@@ -1,4 +1,4 @@
-/* Kidscade Zombie vs Divisor Turrets 3D - outbreak rebuild v13 */
+/* Kidscade Zombie vs Divisor Turrets 3D - fixed top-down rebuild v14 */
 (function(){
 'use strict';
 
@@ -76,8 +76,7 @@ let scene,camera,renderer,loader,fbxLoader,clock,battlefield,decorGroup,skyGroup
 let hoverTile,rangeRing,raycaster,mouse,groundPlane;
 const modelCache=new Map(),towerNodes=new Map(),enemyNodes=new Map(),enemyMixers=new Map(),decorCells=new Map(),tileMeshes=new Map();
 let started=false,assetsLoading=false,audioCtx=null,bgm=null,soundOn=true,toastTimer=0,selectedTower=null,selectedBuilt=null,hoverCell=null,impactShake=0;
-let pointerStart=null,pointerDragged=false,cameraYaw=.69,cameraPitch=.59,cameraDistance=21.5,pinchStart=null;
-const activePointers=new Map();
+let pointerStart=null,pointerDragged=false;
 
 function readBest(){try{return Math.max(1,parseInt(localStorage.getItem('numTD_best')||'1',10)||1)}catch(_){return 1}}
 const state={
@@ -202,7 +201,7 @@ function initThree(){
   scene=new THREE.Scene();
   scene.background=new THREE.Color(0x71808d);
   scene.fog=new THREE.Fog(0x7f8b93,20,55);
-  camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.05,80);
+  camera=new THREE.OrthographicCamera(-1,1,1,-1,.1,80);
   renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));
   renderer.setSize(innerWidth,innerHeight,false);
@@ -218,14 +217,13 @@ function initThree(){
   scene.add(skyGroup,battlefield,decorGroup,towerGroup,enemyGroup,fxGroup,ui3dGroup);
 
   loader=new GLTFLoader();fbxLoader=new FBXLoader();clock=new THREE.Clock();raycaster=new THREE.Raycaster();mouse=new THREE.Vector2();groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
-  buildBoard();resize();setCameraHome();
+  buildBoard();resize();
   addEventListener('resize',resize);
   canvas.addEventListener('pointermove',onPointerMove);
-  canvas.addEventListener('pointerleave',()=>{if(!activePointers.size){pointerStart=null;pointerDragged=false;hoverCell=null;syncSelection()}});
+  canvas.addEventListener('pointerleave',()=>{pointerStart=null;pointerDragged=false;hoverCell=null;syncSelection()});
   canvas.addEventListener('pointerdown',onPointerDown);
   canvas.addEventListener('pointerup',onPointerUp);
   canvas.addEventListener('pointercancel',onPointerCancel);
-  canvas.addEventListener('wheel',onWheel,{passive:false});
   canvas.addEventListener('contextmenu',e=>e.preventDefault());
 
   loadAssets();
@@ -233,23 +231,22 @@ function initThree(){
 }
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function resize(){
-  renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));camera.aspect=innerWidth/Math.max(1,innerHeight);
-  const portrait=innerHeight>innerWidth*1.15;camera.fov=portrait?48:40;camera.updateProjectionMatrix();
-  cameraDistance=clamp(cameraDistance,portrait?13:10,portrait?29:27);updateCameraTransform();
+  renderer.setSize(innerWidth,innerHeight,false);
+  renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));
+  fitTopDownCamera();
 }
-function updateCameraTransform(){
-  const cp=Math.cos(cameraPitch),sp=Math.sin(cameraPitch),sy=Math.sin(cameraYaw),cy=Math.cos(cameraYaw);
-  camera.position.set(sy*cp*cameraDistance,.42+sp*cameraDistance,cy*cp*cameraDistance);
-  camera.lookAt(0,.42,0);
-}
-function setCameraHome(){
-  const portrait=innerHeight>innerWidth*1.15;
-  cameraYaw=portrait?.52:.69;cameraPitch=portrait?.67:.59;cameraDistance=portrait?25.5:21.5;
-  updateCameraTransform();
-}
-function pointerDistance(){
-  const pts=[...activePointers.values()];if(pts.length<2)return 0;
-  return Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)
+function fitTopDownCamera(){
+  const aspect=Math.max(.34,innerWidth/Math.max(1,innerHeight));
+  const boardWidth=GRID_W*CELL+3.6,boardDepth=GRID_H*CELL+3.6;
+  const margin=innerWidth<=700?1.22:1.18;
+  const halfHeight=Math.max(boardDepth*.5,boardWidth/(2*aspect))*margin;
+  const halfWidth=halfHeight*aspect;
+  camera.left=-halfWidth;camera.right=halfWidth;camera.top=halfHeight;camera.bottom=-halfHeight;
+  camera.near=.1;camera.far=60;
+  camera.position.set(0,28,.001);
+  camera.up.set(0,0,-1);
+  camera.lookAt(0,0,0);
+  camera.updateProjectionMatrix();
 }
 
 function buildBoard(){
@@ -403,13 +400,13 @@ function makeEnemyNode(e){
   }
   const halo=ring(e.kind==='brute'?.52:.43,colorHex(enemyColor(e.hp)),.5);halo.position.y=.03;root.add(halo);root.userData.halo=halo;
   const tag=isPrime(e.hp)?'소수 감염':e.kind==='brute'?'대형 감염':'';
-  const label=textSprite(e.hp,tag,enemyColor(e.hp),e.kind==='brute'?.82:.72);label.position.set(e.labelSide*.06,1.12+e.labelLane*.09,0);root.add(label);root.userData.label=label;root.userData.hp=e.hp;
+  const label=textSprite(e.hp,tag,enemyColor(e.hp),e.kind==='brute'?.82:.72);label.position.set(e.labelSide*.06,.92,-.56-e.labelLane*.11);root.add(label);root.userData.label=label;root.userData.hp=e.hp;
   enemyGroup.add(root);enemyNodes.set(e,root);return root
 }
 function refreshEnemyLabel(e,node){
   if(node.userData.hp===e.hp)return;const old=node.userData.label;if(old){node.remove(old);old.material.map?.dispose();old.material.dispose()}
   const tag=isPrime(e.hp)?'소수 감염':e.kind==='brute'?'대형 감염':'';
-  const label=textSprite(e.hp,tag,enemyColor(e.hp),e.kind==='brute'?.82:.72);label.position.set(e.labelSide*.06,1.12+e.labelLane*.09,0);node.add(label);node.userData.label=label;node.userData.hp=e.hp;node.userData.halo.material.color.setHex(colorHex(enemyColor(e.hp)))
+  const label=textSprite(e.hp,tag,enemyColor(e.hp),e.kind==='brute'?.82:.72);label.position.set(e.labelSide*.06,.92,-.56-e.labelLane*.11);node.add(label);node.userData.label=label;node.userData.hp=e.hp;node.userData.halo.material.color.setHex(colorHex(enemyColor(e.hp)))
 }
 function towerVisualKey(t){const def=TOWERS[t.id],i=t.level>=2?1:0;return def.models[Math.min(i,def.models.length-1)]}
 function makeTowerNode(t){
@@ -428,34 +425,16 @@ function validCell(p){return p&&p.x>=0&&p.y>=0&&p.x<GRID_W&&p.y<GRID_H}
 function onPointerDown(e){
   if(!started||state.gameOver)return;initAudio();
   canvas.setPointerCapture?.(e.pointerId);
-  activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(activePointers.size===1){
-    pointerStart={id:e.pointerId,x:e.clientX,y:e.clientY,time:performance.now(),yaw:cameraYaw,pitch:cameraPitch};pointerDragged=false
-  }else{
-    pointerDragged=true;pinchStart={distance:Math.max(1,pointerDistance()),cameraDistance};hoverCell=null;syncSelection()
-  }
+  pointerStart={id:e.pointerId,x:e.clientX,y:e.clientY,time:performance.now()};pointerDragged=false
 }
 function onPointerMove(e){
   if(!started)return;
-  if(activePointers.has(e.pointerId))activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(activePointers.size>=2){
-    if(!pinchStart)pinchStart={distance:Math.max(1,pointerDistance()),cameraDistance};
-    const d=Math.max(1,pointerDistance());cameraDistance=clamp(pinchStart.cameraDistance*(pinchStart.distance/d),10,29);
-    pointerDragged=true;document.body.classList.add('camera-used');hoverCell=null;updateCameraTransform();syncSelection();return
-  }
-  if(pointerStart&&pointerStart.id===e.pointerId){
-    const dx=e.clientX-pointerStart.x,dy=e.clientY-pointerStart.y;
-    if(Math.hypot(dx,dy)>7){
-      pointerDragged=true;cameraYaw=pointerStart.yaw-dx*.007;cameraPitch=clamp(pointerStart.pitch-dy*.005,.42,1.18);
-      document.body.classList.add('camera-used');hoverCell=null;updateCameraTransform();syncSelection();return
-    }
-  }
+  if(pointerStart&&pointerStart.id===e.pointerId&&Math.hypot(e.clientX-pointerStart.x,e.clientY-pointerStart.y)>10)pointerDragged=true;
   if(e.pointerType!=='mouse'||pointerDragged)return;
   const p=pointerCell(e);hoverCell=validCell(p)?p:null;syncSelection()
 }
 function finishPointer(e){
-  activePointers.delete(e.pointerId);try{if(canvas.hasPointerCapture?.(e.pointerId))canvas.releasePointerCapture(e.pointerId)}catch(_){}
-  if(activePointers.size<2)pinchStart=null
+  try{if(canvas.hasPointerCapture?.(e.pointerId))canvas.releasePointerCapture(e.pointerId)}catch(_){}
 }
 function onPointerUp(e){
   if(!started||state.gameOver){finishPointer(e);pointerStart=null;pointerDragged=false;return}
@@ -465,11 +444,7 @@ function onPointerUp(e){
   if(t){selectedBuilt=t;selectedTower=null;syncDeck();syncSelectedPanel();syncSelection();return}
   if(selectedTower)placeTower(selectedTower,p.x,p.y);else{selectedBuilt=null;syncSelectedPanel();syncSelection()}
 }
-function onPointerCancel(e){finishPointer(e);pointerStart=null;pointerDragged=false;pinchStart=null}
-function onWheel(e){
-  if(!started||state.gameOver)return;e.preventDefault();cameraDistance=clamp(cameraDistance+e.deltaY*.012,10,29);
-  document.body.classList.add('camera-used');updateCameraTransform()
-}
+function onPointerCancel(e){finishPointer(e);pointerStart=null;pointerDragged=false}
 
 
 function unlockedDivisors(){const out=[2];if(state.wave>=TOWERS.DIV3.unlock)out.push(3);if(state.wave>=TOWERS.DIV5.unlock)out.push(5);return out}
@@ -549,13 +524,13 @@ function applyTower(t,e){
   else if(t.id==='ADD1'){e.hp+=1;label=before+'+1='+e.hp;e.chain=0}
   else{e.hp=before/def.value;label=before+'÷'+def.value+'='+e.hp;e.chain=(e.chain||0)+1;factor=true;
     if(e.hp>5&&isPrime(e.hp)&&!state.residualHintShown){state.residualHintShown=true;setTimeout(()=>toast(e.hp+' 같은 소수가 남았어요. 길 뒤쪽에도 ±1 교정기와 나눗셈 터렛을 이어 두세요.'),120)}}
-  e.flash=.24;impactShake=Math.max(impactShake,.12);state.texts.push({pos:e.pos.clone().add(new THREE.Vector3(e.labelSide*.12,1.34+e.labelLane*.05,0)),text:label,color:def.color,life:.72});
-  if(factor&&e.chain>=2)state.texts.push({pos:e.pos.clone().add(new THREE.Vector3(-e.labelSide*.16,1.62,0)),text:'FACTOR ×'+e.chain,color:'#fde68a',life:.82});
+  e.flash=.24;impactShake=Math.max(impactShake,.12);state.texts.push({pos:e.pos.clone().add(new THREE.Vector3(e.labelSide*.18,.9,-.42-e.labelLane*.06)),text:label,color:def.color,life:.72});
+  if(factor&&e.chain>=2)state.texts.push({pos:e.pos.clone().add(new THREE.Vector3(-e.labelSide*.18,.95,-.68)),text:'FACTOR ×'+e.chain,color:'#fde68a',life:.82});
   hitBurst(e.pos,def.color);feed(label,def.color);sfx.hit();if(e.hp===1)purifyEnemy(e)
 }
 function purifyEnemy(e){
   const reward=Math.max(8,Math.min(40,8+Math.ceil(Math.log2(e.max+1))*3+(e.chain||0)*2));state.money+=reward;state.kills++;state.enemies=state.enemies.filter(x=>x!==e);const n=enemyNodes.get(e);if(n){enemyGroup.remove(n);enemyNodes.delete(e)}enemyMixers.get(e)?.stopAllAction();enemyMixers.delete(e);
-  state.texts.push({pos:e.pos.clone().add(new THREE.Vector3(0,1.05,0)),text:'완전 분해! +'+reward,color:'#86efac',life:1.0});burst(e.pos,'#86efac');syncHUD()
+  state.texts.push({pos:e.pos.clone().add(new THREE.Vector3(0,.9,-.52)),text:'완전 분해! +'+reward,color:'#86efac',life:1.0});burst(e.pos,'#86efac');syncHUD()
 }
 function hitBurst(pos,color){for(let i=0;i<4;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.035,6,6),new THREE.MeshBasicMaterial({color:colorHex(color)}));m.position.copy(pos).add(new THREE.Vector3(0,.52,0));fxGroup.add(m);state.particles.push({mesh:m,vel:new THREE.Vector3((Math.random()-.5)*1.6,.7+Math.random()*1.4,(Math.random()-.5)*1.6),life:.2+Math.random()*.18})}}
 function burst(pos,color){impactShake=Math.max(impactShake,.22);for(let i=0;i<10;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.045,6,6),new THREE.MeshBasicMaterial({color:colorHex(color)}));m.position.copy(pos).add(new THREE.Vector3(0,.45,0));fxGroup.add(m);state.particles.push({mesh:m,vel:new THREE.Vector3((Math.random()-.5)*2.4,1+Math.random()*2,(Math.random()-.5)*2.4),life:.4+Math.random()*.35})}}
@@ -575,7 +550,7 @@ function gameOver(){
 
 function update(dt){
   if(!started||state.paused||state.gameOver)return;const sim=dt;
-  state.beams.forEach(b=>b.life-=sim);state.beams=state.beams.filter(b=>b.life>0);state.texts.forEach(t=>{t.pos.y+=.45*sim;t.life-=sim});state.texts=state.texts.filter(t=>t.life>0);
+  state.beams.forEach(b=>b.life-=sim);state.beams=state.beams.filter(b=>b.life>0);state.texts.forEach(t=>{t.pos.z-=.45*sim;t.life-=sim});state.texts=state.texts.filter(t=>t.life>0);
   for(let i=state.particles.length-1;i>=0;i--){const p=state.particles[i];p.life-=sim;p.vel.y-=4.4*sim;p.mesh.position.addScaledVector(p.vel,sim);if(p.life<=0){fxGroup.remove(p.mesh);state.particles.splice(i,1)}}
   updateProjectiles(sim);
   if(!state.waveActive)return;
@@ -626,7 +601,7 @@ function loop(){
   for(let i=0;i<steps;i++)update(simStep);
   sync3D(dt,time);
   const bx=camera.position.x,by=camera.position.y,bz=camera.position.z;
-  if(impactShake>0){const n=impactShake*.11;camera.position.x+= (Math.random()-.5)*n;camera.position.y+=(Math.random()-.5)*n;camera.position.z+=(Math.random()-.5)*n}
+  if(impactShake>0){const n=impactShake*.08;camera.position.x+=(Math.random()-.5)*n;camera.position.z+=(Math.random()-.5)*n}
   renderer.render(scene,camera);
   camera.position.set(bx,by,bz)
 }
@@ -686,7 +661,6 @@ $('speedMenu').addEventListener('click',event=>{
 document.addEventListener('click',()=>{
   const btn=$('speedBtn'),control=btn?.closest('.speedControl');control?.classList.remove('open');btn?.setAttribute('aria-expanded','false');
 });
-$('cameraResetBtn')?.addEventListener('click',()=>{setCameraHome();toast('기본 시점으로 돌아왔어요.')});
 $('soundBtn').addEventListener('click',()=>{soundOn=!soundOn;$('soundBtn').textContent=soundOn?'🔊':'🔇';syncBgm()});
 $('startGameBtn').addEventListener('click',()=>{initAudio();started=true;$('startScreen').classList.remove('show');syncHUD();syncDeck();syncBgm();toast('약수 터렛을 골라 도로 주변에 설치하세요.')});
 $('restartBtn').addEventListener('click',()=>{$('gameOverScreen').classList.remove('show');started=true;resetGame()});

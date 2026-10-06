@@ -104,17 +104,8 @@ body.build-mode #waveCard{opacity:.58}
 }
 
 
-/* v5 eco-city battlefield + orbit camera */
-#cameraHint{
-  position:fixed;z-index:17;right:12px;bottom:116px;
-  padding:7px 11px;border-radius:999px;
-  background:rgba(247,252,248,.88);border:1px solid rgba(55,103,83,.22);
-  color:#36584b;font-size:10px;font-weight:900;
-  box-shadow:0 8px 22px rgba(44,83,67,.12);
-  pointer-events:none;transition:opacity .22s,transform .22s;
-}
-body.camera-used #cameraHint{opacity:.38;transform:translateY(2px)}
-#cameraResetBtn{font-size:20px;line-height:1}
+/* v14 fixed top-down battlefield */
+#world{cursor:crosshair}
 #assetStatus{
   color:#d8efff;background:rgba(14,38,50,.76);
   border-color:rgba(148,211,205,.35)
@@ -124,7 +115,7 @@ body.camera-used #cameraHint{opacity:.38;transform:translateY(2px)}
   background:rgba(245,250,246,.7);color:rgba(41,76,65,.72)
 }
 @media(max-width:700px){
-  #cameraHint{right:7px;bottom:91px;max-width:58vw;padding:5px 8px;font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #world{cursor:default}
 }
 
 
