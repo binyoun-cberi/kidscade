@@ -1820,7 +1820,7 @@ document.getElementById('saveBtn')?.addEventListener('click',()=>publish(true));
 document.getElementById('resetBtn')?.addEventListener('click',resetToDefault);
 
 window.KidscadeAvatarShop={
-  version:'pixel-v3-school-starter-armor-30',
+  version:'pixel-v3-school-starter-29',
   stateKey:STATE_KEY,
   getPreviewDataURL:previewData,
   renderPreviewFrame,
