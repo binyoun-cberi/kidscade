@@ -124,3 +124,5 @@ button:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
 @media(max-width:420px){
   .stageBox{max-width:100px}.massBox{min-width:105px}.upgradeList{grid-template-columns:repeat(3,145px)}.codexGrid{grid-template-columns:1fr}
 }
+
+@media(max-width:680px){.upgradeList{grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:145px}}
