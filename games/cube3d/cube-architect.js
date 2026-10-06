@@ -146,6 +146,7 @@ function ensureRenderer(){
 }
 function ensureLoop(){if(loopStarted)return;loopStarted=true;last=performance.now();requestAnimationFrame(animate)}
 function clearModeUi(){
+  tutorialFinish(false);clearCampMarker();
   ['challengePanel','challengeFlyHud','netPanel','freeHud','dungeonHud','mobileControls','blueprintModal','resultCard','tutorial'].forEach(id=>setVisible(id,false));
   blueprintModalOpen=false;
   resetMobileInput();
@@ -3016,6 +3017,7 @@ function buildFreeWorld(){
 }
 function initFree(){
   const survival=gameFreeMode==='survival';
+  clearCampMarker();survivalCamp={version:1,completed:[],dismissed:false,finished:false,baseline:null,prepared:false};
   modeTitle(survival?'생존 탐험':'크리에이티브 월드',
     survival?'나무 채집 → 제작 → 새로운 바이옴 탐험':'모든 건축 재료 · 비행 · 물질 실험');
   setVisible('freeHud',true);$('actionSave').classList.remove('hidden');
@@ -3053,7 +3055,7 @@ function initFree(){
   }catch(_){}
   legacyWorld=!!(storedCreative?.legacyTerrain||previous);
   buildFreeWorld();if(gameFreeMode==='survival'){survivalEquipment={head:'',chest:'',legs:'',feet:'',shield:''};survivalDamageCarry=0}
-  loadFreeWorld();
+  loadFreeWorld();prepareSurvivalCamp();
   const ground=getHighestSolidY(0,5,10);
   const spawn=savedFreePosition&&savedFreePosition.length===3?savedFreePosition:
     [0,ground+1+1.62,5];
@@ -3270,7 +3272,7 @@ function recipeCategory(recipe){
 function visibleSurvivalRecipes(){
   const biomeRecipes={flowerDye:'flowers',reedMat:'marsh',sandstone:'desert',
     snowBrick:'snow',cactusDye:'desert'};
-  return worldRules.RECIPES.filter(r=>discoveredRecipeIds.has(r.id)&&r.stage<=survivalStage&&recipeUnlocked(r.id)&&
+  return worldRules.RECIPES.filter(r=>(!campActive()||['planks','sticks','workbench','woodPick'].includes(r.id))&&discoveredRecipeIds.has(r.id)&&r.stage<=survivalStage&&recipeUnlocked(r.id)&&
     (!['workbench','woodPick','stonePick','ironPick','woodSword','stoneSword','ironSword',...SURVIVAL_GEAR_TYPES].includes(r.id)||!bagCount(r.id))&&
     (!biomeRecipes[r.id]||visitedBiomes.has(biomeRecipes[r.id])||
       Object.keys(r.needs).some(item=>bagCount(item)>0)))
@@ -3307,8 +3309,8 @@ function renderCraftDetail(recipe){
     '</div><div class="craft-result-copy"><b>'+recipe.name+(isNew?'<span class="craft-new-chip">NEW</span>':'')+
     '</b><small>'+result.name+' '+resultCount+'개가 가방에 들어갑니다.</small></div></div>'+
     '<div class="craft-ingredients">'+ingredients+'</div>'+
-    '<div class="craft-bench-note">'+(recipe.bench?(benchReady?'✓ 제작대 범위 안':'제작대 가까이에서 만들 수 있어요.'):'손으로 바로 제작 가능')+'</div>'+
-    '<button id="craftSelectedButton" type="button" '+(possible?'':'disabled')+'>'+(possible?'제작하기':'재료를 더 모아야 해요')+'</button>';
+    '<div class="craft-bench-note">'+(recipe.bench?(benchReady?'✓ 제작대 가까이에 있어요':'제작대 가까이에서 만들 수 있어요.'):'여기서 바로 만들 수 있어요')+'</div>'+
+    '<button id="craftSelectedButton" type="button" '+(possible?'':'disabled')+'>'+(possible?'만들기':'재료를 더 모아야 해요')+'</button>';
   const button=$('craftSelectedButton');if(button)button.onclick=()=>craftSurvival(recipe);
 }
 function craftSurvival(recipe){
@@ -3333,7 +3335,7 @@ function craftSurvival(recipe){
     if(HOTBAR_TOOL_TYPES.includes(recipe.id))putOnHotbar(recipe.id);
     const autoEquipped=maybeEquipCraftedGear(recipe.id);
     craftingBusy=false;buildHotbar();buildInventory('전체');updateSurvivalEquipmentUi();markFreeWorldDirty(450);
-    toast(recipe.name+' 제작 완료!'+(HOTBAR_TOOL_TYPES.includes(recipe.id)?' 바로 사용할 수 있게 핫바에 들었어요.':
+    toast(recipe.name+' 제작 완료!'+(HOTBAR_TOOL_TYPES.includes(recipe.id)?' 아래 물건 칸에서 바로 쓸 수 있어요.':
       autoEquipped?' 더 좋은 장비라서 바로 착용했어요.':
       recipe.id.endsWith('Dye')?' 새로운 색을 면 색칠에 선택했어요.':''));
     sfx('good');
@@ -3367,7 +3369,7 @@ function buildInventory(category='전체'){
   $('survivalCraftPanel').classList.toggle('hidden',!survival);
   $('survivalBagHeader')?.classList.toggle('hidden',!survival);
   $('shapeWorkbench').classList.toggle('hidden',survival?
-    survivalStage<3||!hasWorkbench():!(category==='도형'||category==='전체'));
+    campActive()||survivalStage<3||!hasWorkbench():!(category==='도형'||category==='전체'));
   $('inventoryNote').textContent=survival?
     '제작대를 설치하면 도형과 장비 제작이 열려요. 방어구·방패는 가방에서 눌러 장착하고, 검·곡괭이는 핫바에서 사용해요.':
     '물·모래·불과 식물은 서로 다른 물리·화학적 성질을 갖고 있어요.';
@@ -3510,7 +3512,7 @@ function updateFreeMission(){
     $('freeState').textContent='생존 · '+(freeFluidKind==='water'?'수영 · ':freeFluidKind==='lava'?'용암 · ':'')+chosen;
     $('freeHint').textContent=canRestore?'Q · 랜드마크 던전 입장':
       survivalStage<3?'좌클릭 유지 채집 · F 생물 상호작용 · E 가방·제작 · V 시점':
-      survivalStage===3?'E 제작대 · F 생물 상호작용 · 2×1×1 직육면체 설계':
+      survivalStage<=4?'E로 가방 열기 · 곡괭이로 돌 캐기':
       '좌클릭 채집·전투 · F 생물 상호작용 · E 제작 · V 시점 · P 색칠 · X 수학 렌즈';
   }else{
     const total=5,done=collected.size;
@@ -3523,6 +3525,7 @@ function updateFreeMission(){
       'E 가방 · F 비행 · V 시점 · R 복사 · P 색칠 · X 수학 렌즈';
   }
   renderExplorationHint();
+  if(campActive())renderCampQuest(campStep());
 }
 function nearbyWorldInteractables(eye,max=6.5){
   const reach=max+1.25,ey=eye.y;
@@ -3867,9 +3870,9 @@ function placeFreeBlock(hit){
   const canReplaceFragile=occupied&&['fire','flower','reed','sapling','torch'].includes(occupied.type)&&
     (selectedDef.solid||['water','lava'].includes(selectedType));
   const replaceable=!!(canDisplaceFluid||canReplaceFragile);
-  if(occupied&&!replaceable)return;
+  if(occupied&&!replaceable){toast('여기는 이미 채워져 있어. 빈 곳에 놓아 보자.');return}
   if(Math.hypot(camera.position.x-p.x,camera.position.z-p.z)<.82&&
-    p.y>=Math.floor(freePhysicsY-1.65)&&p.y<=Math.floor(freePhysicsY))return;
+    p.y>=Math.floor(freePhysicsY-1.65)&&p.y<=Math.floor(freePhysicsY)){toast('내가 서 있는 곳이야. 한 걸음 옆으로 가 보자.');return}
   const supportError=placementSupportError(selectedType,p);
   if(supportError){toast(supportError);return}
   const survival=gameFreeMode==='survival';
@@ -3880,7 +3883,7 @@ function placeFreeBlock(hit){
         toast('제작대와 판자 '+volume+'개가 필요해요.');return;
       }
     }else if(bagCount(selectedType)<1){
-      toast(blockDef(selectedType).name+'이(가) 부족해요.');return;
+      toast(blockDef(selectedType).name+'이(가) 더 필요해요.');return;
     }
   }
   const facing=facingFromYaw();
@@ -4160,7 +4163,7 @@ function saveFreeWorld(){
   if(mode!=='free')return;
   const data={version:13,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
     collected:Array.from(collected),hotbar:hotbarTypes,selected:selectedHotbarSlot,
-    dayTime,cuboidSpec:currentCuboidSpec,facePaintColor,
+    dayTime,cuboidSpec:currentCuboidSpec,facePaintColor,campLesson:{...survivalCamp},
     position:[camera.position.x,freePhysicsY,camera.position.z],
     bag:survivalBag,stage:survivalStage,legacyTerrain:legacyWorld,visitedBiomes:[...visitedBiomes],
     discoveredResources:[...discoveredResources],discoveredRecipes:[...discoveredRecipeIds],unreadRecipes:[...unreadRecipeIds],
@@ -4196,6 +4199,9 @@ function loadFreeWorld(){
       if(Array.isArray(data.position)&&data.position.length===3&&data.position.every(Number.isFinite))
         savedFreePosition=data.position;
       if(gameFreeMode==='survival'){
+        if(data.campLesson?.version===1){
+          const saved=data.campLesson;survivalCamp={version:1,completed:Array.isArray(saved.completed)?saved.completed.filter(id=>window.CubeArchitectCamp.STEPS.some(s=>s.id===id)):[],dismissed:!!saved.dismissed,finished:!!saved.finished,baseline:saved.baseline||null,prepared:!!saved.prepared,site:Array.isArray(saved.site)&&saved.site.length===3&&saved.site.every(Number.isFinite)?saved.site:null};
+        }
         survivalBag=data.bag&&typeof data.bag==='object'?data.bag:{};
         discoveredResources=new Set(Array.isArray(data.discoveredResources)?data.discoveredResources:[]);
         discoveredRecipeIds=new Set(Array.isArray(data.discoveredRecipes)?data.discoveredRecipes:[]);
@@ -4218,7 +4224,12 @@ function loadFreeWorld(){
             paintedFaces:Array.isArray(data.stats.paintedFaces)?data.stats.paintedFaces:[],
             biomes:[...visitedBiomes],found:[...collected],
             restored:Array.isArray(data.stats.restored)?data.stats.restored:[...restoredLandmarks]};
-          survivalStage=(data.version||0)<12&&savedStage>=3&&!survivalStats.cuboids.length?3:savedStage;
+          // Preserve late-game unlocks; recalculate early goals from successful actions.
+          survivalStage=savedStage;
+          if(savedStage<6){
+            survivalStage=0;
+            while(survivalStage<6&&worldRules.goalProgress(worldRules.GOALS[survivalStage],survivalStats)>=worldRules.GOALS[survivalStage].need)survivalStage++;
+          }
           survivalFinished=!!data.finished;
         }else{
           const oldStage=Math.max(0,Math.min(6,Number(data.stage)||0));
@@ -4710,7 +4721,7 @@ function returnAfterCreatureDefeat(){
   updateCreatureHealthUi();updateBreathUi(false);saveFreeWorld();
 }
 function damageByCreature(root,t){
-  if(gameFreeMode!=='survival'||freeAvatarDefeated||t-lastCreatureDamage<1250||root.userData.dead||root.userData.assembling)return;
+  if(campActive()||gameFreeMode!=='survival'||freeAvatarDefeated||t-lastCreatureDamage<1250||root.userData.dead||root.userData.assembling)return;
   lastCreatureDamage=t;healthRegenClock=0;root.userData.attackUntil=t+420;freeHitStopUntil=Math.max(freeHitStopUntil,t+50);
   const rawAmount=Math.max(1,root.userData.spec.damage||1),protection=survivalProtection();
   survivalDamageCarry+=rawAmount*(1-protection);
@@ -5035,6 +5046,7 @@ function playerEnvironmentState(px=camera.position.x,eyeY=freePhysicsY,pz=camera
   return state;
 }
 function damageByEnvironment(state,t){
+  if(campActive())return false;
   if(gameFreeMode!=='survival'||freeAvatarDefeated)return false;
   const kind=state.lava?'용암':state.fire?'불':state.cactus?'선인장':'';
   if(!kind)return false;
@@ -5061,6 +5073,7 @@ function updateBreathUi(underwater){
   }
 }
 function updateBreath(state,dt,t){
+  if(campActive()){survivalBreath=100;updateBreathUi(false);return false}
   updateUnderwaterVisual(state.headUnderWater);
   if(gameFreeMode!=='survival'){survivalBreath=100;updateBreathUi(false);return false}
   if(state.headUnderWater){
@@ -5076,6 +5089,7 @@ function updateBreath(state,dt,t){
   updateBreathUi(state.headUnderWater);return false;
 }
 function damageByFall(distance){
+  if(campActive())return false;
   if(gameFreeMode!=='survival'||distance<=4.25)return false;
   const amount=Math.min(4,Math.max(1,Math.floor((distance-4.25)/3)+1));
   healthRegenClock=0;survivalHealth=Math.max(0,survivalHealth-amount);
@@ -5241,8 +5255,9 @@ function updateAmbientAudio(dt,t){
 function updateSurvivalEnvironment(dt){
   if(gameFreeMode!=='survival')return;
   survivalTimeAcc+=dt;
+  if(campActive())survivalTimeAcc=.5;
   if(survivalTimeAcc<.5)return;
-  const delta=survivalTimeAcc;survivalTimeAcc=0;
+  const delta=campActive()?0:survivalTimeAcc;survivalTimeAcc=0;
   const biomeId=worldRules.region(Math.round(camera.position.x),Math.round(camera.position.z));
   const night=dayTime>=.82||dayTime<.16,storm=weather==='storm';
   const feet=freePhysicsY-1.62;
@@ -5274,6 +5289,7 @@ function updateSurvivalEnvironment(dt){
   renderSurvivalSafety(shelter);
 }
 function updateFree(dt,t){
+  updateCampLesson(t);
   if(t<freeHitStopUntil){
     updateDayNight(0);updateWeather(0,t);updateMathOverlay();return;
   }
@@ -5288,8 +5304,9 @@ function updateFree(dt,t){
     updateDayNight(0);updateWeather(0,t);updateMathOverlay();
     updateUnderwaterVisual(playerEnvironmentState(camera.position.x,freePhysicsY,camera.position.z).headUnderWater);return;
   }
-  updateDayNight(dt);updateWeather(dt,t);updateCritters(dt,t);updateWildCreatures(dt,t);updateMathOverlay();
-  updateSurvivalEnvironment(dt);updateMining(dt);updateAmbientAudio(dt,t);
+  const lessonSafe=campActive();
+  updateDayNight(lessonSafe?0:dt);updateWeather(lessonSafe?0:dt,t);updateCritters(dt,t);updateWildCreatures(dt,t);updateMathOverlay();
+  updateSurvivalEnvironment(lessonSafe?0:dt);updateMining(dt);updateAmbientAudio(dt,t);
   freeStepHop=Math.max(0,freeStepHop-dt*6.2);
   freeSimAccum+=dt;
   if(freeSimAccum>.55){freeSimAccum=0;simulateWorld()}
@@ -5690,50 +5707,259 @@ initMobileControls();
 
 /* ---------------- 공통 입력 / 안내 ---------------- */
 let tutorialState=null,tutorialFocusEl=null;
-function tutorialWaitSatisfied(wait){
-  if(!wait)return false;
-  if(wait==='survival-wood3')return (survivalStats.harvestedWood||0)>=3;
-  if(wait==='survival-planks')return (survivalStats.crafted?.planks||0)>=1;
-  if(wait==='survival-workbench-crafted')return (survivalStats.crafted?.workbench||0)>=1;
-  if(wait==='survival-workbench-placed')return (survivalStats.placed?.workbench||0)>=1;
-  if(wait==='survival-planks2')return bagCount('planks')>=2;
-  if(wait==='survival-shape-open')return inventoryOpen&&survivalStage>=3&&hasWorkbench();
-  if(wait==='survival-cuboid-ready'){
-    const dims=(currentCuboidSpec?.dims||[]).slice().map(Number).sort((a,b)=>a-b).join('x');
-    return selectedType==='cuboid'&&dims==='1x1x2';
-  }
-  if(wait==='survival-cuboid')return (survivalStats.cuboids||[]).includes('1x1x2');
-  if(wait==='survival-sticks')return (survivalStats.crafted?.sticks||0)>=1||bagCount('sticks')>=2;
-  if(wait==='survival-woodpick')return (survivalStats.crafted?.woodPick||0)>=1||bagCount('woodPick')>=1;
-  return false;
+let survivalCamp={version:1,completed:[],dismissed:false,finished:false,baseline:null,prepared:false};
+let campMarker=null,campMarkerKey='',campTickAt=0,campWalkStart=null,campHelpTarget=null;
+const campNearestCache=new Map();
+function campActive(){return mode==='free'&&gameFreeMode==='survival'&&tutorialState?.camp===true}
+function campShelterPlan(){
+  const [x,y,z]=survivalCamp.site||[-3,3,3];
+  return window.CubeArchitectCamp.SHELTER.map(p=>[p[0]+x+3,p[1]+y-3,p[2]+z-3]);
 }
-function tutorialLiveStatus(step){
-  if(!step?.wait||!String(step.wait).startsWith('survival-'))return '';
-  const yes='✓ ',no='○ ';
-  if(step.wait==='survival-wood3')return '원목 '+Math.min(3,survivalStats.harvestedWood||0)+' / 3';
-  if(step.wait==='survival-planks')return ((survivalStats.crafted?.planks||0)>=1?yes:no)+'나무 판자 제작';
-  if(step.wait==='survival-workbench-crafted')return ((survivalStats.crafted?.workbench||0)>=1?yes:no)+'제작대 제작';
-  if(step.wait==='survival-workbench-placed')return ((survivalStats.placed?.workbench||0)>=1?yes:no)+'제작대 설치';
-  if(step.wait==='survival-planks2')return '현재 판자 '+bagCount('planks')+' / 2';
-  if(step.wait==='survival-shape-open')return (hasWorkbench()?yes:no)+'제작대 가까이 · '+(inventoryOpen?yes:no)+'가방 열림';
-  if(step.wait==='survival-cuboid-ready'){
-    const dims=(currentCuboidSpec?.dims||[1,1,1]).join('×');
-    return '현재 도형 '+dims+(selectedType==='cuboid'?' · 핫바 준비됨':' · 아직 핫바에 안 담김');
+function chooseCampSite(){
+  if(survivalCamp.site)return;
+  for(let radius=0;radius<=8;radius++)for(let x=-3-radius;x<=-3+radius;x++)for(let z=3-radius;z<=3+radius;z++){
+    if(radius&&Math.max(Math.abs(x+3),Math.abs(z-3))!==radius)continue;
+    const y=getHighestSolidY(x,z,10)+1;
+    if(y<1||y>5)continue;
+    const candidate=window.CubeArchitectCamp.SHELTER.map(p=>[p[0]+x+3,p[1]+y-3,p[2]+z-3]);
+    if(candidate.every(p=>!getBlock(...p))&&!getBlock(x,y,z)&&!getBlock(x,y+1,z)&&
+      getBlock(x-1,y-1,z)&&getBlock(x,y-1,z-1)&&!getBlock(x,y,z+1)){
+      survivalCamp.site=[x,y,z];return;
+    }
   }
-  if(step.wait==='survival-cuboid')return ((survivalStats.cuboids||[]).includes('1x1x2')?yes:no)+'2×1×1 직육면체 설치';
-  if(step.wait==='survival-sticks')return ((survivalStats.crafted?.sticks||0)>=1||bagCount('sticks')>=2?yes:no)+'막대 제작 · 보유 '+bagCount('sticks')+'개';
-  if(step.wait==='survival-woodpick')return ((survivalStats.crafted?.woodPick||0)>=1||bagCount('woodPick')>=1?yes:no)+'나무 곡괭이 제작';
+  survivalCamp.site=[-3,3,3];
+}
+function campShelterComplete(){
+  return campShelterPlan().every(p=>{
+    const d=getBlock(...p);return !!(d?.playerBuilt&&worldRules.shelterBlock(d));
+  });
+}
+function clearCampMarker(){
+  if(campMarker){campMarker.parent?.remove(campMarker);campMarker.geometry.dispose();campMarker.material.dispose()}
+  campMarker=null;campMarkerKey='';
+}
+function prepareSurvivalCamp(){
+  if(gameFreeMode!=='survival'||savedFreePosition||worldEdits.size)return;
+  for(let x=-5;x<=4;x++)for(let z=0;z<=6;z++){
+    for(let y=3;y<=8;y++){setRawBlock(x,y,z,null);markEdit(x,y,z,null)}
+    const floor={type:'grass',natural:true};setRawBlock(x,2,z,floor);markEdit(x,2,z,floor);
+  }
+  for(let y=3;y<=6;y++){
+    const log={type:'log',natural:true};setRawBlock(6,y,3,log);markEdit(6,y,3,log);
+  }
+  for(const x of [3,4,5]){
+    const d={type:'stone',natural:true};setRawBlock(x,3,0,d);markEdit(x,3,0,d);
+  }
+  survivalCamp.prepared=true;
+}
+function campNearest(types){
+  const cacheKey=types.join(','),cached=campNearestCache.get(cacheKey);
+  if(cached&&types.includes(getBlock(...cached)?.type)&&Math.hypot(cached[0]-camera.position.x,cached[2]-camera.position.z)<12)return cached;
+  let nearest=null,score=Infinity;
+  for(const [key,d] of worldData){
+    if(!types.includes(d?.type)||d.protectedPoi)continue;
+    const p=parseWorldKey(key);
+    if(types.includes('stone')&&![[0,1,0],[1,0,0],[-1,0,0],[0,0,1],[0,0,-1]].some(v=>{
+      const neighbor=worldData.get(worldKey(p[0]+v[0],p[1]+v[1],p[2]+v[2]));return !neighbor||!blockDef(neighbor).solid;
+    }))continue;
+    const dist=Math.hypot(p[0]-camera.position.x,p[2]-camera.position.z)+Math.abs(p[1]-(freePhysicsY-1.62))*.3;
+    if(dist<score){score=dist;nearest=p}
+  }
+  if(nearest)campNearestCache.set(cacheKey,nearest);return nearest;
+}
+function campStep(){return campActive()?tutorialState.steps[tutorialState.index]:null}
+function campContext(){
+  return {stats:survivalStats,bag:survivalBag,inventoryOpen,bagOpened:survivalCamp.completed.includes('bag'),
+    moved:campWalkStart?Math.hypot(camera.position.x-campWalkStart[0],camera.position.z-campWalkStart[1]):0,
+    atWalkTarget:Math.hypot(camera.position.x-3,camera.position.z-5)<.9,
+    walked:survivalStage>0,shelterComplete:campShelterComplete(),baseline:survivalCamp.baseline};
+}
+function campTarget(step){
+  if(campHelpTarget)return campHelpTarget;
+  if(!step||step.independent)return null;
+  if(step.id==='walk')return [3,3,5];
+  if(step.id==='wood')return campNearest(['log','pineLog']);
+  if(step.id==='stone')return campNearest(['stone']);
+  if(step.id==='benchPlace')return survivalCamp.prepared&&!getBlock(2,3,3)?[2,3,3]:null;
+  if(step.id==='shelter')return campShelterPlan().find(p=>{
+    const d=getBlock(...p);return !(d?.playerBuilt&&worldRules.shelterBlock(d));
+  })||null;
+  if(step.id==='inside')return survivalCamp.site||[-3,3,3];
+  if(step.recipe&&window.CubeArchitectWorld.RECIPES.find(r=>r.id===step.recipe)?.bench&&!hasWorkbench())
+    return campNearest(['workbench']);
+  return null;
+}
+function updateCampMarker(step){
+  const p=campTarget(step);
+  if(!p||inventoryOpen){clearCampMarker();return}
+  const ring=step.action==='walk'||step.action==='inside';
+  const key=p.join(',')+(ring?'ring':'box');
+  if(key!==campMarkerKey||campMarker?.parent!==scene){
+    clearCampMarker();campMarkerKey=key;
+    const geometry=ring?new THREE.RingGeometry(.5,.7,32):new THREE.BoxGeometry(1.05,1.05,1.05);
+    const material=new THREE.MeshBasicMaterial({color:0xffd54f,transparent:true,opacity:.8,
+      wireframe:!ring,side:THREE.DoubleSide,depthTest:false,depthWrite:false});
+    campMarker=new THREE.Mesh(geometry,material);campMarker.renderOrder=99;
+    campMarker.userData.worldDecorative=true;
+    campMarker.position.set(p[0],ring?p[1]+.025:p[1]+.5,p[2]);
+    if(ring)campMarker.rotation.x=-Math.PI/2;
+    scene.add(campMarker);
+  }
+}
+function campInstruction(step){
+  const mobile=mobileModeEnabled;
+  if(step.id==='walk')return mobile?'왼쪽 동그라미로 움직여 보자. 화면을 밀면 주변을 볼 수 있어.':'화면을 누르고 W·A·S·D로 움직여 보자. 마우스로 주변을 볼 수 있어.';
+  if(step.id==='bag')return mobile?'위쪽 가방 버튼을 눌러 보자.':'E를 눌러 가방을 열어 보자.';
+  if(step.recipe){
+    const recipe=worldRules.RECIPES.find(r=>r.id===step.recipe);
+    if(recipe?.bench&&!hasWorkbench())return '제작대 가까이로 가 보자.';
+    const missing=Object.entries(recipe?.needs||{}).find(([type,n])=>bagCount(type)<n);
+    if(missing)return blockDef(missing[0]).name+' '+(missing[1]-bagCount(missing[0]))+'개가 더 필요해. '+(mobile?'도움 받기를 눌러 보자.':'H를 눌러 도움을 받아 보자.');
+    if(!inventoryOpen)return mobile?'가방을 열고 '+recipe.name+'를 골라 보자.':'E로 가방을 열고 '+recipe.name+'를 골라 보자.';
+    return recipe.name+'를 고른 뒤 만들기를 눌러 보자.';
+  }
+  if(step.action==='harvest'){
+    if(inventoryOpen)return mobile?'가방을 닫고 나무나 돌을 바라보자.':'E로 가방을 닫고 나무나 돌을 바라보자.';
+    if(step.type==='stone'&&pickTier(selectedType)<pickTier('woodPick'))return '아래 물건 칸에서 곡괭이를 골라 보자.';
+    if(step.type==='log'&&PLACEABLE_TYPES.includes(selectedType))return '아래 물건 칸에서 맨손을 골라 보자.';
+    return mobile?'가운데 +를 맞추고 행동 버튼을 한 번 눌러 보자.':'가운데 +를 맞추고 마우스 왼쪽 버튼을 꾹 눌러 보자.';
+  }
+  if(step.action==='place'||step.action==='shelter'){
+    if(inventoryOpen)return mobile?'놓을 물건을 고르고 가방을 닫아 보자.':'놓을 물건을 고르고 E로 가방을 닫아 보자.';
+    if(step.action==='shelter'&&!['planks','dirt'].includes(selectedType))return '아래 물건 칸에서 판자나 흙을 골라 보자.';
+    if(step.action==='place'&&selectedType!==step.type)return '아래 물건 칸에서 '+blockDef(step.type).name+'를 골라 보자.';
+    if(!bagCount(selectedType))return '재료가 다 떨어졌네. '+(mobile?'도움 받기를 눌러 보자.':'H를 눌러 도움을 받아 보자.');
+    if(step.independent)return mobile?'놓고 싶은 곳을 보고 행동 버튼을 눌러 보자.':'놓고 싶은 곳을 보고 마우스 오른쪽 버튼을 눌러 보자.';
+    return mobile?'노란 테두리 옆면이나 바닥을 보고 행동 버튼을 눌러 보자.':'노란 테두리 옆면이나 바닥을 보고 마우스 오른쪽 버튼을 눌러 보자.';
+  }
+  return step.text;
+}
+function campLiveStatus(step){
+  if(step.id==='wood')return '원목 '+Math.min(3,survivalStats.harvestedWood||0)+' / 3';
+  if(step.id==='shelter')return '쉼터 '+campShelterPlan().filter(p=>getBlock(...p)?.playerBuilt&&worldRules.shelterBlock(getBlock(...p))).length+' / 6';
   return '';
 }
+function campFocus(step){
+  if(step.recipe&&inventoryOpen)return '[data-recipe-id="'+step.recipe+'"]';
+  if(step.id==='bag'||step.recipe)return mobileModeEnabled?'#mobileInventory':null;
+  if(step.action==='walk')return mobileModeEnabled?'#mobileJoystick':null;
+  if(step.action==='harvest'||step.action==='place'||step.action==='shelter')
+    return mobileModeEnabled?'#mobileInteract':null;
+  return null;
+}
+function renderCampStep(){
+  const step=campStep();if(!step)return;
+  const intro=step.id==='welcome'||step.id==='done';
+  const root=$('tutorial');root.classList.add('camp');root.classList.remove('hidden');root.classList.toggle('coach',!intro);
+  $('tutorialProgress').textContent=intro?'첫 생존':Math.min(7,step.chapter)+' / 7';
+  $('tutorialBody').innerHTML='<h2>'+step.title+'</h2><p>'+step.text+'</p>'+
+    (intro?'':'<div class="tutorial-do" id="campInstruction">'+campInstruction(step)+'</div>')+
+    (campLiveStatus(step)?'<div class="tutorial-live-status" id="tutorialLiveStatus">'+campLiveStatus(step)+'</div>':'');
+  $('tutorialSkip').textContent='혼자 해 볼게요';
+  $('tutorialSkip').onclick=()=>{survivalCamp.dismissed=true;tutorialFinish(false);markFreeWorldDirty(300);updateFreeMission()};
+  $('tutorialBack').style.visibility=intro?'hidden':'visible';$('tutorialBack').disabled=false;
+  $('tutorialBack').textContent='캠프로 돌아가기';$('tutorialBack').onclick=()=>{
+    toggleInventory(false);camera.position.set(0,safeReturnEyeY(),5);freePhysicsY=camera.position.y;
+    freeVelocityY=0;freeFallPeakY=freePhysicsY;stopMining();markFreeWorldDirty(300);
+  };
+  $('tutorialClose').disabled=false;$('tutorialClose').textContent=intro?(step.id==='done'?'탐험하러 가기':'함께 시작하기'):'도움 받기';
+  $('tutorialClose').onclick=()=>{
+    if(step.id==='done'){survivalCamp.finished=true;survivalCamp.dismissed=false;tutorialFinish(false);markFreeWorldDirty(300);updateFreeMission();return}
+    if(step.id==='welcome'){tutorialState.index++;renderTutorialStep();return}
+    campHelp(step);
+  };
+  tutorialClearFocus();const target=tutorialTarget(campFocus(step));
+  if(target){target.classList.add('tutorial-focus');tutorialFocusEl=target}
+  updateCampMarker(step);renderCampQuest(step);
+  syncCampInventory(step);
+}
+function syncCampInventory(step){
+  $('tutorial').classList.toggle('camp-inventory',inventoryOpen);
+  const hint=$('campInventoryHint');if(!hint)return;
+  hint.classList.toggle('hidden',!inventoryOpen||!campActive());
+  if(inventoryOpen&&step){
+    $('campInventoryText').textContent=step.title+' · '+campInstruction(step);
+    $('campInventoryHelp').onclick=()=>campHelp(campStep());
+  }
+}
+function renderCampQuest(step){
+  if(!step)return;
+  $('freeQuestTitle').textContent='첫 생존 · '+step.title;
+  $('freeQuestDescription').textContent=step.text;
+  $('adventureCount').textContent=step.id==='done'?'완료':Math.min(7,step.chapter||1)+' / 7';
+  $('adventureBar').style.width=(step.id==='done'?100:Math.max(0,(step.chapter||1)-1)/7*100)+'%';
+  $('freeHint').textContent=step.id==='welcome'?'차근차근 함께 해 보자.':campInstruction(step);
+  $('freeMission').classList.add('camp-quest');
+  $('explorationHint').classList.add('hidden');
+}
+function campHelp(step){
+  campHelpTarget=null;
+  if(step.recipe){
+    let recipe=worldRules.RECIPES.find(r=>r.id===step.recipe);
+    if(recipe.bench&&!hasWorkbench()){
+      if(!campNearest(['workbench'])){
+        if(bagCount('workbench')){putOnHotbar('workbench');toggleInventory(false);toast('제작대를 먼저 다시 놓아 보자.');return}
+        recipe=worldRules.RECIPES.find(r=>r.id==='workbench');
+      }else{toggleInventory(false);campHelpTarget=campNearest(['workbench']);toast('노란 테두리의 제작대 가까이로 가 보자.');updateCampMarker(step);return}
+    }
+    const missing=Object.entries(recipe.needs).find(([type,n])=>bagCount(type)<n);
+    if(missing?.[0]==='planks'||missing?.[0]==='sticks')recipe=worldRules.RECIPES.find(r=>r.id===missing[0]);
+    if(Object.keys(recipe.needs).includes('log')&&!bagCount('log')){
+      toggleInventory(false);putOnHotbar('hand');campHelpTarget=campNearest(['log','pineLog']);
+      toast('노란 테두리의 나무에서 원목을 더 얻어 보자.');updateCampMarker(step);return;
+    }
+    survivalCraftCategory='전체';selectedCraftRecipeId=recipe.id;toggleInventory(true);
+    const button=tutorialTarget('[data-recipe-id="'+recipe.id+'"]');tutorialClearFocus();
+    if(button){button.classList.add('tutorial-focus');tutorialFocusEl=button;button.scrollIntoView({block:'nearest'})}
+    toast(recipe.name+'를 골랐어. 재료를 확인하고 만들어 보자.');return;
+  }
+  if(step.action==='harvest'){putOnHotbar(step.type==='stone'?'woodPick':'hand');toggleInventory(false);campHelpTarget=campNearest(step.type==='stone'?['stone']:['log','pineLog'])}
+  if(step.action==='place'||step.action==='shelter'){
+    const type=step.action==='shelter'?(bagCount('planks')?'planks':bagCount('dirt')?'dirt':'planks'):step.type;
+    if(!bagCount(type)){
+      if(type==='planks'||type==='workbench'){campHelp({recipe:type});return}
+    }
+    putOnHotbar(type);toggleInventory(false);
+  }
+  if(step.id==='bag')toggleInventory(true);
+  updateCampMarker(step);toast(campInstruction(step));
+}
+function updateCampLesson(t){
+  if(!campActive()||t<campTickAt)return;campTickAt=t+200;
+  tutorialRefreshProgress();const step=campStep();if(!step)return;
+  const instruction=$('campInstruction');if(instruction)instruction.textContent=campInstruction(step);
+  const status=$('tutorialLiveStatus');if(status)status.textContent=campLiveStatus(step);
+  updateCampMarker(step);renderCampQuest(step);
+  syncCampInventory(step);
+}
+function showSurvivalCamp(force=false){
+  if(!force&&(survivalCamp.dismissed||survivalCamp.finished))return;
+  tutorialFinish(false);campWalkStart=[camera.position.x,camera.position.z];campHelpTarget=null;campNearestCache.clear();
+  chooseCampSite();
+  const steps=window.CubeArchitectCamp.STEPS.map((step,i)=>({...step,chapter:i<1?1:i<2?2:i<5?3:i<6?4:i<10?5:i<12?6:7}));
+  const resume=survivalCamp.completed.length>0||survivalStage>0;
+  tutorialState={camp:true,kind:'free',index:0,steps:resume?steps:[{id:'welcome',title:'함께 첫 집을 지어 보자',text:'나무를 모으고, 곡괭이를 만들고, 작은 쉼터를 지어 보자. 연습하는 동안은 안전해.',chapter:1},...steps]};
+  survivalCamp.dismissed=false;
+  dayTime=.35;setWeather('clear',false);
+  if(survivalCamp.finished){tutorialState.steps=steps.filter(s=>s.id==='done')}
+  renderTutorialStep();tutorialRefreshProgress();
+}
+
 function tutorialRefreshProgress(){
   if(!tutorialState)return;
-  const step=tutorialState.steps[tutorialState.index];
-  const status=$('tutorialLiveStatus');
-  if(status)status.textContent=tutorialLiveStatus(step);
-  if(step?.wait&&String(step.wait).startsWith('survival-')&&tutorialWaitSatisfied(step.wait)){
-    tutorialState.index=Math.min(tutorialState.index+1,tutorialState.steps.length-1);
-    sfx('good');renderTutorialStep();
+  if(campActive()){
+    let changed=false;
+    while(tutorialState.index<tutorialState.steps.length-1){
+      const step=campStep();
+      if(step.independent&&!survivalCamp.baseline)survivalCamp.baseline=window.CubeArchitectCamp.snapshot(survivalStats);
+      if(!survivalCamp.completed.includes(step.id)&&!window.CubeArchitectCamp.satisfied(step.id,campContext()))break;
+      if(!survivalCamp.completed.includes(step.id))survivalCamp.completed.push(step.id);
+      tutorialState.index++;campHelpTarget=null;changed=true;
+    }
+    if(changed){sfx('good');renderTutorialStep();markFreeWorldDirty(350)}
+    return;
   }
+
 }
 function tutorialSignal(action){
   if(!tutorialState)return;
@@ -5756,7 +5982,10 @@ function tutorialClearFocus(){
 }
 function tutorialFinish(save=true){
   if(!tutorialState)return;
-  tutorialClearFocus();
+  tutorialClearFocus();clearCampMarker();
+  $('freeMission').classList.remove('camp-quest');
+  $('tutorial').classList.remove('camp','camp-inventory');$('campInventoryHint')?.classList.add('hidden');
+  $('tutorialBack').textContent='이전';$('tutorialSkip').textContent='건너뛰기';
   $('tutorial').classList.add('hidden');$('tutorial').classList.remove('coach');
   if(save){try{localStorage.setItem(tutorialState.once,'1')}catch(_){}}
   tutorialState=null;
@@ -5785,29 +6014,6 @@ function tutorialSteps(kind){
     {title:'4. 다른 수학 활동',target:'[data-net-mode="face"]',text:'면 관계, 모서리, 꼭짓점 탭은 기본 그림 배치에 익숙해진 뒤 도전하면 됩니다.',do:'처음 하는 학생은 “그림 배치”부터 시작하세요.'},
     {title:'5. 검사와 다음',target:'#actionCheck',text:'검사하기로 답을 확인하고, 다음 버튼으로 새 전개도로 바꿉니다.',do:'상단 튜토리얼 버튼으로 언제든 다시 볼 수 있어요.'}
   ];
-  if(kind==='free'&&gameFreeMode==='survival')return[
-    {title:'생존 탐험 · 첫날 훈련',text:'이번에는 설명만 읽지 않아요. 원목을 직접 모으고, 판자와 제작대를 만들고, 2×1×1 직육면체와 나무 곡괭이까지 실제로 완성합니다.',do:'화면에 보이는 “○”를 하나씩 “✓”로 바꾸면 됩니다. 이미 한 일은 자동으로 인정돼요.'},
-    {title:'1. 움직이고 나무 찾기',target:mobile?'#mobileJoystick':'#lockNotice',text:mobile?'왼쪽 스틱으로 움직이고 빈 화면을 밀어 보는 방향을 바꿉니다.':'게임 화면을 눌러 마우스를 잡고 WASD로 이동합니다. 가운데 +가 내가 보는 곳입니다.',do:mobile?'가까운 나무 줄기 앞까지 가 보세요.':'가까운 나무 줄기를 가운데 +로 바라보세요.',wait:mobile?null:'start-control'},
-    {title:'1-1. 1인칭 ↔ 3인칭 바꾸기',target:mobile?'#mobileView':'#actionView',text:'3인칭은 내 캐릭터와 주변을 보기 좋고, 1인칭은 블록을 정확히 조준하기 좋아요. 버튼에는 지금 사용 중인 시점이 표시됩니다.',do:mobile?'위의 “3인칭/1인칭” 시점 버튼을 한 번 눌러 실제로 바꿔 보세요.':'V 키를 한 번 누르거나 상단 “시점 · 3인칭/1인칭” 버튼을 눌러 보세요.',wait:'free-view-toggle'},
-    ...(mobile?[
-      {title:'모바일 행동 휠 열기',target:'#mobileInteract',text:'“행동” 버튼은 그냥 누르는 버튼이 아니에요. 짧게 탭하면 상황에 맞는 기본 행동, 꾹 누르면 네 방향 행동 휠이 열립니다.',do:'행동 버튼을 손가락으로 꾹 눌러 네 방향 메뉴를 직접 띄워 보세요.',wait:'mobile-radial-open'},
-      {title:'아래로 끌어 채집 선택',target:'#mobileInteract',text:'손가락을 떼지 말고 아래쪽 “채집·공격”으로 끌어가세요. 선택지가 노랗게 커지면 손을 떼면 됩니다.',do:'↑ 관찰·대화 · → 사용·열기 · ↓ 채집·공격 · ← 설치',wait:'mobile-radial-harvest'}
-    ]:[]),
-    {title:'2. 원목 3개 모으기',target:mobile?'#mobileInteract':'#gameCanvas',text:mobile?'나무 줄기를 바라보고 “행동”을 짧게 탭하거나, 꾹 눌러 아래 “채집·공격”으로 끌어 놓으세요. 한 번 선택하면 블록 하나를 끝까지 채집합니다.':'나무 줄기를 가운데 +로 바라보고 마우스 왼쪽 버튼을 길게 누르세요.',do:'한 번만 부수고 끝내지 말고 원목을 3개 모아야 통과합니다.',wait:'survival-wood3'},
-    {title:'3. 가방과 제작법 열기',target:mobile?'#mobileInventory':'#freeHint',text:mobile?'위쪽 “가방” 버튼을 누르세요.':'키보드 E를 누르세요. 가방과 발견한 제작법이 함께 열립니다.',do:'월드에서는 E가 “무엇을 만들 수 있지?”를 확인하는 가장 중요한 버튼입니다.',wait:'inventory-open'},
-    {title:'4. 원목 → 나무 판자',target:'#survivalCraftPanel',text:'제작 목록에서 “나무 판자 ×4”를 고르고 아래 “제작하기”를 누르세요. 원목 1개가 판자 4개로 바뀝니다.',do:'재료 숫자가 초록색이면 지금 만들 수 있다는 뜻이에요.',wait:'survival-planks'},
-    {title:'5. 제작대 만들기',target:'#survivalCraftPanel',text:'이번에는 “제작대 ×1”을 만들어 보세요. 제작대는 곡괭이와 특별한 건축물을 만드는 작업 장소입니다.',do:'판자 4개를 사용해 제작대 1개를 실제로 제작하세요.',wait:'survival-workbench-crafted'},
-    {title:'6. 제작대 땅에 설치하기',target:mobile?'#mobileInteract':'#hotbar',text:'가방을 닫고 핫바에서 제작대를 선택하세요. 땅 가까이를 바라본 뒤 설치합니다.',do:mobile?'제작대 선택 → 가방 닫기 → 땅 보기 → 행동을 꾹 눌러 왼쪽 “설치”로 끌기':'제작대 선택 → E로 가방 닫기 → 땅을 보기 → 마우스 오른쪽 버튼',wait:'survival-workbench-placed'},
-    {title:'7. 직육면체용 판자 준비',target:'#freeMission',text:'직육면체 2×1×1은 판자 2개가 필요해요. 판자가 부족하면 나무를 더 캐고 E에서 판자를 한 번 더 만드세요.',do:'가방에 판자가 2개 이상 있으면 자동 통과합니다.',wait:'survival-planks2'},
-    {title:'8. 제작대 옆에서 가방 열기',target:mobile?'#mobileInventory':'#freeHint',text:'설치한 제작대 가까이 서서 가방을 여세요. 제작대 범위 안이면 아래쪽에 “직육면체 제작대”가 열립니다.',do:'제작대에서 너무 멀리 떨어져 있으면 도형 제작칸이 나타나지 않아요.',wait:'survival-shape-open'},
-    {title:'9. 2×1×1 직육면체 설계',target:'#shapeWorkbench',text:'직육면체 제작대에서 가로 2, 높이 1, 세로 1로 맞추세요. 방향은 1×1×2여도 정답입니다.',do:'값을 맞춘 뒤 “현재 칸에 직육면체 담기”를 누르세요.',wait:'survival-cuboid-ready'},
-    {title:'10. 직육면체 실제 설치',target:mobile?'#mobileInteract':'#gameCanvas',text:'가방을 닫고 방금 만든 직육면체가 선택된 핫바 칸을 확인하세요. 빈 땅 옆을 바라보고 설치합니다.',do:mobile?'행동을 꾹 눌러 왼쪽 “설치”로 끌고 놓으세요. 2×1×1 도형이 실제로 생겨야 합니다.':'2×1×1 도형이 월드에 실제로 생겨야 통과합니다.',wait:'survival-cuboid'},
-    {title:'11. 막대 만들기',target:'#freeMission',text:'이제 곡괭이 손잡이를 만들 차례예요. E를 열고 “막대 ×4”를 제작하세요. 판자가 부족하면 원목을 더 모아 판자로 바꾸면 됩니다.',do:'막대를 실제로 제작하면 다음 단계로 넘어갑니다.',wait:'survival-sticks'},
-    {title:'12. 나무 곡괭이 완성',target:'#survivalCraftPanel',text:'제작대 가까이에서 나무 곡괭이를 만드세요. 판자 3개와 막대 2개가 필요합니다. 부족한 재료는 화면의 보유/필요 숫자로 확인하세요.',do:'곡괭이를 만들면 자동으로 핫바에 들어갑니다.',wait:'survival-woodpick'},
-    {title:'13. 이제 진짜 생존 시작',target:'#freeMission',text:'곡괭이로 돌을 캐고, 판자·흙·직육면체로 지붕과 벽이 있는 거점을 만드세요. 밤·비·설원에서는 거점과 횃불이 몸을 보호합니다.',do:'왼쪽 목표 카드가 다음 할 일을 계속 알려 줍니다. 목표 숫자가 오르면 제대로 하고 있는 거예요.'},
-    {title:'14. 생물 · 전투 · 탐험',target:mobile?'#mobileInteract':'#freeHint',text:mobile?'행동 휠에서 ↑ 관찰·대화는 평화 생물, ↓ 채집·공격은 적대 생물과 자원, → 사용·열기는 문·제작대·화로에 씁니다.':'평화 생물은 F로 관찰·채집하고, 적대 생물은 왼쪽 클릭으로 공격합니다.',do:'새 바이옴을 발견하고 랜드마크까지 찾아가면 구조 퍼즐과 설계도 던전이 이어집니다.'},
-    {title:'첫날 훈련 완료!',text:'이제 “채집 → E로 제작 → 핫바 선택 → 설치 → 더 좋은 도구 제작”이라는 서바이벌의 핵심 반복을 직접 해냈습니다.',do:'막히면 상단 “튜토리얼” 또는 모바일 “도움”을 눌러 언제든 다시 볼 수 있어요.'}
-  ];
   if(kind==='free')return[
     {title:'크리에이티브 건축 연습',text:'여기서는 재료가 무한이라 바로 설치 연습을 할 수 있어요. 블록 하나를 직접 놓고 부수는 데서 시작합니다.',do:'실패해도 아무 손해가 없습니다.'},
     {title:'1. 이동하고 바라보기',target:mobile?'#mobileJoystick':'#lockNotice',text:mobile?'왼쪽 스틱으로 이동하고 화면을 밀어 시점을 돌립니다.':'게임 화면을 눌러 마우스를 잡고 WASD로 이동합니다.',do:mobile?'바닥이 잘 보이게 시점을 내려 보세요.':'가운데 +가 바닥을 가리키게 해 보세요.',wait:mobile?null:'start-control'},
@@ -5824,6 +6030,7 @@ function tutorialSteps(kind){
 }
 function renderTutorialStep(){
   if(!tutorialState)return;
+  if(campActive()){renderCampStep();return}
   tutorialClearFocus();
   const step=tutorialState.steps[tutorialState.index],total=tutorialState.steps.length;
   const isIntro=tutorialState.index===0;
@@ -5833,14 +6040,13 @@ function renderTutorialStep(){
     '<div class="tutorial-step-kicker">'+(isIntro?'처음 조작 연습':'직접 해보기')+'</div>'+
     '<h2>'+step.title+'</h2><p>'+step.text+'</p>'+
     (step.do?'<div class="tutorial-do">'+step.do+'</div>':'')+
-    (tutorialLiveStatus(step)?'<div id="tutorialLiveStatus" class="tutorial-live-status">'+tutorialLiveStatus(step)+'</div>':'')+
-    (step.wait?'<div class="tutorial-tip">성공을 감지하면 자동으로 다음 단계로 넘어갑니다.</div>':'');
+    (step.wait?'<div class="tutorial-tip">안내대로 해 보면 다음 활동이 열려요.</div>':'');
   const target=tutorialTarget(step.target);
   if(target){target.classList.add('tutorial-focus');tutorialFocusEl=target}
   $('tutorialBack').disabled=tutorialState.index===0;
   $('tutorialBack').style.visibility=tutorialState.index===0?'hidden':'visible';
   const last=tutorialState.index===total-1;
-  const conditionDone=step.wait&&String(step.wait).startsWith('survival-')&&tutorialWaitSatisfied(step.wait);
+  const conditionDone=false;
   $('tutorialClose').disabled=!!step.wait&&!conditionDone;
   $('tutorialClose').textContent=step.wait?(conditionDone?'완료 · 다음':'직접 성공해 보세요'):last?'완료':'다음';
   $('tutorialClose').onclick=()=>{if(last)tutorialFinish(true);else{tutorialState.index++;renderTutorialStep()}};
@@ -5848,6 +6054,7 @@ function renderTutorialStep(){
   $('tutorialSkip').onclick=()=>tutorialFinish(true);
 }
 function showTutorial(kind,force=false){
+  if(kind==='free'&&gameFreeMode==='survival'){showSurvivalCamp(force);return}
   const once='cubeArchitectGuidedTutorial_v5_'+kind+
     (kind==='free'?'_'+gameFreeMode:'')+(mobileModeEnabled?'_touch':'_desktop');
   try{if(!force&&localStorage.getItem(once))return}catch(_){}
@@ -5919,7 +6126,7 @@ canvas.addEventListener('mousedown',e=>{
   }
 });
 window.addEventListener('mouseup',e=>{if(e.button===0&&miningSource==='mouse')stopMining()});
-canvas.addEventListener('click',()=>{if(!mobileModeEnabled&&(mode==='free'||mode==='challenge'||mode==='dungeon')&&document.pointerLockElement!==canvas&&$('tutorial').classList.contains('hidden')&&!(mode==='free'&&(inventoryOpen||furnaceOpen)))requestGamePointerLock()});
+canvas.addEventListener('click',()=>{if(!mobileModeEnabled&&(mode==='free'||mode==='challenge'||mode==='dungeon')&&document.pointerLockElement!==canvas&&($('tutorial').classList.contains('hidden')||campActive())&&!(mode==='free'&&(inventoryOpen||furnaceOpen)))requestGamePointerLock()});
 document.addEventListener('pointerlockchange',()=>{
   if(mode==='free'&&document.pointerLockElement!==canvas&&miningSource==='mouse')stopMining();
   if(mode==='free')$('lockNotice').classList.toggle('hidden',mobileModeEnabled||inventoryOpen||furnaceOpen||document.pointerLockElement===canvas);
@@ -5952,6 +6159,7 @@ document.addEventListener('keydown',e=>{
   }
   if(mode!=='free')return;
   if(freeAvatarDefeated){e.preventDefault();return}
+  if(e.code==='KeyH'&&campActive()){e.preventDefault();campHelp(campStep());return}
   if(e.code==='KeyE'){e.preventDefault();if(furnaceOpen)toggleFurnace(false);else toggleInventory();return}
   if(e.code==='Escape'&&(inventoryOpen||furnaceOpen)){if(inventoryOpen)toggleInventory(false);if(furnaceOpen)toggleFurnace(false);return}
   if(inventoryOpen||furnaceOpen)return;

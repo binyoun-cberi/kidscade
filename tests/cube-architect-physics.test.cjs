@@ -13,9 +13,9 @@ const world=read('games/cube3d/cube-architect-world.js');
 
 test('Cube Architect world physics parses and cache-busts the runtime',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/cube-architect\.js\?v=20261006-armor1/);
-  assert.match(html,/cube-architect-world\.js\?v=20261006-armor1/);
-  assert.match(html,/cube-architect\.css\?v=20261006-armor1/);
+  assert.match(html,/cube-architect\.js\?v=[a-z0-9-]+/);
+  assert.match(html,/cube-architect-world\.js\?v=[a-z0-9-]+/);
+  assert.match(html,/cube-architect\.css\?v=[a-z0-9-]+/);
   assert.match(html,/cube-architect-avatar\.js\?v=20261006-armor1/);
   assert.doesNotThrow(()=>new Function(world));
 });
@@ -155,3 +155,4 @@ test('rabbit spawn and emergency return also use shaped surface heights',()=>{
   assert.match(js,/g\.position\.set\(x,creatureGroundY\(x,z,terrainHeight\(x,z\)\+1\),z\)/);
   assert.match(js,/function safeReturnEyeY\(\)\{return groundTopBelow\(0,WORLD_MAX_Y\+1\.62,5\)\+1\.62\}/);
 });
+

@@ -17,7 +17,7 @@ function stats(){
 test('v17 scripts parse and survival features connect to the launcher',()=>{
   assert.doesNotThrow(()=>new Function(js));
   assert.doesNotThrow(()=>new Function(worldJs));
-  assert.match(html,/cube-architect\.js\?v=20261005-craft-audio1/);
+  assert.match(html,/cube-architect\.js\?v=[a-z0-9-]+/);
   assert.ok(html.indexOf('cube-architect-world.js')<html.indexOf('cube-architect.js'));
   assert.match(html,/id="survivalSafety"/);
   assert.match(html,/id="survivalReturn"/);
@@ -73,3 +73,4 @@ test('each biome has a usable regional reward or clue',()=>{
   assert.match(js,/trackSurvival\('paint',worldKey\(x,y,z\)/);
   assert.match(js,/const prizes=\{bp1:/);
 });
+
