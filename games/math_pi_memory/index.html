@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>원주율 외우기 | KIDSCADE</title>
+<style>
+:root{
+  --bg:#07111f;--panel:#0f2036;--panel2:#132b47;--line:rgba(255,255,255,.12);
+  --text:#f7fbff;--muted:#9fb7cf;--mint:#4ee6b1;--blue:#67a9ff;--yellow:#ffd76a;
+  --danger:#ff6f7d;--shadow:0 18px 55px rgba(0,0,0,.28)
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,"Pretendard","Noto Sans KR",sans-serif;background:
+radial-gradient(circle at 20% -10%,#193a67 0,transparent 38%),
+radial-gradient(circle at 95% 20%,#153b42 0,transparent 30%),var(--bg);color:var(--text)}
+button{font:inherit}
+body{min-height:100vh;overflow-x:hidden}
+.app{width:min(1050px,100%);margin:0 auto;padding:18px clamp(14px,3vw,28px) 90px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.pi-mark{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(145deg,var(--mint),#2ca7ff);color:#05111c;font:1000 30px/1 Georgia,serif;box-shadow:0 10px 28px rgba(78,230,177,.22)}
+h1{font-size:clamp(22px,4vw,34px);margin:0;letter-spacing:-.04em}
+.subtitle{margin:3px 0 0;color:var(--muted);font-size:13px;font-weight:700}
+.sound{border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--text);border-radius:13px;min-height:42px;padding:0 13px;font-weight:850;cursor:pointer}
+.home{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(280px,.88fr);gap:16px}
+.card{border:1px solid var(--line);border-radius:24px;background:linear-gradient(180deg,rgba(19,43,71,.94),rgba(11,27,46,.95));box-shadow:var(--shadow)}
+.hero{padding:clamp(20px,4vw,34px);position:relative;overflow:hidden}
+.hero:after{content:"π";position:absolute;right:-18px;bottom:-82px;font:900 250px/1 Georgia,serif;color:rgba(255,255,255,.025);pointer-events:none}
+.eyebrow{display:inline-flex;gap:8px;align-items:center;padding:7px 10px;border-radius:999px;background:rgba(78,230,177,.1);border:1px solid rgba(78,230,177,.18);color:#a8ffdf;font-size:12px;font-weight:900}
+.hero h2{font-size:clamp(28px,5.8vw,52px);line-height:1.08;letter-spacing:-.055em;margin:16px 0 12px}
+.hero p{margin:0;color:#bfd0e2;line-height:1.7;font-weight:650}
+.formula{margin:22px 0;display:flex;align-items:center;gap:16px}
+.circle{width:92px;height:92px;border:7px solid var(--blue);border-radius:50%;position:relative;flex:0 0 auto;box-shadow:0 0 0 7px rgba(103,169,255,.08)}
+.circle:before{content:"";position:absolute;left:4px;right:4px;top:50%;height:3px;background:var(--yellow)}
+.circle:after{content:"지름";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:2px 5px;border-radius:5px;background:#112945;font-size:10px;font-weight:950;white-space:nowrap}
+.formula strong{display:block;font-size:18px;margin-bottom:5px}
+.formula span{color:var(--muted);font-size:13px}
+.mode-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+.primary,.secondary,.ghost{border:0;border-radius:16px;min-height:56px;padding:0 15px;font-weight:950;cursor:pointer;transition:.15s transform,.15s filter}
+.primary{background:linear-gradient(135deg,var(--mint),#44b8ff);color:#04131e;box-shadow:0 10px 25px rgba(78,230,177,.18)}
+.secondary{background:linear-gradient(135deg,#ffe37d,#ffbd5b);color:#2a1900}
+.ghost{background:rgba(255,255,255,.07);color:var(--text);border:1px solid var(--line)}
+.primary:active,.secondary:active,.ghost:active{transform:scale(.98)}
+.stats{padding:20px;display:grid;gap:12px;align-content:start}
+.stat-title{font-size:12px;color:var(--muted);font-weight:900;letter-spacing:.08em}
+.big-stat{padding:18px;border-radius:19px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.07)}
+.big-stat b{display:block;font-size:36px;letter-spacing:-.04em}
+.big-stat span{color:var(--muted);font-size:12px;font-weight:750}
+.milestones{display:grid;gap:7px;margin-top:4px}
+.mile{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:13px;background:rgba(255,255,255,.04);font-size:12px;font-weight:800;color:#bdd0e2}
+.mile.done{color:#a8ffdf;background:rgba(78,230,177,.08)}
+.game{display:none}
+.game.active{display:block}
+.game-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}
+.back{border:0;background:rgba(255,255,255,.06);color:#dbe9f8;border-radius:12px;min-height:40px;padding:0 12px;font-weight:850;cursor:pointer}
+.mode-label{font-size:13px;color:var(--muted);font-weight:900}
+.game-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,330px);gap:15px}
+.play{padding:18px;min-height:500px;display:flex;flex-direction:column}
+.hud{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.hud-box{padding:11px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);text-align:center}
+.hud-box span{display:block;color:var(--muted);font-size:10px;font-weight:850}
+.hud-box b{display:block;font-size:22px;margin-top:2px}
+.number-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260px;text-align:center}
+.pi-line{max-width:100%;font:850 clamp(24px,5.2vw,48px)/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.06em;overflow-wrap:anywhere}
+.pi-line .fixed{color:#8099b1}
+.pi-line .correct{color:#fff}
+.pi-line .cursor{display:inline-block;width:3px;height:1em;background:var(--mint);vertical-align:-.13em;margin-left:4px;animation:blink .9s step-end infinite}
+@keyframes blink{50%{opacity:.15}}
+.practice-card{width:min(500px,100%);padding:22px;border-radius:22px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.range{font-size:12px;color:var(--muted);font-weight:850;margin-bottom:10px}
+.chunk{font:950 clamp(34px,8vw,62px)/1.2 ui-monospace,monospace;letter-spacing:.15em;color:var(--yellow);min-height:75px;display:grid;place-items:center}
+.chunk.hidden-digits{color:transparent;text-shadow:0 0 14px rgba(255,255,255,.12);user-select:none}
+.recall{min-height:34px;font:900 26px/1.2 ui-monospace,monospace;color:var(--mint);letter-spacing:.16em;margin-top:9px}
+.tip{margin-top:12px;color:var(--muted);font-size:12px;line-height:1.5;font-weight:700}
+.keypad-card{padding:14px}
+.keypad-title{text-align:center;color:var(--muted);font-size:12px;font-weight:900;margin:2px 0 10px}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.key{border:1px solid rgba(255,255,255,.1);border-radius:16px;min-height:64px;background:linear-gradient(180deg,rgba(255,255,255,.095),rgba(255,255,255,.045));color:#fff;font-size:25px;font-weight:950;cursor:pointer;box-shadow:inset 0 1px rgba(255,255,255,.08)}
+.key:active{transform:translateY(1px);background:rgba(78,230,177,.13)}
+.key.zero{grid-column:2}
+.action-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.smallbtn{border:1px solid var(--line);border-radius:13px;min-height:46px;background:rgba(255,255,255,.055);color:#dbe8f4;font-size:12px;font-weight:900;cursor:pointer}
+.toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-20px);opacity:0;pointer-events:none;z-index:20;padding:11px 16px;border-radius:999px;background:#eafef7;color:#073523;font-weight:950;box-shadow:0 12px 35px rgba(0,0,0,.28);transition:.2s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.flash{animation:wrong .34s}
+@keyframes wrong{25%{transform:translateX(-8px)}50%{transform:translateX(8px)}75%{transform:translateX(-4px)}}
+.burst{position:fixed;inset:0;pointer-events:none;z-index:18;overflow:hidden}
+.confetti{position:absolute;left:50%;top:45%;width:8px;height:14px;border-radius:3px;background:var(--yellow);animation:pop .8s ease-out forwards}
+@keyframes pop{to{transform:translate(var(--x),var(--y)) rotate(var(--r));opacity:0}}
+.overlay{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(2,8,17,.78);backdrop-filter:blur(9px)}
+.overlay.show{display:flex}
+.result{width:min(520px,100%);padding:28px;border-radius:28px;background:#10243d;border:1px solid rgba(255,255,255,.14);box-shadow:0 24px 80px rgba(0,0,0,.45);text-align:center}
+.result .mini{font-size:13px;color:var(--muted);font-weight:900}
+.result h3{font-size:clamp(36px,9vw,64px);margin:8px 0 4px;letter-spacing:-.05em}
+.result .newbest{display:none;margin:8px auto 12px;width:max-content;padding:7px 11px;border-radius:999px;background:rgba(78,230,177,.12);color:#9fffdc;font-weight:950}
+.result .newbest.show{display:block}
+.answer-note{margin:16px 0;padding:12px;border-radius:15px;background:rgba(255,255,255,.05);color:#c5d6e7;font-size:13px;line-height:1.55}
+.result-actions{display:grid;grid-template-columns:1.3fr .7fr;gap:9px}
+@media(max-width:760px){
+  .home,.game-grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.stats .stat-title,.stats .milestones{grid-column:1/-1}
+  .play{min-height:400px}.keypad-card{position:relative}.key{min-height:58px}.mode-buttons{grid-template-columns:1fr}.game-head{margin-top:4px}
+}
+@media(max-width:450px){
+  .app{padding-left:10px;padding-right:10px}.top{align-items:flex-start}.subtitle{display:none}.sound{min-width:42px;padding:0 9px}
+  .hero{padding:20px}.formula{gap:12px}.circle{width:76px;height:76px}.stats{grid-template-columns:1fr 1fr;padding:14px}.big-stat{padding:13px}.big-stat b{font-size:28px}
+  .game-grid{gap:9px}.play{padding:12px}.keypad-card{padding:10px}.key{min-height:55px;border-radius:14px}.hud-box b{font-size:19px}.pi-line{letter-spacing:.035em}
+}
+</style>
+<script src="../../kidscade-game-sdk.js" data-game-id="math_pi_memory" data-title="원주율 외우기" data-shell="true" data-mute="false"></script>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><div class="pi-mark">π</div><div><h1>원주율 외우기</h1><p class="subtitle">몇 자리까지 기억할 수 있을까?</p></div></div>
+    <button class="sound" id="soundBtn" type="button" aria-label="효과음 켜기 또는 끄기">🔊</button>
+  </header>
+
+  <section id="homeView" class="home">
+    <div class="card hero">
+      <span class="eyebrow">● 숫자 기억 챌린지</span>
+      <h2>3.14159…<br>어디까지 갈 수 있을까?</h2>
+      <p>먼저 5자리씩 익힌 뒤, 아무것도 보지 않고 처음부터 입력해 최고 기록에 도전해 보세요.</p>
+      <div class="formula">
+        <div class="circle" aria-hidden="true"></div>
+        <div><strong>π = 원의 둘레 ÷ 지름</strong><span>원의 크기가 달라도 이 비율은 언제나 같아요.</span></div>
+      </div>
+      <div class="mode-buttons">
+        <button class="primary" id="practiceStart" type="button">👀 외우기 연습</button>
+        <button class="secondary" id="challengeStart" type="button">🏆 기록 도전</button>
+      </div>
+    </div>
+    <aside class="card stats">
+      <div class="stat-title">나의 기록</div>
+      <div class="big-stat"><b id="bestHome">0</b><span>최고 기록 · 소수점 아래 자리</span></div>
+      <div class="big-stat"><b id="nextGoal">10</b><span>다음 목표 자리</span></div>
+      <div class="stat-title">기록 표지판</div>
+      <div class="milestones" id="milestoneList"></div>
+    </aside>
+  </section>
+
+  <section id="gameView" class="game">
+    <div class="game-head">
+      <button class="back" id="backHome" type="button">← 처음 화면</button>
+      <div class="mode-label" id="modeLabel">기록 도전</div>
+    </div>
+    <div class="game-grid">
+      <div class="card play" id="playCard">
+        <div class="hud">
+          <div class="hud-box"><span>현재 기록</span><b id="countStat">0</b></div>
+          <div class="hud-box"><span>최고 기록</span><b id="bestStat">0</b></div>
+          <div class="hud-box"><span id="thirdLabel">다음 목표</span><b id="thirdStat">10</b></div>
+        </div>
+        <div class="number-stage" id="numberStage">
+          <div id="challengePane">
+            <div class="pi-line" id="piLine"><span class="fixed">3.</span><span class="cursor"></span></div>
+            <div class="tip">숫자를 누르는 순간 바로 채점돼요. 한 번 틀리면 이번 기록이 끝나요.</div>
+          </div>
+          <div id="practicePane" hidden>
+            <div class="practice-card">
+              <div class="range" id="practiceRange">소수점 아래 1~5자리</div>
+              <div class="chunk" id="practiceChunk">14159</div>
+              <div class="recall" id="practiceRecall"></div>
+              <button class="primary" id="hideAndRecall" type="button" style="width:100%;margin-top:12px">가리고 입력하기</button>
+              <div class="tip" id="practiceTip">숫자를 소리 내어 읽어 보고, 준비되면 가려 보세요.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="card keypad-card">
+        <div class="keypad-title">화면 숫자판 또는 키보드 숫자키</div>
+        <div class="keypad" id="keypad">
+          <button class="key" data-digit="1">1</button><button class="key" data-digit="2">2</button><button class="key" data-digit="3">3</button>
+          <button class="key" data-digit="4">4</button><button class="key" data-digit="5">5</button><button class="key" data-digit="6">6</button>
+          <button class="key" data-digit="7">7</button><button class="key" data-digit="8">8</button><button class="key" data-digit="9">9</button>
+          <button class="key zero" data-digit="0">0</button>
+        </div>
+        <div class="action-row" id="practiceActions" hidden>
+          <button class="smallbtn" id="prevChunk" type="button">← 이전 5자리</button>
+          <button class="smallbtn" id="nextChunk" type="button">다음 5자리 →</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="burst" id="burst" aria-hidden="true"></div>
+<div class="overlay" id="resultOverlay" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+  <div class="result">
+    <div class="mini" id="resultTitle">이번 기록</div>
+    <h3><span id="resultDigits">0</span>자리</h3>
+    <div class="newbest" id="newBest">새로운 최고 기록!</div>
+    <div class="answer-note" id="answerNote"></div>
+    <div class="result-actions">
+      <button class="primary" id="retryBtn" type="button">다시 도전</button>
+      <button class="ghost" id="resultHome" type="button">처음 화면</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var milestones=[10,20,50,100,200,500,1000];
+  var mode="home", running=false, digits="", piDigits="", piLimit=0, startedAt=0;
+  var practiceStart=0, practiceRecall="", practiceHidden=false;
+  var audioOn=true, audioCtx=null, toastTimer=0;
+
+  function $(id){return document.getElementById(id)}
+  function computePiDigits(count){
+    var guard=12;
+    var scale=10n**BigInt(count+guard);
+    function atanInv(inv){
+      var x=BigInt(inv), x2=x*x, term=scale/x, sum=term, k=1n, sign=-1n;
+      while(term!==0n){
+        term=term/x2;
+        if(term===0n)break;
+        var part=term/(2n*k+1n);
+        if(part===0n)break;
+        sum+=sign*part; sign=-sign; k++;
+      }
+      return sum;
+    }
+    var pi=16n*atanInv(5)-4n*atanInv(239);
+    var raw=pi.toString().padStart(count+guard+1,"0");
+    return raw.slice(1,count+1);
+  }
+  function ensurePi(needed){
+    if(piLimit>=needed)return;
+    var next=piLimit?Math.max(needed+300,piLimit*2):1200;
+    next=Math.min(20000,next);
+    piDigits=computePiDigits(next); piLimit=next;
+  }
+  function best(){
+    try{return Number(window.KidscadeGame&&KidscadeGame.state?KidscadeGame.state().best:0)||0}catch(e){return 0}
+  }
+  function nextMilestone(n){
+    for(var i=0;i<milestones.length;i++)if(milestones[i]>n)return milestones[i];
+    return Math.ceil((n+1)/500)*500;
+  }
+  function renderHome(){
+    var b=best(); $("bestHome").textContent=b; $("nextGoal").textContent=nextMilestone(b);
+    $("milestoneList").innerHTML=milestones.slice(0,5).map(function(n){
+      return '<div class="mile '+(b>=n?'done':'')+'"><span>'+(b>=n?'✓ ':'')+n+'자리</span><span>'+(b>=n?'달성':'도전')+'</span></div>';
+    }).join("");
+  }
+  function showToast(msg){
+    clearTimeout(toastTimer); $("toast").textContent=msg; $("toast").classList.add("show");
+    toastTimer=setTimeout(function(){$("toast").classList.remove("show")},1100);
+  }
+  function tone(freq,dur,delay){
+    if(!audioOn)return;
+    try{
+      audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)(); audioCtx.resume();
+      var o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime+(delay||0);
+      o.type="sine";o.frequency.value=freq;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.06,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+      o.connect(g).connect(audioCtx.destination);o.start(t);o.stop(t+dur+.02);
+    }catch(e){}
+  }
+  function soundCorrect(){tone(520,.06,0)}
+  function soundWrong(){tone(180,.18,0);tone(130,.22,.08)}
+  function soundMilestone(){[523,659,784,1047].forEach(function(f,i){tone(f,.11,i*.07)})}
+  function burst(){
+    var host=$("burst"); host.innerHTML="";
+    for(var i=0;i<28;i++){
+      var e=document.createElement("i");e.className="confetti";
+      e.style.left=(45+Math.random()*10)+"%";e.style.background=["#ffd76a","#4ee6b1","#67a9ff","#ff7c94"][i%4];
+      e.style.setProperty("--x",((Math.random()-.5)*520)+"px");e.style.setProperty("--y",(-80-Math.random()*350)+"px");e.style.setProperty("--r",(Math.random()*720)+"deg");
+      host.appendChild(e);
+    }
+    setTimeout(function(){host.innerHTML=""},900);
+  }
+  function setView(next){
+    mode=next;
+    $("homeView").style.display=next==="home"?"grid":"none";
+    $("gameView").classList.toggle("active",next!=="home");
+    if(next==="home"){running=false;$("resultOverlay").classList.remove("show");renderHome()}
+  }
+  function refreshHud(){
+    var b=best();$("countStat").textContent=mode==="practice"?(practiceStart+practiceRecall.length):digits.length;
+    $("bestStat").textContent=b;
+    if(mode==="practice"){$("thirdLabel").textContent="연습 구간";$("thirdStat").textContent=(practiceStart+1)+"-"+(practiceStart+5)}
+    else{$("thirdLabel").textContent="다음 목표";$("thirdStat").textContent=nextMilestone(digits.length)}
+  }
+  function startChallenge(){
+    ensurePi(1200); setView("challenge"); running=true; digits=""; startedAt=performance.now();
+    $("modeLabel").textContent="🏆 기록 도전";$("challengePane").hidden=false;$("practicePane").hidden=true;$("practiceActions").hidden=true;
+    $("piLine").innerHTML='<span class="fixed">3.</span><span class="cursor"></span>';
+    refreshHud();
+    try{window.KidscadeGame&&KidscadeGame.start&&KidscadeGame.start({mode:"challenge"})}catch(e){}
+  }
+  function renderChallenge(){
+    var visible=digits.slice(-40), prefix=digits.length>40?"…":"";
+    $("piLine").innerHTML='<span class="fixed">3.</span><span class="correct">'+prefix+visible+'</span><span class="cursor"></span>';
+    refreshHud();
+  }
+  function celebrateMilestone(n){
+    if(milestones.indexOf(n)>=0){showToast("🎉 "+n+"자리 돌파!");soundMilestone();burst();
+      try{window.KidscadeGame&&KidscadeGame.milestone&&KidscadeGame.milestone("pi_"+n,{digits:n,uniqueKey:"pi_"+n})}catch(e){}
+    }
+  }
+  function finishChallenge(wrongDigit){
+    if(!running)return; running=false;
+    var count=digits.length, expected=piDigits[count], elapsed=Math.max(.001,(performance.now()-startedAt)/1000), oldBest=best(), result=null;
+    soundWrong();$("playCard").classList.remove("flash");void $("playCard").offsetWidth;$("playCard").classList.add("flash");
+    try{
+      if(window.KidscadeGame&&KidscadeGame.result)result=KidscadeGame.result({
+        scope:"session",status:"completed",score:count,scoreOptions:{higherIsBetter:true,unit:"digits"},
+        mode:"challenge",digits:count,seconds:Number(elapsed.toFixed(2)),digitsPerMinute:Number((count/elapsed*60).toFixed(1))
+      });
+    }catch(e){}
+    var newBest=count>oldBest;
+    $("resultDigits").textContent=count;$("newBest").classList.toggle("show",newBest);
+    var pos=count+1;
+    $("answerNote").innerHTML=pos+"번째 숫자는 <b style='color:#ffd76a'>"+expected+"</b>였어요.<br>입력한 숫자: <b style='color:#ff8390'>"+wrongDigit+"</b> · "+elapsed.toFixed(1)+"초";
+    $("resultOverlay").classList.add("show");
+    if(newBest){setTimeout(function(){soundMilestone();burst()},200)}
+    renderHome();refreshHud();
+  }
+  function inputChallenge(d){
+    if(!running)return;ensurePi(digits.length+600);
+    var expected=piDigits[digits.length];
+    if(d!==expected){finishChallenge(d);return}
+    digits+=d;soundCorrect();renderChallenge();celebrateMilestone(digits.length);
+    if(digits.length>=piLimit&&piLimit>=20000){
+      running=false;
+      try{KidscadeGame.result({scope:"session",status:"completed",outcome:"clear",score:digits.length,scoreOptions:{unit:"digits"},digits:digits.length})}catch(e){}
+      $("resultDigits").textContent=digits.length;$("answerNote").textContent="준비된 20,000자리를 모두 외웠어요!";$("newBest").classList.add("show");$("resultOverlay").classList.add("show");burst();
+    }
+  }
+  function practiceChunk(){ensurePi(practiceStart+20);return piDigits.slice(practiceStart,practiceStart+5)}
+  function renderPractice(){
+    var c=practiceChunk();
+    $("practiceRange").textContent="소수점 아래 "+(practiceStart+1)+"~"+(practiceStart+5)+"자리";
+    $("practiceChunk").textContent=c;$("practiceChunk").classList.toggle("hidden-digits",practiceHidden);
+    $("practiceRecall").textContent=practiceRecall;
+    $("hideAndRecall").textContent=practiceHidden?"다시 보여주기":"가리고 입력하기";
+    $("practiceTip").textContent=practiceHidden?"방금 본 5자리를 차례대로 입력해 보세요.":"숫자를 소리 내어 읽어 보고, 준비되면 가려 보세요.";
+    refreshHud();
+  }
+  function startPractice(){
+    ensurePi(1200);setView("practice");running=false;practiceStart=0;practiceRecall="";practiceHidden=false;
+    $("modeLabel").textContent="👀 외우기 연습";$("challengePane").hidden=true;$("practicePane").hidden=false;$("practiceActions").hidden=false;renderPractice();
+  }
+  function inputPractice(d){
+    if(!practiceHidden){showToast("먼저 ‘가리고 입력하기’를 눌러 보세요");return}
+    var target=practiceChunk(), expected=target[practiceRecall.length];
+    if(d!==expected){
+      soundWrong();$("practiceRecall").textContent=practiceRecall+"×";$("practiceCard");
+      showToast("다시 생각해 봐요!");
+      setTimeout(function(){$("practiceRecall").textContent=practiceRecall},350);return;
+    }
+    practiceRecall+=d;soundCorrect();renderPractice();
+    if(practiceRecall.length===5){
+      soundMilestone();burst();showToast("정답! 다음 5자리로 이동");
+      setTimeout(function(){practiceStart+=5;practiceRecall="";practiceHidden=false;renderPractice()},650);
+    }
+  }
+  function inputDigit(d){
+    if(mode==="challenge")inputChallenge(d);
+    else if(mode==="practice")inputPractice(d);
+  }
+  function movePractice(delta){
+    practiceStart=Math.max(0,practiceStart+delta*5);practiceRecall="";practiceHidden=false;renderPractice();
+  }
+
+  $("practiceStart").onclick=startPractice;$("challengeStart").onclick=startChallenge;$("backHome").onclick=function(){setView("home")};
+  $("retryBtn").onclick=function(){$("resultOverlay").classList.remove("show");startChallenge()};
+  $("resultHome").onclick=function(){setView("home")};
+  $("hideAndRecall").onclick=function(){practiceHidden=!practiceHidden;practiceRecall="";renderPractice()};
+  $("prevChunk").onclick=function(){movePractice(-1)};$("nextChunk").onclick=function(){movePractice(1)};
+  $("soundBtn").onclick=function(){audioOn=!audioOn;$("soundBtn").textContent=audioOn?"🔊":"🔇";if(audioOn)tone(660,.08,0)};
+  $("keypad").addEventListener("click",function(e){var b=e.target.closest("[data-digit]");if(b)inputDigit(b.dataset.digit)});
+  window.addEventListener("keydown",function(e){
+    if(e.key>="0"&&e.key<="9"){e.preventDefault();inputDigit(e.key)}
+    else if(e.key==="Enter"&&mode==="home"){startChallenge()}
+  });
+
+  ensurePi(1200);renderHome();refreshHud();
+})();
+</script>
+</body>
+</html>
