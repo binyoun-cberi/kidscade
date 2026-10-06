@@ -512,3 +512,17 @@
   font-weight:950;
   vertical-align:middle;
 }
+
+/* Keep survival focused on one action at a time. */
+#actionMore,#actionEscape{display:none}
+.simple-survival #actionMore{display:inline-flex}
+.simple-survival #actionAvatar,.simple-survival #actionView,.simple-survival #actionXray,.simple-survival #actionSave{display:none!important}
+.simple-survival.survival-more #actionAvatar:not(.hidden),.simple-survival.survival-more #actionView:not(.hidden),.simple-survival.survival-more #actionXray:not(.hidden),.simple-survival.survival-more #actionSave:not(.hidden),.simple-survival.survival-more #actionEscape{display:inline-flex!important}
+.simple-survival #freeMission::before,.simple-survival #lockNotice::before{display:none}
+.simple-survival #freeState,.simple-survival #weatherState,.simple-survival #biomeState{display:none}
+#simpleBagTabs{display:flex;gap:8px;margin:12px 0}
+#simpleBagTabs button{flex:1;min-height:44px;border:1px solid #b9cadb;border-radius:12px;background:#eef4fa;color:#233750;font-weight:800}
+#simpleBagTabs button.active{background:#245e85;color:white}
+.survival-inventory[data-bag-tab="bag"] #survivalCraftPanel,.survival-inventory[data-bag-tab="bag"] #shapeWorkbench{display:none!important}
+.survival-inventory[data-bag-tab="craft"] #inventoryGrid,.survival-inventory[data-bag-tab="craft"] #survivalBagHeader,.survival-inventory[data-bag-tab="craft"] #survivalEquipmentPanel{display:none!important}
+@media(pointer:coarse){.simple-survival #actionMore,.simple-survival #actionEscape{display:none!important}}

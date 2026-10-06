@@ -81,7 +81,7 @@ test('survival has forgiving fall damage and underwater breath',()=>{
 test('desktop mobile and avatar presentation react to swimming',()=>{
   assert.match(js,/previousFluid!==freeFluidKind\)refreshMobileFly\(\)/);
   assert.match(js,/swimming\?'수영 위':freeFlying\?'상승':'점프'/);
-  assert.match(js,/!fluid\.water&&!fluid\.lava&&onGround/);
+  assert.match(js,/!freeFlying&&!fluid\.water&&!fluid\.lava\)\{queueFreeJump\(\)/);
   assert.doesNotThrow(()=>new Function(avatar));
   assert.match(avatar,/motion='ground'/);
   assert.match(avatar,/const swimming=motion==='swim'/);

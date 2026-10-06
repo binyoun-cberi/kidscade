@@ -35,6 +35,9 @@ let mobileModeEnabled=typeof canvas.requestPointerLock!=='function'||
 let mobileMove={x:0,y:0};
 let mobileLookPointerId=null,mobileLookLast=null,mobileJoyPointerId=null;
 let mobileUtilityOpen=false;
+let survivalInventoryTab='bag';
+let jumpQueuedUntil=0,lastGroundedAt=-Infinity,overlapSeconds=0;
+const FREE_JUMP_SPEED=6.4;
 let mobileRadialPointerId=null,mobileRadialTimer=0,mobileRadialOpen=false,mobileRadialSelected='';
 let mobileRadialCenter={x:0,y:0},mobileRadialPressedAt=0;
 const raycaster = new THREE.Raycaster();
@@ -153,6 +156,7 @@ function clearModeUi(){
   $('underwaterOverlay')?.classList.remove('active');
   $('topbar').classList.add('hidden');
   $('homeScreen').classList.add('hidden');
+  document.body.classList.remove('simple-survival','survival-more');
   $('actionCheck').classList.add('hidden');
   $('actionNext').classList.add('hidden');
   $('actionSave').classList.add('hidden');
@@ -3027,6 +3031,7 @@ function initFree(){
   cleanScene(0x9bd7ff);scene.fog=new THREE.Fog(0x9bd7ff,30,68);
   camera.rotation.order='YXZ';yaw=Math.PI;pitch=0;
   collectibles=[];collected=new Set();xray=false;freeVelocityY=0;onGround=true;freeFlying=false;
+  jumpQueuedUntil=0;lastGroundedAt=-Infinity;overlapSeconds=0;mobileUtilityOpen=false;survivalInventoryTab='bag';
   inventoryOpen=false;furnaceOpen=false;freeSimAccum=0;freeSimTick=0;mathLensMode=0;
   freeSaveDirty=false;freeSaveDueAt=0;freeStepHop=0;miningHeld=false;miningSource='';miningKey='';miningProgress=0;
   miningCrackOverlay=null;miningCrackKey='';freePlacementGhost=null;freePlacementGhostKey='';pendingPlayerStrikes=[];freeHitStopUntil=0;
@@ -3081,9 +3086,13 @@ function initFree(){
   configureMobileMode('free');
   $('lockNotice').onclick=()=>{if(!inventoryOpen&&!furnaceOpen){tutorialSignal('start-control');requestGamePointerLock()}};
   $('survivalReturn').onclick=emergencyReturn;
-  if($('craftDiscoveryNotice'))$('craftDiscoveryNotice').onclick=()=>toggleInventory(true);
+  if($('craftDiscoveryNotice'))$('craftDiscoveryNotice').onclick=()=>{survivalInventoryTab='craft';toggleInventory(true)};
   renderSurvivalSafety(null);
   $('inventoryClose').onclick=()=>toggleInventory(false);
+  document.querySelectorAll('[data-bag-tab]').forEach(b=>b.onclick=()=>setSurvivalInventoryTab(b.dataset.bagTab));
+  $('mobileEscape').onclick=()=>escapeFreeOverlap(true);
+  $('actionEscape').onclick=()=>escapeFreeOverlap(true);
+  $('actionMore').onclick=()=>{mobileUtilityOpen=!mobileUtilityOpen;updateSimpleSurvivalUi();$('actionMore').textContent=mobileUtilityOpen?'접기':'더보기'};
   $('furnaceClose').onclick=()=>toggleFurnace(false);
   document.querySelectorAll('[data-inv-cat]').forEach(b=>b.onclick=()=>buildInventory(b.dataset.invCat));
   showTutorial('free');
@@ -3363,6 +3372,8 @@ function buildInventory(category='전체'){
   const grid=$('inventoryGrid');if(!grid)return;grid.innerHTML='';
   const survival=gameFreeMode==='survival';
   $('blockInventory').classList.toggle('survival-inventory',survival);
+  $('simpleBagTabs')?.classList.toggle('hidden',!survival);
+  setSurvivalInventoryTab(survivalInventoryTab);
   $('inventoryTitle').textContent=survival?'가방 · 제작':'건축 인벤토리';
   $('inventorySubtitle').textContent=survival?'지금 얻은 재료와 만들 수 있는 물건만 보여요.':
     '선택한 재료가 현재 핫바 칸에 들어갑니다.';
@@ -3450,6 +3461,7 @@ function toggleInventory(force){
   }
   $('blockInventory').classList.toggle('hidden',!inventoryOpen);
   if(inventoryOpen){
+    if(campActive()&&campStep()?.action==='craft')survivalInventoryTab='craft';
     if(document.pointerLockElement===canvas)document.exitPointerLock();
     buildInventory('전체');tutorialSignal('inventory-open');
   }
@@ -3858,7 +3870,7 @@ function placeFreeBlock(hit){
   const hitType=hit.object.userData.type;
   if(hitType==='door'){toggleDoorAt(hit.object.userData.gx,hit.object.userData.gy,hit.object.userData.gz);return}
   if(hitType==='furnace'){toggleFurnace(true);return}
-  if(hitType==='workbench'){toggleInventory(true);return}
+  if(hitType==='workbench'){survivalInventoryTab='craft';toggleInventory(true);return}
   if(!PLACEABLE_TYPES.includes(selectedType)){
     toast(gameFreeMode==='survival'?'E를 눌러 가방에서 설치할 재료를 골라 보세요.':'설치할 블록을 먼저 선택해 주세요.');return;
   }
@@ -5005,7 +5017,7 @@ function pointHitsWorldBlock(wx,wy,wz){
 }
 function playerCollidesAt(px,eyeY,pz){
   const r=.27,feet=eyeY-1.62;
-  for(const ox of [-r,r])for(const oz of [-r,r])for(const sy of [feet+.08,feet+.82,eyeY-.12])
+  for(const ox of [-r,0,r])for(const oz of [-r,0,r])for(let sy=feet+.04;sy<=eyeY-.10;sy+=.2)
     if(pointHitsWorldBlock(px+ox,sy,pz+oz))return true;
   return false;
 }
@@ -5098,6 +5110,33 @@ function damageByFall(distance){
   const now=performance.now();
   if(survivalHealth<=0){beginFreeAvatarDefeat(now);return true}
   triggerFreeAvatarAction('hurt',FREE_AVATAR_ACTION_MS.hurt,now);return false;
+}
+function queueFreeJump(){jumpQueuedUntil=performance.now()+160}
+function safeFreeSpot(x,eye,z){
+  const ground=groundTopBelow(x,eye,z),y=ground+1.62;
+  if(ground<=WORLD_MIN_Y+1||Math.abs(y-eye)>2.1||playerCollidesAt(x,y,z))return null;
+  const env=playerEnvironmentState(x,y,z);
+  if(env.water||env.lava||env.fire||env.cactus)return null;
+  return {x,y,z};
+}
+function escapeFreeOverlap(manual=false){
+  if(mode!=='free'||freeAvatarDefeated)return false;
+  const x=camera.position.x,z=camera.position.z,eye=freePhysicsY;
+  let spot=null;
+  search: for(const radius of [.35,.7,1.1,1.6,2.2,3.2,4.5]){
+    for(const lift of [0,.5,1,2])for(let i=0;i<16;i++){
+      const angle=i*Math.PI/8,nx=x+Math.cos(angle)*radius,nz=z+Math.sin(angle)*radius;
+      if(Math.abs(nx)>WORLD_HALF-.7||Math.abs(nz)>WORLD_HALF-.7)continue;
+      spot=safeFreeSpot(nx,eye+lift,nz);if(spot)break search;
+    }
+    if(spot)break;
+  }
+  if(!spot){if(manual)toast('가까운 빈자리를 찾지 못했어. 주변 블록을 하나 캐 보자.');return false}
+  stopMining();camera.position.set(spot.x,spot.y,spot.z);freePhysicsY=spot.y;
+  freeVelocityY=0;freeFallPeakY=spot.y;onGround=true;
+  overlapSeconds=0;jumpQueuedUntil=0;lastGroundedAt=performance.now();
+  if(manual)toast('여기서 다시 걸어 보자.');
+  return true;
 }
 function moveFreeHorizontal(dx,dz){
   if(!dx&&!dz)return;
@@ -5347,21 +5386,28 @@ function updateFree(dt,t){
     if(freeKeys.ShiftLeft||freeKeys.ShiftRight)camera.position.y-=speed*dt;
     freeVelocityY=0;onGround=false;freeFallPeakY=camera.position.y;
   }else{
-    moveFreeHorizontal(move.x,move.z);
+    const physicsSteps=Math.max(1,Math.ceil(dt/.008));
+    const motionDt=dt/physicsSteps;
+    for(let physicsStep=0;physicsStep<physicsSteps;physicsStep++){
+    if(onGround)lastGroundedAt=t;
+    if(!freeFluidKind&&jumpQueuedUntil>=t&&(onGround||t-lastGroundedAt<=100)){
+      freeVelocityY=FREE_JUMP_SPEED;onGround=false;jumpQueuedUntil=0;lastGroundedAt=-Infinity;
+    }
+    moveFreeHorizontal(move.x/physicsSteps,move.z/physicsSteps);
     const wasGrounded=onGround;
     if(freeFluidKind){
       freeFallPeakY=camera.position.y;
       const swimUp=!!freeKeys.Space,swimDown=!!(freeKeys.ShiftLeft||freeKeys.ShiftRight);
-      freeVelocityY+=(swimUp?8.4:0)*dt-(swimDown?6.2:0)*dt-2.6*dt;
+      freeVelocityY+=(swimUp?8.4:0)*motionDt-(swimDown?6.2:0)*motionDt-2.6*motionDt;
       freeVelocityY=THREE.MathUtils.clamp(freeVelocityY,-2.5,3.4);
     }else{
       if(wasGrounded)freeFallPeakY=camera.position.y;
       else freeFallPeakY=Math.max(freeFallPeakY,camera.position.y);
-      freeVelocityY-=14*dt;
+      freeVelocityY-=14*motionDt;
     }
-    let nextY=camera.position.y+freeVelocityY*dt;
+    let nextY=camera.position.y+freeVelocityY*motionDt;
     if(freeVelocityY<=0){
-      const ground=groundTopBelow(camera.position.x,nextY,camera.position.z);
+      const ground=groundTopBelow(camera.position.x,camera.position.y,camera.position.z);
       if(nextY-1.62<=ground){
         nextY=ground+1.62;freeVelocityY=0;
         if(!wasGrounded&&!freeFluidKind&&damageByFall(Math.max(0,freeFallPeakY-nextY)))return;
@@ -5372,11 +5418,17 @@ function updateFree(dt,t){
       freeVelocityY=0;nextY=camera.position.y;
     }else onGround=false;
     camera.position.y=nextY;
+    }
   }
   camera.position.x=THREE.MathUtils.clamp(camera.position.x,-WORLD_HALF+.7,WORLD_HALF-.7);
   camera.position.z=THREE.MathUtils.clamp(camera.position.z,-WORLD_HALF+.7,WORLD_HALF-.7);
   camera.position.y=THREE.MathUtils.clamp(camera.position.y,WORLD_MIN_Y+1.7,WORLD_MAX_Y+8);
   freePhysicsY=camera.position.y;
+  if(!freeFlying&&playerCollidesAt(camera.position.x,freePhysicsY,camera.position.z)){
+    overlapSeconds+=dt;
+    if(overlapSeconds>.18&&!escapeFreeOverlap())overlapSeconds=-.5;
+  }else overlapSeconds=0;
+  updateSimpleSurvivalUi();
   if(landedThisFrame)stepSfx(groundSurfaceType(),true);
   if(freeFlying&&gameFreeMode==='creative')camera.position.y=freePhysicsY;
   else{
@@ -5408,11 +5460,12 @@ function configureMobileMode(target){
   $('mobileControls').classList.toggle('free-mobile',active&&target==='free');
   $('mobileControls').classList.toggle('dungeon-mobile',active&&target==='dungeon');
   $('mobileInventory').classList.toggle('hidden',target!=='free');
-  $('mobileView').classList.toggle('hidden',target!=='free');
+  $('mobileView').classList.toggle('hidden',target!=='free'||(gameFreeMode==='survival'&&!mobileUtilityOpen));
   $('mobileInteract')?.classList.toggle('hidden',target!=='free'||gameFreeMode!=='survival');
   $('mobileMore').classList.toggle('hidden',target!=='free');
-  $('mobileTutorial').classList.toggle('hidden',!active);
-  $('mobileMore').textContent=mobileUtilityOpen?'도구 닫기':'도구';
+  $('mobileTutorial').classList.toggle('hidden',!active||(target==='free'&&gameFreeMode==='survival'&&!mobileUtilityOpen));
+  $('mobileEscape')?.classList.toggle('hidden',target!=='free'||gameFreeMode!=='survival'||!mobileUtilityOpen);
+  $('mobileMore').textContent=mobileUtilityOpen?'접기':'더보기';
   $('mobileAvatar').classList.toggle('hidden',target!=='free'||!mobileUtilityOpen);
   $('mobileFly').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
   const poiRestore=target==='free'&&gameFreeMode==='survival'&&survivalStage>=6&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
@@ -5434,7 +5487,7 @@ function configureMobileMode(target){
   $('mobileDown').classList.toggle('hidden',target==='dungeon');
   $('challengeLockNotice').classList.toggle('hidden',active||target!=='challenge');
   $('lockNotice').classList.toggle('hidden',active||target!=='free'||inventoryOpen||furnaceOpen);
-  if(target==='free'){refreshMobileFly();updateFreeViewButtons()}
+  if(target==='free'){refreshMobileFly();updateFreeViewButtons();updateSimpleSurvivalUi()}
 }
 function enableMobileFallback(){
   mobileModeEnabled=true;configureMobileMode(mode);
@@ -5486,7 +5539,7 @@ function mobileSpecialUseTarget(){
     if(toggleDoorAt(u.gx,u.gy,u.gz))return true;
   }
   if(type==='furnace'){toggleFurnace(true);return true}
-  if(type==='workbench'){toggleInventory(true);return true}
+  if(type==='workbench'){survivalInventoryTab='craft';toggleInventory(true);return true}
   if(survivalStage>=6&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
     openLandmarkDungeon(nearLandmarkPoi);return true;
   }
@@ -5533,6 +5586,28 @@ function executeMobileRadialAction(action){
   else if(action==='place')ok=mobilePlaceAction();
   tutorialSignal('mobile-radial-'+action);
   return ok;
+}
+function updateSimpleSurvivalUi(){
+  const survival=mode==='free'&&gameFreeMode==='survival';
+  document.body.classList.toggle('simple-survival',survival);
+  document.body.classList.toggle('survival-more',survival&&mobileUtilityOpen);
+  if(!survival)return;
+  const hub=$('mobileInteract');
+  if(hub&&mobileModeEnabled&&!mobileRadialOpen&&performance.now()-(hub._labelAt||0)>150){
+    hub._labelAt=performance.now();
+    const u=freeCenterHit(6)?.object?.userData||{};
+    const creature=creatureRayHit(2.9),hostile=creature?.object?.userData?.creatureRoot?.userData?.spec?.kind==='hostile';
+    const name=creature?(hostile?'공격':'인사'):['door','doorTop'].includes(u.type)?'열기':u.type==='workbench'?'만들기':u.type==='furnace'?'굽기':
+      PLACEABLE_TYPES.includes(selectedType)&&selectedType!=='hand'?'놓기':'캐기';
+    const label=hub.querySelector('b');if(label&&label.textContent!==name)label.textContent=name;
+  }
+  const jump=$('mobileUp');if(jump&&!freeFlying&&!freeFluidKind)jump.innerHTML='점프';
+}
+function setSurvivalInventoryTab(tab){
+  survivalInventoryTab=tab==='craft'?'craft':'bag';
+  const panel=$('blockInventory');if(!panel)return;
+  panel.dataset.bagTab=survivalInventoryTab;
+  panel.querySelectorAll('[data-bag-tab]').forEach(b=>b.classList.toggle('active',b.dataset.bagTab===survivalInventoryTab));
 }
 function mobileDefaultAction(){
   if(mode!=='free'||gameFreeMode!=='survival')return;
@@ -5694,7 +5769,7 @@ function initMobileControls(){
       if(mode==='challenge')challengeKeys[key]=true;
       else if(mode==='free'){
         const fluid=playerEnvironmentState(camera.position.x,freePhysicsY,camera.position.z);
-        if(key==='Space'&&!freeFlying&&!fluid.water&&!fluid.lava&&onGround){freeVelocityY=5.2;onGround=false}
+        if(key==='Space'&&!freeFlying&&!fluid.water&&!fluid.lava){queueFreeJump()}
         else freeKeys[key]=true;
       }
     });
@@ -5908,7 +5983,7 @@ function campHelp(step){
       toggleInventory(false);putOnHotbar('hand');campHelpTarget=campNearest(['log','pineLog']);
       toast('노란 테두리의 나무에서 원목을 더 얻어 보자.');updateCampMarker(step);return;
     }
-    survivalCraftCategory='전체';selectedCraftRecipeId=recipe.id;toggleInventory(true);
+    survivalCraftCategory='전체';selectedCraftRecipeId=recipe.id;survivalInventoryTab='craft';toggleInventory(true);
     const button=tutorialTarget('[data-recipe-id="'+recipe.id+'"]');tutorialClearFocus();
     if(button){button.classList.add('tutorial-focus');tutorialFocusEl=button;button.scrollIntoView({block:'nearest'})}
     toast(recipe.name+'를 골랐어. 재료를 확인하고 만들어 보자.');return;
@@ -6167,7 +6242,7 @@ document.addEventListener('keydown',e=>{
   if(e.code==='Space'&&!freeFlying){
     const fluid=playerEnvironmentState(camera.position.x,freePhysicsY,camera.position.z);
     if(fluid.water||fluid.lava)e.preventDefault();
-    else if(onGround){freeVelocityY=5.2;onGround=false;e.preventDefault()}
+    else if(!e.repeat){queueFreeJump();e.preventDefault()}
   }
   if(/^Digit[1-9]$/.test(e.code)){
     stopMining();selectedHotbarSlot=Number(e.code.slice(-1))-1;selectedType=hotbarTypes[selectedHotbarSlot]||'hand';buildHotbar();updateFreeMission();
