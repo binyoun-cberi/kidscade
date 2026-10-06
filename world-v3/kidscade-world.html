@@ -31,6 +31,17 @@
 .durTrack{position:absolute;left:7px;right:7px;bottom:5px;height:4px;border-radius:999px;background:rgba(40,48,38,.22);overflow:hidden}.durFill{display:block;height:100%;background:#4d9c58;width:0}
 .petPicker{position:absolute;left:50%;bottom:94px;transform:translateX(-50%);z-index:18;display:none;gap:6px;max-width:min(620px,90vw);overflow-x:auto;padding:7px;background:rgba(28,37,31,.94);border:2px solid #697454;border-radius:14px;box-shadow:0 8px 20px rgba(0,0,0,.25)}.petPicker.open{display:flex}
 .petChoice{min-width:62px;height:58px;border:2px solid #788267;border-radius:11px;background:#f4edce;color:#263226;font-weight:900;cursor:pointer}.petChoice.active{border-color:#f4d35e;box-shadow:0 0 0 2px rgba(244,211,94,.25)}
+.radialMenu{position:absolute;inset:0;z-index:28;display:none;background:radial-gradient(circle at center,rgba(33,43,32,.18) 0,rgba(19,27,20,.70) 58%,rgba(12,18,13,.82) 100%);backdrop-filter:blur(2px);touch-action:none}
+.radialMenu.open{display:block}
+.radialWheel{position:absolute;left:50%;top:50%;width:370px;height:370px;transform:translate(-50%,-50%)}
+.radialItem,.radialCenter{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid #5b694f;background:linear-gradient(180deg,#fff7d7,#ddd2a5);color:#293528;font-weight:1000;box-shadow:0 8px 22px rgba(0,0,0,.30);cursor:pointer;touch-action:manipulation}
+.radialItem{left:50%;top:50%;width:82px;height:82px;border-radius:23px;transform:translate(calc(-50% + var(--rx)),calc(-50% + var(--ry)));gap:3px}
+.radialItem:hover,.radialItem:focus-visible{border-color:#f4d35e;box-shadow:0 0 0 4px rgba(244,211,94,.26),0 9px 24px rgba(0,0,0,.32);outline:0}
+.radialIcon{font-size:27px;line-height:1}.radialLabel{font-size:11px;line-height:1.05;white-space:nowrap}
+.radialCenter{left:50%;top:50%;width:120px;height:120px;border-radius:50%;transform:translate(-50%,-50%);border-width:4px;border-color:#e0bd55;background:radial-gradient(circle at 36% 28%,#fff9d8,#e7d07b 72%,#b6943f);text-align:center;padding:10px;gap:4px}
+.radialCenter:disabled{filter:saturate(.5);opacity:.82;cursor:default}.radialCenter:not(:disabled):hover,.radialCenter:not(:disabled):focus-visible{box-shadow:0 0 0 5px rgba(244,211,94,.25),0 10px 26px rgba(0,0,0,.34);outline:0}
+.radialCenter .radialIcon{font-size:31px}.radialCenter .radialLabel{white-space:normal;max-width:94px;font-size:11px}
+.radialHint{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);padding:7px 12px;border-radius:999px;background:rgba(28,38,29,.88);border:1px solid rgba(255,244,199,.45);color:#fff4c7;font-size:11px;font-weight:900;white-space:nowrap}
 .mobile{display:none;position:absolute;inset:0;z-index:10;pointer-events:none}
 .dpad{position:absolute;left:16px;bottom:18px;width:156px;height:156px;pointer-events:auto}.dpad button{position:absolute;width:52px;height:52px;font-size:20px}.up{left:52px;top:0}.down{left:52px;bottom:0}.left{left:0;top:52px}.right{right:0;top:52px}
 .interact{position:absolute;right:18px;bottom:26px;width:76px;height:76px;font-size:15px;pointer-events:auto}
@@ -46,6 +57,7 @@
  .orbHud{width:72px;height:72px;bottom:174px}.orbHud.health{left:8px}.orbHud.hunger{right:8px}.orbGlass{border-width:4px}.orbText{font-size:9px}.orbText b{font-size:12px}.orbIcon{font-size:13px}
  .mobile{display:block}.dpad{left:12px;bottom:68px;width:132px;height:132px}.dpad button{width:44px;height:44px}.up{left:44px}.down{left:44px}.left{top:44px}.right{top:44px}.interact{right:14px;bottom:78px;width:68px;height:68px}
  .prompt{bottom:220px;max-width:68vw;text-align:center}.toast{top:108px;max-width:78vw;text-align:center}.helpGrid{grid-template-columns:1fr}
+ .radialWheel{transform:translate(-50%,-50%) scale(.86)}.radialHint{bottom:14px;font-size:10px}
 }
 </style>
 <script type="importmap">{"imports":{"three":"../assets/vendor/three-r160/three.module.js","three/addons/":"../assets/vendor/three-r160/addons/"}}</script>
@@ -81,9 +93,24 @@
     <button class="quickSlot" type="button" data-quick="pet"><span class="slotKey">5</span><span class="quickIcon" id="petQuickIcon">🐾</span><span class="quickName" id="petQuickName">펫</span></button>
   </div>
 
+  <div class="radialMenu" id="radialMenu" role="dialog" aria-modal="true" aria-label="씨앗 월드 라디얼 메뉴" aria-hidden="true">
+    <div class="radialWheel">
+      <button class="radialItem" type="button" data-radial-action="bag" style="--rx:0px;--ry:-140px"><span class="radialIcon">🎒</span><span class="radialLabel">가방</span></button>
+      <button class="radialItem" type="button" data-radial-action="map" style="--rx:99px;--ry:-99px"><span class="radialIcon">🗺️</span><span class="radialLabel">지도</span></button>
+      <button class="radialItem" type="button" data-radial-action="tasks" style="--rx:140px;--ry:0px"><span class="radialIcon">📋</span><span class="radialLabel">오늘 할 일</span></button>
+      <button class="radialItem" type="button" data-radial-action="people" style="--rx:99px;--ry:99px"><span class="radialIcon">👥</span><span class="radialLabel">사람들</span></button>
+      <button class="radialItem" type="button" data-radial-action="pets" style="--rx:0px;--ry:140px"><span class="radialIcon">🐾</span><span class="radialLabel">펫</span></button>
+      <button class="radialItem" type="button" data-radial-action="life" style="--rx:-99px;--ry:99px"><span class="radialIcon">🏠</span><span class="radialLabel">생활</span></button>
+      <button class="radialItem" type="button" data-radial-action="catalog" style="--rx:-140px;--ry:0px"><span class="radialIcon">📖</span><span class="radialLabel">도감</span></button>
+      <button class="radialItem" type="button" data-radial-action="settings" style="--rx:-99px;--ry:-99px"><span class="radialIcon">⚙️</span><span class="radialLabel">기타</span></button>
+      <button class="radialCenter" id="radialContext" type="button" data-radial-context="1"><span class="radialIcon" id="radialContextIcon">✨</span><span class="radialLabel" id="radialContextLabel">가까이 가서 행동</span></button>
+    </div>
+    <div class="radialHint">Q · Tab 길게 · 모바일 행동 길게</div>
+  </div>
+
   <div class="mobile">
     <div class="dpad"><button class="up" data-key="ArrowUp">▲</button><button class="left" data-key="ArrowLeft">◀</button><button class="right" data-key="ArrowRight">▶</button><button class="down" data-key="ArrowDown">▼</button></div>
-    <button class="interact" id="mobileInteract" type="button">행동</button>
+    <button class="interact" id="mobileInteract" type="button" aria-label="짧게 눌러 행동, 길게 눌러 메뉴">행동</button>
   </div>
   <div class="panel" id="panel"><div class="card"><button class="close" id="panelClose" type="button">닫기</button><div id="panelBody"></div></div></div>
   <div class="loading" id="loading">3D 씨앗 월드를 준비하고 있어요…</div>
@@ -93,6 +120,6 @@
 <script src="../world-v2/kidscade-world-storage.js?v=9"></script>
 <script src="../world-v2/kidscade-world-bridge.js?v=2"></script>
 <script src="../seed-world-meta.js?v=1"></script>
-<script type="module" src="kidscade-world-v3.js?v=54"></script>
+<script type="module" src="kidscade-world-v3.js?v=55"></script>
 </body>
 </html>
