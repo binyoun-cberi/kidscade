@@ -9,7 +9,7 @@ const raw = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/games.json'), 'utf8
 const games = (Array.isArray(raw) ? raw : raw.games || []).filter(game => !game.disabled);
 
 test('every active game has exactly one outcome profile', () => {
-  assert.equal(games.length, 140);
+  assert.equal(games.length, 141);
   assert.equal(profiles.size, games.length);
   const all = profiles.getProfiles();
   assert.equal(all.length, games.length);
