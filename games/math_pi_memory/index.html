@@ -106,6 +106,15 @@ h1{font-size:clamp(22px,4vw,34px);margin:0;letter-spacing:-.04em}
   .hero{padding:20px}.formula{gap:12px}.circle{width:76px;height:76px}.stats{grid-template-columns:1fr 1fr;padding:14px}.big-stat{padding:13px}.big-stat b{font-size:28px}
   .game-grid{gap:9px}.play{padding:12px}.keypad-card{padding:10px}.key{min-height:55px;border-radius:14px}.hud-box b{font-size:19px}.pi-line{letter-spacing:.035em}
 }
+
+/* v2 PI LAB */
+body:before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(rgba(3,12,22,.72),rgba(3,12,22,.88)),url("../../assets/game/2d/classroom.png") center/cover no-repeat;filter:saturate(.75)}
+.hero{border:2px solid rgba(103,169,255,.28);background:linear-gradient(135deg,rgba(8,28,48,.94),rgba(12,49,56,.92))}.hero:before{content:"PI LAB";position:absolute;right:24px;top:20px;font:1000 13px/1 ui-monospace,monospace;letter-spacing:.22em;color:var(--mint);opacity:.7}
+.number-stage{position:relative;border-radius:22px;margin-top:10px;background:linear-gradient(180deg,rgba(1,9,16,.55),rgba(9,31,45,.72));border:1px solid rgba(78,230,177,.18);overflow:hidden}.number-stage:before{content:"DIGIT MEMORY CHAMBER";position:absolute;top:12px;left:16px;font:900 10px/1 ui-monospace,monospace;letter-spacing:.14em;color:#6e9aac}
+.pi-line{padding:38px 18px 20px;text-shadow:0 0 18px rgba(78,230,177,.18)}.keypad-card{background:linear-gradient(180deg,#182b3a,#0b1721);border:2px solid #304a5d;box-shadow:inset 0 0 0 4px rgba(0,0,0,.18),var(--shadow)}.keypad-title:before{content:"● ";color:#55f59d}
+.key{border:0;border-bottom:5px solid #15202b;background:linear-gradient(#e6eef4,#9aabb8);color:#11202a;text-shadow:0 1px #fff;box-shadow:0 5px 0 #536571;font-size:28px}.key:active{transform:translateY(4px);box-shadow:0 1px 0 #536571}.hud-box{background:#081722;border-color:#284657}.hud-box b{color:#8fffd9;font-family:ui-monospace,monospace}
+.mile:before{content:"";width:15px;height:15px;background:url("../../assets/game/ui/icons/kenney-game-icons/white/1x/star.png") center/contain no-repeat;opacity:.55}.mile.done:before{opacity:1;filter:drop-shadow(0 0 5px #4ee6b1)}
+.lab-track{height:58px;display:flex;align-items:center;gap:5px;padding:8px 10px;margin-top:14px;border-radius:13px;background:repeating-linear-gradient(90deg,#122533 0 24px,#0c1922 24px 29px);border:2px solid #365262;overflow:hidden}.lab-digit{min-width:34px;height:38px;display:grid;place-items:center;border-radius:6px;background:linear-gradient(#d9e1e7,#8599a6);color:#14222b;font:1000 22px/1 ui-monospace,monospace;box-shadow:0 3px 0 #4d606b;animation:digitDrop .18s ease-out}@keyframes digitDrop{from{transform:translateY(-24px) scale(.7);opacity:0}}
 </style>
 <script src="../../kidscade-game-sdk.js" data-game-id="math_pi_memory" data-title="원주율 외우기" data-shell="true" data-mute="false"></script>
 </head>
@@ -154,7 +163,7 @@ h1{font-size:clamp(22px,4vw,34px);margin:0;letter-spacing:-.04em}
         <div class="number-stage" id="numberStage">
           <div id="challengePane">
             <div class="pi-line" id="piLine"><span class="fixed">3.</span><span class="cursor"></span></div>
-            <div class="tip">숫자를 누르는 순간 바로 채점돼요. 한 번 틀리면 이번 기록이 끝나요.</div>
+            <div class="lab-track" id="labTrack" aria-label="입력한 원주율 숫자 트랙"></div><div class="tip">숫자 블록을 실험 장치에 차곡차곡 넣으세요. 한 번 틀리면 실험 종료!</div>
           </div>
           <div id="practicePane" hidden>
             <div class="practice-card">
@@ -290,6 +299,7 @@ h1{font-size:clamp(22px,4vw,34px);margin:0;letter-spacing:-.04em}
     refreshHud();
     try{window.KidscadeGame&&KidscadeGame.start&&KidscadeGame.start({mode:"challenge"})}catch(e){}
   }
+  function renderLabTrack(){var h=$("labTrack");if(!h)return;h.innerHTML=digits.slice(-12).split("").map(function(d){return '<span class="lab-digit">'+d+'</span>'}).join("");}
   function renderChallenge(){
     var visible=digits.slice(-40), prefix=digits.length>40?"…":"";
     $("piLine").innerHTML='<span class="fixed">3.</span><span class="correct">'+prefix+visible+'</span><span class="cursor"></span>';
@@ -337,7 +347,7 @@ h1{font-size:clamp(22px,4vw,34px);margin:0;letter-spacing:-.04em}
     $("practiceRecall").textContent=practiceRecall;
     $("hideAndRecall").textContent=practiceHidden?"다시 보여주기":"가리고 입력하기";
     $("practiceTip").textContent=practiceHidden?"방금 본 5자리를 차례대로 입력해 보세요.":"숫자를 소리 내어 읽어 보고, 준비되면 가려 보세요.";
-    refreshHud();
+    renderLabTrack();refreshHud();
   }
   function startPractice(){
     ensurePi(1200);setView("practice");running=false;practiceStart=0;practiceRecall="";practiceHidden=false;
