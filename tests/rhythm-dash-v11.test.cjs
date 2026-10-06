@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const runtimePath = path.join(ROOT, 'rhythm-dash-v11.js');
+const extremePath = path.join(ROOT, 'rhythm-dash-extreme.js');
 const gamePath = path.join(ROOT, '리듬 대시.html');
 const injectorPath = path.join(ROOT, 'scripts', 'inject-game-integrations.cjs');
 
@@ -54,4 +55,25 @@ test('Rhythm Dash owns the v11 runtime in source instead of build-time injection
   if (fs.existsSync(builtGame)) {
     assert.match(read(builtGame), /rhythm-dash-v11\.js\?v=20260916-1/);
   }
+});
+
+
+test('Rhythm Dash EXTREME adds seven isolated challenge stages and core GD-style mechanics', () => {
+  const source = read(extremePath);
+  assert.match(source, /const STEP_MS = 1000 \/ 120/);
+  assert.match(source, /EXTREME 1: FIRST SHOCK/);
+  assert.match(source, /EXTREME 7: FINAL DASH/);
+  assert.match(source, /SPEED = Object\.freeze\(\{ A: 0\.8, B: 1, D: 1\.25, X: 1\.5 \}\)/);
+  assert.match(source, /t\.char==='r'/);
+  assert.match(source, /t\.char==='g'/);
+  assert.match(source, /CHECKPOINT/);
+  assert.match(source, /650/);
+  assert.match(source, /coinsBest/);
+});
+
+test('Rhythm Dash loads EXTREME as a source-owned runtime after v11', () => {
+  const html = read(gamePath);
+  assert.match(html, /rhythm-dash-v11\.js\?v=20260916-1/);
+  assert.match(html, /rhythm-dash-extreme\.js\?v=20261006-1/);
+  assert.ok(html.indexOf('rhythm-dash-v11.js') < html.indexOf('rhythm-dash-extreme.js'));
 });
