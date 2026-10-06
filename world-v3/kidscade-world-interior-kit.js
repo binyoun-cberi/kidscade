@@ -185,7 +185,8 @@ async function buildLevel(parent,addModel,level){
 
 export async function buildHomeInterior({parent,addModel}){
   const levels={};
-  for(const level of [1,2,3])levels[level]=await buildLevel(parent,addModel,level);
+  const built=await Promise.all([1,2,3].map(level=>buildLevel(parent,addModel,level)));
+  built.forEach((entry,index)=>{levels[index+1]=entry});
   let current=1;
   function setLevel(level){
     current=clampLevel(level);
