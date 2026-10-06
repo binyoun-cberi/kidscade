@@ -182,6 +182,16 @@ test('Seed School break games friends and lunch persist without reward farming',
   for(const attr of ['data-school-break-answer','data-school-friend','data-school-lunch-eat','data-school-lunch-friend'])assert.ok(economy.includes(attr),'missing school break handler '+attr);
 });
 
+test('Seed World startup overlaps heavy town and home asset work instead of serial loading',()=>{
+  assert.match(city,/async function mapLimit\(items,limit,worker\)/);
+  assert.match(city,/await mapLimit\(homeDefs,4,async def=>/);
+  assert.match(city,/const npcs=await mapLimit\(npcDefs,4/);
+  assert.doesNotMatch(city,/npcs\.push\(await addNpc/);
+  assert.match(city,/Promise\.all\(\[\n    \[residentialSouth/);
+  assert.match(interiorKit,/const built=await Promise\.all\(\[1,2,3\]\.map\(level=>buildLevel/);
+  assert.doesNotMatch(interiorKit,/for\(const level of \[1,2,3\]\)levels\[level\]=await buildLevel/);
+});
+
 test('Seed World characters resolve visible floor height instead of sinking into raised surfaces',()=>{
   assert.match(city,/const CHARACTER_GROUND_CLEARANCE=\.018/);
   assert.match(city,/function normalizeCharacterModel\(model,height\)/);
