@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#183b31">
-<title>우리 동네 마트 계산대</title>
-<link rel="stylesheet" href="market-walk.css?v=3">
+<meta name="theme-color" content="#173b31">
+<title>우리 동네 마트</title>
+<link rel="stylesheet" href="market-walk.css?v=4">
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
@@ -13,93 +13,99 @@
 <div class="vignette"></div>
 
 <header class="topbar">
-  <div class="brand glass"><div class="logo">🛒</div><div><b>우리 동네 마트</b><small>직접 장보기 · 셀프 계산</small></div></div>
+  <div class="brand glass"><div class="logo">🛒</div><div><b>우리 동네 마트</b><small>장보고 · 요리하고 · 먹고 살기</small></div></div>
   <div class="topActions">
     <div class="stats glass">
-      <div class="stat"><span>목록</span><b id="progressStat">0 / 0</b></div>
-      <div class="stat"><span>예산</span><b id="budgetStat">-</b></div>
-      <div class="stat"><span>담은 금액</span><b id="basketStat">0원</b></div>
+      <div class="stat"><span>오늘</span><b id="dayStat">1일차 · 아침</b></div>
+      <div class="stat"><span>남은 식비</span><b id="moneyStat">35,000원</b></div>
+      <div class="stat"><span>배고픔</span><b id="hungerStat">보통</b></div>
+      <div class="stat"><span>오늘 먹은 열량</span><b id="kcalStat">0 kcal</b></div>
+      <div class="stat"><span>컨디션</span><b id="conditionStat">좋음</b></div>
     </div>
+    <button class="iconBtn glass hidden" id="cartBtn" aria-label="카트 보기">🛒<small id="cartCount">0</small></button>
     <button class="iconBtn glass" id="soundBtn" aria-label="소리 켜기 또는 끄기">🔊</button>
   </div>
 </header>
 
-<aside class="missionCard glass">
-  <div class="eyebrow">SHOPPING LIST</div>
-  <div class="missionTitle">오늘의 장보기</div>
-  <div class="missionSub" id="missionSub">목록에 있는 물건을 직접 찾아 담아 보세요.</div>
-  <div class="shoppingList" id="shoppingList"></div>
-  <div class="missionFoot"><span id="zoneHint">입구에서 카트를 끌고 출발해요.</span><b id="modeBadge">연습</b></div>
-</aside>
-
-<div class="phaseChip" id="phaseChip">마트 준비 중…</div>
-<div class="productLabels" id="productLabels"></div>
+<div class="locationChip glass" id="locationChip">🏠 집 · 부엌</div>
+<div class="eventCard glass hidden" id="eventCard"><span>✨ 깜짝</span><b id="eventTitle"></b><small id="eventText"></small></div>
 <div class="toast" id="toast"></div>
+<div class="productLabels" id="productLabels"></div>
+
+<div class="heldCard glass hidden" id="heldCard"><span>손에 든 것</span><b id="heldName">-</b><small id="heldHint"></small></div>
+<div class="prepCard glass hidden" id="prepCard"><span>조리대</span><b id="prepTitle">재료 없음</b><small id="prepText">재료를 가져와 조리대에 올려보세요.</small></div>
 
 <div class="interactDock glass" id="interactDock">
-  <div><span id="interactIcon">🛒</span><b id="interactTitle">매장을 둘러보세요</b><small id="interactSub">WASD / 방향키로 이동</small></div>
-  <button id="interactBtn" type="button">담기</button>
+  <div><span id="interactIcon">🏠</span><b id="interactTitle">부엌을 둘러보세요</b><small id="interactSub">WASD / 방향키 이동 · 마우스 드래그로 둘러보기</small></div>
+  <button id="interactBtn" type="button">사용</button>
 </div>
 
-<div class="desktopHelp glass">WASD / 방향키 이동 · E 또는 Space 담기 · 계산대에서는 셀프 계산</div>
-
+<div class="desktopHelp glass">WASD / 방향키 이동 · 마우스 드래그로 시점 · E/Space 사용 · 마트에서는 카트를 직접 끌고 장보기</div>
 <div class="touchControls" id="touchControls">
   <div class="joystick" id="joystick"><div class="stick" id="stick"></div></div>
-  <button class="touchInteract" id="touchInteract" type="button">담기</button>
+  <button class="touchInteract" id="touchInteract" type="button">사용</button>
 </div>
+
+<section class="cartPanel glass hidden" id="cartPanel">
+  <div class="panelHead"><div><span>CART</span><b>카트 안</b></div><button id="closeCart" type="button">×</button></div>
+  <div class="cartList" id="cartList"></div>
+  <div class="cartFoot"><span>담은 상품</span><b id="cartTotal">0개</b></div>
+</section>
 
 <section class="checkoutPanel" id="checkoutPanel" aria-hidden="true">
   <div class="checkoutCard">
     <div class="checkoutHead">
-      <div><div class="eyebrow">SELF CHECKOUT</div><h2>셀프 계산대</h2><p id="checkoutGuide">장바구니 상품을 하나씩 눌러 스캔하세요.</p></div>
+      <div><div class="eyebrow">SELF CHECKOUT</div><h2>직접 계산하기</h2><p id="checkoutGuide">카트의 상품을 하나씩 스캔하세요.</p></div>
       <button id="closeCheckout" class="closeBtn" type="button" aria-label="계산대 닫기">×</button>
     </div>
     <div class="screenRow">
       <div><span>스캔</span><b id="scanStat">0 / 0</b></div>
-      <div><span>합계</span><b id="checkoutTotal">0원</b></div>
+      <div><span>남은 식비</span><b id="checkoutMoney">0원</b></div>
       <div><span>낸 돈</span><b id="checkoutPaid">-</b></div>
       <div class="accent"><span>거스름돈</span><b id="checkoutChange">?</b></div>
     </div>
     <div class="checkoutBody">
       <div class="checkoutSection">
-        <div class="sectionTitle"><b>1. 상품 스캔</b><span>장바구니</span></div>
+        <div class="sectionTitle"><b>1. 바코드 스캔</b><span>가격을 잘 기억해 두세요</span></div>
         <div class="scanItems" id="scanItems"></div>
       </div>
-      <div class="checkoutSection" id="paySection">
-        <div class="sectionTitle"><b>2. 현금 넣기</b><span>합계보다 같거나 큰 돈</span></div>
+      <div class="checkoutSection" id="totalSection">
+        <div class="sectionTitle"><b>2. 총액 직접 계산</b><span>스캔된 가격을 모두 더해요</span></div>
+        <div class="numberEntry"><input id="totalInput" inputmode="numeric" pattern="[0-9]*" placeholder="총액 입력"><button id="checkTotal" type="button">총액 확인</button></div>
+        <div class="receipt" id="receipt"></div>
+      </div>
+      <div class="checkoutSection locked" id="paySection">
+        <div class="sectionTitle"><b>3. 현금 선택</b><span>총액보다 같거나 큰 금액</span></div>
         <div class="cashOptions" id="cashOptions"></div>
       </div>
-      <div class="checkoutSection" id="changeSection">
-        <div class="sectionTitle"><b>3. 거스름돈 맞히기</b><span id="changeEquation">낸 돈 − 합계 = ?</span></div>
-        <div class="changeOptions" id="changeOptions"></div>
+      <div class="checkoutSection locked" id="changeSection">
+        <div class="sectionTitle"><b>4. 거스름돈 직접 계산</b><span id="changeEquation">낸 돈 − 총액 = ?</span></div>
+        <div class="numberEntry"><input id="changeInput" inputmode="numeric" pattern="[0-9]*" placeholder="거스름돈 입력"><button id="checkChange" type="button">계산 확인</button></div>
       </div>
     </div>
-    <div class="checkoutFooter"><button id="backToShopping" type="button">매장으로 돌아가기</button><button id="finishCheckout" class="primary" type="button" disabled>계산 완료</button></div>
+    <div class="checkoutFooter"><button id="backToShopping" type="button">매장으로 돌아가기</button><button id="finishCheckout" class="primary" type="button" disabled>결제하고 집으로</button></div>
   </div>
 </section>
 
 <div class="modal" id="startModal">
-  <div class="modalCard">
-    <div class="heroRow"><div class="heroIcon">🛒</div><div><div class="eyebrow">KIDSCADE MARKET</div><h1>직접 장보고, 직접 계산해요!</h1></div></div>
-    <p>장보기 목록을 확인하고 넓은 3D 마트를 직접 돌아다니며 물건을 찾아 카트에 담으세요. 모두 담으면 셀프 계산대로 가서 상품을 스캔하고 거스름돈까지 계산합니다.</p>
-    <div class="loading"><i id="loadFill"></i></div><div class="loadText" id="loadText">3D 마트를 준비하고 있어요…</div>
-    <div class="modes">
-      <button class="mode" data-mode="easy" disabled><b>천천히 장보기</b><small>3개 물건 · 목표 물건 표시가 멀리서도 보여요.</small></button>
-      <button class="mode" data-mode="normal" disabled><b>우리 동네 장보기</b><small>5개 물건 · 구역 간판을 보고 직접 찾아요.</small></button>
-      <button class="mode" data-mode="challenge" disabled><b>장보기 달인</b><small>6개 물건 · 가까이 가야 가격표가 보여요.</small></button>
-    </div>
-    <div class="credit">Kenney CC0 · Mini Market / Food / Mini Characters · PC와 터치 조작 지원</div>
+  <div class="modalCard startCard">
+    <div class="heroRow"><div class="heroIcon">🏠</div><div><div class="eyebrow">KIDSCADE LIFE SIM</div><h1>우리 동네에서 먹고 살아보기</h1></div></div>
+    <p>정해진 장보기 목록은 없어요. 이번 주 식비 안에서 먹고 싶은 것도 사고, 필요한 재료도 사고, 집 부엌에서 직접 꺼내 요리하거나 간단히 먹어 보세요.</p>
+    <div class="ruleGrid"><div><b>🛒 마트</b><small>카트를 잡고 1인칭으로 돌아다니며 직접 담아요.</small></div><div><b>🧾 계산</b><small>바코드를 찍고 총액과 거스름돈을 직접 계산해요.</small></div><div><b>🍳 부엌</b><small>냉장고와 찬장에서 꺼내 조리대와 가전으로 요리해요.</small></div><div><b>✨ 일상</b><small>가끔 소풍·할인·운동 같은 깜짝 일이 생겨요.</small></div></div>
+    <div class="loading"><i id="loadFill"></i></div><div class="loadText" id="loadText">집과 마트를 준비하고 있어요…</div>
+    <div class="modalActions"><button id="newLifeBtn" class="primary" disabled>새 생활 시작</button><button id="continueBtn" disabled>이어하기</button></div>
   </div>
 </div>
 
-<div class="modal hidden" id="resultModal">
+<div class="modal hidden" id="weekModal">
   <div class="modalCard resultCard">
-    <div class="eyebrow">SHOPPING COMPLETE</div><h1 id="resultTitle">장보기 완료!</h1>
-    <p id="resultText"></p>
-    <div class="resultGrid"><div><span>산 물건</span><b id="resultItems">0개</b></div><div><span>쓴 돈</span><b id="resultSpent">0원</b></div><div><span>남은 예산</span><b id="resultRemain">0원</b></div></div>
-    <div class="modalActions"><button id="modeBtn">난이도 선택</button><button id="replayBtn" class="primary">새 장보기</button></div>
+    <div class="eyebrow">WEEKLY LIFE NOTE</div><h1>이번 주 생활 돌아보기</h1>
+    <p id="weekSummary"></p>
+    <div class="resultGrid"><div><span>요리한 끼니</span><b id="weekCooked">0회</b></div><div><span>간편하게 먹은 끼니</span><b id="weekQuick">0회</b></div><div><span>남긴 식비</span><b id="weekMoney">0원</b></div><div><span>식생활</span><b id="weekBalance">보통</b></div></div>
+    <div class="modalActions"><button id="nextWeekBtn" class="primary">다음 주 시작</button></div>
   </div>
 </div>
-<script type="module" src="market-walk.js?v=3"></script>
+
+<script type="module" src="market-walk.js?v=4"></script>
 </body>
 </html>
