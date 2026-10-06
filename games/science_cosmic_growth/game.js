@@ -35,7 +35,8 @@ const DISCOVERIES=[
  {id:'collision_growth',cat:'phenomenon',min:2,icon:'💥',title:'충돌과 성장',text:'충돌은 천체를 키우기도 하고 부수기도 합니다. 속도·크기·재질에 따라 결과가 달라집니다.',event:'impact'},
  {id:'asteroid',cat:'body',min:3,icon:'🪨',title:'소행성',text:'소행성은 태양 주위를 도는 작은 암석·금속 천체입니다. 모양이 꼭 둥글 필요는 없습니다.'},
  {id:'gravity',cat:'phenomenon',min:3,icon:'◎',title:'중력 집중',text:'질량이 커질수록 주변 물질을 끌어당기는 중력의 영향이 커져 성장 속도도 달라질 수 있습니다.',event:'gravity'},
- {id:'planetesimal',cat:'body',min:4,icon:'◉',title:'미행성',text:'미행성은 원시행성계 원반에서 만들어지는 비교적 큰 고체 천체로, 서로 합쳐져 행성을 만드는 재료가 됩니다.'},\n {id:'comet',cat:'phenomenon',min:4,icon:'☄️',title:'혜성',text:'혜성은 얼음·먼지·암석으로 이루어진 작은 천체입니다. 별 가까이 가면 가스와 먼지가 방출되어 긴 꼬리가 보일 수 있습니다.',event:'comet'},
+ {id:'planetesimal',cat:'body',min:4,icon:'◉',title:'미행성',text:'미행성은 원시행성계 원반에서 만들어지는 비교적 큰 고체 천체로, 서로 합쳐져 행성을 만드는 재료가 됩니다.'},
+ {id:'comet',cat:'phenomenon',min:4,icon:'☄️',title:'혜성',text:'혜성은 얼음·먼지·암석으로 이루어진 작은 천체입니다. 별 가까이 가면 가스와 먼지가 방출되어 긴 꼬리가 보일 수 있습니다.',event:'comet'},
  {id:'round_world',cat:'phenomenon',min:5,icon:'⚪',title:'왜 큰 천체는 둥글까?',text:'천체가 충분히 커지면 자체 중력이 높은 부분을 끌어내리고 낮은 부분을 채우며 더 둥근 평형 모양을 만들게 됩니다.',event:'pulse'},
  {id:'impact_heat',cat:'phenomenon',min:5,icon:'🌋',title:'충돌 가열',text:'원시행성이 자랄 때 거대한 충돌과 압축은 내부를 뜨겁게 만들 수 있습니다.',event:'impact'},
  {id:'rocky_planet',cat:'body',min:6,icon:'🪐',title:'암석행성',text:'암석과 금속이 중심을 이루는 행성은 단단한 표면을 가질 수 있습니다.'},
@@ -368,7 +369,8 @@ function spawnTapMatter(clientX,clientY){
 }
 function triggerEventVisual(d){
  const kind=d.event||'pulse';
- if(kind==='impact'){spawnSupernovaBurst(false);bodyRoot.rotation.z+=(Math.random()-.5)*.15}
+ if(kind==='comet'){for(let i=0;i<9;i++){const sp=spawnSpriteFx(i===0?'flare':'smoke',i===0?0xe9fbff:0x8bc8ff,-6-i*.28,2.6+i*.08,i===0 ? 0.55 : 0.32,2.8);sp.userData.vx=3.4;sp.userData.vy=-.72;activeFx[activeFx.length-1].kind='burst'}}
+ else if(kind==='impact'){spawnSupernovaBurst(false);bodyRoot.rotation.z+=(Math.random()-.5)*.15}
  else if(kind==='flare'){const sp=spawnSpriteFx('flare',0xff7a4f,1.1,.5,2.4,1.4);sp.userData.grow=1}
  else if(kind==='spark'){for(let i=0;i<8;i++)spawnSpriteFx('spark',0xb8e8ff,(Math.random()-.5)*3,(Math.random()-.5)*2,.35+Math.random()*.35,.8)}
  else if(kind==='ring'){const ring=new THREE.Mesh(new THREE.RingGeometry(1.6,2.25,96),new THREE.MeshBasicMaterial({color:0xf1d399,transparent:true,opacity:.5,side:THREE.DoubleSide}));ring.rotation.x=1.12;fxGroup.add(ring);activeFx.push({obj:ring,life:3,max:3,kind:'fade'})}
