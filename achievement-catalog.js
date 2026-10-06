@@ -60,7 +60,7 @@
     "high_human_history_cards":["첫 도구","첫 생존 도구를 만드세요.","부족의 생존자","오랫동안 부족을 유지하세요.","새 시대의 문","다음 시대에 진입하세요."],
     "high_weathercaster_simulator":["첫 방송","첫 기상 방송을 마치세요.","믿음직한 예보관","정확한 예보를 연속으로 성공하세요.","재난 특보 완벽 대응","위험 기상 상황을 완벽하게 전달하세요."],
     "high_twelve_island":["첫 촌장 업무","첫 결정을 내리세요.","마을은 살아남았다","큰 재난을 넘기고 마을을 유지하세요.","기묘한 촌장","특이한 사회 상태를 만들어 보세요."],
-    "high_little_world":["첫 생명","첫 생명체가 살아가게 하세요.","살아있는 세계","풍부한 생태계를 만드세요.","세상이 이렇게도 되네?","아주 특별한 세계 상태를 발견하세요."],
+    "high_little_world":["첫 생명","첫 생명체가 살아가게 하세요.","살아있는 세계","풍부한 생태계를 만드세요.","세상이 이렇게도 되네?","아주 특별한 세계 상태를 발견하세요."],\n    "science_cosmic_growth":["첫 응집","우주 먼지를 모아 첫 천체 성장을 시작하세요.","별의 탄생","핵융합이 시작되는 별 단계에 도달하세요.","사건의 지평선","블랙홀 시대에 진입하세요."],
     "high_story_builder":["첫 이야기","첫 이야기를 완성하세요.","스토리텔러","여러 장르의 이야기를 만드세요.","상상 밖의 결말","특별한 결말을 만들어 보세요."],
     "high_code_quest":["첫 버그 수정","첫 버그를 고치세요.","디버깅 기사","많은 버그를 해결하세요.","힌트 없이 보스 수정","힌트 없이 어려운 버그를 고치세요."],
     "high_factory_tycoon":["첫 생산 라인","첫 생산 설비를 가동하세요.","산업왕","대규모 생산 체계를 만드세요.","낭비 제로 공장","자원 낭비를 최소화한 공장을 운영하세요."],
@@ -254,6 +254,13 @@
       Object.freeze({slot:'newcomers_5',icon:'⛵',title:'사람이 모이는 섬',description:'새 주민 5명이 섬에 정착하게 하세요.'}),
       Object.freeze({slot:'trust_90',icon:'🤝',title:'믿을 만한 촌장',description:'공동체 신뢰를 90 이상으로 올리세요.'}),
       Object.freeze({slot:'rights_safe_30',icon:'🕊️',title:'모두의 마을',description:'권리 제한 없이 30주 이상 공동체를 운영하세요.',type:'secret',hidden:true})
+    ]),
+    science_cosmic_growth:Object.freeze([
+      Object.freeze({slot:'first_asteroid',icon:'🪨',title:'첫 천체',description:'먼지와 자갈을 모아 소행성 단계에 도달하세요.'}),
+      Object.freeze({slot:'star_birth',icon:'☀️',title:'별의 탄생',description:'중심에서 핵융합이 시작되는 별 단계에 도달하세요.'}),
+      Object.freeze({slot:'black_hole',icon:'⚫',title:'사건의 지평선',description:'항성질량 블랙홀 단계에 도달하세요.'}),
+      Object.freeze({slot:'discoveries_12',icon:'🔭',title:'우주 관측가',description:'서로 다른 우주 현상과 천체를 12개 이상 발견하세요.'}),
+      Object.freeze({slot:'galactic_core',icon:'🌌',title:'은하의 중심',description:'초대질량 블랙홀 단계에 도달하세요.',type:'secret',hidden:true})
     ]),
     high_little_world:Object.freeze([
       Object.freeze({slot:'first_life',icon:'🌱',title:'생명의 시작',description:'살아 있는 식생이 자리 잡은 세계를 만드세요.'}),
