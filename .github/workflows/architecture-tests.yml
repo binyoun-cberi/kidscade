@@ -89,6 +89,7 @@ jobs:
             seed-house-entry.js \
             games/low_cleanup_squad/cleanup-squad.js \
             games/high_bridge_builder/bridge-builder.js \
+            games/high_story_builder/game.js \
             games/math_base10_blocks/market-walk.js \
             games/high_quarantine_17/field-topdown-v18.js \
             games/high_twelve_island/art.js \

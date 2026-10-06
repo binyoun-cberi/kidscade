@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>이야기 조립소</title>
-<link rel="stylesheet" href="./style.css?v=2">
+<link rel="stylesheet" href="./style.css?v=5">
 </head>
 <body>
 <main class="app">
@@ -12,7 +12,7 @@
     <div>
       <div class="eyebrow">KIDSCADE · 국어 창작</div>
       <h1>🧩 이야기 조립소</h1>
-      <p>주어진 그림 카드를 모두 넣어 나만의 이야기를 완성해요.</p>
+      <p>주인공·장소·사건을 조립해 처음–가운데–끝이 있는 이야기를 만들어요.</p>
     </div>
     <div class="top-actions">
       <button id="bookshelfBtn" class="ghost-btn" type="button">📚 내 이야기책 <span id="bookCount">0</span></button>
@@ -24,13 +24,13 @@
     <div class="hero-card">
       <div class="hero-copy">
         <span class="pill">정답 없는 글쓰기 게임</span>
-        <h2>그림 몇 장이면<br>이야기가 시작돼요.</h2>
-        <p>맞춤법은 글을 다 쓴 뒤에 살펴봐요. 처음부터 완벽하게 쓸 필요는 없어요.</p>
+        <h2>재료를 조립하면<br>이야기가 움직여요.</h2>
+        <p>처음에는 이야기의 흐름에 집중하고, 맞춤법은 다 쓴 뒤 천천히 다듬어요.</p>
       </div>
       <div class="sample-stack" aria-hidden="true">
         <div class="sample-card rotate-a">🐰<small>토끼</small></div>
-        <div class="sample-card rotate-b">🌧️<small>비</small></div>
-        <div class="sample-card rotate-c">🎂<small>케이크</small></div>
+        <div class="sample-card rotate-b">🏰<small>장소</small></div>
+        <div class="sample-card rotate-c">🧩<small>사건</small></div>
       </div>
     </div>
 
@@ -38,16 +38,16 @@
       <h3>난이도를 골라요</h3>
       <div class="difficulty-grid">
         <button class="difficulty selected" data-level="easy" type="button">
-          <b>🌱 가볍게</b><span>카드 2장 · 2문장</span><small>처음 쓰기 좋아요</small>
+          <b>🌱 차근차근</b><span>주인공·장소·사건</span><small>3부분 · 30자 이상 · 도움말 풍부</small>
         </button>
         <button class="difficulty" data-level="normal" type="button">
-          <b>✏️ 이야기</b><span>카드 3장 · 3문장</span><small>추가 미션 1개</small>
+          <b>✏️ 이야기</b><span>재료 4개 · 작가 미션 1개</span><small>3부분 · 55자 이상</small>
         </button>
         <button class="difficulty" data-level="hard" type="button">
-          <b>🔥 도전</b><span>카드 4장 · 4문장</span><small>추가 미션 2개</small>
+          <b>🔥 작가 도전</b><span>재료 5개 · 작가 미션 2개</span><small>3부분 · 90자 이상</small>
         </button>
       </div>
-      <button id="startBtn" class="primary big" type="button">카드 뽑고 시작하기</button>
+      <button id="startBtn" class="primary big" type="button">이야기 재료 뽑기</button>
     </div>
   </section>
 
@@ -56,9 +56,9 @@
       <aside class="mission-panel">
         <div class="panel-head">
           <div><span class="step">1</span><b>이야기 재료</b></div>
-          <button id="shuffleBtn" class="mini-btn" type="button">↻ 다시 뽑기</button>
+          <button id="shuffleBtn" class="mini-btn" type="button">↻ 재료 다시 뽑기</button>
         </div>
-        <p class="muted">아래 카드가 <b>모두</b> 이야기 속에 나오게 해 보세요.</p>
+        <p class="muted">각 카드에는 역할이 있어요. 재료를 <b>모두</b> 이야기 속에 자연스럽게 넣어 보세요.</p>
         <div id="cardList" class="card-list"></div>
         <div id="challengeBox" class="challenge-box"></div>
       </aside>
@@ -68,8 +68,40 @@
           <div><span class="step">2</span><b>이야기 쓰기</b></div>
           <div class="live-stats"><span id="sentenceStat">0문장</span><span id="charStat">0자</span></div>
         </div>
-        <input id="titleInput" class="title-input" maxlength="40" placeholder="제목을 붙여 볼까요? (선택)">
-        <textarea id="storyInput" spellcheck="false" placeholder="그림을 보고 떠오르는 이야기를 자유롭게 써 보세요.&#10;&#10;처음에는 맞춤법을 걱정하지 않아도 괜찮아요."></textarea>
+        <input id="titleInput" class="title-input" maxlength="40" placeholder="제목은 마지막에 붙여도 좋아요. (선택)">
+        <div class="story-sections">
+          <section class="story-section start">
+            <div class="story-section-head">
+              <div><span class="part-no">①</span><b>처음</b><small>누가, 어디에서 시작하나요?</small></div>
+              <div class="starter-chips">
+                <button type="button" class="starter-chip" data-target="storyStart" data-text="어느 날, ">어느 날</button>
+                <button type="button" class="starter-chip" data-target="storyStart" data-text="처음에는 ">처음에는</button>
+              </div>
+            </div>
+            <textarea id="storyStart" class="story-part" spellcheck="false" placeholder="주인공과 장소를 소개해 보세요."></textarea>
+          </section>
+          <section class="story-section middle">
+            <div class="story-section-head">
+              <div><span class="part-no">②</span><b>가운데</b><small>어떤 사건이나 문제가 생기나요?</small></div>
+              <div class="starter-chips">
+                <button type="button" class="starter-chip" data-target="storyMiddle" data-text="그때, ">그때</button>
+                <button type="button" class="starter-chip" data-target="storyMiddle" data-text="그런데 갑자기 ">갑자기</button>
+              </div>
+            </div>
+            <textarea id="storyMiddle" class="story-part" spellcheck="false" placeholder="사건이 벌어지고 주인공이 무엇을 하는지 써 보세요."></textarea>
+          </section>
+          <section class="story-section end">
+            <div class="story-section-head">
+              <div><span class="part-no">③</span><b>끝</b><small>어떻게 해결되고 무엇이 달라졌나요?</small></div>
+              <div class="starter-chips">
+                <button type="button" class="starter-chip" data-target="storyEnd" data-text="마침내 ">마침내</button>
+                <button type="button" class="starter-chip" data-target="storyEnd" data-text="그 후, ">그 후</button>
+              </div>
+            </div>
+            <textarea id="storyEnd" class="story-part" spellcheck="false" placeholder="해결 방법과 마지막 장면을 써 보세요."></textarea>
+          </section>
+        </div>
+        <div class="writing-tip">💡 맞춤법은 아직 걱정하지 않아도 돼요. 지금은 이야기가 이어지게 만드는 데 집중해요.</div>
         <div id="missionStatus" class="mission-status"></div>
         <button id="inspectBtn" class="primary" type="button">🔎 이야기 확인하기</button>
       </section>
@@ -136,6 +168,6 @@
 <script src="../../kidscade-game-sdk.js" data-game-id="high_story_builder" data-title="이야기 조립소" data-shell="true" data-orientation="any"></script>
 <script src="../../data/spelling-quiz-expanded.js?v=20260930-1"></script>
 <script src="./spelling-extra.js?v=4"></script>
-<script src="./game.js?v=4"></script>
+<script src="./game.js?v=5"></script>
 </body>
 </html>
