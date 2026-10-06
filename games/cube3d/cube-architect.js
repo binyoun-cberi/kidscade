@@ -1068,6 +1068,16 @@ const BLOCK_DEFS={
   woodSword:{name:'나무 검',icon:'🗡',color:0xb88b5b,category:'기능',solid:false,hidden:true},
   stoneSword:{name:'돌 검',icon:'🗡',color:0x87919a,category:'기능',solid:false,hidden:true},
   ironSword:{name:'철 검',icon:'🗡',color:0xcbd4db,category:'기능',solid:false,hidden:true},
+  paddedHelmet:{name:'양털 모자',icon:'🪖',color:0xe9e3dc,category:'기능',solid:false,hidden:true},
+  paddedChest:{name:'양털 보호복',icon:'🦺',color:0xe4ded5,category:'기능',solid:false,hidden:true},
+  paddedLegs:{name:'양털 보호바지',icon:'👖',color:0xddd7cf,category:'기능',solid:false,hidden:true},
+  paddedBoots:{name:'양털 보호신발',icon:'🥾',color:0xd6cfc5,category:'기능',solid:false,hidden:true},
+  woodShield:{name:'나무 방패',icon:'🛡',color:0x9b744b,category:'기능',solid:false,hidden:true},
+  ironHelmet:{name:'철 투구',icon:'🪖',color:0xcbd4db,category:'기능',solid:false,hidden:true},
+  ironChest:{name:'철 흉갑',icon:'🦺',color:0xbfc8cf,category:'기능',solid:false,hidden:true},
+  ironLegs:{name:'철 각반',icon:'👖',color:0xb4bdc5,category:'기능',solid:false,hidden:true},
+  ironBoots:{name:'철 장화',icon:'🥾',color:0xaab4bd,category:'기능',solid:false,hidden:true},
+  ironShield:{name:'철 방패',icon:'🛡',color:0xbec8d0,category:'기능',solid:false,hidden:true},
   wildBerry:{name:'산딸기',icon:'🫐',color:0xb1476b,category:'자연',solid:false,hidden:true},
   egg:{name:'달걀',icon:'🥚',color:0xf5e8c7,category:'자연',solid:false,hidden:true},
   cookedEgg:{name:'구운 달걀',icon:'🍳',color:0xf2c85f,category:'자연',solid:false,hidden:true},
@@ -1108,6 +1118,15 @@ const BLOCK_DEFS={
 };
 const PLACEABLE_TYPES=['flower','sandstone','snowBrick','reedMat','woolMat','snow','redSand','gravel','pineLog','pineLeaves','cactus','reed','workbench','grass','dirt','stone','smoothStone','sand','clay','ironOre','log','leaves','sapling','planks','brick','glass','glassPane','windowFrame','slab','stairs','roof','cuboid','obsidian','ironBlock','charcoal','door','torch','furnace','water','lava','fire'];
 const HOTBAR_TOOL_TYPES=['woodPick','stonePick','ironPick','woodSword','stoneSword','ironSword'];
+const SURVIVAL_GEAR_DEFS={
+  paddedHelmet:{slot:'head',defense:.04,tier:1},paddedChest:{slot:'chest',defense:.10,tier:1},
+  paddedLegs:{slot:'legs',defense:.07,tier:1},paddedBoots:{slot:'feet',defense:.04,tier:1},
+  woodShield:{slot:'shield',defense:.12,tier:1},
+  ironHelmet:{slot:'head',defense:.08,tier:2},ironChest:{slot:'chest',defense:.18,tier:2},
+  ironLegs:{slot:'legs',defense:.13,tier:2},ironBoots:{slot:'feet',defense:.08,tier:2},
+  ironShield:{slot:'shield',defense:.20,tier:2}
+};
+const SURVIVAL_GEAR_TYPES=Object.keys(SURVIVAL_GEAR_DEFS);
 const CONSUMABLE_TYPES={
   wildBerry:{heal:1,label:'산딸기'},
   cookedEgg:{heal:2,label:'구운 달걀'}
@@ -1116,6 +1135,7 @@ const WORLD_HALF=96,WORLD_MIN_Y=-6,WORLD_MAX_Y=48,SEA_LEVEL=0;
 const WORLD_VIEW_RADIUS=mobileModeEnabled?21:30;
 let streamCenterX=Infinity,streamCenterZ=Infinity;
 let gameFreeMode='survival',survivalBag={},survivalStage=0,freePhysicsY=0,legacyWorld=false,savedFreePosition=null,visitedBiomes=new Set();
+let survivalEquipment={head:'',chest:'',legs:'',feet:'',shield:''},survivalDamageCarry=0;
 let survivalStats={},survivalFinished=false,survivalExposure=0,survivalTimeAcc=0,firstNightStarted=false;
 let discoveredLandmarks=new Set(),restoredLandmarks=new Set(),unlockedTech=new Set();
 let nearLandmarkPoi=null,restorationSession=null,dungeonSession=null;
@@ -2057,7 +2077,7 @@ function prepareFreeAvatar(now){
   freeAvatarRoot.scale.x=freeAvatarFacingRight?-1:1;
   freeAvatarRoot.visible=freeViewMode==='third';
   const motion=freeFluidKind?'swim':freeFlying?'air':onGround?'ground':'air';
-  api.animate(freeAvatarRoot,now,moving,onGround||freeFlying,motion,freeAvatarActionAt(now));
+  api.animate(freeAvatarRoot,now,moving,onGround||freeFlying,motion,freeAvatarActionAt(now),survivalCombatAppearance());
 }
 function freeLookVector(){
   return new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(pitch,yaw,0,'YXZ')).normalize();
@@ -3019,7 +3039,8 @@ function initFree(){
     }
   }catch(_){}
   legacyWorld=!!(storedCreative?.legacyTerrain||previous);
-  buildFreeWorld();loadFreeWorld();
+  buildFreeWorld();if(gameFreeMode==='survival'){survivalEquipment={head:'',chest:'',legs:'',feet:'',shield:''};survivalDamageCarry=0}
+  loadFreeWorld();
   const ground=getHighestSolidY(0,5,10);
   const spawn=savedFreePosition&&savedFreePosition.length===3?savedFreePosition:
     [0,ground+1+1.62,5];
@@ -3053,6 +3074,59 @@ function initFree(){
   showTutorial('free');
 }
 function bagCount(type){return Math.max(0,Number(survivalBag[type])||0)}
+function gearDef(type){return SURVIVAL_GEAR_DEFS[type]||null}
+function survivalProtection(){
+  return Math.min(.65,Object.values(survivalEquipment||{}).reduce((sum,type)=>sum+(gearDef(type)?.defense||0),0));
+}
+function survivalCombatAppearance(){
+  if(gameFreeMode!=='survival')return null;
+  return {
+    head:survivalEquipment.head||'',chest:survivalEquipment.chest||'',legs:survivalEquipment.legs||'',
+    feet:survivalEquipment.feet||'',shield:survivalEquipment.shield||'',
+    weapon:HOTBAR_TOOL_TYPES.includes(selectedType)?selectedType:''
+  };
+}
+function equippedGearLabel(slot){
+  const type=survivalEquipment?.[slot]||'';
+  return type?blockDef(type).name:'비어 있음';
+}
+function equipSurvivalGear(type,announce=true){
+  const def=gearDef(type);if(!def||bagCount(type)<1)return false;
+  survivalEquipment={...survivalEquipment,[def.slot]:type};
+  survivalDamageCarry=Math.min(survivalDamageCarry,.99);
+  if(announce)toast(blockDef(type).name+' 장착 · 방어 '+Math.round(survivalProtection()*100)+'%');
+  updateSurvivalEquipmentUi();updateCreatureHealthUi();markFreeWorldDirty(250);return true;
+}
+function unequipSurvivalGear(slot){
+  if(!survivalEquipment?.[slot])return;
+  survivalEquipment={...survivalEquipment,[slot]:''};
+  updateSurvivalEquipmentUi();updateCreatureHealthUi();markFreeWorldDirty(250);
+}
+function maybeEquipCraftedGear(type){
+  const def=gearDef(type);if(!def)return false;
+  const current=survivalEquipment?.[def.slot]||'',cur=gearDef(current);
+  if(!current||def.tier>(cur?.tier||0)){equipSurvivalGear(type,false);return true}
+  return false;
+}
+function updateSurvivalEquipmentUi(){
+  const root=$('survivalEquipmentPanel');if(!root)return;
+  root.classList.toggle('hidden',gameFreeMode!=='survival');
+  const protection=Math.round(survivalProtection()*100);
+  const value=$('survivalArmorValue');if(value)value.textContent='방어 '+protection+'%';
+  root.querySelectorAll('[data-gear-slot]').forEach(button=>{
+    const slot=button.dataset.gearSlot,type=survivalEquipment?.[slot]||'';
+    button.classList.toggle('equipped',!!type);
+    const name=button.querySelector('b'),sub=button.querySelector('small');
+    if(name)name.textContent=type?blockDef(type).name:({head:'머리',chest:'몸통',legs:'다리',feet:'신발',shield:'방패'}[slot]||slot);
+    if(sub)sub.textContent=type?'눌러서 벗기':'비어 있음';
+    button.onclick=()=>{if(type){unequipSurvivalGear(slot);buildInventory('전체')}};
+  });
+  const hud=$('survivalArmor');if(hud){
+    hud.classList.toggle('hidden',gameFreeMode!=='survival');
+    hud.textContent='🛡 '+protection+'%';
+    hud.title='장비 방어율 '+protection+'%';
+  }
+}
 function hasWorkbench(){
   const x=Math.round(camera.position.x),z=Math.round(camera.position.z);
   for(let dx=-3;dx<=3;dx++)for(let dz=-3;dz<=3;dz++)
@@ -3175,7 +3249,7 @@ function recipePossible(recipe){
     Object.entries(recipe.needs).every(([item,amount])=>bagCount(item)>=amount);
 }
 function recipeCategory(recipe){
-  if(['workbench','woodPick','stonePick','ironPick','woodSword','stoneSword','ironSword','furnace'].includes(recipe.id))return '도구';
+  if(['workbench','woodPick','stonePick','ironPick','woodSword','stoneSword','ironSword','furnace',...SURVIVAL_GEAR_TYPES].includes(recipe.id))return '도구';
   const type=Object.keys(recipe.gives||{})[0],cat=blockDef(type).category;
   if(['건축','기능','도형'].includes(cat))return '건축';
   return '재료';
@@ -3184,7 +3258,7 @@ function visibleSurvivalRecipes(){
   const biomeRecipes={flowerDye:'flowers',reedMat:'marsh',sandstone:'desert',
     snowBrick:'snow',cactusDye:'desert'};
   return worldRules.RECIPES.filter(r=>discoveredRecipeIds.has(r.id)&&r.stage<=survivalStage&&recipeUnlocked(r.id)&&
-    (!['workbench','woodPick','stonePick','ironPick','woodSword','stoneSword','ironSword'].includes(r.id)||!bagCount(r.id))&&
+    (!['workbench','woodPick','stonePick','ironPick','woodSword','stoneSword','ironSword',...SURVIVAL_GEAR_TYPES].includes(r.id)||!bagCount(r.id))&&
     (!biomeRecipes[r.id]||visitedBiomes.has(biomeRecipes[r.id])||
       Object.keys(r.needs).some(item=>bagCount(item)>0)))
     .sort((a,b)=>Number(recipePossible(b))-Number(recipePossible(a))||a.stage-b.stage);
@@ -3244,8 +3318,10 @@ function craftSurvival(recipe){
     if(recipe.id==='cactusDye'){$('facePaintColor').value='#67a74a';facePaintColor='#67a74a'}
     trackSurvival('craft',recipe.id);
     if(HOTBAR_TOOL_TYPES.includes(recipe.id))putOnHotbar(recipe.id);
-    craftingBusy=false;buildHotbar();buildInventory('전체');markFreeWorldDirty(450);
+    const autoEquipped=maybeEquipCraftedGear(recipe.id);
+    craftingBusy=false;buildHotbar();buildInventory('전체');updateSurvivalEquipmentUi();markFreeWorldDirty(450);
     toast(recipe.name+' 제작 완료!'+(HOTBAR_TOOL_TYPES.includes(recipe.id)?' 바로 사용할 수 있게 핫바에 들었어요.':
+      autoEquipped?' 더 좋은 장비라서 바로 착용했어요.':
       recipe.id.endsWith('Dye')?' 새로운 색을 면 색칠에 선택했어요.':''));
     sfx('good');
   },420);
@@ -3280,7 +3356,7 @@ function buildInventory(category='전체'){
   $('shapeWorkbench').classList.toggle('hidden',survival?
     survivalStage<3||!hasWorkbench():!(category==='도형'||category==='전체'));
   $('inventoryNote').textContent=survival?
-    '제작대를 설치하면 2×1×1 직육면체 설계가 열려요. 평화 생물은 F로 상호작용하고, 회복 음식은 가방에서 눌러 먹을 수 있어요.':
+    '제작대를 설치하면 도형과 장비 제작이 열려요. 방어구·방패는 가방에서 눌러 장착하고, 검·곡괭이는 핫바에서 사용해요.':
     '물·모래·불과 식물은 서로 다른 물리·화학적 성질을 갖고 있어요.';
   if(survival){
     const resources=Object.entries(survivalBag).filter(([type,n])=>n>0)
@@ -3288,14 +3364,18 @@ function buildInventory(category='전체'){
     for(const [type,n] of resources){
       const d=blockDef(type),b=document.createElement('button');
       b.className='inventory-item';const hex='#'+(d.color||0xffffff).toString(16).padStart(6,'0');
-      const edible=!!CONSUMABLE_TYPES[type];
-      b.innerHTML='<i style="--swatch:'+hex+'">'+(d.icon||'▣')+'</i><b>'+d.name+'</b><small>보유 '+n+'개'+(edible?' · 눌러서 먹기':'')+'</small>';
+      const edible=!!CONSUMABLE_TYPES[type],gear=gearDef(type),equipped=gear&&survivalEquipment?.[gear.slot]===type;
+      b.classList.toggle('equipped-gear',!!equipped);
+      b.innerHTML='<i style="--swatch:'+hex+'">'+(d.icon||'▣')+'</i><b>'+d.name+'</b><small>보유 '+n+'개'+
+        (edible?' · 눌러서 먹기':gear?(equipped?' · 장착 중':' · 눌러서 장착'):'')+'</small>';
       if(edible)b.onclick=()=>consumeFood(type);
+      else if(gear)b.onclick=()=>{equipSurvivalGear(type);buildInventory('전체')};
       else if(PLACEABLE_TYPES.includes(type)||HOTBAR_TOOL_TYPES.includes(type))b.onclick=()=>{putOnHotbar(type);toast(d.name+'을(를) 핫바에 넣었어요.')};
       else b.disabled=true;
       grid.appendChild(b);
     }
     if(!resources.length)grid.textContent='가방이 비어 있어요. 먼저 주변의 나무를 채집해 보세요.';
+    updateSurvivalEquipmentUi();
     const list=$('survivalCraftList');list.innerHTML='';
     const visible=visibleSurvivalRecipes();updateCraftDiscoveryHud();
     const discoverySummary=$('craftDiscoverySummary');
@@ -4065,7 +4145,7 @@ function markFreeWorldDirty(delay=1200){
 }
 function saveFreeWorld(){
   if(mode!=='free')return;
-  const data={version:12,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
+  const data={version:13,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
     collected:Array.from(collected),hotbar:hotbarTypes,selected:selectedHotbarSlot,
     dayTime,cuboidSpec:currentCuboidSpec,facePaintColor,
     position:[camera.position.x,freePhysicsY,camera.position.z],
@@ -4073,6 +4153,7 @@ function saveFreeWorld(){
     discoveredResources:[...discoveredResources],discoveredRecipes:[...discoveredRecipeIds],unreadRecipes:[...unreadRecipeIds],
     stats:survivalStats,finished:survivalFinished,exposure:survivalExposure,
     firstNightStarted,health:survivalHealth,worldTime:survivalWorldTime,
+    equipment:{...survivalEquipment},damageCarry:survivalDamageCarry,
     creatureDefeats:{...creatureDefeats},creatureForageAt:{...creatureForageAt},
     seenCreatures:[...seenCreatureKinds],nextEliteSpawnCheckAt,
     discoveredLandmarks:[...discoveredLandmarks],restoredLandmarks:[...restoredLandmarks],
@@ -4143,6 +4224,13 @@ function loadFreeWorld(){
         }
         survivalExposure=Math.max(0,Math.min(100,Number(data.exposure)||0));
         survivalHealth=Math.max(1,Math.min(5,Number(data.health)||5));
+        const savedEquipment=data.equipment&&typeof data.equipment==='object'?data.equipment:{};
+        survivalEquipment={head:'',chest:'',legs:'',feet:'',shield:'',...savedEquipment};
+        for(const slot of ['head','chest','legs','feet','shield']){
+          const type=survivalEquipment[slot];
+          if(!gearDef(type)||gearDef(type).slot!==slot||bagCount(type)<1)survivalEquipment[slot]='';
+        }
+        survivalDamageCarry=Math.max(0,Math.min(.999,Number(data.damageCarry)||0));
         survivalWorldTime=Math.max(0,Number(data.worldTime)||0);
         creatureDefeats=data.creatureDefeats&&typeof data.creatureDefeats==='object'?{...data.creatureDefeats}:{};
         creatureForageAt=data.creatureForageAt&&typeof data.creatureForageAt==='object'?{...data.creatureForageAt}:{};
@@ -4587,7 +4675,8 @@ function updateCreatureHealthUi(){
   const el=$('survivalHealth');if(!el)return;
   el.classList.toggle('hidden',gameFreeMode!=='survival');
   el.textContent='♥'.repeat(Math.max(0,survivalHealth))+'♡'.repeat(Math.max(0,5-survivalHealth));
-  el.title='생명 '+survivalHealth+'/5';
+  el.title='생명 '+survivalHealth+'/5 · 방어 '+Math.round(survivalProtection()*100)+'%';
+  updateSurvivalEquipmentUi();
 }
 function beginFreeAvatarDefeat(now=performance.now()){
   if(freeAvatarDefeated)return;
@@ -4599,7 +4688,7 @@ function beginFreeAvatarDefeat(now=performance.now()){
 }
 function returnAfterCreatureDefeat(){
   camera.position.set(0,safeReturnEyeY(),5);freePhysicsY=camera.position.y;
-  freeVelocityY=0;onGround=true;survivalHealth=5;healthRegenClock=0;survivalBreath=100;freeFallPeakY=freePhysicsY;
+  freeVelocityY=0;onGround=true;survivalHealth=5;survivalDamageCarry=0;healthRegenClock=0;survivalBreath=100;freeFallPeakY=freePhysicsY;
   freeAvatarDefeated=false;freeAvatarReturnAt=0;freeAvatarAction='';freeAvatarActionStartedAt=0;freeAvatarActionUntil=0;
   const restoreView=freeViewBeforeDefeat;freeViewBeforeDefeat=null;
   if(restoreView&&restoreView!==freeViewMode)setFreeView(restoreView,false);
@@ -4610,11 +4699,15 @@ function returnAfterCreatureDefeat(){
 function damageByCreature(root,t){
   if(gameFreeMode!=='survival'||freeAvatarDefeated||t-lastCreatureDamage<1250||root.userData.dead||root.userData.assembling)return;
   lastCreatureDamage=t;healthRegenClock=0;root.userData.attackUntil=t+420;freeHitStopUntil=Math.max(freeHitStopUntil,t+50);
-  const amount=Math.max(1,root.userData.spec.damage||1);
-  survivalHealth=Math.max(0,survivalHealth-amount);
+  const rawAmount=Math.max(1,root.userData.spec.damage||1),protection=survivalProtection();
+  survivalDamageCarry+=rawAmount*(1-protection);
+  const amount=Math.floor(survivalDamageCarry+1e-6);
+  if(amount>0){survivalDamageCarry=Math.max(0,survivalDamageCarry-amount);survivalHealth=Math.max(0,survivalHealth-amount)}
   const dx=camera.position.x-root.position.x,dz=camera.position.z-root.position.z,len=Math.hypot(dx,dz)||1;
   const push=.62;moveFreeHorizontal(dx/len*push,dz/len*push);
-  toast(root.userData.spec.name+'에게 부딪혔어요! '+('♥'.repeat(survivalHealth)||'생명 0'));
+  toast(amount>0?
+    root.userData.spec.name+'에게 공격받았어요! · 방어 '+Math.round(protection*100)+'% · '+('♥'.repeat(survivalHealth)||'생명 0'):
+    '🛡 장비가 '+root.userData.spec.name+'의 공격을 막았어요!');
   const hud=$('freeHud');hud?.classList.add('player-hurt');setTimeout(()=>hud?.classList.remove('player-hurt'),180);
   updateCreatureHealthUi();
   if(survivalHealth<=0)beginFreeAvatarDefeat(t);
