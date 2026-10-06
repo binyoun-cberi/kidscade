@@ -158,6 +158,7 @@
             #battle-xp{left:6px;right:6px;top:42px}
         }
     </style>
+    <script src="./hanja-avatar.js?v=1"></script>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
 
@@ -166,7 +167,7 @@
         <h1 class="text-4xl md:text-6xl font-black text-blue-400 title-font mb-4 drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]">
             <i class="ph-fill ph-shield-checkered text-blue-500"></i> 漢字 守護戰
         </h1>
-        <p class="text-slate-300 text-sm md:text-lg mb-3 max-w-lg">8급 한자 50자를 처음부터 전부 사용할 수 있어요. 좋아하는 한자를 골라 쓰고, 경험치를 모아 각 마법을 성장시키세요!</p>
+        <p class="text-slate-300 text-sm md:text-lg mb-3 max-w-lg">내 키즈케이드 아바타가 한자 수호자가 됩니다. 8급 한자 50자를 직접 써서 주문을 발동하고, 경험치를 모아 각 마법을 성장시키세요!</p>
         <p class="text-[11px] md:text-sm text-cyan-300 mb-8 max-w-lg">낮은 레벨에서는 피해·범위·지속시간이 약하지만, 숙련 레벨이 오를수록 눈에 띄게 강해집니다.</p>
         <button id="btn-start-game" class="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-2xl text-xl transition-all shadow-[0_0_20px_rgba(79,70,229,0.5)] transform hover:scale-105">
             게임 시작
@@ -177,7 +178,7 @@
     <header class="bg-slate-900 border-b border-slate-800 py-2 px-4 md:px-6 flex justify-between items-center z-10 shrink-0">
         <h1 class="text-base md:text-2xl font-black text-blue-400 title-font flex items-center gap-1.5">
             <i class="ph-fill ph-shield-checkered text-blue-500"></i>
-            漢字 守護戰 <span class="text-[9px] font-semibold text-slate-300 bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded ml-1">v3.0 숙련도 에디션</span>
+            漢字 守護戰 <span class="text-[9px] font-semibold text-slate-300 bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded ml-1">아바타 수호자 에디션</span>
         </h1>
         <div class="flex items-center gap-3">
             <div class="text-[11px] bg-slate-950 px-2 py-1 rounded border border-slate-800 text-yellow-300 font-bold hidden sm:block">
@@ -3205,6 +3206,7 @@
         // 게임 오버 혹은 게임 승리 완료 화면 분기
         // ----------------------------------------------------
         function endTheGame(victory = false) {
+            if (!victory) window.KidscadeHanjaAvatar?.death?.(1400);
             isRunning = false;
             clearInterval(timerInterval);
 
@@ -3244,6 +3246,7 @@
         // 게임 시스템 재실행 / 초기 리셋 루프
         // ----------------------------------------------------
         function restartGame() {
+            window.KidscadeHanjaAvatar?.reset?.();
             document.getElementById('end-modal').classList.add('hidden');
             
             score = 0;
