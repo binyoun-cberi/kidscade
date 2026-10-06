@@ -6,17 +6,45 @@ const root=path.resolve(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'games/math_base10_blocks/우리 동네 마트 계산대.html'),'utf8');
 const js=fs.readFileSync(path.join(root,'games/math_base10_blocks/market-walk.js'),'utf8');
 
-test('walkable market uses shopping and self checkout flow',()=>{
-  assert.match(html,/직접 장보고, 직접 계산해요/);
-  assert.match(html,/SELF CHECKOUT/);
-  assert.match(js,/state\.phase='shopping'/);
-  assert.match(js,/function openCheckout/);
-  assert.match(js,/function tryPick/);
-  assert.match(js,/function updatePlayer/);
-  assert.doesNotMatch(js,/CUSTOMER_LINES|advanceCustomer|대기 손님/);
+test('neighborhood mart is a free-form life simulator instead of a shopping-list mission',()=>{
+  assert.match(html,/우리 동네에서 먹고 살아보기/);
+  assert.match(html,/정해진 장보기 목록은 없어요/);
+  assert.doesNotMatch(html,/class="missionCard"|id="shoppingList"/);
+  assert.match(js,/WEEKLY_BUDGET=35000/);
+  assert.match(js,/function buildHome\(/);
+  assert.match(js,/function buildStore\(/);
+  assert.match(js,/function rollEvent\(/);
+  assert.match(js,/dailyKcal/);
 });
 
-test('walkable market required assets exist',()=>{
+test('market is first-person, cart based, and checkout requires manual arithmetic',()=>{
+  assert.match(js,/PerspectiveCamera\(62/);
+  assert.match(js,/function tryTakeMarketProduct\(/);
+  assert.match(js,/function putHeldInCart\(/);
+  assert.match(js,/async function spawnCart\(/);
+  assert.match(html,/총액 직접 계산/);
+  assert.match(html,/거스름돈 직접 계산/);
+  assert.doesNotMatch(html,/id="checkoutTotal"/);
+  assert.match(js,/function submitTotal\(/);
+  assert.match(js,/function submitChange\(/);
+});
+
+test('home kitchen supports physical storage, cooking, quick food, and eating',()=>{
+  assert.match(js,/interactable\('fridge'/);
+  assert.match(js,/interactable\('pantry'/);
+  assert.match(js,/interactable\('counter'/);
+  assert.match(js,/interactable\('stove'/);
+  assert.match(js,/interactable\('microwave'/);
+  assert.match(js,/interactable\('table'/);
+  assert.match(js,/async function cookPrep\(/);
+  assert.match(js,/async function microwaveHeld\(/);
+  assert.match(js,/async function eatAtTable\(/);
+  assert.match(js,/protein:/);
+  assert.match(js,/sodium:/);
+  assert.match(js,/sugar:/);
+});
+
+test('required 3D market and food assets exist',()=>{
   const required=[
     'assets/game/shops/market/cash-register.glb',
     'assets/game/shops/market/shopping-cart.glb',
@@ -26,11 +54,11 @@ test('walkable market required assets exist',()=>{
     'assets/game/shops/market/freezers-standing.glb',
     'assets/game/shops/market/shelf-boxes.glb',
     'assets/game/shops/market/shelf-bags.glb',
-    'assets/game/shops/market/shelf-end.glb',
     'assets/game/food/apple.glb',
-    'assets/game/food/carton.glb',
-    'assets/game/food/pizza.glb',
-    'assets/game/characters/people/character-male-a.glb'
+    'assets/game/food/egg.glb',
+    'assets/game/food/tomato.glb',
+    'assets/game/food/fish.glb',
+    'assets/game/food/pizza.glb'
   ];
   for(const rel of required)assert.ok(fs.existsSync(path.join(root,rel)),'missing asset: '+rel);
 });
