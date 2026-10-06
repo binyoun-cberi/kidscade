@@ -2,6 +2,33 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "kor_hand_twist_typing",
+      "addedAt": "2026-10-06T21:12:00+09:00",
+      "title": "손 꼬임 타자왕",
+      "href": "games/kor_hand_twist_typing/index.html?v=1",
+      "category": "korean",
+      "age": "low",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "⌨️",
+      "description": "30초 동안 오늘의 손 꼬임 문장을 외운 뒤 원문 없이 30초 동안 최대한 많이 반복 입력하는 1분 타자 대결. 일반전과 입력까지 숨기는 블라인드전을 지원합니다.",
+      "subject": "korean",
+      "genre": "action",
+      "difficulty": "easy",
+      "sessionMinutes": 1,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "math_pi_memory",
       "addedAt": "2026-10-06T20:32:00+09:00",
       "title": "원주율 외우기",
