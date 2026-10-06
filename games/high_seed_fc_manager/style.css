@@ -220,3 +220,39 @@ button{border:0;cursor:pointer;color:inherit}
   .control-toggle{max-width:98px;white-space:normal;line-height:1.1;padding:6px;font-size:9px}
   .speed-group{gap:3px}.speed{padding:6px 7px;font-size:10px}
 }
+
+
+/* v14 · 첫 경기 실전 튜토리얼 + 분석실 대시보드 */
+.pitch-wrap{position:relative}
+.match-tutorial{position:absolute;z-index:12;left:50%;top:18px;transform:translateX(-50%);width:min(520px,calc(100% - 28px));padding:14px 15px;border-radius:18px;background:rgba(8,24,40,.96);border:2px solid rgba(125,211,252,.74);box-shadow:0 18px 50px rgba(0,0,0,.38);backdrop-filter:blur(10px)}
+.match-tutorial-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.match-tutorial-head span{font-size:11px;font-weight:1000;letter-spacing:.06em;color:#7dd3fc}
+.match-tutorial-head button{padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.08);font-size:10px;font-weight:900;color:#cbd5e1}
+.match-tutorial strong{display:block;font-size:18px;line-height:1.3}
+.match-tutorial p{margin:7px 0;color:#d7e5f3;font-size:12px;line-height:1.55}
+.match-tutorial-goal{padding:9px 10px;border-radius:11px;background:#0b3550;border:1px solid rgba(125,211,252,.28);font-size:12px;font-weight:900;color:#e0f2fe}
+.match-tutorial-goal.done{background:#123c2d;border-color:rgba(74,222,128,.42);color:#bbf7d0}
+.match-tutorial-actions{display:flex;gap:7px;margin-top:9px}.match-tutorial-actions button{padding:7px 10px;font-size:11px}
+.match-tutorial.waiting #matchTutorialNext{display:none}
+.match-tutorial.intro #matchTutorialSkipStep{display:none}
+.match-tutorial.complete{border-color:rgba(74,222,128,.72);background:rgba(8,42,34,.96)}
+.tutorial-target{position:relative;z-index:13!important;box-shadow:0 0 0 4px rgba(250,204,21,.45),0 0 30px rgba(250,204,21,.28)!important;animation:tutorialTargetPulse .75s ease-in-out infinite alternate}
+@keyframes tutorialTargetPulse{from{filter:brightness(1)}to{filter:brightness(1.18)}}
+
+.analysis-overview{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:14px;margin-bottom:16px}
+.analysis-summary,.analysis-latest,.analysis-leaders{padding:16px;border-radius:18px;background:linear-gradient(180deg,#142943,#0e2036);border:1px solid rgba(255,255,255,.09)}
+.analysis-summary h3,.analysis-latest h3,.analysis-leaders h3{margin:0 0 10px}
+.analysis-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.analysis-kpis>div{padding:10px;border-radius:12px;background:rgba(255,255,255,.055);text-align:center}.analysis-kpis b{display:block;font-size:22px}.analysis-kpis small{display:block;margin-top:3px;color:#9fb3c8;font-size:10px}
+.analysis-record{display:flex;align-items:center;gap:8px;margin:9px 0 12px}.analysis-record span{padding:6px 9px;border-radius:999px;background:#1b3552;font-size:11px;font-weight:900}.analysis-record .win{background:#14532d;color:#bbf7d0}.analysis-record .draw{background:#4a3d15;color:#fde68a}.analysis-record .loss{background:#4c1d1d;color:#fecaca}
+.analysis-quick{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.analysis-quick button{padding:9px 8px;border-radius:11px;background:#1d3551;font-size:11px;font-weight:900}.analysis-quick button:hover{background:#28486c}
+.analysis-trend{display:grid;grid-template-columns:repeat(6,minmax(34px,1fr));gap:5px;margin-top:9px}.analysis-trend span{display:grid;place-items:center;min-height:38px;border-radius:9px;background:#1a2d45;font-size:10px;font-weight:1000}.analysis-trend .w{background:#14532d;color:#bbf7d0}.analysis-trend .d{background:#4a3d15;color:#fde68a}.analysis-trend .l{background:#4c1d1d;color:#fecaca}
+.analysis-leader-list{display:grid;gap:7px}.analysis-leader-list>div{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:9px 10px;border-radius:11px;background:rgba(255,255,255,.05)}.analysis-leader-list b{font-size:12px}.analysis-leader-list small{color:#9fb3c8}
+.replay-card{gap:12px}.replay-card-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.replay-card-actions button{padding:8px 10px;border-radius:10px;background:#213b59;font-size:11px;font-weight:900}.replay-card-actions .primary{background:linear-gradient(135deg,#34d399,#22c55e)}
+.analysis-empty-actions{display:flex;gap:8px;margin-top:12px}
+
+@media(max-width:900px){.analysis-overview{grid-template-columns:1fr}.analysis-kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:650px){
+  .match-tutorial{top:8px;padding:10px 11px;width:calc(100% - 18px)}.match-tutorial strong{font-size:15px}.match-tutorial p,.match-tutorial-goal{font-size:10px}.match-tutorial-actions button{font-size:9px;padding:6px 8px}
+  .analysis-kpis{grid-template-columns:repeat(2,1fr)}.analysis-quick{grid-template-columns:1fr}.analysis-trend{grid-template-columns:repeat(3,1fr)}.replay-card-actions{justify-content:flex-start}
+}
