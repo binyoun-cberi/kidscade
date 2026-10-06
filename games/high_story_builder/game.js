@@ -224,7 +224,6 @@ function sentenceCount(t){
   return Math.max(1,parts.length);
 }
 function escapeRegExp(s){return String(s).replace(/[-/\\^$*+?.()|[\]{}]/g,'\\$&')}
-function containsAlias(text,card){return card.aliases.some(a=>text.includes(a))}')}
 function containsAlias(text,card){
   const source=String(text||'');
   const suffix='(?:이|가|은|는|을|를|와|과|도|만|의|에|에서|에게|으로|로|랑|하고|부터|까지|처럼|보다)';
