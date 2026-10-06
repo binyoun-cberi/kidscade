@@ -508,3 +508,6 @@ linear-gradient(145deg,#9bd8ff 0%,#d9f3de 48%,#fff0ba 100%)}
   .mobile-action-hub{right:98px;top:50%;margin-top:-31px;bottom:auto;width:62px;height:62px;min-width:62px;min-height:62px}
   .radial-up{top:-116px}.radial-down{top:68px}.radial-right{left:50px}.radial-left{left:-116px}
 }
+
+#mobileControls.radial-open{z-index:58}
+.mobile-action-hub.tutorial-focus{position:absolute}
