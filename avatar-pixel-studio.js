@@ -1269,12 +1269,14 @@ function frameAt(mode,timeSec=0){
 const COMBAT_GEAR_PALETTES={
   padded:{dark:'#8f8175',mid:'#d8cec3',light:'#f4efe9',accent:'#b89f83'},
   iron:{dark:'#5f6973',mid:'#aeb9c3',light:'#e6edf2',accent:'#7e91a3'},
-  wood:{dark:'#5d402a',mid:'#9b6c43',light:'#d3a06b',accent:'#6d4b31'}
+  wood:{dark:'#5d402a',mid:'#9b6c43',light:'#d3a06b',accent:'#6d4b31'},
+  stone:{dark:'#50575d',mid:'#858f97',light:'#c1c9cf',accent:'#68747d'}
 };
 function combatGearFamily(type){
   if(String(type||'').startsWith('iron'))return 'iron';
   if(String(type||'').startsWith('padded'))return 'padded';
   if(String(type||'').startsWith('wood'))return 'wood';
+  if(String(type||'').startsWith('stone'))return 'stone';
   return 'iron';
 }
 function combatGearPalette(type){
@@ -1320,7 +1322,7 @@ function combatShieldPixels(frameId,type){
 }
 function combatWeaponPixels(frameId,type){
   if(!type)return [];
-  const palette=combatGearPalette(type.includes('iron')?'iron':type.includes('stone')?'iron':'wood');
+  const palette=combatGearPalette(type.includes('iron')?'iron':type.includes('stone')?'stone':'wood');
   const info=equipmentAnchorAndDirection(frameId,'weapon'),anchor=info.anchor;if(!anchor)return [];
   const dir=info.direction||[0,-1],nx=-dir[1],ny=dir[0],map=new Map();
   const sword=String(type).endsWith('Sword'),pick=String(type).endsWith('Pick');
@@ -1343,14 +1345,36 @@ function combatWeaponPixels(frameId,type){
   }
   return [...map.values()];
 }
+function combatEquipmentDepthParts(pixels,frameId,slot){
+  if(!pixels?.length)return {back:[],front:[]};
+  if(slot==='weapon'&&toolCatalog?.attackBackFrames?.includes(frameId))return {back:pixels,front:[]};
+  const layer=slot==='weapon'?'weaponBack':'shieldBack';
+  const coords=packLayerPixels(frameId,layer).map(p=>[p[0],p[1]]);
+  if(!coords.length)return {back:[],front:pixels};
+  const isBack=p=>coords.some(([x,y])=>Math.abs(x-p[0])+Math.abs(y-p[1])<=2);
+  return {back:pixels.filter(isBack),front:pixels.filter(p=>!isBack(p))};
+}
+function drawCombatDepthPass(target,pixels,behind=false){
+  if(!pixels?.length)return;
+  target.save();
+  if(behind)target.globalCompositeOperation='destination-over';
+  drawPixelTuples(target,pixels,true);
+  target.restore();
+}
 function drawCombatGearOverlay(target,frameId,gear){
   if(!gear||typeof gear!=='object')return;
   if(gear.legs)drawPixelTuples(target,combatLayerPixels(frameId,'lower',gear.legs));
   if(gear.chest)drawPixelTuples(target,combatLayerPixels(frameId,'upper',gear.chest));
   if(gear.feet)drawPixelTuples(target,combatLayerPixels(frameId,'shoes',gear.feet));
   if(gear.head)drawPixelTuples(target,combatHelmetPixels(frameId,gear.head),true);
-  if(gear.shield)drawPixelTuples(target,combatShieldPixels(frameId,gear.shield),true);
-  if(gear.weapon)drawPixelTuples(target,combatWeaponPixels(frameId,gear.weapon),true);
+  if(gear.shield){
+    const parts=combatEquipmentDepthParts(combatShieldPixels(frameId,gear.shield),frameId,'shield');
+    drawCombatDepthPass(target,parts.back,true);drawCombatDepthPass(target,parts.front,false);
+  }
+  if(gear.weapon){
+    const parts=combatEquipmentDepthParts(combatWeaponPixels(frameId,gear.weapon),frameId,'weapon');
+    drawCombatDepthPass(target,parts.back,true);drawCombatDepthPass(target,parts.front,false);
+  }
 }
 
 function drawFrame(target,index,eyeId=selectedEyeId(),hairId=selectedHairId(),upperId=selectedUpperId(),lowerId=selectedLowerId(),earringId=selectedEarringId(),shoesId=selectedShoeId(),toolId=selectedToolId(),aidId=selectedTeachingAidId(),hairColorId=selectedHairColorId(),wardrobeOverrides={},effectId=selectedEffectId()){
