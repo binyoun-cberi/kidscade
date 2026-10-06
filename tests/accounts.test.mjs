@@ -102,7 +102,6 @@ test('account feature is wired into deployment without exposing server code as s
   const wrangler = fs.readFileSync(path.join(ROOT, 'wrangler.jsonc'), 'utf8');
   const build = fs.readFileSync(path.join(ROOT, 'scripts', 'build-cloudflare.cjs'), 'utf8');
   const migration = fs.readFileSync(path.join(ROOT, 'migrations', '0002_student_accounts.sql'), 'utf8');
-  const qrMigration = fs.readFileSync(path.join(ROOT, 'migrations', '0018_student_qr_login.sql'), 'utf8');
   assert.doesNotMatch(index, /account-client\.js/);
   assert.match(bootstrap, /['"]account-client\.js['"]/);
   assert.match(wrangler, /worker\/main\.mjs/);
@@ -112,9 +111,10 @@ test('account feature is wired into deployment without exposing server code as s
   assert.match(migration, /CREATE TABLE IF NOT EXISTS student_sessions/);
   assert.match(migration, /pin_ciphertext/);
   assert.match(migration, /pin_iv/);
-  assert.match(qrMigration, /qr_token_hash/);
-  assert.match(qrMigration, /qr_token_ciphertext/);
-  assert.match(qrMigration, /idx_student_accounts_qr_token_hash/);
+  assert.match(migration, /qr_token_hash/);
+  assert.match(migration, /qr_token_ciphertext/);
+  assert.match(migration, /qr_token_iv/);
+  assert.match(migration, /idx_student_accounts_qr_token_hash/);
 });
 
 test('student login supports QR camera scan and QR-link auto login without removing PIN login', () => {

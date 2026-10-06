@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS student_accounts (
   pin_hash TEXT NOT NULL,
   pin_ciphertext TEXT,
   pin_iv TEXT,
+  qr_token_hash TEXT,
+  qr_token_ciphertext TEXT,
+  qr_token_iv TEXT,
   state_json TEXT NOT NULL DEFAULT '{}',
   state_revision INTEGER NOT NULL DEFAULT 0,
   failed_attempts INTEGER NOT NULL DEFAULT 0,
@@ -26,6 +29,10 @@ CREATE TABLE IF NOT EXISTS student_accounts (
 
 CREATE INDEX IF NOT EXISTS idx_student_accounts_class
   ON student_accounts (class_id, login_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_student_accounts_qr_token_hash
+  ON student_accounts(qr_token_hash)
+  WHERE qr_token_hash IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS student_sessions (
   token_hash TEXT PRIMARY KEY,
