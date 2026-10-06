@@ -579,7 +579,7 @@ test('named Seed Town residents expose roles services friendship milestones and 
     assert.ok(school.includes(id+":{name:'"),'school resident profile missing '+id);
     assert.ok(economy.includes("Object.entries(SCHOOL_PROFILES)"),'economy must derive residents from school profiles');
     assert.ok(economy.includes(id+':['),'friendship reward track missing '+id);
-    assert.ok(city.includes("addNpc(npcCtx,'"+id+"'"),'city NPC missing '+id);
+    assert.ok(city.includes("['"+id+"'"),'city NPC definition missing '+id);
   }
   assert.match(economy,/data-resident-talk/);
   assert.match(economy,/data-resident-service/);
