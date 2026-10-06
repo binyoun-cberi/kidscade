@@ -69,4 +69,7 @@ test('teacher UI exposes lifecycle management and guarded destructive actions', 
   assert.match(client, /delete-class/);
   assert.match(client, /confirmLoginId/);
   assert.match(client, /confirmName/);
+  assert.match(client, /PIN 확인 불가/);
+  assert.match(client, /다음 로그인 후 표시/);
+  assert.match(fs.readFileSync(path.join(ROOT, 'worker', 'teacher-admin.mjs'), 'utf8'), /decryptStudentPin/);
 });

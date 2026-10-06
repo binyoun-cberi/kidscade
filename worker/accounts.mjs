@@ -59,6 +59,17 @@ function bytesToHex(bytes) {
   return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
+function bytesToBase64(bytes) {
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function base64ToBytes(text) {
+  const binary = atob(String(text || ''));
+  return Uint8Array.from(binary, ch => ch.charCodeAt(0));
+}
+
 function randomBytes(length = 32) {
   const bytes = new Uint8Array(length);
   crypto.getRandomValues(bytes);
@@ -101,6 +112,38 @@ export async function hashPin(loginId, pin, pepper) {
     new TextEncoder().encode(`${normalizeLoginId(loginId)}:${String(pin)}`)
   );
   return bytesToHex(new Uint8Array(signature));
+}
+
+async function studentPinEncryptionKey(pepper) {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(`kidscade-student-pin:${String(pepper || '')}`)
+  );
+  return crypto.subtle.importKey('raw', digest, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+}
+
+export async function encryptStudentPin(pin, pepper) {
+  const value = String(pin || '');
+  if (!isValidPin(value)) throw new Error('invalid-pin');
+  const iv = randomBytes(12);
+  const key = await studentPinEncryptionKey(pepper);
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    new TextEncoder().encode(value)
+  );
+  return { ciphertext: bytesToBase64(new Uint8Array(encrypted)), iv: bytesToBase64(iv) };
+}
+
+export async function decryptStudentPin(ciphertext, iv, pepper) {
+  if (!ciphertext || !iv) return '';
+  const key = await studentPinEncryptionKey(pepper);
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: base64ToBytes(iv) },
+    key,
+    base64ToBytes(ciphertext)
+  );
+  return new TextDecoder().decode(decrypted);
 }
 
 function secureEqual(left, right) {
@@ -300,6 +343,7 @@ async function login(request, env) {
     return json({ ok: false, error: lockedUntil ? 'temporarily_locked' : 'invalid_credentials' }, lockedUntil ? 429 : 401);
   }
 
+  const encryptedPin = await encryptStudentPin(pin, env.KIDSCADE_ACCOUNT_PEPPER);
   const token = randomToken();
   const tokenHash = await sha256(token);
   const createdAt = nowIso();
@@ -312,8 +356,11 @@ async function login(request, env) {
     VALUES (?, ?, ?, ?)
   `).bind(tokenHash, row.id, createdAt, expiresAt).run();
   await env.DB.prepare(`
-    UPDATE student_accounts SET failed_attempts = 0, locked_until = NULL, last_login_at = ?, updated_at = ? WHERE id = ?
-  `).bind(createdAt, createdAt, row.id).run();
+    UPDATE student_accounts
+    SET failed_attempts = 0, locked_until = NULL, last_login_at = ?, updated_at = ?,
+        pin_ciphertext = ?, pin_iv = ?
+    WHERE id = ?
+  `).bind(createdAt, createdAt, encryptedPin.ciphertext, encryptedPin.iv, row.id).run();
 
   row.last_login_at = createdAt;
   return json({ ok: true, ...accountPayload(row) }, 200, { 'set-cookie': makeSessionCookie(token) });
@@ -398,14 +445,15 @@ async function createClass(request, env) {
     const loginId = `KC-${classCode}-${String(index).padStart(2, '0')}`;
     const pin = randomPin();
     const pinHash = await hashPin(loginId, pin, env.KIDSCADE_ACCOUNT_PEPPER);
+    const encryptedPin = await encryptStudentPin(pin, env.KIDSCADE_ACCOUNT_PEPPER);
     const studentId = crypto.randomUUID();
     credentials.push({ loginId, pin, nickname: '새싹 게이머' });
     statements.push(env.DB.prepare(`
       INSERT INTO student_accounts (
-        id, login_id, class_id, nickname, pin_hash, state_json, state_revision,
+        id, login_id, class_id, nickname, pin_hash, pin_ciphertext, pin_iv, state_json, state_revision,
         failed_attempts, disabled, created_at, updated_at
-      ) VALUES (?, ?, ?, '새싹 게이머', ?, '{}', 0, 0, 0, ?, ?)
-    `).bind(studentId, loginId, classId, pinHash, createdAt, createdAt));
+      ) VALUES (?, ?, ?, '새싹 게이머', ?, ?, ?, '{}', 0, 0, 0, ?, ?)
+    `).bind(studentId, loginId, classId, pinHash, encryptedPin.ciphertext, encryptedPin.iv, createdAt, createdAt));
   }
   if (typeof env.DB.batch === 'function') await env.DB.batch(statements);
   else for (const statement of statements) await statement.run();
@@ -451,12 +499,13 @@ async function resetPin(request, env) {
   if (access.response) return access.response;
   const pin = randomPin();
   const pinHash = await hashPin(loginId, pin, env.KIDSCADE_ACCOUNT_PEPPER);
+  const encryptedPin = await encryptStudentPin(pin, env.KIDSCADE_ACCOUNT_PEPPER);
   const now = nowIso();
   await env.DB.prepare(`
     UPDATE student_accounts
-    SET pin_hash = ?, failed_attempts = 0, locked_until = NULL, updated_at = ?
+    SET pin_hash = ?, pin_ciphertext = ?, pin_iv = ?, failed_attempts = 0, locked_until = NULL, updated_at = ?
     WHERE id = ?
-  `).bind(pinHash, now, account.id).run();
+  `).bind(pinHash, encryptedPin.ciphertext, encryptedPin.iv, now, account.id).run();
   await env.DB.prepare('DELETE FROM student_sessions WHERE student_id = ?').bind(account.id).run();
   return json({ ok: true, loginId, pin });
 }

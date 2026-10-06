@@ -346,9 +346,14 @@
         const online = Number(student.active_sessions || 0) > 0
           ? `<span class="pill session">로그인 ${Number(student.active_sessions)}개</span>`
           : '<span class="tiny">오프라인</span>';
+        const pinLine = overviewData.scope === 'global'
+          ? (student.pin
+            ? `<span class="tiny"><b>PIN ${escapeHtml(student.pin)}</b></span>`
+            : '<span class="tiny"><b>PIN 확인 불가</b> · 다음 로그인 후 표시</span>')
+          : '';
         return `
           <tr>
-            <td data-label="계정"><span class="idline">${escapeHtml(student.login_id)}</span><span class="tiny">${statusBadge(student)} ${online}</span></td>
+            <td data-label="계정"><span class="idline">${escapeHtml(student.login_id)}</span>${pinLine}<span class="tiny">${statusBadge(student)} ${online}</span></td>
             <td data-label="닉네임"><b>${escapeHtml(student.nickname || '새싹 게이머')}</b></td>
             <td data-label="기록"><b>🌟 ${Number(summary.sproutPower || 0).toLocaleString('ko-KR')} 새싹력</b><span class="tiny">이번 주 +${Number(student.weekly_sprout_power || 0).toLocaleString('ko-KR')} · 🌱 씨앗 ${Number(summary.seeds || 0).toLocaleString('ko-KR')} · ${Number(summary.plays || 0)}회 · ${Number(summary.gameCount || 0)}게임 · ${escapeHtml(formatDuration(summary.seconds))}</span></td>
             <td data-label="클라우드">${student.state_revision > 0 ? `저장 ${Number(student.state_revision)}회` : '첫 저장 전'}<span class="tiny">${escapeHtml(formatDate(student.updated_at))}</span></td>
@@ -409,7 +414,10 @@
     await withButton(button, '처리 중', async () => {
       const { response, body } = await api('/api/teacher/reset-pin', { method:'POST', body:JSON.stringify({ loginId }) });
       if (!response.ok || !body.ok) return alert(errorText(body));
-      alert(`${body.loginId}\n새 PIN: ${body.pin}\n\n이 PIN은 지금만 확인할 수 있습니다.`);
+      const note = authMode === 'global'
+        ? '\n\n전역 관리자 화면에서 계속 확인할 수 있습니다.'
+        : '\n\n교사 계정에서는 이 창에서 PIN을 확인해 주세요.';
+      alert(`${body.loginId}\n새 PIN: ${body.pin}${note}`);
       await refreshOverview();
     });
   }

@@ -10,6 +10,8 @@ import {
   sanitizeNickname,
   sanitizeSyncState,
   hashPin,
+  encryptStudentPin,
+  decryptStudentPin,
   makeSessionCookie
 } from '../worker/accounts.mjs';
 
@@ -31,6 +33,13 @@ test('PIN hashes are server-secret keyed and tied to the login ID', async () => 
   assert.equal(first, again);
   assert.notEqual(first, otherStudent);
   assert.match(first, /^[0-9a-f]{64}$/);
+});
+
+test('student PIN encryption can be decrypted by the server with the account secret', async () => {
+  const encrypted = await encryptStudentPin('654321', 'test-pepper');
+  assert.notEqual(encrypted.ciphertext, '654321');
+  assert.ok(encrypted.iv);
+  assert.equal(await decryptStudentPin(encrypted.ciphertext, encrypted.iv, 'test-pepper'), '654321');
 });
 
 test('student session cookie is long-lived, HttpOnly, Secure and strict same-site', () => {
@@ -73,6 +82,7 @@ test('account feature is wired into deployment without exposing server code as s
   const wrangler = fs.readFileSync(path.join(ROOT, 'wrangler.jsonc'), 'utf8');
   const build = fs.readFileSync(path.join(ROOT, 'scripts', 'build-cloudflare.cjs'), 'utf8');
   const migration = fs.readFileSync(path.join(ROOT, 'migrations', '0002_student_accounts.sql'), 'utf8');
+  const pinMigration = fs.readFileSync(path.join(ROOT, 'migrations', '0017_student_pin_encryption.sql'), 'utf8');
   assert.doesNotMatch(index, /account-client\.js/);
   assert.match(bootstrap, /['"]account-client\.js['"]/);
   assert.match(wrangler, /worker\/main\.mjs/);
@@ -80,6 +90,8 @@ test('account feature is wired into deployment without exposing server code as s
   assert.match(build, /'migrations'/);
   assert.match(migration, /CREATE TABLE IF NOT EXISTS student_accounts/);
   assert.match(migration, /CREATE TABLE IF NOT EXISTS student_sessions/);
+  assert.match(pinMigration, /pin_ciphertext/);
+  assert.match(pinMigration, /pin_iv/);
 });
 
 test('account login modal keeps its overlay styling after lobby bootstrap replacement', () => {

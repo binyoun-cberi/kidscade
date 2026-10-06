@@ -1,4 +1,4 @@
-import { hashPin, normalizeLoginId, isValidLoginId } from './accounts.mjs';
+import { hashPin, normalizeLoginId, isValidLoginId, encryptStudentPin, decryptStudentPin } from './accounts.mjs';
 import { authorizeTeacherAccess, authorizeTeacherForClass, ensureTeacherCredential, listTeacherCredentialsForAdmin } from './teacher-auth.mjs';
 import { kstWeekKey } from './sprout-power.mjs';
 
@@ -151,6 +151,7 @@ async function getOverview(request, env) {
     ? await env.DB.prepare(`
         SELECT a.id, a.login_id, a.nickname, a.last_login_at, a.disabled,
                a.state_revision, a.state_json, a.updated_at, a.locked_until,
+               a.pin_ciphertext, a.pin_iv,
                c.id AS class_id, c.class_code, c.name AS class_name,
                (SELECT COUNT(*) FROM student_sessions s
                  WHERE s.student_id = a.id AND s.expires_at > ?) AS active_sessions
@@ -161,6 +162,7 @@ async function getOverview(request, env) {
     : await env.DB.prepare(`
         SELECT a.id, a.login_id, a.nickname, a.last_login_at, a.disabled,
                a.state_revision, a.state_json, a.updated_at, a.locked_until,
+               a.pin_ciphertext, a.pin_iv,
                c.id AS class_id, c.class_code, c.name AS class_name,
                (SELECT COUNT(*) FROM student_sessions s
                  WHERE s.student_id = a.id AND s.expires_at > ?) AS active_sessions
@@ -170,21 +172,31 @@ async function getOverview(request, env) {
         ORDER BY a.login_id ASC
       `).bind(nowIso(), auth.classId).all();
 
-  const safeStudents = (students?.results || []).map(row => ({
-    id: row.id,
-    login_id: row.login_id,
-    nickname: row.nickname || '새싹 게이머',
-    last_login_at: row.last_login_at || null,
-    disabled: Number(row.disabled || 0),
-    state_revision: Number(row.state_revision || 0),
-    updated_at: row.updated_at || null,
-    locked_until: row.locked_until || null,
-    class_id: row.class_id,
-    class_code: row.class_code,
-    class_name: row.class_name,
-    active_sessions: Number(row.active_sessions || 0),
-    summary: summarizeStudentState(row.state_json)
-  }));
+  const safeStudents = [];
+  for (const row of students?.results || []) {
+    let pin = '';
+    if (auth.global && row.pin_ciphertext && row.pin_iv) {
+      try {
+        pin = await decryptStudentPin(row.pin_ciphertext, row.pin_iv, env.KIDSCADE_ACCOUNT_PEPPER);
+      } catch (_) {}
+    }
+    safeStudents.push({
+      id: row.id,
+      login_id: row.login_id,
+      nickname: row.nickname || '새싹 게이머',
+      last_login_at: row.last_login_at || null,
+      disabled: Number(row.disabled || 0),
+      state_revision: Number(row.state_revision || 0),
+      updated_at: row.updated_at || null,
+      locked_until: row.locked_until || null,
+      class_id: row.class_id,
+      class_code: row.class_code,
+      class_name: row.class_name,
+      active_sessions: Number(row.active_sessions || 0),
+      ...(auth.global ? { pin } : {}),
+      summary: summarizeStudentState(row.state_json)
+    });
+  }
 
   const sproutWeekKey = kstWeekKey();
   let weeklySproutRows = [];
@@ -283,14 +295,15 @@ async function addStudents(request, env) {
     const loginId = `KC-${classroom.class_code}-${String(next + i).padStart(2, '0')}`;
     const pin = randomPin();
     const pinHash = await hashPin(loginId, pin, env.KIDSCADE_ACCOUNT_PEPPER);
+    const encryptedPin = await encryptStudentPin(pin, env.KIDSCADE_ACCOUNT_PEPPER);
     const studentId = crypto.randomUUID();
     credentials.push({ loginId, pin, nickname: '새싹 게이머' });
     statements.push(env.DB.prepare(`
       INSERT INTO student_accounts (
-        id, login_id, class_id, nickname, pin_hash, state_json, state_revision,
+        id, login_id, class_id, nickname, pin_hash, pin_ciphertext, pin_iv, state_json, state_revision,
         failed_attempts, disabled, created_at, updated_at
-      ) VALUES (?, ?, ?, '새싹 게이머', ?, '{}', 0, 0, 0, ?, ?)
-    `).bind(studentId, loginId, classId, pinHash, now, now));
+      ) VALUES (?, ?, ?, '새싹 게이머', ?, ?, ?, '{}', 0, 0, 0, ?, ?)
+    `).bind(studentId, loginId, classId, pinHash, encryptedPin.ciphertext, encryptedPin.iv, now, now));
   }
   if (typeof env.DB.batch === 'function') await env.DB.batch(statements);
   else for (const statement of statements) await statement.run();
