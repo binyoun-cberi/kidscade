@@ -132,38 +132,55 @@ async function mapLimit(items,limit,worker){
   return out;
 }
 
-async function addNpc(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}){
+function createNpcShell(ctx,id,name,x,z,{radius=.48,role='resident',label=true}={}){
   const visual=residentVisual(id);
-  const gltf=await ctx.loadGLTF(visual.url);
-  // Keep the complete character asset: independent skeleton + original animation clips.
-  const model=ctx.prepModel(cloneSkeleton(gltf.scene));
-  // Match the already-working people pipeline used by the market game:
-  // normalize by the largest axis, then center X/Z and put feet on local Y=0.
-  normalizeCharacterModel(model,visual.height);
-  const anchor=new THREE.Group();anchor.position.set(x,.025,z);anchor.add(model);
-  model.traverse(n=>{if(n.isSkinnedMesh)n.frustumCulled=false;});
-  const mixer=new THREE.AnimationMixer(model);
-  const clips=Array.isArray(gltf.animations)?gltf.animations:[];
-  // These glTF NPCs use "Bone.position" as the skeleton root while KayKit uses
-  // "root.position". Strip both from idle/walk so animation can never push a
-  // character sideways or below the terrain independently of its world anchor.
-  const idleClip=inPlaceCharacterClip(clips.find(c=>/idle|stand/i.test(c.name))||clips[0]||null);
-  const walkClip=inPlaceCharacterClip(clips.find(c=>/walk|run/i.test(c.name))||idleClip);
-  let action=null,animState='';
-  function playAnim(kind){
-    const clip=kind==='walk'?walkClip:idleClip;
-    if(!clip||animState===kind)return;
-    action?.fadeOut?.(.12);
-    const next=mixer.clipAction(clip);next.reset();next.enabled=true;next.setLoop(THREE.LoopRepeat,Infinity);next.fadeIn(.12);next.play();
-    action=next;animState=kind;
-  }
-  playAnim('idle');
+  const anchor=new THREE.Group();anchor.position.set(x,CHARACTER_GROUND_CLEARANCE,z);
+  const placeholder=new THREE.Group();placeholder.name='resident-placeholder-'+id;
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.28,.34,.82,8),new THREE.MeshStandardMaterial({color:visual.accent||'#7c9863',roughness:.88}));
+  body.position.y=.66;body.castShadow=true;placeholder.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.25,10,8),new THREE.MeshStandardMaterial({color:0xe2b889,roughness:.9}));
+  head.position.y=1.28;head.castShadow=true;placeholder.add(head);
+  anchor.add(placeholder);
   const shadow=new THREE.Mesh(new THREE.CircleGeometry(.38,20),new THREE.MeshBasicMaterial({color:0x263126,transparent:true,opacity:.18,depthWrite:false}));
   shadow.rotation.x=-Math.PI/2;shadow.position.y=.008;anchor.add(shadow);
   ctx.parent.add(anchor);
   const tag=label?makeResidentLabel(name,{role:visual.role,accent:visual.accent}):null;
   if(tag){tag.position.set(x,2.22,z);tag.visible=false;ctx.parent.add(tag)}
-  return {id,name,object:anchor,model,mixer,playAnim,label:tag,interaction:null,homeX:x,homeZ:z,groundY:CHARACTER_GROUND_CLEARANCE,r:radius,role,phase:(id.length*1.37)%6.2,targetX:x,targetZ:z,nextDecision:0,moving:false,anchorX:x,anchorZ:z};
+  return {id,name,object:anchor,model:null,mixer:null,playAnim:()=>{},label:tag,interaction:null,homeX:x,homeZ:z,groundY:CHARACTER_GROUND_CLEARANCE,r:radius,role,phase:(id.length*1.37)%6.2,targetX:x,targetZ:z,nextDecision:0,moving:false,anchorX:x,anchorZ:z,placeholder,loaded:false,loading:false,loadFailedAt:0,loadPromise:null};
+}
+
+async function hydrateNpc(ctx,actor){
+  if(!actor||actor.loaded)return actor;
+  if(actor.loadPromise)return actor.loadPromise;
+  const visual=residentVisual(actor.id);actor.loading=true;
+  actor.loadPromise=(async()=>{
+    const gltf=await ctx.loadGLTF(visual.url);
+    const model=ctx.prepModel(cloneSkeleton(gltf.scene));
+    normalizeCharacterModel(model,visual.height);
+    model.traverse(n=>{if(n.isSkinnedMesh)n.frustumCulled=false;});
+    const mixer=new THREE.AnimationMixer(model);
+    const clips=Array.isArray(gltf.animations)?gltf.animations:[];
+    const idleClip=inPlaceCharacterClip(clips.find(c=>/idle|stand/i.test(c.name))||clips[0]||null);
+    const walkClip=inPlaceCharacterClip(clips.find(c=>/walk|run/i.test(c.name))||idleClip);
+    let action=null,animState='';
+    function playAnim(kind){
+      const clip=kind==='walk'?walkClip:idleClip;
+      if(!clip||animState===kind)return;
+      action?.fadeOut?.(.12);
+      const next=mixer.clipAction(clip);next.reset();next.enabled=true;next.setLoop(THREE.LoopRepeat,Infinity);next.fadeIn(.12);next.play();
+      action=next;animState=kind;
+    }
+    actor.placeholder?.removeFromParent?.();
+    actor.object.add(model);
+    actor.model=model;actor.mixer=mixer;actor.playAnim=playAnim;actor.loaded=true;actor.loading=false;actor.loadFailedAt=0;
+    playAnim(actor.moving?'walk':'idle');
+    return actor;
+  })().catch(err=>{
+    actor.loading=false;actor.loadPromise=null;actor.loadFailedAt=performance.now();
+    console.warn('[World v3] resident model stream failed',actor.id,err);
+    return actor;
+  });
+  return actor.loadPromise;
 }
 
 function overlaps(a,b,pad=.08){
@@ -181,7 +198,7 @@ function validateMapLayout(objects){
 
 export async function buildKidscadeCity(ctx){
   const {parent,addModel,box,plane,interact,collider,loadGLTF,prepModel,actions,getGameTime,getPlayerPosition}=ctx;
-  const layout=[],buildingLabels=[],walkSurfaces=[];
+  const layout=[],buildingLabels=[],walkSurfaces=[],deferredDecorJobs=[];
   const track=(id,type,x,z,w,d)=>{layout.push({id,type,x,z,w,d});return {id,type,x,z,w,d}};
   const registerSurface=(id,x,z,w,d,y)=>{walkSurfaces.push({id,x,z,w,d,y});};
   const groundSurfaceYAt=(x,z)=>{
@@ -234,13 +251,13 @@ export async function buildKidscadeCity(ctx){
     ['clinic',CITY_ASSET.clinic,transit.x-4.7,transit.z-5.0,6.2,5.0,'튼튼 보건소',2.25],
     ['museum',CITY_ASSET.museum,museum.x,museum.z-4.4,10.5,7.0,'씨앗 자연박물관',3.15]
   ];
-  for(const [id,url,x,z,w,d,name,labelDz] of buildings){
+  await mapLimit(buildings,4,async ([id,url,x,z,w,d,name,labelDz])=>{
     await addModel(parent,url,{x,z,w,h:5.0,d,rot:Math.PI,name:'city-'+id});
     collider('outdoor',x,z,w*.82,d*.70);track('building-'+id,'building',x,z,w*.82,d*.70);
     const label=makeLabel(name,{width:1.9,height:.44,font:33});
     label.position.set(x,3.72,z+labelDz);label.userData.anchor={x,z:z+labelDz};label.visible=false;
     parent.add(label);buildingLabels.push(label);
-  }
+  });
 
   // Walk-in venues share the same transition system. Triggers sit just outside the building colliders.
   for(const [id,x,z,r,label] of [
@@ -331,9 +348,10 @@ export async function buildKidscadeCity(ctx){
   // Transit / clinic parcel.
   await Promise.all([
     addModel(parent,CITY_ASSET.busStop,{x:transit.x+4.8,z:transit.z+2.0,w:2.7,h:2.5,d:1.5,rot:-Math.PI/2,name:'seed-bus-stop'}),
-    addModel(parent,CITY_ASSET.busSign,{x:transit.x+3.1,z:transit.z+.2,w:.55,h:2.2,d:.55,rot:0,name:'seed-bus-sign'}),
-    addModel(parent,CITY_ASSET.bicycle,{x:transit.x+6.2,z:transit.z+5.7,w:1.55,h:1.15,d:.55,rot:.25,name:'town-bicycle'})
+    addModel(parent,CITY_ASSET.busSign,{x:transit.x+3.1,z:transit.z+.2,w:.55,h:2.2,d:.55,rot:0,name:'seed-bus-sign'})
   ]);
+  // The bicycle alone is ~2.28 MB and is purely decorative, so it never blocks first play.
+  deferredDecorJobs.push(()=>addModel(parent,CITY_ASSET.bicycle,{x:transit.x+6.2,z:transit.z+5.7,w:1.55,h:1.15,d:.55,rot:.25,name:'town-bicycle'}));
   track('transport-corner','decor',transit.x+4.8,transit.z+2.4,6.4,7.2);
 
   // Residential districts occupy the two previously dead eastern parcels.
@@ -406,7 +424,7 @@ export async function buildKidscadeCity(ctx){
   ].map(([x,z])=>addModel(parent,CITY_ASSET.lamp,{x,z,w:.5,h:3.4,d:.5,rot:0})));
 
   const npcCtx={parent,loadGLTF,prepModel};
-  const npcDefs=[
+const npcDefs=[
     ['minji','민지',market.x-4.7,market.z-1.0,{role:'shop'}],
     ['junho','준호',market.x+4.7,market.z-1.0,{role:'shop'}],
     ['haneul','하늘',leisure.x-4.7,leisure.z-1.0,{role:'shop'}],
@@ -422,9 +440,9 @@ export async function buildKidscadeCity(ctx){
     ['clerk',SCHOOL_PROFILES.clerk.name,market.x-6.6,market.z-1.2,{role:'student',label:false,radius:.20}],
     ['visitor',SCHOOL_PROFILES.visitor.name,leisure.x+3.0,leisure.z+6.7,{role:'student',radius:.42}]
   ];
-  // Resident glTF files are roughly 25 MB together. Four lanes overlap network/decode
-  // work without hammering low-end classroom tablets with 14 simultaneous parses.
-  const npcs=await mapLimit(npcDefs,4,([id,name,x,z,opts])=>addNpc(npcCtx,id,name,x,z,opts));
+  // NPC movement, labels and interactions exist immediately as tiny low-poly shells.
+  // Animated resident glTFs (~25 MB total) stream only when the player approaches.
+  const npcs=npcDefs.map(([id,name,x,z,opts])=>createNpcShell(npcCtx,id,name,x,z,opts));
   const visitor=npcs.find(n=>n.id==='visitor');
   if(visitor){visitor.object.visible=false;if(visitor.label)visitor.label.visible=false}
 
@@ -499,12 +517,36 @@ export async function buildKidscadeCity(ctx){
     getGroundY:characterGroundYAt,
     isBlocked:isNpcBlocked
   });
+  let nextResidentWarmAt=0;
+  function residentStreamCandidates(player,radius=20){
+    if(!player)return [];
+    const retryAfter=30000,clock=performance.now();
+    return npcs.filter(n=>{
+      if(n.loaded||n.loading)return false;
+      if(n.loadFailedAt&&clock-n.loadFailedAt<retryAfter)return false;
+      if(n.id==='visitor'&&!n.object.visible)return false;
+      return Math.hypot(player.x-n.object.position.x,player.z-n.object.position.z)<=radius;
+    }).sort((a,b)=>Math.hypot(player.x-a.object.position.x,player.z-a.object.position.z)-Math.hypot(player.x-b.object.position.x,player.z-b.object.position.z));
+  }
+  function warmNearbyResidents(player,{radius=20,limit=3}={}){
+    const selected=residentStreamCandidates(player,radius).slice(0,limit);
+    for(const n of selected)void hydrateNpc(npcCtx,n);
+    return selected.map(n=>n.id);
+  }
+  let decorWarmPromise=null;
+  function warmDecor(){
+    if(decorWarmPromise)return decorWarmPromise;
+    decorWarmPromise=mapLimit(deferredDecorJobs,1,job=>job()).catch(err=>{console.warn('[World v3] deferred city decor failed',err);return []});
+    return decorWarmPromise;
+  }
 
   return {
-    npcs,bounds:CITY_BOUNDS,residentLife,groundSurfaceYAt,characterGroundYAt,
+    npcs,bounds:CITY_BOUNDS,residentLife,groundSurfaceYAt,characterGroundYAt,warmNearbyResidents,warmDecor,
+    streamingStatus:()=>({loaded:npcs.filter(n=>n.loaded).map(n=>n.id),loading:npcs.filter(n=>n.loading).map(n=>n.id),shells:npcs.filter(n=>!n.loaded).map(n=>n.id)}),
     groundAudit:()=>npcs.map(n=>({id:n.id,x:n.object.position.x,z:n.object.position.z,y:n.object.position.y,expected:characterGroundYAt(n.object.position.x,n.object.position.z),delta:n.object.position.y-characterGroundYAt(n.object.position.x,n.object.position.z)})),
     update(now,dt){
       const player=typeof getPlayerPosition==='function'?getPlayerPosition():null;
+      if(player&&now>=nextResidentWarmAt){nextResidentWarmAt=now+650;warmNearbyResidents(player,{radius:20,limit:3});}
       for(const label of buildingLabels){
         const a=label.userData.anchor;label.visible=!!player&&Math.hypot(player.x-a.x,player.z-a.z)<7.5;
       }
