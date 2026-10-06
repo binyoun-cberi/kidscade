@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>숫자 타워 - KIDSCADE</title>
+<title>숫자 타워: 선택의 모험 - KIDSCADE</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans KR",sans-serif;background:#07132d;color:#fff}
@@ -12,7 +12,7 @@ button{font:inherit}
 #top{height:78px;position:relative;z-index:40;display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:linear-gradient(rgba(4,10,29,.94),rgba(4,10,29,.25))}
 .box{background:rgba(6,15,40,.82);border:1px solid rgba(255,255,255,.15);border-radius:17px;padding:8px 13px;box-shadow:0 8px 22px rgba(0,0,0,.2)}
 #title{font-size:19px;font-weight:1000}.small{font-size:12px;opacity:.72}
-#powerHud{font-size:25px;font-weight:1000;color:#fff2a3}
+#powerHud{font-size:25px;font-weight:1000;color:#fff2a3}\n#heartHud{font-size:20px;letter-spacing:2px}.comboHud{color:#7ee7ff;font-weight:1000}.routeHint{position:absolute;z-index:12;left:50%;bottom:9px;transform:translateX(-50%);padding:3px 7px;border-radius:999px;background:rgba(3,10,27,.78);font-size:9px;font-weight:900;white-space:nowrap}.room.exposed.safe .routeHint{color:#9ff7b7}.room.exposed.danger .routeHint{color:#ffb0a8}\n@media(max-width:700px){#top{height:68px;padding:7px 8px;gap:5px}.box{padding:6px 8px;border-radius:12px}#title{font-size:15px}#powerHud{font-size:21px}#top button{padding:8px;font-size:11px}#guide{top:73px;max-width:94vw;white-space:normal;text-align:center}#viewport{top:68px}.panel{padding:18px 14px}.ans{min-height:58px;font-size:24px;padding:11px 5px}}
 #top button{border:1px solid rgba(255,255,255,.17);background:rgba(255,255,255,.08);color:#fff;border-radius:13px;padding:9px 12px;cursor:pointer}
 #top button:hover{background:rgba(255,255,255,.15)}
 #guide{position:absolute;top:89px;left:50%;z-index:35;transform:translateX(-50%);white-space:nowrap;background:rgba(4,12,34,.82);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:7px 13px;font-size:12px;box-shadow:0 8px 20px rgba(0,0,0,.22)}
@@ -157,18 +157,18 @@ button{font:inherit}
   <header id="top">
     <div style="display:flex;gap:9px;align-items:center">
       <div class="box"><div id="title">숫자 타워</div><div class="small" id="stageText">스테이지 1 · 선택해서 강해지기</div></div>
-      <div class="box">내 숫자 <span id="powerHud">10</span></div>
+      <div class="box">내 숫자 <span id="powerHud">10</span> <span class="comboHud">· 연속 <span id="comboHud">0</span></span></div><div class="box" id="heartHud" aria-label="기회 3개">❤️❤️❤️</div>
     </div>
     <div style="display:flex;gap:8px">
       <button id="restart">↻ 다시하기</button><button id="next">다음 스테이지 ▶</button>
     </div>
   </header>
-  <div id="guide"><b>노란 테두리</b>는 지금 갈 수 있는 층. 슬라임·거미·유령을 물리치며 숫자를 키우고, 너무 강한 적이나 잘못된 계산은 피하세요!</div>
+  <div id="guide"><b>노란 테두리</b> 중 원하는 층을 고르세요. <b>안전</b> 표시를 따라 숫자를 키우고 보스를 쓰러뜨리세요. 계산은 3번까지 실수해도 괜찮아요!</div>
   <div id="viewport"><div id="world"><div id="mountains"></div><div id="ground"></div>
     <div id="hero"><div id="heroBubble">10</div><div class="sprite asset-sprite asset-hero"><img class="pose base" src="assets/game/characters/people/kenney-platformer-characters/player/poses/player-stand.png" alt=""><img class="pose walkPose" src="assets/game/characters/people/kenney-platformer-characters/player/poses/player-walk1.png" alt=""><img class="pose attackPose" src="assets/game/characters/people/kenney-platformer-characters/player/poses/player-action1.png" alt=""><img class="pose hurtPose" src="assets/game/characters/people/kenney-platformer-characters/player/poses/player-hurt.png" alt=""></div></div>
   </div></div>
 </div>
-<div id="modal"><div class="panel"><h2 id="modalTitle">계산!</h2><div class="small" id="modalSub">틀리면 패배합니다.</div><div id="equation">10 + 6 = ?</div><div id="answers"></div></div></div>
+<div id="modal"><div class="panel"><h2 id="modalTitle">계산!</h2><div class="small" id="modalSub">기회는 3번! 천천히 계산해도 괜찮아요.</div><div id="equation">10 + 6 = ?</div><div id="answers"></div></div></div>
 <div id="end"><div class="panel"><div id="endEmoji" style="font-size:58px">💥</div><h2 id="endTitle">패배!</h2><div id="loseReason"></div><div class="actions"><button class="subbtn" id="retry">다시하기</button><button class="main" id="continue">다음 스테이지</button></div></div></div>
 <div id="toast"></div>
 <script>
@@ -219,8 +219,8 @@ const stages=[
   ]
  }
 ];
-let si=0, power=0, zoneIndex=0, state=[], busy=false, currentQuiz=null;
-const towerEls=[], gateEls=[];
+let si=0, power=0, zoneIndex=0, state=[], busy=false, currentQuiz=null, hearts=3, combo=0;
+const towerEls=[], gateEls=[];\nfunction syncRunHud(){const h=$("#heartHud"),c=$("#comboHud");if(h){h.textContent="❤️".repeat(hearts)+"🖤".repeat(3-hearts);h.setAttribute("aria-label",`남은 기회 ${hearts}개`)}if(c)c.textContent=combo}\nfunction rewardCorrect(){combo++;syncRunHud();if(combo>0&&combo%5===0)show(`🔥 ${combo}연속 정답!`)}\nfunction spendHeart(reason){hearts--;combo=0;syncRunHud();if(hearts<=0){modal.classList.remove("open");lose(reason);return false}show(`아깝다! 기회 ${hearts}개 남음`);return true}
 const ASSET={
  tower:{
   treasure:'assets/game/2d/platformer-art/base/items/gem-yellow.png',
@@ -255,7 +255,7 @@ function roomInfo(r){
 }
 function init(){
  [...world.querySelectorAll(".tower,.gate,.zoneShade,.zoneLabel")].forEach(e=>e.remove());
- const s=stages[si]; power=s.start; zoneIndex=0;busy=false;state=[];towerEls.length=0;gateEls.length=0;
+ const s=stages[si]; power=s.start; zoneIndex=0;busy=false;hearts=3;combo=0;state=[];towerEls.length=0;gateEls.length=0;syncRunHud();
  $("#stageText").textContent=s.name;
  let x=330;
  s.zones.forEach((z,zi)=>{
@@ -297,9 +297,9 @@ function update(){
  towerEls.forEach(t=>{
   const zi=+t.dataset.zi,ti=+t.dataset.ti;
   [...t.children].forEach((el,ri)=>{
-   el.classList.remove("exposed","danger","hiddenFloor","done");
+   el.classList.remove("exposed","danger","safe","hiddenFloor","done");
    if(state[zi][ti].cleared[ri]) el.classList.add("done");
-   else if(floorExposed(zi,ti,ri)){el.classList.add("exposed"); if(dangerous(s.zones[zi].towers[ti][ri])) el.classList.add("danger");}
+   else if(floorExposed(zi,ti,ri)){el.classList.add("exposed"); const risk=dangerous(s.zones[zi].towers[ti][ri]);el.classList.add(risk?"danger":"safe");let hint=el.querySelector(".routeHint");if(!hint){hint=document.createElement("div");hint.className="routeHint";el.appendChild(hint)}hint.textContent=risk?"⚠ 위험":"✓ 안전";}
    else el.classList.add("hiddenFloor");
   });
  });
@@ -357,11 +357,11 @@ async function fightGate(g,zi,z){
  }
 }
 function ask(eq,correct,onCorrect,wrongReason){
- currentQuiz={correct,onCorrect,wrongReason};$("#equation").textContent=eq;$("#modalTitle").textContent="계산해서 살아남기!";$("#modalSub").textContent="한 번 틀리면 바로 패배합니다.";
+ currentQuiz={correct,onCorrect,wrongReason};$("#equation").textContent=eq;$("#modalTitle").textContent="계산해서 살아남기!";$("#modalSub").textContent=`기회 ${hearts}개 · 틀려도 다시 도전할 수 있어요.`;
  const vals=new Set([correct]),offs=[-1,1,-2,2,-3,3,4,-4,5,-5];
  while(vals.size<3) vals.add(Math.max(0,correct+offs[Math.floor(Math.random()*offs.length)]));
  const a=$("#answers");a.innerHTML="";
- [...vals].sort(()=>Math.random()-.5).forEach(v=>{const b=document.createElement("button");b.className="ans";b.textContent=v;b.onclick=()=>{if(v!==correct){b.classList.add("wrong");setTimeout(()=>{modal.classList.remove("open");lose(wrongReason);},250);}else{modal.classList.remove("open");onCorrect();}};a.appendChild(b);});
+ [...vals].sort(()=>Math.random()-.5).forEach(v=>{const b=document.createElement("button");b.className="ans";b.textContent=v;b.onclick=()=>{if(v!==correct){b.classList.add("wrong");b.disabled=true;if(spendHeart(wrongReason)){setTimeout(()=>{b.classList.remove("wrong");$("#modalSub").textContent=`다시 생각해봐요 · 기회 ${hearts}개`;},260)}}else{rewardCorrect();modal.classList.remove("open");onCorrect();}};a.appendChild(b);});
  modal.classList.add("open");
 }
 async function winBattle(container,num,boss){
