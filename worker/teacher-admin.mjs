@@ -1,4 +1,4 @@
-import { hashPin, normalizeLoginId, isValidLoginId, encryptStudentPin, decryptStudentPin } from './accounts.mjs';
+import { hashPin, normalizeLoginId, isValidLoginId, encryptStudentPin, decryptStudentPin, ensureStudentPinColumns } from './accounts.mjs';
 import { authorizeTeacherAccess, authorizeTeacherForClass, ensureTeacherCredential, listTeacherCredentialsForAdmin } from './teacher-auth.mjs';
 import { kstWeekKey } from './sprout-power.mjs';
 
@@ -124,6 +124,7 @@ function cleanClassName(value) {
 async function getOverview(request, env) {
   const auth = await authorizeTeacherAccess(request, env);
   if (auth.response) return auth.response;
+  await ensureStudentPinColumns(env);
 
   const classes = auth.global
     ? await env.DB.prepare(`
@@ -274,6 +275,7 @@ async function addStudents(request, env) {
   const count = clampInt(body?.count, 1, MAX_ADD_STUDENTS);
   const access = await authorizeTeacherForClass(request, env, classId);
   if (access.response) return access.response;
+  await ensureStudentPinColumns(env);
   const classroom = await env.DB.prepare(`
     SELECT c.id, c.class_code, c.name, COUNT(a.id) AS student_count
     FROM kidscade_classes c
