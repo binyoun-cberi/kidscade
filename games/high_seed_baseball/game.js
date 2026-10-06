@@ -806,7 +806,8 @@ function drawField(){
  items.forEach(f=>{
   const i=fielders.indexOf(f),team=f.user?'user':'cpu',set=sprites[team];
   const moving=!f.hasBall&&fieldBall&&!fieldBall.owner&&Math.hypot(f.x-f.homeX,f.y-f.homeY)>8;
-  const frame=moving?(Math.floor(simTime*8+i)%2?set.walk1:set.walk2):set.stand;
+  const fallbackFrame=moving?(Math.floor(simTime*8+i)%2?set.walk1:set.walk2):set.stand;
+  const frame=f.user?(moving?(liveAvatar('walk')||fallbackFrame):(liveAvatar('idle')||fallbackFrame)):fallbackFrame;
   drawPlayer(frame,f.x,f.y+23,.67,false,f.user?'#16a34a':'#2563eb',true,i+1);
   if(f.hasBall){ctx.fillStyle='#875b32';ctx.beginPath();ctx.ellipse(f.x+12,f.y-10,9,6,.3,0,Math.PI*2);ctx.fill()}
   if(i===activeFielder&&state==='defenseField'){

@@ -11,7 +11,8 @@ const reviewedEntryFilenames = new Map([
   ['high_byeokrando_voyage', '벽란도 상행기-launch.html'],
   ['high_history_timebattle_live', 'history_timebattle.html'],
   ['infinite_gugudan', '무한 구구단： 무한루.html'],
-  ['math_tower_defense', '약수 타워 디펜스.html']
+  ['math_tower_defense', '약수 타워 디펜스.html'],
+  ['trivia_school_survival', '초딩 생존기.html']
 ]);
 
 test('renamed games live below games without increasing the root HTML baseline', () => {
