@@ -36,17 +36,15 @@ test('survival uses one action hub instead of duplicate harvest and place button
   assert.match(css,/mobile-action-hub/);
 });
 
-test('radial tutorial teaches hold, drag, and directional meanings',()=>{
-  assert.match(js,/mobile-radial-open/);
-  assert.match(js,/mobile-radial-harvest/);
-  assert.match(js,/관찰·대화/);
-  assert.match(js,/사용·열기/);
-  assert.match(js,/채집·공격/);
-  assert.match(js,/왼쪽 “설치”/);
-  assert.match(js,/cubeArchitectGuidedTutorial_v4_/);
+test('camp starts with simple taps while the radial menu remains available',()=>{
+  const camp=read('games/cube3d/cube-architect-camp.js');
+  assert.doesNotMatch(camp,/mobile-radial-open|mobile-radial-harvest/);
+  assert.match(js,/행동 버튼을 한 번 눌러 보자/);
+  assert.match(js,/function executeMobileRadialAction/);
 });
 
 test('radial one-shot mining stops after one block',()=>{
   assert.match(js,/const oneShot=miningSource==='radial'/);
   assert.match(js,/if\(oneShot\)stopMining\(\)/);
 });
+
