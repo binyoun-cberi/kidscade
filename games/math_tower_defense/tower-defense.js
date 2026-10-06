@@ -1,4 +1,4 @@
-/* Kidscade Zombie vs Divisor Turrets 3D - outbreak rebuild v12 */
+/* Kidscade Zombie vs Divisor Turrets 3D - outbreak rebuild v13 */
 (function(){
 'use strict';
 
@@ -136,8 +136,50 @@ function tintCharacter(obj,tint){
   });
   return obj
 }
+
+const ZOMBIE_PALETTES=Object.freeze({
+  zombieClassic:{skin:0x79a94f,shirt:0x8f3f46,pants:0x334155,boots:0x18212a,stain:0x5c2b31},
+  zombieSmooth:{skin:0x6f9f55,shirt:0x6b3f72,pants:0x2f3b49,boots:0x171d24,stain:0x4b2836}
+});
+function colorizeZombieModel(obj,key){
+  const palette=ZOMBIE_PALETTES[key]||ZOMBIE_PALETTES.zombieClassic;
+  obj.traverse(n=>{
+    if(!n.isMesh||!n.geometry||!n.material)return;
+    const geometry=n.geometry,position=geometry.getAttribute?.('position');
+    if(!position)return;
+    geometry.computeBoundingBox?.();
+    const box3=geometry.boundingBox;if(!box3)return;
+    const min=box3.min,max=box3.max,height=Math.max(.0001,max.y-min.y),width=Math.max(.0001,max.x-min.x),cx=(min.x+max.x)*.5;
+    const colors=new Float32Array(position.count*3);
+    const skin=new THREE.Color(palette.skin),shirt=new THREE.Color(palette.shirt),pants=new THREE.Color(palette.pants),boots=new THREE.Color(palette.boots),stain=new THREE.Color(palette.stain);
+    const c=new THREE.Color();
+    for(let i=0;i<position.count;i++){
+      const y=(position.getY(i)-min.y)/height,x=Math.abs(position.getX(i)-cx)/(width*.5);
+      if(y>.79)c.copy(skin);
+      else if(y>.43)c.copy(x>.58?skin:shirt);
+      else if(y>.13)c.copy(pants);
+      else c.copy(boots);
+      if(y>.47&&y<.74&&x<.34&&((i*17)%29)<4)c.lerp(stain,.52);
+      colors[i*3]=c.r;colors[i*3+1]=c.g;colors[i*3+2]=c.b
+    }
+    geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));
+    const list=Array.isArray(n.material)?n.material:[n.material];
+    const next=list.map(src=>{
+      const m=src.clone();
+      if(m.color)m.color.setHex(0xffffff);
+      m.vertexColors=true;
+      if('map' in m&&!m.map)m.map=null;
+      m.roughness=Math.max(.62,m.roughness??.72);
+      m.metalness=Math.min(.04,m.metalness??0);
+      m.needsUpdate=true;
+      return m
+    });
+    n.material=Array.isArray(n.material)?next:next[0]
+  });
+  return obj
+}
 function cloneModel(key,target=1){const g=modelCache.get(key);if(!g)return null;const src=window.SkeletonUtils?.clone?window.SkeletonUtils.clone(g.scene):g.scene.clone(true);return normalize(prep(src),target)}
-function loadModel(key,url,timeout=9000){return new Promise(resolve=>{let done=false;const finish=v=>{if(done)return;done=true;resolve(v)};const timer=setTimeout(()=>finish(null),timeout),isFbx=/\.fbx(?:$|\?)/i.test(url),active=isFbx?fbxLoader:loader;active.load(url,obj=>{clearTimeout(timer);const g=isFbx?{scene:obj,animations:obj.animations||[]}:obj;modelCache.set(key,g);finish(g)},undefined,()=>{clearTimeout(timer);finish(null)})})}
+function loadModel(key,url,timeout=9000){return new Promise(resolve=>{let done=false;const finish=v=>{if(done)return;done=true;resolve(v)};const timer=setTimeout(()=>finish(null),timeout),isFbx=/\.fbx(?:$|\?)/i.test(url),active=isFbx?fbxLoader:loader;active.load(url,obj=>{clearTimeout(timer);const g=isFbx?{scene:obj,animations:obj.animations||[]}:obj;if(key==='zombieClassic'||key==='zombieSmooth')colorizeZombieModel(g.scene,key);modelCache.set(key,g);finish(g)},undefined,()=>{clearTimeout(timer);finish(null)})})}
 
 function textSprite(text,sub='',color='#ffffff',scale=1){
   const c=document.createElement('canvas');c.width=192;c.height=96;const x=c.getContext('2d');
