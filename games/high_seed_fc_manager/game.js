@@ -8,24 +8,72 @@ var SAVE_KEY='kidscade_game_v2:high_seed_fc_manager:save';
 var state=null,currentView='home',squadFilter='all',historyFilter=null;
 var modal=document.getElementById('modal'),modalBody=document.getElementById('modalBody');
 var toastEl=document.getElementById('toast'),toastTimer=0;
-var match=null,matchSpeed=1,raf=0,lastFrame=0,resultShown=false;
+var match=null,matchSpeed=1,raf=0,lastFrame=0,resultShown=false,directCoachSeen=false;
 var broadcastRenderer=window.SeedFCBroadcast&&typeof window.SeedFCBroadcast.create==='function'?window.SeedFCBroadcast.create():null;
 var replayCurrent=null,replayFrame=0,replayCursor=0,replayPlaying=false,replayPlaySpeed=1,replayRaf=0,replayLast=0,replayMode='replay',replayFocus='all',replayReturnView='analysis';
 var soccerBallImg=new Image();
 soccerBallImg.src='../../assets/game/2d/sports/equipment/ball_soccer1.png';
 var matchAudioDefs={
-  whoosh:['../../assets/audio/sfx/combat/projectile-whoosh-01.mp3',.12],
-  impact:['../../assets/audio/sfx/combat/impact-heavy-01.mp3',.10],
-  goal:['../../assets/audio/sfx/success/cheer-yay-01.mp3',.20],
-  confirm:['../../assets/audio/ui/kenney_interface/confirmation_001.ogg',.16]
+  whoosh:['../../assets/audio/sfx/combat/projectile-whoosh-01.mp3',.10],
+  pass:['../../assets/audio/sfx/combat/impact-heavy-01.mp3',.045],
+  tackle:['../../assets/audio/sfx/combat/impact-heavy-01.mp3',.13],
+  save:['../../assets/audio/sfx/combat/impact-heavy-01.mp3',.09],
+  confirm:['../../assets/audio/ui/kenney_interface/confirmation_001.ogg',.14]
 };
-var matchAudio={};
+var matchAudio={},stadiumAudio={ctx:null,crowdSource:null,crowdGain:null},lastVoiceCall=0;
 Object.keys(matchAudioDefs).forEach(function(k){
   var def=matchAudioDefs[k],a=new Audio(def[0]);a.preload='auto';a.volume=def[1];matchAudio[k]=a;
 });
 function matchSfx(k,rate){
   var a=matchAudio[k];if(!a)return;
   try{a.pause();a.currentTime=0;a.playbackRate=rate||1;a.play().catch(function(){});}catch(e){}
+}
+function stadiumContext(){
+  if(stadiumAudio.ctx)return stadiumAudio.ctx;
+  try{var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;stadiumAudio.ctx=new AC();return stadiumAudio.ctx;}catch(e){return null;}
+}
+function startStadiumAmbience(){
+  var ctx=stadiumContext();if(!ctx||stadiumAudio.crowdSource)return;
+  try{
+    if(ctx.state==='suspended')ctx.resume().catch(function(){});
+    var seconds=2.2,buffer=ctx.createBuffer(1,Math.floor(ctx.sampleRate*seconds),ctx.sampleRate),data=buffer.getChannelData(0);
+    for(var i=0;i<data.length;i++){var slow=Math.sin(i/1770)*.10+Math.sin(i/3113)*.08;data[i]=(Math.random()*2-1)*(.34+slow);}
+    var source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
+    source.buffer=buffer;source.loop=true;filter.type='bandpass';filter.frequency.value=760;filter.Q.value=.42;gain.gain.value=.022;
+    source.connect(filter);filter.connect(gain);gain.connect(ctx.destination);source.start();
+    stadiumAudio.crowdSource=source;stadiumAudio.crowdGain=gain;
+  }catch(e){}
+}
+function stopStadiumAmbience(){
+  try{if(stadiumAudio.crowdSource)stadiumAudio.crowdSource.stop();}catch(e){}
+  stadiumAudio.crowdSource=null;stadiumAudio.crowdGain=null;
+}
+function crowdSwell(level){
+  var ctx=stadiumContext(),g=stadiumAudio.crowdGain;if(!ctx||!g)return;
+  try{var now=ctx.currentTime,peak=level||.075;g.gain.cancelScheduledValues(now);g.gain.setValueAtTime(Math.max(.022,g.gain.value||.022),now);g.gain.linearRampToValueAtTime(peak,now+.08);g.gain.exponentialRampToValueAtTime(.022,now+1.5);}catch(e){}
+}
+function whistleSfx(longWhistle){
+  var ctx=stadiumContext();if(!ctx)return;
+  try{
+    if(ctx.state==='suspended')ctx.resume().catch(function(){});
+    var now=ctx.currentTime,d=longWhistle?.52:.30,osc=ctx.createOscillator(),gain=ctx.createGain();
+    osc.type='square';osc.frequency.setValueAtTime(2050,now);osc.frequency.linearRampToValueAtTime(2470,now+d*.36);osc.frequency.linearRampToValueAtTime(2180,now+d);
+    gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.032,now+.018);gain.gain.setValueAtTime(.032,now+d-.045);gain.gain.exponentialRampToValueAtTime(.0001,now+d);
+    osc.connect(gain);gain.connect(ctx.destination);osc.start(now);osc.stop(now+d+.02);
+  }catch(e){}
+}
+function passThump(){
+  var ctx=stadiumContext();if(!ctx)return;
+  try{
+    var now=ctx.currentTime,osc=ctx.createOscillator(),gain=ctx.createGain();osc.type='sine';osc.frequency.setValueAtTime(145,now);osc.frequency.exponentialRampToValueAtTime(68,now+.085);gain.gain.setValueAtTime(.045,now);gain.gain.exponentialRampToValueAtTime(.0001,now+.09);osc.connect(gain);gain.connect(ctx.destination);osc.start(now);osc.stop(now+.10);
+  }catch(e){}
+}
+function teammateVoice(text){
+  var now=Date.now();if(now-lastVoiceCall<2200)return;lastVoiceCall=now;
+  try{
+    if(!window.speechSynthesis||!window.SpeechSynthesisUtterance)return;
+    var u=new SpeechSynthesisUtterance(text||'여기!');u.lang='ko-KR';u.rate=1.3;u.pitch=1.08;u.volume=.32;window.speechSynthesis.speak(u);
+  }catch(e){}
 }
 
 function $(id){return document.getElementById(id);}
