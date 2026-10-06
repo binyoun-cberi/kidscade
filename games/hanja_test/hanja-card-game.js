@@ -14,7 +14,9 @@ let questions=[];
 let state={idx:0,correct:0,wrong:0,skipped:0,points:0,combo:0,locked:false,started:false};
 let audioCtx=null;
 let drag=null;
-let pad={drawing:false,last:null,ctx:null,dpr:1};
+let writerInstance=null;
+let writerSerial=0;
+let writing={token:0,ready:false,complete:false,unavailable:false,mistakes:0,score:0,textPassed:false,loadTimer:null};
 
 const $=id=>document.getElementById(id);
 const shuffle=array=>{
@@ -24,11 +26,10 @@ const shuffle=array=>{
 };
 
 function init(){
-  ['setupScreen','gameScreen','resultScreen','gradeGrid','startBtn','questionCard','hanjaGlyph','cardGrade','deckCount','questionText','scoreText','comboText','gradeHud','meaningInput','readingInput','submitBtn','feedback','floatScore','writePad','clearPad','quitBtn','resultGrade','resultAccuracy','resultCorrect','resultWrong','resultSkipped','resultPoints','retryBtn','menuBtn','answerBox']
+  ['setupScreen','gameScreen','resultScreen','gradeGrid','startBtn','questionCard','hanjaGlyph','cardGrade','deckCount','questionText','scoreText','comboText','gradeHud','meaningInput','readingInput','submitBtn','feedback','floatScore','writerTarget','writingStatus','restartWriting','quitBtn','resultGrade','resultAccuracy','resultCorrect','resultWrong','resultSkipped','resultWriting','resultPoints','retryBtn','menuBtn','answerBox']
     .forEach(id=>els[id]=$(id));
   renderGradeButtons();
   bind();
-  initPad();
   showSetup();
 }
 
@@ -55,7 +56,7 @@ function bind(){
   els.submitBtn.addEventListener('click',submitAnswer);
   els.meaningInput.addEventListener('keydown',onEnter);
   els.readingInput.addEventListener('keydown',onEnter);
-  els.clearPad.addEventListener('click',clearPad);
+  els.restartWriting.addEventListener('click',restartWriting);
   els.retryBtn.addEventListener('click',startRound);
   els.menuBtn.addEventListener('click',showSetup);
   els.quitBtn.addEventListener('click',()=>{if(confirm('현재 25장 도전을 끝내고 급수 선택으로 돌아갈까요?'))showSetup()});
@@ -77,11 +78,10 @@ function startRound(){
   const pool=gradePool();
   questions=shuffle(pool).slice(0,ROUND_SIZE);
   if(questions.length<ROUND_SIZE){throw new Error('선택한 급수의 문제 수가 부족합니다.');}
-  state={idx:0,correct:0,wrong:0,skipped:0,points:0,combo:0,locked:false,started:true};
+  state={idx:0,correct:0,wrong:0,skipped:0,points:0,combo:0,locked:false,started:true,writingScoreTotal:0,writingGraded:0,writingUnavailable:0};
   els.setupScreen.classList.add('hidden');els.resultScreen.classList.add('hidden');els.gameScreen.classList.remove('hidden');
   try{window.KidscadeGame?.start?.({mode:'hanja-card-grade-test',grade:selectedGrade,questions:ROUND_SIZE,poolSize:pool.length})}catch(_){}
   renderQuestion();
-  requestAnimationFrame(resizePad);
 }
 
 function current(){return questions[state.idx]}
@@ -90,6 +90,7 @@ function renderQuestion(){
   if(state.idx>=questions.length)return finishRound();
   const item=current();
   state.locked=false;drag=null;
+  resetWritingState();
   els.questionCard.className='hanja-card';
   els.questionCard.style.transform='';
   els.questionCard.style.opacity='';
@@ -103,7 +104,7 @@ function renderQuestion(){
   els.feedback.className='feedback';els.feedback.textContent='한자를 써 보면서 뜻과 음을 입력하세요.';
   updateHud();
   updateGhosts();
-  clearPad();
+  requestAnimationFrame(()=>initWritingQuiz(item[0]));
   setTimeout(()=>{if(state.started&&!state.locked)els.meaningInput.focus({preventScroll:true})},70);
 }
 
@@ -162,7 +163,13 @@ function submitAnswer(){
     playSound('tap');return;
   }
   const ok=senseMatches(current(),meaning,reading);
-  resolveCard(ok,ok?'answer':'wrong');
+  if(!ok)return resolveCard(false,'wrong');
+  writing.textPassed=true;
+  els.meaningInput.disabled=true;els.readingInput.disabled=true;els.submitBtn.disabled=true;
+  if(writing.complete||writing.unavailable)return resolveCard(true,'answer');
+  els.feedback.className='feedback ok';
+  els.feedback.textContent='뜻과 음은 정답! 오른쪽에서 한자를 끝까지 바르게 써 주세요.';
+  playSound('tap');
 }
 
 function resolveCard(ok,reason){
@@ -171,11 +178,13 @@ function resolveCard(ok,reason){
   els.meaningInput.disabled=true;els.readingInput.disabled=true;els.submitBtn.disabled=true;
   const item=current();
 
+  recordWritingGrade();
   if(ok){
     state.correct++;state.combo++;
-    const earned=100+Math.min(150,(state.combo-1)*15);
+    const writingBonus=writing.unavailable?0:Math.round((writing.score||100)*.3);
+    const earned=100+Math.min(150,(state.combo-1)*15)+writingBonus;
     state.points+=earned;
-    els.feedback.className='feedback ok';els.feedback.textContent='정답! '+answerLabel(item);
+    els.feedback.className='feedback ok';els.feedback.textContent='정답! '+(writing.unavailable?'필기 채점 생략 · ':'필기 '+writing.score+'점 · ')+answerLabel(item);
     els.floatScore.textContent='+'+earned;
     els.floatScore.classList.remove('show');void els.floatScore.offsetWidth;els.floatScore.classList.add('show');
     els.questionCard.classList.add('correct');playSound('correct');
@@ -207,7 +216,9 @@ function finishRound(){
   els.resultCorrect.textContent=state.correct+'개';
   els.resultWrong.textContent=(state.wrong-state.skipped)+'개';
   els.resultSkipped.textContent=state.skipped+'개';
-  els.resultPoints.textContent='게임 점수 '+state.points.toLocaleString()+' P';
+  const writingAvg=state.writingGraded?Math.round(state.writingScoreTotal/state.writingGraded):0;
+  els.resultWriting.textContent=state.writingGraded?writingAvg+'점':'채점 없음';
+  els.resultPoints.textContent='게임 점수 '+state.points.toLocaleString()+' P'+(state.writingUnavailable?' · 필기 데이터 없음 '+state.writingUnavailable+'장':'');
   const storedBest=Number(localStorage.getItem('hanjaScore')||0);
   const best=(Number.isFinite(storedBest)&&storedBest>=0&&storedBest<=100)?storedBest:0;
   if(storedBest!==best||accuracy>best)localStorage.setItem('hanjaScore',String(Math.max(best,accuracy)));
@@ -219,6 +230,7 @@ function finishRound(){
       scope:'campaign',status:'completed',outcome:state.correct>=PASS_CORRECT?'win':'loss',
       score:accuracy,scoreOptions:{unit:'점',higherIsBetter:true},grade:selectedGrade,
       correct:state.correct,wrong:state.wrong-state.skipped,skipped:state.skipped,
+      writingAverage:writingAvg,writingGraded:state.writingGraded,writingUnavailable:state.writingUnavailable,
       points:state.points,total:ROUND_SIZE,completed:true
     });
   }catch(_){}
@@ -278,37 +290,138 @@ function playSound(kind){
   else tone(430,t,.08,'sine',.04);
 }
 
-function initPad(){
-  const canvas=els.writePad;
-  pad.ctx=canvas.getContext('2d',{alpha:true});
-  canvas.addEventListener('pointerdown',e=>{
-    if(!state.started)return;
-    pad.drawing=true;canvas.setPointerCapture?.(e.pointerId);pad.last=padPoint(e);
+function resetWritingState(){
+  if(writing.loadTimer)clearTimeout(writing.loadTimer);
+  writerInstance=null;
+  writing={token:++writerSerial,ready:false,complete:false,unavailable:false,mistakes:0,score:0,textPassed:false,loadTimer:null};
+  if(els.writerTarget)els.writerTarget.innerHTML='';
+  setWritingStatus('loading','필기 채점 준비 중…');
+}
+
+function setWritingStatus(kind,text){
+  if(!els.writingStatus)return;
+  els.writingStatus.className='writing-status '+kind;
+  els.writingStatus.textContent=text;
+}
+
+function normalizeWriterChar(char){
+  try{return String(char||'').normalize('NFKC')}catch(_){return String(char||'')}
+}
+
+function loadStrokeData(character,onLoad,onError,token){
+  const normalized=normalizeWriterChar(character);
+  const chars=[...new Set([normalized,String(character)])].filter(Boolean);
+  const urls=[];
+  chars.forEach(ch=>{
+    const enc=encodeURIComponent(ch);
+    urls.push('https://cdn.jsdelivr.net/npm/hanzi-writer-data@latest/'+enc+'.json');
+    urls.push('https://cdn.jsdelivr.net/gh/MadLadSquad/hanzi-writer-data-youyin@latest/data/'+enc+'.json');
   });
-  canvas.addEventListener('pointermove',e=>{
-    if(!pad.drawing||!pad.last)return;
-    const p=padPoint(e),ctx=pad.ctx;
-    ctx.strokeStyle='#26364a';ctx.lineWidth=5*pad.dpr;ctx.lineCap='round';ctx.lineJoin='round';
-    ctx.beginPath();ctx.moveTo(pad.last.x,pad.last.y);ctx.lineTo(p.x,p.y);ctx.stroke();pad.last=p;
-  });
-  const stop=()=>{pad.drawing=false;pad.last=null};
-  canvas.addEventListener('pointerup',stop);canvas.addEventListener('pointercancel',stop);canvas.addEventListener('pointerleave',stop);
-  window.addEventListener('resize',()=>{if(!els.gameScreen.classList.contains('hidden'))resizePad()});
+  let index=0;
+  const next=()=>{
+    if(token!==writing.token)return;
+    if(index>=urls.length){
+      const err=new Error('stroke data unavailable');
+      markWritingUnavailable('이 글자는 필기 데이터가 없어 뜻·음만 채점해요.',token);
+      try{onError(err)}catch(_){}
+      return;
+    }
+    fetch(urls[index++],{cache:'force-cache'})
+      .then(res=>{if(!res.ok)throw new Error('stroke '+res.status);return res.json()})
+      .then(data=>{
+        if(token!==writing.token)return;
+        writing.ready=true;
+        if(writing.loadTimer){clearTimeout(writing.loadTimer);writing.loadTimer=null}
+        setWritingStatus('ready','획순에 맞게 써 보세요');
+        onLoad(data);
+      })
+      .catch(next);
+  };
+  next();
 }
-function padPoint(e){
-  const rect=els.writePad.getBoundingClientRect();
-  return {x:(e.clientX-rect.left)*pad.dpr,y:(e.clientY-rect.top)*pad.dpr};
+
+function initWritingQuiz(character){
+  const token=writing.token;
+  if(!state.started||state.locked||!els.writerTarget)return;
+  els.writerTarget.innerHTML='';
+  if(typeof window.HanziWriter==='undefined'){
+    markWritingUnavailable('필기 채점기를 불러오지 못해 뜻·음만 채점해요.',token);
+    return;
+  }
+  const shell=els.writerTarget.parentElement;
+  const rect=shell.getBoundingClientRect();
+  const size=Math.max(190,Math.min(380,Math.floor(Math.min(rect.width||300,rect.height||300)-18)));
+  const writerChar=normalizeWriterChar(character);
+  try{
+    writerInstance=window.HanziWriter.create('writerTarget',writerChar,{
+      width:size,height:size,padding:14,
+      showCharacter:false,showOutline:true,
+      strokeColor:'#26364a',outlineColor:'#d5dde6',
+      highlightColor:'#f0a52b',drawingColor:'#376bd0',drawingWidth:12,
+      charDataLoader:(char,onLoad,onError)=>loadStrokeData(char,onLoad,onError,token)
+    });
+    writing.loadTimer=setTimeout(()=>{
+      if(token===writing.token&&!writing.ready&&!writing.complete&&!writing.unavailable){
+        markWritingUnavailable('필기 데이터를 불러오지 못해 뜻·음만 채점해요.',token);
+      }
+    },5000);
+    writerInstance.quiz({
+      leniency:2.35,
+      showHintAfterMisses:2,
+      highlightOnComplete:true,
+      onMistake:()=>{
+        if(token!==writing.token||state.locked)return;
+        writing.mistakes++;
+        const preview=Math.max(40,100-writing.mistakes*10);
+        setWritingStatus('miss','다시 한 획 · 현재 필기 '+preview+'점');
+        playSound('tap');
+      },
+      onComplete:()=>{
+        if(token!==writing.token||state.locked)return;
+        writing.complete=true;
+        writing.score=Math.max(40,100-writing.mistakes*10);
+        if(writing.loadTimer){clearTimeout(writing.loadTimer);writing.loadTimer=null}
+        setWritingStatus('pass','✓ 필기 통과 · '+writing.score+'점');
+        playSound('write');
+        if(writing.textPassed)resolveCard(true,'answer');
+        else{
+          els.feedback.className='feedback ok';
+          els.feedback.textContent='필기 통과! 이제 뜻과 음을 입력해 주세요.';
+        }
+      }
+    });
+  }catch(err){
+    console.warn('[Hanja Card] handwriting judge unavailable',err);
+    markWritingUnavailable('필기 채점기를 사용할 수 없어 뜻·음만 채점해요.',token);
+  }
 }
-function resizePad(){
-  const c=els.writePad,rect=c.getBoundingClientRect();
-  const dpr=Math.min(window.devicePixelRatio||1,2);
-  if(!rect.width||!rect.height)return;
-  pad.dpr=dpr;c.width=Math.max(1,Math.round(rect.width*dpr));c.height=Math.max(1,Math.round(rect.height*dpr));
-  clearPad();
+
+function markWritingUnavailable(message,token=writing.token){
+  if(token!==writing.token||writing.complete)return;
+  writing.unavailable=true;
+  if(writing.loadTimer){clearTimeout(writing.loadTimer);writing.loadTimer=null}
+  setWritingStatus('unavailable','필기 채점 생략');
+  if(els.feedback&&!state.locked)els.feedback.textContent=message;
+  if(writing.textPassed)resolveCard(true,'answer');
 }
-function clearPad(){
-  if(!pad.ctx)return;
-  pad.ctx.clearRect(0,0,els.writePad.width,els.writePad.height);
+
+function restartWriting(){
+  if(!state.started||state.locked||writing.unavailable)return;
+  const priorMistakes=writing.mistakes;
+  if(writing.loadTimer)clearTimeout(writing.loadTimer);
+  writing.ready=false;writing.complete=false;writing.score=0;writing.token=++writerSerial;writing.loadTimer=null;
+  writing.mistakes=priorMistakes;
+  setWritingStatus('loading','다시 쓰기 준비 중…');
+  initWritingQuiz(current()[0]);
+}
+
+function recordWritingGrade(){
+  if(writing.unavailable){
+    state.writingUnavailable++;
+    return;
+  }
+  state.writingGraded++;
+  state.writingScoreTotal+=writing.complete?writing.score:0;
 }
 
 document.addEventListener('DOMContentLoaded',init);
