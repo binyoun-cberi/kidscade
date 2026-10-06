@@ -40,7 +40,7 @@
       "subject": "arts",
       "genre": "rhythm",
       "difficulty": "easy",
-      "sessionMinutes": 5,
+      "sessionMinutes": 8,
       "players": [
         "solo"
       ],
@@ -2807,13 +2807,12 @@
     {
       "id": "hanja_test",
       "title": "한자 급수 테스트",
-      "href": "games/hanja_test/한자 급수 테스트.html",
+      "href": "games/hanja_test/한자 급수 테스트.html?v=2",
       "category": "lang",
       "age": "high",
       "icon": "🀄",
-      "description": "5급부터 8급까지 나의 한자 실력은?",
+      "description": "1급부터 8급까지, 3,500자 한자 카드로 뜻과 음을 직접 맞혀 보세요.",
       "scoreKey": "hanjaScore",
-      "rankKey": "hanjaRank",
       "subject": "language",
       "genre": "quiz",
       "difficulty": "medium",
