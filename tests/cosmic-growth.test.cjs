@@ -41,9 +41,9 @@ test('science facts and observation events are part of actual progression',()=>{
   }
   assert.match(js,/function discover\(/);
   assert.match(js,/function observeEvent\(/);
-  assert.match(js,/science_cosmic_growth\\.'\\+slot/);
-  assert.match(js,/reportAchievement\\('black_hole'/);
-  assert.match(js,/reportAchievement\\('discoveries_12'/);
+  assert.match(js,/science_cosmic_growth\.'\+slot/);
+  assert.match(js,/reportAchievement\('black_hole'/);
+  assert.match(js,/reportAchievement\('discoveries_12'/);
 });
 
 test('cosmic growth is registered as an all-grade science simulation',()=>{
