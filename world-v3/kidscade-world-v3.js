@@ -20,6 +20,11 @@ const Meta=window.KidscadeSeedWorldMeta||null;
 const HOMESTEAD_REWORK_VERSION=2;
 const canvas=document.getElementById('world3d');
 const loading=document.getElementById('loading');
+const loadingStatus=document.getElementById('loadingStatus');
+const loadingPercent=document.getElementById('loadingPercent');
+const loadingFill=document.getElementById('loadingFill');
+const loadingDetail=document.getElementById('loadingDetail');
+const loadingBar=document.querySelector('.loadingBar');
 const toastEl=document.getElementById('toast');
 const promptEl=document.getElementById('prompt');
 const zoneEl=document.getElementById('zone');
@@ -53,6 +58,24 @@ const panel=document.getElementById('panel');
 const panelBody=document.getElementById('panelBody');
 const audioToggle=document.getElementById('audioToggle');
 const worldAudio=createWorldAudio();
+let loadingProgress=3,loadingFailedAssets=0;
+function setLoadingProgress(percent,status='',detail=''){
+  loadingProgress=Math.max(loadingProgress,Math.max(0,Math.min(100,Math.round(Number(percent)||0))));
+  if(loadingFill)loadingFill.style.width=loadingProgress+'%';
+  if(loadingPercent)loadingPercent.textContent=loadingProgress+'%';
+  if(loadingBar)loadingBar.setAttribute('aria-valuenow',String(loadingProgress));
+  if(status&&loadingStatus)loadingStatus.textContent=status;
+  if(detail&&loadingDetail)loadingDetail.textContent=detail;
+}
+function setLoadingStep(id,state='active'){
+  const el=loading?.querySelector?.('[data-loading-step="'+id+'"]');if(!el)return;
+  el.classList.toggle('active',state==='active');el.classList.toggle('done',state==='done');
+}
+function loadingAssetDetail(loaded,total,url=''){
+  if(!loadingDetail||loading?.classList.contains('hide'))return;
+  let file='';try{file=decodeURIComponent(String(url||'').split('/').pop()||'')}catch(_){file=String(url||'').split('/').pop()||''}
+  loadingDetail.textContent='3D 리소스 '+loaded+'/'+Math.max(total,loaded)+(file?' · '+file:'')+(loadingFailedAssets?' · 건너뜀 '+loadingFailedAssets+'개':'');
+}
 function syncAudioButton(){if(audioToggle){audioToggle.textContent=worldAudio.isEnabled()?'🔊':'🔇';audioToggle.title=worldAudio.isEnabled()?'소리 끄기':'소리 켜기'}}
 audioToggle?.addEventListener('click',()=>{worldAudio.toggle();syncAudioButton()});
 addEventListener('pointerdown',()=>worldAudio.unlock(),{once:true});
@@ -158,8 +181,12 @@ scene.add(sun);
 const outdoor=new THREE.Group(),indoor=new THREE.Group(),venueLayer=new THREE.Group(),petLayer=new THREE.Group();
 scene.add(outdoor,indoor,venueLayer,petLayer);indoor.visible=false;venueLayer.visible=false;
 
-const loader=new GLTFLoader();
-const fbxLoader=new FBXLoader();
+const assetLoadingManager=new THREE.LoadingManager();
+assetLoadingManager.onStart=(url,loaded,total)=>loadingAssetDetail(loaded,total,url);
+assetLoadingManager.onProgress=(url,loaded,total)=>loadingAssetDetail(loaded,total,url);
+assetLoadingManager.onError=url=>{loadingFailedAssets++;loadingAssetDetail(0,0,url)};
+const loader=new GLTFLoader(assetLoadingManager);
+const fbxLoader=new FBXLoader(assetLoadingManager);
 const gltfCache=new Map();
 const fbxCache=new Map();
 function loadGLTF(url){
@@ -1021,6 +1048,11 @@ cosmeticAura.rotation.x=-Math.PI/2;cosmeticAura.position.y=.045;cosmeticAura.vis
 const avatarImg=new Image();avatarImg.decoding='async';
 const avatarRuntimeFrame=document.getElementById('avatarRuntime');
 let avatarRuntimeGuardDoc=null;
+function warmAvatarRuntime(){
+  if(!avatarRuntimeFrame)return;
+  const src=avatarRuntimeFrame.dataset.src;
+  if(src&&avatarRuntimeFrame.getAttribute('src')!==src)avatarRuntimeFrame.setAttribute('src',src);
+}
 function silenceAvatarRuntime(){
   let doc=null;try{doc=avatarRuntimeFrame?.contentDocument||null}catch(_){}
   if(!doc)return;
@@ -1741,7 +1773,8 @@ async function addMushroomPatch(id,x,z){
   const nextAt=Number(prog().groundPickups[id]||0),remain=nextAt-Date.now();
   if(remain>0)scheduleGroundPickup(actor,remain);else prog().groundPickups[id]=0;
 }
-async function buildOutdoor(){
+async function buildOutdoor(onProgress=()=>{}){
+  onProgress('terrain',12,'월드 바닥과 길을 만드는 중…');
   const point=(id,dx=0,dz=0)=>{const c=WORLD_GRID[id];return {x:c.cx+dx,z:c.cz+dz}};
   const addZoneSign=async(id,dx,dz,label,rot=0,action=null)=>{
     const p=point(id,dx,dz);
@@ -1759,6 +1792,7 @@ async function buildOutdoor(){
 
   // Landscape v1 visually breaks the rigid parcel grid without changing movement/collision coordinates.
   await buildWorldLandscape({parent:outdoor,addModel,box,plane});
+  onProgress('terrain',24,'강·숲·해변 지형을 배치했어요.');
 
   // HOME square (-22..-2 / -10..10) — starts primitive and grows with the player.
   {
@@ -1825,6 +1859,8 @@ async function buildOutdoor(){
     ]);
     updateHomesteadVisuals();
   }
+
+  onProgress('terrain',36,'집터와 기본 생활 공간을 준비했어요.');
 
   // FARM square (2..22 / -10..10)
   {
@@ -1957,6 +1993,7 @@ async function buildOutdoor(){
     for(const [dx,dz] of [[-7,-5],[-6.3,-4.4],[7.5,-1.0],[-8.3,.5],[7.8,6.0]])await addModel(outdoor,ASSET.flower,{x:h.x+dx,z:h.z+dz,w:.55,h:.5,d:.55,rot:0});
   }
 
+  onProgress('town',55,'씨앗마을 건물과 주민을 불러오는 중…');
   cityRuntime=await buildKidscadeCity({
     parent:outdoor,addModel,box,plane,interact,collider,loadGLB,loadGLTF,prepModel,
     actions:{
@@ -1976,6 +2013,7 @@ async function buildOutdoor(){
     getPlayerPosition:()=>({x:player.x,z:player.z}),
     getDailyState:()=>dailyDirector?.state?.()||null
   });
+  onProgress('town',78,'씨앗마을과 주민 준비를 마쳤어요.');
 }
 
 async function buildIndoor(){
@@ -2191,6 +2229,20 @@ async function buildPets(){
     actor.interaction=interact('outdoor',pos.x,pos.z,1.25,(CUBE_PETS[id]?.name||id)+'에게 다가가기',()=>tamePet(id));
   }
 }
+let petsBuildPromise=null;
+function ensurePetsBuilt(){
+  if(petsBuildPromise)return petsBuildPromise;
+  petsBuildPromise=buildPets().then(()=>{updateRanchExpansionVisuals();updateStatus();return true}).catch(err=>{console.warn('[World v3] background pet load failed',err);return false});
+  return petsBuildPromise;
+}
+function scheduleBackgroundWorldWarmup(){
+  const run=async()=>{
+    await ensurePetsBuilt();
+    warmAvatarRuntime();
+  };
+  if('requestIdleCallback'in window)requestIdleCallback(()=>{void run()},{timeout:900});
+  else setTimeout(()=>{void run()},120);
+}
 function chooseAnimalTarget(a,now,roamX,roamZ){
   a.nextDecision=now+1200+Math.random()*2800;
   if(Math.random()<.32){a.moving=false;return;}
@@ -2398,6 +2450,7 @@ function tick(now){
   renderer.render(scene,camera);
 }
 async function init(){
+  setLoadingStep('save','active');setLoadingProgress(5,'내 기록을 확인하는 중…','저장된 위치와 생활 데이터를 읽고 있어요.');
   furnishingSystem=createFurnishingSystem({
     parent:indoor,addModel,interact,collider,prog,inv,persist,openPanel,closePanel,toast,setAvatarAction,itemName,
     getMode:()=>mode,
@@ -2448,6 +2501,7 @@ async function init(){
     getDailyState:()=>dailyDirector?.state?.()||prog().dailyWorld||null
   });
   townEconomy.ensureState(prog());
+  setLoadingProgress(9,'생활 데이터를 정리하는 중…','농사·가방·마을 성장 기록을 확인했어요.');
   museumRuntime=createMuseumSystem({
     prog,inv,persist,openPanel,toast,
     getDay:()=>prog().survival.day
@@ -2472,6 +2526,7 @@ async function init(){
       setTimeout(()=>toast((weather?.icon||'🌤️')+' 새로운 아침 · '+(weather?.label||'맑음')+extra),320);
     }
   });
+  setLoadingStep('save','done');setLoadingStep('terrain','active');setLoadingProgress(12,'오늘의 씨앗 생활을 준비하는 중…','날씨와 일일 활동을 연결하고 있어요.');
   dailyLife=await createDailyLife({
     parent:outdoor,addModel,interact,prog,inv,persist,toast,openPanel,itemName,
     addInventoryItem,removeInventoryItem,canCarryNewKey,townEconomy,
@@ -2483,6 +2538,7 @@ async function init(){
   persist();
   syncCosmeticAura();
   updateStatus();
+  setLoadingProgress(16,'3D 월드를 조립하는 중…','자연 지형·마을·집 내부를 함께 준비합니다.');
   const venuePromise=buildVenueInteriors({
     parent:venueLayer,addModel,box,plane,interact,collider,loadGLTF,prepModel,
     actions:{
@@ -2499,9 +2555,17 @@ async function init(){
     },
     getGameTime:()=>prog().survival.time
   }).then(runtime=>{venueInteriors=runtime;return runtime});
-  await Promise.all([buildOutdoor(),buildIndoor(),venuePromise]);
+  const outdoorPromise=buildOutdoor((step,percent,detail)=>{
+    if(step==='town'){setLoadingStep('terrain','done');setLoadingStep('town','active');}
+    setLoadingProgress(percent,step==='town'?'씨앗마을과 주민을 준비하는 중…':'자연과 생활 공간을 준비하는 중…',detail);
+  });
+  const indoorPromise=buildIndoor().then(value=>{setLoadingStep('home','done');return value});
+  setLoadingStep('home','active');
+  await Promise.all([outdoorPromise,indoorPromise,venuePromise]);
+  setLoadingStep('terrain','done');setLoadingStep('town','done');setLoadingStep('home','done');setLoadingStep('ready','active');
+  setLoadingProgress(84,'저장된 집을 복원하는 중…','배치해 둔 가구와 생활 기능을 연결하고 있어요.');
   await furnishingSystem.restore();
-  await buildPets();
+  setLoadingProgress(94,'마지막 점검 중…','조작·상태 표시·저장 위치를 확인하고 있어요.');
   updateHomesteadVisuals();updateFarmExpansionVisuals();updateOrchardVisuals();updateRanchExpansionVisuals();
   updateStatus();
   showStarterHintOnce();
@@ -2512,12 +2576,16 @@ async function init(){
     mode='outdoor';activeVenue='';outdoor.visible=true;indoor.visible=false;venueLayer.visible=false;venueInteriors?.hideAll?.();
     player.x=dest.x;player.z=dest.z;zoneEl.textContent='씨앗마을 · 상점가';wasInCity=true;
   }else{mode='outdoor';outdoor.visible=true;indoor.visible=false;venueLayer.visible=false;zoneEl.textContent='집 앞 · 3D 마을';wasInCity=isCityArea(player.x,player.z)}
+  setLoadingStep('ready','done');setLoadingProgress(100,'준비 완료!','먼 지역의 펫과 아바타 애니메이션은 플레이 중 가볍게 이어서 준비해요.');
   loading.classList.add('hide');
-  canvas.focus();requestAnimationFrame(tick);
+  canvas.focus();requestAnimationFrame(tick);scheduleBackgroundWorldWarmup();
 }
 
 window.addEventListener('kidscade-seed-world-meta-change',()=>{syncCosmeticAura();updateStatus();});
-init().catch(err=>{console.error(err);loading.textContent='3D 월드를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.'});
+init().catch(err=>{
+  console.error(err);loading?.classList.remove('hide');loading?.classList.add('error');
+  setLoadingProgress(loadingProgress,'3D 월드를 불러오지 못했어요.','새로고침 후 다시 시도해 주세요. · '+(err?.message||'알 수 없는 오류'));
+});
 
 window.KidscadeWorldV3={
   version:3,
