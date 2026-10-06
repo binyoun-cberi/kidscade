@@ -7,6 +7,7 @@
 <title>큐브 아키텍트 | Kidscade</title>
 <link rel="stylesheet" href="./cube-architect.css?v=20261006-survival-camp2">
 <link rel="stylesheet" href="./cube-architect-ui.css?v=20261006-experience1">
+<link rel="stylesheet" href="./cube-architect-cuboid-puzzle.css?v=20261006-1">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="cube3d" data-title="큐브 아키텍트" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </head>
@@ -30,6 +31,11 @@
           <span class="mode-icon">📦</span><b>전개도 연구실</b>
           <p>전개도 각 면의 그림을 흰 직육면체에 배치하고 실제로 접히는 위치를 확인합니다.</p>
           <span class="tag">2D → 3D</span>
+        </button>
+        <button class="mode-card" data-mode="cuboidPuzzle">
+          <span class="mode-icon">💠</span><b>직육면체 퍼즐</b>
+          <p>직육면체를 90°씩 굴려 중력을 바꾸고, ㄱ자·ㄷ자 홈 속 레이저 장치를 움직여 모든 빛 표적을 켭니다.</p>
+          <span class="tag">중력 · 회전 · 공간 감각</span>
         </button>
         <button class="mode-card" data-mode="free">
           <span class="mode-icon">🌲</span><b>생존 탐험</b>
@@ -370,6 +376,7 @@
 <script src="./cube-architect-camp.js?v=20261006-survival-camp2"></script>
 <script src="./cube-architect-experience.js?v=20261006-experience1"></script>
 <script src="./cube-architect.js?v=20261006-experience1"></script>
+<script src="./cube-architect-cuboid-puzzle.js?v=20261006-1"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
@@ -381,13 +388,28 @@
     window.__cubeArchitectBootToast=setTimeout(()=>toast.classList.remove('show'),3400);
   }
   buttons.forEach(btn=>btn.addEventListener('click',()=>{
+    const selected=btn.dataset.mode;
+    if(selected==='cuboidPuzzle'){
+      const puzzle=window.CubeArchitectCuboidPuzzle;
+      if(!puzzle||typeof puzzle.enter!=='function'){
+        say('직육면체 퍼즐을 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.',true);
+        console.error('[Cube Architect cuboid puzzle] runtime unavailable');
+        return;
+      }
+      try{ puzzle.enter(); }
+      catch(err){
+        console.error('[Cube Architect cuboid puzzle]',err);
+        say('직육면체 퍼즐을 시작하지 못했어요: '+(err?.message||err),true);
+      }
+      return;
+    }
     const game=window.CubeArchitect;
     if(!game||typeof game.enterMode!=='function'){
       say('3D 엔진을 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.',true);
       console.error('[Cube Architect boot] runtime unavailable');
       return;
     }
-    try{ game.enterMode(btn.dataset.mode); }
+    try{ game.enterMode(selected); }
     catch(err){
       console.error('[Cube Architect mode]',err);
       say('모드를 시작하지 못했어요: '+(err?.message||err),true);
