@@ -87,11 +87,11 @@ test('actual crafting consumes ingredients and cannot succeed away from a workbe
  const code=main.slice(main.indexOf('function craftSurvival(recipe){'),main.indexOf('function blockButtonMarkup('));
  const bag={planks:3,sticks:2},stats=fresh(),el={classList:{add(){},remove(){}},disabled:false};
  const c={craftingBusy:false,gameFreeMode:'survival',inventoryBatchDepth:0,HOTBAR_TOOL_TYPES:['woodPick'],
-  $:()=>el,markRecipeSeen(){},recipePossible:r=>c.near&&Object.entries(r.needs).every(([t,n])=>(bag[t]||0)>=n),
+  $:()=>el,bagCount:t=>bag[t]||0,hasWorkbench:()=>c.near,blockDef:t=>({name:t}),markRecipeSeen(){},recipePossible:r=>c.near&&Object.entries(r.needs).every(([t,n])=>(bag[t]||0)>=n),
   near:false,toast(){},sfx(){},setTimeout:fn=>fn(),consumeBag:(t,n)=>bag[t]-=n,addToBag:(t,n)=>bag[t]=(bag[t]||0)+n,
   trackSurvival:(a,t)=>stats.crafted[t]=(stats.crafted[t]||0)+1,putOnHotbar:t=>c.selected=t,
   maybeEquipCraftedGear:()=>false,buildHotbar(){},buildInventory(){},updateSurvivalEquipmentUi(){},markFreeWorldDirty(){}};
- vm.createContext(c);vm.runInContext(code,c);const recipe=world.RECIPES.find(r=>r.id==='woodPick');
+ vm.createContext(c);vm.runInContext(main.slice(main.indexOf('function craftNeedHint('),main.indexOf('function showCraftSource(')),c);vm.runInContext(code,c);const recipe=world.RECIPES.find(r=>r.id==='woodPick');
  c.craftSurvival(recipe);assert.equal(bag.planks,3);assert.equal(stats.crafted.woodPick,undefined);
  c.near=true;c.craftSurvival(recipe);assert.equal(bag.planks,0);assert.equal(bag.sticks,0);assert.equal(bag.woodPick,1);
  assert.equal(stats.crafted.woodPick,1);assert.equal(c.selected,'woodPick');

@@ -36,6 +36,9 @@ let mobileMove={x:0,y:0};
 let mobileLookPointerId=null,mobileLookLast=null,mobileJoyPointerId=null;
 let mobileUtilityOpen=false;
 let survivalInventoryTab='bag';
+let firstJourney={phase:'idle',plan:null},journeyMarker=null,journeyUiAt=0;
+let buildingWorks=[],worksOpen=false,projectGuide='';
+const experience=window.CubeArchitectExperience;
 let jumpQueuedUntil=0,lastGroundedAt=-Infinity,overlapSeconds=0;
 const FREE_JUMP_SPEED=6.4;
 let mobileRadialPointerId=null,mobileRadialTimer=0,mobileRadialOpen=false,mobileRadialSelected='';
@@ -149,7 +152,9 @@ function ensureRenderer(){
 }
 function ensureLoop(){if(loopStarted)return;loopStarted=true;last=performance.now();requestAnimationFrame(animate)}
 function clearModeUi(){
-  tutorialFinish(false);clearCampMarker();
+  tutorialFinish(false);clearCampMarker();clearJourneyMarker();
+  worksOpen=false;$('buildingWorksPanel')?.classList.add('hidden');$('journeyCard')?.classList.add('hidden');
+  $('actionWorks')?.classList.add('hidden');
   ['challengePanel','challengeFlyHud','netPanel','freeHud','dungeonHud','mobileControls','blueprintModal','resultCard','tutorial'].forEach(id=>setVisible(id,false));
   blueprintModalOpen=false;
   resetMobileInput();
@@ -740,6 +745,23 @@ function checkChallenge(){
       '위치와 바닥 방향이 달라도 같은 입체도형이면 정답이에요.':
       '같은 블록 '+match.common+'개 · 부족한 블록 '+Math.max(0,targetCount-match.common)+
       '개 · 다른 블록 '+Math.max(0,userCount-match.common)+'개<br>파란 선을 보고 모양을 다시 확인하세요.';
+  }
+  if(!completed){
+    const correction=experience.nextCorrection(match.target.points,Array.from(match.user.keys,k=>k.split(',').map(Number)),hard);
+    const tip=document.createElement('p');tip.className='next-correction';
+    tip.textContent=correction?correction.text:'가장 덜 맞는 방향부터 살펴보자.';
+    if(!correction)tip.textContent='세 방향의 모양을 다시 비교해 보자.';
+    $('resultText').prepend(tip);
+    if(correction){
+      const [x,y,z]=correction.point;
+      const focus=new THREE.Mesh(blockGeo,new THREE.MeshBasicMaterial({color:correction.kind==='add'?0x5a67f2:0xe76b71,wireframe:true,transparent:true,opacity:1,depthTest:false}));
+      focus.position.set(origin[0]+x-CHALLENGE_HALF+.5,origin[1]+y+.5,origin[2]+z-CHALLENGE_HALF+.5);focus.renderOrder=30;scene.add(focus);targetGhosts.push(focus);
+      const detail=document.createElement('details'),summary=document.createElement('summary');summary.textContent='전체 힌트 보기';
+      const content=document.createElement('div');while($('resultText').lastChild&&$('resultText').lastChild!==tip)content.prepend($('resultText').lastChild);
+      detail.append(summary,content);$('resultText').append(detail);
+      for(const ghost of targetGhosts)if(ghost!==focus)ghost.visible=false;
+      detail.addEventListener('toggle',()=>{for(const ghost of targetGhosts)if(ghost!==focus)ghost.visible=detail.open});
+    }
   }
   if(completed){
     toast(hard?'설계실 해독 완료! 85% 기준을 넘었어요.':'설계도 복원 성공! 위치와 방향은 채점하지 않았어요.');
@@ -3042,6 +3064,7 @@ function initFree(){
   freeAvatarFacingRight=false;
   freeAvatarAction='';freeAvatarActionStartedAt=0;freeAvatarActionUntil=0;freeAvatarDefeated=false;freeAvatarReturnAt=0;freeViewBeforeDefeat=null;
   survivalBag={};survivalStage=0;savedFreePosition=null;visitedBiomes=new Set();
+  firstJourney={phase:'idle',plan:null};buildingWorks=[];projectGuide='';journeyUiAt=0;
   survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;survivalHealth=5;healthRegenClock=0;lastCreatureDamage=0;lastCreatureAttackAt=0;
   freeFluidKind='';lastEnvironmentDamage=0;survivalBreath=100;lastDrownDamage=0;freeFallPeakY=0;
   seenCreatureKinds=new Set();lastCreatureHintAt=0;creatureDefeats={};creatureForageAt={};survivalWorldTime=0;creatureSpawnClock=0;creatureSpawnSerial=0;nextEliteSpawnCheckAt=0;dayTime=.28;
@@ -3078,7 +3101,16 @@ function initFree(){
   buildHotbar();buildInventory();setupShapeWorkbench();buildFurnaceRecipes();
   $('actionXray').classList.toggle('hidden',survival&&survivalStage<3);
   setupWeather();spawnCritters();updateCreatureHealthUi();updateFreeMission();
-  $('actionSave').onclick=()=>{saveFreeWorld();toast('아키텍트 월드를 저장했어요.')};
+  $('actionSave').onclick=()=>{saveFreeWorld();toast('월드를 저장했어요.')};
+  $('actionWorks').classList.toggle('hidden',mobileModeEnabled);$('actionWorks').onclick=()=>toggleBuildingWorks(true);
+  $('mobileWorks').onclick=()=>toggleBuildingWorks(true);
+  $('worksClose').onclick=()=>toggleBuildingWorks(false);$('worksCapture').onclick=captureBuildingWork;
+  $('journeyStart').onclick=startFirstJourney;$('journeyHelp').onclick=helpFirstJourney;
+  $('journeySkip').onclick=()=>{firstJourney.phase='skip';clearJourneyMarker();markFreeWorldDirty(300);updateFirstJourney()};
+  document.querySelectorAll('[data-building-idea]').forEach(b=>b.onclick=()=>{
+    projectGuide=b.dataset.buildingIdea;$('workName').value=projectGuide;toggleBuildingWorks(false);
+    toast(projectGuide==='작은 집'?'바닥을 깔고 벽과 지붕을 만들어 보자.':projectGuide==='다리'?'양쪽 길을 이어 사람이 건널 수 있게 만들어 보자.':'문과 창문이 있는 나만의 비밀 기지를 만들어 보자.');
+  });
   $('actionAvatar').onclick=openAvatarCustomizer;$('actionView').onclick=cycleFreeView;updateFreeViewButtons();
   $('actionXray').textContent='수학 렌즈';$('actionXray').onclick=toggleXray;
   $('blockInventory').classList.add('hidden');$('furnacePanel').classList.add('hidden');
@@ -3299,6 +3331,25 @@ function renderCraftTabs(recipes){
     root.appendChild(b);
   }
 }
+function craftNeedHint(recipe){
+  if(recipe.bench&&!hasWorkbench())return '제작대 가까이로 가 보자.';
+  const missing=Object.entries(recipe.needs).find(([type,n])=>bagCount(type)<n);
+  if(!missing)return '다시 한번 만들어 보자.';
+  const [type,n]=missing,amount=n-bagCount(type);
+  const hints={log:'나무를 캐 보자.',planks:'원목으로 판자를 만들어 보자.',sticks:'판자로 막대를 만들어 보자.',stone:'곡괭이로 돌을 캐 보자.',glass:'화로에 모래를 넣어 보자.',ironBlock:'화로에 철광석을 넣어 보자.'};
+  return blockDef(type).name+' '+amount+'개가 더 필요해. '+(hints[type]||'주변을 탐험해 보자.');
+}
+function showCraftSource(recipe){
+  const missing=Object.entries(recipe.needs).find(([type,n])=>bagCount(type)<n);
+  if(recipe.bench&&!hasWorkbench()){
+    const p=campNearest(['workbench']);if(p){toggleInventory(false);showJourneyMarker(p);toast('노란 테두리의 제작대로 가 보자.')}return;
+  }
+  if(!missing)return;
+  const type=missing[0],sub=worldRules.RECIPES.find(r=>r.id!==recipe.id&&r.gives[type]);
+  if(sub&&visibleSurvivalRecipes().some(r=>r.id===sub.id)){survivalCraftCategory='전체';selectedCraftRecipeId=sub.id;buildInventory();return}
+  const p=campNearest(type==='log'?['log','pineLog']:[type]);
+  if(p){toggleInventory(false);showJourneyMarker(p);toast('노란 테두리에서 '+blockDef(type).name+'을 구해 보자.')}
+}
 function renderCraftDetail(recipe){
   const root=$('survivalCraftDetail');if(!root)return;
   root.classList.remove('crafting');
@@ -3321,12 +3372,13 @@ function renderCraftDetail(recipe){
     '<div class="craft-bench-note">'+(recipe.bench?(benchReady?'✓ 제작대 가까이에 있어요':'제작대 가까이에서 만들 수 있어요.'):'여기서 바로 만들 수 있어요')+'</div>'+
     '<button id="craftSelectedButton" type="button" '+(possible?'':'disabled')+'>'+(possible?'만들기':'재료를 더 모아야 해요')+'</button>';
   const button=$('craftSelectedButton');if(button)button.onclick=()=>craftSurvival(recipe);
+  if(!possible){const help=document.createElement('button');help.type='button';help.className='craft-help';help.textContent='어디서 구할까?';help.onclick=()=>{toast(craftNeedHint(recipe));showCraftSource(recipe)};root.appendChild(help)}
 }
 function craftSurvival(recipe){
   if(craftingBusy)return;
   markRecipeSeen(recipe.id);
   if(gameFreeMode!=='survival'||!recipePossible(recipe)){
-    toast('재료가 부족하거나 제작대가 필요해요.');return;
+    toast(craftNeedHint(recipe));return;
   }
   craftingBusy=true;
   const detail=$('survivalCraftDetail'),button=$('craftSelectedButton');
@@ -3454,6 +3506,7 @@ function resumeFreePointerLock(){
   }catch(_){$('lockNotice')?.classList.remove('hidden')}
 }
 function toggleInventory(force){
+  if(force!==false&&worksOpen)toggleBuildingWorks(false);
   const wasOpen=inventoryOpen;
   inventoryOpen=typeof force==='boolean'?force:!inventoryOpen;
   if(inventoryOpen){
@@ -3537,6 +3590,7 @@ function updateFreeMission(){
     $('freeHint').textContent=nearRuin?'Q 폐허 설계도 · E 가방 · F 비행 · V 시점':
       'E 가방 · F 비행 · V 시점 · R 복사 · P 색칠 · X 수학 렌즈';
   }
+  if(mobileModeEnabled&&gameFreeMode==='survival')$('freeHint').textContent=canRestore?'가까운 유적에서 행동 버튼을 눌러 보자.':'가운데 +로 바라보고 행동 버튼을 눌러 보자.';
   renderExplorationHint();
   if(campActive())renderCampQuest(campStep());
 }
@@ -3867,16 +3921,16 @@ function placeCustomCuboid(p){
   return true;
 }
 function placeFreeBlock(hit){
-  if(!hit)return;
+  if(!hit){toast('놓을 곳을 조금 더 가까이에서 바라보자.');return;}
   const hitType=hit.object.userData.type;
   if(hitType==='door'){toggleDoorAt(hit.object.userData.gx,hit.object.userData.gy,hit.object.userData.gz);return}
   if(hitType==='furnace'){toggleFurnace(true);return}
   if(hitType==='workbench'){survivalInventoryTab='craft';toggleInventory(true);return}
   if(!PLACEABLE_TYPES.includes(selectedType)){
-    toast(gameFreeMode==='survival'?'E를 눌러 가방에서 설치할 재료를 골라 보세요.':'설치할 블록을 먼저 선택해 주세요.');return;
+    toast('가방에서 놓을 물건을 먼저 골라 보자.');return;
   }
   const p=placementTarget(hit);
-  if(!p||!inWorld(p.x,p.y,p.z))return;
+  if(!p||!inWorld(p.x,p.y,p.z)){toast('이곳에는 놓을 수 없어. 가까운 바닥을 골라 보자.');return;}
   const occupied=getBlock(p.x,p.y,p.z),selectedDef=blockDef(selectedType);
   const canDisplaceFluid=occupied&&blockDef(occupied).liquid&&selectedDef.solid&&
     !['door','cuboid'].includes(selectedType);
@@ -4177,6 +4231,7 @@ function saveFreeWorld(){
   const data={version:13,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
     collected:Array.from(collected),hotbar:hotbarTypes,selected:selectedHotbarSlot,
     dayTime,cuboidSpec:currentCuboidSpec,facePaintColor,campLesson:{...survivalCamp},
+    firstJourney,buildingWorks,projectGuide,
     position:[camera.position.x,freePhysicsY,camera.position.z],
     bag:survivalBag,stage:survivalStage,legacyTerrain:legacyWorld,visitedBiomes:[...visitedBiomes],
     discoveredResources:[...discoveredResources],discoveredRecipes:[...discoveredRecipeIds],unreadRecipes:[...unreadRecipeIds],
@@ -4189,9 +4244,10 @@ function saveFreeWorld(){
     unlockedTech:[...unlockedTech]};
   try{
     if(window.KidscadeStorage?.setJson('cubeArchitectWorldSaveV4_'+gameFreeMode,data)){
-      lastFreeSave=performance.now();freeSaveDirty=false;freeSaveDueAt=0;
+      lastFreeSave=performance.now();freeSaveDirty=false;freeSaveDueAt=0;return true;
     }
   }catch(e){console.warn('[Cube Architect save]',e)}
+  return false;
 }
 function loadFreeWorld(){
   worldEdits=new Map();
@@ -4201,6 +4257,8 @@ function loadFreeWorld(){
       data=window.KidscadeStorage?.getJson('cubeArchitectWorldSaveV3',null)||
         window.KidscadeStorage?.getJson('cubeArchitectWorldSaveV2',null);
     if(data){
+      firstJourney=experience.readJourney(data.firstJourney);buildingWorks=experience.readWorks(data.buildingWorks);
+      projectGuide=typeof data.projectGuide==='string'?data.projectGuide.slice(0,30):'';
       legacyWorld=!!(data.legacyTerrain||(data.version||0)<4);
       collected=new Set(data.collected||[]);
       visitedBiomes=new Set(data.visitedBiomes||[]);
@@ -5340,7 +5398,7 @@ function updateFree(dt,t){
     return;
   }
   // Pause the world while young players are reading recipes or using the furnace.
-  if(inventoryOpen||furnaceOpen){
+  if(inventoryOpen||furnaceOpen||worksOpen){
     updateDayNight(0);updateWeather(0,t);updateMathOverlay();
     updateUnderwaterVisual(playerEnvironmentState(camera.position.x,freePhysicsY,camera.position.z).headUnderWater);return;
   }
@@ -5430,6 +5488,7 @@ function updateFree(dt,t){
     if(overlapSeconds>.18&&!escapeFreeOverlap())overlapSeconds=-.5;
   }else overlapSeconds=0;
   updateSimpleSurvivalUi();
+  if(t-journeyUiAt>200){journeyUiAt=t;updateFirstJourney()}
   if(landedThisFrame)stepSfx(groundSurfaceType(),true);
   if(freeFlying&&gameFreeMode==='creative')camera.position.y=freePhysicsY;
   else{
@@ -5468,6 +5527,7 @@ function configureMobileMode(target){
   $('mobileEscape')?.classList.toggle('hidden',target!=='free'||gameFreeMode!=='survival'||!mobileUtilityOpen);
   $('mobileMore').textContent=mobileUtilityOpen?'접기':'더보기';
   $('mobileAvatar').classList.toggle('hidden',target!=='free'||!mobileUtilityOpen);
+  $('mobileWorks').classList.toggle('hidden',target!=='free'||!mobileUtilityOpen);
   $('mobileFly').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
   const poiRestore=target==='free'&&gameFreeMode==='survival'&&survivalStage>=6&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
   $('mobileCheck').classList.toggle('hidden',target!=='challenge'&&!poiRestore&&target!=='dungeon');
@@ -5588,6 +5648,83 @@ function executeMobileRadialAction(action){
   tutorialSignal('mobile-radial-'+action);
   return ok;
 }
+function clearJourneyMarker(){
+  if(journeyMarker){scene.remove(journeyMarker);journeyMarker.geometry?.dispose();journeyMarker.material?.dispose();journeyMarker=null}
+}
+function showJourneyMarker(p){
+  if(!p)return;
+  if(!journeyMarker){journeyMarker=new THREE.Mesh(new THREE.BoxGeometry(1.04,1.04,1.04),new THREE.MeshBasicMaterial({color:0xffda69,wireframe:true,depthTest:false}));journeyMarker.renderOrder=30;scene.add(journeyMarker)}
+  journeyMarker.position.set(p[0],p[1]+.5,p[2]);journeyMarker.visible=true;
+}
+function startFirstJourney(){
+  if(firstJourney.phase!=='idle')return;
+  const plan=experience.bridgePlan((x,z)=>getHighestSolidY(x,z,10),getBlock);
+  if(!plan){toast('주변에 다리를 놓을 빈자리가 부족해. 자유롭게 탐험해도 괜찮아.');return}
+  // Add only empty anchor cells. Never flatten terrain or replace a student's work.
+  if(plan.anchors.some(p=>getBlock(...p)))return;
+  for(const p of plan.anchors)setWorldBlock(...p,{type:'planks',journeyAnchor:true},true);
+  firstJourney={phase:'build',plan};markFreeWorldDirty(300);updateFirstJourney();helpFirstJourney();
+}
+function helpFirstJourney(){
+  if(!firstJourney.plan)return;
+  if(firstJourney.phase==='cross'){showJourneyMarker(firstJourney.plan.anchors[1]);toast('다리 위로 올라가 반대편까지 걸어 보자.');return}
+  if(bagCount('planks')){putOnHotbar('planks');toggleInventory(false);toast('노란 테두리 옆면을 보고 판자를 놓아 보자.');return}
+  const recipe=worldRules.RECIPES.find(r=>r.id==='planks');survivalInventoryTab='craft';survivalCraftCategory='전체';selectedCraftRecipeId=recipe.id;toggleInventory(true);toast(craftNeedHint(recipe));
+}
+function updateFirstJourney(){
+  const card=$('journeyCard');if(!card)return;
+  const available=mode==='free'&&gameFreeMode==='survival'&&!campActive()&&survivalStage>=6&&!['done','skip'].includes(firstJourney.phase);
+  card.classList.toggle('hidden',!available);if(!available)return;
+  const idle=firstJourney.phase==='idle';$('journeyStart').classList.toggle('hidden',!idle);$('journeyHelp').classList.toggle('hidden',idle);
+  $('journeyTitle').textContent=idle?'첫 탐험 · 작은 다리':'첫 탐험 · 길을 이어 보자';
+  if(idle){$('journeyText').textContent='판자 세 칸으로 다리를 만들고 건너가 보자. 선물도 기다리고 있어!';return}
+  const plan=firstJourney.plan;
+  if(!plan)return;
+  const ready=experience.bridgeReady(plan,getBlock);
+  if(!ready){firstJourney.phase='build';const missing=plan.cells.find(p=>getBlock(...p)?.type!=='planks'||!getBlock(...p)?.playerBuilt);showJourneyMarker(missing);
+    const n=plan.cells.filter(p=>getBlock(...p)?.type==='planks'&&getBlock(...p)?.playerBuilt).length;
+    const distance=Math.round(Math.hypot(camera.position.x-plan.anchors[0][0],camera.position.z-plan.anchors[0][2]));
+    $('journeyText').textContent=distance>5?'노란 테두리까지 '+distance+'칸. 다리의 시작점을 찾아보자.':'판자 '+n+' / 3 · 노란 테두리에 한 칸씩 이어 놓아 보자.';return;
+  }
+  if(firstJourney.phase!=='cross'){firstJourney.phase='cross';markFreeWorldDirty(300)}
+  showJourneyMarker(plan.anchors[1]);$('journeyText').textContent='길이 이어졌어! 점프로 올라가 반대편까지 건너 보자.';
+  const [x,y,z]=plan.end;
+  if(Math.hypot(camera.position.x-x,camera.position.z-z)<.65&&Math.abs(freePhysicsY-1.62-y)<.2){
+    firstJourney.phase='done';clearJourneyMarker();
+    addToBag('planks',4);addToBag('roof',2);sfx('good');toast('첫 다리 완성! 판자 4개와 지붕 2개를 받았어.');
+    markFreeWorldDirty(300);saveFreeWorld();card.classList.add('hidden');
+  }
+}
+function toggleBuildingWorks(open){
+  worksOpen=!!open;
+  if(worksOpen){stopMining();if(inventoryOpen)toggleInventory(false);if(furnaceOpen)toggleFurnace(false);if(document.pointerLockElement===canvas)document.exitPointerLock();renderBuildingWorks()}
+  $('buildingWorksPanel').classList.toggle('hidden',!worksOpen);
+  if(!worksOpen&&!mobileModeEnabled&&mode==='free')resumeFreePointerLock();
+}
+function renderBuildingWorks(){
+  const gallery=$('worksGallery');gallery.replaceChildren();
+  if(!buildingWorks.length){const empty=document.createElement('p');empty.textContent='첫 작품을 사진으로 남겨 보자.';gallery.append(empty)}
+  for(const work of [...buildingWorks].reverse()){
+    const figure=document.createElement('figure'),img=document.createElement('img'),name=document.createElement('figcaption');
+    img.src=work.photo;img.alt=work.name;name.textContent=work.name;figure.append(img,name);gallery.append(figure);
+  }
+  $('workName').value=projectGuide||'나의 건축물';
+}
+function captureBuildingWork(){
+  if(mode!=='free'||!renderer)return;
+  const name=($('workName').value.trim()||'나의 건축물').slice(0,30);
+  try{
+    renderFreeScene(performance.now());
+    const thumb=document.createElement('canvas');thumb.width=320;thumb.height=180;
+    const ctx=thumb.getContext('2d');ctx.drawImage(canvas,0,0,320,180);
+    const photo=thumb.toDataURL('image/jpeg',.65);
+    if(photo.length>90000)throw new Error('photo too large');
+    const previousWorks=buildingWorks;
+    buildingWorks=experience.readWorks([...buildingWorks,{name,photo,date:new Date().toISOString()}]);
+    projectGuide=name;if(!saveFreeWorld()){buildingWorks=previousWorks;throw new Error('save failed')}renderBuildingWorks();toast('작품 사진을 남겼어! 최근 여섯 작품을 볼 수 있어.');
+  }catch(_){toast('사진을 남기지 못했어. 잠시 뒤 다시 눌러 보자.')}
+}
+
 function updateSimpleSurvivalUi(){
   const survival=mode==='free'&&gameFreeMode==='survival';
   document.body.classList.toggle('simple-survival',survival);
@@ -6235,6 +6372,7 @@ document.addEventListener('keydown',e=>{
   }
   if(mode!=='free')return;
   if(freeAvatarDefeated){e.preventDefault();return}
+  if(worksOpen){if(e.code==='Escape')toggleBuildingWorks(false);return}
   if(e.code==='KeyH'&&campActive()){e.preventDefault();campHelp(campStep());return}
   if(e.code==='KeyE'){e.preventDefault();if(furnaceOpen)toggleFurnace(false);else toggleInventory();return}
   if(e.code==='Escape'&&(inventoryOpen||furnaceOpen)){if(inventoryOpen)toggleInventory(false);if(furnaceOpen)toggleFurnace(false);return}

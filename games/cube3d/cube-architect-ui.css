@@ -528,3 +528,19 @@
 @media(pointer:coarse){.simple-survival #actionMore,.simple-survival #actionEscape{display:none!important}}
 
 .simple-survival #hotbar .empty-slot:not(.active){display:none}
+
+.simple-survival #actionWorks{display:none!important}
+.simple-survival.survival-more #actionWorks:not(.hidden){display:inline-flex!important}
+#journeyCard{position:absolute;top:210px;left:14px;width:min(286px,40vw);padding:12px;border-radius:14px;background:rgba(12,25,40,.9);color:white;z-index:20}
+#journeyCard p{font-size:12px;line-height:1.5;margin:8px 0}
+#journeyCard button,.craft-help,#buildingWorksPanel button{min-height:42px;padding:8px 12px;border:1px solid #b8ccdc;border-radius:10px;background:#edf5fa;color:#233c53;font-weight:800;margin:3px}
+#buildingWorksPanel{position:absolute;inset:8% 10%;z-index:100;overflow:auto;border-radius:18px;background:#f5f9fd;color:#21384b;padding:20px;box-shadow:0 20px 80px #0008}
+#buildingWorksPanel header{display:flex;justify-content:space-between;align-items:center}
+#buildingWorksPanel input{width:min(100%,330px);min-height:44px;border-radius:10px;border:1px solid #adc1d3;padding:8px}
+#buildingWorksPanel small{display:block;margin:8px 0}
+#worksGallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+#worksGallery figure{margin:0;padding:8px;border-radius:12px;background:white}
+#worksGallery img{width:100%;border-radius:8px}#worksGallery figcaption{padding:8px;font-weight:800}
+.next-correction{padding:10px;border-radius:10px;background:#fff3c8;color:#564514;font-weight:900;font-size:14px}
+@media(max-width:700px){#buildingWorksPanel{inset:4% 3%;padding:12px}#journeyCard{top:185px;left:8px;width:min(240px,55vw);padding:9px}}
+@media(pointer:coarse){.simple-survival #actionWorks{display:none!important}}

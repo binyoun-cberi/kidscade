@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#9bd8ff">
 <title>큐브 아키텍트 | Kidscade</title>
 <link rel="stylesheet" href="./cube-architect.css?v=20261006-survival-camp2">
-<link rel="stylesheet" href="./cube-architect-ui.css?v=20261006-simple-survival1">
+<link rel="stylesheet" href="./cube-architect-ui.css?v=20261006-experience1">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="cube3d" data-title="큐브 아키텍트" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </head>
@@ -52,6 +52,7 @@
     <div class="top-actions">
       <button id="actionTutorial" class="pill-btn">튜토리얼</button>
       <button id="actionAvatar" class="pill-btn hidden">캐릭터 꾸미기</button>
+      <button id="actionWorks" class="pill-btn hidden" type="button">내 작품</button>
       <button id="actionMore" class="pill-btn" type="button">더보기</button><button id="actionEscape" class="pill-btn" type="button">빠져나오기</button>
       <button id="actionView" class="pill-btn hidden" aria-label="현재 3인칭 시점. 누르면 1인칭으로 전환">시점 · 3인칭</button>
       <button id="actionXray" class="pill-btn hidden">구조 보기</button>
@@ -196,6 +197,7 @@
       <button id="survivalReturn" class="hidden" type="button">추위가 심해요 · 시작 지점으로 귀환</button>
       <div class="progress"><i id="adventureBar"></i></div>
     </div>
+    <section id="journeyCard" class="hidden"><b id="journeyTitle"></b><p id="journeyText"></p><button id="journeyStart" type="button">다리 만들러 가기</button><button id="journeyHelp" class="hidden" type="button">도움 받기</button><button id="journeySkip" type="button">자유롭게 탐험하기</button></section>
     <div id="freeHint">나무를 모으고 E로 가방과 제작법을 확인하세요.</div>
     <div id="hotbar"></div>
     <section id="blockInventory" class="hidden">
@@ -290,6 +292,7 @@
       <button id="mobileView" class="mobile-button" type="button" aria-label="현재 3인칭 시점. 누르면 1인칭으로 전환">3인칭</button>
       <button id="mobileMore" class="mobile-button" type="button">도구</button>
       <button id="mobileTutorial" class="mobile-button" type="button">도움</button>
+      <button id="mobileWorks" class="mobile-button hidden" type="button">내 작품</button>
       <button id="mobileEscape" class="mobile-button hidden" type="button">빠져나오기</button>
       <button id="mobileAvatar" class="mobile-button" type="button">꾸미기</button>
       <button id="mobileFly" class="mobile-button" type="button">비행</button>
@@ -327,6 +330,11 @@
     </div>
   </section>
 
+  <section id="buildingWorksPanel" class="hidden" role="dialog" aria-modal="true" aria-label="내 건축 작품">
+    <header><b>내 건축 작품</b><button id="worksClose" type="button">닫기</button></header>
+    <p>만들고 싶은 것을 골라 보자.</p><div class="building-ideas"><button data-building-idea="작은 집" type="button">작은 집 · 벽과 지붕</button><button data-building-idea="다리" type="button">다리 · 길 이어 보기</button><button data-building-idea="비밀 기지" type="button">비밀 기지 · 문과 창문</button></div>
+    <label for="workName">작품 이름</label><input id="workName" maxlength="30" placeholder="나의 건축물"><button id="worksCapture" type="button">지금 모습 사진으로 남기기</button><small>이 브라우저에 최근 여섯 작품을 보관해요.</small><div id="worksGallery"></div>
+  </section>
   <aside id="resultCard" class="hidden">
     <h3>검사 결과</h3>
     <div id="resultScore" class="score-big">0%</div>
@@ -360,7 +368,8 @@
 <script type="module" src="./cube-architect-creature-assets.js?v=20261004-32"></script>
 <script src="./cube-architect-voxel.js?v=20261003-29"></script>
 <script src="./cube-architect-camp.js?v=20261006-survival-camp2"></script>
-<script src="./cube-architect.js?v=20261006-simple-survival1"></script>
+<script src="./cube-architect-experience.js?v=20261006-experience1"></script>
+<script src="./cube-architect.js?v=20261006-experience1"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
