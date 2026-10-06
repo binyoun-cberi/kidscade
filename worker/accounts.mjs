@@ -1,4 +1,5 @@
 import { authorizeGlobalAdmin, authorizeTeacherForClass, ensureTeacherCredential } from './teacher-auth.mjs';
+import { createQrCredential, hashQrToken, isValidQrToken } from './qr-login.mjs';
 
 const JSON_HEADERS = Object.freeze({
   'content-type': 'application/json; charset=utf-8',
@@ -388,6 +389,48 @@ async function login(request, env) {
   return json({ ok: true, ...accountPayload(row) }, 200, { 'set-cookie': makeSessionCookie(token) });
 }
 
+async function qrLogin(request, env) {
+  const missing = requireConfig(env);
+  if (missing) return missing;
+  let body;
+  try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
+  const qrToken = String(body?.token || '').trim().toLowerCase();
+  if (!isValidQrToken(qrToken)) return json({ ok: false, error: 'invalid_qr' }, 401);
+
+  const qrTokenHash = await hashQrToken(qrToken);
+  const row = await env.DB.prepare(`
+    SELECT a.*, c.name AS class_name, c.class_code
+    FROM student_accounts a
+    JOIN kidscade_classes c ON c.id = a.class_id
+    WHERE a.qr_token_hash = ?
+  `).bind(qrTokenHash).first();
+  if (!row || row.disabled) return json({ ok: false, error: 'invalid_qr' }, 401);
+
+  const previousToken = parseCookies(request)[SESSION_COOKIE] || '';
+  if (/^[0-9a-f]{64}$/i.test(previousToken)) {
+    const previousHash = await sha256(previousToken);
+    await env.DB.prepare('DELETE FROM student_sessions WHERE token_hash = ?').bind(previousHash).run();
+  }
+
+  const sessionToken = randomToken();
+  const sessionTokenHash = await sha256(sessionToken);
+  const createdAt = nowIso();
+  const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_SEC * 1000).toISOString();
+  await env.DB.prepare('DELETE FROM student_sessions WHERE expires_at <= ?').bind(createdAt).run();
+  await env.DB.prepare(`
+    INSERT INTO student_sessions (token_hash, student_id, created_at, expires_at)
+    VALUES (?, ?, ?, ?)
+  `).bind(sessionTokenHash, row.id, createdAt, expiresAt).run();
+  await env.DB.prepare(`
+    UPDATE student_accounts
+    SET failed_attempts = 0, locked_until = NULL, last_login_at = ?, updated_at = ?
+    WHERE id = ?
+  `).bind(createdAt, createdAt, row.id).run();
+
+  row.last_login_at = createdAt;
+  return json({ ok: true, ...accountPayload(row) }, 200, { 'set-cookie': makeSessionCookie(sessionToken) });
+}
+
 async function logout(request, env) {
   const token = parseCookies(request)[SESSION_COOKIE] || '';
   if (env.DB && /^[0-9a-f]{64}$/i.test(token)) {
@@ -469,14 +512,20 @@ async function createClass(request, env) {
     const pin = randomPin();
     const pinHash = await hashPin(loginId, pin, env.KIDSCADE_ACCOUNT_PEPPER);
     const encryptedPin = await encryptStudentPin(pin, env.KIDSCADE_ACCOUNT_PEPPER);
+    const qrCredential = await createQrCredential(env.KIDSCADE_ACCOUNT_PEPPER);
     const studentId = crypto.randomUUID();
-    credentials.push({ loginId, pin, nickname: '새싹 게이머' });
+    credentials.push({ loginId, pin, nickname: '새싹 게이머', qrToken: qrCredential.token });
     statements.push(env.DB.prepare(`
       INSERT INTO student_accounts (
-        id, login_id, class_id, nickname, pin_hash, pin_ciphertext, pin_iv, state_json, state_revision,
-        failed_attempts, disabled, created_at, updated_at
-      ) VALUES (?, ?, ?, '새싹 게이머', ?, ?, ?, '{}', 0, 0, 0, ?, ?)
-    `).bind(studentId, loginId, classId, pinHash, encryptedPin.ciphertext, encryptedPin.iv, createdAt, createdAt));
+        id, login_id, class_id, nickname, pin_hash, pin_ciphertext, pin_iv,
+        qr_token_hash, qr_token_ciphertext, qr_token_iv,
+        state_json, state_revision, failed_attempts, disabled, created_at, updated_at
+      ) VALUES (?, ?, ?, '새싹 게이머', ?, ?, ?, ?, ?, ?, '{}', 0, 0, 0, ?, ?)
+    `).bind(
+      studentId, loginId, classId, pinHash, encryptedPin.ciphertext, encryptedPin.iv,
+      qrCredential.tokenHash, qrCredential.ciphertext, qrCredential.iv,
+      createdAt, createdAt
+    ));
   }
   if (typeof env.DB.batch === 'function') await env.DB.batch(statements);
   else for (const statement of statements) await statement.run();
@@ -542,13 +591,14 @@ export async function handleAccountRequest(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
   const accountPaths = new Set([
-    '/api/account/login', '/api/account/logout', '/api/account/me', '/api/account/sync',
+    '/api/account/login', '/api/account/qr-login', '/api/account/logout', '/api/account/me', '/api/account/sync',
     '/api/teacher/classes', '/api/teacher/reset-pin'
   ]);
   if (!accountPaths.has(path)) return null;
 
   try {
     if (path === '/api/account/login') return request.method === 'POST' ? login(request, env) : methodNotAllowed('POST');
+    if (path === '/api/account/qr-login') return request.method === 'POST' ? qrLogin(request, env) : methodNotAllowed('POST');
     if (path === '/api/account/logout') return request.method === 'POST' ? logout(request, env) : methodNotAllowed('POST');
     if (path === '/api/account/me') return request.method === 'GET' ? me(request, env) : methodNotAllowed('GET');
     if (path === '/api/account/sync') return request.method === 'POST' ? syncState(request, env) : methodNotAllowed('POST');
