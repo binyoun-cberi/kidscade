@@ -307,6 +307,7 @@ function refreshMap(){
   renderTokens();
 }
 
+function humanAvatarHref(mode='idle'){return window.KidscadeGameAvatar?.frame?.(mode)||''}
 function renderTokens(){
   ui.playerLayer.innerHTML='';
   const groups={};
@@ -318,8 +319,8 @@ function renderTokens(){
       const x=base.x+Math.cos(angle)*rad,y=base.y+Math.sin(angle)*rad+12;
       const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.setAttribute('class','player-token');g.setAttribute('transform','translate('+x+' '+y+')');
       const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');circle.setAttribute('r','9');circle.setAttribute('fill',p.color);
-      const txt=document.createElementNS('http://www.w3.org/2000/svg','text');txt.textContent=p.emoji;
-      g.append(circle,txt);ui.playerLayer.appendChild(g);
+      const avatarSrc=!p.isCpu?humanAvatarHref('idle'):'';
+      if(avatarSrc){const img=document.createElementNS('http://www.w3.org/2000/svg','image');img.setAttribute('href',avatarSrc);img.setAttribute('x','-15');img.setAttribute('y','-24');img.setAttribute('width','30');img.setAttribute('height','30');img.setAttribute('preserveAspectRatio','xMidYMid meet');g.append(circle,img)}else{const txt=document.createElementNS('http://www.w3.org/2000/svg','text');txt.textContent=p.emoji;g.append(circle,txt)}ui.playerLayer.appendChild(g);
     });
   });
 }
@@ -981,7 +982,8 @@ function netWorth(player){
   return Math.max(0,Math.round((player.money||0)+assets));
 }
 
-function updateAll(){
+function syncTravelAvatar(){const p=state.players[state.turn];if(!p)return;const src=!p.isCpu?humanAvatarHref('idle'):'';if(src){ui.turnAvatar.textContent='';ui.turnAvatar.style.backgroundImage='url("'+src+'")';ui.turnAvatar.style.backgroundSize='contain';ui.turnAvatar.style.backgroundPosition='center';ui.turnAvatar.style.backgroundRepeat='no-repeat'}else{ui.turnAvatar.style.backgroundImage='';ui.turnAvatar.textContent=p.emoji||'🧳'}}
+function updateAll(){syncTravelAvatar();
   ui.round.textContent=Math.min(state.round,state.maxRounds)+' / '+state.maxRounds;
   renderPlayerDock();refreshMap();
   const p=activePlayer();
