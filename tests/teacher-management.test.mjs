@@ -52,6 +52,7 @@ test('management API is routed before the general account API', () => {
   for (const route of [
     '/api/teacher/overview', '/api/teacher/add-students', '/api/teacher/student-status',
     '/api/teacher/student-logout', '/api/teacher/class-logout', '/api/teacher/reset-progress',
+    '/api/teacher/qr-credential', '/api/teacher/qr-class',
     '/api/teacher/student', '/api/teacher/class-delete'
   ]) assert.ok(admin.includes(route), `missing route ${route}`);
 });
@@ -71,5 +72,11 @@ test('teacher UI exposes lifecycle management and guarded destructive actions', 
   assert.match(client, /confirmName/);
   assert.match(client, /PIN 확인 불가/);
   assert.match(client, /다음 로그인 후 표시/);
+  assert.match(client, /QR 전체 인쇄/);
+  assert.match(client, /qr-reissue/);
+  assert.match(client, /\/api\/teacher\/qr-credential/);
+  assert.match(client, /\/api\/teacher\/qr-class/);
+  assert.match(html, /qr-renderer\.js/);
+  assert.match(fs.readFileSync(path.join(ROOT, 'qr-renderer.js'), 'utf8'), /KidscadeQrRenderer/);
   assert.match(fs.readFileSync(path.join(ROOT, 'worker', 'teacher-admin.mjs'), 'utf8'), /decryptStudentPin/);
 });
