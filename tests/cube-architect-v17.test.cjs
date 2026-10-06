@@ -24,7 +24,7 @@ test('v17 scripts parse and survival features connect to the launcher',()=>{
   assert.match(css,/#survivalReturn/);
   assert.match(js,/worldChunksGenerated=new Set/);
   assert.match(js,/generateWorldChunk\(bx,bz\)/);
-  assert.match(js,/version:12/);
+  assert.match(js,/version:13/);
 });
 test('survival has a finishable, action-driven sequence',()=>{
   assert.ok(rules.GOALS.length>=11);
