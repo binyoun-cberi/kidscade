@@ -8,8 +8,21 @@ if(!DATA||!Array.isArray(DATA.entries)){throw new Error('한자 급수 데이터
 const ROUND_SIZE=25;
 const PASS_CORRECT=20;
 const GRADE_ORDER=[8,7,6,5,4,3,2,1];
+const SELECTED_GRADE_KEY='kidscade_hanja_selected_grade_v1';
+const CARD_POINTS_KEY='kidscade_hanja_card_points_v1';
+const LEGACY_SELECTED_GRADE_KEY=['hanja','SelectedGrade'].join('');
+const LEGACY_CARD_POINTS_KEY=['hanja','CardPoints'].join('');
+function migrateHanjaStorage(){
+  try{
+    if(localStorage.getItem(SELECTED_GRADE_KEY)==null){const v=localStorage.getItem(LEGACY_SELECTED_GRADE_KEY);if(v!=null)localStorage.setItem(SELECTED_GRADE_KEY,v)}
+    if(localStorage.getItem(CARD_POINTS_KEY)==null){const v=localStorage.getItem(LEGACY_CARD_POINTS_KEY);if(v!=null)localStorage.setItem(CARD_POINTS_KEY,v)}
+    localStorage.removeItem(LEGACY_SELECTED_GRADE_KEY);
+    localStorage.removeItem(LEGACY_CARD_POINTS_KEY);
+  }catch(_){ }
+}
+migrateHanjaStorage();
 const els={};
-let selectedGrade=Math.min(8,Math.max(1,Number(localStorage.getItem('hanjaSelectedGrade')||8)));
+let selectedGrade=Math.min(8,Math.max(1,Number(localStorage.getItem(SELECTED_GRADE_KEY)||8)));
 let questions=[];
 let state={idx:0,correct:0,wrong:0,skipped:0,points:0,combo:0,locked:false,started:false};
 let audioCtx=null;
@@ -46,7 +59,7 @@ function renderGradeButtons(){
 
 function selectGrade(g){
   selectedGrade=g;
-  localStorage.setItem('hanjaSelectedGrade',String(g));
+  localStorage.setItem(SELECTED_GRADE_KEY,String(g));
   els.gradeGrid.querySelectorAll('.grade-btn').forEach(b=>b.classList.toggle('active',Number(b.dataset.grade)===g));
   els.startBtn.textContent=g+'급 · 25장 시작';
 }
@@ -223,7 +236,7 @@ function finishRound(){
   const best=(Number.isFinite(storedBest)&&storedBest>=0&&storedBest<=100)?storedBest:0;
   if(storedBest!==best||accuracy>best)localStorage.setItem('hanjaScore',String(Math.max(best,accuracy)));
   try{localStorage.removeItem('hanjaRank')}catch(_){}
-  localStorage.setItem('hanjaCardPoints',String(Math.max(state.points,Number(localStorage.getItem('hanjaCardPoints')||0))));
+  localStorage.setItem(CARD_POINTS_KEY,String(Math.max(state.points,Number(localStorage.getItem(CARD_POINTS_KEY)||0))));
   try{
     window.KidscadeGame?.score?.(accuracy,{unit:'점',higherIsBetter:true});
     window.KidscadeGame?.result?.({
