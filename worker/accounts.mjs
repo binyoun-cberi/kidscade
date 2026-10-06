@@ -146,6 +146,27 @@ export async function decryptStudentPin(ciphertext, iv, pepper) {
   return new TextDecoder().decode(decrypted);
 }
 
+export async function ensureStudentPinColumns(env) {
+  if (!env?.DB) return false;
+  const info = await env.DB.prepare('PRAGMA table_info(student_accounts)').all();
+  const names = new Set((info?.results || []).map(row => String(row.name || '')));
+  if (!names.size) return false;
+
+  const statements = [];
+  if (!names.has('pin_ciphertext')) statements.push('ALTER TABLE student_accounts ADD COLUMN pin_ciphertext TEXT');
+  if (!names.has('pin_iv')) statements.push('ALTER TABLE student_accounts ADD COLUMN pin_iv TEXT');
+
+  for (const sql of statements) {
+    try {
+      await env.DB.prepare(sql).run();
+    } catch (error) {
+      const message = String(error?.message || '');
+      if (!/duplicate column|already exists/i.test(message)) throw error;
+    }
+  }
+  return true;
+}
+
 function secureEqual(left, right) {
   const a = String(left || '');
   const b = String(right || '');
@@ -312,6 +333,7 @@ async function refreshStudentSessionIfNeeded(auth, env) {
 async function login(request, env) {
   const missing = requireConfig(env);
   if (missing) return missing;
+  await ensureStudentPinColumns(env);
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
   const loginId = normalizeLoginId(body?.loginId);
@@ -425,6 +447,7 @@ async function uniqueClassCode(env) {
 async function createClass(request, env) {
   const denied = authorizeTeacher(request, env);
   if (denied) return denied;
+  await ensureStudentPinColumns(env);
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
   const name = String(body?.name || '').trim().replace(/\s+/g, ' ').slice(0, 40);
@@ -497,6 +520,7 @@ async function resetPin(request, env) {
   if (!account) return json({ ok: false, error: 'account_not_found' }, 404);
   const access = await authorizeTeacherForClass(request, env, account.class_id);
   if (access.response) return access.response;
+  await ensureStudentPinColumns(env);
   const pin = randomPin();
   const pinHash = await hashPin(loginId, pin, env.KIDSCADE_ACCOUNT_PEPPER);
   const encryptedPin = await encryptStudentPin(pin, env.KIDSCADE_ACCOUNT_PEPPER);
