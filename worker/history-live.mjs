@@ -1,4 +1,4 @@
-import { QUESTION_BANK, CORE_HISTORY_FACTS, ERA_ORDER, normalizeEraSelection, chronologicalQuestionIndexes } from '../data/history-live-question-bank.mjs';
+import { QUESTION_BANK, CORE_HISTORY_FACTS, ERA_ORDER, normalizeEraSelection, chronologicalQuestionIndexes, balancedRandomFactIndexes } from '../data/history-live-question-bank.mjs';
 
 const JSON_HEADERS = Object.freeze({
   'content-type': 'application/json; charset=utf-8',
@@ -57,8 +57,13 @@ function randomQuestionIndexes(count,questionMode='choice',eras=ERA_ORDER){
     if(!fact||!selectedEras.includes(fact.era))return;
     const key=Number(q.sourceFact);if(!byFact.has(key))byFact.set(key,[]);byFact.get(key).push(index);
   });
-  const facts=[...byFact.keys()],bytes=new Uint32Array(Math.max(2,facts.length*3+count+4));crypto.getRandomValues(bytes);
-  for(let i=facts.length-1;i>0;i--){const j=bytes[i]%(i+1);[facts[i],facts[j]]=[facts[j],facts[i]]}
+  const allErasSelected=selectedEras.length===ERA_ORDER.length&&ERA_ORDER.every(era=>selectedEras.includes(era));
+  let facts=allErasSelected?balancedRandomFactIndexes(count,selectedEras):[...byFact.keys()];
+  facts=facts.filter(fact=>byFact.has(fact));
+  const bytes=new Uint32Array(Math.max(2,Math.max(facts.length,byFact.size)*3+count+4));crypto.getRandomValues(bytes);
+  if(!allErasSelected){
+    for(let i=facts.length-1;i>0;i--){const j=bytes[i]%(i+1);[facts[i],facts[j]]=[facts[j],facts[i]]}
+  }
   if(!facts.length)return [];
   const pickedFacts=facts.slice(0,Math.min(count,facts.length));
   let cursor=0;while(pickedFacts.length<count){pickedFacts.push(facts[cursor%facts.length]);cursor++;}
