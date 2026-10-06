@@ -2237,6 +2237,7 @@ function ensurePetsBuilt(){
 function scheduleBackgroundWorldWarmup(){
   const run=async()=>{
     await ensurePetsBuilt();
+    await cityRuntime?.warmDecor?.();
     warmAvatarRuntime();
   };
   if('requestIdleCallback'in window)requestIdleCallback(()=>{void run()},{timeout:900});
@@ -2575,7 +2576,7 @@ async function init(){
     mode='outdoor';activeVenue='';outdoor.visible=true;indoor.visible=false;venueLayer.visible=false;venueInteriors?.hideAll?.();
     player.x=dest.x;player.z=dest.z;zoneEl.textContent='씨앗마을 · 상점가';wasInCity=true;
   }else{mode='outdoor';outdoor.visible=true;indoor.visible=false;venueLayer.visible=false;zoneEl.textContent='집 앞 · 3D 마을';wasInCity=isCityArea(player.x,player.z)}
-  setLoadingStep('ready','done');setLoadingProgress(100,'준비 완료!','주민 3D 모습·펫·아바타 애니메이션은 필요한 순간에 이어서 준비해요.');
+  setLoadingStep('ready','done');setLoadingProgress(100,'준비 완료!','주민 3D 모습·펫·먼 장식·아바타 애니메이션은 플레이를 막지 않고 이어서 준비해요.');
   loading.classList.add('hide');
   canvas.focus();requestAnimationFrame(tick);scheduleBackgroundWorldWarmup();
 }
