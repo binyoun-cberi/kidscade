@@ -60,6 +60,7 @@ const TEST_FILES = [
   "tests/nail-artist-tycoon.test.cjs",
   "tests/world-flag-master-v2.test.cjs",
   "tests/k-travel-world-marble.test.cjs",
+  "tests/hanja-card-grade-test.test.cjs",
   "tests/bunsik-kitchen.test.cjs",
   "tests/restaurant-engine.test.cjs",
   "tests/deep-diver-2d.test.cjs",
