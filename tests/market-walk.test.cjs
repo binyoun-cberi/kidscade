@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const html=fs.readFileSync(path.join(root,'games/math_base10_blocks/우리 동네 마트 계산대.html'),'utf8');
+const html=fs.readFileSync(path.join(root,'games/math_base10_blocks/index.html'),'utf8');
 const js=fs.readFileSync(path.join(root,'games/math_base10_blocks/market-walk.js'),'utf8');
 
 test('neighborhood mart is a free-form life simulator instead of a shopping-list mission',()=>{
