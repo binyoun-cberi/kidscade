@@ -12,6 +12,11 @@ import {
   hashPin,
   encryptStudentPin,
   decryptStudentPin,
+  generateQrLoginToken,
+  isValidQrLoginToken,
+  hashQrLoginToken,
+  encryptQrLoginToken,
+  decryptQrLoginToken,
   makeSessionCookie
 } from '../worker/accounts.mjs';
 
@@ -40,6 +45,35 @@ test('student PIN encryption can be decrypted by the server with the account sec
   assert.notEqual(encrypted.ciphertext, '654321');
   assert.ok(encrypted.iv);
   assert.equal(await decryptStudentPin(encrypted.ciphertext, encrypted.iv, 'test-pepper'), '654321');
+});
+
+test('QR login tokens are random bearer secrets, hashed for lookup, and encrypted for re-printing', async () => {
+  const token = generateQrLoginToken();
+  assert.equal(isValidQrLoginToken(token), true);
+  assert.match(token, /^[0-9a-f]{64}$/);
+  const hash = await hashQrLoginToken(token);
+  assert.match(hash, /^[0-9a-f]{64}$/);
+  assert.notEqual(hash, token);
+  const encrypted = await encryptQrLoginToken(token, 'test-pepper');
+  assert.notEqual(encrypted.ciphertext, token);
+  assert.ok(encrypted.iv);
+  assert.equal(await decryptQrLoginToken(encrypted.ciphertext, encrypted.iv, 'test-pepper'), token);
+});
+
+test('QR quick-login routes and URL handoff are wired into the account client', () => {
+  const server = fs.readFileSync(path.join(ROOT, 'worker', 'accounts.mjs'), 'utf8');
+  const client = fs.readFileSync(path.join(ROOT, 'account-client.js'), 'utf8');
+  const migration = fs.readFileSync(path.join(ROOT, 'migrations', '0018_student_qr_login.sql'), 'utf8');
+  assert.match(server, /\/api\/account\/qr-preview/);
+  assert.match(server, /\/api\/account\/qr-login/);
+  assert.match(server, /qr_token_hash/);
+  assert.match(client, /QR 카드로 빠르게 로그인/);
+  assert.match(client, /BarcodeDetector/);
+  assert.match(client, /kcqr/);
+  assert.match(client, /응, 들어갈래!/);
+  assert.match(migration, /qr_token_hash/);
+  assert.match(migration, /qr_token_ciphertext/);
+  assert.match(migration, /qr_token_iv/);
 });
 
 test('student session cookie is long-lived, HttpOnly, Secure and strict same-site', () => {

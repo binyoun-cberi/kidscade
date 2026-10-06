@@ -1,4 +1,7 @@
-import { hashPin, normalizeLoginId, isValidLoginId, encryptStudentPin, decryptStudentPin } from './accounts.mjs';
+import {
+  hashPin, normalizeLoginId, isValidLoginId, encryptStudentPin, decryptStudentPin,
+  generateQrLoginToken, isValidQrLoginToken, hashQrLoginToken, encryptQrLoginToken, decryptQrLoginToken
+} from './accounts.mjs';
 import { authorizeTeacherAccess, authorizeTeacherForClass, ensureTeacherCredential, listTeacherCredentialsForAdmin } from './teacher-auth.mjs';
 import { kstWeekKey } from './sprout-power.mjs';
 
@@ -320,6 +323,96 @@ async function findStudent(env, loginId) {
   return env.DB.prepare('SELECT id, login_id, class_id, disabled FROM student_accounts WHERE login_id = ? COLLATE NOCASE').bind(normalized).first();
 }
 
+async function findQrStudent(env, loginId) {
+  const normalized = normalizeLoginId(loginId);
+  if (!isValidLoginId(normalized)) return null;
+  return env.DB.prepare(`
+    SELECT a.id, a.login_id, a.class_id, a.nickname, a.disabled,
+           a.qr_token_hash, a.qr_token_ciphertext, a.qr_token_iv,
+           c.name AS class_name, c.class_code
+    FROM student_accounts a
+    JOIN kidscade_classes c ON c.id = a.class_id
+    WHERE a.login_id = ? COLLATE NOCASE
+  `).bind(normalized).first();
+}
+
+function qrUrlFor(request, token) {
+  const url = new URL(request.url);
+  url.pathname = '/';
+  url.search = '';
+  url.hash = 'kcqr=' + encodeURIComponent(token);
+  return url.toString();
+}
+
+async function ensureStudentQrCard(request, env, account, rotate = false) {
+  let token = '';
+  if (!rotate && account.qr_token_ciphertext && account.qr_token_iv) {
+    try {
+      token = await decryptQrLoginToken(account.qr_token_ciphertext, account.qr_token_iv, env.KIDSCADE_ACCOUNT_PEPPER);
+    } catch (_) {
+      token = '';
+    }
+  }
+  if (!isValidQrLoginToken(token)) {
+    token = generateQrLoginToken();
+    const tokenHash = await hashQrLoginToken(token);
+    const encrypted = await encryptQrLoginToken(token, env.KIDSCADE_ACCOUNT_PEPPER);
+    const now = nowIso();
+    await env.DB.prepare(`
+      UPDATE student_accounts
+      SET qr_token_hash = ?, qr_token_ciphertext = ?, qr_token_iv = ?, qr_token_updated_at = ?, updated_at = ?
+      WHERE id = ?
+    `).bind(tokenHash, encrypted.ciphertext, encrypted.iv, now, now, account.id).run();
+  }
+  return {
+    loginId: account.login_id,
+    nickname: account.nickname || '새싹 게이머',
+    className: account.class_name || '',
+    disabled: Boolean(account.disabled),
+    qrUrl: qrUrlFor(request, token)
+  };
+}
+
+async function studentQrCard(request, env) {
+  let body;
+  try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
+  const account = await findQrStudent(env, body?.loginId);
+  if (!account) return json({ ok: false, error: 'account_not_found' }, 404);
+  const access = await authorizeTeacherForClass(request, env, account.class_id);
+  if (access.response) return access.response;
+  const card = await ensureStudentQrCard(request, env, account, Boolean(body?.rotate));
+  return json({ ok: true, card });
+}
+
+async function classQrCards(request, env) {
+  let body;
+  try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
+  const classId = String(body?.classId || '').trim();
+  if (!classId) return json({ ok: false, error: 'class_id_required' }, 400);
+  const access = await authorizeTeacherForClass(request, env, classId);
+  if (access.response) return access.response;
+  const classroom = await env.DB.prepare('SELECT id, name, class_code FROM kidscade_classes WHERE id = ?').bind(classId).first();
+  if (!classroom) return json({ ok: false, error: 'class_not_found' }, 404);
+  const rows = await env.DB.prepare(`
+    SELECT a.id, a.login_id, a.class_id, a.nickname, a.disabled,
+           a.qr_token_hash, a.qr_token_ciphertext, a.qr_token_iv,
+           c.name AS class_name, c.class_code
+    FROM student_accounts a
+    JOIN kidscade_classes c ON c.id = a.class_id
+    WHERE a.class_id = ? AND a.disabled = 0
+    ORDER BY a.login_id ASC
+  `).bind(classId).all();
+  const cards = [];
+  for (const account of rows?.results || []) {
+    cards.push(await ensureStudentQrCard(request, env, account, false));
+  }
+  return json({
+    ok: true,
+    classroom: { id: classroom.id, name: classroom.name, code: classroom.class_code },
+    cards
+  });
+}
+
 async function setStudentStatus(request, env) {
   let body;
   try { body = await parseJson(request); } catch (_) { return json({ ok: false, error: 'invalid_json' }, 400); }
@@ -440,6 +533,8 @@ export async function handleTeacherManagementRequest(request, env) {
     '/api/teacher/class',
     '/api/teacher/add-students',
     '/api/teacher/student-status',
+    '/api/teacher/qr-card',
+    '/api/teacher/qr-cards',
     '/api/teacher/student-logout',
     '/api/teacher/class-logout',
     '/api/teacher/reset-progress',
@@ -452,6 +547,8 @@ export async function handleTeacherManagementRequest(request, env) {
     if (path === '/api/teacher/class') return request.method === 'PATCH' ? renameClass(request, env) : methodNotAllowed('PATCH');
     if (path === '/api/teacher/add-students') return request.method === 'POST' ? addStudents(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/student-status') return request.method === 'POST' ? setStudentStatus(request, env) : methodNotAllowed('POST');
+    if (path === '/api/teacher/qr-card') return request.method === 'POST' ? studentQrCard(request, env) : methodNotAllowed('POST');
+    if (path === '/api/teacher/qr-cards') return request.method === 'POST' ? classQrCards(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/student-logout') return request.method === 'POST' ? forceStudentLogout(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/class-logout') return request.method === 'POST' ? forceClassLogout(request, env) : methodNotAllowed('POST');
     if (path === '/api/teacher/reset-progress') return request.method === 'POST' ? resetStudentProgress(request, env) : methodNotAllowed('POST');
