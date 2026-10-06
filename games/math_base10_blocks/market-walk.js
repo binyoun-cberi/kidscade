@@ -73,7 +73,6 @@ const ui={
  dayModal:$('#dayModal'),dayReportTitle:$('#dayReportTitle'),dayReportSummary:$('#dayReportSummary'),dayIncome:$('#dayIncome'),dayExpense:$('#dayExpense'),dayKcal:$('#dayKcal'),dayNutrition:$('#dayNutrition'),dayWeight:$('#dayWeight'),dayHealth:$('#dayHealth'),nextDayBtn:$('#nextDayBtn'),
  week:$('#weekModal'),weekSummary:$('#weekSummary'),weekCooked:$('#weekCooked'),weekQuick:$('#weekQuick'),weekMoney:$('#weekMoney'),weekBalance:$('#weekBalance'),nextWeek:$('#nextWeekBtn')
 };
-};
 
 const freshStats=()=>({cooked:0,quick:0,spent:0,sugar:0,sodium:0,veg:0,protein:0,meals:0});
 const freshDailyNutrition=()=>({protein:0,veg:0,sugar:0,sodium:0});
@@ -85,7 +84,6 @@ const starterInventory=()=>[
  {uid:'starter-apple',id:'apple',age:0}
 ];
 let state={location:'home',phase:'loading',running:false,sound:true,day:1,slot:0,money:WEEKLY_BUDGET,hunger:58,dailyKcal:0,condition:75,satisfaction:62,weightKg:35,dailyNutrition:freshDailyNutrition(),dailyIncome:0,dailyExpense:0,dailyIncidents:[],injury:null,treatmentNeeded:false,workedDay:0,dogEventDay:0,inventory:starterInventory(),basket:[],hasCart:false,held:null,prep:[],dish:null,event:null,mealFoods:[],mealCooked:false,mealQuick:false,weekStats:freshStats(),checkoutMistakes:0,totalConfirmed:false,paid:0,changeConfirmed:false,scanned:new Set()};
-;
 
 let audioCtx;
 function tone(type){
