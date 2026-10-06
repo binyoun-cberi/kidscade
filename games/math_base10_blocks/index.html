@@ -16,11 +16,12 @@
   <div class="brand glass"><div class="logo">🛒</div><div><b>우리 동네 마트</b><small>장보고 · 요리하고 · 먹고 살기</small></div></div>
   <div class="topActions">
     <div class="stats glass">
-      <div class="stat"><span>오늘</span><b id="dayStat">1일차 · 아침</b></div>
-      <div class="stat"><span>남은 식비</span><b id="moneyStat">35,000원</b></div>
-      <div class="stat"><span>배고픔</span><b id="hungerStat">보통</b></div>
-      <div class="stat"><span>오늘 먹은 열량</span><b id="kcalStat">0 kcal</b></div>
-      <div class="stat"><span>컨디션</span><b id="conditionStat">좋음</b></div>
+      <div class="stat stat-day"><span>오늘</span><b id="dayStat">1일차 · 아침</b></div>
+      <div class="stat stat-money"><span>💰 보유금</span><b id="moneyStat">35,000원</b></div>
+      <div class="stat"><span>🍚 오늘 섭취</span><b id="kcalStat">0 kcal</b></div>
+      <div class="stat"><span>🥗 영양 상태</span><b id="nutritionStat">아직 식사 전</b></div>
+      <div class="stat"><span>⚖️ 몸무게</span><b id="weightStat">35.0 kg</b></div>
+      <div class="stat"><span>❤️ 건강</span><b id="conditionStat">좋음</b></div>
     </div>
     <button class="iconBtn glass hidden" id="cartBtn" aria-label="카트 보기">🛒<small id="cartCount">0</small></button>
     <button class="iconBtn glass" id="soundBtn" aria-label="소리 켜기 또는 끄기">🔊</button>
@@ -30,6 +31,8 @@
 <section class="tapControls glass hidden" id="tapControls"><div class="tapHead"><b id="trayNote"></b><button id="walkToggle" type="button">직접 걷기</button></div><nav id="placeButtons" aria-label="주요 장소"></nav><nav id="localPlaces" aria-label="현재 공간 둘러보기"></nav><h3 id="tapTitle"></h3><div id="tapItems"></div></section>
 <div class="locationChip glass" id="locationChip">🏠 집 · 부엌</div>
 <div class="eventCard glass hidden" id="eventCard"><span>✨ 깜짝</span><b id="eventTitle"></b><small id="eventText"></small></div>
+<div class="chaseHud glass hidden" id="chaseHud"><span>🐕</span><div><b id="chaseTitle">강아지가 쫓아와요!</b><small id="chaseText">멀리 도망가세요.</small></div></div>
+<div class="injuryFlash" id="injuryFlash"></div>
 <div class="toast" id="toast"></div>
 <div class="productLabels" id="productLabels"></div>
 
@@ -99,6 +102,22 @@
   </div>
 </div>
 
+<div class="modal hidden" id="dayModal">
+  <div class="modalCard resultCard">
+    <div class="eyebrow">DAILY LIFE NOTE</div><h1 id="dayReportTitle">오늘의 생활 기록</h1>
+    <p id="dayReportSummary"></p>
+    <div class="resultGrid dayResultGrid">
+      <div><span>오늘 번 돈</span><b id="dayIncome">0원</b></div>
+      <div><span>오늘 쓴 돈</span><b id="dayExpense">0원</b></div>
+      <div><span>섭취 열량</span><b id="dayKcal">0 kcal</b></div>
+      <div><span>영양 상태</span><b id="dayNutrition">-</b></div>
+      <div><span>몸무게</span><b id="dayWeight">35.0 kg</b></div>
+      <div><span>건강</span><b id="dayHealth">좋음</b></div>
+    </div>
+    <div class="modalActions"><button id="nextDayBtn" class="primary">다음 날 시작</button></div>
+  </div>
+</div>
+
 <div class="modal hidden" id="weekModal">
   <div class="modalCard resultCard">
     <div class="eyebrow">WEEKLY LIFE NOTE</div><h1>이번 주 생활 돌아보기</h1>
@@ -108,6 +127,6 @@
   </div>
 </div>
 
-<script type="module" src="market-walk.js?v=10-neighborhood"></script>
+<script type="module" src="market-walk.js?v=11-life-town"></script>
 </body>
 </html>
