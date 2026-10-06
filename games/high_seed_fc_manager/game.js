@@ -424,24 +424,51 @@ function table(){
   }
   root.innerHTML=html;
 }
+function replayTeamTotals(r,side){
+  var total={touches:0,shots:0,goals:0,saves:0,distance:0,xg:0,passesAttempted:0,passesCompleted:0,progressivePasses:0,keyPasses:0,assists:0,tackles:0,crosses:0};
+  (r.players||[]).filter(function(p){return p.side===side;}).forEach(function(p){
+    var st=r.stats&&r.stats[p.id]||{};Object.keys(total).forEach(function(k){total[k]+=Number(st[k]||0);});
+  });
+  return total;
+}
+function replayUserScore(r){return r.userSide===0?[Number(r.score[0]||0),Number(r.score[1]||0)]:[Number(r.score[1]||0),Number(r.score[0]||0)];}
+function replayOutcome(r){var sc=replayUserScore(r);return sc[0]>sc[1]?'w':sc[0]<sc[1]?'l':'d';}
 function analysis(){
   var root=$('viewRoot'),list=state.replays||[];
+  if(!list.length){
+    root.innerHTML='<div class="section-bar"><div><span class="eyebrow">MATCH CENTRE</span><h2>경기 분석실</h2><div class="muted">경기를 마치면 기록이 자동으로 쌓이고 이곳에서 다시 볼 수 있어요.</div></div></div><section class="panel empty-analysis"><h3>아직 분석할 경기가 없어요.</h3><p class="muted">첫 경기를 마치면 슈팅·xG·패스 성공률·태클·이동량과 함께 다시보기, 선수별 히트맵, 패스맵, 주요 장면, 전술 변경 전후 기록이 자동으로 열립니다.</p><div class="analysis-empty-actions"><button class="primary" data-analysis-home type="button">⚽ 첫 경기 하러 가기</button></div></section>';
+    var homeBtn=root.querySelector('[data-analysis-home]');if(homeBtn)homeBtn.onclick=function(){render('home');};return;
+  }
+  var latest=list[0],latestTotals=replayTeamTotals(latest,latest.userSide),passPct=latestTotals.passesAttempted?Math.round(latestTotals.passesCompleted/latestTotals.passesAttempted*100):0;
+  var record={w:0,d:0,l:0,gf:0,ga:0,shots:0,xg:0,passA:0,passC:0,tackles:0},leaders={};
+  list.forEach(function(r){
+    var outcome=replayOutcome(r),sc=replayUserScore(r),tot=replayTeamTotals(r,r.userSide);record[outcome]++;record.gf+=sc[0];record.ga+=sc[1];record.shots+=tot.shots;record.xg+=tot.xg;record.passA+=tot.passesAttempted;record.passC+=tot.passesCompleted;record.tackles+=tot.tackles;
+    (r.players||[]).filter(function(p){return p.side===r.userSide;}).forEach(function(p){var st=r.stats&&r.stats[p.id]||{},q=leaders[p.id]||(leaders[p.id]={name:p.name,goals:0,assists:0,keyPasses:0,tackles:0,saves:0,apps:0});q.goals+=Number(st.goals||0);q.assists+=Number(st.assists||0);q.keyPasses+=Number(st.keyPasses||0);q.tackles+=Number(st.tackles||0);q.saves+=Number(st.saves||0);q.apps++;});
+  });
+  var leaderList=Object.keys(leaders).map(function(id){var q=leaders[id];q.score=q.goals*6+q.assists*4+q.keyPasses*1.5+q.tackles+q.saves*1.5;return q;}).sort(function(a,b){return b.score-a.score;}).slice(0,3);
+  var recentPass=record.passA?Math.round(record.passC/record.passA*100):0,latestScore=replayUserScore(latest),latestH=clubById(latest.homeClubId),latestA=clubById(latest.awayClubId);
+  var trend=list.slice(0,6).map(function(r){var o=replayOutcome(r),sc=replayUserScore(r);return '<span class="'+o+'" title="'+sc[0]+' : '+sc[1]+'">'+(o==='w'?'승':o==='d'?'무':'패')+' '+sc[0]+':'+sc[1]+'</span>';}).join('');
+  var overview='<div class="analysis-overview"><section class="analysis-summary"><span class="eyebrow">최근 '+list.length+'경기</span><h3>팀 흐름 한눈에 보기</h3><div class="analysis-record"><span class="win">'+record.w+'승</span><span class="draw">'+record.d+'무</span><span class="loss">'+record.l+'패</span><span>'+record.gf+'득점 · '+record.ga+'실점</span></div><div class="analysis-kpis"><div><b>'+(record.shots/list.length).toFixed(1)+'</b><small>경기당 슈팅</small></div><div><b>'+(record.xg/list.length).toFixed(2)+'</b><small>경기당 xG</small></div><div><b>'+recentPass+'%</b><small>패스 성공률</small></div><div><b>'+(record.tackles/list.length).toFixed(1)+'</b><small>경기당 태클</small></div><div><b>'+record.gf+'</b><small>총 득점</small></div><div><b>'+record.ga+'</b><small>총 실점</small></div></div><div class="analysis-trend">'+trend+'</div></section>'+
+    '<section class="analysis-latest"><span class="eyebrow">LATEST MATCH</span><h3>'+latestH.emoji+' '+esc(latestH.short)+' '+latest.score[0]+' : '+latest.score[1]+' '+esc(latestA.short)+' '+latestA.emoji+'</h3><div class="analysis-kpis"><div><b>'+latestTotals.shots+'</b><small>슈팅</small></div><div><b>'+latestTotals.xg.toFixed(2)+'</b><small>xG</small></div><div><b>'+passPct+'%</b><small>패스 성공률</small></div><div><b>'+latestTotals.tackles+'</b><small>태클 성공</small></div><div><b>'+latestTotals.keyPasses+'</b><small>키패스</small></div><div><b>'+latestTotals.distance.toFixed(1)+'</b><small>추정 이동 km</small></div></div><div class="analysis-quick"><button data-replay-mode="replay" data-replay-index="0" type="button">▶ 다시보기</button><button data-replay-mode="heat" data-replay-index="0" type="button">🔥 히트맵</button><button data-replay-mode="pass" data-replay-index="0" type="button">↗ 패스맵</button></div></section></div>';
+  var leadersHtml='<section class="analysis-leaders"><h3>최근 경기 활약 선수</h3><div class="analysis-leader-list">'+leaderList.map(function(q){return '<div><b>'+esc(q.name)+'</b><small>'+q.goals+'골 · '+q.assists+'도움 · 키패스 '+q.keyPasses+' · 태클 '+q.tackles+(q.saves?' · 선방 '+q.saves:'')+'</small></div>';}).join('')+'</div></section>';
   var cards=list.map(function(r,i){
-    var h=clubById(r.homeClubId),a=clubById(r.awayClubId);
-    return '<article class="replay-card"><div><span class="round-pill">'+esc(r.league||'경기')+' · 시즌 '+r.season+' '+r.round+'R</span><h3>'+h.emoji+' '+esc(h.short)+' <b>'+r.score[0]+' : '+r.score[1]+'</b> '+esc(a.short)+' '+a.emoji+'</h3><p class="muted">선수 집중 다시보기 · 히트맵 · 패스맵 · 전술 변경 기록 · 개인 경기 기록</p></div><button class="primary" data-replay="'+i+'" type="button">경기 분석</button></article>';
+    var h=clubById(r.homeClubId),a=clubById(r.awayClubId),tot=replayTeamTotals(r,r.userSide),pct=tot.passesAttempted?Math.round(tot.passesCompleted/tot.passesAttempted*100):0;
+    return '<article class="replay-card"><div><span class="round-pill">'+esc(r.league||'경기')+' · 시즌 '+r.season+' '+r.round+'R</span><h3>'+h.emoji+' '+esc(h.short)+' <b>'+r.score[0]+' : '+r.score[1]+'</b> '+esc(a.short)+' '+a.emoji+'</h3><p class="muted">슈팅 '+tot.shots+' · xG '+tot.xg.toFixed(2)+' · 패스 '+pct+'% · 태클 '+tot.tackles+' · 전술 변경 '+Math.max(0,(r.tacticChanges||[]).filter(function(x){return x.side===r.userSide&&x.minute>0;}).length)+'회</p></div><div class="replay-card-actions"><button class="primary" data-replay-mode="replay" data-replay-index="'+i+'" type="button">▶ 다시보기</button><button data-replay-mode="heat" data-replay-index="'+i+'" type="button">🔥 히트맵</button><button data-replay-mode="pass" data-replay-index="'+i+'" type="button">↗ 패스맵</button></div></article>';
   }).join('');
-  root.innerHTML='<div class="section-bar"><div><span class="eyebrow">MATCH CENTRE</span><h2>경기 분석실</h2><div class="muted">최근 6경기를 저장해 선수별 움직임·히트맵·패스맵을 다시 볼 수 있어요.</div></div></div>'+(cards?'<div class="replay-list">'+cards+'</div>':'<section class="panel empty-analysis"><h3>아직 분석할 경기가 없어요.</h3><p class="muted">경기를 한 번 마치면 다시보기와 히트맵이 여기에 저장됩니다.</p></section>');
-  root.querySelectorAll('[data-replay]').forEach(function(b){b.onclick=function(){openReplay(Number(b.dataset.replay));};});
+  root.innerHTML='<div class="section-bar"><div><span class="eyebrow">MATCH CENTRE</span><h2>경기 분석실</h2><div class="muted">최근 6경기의 팀 흐름을 먼저 보고, 원하는 경기의 다시보기·히트맵·패스맵으로 바로 들어갈 수 있어요.</div></div></div>'+overview+leadersHtml+'<div class="replay-list">'+cards+'</div>';
+  root.querySelectorAll('[data-replay-mode]').forEach(function(b){b.onclick=function(){openReplay(Number(b.dataset.replayIndex),b.dataset.replayMode);};});
 }
 function replayPlayerMeta(id){return replayCurrent&&replayCurrent.players.find(function(p){return p.id===id;});}
-function openReplay(index){
+function openReplay(index,mode,focus){
   replayReturnView=currentView||'analysis';
   replayCurrent=(state.replays||[])[index];if(!replayCurrent)return;
   $('replayClose').textContent=replayReturnView==='analysis'?'← 분석실로':'← 홈으로';
-  replayFrame=0;replayCursor=0;replayPlaying=false;replayMode='replay';replayFocus='all';
+  replayFrame=0;replayCursor=0;replayPlaying=false;replayMode=mode||'replay';replayFocus=focus||'all';
   var h=clubById(replayCurrent.homeClubId),a=clubById(replayCurrent.awayClubId);
   $('replayTitle').textContent='시즌 '+replayCurrent.season+' '+replayCurrent.round+'R · '+h.name+' '+replayCurrent.score[0]+' : '+replayCurrent.score[1]+' '+a.name;
   var select=$('replayPlayer');select.innerHTML='<option value="all">전체 선수 보기</option>'+replayCurrent.players.slice().sort(function(x,y){return x.side-y.side;}).map(function(p){return '<option value="'+esc(p.id)+'">'+(p.side===replayCurrent.userSide?'★ ':'')+esc(p.name)+' · '+esc(p.pos)+'</option>';}).join('');
+  if(replayMode==='heat'&&replayFocus==='all'){var first=replayCurrent.players.find(function(p){return p.side===replayCurrent.userSide;});if(first)replayFocus=first.id;}
+  select.value=replayFocus;
   $('replayRange').min=0;$('replayRange').max=Math.max(0,replayCurrent.frames.length-1);$('replayRange').value=0;
   renderReplayEvents();updateReplayButtons();updateReplayStats();drawReplayFrame();
   $('replayLayer').classList.remove('hidden');cancelAnimationFrame(replayRaf);
