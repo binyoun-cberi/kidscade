@@ -29,6 +29,7 @@ const sprites={
  cpu:{stand:sprite('female','stand'),action:sprite('female','action1'),walk1:sprite('female','walk1'),walk2:sprite('female','walk2'),cheer:sprite('female','cheer1')}
 };
 function readyImage(i){return !!(i&&i.complete&&i.naturalWidth>0&&i.naturalHeight>0)}
+function liveAvatar(mode='idle'){const src=window.KidscadeGameAvatar?.frame?.(mode);if(!src)return avatarImg;if(!liveAvatar.cache)liveAvatar.cache=new Map();let im=liveAvatar.cache.get(src);if(!im){im=loadImage(src);liveAvatar.cache.set(src,im)}return readyImage(im)?im:avatarImg}
 function teamColor(side){return side==='user'?'#22c55e':'#60a5fa'}
 function drawShadow(x,y,w=24){ctx.save();ctx.fillStyle='rgba(5,20,13,.25)';ctx.beginPath();ctx.ellipse(x,y,w,5,0,0,Math.PI*2);ctx.fill();ctx.restore()}
 
@@ -755,7 +756,7 @@ function drawPlateView(isBatting){
  if(isBatting){
   const throwing=pitch&&pitch.owner==='cpu'&&pitch.t<.38;
   drawPlayer(throwing?sprites.cpu.action:sprites.cpu.stand,480,254,.9,false,'#2563eb',true,1);
-  const batter=readyImage(avatarImg)?avatarImg:(simTime<swingAnimationUntil?sprites.user.action:sprites.user.stand);
+  const batter=readyImage(avatarImg)?avatarImg:(simTime<swingAnimationUntil?(liveAvatar('attack')||sprites.user.action):(liveAvatar('idle')||sprites.user.stand));
   drawPlayer(batter,626,449,1.2,true,'#16a34a',true,4);
   drawBatFan();
   if(swing?.contact){
@@ -784,7 +785,7 @@ function drawPlateView(isBatting){
   }
  }else{
   const throwing=pitch&&pitch.owner==='user'&&pitch.t<.38;
-  drawPlayer(throwing?sprites.user.action:sprites.user.stand,480,254,.9,false,'#16a34a',true,1);
+  drawPlayer(throwing?(liveAvatar('attack')||sprites.user.action):(liveAvatar('idle')||sprites.user.stand),480,254,.9,false,'#16a34a',true,1);
   const batting=pitch&&pitch.owner==='user'&&pitch.t>.78&&pitch.cpuDecision;
   drawPlayer(batting?sprites.cpu.action:sprites.cpu.stand,590,447,1.2,true,'#2563eb',true,4);
   ctx.save();ctx.translate(577,387);ctx.rotate(.58);ctx.scale(-1,1);
