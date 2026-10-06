@@ -1,7 +1,7 @@
 import { hashPin, normalizeLoginId, isValidLoginId, encryptStudentPin, decryptStudentPin, ensureStudentPinColumns } from './accounts.mjs';
 import { authorizeTeacherAccess, authorizeTeacherForClass, ensureTeacherCredential, listTeacherCredentialsForAdmin } from './teacher-auth.mjs';
 import { kstWeekKey } from './sprout-power.mjs';
-import { createQrCredential, decryptQrToken } from './qr-login.mjs';
+import { createQrCredential, decryptQrToken, ensureStudentQrColumns } from './qr-login.mjs';
 
 const JSON_HEADERS = Object.freeze({
   'content-type': 'application/json; charset=utf-8',
@@ -126,6 +126,7 @@ async function getOverview(request, env) {
   const auth = await authorizeTeacherAccess(request, env);
   if (auth.response) return auth.response;
   await ensureStudentPinColumns(env);
+  await ensureStudentQrColumns(env);
 
   const classes = auth.global
     ? await env.DB.prepare(`
@@ -278,6 +279,7 @@ async function addStudents(request, env) {
   const access = await authorizeTeacherForClass(request, env, classId);
   if (access.response) return access.response;
   await ensureStudentPinColumns(env);
+  await ensureStudentQrColumns(env);
   const classroom = await env.DB.prepare(`
     SELECT c.id, c.class_code, c.name, COUNT(a.id) AS student_count
     FROM kidscade_classes c
@@ -352,6 +354,7 @@ async function getStudentQrCredential(request, env) {
   if (!row) return json({ ok: false, error: 'account_not_found' }, 404);
   const access = await authorizeTeacherForClass(request, env, row.class_id);
   if (access.response) return access.response;
+  await ensureStudentQrColumns(env);
   const credential = await ensureQrForRow(env, row, Boolean(body?.reissue));
   return json({
     ok: true,
@@ -369,6 +372,7 @@ async function getClassQrCredentials(request, env) {
   if (!classId) return json({ ok: false, error: 'class_id_required' }, 400);
   const access = await authorizeTeacherForClass(request, env, classId);
   if (access.response) return access.response;
+  await ensureStudentQrColumns(env);
   const classroom = await env.DB.prepare('SELECT id, name, class_code FROM kidscade_classes WHERE id = ?').bind(classId).first();
   if (!classroom) return json({ ok: false, error: 'class_not_found' }, 404);
   const result = await env.DB.prepare(`
