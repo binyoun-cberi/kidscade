@@ -8,7 +8,7 @@ var SAVE_KEY='kidscade_game_v2:high_seed_fc_manager:save';
 var state=null,currentView='home',squadFilter='all',historyFilter=null;
 var modal=document.getElementById('modal'),modalBody=document.getElementById('modalBody');
 var toastEl=document.getElementById('toast'),toastTimer=0;
-var match=null,matchSpeed=1,raf=0,lastFrame=0,resultShown=false,directCoachSeen=false;
+var match=null,matchSpeed=1,raf=0,lastFrame=0,resultShown=false,directCoachSeen=false,matchTutorial=null;
 var broadcastRenderer=window.SeedFCBroadcast&&typeof window.SeedFCBroadcast.create==='function'?window.SeedFCBroadcast.create():null;
 var replayCurrent=null,replayFrame=0,replayCursor=0,replayPlaying=false,replayPlaySpeed=1,replayRaf=0,replayLast=0,replayMode='replay',replayFocus='all',replayReturnView='analysis';
 var soccerBallImg=new Image();
@@ -138,7 +138,7 @@ function autoLineup(roster,formation){
 }
 function newState(clubId){
   var c=clubById(clubId),roster=clone(c.players);
-  return {version:4,clubId:clubId,season:1,round:0,budget:c.budget,formation:'1-2-1',tactics:Object.assign({line:'standard',tempo:'normal',width:'normal'},clone(c.tactics)),roster:roster,lineup:autoLineup(roster,'1-2-1'),schedule:schedule(),table:tableBlank(),matchHistory:[],trainingAvailable:false,worldSigned:[],managerNotes:[],lastResult:null,replays:[],career:{},scouting:{},historyProgress:{discovered:{},connected:{},attempts:0,correct:0},positionModelVersion:1,pyramid:null,otherLeague:null};
+  return {version:4,clubId:clubId,season:1,round:0,budget:c.budget,formation:'1-2-1',tactics:Object.assign({line:'standard',tempo:'normal',width:'normal'},clone(c.tactics)),roster:roster,lineup:autoLineup(roster,'1-2-1'),schedule:schedule(),table:tableBlank(),matchHistory:[],trainingAvailable:false,worldSigned:[],managerNotes:[],lastResult:null,replays:[],career:{},scouting:{},historyProgress:{discovered:{},connected:{},attempts:0,correct:0},matchTutorialDone:false,positionModelVersion:1,pyramid:null,otherLeague:null};
 }
 function normalize(){
   var migratingV4=(state.version||0)<4;
@@ -152,6 +152,7 @@ function normalize(){
   state.tactics=Object.assign({attack:'short',press:'shape',mindset:'balanced',line:'standard',tempo:'normal',width:'normal'},state.tactics||clone(clubById(state.clubId).tactics));
   state.schedule=state.schedule||schedule();state.table=state.table||tableBlank();state.matchHistory=state.matchHistory||[];state.worldSigned=state.worldSigned||[];
   state.managerNotes=state.managerNotes||[];state.trainingAvailable=!!state.trainingAvailable;state.replays=Array.isArray(state.replays)?state.replays:[];state.career=state.career||{};
+  if(state.matchTutorialDone===undefined)state.matchTutorialDone=state.matchHistory.length>0;
   if(state.pyramid===undefined)state.pyramid=null;if(state.otherLeague===undefined)state.otherLeague=null;
   var sourcePlayers=[];D.clubs.forEach(function(c){sourcePlayers=sourcePlayers.concat(c.players);});sourcePlayers=sourcePlayers.concat(D.world);
   state.roster.forEach(function(p){
@@ -597,11 +598,72 @@ function finishRound(f,hg,ag,replayData){
   settlePlayerCondition(myGoals,oppGoals,replayData);state.round++;state.trainingAvailable=true;state.roster.forEach(function(p){if(state.lineup.indexOf(p.id)<0)p.fitness=clamp((p.fitness||100)+5,0,100);});state.budget+=80;save();updateTop();sdkScore((state.table[state.clubId]?state.table[state.clubId].pts:0)*100+state.season*1000);
 }
 function opponentSetup(o){return clubMatchSetup(o,fixtureSeed(state.clubId,o.id)+'|opponent');}
+
+var MATCH_TUTORIAL_STEPS=[
+  {key:'watch',title:'1. 먼저 지켜봐도 괜찮아요',text:'경기는 기본적으로 관전 모드로 시작해요. 선수들이 스스로 움직이므로 조작이 어렵다면 끝까지 지켜보기만 해도 됩니다.',goal:'지금은 관전 모드예요. 준비되면 “직접 해보기”를 눌러요.',manual:true,next:'직접 해보기'},
+  {key:'direct_on',title:'2. 직접 조종을 켜 봐요',text:'위쪽의 🎮 직접 조종 켜기를 누르면 우리 팀 선수 한 명을 직접 움직일 수 있어요. 직접 조종 중에는 1× 속도로 고정됩니다.',goal:'🎮 직접 조종 켜기 버튼을 눌러 보세요.',target:'#directControlBtn'},
+  {key:'move',title:'3. 선수를 움직여 봐요',text:'키보드는 방향키, 태블릿은 왼쪽 방향 버튼을 사용해요. 질주는 꼭 필요할 때만 쓰면 됩니다.',goal:'방향키 또는 이동 버튼을 한 번 사용해 보세요.',target:'.futsal-move-pad'},
+  {key:'pass',title:'4. 가장 먼저 패스를 배워요',text:'우리 선수가 공을 잡았을 때 S를 누르면 빈 동료를 자동으로 찾아 패스해요. 태블릿에서는 초록색 패스 버튼을 누르면 됩니다.',goal:'우리 팀이 공을 잡으면 S 또는 패스 버튼을 눌러 보세요.',target:'[data-fh-action="pass"]'},
+  {key:'switch',title:'5. 조작 선수를 바꿀 수 있어요',text:'수비할 때 원하는 선수를 잡고 싶다면 Q를 누르세요. 태블릿에서는 “전환” 버튼입니다.',goal:'Q 또는 전환 버튼으로 선수를 한 번 바꿔 보세요.',target:'[data-fh-action="switch"]'},
+  {key:'tackle',title:'6. 태클은 초록색일 때!',text:'상대 공 보유자에게 가까이 가면 노란 표시가 뜨고, 더 가까워지면 초록색으로 바뀝니다. 초록색에서 D를 누르는 것이 핵심이에요.',goal:'초록색 “지금! D 태클” 표시에서 태클을 시도해 보세요.',target:'#shootTackleBtn'},
+  {key:'shoot',title:'7. 공격에서는 D가 슛이에요',text:'내가 조종하는 선수가 공을 가지고 있을 때 D는 태클이 아니라 슛이 됩니다. 버튼 글자도 “슛!”으로 바뀌어요.',goal:'공을 잡으면 D 또는 슛 버튼으로 한 번 슛해 보세요.',target:'#shootTackleBtn'},
+  {key:'tactic',title:'8. 감독처럼 전술도 바꿔 봐요',text:'오른쪽 감독 지시에서 공격 방식·압박·라인·템포 등을 경기 도중 바로 바꿀 수 있어요.',goal:'감독 지시에서 아무 전술 버튼이나 하나 눌러 보세요.',target:'#liveTacticText'},
+  {key:'direct_off',title:'9. 힘들면 언제든 다시 관전',text:'직접 조종이 버거우면 👀 관전으로 전환을 누르면 됩니다. 선수들이 다시 알아서 경기하고 감독 역할만 해도 돼요.',goal:'👀 관전으로 전환을 눌러 튜토리얼을 마쳐 보세요.',target:'#directControlBtn'}
+];
+function clearTutorialTarget(){
+  document.querySelectorAll('.tutorial-target').forEach(function(el){el.classList.remove('tutorial-target');});
+}
+function tutorialStep(){
+  return matchTutorial&&MATCH_TUTORIAL_STEPS[matchTutorial.index]||null;
+}
+function renderMatchTutorial(){
+  var box=$('matchTutorial');if(!box)return;
+  clearTutorialTarget();
+  if(!matchTutorial||!matchTutorial.active){box.classList.add('hidden');return;}
+  var step=tutorialStep();if(!step){finishFirstMatchTutorial(false);return;}
+  box.classList.remove('hidden','intro','waiting','complete');box.classList.add(step.manual?'intro':'waiting');
+  $('matchTutorialStep').textContent='첫 경기 튜토리얼 · '+(matchTutorial.index+1)+' / '+MATCH_TUTORIAL_STEPS.length;
+  $('matchTutorialTitle').textContent=step.title;$('matchTutorialText').textContent=step.text;$('matchTutorialGoal').textContent='목표 · '+step.goal;$('matchTutorialGoal').classList.remove('done');
+  $('matchTutorialNext').textContent=step.next||'다음';
+  if(step.target){var target=document.querySelector(step.target);if(target)target.classList.add('tutorial-target');}
+}
+function beginFirstMatchTutorial(){
+  matchTutorial={active:true,index:0,seen:{},paused:true};renderMatchTutorial();
+}
+function advanceMatchTutorial(){
+  if(!matchTutorial||!matchTutorial.active)return;
+  matchTutorial.paused=false;matchTutorial.index++;
+  if(matchTutorial.index>=MATCH_TUTORIAL_STEPS.length){finishFirstMatchTutorial(false);return;}
+  var step=tutorialStep();
+  if(matchTutorial.seen[step.key]){advanceMatchTutorial();return;}
+  renderMatchTutorial();
+}
+function matchTutorialAction(kind,extra){
+  if(!matchTutorial||!matchTutorial.active)return;
+  matchTutorial.seen[kind]=true;
+  var step=tutorialStep();if(!step||step.key!==kind)return;
+  var goal=$('matchTutorialGoal');if(goal){goal.textContent='✓ 성공! '+(kind==='tackle'&&extra&&extra.success?'공을 정확히 빼앗았어요.':'잘했어요.');goal.classList.add('done');}
+  setTimeout(function(){advanceMatchTutorial();},420);
+}
+function finishFirstMatchTutorial(fromMatchEnd){
+  if(!matchTutorial||!matchTutorial.active){
+    if(state&&!state.matchTutorialDone){state.matchTutorialDone=true;save();}
+    return;
+  }
+  matchTutorial.active=false;matchTutorial.paused=false;clearTutorialTarget();$('matchTutorial').classList.add('hidden');
+  state.matchTutorialDone=true;save();
+  if(!fromMatchEnd)toast('첫 경기 튜토리얼 완료! 이제 원하는 방식으로 경기하면 돼요.');
+}
+function skipFirstMatchTutorial(){
+  if(!matchTutorial||!matchTutorial.active)return;
+  state.matchTutorialDone=true;matchTutorial.active=false;matchTutorial.paused=false;clearTutorialTarget();$('matchTutorial').classList.add('hidden');save();toast('튜토리얼을 건너뛰었습니다.');
+}
 function startMatch(){
   var f=myFixture();if(!f)return;if(state.lineup.length!==5){state.lineup=autoLineup(state.roster,state.formation);save();}var unavailable=state.lineup.map(playerById).filter(function(p){return p&&p.injury&&p.injury.games>0;});if(unavailable.length){state.lineup=autoLineup(state.roster,state.formation);save();toast('부상 선수를 제외하고 선발을 다시 구성했습니다.');}
   var own=clubById(state.clubId),o=opponent(f),opp=opponentSetup(o),isHome=f.home===state.clubId,seed=fixtureSeed(f.home,f.away),homeClub=isHome?own:o,awayClub=isHome?o:own;
   var opts=isHome?{homeClub:own,homeRoster:state.roster,homeLineup:state.lineup,homeFormation:state.formation,homeTactics:clone(state.tactics),homeCoach:clone(own.coachProfile||{}),awayClub:o,awayRoster:opp.roster,awayLineup:opp.lineup,awayFormation:opp.formation,awayTactics:opp.tactics,awayCoach:opp.coach}:{homeClub:o,homeRoster:opp.roster,homeLineup:opp.lineup,homeFormation:opp.formation,homeTactics:opp.tactics,homeCoach:opp.coach,awayClub:own,awayRoster:state.roster,awayLineup:state.lineup,awayFormation:state.formation,awayTactics:clone(state.tactics),awayCoach:clone(own.coachProfile||{})};
-  opts.formations=D.formations;opts.seed=seed;opts.userSide=isHome?0:1;opts.onEvent=matchEvent;opts.onFinish=function(m){setTimeout(function(){showMatchResult(m,f,isHome);},400);};match=(H&&H.create)?H.create(opts):S.create(opts);match.userSide=isHome?0:1;match.fixture=f;if(!match.isPhysicalFutsal&&broadcastRenderer)broadcastRenderer.reset(match);matchSpeed=1;resultShown=false;$('homeName').textContent=homeClub.name;$('awayName').textContent=awayClub.name;$('matchScore').textContent='0 : 0';$('matchClock').textContent="0'";$('eventLog').innerHTML='';$('matchLayer').classList.remove('hidden');if(match.setDirectControl)match.setDirectControl(false);setSpeed(1);updateDirectControlUI();updateLiveTactic();startStadiumAmbience();whistleSfx(false);cancelAnimationFrame(raf);lastFrame=performance.now();raf=requestAnimationFrame(matchLoop);sound('start');
+  var firstMatchTutorial=!state.matchTutorialDone&&state.matchHistory.length===0;
+  opts.formations=D.formations;opts.seed=seed;opts.userSide=isHome?0:1;opts.onEvent=matchEvent;opts.onUserAction=matchTutorialAction;opts.onFinish=function(m){setTimeout(function(){showMatchResult(m,f,isHome);},400);};match=(H&&H.create)?H.create(opts):S.create(opts);match.userSide=isHome?0:1;match.fixture=f;if(!match.isPhysicalFutsal&&broadcastRenderer)broadcastRenderer.reset(match);matchSpeed=1;resultShown=false;$('homeName').textContent=homeClub.name;$('awayName').textContent=awayClub.name;$('matchScore').textContent='0 : 0';$('matchClock').textContent="0'";$('eventLog').innerHTML='';$('matchLayer').classList.remove('hidden');if(match.setDirectControl)match.setDirectControl(false);setSpeed(1);updateDirectControlUI();updateLiveTactic();if(firstMatchTutorial)beginFirstMatchTutorial();else{$('matchTutorial').classList.add('hidden');matchTutorial=null;}startStadiumAmbience();whistleSfx(false);cancelAnimationFrame(raf);lastFrame=performance.now();raf=requestAnimationFrame(matchLoop);sound('start');
 }
 function matchEvent(e){
   var quiet=e.type==='call'||e.type==='tackle_hint'||e.type==='tackle_miss'||e.type==='control';
@@ -668,7 +730,7 @@ function updateControlCoach(){
 function updateLiveTactic(){
   var t=state.tactics;function group(name,key,items){return '<div class="live-group"><small>'+name+'</small><div>'+items.map(function(x){return '<button type="button" class="'+(t[key]===x[0]?'active':'')+'" data-live="'+key+':'+x[0]+'">'+x[1]+'</button>';}).join('')+'</div></div>';}
   $('liveTacticText').innerHTML=group('공격','attack',[['short','연결'],['direct','직선'],['wide','측면']])+group('폭','width',[['narrow','좁게'],['normal','보통'],['wide','넓게']])+group('압박','press',[['press','강하게'],['shape','자리']])+group('라인','line',[['high','높게'],['standard','보통'],['low','낮게']])+group('템포','tempo',[['fast','빠름'],['normal','보통'],['slow','천천히']])+group('태도','mindset',[['attack','공격'],['balanced','균형'],['defend','수비']]);
-  $('liveTacticText').querySelectorAll('[data-live]').forEach(function(b){b.onclick=function(){if(!match||match.finished)return;var a=b.dataset.live.split(':');state.tactics[a[0]]=a[1];match.setTactics(match.userSide,clone(state.tactics),'user');save();updateLiveTactic();toast('작전을 바로 바꿨습니다.');};});
+  $('liveTacticText').querySelectorAll('[data-live]').forEach(function(b){b.onclick=function(){if(!match||match.finished)return;var a=b.dataset.live.split(':');state.tactics[a[0]]=a[1];match.setTactics(match.userSide,clone(state.tactics),'user');save();matchTutorialAction('tactic',{key:a[0],value:a[1]});updateLiveTactic();toast('작전을 바로 바꿨습니다.');};});
 }
 function drawTacticalMatch(){
   if(!match)return;
@@ -779,7 +841,7 @@ function drawTacticalMatch(){
 function drawMatch(){if(!match)return;if(typeof match.render==='function'){match.render($('pitch'));return;}if(broadcastRenderer&&window.SeedFCBroadcast){broadcastRenderer.render($('pitch'),match);return;}drawTacticalMatch();}
 function matchLoop(ts){
   if(!match||$('matchLayer').classList.contains('hidden'))return;
-  var dt=Math.min(.05,(ts-lastFrame)/1000||0);lastFrame=ts;match.update(dt,matchSpeed);drawMatch();updateControlCoach();
+  var dt=Math.min(.05,(ts-lastFrame)/1000||0);lastFrame=ts;if(!(matchTutorial&&matchTutorial.active&&matchTutorial.paused))match.update(dt,matchSpeed);drawMatch();updateControlCoach();
   $('matchScore').textContent=match.score[0]+' : '+match.score[1];$('matchClock').textContent=Math.floor(match.minute)+"'";
   if(!match.finished)raf=requestAnimationFrame(matchLoop);
 }
@@ -816,7 +878,7 @@ function instructionModal(){
   };});
 }
 function showMatchResult(m,f,isHome){
-  if(resultShown)return;resultShown=true;stopStadiumAmbience();try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}var hg=m.score[0],ag=m.score[1],mine=isHome?hg:ag,theirs=isHome?ag:hg,o=opponent(f),replayData=m.exportReplay?m.exportReplay():null;finishRound(f,hg,ag,replayData);
+  if(resultShown)return;resultShown=true;if(matchTutorial&&matchTutorial.active)finishFirstMatchTutorial(true);stopStadiumAmbience();try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}var hg=m.score[0],ag=m.score[1],mine=isHome?hg:ag,theirs=isHome?ag:hg,o=opponent(f),replayData=m.exportReplay?m.exportReplay():null;finishRound(f,hg,ag,replayData);
   var verdict=mine>theirs?'승리!':mine<theirs?'아쉬운 패배':'무승부',why=state.tactics.tempo==='fast'?'빠른 템포로 기회를 늘렸지만 체력도 더 썼습니다.':state.tactics.line==='high'?'라인을 높여 상대 진영에서 오래 싸웠습니다.':state.tactics.line==='low'?'라인을 낮춰 뒷공간을 먼저 지켰습니다.':state.tactics.attack==='wide'?'측면을 넓게 쓰며 공격 길을 만들었습니다.':state.tactics.attack==='direct'?'패스 수를 줄이고 빠르게 전진했습니다.':'짧게 연결하며 빈 공간을 찾았습니다.';
   var star=null,starStats=null,best=-1;if(replayData){replayData.players.forEach(function(p){var st=replayData.stats[p.id]||{},score=Number(st.goals||0)*8+Number(st.assists||0)*5+Number(st.keyPasses||0)*1.5+Number(st.progressivePasses||0)*.35+Number(st.saves||0)*2+Number(st.touches||0)*.03;if(score>best){best=score;star=p;starStats=st;}});}
   var historyMoment='',original=null;if(star){original=sourcePlayerById(star.id);discoverHistoryPlayer(star.id);var action=Number(starStats.goals||0)?starStats.goals+'골':Number(starStats.assists||0)?starStats.assists+'도움':Number(starStats.keyPasses||0)?starStats.keyPasses+'번의 키패스':Number(starStats.progressivePasses||0)?starStats.progressivePasses+'번의 전진 패스':Number(starStats.saves||0)?starStats.saves+'번의 선방':Number(starStats.touches||0)+'번의 주요 관여';historyMoment='<div class="history-moment"><b>오늘의 역사 카드 · '+esc(star.name)+'</b><span>'+esc((original&&original.footballStyle)||star.footballStyle||'균형형')+'으로 '+esc(action)+'을 기록했습니다.</span><small>'+esc((original&&original.memory)||star.memory||'')+'</small></div>';}
@@ -845,6 +907,9 @@ modal.addEventListener('pointerdown',function(e){if(e.target===modal)closeModalS
 document.querySelectorAll('.speed[data-speed]').forEach(function(b){b.onclick=function(){setSpeed(Number(b.dataset.speed));};});
 $('directControlBtn').onclick=toggleDirectControl;
 $('controlTutorialBtn').onclick=showControlTutorial;
+$('matchTutorialNext').onclick=function(){var step=tutorialStep();if(step&&step.manual)advanceMatchTutorial();};
+$('matchTutorialSkipStep').onclick=function(){advanceMatchTutorial();};
+$('matchTutorialSkipAll').onclick=skipFirstMatchTutorial;
 $('quickSubBtn').onclick=substitutionModal;
 $('playerInstructionBtn').onclick=instructionModal;
 $('replayClose').onclick=closeReplay;
