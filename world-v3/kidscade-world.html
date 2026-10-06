@@ -50,7 +50,14 @@
 .card{width:min(620px,100%);max-height:78vh;overflow:auto;background:#fff8dc;border:3px solid #49573f;border-radius:16px;padding:14px 15px;box-shadow:0 18px 50px rgba(0,0,0,.28)}
 .card h2{margin:0 0 10px}.card h3{margin:14px 0 6px}.card p{line-height:1.55}.card button{border:2px solid #65735a;background:#eef3d7;border-radius:8px;padding:7px 10px;font-weight:900;cursor:pointer}.card .close{float:right}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}.item{border:1px solid #a69d72;background:#fffdf1;border-radius:9px;padding:8px}
 .helpGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.helpItem{padding:10px;border:1px solid #b4a77c;border-radius:12px;background:#fffdf1}.helpItem b{display:block;margin-bottom:4px}
-.loading{position:absolute;inset:0;z-index:40;display:grid;place-items:center;background:#dcebd2;color:#32412f;font-weight:900;transition:.35s}.loading.hide{opacity:0;pointer-events:none}.avatar-runtime{position:fixed;left:-10000px;top:-10000px;width:2px;height:2px;border:0;opacity:0;pointer-events:none}
+.loading{position:absolute;inset:0;z-index:40;display:grid;place-items:center;background:linear-gradient(180deg,#dcebd2,#cbdcbd);color:#32412f;font-weight:900;transition:.35s;padding:18px}.loading.hide{opacity:0;pointer-events:none}.loading.error{background:#eadbd5}
+.loadingCard{width:min(540px,92vw);border:3px solid #65745d;border-radius:22px;background:rgba(255,253,238,.97);box-shadow:0 18px 48px rgba(35,48,33,.24);padding:22px}
+.loadingBrand{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#e8efcf;border:1px solid #9fac83;font-size:12px}
+.loadingTitle{font-size:22px;margin:12px 0 14px;letter-spacing:-.4px}.loadingRow{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}.loadingPercent{font-variant-numeric:tabular-nums}
+.loadingBar{height:14px;margin:8px 0 7px;border-radius:999px;background:#cbd6bf;border:2px solid #89977c;overflow:hidden}.loadingFill{height:100%;width:3%;border-radius:999px;background:linear-gradient(90deg,#78a85c,#d8b94d);transition:width .25s ease}
+.loadingDetail{min-height:18px;font-size:11px;color:#66705f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.loadingSteps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:15px}.loadingStep{min-height:54px;border:1px solid #b5bea7;border-radius:11px;background:#f1f1df;padding:7px 5px;text-align:center;font-size:10px;color:#6d7568;display:flex;flex-direction:column;justify-content:center;gap:3px}.loadingStepMark{font-size:16px}.loadingStep.active{border-color:#d1a83d;background:#fff5cb;color:#514a31;box-shadow:0 0 0 2px rgba(209,168,61,.13)}.loadingStep.done{border-color:#769265;background:#e5efd9;color:#35503a}.loadingStep.done .loadingStepMark::after{content:' ✓'}
+.avatar-runtime{position:fixed;left:-10000px;top:-10000px;width:2px;height:2px;border:0;opacity:0;pointer-events:none}
 @media(max-width:760px){
  .helpBtn{left:8px;top:8px;width:40px;height:40px}.audioBtn{right:8px;top:8px;width:40px;height:40px}.status{right:54px;top:8px;min-height:40px;padding:5px 7px;gap:5px}.statusPhase{display:none}.statusChip{padding:4px 6px}.zone{top:58px;max-width:72vw;overflow:hidden;text-overflow:ellipsis}
  .quickbar{bottom:7px;gap:3px;padding:4px}.quickSlot{width:min(17vw,58px);height:56px}.quickIcon{font-size:20px}.quickName{font-size:8px}.petPicker{bottom:70px}
@@ -58,6 +65,7 @@
  .mobile{display:block}.dpad{left:12px;bottom:68px;width:132px;height:132px}.dpad button{width:44px;height:44px}.up{left:44px}.down{left:44px}.left{top:44px}.right{top:44px}.interact{right:14px;bottom:78px;width:68px;height:68px}
  .prompt{bottom:220px;max-width:68vw;text-align:center}.toast{top:108px;max-width:78vw;text-align:center}.helpGrid{grid-template-columns:1fr}
  .radialWheel{transform:translate(-50%,-50%) scale(.86)}.radialHint{bottom:14px;font-size:10px}
+ .loadingCard{padding:17px;border-radius:18px}.loadingTitle{font-size:18px}.loadingSteps{gap:4px}.loadingStep{min-height:48px;font-size:9px;padding:5px 3px}
 }
 </style>
 <script type="importmap">{"imports":{"three":"../assets/vendor/three-r160/three.module.js","three/addons/":"../assets/vendor/three-r160/addons/"}}</script>
@@ -113,13 +121,28 @@
     <button class="interact" id="mobileInteract" type="button" aria-label="짧게 눌러 행동, 길게 눌러 메뉴">행동</button>
   </div>
   <div class="panel" id="panel"><div class="card"><button class="close" id="panelClose" type="button">닫기</button><div id="panelBody"></div></div></div>
-  <div class="loading" id="loading">3D 씨앗 월드를 준비하고 있어요…</div>
-  <iframe id="avatarRuntime" class="avatar-runtime" src="../avatar-studio.html" tabindex="-1" aria-hidden="true"></iframe>
+  <div class="loading" id="loading">
+    <div class="loadingCard">
+      <div class="loadingBrand">🌱 씨앗 월드</div>
+      <div class="loadingTitle">3D 씨앗 월드를 준비하고 있어요</div>
+      <div class="loadingRow"><span id="loadingStatus">저장 데이터를 확인하는 중…</span><b class="loadingPercent" id="loadingPercent">3%</b></div>
+      <div class="loadingBar" role="progressbar" aria-label="씨앗 월드 로딩 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="3"><div class="loadingFill" id="loadingFill"></div></div>
+      <div class="loadingDetail" id="loadingDetail">처음 열 때는 3D 모델을 브라우저에 준비하느라 조금 더 걸릴 수 있어요.</div>
+      <div class="loadingSteps">
+        <div class="loadingStep active" data-loading-step="save"><span class="loadingStepMark">💾</span><span>내 기록</span></div>
+        <div class="loadingStep" data-loading-step="terrain"><span class="loadingStepMark">🌳</span><span>자연·집터</span></div>
+        <div class="loadingStep" data-loading-step="town"><span class="loadingStepMark">🏘️</span><span>마을·주민</span></div>
+        <div class="loadingStep" data-loading-step="home"><span class="loadingStepMark">🏠</span><span>집 내부</span></div>
+        <div class="loadingStep" data-loading-step="ready"><span class="loadingStepMark">✨</span><span>마무리</span></div>
+      </div>
+    </div>
+  </div>
+  <iframe id="avatarRuntime" class="avatar-runtime" src="about:blank" data-src="../avatar-studio.html" tabindex="-1" aria-hidden="true"></iframe>
 </div>
 <script src="../touch-interaction-guard.js?v=2"></script>
 <script src="../world-v2/kidscade-world-storage.js?v=9"></script>
 <script src="../world-v2/kidscade-world-bridge.js?v=2"></script>
 <script src="../seed-world-meta.js?v=1"></script>
-<script type="module" src="kidscade-world-v3.js?v=55"></script>
+<script type="module" src="kidscade-world-v3.js?v=56"></script>
 </body>
 </html>
