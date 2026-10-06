@@ -182,3 +182,41 @@ button{border:0;cursor:pointer;color:inherit}
 
 .futsal-touch button:active{transform:translateY(1px);filter:brightness(1.18)}
 .match-layer .pitch-wrap:after{content:"공을 중심으로 세로 카메라 추적 · 역사 선수 5명을 번갈아 직접 조작"}
+
+
+/* v13 · 관전/직접조종 선택 + 초등 태클 코치 */
+.match-top{grid-template-columns:170px 1fr minmax(300px,370px)}
+.match-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+.control-toggle{min-height:38px;padding:8px 12px;border-radius:12px;background:#2563eb;color:#fff;border:1px solid rgba(147,197,253,.55);font-size:12px;font-weight:1000;white-space:nowrap;box-shadow:0 7px 18px rgba(37,99,235,.22)}
+.control-toggle.active{background:#0f766e;border-color:#5eead4;box-shadow:0 0 0 2px rgba(94,234,212,.12),0 7px 18px rgba(15,118,110,.26)}
+.control-toggle:hover{filter:brightness(1.08)}
+.match-layer.watch-mode .futsal-touch{opacity:0;transform:translateY(12px);pointer-events:none}
+.match-layer.watch-mode .futsal-move-pad,.match-layer.watch-mode .futsal-action-pad{pointer-events:none}
+.futsal-touch{transition:opacity .18s ease,transform .18s ease}
+.futsal-action-pad .shoot.tackle-ready{background:rgba(22,163,74,.92);box-shadow:0 0 0 3px rgba(74,222,128,.25),0 8px 20px rgba(22,163,74,.22);animation:tackleReadyPulse .8s ease-in-out infinite alternate}
+.futsal-action-pad .shoot.tackle-near{background:rgba(202,138,4,.92)}
+@keyframes tackleReadyPulse{from{transform:scale(1)}to{transform:scale(1.06)}}
+.futsal-control-help.watch{border:1px solid rgba(96,165,250,.24);background:linear-gradient(180deg,#102640,#0d1b2e)}
+.futsal-control-help.direct{border:1px solid rgba(74,222,128,.26);background:linear-gradient(180deg,#12372f,#0d2425)}
+.futsal-control-help #controlModeText{font-size:13px}
+.futsal-control-help #controlHint{min-height:34px}
+.tackle-legend{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:8px;color:#d8e5f3;font-size:10px;font-weight:850;line-height:1.35}
+.approach-dot,.ready-dot{display:inline-block;width:10px;height:10px;border-radius:50%}
+.approach-dot{background:#facc15;box-shadow:0 0 0 3px rgba(250,204,21,.13)}
+.ready-dot{background:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.13);margin-left:5px}
+.control-help-btn{width:100%;margin-top:8px;padding:7px 9px;border-radius:10px;background:#1d3551;color:#dbeafe;border:1px solid rgba(147,197,253,.18);font-size:11px;font-weight:900}
+.event-line.foul{background:#4a211f;color:#fecaca;border-left:3px solid #fb7185}
+.event-line.tackle{background:#13372a;color:#bbf7d0;border-left:3px solid #4ade80}
+.match-layer.watch-mode .pitch-wrap:after{content:"👀 관전 중 · 선수들이 AI로 경기합니다 · 원할 때 직접 조종 ON"}
+.match-layer:not(.watch-mode) .pitch-wrap:after{content:"🎮 직접 조종 · 수비는 상대에게 붙어 초록 표시가 뜰 때 D 태클"}
+
+@media(max-width:900px){
+  .match-top{grid-template-columns:120px 1fr minmax(250px,330px)}
+  .control-toggle{font-size:11px;padding:7px 9px}
+}
+@media(max-width:700px){
+  .match-top{grid-template-columns:78px 1fr 178px}
+  .match-tools{gap:4px}
+  .control-toggle{max-width:98px;white-space:normal;line-height:1.1;padding:6px;font-size:9px}
+  .speed-group{gap:3px}.speed{padding:6px 7px;font-size:10px}
+}
