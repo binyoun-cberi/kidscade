@@ -103,3 +103,14 @@ test('active progression simulation keeps black hole and cosmic web as long term
  console.log('active simulation: black hole',Math.round(blackHole/60),'min; cosmic web',Math.round(elapsed/60),'min');
  assert.ok(blackHole>600&&blackHole<5400);assert.ok(elapsed>3600&&elapsed<20000);assert.equal(state.stage,23);
 });
+
+test('holding Space never generates extra growth and focused controls are excluded',()=>{
+ const line=js.split('\n').find(l=>l.startsWith("addEventListener('keydown'"));
+ let callback,count=0;const box={addEventListener:(type,fn)=>callback=fn,running:true,modalOpen:false,innerWidth:800,innerHeight:600,document:{activeElement:{tagName:'BODY'}},onTap:()=>count++};
+ vm.runInNewContext(line,box);
+ callback({code:'Space',repeat:false,preventDefault(){}});
+ for(let i=0;i<30;i++)callback({code:'Space',repeat:true,preventDefault(){}});
+ assert.equal(count,1);
+ callback({code:'Space',repeat:false,preventDefault(){}});assert.equal(count,2);
+ box.document.activeElement.tagName='BUTTON';callback({code:'Space',repeat:false,preventDefault(){}});assert.equal(count,2);
+});

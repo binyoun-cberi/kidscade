@@ -584,4 +584,3 @@ $('soundBtn').addEventListener('click',()=>{state.sound=!state.sound;$('soundBtn
 document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});addEventListener('beforeunload',save);
 
 initThree();preloadAssets();ui.discTotal.textContent=DISCOVERIES.length;ui.continueBtn.classList.toggle('hidden',!hasSave());renderUI();renderUpgrades();requestAnimationFrame(animate);
-
