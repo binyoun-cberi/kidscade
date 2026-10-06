@@ -208,8 +208,10 @@ function finishRound(){
   els.resultWrong.textContent=(state.wrong-state.skipped)+'개';
   els.resultSkipped.textContent=state.skipped+'개';
   els.resultPoints.textContent='게임 점수 '+state.points.toLocaleString()+' P';
-  const best=Number(localStorage.getItem('hanjaScore')||0);
-  if(accuracy>best)localStorage.setItem('hanjaScore',String(accuracy));
+  const storedBest=Number(localStorage.getItem('hanjaScore')||0);
+  const best=(Number.isFinite(storedBest)&&storedBest>=0&&storedBest<=100)?storedBest:0;
+  if(storedBest!==best||accuracy>best)localStorage.setItem('hanjaScore',String(Math.max(best,accuracy)));
+  try{localStorage.removeItem('hanjaRank')}catch(_){}
   localStorage.setItem('hanjaCardPoints',String(Math.max(state.points,Number(localStorage.getItem('hanjaCardPoints')||0))));
   try{
     window.KidscadeGame?.score?.(accuracy,{unit:'점',higherIsBetter:true});
