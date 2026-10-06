@@ -3362,6 +3362,7 @@ function buildHotbar(){
   hotbarTypes.forEach((type,i)=>{
     const b=document.createElement('button');
     b.className='hot-slot'+(i===selectedHotbarSlot?' active':'');
+    b.classList.toggle('empty-slot',!type);
     b.innerHTML=blockButtonMarkup(type,i+1);b.title=type?blockDef(type).name:'빈 칸';
     b.onclick=()=>{selectedHotbarSlot=i;selectedType=hotbarTypes[i]||'hand';buildHotbar();updateFreeMission()};
     h.appendChild(b);
@@ -5601,7 +5602,7 @@ function updateSimpleSurvivalUi(){
       PLACEABLE_TYPES.includes(selectedType)&&selectedType!=='hand'?'놓기':'캐기';
     const label=hub.querySelector('b');if(label&&label.textContent!==name)label.textContent=name;
   }
-  const jump=$('mobileUp');if(jump&&!freeFlying&&!freeFluidKind)jump.innerHTML='점프';
+  const jump=$('mobileUp');if(jump&&!freeFlying&&!freeFluidKind&&jump.textContent!=='점프')jump.textContent='점프';
 }
 function setSurvivalInventoryTab(tab){
   survivalInventoryTab=tab==='craft'?'craft':'bag';

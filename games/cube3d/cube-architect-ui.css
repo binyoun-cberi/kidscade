@@ -526,3 +526,5 @@
 .survival-inventory[data-bag-tab="bag"] #survivalCraftPanel,.survival-inventory[data-bag-tab="bag"] #shapeWorkbench{display:none!important}
 .survival-inventory[data-bag-tab="craft"] #inventoryGrid,.survival-inventory[data-bag-tab="craft"] #survivalBagHeader,.survival-inventory[data-bag-tab="craft"] #survivalEquipmentPanel{display:none!important}
 @media(pointer:coarse){.simple-survival #actionMore,.simple-survival #actionEscape{display:none!important}}
+
+.simple-survival #hotbar .empty-slot:not(.active){display:none}

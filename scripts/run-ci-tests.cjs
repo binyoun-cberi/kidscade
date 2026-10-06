@@ -89,6 +89,7 @@ const TEST_FILES = [
   "tests/cube-architect-guided-tutorial.test.cjs",
   "tests/cube-architect-mobile-radial.test.cjs",
   "tests/cube-architect-physics.test.cjs",
+  "tests/cube-architect-simple-controls.test.cjs",
   "tests/cube-architect-shrine.test.cjs",
   "tests/rule-lab.test.cjs",
   "tests/story-builder-spelling.test.cjs",
