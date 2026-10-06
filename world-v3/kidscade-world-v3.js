@@ -1993,7 +1993,7 @@ async function buildOutdoor(onProgress=()=>{}){
     for(const [dx,dz] of [[-7,-5],[-6.3,-4.4],[7.5,-1.0],[-8.3,.5],[7.8,6.0]])await addModel(outdoor,ASSET.flower,{x:h.x+dx,z:h.z+dz,w:.55,h:.5,d:.55,rot:0});
   }
 
-  onProgress('town',55,'씨앗마을 건물과 주민을 불러오는 중…');
+  onProgress('town',55,'씨앗마을 길과 건물을 준비하는 중…');
   cityRuntime=await buildKidscadeCity({
     parent:outdoor,addModel,box,plane,interact,collider,loadGLB,loadGLTF,prepModel,
     actions:{
@@ -2013,14 +2013,13 @@ async function buildOutdoor(onProgress=()=>{}){
     getPlayerPosition:()=>({x:player.x,z:player.z}),
     getDailyState:()=>dailyDirector?.state?.()||null
   });
-  onProgress('town',78,'씨앗마을과 주민 준비를 마쳤어요.');
+  onProgress('town',78,'마을 구조를 준비했어요. 주민 모습은 가까이 가면 이어서 불러와요.');
 }
 
 async function buildIndoor(){
   // Interior Kit owns the architectural shell. Furniture remains a separate
   // persistent layer so existing x/z/rotation saves survive house upgrades.
-  homeInteriorRuntime=await buildHomeInterior({parent:indoor,addModel});
-  homeInteriorRuntime.setLevel(devState().houseLevel);
+  homeInteriorRuntime=await buildHomeInterior({parent:indoor,addModel,initialLevel:devState().houseLevel});
 
   // Fresh home: floor bedding and one temporary crate, no free functional furniture.
   starterBeddingGroup=new THREE.Group();indoor.add(starterBeddingGroup);
@@ -2557,7 +2556,7 @@ async function init(){
   }).then(runtime=>{venueInteriors=runtime;return runtime});
   const outdoorPromise=buildOutdoor((step,percent,detail)=>{
     if(step==='town'){setLoadingStep('terrain','done');setLoadingStep('town','active');}
-    setLoadingProgress(percent,step==='town'?'씨앗마을과 주민을 준비하는 중…':'자연과 생활 공간을 준비하는 중…',detail);
+    setLoadingProgress(percent,step==='town'?'씨앗마을 구조를 준비하는 중…':'자연과 생활 공간을 준비하는 중…',detail);
   });
   const indoorPromise=buildIndoor().then(value=>{setLoadingStep('home','done');return value});
   setLoadingStep('home','active');
@@ -2576,7 +2575,7 @@ async function init(){
     mode='outdoor';activeVenue='';outdoor.visible=true;indoor.visible=false;venueLayer.visible=false;venueInteriors?.hideAll?.();
     player.x=dest.x;player.z=dest.z;zoneEl.textContent='씨앗마을 · 상점가';wasInCity=true;
   }else{mode='outdoor';outdoor.visible=true;indoor.visible=false;venueLayer.visible=false;zoneEl.textContent='집 앞 · 3D 마을';wasInCity=isCityArea(player.x,player.z)}
-  setLoadingStep('ready','done');setLoadingProgress(100,'준비 완료!','먼 지역의 펫과 아바타 애니메이션은 플레이 중 가볍게 이어서 준비해요.');
+  setLoadingStep('ready','done');setLoadingProgress(100,'준비 완료!','주민 3D 모습·펫·아바타 애니메이션은 필요한 순간에 이어서 준비해요.');
   loading.classList.add('hide');
   canvas.focus();requestAnimationFrame(tick);scheduleBackgroundWorldWarmup();
 }
@@ -2594,6 +2593,13 @@ window.KidscadeWorldV3={
   pauseAudio(){worldAudio.stop()},
   resumeAudio(){worldAudio.unlock();syncAudioButton()},
   setMode,
+  streamingStatus(){
+    return {
+      city:cityRuntime?.streamingStatus?.()||{loaded:[],loading:[],shells:[]},
+      homeLevels:homeInteriorRuntime?.loadedLevels?.()||[],
+      pets:{started:!!petsBuildPromise,actors:petActors.length,wild:wildPetActors.length}
+    };
+  },
   groundAudit(){
     const surface=currentGroundSurfaceYAt(player.x,player.z);
     const playerBottom=avatar.position.y-avatar.scale.y*avatar.center.y;
