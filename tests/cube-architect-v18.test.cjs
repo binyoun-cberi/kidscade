@@ -102,7 +102,7 @@ test('dungeon clear unlocks construction tech while retaining save compatibility
   assert.match(js,/unlockedTech\.add\(poi\.tech\.id\)/);
   assert.match(js,/trackSurvival\('restore',id\)/);
   assert.match(js,/던전 클리어/);
-  assert.match(js,/version:12/);
+  assert.match(js,/version:13/);
   assert.match(js,/restoredLandmarks/);
   assert.match(js,/protectedPoi/);
 });
