@@ -107,10 +107,9 @@ const GOALS=[
  {title:'첫날 · 원목 3개 채집',description:'나무를 바라보고 파괴를 길게 눌러 원목을 3개 모으세요.',need:3,progress:s=>s.harvestedWood||0},
  {title:'판자 제작',description:'가방(E)에서 원목을 판자로 가공해 보세요.',need:1,progress:s=>s.crafted?.planks||0},
  {title:'제작대 설치',description:'판자 4개로 제작대를 만들고 가까운 땅에 설치하세요.',need:1,progress:s=>s.placed?.workbench||0},
- {title:'첫 설계 · 2×1×1 직육면체',description:'제작대 가까이에서 직육면체 제작대를 열고 2×1×1 도형을 만들어 설치하세요. 가로·세로 방향은 달라도 괜찮아요.',need:1,
-  progress:s=>Number((s.cuboids||[]).includes('1x1x2'))},
- {title:'나무 곡괭이',description:'막대를 만들고 제작대 근처에서 나무 곡괭이를 제작하세요.',need:1,progress:s=>s.crafted?.woodPick||0},
- {title:'첫 거점 만들기',description:'방금 만든 직육면체와 판자·흙을 이용해 실제로 지붕과 벽이 있는 거점 안에 들어가 보세요.',need:1,
+ {title:'나무 곡괭이 만들기',description:'제작대 가까이에서 막대와 나무 곡괭이를 만들어 보세요.',need:1,progress:s=>s.crafted?.woodPick||0},
+ {title:'첫 돌 캐기',description:'나무 곡괭이를 고르고 돌 하나를 캐 보세요.',need:1,progress:s=>s.harvestedStone||0},
+ {title:'첫 거점 만들기',description:'판자나 흙으로 벽과 지붕을 만들고 그 안에 들어가 보세요.',need:1,
   progress:s=>Number(!!s.shelterBuilt)},
  {title:'돌과 새로운 지역',description:'돌 8개를 캐고 출발 초원 이외의 바이옴을 발견하세요.',need:2,
   progress:s=>Number((s.harvestedStone||0)>=8)+Number((s.biomes||[]).some(b=>b!=='meadow'))},
@@ -167,5 +166,5 @@ function toolNeeded(type){
  if(['stone','smoothStone','brick','ironBlock','furnace'].includes(type))return 'woodPick';
  return null;
 }
-window.CubeArchitectWorld={WORLD_SCALE,CENTERS,BIOMES,BIOME_REWARDS,region,biomeAt,height,noise,hash,RECIPES,GOALS,goalProgress,shelterAt,exposureStep,dropFor,toolNeeded};
+window.CubeArchitectWorld={WORLD_SCALE,CENTERS,BIOMES,BIOME_REWARDS,region,biomeAt,height,noise,hash,RECIPES,GOALS,goalProgress,shelterBlock,shelterAt,exposureStep,dropFor,toolNeeded};
 })();
