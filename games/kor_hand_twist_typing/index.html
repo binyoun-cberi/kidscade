@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>손 꼬임 타자왕 | KIDSCADE</title>
+<style>
+:root{
+  --bg:#fff7ea;--paper:#fffdfa;--ink:#272238;--muted:#7e7488;--line:#eadfce;
+  --orange:#ff7a3d;--yellow:#ffc94d;--blue:#5979ff;--green:#24b989;--red:#ed5a6f;
+  --shadow:0 18px 48px rgba(94,65,45,.12)
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR","Apple SD Gothic Neo",sans-serif;background:
+radial-gradient(circle at 10% 0,#ffe1ad 0,transparent 30%),
+radial-gradient(circle at 100% 22%,#e7e6ff 0,transparent 30%),var(--bg);color:var(--ink)}
+button,input{font:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+.app{width:min(980px,100%);margin:0 auto;padding:18px clamp(12px,3vw,26px) 70px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.logo{width:50px;height:50px;display:grid;place-items:center;border-radius:17px;background:linear-gradient(145deg,var(--orange),var(--yellow));font-size:26px;box-shadow:0 10px 26px rgba(255,122,61,.22)}
+h1{font-size:clamp(23px,4vw,34px);margin:0;letter-spacing:-.05em}
+.sub{margin:3px 0 0;color:var(--muted);font-size:12px;font-weight:800}
+.sound{border:1px solid var(--line);background:#fff9;color:var(--ink);border-radius:14px;min-height:44px;padding:0 13px;font-weight:900}
+.card{background:rgba(255,253,250,.95);border:1px solid var(--line);border-radius:26px;box-shadow:var(--shadow)}
+.home{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:14px}
+.hero{padding:clamp(22px,4vw,34px);position:relative;overflow:hidden}
+.hero:after{content:"⌨";position:absolute;right:-8px;bottom:-40px;font-size:180px;opacity:.04;transform:rotate(-9deg)}
+.kicker{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border-radius:999px;background:#fff0d6;color:#9d531f;font-size:12px;font-weight:1000}
+.hero h2{font-size:clamp(31px,6vw,56px);line-height:1.05;margin:15px 0 12px;letter-spacing:-.065em}
+.hero p{margin:0;max-width:650px;color:#665d70;font-weight:700;line-height:1.65}
+.rule{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin:22px 0 18px}
+.rulebox{padding:14px;border-radius:18px;background:#fff;border:1px solid var(--line);text-align:center}
+.rulebox b{display:block;font-size:25px}.rulebox span{display:block;color:var(--muted);font-size:11px;font-weight:900;margin-top:3px}
+.arrow{font-weight:1000;color:#a99ba8}
+.section-title{font-size:12px;font-weight:1000;color:var(--muted);margin:16px 0 8px}
+.pills,.modes{display:grid;gap:8px}
+.pills{grid-template-columns:repeat(3,1fr)}
+.modes{grid-template-columns:1fr 1fr}
+.choice{border:1px solid var(--line);background:#fff;border-radius:16px;min-height:50px;padding:9px 10px;color:var(--ink);font-weight:950}
+.choice small{display:block;color:var(--muted);font-size:10px;font-weight:800;margin-top:2px}
+.choice.selected{border-color:#ffaf78;background:#fff2e8;box-shadow:inset 0 0 0 1px #ffaf78}
+.mode-choice{min-height:72px;text-align:left;padding:12px 14px}
+.start{width:100%;border:0;border-radius:18px;min-height:62px;margin-top:14px;background:linear-gradient(135deg,var(--orange),#ffad49);color:#fff;font-weight:1000;font-size:18px;box-shadow:0 12px 28px rgba(255,122,61,.24)}
+.side{padding:19px;display:flex;flex-direction:column;gap:11px}
+.side h3{margin:0;font-size:14px}
+.today{padding:15px;border-radius:18px;background:#f8f3ff;border:1px solid #e3dcf6}
+.today .label{font-size:10px;font-weight:1000;color:#76649a;letter-spacing:.08em}
+.today p{font-size:16px;line-height:1.55;font-weight:900;margin:8px 0 0;word-break:keep-all}
+.stat{display:flex;align-items:flex-end;justify-content:space-between;padding:13px 14px;border-radius:16px;background:#fff;border:1px solid var(--line)}
+.stat span{font-size:11px;color:var(--muted);font-weight:900}.stat b{font-size:25px}
+.tip{padding:13px 14px;border-radius:16px;background:#eef9f4;color:#337461;font-size:12px;line-height:1.55;font-weight:800}
+.game{display:none}.game.active{display:block}
+.game-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}
+.back{border:1px solid var(--line);background:#fff;border-radius:13px;min-height:42px;padding:0 12px;font-weight:900;color:var(--ink)}
+.phase-chip{padding:9px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:12px;font-weight:1000}
+.play{padding:clamp(16px,3vw,25px);min-height:560px;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.hud{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.hudbox{padding:10px;border-radius:15px;background:#fff;border:1px solid var(--line);text-align:center}
+.hudbox span{display:block;color:var(--muted);font-size:10px;font-weight:900}.hudbox b{display:block;font-size:22px;margin-top:2px}
+.timerbar{height:10px;border-radius:999px;background:#f0e6d9;margin:12px 0 0;overflow:hidden}
+.timerbar>div{height:100%;width:100%;background:linear-gradient(90deg,var(--blue),#9c7cff);transform-origin:left center}
+.stage{flex:1;display:flex;align-items:center;justify-content:center;padding:20px 0}
+.memory{text-align:center;width:min(760px,100%)}
+.memory .mini{font-size:12px;color:var(--muted);font-weight:1000;margin-bottom:13px}
+.phrase{font-size:clamp(28px,5.8vw,50px);line-height:1.45;font-weight:1000;letter-spacing:-.045em;word-break:keep-all}
+.memory .warning{margin-top:16px;color:#8f6d23;font-size:13px;font-weight:900;min-height:21px}
+.typing{width:min(780px,100%)}
+.hidden-target{text-align:center;font-size:13px;color:var(--muted);font-weight:900;margin-bottom:12px}
+.input-mirror{min-height:150px;padding:21px;border-radius:22px;background:#fff;border:2px solid #e7dccf;font-size:clamp(22px,4vw,34px);line-height:1.55;font-weight:900;word-break:break-all}
+.input-mirror.empty{display:grid;place-items:center;color:#b0a6ae;font-size:18px}
+.ok{color:var(--green)}.bad{color:var(--red);background:#ffe8ec;border-radius:5px}
+.blind-dots{letter-spacing:.18em;color:#514667;overflow-wrap:anywhere}
+.entry{margin-top:11px;display:flex;gap:8px}
+.typeinput{flex:1;min-width:0;border:2px solid #d9cec2;border-radius:17px;padding:14px 16px;font-size:20px;background:#fff;outline:none;color:var(--ink)}
+.typeinput:focus{border-color:#ff9c67;box-shadow:0 0 0 4px rgba(255,122,61,.1)}
+.blind-input{color:transparent;text-shadow:0 0 0 transparent;caret-color:var(--orange)}
+.submit{border:0;border-radius:17px;padding:0 17px;background:#514667;color:#fff;font-weight:1000;min-width:92px}
+.note{text-align:center;margin-top:9px;color:var(--muted);font-size:11px;font-weight:800}
+.combo-pop{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%) scale(.8);opacity:0;pointer-events:none;font-size:clamp(35px,8vw,72px);font-weight:1000;color:var(--orange);text-shadow:0 4px #fff;z-index:4}
+.combo-pop.show{animation:combo .58s ease}
+@keyframes combo{20%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-70%) scale(1)}}
+.shake{animation:shake .28s}
+@keyframes shake{25%{transform:translateX(-8px)}50%{transform:translateX(8px)}75%{transform:translateX(-4px)}}
+.overlay{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(38,30,47,.58);backdrop-filter:blur(7px)}
+.overlay.show{display:flex}
+.result{width:min(540px,100%);background:#fffdfa;border-radius:28px;border:1px solid var(--line);box-shadow:0 26px 80px rgba(35,26,44,.28);padding:26px;text-align:center}
+.crown{font-size:44px}.result h2{margin:4px 0 3px;font-size:29px}.scoreline{font-size:clamp(37px,9vw,65px);font-weight:1000;letter-spacing:-.055em;color:#4f3f71}
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:17px 0}
+.ritem{padding:12px 5px;border-radius:15px;background:#f7f2ec}.ritem b{display:block;font-size:22px}.ritem span{font-size:10px;color:var(--muted);font-weight:900}
+.result-phrase{padding:12px;border-radius:15px;background:#f5f1ff;font-size:12px;line-height:1.55;color:#62567b;font-weight:800}
+.result-actions{display:grid;grid-template-columns:1.3fr .7fr;gap:8px;margin-top:13px}
+.primary,.ghost{border:0;border-radius:16px;min-height:52px;font-weight:1000}
+.primary{background:var(--orange);color:#fff}.ghost{background:#eee7df;color:var(--ink)}
+.countdown{position:fixed;inset:0;display:none;place-items:center;z-index:30;pointer-events:none;background:rgba(255,247,234,.72);backdrop-filter:blur(4px)}
+.countdown.show{display:grid}.countdown b{font-size:min(35vw,190px);line-height:1;color:var(--orange);text-shadow:0 7px #fff}
+@media(max-width:760px){
+  .home{grid-template-columns:1fr}.side{order:-1}.side .today p{font-size:14px}.play{min-height:520px}.hud{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:480px){
+  .app{padding:10px 10px 58px}.top{align-items:flex-start}.sub{display:none}.logo{width:42px;height:42px}.hero{padding:20px}.modes{grid-template-columns:1fr}.rule{gap:5px}.rulebox{padding:10px 5px}.rulebox b{font-size:21px}.play{padding:12px;min-height:500px}.stage{padding:13px 0}.phrase{font-size:29px}.input-mirror{min-height:135px;padding:16px}.entry{flex-direction:column}.submit{min-height:50px}.result-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+<script src="../../kidscade-game-sdk.js" data-game-id="kor_hand_twist_typing" data-title="손 꼬임 타자왕" data-shell="true" data-mute="false"></script>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><div class="logo">⌨️</div><div><h1>손 꼬임 타자왕</h1><p class="sub">30초 외우고 · 30초 동안 얼마나 많이 칠 수 있을까?</p></div></div>
+    <button class="sound" id="soundBtn" type="button" aria-label="효과음 켜기 또는 끄기">🔊</button>
+  </header>
+
+  <section class="home" id="homeView">
+    <main class="card hero">
+      <span class="kicker">🔥 1판 60초 · 오늘의 손 꼬임 문장</span>
+      <h2>외우고,<br>미친 듯이 쳐라!</h2>
+      <p>문장을 30초 동안 외운 뒤 원문이 사라집니다. 다음 30초 동안 정확하게 몇 번이나 반복 입력할 수 있는지 도전하세요.</p>
+      <div class="rule">
+        <div class="rulebox"><b>30초</b><span>문장 외우기</span></div><div class="arrow">→</div>
+        <div class="rulebox"><b>30초</b><span>반복 타자</span></div>
+      </div>
+
+      <div class="section-title">난이도</div>
+      <div class="pills" id="difficultyChoices">
+        <button class="choice selected" data-diff="easy" type="button">살살 꼬임<small>짧고 쉬움</small></button>
+        <button class="choice" data-diff="medium" type="button">꽤 꼬임<small>헷갈리는 반복</small></button>
+        <button class="choice" data-diff="hard" type="button">손가락 꼬임<small>긴 문장 · 극한</small></button>
+      </div>
+
+      <div class="section-title">게임 방식</div>
+      <div class="modes" id="modeChoices">
+        <button class="choice mode-choice selected" data-mode="normal" type="button">👀 일반전<small>내가 입력한 글자가 보여요</small></button>
+        <button class="choice mode-choice" data-mode="blind" type="button">🙈 블라인드전<small>입력한 글자도 안 보여요</small></button>
+      </div>
+      <button class="start" id="startBtn" type="button">손 풀고 시작!</button>
+    </main>
+
+    <aside class="card side">
+      <h3>오늘의 문장</h3>
+      <div class="today"><div class="label" id="todayLabel">살살 꼬임</div><p id="todayPhrase"></p></div>
+      <div class="stat"><span>내 최고 기록</span><b id="bestScore">0자</b></div>
+      <div class="tip">같은 날 같은 난이도는 모두 같은 문장이 나와요. 교실에서 동시에 시작하면 그대로 기록 대결을 할 수 있습니다.</div>
+    </aside>
+  </section>
+
+  <section class="game" id="gameView">
+    <div class="game-head">
+      <button class="back" id="backBtn" type="button">← 나가기</button>
+      <div class="phase-chip" id="phaseChip">외우기</div>
+    </div>
+    <main class="card play" id="playCard">
+      <div class="hud">
+        <div class="hudbox"><span>남은 시간</span><b id="timeText">30.0</b></div>
+        <div class="hudbox"><span>완성</span><b id="lapsText">0회</b></div>
+        <div class="hudbox"><span>정확한 글자</span><b id="charsText">0자</b></div>
+        <div class="hudbox"><span>PERFECT</span><b id="perfectText">0</b></div>
+      </div>
+      <div class="timerbar"><div id="timerFill"></div></div>
+
+      <div class="stage">
+        <section class="memory" id="memoryPane">
+          <div class="mini">눈으로 읽고 · 속으로 말하고 · 손가락으로 따라 외워 보세요</div>
+          <div class="phrase" id="memoryPhrase"></div>
+          <div class="warning" id="memoryWarning"></div>
+        </section>
+
+        <section class="typing" id="typingPane" hidden>
+          <div class="hidden-target" id="hiddenTarget">원문은 숨겨졌어요. 기억나는 대로 계속 입력!</div>
+          <div class="input-mirror empty" id="inputMirror">첫 글자를 입력하세요</div>
+          <div class="entry">
+            <input class="typeinput" id="typingInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="여기에 입력">
+            <button class="submit" id="submitBtn" type="button">완성!</button>
+          </div>
+          <div class="note" id="typingNote">정확히 한 문장을 완성하면 자동으로 다음 바퀴가 시작돼요.</div>
+        </section>
+      </div>
+      <div class="combo-pop" id="comboPop">1바퀴!</div>
+    </main>
+  </section>
+</div>
+
+<div class="countdown" id="countdown"><b id="countdownText">3</b></div>
+<div class="overlay" id="resultOverlay" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+  <div class="result">
+    <div class="crown">👑</div>
+    <h2 id="resultTitle">이번 기록</h2>
+    <div class="scoreline"><span id="resultLaps">0</span>바퀴 + <span id="resultExtra">0</span>자</div>
+    <div class="result-grid">
+      <div class="ritem"><b id="resultChars">0</b><span>정확한 글자</span></div>
+      <div class="ritem"><b id="resultPerfect">0</b><span>PERFECT</span></div>
+      <div class="ritem"><b id="resultMode">일반</b><span>모드</span></div>
+    </div>
+    <div class="result-phrase" id="resultPhrase"></div>
+    <div class="result-actions">
+      <button class="primary" id="retryBtn" type="button">같은 문장 재도전</button>
+      <button class="ghost" id="homeBtn" type="button">처음으로</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var PHRASES={
+    easy:[
+      "내가 그린 기린 그림은 긴 기린 그림이다",
+      "큰 토끼 토끼통 옆 작은 토끼 토끼통",
+      "파란 바구니 안 빨간 바구니 빨간 바구니 안 파란 바구니",
+      "새우 새우깡 속 새우보다 새우 수염이 더 새롭다",
+      "콩콩이는 콩깍지를 깠고 꽁꽁이는 꽁치를 깠다",
+      "박 반장은 밤빵을 받고 백 반장은 팥빵을 받았다",
+      "김 과장은 긴 과자를 강 과장은 큰 과자를 골랐다",
+      "노란 놀이터 난간 아래 늘어난 노란 나팔꽃",
+      "초코칩 칩초코와 칩초코 초코칩은 조금 다르다",
+      "새 책상 세 책상 사이 새 색연필 세 상자"
+    ],
+    medium:[
+      "간장공장 공장장은 강 공장장이고 된장공장 공장장은 장 공장장이다",
+      "경찰청 철창살은 외철창살이고 검찰청 철창살은 쌍철창살이다",
+      "앞집 팥죽은 붉은 팥 풋팥죽이고 뒷집 콩죽은 햇콩 단콩죽이다",
+      "저기 있는 저 분은 박 법학박사이고 여기 있는 이 분은 백 법학박사이다",
+      "서울특별시 특허허가과 허가과장 허 과장은 허가서를 확인했다",
+      "작은 찹쌀떡집 찹쌀떡은 촉촉하고 큰 찹쌀떡집 찹쌀떡은 쫀득하다",
+      "강 건너 강 공원 큰 그네 곁에 김 군과 권 군이 같이 갔다",
+      "빨간 깃발 든 김 기사가 긴 기차길 끝까지 깃발을 들고 갔다",
+      "박 박사는 백 박사 방 밖에서 박 박사 박스를 바꿔 받았다",
+      "칠판 옆 책장 첫째 칸과 책상 옆 책장 일곱째 칸을 착각했다"
+    ],
+    hard:[
+      "간장공장 강 공장장은 된장공장 장 공장장에게 공장 간장을 가져가라고 강조했다",
+      "경찰청 철창살 담당 경찰과 검찰청 쌍철창살 담당 검찰관이 철창살 수를 다시 셌다",
+      "앞집 붉은 팥 풋팥죽 장수는 뒷집 햇콩 단콩죽 장수보다 팥죽 그릇을 빨리 포갰다",
+      "백 법학박사는 박 법학박사에게 법학박사 박사복보다 백 박사의 박사복이 밝다고 말했다",
+      "김 기사는 긴 기찻길 건너 큰 기차를 기다리고 강 기사는 큰 기찻길 건너 긴 기차를 기다렸다",
+      "새 색연필 세 상자를 산 서 선생님은 세 상자 속 새 색연필 색을 세 번씩 세었다",
+      "최 총무가 찬 찹쌀떡을 찾자 차 총무가 촉촉한 찹쌀떡과 쫀득한 찹쌀떡을 차례로 챙겼다",
+      "박 반장 반의 빨간 방방이는 백 반장 반의 파란 방방이보다 빠르게 방방 뛰었다",
+      "큰 콩깍지 깐 콩콩이와 꽁꽁 언 꽁치 깐 꽁꽁이가 콩과 꽁치를 바꿔 담았다",
+      "청주 체육관 철봉 첫째 줄 철봉과 충주 체육관 철봉 일곱째 줄 철봉을 철수가 착각했다"
+    ]
+  };
+
+  var diff="easy", mode="normal", phase="home", phrase="", phraseIndex=0;
+  var laps=0, perfects=0, currentPerfect=true, currentValue="", correctPrefix=0;
+  var endAt=0, raf=0, audioOn=true, audioCtx=null, composing=false, running=false;
+
+  function $(id){return document.getElementById(id)}
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+  function labelDiff(d){return d==="easy"?"살살 꼬임":d==="medium"?"꽤 꼬임":"손가락 꼬임"}
+  function daySeed(){
+    var now=new Date(), y=now.getFullYear(), m=now.getMonth()+1, d=now.getDate();
+    return y*10000+m*100+d;
+  }
+  function dailyIndex(d){
+    var salt=d==="easy"?17:d==="medium"?41:73;
+    return Math.abs((daySeed()*31+salt*97))%PHRASES[d].length;
+  }
+  function selectPhrase(){
+    phraseIndex=dailyIndex(diff);
+    phrase=PHRASES[diff][phraseIndex];
+    $("todayLabel").textContent=labelDiff(diff)+" · 오늘의 문장";
+    $("todayPhrase").textContent=phrase;
+  }
+  function best(){
+    try{return Number(window.KidscadeGame&&KidscadeGame.state?KidscadeGame.state().best:0)||0}catch(e){return 0}
+  }
+  function renderHome(){
+    selectPhrase();
+    $("bestScore").textContent=best()+"자";
+  }
+  function tone(freq,dur,delay,vol){
+    if(!audioOn)return;
+    try{
+      audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();
+      audioCtx.resume();
+      var o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime+(delay||0);
+      o.type="sine";o.frequency.value=freq;
+      g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol||.05,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+      o.connect(g).connect(audioCtx.destination);o.start(t);o.stop(t+dur+.03);
+    }catch(e){}
+  }
+  function sfxTick(){tone(520,.05,0,.035)}
+  function sfxGo(){tone(523,.08,0,.06);tone(659,.08,.08,.06);tone(880,.14,.16,.07)}
+  function sfxGood(){tone(660,.07,0,.055);tone(880,.1,.065,.06)}
+  function sfxBad(){tone(170,.14,0,.055);tone(130,.16,.07,.045)}
+  function sfxFinish(){tone(523,.1,0,.05);tone(659,.1,.08,.05);tone(784,.12,.16,.06);tone(1047,.2,.25,.07)}
+  function showView(game){
+    $("homeView").style.display=game?"none":"grid";
+    $("gameView").classList.toggle("active",game);
+  }
+  function updateChoices(){
+    document.querySelectorAll("[data-diff]").forEach(function(b){b.classList.toggle("selected",b.getAttribute("data-diff")===diff)});
+    document.querySelectorAll("[data-mode]").forEach(function(b){b.classList.toggle("selected",b.getAttribute("data-mode")===mode)});
+    renderHome();
+  }
+  function totalCorrectChars(){return laps*phrase.length+correctPrefix}
+  function refreshHud(ms){
+    $("timeText").textContent=Math.max(0,ms/1000).toFixed(1);
+    $("lapsText").textContent=laps+"회";
+    $("charsText").textContent=totalCorrectChars()+"자";
+    $("perfectText").textContent=perfects;
+    $("timerFill").style.transform="scaleX("+Math.max(0,Math.min(1,ms/30000))+")";
+  }
+  function startGame(){
+    selectPhrase();
+    laps=0;perfects=0;currentPerfect=true;currentValue="";correctPrefix=0;
+    running=true;phase="memory";showView(true);
+    $("memoryPane").hidden=false;$("typingPane").hidden=true;
+    $("memoryPhrase").textContent=phrase;$("memoryWarning").textContent="";
+    $("phaseChip").textContent="👀 외우기 30초";
+    refreshHud(30000);
+    endAt=performance.now()+30000;
+    try{window.KidscadeGame&&KidscadeGame.start&&KidscadeGame.start({mode:mode,difficulty:diff,phraseId:diff+"_"+phraseIndex})}catch(e){}
+    cancelAnimationFrame(raf);tick();
+  }
+  function tick(){
+    if(!running)return;
+    var left=endAt-performance.now();
+    if(left<=0){
+      refreshHud(0);
+      if(phase==="memory")beginTypingCountdown();
+      else finishGame();
+      return;
+    }
+    refreshHud(left);
+    if(phase==="memory"){
+      if(left<5000)$("memoryWarning").textContent="곧 문장이 사라져요! "+Math.ceil(left/1000);
+      else if(left<12000)$("memoryWarning").textContent="마지막으로 헷갈리는 부분을 확인!";
+      else $("memoryWarning").textContent="";
+    }
+    raf=requestAnimationFrame(tick);
+  }
+  function beginTypingCountdown(){
+    running=false;phase="countdown";
+    $("countdown").classList.add("show");
+    var n=3;$("countdownText").textContent=n;sfxTick();
+    var timer=setInterval(function(){
+      n--;
+      if(n>0){$("countdownText").textContent=n;sfxTick();return}
+      clearInterval(timer);$("countdownText").textContent="GO!";sfxGo();
+      setTimeout(function(){$("countdown").classList.remove("show");startTyping()},350);
+    },650);
+  }
+  function startTyping(){
+    phase="typing";running=true;endAt=performance.now()+30000;
+    $("memoryPane").hidden=true;$("typingPane").hidden=false;
+    $("phaseChip").textContent=mode==="blind"?"🙈 블라인드 타자 30초":"⌨️ 타자 30초";
+    $("typingInput").value="";$("typingInput").classList.toggle("blind-input",mode==="blind");
+    $("typingNote").textContent=mode==="blind"?"입력한 글자도 숨겨집니다. 한 문장을 다 썼다고 생각하면 Enter 또는 완성!":"정확히 한 문장을 완성하면 자동으로 다음 바퀴가 시작돼요.";
+    $("submitBtn").hidden=mode!=="blind";
+    renderMirror();
+    setTimeout(function(){$("typingInput").focus()},30);
+    cancelAnimationFrame(raf);tick();
+  }
+  function calcPrefix(value){
+    var n=Math.min(value.length,phrase.length),i=0;
+    while(i<n&&value[i]===phrase[i])i++;
+    return i;
+  }
+  function renderMirror(){
+    currentValue=$("typingInput").value;
+    correctPrefix=calcPrefix(currentValue);
+    var mirror=$("inputMirror");
+    if(!currentValue){
+      mirror.className="input-mirror empty";
+      mirror.textContent=mode==="blind"?"입력은 보이지 않아요 · 기억을 믿어 보세요":"첫 글자를 입력하세요";
+      return;
+    }
+    mirror.className="input-mirror";
+    if(mode==="blind"){
+      mirror.innerHTML='<span class="blind-dots">'+Array.from(currentValue).map(function(){return "●"}).join("")+"</span>";
+      return;
+    }
+    var html="";
+    for(var i=0;i<currentValue.length;i++){
+      var ok=i<phrase.length&&currentValue[i]===phrase[i];
+      html+='<span class="'+(ok?"ok":"bad")+'">'+esc(currentValue[i])+"</span>";
+    }
+    mirror.innerHTML=html;
+  }
+  function completeLap(){
+    laps++;
+    if(currentPerfect)perfects++;
+    currentPerfect=true;currentValue="";correctPrefix=0;
+    $("typingInput").value="";renderMirror();sfxGood();
+    var pop=$("comboPop");pop.textContent=laps+"바퀴!"+(perfects===laps?" PERFECT!":"");
+    pop.classList.remove("show");void pop.offsetWidth;pop.classList.add("show");
+    try{
+      if(laps===3||laps===5||laps===10)window.KidscadeGame&&KidscadeGame.milestone&&KidscadeGame.milestone("hand_twist_"+laps,{laps:laps,uniqueKey:"hand_twist_"+diff+"_"+mode+"_"+laps});
+    }catch(e){}
+  }
+  function judgeBlind(){
+    if(!running||phase!=="typing")return;
+    var v=$("typingInput").value;
+    if(v===phrase){completeLap();return}
+    currentPerfect=false;sfxBad();
+    $("playCard").classList.remove("shake");void $("playCard").offsetWidth;$("playCard").classList.add("shake");
+    $("typingInput").value="";currentValue="";correctPrefix=0;renderMirror();
+    $("typingNote").textContent="손 꼬였다! 다시 처음부터!";
+    setTimeout(function(){if(phase==="typing")$("typingNote").textContent="입력한 글자도 숨겨집니다. 한 문장을 다 썼다고 생각하면 Enter 또는 완성!"},900);
+  }
+  function handleValue(){
+    if(!running||phase!=="typing"||composing)return;
+    var v=$("typingInput").value;
+    if(mode==="normal"){
+      var p=calcPrefix(v);
+      if(p<v.length)currentPerfect=false;
+      if(v===phrase){completeLap();return}
+      if(v.length>phrase.length)currentPerfect=false;
+    }
+    renderMirror();
+  }
+  function finishGame(){
+    if(!running||phase!=="typing")return;
+    running=false;phase="result";cancelAnimationFrame(raf);
+    currentValue=$("typingInput").value;correctPrefix=calcPrefix(currentValue);
+    var chars=totalCorrectChars(), extra=correctPrefix;
+    $("resultLaps").textContent=laps;$("resultExtra").textContent=extra;
+    $("resultChars").textContent=chars;$("resultPerfect").textContent=perfects;
+    $("resultMode").textContent=mode==="blind"?"블라인드":"일반";
+    $("resultPhrase").innerHTML="<b>"+esc(labelDiff(diff))+"</b><br>"+esc(phrase);
+    $("resultOverlay").classList.add("show");sfxFinish();
+    try{
+      window.KidscadeGame&&KidscadeGame.result&&KidscadeGame.result({
+        scope:"session",status:"completed",score:chars,
+        scoreOptions:{higherIsBetter:true,unit:"chars"},
+        mode:mode,difficulty:diff,loops:laps,extraChars:extra,perfects:perfects,
+        phraseId:diff+"_"+phraseIndex,phraseLength:phrase.length
+      });
+    }catch(e){}
+    renderHome();
+  }
+  function goHome(){
+    running=false;phase="home";cancelAnimationFrame(raf);
+    $("resultOverlay").classList.remove("show");$("countdown").classList.remove("show");showView(false);renderHome();
+  }
+
+  document.querySelectorAll("[data-diff]").forEach(function(b){b.addEventListener("click",function(){diff=b.getAttribute("data-diff");updateChoices()})});
+  document.querySelectorAll("[data-mode]").forEach(function(b){b.addEventListener("click",function(){mode=b.getAttribute("data-mode");updateChoices()})});
+  $("startBtn").addEventListener("click",startGame);
+  $("retryBtn").addEventListener("click",function(){$("resultOverlay").classList.remove("show");startGame()});
+  $("homeBtn").addEventListener("click",goHome);$("backBtn").addEventListener("click",goHome);
+  $("soundBtn").addEventListener("click",function(){audioOn=!audioOn;$("soundBtn").textContent=audioOn?"🔊":"🔇"});
+  $("typingInput").addEventListener("compositionstart",function(){composing=true});
+  $("typingInput").addEventListener("compositionend",function(){composing=false;handleValue()});
+  $("typingInput").addEventListener("input",handleValue);
+  $("typingInput").addEventListener("keydown",function(e){
+    if(e.key==="Enter"){e.preventDefault();if(mode==="blind")judgeBlind();else if($("typingInput").value===phrase)completeLap()}
+  });
+  $("submitBtn").addEventListener("click",judgeBlind);
+  document.addEventListener("visibilitychange",function(){
+    if(document.visibilityState==="visible"&&running)tick();
+  });
+
+  renderHome();
+})();
+</script>
+</body>
+</html>
