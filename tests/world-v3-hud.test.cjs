@@ -52,6 +52,9 @@ test('Seed World loading board reports real stages and defers noncritical warmup
   assert.match(runtime,/ensurePetsBuilt\(\)/);
   assert.doesNotMatch(runtime,/await buildPets\(\);\n  updateHomesteadVisuals/);
   assert.match(runtime,/setLoadingProgress\(100,'준비 완료!'/);
+  assert.match(runtime,/initialLevel:devState\(\)\.houseLevel/);
+  assert.match(runtime,/streamingStatus\(\)/);
+  assert.match(runtime,/cityRuntime\?\.streamingStatus/);
 });
 
 test('Seed World radial menu keeps tools immediate and groups 생활 navigation without covering the HUD',()=>{
