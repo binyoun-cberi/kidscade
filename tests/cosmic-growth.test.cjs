@@ -14,7 +14,7 @@ test('cosmic growth game shell is wired to local Three and Kidscade SDK',()=>{
   assert.match(html,/<title>먼지에서 블랙홀까지<\/title>/);
   assert.match(html,/data-game-id="science_cosmic_growth"/);
   assert.match(html,/assets\/vendor\/three-r160\/three\.module\.js/);
-  assert.match(html,/game\.js\?v=2/);
+  assert.match(html,/game\.js\?v=3/);
   assert.match(html,/id="tapLayer"/);
   assert.match(html,/id="codex"/);
 });
@@ -81,7 +81,7 @@ test('even maximum research and upgrades cannot skip late structures in seconds'
  const api=progression();const upgrades=Object.fromEntries(api.UPGRADES.map(u=>[u.id,true]));
  for(let stage=12;stage<24;stage++){
   api.setState({stage,research:10,upgrades:Object.fromEntries(api.UPGRADES.filter(u=>u.min<=stage).map(u=>[u.id,true]))});
-  const seconds=api.STAGES[stage].need/(api.autoRate()+api.tapPower()*3);
+  const seconds=api.STAGES[stage].need/(api.tapPower()*3);
   assert.ok(seconds>30,api.STAGES[stage].id+' '+seconds);
  }
 });
@@ -93,9 +93,9 @@ test('active progression simulation keeps black hole and cosmic web as long term
   const cost=3+state.research*2;if(state.research<10&&insight>=cost){insight-=cost;state.research++}
   api.setState(state);elapsed++;taps+=2;if(taps%250===0)insight++;
   if(elapsed%25===0)insight++; // successful repeat observation
-  progress+=api.tapPower()*2+api.autoRate();
+  progress+=api.tapPower()*2;
   const current=api.STAGES[state.stage];
-  if(current.auto||progress>=current.need){progress=current.auto?0:Math.min(progress-current.need,api.STAGES[state.stage+1].need*.1);state.stage++;insight+=2;
+  if(progress>=current.need){progress=current.auto?0:Math.min(progress-current.need,api.STAGES[state.stage+1].need*.1);state.stage++;insight+=2;
    for(const id of api.STAGES[state.stage].discover)if(!found.has(id)){found.add(id);insight++}
    if(state.stage===12)blackHole=elapsed;
   }
@@ -113,4 +113,11 @@ test('holding Space never generates extra growth and focused controls are exclud
  assert.equal(count,1);
  callback({code:'Space',repeat:false,preventDefault(){}});assert.equal(count,2);
  box.document.activeElement.tagName='BUTTON';callback({code:'Space',repeat:false,preventDefault(){}});assert.equal(count,2);
+});
+
+test('idle animation does not add growth and upgrades improve deliberate taps',()=>{
+ const animate=js.slice(js.indexOf('function animate('),js.indexOf("$('tapLayer').addEventListener"));
+ assert.doesNotMatch(animate,/addGrowth\(|advanceStage\(|state\.progress\s*=/);
+ const api=progression();api.setState({stage:7,research:0,upgrades:{}});const base=api.tapPower();
+ api.setState({stage:7,research:0,upgrades:{gas_accretion:true}});assert.ok(api.tapPower()>base);
 });
