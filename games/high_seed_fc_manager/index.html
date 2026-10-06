@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>풋살 히스토리그</title>
-<link rel="stylesheet" href="style.css?v=12">
+<link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
 <div id="app">
@@ -66,10 +66,13 @@
         <span id="homeName">우리 팀</span><b id="matchScore">0 : 0</b><span id="awayName">상대 팀</span>
         <small id="matchClock">0'</small>
       </div>
-      <div class="speed-group" aria-label="경기 속도">
-        <button data-speed="1" class="speed active" type="button">1×</button>
-        <button data-speed="2" class="speed" type="button">2×</button>
-        <button data-speed="4" class="speed" type="button">4×</button>
+      <div class="match-tools">
+        <button id="directControlBtn" class="control-toggle" type="button">🎮 직접 조종 켜기</button>
+        <div class="speed-group" aria-label="경기 속도">
+          <button data-speed="1" class="speed active" type="button">1×</button>
+          <button data-speed="2" class="speed" type="button">2×</button>
+          <button data-speed="4" class="speed" type="button">4×</button>
+        </div>
       </div>
     </div>
     <div class="match-body">
@@ -86,10 +89,9 @@
     <div class="futsal-action-pad">
       <button class="switch" type="button" data-fh-action="switch">전환<br>Q</button>
       <button class="lob" type="button" data-fh-action="lob">크로스<br>A</button>
-      <button class="jockey" type="button" data-fh-hold="jockey">조키<br>C</button>
       <button class="pass" type="button" data-fh-action="pass">패스<br>S</button>
       <button class="through" type="button" data-fh-action="through">스루<br>W</button>
-      <button class="shoot" type="button" data-fh-action="shoot">슛/태클<br>D</button>
+      <button id="shootTackleBtn" class="shoot" type="button" data-fh-action="shoot">슛/태클<br>D</button>
     </div>
   </div>
 </div>
@@ -97,7 +99,12 @@
         <div class="mini-card">
           <h3>감독 지시</h3>
           <div id="liveTacticText"></div>
-          <div class="futsal-control-help"><b>직접 조작</b><small>방향키 이동 · Shift 질주 · Q 선수 전환<br>S 패스 · W 스루 · A 크로스 · D 슛/태클</small></div><div class="live-manager-actions">
+          <div id="controlCoach" class="futsal-control-help watch">
+            <b id="controlModeText">👀 관전 모드</b>
+            <small id="controlHint">선수들이 스스로 경기해요. 원할 때 직접 조종을 켤 수 있어요.</small>
+            <div class="tackle-legend"><span class="approach-dot"></span>가까이 가기 <span class="ready-dot"></span>초록 표시에서 D 태클</div>
+            <button id="controlTutorialBtn" class="control-help-btn" type="button">🎓 조작·태클 도움말</button>
+          </div><div class="live-manager-actions">
             <button id="quickSubBtn" class="secondary full" type="button">🔄 선수 교체</button>
             <button id="playerInstructionBtn" class="secondary full" type="button">📣 개인 지시</button>
           </div>
@@ -164,8 +171,8 @@
 <script src="data.js?v=12"></script>
 <script src="sim.js?v=12"></script>
 <script src="match-renderer.js?v=12"></script>
-<script src="futsal-history-match.js?v=13"></script>
-<script src="game.js?v=12"></script>
+<script src="futsal-history-match.js?v=14"></script>
+<script src="game.js?v=13"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_seed_fc_manager" data-title="풋살 히스토리그" data-shell="true" data-orientation="landscape"></script>
 </body>
 </html>

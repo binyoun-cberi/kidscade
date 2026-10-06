@@ -56,6 +56,7 @@ const TEST_FILES = [
   "tests/fraction-smith.test.cjs",
   "tests/market-walk.test.cjs",
   "tests/pass-mafia.test.cjs",
+  "tests/seed-futsal.test.cjs",
   "tests/maratang-selfbar.test.cjs",
   "tests/nail-artist-tycoon.test.cjs",
   "tests/world-flag-master-v2.test.cjs",

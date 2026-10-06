@@ -8,24 +8,72 @@ var SAVE_KEY='kidscade_game_v2:high_seed_fc_manager:save';
 var state=null,currentView='home',squadFilter='all',historyFilter=null;
 var modal=document.getElementById('modal'),modalBody=document.getElementById('modalBody');
 var toastEl=document.getElementById('toast'),toastTimer=0;
-var match=null,matchSpeed=1,raf=0,lastFrame=0,resultShown=false;
+var match=null,matchSpeed=1,raf=0,lastFrame=0,resultShown=false,directCoachSeen=false;
 var broadcastRenderer=window.SeedFCBroadcast&&typeof window.SeedFCBroadcast.create==='function'?window.SeedFCBroadcast.create():null;
 var replayCurrent=null,replayFrame=0,replayCursor=0,replayPlaying=false,replayPlaySpeed=1,replayRaf=0,replayLast=0,replayMode='replay',replayFocus='all',replayReturnView='analysis';
 var soccerBallImg=new Image();
 soccerBallImg.src='../../assets/game/2d/sports/equipment/ball_soccer1.png';
 var matchAudioDefs={
-  whoosh:['../../assets/audio/sfx/combat/projectile-whoosh-01.mp3',.12],
-  impact:['../../assets/audio/sfx/combat/impact-heavy-01.mp3',.10],
-  goal:['../../assets/audio/sfx/success/cheer-yay-01.mp3',.20],
-  confirm:['../../assets/audio/ui/kenney_interface/confirmation_001.ogg',.16]
+  whoosh:['../../assets/audio/sfx/combat/projectile-whoosh-01.mp3',.10],
+  pass:['../../assets/audio/sfx/combat/impact-heavy-01.mp3',.045],
+  tackle:['../../assets/audio/sfx/combat/impact-heavy-01.mp3',.13],
+  save:['../../assets/audio/sfx/combat/impact-heavy-01.mp3',.09],
+  confirm:['../../assets/audio/ui/kenney_interface/confirmation_001.ogg',.14]
 };
-var matchAudio={};
+var matchAudio={},stadiumAudio={ctx:null,crowdSource:null,crowdGain:null},lastVoiceCall=0;
 Object.keys(matchAudioDefs).forEach(function(k){
   var def=matchAudioDefs[k],a=new Audio(def[0]);a.preload='auto';a.volume=def[1];matchAudio[k]=a;
 });
 function matchSfx(k,rate){
   var a=matchAudio[k];if(!a)return;
   try{a.pause();a.currentTime=0;a.playbackRate=rate||1;a.play().catch(function(){});}catch(e){}
+}
+function stadiumContext(){
+  if(stadiumAudio.ctx)return stadiumAudio.ctx;
+  try{var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;stadiumAudio.ctx=new AC();return stadiumAudio.ctx;}catch(e){return null;}
+}
+function startStadiumAmbience(){
+  var ctx=stadiumContext();if(!ctx||stadiumAudio.crowdSource)return;
+  try{
+    if(ctx.state==='suspended')ctx.resume().catch(function(){});
+    var seconds=2.2,buffer=ctx.createBuffer(1,Math.floor(ctx.sampleRate*seconds),ctx.sampleRate),data=buffer.getChannelData(0);
+    for(var i=0;i<data.length;i++){var slow=Math.sin(i/1770)*.10+Math.sin(i/3113)*.08;data[i]=(Math.random()*2-1)*(.34+slow);}
+    var source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
+    source.buffer=buffer;source.loop=true;filter.type='bandpass';filter.frequency.value=760;filter.Q.value=.42;gain.gain.value=.022;
+    source.connect(filter);filter.connect(gain);gain.connect(ctx.destination);source.start();
+    stadiumAudio.crowdSource=source;stadiumAudio.crowdGain=gain;
+  }catch(e){}
+}
+function stopStadiumAmbience(){
+  try{if(stadiumAudio.crowdSource)stadiumAudio.crowdSource.stop();}catch(e){}
+  stadiumAudio.crowdSource=null;stadiumAudio.crowdGain=null;
+}
+function crowdSwell(level){
+  var ctx=stadiumContext(),g=stadiumAudio.crowdGain;if(!ctx||!g)return;
+  try{var now=ctx.currentTime,peak=level||.075;g.gain.cancelScheduledValues(now);g.gain.setValueAtTime(Math.max(.022,g.gain.value||.022),now);g.gain.linearRampToValueAtTime(peak,now+.08);g.gain.exponentialRampToValueAtTime(.022,now+1.5);}catch(e){}
+}
+function whistleSfx(longWhistle){
+  var ctx=stadiumContext();if(!ctx)return;
+  try{
+    if(ctx.state==='suspended')ctx.resume().catch(function(){});
+    var now=ctx.currentTime,d=longWhistle?.52:.30,osc=ctx.createOscillator(),gain=ctx.createGain();
+    osc.type='square';osc.frequency.setValueAtTime(2050,now);osc.frequency.linearRampToValueAtTime(2470,now+d*.36);osc.frequency.linearRampToValueAtTime(2180,now+d);
+    gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.032,now+.018);gain.gain.setValueAtTime(.032,now+d-.045);gain.gain.exponentialRampToValueAtTime(.0001,now+d);
+    osc.connect(gain);gain.connect(ctx.destination);osc.start(now);osc.stop(now+d+.02);
+  }catch(e){}
+}
+function passThump(){
+  var ctx=stadiumContext();if(!ctx)return;
+  try{
+    var now=ctx.currentTime,osc=ctx.createOscillator(),gain=ctx.createGain();osc.type='sine';osc.frequency.setValueAtTime(145,now);osc.frequency.exponentialRampToValueAtTime(68,now+.085);gain.gain.setValueAtTime(.045,now);gain.gain.exponentialRampToValueAtTime(.0001,now+.09);osc.connect(gain);gain.connect(ctx.destination);osc.start(now);osc.stop(now+.10);
+  }catch(e){}
+}
+function teammateVoice(text){
+  var now=Date.now();if(now-lastVoiceCall<2200)return;lastVoiceCall=now;
+  try{
+    if(!window.speechSynthesis||!window.SpeechSynthesisUtterance)return;
+    var u=new SpeechSynthesisUtterance(text||'여기!');u.lang='ko-KR';u.rate=1.3;u.pitch=1.08;u.volume=.32;window.speechSynthesis.speak(u);
+  }catch(e){}
 }
 
 function $(id){return document.getElementById(id);}
@@ -553,18 +601,70 @@ function startMatch(){
   var f=myFixture();if(!f)return;if(state.lineup.length!==5){state.lineup=autoLineup(state.roster,state.formation);save();}var unavailable=state.lineup.map(playerById).filter(function(p){return p&&p.injury&&p.injury.games>0;});if(unavailable.length){state.lineup=autoLineup(state.roster,state.formation);save();toast('부상 선수를 제외하고 선발을 다시 구성했습니다.');}
   var own=clubById(state.clubId),o=opponent(f),opp=opponentSetup(o),isHome=f.home===state.clubId,seed=fixtureSeed(f.home,f.away),homeClub=isHome?own:o,awayClub=isHome?o:own;
   var opts=isHome?{homeClub:own,homeRoster:state.roster,homeLineup:state.lineup,homeFormation:state.formation,homeTactics:clone(state.tactics),homeCoach:clone(own.coachProfile||{}),awayClub:o,awayRoster:opp.roster,awayLineup:opp.lineup,awayFormation:opp.formation,awayTactics:opp.tactics,awayCoach:opp.coach}:{homeClub:o,homeRoster:opp.roster,homeLineup:opp.lineup,homeFormation:opp.formation,homeTactics:opp.tactics,homeCoach:opp.coach,awayClub:own,awayRoster:state.roster,awayLineup:state.lineup,awayFormation:state.formation,awayTactics:clone(state.tactics),awayCoach:clone(own.coachProfile||{})};
-  opts.formations=D.formations;opts.seed=seed;opts.userSide=isHome?0:1;opts.onEvent=matchEvent;opts.onFinish=function(m){setTimeout(function(){showMatchResult(m,f,isHome);},400);};match=(H&&H.create)?H.create(opts):S.create(opts);match.userSide=isHome?0:1;match.fixture=f;if(!match.isPhysicalFutsal&&broadcastRenderer)broadcastRenderer.reset(match);matchSpeed=1;resultShown=false;$('homeName').textContent=homeClub.name;$('awayName').textContent=awayClub.name;$('matchScore').textContent='0 : 0';$('matchClock').textContent="0'";$('eventLog').innerHTML='';$('matchLayer').classList.remove('hidden');setSpeed(1);updateLiveTactic();cancelAnimationFrame(raf);lastFrame=performance.now();raf=requestAnimationFrame(matchLoop);sound('start');
+  opts.formations=D.formations;opts.seed=seed;opts.userSide=isHome?0:1;opts.onEvent=matchEvent;opts.onFinish=function(m){setTimeout(function(){showMatchResult(m,f,isHome);},400);};match=(H&&H.create)?H.create(opts):S.create(opts);match.userSide=isHome?0:1;match.fixture=f;if(!match.isPhysicalFutsal&&broadcastRenderer)broadcastRenderer.reset(match);matchSpeed=1;resultShown=false;$('homeName').textContent=homeClub.name;$('awayName').textContent=awayClub.name;$('matchScore').textContent='0 : 0';$('matchClock').textContent="0'";$('eventLog').innerHTML='';$('matchLayer').classList.remove('hidden');if(match.setDirectControl)match.setDirectControl(false);setSpeed(1);updateDirectControlUI();updateLiveTactic();startStadiumAmbience();whistleSfx(false);cancelAnimationFrame(raf);lastFrame=performance.now();raf=requestAnimationFrame(matchLoop);sound('start');
 }
 function matchEvent(e){
-  var log=$('eventLog'),div=document.createElement('div');div.className='event-line '+(e.type==='goal'?'goal':e.type==='fact'?'fact':e.type==='coach'?'coach':'');
-  div.textContent=e.minute+"' · "+e.text;log.prepend(div);
-  while(log.children.length>16)log.removeChild(log.lastChild);
-  if(e.type==='goal'){matchSfx('goal',1);sound('success');}
-  else if(e.type==='save')matchSfx('impact',1.08);
-  else if(e.type==='shot')matchSfx('whoosh',1.08);
+  var quiet=e.type==='call'||e.type==='tackle_hint'||e.type==='tackle_miss'||e.type==='control';
+  if(!quiet){
+    var log=$('eventLog'),div=document.createElement('div');
+    div.className='event-line '+(e.type==='goal'?'goal':e.type==='fact'?'fact':e.type==='coach'?'coach':e.type==='foul'?'foul':e.type==='tackle'?'tackle':'');
+    div.textContent=e.minute+"' · "+e.text;log.prepend(div);
+    while(log.children.length>16)log.removeChild(log.lastChild);
+  }
+  if(e.type==='goal'){crowdSwell(.095);sound('success');}
+  else if(e.type==='save')matchSfx('save',1.12);
+  else if(e.type==='shot'){matchSfx('whoosh',1.08);passThump();}
+  else if(e.type==='pass'||e.type==='cross'){matchSfx('pass',1.65);passThump();}
+  else if(e.type==='tackle'){matchSfx('tackle',.92);crowdSwell(.040);}
+  else if(e.type==='foul'){whistleSfx(false);crowdSwell(.038);}
+  else if(e.type==='call')teammateVoice(Math.random()<.48?'패스!':'여기!');
+  else if(e.type==='tackle_hint'||e.type==='tackle_miss'){if($('controlHint'))$('controlHint').textContent=e.text;if(e.type==='tackle_miss')toast(e.text);}
   else if(e.type==='sub')matchSfx('confirm',1);
+  else if(e.type==='end'){whistleSfx(true);stopStadiumAmbience();}
 }
-function setSpeed(s){matchSpeed=s;document.querySelectorAll('.speed[data-speed]').forEach(function(b){b.classList.toggle('active',Number(b.dataset.speed)===s);});}
+function setSpeed(s){
+  if(match&&match.directControl&&Number(s)>1)s=1;
+  matchSpeed=s;document.querySelectorAll('.speed[data-speed]').forEach(function(b){
+    var n=Number(b.dataset.speed);b.classList.toggle('active',n===s);b.disabled=!!(match&&match.directControl&&n>1);
+  });
+}
+function showControlTutorial(){
+  modalBody.innerHTML='<h2>🎮 직접 조종은 3가지만 기억해요</h2><div class="fact-box"><b>① 이동</b><br>방향키 또는 왼쪽 방향 버튼으로 움직여요. Shift/질주는 꼭 필요할 때만 써요.<br><br><b>② 공을 가졌을 때</b><br><b>S 패스</b>는 빈 동료를 자동으로 찾아 줘요. W는 앞으로 찔러 주는 스루패스, A는 크로스, <b>D는 슛</b>이에요.<br><br><b>③ 공이 없을 때 태클</b><br>상대 공 보유자에게 가까이 가세요. 상대 둘레 표시가 <b style="color:#4ade80">초록색</b>이 되고 내 선수 위에 <b>“지금! D 태클”</b>이 뜰 때 D를 누르면 성공률이 아주 높아요. 노란색이면 조금 더 가까이 가면 돼요.<br><br><b>반칙은?</b><br>좋은 거리에서도 태클이 빗나가면 가끔 반칙이 될 수 있고, 그때는 심판 휘슬이 들려요.</div><p class="muted">직접 조종이 어렵다면 언제든 👀 관전으로 바꾸면 나머지는 AI가 계속 경기합니다.</p>';
+  modal.classList.remove('hidden');
+}
+function updateDirectControlUI(){
+  if(!match)return;
+  var direct=!!match.directControl,layer=$('matchLayer'),btn=$('directControlBtn');
+  layer.classList.toggle('watch-mode',!direct);
+  btn.classList.toggle('active',direct);
+  btn.textContent=direct?'👀 관전으로 전환':'🎮 직접 조종 켜기';
+  setSpeed(matchSpeed);
+  updateControlCoach();
+}
+function toggleDirectControl(){
+  if(!match||match.finished||!match.setDirectControl)return;
+  var enabled=match.setDirectControl(!match.directControl);
+  if(enabled){
+    setSpeed(1);
+    toast(directCoachSeen?'직접 조종 ON · 초록 표시에서 D 태클!':'직접 조종 ON · 수비할 때 초록 표시가 뜨면 D 태클!');
+    directCoachSeen=true;
+  }else toast('관전 모드 · 선수들이 스스로 경기합니다.');
+  updateDirectControlUI();
+}
+function updateControlCoach(){
+  if(!match||!match.getControlState)return;
+  var st=match.getControlState(),box=$('controlCoach'),mode=$('controlModeText'),hint=$('controlHint'),action=$('shootTackleBtn');
+  if(!box||!mode||!hint||!action)return;
+  box.classList.toggle('watch',!st.direct);box.classList.toggle('direct',st.direct);
+  mode.textContent=st.direct?'🎮 직접 조종 · '+(st.controlledName||'선수'):'👀 관전 모드';
+  hint.textContent=st.text||'';
+  action.classList.remove('tackle-ready','tackle-near');
+  if(!st.direct){action.innerHTML='슛/태클<br>D';return;}
+  if(st.hasBall){action.innerHTML='슛!<br>D';return;}
+  if(st.tackleState==='sweet'||st.tackleState==='ready'){action.classList.add('tackle-ready');action.innerHTML='태클!<br>D';}
+  else if(st.tackleState==='approach'||st.tackleState==='protected'){action.classList.add('tackle-near');action.innerHTML='가까이!<br>D';}
+  else action.innerHTML='태클<br>D';
+}
 function updateLiveTactic(){
   var t=state.tactics;function group(name,key,items){return '<div class="live-group"><small>'+name+'</small><div>'+items.map(function(x){return '<button type="button" class="'+(t[key]===x[0]?'active':'')+'" data-live="'+key+':'+x[0]+'">'+x[1]+'</button>';}).join('')+'</div></div>';}
   $('liveTacticText').innerHTML=group('공격','attack',[['short','연결'],['direct','직선'],['wide','측면']])+group('폭','width',[['narrow','좁게'],['normal','보통'],['wide','넓게']])+group('압박','press',[['press','강하게'],['shape','자리']])+group('라인','line',[['high','높게'],['standard','보통'],['low','낮게']])+group('템포','tempo',[['fast','빠름'],['normal','보통'],['slow','천천히']])+group('태도','mindset',[['attack','공격'],['balanced','균형'],['defend','수비']]);
@@ -679,7 +779,7 @@ function drawTacticalMatch(){
 function drawMatch(){if(!match)return;if(typeof match.render==='function'){match.render($('pitch'));return;}if(broadcastRenderer&&window.SeedFCBroadcast){broadcastRenderer.render($('pitch'),match);return;}drawTacticalMatch();}
 function matchLoop(ts){
   if(!match||$('matchLayer').classList.contains('hidden'))return;
-  var dt=Math.min(.05,(ts-lastFrame)/1000||0);lastFrame=ts;match.update(dt,matchSpeed);drawMatch();
+  var dt=Math.min(.05,(ts-lastFrame)/1000||0);lastFrame=ts;match.update(dt,matchSpeed);drawMatch();updateControlCoach();
   $('matchScore').textContent=match.score[0]+' : '+match.score[1];$('matchClock').textContent=Math.floor(match.minute)+"'";
   if(!match.finished)raf=requestAnimationFrame(matchLoop);
 }
@@ -716,7 +816,7 @@ function instructionModal(){
   };});
 }
 function showMatchResult(m,f,isHome){
-  if(resultShown)return;resultShown=true;var hg=m.score[0],ag=m.score[1],mine=isHome?hg:ag,theirs=isHome?ag:hg,o=opponent(f),replayData=m.exportReplay?m.exportReplay():null;finishRound(f,hg,ag,replayData);
+  if(resultShown)return;resultShown=true;stopStadiumAmbience();try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}var hg=m.score[0],ag=m.score[1],mine=isHome?hg:ag,theirs=isHome?ag:hg,o=opponent(f),replayData=m.exportReplay?m.exportReplay():null;finishRound(f,hg,ag,replayData);
   var verdict=mine>theirs?'승리!':mine<theirs?'아쉬운 패배':'무승부',why=state.tactics.tempo==='fast'?'빠른 템포로 기회를 늘렸지만 체력도 더 썼습니다.':state.tactics.line==='high'?'라인을 높여 상대 진영에서 오래 싸웠습니다.':state.tactics.line==='low'?'라인을 낮춰 뒷공간을 먼저 지켰습니다.':state.tactics.attack==='wide'?'측면을 넓게 쓰며 공격 길을 만들었습니다.':state.tactics.attack==='direct'?'패스 수를 줄이고 빠르게 전진했습니다.':'짧게 연결하며 빈 공간을 찾았습니다.';
   var star=null,starStats=null,best=-1;if(replayData){replayData.players.forEach(function(p){var st=replayData.stats[p.id]||{},score=Number(st.goals||0)*8+Number(st.assists||0)*5+Number(st.keyPasses||0)*1.5+Number(st.progressivePasses||0)*.35+Number(st.saves||0)*2+Number(st.touches||0)*.03;if(score>best){best=score;star=p;starStats=st;}});}
   var historyMoment='',original=null;if(star){original=sourcePlayerById(star.id);discoverHistoryPlayer(star.id);var action=Number(starStats.goals||0)?starStats.goals+'골':Number(starStats.assists||0)?starStats.assists+'도움':Number(starStats.keyPasses||0)?starStats.keyPasses+'번의 키패스':Number(starStats.progressivePasses||0)?starStats.progressivePasses+'번의 전진 패스':Number(starStats.saves||0)?starStats.saves+'번의 선방':Number(starStats.touches||0)+'번의 주요 관여';historyMoment='<div class="history-moment"><b>오늘의 역사 카드 · '+esc(star.name)+'</b><span>'+esc((original&&original.footballStyle)||star.footballStyle||'균형형')+'으로 '+esc(action)+'을 기록했습니다.</span><small>'+esc((original&&original.memory)||star.memory||'')+'</small></div>';}
@@ -724,7 +824,7 @@ function showMatchResult(m,f,isHome){
   modal.classList.remove('hidden');$('resultAnalysis').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;openReplay(0);};$('resultHome').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;render('home');};$('resultTrain').onclick=function(){modal.classList.add('hidden');$('matchLayer').classList.add('hidden');match=null;render('home');trainingModal();};if($('resultHistory'))$('resultHistory').onclick=function(){historyCardModal(star.id);};
 }
 function help(){
-  modalBody.innerHTML='<h2>풋살 히스토리그 하는 법</h2><div class="fact-box"><b>1. 5명의 역사 선수</b><br>GK 1명과 필드 선수 4명을 골라 1-2-1·2-2·3-1·4-0 포메이션으로 경기해요.<br><br><b>2. 직접 조작</b><br>방향키로 이동하고 Shift로 질주해요. Q는 조작 선수 전환, S는 패스, W는 스루패스, A는 크로스, D는 슛 또는 태클이에요. 패스하면 받는 선수로 조작이 자연스럽게 넘어갑니다.<br><br><b>3. 선수마다 다른 AI</b><br>조율형은 패스를 돌리고, 개척형은 측면과 크로스를 노리며, 마무리형은 뒷공간 침투와 슛을 우선해요. 지휘형·수비형은 압박과 태클에 더 적극적입니다.<br><br><b>4. 감독 역할도 유지</b><br>경기 중 전술·개인 지시·자유 교체를 바꿀 수 있고, 경기 후에는 패스맵·히트맵과 역사 카드를 확인해요.<br><br><b>5. 역사 기억</b><br>한 경기에서 10명만 뛰기 때문에 이름과 활약을 반복해서 보게 되고, 경기 후 역사 카드로 실제 내용을 다시 연결합니다.</div><p class="muted">모든 풋살 역할과 능력치는 역사적 인물의 우열을 뜻하지 않는 가상의 게임 설정입니다.</p>';
+  modalBody.innerHTML='<h2>풋살 히스토리그 하는 법</h2><div class="fact-box"><b>1. 그냥 지켜봐도 돼요</b><br>경기는 관전 모드로 시작합니다. 선수들이 각자 성향대로 알아서 뛰고, 감독은 전술과 교체만 바꿔도 돼요.<br><br><b>2. 내가 뛰고 싶으면 직접 조종 ON</b><br>경기 위의 <b>🎮 직접 조종 켜기</b>를 누르면 한 선수를 잡아요. 방향키 이동, Shift 질주, Q 선수 전환, S 패스, W 스루, A 크로스, D 슛/태클이에요. 직접 조종 중에는 어려워지지 않도록 경기 속도가 1×로 고정돼요.<br><br><b>3. 태클은 초록 표시에서</b><br>공이 없을 때 상대 공 보유자에게 가까이 가세요. 노란 표시가 보이면 조금 더 접근하고, <b style="color:#4ade80">초록 표시 + “지금! D 태클”</b>이 뜨면 D를 누르세요. 너무 멀리서 누르면 태클을 낭비하지 않고 “더 가까이”라고 알려 줍니다.<br><br><b>4. 경기장 소리를 들어요</b><br>패스·슛·태클 소리, 반칙 휘슬, 관중 웅성거림과 골 장면의 함성, 동료의 “여기!”·“패스!” 호출이 경기 상황에 맞춰 나와요.<br><br><b>5. 역사 기억</b><br>한 경기에서 10명만 뛰기 때문에 이름과 활약을 반복해서 보고, 경기 후 역사 카드로 실제 내용을 다시 연결합니다.</div><p class="muted">모든 풋살 역할과 능력치는 역사적 인물의 우열을 뜻하지 않는 가상의 게임 설정입니다.</p>';
   modal.classList.remove('hidden');
 }
 
@@ -743,6 +843,8 @@ function closeModalSmart(){
 $('modalClose').onclick=closeModalSmart;
 modal.addEventListener('pointerdown',function(e){if(e.target===modal)closeModalSmart();});
 document.querySelectorAll('.speed[data-speed]').forEach(function(b){b.onclick=function(){setSpeed(Number(b.dataset.speed));};});
+$('directControlBtn').onclick=toggleDirectControl;
+$('controlTutorialBtn').onclick=showControlTutorial;
 $('quickSubBtn').onclick=substitutionModal;
 $('playerInstructionBtn').onclick=instructionModal;
 $('replayClose').onclick=closeReplay;
@@ -776,9 +878,9 @@ $('replayPitch').addEventListener('pointerdown',function(e){
   if(best){replayFocus=best;$('replayPlayer').value=best;updateReplayStats();drawReplayFrame();}
 });
 $('matchBackBtn').onclick=function(){
-  if(!match||match.finished){$('matchLayer').classList.add('hidden');match=null;return;}
+  if(!match||match.finished){stopStadiumAmbience();try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}$('matchLayer').classList.add('hidden');match=null;return;}
   modalBody.innerHTML='<h2>경기에서 나갈까요?</h2><p class="muted">이 경기는 저장되지 않고 라운드도 진행되지 않아요.</p><div class="action-row"><button id="leaveYes" class="primary" type="button">나가기</button><button id="leaveNo" class="secondary" type="button">계속 경기</button></div>';
-  modal.classList.remove('hidden');$('leaveYes').onclick=function(){cancelAnimationFrame(raf);match=null;modal.classList.add('hidden');$('matchLayer').classList.add('hidden');};$('leaveNo').onclick=function(){modal.classList.add('hidden');};
+  modal.classList.remove('hidden');$('leaveYes').onclick=function(){cancelAnimationFrame(raf);stopStadiumAmbience();try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}match=null;modal.classList.add('hidden');$('matchLayer').classList.add('hidden');};$('leaveNo').onclick=function(){modal.classList.add('hidden');};
 };
 
 state=load();
