@@ -48,7 +48,7 @@ test('Futsal History League exposes direct keyboard and touch controls',()=>{
   assert.match(html,/data-fh-action="through"/);
   assert.match(html,/data-fh-action="lob"/);
   assert.match(html,/data-fh-action="shoot"/);
-  assert.match(html,/futsal-history-match\.js\?v=14/);
+  assert.match(html,/futsal-history-match\.js\?v=15/);
 });
 
 
@@ -99,4 +99,39 @@ test('Futsal History League has stadium-style audio feedback',()=>{
   assert.match(game,/e\.type==='tackle'/);
   assert.match(game,/e\.type==='foul'/);
   assert.match(game,/e\.type==='call'/);
+});
+
+
+test('first league match is a live action tutorial and only auto-runs once',()=>{
+  const engine=fs.readFileSync(enginePath,'utf8');
+  const game=fs.readFileSync(gamePath,'utf8');
+  const html=fs.readFileSync(indexPath,'utf8');
+  assert.match(game,/matchTutorialDone:false/);
+  assert.match(game,/state\.matchTutorialDone===undefined/);
+  assert.match(game,/var MATCH_TUTORIAL_STEPS=\[/);
+  for(const key of ['direct_on','move','pass','switch','tackle','shoot','tactic','direct_off'])assert.match(game,new RegExp("key:'"+key+"'"));
+  assert.match(game,/function beginFirstMatchTutorial\(\)/);
+  assert.match(game,/function matchTutorialAction\(kind,extra\)/);
+  assert.match(game,/firstMatchTutorial=!state\.matchTutorialDone&&state\.matchHistory\.length===0/);
+  assert.match(engine,/opts\.onUserAction/);
+  assert.match(engine,/notifyUserAction\('move'/);
+  assert.match(engine,/notifyUserAction\('switch'/);
+  assert.match(engine,/notifyUserAction\('tackle'/);
+  assert.match(html,/id="matchTutorial"/);
+  assert.match(html,/id="matchTutorialSkipStep"/);
+  assert.match(html,/id="matchTutorialSkipAll"/);
+});
+
+
+test('Futsal History League analysis room has dashboard metrics and direct replay modes',()=>{
+  const game=fs.readFileSync(gamePath,'utf8');
+  assert.match(game,/function replayTeamTotals\(r,side\)/);
+  assert.match(game,/function replayOutcome\(r\)/);
+  assert.match(game,/팀 흐름 한눈에 보기/);
+  assert.match(game,/경기당 슈팅/);
+  assert.match(game,/최근 경기 활약 선수/);
+  assert.match(game,/data-replay-mode="replay"/);
+  assert.match(game,/data-replay-mode="heat"/);
+  assert.match(game,/data-replay-mode="pass"/);
+  assert.match(game,/function openReplay\(index,mode,focus\)/);
 });
