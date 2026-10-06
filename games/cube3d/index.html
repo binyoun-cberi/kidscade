@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#9bd8ff">
 <title>큐브 아키텍트 | Kidscade</title>
-<link rel="stylesheet" href="./cube-architect.css?v=20261006-survival-tutorial2">
+<link rel="stylesheet" href="./cube-architect.css?v=20261006-radial-action1">
 <link rel="stylesheet" href="./cube-architect-ui.css?v=20261006-guided-tutorial1">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="cube3d" data-title="큐브 아키텍트" data-shell="true" data-mute="false" data-orientation="landscape"></script>
@@ -273,7 +273,6 @@
     <div id="mobileViewHint">화면을 밀어 시점 돌리기</div>
     <div class="mobile-top-actions">
       <button id="mobileInventory" class="mobile-button" type="button">가방</button>
-      <button id="mobileInteract" class="mobile-button hidden" type="button">상호작용</button>
       <button id="mobileView" class="mobile-button" type="button">시점</button>
       <button id="mobileMore" class="mobile-button" type="button">도구</button>
       <button id="mobileTutorial" class="mobile-button" type="button">도움</button>
@@ -286,6 +285,17 @@
       <button id="mobileLens" class="mobile-button" type="button">수학</button>
       <button id="mobileCopy" class="mobile-button" type="button">복사</button>
       <button id="mobileWeather" class="mobile-button" type="button">날씨</button>
+    </div>
+    <button id="mobileInteract" class="mobile-button mobile-action-hub hidden" type="button" aria-haspopup="true" aria-expanded="false">
+      <b>행동</b><small>탭 / 꾹</small>
+    </button>
+    <div id="mobileActionRadial" class="mobile-action-radial hidden" aria-hidden="true">
+      <div class="radial-ring"></div>
+      <div class="radial-option radial-up" data-radial-action="observe"><b>👀</b><span>관찰·대화</span></div>
+      <div class="radial-option radial-right" data-radial-action="use"><b>✋</b><span>사용·열기</span></div>
+      <div class="radial-option radial-down" data-radial-action="harvest"><b>⛏</b><span>채집·공격</span></div>
+      <div class="radial-option radial-left" data-radial-action="place"><b>▣</b><span>설치</span></div>
+      <div class="radial-center">행동</div>
     </div>
     <div id="mobileJoystick" class="mobile-joystick" role="group" aria-label="이동 조이스틱">
       <div id="mobileJoystickKnob" class="mobile-joystick-knob"></div>
@@ -334,7 +344,7 @@
 <script type="module" src="./cube-architect-world-assets.js?v=20261005-hunt1"></script>
 <script type="module" src="./cube-architect-creature-assets.js?v=20261004-32"></script>
 <script src="./cube-architect-voxel.js?v=20261003-29"></script>
-<script src="./cube-architect.js?v=20261006-survival-tutorial2"></script>
+<script src="./cube-architect.js?v=20261006-radial-action1"></script>
 <script>
 (()=>{
   const buttons=Array.from(document.querySelectorAll('[data-mode]'));
