@@ -45,7 +45,8 @@ test('a round is exactly 25 cards and supports all requested grades',()=>{
 });
 
 test('cards have the requested success, failure and swipe game loop',()=>{
-  assert.match(game,/resolveCard\(ok,ok\?'answer':'wrong'\)/);
+  assert.match(game,/writing\.textPassed=true/);
+  assert.match(game,/if\(writing\.complete\|\|writing\.unavailable\)return resolveCard\(true,'answer'\)/);
   assert.match(game,/resolveCard\(false,'skip'\)/);
   assert.match(game,/dx<-85\|\|velocity<-.55/);
   assert.match(game,/playSound\('correct'\)/);
@@ -56,15 +57,28 @@ test('cards have the requested success, failure and swipe game loop',()=>{
   assert.match(css,/translate\(-120vw,45px\)/);
 });
 
-test('the right side provides free handwriting plus separate meaning and reading inputs',()=>{
-  assert.match(html,/id="writePad"/);
-  assert.match(html,/한자 쓰기판/);
+test('the right side grades handwriting and separately checks meaning and reading',()=>{
+  assert.match(html,/hanzi-writer@3\.5/);
+  assert.match(html,/id="writerTarget"/);
+  assert.match(html,/획순 · 위치 · 방향을 실제 채점/);
+  assert.match(html,/id="writingStatus"/);
   assert.match(html,/id="meaningInput"/);
   assert.match(html,/id="readingInput"/);
-  assert.match(html,/채점에는 사용하지 않는 연습 공간/);
-  assert.match(game,/pointerdown/);
-  assert.match(game,/pointermove/);
+  assert.match(game,/HanziWriter\.create/);
+  assert.match(game,/writerInstance\.quiz/);
+  assert.match(game,/leniency:2\.35/);
+  assert.match(game,/onMistake/);
+  assert.match(game,/onComplete/);
   assert.match(game,/senseMatches/);
+});
+
+test('handwriting grading falls back safely when stroke data is unavailable',()=>{
+  assert.match(game,/normalize\('NFKC'\)/);
+  assert.match(game,/hanzi-writer-data@latest/);
+  assert.match(game,/hanzi-writer-data-youyin@latest/);
+  assert.match(game,/markWritingUnavailable/);
+  assert.match(game,/writingAverage/);
+  assert.match(html,/id="resultWriting"/);
 });
 
 test('meaning and reading are checked as one matching sense instead of independent flattened lists',()=>{
