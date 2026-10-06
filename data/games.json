@@ -1802,17 +1802,17 @@
     },
     {
       "id": "math_base10_blocks",
-      "title": "우리 동네 마트 계산대",
-      "href": "games/math_base10_blocks/우리 동네 마트 계산대.html?v=3",
+      "title": "우리 동네 마트",
+      "href": "games/math_base10_blocks/index.html?v=4",
       "category": "math",
       "age": "low",
       "icon": "🛒",
-      "description": "넓은 3D 마트를 직접 돌아다니며 장보기 목록의 상품을 카트에 담고, 셀프 계산대에서 상품을 스캔한 뒤 현금과 거스름돈까지 계산하는 생활 수학 장보기 게임입니다.",
+      "description": "주간 식비 안에서 1인칭 마트를 직접 돌아다니며 카트에 자유롭게 장보고, 셀프 계산대에서 총액과 거스름돈을 직접 계산한 뒤 집 부엌에서 식품을 꺼내 요리하고 먹으며 생활하는 식생활·소비 시뮬레이터입니다.",
       "cover": "assets/gate-image/우리 동네 마트 계산대.png",
       "subject": "math",
-      "genre": "management",
+      "genre": "simulation",
       "difficulty": "easy",
-      "sessionMinutes": 15,
+      "sessionMinutes": 20,
       "players": [
         "solo"
       ],

@@ -1,330 +1,233 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 const $=s=>document.querySelector(s);
 const fmt=n=>Math.round(n).toLocaleString('ko-KR')+'원';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const shuffle=a=>[...a].sort(()=>Math.random()-.5);
 const sum=a=>a.reduce((x,y)=>x+y,0);
 const ROOT='../../assets/game/';
 const FOOD=ROOT+'food/';
 const MARKET=ROOT+'shops/market/';
-const PEOPLE=ROOT+'characters/people/';
+const SAVE_KEY='mart-life-v1';
+const SLOTS=['아침','점심','저녁'];
+const WEEKLY_BUDGET=35000;
 
 const ZONES={
  produce:{name:'과일 · 채소',color:'#69a65c'},
+ protein:{name:'달걀 · 생선',color:'#d57c65'},
  bakery:{name:'빵 · 간식',color:'#d18a52'},
  pantry:{name:'식품 · 과자',color:'#6c8db0'},
  chilled:{name:'냉장 · 냉동',color:'#69a8b0'},
  drinks:{name:'음료',color:'#b66f72'}
 };
+
 const PRODUCTS=[
- {id:'apple',name:'사과',price:1200,model:'apple.glb',zone:'produce',pos:[-7.5,-6.8],pal:[0xc94f48,0x77a34b]},
- {id:'banana',name:'바나나',price:1800,model:'banana.glb',zone:'produce',pos:[-5.8,-6.8],pal:[0xf0c945,0x78a052]},
- {id:'carrot',name:'당근',price:900,model:'carrot.glb',zone:'produce',pos:[-7.5,-4.9],pal:[0xe47735,0x579553]},
- {id:'broccoli',name:'브로콜리',price:1600,model:'broccoli.glb',zone:'produce',pos:[-5.8,-4.9],pal:[0x3f7c47,0x78a953]},
- {id:'grapes',name:'포도',price:4500,model:'grapes.glb',zone:'produce',pos:[-7.5,-3.0],pal:[0x69528d,0x8d67a3]},
- {id:'corn',name:'옥수수',price:2200,model:'corn.glb',zone:'produce',pos:[-5.8,-3.0],pal:[0xf0c746,0x5f914c]},
- {id:'bread',name:'식빵',price:2300,model:'bread.glb',zone:'bakery',pos:[6.2,-6.8],pal:[0xc98748,0xe0b979]},
- {id:'donut',name:'도넛',price:1400,model:'donut.glb',zone:'bakery',pos:[7.9,-6.8],pal:[0xd88999,0x8f513d]},
- {id:'muffin',name:'머핀',price:2100,model:'muffin.glb',zone:'bakery',pos:[6.2,-4.9],pal:[0xb87748,0xe5bc7a]},
- {id:'cupcake',name:'컵케이크',price:2400,model:'cupcake.glb',zone:'bakery',pos:[7.9,-4.9],pal:[0xd98b9d,0x8c5a48]},
- {id:'chocolate',name:'초콜릿',price:1700,model:'chocolate.glb',zone:'pantry',pos:[-2.8,-4.1],pal:[0x6f3d2c,0x9a6046]},
- {id:'cookie',name:'쿠키',price:1500,model:'cookie.glb',zone:'pantry',pos:[-2.8,-.8],pal:[0xc98b4b,0x8a5735]},
- {id:'sandwich',name:'샌드위치',price:3500,model:'sandwich.glb',zone:'pantry',pos:[0,-4.1],pal:[0xe0b978,0x5f9a59]},
- {id:'pizza',name:'피자',price:6900,model:'pizza.glb',zone:'chilled',pos:[2.8,-4.1],pal:[0xe0a657,0xd45144]},
- {id:'cheese',name:'치즈',price:3200,model:'cheese.glb',zone:'chilled',pos:[2.8,-.8],pal:[0xf0c64c,0xe3a83d]},
- {id:'sodaCan',name:'탄산음료 캔',price:1100,model:'soda-can.glb',zone:'drinks',pos:[-2.8,2.5],pal:[0x4379b8,0xe74f4f]},
- {id:'sodaBottle',name:'탄산음료',price:1900,model:'soda-bottle.glb',zone:'drinks',pos:[0,2.5],pal:[0x4e8bb6,0xd95d55]},
- {id:'carton',name:'우유',price:2600,model:'carton.glb',zone:'chilled',pos:[2.8,2.5],pal:[0xece7d8,0x6694ad]}
+ {id:'apple',name:'사과',price:1200,model:'apple.glb',zone:'produce',storage:'fridge',ready:true,kcal:95,protein:1,veg:2,sugar:9,sodium:1,satiety:17,mood:5,pos:[-7.6,-6.8]},
+ {id:'banana',name:'바나나',price:1800,model:'banana.glb',zone:'produce',storage:'pantry',ready:true,kcal:105,protein:1,veg:2,sugar:12,sodium:1,satiety:19,mood:6,pos:[-5.8,-6.8]},
+ {id:'carrot',name:'당근',price:900,model:'carrot.glb',zone:'produce',storage:'fridge',ready:true,kcal:40,protein:1,veg:3,sugar:4,sodium:1,satiety:10,mood:1,pos:[-7.6,-5.0]},
+ {id:'broccoli',name:'브로콜리',price:1600,model:'broccoli.glb',zone:'produce',storage:'fridge',ready:true,kcal:50,protein:4,veg:4,sugar:2,sodium:1,satiety:13,mood:1,pos:[-5.8,-5.0]},
+ {id:'grapes',name:'포도',price:4500,model:'grapes.glb',zone:'produce',storage:'fridge',ready:true,kcal:120,protein:1,veg:2,sugar:16,sodium:1,satiety:15,mood:7,pos:[-7.6,-3.2]},
+ {id:'corn',name:'옥수수',price:2200,model:'corn.glb',zone:'produce',storage:'fridge',ready:true,kcal:125,protein:4,veg:2,sugar:5,sodium:1,satiety:25,mood:5,pos:[-5.8,-3.2]},
+ {id:'tomato',name:'토마토',price:1400,model:'tomato.glb',zone:'produce',storage:'fridge',ready:true,kcal:30,protein:1,veg:4,sugar:3,sodium:1,satiety:9,mood:3,pos:[-7.6,-1.4]},
+ {id:'eggplant',name:'가지',price:1700,model:'eggplant.glb',zone:'produce',storage:'fridge',ready:false,kcal:35,protein:1,veg:4,sugar:2,sodium:1,satiety:10,mood:1,pos:[-5.8,-1.4]},
+ {id:'egg',name:'달걀',price:800,model:'egg.glb',zone:'protein',storage:'fridge',ready:false,kcal:80,protein:7,veg:0,sugar:0,sodium:2,satiety:20,mood:4,pos:[-2.8,-4.1]},
+ {id:'fish',name:'생선',price:4200,model:'fish.glb',zone:'protein',storage:'fridge',ready:false,kcal:210,protein:24,veg:0,sugar:0,sodium:4,satiety:38,mood:5,pos:[-2.8,-.8]},
+ {id:'bread',name:'식빵',price:2300,model:'bread.glb',zone:'bakery',storage:'pantry',ready:true,kcal:180,protein:6,veg:0,sugar:4,sodium:3,satiety:28,mood:5,pos:[6.2,-6.8]},
+ {id:'donut',name:'도넛',price:1400,model:'donut.glb',zone:'bakery',storage:'pantry',ready:true,kcal:260,protein:3,veg:0,sugar:17,sodium:3,satiety:25,mood:12,pos:[7.9,-6.8]},
+ {id:'muffin',name:'머핀',price:2100,model:'muffin.glb',zone:'bakery',storage:'pantry',ready:true,kcal:310,protein:4,veg:0,sugar:18,sodium:4,satiety:28,mood:11,pos:[6.2,-4.9]},
+ {id:'chocolate',name:'초콜릿',price:1700,model:'chocolate.glb',zone:'pantry',storage:'pantry',ready:true,kcal:230,protein:2,veg:0,sugar:21,sodium:1,satiety:14,mood:13,pos:[0,-4.1]},
+ {id:'cookie',name:'쿠키',price:1500,model:'cookie.glb',zone:'pantry',storage:'pantry',ready:true,kcal:210,protein:2,veg:0,sugar:16,sodium:3,satiety:14,mood:11,pos:[0,-.8]},
+ {id:'sandwich',name:'샌드위치',price:3500,model:'sandwich.glb',zone:'pantry',storage:'fridge',ready:true,kcal:390,protein:15,veg:1,sugar:5,sodium:7,satiety:45,mood:8,pos:[0,2.5]},
+ {id:'pizza',name:'냉동 피자',price:6900,model:'pizza.glb',zone:'chilled',storage:'freezer',ready:false,quick:true,kcal:620,protein:23,veg:1,sugar:8,sodium:10,satiety:65,mood:13,pos:[2.8,-4.1]},
+ {id:'cheese',name:'치즈',price:3200,model:'cheese.glb',zone:'chilled',storage:'fridge',ready:true,kcal:150,protein:9,veg:0,sugar:1,sodium:5,satiety:20,mood:6,pos:[2.8,-.8]},
+ {id:'fries',name:'냉동 감자튀김',price:3800,model:'fries.glb',zone:'chilled',storage:'freezer',ready:false,quick:true,kcal:430,protein:5,veg:1,sugar:1,sodium:7,satiety:43,mood:12,pos:[2.8,2.5]},
+ {id:'carton',name:'우유',price:2600,model:'carton.glb',zone:'chilled',storage:'fridge',ready:true,kcal:140,protein:7,veg:0,sugar:7,sodium:2,satiety:22,mood:5,pos:[5.0,4.8]},
+ {id:'sodaCan',name:'탄산음료 캔',price:1100,model:'soda-can.glb',zone:'drinks',storage:'pantry',ready:true,kcal:150,protein:0,veg:0,sugar:24,sodium:2,satiety:3,mood:11,pos:[-2.8,4.2]},
+ {id:'sodaBottle',name:'탄산음료',price:1900,model:'soda-bottle.glb',zone:'drinks',storage:'pantry',ready:true,kcal:240,protein:0,veg:0,sugar:32,sodium:2,satiety:4,mood:13,pos:[0,4.2]}
 ];
-const CFG={
- easy:{count:3,labelRange:8.5,beacon:true,budgetPad:[3000,5000],name:'천천히'},
- normal:{count:5,labelRange:4.8,beacon:false,budgetPad:[4000,7000],name:'동네 장보기'},
- challenge:{count:6,labelRange:2.8,beacon:false,budgetPad:[3000,6000],name:'장보기 달인'}
-};
-const PLAYER_MODELS=['character-female-a.glb','character-male-a.glb','character-female-b.glb','character-male-b.glb'];
+const productById=id=>PRODUCTS.find(p=>p.id===id);
+
+const EVENTS=[
+ {id:'sports',title:'체육을 신나게 한 날',text:'평소보다 배가 조금 더 고파요. 무엇을 먹을지는 자유예요.',hunger:-12},
+ {id:'picnic',title:'내일 소풍!',text:'간식을 챙기고 싶다면 마트에서 골라볼 수 있어요. 꼭 살 필요는 없어요.',moodTag:'snack'},
+ {id:'produceSale',title:'과일·채소 할인',text:'오늘 마트의 과일·채소가 20% 할인 중이에요.',discountZone:'produce'},
+ {id:'chilledSale',title:'냉장 코너 할인',text:'오늘 냉장·냉동 식품이 15% 할인 중이에요.',discountZone:'chilled'},
+ {id:'rain',title:'비 오는 날',text:'따뜻하게 조리한 음식을 먹으면 만족감이 조금 더 올라가요.',warmBonus:5},
+ {id:'ordinary',title:'그냥 평범한 하루',text:'특별한 일은 없어요. 오늘 먹고 싶은 걸 천천히 생각해 봐요.'}
+];
 
 const ui={
- progress:$('#progressStat'),budget:$('#budgetStat'),basket:$('#basketStat'),list:$('#shoppingList'),missionSub:$('#missionSub'),zoneHint:$('#zoneHint'),modeBadge:$('#modeBadge'),phase:$('#phaseChip'),labels:$('#productLabels'),toast:$('#toast'),sound:$('#soundBtn'),
- interactDock:$('#interactDock'),interactIcon:$('#interactIcon'),interactTitle:$('#interactTitle'),interactSub:$('#interactSub'),interactBtn:$('#interactBtn'),touchInteract:$('#touchInteract'),
- checkout:$('#checkoutPanel'),checkoutGuide:$('#checkoutGuide'),scanStat:$('#scanStat'),checkoutTotal:$('#checkoutTotal'),checkoutPaid:$('#checkoutPaid'),checkoutChange:$('#checkoutChange'),scanItems:$('#scanItems'),cashOptions:$('#cashOptions'),changeOptions:$('#changeOptions'),changeEquation:$('#changeEquation'),paySection:$('#paySection'),changeSection:$('#changeSection'),closeCheckout:$('#closeCheckout'),backToShopping:$('#backToShopping'),finishCheckout:$('#finishCheckout'),
- start:$('#startModal'),loadFill:$('#loadFill'),loadText:$('#loadText'),result:$('#resultModal'),resultTitle:$('#resultTitle'),resultText:$('#resultText'),resultItems:$('#resultItems'),resultSpent:$('#resultSpent'),resultRemain:$('#resultRemain'),modeBtn:$('#modeBtn'),replay:$('#replayBtn'),
- joystick:$('#joystick'),stick:$('#stick')
+ day:$('#dayStat'),money:$('#moneyStat'),hunger:$('#hungerStat'),kcal:$('#kcalStat'),condition:$('#conditionStat'),sound:$('#soundBtn'),cartBtn:$('#cartBtn'),cartCount:$('#cartCount'),location:$('#locationChip'),eventCard:$('#eventCard'),eventTitle:$('#eventTitle'),eventText:$('#eventText'),toast:$('#toast'),labels:$('#productLabels'),heldCard:$('#heldCard'),heldName:$('#heldName'),heldHint:$('#heldHint'),prepCard:$('#prepCard'),prepTitle:$('#prepTitle'),prepText:$('#prepText'),
+ interactDock:$('#interactDock'),interactIcon:$('#interactIcon'),interactTitle:$('#interactTitle'),interactSub:$('#interactSub'),interactBtn:$('#interactBtn'),touchInteract:$('#touchInteract'),joystick:$('#joystick'),stick:$('#stick'),
+ cartPanel:$('#cartPanel'),closeCart:$('#closeCart'),cartList:$('#cartList'),cartTotal:$('#cartTotal'),
+ checkout:$('#checkoutPanel'),checkoutGuide:$('#checkoutGuide'),scanStat:$('#scanStat'),checkoutMoney:$('#checkoutMoney'),checkoutPaid:$('#checkoutPaid'),checkoutChange:$('#checkoutChange'),scanItems:$('#scanItems'),totalSection:$('#totalSection'),totalInput:$('#totalInput'),checkTotal:$('#checkTotal'),receipt:$('#receipt'),paySection:$('#paySection'),cashOptions:$('#cashOptions'),changeSection:$('#changeSection'),changeEquation:$('#changeEquation'),changeInput:$('#changeInput'),checkChange:$('#checkChange'),closeCheckout:$('#closeCheckout'),backToShopping:$('#backToShopping'),finishCheckout:$('#finishCheckout'),
+ start:$('#startModal'),loadFill:$('#loadFill'),loadText:$('#loadText'),newLife:$('#newLifeBtn'),continueBtn:$('#continueBtn'),week:$('#weekModal'),weekSummary:$('#weekSummary'),weekCooked:$('#weekCooked'),weekQuick:$('#weekQuick'),weekMoney:$('#weekMoney'),weekBalance:$('#weekBalance'),nextWeek:$('#nextWeekBtn')
 };
 
-let audioCtx;
-let state={phase:'loading',mode:'normal',running:false,sound:true,list:[],basket:[],budget:0,mistakes:0,checkoutMistakes:0,scanned:new Set(),paid:0,changeAnswer:null};
-try{state.sound=JSON.parse(localStorage.getItem('mart-walk-sound')??'true')!==false}catch(_){}
-ui.sound.textContent=state.sound?'🔊':'🔇';
+const freshStats=()=>({cooked:0,quick:0,spent:0,sugar:0,sodium:0,veg:0,protein:0,meals:0});
+const starterInventory=()=>[
+ {uid:'starter-bread',id:'bread',age:0},
+ {uid:'starter-egg-1',id:'egg',age:0},
+ {uid:'starter-egg-2',id:'egg',age:0},
+ {uid:'starter-carton',id:'carton',age:0},
+ {uid:'starter-apple',id:'apple',age:0}
+];
+let state={location:'home',phase:'loading',running:false,sound:true,day:1,slot:0,money:WEEKLY_BUDGET,hunger:58,dailyKcal:0,condition:75,satisfaction:62,inventory:starterInventory(),basket:[],hasCart:false,held:null,prep:[],dish:null,event:null,weekStats:freshStats(),checkoutMistakes:0,totalConfirmed:false,paid:0,changeConfirmed:false,scanned:new Set()};
 
+let audioCtx;
 function tone(type){
  if(!state.sound)return;
- try{
-  audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();audioCtx.resume();
-  const o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime;
-  const f={pick:520,scan:920,cash:430,good:690,bad:165,start:335}[type]||300;
-  o.type=type==='scan'?'square':type==='bad'?'sawtooth':'triangle';o.frequency.setValueAtTime(f,t);
-  if(type==='good'||type==='scan')o.frequency.exponentialRampToValueAtTime(f*1.35,t+.1);
-  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.045,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+.16);
-  o.connect(g).connect(audioCtx.destination);o.start(t);o.stop(t+.18);
- }catch(_){}
-}
-function toast(msg,bad=false){ui.toast.textContent=msg;ui.toast.className='toast '+(bad?'bad ':'')+'show';clearTimeout(toast.t);toast.t=setTimeout(()=>ui.toast.className='toast',1100)}
+ try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();audioCtx.resume();const o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime;const f={pick:510,scan:930,cash:430,good:680,bad:170,cook:560,eat:620,door:320}[type]||300;o.type=type==='scan'?'square':type==='bad'?'sawtooth':'triangle';o.frequency.setValueAtTime(f,t);if(type==='good'||type==='scan'||type==='eat')o.frequency.exponentialRampToValueAtTime(f*1.32,t+.1);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.045,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+.16);o.connect(g).connect(audioCtx.destination);o.start(t);o.stop(t+.18)}catch(_){}}
+function toast(msg,bad=false){ui.toast.textContent=msg;ui.toast.className='toast '+(bad?'bad ':'')+'show';clearTimeout(toast.t);toast.t=setTimeout(()=>ui.toast.className='toast',1400)}
+function makeUid(id){return id+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7)}
+function discountedPrice(p){const d=state.event?.discountZone===p.zone?(p.zone==='produce'?.8:.85):1;return Math.round(p.price*d/100)*100}
+function save(){
+ try{const plain={...state,scanned:[...state.scanned],phase:state.location==='market'?'shopping':'home',running:true};localStorage.setItem(SAVE_KEY,JSON.stringify(plain));localStorage.setItem('mart-walk-sound',JSON.stringify(state.sound))}catch(_){}}
+function hasSave(){try{return !!localStorage.getItem(SAVE_KEY)}catch(_){return false}}
+function loadSave(){
+ try{const x=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(!x)return false;state={...state,...x,scanned:new Set(x.scanned||[]),totalConfirmed:false,paid:0,changeConfirmed:false};state.location=x.location||'home';state.phase=state.location==='market'?'shopping':'home';state.running=true;return true}catch(_){return false}}
+function newLife(){state={...state,location:'home',phase:'home',running:true,day:1,slot:0,money:WEEKLY_BUDGET,hunger:58,dailyKcal:0,condition:75,satisfaction:62,inventory:starterInventory(),basket:[],hasCart:false,held:null,prep:[],dish:null,event:null,weekStats:freshStats(),checkoutMistakes:0,totalConfirmed:false,paid:0,changeConfirmed:false,scanned:new Set()};rollEvent(true);save()}
 
 const canvas=$('#scene');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.9;
-const scene=new THREE.Scene();scene.background=new THREE.Color(0xc8dbc7);scene.fog=new THREE.Fog(0xc8dbc7,18,38);
-const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,90);
-scene.add(new THREE.HemisphereLight(0xf8fff0,0x58675c,1.45));
-const sun=new THREE.DirectionalLight(0xfff1d3,2.1);sun.position.set(-7,12,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-14;sun.shadow.camera.right=14;sun.shadow.camera.top=14;sun.shadow.camera.bottom=-14;scene.add(sun);
-const fill=new THREE.DirectionalLight(0xd7efff,.6);fill.position.set(8,6,-8);scene.add(fill);
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.9;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xc8dbc7);scene.fog=new THREE.Fog(0xc8dbc7,18,42);
+const camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,.08,90);scene.add(camera);
+const hemi=new THREE.HemisphereLight(0xf8fff0,0x58675c,1.35);scene.add(hemi);const sun=new THREE.DirectionalLight(0xfff1d3,1.9);sun.position.set(-7,12,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-15;sun.shadow.camera.right=15;sun.shadow.camera.top=15;sun.shadow.camera.bottom=-15;scene.add(sun);
+const loader=new GLTFLoader(),cache=new Map();
+const world=new THREE.Group(),dynamic=new THREE.Group(),fx=new THREE.Group();scene.add(world,dynamic,fx);
+const heldRoot=new THREE.Group();heldRoot.position.set(.34,-.34,-.75);camera.add(heldRoot);
+let cart=null,cartCargo=null,nearest=null,yaw=Math.PI,pitch=-.04,playerPos=new THREE.Vector3(0,1.62,0),colliders=[],interactables=[],labelViews=[],homeFoodGroup=new THREE.Group();dynamic.add(homeFoodGroup);
+const keys={};const touch={x:0,y:0,active:false,pointer:null};let lookPointer=null,lastLook=null;
 
-const loader=new GLTFLoader(),cache=new Map(),world=new THREE.Group(),productGroup=new THREE.Group(),playerGroup=new THREE.Group(),fxGroup=new THREE.Group();
-scene.add(world,productGroup,playerGroup,fxGroup);
-const productViews=new Map(),colliders=[];
-let player=null,playerMixer=null,playerAction=null,cart=null,lastDir=new THREE.Vector3(0,0,-1),nearest=null,checkoutRoot=null;
-const keys={};const touch={x:0,y:0,active:false,pointer:null};
-
-function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function clearGroup(g){while(g.children.length)g.remove(g.children[0])}
 async function asset(url){if(!cache.has(url))cache.set(url,loader.loadAsync(url));return cache.get(url)}
-function recolor(root,palette){
- root.traverse(o=>{if(!o.isMesh)return;const arr=Array.isArray(o.material)?o.material:[o.material];const made=arr.map((m,i)=>{const n=m.clone();if(palette&&palette.length&&n.color)n.color.setHex(palette[hash((o.name||'mesh')+i)%palette.length]);if('roughness'in n)n.roughness=Math.max(.5,n.roughness??.7);return n});o.material=Array.isArray(o.material)?made:made[0];o.castShadow=true;o.receiveShadow=true});
-}
-async function fitted(url,size=1,palette=null,animated=false){
- const g=await asset(url),clone=animated?SkeletonUtils.clone(g.scene):g.scene.clone(true),wrap=new THREE.Group();wrap.add(clone);recolor(clone,palette);
- let box3=new THREE.Box3().setFromObject(clone),sz=new THREE.Vector3();box3.getSize(sz);clone.scale.multiplyScalar(size/(Math.max(sz.x,sz.y,sz.z)||1));
- box3=new THREE.Box3().setFromObject(clone);const c=box3.getCenter(new THREE.Vector3());clone.position.x-=c.x;clone.position.z-=c.z;clone.position.y-=box3.min.y;
- return{root:wrap,clips:g.animations||[]};
-}
-function box(size,pos,color,rough=.88,parent=world){
- const m=new THREE.Mesh(new THREE.BoxGeometry(...size),new THREE.MeshStandardMaterial({color,roughness:rough}));m.position.set(...pos);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;
-}
+function recolor(root,palette){root.traverse(o=>{if(!o.isMesh)return;const arr=Array.isArray(o.material)?o.material:[o.material];const made=arr.map((m,i)=>{const n=m.clone();if(palette?.length&&n.color)n.color.setHex(palette[i%palette.length]);if('roughness'in n)n.roughness=Math.max(.48,n.roughness??.7);return n});o.material=Array.isArray(o.material)?made:made[0];o.castShadow=true;o.receiveShadow=true})}
+async function fitted(url,size=1,palette=null){const g=await asset(url),clone=g.scene.clone(true),wrap=new THREE.Group();wrap.add(clone);recolor(clone,palette);let b=new THREE.Box3().setFromObject(clone),s=new THREE.Vector3();b.getSize(s);clone.scale.multiplyScalar(size/(Math.max(s.x,s.y,s.z)||1));b=new THREE.Box3().setFromObject(clone);const c=b.getCenter(new THREE.Vector3());clone.position.x-=c.x;clone.position.z-=c.z;clone.position.y-=b.min.y;return wrap}
+function box(size,pos,color,rough=.88,parent=world){const m=new THREE.Mesh(new THREE.BoxGeometry(...size),new THREE.MeshStandardMaterial({color,roughness:rough}));m.position.set(...pos);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function addCollider(x,z,w,d){colliders.push({x,z,w,d})}
-function canStand(x,z){
- if(x<-9.7||x>9.7||z<-9.1||z>8.3)return false;
- for(const c of colliders)if(Math.abs(x-c.x)<c.w/2+.38&&Math.abs(z-c.z)<c.d/2+.38)return false;
- return true;
-}
-function sign(text,pos,scale=1,color='#2f7d60'){
- const c=document.createElement('canvas');c.width=512;c.height=150;const x=c.getContext('2d');x.fillStyle='#fff8e9';x.fillRect(0,0,512,150);x.fillStyle=color;x.fillRect(0,0,512,23);x.fillStyle='#173b31';x.font='900 48px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(text,256,86);
- const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true}));sp.position.set(...pos);sp.scale.set(4.1*scale,1.2*scale,1);world.add(sp);return sp;
-}
-async function addMarket(name,size,pos,rot=0,palette=null){
- try{const a=await fitted(MARKET+name+'.glb',size,palette);a.root.position.set(...pos);a.root.rotation.y=rot;world.add(a.root);return a.root}catch(e){console.warn('market asset failed',name,e);return null}
+function canStand(x,z){const bounds=state.location==='market'?[-9.7,9.7,-9.0,8.3]:[-7.5,7.5,-5.7,5.7];if(x<bounds[0]||x>bounds[1]||z<bounds[2]||z>bounds[3])return false;for(const c of colliders)if(Math.abs(x-c.x)<c.w/2+.3&&Math.abs(z-c.z)<c.d/2+.3)return false;return true}
+function sign(text,pos,scale=1,color='#2f7d60',parent=world){const c=document.createElement('canvas');c.width=512;c.height=150;const x=c.getContext('2d');x.fillStyle='#fff8e9';x.fillRect(0,0,512,150);x.fillStyle=color;x.fillRect(0,0,512,23);x.fillStyle='#173b31';x.font='900 46px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(text,256,86);const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true}));sp.position.set(...pos);sp.scale.set(4.1*scale,1.2*scale,1);parent.add(sp);return sp}
+async function addMarket(name,size,pos,rot=0,palette=null){try{const r=await fitted(MARKET+name+'.glb',size,palette);r.position.set(...pos);r.rotation.y=rot;world.add(r);return r}catch(e){console.warn('asset failed',name,e);return null}}
+function interactable(type,name,x,z,range=1.5,extra={}){interactables.push({type,name,x,z,range,...extra})}
+
+async function buildHome(){
+ state.location='home';state.phase='home';colliders=[];interactables=[];ui.labels.innerHTML='';labelViews=[];clearGroup(world);clearGroup(homeFoodGroup);if(cart){cart.removeFromParent();cart=null}scene.background.set(0xd9e3d1);scene.fog.color.set(0xd9e3d1);scene.fog.near=13;scene.fog.far=29;
+ const floor=new THREE.Mesh(new THREE.PlaneGeometry(16,12),new THREE.MeshStandardMaterial({color:0xd8c7ad,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;world.add(floor);box([16,.25,.25],[0,.12,-6],0xf0e7d7);box([.25,.25,12],[-8,.12,0],0xf0e7d7);box([.25,.25,12],[8,.12,0],0xf0e7d7);box([16,4,.18],[0,2,-5.9],0xf4eee2);box([.18,4,12],[-7.9,2,0],0xeae5d9);
+ sign('우리 집 부엌',[0,3.35,-5.7],.78,'#ba7c50');
+ box([1.7,3.2,1.3],[-5.9,1.6,-3.9],0xe7edf0,.55);box([1.55,.05,1.05],[-5.9,2.12,-3.22],0xcbd8dc);box([.05,.9,.12],[-5.22,1.85,-3.18],0x82969b,.35);addCollider(-5.9,-3.9,1.8,1.5);interactable('fridge','냉장고',-5.9,-2.8,1.7);
+ box([2.0,2.8,1.1],[-3.55,1.4,-4.0],0xa77d5a,.75);for(let y=.55;y<2.5;y+=.65)box([1.75,.06,.92],[-3.55,y,-3.42],0xd4b28c,.8);addCollider(-3.55,-4.0,2.1,1.25);interactable('pantry','찬장',-3.55,-2.85,1.8);
+ box([4.7,.95,1.35],[-.2,.48,-4.15],0xd9c4a2,.8);box([4.5,.12,1.45],[-.2,1.0,-4.15],0xf0eadc,.45);box([1.15,.08,.8],[-1.4,1.08,-4.15],0x9eb4b5,.28);addCollider(-.2,-4.15,4.8,1.45);interactable('counter','조리대',.55,-3.0,1.75);interactable('sink','싱크대',-1.45,-3.0,1.55);
+ box([1.55,.92,1.35],[3.0,.46,-4.15],0xc8c8c3,.5);box([1.42,.08,1.22],[3.0,.96,-4.15],0x2d3435,.35);for(const dx of [-.38,.38])for(const dz of [-.3,.3]){const r=new THREE.Mesh(new THREE.TorusGeometry(.17,.035,8,18),new THREE.MeshStandardMaterial({color:0x6f7776,roughness:.4}));r.rotation.x=-Math.PI/2;r.position.set(3+dx,1.04,-4.15+dz);world.add(r)}addCollider(3,-4.15,1.65,1.45);interactable('stove','인덕션',3,-3.0,1.65);
+ box([1.5,.8,.9],[5.45,1.35,-4.4],0xd9ddd9,.55);box([1.0,.5,.05],[5.25,1.35,-3.93],0x263a3c,.2);box([1.8,1.05,1.25],[5.45,.52,-4.3],0xc9ab82,.75);addCollider(5.45,-4.3,1.9,1.35);interactable('microwave','전자레인지',5.45,-3.0,1.7);
+ box([3.2,.14,2.0],[2.6,.83,1.6],0xb9865c,.62);for(const x of [1.25,3.95])for(const z of [1.0,2.2])box([.12,.82,.12],[x,.41,z],0x785637,.7);addCollider(2.6,1.6,3.3,2.1);interactable('table','식탁',2.6,.15,2.1);
+ box([1.8,3.1,.12],[-6.7,1.55,5.75],0x8a6750,.7);interactable('marketDoor','마트로 나가는 문',-6.2,4.8,1.8);sign('마트 가기',[-5.7,2.6,5.55],.45,'#2f7d60');
+ await syncHomeInventory();if(state.held){if(state.held.kind==='dish')showDishHeld(state.held);else await showHeldModel(state.held.id)}
+ setSpawn('home');renderHud();
 }
 
 async function buildStore(){
- const floor=new THREE.Mesh(new THREE.PlaneGeometry(21,19),new THREE.MeshStandardMaterial({color:0xd4d0bd,roughness:.98}));floor.rotation.x=-Math.PI/2;floor.position.z=-.4;floor.receiveShadow=true;world.add(floor);
- const grid=new THREE.GridHelper(21,21,0x9aa99a,0xb8b7aa);grid.position.y=.008;grid.position.z=-.4;grid.material.opacity=.13;grid.material.transparent=true;world.add(grid);
- box([21,.35,.35],[0,.18,-9.4],0xe9dfc8);box([.35,.35,18.5],[-10.25,.18,-.25],0xe9dfc8);box([.35,.35,18.5],[10.25,.18,-.25],0xe9dfc8);
- sign('우리 동네 마트',[0,4.5,-9.15],1.15,'#2f7d60');
- sign('과일 · 채소',[-6.65,3.05,-8.7],.62,'#69a65c');sign('빵 · 간식',[6.9,3.05,-8.7],.62,'#d18a52');sign('식품',[0,3.3,-5.9],.48,'#6c8db0');sign('냉장 · 냉동',[4.15,3.3,-2.6],.5,'#69a8b0');sign('음료',[-1.4,3.3,4.2],.48,'#b66f72');sign('셀프 계산',[-7.25,3.1,7.4],.55,'#2f7d60');
-
- const tasks=[];
- tasks.push(addMarket('display-fruit',2.3,[-6.65,0,-6.0],0,[0x54864f,0xd85b50,0xe7bd48,0xd58b43]));
- tasks.push(addMarket('display-fruit',2.3,[-6.65,0,-3.9],0,[0x54864f,0xd85b50,0xe7bd48,0xd58b43]));
- tasks.push(addMarket('display-bread',2.3,[7.0,0,-6.0],0,[0x8c6948,0xd59a58,0xf0d2a1]));
- tasks.push(addMarket('display-bread',2.3,[7.0,0,-3.9],0,[0x8c6948,0xd59a58,0xf0d2a1]));
- addCollider(-6.65,-5.0,3.1,5.2);addCollider(7,-5.0,3.1,5.2);
-
- const aisleXs=[-2.8,0,2.8];
- for(let i=0;i<aisleXs.length;i++){
-  const x=aisleXs[i],type=i===1?'shelf-bags':'shelf-boxes';
-  tasks.push(addMarket(type,3.0,[x,0,-2.5],Math.PI/2,i===0?[0x487961,0xd69b4a,0xca5c4f]:i===1?[0x436f95,0xefb24f,0xd8655b]:[0x4d7d8d,0xe1b154,0xc7655b]));
-  tasks.push(addMarket(type,3.0,[x,0,.8],Math.PI/2,i===0?[0x487961,0xd69b4a,0xca5c4f]:i===1?[0x436f95,0xefb24f,0xd8655b]:[0x4d7d8d,0xe1b154,0xc7655b]));
-  tasks.push(addMarket('shelf-end',1.7,[x,0,-4.45],0,[0x5a796b,0xe0bb66]));
-  tasks.push(addMarket('shelf-end',1.7,[x,0,2.75],Math.PI,[0x5a796b,0xe0bb66]));
-  addCollider(x,-2.5,1.65,2.7);addCollider(x,.8,1.65,2.7);
- }
- tasks.push(addMarket('freezers-standing',3.2,[7.8,0,.25],Math.PI/2,[0xd9e8e8,0x6f9aad,0xf7fbf7]));addCollider(7.8,.25,1.7,5.6);
- tasks.push(addMarket('freezer',2.6,[4.9,0,4.9],0,[0xd9e8e8,0x6f9aad,0xf7fbf7]));addCollider(4.9,4.9,4.2,1.5);
- tasks.push(addMarket('shopping-basket',1.1,[7.6,0,6.6],-.3,[0xe16f4c,0x365d50]));
- tasks.push(addMarket('shopping-cart',1.6,[8.5,0,6.5],-.45,[0x477b9a,0xc8d5d3,0x444e52]));
-
- box([4.3,.8,1.65],[-7.25,.45,5.9],0x356a55);box([4.3,.12,1.7],[-7.25,.91,5.9],0x173b31,.6);addCollider(-7.25,5.9,4.3,1.65);
- checkoutRoot=await addMarket('cash-register',1.55,[-6.3,.96,5.65],Math.PI,[0x2d5147,0x3c3d3d,0xe78a4f]);
- await Promise.allSettled(tasks);
+ state.location='market';state.phase='shopping';colliders=[];interactables=[];ui.labels.innerHTML='';labelViews=[];clearGroup(world);clearGroup(homeFoodGroup);scene.background.set(0xc8dbc7);scene.fog.color.set(0xc8dbc7);scene.fog.near=18;scene.fog.far=40;
+ const floor=new THREE.Mesh(new THREE.PlaneGeometry(21,19),new THREE.MeshStandardMaterial({color:0xd4d0bd,roughness:.98}));floor.rotation.x=-Math.PI/2;floor.position.z=-.4;floor.receiveShadow=true;world.add(floor);const grid=new THREE.GridHelper(21,21,0x9aa99a,0xb8b7aa);grid.position.y=.008;grid.position.z=-.4;grid.material.opacity=.13;grid.material.transparent=true;world.add(grid);
+ box([21,.35,.35],[0,.18,-9.4],0xe9dfc8);box([.35,.35,18.5],[-10.25,.18,-.25],0xe9dfc8);box([.35,.35,18.5],[10.25,.18,-.25],0xe9dfc8);sign('우리 동네 마트',[0,4.5,-9.15],1.15,'#2f7d60');sign('과일 · 채소',[-6.65,3.05,-8.7],.62,'#69a65c');sign('빵 · 간식',[6.9,3.05,-8.7],.62,'#d18a52');sign('식품',[0,3.3,-5.9],.48,'#6c8db0');sign('냉장 · 냉동',[4.15,3.3,-2.6],.5,'#69a8b0');sign('음료',[-1.4,3.3,4.2],.48,'#b66f72');sign('셀프 계산',[-7.25,3.1,7.4],.55,'#2f7d60');
+ const tasks=[];tasks.push(addMarket('display-fruit',2.3,[-6.65,0,-6.0],0,[0x54864f,0xd85b50,0xe7bd48]));tasks.push(addMarket('display-fruit',2.3,[-6.65,0,-3.9],0,[0x54864f,0xd85b50,0xe7bd48]));tasks.push(addMarket('display-bread',2.3,[7.0,0,-6.0],0,[0x8c6948,0xd59a58,0xf0d2a1]));tasks.push(addMarket('display-bread',2.3,[7.0,0,-3.9],0,[0x8c6948,0xd59a58,0xf0d2a1]));addCollider(-6.65,-5.0,3.1,5.2);addCollider(7,-5.0,3.1,5.2);
+ for(const [i,x] of [-2.8,0,2.8].entries()){const type=i===1?'shelf-bags':'shelf-boxes';tasks.push(addMarket(type,3.0,[x,0,-2.5],Math.PI/2));tasks.push(addMarket(type,3.0,[x,0,.8],Math.PI/2));tasks.push(addMarket('shelf-end',1.7,[x,0,-4.45],0));tasks.push(addMarket('shelf-end',1.7,[x,0,2.75],Math.PI));addCollider(x,-2.5,1.65,2.7);addCollider(x,.8,1.65,2.7)}
+ tasks.push(addMarket('freezers-standing',3.2,[7.8,0,.25],Math.PI/2,[0xd9e8e8,0x6f9aad]));addCollider(7.8,.25,1.7,5.6);tasks.push(addMarket('freezer',2.6,[4.9,0,4.9],0,[0xd9e8e8,0x6f9aad]));addCollider(4.9,4.9,4.2,1.5);
+ box([4.3,.8,1.65],[-7.25,.45,5.9],0x356a55);box([4.3,.12,1.7],[-7.25,.91,5.9],0x173b31,.6);addCollider(-7.25,5.9,4.3,1.65);tasks.push(addMarket('cash-register',1.55,[-6.3,.96,5.65],Math.PI,[0x2d5147,0x3c3d3d,0xe78a4f]));interactable('checkout','셀프 계산대',-7.2,7.1,2.15);
+ tasks.push(addMarket('shopping-cart',1.5,[8.15,0,6.3],-.4,[0x477b9a,0xc8d5d3,0x444e52]));interactable('cartBay','카트 보관소',7.65,6.5,1.8);interactable('homeDoor','집으로 돌아가기',4.8,7.1,1.8);sign('집으로',[4.7,2.6,7.8],.42,'#ba7c50');
+ await Promise.allSettled(tasks);await buildMarketProducts();if(state.hasCart)await spawnCart();if(state.held?.id)await showHeldModel(state.held.id);setSpawn('market');renderHud();
 }
 
-async function buildProductViews(){
- for(const p of PRODUCTS){
-  let root;
-  try{root=(await fitted(FOOD+p.model,.72,p.pal)).root}catch(_){root=new THREE.Group();root.add(new THREE.Mesh(new THREE.SphereGeometry(.28,12,9),new THREE.MeshStandardMaterial({color:p.pal[0]})))}
-  root.position.set(p.pos[0],.58,p.pos[1]);root.rotation.y=(hash(p.id)%628)/100;root.userData.productId=p.id;root.traverse(o=>{if(o.isMesh)o.userData.productId=p.id});productGroup.add(root);
-  const pedestal=box([.72,.54,.72],[p.pos[0],.27,p.pos[1]],0xf2e6c9,.82,productGroup);pedestal.userData.productId=p.id;
-  const label=document.createElement('button');label.className='productTag';label.innerHTML=p.name+'<small>'+fmt(p.price)+'</small>';label.onclick=()=>tryPick(p.id);ui.labels.appendChild(label);
-  productViews.set(p.id,{root,label,p});
- }
+async function buildMarketProducts(){
+ for(const p of PRODUCTS){let root;try{root=await fitted(FOOD+p.model,.68,p.zone==='drinks'?[0x4e8bb6,0xd95d55]:null)}catch(_){root=new THREE.Group();root.add(new THREE.Mesh(new THREE.SphereGeometry(.26,12,9),new THREE.MeshStandardMaterial({color:0xd9a45d})))}root.position.set(p.pos[0],.58,p.pos[1]);root.userData.productId=p.id;world.add(root);box([.72,.54,.72],[p.pos[0],.27,p.pos[1]],0xf2e6c9,.82,world);interactable('marketProduct',p.name,p.pos[0],p.pos[1],1.45,{productId:p.id});const label=document.createElement('button');label.className='productTag';label.innerHTML=p.name+'<small>'+fmt(discountedPrice(p))+(discountedPrice(p)<p.price?' · 할인':'')+'</small>';label.onclick=()=>tryTakeMarketProduct(p.id);ui.labels.appendChild(label);labelViews.push({kind:'market',id:p.id,root,label})}
 }
 
-async function buildPlayer(){
- const file=PLAYER_MODELS[Math.floor(Math.random()*PLAYER_MODELS.length)];
- let a;try{a=await fitted(PEOPLE+file,1.65,null,true)}catch(_){a={root:new THREE.Group(),clips:[]}}
- player=a.root;player.position.set(7.0,0,7.0);playerGroup.add(player);playerMixer=new THREE.AnimationMixer(player);player.clips=a.clips||[];
- try{cart=(await fitted(MARKET+'shopping-cart.glb',1.25,[0x477b9a,0xc8d5d3,0x444e52])).root;cart.position.set(7.8,0,7.4);playerGroup.add(cart)}catch(_){}
- setPlayerAnim('idle');
+async function syncHomeInventory(){
+ clearGroup(homeFoodGroup);for(const v of labelViews)if(v.label?.isConnected)v.label.remove();labelViews=[];const positions={fridge:[],freezer:[],pantry:[]};for(let row=0;row<4;row++)for(let col=0;col<4;col++)positions.fridge.push([-6.5+col*.4,.72+row*.48,-3.12]);for(let row=0;row<2;row++)for(let col=0;col<4;col++)positions.freezer.push([-6.5+col*.4,2.55+row*.28,-3.12]);for(let row=0;row<4;row++)for(let col=0;col<4;col++)positions.pantry.push([-4.2+col*.43,.65+row*.57,-3.28]);const used={fridge:0,freezer:0,pantry:0};
+ for(const item of state.inventory){const p=productById(item.id);if(!p)continue;const bucket=p.storage==='freezer'?'freezer':p.storage==='pantry'?'pantry':'fridge';const pos=positions[bucket][used[bucket]++];if(!pos)continue;let root;try{root=await fitted(FOOD+p.model,.35)}catch(_){root=box([.22,.22,.22],[0,0,0],0xd0aa6c,.8,homeFoodGroup)}if(root.parent!==homeFoodGroup)homeFoodGroup.add(root);root.position.set(...pos);root.userData.invUid=item.uid;const label=document.createElement('button');label.className='productTag storage';label.innerHTML=p.name+'<small>'+storageName(p.storage)+'</small>';label.onclick=()=>takeHomeItem(item.uid);ui.labels.appendChild(label);labelViews.push({kind:'home',id:item.uid,root,label})}
+ if(state.dish){const plate=box([1.0,.08,1.0],[2.6,.91,1.6],0xf4f0e7,.35,homeFoodGroup);plate.userData.dish=true;const topping=new THREE.Mesh(new THREE.CylinderGeometry(.38,.44,.12,18),new THREE.MeshStandardMaterial({color:state.dish.color||0xd8a65f,roughness:.8}));topping.position.set(2.6,1.02,1.6);homeFoodGroup.add(topping)}
 }
-function setPlayerAnim(name){
- if(!playerMixer||!player||!player.clips)return;const clip=player.clips.find(c=>c.name===name);if(!clip)return;if(playerAction&&playerAction.getClip()===clip)return;
- playerAction?.fadeOut(.12);const a=playerMixer.clipAction(clip);a.reset().fadeIn(.12).play();playerAction=a;
+function storageName(s){return s==='freezer'?'냉동실':s==='pantry'?'찬장':'냉장고'}
+async function spawnCart(){if(cart)cart.removeFromParent();try{cart=await fitted(MARKET+'shopping-cart.glb',1.3,[0x477b9a,0xc8d5d3,0x444e52]);cartCargo=new THREE.Group();cart.add(cartCargo);dynamic.add(cart);await syncCartCargo()}catch(e){console.warn('cart failed',e)}}
+async function syncCartCargo(){if(!cartCargo)return;clearGroup(cartCargo);const show=state.basket.slice(0,7);for(let i=0;i<show.length;i++){const p=productById(show[i]);if(!p)continue;try{const r=await fitted(FOOD+p.model,.26);r.position.set((i%3-.9)*.25,.45+Math.floor(i/3)*.16,-.05+((i%2)*.18));r.rotation.y=i*.8;cartCargo.add(r)}catch(_){}}
 }
-function moveInput(){
- let x=0,z=0;if(keys.KeyA||keys.ArrowLeft)x-=1;if(keys.KeyD||keys.ArrowRight)x+=1;if(keys.KeyW||keys.ArrowUp)z-=1;if(keys.KeyS||keys.ArrowDown)z+=1;
- if(touch.active){x+=touch.x;z+=touch.y}
- const v=new THREE.Vector3(x,0,z);if(v.lengthSq()>1)v.normalize();return v;
-}
-function updatePlayer(dt){
- if(!state.running||state.phase!=='shopping'||!player)return;
- const v=moveInput(),moving=v.lengthSq()>.01;
- if(moving){
-  v.normalize();lastDir.lerp(v,.18).normalize();const speed=4.2,candidate=player.position.clone().addScaledVector(v,speed*dt);
-  if(canStand(candidate.x,player.position.z))player.position.x=candidate.x;
-  if(canStand(player.position.x,candidate.z))player.position.z=candidate.z;
-  player.rotation.y=Math.atan2(lastDir.x,lastDir.z);setPlayerAnim('walk');
- }else setPlayerAnim('idle');
- if(cart){
-  const behind=player.position.clone().addScaledVector(lastDir,-.95);behind.x+=.25*lastDir.z;behind.z-=.25*lastDir.x;
-  cart.position.lerp(new THREE.Vector3(behind.x,0,behind.z),Math.min(1,dt*7));cart.rotation.y=Math.atan2(lastDir.x,lastDir.z);
- }
-}
-function updateCamera(dt){
- if(!player)return;const target=player.position.clone();const desired=new THREE.Vector3(target.x,6.7,target.z+7.6);camera.position.lerp(desired,Math.min(1,dt*3.4));camera.lookAt(target.x,1.0,target.z-1.4);
-}
+function setSpawn(where){if(where==='market'){playerPos.set(6.9,1.62,7.1);yaw=Math.PI*.86}else{playerPos.set(-1.5,1.62,3.8);yaw=Math.PI}pitch=-.04;camera.position.copy(playerPos);camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch}
 
-function pickMission(mode){
- const count=CFG[mode].count,byZone={};for(const p of PRODUCTS)(byZone[p.zone]??=[]).push(p);
- const zones=shuffle(Object.keys(byZone));const picked=[];for(const z of zones){if(picked.length>=count)break;picked.push(shuffle(byZone[z])[0])}
- for(const p of shuffle(PRODUCTS))if(picked.length<count&&!picked.some(x=>x.id===p.id))picked.push(p);
- state.list=picked;state.basket=[];state.scanned=new Set();state.paid=0;state.changeAnswer=null;state.mistakes=0;state.checkoutMistakes=0;
- const total=sum(picked.map(p=>p.price)),pad=CFG[mode].budgetPad;state.budget=Math.ceil((total+pad[0]+Math.random()*(pad[1]-pad[0]))/1000)*1000;
-}
-function renderMission(){
- const ids=new Set(state.basket.map(p=>p.id));ui.list.innerHTML=state.list.map(p=>'<div class="listItem '+(ids.has(p.id)?'done':'')+'" style="--zone:'+ZONES[p.zone].color+'"><span class="dot"></span><div><b>'+(ids.has(p.id)?'✓ ':'')+p.name+'</b><small>'+ZONES[p.zone].name+'</small></div><strong>'+fmt(p.price)+'</strong></div>').join('');
- ui.progress.textContent=state.basket.length+' / '+state.list.length;ui.budget.textContent=fmt(state.budget);ui.basket.textContent=fmt(sum(state.basket.map(p=>p.price)));
- ui.modeBadge.textContent=CFG[state.mode].name;
- if(state.basket.length===state.list.length){ui.missionSub.textContent='목록을 모두 담았어요! 셀프 계산대로 가세요.';ui.zoneHint.textContent='초록색 셀프 계산대는 입구 왼쪽에 있어요.';ui.phase.textContent='② 셀프 계산대로 이동'}
- else{ui.missionSub.textContent='목록에 있는 물건을 직접 찾아 카트에 담으세요.';ui.zoneHint.textContent='천장 구역 간판을 보고 통로를 찾아가세요.';ui.phase.textContent='① 매장에서 장보기'}
-}
-function targetIds(){return new Set(state.list.map(p=>p.id))}
-function nearestProduct(){
- if(!player)return null;let best=null,dist=999;for(const p of PRODUCTS){const d=Math.hypot(player.position.x-p.pos[0],player.position.z-p.pos[1]);if(d<dist){dist=d;best=p}}return best?{p:best,d:dist}:null;
-}
-function atCheckout(){return player&&Math.hypot(player.position.x+7.25,player.position.z-7.0)<2.25}
+function renderHud(){ui.day.textContent=state.day+'일차 · '+SLOTS[state.slot];ui.money.textContent=fmt(state.money);ui.cartBtn.classList.toggle('hidden',state.location!=='market'||!state.hasCart);ui.cartCount.textContent=state.basket.length;ui.hunger.textContent=hungerText();ui.kcal.textContent=Math.round(state.dailyKcal||0).toLocaleString()+' kcal';ui.condition.textContent=conditionText();ui.location.textContent=state.location==='market'?'🛒 우리 동네 마트':'🏠 집 · 부엌';ui.heldCard.classList.toggle('hidden',!state.held);if(state.held){ui.heldName.textContent=heldName();ui.heldHint.textContent=state.location==='market'?'카트에 넣거나 진열대에 돌려놓을 수 있어요.':'조리대에 올리거나 식탁에서 먹을 수 있어요.'}ui.prepCard.classList.toggle('hidden',state.location!=='home'||!state.prep.length);if(state.prep.length){ui.prepTitle.textContent=state.prep.map(x=>productById(x.id)?.name||'재료').join(' + ');ui.prepText.textContent='인덕션에서 요리하거나 다시 냉장고로 돌려놓을 수 있어요.'}renderEvent();renderCartPanel()}
+function hungerText(){return state.hunger>=75?'든든함':state.hunger>=50?'보통':state.hunger>=28?'배고픔':'많이 배고픔'}
+function conditionText(){return state.condition>=80?'아주 좋음':state.condition>=60?'좋음':state.condition>=42?'보통':'조금 지침'}
+function heldName(){if(!state.held)return '-';if(state.held.kind==='dish')return state.held.name;return productById(state.held.id)?.name||'음식'}
+function renderEvent(){if(!state.event){ui.eventCard.classList.add('hidden');return}ui.eventCard.classList.remove('hidden');ui.eventTitle.textContent=state.event.title;ui.eventText.textContent=state.event.text}
+function renderCartPanel(){ui.cartList.innerHTML=state.basket.length?state.basket.map((id,i)=>{const p=productById(id);return '<div class="cartItem"><div><b>'+p.name+'</b><small>'+fmt(discountedPrice(p))+'</small></div><button data-remove="'+i+'">빼기</button></div>'}).join(''):'<div class="cartItem"><small>아직 담은 물건이 없어요.</small></div>';ui.cartTotal.textContent=state.basket.length+'개'}
+function cartTotal(){return sum(state.basket.map(id=>discountedPrice(productById(id))))}
+
+function nearestInteractable(){let best=null,d=999;for(const it of interactables){const x=playerPos.x-it.x,z=playerPos.z-it.z,dist=Math.hypot(x,z);if(dist<it.range&&dist<d){best=it;d=dist}}return best}
+function nearestHomeFood(){if(state.location!=='home'||state.held)return null;let best=null,d=999;for(const v of labelViews.filter(x=>x.kind==='home')){const p=new THREE.Vector3();v.root.getWorldPosition(p);const dist=Math.hypot(playerPos.x-p.x,playerPos.z-p.z);if(dist<1.75&&dist<d){best=v;d=dist}}return best}
+function nearestMarketProduct(){if(state.location!=='market'||state.held)return null;let best=null,d=999;for(const p of PRODUCTS){const dist=Math.hypot(playerPos.x-p.pos[0],playerPos.z-p.pos[1]);if(dist<1.55&&dist<d){best=p;d=dist}}return best}
 function updateInteraction(){
- if(state.phase!=='shopping'){nearest=null;return}
- const all=state.basket.length===state.list.length;
- if(atCheckout()){
-  nearest={type:'checkout'};ui.interactIcon.textContent='🧾';ui.interactTitle.textContent=all?'셀프 계산 시작':'아직 살 물건이 남았어요';ui.interactSub.textContent=all?'E / Space 또는 버튼을 눌러 계산해요.':'장보기 목록을 먼저 모두 채워 주세요.';ui.interactBtn.textContent='계산';ui.touchInteract.textContent='계산';ui.interactBtn.disabled=!all;return;
+ if(!state.running||state.phase==='checkout'){nearest=null;return}const food=nearestHomeFood(),mp=nearestMarketProduct(),it=nearestInteractable();
+ if(state.held){
+  if(state.location==='market'){nearest={type:'heldAction'};ui.interactIcon.textContent='🛒';ui.interactTitle.textContent=state.hasCart?'카트에 '+heldName()+' 담기':'먼저 카트를 잡아 주세요';ui.interactSub.textContent=state.hasCart?'버튼을 누르면 카트에 넣어요.':'입구 오른쪽 카트 보관소로 가세요.';ui.interactBtn.textContent=state.hasCart?'카트에 담기':'카트 필요';ui.interactBtn.disabled=!state.hasCart;syncTouchInteract();return}
+  if(it&&['counter','sink','microwave','table'].includes(it.type)){nearest=it;const p=state.held.kind==='dish'?null:productById(state.held.id);const map={counter:['🔪','조리대에 올리기','재료를 여기 모아서 요리할 수 있어요.','올리기'],sink:['🚰','식품 씻기',p?.zone==='produce'?'물을 틀어 깨끗이 씻어요.':'필요한 식품만 씻으면 돼요.','씻기'],microwave:['♨️','전자레인지',p?.quick?'간편식을 빠르게 데울 수 있어요.':'이 음식은 전자레인지용이 아니에요.','데우기'],table:['🍽️','식탁에서 먹기',state.held.kind==='dish'||p?.ready?'지금 먹을 수 있어요.':'먼저 조리하거나 데워 주세요.','먹기']};const m=map[it.type];ui.interactIcon.textContent=m[0];ui.interactTitle.textContent=m[1];ui.interactSub.textContent=m[2];ui.interactBtn.textContent=m[3];ui.interactBtn.disabled=(it.type==='microwave'&&!p?.quick)||(it.type==='table'&&state.held.kind!=='dish'&&!p?.ready);syncTouchInteract();return}
+  nearest={type:'heldAction'};ui.interactIcon.textContent=state.held.kind==='dish'?'🍳':'🥣';ui.interactTitle.textContent=heldName()+'을(를) 들고 있어요';ui.interactSub.textContent=state.held.kind==='dish'?'완성한 음식을 식탁으로 가져가 보세요.':'조리대·싱크대·전자레인지·식탁 가까이 가 보세요.';ui.interactBtn.textContent=state.held.kind==='dish'?'식탁으로 가져가기':'제자리 두기';ui.interactBtn.disabled=state.held.kind==='dish';syncTouchInteract();return
  }
- const n=nearestProduct(),wanted=n&&targetIds().has(n.p.id),already=n&&state.basket.some(x=>x.id===n.p.id);
- if(n&&n.d<1.6){
-  nearest={type:'product',p:n.p};ui.interactIcon.textContent=wanted?'🛒':'🏷️';ui.interactTitle.textContent=n.p.name+' · '+fmt(n.p.price);ui.interactSub.textContent=already?'이미 카트에 담았어요.':wanted?'장보기 목록에 있는 물건이에요.':'목록에는 없는 물건이에요.';ui.interactBtn.textContent='담기';ui.touchInteract.textContent='담기';ui.interactBtn.disabled=already;return;
- }
- nearest=null;ui.interactIcon.textContent='🛒';ui.interactTitle.textContent=all?'셀프 계산대로 가세요':'매장을 둘러보세요';ui.interactSub.textContent=all?'입구 왼쪽 초록색 계산대':'WASD / 방향키로 이동';ui.interactBtn.textContent='담기';ui.touchInteract.textContent='담기';ui.interactBtn.disabled=true;
-}
-function tryPick(id){
- if(state.phase!=='shopping'||!player)return;const p=PRODUCTS.find(x=>x.id===id);if(!p)return;const d=Math.hypot(player.position.x-p.pos[0],player.position.z-p.pos[1]);
- if(d>1.7)return toast('조금 더 가까이 가서 담아 주세요.',true);
- if(state.basket.some(x=>x.id===id))return toast('이미 카트에 담았어요.');
- if(!state.list.some(x=>x.id===id)){state.mistakes++;tone('bad');return toast('장보기 목록에는 없는 물건이에요.',true)}
- state.basket.push(p);tone('pick');toast(p.name+'을(를) 카트에 담았어요!');const v=productViews.get(id);if(v)v.label.classList.add('done');renderMission();pulse(p.pos[0],p.pos[1]);
-}
-function interact(){
- if(state.phase!=='shopping'||!nearest)return;
- if(nearest.type==='checkout'){if(state.basket.length===state.list.length)openCheckout();else toast('장보기 목록을 먼저 모두 채워 주세요.',true)}
- else if(nearest.type==='product')tryPick(nearest.p.id);
-}
-function pulse(x,z){
- const ring=new THREE.Mesh(new THREE.RingGeometry(.18,.27,24),new THREE.MeshBasicMaterial({color:0x77e09a,transparent:true,opacity:.95,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.set(x,.03,z);fxGroup.add(ring);const start=performance.now();
- const go=now=>{const t=clamp((now-start)/430,0,1);ring.scale.setScalar(1+t*5);ring.material.opacity=1-t;if(t<1)requestAnimationFrame(go);else ring.removeFromParent()};requestAnimationFrame(go);
-}
+ if(food){nearest={type:'homeFood',uid:food.id};const item=state.inventory.find(x=>x.uid===food.id),p=productById(item?.id);ui.interactIcon.textContent='🥕';ui.interactTitle.textContent=(p?.name||'식품')+' 꺼내기';ui.interactSub.textContent=storageName(p?.storage);ui.interactBtn.textContent='집기';ui.interactBtn.disabled=false;syncTouchInteract();return}
+ if(mp){nearest={type:'marketProduct',productId:mp.id};ui.interactIcon.textContent='🏷️';ui.interactTitle.textContent=mp.name+' · '+fmt(discountedPrice(mp));ui.interactSub.textContent='직접 집어서 카트에 담아 보세요.';ui.interactBtn.textContent='집기';ui.interactBtn.disabled=false;syncTouchInteract();return}
+ if(it){nearest=it;const map={fridge:['🧊','냉장고','가까이 있는 식품을 직접 꺼낼 수 있어요.','살펴보기'],pantry:['🥫','찬장','상온 식품이 놓여 있어요.','살펴보기'],counter:['🔪','조리대',state.prep.length?'재료가 올려져 있어요.':'들고 온 재료를 올려 요리 준비를 해요.','사용'],sink:['🚰','싱크대','채소와 과일을 씻을 수 있어요.','씻기'],stove:['🍳','인덕션',state.prep.length?'조리대 재료로 한 접시를 만들어요.':'먼저 조리대에 재료를 올려 주세요.','요리'],microwave:['♨️','전자레인지','냉동 피자 같은 간편식을 빠르게 데워요.','데우기'],table:['🍽️','식탁',state.dish?'완성된 음식이 놓여 있어요.':'음식을 들고 오면 여기서 먹을 수 있어요.','먹기'],marketDoor:['🚪','마트 가기','장볼 것이 있으면 마트로 나가요.','마트 가기'],cartBay:['🛒','카트 보관소',state.hasCart?'이미 카트를 끌고 있어요.':'카트를 하나 빼서 직접 끌고 다녀요.','카트 잡기'],homeDoor:['🚪','집으로 돌아가기',state.basket.length?'카트에 담은 물건을 계산하거나 빼고 돌아가요.':'아무것도 사지 않아도 집으로 돌아갈 수 있어요.','집으로'],checkout:['🧾','셀프 계산대',state.basket.length?'바코드를 찍고 총액을 직접 계산해요.':'카트가 비어 있어요.','계산'],};const m=map[it.type]||['•',it.name,'','사용'];ui.interactIcon.textContent=m[0];ui.interactTitle.textContent=m[1];ui.interactSub.textContent=m[2];ui.interactBtn.textContent=m[3];ui.interactBtn.disabled=(it.type==='stove'&&!state.prep.length)||(it.type==='checkout'&&!state.basket.length)||(it.type==='cartBay'&&state.hasCart)||(it.type==='homeDoor'&&(state.basket.length>0||!!state.held));syncTouchInteract();return}
+ nearest=null;ui.interactIcon.textContent=state.location==='market'?'🛒':'🏠';ui.interactTitle.textContent=state.location==='market'?'마트를 둘러보세요':'부엌을 둘러보세요';ui.interactSub.textContent=state.location==='market'?(state.hasCart?'원하는 식품을 직접 골라 카트에 담아요.':'입구 오른쪽에서 카트를 잡아 보세요.'):'냉장고·찬장·조리대·식탁을 직접 사용해 보세요.';ui.interactBtn.textContent='사용';ui.interactBtn.disabled=true;syncTouchInteract()}
+function syncTouchInteract(){ui.touchInteract.textContent=ui.interactBtn.textContent;ui.touchInteract.disabled=ui.interactBtn.disabled}
 
-function openCheckout(){
- state.phase='checkout';state.running=false;state.scanned=new Set();state.paid=0;state.changeAnswer=null;ui.checkout.classList.add('show');ui.checkout.setAttribute('aria-hidden','false');ui.phase.textContent='③ 셀프 계산 중';renderCheckout();tone('scan');
+async function tryTakeMarketProduct(id){if(state.location!=='market'||state.held)return;if(!state.hasCart)return toast('먼저 입구에서 카트를 잡아 주세요.',true);const p=productById(id);if(!p)return;const d=Math.hypot(playerPos.x-p.pos[0],playerPos.z-p.pos[1]);if(d>1.75)return toast('조금 더 가까이 가서 집어 주세요.',true);state.held={kind:'market',id};await showHeldModel(id);tone('pick');toast(p.name+'을(를) 집었어요.');renderHud()}
+async function takeHomeItem(uid){if(state.location!=='home'||state.held)return;const item=state.inventory.find(x=>x.uid===uid);if(!item)return;const v=labelViews.find(x=>x.kind==='home'&&x.id===uid);if(v){const p=new THREE.Vector3();v.root.getWorldPosition(p);if(Math.hypot(playerPos.x-p.x,playerPos.z-p.z)>1.9)return toast('조금 더 가까이 가서 꺼내 주세요.',true)}state.inventory=state.inventory.filter(x=>x.uid!==uid);state.held={kind:'home',id:item.id,uid:item.uid,age:item.age||0};await showHeldModel(item.id);await syncHomeInventory();tone('pick');renderHud();save()}
+async function showHeldModel(id){clearGroup(heldRoot);try{const p=productById(id),r=await fitted(FOOD+p.model,.32);r.rotation.y=.5;heldRoot.add(r)}catch(_){}}
+function showDishHeld(d){clearGroup(heldRoot);const plate=new THREE.Mesh(new THREE.CylinderGeometry(.24,.28,.035,18),new THREE.MeshStandardMaterial({color:0xf3efe5,roughness:.45}));plate.rotation.x=Math.PI/2;heldRoot.add(plate);const food=new THREE.Mesh(new THREE.CylinderGeometry(.17,.2,.08,16),new THREE.MeshStandardMaterial({color:d.color||0xd8a65f,roughness:.75}));food.position.z=-.03;food.rotation.x=Math.PI/2;heldRoot.add(food)}
+function clearHeldModel(){clearGroup(heldRoot)}
+async function putHeldInCart(){if(!state.held||state.held.kind!=='market'||!state.hasCart)return;state.basket.push(state.held.id);state.held=null;clearHeldModel();await syncCartCargo();tone('pick');renderHud();save();toast('카트에 담았어요. 계산대에 가기 전까지 뺄 수도 있어요.')}
+async function dropHeldHome(){if(!state.held||state.location!=='home')return;const h=state.held;if(h.kind==='dish')return toast('완성한 음식은 식탁으로 가져가 보세요.');state.inventory.push({uid:h.uid||makeUid(h.id),id:h.id,age:h.age||0});state.held=null;clearHeldModel();await syncHomeInventory();renderHud();save()}
+async function putOnCounter(){if(!state.held||state.location!=='home'||state.held.kind==='dish')return;const h=state.held;state.prep.push({id:h.id,uid:h.uid||makeUid(h.id),age:h.age||0});state.held=null;clearHeldModel();tone('pick');renderHud();save();toast('조리대에 '+productById(h.id).name+'을(를) 올렸어요.')}
+function washHeld(){if(!state.held||state.held.kind==='dish')return toast('씻을 식품을 들고 와 보세요.',true);const p=productById(state.held.id);if(!p||p.zone!=='produce')return toast('이 식품은 따로 씻지 않아도 돼요.');state.held.washed=true;tone('good');toast(p.name+'을(를) 깨끗이 씻었어요.');renderHud()}
+function recipeFromPrep(){const ids=state.prep.map(x=>x.id),ps=ids.map(productById).filter(Boolean),veg=ps.filter(p=>p.veg>=2).length;let name='따뜻한 한 접시',color=0xd7a45f;if(ids.includes('fish')&&veg)name='생선 채소구이';else if(ids.includes('fish'))name='생선구이';else if(ids.includes('egg')&&ids.includes('tomato'))name='토마토 달걀볶음';else if(ids.includes('egg')&&ids.includes('bread'))name='달걀 토스트';else if(ids.includes('egg')&&veg)name='채소 달걀볶음';else if(veg>=2)name='알록달록 채소볶음';else if(ids.includes('egg'))name='달걀구이';else if(ids.includes('corn'))name='구운 옥수수';const nutrition=combineNutrition(ps);const diversity=new Set(ps.map(p=>p.zone)).size;nutrition.veg+=Math.max(0,diversity-1);nutrition.satiety+=ps.length*2;return{name,nutrition,color}}
+function combineNutrition(ps){return ps.reduce((a,p)=>({kcal:a.kcal+p.kcal,protein:a.protein+p.protein,veg:a.veg+p.veg,sugar:a.sugar+p.sugar,sodium:a.sodium+p.sodium,satiety:a.satiety+p.satiety,mood:a.mood+p.mood}),{kcal:0,protein:0,veg:0,sugar:0,sodium:0,satiety:0,mood:0})}
+async function cookPrep(){if(!state.prep.length)return toast('조리대에 재료를 먼저 올려 주세요.',true);if(state.prep.some(x=>productById(x.id)?.quick)){return toast('냉동 간편식은 전자레인지에 하나씩 데워 보세요.',true)}const d=recipeFromPrep();state.prep=[];state.dish=null;state.held={kind:'dish',name:d.name,nutrition:d.nutrition,cooked:true,color:d.color};showDishHeld(state.held);tone('cook');await syncHomeInventory();renderHud();save();toast(d.name+' 완성! 직접 식탁으로 가져가 보세요.')}
+async function microwaveHeld(){if(!state.held||state.held.kind==='dish')return toast('데울 간편식을 들고 와 보세요.',true);const p=productById(state.held.id);if(!p?.quick)return toast('이건 그냥 먹거나 다른 방식으로 조리해도 돼요.');const d={kind:'dish',name:'따뜻한 '+p.name,nutrition:{kcal:p.kcal,protein:p.protein,veg:p.veg,sugar:p.sugar,sodium:p.sodium,satiety:p.satiety,mood:p.mood+2},cooked:false,color:0xd9a85e};state.held=d;state.dish=null;showDishHeld(d);tone('cook');await syncHomeInventory();renderHud();save();toast(d.name+' 준비 완료! 식탁으로 가져가 보세요.')}
+async function eatAtTable(){
+ let food=null,cooked=false,quick=false;if(state.held){if(state.held.kind==='dish'){food={name:state.held.name,nutrition:state.held.nutrition};cooked=!!state.held.cooked;quick=!cooked;state.held=null;clearHeldModel()}else{const p=productById(state.held.id);if(!p.ready)return toast(p.name+'은(는) 조리하거나 데워서 먹는 게 좋아요.',true);food={name:p.name,nutrition:{kcal:p.kcal,protein:p.protein,veg:p.veg,sugar:p.sugar,sodium:p.sodium,satiety:p.satiety,mood:p.mood}};quick=true;state.held=null;clearHeldModel()}}else if(state.dish){food={name:state.dish.name,nutrition:state.dish.nutrition};cooked=!!state.dish.cooked;quick=!cooked;state.dish=null}else return toast('먹을 음식을 들고 오거나 식탁에 차려 보세요.',true);
+ applyMeal(food,cooked,quick);tone('eat');await syncHomeInventory();renderHud();save();toast(food.name+' 잘 먹었어요!');advanceMeal();
 }
-function closeCheckout(){
- if(state.phase==='done')return;state.phase='shopping';state.running=true;ui.checkout.classList.remove('show');ui.checkout.setAttribute('aria-hidden','true');renderMission();
-}
-function checkoutTotal(){return sum(state.basket.filter(p=>state.scanned.has(p.id)).map(p=>p.price))}
-function renderCheckout(){
- const allScanned=state.scanned.size===state.basket.length,total=checkoutTotal();
- ui.scanStat.textContent=state.scanned.size+' / '+state.basket.length;ui.checkoutTotal.textContent=fmt(total);ui.checkoutPaid.textContent=state.paid?fmt(state.paid):'-';ui.checkoutChange.textContent=state.paid&&allScanned?'?':'-';
- ui.scanItems.innerHTML=state.basket.map(p=>'<button class="scanItem '+(state.scanned.has(p.id)?'scanned':'')+'" data-scan="'+p.id+'"><span><b>'+(state.scanned.has(p.id)?'✓ ':'')+p.name+'</b><small>'+ZONES[p.zone].name+'</small></span><strong>'+fmt(p.price)+'</strong></button>').join('');
- ui.paySection.classList.toggle('locked',!allScanned);ui.changeSection.classList.toggle('locked',!state.paid);
- ui.checkoutGuide.textContent=!allScanned?'장바구니 상품을 하나씩 눌러 스캔하세요.':!state.paid?'합계를 확인하고 넣을 현금을 선택하세요.':'낸 돈에서 합계를 빼고 거스름돈을 골라 보세요.';
- if(allScanned){
-  const opts=[5000,10000,20000,50000].filter(v=>v>=total);if(!opts.length)opts.push(50000);
-  const show=[...new Set(opts.slice(0,3))];ui.cashOptions.innerHTML=show.map(v=>'<button class="cashBtn '+(state.paid===v?'selected':'')+'" data-cash="'+v+'">'+fmt(v)+'</button>').join('');
- }else ui.cashOptions.innerHTML='<button class="cashBtn" disabled>상품을 먼저 모두 스캔하세요</button>';
- if(state.paid){
-  const change=state.paid-total,step=state.mode==='easy'?1000:500;let vals=[change,Math.max(0,change-step),change+step];if(change===0)vals=[0,500,1000];vals=shuffle([...new Set(vals)]).slice(0,3);
-  ui.changeEquation.textContent=state.paid.toLocaleString()+' − '+total.toLocaleString()+' = ?';
-  ui.changeOptions.innerHTML=vals.map(v=>'<button class="changeBtn '+(state.changeAnswer===v?'selected':'')+'" data-change="'+v+'">'+fmt(v)+'</button>').join('');
- }else{ui.changeEquation.textContent='낸 돈 − 합계 = ?';ui.changeOptions.innerHTML='<button class="changeBtn" disabled>현금을 먼저 넣어 주세요</button>'}
- ui.finishCheckout.disabled=!(state.paid&&state.changeAnswer!==null);
-}
-function scanItem(id){if(state.phase!=='checkout'||state.scanned.has(id))return;state.scanned.add(id);tone('scan');renderCheckout()}
-function chooseCash(v){if(state.scanned.size!==state.basket.length)return;state.paid=v;state.changeAnswer=null;tone('cash');renderCheckout()}
-function chooseChange(v){if(!state.paid)return;state.changeAnswer=v;tone('cash');renderCheckout()}
-function finishCheckout(){
- const total=checkoutTotal(),target=state.paid-total;if(state.changeAnswer!==target){state.checkoutMistakes++;tone('bad');toast(state.changeAnswer<target?fmt(target-state.changeAnswer)+' 더 받아야 해요.':fmt(state.changeAnswer-target)+' 너무 많아요.',true);return}
- tone('good');ui.checkoutChange.textContent=fmt(target);ui.checkoutGuide.textContent='정답! 영수증이 나왔어요.';setTimeout(completeMission,500);
-}
-function completeMission(){
- state.phase='done';state.running=false;ui.checkout.classList.remove('show');const spent=sum(state.basket.map(p=>p.price)),remain=state.budget-spent;
- const score=Math.max(100,1000-state.mistakes*80-state.checkoutMistakes*120);let best=score;try{const k='mart-walk-best-'+state.mode+'-v3';best=Math.max(score,+(localStorage.getItem(k)||0));localStorage.setItem(k,best)}catch(_){}
- ui.resultTitle.textContent=state.checkoutMistakes===0&&state.mistakes===0?'완벽한 장보기!':'장보기 완료!';
- ui.resultText.innerHTML='직접 매장을 돌아다니며 <b>'+state.basket.length+'개</b> 물건을 찾고 셀프 계산까지 마쳤어요.<br>이번 점수 <b>'+score+'점</b> · 최고 기록 <b>'+best+'점</b>';
- ui.resultItems.textContent=state.basket.length+'개';ui.resultSpent.textContent=fmt(spent);ui.resultRemain.textContent=fmt(remain);ui.result.classList.remove('hidden');ui.phase.textContent='장보기 완료';
-}
+function applyMeal(food,cooked,quick){const n=food.nutrition;state.dailyKcal=(state.dailyKcal||0)+n.kcal;state.hunger=clamp(state.hunger+Math.min(72,n.satiety),0,100);const balance=(n.veg*2+n.protein*.25)-n.sugar*.12-n.sodium*.8+(cooked?4:0);state.condition=clamp(state.condition+balance*.18,20,100);let mood=n.mood+(cooked?2:0)+(state.event?.warmBonus&&cooked?state.event.warmBonus:0);state.satisfaction=clamp(state.satisfaction+mood*.22-1,20,100);state.weekStats.sugar+=n.sugar;state.weekStats.sodium+=n.sodium;state.weekStats.veg+=n.veg;state.weekStats.protein+=n.protein;state.weekStats.meals++;if(cooked)state.weekStats.cooked++;if(quick)state.weekStats.quick++}
+function advanceMeal(){state.hunger=clamp(state.hunger-12,0,100);state.condition=clamp(state.condition-(state.hunger<28?5:1),20,100);if(state.slot<2){state.slot++;save();renderHud();return}state.slot=0;state.day++;state.dailyKcal=0;for(const item of state.inventory)item.age=(item.age||0)+1;if(state.day>7){showWeekReport();return}rollEvent();save();renderHud()}
+function rollEvent(force=false){if(force||Math.random()<.42){state.event=EVENTS[Math.floor(Math.random()*EVENTS.length)];if(state.event.hunger)state.hunger=clamp(state.hunger+state.event.hunger,0,100)}else state.event=null}
 
-async function start(mode){
- state.mode=mode;pickMission(mode);state.phase='shopping';state.running=true;ui.start.classList.add('hidden');ui.result.classList.add('hidden');
- if(player){player.position.set(7,0,7);lastDir.set(0,0,-1)}if(cart)cart.position.set(7.8,0,7.4);
- for(const v of productViews.values())v.label.classList.remove('done');
- renderMission();tone('start');
-}
-async function preload(){
- const critical=[MARKET+'cash-register.glb',MARKET+'shopping-cart.glb',MARKET+'display-fruit.glb',MARKET+'display-bread.glb',MARKET+'shelf-boxes.glb',MARKET+'freezers-standing.glb',...PRODUCTS.map(p=>FOOD+p.model),...PLAYER_MODELS.map(p=>PEOPLE+p)];
- let done=0;const unique=[...new Set(critical)];await Promise.all(unique.map(async u=>{try{await asset(u)}catch(e){console.warn('preload failed',u,e)}finally{done++;const pct=Math.round(done/unique.length*100);ui.loadFill.style.width=pct+'%';ui.loadText.textContent='3D 마트 준비 중… '+pct+'%'}}));
- await buildStore();await buildProductViews();await buildPlayer();ui.loadFill.style.width='100%';ui.loadText.textContent='준비 완료! 장보기 난이도를 골라 주세요.';document.querySelectorAll('.mode').forEach(b=>b.disabled=false);state.phase='ready';ui.phase.textContent='난이도를 선택해 장보기를 시작하세요';
-}
+function interact(){if(!nearest)return;if(nearest.type==='heldAction'){if(state.location==='market')putHeldInCart();else dropHeldHome();return}if(nearest.type==='homeFood'){takeHomeItem(nearest.uid);return}if(nearest.type==='marketProduct'){tryTakeMarketProduct(nearest.productId);return}switch(nearest.type){case'fridge':case'pantry':toast('안에 보이는 식품 가까이 가서 직접 집어 보세요.');break;case'counter':if(state.held)putOnCounter();else if(state.prep.length)toast('재료가 준비됐어요. 인덕션에서 요리해 보세요.');else toast('냉장고나 찬장에서 재료를 꺼내 와 보세요.');break;case'sink':washHeld();break;case'stove':cookPrep();break;case'microwave':microwaveHeld();break;case'table':eatAtTable();break;case'marketDoor':goMarket();break;case'cartBay':grabCart();break;case'homeDoor':goHomeWithoutCheckout();break;case'checkout':openCheckout();break}}
+async function grabCart(){if(state.hasCart)return;state.hasCart=true;await spawnCart();tone('pick');renderHud();save();toast('카트를 잡았어요. 이제 원하는 식품을 골라 담아 보세요.')}
+async function goMarket(){if(state.held||state.prep.length)return toast('들고 있는 음식이나 조리대 재료를 먼저 정리해 주세요.',true);tone('door');await buildStore();save()}
+async function goHomeWithoutCheckout(){if(state.held||state.basket.length)return toast('카트의 물건을 계산하거나 모두 빼고 돌아가 주세요.',true);state.hasCart=false;tone('door');await buildHome();save()}
 
-function updateProductLabels(){
- if(!player)return;const wanted=targetIds(),cfg=CFG[state.mode]||CFG.normal;
- for(const [id,v] of productViews){
-  const d=Math.hypot(player.position.x-v.p.pos[0],player.position.z-v.p.pos[1]),target=wanted.has(id)&&!state.basket.some(x=>x.id===id),show=state.phase==='shopping'&&(d<cfg.labelRange||(cfg.beacon&&target));
-  v.label.style.display=show?'block':'none';v.label.classList.toggle('target',target);
-  if(!show)continue;const w=new THREE.Vector3();v.root.getWorldPosition(w);w.y+=.9;w.project(camera);if(w.z>1){v.label.style.display='none';continue}v.label.style.left=(w.x*.5+.5)*innerWidth+'px';v.label.style.top=(-w.y*.5+.5)*innerHeight+'px';
- }
-}
-function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio,1.65))}
-window.addEventListener('resize',resize);resize();
-window.addEventListener('keydown',e=>{keys[e.code]=true;if((e.code==='Space'||e.code==='KeyE')&&state.phase==='shopping'){e.preventDefault();interact()}if(e.code==='Escape'&&state.phase==='checkout')closeCheckout()});
-window.addEventListener('keyup',e=>{keys[e.code]=false});
-ui.interactBtn.onclick=interact;ui.touchInteract.onclick=interact;ui.sound.onclick=()=>{state.sound=!state.sound;ui.sound.textContent=state.sound?'🔊':'🔇';try{localStorage.setItem('mart-walk-sound',JSON.stringify(state.sound))}catch(_){}if(state.sound)tone('cash')};
-ui.scanItems.onclick=e=>{const b=e.target.closest('[data-scan]');if(b)scanItem(b.dataset.scan)};
-ui.cashOptions.onclick=e=>{const b=e.target.closest('[data-cash]');if(b)chooseCash(+b.dataset.cash)};
-ui.changeOptions.onclick=e=>{const b=e.target.closest('[data-change]');if(b)chooseChange(+b.dataset.change)};
-ui.closeCheckout.onclick=closeCheckout;ui.backToShopping.onclick=closeCheckout;ui.finishCheckout.onclick=finishCheckout;
-document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>start(b.dataset.mode));ui.modeBtn.onclick=()=>{ui.result.classList.add('hidden');ui.start.classList.remove('hidden')};ui.replay.onclick=()=>start(state.mode);
+function openCheckout(){if(state.location!=='market'||!state.basket.length)return;state.phase='checkout';state.running=false;state.scanned=new Set();state.totalConfirmed=false;state.paid=0;state.changeConfirmed=false;ui.totalInput.value='';ui.changeInput.value='';ui.checkout.classList.add('show');ui.checkout.setAttribute('aria-hidden','false');renderCheckout();tone('scan')}
+function closeCheckout(){if(state.phase!=='checkout')return;state.phase='shopping';state.running=true;ui.checkout.classList.remove('show');ui.checkout.setAttribute('aria-hidden','true')}
+function renderCheckout(){const all=state.scanned.size===state.basket.length;ui.scanStat.textContent=state.scanned.size+' / '+state.basket.length;ui.checkoutMoney.textContent=fmt(state.money);ui.checkoutPaid.textContent=state.paid?fmt(state.paid):'-';ui.checkoutChange.textContent=state.changeConfirmed?'✓':'?';ui.scanItems.innerHTML=state.basket.map((id,i)=>{const p=productById(id),scanned=state.scanned.has(i);return '<button class="scanItem '+(scanned?'scanned':'')+'" data-scan="'+i+'"><span><b>'+(scanned?'✓ ':'')+p.name+'</b><small>'+ZONES[p.zone].name+'</small></span><strong>'+fmt(discountedPrice(p))+'</strong></button>'}).join('');ui.receipt.innerHTML=[...state.scanned].sort((a,b)=>a-b).map(i=>{const p=productById(state.basket[i]);return '<div class="receiptLine"><span>'+p.name+'</span><b>'+fmt(discountedPrice(p))+'</b></div>'}).join('')||'<div class="receiptLine"><span>스캔한 상품이 여기에 표시돼요.</span></div>';ui.totalSection.classList.toggle('locked',!all);ui.paySection.classList.toggle('locked',!state.totalConfirmed);ui.changeSection.classList.toggle('locked',!state.paid);ui.checkoutGuide.textContent=!all?'상품을 하나씩 눌러 바코드를 스캔하세요.':!state.totalConfirmed?'가격을 모두 더해서 총액을 직접 입력하세요.':!state.paid?'낼 현금을 고르세요.':'낸 돈에서 총액을 빼서 거스름돈을 직접 입력하세요.';if(state.totalConfirmed){const total=cartTotal(),opts=[10000,20000,30000,50000].filter(v=>v>=total);if(total<=5000)opts.unshift(5000);ui.cashOptions.innerHTML=[...new Set(opts)].slice(0,4).map(v=>'<button class="cashBtn '+(state.paid===v?'selected':'')+'" data-cash="'+v+'">'+fmt(v)+'</button>').join('')}else ui.cashOptions.innerHTML='<button class="cashBtn" disabled>총액을 먼저 맞혀 주세요</button>';ui.changeEquation.textContent=state.paid?state.paid.toLocaleString()+' − 내가 계산한 총액 = ?':'낸 돈 − 총액 = ?';ui.finishCheckout.disabled=!state.changeConfirmed}
+function scanItem(i){if(state.phase!=='checkout'||state.scanned.has(i))return;state.scanned.add(i);tone('scan');renderCheckout()}
+function submitTotal(){if(state.scanned.size!==state.basket.length)return toast('상품을 먼저 모두 스캔해 주세요.',true);const v=Number(String(ui.totalInput.value).replace(/\D/g,'')),real=cartTotal();if(v!==real){state.checkoutMistakes++;tone('bad');const diff=Math.abs(real-v);toast(v<real?fmt(diff)+'만큼 덜 더했어요. 다시 살펴보세요.':fmt(diff)+'만큼 더 크게 계산했어요.',true);return}if(real>state.money){tone('bad');toast('계산은 맞았지만 가진 식비보다 '+fmt(real-state.money)+' 많아요. 카트에서 물건을 빼 주세요.',true);closeCheckout();ui.cartPanel.classList.remove('hidden');return}state.totalConfirmed=true;tone('good');renderCheckout();toast('총액이 맞아요!')}
+function chooseCash(v){if(!state.totalConfirmed)return;state.paid=v;state.changeConfirmed=false;ui.changeInput.value='';tone('cash');renderCheckout()}
+function submitChange(){if(!state.paid)return;const v=Number(String(ui.changeInput.value).replace(/\D/g,'')),target=state.paid-cartTotal();if(v!==target){state.checkoutMistakes++;tone('bad');const diff=Math.abs(target-v);toast(v<target?fmt(diff)+' 더 받아야 해요.':fmt(diff)+' 너무 많아요.',true);return}state.changeConfirmed=true;tone('good');renderCheckout();toast('거스름돈도 정확해요!')}
+async function finishCheckout(){if(!state.changeConfirmed)return;const total=cartTotal();state.money-=total;state.weekStats.spent+=total;for(const id of state.basket)state.inventory.push({uid:makeUid(id),id,age:0});state.basket=[];state.hasCart=false;state.held=null;state.scanned=new Set();state.phase='home';state.running=true;ui.checkout.classList.remove('show');ui.checkout.setAttribute('aria-hidden','true');ui.cartPanel.classList.add('hidden');tone('door');await buildHome();save();toast('장본 식품이 냉장고와 찬장에 들어갔어요.')}
 
-function setStick(e){
- const r=ui.joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx0=e.clientX-cx,dy0=e.clientY-cy,max=r.width*.34,len=Math.hypot(dx0,dy0)||1,s=Math.min(1,max/len),dx=dx0*s,dy=dy0*s;ui.stick.style.transform='translate(calc(-50% + '+dx+'px),calc(-50% + '+dy+'px))';touch.x=dx/max;touch.y=dy/max;
-}
-ui.joystick.addEventListener('pointerdown',e=>{touch.active=true;touch.pointer=e.pointerId;ui.joystick.setPointerCapture(e.pointerId);setStick(e)});
-ui.joystick.addEventListener('pointermove',e=>{if(touch.active&&e.pointerId===touch.pointer)setStick(e)});
+function weekBalanceLabel(){const s=state.weekStats;if(!s.meals)return'기록 없음';const score=s.veg*2+s.protein*.18-s.sugar*.08-s.sodium*.5;return score>24?'다양하게 먹음':score>8?'무난함':'조금 치우침'}
+function showWeekReport(){state.running=false;state.phase='week';const s=state.weekStats;let notes=[];if(s.veg<10)notes.push('채소·과일이 조금 적었어요.');else notes.push('채소·과일을 여러 번 먹었어요.');if(s.sugar>95)notes.push('단 음식과 음료가 자주 있었어요.');if(s.sodium>55)notes.push('짠 간편식이 조금 많았어요.');if(s.cooked>=3)notes.push('직접 요리한 끼니가 꽤 있었어요.');if(!notes.length)notes.push('먹고 싶은 것과 필요한 것을 적당히 섞어 먹었어요.');ui.weekSummary.textContent=notes.join(' ');ui.weekCooked.textContent=s.cooked+'회';ui.weekQuick.textContent=s.quick+'회';ui.weekMoney.textContent=fmt(state.money);ui.weekBalance.textContent=weekBalanceLabel();ui.week.classList.remove('hidden');save()}
+function nextWeek(){const carry=Math.min(5000,Math.max(0,state.money));state.day=1;state.slot=0;state.dailyKcal=0;state.money=WEEKLY_BUDGET+carry;state.weekStats=freshStats();state.hunger=clamp(state.hunger,45,75);state.condition=clamp(state.condition+4,35,90);state.phase='home';state.running=true;rollEvent(true);ui.week.classList.add('hidden');save();renderHud();toast('새로운 한 주가 시작됐어요. 남긴 식비는 조금 이월됐어요.')}
+
+function updateMovement(dt){if(!state.running||state.phase==='checkout')return;let f=0,r=0;if(keys.KeyW||keys.ArrowUp)f+=1;if(keys.KeyS||keys.ArrowDown)f-=1;if(keys.KeyD||keys.ArrowRight)r+=1;if(keys.KeyA||keys.ArrowLeft)r-=1;if(touch.active){r+=touch.x;f-=touch.y}const len=Math.hypot(f,r);if(len>.01){f/=Math.max(1,len);r/=Math.max(1,len);const forward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)),right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw)),v=forward.multiplyScalar(f).add(right.multiplyScalar(r));const speed=state.location==='market'&&state.hasCart?3.4:3.8,c=playerPos.clone().addScaledVector(v,speed*dt);if(canStand(c.x,playerPos.z))playerPos.x=c.x;if(canStand(playerPos.x,c.z))playerPos.z=c.z}camera.position.copy(playerPos);camera.rotation.y=yaw;camera.rotation.x=pitch;if(cart&&state.location==='market'&&state.hasCart){const forward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));const target=playerPos.clone().addScaledVector(forward,.92);target.y=0;cart.position.lerp(target,Math.min(1,dt*8));cart.rotation.y=yaw+Math.PI}}
+function updateLabels(){for(const v of labelViews){let show=false;if(state.location==='market'&&v.kind==='market'){const p=productById(v.id),d=Math.hypot(playerPos.x-p.pos[0],playerPos.z-p.pos[1]);show=d<3.4}else if(state.location==='home'&&v.kind==='home'){const wp=new THREE.Vector3();v.root.getWorldPosition(wp);show=Math.hypot(playerPos.x-wp.x,playerPos.z-wp.z)<2.6}v.label.style.display=show?'block':'none';if(!show)continue;const w=new THREE.Vector3();v.root.getWorldPosition(w);w.y+=.5;w.project(camera);if(w.z>1||Math.abs(w.x)>1.3||Math.abs(w.y)>1.3){v.label.style.display='none';continue}v.label.style.left=(w.x*.5+.5)*innerWidth+'px';v.label.style.top=(-w.y*.5+.5)*innerHeight+'px'}}
+function setStick(e){const r=ui.joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx0=e.clientX-cx,dy0=e.clientY-cy,max=r.width*.34,len=Math.hypot(dx0,dy0)||1,s=Math.min(1,max/len),dx=dx0*s,dy=dy0*s;ui.stick.style.transform='translate(calc(-50% + '+dx+'px),calc(-50% + '+dy+'px))';touch.x=dx/max;touch.y=dy/max}
 function endStick(e){if(e.pointerId!==touch.pointer)return;touch.active=false;touch.x=touch.y=0;touch.pointer=null;ui.stick.style.transform='translate(-50%,-50%)'}
-ui.joystick.addEventListener('pointerup',endStick);ui.joystick.addEventListener('pointercancel',endStick);
+function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight,false);renderer.setPixelRatio(Math.min(devicePixelRatio,1.6))}
 
-const clock=new THREE.Clock();
-function animate(){
- requestAnimationFrame(animate);const dt=Math.min(.05,clock.getDelta());if(playerMixer)playerMixer.update(dt);updatePlayer(dt);updateCamera(dt);updateInteraction();updateProductLabels();
- for(const [id,v] of productViews){if(state.phase==='shopping'&&!state.basket.some(x=>x.id===id))v.root.rotation.y+=dt*.18}
- renderer.render(scene,camera);
-}
-requestAnimationFrame(animate);
-preload().catch(err=>{console.error(err);ui.loadText.textContent='3D 에셋을 불러오지 못했어요. 새로고침해 주세요.';ui.phase.textContent='마트 로딩 오류'});
+window.addEventListener('resize',resize);resize();window.addEventListener('keydown',e=>{keys[e.code]=true;if((e.code==='Space'||e.code==='KeyE')&&state.running&&state.phase!=='checkout'){e.preventDefault();interact()}if(e.code==='Escape'&&state.phase==='checkout')closeCheckout()});window.addEventListener('keyup',e=>{keys[e.code]=false});
+canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'){lookPointer=e.pointerId;lastLook={x:e.clientX,y:e.clientY};canvas.setPointerCapture?.(e.pointerId);return}if(e.clientX>innerWidth*.42){lookPointer=e.pointerId;lastLook={x:e.clientX,y:e.clientY};canvas.setPointerCapture?.(e.pointerId)}});canvas.addEventListener('pointermove',e=>{if(e.pointerId!==lookPointer||!lastLook)return;const dx=e.clientX-lastLook.x,dy=e.clientY-lastLook.y;lastLook={x:e.clientX,y:e.clientY};yaw-=dx*.006;pitch=clamp(pitch-dy*.0045,-.72,.52)});canvas.addEventListener('pointerup',e=>{if(e.pointerId===lookPointer){lookPointer=null;lastLook=null}});canvas.addEventListener('pointercancel',e=>{if(e.pointerId===lookPointer){lookPointer=null;lastLook=null}});
+ui.joystick.addEventListener('pointerdown',e=>{touch.active=true;touch.pointer=e.pointerId;ui.joystick.setPointerCapture(e.pointerId);setStick(e)});ui.joystick.addEventListener('pointermove',e=>{if(touch.active&&e.pointerId===touch.pointer)setStick(e)});ui.joystick.addEventListener('pointerup',endStick);ui.joystick.addEventListener('pointercancel',endStick);
+ui.interactBtn.onclick=interact;ui.touchInteract.onclick=interact;ui.sound.onclick=()=>{state.sound=!state.sound;ui.sound.textContent=state.sound?'🔊':'🔇';save();if(state.sound)tone('cash')};ui.cartBtn.onclick=()=>{renderCartPanel();ui.cartPanel.classList.remove('hidden')};ui.closeCart.onclick=()=>ui.cartPanel.classList.add('hidden');ui.cartList.onclick=async e=>{const b=e.target.closest('[data-remove]');if(!b)return;const i=+b.dataset.remove;if(i<0||i>=state.basket.length)return;const id=state.basket.splice(i,1)[0];await syncCartCargo();renderHud();save();toast(productById(id).name+'을(를) 카트에서 뺐어요.')};
+ui.scanItems.onclick=e=>{const b=e.target.closest('[data-scan]');if(b)scanItem(+b.dataset.scan)};ui.checkTotal.onclick=submitTotal;ui.cashOptions.onclick=e=>{const b=e.target.closest('[data-cash]');if(b)chooseCash(+b.dataset.cash)};ui.checkChange.onclick=submitChange;ui.closeCheckout.onclick=closeCheckout;ui.backToShopping.onclick=closeCheckout;ui.finishCheckout.onclick=finishCheckout;ui.newLife.onclick=async()=>{newLife();ui.start.classList.add('hidden');await buildHome()};ui.continueBtn.onclick=async()=>{if(!loadSave())newLife();ui.start.classList.add('hidden');if(state.location==='market')await buildStore();else await buildHome();renderHud()};ui.nextWeek.onclick=nextWeek;
+
+const clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);const dt=Math.min(.05,clock.getDelta());updateMovement(dt);updateInteraction();updateLabels();renderer.render(scene,camera)}requestAnimationFrame(animate);
+
+async function preload(){const critical=[MARKET+'cash-register.glb',MARKET+'shopping-cart.glb',MARKET+'display-fruit.glb',MARKET+'display-bread.glb',MARKET+'shelf-boxes.glb',MARKET+'freezers-standing.glb',...PRODUCTS.map(p=>FOOD+p.model)];const unique=[...new Set(critical)];let done=0;await Promise.all(unique.map(async u=>{try{await asset(u)}catch(e){console.warn('preload failed',u,e)}finally{done++;const pct=Math.round(done/unique.length*100);ui.loadFill.style.width=pct+'%';ui.loadText.textContent='집과 마트를 준비하고 있어요… '+pct+'%'}}));ui.loadFill.style.width='100%';ui.loadText.textContent='준비 완료!';ui.newLife.disabled=false;ui.continueBtn.disabled=!hasSave();ui.sound.textContent=state.sound?'🔊':'🔇';state.phase='ready'}
+preload().catch(err=>{console.error(err);ui.loadText.textContent='3D 에셋을 불러오지 못했어요. 새로고침해 주세요.'});
