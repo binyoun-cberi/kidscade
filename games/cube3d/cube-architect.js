@@ -2009,14 +2009,27 @@ function refreshFreeAvatar(force=false){
 }
 function updateFreeViewButtons(){
   const third=freeViewMode==='third';
-  if($('actionView'))$('actionView').textContent=third?'1인칭':'3인칭';
-  if($('mobileView'))$('mobileView').textContent=third?'1인칭':'3인칭';
+  const current=third?'3인칭':'1인칭',next=third?'1인칭':'3인칭';
+  if($('actionView')){
+    $('actionView').textContent='시점 · '+current;
+    $('actionView').setAttribute('aria-label','현재 '+current+' 시점. 누르면 '+next+'으로 전환');
+    $('actionView').title='현재 '+current+' · 클릭하거나 V를 눌러 '+next+'으로 전환';
+  }
+  if($('mobileView')){
+    $('mobileView').textContent=current;
+    $('mobileView').setAttribute('aria-label','현재 '+current+' 시점. 누르면 '+next+'으로 전환');
+  }
 }
 function setFreeView(next,announce=true){
-  freeViewMode=next==='first'?'first':'third';
+  const normalized=next==='first'?'first':'third';
+  const changed=freeViewMode!==normalized;
+  freeViewMode=normalized;
   if(freeAvatarRoot)freeAvatarRoot.visible=freeViewMode==='third';
   updateFreeViewButtons();
-  if(announce)toast(freeViewMode==='third'?'3인칭 · 내 캐릭터를 보며 탐험해요.':'1인칭 · 정밀하게 건축해요.');
+  if(announce){
+    toast(freeViewMode==='third'?'3인칭 · 내 캐릭터를 보며 탐험해요.':'1인칭 · 정밀하게 건축해요.');
+    if(changed)tutorialSignal('free-view-toggle');
+  }
 }
 function cycleFreeView(){if(mode==='free')setFreeView(freeViewMode==='third'?'first':'third')}
 function openAvatarCustomizer(){
@@ -5775,6 +5788,7 @@ function tutorialSteps(kind){
   if(kind==='free'&&gameFreeMode==='survival')return[
     {title:'생존 탐험 · 첫날 훈련',text:'이번에는 설명만 읽지 않아요. 원목을 직접 모으고, 판자와 제작대를 만들고, 2×1×1 직육면체와 나무 곡괭이까지 실제로 완성합니다.',do:'화면에 보이는 “○”를 하나씩 “✓”로 바꾸면 됩니다. 이미 한 일은 자동으로 인정돼요.'},
     {title:'1. 움직이고 나무 찾기',target:mobile?'#mobileJoystick':'#lockNotice',text:mobile?'왼쪽 스틱으로 움직이고 빈 화면을 밀어 보는 방향을 바꿉니다.':'게임 화면을 눌러 마우스를 잡고 WASD로 이동합니다. 가운데 +가 내가 보는 곳입니다.',do:mobile?'가까운 나무 줄기 앞까지 가 보세요.':'가까운 나무 줄기를 가운데 +로 바라보세요.',wait:mobile?null:'start-control'},
+    {title:'1-1. 1인칭 ↔ 3인칭 바꾸기',target:mobile?'#mobileView':'#actionView',text:'3인칭은 내 캐릭터와 주변을 보기 좋고, 1인칭은 블록을 정확히 조준하기 좋아요. 버튼에는 지금 사용 중인 시점이 표시됩니다.',do:mobile?'위의 “3인칭/1인칭” 시점 버튼을 한 번 눌러 실제로 바꿔 보세요.':'V 키를 한 번 누르거나 상단 “시점 · 3인칭/1인칭” 버튼을 눌러 보세요.',wait:'free-view-toggle'},
     ...(mobile?[
       {title:'모바일 행동 휠 열기',target:'#mobileInteract',text:'“행동” 버튼은 그냥 누르는 버튼이 아니에요. 짧게 탭하면 상황에 맞는 기본 행동, 꾹 누르면 네 방향 행동 휠이 열립니다.',do:'행동 버튼을 손가락으로 꾹 눌러 네 방향 메뉴를 직접 띄워 보세요.',wait:'mobile-radial-open'},
       {title:'아래로 끌어 채집 선택',target:'#mobileInteract',text:'손가락을 떼지 말고 아래쪽 “채집·공격”으로 끌어가세요. 선택지가 노랗게 커지면 손을 떼면 됩니다.',do:'↑ 관찰·대화 · → 사용·열기 · ↓ 채집·공격 · ← 설치',wait:'mobile-radial-harvest'}
@@ -5802,8 +5816,9 @@ function tutorialSteps(kind){
     {title:'4. 블록 파괴',target:mobile?'#mobileBreak':'#gameCanvas',text:mobile?'방금 만든 블록을 바라보고 파괴를 누르세요.':'방금 만든 블록을 바라보고 마우스 왼쪽 버튼을 누르세요.',do:'실제로 없어지면 성공입니다.',wait:'free-break'},
     {title:'5. 가방 · 모든 재료',target:mobile?'#mobileInventory':'#freeHint',text:mobile?'가방 버튼에서 모든 건축 재료를 찾을 수 있습니다.':'E를 누르면 모든 건축 재료와 직육면체 제작대를 볼 수 있습니다.',do:'원하는 재료를 핫바에 넣어 보세요.'},
     {title:'6. 비행',target:mobile?'#mobileFly':'#freeHint',text:mobile?'비행 버튼으로 걷기와 비행을 바꿉니다.':'F를 누르면 걷기/비행이 바뀝니다.',do:'높은 건물을 지을 때 비행이 편합니다.'},
-    {title:'7. 시점 · 색칠 · 수학 렌즈',target:mobile?'#mobileMore':'#actionXray',text:mobile?'도구 버튼에서 시점·색칠·수학 기능을 사용할 수 있어요.':'V는 시점, P는 면 색칠, X는 수학 렌즈입니다.',do:'건축에 익숙해진 뒤 하나씩 사용하면 됩니다.'},
-    {title:'크리에이티브 조작 완료',text:'블록 선택 → 설치 → 파괴가 되면 기본 건축은 성공입니다.',do:'상단 튜토리얼 버튼으로 언제든 다시 연습할 수 있어요.'}
+    {title:'7. 1인칭 ↔ 3인칭 시점',target:mobile?'#mobileView':'#actionView',text:'3인칭은 내 캐릭터와 주변 공간을 함께 보기 좋고, 1인칭은 블록 면을 정확히 조준하기 좋아요. 버튼 글자는 “현재 시점”입니다.',do:mobile?'위의 시점 버튼을 한 번 눌러 실제로 바꿔 보세요.':'V 키를 한 번 누르거나 상단 “시점 · 3인칭/1인칭” 버튼을 눌러 실제로 바꿔 보세요.',wait:'free-view-toggle'},
+    {title:'8. 색칠 · 수학 렌즈',target:mobile?'#mobileMore':'#actionXray',text:mobile?'도구 버튼에서 면 색칠과 수학 기능을 사용할 수 있어요.':'P는 면 색칠, X는 수학 렌즈입니다.',do:'건축에 익숙해진 뒤 하나씩 사용하면 됩니다.'},
+    {title:'크리에이티브 조작 완료',text:'블록 선택 → 설치 → 파괴와 시점 전환이 되면 기본 건축은 성공입니다.',do:'상단 튜토리얼 버튼으로 언제든 다시 연습할 수 있어요.'}
   ];
   return[{title:'튜토리얼',text:'이 모드의 기본 기능을 화면에서 직접 확인해 보세요.',do:'상단 튜토리얼 버튼으로 다시 볼 수 있습니다.'}];
 }
@@ -5833,7 +5848,7 @@ function renderTutorialStep(){
   $('tutorialSkip').onclick=()=>tutorialFinish(true);
 }
 function showTutorial(kind,force=false){
-  const once='cubeArchitectGuidedTutorial_v4_'+kind+
+  const once='cubeArchitectGuidedTutorial_v5_'+kind+
     (kind==='free'?'_'+gameFreeMode:'')+(mobileModeEnabled?'_touch':'_desktop');
   try{if(!force&&localStorage.getItem(once))return}catch(_){}
   tutorialFinish(false);
