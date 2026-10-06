@@ -77,6 +77,6 @@ test('teacher UI exposes lifecycle management and guarded destructive actions', 
   assert.match(client, /\/api\/teacher\/qr-credential/);
   assert.match(client, /\/api\/teacher\/qr-class/);
   assert.match(html, /qr-renderer\.js/);
-  assert.match(fs.readFileSync(path.join(ROOT, 'qr-renderer.js'), 'utf8'), /KidscadeQrRenderer/);
+  assert.match(fs.readFileSync(path.join(ROOT, 'teacher', 'qr-renderer.js'), 'utf8'), /KidscadeQrRenderer/);
   assert.match(fs.readFileSync(path.join(ROOT, 'worker', 'teacher-admin.mjs'), 'utf8'), /decryptStudentPin/);
 });
