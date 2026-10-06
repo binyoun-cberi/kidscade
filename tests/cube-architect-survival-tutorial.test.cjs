@@ -41,5 +41,5 @@ test('survival tutorial has live progress and uses actual survival state',()=>{
 test('survival crafting UI exposes recipe ids and shape completion refreshes the coach',()=>{
   assert.match(js,/b\.dataset\.recipeId=recipe\.id/);
   assert.match(js,/currentCuboidSpec=\{dims,faceColors\};putOnHotbar\('cuboid'\).*tutorialRefreshProgress/);
-  assert.match(js,/cubeArchitectGuidedTutorial_v3_/);
+  assert.match(js,/cubeArchitectGuidedTutorial_v4_/);
 });
