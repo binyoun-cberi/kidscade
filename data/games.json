@@ -2,6 +2,33 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "science_cosmic_growth",
+      "addedAt": "2026-10-06T21:46:00+09:00",
+      "title": "먼지에서 블랙홀까지",
+      "href": "games/science_cosmic_growth/index.html?v=1",
+      "category": "trivia",
+      "age": "low",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🌌",
+      "description": "우주 먼지 한 알에서 시작해 소행성·행성·별·초신성을 거쳐 블랙홀과 퀘이사까지 성장하는 3D 과학 클리커. 성장할수록 카메라 스케일과 주변 우주가 바뀌고, 실제 천체·중력·핵융합·블랙홀 현상을 관측 도감으로 발견합니다.",
+      "subject": "science",
+      "genre": "simulation",
+      "difficulty": "easy",
+      "sessionMinutes": 12,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "kor_hand_twist_typing",
       "addedAt": "2026-10-06T21:12:00+09:00",
       "title": "손 꼬임 타자왕",
