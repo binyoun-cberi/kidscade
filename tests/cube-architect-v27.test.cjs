@@ -28,7 +28,7 @@ test('survival progression introduces cuboid geometry immediately after the work
 test('cuboid dimensions persist in survival stats and old saves migrate to the new geometry gate',()=>{
   assert.match(js,/cuboids:\[\]/);
   assert.match(js,/trackSurvival\('cuboid',currentCuboidSpec\.dims\.join\('x'\)\)/);
-  assert.match(js,/version:12/);
+  assert.match(js,/version:13/);
   assert.match(js,/\(data\.version\|\|0\)<12&&savedStage>=3&&!survivalStats\.cuboids\.length\?3:savedStage/);
 });
 
