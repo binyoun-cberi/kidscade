@@ -65,6 +65,7 @@ test('avatar combat overlay follows existing 23-frame body and hand anchors with
   assert.match(avatar,/equipmentAnchorAndDirection\(frameId,'shield'\)/);
   assert.match(avatar,/combatEquipmentDepthParts/);
   assert.match(avatar,/globalCompositeOperation='destination-over'/);
+  assert.match(avatar,/handsVisible=!String\(frameId\|\|''\)\.startsWith\('dead-'\)/);
   assert.match(avatar,/toolId!=='__none__'/);
   assert.match(avatar,/aidId!=='__none__'/);
   assert.doesNotMatch(main,/KidscadeAvatarShop\.setState/);
