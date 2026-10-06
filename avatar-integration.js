@@ -1,4 +1,4 @@
-/* Kidscade avatar studio integration: deluxe shop + stable static main-card preview. */
+/* Kidscade avatar studio integration: deluxe shop + v29 stable static main-card preview. */
 (function () {
   'use strict';
 
