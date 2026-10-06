@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const STORE = 'rhythmDashExtremeDataV1';
+  const STORE = 'kidscade_rhythm_dash_extreme_v1';
   const STEP_MS = 1000 / 120;
   const SPEED = Object.freeze({ A: 0.8, B: 1, D: 1.25, X: 1.5 });
   const X = {
