@@ -1620,25 +1620,31 @@ export function balancedRandomFactIndexes(count=15,eras=ERA_ORDER,random=Math.ra
     return picked;
   }
 
+  // "전체 시대"는 세부 시대 수가 많은 근현대가 과대표집되지 않도록
+  // 선사·고대 / 고려 / 조선 / 근현대의 네 큰 구간을 먼저 균등 배분한다.
+  const groups=ALL_ERA_BALANCE_GROUPS
+    .map(group=>group.filter(era=>selectedEras.includes(era)))
+    .filter(group=>group.length);
+  const base=Math.floor(wanted/groups.length),remainder=wanted%groups.length;
+  const extraGroups=new Set(shuffledFactIndexes(groups.map((_,i)=>i),random).slice(0,remainder));
   const used=new Set(),picked=[];
-  if(wanted>=ERA_ORDER.length){
-    const base=Math.floor(wanted/ERA_ORDER.length),remainder=wanted%ERA_ORDER.length;
-    const extraEras=new Set(shuffledFactIndexes(ERA_ORDER,random).slice(0,remainder));
-    for(const era of ERA_ORDER){
-      const bucket=eligible.filter(x=>x.f.era===era).map(x=>x.i);
-      picked.push(...takeUniqueFacts(bucket,base+(extraEras.has(era)?1:0),used,random));
+
+  groups.forEach((group,groupIndex)=>{
+    const groupTarget=base+(extraGroups.has(groupIndex)?1:0);
+    if(groupTarget<=0)return;
+    const eraBuckets=group.map(era=>({
+      era,
+      facts:shuffledFactIndexes(eligible.filter(x=>x.f.era===era).map(x=>x.i),random)
+    })).filter(bucket=>bucket.facts.length);
+    const eraOrder=shuffledFactIndexes(eraBuckets.map((_,i)=>i),random);
+    let cursor=0,stalled=0;
+    while(cursor<groupTarget&&eraBuckets.length&&stalled<eraBuckets.length){
+      const bucket=eraBuckets[eraOrder[cursor%eraOrder.length]];
+      const next=bucket.facts.find(factIndex=>!used.has(factIndex));
+      if(next===undefined){stalled++;cursor++;continue;}
+      used.add(next);picked.push(next);cursor++;stalled=0;
     }
-  }else{
-    const groups=ALL_ERA_BALANCE_GROUPS
-      .map(group=>group.filter(era=>selectedEras.includes(era)))
-      .filter(group=>group.length);
-    const base=Math.floor(wanted/groups.length),remainder=wanted%groups.length;
-    const extraGroups=new Set(shuffledFactIndexes(groups.map((_,i)=>i),random).slice(0,remainder));
-    groups.forEach((group,groupIndex)=>{
-      const bucket=eligible.filter(x=>group.includes(x.f.era)).map(x=>x.i);
-      picked.push(...takeUniqueFacts(bucket,base+(extraGroups.has(groupIndex)?1:0),used,random));
-    });
-  }
+  });
 
   if(picked.length<wanted){
     const remaining=eligible.map(x=>x.i).filter(i=>!used.has(i));
