@@ -1,4 +1,5 @@
 import { QUESTION_BANK, CORE_HISTORY_FACTS, ERA_ORDER, normalizeEraSelection, chronologicalQuestionIndexes, balancedRandomFactIndexes } from '../data/history-live-question-bank.mjs';
+// History all-era random selection is balanced by broad period in the shared question bank.
 
 const JSON_HEADERS = Object.freeze({
   'content-type': 'application/json; charset=utf-8',
