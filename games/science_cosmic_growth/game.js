@@ -205,7 +205,7 @@ function initThree(){
   camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,600);camera.position.set(0,0,12);
   bodyRoot=new THREE.Group();bodyGroup=new THREE.Group();contextGroup=new THREE.Group();fxGroup=new THREE.Group();
   bodyRoot.add(bodyGroup);scene.add(contextGroup,bodyRoot,fxGroup);
-  scene.add(new THREE.AmbientLight(0xffffff,.7));
+  scene.add(new THREE.AmbientLight(0xffffff,.72));const keyLight=new THREE.DirectionalLight(0xddeeff,1.8);keyLight.position.set(5,7,9);scene.add(keyLight);
   makeStarfield();resize();addEventListener('resize',resize);
  }catch(e){console.error(e);ui.error.classList.remove('hidden');throw e}
 }
@@ -225,7 +225,7 @@ function texture(url){
  return new Promise(resolve=>texLoader.load(url,t=>{t.colorSpace=THREE.SRGBColorSpace;resolve(t)},undefined,()=>resolve(null)));
 }
 async function preloadAssets(){
- const planets=await Promise.all(Array.from({length:10},(_,i)=>texture(ROOT+'space/planets/planet'+String(i).padStart(2,'0')+'.png')));
+ const planets=await Promise.all(Array.from({length:LOW_POWER?6:10},(_,i)=>texture(ROOT+'space/planets/planet'+String(i).padStart(2,'0')+'.png')));
  planetTextures=planets.filter(Boolean);
  const pairs=await Promise.all([
   ['flare',texture(ROOT+'effects/particles/kenney-particle-pack/flare-01.png')],
@@ -483,14 +483,14 @@ function observeEvent(){
 }
 function renderCodex(tab='all'){
  ui.codexGrid.innerHTML='';const items=DISCOVERIES.filter(d=>tab==='all'||d.cat===tab);
- for(const d of items){const unlocked=!!state.discovered[d.id],el=document.createElement('button');el.type='button';el.className='codexItem'+(unlocked?'':' locked');el.innerHTML='<span class="cIcon">'+(unlocked?d.icon:'?')+'</span><b>'+(unlocked?d.title:'아직 발견하지 못함')+'</b><p>'+(unlocked?d.text:'우주에서 직접 관측하면 열립니다.')+'</p>';if(unlocked)el.onclick=()=>openScience(d,false);ui.codexGrid.appendChild(el)}
+ for(const d of items){const unlocked=!!state.discovered[d.id],el=document.createElement('button');el.type='button';el.className='codexItem'+(unlocked?'':' locked');el.innerHTML='<span class="cIcon">'+(unlocked?d.icon:'?')+'</span><b>'+(unlocked?d.title:'아직 발견하지 못함')+'</b><p>'+(unlocked?d.text:'우주에서 직접 관측하면 열립니다.')+'</p>';if(unlocked)el.onclick=()=>{ui.codex.classList.add('hidden');openScience(d,false)};ui.codexGrid.appendChild(el)}
 }
 function openCodex(){modalOpen=true;renderCodex(document.querySelector('.tabs button.active')?.dataset.tab||'all');ui.codex.classList.remove('hidden')}
 function closeCodex(){ui.codex.classList.add('hidden');modalOpen=false}
 function startGame(kind){
  if(kind==='new'){state=freshState();clearSave();discover('cosmic_dust',false);discover('micro_scale',false)}
  else if(!load()){state=freshState();discover('cosmic_dust',false);discover('micro_scale',false)}
- running=true;paused=false;modalOpen=false;ui.intro.classList.add('hidden');ui.pause.classList.add('hidden');rebuildVisual(true);renderUpgrades();renderUI();scheduleEvent(10000);
+ running=true;paused=false;modalOpen=false;$('soundBtn').textContent=state.sound?'🔊':'🔇';ui.intro.classList.add('hidden');ui.pause.classList.add('hidden');rebuildVisual(true);renderUpgrades();renderUI();scheduleEvent(10000);
  try{window.KidscadeGame?.start?.({mode:'cosmic_growth'})}catch(_){}
  ensureAudio();save()
 }
