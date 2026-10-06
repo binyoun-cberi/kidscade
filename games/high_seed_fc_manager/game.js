@@ -8,7 +8,7 @@ var SAVE_KEY='kidscade_game_v2:high_seed_fc_manager:save';
 var state=null,currentView='home',squadFilter='all',historyFilter=null;
 var modal=document.getElementById('modal'),modalBody=document.getElementById('modalBody');
 var toastEl=document.getElementById('toast'),toastTimer=0;
-var match=null,matchSpeed=1,raf=0,lastFrame=0,resultShown=false,directCoachSeen=false;
+var match=null,matchSpeed=1,raf=0,lastFrame=0,resultShown=false,directCoachSeen=false,matchTutorial=null;
 var broadcastRenderer=window.SeedFCBroadcast&&typeof window.SeedFCBroadcast.create==='function'?window.SeedFCBroadcast.create():null;
 var replayCurrent=null,replayFrame=0,replayCursor=0,replayPlaying=false,replayPlaySpeed=1,replayRaf=0,replayLast=0,replayMode='replay',replayFocus='all',replayReturnView='analysis';
 var soccerBallImg=new Image();
@@ -138,7 +138,7 @@ function autoLineup(roster,formation){
 }
 function newState(clubId){
   var c=clubById(clubId),roster=clone(c.players);
-  return {version:4,clubId:clubId,season:1,round:0,budget:c.budget,formation:'1-2-1',tactics:Object.assign({line:'standard',tempo:'normal',width:'normal'},clone(c.tactics)),roster:roster,lineup:autoLineup(roster,'1-2-1'),schedule:schedule(),table:tableBlank(),matchHistory:[],trainingAvailable:false,worldSigned:[],managerNotes:[],lastResult:null,replays:[],career:{},scouting:{},historyProgress:{discovered:{},connected:{},attempts:0,correct:0},positionModelVersion:1,pyramid:null,otherLeague:null};
+  return {version:4,clubId:clubId,season:1,round:0,budget:c.budget,formation:'1-2-1',tactics:Object.assign({line:'standard',tempo:'normal',width:'normal'},clone(c.tactics)),roster:roster,lineup:autoLineup(roster,'1-2-1'),schedule:schedule(),table:tableBlank(),matchHistory:[],trainingAvailable:false,worldSigned:[],managerNotes:[],lastResult:null,replays:[],career:{},scouting:{},historyProgress:{discovered:{},connected:{},attempts:0,correct:0},matchTutorialDone:false,positionModelVersion:1,pyramid:null,otherLeague:null};
 }
 function normalize(){
   var migratingV4=(state.version||0)<4;
@@ -152,6 +152,7 @@ function normalize(){
   state.tactics=Object.assign({attack:'short',press:'shape',mindset:'balanced',line:'standard',tempo:'normal',width:'normal'},state.tactics||clone(clubById(state.clubId).tactics));
   state.schedule=state.schedule||schedule();state.table=state.table||tableBlank();state.matchHistory=state.matchHistory||[];state.worldSigned=state.worldSigned||[];
   state.managerNotes=state.managerNotes||[];state.trainingAvailable=!!state.trainingAvailable;state.replays=Array.isArray(state.replays)?state.replays:[];state.career=state.career||{};
+  if(state.matchTutorialDone===undefined)state.matchTutorialDone=state.matchHistory.length>0;
   if(state.pyramid===undefined)state.pyramid=null;if(state.otherLeague===undefined)state.otherLeague=null;
   var sourcePlayers=[];D.clubs.forEach(function(c){sourcePlayers=sourcePlayers.concat(c.players);});sourcePlayers=sourcePlayers.concat(D.world);
   state.roster.forEach(function(p){
@@ -423,24 +424,51 @@ function table(){
   }
   root.innerHTML=html;
 }
+function replayTeamTotals(r,side){
+  var total={touches:0,shots:0,goals:0,saves:0,distance:0,xg:0,passesAttempted:0,passesCompleted:0,progressivePasses:0,keyPasses:0,assists:0,tackles:0,crosses:0};
+  (r.players||[]).filter(function(p){return p.side===side;}).forEach(function(p){
+    var st=r.stats&&r.stats[p.id]||{};Object.keys(total).forEach(function(k){total[k]+=Number(st[k]||0);});
+  });
+  return total;
+}
+function replayUserScore(r){return r.userSide===0?[Number(r.score[0]||0),Number(r.score[1]||0)]:[Number(r.score[1]||0),Number(r.score[0]||0)];}
+function replayOutcome(r){var sc=replayUserScore(r);return sc[0]>sc[1]?'w':sc[0]<sc[1]?'l':'d';}
 function analysis(){
   var root=$('viewRoot'),list=state.replays||[];
+  if(!list.length){
+    root.innerHTML='<div class="section-bar"><div><span class="eyebrow">MATCH CENTRE</span><h2>경기 분석실</h2><div class="muted">경기를 마치면 기록이 자동으로 쌓이고 이곳에서 다시 볼 수 있어요.</div></div></div><section class="panel empty-analysis"><h3>아직 분석할 경기가 없어요.</h3><p class="muted">첫 경기를 마치면 슈팅·xG·패스 성공률·태클·이동량과 함께 다시보기, 선수별 히트맵, 패스맵, 주요 장면, 전술 변경 전후 기록이 자동으로 열립니다.</p><div class="analysis-empty-actions"><button class="primary" data-analysis-home type="button">⚽ 첫 경기 하러 가기</button></div></section>';
+    var homeBtn=root.querySelector('[data-analysis-home]');if(homeBtn)homeBtn.onclick=function(){render('home');};return;
+  }
+  var latest=list[0],latestTotals=replayTeamTotals(latest,latest.userSide),passPct=latestTotals.passesAttempted?Math.round(latestTotals.passesCompleted/latestTotals.passesAttempted*100):0;
+  var record={w:0,d:0,l:0,gf:0,ga:0,shots:0,xg:0,passA:0,passC:0,tackles:0},leaders={};
+  list.forEach(function(r){
+    var outcome=replayOutcome(r),sc=replayUserScore(r),tot=replayTeamTotals(r,r.userSide);record[outcome]++;record.gf+=sc[0];record.ga+=sc[1];record.shots+=tot.shots;record.xg+=tot.xg;record.passA+=tot.passesAttempted;record.passC+=tot.passesCompleted;record.tackles+=tot.tackles;
+    (r.players||[]).filter(function(p){return p.side===r.userSide;}).forEach(function(p){var st=r.stats&&r.stats[p.id]||{},q=leaders[p.id]||(leaders[p.id]={name:p.name,goals:0,assists:0,keyPasses:0,tackles:0,saves:0,apps:0});q.goals+=Number(st.goals||0);q.assists+=Number(st.assists||0);q.keyPasses+=Number(st.keyPasses||0);q.tackles+=Number(st.tackles||0);q.saves+=Number(st.saves||0);q.apps++;});
+  });
+  var leaderList=Object.keys(leaders).map(function(id){var q=leaders[id];q.score=q.goals*6+q.assists*4+q.keyPasses*1.5+q.tackles+q.saves*1.5;return q;}).sort(function(a,b){return b.score-a.score;}).slice(0,3);
+  var recentPass=record.passA?Math.round(record.passC/record.passA*100):0,latestScore=replayUserScore(latest),latestH=clubById(latest.homeClubId),latestA=clubById(latest.awayClubId);
+  var trend=list.slice(0,6).map(function(r){var o=replayOutcome(r),sc=replayUserScore(r);return '<span class="'+o+'" title="'+sc[0]+' : '+sc[1]+'">'+(o==='w'?'승':o==='d'?'무':'패')+' '+sc[0]+':'+sc[1]+'</span>';}).join('');
+  var overview='<div class="analysis-overview"><section class="analysis-summary"><span class="eyebrow">최근 '+list.length+'경기</span><h3>팀 흐름 한눈에 보기</h3><div class="analysis-record"><span class="win">'+record.w+'승</span><span class="draw">'+record.d+'무</span><span class="loss">'+record.l+'패</span><span>'+record.gf+'득점 · '+record.ga+'실점</span></div><div class="analysis-kpis"><div><b>'+(record.shots/list.length).toFixed(1)+'</b><small>경기당 슈팅</small></div><div><b>'+(record.xg/list.length).toFixed(2)+'</b><small>경기당 xG</small></div><div><b>'+recentPass+'%</b><small>패스 성공률</small></div><div><b>'+(record.tackles/list.length).toFixed(1)+'</b><small>경기당 태클</small></div><div><b>'+record.gf+'</b><small>총 득점</small></div><div><b>'+record.ga+'</b><small>총 실점</small></div></div><div class="analysis-trend">'+trend+'</div></section>'+
+    '<section class="analysis-latest"><span class="eyebrow">LATEST MATCH</span><h3>'+latestH.emoji+' '+esc(latestH.short)+' '+latest.score[0]+' : '+latest.score[1]+' '+esc(latestA.short)+' '+latestA.emoji+'</h3><div class="analysis-kpis"><div><b>'+latestTotals.shots+'</b><small>슈팅</small></div><div><b>'+latestTotals.xg.toFixed(2)+'</b><small>xG</small></div><div><b>'+passPct+'%</b><small>패스 성공률</small></div><div><b>'+latestTotals.tackles+'</b><small>태클 성공</small></div><div><b>'+latestTotals.keyPasses+'</b><small>키패스</small></div><div><b>'+latestTotals.distance.toFixed(1)+'</b><small>추정 이동 km</small></div></div><div class="analysis-quick"><button data-replay-mode="replay" data-replay-index="0" type="button">▶ 다시보기</button><button data-replay-mode="heat" data-replay-index="0" type="button">🔥 히트맵</button><button data-replay-mode="pass" data-replay-index="0" type="button">↗ 패스맵</button></div></section></div>';
+  var leadersHtml='<section class="analysis-leaders"><h3>최근 경기 활약 선수</h3><div class="analysis-leader-list">'+leaderList.map(function(q){return '<div><b>'+esc(q.name)+'</b><small>'+q.goals+'골 · '+q.assists+'도움 · 키패스 '+q.keyPasses+' · 태클 '+q.tackles+(q.saves?' · 선방 '+q.saves:'')+'</small></div>';}).join('')+'</div></section>';
   var cards=list.map(function(r,i){
-    var h=clubById(r.homeClubId),a=clubById(r.awayClubId);
-    return '<article class="replay-card"><div><span class="round-pill">'+esc(r.league||'경기')+' · 시즌 '+r.season+' '+r.round+'R</span><h3>'+h.emoji+' '+esc(h.short)+' <b>'+r.score[0]+' : '+r.score[1]+'</b> '+esc(a.short)+' '+a.emoji+'</h3><p class="muted">선수 집중 다시보기 · 히트맵 · 패스맵 · 전술 변경 기록 · 개인 경기 기록</p></div><button class="primary" data-replay="'+i+'" type="button">경기 분석</button></article>';
+    var h=clubById(r.homeClubId),a=clubById(r.awayClubId),tot=replayTeamTotals(r,r.userSide),pct=tot.passesAttempted?Math.round(tot.passesCompleted/tot.passesAttempted*100):0;
+    return '<article class="replay-card"><div><span class="round-pill">'+esc(r.league||'경기')+' · 시즌 '+r.season+' '+r.round+'R</span><h3>'+h.emoji+' '+esc(h.short)+' <b>'+r.score[0]+' : '+r.score[1]+'</b> '+esc(a.short)+' '+a.emoji+'</h3><p class="muted">슈팅 '+tot.shots+' · xG '+tot.xg.toFixed(2)+' · 패스 '+pct+'% · 태클 '+tot.tackles+' · 전술 변경 '+Math.max(0,(r.tacticChanges||[]).filter(function(x){return x.side===r.userSide&&x.minute>0;}).length)+'회</p></div><div class="replay-card-actions"><button class="primary" data-replay-mode="replay" data-replay-index="'+i+'" type="button">▶ 다시보기</button><button data-replay-mode="heat" data-replay-index="'+i+'" type="button">🔥 히트맵</button><button data-replay-mode="pass" data-replay-index="'+i+'" type="button">↗ 패스맵</button></div></article>';
   }).join('');
-  root.innerHTML='<div class="section-bar"><div><span class="eyebrow">MATCH CENTRE</span><h2>경기 분석실</h2><div class="muted">최근 6경기를 저장해 선수별 움직임·히트맵·패스맵을 다시 볼 수 있어요.</div></div></div>'+(cards?'<div class="replay-list">'+cards+'</div>':'<section class="panel empty-analysis"><h3>아직 분석할 경기가 없어요.</h3><p class="muted">경기를 한 번 마치면 다시보기와 히트맵이 여기에 저장됩니다.</p></section>');
-  root.querySelectorAll('[data-replay]').forEach(function(b){b.onclick=function(){openReplay(Number(b.dataset.replay));};});
+  root.innerHTML='<div class="section-bar"><div><span class="eyebrow">MATCH CENTRE</span><h2>경기 분석실</h2><div class="muted">최근 6경기의 팀 흐름을 먼저 보고, 원하는 경기의 다시보기·히트맵·패스맵으로 바로 들어갈 수 있어요.</div></div></div>'+overview+leadersHtml+'<div class="replay-list">'+cards+'</div>';
+  root.querySelectorAll('[data-replay-mode]').forEach(function(b){b.onclick=function(){openReplay(Number(b.dataset.replayIndex),b.dataset.replayMode);};});
 }
 function replayPlayerMeta(id){return replayCurrent&&replayCurrent.players.find(function(p){return p.id===id;});}
-function openReplay(index){
+function openReplay(index,mode,focus){
   replayReturnView=currentView||'analysis';
   replayCurrent=(state.replays||[])[index];if(!replayCurrent)return;
   $('replayClose').textContent=replayReturnView==='analysis'?'← 분석실로':'← 홈으로';
-  replayFrame=0;replayCursor=0;replayPlaying=false;replayMode='replay';replayFocus='all';
+  replayFrame=0;replayCursor=0;replayPlaying=false;replayMode=mode||'replay';replayFocus=focus||'all';
   var h=clubById(replayCurrent.homeClubId),a=clubById(replayCurrent.awayClubId);
   $('replayTitle').textContent='시즌 '+replayCurrent.season+' '+replayCurrent.round+'R · '+h.name+' '+replayCurrent.score[0]+' : '+replayCurrent.score[1]+' '+a.name;
   var select=$('replayPlayer');select.innerHTML='<option value="all">전체 선수 보기</option>'+replayCurrent.players.slice().sort(function(x,y){return x.side-y.side;}).map(function(p){return '<option value="'+esc(p.id)+'">'+(p.side===replayCurrent.userSide?'★ ':'')+esc(p.name)+' · '+esc(p.pos)+'</option>';}).join('');
+  if(replayMode==='heat'&&replayFocus==='all'){var first=replayCurrent.players.find(function(p){return p.side===replayCurrent.userSide;});if(first)replayFocus=first.id;}
+  select.value=replayFocus;
   $('replayRange').min=0;$('replayRange').max=Math.max(0,replayCurrent.frames.length-1);$('replayRange').value=0;
   renderReplayEvents();updateReplayButtons();updateReplayStats();drawReplayFrame();
   $('replayLayer').classList.remove('hidden');cancelAnimationFrame(replayRaf);
@@ -597,11 +625,72 @@ function finishRound(f,hg,ag,replayData){
   settlePlayerCondition(myGoals,oppGoals,replayData);state.round++;state.trainingAvailable=true;state.roster.forEach(function(p){if(state.lineup.indexOf(p.id)<0)p.fitness=clamp((p.fitness||100)+5,0,100);});state.budget+=80;save();updateTop();sdkScore((state.table[state.clubId]?state.table[state.clubId].pts:0)*100+state.season*1000);
 }
 function opponentSetup(o){return clubMatchSetup(o,fixtureSeed(state.clubId,o.id)+'|opponent');}
+
+var MATCH_TUTORIAL_STEPS=[
+  {key:'watch',title:'1. 먼저 지켜봐도 괜찮아요',text:'경기는 기본적으로 관전 모드로 시작해요. 선수들이 스스로 움직이므로 조작이 어렵다면 끝까지 지켜보기만 해도 됩니다.',goal:'지금은 관전 모드예요. 준비되면 “직접 해보기”를 눌러요.',manual:true,next:'직접 해보기'},
+  {key:'direct_on',title:'2. 직접 조종을 켜 봐요',text:'위쪽의 🎮 직접 조종 켜기를 누르면 우리 팀 선수 한 명을 직접 움직일 수 있어요. 직접 조종 중에는 1× 속도로 고정됩니다.',goal:'🎮 직접 조종 켜기 버튼을 눌러 보세요.',target:'#directControlBtn'},
+  {key:'move',title:'3. 선수를 움직여 봐요',text:'키보드는 방향키, 태블릿은 왼쪽 방향 버튼을 사용해요. 질주는 꼭 필요할 때만 쓰면 됩니다.',goal:'방향키 또는 이동 버튼을 한 번 사용해 보세요.',target:'.futsal-move-pad'},
+  {key:'pass',title:'4. 가장 먼저 패스를 배워요',text:'우리 선수가 공을 잡았을 때 S를 누르면 빈 동료를 자동으로 찾아 패스해요. 태블릿에서는 초록색 패스 버튼을 누르면 됩니다.',goal:'우리 팀이 공을 잡으면 S 또는 패스 버튼을 눌러 보세요.',target:'[data-fh-action="pass"]'},
+  {key:'switch',title:'5. 조작 선수를 바꿀 수 있어요',text:'수비할 때 원하는 선수를 잡고 싶다면 Q를 누르세요. 태블릿에서는 “전환” 버튼입니다.',goal:'Q 또는 전환 버튼으로 선수를 한 번 바꿔 보세요.',target:'[data-fh-action="switch"]'},
+  {key:'tackle',title:'6. 태클은 초록색일 때!',text:'상대 공 보유자에게 가까이 가면 노란 표시가 뜨고, 더 가까워지면 초록색으로 바뀝니다. 초록색에서 D를 누르는 것이 핵심이에요.',goal:'초록색 “지금! D 태클” 표시에서 태클을 시도해 보세요.',target:'#shootTackleBtn'},
+  {key:'shoot',title:'7. 공격에서는 D가 슛이에요',text:'내가 조종하는 선수가 공을 가지고 있을 때 D는 태클이 아니라 슛이 됩니다. 버튼 글자도 “슛!”으로 바뀌어요.',goal:'공을 잡으면 D 또는 슛 버튼으로 한 번 슛해 보세요.',target:'#shootTackleBtn'},
+  {key:'tactic',title:'8. 감독처럼 전술도 바꿔 봐요',text:'오른쪽 감독 지시에서 공격 방식·압박·라인·템포 등을 경기 도중 바로 바꿀 수 있어요.',goal:'감독 지시에서 아무 전술 버튼이나 하나 눌러 보세요.',target:'#liveTacticText'},
+  {key:'direct_off',title:'9. 힘들면 언제든 다시 관전',text:'직접 조종이 버거우면 👀 관전으로 전환을 누르면 됩니다. 선수들이 다시 알아서 경기하고 감독 역할만 해도 돼요.',goal:'👀 관전으로 전환을 눌러 튜토리얼을 마쳐 보세요.',target:'#directControlBtn'}
+];
+function clearTutorialTarget(){
+  document.querySelectorAll('.tutorial-target').forEach(function(el){el.classList.remove('tutorial-target');});
+}
+function tutorialStep(){
+  return matchTutorial&&MATCH_TUTORIAL_STEPS[matchTutorial.index]||null;
+}
+function renderMatchTutorial(){
+  var box=$('matchTutorial');if(!box)return;
+  clearTutorialTarget();
+  if(!matchTutorial||!matchTutorial.active){box.classList.add('hidden');return;}
+  var step=tutorialStep();if(!step){finishFirstMatchTutorial(false);return;}
+  box.classList.remove('hidden','intro','waiting','complete');box.classList.add(step.manual?'intro':'waiting');
+  $('matchTutorialStep').textContent='첫 경기 튜토리얼 · '+(matchTutorial.index+1)+' / '+MATCH_TUTORIAL_STEPS.length;
+  $('matchTutorialTitle').textContent=step.title;$('matchTutorialText').textContent=step.text;$('matchTutorialGoal').textContent='목표 · '+step.goal;$('matchTutorialGoal').classList.remove('done');
+  $('matchTutorialNext').textContent=step.next||'다음';
+  if(step.target){var target=document.querySelector(step.target);if(target)target.classList.add('tutorial-target');}
+}
+function beginFirstMatchTutorial(){
+  matchTutorial={active:true,index:0,seen:{},paused:true};renderMatchTutorial();
+}
+function advanceMatchTutorial(){
+  if(!matchTutorial||!matchTutorial.active)return;
+  matchTutorial.paused=false;matchTutorial.index++;
+  if(matchTutorial.index>=MATCH_TUTORIAL_STEPS.length){finishFirstMatchTutorial(false);return;}
+  var step=tutorialStep();
+  if(matchTutorial.seen[step.key]){advanceMatchTutorial();return;}
+  renderMatchTutorial();
+}
+function matchTutorialAction(kind,extra){
+  if(!matchTutorial||!matchTutorial.active)return;
+  matchTutorial.seen[kind]=true;
+  var step=tutorialStep();if(!step||step.key!==kind)return;
+  var goal=$('matchTutorialGoal');if(goal){goal.textContent='✓ 성공! '+(kind==='tackle'&&extra&&extra.success?'공을 정확히 빼앗았어요.':'잘했어요.');goal.classList.add('done');}
+  setTimeout(function(){advanceMatchTutorial();},420);
+}
+function finishFirstMatchTutorial(fromMatchEnd){
+  if(!matchTutorial||!matchTutorial.active){
+    if(state&&!state.matchTutorialDone){state.matchTutorialDone=true;save();}
+    return;
+  }
+  matchTutorial.active=false;matchTutorial.paused=false;clearTutorialTarget();$('matchTutorial').classList.add('hidden');
+  state.matchTutorialDone=true;save();
+  if(!fromMatchEnd)toast('첫 경기 튜토리얼 완료! 이제 원하는 방식으로 경기하면 돼요.');
+}
+function skipFirstMatchTutorial(){
+  if(!matchTutorial||!matchTutorial.active)return;
+  state.matchTutorialDone=true;matchTutorial.active=false;matchTutorial.paused=false;clearTutorialTarget();$('matchTutorial').classList.add('hidden');save();toast('튜토리얼을 건너뛰었습니다.');
+}
 function startMatch(){
   var f=myFixture();if(!f)return;if(state.lineup.length!==5){state.lineup=autoLineup(state.roster,state.formation);save();}var unavailable=state.lineup.map(playerById).filter(function(p){return p&&p.injury&&p.injury.games>0;});if(unavailable.length){state.lineup=autoLineup(state.roster,state.formation);save();toast('부상 선수를 제외하고 선발을 다시 구성했습니다.');}
   var own=clubById(state.clubId),o=opponent(f),opp=opponentSetup(o),isHome=f.home===state.clubId,seed=fixtureSeed(f.home,f.away),homeClub=isHome?own:o,awayClub=isHome?o:own;
   var opts=isHome?{homeClub:own,homeRoster:state.roster,homeLineup:state.lineup,homeFormation:state.formation,homeTactics:clone(state.tactics),homeCoach:clone(own.coachProfile||{}),awayClub:o,awayRoster:opp.roster,awayLineup:opp.lineup,awayFormation:opp.formation,awayTactics:opp.tactics,awayCoach:opp.coach}:{homeClub:o,homeRoster:opp.roster,homeLineup:opp.lineup,homeFormation:opp.formation,homeTactics:opp.tactics,homeCoach:opp.coach,awayClub:own,awayRoster:state.roster,awayLineup:state.lineup,awayFormation:state.formation,awayTactics:clone(state.tactics),awayCoach:clone(own.coachProfile||{})};
-  opts.formations=D.formations;opts.seed=seed;opts.userSide=isHome?0:1;opts.onEvent=matchEvent;opts.onFinish=function(m){setTimeout(function(){showMatchResult(m,f,isHome);},400);};match=(H&&H.create)?H.create(opts):S.create(opts);match.userSide=isHome?0:1;match.fixture=f;if(!match.isPhysicalFutsal&&broadcastRenderer)broadcastRenderer.reset(match);matchSpeed=1;resultShown=false;$('homeName').textContent=homeClub.name;$('awayName').textContent=awayClub.name;$('matchScore').textContent='0 : 0';$('matchClock').textContent="0'";$('eventLog').innerHTML='';$('matchLayer').classList.remove('hidden');if(match.setDirectControl)match.setDirectControl(false);setSpeed(1);updateDirectControlUI();updateLiveTactic();startStadiumAmbience();whistleSfx(false);cancelAnimationFrame(raf);lastFrame=performance.now();raf=requestAnimationFrame(matchLoop);sound('start');
+  var firstMatchTutorial=!state.matchTutorialDone&&state.matchHistory.length===0;
+  opts.formations=D.formations;opts.seed=seed;opts.userSide=isHome?0:1;opts.onEvent=matchEvent;opts.onUserAction=matchTutorialAction;opts.onFinish=function(m){setTimeout(function(){showMatchResult(m,f,isHome);},400);};match=(H&&H.create)?H.create(opts):S.create(opts);match.userSide=isHome?0:1;match.fixture=f;if(!match.isPhysicalFutsal&&broadcastRenderer)broadcastRenderer.reset(match);matchSpeed=1;resultShown=false;$('homeName').textContent=homeClub.name;$('awayName').textContent=awayClub.name;$('matchScore').textContent='0 : 0';$('matchClock').textContent="0'";$('eventLog').innerHTML='';$('matchLayer').classList.remove('hidden');if(match.setDirectControl)match.setDirectControl(false);setSpeed(1);updateDirectControlUI();updateLiveTactic();if(firstMatchTutorial)beginFirstMatchTutorial();else{$('matchTutorial').classList.add('hidden');matchTutorial=null;}startStadiumAmbience();whistleSfx(false);cancelAnimationFrame(raf);lastFrame=performance.now();raf=requestAnimationFrame(matchLoop);sound('start');
 }
 function matchEvent(e){
   var quiet=e.type==='call'||e.type==='tackle_hint'||e.type==='tackle_miss'||e.type==='control';
@@ -668,7 +757,7 @@ function updateControlCoach(){
 function updateLiveTactic(){
   var t=state.tactics;function group(name,key,items){return '<div class="live-group"><small>'+name+'</small><div>'+items.map(function(x){return '<button type="button" class="'+(t[key]===x[0]?'active':'')+'" data-live="'+key+':'+x[0]+'">'+x[1]+'</button>';}).join('')+'</div></div>';}
   $('liveTacticText').innerHTML=group('공격','attack',[['short','연결'],['direct','직선'],['wide','측면']])+group('폭','width',[['narrow','좁게'],['normal','보통'],['wide','넓게']])+group('압박','press',[['press','강하게'],['shape','자리']])+group('라인','line',[['high','높게'],['standard','보통'],['low','낮게']])+group('템포','tempo',[['fast','빠름'],['normal','보통'],['slow','천천히']])+group('태도','mindset',[['attack','공격'],['balanced','균형'],['defend','수비']]);
-  $('liveTacticText').querySelectorAll('[data-live]').forEach(function(b){b.onclick=function(){if(!match||match.finished)return;var a=b.dataset.live.split(':');state.tactics[a[0]]=a[1];match.setTactics(match.userSide,clone(state.tactics),'user');save();updateLiveTactic();toast('작전을 바로 바꿨습니다.');};});
+  $('liveTacticText').querySelectorAll('[data-live]').forEach(function(b){b.onclick=function(){if(!match||match.finished)return;var a=b.dataset.live.split(':');state.tactics[a[0]]=a[1];match.setTactics(match.userSide,clone(state.tactics),'user');save();matchTutorialAction('tactic',{key:a[0],value:a[1]});updateLiveTactic();toast('작전을 바로 바꿨습니다.');};});
 }
 function drawTacticalMatch(){
   if(!match)return;
@@ -779,7 +868,7 @@ function drawTacticalMatch(){
 function drawMatch(){if(!match)return;if(typeof match.render==='function'){match.render($('pitch'));return;}if(broadcastRenderer&&window.SeedFCBroadcast){broadcastRenderer.render($('pitch'),match);return;}drawTacticalMatch();}
 function matchLoop(ts){
   if(!match||$('matchLayer').classList.contains('hidden'))return;
-  var dt=Math.min(.05,(ts-lastFrame)/1000||0);lastFrame=ts;match.update(dt,matchSpeed);drawMatch();updateControlCoach();
+  var dt=Math.min(.05,(ts-lastFrame)/1000||0);lastFrame=ts;if(!(matchTutorial&&matchTutorial.active&&matchTutorial.paused))match.update(dt,matchSpeed);drawMatch();updateControlCoach();
   $('matchScore').textContent=match.score[0]+' : '+match.score[1];$('matchClock').textContent=Math.floor(match.minute)+"'";
   if(!match.finished)raf=requestAnimationFrame(matchLoop);
 }
@@ -816,7 +905,7 @@ function instructionModal(){
   };});
 }
 function showMatchResult(m,f,isHome){
-  if(resultShown)return;resultShown=true;stopStadiumAmbience();try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}var hg=m.score[0],ag=m.score[1],mine=isHome?hg:ag,theirs=isHome?ag:hg,o=opponent(f),replayData=m.exportReplay?m.exportReplay():null;finishRound(f,hg,ag,replayData);
+  if(resultShown)return;resultShown=true;if(matchTutorial&&matchTutorial.active)finishFirstMatchTutorial(true);stopStadiumAmbience();try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}var hg=m.score[0],ag=m.score[1],mine=isHome?hg:ag,theirs=isHome?ag:hg,o=opponent(f),replayData=m.exportReplay?m.exportReplay():null;finishRound(f,hg,ag,replayData);
   var verdict=mine>theirs?'승리!':mine<theirs?'아쉬운 패배':'무승부',why=state.tactics.tempo==='fast'?'빠른 템포로 기회를 늘렸지만 체력도 더 썼습니다.':state.tactics.line==='high'?'라인을 높여 상대 진영에서 오래 싸웠습니다.':state.tactics.line==='low'?'라인을 낮춰 뒷공간을 먼저 지켰습니다.':state.tactics.attack==='wide'?'측면을 넓게 쓰며 공격 길을 만들었습니다.':state.tactics.attack==='direct'?'패스 수를 줄이고 빠르게 전진했습니다.':'짧게 연결하며 빈 공간을 찾았습니다.';
   var star=null,starStats=null,best=-1;if(replayData){replayData.players.forEach(function(p){var st=replayData.stats[p.id]||{},score=Number(st.goals||0)*8+Number(st.assists||0)*5+Number(st.keyPasses||0)*1.5+Number(st.progressivePasses||0)*.35+Number(st.saves||0)*2+Number(st.touches||0)*.03;if(score>best){best=score;star=p;starStats=st;}});}
   var historyMoment='',original=null;if(star){original=sourcePlayerById(star.id);discoverHistoryPlayer(star.id);var action=Number(starStats.goals||0)?starStats.goals+'골':Number(starStats.assists||0)?starStats.assists+'도움':Number(starStats.keyPasses||0)?starStats.keyPasses+'번의 키패스':Number(starStats.progressivePasses||0)?starStats.progressivePasses+'번의 전진 패스':Number(starStats.saves||0)?starStats.saves+'번의 선방':Number(starStats.touches||0)+'번의 주요 관여';historyMoment='<div class="history-moment"><b>오늘의 역사 카드 · '+esc(star.name)+'</b><span>'+esc((original&&original.footballStyle)||star.footballStyle||'균형형')+'으로 '+esc(action)+'을 기록했습니다.</span><small>'+esc((original&&original.memory)||star.memory||'')+'</small></div>';}
@@ -845,6 +934,9 @@ modal.addEventListener('pointerdown',function(e){if(e.target===modal)closeModalS
 document.querySelectorAll('.speed[data-speed]').forEach(function(b){b.onclick=function(){setSpeed(Number(b.dataset.speed));};});
 $('directControlBtn').onclick=toggleDirectControl;
 $('controlTutorialBtn').onclick=showControlTutorial;
+$('matchTutorialNext').onclick=function(){var step=tutorialStep();if(step&&step.manual)advanceMatchTutorial();};
+$('matchTutorialSkipStep').onclick=function(){advanceMatchTutorial();};
+$('matchTutorialSkipAll').onclick=skipFirstMatchTutorial;
 $('quickSubBtn').onclick=substitutionModal;
 $('playerInstructionBtn').onclick=instructionModal;
 $('replayClose').onclick=closeReplay;
