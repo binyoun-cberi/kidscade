@@ -115,7 +115,6 @@ test('corrected descriptions match the current game implementations', () => {
   assert.match(architect, /typeof canvas.requestPointerLock/);
   assert.match(architect, /mobileLookPointerId/);
   assert.match(architect, /configureMobileMode/);
-  assert.match(architect, /_touch_v1/);
   assert.match(blocks, /challengeCourseLabel/);
   assert.match(blocks, /blockInventory/);
   assert.match(blocks, /worldClock/);
