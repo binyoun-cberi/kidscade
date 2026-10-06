@@ -194,7 +194,11 @@ function saveState(patch){
 }
 function hydrateMission(raw){
   if(!raw)return null;
-  const cards=(raw.cards||[]).map(c=>CARD_POOL.find(x=>x.id===c.id)).filter(Boolean);
+  const allCards=[...CARD_POOL,...EVENT_POOL];
+  const cards=(raw.cards||[]).map(c=>{
+    const base=allCards.find(x=>x.id===c.id);
+    return base?{...base,role:c.role||base.role||'bonus'}:null;
+  }).filter(Boolean);
   const challenges=(raw.challenges||[]).map(c=>CHALLENGES.find(x=>x.id===c.id)).filter(Boolean);
   if(!cards.length)return null;
   return {...raw,cards,challenges};
@@ -473,7 +477,7 @@ function finishStory(){
   const text=$('reviewInput').value.trim();if(!text){toast('이야기가 비어 있어요.');return}
   const final=renderIssues();
   const title=$('titleInput').value.trim()||makeTitle();
-  const record={id:Date.now(),title,text,cards:mission.cards.map(c=>c.id),level:mission.level,accuracy:final.accuracy,checkTotal:final.checkTotal,createdAt:new Date().toISOString()};
+  const record={id:Date.now(),title,text,cards:mission.cards.map(c=>c.id),roles:mission.cards.map(c=>c.role),challenges:mission.challenges.map(c=>c.id),level:mission.level,accuracy:final.accuracy,checkTotal:final.checkTotal,createdAt:new Date().toISOString()};
   const list=[record,...books()].slice(0,20);saveState({books:list,draft:null});
   $('resultTitle').textContent=title;$('resultStory').textContent=text;
   $('bookVisuals').innerHTML=mission.cards.map(c=>`<div class="book-visual">${c.image?`<img src="${c.image}" alt="${c.label}">`:c.emoji}</div>`).join('');
@@ -484,25 +488,33 @@ function finishStory(){
     ? `초고 ${initialAccuracy}점 → 지금 ${final.accuracy}점 · 직접 고치며 더 정확해졌어요.`
     : final.accuracy===100?'등록된 검사 규칙에서는 오류가 더 발견되지 않았어요. 직접 한 번 더 읽어 보세요.':'고치지 않은 곳이 있어도 이야기는 완성할 수 있어요.';
   updateBookCount();showScreen('resultScreen');
+  try{
+    window.KidscadeGame?.result?.({
+      scope:'creation',status:'completed',outcome:'clear',completed:true,creationSaved:true,
+      score:final.accuracy,scoreOptions:{unit:'점',higherIsBetter:true},
+      level:mission.level,cardsUsed:mission.cards.length,challengesCompleted:mission.challenges.length,
+      sentences:sentenceCount(text),characters:text.replace(/\s/g,'').length,accuracy:final.accuracy
+    });
+  }catch(_){}
 }
 function makeTitle(){
   if(!mission?.cards?.length)return '나의 이야기';
   return mission.cards.slice(0,2).map(x=>x.label).join('와 ')+' 이야기';
 }
 function shuffleMission(){
-  if($('storyInput').value.trim()&&!confirm('지금 쓴 글을 지우고 새 카드를 뽑을까요?'))return;
+  if(composeStory().trim()&&!confirm('지금 쓴 글을 지우고 새 재료를 뽑을까요?'))return;
   startMission();
 }
 function openModal(html){$('modalContent').innerHTML=html;$('modal').classList.remove('hidden')}
 function closeModal(){$('modal').classList.add('hidden')}
 function showHelp(){
-  openModal(`<h2>🧩 이야기 조립소는 이렇게 해요</h2>
-  <div class="help-steps">
-    <div class="help-step"><span>1</span><div><b>그림 카드를 확인해요.</b><br><small>카드의 낱말이 모두 나오도록 이야기를 생각해요.</small></div></div>
-    <div class="help-step"><span>2</span><div><b>일단 자유롭게 써요.</b><br><small>쓰는 동안에는 맞춤법 점수를 보여 주지 않아요.</small></div></div>
-    <div class="help-step"><span>3</span><div><b>마지막에 맞춤법을 다듬어요.</b><br><small>검사기가 고쳐 주는 대신 힌트를 보고 직접 수정해요.</small></div></div>
-    <div class="help-step"><span>4</span><div><b>완성하면 한 페이지의 책이 돼요.</b><br><small>완성한 글은 이 기기의 내 이야기책에만 저장돼요.</small></div></div>
-  </div>`);
+  openModal('<h2>🧩 이야기 조립소는 이렇게 해요</h2>'
+    +'<div class="help-steps">'
+    +'<div class="help-step"><span>1</span><div><b>역할이 다른 이야기 재료를 확인해요.</b><br><small>주인공·장소·사건과 중요한 물건이 이야기의 뼈대가 돼요.</small></div></div>'
+    +'<div class="help-step"><span>2</span><div><b>처음·가운데·끝을 차례로 써요.</b><br><small>각 칸의 질문을 따라가면 자연스럽게 한 편의 이야기가 돼요.</small></div></div>'
+    +'<div class="help-step"><span>3</span><div><b>작가 미션으로 장면을 풍부하게 만들어요.</b><br><small>대화·감정·소리·반전 같은 표현에 도전할 수 있어요.</small></div></div>'
+    +'<div class="help-step"><span>4</span><div><b>마지막에 맞춤법을 다듬고 책으로 완성해요.</b><br><small>검사기가 자동으로 고치지 않고, 힌트를 보고 직접 수정해요.</small></div></div>'
+    +'</div>');
 }
 function showBooks(){
   const list=books();
@@ -520,7 +532,7 @@ document.querySelectorAll('.difficulty').forEach(btn=>btn.onclick=()=>{
 });
 $('startBtn').onclick=startMission;
 $('shuffleBtn').onclick=shuffleMission;
-$('storyInput').addEventListener('input',updateWriteStatus);
+['storyStart','storyMiddle','storyEnd'].forEach(id=>$(id).addEventListener('input',updateWriteStatus));
 $('titleInput').addEventListener('input',updateWriteStatus);
 $('inspectBtn').onclick=enterReview;
 $('recheckBtn').onclick=()=>{renderIssues();toast('다시 살펴봤어요.')};
@@ -535,7 +547,12 @@ const saved=loadState().draft;
 if(saved?.mission&&saved?.text){
   mission=hydrateMission(saved.mission);level=mission?.level||'easy';
   document.querySelectorAll('.difficulty').forEach(x=>x.classList.toggle('selected',x.dataset.level===level));
-  $('titleInput').value=saved.title||'';$('storyInput').value=saved.text||'';
+  $('titleInput').value=saved.title||'';
+  if(saved.parts)setStoryParts(saved.parts);
+  else if(saved.text){
+    const legacy=String(saved.text).split(/\n\s*\n/);
+    setStoryParts({start:legacy[0]||'',middle:legacy[1]||'',end:legacy.slice(2).join('\n\n')});
+  }
   if(mission){renderMission();updateWriteStatus();showScreen('writeScreen');toast('쓰던 이야기를 다시 펼쳤어요.')}
 }
 })();
