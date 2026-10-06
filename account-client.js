@@ -19,6 +19,9 @@
   let economySummary = null;
   let economySummaryLoaded = false;
   let economySummaryLoading = false;
+  let qrStream = null;
+  let qrScanTimer = 0;
+  let qrDetecting = false;
 
   function store() { return window.KidscadeStorage || null; }
   function profileApi() { return window.KidscadeProfileHistory || null; }
@@ -165,6 +168,7 @@
   function errorText(code, body = {}) {
     if (code === 'invalid_credentials') return '학생 ID 또는 PIN을 확인해 주세요.';
     if (code === 'invalid_teacher_credentials') return '교사 ID 또는 비밀번호를 확인해 주세요.';
+    if (code === 'invalid_qr') return 'QR 카드가 만료되었거나 올바르지 않아요. 선생님께 새 QR 카드를 받아 주세요.';
     if (code === 'temporarily_locked') return 'PIN을 여러 번 잘못 입력해 잠시 잠겼어요. 잠시 후 다시 시도해 주세요.';
     if (code === 'teacher_temporarily_locked') return '비밀번호를 여러 번 잘못 입력해 교사 계정이 잠시 잠겼어요.';
     if (code === 'not_authenticated' || code === 'session_expired' || code === 'unauthorized' || code === 'teacher_session_expired') return '로그인이 만료됐어요. 다시 로그인해 주세요.';
@@ -237,6 +241,14 @@
       #${MODAL_ID} .kca-actions{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}
       #${MODAL_ID} button{min-height:44px;border:0;border-radius:13px;padding:0 14px;font-weight:1000;cursor:pointer}
       #${MODAL_ID} .kca-login{background:linear-gradient(135deg,#7c5cff,#ec4899);color:#fff}
+      #${MODAL_ID} .kca-qr-start{width:100%;margin-top:10px;background:linear-gradient(135deg,#0f766e,#14b8a6);color:#fff}
+      #${MODAL_ID} .kca-qr-divider{display:flex;align-items:center;gap:8px;margin:13px 0 2px;color:#94a3b8;font-size:.62rem;font-weight:900}
+      #${MODAL_ID} .kca-qr-divider::before,#${MODAL_ID} .kca-qr-divider::after{content:"";height:1px;flex:1;background:#e2e8f0}
+      #${MODAL_ID} .kca-qr-scanner{margin-top:10px;padding:10px;border-radius:15px;background:#0f172a;color:#fff}
+      #${MODAL_ID} .kca-qr-scanner.hidden{display:none!important}
+      #${MODAL_ID} .kca-qr-scanner video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:11px;background:#020617}
+      #${MODAL_ID} .kca-qr-scanner small{display:block;margin-top:7px;text-align:center;color:#cbd5e1;font-size:.64rem;font-weight:850;line-height:1.4}
+      #${MODAL_ID} .kca-qr-stop{width:100%;margin-top:8px;background:#334155;color:#fff}
       #${MODAL_ID} .kca-cancel{background:#eef2f7;color:#64748b}
       body.dark-mode #${MODAL_ID} .kca-cancel{background:#334155;color:#e2e8f0}
       #${MODAL_ID} .kca-help{margin-top:13px;padding-top:12px;border-top:1px solid #eef2f7;font-size:.65rem;color:#94a3b8;line-height:1.45}
@@ -254,7 +266,14 @@
     modal.innerHTML = `
       <form class="kca-modal-card" id="kca-login-form">
         <h2>☁️ Kidscade 로그인</h2>
-        <p>학생은 KC 아이디와 6자리 PIN, 교사는 KT 아이디와 교사 비밀번호로 로그인할 수 있어요.</p>
+        <p>QR 카드가 있으면 카메라로 바로 들어갈 수 있어요. ID와 PIN 로그인도 그대로 사용할 수 있습니다.</p>
+        <button class="kca-qr-start" type="button">📷 QR 카드로 빠른 로그인</button>
+        <div class="kca-qr-scanner hidden" id="kca-qr-scanner">
+          <video id="kca-qr-video" playsinline muted></video>
+          <small>카드의 QR이 네모 안에 크게 보이게 비춰 주세요.</small>
+          <button class="kca-qr-stop" type="button">카메라 닫기</button>
+        </div>
+        <div class="kca-qr-divider"><span>ID · PIN으로 로그인</span></div>
         <label>Kidscade ID<input id="kca-login-id" autocomplete="username" placeholder="KC-ABCDE-01 또는 KT-ABCDE" maxlength="32"></label>
         <label>PIN / 비밀번호<input class="kca-pin" id="kca-login-pin" type="password" autocomplete="current-password" placeholder="PIN 또는 비밀번호" maxlength="64"></label>
         <div class="kca-error" id="kca-login-error" aria-live="polite"></div>
@@ -264,6 +283,8 @@
     `;
     document.body.appendChild(modal);
     modal.querySelector('.kca-cancel')?.addEventListener('click', closeLogin);
+    modal.querySelector('.kca-qr-start')?.addEventListener('click', startQrScanner);
+    modal.querySelector('.kca-qr-stop')?.addEventListener('click', stopQrScanner);
     modal.addEventListener('click', event => { if (event.target === modal) closeLogin(); });
     modal.querySelector('#kca-login-form')?.addEventListener('submit', submitLogin);
     return modal;
@@ -277,8 +298,140 @@
   }
 
   function closeLogin() {
+    stopQrScanner();
     document.getElementById(MODAL_ID)?.classList.add('hidden');
     document.body.style.overflow = '';
+  }
+
+  function qrTokenFromRaw(value) {
+    const raw = String(value || '').trim();
+    if (/^[0-9a-f]{64}$/i.test(raw)) return raw.toLowerCase();
+    try {
+      const url = new URL(raw, location.href);
+      const hash = String(url.hash || '');
+      const match = hash.match(/^#kcqr=([0-9a-f]{64})$/i);
+      return match ? match[1].toLowerCase() : '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function takeQrTokenFromLocation() {
+    const token = qrTokenFromRaw(location.href);
+    if (!token) return '';
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {}
+    return token;
+  }
+
+  function stopQrScanner() {
+    clearTimeout(qrScanTimer);
+    qrScanTimer = 0;
+    qrDetecting = false;
+    if (qrStream) {
+      for (const track of qrStream.getTracks?.() || []) {
+        try { track.stop(); } catch (_) {}
+      }
+    }
+    qrStream = null;
+    const scanner = document.getElementById('kca-qr-scanner');
+    const video = document.getElementById('kca-qr-video');
+    if (video) video.srcObject = null;
+    scanner?.classList.add('hidden');
+  }
+
+  async function startQrScanner() {
+    const error = document.getElementById('kca-login-error');
+    if (error) error.textContent = '';
+    if (!navigator.mediaDevices?.getUserMedia || typeof window.BarcodeDetector !== 'function') {
+      if (error) error.textContent = '이 기기에서는 기본 카메라 앱으로 QR 카드를 찍어 주세요. QR을 누르면 Kidscade가 바로 열립니다.';
+      return;
+    }
+    try {
+      const supported = await window.BarcodeDetector.getSupportedFormats?.();
+      if (Array.isArray(supported) && !supported.includes('qr_code')) throw new Error('qr-not-supported');
+      stopQrScanner();
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video:{ facingMode:{ ideal:'environment' }, width:{ ideal:960 }, height:{ ideal:720 } },
+        audio:false
+      });
+      qrStream = stream;
+      const scanner = document.getElementById('kca-qr-scanner');
+      const video = document.getElementById('kca-qr-video');
+      if (!video) throw new Error('video-missing');
+      scanner?.classList.remove('hidden');
+      video.srcObject = stream;
+      await video.play();
+      const detector = new window.BarcodeDetector({ formats:['qr_code'] });
+      const scan = async () => {
+        if (!qrStream || qrDetecting) return;
+        qrDetecting = true;
+        try {
+          const codes = await detector.detect(video);
+          for (const code of codes || []) {
+            const token = qrTokenFromRaw(code.rawValue);
+            if (!token) continue;
+            stopQrScanner();
+            await loginWithQrToken(token);
+            return;
+          }
+        } catch (_) {
+        } finally {
+          qrDetecting = false;
+        }
+        if (qrStream) qrScanTimer = setTimeout(scan, 280);
+      };
+      qrScanTimer = setTimeout(scan, 200);
+    } catch (_) {
+      stopQrScanner();
+      if (error) error.textContent = '카메라를 열 수 없어요. 카메라 권한을 허용하거나 기본 카메라 앱으로 QR을 찍어 주세요.';
+    }
+  }
+
+  async function completeLogin(body) {
+    account = body.account;
+    emitAccountChanged();
+    const localState = collectState();
+    if (Number(account.revision || 0) === 0 && hasMeaningfulProgress(localState)) {
+      await syncNow(localState);
+    } else if (Number(account.revision || 0) > 0) {
+      applyCloudState(body.state || {});
+      writeMeta({ loginId: account.loginId, revision: account.revision });
+      closeLogin();
+      location.reload();
+      return;
+    } else {
+      writeMeta({ loginId: account.loginId, revision: 0 });
+    }
+    closeLogin();
+    economySummary = null;
+    economySummaryLoaded = false;
+    renderSlot();
+    if (account.role !== 'teacher') loadEconomySummary();
+  }
+
+  async function loginWithQrToken(token, { automatic = false } = {}) {
+    const modal = ensureModal();
+    const error = document.getElementById('kca-login-error');
+    if (error) error.textContent = automatic ? 'QR 카드를 확인하고 있어요…' : '';
+    if (automatic) {
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+    try {
+      const { response, body } = await api('/api/account/qr-login', {
+        method:'POST',
+        body:JSON.stringify({ token })
+      });
+      if (!response.ok || !body.ok) {
+        if (error) error.textContent = errorText(body.error, body);
+        return false;
+      }
+      await completeLogin(body);
+      return true;
+    } catch (_) {
+      if (error) error.textContent = '네트워크 연결을 확인해 주세요.';
+      return false;
+    }
   }
 
   function economyCardView() {
@@ -416,25 +569,7 @@
         if (error) error.textContent = errorText(body.error, body);
         return;
       }
-      account = body.account;
-      emitAccountChanged();
-      const localState = collectState();
-      if (Number(account.revision || 0) === 0 && hasMeaningfulProgress(localState)) {
-        await syncNow(localState);
-      } else if (Number(account.revision || 0) > 0) {
-        applyCloudState(body.state || {});
-        writeMeta({ loginId: account.loginId, revision: account.revision });
-        closeLogin();
-        location.reload();
-        return;
-      } else {
-        writeMeta({ loginId: account.loginId, revision: 0 });
-      }
-      closeLogin();
-      economySummary = null;
-      economySummaryLoaded = false;
-      renderSlot();
-      if (account.role !== 'teacher') loadEconomySummary();
+      await completeLogin(body);
     } catch (_) {
       if (error) error.textContent = '네트워크 연결을 확인해 주세요.';
     } finally {
@@ -564,7 +699,9 @@
     installStyles();
     ensureModal();
     watchUi();
-    checkSession();
+    const qrToken = takeQrTokenFromLocation();
+    if (qrToken) loginWithQrToken(qrToken, { automatic:true });
+    else checkSession();
     document.addEventListener('kidscade:profile-history-changed', scheduleSync);
     document.addEventListener('kidscade:storage-changed', scheduleSync);
     window.addEventListener('storage', event => {
