@@ -198,7 +198,7 @@ function validateMapLayout(objects){
 
 export async function buildKidscadeCity(ctx){
   const {parent,addModel,box,plane,interact,collider,loadGLTF,prepModel,actions,getGameTime,getPlayerPosition}=ctx;
-  const layout=[],buildingLabels=[],walkSurfaces=[];
+  const layout=[],buildingLabels=[],walkSurfaces=[],deferredDecorJobs=[];
   const track=(id,type,x,z,w,d)=>{layout.push({id,type,x,z,w,d});return {id,type,x,z,w,d}};
   const registerSurface=(id,x,z,w,d,y)=>{walkSurfaces.push({id,x,z,w,d,y});};
   const groundSurfaceYAt=(x,z)=>{
@@ -348,9 +348,10 @@ export async function buildKidscadeCity(ctx){
   // Transit / clinic parcel.
   await Promise.all([
     addModel(parent,CITY_ASSET.busStop,{x:transit.x+4.8,z:transit.z+2.0,w:2.7,h:2.5,d:1.5,rot:-Math.PI/2,name:'seed-bus-stop'}),
-    addModel(parent,CITY_ASSET.busSign,{x:transit.x+3.1,z:transit.z+.2,w:.55,h:2.2,d:.55,rot:0,name:'seed-bus-sign'}),
-    addModel(parent,CITY_ASSET.bicycle,{x:transit.x+6.2,z:transit.z+5.7,w:1.55,h:1.15,d:.55,rot:.25,name:'town-bicycle'})
+    addModel(parent,CITY_ASSET.busSign,{x:transit.x+3.1,z:transit.z+.2,w:.55,h:2.2,d:.55,rot:0,name:'seed-bus-sign'})
   ]);
+  // The bicycle alone is ~2.28 MB and is purely decorative, so it never blocks first play.
+  deferredDecorJobs.push(()=>addModel(parent,CITY_ASSET.bicycle,{x:transit.x+6.2,z:transit.z+5.7,w:1.55,h:1.15,d:.55,rot:.25,name:'town-bicycle'}));
   track('transport-corner','decor',transit.x+4.8,transit.z+2.4,6.4,7.2);
 
   // Residential districts occupy the two previously dead eastern parcels.
@@ -532,9 +533,15 @@ const npcDefs=[
     for(const n of selected)void hydrateNpc(npcCtx,n);
     return selected.map(n=>n.id);
   }
+  let decorWarmPromise=null;
+  function warmDecor(){
+    if(decorWarmPromise)return decorWarmPromise;
+    decorWarmPromise=mapLimit(deferredDecorJobs,1,job=>job()).catch(err=>{console.warn('[World v3] deferred city decor failed',err);return []});
+    return decorWarmPromise;
+  }
 
   return {
-    npcs,bounds:CITY_BOUNDS,residentLife,groundSurfaceYAt,characterGroundYAt,warmNearbyResidents,
+    npcs,bounds:CITY_BOUNDS,residentLife,groundSurfaceYAt,characterGroundYAt,warmNearbyResidents,warmDecor,
     streamingStatus:()=>({loaded:npcs.filter(n=>n.loaded).map(n=>n.id),loading:npcs.filter(n=>n.loading).map(n=>n.id),shells:npcs.filter(n=>!n.loaded).map(n=>n.id)}),
     groundAudit:()=>npcs.map(n=>({id:n.id,x:n.object.position.x,z:n.object.position.z,y:n.object.position.y,expected:characterGroundYAt(n.object.position.x,n.object.position.z),delta:n.object.position.y-characterGroundYAt(n.object.position.x,n.object.position.z)})),
     update(now,dt){
