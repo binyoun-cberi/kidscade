@@ -7,6 +7,7 @@ const ROOT = path.resolve(__dirname, '..');
 const runtimePath = path.join(ROOT, 'rhythm-dash-v11.js');
 const extremePath = path.join(ROOT, 'games', 'high_rhythm_dash', 'rhythm-dash-extreme.js');
 const gamePath = path.join(ROOT, '리듬 대시.html');
+const storagePath = path.join(ROOT, 'kidscade-storage.js');
 const injectorPath = path.join(ROOT, 'scripts', 'inject-game-integrations.cjs');
 
 function read(file) {
@@ -76,4 +77,12 @@ test('Rhythm Dash loads EXTREME as a source-owned runtime after v11', () => {
   assert.match(html, /rhythm-dash-v11\.js\?v=20260916-1/);
   assert.match(html, /rhythm-dash-extreme\.js\?v=20261006-1/);
   assert.ok(html.indexOf('rhythm-dash-v11.js') < html.indexOf('rhythm-dash-extreme.js'));
+});
+
+
+test('Rhythm Dash EXTREME save key is registered in Kidscade storage', () => {
+  const source = read(extremePath);
+  const storage = read(storagePath);
+  assert.match(source, /kidscade_rhythm_dash_extreme_v1/);
+  assert.match(storage, /rhythmDashExtremeSave: 'kidscade_rhythm_dash_extreme_v1'/);
 });
