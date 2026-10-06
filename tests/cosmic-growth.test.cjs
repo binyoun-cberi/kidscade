@@ -55,7 +55,7 @@ test('cosmic growth is registered as an all-grade science simulation',()=>{
   assert.equal(game.age,'low');
   assert.deepEqual(game.ages,['low','high']);
   assert.deepEqual(game.input,['touch','keyboard']);
-  assert.equal(game.href,'games/science_cosmic_growth/index.html?v=1');
+  assert.equal(game.href,'games/science_cosmic_growth/index.html');
 });
 
 test('mobile layout keeps the upgrade strip compact',()=>{
