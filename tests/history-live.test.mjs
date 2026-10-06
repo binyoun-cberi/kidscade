@@ -26,9 +26,28 @@ test('history question bank has at least one thousand playable questions', () =>
   }
 });
 
+test('all-era random play balances broad periods and covers every era when count allows', () => {
+  let seed=0x12345678;
+  const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/0x100000000;};
+  const fifteen=pickHistoryQuestions(15,random,'random','choice',ERA_ORDER);
+  assert.equal(new Set(fifteen.map(q=>q.era)).size,ERA_ORDER.length,'15 questions should cover all 13 eras');
+
+  const ten=pickHistoryQuestions(10,random,'random','choice',ERA_ORDER);
+  const broad=[
+    ['선사','고조선','삼국','남북국'],
+    ['고려'],
+    ['조선 전기','조선 후기'],
+    ['개항기','대한제국','국권 피탈','일제강점기','광복 이후','6·25 전쟁']
+  ];
+  const counts=broad.map(group=>ten.filter(q=>group.includes(q.era)).length);
+  assert.equal(counts.reduce((a,b)=>a+b,0),10);
+  assert.ok(Math.max(...counts)-Math.min(...counts)<=1,'10 questions should be split 2–3 per broad period');
+});
+
 test('worker uses shared bank, supports 40 questions, and has ranking checkpoints', () => {
   const worker = fs.readFileSync(new URL('../worker/history-live.mjs', import.meta.url), 'utf8');
   assert.match(worker, /QUESTION_BANK/);
+  assert.match(worker, /balancedRandomFactIndexes/);
   assert.match(worker, /clampInt\(body\.questionCount,5,40,15\)/);
   assert.match(worker, /normalizeCheckpoints/);
   assert.match(worker, /status='checkpoint'/);
