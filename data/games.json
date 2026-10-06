@@ -5,7 +5,7 @@
       "id": "science_cosmic_growth",
       "addedAt": "2026-10-06T21:46:00+09:00",
       "title": "먼지에서 블랙홀까지",
-      "href": "games/science_cosmic_growth/index.html?v=1",
+      "href": "games/science_cosmic_growth/index.html",
       "category": "trivia",
       "age": "low",
       "ages": [
@@ -59,7 +59,7 @@
       "id": "math_pi_memory",
       "addedAt": "2026-10-06T20:32:00+09:00",
       "title": "원주율 외우기",
-      "href": "games/math_pi_memory/index.html?v=1",
+      "href": "games/math_pi_memory/index.html",
       "category": "math",
       "age": "low",
       "ages": [
