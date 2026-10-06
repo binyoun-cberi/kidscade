@@ -14,7 +14,7 @@ test('cosmic growth game shell is wired to local Three and Kidscade SDK',()=>{
   assert.match(html,/<title>먼지에서 블랙홀까지<\/title>/);
   assert.match(html,/data-game-id="science_cosmic_growth"/);
   assert.match(html,/assets\/vendor\/three-r160\/three\.module\.js/);
-  assert.match(html,/game\.js\?v=1/);
+  assert.match(html,/game\.js\?v=2/);
   assert.match(html,/id="tapLayer"/);
   assert.match(html,/id="codex"/);
 });
@@ -61,4 +61,45 @@ test('cosmic growth is registered as an all-grade science simulation',()=>{
 test('mobile layout keeps the upgrade strip compact',()=>{
   assert.match(css,/@media\(max-width:680px\)/);
   assert.match(css,/\.upgradeList\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+});
+const vm=require('node:vm');
+function progression(){
+ const head=js.slice(js.indexOf('const STAGES='),js.indexOf('const ui='));
+ const rates=js.slice(js.indexOf('function tapPower()'),js.indexOf('function save()'));
+ const box={};vm.createContext(box);vm.runInContext(head+";let state={stage:0,research:0,upgrades:{}};"+rates+";this.api={STAGES,DISCOVERIES,UPGRADES,tapPower,autoRate,setState:s=>state=s};",box);return box.api;
+}
+test('all 24 stages have valid discoveries and growing thresholds',()=>{
+ const {STAGES,DISCOVERIES}=progression();assert.equal(STAGES.length,24);
+ for(const [i,s] of STAGES.entries()){
+  assert.ok(Number.isFinite(s.need)&&s.need>0);assert.ok(s.m0>0&&s.m1>0);
+  for(const id of s.discover)assert.ok(DISCOVERIES.some(d=>d.id===id&&d.min<=i),id);
+  if(i>0&&!s.auto&&!STAGES[i-1].auto)assert.ok(s.need>STAGES[i-1].need);
+ }
+ assert.equal(STAGES.at(-1).id,'cosmic_web');
+});
+test('even maximum research and upgrades cannot skip late structures in seconds',()=>{
+ const api=progression();const upgrades=Object.fromEntries(api.UPGRADES.map(u=>[u.id,true]));
+ for(let stage=12;stage<24;stage++){
+  api.setState({stage,research:10,upgrades:Object.fromEntries(api.UPGRADES.filter(u=>u.min<=stage).map(u=>[u.id,true]))});
+  const seconds=api.STAGES[stage].need/(api.autoRate()+api.tapPower()*3);
+  assert.ok(seconds>30,api.STAGES[stage].id+' '+seconds);
+ }
+});
+test('active progression simulation keeps black hole and cosmic web as long term goals',()=>{
+ const api=progression();let state={stage:0,research:0,upgrades:{}},progress=0,insight=2,taps=0,elapsed=0,blackHole=0;
+ const found=new Set(['cosmic_dust','micro_scale']);
+ while(state.stage<23&&elapsed<30000){
+  for(const u of api.UPGRADES)if(u.min<=state.stage&&!state.upgrades[u.id]&&insight>=u.cost){insight-=u.cost;state.upgrades[u.id]=true}
+  const cost=3+state.research*2;if(state.research<10&&insight>=cost){insight-=cost;state.research++}
+  api.setState(state);elapsed++;taps+=2;if(taps%250===0)insight++;
+  if(elapsed%25===0)insight++; // successful repeat observation
+  progress+=api.tapPower()*2+api.autoRate();
+  const current=api.STAGES[state.stage];
+  if(current.auto||progress>=current.need){progress=current.auto?0:Math.min(progress-current.need,api.STAGES[state.stage+1].need*.1);state.stage++;insight+=2;
+   for(const id of api.STAGES[state.stage].discover)if(!found.has(id)){found.add(id);insight++}
+   if(state.stage===12)blackHole=elapsed;
+  }
+ }
+ console.log('active simulation: black hole',Math.round(blackHole/60),'min; cosmic web',Math.round(elapsed/60),'min');
+ assert.ok(blackHole>600&&blackHole<5400);assert.ok(elapsed>3600&&elapsed<20000);assert.equal(state.stage,23);
 });

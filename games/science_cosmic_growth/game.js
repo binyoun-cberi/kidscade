@@ -9,22 +9,30 @@ const AUDIO_ROOT='../../assets/audio/';
 const EARTH=5.9722e24,JUPITER=1.89813e27,SUN=1.98847e30;
 
 const STAGES=[
- {id:'dust',name:'우주 먼지',need:18,m0:1e-12,m1:1e-6,scale:'먼지 한 알보다 작음',fact:'우주 공간에도 아주 작은 고체 입자와 가스가 떠다닙니다.',discover:['cosmic_dust','micro_scale']},
- {id:'aggregate',name:'먼지 덩어리',need:24,m0:1e-6,m1:.05,scale:'눈에 겨우 보이는 알갱이',fact:'미세 입자들은 충돌하고 달라붙으며 더 큰 덩어리로 자랄 수 있습니다.',discover:['dust_aggregate']},
- {id:'pebble',name:'자갈 천체',need:34,m0:.05,m1:1e4,scale:'돌멩이에서 자동차 크기',fact:'작은 충돌이 계속되면 더 큰 덩어리가 되지만, 충돌이 너무 빠르면 다시 부서지기도 합니다.',discover:['collision_growth']},
- {id:'asteroid',name:'소행성',need:48,m0:1e4,m1:1e15,scale:'건물에서 작은 산 크기',fact:'질량이 커질수록 중력이 주변 물질의 경로를 더 크게 휘게 합니다.',discover:['asteroid','gravity']},
- {id:'planetesimal',name:'미행성',need:65,m0:1e15,m1:1e21,scale:'거대한 산에서 작은 위성 크기',fact:'행성 형성 과정에서는 미행성들이 서로 충돌하고 합쳐져 더 큰 천체가 됩니다.',discover:['planetesimal']},
- {id:'protoplanet',name:'원시행성',need:90,m0:1e21,m1:1e24,scale:'작은 행성 크기',fact:'충돌과 압축으로 내부가 뜨거워지고, 큰 천체는 중력 때문에 점점 둥글어집니다.',discover:['round_world','impact_heat']},
- {id:'rocky_planet',name:'암석행성',need:120,m0:1e24,m1:2e26,scale:'지구와 비슷하거나 더 큰 행성',fact:'암석행성에는 충돌구·대기·위성처럼 서로 다른 흔적과 환경이 생길 수 있습니다.',discover:['rocky_planet','earth_scale']},
- {id:'gas_giant',name:'거대행성',need:160,m0:2e26,m1:2.5e28,scale:'목성급 거대행성',fact:'거대행성은 두꺼운 수소·헬륨 대기를 가지며 강한 중력으로 많은 위성을 거느릴 수 있습니다.',discover:['gas_giant']},
- {id:'brown_dwarf',name:'갈색왜성',need:190,m0:2.5e28,m1:1.6e29,scale:'행성과 별 사이의 질량',fact:'갈색왜성은 행성보다 훨씬 무겁지만 보통 별처럼 안정적인 수소 핵융합을 이어가기에는 부족합니다.',discover:['brown_dwarf']},
- {id:'star',name:'별',need:240,m0:1.6e29,m1:4e31,scale:'태양급에서 거대질량별까지',fact:'중심의 압력과 온도가 충분히 높아지면 수소 핵융합이 시작되고 별이 스스로 빛납니다.',discover:['star_birth','fusion','solar_scale']},
- {id:'supergiant',name:'초거성',need:300,m0:4e31,m1:9e31,scale:'태양보다 훨씬 무거운 별',fact:'매우 무거운 별은 연료를 빠르게 소모하고 마지막에는 핵붕괴를 겪을 수 있습니다.',discover:['supergiant','heavy_elements']},
+ {id:'dust',name:'우주 먼지',need:36,m0:1e-12,m1:1e-6,scale:'먼지 한 알보다 작음',fact:'우주 공간에도 아주 작은 고체 입자와 가스가 떠다닙니다.',discover:['cosmic_dust','micro_scale']},
+ {id:'aggregate',name:'먼지 덩어리',need:100,m0:1e-6,m1:.05,scale:'눈에 겨우 보이는 알갱이',fact:'미세 입자들은 충돌하고 달라붙으며 더 큰 덩어리로 자랄 수 있습니다.',discover:['dust_aggregate']},
+ {id:'pebble',name:'자갈 천체',need:240,m0:.05,m1:1e4,scale:'돌멩이에서 자동차 크기',fact:'작은 충돌이 계속되면 더 큰 덩어리가 되지만, 충돌이 너무 빠르면 다시 부서지기도 합니다.',discover:['collision_growth']},
+ {id:'asteroid',name:'소행성',need:600,m0:1e4,m1:1e15,scale:'건물에서 작은 산 크기',fact:'질량이 커질수록 중력이 주변 물질의 경로를 더 크게 휘게 합니다.',discover:['asteroid','gravity']},
+ {id:'planetesimal',name:'미행성',need:1300,m0:1e15,m1:1e21,scale:'거대한 산에서 작은 위성 크기',fact:'행성 형성 과정에서는 미행성들이 서로 충돌하고 합쳐져 더 큰 천체가 됩니다.',discover:['planetesimal']},
+ {id:'protoplanet',name:'원시행성',need:2800,m0:1e21,m1:1e24,scale:'작은 행성 크기',fact:'충돌과 압축으로 내부가 뜨거워지고, 큰 천체는 중력 때문에 점점 둥글어집니다.',discover:['round_world','impact_heat']},
+ {id:'rocky_planet',name:'암석행성',need:5500,m0:1e24,m1:2e26,scale:'지구와 비슷하거나 더 큰 행성',fact:'암석행성에는 충돌구·대기·위성처럼 서로 다른 흔적과 환경이 생길 수 있습니다.',discover:['rocky_planet','earth_scale']},
+ {id:'gas_giant',name:'거대행성',need:9500,m0:2e26,m1:2.5e28,scale:'목성급 거대행성',fact:'거대행성은 두꺼운 수소·헬륨 대기를 가지며 강한 중력으로 많은 위성을 거느릴 수 있습니다.',discover:['gas_giant']},
+ {id:'brown_dwarf',name:'갈색왜성',need:15000,m0:2.5e28,m1:1.6e29,scale:'행성과 별 사이의 질량',fact:'갈색왜성은 행성보다 훨씬 무겁지만 보통 별처럼 안정적인 수소 핵융합을 이어가기에는 부족합니다.',discover:['brown_dwarf']},
+ {id:'star',name:'별',need:24000,m0:1.6e29,m1:4e31,scale:'태양급에서 거대질량별까지',fact:'중심의 압력과 온도가 충분히 높아지면 수소 핵융합이 시작되고 별이 스스로 빛납니다.',discover:['star_birth','fusion','solar_scale']},
+ {id:'supergiant',name:'초거성',need:38000,m0:4e31,m1:9e31,scale:'태양보다 훨씬 무거운 별',fact:'매우 무거운 별은 연료를 빠르게 소모하고 마지막에는 핵붕괴를 겪을 수 있습니다.',discover:['supergiant','heavy_elements']},
  {id:'supernova',name:'초신성 · 핵붕괴',need:100,m0:9e31,m1:6e31,scale:'별의 바깥층이 우주로 퍼지는 순간',fact:'핵붕괴 초신성에서는 별의 바깥층이 강하게 방출되고 중심에는 매우 조밀한 잔해가 남을 수 있습니다.',discover:['supernova'],auto:true},
- {id:'stellar_black_hole',name:'항성질량 블랙홀',need:360,m0:2e31,m1:2e35,scale:'별 수 개에서 수만 개 질량',fact:'사건의 지평선 안쪽에서는 빛도 바깥으로 탈출할 수 없습니다.',discover:['black_hole','event_horizon']},
- {id:'intermediate_black_hole',name:'중간질량 블랙홀',need:520,m0:2e35,m1:8e36,scale:'수백~수만 태양질량',fact:'중간질량 블랙홀은 항성질량과 초대질량 블랙홀 사이의 연결고리로 활발히 연구되고 있습니다.',discover:['intermediate_bh']},
- {id:'supermassive_black_hole',name:'초대질량 블랙홀',need:720,m0:8e36,m1:1e39,scale:'은하 중심을 차지할 규모',fact:'많은 은하 중심에는 수백만~수십억 태양질량의 초대질량 블랙홀이 있습니다.',discover:['supermassive_bh','galaxy_scale']},
- {id:'quasar',name:'활동은하핵 · 퀘이사',need:1000,m0:1e39,m1:1e41,scale:'은하보다 멀리서도 보이는 밝은 핵',fact:'블랙홀 자체가 빛나는 것이 아니라, 주변 강착원반의 뜨거운 물질이 엄청난 빛을 냅니다.',discover:['quasar']}
+ {id:'stellar_black_hole',name:'항성질량 블랙홀',need:60000,m0:2e31,m1:2e35,scale:'별 수 개에서 수만 개 질량',fact:'사건의 지평선 안쪽에서는 빛도 바깥으로 탈출할 수 없습니다.',discover:['black_hole','event_horizon']},
+ {id:'intermediate_black_hole',name:'중간질량 블랙홀',need:95000,m0:2e35,m1:8e36,scale:'수백~수만 태양질량',fact:'중간질량 블랙홀은 항성질량과 초대질량 블랙홀 사이의 연결고리로 활발히 연구되고 있습니다.',discover:['intermediate_bh']},
+ {id:'supermassive_black_hole',name:'초대질량 블랙홀',need:145000,m0:8e36,m1:1e39,scale:'은하 중심을 차지할 규모',fact:'많은 은하 중심에는 수백만~수십억 태양질량의 초대질량 블랙홀이 있습니다.',discover:['supermassive_bh','galaxy_scale']},
+ {id:'quasar',name:'활동은하핵 · 퀘이사',need:210000,m0:1e39,m1:1e41,scale:'은하보다 멀리서도 보이는 밝은 핵',fact:'블랙홀 자체가 빛나는 것이 아니라, 주변 강착원반의 뜨거운 물질이 엄청난 빛을 냅니다.',discover:['quasar']},
+ {id:'dwarf_galaxy',name:'왜소은하',need:280000,m0:1e41,m1:1e42,scale:'수천~수만 광년 · 별들이 이루는 작은 은하',fact:'여기부터는 블랙홀 한 개가 아니라 주변 별·가스·암흑물질을 포함한 구조 전체를 관측합니다. 블랙홀이 은하로 변하는 것은 아닙니다.',discover:['dwarf_galaxy','dark_matter']},
+ {id:'spiral_galaxy',name:'나선은하',need:400000,m0:1e42,m1:3e42,scale:'약 10만 광년 · 나선팔을 펼친 은하',fact:'나선은하에는 별과 가스로 이루어진 원반과 나선팔이 있습니다. 우리 은하도 막대나선은하입니다.',discover:['spiral_galaxy','spiral_arms']},
+ {id:'galaxy_group',name:'은하군',need:600000,m0:3e42,m1:2e43,scale:'수백만 광년 · 여러 은하의 모임',fact:'은하군은 중력으로 연결된 은하들의 모임입니다. 우리 은하와 안드로메다은하는 국부은하군에 속합니다.',discover:['galaxy_group','galaxy_merger']},
+ {id:'galaxy_cluster',name:'은하단',need:900000,m0:2e43,m1:2e45,scale:'수백만~수천만 광년 · 수백~수천 은하',fact:'은하단은 많은 은하뿐 아니라 뜨거운 가스와 암흑물질을 포함하는 거대한 중력 결합 구조입니다.',discover:['galaxy_cluster','cluster_gas']},
+ {id:'supercluster',name:'초은하단',need:1350000,m0:2e45,m1:2e47,scale:'수억 광년 · 은하군과 은하단의 큰 분포',fact:'초은하단은 여러 은하군과 은하단이 모인 넓은 영역입니다. 전체가 하나의 중력 결합 천체인 것은 아닙니다.',discover:['supercluster']},
+ {id:'cosmic_filament',name:'우주 필라멘트',need:2000000,m0:2e47,m1:5e47,scale:'수억 광년 · 은하단 사이의 실 같은 구조',fact:'암흑물질과 가스, 은하들이 긴 실 모양으로 분포하며 은하단들을 연결합니다.',discover:['cosmic_filament','matter_flow']},
+ {id:'galaxy_wall',name:'은하 장벽',need:3000000,m0:5e47,m1:1e48,scale:'수억 광년 이상 · 넓은 벽 모양의 분포',fact:'은하들은 실뿐 아니라 넓은 벽 모양으로도 분포합니다. 이 장벽은 단단한 벽이 아니라 은하들의 분포입니다.',discover:['galaxy_wall','cosmic_void']},
+ {id:'cosmic_web',name:'우주 거대구조 · 코스믹 웹',need:4500000,m0:1e48,m1:1e49,scale:'필라멘트·장벽·은하단·거대공동의 그물망',fact:'코스믹 웹은 은하단과 필라멘트, 장벽, 은하가 드문 거대공동이 이루는 우주의 큰 분포입니다. 우주 전체의 끝을 뜻하지는 않습니다.',discover:['cosmic_web']}
 ];
 
 const DISCOVERIES=[
@@ -70,7 +78,21 @@ const DISCOVERIES=[
  {id:'galaxy_scale',cat:'scale',min:14,icon:'🌌',title:'은하의 중심',text:'우리 은하 중심의 궁수자리 A*는 태양 약 400만 개 정도의 질량을 가진 초대질량 블랙홀입니다.'},
  {id:'unknown_origin',cat:'phenomenon',min:14,icon:'❓',title:'아직 풀리지 않은 기원',text:'초대질량 블랙홀이 우주 초기에 어떻게 그렇게 빠르게 커졌는지는 지금도 중요한 연구 주제입니다.',event:'question'},
  {id:'quasar',cat:'body',min:15,icon:'✨',title:'퀘이사',text:'활발히 물질을 먹는 초대질량 블랙홀 주변은 강착원반 때문에 멀리서도 매우 밝게 보일 수 있습니다.'},
- {id:'jet',cat:'phenomenon',min:15,icon:'↕️',title:'상대론적 제트',text:'일부 활동은하핵에서는 블랙홀 주변 자기장과 강착 과정 때문에 매우 빠른 입자 제트가 양쪽 방향으로 뻗어 나옵니다.',event:'jet'}
+ {id:'jet',cat:'phenomenon',min:15,icon:'↕️',title:'상대론적 제트',text:'일부 활동은하핵에서는 블랙홀 주변 자기장과 강착 과정 때문에 매우 빠른 입자 제트가 양쪽 방향으로 뻗어 나옵니다.',event:'jet'},
+ {id:'dwarf_galaxy',min:16,cat:'body',icon:'🌌',title:'왜소은하',text:'작은 은하에도 많은 별과 가스, 암흑물질이 있습니다.'},
+ {id:'dark_matter',min:16,cat:'phenomenon',icon:'🌌',title:'암흑물질',text:'빛으로 직접 보이지 않지만 중력 효과로 존재를 추론하는 물질입니다.',event:'wave'},
+ {id:'spiral_galaxy',min:17,cat:'body',icon:'🌌',title:'나선은하',text:'별과 가스의 원반에서 나선팔이 보이는 은하입니다.'},
+ {id:'spiral_arms',min:17,cat:'phenomenon',icon:'🌌',title:'나선팔',text:'나선팔에는 가스와 젊은 별이 모여 밝게 보이는 영역이 있습니다.',event:'wave'},
+ {id:'galaxy_group',min:18,cat:'body',icon:'🌌',title:'은하군',text:'수십 개 정도의 은하가 모여 있는 작은 은하 집단입니다.'},
+ {id:'galaxy_merger',min:18,cat:'phenomenon',icon:'🌌',title:'은하 병합',text:'은하들이 중력으로 상호작용하고 합쳐지면서 모양과 별 형성이 달라질 수 있습니다.',event:'wave'},
+ {id:'galaxy_cluster',min:19,cat:'body',icon:'🌌',title:'은하단',text:'수백~수천 개의 은하와 뜨거운 가스, 암흑물질을 포함하는 집단입니다.'},
+ {id:'cluster_gas',min:19,cat:'phenomenon',icon:'🌌',title:'은하단의 뜨거운 가스',text:'은하 사이의 매우 뜨거운 가스는 X선으로 관측할 수 있습니다.',event:'wave'},
+ {id:'supercluster',min:20,cat:'body',icon:'🌌',title:'초은하단',text:'여러 은하군과 은하단을 포함하는 넓은 분포이며 전체가 중력으로 결합한 것은 아닙니다.'},
+ {id:'cosmic_filament',min:21,cat:'body',icon:'🌌',title:'우주 필라멘트',text:'은하와 가스, 암흑물질이 실처럼 늘어서 은하단들을 연결합니다.'},
+ {id:'matter_flow',min:21,cat:'phenomenon',icon:'🌌',title:'필라멘트를 따라 흐르는 물질',text:'필라멘트는 주변 물질이 은하단으로 유입되는 경로가 됩니다.',event:'wave'},
+ {id:'galaxy_wall',min:22,cat:'body',icon:'🌌',title:'은하 장벽',text:'은하들이 넓은 벽이나 판 모양으로 분포한 우주 거대구조입니다.'},
+ {id:'cosmic_void',min:22,cat:'phenomenon',icon:'🌌',title:'우주 거대공동',text:'필라멘트와 장벽 사이에는 은하가 상대적으로 드문 큰 영역이 있습니다. 완전히 빈 공간은 아닙니다.',event:'wave'},
+ {id:'cosmic_web',min:23,cat:'body',icon:'🌌',title:'코스믹 웹',text:'은하단과 필라멘트, 장벽과 거대공동이 만드는 우주의 그물 같은 분포입니다.'}
 ];
 
 const UPGRADES=[
@@ -85,7 +107,10 @@ const UPGRADES=[
  {id:'accretion_disk',min:12,cost:4,icon:'🟠',name:'강착원반',desc:'모든 자동 성장 ×1.8',autoMul:1.8},
  {id:'star_capture',min:12,cost:5,icon:'⭐',name:'항성 포획',desc:'자동 성장 +22/s',auto:22},
  {id:'cluster_feeding',min:13,cost:5,icon:'🌌',name:'성단 공급',desc:'자동 성장 +45/s',auto:45},
- {id:'blackhole_merger',min:14,cost:6,icon:'⚫',name:'블랙홀 병합',desc:'모든 성장 속도 ×2',tap:2,autoMul:2}
+ {id:'blackhole_merger',min:14,cost:6,icon:'⚫',name:'블랙홀 병합',desc:'모든 성장 속도 ×2',tap:2,autoMul:2},
+ {id:'galaxy_inflow',min:16,cost:6,icon:'🌌',name:'은하 물질 유입',desc:'자동 성장 +90/s',auto:90},
+ {id:'cluster_network',min:18,cost:8,icon:'🔗',name:'은하군 연결',desc:'자동 성장 +160/s',auto:160},
+ {id:'filament_flow',min:21,cost:10,icon:'〰',name:'필라멘트 유입',desc:'자동 성장 +300/s',auto:300}
 ];
 
 const ui={
@@ -98,7 +123,7 @@ const ui={
 };
 
 function freshState(){
- return {stage:0,progress:0,insight:0,upgrades:{},discovered:{},taps:0,startedAt:Date.now(),lastSave:Date.now(),sound:true,blackHoleEra:false};
+ return {stage:0,progress:0,insight:0,upgrades:{},discovered:{},taps:0,research:0,balanceVersion:2,startedAt:Date.now(),lastSave:Date.now(),sound:true,blackHoleEra:false};
 }
 let state=freshState(),running=false,paused=false,modalOpen=false,last=performance.now(),uiClock=0,saveClock=0,autoAdvanceClock=0;
 let eventNextAt=0,eventExpiresAt=0,currentEvent=null,eventSeenAt=0,toastTimer=0,evoTimer=0,tapPulse=0,lensPulse=0;
@@ -108,7 +133,7 @@ const gltfLoader=new GLTFLoader(),texLoader=new THREE.TextureLoader(),activeFx=[
 
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function stage(){return STAGES[state.stage]}
-function progressRatio(){const s=stage();return s.id==='quasar'?1-Math.exp(-state.progress/s.need):clamp(state.progress/s.need,0,1)}
+function progressRatio(){const s=stage();return state.stage===STAGES.length-1?1-Math.exp(-state.progress/s.need):clamp(state.progress/s.need,0,1)}
 function massNow(){
  const s=stage(),r=progressRatio(),a=Math.log10(s.m0),b=Math.log10(s.m1);
  return Math.pow(10,a+(b-a)*r);
@@ -128,7 +153,7 @@ function formatMass(kg){
  return formatNumber(kg/SUN,2)+' M☉';
 }
 function tapPower(){
- let p=1+state.stage*.11;
+ let p=(1+state.stage*.06)*(1+state.research*.12);
  for(const u of UPGRADES)if(state.upgrades[u.id])p*=u.tap||1;
  return p;
 }
@@ -136,7 +161,7 @@ function autoRate(){
  let r=state.stage>=2 ? 0.03*Math.pow(1.3,state.stage) : 0;
  let mul=1;
  for(const u of UPGRADES)if(state.upgrades[u.id]){r+=u.auto||0;mul*=u.autoMul||1}
- return r*mul;
+ return r*mul*(1+state.research*.1);
 }
 function save(){
  if(!running)return;
@@ -147,7 +172,11 @@ function load(){
  try{
   const raw=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
   if(!raw||!Number.isFinite(raw.stage))return false;
+  const oldNeeds=[18,24,34,48,65,90,120,160,190,240,300,100,360,520,720,1000];
+  if(raw.balanceVersion!==2){raw.progress=Math.min(1,Math.max(0,(raw.progress||0)/(oldNeeds[raw.stage]||1000)))*STAGES[clamp(Math.floor(raw.stage),0,15)].need;raw.balanceVersion=2}
   state={...freshState(),...raw,stage:clamp(Math.floor(raw.stage),0,STAGES.length-1),upgrades:raw.upgrades||{},discovered:raw.discovered||{}};
+  state.progress=Math.max(0,Number.isFinite(state.progress)?state.progress:0);
+  state.research=clamp(Math.floor(Number(state.research)||0),0,10);
   return true;
  }catch(_){return false}
 }
@@ -221,7 +250,7 @@ function makeStarfield(){
  const m=new THREE.PointsMaterial({color:0xcfe8ff,size:LOW_POWER ? 0.08 : 0.11,transparent:true,opacity:.8,sizeAttenuation:true});
  starField=new THREE.Points(g,m);scene.add(starField);
 }
-function clearGroup(g){while(g.children.length)g.remove(g.children[g.children.length-1])}
+function clearGroup(g){while(g.children.length){const o=g.children[g.children.length-1];g.remove(o);o.traverse(n=>{if(n.userData?.cachedAsset)return;n.geometry?.dispose();const mats=Array.isArray(n.material)?n.material:[n.material];mats.forEach(m=>m?.dispose())})}}
 function texture(url){
  return new Promise(resolve=>texLoader.load(url,t=>{t.colorSpace=THREE.SRGBColorSpace;resolve(t)},undefined,()=>resolve(null)));
 }
@@ -247,7 +276,7 @@ function loadGLTF(url){
 function normalizeClone(gltf,target=2.5){
  if(!gltf)return null;const o=gltf.scene.clone(true);o.updateMatrixWorld(true);let box=new THREE.Box3().setFromObject(o),sz=box.getSize(new THREE.Vector3()),base=Math.max(sz.x,sz.y,sz.z)||1;
  o.scale.multiplyScalar(target/base);o.updateMatrixWorld(true);box=new THREE.Box3().setFromObject(o);const c=box.getCenter(new THREE.Vector3());o.position.sub(c);
- o.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.roughness=.88;n.material.metalness=.05}});
+ o.traverse(n=>{if(n.isMesh){n.geometry=n.geometry.clone();n.material=n.material.clone();n.material.roughness=.88;n.material.metalness=.05}});
  return o;
 }
 function materialColorForStage(idx){return [0x9a8b79,0x9d8f7d,0x8a7765,0x6f6258,0x725f54,0x8b604c][Math.min(5,idx)]||0x76665c}
@@ -331,15 +360,42 @@ function addQuasarJets(){
  const mat=new THREE.MeshBasicMaterial({color:0x8bdcff,transparent:true,opacity:.16,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
  const g=new THREE.ConeGeometry(.55,8,24,1,true);const a=new THREE.Mesh(g,mat),b=new THREE.Mesh(g,mat.clone());a.position.y=4;b.position.y=-4;b.rotation.z=Math.PI;a.position.z=b.position.z=-.8;contextGroup.add(a,b)
 }
+// Each point in large-scale views represents a star region or an entire galaxy.
+function makeLargeStructure(index){
+ const count=LOW_POWER?1000:2800,pos=new Float32Array(count*3),col=new Float32Array(count*3),color=new THREE.Color();
+ const nodes=Array.from({length:index>=20?12: index===19?8:5},(_,i)=>({x:Math.cos(i*2.399)*(.8+i*.3),y:Math.sin(i*2.399)*(.8+i*.3)*.7,z:(i%3-1)*.6}));
+ for(let i=0;i<count;i++){
+  let x,y,z;
+  if(index<=17){
+   const r=Math.pow(Math.random(),.6)*3.6,a=(i%3)*2.094+r*1.6+(Math.random()-.5)*(index===16?2:.45);
+   x=Math.cos(a)*r;y=Math.sin(a)*r*.62;z=(Math.random()-.5)*.35;
+  }else if(index<=20){
+   const n=nodes[i%nodes.length],r=Math.pow(Math.random(),2)*(.5+(index-18)*.14),a=Math.random()*Math.PI*2;
+   x=n.x+Math.cos(a)*r;y=n.y+Math.sin(a)*r;z=n.z+(Math.random()-.5)*r;
+  }else if(index===22){
+   x=(Math.random()-.5)*8;y=Math.sin(x*1.2)*.6+(Math.random()-.5)*3.4;z=(Math.random()-.5)*.25;
+  }else{
+   const edge=i%(index===21?5:18),a=nodes[edge%nodes.length],b=nodes[(edge*5+3)%nodes.length],t=Math.random(),spread=.07+Math.sin(t*Math.PI)*.14;
+   x=a.x+(b.x-a.x)*t+(Math.random()-.5)*spread;y=a.y+(b.y-a.y)*t+(Math.random()-.5)*spread;z=a.z+(b.z-a.z)*t+(Math.random()-.5)*spread;
+  }
+  pos[i*3]=x;pos[i*3+1]=y;pos[i*3+2]=z;
+  color.setHSL(index>=21?.72+Math.random()*.12:.55+Math.random()*.12,.6,.6+Math.random()*.3);col[i*3]=color.r;col[i*3+1]=color.g;col[i*3+2]=color.b;
+ }
+ const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(col,3));
+ const mat=new THREE.PointsMaterial({vertexColors:true,size:index>=18?.055:.035,map:fxTextures.star||null,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});
+ const points=new THREE.Points(geo,mat);points.userData.kind='largeStructure';bodyGroup.add(points);
+ if(index<=17)bodyGroup.add(glowSprite(0xffdec0,index===16?1.1:1.8,.55,'flare'));
+}
 function rebuildContext(){
  clearGroup(contextGroup);galaxyGroup=null;
  const i=state.stage;
+ if(i>=16)return;
  if(i>=6&&i<=8)addMoonContext(i===7?5:2);
  if(i>=9&&i<=10)addPlanetSystem(LOW_POWER?4:6);
  if(i===11)addCluster(LOW_POWER?120:280);
  if(i===12)addCluster(LOW_POWER?170:420);
  if(i===13)addCluster(LOW_POWER?320:900);
- if(i>=14){addGalaxy(LOW_POWER?900:2600);if(i>=15)addQuasarJets()}
+ if(i>=14&&i<=15){addGalaxy(LOW_POWER?900:2600);if(i>=15)addQuasarJets()}
 }
 function rebuildVisual(noZoom=false){
  clearGroup(bodyGroup);const i=state.stage;
@@ -348,7 +404,8 @@ function rebuildVisual(noZoom=false){
  else if(i<=8)makePlanet(i);
  else if(i<=10)makeStar(i);
  else if(i===11){makeStar(10);spawnSupernovaBurst(true)}
- else makeBlackHole(i);
+ else if(i<=15)makeBlackHole(i);
+ else makeLargeStructure(i);
  rebuildContext();
  if(!noZoom)startZoomTransition();
 }
@@ -396,12 +453,12 @@ function updateFx(dt){
   else if(f.kind==='orbit'){o.userData.angle+=dt*o.userData.speed;o.position.set(Math.cos(o.userData.angle)*o.userData.r,Math.sin(o.userData.angle)*o.userData.r*o.userData.flatten,.3)}
   if(o.material&&'opacity'in o.material)o.material.opacity=Math.max(0,(f.life/f.max)*.75);
   if(o.userData.grow)o.scale.multiplyScalar(1+dt*1.8);
-  if(f.life<=0){fxGroup.remove(o);activeFx.splice(i,1)}
+  if(f.life<=0){fxGroup.remove(o);o.geometry?.dispose();o.material?.dispose();activeFx.splice(i,1)}
  }
 }
 function updateScene(dt){
  if(starField){starField.rotation.z+=dt*.002;if(lensPulse>0){lensPulse=Math.max(0,lensPulse-dt);starField.scale.setScalar(1+Math.sin(lensPulse*8)*.018)}else starField.scale.setScalar(1)}
- bodyRoot.rotation.z+=dt*(state.stage<=5 ? 0.08 : 0.018);tapPulse=Math.max(0,tapPulse-dt*3.4);const pulse=1+tapPulse*.075;bodyRoot.scale.setScalar(pulse);
+ bodyRoot.rotation.z+=dt*(state.stage>=18?0:state.stage<=5 ? 0.08 : 0.018);tapPulse=Math.max(0,tapPulse-dt*3.4);const pulse=1+tapPulse*.075;bodyRoot.scale.setScalar(pulse);
  for(const o of bodyGroup.children){if(o.userData.kind==='planetSprite')o.material.rotation=(o.material.rotation||0)+dt*.035;if(o.userData.kind==='diskSprite')o.material.rotation=(o.material.rotation||0)+dt*.14;if(o.userData.kind==='accretion')o.rotation.z+=dt*o.userData.speed;if(o.userData.kind==='starCore'){const s=1+Math.sin(performance.now()*.003)*.02;o.scale.setScalar(s)}}
  for(const o of contextGroup.children)if(o.userData?.orbit){o.userData.angle+=dt*o.userData.speed;o.position.set(Math.cos(o.userData.angle)*o.userData.r,Math.sin(o.userData.angle)*o.userData.r*o.userData.flatten,-.1)}
  if(galaxyGroup)galaxyGroup.rotation.z+=dt*.006;
@@ -420,13 +477,13 @@ function openScience(d,isNew=false){
 }
 function closeScience(){ui.science.classList.add('hidden');modalOpen=false;scheduleEvent(5000)}
 function showEvolution(s){
- clearTimeout(evoTimer);ui.evoKicker.textContent=s.id.includes('black_hole')?'BLACK HOLE ERA':s.id==='supernova'?'STELLAR DEATH':'새로운 단계';
+ clearTimeout(evoTimer);ui.evoKicker.textContent=state.stage>=16?'더 넓은 우주를 관측':s.id.includes('black_hole')?'BLACK HOLE ERA':s.id==='supernova'?'STELLAR DEATH':'새로운 단계';
  ui.evoTitle.textContent=s.name;ui.evoFact.textContent=s.fact;ui.evo.classList.remove('hidden');evoTimer=setTimeout(()=>ui.evo.classList.add('hidden'),1950);
  evolutionSound();
 }
 function advanceStage(){
  if(state.stage>=STAGES.length-1)return;
- const prev=stage(),carry=Math.max(0,state.progress-prev.need);state.stage++;state.progress=carry;autoAdvanceClock=0;
+ const prev=stage(),carry=Math.max(0,state.progress-prev.need);state.stage++;state.progress=Math.min(carry,stage().need*.1);state.insight+=2;autoAdvanceClock=0;
  const s=stage();s.discover.forEach(id=>discover(id,false));reportMilestone('cosmic_stage_'+s.id,{stage:s.id,index:state.stage});
  if(state.stage===12){state.blackHoleEra=true;reportAchievement('black_hole',{stage:s.id})}
  showEvolution(s);rebuildVisual(false);renderUpgrades();checkAchievements();save();scheduleEvent(6500);
@@ -441,27 +498,28 @@ function onTap(e){
  if(!running||paused||modalOpen)return;ensureAudio();
  const s=stage();
  if(s.auto){spawnSupernovaBurst(false);tone(180+Math.random()*80,.08,.022,'triangle');return}
- const power=tapPower();state.taps++;addGrowth(power);tapPulse=1;spawnTapMatter(e.clientX,e.clientY);floatGain(e.clientX,e.clientY,power);tone(260+Math.min(520,state.stage*27)+Math.random()*35,.045,.018,'sine');
+ const power=tapPower();state.taps++;if(state.taps%250===0){state.insight++;toast('꾸준한 응집 · 과학 포인트 +1');renderUpgrades()}addGrowth(power);tapPulse=1;spawnTapMatter(e.clientX,e.clientY);floatGain(e.clientX,e.clientY,power);tone(260+Math.min(520,state.stage*27)+Math.random()*35,.045,.018,'sine');
  if(state.taps===1)ui.hint.classList.add('dim');
  if(state.taps%25===0)playWhoosh();
 }
 function renderUpgrades(){
  ui.upgrades.innerHTML='';
- const visible=UPGRADES.filter(u=>u.min<=state.stage+1).slice(-6);
+ const visible=UPGRADES.filter(u=>u.min<=state.stage+1&&(!state.upgrades[u.id]||u.min>=state.stage-2));
  for(const u of visible){const bought=!!state.upgrades[u.id],locked=u.min>state.stage,b=document.createElement('button');b.type='button';b.className='upgrade'+(bought?' bought':'')+(locked?' locked':'');
   b.innerHTML='<div class="uTop"><span class="uIcon">'+u.icon+'</span><span class="uName">'+u.name+'</span><span class="cost">'+(bought?'완료':locked?'잠김':'🔬 '+u.cost)+'</span></div><p>'+(locked?STAGES[u.min].name+' 단계에서 해금':u.desc)+'</p>';
   if(!bought&&!locked)b.onclick=()=>buyUpgrade(u);ui.upgrades.appendChild(b)
  }
+ const research=document.createElement('button');research.type='button';research.className='upgrade';research.innerHTML='<div class="uTop"><span class="uIcon">🔬</span><span class="uName">성장 연구 '+state.research+'/10</span><span class="cost">'+(state.research>=10?'완료':'🔬 '+(3+state.research*2))+'</span></div><p>연구마다 기본 탭 +12% · 자동 +10%</p>';research.disabled=state.research>=10;research.onclick=()=>{if(!running||paused||modalOpen)return;const cost=3+state.research*2;if(state.insight<cost){toast('관측과 250회 응집으로 과학 포인트를 모으세요');return}state.insight-=cost;state.research++;renderUpgrades();save()};ui.upgrades.appendChild(research);
 }
 function buyUpgrade(u){
- if(state.upgrades[u.id])return;if(state.insight<u.cost){toast('🔬 과학 포인트가 '+(u.cost-state.insight)+' 더 필요해요');tone(150,.12,.025,'triangle');return}
+ if(!running||paused||modalOpen||u.min>state.stage||state.upgrades[u.id])return;if(state.insight<u.cost){toast('🔬 과학 포인트가 '+(u.cost-state.insight)+' 더 필요해요');tone(150,.12,.025,'triangle');return}
  state.insight-=u.cost;state.upgrades[u.id]=true;tone(520,.08,.03,'triangle');setTimeout(()=>tone(780,.12,.025,'triangle'),70);toast(u.name+' 강화 완료');renderUpgrades();save()
 }
 function renderUI(){
  const s=stage(),r=progressRatio(),disc=Object.keys(state.discovered).length;
- ui.stage.textContent=s.name;ui.era.textContent=state.stage>=12?'BLACK HOLE ERA':state.stage>=9?'STELLAR ERA':state.stage>=6?'PLANET ERA':'ACCRETION ERA';
+ ui.stage.textContent=s.name;ui.era.textContent=state.stage>=21?'COSMIC WEB ERA':state.stage>=16?'GALAXY ERA':state.stage>=12?'BLACK HOLE ERA':state.stage>=9?'STELLAR ERA':state.stage>=6?'PLANET ERA':'ACCRETION ERA';
  ui.scale.textContent=s.scale;ui.mass.textContent=formatMass(massNow());ui.fill.style.width=(r*100).toFixed(1)+'%';
- ui.next.textContent=state.stage===STAGES.length-1?'관측 가능한 끝 너머로 계속 성장 중':s.auto?'핵붕괴 진행 중 · '+Math.round(r*100)+'%':STAGES[state.stage+1].name+'까지 '+Math.round(r*100)+'%';
+ ui.next.textContent=state.stage===STAGES.length-1?'코스믹 웹 관측을 계속 확장하는 중':s.auto?'핵붕괴 진행 중 · '+Math.round(r*100)+'%':STAGES[state.stage+1].name+'까지 '+Math.round(r*100)+'%';
  ui.insight.textContent=state.insight;ui.rate.textContent='자동 +'+autoRate().toFixed(autoRate()<10?1:0)+'/s';ui.discCount.textContent=disc;ui.discTotal.textContent=DISCOVERIES.length;ui.codexProgress.textContent=disc+' / '+DISCOVERIES.length;
 }
 function scheduleEvent(delay){
@@ -480,7 +538,7 @@ function updateEvent(now){
 }
 function observeEvent(){
  if(!currentEvent)return;const d=currentEvent;ui.event.classList.add('hidden');currentEvent=null;const fresh=discover(d.id,true);
- if(!fresh){state.progress+=Math.max(2,tapPower()*3);toast('이미 아는 현상 · 성장 보너스 +'+Math.max(2,tapPower()*3).toFixed(0))}
+ if(!fresh){state.insight+=1;const bonus=Math.min(stage().need*.01,Math.max(2,tapPower()*5));state.progress+=stage().auto?0:bonus;ui.scienceBonus.textContent='재관측 · 과학 포인트 +1 · 성장 +'+bonus.toFixed(0);renderUpgrades();save()}
  scheduleEvent(12000+Math.random()*9000)
 }
 function renderCodex(tab='all'){
@@ -513,7 +571,7 @@ function animate(now){
 }
 
 $('tapLayer').addEventListener('pointerdown',onTap);
-addEventListener('keydown',e=>{if(e.code==='Space'&&running&&!modalOpen){e.preventDefault();onTap({clientX:innerWidth/2,clientY:innerHeight/2})}});
+addEventListener('keydown',e=>{if(e.code==='Space'&&!e.repeat&&running&&!modalOpen&& !['BUTTON','INPUT','TEXTAREA'].includes(document.activeElement?.tagName)){e.preventDefault();onTap({clientX:innerWidth/2,clientY:innerHeight/2})}});
 $('eventPill').addEventListener('click',observeEvent);
 $('codexBtn').addEventListener('click',openCodex);$('quickCodex').addEventListener('click',openCodex);
 document.querySelectorAll('[data-close="codex"]').forEach(b=>b.addEventListener('click',closeCodex));
@@ -526,3 +584,4 @@ $('soundBtn').addEventListener('click',()=>{state.sound=!state.sound;$('soundBtn
 document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});addEventListener('beforeunload',save);
 
 initThree();preloadAssets();ui.discTotal.textContent=DISCOVERIES.length;ui.continueBtn.classList.toggle('hidden',!hasSave());renderUI();renderUpgrades();requestAnimationFrame(animate);
+
