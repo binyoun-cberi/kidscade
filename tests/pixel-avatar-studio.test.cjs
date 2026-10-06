@@ -22,7 +22,7 @@ const teachingAidCatalog=JSON.parse(fs.readFileSync(path.join(starterDir,'teachi
 
 test('public v3 avatar controller parses cleanly',()=>{
   assert.doesNotThrow(()=>new Function(js));
-  assert.match(html,/avatar-pixel-studio\.js\?v=73/);
+  assert.match(html,/avatar-pixel-studio\.js\?v=74/);
   assert.doesNotMatch(html,/pixel-avatar-renderer\.js/);
 });
 
