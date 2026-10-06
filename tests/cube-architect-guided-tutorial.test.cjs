@@ -33,6 +33,6 @@ test('guided tutorial covers challenge, net, survival, creative and can be repla
   assert.match(js,/if\(kind==='challenge'\)return\[/);
   assert.match(js,/if\(kind==='net'\)return\[/);
   assert.match(js,/gameFreeMode==='survival'/);
-  assert.match(js,/cubeArchitectGuidedTutorial_v3_/);
+  assert.match(js,/cubeArchitectGuidedTutorial_v4_/);
   assert.match(js,/showTutorial\(mode==='free'\?'free':mode,true\)/);
 });
