@@ -2,6 +2,33 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "math_pi_memory",
+      "addedAt": "2026-10-06T20:32:00+09:00",
+      "title": "원주율 외우기",
+      "href": "games/math_pi_memory/index.html?v=1",
+      "category": "math",
+      "age": "low",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🥧",
+      "description": "원주율을 5자리씩 보고 가려서 외운 뒤, 3.14159…를 처음부터 직접 입력해 몇 자리까지 기억하는지 최고 기록에 도전하는 숫자 암기 게임.",
+      "subject": "math",
+      "genre": "quiz",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "high_human_history_cards",
       "addedAt": "2026-10-03T20:03:00+09:00",
       "title": "석기 시대에서 살아남기",
