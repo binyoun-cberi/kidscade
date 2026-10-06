@@ -309,7 +309,7 @@
     try {
       const url = new URL(raw, location.href);
       const hash = String(url.hash || '');
-      const match = hash.match(/^#kcqr=([0-9a-f]{64})$/i);
+      const match = hash.match(/^#(?:kcqr=)?([0-9a-f]{64})$/i);
       return match ? match[1].toLowerCase() : '';
     } catch (_) {
       return '';
