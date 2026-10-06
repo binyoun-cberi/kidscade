@@ -81,3 +81,32 @@ export async function createQrCredential(pepper) {
     iv: encrypted.iv
   };
 }
+
+
+export async function ensureStudentQrColumns(env) {
+  if (!env?.DB) return false;
+  const info = await env.DB.prepare('PRAGMA table_info(student_accounts)').all();
+  const names = new Set((info?.results || []).map(row => String(row.name || '')));
+  if (!names.size) return false;
+
+  const statements = [];
+  if (!names.has('qr_token_hash')) statements.push('ALTER TABLE student_accounts ADD COLUMN qr_token_hash TEXT');
+  if (!names.has('qr_token_ciphertext')) statements.push('ALTER TABLE student_accounts ADD COLUMN qr_token_ciphertext TEXT');
+  if (!names.has('qr_token_iv')) statements.push('ALTER TABLE student_accounts ADD COLUMN qr_token_iv TEXT');
+
+  for (const sql of statements) {
+    try {
+      await env.DB.prepare(sql).run();
+    } catch (error) {
+      const message = String(error?.message || '');
+      if (!/duplicate column|already exists/i.test(message)) throw error;
+    }
+  }
+
+  await env.DB.prepare(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_student_accounts_qr_token_hash
+    ON student_accounts(qr_token_hash)
+    WHERE qr_token_hash IS NOT NULL
+  `).run();
+  return true;
+}
