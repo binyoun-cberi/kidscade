@@ -14,6 +14,13 @@ import {
   decryptStudentPin,
   makeSessionCookie
 } from '../worker/accounts.mjs';
+import {
+  createQrToken,
+  isValidQrToken,
+  hashQrToken,
+  encryptQrToken,
+  decryptQrToken
+} from '../worker/qr-login.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -40,6 +47,19 @@ test('student PIN encryption can be decrypted by the server with the account sec
   assert.notEqual(encrypted.ciphertext, '654321');
   assert.ok(encrypted.iv);
   assert.equal(await decryptStudentPin(encrypted.ciphertext, encrypted.iv, 'test-pepper'), '654321');
+});
+
+test('QR login credentials are random, hashable and encrypted at rest', async () => {
+  const token = createQrToken();
+  assert.equal(isValidQrToken(token), true);
+  assert.match(token, /^[0-9a-f]{64}$/);
+  const hash = await hashQrToken(token);
+  assert.match(hash, /^[0-9a-f]{64}$/);
+  assert.notEqual(hash, token);
+  const encrypted = await encryptQrToken(token, 'test-pepper');
+  assert.notEqual(encrypted.ciphertext, token);
+  assert.ok(encrypted.iv);
+  assert.equal(await decryptQrToken(encrypted.ciphertext, encrypted.iv, 'test-pepper'), token);
 });
 
 test('student session cookie is long-lived, HttpOnly, Secure and strict same-site', () => {
@@ -83,6 +103,7 @@ test('account feature is wired into deployment without exposing server code as s
   const build = fs.readFileSync(path.join(ROOT, 'scripts', 'build-cloudflare.cjs'), 'utf8');
   const migration = fs.readFileSync(path.join(ROOT, 'migrations', '0002_student_accounts.sql'), 'utf8');
   const pinMigration = fs.readFileSync(path.join(ROOT, 'migrations', '0017_student_pin_encryption.sql'), 'utf8');
+  const qrMigration = fs.readFileSync(path.join(ROOT, 'migrations', '0018_student_qr_login.sql'), 'utf8');
   assert.doesNotMatch(index, /account-client\.js/);
   assert.match(bootstrap, /['"]account-client\.js['"]/);
   assert.match(wrangler, /worker\/main\.mjs/);
@@ -92,6 +113,22 @@ test('account feature is wired into deployment without exposing server code as s
   assert.match(migration, /CREATE TABLE IF NOT EXISTS student_sessions/);
   assert.match(pinMigration, /pin_ciphertext/);
   assert.match(pinMigration, /pin_iv/);
+  assert.match(qrMigration, /qr_token_hash/);
+  assert.match(qrMigration, /qr_token_ciphertext/);
+  assert.match(qrMigration, /idx_student_accounts_qr_token_hash/);
+});
+
+test('student login supports QR camera scan and QR-link auto login without removing PIN login', () => {
+  const server = fs.readFileSync(path.join(ROOT, 'worker', 'accounts.mjs'), 'utf8');
+  const client = fs.readFileSync(path.join(ROOT, 'account-client.js'), 'utf8');
+  assert.match(server, /\/api\/account\/qr-login/);
+  assert.match(server, /async function qrLogin/);
+  assert.match(server, /WHERE a\.qr_token_hash = \?/);
+  assert.match(client, /QR 카드로 빠른 로그인/);
+  assert.match(client, /BarcodeDetector/);
+  assert.match(client, /takeQrTokenFromLocation/);
+  assert.match(client, /\/api\/account\/qr-login/);
+  assert.match(client, /ID · PIN으로 로그인/);
 });
 
 test('account login modal keeps its overlay styling after lobby bootstrap replacement', () => {
