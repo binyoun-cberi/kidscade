@@ -85,6 +85,7 @@
     driftSurvivalSaveV2: 'kidscade_drift_v2_save',
     driftSurvivalEndingsV2: 'kidscade_drift_endings_v2',
     perfectPitchSave: 'kidscade_perfect_pitch_v1',
+    rhythmDashExtremeSave: 'kidscade_rhythm_dash_extreme_v1',
     storyBuilderSave: 'kidscade_story_builder_v1',
     takoyakiHolesSave: 'kidscade_takoyaki_holes_v1',
     weathercasterBest: 'kidscade_weathercaster_best_v1',
