@@ -139,7 +139,7 @@ function create(opts){
     userSubs:0,controlled:null,lastTouchId:null,replay:{step:.75,next:0,frames:[],heat:heat,stats:stats,tacticChanges:[]},
     seed:opts.seed||null
   };
-  var pendingPass=null,lastCompletedPass=null,ballFree=0,restart=0,lastNow=performance.now(),camera=FIELD_W/2,controlIdle=0,teamCallCooldown=1.4,tackleHintCooldown=0;
+  var pendingPass=null,lastCompletedPass=null,ballFree=0,restart=0,lastNow=performance.now(),camera=FIELD_W/2,controlIdle=0,teamCallCooldown=1.4,tackleHintCooldown=0,movementNotified=false;
   var ballImg=new Image();ballImg.src=BALL_SRC;
   var spriteCache={};
 
@@ -154,6 +154,7 @@ function create(opts){
     return e;
   }
   function touchActor(a){if(!a)return;m.lastTouchId=a.id;var st=stats[a.id];if(st)st.touches++;}
+  function notifyUserAction(kind,extra){if(opts.onUserAction)opts.onUserAction(kind,Object.assign({minute:m.minute,controlledId:m.controlled&&m.controlled.id||null},extra||{}));}
   function resetPositions(){
     teams.forEach(function(t,side){var coords=FORMATION_COORDS[t.formation]||FORMATION_COORDS['1-2-1'];t.actors.forEach(function(a,i){var c=coords[i]||[.5,.5];a.baseX=side===0?c[0]*FIELD_W:(1-c[0])*FIELD_W;a.baseY=c[1]*FIELD_H;a.x=a.baseX;a.y=a.baseY;a.vx=0;a.vy=0;});});
   }
@@ -353,12 +354,13 @@ function create(opts){
     var up=(keys.ArrowUp||touch.up?1:0)-(keys.ArrowDown||touch.down?1:0),side=(keys.ArrowRight||touch.right?1:0)-(keys.ArrowLeft||touch.left?1:0);
     if(up||side){
       controlIdle=0;
+      if(!movementNotified){movementNotified=true;notifyUserAction('move',{sprint:!!(keys.ShiftLeft||keys.ShiftRight||touch.sprint)});}
       var dir=teamDir(userSide),v=norm(up*dir,side),sp=actorSpeed(a,keys.ShiftLeft||keys.ShiftRight||touch.sprint);
       a.vx+=(v.x*sp-a.vx)*Math.min(1,dt*7);a.vy+=(v.y*sp-a.vy)*Math.min(1,dt*7);
       var ox=a.x,oy=a.y;a.x=clamp(a.x+a.vx*dt,35,FIELD_W-35);a.y=clamp(a.y+a.vy*dt,28,FIELD_H-28);stats[a.id].distance+=hypot(a.x-ox,a.y-oy)/1000;
       return;
     }
-    controlIdle+=dt;
+    movementNotified=false;controlIdle+=dt;
     if(controlIdle>1.15&&m.ball.owner===a){aiCarrier(a,dt);return;}
     if(controlIdle>.55&&m.ball.owner!==a){
       if(!m.ball.owner&&m.ball.z<85){var ch=nearest(outfield(userSide),m.ball);if(ch===a){move(a,m.ball.x,m.ball.y,dt,true);return;}}
@@ -400,10 +402,21 @@ function create(opts){
   }
 
   function userAction(kind){
-    if(!m.directControl||m.finished||restart>0)return;controlIdle=0;var a=m.controlled;if(kind==='switch'){cycleControl();return;}if(!a)return;
-    if(kind==='shoot'){if(m.ball.owner===a)shoot(a);else tackle(a);return;}
+    if(!m.directControl||m.finished||restart>0)return;controlIdle=0;var a=m.controlled;
+    if(kind==='switch'){cycleControl();notifyUserAction('switch',{controlledId:m.controlled&&m.controlled.id||null});return;}
+    if(!a)return;
+    if(kind==='shoot'){
+      if(m.ball.owner===a){if(shoot(a))notifyUserAction('shoot',{actorId:a.id});}
+      else{
+        var guide=tackleGuide(a),success=tackle(a);
+        if(guide.state==='sweet'||guide.state==='ready')notifyUserAction('tackle',{actorId:a.id,timing:guide.state,success:!!success});
+      }
+      return;
+    }
     if(m.ball.owner!==a)return;
-    if(kind==='pass')doPass(a,'pass');else if(kind==='through')doPass(a,'through');else if(kind==='lob')doPass(a,'cross');
+    var done=false;
+    if(kind==='pass')done=doPass(a,'pass');else if(kind==='through')done=doPass(a,'through');else if(kind==='lob')done=doPass(a,'cross');
+    if(done)notifyUserAction(kind,{actorId:a.id});
   }
   m.handleAction=userAction;
   m.setHold=function(name,on){if(!m.directControl&&on)return;touch[name]=!!on;};
@@ -413,6 +426,7 @@ function create(opts){
     Object.keys(touch).forEach(function(k){touch[k]=false;});
     if(m.directControl)chooseControl(m.ball.owner&&m.ball.owner.side===userSide?m.ball.owner:null);
     emit('control',m.directControl?'직접 조종을 시작합니다.':'관전 모드로 전환했습니다. 선수들이 스스로 경기합니다.',userSide,m.controlled,{enabled:m.directControl});
+    notifyUserAction(m.directControl?'direct_on':'direct_off',{enabled:m.directControl});
     return m.directControl;
   };
   m.getControlState=function(){
