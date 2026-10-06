@@ -183,14 +183,22 @@ async function buildLevel(parent,addModel,level){
   return {group,walls,def};
 }
 
-export async function buildHomeInterior({parent,addModel}){
-  const levels={};
-  const built=await Promise.all([1,2,3].map(level=>buildLevel(parent,addModel,level)));
-  built.forEach((entry,index)=>{levels[index+1]=entry});
-  let current=1;
-  function setLevel(level){
-    current=clampLevel(level);
+export async function buildHomeInterior({parent,addModel,initialLevel=1}){
+  const levels={},buildPromises={};let current=clampLevel(initialLevel);
+  function syncVisibility(){
     for(const [id,entry] of Object.entries(levels))entry.group.visible=Number(id)===current;
+  }
+  function ensureLevel(level){
+    const id=clampLevel(level);
+    if(levels[id])return Promise.resolve(levels[id]);
+    if(buildPromises[id])return buildPromises[id];
+    buildPromises[id]=buildLevel(parent,addModel,id).then(entry=>{levels[id]=entry;syncVisibility();return entry});
+    return buildPromises[id];
+  }
+  await ensureLevel(current);
+  function setLevel(level){
+    current=clampLevel(level);syncVisibility();
+    if(!levels[current])void ensureLevel(current);
   }
   function updateCutaway(cameraX,cameraZ){
     const entry=levels[current];if(!entry)return;
@@ -202,11 +210,11 @@ export async function buildHomeInterior({parent,addModel}){
     entry.walls.south.visible=Number(cameraZ)<cz;
     entry.walls.north.visible=Number(cameraZ)>=cz;
   }
-  setLevel(1);
   return {
-    setLevel,
+    setLevel,ensureLevel,
     updateCutaway,
     currentLevel:()=>current,
+    loadedLevels:()=>Object.keys(levels).map(Number),
     getBounds:()=>HOME_INTERIOR_LEVELS[current].bounds,
     getCameraProfile:()=>homeInteriorCameraProfile(current)
   };
