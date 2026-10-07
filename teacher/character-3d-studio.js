@@ -3,15 +3,16 @@ import * as THREE from '../assets/vendor/three-r160/three.module.js';
 window.__kc3dStudioModuleReady=true;
 
 const ADMIN_KEY_NAME='kc_teacher_admin_key';
-const RIG_VERSION='kidscade-humanoid-v1';
+const RIG_VERSION='kidscade-humanoid-v2';
 const CLIP_NAMES=['IDLE','WALK','RUN','JUMP','ATTACK','HURT','DEAD'];
 const $=id=>document.getElementById(id);
 
 let scene,camera,renderer,controls,characterRoot,skinnedMesh,skeletonHelper,mixer;
 let clips=[],activeAction=null,activeClip='IDLE',lastTime=performance.now();
+let bodyStyle='chibi2',activeView='threeQuarter',currentDim=null;
 
 const params={
-  height:1.35,
+  height:1.25,
   headScale:1,
   shoulderScale:1,
   limbScale:1,
@@ -23,11 +24,19 @@ const params={
   eyeColor:'#1f2937'
 };
 
-const PRESETS={
-  kid:{height:1.35,headScale:1.02,shoulderScale:.94,limbScale:1.02,topColor:'#5b7cfa',bottomColor:'#34495e'},
-  chibi:{height:1.22,headScale:1.28,shoulderScale:.88,limbScale:1.08,topColor:'#ef6f9b',bottomColor:'#4d5f82'},
-  hero:{height:1.48,headScale:.90,shoulderScale:1.15,limbScale:1.08,topColor:'#2f8f6b',bottomColor:'#5a4538'},
-  slim:{height:1.52,headScale:.92,shoulderScale:.96,limbScale:.78,topColor:'#7758c8',bottomColor:'#30364a'}
+const BODY_STYLES={
+  legacy:{
+    label:'V1 기존 마네킹',
+    defaults:{height:1.35,headScale:1,shoulderScale:1,limbScale:1}
+  },
+  chibi2:{
+    label:'V2 SD 기본형',
+    defaults:{height:1.25,headScale:1,shoulderScale:1,limbScale:1}
+  },
+  action2:{
+    label:'V2 액션 과장형',
+    defaults:{height:1.28,headScale:.96,shoulderScale:1.06,limbScale:1.12}
+  }
 };
 
 function setStatus(text,error=false){
@@ -299,6 +308,82 @@ function cylinderPart(radius,height,center,boneIndex){
   return rigidGeometry(g,m,boneIndex);
 }
 
+function capsulePart(radius,height,center,boneIndex,scaleX=1,scaleZ=1){
+  const straight=Math.max(.001,height-radius*2);
+  const g=new THREE.CapsuleGeometry(radius,straight,3,8);
+  const m=new THREE.Matrix4().compose(
+    new THREE.Vector3(center[0],center[1],center[2]),
+    new THREE.Quaternion(),
+    new THREE.Vector3(scaleX,1,scaleZ)
+  );
+  return rigidGeometry(g,m,boneIndex);
+}
+
+function taperedPart(topRadius,bottomRadius,height,center,boneIndex,depthScale=.58){
+  const g=new THREE.CylinderGeometry(topRadius,bottomRadius,height,8,1,false);
+  const m=new THREE.Matrix4().compose(
+    new THREE.Vector3(center[0],center[1],center[2]),
+    new THREE.Quaternion(),
+    new THREE.Vector3(1,1,depthScale)
+  );
+  return rigidGeometry(g,m,boneIndex);
+}
+
+function bodyDimensions(style,H){
+  if(style==='legacy'){
+    return {
+      style,H,
+      ankleY:.065*H,kneeY:.292*H,hipY:.515*H,spineY:.615*H,chestY:.715*H,
+      shoulderY:.755*H,neckY:.835*H,headBoneY:.855*H,headCenterY:.925*H,
+      headRX:.092*H*params.headScale,headRY:.075*H*params.headScale,headRZ:.088*H*params.headScale,
+      shoulderX:.145*H*params.shoulderScale,hipX:.075*H,
+      upperArmLen:.185*H,lowerArmLen:.17*H,
+      upperLegLen:(.515-.292)*H,lowerLegLen:(.292-.065)*H,
+      limb:.055*H*params.limbScale,
+      handX:.032*H,handY:.038*H,handZ:.032*H,
+      footX:.070*H,footY:.055*H,footZ:.135*H,
+      eyeSize:.012*H,torsoH:.23*H,torsoCenterY:.695*H,torsoTop:.145*H,torsoBottom:.13*H,
+      rounded:false
+    };
+  }
+
+  const action=style==='action2';
+  return {
+    style,H,
+    ankleY:.078*H,
+    kneeY:.247*H,
+    hipY:.418*H,
+    spineY:.49*H,
+    chestY:.558*H,
+    shoulderY:.625*H,
+    neckY:.648*H,
+    headBoneY:.665*H,
+    headCenterY:.828*H,
+    headRX:(action ? .175 : .184)*H*params.headScale,
+    headRY:(action ? .164 : .172)*H*params.headScale,
+    headRZ:(action ? .158 : .166)*H*params.headScale,
+    shoulderX:(action ? .176 : .158)*H*params.shoulderScale,
+    hipX:(action ? .082 : .074)*H,
+    upperArmLen:(action ? .137 : .132)*H,
+    lowerArmLen:(action ? .126 : .122)*H,
+    upperLegLen:(.418-.247)*H,
+    lowerLegLen:(.247-.078)*H,
+    limb:(action ? .078 : .068)*H*params.limbScale,
+    handX:(action ? .072 : .056)*H,
+    handY:(action ? .068 : .058)*H,
+    handZ:(action ? .064 : .053)*H,
+    footX:(action ? .116 : .098)*H,
+    footY:(action ? .078 : .067)*H,
+    footZ:(action ? .170 : .148)*H,
+    eyeSize:(action ? .020 : .022)*H,
+    torsoH:(action ? .205 : .19)*H,
+    torsoCenterY:(action ? .53 : .535)*H,
+    torsoTop:(action ? .17 : .157)*H*params.shoulderScale,
+    torsoBottom:(action ? .135 : .128)*H,
+    rounded:true
+  };
+}
+
 function q(x=0,y=0,z=0){
   const out=new THREE.Quaternion();
   out.setFromEuler(new THREE.Euler(x,y,z,'XYZ'));
@@ -386,30 +471,69 @@ function buildClips(dim){
 }
 
 function addHeadDetails(headBone,dim,materials){
+  const chibi=dim.style!=='legacy';
   const hair=new THREE.Mesh(
-    new THREE.SphereGeometry(1,10,6,0,Math.PI*2,0,Math.PI*.57),
+    new THREE.SphereGeometry(1,chibi?12:10,chibi?8:6,0,Math.PI*2,0,Math.PI*(chibi?.46:.57)),
     materials[4]
   );
   hair.name='Hair';
-  hair.scale.set(dim.headRX*1.055,dim.headRY*1.03,dim.headRZ*1.055);
-  hair.position.set(0,dim.headCenterY-dim.headBoneY+.014*dim.H,-.005*dim.H);
+  hair.scale.set(dim.headRX*1.055,dim.headRY*1.035,dim.headRZ*1.055);
+  hair.position.set(0,dim.headCenterY-dim.headBoneY+(chibi?.010:.014)*dim.H,-(chibi?.012:.005)*dim.H);
   hair.castShadow=true;
   headBone.add(hair);
 
-  const eyeGeo=new THREE.SphereGeometry(.012*dim.H,7,5);
+  const eyeGeo=new THREE.SphereGeometry(dim.eyeSize,chibi?9:7,chibi?7:5);
   const eyeMat=materials[5];
+  const eyeY=dim.headCenterY-dim.headBoneY+(chibi?-.018:.012)*dim.H;
   for(const side of [-1,1]){
     const eye=new THREE.Mesh(eyeGeo.clone(),eyeMat);
     eye.name=side<0?'Eye_L':'Eye_R';
-    eye.position.set(side*dim.headRX*.39,dim.headCenterY-dim.headBoneY+.012*dim.H,dim.headRZ*.91);
-    eye.scale.set(1,.88,.55);
+    eye.position.set(side*dim.headRX*(chibi?.38:.39),eyeY,dim.headRZ*(chibi?.91:.91));
+    eye.scale.set(chibi?.86:1,chibi?1.12:.88,.48);
     headBone.add(eye);
   }
 
-  const nose=new THREE.Mesh(new THREE.BoxGeometry(.018*dim.H,.018*dim.H,.025*dim.H),materials[0]);
-  nose.name='Nose';
-  nose.position.set(0,dim.headCenterY-dim.headBoneY-.018*dim.H,dim.headRZ*.96);
-  headBone.add(nose);
+  if(chibi){
+    const mouth=new THREE.Mesh(
+      new THREE.BoxGeometry(.037*dim.H,.007*dim.H,.006*dim.H),
+      materials[5]
+    );
+    mouth.name='Mouth';
+    mouth.position.set(0,dim.headCenterY-dim.headBoneY-.078*dim.H,dim.headRZ*.955);
+    headBone.add(mouth);
+
+    const bangGeo=new THREE.ConeGeometry(.030*dim.H,.075*dim.H,5);
+    for(const [x,rot] of [[-.065,.18],[0,0],[.065,-.18]]){
+      const bang=new THREE.Mesh(bangGeo.clone(),materials[4]);
+      bang.name='HairFringe';
+      bang.position.set(x*dim.H,dim.headCenterY-dim.headBoneY+.055*dim.H,dim.headRZ*.89);
+      bang.rotation.z=rot;
+      bang.rotation.x=-.10;
+      bang.castShadow=true;
+      headBone.add(bang);
+    }
+  }else{
+    const nose=new THREE.Mesh(new THREE.BoxGeometry(.018*dim.H,.018*dim.H,.025*dim.H),materials[0]);
+    nose.name='Nose';
+    nose.position.set(0,dim.headCenterY-dim.headBoneY-.018*dim.H,dim.headRZ*.96);
+    headBone.add(nose);
+  }
+}
+
+function setCameraView(name,markButton=true){
+  if(!camera||!controls||!currentDim)return;
+  activeView=name;
+  const H=currentDim.H;
+  controls.target.set(0,H*.50,0);
+  if(name==='front')camera.position.set(0,H*.72,H*2.55);
+  else if(name==='side')camera.position.set(H*2.55,H*.72,0);
+  else if(name==='back')camera.position.set(0,H*.72,-H*2.55);
+  else camera.position.set(H*1.68,H*.82,H*1.92);
+  controls.syncFromCamera?.();
+  controls.update();
+  if(markButton){
+    document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
+  }
 }
 
 function buildCharacter(){
@@ -433,37 +557,20 @@ function buildCharacter(){
   }
 
   const H=params.height;
-  const dim={
-    H,
-    ankleY:.065*H,
-    kneeY:.292*H,
-    hipY:.515*H,
-    spineY:.615*H,
-    chestY:.715*H,
-    shoulderY:.755*H,
-    neckY:.835*H,
-    headBoneY:.855*H,
-    headCenterY:.925*H,
-    headRX:.092*H*params.headScale,
-    headRY:.075*H*params.headScale,
-    headRZ:.088*H*params.headScale,
-    shoulderX:.145*H*params.shoulderScale,
-    hipX:.075*H,
-    upperArmLen:.185*H,
-    lowerArmLen:.17*H,
-    upperLegLen:(.515-.292)*H,
-    lowerLegLen:(.292-.065)*H,
-    limb:.055*H*params.limbScale
-  };
+  const dim=bodyDimensions(bodyStyle,H);
+  currentDim=dim;
 
   characterRoot=new THREE.Group();
   characterRoot.name='KidscadeCharacter';
   characterRoot.userData={
     type:'kidscade-rigged-character',
     rigVersion:RIG_VERSION,
+    bodyStyle,
+    bodyStyleLabel:BODY_STYLES[bodyStyle]?.label||bodyStyle,
     units:'meters',
     upAxis:'Y',
     groundOrigin:true,
+    designTarget:bodyStyle==='legacy'?'legacy mannequin':'Kidscade SD game character',
     generator:'Kidscade 3D Character Studio'
   };
   scene.add(characterRoot);
@@ -494,11 +601,11 @@ function buildCharacter(){
 
   const materials=[
     mat(params.skinColor,.82),
-    mat(params.topColor,.78),
-    mat(params.bottomColor,.83),
-    mat(params.shoeColor,.72),
-    mat(params.hairColor,.9),
-    mat(params.eyeColor,.8)
+    mat(params.topColor,.76),
+    mat(params.bottomColor,.82),
+    mat(params.shoeColor,.70),
+    mat(params.hairColor,.88),
+    mat(params.eyeColor,.72)
   ];
   materials.forEach((m,i)=>m.name=['Skin','Top','Bottom','Shoes','Hair','Eyes'][i]);
 
@@ -506,11 +613,18 @@ function buildCharacter(){
   const materialSlots=[];
   const push=(g,slot)=>{geoms.push(g);materialSlots.push(slot)};
 
-  const torsoW=dim.shoulderX*1.62;
-  push(boxPart([torsoW,.23*H,.13*H],[0,.695*H,0],boneIndex.Chest),1);
-  push(boxPart([.225*H,.095*H,.13*H],[0,.49*H,0],boneIndex.Hips),2);
-  push(cylinderPart(.028*H,.04*H,[0,.842*H,0],boneIndex.Neck),0);
-  push(spherePart([dim.headRX,dim.headRY,dim.headRZ],[0,dim.headCenterY,0],boneIndex.Head),0);
+  if(!dim.rounded){
+    const torsoW=dim.shoulderX*1.62;
+    push(boxPart([torsoW,.23*H,.13*H],[0,.695*H,0],boneIndex.Chest),1);
+    push(boxPart([.225*H,.095*H,.13*H],[0,.49*H,0],boneIndex.Hips),2);
+    push(cylinderPart(.028*H,.04*H,[0,.842*H,0],boneIndex.Neck),0);
+    push(spherePart([dim.headRX,dim.headRY,dim.headRZ],[0,dim.headCenterY,0],boneIndex.Head),0);
+  }else{
+    push(taperedPart(dim.torsoTop,dim.torsoBottom,dim.torsoH,[0,dim.torsoCenterY,0],boneIndex.Chest,.56),1);
+    push(capsulePart(.045*H,.090*H,[0,dim.hipY-.008*H,0],boneIndex.Hips,2.55,1.35),2);
+    push(cylinderPart(.020*H,.028*H,[0,dim.neckY+.004*H,0],boneIndex.Neck),0);
+    push(spherePart([dim.headRX,dim.headRY,dim.headRZ],[0,dim.headCenterY,0],boneIndex.Head),0);
+  }
 
   for(const side of [-1,1]){
     const suffix=side>0?'L':'R';
@@ -519,13 +633,22 @@ function buildCharacter(){
     const uArm=boneIndex['UpperArm_'+suffix],lArm=boneIndex['LowerArm_'+suffix],hand=boneIndex['Hand_'+suffix];
     const uLeg=boneIndex['UpperLeg_'+suffix],lLeg=boneIndex['LowerLeg_'+suffix],foot=boneIndex['Foot_'+suffix];
 
-    push(boxPart([dim.limb,dim.upperArmLen*.96,dim.limb],[sx,dim.shoulderY-dim.upperArmLen*.48,0],uArm),1);
-    push(boxPart([dim.limb*.88,dim.lowerArmLen*.95,dim.limb*.88],[sx,dim.shoulderY-dim.upperArmLen-dim.lowerArmLen*.475,0],lArm),0);
-    push(spherePart([dim.limb*.58,.038*H,dim.limb*.58],[sx,dim.shoulderY-dim.upperArmLen-dim.lowerArmLen-.032*H,0],hand,8,5),0);
+    if(!dim.rounded){
+      push(boxPart([dim.limb,dim.upperArmLen*.96,dim.limb],[sx,dim.shoulderY-dim.upperArmLen*.48,0],uArm),1);
+      push(boxPart([dim.limb*.88,dim.lowerArmLen*.95,dim.limb*.88],[sx,dim.shoulderY-dim.upperArmLen-dim.lowerArmLen*.475,0],lArm),0);
+      push(spherePart([dim.handX,dim.handY,dim.handZ],[sx,dim.shoulderY-dim.upperArmLen-dim.lowerArmLen-.032*H,0],hand,8,5),0);
+      push(boxPart([dim.limb*1.18,dim.upperLegLen*.97,dim.limb*1.18],[hipX,dim.hipY-dim.upperLegLen*.485,0],uLeg),2);
+      push(boxPart([dim.limb,dim.lowerLegLen*.96,dim.limb],[hipX,dim.kneeY-dim.lowerLegLen*.48,0],lLeg),0);
+      push(boxPart([dim.footX,.055*H,dim.footZ],[hipX,.033*H,.035*H],foot),3);
+    }else{
+      push(capsulePart(dim.limb*.52,dim.upperArmLen*.96,[sx,dim.shoulderY-dim.upperArmLen*.49,0],uArm,1,.92),1);
+      push(capsulePart(dim.limb*.46,dim.lowerArmLen*.95,[sx,dim.shoulderY-dim.upperArmLen-dim.lowerArmLen*.48,0],lArm,1,.92),0);
+      push(spherePart([dim.handX,dim.handY,dim.handZ],[sx,dim.shoulderY-dim.upperArmLen-dim.lowerArmLen-.035*H,.008*H],hand,9,6),0);
 
-    push(boxPart([dim.limb*1.18,dim.upperLegLen*.97,dim.limb*1.18],[hipX,dim.hipY-dim.upperLegLen*.485,0],uLeg),2);
-    push(boxPart([dim.limb,dim.lowerLegLen*.96,dim.limb],[hipX,dim.kneeY-dim.lowerLegLen*.48,0],lLeg),0);
-    push(boxPart([dim.limb*1.28,.055*H,.135*H],[hipX,.033*H,.035*H],foot),3);
+      push(capsulePart(dim.limb*.58,dim.upperLegLen*.97,[hipX,dim.hipY-dim.upperLegLen*.49,0],uLeg,1.04,1),2);
+      push(capsulePart(dim.limb*.50,dim.lowerLegLen*.96,[hipX,dim.kneeY-dim.lowerLegLen*.48,0],lLeg,1,1),0);
+      push(spherePart([dim.footX,dim.footY,dim.footZ],[hipX,dim.footY*.58,.040*H],foot,9,6),3);
+    }
   }
 
   const merged=mergeRigidGeometries(geoms,materialSlots);
@@ -565,16 +688,15 @@ function buildCharacter(){
   const triangles=countTriangles(characterRoot);
   $('triangleCount').textContent=triangles.toLocaleString();
   $('polyBadge').textContent=triangles.toLocaleString()+' triangles';
-  $('rigBadge').textContent='✓ Humanoid Rig · '+bones.length+' bones';
+  $('rigBadge').textContent='✓ '+(BODY_STYLES[bodyStyle]?.label||'Humanoid')+' · '+bones.length+' bones';
   $('clipBadge').textContent=clips.length+' clips';
+  if($('rigVersionLabel'))$('rigVersionLabel').textContent=bodyStyle==='legacy'?'Humanoid v2 · V1 body':'Kidscade Humanoid v2';
 
-  controls.target.set(0,H*.52,0);
-  camera.position.set(H*1.75,H*1.18,H*2.35);
-  controls.syncFromCamera?.();
-  controls.update();
+  setCameraView(activeView,false);
+  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===activeView));
 
-  playClip(activeClip);
-  setStatus('생성 완료 · '+bones.length+' bones · '+triangles.toLocaleString()+' triangles');
+  playClip(activeClip||'IDLE');
+  setStatus('생성 완료 · '+(BODY_STYLES[bodyStyle]?.label||bodyStyle)+' · '+triangles.toLocaleString()+' triangles');
 }
 
 function countTriangles(root){
@@ -618,13 +740,15 @@ function resetPose(){
   setStatus('기본 바인드 자세로 돌아왔습니다.');
 }
 
-function applyPreset(name){
-  const p=PRESETS[name];
-  if(!p)return;
-  for(const [key,value] of Object.entries(p)){
+function applyBodyStyle(name){
+  const profile=BODY_STYLES[name];
+  if(!profile)return;
+  bodyStyle=name;
+  for(const [key,value] of Object.entries(profile.defaults)){
     const el=$(key);
     if(el)el.value=String(value);
   }
+  document.querySelectorAll('[data-body-style]').forEach(b=>b.classList.toggle('active',b.dataset.bodyStyle===name));
   syncOutputs();
   buildCharacter();
 }
@@ -643,12 +767,17 @@ function download(name,blob){
 function exportSpec(){
   readParams();
   const spec={
-    version:1,
+    version:2,
     type:'kidscade-humanoid-rig-spec',
     rigVersion:RIG_VERSION,
+    bodyStyle,
+    bodyStyleLabel:BODY_STYLES[bodyStyle]?.label||bodyStyle,
     generatedAt:new Date().toISOString(),
     coordinateSystem:{up:'Y',units:'meters',origin:'ground-center',forward:'+Z'},
     parameters:{...params},
+    proportionGuide:bodyStyle==='legacy'
+      ?{headsTall:'legacy',headHeightRatio:.15}
+      :{headsTall:bodyStyle==='action2'?'about 3.05':'about 2.9',headHeightRatio:Number((currentDim?.headRY*2/currentDim?.H||0).toFixed(3))},
     bones:skinnedMesh?.skeleton?.bones.map(b=>({name:b.name,parent:b.parent?.isBone?b.parent.name:null}))||[],
     clips:clips.map(c=>({name:c.name,duration:Number(c.duration.toFixed(3)),tracks:c.tracks.map(t=>t.name)})),
     skinning:'rigid-single-bone-weight',
@@ -697,7 +826,7 @@ async function exportGlb(){
       const blob=result instanceof ArrayBuffer
         ?new Blob([result],{type:'model/gltf-binary'})
         :new Blob([JSON.stringify(result)],{type:'model/gltf+json'});
-      download('kidscade-rigged-character.glb',blob);
+      download('kidscade-'+bodyStyle+'-rigged-character.glb',blob);
       setStatus('GLB 저장 완료 · 바인드 자세 + 스켈레톤 + '+clips.length+'개 애니메이션');
     },
     error=>{
@@ -722,7 +851,8 @@ function wireUi(){
   $('exportSpec').addEventListener('click',exportSpec);
   $('speed').addEventListener('input',()=>{if(activeAction)activeAction.setEffectiveTimeScale(Number($('speed').value))});
   document.querySelectorAll('[data-clip]').forEach(b=>b.addEventListener('click',()=>playClip(b.dataset.clip)));
-  document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>applyPreset(b.dataset.preset)));
+  document.querySelectorAll('[data-body-style]').forEach(b=>b.addEventListener('click',()=>applyBodyStyle(b.dataset.bodyStyle)));
+  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setCameraView(b.dataset.view)));
 }
 
 function loop(now){
