@@ -23,6 +23,8 @@ const A={
  femaleC:'characters/people/character-female-c.glb'
 };
 const PEOPLE=[A.femaleA,A.maleA,A.femaleB,A.maleB,A.femaleC,A.maleC];
+function hashId(s){let h=2166136261;for(const ch of String(s||'')){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return Math.abs(h)}
+function actorPath(info,index=0){const female=info?.sprite==='female',arr=female?[A.femaleA,A.femaleB,A.femaleC]:[A.maleA,A.maleB,A.maleC];return arr[hashId(info?.personId||info?.id||index)%arr.length]}
 const W=bridge.width||960,H=bridge.height||540,FIELD_W=30,FIELD_D=16.875;
 const sx=x=>(x/W-.5)*FIELD_W, sz=y=>(y/H-.5)*FIELD_D;
 const wx=x=>(x/FIELD_W+.5)*W, wy=z=>(z/FIELD_D+.5)*H;
@@ -186,12 +188,12 @@ function fallbackActor(color,zombie=false){
 async function populate(host,path,target,color,mix){
  const o=await cloneAsset(path,target,color,mix);if(!o||!host.parent)return;host.clear();host.add(o)
 }
-function getActor(key,type,index,elite=false){
+function getActor(key,type,index,elite=false,info={}){
  let a=actorMap.get(key);if(a)return a;
  const root=new THREE.Group(),modelHost=new THREE.Group();root.add(modelHost);dynamicRoot.add(root);
- let color=0x6b9b78,target=1.55,path=PEOPLE[index%PEOPLE.length],mix=.28;
+ let color=0x6b9b78,target=1.55,path=actorPath(info,index),mix=.28;
  if(type==='zombie'){color=elite?0x7d4f55:0x758b58;target=elite?1.85:1.65;mix=.68}
- else if(type==='survivor'){color=[0x6f9b78,0x6d8eaa,0xaa7c62,0x8d79a7][index%4];target=1.55;mix=.38}
+ else if(type==='survivor'){color=[0x6f9b78,0x6d8eaa,0xaa7c62,0x8d79a7][hashId(info?.personId||info?.id||index)%4];target=1.55;mix=.38}
  modelHost.add(fallbackActor(color,type==='zombie'));populate(modelHost,path,target,color,mix);
  const r=new THREE.Mesh(new THREE.RingGeometry(.32,.39,30),new THREE.MeshBasicMaterial({color:type==='zombie'?0xd85960:0x7fc68e,transparent:true,opacity:.62,side:THREE.DoubleSide,depthWrite:false}));
  r.rotation.x=-Math.PI/2;r.position.y=.024;root.add(r);
@@ -231,7 +233,7 @@ async function ensureCrate(q){
 function syncActors(s,t){
  const zombieKeys=new Set(),survivorKeys=new Set();
  s.zombies.forEach((z,i)=>{
-  const key='z'+String(z.id??i);zombieKeys.add(key);const a=getActor(key,'zombie',i,z.elite);
+  const key='z'+String(z.id??i);zombieKeys.add(key);const a=getActor(key,'zombie',i,z.elite,z);
   const x=sx(z.x),zz=sz(z.y),dx=a.lastX===null?0:z.x-a.lastX,dy=a.lastY===null?0:z.y-a.lastY;
   a.root.position.set(x,.02,zz);if(Math.hypot(dx,dy)>.05)a.root.rotation.y=Math.atan2(dx,dy);
   a.root.position.y=.02+Math.sin(t*.006+(z.phase||0))*.035;a.root.scale.setScalar(z.hit>0?1.08:1);
@@ -240,7 +242,7 @@ function syncActors(s,t){
  removeMissing('z',zombieKeys);
 
  s.survivors.forEach((p,i)=>{
-  const key='s'+String(p.id??i);survivorKeys.add(key);const a=getActor(key,'survivor',i,false);
+  const key='s'+String(p.id??i);survivorKeys.add(key);const a=getActor(key,'survivor',i,false,p);
   a.root.visible=!!p.alive&&!p.rescued;if(!a.root.visible)return;
   const dx=a.lastX===null?0:p.x-a.lastX,dy=a.lastY===null?0:p.y-a.lastY;
   a.root.position.set(sx(p.x),.02,sz(p.y));if(Math.hypot(dx,dy)>.05)a.root.rotation.y=Math.atan2(dx,dy);
@@ -329,4 +331,4 @@ function frame(t){
  requestAnimationFrame(frame)
 }
 requestAnimationFrame(frame);
-window.Q17Field3D=Object.freeze({active:true,version:'21.2',scene,camera,renderer});
+window.Q17Field3D=Object.freeze({active:true,version:'21.3',scene,camera,renderer});
