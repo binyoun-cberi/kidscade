@@ -938,10 +938,11 @@ function updateSafety(dt){
   if(!currentStep.safetyRequired)return;
   const inBriefing=lessonElapsed>=SAFETY_RULES.briefingStartSeconds&&lessonElapsed<SAFETY_RULES.briefingStartSeconds+SAFETY_RULES.briefingDurationSeconds;
   if(inBriefing){
-    setGuide('안전교육 중','안전수칙을 잘 듣고 있는지 살펴보세요','집중이 떨어진 학생에게 가까이 가서 관심을 주세요.');
+    setGuide('안전교육 중',boardNear?'안전수칙 설명 중':'선생님이 칠판을 떠났어요',
+      boardNear?'안전수칙을 듣지 못한 학생이 있는지 살펴보세요.':'안전교육을 직접 진행하지 못하면 사고 위험이 생겨요.');
   }
   for(const s of activeLessonStudents()){
-    const blocked=s.runtime.mode==='offtask'||pairs.some(p=>p.state==='conflict'&&(p.a===s||p.b===s));
+    const blocked=(inBriefing&&!boardNear)||s.runtime.mode==='offtask'||pairs.some(p=>p.state==='conflict'&&(p.a===s||p.b===s));
     const evt=tickSafetyRecord(s,dt,{lessonElapsed,focusRatio:focusRatio(s),blocked});
     if(inBriefing&&focusRatio(s)<SAFETY_RULES.distractedFocusRatio&&!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy')){
       showBubble(s,'👀','');
@@ -1033,11 +1034,36 @@ function recordLessonLearning(s,dt,chat){
     chatting:!!chat,
     conflict
   });
-  addLearning(campaign,s.runtime.id,gain);
+  // Every pupil's learning depends on both personal attention and real instruction delivery.
+  addLearning(campaign,s.runtime.id,gain*teachingMultiplier);
+}
+function endGroupActivitiesForRecap(){
+  for(const pair of pairs.filter(p=>p.source==='team')){
+    refreshStudentBubbleState(pair.a);refreshStudentBubbleState(pair.b);
+  }
+  pairs=pairs.filter(p=>p.source!=='team');
+  teamActive=false;
 }
 function updateLesson(dt){
   stepTime-=dt;schoolMinute+=dt*.36;lessonElapsed+=dt;
   groupSignalCooldown=Math.max(0,groupSignalCooldown-dt);
+  boardNear=isTeacherAtBoard();
+  const phaseEvent=tickLessonFlow(lessonFlow,dt,{teacherAtBoard:boardNear});
+  if(lessonFlow.phase==='explain'&&boardNear)stats.boardExplanationSeconds+=dt;
+  if(phaseEvent==='explanation-complete'){
+    showToast('📖 설명 완료! 칠판 앞에서 과제를 내주세요.');
+  }else if(phaseEvent==='practice-complete'){
+    showToast('📝 활동 시간이 끝났어요. 칠판으로 돌아와 정리하세요.');
+    endGroupActivitiesForRecap();
+  }else if(phaseEvent==='recap-complete'){
+    stats.lessonsRecapped++;
+    for(const student of activeLessonStudents()){
+      const weight=LEARNING_RULES.subjectWeights[currentStep.subject]??.5;
+      addLearning(campaign,student.runtime.id,TEACHING_RULES.recapLearningBonus*weight);
+    }
+    showToast('📚 핵심 내용을 정리했어요. 학생들이 더 잘 기억해요.');
+  }
+  teachingMultiplier=lessonTeachingEfficiency(lessonFlow,{teacherAtBoard:boardNear});
   for(const s of students){
     if(!studentCanParticipate(s))continue;
     revealHealthIfNeeded(s,dt);
@@ -1072,7 +1098,10 @@ function updateLesson(dt){
   updateLessonChatter(dt);
   updateTeamActivity(dt);
   updateSafety(dt);
-  if(stepTime<=0){stats.periodsCompleted++;advanceStep()}
+  if(stepTime<=0){
+    if(!lessonFlow.completed)stats.lessonsWithoutRecap++;
+    stats.periodsCompleted++;advanceStep();
+  }
 }
 
 function freeStudents(){return students.filter(s=>studentCanParticipate(s)&&!pairs.some(p=>p.a===s||p.b===s)&&s.runtime.cooldown<=0)}
@@ -1277,8 +1306,11 @@ function scanAction(){
       .sort((a,b)=>distance2D(player.root.position,a.actor.root.position)-distance2D(player.root.position,b.actor.root.position))[0];
     if(near){currentAction={type:'focus',student:near};setAction('👀',near.runtime.name+' 집중 도와주기',true);return}
 
-    const point=new THREE.Vector3(activeSpace.teachingPoint.x,0,activeSpace.teachingPoint.z);
-    if(groupSignalCooldown<=0&&groupSignalsThisLesson<2&&distance2D(player.root.position,point)<1.75){
+    const flowAction=lessonFlowAction(lessonFlow);
+    if(flowAction&&isTeacherAtBoard()){
+      currentAction={type:flowAction.type};setAction(flowAction.icon,flowAction.label,true);return;
+    }
+    if(groupSignalCooldown<=0&&groupSignalsThisLesson<TEACHING_RULES.maxGroupFocusPerLesson&&isTeacherAtBoard()){
       currentAction={type:'groupFocus'};setAction('📣','전체 집중시키기',true);return;
     }
   }
@@ -1293,6 +1325,15 @@ function updateGuideByAction(){
   else if(currentAction.type==='healthDecision')setGuide('건강 조치',healthStatusText(currentAction.student),'상황에 맞는 조치를 해주세요.');
   else if(currentAction.type==='safetyReview')setGuide('안전교육',currentAction.student.runtime.name+'가 안전수칙을 놓쳤어요','가까이에서 안전수칙을 다시 알려주세요.');
   else if(currentAction.type==='groupFocus')setGuide('전체 집중 신호','반 전체가 다시 집중하도록 도와주세요','한 교시에 최대 2번 사용할 수 있어요.');
+  else if(currentAction.type==='assignWork')setGuide('설명 완료','과제를 내줄 시간이에요','행동 버튼으로 자율활동을 시작하면 개별지도를 할 수 있어요.');
+  else if(currentAction.type==='startRecap')setGuide('활동 완료','칠판에서 정리해 주세요','정리를 끝내야 전체 학생이 배운 내용을 오래 기억해요.');
+  else if(currentStep.kind==='lesson'&&currentAction.type==='none'){
+    const flow=lessonFlow;
+    if(flow?.phase==='explain')setGuide('① 직접 설명',boardNear?'칠판에서 설명하고 있어요':'설명이 멈췄어요',
+      boardNear?'설명을 마치면 과제를 제시하세요.':'학생을 도왔으면 칠판으로 돌아가 설명을 이어가세요.');
+    else if(flow?.phase==='practice')setGuide('② 자율·모둠활동','학생들을 지도하세요','과제가 나간 동안은 학생 관리에 집중해도 수업이 이어져요.');
+    else if(flow?.phase==='recap')setGuide('③ 내용 정리',boardNear?'수업 내용을 정리하고 있어요':'정리가 멈췄어요','칠판 앞에 머물러 마무리하세요.');
+  }
   else if(currentAction.type==='quietFriends')setGuide('수업 중 친구 장난',currentAction.chat.a.runtime.name+'와 '+currentAction.chat.b.runtime.name+'가 떠들고 있어요','친한 친구끼리도 지금은 수업에 집중하도록 조용히 알려주세요.');
 }
 function removeStudentFromActivePairs(s){
@@ -1348,6 +1389,20 @@ function useAction(){
   }
   if(currentAction.type==='quietFriends'){
     stopLessonChat(currentAction.chat,{teacher:true});playerGestureTimer=.45;playAnim(player,'push');return;
+  }
+  if(currentAction.type==='assignWork'){
+    if(isTeacherAtBoard()&&performLessonAction(lessonFlow,'assignWork')){
+      stats.lessonsAssigned++;showToast('📝 과제를 냈어요. 학생들이 스스로 활동합니다.');
+      playerGestureTimer=.45;playAnim(player,'push');
+    }
+    return;
+  }
+  if(currentAction.type==='startRecap'){
+    if(isTeacherAtBoard()&&performLessonAction(lessonFlow,'startRecap')){
+      showToast('📖 정리를 시작해요. 칠판에서 끝까지 설명해 주세요.');
+      playerGestureTimer=.45;playAnim(player,'push');
+    }
+    return;
   }
   if(currentAction.type==='groupFocus'){
     if(groupSignalCooldown>0||groupSignalsThisLesson>=2)return;
@@ -1431,7 +1486,8 @@ function finishDay(){
     '<div><strong>'+stats.focusHelps+'</strong><span>집중 도움</span></div>'+
     '<div><strong>'+stats.conflictsMediated+'</strong><span>갈등 중재</span></div>'+
     '<div><strong>'+stats.healthChecks+'</strong><span>건강 확인</span></div>'+
-    '<div><strong>'+stats.groupSignals+'</strong><span>전체 집중 신호</span></div>';
+    '<div><strong>'+stats.groupSignals+'</strong><span>전체 집중 신호</span></div>'+
+    '<div><strong>'+stats.lessonsRecapped+'/6</strong><span>완료한 수업 정리</span></div>';
 
   if(exam){
     renderExamResults(exam);
