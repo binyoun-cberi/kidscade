@@ -4040,7 +4040,7 @@ function plantFarmItem(hit){
   if(bagCount(selectedType)<1){toast(blockDef(selectedType).name+'이(가) 더 필요해요.');return true}
   if(below.type!=='tilledSoil')setWorldBlock(p.x,p.y-1,p.z,{type:'tilledSoil',playerBuilt:true},true);
   const crop=cropForPlant(selectedType);
-  setWorldBlock(p.x,p.y,p.z,{type:crop,age:0,plantedAt:survivalWorldTime,lastGrowAt:survivalWorldTime,playerBuilt:true},true);
+  setWorldBlock(p.x,p.y,p.z,{type:crop,age:0,plantedAt:survivalWorldTime,lastGrowAt:survivalWorldTime,lastGrowReal:Date.now()/1000,playerBuilt:true},true);
   consumeBag(selectedType,1);buildHotbar();sfx('place');toast(blockDef(selectedType).name+'을(를) 심었어요. 비나 시간이 작물을 키워 줘요.');markFreeWorldDirty(300);return true;
 }
 function harvestCrop(x,y,z,data){
@@ -4750,9 +4750,12 @@ function simulatePlants(){
     let wet=weather==='rain'||weather==='storm';
     if(!wet)for(let dx=-2;dx<=2&&!wet;dx++)for(let dz=-2;dz<=2&&!wet;dz++)if(getBlock(x+dx,y-1,z+dz)?.type==='water')wet=true;
     const last=Number.isFinite(Number(d.lastGrowAt))?Number(d.lastGrowAt):now;
-    const elapsed=Math.max(0,now-last),rate=CROP_MATURE_AGE/CROP_MATURE_SECONDS;
+    const realNow=Date.now()/1000,lastReal=Number.isFinite(Number(d.lastGrowReal))?Number(d.lastGrowReal):realNow;
+    const worldElapsed=Math.max(0,now-last),realElapsed=Math.max(0,realNow-lastReal);
+    const elapsed=Math.max(worldElapsed,realElapsed),rate=CROP_MATURE_AGE/CROP_MATURE_SECONDS;
     d.age=Math.min(CROP_MATURE_AGE,age+elapsed*rate*(wet?1.6:1));
-    d.lastGrowAt=now;if(!Number.isFinite(Number(d.plantedAt)))d.plantedAt=Math.max(0,now-(d.age/rate));
+    d.lastGrowAt=now;d.lastGrowReal=realNow;
+    if(!Number.isFinite(Number(d.plantedAt)))d.plantedAt=Math.max(0,now-(d.age/rate));
     const newStage=Math.floor(Math.min(CROP_MATURE_AGE,d.age)/(CROP_MATURE_AGE/4));
     if(newStage!==oldStage||elapsed>=5||d.age>=CROP_MATURE_AGE){worldEdits.set(key,cloneBlockData(d));refreshBlockMesh(x,y,z);markFreeWorldDirty(900)}
   }
