@@ -1089,11 +1089,11 @@
     {
       "id": "job_bogle_bunsik",
       "title": "보글보글 분식집",
-      "href": "games/job_bogle_bunsik/보글보글 분식집.html?v=20",
+      "href": "games/job_bogle_bunsik/보글보글 분식집.html?v=21",
       "category": "job",
       "age": "job",
       "icon": "🥘",
-      "description": "왼쪽 아래 주문 영수증과 오른쪽 아래 해야 할 일을 보며, 바닥의 상호작용 칸을 따라 실제 3D 주방에서 라면을 만들고 서빙하는 분식집 직업 체험 게임!",
+      "description": "주문서를 냄비에 배정하고 여러 냄비를 동시에 관리해 콤보를 이어 가는 3D 분식집 게임! 물은 주전자에 2컵씩 받아 오고, 맛있게 연속 서빙하면 보너스와 손님 리액션이 커져요.",
       "cover": "assets/gate-image/보글보글 분식집.png",
       "subject": "career",
       "genre": "management",
