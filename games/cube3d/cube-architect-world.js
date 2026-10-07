@@ -101,7 +101,12 @@ const RECIPES=[
  {id:'sandstone',name:'사암 ×2',needs:{sand:4},gives:{sandstone:2},stage:5,bench:true},
  {id:'snowBrick',name:'눈 벽돌 ×2',needs:{snow:4},gives:{snowBrick:2},stage:5},
  {id:'cactusDye',name:'선인장 안료 ×2',needs:{cactus:2},gives:{cactusDye:2},stage:5,bench:true},
- {id:'windowFrame',name:'창문틀 ×2',needs:{planks:3,glass:1},gives:{windowFrame:2},stage:7,bench:true}
+ {id:'windowFrame',name:'창문틀 ×2',needs:{planks:3,glass:1},gives:{windowFrame:2},stage:7,bench:true},
+ {id:'chest',name:'나무 상자',needs:{planks:8},gives:{chest:1},stage:2,bench:true},
+ {id:'bed',name:'양털 침대',needs:{planks:3,wool:2},gives:{bed:1},stage:2,bench:true},
+ {id:'mapBoard',name:'탐험 지도판',needs:{planks:4,sticks:2},gives:{mapBoard:1},stage:2,bench:true},
+ {id:'displayStand',name:'기념품 전시대',needs:{planks:2,stone:1},gives:{displayStand:1},stage:2,bench:true},
+ {id:'bread',name:'빵',needs:{wheat:3},gives:{bread:1},stage:2,bench:true}
 ];
 const GOALS=[
  {id:'wood',kind:'training',title:'첫날 · 원목 3개 채집',description:'나무를 바라보고 파괴를 길게 눌러 원목을 3개 모으세요.',need:3,progress:s=>s.harvestedWood||0},
@@ -159,7 +164,7 @@ function exposureStep(exposure,dt,{night=false,storm=false,rain=false,cold=false
  const intensity=(night?1:0)+(storm?1.0:rain?.45:0)+(cold?.55:0);
  return Math.max(0,Math.min(100,exposure+dt*(intensity?1.8+intensity*1.7:-7)));
 }
-const RESOURCE_ALIAS={grass:'dirt',pineLog:'log',pineLeaves:'leaves',snow:'snow',redSand:'redSand',ironOre:'ironOre'};
+const RESOURCE_ALIAS={grass:'dirt',tilledSoil:'dirt',pineLog:'log',pineLeaves:'leaves',snow:'snow',redSand:'redSand',ironOre:'ironOre'};
 function dropFor(type){return RESOURCE_ALIAS[type]||type}
 function toolNeeded(type){
  if(type==='obsidian')return 'ironPick';
