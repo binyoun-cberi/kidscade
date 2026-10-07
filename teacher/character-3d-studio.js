@@ -3,16 +3,16 @@ import * as THREE from '../assets/vendor/three-r160/three.module.js';
 window.__kc3dStudioModuleReady=true;
 
 const ADMIN_KEY_NAME='kc_teacher_admin_key';
-const RIG_VERSION='kidscade-humanoid-v2';
+const RIG_VERSION='kidscade-humanoid-v3';
 const CLIP_NAMES=['IDLE','WALK','RUN','JUMP','ATTACK','HURT','DEAD'];
 const $=id=>document.getElementById(id);
 
 let scene,camera,renderer,controls,characterRoot,skinnedMesh,skeletonHelper,mixer;
 let clips=[],activeAction=null,activeClip='IDLE',lastTime=performance.now();
-let bodyStyle='chibi2',activeView='threeQuarter',currentDim=null;
+let bodyStyle='soft3',activeView='threeQuarter',currentDim=null;
 
 const params={
-  height:1.25,
+  height:1.22,
   headScale:1,
   shoulderScale:1,
   limbScale:1,
@@ -36,6 +36,10 @@ const BODY_STYLES={
   action2:{
     label:'V2 액션 과장형',
     defaults:{height:1.28,headScale:.96,shoulderScale:1.06,limbScale:1.12}
+  },
+  soft3:{
+    label:'V3 SoftMesh SD',
+    defaults:{height:1.22,headScale:1,shoulderScale:1,limbScale:1}
   }
 };
 
@@ -329,7 +333,124 @@ function taperedPart(topRadius,bottomRadius,height,center,boneIndex,depthScale=.
   return rigidGeometry(g,m,boneIndex);
 }
 
+function normalizeBoneWeights(pairs){
+  const clean=(pairs||[]).filter(p=>p&&p[1]>0).slice(0,4);
+  const total=clean.reduce((s,p)=>s+p[1],0)||1;
+  const indices=[0,0,0,0],weights=[0,0,0,0];
+  clean.forEach((p,i)=>{indices[i]=p[0];weights[i]=p[1]/total});
+  return {indices,weights};
+}
+
+function skinnedRingShell(rings,segments=14){
+  const pos=[],skinI=[],skinW=[],idx=[];
+  for(const ring of rings){
+    const weights=normalizeBoneWeights(ring.weights);
+    for(let s=0;s<segments;s++){
+      const a=s/segments*Math.PI*2;
+      pos.push(
+        (ring.cx||0)+Math.cos(a)*ring.rx,
+        ring.y,
+        (ring.cz||0)+Math.sin(a)*ring.rz
+      );
+      skinI.push(...weights.indices);
+      skinW.push(...weights.weights);
+    }
+  }
+  for(let r=0;r<rings.length-1;r++){
+    for(let s=0;s<segments;s++){
+      const n=(s+1)%segments;
+      const a=r*segments+s,b=r*segments+n,c=(r+1)*segments+s,d=(r+1)*segments+n;
+      idx.push(a,c,b,b,c,d);
+    }
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(skinI,4));
+  g.setAttribute('skinWeight',new THREE.Float32BufferAttribute(skinW,4));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  const non=g.toNonIndexed();
+  g.dispose();
+  return non;
+}
+
+function softTorsoGeometry(dim,boneIndex){
+  const H=dim.H;
+  const sh=params.shoulderScale;
+  return skinnedRingShell([
+    {y:dim.hipY-.010*H,rx:.105*H,rz:.090*H,weights:[[boneIndex.Hips,1]]},
+    {y:dim.hipY+.025*H,rx:.122*H,rz:.101*H,weights:[[boneIndex.Hips,.82],[boneIndex.Spine,.18]]},
+    {y:dim.spineY-.018*H,rx:.135*H,rz:.108*H,weights:[[boneIndex.Hips,.32],[boneIndex.Spine,.68]]},
+    {y:dim.spineY+.026*H,rx:.151*H,rz:.113*H,weights:[[boneIndex.Spine,.82],[boneIndex.Chest,.18]]},
+    {y:dim.chestY-.015*H,rx:.164*H*sh,rz:.118*H,weights:[[boneIndex.Spine,.28],[boneIndex.Chest,.72]]},
+    {y:dim.shoulderY-.020*H,rx:.178*H*sh,rz:.116*H,weights:[[boneIndex.Chest,1]]},
+    {y:dim.shoulderY+.012*H,rx:.150*H*sh,rz:.105*H,weights:[[boneIndex.Chest,1]]},
+    {y:dim.neckY-.006*H,rx:.072*H,rz:.070*H,weights:[[boneIndex.Chest,.72],[boneIndex.Neck,.28]]}
+  ],16);
+}
+
+function softForearmGeometry(dim,x,upperBone,lowerBone){
+  const H=dim.H;
+  const elbow=dim.shoulderY-dim.upperArmLen;
+  const wrist=elbow-dim.lowerArmLen;
+  const r=dim.limb*.54;
+  return skinnedRingShell([
+    {cx:x,y:elbow+.030*H,rx:r*1.08,rz:r*.94,weights:[[upperBone,.86],[lowerBone,.14]]},
+    {cx:x,y:elbow+.010*H,rx:r*1.12,rz:r*.97,weights:[[upperBone,.64],[lowerBone,.36]]},
+    {cx:x,y:elbow-.010*H,rx:r*1.10,rz:r*.96,weights:[[upperBone,.36],[lowerBone,.64]]},
+    {cx:x,y:elbow-.045*H,rx:r,rz:r*.92,weights:[[lowerBone,.94],[upperBone,.06]]},
+    {cx:x,y:(elbow+wrist)*.5,rx:r*.91,rz:r*.86,weights:[[lowerBone,1]]},
+    {cx:x,y:wrist+.018*H,rx:r*.83,rz:r*.80,weights:[[lowerBone,1]]}
+  ],14);
+}
+
+function softLegGeometry(dim,x,upperBone,lowerBone){
+  const H=dim.H;
+  const knee=dim.kneeY,ankle=dim.ankleY;
+  const r=dim.limb*.63;
+  const shortsBottom=dim.hipY-.085*H;
+  return skinnedRingShell([
+    {cx:x,y:shortsBottom+.016*H,rx:r*1.04,rz:r*.98,weights:[[upperBone,1]]},
+    {cx:x,y:shortsBottom-.010*H,rx:r,rz:r*.94,weights:[[upperBone,1]]},
+    {cx:x,y:knee+.030*H,rx:r*.91,rz:r*.90,weights:[[upperBone,.88],[lowerBone,.12]]},
+    {cx:x,y:knee+.010*H,rx:r*.88,rz:r*.88,weights:[[upperBone,.63],[lowerBone,.37]]},
+    {cx:x,y:knee-.012*H,rx:r*.86,rz:r*.87,weights:[[upperBone,.35],[lowerBone,.65]]},
+    {cx:x,y:knee-.045*H,rx:r*.82,rz:r*.85,weights:[[lowerBone,.96],[upperBone,.04]]},
+    {cx:x,y:(knee+ankle)*.5,rx:r*.76,rz:r*.82,weights:[[lowerBone,1]]},
+    {cx:x,y:ankle+.020*H,rx:r*.70,rz:r*.78,weights:[[lowerBone,1]]}
+  ],14);
+}
+
 function bodyDimensions(style,H){
+  if(style==='soft3'){
+    return {
+      style,H,
+      ankleY:.082*H,
+      kneeY:.252*H,
+      hipY:.425*H,
+      spineY:.505*H,
+      chestY:.570*H,
+      shoulderY:.626*H,
+      neckY:.648*H,
+      headBoneY:.662*H,
+      headCenterY:.820*H,
+      headRX:.183*H*params.headScale,
+      headRY:.180*H*params.headScale,
+      headRZ:.168*H*params.headScale,
+      shoulderX:.165*H*params.shoulderScale,
+      hipX:.076*H,
+      upperArmLen:.136*H,
+      lowerArmLen:.126*H,
+      upperLegLen:(.425-.252)*H,
+      lowerLegLen:(.252-.082)*H,
+      limb:.072*H*params.limbScale,
+      handX:.061*H,handY:.066*H,handZ:.056*H,
+      footX:.108*H,footY:.066*H,footZ:.157*H,
+      eyeSize:.021*H,
+      torsoH:.20*H,torsoCenterY:.535*H,torsoTop:.17*H,torsoBottom:.13*H,
+      rounded:true,soft:true
+    };
+  }
   if(style==='legacy'){
     return {
       style,H,
@@ -343,7 +464,7 @@ function bodyDimensions(style,H){
       handX:.032*H,handY:.038*H,handZ:.032*H,
       footX:.070*H,footY:.055*H,footZ:.135*H,
       eyeSize:.012*H,torsoH:.23*H,torsoCenterY:.695*H,torsoTop:.145*H,torsoBottom:.13*H,
-      rounded:false
+      rounded:false,soft:false
     };
   }
 
@@ -380,7 +501,7 @@ function bodyDimensions(style,H){
     torsoCenterY:(action ? .53 : .535)*H,
     torsoTop:(action ? .17 : .157)*H*params.shoulderScale,
     torsoBottom:(action ? .135 : .128)*H,
-    rounded:true
+    rounded:true,soft:false
   };
 }
 
@@ -472,50 +593,101 @@ function buildClips(dim){
 
 function addHeadDetails(headBone,dim,materials){
   const chibi=dim.style!=='legacy';
+  const soft=dim.style==='soft3';
+  const H=dim.H;
+
   const hair=new THREE.Mesh(
-    new THREE.SphereGeometry(1,chibi?12:10,chibi?8:6,0,Math.PI*2,0,Math.PI*(chibi?.46:.57)),
+    new THREE.SphereGeometry(1,soft?20:(chibi?12:10),soft?12:(chibi?8:6),0,Math.PI*2,0,Math.PI*(soft?.50:(chibi?.46:.57))),
     materials[4]
   );
   hair.name='Hair';
-  hair.scale.set(dim.headRX*1.055,dim.headRY*1.035,dim.headRZ*1.055);
-  hair.position.set(0,dim.headCenterY-dim.headBoneY+(chibi?.010:.014)*dim.H,-(chibi?.012:.005)*dim.H);
+  hair.scale.set(dim.headRX*(soft?1.075:1.055),dim.headRY*(soft?1.055:1.035),dim.headRZ*(soft?1.065:1.055));
+  hair.position.set(0,dim.headCenterY-dim.headBoneY+(soft?.006:(chibi?.010:.014))*H,-(soft?.010:(chibi?.012:.005))*H);
   hair.castShadow=true;
   headBone.add(hair);
 
+  const faceY=dim.headCenterY-dim.headBoneY;
+  if(soft){
+    const whiteMat=mat('#f8fafc',.70);
+    whiteMat.name='EyeWhite';
+    const eyeWhiteGeo=new THREE.SphereGeometry(1,12,8);
+    const pupilGeo=new THREE.SphereGeometry(1,10,7);
+    for(const side of [-1,1]){
+      const white=new THREE.Mesh(eyeWhiteGeo.clone(),whiteMat);
+      white.name=side<0?'EyeWhite_L':'EyeWhite_R';
+      white.scale.set(.030*H,.039*H,.010*H);
+      white.position.set(side*dim.headRX*.39,faceY-.022*H,dim.headRZ*.935);
+      headBone.add(white);
+
+      const pupil=new THREE.Mesh(pupilGeo.clone(),materials[5]);
+      pupil.name=side<0?'Eye_L':'Eye_R';
+      pupil.scale.set(.0135*H,.018*H,.007*H);
+      pupil.position.set(side*dim.headRX*.39,faceY-.023*H,dim.headRZ*.979);
+      headBone.add(pupil);
+
+      const brow=new THREE.Mesh(new THREE.BoxGeometry(.041*H,.006*H,.006*H),materials[4]);
+      brow.name=side<0?'Brow_L':'Brow_R';
+      brow.position.set(side*dim.headRX*.39,faceY+.025*H,dim.headRZ*.972);
+      brow.rotation.z=side*.08;
+      headBone.add(brow);
+
+      const ear=new THREE.Mesh(new THREE.SphereGeometry(1,10,7),materials[0]);
+      ear.name=side<0?'Ear_L':'Ear_R';
+      ear.scale.set(.020*H,.030*H,.016*H);
+      ear.position.set(side*dim.headRX*.99,faceY-.006*H,0);
+      headBone.add(ear);
+    }
+
+    const mouth=new THREE.Mesh(new THREE.BoxGeometry(.041*H,.006*H,.006*H),materials[5]);
+    mouth.name='Mouth';
+    mouth.position.set(0,faceY-.093*H,dim.headRZ*.972);
+    headBone.add(mouth);
+
+    const bangGeo=new THREE.ConeGeometry(.026*H,.070*H,7);
+    const bangs=[[-.098,.24],[-.050,.12],[0,0],[.050,-.12],[.098,-.24]];
+    for(const [x,rot] of bangs){
+      const bang=new THREE.Mesh(bangGeo.clone(),materials[4]);
+      bang.name='HairFringe';
+      bang.position.set(x*H,faceY+.071*H,dim.headRZ*.91);
+      bang.rotation.z=rot;
+      bang.rotation.x=-.08;
+      bang.castShadow=true;
+      headBone.add(bang);
+    }
+    return;
+  }
+
   const eyeGeo=new THREE.SphereGeometry(dim.eyeSize,chibi?9:7,chibi?7:5);
   const eyeMat=materials[5];
-  const eyeY=dim.headCenterY-dim.headBoneY+(chibi?-.018:.012)*dim.H;
+  const eyeY=faceY+(chibi?-.018:.012)*H;
   for(const side of [-1,1]){
     const eye=new THREE.Mesh(eyeGeo.clone(),eyeMat);
     eye.name=side<0?'Eye_L':'Eye_R';
-    eye.position.set(side*dim.headRX*(chibi?.38:.39),eyeY,dim.headRZ*(chibi?.91:.91));
+    eye.position.set(side*dim.headRX*(chibi?.38:.39),eyeY,dim.headRZ*.91);
     eye.scale.set(chibi?.86:1,chibi?1.12:.88,.48);
     headBone.add(eye);
   }
 
   if(chibi){
-    const mouth=new THREE.Mesh(
-      new THREE.BoxGeometry(.037*dim.H,.007*dim.H,.006*dim.H),
-      materials[5]
-    );
+    const mouth=new THREE.Mesh(new THREE.BoxGeometry(.037*H,.007*H,.006*H),materials[5]);
     mouth.name='Mouth';
-    mouth.position.set(0,dim.headCenterY-dim.headBoneY-.078*dim.H,dim.headRZ*.955);
+    mouth.position.set(0,faceY-.078*H,dim.headRZ*.955);
     headBone.add(mouth);
 
-    const bangGeo=new THREE.ConeGeometry(.030*dim.H,.075*dim.H,5);
+    const bangGeo=new THREE.ConeGeometry(.030*H,.075*H,5);
     for(const [x,rot] of [[-.065,.18],[0,0],[.065,-.18]]){
       const bang=new THREE.Mesh(bangGeo.clone(),materials[4]);
       bang.name='HairFringe';
-      bang.position.set(x*dim.H,dim.headCenterY-dim.headBoneY+.055*dim.H,dim.headRZ*.89);
+      bang.position.set(x*H,faceY+.055*H,dim.headRZ*.89);
       bang.rotation.z=rot;
       bang.rotation.x=-.10;
       bang.castShadow=true;
       headBone.add(bang);
     }
   }else{
-    const nose=new THREE.Mesh(new THREE.BoxGeometry(.018*dim.H,.018*dim.H,.025*dim.H),materials[0]);
+    const nose=new THREE.Mesh(new THREE.BoxGeometry(.018*H,.018*H,.025*H),materials[0]);
     nose.name='Nose';
-    nose.position.set(0,dim.headCenterY-dim.headBoneY-.018*dim.H,dim.headRZ*.96);
+    nose.position.set(0,faceY-.018*H,dim.headRZ*.96);
     headBone.add(nose);
   }
 }
@@ -571,6 +743,8 @@ function buildCharacter(){
     upAxis:'Y',
     groundOrigin:true,
     designTarget:bodyStyle==='legacy'?'legacy mannequin':'Kidscade SD game character',
+    skinning:dim.soft?'blended-two-bone-joints':'rigid-single-bone-weight',
+    referenceAssets:dim.soft?['character-female-a.glb','character-male-a.glb']:[],
     generator:'Kidscade 3D Character Studio'
   };
   scene.add(characterRoot);
@@ -613,7 +787,12 @@ function buildCharacter(){
   const materialSlots=[];
   const push=(g,slot)=>{geoms.push(g);materialSlots.push(slot)};
 
-  if(!dim.rounded){
+  if(dim.soft){
+    push(softTorsoGeometry(dim,boneIndex),1);
+    push(capsulePart(.048*H,.092*H,[0,dim.hipY-.020*H,0],boneIndex.Hips,2.55,1.50),2);
+    push(cylinderPart(.020*H,.026*H,[0,dim.neckY+.002*H,0],boneIndex.Neck),0);
+    push(spherePart([dim.headRX,dim.headRY,dim.headRZ],[0,dim.headCenterY,0],boneIndex.Head,20,14),0);
+  }else if(!dim.rounded){
     const torsoW=dim.shoulderX*1.62;
     push(boxPart([torsoW,.23*H,.13*H],[0,.695*H,0],boneIndex.Chest),1);
     push(boxPart([.225*H,.095*H,.13*H],[0,.49*H,0],boneIndex.Hips),2);
@@ -633,7 +812,17 @@ function buildCharacter(){
     const uArm=boneIndex['UpperArm_'+suffix],lArm=boneIndex['LowerArm_'+suffix],hand=boneIndex['Hand_'+suffix];
     const uLeg=boneIndex['UpperLeg_'+suffix],lLeg=boneIndex['LowerLeg_'+suffix],foot=boneIndex['Foot_'+suffix];
 
-    if(!dim.rounded){
+    if(dim.soft){
+      push(spherePart([dim.limb*.58,dim.limb*.58,dim.limb*.54],[sx,dim.shoulderY-.006*H,0],uArm,12,8),1);
+      push(capsulePart(dim.limb*.50,dim.upperArmLen*.74,[sx,dim.shoulderY-dim.upperArmLen*.33,0],uArm,1.02,.94),1);
+      push(softForearmGeometry(dim,sx,uArm,lArm),0);
+      push(spherePart([dim.handX,dim.handY,dim.handZ],[sx,dim.shoulderY-dim.upperArmLen-dim.lowerArmLen-.038*H,.010*H],hand,14,9),0);
+
+      push(capsulePart(dim.limb*.66,dim.upperLegLen*.50,[hipX,dim.hipY-dim.upperLegLen*.20,0],uLeg,1.06,1.0),2);
+      push(softLegGeometry(dim,hipX,uLeg,lLeg),0);
+      push(spherePart([dim.footX,dim.footY,dim.footZ],[hipX,dim.footY*.60,.050*H],foot,14,9),3);
+      push(boxPart([dim.footX*1.55,.018*H,dim.footZ*1.45],[hipX,.011*H,.050*H],foot),3);
+    }else if(!dim.rounded){
       push(boxPart([dim.limb,dim.upperArmLen*.96,dim.limb],[sx,dim.shoulderY-dim.upperArmLen*.48,0],uArm),1);
       push(boxPart([dim.limb*.88,dim.lowerArmLen*.95,dim.limb*.88],[sx,dim.shoulderY-dim.upperArmLen-dim.lowerArmLen*.475,0],lArm),0);
       push(spherePart([dim.handX,dim.handY,dim.handZ],[sx,dim.shoulderY-dim.upperArmLen-dim.lowerArmLen-.032*H,0],hand,8,5),0);
@@ -690,7 +879,8 @@ function buildCharacter(){
   $('polyBadge').textContent=triangles.toLocaleString()+' triangles';
   $('rigBadge').textContent='✓ '+(BODY_STYLES[bodyStyle]?.label||'Humanoid')+' · '+bones.length+' bones';
   $('clipBadge').textContent=clips.length+' clips';
-  if($('rigVersionLabel'))$('rigVersionLabel').textContent=bodyStyle==='legacy'?'Humanoid v2 · V1 body':'Kidscade Humanoid v2';
+  if($('rigVersionLabel'))$('rigVersionLabel').textContent=dim.soft?'Kidscade Humanoid v3':(bodyStyle==='legacy'?'Humanoid v3 · V1 body':'Kidscade Humanoid v3 · V2 body');
+  if($('skinningModeLabel'))$('skinningModeLabel').textContent=dim.soft?'Blended joint weights':'Rigid skin weights';
 
   setCameraView(activeView,false);
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===activeView));
@@ -767,7 +957,7 @@ function download(name,blob){
 function exportSpec(){
   readParams();
   const spec={
-    version:2,
+    version:3,
     type:'kidscade-humanoid-rig-spec',
     rigVersion:RIG_VERSION,
     bodyStyle,
@@ -777,10 +967,15 @@ function exportSpec(){
     parameters:{...params},
     proportionGuide:bodyStyle==='legacy'
       ?{headsTall:'legacy',headHeightRatio:.15}
-      :{headsTall:bodyStyle==='action2'?'about 3.05':'about 2.9',headHeightRatio:Number((currentDim?.headRY*2/currentDim?.H||0).toFixed(3))},
+      :{headsTall:bodyStyle==='soft3'?'about 2.78':(bodyStyle==='action2'?'about 3.05':'about 2.9'),headHeightRatio:Number((currentDim?.headRY*2/currentDim?.H||0).toFixed(3))},
     bones:skinnedMesh?.skeleton?.bones.map(b=>({name:b.name,parent:b.parent?.isBone?b.parent.name:null}))||[],
     clips:clips.map(c=>({name:c.name,duration:Number(c.duration.toFixed(3)),tracks:c.tracks.map(t=>t.name)})),
-    skinning:'rigid-single-bone-weight',
+    skinning:currentDim?.soft?'blended-two-bone-joints':'rigid-single-bone-weight',
+    referenceBaseline:currentDim?.soft?{
+      femaleA:{triangles:876,skinnedMeshes:2,joints:7},
+      maleA:{triangles:723,skinnedMeshes:2,joints:7},
+      note:'Existing Kidscade people GLBs were inspected as topology/skinning references; geometry is newly generated.'
+    }:null,
     reuseRule:'Characters using the same bone names and hierarchy can share retargeted Kidscade humanoid animations.'
   };
   download('kidscade-humanoid-rig-spec.json',new Blob([JSON.stringify(spec,null,2)+'\n'],{type:'application/json'}));
