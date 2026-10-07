@@ -147,6 +147,8 @@ test('unresolved relationships survive step changes until teacher mediation', ()
   assert.match(js, /relations\.delete\(relationKey/);
   assert.match(js, /GROUP_RULES\.unresolvedConflictChance/);
   assert.match(js, /function beginTeamConflict\(/);
+  assert.match(js, /function buildNearbyTeams\(/);
+  assert.match(js, /teamPairs=buildNearbyTeams\(activeLessonStudents\(\)\)/);
 });
 
 test('health actions include check nurse dismissal and classroom rest', () => {
