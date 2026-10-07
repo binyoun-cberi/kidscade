@@ -1231,13 +1231,14 @@ function playClip(name){
   if(activeAction)activeAction.fadeOut(.12);
   const clip=clips.find(c=>c.name===name);
   if(!clip)return;
+  const once=name==='DEAD'||name==='anim_dying'||name==='dyinganim_';
   const next=mixer.clipAction(clip);
   next.reset();
   next.enabled=true;
   next.setEffectiveTimeScale(Number($('speed')?.value||1));
   next.setEffectiveWeight(1);
-  next.setLoop(name==='DEAD'?THREE.LoopOnce:THREE.LoopRepeat,name==='DEAD'?1:Infinity);
-  next.clampWhenFinished=name==='DEAD';
+  next.setLoop(once?THREE.LoopOnce:THREE.LoopRepeat,once?1:Infinity);
+  next.clampWhenFinished=once;
   next.fadeIn(.12).play();
   activeAction=next;
 }
@@ -1246,17 +1247,20 @@ function resetPose(){
   if(activeAction)activeAction.stop();
   activeAction=null;
   mixer?.stopAllAction();
-  skinnedMesh?.skeleton?.pose();
+  if(bodyStyle==='assetChibi'){
+    chibiSourceScene?.traverse?.(o=>{if(o.isSkinnedMesh)o.skeleton?.pose?.()});
+  }else{
+    skinnedMesh?.skeleton?.pose();
+  }
   if(characterRoot){
-    characterRoot.position.set(0,0,0);
-    characterRoot.quaternion.identity();
+    characterRoot.rotation.set(0,0,0);
   }
   activeClip='';
   document.querySelectorAll('[data-clip]').forEach(b=>b.classList.remove('active'));
   setStatus('기본 바인드 자세로 돌아왔습니다.');
 }
 
-function applyBodyStyle(name){
+async function applyBodyStyle(name){
   const profile=BODY_STYLES[name];
   if(!profile)return;
   bodyStyle=name;
@@ -1266,6 +1270,21 @@ function applyBodyStyle(name){
   }
   document.querySelectorAll('[data-body-style]').forEach(b=>b.classList.toggle('active',b.dataset.bodyStyle===name));
   syncOutputs();
+  setStudioModePanels();
+
+  if(name==='assetChibi'){
+    const ok=await loadChibiAsset();
+    if(!ok){
+      bodyStyle='soft3';
+      document.querySelectorAll('[data-body-style]').forEach(b=>b.classList.toggle('active',b.dataset.bodyStyle==='soft3'));
+      setStudioModePanels();
+      populateProceduralClipButtons();
+      buildCharacter();
+    }
+    return;
+  }
+
+  populateProceduralClipButtons();
   buildCharacter();
 }
 
