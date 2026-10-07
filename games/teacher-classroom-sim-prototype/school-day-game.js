@@ -857,27 +857,79 @@ function scanAction(){
   if(currentStep.kind==='transition'){
     if(distance2D(player.root.position,DOOR_POINT)<1.55){const next=SCHOOL_SPACES[currentStep.nextLocation];currentAction={type:'moveNext'};setAction('🚪',(next?.name||'다음 장소')+' 이동',true);return}
   }
-  if(currentStep.kind==='lesson'){
-    const near=students.filter(s=>s.runtime.mode==='offtask'&&distance2D(player.root.position,s.actor.root.position)<2.35)
-      .sort((a,b)=>distance2D(player.root.position,a.actor.root.position)-distance2D(player.root.position,b.actor.root.position))[0];
-    if(near){currentAction={type:'focus',student:near};setAction('👀',near.runtime.name+' 도와주기',true);return}
-  }
-  if(currentStep.kind==='social'){
-    const pair=pairs.filter(p=>p.state==='conflict'||p.state==='fight').sort((a,b)=>{
-      const da=Math.min(distance2D(player.root.position,a.a.actor.root.position),distance2D(player.root.position,a.b.actor.root.position));
-      const db=Math.min(distance2D(player.root.position,b.a.actor.root.position),distance2D(player.root.position,b.b.actor.root.position));return da-db;
-    })[0];
-    if(pair){
-      const d=Math.min(distance2D(player.root.position,pair.a.actor.root.position),distance2D(player.root.position,pair.b.actor.root.position));
-      if(d<2.75){currentAction={type:pair.state==='fight'?'separate':'mediate',pair};setAction(pair.state==='fight'?'🫱':'💬',pair.state==='fight'?'둘 떼어놓기':'중재하기',true);return}
+
+  const healthTarget=students
+    .filter(s=>isStudentPresent(s)&&(s.accident||(s.health?.revealed&&s.health.state!=='healthy'))&&distance2D(player.root.position,s.actor.root.position)<2.45)
+    .sort((a,b)=>distance2D(player.root.position,a.actor.root.position)-distance2D(player.root.position,b.actor.root.position))[0];
+  if(healthTarget){
+    if(!healthTarget.health.checked){
+      currentAction={type:'healthCheck',student:healthTarget};setAction('🩺',healthTarget.runtime.name+' 상태 확인',true);return;
+    }
+    if(healthTarget.healthAction){
+      currentAction={type:'healthDecision',student:healthTarget,decision:healthTarget.healthAction};
+      setAction(healthTarget.healthAction.icon,healthTarget.healthAction.label,true);return;
     }
   }
+
+  const pair=pairs.filter(p=>p.state==='conflict'||p.state==='fight').sort((a,b)=>{
+    const da=Math.min(distance2D(player.root.position,a.a.actor.root.position),distance2D(player.root.position,a.b.actor.root.position));
+    const db=Math.min(distance2D(player.root.position,b.a.actor.root.position),distance2D(player.root.position,b.b.actor.root.position));return da-db;
+  })[0];
+  if(pair){
+    const d=Math.min(distance2D(player.root.position,pair.a.actor.root.position),distance2D(player.root.position,pair.b.actor.root.position));
+    if(d<2.75){currentAction={type:pair.state==='fight'?'separate':'mediate',pair};setAction(pair.state==='fight'?'🫱':'💬',pair.state==='fight'?'둘 떼어놓기':'중재하기',true);return}
+  }
+
+  if(currentStep.kind==='lesson'){
+    const unsafe=students.filter(s=>studentCanParticipate(s)&&s.safetyRecord?.finished&&!s.safetyRecord.heard&&!s.accident&&distance2D(player.root.position,s.actor.root.position)<2.35)
+      .sort((a,b)=>distance2D(player.root.position,a.actor.root.position)-distance2D(player.root.position,b.actor.root.position))[0];
+    if(unsafe){currentAction={type:'safetyReview',student:unsafe};setAction('🦺',unsafe.runtime.name+' 안전수칙 다시',true);return}
+
+    const briefing=currentStep.safetyRequired&&lessonElapsed>=SAFETY_RULES.briefingStartSeconds&&lessonElapsed<SAFETY_RULES.briefingStartSeconds+SAFETY_RULES.briefingDurationSeconds;
+    const near=students.filter(s=>studentCanParticipate(s)&&(s.runtime.mode==='offtask'||(briefing&&focusRatio(s)<SAFETY_RULES.distractedFocusRatio))&&distance2D(player.root.position,s.actor.root.position)<2.35)
+      .sort((a,b)=>distance2D(player.root.position,a.actor.root.position)-distance2D(player.root.position,b.actor.root.position))[0];
+    if(near){currentAction={type:'focus',student:near};setAction('👀',near.runtime.name+' 집중 도와주기',true);return}
+  }
+
   currentAction={type:'none'};setAction('✋','살펴보기',false);
 }
 function updateGuideByAction(){
-  if(currentAction.type==='focus')setGuide(currentStep.subject+' 수업',currentAction.student.runtime.name+'가 딴짓 중','가까이 왔어요. 행동 버튼으로 도와주세요.');
-  else if(currentAction.type==='mediate')setGuide(currentStep.lunch?'점심시간':'쉬는 시간','말다툼이 생겼어요','가까이에서 중재하면 갈등이 풀립니다.');
-  else if(currentAction.type==='separate')setGuide(currentStep.lunch?'점심시간':'쉬는 시간','싸움이 났어요!','둘을 먼저 떼어놓으세요.');
+  if(currentAction.type==='focus')setGuide(currentStep.subject+' 수업',currentAction.student.runtime.name+'의 집중이 떨어졌어요','가까이 왔어요. 행동 버튼으로 관심을 주세요.');
+  else if(currentAction.type==='mediate')setGuide(currentAction.pair?.source==='team'?'모둠 활동':'갈등 상황','두 학생이 부딪히고 있어요','가까이에서 중재하면 갈등 관계가 풀립니다.');
+  else if(currentAction.type==='separate')setGuide('갈등 상황','싸움이 났어요!','둘을 먼저 떼어놓으세요.');
+  else if(currentAction.type==='healthCheck')setGuide('건강 확인',currentAction.student.runtime.name+'의 상태가 이상해 보여요','가까이에서 상태를 확인하세요.');
+  else if(currentAction.type==='healthDecision')setGuide('건강 조치',healthStatusText(currentAction.student),'상황에 맞는 조치를 해주세요.');
+  else if(currentAction.type==='safetyReview')setGuide('안전교육',currentAction.student.runtime.name+'가 안전수칙을 놓쳤어요','가까이에서 안전수칙을 다시 알려주세요.');
+}
+function removeStudentFromActivePairs(s){
+  pairs=pairs.filter(p=>{
+    const hit=p.a===s||p.b===s;
+    if(hit){const other=p.a===s?p.b:p.a;if(other&&!other.accident&&!(other.health?.revealed&&other.health.state!=='healthy'))hideBubble(other)}
+    return !hit;
+  });
+}
+function checkStudentHealth(s){
+  s.health.checked=true;stats.healthChecks++;
+  s.healthAction=nextHealthAction(s.health,environment,currentPeriodNumber());
+  let detail=healthStatusText(s)+'. ';
+  if(!environment.nurseAvailable)detail+='보건교사는 출장 중이에요. ';
+  if(!s.health.parentAvailable)detail+='보호자는 지금 집에 없어요. ';
+  showToast(detail+s.healthAction.label+'가 필요해요.');
+}
+function applyHealthDecision(s,decision){
+  if(!s||!decision)return;
+  removeStudentFromActivePairs(s);
+  s.accident=null;s.healthAction=null;hideBubble(s);
+  if(decision.type==='dismiss'){
+    s.health.dismissed=true;s.actor.root.visible=false;stats.earlyDismissals++;
+    showToast(s.runtime.name+'가 보호자와 조퇴했어요.');
+  }else if(decision.type==='nurse'){
+    s.health.awayUntilPeriod=decision.awayUntilPeriod||currentPeriodNumber()+1;s.actor.root.visible=false;stats.nurseVisits++;
+    showToast(s.runtime.name+'가 보건실에서 쉬어요.');
+  }else if(decision.type==='rest'){
+    s.health.resting=true;s.health.restUntilPeriod=currentPeriodNumber()+1;s.actor.target=safeSeparatedTarget(-1);stats.classroomRests++;
+    showToast('보건교사도 보호자도 어려워서 '+s.runtime.name+'를 조용한 곳에서 쉬게 했어요.');
+  }
 }
 function useAction(){
   if(!started||paused)return;
@@ -885,8 +937,17 @@ function useAction(){
   if(currentAction.type==='moveNext'){
     transitionToSpace(currentStep.nextLocation);enterStep(stepIndex+1,{spaceChanged:true});return;
   }
+  if(currentAction.type==='healthCheck'){checkStudentHealth(currentAction.student);playerGestureTimer=.45;playAnim(player,'push');return}
+  if(currentAction.type==='healthDecision'){applyHealthDecision(currentAction.student,currentAction.decision);playerGestureTimer=.5;playAnim(player,'push');return}
+  if(currentAction.type==='safetyReview'){
+    const s=currentAction.student;s.safetyRecord.heard=true;s.safetyRecord.finished=true;
+    if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy'))hideBubble(s);
+    playerGestureTimer=.45;playAnim(player,'push');showToast(s.runtime.name+'에게 안전수칙을 다시 알려줬어요.');return;
+  }
   if(currentAction.type==='focus'){
-    const s=currentAction.student;helpFocus(s.runtime);stats.focusHelps++;s.wander=null;s.actor.target=s.seat.clone();playerGestureTimer=.5;playAnim(player,'push');showToast(s.runtime.name+'에게 관심을 줬어요.');hideBubble(s);return;
+    const s=currentAction.student;helpFocus(s.runtime);stats.focusHelps++;s.wander=null;s.actor.target=s.seat.clone();playerGestureTimer=.5;playAnim(player,'push');
+    if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy')&&!(s.safetyRecord?.finished&&!s.safetyRecord.heard))hideBubble(s);
+    showToast(s.runtime.name+'에게 관심을 줬어요.');return;
   }
   if(currentAction.type==='mediate'){mediatePair(currentAction.pair);playerGestureTimer=.5;playAnim(player,'push');return}
   if(currentAction.type==='separate'){separateFight(currentAction.pair);playerGestureTimer=.65;playAnim(player,'push');return}
