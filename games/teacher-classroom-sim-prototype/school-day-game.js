@@ -623,7 +623,7 @@ function healthIcon(s){
 function activeLessonStudents(){return students.filter(studentCanParticipate)}
 function updateHud(){
   const space=SCHOOL_SPACES[currentStep.location]||activeSpace;
-  ui.phase.parentElement?.querySelector('small')?.replaceChildren(document.createTextNode(space.icon+' '+space.name+' · 월요일'));
+  ui.phase.parentElement?.querySelector('small')?.replaceChildren(document.createTextNode(space.icon+' '+space.name+' · '+campaign.day+'일차'));
   ui.phase.textContent=currentStep.period?currentStep.period+'교시 · '+currentStep.subject:(currentStep.title||'학교생활');
   if(currentStep.kind==='lesson'||currentStep.kind==='social')ui.timer.textContent=(currentStep.kind==='lesson'?'수업 ':'')+fmt(stepTime);
   else if(currentStep.kind==='prep')ui.timer.textContent='수업 시작 위치로 이동';
@@ -653,6 +653,7 @@ function updateHud(){
       '<span class="meters"><b class="focusMeter" style="width:'+f+'%"></b><b class="socialMeter" style="width:'+so+'%"></b></span></div>';
   }).join('');
   updateDayStrip();
+  updateCampaignStatus();
 }
 
 function hideAllBubbles(){students.forEach(hideBubble)}
@@ -935,6 +936,16 @@ function updateLessonChatter(dt){
     if(Math.random()<friendshipChatterChance(candidate.level)){startLessonChat(candidate.a,candidate.b);break}
   }
 }
+function recordLessonLearning(s,dt,chat){
+  if(!studentCanParticipate(s)||s.accident)return;
+  const conflict=pairs.some(p=>p.state==='conflict'&&(p.a===s||p.b===s));
+  const gain=learningGain(dt,currentStep.subject,{
+    focused:s.runtime.mode==='focused',
+    chatting:!!chat,
+    conflict
+  });
+  addLearning(campaign,s.runtime.id,gain);
+}
 function updateLesson(dt){
   stepTime-=dt;schoolMinute+=dt*.36;lessonElapsed+=dt;
   for(const s of students){
@@ -947,6 +958,7 @@ function updateLesson(dt){
     const drainMultiplier=(currentStep.focusDrain||1)*preferenceMultiplier(s.runtime.id,currentStep.subject)*chatterDrain;
     const recoveryMultiplier=healthRecoveryMultiplier(s.health);
     const evt=updateLessonFocus(s.runtime,dt,{teacherNear:teacherNearStudent(s),drainMultiplier,recoveryMultiplier});
+    recordLessonLearning(s,dt,chat);
     if(evt==='offtask-start'){
       stats.offTaskStarts++;offTaskWander(s);
       if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy'))showBubble(s,'…','');
