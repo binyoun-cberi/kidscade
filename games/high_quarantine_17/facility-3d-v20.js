@@ -337,7 +337,8 @@ function mount(){
   `;document.head.appendChild(st)
  }
  camp.classList.add('q17-3d-enabled');let cc=document.getElementById('q17Camp3D');
- if(!cc){cc=document.createElement('canvas');cc.id='q17Camp3D';camp.prepend(cc)}\n let pop=document.getElementById('q17Camp3DPopulation');if(!pop){pop=document.createElement('div');pop.id='q17Camp3DPopulation';pop.textContent='CAMP 주민 0명';camp.appendChild(pop)}
+ if(!cc){cc=document.createElement('canvas');cc.id='q17Camp3D';camp.prepend(cc)}
+ let pop=document.getElementById('q17Camp3DPopulation');if(!pop){pop=document.createElement('div');pop.id='q17Camp3DPopulation';pop.textContent='CAMP 주민 0명';camp.appendChild(pop)}
  let wrap=document.getElementById('q17Iso3DWrap');
  if(!wrap){wrap=document.createElement('div');wrap.id='q17Iso3DWrap';const ic=document.createElement('canvas');ic.id='q17Iso3D';wrap.appendChild(ic);isoRoom.parentNode.insertBefore(wrap,isoRoom)}
  const campView=new View(cc,'camp'),isoView=new View(document.getElementById('q17Iso3D'),'isolation');
