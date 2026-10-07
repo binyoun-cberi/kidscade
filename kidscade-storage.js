@@ -45,7 +45,7 @@
     profile: 'kidscade_profile_v1',
     playHistory: 'kidscade_play_history_v1',
     activityFeed: 'kidscade_activity_feed_v1',
-    achievements: 'kidscade_achievements_v1'
+    achievements: 'kidscade_achievements_v1',
   });
 
   // Existing namespaced saves owned by one game. They are catalogued separately
@@ -93,7 +93,10 @@
     hanjaSelectedGrade: 'kidscade_hanja_selected_grade_v1',
     hanjaCardPoints: 'kidscade_hanja_card_points_v1',
     bunsikTycoonProgressV1: 'kidscade_bunsik_tycoon_progress_v1',
-    juiceFarmV3: 'kidscade_juice_farm_v3'
+    juiceFarmV3: 'kidscade_juice_farm_v3',
+    wordSiegeDictionary: 'kidscade_word_siege_discovered_v1',
+    wordSiegeBest: 'kidscade_word_siege_best_v1',
+    teacherCampaign: 'kidscade_teacher_campaign_v1'
   });
 
   // Dynamic namespaces are prefixes, not concrete localStorage records.
