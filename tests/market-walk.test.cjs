@@ -180,4 +180,14 @@ test('street furniture stays outside the vehicle roadway and pedestrians no long
   assert.match(js,/\['busStop',1\.88,\[11\.58,0,10\.8\],-Math\.PI\/2\]/);
   assert.match(js,/const pedestrianLanes=\[5\.34,5\.34,10\.66,10\.66\]/);
 });
-test('market page cache-busts the interior layout pass',()=>{assert.ok(html.includes('market-walk.js?v=17-layout-pass'))});
+test('room title signs are wall-mounted meshes instead of camera-facing sprites',()=>{
+  assert.match(js,/function wallSign\(/);
+  assert.match(js,/new THREE\.PlaneGeometry\(width,h\)/);
+  assert.match(js,/wallSign\('우리 집 부엌'/);
+  assert.match(js,/wallSign\('우리 동네 마트'/);
+  assert.match(js,/wallSign\('우리 사무실'/);
+  assert.doesNotMatch(js,/sign\('우리 집 부엌'/);
+  assert.doesNotMatch(js,/sign\('우리 동네 마트'/);
+  assert.doesNotMatch(js,/sign\('우리 사무실'/);
+});
+test('market page cache-busts the wall sign pass',()=>{assert.ok(html.includes('market-walk.js?v=18-wall-signs'))});
