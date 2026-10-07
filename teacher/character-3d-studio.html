@@ -7,7 +7,7 @@
 <title>Kidscade 3D 캐릭터 제작실</title>
 <style>
 :root{font-family:"맑은 고딕",system-ui,sans-serif;color:#172033;background:#f4f6fb;--purple:#6547d8;--line:#dfe4ee;--muted:#6b778c;--panel:#fff;--green:#15803d}
-*{box-sizing:border-box}body{margin:0}.hidden{display:none!important}.wrap{width:min(1500px,calc(100% - 18px));margin:9px auto 32px}.top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:4px 5px 9px}.top h1{margin:0;font-size:1.34rem;letter-spacing:-.04em}.top a{text-decoration:none;color:#5b43c5;font-weight:900}.muted{color:var(--muted);font-size:.72rem;line-height:1.5}.gate,.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.05)}.gate{padding:28px;text-align:center}.studio{display:grid;grid-template-columns:290px minmax(520px,1fr) 330px;gap:10px;align-items:start}.card{padding:13px}.side{display:grid;gap:10px;position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto}.card h2,.card h3{margin:0 0 9px;font-size:.9rem}.canvas-card{padding:0;overflow:hidden;position:relative;min-height:680px;background:#17202a}.view{width:100%;height:min(78vh,760px);display:block;touch-action:none}.hud{position:absolute;left:12px;top:12px;display:flex;gap:6px;flex-wrap:wrap;max-width:calc(100% - 24px);pointer-events:none}.badge{padding:6px 8px;border-radius:999px;background:rgba(255,255,255,.9);font-size:.62rem;font-weight:1000;color:#334155;box-shadow:0 3px 12px rgba(0,0,0,.13)}.hint{position:absolute;left:12px;bottom:12px;padding:7px 9px;border-radius:9px;background:rgba(15,23,42,.82);color:#e2e8f0;font-size:.62rem}.row{display:grid;grid-template-columns:1fr 1fr;gap:7px}.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}label{display:grid;gap:4px;font-size:.64rem;font-weight:900;color:#475569}input[type=number],input[type=text],select{width:100%;min-height:37px;border:1px solid #dbe1eb;border-radius:9px;padding:0 9px;background:#fff;color:#111827;font:inherit}input[type=range]{width:100%}input[type=color]{width:100%;height:38px;border:1px solid #dbe1eb;border-radius:9px;padding:3px;background:#fff}button,.btn{min-height:37px;border:0;border-radius:9px;padding:0 10px;background:var(--purple);color:#fff;font:900 .68rem/1 system-ui;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}button.secondary{background:#eef2f7;color:#475569;border:1px solid #e2e8f0}button.good{background:#ecfdf5;color:#166534;border:1px solid #bbf7d0}.full{width:100%}.stack{display:grid;gap:7px}.divider{height:1px;background:#edf0f5;margin:10px 0}.status{min-height:18px;font-size:.68rem;font-weight:900;color:var(--green);line-height:1.45}.status.error{color:#b91c1c}.bone-list{display:grid;grid-template-columns:1fr 1fr;gap:4px}.bone-list span{padding:5px 7px;border-radius:7px;background:#f8fafc;border:1px solid #eef2f7;font-size:.57rem;font-weight:900;color:#64748b}.clip-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}.clip-grid button.active{background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd}.summary{display:grid;gap:7px}.metric{display:flex;justify-content:space-between;gap:8px;padding:7px 8px;border-radius:9px;background:#f8fafc;border:1px solid #eef2f7;font-size:.62rem}.metric b{color:#334155}.tip{padding:9px;border-radius:9px;background:#f8fafc;color:#64748b;font-size:.61rem;line-height:1.5}.check{display:flex;align-items:center;gap:6px;font-size:.64rem;font-weight:900;color:#475569}.preset-grid{display:grid;grid-template-columns:1fr;gap:6px}.preset-grid button{font-size:.62rem;justify-content:flex-start;text-align:left;padding:0 11px}.preset-grid button.active{background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd}.view-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.view-grid button{font-size:.6rem}.view-grid button.active{background:#e0f2fe;color:#075985;border:1px solid #7dd3fc}.style-note{padding:9px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:.61rem;line-height:1.45}.export-actions{display:grid;gap:6px}.top-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.top-actions a{min-height:34px;display:inline-flex;align-items:center}
+*{box-sizing:border-box}body{margin:0}.hidden{display:none!important}.wrap{width:min(1500px,calc(100% - 18px));margin:9px auto 32px}.top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:4px 5px 9px}.top h1{margin:0;font-size:1.34rem;letter-spacing:-.04em}.top a{text-decoration:none;color:#5b43c5;font-weight:900}.muted{color:var(--muted);font-size:.72rem;line-height:1.5}.gate,.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.05)}.gate{padding:28px;text-align:center}.studio{display:grid;grid-template-columns:290px minmax(520px,1fr) 330px;gap:10px;align-items:start}.card{padding:13px}.side{display:grid;gap:10px;position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto}.card h2,.card h3{margin:0 0 9px;font-size:.9rem}.canvas-card{padding:0;overflow:hidden;position:relative;min-height:680px;background:#17202a}.view{width:100%;height:min(78vh,760px);display:block;touch-action:none}.hud{position:absolute;left:12px;top:12px;display:flex;gap:6px;flex-wrap:wrap;max-width:calc(100% - 24px);pointer-events:none}.badge{padding:6px 8px;border-radius:999px;background:rgba(255,255,255,.9);font-size:.62rem;font-weight:1000;color:#334155;box-shadow:0 3px 12px rgba(0,0,0,.13)}.hint{position:absolute;left:12px;bottom:12px;padding:7px 9px;border-radius:9px;background:rgba(15,23,42,.82);color:#e2e8f0;font-size:.62rem}.row{display:grid;grid-template-columns:1fr 1fr;gap:7px}.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}label{display:grid;gap:4px;font-size:.64rem;font-weight:900;color:#475569}input[type=number],input[type=text],select{width:100%;min-height:37px;border:1px solid #dbe1eb;border-radius:9px;padding:0 9px;background:#fff;color:#111827;font:inherit}input[type=range]{width:100%}input[type=color]{width:100%;height:38px;border:1px solid #dbe1eb;border-radius:9px;padding:3px;background:#fff}button,.btn{min-height:37px;border:0;border-radius:9px;padding:0 10px;background:var(--purple);color:#fff;font:900 .68rem/1 system-ui;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}button.secondary{background:#eef2f7;color:#475569;border:1px solid #e2e8f0}button.good{background:#ecfdf5;color:#166534;border:1px solid #bbf7d0}.full{width:100%}.stack{display:grid;gap:7px}.divider{height:1px;background:#edf0f5;margin:10px 0}.status{min-height:18px;font-size:.68rem;font-weight:900;color:var(--green);line-height:1.45}.status.error{color:#b91c1c}.bone-list{display:grid;grid-template-columns:1fr 1fr;gap:4px}.bone-list span{padding:5px 7px;border-radius:7px;background:#f8fafc;border:1px solid #eef2f7;font-size:.57rem;font-weight:900;color:#64748b}.clip-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}.clip-grid button.active{background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd}.summary{display:grid;gap:7px}.metric{display:flex;justify-content:space-between;gap:8px;padding:7px 8px;border-radius:9px;background:#f8fafc;border:1px solid #eef2f7;font-size:.62rem}.metric b{color:#334155}.tip{padding:9px;border-radius:9px;background:#f8fafc;color:#64748b;font-size:.61rem;line-height:1.5}.check{display:flex;align-items:center;gap:6px;font-size:.64rem;font-weight:900;color:#475569}.preset-grid{display:grid;grid-template-columns:1fr;gap:6px}.preset-grid button{font-size:.62rem;justify-content:flex-start;text-align:left;padding:0 11px}.preset-grid button.active{background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd}.view-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.view-grid button{font-size:.6rem}.view-grid button.active{background:#e0f2fe;color:#075985;border:1px solid #7dd3fc}.style-note{padding:9px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:.61rem;line-height:1.45}.asset-note{padding:9px;border-radius:10px;background:#ecfdf5;border:1px solid #bbf7d0;color:#166534;font-size:.61rem;line-height:1.45}.wardrobe-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;max-height:280px;overflow:auto;padding-right:2px}.part-check{display:flex;align-items:center;gap:6px;padding:6px 7px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;font-size:.58rem;font-weight:900;color:#475569}.part-check input{margin:0}.asset-status{font-size:.62rem;font-weight:900;color:#166534;line-height:1.45}.asset-status.error{color:#b91c1c}.export-actions{display:grid;gap:6px}.top-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.top-actions a{min-height:34px;display:inline-flex;align-items:center}
 @media(max-width:1100px){.studio{grid-template-columns:250px minmax(440px,1fr)}.right{position:static;grid-column:1/-1;max-height:none;grid-template-columns:repeat(2,1fr)}}
 @media(max-width:780px){.wrap{width:calc(100% - 8px)}.top{display:grid}.top-actions{justify-content:flex-start}.studio{grid-template-columns:1fr}.side,.right{position:static;max-height:none;grid-template-columns:1fr}.canvas-card{min-height:560px}.view{height:66vh}.row,.row3{grid-template-columns:1fr}.clip-grid{grid-template-columns:repeat(4,1fr)}}
 </style>
@@ -30,12 +30,42 @@
       <section class="card">
         <h2>체형 기준</h2>
         <div class="preset-grid">
+          <button class="secondary active" data-body-style="assetChibi">실물 Chibi Asset · 기본</button>
+          <button class="secondary" data-body-style="soft3">V3 · SoftMesh 실험형</button>
+          <button class="secondary" data-body-style="chibi2">V2 · SD 도형형</button>
+          <button class="secondary" data-body-style="action2">V2 · 액션 과장형</button>
           <button class="secondary" data-body-style="legacy">V1 · 기존 마네킹</button>
-          <button class="secondary" data-body-style="chibi2">V2 · SD 기본형 — 도형 기반</button>
-          <button class="secondary" data-body-style="action2">V2 · 액션 과장형 — 도형 기반</button>
-          <button class="secondary active" data-body-style="soft3">V3 · SoftMesh SD — 기존 인간형 에셋 참고</button>
         </div>
-        <div class="style-note" style="margin-top:8px">V3는 저장소의 기존 SkinnedMesh 인간형 GLB 구조를 참고해 연속형 몸통·팔다리와 관절 블렌드 웨이트를 사용합니다. 특정 게임 캐릭터를 복제하지 않습니다.</div>
+        <div class="asset-note" style="margin-top:8px">실물 모드는 Styloo Chibi Characters v1.2의 78-bone GLB와 옷·헤어·장비 파츠를 직접 사용합니다. 에셋 라이선스: CC0.</div>
+        <div id="assetWardrobe" style="margin-top:10px">
+          <h3>옷장 프리셋</h3>
+          <div class="preset-grid">
+            <button class="secondary" data-chibi-preset="base">기본 바디</button>
+            <button class="secondary active" data-chibi-preset="student">학생</button>
+            <button class="secondary" data-chibi-preset="merchant">상인</button>
+            <button class="secondary" data-chibi-preset="archer">궁수</button>
+            <button class="secondary" data-chibi-preset="ninja">닌자</button>
+            <button class="secondary" data-chibi-preset="knight">기사</button>
+          </div>
+          <div class="divider"></div>
+          <label>헤어
+            <select id="chibiHair">
+              <option value="">없음</option>
+              <option value="hairvariant" selected>학생 헤어</option>
+              <option value="hairone">단정한 헤어</option>
+              <option value="hairT">T 헤어</option>
+              <option value="hairtail">포니테일</option>
+              <option value="hairtailknight">기사 헤어</option>
+              <option value="hairvariant.001">궁수 헤어</option>
+            </select>
+          </label>
+          <label class="check" style="margin-top:8px"><input id="chibiUnlit" type="checkbox" checked> 원본 권장 Unlit/NPR 재질</label>
+          <div class="divider"></div>
+          <h3>세부 파츠</h3>
+          <div id="wardrobeParts" class="wardrobe-grid"></div>
+          <div id="chibiAssetStatus" class="asset-status" style="margin-top:8px">Chibi GLB를 찾는 중…</div>
+        </div>
+        <div id="proceduralPanel" class="hidden">
         <div class="divider"></div>
         <div class="stack">
           <label>키 <span id="heightOut">1.22 m</span><input id="height" type="range" min="1.00" max="1.60" step=".01" value="1.22"></label>
@@ -53,6 +83,7 @@
           <label>눈<input id="eyeColor" type="color" value="#1f2937"></label>
         </div>
         <button id="rebuild" class="full" style="margin-top:9px">캐릭터 다시 만들기</button>
+        </div>
       </section>
 
       <section class="card">
@@ -101,14 +132,14 @@
       <section class="card">
         <h2>모델 정보</h2>
         <div class="summary">
-          <div class="metric"><span>리그</span><b id="rigVersionLabel">Kidscade Humanoid v3</b></div>
-          <div class="metric"><span>방식</span><b id="skinningModeLabel">Blended skin weights</b></div>
+          <div class="metric"><span>리그</span><b id="rigVersionLabel">Styloo Chibi · 78 bones</b></div>
+          <div class="metric"><span>방식</span><b id="skinningModeLabel">Original SkinnedMesh</b></div>
           <div class="metric"><span>축</span><b>Y-up · meters</b></div>
           <div class="metric"><span>원점</span><b>발바닥 중앙</b></div>
           <div class="metric"><span>뼈</span><b id="boneCount">0</b></div>
           <div class="metric"><span>삼각형</span><b id="triangleCount">0</b></div>
         </div>
-        <div class="tip" style="margin-top:9px">V3는 약 2.8등신의 SD 비율에 연속형 torso/arm/leg 메시를 사용하고 팔꿈치·무릎 주변을 부드러운 2-bone weight로 연결합니다. 얼굴·헤어·손·신발에 폴리를 더 배분하고 18-bone 구조는 유지합니다.</div>
+        <div id="modelInfoTip" class="tip" style="margin-top:9px">Chibi Asset 모드에서는 원본 78-bone rig, 손가락 뼈, 11개 애니메이션과 선택한 옷/헤어 파츠를 그대로 사용합니다.</div>
       </section>
 
       <section class="card">
@@ -118,7 +149,7 @@
           <button id="exportSpec" class="secondary">⬇ 리그 규격 JSON</button>
         </div>
         <div id="status" class="status" style="margin-top:8px">준비 중…</div>
-        <div class="tip" style="margin-top:8px">GLB에는 메시·재질·스켈레톤·7개 애니메이션 클립을 함께 넣습니다. Cube Architect나 3D 게임에서 GLTFLoader로 바로 읽을 수 있게 만드는 것이 목표입니다.</div>
+        <div class="tip" style="margin-top:8px">Chibi Asset 모드에서는 현재 보이는 파츠만 포함해 GLB로 다시 내보냅니다. 원본 11개 애니메이션과 78-bone rig는 유지됩니다.</div>
       </section>
     </aside>
   </main>
@@ -133,6 +164,6 @@ setTimeout(()=>{
   }
 },7000);
 </script>
-<script type="module" src="/teacher/character-3d-studio.js?v=20261007-soft3"></script>
+<script type="module" src="/teacher/character-3d-studio.js?v=20261007-chibiasset1"></script>
 </body>
 </html>

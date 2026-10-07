@@ -9,7 +9,9 @@ const $=id=>document.getElementById(id);
 
 let scene,camera,renderer,controls,characterRoot,skinnedMesh,skeletonHelper,mixer;
 let clips=[],activeAction=null,activeClip='IDLE',lastTime=performance.now();
-let bodyStyle='soft3',activeView='threeQuarter',currentDim=null;
+let bodyStyle='assetChibi',activeView='threeQuarter',currentDim=null;
+let chibiAssetRoot=null,chibiSourceScene=null,chibiAnimations=[],chibiLoadedUrl='',chibiCurrentPreset='student';
+let chibiOriginalMaterials=new Map();
 
 const params={
   height:1.22,
@@ -24,7 +26,55 @@ const params={
   eyeColor:'#1f2937'
 };
 
+const CHIBI_ASSET_CANDIDATES=[
+  '/chibi/glb/allinonepr.glb',
+  '/chibi/ChibiCharacters/glb/allinonepr.glb',
+  '/ChibiCharacters/glb/allinonepr.glb',
+  '/assets/game/characters/chibi/glb/allinonepr.glb',
+  '/assets/chibi/glb/allinonepr.glb',
+  '/chibi/glb emission/allinone.glb',
+  '/chibi/ChibiCharacters/glb emission/allinone.glb'
+];
+
+const CHIBI_BASE_NODES=['character_low','eyelashes','eyes','tooth'];
+const CHIBI_HAIR_NODES=['hairone','hairT','hairtail','hairtailknight','hairvariant','hairvariant.001'];
+const CHIBI_PRESETS={
+  base:[...CHIBI_BASE_NODES],
+  student:[...CHIBI_BASE_NODES,'hairvariant','shirt','skirt','shoe','bag'],
+  merchant:[...CHIBI_BASE_NODES,'hairone','chemise','pants','bottes','hat'],
+  archer:[...CHIBI_BASE_NODES,'hairvariant.001','greenoutfit','greenoutfitbelt','greenoutfitneckless','bottesgreen'],
+  ninja:[...CHIBI_BASE_NODES,'hairtail','ninjassuit','ninjassuitmask','ninjassuitshoe','ninjassuitthigh','ninjasuitshort'],
+  knight:[...CHIBI_BASE_NODES,'hairtailknight','amorarm','amorplastron','armorceinturethighs','armorhelmet','armorknees','armorlegs','armorshoe','armorskirt','armorthigh','ceinture']
+};
+
+const CHIBI_PART_LABELS={
+  amorarm:'갑옷 팔',amorplastron:'갑옷 흉갑',armorceinturethighs:'갑옷 허리',
+  armorhelmet:'기사 투구',armorknees:'무릎 갑옷',armorlegs:'다리 갑옷',armorshoe:'갑옷 신발',
+  armorskirt:'갑옷 스커트',armorthigh:'허벅지 갑옷',bag:'학생 가방',bottes:'상인 부츠',
+  bottesgreen:'궁수 부츠',ceinture:'기사 벨트',chemise:'상인 셔츠',greenoutfit:'궁수 의상',
+  greenoutfitbelt:'궁수 벨트',greenoutfitneckless:'궁수 목걸이',hairone:'단정한 헤어',
+  hairT:'T 헤어',hairtail:'포니테일',hairtailknight:'기사 헤어',hairvariant:'학생 헤어',
+  'hairvariant.001':'궁수 헤어',hat:'상인 모자',ninjassuit:'닌자 상의',ninjassuitmask:'닌자 마스크',
+  ninjassuitshoe:'닌자 신발',ninjassuitthigh:'닌자 허벅지',ninjasuitshort:'닌자 하의',
+  pants:'상인 바지',shirt:'학생 셔츠',shoe:'학생 신발',skirt:'학생 치마'
+};
+
+const CHIBI_TOGGLE_NODES=Object.keys(CHIBI_PART_LABELS);
+
+const CHIBI_CLIP_LABELS={
+  anim_iddle:'IDLE', 'anim_iddle.001':'IDLE ALT', anim_walk:'WALK', anim_run:'RUN',
+  anim_jump:'JUMP', anim_flip:'FLIP', anim_push:'PUSH', anim_crouch:'CROUCH',
+  anim_crouchiddle:'CROUCH IDLE', anim_uncrouch:'STAND', anim_dying:'DYING',
+  iddleanim_:'IDLE', 'iddle.001anim_':'IDLE ALT', walkanim_:'WALK', runanim_:'RUN',
+  jumpanim_:'JUMP', flipanim_:'FLIP', pushanim_:'PUSH', crouchanim_:'CROUCH',
+  crouchiddleanim_:'CROUCH IDLE', uncrouchanim_:'STAND', dyinganim_:'DYING'
+};
+
 const BODY_STYLES={
+  assetChibi:{
+    label:'Styloo Chibi Asset',
+    defaults:{height:1.22,headScale:1,shoulderScale:1,limbScale:1}
+  },
   legacy:{
     label:'V1 기존 마네킹',
     defaults:{height:1.35,headScale:1,shoulderScale:1,limbScale:1}
@@ -49,6 +99,282 @@ function setStatus(text,error=false){
   el.textContent=text;
   el.className='status'+(error?' error':'');
 }
+
+function setChibiAssetStatus(text,error=false){
+  const el=$('chibiAssetStatus');
+  if(!el)return;
+  el.textContent=text;
+  el.className='asset-status'+(error?' error':'');
+}
+
+function effectiveVisible(object,root){
+  let current=object;
+  while(current&&current!==root){
+    if(current.visible===false)return false;
+    current=current.parent;
+  }
+  return root?.visible!==false;
+}
+
+function countVisibleTriangles(root){
+  let total=0;
+  root?.traverse?.(o=>{
+    if(!o.isMesh||!o.geometry||!effectiveVisible(o,root))return;
+    total+=o.geometry.index?o.geometry.index.count/3:o.geometry.getAttribute('position')?.count/3||0;
+  });
+  return Math.round(total);
+}
+
+function selectedChibiParts(){
+  if(!chibiSourceScene)return [];
+  return CHIBI_TOGGLE_NODES.filter(name=>chibiSourceScene.getObjectByName(name)?.visible);
+}
+
+function setChibiNodeVisible(name,visible){
+  const object=chibiSourceScene?.getObjectByName(name);
+  if(object)object.visible=!!visible;
+}
+
+function refreshWardrobeChecks(){
+  document.querySelectorAll('[data-chibi-part]').forEach(input=>{
+    const object=chibiSourceScene?.getObjectByName(input.dataset.chibiPart);
+    input.checked=!!object?.visible;
+    input.disabled=!object;
+  });
+}
+
+function renderWardrobeParts(){
+  const host=$('wardrobeParts');
+  if(!host)return;
+  host.innerHTML=CHIBI_TOGGLE_NODES.map(name=>{
+    const exists=!!chibiSourceScene?.getObjectByName(name);
+    const label=CHIBI_PART_LABELS[name]||name;
+    return '<label class="part-check"><input type="checkbox" data-chibi-part="'+name+'" '+(exists?'':'disabled')+'> '+label+'</label>';
+  }).join('');
+  refreshWardrobeChecks();
+}
+
+function applyChibiHair(name){
+  CHIBI_HAIR_NODES.forEach(n=>setChibiNodeVisible(n,false));
+  if(name)setChibiNodeVisible(name,true);
+  if($('chibiHair'))$('chibiHair').value=name||'';
+  refreshWardrobeChecks();
+  refreshChibiMetrics();
+}
+
+function applyChibiPreset(name,updateHair=true){
+  if(!chibiSourceScene)return;
+  chibiCurrentPreset=CHIBI_PRESETS[name]?name:'base';
+  const wanted=new Set(CHIBI_PRESETS[chibiCurrentPreset]);
+  CHIBI_TOGGLE_NODES.forEach(node=>setChibiNodeVisible(node,wanted.has(node)));
+  CHIBI_BASE_NODES.forEach(node=>setChibiNodeVisible(node,true));
+  if(updateHair){
+    const hair=CHIBI_HAIR_NODES.find(node=>wanted.has(node))||'';
+    if($('chibiHair'))$('chibiHair').value=hair;
+  }
+  document.querySelectorAll('[data-chibi-preset]').forEach(b=>b.classList.toggle('active',b.dataset.chibiPreset===chibiCurrentPreset));
+  refreshWardrobeChecks();
+  refreshChibiMetrics();
+}
+
+function basicFromMaterial(source){
+  const material=new THREE.MeshBasicMaterial({
+    color:source?.color?.clone?.()||new THREE.Color(0xffffff),
+    map:source?.map||null,
+    alphaMap:source?.alphaMap||null,
+    transparent:!!source?.transparent,
+    opacity:source?.opacity??1,
+    alphaTest:source?.alphaTest??0,
+    side:THREE.DoubleSide,
+    vertexColors:!!source?.vertexColors
+  });
+  material.name=(source?.name||'material')+'__kidscade_unlit';
+  material.userData.kidscadeGeneratedUnlit=true;
+  return material;
+}
+
+function applyChibiMaterialMode(useUnlit){
+  if(!chibiSourceScene)return;
+  chibiSourceScene.traverse(o=>{
+    if(!o.isMesh)return;
+    if(!chibiOriginalMaterials.has(o.uuid)){
+      chibiOriginalMaterials.set(o.uuid,Array.isArray(o.material)?o.material.slice():o.material);
+    }
+    const original=chibiOriginalMaterials.get(o.uuid);
+    if(useUnlit){
+      const current=Array.isArray(o.material)?o.material:[o.material];
+      current.forEach(m=>{if(m?.userData?.kidscadeGeneratedUnlit)m.dispose?.()});
+      o.material=Array.isArray(original)?original.map(basicFromMaterial):basicFromMaterial(original);
+    }else{
+      const current=Array.isArray(o.material)?o.material:[o.material];
+      current.forEach(m=>{if(m?.userData?.kidscadeGeneratedUnlit)m.dispose?.()});
+      o.material=Array.isArray(original)?original.slice():original;
+    }
+  });
+  setChibiAssetStatus((useUnlit?'Unlit/NPR':'원본 PBR')+' 재질 적용 · '+chibiCurrentPreset+' 프리셋');
+}
+
+function chibiIdleClipName(){
+  return chibiAnimations.find(c=>c.name==='anim_iddle')?.name
+    ||chibiAnimations.find(c=>c.name==='iddleanim_')?.name
+    ||chibiAnimations[0]?.name||'';
+}
+
+function populateProceduralClipButtons(){
+  const host=$('clipGrid');
+  if(!host)return;
+  host.innerHTML=CLIP_NAMES.map(name=>'<button class="secondary '+(name==='IDLE'?'active':'')+'" data-clip="'+name+'">'+name+'</button>').join('');
+}
+
+function populateChibiClipButtons(){
+  const host=$('clipGrid');
+  if(!host)return;
+  host.innerHTML=chibiAnimations.map((clip,index)=>{
+    const label=CHIBI_CLIP_LABELS[clip.name]||clip.name.replace(/^anim_/,'').replace(/anim_$/,'').toUpperCase();
+    return '<button class="secondary '+(index===0?'':'')+'" data-clip="'+clip.name+'">'+label+'</button>';
+  }).join('');
+}
+
+function refreshChibiMetrics(){
+  if(!chibiAssetRoot)return;
+  const triangles=countVisibleTriangles(chibiAssetRoot);
+  const boneCount=skinnedMesh?.skeleton?.bones?.length||78;
+  $('triangleCount').textContent=triangles.toLocaleString();
+  $('polyBadge').textContent=triangles.toLocaleString()+' triangles';
+  $('boneCount').textContent=String(boneCount);
+  $('rigBadge').textContent='✓ Styloo Chibi · '+boneCount+' bones';
+  $('clipBadge').textContent=chibiAnimations.length+' clips';
+  if($('rigVersionLabel'))$('rigVersionLabel').textContent='Styloo Chibi v1.2 · '+boneCount+' bones';
+  if($('skinningModeLabel'))$('skinningModeLabel').textContent='Original SkinnedMesh';
+  if($('modelInfoTip'))$('modelInfoTip').textContent='원본 78-bone rig와 손가락 뼈를 유지하고, 현재 선택한 옷/헤어 파츠만 표시합니다. 보이는 메시 기준 '+triangles.toLocaleString()+' triangles.';
+}
+
+function normalizeChibiScene(source,targetHeight=1.22){
+  source.updateMatrixWorld(true);
+  const firstBox=new THREE.Box3().setFromObject(source);
+  const size=firstBox.getSize(new THREE.Vector3());
+  const scale=size.y>0?targetHeight/size.y:1;
+  source.scale.setScalar(scale);
+  source.updateMatrixWorld(true);
+  const box=new THREE.Box3().setFromObject(source);
+  const center=box.getCenter(new THREE.Vector3());
+  source.position.x-=center.x;
+  source.position.z-=center.z;
+  source.position.y-=box.min.y;
+  source.updateMatrixWorld(true);
+  currentDim={H:targetHeight,asset:true,soft:false};
+}
+
+function clearCharacterForAsset(){
+  if(activeAction)activeAction.stop();
+  activeAction=null;
+  mixer?.stopAllAction?.();
+  mixer=null;
+  if(skeletonHelper){
+    scene.remove(skeletonHelper);
+    skeletonHelper.geometry?.dispose?.();
+    skeletonHelper.material?.dispose?.();
+    skeletonHelper=null;
+  }
+  if(characterRoot&&characterRoot!==chibiAssetRoot){
+    scene.remove(characterRoot);
+    disposeObject(characterRoot);
+  }else if(characterRoot){
+    scene.remove(characterRoot);
+  }
+  characterRoot=null;
+  skinnedMesh=null;
+}
+
+function mountLoadedChibi(){
+  if(!chibiAssetRoot||!chibiSourceScene)return false;
+  clearCharacterForAsset();
+  characterRoot=chibiAssetRoot;
+  if(!characterRoot.parent)scene.add(characterRoot);
+  skinnedMesh=null;
+  chibiSourceScene.traverse(o=>{
+    if(!skinnedMesh&&o.isSkinnedMesh)skinnedMesh=o;
+    if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false}
+  });
+  mixer=new THREE.AnimationMixer(chibiSourceScene);
+  clips=chibiAnimations;
+  skeletonHelper=new THREE.SkeletonHelper(chibiSourceScene);
+  skeletonHelper.name='ChibiRigPreviewOnly';
+  skeletonHelper.visible=$('showBones').checked;
+  skeletonHelper.material.depthTest=false;
+  skeletonHelper.material.transparent=true;
+  skeletonHelper.material.opacity=.88;
+  scene.add(skeletonHelper);
+
+  const bones=skinnedMesh?.skeleton?.bones||[];
+  $('boneList').innerHTML=bones.map(b=>'<span>'+b.name.replace(/^DEF-/,'')+'</span>').join('');
+  populateChibiClipButtons();
+  renderWardrobeParts();
+  applyChibiPreset(chibiCurrentPreset);
+  applyChibiMaterialMode($('chibiUnlit')?.checked!==false);
+  refreshChibiMetrics();
+  setCameraView(activeView,false);
+  const idle=chibiIdleClipName();
+  if(idle)playClip(idle);
+  return true;
+}
+
+async function loadChibiAsset(){
+  if(chibiAssetRoot)return mountLoadedChibi();
+  setChibiAssetStatus('Chibi all-in-one GLB를 찾는 중…');
+  setStatus('Chibi 실물 에셋을 불러오는 중…');
+  let GLTFLoader;
+  try{
+    ({GLTFLoader}=await import('../assets/vendor/three-r160/addons/loaders/GLTFLoader.js'));
+  }catch(error){
+    console.error(error);
+    setChibiAssetStatus('GLTFLoader를 불러오지 못했습니다.',true);
+    return false;
+  }
+  const loader=new GLTFLoader();
+  let gltf=null,lastError=null;
+  for(const candidate of CHIBI_ASSET_CANDIDATES){
+    try{
+      gltf=await loader.loadAsync(candidate+'?v=20261007-chibi12');
+      chibiLoadedUrl=candidate;
+      break;
+    }catch(error){
+      lastError=error;
+    }
+  }
+  if(!gltf){
+    console.warn('Chibi asset load failed',lastError);
+    setChibiAssetStatus('Chibi GLB를 찾지 못했습니다. /chibi/glb/allinonepr.glb 경로를 확인해 주세요.',true);
+    setStatus('Chibi 실물 에셋을 찾지 못해 V3 실험형으로 전환합니다.',true);
+    return false;
+  }
+
+  chibiSourceScene=gltf.scene;
+  chibiSourceScene.name='StylooChibiAllInOne';
+  chibiAnimations=gltf.animations||[];
+  chibiAssetRoot=new THREE.Group();
+  chibiAssetRoot.name='KidscadeChibiAvatar';
+  chibiAssetRoot.userData={
+    type:'kidscade-chibi-avatar',
+    source:'Styloo Chibi Characters v1.2',
+    sourceUrl:'https://styloo.itch.io/chibi',
+    license:'CC0-1.0',
+    loadedFrom:chibiLoadedUrl
+  };
+  normalizeChibiScene(chibiSourceScene,params.height);
+  chibiAssetRoot.add(chibiSourceScene);
+  CHIBI_TOGGLE_NODES.forEach(node=>setChibiNodeVisible(node,false));
+  CHIBI_BASE_NODES.forEach(node=>setChibiNodeVisible(node,true));
+  setChibiAssetStatus('로드 완료 · '+chibiAnimations.length+' animations · '+chibiLoadedUrl);
+  return mountLoadedChibi();
+}
+
+function setStudioModePanels(){
+  const asset=bodyStyle==='assetChibi';
+  $('assetWardrobe')?.classList.toggle('hidden',!asset);
+  $('proceduralPanel')?.classList.toggle('hidden',asset);
+}
+
 
 function createSimpleOrbitControls(camera,domElement){
   const target=new THREE.Vector3(0,.75,0);
@@ -693,9 +1019,9 @@ function addHeadDetails(headBone,dim,materials){
 }
 
 function setCameraView(name,markButton=true){
-  if(!camera||!controls||!currentDim)return;
+  if(!camera||!controls)return;
   activeView=name;
-  const H=currentDim.H;
+  const H=currentDim?.H||params.height||1.22;
   controls.target.set(0,H*.50,0);
   if(name==='front')camera.position.set(0,H*.72,H*2.55);
   else if(name==='side')camera.position.set(H*2.55,H*.72,0);
@@ -725,7 +1051,7 @@ function buildCharacter(){
   }
   if(characterRoot){
     scene.remove(characterRoot);
-    disposeObject(characterRoot);
+    if(characterRoot!==chibiAssetRoot)disposeObject(characterRoot);
   }
 
   const H=params.height;
@@ -905,13 +1231,14 @@ function playClip(name){
   if(activeAction)activeAction.fadeOut(.12);
   const clip=clips.find(c=>c.name===name);
   if(!clip)return;
+  const once=name==='DEAD'||name==='anim_dying'||name==='dyinganim_';
   const next=mixer.clipAction(clip);
   next.reset();
   next.enabled=true;
   next.setEffectiveTimeScale(Number($('speed')?.value||1));
   next.setEffectiveWeight(1);
-  next.setLoop(name==='DEAD'?THREE.LoopOnce:THREE.LoopRepeat,name==='DEAD'?1:Infinity);
-  next.clampWhenFinished=name==='DEAD';
+  next.setLoop(once?THREE.LoopOnce:THREE.LoopRepeat,once?1:Infinity);
+  next.clampWhenFinished=once;
   next.fadeIn(.12).play();
   activeAction=next;
 }
@@ -920,17 +1247,20 @@ function resetPose(){
   if(activeAction)activeAction.stop();
   activeAction=null;
   mixer?.stopAllAction();
-  skinnedMesh?.skeleton?.pose();
+  if(bodyStyle==='assetChibi'){
+    chibiSourceScene?.traverse?.(o=>{if(o.isSkinnedMesh)o.skeleton?.pose?.()});
+  }else{
+    skinnedMesh?.skeleton?.pose();
+  }
   if(characterRoot){
-    characterRoot.position.set(0,0,0);
-    characterRoot.quaternion.identity();
+    characterRoot.rotation.set(0,0,0);
   }
   activeClip='';
   document.querySelectorAll('[data-clip]').forEach(b=>b.classList.remove('active'));
   setStatus('기본 바인드 자세로 돌아왔습니다.');
 }
 
-function applyBodyStyle(name){
+async function applyBodyStyle(name){
   const profile=BODY_STYLES[name];
   if(!profile)return;
   bodyStyle=name;
@@ -940,6 +1270,21 @@ function applyBodyStyle(name){
   }
   document.querySelectorAll('[data-body-style]').forEach(b=>b.classList.toggle('active',b.dataset.bodyStyle===name));
   syncOutputs();
+  setStudioModePanels();
+
+  if(name==='assetChibi'){
+    const ok=await loadChibiAsset();
+    if(!ok){
+      bodyStyle='soft3';
+      document.querySelectorAll('[data-body-style]').forEach(b=>b.classList.toggle('active',b.dataset.bodyStyle==='soft3'));
+      setStudioModePanels();
+      populateProceduralClipButtons();
+      buildCharacter();
+    }
+    return;
+  }
+
+  populateProceduralClipButtons();
   buildCharacter();
 }
 
@@ -956,6 +1301,28 @@ function download(name,blob){
 
 function exportSpec(){
   readParams();
+
+  if(bodyStyle==='assetChibi'){
+    const spec={
+      version:4,
+      type:'kidscade-chibi-avatar-spec',
+      source:'Styloo Chibi Characters v1.2',
+      sourceUrl:'https://styloo.itch.io/chibi',
+      license:'CC0-1.0',
+      loadedFrom:chibiLoadedUrl,
+      preset:chibiCurrentPreset,
+      materialMode:$('chibiUnlit')?.checked!==false?'unlit-npr':'original-pbr',
+      visibleParts:selectedChibiParts(),
+      bones:skinnedMesh?.skeleton?.bones.map(b=>({name:b.name,parent:b.parent?.isBone?b.parent.name:null}))||[],
+      clips:chibiAnimations.map(clip=>({name:clip.name,duration:Number(clip.duration.toFixed(3))})),
+      triangles:countVisibleTriangles(chibiAssetRoot),
+      coordinateSystem:{up:'Y',units:'meters',origin:'ground-center'}
+    };
+    download('kidscade-chibi-'+chibiCurrentPreset+'-spec.json',new Blob([JSON.stringify(spec,null,2)+'\n'],{type:'application/json'}));
+    setStatus('Chibi 아바타 파츠/리그 규격 JSON을 저장했습니다.');
+    return;
+  }
+
   const spec={
     version:3,
     type:'kidscade-humanoid-rig-spec',
@@ -992,8 +1359,11 @@ async function exportGlb(){
 
   if(activeAction)activeAction.stop();
   mixer?.stopAllAction();
-  skinnedMesh.skeleton.pose();
-  characterRoot.position.set(0,0,0);
+  if(bodyStyle==='assetChibi'){
+    chibiSourceScene?.traverse?.(o=>{if(o.isSkinnedMesh)o.skeleton?.pose?.()});
+  }else{
+    skinnedMesh.skeleton.pose();
+  }
   characterRoot.rotation.set(0,0,0);
   characterRoot.updateMatrixWorld(true);
 
@@ -1021,33 +1391,57 @@ async function exportGlb(){
       const blob=result instanceof ArrayBuffer
         ?new Blob([result],{type:'model/gltf-binary'})
         :new Blob([JSON.stringify(result)],{type:'model/gltf+json'});
-      download('kidscade-'+bodyStyle+'-rigged-character.glb',blob);
-      setStatus('GLB 저장 완료 · 바인드 자세 + 스켈레톤 + '+clips.length+'개 애니메이션');
+      const filename=bodyStyle==='assetChibi'
+        ?'kidscade-chibi-'+chibiCurrentPreset+'.glb'
+        :'kidscade-'+bodyStyle+'-rigged-character.glb';
+      download(filename,blob);
+      setStatus('GLB 저장 완료 · '+(bodyStyle==='assetChibi'?'선택 파츠 + 78-bone rig + ':'바인드 자세 + 스켈레톤 + ')+clips.length+'개 애니메이션');
     },
     error=>{
       restorePreview();
       console.error(error);
       setStatus('GLB 내보내기에 실패했습니다: '+(error?.message||error),true);
     },
-    {binary:true,trs:true,onlyVisible:false,animations:clips,includeCustomExtensions:false}
+    {binary:true,trs:true,onlyVisible:bodyStyle==='assetChibi',animations:bodyStyle==='assetChibi'?chibiAnimations:clips,includeCustomExtensions:false}
   );
 }
 
 function wireUi(){
   ['height','headScale','shoulderScale','limbScale'].forEach(id=>{
     $(id).addEventListener('input',syncOutputs);
-    $(id).addEventListener('change',buildCharacter);
+    $(id).addEventListener('change',()=>{if(bodyStyle!=='assetChibi')buildCharacter()});
   });
-  ['skinColor','hairColor','topColor','bottomColor','shoeColor','eyeColor'].forEach(id=>$(id).addEventListener('change',buildCharacter));
-  $('rebuild').addEventListener('click',buildCharacter);
+  ['skinColor','hairColor','topColor','bottomColor','shoeColor','eyeColor'].forEach(id=>{
+    $(id).addEventListener('change',()=>{if(bodyStyle!=='assetChibi')buildCharacter()});
+  });
+  $('rebuild').addEventListener('click',()=>{if(bodyStyle!=='assetChibi')buildCharacter()});
   $('showBones').addEventListener('change',()=>{if(skeletonHelper)skeletonHelper.visible=$('showBones').checked});
   $('resetPose').addEventListener('click',resetPose);
   $('exportGlb').addEventListener('click',exportGlb);
   $('exportSpec').addEventListener('click',exportSpec);
   $('speed').addEventListener('input',()=>{if(activeAction)activeAction.setEffectiveTimeScale(Number($('speed').value))});
-  document.querySelectorAll('[data-clip]').forEach(b=>b.addEventListener('click',()=>playClip(b.dataset.clip)));
-  document.querySelectorAll('[data-body-style]').forEach(b=>b.addEventListener('click',()=>applyBodyStyle(b.dataset.bodyStyle)));
+
+  $('clipGrid').addEventListener('click',event=>{
+    const button=event.target.closest('[data-clip]');
+    if(button)playClip(button.dataset.clip);
+  });
+
+  document.querySelectorAll('[data-body-style]').forEach(b=>b.addEventListener('click',()=>void applyBodyStyle(b.dataset.bodyStyle)));
   document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setCameraView(b.dataset.view)));
+  document.querySelectorAll('[data-chibi-preset]').forEach(b=>b.addEventListener('click',()=>applyChibiPreset(b.dataset.chibiPreset)));
+
+  $('chibiHair')?.addEventListener('change',event=>applyChibiHair(event.target.value));
+  $('chibiUnlit')?.addEventListener('change',event=>applyChibiMaterialMode(event.target.checked));
+  $('wardrobeParts')?.addEventListener('change',event=>{
+    const input=event.target.closest('[data-chibi-part]');
+    if(!input)return;
+    setChibiNodeVisible(input.dataset.chibiPart,input.checked);
+    const hair=CHIBI_HAIR_NODES.find(name=>chibiSourceScene?.getObjectByName(name)?.visible)||'';
+    if($('chibiHair'))$('chibiHair').value=hair;
+    document.querySelectorAll('[data-chibi-preset]').forEach(b=>b.classList.remove('active'));
+    chibiCurrentPreset='custom';
+    refreshChibiMetrics();
+  });
 }
 
 function loop(now){
@@ -1066,11 +1460,29 @@ async function boot(){
   initScene();
   wireUi();
   syncOutputs();
-  try{buildCharacter()}catch(error){
-    console.error(error);
-    setStatus('초기 캐릭터 생성 실패: '+(error?.message||error),true);
-  }
+  setStudioModePanels();
   requestAnimationFrame(loop);
+
+  try{
+    const loaded=await loadChibiAsset();
+    if(!loaded){
+      bodyStyle='soft3';
+      document.querySelectorAll('[data-body-style]').forEach(b=>b.classList.toggle('active',b.dataset.bodyStyle==='soft3'));
+      setStudioModePanels();
+      populateProceduralClipButtons();
+      buildCharacter();
+    }
+  }catch(error){
+    console.error(error);
+    bodyStyle='soft3';
+    document.querySelectorAll('[data-body-style]').forEach(b=>b.classList.toggle('active',b.dataset.bodyStyle==='soft3'));
+    setStudioModePanels();
+    populateProceduralClipButtons();
+    try{buildCharacter()}catch(inner){
+      console.error(inner);
+      setStatus('초기 캐릭터 생성 실패: '+(inner?.message||inner),true);
+    }
+  }
 }
 
 boot();

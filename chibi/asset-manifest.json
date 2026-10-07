@@ -1,0 +1,106 @@
+{
+  "id": "styloo-chibi-v1.2",
+  "title": "Styloo Chibi Characters v1.2",
+  "license": "CC0-1.0",
+  "source": "https://styloo.itch.io/chibi",
+  "primary": "glb/allinonepr.glb",
+  "fallbackPrimary": "glb emission/allinone.glb",
+  "expectedRoot": "/chibi/",
+  "baseNodes": [
+    "character_low",
+    "eyelashes",
+    "eyes",
+    "tooth"
+  ],
+  "hairNodes": [
+    "hairone",
+    "hairT",
+    "hairtail",
+    "hairtailknight",
+    "hairvariant",
+    "hairvariant.001"
+  ],
+  "presets": {
+    "base": [
+      "character_low",
+      "eyelashes",
+      "eyes",
+      "tooth"
+    ],
+    "student": [
+      "character_low",
+      "eyelashes",
+      "eyes",
+      "tooth",
+      "hairvariant",
+      "shirt",
+      "skirt",
+      "shoe",
+      "bag"
+    ],
+    "merchant": [
+      "character_low",
+      "eyelashes",
+      "eyes",
+      "tooth",
+      "hairone",
+      "chemise",
+      "pants",
+      "bottes",
+      "hat"
+    ],
+    "archer": [
+      "character_low",
+      "eyelashes",
+      "eyes",
+      "tooth",
+      "hairvariant.001",
+      "greenoutfit",
+      "greenoutfitbelt",
+      "greenoutfitneckless",
+      "bottesgreen"
+    ],
+    "ninja": [
+      "character_low",
+      "eyelashes",
+      "eyes",
+      "tooth",
+      "hairtail",
+      "ninjassuit",
+      "ninjassuitmask",
+      "ninjassuitshoe",
+      "ninjassuitthigh",
+      "ninjasuitshort"
+    ],
+    "knight": [
+      "character_low",
+      "eyelashes",
+      "eyes",
+      "tooth",
+      "hairtailknight",
+      "amorarm",
+      "amorplastron",
+      "armorceinturethighs",
+      "armorhelmet",
+      "armorknees",
+      "armorlegs",
+      "armorshoe",
+      "armorskirt",
+      "armorthigh",
+      "ceinture"
+    ]
+  },
+  "animations": [
+    "anim_crouch",
+    "anim_crouchiddle",
+    "anim_dying",
+    "anim_flip",
+    "anim_iddle",
+    "anim_iddle.001",
+    "anim_jump",
+    "anim_push",
+    "anim_run",
+    "anim_uncrouch",
+    "anim_walk"
+  ]
+}
