@@ -1041,6 +1041,15 @@ function scanAction(){
       .sort((a,b)=>distance2D(player.root.position,a.actor.root.position)-distance2D(player.root.position,b.actor.root.position))[0];
     if(unsafe){currentAction={type:'safetyReview',student:unsafe};setAction('🦺',unsafe.runtime.name+' 안전수칙 다시',true);return}
 
+    const chat=lessonChats.slice().sort((a,b)=>{
+      const da=Math.min(distance2D(player.root.position,a.a.actor.root.position),distance2D(player.root.position,a.b.actor.root.position));
+      const db=Math.min(distance2D(player.root.position,b.a.actor.root.position),distance2D(player.root.position,b.b.actor.root.position));return da-db;
+    })[0];
+    if(chat){
+      const d=Math.min(distance2D(player.root.position,chat.a.actor.root.position),distance2D(player.root.position,chat.b.actor.root.position));
+      if(d<2.65){currentAction={type:'quietFriends',chat};setAction('🤫','조용히 시키기',true);return}
+    }
+
     const briefing=currentStep.safetyRequired&&lessonElapsed>=SAFETY_RULES.briefingStartSeconds&&lessonElapsed<SAFETY_RULES.briefingStartSeconds+SAFETY_RULES.briefingDurationSeconds;
     const near=students.filter(s=>studentCanParticipate(s)&&(s.runtime.mode==='offtask'||(briefing&&focusRatio(s)<SAFETY_RULES.distractedFocusRatio))&&distance2D(player.root.position,s.actor.root.position)<2.35)
       .sort((a,b)=>distance2D(player.root.position,a.actor.root.position)-distance2D(player.root.position,b.actor.root.position))[0];
@@ -1056,8 +1065,10 @@ function updateGuideByAction(){
   else if(currentAction.type==='healthCheck')setGuide('건강 확인',currentAction.student.runtime.name+'의 상태가 이상해 보여요','가까이에서 상태를 확인하세요.');
   else if(currentAction.type==='healthDecision')setGuide('건강 조치',healthStatusText(currentAction.student),'상황에 맞는 조치를 해주세요.');
   else if(currentAction.type==='safetyReview')setGuide('안전교육',currentAction.student.runtime.name+'가 안전수칙을 놓쳤어요','가까이에서 안전수칙을 다시 알려주세요.');
+  else if(currentAction.type==='quietFriends')setGuide('수업 중 친구 장난',currentAction.chat.a.runtime.name+'와 '+currentAction.chat.b.runtime.name+'가 떠들고 있어요','친한 친구끼리도 지금은 수업에 집중하도록 조용히 알려주세요.');
 }
 function removeStudentFromActivePairs(s){
+  for(const chat of lessonChats.filter(x=>x.a===s||x.b===s))stopLessonChat(chat);
   pairs=pairs.filter(p=>{
     const hit=p.a===s||p.b===s;
     if(hit){
@@ -1106,6 +1117,9 @@ function useAction(){
     const s=currentAction.student;s.safetyRecord.heard=true;s.safetyRecord.finished=true;
     if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy'))hideBubble(s);
     playerGestureTimer=.45;playAnim(player,'push');showToast(s.runtime.name+'에게 안전수칙을 다시 알려줬어요.');return;
+  }
+  if(currentAction.type==='quietFriends'){
+    stopLessonChat(currentAction.chat,{teacher:true});playerGestureTimer=.45;playAnim(player,'push');return;
   }
   if(currentAction.type==='focus'){
     const s=currentAction.student;helpFocus(s.runtime);stats.focusHelps++;s.wander=null;s.actor.target=s.seat.clone();playerGestureTimer=.5;playAnim(player,'push');
