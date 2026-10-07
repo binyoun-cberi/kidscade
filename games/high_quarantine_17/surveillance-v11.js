@@ -90,14 +90,46 @@ function chooseRoutine(r){
  const z=zoneInfo(zid),p=pointInZone(z,3);
  r.zone=zid;r.task=rand(TASKS[zid]);r.tx=p.x;r.ty=p.y;r.routineMs=4500+Math.random()*8500;
 }
+function campLineBlocked(x1,y1,x2,y2){
+ const d=Math.hypot(x2-x1,y2-y1),steps=Math.max(1,Math.ceil(d/1.35));
+ for(let i=1;i<steps;i++){const t=i/steps;if(campBlockedAt(x1+(x2-x1)*t,y1+(y2-y1)*t,1.05))return true}
+ return false
+}
+function campWaypoint(e,tx,ty){
+ if(!campLineBlocked(e.x,e.y,tx,ty))return{x:tx,y:ty};
+ const step=4,minX=4,maxX=96,minY=17,maxY=84;
+ const gx=x=>Math.round((clamp(x,minX,maxX)-minX)/step),gy=y=>Math.round((clamp(y,minY,maxY)-minY)/step);
+ const px=x=>minX+x*step,py=y=>minY+y*step,cols=gx(maxX)+1,rows=gy(maxY)+1;
+ const start=[gx(e.x),gy(e.y)],rawGoal=[gx(tx),gy(ty)];
+ const key=(x,y)=>y*cols+x,free=(x,y)=>x>=0&&y>=0&&x<cols&&y<rows&&!campBlockedAt(px(x),py(y),1.2);
+ let goal=rawGoal;
+ if(!free(goal[0],goal[1])){
+  let best=null,bd=Infinity;
+  for(let y=0;y<rows;y++)for(let x=0;x<cols;x++)if(free(x,y)){const d=Math.hypot(px(x)-tx,py(y)-ty);if(d<bd){bd=d;best=[x,y]}}
+  if(best)goal=best
+ }
+ const q=[start],prev=new Map([[key(start[0],start[1]),null]]),dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+ let found=false;
+ for(let qi=0;qi<q.length&&!found;qi++){
+  const cur=q[qi];
+  for(const d of dirs){
+   const nx=cur[0]+d[0],ny=cur[1]+d[1],k=key(nx,ny);
+   if(!free(nx,ny)||prev.has(k))continue;prev.set(k,cur);q.push([nx,ny]);if(nx===goal[0]&&ny===goal[1]){found=true;break}
+  }
+ }
+ if(!prev.has(key(goal[0],goal[1])))return{x:tx,y:ty};
+ let cur=goal,parent=prev.get(key(cur[0],cur[1]));
+ while(parent&&!(parent[0]===start[0]&&parent[1]===start[1])){cur=parent;parent=prev.get(key(cur[0],cur[1]))}
+ return{x:px(cur[0]),y:py(cur[1])}
+}
 function moveToward(e,tx,ty,speed,dt){
- const dx=tx-e.x,dy=ty-e.y,d=Math.hypot(dx,dy);if(d<.15)return false;
- const step=Math.min(d,speed*dt),base=Math.atan2(dy,dx),offsets=[0,.42,-.42,.82,-.82,1.2,-1.2,1.57,-1.57];
+ const target=campWaypoint(e,tx,ty),dx=target.x-e.x,dy=target.y-e.y,d=Math.hypot(dx,dy);if(d<.15)return false;
+ const step=Math.min(d,speed*dt),base=Math.atan2(dy,dx),offsets=[0,.38,-.38,.76,-.76,1.15,-1.15,1.57,-1.57];
  let best=null,bestD=Infinity;
  for(const off of offsets){
   const nx=clamp(e.x+Math.cos(base+off)*step,4,96),ny=clamp(e.y+Math.sin(base+off)*step,17,84);
   if(campBlockedAt(nx,ny,1.05))continue;
-  const nd=Math.hypot(tx-nx,ty-ny)+Math.abs(off)*.08;
+  const nd=Math.hypot(target.x-nx,target.y-ny)+Math.abs(off)*.08;
   if(nd<bestD){bestD=nd;best={x:nx,y:ny}}
  }
  if(!best)return false;
