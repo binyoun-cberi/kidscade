@@ -1,0 +1,32 @@
+name: Male avatar visual audit
+
+on:
+  push:
+    branches:
+      - audit/chibi-male-visual-20261008
+
+permissions:
+  contents: read
+
+jobs:
+  visual-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install project dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Start local static server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/avatar-http.log 2>&1 &
+          echo $! > /tmp/avatar-http.pid
+          sleep 2
+      - name: Render male avatar audit
+        run: node scripts/avatar-male-visual-audit.mjs
