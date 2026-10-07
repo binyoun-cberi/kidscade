@@ -293,20 +293,30 @@ function pointToNavCell(point){
     iz:clamp(Math.round((point.z-NAV_MIN_Z)/NAV_STEP),0,NAV_ROWS-1)
   };
 }
-function nearestOpenNavCell(point){
+function studentSegmentClear(a,b,step=.07){
+  const distance=distance2D(a,b);
+  const samples=Math.max(1,Math.ceil(distance/step));
+  for(let i=1;i<=samples;i++){
+    const t=i/samples;
+    const x=THREE.MathUtils.lerp(a.x,b.x,t),z=THREE.MathUtils.lerp(a.z,b.z,t);
+    if(isStudentBlocked(x,z))return false;
+  }
+  return true;
+}
+function nearestConnectedNavCell(point){
   const base=pointToNavCell(point);
-  for(let radius=0;radius<=7;radius++){
+  for(let radius=0;radius<=9;radius++){
     for(let dz=-radius;dz<=radius;dz++){
       for(let dx=-radius;dx<=radius;dx++){
         if(radius&&Math.abs(dx)!==radius&&Math.abs(dz)!==radius)continue;
         const ix=base.ix+dx,iz=base.iz+dz;
         if(ix<0||iz<0||ix>=NAV_COLS||iz>=NAV_ROWS)continue;
         const p=navCell(ix,iz);
-        if(!isStudentBlocked(p.x,p.z))return {ix,iz};
+        if(!isStudentBlocked(p.x,p.z)&&studentSegmentClear(point,p))return {ix,iz};
       }
     }
   }
-  return base;
+  return null;
 }
 function simplifyStudentPath(points,start,target){
   if(!points.length)return [target.clone()];
@@ -323,37 +333,36 @@ function simplifyStudentPath(points,start,target){
   return out;
 }
 function findStudentPath(start,target){
-  if(!isStudentBlocked(target.x,target.z)){
-    const samples=Math.max(1,Math.ceil(distance2D(start,target)/.28));
-    let clear=true;
-    for(let i=1;i<samples;i++){
-      const t=i/samples,x=THREE.MathUtils.lerp(start.x,target.x,t),z=THREE.MathUtils.lerp(start.z,target.z,t);
-      if(isStudentBlocked(x,z)){clear=false;break}
-    }
-    if(clear)return [target.clone()];
-  }
-  const s=nearestOpenNavCell(start),g=nearestOpenNavCell(target);
+  if(!isStudentBlocked(target.x,target.z)&&studentSegmentClear(start,target))return [target.clone()];
+  const s=nearestConnectedNavCell(start),g=nearestConnectedNavCell(target);
+  if(!s||!g)return [];
   const startKey=navKey(s.ix,s.iz),goalKey=navKey(g.ix,g.iz);
   const queue=[s],came=new Map([[startKey,null]]);let head=0;
   const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
   while(head<queue.length&&queue.length<2200){
     const cur=queue[head++],key=navKey(cur.ix,cur.iz);
     if(key===goalKey)break;
+    const curPoint=navCell(cur.ix,cur.iz);
     for(const [dx,dz] of dirs){
       const ix=cur.ix+dx,iz=cur.iz+dz,nk=navKey(ix,iz);
       if(ix<0||iz<0||ix>=NAV_COLS||iz>=NAV_ROWS||came.has(nk))continue;
       const p=navCell(ix,iz);
-      if(isStudentBlocked(p.x,p.z))continue;
+      if(isStudentBlocked(p.x,p.z)||!studentSegmentClear(curPoint,p))continue;
       came.set(nk,key);queue.push({ix,iz});
     }
   }
-  if(!came.has(goalKey))return [target.clone()];
+  if(!came.has(goalKey))return [];
   const cells=[];let key=goalKey;
   while(key&&key!==startKey){
     const [ix,iz]=key.split(',').map(Number);cells.push(navCell(ix,iz));key=came.get(key);
   }
   cells.reverse();
-  return simplifyStudentPath(cells,start,target);
+  const route=simplifyStudentPath(cells,start,target);
+  for(let i=0,prev=start;i<route.length;i++){
+    if(!studentSegmentClear(prev,route[i]))return cells.length?[...cells,target.clone()]:[];
+    prev=route[i];
+  }
+  return route;
 }
 function moveActorToward(actor,target,dt,speed){
   let waypoint=target;
@@ -364,6 +373,11 @@ function moveActorToward(actor,target,dt,speed){
       actor.navPath=findStudentPath(actor.root.position,target);
     }
     while(actor.navPath.length&&distance2D(actor.root.position,actor.navPath[0])<.09)actor.navPath.shift();
+    if(!actor.navPath.length&&distance2D(actor.root.position,target)>.12){
+      actor.navGoal='';
+      playAnim(actor,'idle');
+      return false;
+    }
     waypoint=actor.navPath[0]||target;
   }
   const dx=waypoint.x-actor.root.position.x,dz=waypoint.z-actor.root.position.z;
