@@ -57,7 +57,7 @@ These packs are tracked as CC0 in the repository license records. Credit is welc
 - **Quaternius Ultimate Food Pack** — https://poly.pizza/bundle/Ultimate-Food-Pack-h3WC1gyRb4
 - **Quaternius Modular Sushi Restaurant Kit** — https://poly.pizza/bundle/Modular-Sushi-Restaurant-Kit-LJZrZsNPM7
 - **Quaternius Ultimate Monsters Bundle** — https://poly.pizza/bundle/Ultimate-Monsters-Bundle-5oyGWAmOB6
-- **Natural Earth world boundaries** — CC0/public-domain map data, imported through `BenPortner/geojson-atlas` for `games/world_map_puzzle/data/world-countries-110m.geojson`
+- **Natural Earth world boundaries** — CC0/public-domain map data, imported through `BenPortner/geojson-atlas` for `assets/maps/world-countries-110m.geojson`
 
 For mixed Poly Pizza bundles, use the per-model license status rather than assuming CC0.
 
