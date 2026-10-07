@@ -128,3 +128,12 @@ test('Chibi manifest records the custom hoodie part',()=>{
   assert.equal(manifest.customParts.kidscade_hoodie_blue.generatedFrom,'shirt');
   assert.equal(manifest.customParts.kidscade_hoodie_blue.color,'#4f7df3');
 });
+
+
+test('hoodie bone resolver tolerates Three-sanitized Blender names',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  assert.match(js,/function normalizeRuntimeBoneName/);
+  assert.match(js,/replace\(\/\[\\\\\[\\\\\]\\\\\.\:\\\\/\]\/g,''\)/);
+  assert.match(js,/function resolveBoneIndex/);
+  assert.match(js,/normalizeRuntimeBoneName\(bone\.name\)===wanted/);
+});
