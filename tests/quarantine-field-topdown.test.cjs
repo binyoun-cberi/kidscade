@@ -101,8 +101,8 @@ test('격리구역 17 v21 uses the same 3D camp language for CCTV and field miss
   assert.match(game,/time:102/);
   assert.doesNotThrow(()=>new Function(field));
   assert.doesNotThrow(()=>new Function(surveillance));
-  assert.doesNotThrow(()=>new Function(facility.replace(/^import .*$/mg,'').replace(/import\\.meta\\.url/g,'document.baseURI')));
-  assert.doesNotThrow(()=>new Function(field3d.replace(/^import .*$/mg,'').replace(/import\\.meta\\.url/g,'document.baseURI')));
+  assert.doesNotThrow(()=>new Function(facility.replace(/^import .*$/mg,'').replace(/import\.meta\.url/g,'document.baseURI')));
+  assert.doesNotThrow(()=>new Function(field3d.replace(/^import .*$/mg,'').replace(/import\.meta\.url/g,'document.baseURI')));
   assert.doesNotThrow(()=>new Function(game));
   assert.doesNotThrow(()=>new Function(outbreak));
 });
