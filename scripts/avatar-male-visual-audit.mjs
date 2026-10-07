@@ -30,7 +30,7 @@ await page.route('**/api/teacher/overview',async route=>{
 });
 
 
-await page.route('**/teacher/character-3d-studio-*.js',async route=>{
+await page.route('**/teacher/character-3d-studio.js*',async route=>{
   const response=await route.fetch();
   const original=await response.text();
   const helper=`
