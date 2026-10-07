@@ -7,6 +7,7 @@ const PEOPLE=new URL('../../assets/game/characters/people/',import.meta.url).hre
 const NPCS=new URL('../../assets/game/npcs/glTF/',import.meta.url).href;
 const KITCHEN=new URL('../../assets/game/3d/interiors/charming-kitchen-set/',import.meta.url).href;
 const SUSHI=new URL('../../assets/game/3d/interiors/modular-sushi-restaurant-kit/',import.meta.url).href;
+const ULTIMATE_FOOD=new URL('../../assets/game/3d/food/ultimate-food-pack/',import.meta.url).href;
 const BAKERY=new URL('../../assets/game/3d/bakery/interior/',import.meta.url).href;
 const BAKERY_BITS=new URL('../../assets/game/3d/bakery/restaurant-bits/',import.meta.url).href;
 const MARKET=new URL('../../assets/game/shops/market/',import.meta.url).href;
@@ -46,9 +47,9 @@ const INGREDIENTS={
  water:{name:'물',icon:'💧'},
  noodle:{name:'면',icon:'🍜'},
  soup:{name:'스프',icon:'🟥'},
- egg:{name:'계란',icon:'🥚',model:'egg.glb'},
- green:{name:'대파',icon:'🌿',model:'leek.glb'},
- cheese:{name:'치즈',icon:'🧀',model:'cheese-cut.glb'}
+ egg:{name:'계란',icon:'🥚',model:'egg.glb',root:ULTIMATE_FOOD},
+ green:{name:'대파',icon:'🌿',model:'leek.glb',root:FOOD},
+ cheese:{name:'치즈',icon:'🧀',model:'cheese-cut.glb',root:FOOD}
 };
 const RECIPES=[
  {id:'egg',name:'계란 라면',need:['noodle','soup','egg'],price:900},
@@ -256,6 +257,11 @@ class RamenKitchen3D{
   this.loadModel(root,file,size).then(o=>{if(o)holder.add(o)});
   return holder;
  }
+ attachModel(holder,root,file,size,pos=[0,0,0],rot=0){
+  const anchor=new THREE.Group();anchor.position.set(...pos);anchor.rotation.y=rot;holder.add(anchor);
+  this.loadModel(root,file,size).then(o=>{if(o)anchor.add(o)});
+  return anchor
+ }
  loadAvatarSheet(){
   if(this.avatarSheetImage?.complete&&this.avatarSheetImage.naturalWidth)return Promise.resolve(this.avatarSheetImage);
   if(this.avatarSheetPromise)return this.avatarSheetPromise;
@@ -375,8 +381,17 @@ class RamenKitchen3D{
   const mesh=new THREE.Mesh(new THREE.PlaneGeometry(1.15,.38),mat);mesh.rotation.x=-Math.PI/2;mesh.position.set(0,.032,.58);mesh.renderOrder=4;return mesh
  }
  makeKitchenProps(){
-  this.placeModel(SUSHI,'table.glb',1.2,-8.35,.02,5.7,0);
+  const staffTable=this.placeModel(SUSHI,'table.glb',1.2,-8.35,.02,5.7,0);
   this.placeModel(SUSHI,'chair.glb',.82,-9.0,.02,5.7,Math.PI/2);
+  this.attachModel(staffTable,KITCHEN,'kettle.glb',.32,[.18,.78,.03],.15);
+  this.attachModel(staffTable,KITCHEN,'mug-yellow.glb',.2,[-.22,.78,.02],-.25);
+  this.attachModel(staffTable,KITCHEN,'plate.glb',.27,[.02,.78,-.24],0);
+  this.placeModel(KITCHEN,'extractor-hood.glb',1.08,-2.1,1.72,-.22,0);
+  this.placeModel(KITCHEN,'extractor-hood.glb',1.08,2.1,1.72,-.22,0);
+  this.placeModel(KITCHEN,'wall-knife-rack.glb',.82,9.72,1.24,2.7,-Math.PI/2);
+  this.placeModel(KITCHEN,'wall-papertowel.glb',.66,-9.72,1.18,2.65,Math.PI/2);
+  this.placeModel(KITCHEN,'utensils-cup.glb',.34,-7.85,.02,5.7,.2);
+  this.placeModel(KITCHEN,'pan.glb',.46,-7.45,.02,5.7,-.4);
  }
  makeDiningHall(){
   const defs=[
@@ -389,14 +404,20 @@ class RamenKitchen3D{
   defs.forEach((d,i)=>{
    const group=new THREE.Group();group.position.set(d.x,0,d.z);this.scene.add(group);this.hallTableGroups.push(group);
    const rug=new THREE.Mesh(new THREE.BoxGeometry(3.05,.025,2.75),this.material(i%2?0xe8cba8:0xefd7b7,{roughness:.96}));rug.position.y=.024;rug.receiveShadow=true;group.add(rug);
-   this.loadModel(SUSHI,'table.glb',1.55).then(o=>{if(o){o.position.y=.03;group.add(o);const box=new THREE.Box3().setFromObject(o),top=Math.max(.62,Math.min(1.18,box.max.y+.05));dishAnchor.position.y=top}});
+   const dishAnchor=new THREE.Group();dishAnchor.position.set(0,.86,0);group.add(dishAnchor);
+   const condimentAnchor=new THREE.Group();condimentAnchor.position.set(0,.86,0);group.add(condimentAnchor);
+   this.loadModel(SUSHI,'table.glb',1.55).then(o=>{if(o){o.position.y=.03;group.add(o);const box=new THREE.Box3().setFromObject(o),top=Math.max(.62,Math.min(1.18,box.max.y+.05));dishAnchor.position.y=top;condimentAnchor.position.y=top}});
    this.loadModel(SUSHI,'chair.glb',.92).then(o=>{if(o){o.position.set(0,.03,1.08);o.rotation.y=Math.PI;group.add(o)}});
    this.loadModel(SUSHI,'chair.glb',.92).then(o=>{if(o){o.position.set(0,.03,-1.08);group.add(o)}});
-   const dishAnchor=new THREE.Group();dishAnchor.position.set(0,.86,0);group.add(dishAnchor);
+   this.attachModel(condimentAnchor,SUSHI,'bottles.glb',.32,[.5,.02,.12],.35);
+   this.attachModel(condimentAnchor,ULTIMATE_FOOD,'chopsticks.glb',.28,[-.48,.025,.1],-.55);
    const enabled=!d.upgrade||hasUpgrade(d.upgrade);group.visible=enabled;
    this.hallSeats.push({slot:i,tableNo:d.tableNo,position:new THREE.Vector3(d.seatX,0,d.seatZ),tablePosition:new THREE.Vector3(d.x,0,d.z),rotation:d.rot,occupiedBy:null,upgrade:d.upgrade||null,enabled,dishAnchor,dishMode:'none',dishToken:0})
   });
   const aisle=this.box(2.2,.026,8.1,0xc99664,0,.028,-9.45,{roughness:.92,castShadow:false});aisle.receiveShadow=true;
+  this.placeModel(SUSHI,'can-fridge.glb',1.28,-8.72,.02,-8.55,Math.PI/2);
+  this.placeModel(SUSHI,'bench.glb',1.65,-8.05,.02,-12.35,0);
+  this.placeModel(SUSHI,'bottles.glb',.52,-8.68,1.25,-8.55,Math.PI/2);
 
   // 셀프 반납대: 퇴식 카트가 없을 때 손님이 직접 빈 그릇을 가져오는 곳.
   const returnBase=this.box(2.35,.72,.72,0x5a776e,-3.55,.36,-4.28,{roughness:.62});
@@ -602,9 +623,14 @@ class RamenKitchen3D{
  makePlateupStations(){
   // 왼쪽 벽 = 재료존. 중앙과의 사이에 3칸 가까운 세로 통로를 남긴다.
   const sink=this.makeLayoutStation('sink','싱크 · 물/설거지',BAKERY_BITS,'kitchencounter-sink.glb',1.82,-8.15,-2.65,Math.PI/2,.78);
-  this.makeLayoutStation('noodleSource','면 바구니',BAKERY,'basket-a.glb',.92,-8.2,-.55,0,.54);
-  this.makeLayoutStation('soupSource','스프 바구니',BAKERY,'basket-b.glb',.92,-8.2,1.5,0,.54);
-  this.makeLayoutStation('fridge','토핑 냉장고',BAKERY_BITS,'fridge-a.glb',1.82,-8.05,4.15,Math.PI,.78);
+  const noodleSource=this.makeLayoutStation('noodleSource','면 바구니',BAKERY,'basket-a.glb',.92,-8.2,-.55,0,.54);
+  const soupSource=this.makeLayoutStation('soupSource','스프 바구니',BAKERY,'basket-b.glb',.92,-8.2,1.5,0,.54);
+  const toppingFridge=this.makeLayoutStation('fridge','토핑 냉장고',BAKERY_BITS,'fridge-a.glb',1.82,-8.05,4.15,Math.PI,.78);
+  this.attachModel(noodleSource,SUSHI,'udon.glb',.42,[0,.48,0],.2);
+  this.attachModel(soupSource,KITCHEN,'pot.glb',.36,[0,.5,0],-.25);
+  this.attachModel(sink,KITCHEN,'papertowel-holder.glb',.3,[.42,.85,.12],.15);
+  this.attachModel(toppingFridge,ULTIMATE_FOOD,'egg.glb',.26,[-.28,1.52,.02],.2);
+  this.attachModel(toppingFridge,KITCHEN,'cutting-board.glb',.38,[.25,1.5,.02],-.2);
 
   // 오른쪽 벽 = 접시/조리대존. 중앙 통로는 비워 둔다.
   this.makeLayoutStation('rack','깨끗한 접시',BAKERY_BITS,'dishrack-plates.glb',1.28,8.15,-2.1,-Math.PI/2,.62);
@@ -1115,6 +1141,8 @@ class RamenKitchen3D{
   const base=this.serviceGroup=new THREE.Group();base.position.copy(this.serviceHome);this.scene.add(base);
   const pad=new THREE.Mesh(new THREE.BoxGeometry(2.25,.18,1.45),this.material(0xe6c58f,{roughness:.55}));pad.position.y=-.08;pad.castShadow=true;pad.receiveShadow=true;base.add(pad);
   this.loadModel(BAKERY,'serving-tray.glb',1.35).then(o=>{if(o){o.rotation.y=Math.PI/2;base.add(o)}});
+  this.attachModel(base,SUSHI,'bowl.glb',.34,[.68,.13,.18],.2);
+  this.attachModel(base,ULTIMATE_FOOD,'chopsticks.glb',.34,[-.7,.14,.18],-.45);
   const meal=this.serviceMeal=new THREE.Group();meal.position.y=.12;meal.visible=false;base.add(meal);
   this.loadModel(SUSHI,'ramen.glb',.9).then(o=>{if(o){o.position.y=.02;meal.add(o)}});
   const actionTile=this.makeFloorActionTile('배식대');actionTile.position.set(0,.027,-1.18);base.add(actionTile);base.userData.actionTile=actionTile;
@@ -1176,7 +1204,7 @@ class RamenKitchen3D{
   if(id==='soup')return;
   const info=INGREDIENTS[id];if(!info?.model)return;
   const offsets={egg:[-.18,.02],green:[.15,-.12],cheese:[.18,.15]};
-  this.loadModel(FOOD,info.model,.28).then(o=>{
+  this.loadModel(info.root||FOOD,info.model,.28).then(o=>{
    if(!o)return;
    const pos=offsets[id]||[0,0];o.position.set(pos[0],.01,pos[1]);o.rotation.y=index*.45;v.foodGroup.add(o)
   });
