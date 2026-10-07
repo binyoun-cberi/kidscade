@@ -4,8 +4,14 @@ import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {
   AI_RULES,STUDENT_PROFILES,createStudentRuntime,resetFocusForLesson,updateLessonFocus,helpFocus,
   resetSocialForRecess,recoverSocial,drainSocial,conflictProbability,clamp
-} from './student-ai.mjs?v=63';
-import {SCHOOL_SPACES,DAY_STEPS,PERIODS} from './school-day.mjs?v=63';
+} from './student-ai.mjs?v=64';
+import {SCHOOL_SPACES,DAY_STEPS,PERIODS} from './school-day.mjs?v=64';
+import {
+  preferenceFor,preferenceMultiplier,preferenceIcon,
+  createDailyEnvironment,createDailyHealth,healthRecoveryMultiplier,tickHealth,nextHealthAction,
+  beginSafetyRecord,tickSafetyRecord,unsafeAccidentChance,buildPairs,
+  SAFETY_RULES,GROUP_RULES
+} from './student-life.mjs?v=64';
 
 const $=id=>document.getElementById(id);
 const ui={
@@ -71,9 +77,16 @@ let toastTimer=0,playerGestureTimer=0;
 let chibiTemplate=null,chibiAnimations=[];
 let player=null,students=[],pairs=[],relations=new Set();
 let fightsThisSocial=0;
+let lessonElapsed=0;
+let teamPairs=[];
+let teamActive=false;
+let teamCheckTimer=0;
+let lessonAccidents=0;
+let environment=createDailyEnvironment();
 let stats={
   focusHelps:0,conflictsMediated:0,fightsSeparated:0,missedFights:0,
-  offTaskStarts:0,peacefulSocial:0,periodsCompleted:0,spacesVisited:new Set(['classroom'])
+  offTaskStarts:0,peacefulSocial:0,periodsCompleted:0,spacesVisited:new Set(['classroom']),
+  healthChecks:0,nurseVisits:0,earlyDismissals:0,classroomRests:0,accidents:0,safetyMisses:0,teamConflicts:0
 };
 const keys=new Set();
 const joy={active:false,id:null,x:0,y:0};
@@ -317,10 +330,15 @@ function playAnim(actor,name){
 function faceDirection(actor,dx,dz){if(Math.abs(dx)+Math.abs(dz)>.001)actor.root.rotation.y=Math.atan2(dx,dz)}
 function createActors(){
   player=makeActor('teacher',{hair:'hairone'},0,new THREE.Vector3(0,0,3.3));
+  const healthToday=createDailyHealth(STUDENT_PROFILES);
   students=STUDENT_PROFILES.map((profile,i)=>{
     const runtime=createStudentRuntime(profile),seat=activeSeats[i]||new THREE.Vector3();
     const actor=makeActor('student',profile,i,seat.clone());
-    return {runtime,actor,seat:seat.clone(),wander:null,bubble:null};
+    return {
+      runtime,actor,seat:seat.clone(),wander:null,bubble:null,
+      health:healthToday[i],healthAction:null,
+      safetyRecord:null,accident:null,teamId:-1
+    };
   });
 }
 
