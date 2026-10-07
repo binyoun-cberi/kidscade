@@ -123,7 +123,7 @@ const gateLights={pass:null,retest:null,quarantine:null};
 let ambulance=null,lateBarricades=[],weekProps=[];
 
 function buildWorld(){
- plane(world,15,13,0x4a4d49);
+ plane(world,15,16,0x4a4d49);
  const lane=plane(world,4.1,10.5,0x555b5d,.012);lane.position.z=-1;
  for(let z=-5.5;z<4;z+=1.15){const d=plane(world,.08,.52,0xc2aa55,.025);d.position.set(-2.05,.025,z)}
  for(let z=-5.5;z<4;z+=1.15){const d=plane(world,.08,.52,0xc2aa55,.025);d.position.set(2.05,.025,z)}
@@ -135,8 +135,8 @@ function buildWorld(){
  const tempHead=box(world,-1.68,1.3,1.5,.18,.18,.32,0x6f858c);tempHead.material=glow(0x88cbd5,.18);
  const analyzer=box(world,1.55,1.36,1.7,.6,.18,.48,0x39454a);analyzer.material=glow(0x5e7f87,.12);
  for(let i=0;i<3;i++){const led=new THREE.Mesh(new THREE.SphereGeometry(.035,10,8),glow([0x65b7ca,0xd4b456,0xb85a5f][i],.3));led.position.set(1.36+i*.18,1.53,1.38);world.add(led)}
- addAsset(world,A.laptop,[-.65,.91,2.08],.48,0x77888e,.16,Math.PI);
- addAsset(world,A.radio,[.25,.91,2.07],.40,0x606d71,.18,Math.PI);
+ addAsset(world,A.laptop,[-.65,.865,2.08],.48,0x77888e,.16,Math.PI);
+ addAsset(world,A.radio,[.25,.865,2.07],.40,0x606d71,.18,Math.PI);
  addAsset(world,A.trashcan,[2.85,0,2.35],.55,0x5f6869,.20,0);
 
  // scanner arch
@@ -346,4 +346,4 @@ function frame(t){
 }
 syncSnapshot(snapshot(),true);requestAnimationFrame(frame);
 
-window.Q17Quarantine3D=Object.freeze({active:true,version:'22.2',scene,camera,renderer,sync:()=>syncSnapshot(snapshot(),true)});
+window.Q17Quarantine3D=Object.freeze({active:true,version:'22.3',scene,camera,renderer,sync:()=>syncSnapshot(snapshot(),true)});
