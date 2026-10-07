@@ -46,7 +46,7 @@ let chrome,ws;
     try{
       const portFile=path.join(userData,'DevToolsActivePort');
       if(!fs.existsSync(portFile))continue;
-      const dynamicPort=Number(fs.readFileSync(portFile,'utf8').split('\\n')[0]);
+      const dynamicPort=Number(fs.readFileSync(portFile,'utf8').split(/\r?\n/)[0]);
       if(!dynamicPort)continue;
       const res=await fetch('http://127.0.0.1:'+dynamicPort+'/json/list');
       const all=await res.json();target=all.find(x=>x.type==='page');if(target)break;
