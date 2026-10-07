@@ -28,7 +28,7 @@ function freshState(){
     enemies:[],towers:[],shots:[],effects:[],rack:D.startRack.slice(0,D.maxRack),
     selected:[],placing:null,hover:null,uid:1,unique:new Set(),builtWords:[],
     resources:resourceSpots.map((s,i)=>({...s,amount:70+i*20})),
-    discovered:new Set(loadDiscovered()), ended:false
+    discovered:new Set(loadDiscovered()), discoveredCombos:new Set(), ended:false
   };
 }
 function loadDiscovered(){
@@ -203,7 +203,7 @@ function makeTowerStats(word,def){
         stats[key]=baseline*signature[key];
       }
     }
-    if(signature.chain!==undefined)stats.chain=signature.chain;
+    if(signature.chain!==undefined){stats.chain=signature.chain;stats.beam=true}
     if(signature.shieldBreak)stats.shieldBreak=signature.shieldBreak;
     if(signature.element)stats.element=signature.element;
   }
@@ -232,7 +232,7 @@ function buildTower(p){
   const newly=!state.discovered.has(word);state.discovered.add(word);saveDiscovered();
   consumeSelected();state.placing=null;applyLinks();setStatus('배치 완료 · '+word,(newly?'새 단어 발견! ':'')+def.meaning+' · '+def.roleLabel);
   if(newly){state.score+=80+def.difficulty*20;state.ink+=2;toast('NEW WORD · '+word+' · '+def.meaning+' · INK +2');beep(880,.12,'triangle',.05)} else beep(640,.08,'square');
-  updateHud();
+  updateHud();updateComposer();
 }
 
 function effectiveStats(t){
@@ -241,18 +241,42 @@ function effectiveStats(t){
     const mod=D.modifiers[m.word]; if(!mod)continue;
     if(mod.rate)rateMul*=mod.rate;if(mod.damage)damageMul*=mod.damage;if(mod.range)rangeMul*=mod.range;if(mod.area)areaMul*=mod.area;if(mod.push)pushMul*=mod.push;
   }
+  for(const combo of t.combos||[]){
+    const bonus=combo.bonus;
+    for(const key of ['damage','rate','range','area','push','pull','harvest','heal','burn','poison','slow','barrierSlow']){
+      if(typeof bonus[key]==='number'&&s[key]!==undefined)s[key]*=bonus[key];
+    }
+    if(bonus.chain)s.chain=(s.chain||0)+bonus.chain;
+  }
   if(s.rate)s.rate*=Math.min(2.4,rateMul);if(s.damage)s.damage*=Math.min(2.5,damageMul);if(s.range)s.range*=Math.min(1.85,rangeMul);if(s.area)s.area*=Math.min(1.9,areaMul);if(s.push)s.push*=Math.min(2,pushMul);
   const duplicates=state.towers.filter(o=>o!==t&&o.word===t.word).length;
   if(s.damage)s.damage*=Math.max(.65,Math.pow(.93,duplicates));
   return s;
 }
 function applyLinks(){
-  for(const t of state.towers)t.links=[];
+  for(const t of state.towers){t.links=[];t.combos=[]}
   const mods=state.towers.filter(t=>t.def.role==='modifier'||['burn','slow','poison'].includes(t.def.role));
   for(const m of mods){
     const candidates=state.towers.filter(t=>t.id!==m.id&&t.def.role!=='modifier'&&dist(t,m)<=.17).sort((a,b)=>dist(a,m)-dist(b,m));
     for(const t of candidates.slice(0,3))t.links.push(m);
   }
+  const discovered=[];
+  for(const combo of D.combos||[]){
+    const left=state.towers.filter(t=>t.word===combo.a);
+    const right=state.towers.filter(t=>t.word===combo.b);
+    let paired=false;
+    for(const a of left){for(const b of right){
+      if(dist(a,b)>.18)continue;
+      paired=true;
+      if(a.combos.length<3)a.combos.push({with:b.word,name:combo.name,bonus:combo.bonus});
+      if(b.combos.length<3)b.combos.push({with:a.word,name:combo.name,bonus:combo.bonus});
+    }}
+    if(paired&&!state.discoveredCombos.has(combo.name)){
+      state.discoveredCombos.add(combo.name);state.score+=60;state.ink+=3;discovered.push(combo.name);
+    }
+  }
+  if(discovered.length)toast('WORD COMBO · '+discovered.join(' / ')+' · INK +3');
+  return discovered;
 }
 
 function createWave(n){
@@ -387,16 +411,38 @@ function statusEffects(e,dt){
   if(e.poison>0){e.poison-=dt;e.hp-=e.poisonDps*dt}
   if(e.hp<=0&&!e.dead)killEnemy(e);
 }
+function giveNextWaveWord(){
+  const maxLen=Math.min(9,5+state.wave);
+  const pool=D.wordList.filter(w=>w.length>=5&&w.length<=maxLen&&!state.discovered.has(w)
+    &&D.words[w].difficulty<=Math.min(9,4+Math.floor(state.wave/2))
+    &&towerCost(D.words[w])<=state.ink);
+  if(!pool.length)return '';
+  const word=pool[(Math.random()*pool.length)|0];
+  const letters=state.rack.slice();
+  for(let i=0;i<word.length;i++)letters[i]=word[i];
+  state.rack=letters.sort(()=>Math.random()-.5);
+  state.selected=[];
+  renderRack();updateComposer();
+  return word;
+}
 function waveUpdate(dt){
   if(!state.inWave)return;
   state.waveTimer+=dt;
   while(state.spawnQueue.length&&state.spawnQueue[0].delay<=state.waveTimer){spawnEnemy(state.spawnQueue.shift().type)}
   if(!state.spawnQueue.length&&!state.enemies.some(e=>!e.dead)){
     state.inWave=false;state.ink+=8+state.wave*2;state.score+=100*state.wave;waveBtn.disabled=false;
-    if(state.wave>=8){endGame(true)}else{waveBtn.textContent='WAVE '+(state.wave+1)+' 시작';setStatus('WAVE '+state.wave+' 완료','INK 보너스를 받았습니다. 다음 웨이브 전까지 단어를 준비하세요.');beep(780,.16,'triangle',.045)}
+    if(state.wave>=8){endGame(true)}else{
+      const bonusWord=giveNextWaveWord();
+      waveBtn.textContent='WAVE '+(state.wave+1)+' 시작';
+      setStatus('WAVE '+state.wave+' 완료 · INK 획득',bonusWord
+        ?'새 단어 기회! '+D.words[bonusWord].meaning+' · '+bonusWord[0]+'로 시작하는 '+bonusWord.length+'글자를 찾아보세요.'
+        :'INK 보너스를 받았습니다. 다음 웨이브 전까지 단어를 준비하세요.');
+      beep(780,.16,'triangle',.045);
+    }
   }
 }
 
+let previousInk=-1;
 function update(dt){
   if(!running||state.ended)return;
   waveUpdate(dt);barrierEffects();
@@ -407,6 +453,7 @@ function update(dt){
   state.shots=state.shots.filter(s=>!s.dead);
   for(const ef of state.effects)ef.life-=dt;state.effects=state.effects.filter(e=>e.life>0);
   updateHud();
+  if(previousInk!==Math.floor(state.ink)){previousInk=Math.floor(state.ink);if(!state.placing)updateComposer()}
 }
 function updateHud(){coreText.textContent=Math.ceil(state.core);waveText.textContent=state.wave+' / 8';inkText.textContent=Math.floor(state.ink);scoreText.textContent=Math.floor(state.score)}
 function endGame(win){
@@ -425,6 +472,7 @@ function endGame(win){
       scoreOptions:{unit:'points'},
       wave:state.wave,
       uniqueWords:state.unique.size,
+      combosFound:state.discoveredCombos.size,
       longestWord:longest==='-'?'':longest,
       hardestWord:hardest==='-'?'':hardest,
       hardestDifficulty,
@@ -463,7 +511,15 @@ function drawResources(){
 }
 function drawLinks(){
   ctx.save();ctx.lineWidth=2;ctx.setLineDash([4,5]);
-  for(const t of state.towers){for(const m of t.links){ctx.strokeStyle=m.def.color+'99';ctx.beginPath();ctx.moveTo(px(m.x),py(m.y));ctx.lineTo(px(t.x),py(t.y));ctx.stroke()}}
+  for(const t of state.towers){
+    for(const m of t.links){ctx.strokeStyle=m.def.color+'99';ctx.beginPath();ctx.moveTo(px(m.x),py(m.y));ctx.lineTo(px(t.x),py(t.y));ctx.stroke()}
+    for(const combo of t.combos||[]){
+      const other=state.towers.find(b=>b.word===combo.with&&dist(t,b)<=.18);
+      if(!other||t.id>other.id)continue;
+      ctx.save();ctx.setLineDash([]);ctx.strokeStyle='#f0a52e';ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(px(other.x),py(other.y));ctx.lineTo(px(t.x),py(t.y));ctx.stroke();ctx.restore();
+    }
+  }
   ctx.restore();
 }
 function towerRadius(t){return Math.max(19,Math.min(W,H)*(.029+t.def.difficulty*.0015))}
@@ -506,7 +562,7 @@ function roundRect(c,x,y,w,h,r,fill,stroke){c.beginPath();c.roundRect?c.roundRec
 function inspectAt(p){
   const t=state.towers.map(t=>({t,d:dist(p,t)})).sort((a,b)=>a.d-b.d)[0];
   if(!t||t.d>.06){inspectBox.classList.remove('show');return}
-  const s=effectiveStats(t.t),signature=D.signatures?.[t.t.word];inspectBox.innerHTML='<strong>'+t.t.word+'</strong><small>'+t.t.def.meaning+' · '+t.t.def.roleLabel+(signature?.flavor?' · '+signature.flavor:'')+'</small><div class="meter">난도 '+('★'.repeat(t.t.def.difficulty))+' · INK '+towerCost(t.t.def)+(s.damage?' · DMG '+Math.round(s.damage):'')+(s.range?' · RANGE '+Math.round(s.range*100):'')+(t.t.links.length?' · LINK '+t.t.links.map(x=>x.word).join(', '):'')+'</div>';inspectBox.classList.add('show');
+  const s=effectiveStats(t.t),signature=D.signatures?.[t.t.word];inspectBox.innerHTML='<strong>'+t.t.word+'</strong><small>'+t.t.def.meaning+' · '+t.t.def.roleLabel+(signature?.flavor?' · '+signature.flavor:'')+'</small><div class="meter">난도 '+('★'.repeat(t.t.def.difficulty))+' · INK '+towerCost(t.t.def)+(s.damage?' · DMG '+Math.round(s.damage):'')+(s.range?' · RANGE '+Math.round(s.range*100):'')+(t.t.links.length?' · LINK '+t.t.links.map(x=>x.word).join(', '):'')+(t.t.combos?.length?' · COMBO '+t.t.combos.map(x=>x.name).join(', '):'')+'</div>';inspectBox.classList.add('show');
 }
 canvas.addEventListener('pointermove',e=>{if(!state)return;state.hover=boardPos(e)});
 canvas.addEventListener('pointerleave',()=>{if(state)state.hover=null});
@@ -519,7 +575,7 @@ function openDictionary(){
   dictOverlay.classList.remove('hidden');
 }
 function restart(){
-  state=freshState();renderRack();updateComposer();updateHud();waveBtn.textContent='WAVE 1 시작';waveBtn.disabled=false;inspectBox.classList.remove('show');resultOverlay.classList.add('hidden');setStatus('첫 배치','시작 글자에는 MINER와 ARROW가 숨어 있어요. 둘 중 하나부터 만들어 보세요.');running=true;last=performance.now();
+  state=freshState();previousInk=-1;renderRack();updateComposer();updateHud();waveBtn.textContent='WAVE 1 시작';waveBtn.disabled=false;inspectBox.classList.remove('show');resultOverlay.classList.add('hidden');setStatus('첫 배치','시작 글자에는 MINER와 ARROW가 숨어 있어요. 둘 중 하나부터 만들어 보세요.');running=true;last=performance.now();
 }
 
 $('startBtn').addEventListener('click',()=>{startOverlay.classList.add('hidden');restart();beep(660,.1,'triangle')});
