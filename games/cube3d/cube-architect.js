@@ -1162,6 +1162,7 @@ const PLACEABLE_TYPES=['flower','sandstone','snowBrick','reedMat','woolMat','sno
 const FARM_PLANT_TYPES=['wheatSeed','carrot','potato'];
 const FARM_CROP_TYPES=['wheatCrop','carrotCrop','potatoCrop'];
 const CROP_MATURE_AGE=24;
+const CROP_MATURE_SECONDS=150;
 const HOTBAR_TOOL_TYPES=['woodPick','stonePick','ironPick','woodSword','stoneSword','ironSword'];
 const SURVIVAL_GEAR_DEFS={
   paddedHelmet:{slot:'head',defense:.04,tier:1},paddedChest:{slot:'chest',defense:.10,tier:1},
@@ -3208,6 +3209,7 @@ function initFree(){
   $('actionMore').onclick=()=>{mobileUtilityOpen=!mobileUtilityOpen;updateSimpleSurvivalUi();$('actionMore').textContent=mobileUtilityOpen?'접기':'더보기'};
   $('furnaceClose').onclick=()=>toggleFurnace(false);
   if($('lifePanelClose'))$('lifePanelClose').onclick=()=>closeLifePanel();
+  if($('trackingStop'))$('trackingStop').onclick=stopTrackedTarget;
   document.querySelectorAll('[data-inv-cat]').forEach(b=>b.onclick=()=>buildInventory(b.dataset.invCat));
   showTutorial('free');
 }
@@ -3687,7 +3689,7 @@ function updateFreeMission(){
       'E 가방 · F 비행 · V 시점 · R 복사 · P 색칠 · X 수학 렌즈';
   }
   if(mobileModeEnabled&&gameFreeMode==='survival')$('freeHint').textContent=canRestore?'가까운 랜드마크에서 행동 버튼을 눌러 들어갈 수 있어요.':'가운데 +로 바라보고 행동 버튼을 눌러 보세요.';
-  renderExplorationHint();
+  renderExplorationHint();updateTrackingGuide();
   if(campActive())renderCampQuest(campStep());
 }
 function nearbyWorldInteractables(eye,max=6.5){
@@ -3917,7 +3919,14 @@ function placementCellReplaceable(occupied,type){
   return !!(canDisplaceFluid||canReplaceFragile);
 }
 function placementPreviewValid(type,p){
-  if(!p||!inWorld(p.x,p.y,p.z)||!PLACEABLE_TYPES.includes(type))return false;
+  const farmItem=FARM_PLANT_TYPES.includes(type);
+  if(!p||!inWorld(p.x,p.y,p.z)||(!PLACEABLE_TYPES.includes(type)&&!farmItem))return false;
+  if(farmItem){
+    if(gameFreeMode==='survival'&&bagCount(type)<1)return false;
+    if(getBlock(p.x,p.y,p.z))return false;
+    const below=getBlock(p.x,p.y-1,p.z);
+    return !!below&&['grass','dirt','tilledSoil'].includes(below.type);
+  }
   if(Math.hypot(camera.position.x-p.x,camera.position.z-p.z)<.82&&
     p.y>=Math.floor(freePhysicsY-1.65)&&p.y<=Math.floor(freePhysicsY))return false;
   if(!placementSupportValid(type,p.x,p.y,p.z))return false;
@@ -3938,6 +3947,7 @@ function buildFreePlacementGhost(type,p,valid,facing){
   let dims=[.96,.96,.96],offset=[0,.5,0];
   if(type==='cuboid'){
     const d=currentCuboidSpec.dims;dims=[d[0]*.96,d[1]*.96,d[2]*.96];offset=[(d[0]-1)/2,d[1]/2,(d[2]-1)/2];
+  }else if(FARM_PLANT_TYPES.includes(type)){dims=[.44,.12,.44];offset=[0,.08,0]
   }else if(type==='door'){dims=facing%2===0?[.82,1.92,.18]:[.18,1.92,.82];offset=[0,1,0]}
   else if(type==='slab'){dims=[.96,.48,.96];offset=[0,.25,0]}
   else if(['glassPane','windowFrame'].includes(type)){dims=facing%2===0?[.18,.96,.96]:[.96,.96,.18];offset=[0,.5,0]}
@@ -3957,7 +3967,7 @@ function buildFreePlacementGhost(type,p,valid,facing){
   group.userData.worldDecorative=true;return group;
 }
 function updateFreePlacementGhost(){
-  if(mode!=='free'||inventoryOpen||furnaceOpen||lifePanelOpen||freeAvatarDefeated||!PLACEABLE_TYPES.includes(selectedType)){
+  if(mode!=='free'||inventoryOpen||furnaceOpen||lifePanelOpen||freeAvatarDefeated||(!PLACEABLE_TYPES.includes(selectedType)&&!FARM_PLANT_TYPES.includes(selectedType))){
     clearFreePlacementGhost();return;
   }
   const hit=freeCenterHit(6);
@@ -3980,7 +3990,8 @@ function placementSupportValid(type,x,y,z){
   if(type==='reed')return ['grass','dirt','clay','sand'].includes(belowType);
   if(type==='cactus')return ['sand','redSand','cactus'].includes(belowType);
   if(FARM_CROP_TYPES.includes(type))return belowType==='tilledSoil';
-  if(['door','torch','fire','chest','bed','mapBoard','displayStand'].includes(type))return fullSupportBelow(x,y,z);
+  if(type==='door'||type==='torch'||type==='fire')return fullSupportBelow(x,y,z);
+  if(['chest','bed','mapBoard','displayStand'].includes(type))return fullSupportBelow(x,y,z);
   return true;
 }
 function placementSupportError(type,p){
@@ -4029,7 +4040,7 @@ function plantFarmItem(hit){
   if(bagCount(selectedType)<1){toast(blockDef(selectedType).name+'이(가) 더 필요해요.');return true}
   if(below.type!=='tilledSoil')setWorldBlock(p.x,p.y-1,p.z,{type:'tilledSoil',playerBuilt:true},true);
   const crop=cropForPlant(selectedType);
-  setWorldBlock(p.x,p.y,p.z,{type:crop,age:0,playerBuilt:true},true);
+  setWorldBlock(p.x,p.y,p.z,{type:crop,age:0,plantedAt:survivalWorldTime,lastGrowAt:survivalWorldTime,playerBuilt:true},true);
   consumeBag(selectedType,1);buildHotbar();sfx('place');toast(blockDef(selectedType).name+'을(를) 심었어요. 비나 시간이 작물을 키워 줘요.');markFreeWorldDirty(300);return true;
 }
 function harvestCrop(x,y,z,data){
@@ -4095,7 +4106,7 @@ function mapTargetButton(target){
   const b=document.createElement('button');b.type='button';b.className='life-map-target';
   const active=trackedTarget&&trackedTarget.kind===target.kind&&trackedTarget.id===target.id;
   b.innerHTML='<b>'+target.label+'</b><small>'+(active?'추적 중':'눌러서 추적')+'</small>';
-  b.onclick=()=>{trackedTarget={...target};renderLifePanel();updateFreeMission();saveFreeWorld();toast(target.label+'을(를) 추적해요.')};return b;
+  b.onclick=()=>{trackedTarget={...target};renderLifePanel();updateTrackingGuide();updateFreeMission();saveFreeWorld();toast(target.label+'을(를) 추적해요.')};return b;
 }
 function renderLifePanel(){
   const title=$('lifePanelTitle'),body=$('lifePanelBody');if(!title||!body)return;body.replaceChildren();
@@ -4124,7 +4135,7 @@ function renderLifePanel(){
     const intro=document.createElement('p');intro.textContent='직접 발견한 지역과 랜드마크만 기록돼요. 원하는 곳을 추적할 수 있어요.';body.append(intro);
     if(trackedTarget){
       const active=document.createElement('div');active.className='life-tracked';active.textContent='현재 추적 · '+trackedTarget.label;
-      const stop=document.createElement('button');stop.textContent='추적 그만하기';stop.onclick=()=>{trackedTarget=null;renderLifePanel();updateFreeMission();saveFreeWorld()};active.append(stop);body.append(active);
+      const stop=document.createElement('button');stop.textContent='추적 그만하기';stop.onclick=()=>{trackedTarget=null;renderLifePanel();updateTrackingGuide();updateFreeMission();saveFreeWorld()};active.append(stop);body.append(active);
     }
     const sections=[['발견한 지역',[]],['발견한 장소',[]],['발견한 랜드마크',[]]];
     for(const biomeId of visitedBiomes){
@@ -4184,8 +4195,8 @@ function placeFreeBlock(hit){
   if(hitType==='door'){toggleDoorAt(u.gx,u.gy,u.gz);return}
   if(hitType==='furnace'){toggleFurnace(true);return}
   if(hitType==='workbench'){survivalInventoryTab='craft';toggleInventory(true);return}
-  if(interactLifeBlock(hitType,u.gx,u.gy,u.gz))return;
-  if(FARM_PLANT_TYPES.includes(selectedType)){plantFarmItem(hit);return}
+  if(typeof interactLifeBlock==='function'&&interactLifeBlock(hitType,u.gx,u.gy,u.gz))return;
+  if(typeof FARM_PLANT_TYPES!=='undefined'&&FARM_PLANT_TYPES.includes(selectedType)){plantFarmItem(hit);return}
   if(!PLACEABLE_TYPES.includes(selectedType)){
     toast('가방에서 놓을 물건을 먼저 골라 보자.');return;
   }
@@ -4734,12 +4745,16 @@ function simulatePlants(){
   }
   for(const key of crops){
     const [x,y,z]=parseWorldKey(key),d=getBlock(x,y,z);if(!d)continue;
-    const oldStage=Math.floor(Math.min(CROP_MATURE_AGE,Number(d.age)||0)/(CROP_MATURE_AGE/4));
+    const now=Math.max(0,survivalWorldTime),age=Math.max(0,Number(d.age)||0);
+    const oldStage=Math.floor(Math.min(CROP_MATURE_AGE,age)/(CROP_MATURE_AGE/4));
     let wet=weather==='rain'||weather==='storm';
     if(!wet)for(let dx=-2;dx<=2&&!wet;dx++)for(let dz=-2;dz<=2&&!wet;dz++)if(getBlock(x+dx,y-1,z+dz)?.type==='water')wet=true;
-    d.age=Math.min(CROP_MATURE_AGE,(Number(d.age)||0)+(wet?2:1));
-    const newStage=Math.floor(d.age/(CROP_MATURE_AGE/4));
-    if(newStage!==oldStage||d.age>=CROP_MATURE_AGE){worldEdits.set(key,cloneBlockData(d));refreshBlockMesh(x,y,z);markFreeWorldDirty(900)}
+    const last=Number.isFinite(Number(d.lastGrowAt))?Number(d.lastGrowAt):now;
+    const elapsed=Math.max(0,now-last),rate=CROP_MATURE_AGE/CROP_MATURE_SECONDS;
+    d.age=Math.min(CROP_MATURE_AGE,age+elapsed*rate*(wet?1.6:1));
+    d.lastGrowAt=now;if(!Number.isFinite(Number(d.plantedAt)))d.plantedAt=Math.max(0,now-(d.age/rate));
+    const newStage=Math.floor(Math.min(CROP_MATURE_AGE,d.age)/(CROP_MATURE_AGE/4));
+    if(newStage!==oldStage||elapsed>=5||d.age>=CROP_MATURE_AGE){worldEdits.set(key,cloneBlockData(d));refreshBlockMesh(x,y,z);markFreeWorldDirty(900)}
   }
 }
 function simulateFire(){
@@ -5521,6 +5536,26 @@ function nearestUndiscoveredRegion(x,z){
     .map(([cx,cz,id])=>({cx,cz,id,dist:Math.round(Math.hypot(cx-x,cz-z))}))
     .sort((a,b)=>a.dist-b.dist)[0]||null;
 }
+function stopTrackedTarget(){
+  if(!trackedTarget)return false;
+  const label=trackedTarget.label||'목표';trackedTarget=null;updateTrackingGuide();updateFreeMission();saveFreeWorld();
+  toast(label+' 추적을 끝냈어요.');return true;
+}
+function updateTrackingGuide(){
+  const root=$('trackingGuide');if(!root)return;
+  const active=mode==='free'&&gameFreeMode==='survival'&&trackedTarget&&
+    Number.isFinite(trackedTarget.x)&&Number.isFinite(trackedTarget.z)&&!campActive();
+  root.classList.toggle('hidden',!active);if(!active)return;
+  const dx=trackedTarget.x-camera.position.x,dz=trackedTarget.z-camera.position.z;
+  const dist=Math.max(0,Math.round(Math.hypot(dx,dz))),len=Math.max(.001,Math.hypot(dx,dz));
+  const tx=dx/len,tz=dz/len,lookX=-Math.sin(yaw),lookZ=-Math.cos(yaw);
+  const relative=Math.atan2(lookX*tz-lookZ*tx,lookX*tx+lookZ*tz),arrived=dist<=4;
+  const arrow=$('trackingArrow'),label=$('trackingLabel'),stop=$('trackingStop');
+  if(arrow)arrow.style.transform='rotate('+relative+'rad)';
+  if(label)label.textContent=arrived?'도착 · '+trackedTarget.label:trackedTarget.label+' · '+dist+'칸';
+  if(stop)stop.textContent=arrived?'도착 · 추적 끝':'추적 취소';
+  root.classList.toggle('arrived',arrived);
+}
 function renderExplorationHint(){
   if(gameFreeMode!=='survival'){
     $('explorationHint').classList.add('hidden');return;
@@ -5532,7 +5567,7 @@ function renderExplorationHint(){
   if(trackedTarget&&Number.isFinite(trackedTarget.x)&&Number.isFinite(trackedTarget.z)){
     const dx=trackedTarget.x-x,dz=trackedTarget.z-z,dist=Math.round(Math.hypot(dx,dz));
     const direction=(dz<-4?'북':dz>4?'남':'')+(dx>4?'동':dx<-4?'서':'');
-    $('explorationHint').textContent=dist<=4?'추적 목표 도착 · '+trackedTarget.label:
+    $('explorationHint').textContent=dist<=4?'추적 목표 도착 · '+trackedTarget.label+' · 위의 「도착 · 추적 끝」을 눌러 마칠 수 있어요.':
       '추적 중 · '+trackedTarget.label+' · '+(direction||'근처')+'쪽 약 '+dist+'칸';
     return;
   }
@@ -5804,7 +5839,7 @@ function updateFree(dt,t){
   camera.rotation.y=yaw;camera.rotation.x=pitch;
   updateFootstepAudio();
   streamWorldMeshes();
-  checkCollectibles(t);
+  checkCollectibles(t);updateTrackingGuide();
 }
 
 /* Pointer-lock is optional. Safari on iPhone uses touch-look and these controls. */
@@ -5936,8 +5971,8 @@ function mobilePlaceAction(){
   if(mode!=='free'||gameFreeMode!=='survival')return false;
   const hit=freeCenterHit(6);
   if(!hit){toast('설치할 면을 가운데 +로 바라보세요.');return false}
-  if(!PLACEABLE_TYPES.includes(selectedType)){
-    toast('먼저 가방이나 핫바에서 설치할 재료를 골라 주세요.');return false;
+  if(!PLACEABLE_TYPES.includes(selectedType)&&!FARM_PLANT_TYPES.includes(selectedType)){
+    toast('먼저 가방이나 핫바에서 설치하거나 심을 재료를 골라 주세요.');return false;
   }
   placeFreeBlock(hit);return true;
 }
@@ -6042,7 +6077,7 @@ function updateSimpleSurvivalUi(){
     const u=freeCenterHit(6)?.object?.userData||{};
     const creature=creatureRayHit(2.9),hostile=creature?.object?.userData?.creatureRoot?.userData?.spec?.kind==='hostile';
     const name=creature?(hostile?'공격':'인사'):['door','doorTop'].includes(u.type)?'열기':u.type==='workbench'?'만들기':u.type==='furnace'?'굽기':u.type==='chest'?'상자':u.type==='bed'?'침대':u.type==='mapBoard'?'지도':u.type==='displayStand'?'전시':
-      PLACEABLE_TYPES.includes(selectedType)&&selectedType!=='hand'?'놓기':'캐기';
+      FARM_PLANT_TYPES.includes(selectedType)?'심기':PLACEABLE_TYPES.includes(selectedType)&&selectedType!=='hand'?'놓기':'캐기';
     const label=hub.querySelector('b');if(label&&label.textContent!==name)label.textContent=name;
   }
   const jump=$('mobileUp'),jumpHint=jump?.querySelector('small');if(jumpHint&&!freeFlying&&!freeFluidKind&&jumpHint.textContent!=='점프')jumpHint.textContent='점프';
@@ -6064,7 +6099,7 @@ function mobileDefaultAction(){
   }
   if(mobileSpecialUseTarget())return;
   const hit=freeCenterHit(6);
-  if(hit&&PLACEABLE_TYPES.includes(selectedType)&&selectedType!=='hand'){
+  if(hit&&(PLACEABLE_TYPES.includes(selectedType)||FARM_PLANT_TYPES.includes(selectedType))&&selectedType!=='hand'){
     placeFreeBlock(hit);return;
   }
   if(hit&&canMineTarget(hit,false)){mobileOneShotHarvest();return}
