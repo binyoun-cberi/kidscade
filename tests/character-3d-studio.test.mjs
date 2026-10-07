@@ -315,3 +315,18 @@ test('male short hair reuses hairone topology, materials and original skin weigh
   assert.match(js,/const HAIR_NODES=\[[^\n]*kidscade_male_hair_short/);
   assert.match(js,/kidscade_male_hair_short:'남자 짧은 머리'/);
 });
+
+
+test('deployed Chibi studio uses commit-scoped HTML and JS assets',()=>{
+  const build=read('scripts/build-cloudflare.cjs');
+  const worker=read('worker/main.mjs');
+  const wrangler=read('wrangler.jsonc');
+  assert.match(build,/function writeVersioned3dStudioAssets\(buildId\)/);
+  assert.match(build,/fs\.copyFileSync\(sourceJs,jsDest\)/);
+  assert.match(build,/character-3d-studio-\$\{version\}\.js/);
+  assert.match(build,/assertExists\(writeVersioned3dStudioAssets\(buildId\)\)/);
+  assert.match(worker,/async function serveFresh3dStudio\(request, env\)/);
+  assert.match(worker,/env\.ASSETS\.fetch\(new Request\(versionedUrl/);
+  assert.match(worker,/x-kidscade-studio-build/);
+  assert.match(wrangler,/\/teacher\/character-3d-studio\.html/);
+});
