@@ -4,7 +4,16 @@ export const SUBJECT_PREFERENCES=Object.freeze({
   seoyeon:{'수학':'like','국어':'like','체육':'dislike','과학':'neutral','미술':'like','컴퓨터':'neutral'},
   taeho:{'수학':'neutral','국어':'dislike','체육':'like','과학':'dislike','미술':'neutral','컴퓨터':'like'},
   junho:{'수학':'dislike','국어':'neutral','체육':'like','과학':'neutral','미술':'dislike','컴퓨터':'like'},
-  arin:{'수학':'like','국어':'neutral','체육':'neutral','과학':'like','미술':'like','컴퓨터':'dislike'}
+  arin:{'수학':'like','국어':'neutral','체육':'neutral','과학':'like','미술':'like','컴퓨터':'dislike'},
+  haeun:{'수학':'neutral','국어':'like','체육':'dislike','과학':'neutral','미술':'like','컴퓨터':'neutral'},
+  doyun:{'수학':'like','국어':'dislike','체육':'like','과학':'neutral','미술':'neutral','컴퓨터':'like'},
+  yuna:{'수학':'like','국어':'like','체육':'neutral','과학':'like','미술':'neutral','컴퓨터':'neutral'},
+  jisung:{'수학':'dislike','국어':'neutral','체육':'like','과학':'neutral','미술':'like','컴퓨터':'like'},
+  soeun:{'수학':'neutral','국어':'like','체육':'like','과학':'neutral','미술':'like','컴퓨터':'dislike'},
+  hyunwoo:{'수학':'like','국어':'neutral','체육':'like','과학':'dislike','미술':'neutral','컴퓨터':'like'},
+  sua:{'수학':'like','국어':'like','체육':'dislike','과학':'like','미술':'like','컴퓨터':'neutral'},
+  eunho:{'수학':'neutral','국어':'dislike','체육':'like','과학':'neutral','미술':'like','컴퓨터':'neutral'},
+  narin:{'수학':'neutral','국어':'like','체육':'neutral','과학':'like','미술':'like','컴퓨터':'dislike'}
 });
 
 export const PREFERENCE_RULES=Object.freeze({
@@ -14,7 +23,7 @@ export const PREFERENCE_RULES=Object.freeze({
 });
 
 export const HEALTH_RULES=Object.freeze({
-  maxSickStudents:2,
+  maxSickStudents:3,
   sickChance:.10,
   severeShare:.28,
   sickRecoveryMultiplier:.58,
