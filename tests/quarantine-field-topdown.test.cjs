@@ -19,7 +19,7 @@ test('격리구역 17 v23 keeps one 3D flow and preserves outbreak pressure acro
   const entry=(catalog.games||catalog).find(g=>g.id==='high_quarantine_17');
 
   assert.match(html,/surveillance-v11\.js\?v=10/);
-  assert.match(html,/field-topdown-v18\.js\?v=8/);
+  assert.match(html,/field-topdown-v18\.js\?v=9/);
   assert.match(html,/facility-3d-v20\.js\?v=6/);
   assert.match(html,/field-3d-v21\.js\?v=4/);
   assert.match(html,/three-r160\/three\.module\.js/);
@@ -102,6 +102,8 @@ test('격리구역 17 v23 keeps one 3D flow and preserves outbreak pressure acro
   assert.match(surveillance,/function admitResident/);
   assert.match(surveillance,/CAMP-17 입소/);
   assert.match(field,/slice\(0,12\)/);
+  assert.match(field,/totalResidentCount/);
+  assert.match(field,/위험구역 인근/);
   assert.match(field,/personId:src\.personId/);
   assert.match(game,/getMain3DSnapshot/);
   assert.match(game,/q17-main3d/);
