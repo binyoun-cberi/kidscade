@@ -140,7 +140,7 @@ test('town people use skeleton-safe clones and actual walk animation instead of 
   assert.ok(js.includes("wrap.userData.animations=g.animations||[]"));
   assert.ok(js.includes("new THREE.AnimationMixer(root)"));
   assert.ok(js.includes("m.mixer?.update(dt)"));
-  assert.ok(js.includes("mixer=startModelAnimation(r,/walk|sprint|run/i)"));
+  assert.ok(js.includes("mixer=startModelAnimation(r,Math.abs(speed)>.05?/walk|sprint|run/i:/idle/i)"));
 });
 test('town character animation strips root motion and disables skinned-mesh frustum culling',()=>{
   assert.ok(js.includes("if(n.isSkinnedMesh)n.frustumCulled=false"));
@@ -170,15 +170,18 @@ test('mart product shelves use fixture surfaces instead of the display bounding-
   assert.match(js,/function marketProductVisualSize\(/);
 });
 test('office uses a human-scale desk asset and real office chair',()=>{
-  assert.match(js,/homeModel\('desk',1\.58,\[0,0,-1\.05\],'x'/);
-  assert.match(js,/homeModel\('chair-desk',\.82/);
+  assert.match(js,/const deskXs=\[-2\.35,0,2\.35\]/);
+  assert.match(js,/homeModel\('desk',1\.5,\[x,0,-1\.35\],'x',0\)/);
+  assert.match(js,/homeModel\('chair-desk',\.8,\[x,0,-\.15\]/);
   assert.match(js,/computer-screen\.glb/);
   assert.doesNotMatch(js,/homeModel\('table',1\.55,\[0,0,-\.9\]\)/);
 });
 test('street furniture stays outside the vehicle roadway and pedestrians no longer scrape the mart wall',()=>{
   assert.match(js,/\['bench',1\.45,\[4\.42,0,6\.7\]/);
   assert.match(js,/\['busStop',1\.88,\[11\.58,0,10\.8\],-Math\.PI\/2\]/);
-  assert.match(js,/const pedestrianLanes=\[5\.34,5\.34,10\.66,10\.66\]/);
+  assert.match(js,/const pedestrianDefs=\[/);
+  assert.match(js,/\[5\.34,-13,\.72,'출근하는 주민'\]/);
+  assert.match(js,/\[10\.66,-10,-\.7,'통근자'\]/);
 });
 test('room title signs are wall-mounted meshes instead of camera-facing sprites',()=>{
   assert.match(js,/function wallSign\(/);
