@@ -46,12 +46,16 @@ test('Cube Architect registers the remaining Cube World animals and enemies',()=
   assert.match(read('games/cube3d/index.html'),/cube-architect-creatures\.js\?v=20261004-32/);
 });
 
-test('Bunsik Kitchen uses NPC chefs and rotating customer sources',()=>{
+test('Bunsik Kitchen uses cute KIDSCADE cooks and rotating customer sources',()=>{
   const js=read('games/job_bogle_bunsik/bunsik-kitchen.js');
   assert.match(js,/const NPCS=/);
-  for(const file of ['Chef_Female.gltf','Chef_Male.gltf','Casual_Female.gltf','OldClassy_Female.gltf','Suit_Male.gltf'])assert.ok(js.includes(file),file);
+  assert.match(js,/const AVATAR_SHEET=/);
+  assert.match(js,/makeCuteCook\('player'\)/);
+  assert.match(js,/makeCuteCook\('helper'\)/);
+  assert.match(js,/paintCuteCook\(/);
+  for(const file of ['Casual_Female.gltf','OldClassy_Female.gltf','Suit_Male.gltf'])assert.ok(js.includes(file),file);
   assert.match(js,/this\.loadModel\(spec\.root,spec\.file,1\.65\)/);
-  assert.match(read('games/job_bogle_bunsik/보글보글 분식집.html'),/bunsik-kitchen\.js\?v=16/);
+  assert.match(read('games/job_bogle_bunsik/보글보글 분식집.html'),/bunsik-kitchen\.js\?v=17/);
 });
 
 test('catalog publishes cache-busted entries for changed standalone games',()=>{
@@ -59,5 +63,5 @@ test('catalog publishes cache-busted entries for changed standalone games',()=>{
   const href=id=>catalog.games.find(g=>g.id===id)?.href;
   assert.equal(href('high_little_world'),'games/high_little_world/index.html?v=2');
   assert.equal(href('job_internal_medicine'),'games/job_internal_medicine/오늘도 진료중!.html?v=4');
-  assert.equal(href('job_bogle_bunsik'),'games/job_bogle_bunsik/보글보글 분식집.html?v=16');
+  assert.equal(href('job_bogle_bunsik'),'games/job_bogle_bunsik/보글보글 분식집.html?v=17');
 });
