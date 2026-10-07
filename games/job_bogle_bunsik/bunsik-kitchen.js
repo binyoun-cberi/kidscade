@@ -678,6 +678,10 @@ class RamenKitchen3D{
    };requestAnimationFrame(back)
   };requestAnimationFrame(run)
  }
+ dishCartSinkTarget(){
+  const sink=this.layoutStations.find(s=>s.id==='sink')?.group;
+  return sink?new THREE.Vector3(sink.position.x+1.05,.02,sink.position.z-.15):new THREE.Vector3(-7.1,.02,-2.8)
+ }
  setDishCartCarry(show){
   if(!this.dishCartModel)return;
   const old=this.dishCartModel.getObjectByName('dishCartCarry');if(old)this.dishCartModel.remove(old);
@@ -697,7 +701,7 @@ class RamenKitchen3D{
   }
   const task=this.dishCartTask,seat=this.hallSeats[task.slot];
   if(!seat){this.dishCartTask=null;return}
-  const target=task.phase==='toTable'?new THREE.Vector3(seat.tablePosition.x,.02,seat.tablePosition.z+.82):task.phase==='toSink'?this.dishReturnPoint:this.dishCartHome;
+  const target=task.phase==='toTable'?new THREE.Vector3(seat.tablePosition.x,.02,seat.tablePosition.z+.82):task.phase==='toSink'?this.dishCartSinkTarget():this.dishCartHome;
   const dx=target.x-cart.position.x,dz=target.z-cart.position.z,d=Math.hypot(dx,dz),speed=3.15;
   if(d>.06){const step=Math.min(d,speed*dt);cart.position.x+=dx/d*step;cart.position.z+=dz/d*step;cart.rotation.y=Math.atan2(dx,dz);return}
   cart.position.x=target.x;cart.position.z=target.z;
