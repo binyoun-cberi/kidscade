@@ -133,7 +133,7 @@ let chrome,ws;
       assert.match(result, /배치 완료/,'Failed to build '+word+' / '+config.name+' '+result);
     }
     await build('MINER',.22,.18);
-    await build('ARROW',.40,.48);
+    await build('ARROW',.40,.55);
     let wordStatus=await evaluate("document.getElementById('wordMeta').textContent");
     assert.ok(wordStatus,'composer meta should render');
     await evaluate("document.getElementById('waveBtn').click()");
