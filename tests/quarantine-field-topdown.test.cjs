@@ -18,8 +18,8 @@ test('격리구역 17 v22 keeps checkpoint, isolation, CAMP and field missions i
   const catalog=JSON.parse(fs.readFileSync(path.join(ROOT,'data','games.json'),'utf8'));
   const entry=(catalog.games||catalog).find(g=>g.id==='high_quarantine_17');
 
-  assert.match(html,/surveillance-v11\.js\?v=8/);
-  assert.match(html,/field-topdown-v18\.js\?v=6/);
+  assert.match(html,/surveillance-v11\.js\?v=9/);
+  assert.match(html,/field-topdown-v18\.js\?v=7/);
   assert.match(html,/facility-3d-v20\.js\?v=5/);
   assert.match(html,/field-3d-v21\.js\?v=4/);
   assert.match(html,/three-r160\/three\.module\.js/);
@@ -70,10 +70,25 @@ test('격리구역 17 v22 keeps checkpoint, isolation, CAMP and field missions i
   assert.match(main3d,/Q-17 CHECKPOINT/);
   assert.match(main3d,/통과 · CAMP-17/);
   assert.match(main3d,/A 추가검사/);
-  assert.match(main3d,/고위험 격리/);
+  assert.match(main3d,/격리 · 소각 처리/);
   assert.match(main3d,/syncQueue/);
   assert.match(main3d,/q17-main3d/);
-  assert.match(main3d,/version:'22\.0'/);
+  assert.match(main3d,/version:'22\.1'/);
+  assert.match(main3d,/bottom:390px/);
+  assert.match(main3d,/camera\.aspect<\.9/);
+  assert.match(main3d,/const DECISION_PATHS=/);
+  assert.match(main3d,/function pathPoint/);
+  assert.match(main3d,/function walkPose/);
+  assert.match(main3d,/queueActors\.get\(info\?\.id\)/);
+  assert.match(main3d,/function mainSceneVisible/);
+  for(const tool of ['id','doc','temp','uv','blood','resp','bag'])assert.ok(main3d.includes("tool==='"+tool+"'")||main3d.includes("tool==='"+tool+"'"),'3D tool feedback '+tool);
+  assert.match(game,/처리 현황/);
+  assert.match(game,/setTimeout\(nextCase,1050\)/);
+  assert.match(outbreak,/admitResident/);
+  assert.match(surveillance,/function admitResident/);
+  assert.match(surveillance,/CAMP-17 입소/);
+  assert.match(field,/slice\(0,12\)/);
+  assert.match(field,/personId:src\.personId/);
   assert.match(game,/getMain3DSnapshot/);
   assert.match(game,/q17-main3d/);
   assert.match(game,/personId:'w'\+state\.weekIndex\+'c'\+state\.caseIndex/);
