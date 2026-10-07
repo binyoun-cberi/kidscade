@@ -4,6 +4,8 @@ import {CITY_BOUNDS,WORLD_GRID} from './kidscade-world-grid.js?v=6';
 import {createResidentLife} from './kidscade-world-residents.js?v=7';
 import {residentVisual} from './kidscade-world-npc-style.js?v=2';
 import {SCHOOL_PROFILES,schoolInteractionLabel} from './kidscade-world-school.js?v=3';
+import {shared3DPath,shared3DCanUse} from '../assets/game/manifest/shared-community-3d.js';
+import {prepareShared3DObject} from '../assets/game/manifest/shared-community-3d-runtime.js';
 export {CITY_BOUNDS};
 
 const ROOT=new URL('../assets/game/',import.meta.url);
@@ -120,6 +122,29 @@ function normalizeCharacterModel(model,height){
   model.updateMatrixWorld(true);
 }
 
+function detectedPlanarForward(obj){
+  obj.updateMatrixWorld(true);
+  const whole=new THREE.Box3().setFromObject(obj),size=whole.getSize(new THREE.Vector3()),center=whole.getCenter(new THREE.Vector3());
+  const axis=size.x>=size.z?'x':'z';
+  let sum=0,count=0;
+  obj.traverse(n=>{
+    if(!n.isMesh)return;
+    const materials=Array.isArray(n.material)?n.material:[n.material];
+    const label=(n.name||'')+' '+materials.map(m=>m?.name||'').join(' ');
+    if(!/headlight|windshield|windscreen|front/i.test(label))return;
+    const c=new THREE.Box3().setFromObject(n).getCenter(new THREE.Vector3());
+    sum+=axis==='x'?c.x:c.z;count++;
+  });
+  // glTF/Quaternius models normally author visual forward toward the negative long axis.
+  // Semantic front meshes override that fallback when available.
+  const base=axis==='x'?center.x:center.z,sign=count?((sum/count)>=base?1:-1):-1;
+  return axis==='x'?{x:sign,z:0}:{x:0,z:sign};
+}
+function yawToward(obj,targetX,targetZ){
+  const forward=detectedPlanarForward(obj);
+  return Math.atan2(targetX,targetZ)-Math.atan2(forward.x,forward.z);
+}
+
 async function mapLimit(items,limit,worker){
   const out=new Array(items.length);let cursor=0;
   async function lane(){
@@ -197,7 +222,16 @@ function validateMapLayout(objects){
 }
 
 export async function buildKidscadeCity(ctx){
-  const {parent,addModel,box,plane,interact,collider,loadGLTF,prepModel,actions,getGameTime,getPlayerPosition}=ctx;
+  const {parent,addModel,box,plane,interact,collider,loadGLB,loadGLTF,prepModel,actions,getGameTime,getPlayerPosition}=ctx;
+  const addSharedStatic=async(id,{x=0,z=0,target=1,name='',forwardX=0,forwardZ=1}={})=>{
+    if(!shared3DCanUse(id))return null;
+    try{
+      const sharedSource=await loadGLB(shared3DPath(id,'../')),visual=prepareShared3DObject(sharedSource.clone(true),id,target);
+      if(!visual)return null;
+      const anchor=new THREE.Group();anchor.name=name;anchor.position.set(x,0,z);anchor.rotation.y=yawToward(visual,forwardX,forwardZ);anchor.add(visual);parent.add(anchor);
+      anchor.userData.forwardAudit={targetX:forwardX,targetZ:forwardZ,yaw:anchor.rotation.y};return anchor;
+    }catch(err){console.warn('[World v3] shared city asset failed',id,err);return null}
+  };
   const layout=[],buildingLabels=[],walkSurfaces=[],deferredDecorJobs=[];
   const track=(id,type,x,z,w,d)=>{layout.push({id,type,x,z,w,d});return {id,type,x,z,w,d}};
   const registerSurface=(id,x,z,w,d,y)=>{walkSurfaces.push({id,x,z,w,d,y});};
@@ -350,8 +384,14 @@ export async function buildKidscadeCity(ctx){
     addModel(parent,CITY_ASSET.busStop,{x:transit.x+4.8,z:transit.z+2.0,w:2.7,h:2.5,d:1.5,rot:-Math.PI/2,name:'seed-bus-stop'}),
     addModel(parent,CITY_ASSET.busSign,{x:transit.x+3.1,z:transit.z+.2,w:.55,h:2.2,d:.55,rot:0,name:'seed-bus-sign'})
   ]);
+  // The shared school bus is repaired with the Kidscade yellow palette. Its long axis/front
+  // are detected from the model itself and rotated toward -Z, the parcel's road exit.
+  const schoolBusPark={x:transit.x+6.1,z:transit.z+5.3};
+  const schoolBus=await addSharedStatic('vehicle.schoolBus',{x:schoolBusPark.x,z:schoolBusPark.z,target:4.65,name:'seed-school-bus',forwardX:0,forwardZ:-1});
+  const schoolBusCollider=collider('outdoor',schoolBusPark.x,schoolBusPark.z,1.85,4.35);schoolBusCollider.enabled=false;
+  if(schoolBus)schoolBus.visible=false;
   // The bicycle alone is ~2.28 MB and is purely decorative, so it never blocks first play.
-  deferredDecorJobs.push(()=>addModel(parent,CITY_ASSET.bicycle,{x:transit.x+6.2,z:transit.z+5.7,w:1.55,h:1.15,d:.55,rot:.25,name:'town-bicycle'}));
+  deferredDecorJobs.push(()=>addModel(parent,CITY_ASSET.bicycle,{x:transit.x+6.5,z:transit.z-5.4,w:1.55,h:1.15,d:.55,rot:.25,name:'town-bicycle'}));
   track('transport-corner','decor',transit.x+4.8,transit.z+2.4,6.4,7.2);
 
   // Residential districts occupy the two previously dead eastern parcels.
@@ -539,13 +579,30 @@ const npcDefs=[
     decorWarmPromise=mapLimit(deferredDecorJobs,1,job=>job()).catch(err=>{console.warn('[World v3] deferred city decor failed',err);return []});
     return decorWarmPromise;
   }
+  function syncSchoolBus(){
+    if(!schoolBus)return;
+    const minutes=((Number(typeof getGameTime==='function'?getGameTime():720)%1440)+1440)%1440;
+    const windows=[[420,510],[930,1050]];
+    let phase=null;
+    for(const [start,end] of windows)if(minutes>=start&&minutes<=end){phase={start,end};break}
+    schoolBus.visible=!!phase;schoolBusCollider.enabled=!!phase;
+    if(!phase)return;
+    const span=phase.end-phase.start,edge=Math.min(18,span*.22),elapsed=minutes-phase.start;
+    let offset=0;
+    if(elapsed<edge)offset=(1-elapsed/edge)*3.4;
+    else if(elapsed>span-edge)offset=-((elapsed-(span-edge))/edge)*3.4;
+    // Approach/departure happens along the same forward axis, never sideways through the shelter.
+    schoolBus.position.x=schoolBusPark.x;schoolBus.position.z=schoolBusPark.z+offset;
+    schoolBusCollider.x=schoolBus.position.x;schoolBusCollider.z=schoolBus.position.z;
+  }
 
   return {
     npcs,bounds:CITY_BOUNDS,residentLife,groundSurfaceYAt,characterGroundYAt,warmNearbyResidents,warmDecor,
-    streamingStatus:()=>({loaded:npcs.filter(n=>n.loaded).map(n=>n.id),loading:npcs.filter(n=>n.loading).map(n=>n.id),shells:npcs.filter(n=>!n.loaded).map(n=>n.id)}),
+    streamingStatus:()=>({loaded:npcs.filter(n=>n.loaded).map(n=>n.id),loading:npcs.filter(n=>n.loading).map(n=>n.id),shells:npcs.filter(n=>!n.loaded).map(n=>n.id),schoolBus:!!schoolBus?.visible}),
     groundAudit:()=>npcs.map(n=>({id:n.id,x:n.object.position.x,z:n.object.position.z,y:n.object.position.y,expected:characterGroundYAt(n.object.position.x,n.object.position.z),delta:n.object.position.y-characterGroundYAt(n.object.position.x,n.object.position.z)})),
     update(now,dt){
       const player=typeof getPlayerPosition==='function'?getPlayerPosition():null;
+      syncSchoolBus();
       if(player&&now>=nextResidentWarmAt){nextResidentWarmAt=now+650;warmNearbyResidents(player,{radius:20,limit:3});}
       for(const label of buildingLabels){
         const a=label.userData.anchor;label.visible=!!player&&Math.hypot(player.x-a.x,player.z-a.z)<7.5;

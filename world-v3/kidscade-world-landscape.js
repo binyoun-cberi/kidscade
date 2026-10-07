@@ -1,8 +1,20 @@
 import * as THREE from 'three';
-import {WORLD_GRID} from './kidscade-world-grid.js?v=5';
+import {WORLD_GRID} from './kidscade-world-grid.js?v=6';
 
 const ROOT=new URL('../assets/game/3d/',import.meta.url).href;
 const NATURE=ROOT+'nature/kenney-nature-kit/';
+const COMMUNITY_ROOT=new URL('../assets/',import.meta.url).href;
+const COMMUNITY={
+  treeA:COMMUNITY_ROOT+'quaternius_cc0-common-tree-849.glb',
+  treeB:COMMUNITY_ROOT+'quaternius_cc0-common-tree-855.glb',
+  pineA:COMMUNITY_ROOT+'quaternius_cc0-pine-tree-1228.glb',
+  pineB:COMMUNITY_ROOT+'quaternius_cc0-pine-tree-1237.glb',
+  mossA:COMMUNITY_ROOT+'quaternius_cc0-mossy-rock-1303.glb',
+  mossB:COMMUNITY_ROOT+'quaternius_cc0-mossy-rock-1308.glb',
+  grass:COMMUNITY_ROOT+'quaternius_cc0-grass-1070.glb',
+  plant:COMMUNITY_ROOT+'quaternius_cc0-plant-1249.glb',
+  woodLog:COMMUNITY_ROOT+'quaternius_cc0-wood-log-1520.glb'
+};
 
 function ellipse(parent,x,z,rx,rz,color,y=.035,rotation=0,opacity=1){
   const mat=new THREE.MeshStandardMaterial({color,roughness:.96,transparent:opacity<1,opacity,depthWrite:opacity>=1});
@@ -66,7 +78,10 @@ export async function buildWorldLandscape({parent,addModel}){
     addModel(parent,NATURE+'lily-large.glb',{x:-16.5,z:-24.7,w:.62,h:.18,d:.62,rot:.15,name:'river-lily-a'}),
     addModel(parent,NATURE+'lily-small.glb',{x:-9.5,z:-23.6,w:.42,h:.14,d:.42,rot:-.20,name:'river-lily-b'}),
     addModel(parent,NATURE+'plant-bush-large.glb',{x:-19.5,z:-20.7,w:1.25,h:.92,d:1.25,rot:.1,name:'river-bank-bush-a'}),
-    addModel(parent,NATURE+'plant-bush.glb',{x:-5.2,z:-27.0,w:.92,h:.70,d:.92,rot:-.1,name:'river-bank-bush-b'})
+    addModel(parent,NATURE+'plant-bush.glb',{x:-5.2,z:-27.0,w:.92,h:.70,d:.92,rot:-.1,name:'river-bank-bush-b'}),
+    addModel(parent,COMMUNITY.mossA,{x:-18.7,z:-27.6,w:1.05,h:.72,d:1.0,rot:.34,name:'river-shared-moss-a'}),
+    addModel(parent,COMMUNITY.plant,{x:-7.1,z:-20.5,w:.72,h:.72,d:.72,rot:-.22,name:'river-shared-plant'}),
+    addModel(parent,COMMUNITY.woodLog,{x:-5.8,z:-25.4,w:1.65,h:.58,d:.72,rot:1.05,name:'river-shared-log'})
   ]);
 
   // Beach now has three readable sub-spaces: estuary rocks, open sand, and a small landing.
@@ -87,16 +102,23 @@ export async function buildWorldLandscape({parent,addModel}){
     addModel(parent,NATURE+'log-large.glb',{x:camp.cx-3.8,z:camp.cz+2.3,w:1.9,h:.55,d:.75,rot:1.05,name:'camp-seat-log-a'}),
     addModel(parent,NATURE+'log-large.glb',{x:camp.cx+1.4,z:camp.cz+3.2,w:1.9,h:.55,d:.75,rot:-.45,name:'camp-seat-log-b'}),
     addModel(parent,NATURE+'stump-round-detailed.glb',{x:camp.cx+4.1,z:camp.cz+2.9,w:.85,h:.68,d:.85,rot:.1,name:'camp-stump'}),
-    addModel(parent,NATURE+'plant-bush-large.glb',{x:camp.cx-7.2,z:camp.cz+1.3,w:1.2,h:.92,d:1.2,rot:.15,name:'camp-bush'})
+    addModel(parent,NATURE+'plant-bush-large.glb',{x:camp.cx-7.2,z:camp.cz+1.3,w:1.2,h:.92,d:1.2,rot:.15,name:'camp-bush'}),
+    addModel(parent,COMMUNITY.mossB,{x:camp.cx+7.0,z:camp.cz-5.7,w:1.0,h:.68,d:1.0,rot:.25,name:'camp-shared-moss'}),
+    addModel(parent,COMMUNITY.grass,{x:camp.cx-6.6,z:camp.cz-5.4,w:.78,h:.72,d:.78,rot:-.14,name:'camp-shared-grass'}),
+    addModel(parent,COMMUNITY.plant,{x:camp.cx+6.3,z:camp.cz+5.2,w:.70,h:.72,d:.70,rot:.18,name:'camp-shared-plant'})
   ]);
 
   // Edge clusters disguise long straight parcel boundaries while keeping paths walkable.
   await Promise.all([
     addModel(parent,NATURE+'grass-large.glb',{x:-25.8,z:5.2,w:1.1,h:.70,d:1.1,rot:.2,name:'edge-grass-forest-home-a'}),
-    addModel(parent,NATURE+'plant-bush.glb',{x:-22.2,z:-4.7,w:.95,h:.72,d:.95,rot:-.2,name:'edge-bush-forest-home-b'}),
+    addModel(parent,COMMUNITY.grass,{x:-22.2,z:-4.7,w:.82,h:.72,d:.82,rot:-.2,name:'edge-shared-grass-forest-home-b'}),
+    addModel(parent,COMMUNITY.treeA,{x:-29.0,z:7.6,w:1.7,h:3.45,d:1.7,rot:.38,name:'forest-shared-tree-a'}),
+    addModel(parent,COMMUNITY.treeB,{x:-43.2,z:-6.8,w:1.75,h:3.55,d:1.75,rot:-.24,name:'forest-shared-tree-b'}),
+    addModel(parent,COMMUNITY.pineA,{x:-40.4,z:7.2,w:1.65,h:3.65,d:1.65,rot:.17,name:'forest-shared-pine-a'}),
+    addModel(parent,COMMUNITY.mossA,{x:-31.0,z:-6.1,w:1.0,h:.68,d:1.0,rot:.34,name:'forest-shared-moss-a'}),
     addModel(parent,NATURE+'grass-leafs-large.glb',{x:22.1,z:5.8,w:1.0,h:.75,d:1.0,rot:.1,name:'edge-grass-farm-quarry-a'}),
     addModel(parent,NATURE+'rock-small-flat-c.glb',{x:25.7,z:-4.8,w:.95,h:.42,d:.95,rot:-.1,name:'edge-rock-farm-quarry-b'})
   ]);
 
-  return {connectedRiver:true,softenedRoads:true};
+  return {connectedRiver:true,softenedRoads:true,communityNature:true};
 }

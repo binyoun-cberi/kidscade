@@ -657,13 +657,16 @@ test('World v3 road-first grid keeps the core town plus museum district connecte
 
 test('Seed World landscape visually connects nature districts and softens the rigid grid',()=>{
   assert.match(runtime,/buildWorldLandscape\(\{parent:outdoor,addModel,box,plane\}\)/);
-  assert.match(runtime,/kidscade-world-landscape\.js\?v=1/);
+  assert.match(runtime,/kidscade-world-landscape\.js\?v=2/);
   assert.match(landscape,/bridge-wood-narrow\.glb/);
   assert.match(landscape,/tree-palm-detailed-tall\.glb/);
   assert.match(landscape,/tent-detailed-open\.glb/);
   assert.match(landscape,/waterShape/);
   assert.match(landscape,/softenedRoads:true/);
   assert.match(landscape,/connectedRiver:true/);
+  assert.match(landscape,/communityNature:true/);
+  assert.match(landscape,/quaternius_cc0-common-tree-849\.glb/);
+  assert.match(landscape,/quaternius_cc0-mossy-rock-1303\.glb/);
 });
 
 test('east Seed Town has twelve real resident homes with doorstep lanes and pocket park',()=>{
@@ -702,6 +705,32 @@ test('resident AI movement keeps interaction anchors attached inside the new cit
 });
 
 
+test('Seed World community asset pass keeps ranch buildings, water infrastructure and school bus direction-safe',()=>{
+  const assets=[
+    'quaternius_cc0-barn-666.glb','quaternius_cc0-chicken-coop-819.glb',
+    'quaternius_cc0-silo-house-1341.glb','quaternius_cc0-windmill-1504.glb',
+    'quaternius_cc0-well-1471.glb','quaternius_cc0-water-tower-1470.glb',
+    'quaternius_cc0-common-tree-849.glb','quaternius_cc0-common-tree-855.glb',
+    'quaternius_cc0-pine-tree-1228.glb','quaternius_cc0-pine-tree-1237.glb',
+    'quaternius_cc0-mossy-rock-1303.glb','quaternius_cc0-school-bus-1323.glb'
+  ];
+  for(const file of assets)assert.ok(fs.existsSync(path.join(root,'assets',file)),'missing Seed World community asset '+file);
+  for(const token of ['ASSET.ranchBarn','ASSET.ranchCoop','ASSET.ranchSilo','ASSET.ranchWindmill'])assert.match(runtime,new RegExp(token.replace('.','\\.')));
+  assert.match(runtime,/const RANCH_FRONT_ROT=Math\.PI/);
+  assert.match(runtime,/north strip is reserved for buildings/);
+  assert.match(runtime,/home-shared-well/);
+  assert.match(runtime,/home-water-tower/);
+  assert.match(runtime,/homeWaterTowerObject\.visible=d\.waterLevel>=3/);
+  assert.match(runtime,/treeAssets=\[ASSET\.tree,ASSET\.oak,ASSET\.pine,ASSET\.sharedTreeA/);
+  assert.match(city,/shared3DCanUse/);
+  assert.match(city,/prepareShared3DObject/);
+  assert.match(city,/function detectedPlanarForward/);
+  assert.match(city,/forwardX:0,forwardZ:-1/);
+  assert.match(city,/name:'seed-school-bus'/);
+  assert.match(city,/schoolBusCollider\.enabled=!!phase/);
+  assert.match(city,/offset=-\(\(elapsed-\(span-edge\)\)\/edge\)\*3\.4/);
+});
+
 test('Cube Pets are separated into home yard ranch and biome habitats',()=>{
   assert.match(runtime,/isCityArea,isTravelCorridor,footprintTouchesRoad/);
   for(const habitat of ['pond','ranch','deep-forest','waterfront'])assert.ok(runtime.includes("habitat:'"+habitat+"'"),'missing habitat '+habitat);
@@ -711,7 +740,7 @@ test('Cube Pets are separated into home yard ranch and biome habitats',()=>{
   assert.match(runtime,/if\(isCityArea\(a\.targetX,a\.targetZ\)\)/);
   assert.match(runtime,/a\.interaction\.x=a\.object\.position\.x/);
   assert.match(runtime,/a\.interaction\.z=a\.object\.position\.z/);
-  assert.match(runtime,/const LAYOUT_VERSION=8/);
+  assert.match(runtime,/const LAYOUT_VERSION=9/);
 });
 
 test('regression: NPCs and animals preserve GLB ground offsets instead of sinking or floating',()=>{
@@ -909,7 +938,7 @@ test('four city squares use only shared road gutters and centered crosswalks',()
   assert.match(city,/for\(const x of \[-12,12\]\)/);
   assert.match(city,/for\(const z of \[10\.8,11\.55,12\.3,13\.05\]\)/);
   assert.match(city,/for\(const z of \[24,48\]\)/);
-  assert.match(runtime,/const LAYOUT_VERSION=8/);
+  assert.match(runtime,/const LAYOUT_VERSION=9/);
 });
 
 
