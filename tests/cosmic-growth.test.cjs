@@ -14,7 +14,7 @@ test('cosmic growth game shell is wired to local Three and Kidscade SDK',()=>{
   assert.match(html,/<title>먼지에서 블랙홀까지<\/title>/);
   assert.match(html,/data-game-id="science_cosmic_growth"/);
   assert.match(html,/assets\/vendor\/three-r160\/three\.module\.js/);
-  assert.match(html,/game\.js\?v=6/);
+  assert.match(html,/game\.js\?v=7/);
   assert.match(html,/id="tapLayer"/);
   assert.match(html,/id="codex"/);
   assert.match(html,/style\.css\?v=4/);
@@ -34,6 +34,14 @@ test('cosmic growth spans dust through quasar and reuses existing assets',()=>{
   assert.match(js,/effects\/particles\/kenney-particle-pack\/flare-01\.png/);
   assert.match(js,/effects\/particles\/kenney-particle-pack\/twirl-02\.png/);
   assert.match(js,/LOW_POWER/);
+});
+
+test('opening dust is visibly larger than a pixel and has haze support',()=>{
+  assert.match(js,/size:state\.stage\?\(LOW_POWER\?3\.0:3\.8\):\(LOW_POWER\?2\.4:3\.2\)/);
+  assert.match(js,/size:LOW_POWER\?1\.7:2\.4/);
+  assert.match(js,/alphaTest:0/);
+  assert.match(js,/dustHaze/);
+  assert.match(js,/if\(i<=1\)return n<\.9\?'dust':'rock'/);
 });
 
 test('cosmic growth keeps neighbouring celestial scenery visible across scales',()=>{
@@ -116,6 +124,17 @@ test('all 24 stages have valid discoveries and growing thresholds',()=>{
  }
  assert.equal(STAGES.at(-1).id,'cosmic_web');
 });
+test('click requirements grow geometrically across playable stages',()=>{
+ const {STAGES}=progression(),playable=STAGES.filter(s=>!s.auto);
+ assert.ok(playable[0].need>=60);
+ assert.ok(playable.at(-1).need>=100000000);
+ for(let i=1;i<playable.length;i++){
+  assert.ok(playable[i].need>=playable[i-1].need*1.5,playable[i-1].id+' -> '+playable[i].id);
+ }
+ assert.match(js,/balanceVersion:3/);
+ assert.match(js,/balanceV2Needs=/);
+});
+
 test('even maximum research and upgrades cannot skip late structures in seconds',()=>{
  const api=progression();const upgrades=Object.fromEntries(api.UPGRADES.map(u=>[u.id,true]));
  for(let stage=12;stage<24;stage++){
@@ -127,7 +146,7 @@ test('even maximum research and upgrades cannot skip late structures in seconds'
 test('active progression simulation keeps black hole and cosmic web as long term goals',()=>{
  const api=progression();let state={stage:0,research:0,upgrades:{}},progress=0,insight=2,taps=0,elapsed=0,blackHole=0;
  const found=new Set(['cosmic_dust','micro_scale']);
- while(state.stage<23&&elapsed<30000){
+ while(state.stage<23&&elapsed<90000){
   for(const u of api.UPGRADES)if(u.min<=state.stage&&!state.upgrades[u.id]&&insight>=u.cost){insight-=u.cost;state.upgrades[u.id]=true}
   const cost=3+state.research*2;if(state.research<10&&insight>=cost){insight-=cost;state.research++}
   api.setState(state);elapsed++;taps+=2;if(taps%250===0)insight++;
@@ -140,7 +159,7 @@ test('active progression simulation keeps black hole and cosmic web as long term
   }
  }
  console.log('active simulation: black hole',Math.round(blackHole/60),'min; cosmic web',Math.round(elapsed/60),'min');
- assert.ok(blackHole>600&&blackHole<5400);assert.ok(elapsed>3600&&elapsed<20000);assert.equal(state.stage,23);
+ assert.ok(blackHole>5000&&blackHole<20000);assert.ok(elapsed>30000&&elapsed<80000);assert.equal(state.stage,23);
 });
 
 test('holding Space never generates extra growth and focused controls are excluded',()=>{
