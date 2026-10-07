@@ -861,6 +861,12 @@ const COMBOS=[
   }
 ];
 
+const WAVE_BALANCE={
+  hpLinear:.18,
+  hpQuadratic:.08,
+  speedGrowth:.035
+};
+
 const START_RACK='MINERARROWIC'.split('');
 const FILLER_FREQUENCY='EEEEEEEEEEEEAAAAAAAAAIIIIIIIIOOOOOOOONNNNNNRRRRRRTTTTTTLLLLSSSSUUUUDDDDGGGBBCCMMPPFFHHVVWWYYKJXQZ'.split('');
 
@@ -872,6 +878,7 @@ window.WordSiegeData={
   modifiers:MODIFIERS,
   signatures:SIGNATURES,
   combos:COMBOS,
+  waveBalance:WAVE_BALANCE,
   startRack:START_RACK,
   fillerFrequency:FILLER_FREQUENCY,
   maxRack:12
