@@ -1301,6 +1301,28 @@ function download(name,blob){
 
 function exportSpec(){
   readParams();
+
+  if(bodyStyle==='assetChibi'){
+    const spec={
+      version:4,
+      type:'kidscade-chibi-avatar-spec',
+      source:'Styloo Chibi Characters v1.2',
+      sourceUrl:'https://styloo.itch.io/chibi',
+      license:'CC0-1.0',
+      loadedFrom:chibiLoadedUrl,
+      preset:chibiCurrentPreset,
+      materialMode:$('chibiUnlit')?.checked!==false?'unlit-npr':'original-pbr',
+      visibleParts:selectedChibiParts(),
+      bones:skinnedMesh?.skeleton?.bones.map(b=>({name:b.name,parent:b.parent?.isBone?b.parent.name:null}))||[],
+      clips:chibiAnimations.map(clip=>({name:clip.name,duration:Number(clip.duration.toFixed(3))})),
+      triangles:countVisibleTriangles(chibiAssetRoot),
+      coordinateSystem:{up:'Y',units:'meters',origin:'ground-center'}
+    };
+    download('kidscade-chibi-'+chibiCurrentPreset+'-spec.json',new Blob([JSON.stringify(spec,null,2)+'\n'],{type:'application/json'}));
+    setStatus('Chibi 아바타 파츠/리그 규격 JSON을 저장했습니다.');
+    return;
+  }
+
   const spec={
     version:3,
     type:'kidscade-humanoid-rig-spec',
@@ -1337,8 +1359,11 @@ async function exportGlb(){
 
   if(activeAction)activeAction.stop();
   mixer?.stopAllAction();
-  skinnedMesh.skeleton.pose();
-  characterRoot.position.set(0,0,0);
+  if(bodyStyle==='assetChibi'){
+    chibiSourceScene?.traverse?.(o=>{if(o.isSkinnedMesh)o.skeleton?.pose?.()});
+  }else{
+    skinnedMesh.skeleton.pose();
+  }
   characterRoot.rotation.set(0,0,0);
   characterRoot.updateMatrixWorld(true);
 
@@ -1366,15 +1391,18 @@ async function exportGlb(){
       const blob=result instanceof ArrayBuffer
         ?new Blob([result],{type:'model/gltf-binary'})
         :new Blob([JSON.stringify(result)],{type:'model/gltf+json'});
-      download('kidscade-'+bodyStyle+'-rigged-character.glb',blob);
-      setStatus('GLB 저장 완료 · 바인드 자세 + 스켈레톤 + '+clips.length+'개 애니메이션');
+      const filename=bodyStyle==='assetChibi'
+        ?'kidscade-chibi-'+chibiCurrentPreset+'.glb'
+        :'kidscade-'+bodyStyle+'-rigged-character.glb';
+      download(filename,blob);
+      setStatus('GLB 저장 완료 · '+(bodyStyle==='assetChibi'?'선택 파츠 + 78-bone rig + ':'바인드 자세 + 스켈레톤 + ')+clips.length+'개 애니메이션');
     },
     error=>{
       restorePreview();
       console.error(error);
       setStatus('GLB 내보내기에 실패했습니다: '+(error?.message||error),true);
     },
-    {binary:true,trs:true,onlyVisible:false,animations:clips,includeCustomExtensions:false}
+    {binary:true,trs:true,onlyVisible:bodyStyle==='assetChibi',animations:bodyStyle==='assetChibi'?chibiAnimations:clips,includeCustomExtensions:false}
   );
 }
 
