@@ -915,7 +915,7 @@ class RamenKitchen3D{
   this.customerXs.forEach((x,i)=>{
    const spec=CUSTOMER_MODELS[(i+progress.shifts*2)%CUSTOMER_MODELS.length],holder=new THREE.Group(),seat=this.hallSeats[i];
    holder.position.copy(this.hallEntrance);holder.visible=false;holder.userData.customerSlot=i;this.scene.add(holder);this.customerHolders.push(holder);
-   const cs={slot:i,holder,seat,phase:'idle',orderId:null,path:[],walkClock:i*.7};
+   const cs={slot:i,holder,seat,phase:'idle',orderId:null,path:[],walkClock:i*.7,mealMeta:null,eatRemaining:0,reviewRemaining:0};
    this.customerStates.push(cs);
    this.loadModel(spec.root,spec.file,1.65).then(o=>{if(o){o.rotation.y=Math.PI;holder.add(o);cs.model=o}});
   });
@@ -929,17 +929,20 @@ class RamenKitchen3D{
   if(c.seat?.occupiedBy===orderId)c.seat.occupiedBy=null;
   c.holder.userData.reactionToken=(c.holder.userData.reactionToken||0)+1;
   c.holder.children.filter(n=>n.userData?.customerFx).forEach(n=>c.holder.remove(n));
-  c.phase='idle';c.orderId=null;c.path.length=0;c.holder.visible=false;c.holder.position.copy(this.hallEntrance);c.holder.position.y=0;c.holder.rotation.set(0,0,0);c.holder.scale.setScalar(1);c.holder.userData.seatedScaleY=1
+  this.setCustomerDishCarry(c,false);
+  c.phase='idle';c.orderId=null;c.path.length=0;c.mealMeta=null;c.eatRemaining=0;c.reviewRemaining=0;c.holder.visible=false;c.holder.position.copy(this.hallEntrance);c.holder.position.y=0;c.holder.rotation.set(0,0,0);c.holder.scale.setScalar(1);c.holder.userData.seatedScaleY=1
  }
  resetCustomerHall(){
-  this.hallSeats.forEach(seat=>seat.occupiedBy=null);
-  this.customerStates.forEach(c=>{c.holder.userData.reactionToken=(c.holder.userData.reactionToken||0)+1;c.holder.children.filter(n=>n.userData?.customerFx).forEach(n=>c.holder.remove(n));c.phase='idle';c.orderId=null;c.path.length=0;c.holder.visible=false;c.holder.position.copy(this.hallEntrance);c.holder.position.y=0;c.holder.rotation.set(0,0,0);c.holder.scale.setScalar(1);c.holder.userData.seatedScaleY=1})
+  this.hallSeats.forEach(seat=>{seat.occupiedBy=null;seat.dirtyPending=false;this.setSeatDish(seat,'none')});
+  this.dishCartQueue.length=0;this.dishCartTask=null;
+  if(this.dishCartModel)this.dishCartModel.position.copy(this.dishCartHome);
+  this.customerStates.forEach(c=>{c.holder.userData.reactionToken=(c.holder.userData.reactionToken||0)+1;c.holder.children.filter(n=>n.userData?.customerFx).forEach(n=>c.holder.remove(n));this.setCustomerDishCarry(c,false);c.phase='idle';c.orderId=null;c.path.length=0;c.mealMeta=null;c.eatRemaining=0;c.reviewRemaining=0;c.holder.visible=false;c.holder.position.copy(this.hallEntrance);c.holder.position.y=0;c.holder.rotation.set(0,0,0);c.holder.scale.setScalar(1);c.holder.userData.seatedScaleY=1})
  }
  beginCustomerArrival(order){
   if(!order)return false;
-  const c=this.customerStates[order.slot],seat=this.hallSeats[order.slot];if(!c||!seat)return false;
+  const c=this.customerStates[order.slot],seat=this.hallSeats[order.slot];if(!c||!seat||!seat.enabled||seat.dirtyPending)return false;
   if(c.orderId!=null&&c.orderId!==order.id)this.resetCustomerForOrder(c.orderId);
-  seat.occupiedBy=order.id;c.seat=seat;c.orderId=order.id;c.walkClock=order.id*.41;
+  seat.occupiedBy=order.id;c.seat=seat;c.orderId=order.id;c.walkClock=order.id*.41;c.mealMeta=null;
   const ahead=this.customerStates.filter(x=>x!==c&&(x.phase==='walking'||x.phase==='waiting')).length;c.wait=ahead*.55;c.phase=c.wait>0?'waiting':'walking';
   c.holder.visible=c.phase==='walking';c.holder.position.copy(this.hallEntrance);c.holder.position.y=0;c.holder.scale.setScalar(1);
   if(c.phase==='walking')this.hallDoorOpenUntil=Math.max(this.hallDoorOpenUntil,this.clock+1.25);
@@ -960,6 +963,64 @@ class RamenKitchen3D{
   if(order){order.paused=false;order.arriving=false;order.seated=true}
   sfx('collect.coin_pickup',{volume:.08,rate:1.28,cooldownMs:120})
  }
+ beginDining(orderId,meta={}){
+  const c=this.customerStateForOrder(orderId);if(!c?.seat)return false;
+  c.phase='eating';c.mealMeta={...meta};c.eatRemaining=6.4+(orderId%4)*1.05;c.reviewRemaining=0;
+  c.holder.position.copy(c.seat.position);c.holder.position.y=-.22;c.holder.rotation.set(0,c.seat.rotation,0);c.holder.scale.set(1,.93,1);c.holder.userData.seatedScaleY=.93;
+  this.setSeatDish(c.seat,'meal');return true
+ }
+ customerFeedback(meta={}){
+  const q=Number(meta.quality)||0,t=Number(meta.noodleTime)||0;
+  if(meta.burnt)return'😠 탄 냄새 나요!';
+  if(q<38&&t>11.5)return'😠 면이 다 퍼졌잖아요!';
+  if(q<38&&t>0&&t<8.2)return'😣 면이 너무 딱딱해요!';
+  if(q<38)return'😠 이건 너무 아쉬워요!';
+  if(q<58&&t>11.5)return'😕 면이 좀 퍼졌는데…';
+  if(q<58&&t>0&&t<8.2)return'😕 면이 조금 설익었어요.';
+  if(q<58)return'😕 국물 맛이 조금 아쉬워요.';
+  if(q<76)return'🙂 괜찮네요.';
+  if(q<90)return'😋 맛있어요!'+((meta.combo||0)>=2?' 🔥'+meta.combo:'');
+  return'🤩 최고예요!'+((meta.combo||0)>=2?' 🔥'+meta.combo:'')
+ }
+ finishDining(c){
+  if(!c?.seat||c.phase!=='eating')return;
+  this.setSeatDish(c.seat,'dirty');c.phase='reviewing';c.reviewRemaining=1.65;
+  const meta=c.mealMeta||{},text=this.customerFeedback(meta);
+  this.customerCelebrate(c.slot,meta.quality||0,meta.combo||0,meta.earned||0,{text,burnt:!!meta.burnt});
+  sfx((meta.quality||0)>=76?'success.cheer_yay':'failure.fail_sting',{volume:(meta.quality||0)>=76?.16:.11,cooldownMs:240})
+ }
+ beginReturnDish(c){
+  if(!c?.seat)return;
+  this.setSeatDish(c.seat,'none');this.setCustomerDishCarry(c,true);c.phase='returningDish';c.holder.position.y=0;c.holder.scale.setScalar(1);c.holder.userData.seatedScaleY=1;c.holder.rotation.z=0;
+  const laneZ=c.seat.position.z+1.15;
+  c.path=[
+   new THREE.Vector3(c.seat.position.x,0,laneZ),
+   new THREE.Vector3(0,0,laneZ),
+   new THREE.Vector3(0,0,this.dishReturnPoint.z),
+   this.dishReturnPoint.clone()
+  ]
+ }
+ beginCustomerExit(c){
+  if(!c)return;
+  c.phase='leaving';c.holder.position.y=0;c.holder.scale.setScalar(1);c.holder.userData.seatedScaleY=1;c.holder.rotation.z=0;
+  const z=c.holder.position.z,laneZ=c.seat?c.seat.position.z+1.15:z;
+  const path=[];
+  if(Math.abs(c.holder.position.x-(c.seat?.position.x||0))<1.5&&c.seat)path.push(new THREE.Vector3(c.seat.position.x,0,laneZ));
+  path.push(new THREE.Vector3(0,0,laneZ),new THREE.Vector3(0,0,-12.15),new THREE.Vector3(0,0,-13.15));
+  c.path=path
+ }
+ moveCustomerPath(c,dt,speed=2.25){
+  const target=c.path[0];if(!target)return true;
+  const dx=target.x-c.holder.position.x,dz=target.z-c.holder.position.z,d=Math.hypot(dx,dz);
+  if(d<.07){c.holder.position.x=target.x;c.holder.position.z=target.z;c.path.shift();return !c.path.length}
+  const step=Math.min(d,speed*dt);c.holder.position.x+=dx/d*step;c.holder.position.z+=dz/d*step;
+  c.walkClock+=dt*9;c.holder.position.y=Math.sin(c.walkClock)*.025;c.holder.rotation.y=Math.atan2(dx,dz);
+  if(target.z<-11.5)this.hallDoorOpenUntil=Math.max(this.hallDoorOpenUntil,this.clock+1.2);
+  return false
+ }
+ hasActiveDiningCustomers(){
+  return this.customerStates.some(c=>['eating','reviewing','returningDish','leaving'].includes(c.phase))||!!this.dishCartTask||this.dishCartQueue.length>0
+ }
  updateCustomerHall(dt){
   if(this.hallDoor){
    const open=this.clock<this.hallDoorOpenUntil,target=open?-1.08:0;
@@ -971,12 +1032,31 @@ class RamenKitchen3D{
     if(c.wait<=0){c.phase='walking';c.holder.visible=true;this.hallDoorOpenUntil=Math.max(this.hallDoorOpenUntil,this.clock+1.25)}
     else continue
    }
-   if(c.phase!=='walking'||!c.holder.visible)continue;
-   const target=c.path[0];if(!target){this.seatCustomer(c);continue}
-   const dx=target.x-c.holder.position.x,dz=target.z-c.holder.position.z,d=Math.hypot(dx,dz),speed=2.25;
-   if(d<.07){c.holder.position.x=target.x;c.holder.position.z=target.z;c.path.shift();if(!c.path.length)this.seatCustomer(c);continue}
-   const step=Math.min(d,speed*dt);c.holder.position.x+=dx/d*step;c.holder.position.z+=dz/d*step;
-   c.walkClock+=dt*9;c.holder.position.y=Math.sin(c.walkClock)*.025;c.holder.rotation.y=Math.atan2(dx,dz)
+   if(c.phase==='walking'){
+    if(this.moveCustomerPath(c,dt))this.seatCustomer(c);
+    continue
+   }
+   if(c.phase==='eating'){
+    c.eatRemaining=Math.max(0,c.eatRemaining-dt);c.walkClock+=dt*4.8;
+    c.holder.rotation.z=Math.sin(c.walkClock)*.014;c.holder.position.y=-.22+Math.max(0,Math.sin(c.walkClock*1.35))*.018;
+    if(c.eatRemaining<=0){c.holder.rotation.z=0;c.holder.position.y=-.22;this.finishDining(c)}
+    continue
+   }
+   if(c.phase==='reviewing'){
+    c.reviewRemaining=Math.max(0,c.reviewRemaining-dt);
+    if(c.reviewRemaining<=0){
+     if(hasUpgrade('dishCart')){c.seat.dirtyPending=true;this.queueDishCart(c);this.beginCustomerExit(c)}
+     else this.beginReturnDish(c)
+    }
+    continue
+   }
+   if(c.phase==='returningDish'){
+    if(this.moveCustomerPath(c,dt,2.35)){this.setCustomerDishCarry(c,false);addDirtyPlate();this.beginCustomerExit(c)}
+    continue
+   }
+   if(c.phase==='leaving'){
+    if(this.moveCustomerPath(c,dt,2.45)){const id=c.orderId;this.resetCustomerForOrder(id)}
+   }
   }
  }
  makeServiceStation(){
