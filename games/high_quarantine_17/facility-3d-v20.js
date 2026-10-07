@@ -156,8 +156,8 @@ class View{
   building(548,58,184,118,2.15,0x6b604d,0x918269,'보급창고','#efd697');
   // 실제 장비를 앞마당에 배치해 단순 박스 건물의 느낌을 줄인다.
   this.addAsset(A.desk,[X(260),0,Z(102)],1.35,0x657276,.18,Math.PI/2);
-  this.addAsset(A.radio,[X(260),.82,Z(102)],.34,0x536166,.18,Math.PI/2);
-  this.addAsset(A.laptop,[X(260),.82,Z(122)],.40,0x5f6d70,.16,Math.PI/2);
+  this.addAsset(A.radio,[X(247),.95,Z(102)],.34,0x536166,.18,Math.PI/2);
+  this.addAsset(A.laptop,[X(273),.95,Z(102)],.40,0x5f6d70,.16,Math.PI/2);
   this.addAsset(A.structureCanvas,[X(615),0,Z(193)],2.4,0x6d6756,.20,0);
   this.addAsset(A.boxLarge,[X(590),0,Z(208)],.82,0x82664c,.24,.12);
   this.addAsset(A.barrel,[X(660),0,Z(206)],.72,0x596762,.20,0);
@@ -185,7 +185,7 @@ class View{
   this.addAsset(A.turret,[X(720),0,Z(286)],1.5,0x6f7976,.38,-Math.PI/2);
 
   // Medical interaction marker and a small supply cluster make the route legible even before an emergency.
-  for(const p of [[520,234],[746,446],[350,288]])this.addAsset(A.crate,[X(p[0]),0,Z(p[1])],.70,0xa87542,.42,0);
+  for(const p of [[520,234],[760,395],[350,288]])this.addAsset(A.crate,[X(p[0]),0,Z(p[1])],.70,0xa87542,.42,0);
   const medCircle=new THREE.Mesh(new THREE.CircleGeometry(.48,36),new THREE.MeshBasicMaterial({color:0x79a6a5,transparent:true,opacity:.18,side:THREE.DoubleSide}));
   medCircle.rotation.x=-Math.PI/2;medCircle.position.set(X(610),.028,Z(330));this.root.add(medCircle);
 
@@ -375,6 +375,6 @@ function mount(){
  const campView=new View(cc,'camp'),isoView=new View(document.getElementById('q17Iso3D'),'isolation');
  setInterval(()=>{campView.update();isoView.update()},450);campView.update();isoView.update();
  let last=0;const loop=t=>{if(t-last>16){views.forEach(v=>v.render(t));last=t}requestAnimationFrame(loop)};requestAnimationFrame(loop);
- window.Q17Facility3D=Object.freeze({version:'20.6',camp:campView,isolation:isoView});return true
+ window.Q17Facility3D=Object.freeze({version:'20.7',camp:campView,isolation:isoView});return true
 }
 let tries=0;const timer=setInterval(()=>{if(mount()||++tries>80)clearInterval(timer)},50);
