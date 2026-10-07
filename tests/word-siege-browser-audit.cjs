@@ -89,7 +89,13 @@ let chrome,ws;
       const tiles=[...document.querySelectorAll('#rack .tile')].map(el=>{const r=el.getBoundingClientRect();return {x:r.left,y:r.top,w:r.width,h:r.height,bottom:r.bottom}});
       return {screen:{w:innerWidth,h:innerHeight},board:rect('boardWrap'),canvas:rect('game'),
         rack:rect('rack'),bottom:rect('rack'),wave:rect('waveBtn'),status:rect('statusBox'),tiles,
-        scrollWidth:document.documentElement.scrollWidth};
+        scrollWidth:document.documentElement.scrollWidth,
+        floatingMenu:(()=>{
+          const button=document.querySelector('#kidscade-game-shell .kcgs-open');
+          if(!button)return null;
+          const r=button.getBoundingClientRect();
+          return {x:r.left,y:r.top,right:r.right,bottom:r.bottom};
+        })()};
     })()`);
     assert.ok(Math.abs(geometry.board.h-geometry.canvas.h)<2,'canvas is clipped: '+config.name+' '+JSON.stringify(geometry));
     assert.ok(Math.abs(geometry.board.w-geometry.canvas.w)<2,'canvas width mismatch: '+config.name);
@@ -97,6 +103,10 @@ let chrome,ws;
     assert.ok(geometry.tiles.length===12);
     assert.ok(geometry.tiles.every(t=>t.x>=-1&&t.y>=0&&t.x+t.w<=config.w+1&&t.bottom<=config.h+1),'letter rack clipped: '+config.name);
     assert.ok(geometry.scrollWidth<=config.w+2,'horizontal overflow: '+config.name+' width='+geometry.scrollWidth);
+    if(geometry.floatingMenu){
+      assert.ok(geometry.tiles.every(t=>t.x+t.w<=geometry.floatingMenu.x||t.x>=geometry.floatingMenu.right||t.bottom<=geometry.floatingMenu.y||t.y>=geometry.floatingMenu.bottom),
+        'floating SDK menu covers a letter tile: '+config.name+' '+JSON.stringify(geometry.floatingMenu));
+    }
     const waveBefore=await evaluate("document.getElementById('waveText').textContent");
     await evaluate("document.getElementById('waveBtn').click()");
     const waveAfter=await evaluate("document.getElementById('waveText').textContent");
