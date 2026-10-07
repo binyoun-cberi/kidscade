@@ -81,13 +81,19 @@ function renderRack(){
     rackEl.appendChild(b);
   });
 }
+function towerCost(def){
+  return (def.role==='resource'?5:def.role==='modifier'?6:def.role==='repair'?7:6)
+    +Math.ceil(def.difficulty*.75)+(def.role==='special'?3:0);
+}
 function updateComposer(){
   const w=tileWord();currentWordEl.textContent=w||'_';
   const def=D.words[w];
   if(!w){const n=availableWords().length;wordMetaEl.textContent=n?'현재 만들 수 있는 단어 '+n+'개':'글자를 골라보세요'}
-  else if(def) wordMetaEl.innerHTML=def.meaning+' · '+def.roleLabel+'<br>난도 '+('★'.repeat(def.difficulty));
-  else wordMetaEl.textContent='등록되지 않은 단어';
-  buildBtn.disabled=!def||!!state.placing;
+  else if(def){
+    const cost=towerCost(def),sig=D.signatures?.[w],affordable=state.ink>=cost;
+    wordMetaEl.innerHTML=def.meaning+' · '+def.roleLabel+'<br>INK '+cost+(affordable?'':' · 부족')+(sig?.flavor?' · '+sig.flavor:'');
+  }else wordMetaEl.textContent='등록되지 않은 단어';
+  buildBtn.disabled=!def||!!state.placing||state.ink<towerCost(def);
 }
 function clearSelection(){state.selected=[];renderRack();updateComposer()}
 
@@ -113,6 +119,8 @@ function showHint(){
   let list=availableWords();
   if(!list.length){ensurePlayableRack();renderRack();updateComposer();list=availableWords()}
   if(!list.length){toast('단어를 찾지 못했어요. SWAP을 해보세요');return}
+  list=list.filter(w=>towerCost(D.words[w])<=state.ink);
+  if(!list.length){toast('INK가 부족해요. 웨이브를 방어하면 INK를 얻어요.');return}
   list.sort((a,b)=>{
     const ad=state.discovered.has(a)?1:0,bd=state.discovered.has(b)?1:0;
     if(ad!==bd)return ad-bd;
@@ -137,15 +145,19 @@ function consumeSelected(){
 }
 function swapOne(){
   if(state.placing)return;
-  const idx=state.selected.length===1?state.selected[0]:((Math.random()*state.rack.length)|0);
   if(state.ink<2){toast('INK가 2 필요해요');return}
-  state.ink-=2;state.rack[idx]=randomLetter();state.selected=[];ensurePlayableRack();renderRack();updateComposer();updateHud();beep(320,.06,'triangle');
+  state.ink-=2;
+  const indices=Array.from({length:state.rack.length},(_,i)=>i)
+    .sort(()=>Math.random()-.5).slice(0,3);
+  indices.forEach(i=>{state.rack[i]=randomLetter()});
+  state.selected=[];ensurePlayableRack();renderRack();updateComposer();updateHud();toast('글자 3개 교환!');beep(320,.06,'triangle');
 }
 
 function beginPlacement(){
   const w=tileWord(),def=D.words[w]; if(!def)return;
+  if(state.ink<towerCost(def)){toast('건설할 INK가 부족해요');return}
   state.placing={word:w,def,indices:state.selected.slice()};
-  setStatus('배치 중 · '+w,def.role==='resource'?'녹색 INK 광석 가까운 빈 공간을 누르세요.':'빈 공간을 눌러 Word Tower를 세우세요. 경로 위에는 놓을 수 없습니다.');
+  setStatus('배치 중 · '+w,'건설 비용 INK '+towerCost(def)+' · '+(def.role==='resource'?'녹색 INK 광석 가까운 빈 공간을 누르세요.':'길 위가 아닌 빈 공간을 누르세요.'));
   buildBtn.disabled=true;beep(700,.07,'square');
 }
 function cancelPlacement(){state.placing=null;setStatus(state.inWave?'전투 중':'준비','글자를 눌러 단어를 만든 뒤 타워를 배치하세요.');updateComposer()}
@@ -172,21 +184,7 @@ function validPlacement(p){
   if(state.towers.some(t=>dist(p,t)<.07))return false;
   return true;
 }
-function rolePlacementValid(p,def){
-  const base=D.roleStats[def.role]||{};
-  const scaledRange=(base.range||.16)*(1+Math.min(.18,(def.difficulty-1)*.02));
-  if(def.role==='resource')return state.resources.some(r=>r.amount>0&&dist(p,r)<=scaledRange);
-  if((base.damage||0)>0||def.role==='barrier')return minPathDistance(p)<=scaledRange;
-  return true;
-}
-function buildTower(p){
-  if(!state.placing||!validPlacement(p)){if(state.placing)toast('여기에는 놓을 수 없어요');return}
-  const {word,def}=state.placing;
-  if(!rolePlacementValid(p,def)){
-    if(def.role==='resource'){toast('채굴 타워는 녹색 INK 광석 가까이에 놓아야 해요');setStatus('배치 위치 다시 선택','MINER·DRILL 같은 채굴 타워는 INK 광석이 범위 안에 있어야 합니다.')}
-    else{toast('공격 범위가 적의 길에 닿아야 해요');setStatus('배치 위치 다시 선택','사거리 원이 적의 이동 경로에 닿도록 놓아주세요.')}
-    return;
-  }
+function makeTowerStats(word,def){
   const stats={...D.roleStats[def.role]};
   const scale=1+(def.difficulty-1)*.085;
   stats.damage=(stats.damage||0)*scale;stats.range=(stats.range||.16)*(1+Math.min(.18,(def.difficulty-1)*.02));
@@ -197,11 +195,43 @@ function buildTower(p){
   if(word==='VOLCANO'){stats.damage*=1.55;stats.area=.14;stats.burn=12}
   if(word==='DRAGON'){stats.damage*=1.45;stats.burn=11}
   if(word==='JUGGERNAUT'){stats.damage*=1.65;stats.area=.13}
+  const signature=D.signatures?.[word];
+  if(signature){
+    for(const key of ['damage','range','rate','area','burn','slow','poison','push','pull','harvest','heal','barrierSlow']){
+      if(typeof signature[key]==='number'){
+        const baseline=stats[key]??({burn:7,poison:6,slow:.58,push:.045,pull:.032,area:.09}[key]||1);
+        stats[key]=baseline*signature[key];
+      }
+    }
+    if(signature.chain!==undefined)stats.chain=signature.chain;
+    if(signature.shieldBreak)stats.shieldBreak=signature.shieldBreak;
+    if(signature.element)stats.element=signature.element;
+  }
+  return stats;
+}
+function rolePlacementValid(p,def,word){
+  const s=makeTowerStats(word||def.word,def);
+  if(def.role==='resource')return state.resources.some(r=>r.amount>0&&dist(p,r)<=s.range);
+  if((s.damage||0)>0||def.role==='barrier')return minPathDistance(p)<=s.range;
+  return true;
+}
+function buildTower(p){
+  if(!state.placing||!validPlacement(p)){if(state.placing)toast('여기에는 놓을 수 없어요');return}
+  const {word,def}=state.placing;
+  if(!rolePlacementValid(p,def,word)){
+    if(def.role==='resource'){toast('채굴 타워는 녹색 INK 광석 가까이에 놓아야 해요');setStatus('배치 위치 다시 선택','MINER·DRILL 같은 채굴 타워는 INK 광석이 범위 안에 있어야 합니다.')}
+    else{toast('공격 범위가 적의 길에 닿아야 해요');setStatus('배치 위치 다시 선택','사거리 원이 적의 이동 경로에 닿도록 놓아주세요.')}
+    return;
+  }
+  const cost=towerCost(def);
+  if(state.ink<cost){toast('INK가 부족해요');return}
+  const stats=makeTowerStats(word,def);
+  state.ink-=cost;
   const tower={id:state.uid++,x:p.x,y:p.y,word,def,stats,cool:Math.random()*.3,harvestClock:0,links:[],pulse:0};
   state.towers.push(tower); state.unique.add(word); state.builtWords.push(word);
   const newly=!state.discovered.has(word);state.discovered.add(word);saveDiscovered();
   consumeSelected();state.placing=null;applyLinks();setStatus('배치 완료 · '+word,(newly?'새 단어 발견! ':'')+def.meaning+' · '+def.roleLabel);
-  if(newly){state.score+=80+def.difficulty*20;toast('NEW WORD · '+word+' · '+def.meaning);beep(880,.12,'triangle',.05)} else beep(640,.08,'square');
+  if(newly){state.score+=80+def.difficulty*20;state.ink+=2;toast('NEW WORD · '+word+' · '+def.meaning+' · INK +2');beep(880,.12,'triangle',.05)} else beep(640,.08,'square');
   updateHud();
 }
 
@@ -211,7 +241,7 @@ function effectiveStats(t){
     const mod=D.modifiers[m.word]; if(!mod)continue;
     if(mod.rate)rateMul*=mod.rate;if(mod.damage)damageMul*=mod.damage;if(mod.range)rangeMul*=mod.range;if(mod.area)areaMul*=mod.area;if(mod.push)pushMul*=mod.push;
   }
-  if(s.rate)s.rate*=rateMul;if(s.damage)s.damage*=damageMul;if(s.range)s.range*=rangeMul;if(s.area)s.area*=areaMul;if(s.push)s.push*=pushMul;
+  if(s.rate)s.rate*=Math.min(2.4,rateMul);if(s.damage)s.damage*=Math.min(2.5,damageMul);if(s.range)s.range*=Math.min(1.85,rangeMul);if(s.area)s.area*=Math.min(1.9,areaMul);if(s.push)s.push*=Math.min(2,pushMul);
   const duplicates=state.towers.filter(o=>o!==t&&o.word===t.word).length;
   if(s.damage)s.damage*=Math.max(.65,Math.pow(.93,duplicates));
   return s;
@@ -281,11 +311,16 @@ function moveEnemy(e,dt){
 function reachCore(e){e.dead=true;state.core=Math.max(0,state.core-e.damage);flashEffect(.94,.57,'#ef5d67',.12);beep(120,.12,'sawtooth',.06);if(state.core<=0)endGame(false)}
 function damageEnemy(e,amount,kind,tower){
   if(e.dead)return;
-  if(e.shield>0){const used=Math.min(e.shield,amount);e.shield-=used;amount-=used}
-  e.hp-=amount;if(kind==='burn'){e.burn=2.8;e.burnDps=Math.max(e.burnDps,7+(tower?.def.difficulty||1))}
-  if(kind==='poison'){e.poison=4.5;e.poisonDps=Math.max(e.poisonDps,5+(tower?.def.difficulty||1))}
-  if(kind==='slow')e.slow=Math.min(e.slow,.52);
-  if(kind==='push')e.pushBack=Math.max(e.pushBack,.035);
+  if(e.shield>0){
+    const multiplier=tower?.stats.shieldBreak||1;
+    const used=Math.min(e.shield,amount*multiplier);
+    e.shield-=used;amount-=used/multiplier;
+  }
+  e.hp-=Math.max(0,amount);
+  if(kind==='burn'){e.burn=2.8;e.burnDps=Math.max(e.burnDps,(tower?.stats.burn||7)+(tower?.def.difficulty||1))}
+  if(kind==='poison'){e.poison=4.5;e.poisonDps=Math.max(e.poisonDps,(tower?.stats.poison||6)+(tower?.def.difficulty||1))}
+  if(kind==='slow')e.slow=Math.min(e.slow,tower?.stats.slow||.52);
+  if(kind==='push')e.pushBack=Math.max(e.pushBack,(tower?.stats.push||.045)*.75);
   if(e.hp<=0)killEnemy(e);
 }
 function killEnemy(e){
@@ -297,29 +332,35 @@ function killEnemy(e){
 function towerUpdate(t,dt){
   const s=effectiveStats(t);t.pulse=Math.max(0,t.pulse-dt);
   if(t.def.role==='resource'){
+    if(!state.inWave)return;
     t.harvestClock+=dt; if(t.harvestClock>=2.3){t.harvestClock=0;const node=state.resources.filter(r=>r.amount>0&&dist(t,r)<=s.range).sort((a,b)=>dist(t,a)-dist(t,b))[0];if(node){const amt=Math.min(node.amount,Math.max(1,Math.round((s.harvest||3)*(1+t.def.difficulty*.08))));node.amount-=amt;state.ink+=amt;state.score+=amt*2;t.pulse=.35;floatEffect(t.x,t.y,'+'+amt+' INK','#4b9f38')}}
     return;
   }
-  if(t.def.role==='repair'){t.harvestClock+=dt;if(t.harvestClock>2.5){t.harvestClock=0;state.core=Math.min(100,state.core+(s.heal||2));t.pulse=.3}return}
+  if(t.def.role==='repair'){if(!state.inWave)return;t.harvestClock+=dt;if(t.harvestClock>2.5){t.harvestClock=0;state.core=Math.min(100,state.core+(s.heal||2));t.pulse=.3}return}
   if(t.def.role==='modifier'||s.rate<=0)return;
   t.cool-=dt;if(t.cool>0)return;
   const targets=state.enemies.filter(e=>!e.dead&&dist(t,e)<=s.range).sort((a,b)=>enemyProgress(b)-enemyProgress(a));
   if(!targets.length)return;
   const target=targets[0];t.cool=1/s.rate;t.pulse=.12;
-  const linkedElement=(t.links.find(m=>['burn','slow','poison'].includes(m.def.role))||{}).def?.role||'';
+  const linkedElement=s.element||(t.links.find(m=>['burn','slow','poison'].includes(m.def.role))||{}).def?.role||'';
   if(s.beam||t.def.role==='pierce'||t.def.role==='push'||t.def.role==='gravity'){
     if(t.def.role==='pierce'){
       const ang=Math.atan2(target.y-t.y,target.x-t.x);let hit=0;
       for(const e of targets){const dx=e.x-t.x,dy=e.y-t.y;const along=dx*Math.cos(ang)+dy*Math.sin(ang),perp=Math.abs(-dx*Math.sin(ang)+dy*Math.cos(ang));if(along>0&&perp<.025){damageEnemy(e,s.damage,linkedElement,t);hit++;if(hit>=4)break}}
       lineEffect(t.x,t.y,target.x,target.y,t.def.color,.12,2);
     }else if(t.def.role==='push'){
-      damageEnemy(target,s.damage,'push',t);if(linkedElement)damageEnemy(target,0,linkedElement,t);lineEffect(t.x,t.y,target.x,target.y,t.def.color,.14,2);
+      const impacted=s.area?targets.filter(e=>dist(e,target)<=s.area):[target];
+      for(const e of impacted){damageEnemy(e,s.damage,e===target?'push':(linkedElement||'push'),t);if(linkedElement&&linkedElement!=='push')damageEnemy(e,0,linkedElement,t)}
+      lineEffect(t.x,t.y,target.x,target.y,t.def.color,.14,2);
+      if(s.area)ringEffect(target.x,target.y,s.area,t.def.color,.2);
     }else if(t.def.role==='gravity'){
-      for(const e of targets.filter(e=>dist(t,e)<=s.area)) {damageEnemy(e,s.damage,linkedElement,t);e.pushBack=Math.max(e.pushBack,.018)}
+      for(const e of targets.filter(e=>dist(t,e)<=s.area)) {damageEnemy(e,s.damage,linkedElement,t);e.pushBack=Math.max(e.pushBack,(s.pull||.032)*.55)}
       ringEffect(t.x,t.y,s.area,t.def.color,.18);
     }else{
       damageEnemy(target,s.damage,linkedElement||(['burn','slow','poison'].includes(t.def.role)?t.def.role:''),t);lineEffect(t.x,t.y,target.x,target.y,t.def.color,.09,3);
-      if((s.chain||0)>0&&targets[1]){damageEnemy(targets[1],s.damage*.55,'',t);lineEffect(target.x,target.y,targets[1].x,targets[1].y,t.def.color,.08,2)}
+      const chained=targets.slice(1,1+Math.min(4,s.chain||0));
+      let previous=target;
+      chained.forEach((next,i)=>{damageEnemy(next,s.damage*Math.pow(.58,i+1),linkedElement,t);lineEffect(previous.x,previous.y,next.x,next.y,t.def.color,.08,2);previous=next});
     }
   }else{
     state.shots.push({x:t.x,y:t.y,target,damage:s.damage,speed:s.projectileSpeed||.55,color:t.def.color,area:s.area||0,kind:(linkedElement||t.def.role),source:t,dead:false});
@@ -339,7 +380,7 @@ function shotUpdate(s,dt){
 function barrierEffects(){
   const barriers=state.towers.filter(t=>t.def.role==='barrier');
   if(!barriers.length)return;
-  for(const e of state.enemies){if(e.dead)continue;for(const t of barriers){if(dist(e,t)<.11){e.slow=Math.min(e.slow,.62);break}}}
+  for(const e of state.enemies){if(e.dead)continue;for(const t of barriers){const s=effectiveStats(t);if(dist(e,t)<s.range*.84){e.slow=Math.min(e.slow,s.barrierSlow||.62);break}}}
 }
 function statusEffects(e,dt){
   if(e.burn>0){e.burn-=dt;e.hp-=e.burnDps*dt}
@@ -456,16 +497,16 @@ function drawEffects(){
   }
 }
 function drawPlacement(){
-  if(!state.placing||!state.hover)return;const p=state.hover,ok=validPlacement(p)&&rolePlacementValid(p,state.placing.def),r=Math.max(20,Math.min(W,H)*.034);
+  if(!state.placing||!state.hover)return;const p=state.hover,ok=validPlacement(p)&&rolePlacementValid(p,state.placing.def,state.placing.word),r=Math.max(20,Math.min(W,H)*.034);
   ctx.save();ctx.globalAlpha=.72;ctx.fillStyle=ok?state.placing.def.color:'#d34f58';ctx.fillRect(px(p.x)-r*.55,py(p.y)-r*.7,r*1.1,r*1.3);
-  ctx.strokeStyle=ok?'#1aa59f':'#c33445';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px(p.x),py(p.y),Math.min(W,H)*(D.roleStats[state.placing.def.role].range||.16),0,Math.PI*2);ctx.stroke();ctx.restore();
+  ctx.strokeStyle=ok?'#1aa59f':'#c33445';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px(p.x),py(p.y),Math.min(W,H)*makeTowerStats(state.placing.word,state.placing.def).range,0,Math.PI*2);ctx.stroke();ctx.restore();
 }
 function roundRect(c,x,y,w,h,r,fill,stroke){c.beginPath();c.roundRect?c.roundRect(x,y,w,h,r):(c.rect(x,y,w,h));if(fill)c.fill();if(stroke)c.stroke()}
 
 function inspectAt(p){
   const t=state.towers.map(t=>({t,d:dist(p,t)})).sort((a,b)=>a.d-b.d)[0];
   if(!t||t.d>.06){inspectBox.classList.remove('show');return}
-  const s=effectiveStats(t.t);inspectBox.innerHTML='<strong>'+t.t.word+'</strong><small>'+t.t.def.meaning+' · '+t.t.def.roleLabel+'</small><div class="meter">난도 '+('★'.repeat(t.t.def.difficulty))+(s.damage?' · DMG '+Math.round(s.damage):'')+(s.range?' · RANGE '+Math.round(s.range*100):'')+(t.t.links.length?' · LINK '+t.t.links.map(x=>x.word).join(', '):'')+'</div>';inspectBox.classList.add('show');
+  const s=effectiveStats(t.t),signature=D.signatures?.[t.t.word];inspectBox.innerHTML='<strong>'+t.t.word+'</strong><small>'+t.t.def.meaning+' · '+t.t.def.roleLabel+(signature?.flavor?' · '+signature.flavor:'')+'</small><div class="meter">난도 '+('★'.repeat(t.t.def.difficulty))+' · INK '+towerCost(t.t.def)+(s.damage?' · DMG '+Math.round(s.damage):'')+(s.range?' · RANGE '+Math.round(s.range*100):'')+(t.t.links.length?' · LINK '+t.t.links.map(x=>x.word).join(', '):'')+'</div>';inspectBox.classList.add('show');
 }
 canvas.addEventListener('pointermove',e=>{if(!state)return;state.hover=boardPos(e)});
 canvas.addEventListener('pointerleave',()=>{if(state)state.hover=null});
@@ -474,7 +515,7 @@ canvas.addEventListener('pointerdown',e=>{if(!state||state.ended)return;const p=
 function openDictionary(){
   const list=[...state.discovered].filter(w=>D.words[w]).sort();
   $('dictStats').textContent=list.length+' / '+D.wordList.length+' 단어 발견';
-  $('dictList').innerHTML=list.length?list.map(w=>{const d=D.words[w];return '<div class="dict-item" style="--c:'+d.color+'"><b>'+w+'</b><span>'+d.meaning+' · '+d.roleLabel+' · '+('★'.repeat(d.difficulty))+'</span></div>'}).join(''):'<div class="empty">아직 발견한 단어가 없습니다.</div>';
+  $('dictList').innerHTML=list.length?list.map(w=>{const d=D.words[w],sig=D.signatures?.[w];return '<div class="dict-item" style="--c:'+d.color+'"><b>'+w+'</b><span>'+d.meaning+' · '+d.roleLabel+' · INK '+towerCost(d)+(sig?.flavor?' · '+sig.flavor:'')+'</span></div>'}).join(''):'<div class="empty">아직 발견한 단어가 없습니다.</div>';
   dictOverlay.classList.remove('hidden');
 }
 function restart(){
