@@ -60,7 +60,7 @@ test('cosmic growth has ambient flybys and black holes capture passing bodies',(
     assert.ok(js.includes('function '+fn+'('),fn);
   }
   assert.match(js,/const blackHole=state\.stage>=12&&state\.stage<=15/);
-  assert.match(js,/data\.radius=Math\.max\(3\.6,Math\.hypot\(x,y\)\)/);
+  assert.match(js,/data\.radius=Math\.max\(3\.6,Math\.hypot\(obj\.position\.x,obj\.position\.y\)\)/);
   assert.match(js,/f\.radius-=dt\*f\.inward/);
   assert.match(js,/if\(f\.radius<\.62\)\{swallowFlyby\(f\)/);
   assert.match(js,/updateFlybys\(dt\);updateFx\(dt\)/);
