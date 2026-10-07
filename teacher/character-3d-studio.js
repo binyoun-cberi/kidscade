@@ -100,6 +100,282 @@ function setStatus(text,error=false){
   el.className='status'+(error?' error':'');
 }
 
+function setChibiAssetStatus(text,error=false){
+  const el=$('chibiAssetStatus');
+  if(!el)return;
+  el.textContent=text;
+  el.className='asset-status'+(error?' error':'');
+}
+
+function effectiveVisible(object,root){
+  let current=object;
+  while(current&&current!==root){
+    if(current.visible===false)return false;
+    current=current.parent;
+  }
+  return root?.visible!==false;
+}
+
+function countVisibleTriangles(root){
+  let total=0;
+  root?.traverse?.(o=>{
+    if(!o.isMesh||!o.geometry||!effectiveVisible(o,root))return;
+    total+=o.geometry.index?o.geometry.index.count/3:o.geometry.getAttribute('position')?.count/3||0;
+  });
+  return Math.round(total);
+}
+
+function selectedChibiParts(){
+  if(!chibiSourceScene)return [];
+  return CHIBI_TOGGLE_NODES.filter(name=>chibiSourceScene.getObjectByName(name)?.visible);
+}
+
+function setChibiNodeVisible(name,visible){
+  const object=chibiSourceScene?.getObjectByName(name);
+  if(object)object.visible=!!visible;
+}
+
+function refreshWardrobeChecks(){
+  document.querySelectorAll('[data-chibi-part]').forEach(input=>{
+    const object=chibiSourceScene?.getObjectByName(input.dataset.chibiPart);
+    input.checked=!!object?.visible;
+    input.disabled=!object;
+  });
+}
+
+function renderWardrobeParts(){
+  const host=$('wardrobeParts');
+  if(!host)return;
+  host.innerHTML=CHIBI_TOGGLE_NODES.map(name=>{
+    const exists=!!chibiSourceScene?.getObjectByName(name);
+    const label=CHIBI_PART_LABELS[name]||name;
+    return '<label class="part-check"><input type="checkbox" data-chibi-part="'+name+'" '+(exists?'':'disabled')+'> '+label+'</label>';
+  }).join('');
+  refreshWardrobeChecks();
+}
+
+function applyChibiHair(name){
+  CHIBI_HAIR_NODES.forEach(n=>setChibiNodeVisible(n,false));
+  if(name)setChibiNodeVisible(name,true);
+  if($('chibiHair'))$('chibiHair').value=name||'';
+  refreshWardrobeChecks();
+  refreshChibiMetrics();
+}
+
+function applyChibiPreset(name,updateHair=true){
+  if(!chibiSourceScene)return;
+  chibiCurrentPreset=CHIBI_PRESETS[name]?name:'base';
+  const wanted=new Set(CHIBI_PRESETS[chibiCurrentPreset]);
+  CHIBI_TOGGLE_NODES.forEach(node=>setChibiNodeVisible(node,wanted.has(node)));
+  CHIBI_BASE_NODES.forEach(node=>setChibiNodeVisible(node,true));
+  if(updateHair){
+    const hair=CHIBI_HAIR_NODES.find(node=>wanted.has(node))||'';
+    if($('chibiHair'))$('chibiHair').value=hair;
+  }
+  document.querySelectorAll('[data-chibi-preset]').forEach(b=>b.classList.toggle('active',b.dataset.chibiPreset===chibiCurrentPreset));
+  refreshWardrobeChecks();
+  refreshChibiMetrics();
+}
+
+function basicFromMaterial(source){
+  const material=new THREE.MeshBasicMaterial({
+    color:source?.color?.clone?.()||new THREE.Color(0xffffff),
+    map:source?.map||null,
+    alphaMap:source?.alphaMap||null,
+    transparent:!!source?.transparent,
+    opacity:source?.opacity??1,
+    alphaTest:source?.alphaTest??0,
+    side:THREE.DoubleSide,
+    vertexColors:!!source?.vertexColors
+  });
+  material.name=(source?.name||'material')+'__kidscade_unlit';
+  material.userData.kidscadeGeneratedUnlit=true;
+  return material;
+}
+
+function applyChibiMaterialMode(useUnlit){
+  if(!chibiSourceScene)return;
+  chibiSourceScene.traverse(o=>{
+    if(!o.isMesh)return;
+    if(!chibiOriginalMaterials.has(o.uuid)){
+      chibiOriginalMaterials.set(o.uuid,Array.isArray(o.material)?o.material.slice():o.material);
+    }
+    const original=chibiOriginalMaterials.get(o.uuid);
+    if(useUnlit){
+      const current=Array.isArray(o.material)?o.material:[o.material];
+      current.forEach(m=>{if(m?.userData?.kidscadeGeneratedUnlit)m.dispose?.()});
+      o.material=Array.isArray(original)?original.map(basicFromMaterial):basicFromMaterial(original);
+    }else{
+      const current=Array.isArray(o.material)?o.material:[o.material];
+      current.forEach(m=>{if(m?.userData?.kidscadeGeneratedUnlit)m.dispose?.()});
+      o.material=Array.isArray(original)?original.slice():original;
+    }
+  });
+  setChibiAssetStatus((useUnlit?'Unlit/NPR':'원본 PBR')+' 재질 적용 · '+chibiCurrentPreset+' 프리셋');
+}
+
+function chibiIdleClipName(){
+  return chibiAnimations.find(c=>c.name==='anim_iddle')?.name
+    ||chibiAnimations.find(c=>c.name==='iddleanim_')?.name
+    ||chibiAnimations[0]?.name||'';
+}
+
+function populateProceduralClipButtons(){
+  const host=$('clipGrid');
+  if(!host)return;
+  host.innerHTML=CLIP_NAMES.map(name=>'<button class="secondary '+(name==='IDLE'?'active':'')+'" data-clip="'+name+'">'+name+'</button>').join('');
+}
+
+function populateChibiClipButtons(){
+  const host=$('clipGrid');
+  if(!host)return;
+  host.innerHTML=chibiAnimations.map((clip,index)=>{
+    const label=CHIBI_CLIP_LABELS[clip.name]||clip.name.replace(/^anim_/,'').replace(/anim_$/,'').toUpperCase();
+    return '<button class="secondary '+(index===0?'':'')+'" data-clip="'+clip.name+'">'+label+'</button>';
+  }).join('');
+}
+
+function refreshChibiMetrics(){
+  if(!chibiAssetRoot)return;
+  const triangles=countVisibleTriangles(chibiAssetRoot);
+  const boneCount=skinnedMesh?.skeleton?.bones?.length||78;
+  $('triangleCount').textContent=triangles.toLocaleString();
+  $('polyBadge').textContent=triangles.toLocaleString()+' triangles';
+  $('boneCount').textContent=String(boneCount);
+  $('rigBadge').textContent='✓ Styloo Chibi · '+boneCount+' bones';
+  $('clipBadge').textContent=chibiAnimations.length+' clips';
+  if($('rigVersionLabel'))$('rigVersionLabel').textContent='Styloo Chibi v1.2 · '+boneCount+' bones';
+  if($('skinningModeLabel'))$('skinningModeLabel').textContent='Original SkinnedMesh';
+  if($('modelInfoTip'))$('modelInfoTip').textContent='원본 78-bone rig와 손가락 뼈를 유지하고, 현재 선택한 옷/헤어 파츠만 표시합니다. 보이는 메시 기준 '+triangles.toLocaleString()+' triangles.';
+}
+
+function normalizeChibiScene(source,targetHeight=1.22){
+  source.updateMatrixWorld(true);
+  const firstBox=new THREE.Box3().setFromObject(source);
+  const size=firstBox.getSize(new THREE.Vector3());
+  const scale=size.y>0?targetHeight/size.y:1;
+  source.scale.setScalar(scale);
+  source.updateMatrixWorld(true);
+  const box=new THREE.Box3().setFromObject(source);
+  const center=box.getCenter(new THREE.Vector3());
+  source.position.x-=center.x;
+  source.position.z-=center.z;
+  source.position.y-=box.min.y;
+  source.updateMatrixWorld(true);
+  currentDim={H:targetHeight,asset:true,soft:false};
+}
+
+function clearCharacterForAsset(){
+  if(activeAction)activeAction.stop();
+  activeAction=null;
+  mixer?.stopAllAction?.();
+  mixer=null;
+  if(skeletonHelper){
+    scene.remove(skeletonHelper);
+    skeletonHelper.geometry?.dispose?.();
+    skeletonHelper.material?.dispose?.();
+    skeletonHelper=null;
+  }
+  if(characterRoot&&characterRoot!==chibiAssetRoot){
+    scene.remove(characterRoot);
+    disposeObject(characterRoot);
+  }else if(characterRoot){
+    scene.remove(characterRoot);
+  }
+  characterRoot=null;
+  skinnedMesh=null;
+}
+
+function mountLoadedChibi(){
+  if(!chibiAssetRoot||!chibiSourceScene)return false;
+  clearCharacterForAsset();
+  characterRoot=chibiAssetRoot;
+  if(!characterRoot.parent)scene.add(characterRoot);
+  skinnedMesh=null;
+  chibiSourceScene.traverse(o=>{
+    if(!skinnedMesh&&o.isSkinnedMesh)skinnedMesh=o;
+    if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false}
+  });
+  mixer=new THREE.AnimationMixer(chibiSourceScene);
+  clips=chibiAnimations;
+  skeletonHelper=new THREE.SkeletonHelper(chibiSourceScene);
+  skeletonHelper.name='ChibiRigPreviewOnly';
+  skeletonHelper.visible=$('showBones').checked;
+  skeletonHelper.material.depthTest=false;
+  skeletonHelper.material.transparent=true;
+  skeletonHelper.material.opacity=.88;
+  scene.add(skeletonHelper);
+
+  const bones=skinnedMesh?.skeleton?.bones||[];
+  $('boneList').innerHTML=bones.map(b=>'<span>'+b.name.replace(/^DEF-/,'')+'</span>').join('');
+  populateChibiClipButtons();
+  renderWardrobeParts();
+  applyChibiPreset(chibiCurrentPreset);
+  applyChibiMaterialMode($('chibiUnlit')?.checked!==false);
+  refreshChibiMetrics();
+  setCameraView(activeView,false);
+  const idle=chibiIdleClipName();
+  if(idle)playClip(idle);
+  return true;
+}
+
+async function loadChibiAsset(){
+  if(chibiAssetRoot)return mountLoadedChibi();
+  setChibiAssetStatus('Chibi all-in-one GLB를 찾는 중…');
+  setStatus('Chibi 실물 에셋을 불러오는 중…');
+  let GLTFLoader;
+  try{
+    ({GLTFLoader}=await import('../assets/vendor/three-r160/addons/loaders/GLTFLoader.js'));
+  }catch(error){
+    console.error(error);
+    setChibiAssetStatus('GLTFLoader를 불러오지 못했습니다.',true);
+    return false;
+  }
+  const loader=new GLTFLoader();
+  let gltf=null,lastError=null;
+  for(const candidate of CHIBI_ASSET_CANDIDATES){
+    try{
+      gltf=await loader.loadAsync(candidate+'?v=20261007-chibi12');
+      chibiLoadedUrl=candidate;
+      break;
+    }catch(error){
+      lastError=error;
+    }
+  }
+  if(!gltf){
+    console.warn('Chibi asset load failed',lastError);
+    setChibiAssetStatus('Chibi GLB를 찾지 못했습니다. /chibi/glb/allinonepr.glb 경로를 확인해 주세요.',true);
+    setStatus('Chibi 실물 에셋을 찾지 못해 V3 실험형으로 전환합니다.',true);
+    return false;
+  }
+
+  chibiSourceScene=gltf.scene;
+  chibiSourceScene.name='StylooChibiAllInOne';
+  chibiAnimations=gltf.animations||[];
+  chibiAssetRoot=new THREE.Group();
+  chibiAssetRoot.name='KidscadeChibiAvatar';
+  chibiAssetRoot.userData={
+    type:'kidscade-chibi-avatar',
+    source:'Styloo Chibi Characters v1.2',
+    sourceUrl:'https://styloo.itch.io/chibi',
+    license:'CC0-1.0',
+    loadedFrom:chibiLoadedUrl
+  };
+  normalizeChibiScene(chibiSourceScene,params.height);
+  chibiAssetRoot.add(chibiSourceScene);
+  CHIBI_TOGGLE_NODES.forEach(node=>setChibiNodeVisible(node,false));
+  CHIBI_BASE_NODES.forEach(node=>setChibiNodeVisible(node,true));
+  setChibiAssetStatus('로드 완료 · '+chibiAnimations.length+' animations · '+chibiLoadedUrl);
+  return mountLoadedChibi();
+}
+
+function setStudioModePanels(){
+  const asset=bodyStyle==='assetChibi';
+  $('assetWardrobe')?.classList.toggle('hidden',!asset);
+  $('proceduralPanel')?.classList.toggle('hidden',asset);
+}
+
+
 function createSimpleOrbitControls(camera,domElement){
   const target=new THREE.Vector3(0,.75,0);
   let dragging=false,lastX=0,lastY=0;
@@ -743,9 +1019,9 @@ function addHeadDetails(headBone,dim,materials){
 }
 
 function setCameraView(name,markButton=true){
-  if(!camera||!controls||!currentDim)return;
+  if(!camera||!controls)return;
   activeView=name;
-  const H=currentDim.H;
+  const H=currentDim?.H||params.height||1.22;
   controls.target.set(0,H*.50,0);
   if(name==='front')camera.position.set(0,H*.72,H*2.55);
   else if(name==='side')camera.position.set(H*2.55,H*.72,0);
@@ -775,7 +1051,7 @@ function buildCharacter(){
   }
   if(characterRoot){
     scene.remove(characterRoot);
-    disposeObject(characterRoot);
+    if(characterRoot!==chibiAssetRoot)disposeObject(characterRoot);
   }
 
   const H=params.height;
