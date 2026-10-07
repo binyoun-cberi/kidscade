@@ -20,6 +20,8 @@ const A={
  femaleC:'characters/people/character-female-c.glb'
 };
 const PERSON=[A.femaleA,A.maleA,A.femaleB,A.maleB,A.femaleC,A.maleC];
+function hashId(s){let h=2166136261;for(const ch of String(s||'')){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return Math.abs(h)}
+function personAsset(info){const female=info?.sprite==='female',arr=female?[A.femaleA,A.femaleB,A.femaleC]:[A.maleA,A.maleB,A.maleC];return arr[hashId(info?.personId||info?.id)%arr.length]}
 const loader=new GLTFLoader(),cache=new Map(),views=[];
 const url=p=>new URL(p,ROOT).href;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -262,7 +264,7 @@ class View{
     slot=Array.from({length:cap},(_,i)=>i).find(i=>!used.has(i));if(slot===undefined)slot=0;
     this.isoSlotAssignments[room].set(id,slot)
    }
-   return{key:'i'+d.id,...d,room,slot,threat:d.status==='zombie'}
+   return{key:'i'+(d.personId||d.id),...d,room,slot,threat:d.status==='zombie'}
   });
   if(this.isoSlotLights){
    for(const room of ['A','B']){
@@ -282,7 +284,7 @@ class View{
    let g=this.dynamic.children.find(x=>x.userData.key===info.key);
    if(!g){
     g=new THREE.Group();g.userData.key=info.key;g.add(fallbackActor(personColor(info)));g.add(ring(info.threat?0xe05b60:0x7cc996));this.dynamic.add(g);
-    const idx=(Number(info.id)||info.key.charCodeAt(info.key.length-1)||0)%PERSON.length;populateActor(g,PERSON[idx],personColor(info),mode==='camp'?1.88:1.72).then(()=>{if(g.parent){g.add(ring(info.threat?0xe05b60:0x7cc996));setInfo(g,info)}})
+    populateActor(g,personAsset(info),personColor(info),mode==='camp'?1.88:1.72).then(()=>{if(g.parent){g.add(ring(info.threat?0xe05b60:0x7cc996));setInfo(g,info)}})
    }
    setInfo(g,info);
    if(mode==='camp'){
@@ -335,6 +337,6 @@ function mount(){
  const campView=new View(cc,'camp'),isoView=new View(document.getElementById('q17Iso3D'),'isolation');
  setInterval(()=>{campView.update();isoView.update()},450);campView.update();isoView.update();
  let last=0;const loop=t=>{if(t-last>16){views.forEach(v=>v.render(t));last=t}requestAnimationFrame(loop)};requestAnimationFrame(loop);
- window.Q17Facility3D=Object.freeze({version:'20.3',camp:campView,isolation:isoView});return true
+ window.Q17Facility3D=Object.freeze({version:'20.4',camp:campView,isolation:isoView});return true
 }
 let tries=0;const timer=setInterval(()=>{if(mount()||++tries>80)clearInterval(timer)},50);
