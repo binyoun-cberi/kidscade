@@ -155,12 +155,12 @@ test('hoodie includes collar and garment seam details',()=>{
   assert.match(js,/kidscade_hoodie_blue_collar/);
   assert.match(js,/kidscade_hoodie_blue_seam_left/);
   assert.match(js,/kidscade_hoodie_blue_seam_right/);
-  assert.match(js,/kidscade_hoodie_blue_pocket_opening/);
-  assert.match(js,/kidscade_hoodie_blue_pocket_seam_left/);
-  assert.match(js,/kidscade_hoodie_blue_pocket_seam_right/);
+  assert.match(js,/kidscade_hoodie_blue_pocket_opening_L/);
+  assert.match(js,/kidscade_hoodie_blue_pocket_opening_R/);
+  assert.match(js,/kidscade_hoodie_blue_pocket_bottom_seam/);
   assert.match(js,/function makeBoundSeam/);
   assert.match(js,/function resolveFirstBoneName/);
-  assert.match(js,/if\(y>1\.06\)/);
+  assert.match(js,/if\(torsoVertex&&y>1\.075\)/);
 });
 
 
