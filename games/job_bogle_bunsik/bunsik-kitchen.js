@@ -392,6 +392,16 @@ class RamenKitchen3D{
   this.placeModel(KITCHEN,'wall-papertowel.glb',.66,-9.72,1.18,2.65,Math.PI/2);
   this.placeModel(KITCHEN,'utensils-cup.glb',.34,-7.85,.02,5.7,.2);
   this.placeModel(KITCHEN,'pan.glb',.46,-7.45,.02,5.7,-.4);
+
+  // 벽면 수납과 작은 조리 소품으로 실제 영업 주방의 밀도를 높인다.
+  this.placeModel(KITCHEN,'wall-cabinet-straight.glb',1.55,9.72,1.18,.45,-Math.PI/2);
+  this.placeModel(KITCHEN,'wall-cabinet-single.glb',1.05,9.72,1.2,2.25,-Math.PI/2);
+  this.placeModel(KITCHEN,'wall-shelf-kitchen.glb',1.35,-9.72,1.15,.25,Math.PI/2);
+  this.attachModel(staffTable,KITCHEN,'red-mug.glb',.18,[.38,.78,-.16],.25);
+  this.attachModel(staffTable,KITCHEN,'blue-mug.glb',.18,[-.38,.78,-.15],-.2);
+  this.attachModel(staffTable,KITCHEN,'spoon.glb',.23,[.32,.79,.25],.65);
+  this.attachModel(staffTable,KITCHEN,'spatula.glb',.25,[-.3,.79,.25],-.55);
+  this.attachModel(staffTable,KITCHEN,'oven-glove.glb',.24,[.03,.79,.34],.15);
  }
  makeDiningHall(){
   const defs=[
@@ -418,6 +428,12 @@ class RamenKitchen3D{
   this.placeModel(SUSHI,'can-fridge.glb',1.28,-8.72,.02,-8.55,Math.PI/2);
   this.placeModel(SUSHI,'bench.glb',1.65,-8.05,.02,-12.35,0);
   this.placeModel(SUSHI,'bottles.glb',.52,-8.68,1.25,-8.55,Math.PI/2);
+  this.placeModel(SUSHI,'wall-with-shelves.glb',1.8,9.76,.02,-6.9,-Math.PI/2);
+  this.placeModel(BAKERY_BITS,'menu.glb',1.05,8.75,.02,-12.65,-Math.PI/2);
+  this.placeModel(BAKERY,'cash-register.glb',.58,3.35,.93,-3.62,Math.PI);
+  this.placeModel(BAKERY,'pricing-card.glb',.24,2.72,.94,-3.58,Math.PI);
+  this.placeModel(BAKERY_BITS,'jar-a-large.glb',.3,4.02,.94,-3.58,.15);
+  this.placeModel(SUSHI,'bottle.glb',.28,-8.48,1.28,-8.55,.2);
 
   // 셀프 반납대: 퇴식 카트가 없을 때 손님이 직접 빈 그릇을 가져오는 곳.
   const returnBase=this.box(2.35,.72,.72,0x5a776e,-3.55,.36,-4.28,{roughness:.62});
@@ -631,12 +647,16 @@ class RamenKitchen3D{
   this.attachModel(sink,KITCHEN,'papertowel-holder.glb',.3,[.42,.85,.12],.15);
   this.attachModel(toppingFridge,ULTIMATE_FOOD,'egg.glb',.26,[-.28,1.52,.02],.2);
   this.attachModel(toppingFridge,KITCHEN,'cutting-board.glb',.38,[.25,1.5,.02],-.2);
+  this.attachModel(toppingFridge,KITCHEN,'kitchen-knife.glb',.28,[.44,1.51,.08],.55);
 
   // 오른쪽 벽 = 접시/조리대존. 중앙 통로는 비워 둔다.
   this.makeLayoutStation('rack','깨끗한 접시',BAKERY_BITS,'dishrack-plates.glb',1.28,8.15,-2.1,-Math.PI/2,.62);
-  this.makePrepCounter('prepCounterA','조리대 A',8.05,.15,-Math.PI/2,0);
-  this.makePrepCounter('prepCounterB','조리대 B',8.05,2.45,-Math.PI/2,1);
-  this.makePrepCounter('prepCounterC','조리대 C',8.05,4.75,-Math.PI/2,2);
+  const prepA=this.makePrepCounter('prepCounterA','조리대 A',8.05,.15,-Math.PI/2,0);
+  const prepB=this.makePrepCounter('prepCounterB','조리대 B',8.05,2.45,-Math.PI/2,1);
+  const prepC=this.makePrepCounter('prepCounterC','조리대 C',8.05,4.75,-Math.PI/2,2);
+  this.attachModel(prepA,KITCHEN,'container-kitchen-a.glb',.28,[.42,1.08,.12],.1);
+  this.attachModel(prepB,KITCHEN,'container-kitchen-b.glb',.28,[.42,1.08,.12],-.1);
+  this.attachModel(prepC,KITCHEN,'utensils-cup.glb',.27,[.42,1.08,.12],.2);
 
   // 자동화는 손님 쪽 '기계 레인'에만 기본 배치한다. 메인 보행 통로를 침범하지 않는다.
   this.makeAutomationStation('conveyorA','컨베이어 A','conveyor',-1.05,-2.45,2,0);
