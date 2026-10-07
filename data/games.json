@@ -3411,6 +3411,35 @@
       "qualityStatus": "featured",
       "classroom": true,
       "cover": "assets/gate-image/마이크로 에볼루션.png"
+    },
+    {
+      "id": "language_word_siege",
+      "addedAt": "2026-10-08T00:10:00+09:00",
+      "title": "워드 시즈",
+      "href": "games/language_word_siege/index.html?v=2",
+      "category": "lang",
+      "age": "low",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🔤",
+      "description": "주어진 알파벳으로 영어 단어를 만들면 단어 자체가 타워가 되는 워드 타워디펜스. MINER로 INK를 캐고 ARROW·LASER·BOMB 같은 공격 타워와 FIRE·ICE·FAST 같은 강화 단어를 배치해 8개 웨이브를 막아 보세요.",
+      "scoreKey": "kidscade_word_siege_best_v1",
+      "subject": "language",
+      "genre": "strategy",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo",
+        "classroom"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
     }
   ],
   "taxonomy": {
