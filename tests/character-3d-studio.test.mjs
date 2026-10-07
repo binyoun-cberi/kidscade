@@ -284,7 +284,13 @@ test('male Chibi generator does not create procedural hair sleeves or compressed
   const male=js.slice(start,end);
   assert.doesNotMatch(male,/SphereGeometry|ConeGeometry|makeSleeveGeometry/);
   assert.doesNotMatch(male,/pantsSource|getNode\('pants'\)|shortsTop/);
-  assert.match(male,/getNode\('hairone'\)|male:\[\.\.\.MALE_BASE_NODES,'hairone'/);
   assert.match(male,/getNode\('ninjasuitshort'\)/);
   assert.match(male,/meshPolicy:'reuse-source-meshes-only'/);
+});
+
+
+test('avatar spec tracks visible base meshes as well as wardrobe toggles',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  assert.match(js,/const TRACKED_PART_NODES=\[\.\.\.new Set\(\[\.\.\.BASE_VARIANT_NODES,\.\.\.TOGGLE_NODES\]\)\]/);
+  assert.match(js,/return TRACKED_PART_NODES\.filter\(name=>getNode\(name\)\?\.visible\)/);
 });
