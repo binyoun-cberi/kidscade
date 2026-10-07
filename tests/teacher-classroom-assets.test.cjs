@@ -86,6 +86,7 @@ test('illness slows focus recovery without changing focus maximum', async () => 
 test('daily illness is capped at two students and has a safe fallback', async () => {
   const ai = await import(pathToFileURL(aiPath).href + '?health-profiles=' + Date.now());
   const life = await import(pathToFileURL(lifePath).href + '?health-cap=' + Date.now());
+  assert.equal(life.HEALTH_RULES.sickChance, .10);
   const health = life.createDailyHealth(ai.STUDENT_PROFILES, () => 0);
   assert.equal(health.filter(h => h.state !== 'healthy').length, 2);
 
@@ -133,7 +134,9 @@ test('group activity drains social energy while focus continues', async () => {
   }
   assert.ok(student.focus < f0);
   assert.ok(student.social < s0);
-  assert.ok(life.GROUP_RULES.socialDrainMultiplier <= .4);
+  assert.equal(life.GROUP_RULES.socialDrainMultiplier, .12);
+  assert.equal(life.GROUP_RULES.conflictCheckEverySeconds, 12);
+  assert.equal(life.GROUP_RULES.tiredConflictChanceMultiplier, .2);
   assert.equal(life.GROUP_RULES.unresolvedConflictChance, 1);
 });
 
