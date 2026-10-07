@@ -125,7 +125,7 @@
       'sim_mosquito','low_word_blaster','hanja_survivors_8','high_rhythm_dash','snake_math','threes',
       'math_tower_defense','high_gugudan_stairs','joseon_janggu','trash_runner','word_snake',
       'patience_tower','jineung_bird','triangle_situation','math_rune_forest','spelling_frog',
-      'tod_emoji_pang','high_emergency_escape','tod_heaven_stairs'
+      'tod_emoji_pang','high_emergency_escape','tod_heaven_stairs','language_word_siege'
     ]),
     stage:Object.freeze([
       'high_code_quest','low_math_number_tower','high_classroom_war_3d','high_rule_lab','low_one_stroke',
