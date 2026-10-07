@@ -34,7 +34,7 @@ h1{font-size:clamp(26px,4vw,38px);margin:0;letter-spacing:-.05em}.tagline{color:
 @keyframes vanish{to{transform:scale(.45) rotate(7deg);opacity:0}}@keyframes hintGlow{to{filter:brightness(1.28)}}@keyframes blinkToast{50%{transform:translateY(-4px)}}
 .toast{min-height:28px;text-align:center;color:#cbd9e6;font-weight:800;padding:7px 12px;font-size:14px}
 .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:15px}.actions button{min-height:46px;border:1px solid #536985;background:#263c56;color:#fff;border-radius:13px;padding:10px 19px;font-weight:850}.actions button:hover{background:#314b68}.actions button:disabled{opacity:.45;cursor:not-allowed}
-.bottom-note{font-size:12px;color:#9bb0c5;margin:16px 2px;line-height:1.6}
+ .review-list{max-height:45vh;overflow-y:auto;text-align:left;display:grid;gap:7px;margin:14px 0}.review-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 13px;border-radius:10px;background:#314966}.review-row strong{font-family:serif;font-size:25px;color:#ffe3a7}.review-row span{font-size:14px;color:#e7f4fa;font-weight:800}.bottom-note{font-size:12px;color:#9bb0c5;margin:16px 2px;line-height:1.6}
 dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #c0a875;border-radius:22px;padding:29px;background:#20354f;color:white;box-shadow:0 25px 75px #0009;z-index:30;text-align:center}dialog::backdrop{background:#0b1529d9;backdrop-filter:blur(5px)}dialog h2{font-size:30px;margin:0 0 10px}dialog p{line-height:1.7;color:#d4e1ed}.result-score{font-size:41px;color:var(--gold);font-weight:950;margin:5px 0}.dialog-buttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.dialog-buttons button{min-height:44px}
 @media(max-width:600px){:root{--tile:62px}.app{padding:12px 8px 82px}header{margin:6px 5px 14px}h1{font-size:25px}.brand-icon{width:45px;height:45px;font-size:29px}.tagline{font-size:11px}.config{gap:8px;padding:11px;border-radius:15px}.config label{flex:1 1 85px}.config select{min-width:0;width:100%;font-size:13px}.config .primary{flex:1 1 100%;font-size:15px}.hud{gap:5px}.stat{padding:8px 3px;border-radius:10px}.stat span{font-size:10px}.stat strong{font-size:17px}.board-wrap{margin:calc(var(--tile)*.52)}.game{padding:3px;border-radius:14px}.actions{gap:6px}.actions button{flex:1 1 auto;padding:8px 11px;font-size:12px}.guide{font-size:12px;margin:10px 4px}.tile{border-radius:9px}.tile.reading .meaning,.tile.reading .reading-text{font-size:12px}}
 @media(prefers-reduced-motion:reduce){.tile,.stat{transition:none}.tile.clearing,.tile.hinted{animation:none}}
@@ -85,9 +85,11 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
     <button type="button" id="hintBtn">힌트 보기 (−20점)</button>
     <button type="button" id="shuffleBtn">패 섞기 (−50점)</button>
     <button type="button" id="pauseBtn">잠시 멈춤</button>
+    <button type="button" id="reviewBtn">오답 복습</button>
   </nav>
   <p class="bottom-note">뜻과 음 패는 연한 초록색, 한자는 아이보리색입니다. 틀린 한자는 이 기기의 복습 목록에 저장됩니다. 제한 시간 모드에서 시간이 끝나면 도전이 종료됩니다.</p>
 </div>
+<dialog id="reviewDialog" aria-labelledby="reviewTitle"><h2 id="reviewTitle">오답 복습</h2><p>선택한 급수에서 틀렸던 한자를 다시 확인해 보세요.</p><div id="reviewList" class="review-list"></div><div class="dialog-buttons"><button type="button" class="secondary" id="clearReviewBtn">복습 목록 비우기</button><button type="button" class="primary" id="closeReviewBtn">닫기</button></div></dialog>
 <dialog id="finishDialog" aria-labelledby="finishTitle">
   <h2 id="finishTitle">완성!</h2>
   <p id="finishMessage"></p>
@@ -280,6 +282,19 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
     }
     announce(title);
   }
+  function openReview(){
+    const grade=Number($('grade').value);
+    const items=storage.read('hanja_sichuan_review_'+grade,[]);
+    const list=$('reviewList');list.replaceChildren();
+    if(!items.length)list.textContent='아직 저장된 오답이 없어요.';
+    for(const item of items.slice(0,60)){
+      const row=document.createElement('div');row.className='review-row';
+      const glyph=document.createElement('strong');glyph.textContent=item.hanja;
+      const label=document.createElement('span');label.textContent=item.label;
+      row.append(glyph,label);list.appendChild(row);
+    }
+    if(!$('reviewDialog').open)$('reviewDialog').showModal();
+  }
   function newGame(){
     const grade=Number($('grade').value),difficulty=$('difficulty').value,mode=$('mode').value;
     const [cols,rows,seconds]=MODES[difficulty];
@@ -314,6 +329,9 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
   $('againBtn').addEventListener('click',newGame);
   $('closeBtn').addEventListener('click',()=>$('finishDialog').close());
   $('hintBtn').addEventListener('click',hint);
+  $('reviewBtn').addEventListener('click',openReview);
+  $('closeReviewBtn').addEventListener('click',()=>$('reviewDialog').close());
+  $('clearReviewBtn').addEventListener('click',()=>{storage.write('hanja_sichuan_review_'+Number($('grade').value),[]);openReview();});
   $('shuffleBtn').addEventListener('click',()=>{if(st.active&&!st.paused&&!st.locked)rearrange(false);});
   $('pauseBtn').addEventListener('click',togglePause);
   $('soundBtn').addEventListener('click',()=>{
