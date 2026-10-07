@@ -1078,7 +1078,8 @@ function taskPlan(){
   return labels.map((label,i)=>({label,done:i<doneCount,current:i===Math.min(doneCount,5)}))
  }
  const selectedIndex=state.selectedPot!=null?state.selectedPot:state.pots.findIndex(p=>orderForPot(p));
- const p=selectedIndex>=0?state.pots[selectedIndex]:state.pots[0],order=orderForPot(p)||state.orders.find(o=>potIndexForOrder(o.id)<0)||state.orders[0]||null,r=order&&recipeById(order.recipeId);
+ const p=selectedIndex>=0?state.pots[selectedIndex]:state.pots[0],boundOrder=orderForPot(p),compatible=boundOrder||compatibleOrderForPot(p),order=compatible||(!p||potEmpty(p)?state.orders.find(o=>potIndexForOrder(o.id)<0)||state.orders[0]||null:null),r=order&&recipeById(order.recipeId);
+ if(!order&&p&&!potEmpty(p))return[{label:'이 냄비의 손님이 떠났어요 · 냄비 비우기',done:false,current:true,urgent:true},{label:'새 주문을 냄비에 다시 배정하기',done:false,current:false}];
  if(!order)return[{label:'새 주문을 기다리는 중…',done:false,current:true}];
  if(p?.burnt)return[{label:'탄 냄비 비우기',done:false,current:true,urgent:true},{label:'새 냄비로 주문 다시 시작하기',done:false,current:false}];
  if(state.cleanPlates<=0&&state.dirtyPlates>0)return[{label:'싱크대에서 더러운 그릇 설거지하기',done:false,current:true,urgent:true},{label:r.name+' 조리 계속하기',done:false,current:false}];
@@ -1532,7 +1533,12 @@ function updateOrders(dt){
   advanceAutomation:false,
   context:{served:state.served}
  });
- if(expiredOrders.length){expiredOrders.forEach(o=>releaseOrderBinding(o.id));state.combo=0;sfx('failure.fail_sting',{volume:.16,cooldownMs:300});toast('기다리던 손님이 떠났어요 · 콤보가 끊겼어요',1500);renderOrders();updateHud()}
+ if(expiredOrders.length){
+  const affected=expiredOrders.map(o=>potIndexForOrder(o.id)).filter(i=>i>=0);
+  expiredOrders.forEach(o=>releaseOrderBinding(o.id));
+  affected.forEach(i=>ensurePotOrder(i));
+  state.combo=0;sfx('failure.fail_sting',{volume:.16,cooldownMs:300});toast('기다리던 손님이 떠났어요 · 콤보가 끊겼어요',1500);renderOrders();renderTaskPanel();updateHud()
+ }
 }
 function applyServeCombo(quality){
  if(quality>=76)state.combo+=1;else state.combo=0;
