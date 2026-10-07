@@ -785,7 +785,12 @@ function buildCharacter(){
   const materialSlots=[];
   const push=(g,slot)=>{geoms.push(g);materialSlots.push(slot)};
 
-  if(!dim.rounded){
+  if(dim.soft){
+    push(softTorsoGeometry(dim,boneIndex),1);
+    push(capsulePart(.048*H,.092*H,[0,dim.hipY-.020*H,0],boneIndex.Hips,2.55,1.50),2);
+    push(cylinderPart(.020*H,.026*H,[0,dim.neckY+.002*H,0],boneIndex.Neck),0);
+    push(spherePart([dim.headRX,dim.headRY,dim.headRZ],[0,dim.headCenterY,0],boneIndex.Head,20,14),0);
+  }else if(!dim.rounded){
     const torsoW=dim.shoulderX*1.62;
     push(boxPart([torsoW,.23*H,.13*H],[0,.695*H,0],boneIndex.Chest),1);
     push(boxPart([.225*H,.095*H,.13*H],[0,.49*H,0],boneIndex.Hips),2);
@@ -805,7 +810,17 @@ function buildCharacter(){
     const uArm=boneIndex['UpperArm_'+suffix],lArm=boneIndex['LowerArm_'+suffix],hand=boneIndex['Hand_'+suffix];
     const uLeg=boneIndex['UpperLeg_'+suffix],lLeg=boneIndex['LowerLeg_'+suffix],foot=boneIndex['Foot_'+suffix];
 
-    if(!dim.rounded){
+    if(dim.soft){
+      push(spherePart([dim.limb*.58,dim.limb*.58,dim.limb*.54],[sx,dim.shoulderY-.006*H,0],uArm,12,8),1);
+      push(capsulePart(dim.limb*.50,dim.upperArmLen*.74,[sx,dim.shoulderY-dim.upperArmLen*.33,0],uArm,1.02,.94),1);
+      push(softForearmGeometry(dim,sx,uArm,lArm),0);
+      push(spherePart([dim.handX,dim.handY,dim.handZ],[sx,dim.shoulderY-dim.upperArmLen-dim.lowerArmLen-.038*H,.010*H],hand,14,9),0);
+
+      push(capsulePart(dim.limb*.66,dim.upperLegLen*.50,[hipX,dim.hipY-dim.upperLegLen*.20,0],uLeg,1.06,1.0),2);
+      push(softLegGeometry(dim,hipX,uLeg,lLeg),0);
+      push(spherePart([dim.footX,dim.footY,dim.footZ],[hipX,dim.footY*.60,.050*H],foot,14,9),3);
+      push(boxPart([dim.footX*1.55,.018*H,dim.footZ*1.45],[hipX,.011*H,.050*H],foot),3);
+    }else if(!dim.rounded){
       push(boxPart([dim.limb,dim.upperArmLen*.96,dim.limb],[sx,dim.shoulderY-dim.upperArmLen*.48,0],uArm),1);
       push(boxPart([dim.limb*.88,dim.lowerArmLen*.95,dim.limb*.88],[sx,dim.shoulderY-dim.upperArmLen-dim.lowerArmLen*.475,0],lArm),0);
       push(spherePart([dim.handX,dim.handY,dim.handZ],[sx,dim.shoulderY-dim.upperArmLen-dim.lowerArmLen-.032*H,0],hand,8,5),0);
