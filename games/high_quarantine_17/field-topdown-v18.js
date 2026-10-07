@@ -130,10 +130,10 @@ function makeMap(){
  state.obstacles=[];
  addObstacle(0,0,W,18,'북쪽 울타리');addObstacle(0,H-18,W,18,'남쪽 울타리');
  addObstacle(0,0,18,H,'서쪽 울타리');addObstacle(W-18,0,18,H,'동쪽 울타리');
- addObstacle(65,55,185,122,'지휘소');addObstacle(292,52,210,132,'격리동');
- addObstacle(548,58,184,118,'보급창고');addObstacle(455,374,92,72,'의무막사 텐트');
+ addObstacle(65,55,185,122,'지휘소');addObstacle(242,88,48,36,'지휘소 장비 책상');addObstacle(292,52,210,132,'격리동');
+ addObstacle(548,58,184,118,'보급창고');addObstacle(575,166,105,70,'보급 천막·적재물');addObstacle(455,374,92,72,'의무막사 텐트');
  addObstacle(118,314,92,48,'텐트');addObstacle(230,378,100,48,'텐트');
- addObstacle(770,70,38,132,'금속 쉘터');addObstacle(815,334,72,44,'구급차');
+ addObstacle(770,95,38,82,'금속 쉘터');addObstacle(815,334,72,44,'구급차');
  addObstacle(835,402,88,54,'경찰차');addObstacle(718,454,92,58,'지원 밴');
  addObstacle(820,225,58,54,'폐기물 컨테이너');addObstacle(640,404,64,46,'바리케이드');
 }
@@ -146,7 +146,7 @@ function resetMission(mode,payload,done){
  state.turret={x:720,y:286,r:15,active:false,cooldown:0,range:190};
  state.crates=[
   {x:520,y:234,r:15,opened:false,loot:['ammo','scrap','scrap']},
-  {x:746,y:446,r:15,opened:false,loot:['med','ammo','scrap']},
+  {x:760,y:395,r:15,opened:false,loot:['med','ammo','scrap']},
   {x:350,y:288,r:15,opened:false,loot:['ammo','scrap']}
  ];
  if(mode==='camp'){
