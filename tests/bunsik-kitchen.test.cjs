@@ -14,8 +14,8 @@ const catalog = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.json')
 const game = catalog.games.find(g => g.id === 'job_bogle_bunsik');
 
 test('Bunsik Kitchen v30 keeps the 3D kitchen visually dominant', () => {
-  assert.match(html, /bunsik-kitchen\.css\?v=29/);
-  assert.match(html, /bunsik-kitchen\.js\?v=29/);
+  assert.match(html, /bunsik-kitchen\.css\?v=30/);
+  assert.match(html, /bunsik-kitchen\.js\?v=30/);
   assert.match(html, /class="customer-orders"/);
   assert.match(html, /class="pot-world-labels"/);
   assert.match(html, /class="context-panel"/);
@@ -154,14 +154,14 @@ test('catalog and compatibility entry publish v30', () => {
   assert.ok(game);
   assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=30');
   assert.equal(game.difficulty, 'easy');
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.css\?v=29/);
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=29/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.css\?v=30/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=30/);
   assert.match(rootEntry, /"three":"assets\/vendor\/three-r160\/three\.module\.js"/);
 });
 
-test('Bunsik Kitchen build script publishes v29', () => {
+test('Bunsik Kitchen build script publishes v30', () => {
   const build=fs.readFileSync(path.join(root,'scripts','bunsik-kitchen-build.cjs'),'utf8');
-  assert.match(build,/\?v=29/);
+  assert.match(build,/\?v=30/);
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.match(pkg.scripts.build,/bunsik-kitchen-build\.cjs/);
 });
@@ -538,7 +538,7 @@ test('Bunsik Kitchen v30 compatibility entry is synchronized with the live game'
   assert.match(rootEntry, /id="equipmentShop"/);
   assert.match(rootEntry, /id="smartFilterBtn"/);
   assert.match(rootEntry, /kidscade-storage\.js/);
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=29/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=30/);
 });
 
 test('Bunsik Kitchen v30 keeps two-tile movement lanes and a player follow camera', () => {
