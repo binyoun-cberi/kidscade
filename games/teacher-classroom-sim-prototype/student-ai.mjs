@@ -80,7 +80,7 @@ export function helpFocus(student){
 }
 
 export function resetSocialForRecess(student){
-  student.social=student.socialMax;
+  student.social=Math.min(student.socialMax,Math.max(0,student.social));
   student.cooldown=0;
 }
 
