@@ -374,6 +374,22 @@ function endGame(win){
   $('resultScore').textContent=Math.floor(state.score);$('resultUnique').textContent=state.unique.size;
   const longest=state.builtWords.slice().sort((a,b)=>b.length-a.length)[0]||'-';
   const hardest=state.builtWords.slice().sort((a,b)=>(D.words[b]?.difficulty||0)-(D.words[a]?.difficulty||0))[0]||'-';
+  const hardestDifficulty=hardest==='-'?0:(D.words[hardest]?.difficulty||0);
+  try{
+    if(window.KidscadeGame?.result) KidscadeGame.result({
+      scope:'run',
+      status:'completed',
+      outcome:win?'clear':'failed',
+      score:Math.floor(state.score),
+      scoreOptions:{unit:'points'},
+      wave:state.wave,
+      uniqueWords:state.unique.size,
+      longestWord:longest==='-'?'':longest,
+      hardestWord:hardest==='-'?'':hardest,
+      hardestDifficulty,
+      core:Math.max(0,Math.ceil(state.core))
+    });
+  }catch(e){}
   $('resultLongest').textContent=longest;$('resultHardest').textContent=hardest;resultOverlay.classList.remove('hidden');beep(win?900:130,.35,win?'triangle':'sawtooth',.06)
 }
 
