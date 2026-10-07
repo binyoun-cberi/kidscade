@@ -12,6 +12,8 @@ const RUNTIME_EXTENSIONS = new Set(['.html', '.htm', '.js', '.mjs']);
 const SKIP_DIRS = new Set(['.git', 'node_modules', 'docs', 'tests', 'scripts', '.github']);
 const KIDSCade_LITERAL_RE = /["'](kidscade_[A-Za-z0-9_.:-]+)["']/g;
 const LOCAL_STORAGE_LITERAL_RE = /localStorage\.(?:getItem|setItem|removeItem)\(\s*["']([^"']+)["']/g;
+// These are GLTF node/part identifiers, not persisted storage records.
+const NON_STORAGE_LITERAL_PREFIXES = ['kidscade_hoodie_', 'kidscade_male_'];
 
 function walk(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -54,6 +56,7 @@ function collect() {
   const registeredPrefixes = new Set(Object.values(storageApi.prefixes || {}));
   const unknownKidscadeKeys = [...kidscadeKeys.keys()]
     .filter(key => !storageApi.isRegisteredPhysicalKey(key))
+    .filter(key => !NON_STORAGE_LITERAL_PREFIXES.some(prefix => key.startsWith(prefix)))
     .sort();
   const registeredInUse = [...kidscadeKeys.keys()]
     .filter(key => storageApi.isRegisteredPhysicalKey(key))
