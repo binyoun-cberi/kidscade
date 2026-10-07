@@ -381,6 +381,7 @@ function drawBullets(){
  state.bullets.forEach(b=>{if(b.beam){ctx.strokeStyle='#e8d46b';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.tx,b.ty);ctx.stroke();return}ctx.fillStyle='#fff2a8';ctx.beginPath();ctx.arc(b.x,b.y,3,0,Math.PI*2);ctx.fill();});
 }
 function draw(){
+ if(window.Q17Field3D?.active){ctx.clearRect(0,0,W,H);return}
  ctx.save();const sx=state.shake?((Math.random()-.5)*state.shake):0,sy=state.shake?((Math.random()-.5)*state.shake):0;ctx.translate(sx,sy);
  drawMap();drawCrates();drawBullets();drawActors(performance.now());ctx.restore();
  if(state.flash>0){ctx.fillStyle='rgba(175,35,43,'+(state.flash*.45)+')';ctx.fillRect(0,0,W,H);}
@@ -429,6 +430,23 @@ if(fightBtn)fightBtn.addEventListener('click',e=>{
  e.preventDefault();e.stopImmediatePropagation();const iso=document.getElementById('q17Isolation');if(iso)iso.classList.remove('show');
  resetMission('isolation',{count},null);
 },true);
+
+window.Q17Field3DBridge=Object.freeze({
+ width:W,height:H,
+ snapshot:()=>({
+  active:state.active,started:state.started,mode:state.mode,
+  elapsed:state.elapsed,wave:state.wave,waveCount:state.waves.length,spawnQueue:state.spawnQueue,
+  shake:state.shake,flash:state.flash,
+  player:state.player?{x:state.player.x,y:state.player.y,hp:state.player.hp,maxHp:state.player.maxHp,ammo:state.player.ammo,reserve:state.player.reserve,reload:state.player.reload,scrap:state.player.scrap,ifr:state.player.ifr,facing:state.player.facing}:null,
+  zombies:state.zombies.map((z,i)=>({id:i,x:z.x,y:z.y,hp:z.hp,elite:!!z.elite,hit:z.hit||0,phase:z.phase||0})),
+  survivors:state.survivors.map((s,i)=>({id:i,x:s.x,y:s.y,hp:s.hp,alive:s.alive,rescued:s.rescued,escorted:!!s.escorted,sprite:s.sprite})),
+  bullets:state.bullets.map((b,i)=>({id:i,x:b.x,y:b.y,tx:b.tx,ty:b.ty,beam:!!b.beam,life:b.life})),
+  pickups:state.pickups.map((p,i)=>({id:i,x:p.x,y:p.y,type:p.type})),
+  crates:state.crates.map((q,i)=>({id:i,x:q.x,y:q.y,opened:q.opened})),
+  turret:state.turret?{x:state.turret.x,y:state.turret.y,active:state.turret.active,range:state.turret.range}:null,
+  medCharges:state.medCharges,rescued:state.rescued,losses:state.losses
+ })
+});
 
 window.Q17FieldMission=Object.freeze({
  isActive:()=>state.active,
