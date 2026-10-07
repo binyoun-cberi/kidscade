@@ -310,9 +310,13 @@ class RamenKitchen3D{
  }
  attachStationFloorTile(holder,id,label){
   if(!holder)return null;
-  const world=this.actionOffsetForWorld(holder.position.x,holder.position.z),a=-holder.rotation.y,c=Math.cos(a),si=Math.sin(a);
-  const localX=world.x*c-world.z*si,localZ=world.x*si+world.z*c;
-  const tile=this.makeFloorActionTile(this.floorLabelForStation(id,label));tile.position.set(localX,.027,localZ);holder.add(tile);holder.userData.actionTile=tile;return tile
+  const tile=this.makeFloorActionTile(this.floorLabelForStation(id,label));this.scene.add(tile);holder.userData.actionTile=tile;this.updateStationFloorTile(holder);return tile
+ }
+ updateStationFloorTile(holder){
+  const tile=holder?.userData?.actionTile;if(!tile)return;
+  const off=this.actionOffsetForWorld(holder.position.x,holder.position.z);
+  tile.position.set(holder.position.x+off.x,.027,holder.position.z+off.z);
+  tile.rotation.set(-Math.PI/2,0,0)
  }
  makeRoleFloorLabel(text,color='#f1c85c'){
   const c=document.createElement('canvas');c.width=384;c.height=128;const g=c.getContext('2d');
@@ -704,7 +708,7 @@ class RamenKitchen3D{
   this.nearestStation=nearest;
   this.layoutStations.forEach(s=>{
    const near=nearest?.group===s.group,tile=s.group.userData.actionTile;
-   s.group.userData.ring.material.opacity=0;
+   s.group.userData.ring.material.opacity=0;this.updateStationFloorTile(s.group);
    if(tile){tile.visible=s.group.visible;tile.material.opacity=near?.98:(state.phase==='prep'?.52:.68);tile.scale.setScalar(near?1.08:1)}
   });
   if(this.serviceGroup?.userData?.actionTile){const near=nearest?.group===this.serviceGroup,t=this.serviceGroup.userData.actionTile;t.material.opacity=near?.98:.68;t.scale.setScalar(near?1.08:1)}
