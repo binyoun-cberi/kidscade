@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=30';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=31';
 import {createDailyDirector} from './kidscade-world-daily.js?v=3';
 import {createDailyLife} from './kidscade-world-daily-life.js?v=3';
 import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=10';
@@ -11,7 +11,7 @@ import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=10';
 import {buildHomeInterior,HOME_INTERIOR_LEVELS,homeInteriorCameraProfile} from './kidscade-world-interior-kit.js?v=2';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
 import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,ROAD_X,ROAD_Z,zoneAt,isCityArea,isTravelCorridor,footprintTouchesRoad} from './kidscade-world-grid.js?v=6';
-import {buildWorldLandscape} from './kidscade-world-landscape.js?v=1';
+import {buildWorldLandscape} from './kidscade-world-landscape.js?v=2';
 
 const V2=window.KidscadeWorldV2||{};
 const Storage=V2.Storage;
@@ -122,6 +122,22 @@ const ASSET={
   logStack:P.nature+'log-stack.glb',
   campfire:P.survival+'campfire-pit.glb',
   signpost:P.survival+'signpost.glb',
+  // Community 3D pass. Farm buildings are kept in one family so the visual language stays coherent.
+  sharedWell:'../assets/quaternius_cc0-well-1471.glb',
+  sharedWaterTower:'../assets/quaternius_cc0-water-tower-1470.glb',
+  sharedTreeA:'../assets/quaternius_cc0-common-tree-849.glb',
+  sharedTreeB:'../assets/quaternius_cc0-common-tree-855.glb',
+  sharedPineA:'../assets/quaternius_cc0-pine-tree-1228.glb',
+  sharedPineB:'../assets/quaternius_cc0-pine-tree-1237.glb',
+  sharedMossyRockA:'../assets/quaternius_cc0-mossy-rock-1303.glb',
+  sharedMossyRockB:'../assets/quaternius_cc0-mossy-rock-1308.glb',
+  sharedGrass:'../assets/quaternius_cc0-grass-1070.glb',
+  sharedPlant:'../assets/quaternius_cc0-plant-1249.glb',
+  sharedWoodLog:'../assets/quaternius_cc0-wood-log-1520.glb',
+  ranchBarn:'../assets/quaternius_cc0-barn-666.glb',
+  ranchCoop:'../assets/quaternius_cc0-chicken-coop-819.glb',
+  ranchSilo:'../assets/quaternius_cc0-silo-house-1341.glb',
+  ranchWindmill:'../assets/quaternius_cc0-windmill-1504.glb',
   petDog:'../assets/game/characters/pets/animal-dog.glb',
   petCat:'../assets/game/characters/pets/animal-cat.glb',
   petBunny:'../assets/game/characters/pets/animal-bunny.glb',
@@ -1212,6 +1228,7 @@ if(mobileInteractBtn){
 
 const LAYOUT_VERSION=8;
 let homePondGroup=null,homePondInteraction=null,homeWellGroup=null,homeWellInteraction=null,homePumpGroup=null,homePumpInteraction=null;
+let homeWaterTowerObject=null,homeWaterTowerCollider=null;
 let homeCampfireObject=null,homeCampfireLight=null,homeCampfireInteraction=null,homeHouseObject=null,homeHouseBaseScale=null,homeHouseCollider=null;
 let carpenterBuildingObject=null,carpenterInteraction=null,carpenterFoundation=null,carpenterCollider=null;
 let starterBeddingGroup=null,starterBeddingInteraction=null;
@@ -1306,6 +1323,8 @@ function updateHomesteadVisuals(){
   if(homeWellInteraction)homeWellInteraction.enabled=d.waterLevel>=1;
   if(homePumpGroup)homePumpGroup.visible=d.waterLevel>=2;
   if(homePumpInteraction)homePumpInteraction.enabled=d.waterLevel>=2;
+  if(homeWaterTowerObject)homeWaterTowerObject.visible=d.waterLevel>=3;
+  if(homeWaterTowerCollider)homeWaterTowerCollider.enabled=d.waterLevel>=3;
   if(homeCampfireObject)homeCampfireObject.visible=!!h.campfireBuilt;
   if(homeCampfireLight)homeCampfireLight.visible=!!h.campfireBuilt;
   if(homeCampfireInteraction)homeCampfireInteraction.enabled=!!h.campfireBuilt;
@@ -1814,14 +1833,11 @@ async function buildOutdoor(onProgress=()=>{}){
     homeHouseBaseScale=homeHouseObject?.scale?.clone?.()||null;
     homeHouseCollider=collider('outdoor',h.x,h.z-5.5,5.8,4.4);
 
-    // A simple well and hand pump are built from primitives so their appearance can unlock instantly.
+    // Water progression now uses the shared 3D infrastructure set.
+    // The well/water tower are rotationally symmetric enough to avoid a false "back" facing the player;
+    // the hand pump keeps its spout pointed east, away from the house doorway and toward the water-work area.
     homeWellGroup=new THREE.Group();outdoor.add(homeWellGroup);
-    const wellBase=new THREE.Mesh(new THREE.CylinderGeometry(1.0,1.06,.70,24),new THREE.MeshStandardMaterial({color:0x8e8b7c,roughness:.92}));
-    wellBase.position.set(h.x+2.1,.35,h.z+5.3);wellBase.castShadow=true;homeWellGroup.add(wellBase);
-    const wellHole=new THREE.Mesh(new THREE.CylinderGeometry(.68,.68,.73,24),new THREE.MeshStandardMaterial({color:0x32495a,roughness:.65}));
-    wellHole.position.set(h.x+2.1,.41,h.z+5.3);homeWellGroup.add(wellHole);
-    const wellRoof=box(homeWellGroup,h.x+2.1,h.z+5.3,2.55,1.35,.16,0x7b513a,2.15);
-    for(const sx of [-.9,.9])box(homeWellGroup,h.x+2.1+sx,h.z+5.3,.14,.14,1.9,0x6d5135,.65);
+    await addModel(homeWellGroup,ASSET.sharedWell,{x:h.x+2.1,z:h.z+5.3,w:2.35,h:2.25,d:2.35,rot:0,name:'home-shared-well'});
 
     homePumpGroup=new THREE.Group();outdoor.add(homePumpGroup);
     const pumpX=h.x+4.65,pumpZ=h.z+4.25;
@@ -1829,6 +1845,9 @@ async function buildOutdoor(onProgress=()=>{}){
     const pipe=new THREE.Mesh(new THREE.CylinderGeometry(.10,.10,.72,12),new THREE.MeshStandardMaterial({color:0x788b88,metalness:.30,roughness:.55}));
     pipe.rotation.z=Math.PI/2;pipe.position.set(pumpX+.30,1.18,pumpZ);homePumpGroup.add(pipe);
     box(homePumpGroup,pumpX+.10,pumpZ,.92,.16,.12,0x657c79,1.52);
+
+    homeWaterTowerObject=await addModel(outdoor,ASSET.sharedWaterTower,{x:h.x+7.0,z:h.z-5.2,w:2.5,h:4.6,d:2.5,rot:0,name:'home-water-tower'});
+    homeWaterTowerCollider=collider('outdoor',h.x+7.0,h.z-5.2,1.75,1.75);
 
     homeCampfireObject=await addModel(outdoor,ASSET.campfire,{x:h.x+3.2,z:h.z+7.2,w:1.55,h:.72,d:1.55,rot:0,name:'home-campfire'});
     homeCampfireLight=new THREE.PointLight(0xff9b45,0,7,2);homeCampfireLight.position.set(h.x+3.2,1.25,h.z+7.2);homeCampfireLight.userData.campfire=true;outdoor.add(homeCampfireLight);
@@ -1949,7 +1968,7 @@ async function buildOutdoor(onProgress=()=>{}){
 
   // FOREST square (-46..-26 / -10..10)
   {
-    const c=point('forest'),treeAssets=[ASSET.tree,ASSET.oak,ASSET.pine];
+    const c=point('forest'),treeAssets=[ASSET.tree,ASSET.oak,ASSET.pine,ASSET.sharedTreeA,ASSET.sharedTreeB,ASSET.sharedPineA,ASSET.sharedPineB];
     const trees=[[-7,-7],[-3,-8],[4,-7],[-7,-3],[-3,-3],[5,-2],[-7,4],[-3,6],[5,5],[-6,8],[4,8]];
     for(let i=0;i<trees.length;i++){
       const [dx,dz]=trees[i],x=c.x+dx,z=c.z+dz;if(isPathClearance(x,z,2.5,2.5))continue;
@@ -1983,7 +2002,11 @@ async function buildOutdoor(onProgress=()=>{}){
     const fireLight=new THREE.PointLight(0xff9b45,0,9,2);fireLight.position.set(c.x-1.5,1.4,c.z);fireLight.userData.campfire=true;outdoor.add(fireLight);
     interact('outdoor',c.x-1.5,c.z,1.55,'야영지 모닥불 살펴보기',()=>toast('여기는 탐험 중 쉬어가는 공용 모닥불이에요. 요리는 집 앞에 직접 캠프파이어를 만들어서 해보세요.'));
     interact('outdoor',c.x+1.3,c.z,1.5,'야영지에서 쉬기',restAtCamp);
-    for(const [dx,dz] of [[-7,-7],[-5,6],[6,-7],[7,6]])await addModel(outdoor,ASSET.pine,{x:c.x+dx,z:c.z+dz,w:2.4,h:4.0,d:2.4,rot:.2});
+    const campTrees=[ASSET.pine,ASSET.sharedPineA,ASSET.sharedPineB,ASSET.sharedTreeA];
+    for(const [i,pos] of [[0,[-7,-7]],[1,[-5,6]],[2,[6,-7]],[3,[7,6]]]){
+      const [dx,dz]=pos;await addModel(outdoor,campTrees[i],{x:c.x+dx,z:c.z+dz,w:2.4,h:4.0,d:2.4,rot:.2+i*.41});
+    }
+    await addModel(outdoor,ASSET.sharedWoodLog,{x:c.x+5.8,z:c.z+4.2,w:1.8,h:.65,d:.8,rot:-.55,name:'camp-shared-log'});
     await addZoneSign('camp',7.2,0,'야영지 · 모닥불 · 휴식',Math.PI/2);
   }
 
@@ -2044,7 +2067,7 @@ function isNightTime(minutes){const h=((minutes%1440)+1440)%1440/60;return h<6||
 const petActors=[];
 const wildPetActors=[];
 const PET_SLOTS=[[-19.2,-7.0],[-17.8,-7.1],[-16.4,-7.0],[-19.0,-5.8],[-17.6,-5.8],[-16.2,-5.7],[-18.8,-4.6],[-17.4,-4.6],[-16.0,-4.5],[-20.1,-5.8]];
-const RANCH_SLOTS={bunny:[8.0,-24.8],pig:[10.0,-22.5],cow:[13.0,-26.0],chick:[16.0,-21.0]};
+const RANCH_SLOTS={bunny:[7.5,-23.5],pig:[10.5,-21.2],cow:[13.0,-25.0],chick:[16.2,-21.5]};
 const RANCH_PRODUCTS={cow:{key:'milk',name:'우유',qty:1,cooldown:1},chick:{key:'egg',name:'달걀',qty:2,cooldown:1},pig:{key:'truffle',name:'트러플',qty:1,cooldown:2}};
 const RANCH_ANIMALS=['bunny','pig','cow','chick'];
 let ranchProduceObject=null,ranchSignObject=null,ranchProduceInteraction=null;
@@ -2060,7 +2083,10 @@ function ownedPetHomeSlot(id){
 }
 function updateRanchExpansionVisuals(){
   const level=devState().ranchLevel;
-  for(const actor of ranchVisualActors)actor.group.visible=actor.level===level;
+  for(const actor of ranchVisualActors){
+    const active=actor.level===level;actor.group.visible=active;
+    for(const c of actor.colliders||[])c.enabled=active;
+  }
   if(ranchProduceObject)ranchProduceObject.visible=level>0;
   if(ranchSignObject)ranchSignObject.visible=level>0;
   if(ranchProduceInteraction)ranchProduceInteraction.enabled=level>0;
@@ -2075,10 +2101,10 @@ function updateRanchExpansionVisuals(){
 const PET_SCALE={dog:.82,cat:.78,bunny:.72,pig:.88,cow:1.0,chick:.56,fox:.78,deer:.92,parrot:.64,beaver:.76};
 const WILD_PETS={
   cat:{habitat:'pond',x:-16.0,z:5.6,roamX:.34,roamZ:.38},
-  bunny:{habitat:'ranch',x:8.0,z:-24.8,roamX:.42,roamZ:.36},
-  pig:{habitat:'ranch',x:10.0,z:-22.5,roamX:.40,roamZ:.34},
-  cow:{habitat:'ranch',x:13.0,z:-26.0,roamX:.36,roamZ:.32},
-  chick:{habitat:'ranch',x:16.0,z:-21.0,roamX:.44,roamZ:.38},
+  bunny:{habitat:'ranch',x:7.5,z:-23.5,roamX:.42,roamZ:.36},
+  pig:{habitat:'ranch',x:10.5,z:-21.2,roamX:.40,roamZ:.34},
+  cow:{habitat:'ranch',x:13.0,z:-25.0,roamX:.36,roamZ:.32},
+  chick:{habitat:'ranch',x:16.2,z:-21.5,roamX:.44,roamZ:.38},
   fox:{habitat:'deep-forest',x:-40.0,z:2.8,roamX:.55,roamZ:.44},
   deer:{habitat:'deep-forest',x:-32.0,z:6.2,roamX:.58,roamZ:.46},
   parrot:{habitat:'deep-forest',x:-39.0,z:-5.0,roamX:.40,roamZ:.34},
@@ -2200,23 +2226,47 @@ async function buildPets(){
   await addModel(outdoor,ASSET.signpost,{x:-19.8,z:-2.9,w:.7,h:1.45,d:.7,rot:.2,name:'pet-yard-sign'});
   interact('outdoor',-19.8,-2.9,1.35,'Cube Pets 보기',petPanel);
 
-  // Ranch grows physically: each level swaps to a larger paddock boundary.
+  // Ranch grows physically. The north strip is reserved for buildings, while the
+  // south half remains a clear animal paddock and keeps the bus/road approach open.
+  // Quaternius farm façades are treated as local -Z fronts, so PI turns doors toward
+  // +Z: the paddock and the player's southern approach. No barn door faces the cell edge.
+  const RANCH_FRONT_ROT=Math.PI;
   const ranchLayouts={
-    1:[[7.0,-27.5,0],[10.0,-27.5,0],[7.0,-20.5,0],[10.0,-20.5,0],[5.8,-25.2,Math.PI/2],[5.8,-22.8,Math.PI/2],[11.2,-25.2,Math.PI/2],[11.2,-22.8,Math.PI/2]],
-    2:[[5.5,-29.0,0],[9.0,-29.0,0],[12.5,-29.0,0],[5.5,-19.0,0],[9.0,-19.0,0],[12.5,-19.0,0],[4.2,-26.0,Math.PI/2],[4.2,-22.0,Math.PI/2],[13.8,-26.0,Math.PI/2],[13.8,-22.0,Math.PI/2]],
-    3:[[4.5,-30.5,0],[8.0,-30.5,0],[12.0,-30.5,0],[16.0,-30.5,0],[4.5,-17.5,0],[8.0,-17.5,0],[12.0,-17.5,0],[16.0,-17.5,0],[3.4,-27.0,Math.PI/2],[3.4,-21.0,Math.PI/2],[17.2,-27.0,Math.PI/2],[17.2,-21.0,Math.PI/2]],
-    4:[[4.2,-31.5,0],[7.5,-31.5,0],[11.0,-31.5,0],[14.5,-31.5,0],[18.0,-31.5,0],[4.2,-16.5,0],[7.5,-16.5,0],[11.0,-16.5,0],[14.5,-16.5,0],[18.0,-16.5,0],[3.2,-28.0,Math.PI/2],[3.2,-23.5,Math.PI/2],[3.2,-19.0,Math.PI/2],[19.2,-28.0,Math.PI/2],[19.2,-23.5,Math.PI/2],[19.2,-19.0,Math.PI/2]]
+    1:{
+      ground:[9.0,-22.9,6.4,7.8],
+      fences:[[7.3,-26.8,0],[10.7,-26.8,0],[7.3,-19.0,0],[10.7,-19.0,0],[5.8,-24.4,Math.PI/2],[5.8,-21.5,Math.PI/2],[12.2,-24.4,Math.PI/2],[12.2,-21.5,Math.PI/2]],
+      facilities:[['coop',ASSET.ranchCoop,9.0,-31.0,2.5,2.25,2.35,1.8,1.6]]
+    },
+    2:{
+      ground:[9.8,-22.8,10.4,9.6],
+      fences:[[6.0,-27.7,0],[9.5,-27.7,0],[13.0,-27.7,0],[6.0,-18.0,0],[9.5,-18.0,0],[13.0,-18.0,0],[4.3,-25.0,Math.PI/2],[4.3,-21.0,Math.PI/2],[15.2,-25.0,Math.PI/2],[15.2,-21.0,Math.PI/2]],
+      facilities:[['barn',ASSET.ranchBarn,7.0,-31.0,4.25,3.55,3.55,3.5,2.8],['coop',ASSET.ranchCoop,14.0,-31.0,2.4,2.2,2.3,1.8,1.6]]
+    },
+    3:{
+      ground:[10.4,-22.8,13.8,11.0],
+      fences:[[5.0,-28.3,0],[8.5,-28.3,0],[12.0,-28.3,0],[15.5,-28.3,0],[5.0,-17.3,0],[8.5,-17.3,0],[12.0,-17.3,0],[15.5,-17.3,0],[3.4,-25.6,Math.PI/2],[3.4,-21.8,Math.PI/2],[17.3,-25.6,Math.PI/2],[17.3,-21.8,Math.PI/2]],
+      facilities:[['barn',ASSET.ranchBarn,6.2,-31.0,4.1,3.5,3.5,3.4,2.8],['silo',ASSET.ranchSilo,12.0,-31.1,2.7,3.55,2.7,2.1,2.1],['coop',ASSET.ranchCoop,16.2,-31.0,2.35,2.2,2.25,1.8,1.6]]
+    },
+    4:{
+      ground:[11.2,-22.6,16.0,12.2],
+      fences:[[4.4,-28.7,0],[7.9,-28.7,0],[11.4,-28.7,0],[14.9,-28.7,0],[18.2,-28.7,0],[4.4,-16.4,0],[7.9,-16.4,0],[11.4,-16.4,0],[14.9,-16.4,0],[18.2,-16.4,0],[3.2,-26.0,Math.PI/2],[3.2,-22.3,Math.PI/2],[3.2,-18.6,Math.PI/2],[19.2,-26.0,Math.PI/2],[19.2,-22.3,Math.PI/2],[19.2,-18.6,Math.PI/2]],
+      facilities:[['barn',ASSET.ranchBarn,5.4,-31.0,4.0,3.45,3.45,3.3,2.75],['silo',ASSET.ranchSilo,10.4,-31.1,2.55,3.45,2.55,2.0,2.0],['coop',ASSET.ranchCoop,14.1,-31.0,2.25,2.1,2.2,1.7,1.55],['windmill',ASSET.ranchWindmill,18.0,-31.0,2.8,4.5,2.8,2.2,2.2]]
+    }
   };
-  for(const [level,parts] of Object.entries(ranchLayouts)){
-    const group=new THREE.Group();outdoor.add(group);
-    for(const [x,z,rot] of parts)await addFence(group,x,z,rot,{length:2.8,height:.82});
-    const ground=plane(group,11.2,-24,Math.min(16,5+Number(level)*3),Math.min(14,5+Number(level)*2.4),0x91a95f,-.055);
-    ranchVisualActors.push({level:Number(level),group});
+  for(const [levelKey,layout] of Object.entries(ranchLayouts)){
+    const level=Number(levelKey),group=new THREE.Group(),facilityColliders=[];group.visible=false;outdoor.add(group);
+    for(const [x,z,rot] of layout.fences)await addFence(group,x,z,rot,{length:2.8,height:.82});
+    plane(group,layout.ground[0],layout.ground[1],layout.ground[2],layout.ground[3],0x91a95f,-.055);
+    for(const [key,url,x,z,w,h,d,cw,cd] of layout.facilities){
+      const model=await addModel(group,url,{x,z,w,h,d,rot:RANCH_FRONT_ROT,name:'ranch-'+level+'-'+key});
+      if(model)facilityColliders.push(collider('outdoor',x,z,cw,cd));
+    }
+    ranchVisualActors.push({level,group,colliders:facilityColliders});
   }
-  ranchProduceObject=await addModel(outdoor,ASSET.chest,{x:18.5,z:-17.4,w:1.1,h:.82,d:.9,rot:.1,name:'ranch-produce-crate'});
-  ranchSignObject=await addModel(outdoor,ASSET.signpost,{x:15.8,z:-17.2,w:.7,h:1.45,d:.7,rot:.05,name:'ranch-sign'});
-  ranchProduceInteraction=interact('outdoor',18.0,-17.7,1.7,'목장 생산물 확인하기',ranchPanel);
-  interact('outdoor',15.8,-17.2,1.35,'🏗️ 목장 성장 보기',developmentPanel);
+  ranchProduceObject=await addModel(outdoor,ASSET.chest,{x:18.1,z:-18.2,w:1.1,h:.82,d:.9,rot:0,name:'ranch-produce-crate'});
+  ranchSignObject=await addModel(outdoor,ASSET.signpost,{x:15.7,z:-15.9,w:.7,h:1.45,d:.7,rot:0,name:'ranch-sign'});
+  ranchProduceInteraction=interact('outdoor',18.0,-18.2,1.7,'목장 생산물 확인하기',ranchPanel);
+  interact('outdoor',15.7,-15.9,1.35,'🏗️ 목장 성장 보기',developmentPanel);
   updateRanchExpansionVisuals();
   for(const id of state.owned)await ensureOwnedPetActor(id);
 
