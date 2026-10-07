@@ -17,7 +17,7 @@ test('격리구역 17 v21 uses the same 3D camp language for CCTV and field miss
   const entry=(catalog.games||catalog).find(g=>g.id==='high_quarantine_17');
 
   assert.match(html,/field-topdown-v18\.js\?v=4/);
-  assert.match(html,/facility-3d-v20\.js\?v=2/);
+  assert.match(html,/facility-3d-v20\.js\?v=3/);
   assert.match(html,/three-r160\/three\.module\.js/);
   assert.match(html,/3D 격리시설\/CAMP-17/);
   assert.equal(entry.href,'games/high_quarantine_17/격리구역 17.html?v=21');
@@ -47,7 +47,7 @@ test('격리구역 17 v21 uses the same 3D camp language for CCTV and field miss
   assert.match(field3d,/kidscade-avatar-studio-preview/);
   assert.match(field3d,/q17FieldStage3D/);
   assert.match(field3d,/q17-field-input-layer/);
-  assert.match(field3d,/version:'21\.0'/);
+  assert.match(field3d,/version:'21\.1'/);
   for(const asset of ['tent-detailed-open.glb','bed.glb','construction-fence.glb','ambulance.glb','gatelng-gun-turret.glb','character-male-a.glb']){
     assert.ok(facility.includes(asset),asset);
   }
@@ -64,7 +64,16 @@ test('격리구역 17 v21 uses the same 3D camp language for CCTV and field miss
   assert.match(facility,/isoSlotLights/);
   assert.match(facility,/campBeacon/);
   assert.match(facility,/mode==='camp'\?1\.88:1\.72/);
-  assert.match(facility,/version:'20\.1'/);
+  assert.match(facility,/version:'20\.2'/);
+  for(const landmark of ['지휘소','A/B 격리동','보급창고','의무막사','외곽 검문 게이트']){
+    assert.ok(facility.includes(landmark)&&field3d.includes(landmark),'same CAMP-17 landmarks: '+landmark);
+  }
+  assert.match(facility,/X\(270\)/);
+  assert.match(field3d,/sx\(270\)/);
+  assert.match(facility,/X\(720\)/);
+  assert.match(field3d,/sx\(720\)/);
+  assert.match(field3d,/function ensureCrate/);
+  assert.match(field3d,/if\(!s\.active\)\{last=t;requestAnimationFrame\(frame\);return\}/);
   assert.match(outbreak,/resolveIsolationField:function/);
   assert.match(outbreak,/현장 소탕 완료/);
 
