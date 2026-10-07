@@ -122,3 +122,44 @@ test('homestead assets are cache-busted together',()=>{
   assert.match(index,/cube-architect\.js\?v=20261007-homestead2/);
   assert.match(css,/\.life-sign-text\{/);
 });
+
+
+test('partial taming progress survives reloads and resumes on the next wild animal of that species',()=>{
+  assert.match(main,/let seatedFurniture=null,tamedCreatures=\{\},tamingProgress=\{\},petSerial=0/);
+  assert.match(main,/tamingProgress\[spec\.id\]=u\.tameProgress/);
+  assert.match(main,/tamingProgress:\{\.\.\.tamingProgress\}/);
+  assert.match(main,/data\.tamingProgress&&typeof data\.tamingProgress==='object'/);
+  assert.match(main,/if\(TAME_RULES\[id\]\)u\.tameProgress=/);
+  assert.match(main,/delete tamingProgress\[spec\.id\]/);
+});
+
+test('tamed sheep and chickens use per-animal production cooldowns',()=>{
+  assert.match(main,/function creatureForageKey\(root\)/);
+  assert.match(main,/u\?\.petId\?'pet:'\+u\.petId/);
+  assert.match(main,/creatureForageAt\[forageKey\]/);
+  assert.doesNotMatch(main,/creatureForageAt\[spec\.id\]=survivalWorldTime\+Math\.max\(20,Number\(forage\.cooldown\)\|\|60\)/);
+});
+
+test('pet panels pause the world and distant waiting pets stop running full AI',()=>{
+  assert.match(main,/wild animal cannot walk away while a child is feeding or naming it/);
+  assert.match(main,/if\(inventoryOpen\|\|furnaceOpen\|\|worksOpen\|\|lifePanelOpen\)/);
+  assert.match(main,/pet\?\.mode==='stay'&&dist>WORLD_VIEW_RADIUS\+6\)\{root\.visible=false;continue\}/);
+});
+
+test('following pets catch up behind the player instead of appearing beside them',()=>{
+  assert.match(main,/function petCatchupPosition\(root\)/);
+  assert.match(main,/camera\.position\.x\+Math\.sin\(yaw\)\*distance\+Math\.cos\(yaw\)\*side/);
+  assert.match(main,/camera\.position\.z\+Math\.cos\(yaw\)\*distance-Math\.sin\(yaw\)\*side/);
+  assert.match(main,/const catchup=petCatchupPosition\(root\)/);
+  assert.doesNotMatch(main,/camera\.position\.x\+Math\.cos\(yaw\)\*1\.3/);
+});
+
+test('chairs lower first-person eye height without sinking the third-person avatar',()=>{
+  assert.match(main,/const avatarEyeY=seatedFurniture\?freePhysicsY:camera\.position\.y/);
+  assert.match(main,/const targetEye=freePhysicsY-\(seatedFurniture\?\.5:0\)/);
+  assert.match(main,/if\(Math\.abs\(targetEye-camera\.position\.y\)<\.008\)camera\.position\.y=targetEye/);
+});
+
+test('homestead behavior refreshes the published runtime',()=>{
+  assert.match(index,/cube-architect\.js\?v=20261007-homestead3/);
+});
