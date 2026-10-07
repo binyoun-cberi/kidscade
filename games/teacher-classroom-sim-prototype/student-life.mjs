@@ -121,7 +121,7 @@ export function nextHealthAction(health,environment,currentPeriod){
     return {type:'dismiss',label:'보호자 연락 · 조퇴',icon:'🏠'};
   }
   if(environment?.nurseAvailable){
-    return {type:'nurse',label:'보건실 보내기',icon:'🏥',awayUntilPeriod:Math.min(6,(currentPeriod||1)+1)};
+    return {type:'nurse',label:'보건실 보내기',icon:'🏥',awayUntilPeriod:(currentPeriod||1)+1};
   }
   if(health.parentAvailable){
     return {type:'dismiss',label:'보호자 연락 · 조퇴',icon:'🏠'};
