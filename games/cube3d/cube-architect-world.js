@@ -110,7 +110,17 @@ const RECIPES=[
  {id:'chair',name:'나무 의자',needs:{planks:2,sticks:2},gives:{chair:1},stage:2,bench:true},
  {id:'desk',name:'나무 책상',needs:{planks:4,sticks:2},gives:{desk:1},stage:2,bench:true},
  {id:'bookshelf',name:'탐험 책장',needs:{planks:6,sticks:2},gives:{bookshelf:1},stage:2,bench:true},
- {id:'sign',name:'나무 표지판 ×2',needs:{planks:2,sticks:1},gives:{sign:2},stage:2,bench:true}
+ {id:'sign',name:'나무 표지판 ×2',needs:{planks:2,sticks:1},gives:{sign:2},stage:2,bench:true},
+ {id:'sofa',name:'거실 소파',needs:{planks:4,wool:3},gives:{sofa:1},stage:3,bench:true},
+ {id:'bench',name:'정원 벤치',needs:{planks:4,sticks:2},gives:{bench:1},stage:2,bench:true},
+ {id:'coffeeTable',name:'작은 탁자',needs:{planks:3,sticks:2},gives:{coffeeTable:1},stage:2,bench:true},
+ {id:'floorLamp',name:'스탠드 조명',needs:{ironBlock:1,glass:1,charcoal:1},gives:{floorLamp:1},stage:7,bench:true},
+ {id:'rug',name:'원형 러그',needs:{wool:3},gives:{rug:1},stage:2,bench:true},
+ {id:'crate',name:'튼튼한 화물 상자',needs:{planks:5,sticks:2},gives:{crate:1},stage:2,bench:true},
+ {id:'campfire',name:'모닥불 시설',needs:{stone:3,log:2},gives:{campfire:1},stage:3,bench:true},
+ {id:'fence',name:'울타리 ×2',needs:{planks:3,sticks:2},gives:{fence:2},stage:2,bench:true},
+ {id:'tent',name:'야영 천막',needs:{wool:4,sticks:4},gives:{tent:1},stage:3,bench:true},
+ {id:'bedroll',name:'야영 침낭',needs:{wool:2},gives:{bedroll:1},stage:2,bench:true}
 ];
 const GOALS=[
  {id:'wood',kind:'training',title:'첫날 · 원목 3개 채집',description:'나무를 바라보고 파괴를 길게 눌러 원목을 3개 모으세요.',need:3,progress:s=>s.harvestedWood||0},
