@@ -6,7 +6,7 @@ const path=require('node:path');
 const ROOT=path.resolve(__dirname,'..');
 const gameDir=path.join(ROOT,'games','high_quarantine_17');
 
-test('격리구역 17 v22 keeps checkpoint, isolation, CAMP and field missions in one 3D flow',()=>{
+test('격리구역 17 v23 keeps one 3D flow and preserves outbreak pressure across eight weeks',()=>{
   const html=fs.readFileSync(path.join(gameDir,'격리구역 17.html'),'utf8');
   const outbreak=fs.readFileSync(path.join(gameDir,'outbreak-v3.js'),'utf8');
   const field=fs.readFileSync(path.join(gameDir,'field-topdown-v18.js'),'utf8');
@@ -18,13 +18,13 @@ test('격리구역 17 v22 keeps checkpoint, isolation, CAMP and field missions i
   const catalog=JSON.parse(fs.readFileSync(path.join(ROOT,'data','games.json'),'utf8'));
   const entry=(catalog.games||catalog).find(g=>g.id==='high_quarantine_17');
 
-  assert.match(html,/surveillance-v11\.js\?v=9/);
-  assert.match(html,/field-topdown-v18\.js\?v=7/);
-  assert.match(html,/facility-3d-v20\.js\?v=5/);
+  assert.match(html,/surveillance-v11\.js\?v=10/);
+  assert.match(html,/field-topdown-v18\.js\?v=8/);
+  assert.match(html,/facility-3d-v20\.js\?v=6/);
   assert.match(html,/field-3d-v21\.js\?v=4/);
   assert.match(html,/three-r160\/three\.module\.js/);
   assert.match(html,/3D 격리시설\/CAMP-17/);
-  assert.equal(entry.href,'games/high_quarantine_17/격리구역 17.html?v=22');
+  assert.equal(entry.href,'games/high_quarantine_17/격리구역 17.html?v=23');
 
   assert.match(field,/api\.respondCamp=function/);
   assert.match(field,/api\.respondGlobal=function/);
@@ -56,7 +56,9 @@ test('격리구역 17 v22 keeps checkpoint, isolation, CAMP and field missions i
   assert.match(surveillance,/function campBlockedAt/);
   assert.match(surveillance,/function campWaypoint/);
   assert.match(surveillance,/const step=3,minX=4,maxX=96/);
-  assert.match(surveillance,/residents:liveResidents\.map/);
+  assert.match(surveillance,/function fieldResidentSelection/);
+  assert.match(surveillance,/survivorCount:fieldResidents\.length/);
+  assert.match(surveillance,/residents:fieldResidents\.map/);
   assert.match(surveillance,/threats:active\.map/);
   assert.match(surveillance,/applyCombatLosses\(result\.losses\|\|0,result\.lostIds\)/);
   for(const asset of ['tent-detailed-open.glb','construction-fence.glb','ambulance.glb','gatelng-gun-turret.glb','character-female-a.glb']){
@@ -84,6 +86,18 @@ test('격리구역 17 v22 keeps checkpoint, isolation, CAMP and field missions i
   for(const tool of ['id','doc','temp','uv','blood','resp','bag'])assert.ok(main3d.includes("tool==='"+tool+"'")||main3d.includes("tool==='"+tool+"'"),'3D tool feedback '+tool);
   assert.match(game,/처리 현황/);
   assert.match(game,/setTimeout\(nextCase,1050\)/);
+  assert.match(game,/정유리'[\s\S]*infected:true/);
+  assert.match(game,/김로아'[\s\S]*infected:true/);
+  assert.match(game,/김현우'[\s\S]*infected:true/);
+  assert.doesNotMatch(game,/pp\.infected&&action==='quarantine'\)state\.infection=clamp\(state\.infection-1/);
+  assert.match(outbreak,/확진 소각 완료[\s\S]*시설 내 감염원 제거/);
+  assert.doesNotMatch(outbreak,/burnDetainee[\s\S]{0,900}infectionDelta:-1/);
+  assert.match(field,/mode==='camp'[\s\S]*infectionDelta:-1/);
+  assert.match(surveillance,/\.slice\(0,12\)/);
+  assert.match(surveillance,/Math\.hypot\(\(Number\(r\.x\)/);
+  assert.match(facility,/\.slice\(0,20\)/);
+  assert.match(facility,/q17Camp3DPopulation/);
+  assert.match(facility,/3D 표시/);
   assert.match(outbreak,/admitResident/);
   assert.match(surveillance,/function admitResident/);
   assert.match(surveillance,/CAMP-17 입소/);
@@ -114,7 +128,7 @@ test('격리구역 17 v22 keeps checkpoint, isolation, CAMP and field missions i
   assert.match(facility,/\.3,tz=\(Number\(info\.y\)-50\)\*\.16875/);
   assert.match(facility,/campBeacon/);
   assert.match(facility,/mode==='camp'\?1\.88:1\.72/);
-  assert.match(facility,/version:'20\.4'/);
+  assert.match(facility,/version:'20\.5'/);
   for(const landmark of ['지휘소','A/B 격리동','보급창고','의무막사','외곽 검문 게이트']){
     assert.ok(facility.includes(landmark)&&field3d.includes(landmark),'same CAMP-17 landmarks: '+landmark);
   }
