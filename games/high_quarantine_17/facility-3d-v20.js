@@ -5,11 +5,25 @@ const ROOT=new URL('../../assets/game/',import.meta.url);
 const A={
  tent:'3d/nature/kenney-nature-kit/tent-detailed-open.glb',
  tentSmall:'3d/nature/kenney-nature-kit/tent-small-open.glb',
- bed:'3d/nature/kenney-nature-kit/bed.glb',
+ bed:'3d/interiors/kenney-furniture-kit/bed-single.glb',
+ bunk:'3d/interiors/kenney-furniture-kit/bed-bunk.glb',
+ desk:'3d/interiors/kenney-furniture-kit/desk.glb',
+ radio:'3d/interiors/kenney-furniture-kit/radio.glb',
+ laptop:'3d/interiors/kenney-furniture-kit/laptop.glb',
+ trashcan:'3d/interiors/kenney-furniture-kit/trashcan.glb',
+ sideTable:'3d/interiors/kenney-furniture-kit/side-table.glb',
+ structureMetal:'3d/survival/kenney-survival-kit/structure-metal.glb',
+ structureCanvas:'3d/survival/kenney-survival-kit/structure-canvas.glb',
+ fortifiedFence:'3d/survival/kenney-survival-kit/fence-fortified.glb',
+ boxLarge:'3d/survival/kenney-survival-kit/box-large.glb',
+ barrel:'3d/survival/kenney-survival-kit/barrel.glb',
  fence:'3d/city/kenney-city-kit-roads/construction-fence.glb',
  light:'3d/city/kenney-city-kit-roads/construction-light.glb',
  barrier:'3d/city/kenney-city-kit-roads/construction-barrier.glb',
  ambulance:'3d/vehicles/kenney-car-kit/ambulance.glb',
+ police:'3d/vehicles/kenney-car-kit/police.glb',
+ van:'3d/vehicles/kenney-car-kit/van.glb',
+ dumpster:'3d/city/kenney-city-kit-roads/dumpster.glb',
  turret:'3d/weapons/scifi-turrets/gatelng-gun-turret.glb',
  crate:'3d/city/poly-pizza-city-pack/box.glb',
  maleA:'characters/people/character-male-a.glb',
@@ -140,6 +154,13 @@ class View{
   building(65,55,185,122,2.15,0x4d656a,0x78898a,'지휘소','#d9eceb');
   building(292,52,210,132,2.3,0x555e63,0x7a8588,'A/B 격리동','#d1e4e9');
   building(548,58,184,118,2.15,0x6b604d,0x918269,'보급창고','#efd697');
+  // 실제 장비를 앞마당에 배치해 단순 박스 건물의 느낌을 줄인다.
+  this.addAsset(A.desk,[X(260),0,Z(102)],1.35,0x657276,.18,Math.PI/2);
+  this.addAsset(A.radio,[X(260),.82,Z(102)],.34,0x536166,.18,Math.PI/2);
+  this.addAsset(A.laptop,[X(260),.82,Z(122)],.40,0x5f6d70,.16,Math.PI/2);
+  this.addAsset(A.structureCanvas,[X(615),0,Z(193)],2.4,0x6d6756,.20,0);
+  this.addAsset(A.boxLarge,[X(590),0,Z(208)],.82,0x82664c,.24,.12);
+  this.addAsset(A.barrel,[X(660),0,Z(206)],.72,0x596762,.20,0);
 
   // Isolation block has the same visible containment seam as the field renderer.
   box(this.root,X(397),.1,Z(118),.18,2.05,DD(116),0x899398);
@@ -155,8 +176,11 @@ class View{
   for(const p of [[138,376],[184,390],[255,444],[305,455]])this.addAsset(A.crate,[X(p[0]),0,Z(p[1])],.58,0x9d7448,.42,0);
 
   // The eastern service lane carries the same container, ambulance, barricade and gate seen during deployment.
-  box(this.root,X(789),0,Z(136),WW(38),2.15,DD(132),0x4d5457);
+  this.addAsset(A.structureMetal,[X(789),0,Z(136)],2.45,0x596467,.22,Math.PI/2);
   this.addAsset(A.ambulance,[X(850),0,Z(356)],2.45,0xe3e7e2,.24,Math.PI/2);
+  this.addAsset(A.police,[X(870),0,Z(430)],2.25,0xc8d2d5,.12,Math.PI);
+  this.addAsset(A.van,[X(760),0,Z(480)],2.20,0x69787b,.16,0);
+  this.addAsset(A.dumpster,[X(845),0,Z(250)],1.15,0x5d6b66,.18,Math.PI/2);
   this.addAsset(A.barrier,[X(672),0,Z(427)],1.3,0xc3953f,.48,0);
   this.addAsset(A.turret,[X(720),0,Z(286)],1.5,0x6f7976,.38,-Math.PI/2);
 
@@ -168,6 +192,7 @@ class View{
   // Perimeter and gate: enough real fence assets to make the camp visibly enclosed.
   for(const [x,y,r] of [[92,26,0],[245,26,0],[600,26,0],[760,26,0],[925,74,Math.PI/2],[925,120,Math.PI/2],[925,385,Math.PI/2],[925,455,Math.PI/2],[70,510,0],[225,510,0],[650,510,0],[805,510,0],[28,100,Math.PI/2],[28,245,Math.PI/2],[28,420,Math.PI/2]])
    this.addAsset(A.fence,[X(x),0,Z(y)],1.25,0x77837d,.32,r);
+  for(const [x,y,r] of [[365,26,0],[480,26,0],[925,245,Math.PI/2]])this.addAsset(A.fortifiedFence,[X(x),0,Z(y)],1.55,0x6c7772,.18,r);
   box(this.root,X(900),0,Z(155),.22,2.4,.22,0x7b6868);box(this.root,X(900),0,Z(345),.22,2.4,.22,0x7b6868);
   const gl=label('외곽 검문 게이트','#ffaaa9');gl.scale.set(2.15,.42,1);gl.position.set(X(850),2.75,Z(150));this.root.add(gl);
   for(const p of [[65,205],[738,205],[770,360],[890,360]])this.addAsset(A.light,[X(p[0]),0,Z(p[1])],1.85,0xe5bd55,.28,0);
@@ -207,14 +232,14 @@ class View{
 
   // Observation bays: beds, half-height dividers, small equipment blocks and one status lamp per patient.
   slotsA.forEach((p,i)=>{
-   this.addAsset(A.bed,[p[0],0,p[1]-.85],1.78,0xa9c7ce,.34,Math.PI/2);
+   this.addAsset(A.bed,[p[0],0,p[1]-.85],1.78,0xa9c7ce,.22,Math.PI/2);
    box(this.root,p[0]-1.15,0,p[1],.10,1.05,2.35,0x78868d);
    glass(this.root,p[0]+1.0,0,p[1],.08,1.15,2.1,0xaed4df,.16);
    box(this.root,p[0]+.95,0,p[1]-.95,.58,.82,.44,0x657a82);
    const lamp=indicator(this.root,p[0]+.95,1.06,p[1]-.95,0x6e9eac);this.isoSlotLights.A.push(lamp)
   });
   slotsB.forEach((p,i)=>{
-   this.addAsset(A.bed,[p[0],0,p[1]-.75],1.82,0xc99898,.44,Math.PI/2);
+   this.addAsset(A.bed,[p[0],0,p[1]-.75],1.82,0xc99898,.30,Math.PI/2);
    box(this.root,p[0]-1.35,0,p[1],.14,1.45,2.85,0x7a5e62);
    glass(this.root,p[0]+1.25,0,p[1],.10,1.65,2.6,0xd19a9d,.18);
    box(this.root,p[0]+1.1,0,p[1]-1.05,.64,.92,.48,0x785b60);
@@ -227,6 +252,12 @@ class View{
   this.addAsset(A.barrier,[-1.05,0,4.1],1.22,0xd1ad49,.42,Math.PI/2);this.addAsset(A.barrier,[1.05,0,4.1],1.22,0xd1ad49,.42,Math.PI/2);
   for(const p of [[-8.7,4.15],[-7.7,4.15],[-6.7,4.15]])this.addAsset(A.crate,[p[0],0,p[1]],.52,0x7393a0,.38,0);
   for(const p of [[6.8,4.15],[7.8,4.15],[8.8,4.15]])this.addAsset(A.crate,[p[0],0,p[1]],.52,0x9b6267,.46,0);
+  this.addAsset(A.sideTable,[-1.9,0,3.55],.82,0x67777c,.18,Math.PI/2);
+  this.addAsset(A.radio,[-1.9,.62,3.55],.31,0x53666d,.18,Math.PI/2);
+  this.addAsset(A.sideTable,[2.0,0,3.55],.82,0x725e62,.18,-Math.PI/2);
+  this.addAsset(A.laptop,[2.0,.62,3.55],.38,0x6d6669,.14,-Math.PI/2);
+  this.addAsset(A.trashcan,[-9.05,0,3.75],.55,0x617176,.18,0);
+  this.addAsset(A.trashcan,[9.05,0,3.75],.55,0x756064,.18,0);
 
   this.isoEmergencyA=indicator(this.root,-.55,2.65,-3.65,0x79c6e1);this.isoEmergencyA.material.emissiveIntensity=.45;
   this.isoEmergencyB=indicator(this.root,.55,2.65,-3.65,0xd7585e);this.isoEmergencyB.material.emissiveIntensity=.45;
