@@ -1802,7 +1802,7 @@ function orderTicketRows(r){
 function renderOrders(){
  els.orders.innerHTML='';
  state.orders.filter(o=>o.seated).forEach(o=>{
-  const r=recipeById(o.recipeId),d=document.createElement('button');d.type='button',potIndex=potIndexForOrder(o.id);
+  const r=recipeById(o.recipeId),d=document.createElement('button'),potIndex=potIndexForOrder(o.id);d.type='button';
   const matching=(state.heldItem?.kind==='meal'&&((state.heldItem.orderId!=null&&state.heldItem.orderId===o.id)||(state.heldItem.orderId==null&&state.heldItem.recipeId===o.recipeId)))||(state.tray?.ready&&((state.tray.orderId!=null&&state.tray.orderId===o.id)||(state.tray.orderId==null&&state.tray.recipeId===o.recipeId)));
   const wait=orderWaitState(o.patience),fresh=!seenOrderTickets.has(o.id);seenOrderTickets.add(o.id);
   d.className='order-ticket '+wait.key+(potIndex>=0?' bound':'')+(matching?' waiting':'')+(fresh?' printing':'')+(state.tutorial.active&&state.tutorial.step===6&&o.recipeId==='egg'?' target':'');
