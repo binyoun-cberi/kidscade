@@ -9,6 +9,7 @@ const KITCHEN=new URL('../../assets/game/3d/interiors/charming-kitchen-set/',imp
 const SUSHI=new URL('../../assets/game/3d/interiors/modular-sushi-restaurant-kit/',import.meta.url).href;
 const BAKERY=new URL('../../assets/game/3d/bakery/interior/',import.meta.url).href;
 const BAKERY_BITS=new URL('../../assets/game/3d/bakery/restaurant-bits/',import.meta.url).href;
+const MARKET=new URL('../../assets/game/shops/market/',import.meta.url).href;
 const AVATAR_SHEET=new URL('../../assets/game/characters/kidscade-avatar-v3/school-starter/school-starter-sheet.png',import.meta.url).href;
 
 const SHIFT_SECONDS=150;
@@ -173,7 +174,7 @@ class RamenKitchen3D{
   this.potVisuals=[];
   this.customerHolders=[];
   this.customerXs=[-3.3,-1.1,1.1,3.3,0];
-  this.hallSeats=[];this.hallTableGroups=[];this.customerStates=[];this.hallEntrance=new THREE.Vector3(0,0,-12.95);this.hallDoor=null;this.hallDoorOpenUntil=0;this.hallSign=null;this.hallFamousSign=null;
+  this.hallSeats=[];this.hallTableGroups=[];this.customerStates=[];this.dishCartModel=null;this.hallEntrance=new THREE.Vector3(0,0,-12.95);this.hallDoor=null;this.hallDoorOpenUntil=0;this.hallSign=null;this.hallFamousSign=null;
   this.serviceGroup=null;this.serviceMeal=null;this.serviceHome=new THREE.Vector3(0,.92,5.25);
   this.cameraFocus=new THREE.Vector3(0,.9,.5);this.cameraGoal=new THREE.Vector3(0,10.5,10.8);
   this.raycaster=new THREE.Raycaster();
@@ -395,7 +396,9 @@ class RamenKitchen3D{
   });
   const aisle=this.box(2.2,.026,8.1,0xc99664,0,.028,-9.45,{roughness:.92,castShadow:false});aisle.receiveShadow=true;
   this.hallSign=this.makeTextSprite('어서오세요');this.hallSign.position.set(0,2.25,-13.82);this.hallSign.scale.set(1.7,.5,1);this.scene.add(this.hallSign);
-  this.hallFamousSign=this.makeTextSprite('★ 동네 명물 분식집 ★');this.hallFamousSign.position.set(0,2.28,-13.8);this.hallFamousSign.scale.set(2.8,.62,1);this.scene.add(this.hallFamousSign);this.hallFamousSign.visible=hasUpgrade('famousSign')
+  this.hallFamousSign=this.makeTextSprite('★ 동네 명물 분식집 ★');this.hallFamousSign.position.set(0,2.28,-13.8);this.hallFamousSign.scale.set(2.8,.62,1);this.scene.add(this.hallFamousSign);this.hallFamousSign.visible=hasUpgrade('famousSign');
+  this.dishCartModel=this.placeModel(MARKET,'shopping-cart.glb',1.15,-7.7,.02,-6.1,Math.PI/2);this.dishCartModel.visible=hasUpgrade('dishCart');
+  const cartLabel=this.makeRoleFloorLabel('퇴식 카트','#9ed6c4');cartLabel.position.set(0,.03,.72);cartLabel.scale.set(.78,.78,.78);this.dishCartModel.add(cartLabel)
  }
  syncProgressUpgrades(){
   this.hallSeats.forEach((seat,i)=>{
@@ -403,6 +406,7 @@ class RamenKitchen3D{
    if(this.hallTableGroups[i])this.hallTableGroups[i].visible=enabled
   });
   if(this.hallWorker)this.hallWorker.visible=hasUpgrade('hallStaff');
+  if(this.dishCartModel)this.dishCartModel.visible=hasUpgrade('dishCart');
   if(this.hallSign)this.hallSign.visible=!hasUpgrade('famousSign');
   if(this.hallFamousSign)this.hallFamousSign.visible=hasUpgrade('famousSign')
  }
