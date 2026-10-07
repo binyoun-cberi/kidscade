@@ -433,6 +433,12 @@ if(fightBtn)fightBtn.addEventListener('click',e=>{
 
 window.Q17Field3DBridge=Object.freeze({
  width:W,height:H,
+ aimAt:(x,y,down=false)=>{
+  pointer.x=clamp(Number(x)||0,0,W);pointer.y=clamp(Number(y)||0,0,H);pointer.down=!!down;
+  if(down)shootAt(pointer.x,pointer.y)
+ },
+ setAim:(x,y)=>{pointer.x=clamp(Number(x)||0,0,W);pointer.y=clamp(Number(y)||0,0,H)},
+ setFire:down=>{pointer.down=!!down},
  snapshot:()=>({
   active:state.active,started:state.started,mode:state.mode,
   elapsed:state.elapsed,wave:state.wave,waveCount:state.waves.length,spawnQueue:state.spawnQueue,
