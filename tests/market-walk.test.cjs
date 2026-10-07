@@ -208,6 +208,12 @@ test('town uses a diverse twelve-model resident pool and role-tagged pedestrians
   assert.match(js,/벤치에서 쉬는 주민/);
   assert.match(js,/r\.userData\.role=role/);
 });
+test('saved games can resume directly inside either new neighborhood shop',()=>{
+  assert.match(js,/state\.location==='convenience'\)await buildConvenienceStore\(\)/);
+  assert.match(js,/state\.location==='fastfood'\)await buildFastFood\(\)/);
+  assert.match(js,/CITY_PEOPLE_ASSETS\.slice\(0,8\)/);
+  assert.match(js,/MARKET_MODELS=\['cash-register','character-employee'/);
+});
 test('new storefronts reuse the two previously empty south-block buildings',()=>{
   assert.match(js,/interactable\('convenienceEntry','24시 편의점',-3,-11\.5/);
   assert.match(js,/interactable\('fastFoodEntry','버거하우스',4,-11\.5/);
