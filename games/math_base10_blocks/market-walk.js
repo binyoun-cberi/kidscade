@@ -120,7 +120,25 @@ function clearGroup(g){while(g.children.length)g.remove(g.children[0])}
 async function asset(url){if(!cache.has(url))cache.set(url,loader.loadAsync(url).catch(err=>{cache.delete(url);throw err}));return cache.get(url)}
 function recolor(root,palette){root.traverse(o=>{if(!o.isMesh)return;const arr=Array.isArray(o.material)?o.material:[o.material];const made=arr.map((m,i)=>{const n=m.clone();if(palette?.length&&n.color)n.color.setHex(palette[i%palette.length]);if('roughness'in n)n.roughness=Math.max(.48,n.roughness??.7);return n});o.material=Array.isArray(o.material)?made:made[0];o.castShadow=true;o.receiveShadow=true})}
 async function fitted(url,size=1,palette=null){const g=await asset(url),clone=g.scene.clone(true),wrap=new THREE.Group();wrap.add(clone);recolor(clone,palette);let b=new THREE.Box3().setFromObject(clone),s=new THREE.Vector3();b.getSize(s);clone.scale.multiplyScalar(size/(Math.max(s.x,s.y,s.z)||1));b=new THREE.Box3().setFromObject(clone);const c=b.getCenter(new THREE.Vector3());clone.position.x-=c.x;clone.position.z-=c.z;clone.position.y-=b.min.y;return wrap}
-function groundModel(root,clearance=.05){root.updateMatrixWorld(true);const b=new THREE.Box3().setFromObject(root),delta=clearance-b.min.y;root.position.y+=delta;root.updateMatrixWorld(true);root.userData.groundY=root.position.y;return root.position.y}
+function groundModel(root,surfaceY=0,clearance=.035){
+ root.updateMatrixWorld(true);
+ const before=new THREE.Box3().setFromObject(root),targetMin=surfaceY+clearance,delta=targetMin-before.min.y;
+ root.position.y+=delta;root.updateMatrixWorld(true);
+ const after=new THREE.Box3().setFromObject(root);
+ root.userData.groundY=root.position.y;
+ root.userData.footLocalY=after.min.y-root.position.y;
+ root.userData.surfaceY=surfaceY;
+ return root.position.y
+}
+function pedestrianFootY(m){
+ const local=Number.isFinite(m?.footLocalY)?m.footLocalY:(Number.isFinite(m?.root?.userData?.footLocalY)?m.root.userData.footLocalY:0);
+ return (m?.root?.position?.y||0)+local
+}
+function keepPedestrianAboveGround(m,minClearance=.02){
+ if(!m?.walk)return;
+ const surface=Number.isFinite(m.surfaceY)?m.surfaceY:0,target=surface+minClearance,foot=pedestrianFootY(m);
+ if(foot<target)m.root.position.y+=target-foot
+}
 function box(size,pos,color,rough=.88,parent=world){const m=new THREE.Mesh(new THREE.BoxGeometry(...size),new THREE.MeshStandardMaterial({color,roughness:rough}));m.position.set(...pos);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function addCollider(x,z,w,d){colliders.push({x,z,w,d})}
 function canStand(x,z){
@@ -196,6 +214,7 @@ function updateCity(dt){
    else nextZ=wrappedStreetZ(trial)
   }
   m.z=nextZ;const baseY=Number.isFinite(m.groundY)?m.groundY:0;m.root.position.set(m.lane,baseY+(m.walk?Math.sin(cityTime*7+m.offset)*.015:0),m.z);m.root.rotation.y=m.speed>0?0:Math.PI;
+  if(m.walk)keepPedestrianAboveGround(m,.025);
   if(state.location==='town'&&!m.walk&&moving&&Math.hypot(playerPos.x-m.lane,playerPos.z-m.z)<.9)handleCarCollision()
  }
  updateTrafficVisual()
@@ -215,7 +234,7 @@ async function ensureCity(){if(cityReady)return cityReady;cityReady=(async()=>{
 
  await Promise.all([[-5,-5],[4,-4],[4,3],[11,5],[11,-3],[-6,5],[-10,-4]].map(([x,z])=>place('tree',2.7,[x,0,z])));
  for(const [i,lane]of [6.8,9.2].entries()){const z=-12+i*14,r=await place('car',2.5,[lane,0,z]);cityMovers.push({root:r,lane,z,speed:i?-2.1:2.4,offset:i*17,walk:false})}
- for(let i=0;i<4;i++){const lane=i<2?4.9:11.1,z=-9+i*5,r=await place(i%2?'personA':'personB',1.55,[lane,0,z]),groundY=groundModel(r,.08);cityMovers.push({root:r,lane,z,speed:i%2?-.65:.75,offset:4+i*7,walk:true,groundY})}
+ for(let i=0;i<4;i++){const lane=i<2?4.9:11.1,z=-9+i*5,r=await place(i%2?'personA':'personB',1.55,[lane,0,z]),surfaceY=.06,groundY=groundModel(r,surfaceY,.04);cityMovers.push({root:r,lane,z,speed:i%2?-.65:.75,offset:4+i*7,walk:true,groundY,surfaceY,footLocalY:r.userData.footLocalY})}
  })().catch(e=>{cityReady=null;clearGroup(city);cityMovers.length=0;throw e});return cityReady}
 
 // Furniture keeps its source proportions. Scale to height (or width for tables),
