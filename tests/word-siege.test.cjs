@@ -59,7 +59,7 @@ test('Word Siege starts with a guaranteed economy and attack choice',()=>{
   assert.equal(data.words.ICE.role,'slow');
   assert.equal(data.words.FAST.role,'modifier');
   assert.ok(Object.keys(data.words).length>=400);
-  assert.equal(data.wordList.length,437);
+  assert.equal(data.wordList.length,501);
   assert.equal(data.combos.length,20);
   assert.ok(Object.keys(data.signatures).length>=60);
 });
