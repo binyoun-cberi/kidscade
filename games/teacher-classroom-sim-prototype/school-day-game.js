@@ -158,7 +158,7 @@ function campaignGradeGoalText(){
   const latest=latestExam(campaign);
   if(!latest)return '📝 1차 시험에서 현재 등급을 확인해요';
   const reached=targetReachedCount(campaign);
-  return '🎯 목표 달성 '+reached+'/6 · 전원 한 단계 상승';
+  return '🎯 목표 달성 '+reached+'/'+CLASS_SIZE+' · 전원 한 단계 상승';
 }
 function updateCampaignStatus(){
   if(!ui.campaignStatus)return;
@@ -465,6 +465,14 @@ async function createActors(){
     };
   }));
   students=built;
+  for(const s of students){
+    const label=document.createElement('div');
+    label.className='studentWorldLabel';
+    label.textContent=s.runtime.name;
+    label.style.display='none';
+    ui.app.appendChild(label);
+    s.nameLabel=label;
+  }
 }
 
 function isBlockedWithPadding(x,z,pad){
@@ -648,7 +656,10 @@ function updateHud(){
   const accident=students.some(s=>s.accident&&isStudentPresent(s));
   const sick=students.some(s=>isStudentPresent(s)&&s.health?.revealed&&s.health.state!=='healthy'&&!s.health.checked);
   const conflict=pairs.some(p=>p.state==='fight')?'싸움 발생':pairs.some(p=>p.state==='conflict')?'갈등 발생':null;
-  ui.classState.textContent=accident?'사고 확인 필요':sick?'건강 확인 필요':conflict||(off>=3?'산만함':off?'조금 산만':'차분함');
+  ui.classState.textContent=accident?'사고 확인 필요':sick?'건강 확인 필요':conflict||(off>=5?'산만함':off?'조금 산만':'차분함');
+  const needsAttention=students.filter(s=>studentCanParticipate(s)&&
+    (s.runtime.mode==='offtask'||(s.health?.revealed&&!s.health.checked)||s.accident)).length;
+  ui.rosterToggle.textContent='학생 '+CLASS_SIZE+'명 · '+(needsAttention?'살펴볼 학생 '+needsAttention+'명':'명단 보기');
   ui.studentStrip.innerHTML=students.map(s=>{
     let cls='',icon='🙂';
     const pair=pairs.find(p=>p.a===s||p.b===s);
@@ -663,6 +674,7 @@ function updateHud(){
     const f=Math.round(focusRatio(s)*100),so=Math.round(socialRatio(s)*100);
     return '<div class="studentChip '+cls+'"><i class="face">'+icon+'</i><span class="studentName">'+s.runtime.name+'</span>'+
       (prefMark?'<em class="pref">'+prefMark+'</em>':'')+
+      (currentGradeLabel(s.runtime.id)?'<small class="studentGrade">'+currentGradeLabel(s.runtime.id)+'</small>':'')+
       '<span class="meters"><b class="focusMeter" style="width:'+f+'%"></b><b class="socialMeter" style="width:'+so+'%"></b></span></div>';
   }).join('');
   updateDayStrip();
@@ -1132,8 +1144,22 @@ function showBubble(s,text,cls){
 function hideBubble(s){if(s.bubble)s.bubble.style.display='none'}
 function updateBubbles(){
   const v=new THREE.Vector3();
-  students.forEach(s=>{if(!s.bubble||s.bubble.style.display==='none')return;v.copy(s.actor.root.position);v.y=1.55;v.project(camera);
-    s.bubble.style.left=((v.x*.5+.5)*innerWidth)+'px';s.bubble.style.top=((-v.y*.5+.5)*innerHeight)+'px';s.bubble.style.opacity=v.z<1?'1':'0';
+  students.forEach(s=>{
+    const inView=isStudentPresent(s)&&distance2D(player?.root.position||s.actor.root.position,s.actor.root.position)<3.4;
+    if(s.nameLabel){
+      s.nameLabel.style.display=inView?'block':'none';
+      if(inView){
+        v.copy(s.actor.root.position);v.y=1.6;v.project(camera);
+        s.nameLabel.style.left=((v.x*.5+.5)*innerWidth)+'px';
+        s.nameLabel.style.top=((-v.y*.5+.5)*innerHeight)+'px';
+        s.nameLabel.style.opacity=v.z<1?'1':'0';
+      }
+    }
+    if(!s.bubble||s.bubble.style.display==='none')return;
+    v.copy(s.actor.root.position);v.y=1.95;v.project(camera);
+    s.bubble.style.left=((v.x*.5+.5)*innerWidth)+'px';
+    s.bubble.style.top=((-v.y*.5+.5)*innerHeight)+'px';
+    s.bubble.style.opacity=v.z<1?'1':'0';
   });
 }
 function teacherNearStudent(s){return distance2D(player.root.position,s.actor.root.position)<=AI_RULES.teacherNearDistance}
@@ -1375,6 +1401,10 @@ function finishDay(){
 }
 
 function setupInput(){
+  ui.rosterToggle.addEventListener('click',()=>{
+    const isOpen=ui.studentStrip.classList.toggle('open');
+    ui.rosterToggle.setAttribute('aria-expanded',String(isOpen));
+  });
   addEventListener('keydown',e=>{keys.add(e.code);if((e.code==='Space'||e.code==='KeyE')&&!e.repeat){e.preventDefault();useAction()}});
   addEventListener('keyup',e=>keys.delete(e.code));ui.action.addEventListener('pointerdown',e=>{e.preventDefault();useAction()});
   const moveJoy=e=>{
@@ -1417,7 +1447,9 @@ function loop(now){
       else if(currentStep.kind==='social')updateSocial(dt);
       else updateStudentsIdle(dt);
       interactionScan-=dt;if(interactionScan<=0){interactionScan=.12;scanAction();updateGuideByAction()}
-      updateCamera(dt);updateHud();
+      updateCamera(dt);
+      hudTimer-=dt;
+      if(hudTimer<=0){hudTimer=.23;updateHud();}
     }else updateCamera(dt);
   }
   if(toastTimer>0){toastTimer-=dt;if(toastTimer<=0)ui.toast.classList.remove('show')}
