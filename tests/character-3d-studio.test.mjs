@@ -178,3 +178,14 @@ test('hoodie v2 has sleeves hood volume and subtle seams',()=>{
   assert.match(js,/kidscade_hoodie_blue_pocket_bottom_seam/);
   assert.doesNotMatch(js,/kidscade_hoodie_blue_pocket_opening',\.0030/);
 });
+
+
+test('left rail stays readable without nested scrolling',()=>{
+  const html=read('teacher/character-3d-studio.html');
+  assert.match(html,/grid-template-columns:minmax\(350px,370px\)/);
+  assert.match(html,/\.left\{position:static;max-height:none;overflow:visible\}/);
+  assert.match(html,/\.wardrobe-grid\{display:grid;grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\);gap:6px;max-height:none;overflow:visible/);
+  assert.match(html,/font-size:\.64rem/);
+  assert.match(html,/<aside class="side left">/);
+  assert.match(html,/@media\(max-width:1250px\)/);
+});
