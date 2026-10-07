@@ -18,7 +18,7 @@ const catalogData = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.js
 const catalog = Array.isArray(catalogData) ? catalogData : catalogData.games;
 const game = catalog.find(g => g.id === 'job_teacher_classroom');
 
-test('teacher simulator v69 loads the six-period direct-control game', () => {
+test('teacher simulator v70 loads the six-period direct-control game', () => {
   assert.match(html, /id="game"/);
   assert.match(html, /id="joystick"/);
   assert.match(html, /id="actionButton"/);
@@ -84,12 +84,12 @@ test('illness slows focus recovery without changing focus maximum', async () => 
   assert.ok(life.HEALTH_RULES.sickRecoveryMultiplier < life.HEALTH_RULES.mildRecoveryMultiplier);
 });
 
-test('daily illness is capped at two students and has a safe fallback', async () => {
+test('daily illness is capped at three students and has a safe fallback', async () => {
   const ai = await import(pathToFileURL(aiPath).href + '?health-profiles=' + Date.now());
   const life = await import(pathToFileURL(lifePath).href + '?health-cap=' + Date.now());
   assert.equal(life.HEALTH_RULES.sickChance, .10);
   const health = life.createDailyHealth(ai.STUDENT_PROFILES, () => 0);
-  assert.equal(health.filter(h => h.state !== 'healthy').length, 2);
+  assert.equal(health.filter(h => h.state !== 'healthy').length, 3);
 
   const stranded = {state:'mild',parentAvailable:false};
   const decision = life.nextHealthAction(stranded,{nurseAvailable:false},3);
@@ -159,7 +159,7 @@ test('health actions include check nurse dismissal and classroom rest', () => {
 
 test('student AI safety rails still cap chaos', async () => {
   const ai = await import(pathToFileURL(aiPath).href + '?rails=' + Date.now());
-  assert.equal(ai.AI_RULES.maxConcurrentSocialPairs, 2);
+  assert.equal(ai.AI_RULES.maxConcurrentSocialPairs, 3);
   assert.equal(ai.AI_RULES.maxConcurrentConflicts, 1);
   assert.equal(ai.AI_RULES.maxFightsPerRecess, 1);
 });
@@ -282,7 +282,7 @@ test('eight-day campaign schedules four exams and a clear final goal', async () 
   assert.equal(campaign.examNumberForDay(2), 1);
   assert.equal(campaign.examNumberForDay(8), 4);
   assert.equal(campaign.examNumberForDay(7), 0);
-  assert.match(html, /학생 6명 모두 1차 시험보다 한 단계 이상/);
+  assert.match(html, /학생 15명 모두 1차 시험보다 한 단계 이상/);
   assert.match(html, /id="campaignStatus"/);
   assert.match(html, /id="examResults"/);
 });
@@ -306,7 +306,7 @@ test('first exam sets one-grade targets and fourth exam decides success', async 
   state.day = 8;
   const fourth = campaign.conductExam(state, ai.STUDENT_PROFILES);
   assert.equal(fourth.examNumber, 4);
-  assert.equal(fourth.reached, 6);
+  assert.equal(fourth.reached, 15);
   assert.equal(fourth.success, true);
   assert.equal(state.finalSuccess, true);
 });
@@ -326,14 +326,79 @@ test('learning accumulates continuously and direct focus support gives a small b
 });
 
 test('campaign persistence stores growth progress but not health friendship or conflicts', () => {
-  assert.match(js, /kidscade_teacher_campaign_v1/);
+  assert.match(js, /kidscade_teacher_campaign_v2/);
   assert.match(js, /localStorage\.setItem\(CAMPAIGN_STORAGE_KEY/);
   assert.doesNotMatch(js, /CAMPAIGN_STORAGE_KEY[^\n]*(friendship|relations|health)/i);
 });
 
-test('catalog publishes teacher simulator v69', () => {
+
+test('all fifteen pupils have profiles preferences mastery and distinct visual identities', async () => {
+  const ai = await import(pathToFileURL(aiPath).href + '?class15=' + Date.now());
+  const life = await import(pathToFileURL(lifePath).href + '?pref15=' + Date.now());
+  const campaign = await import(pathToFileURL(campaignPath).href + '?grades15=' + Date.now());
+  const ids = ai.STUDENT_PROFILES.map(s => s.id);
+  assert.equal(ids.length, 15);
+  assert.equal(new Set(ids).size, 15);
+  assert.equal(new Set(ai.STUDENT_PROFILES.map(s => s.name)).size, 15);
+  assert.equal(Object.keys(campaign.INITIAL_MASTERY).length, 15);
+  assert.equal(campaign.CAMPAIGN_VERSION, 2);
+  for (const id of ids) {
+    assert.equal(Object.keys(life.SUBJECT_PREFERENCES[id]).length, 6);
+    assert.ok(Number.isFinite(campaign.INITIAL_MASTERY[id]));
+    assert.match(js, new RegExp(id + ':\\\\{file:'));
+  }
+  assert.match(js, /studentWorldLabel/);
+  assert.match(html, /id="rosterToggle"/);
+  assert.match(css, /#studentStrip\\.open/);
+  const state = campaign.createCampaignState(ids);
+  assert.equal(Object.keys(state.mastery).length, 15);
+  assert.equal(Object.keys(campaign.normalizeCampaignState({version:1},ids).mastery).length, 15);
+});
+
+test('every school space has fifteen reachable nonoverlapping stations', async () => {
+  const {CLASS_SIZE,SCHOOL_SPACES} = await import(pathToFileURL(dayPath).href + '?layout15=' + Date.now());
+  assert.equal(CLASS_SIZE, 15);
+  for (const [name,space] of Object.entries(SCHOOL_SPACES)) {
+    assert.equal(space.seats.length,15,name);
+    for (let i=0;i<space.seats.length;i++) {
+      const p=space.seats[i];
+      assert.ok(Math.abs(p.x)<6.6 && Math.abs(p.z)<4.6,name+' station outside room');
+      for (let j=i+1;j<space.seats.length;j++) {
+        const q=space.seats[j];
+        assert.ok(Math.hypot(p.x-q.x,p.z-q.z)>.75,name+' overlapping pupils');
+      }
+      for (const o of space.obstacles) {
+        const dx=Math.max(0,Math.abs(p.x-o.x)-o.hx);
+        const dz=Math.max(0,Math.abs(p.z-o.z)-o.hz);
+        assert.ok(Math.hypot(dx,dz)>=.35,name+' occupied furniture');
+      }
+    }
+  }
+  assert.match(js, /deskZ=s\\.z-1/);
+});
+
+test('fifteenth pupil gets a three-person team instead of being omitted', async () => {
+  const life = await import(pathToFileURL(lifePath).href + '?odd-group=' + Date.now());
+  const ai = await import(pathToFileURL(aiPath).href + '?odd-students=' + Date.now());
+  const groups=life.buildPairs(ai.STUDENT_PROFILES,()=>.5);
+  assert.equal(groups.length,7);
+  assert.deepEqual(groups.map(t=>t.length).sort((a,b)=>a-b),[2,2,2,2,2,2,3]);
+  assert.equal(new Set(groups.flat().map(s=>s.id)).size,15);
+  assert.match(js,/for\\(const team of teamPairs\\)/);
+});
+
+test('teacher-wide signal helps fifteen pupils while capping lesson interactions', () => {
+  assert.match(js,/type:'groupFocus'/);
+  assert.match(js,/groupSignalsThisLesson<2/);
+  assert.match(js,/groupSignalCooldown=30/);
+  assert.match(js,/for\\(const s of activeLessonStudents\\(\\)\\)/);
+  assert.match(js,/hudTimer=\\.23/);
+  assert.match(html,/학생 15명/);
+});
+
+test('catalog publishes teacher simulator v70', () => {
   assert.ok(game);
-  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=69');
+  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=70');
   assert.match(game.description, /건강/);
   assert.match(game.description, /안전교육/);
   assert.match(game.description, /8일/);
