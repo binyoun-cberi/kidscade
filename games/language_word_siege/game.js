@@ -28,7 +28,7 @@ function freshState(){
     enemies:[],towers:[],shots:[],effects:[],rack:D.startRack.slice(0,D.maxRack),
     selected:[],placing:null,hover:null,uid:1,unique:new Set(),builtWords:[],
     resources:resourceSpots.map((s,i)=>({...s,amount:70+i*20})),
-    discovered:new Set(loadDiscovered()), discoveredCombos:new Set(), ended:false
+    discovered:new Set(loadDiscovered()), discoveredCombos:new Set(), ended:false,towerRevision:0
   };
 }
 function loadDiscovered(){
@@ -43,7 +43,9 @@ function saveBest(){
 
 function resize(){
   const r=boardWrap.getBoundingClientRect(); dpr=Math.min(2,window.devicePixelRatio||1);
-  W=Math.max(320,r.width); H=Math.max(260,r.height);
+  // The board may be shorter than 260px on a tablet in landscape mode.
+  // Never draw a larger canvas than its hit-tested viewport.
+  W=Math.max(1,r.width); H=Math.max(1,r.height);
   canvas.width=Math.round(W*dpr); canvas.height=Math.round(H*dpr);
   canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0);
 }
@@ -236,6 +238,8 @@ function buildTower(p){
 }
 
 function effectiveStats(t){
+  // Links and duplicates change only when a tower is constructed.
+  if(t._effectiveRevision===state.towerRevision)return t._effectiveStats;
   const s={...t.stats}; let rateMul=1,damageMul=1,rangeMul=1,areaMul=1,pushMul=1;
   for(const m of t.links){
     const mod=D.modifiers[m.word]; if(!mod)continue;
@@ -251,6 +255,7 @@ function effectiveStats(t){
   if(s.rate)s.rate*=Math.min(2.4,rateMul);if(s.damage)s.damage*=Math.min(2.5,damageMul);if(s.range)s.range*=Math.min(1.85,rangeMul);if(s.area)s.area*=Math.min(1.9,areaMul);if(s.push)s.push*=Math.min(2,pushMul);
   const duplicates=state.towers.filter(o=>o!==t&&o.word===t.word).length;
   if(s.damage)s.damage*=Math.max(.65,Math.pow(.93,duplicates));
+  t._effectiveStats=s;t._effectiveRevision=state.towerRevision;
   return s;
 }
 function applyLinks(){
@@ -268,13 +273,14 @@ function applyLinks(){
     for(const a of left){for(const b of right){
       if(dist(a,b)>.18)continue;
       paired=true;
-      if(a.combos.length<3)a.combos.push({with:b.word,name:combo.name,bonus:combo.bonus});
-      if(b.combos.length<3)b.combos.push({with:a.word,name:combo.name,bonus:combo.bonus});
+      if(a.combos.length<3)a.combos.push({with:b.word,peer:b,name:combo.name,bonus:combo.bonus});
+      if(b.combos.length<3)b.combos.push({with:a.word,peer:a,name:combo.name,bonus:combo.bonus});
     }}
     if(paired&&!state.discoveredCombos.has(combo.name)){
       state.discoveredCombos.add(combo.name);state.score+=60;state.ink+=3;discovered.push(combo.name);
     }
   }
+  state.towerRevision++;
   if(discovered.length)toast('WORD COMBO · '+discovered.join(' / ')+' · INK +3');
   return discovered;
 }
@@ -297,6 +303,10 @@ function createWave(n){
 function startWave(){
   if(state.inWave||state.ended)return;
   if(state.wave>=8)return;
+  if(state.wave===0&&!state.towers.some(t=>(t.stats.damage||0)>0)){
+    setStatus('공격 타워를 먼저 지어주세요','ARROW, FIRE, ICE처럼 적을 공격할 단어 타워가 필요해요.');
+    toast('첫 웨이브 전에 공격 타워가 필요해요');return;
+  }
   state.wave++;state.inWave=true;state.waveTimer=0;state.spawnQueue=createWave(state.wave);
   waveBtn.disabled=true;setStatus('WAVE '+state.wave,'적이 CORE를 향해 이동합니다. 전투 중에도 타워를 만들 수 있어요.');
   beep(250,.12,'sawtooth',.05);updateHud();
@@ -425,6 +435,8 @@ function statusEffects(e,dt){
   if(e.hp<=0&&!e.dead)killEnemy(e);
 }
 function giveNextWaveWord(){
+  // Preserve a word the player is already spelling instead of discarding it.
+  if(state.selected.length)return '';
   const maxLen=Math.min(9,5+state.wave);
   const pool=D.wordList.filter(w=>w.length>=5&&w.length<=maxLen&&!state.discovered.has(w)
     &&D.words[w].difficulty<=Math.min(9,4+Math.floor(state.wave/2))
@@ -468,7 +480,11 @@ function update(dt){
   updateHud();
   if(previousInk!==Math.floor(state.ink)){previousInk=Math.floor(state.ink);if(!state.placing)updateComposer()}
 }
-function updateHud(){coreText.textContent=Math.ceil(state.core);waveText.textContent=state.wave+' / 8';inkText.textContent=Math.floor(state.ink);scoreText.textContent=Math.floor(state.score)}
+function updateHud(){
+  const updates=[[coreText,Math.ceil(state.core)],[waveText,state.wave+' / 8'],
+    [inkText,Math.floor(state.ink)],[scoreText,Math.floor(state.score)]];
+  for(const [el,value] of updates)if(el.textContent!==String(value))el.textContent=String(value);
+}
 function endGame(win){
   state.ended=true;running=false;saveBest();$('resultTitle').textContent=win?'SIEGE CLEARED!':'CORE LOST';
   $('resultLead').textContent=win?'8개의 웨이브를 모두 막았습니다.':'이번에는 '+state.wave+' 웨이브까지 버텼습니다.';
@@ -527,7 +543,7 @@ function drawLinks(){
   for(const t of state.towers){
     for(const m of t.links){ctx.strokeStyle=m.def.color+'99';ctx.beginPath();ctx.moveTo(px(m.x),py(m.y));ctx.lineTo(px(t.x),py(t.y));ctx.stroke()}
     for(const combo of t.combos||[]){
-      const other=state.towers.find(b=>b.word===combo.with&&dist(t,b)<=.18);
+      const other=combo.peer;
       if(!other||t.id>other.id)continue;
       ctx.save();ctx.setLineDash([]);ctx.strokeStyle='#f0a52e';ctx.lineWidth=3;
       ctx.beginPath();ctx.moveTo(px(other.x),py(other.y));ctx.lineTo(px(t.x),py(t.y));ctx.stroke();ctx.restore();
@@ -537,12 +553,31 @@ function drawLinks(){
 }
 function towerRadius(t){return Math.max(19,Math.min(W,H)*(.029+t.def.difficulty*.0015))}
 function drawTowers(){
-  for(const t of state.towers){const x=px(t.x),y=py(t.y),r=towerRadius(t);ctx.save();ctx.translate(x,y);
-    ctx.shadowColor='rgba(0,0,0,.22)';ctx.shadowBlur=8;ctx.shadowOffsetY=5;ctx.fillStyle=t.def.color;ctx.fillRect(-r*.55,-r*.76,r*1.1,r*1.34);ctx.shadowColor='transparent';
+  const drawnLabels=[];
+  for(const t of state.towers){
+    const x=px(t.x),y=py(t.y),r=towerRadius(t);ctx.save();ctx.translate(x,y);
+    ctx.shadowColor='rgba(0,0,0,.22)';ctx.shadowBlur=8;ctx.shadowOffsetY=5;
+    ctx.fillStyle=t.def.color;ctx.fillRect(-r*.55,-r*.76,r*1.1,r*1.34);ctx.shadowColor='transparent';
     ctx.fillStyle='rgba(255,255,255,.22)';ctx.fillRect(-r*.40,-r*.62,r*.28,r*.95);
-    ctx.fillStyle='#1e2228';ctx.font='1000 '+Math.max(15,r*.72)+'px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t.word[0],0,-r*.12);
-    ctx.fillStyle='#fffdf2';ctx.strokeStyle='rgba(30,34,40,.22)';ctx.lineWidth=1;const tw=Math.max(r*1.45,ctx.measureText(t.word).width*.65+12);roundRect(ctx,-tw/2,r*.48,tw,r*.55,4,true,true);
-    ctx.fillStyle='#25272c';ctx.font='900 '+Math.max(8,r*.28)+'px ui-monospace,monospace';ctx.fillText(t.word,0,r*.75);
+    ctx.fillStyle='#1e2228';ctx.font='1000 '+Math.max(15,r*.72)+'px sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t.word[0],0,-r*.12);
+    // Full tower names are visible in the inspector. On compact screens the
+    // field label must not conceal neighboring towers and enemies.
+    const compact=W<710||H<295;
+    const label=compact&&t.word.length>6?t.word.slice(0,5)+'…':t.word;
+    const fontSize=compact?9:Math.max(10,Math.min(12,r*.36));
+    ctx.font='900 '+fontSize+'px ui-monospace,monospace';
+    const tw=Math.max(r*1.45,ctx.measureText(label).width+11),th=fontSize+8;
+    let labelY=r*.48;
+    const collisionAt=ly=>drawnLabels.some(v=>
+      Math.abs(v.cx-x)<(v.w+tw)*.5+2&&Math.abs(v.cy-(y+ly+th*.5))<(v.h+th)*.5+2);
+    if(collisionAt(labelY))labelY=-r*.85-th;
+    if(!collisionAt(labelY)&&y+labelY>0&&y+labelY+th<H){
+      ctx.fillStyle='#fffdf2';ctx.strokeStyle='rgba(30,34,40,.22)';ctx.lineWidth=1;
+      roundRect(ctx,-tw/2,labelY,tw,th,4,true,true);
+      ctx.fillStyle='#25272c';ctx.fillText(label,0,labelY+th*.52);
+      drawnLabels.push({cx:x,cy:y+labelY+th*.5,w:tw,h:th});
+    }
     if(t.pulse>0){ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,r*(1.05+t.pulse),0,Math.PI*2);ctx.stroke()}
     ctx.restore();
   }
@@ -570,7 +605,7 @@ function drawEffects(){
 function drawPlacement(){
   if(!state.placing||!state.hover)return;const p=state.hover,ok=validPlacement(p)&&rolePlacementValid(p,state.placing.def,state.placing.word),r=Math.max(20,Math.min(W,H)*.034);
   ctx.save();ctx.globalAlpha=.72;ctx.fillStyle=ok?state.placing.def.color:'#d34f58';ctx.fillRect(px(p.x)-r*.55,py(p.y)-r*.7,r*1.1,r*1.3);
-  ctx.strokeStyle=ok?'#1aa59f':'#c33445';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px(p.x),py(p.y),Math.min(W,H)*makeTowerStats(state.placing.word,state.placing.def).range,0,Math.PI*2);ctx.stroke();ctx.restore();
+  ctx.strokeStyle=ok?'#1aa59f':'#c33445';ctx.lineWidth=2;ctx.beginPath();{const range=makeTowerStats(state.placing.word,state.placing.def).range;ctx.ellipse(px(p.x),py(p.y),W*range,H*range,0,0,Math.PI*2)}ctx.stroke();ctx.restore();
 }
 function roundRect(c,x,y,w,h,r,fill,stroke){c.beginPath();c.roundRect?c.roundRect(x,y,w,h,r):(c.rect(x,y,w,h));if(fill)c.fill();if(stroke)c.stroke()}
 
