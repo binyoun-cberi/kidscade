@@ -231,7 +231,7 @@ async function ensureCrate(q){
 function syncActors(s,t){
  const zombieKeys=new Set(),survivorKeys=new Set();
  s.zombies.forEach((z,i)=>{
-  const key='z'+i;zombieKeys.add(key);const a=getActor(key,'zombie',i,z.elite);
+  const key='z'+String(z.id??i);zombieKeys.add(key);const a=getActor(key,'zombie',i,z.elite);
   const x=sx(z.x),zz=sz(z.y),dx=a.lastX===null?0:z.x-a.lastX,dy=a.lastY===null?0:z.y-a.lastY;
   a.root.position.set(x,.02,zz);if(Math.hypot(dx,dy)>.05)a.root.rotation.y=Math.atan2(dx,dy);
   a.root.position.y=.02+Math.sin(t*.006+(z.phase||0))*.035;a.root.scale.setScalar(z.hit>0?1.08:1);
@@ -240,7 +240,7 @@ function syncActors(s,t){
  removeMissing('z',zombieKeys);
 
  s.survivors.forEach((p,i)=>{
-  const key='s'+i;survivorKeys.add(key);const a=getActor(key,'survivor',i,false);
+  const key='s'+String(p.id??i);survivorKeys.add(key);const a=getActor(key,'survivor',i,false);
   a.root.visible=!!p.alive&&!p.rescued;if(!a.root.visible)return;
   const dx=a.lastX===null?0:p.x-a.lastX,dy=a.lastY===null?0:p.y-a.lastY;
   a.root.position.set(sx(p.x),.02,sz(p.y));if(Math.hypot(dx,dy)>.05)a.root.rotation.y=Math.atan2(dx,dy);
@@ -329,4 +329,4 @@ function frame(t){
  requestAnimationFrame(frame)
 }
 requestAnimationFrame(frame);
-window.Q17Field3D=Object.freeze({active:true,version:'21.1',scene,camera,renderer});
+window.Q17Field3D=Object.freeze({active:true,version:'21.2',scene,camera,renderer});
