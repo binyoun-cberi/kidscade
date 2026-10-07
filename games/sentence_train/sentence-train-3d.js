@@ -31,7 +31,7 @@ const MODEL={
  sign:asset('3d/nature/kenney-nature-kit/sign.glb')
 };
 let scene,camera,renderer,loader,trainGroup,railGroup,decorGroup,stationGroup;
-let models=new Map(),ready=false,departT=-1,last=performance.now(),carCount=4,pulse=0,stationIndex=0,trainTheme='easy';
+let models=new Map(),ready=false,departT=-1,last=performance.now(),carCount=4,pulse=0,stationIndex=Number(document.body.dataset.stationIndex)||0,trainTheme=document.body.dataset.trainTheme||'easy';
 const palette=['blue','green','red','box'];
 
 function prep(obj){obj.traverse(n=>{if(!n.isMesh)return;n.castShadow=true;n.receiveShadow=true;if(n.material){const mats=Array.isArray(n.material)?n.material:[n.material];n.material=Array.isArray(n.material)?mats.map(m=>m.clone()):mats[0].clone()}});return obj}
