@@ -142,7 +142,10 @@ test('underwater state has a visible screen cue and clears between modes',()=>{
 });
 
 test('shelter checks ignore decoration partial walls and open doorways',()=>{
-  assert.match(world,/SHELTER_PASSABLE=new Set\(\['air','water','lava','fire','leaves','pineLeaves','flower','reed','sapling','torch'\]\)/);
+  assert.match(world,/SHELTER_PASSABLE=new Set\(\[/);
+  for(const type of ['air','water','lava','fire','leaves','pineLeaves','flower','reed','sapling','torch','chair','sign','sofa','bench','coffeeTable','floorLamp','rug','campfire','fence','tent','bedroll']){
+    assert.match(world,new RegExp("'"+type+"'"),type+' should remain passable for shelter checks');
+  }
   assert.match(world,/d\.type==='cactus'/);
   assert.match(world,/role==='wall'&&d\.type==='slab'/);
   assert.match(world,/\(d\.type==='door'\|\|d\.type==='doorTop'\)&&d\.open/);

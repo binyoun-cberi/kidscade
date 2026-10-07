@@ -2,6 +2,7 @@
   'use strict';
 
   const PLANS = Object.freeze({
+    "hanja_sichuan":["첫 연결","첫 한자 사천성 판을 완성하세요.","한자 연결 달인","여러 판을 끝까지 해결하세요.","실수 없는 사천성","힌트와 오답 없이 판을 완료하세요."],
     "kor_hand_twist_typing":["첫 타자 도전","타자 도전을 끝까지 완료하세요.","손 꼬임 타자왕","여러 문장에 도전하며 타자 기록을 높이세요.","빈틈없는 타자","문장을 정확하게 입력하세요."],
     "job_takoyaki_simulator":["첫 타코야키","첫 주문을 완성하세요.","열두 구 장인","12구를 모두 해금하세요.","황금판","한 판의 타코야키를 모두 성공하세요."],
     "toddler_muk_jji_ppa":["첫 승부","처음으로 승리하세요.","묵찌빠 왕","누적 5승을 달성하세요.","대역전","불리한 상황에서 승리하세요."],
@@ -151,6 +152,10 @@
   const PILOT_GAME_IDS = new Set(['cube3d','high_micro_evolution','infinite_gugudan']);
 
   const LIVE_RULES = Object.freeze({
+    hanja_sichuan: {
+      mastery:{event:'result',field:'maxCombo',op:'gte',value:10},
+      secret:{event:'result',field:'clean',op:'truthy'}
+    },
     low_perfect_pitch: {
       mastery:{event:'game-over', field:'maxCombo', op:'gte', value:10},
       secret:{event:'game-over', field:'stairPeak', op:'gte', value:10}

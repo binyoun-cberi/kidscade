@@ -2,6 +2,34 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "hanja_sichuan",
+      "addedAt": "2026-10-08T08:06:00+09:00",
+      "title": "한자 사천성",
+      "href": "games/hanja_sichuan/index.html",
+      "category": "lang",
+      "age": "low",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🀄",
+      "description": "사천성 방식으로 한자와 뜻·음 패를 연결하세요. 1~8급 3,500자, 두 번 꺾기 연결 규칙, 힌트·섞기·시간 도전을 지원합니다.",
+      "scoreKey": "hanja_sichuan_best",
+      "subject": "language",
+      "genre": "puzzle",
+      "difficulty": "easy",
+      "sessionMinutes": 7,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "science_periodic_memory",
       "addedAt": "2026-10-07T08:44:00+09:00",
       "title": "원소주기율표 외우기",
