@@ -14,15 +14,21 @@ import {
   friendshipSelfReconcileChance,friendshipChatterChance,
   SAFETY_RULES,GROUP_RULES,FRIENDSHIP_RULES
 } from './student-life.mjs?v=68';
+import {
+  CAMPAIGN_DAYS,EXAM_DAYS,GRADE_ORDER,
+  createCampaignState,normalizeCampaignState,examNumberForDay,nextExamInfo,
+  gradeIndex,learningGain,addLearning,conductExam,latestExam,targetReachedCount
+} from './school-campaign.mjs?v=69';
 
 const $=id=>document.getElementById(id);
 const ui={
   app:$('app'),canvas:$('game'),phase:$('phaseLabel'),clock:$('clock'),timer:$('phaseTimer'),
-  classState:$('classState'),studentStrip:$('studentStrip'),dayStrip:$('dayStrip'),
+  classState:$('classState'),studentStrip:$('studentStrip'),dayStrip:$('dayStrip'),campaignStatus:$('campaignStatus'),
   guideKicker:$('guideKicker'),guideTitle:$('guideTitle'),guideText:$('guideText'),
   toast:$('toast'),action:$('actionButton'),actionIcon:$('actionIcon'),actionLabel:$('actionLabel'),
   intro:$('intro'),start:$('startButton'),help:$('help'),helpButton:$('helpButton'),
   closeHelp:$('closeHelpButton'),end:$('endPanel'),summary:$('summary'),restart:$('restartButton'),
+  endEyebrow:$('endEyebrow'),endTitle:$('endTitle'),examResults:$('examResults'),
   assetError:$('assetError'),joy:$('joystick'),joyKnob:$('joyKnob'),
   bell:$('bellAudio'),talk:$('talkAudio'),fight:$('fightAudio')
 };
@@ -99,6 +105,9 @@ let teamPairs=[];
 let teamActive=false;
 let teamCheckTimer=0;
 let lessonAccidents=0;
+const CAMPAIGN_STORAGE_KEY='kidscade_teacher_campaign_v1';
+let campaign=loadCampaign();
+let dayFinished=false;
 let environment=createDailyEnvironment();
 let stats={
   focusHelps:0,conflictsMediated:0,fightsSeparated:0,missedFights:0,
@@ -108,6 +117,50 @@ let stats={
 };
 const keys=new Set();
 const joy={active:false,id:null,x:0,y:0};
+
+function loadCampaign(){
+  let raw=null;
+  try{raw=JSON.parse(localStorage.getItem(CAMPAIGN_STORAGE_KEY)||'null')}catch(_){}
+  let state=normalizeCampaignState(raw,STUDENT_PROFILES.map(s=>s.id));
+  if(state.dayComplete){
+    if(state.day<CAMPAIGN_DAYS){
+      state.day++;
+      state.dayComplete=false;
+      state.finalSuccess=null;
+    }else{
+      state=createCampaignState(STUDENT_PROFILES.map(s=>s.id));
+    }
+    try{localStorage.setItem(CAMPAIGN_STORAGE_KEY,JSON.stringify(state))}catch(_){}
+  }
+  return state;
+}
+function saveCampaign(){
+  try{localStorage.setItem(CAMPAIGN_STORAGE_KEY,JSON.stringify(campaign))}catch(_){}
+}
+function resetCampaign(){
+  campaign=createCampaignState(STUDENT_PROFILES.map(s=>s.id));
+  try{localStorage.removeItem(CAMPAIGN_STORAGE_KEY)}catch(_){}
+}
+function campaignGradeGoalText(){
+  const latest=latestExam(campaign);
+  if(!latest)return '📝 1차 시험에서 현재 등급을 확인해요';
+  const reached=targetReachedCount(campaign);
+  return '🎯 목표 달성 '+reached+'/6 · 전원 한 단계 상승';
+}
+function updateCampaignStatus(){
+  if(!ui.campaignStatus)return;
+  const exam=nextExamInfo(campaign.day);
+  const when=exam.daysAway===0?'오늘 '+exam.examNumber+'차 시험':exam.examNumber+'차 시험 D-'+exam.daysAway;
+  ui.campaignStatus.innerHTML='<strong>📅 '+campaign.day+'/'+CAMPAIGN_DAYS+'일차</strong> · '+when+'<br>'+campaignGradeGoalText();
+}
+function currentGradeLabel(id){
+  const latest=latestExam(campaign);
+  if(!latest)return '';
+  const row=latest.rows.find(r=>r.id===id);
+  const target=campaign.targetGrades?.[id];
+  if(!row||!target)return '';
+  return row.grade+'→'+target;
+}
 
 function mat(color,rough=.82){return new THREE.MeshStandardMaterial({color,roughness:rough,metalness:0})}
 function box(w,h,d,color){
