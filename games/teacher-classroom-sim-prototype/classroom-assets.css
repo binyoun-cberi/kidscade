@@ -1,0 +1,244 @@
+/*
+ * Teacher Classroom Simulator — Styloo classroom asset pass
+ * Source: assets/more assets/2dClassroomAssetPackByStyloo/
+ * The source pack's included readme marks the classroom art for free use.
+ *
+ * Keep gameplay hit targets and information hierarchy intact: this layer only
+ * replaces procedural room decoration with real classroom sprites.
+ */
+
+:root{
+  --kc-classroom-sheet:url("../../assets/more%20assets/2dClassroomAssetPackByStyloo/Classroom/Classroom%20First%20Spritesheet%201.png");
+  --kc-classroom-props:url("../../assets/more%20assets/2dClassroomAssetPackByStyloo/Classroom%202%20Props/Classroom%20Props%20First%20Spritesheet%201.png");
+  --kc-classroom-stationery:url("../../assets/more%20assets/2dClassroomAssetPackByStyloo/Classroom%202%20Props/Classroom%20Props%20Second%20Spritesheet%201.png");
+}
+
+/* The room itself now feels like a real classroom rather than a CSS mockup. */
+.office-scene{
+  background:
+    linear-gradient(180deg,rgba(246,239,218,.18),transparent 31%),
+    linear-gradient(180deg,#dce7df 0 51.5%,#b9a47f 51.5% 52.3%,#8d7356 52.3% 100%);
+}
+.classroom-backdrop{
+  inset:0 0 34%;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.06) 52%,transparent 78%),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 2px,transparent 2px 80px),
+    linear-gradient(90deg,#d9e7df 0 16%,#edf0df 16% 84%,#d9e7df 84%);
+  border-bottom:9px solid #806b50;
+  box-shadow:inset 0 -20px 30px rgba(67,66,49,.08);
+}
+
+/* Real classroom cubby cabinet, cropped from Classroom First Spritesheet 1. */
+.classroom-backdrop:before{
+  content:"";
+  position:absolute;
+  left:2.2%;
+  top:58px;
+  width:298px;
+  height:126px;
+  bottom:auto;
+  border:0;
+  background-image:var(--kc-classroom-sheet);
+  background-repeat:no-repeat;
+  background-size:512px 512px;
+  background-position:-10px -78px;
+  transform:none;
+  filter:drop-shadow(0 8px 6px rgba(55,45,34,.18));
+  opacity:.97;
+}
+
+/* Real low bookshelf from the same pack. */
+.classroom-backdrop:after{
+  content:"";
+  position:absolute;
+  right:3.2%;
+  left:auto;
+  top:262px;
+  width:112px;
+  height:128px;
+  bottom:auto;
+  border:0;
+  background-image:var(--kc-classroom-sheet);
+  background-repeat:no-repeat;
+  background-size:512px 512px;
+  background-position:-379px -261px;
+  transform:none;
+  filter:drop-shadow(0 7px 5px rgba(55,45,34,.16));
+  opacity:.96;
+}
+
+/* Use the pack's long classroom chalkboard while retaining live game text. */
+.board{
+  top:20px;
+  width:min(54%,660px);
+  min-height:150px;
+  padding:25px 42px 18px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  isolation:isolate;
+  overflow:visible;
+}
+.board:before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  left:50%;
+  top:50%;
+  width:284px;
+  height:82px;
+  background-image:var(--kc-classroom-props);
+  background-repeat:no-repeat;
+  background-size:512px 512px;
+  background-position:-16px -329px;
+  transform:translate(-50%,-50%) scale(1.82);
+  transform-origin:center;
+  filter:drop-shadow(0 9px 7px rgba(49,46,34,.19));
+}
+.board small,.board strong,.board span{
+  position:relative;
+  z-index:1;
+  text-shadow:0 2px 2px rgba(31,51,34,.35);
+}
+.board small{color:#dae9cc}
+.board strong{font-size:23px;color:#f8f3d2}
+.board span{color:#eef3d8}
+
+/* The previous generic "student silhouettes" become actual classroom desks. */
+.student-silhouettes{
+  left:12%;
+  right:12%;
+  bottom:4px;
+  height:76px;
+  opacity:1;
+  align-items:flex-end;
+  gap:12px;
+  justify-content:space-around;
+  perspective:700px;
+}
+.student-silhouettes i{
+  display:block;
+  flex:0 0 67px;
+  width:67px;
+  height:62px;
+  border:0;
+  border-radius:0;
+  background-image:var(--kc-classroom-sheet);
+  background-repeat:no-repeat;
+  background-size:512px 512px;
+  background-position:-406px -424px;
+  filter:drop-shadow(0 5px 3px rgba(54,45,34,.18));
+  opacity:.96;
+}
+.student-silhouettes i:before{display:none}
+.student-silhouettes i:nth-child(2n){
+  height:62px;
+  transform:scale(.90) translateY(3px);
+}
+.student-silhouettes i:nth-child(3n){
+  height:62px;
+  transform:scale(.84) translateY(6px);
+}
+.student-silhouettes i:nth-child(4n){
+  transform:scale(.94) translateY(2px);
+}
+
+/* Let sunlight remain, but make it read as room lighting rather than a placeholder. */
+.window-light{
+  inset:0;
+  background:
+    linear-gradient(112deg,rgba(255,250,217,.38),transparent 36%),
+    radial-gradient(circle at 72% 2%,rgba(255,255,244,.54),transparent 35%);
+  mix-blend-mode:screen;
+}
+
+/* Real stationery from Classroom Props is placed on the teacher desk. */
+.desk:after{
+  content:"";
+  position:absolute;
+  z-index:1;
+  right:2.3%;
+  top:7%;
+  width:82px;
+  height:69px;
+  pointer-events:none;
+  background-image:var(--kc-classroom-stationery);
+  background-repeat:no-repeat;
+  background-size:512px 512px;
+  background-position:-153px -422px;
+  filter:drop-shadow(0 6px 4px rgba(53,35,23,.22));
+  opacity:.92;
+}
+
+/* Give gameplay cards a little more separation from the richer room art. */
+.waiting-panel,.task-panel{
+  background:rgba(249,250,243,.91);
+  border-color:rgba(255,255,255,.8);
+  box-shadow:0 12px 28px rgba(46,60,60,.14);
+}
+.empty-visitor{
+  background:rgba(250,250,240,.82);
+  border-color:rgba(255,255,255,.9);
+}
+.visitor-content{
+  box-shadow:0 16px 34px rgba(55,50,44,.21);
+}
+
+/* Keep the original teacher desk interaction area visually dominant. */
+.desk{
+  height:38%;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.11),transparent 13%),
+    repeating-linear-gradient(92deg,rgba(87,52,29,.08) 0 2px,transparent 2px 70px),
+    linear-gradient(180deg,#9f7452,#775139);
+  border-top-color:#b08460;
+}
+
+/* Tablet layout: preserve useful asset detail without covering interactions. */
+@media (max-width:1100px){
+  .classroom-backdrop:before{
+    left:-38px;
+    top:70px;
+    transform:scale(.82);
+    transform-origin:left top;
+  }
+  .classroom-backdrop:after{
+    right:1%;
+    top:250px;
+    transform:scale(.88);
+    transform-origin:right top;
+  }
+  .board{width:min(58%,590px)}
+  .board:before{transform:translate(-50%,-50%) scale(1.62)}
+  .student-silhouettes{left:9%;right:9%;gap:5px}
+  .student-silhouettes i:nth-child(n+7){display:none}
+}
+
+/* Phone-sized screens already prioritize controls; keep only the chalkboard asset. */
+@media (max-width:720px){
+  .classroom-backdrop:before,.classroom-backdrop:after,.desk:after{display:none}
+  .board{
+    width:76%;
+    min-height:112px;
+    top:15px;
+    padding:18px 28px 13px;
+  }
+  .board:before{transform:translate(-50%,-50%) scale(1.27)}
+  .board strong{font-size:19px;margin:4px 0}
+  .board span{font-size:10px}
+  .student-silhouettes{
+    left:4%;
+    right:4%;
+    height:54px;
+    overflow:hidden;
+  }
+  .student-silhouettes i{
+    flex-basis:52px;
+    width:52px;
+    transform:scale(.78)!important;
+    transform-origin:center bottom;
+  }
+  .student-silhouettes i:nth-child(n+6){display:none}
+}
