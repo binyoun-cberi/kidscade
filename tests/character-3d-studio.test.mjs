@@ -34,8 +34,8 @@ test('3D character studio previews and exports the standard animation set',()=>{
   }
   assert.match(js,/GLTFExporter/);
   assert.match(js,/binary:true/);
-  assert.match(js,/animations:bodyStyle==='assetChibi'\\?chibiAnimations:clips/);
-  assert.match(js,/kidscade-'\+bodyStyle\+'-rigged-character\\.glb/);
+  assert.ok(js.includes("animations:bodyStyle==='assetChibi'?chibiAnimations:clips"));
+  assert.ok(js.includes("'kidscade-'+bodyStyle+'-rigged-character.glb'"));
 });
 
 test('3D character studio remains global-admin only',()=>{
@@ -155,7 +155,7 @@ test('Chibi export keeps source animations and exports visible parts only',()=>{
   assert.match(js,/anim_run/);
   assert.match(js,/anim_jump/);
   assert.match(js,/onlyVisible:bodyStyle==='assetChibi'/);
-  assert.match(js,/animations:bodyStyle==='assetChibi'\?chibiAnimations:clips/);
+  assert.ok(js.includes("animations:bodyStyle==='assetChibi'?chibiAnimations:clips"));
 });
 
 test('Chibi asset manifest records CC0 source and wardrobe presets',()=>{
