@@ -49,8 +49,8 @@ test('three crops grow on tilled soil and can be harvested',()=>{
   assert.match(main,/function harvestCrop\(x,y,z,data\)/);
   assert.match(main,/CROP_MATURE_AGE=24/);
   assert.match(main,/CROP_MATURE_SECONDS=150/);
-  assert.match(main,/plantedAt:survivalWorldTime,lastGrowAt:survivalWorldTime/);
-  assert.match(main,/const elapsed=Math\.max\(0,now-last\),rate=CROP_MATURE_AGE\/CROP_MATURE_SECONDS/);
+  assert.match(main,/plantedAt:survivalWorldTime,lastGrowAt:survivalWorldTime,lastGrowReal:Date\.now\(\)\/1000/);
+  assert.match(main,/const elapsed=Math\.max\(worldElapsed,realElapsed\),rate=CROP_MATURE_AGE\/CROP_MATURE_SECONDS/);
 });
 
 test('base life panel is published and mobile interactions can use it',()=>{
