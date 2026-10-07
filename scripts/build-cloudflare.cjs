@@ -98,6 +98,35 @@ function writeBuildVersion(buildId) {
   );
 }
 
+// Give the 3D studio a build-specific pathname. Cloudflare's static-asset edge
+// can retain older /teacher/* bodies even if the response says no-store.
+// A pathname unique to each deployment avoids reusing that cached HTML/JS.
+function writeVersioned3dStudioAssets(buildId) {
+  const version=String(buildId || '').slice(0,12);
+  if(!/^[a-zA-Z0-9_-]{10,12}$/.test(version)){
+    throw new Error('Invalid 3D studio build version');
+  }
+  const dir=path.join(OUT,'teacher');
+  const sourceHtml=path.join(dir,'character-3d-studio.html');
+  const sourceJs=path.join(dir,'character-3d-studio.js');
+  const htmlDest=path.join(dir,`character-3d-studio-${version}.html`);
+  const jsDest=path.join(dir,`character-3d-studio-${version}.js`);
+  if(!fs.existsSync(sourceHtml)||!fs.existsSync(sourceJs)){
+    throw new Error('3D studio sources missing from Cloudflare artifact');
+  }
+  fs.copyFileSync(sourceJs,jsDest);
+  const original=fs.readFileSync(sourceHtml,'utf8');
+  const updated=original.replace(
+    /\/teacher\/character-3d-studio\.js(?:\?v=[^"']*)?/g,
+    `/teacher/character-3d-studio-${version}.js`
+  );
+  if(updated===original||!updated.includes('value="kidscade_male_hair_short"')){
+    throw new Error('3D studio versioned HTML must include the new male short hair option');
+  }
+  fs.writeFileSync(htmlDest,updated,'utf8');
+  return `teacher/character-3d-studio-${version}.html`;
+}
+
 function gameMap(catalog) {
   const games = Array.isArray(catalog.games) ? catalog.games : [];
   return new Map(games.map(game => [String(game.id || ''), game]));
@@ -196,6 +225,7 @@ async function main() {
 
   const buildId = resolveBuildId();
   writeBuildVersion(buildId);
+  assertExists(writeVersioned3dStudioAssets(buildId));
   assertExists('kidscade-version.json');
 
   const catalogPath = path.join(OUT, 'data/games.json');
