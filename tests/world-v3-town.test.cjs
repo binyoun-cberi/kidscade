@@ -740,7 +740,7 @@ test('Cube Pets are separated into home yard ranch and biome habitats',()=>{
   assert.match(runtime,/if\(isCityArea\(a\.targetX,a\.targetZ\)\)/);
   assert.match(runtime,/a\.interaction\.x=a\.object\.position\.x/);
   assert.match(runtime,/a\.interaction\.z=a\.object\.position\.z/);
-  assert.match(runtime,/const LAYOUT_VERSION=8/);
+  assert.match(runtime,/const LAYOUT_VERSION=9/);
 });
 
 test('regression: NPCs and animals preserve GLB ground offsets instead of sinking or floating',()=>{
@@ -938,7 +938,7 @@ test('four city squares use only shared road gutters and centered crosswalks',()
   assert.match(city,/for\(const x of \[-12,12\]\)/);
   assert.match(city,/for\(const z of \[10\.8,11\.55,12\.3,13\.05\]\)/);
   assert.match(city,/for\(const z of \[24,48\]\)/);
-  assert.match(runtime,/const LAYOUT_VERSION=8/);
+  assert.match(runtime,/const LAYOUT_VERSION=9/);
 });
 
 
