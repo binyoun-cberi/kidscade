@@ -505,6 +505,56 @@ function orderFastFood(menuKey){
  state.mealFoods=[];state.mealCooked=false;state.mealQuick=false;tone('eat');renderHud();save();advanceMeal();toast(m.name+'을 바로 먹었어요. 빠르지만 비용과 영양도 함께 생각해 볼 수 있어요.')
 }
 
+const GYM_DAY_PASS=3500;
+const GYM_WORKOUTS={
+ run:{name:'러닝머신 20분',burn:180,hunger:12,condition:-1,satisfaction:4},
+ weights:{name:'근력 운동',burn:120,hunger:9,condition:-1,satisfaction:3},
+ stretch:{name:'스트레칭',burn:35,hunger:3,condition:1,satisfaction:2}
+};
+async function buildGym(){
+ endDog(false);state.location='gym';state.phase='gym';colliders=[];interactables=[];ui.labels.innerHTML='';labelViews=[];clearGroup(world);clearGroup(homeFoodGroup);document.body.classList.remove('lifeTown');await ensureCity();
+ scene.background.set(0xd5e0e6);scene.fog.color.set(0xd5e0e6);scene.fog.near=25;scene.fog.far=58;
+ const floor=new THREE.Mesh(new THREE.PlaneGeometry(9.2,7.2),new THREE.MeshStandardMaterial({color:0xb8bec3,roughness:.9}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;world.add(floor);
+ windowWall(9.2,3.25,[0,0,-3.5],0,.92,4.6);windowWall(7.2,3.25,[-4.55,0,0],Math.PI/2,.9,2.25);windowWall(7.2,3.25,[4.55,0,0],Math.PI/2,.9,2.25);entryWall(9.2,3.25,3.5,-3.25,1.38,.9,0x5367d6,true);addCeilingLights(9.2,7.2,3.28);wallSign('파워짐',[0,2.6,-3.37],1.58,'#5367d6');
+ const reception=await homeModel('desk',1.5,[2.8,0,2.55],'x',Math.PI),receptionTop=reception.userData.closedBounds.max.y;
+ await Promise.all([
+  homeModel('chair-desk',.78,[2.8,0,3.12],'y',0),
+  homeModel('bookcase-closed-wide',1.9,[4.08,0,.65],'y',Math.PI/2,true),
+  homeModel('bench',1.42,[2.55,0,1.4],'x',Math.PI/2,true),
+  packDecor(KITCHEN+'computer-screen.glb',.42,[2.8,receptionTop+.01,2.55],0,false),
+  packDecor(KITCHEN+'potted-plant.glb',.95,[4.0,0,2.65],0,false),
+  packDecor(KITCHEN+'trashcan.glb',.55,[1.7,0,2.9],0,false),
+  addMarket('character-employee',1.48,[2.8,0,3.25],0,[0x5367d6,0xeef2ff,0x26324a])
+ ]);
+ wallSign('1일 이용권 '+fmt(GYM_DAY_PASS),[2.78,2.15,3.28],1.24,'#5367d6',Math.PI);sign('락커 · 휴식',[3.35,1.55,1.35],.17,'#5367d6');
+ addGymTreadmill(-2.65,-1.45);addGymTreadmill(-.85,-1.45);sign('유산소',[-1.75,1.72,-2.22],.22,'#5367d6');interactable('gymRun','러닝머신 20분',-1.75,-.15,1.35);
+ addGymDumbbellRack(3.35,-2.15);await homeModel('bench',1.48,[2.25,0,-.55],'x',0,true);box([5.0,1.25,.045],[1.65,1.72,-3.37],0xc4d7df,.22);
+ sign('웨이트 존',[2.55,1.65,-2.65],.19,'#394b9a');interactable('gymWeights','근력 운동',2.25,.55,1.35);
+ addGymMat(-1.25,1.45,0x6f8fd8);addGymMat(.55,1.45,0x74a786);sign('스트레칭',[-.35,1.25,1.44],.18,'#5576b9');interactable('gymStretch','스트레칭',-.35,2.15,1.2);
+ interactable('gymRest','잠깐 쉬기',2.45,1.9,1.2);
+ await Promise.all([
+  indoorResident(CITY_PEOPLE_ASSETS[2],[-2.65,0,-1.35],Math.PI,'러닝하는 주민',/run|sprint|walk/i,.24),
+  indoorResident(CITY_PEOPLE_ASSETS[5],[3.55,0,-.55],-Math.PI/2,'운동하는 주민')
+ ]);
+ interactable('gymExit','동네로 나가기',-3.25,2.72,1.8);sign('밖으로',[-3.25,2.5,3.38],.2,'#5367d6');setSpawn('gym');renderHud();save()
+}
+function gymPassReady(){
+ if(state.gymPassDay===state.day)return true;
+ if(state.money<GYM_DAY_PASS){toast('헬스장 1일 이용권 '+fmt(GYM_DAY_PASS)+'이 필요해요.',true);return false}
+ state.money-=GYM_DAY_PASS;state.dailyExpense+=GYM_DAY_PASS;state.weekStats.spent+=GYM_DAY_PASS;state.gymPassDay=state.day;state.dailyIncidents.push('🏋️ 파워짐 1일 이용권 '+fmt(GYM_DAY_PASS)+'을 샀어요.');tone('cash');return true
+}
+function doGymWorkout(kind){
+ const w=GYM_WORKOUTS[kind];if(!w)return;
+ if(state.treatmentNeeded)return toast('다친 상태에서는 운동하지 말고 병원에서 먼저 치료받는 게 좋아요.',true);
+ if((kind==='run'||kind==='weights')&&state.condition<32)return toast('컨디션이 너무 낮아요. 오늘은 스트레칭이나 휴식을 선택해 보세요.',true);
+ if((state.gymWorkoutCount||0)>=2)return toast('오늘 운동은 충분히 했어요. 무리하지 말고 쉬어 주세요.',true);
+ if(!gymPassReady())return;
+ state.gymWorkoutCount=(state.gymWorkoutCount||0)+1;state.dailyActivityKcal=(state.dailyActivityKcal||0)+w.burn;
+ state.hunger=clamp(state.hunger-w.hunger,0,100);state.condition=clamp(state.condition+w.condition,5,100);state.satisfaction=clamp(state.satisfaction+w.satisfaction,20,100);
+ state.dailyIncidents.push('🏃 '+w.name+' · 활동 '+w.burn+' kcal');tone('good');renderHud();save();toast(w.name+' 완료! 운동 뒤에는 배가 더 고플 수 있어요.')
+}
+function restAtGym(){tone('good');toast('벤치에서 잠깐 쉬었어요. 오늘 운동은 최대 2번까지 할 수 있어요.')}
+
 async function buildOffice(){
  endDog(false);state.location='office';state.phase='office';colliders=[];interactables=[];ui.labels.innerHTML='';labelViews=[];clearGroup(world);scene.background.set(0xc9dce5);scene.fog.near=25;scene.fog.far=55;document.body.classList.remove('lifeTown');
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(9,7),new THREE.MeshStandardMaterial({color:0xc9b99e,roughness:.95}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;world.add(floor);
