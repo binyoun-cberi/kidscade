@@ -220,13 +220,13 @@ function loadAvatar(){
 }
 loadAvatar();window.addEventListener('kidscade-avatar-change',loadAvatar);
 
-async function initCrates(){
- const snap=bridge.snapshot();for(const q of snap.crates||[]){
-  const host=new THREE.Group();host.position.set(sx(q.x),0,sz(q.y));staticRoot.add(host);crateMap.set(q.id,host);
-  const placeholder=box(host,0,0,0,.55,.42,.55,0x9a7044);const o=await cloneAsset(A.crate,.7,0xa87542,.42);if(o&&host.parent){host.remove(placeholder);host.add(o)}
- }
+async function ensureCrate(q){
+ if(crateMap.has(q.id))return crateMap.get(q.id);
+ const host=new THREE.Group();host.position.set(sx(q.x),0,sz(q.y));staticRoot.add(host);crateMap.set(q.id,host);
+ const placeholder=box(host,0,0,0,.55,.42,.55,0x9a7044);
+ const o=await cloneAsset(A.crate,.7,0xa87542,.42);if(o&&host.parent){host.remove(placeholder);host.add(o)}
+ return host
 }
-initCrates();
 
 function syncActors(s,t){
  const zombieKeys=new Set(),survivorKeys=new Set();
@@ -256,6 +256,7 @@ function syncActors(s,t){
  }else if(avatarMesh)avatarMesh.visible=false
 }
 function syncBullets(s){
+ for(const o of bulletRoot.children)if(o.isLine){o.geometry?.dispose?.();o.material?.dispose?.()}
  bulletRoot.clear();
  for(const b of s.bullets){
   if(b.beam&&Number.isFinite(b.tx)&&Number.isFinite(b.ty)){
@@ -274,7 +275,9 @@ function syncPickups(s,t){
  }
 }
 function syncGameplay(s,t){
- for(const q of s.crates||[]){const o=crateMap.get(q.id);if(o)o.visible=!q.opened}
+ const crateIds=new Set((s.crates||[]).map(q=>q.id));
+ for(const [id,o] of crateMap)if(!crateIds.has(id))o.visible=false;
+ for(const q of s.crates||[]){let o=crateMap.get(q.id);if(!o){ensureCrate(q);o=crateMap.get(q.id)}if(o)o.visible=!q.opened}
  if(fieldTurret){fieldTurret.rotation.y=-Math.PI/2+Math.sin(t*.002)*.18;fieldTurret.traverse(n=>{if(!n.isMesh)return;const ms=Array.isArray(n.material)?n.material:[n.material];ms.forEach(m=>{if(m?.emissive){m.emissive.setHex(s.turret?.active?0xe6c654:0x24282a);m.emissiveIntensity=s.turret?.active ? .7 : .08}})})}
  if(rangeRing)rangeRing.visible=!!s.turret?.active;
  emergencyLight.intensity=(s.zombies.length+s.spawnQueue)>0?2.1+Math.max(0,Math.sin(t*.012))*2.2:0;
@@ -319,10 +322,11 @@ new ResizeObserver(resize).observe(stage);resize();
 let last=0;
 function frame(t){
  const s=bridge.snapshot();
+ if(!s.active){last=t;requestAnimationFrame(frame);return}
  if(t-last>15){
   syncActors(s,t);syncBullets(s);syncPickups(s,t);syncGameplay(s,t);updateCamera(s,t);renderer.render(scene,camera);last=t
  }
  requestAnimationFrame(frame)
 }
 requestAnimationFrame(frame);
-window.Q17Field3D=Object.freeze({active:true,version:'21.0',scene,camera,renderer});
+window.Q17Field3D=Object.freeze({active:true,version:'21.1',scene,camera,renderer});
