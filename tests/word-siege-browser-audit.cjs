@@ -89,6 +89,18 @@ let chrome,ws;
     assert.equal(stageCount,10,'stage selection must contain ten boards');
     const initiallyLocked=await evaluate("document.querySelectorAll('#stageList .stage-choice:disabled').length");
     assert.ok(initiallyLocked>=9,'fresh campaign should lock later boards');
+    const selectorGeometry=await evaluate(`(()=>{
+      const panel=document.querySelector('#startOverlay .panel').getBoundingClientRect();
+      const start=document.getElementById('startBtn').getBoundingClientRect();
+      const list=document.getElementById('stageList').getBoundingClientRect();
+      return {panelTop:panel.top,panelBottom:panel.bottom,startTop:start.top,startBottom:start.bottom,
+        listTop:list.top,listBottom:list.bottom,screenHeight:innerHeight};
+    })()`);
+    assert.ok(selectorGeometry.panelBottom<=config.h+2,'stage selector beyond viewport '+config.name);
+    if(index===0||index===2){
+      const shot=await send('Page.captureScreenshot',{format:'jpeg',quality:40,captureBeyondViewport:false});
+      console.log('WORD_SIEGE_IMAGE_stage-select-'+config.name+'='+shot.data);
+    }
     await evaluate("document.getElementById('startBtn').click()");
     await pause(250);
     const geometry=await evaluate(`(()=>{
