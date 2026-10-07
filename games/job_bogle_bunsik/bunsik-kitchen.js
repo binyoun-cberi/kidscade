@@ -174,7 +174,7 @@ class RamenKitchen3D{
   this.potVisuals=[];
   this.customerHolders=[];
   this.customerXs=[-3.3,-1.1,1.1,3.3,0];
-  this.hallSeats=[];this.hallTableGroups=[];this.customerStates=[];this.dishCartModel=null;this.dishCartQueue=[];this.dishCartTask=null;this.dishCartHome=new THREE.Vector3(-7.7,.02,-6.1);this.dishReturnPoint=new THREE.Vector3(-3.55,0,-4.35);this.hallExpansionLocked=null;this.hallExpansionOpen=null;this.hallEntrance=new THREE.Vector3(0,0,-12.95);this.hallDoor=null;this.hallDoorOpenUntil=0;this.hallSign=null;this.hallFamousSign=null;
+  this.hallSeats=[];this.hallTableGroups=[];this.customerStates=[];this.dishCartModel=null;this.dishCartQueue=[];this.dishCartTask=null;this.dishCartHome=new THREE.Vector3(-7.7,.02,-6.1);this.dishReturnPoint=new THREE.Vector3(-3.55,0,-4.35);this.hallExpansionLocked=null;this.hallExpansionOpen=null;this.hallEntrance=new THREE.Vector3(0,0,-15.15);this.hallDoor=null;this.hallDoorOpenUntil=0;this.hallSign=null;this.hallFamousSign=null;
   this.serviceGroup=null;this.serviceMeal=null;this.serviceHome=new THREE.Vector3(0,.92,5.25);
   this.cameraFocus=new THREE.Vector3(0,.9,.5);this.cameraGoal=new THREE.Vector3(0,10.5,10.8);
   this.raycaster=new THREE.Raycaster();
@@ -235,6 +235,7 @@ class RamenKitchen3D{
   const doorPivot=this.hallDoor=new THREE.Group();doorPivot.position.set(-1.05,.02,-14.12);this.scene.add(doorPivot);
   this.loadModel(BAKERY,'door-modular.glb',2.35).then(o=>{if(o){o.position.x+=1.05;o.rotation.y=Math.PI;doorPivot.add(o)}});
   const mat=this.box(2.5,.035,1.15,0x86543d,0,.035,-13.35,{roughness:.9,castShadow:false});mat.receiveShadow=true;
+  const porch=this.box(3.4,.08,1.65,0xa98a6c,0,-.03,-14.88,{roughness:.95,castShadow:false});porch.receiveShadow=true;
  }
  async loadModel(root,file,size){
   const key=root+file;
@@ -965,8 +966,8 @@ class RamenKitchen3D{
  }
  resetCustomerHall(){
   this.hallSeats.forEach(seat=>{seat.occupiedBy=null;seat.dirtyPending=false;this.setSeatDish(seat,'none')});
-  this.dishCartQueue.length=0;this.dishCartTask=null;
-  if(this.dishCartModel)this.dishCartModel.position.copy(this.dishCartHome);
+  this.dishCartQueue.length=0;this.dishCartTask=null;this.setDishCartCarry(false);
+  if(this.dishCartModel){this.dishCartModel.position.copy(this.dishCartHome);this.dishCartModel.rotation.y=Math.PI/2}
   this.customerStates.forEach(c=>{c.holder.userData.reactionToken=(c.holder.userData.reactionToken||0)+1;c.holder.children.filter(n=>n.userData?.customerFx).forEach(n=>c.holder.remove(n));this.setCustomerDishCarry(c,false);c.phase='idle';c.orderId=null;c.path.length=0;c.mealMeta=null;c.eatRemaining=0;c.reviewRemaining=0;c.holder.visible=false;c.holder.position.copy(this.hallEntrance);c.holder.position.y=0;c.holder.rotation.set(0,0,0);c.holder.scale.setScalar(1);c.holder.userData.seatedScaleY=1})
  }
  beginCustomerArrival(order){
@@ -1033,12 +1034,15 @@ class RamenKitchen3D{
  }
  beginCustomerExit(c){
   if(!c)return;
+  const fromReturn=c.phase==='returningDish'||Math.hypot(c.holder.position.x-this.dishReturnPoint.x,c.holder.position.z-this.dishReturnPoint.z)<.55;
   c.phase='leaving';c.holder.position.y=0;c.holder.scale.setScalar(1);c.holder.userData.seatedScaleY=1;c.holder.rotation.z=0;
-  const z=c.holder.position.z,laneZ=c.seat?c.seat.position.z+1.15:z;
-  const path=[];
-  if(Math.abs(c.holder.position.x-(c.seat?.position.x||0))<1.5&&c.seat)path.push(new THREE.Vector3(c.seat.position.x,0,laneZ));
-  path.push(new THREE.Vector3(0,0,laneZ),new THREE.Vector3(0,0,-12.15),new THREE.Vector3(0,0,-13.15));
-  c.path=path
+  const z=c.holder.position.z,laneZ=c.seat?c.seat.position.z+1.15:z,path=[];
+  if(fromReturn)path.push(new THREE.Vector3(0,0,z));
+  else{
+   if(c.seat)path.push(new THREE.Vector3(c.seat.position.x,0,laneZ));
+   path.push(new THREE.Vector3(0,0,laneZ))
+  }
+  path.push(new THREE.Vector3(0,0,-12.15),this.hallEntrance.clone());c.path=path
  }
  moveCustomerPath(c,dt,speed=2.25){
   const target=c.path[0];if(!target)return true;
