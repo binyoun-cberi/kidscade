@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - audit/chibi-male-visual-20261008
+  pull_request:
 
 permissions:
   contents: read
