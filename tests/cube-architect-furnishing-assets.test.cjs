@@ -64,6 +64,6 @@ test('old saves and placement rules remain intact, with new interactions',()=>{
   assert.match(main,/setWorldBlock\(p\.x,p\.y,p\.z,\{type:selectedType,facing,playerBuilt:true\},true\)/);
   assert.match(index,/data-inv-cat="가구"/);
   assert.match(index,/data-inv-cat="생존"/);
-  assert.match(index,/cube-architect-world-assets\.js\?v=20261008-furnishing1/);
+  assert.match(index,/cube-architect-world-assets\.js\?v=20261005-hunt1&furnishing=1/);
   assert.match(index,/cube-architect\.js\?v=20261007-homestead4&furnishing=1/);
 });
