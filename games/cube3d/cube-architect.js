@@ -1305,7 +1305,7 @@ function applyRestoredLandmarksToLoadedWorld(){
 function completeLandmarkPoi(id){
   const poi=poiRules.poiById(id);if(!poi||restoredLandmarks.has(id))return;
   // Keep the old save-field name for backward compatibility; it now means dungeon cleared.
-  restoredLandmarks.add(id);discoveredLandmarks.add(id);unlockedTech.add(poi.tech.id);
+  restoredLandmarks.add(id);discoveredLandmarks.add(id);unlockedTech.add(poi.tech.id);refreshBookshelfMeshes();
   for(const [type,n] of Object.entries(poi.tech.reward||{}))addToBag(type,n);
   trackSurvival('restore',id);
   refreshRecipeDiscoveries(true);
@@ -2696,22 +2696,55 @@ function makeChairObject(facing=0){
   }
   g.rotation.y=(facing||0)*Math.PI/2;return g;
 }
-function makeDeskObject(facing=0){
+function makeDeskObject(facing=0,decor=''){
   const g=new THREE.Group(),wood=materialFor('planks');
   const top=new THREE.Mesh(new THREE.BoxGeometry(.96,.16,.7),wood);top.position.y=.18;g.add(top);
   for(const x of [-.37,.37])for(const z of [-.25,.25]){
     const leg=new THREE.Mesh(new THREE.BoxGeometry(.12,.72,.12),wood);leg.position.set(x,-.23,z);g.add(leg);
   }
   const drawer=new THREE.Mesh(new THREE.BoxGeometry(.34,.22,.58),new THREE.MeshStandardMaterial({color:0x855d3c,roughness:.88}));
-  drawer.position.set(.25,.02,0);g.add(drawer);g.rotation.y=(facing||0)*Math.PI/2;return g;
+  drawer.position.set(.25,.02,0);g.add(drawer);
+  const prop=new THREE.Group();prop.position.set(-.16,.31,0);
+  if(decor==='notes'){
+    const paper=new THREE.Mesh(new THREE.BoxGeometry(.42,.025,.32),new THREE.MeshStandardMaterial({color:0xf1ead8,roughness:.95}));
+    const book=new THREE.Mesh(new THREE.BoxGeometry(.28,.05,.22),new THREE.MeshStandardMaterial({color:0x5b78b5,roughness:.85}));
+    book.position.set(.08,.045,-.02);prop.add(paper,book);
+  }else if(decor==='flower'){
+    const pot=new THREE.Mesh(new THREE.CylinderGeometry(.1,.13,.18,8),new THREE.MeshStandardMaterial({color:0xa96242,roughness:.9}));
+    const stem=new THREE.Mesh(new THREE.BoxGeometry(.035,.22,.035),new THREE.MeshStandardMaterial({color:0x4e9b53,roughness:.9}));
+    const bloom=new THREE.Mesh(new THREE.SphereGeometry(.09,8,6),new THREE.MeshStandardMaterial({color:0xe68fbb,roughness:.85}));
+    pot.position.y=.08;stem.position.y=.25;bloom.position.y=.38;prop.add(pot,stem,bloom);
+  }else if(decor==='lamp'){
+    const stem=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.32,8),new THREE.MeshStandardMaterial({color:0x60656b,metalness:.25,roughness:.55}));
+    const shade=new THREE.Mesh(new THREE.ConeGeometry(.14,.18,10,1,true),new THREE.MeshStandardMaterial({color:0xf0b34e,emissive:0xff9e35,emissiveIntensity:.35,side:THREE.DoubleSide}));
+    stem.position.y=.18;shade.position.y=.4;prop.add(stem,shade);
+  }else if(decor.startsWith('trophy:')){
+    const id=decor.slice(7),tiny=makeDisplayStandObject(id);tiny.scale.setScalar(.38);tiny.position.y=.18;prop.add(tiny);
+  }
+  g.add(prop);g.rotation.y=(facing||0)*Math.PI/2;return g;
 }
-function makeBookshelfObject(facing=0){
+function explorationCollectionProgress(){
+  const creatureTotal=Math.max(1,Object.keys(window.CubeArchitectCreatures?.SPECIES||{}).length);
+  const biomeTotal=Math.max(1,Object.keys(worldRules.BIOMES||{}).length);
+  const landmarkTotal=Math.max(1,(poiRules.POIS||poiRules.ALL||[]).length||6);
+  const found=seenCreatureKinds.size+visitedBiomes.size+restoredLandmarks.size,total=creatureTotal+biomeTotal+landmarkTotal;
+  return THREE.MathUtils.clamp(found/total,0,1);
+}
+function refreshBookshelfMeshes(){
+  if(mode!=='free')return;
+  for(const [key,data] of worldData){
+    if(data?.type!=='bookshelf')continue;
+    const [x,y,z]=parseWorldKey(key);if(inRenderRange(x,z))refreshBlockMesh(x,y,z);
+  }
+}
+function makeBookshelfObject(facing=0,fill=0){
   const g=new THREE.Group(),wood=materialFor('planks'),dark=new THREE.MeshStandardMaterial({color:0x6f4e38,roughness:.9});
   const back=new THREE.Mesh(new THREE.BoxGeometry(.88,.96,.12),dark);back.position.z=.37;g.add(back);
   for(const x of [-.41,.41]){const side=new THREE.Mesh(new THREE.BoxGeometry(.12,.98,.76),wood);side.position.x=x;g.add(side)}
   for(const y of [-.42,0,.42]){const shelf=new THREE.Mesh(new THREE.BoxGeometry(.88,.1,.76),wood);shelf.position.y=y;g.add(shelf)}
-  const colors=[0x5b78b5,0xb85f59,0xd0a84e,0x5f9c68,0x8c6bb1];
-  for(let row=0;row<2;row++)for(let i=0;i<5;i++){
+  const colors=[0x5b78b5,0xb85f59,0xd0a84e,0x5f9c68,0x8c6bb1],count=Math.max(0,Math.min(10,Math.round(fill*10)));
+  for(let n=0;n<count;n++){
+    const row=Math.floor(n/5),i=n%5;
     const book=new THREE.Mesh(new THREE.BoxGeometry(.1,.28+.04*((i+row)%2),.32),
       new THREE.MeshStandardMaterial({color:colors[(i+row)%colors.length],roughness:.86}));
     book.position.set(-.28+i*.14,-.2+row*.43,.08);g.add(book);
@@ -2783,9 +2816,9 @@ function makeWorldMesh(x,y,z,data){
   }else if(type==='chair'){
     root=makeChairObject(data.facing||0);root.position.set(x,y+.5,z);
   }else if(type==='desk'){
-    root=makeDeskObject(data.facing||0);root.position.set(x,y+.5,z);
+    root=makeDeskObject(data.facing||0,data.decor||'');root.position.set(x,y+.5,z);
   }else if(type==='bookshelf'){
-    root=makeBookshelfObject(data.facing||0);root.position.set(x,y+.5,z);
+    root=makeBookshelfObject(data.facing||0,explorationCollectionProgress());root.position.set(x,y+.5,z);
   }else if(type==='sign'){
     root=makeSignObject(data.facing||0,data.text||'');root.position.set(x,y+.5,z);
   }else if(type==='tilledSoil'){
@@ -3702,7 +3735,7 @@ function updateFreeMission(){
   $('biomeState').textContent=biome.name;
   if(!visitedBiomes.has(region)){
     const alreadyExplored=visitedBiomes.size>0;
-    visitedBiomes.add(region);ambientAudioClock=0;
+    visitedBiomes.add(region);ambientAudioClock=0;refreshBookshelfMeshes();
     if(gameFreeMode==='survival')trackSurvival('biome',region);
     if(alreadyExplored){
       const hint=worldRules.BIOME_REWARDS[region];
@@ -4143,20 +4176,21 @@ function refreshPetNameTag(root){
   if(!root)return;const old=root.children.find(c=>c.userData?.petNameTag);if(old){root.remove(old);old.material?.map?.dispose?.();old.material?.dispose?.()}
   if(root.userData?.petId)root.add(makePetNameSprite(petDisplayName(root)));
 }
+function finiteNumber(value,fallback=0){const n=Number(value);return Number.isFinite(n)?n:fallback}
 function syncTamedCreaturePositions(){
   for(const root of wildCreatures){
     const record=petRecordForRoot(root);if(!record||root.userData.dead)continue;
-    record.x=Number(root.position.x)||0;record.z=Number(root.position.z)||0;
-    if(record.mode==='stay'){record.homeX=Number(root.userData.homeX)||record.x;record.homeZ=Number(root.userData.homeZ)||record.z}
+    record.x=finiteNumber(root.position.x,0);record.z=finiteNumber(root.position.z,0);
+    if(record.mode==='stay'){record.homeX=finiteNumber(root.userData.homeX,record.x);record.homeZ=finiteNumber(root.userData.homeZ,record.z)}
   }
 }
 function restoreTamedCreatures(){
   for(const record of Object.values(tamedCreatures||{})){
     const spec=window.CubeArchitectCreatures?.SPECIES?.[record.species];if(!spec||!TAME_RULES[record.species])continue;
-    const x=THREE.MathUtils.clamp(Number(record.x)||0,-WORLD_HALF+2,WORLD_HALF-2),z=THREE.MathUtils.clamp(Number(record.z)||5,-WORLD_HALF+2,WORLD_HALF-2);
+    const x=THREE.MathUtils.clamp(finiteNumber(record.x,0),-WORLD_HALF+2,WORLD_HALF-2),z=THREE.MathUtils.clamp(finiteNumber(record.z,5),-WORLD_HALF+2,WORLD_HALF-2);
     const root=placeWildCreature(record.species,x,z);if(!root)continue;
     root.userData.petId=record.id;root.userData.tameProgress=TAME_RULES[record.species].need;
-    root.userData.homeX=Number(record.homeX)||x;root.userData.homeZ=Number(record.homeZ)||z;
+    root.userData.homeX=finiteNumber(record.homeX,x);root.userData.homeZ=finiteNumber(record.homeZ,z);
     refreshPetNameTag(root);
   }
 }
@@ -4173,8 +4207,10 @@ function petCatchupPosition(root){
     const y=creatureGroundY(x,z,freePhysicsY-1.62);
     if(Math.abs(y-(freePhysicsY-1.62))>1.35)continue;
     const cx=Math.round(x),cz=Math.round(z),feet=getBlock(cx,Math.floor(y),cz),support=getBlock(cx,Math.floor(y)-1,cz);
-    const danger=[feet?.type,support?.type].some(type=>['water','lava','fire','cactus'].includes(type));
-    if(!danger)candidates.push({x,y,z});
+    const bodyA=getBlock(cx,Math.floor(y+.08),cz),bodyB=getBlock(cx,Math.floor(y+.78),cz);
+    const occupied=isSolidData(bodyA,cx,Math.floor(y+.08),cz)||isSolidData(bodyB,cx,Math.floor(y+.78),cz);
+    const danger=[feet?.type,support?.type,bodyA?.type,bodyB?.type].some(type=>['water','lava','fire','cactus'].includes(type));
+    if(!danger&&!occupied)candidates.push({x,y,z});
   }
   return candidates[0]||null;
 }
@@ -4230,6 +4266,13 @@ function leaveChair(){
 function saveSignText(){
   const target=lifeTargetData();if(!target||target.data.type!=='sign')return;
   const value=cleanSignText($('lifeSignText')?.value||'');setWorldBlock(...target.p,{...target.data,text:value},true);toast(value?'표지판에 글을 적었어요.':'표지판 글을 지웠어요.');renderLifePanel();saveFreeWorld();
+}
+function setDeskDecor(value){
+  const target=lifeTargetData();if(!target||target.data.type!=='desk')return;
+  const decor=String(value||'').slice(0,48);setWorldBlock(...target.p,{...target.data,decor},true);
+  const labels={'':'비움',notes:'탐험 노트',flower:'작은 화분',lamp:'작은 랜턴'};
+  const label=decor.startsWith('trophy:')?(poiRules.poiById(decor.slice(7))?.name||'랜드마크')+' 기념품':labels[decor]||'소품';
+  toast('책상 위에 '+label+'을(를) 놓았어요.');renderLifePanel();saveFreeWorld();
 }
 function lifeTargetData(){
   if(!lifePanelTargetKey)return null;const p=parseWorldKey(lifePanelTargetKey),data=getBlock(...p);
@@ -4319,6 +4362,19 @@ function renderLifePanel(){
     title.textContent='표지판 쓰기';const p=document.createElement('p');p.textContent='두 줄까지 적을 수 있어요. 집·방·창고에 이름을 붙여 보세요.';
     const area=document.createElement('textarea');area.id='lifeSignText';area.className='life-sign-text';area.maxLength=24;area.rows=2;area.value=target.data.text||'';area.placeholder='예: 나의 비밀기지';
     const save=document.createElement('button');save.type='button';save.className='life-primary';save.textContent='표지판 저장';save.onclick=saveSignText;body.append(p,area,save);return;
+  }
+  if(lifePanelMode==='desk'){
+    const target=lifeTargetData();if(!target||target.data.type!=='desk'){closeLifePanel();return}
+    title.textContent='책상 꾸미기';const intro=document.createElement('p');intro.textContent='발견한 것에 따라 책상 위 소품이 늘어나요. 마음에 드는 하나를 올려 보세요.';body.append(intro);
+    const actions=document.createElement('div');actions.className='life-actions';
+    const options=[['','비우기'],['notes','탐험 노트']];
+    if(discoveredResources.has('flower')||bagCount('flower')>0)options.push(['flower','작은 화분']);
+    if(discoveredResources.has('torch')||bagCount('torch')>0)options.push(['lamp','작은 랜턴']);
+    for(const id of restoredLandmarks){const poi=poiRules.poiById(id);if(poi)options.push(['trophy:'+id,poi.name+' 기념품'])}
+    for(const [value,label] of options){
+      const b=document.createElement('button');b.type='button';b.textContent=(target.data.decor||'')===value?'✓ '+label:label;b.onclick=()=>setDeskDecor(value);actions.append(b);
+    }
+    body.append(actions);return;
   }
   if(lifePanelMode==='library'){
     title.textContent='탐험 책장';const wrap=document.createElement('div');wrap.className='life-library';
@@ -4411,6 +4467,7 @@ function interactLifeBlock(type,x,y,z){
   if(type==='displayStand')return useDisplayStand(x,y,z);
   if(type==='chair')return useChair(x,y,z);
   if(type==='sign'){openLifePanel('sign',x,y,z);return true}
+  if(type==='desk'){openLifePanel('desk',x,y,z);return true}
   if(type==='bookshelf'){openLifePanel('library',x,y,z);return true}
   return false;
 }
@@ -5475,7 +5532,7 @@ function updateWildCreatures(dt,t){
     }
     upgradeWildCreatureAsset(root);
     if(dist<7&&!seenCreatureKinds.has(spec.id)&&t-lastCreatureHintAt>2400){
-      seenCreatureKinds.add(spec.id);lastCreatureHintAt=t;toast('생물 발견 · '+spec.name+' · '+creatureHint(spec));
+      seenCreatureKinds.add(spec.id);lastCreatureHintAt=t;refreshBookshelfMeshes();toast('생물 발견 · '+spec.name+' · '+creatureHint(spec));
     }
     const active=spec.kind!=='hostile'||(spec.id==='shadowBug'?night:true);
     root.visible=active;
@@ -6322,8 +6379,9 @@ function updateSimpleSurvivalUi(){
   if(hub&&mobileModeEnabled&&!mobileRadialOpen&&performance.now()-(hub._labelAt||0)>150){
     hub._labelAt=performance.now();
     const u=freeCenterHit(6)?.object?.userData||{};
-    const creature=creatureRayHit(2.9),hostile=creature?.object?.userData?.creatureRoot?.userData?.spec?.kind==='hostile';
-    const name=creature?(hostile?'공격':'인사'):['door','doorTop'].includes(u.type)?'열기':u.type==='workbench'?'만들기':u.type==='furnace'?'굽기':u.type==='chest'?'상자':u.type==='bed'?'침대':u.type==='mapBoard'?'지도':u.type==='displayStand'?'전시':u.type==='chair'?'앉기':u.type==='sign'?'쓰기':u.type==='bookshelf'?'책장':
+    const creature=creatureRayHit(2.9),creatureRoot=creature?.object?.userData?.creatureRoot,cu=creatureRoot?.userData;
+    const hostile=cu?.spec?.kind==='hostile',tameable=!!TAME_RULES[cu?.spec?.id];
+    const name=creature?(hostile?'공격':cu?.petId?'돌보기':tameable?'길들이기':'인사'):['door','doorTop'].includes(u.type)?'열기':u.type==='workbench'?'만들기':u.type==='furnace'?'굽기':u.type==='chest'?'상자':u.type==='bed'?'침대':u.type==='mapBoard'?'지도':u.type==='displayStand'?'전시':u.type==='chair'?'앉기':u.type==='sign'?'쓰기':u.type==='bookshelf'?'책장':
       FARM_PLANT_TYPES.includes(selectedType)?'심기':PLACEABLE_TYPES.includes(selectedType)&&selectedType!=='hand'?'놓기':'캐기';
     const label=hub.querySelector('b');if(label&&label.textContent!==name)label.textContent=name;
   }
