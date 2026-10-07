@@ -120,3 +120,50 @@ test('SoftMesh v3 records the inspected Kidscade people GLB baseline',()=>{
   assert.match(js,/maleA:\{triangles:723,skinnedMeshes:2,joints:7\}/);
   assert.match(js,/Existing Kidscade people GLBs were inspected as topology\/skinning references/);
 });
+
+
+test('Chibi asset mode is the default 3D avatar workflow',()=>{
+  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
+  const html=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.html'),'utf8');
+  assert.match(js,/bodyStyle='assetChibi'/);
+  assert.match(js,/GLTFLoader/);
+  assert.match(js,/\/chibi\/glb\/allinonepr\.glb/);
+  assert.match(html,/실물 Chibi Asset · 기본/);
+  assert.match(html,/Styloo Chibi Characters v1\.2/);
+});
+
+test('Chibi wardrobe exposes the source clothing and hair parts',()=>{
+  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
+  const html=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.html'),'utf8');
+  for(const part of ['shirt','skirt','shoe','bag','chemise','pants','hat','greenoutfit','ninjassuit','armorhelmet','armorshoe','hairvariant','hairtail']){
+    assert.match(js,new RegExp(part.replace('.','\\.')));
+  }
+  for(const preset of ['student','merchant','archer','ninja','knight']){
+    assert.match(html,new RegExp('data-chibi-preset="'+preset+'"'));
+  }
+  assert.match(js,/applyChibiPreset/);
+  assert.match(js,/applyChibiHair/);
+  assert.match(js,/selectedChibiParts/);
+});
+
+test('Chibi export keeps source animations and exports visible parts only',()=>{
+  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
+  assert.match(js,/chibiAnimations/);
+  assert.match(js,/anim_crouch/);
+  assert.match(js,/anim_iddle/);
+  assert.match(js,/anim_walk/);
+  assert.match(js,/anim_run/);
+  assert.match(js,/anim_jump/);
+  assert.match(js,/onlyVisible:bodyStyle==='assetChibi'/);
+  assert.match(js,/animations:bodyStyle==='assetChibi'\?chibiAnimations:clips/);
+});
+
+test('Chibi asset manifest records CC0 source and wardrobe presets',()=>{
+  const manifest=JSON.parse(fs.readFileSync(path.join(ROOT,'chibi','asset-manifest.json'),'utf8'));
+  assert.equal(manifest.license,'CC0-1.0');
+  assert.equal(manifest.primary,'glb/allinonepr.glb');
+  assert.ok(manifest.presets.student.includes('shirt'));
+  assert.ok(manifest.presets.ninja.includes('ninjassuit'));
+  assert.ok(manifest.presets.knight.includes('armorhelmet'));
+  assert.equal(manifest.animations.length,11);
+});
