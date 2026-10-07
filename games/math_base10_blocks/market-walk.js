@@ -733,8 +733,19 @@ function submitChange(){if(!state.paid)return;const v=Number(String(ui.changeInp
 async function finishCheckout(){if(!state.changeConfirmed)return;const total=cartTotal();state.money-=total;state.dailyExpense+=total;state.weekStats.spent+=total;for(const id of state.basket)state.inventory.push({uid:makeUid(id),id,age:0});state.basket=[];state.hasCart=false;state.held=null;state.scanned=new Set();state.phase='town';state.running=true;ui.checkout.classList.remove('show');ui.checkout.setAttribute('aria-hidden','true');ui.cartPanel.classList.add('hidden');tone('door');await buildTown('market');renderHud();save();toast('계산 완료! 장본 식품을 가지고 집으로 돌아가 보세요.')}
 
 function weekBalanceLabel(){const s=state.weekStats;if(!s.meals)return'기록 없음';const score=s.veg*2+s.protein*.18-s.sugar*.08-s.sodium*.5;return score>24?'다양하게 먹음':score>8?'무난함':'조금 치우침'}
-function showWeekReport(){state.running=false;state.phase='week';const s=state.weekStats;let notes=[];if(s.veg<10)notes.push('채소·과일이 조금 적었어요.');else notes.push('채소·과일을 여러 번 먹었어요.');if(s.sugar>95)notes.push('단 음식과 음료가 자주 있었어요.');if(s.sodium>55)notes.push('짠 간편식이 조금 많았어요.');if(s.cooked>=3)notes.push('직접 요리한 끼니가 꽤 있었어요.');if(!notes.length)notes.push('먹고 싶은 것과 필요한 것을 적당히 섞어 먹었어요.');ui.weekSummary.textContent=notes.join(' ');ui.weekCooked.textContent=s.cooked+'회';ui.weekQuick.textContent=s.quick+'회';ui.weekMoney.textContent=fmt(state.money);ui.weekBalance.textContent=weekBalanceLabel();ui.week.classList.remove('hidden');save()}
-function nextWeek(){state.day=1;state.slot=0;state.dailyKcal=0;state.dailyNutrition=freshDailyNutrition();state.dailyIncome=0;state.dailyExpense=0;state.dailyIncidents=[];state.weekStats=freshStats();state.mealFoods=[];state.mealCooked=false;state.mealQuick=false;state.hunger=clamp(state.hunger,45,75);state.condition=clamp(state.condition+4,20,100);state.workedDay=0;state.dogEventDay=0;state.phase='home';state.running=true;rollEvent(true);ui.week.classList.add('hidden');save();renderHud();toast('새로운 한 주가 시작됐어요. 가진 돈은 그대로 이어집니다.')}
+function showWeekReport(){
+ state.running=false;state.phase='week';const s=state.weekStats;let notes=[];
+ if(s.veg<10)notes.push('채소·과일이 조금 적었어요.');else notes.push('채소·과일을 여러 번 먹었어요.');
+ if(s.sugar>95)notes.push('단 음식과 음료가 자주 있었어요.');if(s.sodium>55)notes.push('짠 간편식이 조금 많았어요.');
+ if(s.cooked>=3)notes.push('직접 요리한 끼니가 꽤 있었어요.');
+ if((s.workouts||0)>=4)notes.push('운동을 꾸준히 했어요.');else if((s.workouts||0)>0)notes.push('가볍게 운동도 했어요.');
+ if((s.sickDays||0)>0)notes.push('몸이 좋지 않은 날에는 단축 근무로 버텼어요.');
+ if(!notes.length)notes.push('먹고 싶은 것과 필요한 것을 적당히 섞어 생활했어요.');
+ ui.weekSummary.textContent=notes.join(' ');ui.weekCooked.textContent=s.cooked+'회';ui.weekQuick.textContent=s.quick+'회';ui.weekWorkout.textContent=(s.workouts||0)+'회';ui.weekActivity.textContent=Math.round(s.activity||0).toLocaleString()+' kcal';ui.weekMoney.textContent=fmt(state.money);ui.weekBalance.textContent=weekBalanceLabel();ui.week.classList.remove('hidden');save()
+}
+function nextWeek(){
+ state.day=1;state.slot=0;state.dailyKcal=0;state.dailyActivityKcal=0;state.gymWorkoutCount=0;state.gymPassDay=0;state.dailyNutrition=freshDailyNutrition();state.dailyIncome=0;state.dailyExpense=0;state.dailyIncidents=[];state.weekStats=freshStats();state.mealFoods=[];state.mealCooked=false;state.mealQuick=false;state.hunger=clamp(state.hunger,45,75);state.condition=clamp(state.condition+4,20,100);state.workedDay=0;state.dogEventDay=0;state.phase='home';state.running=true;rollEvent(true);ui.week.classList.add('hidden');save();renderHud();toast('새로운 한 주가 시작됐어요. 가진 돈은 그대로 이어집니다.')
+}
 
 function makeDogLabel(){
  const c=document.createElement('canvas');c.width=256;c.height=96;const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));sp.scale.set(1.9,.72,1);sp.userData.canvas=c;sp.userData.tex=tex;return sp
