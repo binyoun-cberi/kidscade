@@ -402,9 +402,9 @@ function shotUpdate(s,dt){
 }
 
 function barrierEffects(){
-  const barriers=state.towers.filter(t=>t.def.role==='barrier');
+  const barriers=state.towers.filter(t=>t.def.role==='barrier').map(t=>({t,s:effectiveStats(t)}));
   if(!barriers.length)return;
-  for(const e of state.enemies){if(e.dead)continue;for(const t of barriers){const s=effectiveStats(t);if(dist(e,t)<s.range*.84){e.slow=Math.min(e.slow,s.barrierSlow||.62);break}}}
+  for(const e of state.enemies){if(e.dead)continue;for(const {t,s} of barriers){if(dist(e,t)<s.range*.84){e.slow=Math.min(e.slow,s.barrierSlow||.62);break}}}
 }
 function statusEffects(e,dt){
   if(e.burn>0){e.burn-=dt;e.hp-=e.burnDps*dt}
@@ -479,7 +479,7 @@ function endGame(win){
       core:Math.max(0,Math.ceil(state.core))
     });
   }catch(e){}
-  $('resultLongest').textContent=longest;$('resultHardest').textContent=hardest;resultOverlay.classList.remove('hidden');beep(win?900:130,.35,win?'triangle':'sawtooth',.06)
+  $('resultLongest').textContent=longest;$('resultHardest').textContent=hardest;$('resultCombos').textContent=state.discoveredCombos.size;resultOverlay.classList.remove('hidden');beep(win?900:130,.35,win?'triangle':'sawtooth',.06)
 }
 
 function flashEffect(x,y,color,r){state.effects.push({type:'flash',x,y,color,r,life:.25,max:.25})}
@@ -595,5 +595,6 @@ window.addEventListener('keydown',e=>{
 function loop(now){
   const dt=Math.min(.04,(now-last)/1000||0);last=now;if(state){update(dt);draw()}requestAnimationFrame(loop)
 }
+$('dictionaryTotal').textContent=D.wordList.length;
 resize();requestAnimationFrame(loop);
 })();
