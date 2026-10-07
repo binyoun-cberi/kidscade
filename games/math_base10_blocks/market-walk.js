@@ -12,7 +12,7 @@ const MARKET=ROOT+'shops/market/';
 const KITCHEN=ROOT+'3d/interiors/kenney-furniture-kit/';
 const ULTIMATE_FOOD=ROOT+'3d/food/ultimate-food-pack/';
 const CHARMING=ROOT+'3d/interiors/charming-kitchen-set/';
-const HOME_MODELS=['kitchen-fridge','kitchen-cabinet-upper-double','kitchen-cabinet','kitchen-sink','kitchen-stove-electric','kitchen-microwave','table','chair','desk','chair-desk','bookcase-open','bookcase-open-low','rug-rectangle','rug-round','rug-doormat','potted-plant','lamp-round-floor','table-coffee','lounge-chair','computer-screen','computer-keyboard','computer-mouse','trashcan'];
+const HOME_MODELS=['kitchen-fridge','kitchen-cabinet-upper-double','kitchen-cabinet','kitchen-sink','kitchen-stove-electric','kitchen-microwave','table','chair','desk','chair-desk','bookcase-open','bookcase-open-low','bookcase-closed-wide','bench','rug-rectangle','rug-round','rug-doormat','potted-plant','lamp-round-floor','table-coffee','lounge-chair','computer-screen','computer-keyboard','computer-mouse','trashcan'];
 const DISH_MODELS=['plate','egg-cooked','tomato-slice','cutting-board-japanese'];
 const MARKET_MODELS=['cash-register','character-employee','shopping-cart','shopping-basket','display-fruit','display-bread','freezer','freezers-standing','shelf-boxes','shelf-bags'];
 const PRODUCT_V4={apple:'apple-green.glb',banana:'banana.glb',carrot:'carrot.glb',broccoli:'broccoli.glb',tomato:'tomato.glb',eggplant:'eggplant.glb',egg:'egg.glb',bread:'bread.glb',donut:'donut.glb',chocolate:'chocolate-bar.glb',pizza:'pizza.glb',fries:'fries.glb'};
@@ -109,7 +109,7 @@ const starterInventory=()=>[
  {uid:'starter-carton',id:'carton',age:0},
  {uid:'starter-apple',id:'apple',age:0}
 ];
-let state={location:'home',phase:'loading',running:false,sound:true,day:1,slot:0,money:WEEKLY_BUDGET,hunger:58,dailyKcal:0,condition:75,satisfaction:62,weightKg:35,dailyNutrition:freshDailyNutrition(),dailyIncome:0,dailyExpense:0,dailyIncidents:[],injury:null,treatmentNeeded:false,workedDay:0,dogEventDay:0,inventory:starterInventory(),basket:[],hasCart:false,held:null,prep:[],dish:null,event:null,mealFoods:[],mealCooked:false,mealQuick:false,weekStats:freshStats(),checkoutMistakes:0,totalConfirmed:false,paid:0,changeConfirmed:false,scanned:new Set()};
+let state={location:'home',phase:'loading',running:false,sound:true,day:1,slot:0,money:WEEKLY_BUDGET,hunger:58,dailyKcal:0,condition:75,satisfaction:62,weightKg:35,dailyActivityKcal:0,dailyNutrition:freshDailyNutrition(),dailyIncome:0,dailyExpense:0,dailyIncidents:[],injury:null,treatmentNeeded:false,workedDay:0,dogEventDay:0,gymPassDay:0,gymWorkoutCount:0,inventory:starterInventory(),basket:[],hasCart:false,held:null,prep:[],dish:null,event:null,mealFoods:[],mealCooked:false,mealQuick:false,weekStats:freshStats(),checkoutMistakes:0,totalConfirmed:false,paid:0,changeConfirmed:false,scanned:new Set()};
 
 let audioCtx;
 function ensureAudio(){
@@ -145,7 +145,7 @@ function save(){
 function hasSave(){try{return !!localStorage.getItem(SAVE_KEY)}catch(_){return false}}
 function loadSave(){
  try{const x=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(!x)return false;state={...state,...x,dailyNutrition:{...freshDailyNutrition(),...(x.dailyNutrition||{})},dailyIncidents:x.dailyIncidents||[],weightKg:Number(x.weightKg)||35,mealFoods:x.mealFoods||[],mealCooked:!!x.mealCooked,mealQuick:!!x.mealQuick,scanned:new Set(x.scanned||[]),totalConfirmed:false,paid:0,changeConfirmed:false};state.location=x.location||'home';state.phase=state.location==='market'?'shopping':state.location;state.running=true;return true}catch(_){return false}}
-function newLife(){state={...state,location:'home',phase:'home',running:true,day:1,slot:0,money:WEEKLY_BUDGET,hunger:58,dailyKcal:0,condition:75,satisfaction:62,weightKg:35,dailyNutrition:freshDailyNutrition(),dailyIncome:0,dailyExpense:0,dailyIncidents:[],injury:null,treatmentNeeded:false,workedDay:0,dogEventDay:0,inventory:starterInventory(),basket:[],hasCart:false,held:null,prep:[],dish:null,event:null,mealFoods:[],mealCooked:false,mealQuick:false,weekStats:freshStats(),checkoutMistakes:0,totalConfirmed:false,paid:0,changeConfirmed:false,scanned:new Set()};rollEvent(true);save()}
+function newLife(){state={...state,location:'home',phase:'home',running:true,day:1,slot:0,money:WEEKLY_BUDGET,hunger:58,dailyKcal:0,condition:75,satisfaction:62,weightKg:35,dailyActivityKcal:0,dailyNutrition:freshDailyNutrition(),dailyIncome:0,dailyExpense:0,dailyIncidents:[],injury:null,treatmentNeeded:false,workedDay:0,dogEventDay:0,gymPassDay:0,gymWorkoutCount:0,inventory:starterInventory(),basket:[],hasCart:false,held:null,prep:[],dish:null,event:null,mealFoods:[],mealCooked:false,mealQuick:false,weekStats:freshStats(),checkoutMistakes:0,totalConfirmed:false,paid:0,changeConfirmed:false,scanned:new Set()};rollEvent(true);save()}
 
 
 const canvas=$('#scene');
@@ -199,7 +199,7 @@ function startModelAnimation(root,pattern=/walk|run|sprint/i){
 function box(size,pos,color,rough=.88,parent=world){const m=new THREE.Mesh(new THREE.BoxGeometry(...size),new THREE.MeshStandardMaterial({color,roughness:rough}));m.position.set(...pos);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function addCollider(x,z,w,d){colliders.push({x,z,w,d})}
 function canStand(x,z){
- const bounds=state.location==='market'?[-4.7,4.7,-4.2,4.2]:state.location==='home'?[-3.1,3.1,-2.8,3.1]:state.location==='convenience'?[-3.45,3.45,-2.95,2.95]:state.location==='fastfood'?[-3.75,3.75,-3.15,3.15]:state.location==='office'||state.location==='hospital'?[-4.4,4.4,-3.4,3.4]:[-16.5,16.5,-16.5,16.5];
+ const bounds=state.location==='market'?[-4.7,4.7,-4.2,4.2]:state.location==='home'?[-3.1,3.1,-2.8,3.1]:state.location==='convenience'?[-3.45,3.45,-2.95,2.95]:state.location==='fastfood'?[-3.75,3.75,-3.15,3.15]:state.location==='gym'?[-4.45,4.45,-3.45,3.45]:state.location==='office'||state.location==='hospital'?[-4.4,4.4,-3.4,3.4]:[-16.5,16.5,-16.5,16.5];
  if(x<bounds[0]||x>bounds[1]||z<bounds[2]||z>bounds[3])return false;for(const c of colliders)if(Math.abs(x-c.x)<c.w/2+.3&&Math.abs(z-c.z)<c.d/2+.3)return false;return true
 }
 function addCeilingLights(width,depth,height=3.12){const ceiling=box([width,.14,depth],[0,height,0],0xf5f1e8,.92);for(const x of [-width*.24,0,width*.24]){const panel=box([.85,.055,.28],[x,height-.1,0],0xfff6d8,.3);panel.material.emissive=new THREE.Color(0xffefbd);panel.material.emissiveIntensity=.85;const light=new THREE.PointLight(0xffefd0,.75,7,2);light.position.set(x,height-.28,0);world.add(light)}return ceiling}
@@ -357,9 +357,26 @@ async function ensureCity(){if(cityReady)return cityReady;cityReady=(async()=>{
 // Furniture keeps its source proportions. Scale to height (or width for tables),
 // center the footprint, and ground the model before deriving closed-body collisions.
 async function homeModel(name,value,pos,axis='y',rot=0,solid=true){const data=await asset(KITCHEN+name+'.glb'),clone=data.scene.clone(true),root=new THREE.Group();root.add(clone);recolor(clone,null);let bounds=new THREE.Box3().setFromObject(clone),size=bounds.getSize(new THREE.Vector3());clone.scale.multiplyScalar(value/(size[axis]||1));bounds=new THREE.Box3().setFromObject(clone);const center=bounds.getCenter(new THREE.Vector3());clone.position.x-=center.x;clone.position.z-=center.z;clone.position.y-=bounds.min.y;root.userData.localBounds=new THREE.Box3().setFromObject(root);root.rotation.y=rot;root.position.set(...pos);world.add(root);bounds=new THREE.Box3().setFromObject(root);size=bounds.getSize(new THREE.Vector3());root.userData.closedBounds=bounds.clone();if(solid)addCollider((bounds.min.x+bounds.max.x)/2,(bounds.min.z+bounds.max.z)/2,size.x,size.z);return root}
-async function indoorResident(url,pos,rot=0,role='주민'){
- const r=await fitted(url,1.55);r.position.set(...pos);r.rotation.y=rot;r.userData.role=role;world.add(r);groundModel(r,pos[1]||0,.025);
- const mixer=startModelAnimation(r,/idle/i);if(mixer)roomMixers.push(mixer);return r
+async function indoorResident(url,pos,rot=0,role='주민',pattern=/idle/i,surfaceY=pos[1]||0){
+ const r=await fitted(url,1.55);r.position.set(...pos);r.rotation.y=rot;r.userData.role=role;world.add(r);groundModel(r,surfaceY,.025);
+ const mixer=startModelAnimation(r,pattern);if(mixer)roomMixers.push(mixer);return r
+}
+function addGymTreadmill(x,z){
+ const g=new THREE.Group();g.position.set(x,0,z);world.add(g);
+ box([.92,.12,1.82],[0,.12,0],0x303842,.72,g);box([.68,.035,1.48],[0,.195,.08],0x171c22,.52,g);
+ box([.055,.9,.055],[-.36,.62,-.68],0x707b87,.5,g);box([.055,.9,.055],[.36,.62,-.68],0x707b87,.5,g);
+ box([.82,.07,.08],[0,.93,-.68],0x596573,.46,g);box([.46,.26,.08],[0,1.12,-.68],0x4659a6,.38,g);
+ addCollider(x,z,.92,1.82);return g
+}
+function addGymDumbbellRack(x,z){
+ const g=new THREE.Group();g.position.set(x,0,z);world.add(g);
+ box([1.55,.08,.46],[0,.48,0],0x404852,.65,g);box([.08,.82,.08],[-.66,.41,0],0x69737d,.5,g);box([.08,.82,.08],[.66,.41,0],0x69737d,.5,g);
+ const metal=new THREE.MeshStandardMaterial({color:0xa8b0b7,roughness:.38,metalness:.42}),plateMat=new THREE.MeshStandardMaterial({color:0x252b31,roughness:.72});
+ for(let j=0;j<5;j++){const dx=-.48+j*.24,bar=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.32,10),metal);bar.rotation.z=Math.PI/2;bar.position.set(dx,.56,0);g.add(bar);for(const ox of [-.14,.14]){const p=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,.045,12),plateMat);p.rotation.z=Math.PI/2;p.position.set(dx+ox,.56,0);g.add(p)}}
+ addCollider(x,z,1.55,.46);return g
+}
+function addGymMat(x,z,color){
+ const g=new THREE.Group();g.position.set(x,.025,z);world.add(g);box([1.55,.045,.68],[0,0,0],color,.84,g);return g
 }
 async function marketSurfaceModel(name,value,pos,axis='x',rot=0,solid=true){const data=await asset(MARKET+name+'.glb'),clone=data.scene.clone(true),root=new THREE.Group();root.add(clone);recolor(clone,null);let bounds=new THREE.Box3().setFromObject(clone),size=bounds.getSize(new THREE.Vector3());clone.scale.multiplyScalar(value/(size[axis]||1));bounds=new THREE.Box3().setFromObject(clone);const center=bounds.getCenter(new THREE.Vector3());clone.position.x-=center.x;clone.position.z-=center.z;clone.position.y-=bounds.min.y;root.userData.localBounds=new THREE.Box3().setFromObject(root);root.rotation.y=rot;root.position.set(...pos);world.add(root);bounds=new THREE.Box3().setFromObject(root);size=bounds.getSize(new THREE.Vector3());root.userData.closedBounds=bounds.clone();if(solid)addCollider((bounds.min.x+bounds.max.x)/2,(bounds.min.z+bounds.max.z)/2,size.x,size.z);return root}
 async function packDecor(url,size,pos,rot=0,solid=false,palette=null,parent=world){try{const r=await fitted(url,size,palette);r.position.set(pos[0],0,pos[2]);r.rotation.y=rot;groundModel(r,pos[1]??0,.01);parent.add(r);if(solid){const b=new THREE.Box3().setFromObject(r),s=b.getSize(new THREE.Vector3());addCollider((b.min.x+b.max.x)/2,(b.min.z+b.max.z)/2,s.x,s.z)}return r}catch(e){console.warn('optional decor failed',url,e);return null}}
@@ -430,9 +447,10 @@ async function buildTown(from='home'){
  visibleDoor([4,0,-12.68],0,0xbd4b3f,true);storefrontCanopy(4,-12.28,2.85,0xd85642,0xffd76b);wallSign('버거하우스',[4,2.72,-12.5],1.7,'#d85642');interactable('fastFoodEntry','버거하우스',4,-11.5,2.2);
  visibleDoor([12.68,0,-12],Math.PI/2,0x2f7d60,true);sign('🛒 마트',[12.55,2.55,-12],.34,'#2f7d60');interactable('marketEntry','우리 동네 마트',12.2,-12,2.2);
  visibleDoor([-13,0,4.18],0,0x4d6f91,true);sign('💼 사무실',[-13,2.55,4.32],.34,'#4d7ea8');interactable('officeEntry','사무실',-13,3.8,2.2);
+ visibleDoor([12.68,0,-3],Math.PI/2,0x5367d6,true);wallSign('파워짐',[12.53,2.66,-3],1.46,'#5367d6',Math.PI/2);interactable('gymEntry','파워짐 헬스장',12.2,-3,2.2);
  visibleDoor([12.68,0,7],Math.PI/2,0xb94f4b,true);sign('🏥 병원',[12.55,2.55,7],.34,'#d65b52');interactable('hospitalEntry','병원',12.2,7,2.2);
  trafficSignalMeshes=[];for(const z of [-2.1,2.1]){box([.12,2.4,.12],[5.2,1.2,z],0x343d3b,.75,world);const red=new THREE.Mesh(new THREE.SphereGeometry(.13,10,8),new THREE.MeshStandardMaterial({color:0x9a2f2d,emissive:0xff3b35,emissiveIntensity:.15}));red.position.set(5.2,2.0,z);red.userData.kind='carRed';world.add(red);trafficSignalMeshes.push(red);const yellow=new THREE.Mesh(new THREE.SphereGeometry(.13,10,8),new THREE.MeshStandardMaterial({color:0xa98220,emissive:0xffd84f,emissiveIntensity:.15}));yellow.position.set(5.2,1.81,z);yellow.userData.kind='carYellow';world.add(yellow);trafficSignalMeshes.push(yellow);const green=new THREE.Mesh(new THREE.SphereGeometry(.13,10,8),new THREE.MeshStandardMaterial({color:0x277447,emissive:0x47ff83,emissiveIntensity:.15}));green.position.set(5.2,1.62,z);green.userData.kind='carGreen';world.add(green);trafficSignalMeshes.push(green);const walk=new THREE.Mesh(new THREE.SphereGeometry(.11,10,8),new THREE.MeshStandardMaterial({color:0x2d7d55,emissive:0x6cff9b,emissiveIntensity:.15}));walk.position.set(10.8,1.65,z);walk.userData.kind='walk';world.add(walk);trafficSignalMeshes.push(walk)}
- const spawns={home:[-10,1.62,-10.4],convenience:[-3,1.62,-10.4],fastfood:[4,1.62,-10.4],market:[11.2,1.62,-12],office:[-13,1.62,2.8],hospital:[11.2,1.62,7],ambulance:[11.2,1.62,7]};const s=spawns[from]||spawns.home;playerPos.set(...s);yaw=from==='market'?-Math.PI/2:0;pitch=-.12;camera.position.copy(playerPos);camera.rotation.y=yaw;camera.rotation.x=pitch;dogSpawnClock=12+Math.random()*12;renderHud();save()
+ const spawns={home:[-10,1.62,-10.4],convenience:[-3,1.62,-10.4],fastfood:[4,1.62,-10.4],market:[11.2,1.62,-12],gym:[11.2,1.62,-3],office:[-13,1.62,2.8],hospital:[11.2,1.62,7],ambulance:[11.2,1.62,7]};const s=spawns[from]||spawns.home;playerPos.set(...s);yaw=(from==='market'||from==='gym')?-Math.PI/2:0;pitch=-.12;camera.position.copy(playerPos);camera.rotation.y=yaw;camera.rotation.x=pitch;dogSpawnClock=12+Math.random()*12;renderHud();save()
 }
 
 async function buildConvenienceStore(){
@@ -486,6 +504,56 @@ function orderFastFood(menuKey){
  applyMeal({name:m.name,nutrition:m.nutrition},false,true);state.weekStats.meals++;state.weekStats.quick++;state.dailyIncidents.push('🍔 '+m.name+'을(를) '+fmt(m.price)+'에 사 먹었어요.');
  state.mealFoods=[];state.mealCooked=false;state.mealQuick=false;tone('eat');renderHud();save();advanceMeal();toast(m.name+'을 바로 먹었어요. 빠르지만 비용과 영양도 함께 생각해 볼 수 있어요.')
 }
+
+const GYM_DAY_PASS=3500;
+const GYM_WORKOUTS={
+ run:{name:'러닝머신 20분',burn:180,hunger:12,condition:-1,satisfaction:4},
+ weights:{name:'근력 운동',burn:120,hunger:9,condition:-1,satisfaction:3},
+ stretch:{name:'스트레칭',burn:35,hunger:3,condition:1,satisfaction:2}
+};
+async function buildGym(){
+ endDog(false);state.location='gym';state.phase='gym';colliders=[];interactables=[];ui.labels.innerHTML='';labelViews=[];clearGroup(world);clearGroup(homeFoodGroup);document.body.classList.remove('lifeTown');await ensureCity();
+ scene.background.set(0xd5e0e6);scene.fog.color.set(0xd5e0e6);scene.fog.near=25;scene.fog.far=58;
+ const floor=new THREE.Mesh(new THREE.PlaneGeometry(9.2,7.2),new THREE.MeshStandardMaterial({color:0xb8bec3,roughness:.9}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;world.add(floor);
+ windowWall(9.2,3.25,[0,0,-3.5],0,.92,4.6);windowWall(7.2,3.25,[-4.55,0,0],Math.PI/2,.9,2.25);windowWall(7.2,3.25,[4.55,0,0],Math.PI/2,.9,2.25);entryWall(9.2,3.25,3.5,-3.25,1.38,.9,0x5367d6,true);addCeilingLights(9.2,7.2,3.28);wallSign('파워짐',[0,2.6,-3.37],1.58,'#5367d6');
+ const reception=await homeModel('desk',1.5,[2.8,0,2.55],'x',Math.PI),receptionTop=reception.userData.closedBounds.max.y;
+ await Promise.all([
+  homeModel('chair-desk',.78,[2.8,0,3.12],'y',0),
+  homeModel('bookcase-closed-wide',1.9,[4.08,0,.65],'y',Math.PI/2,true),
+  homeModel('bench',1.42,[2.55,0,1.4],'x',Math.PI/2,true),
+  packDecor(KITCHEN+'computer-screen.glb',.42,[2.8,receptionTop+.01,2.55],0,false),
+  packDecor(KITCHEN+'potted-plant.glb',.95,[4.0,0,2.65],0,false),
+  packDecor(KITCHEN+'trashcan.glb',.55,[1.7,0,2.9],0,false),
+  addMarket('character-employee',1.48,[2.8,0,3.25],0,[0x5367d6,0xeef2ff,0x26324a])
+ ]);
+ wallSign('1일 이용권 '+fmt(GYM_DAY_PASS),[2.78,2.15,3.28],1.24,'#5367d6',Math.PI);sign('락커 · 휴식',[3.35,1.55,1.35],.17,'#5367d6');
+ addGymTreadmill(-2.65,-1.45);addGymTreadmill(-.85,-1.45);sign('유산소',[-1.75,1.72,-2.22],.22,'#5367d6');interactable('gymRun','러닝머신 20분',-1.75,-.15,1.35);
+ addGymDumbbellRack(3.35,-2.15);await homeModel('bench',1.48,[2.25,0,-.55],'x',0,true);box([5.0,1.25,.045],[1.65,1.72,-3.37],0xc4d7df,.22);
+ sign('웨이트 존',[2.55,1.65,-2.65],.19,'#394b9a');interactable('gymWeights','근력 운동',2.25,.55,1.35);
+ addGymMat(-1.25,1.45,0x6f8fd8);addGymMat(.55,1.45,0x74a786);sign('스트레칭',[-.35,1.25,1.44],.18,'#5576b9');interactable('gymStretch','스트레칭',-.35,2.15,1.2);
+ interactable('gymRest','잠깐 쉬기',2.45,1.9,1.2);
+ await Promise.all([
+  indoorResident(CITY_PEOPLE_ASSETS[2],[-2.65,0,-1.35],Math.PI,'러닝하는 주민',/run|sprint|walk/i,.24),
+  indoorResident(CITY_PEOPLE_ASSETS[5],[3.55,0,-.55],-Math.PI/2,'운동하는 주민')
+ ]);
+ interactable('gymExit','동네로 나가기',-3.25,2.72,1.8);sign('밖으로',[-3.25,2.5,3.38],.2,'#5367d6');setSpawn('gym');renderHud();save()
+}
+function gymPassReady(){
+ if(state.gymPassDay===state.day)return true;
+ if(state.money<GYM_DAY_PASS){toast('헬스장 1일 이용권 '+fmt(GYM_DAY_PASS)+'이 필요해요.',true);return false}
+ state.money-=GYM_DAY_PASS;state.dailyExpense+=GYM_DAY_PASS;state.weekStats.spent+=GYM_DAY_PASS;state.gymPassDay=state.day;state.dailyIncidents.push('🏋️ 파워짐 1일 이용권 '+fmt(GYM_DAY_PASS)+'을 샀어요.');tone('cash');return true
+}
+function doGymWorkout(kind){
+ const w=GYM_WORKOUTS[kind];if(!w)return;
+ if(state.treatmentNeeded)return toast('다친 상태에서는 운동하지 말고 병원에서 먼저 치료받는 게 좋아요.',true);
+ if((kind==='run'||kind==='weights')&&state.condition<32)return toast('컨디션이 너무 낮아요. 오늘은 스트레칭이나 휴식을 선택해 보세요.',true);
+ if((state.gymWorkoutCount||0)>=2)return toast('오늘 운동은 충분히 했어요. 무리하지 말고 쉬어 주세요.',true);
+ if(!gymPassReady())return;
+ state.gymWorkoutCount=(state.gymWorkoutCount||0)+1;state.dailyActivityKcal=(state.dailyActivityKcal||0)+w.burn;
+ state.hunger=clamp(state.hunger-w.hunger,0,100);state.condition=clamp(state.condition+w.condition,5,100);state.satisfaction=clamp(state.satisfaction+w.satisfaction,20,100);
+ state.dailyIncidents.push('🏃 '+w.name+' · 활동 '+w.burn+' kcal');tone('good');renderHud();save();toast(w.name+' 완료! 운동 뒤에는 배가 더 고플 수 있어요.')
+}
+function restAtGym(){tone('good');toast('벤치에서 잠깐 쉬었어요. 오늘 운동은 최대 2번까지 할 수 있어요.')}
 
 async function buildOffice(){
  endDog(false);state.location='office';state.phase='office';colliders=[];interactables=[];ui.labels.innerHTML='';labelViews=[];clearGroup(world);scene.background.set(0xc9dce5);scene.fog.near=25;scene.fog.far=55;document.body.classList.remove('lifeTown');
@@ -550,12 +618,12 @@ function storageName(s){return s==='freezer'?'냉동실':s==='pantry'?'찬장':'
 async function spawnCart(){if(cart)cart.removeFromParent();try{cart=await fitted(MARKET+'shopping-cart.glb',1.3,[0x477b9a,0xc8d5d3,0x444e52]);cartCargo=new THREE.Group();cart.add(cartCargo);dynamic.add(cart);await syncCartCargo()}catch(e){console.warn('cart failed',e)}}
 async function syncCartCargo(){if(!cartCargo)return;clearGroup(cartCargo);const show=state.basket.slice(0,7);for(let i=0;i<show.length;i++){const p=productById(show[i]);if(!p)continue;try{const r=await fitted(productAssetUrl(p),.26);r.position.set((i%3-.9)*.25,.45+Math.floor(i/3)*.16,-.05+((i%2)*.18));r.rotation.y=i*.8;cartCargo.add(r)}catch(_){}}
 }
-function setSpawn(where){let x=0,z=.9;if(where==='market'){x=1.6;z=3.6}else if(where==='convenience'||where==='fastfood'){x=0;z=2.15}else if(where==='office'||where==='hospital'){x=0;z=2.2}playerPos.set(x,1.62,z);yaw=0;pitch=-.12;camera.position.copy(playerPos);camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch}
+function setSpawn(where){let x=0,z=.9;if(where==='market'){x=1.6;z=3.6}else if(where==='convenience'||where==='fastfood'){x=0;z=2.15}else if(where==='gym'){x=-2.85;z=2.58}else if(where==='office'||where==='hospital'){x=0;z=2.2}playerPos.set(x,1.62,z);yaw=0;pitch=-.12;camera.position.copy(playerPos);camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch}
 
 
 function nutritionText(){const n=state.dailyNutrition||freshDailyNutrition();if(!(state.dailyKcal||0))return'아직 식사 전';if(n.veg>=7&&n.protein>=25&&n.sugar<=50&&n.sodium<=22)return'균형 좋음';if(n.veg<4)return'채소·과일 부족';if(n.protein<16)return'단백질 부족';if(n.sugar>65)return'당류 많음';if(n.sodium>28)return'나트륨 많음';return'무난함'}
 function conditionText(){if(state.treatmentNeeded)return state.injury==='car'?'사고 · 치료 필요':state.injury==='dog'?'물림 · 치료 필요':'치료 필요';return state.condition>=80?'아주 좋음':state.condition>=60?'좋음':state.condition>=42?'보통':'조금 지침'}
-function locationText(){return({market:'🛒 우리 동네 마트',convenience:'🏪 24시 편의점',fastfood:'🍔 버거하우스',home:'🏠 집 · 부엌',town:'🏘️ 우리 동네',office:'💼 사무실',hospital:'🏥 동네 병원'})[state.location]||'우리 동네'}
+function locationText(){return({market:'🛒 우리 동네 마트',convenience:'🏪 24시 편의점',fastfood:'🍔 버거하우스',gym:'🏋️ 파워짐',home:'🏠 집 · 부엌',town:'🏘️ 우리 동네',office:'💼 사무실',hospital:'🏥 동네 병원'})[state.location]||'우리 동네'}
 function renderHud(){ui.day.textContent=state.day+'일차 · '+SLOTS[state.slot];ui.money.textContent=fmt(state.money);ui.cartBtn.classList.toggle('hidden',state.location!=='market'||!state.hasCart);ui.cartCount.textContent=state.basket.length;ui.kcal.textContent=Math.round(state.dailyKcal||0).toLocaleString()+' kcal';ui.nutrition.textContent=nutritionText();ui.weight.textContent=(state.weightKg||35).toFixed(1)+' kg';ui.condition.textContent=conditionText();ui.location.textContent=locationText();ui.heldCard.classList.toggle('hidden',!state.held);if(state.held){ui.heldName.textContent=heldName();ui.heldHint.textContent=state.location==='market'?'카트에 넣거나 진열대에 돌려놓을 수 있어요.':'조리대에 올리거나 식탁에서 먹을 수 있어요.'}ui.prepCard.classList.toggle('hidden',state.location!=='home'||!state.prep.length);if(state.prep.length){ui.prepTitle.textContent=state.prep.map(x=>productById(x.id)?.name||'재료').join(' + ');ui.prepText.textContent='인덕션에서 요리하거나 다시 냉장고로 돌려놓을 수 있어요.'}renderEvent();renderCartPanel();renderTapControls()}
 function hungerText(){return state.hunger>=75?'든든함':state.hunger>=50?'보통':state.hunger>=28?'배고픔':'많이 배고픔'}
 
@@ -626,11 +694,11 @@ async function eatAtTable(){
 function applyMeal(food,cooked,quick){const n=food.nutrition;state.dailyKcal=(state.dailyKcal||0)+n.kcal;state.dailyNutrition=state.dailyNutrition||{protein:0,veg:0,sugar:0,sodium:0};state.dailyNutrition.protein+=n.protein;state.dailyNutrition.veg+=n.veg;state.dailyNutrition.sugar+=n.sugar;state.dailyNutrition.sodium+=n.sodium;state.hunger=clamp(state.hunger+Math.min(72,n.satiety),0,100);const balance=n.veg*2+n.protein*.25-n.sugar*.12-n.sodium*.8;state.condition=clamp(state.condition+clamp(balance*.08,-2,2),5,100);const mood=n.mood+(state.event?.warmBonus&&cooked?state.event.warmBonus:0);state.satisfaction=clamp(state.satisfaction+mood*.22-1,20,100);state.weekStats.sugar+=n.sugar;state.weekStats.sodium+=n.sodium;state.weekStats.veg+=n.veg;state.weekStats.protein+=n.protein;state.mealFoods.push(food.name);state.mealCooked ||= cooked;state.mealQuick ||= quick}
 function finishMeal(){if(!state.running||state.location!=='home'||!nearest||nearest.type!=='table')return toast('식탁 가까이에서 식사를 마쳐 주세요.',true);if(!state.mealFoods.length)return toast('먼저 음식을 먹어 보세요.',true);state.weekStats.meals++;if(state.mealCooked)state.weekStats.cooked++;if(state.mealQuick)state.weekStats.quick++;state.mealFoods=[];state.mealCooked=false;state.mealQuick=false;advanceMeal();toast('식사를 마쳤어요. 다음 끼니까지 자유롭게 생활해 보세요.')}
 function skipMeal(){if(!state.running||state.location!=='home')return;const meal=SLOTS[state.slot];state.hunger=clamp(state.hunger-8,0,100);state.condition=clamp(state.condition-2,5,100);state.satisfaction=clamp(state.satisfaction-2,20,100);state.dailyIncidents.push('⏭️ '+meal+' 끼니를 건너뛰었어요.');tone('bad');advanceMeal();toast(meal+'을(를) 건너뛰었어요. 다음 끼니까지 배고픔과 컨디션이 더 떨어질 수 있어요.',true)}
-function projectedWeight(){const delta=clamp(((state.dailyKcal||0)-DAILY_CAL_TARGET)/7700,-.15,.15);return clamp((state.weightKg||35)+delta,25,120)}
+function projectedWeight(){const net=(state.dailyKcal||0)-(state.dailyActivityKcal||0),delta=clamp((net-DAILY_CAL_TARGET)/7700,-.15,.15);return clamp((state.weightKg||35)+delta,25,120)}
 function showDayReport(){state.running=false;state.phase='day';const events=state.dailyIncidents||[],nutrition=nutritionText(),nextW=projectedWeight();ui.dayReportTitle.textContent=state.day+'일차 생활 기록';ui.dayReportSummary.textContent=events.length?events.join(' '):'큰 사건 없이 하루를 보냈어요. 오늘의 선택이 내일의 돈과 컨디션으로 이어집니다.';ui.dayIncome.textContent='+'+fmt(state.dailyIncome||0);ui.dayExpense.textContent='-'+fmt(state.dailyExpense||0);ui.dayKcal.textContent=Math.round(state.dailyKcal||0).toLocaleString()+' kcal';ui.dayNutrition.textContent=nutrition;ui.dayWeight.textContent=(state.weightKg||35).toFixed(1)+' → '+nextW.toFixed(1)+' kg';ui.dayHealth.textContent=conditionText();ui.dayModal.classList.remove('hidden');save()}
 function completeDay(){
- state.weightKg=projectedWeight();const nutrition=nutritionText();let sleepRecovery=(state.dailyKcal||0)<700?2:6;if(nutrition==='균형 좋음')sleepRecovery+=3;else if(nutrition==='무난함')sleepRecovery+=1;if(state.treatmentNeeded)sleepRecovery=Math.max(0,sleepRecovery-2);state.condition=clamp(state.condition+sleepRecovery,5,100);
- state.slot=0;state.day++;state.dailyKcal=0;state.dailyNutrition=freshDailyNutrition();state.dailyIncome=0;state.dailyExpense=0;state.dailyIncidents=[];for(const item of state.inventory)item.age=(item.age||0)+1;ui.dayModal.classList.add('hidden');if(state.day>7){showWeekReport();return}
+ state.weightKg=projectedWeight();const nutrition=nutritionText();let sleepRecovery=(state.dailyKcal||0)<700?2:6;if(nutrition==='균형 좋음')sleepRecovery+=3;else if(nutrition==='무난함')sleepRecovery+=1;sleepRecovery+=Math.min(4,(state.gymWorkoutCount||0)*2);if(state.treatmentNeeded)sleepRecovery=Math.max(0,sleepRecovery-2);state.condition=clamp(state.condition+sleepRecovery,5,100);
+ state.slot=0;state.day++;state.dailyKcal=0;state.dailyActivityKcal=0;state.gymWorkoutCount=0;state.dailyNutrition=freshDailyNutrition();state.dailyIncome=0;state.dailyExpense=0;state.dailyIncidents=[];for(const item of state.inventory)item.age=(item.age||0)+1;ui.dayModal.classList.add('hidden');if(state.day>7){showWeekReport();return}
  if(!state.treatmentNeeded&&state.condition<45&&Math.random()<.35){state.injury='sick';state.treatmentNeeded=true;state.dailyIncidents.push('🤒 몸 상태가 나빠져 아침부터 아파요. 병원에 가면 회복할 수 있어요.')}
  state.phase=state.location==='market'?'shopping':state.location;state.running=true;rollEvent();dogSpawnClock=12+Math.random()*12;save();renderHud();toast(state.injury==='sick'?'몸이 좋지 않아요. 병원에 갈지 결정해 보세요.':'잠을 자고 컨디션이 '+sleepRecovery+' 회복됐어요.',state.injury==='sick')
 }
@@ -639,7 +707,7 @@ function advanceMeal(){state.hunger=clamp(state.hunger-12,0,100);state.condition
 
 function rollEvent(force=false){if(force||Math.random()<.42){state.event=EVENTS[Math.floor(Math.random()*EVENTS.length)];if(state.event.hunger)state.hunger=clamp(state.hunger+state.event.hunger,0,100)}else state.event=null}
 
-function interact(){if(!nearest)return;if(nearest.type==='heldAction'){if(state.location==='market')putHeldInCart();else dropHeldHome();return}if(nearest.type==='homeFood'){takeHomeItem(nearest.uid);return}if(nearest.type==='marketProduct'){tryTakeMarketProduct(nearest.productId);return}switch(nearest.type){case'fridge':case'pantry':toggleStorage(nearest.type);break;case'counter':if(state.held)putOnCounter();else if(state.prep.length)toast('재료가 준비됐어요. 인덕션에서 요리해 보세요.');else toast('냉장고나 찬장에서 재료를 꺼내 와 보세요.');break;case'sink':washHeld();break;case'stove':cookPrep();break;case'microwave':microwaveHeld();break;case'table':if(state.held||state.dish)eatAtTable();else if(state.mealFoods.length)finishMeal();else skipMeal();break;case'marketDoor':goMarket();break;case'cartBay':grabCart();break;case'homeDoor':goHomeWithoutCheckout();break;case'checkout':openCheckout();break;case'homeEntry':buildHome();break;case'convenienceEntry':buildConvenienceStore();break;case'fastFoodEntry':buildFastFood();break;case'marketEntry':buildStore();break;case'officeEntry':buildOffice();break;case'hospitalEntry':buildHospital('walk');break;case'convenienceBuy':buyConvenienceItem(nearest.productId,nearest.price);break;case'fastFoodOrder':orderFastFood(nearest.menuKey);break;case'convenienceExit':buildTown('convenience');break;case'fastFoodExit':buildTown('fastfood');break;case'workDesk':workOffice();break;case'officeExit':buildTown('office');break;case'treat':treatAtHospital();break;case'hospitalExit':buildTown('hospital');break}}
+function interact(){if(!nearest)return;if(nearest.type==='heldAction'){if(state.location==='market')putHeldInCart();else dropHeldHome();return}if(nearest.type==='homeFood'){takeHomeItem(nearest.uid);return}if(nearest.type==='marketProduct'){tryTakeMarketProduct(nearest.productId);return}switch(nearest.type){case'fridge':case'pantry':toggleStorage(nearest.type);break;case'counter':if(state.held)putOnCounter();else if(state.prep.length)toast('재료가 준비됐어요. 인덕션에서 요리해 보세요.');else toast('냉장고나 찬장에서 재료를 꺼내 와 보세요.');break;case'sink':washHeld();break;case'stove':cookPrep();break;case'microwave':microwaveHeld();break;case'table':if(state.held||state.dish)eatAtTable();else if(state.mealFoods.length)finishMeal();else skipMeal();break;case'marketDoor':goMarket();break;case'cartBay':grabCart();break;case'homeDoor':goHomeWithoutCheckout();break;case'checkout':openCheckout();break;case'homeEntry':buildHome();break;case'convenienceEntry':buildConvenienceStore();break;case'fastFoodEntry':buildFastFood();break;case'marketEntry':buildStore();break;case'gymEntry':buildGym();break;case'officeEntry':buildOffice();break;case'hospitalEntry':buildHospital('walk');break;case'convenienceBuy':buyConvenienceItem(nearest.productId,nearest.price);break;case'fastFoodOrder':orderFastFood(nearest.menuKey);break;case'gymRun':doGymWorkout('run');break;case'gymWeights':doGymWorkout('weights');break;case'gymStretch':doGymWorkout('stretch');break;case'gymRest':restAtGym();break;case'convenienceExit':buildTown('convenience');break;case'fastFoodExit':buildTown('fastfood');break;case'gymExit':buildTown('gym');break;case'workDesk':workOffice();break;case'officeExit':buildTown('office');break;case'treat':treatAtHospital();break;case'hospitalExit':buildTown('hospital');break}}
 
 async function grabCart(){if(state.hasCart)return;state.hasCart=true;await spawnCart();tone('pick');renderHud();save();toast('카트를 잡았어요. 이제 원하는 식품을 골라 담아 보세요.')}
 async function goMarket(){if(state.held||state.prep.length)return toast('들고 있는 음식이나 조리대 재료를 먼저 정리해 주세요.',true);tone('door');await buildTown('home');save()}
@@ -703,7 +771,7 @@ window.addEventListener('resize',resize);resize();window.addEventListener('point
 canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'){lookPointer=e.pointerId;lastLook={x:e.clientX,y:e.clientY};canvas.setPointerCapture?.(e.pointerId);return}if(e.clientX>innerWidth*.42){lookPointer=e.pointerId;lastLook={x:e.clientX,y:e.clientY};canvas.setPointerCapture?.(e.pointerId)}});canvas.addEventListener('pointermove',e=>{if(e.pointerId!==lookPointer||!lastLook)return;const dx=e.clientX-lastLook.x,dy=e.clientY-lastLook.y;lastLook={x:e.clientX,y:e.clientY};yaw-=dx*.006;pitch=clamp(pitch-dy*.0045,-.72,.52)});canvas.addEventListener('pointerup',e=>{if(e.pointerId===lookPointer){lookPointer=null;lastLook=null}});canvas.addEventListener('pointercancel',e=>{if(e.pointerId===lookPointer){lookPointer=null;lastLook=null}});
 ui.joystick.addEventListener('pointerdown',e=>{touch.active=true;touch.pointer=e.pointerId;ui.joystick.setPointerCapture(e.pointerId);setStick(e)});ui.joystick.addEventListener('pointermove',e=>{if(touch.active&&e.pointerId===touch.pointer)setStick(e)});ui.joystick.addEventListener('pointerup',endStick);ui.joystick.addEventListener('pointercancel',endStick);
 ui.interactBtn.onclick=interact;ui.touchInteract.onclick=interact;ui.sound.onclick=()=>{state.sound=!state.sound;ui.sound.textContent=state.sound?'🔊':'🔇';save();if(state.sound)tone('cash')};ui.cartBtn.onclick=()=>{renderCartPanel();ui.cartPanel.classList.remove('hidden')};ui.closeCart.onclick=()=>ui.cartPanel.classList.add('hidden');ui.cartList.onclick=async e=>{const b=e.target.closest('[data-remove]');if(!b)return;const i=+b.dataset.remove;if(i<0||i>=state.basket.length)return;const id=state.basket.splice(i,1)[0];await syncCartCargo();renderHud();save();toast(productById(id).name+'을(를) 카트에서 뺐어요.')};
-ui.scanItems.onclick=e=>{const b=e.target.closest('[data-scan]');if(b)scanItem(+b.dataset.scan)};ui.checkTotal.onclick=submitTotal;ui.cashOptions.onclick=e=>{const b=e.target.closest('[data-cash]');if(b)chooseCash(+b.dataset.cash)};ui.checkChange.onclick=submitChange;ui.closeCheckout.onclick=closeCheckout;ui.backToShopping.onclick=closeCheckout;ui.finishCheckout.onclick=finishCheckout;ui.nextDayBtn.onclick=completeDay;ui.newLife.onclick=async()=>{if(state.phase==='assetError'){ui.newLife.disabled=true;await preload();return}newLife();try{await buildHome();storageOpen.fridge=true;for(const r of kitchenStorage.fridge)setStorageDoors(r,true);await syncHomeInventory();ui.start.classList.add('hidden');renderHud()}catch(err){state.running=false;console.error(err);ui.loadText.textContent='부엌을 준비하지 못했어요. 다시 눌러 주세요.'}};ui.continueBtn.onclick=async()=>{if(!loadSave())newLife();try{if(state.location==='market')await buildStore();else if(state.location==='convenience')await buildConvenienceStore();else if(state.location==='fastfood')await buildFastFood();else if(state.location==='town')await buildTown('home');else if(state.location==='office')await buildOffice();else if(state.location==='hospital')await buildHospital('walk');else await buildHome();if(state.location==='home'){storageOpen.fridge=true;for(const r of kitchenStorage.fridge)setStorageDoors(r,true);await syncHomeInventory()}ui.start.classList.add('hidden');renderHud()}catch(err){state.running=false;console.error(err);ui.loadText.textContent='공간을 준비하지 못했어요. 이어하기를 다시 눌러 주세요.'}};ui.nextWeek.onclick=nextWeek;
+ui.scanItems.onclick=e=>{const b=e.target.closest('[data-scan]');if(b)scanItem(+b.dataset.scan)};ui.checkTotal.onclick=submitTotal;ui.cashOptions.onclick=e=>{const b=e.target.closest('[data-cash]');if(b)chooseCash(+b.dataset.cash)};ui.checkChange.onclick=submitChange;ui.closeCheckout.onclick=closeCheckout;ui.backToShopping.onclick=closeCheckout;ui.finishCheckout.onclick=finishCheckout;ui.nextDayBtn.onclick=completeDay;ui.newLife.onclick=async()=>{if(state.phase==='assetError'){ui.newLife.disabled=true;await preload();return}newLife();try{await buildHome();storageOpen.fridge=true;for(const r of kitchenStorage.fridge)setStorageDoors(r,true);await syncHomeInventory();ui.start.classList.add('hidden');renderHud()}catch(err){state.running=false;console.error(err);ui.loadText.textContent='부엌을 준비하지 못했어요. 다시 눌러 주세요.'}};ui.continueBtn.onclick=async()=>{if(!loadSave())newLife();try{if(state.location==='market')await buildStore();else if(state.location==='convenience')await buildConvenienceStore();else if(state.location==='fastfood')await buildFastFood();else if(state.location==='gym')await buildGym();else if(state.location==='town')await buildTown('home');else if(state.location==='office')await buildOffice();else if(state.location==='hospital')await buildHospital('walk');else await buildHome();if(state.location==='home'){storageOpen.fridge=true;for(const r of kitchenStorage.fridge)setStorageDoors(r,true);await syncHomeInventory()}ui.start.classList.add('hidden');renderHud()}catch(err){state.running=false;console.error(err);ui.loadText.textContent='공간을 준비하지 못했어요. 이어하기를 다시 눌러 주세요.'}};ui.nextWeek.onclick=nextWeek;
 
 const clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);const dt=Math.min(.05,clock.getDelta());updateMovement(dt);updateCity(dt);for(const mixer of roomMixers)mixer.update(dt);updateDog(dt);updateCameraImpact(dt);updateInjuryParticles(dt);updateInteraction();updateLabels();renderer.render(scene,camera)}requestAnimationFrame(animate);
 

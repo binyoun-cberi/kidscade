@@ -244,4 +244,29 @@ test('room residents update idle animation mixers and release them when changing
   assert.match(js,/for\(const mixer of roomMixers\)mixer\.update\(dt\)/);
   assert.match(js,/function indoorResident\(/);
 });
-test('market page cache-busts the home and office expansion',()=>{assert.ok(html.includes('market-walk.js?v=20-home-office'))});
+test('neighborhood gym occupies the unused east-side building and is fully enterable',()=>{
+  assert.match(js,/interactable\('gymEntry','파워짐 헬스장',12\.2,-3,2\.2\)/);
+  assert.match(js,/async function buildGym\(\)/);
+  assert.match(js,/state\.location='gym'/);
+  assert.match(js,/state\.location==='gym'\?\[-4\.45,4\.45,-3\.45,3\.45\]/);
+  assert.match(js,/case'gymExit':buildTown\('gym'\)/);
+  assert.match(js,/state\.location==='gym'\)await buildGym\(\)/);
+});
+test('gym has cardio weights stretching lockers staff and active residents',()=>{
+  assert.match(js,/function addGymTreadmill\(/);
+  assert.match(js,/function addGymDumbbellRack\(/);
+  assert.match(js,/function addGymMat\(/);
+  assert.match(js,/homeModel\('bookcase-closed-wide',1\.9/);
+  assert.match(js,/homeModel\('bench',1\.42/);
+  assert.match(js,/character-employee/);
+  assert.match(js,/러닝하는 주민'[\s\S]*\/run\|sprint\|walk\/i,\.24/);
+});
+test('gym day pass and workouts affect money hunger activity calories and overnight recovery',()=>{
+  assert.match(js,/const GYM_DAY_PASS=3500/);
+  assert.match(js,/if\(\(state\.gymWorkoutCount\|\|0\)>=2\)/);
+  assert.match(js,/state\.dailyActivityKcal=\(state\.dailyActivityKcal\|\|0\)\+w\.burn/);
+  assert.match(js,/state\.hunger=clamp\(state\.hunger-w\.hunger,0,100\)/);
+  assert.match(js,/sleepRecovery\+=Math\.min\(4,\(state\.gymWorkoutCount\|\|0\)\*2\)/);
+  assert.match(js,/const net=\(state\.dailyKcal\|\|0\)-\(state\.dailyActivityKcal\|\|0\)/);
+});
+test('market page cache-busts the neighborhood gym expansion',()=>{assert.ok(html.includes('market-walk.js?v=21-neighborhood-gym'))});
