@@ -1040,8 +1040,9 @@ function recordLessonLearning(s,dt,chat){
     chatting:!!chat,
     conflict
   });
-  // Every pupil's learning depends on both personal attention and real instruction delivery.
-  addLearning(campaign,s.runtime.id,gain*teachingMultiplier);
+  // A student who is only barely paying attention learns less than a fully attentive student.
+  const attentionQuality=.45+.55*focusRatio(s);
+  addLearning(campaign,s.runtime.id,gain*teachingMultiplier*attentionQuality);
 }
 function endGroupActivitiesForRecap(){
   const ended=pairs.filter(p=>p.source==='team');
