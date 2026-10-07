@@ -379,7 +379,7 @@ function rebuildSkyWorld(){
   const lots=[
     [-11.85,-5.5,Math.PI/2],[-11.9,-2.0,Math.PI/2],[-11.9,2.0,Math.PI/2],[-11.85,5.35,Math.PI/2],
     [11.85,-5.35,-Math.PI/2],[11.9,-1.8,-Math.PI/2],[11.9,1.9,-Math.PI/2],[11.85,5.25,-Math.PI/2],
-    [-7.8,-8.25,0],[-3.0,-8.2,0],[3.0,-8.2,0],[7.8,-8.25,0]
+    [-7.8,-7.65,0],[-3.0,-7.62,0],[3.0,-7.62,0],[7.8,-7.65,0]
   ];
   lots.forEach(([x,z,rot],i)=>{
     const key=buildingKeys[i%buildingKeys.length],target=2.15+(i%4)*.18,b=cloneModel(key,target);
