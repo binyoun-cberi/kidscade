@@ -1226,7 +1226,7 @@ if(mobileInteractBtn){
   mobileInteractBtn.addEventListener('pointercancel',()=>{clearTimeout(mobileInteractTimer);mobileInteractTimer=0;mobileInteractLong=false;});
 }
 
-const LAYOUT_VERSION=8;
+const LAYOUT_VERSION=9;
 let homePondGroup=null,homePondInteraction=null,homeWellGroup=null,homeWellInteraction=null,homePumpGroup=null,homePumpInteraction=null;
 let homeWaterTowerObject=null,homeWaterTowerCollider=null;
 let homeCampfireObject=null,homeCampfireLight=null,homeCampfireInteraction=null,homeHouseObject=null,homeHouseBaseScale=null,homeHouseCollider=null;
