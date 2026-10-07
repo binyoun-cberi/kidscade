@@ -23,7 +23,6 @@ const A={
  ambulance:'3d/vehicles/kenney-car-kit/ambulance.glb',
  police:'3d/vehicles/kenney-car-kit/police.glb',
  van:'3d/vehicles/kenney-car-kit/van.glb',
- dumpster:'3d/city/kenney-city-kit-roads/dumpster.glb',
  turret:'3d/weapons/scifi-turrets/gatelng-gun-turret.glb',
  crate:'3d/survival/kenney-survival-kit/box.glb',
  maleA:'characters/people/character-male-a.glb',
@@ -180,7 +179,6 @@ class View{
   this.addAsset(A.ambulance,[X(850),0,Z(356)],2.45,0xe3e7e2,.24,Math.PI/2);
   this.addAsset(A.police,[X(870),0,Z(430)],2.25,0xc8d2d5,.12,Math.PI);
   this.addAsset(A.van,[X(760),0,Z(480)],2.20,0x69787b,.16,0);
-  this.addAsset(A.dumpster,[X(845),0,Z(250)],1.15,0x5d6b66,.18,Math.PI/2);
   this.addAsset(A.barrier,[X(672),0,Z(427)],1.3,0xc3953f,.48,0);
   this.addAsset(A.turret,[X(720),0,Z(286)],1.5,0x6f7976,.38,-Math.PI/2);
 
@@ -375,6 +373,6 @@ function mount(){
  const campView=new View(cc,'camp'),isoView=new View(document.getElementById('q17Iso3D'),'isolation');
  setInterval(()=>{campView.update();isoView.update()},450);campView.update();isoView.update();
  let last=0;const loop=t=>{if(t-last>16){views.forEach(v=>v.render(t));last=t}requestAnimationFrame(loop)};requestAnimationFrame(loop);
- window.Q17Facility3D=Object.freeze({version:'20.7',camp:campView,isolation:isoView});return true
+ window.Q17Facility3D=Object.freeze({version:'20.8',camp:campView,isolation:isoView});return true
 }
 let tries=0;const timer=setInterval(()=>{if(mount()||++tries>80)clearInterval(timer)},50);
