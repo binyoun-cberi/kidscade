@@ -399,7 +399,10 @@ function addBlackHoleLensing(){
 function flybyTypeForStage(){
  const i=state.stage,r=Math.random();
  if(i<=1)return r<.7?'dust':'rock';
- if(i<=5)return r<.82?'rock':'planet';
+ // Pebble, asteroid and planetesimal stages must not show tiny planet art in the background.
+ // Keep those flybys as dust/rock so the visual scale stays coherent.
+ if(i<=4)return r<.16?'dust':'rock';
+ if(i===5)return r<.78?'rock':'planet';
  if(i<=8)return r<.48?'rock':'planet';
  if(i<=11)return r<.5?'planet':r<.82?'star':'rock';
  if(i<=15)return r<.34?'rock':r<.7?'planet':'star';
@@ -509,7 +512,7 @@ function rebuildContext(){
  // Every scale keeps visible neighbours so the player feels embedded in a living universe,
  // while the central body remains the clear focus and scale reference.
  if(i<=1)addDustNeighborhood(LOW_POWER?80:180);
- if(i>=2&&i<=5){addDustNeighborhood(LOW_POWER?45:90);addAsteroidNeighborhood(LOW_POWER?6:12);if(i>=4)addDistantWorlds(1)}
+ if(i>=2&&i<=5){addDustNeighborhood(LOW_POWER?45:90);addAsteroidNeighborhood(LOW_POWER?6:12)}
  if(i>=6&&i<=8){addMoonContext(i===7?5:2);addDistantWorlds(i===8?3:2);addAsteroidNeighborhood(LOW_POWER?3:6)}
  if(i>=9&&i<=10){addPlanetSystem(LOW_POWER?4:6);addNeighborStars(LOW_POWER?2:4)}
  if(i===11){addCluster(LOW_POWER?120:280);addNeighborStars(LOW_POWER?3:5)}
