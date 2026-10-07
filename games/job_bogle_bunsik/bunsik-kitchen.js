@@ -1042,6 +1042,13 @@ class RamenKitchen3D{
    this.dishReturnPoint.clone()
   ]
  }
+ dismissCustomerOrder(orderId,text='😠 너무 오래 기다렸어요!'){
+  const c=this.customerStateForOrder(orderId);if(!c)return false;
+  c.phase='complaining';this.hallFocusSlot=c.slot;this.hallFocusUntil=this.clock+1.5;
+  this.customerCelebrate(c.slot,0,0,0,{text});
+  setTimeout(()=>{if(c.orderId===orderId&&c.phase==='complaining')this.beginCustomerExit(c)},1050);
+  return true
+ }
  beginCustomerExit(c){
   if(!c)return;
   const fromReturn=c.phase==='returningDish'||Math.hypot(c.holder.position.x-this.dishReturnPoint.x,c.holder.position.z-this.dishReturnPoint.z)<.55;
@@ -1064,7 +1071,7 @@ class RamenKitchen3D{
   return false
  }
  hasActiveDiningCustomers(){
-  return this.customerStates.some(c=>['eating','reviewing','returningDish','leaving'].includes(c.phase))||!!this.dishCartTask||this.dishCartQueue.length>0
+  return this.customerStates.some(c=>['eating','reviewing','complaining','returningDish','leaving'].includes(c.phase))||!!this.dishCartTask||this.dishCartQueue.length>0
  }
  updateCustomerHall(dt){
   if(this.hallDoor){
@@ -1931,9 +1938,9 @@ function updateOrders(dt){
  });
  if(expiredOrders.length){
   const affected=expiredOrders.map(o=>potIndexForOrder(o.id)).filter(i=>i>=0);
-  expiredOrders.forEach(o=>{releaseOrderBinding(o.id);kitchen.resetCustomerForOrder(o.id)});
+  expiredOrders.forEach(o=>{releaseOrderBinding(o.id);kitchen.dismissCustomerOrder(o.id,'😠 너무 오래 기다렸어요!')});
   affected.forEach(i=>ensurePotOrder(i));
-  state.combo=0;sfx('failure.fail_sting',{volume:.16,cooldownMs:300});toast('기다리던 손님이 떠났어요 · 콤보가 끊겼어요',1500);renderOrders();renderTaskPanel();updateHud()
+  state.combo=0;sfx('failure.fail_sting',{volume:.16,cooldownMs:300});toast('손님이 화가 났어요 · 콤보가 끊겼어요',1500);renderOrders();renderTaskPanel();updateHud()
  }
 }
 function applyServeCombo(quality){
@@ -1957,8 +1964,8 @@ function beginClosingShift(){
 }
 function expireClosingOrders(){
  if(!state.orders.length)return;
- const remaining=[...state.orders];remaining.forEach(o=>{releaseOrderBinding(o.id);kitchen.resetCustomerForOrder(o.id)});
- state.missed+=remaining.length;restaurant.orders.replace([]);renderOrders();renderTaskPanel();toast('마감 시간이 끝나 남은 주문을 정리했어요',1800)
+ const remaining=[...state.orders];remaining.forEach(o=>{releaseOrderBinding(o.id);kitchen.dismissCustomerOrder(o.id,'😕 마감 시간이 끝났네요. 다음에 올게요!')});
+ state.missed+=remaining.length;restaurant.orders.replace([]);renderOrders();renderTaskPanel();toast('마감 시간이 끝나 남은 손님이 퇴장하고 있어요',1800)
 }
 function updateGame(dt){
  if(state.phase==='service'){
