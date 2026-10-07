@@ -19,6 +19,14 @@ const PRODUCT_V4={apple:'apple-green.glb',banana:'banana.glb',carrot:'carrot.glb
 const HOME_DECOR_MODELS=['pan.glb','toaster.glb','kettle.glb','utensils-cup.glb','mug-yellow.glb','plate.glb','extractor-hood.glb'];
 const CITY_DECOR_ASSETS={bench:ROOT+'3d/city/poly-pizza-city-pack/bench.glb',bicycle:ROOT+'3d/city/poly-pizza-city-pack/bicycle.glb',busStop:ROOT+'3d/city/poly-pizza-city-pack/bus-stop.glb',hydrant:ROOT+'3d/city/poly-pizza-city-pack/fire-hydrant.glb',planter:ROOT+'3d/city/poly-pizza-city-pack/planter-and-bushes.glb',trashCan:ROOT+'3d/city/poly-pizza-city-pack/trash-can.glb',mailbox:ROOT+'3d/city/poly-pizza-city-pack/mailbox.glb'};
 const CITY_ASSETS={house:ROOT+'3d/buildings/kenney-modular-buildings/building-sample-house-a.glb',tower:ROOT+'3d/buildings/kenney-modular-buildings/building-sample-tower-a.glb',tree:ROOT+'3d/nature/kenney-nature-kit/tree-small.glb',car:ROOT+'3d/vehicles/kenney-car-kit/sedan.glb',personA:ROOT+'characters/people/character-female-a.glb',personB:ROOT+'characters/people/character-male-b.glb',dog:ROOT+'characters/pets/animal-dog.glb'};
+const CITY_PEOPLE_ASSETS=[
+ ROOT+'characters/people/character-female-a.glb',ROOT+'characters/people/character-female-b.glb',
+ ROOT+'characters/people/character-female-c.glb',ROOT+'characters/people/character-female-d.glb',
+ ROOT+'characters/people/character-female-e.glb',ROOT+'characters/people/character-female-f.glb',
+ ROOT+'characters/people/character-male-a.glb',ROOT+'characters/people/character-male-b.glb',
+ ROOT+'characters/people/character-male-c.glb',ROOT+'characters/people/character-male-d.glb',
+ ROOT+'characters/people/character-male-e.glb',ROOT+'characters/people/character-male-f.glb'
+];
 const DAILY_CAL_TARGET=1800;
 const BASE_WORK_PAY=28000;
 const HOSPITAL_COST={dog:12000,car:30000,sick:8000};
@@ -61,6 +69,16 @@ const PRODUCTS=[
 ];
 const productById=id=>PRODUCTS.find(p=>p.id===id);
 function productAssetUrl(p){return PRODUCT_V4[p?.id]?ULTIMATE_FOOD+PRODUCT_V4[p.id]:FOOD+p.model}
+
+const CONVENIENCE_ITEMS=[
+ {id:'sandwich',price:4500,label:'샌드위치'},
+ {id:'sodaCan',price:1600,label:'탄산음료'},
+ {id:'donut',price:2100,label:'도넛'}
+];
+const FAST_FOOD_MENU={
+ burger:{name:'치즈버거 세트',price:6900,model:'burger-cheese.glb',nutrition:{kcal:860,protein:27,veg:1,sugar:24,sodium:17,satiety:76,mood:18}},
+ double:{name:'더블버거 세트',price:7900,model:'burger-cheese-double.glb',nutrition:{kcal:1080,protein:39,veg:1,sugar:27,sodium:22,satiety:88,mood:20}}
+};
 
 const EVENTS=[
  {id:'sports',title:'체육을 신나게 한 날',text:'평소보다 배가 조금 더 고파요. 무엇을 먹을지는 자유예요.',hunger:-12},
@@ -181,7 +199,7 @@ function startModelAnimation(root,pattern=/walk|run|sprint/i){
 function box(size,pos,color,rough=.88,parent=world){const m=new THREE.Mesh(new THREE.BoxGeometry(...size),new THREE.MeshStandardMaterial({color,roughness:rough}));m.position.set(...pos);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function addCollider(x,z,w,d){colliders.push({x,z,w,d})}
 function canStand(x,z){
- const bounds=state.location==='market'?[-4.7,4.7,-4.2,4.2]:state.location==='home'?[-3.1,3.1,-2.8,3.1]:state.location==='office'||state.location==='hospital'?[-4.4,4.4,-3.4,3.4]:[-16.5,16.5,-16.5,16.5];
+ const bounds=state.location==='market'?[-4.7,4.7,-4.2,4.2]:state.location==='home'?[-3.1,3.1,-2.8,3.1]:state.location==='convenience'?[-3.45,3.45,-2.95,2.95]:state.location==='fastfood'?[-3.75,3.75,-3.15,3.15]:state.location==='office'||state.location==='hospital'?[-4.4,4.4,-3.4,3.4]:[-16.5,16.5,-16.5,16.5];
  if(x<bounds[0]||x>bounds[1]||z<bounds[2]||z>bounds[3])return false;for(const c of colliders)if(Math.abs(x-c.x)<c.w/2+.3&&Math.abs(z-c.z)<c.d/2+.3)return false;return true
 }
 function addCeilingLights(width,depth,height=3.12){const ceiling=box([width,.14,depth],[0,height,0],0xf5f1e8,.92);for(const x of [-width*.24,0,width*.24]){const panel=box([.85,.055,.28],[x,height-.1,0],0xfff6d8,.3);panel.material.emissive=new THREE.Color(0xffefbd);panel.material.emissiveIntensity=.85;const light=new THREE.PointLight(0xffefd0,.75,7,2);light.position.set(x,height-.28,0);world.add(light)}return ceiling}
@@ -215,6 +233,13 @@ function wallSign(text,pos,width=1.75,color='#2f7d60',rot=0,parent=world){
  box([width+.08,h+.08,.055],[0,0,0],0xd8d2c6,.82,g);
  const face=new THREE.Mesh(new THREE.PlaneGeometry(width,h),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
  face.position.z=.032;g.add(face);return g
+}
+function storefrontCanopy(x,z,width,colorA,colorB=0xf6eedc){
+ const g=new THREE.Group();g.position.set(x,2.12,z);world.add(g);
+ box([width,.12,.68],[0,0,0],colorA,.62,g);
+ const stripeW=width/6;
+ for(let i=0;i<6;i++)box([stripeW-.025,.035,.7],[-width/2+stripeW/2+i*stripeW,.075,0],i%2?colorB:colorA,.55,g);
+ return g
 }
 async function addMarket(name,size,pos,rot=0,palette=null){try{const r=await fitted(MARKET+name+'.glb',size,palette);r.position.set(...pos);r.rotation.y=rot;world.add(r);return r}catch(e){console.warn('asset failed',name,e);return null}}
 function interactable(type,name,x,z,range=1.5,extra={}){interactables.push({type,name,x,z,range,...extra})}
@@ -318,8 +343,15 @@ async function ensureCity(){if(cityReady)return cityReady;cityReady=(async()=>{
   ['hydrant',.68,[4.4,0,-5.8],0],['planter',1.28,[11.5,0,-6.3],Math.PI/2],['trashCan',.68,[4.42,0,11.8],0],['mailbox',.88,[11.5,0,-13.2],Math.PI/2]
  ].map(([kind,size,pos,rot])=>decorate(kind,size,pos,rot)));
  for(const [i,lane]of [6.8,9.2].entries()){const z=-12+i*14,r=await place('car',2.5,[lane,0,z]);cityMovers.push({root:r,lane,z,speed:i?-2.1:2.4,offset:i*17,walk:false})}
- const pedestrianLanes=[5.34,5.34,10.66,10.66];
- for(let i=0;i<4;i++){const lane=pedestrianLanes[i],z=-9+i*5,r=await place(i%2?'personA':'personB',1.55,[lane,0,z]),surfaceY=.06,groundY=groundModel(r,surfaceY,.04),mixer=startModelAnimation(r,/walk|sprint|run/i);cityMovers.push({root:r,lane,z,speed:i%2?-.65:.75,offset:4+i*7,walk:true,groundY,surfaceY,footLocalY:r.userData.footLocalY,mixer})}
+ const pedestrianDefs=[
+  [5.34,-13,.72,'출근하는 주민'],[5.34,-7,-.62,'장보러 가는 주민'],[5.34,-1,.54,'산책하는 주민'],
+  [10.66,-10,-.7,'통근자'],[10.66,-3,.64,'학생'],[10.66,4,-.56,'퇴근하는 주민'],
+  [4.58,6.15,0,'벤치에서 쉬는 주민'],[11.0,10.05,0,'버스를 기다리는 주민']
+ ];
+ for(let i=0;i<pedestrianDefs.length;i++){
+  const [lane,z,speed,role]=pedestrianDefs[i],r=await placeUrl(CITY_PEOPLE_ASSETS[i%CITY_PEOPLE_ASSETS.length],1.55,[lane,0,z]),surfaceY=.06,groundY=groundModel(r,surfaceY,.04),mixer=startModelAnimation(r,Math.abs(speed)>.05?/walk|sprint|run/i:/idle/i);
+  r.userData.role=role;cityMovers.push({root:r,lane,z,speed,offset:3+i*5,walk:true,groundY,surfaceY,footLocalY:r.userData.footLocalY,mixer,role})
+ }
  })().catch(e=>{cityReady=null;clearGroup(city);cityMovers.length=0;throw e});return cityReady}
 
 // Furniture keeps its source proportions. Scale to height (or width for tables),
@@ -384,12 +416,66 @@ async function buildTown(from='home'){
  endDog(false);state.location='town';state.phase='town';homeInventoryRevision++;colliders=[];interactables=[];ui.labels.innerHTML='';labelViews=[];clearGroup(world);clearGroup(homeFoodGroup);if(cart){cart.removeFromParent();cart=null}scene.background.set(0xb9dce9);scene.fog.color.set(0xb9dce9);scene.fog.near=35;scene.fog.far=75;await ensureCity();document.body.classList.add('lifeTown');freeWalk=true;
  const buildings=[[-10,-15,5.4,4.5],[-3,-15,5.2,4.5],[4,-15,5.2,4.5],[15,-12,4.5,6],[15,-3,4.5,6],[15,7,4.5,6],[-13,7,5.5,5.5]];for(const [x,z,w,d]of buildings)addCollider(x,z,w,d);for(let z=-1.4;z<=1.4;z+=.55)box([6.4,.016,.28],[8,.018,z],0xf5f1df,1,world);
  visibleDoor([-10,0,-12.68],0,0x9c6a43,false);sign('🏠 우리 집',[-10,2.55,-12.55],.34,'#ba7c50');interactable('homeEntry','우리 집',-10,-11.5,2.2);
+ visibleDoor([-3,0,-12.68],0,0x2b8b5b,true);storefrontCanopy(-3,-12.28,2.75,0x2f9c68);wallSign('24시 편의점',[-3,2.72,-12.5],1.75,'#2f8b5b');interactable('convenienceEntry','24시 편의점',-3,-11.5,2.2);
+ visibleDoor([4,0,-12.68],0,0xbd4b3f,true);storefrontCanopy(4,-12.28,2.85,0xd85642,0xffd76b);wallSign('버거하우스',[4,2.72,-12.5],1.7,'#d85642');interactable('fastFoodEntry','버거하우스',4,-11.5,2.2);
  visibleDoor([12.68,0,-12],Math.PI/2,0x2f7d60,true);sign('🛒 마트',[12.55,2.55,-12],.34,'#2f7d60');interactable('marketEntry','우리 동네 마트',12.2,-12,2.2);
  visibleDoor([-13,0,4.18],0,0x4d6f91,true);sign('💼 사무실',[-13,2.55,4.32],.34,'#4d7ea8');interactable('officeEntry','사무실',-13,3.8,2.2);
  visibleDoor([12.68,0,7],Math.PI/2,0xb94f4b,true);sign('🏥 병원',[12.55,2.55,7],.34,'#d65b52');interactable('hospitalEntry','병원',12.2,7,2.2);
  trafficSignalMeshes=[];for(const z of [-2.1,2.1]){box([.12,2.4,.12],[5.2,1.2,z],0x343d3b,.75,world);const red=new THREE.Mesh(new THREE.SphereGeometry(.13,10,8),new THREE.MeshStandardMaterial({color:0x9a2f2d,emissive:0xff3b35,emissiveIntensity:.15}));red.position.set(5.2,2.0,z);red.userData.kind='carRed';world.add(red);trafficSignalMeshes.push(red);const yellow=new THREE.Mesh(new THREE.SphereGeometry(.13,10,8),new THREE.MeshStandardMaterial({color:0xa98220,emissive:0xffd84f,emissiveIntensity:.15}));yellow.position.set(5.2,1.81,z);yellow.userData.kind='carYellow';world.add(yellow);trafficSignalMeshes.push(yellow);const green=new THREE.Mesh(new THREE.SphereGeometry(.13,10,8),new THREE.MeshStandardMaterial({color:0x277447,emissive:0x47ff83,emissiveIntensity:.15}));green.position.set(5.2,1.62,z);green.userData.kind='carGreen';world.add(green);trafficSignalMeshes.push(green);const walk=new THREE.Mesh(new THREE.SphereGeometry(.11,10,8),new THREE.MeshStandardMaterial({color:0x2d7d55,emissive:0x6cff9b,emissiveIntensity:.15}));walk.position.set(10.8,1.65,z);walk.userData.kind='walk';world.add(walk);trafficSignalMeshes.push(walk)}
- const spawns={home:[-10,1.62,-10.4],market:[11.2,1.62,-12],office:[-13,1.62,2.8],hospital:[11.2,1.62,7],ambulance:[11.2,1.62,7]};const s=spawns[from]||spawns.home;playerPos.set(...s);yaw=from==='market'?-Math.PI/2:0;pitch=-.12;camera.position.copy(playerPos);camera.rotation.y=yaw;camera.rotation.x=pitch;dogSpawnClock=12+Math.random()*12;renderHud();save()
+ const spawns={home:[-10,1.62,-10.4],convenience:[-3,1.62,-10.4],fastfood:[4,1.62,-10.4],market:[11.2,1.62,-12],office:[-13,1.62,2.8],hospital:[11.2,1.62,7],ambulance:[11.2,1.62,7]};const s=spawns[from]||spawns.home;playerPos.set(...s);yaw=from==='market'?-Math.PI/2:0;pitch=-.12;camera.position.copy(playerPos);camera.rotation.y=yaw;camera.rotation.x=pitch;dogSpawnClock=12+Math.random()*12;renderHud();save()
 }
+
+async function buildConvenienceStore(){
+ endDog(false);state.location='convenience';state.phase='convenience';colliders=[];interactables=[];ui.labels.innerHTML='';labelViews=[];clearGroup(world);clearGroup(homeFoodGroup);document.body.classList.remove('lifeTown');scene.background.set(0xc7e3e4);scene.fog.color.set(0xc7e3e4);scene.fog.near=26;scene.fog.far=55;
+ const floor=new THREE.Mesh(new THREE.PlaneGeometry(7.2,6.2),new THREE.MeshStandardMaterial({color:0xd9d6c8,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;world.add(floor);
+ windowWall(7.2,3.1,[0,0,-3.0],0,.84,4.2);windowWall(6.2,3.1,[-3.55,0,0],Math.PI/2,.84,2.1);windowWall(6.2,3.1,[3.55,0,0],Math.PI/2,.84,2.1);entryWall(7.2,3.1,3.0,-2.65,1.3,.84,0x2f8b5b,true);addCeilingLights(7.2,6.2,3.18);wallSign('24시 편의점',[0,2.5,-2.87],1.7,'#2f8b5b');
+ await Promise.all([
+  packDecor(MARKET+'shelf-boxes.glb',1.85,[-2.65,0,-.7],Math.PI/2,true),
+  packDecor(MARKET+'shelf-bags.glb',1.75,[-2.65,0,1.0],Math.PI/2,true),
+  packDecor(MARKET+'freezers-standing.glb',1.85,[2.72,0,-1.35],-Math.PI/2,true),
+  packDecor(MARKET+'shopping-basket.glb',.65,[2.55,0,2.15],-.2,false)
+ ]);
+ box([4.65,.72,.72],[0,.36,-.55],0x547b6a,.86);box([4.75,.08,.82],[0,.76,-.55],0xe9e2cf,.72);addCollider(0,-.55,4.75,.82);
+ const itemXs=[-1.45,0,1.45];
+ for(let i=0;i<CONVENIENCE_ITEMS.length;i++){
+  const item=CONVENIENCE_ITEMS[i],p=productById(item.id),root=await fitted(productAssetUrl(p),.3);root.position.set(itemXs[i],.8,-.55);world.add(root);
+  sign(item.label+' '+fmt(item.price),[itemXs[i],1.42,-.52],.15,'#2f8b5b');
+  interactable('convenienceBuy',item.label,itemXs[i],.2,1.12,{productId:item.id,price:item.price})
+ }
+ await addMarket('cash-register',.62,[0,.8,-2.45],0);sign('빠른 계산 · 카트 필요 없음',[0,1.72,-2.35],.2,'#2f8b5b');
+ interactable('convenienceExit','동네로 나가기',-2.65,2.35,1.8);sign('밖으로',[-2.65,2.42,2.88],.21,'#2f8b5b');setSpawn('convenience');renderHud();save()
+}
+function buyConvenienceItem(productId,price){
+ const p=productById(productId);if(!p)return;if(state.money<price)return toast('돈이 부족해요. 편의점은 빠르지만 마트보다 조금 비싸요.',true);
+ state.money-=price;state.dailyExpense+=price;state.weekStats.spent+=price;state.inventory.push({uid:makeUid(productId),id:productId,age:0});state.dailyIncidents.push('🏪 편의점에서 '+p.name+'을(를) '+fmt(price)+'에 샀어요.');
+ tone('cash');renderHud();save();toast(p.name+' 구입 완료! 카트 없이 바로 샀어요.')
+}
+async function buildFastFood(){
+ endDog(false);state.location='fastfood';state.phase='fastfood';colliders=[];interactables=[];ui.labels.innerHTML='';labelViews=[];clearGroup(world);clearGroup(homeFoodGroup);document.body.classList.remove('lifeTown');scene.background.set(0xead8ca);scene.fog.color.set(0xead8ca);scene.fog.near=26;scene.fog.far=55;
+ const floor=new THREE.Mesh(new THREE.PlaneGeometry(7.8,6.6),new THREE.MeshStandardMaterial({color:0xd6c4a8,roughness:.94}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;world.add(floor);
+ windowWall(7.8,3.15,[0,0,-3.2],0,.88,4.6);windowWall(6.6,3.15,[-3.85,0,0],Math.PI/2,.88,2.15);windowWall(6.6,3.15,[3.85,0,0],Math.PI/2,.88,2.15);entryWall(7.8,3.15,3.2,-3.0,1.34,.88,0xc8503e,true);addCeilingLights(7.8,6.6,3.2);wallSign('버거하우스',[0,2.55,-3.07],1.72,'#d85642');
+ box([5.5,.86,.82],[0,.43,-2.15],0xa53f34,.78);box([5.65,.09,.92],[0,.9,-2.15],0xffd36b,.62);addCollider(0,-2.15,5.65,.92);
+ const menuKeys=['burger','double'],menuXs=[-1.25,1.25];
+ for(let i=0;i<menuKeys.length;i++){
+  const key=menuKeys[i],m=FAST_FOOD_MENU[key],root=await fitted(FOOD+m.model,.42);root.position.set(menuXs[i],.96,-2.15);world.add(root);
+  sign(m.name+' '+fmt(m.price),[menuXs[i],1.72,-2.02],.17,'#d85642');interactable('fastFoodOrder',m.name,menuXs[i],-1.05,1.15,{menuKey:key})
+ }
+ await Promise.all([
+  packDecor(FOOD+'fries.glb',.32,[0,.96,-2.15],.2,false),
+  homeModel('table',1.25,[-2.25,0,.65],'x',0,true),
+  homeModel('table',1.25,[1.3,0,.65],'x',0,true),
+  homeModel('chair-desk',.78,[-2.25,0,1.55],'y',Math.PI,true),
+  homeModel('chair-desk',.78,[1.3,0,1.55],'y',Math.PI,true)
+ ]);
+ interactable('fastFoodExit','동네로 나가기',-3.0,2.45,1.8);sign('밖으로',[-3,2.46,3.08],.21,'#d85642');setSpawn('fastfood');renderHud();save()
+}
+function orderFastFood(menuKey){
+ const m=FAST_FOOD_MENU[menuKey];if(!m)return;if(state.money<m.price)return toast('돈이 부족해요. 다른 메뉴를 고르거나 집에서 먹어도 돼요.',true);
+ state.money-=m.price;state.dailyExpense+=m.price;state.weekStats.spent+=m.price;
+ applyMeal({name:m.name,nutrition:m.nutrition},false,true);state.weekStats.meals++;state.weekStats.quick++;state.dailyIncidents.push('🍔 '+m.name+'을(를) '+fmt(m.price)+'에 사 먹었어요.');
+ state.mealFoods=[];state.mealCooked=false;state.mealQuick=false;tone('eat');renderHud();save();advanceMeal();toast(m.name+'을 바로 먹었어요. 빠르지만 비용과 영양도 함께 생각해 볼 수 있어요.')
+}
+
 async function buildOffice(){
  endDog(false);state.location='office';state.phase='office';colliders=[];interactables=[];ui.labels.innerHTML='';labelViews=[];clearGroup(world);scene.background.set(0xc9dce5);scene.fog.near=25;scene.fog.far=55;document.body.classList.remove('lifeTown');
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(9,7),new THREE.MeshStandardMaterial({color:0xc9b99e,roughness:.95}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;world.add(floor);
@@ -431,12 +517,12 @@ function storageName(s){return s==='freezer'?'냉동실':s==='pantry'?'찬장':'
 async function spawnCart(){if(cart)cart.removeFromParent();try{cart=await fitted(MARKET+'shopping-cart.glb',1.3,[0x477b9a,0xc8d5d3,0x444e52]);cartCargo=new THREE.Group();cart.add(cartCargo);dynamic.add(cart);await syncCartCargo()}catch(e){console.warn('cart failed',e)}}
 async function syncCartCargo(){if(!cartCargo)return;clearGroup(cartCargo);const show=state.basket.slice(0,7);for(let i=0;i<show.length;i++){const p=productById(show[i]);if(!p)continue;try{const r=await fitted(productAssetUrl(p),.26);r.position.set((i%3-.9)*.25,.45+Math.floor(i/3)*.16,-.05+((i%2)*.18));r.rotation.y=i*.8;cartCargo.add(r)}catch(_){}}
 }
-function setSpawn(where){let x=0,z=.9;if(where==='market'){x=1.6;z=3.6}else if(where==='office'||where==='hospital'){x=0;z=2.2}playerPos.set(x,1.62,z);yaw=0;pitch=-.12;camera.position.copy(playerPos);camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch}
+function setSpawn(where){let x=0,z=.9;if(where==='market'){x=1.6;z=3.6}else if(where==='convenience'||where==='fastfood'){x=0;z=2.15}else if(where==='office'||where==='hospital'){x=0;z=2.2}playerPos.set(x,1.62,z);yaw=0;pitch=-.12;camera.position.copy(playerPos);camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch}
 
 
 function nutritionText(){const n=state.dailyNutrition||freshDailyNutrition();if(!(state.dailyKcal||0))return'아직 식사 전';if(n.veg>=7&&n.protein>=25&&n.sugar<=50&&n.sodium<=22)return'균형 좋음';if(n.veg<4)return'채소·과일 부족';if(n.protein<16)return'단백질 부족';if(n.sugar>65)return'당류 많음';if(n.sodium>28)return'나트륨 많음';return'무난함'}
 function conditionText(){if(state.treatmentNeeded)return state.injury==='car'?'사고 · 치료 필요':state.injury==='dog'?'물림 · 치료 필요':'치료 필요';return state.condition>=80?'아주 좋음':state.condition>=60?'좋음':state.condition>=42?'보통':'조금 지침'}
-function locationText(){return({market:'🛒 우리 동네 마트',home:'🏠 집 · 부엌',town:'🏘️ 우리 동네',office:'💼 사무실',hospital:'🏥 동네 병원'})[state.location]||'우리 동네'}
+function locationText(){return({market:'🛒 우리 동네 마트',convenience:'🏪 24시 편의점',fastfood:'🍔 버거하우스',home:'🏠 집 · 부엌',town:'🏘️ 우리 동네',office:'💼 사무실',hospital:'🏥 동네 병원'})[state.location]||'우리 동네'}
 function renderHud(){ui.day.textContent=state.day+'일차 · '+SLOTS[state.slot];ui.money.textContent=fmt(state.money);ui.cartBtn.classList.toggle('hidden',state.location!=='market'||!state.hasCart);ui.cartCount.textContent=state.basket.length;ui.kcal.textContent=Math.round(state.dailyKcal||0).toLocaleString()+' kcal';ui.nutrition.textContent=nutritionText();ui.weight.textContent=(state.weightKg||35).toFixed(1)+' kg';ui.condition.textContent=conditionText();ui.location.textContent=locationText();ui.heldCard.classList.toggle('hidden',!state.held);if(state.held){ui.heldName.textContent=heldName();ui.heldHint.textContent=state.location==='market'?'카트에 넣거나 진열대에 돌려놓을 수 있어요.':'조리대에 올리거나 식탁에서 먹을 수 있어요.'}ui.prepCard.classList.toggle('hidden',state.location!=='home'||!state.prep.length);if(state.prep.length){ui.prepTitle.textContent=state.prep.map(x=>productById(x.id)?.name||'재료').join(' + ');ui.prepText.textContent='인덕션에서 요리하거나 다시 냉장고로 돌려놓을 수 있어요.'}renderEvent();renderCartPanel();renderTapControls()}
 function hungerText(){return state.hunger>=75?'든든함':state.hunger>=50?'보통':state.hunger>=28?'배고픔':'많이 배고픔'}
 
@@ -520,7 +606,7 @@ function advanceMeal(){state.hunger=clamp(state.hunger-12,0,100);state.condition
 
 function rollEvent(force=false){if(force||Math.random()<.42){state.event=EVENTS[Math.floor(Math.random()*EVENTS.length)];if(state.event.hunger)state.hunger=clamp(state.hunger+state.event.hunger,0,100)}else state.event=null}
 
-function interact(){if(!nearest)return;if(nearest.type==='heldAction'){if(state.location==='market')putHeldInCart();else dropHeldHome();return}if(nearest.type==='homeFood'){takeHomeItem(nearest.uid);return}if(nearest.type==='marketProduct'){tryTakeMarketProduct(nearest.productId);return}switch(nearest.type){case'fridge':case'pantry':toggleStorage(nearest.type);break;case'counter':if(state.held)putOnCounter();else if(state.prep.length)toast('재료가 준비됐어요. 인덕션에서 요리해 보세요.');else toast('냉장고나 찬장에서 재료를 꺼내 와 보세요.');break;case'sink':washHeld();break;case'stove':cookPrep();break;case'microwave':microwaveHeld();break;case'table':if(state.held||state.dish)eatAtTable();else if(state.mealFoods.length)finishMeal();else skipMeal();break;case'marketDoor':goMarket();break;case'cartBay':grabCart();break;case'homeDoor':goHomeWithoutCheckout();break;case'checkout':openCheckout();break;case'homeEntry':buildHome();break;case'marketEntry':buildStore();break;case'officeEntry':buildOffice();break;case'hospitalEntry':buildHospital('walk');break;case'workDesk':workOffice();break;case'officeExit':buildTown('office');break;case'treat':treatAtHospital();break;case'hospitalExit':buildTown('hospital');break}}
+function interact(){if(!nearest)return;if(nearest.type==='heldAction'){if(state.location==='market')putHeldInCart();else dropHeldHome();return}if(nearest.type==='homeFood'){takeHomeItem(nearest.uid);return}if(nearest.type==='marketProduct'){tryTakeMarketProduct(nearest.productId);return}switch(nearest.type){case'fridge':case'pantry':toggleStorage(nearest.type);break;case'counter':if(state.held)putOnCounter();else if(state.prep.length)toast('재료가 준비됐어요. 인덕션에서 요리해 보세요.');else toast('냉장고나 찬장에서 재료를 꺼내 와 보세요.');break;case'sink':washHeld();break;case'stove':cookPrep();break;case'microwave':microwaveHeld();break;case'table':if(state.held||state.dish)eatAtTable();else if(state.mealFoods.length)finishMeal();else skipMeal();break;case'marketDoor':goMarket();break;case'cartBay':grabCart();break;case'homeDoor':goHomeWithoutCheckout();break;case'checkout':openCheckout();break;case'homeEntry':buildHome();break;case'convenienceEntry':buildConvenienceStore();break;case'fastFoodEntry':buildFastFood();break;case'marketEntry':buildStore();break;case'officeEntry':buildOffice();break;case'hospitalEntry':buildHospital('walk');break;case'convenienceBuy':buyConvenienceItem(nearest.productId,nearest.price);break;case'fastFoodOrder':orderFastFood(nearest.menuKey);break;case'convenienceExit':buildTown('convenience');break;case'fastFoodExit':buildTown('fastfood');break;case'workDesk':workOffice();break;case'officeExit':buildTown('office');break;case'treat':treatAtHospital();break;case'hospitalExit':buildTown('hospital');break}}
 
 async function grabCart(){if(state.hasCart)return;state.hasCart=true;await spawnCart();tone('pick');renderHud();save();toast('카트를 잡았어요. 이제 원하는 식품을 골라 담아 보세요.')}
 async function goMarket(){if(state.held||state.prep.length)return toast('들고 있는 음식이나 조리대 재료를 먼저 정리해 주세요.',true);tone('door');await buildTown('home');save()}
