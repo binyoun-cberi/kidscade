@@ -296,3 +296,53 @@ body.wave-live #topHud{border-bottom-color:rgba(255,91,104,.34)}
   #assetStatus{bottom:89px}
   .arsenalPreview{grid-template-columns:1fr 1fr;gap:5px}.arsenalPreview .evolution{grid-column:1/-1}.arsenalPreview span{padding:6px}
 }
+
+
+/* ===== v16 visual composition pass ===== */
+body.wave-live #waveCard{
+  width:286px;
+  padding:8px 10px 9px;
+  border-color:rgba(255,82,95,.64);
+}
+body.wave-live #waveMission,
+body.wave-live #startWaveBtn{display:none}
+body.wave-live .waveCardHead{margin-bottom:3px}
+body.wave-live .waveNumbers{margin:0}
+body.wave-live #enemyPreview{font-size:17px}
+body.wave-live #enemyCount{font-size:8px}
+body.wave-live #towerDeck{background:linear-gradient(0deg,rgba(3,15,23,.995),rgba(5,20,29,.9))}
+body.wave-live #buildHint{opacity:.62}
+
+body.portrait-board #missionLine:after{
+  content:" · 세로 화면 전장 회전";
+  color:#8ddff2;
+}
+body.portrait-board #waveCard{top:72px}
+body.portrait-board #towerDeck{
+  gap:5px;
+  padding:5px 6px calc(5px + env(safe-area-inset-bottom));
+}
+body.portrait-board .towerCard{
+  flex-basis:98px;
+  min-height:66px;
+}
+body.portrait-board .towerCard .op,
+body.portrait-board .recommend .autoIcon{width:29px;height:29px}
+body.portrait-board .towerMeta b{font-size:9px!important}
+body.portrait-board .towerMeta small{font-size:7px!important}
+body.portrait-board .towerCard>em{font-size:6px}
+body.portrait-board #selectedPanel{bottom:82px}
+body.portrait-board #buildHint{bottom:86px}
+body.portrait-board #assetStatus{bottom:82px}
+
+@media(max-width:700px) and (orientation:portrait){
+  body.wave-live #waveCard{width:auto;right:7px;left:7px;top:68px}
+  body.wave-live .waveCardHead{display:none!important}
+  body.wave-live .waveNumbers{justify-content:space-between!important}
+  body.wave-live #enemyPreview{font-size:13px}
+  body.wave-live #enemyCount{font-size:8px}
+  #topHud{padding:6px 7px;min-height:58px}
+  .brand b{font-size:14px}.brand small{font-size:8px}
+  .stats{gap:3px}.stats span{min-width:46px;padding:4px 5px}.stats small{font-size:7px}.stats b{font-size:11px}
+  .controlsTop{gap:3px}.speedBtn,.iconBtn{min-width:32px;height:32px;padding:0 7px}
+}
