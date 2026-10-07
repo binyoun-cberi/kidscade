@@ -16,7 +16,7 @@ const nestedAlias=fs.readFileSync(path.join(dir,'index.html'),'utf8');
 
 test('Divisor Tower Defense has one canonical standalone 3D entry',()=>{
   assert.match(html,/id="world"/);
-  assert.match(html,/tower-defense-loader\.js\?v=14-topdown1/);
+  assert.match(html,/tower-defense-loader\.js\?v=15-arsenal1/);
   assert.match(html,/type="importmap"/);
   assert.doesNotMatch(html,/gameCanvas|number-td-3d|__numTD3D/);
   assert.ok(html.length>1000);
@@ -28,7 +28,7 @@ test('loader uses the proven Three.js bootstrap pattern',()=>{
   assert.match(loader,/import \* as THREE from 'three'/);
   assert.match(loader,/GLTFLoader/);
   assert.match(loader,/window\.THREE=THREE/);
-  assert.match(loader,/tower-defense\.js\?v=14-topdown1/);
+  assert.match(loader,/tower-defense\.js\?v=15-arsenal1/);
 });
 
 test('classic 3D runtime parses',()=>{
@@ -69,13 +69,25 @@ test('math rules and scripted wave progression stay solvable as factors unlock',
   waves.forEach((waveDef,index)=>waveDef.nums.forEach(n=>assert.ok(reachable(n,index+1),'wave '+(index+1)+' cannot reduce '+n+' to 1')));
 });
 
-test('v14 runtime uses Quaternius zombies, turrets and city buildings',()=>{
+test('v15 runtime uses the full Zsky sci-fi turret arsenal plus outbreak city assets',()=>{
   for(const rel of [
-    'assets/game/turrets/FBX/Gun_2.fbx',
-    'assets/game/turrets/FBX/Gun_10.fbx',
-    'assets/game/turrets/FBX/Laser_2.fbx',
-    'assets/game/turrets/FBX/Teleporter5.fbx',
-    'assets/game/turrets/FBX/Cannon_7.fbx',
+    'assets/game/3d/weapons/scifi-turrets/emp-turret.glb',
+    'assets/game/3d/weapons/scifi-turrets/flamethrower-turret.glb',
+    'assets/game/3d/weapons/scifi-turrets/gatelng-gun-turret.glb',
+    'assets/game/3d/weapons/scifi-turrets/gun-cannon-turret.glb',
+    'assets/game/3d/weapons/scifi-turrets/hive-turret.glb',
+    'assets/game/3d/weapons/scifi-turrets/lighting-turret.glb',
+    'assets/game/3d/weapons/scifi-turrets/missile-turret.glb',
+    'assets/game/3d/weapons/scifi-turrets/plasma-turret.glb',
+    'assets/game/3d/weapons/scifi-turrets/rail-gun-turret.glb',
+    'assets/game/3d/weapons/scifi-turrets/shield-turret.glb',
+    'assets/game/3d/city/kenney-city-kit-roads/traffic-light.glb',
+    'assets/game/3d/city/kenney-city-kit-roads/construction-cone.glb',
+    'assets/game/3d/city/kenney-city-kit-roads/construction-barrier.glb',
+    'assets/game/3d/city/kenney-city-kit-roads/construction-fence.glb',
+    'assets/game/3d/city/kenney-city-kit-roads/dumpster.glb',
+    'assets/game/3d/vehicles/kenney-car-kit/ambulance.glb',
+    'assets/game/3d/city/poly-pizza-city-pack/fire-hydrant.glb',
     'assets/game/zombie/FBX/Zombie.fbx',
     'assets/game/zombie/FBX/ZombieSmooth.fbx',
     'assets/game/buildings/Models with Materials/FBX/1Story_Sign_Mat.fbx',
@@ -83,12 +95,16 @@ test('v14 runtime uses Quaternius zombies, turrets and city buildings',()=>{
   ]) assert.ok(fs.existsSync(path.join(root,rel)),'missing '+rel);
   assert.match(loader,/FBXLoader/);
   assert.match(runtime,/zombieSmooth:gameUrl\('zombie\/FBX\/ZombieSmooth\.fbx'\)/);
-  assert.match(runtime,/Gun_10\.fbx/);
-  assert.match(runtime,/6Story_Stack_Mat\.fbx/);
+  assert.match(runtime,/gatelng-gun-turret\.glb/);
+  assert.match(runtime,/rail-gun-turret\.glb/);
+  assert.match(runtime,/ambulance\.glb/);
   assert.match(runtime,/function towerVisualKey/);
+  assert.match(runtime,/function towerVisualName/);
+  assert.match(runtime,/function nextTowerEvolution/);
+  assert.doesNotMatch(runtime,/Gun_\d+\.fbx|Laser_\d+\.fbx|Teleporter\d+\.fbx|Cannon_\d+\.fbx/);
 });
 
-test('v14 restores visible zombie skin, clothing and footwear colors for textureless FBX meshes',()=>{
+test('v15 keeps visible zombie skin, clothing and footwear colors for textureless FBX meshes',()=>{
   assert.match(runtime,/const ZOMBIE_PALETTES=Object\.freeze/);
   assert.match(runtime,/function colorizeZombieModel/);
   assert.match(runtime,/geometry\.setAttribute\('color',new THREE\.BufferAttribute\(colors,3\)\)/);
@@ -100,7 +116,7 @@ test('v14 restores visible zombie skin, clothing and footwear colors for texture
   assert.match(runtime,/boots:0x18212a/);
 });
 
-test('v14 adds visible aiming, projectile travel, colored civilians, and the dedicated zombie pack',()=>{
+test('v15 keeps visible aiming, projectile travel, colored civilians, and the dedicated zombie pack',()=>{
   assert.match(runtime,/turnSpeed/);
   assert.match(runtime,/projectileSpeed/);
   assert.match(runtime,/function turnToward/);
@@ -121,6 +137,22 @@ test('3D placement and learning feedback are first class',()=>{
   assert.doesNotMatch(runtime,/canvas\.getContext\(['"]2d/);
 });
 
+test('v15 makes upgrades visibly evolve and gives each operator a combat identity',()=>{
+  assert.match(runtime,/visualSteps:\[0,1,2,3\]/);
+  assert.match(runtime,/visualNames:\['CANNON','MISSILE','PLASMA','RAIL GUN'\]/);
+  assert.match(runtime,/projectile:'emp'/);
+  assert.match(runtime,/projectile:'tracer'/);
+  assert.match(runtime,/projectile:'plasma'/);
+  assert.match(runtime,/projectile:'boost'/);
+  assert.match(runtime,/projectile:'heavy'/);
+  assert.match(runtime,/function projectileMesh/);
+  assert.match(runtime,/function muzzleSparks/);
+  assert.match(html,/CANNON → MISSILE → PLASMA → RAIL/);
+  assert.match(html,/id="selectedWeapon"/);
+  assert.match(css,/v15 sci-fi arsenal/);
+  assert.match(css,/body\.wave-live #waveCard/);
+});
+
 test('mobile UI reserves most of the screen for the battlefield',()=>{
   assert.match(css,/#towerDeck/);
   assert.match(css,/@media\(max-width:700px\)/);
@@ -131,13 +163,13 @@ test('catalog and Cloudflare build use the title-matching canonical file',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='math_tower_defense');
   assert.equal(game.title,'좀비 vs 약수 터렛');
-  assert.equal(game.href,'games/math_tower_defense/약수 타워 디펜스.html?v=14');
+  assert.equal(game.href,'games/math_tower_defense/약수 타워 디펜스.html?v=15');
   const dist=path.join(root,'dist');
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense',canonicalName)));
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense','tower-defense-loader.js')));
   assert.ok(fs.existsSync(path.join(dist,'games','math_tower_defense','tower-defense.js')));
   const distCatalog=JSON.parse(fs.readFileSync(path.join(dist,'data','games.json'),'utf8'));
-  assert.equal(distCatalog.games.find(g=>g.id==='math_tower_defense')?.href,'games/math_tower_defense/약수 타워 디펜스.html?v=14');
+  assert.equal(distCatalog.games.find(g=>g.id==='math_tower_defense')?.href,'games/math_tower_defense/약수 타워 디펜스.html?v=15');
 });
 
 test('legacy URLs are registered aliases to the canonical game',()=>{
@@ -157,7 +189,7 @@ test('v3 battlefield improves combat readability and feedback',()=>{
 });
 
 
-test('v14 uses a fixed orthographic top-down battlefield with direct placement',()=>{
+test('v15 keeps the fixed orthographic top-down battlefield with direct placement',()=>{
   assert.match(runtime,/new THREE\.OrthographicCamera/);
   assert.match(runtime,/function fitTopDownCamera/);
   assert.match(runtime,/camera\.up\.set\(0,0,-1\)/);
@@ -189,8 +221,9 @@ test('v9 exposes direct 1x to 16x speed choices and substeps high-speed simulati
   assert.match(css,/\.speedMenu/);
 });
 
-test('v14 credits the new CC0 Quaternius outbreak packs',()=>{
-  assert.match(html,/Zombies · NPCs · Turrets · Buildings: Quaternius/);
-  assert.match(html,/CC0/);
-  assert.doesNotMatch(html,/Turrets: Zsky/);
+test('v15 credits Quaternius, Kenney and the Zsky sci-fi turret pack',()=>{
+  assert.match(html,/Zombies · NPCs · Buildings: Quaternius/);
+  assert.match(html,/Sci-Fi Turrets: Zsky/);
+  assert.match(html,/CC BY/);
+  assert.match(html,/Environment · Vehicles: Kenney/);
 });
