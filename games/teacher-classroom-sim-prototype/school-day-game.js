@@ -783,7 +783,7 @@ function startLessonChat(a,b){
   };
   lessonChats.push(chat);stats.lessonChats++;
   showBubble(a,'😄','chat');showBubble(b,'😄','chat');
-  showToast('😄 '+a.runtime.name+'와 '+b.runtime.name+'가 수업 중 장난을 시작했어요.');
+  showToast('😄 '+a.runtime.name+'와 '+b.runtime.name+'가 수업 중 장난을 시작했어요. · 친분 Lv.'+chat.level);
 }
 function stopLessonChat(chat,{teacher=false,natural=false}={}){
   if(!chat)return;
@@ -1166,7 +1166,9 @@ function finishDay(){
     '<div><strong>'+stats.safetyMisses+'</strong><span>놓친 안전교육</span></div>'+
     '<div><strong>'+stats.nurseVisits+'</strong><span>보건실 이용</span></div>'+
     '<div><strong>'+stats.earlyDismissals+'</strong><span>조퇴</span></div>'+
-    '<div><strong>'+stats.teamConflicts+'</strong><span>모둠 갈등</span></div>';
+    '<div><strong>'+stats.teamConflicts+'</strong><span>모둠 갈등</span></div>'+
+    '<div><strong>'+stats.selfReconciles+'</strong><span>친구끼리 화해</span></div>'+
+    '<div><strong>'+stats.chatsStopped+'</strong><span>수업 장난 정리</span></div>';
   ui.end.classList.remove('hidden');
 }
 
