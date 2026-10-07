@@ -92,7 +92,7 @@ export function drainSocial(student,dt,mult=1){
 }
 
 export function conflictProbability(a,b,{teacherNear=false,relationActive=false}={}){
-  if(relationActive)return teacherNear?.18:1;
+  if(relationActive)return teacherNear ? .18 : 1;
   const ar=a.social/Math.max(1,a.socialMax);
   const br=b.social/Math.max(1,b.socialMax);
   const lowA=ar<.25,lowB=br<.25;
