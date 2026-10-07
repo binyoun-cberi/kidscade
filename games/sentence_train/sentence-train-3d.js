@@ -14,10 +14,19 @@ const MODEL={
  box:asset('3d/rail/kenney-train-kit/train-carriage-box.glb'),
  connector:asset('3d/rail/kenney-train-kit/train-connector.glb'),
  rail:asset('3d/rail/kenney-train-kit/railroad-straight.glb'),
- tree:asset('3d/nature/kenney-nature-kit/tree-default.glb')
+ tree:asset('3d/nature/kenney-nature-kit/tree-default.glb'),
+ stationA:asset('3d/city/kenney-city-kit-suburban/building-type-f.glb'),
+ stationB:asset('3d/city/kenney-city-kit-suburban/building-type-h.glb'),
+ stationC:asset('3d/city/kenney-city-kit-suburban/building-type-d.glb'),
+ stationD:asset('3d/city/kenney-city-kit-suburban/building-type-q.glb'),
+ bench:asset('3d/interiors/kenney-furniture-kit/bench.glb'),
+ lamp:asset('3d/city/kenney-city-kit-roads/light-curved.glb'),
+ bush:asset('3d/nature/kenney-nature-kit/plant-bush.glb'),
+ flower:asset('3d/nature/kenney-nature-kit/flower-yellow-a.glb'),
+ sign:asset('3d/nature/kenney-nature-kit/sign.glb')
 };
-let scene,camera,renderer,loader,trainGroup,railGroup,decorGroup;
-let models=new Map(),ready=false,departT=-1,last=performance.now(),carCount=4,pulse=0;
+let scene,camera,renderer,loader,trainGroup,railGroup,decorGroup,stationGroup;
+let models=new Map(),ready=false,departT=-1,last=performance.now(),carCount=4,pulse=0,stationIndex=0;
 const palette=['blue','green','red','box'];
 
 function prep(obj){obj.traverse(n=>{if(!n.isMesh)return;n.castShadow=true;n.receiveShadow=true;if(n.material){const mats=Array.isArray(n.material)?n.material:[n.material];n.material=Array.isArray(n.material)?mats.map(m=>m.clone()):mats[0].clone()}});return obj}
@@ -48,9 +57,30 @@ function addRails(){
 }
 function addDecor(){
  clear(decorGroup);
- for(const x of[-9,-6.4,6.8,9.2]){
+ for(const x of[-9,-6.4,7.7,10.1]){
    const t=clone('tree',1.8,'height');
-   if(t){t.position.set(x,.02,-2.8);t.rotation.y=(x<0?.5:-.4);decorGroup.add(t)}
+   if(t){t.position.set(x,.02,-3.35);t.rotation.y=(x<0?.5:-.4);decorGroup.add(t)}
+ }
+ for(const x of[-7.5,-5.1,2.1,8.8]){
+   const b=clone('bush',.72,'width');if(b){b.position.set(x,.02,-2.35);b.rotation.y=x*.2;decorGroup.add(b)}
+ }
+ for(const x of[-6.9,-5.9,1.6,2.7,8.2,9.5]){
+   const fl=clone('flower',.32,'height');if(fl){fl.position.set(x,.02,-2.15);fl.rotation.y=x;decorGroup.add(fl)}
+ }
+}
+function buildStation(index=stationIndex){
+ stationIndex=Math.max(0,Math.min(3,index|0));clear(stationGroup);
+ const keys=['stationA','stationB','stationC','stationD'];
+ const building=clone(keys[stationIndex],3.5,'width');
+ if(building){building.position.set(5.15,.02,-3.05);building.rotation.y=-.52;stationGroup.add(building)}
+ const bench=clone('bench',1.15,'width');
+ if(bench){bench.position.set(3.55,.02,-1.95);bench.rotation.y=-.18;stationGroup.add(bench)}
+ const lamp=clone('lamp',1.95,'height');
+ if(lamp){lamp.position.set(6.85,.02,-1.95);lamp.rotation.y=.18;stationGroup.add(lamp)}
+ const sign=clone('sign',.85,'height');
+ if(sign){sign.position.set(2.75,.02,-1.85);sign.rotation.y=.08;stationGroup.add(sign)}
+ for(const x of[4.25,5.8,6.45]){
+   const b=clone('bush',.65,'width');if(b){b.position.set(x,.02,-2.25);stationGroup.add(b)}
  }
 }
 function makeFallbackCar(color){
@@ -91,10 +121,10 @@ function init(){
  renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
  scene.add(new THREE.HemisphereLight(0xf8fcff,0x5f7750,2.3));
  const sun=new THREE.DirectionalLight(0xffefc4,3);sun.position.set(-7,10,7);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
- trainGroup=new THREE.Group();railGroup=new THREE.Group();decorGroup=new THREE.Group();scene.add(decorGroup,railGroup,trainGroup);
+ trainGroup=new THREE.Group();railGroup=new THREE.Group();decorGroup=new THREE.Group();stationGroup=new THREE.Group();scene.add(decorGroup,stationGroup,railGroup,trainGroup);
  loader=new GLTFLoader();
  Promise.all(Object.entries(MODEL).map(([k,u])=>load(k,u))).then(()=>{
-   addRails();addDecor();const liveSlots=document.querySelectorAll('#track .slot').length;buildTrain(liveSlots||carCount);ready=true;document.body.classList.add('sentence-train-3d-ready');resize();
+   addRails();addDecor();buildStation(stationIndex);const liveSlots=document.querySelectorAll('#track .slot').length;buildTrain(liveSlots||carCount);ready=true;document.body.classList.add('sentence-train-3d-ready');resize();
  });
  addEventListener('resize',resize,{passive:true});requestAnimationFrame(loop);
 }
@@ -103,6 +133,7 @@ function resize(){
  const rect=canvas.getBoundingClientRect();renderer.setSize(Math.max(1,rect.width),Math.max(1,rect.height),false);fitCamera();
 }
 function setCars(n){carCount=n; if(ready)buildTrain(n)}
+function setStation(index){stationIndex=Math.max(0,Math.min(3,index|0));if(ready)buildStation(stationIndex)}
 function reset(){departT=-1;if(trainGroup){trainGroup.position.x=0;trainGroup.rotation.z=0;trainGroup.visible=true}}
 function depart(){if(!trainGroup)return;departT=0}
 function celebrate(){pulse=.55}
@@ -123,6 +154,6 @@ function loop(now){
  if(pulse>0){pulse=Math.max(0,pulse-dt);renderer.toneMappingExposure=1.05+pulse*.38}else renderer.toneMappingExposure+=(1.05-renderer.toneMappingExposure)*.12;
  renderer.render(scene,camera);
 }
-window.SentenceTrain3D={setCars,reset,depart,celebrate,resize,ready:()=>ready};
+window.SentenceTrain3D={setCars,setStation,reset,depart,celebrate,resize,ready:()=>ready};
 init();
 })();
