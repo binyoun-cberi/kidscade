@@ -3,6 +3,7 @@ export const TEACHING_RULES=Object.freeze({
   boardRadius:1.75,
   explanationFraction:.19,
   practiceFraction:.39,
+  groupPracticeFraction:.54,
   recapFraction:.12,
   minimumPracticeSeconds:31,
   learningEfficiency:Object.freeze({
@@ -27,12 +28,13 @@ export const LESSON_PHASES=Object.freeze({
   recap:{label:'③ 수업 정리',short:'정리'},
   complete:{label:'수업 정리 완료',short:'완료'}
 });
-export function createLessonFlow(duration){
+export function createLessonFlow(duration,{teamActivity=false}={}){
   const total=Math.max(60,Number(duration)||110);
   return {
     phase:'explain',progress:0,
     explanationSeconds:Math.round(total*TEACHING_RULES.explanationFraction),
-    practiceSeconds:Math.max(TEACHING_RULES.minimumPracticeSeconds,Math.round(total*TEACHING_RULES.practiceFraction)),
+    practiceSeconds:Math.max(TEACHING_RULES.minimumPracticeSeconds,
+      Math.round(total*(teamActivity?TEACHING_RULES.groupPracticeFraction:TEACHING_RULES.practiceFraction))),
     recapSeconds:Math.max(10,Math.round(total*TEACHING_RULES.recapFraction)),
     assigned:false,completed:false,
     explanationTime:0,awayDuringExplanation:0,practiceTime:0,recapTime:0
