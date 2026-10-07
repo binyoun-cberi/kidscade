@@ -2,6 +2,33 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "science_periodic_memory",
+      "addedAt": "2026-10-07T08:44:00+09:00",
+      "title": "원소주기율표 외우기",
+      "href": "games/science_periodic_memory/index.html",
+      "category": "trivia",
+      "age": "high",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "⚛️",
+      "description": "118개 원소의 이름과 기호를 카드로 익히고 퀴즈와 빈 주기율표 채우기에 도전해요. 1~10번부터 전체 범위까지, 직접 입력과 오답 복습을 지원합니다.",
+      "subject": "science",
+      "genre": "quiz",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "science_cosmic_growth",
       "addedAt": "2026-10-06T21:46:00+09:00",
       "title": "먼지에서 블랙홀까지",

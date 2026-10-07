@@ -118,7 +118,7 @@
       'low_blind_elephant','math_timing_lcd','trivia_zoolympic','kor_handwriting_party',
       'tod_shape_color','kor_sentence_train','chosung_bomb','low_order_pang','low_speak_jjoayo',
       'tod_symbol_duel','kor_typing_tadak','math_quiz','fraction_quiz','world_flag_master',
-      'korean_vocab','swipe_spelling','language_arcade','hanja_test','high_body_muscle_lab','math_pi_memory','kor_hand_twist_typing'
+      'korean_vocab','swipe_spelling','language_arcade','hanja_test','high_body_muscle_lab','math_pi_memory','science_periodic_memory','kor_hand_twist_typing'
     ]),
     run:Object.freeze([
       'low_perfect_pitch','low_wordris','low_math_dog_runner','music_neon_rift','high_kite_wind_rider',
