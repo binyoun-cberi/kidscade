@@ -93,6 +93,7 @@
     hanjaSelectedGrade: 'kidscade_hanja_selected_grade_v1',
     hanjaCardPoints: 'kidscade_hanja_card_points_v1',
     bunsikTycoonProgressV1: 'kidscade_bunsik_tycoon_progress_v1',
+    teacherCampaignV1: 'kidscade_teacher_campaign_v1',
     wordSiegeDictionary: 'kidscade_word_siege_discovered_v1',
     wordSiegeBest: 'kidscade_word_siege_best_v1'
   });
