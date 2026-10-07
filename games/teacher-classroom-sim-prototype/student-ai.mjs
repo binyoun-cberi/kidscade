@@ -51,7 +51,7 @@ export function resetFocusForLesson(student){
   student.offTaskCount=0;
 }
 
-export function updateLessonFocus(student,dt,{teacherNear=false,drainMultiplier=1}={}){
+export function updateLessonFocus(student,dt,{teacherNear=false,drainMultiplier=1,recoveryMultiplier=1}={}){
   if(student.mode==='focused'){
     student.focus=Math.max(0,student.focus-AI_RULES.focusDrainPerSecond*drainMultiplier*dt);
     if(student.focus<=student.focusMax*AI_RULES.focusOffTaskRatio){
@@ -61,7 +61,7 @@ export function updateLessonFocus(student,dt,{teacherNear=false,drainMultiplier=
     }
     return '';
   }
-  const mult=AI_RULES.focusNaturalRecoveryMultiplier*(teacherNear?AI_RULES.teacherRecoveryMultiplier:1);
+  const mult=AI_RULES.focusNaturalRecoveryMultiplier*(teacherNear?AI_RULES.teacherRecoveryMultiplier:1)*recoveryMultiplier;
   student.focus=Math.min(student.focusMax,student.focus+student.focusRecovery*mult*dt);
   if(student.focus>=student.focusMax*AI_RULES.focusReturnRatio){
     student.mode='focused';
