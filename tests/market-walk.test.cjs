@@ -220,4 +220,28 @@ test('new storefronts reuse the two previously empty south-block buildings',()=>
   assert.match(js,/storefrontCanopy\(-3,-12\.28/);
   assert.match(js,/storefrontCanopy\(4,-12\.28/);
 });
-test('market page cache-busts the neighborhood expansion',()=>{assert.ok(html.includes('market-walk.js?v=19-neighborhood'))});
+test('home gains grounded domestic details without expanding the kitchen footprint',()=>{
+  assert.match(js,/homeModel\('rug-rectangle',2\.55/);
+  assert.match(js,/homeModel\('rug-doormat',1\.25/);
+  assert.match(js,/homeModel\('potted-plant',1\.05/);
+  assert.match(js,/homeModel\('bookcase-open-low',1\.18/);
+  assert.match(js,/trashcan\.glb/);
+  assert.match(js,/lamp-wall\.glb/);
+});
+test('office has three human-scale workstations, coworkers, and a separate break corner',()=>{
+  assert.match(js,/const deskXs=\[-2\.35,0,2\.35\]/);
+  assert.match(js,/homeModel\('desk',1\.5/);
+  assert.match(js,/computer-keyboard\.glb/);
+  assert.match(js,/computer-mouse\.glb/);
+  assert.match(js,/indoorResident\(CITY_PEOPLE_ASSETS\[8\]/);
+  assert.match(js,/indoorResident\(CITY_PEOPLE_ASSETS\[9\]/);
+  assert.match(js,/homeModel\('table-coffee',1\.25/);
+  assert.match(js,/homeModel\('lounge-chair',1\.02/);
+});
+test('room residents update idle animation mixers and release them when changing rooms',()=>{
+  assert.match(js,/const city=new THREE\.Group\(\),cityMovers=\[\],roomMixers=\[\]/);
+  assert.match(js,/if\(g===world\)roomMixers\.length=0/);
+  assert.match(js,/for\(const mixer of roomMixers\)mixer\.update\(dt\)/);
+  assert.match(js,/function indoorResident\(/);
+});
+test('market page cache-busts the home and office expansion',()=>{assert.ok(html.includes('market-walk.js?v=20-home-office'))});
