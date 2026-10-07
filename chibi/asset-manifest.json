@@ -158,14 +158,17 @@
       "type": "face",
       "generatedFrom": "eyes",
       "rigging": "source eyes topology + skin weights",
-      "shaping": "reduced vertical eye height, slightly increased width"
+      "shaping": "vertical silhouette 0.70x original, width 1.045x; original iris textures/UV and 78-bone skin weights unchanged",
+      "revision": "boyish-eyes-v2"
     },
     "kidscade_male_brows": {
       "label": "남자 기본 눈썹",
       "type": "face-detail",
       "generatedFrom": "eyelashes",
       "rigging": "source eyelashes topology + skin weights",
-      "shaping": "raised and vertically compressed into brows"
+      "shaping": "original eyelashes mesh widened 1.055x, thickness 0.52x original, lowered to +0.072 Y and projected +0.016 Z",
+      "color": "#30241f",
+      "revision": "defined-lower-brows-v2"
     },
     "kidscade_male_tshirt": {
       "label": "남자 기본 티셔츠",
