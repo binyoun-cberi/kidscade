@@ -161,7 +161,7 @@ function resetMission(mode,payload,done){
   {x:350,y:288,r:15,opened:false,loot:['ammo','scrap']}
  ];
  if(mode==='camp'){
-  const sourceResidents=Array.isArray(state.payload.residents)?state.payload.residents.filter(r=>r&&r.status!=='lost'&&r.status!=='zombie').slice(0,8):[];
+  const sourceResidents=Array.isArray(state.payload.residents)?state.payload.residents.filter(r=>r&&r.status!=='lost'&&r.status!=='zombie').slice(0,12):[];
   const fallbackSpawns=[[118,248],[166,248],[214,248],[118,293],[166,293],[214,293],[262,293],[305,248]];
   const residentCount=sourceResidents.length||clamp(Number(state.payload.survivorCount)||5,3,8);
   for(let i=0;i<residentCount;i++){
