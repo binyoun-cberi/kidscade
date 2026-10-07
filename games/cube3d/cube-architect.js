@@ -5683,7 +5683,8 @@ function helpFirstJourney(){
 }
 function updateFirstJourney(){
   const card=$('journeyCard');if(!card)return;
-  const available=mode==='free'&&gameFreeMode==='survival'&&!campActive()&&(survivalCamp.finished||survivalCamp.dismissed)&&!['done','skip'].includes(firstJourney.phase);
+  const campReady=typeof survivalCamp==='undefined'||survivalCamp.finished||survivalCamp.dismissed;
+  const available=mode==='free'&&gameFreeMode==='survival'&&!campActive()&&campReady&&!['done','skip'].includes(firstJourney.phase);
   card.classList.toggle('hidden',!available);if(!available)return;
   const idle=firstJourney.phase==='idle';$('journeyStart').classList.toggle('hidden',!idle);$('journeyHelp').classList.toggle('hidden',idle);
   $('journeyTitle').textContent=idle?'추천 탐험 · 작은 다리':'추천 탐험 · 길을 이어 보자';
