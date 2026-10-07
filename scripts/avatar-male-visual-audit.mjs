@@ -96,7 +96,7 @@ async function tile(item,width,height){
     '<rect x="10" y="10" rx="8" ry="8" width="150" height="34" fill="rgba(255,255,255,0.90)"/>'+
     '<text x="22" y="33" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#1f2937">'+item.label+'</text>'+
     '</svg>';
-  return sharp(base).composite([{input:Buffer.from(label),top:0,left:0}]).jpeg({quality:72}).toBuffer();
+  return sharp(base).composite([{input:Buffer.from(label),top:0,left:0}]).webp({quality:42}).toBuffer();
 }
 
 async function makeSheet(items,cols,tileW,tileH,outFile){
@@ -112,13 +112,13 @@ async function makeSheet(items,cols,tileW,tileH,outFile){
       top:Math.floor(i/cols)*tileH
     });
   }
-  await canvas.composite(comps).jpeg({quality:68}).toFile(outFile);
+  await canvas.composite(comps).webp({quality:38}).toFile(outFile);
 }
 
-const idleSheet=path.join(OUT,'idle-views-sheet.jpg');
-const motionSheet=path.join(OUT,'motion-sheet.jpg');
-await makeSheet(idleViews,2,420,420,idleSheet);
-await makeSheet(motions,3,330,350,motionSheet);
+const idleSheet=path.join(OUT,'idle-views-sheet.webp');
+const motionSheet=path.join(OUT,'motion-sheet.webp');
+await makeSheet(idleViews,2,220,220,idleSheet);
+await makeSheet(motions,3,220,230,motionSheet);
 
 function printB64(tag,file){
   const b64=fs.readFileSync(file).toString('base64');
