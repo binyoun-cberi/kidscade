@@ -2,180 +2,106 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#25353a">
-<title>우리 반: 담임교사 업무 시뮬레이터</title>
-<link rel="stylesheet" href="./style.css?v=51">
-<link rel="stylesheet" href="./classroom-assets.css?v=53">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#183047">
+<title>우리 반: 담임교사 시뮬레이터</title>
+<link rel="stylesheet" href="./style.css?v=60">
+<script type="importmap">
+{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}
+</script>
 </head>
 <body>
 <main id="app">
-  <header class="statusbar">
-    <div class="day-copy">
-      <strong>첫 출근 · 월요일</strong>
-      <span id="phaseLabel">등교 준비</span>
+  <canvas id="game" aria-label="담임교사 3D 교실"></canvas>
+
+  <header id="hud">
+    <div class="phase">
+      <small>우리 반 · 월요일</small>
+      <strong id="phaseLabel">1교시 준비</strong>
     </div>
-    <div class="clock-block">
-      <strong id="clock">08:30</strong>
-      <span id="phaseHint">1교시까지 30분</span>
+    <div class="clock">
+      <strong id="clock">09:00</strong>
+      <small id="phaseTimer">칠판 앞으로 가세요</small>
     </div>
-    <button id="helpButton" class="header-button" type="button">도움말</button>
-    <button id="resetButton" class="header-button danger" type="button">첫날 다시</button>
+    <div class="classState">
+      <small>교실 상태</small>
+      <strong id="classState">차분함</strong>
+    </div>
   </header>
 
-  <section class="office-scene" aria-label="담임교사 교탁">
-    <div class="classroom-backdrop" aria-hidden="true">
-      <div class="window-light"></div>
-      <div class="board">
-        <small>3학년 2반</small>
-        <strong id="boardSubject">좋은 아침!</strong>
-        <span id="boardNote">오늘도 한 명씩 천천히.</span>
-      </div>
-      <div class="student-silhouettes">
-        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-      </div>
-    </div>
+  <aside id="studentStrip" aria-label="학생 상태"></aside>
 
-    <aside class="waiting-panel">
-      <div class="panel-title">
-        <span>기다리는 일</span>
-        <strong id="waitingCount">0</strong>
-      </div>
-      <div id="waitingList" class="waiting-list">
-        <p class="empty-copy">아직 기다리는 일이 없습니다.</p>
-      </div>
-    </aside>
-
-    <section id="visitorZone" class="visitor-zone" aria-live="polite">
-      <div id="emptyVisitor" class="empty-visitor">
-        <div class="hallway-glow"></div>
-        <strong>교실이 조용한 틈입니다.</strong>
-        <span>책상 위 일을 처리하거나 잠시 기다려 보세요.</span>
-      </div>
-
-      <article id="visitorCard" class="visitor-card" hidden>
-        <div id="visitorAvatar" class="visitor-avatar" aria-hidden="true">
-          <span class="hair"></span><span class="face"></span><span class="body"></span>
-        </div>
-        <div class="visitor-content">
-          <div class="visitor-kicker">
-            <span id="visitorRole">학생</span>
-            <small id="visitorTime">08:34</small>
-          </div>
-          <h1 id="visitorName">태호</h1>
-          <p id="visitorStage" class="stage-copy"></p>
-          <blockquote id="visitorDialogue"></blockquote>
-          <div id="contextLine" class="context-line" hidden></div>
-          <div id="actionList" class="action-list"></div>
-          <button id="deferButton" class="defer-button" type="button">지금은 넘어간다</button>
-        </div>
-      </article>
-
-      <article id="resultCard" class="result-card" hidden>
-        <small id="resultKicker">그 뒤</small>
-        <h2 id="resultTitle">태호가 고개를 끄덕였다.</h2>
-        <p id="resultText"></p>
-        <button id="resultClose" type="button">마무리</button>
-      </article>
-    </section>
-
-    <section class="desk" aria-label="교탁 위 도구">
-      <div class="desk-shadow"></div>
-
-      <button id="rosterButton" class="desk-object roster-object" type="button">
-        <span class="book-stack"><i></i><i></i><i></i></span>
-        <strong>학급 명부</strong>
-        <small>아이들 정보</small>
-      </button>
-
-      <button id="recordButton" class="desk-object record-object" type="button">
-        <span class="binder"></span>
-        <strong>기록철</strong>
-        <small id="recordBadge">기록 0</small>
-      </button>
-
-      <button id="computerButton" class="desk-object computer-object" type="button">
-        <span class="monitor"><i id="monitorNotice">업무</i></span>
-        <span class="keyboard"></span>
-        <strong>업무 컴퓨터</strong>
-        <small id="computerBadge">할 일 확인</small>
-      </button>
-
-      <button id="phoneButton" class="desk-object phone-object" type="button">
-        <span class="phone"><i></i></span>
-        <strong>전화기</strong>
-        <small id="phoneBadge">조용함</small>
-      </button>
-
-      <button id="noteButton" class="desk-object note-object" type="button">
-        <span class="sticky-note">메모</span>
-        <strong>포스트잇</strong>
-        <small>내가 적어두기</small>
-      </button>
-    </section>
-
-    <aside class="task-panel">
-      <div class="panel-title">
-        <span>오늘 할 일</span>
-        <strong id="taskCount">0</strong>
-      </div>
-      <div id="taskList" class="task-list"></div>
-    </aside>
-
-    <button id="fastForwardButton" class="fast-forward-button" type="button" aria-label="수업 진행 또는 시간 보내기">
-      <span aria-hidden="true">▶▶</span>
-      <strong id="lessonActionLabel">수업을 한다</strong>
-      <small id="lessonActionHint">길게 누르기 · Space</small>
-    </button>
-
-    <section id="lessonResultPanel" class="lesson-result-panel" hidden aria-live="polite">
-      <small id="lessonResultKicker">수학 · 수업 결과</small>
-      <h2 id="lessonResultTitle">좋은 수업이었다</h2>
-      <strong id="lessonResultLead"></strong>
-      <p id="lessonResultText"></p>
-      <div id="lessonResultStudents" class="lesson-result-students"></div>
-      <button id="lessonResultClose" type="button">계속하기</button>
-    </section>
-
-    <div id="toastStack" class="toast-stack" aria-live="polite"></div>
+  <section id="guide">
+    <small id="guideKicker">지금 할 일</small>
+    <strong id="guideTitle">칠판 앞으로 이동</strong>
+    <span id="guideText">가까이 가면 행동 버튼이 바뀝니다.</span>
   </section>
 
-  <section id="toolModal" class="modal" hidden>
-    <div class="modal-card">
-      <header>
-        <div>
-          <small id="modalKicker">교탁 도구</small>
-          <h2 id="modalTitle">학급 명부</h2>
-        </div>
-        <button id="modalClose" type="button" aria-label="닫기">×</button>
-      </header>
-      <div id="modalBody" class="modal-body"></div>
+  <div id="toast" aria-live="polite"></div>
+
+  <div id="joystick" aria-label="이동 조이스틱">
+    <div class="joyBase"><div id="joyKnob"></div></div>
+  </div>
+  <button id="actionButton" type="button">
+    <span id="actionIcon">✋</span>
+    <strong id="actionLabel">살펴보기</strong>
+  </button>
+
+  <button id="helpButton" type="button" aria-label="도움말">?</button>
+
+  <section id="intro" class="overlay">
+    <div class="card">
+      <span class="eyebrow">KIDSCADE · SCHOOL LIFE</span>
+      <h1>우리 반</h1>
+      <p class="lead">선생님을 직접 움직여 수업하고, 산만한 학생에게 다가가고, 쉬는 시간 갈등을 중재해 보세요.</p>
+      <div class="rules">
+        <div><b>📚 수업</b><span>집중력이 떨어진 학생은 딴짓을 시작해요.</span></div>
+        <div><b>👀 관심</b><span>가까이 가거나 도와주면 다시 집중해요.</span></div>
+        <div><b>🧑‍🤝‍🧑 쉬는 시간</b><span>사교력이 지치면 말다툼이 생길 수 있어요.</span></div>
+        <div><b>🫱 중재</b><span>한 번에 싸움 하나만. 빨리 가서 정리하세요.</span></div>
+      </div>
+      <button id="startButton" class="primary" type="button">교실 들어가기</button>
+      <small class="tip">키보드: WASD/방향키 이동 · Space/E 행동 · 태블릿: 왼쪽 조이스틱 + 오른쪽 행동</small>
     </div>
   </section>
 
-  <section id="tutorial" class="tutorial" hidden>
-    <div class="tutorial-card">
-      <small>첫날 안내</small>
-      <h2 id="tutorialTitle"></h2>
-      <p id="tutorialText"></p>
-      <div id="tutorialVisual" class="tutorial-visual"></div>
-      <button id="tutorialNext" type="button">다음</button>
+  <section id="help" class="overlay hidden">
+    <div class="card compact">
+      <h2>어떻게 하면 돼요?</h2>
+      <p>숫자를 외울 필요는 없어요. 학생 행동을 보고 움직이면 됩니다.</p>
+      <div class="helpRows">
+        <div>😶‍🌫️ <b>멍때림·딴짓</b><span>그 학생 가까이 가서 <em>집중 도와주기</em></span></div>
+        <div>💬 <b>말다툼</b><span>둘 가까이 가서 <em>중재하기</em></span></div>
+        <div>💥 <b>싸움</b><span>가까이 가서 <em>떼어놓기</em>. 둘은 잠시 떨어져 쉽니다.</span></div>
+      </div>
+      <button id="closeHelpButton" class="primary" type="button">계속하기</button>
     </div>
   </section>
 
-  <section id="dayEnd" class="day-end" hidden>
-    <div class="day-end-card">
-      <small>첫날 근무</small>
-      <h2 id="dayEndTitle">이제 퇴근할 수 있습니다.</h2>
-      <p id="dayEndLead"></p>
-      <div id="dayEndSummary" class="day-end-summary"></div>
-      <div class="day-end-actions">
-        <button id="overtimeButton" class="secondary" type="button">조금 더 남는다</button>
-        <button id="leaveButton" type="button">오늘은 퇴근한다</button>
-      </div>
+  <section id="endPanel" class="overlay hidden">
+    <div class="card compact">
+      <span class="eyebrow">오늘의 교실</span>
+      <h2>두 교시를 마쳤어요</h2>
+      <div id="summary" class="summary"></div>
+      <button id="restartButton" class="primary" type="button">다시 해보기</button>
+    </div>
+  </section>
+
+  <section id="assetError" class="overlay hidden">
+    <div class="card compact">
+      <h2>캐릭터를 불러오지 못했어요</h2>
+      <p>Kidscade Chibi 에셋이 준비되어 있는지 확인해 주세요.</p>
+      <code>/assets/game/chibi/ChibiCharactersV1.2/ChibiCharacters/glb/allinonepr.glb</code>
     </div>
   </section>
 </main>
-<script src="./game.js?v=51"></script>
+
+<audio id="bellAudio" preload="auto" src="./assets/audio/school-bell.mp3"></audio>
+<audio id="talkAudio" preload="auto" loop src="./assets/audio/classroom-talk.mp3"></audio>
+<audio id="fightAudio" preload="auto" src="./assets/audio/student-fight.mp3"></audio>
+
+<script src="../../kidscade-storage.js"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="job_teacher_classroom" data-title="우리 반: 담임교사 업무 시뮬레이터" data-shell="true" data-pauseable="true" data-orientation="landscape"></script>
+<script type="module" src="./game.js?v=60"></script>
 </body>
 </html>
