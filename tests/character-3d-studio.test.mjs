@@ -59,3 +59,15 @@ test('vendors every Three addon imported by the 3D studio',()=>{
   const exporter=fs.readFileSync(path.join(ROOT,'assets/vendor/three-r160/addons/exporters/GLTFExporter.js'),'utf8');
   assert.match(exporter,/\.\.\/utils\/TextureUtils\.js/);
 });
+
+
+test('3D studio starts with only the local Three core module',()=>{
+  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
+  assert.match(js,/import \* as THREE from '\.\.\/assets\/vendor\/three-r160\/three\.module\.js'/);
+  assert.doesNotMatch(js,/^import .*OrbitControls/m);
+  assert.doesNotMatch(js,/^import .*GLTFExporter/m);
+  assert.doesNotMatch(js,/^import .*BufferGeometryUtils/m);
+  assert.match(js,/createSimpleOrbitControls/);
+  assert.match(js,/mergeRigidGeometries/);
+  assert.match(js,/await import\('\.\.\/assets\/vendor\/three-r160\/addons\/exporters\/GLTFExporter\.js'\)/);
+});
