@@ -179,47 +179,27 @@ test('hoodie v2 has sleeves hood volume and subtle seams',()=>{
   assert.doesNotMatch(js,/kidscade_hoodie_blue_pocket_opening',\.0030/);
 });
 
-
-test('left rail stays readable without nested scrolling',()=>{
+test('3D studio uses a workbench layout without a left rail',()=>{
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/grid-template-columns:minmax\(350px,370px\)/);
-  assert.match(html,/\.left\{position:static;max-height:none;overflow:visible\}/);
-  assert.match(html,/\.wardrobe-grid\{display:grid;grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\);gap:6px;max-height:none;overflow:visible/);
-  assert.match(html,/font-size:\.64rem/);
-  assert.match(html,/<aside class="side left">/);
-  assert.match(html,/@media\(max-width:1250px\)/);
+  assert.match(html,/data-layout-version="workbench-v1"/);
+  assert.match(html,/class="workspace"/);
+  assert.match(html,/class="right-rail"/);
+  assert.doesNotMatch(html,/class="left-rail"/);
+  assert.doesNotMatch(html,/class="side left"/);
+  assert.match(html,/grid-template-columns:minmax\(0,1fr\) 320px/);
 });
 
-
-test('left rail v2 forces a wide non-scrolling desktop column',()=>{
+test('workbench keeps wardrobe and rig controls outside independent scrollers',()=>{
   const html=read('teacher/character-3d-studio.html');
+  assert.match(html,/id="wardrobeParts" class="wardrobe-grid"/);
+  assert.match(html,/<details class="card">/);
+  assert.match(html,/<summary>리그 검수 · 본 목록<\/summary>/);
+  assert.doesNotMatch(html,/max-height:calc\(100vh - 16px\);overflow:auto/);
+  assert.doesNotMatch(html,/overflow-x:auto/);
+  assert.match(html,/html,body\{margin:0;overflow-x:hidden\}/);
+});
+
+test('admin navigation opens the workbench build',()=>{
   const admin=read('teacher/index.html');
-  assert.match(html,/grid-template-columns:370px minmax\(560px,1fr\) 300px/);
-  assert.match(html,/\.left\{position:static!important;width:370px;max-width:370px;max-height:none!important;overflow:visible!important/);
-  assert.match(html,/data-layout-version="left-rail-v2"/);
-  assert.match(admin,/character-3d-studio\.html\?v=20261007-leftrail2/);
-});
-
-
-test('left rail never inherits side scrolling',()=>{
-  const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/<aside class="left-rail">/);
-  assert.doesNotMatch(html,/<aside class="side left">/);
-  assert.match(html,/\.left-rail\{display:grid;gap:10px;width:370px;max-width:370px;min-width:0;align-self:start;position:static;overflow:visible\}/);
-  assert.match(html,/data-layout-version="left-rail-no-scroll-v4"/);
-});
-
-test('admin navigation cache-busts the no-scroll layout',()=>{
-  const admin=read('teacher/index.html');
-  assert.match(admin,/character-3d-studio\.html\?v=20261007-noscroll4/);
-});
-
-
-test('left rail clips overflow instead of creating scrollbars',()=>{
-  const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/\.left-rail\{display:grid;gap:10px;width:370px;max-width:370px;min-width:0;align-self:start;position:static;max-height:none;overflow:clip\}/);
-  assert.match(html,/\.left-rail>\.card\{min-width:0;max-width:100%;overflow:hidden\}/);
-  assert.match(html,/\.left-rail \*\{min-width:0\}/);
-  assert.match(html,/overflow-wrap:anywhere/);
-  assert.match(html,/data-layout-version="left-rail-no-scroll-v4"/);
+  assert.match(admin,/character-3d-studio\.html\?v=20261007-workbench1/);
 });
