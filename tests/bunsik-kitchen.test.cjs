@@ -503,10 +503,9 @@ test('Bunsik Kitchen v33 starts as manual-first progression instead of granting 
 test('Bunsik Kitchen v33 adds an end-of-shift equipment shop and bank', () => {
   assert.match(html, /id="bankCash"/);
   assert.match(html, /id="equipmentShop"/);
-  assert.ok(js.includes('data-buy="'+key+'"'));
-  assert.match(html, /data-buy="conveyor" data-price="1400"/);
-  assert.match(html, /data-buy="grabber" data-price="2200"/);
-  assert.match(html, /data-buy="smartGrabber" data-price="3400"/);
+  assert.match(js, /function renderEquipmentShop\(force=false\)/);
+  assert.ok(js.includes(`data-buy="'+key+'"`));
+  for(const key of ['prepCounter','conveyor','grabber','smartGrabber'])assert.ok(js.includes(key+':{name:'),key);
   assert.match(js, /progress\.cash\+=earned;progress\.shifts\+=1/);
   assert.match(js, /function purchaseEquipment\(key\)/);
   assert.match(js, /progress\.cash-=info\.price/);
@@ -515,8 +514,8 @@ test('Bunsik Kitchen v33 adds an end-of-shift equipment shop and bank', () => {
 
 test('Bunsik Kitchen v33 gates Smart Grabber behind a normal Grabber', () => {
   assert.match(js, /smartGrabber:\{name:'Smart Grabber',price:3400,min:0,max:1,requires:'grabber',category:'automation'/);
-  assert.match(js, /if\(info\.requires&&\(progress\.owned\[info\.requires\]\|\|0\)<1\)/);
-  assert.match(js, /를 먼저 구매해야 해요/);
+  assert.match(js, /if\(info\.requires&&!hasUpgrade\(info\.requires\)&&\(progress\.owned\[info\.requires\]\|\|0\)<\(SHOP_ITEMS\[info\.requires\]\?\.min\|\|1\)\)/);
+  assert.match(js, /SHOP_ITEMS\[info\.requires\]\?\.name\+' 먼저 필요'/);
 });
 
 test('Bunsik Kitchen v33 adds a filterable Smart Grabber', () => {
