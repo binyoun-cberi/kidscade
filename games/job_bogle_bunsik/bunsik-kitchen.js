@@ -13,15 +13,31 @@ const AVATAR_SHEET=new URL('../../assets/game/characters/kidscade-avatar-v3/scho
 
 const SHIFT_SECONDS=150;
 const TARGET_REVENUE=5200;
-const MAX_ORDERS=4;
+const MAX_ORDERS=5;
 const POT_COUNT=4;
 const SAVE_KEY='bunsikTycoonProgressV1';
 const EQUIPMENT={
- prepCounter:{name:'추가 조리대',price:900,min:2,max:3},
- conveyor:{name:'컨베이어',price:1400,min:0,max:2},
- grabber:{name:'Grabber',price:2200,min:0,max:1},
- smartGrabber:{name:'Smart Grabber',price:3400,min:0,max:1,requires:'grabber'}
+ prepCounter:{name:'추가 조리대',price:900,min:2,max:3,category:'kitchen',icon:'🧺',desc:'재료를 잠깐 올려둘 공간 +1'},
+ conveyor:{name:'컨베이어',price:1400,min:0,max:2,category:'automation',icon:'➡️',desc:'재료를 배치 방향으로 자동 이동'},
+ grabber:{name:'Grabber',price:2200,min:0,max:1,category:'automation',icon:'🦾',desc:'뒤 조리대의 재료를 자동으로 집기'},
+ smartGrabber:{name:'Smart Grabber',price:3400,min:0,max:1,requires:'grabber',category:'automation',icon:'🎯',desc:'지정한 재료만 골라 자동 운반'}
 };
+const UPGRADES={
+ dishRack:{name:'대형 식기 선반',price:1300,min:0,max:1,minStars:1,category:'kitchen',icon:'🥣',desc:'영업 시작 깨끗한 그릇 3 → 5'},
+ wideSink:{name:'넓은 싱크대',price:1800,min:0,max:1,minStars:1,category:'kitchen',icon:'🚰',desc:'설거지 시간이 1.45초 → 0.9초'},
+ table3:{name:'3번 테이블',price:1500,min:0,max:1,minStars:1,category:'hall',icon:'🪑',desc:'홀 좌석 +1 · 동시 손님 증가'},
+ table4:{name:'4번 테이블',price:2800,min:0,max:1,minStars:2,requires:'table3',category:'hall',icon:'🪑',desc:'홀 좌석 +1 · 바쁜 시간 대응'},
+ hallStaff:{name:'홀 알바 고용',price:3800,min:0,max:1,minStars:2,requires:'table3',category:'staff',icon:'🙋',desc:'배식대 근처 완성 메뉴를 자동으로 서빙'},
+ dishCart:{name:'퇴식 카트',price:4200,min:0,max:1,minStars:3,requires:'hallStaff',category:'hall',icon:'🛒',desc:'더러운 그릇을 회수해 6초마다 한 장 자동 세척'},
+ helperSkill1:{name:'주방 알바 숙련 1',price:2500,min:0,max:1,minStars:2,category:'staff',icon:'👨‍🍳',desc:'주방 알바 이동·판단 속도 증가'},
+ helperSkill2:{name:'주방 알바 숙련 2',price:5000,min:0,max:1,minStars:3,requires:'helperSkill1',category:'staff',icon:'⚡',desc:'주방 알바가 더 빠르게 다음 일을 찾음'},
+ menuPlus:{name:'토핑 메뉴 연구',price:3500,min:0,max:1,minStars:3,category:'menu',icon:'📖',desc:'계란 파 라면·치즈 파 라면 주문 해금'},
+ hallExpansion:{name:'홀 확장 공사',price:8000,min:0,max:1,minStars:4,requires:'table4',category:'expansion',icon:'🏗️',desc:'5번 테이블과 추가 손님 공간 개방'},
+ famousSign:{name:'동네 명물 간판',price:18000,min:0,max:1,minStars:5,requires:'hallExpansion',category:'expansion',icon:'🌟',desc:'가게 외관 변화 · 모든 메뉴 매출 +10%'}
+};
+const SHOP_ITEMS={...EQUIPMENT,...UPGRADES};
+const SHOP_CATEGORY_LABELS={kitchen:'🍳 주방',automation:'⚙️ 자동화',hall:'🪑 홀',staff:'🧑‍🍳 직원',menu:'📖 메뉴',expansion:'🏗️ 확장'};
+const REP_THRESHOLDS=[0,8,24,55,100];
 const SMART_FILTERS=['noodle','soup','egg','green','cheese'];
 const $=s=>document.querySelector(s);
 
@@ -36,7 +52,9 @@ const INGREDIENTS={
 const RECIPES=[
  {id:'egg',name:'계란 라면',need:['noodle','soup','egg'],price:900},
  {id:'green',name:'파 라면',need:['noodle','soup','green'],price:900},
- {id:'cheeseEgg',name:'치즈 계란 라면',need:['noodle','soup','egg','cheese'],price:1200}
+ {id:'cheeseEgg',name:'치즈 계란 라면',need:['noodle','soup','egg','cheese'],price:1200},
+ {id:'eggGreen',name:'계란 파 라면',need:['noodle','soup','egg','green'],price:1150,unlock:'menuPlus'},
+ {id:'cheeseGreen',name:'치즈 파 라면',need:['noodle','soup','green','cheese'],price:1250,unlock:'menuPlus'}
 ];
 const ACTION_NAMES={water:'물 붓기',noodle:'면 넣기',soup:'스프 넣기',egg:'계란 넣기',green:'대파 넣기',cheese:'치즈 넣기',plate:'그릇에 담기',discard:'냄비 비우기'};
 const CUSTOMER_ICONS=['👧','👦','👩','🧑','👵','👨'];
@@ -58,14 +76,15 @@ const els={
 
 
 function defaultProgress(){
- return{version:2,cash:0,shifts:0,tutorialDone:false,owned:{prepCounter:2,conveyor:0,grabber:0,smartGrabber:0},filters:{smartGrabberA:'noodle'},layout:{}}
+ const owned={};for(const [key,info] of Object.entries(SHOP_ITEMS))owned[key]=info.min||0;
+ return{version:3,cash:0,shifts:0,tutorialDone:false,reputation:0,satisfied:0,owned:{...owned,prepCounter:2},filters:{smartGrabberA:'noodle'},layout:{}}
 }
 function normalizeProgress(raw){
  const base=defaultProgress(),v=raw&&typeof raw==='object'?raw:{},layoutOk=Number(v.version)>=2;
- const out={version:2,cash:Math.max(0,Math.floor(Number(v.cash)||0)),shifts:Math.max(0,Math.floor(Number(v.shifts)||0)),tutorialDone:!!v.tutorialDone,owned:{},filters:{...base.filters,...(v.filters||{})},layout:layoutOk&&v.layout&&typeof v.layout==='object'?v.layout:{}};
- for(const [key,info] of Object.entries(EQUIPMENT)){
+ const out={version:3,cash:Math.max(0,Math.floor(Number(v.cash)||0)),shifts:Math.max(0,Math.floor(Number(v.shifts)||0)),tutorialDone:!!v.tutorialDone,reputation:Math.max(0,Math.floor(Number(v.reputation)||0)),satisfied:Math.max(0,Math.floor(Number(v.satisfied)||0)),owned:{},filters:{...base.filters,...(v.filters||{})},layout:layoutOk&&v.layout&&typeof v.layout==='object'?v.layout:{}};
+ for(const [key,info] of Object.entries(SHOP_ITEMS)){
   const n=Math.floor(Number(v.owned?.[key]));
-  out.owned[key]=Math.max(info.min,Math.min(info.max,Number.isFinite(n)?n:info.min))
+  out.owned[key]=Math.max(info.min||0,Math.min(info.max||1,Number.isFinite(n)?n:(base.owned[key]||0)))
  }
  if(!SMART_FILTERS.includes(out.filters.smartGrabberA))out.filters.smartGrabberA='noodle';
  return out
@@ -111,12 +130,23 @@ restaurant=new RestaurantEngine({
  },
  economy:{perfectQuality:90},
  shift:{duration:SHIFT_SECONDS,targetRevenue:TARGET_REVENUE},
- pricing:({recipe,quality,order})=>Math.max(200,Math.round(((recipe?.price||0)*(.48+.52*quality/100)+(order?.patience||0))*.01)*100)
+ pricing:({recipe,quality,order})=>Math.max(200,Math.round((((recipe?.price||0)*(.48+.52*quality/100)+(order?.patience||0))*(hasUpgrade('famousSign')?1.10:1))*.01)*100)
 });
 
 window.__bunsikKitchenOwnAudio=true;
 function sfx(key,opt={}){if(!state.sound)return;try{window.KidscadeAudio?.play?.(key,opt)}catch(_){}}
 function money(n){return Math.max(0,Math.round(n)).toLocaleString('ko-KR')+'원'}
+function hasUpgrade(key){return (progress.owned?.[key]||0)>0}
+function reputationStars(points=progress.reputation){
+ let stars=1;for(let i=1;i<REP_THRESHOLDS.length;i++)if(points>=REP_THRESHOLDS[i])stars=i+1;return stars
+}
+function reputationLabel(){return'★'.repeat(reputationStars())+'☆'.repeat(5-reputationStars())}
+function availableRecipeIds(){
+ return RECIPES.filter(r=>!r.unlock||hasUpgrade(r.unlock)).map(r=>r.id)
+}
+function addServeReputation(quality){
+ const gain=quality>=90?2:quality>=76?1:0;if(quality>=58)progress.satisfied+=1;if(gain)progress.reputation+=gain;return gain
+}
 function toast(t,ms=1300){els.toast.textContent=t;els.toast.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>els.toast.classList.remove('show'),ms)}
 function recipeById(id){return restaurant.recipes.get(id)}
 function ingredientLabel(id){return INGREDIENTS[id]?.name||id}
@@ -1465,13 +1495,17 @@ function renderSelectedHelp(){
  const p=state.selectedPot==null?null:state.pots[state.selectedPot];
  els.selected.textContent=nextInstruction(p);renderTaskPanel()
 }
+function unlockedSeatSlots(){
+ return kitchen?.hallSeats?.filter(s=>s.enabled).map(s=>s.slot) || [0,1]
+}
 function makeOrder(forcedId=null){
- const used=new Set(state.orders.map(o=>o.slot));
- const slot=[0,1,2,3].find(n=>!used.has(n))??0;
- return restaurant.spawnOrder(forcedId,{slot,customer:CUSTOMER_ICONS[slot%CUSTOMER_ICONS.length]})
+ const used=new Set(state.orders.map(o=>o.slot)),slots=unlockedSeatSlots(),slot=slots.find(n=>!used.has(n));
+ if(slot==null)return null;
+ const ids=availableRecipeIds(),recipeId=forcedId||ids[Math.floor(Math.random()*ids.length)]||'egg';
+ return restaurant.spawnOrder(recipeId,{slot,customer:CUSTOMER_ICONS[slot%CUSTOMER_ICONS.length]})
 }
 function spawnOrder(forcedId=null){
- if(!state.running||state.orders.length>=MAX_ORDERS)return;
+ if(!state.running||state.orders.length>=Math.min(MAX_ORDERS,unlockedSeatSlots().length))return;
  const order=makeOrder(forcedId);if(!order)return;
  kitchen.beginCustomerArrival(order);
  if(state.tutorial.active&&!state.pots[0].orderId)assignOrderToPot(0,order.id,false);
