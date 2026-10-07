@@ -911,7 +911,14 @@ function updateGuideByAction(){
 function removeStudentFromActivePairs(s){
   pairs=pairs.filter(p=>{
     const hit=p.a===s||p.b===s;
-    if(hit){const other=p.a===s?p.b:p.a;if(other&&!other.accident&&!(other.health?.revealed&&other.health.state!=='healthy'))hideBubble(other)}
+    if(hit){
+      const other=p.a===s?p.b:p.a;
+      if(p.source!=='team'){
+        s.runtime.mode='solo';
+        if(other){other.runtime.mode='solo';other.runtime.cooldown=Math.max(other.runtime.cooldown||0,2)}
+      }
+      if(other&&!other.accident&&!(other.health?.revealed&&other.health.state!=='healthy'))hideBubble(other);
+    }
     return !hit;
   });
 }
