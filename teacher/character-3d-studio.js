@@ -42,6 +42,7 @@ const PART_LABELS={
 };
 
 const TOGGLE_NODES=Object.keys(PART_LABELS);
+const TRACKED_PART_NODES=[...new Set([...BASE_VARIANT_NODES,...TOGGLE_NODES])];
 
 const CLIP_LABELS={
   anim_iddle:'IDLE','anim_iddle.001':'IDLE ALT',anim_walk:'WALK',anim_run:'RUN',
@@ -330,7 +331,7 @@ function setNodeVisible(name,visible){
 }
 
 function selectedParts(){
-  return TOGGLE_NODES.filter(name=>getNode(name)?.visible);
+  return TRACKED_PART_NODES.filter(name=>getNode(name)?.visible);
 }
 
 function renderPartChecks(){
