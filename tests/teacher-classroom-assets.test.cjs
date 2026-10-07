@@ -16,7 +16,7 @@ const catalogData = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.js
 const catalog = Array.isArray(catalogData) ? catalogData : catalogData.games;
 const game = catalog.find(g => g.id === 'job_teacher_classroom');
 
-test('teacher simulator v62 loads the six-period direct-control game', () => {
+test('teacher simulator v63 loads the six-period direct-control game', () => {
   assert.match(html, /id="game"/);
   assert.match(html, /id="joystick"/);
   assert.match(html, /id="actionButton"/);
@@ -130,7 +130,7 @@ test('room changes require walking to the door action', () => {
   assert.match(js, /transitionToSpace\(currentStep\.nextLocation\)/);
 });
 
-test('catalog publishes teacher simulator v62', () => {
+test('catalog publishes teacher simulator v63', () => {
   assert.ok(game);
   assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=62');
   assert.match(game.description, /6교시/);
