@@ -1258,7 +1258,7 @@ class RamenKitchen3D{
   if(service){
    const inHall=this.player.position.z<-3.3;
    fx=Math.max(-7.7,Math.min(7.7,this.player.position.x));
-   fz=Math.max(-12.8,Math.min(4.75,this.player.position.z))-(inHall?.38:.72);
+   fz=Math.max(-12.8,Math.min(4.75,this.player.position.z))-(inHall ? .38 : .72);
    fy=.86;
    px=fx;py=inHall?(mobile?8.2:7.05):(mobile?7.0:6.05);pz=fz+(inHall?(mobile?7.7:6.35):(mobile?6.7:5.65));targetFov=inHall?(mobile?48:40):(mobile?44:35);
    if(this.clock<this.hallFocusUntil&&this.hallFocusSlot!=null){
