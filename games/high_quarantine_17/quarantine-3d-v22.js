@@ -169,7 +169,7 @@ function buildWorld(){
 
  // lane dividers and security furniture
  for(const p of [[-3.0,-3.7],[-3.0,-1.0],[3.0,-3.7],[3.0,-1.0]])addAsset(world,A.barrier,[p[0],0,p[1]],1.05,0xc0963f,.42,Math.PI/2);
- for(const p of [[-2.65,-5.0],[2.65,-5.0],[-2.65,.72],[2.65,.72]])addAsset(world,A.cone,[p[0],0,p[1]],.42,0xd89136,.16,0);
+ for(const p of [[-2.65,-5.0],[2.65,-5.0],[-3.15,1.05],[3.15,1.05]])addAsset(world,A.cone,[p[0],0,p[1]],.42,0xd89136,.16,0);
  for(const p of [[-5.5,-.8],[5.5,-.3]])addAsset(world,A.crate,[p[0],0,p[1]],.65,0x8d6947,.36,0);
  addAsset(world,A.boxLarge,[-6.2,0,-2.8],.82,0x846348,.28,.12);
  addAsset(world,A.barrel,[-6.15,0,-3.75],.72,0x5f6d69,.24,0);
@@ -346,4 +346,4 @@ function frame(t){
 }
 syncSnapshot(snapshot(),true);requestAnimationFrame(frame);
 
-window.Q17Quarantine3D=Object.freeze({active:true,version:'22.4',scene,camera,renderer,sync:()=>syncSnapshot(snapshot(),true)});
+window.Q17Quarantine3D=Object.freeze({active:true,version:'22.5',scene,camera,renderer,sync:()=>syncSnapshot(snapshot(),true)});
