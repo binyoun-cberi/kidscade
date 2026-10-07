@@ -24,7 +24,7 @@ test('3D character studio builds a reusable humanoid rig',()=>{
   assert.match(js,/new THREE\.Skeleton/);
   assert.match(js,/skinIndex/);
   assert.match(js,/skinWeight/);
-  assert.match(js,/kidscade-humanoid-v1/);
+  assert.match(js,/kidscade-humanoid-v2/);
 });
 
 test('3D character studio previews and exports the standard animation set',()=>{
@@ -70,4 +70,28 @@ test('3D studio starts with only the local Three core module',()=>{
   assert.match(js,/createSimpleOrbitControls/);
   assert.match(js,/mergeRigidGeometries/);
   assert.match(js,/await import\('\.\.\/assets\/vendor\/three-r160\/addons\/exporters\/GLTFExporter\.js'\)/);
+});
+
+
+test('Chibi v2 keeps the reference-inspired SD proportions explicit',()=>{
+  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
+  const html=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.html'),'utf8');
+  assert.match(js,/chibi2/);
+  assert.match(js,/action2/);
+  assert.match(js,/headRY:\(action \? \.164 : \.172\)\*H/);
+  assert.match(js,/hipY:\.418\*H/);
+  assert.match(js,/handX:\(action \? \.072 : \.056\)\*H/);
+  assert.match(js,/footZ:\(action \? \.170 : \.148\)\*H/);
+  assert.match(html,/V2 · SD 기본형/);
+  assert.match(html,/V2 · 액션 과장형/);
+});
+
+test('3D studio offers four-way silhouette inspection',()=>{
+  const html=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.html'),'utf8');
+  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
+  for(const view of ['front','threeQuarter','side','back']){
+    assert.match(html,new RegExp('data-view="'+view+'"'));
+  }
+  assert.match(js,/function setCameraView/);
+  assert.match(js,/data-body-style/);
 });
