@@ -373,7 +373,7 @@ function finish(won){
  host.classList.remove('show');pointer.down=false;
  if(mode==='camp'){
   if(b){
-   if(won){const reduction=losses===0?4:Math.max(1,3-losses);b.applyOutbreakResult({won:true,infectionDelta:-reduction,trustDelta:-(losses*2),scoreDelta:Math.max(80,340-losses*70)});}
+   if(won){b.applyOutbreakResult({won:true,infectionDelta:-1,trustDelta:-(losses*2),scoreDelta:Math.max(80,340-losses*70)});}
    else b.applyOutbreakResult({won:false,infectionDelta:5,trustDelta:-7,scoreDelta:-240});
   }
   if(done)setTimeout(()=>done({won,mode:'camp',losses,lostIds:state.survivors.filter(s=>!s.alive).map(s=>String(s.id)),rescuedIds:state.survivors.filter(s=>s.rescued).map(s=>String(s.id))}),120);

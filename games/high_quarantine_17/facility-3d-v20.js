@@ -243,8 +243,14 @@ class View{
  }
  syncCamp(){
   const api=window.Q17Surveillance;if(!api?.snapshot)return;const s=api.snapshot(),items=[];
-  s.residents.forEach(r=>{if(r.status!=='lost'&&r.status!=='zombie')items.push({key:'r'+r.id,...r,threat:false})});
+  const live=s.residents.filter(r=>r.status!=='lost'&&r.status!=='zombie');
+  const visible=live.slice().sort((a,b)=>{
+   const pa=a.status==='bitten'?-100000:0,pb=b.status==='bitten'?-100000:0;
+   if(pa!==pb)return pa-pb;return hashId(a.personId||a.id)-hashId(b.personId||b.id)
+  }).slice(0,20);
+  visible.forEach(r=>items.push({key:'r'+r.id,...r,threat:false}));
   s.threats.forEach(t=>items.push({key:'t'+t.id,...t,threat:true}));
+  const pop=document.getElementById('q17Camp3DPopulation');if(pop)pop.textContent=live.length>20?'3D 표시 '+visible.length+'명 · CAMP 전체 '+live.length+'명':'CAMP 주민 '+live.length+'명';
   this.campDanger=s.threats.filter(t=>t.phase==='infected'||t.phase==='zombie').length+s.residents.filter(r=>r.status==='bitten').length;
   this.syncPeople(items,'camp')
  }
@@ -321,7 +327,7 @@ function mount(){
   .q17-camp-map.q17-3d-enabled{min-height:420px;background:#101815!important}
   .q17-camp-map.q17-3d-enabled>.q17-map-ground-road,.q17-camp-map.q17-3d-enabled>.q17-zone-mark,.q17-camp-map.q17-3d-enabled>.q17-tent,.q17-camp-map.q17-3d-enabled>.q17-med,.q17-camp-map.q17-3d-enabled>.q17-warehouse,.q17-camp-map.q17-3d-enabled>.q17-water,.q17-camp-map.q17-3d-enabled>.q17-crate,.q17-camp-map.q17-3d-enabled>.q17-tower,.q17-camp-map.q17-3d-enabled>.q17-gatehouse,.q17-camp-map.q17-3d-enabled>.q17-fence,.q17-camp-map.q17-3d-enabled>#q17CampEntityLayer{display:none!important}
   .q17-camp-map.q17-3d-enabled:before{z-index:8;pointer-events:none}.q17-camp-map.q17-3d-enabled:after{z-index:9}
-  #q17Camp3D{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation}
+  #q17Camp3D{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation}\n  #q17Camp3DPopulation{position:absolute;left:10px;top:8px;z-index:10;padding:5px 7px;background:#0b1216cc;border:1px solid #65757b;color:#cad4d7;font:800 9px ui-monospace,monospace;letter-spacing:.04em;pointer-events:none}
   #q17Iso3DWrap{margin:12px 14px 4px;height:min(46vh,410px);min-height:290px;position:relative;border:1px solid #53636d;background:#0e1519;overflow:hidden;box-shadow:inset 0 0 35px #0008}
   #q17Iso3D{width:100%;height:100%;display:block}
   #q17Iso3DWrap:after{content:'CCTV ISO-17  •  LIVE 3D';position:absolute;right:9px;top:7px;color:#aebdc3aa;font:800 9px ui-monospace,monospace;letter-spacing:.1em;pointer-events:none}
@@ -331,12 +337,12 @@ function mount(){
   `;document.head.appendChild(st)
  }
  camp.classList.add('q17-3d-enabled');let cc=document.getElementById('q17Camp3D');
- if(!cc){cc=document.createElement('canvas');cc.id='q17Camp3D';camp.prepend(cc)}
+ if(!cc){cc=document.createElement('canvas');cc.id='q17Camp3D';camp.prepend(cc)}\n let pop=document.getElementById('q17Camp3DPopulation');if(!pop){pop=document.createElement('div');pop.id='q17Camp3DPopulation';pop.textContent='CAMP 주민 0명';camp.appendChild(pop)}
  let wrap=document.getElementById('q17Iso3DWrap');
  if(!wrap){wrap=document.createElement('div');wrap.id='q17Iso3DWrap';const ic=document.createElement('canvas');ic.id='q17Iso3D';wrap.appendChild(ic);isoRoom.parentNode.insertBefore(wrap,isoRoom)}
  const campView=new View(cc,'camp'),isoView=new View(document.getElementById('q17Iso3D'),'isolation');
  setInterval(()=>{campView.update();isoView.update()},450);campView.update();isoView.update();
  let last=0;const loop=t=>{if(t-last>16){views.forEach(v=>v.render(t));last=t}requestAnimationFrame(loop)};requestAnimationFrame(loop);
- window.Q17Facility3D=Object.freeze({version:'20.4',camp:campView,isolation:isoView});return true
+ window.Q17Facility3D=Object.freeze({version:'20.5',camp:campView,isolation:isoView});return true
 }
 let tries=0;const timer=setInterval(()=>{if(mount()||++tries>80)clearInterval(timer)},50);

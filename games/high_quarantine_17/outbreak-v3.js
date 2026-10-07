@@ -258,7 +258,7 @@ function expediteDetainee(id){
 function burnDetainee(id){
  const d=isolation.find(function(x){return x.id===id});if(!d)return;if(!(d.status==='positive'||d.status==='turning'||d.status==='zombie')){notify('정밀검사 양성 또는 변이 확인 후 소각할 수 있습니다.');return}
  if(!window.confirm(d.name+'을(를) 확진 소각 처리하시겠습니까?'))return;isolation=isolation.filter(function(x){return x.id!==id});addIsoLog('<b>'+escapeHtml(d.name)+'</b> 확진 소각 · 감염원 제거');
- const b=bridge();if(b)b.applyOutbreakResult({infectionDelta:-1,trustDelta:-1,scoreDelta:80});notify('확진 소각 완료 · '+d.name);renderIsolation();
+ const b=bridge();if(b)b.applyOutbreakResult({trustDelta:-1,scoreDelta:80});notify('확진 소각 완료 · '+d.name+' · 시설 내 감염원 제거');renderIsolation();
 }
 function immediateIncinerate(p){
  const infected=!!p.infected;addIsoLog('<b>'+escapeHtml(p.name)+'</b> 검역대 즉시 격리 판정 → 소각'+(infected?' · 감염원 제거':' · 정상 시민 오판'));notify(infected?'격리 판정 · 즉시 소각 완료':'오판 격리 · 정상 시민을 소각했습니다');

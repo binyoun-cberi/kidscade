@@ -98,3 +98,11 @@ test('Chibi asset manifest is canonical and has no fallback source',()=>{
   assert.ok(manifest.presets.ninja.includes('ninjassuit'));
   assert.ok(manifest.presets.knight.includes('armorhelmet'));
 });
+
+
+test('Chibi studio provides an import map for Three addons',()=>{
+  const html=read('teacher/character-3d-studio.html');
+  assert.match(html,/type="importmap"/);
+  assert.match(html,/"three": "\/assets\/vendor\/three-r160\/three\.module\.js"/);
+  assert.match(html,/"three\/addons\/": "\/assets\/vendor\/three-r160\/addons\/"/);
+});
