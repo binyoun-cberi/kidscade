@@ -36,6 +36,20 @@ test('Sentence Train uses tracked Kenney Train Kit assets',()=>{
   assert.match(runtime,/railroad-straight\.glb/);
 });
 
+test('Sentence Train v5 uses color palettes, perspective and a curved rail path',()=>{
+  assert.match(runtime,/TRAIN_PALETTES/);
+  assert.match(runtime,/STATION_PALETTES/);
+  assert.match(runtime,/function recolor/);
+  assert.match(runtime,/new THREE\.CatmullRomCurve3/);
+  assert.match(runtime,/new THREE\.PerspectiveCamera/);
+  assert.match(runtime,/function trackPose/);
+  assert.match(runtime,/function positionTrain/);
+  assert.match(html,/Sentence Train v5 · true depth \+ colorful assets/);
+  assert.match(html,/class="carriage-order"/);
+  assert.match(html,/곡선 선로를 달리는 3D 문장열차/);
+  assert.doesNotMatch(html,/\$\('#trainWrap'\)\.classList\.add\('depart'\)/);
+});
+
 test('Sentence Train v4 is a platform-first 3D rebuild',()=>{
   assert.match(html,/Sentence Train v4 · platform-first overhaul/);
   assert.match(html,/PLATFORM 01/);
@@ -85,14 +99,14 @@ test('Sentence Train keeps sentence ordering gameplay while syncing 3D carriage 
 test('Sentence Train has local Three.js and CSS fallback train',()=>{
   assert.match(html,/id="train3d"/);
   assert.match(html,/assets\/vendor\/three-r160\/three\.module\.js/);
-  assert.match(html,/sentence-train-3d-loader\.js\?v=3/);
+  assert.match(html,/sentence-train-3d-loader\.js\?v=4/);
   assert.match(html,/function engineMarkup\(\)/);
   assert.match(html,/sentence-train-3d-ready/);
 });
 
-test('Sentence Train catalog points to v4',()=>{
+test('Sentence Train catalog points to v5',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='kor_sentence_train');
   assert.ok(game);
-  assert.equal(game.href,'문장열차.html?v=4');
+  assert.equal(game.href,'문장열차.html?v=5');
 });
