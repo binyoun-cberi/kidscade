@@ -122,15 +122,18 @@
       "generatedFrom": "shirt",
       "color": "#4f7df3",
       "components": [
-        "skinned shirt shell",
-        "hood",
-        "neck rib collar",
-        "raglan seam lines",
+        "boxy skinned shirt shell",
+        "rigged short sleeves",
+        "rear hood volume",
+        "thin neck rib",
+        "subtle raglan seam lines",
         "shaped kangaroo pocket",
-        "pocket stitch lines",
+        "diagonal pocket openings",
+        "pocket bottom stitch",
         "drawstrings"
       ],
-      "rigging": "shirt skin weights + rigid upper-spine detail pieces"
+      "rigging": "shirt skin weights + rigid upper-spine detail pieces",
+      "revision": "v2-silhouette"
     }
   }
 }
