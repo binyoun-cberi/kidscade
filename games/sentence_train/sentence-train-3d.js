@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const SENTENCE_TRAIN_BUILD='v6-composition-color';
+const SENTENCE_TRAIN_BUILD='v7-train-is-the-board';
 const THREE=window.THREE,GLTFLoader=window.GLTFLoader;
 const canvas=document.getElementById('train3d');
 if(!THREE||!GLTFLoader||!canvas)return;
@@ -32,7 +32,7 @@ const MODEL={
  sign:asset('3d/nature/kenney-nature-kit/sign.glb')
 };
 let scene,camera,renderer,loader,trainGroup,railGroup,decorGroup,stationGroup,trackCurve;
-let models=new Map(),ready=false,departT=-1,last=performance.now(),carCount=4,pulse=0,stationIndex=Number(document.body.dataset.stationIndex)||0,trainTheme=document.body.dataset.trainTheme||'easy',trainUnits=[];
+let models=new Map(),ready=false,departT=-1,last=performance.now(),carCount=4,pulse=0,stationIndex=Number(document.body.dataset.stationIndex)||0,trainTheme=document.body.dataset.trainTheme||'easy',trainUnits=[],trainCars=[];
 const palette=['blue','green','red','box'];
 const TRAIN_PALETTES={
  easy:{body:0x2f8fda,body2:0x65bff2,accent:0xffc83d,trim:0x24364a,window:0x9edcff,roof:0x31536f},
@@ -130,7 +130,7 @@ function addRails(){
 }
 function addDecor(){
  clear(decorGroup);
- const ground=box(34,.12,7.2,0xa7c984);ground.position.set(0,-.08,-2.35);ground.receiveShadow=true;decorGroup.add(ground);
+ const ground=box(36,.14,11.8,0xa7c984);ground.position.set(0,-.09,-.3);ground.receiveShadow=true;decorGroup.add(ground);
  const platform=box(14,.28,2.15,0xa9b2ba);platform.position.set(3.5,.10,-1.38);decorGroup.add(platform);
  const edge=box(14,.12,.18,0xe2bd4d);edge.position.set(3.5,.29,-.28);decorGroup.add(edge);
  for(const x of[-9,-6.4,7.7,10.1]){
@@ -165,6 +165,23 @@ function makeFallbackCar(color){
  for(const x of[-.6,.6])for(const z of[-.43,.43]){const w=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,.12,16),new THREE.MeshStandardMaterial({color:0x29323a,roughness:.8}));w.rotation.x=Math.PI/2;w.position.set(x,.18,z);g.add(w)}
  return g;
 }
+function disposeWordLabel(car){
+ if(!car)return;const s=car.userData?.wordLabel;if(!s)return;
+ s.material?.map?.dispose?.();s.material?.dispose?.();car.remove(s);delete car.userData.wordLabel;
+}
+function roundRectPath(ctx,x,y,w,h,r){
+ const rr=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+rr,y);ctx.arcTo(x+w,y,x+w,y+h,rr);ctx.arcTo(x+w,y+h,x,y+h,rr);ctx.arcTo(x,y+h,x,y,rr);ctx.arcTo(x,y,x+w,y,rr);ctx.closePath();
+}
+function makeWordLabel(text,status='filled'){
+ const c=document.createElement('canvas');c.width=512;c.height=150;const ctx=c.getContext('2d');
+ const bg=status==='correct'?'#dff7e8':status==='wrong'?'#ffe2df':'#ffffff',border=status==='correct'?'#3d9b61':status==='wrong'?'#cf544f':'#29445f';
+ ctx.clearRect(0,0,c.width,c.height);roundRectPath(ctx,8,8,496,134,24);ctx.fillStyle=bg;ctx.fill();ctx.lineWidth=8;ctx.strokeStyle=border;ctx.stroke();
+ const len=[...String(text)].length,size=len>8?44:len>5?52:60;ctx.fillStyle='#17263d';ctx.font=`900 ${size}px "Noto Sans KR",system-ui,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(text),256,76,452);
+ const texture=new THREE.CanvasTexture(c);texture.colorSpace=THREE.SRGBColorSpace;texture.needsUpdate=true;const mat=new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:true,depthWrite:false});const sprite=new THREE.Sprite(mat);sprite.scale.set(1.72,.50,1);sprite.position.set(0,1.28,0);sprite.renderOrder=12;return sprite;
+}
+function setCarLabel(index,text,status='filled'){
+ const car=trainCars[index];if(!car)return;disposeWordLabel(car);if(!text)return;const label=makeWordLabel(text,status);car.userData.wordLabel=label;car.add(label);
+}
 function positionTrain(offset=0,now=0){
  if(!trackCurve)return;
  const bob=now?Math.sin(now*.004)*.018:0;
@@ -172,7 +189,7 @@ function positionTrain(offset=0,now=0){
 }
 function buildTrain(count=carCount){
  carCount=Math.max(3,Math.min(8,count||4));
- clear(trainGroup);trainUnits=[];trainGroup.position.set(0,0,0);trainGroup.rotation.set(0,0,0);
+ trainCars.forEach(disposeWordLabel);clear(trainGroup);trainUnits=[];trainCars=[];trainGroup.position.set(0,0,0);trainGroup.rotation.set(0,0,0);
  if(!trackCurve)makeTrackCurve();
  const pal=TRAIN_PALETTES[trainTheme]||TRAIN_PALETTES.easy;
  const themeCars=trainTheme==='hard'?['red','box','woodCar','flatCar']:trainTheme==='normal'?['green','blue','box','woodCar']:['blue','green','red','box'];
@@ -181,7 +198,7 @@ function buildTrain(count=carCount){
   const key=themeCars[i%themeCars.length],car=clone(key,1.62,'max')||makeFallbackCar([0x4f83c7,0x5da66f,0xd45a58,0xa07b4e][i%4]);
   recolor(car,pal,'train',i);
   const baseT=headT-(carCount-i)*step;
-  trainGroup.add(car);trainUnits.push({obj:car,baseT,y:.04});
+  trainGroup.add(car);trainCars.push(car);trainUnits.push({obj:car,baseT,y:.04,kind:'car',carIndex:i});
   if(i<carCount-1){
     const con=clone('connector',.28,'max');
     if(con){recolor(con,pal,'train',i);const conT=baseT+step*.5;trainGroup.add(con);trainUnits.push({obj:con,baseT:conT,y:.15})}
@@ -197,9 +214,9 @@ function fitCamera(){
  const rect=canvas.getBoundingClientRect(),aspect=Math.max(.7,rect.width/Math.max(1,rect.height));
  camera.aspect=aspect;
  const narrow=aspect<1.7;
- camera.fov=narrow?39:34;
- camera.position.set(narrow?7.6:9.6,narrow?6.6:5.9,narrow?24.5:22.5);
- camera.lookAt(narrow?0.0:.7,.62,-.75);
+ camera.fov=narrow?40:32;
+ camera.position.set(narrow?5.9:7.2,narrow?5.0:4.45,narrow?17.8:15.9);
+ camera.lookAt(narrow?.15:1.25,.72,-.9);
  camera.updateProjectionMatrix();
 }
 function init(){
@@ -244,6 +261,6 @@ function loop(now){
  if(pulse>0){pulse=Math.max(0,pulse-dt);renderer.toneMappingExposure=.88+pulse*.24}else renderer.toneMappingExposure+=(.88-renderer.toneMappingExposure)*.12;
  renderer.render(scene,camera);
 }
-window.SentenceTrain3D={setCars,setTheme,setStation,reset,depart,celebrate,resize,ready:()=>ready};
+window.SentenceTrain3D={setCars,setTheme,setStation,setCarLabel,reset,depart,celebrate,resize,ready:()=>ready};
 init();
 })();
