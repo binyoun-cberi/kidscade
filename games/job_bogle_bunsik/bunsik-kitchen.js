@@ -48,7 +48,7 @@ const CUSTOMER_MODELS=[
 ];
 
 const els={
- canvas:$('#gameCanvas'),orders:$('#orderStrip'),pots:$('#potStrip'),revenue:$('#revenue'),goal:$('#goal'),time:$('#time'),served:$('#served'),
+ canvas:$('#gameCanvas'),orders:$('#orderStrip'),pots:$('#potStrip'),revenue:$('#revenue'),goal:$('#goal'),time:$('#time'),served:$('#served'),combo:$('#comboStat'),
  selected:$('#selectedAction'),trayBtn:$('#trayBtn'),trayText:$('#trayText'),trayQuality:$('#trayQuality'),dock:$('#actionDock'),
  tutorialBanner:$('#tutorialBanner'),tutorialText:$('#tutorialText'),discard:$('#discardBtn'),
  toast:$('#toast'),start:$('#startOverlay'),end:$('#endOverlay'),endTitle:$('#endTitle'),endText:$('#endText'),
@@ -795,10 +795,27 @@ class RamenKitchen3D{
   };
   requestAnimationFrame(run)
  }
- customerReact(slot){
+ customerReact(slot,intensity=1){
   const h=this.customerHolders[slot];if(!h)return;const baseY=h.position.y,started=performance.now();
-  const run=now=>{const t=Math.min(1,(now-started)/650);h.position.y=baseY+Math.sin(t*Math.PI*4)*.08*(1-t);h.rotation.z=Math.sin(t*Math.PI*5)*.05*(1-t);if(t<1)requestAnimationFrame(run);else{h.position.y=baseY;h.rotation.z=0}};
+  const run=now=>{const t=Math.min(1,(now-started)/780);h.position.y=baseY+Math.sin(t*Math.PI*5)*.13*intensity*(1-t);h.rotation.z=Math.sin(t*Math.PI*6)*.075*intensity*(1-t);const s=1+Math.sin(Math.PI*Math.min(1,t*1.45))*.08*intensity;h.scale.setScalar(s);if(t<1)requestAnimationFrame(run);else{h.position.y=baseY;h.rotation.z=0;h.scale.setScalar(1)}};
   requestAnimationFrame(run)
+ }
+ customerCelebrate(slot,quality,combo,earned){
+  const h=this.customerHolders[slot];if(!h)return;
+  const perfect=quality>=90,intensity=perfect?1.35:quality>=76?1.05:.78;this.customerReact(slot,intensity);
+  const text=perfect?'🤩 최고예요!'+(combo>=2?' 🔥'+combo:''):quality>=76?'😋 맛있어요!'+(combo>=2?' 🔥'+combo:''):'🙂 잘 먹었어요';
+  const bubble=this.makeTextSprite(text);bubble.position.set(0,2.15,.05);bubble.scale.set(perfect?1.75:1.5,perfect?.55:.48,1);h.add(bubble);
+  const coins=new THREE.Group();coins.position.set(0,1.35,.18);h.add(coins);
+  const geo=new THREE.SphereGeometry(.055,8,6),mat=new THREE.MeshBasicMaterial({color:0xf7c84b});
+  for(let i=0;i<8;i++){const m=new THREE.Mesh(geo,mat);m.userData.vx=(i-3.5)*.12;m.userData.vy=.7+(i%3)*.12;m.userData.phase=i*.7;coins.add(m)}
+  const started=performance.now(),run=now=>{
+   const t=Math.min(1,(now-started)/1050);
+   bubble.position.y=2.15+t*.55;bubble.material.opacity=1-t;
+   coins.children.forEach((m,i)=>{m.position.x=m.userData.vx*t;m.position.y=m.userData.vy*t-1.05*t*t;m.position.z=Math.sin(m.userData.phase+t*6)*.15;m.scale.setScalar(1-t*.35)});
+   mat.opacity=1-t;mat.transparent=true;
+   if(t<1){requestAnimationFrame(run);return}
+   h.remove(bubble);bubble.material.map?.dispose?.();bubble.material.dispose?.();h.remove(coins);geo.dispose();mat.dispose()
+  };requestAnimationFrame(run)
  }
  animateServe(slot,onDone){
   if(!this.serviceGroup){onDone?.();return}
@@ -806,8 +823,8 @@ class RamenKitchen3D{
   const run=now=>{
    const t=Math.min(1,(now-started)/700),e=1-Math.pow(1-t,3);g.position.lerpVectors(start,end,e);g.position.y=.92+Math.sin(Math.PI*t)*.3;
    if(t<1){requestAnimationFrame(run);return}
-   this.customerReact(slot);if(this.serviceMeal)this.serviceMeal.visible=false;
-   setTimeout(()=>{g.position.copy(this.serviceHome);onDone?.()},260)
+   if(this.serviceMeal)this.serviceMeal.visible=false;
+   setTimeout(()=>{g.position.copy(this.serviceHome);onDone?.()},180)
   };
   requestAnimationFrame(run)
  }
@@ -1428,15 +1445,18 @@ function serveOrder(orderId){
   const sale=restaurant.serve(orderId,r.id,{quality:q});
   if(!sale.ok){order.paused=false;state.busy=false;renderOrders();updateActionButtons();toast('주문 상태가 바뀌었어요 · 다시 확인해 주세요',1700);return}
   if(ticket){ticket.classList.add('served');ticket.setAttribute('aria-label',r.name+' 주문 완료')}
+  const streak=applyServeCombo(q),totalEarned=earned+streak.bonus;releaseOrderBinding(order.id);kitchen.customerCelebrate(slot,q,streak.combo,totalEarned);pulseComboHud();
   state.tray=null;state.busy=false;setTimeout(()=>{if(state.running)addDirtyPlate()},1050);
   const after=activePotCount();
   if(wasTutorial){
    state.tutorial.active=false;state.tutorial.step=7;state.spawnClock=0;unlockHelper();
    setTimeout(()=>{if(state.running){spawnOrder();spawnOrder();toast('알바생 합류! 조리대에 올린 재료를 필요한 냄비로 옮겨줘요',3000)}},650)
   }else setTimeout(()=>{if(state.running)spawnOrder()},700);
-  renderTray();setTimeout(()=>renderOrders(),420);renderTutorial();renderPotStrip();renderSelectedHelp();updateActionButtons();updateHud();sfx(q>=82?'shop.purchase':'collect.coin_pickup',{volume:.25,cooldownMs:300});
-  if(after>before)toast('새 화구가 열렸어요! 이제 냄비 '+after+'개를 쓸 수 있어요',2200);
-  else if(wasTutorial)toast(r.name+' 첫 서빙 성공! +'+money(earned),1800);else toast(r.name+' 서빙 · '+qualityLabel(q)+' · +'+money(earned),1700)
+  renderTray();setTimeout(()=>renderOrders(),420);renderTutorial();renderPotStrip();renderSelectedHelp();updateActionButtons();updateHud();sfx(q>=90||streak.combo>=3?'success.cheer_yay':q>=76?'shop.purchase':'collect.coin_pickup',{volume:q>=90?.32:.25,cooldownMs:300});
+  const comboText=streak.combo>=2?' · 🔥 '+streak.combo+'콤보'+(streak.bonus?' 보너스 +'+money(streak.bonus):''):'';
+  if(after>before)toast('🎉 새 화구 OPEN! 냄비 '+after+'개 · '+qualityLabel(q)+comboText,2400);
+  else if(wasTutorial)toast('🎉 '+r.name+' 첫 서빙 성공! +'+money(totalEarned),1900);
+  else toast((q>=90?'✨ PERFECT! ':q>=76?'😋 맛있음! ':'🍜 서빙! ')+ '+'+money(totalEarned)+comboText,2000)
  })
 }
 
@@ -1514,8 +1534,20 @@ function updateOrders(dt){
  });
  if(expiredOrders.length){expiredOrders.forEach(o=>releaseOrderBinding(o.id));state.combo=0;sfx('failure.fail_sting',{volume:.16,cooldownMs:300});toast('기다리던 손님이 떠났어요 · 콤보가 끊겼어요',1500);renderOrders();updateHud()}
 }
+function applyServeCombo(quality){
+ if(quality>=76)state.combo+=1;else state.combo=0;
+ state.maxCombo=Math.max(state.maxCombo,state.combo);
+ const bonus=state.combo>=2?Math.min(300,(state.combo-1)*100):0;
+ if(bonus)state.revenue+=bonus;
+ return{combo:state.combo,bonus}
+}
+function pulseComboHud(){
+ if(!els.combo||state.combo<2)return;els.combo.classList.remove('hot');void els.combo.offsetWidth;els.combo.classList.add('hot')
+}
 function updateHud(){
- els.revenue.textContent=money(state.revenue);els.goal.textContent=money(TARGET_REVENUE);els.time.textContent=Math.max(0,Math.ceil(state.time));els.served.textContent=state.served;renderEconomyProgress()
+ els.revenue.textContent=money(state.revenue);els.goal.textContent=money(TARGET_REVENUE);els.time.textContent=Math.max(0,Math.ceil(state.time));els.served.textContent=state.served;
+ if(els.combo){els.combo.classList.toggle('hidden',state.combo<2);els.combo.classList.toggle('hot',state.combo>=3);const b=els.combo.querySelector('b');if(b)b.textContent=state.combo}
+ renderEconomyProgress()
 }
 function updateGame(dt){
  if(state.phase==='service'){
@@ -1548,7 +1580,7 @@ function loop(ts){
 function resetGameState(){
  restaurant.reset({keepLayout:true});
  state.phase='prep';state.time=SHIFT_SECONDS;state.revenue=0;state.served=0;state.perfect=0;state.missed=0;state.orders=[];state.nextOrder=1;state.spawnClock=0;state.uiClock=0;state.tray=null;state.busy=false;seenOrderTickets.clear();
- state.cleanPlates=3;state.dirtyPlates=0;state.washing=false;state.heldItem=null;state.helperUnlocked=progress.tutorialDone;state.helperEnabled=progress.tutorialDone;kitchen.clearPrepCounters();kitchen.resetHelper();kitchen.syncEquipmentVisibility();kitchen.applySavedEquipmentState();
+ state.cleanPlates=3;state.dirtyPlates=0;state.washing=false;state.heldItem=null;state.combo=0;state.maxCombo=0;state.helperUnlocked=progress.tutorialDone;state.helperEnabled=progress.tutorialDone;kitchen.clearPrepCounters();kitchen.resetHelper();kitchen.syncEquipmentVisibility();kitchen.applySavedEquipmentState();
  state.selectedPot=null;state.tutorial={active:!progress.tutorialDone,step:progress.tutorialDone?7:0};state.discardArmedUntil=0;state.discardArmedPot=null;state.trayDiscardArmedUntil=0;state.heldDiscardArmedUntil=0;
  state.pots=Array.from({length:POT_COUNT},(_,i)=>newPot(i));
  for(let i=0;i<POT_COUNT;i++)kitchen.clearPotVisual(i);
