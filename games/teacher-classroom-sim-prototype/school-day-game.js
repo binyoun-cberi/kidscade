@@ -4,14 +4,16 @@ import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {
   AI_RULES,STUDENT_PROFILES,createStudentRuntime,resetFocusForLesson,updateLessonFocus,helpFocus,
   resetSocialForRecess,recoverSocial,drainSocial,conflictProbability,clamp
-} from './student-ai.mjs?v=65';
-import {SCHOOL_SPACES,DAY_STEPS,PERIODS} from './school-day.mjs?v=65';
+} from './student-ai.mjs?v=66';
+import {SCHOOL_SPACES,DAY_STEPS,PERIODS} from './school-day.mjs?v=66';
 import {
   preferenceFor,preferenceMultiplier,preferenceIcon,
   createDailyEnvironment,createDailyHealth,healthRecoveryMultiplier,tickHealth,nextHealthAction,
   beginSafetyRecord,tickSafetyRecord,unsafeAccidentChance,buildPairs,
-  SAFETY_RULES,GROUP_RULES
-} from './student-life.mjs?v=65';
+  friendshipKey,friendshipInfo,addFriendship,friendshipConflictDuration,
+  friendshipSelfReconcileChance,friendshipChatterChance,
+  SAFETY_RULES,GROUP_RULES,FRIENDSHIP_RULES
+} from './student-life.mjs?v=66';
 
 const $=id=>document.getElementById(id);
 const ui={
@@ -76,6 +78,10 @@ let interactionScan=0,pairScan=0,currentAction={type:'none'};
 let toastTimer=0,playerGestureTimer=0;
 let chibiTemplate=null,chibiAnimations=[];
 let player=null,students=[],pairs=[],relations=new Set();
+let friendships=new Map();
+let lessonChats=[];
+let chatterScanTimer=0;
+let chatterCooldowns=new Map();
 let fightsThisSocial=0;
 let lessonElapsed=0;
 let teamPairs=[];
@@ -86,7 +92,8 @@ let environment=createDailyEnvironment();
 let stats={
   focusHelps:0,conflictsMediated:0,fightsSeparated:0,missedFights:0,
   offTaskStarts:0,peacefulSocial:0,periodsCompleted:0,spacesVisited:new Set(['classroom']),
-  healthChecks:0,nurseVisits:0,earlyDismissals:0,classroomRests:0,accidents:0,safetyMisses:0,teamConflicts:0
+  healthChecks:0,nurseVisits:0,earlyDismissals:0,classroomRests:0,accidents:0,safetyMisses:0,teamConflicts:0,
+  friendshipLevelUps:0,selfReconciles:0,lessonChats:0,chatsStopped:0
 };
 const keys=new Set();
 const joy={active:false,id:null,x:0,y:0};
@@ -443,6 +450,24 @@ function activePeriod(){
 function updateDayStrip(){
   const p=activePeriod();
   ui.dayStrip.innerHTML=PERIODS.map(item=>'<span class="'+(item.period===p?'active ':'')+(item.period< p?'done':'')+'"><i>'+item.icon+'</i><b>'+item.period+'</b><small>'+item.subject+'</small></span>').join('');
+}
+function friendInfo(a,b){return friendshipInfo(friendships,a.runtime.id,b.runtime.id)}
+function gainFriendship(a,b,amount,{announce=false}={}){
+  const before=friendInfo(a,b);
+  const after=addFriendship(friendships,a.runtime.id,b.runtime.id,amount);
+  if(after.level>before.level){
+    stats.friendshipLevelUps++;
+    if(announce)showToast('💛 '+a.runtime.name+' · '+b.runtime.name+' 친분 Lv.'+after.level);
+  }
+  return after;
+}
+function friendConflictMeta(a,b){
+  const info=friendInfo(a,b);
+  return {
+    level:info.level,
+    selfReconcile:Math.random()<friendshipSelfReconcileChance(info.level),
+    selfReconcileAt:friendshipConflictDuration(AI_RULES.conflictSeconds,info.level)
+  };
 }
 function currentPeriodNumber(){return activePeriod()}
 function isStudentPresent(s){
