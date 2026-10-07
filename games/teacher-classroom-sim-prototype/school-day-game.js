@@ -570,7 +570,8 @@ function transitionToSpace(spaceId){
 
 function enterStep(index,{spaceChanged=false}={}){
   stepIndex=clamp(index,0,DAY_STEPS.length-1);currentStep=DAY_STEPS[stepIndex];stepTime=currentStep.duration||0;
-  pairs=[];teamPairs=[];teamActive=false;teamCheckTimer=0;lessonElapsed=0;lessonAccidents=0;
+  pairs=[];teamPairs=[];lessonChats=[];chatterScanTimer=.5;chatterCooldowns.clear();
+  teamActive=false;teamCheckTimer=0;lessonElapsed=0;lessonAccidents=0;
   hideAllBubbles();setTalk(false);fightsThisSocial=0;
   if(currentStep.location!==activeSpace.id){
     transitionToSpace(currentStep.location);spaceChanged=true;
@@ -659,12 +660,46 @@ function createSafetyAccident(s){
   showBubble(s,'⚠️','health');
   showToast('⚠️ '+s.runtime.name+'에게 사고가 났어요!');
 }
+function configureFriendConflict(pair){
+  const meta=friendConflictMeta(pair.a,pair.b);
+  pair.friendLevel=meta.level;
+  pair.duration=friendshipConflictDuration(AI_RULES.conflictSeconds,meta.level);
+  pair.selfReconcile=meta.selfReconcile;
+  pair.selfReconcileAt=meta.selfReconcileAt;
+  pair.fightChance=.30*Math.max(.45,1-meta.level*.11);
+  return pair;
+}
+function selfReconcilePair(pair){
+  relations.delete(relationKey(pair.a,pair.b));
+  stats.selfReconciles++;
+  gainFriendship(pair.a,pair.b,.35);
+  for(const s of [pair.a,pair.b]){
+    s.runtime.social=Math.min(s.runtime.socialMax,s.runtime.social+s.runtime.socialMax*.14);
+    hideBubble(s);
+    if(pair.source==='team'&&studentCanParticipate(s))s.actor.target=s.seat.clone();
+  }
+  pairs=pairs.filter(p=>p!==pair);
+  if(pair.source!=='team'){
+    for(const s of [pair.a,pair.b]){
+      s.runtime.mode='solo';s.runtime.cooldown=3+Math.random()*2;s.actor.target=randomOpenPoint();
+    }
+  }
+  showToast('💛 '+pair.a.runtime.name+'와 '+pair.b.runtime.name+'가 스스로 화해했어요.');
+}
+function coolOffTeamConflict(pair){
+  pairs=pairs.filter(p=>p!==pair);
+  for(const s of [pair.a,pair.b]){
+    hideBubble(s);
+    if(studentCanParticipate(s))s.actor.target=s.seat.clone();
+  }
+}
 function beginTeamConflict(a,b){
   if(!a||!b||pairs.some(p=>(p.a===a&&p.b===b)||(p.a===b&&p.b===a)))return;
-  const pair={a,b,state:'conflict',time:0,duration:AI_RULES.conflictSeconds,source:'team'};
+  const pair=configureFriendConflict({a,b,state:'conflict',time:0,source:'team'});
   pairs.push(pair);relations.add(relationKey(a,b));stats.teamConflicts++;
   showBubble(a,'!','conflict');showBubble(b,'!','conflict');
-  showToast(a.runtime.name+'와 '+b.runtime.name+' 모둠에서 갈등이 생겼어요.');
+  const lv=pair.friendLevel?' · 친분 Lv.'+pair.friendLevel:'';
+  showToast(a.runtime.name+'와 '+b.runtime.name+' 모둠에서 갈등이 생겼어요.'+lv);
 }
 function updateTeamActivity(dt){
   if(!currentStep.teamActivity)return;
@@ -674,6 +709,7 @@ function updateTeamActivity(dt){
     showToast('🤝 모둠 활동 시작!');
   }
   if(!teamActive)return;
+
   for(const team of teamPairs){
     for(const s of team){
       if(!studentCanParticipate(s))continue;
@@ -681,18 +717,26 @@ function updateTeamActivity(dt){
       drainSocial(s.runtime,dt,GROUP_RULES.socialDrainMultiplier*(conflict?1.35:1));
     }
   }
+
+  for(const pair of pairs.filter(p=>p.source==='team'&&p.state==='conflict').slice()){
+    pair.time+=dt;
+    if(pair.selfReconcile&&pair.time>=pair.selfReconcileAt){selfReconcilePair(pair);continue}
+    if(pair.time>=pair.duration){coolOffTeamConflict(pair)}
+  }
+
   teamCheckTimer-=dt;
   if(teamCheckTimer>0)return;
   teamCheckTimer=GROUP_RULES.conflictCheckEverySeconds;
-  if(socialConflictCount()>=AI_RULES.maxConcurrentConflicts)return;
   for(const [a,b] of teamPairs){
     if(!studentCanParticipate(a)||!studentCanParticipate(b))continue;
     if(pairs.some(p=>(p.a===a&&p.b===b)||(p.a===b&&p.b===a)))continue;
+    if(socialConflictCount()>=AI_RULES.maxConcurrentConflicts)break;
     const unresolved=relations.has(relationKey(a,b));
     const teacherNear=teacherNearStudent(a)||teacherNearStudent(b);
     const base=conflictProbability(a.runtime,b.runtime,{teacherNear,relationActive:false});
     const chance=unresolved?GROUP_RULES.unresolvedConflictChance:base*GROUP_RULES.tiredConflictChanceMultiplier;
     if(Math.random()<chance){beginTeamConflict(a,b);break}
+    gainFriendship(a,b,FRIENDSHIP_RULES.teamInteractionGain);
   }
 }
 function updateSafety(dt){
@@ -779,7 +823,7 @@ function releasePair(pair,cooldown=3){
   for(const s of [pair.a,pair.b]){s.runtime.mode='solo';s.runtime.cooldown=cooldown+Math.random()*2;s.actor.target=randomOpenPoint();hideBubble(s)}
 }
 function beginConflict(pair){
-  pair.state='conflict';pair.time=0;pair.duration=AI_RULES.conflictSeconds;pair.a.runtime.mode=pair.b.runtime.mode='conflict';
+  pair.state='conflict';pair.time=0;configureFriendConflict(pair);pair.a.runtime.mode=pair.b.runtime.mode='conflict';
   relations.add(relationKey(pair.a,pair.b));showBubble(pair.a,'!','conflict');showBubble(pair.b,'!','conflict');
 }
 function beginFight(pair){
@@ -842,12 +886,17 @@ function updateSocial(dt){
         const near=distance2D(player.root.position,pair.a.actor.root.position)<2.8||distance2D(player.root.position,pair.b.actor.root.position)<2.8;
         const chance=conflictProbability(pair.a.runtime,pair.b.runtime,{teacherNear:near,relationActive:relations.has(relationKey(pair.a,pair.b))});
         if(socialConflictCount()<AI_RULES.maxConcurrentConflicts&&Math.random()<chance)beginConflict(pair);
-        else{stats.peacefulSocial++;releasePair(pair,2.5)}
+        else{
+          stats.peacefulSocial++;
+          gainFriendship(pair.a,pair.b,FRIENDSHIP_RULES.peacefulInteractionGain,{announce:true});
+          releasePair(pair,2.5);
+        }
       }
     }else if(pair.state==='conflict'){
       drainSocial(pair.a.runtime,dt,.45);drainSocial(pair.b.runtime,dt,.45);
+      if(pair.selfReconcile&&pair.time>=pair.selfReconcileAt){selfReconcilePair(pair);continue}
       if(pair.time>=pair.duration){
-        if(fightsThisSocial<AI_RULES.maxFightsPerRecess&&Math.random()<.30)beginFight(pair);
+        if(fightsThisSocial<AI_RULES.maxFightsPerRecess&&Math.random()<(pair.fightChance??.30))beginFight(pair);
         else releasePair(pair,AI_RULES.conflictCooldownSeconds);
       }
     }else if(pair.state==='fight'){
