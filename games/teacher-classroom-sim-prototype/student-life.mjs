@@ -15,7 +15,7 @@ export const PREFERENCE_RULES=Object.freeze({
 
 export const HEALTH_RULES=Object.freeze({
   maxSickStudents:2,
-  sickChance:.16,
+  sickChance:.10,
   severeShare:.28,
   sickRecoveryMultiplier:.58,
   mildRecoveryMultiplier:.76,
@@ -30,12 +30,12 @@ export const SAFETY_RULES=Object.freeze({
   briefingDurationSeconds:18,
   attentionRatioNeeded:.68,
   distractedFocusRatio:.62,
-  unsafeAccidentPerSecond:.006,
+  unsafeAccidentPerSecond:.0035,
   maxAccidentsPerLesson:1
 });
 
 export const GROUP_RULES=Object.freeze({
-  socialDrainMultiplier:.72,
+  socialDrainMultiplier:.34,
   conflictCheckEverySeconds:6,
   unresolvedConflictChance:1,
   tiredConflictChanceMultiplier:.65
