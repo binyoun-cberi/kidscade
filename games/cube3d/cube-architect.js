@@ -39,7 +39,7 @@ let survivalInventoryTab='bag';
 let firstJourney={phase:'idle',plan:null},journeyMarker=null,journeyUiAt=0;
 let buildingWorks=[],worksOpen=false,projectGuide='';
 let lifePanelOpen=false,lifePanelMode='',lifePanelTargetKey='',lifeCreatureTarget=null,survivalHome=null,trackedTarget=null;
-let seatedFurniture=null,tamedCreatures={},petSerial=0;
+let seatedFurniture=null,tamedCreatures={},tamingProgress={},petSerial=0;
 const experience=window.CubeArchitectExperience;
 let jumpQueuedUntil=0,lastGroundedAt=-Infinity,overlapSeconds=0;
 const FREE_JUMP_SPEED=6.4;
@@ -2144,7 +2144,8 @@ function prepareFreeAvatar(now){
   else if(mobileMove.x>.18)freeAvatarFacingRight=true;
   else if(mobileMove.x<-.18)freeAvatarFacingRight=false;
   const stepLift=freeStepHop>0?Math.sin((1-freeStepHop)*Math.PI)*.1:0;
-  freeAvatarRoot.position.set(camera.position.x,camera.position.y-1.62+stepLift,camera.position.z);
+  const avatarEyeY=seatedFurniture?freePhysicsY:camera.position.y;
+  freeAvatarRoot.position.set(camera.position.x,avatarEyeY-1.62+stepLift,camera.position.z);
   freeAvatarRoot.rotation.y=yaw;
   // Base sprites face left. Mirror only when travelling right and keep the last facing while idle/attacking.
   freeAvatarRoot.scale.x=freeAvatarFacingRight?-1:1;
@@ -3218,7 +3219,7 @@ function initFree(){
   firstJourney={phase:'idle',plan:null};buildingWorks=[];projectGuide='';journeyUiAt=0;
   survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;survivalHealth=5;healthRegenClock=0;lastCreatureDamage=0;lastCreatureAttackAt=0;
   freeFluidKind='';lastEnvironmentDamage=0;survivalBreath=100;lastDrownDamage=0;freeFallPeakY=0;
-  seenCreatureKinds=new Set();lastCreatureHintAt=0;creatureDefeats={};creatureForageAt={};tamedCreatures={};petSerial=0;survivalWorldTime=0;creatureSpawnClock=0;creatureSpawnSerial=0;nextEliteSpawnCheckAt=0;dayTime=.28;
+  seenCreatureKinds=new Set();lastCreatureHintAt=0;creatureDefeats={};creatureForageAt={};tamedCreatures={};tamingProgress={};petSerial=0;survivalWorldTime=0;creatureSpawnClock=0;creatureSpawnSerial=0;nextEliteSpawnCheckAt=0;dayTime=.28;
   survivalTimeAcc=0;firstNightStarted=false;firstDuskWarned=false;nightShelterNotice=false;
   discoveredLandmarks=new Set();restoredLandmarks=new Set();unlockedTech=new Set();nearLandmarkPoi=null;
   selectedHotbarSlot=0;
@@ -4127,6 +4128,10 @@ function harvestCrop(x,y,z,data){
 
 function petRecordForRoot(root){return root?.userData?.petId?tamedCreatures[root.userData.petId]||null:null}
 function petDisplayName(root){const record=petRecordForRoot(root);return record?.name||root?.userData?.spec?.name||'동물'}
+function creatureForageKey(root){
+  const u=root?.userData;return u?.petId?'pet:'+u.petId:(u?.spec?.id||'');
+}
+
 function makePetNameSprite(name){
   const c=document.createElement('canvas');c.width=256;c.height=64;const ctx=c.getContext('2d');
   ctx.fillStyle='rgba(10,20,32,.78)';ctx.beginPath();ctx.roundRect?.(4,4,248,56,16);if(ctx.roundRect)ctx.fill();else ctx.fillRect(4,4,248,56);
@@ -4155,6 +4160,24 @@ function restoreTamedCreatures(){
     refreshPetNameTag(root);
   }
 }
+
+function petCatchupPosition(root){
+  const record=petRecordForRoot(root);if(!record)return null;
+  let salt=0;for(const ch of record.id||'pet')salt=(salt*31+ch.charCodeAt(0))>>>0;
+  const baseSide=((salt%9)-4)*.12;
+  const candidates=[];
+  for(const distance of [1.8,2.4,3.0])for(const side of [baseSide,baseSide+.7,baseSide-.7]){
+    const x=camera.position.x+Math.sin(yaw)*distance+Math.cos(yaw)*side;
+    const z=camera.position.z+Math.cos(yaw)*distance-Math.sin(yaw)*side;
+    if(!inWorld(Math.round(x),0,Math.round(z)))continue;
+    const y=creatureGroundY(x,z,freePhysicsY-1.62);
+    if(Math.abs(y-(freePhysicsY-1.62))>1.35)continue;
+    const cx=Math.round(x),cz=Math.round(z),feet=getBlock(cx,Math.floor(y),cz),support=getBlock(cx,Math.floor(y)-1,cz);
+    const danger=[feet?.type,support?.type].some(type=>['water','lava','fire','cactus'].includes(type));
+    if(!danger)candidates.push({x,y,z});
+  }
+  return candidates[0]||null;
+}
 function openCreatureLifePanel(root){
   if(!root?.userData||root.userData.dead)return false;
   const panel=$('lifePanel');if(!panel)return false;
@@ -4166,21 +4189,21 @@ function openCreatureLifePanel(root){
 }
 function collectCreatureForage(root){
   const u=root?.userData,spec=u?.spec,forage=spec?.forage;if(!root||u.dead||!forage)return false;
-  const readyAt=Math.max(0,Number(creatureForageAt[spec.id])||0);
+  const forageKey=creatureForageKey(root),readyAt=Math.max(0,Number(creatureForageAt[forageKey])||0);
   if(survivalWorldTime<readyAt){toast(petDisplayName(root)+'에게 다시 다가가려면 '+Math.ceil(readyAt-survivalWorldTime)+'초 정도 기다려 주세요.');return true}
   let total=0;for(const [type,n] of Object.entries(forage.reward||{})){addToBag(type,n);spawnPickupVisual(type,root.position.x,root.position.y+.25,root.position.z,n);total+=n}
-  creatureForageAt[spec.id]=survivalWorldTime+Math.max(20,Number(forage.cooldown)||60);trackSurvival('forage',spec.id,Math.max(1,total));
+  creatureForageAt[forageKey]=survivalWorldTime+Math.max(20,Number(forage.cooldown)||60);trackSurvival('forage',spec.id,Math.max(1,total));
   triggerFreeAvatarAction('pickup',FREE_AVATAR_ACTION_MS.pickup);toast(petDisplayName(root)+'에게서 '+(forage.label||'재료')+'을(를) 얻었어요.');sfx('good');markFreeWorldDirty(350);return true;
 }
 function feedTameTarget(){
   const root=lifeCreatureTarget,u=root?.userData,spec=u?.spec,rule=TAME_RULES[spec?.id];if(!root||u.dead||!rule)return;
   if(u.petId){toast(petDisplayName(root)+'은(는) 이미 우리 친구예요.');return}
   if(bagCount(rule.food)<1){toast(blockDef(rule.food).name+'이(가) 필요해요.');return}
-  consumeBag(rule.food,1);u.tameProgress=Math.min(rule.need,(Number(u.tameProgress)||0)+1);sfx('good');
+  consumeBag(rule.food,1);u.tameProgress=Math.min(rule.need,(Number(u.tameProgress)||Number(tamingProgress[spec.id])||0)+1);tamingProgress[spec.id]=u.tameProgress;sfx('good');
   if(u.tameProgress>=rule.need){
     const id='pet-'+spec.id+'-'+Date.now().toString(36)+'-'+(++petSerial);
     tamedCreatures[id]={id,species:spec.id,name:spec.name,mode:'follow',x:root.position.x,z:root.position.z,homeX:root.position.x,homeZ:root.position.z};
-    u.petId=id;u.homeX=root.position.x;u.homeZ=root.position.z;refreshPetNameTag(root);
+    delete tamingProgress[spec.id];u.petId=id;u.homeX=root.position.x;u.homeZ=root.position.z;refreshPetNameTag(root);
     toast(spec.name+'이(가) 마음을 열었어요! 이제 따라다녀요.');
   }else toast(spec.name+'에게 '+blockDef(rule.food).name+'을(를) 줬어요 · '+u.tameProgress+' / '+rule.need);
   buildHotbar();renderLifePanel();saveFreeWorld();
@@ -4276,7 +4299,7 @@ function renderLifePanel(){
       const stay=document.createElement('button');stay.type='button';stay.textContent='여기 있어';stay.disabled=record.mode==='stay';stay.onclick=()=>setPetMode(root,'stay');
       actions.append(follow,stay);card.append(input,status,actions);
     }else{
-      const progress=Math.max(0,Number(u.tameProgress)||0),food=blockDef(rule.food);
+      const progress=Math.max(0,Number(u.tameProgress)||Number(tamingProgress[spec.id])||0),food=blockDef(rule.food);
       const p=document.createElement('p');p.textContent=spec.name+'이(가) 좋아하는 '+food.name+'을(를) 몇 번 나누면 친해질 수 있어요.';
       const meter=document.createElement('div');meter.className='life-pet-progress';meter.innerHTML='<span style="width:'+Math.round(progress/rule.need*100)+'%"></span>';
       const count=document.createElement('small');count.textContent='친밀감 '+progress+' / '+rule.need+' · 가방의 '+food.name+' '+bagCount(rule.food)+'개';
@@ -4285,7 +4308,7 @@ function renderLifePanel(){
     }
     if(spec.forage){
       const forage=document.createElement('button');forage.type='button';forage.className='life-secondary';
-      const readyAt=Math.max(0,Number(creatureForageAt[spec.id])||0),left=Math.max(0,Math.ceil(readyAt-survivalWorldTime));
+      const forageKey=creatureForageKey(root),readyAt=Math.max(0,Number(creatureForageAt[forageKey])||0),left=Math.max(0,Math.ceil(readyAt-survivalWorldTime));
       forage.textContent=left?((spec.forage.label||'재료')+' · '+left+'초 뒤'):(spec.forage.label||'재료')+' 얻기';forage.disabled=left>0;
       forage.onclick=()=>{collectCreatureForage(root);renderLifePanel()};card.append(forage);
     }
@@ -4728,7 +4751,7 @@ function saveFreeWorld(){
     firstNightStarted,health:survivalHealth,worldTime:survivalWorldTime,
     equipment:{...survivalEquipment},damageCarry:survivalDamageCarry,
     creatureDefeats:{...creatureDefeats},creatureForageAt:{...creatureForageAt},
-    pets:Object.values(tamedCreatures),seenCreatures:[...seenCreatureKinds],nextEliteSpawnCheckAt,
+    pets:Object.values(tamedCreatures),tamingProgress:{...tamingProgress},seenCreatures:[...seenCreatureKinds],nextEliteSpawnCheckAt,
     discoveredLandmarks:[...discoveredLandmarks],restoredLandmarks:[...restoredLandmarks],
     unlockedTech:[...unlockedTech]};
   try{
@@ -4825,6 +4848,9 @@ function loadFreeWorld(){
         survivalWorldTime=Math.max(0,Number(data.worldTime)||0);
         creatureDefeats=data.creatureDefeats&&typeof data.creatureDefeats==='object'?{...data.creatureDefeats}:{};
         creatureForageAt=data.creatureForageAt&&typeof data.creatureForageAt==='object'?{...data.creatureForageAt}:{};
+        tamingProgress={};if(data.tamingProgress&&typeof data.tamingProgress==='object')for(const [species,value] of Object.entries(data.tamingProgress)){
+          const rule=TAME_RULES[species],n=Math.max(0,Math.floor(Number(value)||0));if(rule&&n>0&&n<rule.need)tamingProgress[species]=n;
+        }
         tamedCreatures={};if(Array.isArray(data.pets))for(const raw of data.pets){
           if(!raw||!TAME_RULES[raw.species])continue;const id=String(raw.id||'').slice(0,64);if(!id)continue;
           tamedCreatures[id]={id,species:raw.species,name:String(raw.name||window.CubeArchitectCreatures?.SPECIES?.[raw.species]?.name||'친구').slice(0,10),
@@ -5091,7 +5117,9 @@ function creatureGroundY(x,z,fromY=terrainHeight(Math.round(x),Math.round(z))+1)
 function placeWildCreature(id,x,z){
   const api=window.CubeArchitectCreatures,root=api?.create?.(id);if(!root)return null;
   const u=root.userData;
-  u.homeX=x;u.homeZ=z;u.baseY=terrainHeight(x,z)+1;root.position.set(x,u.baseY,z);
+  u.homeX=x;u.homeZ=z;u.baseY=terrainHeight(x,z)+1;
+  if(TAME_RULES[id])u.tameProgress=Math.max(0,Math.min(TAME_RULES[id].need,Number(tamingProgress[id])||0));
+  root.position.set(x,u.baseY,z);
   scene.add(root);wildCreatures.push(root);registerCreatureMeshes(root);return root;
 }
 function despawnWildCreature(root){
@@ -5432,10 +5460,13 @@ function updateWildCreatures(dt,t){
     const u=root.userData;if(u.dead||!root.parent)continue;
     const spec=u.spec;let dx=camera.position.x-root.position.x,dz=camera.position.z-root.position.z,dist=Math.hypot(dx,dz);
     const pet=petRecordForRoot(root);
+    if(pet?.mode==='stay'&&dist>WORLD_VIEW_RADIUS+6){root.visible=false;continue}
     if(pet?.mode==='follow'&&dist>24){
-      const px=THREE.MathUtils.clamp(camera.position.x+Math.cos(yaw)*1.3,-WORLD_HALF+1,WORLD_HALF-1);
-      const pz=THREE.MathUtils.clamp(camera.position.z-Math.sin(yaw)*1.3,-WORLD_HALF+1,WORLD_HALF-1);
-      root.position.set(px,creatureGroundY(px,pz,freePhysicsY-1.62),pz);dx=camera.position.x-px;dz=camera.position.z-pz;dist=Math.hypot(dx,dz);
+      const catchup=petCatchupPosition(root);
+      if(catchup){
+        root.position.set(catchup.x,catchup.y,catchup.z);
+        dx=camera.position.x-catchup.x;dz=camera.position.z-catchup.z;dist=Math.hypot(dx,dz);
+      }
     }
     if(dist>42&&!pet){root.visible=false;continue}
     if(u.needsAssembly){
@@ -5951,6 +5982,7 @@ function updateFree(dt,t){
     return;
   }
   // Pause the world while young players are reading recipes or using the furnace.
+  // Life panels pause the simulation so a wild animal cannot walk away while a child is feeding or naming it.
   if(inventoryOpen||furnaceOpen||worksOpen||lifePanelOpen){
     updateDayNight(0);updateWeather(0,t);updateMathOverlay();
     updateUnderwaterVisual(playerEnvironmentState(camera.position.x,freePhysicsY,camera.position.z).headUnderWater);return;
@@ -6046,10 +6078,10 @@ function updateFree(dt,t){
   if(landedThisFrame)stepSfx(groundSurfaceType(),true);
   if(freeFlying&&gameFreeMode==='creative')camera.position.y=freePhysicsY;
   else{
-    const delta=freePhysicsY-displayEye;
+    const targetEye=freePhysicsY-(seatedFurniture?.5:0),delta=targetEye-displayEye;
     const maxChange=(delta>=0?4.5:5.1)*Math.min(dt,.055);
     camera.position.y=displayEye+THREE.MathUtils.clamp(delta,-maxChange,maxChange);
-    if(Math.abs(freePhysicsY-camera.position.y)<.008)camera.position.y=freePhysicsY;
+    if(Math.abs(targetEye-camera.position.y)<.008)camera.position.y=targetEye;
   }
   camera.rotation.y=yaw;camera.rotation.x=pitch;
   updateFootstepAudio();
