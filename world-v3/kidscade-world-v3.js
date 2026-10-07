@@ -306,6 +306,7 @@ function prog(){
     migratedLegacy:!!rawPets.migratedLegacy,
     products:rawPets.products&&typeof rawPets.products==='object'?rawPets.products:{}
   };
+  p.ranchCare={fedDay:Math.max(0,Math.floor(Number(p.ranchCare?.fedDay)||0))};
   p.starterKitClaimed=!!p.starterKitClaimed;
   p.starterHintSeen=!!p.starterHintSeen;
   p.groundPickups=p.groundPickups&&typeof p.groundPickups==='object'?p.groundPickups:{};
@@ -2087,6 +2088,7 @@ function updateRanchExpansionVisuals(){
   for(const actor of ranchVisualActors){
     const active=actor.level===level;actor.group.visible=active;
     for(const c of actor.colliders||[])c.enabled=active;
+    for(const q of actor.interactions||[])q.enabled=active;
   }
   if(ranchProduceObject)ranchProduceObject.visible=level>0;
   if(ranchSignObject)ranchSignObject.visible=level>0;
@@ -2183,6 +2185,30 @@ function ranchPanel(){
   const can=Object.entries(RANCH_PRODUCTS).some(([id,d])=>residents.has(id)&&(day-Number(state.products[id]??-999)>=d.cooldown));
   openPanel('<h2>🐄 목장 '+level+'단계 · '+used+'/'+cap+'마리</h2><p>목장을 키우면 울타리가 넓어지고 함께 살 수 있는 동물이 늘어나요.</p><div class="grid">'+rows+'</div><button data-ranch-collect="1" '+(can?'':'disabled')+'>오늘 생산물 모으기</button> <button data-world-hub="develop">🏗️ 목장 확장</button><p style="font-size:12px">우유·달걀·트러플은 요리하거나 씨앗마트에 팔아 다른 생활 재료를 살 수 있어요.</p>');
 }
+function useRanchFacility(kind){
+  if(kind==='coop'||kind==='barn'){ranchPanel();return;}
+  const p=prog(),i=inv(),day=p.survival.day;
+  if(kind==='silo'){
+    if(!ranchAnimalCount()){toast('먼저 목장에 동물 친구를 데려오세요.');return;}
+    if(p.ranchCare.fedDay===day){toast('오늘은 이미 동물들에게 먹이를 주었어요.');return;}
+    const feed=(i.corn||0)>0?'corn':(i.carrot||0)>0?'carrot':'';
+    if(!feed){toast('먹이를 주려면 옥수수나 당근이 1개 필요해요.');return;}
+    removeInventoryItem(feed,1);p.ranchCare.fedDay=day;
+    const town=townEconomy?.ensureState?.(p)||p.town;
+    if(town)town.fun=Math.min(100,(town.fun||0)+6);
+    persist();setAvatarAction('smile',650);worldAudio.sfx('pickup',.14);updateStatus();
+    toast('동물들에게 '+itemName(feed)+' 먹이를 주었어요. · 재미 +6');return;
+  }
+  if(kind==='windmill'){
+    if((i.wheat||0)<2){toast('풍차에서 밀을 팔려면 수확한 밀 2개가 필요해요.');return;}
+    const town=townEconomy?.ensureState?.(p)||p.town;
+    if(!town){toast('마을 장부가 준비되지 않았어요.');return;}
+    removeInventoryItem('wheat',2);town.coins=(Number(town.coins)||0)+20;
+    persist();setAvatarAction('smile',650);worldAudio.sfx('success',.11);updateStatus();
+    toast('풍차에서 밀 2개를 가공해 납품했어요. · 코인 +20');
+  }
+}
+
 function collectRanchProducts(){
   const p=prog(),state=petState(),day=p.survival.day,i=inv();const got=[];
   const residents=new Set(ranchResidentIds());
@@ -2262,13 +2288,18 @@ async function buildPets(){
     if(!ranchLayouts[level])return Promise.resolve();
     if(ranchLevelJobs.has(level))return ranchLevelJobs.get(level);
     const job=(async()=>{
-      const layout=ranchLayouts[level],group=new THREE.Group(),facilityColliders=[];group.visible=false;outdoor.add(group);
+      const layout=ranchLayouts[level],group=new THREE.Group(),facilityColliders=[],facilityInteractions=[];group.visible=false;outdoor.add(group);
       await Promise.all(layout.fences.map(([x,z,rot])=>addFence(group,x,z,rot,{length:2.8,height:.82})));
       // Parcel tile top is -.05; the pasture must be slightly above it.
       plane(group,layout.ground[0],layout.ground[1],layout.ground[2],layout.ground[3],0x91a95f,-.035);
       await Promise.all(layout.facilities.map(async([key,url,x,z,w,h,d,cw,cd])=>{
         const model=await addModel(group,url,{x,z,w,h,d,rot:RANCH_FRONT_ROT,name:'ranch-'+level+'-'+key});
-        if(model)facilityColliders.push(collider('outdoor',x,z,cw,cd));
+        if(model){
+          facilityColliders.push(collider('outdoor',x,z,cw,cd));
+          const labels={coop:'닭장 살펴보기',barn:'헛간 살펴보기',silo:'사일로에서 먹이 주기',windmill:'풍차에서 밀 가공하기'};
+          const action=interact('outdoor',x,z+2.2,1.5,labels[key]||'목장 시설 이용하기',()=>useRanchFacility(key));
+          action.enabled=false;facilityInteractions.push(action);
+        }
       }));
       // Keep at most the current stage in the scene and collider registry.
       for(const actor of ranchVisualActors.splice(0)){
@@ -2278,8 +2309,13 @@ async function buildPets(){
           const index=colliders.outdoor.indexOf(c);
           if(index>=0)colliders.outdoor.splice(index,1);
         }
+        for(const q of actor.interactions){
+          q.enabled=false;
+          const index=interactables.outdoor.indexOf(q);
+          if(index>=0)interactables.outdoor.splice(index,1);
+        }
       }
-      ranchVisualActors.push({level,group,colliders:facilityColliders});
+      ranchVisualActors.push({level,group,colliders:facilityColliders,interactions:facilityInteractions});
       updateRanchExpansionVisuals();
     })().catch(err=>{ranchLevelJobs.delete(level);throw err});
     ranchLevelJobs.set(level,job);
