@@ -76,7 +76,18 @@ let stepIndex=0,currentStep=DAY_STEPS[0],stepTime=0;
 let schoolMinute=9*60;
 let interactionScan=0,pairScan=0,currentAction={type:'none'};
 let toastTimer=0,playerGestureTimer=0;
-let chibiTemplate=null,chibiAnimations=[];
+const CHARACTER_ROOT='../../assets/game/npcs/glTF/';
+const CHARACTER_VISUALS=Object.freeze({
+  teacher:{file:'Suit_Female.gltf',height:1.68},
+  minsu:{file:'Casual_Male.gltf',height:1.36},
+  jiwoo:{file:'Casual_Female.gltf',height:1.33},
+  seoyeon:{file:'Casual2_Female.gltf',height:1.38},
+  taeho:{file:'Casual2_Male.gltf',height:1.39},
+  junho:{file:'Casual3_Male.gltf',height:1.41},
+  arin:{file:'Casual3_Female.gltf',height:1.32},
+  nurse:{file:'Doctor_Female_Young.gltf',height:1.66}
+});
+const characterCache=new Map();
 let player=null,students=[],pairs=[],relations=new Set();
 let friendships=new Map();
 let lessonChats=[];
@@ -282,71 +293,112 @@ function buildSpace(spaceId){
   scene.fog.color.set(space.wall);scene.background.set(space.id==='gym'?0xc7e4ee:0xc4dcea);
 }
 
-const BASE_NODES=['character_low','eyelashes','eyes','tooth'];
-const HAIRS=['hairone','hairT','hairtail','hairtailknight','hairvariant','hairvariant.001'];
-const TOGGLES=['amorarm','amorplastron','armorceinturethighs','armorhelmet','armorknees','armorlegs','armorshoe','armorskirt','armorthigh','bag','bottes','bottesgreen','ceinture','chemise','greenoutfit','greenoutfitbelt','greenoutfitneckless','hairone','hairT','hairtail','hairtailknight','hairvariant','hairvariant.001','hat','ninjassuit','ninjassuitmask','ninjassuitshoe','ninjassuitthigh','ninjassuitshort','pants','shirt','shoe','skirt'];
-function setVisible(root,name,visible){const o=root.getObjectByName(name);if(o)o.visible=visible}
-function setOutfit(root,kind,hair,index,color){
-  BASE_NODES.forEach(n=>setVisible(root,n,true));TOGGLES.forEach(n=>setVisible(root,n,false));HAIRS.forEach(n=>setVisible(root,n,false));
-  if(hair)setVisible(root,hair,true);
-  if(kind==='teacher')['chemise','pants','shoe'].forEach(n=>setVisible(root,n,true));
-  else{['shirt','shoe'].forEach(n=>setVisible(root,n,true));setVisible(root,index%2===0?'pants':'skirt',true);}
-  ['shirt','chemise'].forEach(name=>{
-    const obj=root.getObjectByName(name);if(!obj)return;
-    obj.traverse(m=>{if(!m.isMesh||!m.material)return;
-      if(Array.isArray(m.material))m.material=m.material.map(x=>{const y=x.clone();if(y.color)y.color.set(color);return y});
-      else{m.material=m.material.clone();if(m.material.color)m.material.color.set(color)}
+function inPlaceCharacterClip(source){
+  if(!source)return null;
+  const clip=source.clone?source.clone():source;
+  if(clip?.tracks){
+    clip.tracks=clip.tracks.filter(track=>!/(^|[./])(?:root|bone)\.position$/i.test(String(track.name||'')));
+  }
+  return clip;
+}
+function normalizeCharacterModel(model,height){
+  model.updateMatrixWorld(true);
+  let bounds=new THREE.Box3().setFromObject(model);
+  const size=bounds.getSize(new THREE.Vector3());
+  const baseHeight=Math.max(.001,size.y||Math.max(size.x,size.z)||1);
+  model.scale.multiplyScalar((Number(height)||1.4)/baseHeight);
+  model.updateMatrixWorld(true);
+  bounds=new THREE.Box3().setFromObject(model);
+  const center=bounds.getCenter(new THREE.Vector3());
+  model.position.x-=center.x;
+  model.position.z-=center.z;
+  model.position.y-=bounds.min.y;
+  model.updateMatrixWorld(true);
+}
+function loadCharacterAsset(file){
+  if(!characterCache.has(file)){
+    const url=CHARACTER_ROOT+file;
+    characterCache.set(file,new GLTFLoader().loadAsync(url));
+  }
+  return characterCache.get(file);
+}
+function makeFallbackPerson(height,color){
+  const root=new THREE.Group();
+  const body=box(.42,height*.56,.30,color);
+  body.position.y=height*.47;root.add(body);
+  const head=new THREE.Mesh(
+    new THREE.SphereGeometry(height*.14,14,10),
+    new THREE.MeshStandardMaterial({color:0xe5b98d,roughness:.9})
+  );
+  head.position.y=height*.83;head.castShadow=true;root.add(head);
+  return root;
+}
+function pickCharacterClips(gltf){
+  const clips=Array.isArray(gltf?.animations)?gltf.animations:[];
+  const idle=inPlaceCharacterClip(clips.find(c=>/idle|stand/i.test(c.name))||clips[0]||null);
+  const walk=inPlaceCharacterClip(clips.find(c=>/walk|run/i.test(c.name))||idle);
+  const gesture=inPlaceCharacterClip(
+    clips.find(c=>/push|attack|punch|hit|wave|talk|gesture|point/i.test(c.name))||idle
+  );
+  return {idle,walk,push:gesture};
+}
+async function makeActor(kind,profile,index,pos){
+  const visual=kind==='teacher'?CHARACTER_VISUALS.teacher:(CHARACTER_VISUALS[profile?.id]||CHARACTER_VISUALS.minsu);
+  let model=null,clips={idle:null,walk:null,push:null},usingFallback=false;
+  try{
+    const gltf=await loadCharacterAsset(visual.file);
+    model=cloneSkeleton(gltf.scene);
+    normalizeCharacterModel(model,visual.height);
+    model.traverse(o=>{
+      if(o.isMesh){o.castShadow=true;o.receiveShadow=true}
+      if(o.isSkinnedMesh)o.frustumCulled=false;
     });
-  });
-}
-function visibleBounds(root){
-  root.updateMatrixWorld(true);const out=new THREE.Box3();let any=false;
-  root.traverse(o=>{if(!o.visible||!o.isMesh||!o.geometry)return;if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();
-    if(o.geometry.boundingBox){out.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));any=true}});
-  return any?out:null;
-}
-function normalizeChibi(root){
-  root.updateMatrixWorld(true);const body=root.getObjectByName('character_low');let b=null;
-  if(body?.geometry){if(!body.geometry.boundingBox)body.geometry.computeBoundingBox();if(body.geometry.boundingBox)b=body.geometry.boundingBox.clone().applyMatrix4(body.matrixWorld)}
-  if(!b||b.isEmpty())b=visibleBounds(root);if(!b||b.isEmpty())throw new Error('Chibi bounds unavailable');
-  const h=b.getSize(new THREE.Vector3()).y||1;root.scale.setScalar(1.08/h);root.updateMatrixWorld(true);
-  b=visibleBounds(root);const center=b.getCenter(new THREE.Vector3());root.position.x-=center.x;root.position.z-=center.z;root.position.y-=b.min.y;root.updateMatrixWorld(true);
-}
-async function loadChibiTemplate(){
-  const url='../../assets/game/chibi/ChibiCharactersV1.2/ChibiCharacters/glb/allinonepr.glb?v=20261007-chibi12';
-  const gltf=await new GLTFLoader().loadAsync(url);chibiTemplate=gltf.scene;chibiAnimations=gltf.animations||[];
-  setOutfit(chibiTemplate,'student','hairvariant',0,'#6f93c2');normalizeChibi(chibiTemplate);
-  chibiTemplate.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false}});
-}
-function clipFor(kind){
-  const names=kind==='walk'?['anim_walk','walkanim_']:kind==='push'?['anim_push','pushanim_']:['anim_iddle','iddleanim_','anim_iddle.001','iddle.001anim_'];
-  return names.map(n=>chibiAnimations.find(c=>c.name===n)).find(Boolean)||chibiAnimations[0]||null;
-}
-function makeActor(kind,profile,index,pos){
-  const model=cloneSkeleton(chibiTemplate);setOutfit(model,kind,profile?.hair||'hairone',index,kind==='teacher'?COLORS.teacher:COLORS[profile.id]);
-  model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false}});
-  const root=new THREE.Group();root.position.copy(pos);root.add(model);actorRoot.add(root);
-  const mixer=new THREE.AnimationMixer(model);const actor={root,model,mixer,action:null,anim:'',target:pos.clone(),speed:kind==='teacher'?3.2:1.15,kind,navGoal:'',navPath:[]};
-  playAnim(actor,'idle');return actor;
+    clips=pickCharacterClips(gltf);
+  }catch(err){
+    console.warn('[TeacherSim] character asset fallback',visual.file,err);
+    model=makeFallbackPerson(visual.height,kind==='teacher'?0x4b79d1:Number.parseInt(String(COLORS[profile?.id]||'#78909c').slice(1),16));
+    usingFallback=true;
+  }
+
+  const root=new THREE.Group();
+  root.position.copy(pos);
+  root.add(model);
+  actorRoot.add(root);
+  const mixer=usingFallback?{update(){},clipAction(){return null}}:new THREE.AnimationMixer(model);
+  const actor={
+    root,model,mixer,clips,action:null,anim:'',target:pos.clone(),
+    speed:kind==='teacher'?3.2:1.15,kind,navGoal:'',navPath:[],
+    visualId:kind==='teacher'?'teacher':profile?.id,usingFallback
+  };
+  playAnim(actor,'idle');
+  return actor;
 }
 function playAnim(actor,name){
-  if(actor.anim===name)return;const clip=clipFor(name);if(!clip)return;
-  const next=actor.mixer.clipAction(clip);if(actor.action&&actor.action!==next)actor.action.fadeOut(.1);
-  next.reset().setLoop(THREE.LoopRepeat,Infinity).fadeIn(.1).play();actor.action=next;actor.anim=name;
+  if(actor.anim===name)return;
+  const clip=actor.clips?.[name]||actor.clips?.idle;
+  if(!clip){actor.anim=name;return}
+  const next=actor.mixer.clipAction(clip);
+  if(!next){actor.anim=name;return}
+  if(actor.action&&actor.action!==next)actor.action.fadeOut(.1);
+  next.reset().setLoop(THREE.LoopRepeat,Infinity).fadeIn(.1).play();
+  actor.action=next;actor.anim=name;
 }
-function faceDirection(actor,dx,dz){if(Math.abs(dx)+Math.abs(dz)>.001)actor.root.rotation.y=Math.atan2(dx,dz)}
-function createActors(){
-  player=makeActor('teacher',{hair:'hairone'},0,new THREE.Vector3(0,0,3.3));
+function faceDirection(actor,dx,dz){
+  if(Math.abs(dx)+Math.abs(dz)>.001)actor.root.rotation.y=Math.atan2(dx,dz);
+}
+async function createActors(){
+  player=await makeActor('teacher',null,0,new THREE.Vector3(0,0,3.3));
   const healthToday=createDailyHealth(STUDENT_PROFILES);
-  students=STUDENT_PROFILES.map((profile,i)=>{
+  const built=await Promise.all(STUDENT_PROFILES.map(async (profile,i)=>{
     const runtime=createStudentRuntime(profile),seat=activeSeats[i]||new THREE.Vector3();
-    const actor=makeActor('student',profile,i,seat.clone());
+    const actor=await makeActor('student',profile,i,seat.clone());
     return {
       runtime,actor,seat:seat.clone(),wander:null,bubble:null,
       health:healthToday[i],healthAction:null,
       safetyRecord:null,accident:null,teamId:-1
     };
-  });
+  }));
+  students=built;
 }
 
 function isBlockedWithPadding(x,z,pad){
@@ -1196,8 +1248,8 @@ ui.closeHelp.addEventListener('click',()=>{ui.help.classList.add('hidden');pause
 async function boot(){
   buildSpace('classroom');setupInput();updateDayStrip();
   ui.start.disabled=true;ui.start.textContent='학교 준비 중…';
-  try{await loadChibiTemplate();createActors()}catch(err){
-    console.error('[TeacherSim] Chibi load failed',err);ui.intro.classList.add('hidden');ui.assetError.classList.remove('hidden');return;
+  try{await createActors()}catch(err){
+    console.error('[TeacherSim] character load failed',err);ui.intro.classList.add('hidden');ui.assetError.classList.remove('hidden');return;
   }
   enterStep(0);ui.start.disabled=false;ui.start.textContent='등교하기';
   ui.start.addEventListener('click',()=>{started=true;ui.intro.classList.add('hidden');clock3d.getDelta()});
