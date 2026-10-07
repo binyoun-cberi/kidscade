@@ -17,7 +17,8 @@
     "hairtail",
     "hairtailknight",
     "hairvariant",
-    "hairvariant.001"
+    "hairvariant.001",
+    "kidscade_male_hair_short"
   ],
   "presets": {
     "base": [
@@ -103,7 +104,7 @@
       "kidscade_male_eyes",
       "kidscade_male_brows",
       "tooth",
-      "hairone",
+      "kidscade_male_hair_short",
       "kidscade_male_tshirt",
       "kidscade_male_shorts",
       "shoe"
@@ -186,7 +187,15 @@
       "label": "남자 기본 세트 메시 정책",
       "type": "policy",
       "rule": "reuse existing Chibi mesh topology and source skin weights; no procedural hair, sleeves, or compressed long-pants shortcuts",
-      "defaultHair": "hairone"
+      "defaultHair": "kidscade_male_hair_short"
+    },
+    "kidscade_male_hair_short": {
+      "label": "남자 짧은 머리",
+      "type": "hair",
+      "generatedFrom": "hairone",
+      "rigging": "source hairone topology, UVs, materials and skin weights",
+      "shaping": "lower bob silhouette shortened using original geometry bounds; narrower sides and nape",
+      "revision": "v3-existing-mesh-short-hair"
     }
   }
 }

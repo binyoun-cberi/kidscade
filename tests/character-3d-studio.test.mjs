@@ -249,11 +249,11 @@ test('male Chibi preset reuses source meshes for body face hair and clothes',()=
   assert.match(js,/const lashesSource=getNode\('eyelashes'\)/);
   assert.match(js,/const shirtSource=getNode\('shirt'\)/);
   assert.match(js,/const shortsSource=getNode\('ninjasuitshort'\)/);
-  assert.match(js,/male:\[\.\.\.MALE_BASE_NODES,'hairone'/);
+  assert.match(js,/male:\[\.\.\.MALE_BASE_NODES,'kidscade_male_hair_short'/);
   assert.match(js,/eyeCenterY=1\.620/);
   assert.match(html,/data-chibi-preset="male"/);
   assert.match(html,/남자 기본/);
-  assert.doesNotMatch(html,/kidscade_male_hair_short/);
+  assert.match(html,/value="kidscade_male_hair_short">남자 짧은 머리/);
 });
 
 test('male and female Chibi bases are mutually exclusive',()=>{
@@ -267,9 +267,11 @@ test('male and female Chibi bases are mutually exclusive',()=>{
 test('male Chibi manifest records source-mesh reuse',()=>{
   const manifest=JSON.parse(read('chibi/asset-manifest.json'));
   assert.ok(manifest.presets.male.includes('kidscade_male_body'));
-  assert.ok(manifest.presets.male.includes('hairone'));
+  assert.ok(manifest.presets.male.includes('kidscade_male_hair_short'));
   assert.equal(manifest.customParts.kidscade_male_body.type,'body');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
+  assert.equal(manifest.customParts.kidscade_male_hair_short.generatedFrom,'hairone');
+  assert.ok(manifest.hairNodes.includes('kidscade_male_hair_short'));
   assert.equal(manifest.customParts.kidscade_male_tshirt.generatedFrom,'shirt');
   assert.equal(manifest.customParts.kidscade_male_shorts.generatedFrom,'ninjasuitshort');
   assert.match(manifest.customParts.kidscade_male_set_policy.rule,/no procedural hair, sleeves/);
@@ -293,4 +295,23 @@ test('avatar spec tracks visible base meshes as well as wardrobe toggles',()=>{
   const js=read('teacher/character-3d-studio.js');
   assert.match(js,/const TRACKED_PART_NODES=\[\.\.\.new Set\(\[\.\.\.BASE_VARIANT_NODES,\.\.\.TOGGLE_NODES\]\)\]/);
   assert.match(js,/return TRACKED_PART_NODES\.filter\(name=>getNode\(name\)\?\.visible\)/);
+});
+
+
+test('male short hair reuses hairone topology, materials and original skin weights',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const maleHair=js.slice(
+    js.indexOf('function createKidscadeMaleHairShort(){'),
+    js.indexOf('function createKidscadeMaleSet(){')
+  );
+  assert.match(maleHair,/const source=getNode\('hairone'\)/);
+  assert.match(maleHair,/const geometry=source\.geometry\.clone\(\)/);
+  assert.match(maleHair,/geometry\.computeBoundingBox\(\)/);
+  assert.match(maleHair,/positions\.setXYZ\(i,x,y,z\)/);
+  assert.match(maleHair,/cloneSkinnedMeshWithGeometry\(/);
+  assert.match(maleHair,/source\.parent\.add\(hair\)/);
+  assert.doesNotMatch(maleHair,/SphereGeometry|ConeGeometry|CylinderGeometry|TubeGeometry/);
+  assert.match(js,/createKidscadeMaleSet\(\);\s*createKidscadeMaleHairShort\(\);/);
+  assert.match(js,/const HAIR_NODES=\[[^\n]*kidscade_male_hair_short/);
+  assert.match(js,/kidscade_male_hair_short:'남자 짧은 머리'/);
 });

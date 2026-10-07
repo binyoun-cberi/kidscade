@@ -13,11 +13,11 @@ const FEMALE_BASE_NODES=['character_low','eyelashes','eyes','tooth'];
 const MALE_BASE_NODES=['kidscade_male_body','kidscade_male_eyes','kidscade_male_brows','tooth'];
 const BASE_VARIANT_NODES=[...new Set([...FEMALE_BASE_NODES,...MALE_BASE_NODES])];
 const BASE_NODES=FEMALE_BASE_NODES;
-const HAIR_NODES=['hairone','hairT','hairtail','hairtailknight','hairvariant','hairvariant.001'];
+const HAIR_NODES=['hairone','hairT','hairtail','hairtailknight','hairvariant','hairvariant.001','kidscade_male_hair_short'];
 
 const PRESETS={
   base:[...FEMALE_BASE_NODES],
-  male:[...MALE_BASE_NODES,'hairone','kidscade_male_tshirt','kidscade_male_shorts','shoe'],
+  male:[...MALE_BASE_NODES,'kidscade_male_hair_short','kidscade_male_tshirt','kidscade_male_shorts','shoe'],
   hoodie:[...FEMALE_BASE_NODES,'hairvariant','kidscade_hoodie_blue','pants','shoe'],
   student:[...BASE_NODES,'hairvariant','shirt','skirt','shoe','bag'],
   merchant:[...BASE_NODES,'hairone','chemise','pants','bottes','hat'],
@@ -37,6 +37,7 @@ const PART_LABELS={
   ninjassuitshoe:'닌자 신발',ninjassuitthigh:'닌자 허벅지',ninjasuitshort:'닌자 하의',
   pants:'상인 바지',shirt:'학생 셔츠',shoe:'학생 신발',skirt:'학생 치마',
   kidscade_hoodie_blue:'파란 후드티',
+  kidscade_male_hair_short:'남자 짧은 머리',
   kidscade_male_tshirt:'남자 기본 티셔츠',
   kidscade_male_shorts:'남자 기본 반바지'
 };
@@ -731,6 +732,75 @@ function cloneSkinnedMeshWithGeometry(template,geometry,material,name){
   return mesh;
 }
 
+/**
+ * Chibi hairone 메시를 재사용한 남자 기본 숏컷.
+ * 원본의 정점 연결/UV/가중치/재질은 그대로 두고, 하단 보브컷만 연속적으로 들어 올린다.
+ * geometry 좌표계의 실제 경계를 기준으로 변형하여 캐릭터 스케일과 무관하게 적용한다.
+ */
+function createKidscadeMaleHairShort(){
+  if(getNode('kidscade_male_hair_short'))return getNode('kidscade_male_hair_short');
+
+  const source=getNode('hairone');
+  if(!source?.isSkinnedMesh){
+    throw new Error('남자 숏컷의 원본 hairone SkinnedMesh를 찾지 못했습니다.');
+  }
+
+  const geometry=source.geometry.clone();
+  geometry.computeBoundingBox();
+  const bounds=geometry.boundingBox;
+  const size=bounds.getSize(new THREE.Vector3());
+  if(size.y<=.00001||size.x<=.00001||size.z<=.00001){
+    geometry.dispose();
+    throw new Error('hairone 메시의 크기가 유효하지 않습니다.');
+  }
+
+  const centerX=(bounds.min.x+bounds.max.x)*.5;
+  const centerZ=(bounds.min.z+bounds.max.z)*.5;
+  const cutoff=bounds.min.y+size.y*.60;
+  const lowerRange=cutoff-bounds.min.y;
+  const positions=geometry.getAttribute('position');
+
+  for(let i=0;i<positions.count;i++){
+    const ox=positions.getX(i);
+    const oy=positions.getY(i);
+    const oz=positions.getZ(i);
+    const lower=THREE.MathUtils.clamp((cutoff-oy)/lowerRange,0,1);
+
+    // 머리 윗부분은 그대로 두고, 귀·목 아래로 늘어진 보브컷 부분만 단축한다.
+    // 선형 압축은 정점의 세로 순서를 보존해 긴 머리 끝의 뒤집힘을 막는다.
+    const y=oy<cutoff?cutoff-(cutoff-oy)*.40:oy;
+
+    // 아래로 내려갈수록 관자놀이/뒤통수 방향으로 볼륨을 줄여 숏컷 윤곽을 만든다.
+    const x=centerX+(ox-centerX)*(1-.17*lower);
+    const z=centerZ+(oz-centerZ)*(1-.11*lower);
+    positions.setXYZ(i,x,y,z);
+  }
+  positions.needsUpdate=true;
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+
+  // 새 스켈레톤이나 원통·구·원뿔을 만들지 않는다. hairone 원본 weights를 공유한다.
+  const hair=cloneSkinnedMeshWithGeometry(
+    source,
+    geometry,
+    Array.isArray(source.material)?source.material.slice():source.material,
+    'kidscade_male_hair_short'
+  );
+  hair.userData={
+    ...source.userData,
+    type:'kidscade-male-short-hair',
+    generatedFrom:'hairone',
+    geometryPolicy:'retains-source-uv-indices-and-skin-weights',
+    sourceHeight:size.y,
+    shapedHeight:geometry.boundingBox.max.y-geometry.boundingBox.min.y
+  };
+
+  source.parent.add(hair);
+  hair.visible=false;
+  return hair;
+}
+
 function createKidscadeMaleSet(){
   if(getNode('kidscade_male_body'))return getNode('kidscade_male_body');
 
@@ -1133,6 +1203,7 @@ async function loadChibi(){
   try{
     createKidscadeBlueHoodie();
     createKidscadeMaleSet();
+    createKidscadeMaleHairShort();
   }catch(error){
     console.error(error);
     showAssetError('Chibi 본체는 열렸지만 커스텀 파츠 생성에 실패했습니다: '+(error?.message||error));
