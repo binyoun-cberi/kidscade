@@ -6,7 +6,7 @@ const path=require('node:path');
 const ROOT=path.resolve(__dirname,'..');
 const gameDir=path.join(ROOT,'games','high_quarantine_17');
 
-test('격리구역 17 v28 keeps one 3D flow and preserves outbreak pressure across eight weeks',()=>{
+test('격리구역 17 v29 keeps one 3D flow and preserves outbreak pressure across eight weeks',()=>{
   const html=fs.readFileSync(path.join(gameDir,'격리구역 17.html'),'utf8');
   const outbreak=fs.readFileSync(path.join(gameDir,'outbreak-v3.js'),'utf8');
   const field=fs.readFileSync(path.join(gameDir,'field-topdown-v18.js'),'utf8');
@@ -24,7 +24,7 @@ test('격리구역 17 v28 keeps one 3D flow and preserves outbreak pressure acro
   assert.match(html,/field-3d-v21\.js\?v=8/);
   assert.match(html,/three-r160\/three\.module\.js/);
   assert.match(html,/3D 격리시설\/CAMP-17/);
-  assert.equal(entry.href,'games/high_quarantine_17/격리구역 17.html?v=28');
+  assert.equal(entry.href,'games/high_quarantine_17/격리구역 17.html?v=29');
 
   assert.match(field,/api\.respondCamp=function/);
   assert.match(field,/api\.respondGlobal=function/);
@@ -98,10 +98,11 @@ test('격리구역 17 v28 keeps one 3D flow and preserves outbreak pressure acro
   assert.match(main3d,/격리 · 소각 처리/);
   assert.match(main3d,/syncQueue/);
   assert.match(main3d,/q17-main3d/);
-  assert.match(main3d,/version:'22\.4'/);
+  assert.match(main3d,/version:'22\.5'/);
   assert.match(main3d,/bottom:390px/);
   assert.match(main3d,/camera\.aspect<\.9/);
   assert.match(main3d,/const DECISION_PATHS=/);
+  assert.match(main3d,/\[-3\.15,1\.05\],\[3\.15,1\.05\]/);
   assert.match(main3d,/function pathPoint/);
   assert.match(main3d,/function walkPose/);
   assert.match(main3d,/queueActors\.get\(info\?\.id\)/);
