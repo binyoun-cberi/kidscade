@@ -35,24 +35,32 @@ let chrome,ws;
   const userData=fs.mkdtempSync(path.join(os.tmpdir(),'word-siege-chrome-'));
   chrome=cp.spawn(chromePath,[
     '--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage',
-    '--no-first-run','--no-default-browser-check','--remote-debugging-port=9229',
+    '--no-first-run','--no-default-browser-check','--remote-debugging-port=0',
     '--user-data-dir='+userData,'about:blank'
-  ],{stdio:'ignore'});
-  let target;
-  for(let i=0;i<100;i++){
+  ],{stdio:['ignore','ignore','pipe']});
+  let diagnostic='',target;
+  chrome.stderr?.on('data',part=>{diagnostic+=String(part).slice(0,700)});
+  for(let i=0;i<300;i++){
     await pause(100);
-    if(chrome.exitCode!==null)throw new Error('Chrome exited '+chrome.exitCode);
+    if(chrome.exitCode!==null)throw new Error('Chrome exited '+chrome.exitCode+' '+diagnostic.slice(-600));
     try{
-      const res=await fetch('http://127.0.0.1:9229/json/list');
+      const portFile=path.join(userData,'DevToolsActivePort');
+      if(!fs.existsSync(portFile))continue;
+      const dynamicPort=Number(fs.readFileSync(portFile,'utf8').split(/\r?\n/)[0]);
+      if(!dynamicPort)continue;
+      const res=await fetch('http://127.0.0.1:'+dynamicPort+'/json/list');
       const all=await res.json();target=all.find(x=>x.type==='page');if(target)break;
     }catch{}
   }
-  if(!target)throw new Error('Chrome DevTools never opened');
+  if(!target)throw new Error('Chrome DevTools never opened '+diagnostic.slice(-700));
   ws=new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((resolve,reject)=>{ws.onopen=resolve;ws.onerror=reject});
-  const pending=new Map();let serial=0;
+  const pending=new Map(),pageErrors=[];let serial=0;
   ws.onmessage=event=>{
     const msg=JSON.parse(event.data);
+    if(msg.method==='Runtime.exceptionThrown'){
+      pageErrors.push(msg.params?.exceptionDetails?.text||'Unknown browser exception');
+    }
     if(!msg.id)return;
     const p=pending.get(msg.id);if(!p)return;pending.delete(msg.id);
     if(msg.error)p.reject(new Error(msg.error.message));else p.resolve(msg.result||{});
@@ -82,6 +90,22 @@ let chrome,ws;
       return {all,title:document.title};
     })()`);
     assert.ok(status.all.every(Boolean),'Missing essential DOM: '+config.name);
+    const stageCount=await evaluate("document.querySelectorAll('#stageList .stage-choice').length");
+    assert.equal(stageCount,10,'stage selection must contain ten boards');
+    const initiallyLocked=await evaluate("document.querySelectorAll('#stageList .stage-choice:disabled').length");
+    assert.ok(initiallyLocked>=9,'fresh campaign should lock later boards');
+    const selectorGeometry=await evaluate(`(()=>{
+      const panel=document.querySelector('#startOverlay .panel').getBoundingClientRect();
+      const start=document.getElementById('startBtn').getBoundingClientRect();
+      const list=document.getElementById('stageList').getBoundingClientRect();
+      return {panelTop:panel.top,panelBottom:panel.bottom,startTop:start.top,startBottom:start.bottom,
+        listTop:list.top,listBottom:list.bottom,screenHeight:innerHeight};
+    })()`);
+    assert.ok(selectorGeometry.panelBottom<=config.h+2,'stage selector beyond viewport '+config.name);
+    if(index===0||index===2){
+      const shot=await send('Page.captureScreenshot',{format:'jpeg',quality:40,captureBeyondViewport:false});
+      console.log('WORD_SIEGE_IMAGE_stage-select-'+config.name+'='+shot.data);
+    }
     await evaluate("document.getElementById('startBtn').click()");
     await pause(250);
     const geometry=await evaluate(`(()=>{
@@ -149,7 +173,29 @@ let chrome,ws;
       console.log('WORD_SIEGE_IMAGE_'+config.name+'='+shot.data);
     }
   }
-  console.log('WORD_SIEGE_BROWSER_AUDIT_PASSED 4 sizes, wave guards, MINER/ARROW pointer placement');
+  // Open two advanced boards through the same stored unlock the game writes on victory.
+  await evaluate("window.KidscadeStorage.setRaw('kidscade_word_siege_stage_v1','10')");
+  await send('Emulation.setDeviceMetricsOverride',{width:1024,height:768,deviceScaleFactor:1,mobile:true});
+  for(const index of [5,9]){
+    await send('Page.navigate',{url:'http://127.0.0.1:'+port+'/games/language_word_siege/index.html?stageAudit='+index});
+    await pause(700);
+    const selected=await evaluate(`(()=>{
+      const buttons=[...document.querySelectorAll('#stageList .stage-choice')];
+      if(buttons.some(b=>b.disabled))return 'still-locked';
+      buttons[${index}].click();
+      document.getElementById('startBtn').click();
+      return document.getElementById('stageText').textContent;
+    })()`);
+    assert.equal(selected,String(index+1).padStart(2,'0'),'Could not load advanced stage '+index);
+    await pause(300);
+    if(index===9){
+      const shot=await send('Page.captureScreenshot',{format:'jpeg',quality:42,captureBeyondViewport:false});
+      console.log('WORD_SIEGE_IMAGE_final-stage='+shot.data);
+    }
+    console.log('WORD_SIEGE_CAMPAIGN '+JSON.stringify({index:index+1,selected}));
+  }
+  assert.equal(pageErrors.length,0,'Browser JavaScript errors: '+JSON.stringify(pageErrors));
+  console.log('WORD_SIEGE_BROWSER_AUDIT_PASSED 4 sizes, 10 stage selectors, 2 advanced stage renders and pointer gameplay');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1}).finally(async()=>{
   try{ws?.close()}catch{}
   try{chrome?.kill()}catch{}

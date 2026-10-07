@@ -344,6 +344,89 @@ add('repair','CARE,AID,HELP,HEALTH,MEDICINE,HOSPITAL,CLINIC,POTION,BALM,HERB,TON
 add('modifier','SMART,WISE,FOCUS,LUCKY,LUCK,BRAVE,BOLD,SUPER,MIGHTY,FIERCE,PRECISE,FOCUSED,STEADY,CHARGED,GOLDEN,SILENT,HYPER,ENDLESS,STABLE');
 add('special','RHYTHM,SONIC,SOUND,MUSIC,SONG,BELL,CLOCK,HOURGLASS,RIDDLE,MAGIC,SPELL,WIZARD,GHOST,PHOENIX,DREAM,ILLUSION,SHADOW,SPECTRUM');
 
+// Additional playable word towers with verified meanings.
+Object.assign(MEANINGS,{
+  PEBBLES:"자갈",
+  NUT:"견과",
+  PINECONE:"솔방울",
+  MOSS:"이끼",
+  PETAL:"꽃잎",
+  DROPLET:"작은 물방울",
+  PING:"짧은 소리",
+  BOW:"활",
+  SPEARHEAD:"창끝",
+  LANCET:"작은 칼",
+  FLAK:"대공 포화",
+  SHRAPNEL:"파편탄",
+  ERUPTION:"분출",
+  FLASHBANG:"섬광탄",
+  CRATER:"분화구",
+  DETONATION:"폭발",
+  BLASTWAVE:"폭풍파",
+  MOONBEAM:"달빛",
+  FLASHLIGHT:"손전등",
+  REFRACTION:"굴절",
+  AURORA:"오로라",
+  LUMEN:"광속 단위",
+  SUNLIGHT:"햇빛",
+  CINDER:"잿불",
+  HEATER:"난방기",
+  MATCH:"성냥",
+  WILDFIRE:"산불",
+  HAILSTONE:"우박 덩이",
+  PERMAFROST:"영구 동토",
+  SLUSH:"녹은 눈",
+  TOADSTOOL:"독버섯",
+  ALGAE:"조류",
+  STINGRAY:"가오리",
+  MIDGE:"작은 날벌레",
+  MOSQUITO:"모기",
+  GUSTY:"돌풍의",
+  JETSTREAM:"제트 기류",
+  PROPELLER:"프로펠러",
+  BLACKSTAR:"검은 별",
+  GRAVITON:"중력자",
+  BULWARK:"방벽",
+  PANELS:"판자들",
+  REFINERY:"정제 공장",
+  HARVEST:"수확",
+  GEMSTONE:"보석 원석",
+  RIG:"채굴 장치",
+  SMELTER:"제련기",
+  RESCUE:"구조하다",
+  HEALER:"치료사",
+  REVIVE:"되살리다",
+  REMEDY:"치료법",
+  RECOVER:"회복하다",
+  TINY:"아주 작은",
+  EXTRA:"추가의",
+  EPIC:"웅장한",
+  OVERDRIVE:"과출력",
+  MAXIMUM:"최대의",
+  CHRONOS:"시간의 신",
+  SHOCK:"충격",
+  PHANTOM:"유령",
+  SPECTER:"유령",
+  STARDUST:"별가루",
+  SUPERNOVA:"초신성",
+  PARADOX:"역설"
+});
+add('rapid','PEBBLES,NUT,PINECONE,MOSS,PETAL,DROPLET,PING,BOW');
+add('pierce','SPEARHEAD,LANCET');
+add('burst','FLAK,SHRAPNEL');
+add('explosive','ERUPTION,FLASHBANG,CRATER,DETONATION,BLASTWAVE');
+add('beam','MOONBEAM,FLASHLIGHT,REFRACTION,AURORA,LUMEN,SUNLIGHT');
+add('burn','CINDER,HEATER,MATCH,WILDFIRE');
+add('slow','HAILSTONE,PERMAFROST,SLUSH');
+add('poison','TOADSTOOL,ALGAE,STINGRAY,MIDGE,MOSQUITO');
+add('push','GUSTY,JETSTREAM,PROPELLER');
+add('gravity','BLACKSTAR,GRAVITON');
+add('barrier','BULWARK,PANELS');
+add('resource','REFINERY,HARVEST,GEMSTONE,RIG,SMELTER');
+add('repair','RESCUE,HEALER,REVIVE,REMEDY,RECOVER');
+add('modifier','TINY,EXTRA,EPIC,OVERDRIVE,MAXIMUM');
+add('special','CHRONOS,SHOCK,PHANTOM,SPECTER,STARDUST,SUPERNOVA,PARADOX');
+
 const ROLE_STATS={
   rapid:{damage:13,range:.19,rate:2.25,projectile:true,projectileSpeed:.72},
   pierce:{damage:24,range:.22,rate:.88,pierce:true},
@@ -683,6 +766,148 @@ const SIGNATURES={
 };
 
 Object.assign(MODIFIERS,{"SMART":{"damage":1.1,"range":1.14},"WISE":{"range":1.18},"FOCUS":{"damage":1.2,"range":1.05},"LUCKY":{"damage":1.15,"rate":1.06},"LUCK":{"damage":1.1,"rate":1.08},"BRAVE":{"damage":1.28},"BOLD":{"damage":1.22},"SUPER":{"damage":1.23,"rate":1.1},"MIGHTY":{"damage":1.3},"FIERCE":{"damage":1.2,"rate":1.1},"PRECISE":{"range":1.24,"damage":1.12},"FOCUSED":{"damage":1.22},"STEADY":{"rate":1.17},"CHARGED":{"damage":1.22},"GOLDEN":{"damage":1.2},"SILENT":{"range":1.17},"HYPER":{"rate":1.34},"ENDLESS":{"range":1.26},"STABLE":{"range":1.14,"rate":1.08}});
+
+Object.assign(SIGNATURES,{
+  "BOW": {
+    "rate": 1.15,
+    "damage": 1.03,
+    "flavor": "가벼운 연속 화살"
+  },
+  "PINECONE": {
+    "area": 1.3,
+    "damage": 0.8,
+    "flavor": "튀어오르는 솔방울"
+  },
+  "DAGGER": {
+    "rate": 1.45,
+    "range": 0.8,
+    "flavor": "빠른 근접 찌르기"
+  },
+  "SCYTHE": {
+    "area": 1.5,
+    "rate": 0.72,
+    "flavor": "넓은 낫베기"
+  },
+  "BAZOOKA": {
+    "area": 1.55,
+    "damage": 1.3,
+    "rate": 0.6,
+    "flavor": "중형 광역 폭발"
+  },
+  "BALLISTA": {
+    "damage": 1.6,
+    "rate": 0.67,
+    "range": 1.2,
+    "flavor": "무거운 관통 쇠뇌"
+  },
+  "GRENADE": {
+    "area": 1.24,
+    "rate": 1.16,
+    "flavor": "빠른 범위 폭발"
+  },
+  "DYNAMITE": {
+    "area": 1.65,
+    "rate": 0.75,
+    "flavor": "큰 폭풍 피해"
+  },
+  "BLASTWAVE": {
+    "element": "push",
+    "area": 1.4,
+    "push": 1.7,
+    "flavor": "폭발과 밀쳐내기"
+  },
+  "PHOTON": {
+    "chain": 3,
+    "rate": 1.4,
+    "flavor": "광자 연속 도약"
+  },
+  "AURORA": {
+    "chain": 3,
+    "range": 1.3,
+    "flavor": "광범위 오로라 레이저"
+  },
+  "INFERNO": {
+    "burn": 2.1,
+    "area": 1.45,
+    "flavor": "강한 지속 화염"
+  },
+  "EMBER": {
+    "burn": 1.6,
+    "rate": 1.7,
+    "damage": 0.65,
+    "flavor": "작은 불씨 연타"
+  },
+  "BLIZZARD": {
+    "element": "slow",
+    "slow": 0.32,
+    "area": 1.65,
+    "flavor": "넓은 범위 냉기"
+  },
+  "PERMAFROST": {
+    "slow": 0.25,
+    "range": 1.2,
+    "rate": 0.55,
+    "flavor": "강력한 영구 빙결"
+  },
+  "SCORPION": {
+    "poison": 1.8,
+    "rate": 0.8,
+    "flavor": "강력한 독침"
+  },
+  "TOADSTOOL": {
+    "area": 1.4,
+    "poison": 1.5,
+    "flavor": "독 포자 확산"
+  },
+  "CYCLONE": {
+    "push": 1.85,
+    "area": 1.6,
+    "flavor": "넓게 밀어내는 소용돌이"
+  },
+  "JETSTREAM": {
+    "push": 1.6,
+    "range": 1.35,
+    "flavor": "긴 사거리 바람"
+  },
+  "SINGULARITY": {
+    "pull": 2.2,
+    "area": 1.65,
+    "flavor": "강력한 중력 압축"
+  },
+  "SUPERNOVA": {
+    "element": "burn",
+    "area": 1.65,
+    "damage": 1.5,
+    "rate": 0.5,
+    "flavor": "빛나는 광역 폭발"
+  },
+  "BUNKER": {
+    "barrierSlow": 0.38,
+    "range": 1.2,
+    "flavor": "견고한 방어 진지"
+  },
+  "RAMPART": {
+    "barrierSlow": 0.43,
+    "range": 1.28,
+    "flavor": "긴 성벽 저지"
+  },
+  "EXCAVATOR": {
+    "harvest": 1.45,
+    "flavor": "강력한 채굴"
+  },
+  "REFINERY": {
+    "harvest": 1.6,
+    "flavor": "광석 정제 생산"
+  },
+  "NURSE": {
+    "heal": 1.4,
+    "flavor": "빠른 치료"
+  },
+  "REVIVE": {
+    "heal": 1.75,
+    "flavor": "강력한 복구"
+  }
+});
 
 const COMBOS=[
   {

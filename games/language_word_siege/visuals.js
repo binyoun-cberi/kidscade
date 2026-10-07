@@ -1,0 +1,111 @@
+(function(){
+'use strict';
+
+// Typography is the game art: every word remains a stationary letter tower.
+// Geometry, moving mechanisms, highlights and effect colors distinguish roles.
+// All drawings are vector operations on a shared Canvas2D; no image downloads.
+const PI=Math.PI,TAU=2*PI;
+function stroke(c,color,width=2){c.strokeStyle=color;c.lineWidth=width}
+function poly(c,points,fill){c.beginPath();c.moveTo(points[0][0],points[0][1]);for(const p of points.slice(1))c.lineTo(p[0],p[1]);c.closePath();if(fill){c.fillStyle=fill;c.fill()}else c.stroke()}
+function disc(c,x,y,r,color){c.beginPath();c.arc(x,y,r,0,TAU);c.fillStyle=color;c.fill()}
+function line(c,x,y,x2,y2){c.beginPath();c.moveTo(x,y);c.lineTo(x2,y2);c.stroke()}
+function star(c,n,inner,outer,phase=0){c.beginPath();for(let i=0;i<n*2;i++){const a=phase+i*PI/n,r=i%2?inner:outer;const x=Math.cos(a)*r,y=Math.sin(a)*r;if(i===0)c.moveTo(x,y);else c.lineTo(x,y)}c.closePath()}
+function symbol(c,role,r,t){
+  const s=r*.45,phase=t*.95; c.save();c.translate(r*.03,-r*.97);
+  switch(role){
+    case 'rapid':
+      stroke(c,'#fff3d7',2.5);line(c,-s*.6,0,s*.6,0);poly(c,[[s*.85,0],[s*.1,-s*.45],[s*.1,s*.45]],'#fff3d7');break;
+    case 'pierce':
+      stroke(c,'#fff3d7',2.5);line(c,-s*.9,s*.7,s*.6,-s*.7);poly(c,[[s*.7,-s*.8],[s*.05,-s*.54],[s*.5,-s*.05]],'#fff3d7');break;
+    case 'burst':
+      c.fillStyle='#fff3d7';c.fillRect(-s*.8,-s*.27,s*1.45,s*.54);c.fillStyle='#273138';c.fillRect(s*.28,-s*.17,s*.55,s*.34);break;
+    case 'explosive':
+      stroke(c,'#fff3d7',2.2);c.beginPath();c.arc(0,0,s*.65,0,TAU);c.stroke();
+      for(let j=0;j<4;j++){const a=phase+j*PI/2;line(c,Math.cos(a)*s*.85,Math.sin(a)*s*.85,Math.cos(a)*s*1.1,Math.sin(a)*s*1.1)}break;
+    case 'beam':
+      c.rotate(phase*.3);poly(c,[[0,-s],[s*.9,s*.7],[-s*.9,s*.7]],'#fff0ff');
+      stroke(c,'#8a60c8',1.5);line(c,0,-s,0,s*.45);break;
+    case 'burn':
+      poly(c,[[0,-s],[s*.65,-s*.12],[s*.3,s*.7],[-s*.12,s],[-s*.7,s*.2]],'#fff0b0');
+      poly(c,[[0,-s*.4],[s*.2,s*.3],[-s*.18,s*.55]],'#ff6838');break;
+    case 'slow':
+      stroke(c,'#fff',2);
+      for(let j=0;j<3;j++){c.save();c.rotate(j*PI/3);line(c,0,-s*.93,0,s*.93);line(c,-s*.18,-s*.63,0,-s*.45);line(c,s*.18,-s*.63,0,-s*.45);c.restore()}break;
+    case 'poison':
+      poly(c,[[0,-s*.9],[s*.5,-s*.2],[s*.56,s*.3],[0,s*.85],[-s*.56,s*.3],[-s*.5,-s*.2]],'#e5ffb7');disc(c,0,s*.15,s*.18,'#4b9850');break;
+    case 'push':
+      stroke(c,'#e4fff8',2.3);for(let j=-1;j<=1;j++){c.beginPath();c.arc(-s*.2,j*s*.3,s*.5,-PI*.55,PI*.55);c.stroke()}break;
+    case 'gravity':
+      stroke(c,'#fff',2);c.save();c.rotate(phase*.5);c.scale(1,.45);c.beginPath();c.arc(0,0,s*.95,0,TAU);c.stroke();c.restore();disc(c,0,0,s*.36,'#fff');break;
+    case 'barrier':
+      stroke(c,'#fff',2.6);c.strokeRect(-s*.63,-s*.63,s*1.26,s*1.26);c.strokeRect(-s*.34,-s*.34,s*.68,s*.68);break;
+    case 'resource':
+      poly(c,[[0,-s*.9],[s*.65,-s*.15],[s*.42,s*.75],[-s*.45,s*.75],[-s*.68,-s*.15]],'#ebffbd');
+      stroke(c,'#52883e',1.5);line(c,0,-s*.9,0,s*.7);break;
+    case 'repair':
+      c.fillStyle='#fff';c.fillRect(-s*.2,-s*.88,s*.4,s*1.76);c.fillRect(-s*.88,-s*.2,s*1.76,s*.4);break;
+    case 'modifier':
+      c.rotate(phase*.25);star(c,4,s*.35,s*.95,PI/4);c.fillStyle='#fff7c9';c.fill();break;
+    case 'special':
+      c.rotate(phase*.22);star(c,6,s*.4,s*.98);c.fillStyle='#fff';c.fill();break;
+    default:disc(c,0,0,s*.6,'#fff');
+  }
+  c.restore();
+}
+function drawTower(c,t,r,clock){
+  const role=t.def.role;
+  const animate=clock+(t.id||0)*.63;
+  const busy=(t.pulse||0)>0;
+  c.save();
+  // Soft range glow is intentionally subtle: the word label remains primary.
+  if(['slow','gravity','modifier','resource','repair'].includes(role)){
+    c.globalAlpha=.13+.045*Math.sin(animate*2);
+    disc(c,0,r*.15,r*.95,t.def.color);c.globalAlpha=1;
+  }
+  c.fillStyle='rgba(35,38,43,.19)';c.beginPath();c.ellipse(r*.13,r*.95,r*.82,r*.27,-.1,0,TAU);c.fill();
+  const height=r*1.53,top=-r*.72,width=r*1.08;
+  poly(c,[[-width*.5,top],[width*.5,top],[width*.8,top-r*.18],[-width*.19,top-r*.18]],'#fff2');
+  poly(c,[[width*.5,top],[width*.8,top-r*.18],[width*.8,top+height-r*.14],[width*.5,top+height]],'#272e38');
+  const gradient=c.createLinearGradient(-width*.5,top,width*.55,top+height);
+  gradient.addColorStop(0,'#ffffff');gradient.addColorStop(.06,t.def.color);gradient.addColorStop(1,t.def.color);
+  c.fillStyle=gradient;c.fillRect(-width*.5,top,width,height);
+  c.fillStyle='rgba(255,255,255,.25)';c.fillRect(-width*.39,top+r*.1,width*.18,height-r*.23);
+  c.fillStyle='rgba(23,27,37,.24)';c.fillRect(width*.31,top+r*.07,width*.12,height-r*.15);
+  // Dark central panel, oversized readable first letter.
+  c.fillStyle='rgba(25,31,39,.25)';c.fillRect(-width*.42,top+height*.30,width*.84,height*.48);
+  c.font='1000 '+Math.max(16,r*.83)+'px system-ui,sans-serif';
+  c.textAlign='center';c.textBaseline='middle';c.fillStyle='#fff';
+  c.shadowColor='rgba(0,0,0,.24)';c.shadowBlur=2;c.fillText(t.word[0],0,r*.05);
+  c.shadowBlur=0;
+  // Mechanical badge and role pictogram sit above the letter, not on top of it.
+  disc(c,0,-r*.96,r*.30,'#27313a');symbol(c,role,r,animate);
+  if(busy){
+    c.globalAlpha=.4+.55*Math.min(1,t.pulse/.25);
+    stroke(c,'#fff6d2',2.5);c.beginPath();c.arc(0,0,r*(1.03+(.28-t.pulse)*1.2),0,TAU);c.stroke();
+    c.globalAlpha=1;
+  }
+  if(t.combos?.length){c.fillStyle='#ffcc65';c.beginPath();c.arc(r*.67,-r*.35,r*.20,0,TAU);c.fill();stroke(c,'#523a13',1);c.stroke();}
+  if(t.links?.length){disc(c,-r*.63,r*.58,r*.16,'#dffdf5');}
+  c.restore();
+}
+function drawShot(c,s,W,H,clock){
+  const x=s.x*W,y=s.y*H;
+  const role=s.kind;
+  const radius=role==='explosive'||role==='burst'||role==='special'?6:3.5;
+  c.save();c.translate(x,y);
+  c.shadowColor=s.color;c.shadowBlur=8;
+  if(role==='slow'){
+    c.rotate(clock*4);stroke(c,'#d9f6ff',2);poly(c,[[0,-7],[5,0],[0,7],[-5,0]],'#c8f3ff');c.stroke();
+  }else if(role==='burn'){
+    poly(c,[[0,-8],[6,-1],[4,5],[-4,6],[-6,0]],'#ffda61');disc(c,1,0,2,'#ff603d');
+  }else if(role==='poison'){
+    disc(c,0,0,5,'#caff71');disc(c,-1,-2,2,'#387c36');
+  }else if(role==='burst'||role==='explosive'||role==='special'){
+    disc(c,0,0,radius,s.color);stroke(c,'#fff0b0',1.5);c.beginPath();c.arc(0,0,3,0,TAU);c.stroke();
+  }else{
+    stroke(c,s.color,3);line(c,-6,3,6,-3);poly(c,[[7,-4],[2,-5],[5,1]],'#fff4cc');
+  }
+  c.restore();
+}
+window.WordSiegeVisuals={drawTower,drawShot};
+})();
