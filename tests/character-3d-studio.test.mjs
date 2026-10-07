@@ -162,3 +162,19 @@ test('hoodie includes collar and garment seam details',()=>{
   assert.match(js,/function resolveFirstBoneName/);
   assert.match(js,/if\(y>1\.06\)/);
 });
+
+
+test('hoodie v2 has sleeves hood volume and subtle seams',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  assert.match(js,/function makeSleeveGeometry/);
+  assert.match(js,/kidscade_hoodie_blue_sleeve_L/);
+  assert.match(js,/kidscade_hoodie_blue_sleeve_R/);
+  assert.match(js,/kidscade_hoodie_blue_hood_back/);
+  assert.match(js,/new THREE\.SphereGeometry\(\.195,16,10/);
+  assert.match(js,/Kidscade Hoodie Stitch/);
+  assert.match(js,/#6687e6/);
+  assert.match(js,/kidscade_hoodie_blue_pocket_opening_L/);
+  assert.match(js,/kidscade_hoodie_blue_pocket_opening_R/);
+  assert.match(js,/kidscade_hoodie_blue_pocket_bottom_seam/);
+  assert.doesNotMatch(js,/kidscade_hoodie_blue_pocket_opening',\.0030/);
+});
