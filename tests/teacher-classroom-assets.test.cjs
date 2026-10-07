@@ -14,17 +14,18 @@ const aiPath = path.join(gameDir, 'student-ai.mjs');
 const dayPath = path.join(gameDir, 'school-day.mjs');
 const lifePath = path.join(gameDir, 'student-life.mjs');
 const campaignPath = path.join(gameDir, 'school-campaign.mjs');
+const instructionPath = path.join(gameDir, 'lesson-instruction.mjs');
 const catalogData = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.json'), 'utf8'));
 const catalog = Array.isArray(catalogData) ? catalogData : catalogData.games;
 const game = catalog.find(g => g.id === 'job_teacher_classroom');
 
-test('teacher simulator v70 loads the six-period direct-control game', () => {
+test('teacher simulator v71 loads the six-period direct-control game', () => {
   assert.match(html, /id="game"/);
   assert.match(html, /id="joystick"/);
   assert.match(html, /id="actionButton"/);
   assert.match(html, /id="dayStrip"/);
-  assert.match(html, /school-day-game\.js\?v=70/);
-  assert.match(html, /style\.css\?v=70/);
+  assert.match(html, /school-day-game\.js\?v=71/);
+  assert.match(html, /style\.css\?v=71/);
   assert.match(html, /건강/);
   assert.match(html, /안전교육/);
   assert.match(css, /\.focusMeter/);
@@ -32,7 +33,7 @@ test('teacher simulator v70 loads the six-period direct-control game', () => {
 });
 
 test('teacher simulator modules parse as JavaScript', () => {
-  for (const name of ['school-day-game.js','school-day.mjs','student-ai.mjs','student-life.mjs','school-campaign.mjs']) {
+  for (const name of ['school-day-game.js','school-day.mjs','student-ai.mjs','student-life.mjs','school-campaign.mjs','lesson-instruction.mjs']) {
     const src = fs.readFileSync(path.join(gameDir, name), 'utf8');
     const result = spawnSync(process.execPath, ['--input-type=module', '--check'], {input:src,encoding:'utf8'});
     assert.equal(result.status, 0, name+': '+(result.stderr || result.stdout || 'syntax check failed'));
@@ -398,9 +399,66 @@ test('teacher-wide signal helps fifteen pupils while capping lesson interactions
   assert.match(html,/학생 15명/);
 });
 
-test('catalog publishes teacher simulator v70', () => {
+
+test('lesson explanation pauses when teacher leaves the board', async () => {
+  const lesson = await import(pathToFileURL(instructionPath).href + '?flow-away=' + Date.now());
+  const flow=lesson.createLessonFlow(110);
+  for (let s=0;s<30;s++)lesson.tickLessonFlow(flow,1,{teacherAtBoard:false});
+  assert.equal(flow.progress,0);
+  assert.equal(flow.phase,'explain');
+  assert.equal(lesson.lessonTeachingEfficiency(flow,{teacherAtBoard:false}),.12);
+  for (let s=0;s<flow.explanationSeconds;s++)lesson.tickLessonFlow(flow,1,{teacherAtBoard:true});
+  assert.equal(flow.phase,'assign');
+  assert.equal(lesson.lessonFlowAction(flow).type,'assignWork');
+});
+
+test('teacher must assign work and return for recap while independent work continues away', async () => {
+  const lesson = await import(pathToFileURL(instructionPath).href + '?flow-complete=' + Date.now());
+  const flow=lesson.createLessonFlow(110);
+  for(let i=0;i<flow.explanationSeconds;i++)lesson.tickLessonFlow(flow,1,{teacherAtBoard:true});
+  assert.equal(lesson.performLessonAction(flow,'startRecap'),false);
+  assert.equal(lesson.performLessonAction(flow,'assignWork'),true);
+  assert.equal(flow.phase,'practice');
+  const practiceEfficiency=lesson.lessonTeachingEfficiency(flow,{teacherAtBoard:false});
+  assert.ok(practiceEfficiency>=.60&&practiceEfficiency<1);
+  for(let i=0;i<flow.practiceSeconds;i++)lesson.tickLessonFlow(flow,1,{teacherAtBoard:false});
+  assert.equal(flow.phase,'recapReady');
+  assert.equal(lesson.lessonFlowAction(flow).type,'startRecap');
+  assert.equal(lesson.performLessonAction(flow,'startRecap'),true);
+  for(let i=0;i<20;i++)lesson.tickLessonFlow(flow,1,{teacherAtBoard:false});
+  assert.equal(flow.progress,0,'recap must pause away from board');
+  for(let i=0;i<flow.recapSeconds;i++)lesson.tickLessonFlow(flow,1,{teacherAtBoard:true});
+  assert.equal(flow.phase,'complete');
+  assert.equal(flow.completed,true);
+});
+
+test('longer group practice preserves safety lesson and teamwork windows', async () => {
+  const lesson = await import(pathToFileURL(instructionPath).href + '?group-time=' + Date.now());
+  const core=lesson.createLessonFlow(110);
+  const science=lesson.createLessonFlow(110,{teamActivity:true});
+  assert.ok(science.practiceSeconds>core.practiceSeconds);
+  assert.ok(science.explanationSeconds+science.practiceSeconds+science.recapSeconds<=110);
+  assert.match(js, /lessonFlow\.assigned/);
+  assert.match(js, /lessonFlow\.phase==='practice'/);
+  assert.match(js, /inBriefing&&!boardNear/);
+});
+
+test('actual teacher position and student focus both affect each learner mastery', () => {
+  assert.match(js, /function isTeacherAtBoard\(/);
+  assert.match(js, /tickLessonFlow\(lessonFlow,dt,\{teacherAtBoard:boardNear\}\)/);
+  assert.match(js, /gain\*teachingMultiplier\*attentionQuality/);
+  assert.match(js, /attentionQuality=\.45\+\.55\*focusRatio\(s\)/);
+  assert.match(js, /TEACHING_RULES\.recapLearningBonus/);
+  assert.match(html, /id="instructionPanel"/);
+  assert.match(html, /id="instructionBar"/);
+  assert.match(css, /#instructionPanel/);
+  assert.match(js, /type:'assignWork'/);
+  assert.match(js, /type:'startRecap'/);
+});
+
+test('catalog publishes teacher simulator v71', () => {
   assert.ok(game);
-  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=70');
+  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=71');
   assert.match(game.description, /건강/);
   assert.match(game.description, /안전교육/);
   assert.match(game.description, /8일/);
