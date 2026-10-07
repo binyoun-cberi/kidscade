@@ -14,6 +14,7 @@ const HAIR_NODES=['hairone','hairT','hairtail','hairtailknight','hairvariant','h
 
 const PRESETS={
   base:[...BASE_NODES],
+  hoodie:[...BASE_NODES,'hairvariant','kidscade_hoodie_blue','pants','shoe'],
   student:[...BASE_NODES,'hairvariant','shirt','skirt','shoe','bag'],
   merchant:[...BASE_NODES,'hairone','chemise','pants','bottes','hat'],
   archer:[...BASE_NODES,'hairvariant.001','greenoutfit','greenoutfitbelt','greenoutfitneckless','bottesgreen'],
@@ -30,7 +31,8 @@ const PART_LABELS={
   hairT:'T 헤어',hairtail:'포니테일',hairtailknight:'기사 헤어',hairvariant:'학생 헤어',
   'hairvariant.001':'궁수 헤어',hat:'상인 모자',ninjassuit:'닌자 상의',ninjassuitmask:'닌자 마스크',
   ninjassuitshoe:'닌자 신발',ninjassuitthigh:'닌자 허벅지',ninjasuitshort:'닌자 하의',
-  pants:'상인 바지',shirt:'학생 셔츠',shoe:'학생 신발',skirt:'학생 치마'
+  pants:'상인 바지',shirt:'학생 셔츠',shoe:'학생 신발',skirt:'학생 치마',
+  kidscade_hoodie_blue:'파란 후드티'
 };
 
 const TOGGLE_NODES=Object.keys(PART_LABELS);
@@ -46,7 +48,7 @@ const CLIP_LABELS={
 
 let scene,camera,renderer,controls;
 let avatarRoot=null,sourceScene=null,primarySkinnedMesh=null,skeletonHelper=null,mixer=null;
-let animations=[],activeAction=null,activeClip='',currentPreset='student',activeView='threeQuarter';
+let animations=[],activeAction=null,activeClip='',currentPreset='hoodie',activeView='threeQuarter';
 let originalMaterials=new Map();
 let loaded=false;
 let lastTime=performance.now();
@@ -347,6 +349,128 @@ function applyPreset(name){
   refreshMetrics();
 }
 
+
+function makeSolidMaterial(color,name){
+  const material=new THREE.MeshStandardMaterial({
+    color:new THREE.Color(color),
+    roughness:.92,
+    metalness:0
+  });
+  material.name=name;
+  return material;
+}
+
+function addRigidSkinAttributes(geometry,skeleton,boneName){
+  const boneIndex=skeleton.bones.findIndex(bone=>bone.name===boneName);
+  if(boneIndex<0)throw new Error('후드티용 본을 찾지 못했습니다: '+boneName);
+  const count=geometry.getAttribute('position').count;
+  const indices=new Uint16Array(count*4);
+  const weights=new Float32Array(count*4);
+  for(let i=0;i<count;i++){
+    indices[i*4]=boneIndex;
+    weights[i*4]=1;
+  }
+  geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(indices,4));
+  geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
+}
+
+function makeRigidSkinnedPiece(template,geometry,boneName,material,name){
+  addRigidSkinAttributes(geometry,template.skeleton,boneName);
+  const mesh=new THREE.SkinnedMesh(geometry,material);
+  mesh.name=name;
+  mesh.bindMode=template.bindMode;
+  mesh.bind(template.skeleton,template.bindMatrix);
+  mesh.position.copy(template.position);
+  mesh.quaternion.copy(template.quaternion);
+  mesh.scale.copy(template.scale);
+  mesh.castShadow=true;
+  mesh.receiveShadow=true;
+  mesh.frustumCulled=false;
+  return mesh;
+}
+
+function createKidscadeBlueHoodie(){
+  if(getNode('kidscade_hoodie_blue'))return getNode('kidscade_hoodie_blue');
+
+  const shirt=getNode('shirt');
+  if(!shirt?.isSkinnedMesh)throw new Error('후드티 베이스가 될 shirt SkinnedMesh를 찾지 못했습니다.');
+
+  const group=new THREE.Group();
+  group.name='kidscade_hoodie_blue';
+  group.userData={
+    type:'kidscade-custom-garment',
+    label:'파란 후드티',
+    base:'shirt',
+    author:'Kidscade',
+    createdFromCc0:true
+  };
+
+  const bodyGeometry=shirt.geometry.clone();
+  const pos=bodyGeometry.getAttribute('position');
+  const centerY=.98;
+  for(let i=0;i<pos.count;i++){
+    const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
+    pos.setXYZ(
+      i,
+      x*1.075,
+      centerY+(y-centerY)*1.035,
+      z*1.11+(z>0?.008:-.006)
+    );
+  }
+  pos.needsUpdate=true;
+  bodyGeometry.computeVertexNormals();
+  bodyGeometry.computeBoundingBox();
+  bodyGeometry.computeBoundingSphere();
+
+  const blue=makeSolidMaterial('#4f7df3','Kidscade Hoodie Blue');
+  const darkBlue=makeSolidMaterial('#3b63cc','Kidscade Hoodie Detail');
+  const white=makeSolidMaterial('#f8fafc','Kidscade Hoodie String');
+
+  const body=new THREE.SkinnedMesh(bodyGeometry,blue);
+  body.name='kidscade_hoodie_blue_body';
+  body.bindMode=shirt.bindMode;
+  body.bind(shirt.skeleton,shirt.bindMatrix);
+  body.position.copy(shirt.position);
+  body.quaternion.copy(shirt.quaternion);
+  body.scale.copy(shirt.scale);
+  body.castShadow=true;
+  body.receiveShadow=true;
+  body.frustumCulled=false;
+  group.add(body);
+
+  const hoodGeometry=new THREE.TorusGeometry(.205,.050,10,24);
+  hoodGeometry.rotateX(Math.PI/2);
+  hoodGeometry.scale(1.05,.72,.82);
+  hoodGeometry.translate(0,1.235,-.105);
+  group.add(makeRigidSkinnedPiece(
+    shirt,hoodGeometry,'DEF-spine.003',blue,'kidscade_hoodie_blue_hood'
+  ));
+
+  const pocketGeometry=new THREE.BoxGeometry(.30,.125,.045,2,2,1);
+  pocketGeometry.translate(0,.86,.177);
+  group.add(makeRigidSkinnedPiece(
+    shirt,pocketGeometry,'DEF-spine.001',darkBlue,'kidscade_hoodie_blue_pocket'
+  ));
+
+  for(const x of [-.055,.055]){
+    const stringGeometry=new THREE.CylinderGeometry(.006,.006,.16,8,1,false);
+    stringGeometry.translate(x,1.135,.188);
+    group.add(makeRigidSkinnedPiece(
+      shirt,stringGeometry,'DEF-spine.003',white,'kidscade_hoodie_string_'+(x<0?'L':'R')
+    ));
+
+    const tipGeometry=new THREE.SphereGeometry(.010,8,6);
+    tipGeometry.translate(x,1.055,.188);
+    group.add(makeRigidSkinnedPiece(
+      shirt,tipGeometry,'DEF-spine.003',white,'kidscade_hoodie_tip_'+(x<0?'L':'R')
+    ));
+  }
+
+  shirt.parent.add(group);
+  group.visible=false;
+  return group;
+}
+
 function makeUnlitMaterial(source){
   const material=new THREE.MeshBasicMaterial({
     color:source?.color?.clone?.()||new THREE.Color(0xffffff),
@@ -587,6 +711,16 @@ async function loadChibi(){
     return false;
   }
 
+  try{
+    createKidscadeBlueHoodie();
+  }catch(error){
+    console.error(error);
+    showAssetError('Chibi 본체는 열렸지만 파란 후드티 생성에 실패했습니다: '+(error?.message||error));
+    scene.remove(avatarRoot);
+    avatarRoot=null;
+    return false;
+  }
+
   mixer=new THREE.AnimationMixer(sourceScene);
   skeletonHelper=new THREE.SkeletonHelper(sourceScene);
   skeletonHelper.visible=$('showBones').checked;
@@ -598,10 +732,7 @@ async function loadChibi(){
   populateBoneList();
   populateAnimationButtons();
   renderPartChecks();
-  currentPreset='student';
-  document.querySelectorAll('[data-chibi-preset]').forEach(button=>{
-    button.classList.toggle('active',button.dataset.chibiPreset==='student');
-  });
+  applyPreset('hoodie');
   applyMaterialMode($('chibiUnlit').checked);
   setCameraView(activeView);
 
@@ -610,7 +741,7 @@ async function loadChibi(){
   refreshMetrics();
   clearAssetError();
 
-  setAssetStatus('로드 완료 · '+uniqueBones().length+' bones · '+animations.length+' animations');
+  setAssetStatus('로드 완료 · 파란 후드티 제작 완료 · '+uniqueBones().length+' bones · '+animations.length+' animations');
   setStatus('Chibi 제작실 준비 완료');
 
   const idle=idleClipName();
