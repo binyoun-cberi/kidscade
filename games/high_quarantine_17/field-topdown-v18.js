@@ -166,7 +166,7 @@ function resetMission(mode,payload,done){
   const residentCount=sourceResidents.length||clamp(Number(state.payload.survivorCount)||5,3,8);
   for(let i=0;i<residentCount;i++){
    const src=sourceResidents[i]||{},rawX=sourceResidents.length?Number(src.x)*9.6:fallbackSpawns[i][0],rawY=sourceResidents.length?Number(src.y)*5.4:fallbackSpawns[i][1],p=findWalkable(rawX,rawY,10);
-   state.survivors.push({id:String(src.id??(++state.survivorSeq)),name:src.name||('생존자 '+(i+1)),role:src.role||'',sourceStatus:src.status||'safe',x:p.x,y:p.y,r:10,hp:src.status==='bitten'?2:3,alive:true,rescued:false,phase:i*.8,sprite:src.sprite|| (i%2?'female':'adventurer'),escorted:false});
+   state.survivors.push({id:String(src.id??(++state.survivorSeq)),personId:src.personId||src.id||null,name:src.name||('생존자 '+(i+1)),role:src.role||'',sourceStatus:src.status||'safe',x:p.x,y:p.y,r:10,hp:src.status==='bitten'?2:3,alive:true,rescued:false,phase:i*.8,sprite:src.sprite|| (i%2?'female':'adventurer'),escorted:false});
   }
   const sourceThreats=Array.isArray(state.payload.threats)?state.payload.threats.filter(Boolean):[];
   state.explicitCampThreats=sourceThreats.length>0;
@@ -499,7 +499,7 @@ window.Q17Field3DBridge=Object.freeze({
   shake:state.shake,flash:state.flash,
   player:state.player?{x:state.player.x,y:state.player.y,hp:state.player.hp,maxHp:state.player.maxHp,ammo:state.player.ammo,reserve:state.player.reserve,reload:state.player.reload,scrap:state.player.scrap,ifr:state.player.ifr,facing:state.player.facing}:null,
   zombies:state.zombies.map((z,i)=>({id:z.id??i,personId:z.personId||null,name:z.name||'',sprite:z.sprite||'player',x:z.x,y:z.y,hp:z.hp,elite:!!z.elite,hit:z.hit||0,phase:z.phase||0,sourcePhase:z.sourcePhase||'zombie'})),
-  survivors:state.survivors.map((s,i)=>({id:s.id??i,name:s.name||'',role:s.role||'',sourceStatus:s.sourceStatus||'safe',x:s.x,y:s.y,hp:s.hp,alive:s.alive,rescued:s.rescued,escorted:!!s.escorted,sprite:s.sprite})),
+  survivors:state.survivors.map((s,i)=>({id:s.id??i,personId:s.personId||null,name:s.name||'',role:s.role||'',sourceStatus:s.sourceStatus||'safe',x:s.x,y:s.y,hp:s.hp,alive:s.alive,rescued:s.rescued,escorted:!!s.escorted,sprite:s.sprite})),
   bullets:state.bullets.map((b,i)=>({id:i,x:b.x,y:b.y,tx:b.tx,ty:b.ty,beam:!!b.beam,life:b.life})),
   pickups:state.pickups.map((p,i)=>({id:i,x:p.x,y:p.y,type:p.type})),
   crates:state.crates.map((q,i)=>({id:i,x:q.x,y:q.y,opened:q.opened})),
