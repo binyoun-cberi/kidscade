@@ -600,21 +600,117 @@ function offTaskWander(s){
   }
   s.wander=base.clone();
 }
+function revealHealthIfNeeded(s,dt){
+  if(!studentCanParticipate(s))return;
+  if(tickHealth(s.health,dt,{active:true})){
+    showBubble(s,'🤒','health');
+    showToast(s.runtime.name+'가 몸이 안 좋아 보여요.');
+  }
+}
+function healthStatusText(s){
+  if(s.accident)return s.accident.label;
+  return s.health?.symptom?.label||'몸이 좋지 않아요';
+}
+function createSafetyAccident(s){
+  if(!s||s.accident||lessonAccidents>=SAFETY_RULES.maxAccidentsPerLesson)return;
+  lessonAccidents++;stats.accidents++;
+  const label=currentStep.subject==='체육'
+    ? (Math.random()<.5?'활동 중 넘어졌어요':'공에 맞아 아파해요')
+    : (Math.random()<.5?'실험 도구를 떨어뜨렸어요':'실험 중 손을 다쳤어요');
+  s.accident={subject:currentStep.subject,label};
+  if(s.health.state==='healthy')s.health.state='mild';
+  s.health.revealed=true;s.health.checked=false;
+  s.health.symptom={id:'accident',label};
+  s.runtime.mode='offtask';s.runtime.focus=Math.min(s.runtime.focus,s.runtime.focusMax*.08);
+  showBubble(s,'⚠️','health');
+  showToast('⚠️ '+s.runtime.name+'에게 사고가 났어요!');
+}
+function beginTeamConflict(a,b){
+  if(!a||!b||pairs.some(p=>(p.a===a&&p.b===b)||(p.a===b&&p.b===a)))return;
+  const pair={a,b,state:'conflict',time:0,duration:AI_RULES.conflictSeconds,source:'team'};
+  pairs.push(pair);relations.add(relationKey(a,b));stats.teamConflicts++;
+  showBubble(a,'!','conflict');showBubble(b,'!','conflict');
+  showToast(a.runtime.name+'와 '+b.runtime.name+' 모둠에서 갈등이 생겼어요.');
+}
+function updateTeamActivity(dt){
+  if(!currentStep.teamActivity)return;
+  const startAt=(currentStep.duration||1)*(currentStep.teamStartRatio||.5);
+  if(!teamActive&&lessonElapsed>=startAt){
+    teamActive=true;teamCheckTimer=.5;
+    showToast('🤝 모둠 활동 시작!');
+  }
+  if(!teamActive)return;
+  for(const team of teamPairs){
+    for(const s of team){
+      if(!studentCanParticipate(s))continue;
+      const conflict=pairs.some(p=>p.source==='team'&&(p.a===s||p.b===s)&&p.state==='conflict');
+      drainSocial(s.runtime,dt,GROUP_RULES.socialDrainMultiplier*(conflict?1.35:1));
+    }
+  }
+  teamCheckTimer-=dt;
+  if(teamCheckTimer>0)return;
+  teamCheckTimer=GROUP_RULES.conflictCheckEverySeconds;
+  if(socialConflictCount()>=AI_RULES.maxConcurrentConflicts)return;
+  for(const [a,b] of teamPairs){
+    if(!studentCanParticipate(a)||!studentCanParticipate(b))continue;
+    if(pairs.some(p=>(p.a===a&&p.b===b)||(p.a===b&&p.b===a)))continue;
+    const unresolved=relations.has(relationKey(a,b));
+    const teacherNear=teacherNearStudent(a)||teacherNearStudent(b);
+    const base=conflictProbability(a.runtime,b.runtime,{teacherNear,relationActive:false});
+    const chance=unresolved?GROUP_RULES.unresolvedConflictChance:base*GROUP_RULES.tiredConflictChanceMultiplier;
+    if(Math.random()<chance){beginTeamConflict(a,b);break}
+  }
+}
+function updateSafety(dt){
+  if(!currentStep.safetyRequired)return;
+  const inBriefing=lessonElapsed>=SAFETY_RULES.briefingStartSeconds&&lessonElapsed<SAFETY_RULES.briefingStartSeconds+SAFETY_RULES.briefingDurationSeconds;
+  if(inBriefing){
+    setGuide('안전교육 중','안전수칙을 잘 듣고 있는지 살펴보세요','집중이 떨어진 학생에게 가까이 가서 관심을 주세요.');
+  }
+  for(const s of activeLessonStudents()){
+    const blocked=s.runtime.mode==='offtask'||pairs.some(p=>p.state==='conflict'&&(p.a===s||p.b===s));
+    const evt=tickSafetyRecord(s,dt,{lessonElapsed,focusRatio:focusRatio(s),blocked});
+    if(inBriefing&&focusRatio(s)<SAFETY_RULES.distractedFocusRatio&&!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy')){
+      showBubble(s,'👀','');
+    }
+    if(evt==='safety-heard'&&s.bubble?.textContent==='👀')hideBubble(s);
+    if(evt==='safety-missed'){
+      stats.safetyMisses++;
+      showBubble(s,'⚠️','');
+      showToast(s.runtime.name+'가 안전수칙을 놓쳤어요. 다시 알려줄 수 있어요.');
+    }
+    if(s.safetyRecord?.finished&&!s.safetyRecord.heard&&!s.accident&&lessonElapsed>SAFETY_RULES.briefingStartSeconds+SAFETY_RULES.briefingDurationSeconds+5){
+      if(Math.random()<unsafeAccidentChance(dt,{safetyHeard:false,focusRatio:focusRatio(s)}))createSafetyAccident(s);
+    }
+  }
+}
 function updateLesson(dt){
-  stepTime-=dt;schoolMinute+=dt*.36;
-  const drainMultiplier=currentStep.focusDrain||1;
-  students.forEach(s=>{
+  stepTime-=dt;schoolMinute+=dt*.36;lessonElapsed+=dt;
+  for(const s of students){
+    if(!studentCanParticipate(s))continue;
+    revealHealthIfNeeded(s,dt);
     const was=s.runtime.mode;
-    const evt=updateLessonFocus(s.runtime,dt,{teacherNear:teacherNearStudent(s),drainMultiplier});
-    if(evt==='offtask-start'){stats.offTaskStarts++;offTaskWander(s);showBubble(s,'…','')}
-    if(evt==='focused-return'){s.wander=null;hideBubble(s)}
+    const drainMultiplier=(currentStep.focusDrain||1)*preferenceMultiplier(s.runtime.id,currentStep.subject);
+    const recoveryMultiplier=healthRecoveryMultiplier(s.health);
+    const evt=updateLessonFocus(s.runtime,dt,{teacherNear:teacherNearStudent(s),drainMultiplier,recoveryMultiplier});
+    if(evt==='offtask-start'){
+      stats.offTaskStarts++;offTaskWander(s);
+      if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy'))showBubble(s,'…','');
+    }
+    if(evt==='focused-return'){
+      s.wander=null;
+      if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy')&&!(s.safetyRecord?.finished&&!s.safetyRecord.heard))hideBubble(s);
+    }
     if(s.runtime.mode==='offtask'){
       if(!s.wander||distance2D(s.actor.root.position,s.wander)<.08)offTaskWander(s);
       moveActorToward(s.actor,s.wander,dt,activeSpace.id==='gym'?.58:.42);
     }else{
-      moveActorToward(s.actor,s.seat,dt,.72);if(was==='offtask')hideBubble(s);
+      moveActorToward(s.actor,s.seat,dt,.72);
+      if(was==='offtask'&&!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy')&&!(s.safetyRecord?.finished&&!s.safetyRecord.heard))hideBubble(s);
     }
-  });
+  }
+  updateTeamActivity(dt);
+  updateSafety(dt);
   if(stepTime<=0){stats.periodsCompleted++;advanceStep()}
 }
 
