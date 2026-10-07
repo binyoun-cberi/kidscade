@@ -15,7 +15,7 @@ import {
   SAFETY_RULES,GROUP_RULES,FRIENDSHIP_RULES
 } from './student-life.mjs?v=68';
 import {
-  CAMPAIGN_DAYS,EXAM_DAYS,GRADE_ORDER,
+  CAMPAIGN_DAYS,EXAM_DAYS,GRADE_ORDER,LEARNING_RULES,
   createCampaignState,normalizeCampaignState,examNumberForDay,nextExamInfo,
   gradeIndex,learningGain,addLearning,conductExam,latestExam,targetReachedCount
 } from './school-campaign.mjs?v=69';
@@ -1241,7 +1241,7 @@ function useAction(){
     stopLessonChat(currentAction.chat,{teacher:true});playerGestureTimer=.45;playAnim(player,'push');return;
   }
   if(currentAction.type==='focus'){
-    const s=currentAction.student;helpFocus(s.runtime);stats.focusHelps++;s.wander=null;s.actor.target=s.seat.clone();playerGestureTimer=.5;playAnim(player,'push');
+    const s=currentAction.student;helpFocus(s.runtime);addLearning(campaign,s.runtime.id,LEARNING_RULES.focusHelpBonus);stats.focusHelps++;s.wander=null;s.actor.target=s.seat.clone();playerGestureTimer=.5;playAnim(player,'push');
     if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy')&&!(s.safetyRecord?.finished&&!s.safetyRecord.heard))hideBubble(s);
     showToast(s.runtime.name+'에게 관심을 줬어요.');return;
   }
