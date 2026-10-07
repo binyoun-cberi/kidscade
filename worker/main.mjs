@@ -16,6 +16,43 @@ export { WordchainRoom } from './wordchain-room.mjs';
 export { TowerRoom } from './tower-room.mjs';
 import { ensureMultiplayerSchema, multiplayerDatabaseHealth } from './multiplayer-schema.mjs';
 
+const STUDIO_ENTRY_PATH = '/teacher/character-3d-studio.html';
+
+// Serve the canonical studio URL from a commit-specific static asset pathname.
+// This bypasses stale Cloudflare static edge objects without changing teacher links.
+async function serveFresh3dStudio(request, env) {
+  const url=new URL(request.url);
+  if(url.pathname!==STUDIO_ENTRY_PATH || (request.method!=='GET' && request.method!=='HEAD')){
+    return null;
+  }
+  try{
+    const versionUrl=new URL('/kidscade-version.json',url);
+    const versionResponse=await env.ASSETS.fetch(new Request(versionUrl));
+    if(!versionResponse.ok)throw new Error('build manifest unavailable');
+    const version=String((await versionResponse.json()).build||'').slice(0,12);
+    if(!/^[a-zA-Z0-9_-]{10,12}$/.test(version))throw new Error('invalid studio build ID');
+
+    const versionedUrl=new URL(`/teacher/character-3d-studio-${version}.html`,url);
+    const assetResponse=await env.ASSETS.fetch(new Request(versionedUrl,{method:request.method}));
+    if(!assetResponse.ok)throw new Error(`studio asset HTTP ${assetResponse.status}`);
+
+    const headers=new Headers(assetResponse.headers);
+    headers.set('cache-control','no-cache, no-store, must-revalidate');
+    headers.set('x-kidscade-studio-build',version);
+    return new Response(request.method==='HEAD'?null:assetResponse.body,{
+      status:assetResponse.status,
+      statusText:assetResponse.statusText,
+      headers
+    });
+  }catch(error){
+    console.error('3D studio versioned asset error',error);
+    return new Response('3D 제작실을 업데이트하는 중입니다. 잠시 후 다시 열어 주세요.',{
+      status:503,
+      headers:{'content-type':'text/plain; charset=utf-8','cache-control':'no-store'}
+    });
+  }
+}
+
 const MULTIPLAYER_PREFIX = '/api/multiplayer/';
 
 function multiplayerDatabaseError(error) {
@@ -38,6 +75,9 @@ export default {
     if (economyResponse) return economyResponse;
 
     const url = new URL(request.url);
+
+    const studioResponse=await serveFresh3dStudio(request,env);
+    if(studioResponse)return studioResponse;
 
     // Wordchain v2 owns its realtime room state in a Durable Object. Route it
     // before the legacy multiplayer D1 schema preflight so active v2 rooms do
