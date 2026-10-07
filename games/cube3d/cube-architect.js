@@ -38,7 +38,8 @@ let mobileUtilityOpen=false;
 let survivalInventoryTab='bag';
 let firstJourney={phase:'idle',plan:null},journeyMarker=null,journeyUiAt=0;
 let buildingWorks=[],worksOpen=false,projectGuide='';
-let lifePanelOpen=false,lifePanelMode='',lifePanelTargetKey='',survivalHome=null,trackedTarget=null;
+let lifePanelOpen=false,lifePanelMode='',lifePanelTargetKey='',lifeCreatureTarget=null,survivalHome=null,trackedTarget=null;
+let seatedFurniture=null,tamedCreatures={},petSerial=0;
 const experience=window.CubeArchitectExperience;
 let jumpQueuedUntil=0,lastGroundedAt=-Infinity,overlapSeconds=0;
 const FREE_JUMP_SPEED=6.4;
@@ -1121,6 +1122,10 @@ const BLOCK_DEFS={
   bed:{name:'양털 침대',icon:'🛏',color:0xd7d1c9,category:'기능',solid:true,flammable:true,special:'bed'},
   mapBoard:{name:'탐험 지도판',icon:'🗺',color:0x6fa4b8,category:'기능',solid:true,flammable:true,special:'mapBoard'},
   displayStand:{name:'기념품 전시대',icon:'🏛',color:0xa69076,category:'기능',solid:true,special:'displayStand'},
+  chair:{name:'나무 의자',icon:'🪑',color:0x9b744b,category:'건축',solid:false,flammable:true,special:'chair'},
+  desk:{name:'나무 책상',icon:'▰',color:0x9b744b,category:'건축',solid:true,flammable:true,special:'desk'},
+  bookshelf:{name:'탐험 책장',icon:'📚',color:0x835d43,category:'건축',solid:true,flammable:true,special:'bookshelf'},
+  sign:{name:'나무 표지판',icon:'✎',color:0xa9784d,category:'기능',solid:false,flammable:true,special:'sign'},
   tilledSoil:{name:'밭',icon:'▤',color:0x6f4932,category:'자연',solid:true,special:'farmland'},
   wheatCrop:{name:'자라는 밀',icon:'🌾',color:0xb9a34d,category:'자연',solid:false,special:'crop'},
   carrotCrop:{name:'자라는 당근',icon:'🥕',color:0x6fa948,category:'자연',solid:false,special:'crop'},
@@ -1158,7 +1163,7 @@ const BLOCK_DEFS={
   fire:{name:'불',icon:'🔥',color:0xff8c38,category:'실험',solid:false,transparent:true,special:'fire'},
   bedrock:{name:'기반암',icon:'⬛',color:0x34383f,category:'자연',solid:true,unbreakable:true}
 };
-const PLACEABLE_TYPES=['flower','sandstone','snowBrick','reedMat','woolMat','snow','redSand','gravel','pineLog','pineLeaves','cactus','reed','workbench','chest','bed','mapBoard','displayStand','grass','dirt','stone','smoothStone','sand','clay','ironOre','log','leaves','sapling','planks','brick','glass','glassPane','windowFrame','slab','stairs','roof','cuboid','obsidian','ironBlock','charcoal','door','torch','furnace','water','lava','fire'];
+const PLACEABLE_TYPES=['flower','sandstone','snowBrick','reedMat','woolMat','snow','redSand','gravel','pineLog','pineLeaves','cactus','reed','workbench','chest','bed','mapBoard','displayStand','chair','desk','bookshelf','sign','grass','dirt','stone','smoothStone','sand','clay','ironOre','log','leaves','sapling','planks','brick','glass','glassPane','windowFrame','slab','stairs','roof','cuboid','obsidian','ironBlock','charcoal','door','torch','furnace','water','lava','fire'];
 const FARM_PLANT_TYPES=['wheatSeed','carrot','potato'];
 const FARM_CROP_TYPES=['wheatCrop','carrotCrop','potatoCrop'];
 const CROP_MATURE_AGE=24;
@@ -1999,6 +2004,13 @@ let weather='clear',weatherTimer=18,rainSystem=null,rainPositions=null,lightning
 let critters=[],critterClock=0;
 let wildCreatures=[],creatureInteractables=[],survivalHealth=5,healthRegenClock=0,lastCreatureDamage=0,lastCreatureAttackAt=0;
 let seenCreatureKinds=new Set(),lastCreatureHintAt=0,creatureDefeats={},creatureForageAt={},survivalWorldTime=0,creatureSpawnClock=0,creatureSpawnSerial=0,nextEliteSpawnCheckAt=0;
+const TAME_RULES={
+  chicken:{food:'wheatSeed',need:3,label:'밀 씨앗'},
+  sheep:{food:'wheat',need:2,label:'밀'},
+  cat:{food:'cookedEgg',need:2,label:'구운 달걀'},
+  dog:{food:'bread',need:2,label:'빵'}
+};
+
 let miniPoiCatalog=null;
 const MINI_POI_VARIANTS={
   meadow:[
@@ -2673,6 +2685,55 @@ function makeDisplayStandObject(trophy=''){
   }
   return g;
 }
+
+function makeChairObject(facing=0){
+  const g=new THREE.Group(),wood=materialFor('planks');
+  const seat=new THREE.Mesh(new THREE.BoxGeometry(.72,.14,.72),wood);seat.position.y=-.02;g.add(seat);
+  const back=new THREE.Mesh(new THREE.BoxGeometry(.72,.74,.12),wood);back.position.set(0,.34,.31);g.add(back);
+  for(const x of [-.27,.27])for(const z of [-.27,.27]){
+    const leg=new THREE.Mesh(new THREE.BoxGeometry(.11,.58,.11),wood);leg.position.set(x,-.34,z);g.add(leg);
+  }
+  g.rotation.y=(facing||0)*Math.PI/2;return g;
+}
+function makeDeskObject(facing=0){
+  const g=new THREE.Group(),wood=materialFor('planks');
+  const top=new THREE.Mesh(new THREE.BoxGeometry(.96,.16,.7),wood);top.position.y=.18;g.add(top);
+  for(const x of [-.37,.37])for(const z of [-.25,.25]){
+    const leg=new THREE.Mesh(new THREE.BoxGeometry(.12,.72,.12),wood);leg.position.set(x,-.23,z);g.add(leg);
+  }
+  const drawer=new THREE.Mesh(new THREE.BoxGeometry(.34,.22,.58),new THREE.MeshStandardMaterial({color:0x855d3c,roughness:.88}));
+  drawer.position.set(.25,.02,0);g.add(drawer);g.rotation.y=(facing||0)*Math.PI/2;return g;
+}
+function makeBookshelfObject(facing=0){
+  const g=new THREE.Group(),wood=materialFor('planks'),dark=new THREE.MeshStandardMaterial({color:0x6f4e38,roughness:.9});
+  const back=new THREE.Mesh(new THREE.BoxGeometry(.88,.96,.12),dark);back.position.z=.37;g.add(back);
+  for(const x of [-.41,.41]){const side=new THREE.Mesh(new THREE.BoxGeometry(.12,.98,.76),wood);side.position.x=x;g.add(side)}
+  for(const y of [-.42,0,.42]){const shelf=new THREE.Mesh(new THREE.BoxGeometry(.88,.1,.76),wood);shelf.position.y=y;g.add(shelf)}
+  const colors=[0x5b78b5,0xb85f59,0xd0a84e,0x5f9c68,0x8c6bb1];
+  for(let row=0;row<2;row++)for(let i=0;i<5;i++){
+    const book=new THREE.Mesh(new THREE.BoxGeometry(.1,.28+.04*((i+row)%2),.32),
+      new THREE.MeshStandardMaterial({color:colors[(i+row)%colors.length],roughness:.86}));
+    book.position.set(-.28+i*.14,-.2+row*.43,.08);g.add(book);
+  }
+  g.rotation.y=(facing||0)*Math.PI/2;return g;
+}
+function cleanSignText(value){
+  return String(value||'').replace(/[\r\t]/g,' ').split('\n').slice(0,2).map(s=>s.slice(0,12)).join('\n').slice(0,24);
+}
+function makeSignTexture(text=''){
+  const c=document.createElement('canvas');c.width=512;c.height=256;const ctx=c.getContext('2d');
+  ctx.fillStyle='#b98554';ctx.fillRect(0,0,c.width,c.height);ctx.strokeStyle='#754c2d';ctx.lineWidth=18;ctx.strokeRect(9,9,c.width-18,c.height-18);
+  ctx.fillStyle='#2d2118';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='800 54px Pretendard, Noto Sans KR, sans-serif';
+  const lines=(cleanSignText(text)||'표지판').split('\n');lines.forEach((line,i)=>ctx.fillText(line,256,lines.length===1?128:86+i*84,450));
+  const tex=new THREE.CanvasTexture(c);if('colorSpace' in tex&&THREE.SRGBColorSpace)tex.colorSpace=THREE.SRGBColorSpace;return tex;
+}
+function makeSignObject(facing=0,text=''){
+  const g=new THREE.Group(),wood=materialFor('planks');
+  const post=new THREE.Mesh(new THREE.BoxGeometry(.11,.72,.11),wood);post.position.y=-.14;g.add(post);
+  const board=new THREE.Mesh(new THREE.BoxGeometry(.9,.55,.1),wood);board.position.y=.28;g.add(board);
+  const front=new THREE.Mesh(new THREE.PlaneGeometry(.78,.43),new THREE.MeshBasicMaterial({map:makeSignTexture(text),side:THREE.DoubleSide,toneMapped:false}));
+  front.position.set(0,.28,-.056);front.rotation.y=Math.PI;g.add(front);g.rotation.y=(facing||0)*Math.PI/2;return g;
+}
 function makeCropObject(type,age=0){
   const g=new THREE.Group(),stage=Math.max(0,Math.min(3,Math.floor((Number(age)||0)/(CROP_MATURE_AGE/4))));
   const color=type==='wheatCrop'?(stage>=3?0xd9bd55:0x79a94d):type==='carrotCrop'?0x62a34f:0x709a4d;
@@ -2718,6 +2779,14 @@ function makeWorldMesh(x,y,z,data){
     root=makeMapBoardObject(data.facing||0);root.position.set(x,y+.5,z);
   }else if(type==='displayStand'){
     root=makeDisplayStandObject(data.trophy||'');root.position.set(x,y+.5,z);
+  }else if(type==='chair'){
+    root=makeChairObject(data.facing||0);root.position.set(x,y+.5,z);
+  }else if(type==='desk'){
+    root=makeDeskObject(data.facing||0);root.position.set(x,y+.5,z);
+  }else if(type==='bookshelf'){
+    root=makeBookshelfObject(data.facing||0);root.position.set(x,y+.5,z);
+  }else if(type==='sign'){
+    root=makeSignObject(data.facing||0,data.text||'');root.position.set(x,y+.5,z);
   }else if(type==='tilledSoil'){
     root=new THREE.Mesh(new THREE.BoxGeometry(1,.88,1),new THREE.MeshStandardMaterial({color:0x6f4932,roughness:1}));root.position.set(x,y+.44,z);
   }else if(FARM_CROP_TYPES.includes(type)){
@@ -3136,7 +3205,7 @@ function initFree(){
   camera.rotation.order='YXZ';yaw=Math.PI;pitch=0;
   collectibles=[];collected=new Set();xray=false;freeVelocityY=0;onGround=true;freeFlying=false;
   jumpQueuedUntil=0;lastGroundedAt=-Infinity;overlapSeconds=0;mobileUtilityOpen=false;survivalInventoryTab='bag';
-  inventoryOpen=false;furnaceOpen=false;lifePanelOpen=false;lifePanelMode='';lifePanelTargetKey='';freeSimAccum=0;freeSimTick=0;mathLensMode=0;
+  inventoryOpen=false;furnaceOpen=false;lifePanelOpen=false;lifePanelMode='';lifePanelTargetKey='';lifeCreatureTarget=null;seatedFurniture=null;freeSimAccum=0;freeSimTick=0;mathLensMode=0;
   freeSaveDirty=false;freeSaveDueAt=0;freeStepHop=0;miningHeld=false;miningSource='';miningKey='';miningProgress=0;
   miningCrackOverlay=null;miningCrackKey='';freePlacementGhost=null;freePlacementGhostKey='';pendingPlayerStrikes=[];freeHitStopUntil=0;
   selectedCraftRecipeId=null;survivalCraftCategory='전체';craftingBusy=false;inventoryBatchDepth=0;resetMiningFeedback();
@@ -3149,7 +3218,7 @@ function initFree(){
   firstJourney={phase:'idle',plan:null};buildingWorks=[];projectGuide='';journeyUiAt=0;
   survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;survivalHealth=5;healthRegenClock=0;lastCreatureDamage=0;lastCreatureAttackAt=0;
   freeFluidKind='';lastEnvironmentDamage=0;survivalBreath=100;lastDrownDamage=0;freeFallPeakY=0;
-  seenCreatureKinds=new Set();lastCreatureHintAt=0;creatureDefeats={};creatureForageAt={};survivalWorldTime=0;creatureSpawnClock=0;creatureSpawnSerial=0;nextEliteSpawnCheckAt=0;dayTime=.28;
+  seenCreatureKinds=new Set();lastCreatureHintAt=0;creatureDefeats={};creatureForageAt={};tamedCreatures={};petSerial=0;survivalWorldTime=0;creatureSpawnClock=0;creatureSpawnSerial=0;nextEliteSpawnCheckAt=0;dayTime=.28;
   survivalTimeAcc=0;firstNightStarted=false;firstDuskWarned=false;nightShelterNotice=false;
   discoveredLandmarks=new Set();restoredLandmarks=new Set();unlockedTech=new Set();nearLandmarkPoi=null;
   selectedHotbarSlot=0;
@@ -3959,7 +4028,7 @@ function buildFreePlacementGhost(type,p,valid,facing){
     color:good,transparent:true,opacity:valid?.78:.88,depthWrite:false
   }));group.add(edges);
   group.position.set(p.x+offset[0],p.y+offset[1],p.z+offset[2]);
-  if(['stairs','roof','door','windowFrame','glassPane','furnace','workbench','chest','bed','mapBoard','displayStand'].includes(type)){
+  if(['stairs','roof','door','windowFrame','glassPane','furnace','workbench','chest','bed','mapBoard','displayStand','chair','desk','bookshelf','sign'].includes(type)){
     const dirs=[[0,0,1],[1,0,0],[0,0,-1],[-1,0,0]],dir=new THREE.Vector3(...dirs[facing]);
     const arrow=new THREE.ArrowHelper(dir,new THREE.Vector3(0,dims[1]/2+.12,0),.55,good,.18,.12);
     group.add(arrow);
@@ -3991,7 +4060,7 @@ function placementSupportValid(type,x,y,z){
   if(type==='cactus')return ['sand','redSand','cactus'].includes(belowType);
   if(FARM_CROP_TYPES.includes(type))return belowType==='tilledSoil';
   if(type==='door'||type==='torch'||type==='fire')return fullSupportBelow(x,y,z);
-  if(['chest','bed','mapBoard','displayStand'].includes(type))return fullSupportBelow(x,y,z);
+  if(['chest','bed','mapBoard','displayStand','chair','desk','bookshelf','sign'].includes(type))return fullSupportBelow(x,y,z);
   return true;
 }
 function placementSupportError(type,p){
@@ -4002,7 +4071,7 @@ function placementSupportError(type,p){
   if(type==='door')return '문은 단단한 바닥 위에 세워야 해요.';
   if(type==='torch')return '횃불은 단단한 바닥 위에 놓아 주세요.';
   if(type==='fire')return '불은 단단한 바닥 위에서만 붙일 수 있어요.';
-  if(['chest','bed','mapBoard','displayStand'].includes(type))return '생활 가구는 단단한 바닥 위에 놓아 주세요.';
+  if(['chest','bed','mapBoard','displayStand','chair','desk','bookshelf','sign'].includes(type))return '생활 가구는 단단한 바닥 위에 놓아 주세요.';
   return '이 블록을 놓을 바닥을 확인해 주세요.';
 }
 function cleanupUnsupportedAt(x,y,z,record=true){
@@ -4055,6 +4124,90 @@ function harvestCrop(x,y,z,data){
   toast(mature?(data.type==='wheatCrop'?'밀을 수확했어요!':'잘 자란 '+blockDef(plant).name+'을(를) 수확했어요!'):'아직 덜 자란 작물을 다시 챙겼어요.');
   markFreeWorldDirty(250);return true;
 }
+
+function petRecordForRoot(root){return root?.userData?.petId?tamedCreatures[root.userData.petId]||null:null}
+function petDisplayName(root){const record=petRecordForRoot(root);return record?.name||root?.userData?.spec?.name||'동물'}
+function makePetNameSprite(name){
+  const c=document.createElement('canvas');c.width=256;c.height=64;const ctx=c.getContext('2d');
+  ctx.fillStyle='rgba(10,20,32,.78)';ctx.beginPath();ctx.roundRect?.(4,4,248,56,16);if(ctx.roundRect)ctx.fill();else ctx.fillRect(4,4,248,56);
+  ctx.fillStyle='#ffffff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='800 30px Pretendard, Noto Sans KR, sans-serif';ctx.fillText(String(name||'친구').slice(0,10),128,32,228);
+  const tex=new THREE.CanvasTexture(c);if('colorSpace' in tex&&THREE.SRGBColorSpace)tex.colorSpace=THREE.SRGBColorSpace;
+  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:true,toneMapped:false}));sprite.scale.set(1.7,.42,1);sprite.position.y=1.75;sprite.userData.petNameTag=true;return sprite;
+}
+function refreshPetNameTag(root){
+  if(!root)return;const old=root.children.find(c=>c.userData?.petNameTag);if(old){root.remove(old);old.material?.map?.dispose?.();old.material?.dispose?.()}
+  if(root.userData?.petId)root.add(makePetNameSprite(petDisplayName(root)));
+}
+function syncTamedCreaturePositions(){
+  for(const root of wildCreatures){
+    const record=petRecordForRoot(root);if(!record||root.userData.dead)continue;
+    record.x=Number(root.position.x)||0;record.z=Number(root.position.z)||0;
+    if(record.mode==='stay'){record.homeX=Number(root.userData.homeX)||record.x;record.homeZ=Number(root.userData.homeZ)||record.z}
+  }
+}
+function restoreTamedCreatures(){
+  for(const record of Object.values(tamedCreatures||{})){
+    const spec=window.CubeArchitectCreatures?.SPECIES?.[record.species];if(!spec||!TAME_RULES[record.species])continue;
+    const x=THREE.MathUtils.clamp(Number(record.x)||0,-WORLD_HALF+2,WORLD_HALF-2),z=THREE.MathUtils.clamp(Number(record.z)||5,-WORLD_HALF+2,WORLD_HALF-2);
+    const root=placeWildCreature(record.species,x,z);if(!root)continue;
+    root.userData.petId=record.id;root.userData.tameProgress=TAME_RULES[record.species].need;
+    root.userData.homeX=Number(record.homeX)||x;root.userData.homeZ=Number(record.homeZ)||z;
+    refreshPetNameTag(root);
+  }
+}
+function openCreatureLifePanel(root){
+  if(!root?.userData||root.userData.dead)return false;
+  const panel=$('lifePanel');if(!panel)return false;
+  stopMining();if(inventoryOpen){inventoryOpen=false;$('blockInventory').classList.add('hidden')}
+  if(furnaceOpen){furnaceOpen=false;$('furnacePanel').classList.add('hidden')}
+  if(worksOpen){worksOpen=false;$('buildingWorksPanel').classList.add('hidden')}
+  lifePanelOpen=true;lifePanelMode='pet';lifePanelTargetKey='';lifeCreatureTarget=root;
+  if(document.pointerLockElement===canvas)document.exitPointerLock?.();panel.classList.remove('hidden');renderLifePanel();return true;
+}
+function collectCreatureForage(root){
+  const u=root?.userData,spec=u?.spec,forage=spec?.forage;if(!root||u.dead||!forage)return false;
+  const readyAt=Math.max(0,Number(creatureForageAt[spec.id])||0);
+  if(survivalWorldTime<readyAt){toast(petDisplayName(root)+'에게 다시 다가가려면 '+Math.ceil(readyAt-survivalWorldTime)+'초 정도 기다려 주세요.');return true}
+  let total=0;for(const [type,n] of Object.entries(forage.reward||{})){addToBag(type,n);spawnPickupVisual(type,root.position.x,root.position.y+.25,root.position.z,n);total+=n}
+  creatureForageAt[spec.id]=survivalWorldTime+Math.max(20,Number(forage.cooldown)||60);trackSurvival('forage',spec.id,Math.max(1,total));
+  triggerFreeAvatarAction('pickup',FREE_AVATAR_ACTION_MS.pickup);toast(petDisplayName(root)+'에게서 '+(forage.label||'재료')+'을(를) 얻었어요.');sfx('good');markFreeWorldDirty(350);return true;
+}
+function feedTameTarget(){
+  const root=lifeCreatureTarget,u=root?.userData,spec=u?.spec,rule=TAME_RULES[spec?.id];if(!root||u.dead||!rule)return;
+  if(u.petId){toast(petDisplayName(root)+'은(는) 이미 우리 친구예요.');return}
+  if(bagCount(rule.food)<1){toast(blockDef(rule.food).name+'이(가) 필요해요.');return}
+  consumeBag(rule.food,1);u.tameProgress=Math.min(rule.need,(Number(u.tameProgress)||0)+1);sfx('good');
+  if(u.tameProgress>=rule.need){
+    const id='pet-'+spec.id+'-'+Date.now().toString(36)+'-'+(++petSerial);
+    tamedCreatures[id]={id,species:spec.id,name:spec.name,mode:'follow',x:root.position.x,z:root.position.z,homeX:root.position.x,homeZ:root.position.z};
+    u.petId=id;u.homeX=root.position.x;u.homeZ=root.position.z;refreshPetNameTag(root);
+    toast(spec.name+'이(가) 마음을 열었어요! 이제 따라다녀요.');
+  }else toast(spec.name+'에게 '+blockDef(rule.food).name+'을(를) 줬어요 · '+u.tameProgress+' / '+rule.need);
+  buildHotbar();renderLifePanel();saveFreeWorld();
+}
+function setPetName(root,value){
+  const record=petRecordForRoot(root);if(!record)return;record.name=String(value||record.name||root.userData.spec.name).trim().slice(0,10)||root.userData.spec.name;
+  refreshPetNameTag(root);saveFreeWorld();
+}
+function setPetMode(root,modeName){
+  const record=petRecordForRoot(root);if(!record)return;record.mode=modeName==='stay'?'stay':'follow';
+  if(record.mode==='stay'){record.homeX=root.position.x;record.homeZ=root.position.z;root.userData.homeX=record.homeX;root.userData.homeZ=record.homeZ}
+  toast(record.name+(record.mode==='stay'?' · 여기에서 기다려요.':' · 다시 따라와요.'));renderLifePanel();saveFreeWorld();
+}
+function useChair(x,y,z){
+  const data=getBlock(x,y,z);if(!data||data.type!=='chair')return false;
+  camera.position.set(x,y+1.62,z);freePhysicsY=camera.position.y;freeVelocityY=0;onGround=true;
+  yaw=((data.facing||0)%4)*Math.PI/2;seatedFurniture=worldKey(x,y,z);triggerFreeAvatarAction('sit',1000000000);
+  toast('의자에 앉았어요. 움직이면 일어나요.');return true;
+}
+function leaveChair(){
+  if(!seatedFurniture)return;seatedFurniture=null;
+  if(freeAvatarAction==='sit'){freeAvatarAction='';freeAvatarActionStartedAt=0;freeAvatarActionUntil=0}
+}
+function saveSignText(){
+  const target=lifeTargetData();if(!target||target.data.type!=='sign')return;
+  const value=cleanSignText($('lifeSignText')?.value||'');setWorldBlock(...target.p,{...target.data,text:value},true);toast(value?'표지판에 글을 적었어요.':'표지판 글을 지웠어요.');renderLifePanel();saveFreeWorld();
+}
 function lifeTargetData(){
   if(!lifePanelTargetKey)return null;const p=parseWorldKey(lifePanelTargetKey),data=getBlock(...p);
   return data?{p,data}:null;
@@ -4071,7 +4224,7 @@ function openLifePanel(modeName,x,y,z){
 }
 function closeLifePanel(){
   if(!lifePanelOpen)return;
-  lifePanelOpen=false;lifePanelMode='';lifePanelTargetKey='';$('lifePanel')?.classList.add('hidden');
+  lifePanelOpen=false;lifePanelMode='';lifePanelTargetKey='';lifeCreatureTarget=null;$('lifePanel')?.classList.add('hidden');
   $('lockNotice')?.classList.toggle('hidden',mobileModeEnabled||document.pointerLockElement===canvas);
   if(!mobileModeEnabled&&mode==='free')resumeFreePointerLock();
 }
@@ -4110,6 +4263,52 @@ function mapTargetButton(target){
 }
 function renderLifePanel(){
   const title=$('lifePanelTitle'),body=$('lifePanelBody');if(!title||!body)return;body.replaceChildren();
+  if(lifePanelMode==='pet'){
+    const root=lifeCreatureTarget,u=root?.userData,spec=u?.spec;if(!root||u?.dead||!spec){closeLifePanel();return}
+    const rule=TAME_RULES[spec.id],record=petRecordForRoot(root);title.textContent=record?(record.name+' · 나의 동물'):('길들이기 · '+spec.name);
+    const card=document.createElement('div');card.className='life-pet-card';
+    if(record){
+      const input=document.createElement('input');input.className='life-name';input.maxLength=10;input.value=record.name;input.placeholder='동물 이름';
+      input.onchange=()=>{setPetName(root,input.value);title.textContent=petDisplayName(root)+' · 나의 동물'};
+      const status=document.createElement('p');status.textContent='상태 · '+(record.mode==='stay'?'여기에서 기다리는 중':'나를 따라오는 중');
+      const actions=document.createElement('div');actions.className='life-actions';
+      const follow=document.createElement('button');follow.type='button';follow.textContent='따라와';follow.disabled=record.mode==='follow';follow.onclick=()=>setPetMode(root,'follow');
+      const stay=document.createElement('button');stay.type='button';stay.textContent='여기 있어';stay.disabled=record.mode==='stay';stay.onclick=()=>setPetMode(root,'stay');
+      actions.append(follow,stay);card.append(input,status,actions);
+    }else{
+      const progress=Math.max(0,Number(u.tameProgress)||0),food=blockDef(rule.food);
+      const p=document.createElement('p');p.textContent=spec.name+'이(가) 좋아하는 '+food.name+'을(를) 몇 번 나누면 친해질 수 있어요.';
+      const meter=document.createElement('div');meter.className='life-pet-progress';meter.innerHTML='<span style="width:'+Math.round(progress/rule.need*100)+'%"></span>';
+      const count=document.createElement('small');count.textContent='친밀감 '+progress+' / '+rule.need+' · 가방의 '+food.name+' '+bagCount(rule.food)+'개';
+      const feed=document.createElement('button');feed.type='button';feed.textContent=food.name+' 1개 주기';feed.disabled=bagCount(rule.food)<1;feed.onclick=feedTameTarget;
+      card.append(p,meter,count,feed);
+    }
+    if(spec.forage){
+      const forage=document.createElement('button');forage.type='button';forage.className='life-secondary';
+      const readyAt=Math.max(0,Number(creatureForageAt[spec.id])||0),left=Math.max(0,Math.ceil(readyAt-survivalWorldTime));
+      forage.textContent=left?((spec.forage.label||'재료')+' · '+left+'초 뒤'):(spec.forage.label||'재료')+' 얻기';forage.disabled=left>0;
+      forage.onclick=()=>{collectCreatureForage(root);renderLifePanel()};card.append(forage);
+    }
+    body.append(card);return;
+  }
+  if(lifePanelMode==='sign'){
+    const target=lifeTargetData();if(!target||target.data.type!=='sign'){closeLifePanel();return}
+    title.textContent='표지판 쓰기';const p=document.createElement('p');p.textContent='두 줄까지 적을 수 있어요. 집·방·창고에 이름을 붙여 보세요.';
+    const area=document.createElement('textarea');area.id='lifeSignText';area.className='life-sign-text';area.maxLength=24;area.rows=2;area.value=target.data.text||'';area.placeholder='예: 나의 비밀기지';
+    const save=document.createElement('button');save.type='button';save.className='life-primary';save.textContent='표지판 저장';save.onclick=saveSignText;body.append(p,area,save);return;
+  }
+  if(lifePanelMode==='library'){
+    title.textContent='탐험 책장';const wrap=document.createElement('div');wrap.className='life-library';
+    const rows=[
+      ['발견한 생물',seenCreatureKinds.size,Object.keys(window.CubeArchitectCreatures?.SPECIES||{}).length,[...seenCreatureKinds].map(id=>window.CubeArchitectCreatures?.SPECIES?.[id]?.name||id)],
+      ['발견한 지역',visitedBiomes.size,Object.keys(worldRules.BIOMES||{}).length,[...visitedBiomes].map(id=>worldRules.BIOMES[id]?.name||id)],
+      ['랜드마크 기록',restoredLandmarks.size,(poiRules.POIS||poiRules.ALL||[]).length||6,[...restoredLandmarks].map(id=>poiRules.poiById(id)?.name||id)]
+    ];
+    for(const [label,n,total,names] of rows){
+      const section=document.createElement('section');section.innerHTML='<b>'+label+' · '+n+' / '+total+'</b><small>'+(names.length?names.join(' · '):'아직 기록이 없어요.')+'</small>';wrap.append(section);
+    }
+    body.append(wrap);return;
+  }
   if(lifePanelMode==='chest'){
     const target=lifeTargetData();if(!target||target.data.type!=='chest'){closeLifePanel();return}
     title.textContent=target.data.label||'나무 상자';
@@ -4187,6 +4386,9 @@ function interactLifeBlock(type,x,y,z){
   if(type==='bed')return useBed(x,y,z);
   if(type==='mapBoard'){openLifePanel('map',x,y,z);return true}
   if(type==='displayStand')return useDisplayStand(x,y,z);
+  if(type==='chair')return useChair(x,y,z);
+  if(type==='sign'){openLifePanel('sign',x,y,z);return true}
+  if(type==='bookshelf'){openLifePanel('library',x,y,z);return true}
   return false;
 }
 function placeFreeBlock(hit){
@@ -4241,7 +4443,7 @@ function placeFreeBlock(hit){
     setWorldBlock(p.x,p.y,p.z,{type:'fire',age:0,playerBuilt:true},true);
   }else if(selectedType==='sapling'){
     setWorldBlock(p.x,p.y,p.z,{type:'sapling',age:0,playerBuilt:true},true);
-  }else if(['stairs','roof','windowFrame','glassPane','furnace','workbench','chest','bed','mapBoard','displayStand'].includes(selectedType)){
+  }else if(['stairs','roof','windowFrame','glassPane','furnace','workbench','chest','bed','mapBoard','displayStand','chair','desk','bookshelf','sign'].includes(selectedType)){
     setWorldBlock(p.x,p.y,p.z,{type:selectedType,facing,playerBuilt:true},true);
   }else setWorldBlock(p.x,p.y,p.z,{type:selectedType,playerBuilt:true},true);
   if(survival){
@@ -4259,6 +4461,7 @@ function breakFreeBlock(hit){
   const {gx:x,gy:y,gz:z}=hit.object.userData;
   const data=getBlock(x,y,z);
   if(!data||blockDef(data).unbreakable){toast('기반암은 부술 수 없어요.');return}
+  if(data.type==='chair'&&seatedFurniture===worldKey(x,y,z))leaveChair();
   if(FARM_CROP_TYPES.includes(data.type)){harvestCrop(x,y,z,data);return}
   if(data.type==='chest'&&data.items&&gameFreeMode==='survival'){
     inventoryBatchDepth++;
@@ -4513,7 +4716,8 @@ function markFreeWorldDirty(delay=1200){
 }
 function saveFreeWorld(){
   if(mode!=='free')return;
-  const data={version:14,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
+  syncTamedCreaturePositions();
+  const data={version:15,worldMode:gameFreeMode,edits:Array.from(worldEdits.entries()),
     collected:Array.from(collected),hotbar:hotbarTypes,selected:selectedHotbarSlot,
     dayTime,cuboidSpec:currentCuboidSpec,facePaintColor,campLesson:{...survivalCamp},
     firstJourney,buildingWorks,projectGuide,survivalHome,trackedTarget,
@@ -4524,7 +4728,7 @@ function saveFreeWorld(){
     firstNightStarted,health:survivalHealth,worldTime:survivalWorldTime,
     equipment:{...survivalEquipment},damageCarry:survivalDamageCarry,
     creatureDefeats:{...creatureDefeats},creatureForageAt:{...creatureForageAt},
-    seenCreatures:[...seenCreatureKinds],nextEliteSpawnCheckAt,
+    pets:Object.values(tamedCreatures),seenCreatures:[...seenCreatureKinds],nextEliteSpawnCheckAt,
     discoveredLandmarks:[...discoveredLandmarks],restoredLandmarks:[...restoredLandmarks],
     unlockedTech:[...unlockedTech]};
   try{
@@ -4621,6 +4825,11 @@ function loadFreeWorld(){
         survivalWorldTime=Math.max(0,Number(data.worldTime)||0);
         creatureDefeats=data.creatureDefeats&&typeof data.creatureDefeats==='object'?{...data.creatureDefeats}:{};
         creatureForageAt=data.creatureForageAt&&typeof data.creatureForageAt==='object'?{...data.creatureForageAt}:{};
+        tamedCreatures={};if(Array.isArray(data.pets))for(const raw of data.pets){
+          if(!raw||!TAME_RULES[raw.species])continue;const id=String(raw.id||'').slice(0,64);if(!id)continue;
+          tamedCreatures[id]={id,species:raw.species,name:String(raw.name||window.CubeArchitectCreatures?.SPECIES?.[raw.species]?.name||'친구').slice(0,10),
+            mode:raw.mode==='stay'?'stay':'follow',x:Number(raw.x)||0,z:Number(raw.z)||5,homeX:Number(raw.homeX)||Number(raw.x)||0,homeZ:Number(raw.homeZ)||Number(raw.z)||5};
+        }
         seenCreatureKinds=new Set(Array.isArray(data.seenCreatures)?data.seenCreatures:[]);
         nextEliteSpawnCheckAt=Math.max(survivalWorldTime,Number(data.nextEliteSpawnCheckAt)||0);
         firstNightStarted=!!data.firstNightStarted;
@@ -4902,7 +5111,7 @@ function creatureRespawnReady(spec){
   return !Number.isFinite(last)||survivalWorldTime-last>=(spec.respawn||60);
 }
 function creatureSpeciesCount(id){
-  return wildCreatures.filter(c=>!c.userData.dead&&c.userData.species===id).length;
+  return wildCreatures.filter(c=>!c.userData.dead&&!c.userData.petId&&c.userData.species===id).length;
 }
 function spawnCreatureFromSpec(spec,biome){
   for(let tries=0;tries<14;tries++){
@@ -4940,18 +5149,19 @@ function maintainWildCreatures(force=false){
   const max=mobileModeEnabled?5:7,normalTarget=mobileModeEnabled?4:6;
   for(const root of [...wildCreatures]){
     const dist=Math.hypot(root.position.x-camera.position.x,root.position.z-camera.position.z);
-    if(root.userData.dead||dist>56)despawnWildCreature(root);
+    if(root.userData.dead||(!root.userData.petId&&dist>56))despawnWildCreature(root);
   }
-  const normalCount=()=>wildCreatures.filter(c=>!c.userData.spec?.elite).length;
+  const normalCount=()=>wildCreatures.filter(c=>!c.userData.petId&&!c.userData.spec?.elite).length;
+  const wildCount=()=>wildCreatures.filter(c=>!c.userData.petId).length;
   let budget=force?normalTarget:2;
-  while(normalCount()<normalTarget&&wildCreatures.length<max&&budget-->0)spawnDynamicCreature();
-  if(wildCreatures.length<max)tryRareEliteSpawn();
+  while(normalCount()<normalTarget&&wildCount()<max&&budget-->0)spawnDynamicCreature();
+  if(wildCount()<max)tryRareEliteSpawn();
 }
 function spawnWildCreatures(){
   for(const c of [...wildCreatures])despawnWildCreature(c);
   wildCreatures=[];creatureInteractables=[];creatureSpawnClock=0;
   if(gameFreeMode!=='survival')return;
-  maintainWildCreatures(true);
+  restoreTamedCreatures();maintainWildCreatures(true);
 }
 function startCubeGolemAssembly(root){
   const u=root?.userData;if(!u||u.species!=='cubeGolem'||u.assembling)return;
@@ -5181,26 +5391,11 @@ function interactWildCreature(){
   const hit=creatureRayHit(2.9);if(!hit)return false;
   const root=hit.object.userData.creatureRoot,u=root?.userData;if(!root||u.dead)return false;
   const spec=u.spec;
-  if(spec.kind==='hostile'){
-    toast(spec.name+'은(는) 위험한 생물이에요. 좌클릭으로 방어하거나 거리를 두세요.');return true;
-  }
-  const forage=spec.forage;
-  if(!forage){
-    u.dir=Math.atan2(root.position.x-camera.position.x,root.position.z-camera.position.z);u.turn=.2;
-    toast('생물 관찰 · '+creatureHint(spec));return true;
-  }
-  const readyAt=Math.max(0,Number(creatureForageAt[spec.id])||0);
-  if(survivalWorldTime<readyAt){
-    toast(spec.name+'에게 다시 다가가려면 '+Math.ceil(readyAt-survivalWorldTime)+'초 정도 기다려 주세요.');return true;
-  }
-  let total=0;
-  for(const [type,n] of Object.entries(forage.reward||{})){
-    addToBag(type,n);spawnPickupVisual(type,root.position.x,root.position.y+.25,root.position.z,n);total+=n
-  }
-  creatureForageAt[spec.id]=survivalWorldTime+Math.max(20,Number(forage.cooldown)||60);
-  trackSurvival('forage',spec.id,Math.max(1,total));u.dir=Math.atan2(root.position.x-camera.position.x,root.position.z-camera.position.z);u.turn=.15;
-  triggerFreeAvatarAction('pickup',FREE_AVATAR_ACTION_MS.pickup);
-  toast(spec.name+'과(와) 조심히 상호작용해서 '+(forage.label||'재료')+'을(를) 얻었어요.');sfx('good');markFreeWorldDirty(350);return true;
+  if(spec.kind==='hostile'){toast(spec.name+'은(는) 위험한 생물이에요. 좌클릭으로 방어하거나 거리를 두세요.');return true}
+  if(TAME_RULES[spec.id])return openCreatureLifePanel(root);
+  if(spec.forage)return collectCreatureForage(root);
+  u.dir=Math.atan2(root.position.x-camera.position.x,root.position.z-camera.position.z);u.turn=.2;
+  toast('생물 관찰 · '+creatureHint(spec));return true;
 }
 function hitWildCreature(){
   if(gameFreeMode!=='survival')return false;
@@ -5208,6 +5403,7 @@ function hitWildCreature(){
   const root=hit.object.userData.creatureRoot,u=root?.userData;if(!root||u.dead)return false;
   const now=performance.now();
   if(u.spec.kind!=='hostile'){
+    if(u.petId){toast(petDisplayName(root)+'이(가) 깜짝 놀랐어요.');return true}
     u.dir=Math.atan2(root.position.x-camera.position.x,root.position.z-camera.position.z);
     u.turn=.1;toast(u.spec.name+'이(가) 놀라서 도망갔어요.');return true;
   }
@@ -5234,8 +5430,14 @@ function updateWildCreatures(dt,t){
   }
   for(const root of [...wildCreatures]){
     const u=root.userData;if(u.dead||!root.parent)continue;
-    const spec=u.spec,dx=camera.position.x-root.position.x,dz=camera.position.z-root.position.z,dist=Math.hypot(dx,dz);
-    if(dist>42){root.visible=false;continue}
+    const spec=u.spec;let dx=camera.position.x-root.position.x,dz=camera.position.z-root.position.z,dist=Math.hypot(dx,dz);
+    const pet=petRecordForRoot(root);
+    if(pet?.mode==='follow'&&dist>24){
+      const px=THREE.MathUtils.clamp(camera.position.x+Math.cos(yaw)*1.3,-WORLD_HALF+1,WORLD_HALF-1);
+      const pz=THREE.MathUtils.clamp(camera.position.z-Math.sin(yaw)*1.3,-WORLD_HALF+1,WORLD_HALF-1);
+      root.position.set(px,creatureGroundY(px,pz,freePhysicsY-1.62),pz);dx=camera.position.x-px;dz=camera.position.z-pz;dist=Math.hypot(dx,dz);
+    }
+    if(dist>42&&!pet){root.visible=false;continue}
     if(u.needsAssembly){
       if(dist>=16){root.visible=false;continue}
       u.needsAssembly=false;startCubeGolemAssembly(root);
@@ -5257,6 +5459,15 @@ function updateWildCreatures(dt,t){
     let dir=u.dir,speed=spec.speed,animState='move';
     if(u.knockbackUntil>t){
       dir=u.knockDir;speed=3.9;
+    }else if(pet){
+      if(pet.mode==='follow'){
+        if(dist>2.15){dir=Math.atan2(dx,dz);speed=Math.max(.68,spec.speed*1.35)}
+        else {speed=0;animState='idle'}
+      }else{
+        const homeDist=Math.hypot(root.position.x-(pet.homeX??u.homeX),root.position.z-(pet.homeZ??u.homeZ));
+        if(homeDist>2.6){dir=Math.atan2((pet.homeX??u.homeX)-root.position.x,(pet.homeZ??u.homeZ)-root.position.z);speed=Math.max(.32,spec.speed*.72)}
+        else speed*=.42;
+      }
     }else if(spec.kind==='passive'){
       if(dist<5){dir=Math.atan2(-dx,-dz);speed*=1.65}
       else if(Math.hypot(root.position.x-u.homeX,root.position.z-u.homeZ)>spec.radius){
@@ -5287,7 +5498,7 @@ function updateWildCreatures(dt,t){
       if(u.attackUntil>t||u.attackWindupAt>t)animState='attack';
     }
     u.dir=dir;
-    if(!walkCreatureWithDetour(root,dir,speed,dt,spec.id==='frog'||spec.id==='slime',t))u.dir+=Math.PI*.55;
+    if(speed>0&&!walkCreatureWithDetour(root,dir,speed,dt,spec.id==='frog'||spec.id==='slime',t))u.dir+=Math.PI*.55;
     if(u.hurtUntil<t&&root.scale.x!==1)root.scale.setScalar(1);
     window.CubeArchitectCreatureAssets?.update?.(u.visual,dt,animState);
   }
@@ -5765,6 +5976,7 @@ function updateFree(dt,t){
   const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
   const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
   const move=new THREE.Vector3();
+  if(seatedFurniture&&(freeKeys.KeyW||freeKeys.KeyS||freeKeys.KeyA||freeKeys.KeyD||freeKeys.ArrowUp||freeKeys.ArrowDown||freeKeys.ArrowLeft||freeKeys.ArrowRight||freeKeys.Space||Math.hypot(mobileMove.x,mobileMove.y)>.12))leaveChair();
   if(mobileModeEnabled){
     const magnitude=Math.min(1,Math.hypot(mobileMove.x,mobileMove.y));
     if(magnitude>.12){
@@ -5985,7 +6197,7 @@ function executeMobileRadialAction(action){
   if(action==='observe')ok=mobileObserveTarget();
   else if(action==='use'){
     ok=mobileSpecialUseTarget();
-    if(!ok)toast('문·제작대·화로·랜드마크처럼 사용할 대상을 바라보세요.');
+    if(!ok)toast('문·제작대·화로·의자·표지판·동물처럼 사용할 대상을 바라보세요.');
   }else if(action==='harvest')ok=mobileOneShotHarvest();
   else if(action==='place')ok=mobilePlaceAction();
   tutorialSignal('mobile-radial-'+action);
@@ -6079,7 +6291,7 @@ function updateSimpleSurvivalUi(){
     hub._labelAt=performance.now();
     const u=freeCenterHit(6)?.object?.userData||{};
     const creature=creatureRayHit(2.9),hostile=creature?.object?.userData?.creatureRoot?.userData?.spec?.kind==='hostile';
-    const name=creature?(hostile?'공격':'인사'):['door','doorTop'].includes(u.type)?'열기':u.type==='workbench'?'만들기':u.type==='furnace'?'굽기':u.type==='chest'?'상자':u.type==='bed'?'침대':u.type==='mapBoard'?'지도':u.type==='displayStand'?'전시':
+    const name=creature?(hostile?'공격':'인사'):['door','doorTop'].includes(u.type)?'열기':u.type==='workbench'?'만들기':u.type==='furnace'?'굽기':u.type==='chest'?'상자':u.type==='bed'?'침대':u.type==='mapBoard'?'지도':u.type==='displayStand'?'전시':u.type==='chair'?'앉기':u.type==='sign'?'쓰기':u.type==='bookshelf'?'책장':
       FARM_PLANT_TYPES.includes(selectedType)?'심기':PLACEABLE_TYPES.includes(selectedType)&&selectedType!=='hand'?'놓기':'캐기';
     const label=hub.querySelector('b');if(label&&label.textContent!==name)label.textContent=name;
   }
