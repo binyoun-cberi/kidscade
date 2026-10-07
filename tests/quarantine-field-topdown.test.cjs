@@ -6,7 +6,7 @@ const path=require('node:path');
 const ROOT=path.resolve(__dirname,'..');
 const gameDir=path.join(ROOT,'games','high_quarantine_17');
 
-test('격리구역 17 v27 keeps one 3D flow and preserves outbreak pressure across eight weeks',()=>{
+test('격리구역 17 v28 keeps one 3D flow and preserves outbreak pressure across eight weeks',()=>{
   const html=fs.readFileSync(path.join(gameDir,'격리구역 17.html'),'utf8');
   const outbreak=fs.readFileSync(path.join(gameDir,'outbreak-v3.js'),'utf8');
   const field=fs.readFileSync(path.join(gameDir,'field-topdown-v18.js'),'utf8');
@@ -21,10 +21,10 @@ test('격리구역 17 v27 keeps one 3D flow and preserves outbreak pressure acro
   assert.match(html,/surveillance-v11\.js\?v=12/);
   assert.match(html,/field-topdown-v18\.js\?v=13/);
   assert.match(html,/facility-3d-v20\.js\?v=9/);
-  assert.match(html,/field-3d-v21\.js\?v=7/);
+  assert.match(html,/field-3d-v21\.js\?v=8/);
   assert.match(html,/three-r160\/three\.module\.js/);
   assert.match(html,/3D 격리시설\/CAMP-17/);
-  assert.equal(entry.href,'games/high_quarantine_17/격리구역 17.html?v=27');
+  assert.equal(entry.href,'games/high_quarantine_17/격리구역 17.html?v=28');
 
   assert.match(field,/api\.respondCamp=function/);
   assert.match(field,/api\.respondGlobal=function/);
@@ -91,7 +91,7 @@ test('격리구역 17 v27 keeps one 3D flow and preserves outbreak pressure acro
   assert.doesNotMatch(field3d,/kidscade-avatar|avatar-studio-preview|guest-default\.png/);
   assert.match(field3d,/q17FieldStage3D/);
   assert.match(field3d,/q17-field-input-layer/);
-  assert.match(field3d,/version:'21\.7'/);
+  assert.match(field3d,/version:'21\.8'/);
   assert.match(main3d,/Q-17 CHECKPOINT/);
   assert.match(main3d,/통과 · CAMP-17/);
   assert.match(main3d,/A 추가검사/);
@@ -138,6 +138,7 @@ test('격리구역 17 v27 keeps one 3D flow and preserves outbreak pressure acro
   assert.match(facility,/function personAsset/);
   assert.match(field3d,/const playerRoot=new THREE\.Group\(\)/);
   assert.match(field3d,/cloneAsset\(A\.maleC,1\.72/);
+  assert.match(field3d,/position\.y\+=\.95/);
   assert.match(field,/경찰차/);
   assert.match(field,/지원 밴/);
   assert.match(main3d,/A\.police/);
