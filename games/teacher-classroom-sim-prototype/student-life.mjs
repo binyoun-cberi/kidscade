@@ -229,6 +229,10 @@ export function buildPairs(students,rng=Math.random){
     [active[i],active[j]]=[active[j],active[i]];
   }
   const pairs=[];
-  for(let i=0;i<active.length;i+=2)if(active[i+1])pairs.push([active[i],active[i+1]]);
+  for(let i=0;i<active.length;i+=2){
+    if(active[i+1])pairs.push([active[i],active[i+1]]);
+    else if(pairs.length)pairs[pairs.length-1].push(active[i]); // 15 pupils: six pairs and one trio
+    else pairs.push([active[i]]);
+  }
   return pairs;
 }
