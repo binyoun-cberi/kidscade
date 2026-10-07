@@ -51,9 +51,9 @@ export function resetFocusForLesson(student){
   student.offTaskCount=0;
 }
 
-export function updateLessonFocus(student,dt,{teacherNear=false}={}){
+export function updateLessonFocus(student,dt,{teacherNear=false,drainMultiplier=1}={}){
   if(student.mode==='focused'){
-    student.focus=Math.max(0,student.focus-AI_RULES.focusDrainPerSecond*dt);
+    student.focus=Math.max(0,student.focus-AI_RULES.focusDrainPerSecond*drainMultiplier*dt);
     if(student.focus<=student.focusMax*AI_RULES.focusOffTaskRatio){
       student.mode='offtask';
       student.offTaskCount++;
