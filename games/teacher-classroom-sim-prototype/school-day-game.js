@@ -536,21 +536,39 @@ function transitionToSpace(spaceId){
 
 function enterStep(index,{spaceChanged=false}={}){
   stepIndex=clamp(index,0,DAY_STEPS.length-1);currentStep=DAY_STEPS[stepIndex];stepTime=currentStep.duration||0;
-  pairs=[];relations.clear();hideAllBubbles();setTalk(false);fightsThisSocial=0;
+  pairs=[];teamPairs=[];teamActive=false;teamCheckTimer=0;lessonElapsed=0;lessonAccidents=0;
+  hideAllBubbles();setTalk(false);fightsThisSocial=0;
   if(currentStep.location!==activeSpace.id){
     transitionToSpace(currentStep.location);spaceChanged=true;
   }
+  syncStudentPresence();
   if(teachingMarker)teachingMarker.visible=currentStep.kind==='prep';
   if(doorMarker)doorMarker.visible=currentStep.kind==='transition';
 
   if(currentStep.kind==='prep'){
-    setStudentsToStations();students.forEach(s=>{s.runtime.mode='focused';s.actor.target=s.seat.clone()});
+    setStudentsToStations();
+    students.forEach(s=>{
+      if(!isStudentPresent(s))return;
+      s.runtime.mode='focused';
+      s.actor.target=isStudentResting(s)?safeSeparatedTarget(-1):s.seat.clone();
+    });
     updateBoard(currentStep.board||currentStep.subject);
     setGuide('수업 준비',currentStep.subject+' 수업 시작 위치로 이동',activeSpace.id==='gym'?'체육관 앞쪽 표시로 가세요.':'앞쪽 노란 표시로 가세요.');
   }else if(currentStep.kind==='lesson'){
-    setStudentsToStations();students.forEach(s=>{resetFocusForLesson(s.runtime);s.actor.target=s.seat.clone()});
+    setStudentsToStations();
+    students.forEach(s=>{
+      if(!studentCanParticipate(s))return;
+      resetFocusForLesson(s.runtime);s.actor.target=s.seat.clone();
+      s.safetyRecord=currentStep.safetyRequired?beginSafetyRecord(s,currentStep.period):null;
+      s.accident=null;
+    });
+    if(currentStep.teamActivity){
+      teamPairs=buildPairs(activeLessonStudents());
+      teamPairs.forEach((team,i)=>team.forEach(s=>s.teamId=i));
+    }
     updateBoard(currentStep.board||currentStep.subject);
-    setGuide(currentStep.period+'교시 · '+currentStep.subject,'학생들을 살펴보세요','딴짓하는 학생에게 직접 다가가 도와주세요.');
+    const extra=currentStep.safetyRequired?' 안전교육을 놓치는 학생도 살펴보세요.':'';
+    setGuide(currentStep.period+'교시 · '+currentStep.subject,'학생들을 살펴보세요','딴짓하는 학생에게 직접 다가가 도와주세요.'+extra);
     playAudio(ui.bell,.5);
   }else if(currentStep.kind==='social'){
     pairScan=.4;resetSocialScene();
@@ -558,7 +576,11 @@ function enterStep(index,{spaceChanged=false}={}){
     setGuide(currentStep.lunch?'점심시간':'쉬는 시간',currentStep.lunch?'먹고 쉬며 친구들과 어울려요':'학생들이 스스로 어울립니다','말다툼이 생기면 가까이 가서 중재하세요.');
     playAudio(ui.bell,.45);
   }else if(currentStep.kind==='transition'){
-    students.forEach((s,i)=>{s.runtime.mode='solo';s.actor.target=new THREE.Vector3(5.25,0,-1.9+i*.65)});
+    students.forEach((s,i)=>{
+      if(!isStudentPresent(s))return;
+      s.runtime.mode='solo';
+      s.actor.target=isStudentResting(s)?safeSeparatedTarget(-1):new THREE.Vector3(5.25,0,-1.9+i*.65);
+    });
     const next=SCHOOL_SPACES[currentStep.nextLocation];
     updateBoard((next?.icon||'➡️')+' '+(next?.name||'다음 장소'));
     setGuide('장소 이동',currentStep.title,'오른쪽 출입문까지 직접 걸어가세요.');
@@ -596,11 +618,17 @@ function updateLesson(dt){
   if(stepTime<=0){stats.periodsCompleted++;advanceStep()}
 }
 
-function freeStudents(){return students.filter(s=>!pairs.some(p=>p.a===s||p.b===s)&&s.runtime.cooldown<=0)}
+function freeStudents(){return students.filter(s=>studentCanParticipate(s)&&!pairs.some(p=>p.a===s||p.b===s)&&s.runtime.cooldown<=0)}
 function socialConflictCount(){return pairs.filter(p=>p.state==='conflict'||p.state==='fight').length}
 function relationKey(a,b){return [a.runtime.id,b.runtime.id].sort().join('|')}
 function resetSocialScene(){
-  students.forEach(s=>{resetSocialForRecess(s.runtime);s.runtime.mode='solo';s.runtime.cooldown=Math.random()*2;s.actor.target=randomOpenPoint();s.actor.navGoal='';s.actor.navPath=[]});
+  students.forEach(s=>{
+    if(!isStudentPresent(s))return;
+    resetSocialForRecess(s.runtime);
+    s.runtime.mode='solo';s.runtime.cooldown=Math.random()*2;
+    s.actor.target=isStudentResting(s)?safeSeparatedTarget(-1):randomOpenPoint();
+    s.actor.navGoal='';s.actor.navPath=[];
+  });
 }
 function socialMeetingTargets(){
   for(let i=0;i<20;i++){
