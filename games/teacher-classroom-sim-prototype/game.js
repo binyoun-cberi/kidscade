@@ -293,7 +293,7 @@ function pointToNavCell(point){
     iz:clamp(Math.round((point.z-NAV_MIN_Z)/NAV_STEP),0,NAV_ROWS-1)
   };
 }
-function studentSegmentClear(a,b,step=.07){
+function studentSegmentClear(a,b,step=.025){
   const distance=distance2D(a,b);
   const samples=Math.max(1,Math.ceil(distance/step));
   for(let i=1;i<=samples;i++){
