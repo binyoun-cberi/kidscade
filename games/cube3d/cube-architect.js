@@ -4531,7 +4531,8 @@ function interactLifeBlock(type,x,y,z){
   if(type==='bed')return useBed(x,y,z);
   if(type==='mapBoard'){openLifePanel('map',x,y,z);return true}
   if(type==='displayStand')return useDisplayStand(x,y,z);
-  if(['chair','sofa','bench'].includes(type))return useChair(x,y,z);
+  if(type==='chair')return useChair(x,y,z);
+  if(type==='sofa'||type==='bench')return useChair(x,y,z);
   if(type==='floorLamp'||type==='campfire'){
     const d=getBlock(x,y,z);if(!d)return false;
     const next=d.lit===false;
@@ -4607,7 +4608,7 @@ function placeFreeBlock(hit){
     setWorldBlock(p.x,p.y,p.z,{type:'fire',age:0,playerBuilt:true},true);
   }else if(selectedType==='sapling'){
     setWorldBlock(p.x,p.y,p.z,{type:'sapling',age:0,playerBuilt:true},true);
-  }else if(['stairs','roof','windowFrame','glassPane','furnace','workbench','chest','bed','mapBoard','displayStand','chair','desk','bookshelf','sign',...CAMP_STRUCTURE_TYPES].includes(selectedType)){
+  }else if(['stairs','roof','windowFrame','glassPane','furnace','workbench','chest','bed','mapBoard','displayStand','chair','desk','bookshelf','sign','sofa','bench','coffeeTable','floorLamp','rug','crate','campfire','fence','tent','bedroll'].includes(selectedType)){
     setWorldBlock(p.x,p.y,p.z,{type:selectedType,facing,playerBuilt:true},true);
   }else setWorldBlock(p.x,p.y,p.z,{type:selectedType,playerBuilt:true},true);
   if(survival){
@@ -4627,7 +4628,7 @@ function breakFreeBlock(hit){
   if(!data||blockDef(data).unbreakable){toast('기반암은 부술 수 없어요.');return}
   if(['chair','sofa','bench'].includes(data.type)&&seatedFurniture===worldKey(x,y,z))leaveChair();
   if(FARM_CROP_TYPES.includes(data.type)){harvestCrop(x,y,z,data);return}
-  if(['chest','crate'].includes(data.type)&&data.items&&gameFreeMode==='survival'){
+  if((data.type==='chest'&&data.items&&gameFreeMode==='survival')||(data.type==='crate'&&data.items&&gameFreeMode==='survival')){
     inventoryBatchDepth++;
     for(const [type,n] of Object.entries(data.items))if((Number(n)||0)>0)addToBag(type,Number(n)||0);
     inventoryBatchDepth--;buildHotbar();toast('상자 안의 물건도 가방으로 챙겼어요.');
