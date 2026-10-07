@@ -58,11 +58,11 @@ const els={
 
 
 function defaultProgress(){
- return{version:1,cash:0,shifts:0,tutorialDone:false,owned:{prepCounter:2,conveyor:0,grabber:0,smartGrabber:0},filters:{smartGrabberA:'noodle'},layout:{}}
+ return{version:2,cash:0,shifts:0,tutorialDone:false,owned:{prepCounter:2,conveyor:0,grabber:0,smartGrabber:0},filters:{smartGrabberA:'noodle'},layout:{}}
 }
 function normalizeProgress(raw){
- const base=defaultProgress(),v=raw&&typeof raw==='object'?raw:{};
- const out={version:1,cash:Math.max(0,Math.floor(Number(v.cash)||0)),shifts:Math.max(0,Math.floor(Number(v.shifts)||0)),tutorialDone:!!v.tutorialDone,owned:{},filters:{...base.filters,...(v.filters||{})},layout:v.layout&&typeof v.layout==='object'?v.layout:{}};
+ const base=defaultProgress(),v=raw&&typeof raw==='object'?raw:{},layoutOk=Number(v.version)>=2;
+ const out={version:2,cash:Math.max(0,Math.floor(Number(v.cash)||0)),shifts:Math.max(0,Math.floor(Number(v.shifts)||0)),tutorialDone:!!v.tutorialDone,owned:{},filters:{...base.filters,...(v.filters||{})},layout:layoutOk&&v.layout&&typeof v.layout==='object'?v.layout:{}};
  for(const [key,info] of Object.entries(EQUIPMENT)){
   const n=Math.floor(Number(v.owned?.[key]));
   out.owned[key]=Math.max(info.min,Math.min(info.max,Number.isFinite(n)?n:info.min))
@@ -143,7 +143,8 @@ class RamenKitchen3D{
   this.potVisuals=[];
   this.customerHolders=[];
   this.customerXs=[-3.3,-1.1,1.1,3.3];
-  this.serviceGroup=null;this.serviceMeal=null;this.serviceHome=new THREE.Vector3(5.25,.92,2.65);
+  this.serviceGroup=null;this.serviceMeal=null;this.serviceHome=new THREE.Vector3(0,.92,5.25);
+  this.cameraFocus=new THREE.Vector3(0,.9,.5);this.cameraGoal=new THREE.Vector3(0,10.5,10.8);
   this.raycaster=new THREE.Raycaster();
   this.pointer=new THREE.Vector2();
   this.layoutStations=[];this.stationPickables=[];this.dragLayout=null;this.selectedLayoutStation=null;
@@ -174,17 +175,18 @@ class RamenKitchen3D{
   const warm=new THREE.PointLight(0xffc26b,10,14,2);warm.position.set(0,5,-2.5);this.scene.add(warm);
  }
  makeRoom(){
-  this.box(16.5,.3,11.8,0xc58d5b,0,-.18,.2);
-  this.box(16.5,3.4,.25,0xf5ead7,0,1.5,-5.6);
-  this.box(.24,3.4,11.8,0xe7d4bb,-8.12,1.5,.2);
-  this.box(.24,3.4,11.8,0xe7d4bb,8.12,1.5,.2);
-  this.box(15.8,.58,.12,0xb93f35,0,.52,-5.43);
-  this.box(5.4,1.15,.09,0x27383a,0,2.02,-5.3,{roughness:.5});
-  this.box(4.7,.055,.09,0xf3d46e,0,2.36,-5.22);
-  for(const x of[-5.2,0,5.2]){
-   const lamp=new THREE.PointLight(0xffd28a,5.5,7,2);lamp.position.set(x,3.2,-1.1);this.scene.add(lamp);
+  // v18: 20 x 14 정도의 넓은 주방. 바닥 격자 한 칸을 약 1m 작업칸으로 사용한다.
+  this.box(20.4,.3,13.8,0xc58d5b,0,-.18,.35);
+  this.box(20.4,3.5,.25,0xf5ead7,0,1.55,-6.35);
+  this.box(.24,3.5,13.8,0xe7d4bb,-10.08,1.55,.35);
+  this.box(.24,3.5,13.8,0xe7d4bb,10.08,1.55,.35);
+  this.box(19.7,.58,.12,0xb93f35,0,.52,-6.18);
+  this.box(5.4,1.15,.09,0x27383a,0,2.02,-6.05,{roughness:.5});
+  this.box(4.7,.055,.09,0xf3d46e,0,2.36,-5.97);
+  for(const x of[-6.4,0,6.4]){
+   const lamp=new THREE.PointLight(0xffd28a,5.5,7.5,2);lamp.position.set(x,3.25,-.8);this.scene.add(lamp);
   }
-  const floorGrid=new THREE.GridHelper(15.8,24,0x94654a,0xe1bc91);floorGrid.position.y=.005;floorGrid.scale.z=.72;floorGrid.material.transparent=true;floorGrid.material.opacity=.24;this.scene.add(floorGrid);
+  const floorGrid=new THREE.GridHelper(19.2,18,0x94654a,0xe1bc91);floorGrid.position.set(0,.005,.35);floorGrid.scale.z=.7;floorGrid.material.transparent=true;floorGrid.material.opacity=.22;this.scene.add(floorGrid);
  }
  async loadModel(root,file,size){
   const key=root+file;
@@ -246,50 +248,46 @@ class RamenKitchen3D{
   ctx.restore();look.texture.needsUpdate=true
  }
  makeBurners(){
-  const xs=[-3.45,-1.15,1.15,3.45];
+  const xs=[-3.15,-1.05,1.05,3.15],z=-.05;
   xs.forEach((x,i)=>{
-   const root=new THREE.Group();root.position.set(x,0,.75);this.scene.add(root);
-   const counter=new THREE.Mesh(new THREE.BoxGeometry(2.0,.82,2.35),this.material(0x394447,{roughness:.52,metalness:.18}));counter.position.y=.4;counter.castShadow=true;counter.receiveShadow=true;root.add(counter);
-   const top=new THREE.Mesh(new THREE.BoxGeometry(1.92,.14,2.24),this.material(0x202829,{roughness:.35,metalness:.45}));top.position.y=.87;root.add(top);
-   const burner=new THREE.Mesh(new THREE.TorusGeometry(.55,.07,10,34),new THREE.MeshStandardMaterial({color:0x30383a,roughness:.35,metalness:.62,emissive:0xff5b25,emissiveIntensity:.08}));burner.rotation.x=Math.PI/2;burner.position.set(0,.96,.08);root.add(burner);
-   const flame=new THREE.PointLight(0xff6a2b,0,3,2);flame.position.set(0,1.0,.08);root.add(flame);
+   const root=new THREE.Group();root.position.set(x,0,z);this.scene.add(root);
+   const counter=new THREE.Mesh(new THREE.BoxGeometry(1.58,.8,1.72),this.material(0x394447,{roughness:.52,metalness:.18}));counter.position.y=.39;counter.castShadow=true;counter.receiveShadow=true;root.add(counter);
+   const top=new THREE.Mesh(new THREE.BoxGeometry(1.5,.13,1.64),this.material(0x202829,{roughness:.35,metalness:.45}));top.position.y=.84;root.add(top);
+   const burner=new THREE.Mesh(new THREE.TorusGeometry(.47,.062,10,34),new THREE.MeshStandardMaterial({color:0x30383a,roughness:.35,metalness:.62,emissive:0xff5b25,emissiveIntensity:.08}));burner.rotation.x=Math.PI/2;burner.position.set(0,.93,.02);root.add(burner);
+   const flame=new THREE.PointLight(0xff6a2b,0,2.7,2);flame.position.set(0,.98,.02);root.add(flame);
 
-   const potGroup=new THREE.Group();potGroup.position.set(0,1.02,.08);root.add(potGroup);
-   const potBody=new THREE.Mesh(new THREE.CylinderGeometry(.68,.62,.48,28,1,true),this.material(0x69787b,{roughness:.32,metalness:.72}));potBody.position.y=.24;potGroup.add(potBody);
-   const rim=new THREE.Mesh(new THREE.TorusGeometry(.67,.045,8,32),this.material(0xaab6b6,{roughness:.25,metalness:.8}));rim.rotation.x=Math.PI/2;rim.position.y=.49;potGroup.add(rim);
-   const handle=new THREE.Mesh(new THREE.BoxGeometry(.58,.09,.12),this.material(0x343a3b,{roughness:.55}));handle.position.set(.91,.35,0);potGroup.add(handle);
+   const potGroup=new THREE.Group();potGroup.position.set(0,.99,.02);root.add(potGroup);
+   const potBody=new THREE.Mesh(new THREE.CylinderGeometry(.58,.53,.43,28,1,true),this.material(0x69787b,{roughness:.32,metalness:.72}));potBody.position.y=.22;potGroup.add(potBody);
+   const rim=new THREE.Mesh(new THREE.TorusGeometry(.57,.04,8,32),this.material(0xaab6b6,{roughness:.25,metalness:.8}));rim.rotation.x=Math.PI/2;rim.position.y=.44;potGroup.add(rim);
+   const handle=new THREE.Mesh(new THREE.BoxGeometry(.48,.08,.11),this.material(0x343a3b,{roughness:.55}));handle.position.set(.78,.31,0);potGroup.add(handle);
 
-   const liquid=new THREE.Mesh(new THREE.CylinderGeometry(.59,.59,.035,30),new THREE.MeshStandardMaterial({color:0x74cbe8,roughness:.28,transparent:true,opacity:.82,emissive:0x173843,emissiveIntensity:.08}));liquid.position.y=.47;liquid.visible=false;potGroup.add(liquid);
-   const foodGroup=new THREE.Group();foodGroup.position.y=.505;potGroup.add(foodGroup);
-   const noodleGroup=new THREE.Group();noodleGroup.position.y=.515;potGroup.add(noodleGroup);
-   for(let n=0;n<4;n++){const noodle=new THREE.Mesh(new THREE.TorusGeometry(.24+n*.045,.023,5,24,Math.PI*1.62),new THREE.MeshStandardMaterial({color:0xf0ce69,roughness:.76}));noodle.rotation.x=Math.PI/2;noodle.rotation.z=n*.72;noodle.position.y=n*.013;noodleGroup.add(noodle)}
+   const liquid=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,.032,30),new THREE.MeshStandardMaterial({color:0x74cbe8,roughness:.28,transparent:true,opacity:.82,emissive:0x173843,emissiveIntensity:.08}));liquid.position.y=.425;liquid.visible=false;potGroup.add(liquid);
+   const foodGroup=new THREE.Group();foodGroup.position.y=.46;potGroup.add(foodGroup);
+   const noodleGroup=new THREE.Group();noodleGroup.position.y=.47;potGroup.add(noodleGroup);
+   for(let n=0;n<4;n++){const noodle=new THREE.Mesh(new THREE.TorusGeometry(.2+n*.038,.021,5,24,Math.PI*1.62),new THREE.MeshStandardMaterial({color:0xf0ce69,roughness:.76}));noodle.rotation.x=Math.PI/2;noodle.rotation.z=n*.72;noodle.position.y=n*.012;noodleGroup.add(noodle)}
    noodleGroup.visible=false;
 
-   const steam=new THREE.Group();steam.position.y=.68;potGroup.add(steam);
-   for(let n=0;n<5;n++){const puff=new THREE.Mesh(new THREE.SphereGeometry(.09+n*.008,10,7),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.18,depthWrite:false}));puff.position.set((n-2)*.13,n*.13,(n%2-.5)*.12);steam.add(puff)}
+   const steam=new THREE.Group();steam.position.y=.61;potGroup.add(steam);
+   for(let n=0;n<5;n++){const puff=new THREE.Mesh(new THREE.SphereGeometry(.08+n*.007,10,7),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.18,depthWrite:false}));puff.position.set((n-2)*.11,n*.12,(n%2-.5)*.1);steam.add(puff)}
    steam.visible=false;
 
-   const selectRing=new THREE.Mesh(new THREE.RingGeometry(.82,.94,36),new THREE.MeshBasicMaterial({color:0xffe27b,transparent:true,opacity:.9,depthWrite:false}));selectRing.rotation.x=-Math.PI/2;selectRing.position.y=.94;root.add(selectRing);
-   selectRing.visible=i===0;
+   const selectRing=new THREE.Mesh(new THREE.RingGeometry(.67,.78,36),new THREE.MeshBasicMaterial({color:0xffe27b,transparent:true,opacity:.9,depthWrite:false}));selectRing.rotation.x=-Math.PI/2;selectRing.position.y=.88;root.add(selectRing);selectRing.visible=i===0;
 
-   const pick=new THREE.Mesh(new THREE.CylinderGeometry(.95,.95,1.1,16),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));pick.position.y=1.25;pick.userData.potIndex=i;root.add(pick);this.pickables.push(pick);
-
-   const tag=this.makeTextSprite('냄비 '+(i+1));tag.position.set(0,1.98,.1);root.add(tag);
-   const lockTag=this.makeTextSprite('잠금');lockTag.position.set(0,2.02,.1);lockTag.visible=false;root.add(lockTag);
+   const pick=new THREE.Mesh(new THREE.CylinderGeometry(.78,.78,1.05,16),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));pick.position.y=1.18;pick.userData.potIndex=i;root.add(pick);this.pickables.push(pick);
+   const tag=this.makeTextSprite('냄비 '+(i+1));tag.position.set(0,1.72,.05);tag.scale.set(1.18,.37,1);root.add(tag);
+   const lockTag=this.makeTextSprite('잠금');lockTag.position.set(0,1.75,.05);lockTag.scale.set(1.05,.34,1);lockTag.visible=false;root.add(lockTag);
 
    this.potVisuals.push({root,burner,flame,potGroup,liquid,foodGroup,noodleGroup,steam,selectRing,tag,lockTag});
-   this.placeModel(KITCHEN,'stove.glb',1.5,x,.04,1.1,0);
+   this.placeModel(KITCHEN,'stove.glb',1.12,x,.02,z+.04,0);
   });
- }
- makeTextSprite(text){
+ } makeTextSprite(text){
   const c=document.createElement('canvas');c.width=256;c.height=80;const g=c.getContext('2d');g.fillStyle='rgba(49,36,28,.88)';g.beginPath();g.roundRect?.(18,12,220,52,18);g.fill();g.fillStyle='#fff8ec';g.font='900 26px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText(text,128,39);
-  const tex=new THREE.CanvasTexture(c);const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false});const sp=new THREE.Sprite(mat);sp.scale.set(1.6,.5,1);return sp
+  const tex=new THREE.CanvasTexture(c);const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false});const sp=new THREE.Sprite(mat);sp.scale.set(1.28,.4,1);return sp
  }
  makeKitchenProps(){
-  this.placeModel(SUSHI,'table.glb',2.15,-5.0,.02,4.2,0);
-  this.placeModel(SUSHI,'chair.glb',1.25,-6.15,.02,4.2,Math.PI/2);
-  this.placeModel(SUSHI,'chair.glb',1.25,-3.85,.02,4.2,-Math.PI/2);
-  this.staticBlockers.push({x:-5.0,z:4.2,r:.95});
+  // 손님 테이블은 작업 동선을 막지 않도록 주방 바깥 배경 쪽으로 뺀다.
+  this.placeModel(SUSHI,'table.glb',1.45,-7.9,.02,5.95,0);
+  this.placeModel(SUSHI,'chair.glb',.95,-8.8,.02,5.95,Math.PI/2);
  }
  makeLayoutStation(id,label,root,file,size,x,z,rot=0,radius=.82){
   const holder=new THREE.Group();holder.position.set(x,0,z);holder.rotation.y=rot;holder.userData.stationId=id;holder.userData.blockRadius=radius;this.scene.add(holder);
@@ -297,7 +295,7 @@ class RamenKitchen3D{
   pick.position.y=.8;pick.userData.layoutStation=holder;holder.add(pick);this.stationPickables.push(pick);
   const ring=new THREE.Mesh(new THREE.RingGeometry(.72,.9,32),new THREE.MeshBasicMaterial({color:0x5bd0ff,transparent:true,opacity:.0,depthWrite:false}));
   ring.rotation.x=-Math.PI/2;ring.position.y=.02;holder.add(ring);holder.userData.ring=ring;
-  const tag=this.makeTextSprite(label);tag.position.set(0,1.8,0);tag.scale.set(1.25,.4,1);holder.add(tag);
+  const tag=this.makeTextSprite(label);tag.position.set(0,1.72,0);tag.scale.set(1.02,.32,1);holder.add(tag);holder.userData.tag=tag;
   this.loadModel(root,file,size).then(o=>{if(o)holder.add(o)});
   this.layoutStations.push({id,label,group:holder});
   return holder
@@ -378,9 +376,11 @@ class RamenKitchen3D{
   saveProgress()
  }
  findFreeEquipmentSpot(group){
-  const spots=[];
-  for(const z of [3.35,2.25,-2.1])for(let x=-3.2;x<=4.8;x+=1.6)spots.push({x:Math.round(x*10)/10,z});
-  return spots.find(p=>!this.layoutPlacementBlocked(group,p.x,p.z))||{x:0,z:3.35}
+  const spots=[
+   {x:-5.8,z:-2.45},{x:5.8,z:-2.45},{x:-7.95,z:5.25},{x:7.95,z:5.25},
+   {x:-3.15,z:-2.45},{x:-1.05,z:-2.45},{x:1.05,z:-2.45},{x:3.15,z:-2.45}
+  ];
+  return spots.find(p=>!this.layoutPlacementBlocked(group,p.x,p.z))||{x:7.95,z:5.25}
  }
  revealNewestEquipment(key){
   const candidates=this.layoutStations.filter(s=>s.group.userData.equipmentKey===key).sort((a,b)=>(a.group.userData.equipmentIndex||0)-(b.group.userData.equipmentIndex||0));
@@ -442,28 +442,33 @@ class RamenKitchen3D{
   }
  }
  makePlateupStations(){
-  const sink=this.makeLayoutStation('sink','싱크 · 물/설거지',BAKERY_BITS,'kitchencounter-sink.glb',2.05,-5.7,-1.7,Math.PI/2,.88);
-  this.makeLayoutStation('noodleSource','면 바구니',BAKERY,'basket-a.glb',1.05,-5.9,.45,0,.62);
-  this.makeLayoutStation('soupSource','스프 바구니',BAKERY,'basket-b.glb',1.05,-5.9,2.45,0,.62);
-  this.makeLayoutStation('fridge','토핑 냉장고',BAKERY_BITS,'fridge-a.glb',2.1,-3.8,3.7,Math.PI,.88);
-  this.makeLayoutStation('rack','깨끗한 접시',BAKERY_BITS,'dishrack-plates.glb',1.45,5.75,1.0,-Math.PI/2,.72);
-  this.makePrepCounter('prepCounterA','조리대 A',5.35,-1.65,-Math.PI/2,0);
-  this.makePrepCounter('prepCounterB','조리대 B',5.35,.15,-Math.PI/2,1);
-  this.makePrepCounter('prepCounterC','조리대 C',3.7,3.2,Math.PI,2);
-  this.makeAutomationStation('conveyorA','컨베이어 A','conveyor',-1.15,-1.8,2,0);
-  this.makeAutomationStation('conveyorB','컨베이어 B','conveyor',1.15,-1.8,2,1);
-  this.makeAutomationStation('grabberA','Grabber','grabber',-3.45,-1.8,2,0);
-  this.makeAutomationStation('smartGrabberA','Smart Grabber','smartGrabber',3.45,-1.8,2,0);
+  // 왼쪽 벽 = 재료존. 중앙과의 사이에 3칸 가까운 세로 통로를 남긴다.
+  const sink=this.makeLayoutStation('sink','싱크 · 물/설거지',BAKERY_BITS,'kitchencounter-sink.glb',1.82,-8.15,-2.65,Math.PI/2,.78);
+  this.makeLayoutStation('noodleSource','면 바구니',BAKERY,'basket-a.glb',.92,-8.2,-.55,0,.54);
+  this.makeLayoutStation('soupSource','스프 바구니',BAKERY,'basket-b.glb',.92,-8.2,1.5,0,.54);
+  this.makeLayoutStation('fridge','토핑 냉장고',BAKERY_BITS,'fridge-a.glb',1.82,-8.05,4.15,Math.PI,.78);
+
+  // 오른쪽 벽 = 접시/조리대존. 중앙 통로는 비워 둔다.
+  this.makeLayoutStation('rack','깨끗한 접시',BAKERY_BITS,'dishrack-plates.glb',1.28,8.15,-2.1,-Math.PI/2,.62);
+  this.makePrepCounter('prepCounterA','조리대 A',8.05,.15,-Math.PI/2,0);
+  this.makePrepCounter('prepCounterB','조리대 B',8.05,2.45,-Math.PI/2,1);
+  this.makePrepCounter('prepCounterC','조리대 C',8.05,4.75,-Math.PI/2,2);
+
+  // 자동화는 손님 쪽 '기계 레인'에만 기본 배치한다. 메인 보행 통로를 침범하지 않는다.
+  this.makeAutomationStation('conveyorA','컨베이어 A','conveyor',-1.05,-2.45,2,0);
+  this.makeAutomationStation('conveyorB','컨베이어 B','conveyor',1.05,-2.45,2,1);
+  this.makeAutomationStation('grabberA','Grabber','grabber',-3.15,-2.45,2,0);
+  this.makeAutomationStation('smartGrabberA','Smart Grabber','smartGrabber',3.15,-2.45,2,0);
   this.applySavedEquipmentState();
+
   const dirtyGroup=new THREE.Group();dirtyGroup.position.set(.1,1.0,.15);sink.add(dirtyGroup);
   this.loadModel(BAKERY_BITS,'plate-dirty.glb',.42).then(model=>{
    if(!model)return;
    for(let i=0;i<5;i++){const plate=model.clone(true);plate.position.set(0,i*.07,0);plate.visible=false;dirtyGroup.add(plate);this.dirtyPlateModels.push(plate)}
    this.syncDishVisuals()
   });
- }
- makePlayer(){
-  const root=this.player=new THREE.Group();root.position.set(0,0,3.45);this.scene.add(root);
+ } makePlayer(){
+  const root=this.player=new THREE.Group();root.position.set(0,0,3.55);this.scene.add(root);
   const ring=this.playerRing=new THREE.Mesh(new THREE.RingGeometry(.42,.55,30),new THREE.MeshBasicMaterial({color:0xffe172,transparent:true,opacity:.9,depthWrite:false}));
   ring.rotation.x=-Math.PI/2;ring.position.y=.025;root.add(ring);
   const cute=this.makeCuteCook('player');root.add(cute.sprite);root.userData.cute=cute;root.userData.moving=false;root.userData.faceRight=false;
@@ -481,7 +486,7 @@ class RamenKitchen3D{
   const tex=new THREE.CanvasTexture(canvas),sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));sprite.scale.set(.72,.72,1);this.carryAnchor.add(sprite);this.carrySprite=sprite
  }
  makeHelper(){
-  const root=this.helper=new THREE.Group();root.position.set(2.55,0,4.05);root.visible=false;this.scene.add(root);
+  const root=this.helper=new THREE.Group();root.position.set(4.9,0,4.55);root.visible=false;this.scene.add(root);
   const ring=new THREE.Mesh(new THREE.RingGeometry(.36,.47,28),new THREE.MeshBasicMaterial({color:0x77c9ff,transparent:true,opacity:.82,depthWrite:false}));
   ring.rotation.x=-Math.PI/2;ring.position.y=.02;root.add(ring);
   const cute=this.makeCuteCook('helper');cute.sprite.scale.set(1.78,1.78,1);root.add(cute.sprite);root.userData.cute=cute;root.userData.moving=false;root.userData.faceRight=false;
@@ -499,7 +504,7 @@ class RamenKitchen3D{
  }
  resetHelper(){
   this.releaseHelperReservation();this.helperTask=null;this.helperPath=[];this.helperThink=0;this.setHelperCarry(null);
-  if(this.helper){this.helper.position.set(2.55,0,4.05);this.helper.visible=false}
+  if(this.helper){this.helper.position.set(4.9,0,4.55);this.helper.visible=false}
  }
  setHelperEnabled(on){
   state.helperEnabled=!!on&&state.helperUnlocked;
@@ -513,7 +518,7 @@ class RamenKitchen3D{
  }
  buildHelperPath(group,approach=1.42){
   if(!this.helper||!group)return[];
-  const step=.45,minX=-7,maxX=7,minZ=-2.7,maxZ=4.45;
+  const step=.5,minX=-8.8,maxX=8.8,minZ=-3.45,maxZ=5.95;
   const snap=v=>Math.round(v/step)*step,key=(x,z)=>x.toFixed(2)+','+z.toFixed(2);
   const start={x:snap(this.helper.position.x),z:snap(this.helper.position.z)},queue=[start],prev=new Map([[key(start.x,start.z),null]]),nodes=new Map([[key(start.x,start.z),start]]);
   let goalKey=null,head=0;
@@ -606,21 +611,29 @@ class RamenKitchen3D{
   this.updatePointer(e);
   const p=new THREE.Vector3(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
   if(!this.raycaster.ray.intersectPlane(plane,p))return;
-  const x=Math.max(-6.2,Math.min(6.2,Math.round(p.x*2)/2)),z=Math.max(-2.25,Math.min(3.7,Math.round(p.z*2)/2));
+  const x=Math.max(-8.35,Math.min(8.35,Math.round(p.x*2)/2)),z=Math.max(-3.35,Math.min(5.55,Math.round(p.z*2)/2));
   if(!this.layoutPlacementBlocked(this.dragLayout,x,z))this.dragLayout.position.set(x,0,z);
  }
- layoutPlacementBlocked(holder,x,z){
-  const r=holder.userData.blockRadius||.82;
-  if(this.potVisuals.some(v=>Math.hypot(v.root.position.x-x,v.root.position.z-z)<r+1.15))return true;
-  if(this.layoutStations.some(s=>s.group!==holder&&s.group.visible&&Math.hypot(s.group.position.x-x,s.group.position.z-z)<r+(s.group.userData.blockRadius||.82)+.28))return true;
-  if(this.serviceGroup&&Math.hypot(this.serviceGroup.position.x-x,this.serviceGroup.position.z-z)<r+1.05)return true;
-  return this.staticBlockers.some(b=>Math.hypot(b.x-x,b.z-z)<r+b.r+.2)
+ protectedAisle(x,z,r=.7){
+  // 약 1m 격자 두 칸(2m+)을 항상 비워 두는 십자형 메인 동선.
+  const frontLane=z>1.25-r&&z<4.55+r&&x>-6.45-r&&x<6.45+r;
+  const leftLane=x>-6.85-r&&x<-4.45+r&&z>-3.25-r&&z<5.15+r;
+  const rightLane=x>4.45-r&&x<6.85+r&&z>-3.25-r&&z<5.15+r;
+  return frontLane||leftLane||rightLane
  }
- isBlockedPosition(x,z,pr=.36){
-  if(x<-7.15||x>7.15||z<-2.85||z>4.55)return true;
-  if(this.potVisuals.some(v=>Math.hypot(v.root.position.x-x,v.root.position.z-z)<1.0+pr))return true;
-  if(this.layoutStations.some(s=>s.group.visible&&Math.hypot(s.group.position.x-x,s.group.position.z-z)<(s.group.userData.blockRadius||.82)+pr))return true;
-  if(this.serviceGroup&&Math.hypot(this.serviceGroup.position.x-x,this.serviceGroup.position.z-z)<.9+pr)return true;
+ layoutPlacementBlocked(holder,x,z){
+  const r=holder.userData.blockRadius||.72;
+  if(this.protectedAisle(x,z,r))return true;
+  if(this.potVisuals.some(v=>Math.hypot(v.root.position.x-x,v.root.position.z-z)<r+.95))return true;
+  if(this.layoutStations.some(s=>s.group!==holder&&s.group.visible&&Math.hypot(s.group.position.x-x,s.group.position.z-z)<r+(s.group.userData.blockRadius||.72)+.34))return true;
+  if(this.serviceGroup&&Math.hypot(this.serviceGroup.position.x-x,this.serviceGroup.position.z-z)<r+1.05)return true;
+  return this.staticBlockers.some(b=>Math.hypot(b.x-x,b.z-z)<r+b.r+.25)
+ }
+ isBlockedPosition(x,z,pr=.34){
+  if(x<-8.9||x>8.9||z<-3.55||z>6.0)return true;
+  if(this.potVisuals.some(v=>Math.hypot(v.root.position.x-x,v.root.position.z-z)<.84+pr))return true;
+  if(this.layoutStations.some(s=>s.group.visible&&Math.hypot(s.group.position.x-x,s.group.position.z-z)<(s.group.userData.blockRadius||.72)+pr))return true;
+  if(this.serviceGroup&&Math.hypot(this.serviceGroup.position.x-x,this.serviceGroup.position.z-z)<.82+pr)return true;
   return this.staticBlockers.some(b=>Math.hypot(b.x-x,b.z-z)<b.r+pr)
  }
  stationDistance(group){return this.player?Math.hypot(group.position.x-this.player.position.x,group.position.z-this.player.position.z):999}
@@ -652,7 +665,11 @@ class RamenKitchen3D{
   let nearest=null,best=1.55;
   candidates.forEach(item=>{const d=this.stationDistance(item.group);if(d<best){best=d;nearest=item}});
   this.nearestStation=nearest;
-  this.layoutStations.forEach(s=>{s.group.userData.ring.material.opacity=s.group.visible?(state.phase==='prep' ? .55 : (nearest?.group===s.group ? .88 : 0)):0});
+  this.layoutStations.forEach(s=>{
+   const d=this.stationDistance(s.group),near=nearest?.group===s.group,tag=s.group.userData.tag;
+   s.group.userData.ring.material.opacity=s.group.visible?(state.phase==='prep'?.42:(near?.88:0)):0;
+   if(tag){tag.visible=s.group.visible&&(state.phase==='prep'||near||d<3.15);tag.material.opacity=near?1:.7;tag.scale.set(near?1.12:.92,near?.35:.29,1)}
+  });
   if(els.stationHint){
    if(state.phase==='prep')els.stationHint.textContent=this.selectedLayoutStation?.userData?.automationType?'자동화 장비 선택됨 · 드래그로 이동 / R 또는 회전 버튼으로 방향 변경':'가구를 드래그해 주방 동선을 바꿔 보세요';
    else if(!nearest)els.stationHint.textContent='WASD / 방향키로 가까이 가서 E로 상호작용';
@@ -718,7 +735,7 @@ class RamenKitchen3D{
   this.loadModel(BAKERY,'serving-tray.glb',1.35).then(o=>{if(o){o.rotation.y=Math.PI/2;base.add(o)}});
   const meal=this.serviceMeal=new THREE.Group();meal.position.y=.12;meal.visible=false;base.add(meal);
   this.loadModel(SUSHI,'ramen.glb',.9).then(o=>{if(o){o.position.y=.02;meal.add(o)}});
-  const label=this.makeTextSprite('배식대');label.position.set(0,1.0,0);label.scale.set(1.25,.4,1);base.add(label);
+  const label=this.makeTextSprite('배식대');label.position.set(0,.95,0);label.scale.set(1.02,.32,1);base.add(label);
  }
  setTrayMeal(show){
   if(this.serviceMeal)this.serviceMeal.visible=!!show;
@@ -787,8 +804,20 @@ class RamenKitchen3D{
  }
  resize(){
   const w=this.canvas.clientWidth||innerWidth,h=this.canvas.clientHeight||innerHeight;
-  this.renderer.setSize(w,h,false);this.camera.aspect=w/Math.max(1,h);this.camera.fov=w<650?50:w<900?43:38;
-  this.camera.position.set(0,w<650?10.7:8.7,w<650?10.9:8.9);this.camera.lookAt(0,1.0,.45);this.camera.updateProjectionMatrix()
+  this.renderer.setSize(w,h,false);this.camera.aspect=w/Math.max(1,h);this.updateCamera(0,true)
+ }
+ updateCamera(dt=0,immediate=false){
+  const w=this.canvas.clientWidth||innerWidth,mobile=w<650,service=state.phase==='service'&&this.player;
+  let fx=0,fz=.45,fy=.9,px=0,py=mobile?12.2:10.5,pz=mobile?12.6:11.2,targetFov=mobile?50:43;
+  if(service){
+   fx=Math.max(-5.85,Math.min(5.85,this.player.position.x));
+   fz=Math.max(-1.9,Math.min(4.75,this.player.position.z))-.72;
+   fy=.86;
+   px=fx;py=mobile?7.0:6.05;pz=fz+(mobile?6.7:5.65);targetFov=mobile?44:35;
+  }
+  const a=immediate?1:1-Math.exp(-Math.max(0,dt)*5.2);
+  this.cameraGoal.set(px,py,pz);this.cameraFocus.lerp(new THREE.Vector3(fx,fy,fz),a);this.camera.position.lerp(this.cameraGoal,a);
+  this.camera.fov+= (targetFov-this.camera.fov)*a;this.camera.lookAt(this.cameraFocus);this.camera.updateProjectionMatrix()
  }
  update(dt){
   this.clock+=dt;
@@ -796,6 +825,7 @@ class RamenKitchen3D{
   this.updateHelper(dt);
   if(this.helper?.userData?.cute)this.paintCuteCook(this.helper.userData.cute,!!this.helper.userData.moving,!!this.helper.userData.faceRight);
   this.updateAutomation(dt);
+  this.updateCamera(dt);
   state.pots.forEach((p,i)=>{
    const v=this.potVisuals[i];if(!v)return;
    const boiling=p.water>.05&&p.heat>=3.5&&!p.burnt;
@@ -812,7 +842,8 @@ class RamenKitchen3D{
    }
    const hot=p.water>.05||p.ingredients.length;v.burner.material.emissiveIntensity=hot?(p.burnt?.95:.42):.06;v.flame.intensity=hot?(p.burnt?4.8:2.2):0;
    if(p.burnt)v.flame.color.setHex(0xff2f1d);else v.flame.color.setHex(0xff6a2b);
-   const locked=i>=activePotCount();v.lockTag.visible=locked;v.tag.visible=!locked;
+   const locked=i>=activePotCount(),pd=this.player?Math.hypot(v.root.position.x-this.player.position.x,v.root.position.z-this.player.position.z):99,showLabel=state.phase!=='service'||pd<4.15||i===state.selectedPot;
+   v.lockTag.visible=locked&&showLabel;v.tag.visible=!locked&&showLabel;
    if(locked){v.selectRing.visible=false;v.flame.intensity=0;v.burner.material.emissiveIntensity=.02;return}
    const selected=i===state.selectedPot,tutorialTarget=state.tutorial.active&&state.tutorial.step===0&&i===0;
    const ideal=hasIngredient(p,'noodle')&&p.noodleTime>=8.2&&p.noodleTime<=11.5&&!p.burnt;
