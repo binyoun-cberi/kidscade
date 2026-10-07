@@ -183,10 +183,24 @@ function minPathDistance(p){
   for(let i=0;i<pathPts.length-1;i++) best=Math.min(best,segDist(p,{x:pathPts[i][0],y:pathPts[i][1]},{x:pathPts[i+1][0],y:pathPts[i+1][1]}));
   return best;
 }
+function minPathPixels(p){
+  const point={x:px(p.x),y:py(p.y)};
+  let closest=Infinity;
+  for(let i=0;i<pathPts.length-1;i++){
+    const a=pathPts[i],b=pathPts[i+1];
+    closest=Math.min(closest,segDist(point,{x:px(a[0]),y:py(a[1])},{x:px(b[0]),y:py(b[1])}));
+  }
+  return closest;
+}
 function validPlacement(p){
   if(p.x<.045||p.x>.955||p.y<.06||p.y>.94)return false;
-  if(minPathDistance(p)<.055)return false;
-  if(state.towers.some(t=>dist(p,t)<.07))return false;
+  // Keep the actual tower body clear of the visibly stroked enemy lane.
+  const unit=Math.min(W,H);
+  const laneHalfWidth=Math.max(30,unit*.065)/2;
+  const towerHalfWidth=Math.max(19,unit*.034)*.55;
+  if(minPathPixels(p)<laneHalfWidth+towerHalfWidth+3)return false;
+  const minSpacing=towerHalfWidth*2+7;
+  if(state.towers.some(t=>Math.hypot((p.x-t.x)*W,(p.y-t.y)*H)<minSpacing))return false;
   return true;
 }
 function makeTowerStats(word,def){
