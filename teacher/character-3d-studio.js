@@ -740,13 +740,15 @@ function resetPose(){
   setStatus('기본 바인드 자세로 돌아왔습니다.');
 }
 
-function applyPreset(name){
-  const p=PRESETS[name];
-  if(!p)return;
-  for(const [key,value] of Object.entries(p)){
+function applyBodyStyle(name){
+  const profile=BODY_STYLES[name];
+  if(!profile)return;
+  bodyStyle=name;
+  for(const [key,value] of Object.entries(profile.defaults)){
     const el=$(key);
     if(el)el.value=String(value);
   }
+  document.querySelectorAll('[data-body-style]').forEach(b=>b.classList.toggle('active',b.dataset.bodyStyle===name));
   syncOutputs();
   buildCharacter();
 }
@@ -765,12 +767,17 @@ function download(name,blob){
 function exportSpec(){
   readParams();
   const spec={
-    version:1,
+    version:2,
     type:'kidscade-humanoid-rig-spec',
     rigVersion:RIG_VERSION,
+    bodyStyle,
+    bodyStyleLabel:BODY_STYLES[bodyStyle]?.label||bodyStyle,
     generatedAt:new Date().toISOString(),
     coordinateSystem:{up:'Y',units:'meters',origin:'ground-center',forward:'+Z'},
     parameters:{...params},
+    proportionGuide:bodyStyle==='legacy'
+      ?{headsTall:'legacy',headHeightRatio:.15}
+      :{headsTall:bodyStyle==='action2'?'about 3.05':'about 2.9',headHeightRatio:Number((currentDim?.headRY*2/currentDim?.H||0).toFixed(3))},
     bones:skinnedMesh?.skeleton?.bones.map(b=>({name:b.name,parent:b.parent?.isBone?b.parent.name:null}))||[],
     clips:clips.map(c=>({name:c.name,duration:Number(c.duration.toFixed(3)),tracks:c.tracks.map(t=>t.name)})),
     skinning:'rigid-single-bone-weight',
@@ -819,7 +826,7 @@ async function exportGlb(){
       const blob=result instanceof ArrayBuffer
         ?new Blob([result],{type:'model/gltf-binary'})
         :new Blob([JSON.stringify(result)],{type:'model/gltf+json'});
-      download('kidscade-rigged-character.glb',blob);
+      download('kidscade-'+bodyStyle+'-rigged-character.glb',blob);
       setStatus('GLB 저장 완료 · 바인드 자세 + 스켈레톤 + '+clips.length+'개 애니메이션');
     },
     error=>{
@@ -844,7 +851,8 @@ function wireUi(){
   $('exportSpec').addEventListener('click',exportSpec);
   $('speed').addEventListener('input',()=>{if(activeAction)activeAction.setEffectiveTimeScale(Number($('speed').value))});
   document.querySelectorAll('[data-clip]').forEach(b=>b.addEventListener('click',()=>playClip(b.dataset.clip)));
-  document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>applyPreset(b.dataset.preset)));
+  document.querySelectorAll('[data-body-style]').forEach(b=>b.addEventListener('click',()=>applyBodyStyle(b.dataset.bodyStyle)));
+  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setCameraView(b.dataset.view)));
 }
 
 function loop(now){
