@@ -293,14 +293,28 @@ function pointToNavCell(point){
     iz:clamp(Math.round((point.z-NAV_MIN_Z)/NAV_STEP),0,NAV_ROWS-1)
   };
 }
-function studentSegmentClear(a,b,step=.025){
-  const distance=distance2D(a,b);
-  const samples=Math.max(1,Math.ceil(distance/step));
-  for(let i=1;i<=samples;i++){
-    const t=i/samples;
-    const x=THREE.MathUtils.lerp(a.x,b.x,t),z=THREE.MathUtils.lerp(a.z,b.z,t);
-    if(isStudentBlocked(x,z))return false;
+function segmentHitsRect(a,b,minX,maxX,minZ,maxZ){
+  const dx=b.x-a.x,dz=b.z-a.z;
+  let tMin=0,tMax=1;
+  for(const [start,delta,min,max] of [[a.x,dx,minX,maxX],[a.z,dz,minZ,maxZ]]){
+    if(Math.abs(delta)<1e-8){
+      if(start<=min||start>=max)return false;
+      continue;
+    }
+    let t1=(min-start)/delta,t2=(max-start)/delta;
+    if(t1>t2){const tmp=t1;t1=t2;t2=tmp;}
+    tMin=Math.max(tMin,t1);tMax=Math.min(tMax,t2);
+    if(tMin>tMax)return false;
   }
+  return tMax>=0&&tMin<=1;
+}
+function studentSegmentClear(a,b){
+  const pad=.08;
+  if(isStudentBlocked(a.x,a.z)||isStudentBlocked(b.x,b.z))return false;
+  for(const r of deskRects){
+    if(segmentHitsRect(a,b,r.x-r.hx-pad,r.x+r.hx+pad,r.z-r.hz-pad,r.z+r.hz+pad))return false;
+  }
+  if(segmentHitsRect(a,b,4.75-1.05-pad,4.75+1.05+pad,3.35-.58-pad,3.35+.58+pad))return false;
   return true;
 }
 function nearestConnectedNavCell(point){
