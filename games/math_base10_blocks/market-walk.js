@@ -12,7 +12,7 @@ const MARKET=ROOT+'shops/market/';
 const KITCHEN=ROOT+'3d/interiors/kenney-furniture-kit/';
 const ULTIMATE_FOOD=ROOT+'3d/food/ultimate-food-pack/';
 const CHARMING=ROOT+'3d/interiors/charming-kitchen-set/';
-const HOME_MODELS=['kitchen-fridge','kitchen-cabinet-upper-double','kitchen-cabinet','kitchen-sink','kitchen-stove-electric','kitchen-microwave','table','chair'];
+const HOME_MODELS=['kitchen-fridge','kitchen-cabinet-upper-double','kitchen-cabinet','kitchen-sink','kitchen-stove-electric','kitchen-microwave','table','chair','desk','chair-desk','bookcase-open','bookcase-open-low','rug-rectangle','rug-round','rug-doormat','potted-plant','lamp-round-floor','table-coffee','lounge-chair','computer-screen','computer-keyboard','computer-mouse','trashcan'];
 const DISH_MODELS=['plate','egg-cooked','tomato-slice','cutting-board-japanese'];
 const MARKET_MODELS=['cash-register','character-employee','shopping-cart','shopping-basket','display-fruit','display-bread','freezer','freezers-standing','shelf-boxes','shelf-bags'];
 const PRODUCT_V4={apple:'apple-green.glb',banana:'banana.glb',carrot:'carrot.glb',broccoli:'broccoli.glb',tomato:'tomato.glb',eggplant:'eggplant.glb',egg:'egg.glb',bread:'bread.glb',donut:'donut.glb',chocolate:'chocolate-bar.glb',pizza:'pizza.glb',fries:'fries.glb'};
@@ -155,7 +155,7 @@ const camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,.08,90);scene
 const hemi=new THREE.HemisphereLight(0xf8fff0,0x58675c,1.35);scene.add(hemi);const sun=new THREE.DirectionalLight(0xfff1d3,1.9);sun.position.set(-7,12,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-15;sun.shadow.camera.right=15;sun.shadow.camera.top=15;sun.shadow.camera.bottom=-15;scene.add(sun);
 const loader=new GLTFLoader(),cache=new Map();
 const world=new THREE.Group(),dynamic=new THREE.Group(),fx=new THREE.Group();scene.add(world,dynamic,fx);
-const city=new THREE.Group(),cityMovers=[];scene.add(city);let cityReady=null,cityTime=0,trafficSignalMeshes=[];
+const city=new THREE.Group(),cityMovers=[],roomMixers=[];scene.add(city);let cityReady=null,cityTime=0,trafficSignalMeshes=[];
 let dog=null,dogChaseLeft=0,dogSpawnClock=14+Math.random()*10,dogLabelClock=0,dogSpawning=false,dogBarkCooldown=0,carHitCooldown=0,cameraImpact=0,cameraImpactTotal=.4,cameraImpactPower=0;
 const injuryParticles=[],impactParticles=[];
 const heldRoot=new THREE.Group();heldRoot.position.set(.34,-.34,-.75);camera.add(heldRoot);
@@ -164,7 +164,7 @@ let cart=null,cartCargo=null,nearest=null,yaw=Math.PI,pitch=-.04,playerPos=new T
 let tapStation='fridge',tapBusy=false,freeWalk=true;
 const keys={};const touch={x:0,y:0,active:false,pointer:null};let lookPointer=null,lastLook=null;
 
-function clearGroup(g){while(g.children.length)g.remove(g.children[0])}
+function clearGroup(g){if(g===world)roomMixers.length=0;while(g.children.length)g.remove(g.children[0])}
 async function asset(url){if(!cache.has(url))cache.set(url,loader.loadAsync(url).catch(err=>{cache.delete(url);throw err}));return cache.get(url)}
 function recolor(root,palette){root.traverse(o=>{if(!o.isMesh)return;const arr=Array.isArray(o.material)?o.material:[o.material];const made=arr.map((m,i)=>{const n=m.clone();if(palette?.length&&n.color)n.color.setHex(palette[i%palette.length]);if('roughness'in n)n.roughness=Math.max(.48,n.roughness??.7);return n});o.material=Array.isArray(o.material)?made:made[0];o.castShadow=true;o.receiveShadow=true})}
 async function fitted(url,size=1,palette=null){const g=await asset(url),clone=cloneSkeleton(g.scene),wrap=new THREE.Group();wrap.add(clone);recolor(clone,palette);clone.traverse(n=>{if(n.isSkinnedMesh)n.frustumCulled=false});let b=new THREE.Box3().setFromObject(clone),s=new THREE.Vector3();b.getSize(s);clone.scale.multiplyScalar(size/(Math.max(s.x,s.y,s.z)||1));clone.updateMatrixWorld(true);b=new THREE.Box3().setFromObject(clone);const center=b.getCenter(new THREE.Vector3());clone.position.x-=center.x;clone.position.z-=center.z;clone.position.y-=b.min.y;wrap.userData.animations=g.animations||[];return wrap}
@@ -357,6 +357,10 @@ async function ensureCity(){if(cityReady)return cityReady;cityReady=(async()=>{
 // Furniture keeps its source proportions. Scale to height (or width for tables),
 // center the footprint, and ground the model before deriving closed-body collisions.
 async function homeModel(name,value,pos,axis='y',rot=0,solid=true){const data=await asset(KITCHEN+name+'.glb'),clone=data.scene.clone(true),root=new THREE.Group();root.add(clone);recolor(clone,null);let bounds=new THREE.Box3().setFromObject(clone),size=bounds.getSize(new THREE.Vector3());clone.scale.multiplyScalar(value/(size[axis]||1));bounds=new THREE.Box3().setFromObject(clone);const center=bounds.getCenter(new THREE.Vector3());clone.position.x-=center.x;clone.position.z-=center.z;clone.position.y-=bounds.min.y;root.userData.localBounds=new THREE.Box3().setFromObject(root);root.rotation.y=rot;root.position.set(...pos);world.add(root);bounds=new THREE.Box3().setFromObject(root);size=bounds.getSize(new THREE.Vector3());root.userData.closedBounds=bounds.clone();if(solid)addCollider((bounds.min.x+bounds.max.x)/2,(bounds.min.z+bounds.max.z)/2,size.x,size.z);return root}
+async function indoorResident(url,pos,rot=0,role='주민'){
+ const r=await fitted(url,1.55);r.position.set(...pos);r.rotation.y=rot;r.userData.role=role;world.add(r);groundModel(r,pos[1]||0,.025);
+ const mixer=startModelAnimation(r,/idle/i);if(mixer)roomMixers.push(mixer);return r
+}
 async function marketSurfaceModel(name,value,pos,axis='x',rot=0,solid=true){const data=await asset(MARKET+name+'.glb'),clone=data.scene.clone(true),root=new THREE.Group();root.add(clone);recolor(clone,null);let bounds=new THREE.Box3().setFromObject(clone),size=bounds.getSize(new THREE.Vector3());clone.scale.multiplyScalar(value/(size[axis]||1));bounds=new THREE.Box3().setFromObject(clone);const center=bounds.getCenter(new THREE.Vector3());clone.position.x-=center.x;clone.position.z-=center.z;clone.position.y-=bounds.min.y;root.userData.localBounds=new THREE.Box3().setFromObject(root);root.rotation.y=rot;root.position.set(...pos);world.add(root);bounds=new THREE.Box3().setFromObject(root);size=bounds.getSize(new THREE.Vector3());root.userData.closedBounds=bounds.clone();if(solid)addCollider((bounds.min.x+bounds.max.x)/2,(bounds.min.z+bounds.max.z)/2,size.x,size.z);return root}
 async function packDecor(url,size,pos,rot=0,solid=false,palette=null,parent=world){try{const r=await fitted(url,size,palette);r.position.set(pos[0],0,pos[2]);r.rotation.y=rot;groundModel(r,pos[1]??0,.01);parent.add(r);if(solid){const b=new THREE.Box3().setFromObject(r),s=b.getSize(new THREE.Vector3());addCollider((b.min.x+b.max.x)/2,(b.min.z+b.max.z)/2,s.x,s.z)}return r}catch(e){console.warn('optional decor failed',url,e);return null}}
 function setStorageDoors(root,open){root.traverse(o=>{if(/^door/.test(o.name))o.rotation.y=open?(o.name==='doorRight'?1:-1)*Math.PI*.62:0})}
@@ -373,15 +377,21 @@ async function buildHome(){
  const stove=await homeModel('kitchen-stove-electric',1.0,[2.65,0,-.9],'y',-Math.PI/2),stoveTop=stove.userData.closedBounds.max.y;interactable('stove','인덕션',1.25,-.9,1.65);
  const sideCabinet=await homeModel('kitchen-cabinet',1.0,[2.65,0,.65],'y',-Math.PI/2),sideTop=sideCabinet.userData.closedBounds.max.y;await homeModel('kitchen-microwave',.4,[2.65,1,.65],'y',-Math.PI/2,false);interactable('microwave','전자레인지',1.25,.65,1.7);
  const table=await homeModel('table',.78,[0,0,2.1]);tableTop=table.userData.closedBounds.max.y;interactable('table','식탁',0,.9,1.7);
+ await homeModel('rug-rectangle',2.55,[0,.012,2.05],'x',0,false);
  for(const x of [-.65,.65])await homeModel('chair',.9,[x,0,2.95],'y',Math.PI);
  await Promise.all([
+  homeModel('rug-doormat',1.25,[-2.4,.014,2.72],'x',0,false),
+  homeModel('potted-plant',1.05,[2.73,0,2.48],'y',0,false),
+  homeModel('bookcase-open-low',1.18,[2.92,0,1.18],'x',-Math.PI/2,true),
   packDecor(CHARMING+'pan.glb',.48,[2.65,stoveTop,-.9],-.35),
   packDecor(CHARMING+'toaster.glb',.38,[.05,counterTop,-2.35],0),
   packDecor(CHARMING+'kettle.glb',.34,[.88,counterTop,-2.35],.25),
   packDecor(CHARMING+'utensils-cup.glb',.28,[2.65,sideTop,.55],0),
   packDecor(CHARMING+'mug-yellow.glb',.2,[.35,tableTop,2.1],.2),
   packDecor(CHARMING+'plate.glb',.28,[-.35,tableTop,2.1],0),
-  packDecor(CHARMING+'extractor-hood.glb',.72,[3.02,1.62,-.9],-Math.PI/2)
+  packDecor(CHARMING+'extractor-hood.glb',.72,[3.02,1.62,-.9],-Math.PI/2),
+  packDecor(KITCHEN+'trashcan.glb',.58,[-2.62,0,-2.25],0,false),
+  packDecor(KITCHEN+'lamp-wall.glb',.58,[2.42,1.72,-2.86],0,false)
  ]);
  interactable('marketDoor','동네로 나가는 문',-2.4,2.5,1.8);sign('밖으로',[-2.4,2.35,3.02],.28,'#2f7d60');
  await syncHomeInventory();if(state.held){if(state.held.kind==='dish')await showDishHeld(state.held);else await showHeldModel(state.held.id)}
@@ -481,12 +491,34 @@ async function buildOffice(){
  endDog(false);state.location='office';state.phase='office';colliders=[];interactables=[];ui.labels.innerHTML='';labelViews=[];clearGroup(world);scene.background.set(0xc9dce5);scene.fog.near=25;scene.fog.far=55;document.body.classList.remove('lifeTown');
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(9,7),new THREE.MeshStandardMaterial({color:0xc9b99e,roughness:.95}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;world.add(floor);
  windowWall(9,3.2,[0,0,-3.35],0,.88,4.4);windowWall(7,3.2,[-4.45,0,0],Math.PI/2,.86,2.2);windowWall(7,3.2,[4.45,0,0],Math.PI/2,.86,2.2);entryWall(9,3.2,3.35,-3.5,1.38,.86,0x4d6f91,true);addCeilingLights(9,7,3.25);wallSign('우리 사무실',[0,2.5,-3.22],1.6,'#4d7ea8');
- const desk=await homeModel('desk',1.58,[0,0,-1.05],'x',0),deskTop=desk.userData.closedBounds.max.y;interactable('workDesk','내 자리',0,.25,1.9);
- await homeModel('chair-desk',.82,[0,0,.05],'y',Math.PI);
+ const deskXs=[-2.35,0,2.35],deskTops=[];
+ for(let i=0;i<deskXs.length;i++){
+  const x=deskXs[i],desk=await homeModel('desk',1.5,[x,0,-1.35],'x',0),top=desk.userData.closedBounds.max.y;deskTops.push(top);
+  await homeModel('chair-desk',.8,[x,0,-.15],'y',Math.PI);
+  await Promise.all([
+   packDecor(KITCHEN+'computer-screen.glb',.44,[x,top+.012,-1.35],Math.PI,false),
+   packDecor(KITCHEN+'computer-keyboard.glb',.34,[x-.1,top+.01,-1.02],Math.PI,false),
+   packDecor(KITCHEN+'computer-mouse.glb',.16,[x+.42,top+.01,-1.02],Math.PI,false)
+  ])
+ }
+ interactable('workDesk','내 자리',0,.35,1.75);
  await Promise.all([
-  packDecor(KITCHEN+'computer-screen.glb',.46,[0,deskTop+.015,-1.05],Math.PI,false),
-  homeModel('bookcase-open',1.7,[-3.72,0,-1.85],'y',Math.PI/2,true)
+  homeModel('bookcase-open',1.62,[-4.02,0,-1.8],'y',Math.PI/2,true),
+  homeModel('bookcase-open-low',1.35,[-4.0,0,.45],'x',Math.PI/2,true),
+  homeModel('potted-plant',1.15,[3.82,0,-2.58],'y',0,false),
+  homeModel('rug-round',2.15,[2.55,.012,1.85],'x',0,false),
+  homeModel('table-coffee',1.25,[2.55,0,1.85],'x',0,true),
+  homeModel('lounge-chair',1.02,[1.45,0,2.25],'y',Math.PI/2,true),
+  homeModel('lounge-chair',1.02,[3.55,0,2.25],'y',-Math.PI/2,true)
  ]);
+ await Promise.all([
+  packDecor(FOOD+'cup-coffee.glb',.22,[2.55,.66,1.85],.2,false),
+  packDecor(KITCHEN+'trashcan.glb',.58,[3.82,0,.05],0,false),
+  packDecor(KITCHEN+'lamp-round-floor.glb',1.65,[3.92,0,2.75],0,false),
+  indoorResident(CITY_PEOPLE_ASSETS[8],[-2.35,0,.25],Math.PI,'동료 직원'),
+  indoorResident(CITY_PEOPLE_ASSETS[9],[2.35,0,.25],Math.PI,'동료 직원')
+ ]);
+ sign('업무 공간',[0,2.02,-2.45],.2,'#4d7ea8');sign('휴게 코너',[2.55,1.55,1.85],.18,'#7b6f9c');
  interactable('officeExit','퇴근 · 밖으로',-3.5,2.6,1.8);sign('밖으로',[-3.5,2.46,3.17],.22,'#4d7ea8');setSpawn('office');renderHud();save()
 }
 async function buildHospital(source='walk'){endDog(false);state.location='hospital';state.phase='hospital';colliders=[];interactables=[];ui.labels.innerHTML='';labelViews=[];clearGroup(world);scene.background.set(0xdbe9e8);scene.fog.near=25;scene.fog.far=55;document.body.classList.remove('lifeTown');const floor=new THREE.Mesh(new THREE.PlaneGeometry(9,7),new THREE.MeshStandardMaterial({color:0xdde2dd,roughness:.95}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;world.add(floor);windowWall(9,3.2,[0,0,-3.35],0,.88,3.8);windowWall(7,3.2,[-4.45,0,0],Math.PI/2,.86,2.2);windowWall(7,3.2,[4.45,0,0],Math.PI/2,.86,2.2);entryWall(9,3.2,3.35,-3.5,1.38,.86,0xb94f4b,true);addCeilingLights(9,7,3.25);wallSign('동네 병원',[0,2.5,-3.22],1.58,'#d65b52');box([2.8,.85,.8],[0,.43,-1.25],0xe6f1ed);box([2.7,.08,.72],[0,.88,-1.25],0x4d7ea8);interactable('treat','진료 접수',0,-.15,2.0);sign(state.treatmentNeeded?'진료가 필요해요':'진료 접수',[0,1.65,-1.25],.32,'#d65b52');interactable('hospitalExit','밖으로',-3.5,2.6,1.8);sign('밖으로',[-3.5,2.32,3.16],.27,'#2f7d60');setSpawn('hospital');if(source==='ambulance')toast('응급실에 도착했어요. 접수대에서 치료를 받아야 해요.',true);renderHud();save()}
@@ -673,7 +705,7 @@ ui.joystick.addEventListener('pointerdown',e=>{touch.active=true;touch.pointer=e
 ui.interactBtn.onclick=interact;ui.touchInteract.onclick=interact;ui.sound.onclick=()=>{state.sound=!state.sound;ui.sound.textContent=state.sound?'🔊':'🔇';save();if(state.sound)tone('cash')};ui.cartBtn.onclick=()=>{renderCartPanel();ui.cartPanel.classList.remove('hidden')};ui.closeCart.onclick=()=>ui.cartPanel.classList.add('hidden');ui.cartList.onclick=async e=>{const b=e.target.closest('[data-remove]');if(!b)return;const i=+b.dataset.remove;if(i<0||i>=state.basket.length)return;const id=state.basket.splice(i,1)[0];await syncCartCargo();renderHud();save();toast(productById(id).name+'을(를) 카트에서 뺐어요.')};
 ui.scanItems.onclick=e=>{const b=e.target.closest('[data-scan]');if(b)scanItem(+b.dataset.scan)};ui.checkTotal.onclick=submitTotal;ui.cashOptions.onclick=e=>{const b=e.target.closest('[data-cash]');if(b)chooseCash(+b.dataset.cash)};ui.checkChange.onclick=submitChange;ui.closeCheckout.onclick=closeCheckout;ui.backToShopping.onclick=closeCheckout;ui.finishCheckout.onclick=finishCheckout;ui.nextDayBtn.onclick=completeDay;ui.newLife.onclick=async()=>{if(state.phase==='assetError'){ui.newLife.disabled=true;await preload();return}newLife();try{await buildHome();storageOpen.fridge=true;for(const r of kitchenStorage.fridge)setStorageDoors(r,true);await syncHomeInventory();ui.start.classList.add('hidden');renderHud()}catch(err){state.running=false;console.error(err);ui.loadText.textContent='부엌을 준비하지 못했어요. 다시 눌러 주세요.'}};ui.continueBtn.onclick=async()=>{if(!loadSave())newLife();try{if(state.location==='market')await buildStore();else if(state.location==='convenience')await buildConvenienceStore();else if(state.location==='fastfood')await buildFastFood();else if(state.location==='town')await buildTown('home');else if(state.location==='office')await buildOffice();else if(state.location==='hospital')await buildHospital('walk');else await buildHome();if(state.location==='home'){storageOpen.fridge=true;for(const r of kitchenStorage.fridge)setStorageDoors(r,true);await syncHomeInventory()}ui.start.classList.add('hidden');renderHud()}catch(err){state.running=false;console.error(err);ui.loadText.textContent='공간을 준비하지 못했어요. 이어하기를 다시 눌러 주세요.'}};ui.nextWeek.onclick=nextWeek;
 
-const clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);const dt=Math.min(.05,clock.getDelta());updateMovement(dt);updateCity(dt);updateDog(dt);updateCameraImpact(dt);updateInjuryParticles(dt);updateInteraction();updateLabels();renderer.render(scene,camera)}requestAnimationFrame(animate);
+const clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);const dt=Math.min(.05,clock.getDelta());updateMovement(dt);updateCity(dt);for(const mixer of roomMixers)mixer.update(dt);updateDog(dt);updateCameraImpact(dt);updateInjuryParticles(dt);updateInteraction();updateLabels();renderer.render(scene,camera)}requestAnimationFrame(animate);
 
 async function preload(){const critical=[...MARKET_MODELS.map(n=>MARKET+n+'.glb'),...PRODUCTS.map(productAssetUrl),...HOME_MODELS.map(n=>KITCHEN+n+'.glb'),...HOME_DECOR_MODELS.map(n=>CHARMING+n),...DISH_MODELS.map(n=>FOOD+n+'.glb'),...Object.values(CITY_ASSETS),...CITY_PEOPLE_ASSETS.slice(0,8),...Object.values(CITY_DECOR_ASSETS),...Object.values(FAST_FOOD_MENU).map(m=>FOOD+m.model),KITCHEN+'chair-desk.glb'];const unique=[...new Set(critical)];let done=0;const failed=[];await Promise.all(unique.map(async u=>{try{await asset(u)}catch(e){console.warn('preload failed',u,e);failed.push(u)}finally{done++;const pct=Math.round(done/unique.length*100);ui.loadFill.style.width=pct+'%';ui.loadText.textContent='집과 동네 상점을 준비하고 있어요… '+pct+'%'}}));if(failed.length){state.phase='assetError';ui.loadText.textContent='일부 에셋을 불러오지 못했어요. 다시 준비를 눌러 주세요.';ui.newLife.textContent='다시 준비';ui.newLife.disabled=false;ui.continueBtn.disabled=true;return}ui.newLife.textContent='새 생활 시작';ui.loadFill.style.width='100%';ui.loadText.textContent='준비 완료!';ui.newLife.disabled=false;ui.continueBtn.disabled=!hasSave();ui.sound.textContent=state.sound?'🔊':'🔇';state.phase='ready'}
 preload().catch(err=>{console.error(err);ui.loadText.textContent='3D 에셋을 불러오지 못했어요. 새로고침해 주세요.'});
