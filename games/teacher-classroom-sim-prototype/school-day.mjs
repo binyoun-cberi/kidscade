@@ -3,8 +3,8 @@ export const SCHOOL_SPACES=Object.freeze({
     id:'classroom',name:'우리 교실',icon:'🏫',floor:'#c8a77d',wall:'#f1ead9',accent:'#355d4f',
     teachingPoint:{x:0,z:-4.1},
     seats:[
-      {x:-3.2,z:-1.63},{x:0,z:-1.63},{x:3.2,z:-1.63},
-      {x:-3.2,z:.77},{x:0,z:.77},{x:3.2,z:.77}
+      {x:-3.2,z:-1.35},{x:0,z:-1.35},{x:3.2,z:-1.35},
+      {x:-3.2,z:1.05},{x:0,z:1.05},{x:3.2,z:1.05}
     ],
     obstacles:[
       {x:-3.2,z:-2.4,hx:.80,hz:.66},{x:0,z:-2.4,hx:.80,hz:.66},{x:3.2,z:-2.4,hx:.80,hz:.66},
