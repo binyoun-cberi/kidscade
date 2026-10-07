@@ -97,17 +97,18 @@ function campLineBlocked(x1,y1,x2,y2){
 }
 function campWaypoint(e,tx,ty){
  if(!campLineBlocked(e.x,e.y,tx,ty))return{x:tx,y:ty};
- const step=4,minX=4,maxX=96,minY=17,maxY=84;
+ const step=3,minX=4,maxX=96,minY=17,maxY=84;
  const gx=x=>Math.round((clamp(x,minX,maxX)-minX)/step),gy=y=>Math.round((clamp(y,minY,maxY)-minY)/step);
  const px=x=>minX+x*step,py=y=>minY+y*step,cols=gx(maxX)+1,rows=gy(maxY)+1;
- const start=[gx(e.x),gy(e.y)],rawGoal=[gx(tx),gy(ty)];
+ let start=[gx(e.x),gy(e.y)],goal=[gx(tx),gy(ty)];
  const key=(x,y)=>y*cols+x,free=(x,y)=>x>=0&&y>=0&&x<cols&&y<rows&&!campBlockedAt(px(x),py(y),1.2);
- let goal=rawGoal;
- if(!free(goal[0],goal[1])){
+ const nearestFree=(cell,wx,wy)=>{
+  if(free(cell[0],cell[1]))return cell;
   let best=null,bd=Infinity;
-  for(let y=0;y<rows;y++)for(let x=0;x<cols;x++)if(free(x,y)){const d=Math.hypot(px(x)-tx,py(y)-ty);if(d<bd){bd=d;best=[x,y]}}
-  if(best)goal=best
- }
+  for(let y=0;y<rows;y++)for(let x=0;x<cols;x++)if(free(x,y)){const d=Math.hypot(px(x)-wx,py(y)-wy);if(d<bd){bd=d;best=[x,y]}}
+  return best||cell
+ };
+ start=nearestFree(start,e.x,e.y);goal=nearestFree(goal,tx,ty);
  const q=[start],prev=new Map([[key(start[0],start[1]),null]]),dirs=[[1,0],[-1,0],[0,1],[0,-1]];
  let found=false;
  for(let qi=0;qi<q.length&&!found;qi++){
