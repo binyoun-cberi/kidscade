@@ -190,4 +190,28 @@ test('room title signs are wall-mounted meshes instead of camera-facing sprites'
   assert.doesNotMatch(js,/sign\('우리 동네 마트'/);
   assert.doesNotMatch(js,/sign\('우리 사무실'/);
 });
-test('market page cache-busts the wall sign pass',()=>{assert.ok(html.includes('market-walk.js?v=18-wall-signs'))});
+test('neighborhood adds convenience store and fast-food destinations with distinct gameplay',()=>{
+  assert.match(js,/async function buildConvenienceStore\(/);
+  assert.match(js,/async function buildFastFood\(/);
+  assert.match(js,/case'convenienceEntry':buildConvenienceStore\(\)/);
+  assert.match(js,/case'fastFoodEntry':buildFastFood\(\)/);
+  assert.match(js,/function buyConvenienceItem\(/);
+  assert.match(js,/function orderFastFood\(/);
+  assert.match(js,/편의점은 빠르지만 마트보다 조금 비싸요/);
+  assert.match(js,/state\.weekStats\.quick\+\+/);
+});
+test('town uses a diverse twelve-model resident pool and role-tagged pedestrians',()=>{
+  const block=js.slice(js.indexOf('const CITY_PEOPLE_ASSETS='),js.indexOf('const DAILY_CAL_TARGET='));
+  assert.equal((block.match(/characters\/people\/character-/g)||[]).length,12);
+  assert.match(js,/const pedestrianDefs=\[/);
+  assert.match(js,/버스를 기다리는 주민/);
+  assert.match(js,/벤치에서 쉬는 주민/);
+  assert.match(js,/r\.userData\.role=role/);
+});
+test('new storefronts reuse the two previously empty south-block buildings',()=>{
+  assert.match(js,/interactable\('convenienceEntry','24시 편의점',-3,-11\.5/);
+  assert.match(js,/interactable\('fastFoodEntry','버거하우스',4,-11\.5/);
+  assert.match(js,/storefrontCanopy\(-3,-12\.28/);
+  assert.match(js,/storefrontCanopy\(4,-12\.28/);
+});
+test('market page cache-busts the neighborhood expansion',()=>{assert.ok(html.includes('market-walk.js?v=19-neighborhood'))});
