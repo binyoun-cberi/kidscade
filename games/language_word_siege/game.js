@@ -285,8 +285,10 @@ function createWave(n){
     let type='normal';
     if(n>=2&&i%5===3)type='fast';
     if(n>=3&&i%7===5)type='heavy';
+    if(n>=4&&i%9===6)type='armored';
     if(n>=5&&i%9===7)type='shield';
     if(n>=6&&i%11===9)type='split';
+    if(n>=6&&i%13===11)type='regen';
     arr.push({delay:i*(Math.max(.34,.78-n*.045)),type});
   }
   if(n===8)arr.push({delay:count*.42+.7,type:'boss'});
@@ -304,12 +306,21 @@ const ENEMY={
  fast:{hp:34,speed:.120,r:.010,damage:5,color:'#b92c45'},
  heavy:{hp:145,speed:.046,r:.018,damage:12,color:'#553d34'},
  shield:{hp:78,speed:.064,r:.014,damage:7,color:'#355f7a',shield:30},
+ armored:{hp:126,speed:.052,r:.018,damage:11,color:'#5a6576',armor:.32},
+ regen:{hp:110,speed:.067,r:.015,damage:9,color:'#3e906d',regen:4},
  split:{hp:68,speed:.060,r:.014,damage:6,color:'#6c3d82',split:true},
  boss:{hp:650,speed:.035,r:.028,damage:28,color:'#971f31',boss:true}
 };
 function spawnEnemy(type){
   const a=ENEMY[type]||ENEMY.normal;
-  const e={id:state.uid++,type,hp:a.hp*(1+(state.wave-1)*.07),maxHp:a.hp*(1+(state.wave-1)*.07),speed:a.speed*(1+(state.wave-1)*.01),r:a.r,damage:a.damage,color:a.color,shield:a.shield||0,split:a.split||false,boss:a.boss||false,pathIndex:0,pathT:0,x:pathPts[0][0],y:pathPts[0][1],burn:0,burnDps:0,poison:0,poisonDps:0,slow:1,pushBack:0,dead:false};
+  const stage=state.wave-1,balance=D.waveBalance;
+  const hpScale=1+balance.hpLinear*stage+balance.hpQuadratic*stage*stage;
+  const hp=Math.round(a.hp*hpScale);
+  const e={id:state.uid++,type,hp,maxHp:hp,speed:a.speed*(1+stage*balance.speedGrowth),
+    r:a.r,damage:Math.round(a.damage*(1+stage*.065)),color:a.color,
+    shield:Math.round((a.shield||0)*hpScale),armor:a.armor||0,regen:a.regen||0,
+    split:a.split||false,boss:a.boss||false,pathIndex:0,pathT:0,x:pathPts[0][0],y:pathPts[0][1],
+    burn:0,burnDps:0,poison:0,poisonDps:0,slow:1,pushBack:0,dead:false};
   state.enemies.push(e);
 }
 function enemyProgress(e){return e.pathIndex+e.pathT}
@@ -340,7 +351,8 @@ function damageEnemy(e,amount,kind,tower){
     const used=Math.min(e.shield,amount*multiplier);
     e.shield-=used;amount-=used/multiplier;
   }
-  e.hp-=Math.max(0,amount);
+  const effectiveArmor=e.armor*(tower?.def.role==='pierce'?.28:1);
+  e.hp-=Math.max(0,amount)*(1-effectiveArmor);
   if(kind==='burn'){e.burn=2.8;e.burnDps=Math.max(e.burnDps,(tower?.stats.burn||7)+(tower?.def.difficulty||1))}
   if(kind==='poison'){e.poison=4.5;e.poisonDps=Math.max(e.poisonDps,(tower?.stats.poison||6)+(tower?.def.difficulty||1))}
   if(kind==='slow')e.slow=Math.min(e.slow,tower?.stats.slow||.52);
@@ -348,7 +360,7 @@ function damageEnemy(e,amount,kind,tower){
   if(e.hp<=0)killEnemy(e);
 }
 function killEnemy(e){
-  if(e.dead)return;e.dead=true;state.score+=e.boss?800:18+state.wave*2;state.ink+=e.boss?20:1;
+  if(e.dead)return;e.dead=true;state.score+=e.boss?800:18+state.wave*2;state.ink+=e.boss?20:((e.armor||e.regen||e.shield)?2:1);
   flashEffect(e.x,e.y,e.color,e.boss ? .09 : .045);
   if(e.split&&!e.boss){for(let i=0;i<2;i++){const c={...e,id:state.uid++,type:'normal',hp:20,maxHp:20,speed:.095,r:.008,damage:3,color:'#2f3035',split:false,dead:false,pathT:Math.max(0,e.pathT-i*.025)};state.enemies.push(c)}}
 }
@@ -409,6 +421,7 @@ function barrierEffects(){
 function statusEffects(e,dt){
   if(e.burn>0){e.burn-=dt;e.hp-=e.burnDps*dt}
   if(e.poison>0){e.poison-=dt;e.hp-=e.poisonDps*dt}
+  if(e.regen&&!e.dead&&e.poison<=0&&e.hp>0)e.hp=Math.min(e.maxHp,e.hp+e.regen*dt);
   if(e.hp<=0&&!e.dead)killEnemy(e);
 }
 function giveNextWaveWord(){
@@ -540,6 +553,8 @@ function drawEnemies(){
     ctx.fillStyle=e.color;ctx.rotate(enemyProgress(e)*.12);ctx.fillRect(-r,-r,r*2,r*2);ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(-r*.65,-r*.65,r*.55,r*.55);ctx.restore();
     const bw=Math.max(18,r*2.1);ctx.fillStyle='#5f504c';ctx.fillRect(x-bw/2,y-r-7,bw,3);ctx.fillStyle=e.boss?'#ff4c5e':'#53bd64';ctx.fillRect(x-bw/2,y-r-7,bw*Math.max(0,e.hp/e.maxHp),3);
     if(e.shield>0){ctx.strokeStyle='#4ca7e8';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,r*1.35,0,Math.PI*2);ctx.stroke()}
+    if(e.armor){ctx.strokeStyle='#b6bdc9';ctx.lineWidth=3;ctx.strokeRect(x-r*1.12,y-r*1.12,r*2.24,r*2.24)}
+    if(e.regen){ctx.fillStyle='#b2ffd6';ctx.font='900 11px sans-serif';ctx.fillText('+',x,y+3)}
   }
 }
 function drawShots(){for(const s of state.shots){ctx.fillStyle=s.color;ctx.beginPath();ctx.arc(px(s.x),py(s.y),4,0,Math.PI*2);ctx.fill()}}
