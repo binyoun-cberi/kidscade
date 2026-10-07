@@ -1,4 +1,4 @@
-/* Kidscade Zombie vs Divisor Turrets 3D - sci-fi arsenal redesign v15 */
+/* Kidscade Zombie vs Divisor Turrets 3D - sci-fi arsenal visual pass v16 */
 (function(){
 'use strict';
 
@@ -11,8 +11,8 @@ const GRID_W=16,GRID_H=10,CELL=1.05;
 const GAME_SPEEDS=[1,2,4,8,16],MAX_SIM_STEP=.05;
 const TOWERS={
   SUB1:{id:'SUB1',name:'−1 EMP 교정기',short:'−1',cost:90,unlock:3,range:2.05,cool:.62,turnSpeed:5.2,projectileSpeed:7.0,color:'#fb7185',models:['emp'],visualSteps:[0],visualNames:['EMP FIELD'],op:'-1',projectile:'emp'},
-  DIV2:{id:'DIV2',name:'÷2 개틀링',short:'÷2',cost:145,unlock:1,range:2.3,cool:.68,turnSpeed:7.2,projectileSpeed:10.5,color:'#38bdf8',models:['gatling','flame'],visualSteps:[0,3],visualNames:['GATLING','FLAME ARRAY'],op:'÷2',value:2,projectile:'tracer'},
-  DIV3:{id:'DIV3',name:'÷3 하이브 캐논',short:'÷3',cost:205,unlock:2,range:2.35,cool:.82,turnSpeed:4.4,projectileSpeed:6.4,color:'#22c55e',models:['hive','lightning'],visualSteps:[0,3],visualNames:['HIVE','LIGHTNING'],op:'÷3',value:3,projectile:'plasma'},
+  DIV2:{id:'DIV2',name:'÷2 속사 계열',short:'÷2',cost:145,unlock:1,range:2.3,cool:.68,turnSpeed:7.2,projectileSpeed:10.5,color:'#38bdf8',models:['gatling','gunCannon','flame'],visualSteps:[0,1,3],visualNames:['GATLING','GUN CANNON','FLAME ARRAY'],op:'÷2',value:2,projectile:'tracer'},
+  DIV3:{id:'DIV3',name:'÷3 에너지 계열',short:'÷3',cost:205,unlock:2,range:2.35,cool:.82,turnSpeed:4.4,projectileSpeed:6.4,color:'#22c55e',models:['hive','lightning','plasma'],visualSteps:[0,2,4],visualNames:['HIVE','LIGHTNING','PLASMA'],op:'÷3',value:3,projectile:'plasma'},
   ADD1:{id:'ADD1',name:'+1 실드 변환기',short:'+1',cost:115,unlock:3,range:2.0,cool:.9,turnSpeed:5.6,projectileSpeed:7.4,color:'#fbbf24',models:['shield'],visualSteps:[0],visualNames:['SHIELD FIELD'],op:'+1',projectile:'boost'},
   DIV5:{id:'DIV5',name:'÷5 중화기',short:'÷5',cost:295,unlock:4,range:2.5,cool:1.0,turnSpeed:3.6,projectileSpeed:5.2,color:'#a78bfa',models:['gunCannon','missile','plasma','railGun'],visualSteps:[0,1,2,3],visualNames:['CANNON','MISSILE','PLASMA','RAIL GUN'],op:'÷5',value:5,projectile:'heavy'}
 };
@@ -237,16 +237,25 @@ function initThree(){
   requestAnimationFrame(loop);
 }
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+let portraitBoard=false;
+function setWorldOrientation(portrait){
+  portraitBoard=portrait;
+  document.body.classList.toggle('portrait-board',portrait);
+  const angle=portrait?Math.PI/2:0;
+  for(const g of [skyGroup,battlefield,decorGroup,towerGroup,enemyGroup,fxGroup,ui3dGroup])if(g)g.rotation.y=angle
+}
 function resize(){
   renderer.setSize(innerWidth,innerHeight,false);
   renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));
   fitTopDownCamera();
 }
 function fitTopDownCamera(){
-  const aspect=Math.max(.34,innerWidth/Math.max(1,innerHeight));
+  const aspect=Math.max(.34,innerWidth/Math.max(1,innerHeight)),portrait=innerWidth<=700&&innerHeight>innerWidth*1.16;
   const boardWidth=GRID_W*CELL+3.6,boardDepth=GRID_H*CELL+3.6;
-  const margin=innerWidth<=700?1.22:1.18;
-  const halfHeight=Math.max(boardDepth*.5,boardWidth/(2*aspect))*margin;
+  setWorldOrientation(portrait);
+  const displayWidth=portrait?boardDepth:boardWidth,displayDepth=portrait?boardWidth:boardDepth;
+  const margin=portrait?1.12:(innerWidth<=700?1.2:1.15);
+  const halfHeight=Math.max(displayDepth*.5,displayWidth/(2*aspect))*margin;
   const halfWidth=halfHeight*aspect;
   camera.left=-halfWidth;camera.right=halfWidth;camera.top=halfHeight;camera.bottom=-halfHeight;
   camera.near=.1;camera.far=60;
@@ -352,42 +361,62 @@ function makeCloud(x,y,z,scale=1){
 }
 function rebuildSkyWorld(){
   clear3DGroup(skyGroup);
-  const lawn=box(48,.38,36,0x76ae67,.99);lawn.position.y=-.58;skyGroup.add(lawn);
-  const rearWalk=box(38,.06,2.4,0xd9dfd6,.98);rearWalk.position.set(0,-.34,-11.7);skyGroup.add(rearWalk);
-  const rearRoad=box(40,.05,3.1,0x73848b,.96);rearRoad.position.set(0,-.37,-14.25);skyGroup.add(rearRoad);
-  for(let x=-18;x<=18;x+=2.4){const stripe=box(1.05,.012,.08,0xeaf0e8,.9);stripe.position.set(x,-.335,-14.25);skyGroup.add(stripe)}
+  const lawn=box(30,.38,22,0x6d9369,.99);lawn.position.y=-.58;skyGroup.add(lawn);
+
+  // Roads and pavements deliberately sit just outside the playable block so they stay visible from the fixed camera.
+  const roadColor=0x4f5e64,walkColor=0xcbd3cf,lineColor=0xe9d46d;
+  for(const z of[-7.35,7.35]){
+    const walk=box(25,.06,1.0,walkColor,.98);walk.position.set(0,-.35,z+(z<0?.95:-.95));skyGroup.add(walk);
+    const road=box(25,.05,2.05,roadColor,.97);road.position.set(0,-.38,z);skyGroup.add(road);
+    for(let x=-11;x<=11;x+=2.2){const stripe=box(.9,.012,.07,lineColor,.92);stripe.position.set(x,-.345,z);skyGroup.add(stripe)}
+  }
+  for(const x of[-10.85,10.85]){
+    const walk=box(1.0,.06,13.2,walkColor,.98);walk.position.set(x+(x<0?.95:-.95),-.35,0);skyGroup.add(walk);
+    const road=box(2.0,.05,13.2,roadColor,.97);road.position.set(x,-.38,0);skyGroup.add(road)
+  }
 
   const buildingKeys=['building1','building2','building3','building4','building5','building6'];
-  for(let i=0;i<24;i++){
-    const a=i/24*Math.PI*2,r=23.5+(i%3)*1.5,key=buildingKeys[i%buildingKeys.length],target=2.8+(i%6)*.34;
-    const b=cloneModel(key,target);
-    if(b){b.position.set(Math.cos(a)*r,-.34,Math.sin(a)*r);b.rotation.y=-a+Math.PI/2;skyGroup.add(b)}
-    else{const fallback=box(1.7,2.4+(i%6)*.5,1.5,0x667078,.88);fallback.position.set(Math.cos(a)*r,.9,Math.sin(a)*r);fallback.rotation.y=-a;skyGroup.add(fallback)}
-  }
-  const endPos=cellWorld(PATH[PATH.length-1].x,PATH[PATH.length-1].y,0);
-  const shelter=cloneModel('building3',3.2);if(shelter){shelter.position.set(endPos.x+2.0,-.34,endPos.z+1.1);shelter.rotation.y=-Math.PI/2;skyGroup.add(shelter)}
-  const shelterPeople=[
-    ['soldier',1.05,.7,-Math.PI/2,0x3b82f6],['doctor',1.35,-.55,-Math.PI/2,0xf472b6],
-    ['civilianMale',2.2,.35,-Math.PI/2,0xf59e0b],['civilianFemale',2.05,-.95,-Math.PI/2,0x22c55e]
+  const lots=[
+    [-11.85,-5.5,Math.PI/2],[-11.9,-2.0,Math.PI/2],[-11.9,2.0,Math.PI/2],[-11.85,5.35,Math.PI/2],
+    [11.85,-5.35,-Math.PI/2],[11.9,-1.8,-Math.PI/2],[11.9,1.9,-Math.PI/2],[11.85,5.25,-Math.PI/2],
+    [-7.8,-8.25,0],[-3.0,-8.2,0],[3.0,-8.2,0],[7.8,-8.25,0]
   ];
-  for(const [key,dx,dz,rot,tint] of shelterPeople){const npc=cloneModel(key,1.05);if(npc){tintCharacter(npc,tint);npc.position.set(endPos.x+dx,-.01,endPos.z+dz);npc.rotation.y=rot;skyGroup.add(npc)}}
+  lots.forEach(([x,z,rot],i)=>{
+    const key=buildingKeys[i%buildingKeys.length],target=2.15+(i%4)*.18,b=cloneModel(key,target);
+    if(b){b.position.set(x,-.34,z);b.rotation.y=rot;skyGroup.add(b)}
+    else{const fallback=box(1.65,2.2+(i%4)*.32,1.45,0x667078,.88);fallback.position.set(x,.75,z);fallback.rotation.y=rot;skyGroup.add(fallback)}
+  });
 
-  const outerTrees=[[-12,-8,'treeDetailed'],[-9,-10,'treeOak'],[-5,-10.6,'treeDefault'],[5,-10.5,'treeOak'],[9,-9.4,'treeDetailed'],[12,-7.5,'treeDefault'],[-13,2,'treeOak'],[13,1,'treeDetailed'],[-12,8,'treeDefault'],[-7,10,'treeOak'],[7,10,'treeDetailed'],[12,8,'treeDefault']];
-  for(const [x,z,key] of outerTrees){const t=cloneModel(key,.95);if(t){t.position.set(x,-.34,z);t.rotation.y=(x-z)*.17;skyGroup.add(t)}}
+  const endPos=cellWorld(PATH[PATH.length-1].x,PATH[PATH.length-1].y,0);
+  const shelter=cloneModel('building3',2.7);if(shelter){shelter.position.set(endPos.x+1.85,-.34,endPos.z+.95);shelter.rotation.y=-Math.PI/2;skyGroup.add(shelter)}
+  const shelterPeople=[
+    ['soldier',.95,.62,-Math.PI/2,0x3b82f6],['doctor,',1.2,-.48,-Math.PI/2,0xf472b6],
+    ['civilianMale',2.0,.28,-Math.PI/2,0xf59e0b],['civilianFemale',1.9,-.82,-Math.PI/2,0x22c55e]
+  ];
+  for(const row of shelterPeople){
+    const [rawKey,dx,dz,rot,tint]=row,key=String(rawKey).replace(',',''),npc=cloneModel(key,1.0);
+    if(npc){tintCharacter(npc,tint);npc.position.set(endPos.x+dx,-.01,endPos.z+dz);npc.rotation.y=rot;skyGroup.add(npc)}
+  }
+
+  const outerTrees=[[-9.1,-6.1,'treeDetailed'],[-6.8,-6.35,'treeOak'],[-4.6,-6.25,'treeDefault'],[4.8,-6.25,'treeOak'],[7.0,-6.3,'treeDetailed'],[9.15,-6.0,'treeDefault'],[-9.2,5.9,'treeOak'],[9.15,5.9,'treeDetailed']];
+  for(const [x,z,key] of outerTrees){const t=cloneModel(key,.78);if(t){t.position.set(x,-.34,z);t.rotation.y=(x-z)*.17;skyGroup.add(t)}}
 
   const placeStreet=(key,target,x,z,rot=0)=>{
     const prop=cloneModel(key,target);if(!prop)return;prop.position.set(x,-.08,z);prop.rotation.y=rot;skyGroup.add(prop)
   };
-  placeStreet('ambulance',2.15,9.0,4.55,-Math.PI/2);
-  placeStreet('trafficLight',1.25,-9.05,-4.65,Math.PI/2);
-  placeStreet('trafficLight',1.25,9.05,-4.65,-Math.PI/2);
-  placeStreet('dumpster',1.18,-9.15,4.65,.15);
-  placeStreet('hydrant',.72,9.18,-2.55,-.2);
-  for(const [x,z,r] of [[-9.05,.1,.2],[-9.1,.72,-.12],[-8.85,1.28,.08]])placeStreet('cone',.42,x,z,r);
-  for(const [x,z,r] of [[8.9,3.0,Math.PI/2],[8.9,4.0,Math.PI/2]])placeStreet('barrier',1.25,x,z,r);
-  for(const z of[2.15,3.15,4.15])placeStreet('fence',1.12,9.45,z,Math.PI/2);
+  placeStreet('ambulance',1.9,9.65,4.7,-Math.PI/2);
+  placeStreet('trafficLight',1.05,-9.7,-5.55,Math.PI/2);
+  placeStreet('trafficLight',1.05,9.7,-5.55,-Math.PI/2);
+  placeStreet('dumpster',1.0,-9.7,4.85,.15);
+  placeStreet('hydrant',.62,9.55,-3.25,-.2);
+  for(const [x,z,r] of [[-9.55,.1,.2],[-9.55,.72,-.12],[-9.4,1.32,.08]])placeStreet('cone',.36,x,z,r);
+  for(const [x,z,r] of [[9.55,2.65,Math.PI/2],[9.55,3.65,Math.PI/2]])placeStreet('barrier',1.05,x,z,r);
+  for(const z of[1.7,2.65,3.6,4.55])placeStreet('fence',.96,9.92,z,Math.PI/2);
 
-  skyGroup.add(makeCloud(-13,10,-10,1.5),makeCloud(9,12,-15,1.25),makeCloud(15,9,4,1.05),makeCloud(-14,11,9,1.18));
+  // Quarantine hazard posts make the board edge read as an intentional defended block.
+  for(const [x,z] of [[-9.55,-5.9],[-3.2,-5.9],[3.2,-5.9],[9.55,-5.9],[-9.55,5.9],[9.55,5.9]]){
+    const post=box(.16,.44,.16,0xf3c84b,.6);post.position.set(x,-.08,z);skyGroup.add(post)
+  }
 }
 
 
@@ -448,13 +477,14 @@ function makeTowerNode(t){
     const a=-Math.PI*.72+i*(Math.PI*1.44/4),lamp=new THREE.Mesh(new THREE.SphereGeometry(.035,7,6),new THREE.MeshStandardMaterial({color:colorHex(def.color),emissive:colorHex(def.color),emissiveIntensity:1.5,roughness:.2}));
     lamp.position.set(Math.cos(a)*.37,.245,Math.sin(a)*.37);root.add(lamp)
   }
-  const label=opSprite(def.short,def.color);label.position.y=1.2;root.add(label);root.userData.visual=visual;root.userData.weaponName=towerVisualName(t);towerGroup.add(root);towerNodes.set(t,root);return root
+  const label=opSprite(def.short,def.color);label.position.set(0,1.12,-.72);label.scale.multiplyScalar(.9);root.add(label);root.userData.visual=visual;root.userData.weaponName=towerVisualName(t);towerGroup.add(root);towerNodes.set(t,root);return root
 }
 function enemyColor(n){if(isPrime(n))return '#fb7185';if(n%5===0)return '#a78bfa';if(n%3===0)return '#22c55e';if(n%2===0)return '#38bdf8';return '#e2e8f0'}
 
 function pointerCell(ev){
   const r=canvas.getBoundingClientRect();mouse.x=((ev.clientX-r.left)/r.width)*2-1;mouse.y=-((ev.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(mouse,camera);const pt=new THREE.Vector3();if(!raycaster.ray.intersectPlane(groundPlane,pt))return null;
-  return{x:Math.round(pt.x/CELL+(GRID_W-1)/2),y:Math.round(pt.z/CELL+(GRID_H-1)/2)}
+  const boardX=portraitBoard?-pt.z:pt.x,boardZ=portraitBoard?pt.x:pt.z;
+  return{x:Math.round(boardX/CELL+(GRID_W-1)/2),y:Math.round(boardZ/CELL+(GRID_H-1)/2)}
 }
 function validCell(p){return p&&p.x>=0&&p.y>=0&&p.x<GRID_W&&p.y<GRID_H}
 function onPointerDown(e){
