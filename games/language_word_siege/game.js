@@ -32,6 +32,7 @@ function currentStage(){return STAGES[activeStage]}
 
 let W=1000,H=600,dpr=1,last=performance.now(),running=false,muted=false;
 let state=null, audioCtx=null;
+const V=window.WordSiegeVisuals||null;
 
 let pathPts=STAGES[0].path;
 let resourceSpots=STAGES[0].resources;
@@ -74,7 +75,7 @@ function freshState(){
   return {
     core:100,wave:0,ink:20,score:0,inWave:false,waveTimer:0,spawnQueue:[],
     enemies:[],towers:[],shots:[],effects:[],rack:D.startRack.slice(0,D.maxRack),
-    selected:[],placing:null,hover:null,uid:1,unique:new Set(),builtWords:[],
+    selected:[],placing:null,hover:null,uid:1,unique:new Set(),builtWords:[],elapsed:0,
     resources:resourceSpots.map((s,i)=>({...s,r:.045,amount:s.amount??(70+i*20)})),
     discovered:new Set(loadDiscovered()), discoveredCombos:new Set(), ended:false,towerRevision:0,totalSpawns:0
   };
@@ -296,6 +297,8 @@ function buildTower(p){
   state.ink-=cost;
   const tower={id:state.uid++,x:p.x,y:p.y,word,def,stats,cool:Math.random()*.3,harvestClock:0,links:[],pulse:0};
   state.towers.push(tower); state.unique.add(word); state.builtWords.push(word);
+  ringEffect(p.x,p.y,.05,def.color,.36);
+  if(V)particleEffect(p.x,p.y,def.color,9,.05);
   const newly=!state.discovered.has(word);state.discovered.add(word);saveDiscovered();
   consumeSelected();state.placing=null;applyLinks();setStatus('배치 완료 · '+word,(newly?'새 단어 발견! ':'')+def.meaning+' · '+def.roleLabel);
   if(newly){state.score+=80+def.difficulty*20;state.ink+=2;toast('NEW WORD · '+word+' · '+def.meaning+' · INK +2');beep(880,.12,'triangle',.05)} else beep(640,.08,'square');
@@ -382,6 +385,7 @@ function startWave(){
     toast('첫 웨이브 전에 공격 타워가 필요해요');return;
   }
   state.wave++;state.inWave=true;state.waveTimer=0;state.spawnQueue=createWave(state.wave);state.totalSpawns=state.spawnQueue.length;
+  state.effects.push({type:'banner',text:'WAVE '+state.wave,x:.5,y:.38,color:currentStage().colors.accent,life:1.1,max:1.1});
   waveBtn.disabled=true;waveBtn.textContent='WAVE '+state.wave+' 진행 중';setStatus('WAVE '+state.wave,'적이 CORE를 향해 이동합니다. 전투 중에도 타워를 만들 수 있어요.');
   beep(250,.12,'sawtooth',.05);updateHud();
 }
@@ -451,6 +455,7 @@ function damageEnemy(e,amount,kind,tower){
 function killEnemy(e){
   if(e.dead)return;e.dead=true;state.score+=e.boss?800:18+state.wave*2;state.ink+=e.boss?20:((e.armor||e.regen||e.shield)?2:1);
   flashEffect(e.x,e.y,e.color,e.boss ? .09 : .045);
+  particleEffect(e.x,e.y,e.color,e.boss?14:4,e.boss?.10:.032);
   if(e.split&&!e.boss){for(let i=0;i<2;i++){const c={...e,id:state.uid++,type:'normal',hp:20,maxHp:20,speed:.095,r:.008,damage:3,color:'#2f3035',split:false,dead:false,pathT:Math.max(0,e.pathT-i*.025)};state.enemies.push(c)}}
 }
 
@@ -466,7 +471,7 @@ function towerUpdate(t,dt){
   t.cool-=dt;if(t.cool>0)return;
   const targets=state.enemies.filter(e=>!e.dead&&dist(t,e)<=s.range).sort((a,b)=>enemyProgress(b)-enemyProgress(a));
   if(!targets.length)return;
-  const target=targets[0];t.cool=1/s.rate;t.pulse=.12;
+  const target=targets[0];t.cool=1/s.rate;t.pulse=.24;
   const linkedElement=s.element||(t.links.find(m=>['burn','slow','poison'].includes(m.def.role))||{}).def?.role||'';
   if(s.beam||t.def.role==='pierce'||t.def.role==='push'||t.def.role==='gravity'){
     if(t.def.role==='pierce'){
@@ -495,8 +500,15 @@ function shotUpdate(s,dt){
   if(s.dead||!s.target||s.target.dead){s.dead=true;return}
   const dx=s.target.x-s.x,dy=s.target.y-s.y,d=Math.hypot(dx,dy),mv=s.speed*dt;
   if(d<=mv+.008){
-    if(s.area>0){for(const e of state.enemies)if(!e.dead&&dist(e,s.target)<=s.area)damageEnemy(e,s.damage*(e===s.target?1:.72),s.kind,s.source);ringEffect(s.target.x,s.target.y,s.area,s.color,.14)}
-    else damageEnemy(s.target,s.damage,s.kind,s.source);
+    if(s.area>0){
+      for(const e of state.enemies)if(!e.dead&&dist(e,s.target)<=s.area)damageEnemy(e,s.damage*(e===s.target?1:.72),s.kind,s.source);
+      ringEffect(s.target.x,s.target.y,s.area,s.color,.28);
+      particleEffect(s.target.x,s.target.y,s.color,Math.min(15,5+Math.round(s.area*25)),s.area*.65);
+    }
+    else{
+      damageEnemy(s.target,s.damage,s.kind,s.source);
+      particleEffect(s.target.x,s.target.y,s.color,3,.025);
+    }
     s.dead=true;return;
   }
   s.x+=dx/d*mv;s.y+=dy/d*mv;
@@ -550,6 +562,7 @@ function waveUpdate(dt){
 let previousInk=-1;
 function update(dt){
   if(!running||state.ended)return;
+  state.elapsed+=dt;
   waveUpdate(dt);barrierEffects();
   for(const e of state.enemies){if(!e.dead){statusEffects(e,dt);moveEnemy(e,dt)}}
   for(const t of state.towers)towerUpdate(t,dt);
@@ -603,27 +616,77 @@ function flashEffect(x,y,color,r){state.effects.push({type:'flash',x,y,color,r,l
 function ringEffect(x,y,r,color,life=.2){state.effects.push({type:'ring',x,y,r,color,life,max:life})}
 function lineEffect(x1,y1,x2,y2,color,life=.1,w=2){state.effects.push({type:'line',x1,y1,x2,y2,color,w,life,max:life})}
 function floatEffect(x,y,text,color){state.effects.push({type:'text',x,y,text,color,life:.8,max:.8})}
+function particleEffect(x,y,color,count=6,radius=.04){
+  for(let i=0;i<count&&state.effects.length<180;i++){
+    const a=i*Math.PI*2/count+state.elapsed*.3,energy=radius*(.62+(i%4)*.17);
+    state.effects.push({type:'particle',x,y,dx:Math.cos(a)*energy,dy:Math.sin(a)*energy,
+      color,life:.36+(i%3)*.08,max:.36+(i%3)*.08,size:2+i%3});
+  }
+}
 
 function draw(){
-  ctx.clearRect(0,0,W,H);drawGrid();drawPath();drawResources();drawLinks();drawTowers();drawEnemies();drawShots();drawEffects();drawPlacement();
+  ctx.clearRect(0,0,W,H);
+  drawGrid();drawPath();drawResources();drawLinks();drawTowers();
+  drawEnemies();drawShots();drawEffects();drawPlacement();
 }
 function px(x){return x*W}function py(y){return y*H}
 function drawGrid(){
-  ctx.fillStyle='#f2ecd2';ctx.fillRect(0,0,W,H);
-  const s=Math.max(24,Math.min(W,H)/18);ctx.strokeStyle='rgba(90,79,49,.11)';ctx.lineWidth=1;
+  const stage=currentStage(),colors=stage.colors;
+  ctx.fillStyle=colors.background;ctx.fillRect(0,0,W,H);
+  const s=Math.max(24,Math.min(W,H)/18);ctx.strokeStyle='rgba(60,60,65,.095)';ctx.lineWidth=1;
   for(let x=0;x<W;x+=s){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
   for(let y=0;y<H;y+=s){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+  ctx.save();
+  // Stage identity without characters or buildings: numeric markers and quiet geometry.
+  ctx.strokeStyle=colors.accent;ctx.globalAlpha=.18;ctx.lineWidth=2;
+  for(let i=0;i<9;i++){
+    const x=((i*67+stage.number*31)%93)/100*W,y=((i*53+stage.number*19)%88)/100*H;
+    const r=11+(i%3)*5;
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke();
+    if(i%2){ctx.beginPath();ctx.moveTo(x-r*.6,y);ctx.lineTo(x+r*.6,y);ctx.stroke()}
+  }
+  ctx.globalAlpha=.24;ctx.fillStyle=colors.accent;ctx.textAlign='right';
+  ctx.font='900 '+Math.min(54,Math.max(28,H*.10))+'px ui-monospace,monospace';
+  ctx.fillText(String(stage.number).padStart(2,'0'),W-15,H-24);
+  ctx.font='900 11px ui-monospace,monospace';ctx.fillText(stage.name,W-15,H-10);
+  ctx.restore();
 }
 function drawPath(){
-  ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#d8ccb1';ctx.lineWidth=Math.max(30,Math.min(W,H)*.065);
-  ctx.beginPath();ctx.moveTo(px(pathPts[0][0]),py(pathPts[0][1]));for(let i=1;i<pathPts.length;i++)ctx.lineTo(px(pathPts[i][0]),py(pathPts[i][1]));ctx.stroke();
-  ctx.strokeStyle='#b7aa8a';ctx.lineWidth=2;ctx.setLineDash([6,7]);ctx.stroke();ctx.setLineDash([]);
-  ctx.fillStyle='#263039';ctx.beginPath();ctx.arc(px(.96),py(.57),Math.max(10,Math.min(W,H)*.025),0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.font='900 10px sans-serif';ctx.textAlign='center';ctx.fillText('CORE',px(.92),py(.57)-H*.035)
+  const colors=currentStage().colors, lane=Math.max(30,Math.min(W,H)*.065);
+  ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+  const trace=()=>{
+    ctx.beginPath();ctx.moveTo(px(pathPts[0][0]),py(pathPts[0][1]));
+    for(let i=1;i<pathPts.length;i++)ctx.lineTo(px(pathPts[i][0]),py(pathPts[i][1]));
+  };
+  ctx.strokeStyle='rgba(30,33,39,.14)';ctx.lineWidth=lane+6;trace();ctx.stroke();
+  ctx.strokeStyle=colors.lane;ctx.lineWidth=lane;trace();ctx.stroke();
+  ctx.strokeStyle=colors.accent;ctx.globalAlpha=.24;ctx.lineWidth=lane*.12;trace();ctx.stroke();
+  ctx.globalAlpha=.9;ctx.strokeStyle='rgba(70,75,82,.35)';ctx.lineWidth=1.8;ctx.setLineDash([6,10]);trace();ctx.stroke();
+  ctx.setLineDash([]);
+  const end=pathPts[pathPts.length-1];const r=Math.max(10,Math.min(W,H)*.025);
+  ctx.fillStyle='#263039';ctx.beginPath();ctx.arc(px(end[0]),py(end[1]),r,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=colors.accent;ctx.lineWidth=3;ctx.stroke();
+  ctx.fillStyle='#242932';ctx.font='900 10px sans-serif';ctx.textAlign='center';
+  ctx.fillText('CORE',px(end[0])-r-17,py(end[1])-r-8);
+  ctx.restore();
 }
 function drawResources(){
-  for(const r of state.resources){if(r.amount<=0)continue;const x=px(r.x),y=py(r.y),rr=Math.max(12,Math.min(W,H)*r.r);
-    ctx.fillStyle='#62a83e';for(let i=0;i<8;i++){const a=i*.78,rad=rr*(.35+.35*((i*37)%10)/10);ctx.beginPath();ctx.arc(x+Math.cos(a)*rr*.45,y+Math.sin(a)*rr*.35,rad*.28,0,Math.PI*2);ctx.fill()}
-    ctx.fillStyle='#315d28';ctx.font='900 10px sans-serif';ctx.textAlign='center';ctx.fillText(Math.ceil(r.amount),x,y+4);
+  for(const ore of state.resources){
+    if(ore.amount<=0)continue;
+    const x=px(ore.x),y=py(ore.y),r=Math.max(12,Math.min(W,H)*ore.r),phase=state.elapsed;
+    ctx.save();ctx.translate(x,y);
+    ctx.shadowColor='rgba(34,93,48,.20)';ctx.shadowBlur=8;
+    for(let i=0;i<5;i++){
+      const a=i*2.4,rad=r*(i===0?.05:.45),xx=Math.cos(a)*rad,yy=Math.sin(a)*rad;
+      const size=r*(i===0?.42:.23);
+      ctx.fillStyle=i%2?'#67b962':'#85d78f';ctx.beginPath();
+      ctx.moveTo(xx,yy-size);ctx.lineTo(xx+size*.65,yy);ctx.lineTo(xx,yy+size);ctx.lineTo(xx-size*.65,yy);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='#3a8756';ctx.lineWidth=1;ctx.stroke();
+    }
+    ctx.shadowBlur=0;ctx.globalAlpha=.55+.4*Math.sin(phase*1.7+ore.x*13);
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-r*.22,-r*.48,1.8,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;ctx.fillStyle='#1e4c34';ctx.font='900 10px sans-serif';
+    ctx.textAlign='center';ctx.fillText(Math.ceil(ore.amount),0,r*.85);ctx.restore();
   }
 }
 function drawLinks(){
