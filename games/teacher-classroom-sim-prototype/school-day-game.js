@@ -496,9 +496,11 @@ function updateHud(){
   else ui.timer.textContent='하교!';
   updateClock();
 
-  const off=students.filter(s=>s.runtime.mode==='offtask').length;
-  const conflict=pairs.some(p=>p.state==='fight')?'싸움 발생':pairs.some(p=>p.state==='conflict')?'말다툼':null;
-  ui.classState.textContent=conflict||(off>=3?'산만함':off?'조금 산만':'차분함');
+  const off=students.filter(s=>studentCanParticipate(s)&&s.runtime.mode==='offtask').length;
+  const accident=students.some(s=>s.accident&&isStudentPresent(s));
+  const sick=students.some(s=>isStudentPresent(s)&&s.health?.revealed&&s.health.state!=='healthy'&&!s.health.checked);
+  const conflict=pairs.some(p=>p.state==='fight')?'싸움 발생':pairs.some(p=>p.state==='conflict')?'갈등 발생':null;
+  ui.classState.textContent=accident?'사고 확인 필요':sick?'건강 확인 필요':conflict||(off>=3?'산만함':off?'조금 산만':'차분함');
   ui.studentStrip.innerHTML=students.map(s=>{
     let cls='',icon='🙂';
     const pair=pairs.find(p=>p.a===s||p.b===s);
@@ -982,11 +984,14 @@ function finishDay(){
   if(teachingMarker)teachingMarker.visible=false;if(doorMarker)doorMarker.visible=false;
   ui.summary.innerHTML=
     '<div><strong>'+stats.periodsCompleted+'/6</strong><span>마친 수업</span></div>'+
-    '<div><strong>'+stats.spacesVisited.size+'</strong><span>다녀온 공간</span></div>'+
-    '<div><strong>'+stats.focusHelps+'</strong><span>집중 도와준 횟수</span></div>'+
-    '<div><strong>'+stats.conflictsMediated+'</strong><span>말다툼 중재</span></div>'+
-    '<div><strong>'+stats.fightsSeparated+'</strong><span>직접 싸움 분리</span></div>'+
-    '<div><strong>'+stats.missedFights+'</strong><span>놓친 싸움</span></div>';
+    '<div><strong>'+stats.focusHelps+'</strong><span>집중 도움</span></div>'+
+    '<div><strong>'+stats.conflictsMediated+'</strong><span>갈등 중재</span></div>'+
+    '<div><strong>'+stats.healthChecks+'</strong><span>건강 확인</span></div>'+
+    '<div><strong>'+stats.accidents+'</strong><span>안전 사고</span></div>'+
+    '<div><strong>'+stats.safetyMisses+'</strong><span>놓친 안전교육</span></div>'+
+    '<div><strong>'+stats.nurseVisits+'</strong><span>보건실 이용</span></div>'+
+    '<div><strong>'+stats.earlyDismissals+'</strong><span>조퇴</span></div>'+
+    '<div><strong>'+stats.teamConflicts+'</strong><span>모둠 갈등</span></div>';
   ui.end.classList.remove('hidden');
 }
 
