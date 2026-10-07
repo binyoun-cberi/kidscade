@@ -571,3 +571,31 @@ linear-gradient(145deg,#a8ddff 0%,#ddf5e3 52%,#fff3c7 100%)}
   .survival-equipment-slots button span{font-size:15px}
   .survival-equipment-slots button small{font-size:7px}
 }
+
+/* Cube Architect base-life update */
+#lifePanel{
+  position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(760px,calc(100vw - 28px));max-height:min(78vh,720px);overflow:auto;
+  z-index:46;background:rgba(14,25,42,.97);border:1px solid rgba(169,210,255,.35);
+  border-radius:18px;padding:16px;box-shadow:0 22px 70px rgba(0,0,0,.45);color:#eef7ff
+}
+#lifePanel.hidden{display:none}
+#lifePanelBody{display:grid;gap:12px;margin-top:12px}
+#lifePanelBody p,#lifePanelBody small{color:#bcd0e2;line-height:1.5}
+.life-name{width:100%;box-sizing:border-box;border:1px solid rgba(180,210,235,.28);border-radius:10px;background:#0c1727;color:#fff;padding:10px 12px}
+.life-actions{display:flex;gap:8px;flex-wrap:wrap}
+.life-actions button,.life-item,.life-map-target,.life-tracked button{
+  border:1px solid rgba(180,210,235,.24);background:#172a43;color:#eef7ff;border-radius:10px;padding:9px 11px;font:inherit
+}
+.life-storage-columns{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.life-storage-columns>div,.life-map-section,.life-tracked{
+  display:grid;gap:7px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:11px
+}
+.life-storage-columns h4,.life-map-section h4{margin:0 0 4px}
+.life-item,.life-map-target{text-align:left;display:flex;justify-content:space-between;align-items:center;width:100%}
+.life-map-target b{font-size:14px}.life-map-target small{font-size:11px}
+.life-tracked{grid-template-columns:1fr auto;align-items:center;font-weight:800}
+@media(max-width:680px){
+  #lifePanel{top:auto;bottom:12px;transform:translateX(-50%);max-height:70vh;padding:12px}
+  .life-storage-columns{grid-template-columns:1fr}
+}
