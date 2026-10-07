@@ -5,165 +5,95 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const read=rel=>fs.readFileSync(path.join(ROOT,rel),'utf8');
 
-test('global admin exposes the 3D character studio',()=>{
-  const admin=fs.readFileSync(path.join(ROOT,'teacher','index.html'),'utf8');
-  const html=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.html'),'utf8');
+test('global admin exposes the Chibi-only 3D avatar studio',()=>{
+  const admin=read('teacher/index.html');
+  const html=read('teacher/character-3d-studio.html');
   assert.match(admin,/\/teacher\/character-3d-studio\.html/);
+  assert.match(html,/3D 아바타 제작실/);
+  assert.match(html,/Styloo Chibi Characters v1\.2/);
   assert.match(html,/전역 관리자/);
-  assert.match(html,/three-r160/);
-  assert.match(html,/character-3d-studio\.js/);
 });
 
-test('3D character studio builds a reusable humanoid rig',()=>{
-  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
-  for(const bone of ['Root','Hips','Spine','Chest','Neck','Head','UpperArm_L','LowerArm_L','Hand_L','UpperLeg_L','LowerLeg_L','Foot_L']){
-    assert.match(js,new RegExp("'"+bone+"'"));
+test('3D studio has no V1 V2 V3 procedural body UI or generator',()=>{
+  const html=read('teacher/character-3d-studio.html');
+  const js=read('teacher/character-3d-studio.js');
+  for(const stale of ['V1 ·','V2 ·','V3 ·','data-body-style','proceduralPanel','soft3','chibi2','action2']){
+    assert.equal(html.includes(stale),false,stale+' must be removed');
   }
-  assert.match(js,/new THREE\.SkinnedMesh/);
-  assert.match(js,/new THREE\.Skeleton/);
-  assert.match(js,/skinIndex/);
-  assert.match(js,/skinWeight/);
-  assert.match(js,/kidscade-humanoid-v3/);
+  for(const stale of ['buildCharacter','makeBone','rigidGeometry','softTorsoGeometry','softForearmGeometry','softLegGeometry','BODY_STYLES','RIG_VERSION','CLIP_NAMES']){
+    assert.equal(js.includes(stale),false,stale+' must be removed');
+  }
 });
 
-test('3D character studio previews and exports the standard animation set',()=>{
-  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
-  for(const clip of ['IDLE','WALK','RUN','JUMP','ATTACK','HURT','DEAD']){
-    assert.match(js,new RegExp("'"+clip+"'"));
-  }
+test('Chibi studio uses one canonical GLB with no character fallback',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  assert.match(js,/const CHIBI_ASSET_URL='\/chibi\/glb\/allinonepr\.glb'/);
+  assert.equal(js.includes('CHIBI_ASSET_CANDIDATES'),false);
+  assert.equal(js.toLowerCase().includes('fallback'),false);
+  assert.match(js,/폴백 캐릭터는 사용하지 않습니다/);
+});
+
+test('Chibi studio loads source rig and exports visible parts only',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  assert.match(js,/GLTFLoader/);
   assert.match(js,/GLTFExporter/);
-  assert.match(js,/binary:true/);
-  assert.ok(js.includes("animations:bodyStyle==='assetChibi'?chibiAnimations:clips"));
-  assert.ok(js.includes("'kidscade-'+bodyStyle+'-rigged-character.glb'"));
+  assert.match(js,/choosePrimarySkinnedMesh/);
+  assert.match(js,/uniqueBones/);
+  assert.match(js,/onlyVisible:true/);
+  assert.match(js,/animations,/);
+  assert.match(js,/kidscade-chibi-/);
 });
 
-test('3D character studio remains global-admin only',()=>{
-  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
+test('Chibi wardrobe exposes source clothes hair and presets',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const html=read('teacher/character-3d-studio.html');
+  for(const part of ['shirt','skirt','shoe','bag','chemise','pants','hat','greenoutfit','ninjassuit','armorhelmet','armorshoe','hairvariant','hairtail']){
+    assert.ok(js.includes(part),part+' must exist');
+  }
+  for(const preset of ['base','student','merchant','archer','ninja','knight']){
+    assert.ok(html.includes('data-chibi-preset="'+preset+'"'),preset+' preset must exist');
+  }
+  assert.match(js,/applyPreset/);
+  assert.match(js,/applyHair/);
+  assert.match(js,/selectedParts/);
+});
+
+test('Chibi source animation labels remain available',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  for(const clip of ['anim_crouch','anim_crouchiddle','anim_dying','anim_flip','anim_iddle','anim_jump','anim_push','anim_run','anim_uncrouch','anim_walk']){
+    assert.ok(js.includes(clip),clip+' must exist');
+  }
+  assert.match(js,/populateAnimationButtons/);
+  assert.match(js,/new THREE\.AnimationMixer/);
+});
+
+test('Chibi studio remains global-admin only',()=>{
+  const js=read('teacher/character-3d-studio.js');
   assert.match(js,/kc_teacher_admin_key/);
   assert.match(js,/\/api\/teacher\/overview/);
   assert.match(js,/body\.scope!=='global'/);
 });
 
-
-test('vendors every Three addon imported by the 3D studio',()=>{
-  const required=[
-    'assets/vendor/three-r160/addons/controls/OrbitControls.js',
+test('required local Three runtime modules are vendored',()=>{
+  for(const rel of [
+    'assets/vendor/three-r160/three.module.js',
+    'assets/vendor/three-r160/addons/loaders/GLTFLoader.js',
     'assets/vendor/three-r160/addons/exporters/GLTFExporter.js',
-    'assets/vendor/three-r160/addons/utils/BufferGeometryUtils.js',
     'assets/vendor/three-r160/addons/utils/TextureUtils.js'
-  ];
-  for(const rel of required){
-    assert.ok(fs.existsSync(path.join(ROOT,rel)),rel+' must exist in the local Three r160 vendor');
+  ]){
+    assert.ok(fs.existsSync(path.join(ROOT,rel)),rel+' must exist');
   }
-  const exporter=fs.readFileSync(path.join(ROOT,'assets/vendor/three-r160/addons/exporters/GLTFExporter.js'),'utf8');
-  assert.match(exporter,/\.\.\/utils\/TextureUtils\.js/);
 });
 
-
-test('3D studio starts with only the local Three core module',()=>{
-  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
-  assert.match(js,/import \* as THREE from '\.\.\/assets\/vendor\/three-r160\/three\.module\.js'/);
-  assert.doesNotMatch(js,/^import .*OrbitControls/m);
-  assert.doesNotMatch(js,/^import .*GLTFExporter/m);
-  assert.doesNotMatch(js,/^import .*BufferGeometryUtils/m);
-  assert.match(js,/createSimpleOrbitControls/);
-  assert.match(js,/mergeRigidGeometries/);
-  assert.match(js,/await import\('\.\.\/assets\/vendor\/three-r160\/addons\/exporters\/GLTFExporter\.js'\)/);
-});
-
-
-test('Chibi v2 keeps the reference-inspired SD proportions explicit',()=>{
-  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
-  const html=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.html'),'utf8');
-  assert.match(js,/chibi2/);
-  assert.match(js,/action2/);
-  assert.match(js,/headRY:\(action \? \.164 : \.172\)\*H/);
-  assert.match(js,/hipY:\.418\*H/);
-  assert.match(js,/handX:\(action \? \.072 : \.056\)\*H/);
-  assert.match(js,/footZ:\(action \? \.170 : \.148\)\*H/);
-  assert.match(html,/V2 · SD 도형형/);
-  assert.match(html,/V2 · 액션 과장형/);
-});
-
-test('3D studio offers four-way silhouette inspection',()=>{
-  const html=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.html'),'utf8');
-  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
-  for(const view of ['front','threeQuarter','side','back']){
-    assert.match(html,new RegExp('data-view="'+view+'"'));
-  }
-  assert.match(js,/function setCameraView/);
-  assert.match(js,/data-body-style/);
-});
-
-
-test('SoftMesh v3 uses continuous skinned shells and blended joint weights',()=>{
-  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
-  const html=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.html'),'utf8');
-  assert.match(js,/soft3/);
-  assert.match(js,/function skinnedRingShell/);
-  assert.match(js,/function softTorsoGeometry/);
-  assert.match(js,/function softForearmGeometry/);
-  assert.match(js,/function softLegGeometry/);
-  assert.match(js,/blended-two-bone-joints/);
-  assert.match(js,/\[\[upperBone,\.86\],\[lowerBone,\.14\]\]/);
-  assert.match(js,/\[\[upperBone,\.35\],\[lowerBone,\.65\]\]/);
-  assert.match(html,/V3 · SoftMesh 실험형/);
-  assert.match(js,/blended-two-bone-joints/);
-});
-
-test('SoftMesh v3 records the inspected Kidscade people GLB baseline',()=>{
-  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
-  assert.match(js,/character-female-a\.glb/);
-  assert.match(js,/character-male-a\.glb/);
-  assert.match(js,/femaleA:\{triangles:876,skinnedMeshes:2,joints:7\}/);
-  assert.match(js,/maleA:\{triangles:723,skinnedMeshes:2,joints:7\}/);
-  assert.match(js,/Existing Kidscade people GLBs were inspected as topology\/skinning references/);
-});
-
-
-test('Chibi asset mode is the default 3D avatar workflow',()=>{
-  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
-  const html=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.html'),'utf8');
-  assert.match(js,/bodyStyle='assetChibi'/);
-  assert.match(js,/GLTFLoader/);
-  assert.match(js,/\/chibi\/glb\/allinonepr\.glb/);
-  assert.match(html,/실물 Chibi Asset · 기본/);
-  assert.match(html,/Styloo Chibi Characters v1\.2/);
-});
-
-test('Chibi wardrobe exposes the source clothing and hair parts',()=>{
-  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
-  const html=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.html'),'utf8');
-  for(const part of ['shirt','skirt','shoe','bag','chemise','pants','hat','greenoutfit','ninjassuit','armorhelmet','armorshoe','hairvariant','hairtail']){
-    assert.match(js,new RegExp(part.replace('.','\\.')));
-  }
-  for(const preset of ['student','merchant','archer','ninja','knight']){
-    assert.match(html,new RegExp('data-chibi-preset="'+preset+'"'));
-  }
-  assert.match(js,/applyChibiPreset/);
-  assert.match(js,/applyChibiHair/);
-  assert.match(js,/selectedChibiParts/);
-});
-
-test('Chibi export keeps source animations and exports visible parts only',()=>{
-  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
-  assert.match(js,/chibiAnimations/);
-  assert.match(js,/anim_crouch/);
-  assert.match(js,/anim_iddle/);
-  assert.match(js,/anim_walk/);
-  assert.match(js,/anim_run/);
-  assert.match(js,/anim_jump/);
-  assert.match(js,/onlyVisible:bodyStyle==='assetChibi'/);
-  assert.ok(js.includes("animations:bodyStyle==='assetChibi'?chibiAnimations:clips"));
-});
-
-test('Chibi asset manifest records CC0 source and wardrobe presets',()=>{
-  const manifest=JSON.parse(fs.readFileSync(path.join(ROOT,'chibi','asset-manifest.json'),'utf8'));
+test('Chibi asset manifest is canonical and has no fallback source',()=>{
+  const manifest=JSON.parse(read('chibi/asset-manifest.json'));
   assert.equal(manifest.license,'CC0-1.0');
   assert.equal(manifest.primary,'glb/allinonepr.glb');
+  assert.equal(Object.hasOwn(manifest,'fallbackPrimary'),false);
+  assert.equal(manifest.animations.length,11);
   assert.ok(manifest.presets.student.includes('shirt'));
   assert.ok(manifest.presets.ninja.includes('ninjassuit'));
   assert.ok(manifest.presets.knight.includes('armorhelmet'));
-  assert.equal(manifest.animations.length,11);
 });
