@@ -27,7 +27,10 @@
   <main class="game-wrap">
     <canvas id="gameCanvas" aria-label="3D 라면 조리대와 손님"></canvas>
 
-    <section id="orderStrip" class="customer-orders" aria-label="손님 주문"></section>
+    <aside class="order-corner-panel" aria-label="주문서 모음">
+      <div class="corner-panel-title"><span>🧾 주문서</span><small>먼저 들어온 주문부터</small></div>
+      <section id="orderStrip" class="customer-orders" aria-label="손님 주문"></section>
+    </aside>
     <div id="potStrip" class="pot-world-labels" aria-label="냄비 상태"></div>
 
     <div id="prepBar" class="prep-bar hidden">
@@ -37,18 +40,20 @@
       <button id="openShopBtn" type="button">영업 시작</button>
     </div>
 
-    <div id="stationHint" class="station-hint">WASD / 방향키로 이동 · E로 상호작용</div>
-    <div id="heldStatus" class="held-status empty"><small>손에 든 것</small><b>빈손</b></div>
-
-    <div id="tutorialBanner" class="tutorial-banner">
-      <small>첫 그릇</small>
-      <b id="tutorialText">1번 냄비를 눌러 보세요</b>
-    </div>
-
-    <div class="context-panel">
-      <b id="selectedAction">냄비를 직접 눌러 선택하세요</b>
-      <div id="actionDock" class="action-dock" aria-label="지금 할 수 있는 행동"></div>
-    </div>
+    <aside id="taskPanel" class="task-panel" aria-label="해야 할 일">
+      <div class="corner-panel-title task-title"><span>✓ 해야 할 일</span><small id="taskProgress">0/0</small></div>
+      <ol id="taskList" class="task-list"></ol>
+      <div id="stationHint" class="station-hint">가까운 바닥 칸으로 이동해 E로 상호작용</div>
+      <div id="heldStatus" class="held-status empty"><small>손에 든 것</small><b>빈손</b></div>
+      <div id="tutorialBanner" class="tutorial-banner">
+        <small>첫 그릇</small>
+        <b id="tutorialText">1번 냄비를 눌러 보세요</b>
+      </div>
+      <div class="context-panel">
+        <b id="selectedAction">냄비를 직접 눌러 선택하세요</b>
+        <div id="actionDock" class="action-dock" aria-label="지금 할 수 있는 행동"></div>
+      </div>
+    </aside>
 
     <button id="trayBtn" class="serve-drag hidden" type="button" aria-label="완성된 라면 쟁반을 손님에게 끌어다 주세요">
       <span class="tray-icon">🍜</span>
