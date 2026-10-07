@@ -4,7 +4,6 @@
   "license": "CC0-1.0",
   "source": "https://styloo.itch.io/chibi",
   "primary": "glb/allinonepr.glb",
-  "fallbackPrimary": "glb emission/allinone.glb",
   "expectedRoot": "/chibi/",
   "baseNodes": [
     "character_low",
@@ -102,5 +101,7 @@
     "anim_run",
     "anim_uncrouch",
     "anim_walk"
-  ]
+  ],
+  "mode": "chibi-only",
+  "noProceduralFallback": true
 }
