@@ -77,6 +77,11 @@ test('serving is now a direct carry interaction at the service counter', () => {
   assert.match(css, /\.serve-drag\{display:none!important/);
 });
 
+test('order rendering declares potIndex locally before receipt rendering', () => {
+  assert.match(js, /const r=recipeById\(o\.recipeId\),d=document\.createElement\('button'\),potIndex=potIndexForOrder\(o\.id\);d\.type='button';/);
+  assert.doesNotMatch(js, /d\.type='button',potIndex=potIndexForOrder/);
+});
+
 test('orders are receipt-style tickets with printer and completion feedback', () => {
   assert.match(js, /className='order-ticket '/);
   assert.match(js, /ticket-brand/);
