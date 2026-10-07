@@ -56,7 +56,7 @@ test('three crops grow on tilled soil and can be harvested',()=>{
 test('base life panel is published and mobile interactions can use it',()=>{
   assert.match(index,/id="lifePanel"/);
   assert.match(index,/cube-architect\.css\?v=20261007-homestead2/);
-  assert.match(index,/cube-architect\.js\?v=20261007-homestead2/);
+  assert.match(index,/cube-architect\.js\?v=20261007-homestead3/);
   assert.match(css,/#lifePanel\{/);
   assert.match(main,/interactLifeBlock\(type,u\.gx,u\.gy,u\.gz\)/);
   assert.match(main,/!PLACEABLE_TYPES\.includes\(selectedType\)&&!FARM_PLANT_TYPES\.includes\(selectedType\)/);
@@ -119,7 +119,7 @@ test('tamed animals persist, restore, follow or stay and are not despawned as wi
 test('homestead assets are cache-busted together',()=>{
   assert.match(index,/cube-architect\.css\?v=20261007-homestead2/);
   assert.match(index,/cube-architect-world\.js\?v=20261007-homestead2/);
-  assert.match(index,/cube-architect\.js\?v=20261007-homestead2/);
+  assert.match(index,/cube-architect\.js\?v=20261007-homestead3/);
   assert.match(css,/\.life-sign-text\{/);
 });
 
