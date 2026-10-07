@@ -256,7 +256,7 @@ class View{
     const roomItems=items.filter(x=>x.room===room);
     this.isoSlotLights[room].forEach((lamp,i)=>{
      const d=roomItems[i],color=!d?0x65747b:personColor(d);lamp.material.color.setHex(color);lamp.material.emissive.setHex(color);
-     lamp.material.emissiveIntensity=!d?.18:(d.status==='zombie'||d.status==='turning'||d.status==='positive'?1.65:.78)
+     lamp.material.emissiveIntensity=!d ? .18 : (d.status==='zombie'||d.status==='turning'||d.status==='positive'?1.65:.78)
     })
    }
   }
@@ -289,11 +289,11 @@ class View{
    this.camera.position.x=Math.sin(t*.00008)*.72;
    if(this.campBeacon){
     const alarm=this.campDanger>0,blink=.45+.55*Math.max(0,Math.sin(t*.009));
-    this.campBeacon.material.emissiveIntensity=alarm?.7+blink*1.7:.14;this.campBeacon.scale.setScalar(alarm?1+blink*.18:1)
+    this.campBeacon.material.emissiveIntensity=alarm ? .7+blink*1.7 : .14;this.campBeacon.scale.setScalar(alarm?1+blink*.18:1)
    }
   }else if(this.isoEmergencyB){
    const bDanger=this.dynamic.children.some(g=>{const d=g.userData?.info;return d?.room==='B'&&(d.status==='positive'||d.status==='turning'||d.status==='zombie')});
-   const pulse=.45+.55*Math.max(0,Math.sin(t*.011));this.isoEmergencyB.material.emissiveIntensity=bDanger?.8+pulse*1.9:.38
+   const pulse=.45+.55*Math.max(0,Math.sin(t*.011));this.isoEmergencyB.material.emissiveIntensity=bDanger ? .8+pulse*1.9 : .38
   }
   this.renderer.render(this.scene,this.camera)
  }
