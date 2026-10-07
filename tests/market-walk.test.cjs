@@ -269,7 +269,30 @@ test('gym day pass and workouts affect money hunger activity calories and overni
   assert.match(js,/if\(\(state\.gymWorkoutCount\|\|0\)>=2\)/);
   assert.match(js,/state\.dailyActivityKcal=\(state\.dailyActivityKcal\|\|0\)\+w\.burn/);
   assert.match(js,/state\.hunger=clamp\(state\.hunger-w\.hunger,0,100\)/);
-  assert.match(js,/sleepRecovery\+=Math\.min\(4,\(state\.gymWorkoutCount\|\|0\)\*2\)/);
+  assert.match(js,/activity>=250\?3:activity>=100\?2:activity>=30\?1:0/);
   assert.match(js,/const net=\(state\.dailyKcal\|\|0\)-\(state\.dailyActivityKcal\|\|0\)/);
 });
-test('market page cache-busts the neighborhood gym expansion',()=>{assert.ok(html.includes('market-walk.js?v=21-neighborhood-gym'))});
+test('play-style balance exposes activity and weekly lifestyle feedback',()=>{
+  for(const id of ['activityStat','dayActivity','weekWorkout','weekActivity'])assert.ok(html.includes('id="'+id+'"'),id);
+  assert.match(js,/workouts:0,activity:0,workDays:0,sickDays:0/);
+  assert.match(js,/state\.weekStats\.workouts=\(state\.weekStats\.workouts\|\|0\)\+1/);
+  assert.match(js,/state\.weekStats\.activity=\(state\.weekStats\.activity\|\|0\)\+w\.burn/);
+  assert.match(js,/ui\.weekWorkout\.textContent=/);
+  assert.match(js,/ui\.weekActivity\.textContent=/);
+});
+test('very low health uses a paid sick or short shift instead of full-value work',()=>{
+  assert.match(js,/if\(state\.treatmentNeeded\|\|state\.condition<25\)/);
+  assert.match(js,/const pay=6000/);
+  assert.match(js,/state\.weekStats\.sickDays=/);
+  assert.match(js,/단축 근무·병가 처리/);
+});
+test('gym recovery rewards exercise intensity and next week clears gym state',()=>{
+  assert.match(js,/const activity=state\.dailyActivityKcal\|\|0/);
+  assert.match(js,/activity>=250\?3:activity>=100\?2:activity>=30\?1:0/);
+  assert.match(js,/state\.dailyActivityKcal=0;state\.gymWorkoutCount=0;state\.gymPassDay=0/);
+  assert.match(js,/\/7700,-\.05,\.05/);
+});
+test('market page cache-busts the play-style balance pass',()=>{
+  assert.ok(html.includes('market-walk.js?v=22-playstyles'));
+  assert.ok(html.includes('market-walk.css?v=12-playstyles'));
+});
