@@ -43,7 +43,7 @@ const TEST_FILES = [
   "tests/ui-visual-polish.test.cjs",
   "tests/accounts.test.mjs",
   "tests/account-ui-observer.test.cjs",
-  "tests/teacher-management.test.mjs",
+  "tests/teacher-management.test.mjs",\n  "tests/character-3d-studio.test.mjs",
   "tests/economy.test.mjs",
   "tests/economy-v3.test.mjs",
   "tests/economy-job-capabilities.test.mjs",
