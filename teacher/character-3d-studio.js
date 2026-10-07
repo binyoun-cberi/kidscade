@@ -9,12 +9,16 @@ const CHIBI_LICENSE='CC0-1.0';
 const TARGET_HEIGHT=1.22;
 const $=id=>document.getElementById(id);
 
-const BASE_NODES=['character_low','eyelashes','eyes','tooth'];
-const HAIR_NODES=['hairone','hairT','hairtail','hairtailknight','hairvariant','hairvariant.001'];
+const FEMALE_BASE_NODES=['character_low','eyelashes','eyes','tooth'];
+const MALE_BASE_NODES=['kidscade_male_body','kidscade_male_eyes','kidscade_male_brows','tooth'];
+const BASE_VARIANT_NODES=[...new Set([...FEMALE_BASE_NODES,...MALE_BASE_NODES])];
+const BASE_NODES=FEMALE_BASE_NODES;
+const HAIR_NODES=['hairone','hairT','hairtail','hairtailknight','hairvariant','hairvariant.001','kidscade_male_hair_short'];
 
 const PRESETS={
-  base:[...BASE_NODES],
-  hoodie:[...BASE_NODES,'hairvariant','kidscade_hoodie_blue','pants','shoe'],
+  base:[...FEMALE_BASE_NODES],
+  male:[...MALE_BASE_NODES,'kidscade_male_hair_short','kidscade_male_tshirt','kidscade_male_shorts','shoe'],
+  hoodie:[...FEMALE_BASE_NODES,'hairvariant','kidscade_hoodie_blue','pants','shoe'],
   student:[...BASE_NODES,'hairvariant','shirt','skirt','shoe','bag'],
   merchant:[...BASE_NODES,'hairone','chemise','pants','bottes','hat'],
   archer:[...BASE_NODES,'hairvariant.001','greenoutfit','greenoutfitbelt','greenoutfitneckless','bottesgreen'],
@@ -32,7 +36,10 @@ const PART_LABELS={
   'hairvariant.001':'궁수 헤어',hat:'상인 모자',ninjassuit:'닌자 상의',ninjassuitmask:'닌자 마스크',
   ninjassuitshoe:'닌자 신발',ninjassuitthigh:'닌자 허벅지',ninjasuitshort:'닌자 하의',
   pants:'상인 바지',shirt:'학생 셔츠',shoe:'학생 신발',skirt:'학생 치마',
-  kidscade_hoodie_blue:'파란 후드티'
+  kidscade_hoodie_blue:'파란 후드티',
+  kidscade_male_hair_short:'남자 짧은 머리',
+  kidscade_male_tshirt:'남자 기본 티셔츠',
+  kidscade_male_shorts:'남자 기본 반바지'
 };
 
 const TOGGLE_NODES=Object.keys(PART_LABELS);
@@ -356,9 +363,14 @@ function applyPreset(name){
   if(!sourceScene||!PRESETS[name])return;
   currentPreset=name;
   const wanted=new Set(PRESETS[name]);
-  BASE_NODES.forEach(node=>setNodeVisible(node,true));
 
-  // 헤어는 항상 배타적으로 관리한다. GLB 기본 visibility가 무엇이든 먼저 전부 끈다.
+  // 여자/남자 베이스는 동시에 켜지지 않는다.
+  BASE_VARIANT_NODES.forEach(node=>setNodeVisible(node,false));
+  BASE_VARIANT_NODES.forEach(node=>{
+    if(wanted.has(node))setNodeVisible(node,true);
+  });
+
+  // 헤어도 항상 한 종류만 보이게 한다.
   HAIR_NODES.forEach(node=>setNodeVisible(node,false));
   TOGGLE_NODES.filter(node=>!HAIR_NODES.includes(node)).forEach(node=>{
     setNodeVisible(node,wanted.has(node));
@@ -704,6 +716,222 @@ function createKidscadeBlueHoodie(){
   return group;
 }
 
+
+function cloneSkinnedMeshWithGeometry(template,geometry,material,name){
+  const mesh=new THREE.SkinnedMesh(geometry,material);
+  mesh.name=name;
+  mesh.bindMode=template.bindMode;
+  mesh.bind(template.skeleton,template.bindMatrix);
+  mesh.position.copy(template.position);
+  mesh.quaternion.copy(template.quaternion);
+  mesh.scale.copy(template.scale);
+  mesh.castShadow=true;
+  mesh.receiveShadow=true;
+  mesh.frustumCulled=false;
+  return mesh;
+}
+
+function createKidscadeMaleSet(){
+  if(getNode('kidscade_male_body'))return getNode('kidscade_male_body');
+
+  const bodySource=getNode('character_low');
+  const eyesSource=getNode('eyes');
+  const shirtSource=getNode('shirt');
+  const pantsSource=getNode('pants');
+  if(!bodySource?.isSkinnedMesh||!eyesSource?.isSkinnedMesh||!shirtSource?.isSkinnedMesh||!pantsSource?.isSkinnedMesh){
+    throw new Error('남자 베이스 제작에 필요한 character_low / eyes / shirt / pants SkinnedMesh를 찾지 못했습니다.');
+  }
+
+  const root=bodySource.parent;
+  const group=new THREE.Group();
+  group.name='kidscade_male_set';
+  group.userData={
+    type:'kidscade-custom-male-base',
+    label:'남자 기본형',
+    rig:'source-78-bone',
+    author:'Kidscade',
+    createdFromCc0:true
+  };
+
+  // 1) 남자 바디: 같은 skin weights를 유지하면서 어깨/몸통을 넓히고 골반과 가슴 굴곡을 줄인다.
+  const bodyGeometry=bodySource.geometry.clone();
+  const bp=bodyGeometry.getAttribute('position');
+  for(let i=0;i<bp.count;i++){
+    let x=bp.getX(i),y=bp.getY(i),z=bp.getZ(i);
+
+    if(y>=.86&&y<=1.30){
+      const shoulder=Math.max(0,Math.min(1,(y-.86)/.44));
+      x*=1.055+shoulder*.055;
+      z*=1.02;
+      if(z>0)z*=.94;
+    }else if(y>=.48&&y<.86){
+      x*=.965;
+      if(z>0)z*=.97;
+    }
+
+    // 턱 아래를 아주 조금 넓혀 둥근 여성형 얼굴 인상을 줄인다.
+    if(y>=1.34&&y<=1.58&&z>.05){
+      x*=1.025;
+      z*=.985;
+    }
+
+    bp.setXYZ(i,x,y,z);
+  }
+  bp.needsUpdate=true;
+  bodyGeometry.computeVertexNormals();
+  bodyGeometry.computeBoundingBox();
+  bodyGeometry.computeBoundingSphere();
+
+  const maleBody=cloneSkinnedMeshWithGeometry(
+    bodySource,
+    bodyGeometry,
+    Array.isArray(bodySource.material)?bodySource.material.slice():bodySource.material,
+    'kidscade_male_body'
+  );
+  group.add(maleBody);
+
+  // 2) 남자 눈: 원본 눈의 세로폭을 줄이고 가로폭은 살짝 키운다.
+  const eyeGeometry=eyesSource.geometry.clone();
+  const ep=eyeGeometry.getAttribute('position');
+  const eyeCenterY=1.620;
+  for(let i=0;i<ep.count;i++){
+    let x=ep.getX(i),y=ep.getY(i),z=ep.getZ(i);
+    x*=1.025;
+    y=eyeCenterY+(y-eyeCenterY)*.82;
+    z+=.004;
+    ep.setXYZ(i,x,y,z);
+  }
+  ep.needsUpdate=true;
+  eyeGeometry.computeVertexNormals();
+  eyeGeometry.computeBoundingBox();
+  eyeGeometry.computeBoundingSphere();
+
+  const maleEyes=cloneSkinnedMeshWithGeometry(
+    eyesSource,
+    eyeGeometry,
+    Array.isArray(eyesSource.material)?eyesSource.material.slice():eyesSource.material,
+    'kidscade_male_eyes'
+  );
+  group.add(maleEyes);
+
+  // 3) 남자 눈썹: face bone을 따라가는 짧고 굵은 라인.
+  const browMaterial=makeSolidMaterial('#3a2a24','Kidscade Male Brows');
+  const faceBone=resolveFirstBoneName(bodySource.skeleton,['DEF-face','face','Face']);
+  const browGroup=new THREE.Group();
+  browGroup.name='kidscade_male_brows';
+  const leftBrow=makeTubeGeometry([
+    new THREE.Vector3(-.235,1.772,.404),
+    new THREE.Vector3(-.165,1.785,.412),
+    new THREE.Vector3(-.090,1.774,.407)
+  ],.010,8);
+  const rightBrow=makeTubeGeometry([
+    new THREE.Vector3(.090,1.774,.407),
+    new THREE.Vector3(.165,1.785,.412),
+    new THREE.Vector3(.235,1.772,.404)
+  ],.010,8);
+  browGroup.add(makeRigidSkinnedPiece(bodySource,leftBrow,faceBone,browMaterial,'kidscade_male_brow_L'));
+  browGroup.add(makeRigidSkinnedPiece(bodySource,rightBrow,faceBone,browMaterial,'kidscade_male_brow_R'));
+  group.add(browGroup);
+
+  // 4) 짧은 남자 헤어: 머리 윗부분 cap + 짧은 앞머리 조각.
+  const hairMaterial=makeSolidMaterial('#3b2a22','Kidscade Male Short Hair');
+  const hairGroup=new THREE.Group();
+  hairGroup.name='kidscade_male_hair_short';
+
+  const cap=new THREE.SphereGeometry(.465,18,10,0,Math.PI*2,0,Math.PI*.56);
+  cap.scale(1.02,1,.98);
+  cap.translate(0,1.835,-.035);
+  cap.computeVertexNormals();
+  cap.computeBoundingBox();
+  cap.computeBoundingSphere();
+  hairGroup.add(makeRigidSkinnedPiece(bodySource,cap,faceBone,hairMaterial,'kidscade_male_hair_cap'));
+
+  const fringeSpecs=[
+    [-.20,1.855,.405,-.18],
+    [-.075,1.840,.425,-.05],
+    [.055,1.842,.425,.07],
+    [.175,1.860,.405,.16]
+  ];
+  fringeSpecs.forEach((spec,index)=>{
+    const [x,y,z,rz]=spec;
+    const fringe=new THREE.ConeGeometry(.075,.205,4,1,false);
+    fringe.rotateZ(rz);
+    fringe.rotateX(Math.PI*.03);
+    fringe.translate(x,y,z);
+    fringe.computeVertexNormals();
+    fringe.computeBoundingBox();
+    fringe.computeBoundingSphere();
+    hairGroup.add(makeRigidSkinnedPiece(
+      bodySource,fringe,faceBone,hairMaterial,'kidscade_male_hair_fringe_'+index
+    ));
+  });
+  group.add(hairGroup);
+
+  // 5) 남자 기본 티셔츠: shirt의 원본 웨이트를 그대로 사용하고 몸통을 조금 넓힌다.
+  const tshirtMaterial=makeSolidMaterial('#4d78d6','Kidscade Male T-shirt');
+  const tshirtGeometry=shirtSource.geometry.clone();
+  const tp=tshirtGeometry.getAttribute('position');
+  for(let i=0;i<tp.count;i++){
+    let x=tp.getX(i),y=tp.getY(i),z=tp.getZ(i);
+    x*=1.07;
+    z*=1.035;
+    if(y<.86)x*=1.025;
+    tp.setXYZ(i,x,y,z);
+  }
+  tp.needsUpdate=true;
+  tshirtGeometry.computeVertexNormals();
+  tshirtGeometry.computeBoundingBox();
+  tshirtGeometry.computeBoundingSphere();
+
+  const tshirtGroup=new THREE.Group();
+  tshirtGroup.name='kidscade_male_tshirt';
+  tshirtGroup.add(cloneSkinnedMeshWithGeometry(
+    shirtSource,tshirtGeometry,tshirtMaterial,'kidscade_male_tshirt_body'
+  ));
+
+  const upperArmLBone=resolveFirstBoneName(bodySource.skeleton,['DEF-upper_arm.L','upper_arm.L','UpperArm_L']);
+  const upperArmRBone=resolveFirstBoneName(bodySource.skeleton,['DEF-upper_arm.R','upper_arm.R','UpperArm_R']);
+  const sleeveL=makeSleeveGeometry(
+    new THREE.Vector3(.145,1.105,-.006),
+    new THREE.Vector3(.260,1.025,-.030),
+    .070,.058
+  );
+  const sleeveR=makeSleeveGeometry(
+    new THREE.Vector3(-.145,1.105,-.006),
+    new THREE.Vector3(-.260,1.025,-.030),
+    .070,.058
+  );
+  tshirtGroup.add(makeRigidSkinnedPiece(bodySource,sleeveL,upperArmLBone,tshirtMaterial,'kidscade_male_tshirt_sleeve_L'));
+  tshirtGroup.add(makeRigidSkinnedPiece(bodySource,sleeveR,upperArmRBone,tshirtMaterial,'kidscade_male_tshirt_sleeve_R'));
+  group.add(tshirtGroup);
+
+  // 6) 남자 반바지: 기존 pants를 짧고 덜 부풀게 재성형한다.
+  const shortsMaterial=makeSolidMaterial('#29446f','Kidscade Male Shorts');
+  const shortsGeometry=pantsSource.geometry.clone();
+  const sp=shortsGeometry.getAttribute('position');
+  const shortsTop=.84;
+  for(let i=0;i<sp.count;i++){
+    let x=sp.getX(i),y=sp.getY(i),z=sp.getZ(i);
+    x*=.90;
+    z*=.90;
+    y=shortsTop-(shortsTop-y)*.72;
+    sp.setXYZ(i,x,y,z);
+  }
+  sp.needsUpdate=true;
+  shortsGeometry.computeVertexNormals();
+  shortsGeometry.computeBoundingBox();
+  shortsGeometry.computeBoundingSphere();
+  group.add(cloneSkinnedMeshWithGeometry(
+    pantsSource,shortsGeometry,shortsMaterial,'kidscade_male_shorts'
+  ));
+
+  root.add(group);
+  group.visible=true;
+  ['kidscade_male_body','kidscade_male_eyes','kidscade_male_brows','kidscade_male_hair_short','kidscade_male_tshirt','kidscade_male_shorts']
+    .forEach(name=>setNodeVisible(name,false));
+  return group;
+}
+
 function makeUnlitMaterial(source){
   const material=new THREE.MeshBasicMaterial({
     color:source?.color?.clone?.()||new THREE.Color(0xffffff),
@@ -905,7 +1133,7 @@ async function loadChibi(){
   originalMaterials=new Map();
 
   TOGGLE_NODES.forEach(name=>setNodeVisible(name,false));
-  BASE_NODES.forEach(name=>setNodeVisible(name,true));
+  FEMALE_BASE_NODES.forEach(name=>setNodeVisible(name,true));
   const initial=new Set(PRESETS.student);
   TOGGLE_NODES.forEach(name=>setNodeVisible(name,initial.has(name)));
 
@@ -946,9 +1174,10 @@ async function loadChibi(){
 
   try{
     createKidscadeBlueHoodie();
+    createKidscadeMaleSet();
   }catch(error){
     console.error(error);
-    showAssetError('Chibi 본체는 열렸지만 파란 후드티 생성에 실패했습니다: '+(error?.message||error));
+    showAssetError('Chibi 본체는 열렸지만 커스텀 파츠 생성에 실패했습니다: '+(error?.message||error));
     scene.remove(avatarRoot);
     avatarRoot=null;
     return false;
@@ -974,7 +1203,7 @@ async function loadChibi(){
   refreshMetrics();
   clearAssetError();
 
-  setAssetStatus('로드 완료 · 파란 후드티 제작 완료 · '+uniqueBones().length+' bones · '+animations.length+' animations');
+  setAssetStatus('로드 완료 · 후드티 + 남자 기본형 제작 완료 · '+uniqueBones().length+' bones · '+animations.length+' animations');
   setStatus('Chibi 제작실 준비 완료');
 
   const idle=idleClipName();
