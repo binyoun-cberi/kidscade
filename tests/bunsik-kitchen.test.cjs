@@ -13,9 +13,9 @@ const js = fs.readFileSync(path.join(gameDir, 'bunsik-kitchen.js'), 'utf8');
 const catalog = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.json'), 'utf8'));
 const game = catalog.games.find(g => g.id === 'job_bogle_bunsik');
 
-test('Bunsik Kitchen v25 keeps the 3D kitchen visually dominant', () => {
-  assert.match(html, /bunsik-kitchen\.css\?v=25/);
-  assert.match(html, /bunsik-kitchen\.js\?v=25/);
+test('Bunsik Kitchen v26 keeps the 3D kitchen visually dominant', () => {
+  assert.match(html, /bunsik-kitchen\.css\?v=26/);
+  assert.match(html, /bunsik-kitchen\.js\?v=26/);
   assert.match(html, /class="customer-orders"/);
   assert.match(html, /class="pot-world-labels"/);
   assert.match(html, /class="context-panel"/);
@@ -123,18 +123,18 @@ test('Bunsik Kitchen reuses existing food, restaurant, customer and tray assets'
   assert.match(js, /paintCuteCook\(/);
 });
 
-test('catalog and compatibility entry publish v25', () => {
+test('catalog and compatibility entry publish v26', () => {
   assert.ok(game);
-  assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=25');
+  assert.equal(game.href, 'games/job_bogle_bunsik/보글보글 분식집.html?v=26');
   assert.equal(game.difficulty, 'easy');
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.css\?v=25/);
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=25/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.css\?v=26/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=26/);
   assert.match(rootEntry, /"three":"assets\/vendor\/three-r160\/three\.module\.js"/);
 });
 
-test('Bunsik Kitchen build script publishes v25', () => {
+test('Bunsik Kitchen build script publishes v26', () => {
   const build=fs.readFileSync(path.join(root,'scripts','bunsik-kitchen-build.cjs'),'utf8');
-  assert.match(build,/\?v=25/);
+  assert.match(build,/\?v=26/);
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   assert.match(pkg.scripts.build,/bunsik-kitchen-build\.cjs/);
 });
@@ -142,7 +142,7 @@ test('Bunsik Kitchen build script publishes v25', () => {
 
 
 
-test('Bunsik Kitchen v25 adds a PlateUp-style prep phase and movable layout stations', () => {
+test('Bunsik Kitchen v26 adds a PlateUp-style prep phase and movable layout stations', () => {
   assert.match(html, /id="prepBar" class="prep-bar hidden"/);
   assert.match(html, /id="openShopBtn"/);
   assert.match(html, /id="stationHint"/);
@@ -158,7 +158,7 @@ test('Bunsik Kitchen v25 adds a PlateUp-style prep phase and movable layout stat
   assert.match(css, /\.layout-mode #gameCanvas/);
 });
 
-test('Bunsik Kitchen v25 uses committed CC0 assets for the physical kitchen sources', () => {
+test('Bunsik Kitchen v26 uses committed CC0 assets for the physical kitchen sources', () => {
   const required = [
     'assets/game/3d/bakery/restaurant-bits/kitchencounter-sink.glb',
     'assets/game/3d/bakery/restaurant-bits/fridge-a.glb',
@@ -178,7 +178,7 @@ test('Bunsik Kitchen v25 uses committed CC0 assets for the physical kitchen sour
   assert.match(js, /'soupSource'/);
 });
 
-test('Bunsik Kitchen v25 uses cute KIDSCADE cook sprites for player and helper', () => {
+test('Bunsik Kitchen v26 uses cute KIDSCADE cook sprites for player and helper', () => {
   assert.match(js, /school-starter\/school-starter-sheet\.png/);
   assert.match(js, /makeCuteCook\(role='player'\)/);
   assert.match(js, /paintCuteCook\(look,moving=false,faceRight=false/);
@@ -187,7 +187,7 @@ test('Bunsik Kitchen v25 uses cute KIDSCADE cook sprites for player and helper',
   assert.match(js, /const apron=look\.role==='player'\?'#d95343':'#4b8fc7'/);
 });
 
-test('Bunsik Kitchen v25 adds player movement and proximity interaction', () => {
+test('Bunsik Kitchen v26 adds player movement and proximity interaction', () => {
   assert.match(html, /id="moveControls"/);
   assert.match(html, /data-move="ArrowUp"/);
   assert.match(html, /data-interact/);
@@ -201,7 +201,7 @@ test('Bunsik Kitchen v25 adds player movement and proximity interaction', () => 
   assert.match(css, /\.move-controls\{/);
 });
 
-test('Bunsik Kitchen v25 turns plates into a reusable washing bottleneck', () => {
+test('Bunsik Kitchen v26 turns plates into a reusable washing bottleneck', () => {
   assert.match(html, /id="dishStatus"/);
   assert.match(js, /cleanPlates:3,dirtyPlates:0/);
   assert.match(js, /if\(state\.cleanPlates<=0\)/);
@@ -228,7 +228,7 @@ test('Bunsik Kitchen delegates restaurant state to the shared engine', () => {
 });
 
 
-test('Bunsik Kitchen v25 enforces a one-item carry invariant', () => {
+test('Bunsik Kitchen v26 enforces a one-item carry invariant', () => {
   assert.match(js, /heldItem:null/);
   assert.match(js, /function setHeldItem\(item\)/);
   assert.match(js, /if\(state\.heldItem\)\{toast\('한 번에 하나만 들 수 있어요/);
@@ -240,7 +240,7 @@ test('Bunsik Kitchen v25 enforces a one-item carry invariant', () => {
   assert.match(css, /\.held-status\{/);
 });
 
-test('Bunsik Kitchen v25 tutorial follows the split source route', () => {
+test('Bunsik Kitchen v26 tutorial follows the split source route', () => {
   assert.match(js, /싱크로 가서 E로 물을 받아/);
   assert.match(js, /면 바구니로 가서 E로 면을 들고/);
   assert.match(js, /스프 바구니에서 스프를 들고/);
@@ -249,7 +249,7 @@ test('Bunsik Kitchen v25 tutorial follows the split source route', () => {
   assert.match(js, /function recommendedToppingIngredient\(\)/);
 });
 
-test('Bunsik Kitchen v25 no longer exposes instant ingredient keyboard shortcuts', () => {
+test('Bunsik Kitchen v26 no longer exposes instant ingredient keyboard shortcuts', () => {
   assert.doesNotMatch(js, /Digit1:'water'/);
   assert.doesNotMatch(js, /Digit2:'noodle'/);
   assert.doesNotMatch(js, /Digit3:'soup'/);
@@ -259,7 +259,7 @@ test('Bunsik Kitchen v25 no longer exposes instant ingredient keyboard shortcuts
 });
 
 
-test('Bunsik Kitchen v25 makes furniture collision matter during service', () => {
+test('Bunsik Kitchen v26 makes furniture collision matter during service', () => {
   assert.match(js, /isBlockedPosition\(x,z,pr=/);
   assert.match(js, /layoutPlacementBlocked\(holder,x,z\)/);
   assert.match(js, /this\.potVisuals\.some\(v=>Math\.hypot/);
@@ -268,7 +268,7 @@ test('Bunsik Kitchen v25 makes furniture collision matter during service', () =>
   assert.match(js, /if\(!this\.isBlockedPosition\(this\.player\.position\.x,nz\)\)/);
 });
 
-test('Bunsik Kitchen v25 lets players recover from a wrong carried item', () => {
+test('Bunsik Kitchen v26 lets players recover from a wrong carried item', () => {
   assert.match(js, /function returnHeldAtSource\(ids\)/);
   assert.match(js, /function dropHeldItem\(\)/);
   assert.match(js, /state\.heldItem\.kind==='ingredient'/);
@@ -277,7 +277,7 @@ test('Bunsik Kitchen v25 lets players recover from a wrong carried item', () => 
   assert.match(js, /완성 라면을 정말 버릴까요/);
 });
 
-test('Bunsik Kitchen v25 rebalance matches the longer direct-carry loop', () => {
+test('Bunsik Kitchen v26 rebalance matches the longer direct-carry loop', () => {
   assert.match(js, /const SHIFT_SECONDS=150;/);
   assert.match(js, /const TARGET_REVENUE=5200;/);
   assert.match(html, /id="time">150</);
@@ -285,7 +285,7 @@ test('Bunsik Kitchen v25 rebalance matches the longer direct-carry loop', () => 
 });
 
 
-test('Bunsik Kitchen v25 adds two movable one-slot prep counters', () => {
+test('Bunsik Kitchen v26 adds two movable one-slot prep counters', () => {
   assert.match(js, /makePrepCounter\('prepCounterA','조리대 A'/);
   assert.match(js, /makePrepCounter\('prepCounterB','조리대 B'/);
   assert.match(js, /storageSlot=true/);
@@ -294,7 +294,7 @@ test('Bunsik Kitchen v25 adds two movable one-slot prep counters', () => {
   assert.match(js, /counter-straight\.glb/);
 });
 
-test('Bunsik Kitchen v25 moves items between hand and prep counters without duplication', () => {
+test('Bunsik Kitchen v26 moves items between hand and prep counters without duplication', () => {
   assert.match(js, /function usePrepCounter\(group\)/);
   assert.match(js, /if\(held&&stored\)/);
   assert.match(js, /group\.userData\.storedItem=\{\.\.\.held\}/);
@@ -304,19 +304,19 @@ test('Bunsik Kitchen v25 moves items between hand and prep counters without dupl
   assert.match(js, /setHeldItem\(item\)/);
 });
 
-test('Bunsik Kitchen v25 renders stored prep-counter items in the 3D world', () => {
+test('Bunsik Kitchen v26 renders stored prep-counter items in the 3D world', () => {
   assert.match(js, /makeItemSprite\(item\)/);
   assert.match(js, /syncCounterVisual\(group\)/);
   assert.match(js, /group\.userData\.storedItem/);
   assert.match(js, /anchor\.add\(this\.makeItemSprite/);
 });
 
-test('Bunsik Kitchen v25 clears prep counters between shifts', () => {
+test('Bunsik Kitchen v26 clears prep counters between shifts', () => {
   assert.match(js, /clearPrepCounters\(\)/);
   assert.match(js, /kitchen\.clearPrepCounters\(\)/);
 });
 
-test('Bunsik Kitchen v25 exposes generic storage-slot actions in the proximity dock', () => {
+test('Bunsik Kitchen v26 exposes generic storage-slot actions in the proximity dock', () => {
   assert.match(js, /n\?\.group\?\.userData\?\.storageSlot/);
   assert.match(js, /function storageLabel\(group\)/);
   assert.match(js, /에 내려놓기/);
@@ -324,14 +324,14 @@ test('Bunsik Kitchen v25 exposes generic storage-slot actions in the proximity d
   assert.match(js, /사용 중/);
 });
 
-test('Bunsik Kitchen v25 publishes the automation strategy', () => {
+test('Bunsik Kitchen v26 publishes the automation strategy', () => {
   assert.match(html, /컨베이어\/Grabber 방향/);
   assert.match(html, /Grabber는 재료를 당기고/);
   assert.match(html, /장비 구매/);
 });
 
 
-test('Bunsik Kitchen v25 unlocks a helper worker after the first tutorial dish', () => {
+test('Bunsik Kitchen v26 unlocks a helper worker after the first tutorial dish', () => {
   assert.match(html, /id="helperBtn" class="helper-toggle hidden"/);
   assert.match(js, /helperUnlocked:false,helperEnabled:false/);
   assert.match(js, /function unlockHelper\(\)/);
@@ -340,7 +340,7 @@ test('Bunsik Kitchen v25 unlocks a helper worker after the first tutorial dish',
   assert.match(css, /\.helper-toggle\.active/);
 });
 
-test('Bunsik Kitchen v25 helper only consumes prepared non-automation counter ingredients', () => {
+test('Bunsik Kitchen v26 helper only consumes prepared non-automation counter ingredients', () => {
   assert.match(js, /findHelperTask\(\)/);
   assert.match(js, /counter\.userData\.storageSlot&&!counter\.userData\.automationType&&counter\.userData\.storedItem/);
   assert.match(js, /item\.kind!=='ingredient'/);
@@ -348,28 +348,28 @@ test('Bunsik Kitchen v25 helper only consumes prepared non-automation counter in
   assert.doesNotMatch(js, /helper.*pickIngredient\(/i);
 });
 
-test('Bunsik Kitchen v25 reserves counter work to avoid player-worker duplication', () => {
+test('Bunsik Kitchen v26 reserves counter work to avoid player-worker duplication', () => {
   assert.match(js, /counter\.userData\.reservedBy='helper'/);
   assert.match(js, /group\.userData\.reservedBy==='helper'/);
   assert.match(js, /알바생이 이 조리대 재료를 가지러 오는 중이에요/);
   assert.match(js, /delete task\.counter\.userData\.reservedBy/);
 });
 
-test('Bunsik Kitchen v25 helper paths around solid kitchen furniture', () => {
+test('Bunsik Kitchen v26 helper paths around solid kitchen furniture', () => {
   assert.match(js, /buildHelperPath\(group,approach=/);
   assert.match(js, /this\.isBlockedPosition\(x,z,\.26\)/);
   assert.match(js, /moveHelperPath\(dt\)/);
   assert.match(js, /for\(const \[dx,dz\] of \[\[step,0\],\[-step,0\],\[0,step\],\[0,-step\]\]\)/);
 });
 
-test('Bunsik Kitchen v25 helper safely returns or releases carried work', () => {
+test('Bunsik Kitchen v26 helper safely returns or releases carried work', () => {
   assert.match(js, /returnHelperCarry\(\)/);
   assert.match(js, /preferred\?\.visible&&!preferred\.userData\.storedItem/);
   assert.match(js, /this\.setHelperCarry\(null\);return false/);
   assert.match(js, /resetHelper\(\)/);
 });
 
-test('Bunsik Kitchen v25 helper can be toggled without disabling player cooking', () => {
+test('Bunsik Kitchen v26 helper can be toggled without disabling player cooking', () => {
   assert.match(js, /setHelperEnabled\(on\)/);
   assert.match(js, /els\.helper\?\.addEventListener\('click'/);
   assert.match(js, /알바생 자동 운반 ON/);
@@ -378,7 +378,7 @@ test('Bunsik Kitchen v25 helper can be toggled without disabling player cooking'
 });
 
 
-test('Bunsik Kitchen v25 adds movable conveyor and grabber storage devices', () => {
+test('Bunsik Kitchen v26 adds movable conveyor and grabber storage devices', () => {
   assert.match(js, /makeAutomationStation\('conveyorA','컨베이어 A','conveyor'/);
   assert.match(js, /makeAutomationStation\('grabberA','Grabber','grabber'/);
   assert.match(js, /holder\.userData\.automationType=type/);
@@ -387,7 +387,7 @@ test('Bunsik Kitchen v25 adds movable conveyor and grabber storage devices', () 
   assert.match(js, /automationClock=0/);
 });
 
-test('Bunsik Kitchen v25 automation is directional and rotatable during prep', () => {
+test('Bunsik Kitchen v26 automation is directional and rotatable during prep', () => {
   assert.match(html, /id="rotateStationBtn"/);
   assert.match(js, /rotateSelectedAutomation\(\)/);
   assert.match(js, /g\.userData\.direction=\(g\.userData\.direction\+1\)%4/);
@@ -397,7 +397,7 @@ test('Bunsik Kitchen v25 automation is directional and rotatable during prep', (
   assert.match(css, /\.prep-bar \.rotate-btn/);
 });
 
-test('Bunsik Kitchen v25 conveyor moves one item only into an empty forward slot', () => {
+test('Bunsik Kitchen v26 conveyor moves one item only into an empty forward slot', () => {
   assert.match(js, /transferAutomationItem\(from,to\)/);
   assert.match(js, /!from\?\.userData\?\.storedItem/);
   assert.match(js, /to\.userData\.storedItem/);
@@ -407,7 +407,7 @@ test('Bunsik Kitchen v25 conveyor moves one item only into an empty forward slot
   assert.match(js, /findStorageInDirection\(g,1,'empty'\)/);
 });
 
-test('Bunsik Kitchen v25 automation inserts only compatible ingredients into pots', () => {
+test('Bunsik Kitchen v26 automation inserts only compatible ingredients into pots', () => {
   assert.match(js, /findPotInDirection\(origin,item\)/);
   assert.match(js, /item\.kind!=='ingredient'/);
   assert.match(js, /this\.helperCanDeliver\(item\.id,state\.pots\[i\]\)/);
@@ -415,7 +415,7 @@ test('Bunsik Kitchen v25 automation inserts only compatible ingredients into pot
   assert.match(js, /g\.userData\.storedItem=null/);
 });
 
-test('Bunsik Kitchen v25 grabber pulls from a prepared slot behind it without stealing reserved work', () => {
+test('Bunsik Kitchen v26 grabber pulls from a prepared slot behind it without stealing reserved work', () => {
   assert.match(js, /g\.userData\.automationType==='grabber'\|\|g\.userData\.automationType==='smartGrabber'/);
   assert.match(js, /findStorageInDirection\(g,-1,'filled',/);
   assert.match(js, /item\?\.kind==='ingredient'/);
@@ -423,7 +423,7 @@ test('Bunsik Kitchen v25 grabber pulls from a prepared slot behind it without st
   assert.match(js, /candidate\.userData\.reservedBy!=='helper'/);
 });
 
-test('Bunsik Kitchen v25 automation waits until free service and shares the storage contract', () => {
+test('Bunsik Kitchen v26 automation waits until free service and shares the storage contract', () => {
   assert.match(js, /updateAutomation\(dt\)/);
   assert.match(js, /state\.phase!=='service'\|\|state\.tutorial\.active/);
   assert.match(js, /this\.updateAutomation\(dt\)/);
@@ -432,7 +432,7 @@ test('Bunsik Kitchen v25 automation waits until free service and shares the stor
   assert.match(js, /automationType==='grabber'/);
 });
 
-test('Bunsik Kitchen v25 clears automation buffers and reservations between shifts', () => {
+test('Bunsik Kitchen v26 clears automation buffers and reservations between shifts', () => {
   assert.match(js, /delete s\.group\.userData\.reservedBy/);
   assert.match(js, /s\.group\.userData\.automationClock=0/);
   assert.match(js, /s\.group\.userData\.storedItem=null/);
@@ -440,7 +440,7 @@ test('Bunsik Kitchen v25 clears automation buffers and reservations between shif
 });
 
 
-test('Bunsik Kitchen v25 registers and loads persistent tycoon progression', () => {
+test('Bunsik Kitchen v26 registers and loads persistent tycoon progression', () => {
   const storage=fs.readFileSync(path.join(root,'kidscade-storage.js'),'utf8');
   assert.match(html, /\.\.\/\.\.\/kidscade-storage\.js/);
   assert.match(storage, /bunsikTycoonProgressV1:\s*'kidscade_bunsik_tycoon_progress_v1'/);
@@ -449,14 +449,14 @@ test('Bunsik Kitchen v25 registers and loads persistent tycoon progression', () 
   assert.match(js, /KidscadeStorage\?\.setJson\?\.\(SAVE_KEY,progress\)/);
 });
 
-test('Bunsik Kitchen v25 starts as manual-first progression instead of granting automation', () => {
+test('Bunsik Kitchen v26 starts as manual-first progression instead of granting automation', () => {
   assert.match(js, /owned:\{prepCounter:2,conveyor:0,grabber:0,smartGrabber:0\}/);
   assert.match(js, /syncEquipmentVisibility\(\)/);
   assert.match(js, /return \(progress\.owned\[key\]\|\|0\)>\(group\.userData\.equipmentIndex\|\|0\)/);
   assert.match(js, /g\.visible=active/);
 });
 
-test('Bunsik Kitchen v25 adds an end-of-shift equipment shop and bank', () => {
+test('Bunsik Kitchen v26 adds an end-of-shift equipment shop and bank', () => {
   assert.match(html, /id="bankCash"/);
   assert.match(html, /id="equipmentShop"/);
   assert.match(html, /data-buy="prepCounter" data-price="900"/);
@@ -469,13 +469,13 @@ test('Bunsik Kitchen v25 adds an end-of-shift equipment shop and bank', () => {
   assert.match(js, /progress\.owned\[key\]=count\+1/);
 });
 
-test('Bunsik Kitchen v25 gates Smart Grabber behind a normal Grabber', () => {
+test('Bunsik Kitchen v26 gates Smart Grabber behind a normal Grabber', () => {
   assert.match(js, /smartGrabber:\{name:'Smart Grabber',price:3400,min:0,max:1,requires:'grabber'\}/);
   assert.match(js, /if\(info\.requires&&\(progress\.owned\[info\.requires\]\|\|0\)<1\)/);
   assert.match(js, /를 먼저 구매해야 해요/);
 });
 
-test('Bunsik Kitchen v25 adds a filterable Smart Grabber', () => {
+test('Bunsik Kitchen v26 adds a filterable Smart Grabber', () => {
   assert.match(js, /makeAutomationStation\('smartGrabberA','Smart Grabber','smartGrabber'/);
   assert.match(js, /const SMART_FILTERS=\['noodle','soup','egg','green','cheese'\]/);
   assert.match(js, /holder\.userData\.filterId=progress\.filters\[id\]\|\|'noodle'/);
@@ -485,7 +485,7 @@ test('Bunsik Kitchen v25 adds a filterable Smart Grabber', () => {
   assert.match(js, /progress\.filters\[g\.userData\.stationId\]=next/);
 });
 
-test('Bunsik Kitchen v25 persists purchased equipment layout, direction and Smart Grabber filter', () => {
+test('Bunsik Kitchen v26 persists purchased equipment layout, direction and Smart Grabber filter', () => {
   assert.match(js, /snapshotEquipmentLayout\(\)/);
   assert.match(js, /layout\[s\.id\]=\{x:/);
   assert.match(js, /layout\[s\.id\]\.dir=g\.userData\.direction\|\|0/);
@@ -494,27 +494,27 @@ test('Bunsik Kitchen v25 persists purchased equipment layout, direction and Smar
   assert.match(js, /g\.position\.set\(saved\.x,0,saved\.z\)/);
 });
 
-test('Bunsik Kitchen v25 only runs the onboarding tutorial once', () => {
+test('Bunsik Kitchen v26 only runs the onboarding tutorial once', () => {
   assert.match(js, /tutorialDone:false/);
   assert.match(js, /progress\.tutorialDone=true;saveProgress\(\)/);
   assert.match(js, /state\.tutorial=\{active:!progress\.tutorialDone,step:progress\.tutorialDone\?7:0\}/);
   assert.match(js, /if\(state\.tutorial\.active\)spawnOrder\('egg'\);else\{spawnOrder\(\);spawnOrder\(\)\}/);
 });
 
-test('Bunsik Kitchen v25 shop result card stays scrollable on small screens', () => {
+test('Bunsik Kitchen v26 shop result card stays scrollable on small screens', () => {
   assert.match(css, /\.result-card\{max-height:92vh;overflow:auto\}/);
   assert.match(css, /\.equipment-shop\{/);
   assert.match(css, /\.shop-item\{/);
 });
 
-test('Bunsik Kitchen v25 compatibility entry is synchronized with the live game', () => {
+test('Bunsik Kitchen v26 compatibility entry is synchronized with the live game', () => {
   assert.match(rootEntry, /id="equipmentShop"/);
   assert.match(rootEntry, /id="smartFilterBtn"/);
   assert.match(rootEntry, /kidscade-storage\.js/);
-  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=25/);
+  assert.match(rootEntry, /games\/job_bogle_bunsik\/bunsik-kitchen\.js\?v=26/);
 });
 
-test('Bunsik Kitchen v25 keeps two-tile movement lanes and a player follow camera', () => {
+test('Bunsik Kitchen v26 keeps two-tile movement lanes and a player follow camera', () => {
   assert.match(js, /const xs=\[-3\.15,-1\.05,1\.05,3\.15\],z=-\.05/);
   assert.match(js, /protectedAisle\(x,z,r=\.7\)/);
   assert.match(js, /약 1m 격자 두 칸/);
@@ -526,7 +526,7 @@ test('Bunsik Kitchen v25 keeps two-tile movement lanes and a player follow camer
   assert.match(js, /layoutOk=Number\(v\.version\)>=2/);
 });
 
-test('Bunsik Kitchen v25 zones ingredients left and cleanup stations right', () => {
+test('Bunsik Kitchen v26 zones ingredients left and cleanup stations right', () => {
   assert.match(js, /'sink','싱크 · 물\/설거지'.*,-8\.15,-2\.65/);
   assert.match(js, /'fridge','토핑 냉장고'.*,-8\.05,4\.15/);
   assert.match(js, /'rack','깨끗한 접시'.*,8\.15,-2\.1/);
@@ -534,7 +534,7 @@ test('Bunsik Kitchen v25 zones ingredients left and cleanup stations right', () 
   assert.match(js, /serviceHome=new THREE\.Vector3\(0,\.92,5\.25\)/);
 });
 
-test('Bunsik Kitchen v25 anchors orders bottom-left and tasks bottom-right', () => {
+test('Bunsik Kitchen v26 anchors orders bottom-left and tasks bottom-right', () => {
   assert.match(html, /class="order-corner-panel"/);
   assert.match(html, /id="taskPanel" class="task-panel"/);
   assert.match(html, /id="taskList"/);
@@ -545,7 +545,7 @@ test('Bunsik Kitchen v25 anchors orders bottom-left and tasks bottom-right', () 
   assert.match(css, /\.pot-world-labels\{display:none!important\}/);
 });
 
-test('Bunsik Kitchen v25 replaces floating labels with rounded dashed floor interaction tiles', () => {
+test('Bunsik Kitchen v26 replaces floating labels with rounded dashed floor interaction tiles', () => {
   assert.match(js, /makeFloorActionTile\(text,opt=\{\}\)/);
   assert.match(js, /g\.setLineDash\(\[20,14\]\)/);
   assert.match(js, /attachStationFloorTile\(holder,id,label\)/);
@@ -557,7 +557,7 @@ test('Bunsik Kitchen v25 replaces floating labels with rounded dashed floor inte
   assert.doesNotMatch(js, /makeTextSprite\('알바생'\)/);
 });
 
-test('Bunsik Kitchen v25 renders a stacked live task checklist', () => {
+test('Bunsik Kitchen v26 renders a stacked live task checklist', () => {
   assert.match(js, /function taskPlan\(\)/);
   assert.match(js, /function renderTaskPanel\(\)/);
   assert.match(js, /싱크대에서 물 2컵/);
@@ -570,7 +570,7 @@ test('Bunsik Kitchen v25 renders a stacked live task checklist', () => {
   assert.match(css, /\.task-list li\.urgent/);
 });
 
-test('Bunsik Kitchen v25 binds each order to a specific pot and carries that order through serving', () => {
+test('Bunsik Kitchen v26 binds each order to a specific pot and carries that order through serving', () => {
   assert.match(js, /orderId:null/);
   assert.match(js, /function potIndexForOrder\(orderId\)/);
   assert.match(js, /function assignOrderToPot\(index,orderId,announce=true\)/);
@@ -583,7 +583,7 @@ test('Bunsik Kitchen v25 binds each order to a specific pot and carries that ord
   assert.match(js, /const bound=orderForPot\(p\)/);
 });
 
-test('Bunsik Kitchen v25 reduces water errands to one two-cup pitcher trip', () => {
+test('Bunsik Kitchen v26 reduces water errands to one two-cup pitcher trip', () => {
   assert.match(js, /const amount=id==='water'\?2:1/);
   assert.match(js, /물 2컵을 주전자에 받았어요/);
   assert.match(js, /addToPot\(index,action,held\.amount\|\|1\)/);
@@ -592,7 +592,7 @@ test('Bunsik Kitchen v25 reduces water errands to one two-cup pitcher trip', () 
   assert.doesNotMatch(js, /물 한 컵 받기/);
 });
 
-test('Bunsik Kitchen v25 rewards consecutive good serves with combo bonuses and customer celebration', () => {
+test('Bunsik Kitchen v26 rewards consecutive good serves with combo bonuses and customer celebration', () => {
   assert.match(html, /id="comboStat"/);
   assert.match(js, /function applyServeCombo\(quality\)/);
   assert.match(js, /state\.combo>=2\?Math\.min\(300,\(state\.combo-1\)\*100\):0/);
@@ -603,19 +603,19 @@ test('Bunsik Kitchen v25 rewards consecutive good serves with combo bonuses and 
   assert.match(css, /\.ticket-assignment\.assigned/);
 });
 
-test('Bunsik Kitchen v25 task list follows the selected pot order rather than the oldest ticket', () => {
+test('Bunsik Kitchen v26 task list follows the selected pot order rather than the oldest ticket', () => {
   assert.match(js, /orderForPot\(p\)\|\|state\.orders\.find/);
   assert.match(js, /els\.taskProgress\.textContent=o\?'냄비 '/);
   assert.match(js, /mealReady=.*state\.heldItem\.orderId===order\.id/);
 });
 
-test('Bunsik Kitchen v25 preserves two-cup water through helper and automation', () => {
+test('Bunsik Kitchen v26 preserves two-cup water through helper and automation', () => {
   assert.match(js, /addToPot\(potIndex,item\.id,item\.amount\|\|1\)/);
   assert.match(js, /addToPot\(task\.potIndex,id,this\.helperCarry\.amount\|\|1\)/);
   assert.match(js, /const amount=id==='water'\?2:1/);
 });
 
-test('Bunsik Kitchen v25 recovers safely when a bound customer leaves', () => {
+test('Bunsik Kitchen v26 recovers safely when a bound customer leaves', () => {
   assert.match(js, /const affected=expiredOrders\.map\(o=>potIndexForOrder\(o\.id\)\)/);
   assert.match(js, /expiredOrders\.forEach\(o=>releaseOrderBinding\(o\.id\)\)/);
   assert.match(js, /affected\.forEach\(i=>ensurePotOrder\(i\)\)/);
@@ -623,17 +623,18 @@ test('Bunsik Kitchen v25 recovers safely when a bound customer leaves', () => {
   assert.match(js, /const p=selectedIndex>=0\?state\.pots\[selectedIndex\]:state\.pots\[0\],boundOrder=orderForPot\(p\),compatible=boundOrder\|\|compatibleOrderForPot\(p\)/);
 });
 
-test('Bunsik Kitchen v25 builds a dining hall with a real entrance and four seats', () => {
-  assert.match(js, /this\.hallSeats=\[\];this\.customerStates=\[\];this\.hallEntrance=new THREE\.Vector3\(0,0,-12\.95\)/);
+test('Bunsik Kitchen v26 builds a dining hall with a real entrance and four seats', () => {
+  assert.match(js, /this\.hallSeats=\[\];this\.hallTableGroups=\[\];this\.customerStates=\[\]/);
   assert.match(js, /makeDiningHall\(\)/);
   assert.match(js, /door-modular\.glb/);
   assert.match(js, /tableNo:1/);
   assert.match(js, /tableNo:4/);
+  assert.match(js, /tableNo:5/);
   assert.match(js, /this\.hallSeats\.push\(/);
   assert.match(js, /this\.box\(20\.4,\.3,21\.6/);
 });
 
-test('Bunsik Kitchen v25 makes customers enter, walk to a free table, and sit', () => {
+test('Bunsik Kitchen v26 makes customers enter, walk to a free table, and sit', () => {
   assert.match(js, /beginCustomerArrival\(order\)/);
   assert.match(js, /order\.paused=true;order\.arriving=true;order\.seated=false/);
   assert.match(js, /c\.phase=c\.wait>0\?'waiting':'walking'/);
@@ -643,7 +644,7 @@ test('Bunsik Kitchen v25 makes customers enter, walk to a free table, and sit', 
   assert.match(js, /this\.updateCustomerHall\(dt\)/);
 });
 
-test('Bunsik Kitchen v25 staggers arrivals, opens the door, and serves the actual table', () => {
+test('Bunsik Kitchen v26 staggers arrivals, opens the door, and serves the actual table', () => {
   assert.match(js, /ahead\*\.55/);
   assert.match(js, /this\.hallDoorOpenUntil=Math\.max/);
   assert.match(js, /target=open\?-1\.08:0/);
@@ -652,10 +653,69 @@ test('Bunsik Kitchen v25 staggers arrivals, opens the door, and serves the actua
   assert.match(js, /o\.tableNo\?o\.tableNo\+'번 테이블'/);
 });
 
-test('Bunsik Kitchen v25 frees hall seats on expiration and reset', () => {
+test('Bunsik Kitchen v26 frees hall seats on expiration and reset', () => {
   assert.match(js, /resetCustomerForOrder\(orderId\)/);
   assert.match(js, /resetCustomerHall\(\)/);
   assert.match(js, /seat\.occupiedBy=null/);
   assert.match(js, /kitchen\.resetCustomerForOrder\(o\.id\)/);
   assert.match(js, /kitchen\.resetCustomerHall\(\)/);
+});
+
+test('Bunsik Kitchen v26 adds money plus reputation progression without wiping v2 saves', () => {
+  assert.match(js, /version:3/);
+  assert.match(js, /reputation:0,satisfied:0/);
+  assert.match(js, /layoutOk=Number\(v\.version\)>=2/);
+  assert.match(js, /REP_THRESHOLDS=\[0,8,24,55,100\]/);
+  assert.match(js, /function reputationStars/);
+  assert.match(js, /function addServeReputation/);
+  assert.match(html, /id="repStars"/);
+  assert.match(html, /id="endRep"/);
+});
+
+test('Bunsik Kitchen v26 gates five dining seats behind visible hall upgrades', () => {
+  assert.match(js, /tableNo:3[\s\S]*upgrade:'table3'/);
+  assert.match(js, /tableNo:4[\s\S]*upgrade:'table4'/);
+  assert.match(js, /tableNo:5[\s\S]*upgrade:'hallExpansion'/);
+  assert.match(js, /seat\.enabled=enabled/);
+  assert.match(js, /function unlockedSeatSlots\(\)/);
+  assert.match(js, /filter\(s=>s\.enabled\)/);
+  assert.match(js, /state\.orders\.length>=Math\.min\(MAX_ORDERS,unlockedSeatSlots\(\)\.length\)/);
+});
+
+test('Bunsik Kitchen v26 growth shop has real kitchen hall staff menu and expansion effects', () => {
+  assert.match(js, /dishRack:\{name:'대형 식기 선반'/);
+  assert.match(js, /wideSink:\{name:'넓은 싱크대'/);
+  assert.match(js, /hallStaff:\{name:'홀 알바 고용'/);
+  assert.match(js, /dishCart:\{name:'퇴식 카트'/);
+  assert.match(js, /menuPlus:\{name:'토핑 메뉴 연구'/);
+  assert.match(js, /hallExpansion:\{name:'홀 확장 공사'/);
+  assert.match(js, /famousSign:\{name:'동네 명물 간판'/);
+  assert.match(js, /hasUpgrade\('dishRack'\)\?5:3/);
+  assert.match(js, /hasUpgrade\('wideSink'\)\?900:1450/);
+  assert.match(js, /hasUpgrade\('dishCart'\)/);
+  assert.match(js, /makeHallWorker\(\)/);
+  assert.match(js, /animateHallWorkerServe/);
+  assert.match(js, /shopping-cart\.glb/);
+  assert.match(js, /매출 10% 보너스/);
+});
+
+test('Bunsik Kitchen v26 unlocks additional real recipes instead of placeholder menu buttons', () => {
+  assert.match(js, /id:'eggGreen',name:'계란 파 라면'/);
+  assert.match(js, /id:'cheeseGreen',name:'치즈 파 라면'/);
+  assert.match(js, /unlock:'menuPlus'/);
+  assert.match(js, /function availableRecipeIds\(\)/);
+  assert.match(js, /RECIPES\.filter\(r=>!r\.unlock\|\|hasUpgrade\(r\.unlock\)\)/);
+});
+
+test('Bunsik Kitchen v26 renders categorized reputation-gated growth shop', () => {
+  assert.match(html, /id="shopTabs"/);
+  assert.match(html, /data-shop-category="kitchen"/);
+  assert.match(html, /data-shop-category="hall"/);
+  assert.match(html, /data-shop-category="staff"/);
+  assert.match(html, /data-shop-category="menu"/);
+  assert.match(html, /data-shop-category="expansion"/);
+  assert.match(js, /function renderEquipmentShop/);
+  assert.match(js, /function shopLockReason/);
+  assert.match(css, /\.shop-tabs/);
+  assert.match(css, /\.growth-shop/);
 });
