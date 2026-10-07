@@ -41,6 +41,61 @@ export const GROUP_RULES=Object.freeze({
   tiredConflictChanceMultiplier:.2
 });
 
+export const FRIENDSHIP_RULES=Object.freeze({
+  maxLevel:5,
+  levelThresholds:[0,2,5,9,14,20],
+  peacefulInteractionGain:1,
+  teamInteractionGain:.45,
+  lessonChatterGain:.20,
+  chatterMinLevel:3,
+  chatterDistance:2.75,
+  chatterFocusRatio:.45,
+  chatterCheckSeconds:1.6,
+  chatterDurationSeconds:[4,6.5],
+  chatterCooldownSeconds:16,
+  chatterChanceByLevel:[0,0,0,.08,.13,.18],
+  conflictDurationByLevel:[1,.94,.86,.76,.66,.56],
+  selfReconcileChanceByLevel:[0,.03,.08,.18,.30,.42]
+});
+
+export function friendshipKey(aId,bId){
+  return [aId,bId].sort().join('|');
+}
+
+export function friendshipLevel(score=0){
+  let level=0;
+  for(let i=1;i<FRIENDSHIP_RULES.levelThresholds.length;i++){
+    if(score>=FRIENDSHIP_RULES.levelThresholds[i])level=i;
+  }
+  return Math.min(FRIENDSHIP_RULES.maxLevel,level);
+}
+
+export function addFriendship(friendships,aId,bId,amount=1){
+  const key=friendshipKey(aId,bId);
+  const next=Math.max(0,(friendships.get(key)||0)+amount);
+  friendships.set(key,next);
+  return {key,score:next,level:friendshipLevel(next)};
+}
+
+export function friendshipInfo(friendships,aId,bId){
+  const key=friendshipKey(aId,bId);
+  const score=friendships.get(key)||0;
+  return {key,score,level:friendshipLevel(score)};
+}
+
+export function friendshipConflictDuration(baseSeconds,level){
+  const factor=FRIENDSHIP_RULES.conflictDurationByLevel[Math.max(0,Math.min(FRIENDSHIP_RULES.maxLevel,level))]||1;
+  return baseSeconds*factor;
+}
+
+export function friendshipSelfReconcileChance(level){
+  return FRIENDSHIP_RULES.selfReconcileChanceByLevel[Math.max(0,Math.min(FRIENDSHIP_RULES.maxLevel,level))]||0;
+}
+
+export function friendshipChatterChance(level){
+  return FRIENDSHIP_RULES.chatterChanceByLevel[Math.max(0,Math.min(FRIENDSHIP_RULES.maxLevel,level))]||0;
+}
+
 export const HEALTH_STATES=Object.freeze({
   healthy:{id:'healthy',label:'괜찮음',icon:'🙂',recoveryMultiplier:1},
   mild:{id:'mild',label:'몸이 안 좋아 보여요',icon:'🤒',recoveryMultiplier:HEALTH_RULES.mildRecoveryMultiplier},
