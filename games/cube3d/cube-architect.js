@@ -2845,13 +2845,19 @@ function hydrateFurnishingGLB(root,key,x,y,z,type,data){
       if(Array.isArray(root.material))root.material=root.material.map(m=>{const c=m.clone();c.visible=false;return c});
       else if(root.material){root.material=root.material.clone();root.material.visible=false}
     }
+    const hiddenLegacyMeshes=new Set();
     oldChildren.forEach((child,i)=>{
       if(child.userData?.persistentWorldEffect)return;
-      // Keep player-written desktop decorations and collection books visible.
+      // Player-written desk decorations and collection books are still drawn.
       if(type==='desk'&&i===oldChildren.length-1)return;
       if(type==='bookshelf'&&i>=6)return;
+      child.traverse?.(o=>{if(o.isMesh)hiddenLegacyMeshes.add(o)});
       child.visible=false;
     });
+    if(hiddenLegacyMeshes.size){
+      worldInteractables=worldInteractables.filter(o=>!hiddenLegacyMeshes.has(o));
+      freeMeshes=freeMeshes.filter(o=>!hiddenLegacyMeshes.has(o));
+    }
     registerWorldObject(model,key,x,y,z,type);
   }).catch(err=>console.warn('[Cube Architect furnishing fallback]',type,err));
 }
@@ -3573,6 +3579,7 @@ function recipePossible(recipe){
 function recipeCategory(recipe){
   if(['workbench','woodPick','stonePick','ironPick','woodSword','stoneSword','ironSword','furnace',...SURVIVAL_GEAR_TYPES].includes(recipe.id))return '도구';
   const type=Object.keys(recipe.gives||{})[0],cat=blockDef(type).category;
+  if(cat==='가구'||cat==='생존')return cat;
   if(['건축','기능','도형'].includes(cat))return '건축';
   return '재료';
 }
@@ -3588,7 +3595,7 @@ function visibleSurvivalRecipes(){
 function renderCraftTabs(recipes){
   const root=$('survivalCraftTabs');if(!root)return;
   root.innerHTML='';
-  for(const cat of ['전체','도구','건축','재료']){
+  for(const cat of ['전체','도구','건축','가구','생존','재료']){
     const count=cat==='전체'?recipes.length:recipes.filter(r=>recipeCategory(r)===cat).length;
     if(cat!=='전체'&&!count)continue;
     const b=document.createElement('button');b.type='button';b.className=survivalCraftCategory===cat?'active':'';
@@ -3726,7 +3733,7 @@ function buildInventory(category='전체'){
     const discoverySummary=$('craftDiscoverySummary');
     if(discoverySummary)discoverySummary.textContent='발견한 제작법 '+discoveredRecipeIds.size+' / '+worldRules.RECIPES.length+
       (unreadRecipeIds.size?' · NEW '+unreadRecipeIds.size:'');
-    if(!['전체','도구','건축','재료'].includes(survivalCraftCategory))survivalCraftCategory='전체';
+    if(!['전체','도구','건축','가구','생존','재료'].includes(survivalCraftCategory))survivalCraftCategory='전체';
     renderCraftTabs(visible);
     const filtered=survivalCraftCategory==='전체'?visible:visible.filter(r=>recipeCategory(r)===survivalCraftCategory);
     if(!filtered.some(r=>r.id===selectedCraftRecipeId))selectedCraftRecipeId=(filtered.find(recipePossible)||filtered[0])?.id||null;
@@ -4323,7 +4330,7 @@ function useChair(x,y,z){
   const data=getBlock(x,y,z);if(!data||!['chair','sofa','bench'].includes(data.type))return false;
   camera.position.set(x,y+1.62,z);freePhysicsY=camera.position.y;freeVelocityY=0;onGround=true;
   yaw=((data.facing||0)%4)*Math.PI/2;seatedFurniture=worldKey(x,y,z);triggerFreeAvatarAction('sit',1000000000);
-  toast('의자에 앉았어요. 움직이면 일어나요.');return true;
+  toast((data.type==='sofa'?'소파':data.type==='bench'?'벤치':'의자')+'에 앉았어요. 움직이면 일어나요.');return true;
 }
 function leaveChair(){
   if(!seatedFurniture)return;seatedFurniture=null;
@@ -4539,6 +4546,13 @@ function interactLifeBlock(type,x,y,z){
     setWorldBlock(x,y,z,{...d,lit:next},true);
     toast((type==='campfire'?'모닥불':'조명')+(next?'을 켰어요.':'을 껐어요.'));
     saveFreeWorld();return true;
+  }
+  if(type==='tent'){
+    if(gameFreeMode!=='survival')return false;
+    const night=dayTime>=.74||dayTime<.18;
+    if(!night){toast('천막을 설치했어요. 밤에는 이곳에서 야영할 수 있어요.');return true}
+    dayTime=.28;survivalExposure=Math.min(12,survivalExposure);
+    toast('천막에서 밤을 보내고 아침이 되었어요.');triggerFreeAvatarAction('sit');saveFreeWorld();return true;
   }
   if(type==='bedroll'){
     if(gameFreeMode!=='survival')return false;
@@ -6466,7 +6480,7 @@ function updateSimpleSurvivalUi(){
     const u=freeCenterHit(6)?.object?.userData||{};
     const creature=creatureRayHit(2.9),creatureRoot=creature?.object?.userData?.creatureRoot,cu=creatureRoot?.userData;
     const hostile=cu?.spec?.kind==='hostile',tameable=!!TAME_RULES[cu?.spec?.id];
-    const name=creature?(hostile?'공격':cu?.petId?'돌보기':tameable?'길들이기':'인사'):['door','doorTop'].includes(u.type)?'열기':u.type==='workbench'?'만들기':u.type==='furnace'?'굽기':u.type==='chest'?'상자':u.type==='bed'?'침대':u.type==='mapBoard'?'지도':u.type==='displayStand'?'전시':['chair','sofa','bench'].includes(u.type)?'앉기':u.type==='campfire'?'모닥불':u.type==='floorLamp'?'조명':u.type==='bedroll'?'쉬기':u.type==='crate'?'상자':u.type==='sign'?'쓰기':u.type==='bookshelf'?'책장':
+    const name=creature?(hostile?'공격':cu?.petId?'돌보기':tameable?'길들이기':'인사'):['door','doorTop'].includes(u.type)?'열기':u.type==='workbench'?'만들기':u.type==='furnace'?'굽기':u.type==='chest'?'상자':u.type==='bed'?'침대':u.type==='mapBoard'?'지도':u.type==='displayStand'?'전시':['chair','sofa','bench'].includes(u.type)?'앉기':u.type==='campfire'?'모닥불':u.type==='floorLamp'?'조명':u.type==='bedroll'?'쉬기':u.type==='tent'?'야영':u.type==='crate'?'상자':u.type==='sign'?'쓰기':u.type==='bookshelf'?'책장':
       FARM_PLANT_TYPES.includes(selectedType)?'심기':PLACEABLE_TYPES.includes(selectedType)&&selectedType!=='hand'?'놓기':'캐기';
     const label=hub.querySelector('b');if(label&&label.textContent!==name)label.textContent=name;
   }
