@@ -473,7 +473,7 @@ function buildClips(dim){
 function addHeadDetails(headBone,dim,materials){
   const chibi=dim.style!=='legacy';
   const hair=new THREE.Mesh(
-    new THREE.SphereGeometry(1,chibi?12:10,chibi?8:6,0,Math.PI*2,0,Math.PI*(chibi?.61:.57)),
+    new THREE.SphereGeometry(1,chibi?12:10,chibi?8:6,0,Math.PI*2,0,Math.PI*(chibi?.46:.57)),
     materials[4]
   );
   hair.name='Hair';
