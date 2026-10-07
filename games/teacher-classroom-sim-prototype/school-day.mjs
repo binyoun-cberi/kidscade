@@ -27,8 +27,8 @@ export const SCHOOL_SPACES=Object.freeze({
     id:'science',name:'과학실',icon:'🧪',floor:'#aab9b4',wall:'#e8f1ea',accent:'#2d6e65',
     teachingPoint:{x:0,z:-3.8},
     seats:[
-      {x:-3.4,z:-1.45},{x:-1.8,z:-1.45},{x:1.8,z:-1.45},{x:3.4,z:-1.45},
-      {x:-2.2,z:1.25},{x:2.2,z:1.25}
+      {x:-3.4,z:-1.22},{x:-1.8,z:-1.22},{x:1.8,z:-1.22},{x:3.4,z:-1.22},
+      {x:-2.2,z:1.48},{x:2.2,z:1.48}
     ],
     obstacles:[
       {x:-2.6,z:-2.15,hx:1.35,hz:.62},{x:2.6,z:-2.15,hx:1.35,hz:.62},
@@ -40,7 +40,7 @@ export const SCHOOL_SPACES=Object.freeze({
     id:'cafeteria',name:'급식실',icon:'🍚',floor:'#d6c7a8',wall:'#fff1d4',accent:'#c76b3e',
     teachingPoint:{x:0,z:-3.6},
     seats:[
-      {x:-3.7,z:-.7},{x:-2.3,z:-.7},{x:.9,z:-.7},{x:2.3,z:-.7},{x:-1.4,z:2.0},{x:0,z:2.0}
+      {x:-3.7,z:-.42},{x:-2.3,z:-.42},{x:.9,z:-.42},{x:2.3,z:-.42},{x:-1.4,z:2.28},{x:0,z:2.28}
     ],
     obstacles:[
       {x:-3,z:-1.45,hx:1.45,hz:.7},{x:1.6,z:-1.45,hx:1.45,hz:.7},
@@ -51,8 +51,8 @@ export const SCHOOL_SPACES=Object.freeze({
     id:'art',name:'미술실',icon:'🎨',floor:'#d8c39d',wall:'#fff0e7',accent:'#a24a71',
     teachingPoint:{x:0,z:-3.8},
     seats:[
-      {x:-3.5,z:-1.35},{x:-1.9,z:-1.35},{x:1.9,z:-1.35},{x:3.5,z:-1.35},
-      {x:-2.0,z:1.45},{x:2.0,z:1.45}
+      {x:-3.5,z:-1.12},{x:-1.9,z:-1.12},{x:1.9,z:-1.12},{x:3.5,z:-1.12},
+      {x:-2.0,z:1.68},{x:2.0,z:1.68}
     ],
     obstacles:[
       {x:-2.7,z:-2.05,hx:1.35,hz:.64},{x:2.7,z:-2.05,hx:1.35,hz:.64},
