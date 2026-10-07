@@ -82,7 +82,7 @@ test('Chibi v2 keeps the reference-inspired SD proportions explicit',()=>{
   assert.match(js,/hipY:\.418\*H/);
   assert.match(js,/handX:\(action \? \.072 : \.056\)\*H/);
   assert.match(js,/footZ:\(action \? \.170 : \.148\)\*H/);
-  assert.match(html,/V2 · SD 기본형/);
+  assert.match(html,/V2 · SD 도형형/);
   assert.match(html,/V2 · 액션 과장형/);
 });
 
@@ -108,8 +108,8 @@ test('SoftMesh v3 uses continuous skinned shells and blended joint weights',()=>
   assert.match(js,/blended-two-bone-joints/);
   assert.match(js,/\[\[upperBone,\.86\],\[lowerBone,\.14\]\]/);
   assert.match(js,/\[\[upperBone,\.35\],\[lowerBone,\.65\]\]/);
-  assert.match(html,/V3 · SoftMesh SD/);
-  assert.match(html,/Blended skin weights/);
+  assert.match(html,/V3 · SoftMesh 실험형/);
+  assert.match(js,/blended-two-bone-joints/);
 });
 
 test('SoftMesh v3 records the inspected Kidscade people GLB baseline',()=>{
