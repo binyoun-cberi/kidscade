@@ -161,15 +161,32 @@ function segDist(p,a,b){
   const c1=vx*wx+vy*wy,c2=vx*vx+vy*vy,t=Math.max(0,Math.min(1,c1/c2));
   return Math.hypot(p.x-(a.x+vx*t),p.y-(a.y+vy*t));
 }
+function minPathDistance(p){
+  let best=Infinity;
+  for(let i=0;i<pathPts.length-1;i++) best=Math.min(best,segDist(p,{x:pathPts[i][0],y:pathPts[i][1]},{x:pathPts[i+1][0],y:pathPts[i+1][1]}));
+  return best;
+}
 function validPlacement(p){
   if(p.x<.045||p.x>.955||p.y<.06||p.y>.94)return false;
-  for(let i=0;i<pathPts.length-1;i++) if(segDist(p,{x:pathPts[i][0],y:pathPts[i][1]},{x:pathPts[i+1][0],y:pathPts[i+1][1]})<.055)return false;
+  if(minPathDistance(p)<.055)return false;
   if(state.towers.some(t=>dist(p,t)<.07))return false;
+  return true;
+}
+function rolePlacementValid(p,def){
+  const base=D.roleStats[def.role]||{};
+  const scaledRange=(base.range||.16)*(1+Math.min(.18,(def.difficulty-1)*.02));
+  if(def.role==='resource')return state.resources.some(r=>r.amount>0&&dist(p,r)<=scaledRange);
+  if((base.damage||0)>0||def.role==='barrier')return minPathDistance(p)<=scaledRange;
   return true;
 }
 function buildTower(p){
   if(!state.placing||!validPlacement(p)){if(state.placing)toast('여기에는 놓을 수 없어요');return}
   const {word,def}=state.placing;
+  if(!rolePlacementValid(p,def)){
+    if(def.role==='resource'){toast('채굴 타워는 녹색 INK 광석 가까이에 놓아야 해요');setStatus('배치 위치 다시 선택','MINER·DRILL 같은 채굴 타워는 INK 광석이 범위 안에 있어야 합니다.')}
+    else{toast('공격 범위가 적의 길에 닿아야 해요');setStatus('배치 위치 다시 선택','사거리 원이 적의 이동 경로에 닿도록 놓아주세요.')}
+    return;
+  }
   const stats={...D.roleStats[def.role]};
   const scale=1+(def.difficulty-1)*.085;
   stats.damage=(stats.damage||0)*scale;stats.range=(stats.range||.16)*(1+Math.min(.18,(def.difficulty-1)*.02));
@@ -180,11 +197,6 @@ function buildTower(p){
   if(word==='VOLCANO'){stats.damage*=1.55;stats.area=.14;stats.burn=12}
   if(word==='DRAGON'){stats.damage*=1.45;stats.burn=11}
   if(word==='JUGGERNAUT'){stats.damage*=1.65;stats.area=.13}
-  if(def.role==='resource'&&!state.resources.some(r=>r.amount>0&&dist(p,r)<=stats.range)){
-    toast('채굴 타워는 녹색 INK 광석 가까이에 놓아야 해요');
-    setStatus('배치 위치 다시 선택','MINER·DRILL 같은 채굴 타워는 INK 광석이 범위 안에 있어야 합니다.');
-    return;
-  }
   const tower={id:state.uid++,x:p.x,y:p.y,word,def,stats,cool:Math.random()*.3,harvestClock:0,links:[],pulse:0};
   state.towers.push(tower); state.unique.add(word); state.builtWords.push(word);
   const newly=!state.discovered.has(word);state.discovered.add(word);saveDiscovered();
@@ -428,7 +440,7 @@ function drawEffects(){
   }
 }
 function drawPlacement(){
-  if(!state.placing||!state.hover)return;const p=state.hover,ok=validPlacement(p),r=Math.max(20,Math.min(W,H)*.034);
+  if(!state.placing||!state.hover)return;const p=state.hover,ok=validPlacement(p)&&rolePlacementValid(p,state.placing.def),r=Math.max(20,Math.min(W,H)*.034);
   ctx.save();ctx.globalAlpha=.72;ctx.fillStyle=ok?state.placing.def.color:'#d34f58';ctx.fillRect(px(p.x)-r*.55,py(p.y)-r*.7,r*1.1,r*1.3);
   ctx.strokeStyle=ok?'#1aa59f':'#c33445';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px(p.x),py(p.y),Math.min(W,H)*(D.roleStats[state.placing.def.role].range||.16),0,Math.PI*2);ctx.stroke();ctx.restore();
 }
@@ -450,7 +462,7 @@ function openDictionary(){
   dictOverlay.classList.remove('hidden');
 }
 function restart(){
-  state=freshState();renderRack();updateComposer();updateHud();waveBtn.textContent='WAVE 1 시작';waveBtn.disabled=false;inspectBox.classList.remove('show');resultOverlay.classList.add('hidden');setStatus('준비','글자를 눌러 단어를 만든 뒤 타워를 배치하세요.');running=true;last=performance.now();
+  state=freshState();renderRack();updateComposer();updateHud();waveBtn.textContent='WAVE 1 시작';waveBtn.disabled=false;inspectBox.classList.remove('show');resultOverlay.classList.add('hidden');setStatus('첫 배치','시작 글자에는 MINER와 ARROW가 숨어 있어요. 둘 중 하나부터 만들어 보세요.');running=true;last=performance.now();
 }
 
 $('startBtn').addEventListener('click',()=>{startOverlay.classList.add('hidden');restart();beep(660,.1,'triangle')});
