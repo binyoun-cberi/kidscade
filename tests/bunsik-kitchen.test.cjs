@@ -371,7 +371,7 @@ test('Bunsik Kitchen v33 exposes generic storage-slot actions in the proximity d
 test('Bunsik Kitchen v33 publishes the automation strategy', () => {
   assert.match(html, /컨베이어\/Grabber 방향/);
   assert.match(html, /id="smartFilterBtn"/);
-  assert.match(html, /장비 구매/);
+  assert.match(html, /자동화 장비를 옮기고/);
 });
 
 
@@ -626,7 +626,7 @@ test('Bunsik Kitchen v33 keeps two-tile movement lanes and a player follow camer
   assert.match(js, /state\.phase==='service'&&this\.player/);
   assert.match(js, /targetFov=inHall\?\(mobile\?48:40\):\(mobile\?44:35\)/);
   assert.match(js, /this\.updateCamera\(dt\)/);
-  assert.match(js, /version:2/);
+  assert.match(js, /version:3/);
   assert.match(js, /layoutOk=Number\(v\.version\)>=2/);
 });
 
@@ -783,7 +783,7 @@ test('Bunsik Kitchen v33 gates five dining seats behind visible hall upgrades', 
   assert.match(js, /seat\.enabled=enabled/);
   assert.match(js, /function unlockedSeatSlots\(\)/);
   assert.match(js, /hallSeats\?\.filter\(s=>s\.enabled&&!s\.occupiedBy&&!s\.dirtyPending\)/);
-  assert.match(js, /state\.orders\.length>=Math\.min\(MAX_ORDERS,unlockedSeatSlots\(\)\.length\)/);
+  assert.match(js, /state\.orders\.length>=MAX_ORDERS/);\n  assert.match(js, /const used=new Set\(state\.orders\.map\(o=>o\.slot\)\),slots=unlockedSeatSlots\(\),slot=slots\.find\(n=>!used\.has\(n\)\)/);\n  assert.match(js, /if\(slot==null\)return null/);
 });
 
 test('Bunsik Kitchen v33 growth shop has real kitchen hall staff menu and expansion effects', () => {
