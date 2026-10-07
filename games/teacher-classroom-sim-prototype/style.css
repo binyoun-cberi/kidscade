@@ -48,14 +48,23 @@ button{font:inherit}
   position:absolute;left:12px;top:122px;z-index:18;display:flex;gap:5px;flex-wrap:wrap;max-width:min(680px,70vw);pointer-events:none
 }
 .studentChip{
-  display:flex;align-items:center;gap:5px;min-height:30px;padding:5px 8px;border-radius:999px;
-  background:rgba(255,255,255,.9);color:#213449;border:1px solid rgba(255,255,255,.88);
-  box-shadow:0 4px 12px rgba(0,0,0,.12);font-size:10px;font-weight:900
+  display:grid;grid-template-columns:auto auto auto;grid-template-rows:auto auto;align-items:center;column-gap:5px;row-gap:2px;
+  min-height:38px;padding:5px 8px;border-radius:14px;background:rgba(255,255,255,.92);color:#213449;
+  border:1px solid rgba(255,255,255,.88);box-shadow:0 4px 12px rgba(0,0,0,.12);font-size:10px;font-weight:900
 }
-.studentChip i{font-style:normal;font-size:13px}
+.studentChip .face{grid-row:1/3;font-style:normal;font-size:15px}
+.studentChip .studentName{white-space:nowrap}
+.studentChip .pref{font-style:normal;font-size:10px;opacity:.8}
+.studentChip .meters{grid-column:2/4;width:58px;height:7px;display:flex;flex-direction:column;gap:2px;align-items:flex-start}
+.studentChip .meters b{display:block;height:2.5px;max-width:100%;border-radius:999px;transition:width .18s linear}
+.studentChip .focusMeter{background:#e9b949}
+.studentChip .socialMeter{background:#58a985}
 .studentChip.offtask{background:#fff4bd;color:#725100}
 .studentChip.conflict{background:#ffe0d9;color:#8d2f25}
 .studentChip.fight{background:#ffd0d0;color:#8a1515;animation:pulse .55s ease-in-out infinite alternate}
+.studentChip.health{outline:2px solid rgba(224,95,95,.22)}
+.studentChip.away{opacity:.55;filter:saturate(.65)}
+.studentChip.resting{background:#e8f2ff;color:#34536f}
 @keyframes pulse{to{transform:scale(1.05)}}
 
 #guide{
@@ -143,6 +152,7 @@ code{display:block;padding:10px;border-radius:10px;background:#edf2f7;color:#405
 }
 .statusBubble.conflict{background:#ffe0d7;color:#8b271b}
 .statusBubble.fight{background:#ffd0d0;color:#8c1515}
+.statusBubble.health{background:#ffe7e3;color:#8d3028}
 
 @media(pointer:fine){
   #joystick{opacity:.28}
