@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#9bd8ff">
 <title>큐브 아키텍트 | Kidscade</title>
-<link rel="stylesheet" href="./cube-architect.css?v=20261007-base-life1">
+<link rel="stylesheet" href="./cube-architect.css?v=20261007-base-life2">
 <link rel="stylesheet" href="./cube-architect-ui.css?v=20261006-experience1">
 <link rel="stylesheet" href="./cube-architect-cuboid-puzzle.css?v=20261006-2">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
@@ -205,6 +205,11 @@
       <button id="craftDiscoveryNotice" class="hidden" type="button">새 제작법 1 · E로 확인</button>
       <div class="free-status"><span id="freeState">걷기 · 맨손</span><span id="biomeState">초원</span><span id="worldClock">낮</span><span id="weatherState">맑음</span><span id="survivalHealth" class="hidden">♥♥♥♥♥</span><span id="survivalArmor" class="hidden">🛡 0%</span><span id="survivalSafety" class="hidden">안전함</span></div>
       <small id="explorationHint" class="hidden">새로운 지역을 발견하면 고유한 재료를 얻을 수 있어요.</small>
+      <div id="trackingGuide" class="tracking-guide hidden" aria-live="polite">
+        <span id="trackingArrow" class="tracking-arrow" aria-hidden="true">↑</span>
+        <b id="trackingLabel">추적 중</b>
+        <button id="trackingStop" type="button">추적 취소</button>
+      </div>
       <div id="exposureBar" class="progress hidden" role="progressbar" aria-label="추위 노출" aria-valuemin="0" aria-valuemax="100"><i id="exposureFill"></i></div>
       <div id="breathBar" class="progress hidden" role="progressbar" aria-label="남은 숨" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i id="breathFill"></i></div>
       <button id="survivalReturn" class="hidden" type="button">추위가 심해요 · 시작 지점으로 귀환</button>
@@ -386,7 +391,7 @@
 <script src="./cube-architect-voxel.js?v=20261003-29"></script>
 <script src="./cube-architect-camp.js?v=20261006-survival-camp2"></script>
 <script src="./cube-architect-experience.js?v=20261006-experience1"></script>
-<script src="./cube-architect.js?v=20261007-base-life2"></script>
+<script src="./cube-architect.js?v=20261007-base-life3"></script>
 <script src="./cube-architect-cuboid-puzzle.js?v=20261006-2"></script>
 <script>
 (()=>{
