@@ -5569,7 +5569,7 @@ function refreshMobileFly(){
   $('mobileFly').textContent=freeFlying?'걷기':'비행';
   const swimming=!!freeFluidKind&&!freeFlying;
   $('mobileDown').classList.toggle('hidden',!freeFlying&&!swimming);
-  $('mobileUp').querySelector('small').textContent=swimming?'수영 위':freeFlying?'상승':'점프';
+  const upHint=$('mobileUp')?.querySelector('small');if(upHint)upHint.textContent=swimming?'수영 위':freeFlying?'상승':'점프';
 }
 function mobileBlockAction(action){
   if(mode==='free'&&freeAvatarDefeated)return;
@@ -5739,7 +5739,7 @@ function updateSimpleSurvivalUi(){
       PLACEABLE_TYPES.includes(selectedType)&&selectedType!=='hand'?'놓기':'캐기';
     const label=hub.querySelector('b');if(label&&label.textContent!==name)label.textContent=name;
   }
-  const jump=$('mobileUp');if(jump&&!freeFlying&&!freeFluidKind&&jump.textContent!=='점프')jump.textContent='점프';
+  const jump=$('mobileUp'),jumpHint=jump?.querySelector('small');if(jumpHint&&!freeFlying&&!freeFluidKind&&jumpHint.textContent!=='점프')jumpHint.textContent='점프';
 }
 function setSurvivalInventoryTab(tab){
   survivalInventoryTab=tab==='craft'?'craft':'bag';
