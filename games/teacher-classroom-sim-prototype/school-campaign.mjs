@@ -2,7 +2,7 @@ export const CAMPAIGN_VERSION=1;
 export const CAMPAIGN_DAYS=8;
 export const EXAM_DAYS=Object.freeze([2,4,6,8]);
 export const GRADE_ORDER=Object.freeze(['D','C','B','A','S']);
-export const GRADE_THRESHOLDS=Object.freeze({D:0,C:38,B:52,A:68,S:84});
+export const GRADE_THRESHOLDS=Object.freeze({D:0,C:38,B:52,A:66,S:82});
 
 export const INITIAL_MASTERY=Object.freeze({
   minsu:35,
@@ -14,7 +14,8 @@ export const INITIAL_MASTERY=Object.freeze({
 });
 
 export const LEARNING_RULES=Object.freeze({
-  focusedPerSecond:.0065,
+  focusedPerSecond:.00395,
+  focusHelpBonus:.18,
   offTaskMultiplier:.10,
   chatterMultiplier:.08,
   conflictMultiplier:.04,
