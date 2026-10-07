@@ -7,7 +7,7 @@ const game=fs.readFileSync(path.join(root,'games','low_juice_maker','과일 농�
 
 test('과일 농장 주스 메이커는 3D 수확-제조-서빙 루프를 사용한다',()=>{
   for(const token of ['수확 → 세척 → 믹서 → 서빙','phaseSet(\'wash\')','phaseSet(\'blend\')','phaseSet(\'pour\')','phaseSet(\'serve\')'])assert.ok(game.includes(token),token);
-  assert.doesNotMatch(game,/폭탄|냉동 준비|과일비가 내리/집게 ·/skyJuicePixel_v2/);
+  assert.doesNotMatch(game,/(폭탄|냉동 준비|과일비가 내리|집게 ·|skyJuicePixel_v2)/);
 });
 
 test('주요 공유 3D 에셋과 아바타를 실제로 연결한다',()=>{
