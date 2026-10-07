@@ -37,7 +37,7 @@ const ROLES=['배급 담당','시설 정비','의무 보조','경계 근무','�
 const RESIDENT_SPRITES=['female','adventurer','player','soldier','female','player','adventurer','soldier'];
 const SIM_MS=450;
 
-let residents=[],threats=[],campLog=[],seq=0,campCollapsed=false,globalIncident=null,currentView='station',campSeconds=0;
+let residents=[],threats=[],campLog=[],seq=0,residentSeq=1000,campCollapsed=false,globalIncident=null,currentView='station',campSeconds=0;
 
 function esc(s){return String(s).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]})}
 function rand(a){return a[Math.floor(Math.random()*a.length)]}
@@ -73,10 +73,10 @@ function addCampLog(text){
 }
 function makeResident(name,i){
  const home=zoneInfo(ROLE_HOME[i]||'residential'),p=pointInZone(home,3);
- return{id:i+1,name:name,role:ROLES[i],sprite:RESIDENT_SPRITES[i],zone:home.id,status:'safe',task:rand(TASKS[home.id]),x:p.x,y:p.y,tx:p.x,ty:p.y,speed:3.3+Math.random()*.55,dir:1,turnMs:0,routineMs:1800+Math.random()*5000,home:home.id};
+ return{id:i+1,personId:'camp-base-'+(i+1),name:name,role:ROLES[i],sprite:RESIDENT_SPRITES[i],zone:home.id,status:'safe',task:rand(TASKS[home.id]),x:p.x,y:p.y,tx:p.x,ty:p.y,speed:3.3+Math.random()*.55,dir:1,turnMs:0,routineMs:1800+Math.random()*5000,home:home.id};
 }
 function resetCamp(){
- residents=NAMES.map(makeResident);threats=[];campLog=[];seq=0;campCollapsed=false;globalIncident=null;campSeconds=0;
+ residents=NAMES.map(makeResident);threats=[];campLog=[];seq=0;residentSeq=1000;campCollapsed=false;globalIncident=null;campSeconds=0;
  addCampLog('CAMP-17 정상 운영 시작 · 생존자 '+residents.length+'명');
  renderAll();
 }
@@ -89,6 +89,23 @@ function chooseRoutine(r){
  else if(roll<.43)zid='gate';
  const z=zoneInfo(zid),p=pointInZone(z,3);
  r.zone=zid;r.task=rand(TASKS[zid]);r.tx=p.x;r.ty=p.y;r.routineMs=4500+Math.random()*8500;
+}
+function admissionHome(job){
+ job=String(job||'');
+ if(/경비|경찰|군인|보안|소방/.test(job))return'gate';
+ if(/정비|배관|운송|창고|조리|기술|목수|연구|시설/.test(job))return'supply';
+ return'residential'
+}
+function admitResident(p){
+ p=p||{};const pid=p.personId||null;
+ if(pid){
+  const old=residents.find(function(r){return r.personId===pid});
+  if(old)return old;
+  if(threats.some(function(t){return t.personId===pid}))return null
+ }
+ const home=zoneInfo(admissionHome(p.job)),pos=pointInZone(home,3),id=pid||('camp-admit-'+(++residentSeq));
+ const r={id:id,personId:pid||id,name:p.name||'신규 생존자',role:p.job||p.role||'신규 입소',sprite:p.sprite||'player',zone:home.id,status:'safe',task:'입소 등록',x:pos.x,y:pos.y,tx:pos.x,ty:pos.y,speed:3.25+Math.random()*.5,dir:1,turnMs:0,routineMs:1100+Math.random()*1800,home:home.id};
+ residents.push(r);addCampLog('<b>'+esc(r.name)+'</b> CAMP-17 입소 · '+esc(r.role));chooseRoutine(r);renderAll();return r
 }
 function campLineBlocked(x1,y1,x2,y2){
  const d=Math.hypot(x2-x1,y2-y1),steps=Math.max(1,Math.ceil(d/1.35));
@@ -163,7 +180,7 @@ function biteResident(t,r){
 function convertResident(r){
  if(!r||r.status!=='bitten')return;
  r.status='zombie';r.task='변이 완료';
- threats.push({id:'r'+r.id,name:r.name,sprite:r.sprite,zone:r.zone,phase:'zombie',timerMs:0,attackMs:1200,source:'resident',x:r.x,y:r.y,tx:r.x,ty:r.y,dir:r.dir||1,speed:5.0});
+ threats.push({id:'r'+r.id,personId:r.personId||null,name:r.name,sprite:r.sprite,zone:r.zone,phase:'zombie',timerMs:0,attackMs:1200,source:'resident',x:r.x,y:r.y,tx:r.x,ty:r.y,dir:r.dir||1,speed:5.0});
  addCampLog('<b>'+esc(r.name)+'</b> 변이 완료 · '+zoneInfo(r.zone).name+' 내부 좀비 발생');
  const b=bridge();if(b)b.applyOutbreakResult({infectionDelta:2,trustDelta:-2,scoreDelta:-80});
 }
@@ -241,7 +258,7 @@ function responsePayload(){
  return{
   name:active.length?active[0].name:'캠프 감염자',
   threatCount:Math.max(1,active.length),survivorCount:liveResidents.length,
-  residents:liveResidents.map(function(r){return{id:r.id,name:r.name,role:r.role,status:r.status,sprite:r.sprite,x:r.x,y:r.y,dir:r.dir}}),
+  residents:liveResidents.map(function(r){return{id:r.id,personId:r.personId||null,name:r.name,role:r.role,status:r.status,sprite:r.sprite,x:r.x,y:r.y,dir:r.dir}}),
   threats:active.map(function(t){return{id:t.personId||t.id,personId:t.personId||null,name:t.name,phase:t.phase,sprite:t.sprite,x:t.x,y:t.y,dir:t.dir,source:t.source}})
  };
 }
@@ -446,6 +463,7 @@ mount();
 
 window.Q17Surveillance={
  onCampBreach:onCampBreach,
+ admitResident:admitResident,
  registerGlobalOutbreak:registerGlobalOutbreak,
  openCamp:function(){switchView('camp')},
  switchView:switchView,
