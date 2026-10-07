@@ -9,7 +9,9 @@ const $=id=>document.getElementById(id);
 
 let scene,camera,renderer,controls,characterRoot,skinnedMesh,skeletonHelper,mixer;
 let clips=[],activeAction=null,activeClip='IDLE',lastTime=performance.now();
-let bodyStyle='soft3',activeView='threeQuarter',currentDim=null;
+let bodyStyle='assetChibi',activeView='threeQuarter',currentDim=null;
+let chibiAssetRoot=null,chibiSourceScene=null,chibiAnimations=[],chibiLoadedUrl='',chibiCurrentPreset='student';
+let chibiOriginalMaterials=new Map();
 
 const params={
   height:1.22,
@@ -24,7 +26,55 @@ const params={
   eyeColor:'#1f2937'
 };
 
+const CHIBI_ASSET_CANDIDATES=[
+  '/chibi/glb/allinonepr.glb',
+  '/chibi/ChibiCharacters/glb/allinonepr.glb',
+  '/ChibiCharacters/glb/allinonepr.glb',
+  '/assets/game/characters/chibi/glb/allinonepr.glb',
+  '/assets/chibi/glb/allinonepr.glb',
+  '/chibi/glb emission/allinone.glb',
+  '/chibi/ChibiCharacters/glb emission/allinone.glb'
+];
+
+const CHIBI_BASE_NODES=['character_low','eyelashes','eyes','tooth'];
+const CHIBI_HAIR_NODES=['hairone','hairT','hairtail','hairtailknight','hairvariant','hairvariant.001'];
+const CHIBI_PRESETS={
+  base:[...CHIBI_BASE_NODES],
+  student:[...CHIBI_BASE_NODES,'hairvariant','shirt','skirt','shoe','bag'],
+  merchant:[...CHIBI_BASE_NODES,'hairone','chemise','pants','bottes','hat'],
+  archer:[...CHIBI_BASE_NODES,'hairvariant.001','greenoutfit','greenoutfitbelt','greenoutfitneckless','bottesgreen'],
+  ninja:[...CHIBI_BASE_NODES,'hairtail','ninjassuit','ninjassuitmask','ninjassuitshoe','ninjassuitthigh','ninjasuitshort'],
+  knight:[...CHIBI_BASE_NODES,'hairtailknight','amorarm','amorplastron','armorceinturethighs','armorhelmet','armorknees','armorlegs','armorshoe','armorskirt','armorthigh','ceinture']
+};
+
+const CHIBI_PART_LABELS={
+  amorarm:'갑옷 팔',amorplastron:'갑옷 흉갑',armorceinturethighs:'갑옷 허리',
+  armorhelmet:'기사 투구',armorknees:'무릎 갑옷',armorlegs:'다리 갑옷',armorshoe:'갑옷 신발',
+  armorskirt:'갑옷 스커트',armorthigh:'허벅지 갑옷',bag:'학생 가방',bottes:'상인 부츠',
+  bottesgreen:'궁수 부츠',ceinture:'기사 벨트',chemise:'상인 셔츠',greenoutfit:'궁수 의상',
+  greenoutfitbelt:'궁수 벨트',greenoutfitneckless:'궁수 목걸이',hairone:'단정한 헤어',
+  hairT:'T 헤어',hairtail:'포니테일',hairtailknight:'기사 헤어',hairvariant:'학생 헤어',
+  'hairvariant.001':'궁수 헤어',hat:'상인 모자',ninjassuit:'닌자 상의',ninjassuitmask:'닌자 마스크',
+  ninjassuitshoe:'닌자 신발',ninjassuitthigh:'닌자 허벅지',ninjasuitshort:'닌자 하의',
+  pants:'상인 바지',shirt:'학생 셔츠',shoe:'학생 신발',skirt:'학생 치마'
+};
+
+const CHIBI_TOGGLE_NODES=Object.keys(CHIBI_PART_LABELS);
+
+const CHIBI_CLIP_LABELS={
+  anim_iddle:'IDLE', 'anim_iddle.001':'IDLE ALT', anim_walk:'WALK', anim_run:'RUN',
+  anim_jump:'JUMP', anim_flip:'FLIP', anim_push:'PUSH', anim_crouch:'CROUCH',
+  anim_crouchiddle:'CROUCH IDLE', anim_uncrouch:'STAND', anim_dying:'DYING',
+  iddleanim_:'IDLE', 'iddle.001anim_':'IDLE ALT', walkanim_:'WALK', runanim_:'RUN',
+  jumpanim_:'JUMP', flipanim_:'FLIP', pushanim_:'PUSH', crouchanim_:'CROUCH',
+  crouchiddleanim_:'CROUCH IDLE', uncrouchanim_:'STAND', dyinganim_:'DYING'
+};
+
 const BODY_STYLES={
+  assetChibi:{
+    label:'Styloo Chibi Asset',
+    defaults:{height:1.22,headScale:1,shoulderScale:1,limbScale:1}
+  },
   legacy:{
     label:'V1 기존 마네킹',
     defaults:{height:1.35,headScale:1,shoulderScale:1,limbScale:1}
