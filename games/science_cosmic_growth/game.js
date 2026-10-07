@@ -6,6 +6,21 @@ const LOW_POWER=innerWidth<760||((navigator.hardwareConcurrency||8)<=4)||((navig
 const SAVE_KEY=window.KidscadeGame?.storageKey?.('science_cosmic_growth','save')||'kidscade_game_v1:science_cosmic_growth:save';
 const ROOT='../../assets/game/';
 const AUDIO_ROOT='../../assets/audio/';
+const NOVELTY_FLYBYS=[
+ {id:'dog',path:'characters/pets/animal-dog.glb',target:.82,weight:3,palette:[0xc9824f,0xf0c590,0x704936],tint:.32},
+ {id:'cat',path:'characters/pets/animal-cat.glb',target:.76,weight:2,palette:[0xe5a15d,0x8f7165,0xf3d2a7],tint:.30},
+ {id:'cow',path:'characters/pets/animal-cow.glb',target:.92,weight:1,palette:[0xf4f1e8,0x45434b,0xf2a7b4],tint:.26},
+ {id:'penguin',path:'characters/pets/animal-penguin.glb',target:.80,weight:1,palette:[0x303746,0xf3f0e7,0xf2b33d],tint:.30},
+ {id:'monkey',path:'characters/pets/animal-monkey.glb',target:.80,weight:1,palette:[0x8e5b3b,0xc98c5c,0xf0c59a],tint:.34},
+ {id:'panda',path:'characters/pets/animal-panda.glb',target:.82,weight:1,palette:[0x30313a,0xf2eee7],tint:.22},
+ {id:'elephant',path:'characters/pets/animal-elephant.glb',target:.94,weight:.55,palette:[0x8293a8,0xafbfd1],tint:.38},
+ {id:'fish',path:'characters/pets/animal-fish.glb',target:.78,weight:.80,palette:[0x46c7ff,0xff826c,0xffd65b],tint:.50,bubble:true},
+ {id:'astronaut',path:'characters/people/character-male-a.glb',target:.98,weight:2,palette:[0xf2f7ff,0xaed5ff,0xffa24e],tint:.24,astronaut:true},
+ {id:'alien',path:'3d/characters/monsters/ultimate-monsters-bundle/alien.glb',target:.88,weight:2,palette:[0x62ef91,0x917dff,0xc7ff73],tint:.76},
+ {id:'ufo',path:'3d/characters/monsters/ultimate-monsters-bundle/alien.glb',target:.34,weight:.70,palette:[0x64ef90,0x8d7aff],tint:.78,ufo:true},
+ {id:'pizza',path:'food/pizza.glb',target:.76,weight:.70,palette:[0xf0b247,0xe95454,0x72bb59],tint:.28},
+ {id:'ball',path:'platformer/props/ball.glb',target:.68,weight:.60,palette:[0x53b9ff,0xff657a,0xffd254],tint:.48}
+];
 const EARTH=5.9722e24,JUPITER=1.89813e27,SUN=1.98847e30;
 
 const STAGES=[
@@ -128,7 +143,7 @@ function freshState(){
 let state=freshState(),running=false,paused=false,modalOpen=false,last=performance.now(),uiClock=0,saveClock=0;
 let eventNextAt=0,eventExpiresAt=0,currentEvent=null,eventSeenAt=0,toastTimer=0,evoTimer=0,tapPulse=0,lensPulse=0;
 let renderer,scene,camera,bodyRoot,bodyGroup,contextGroup,fxGroup,flybyGroup,starField,galaxyGroup;
-let planetTextures=[],fxTextures={},gltfCache=new Map(),assetsReady=false,flybyClock=0;
+let planetTextures=[],fxTextures={},gltfCache=new Map(),assetsReady=false,flybyClock=0,noveltyLoading=false;
 const gltfLoader=new GLTFLoader(),texLoader=new THREE.TextureLoader(),activeFx=[],activeFlybys=[];
 
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
@@ -398,48 +413,102 @@ function addBlackHoleLensing(){
 }
 function flybyTypeForStage(){
  const i=state.stage,r=Math.random();
- if(i<=1)return r<.7?'dust':'rock';
- // Pebble, asteroid and planetesimal stages must not show tiny planet art in the background.
- // Keep those flybys as dust/rock so the visual scale stays coherent.
- if(i<=4)return r<.16?'dust':'rock';
- if(i===5)return r<.78?'rock':'planet';
- if(i<=8)return r<.48?'rock':'planet';
- if(i<=11)return r<.5?'planet':r<.82?'star':'rock';
- if(i<=15)return r<.34?'rock':r<.7?'planet':'star';
- if(i<=17)return r<.7?'galaxy':'star';
- return r<.78?'galaxy':'cluster';
+ // Keep the microscopic/rock-growth eras visually coherent. Joke objects start only once
+ // the scene reaches planet scale, so they read as foreground easter eggs rather than scale references.
+ const noveltyChance=i<6?0:(LOW_POWER?(i>=12?.08:.055):(i>=12?.14:.10));
+ if(r<noveltyChance)return 'novelty';
+ const n=noveltyChance?(r-noveltyChance)/(1-noveltyChance):r;
+ if(i<=1)return n<.7?'dust':'rock';
+ if(i<=4)return n<.16?'dust':'rock';
+ if(i===5)return n<.78?'rock':'planet';
+ if(i<=8)return n<.48?'rock':'planet';
+ if(i<=11)return n<.5?'planet':n<.82?'star':'rock';
+ if(i<=15)return n<.34?'rock':n<.7?'planet':'star';
+ if(i<=17)return n<.7?'galaxy':'star';
+ return n<.78?'galaxy':'cluster';
 }
 function makeFlybyBody(type){
  if(type==='dust'){const sp=glowSprite(0xd9ecff,.16+Math.random()*.16,.55,'star');sp.userData.flyType=type;return sp}
  if(type==='rock'){
-  const o=new THREE.Mesh(new THREE.IcosahedronGeometry(.12+Math.random()*.16,1),new THREE.MeshStandardMaterial({color:Math.random()>.5?0x8c8175:0x6c6870,roughness:.97,metalness:.02}));
+  const size=state.stage===2?.30+Math.random()*.16:.14+Math.random()*.18;
+  const o=new THREE.Mesh(new THREE.IcosahedronGeometry(size,1),new THREE.MeshStandardMaterial({color:Math.random()>.5?0x9b8872:0x746b70,roughness:.97,metalness:.02}));
   o.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);o.userData.flyType=type;return o
  }
  if(type==='planet'){
   const tex=planetTextures.length?planetTextures[Math.floor(Math.random()*planetTextures.length)]:null;
-  if(tex){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,opacity:.9}));const s=.34+Math.random()*.28;sp.scale.set(s,s,1);sp.userData.flyType=type;return sp}
-  const o=new THREE.Mesh(new THREE.SphereGeometry(.2+Math.random()*.08,18,12),new THREE.MeshStandardMaterial({color:new THREE.Color().setHSL(Math.random(),.5,.55),roughness:.82}));o.userData.flyType=type;return o
+  if(tex){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,opacity:.92}));const s=.62+Math.random()*.34;sp.scale.set(s,s,1);sp.userData.flyType=type;return sp}
+  const o=new THREE.Mesh(new THREE.SphereGeometry(.28+Math.random()*.1,20,14),new THREE.MeshStandardMaterial({color:new THREE.Color().setHSL(Math.random(),.62,.58),roughness:.8}));o.userData.flyType=type;return o
  }
- if(type==='star'){const sp=glowSprite(Math.random()>.5?0xffd58c:0xaedcff,.55+Math.random()*.4,.7,'flare');sp.userData.flyType=type;return sp}
- if(type==='galaxy'){const sp=glowSprite(Math.random()>.5?0xbba8ff:0x9edfff,.75+Math.random()*.7,.42,'twirl');sp.material.rotation=Math.random()*Math.PI;sp.userData.flyType=type;return sp}
- const sp=glowSprite(0xb9dfff,.75+Math.random()*.5,.34,'star');sp.userData.flyType='cluster';return sp
+ if(type==='star'){const sp=glowSprite(Math.random()>.5?0xffd58c:0xaedcff,.74+Math.random()*.44,.72,'flare');sp.userData.flyType=type;return sp}
+ if(type==='galaxy'){const sp=glowSprite(Math.random()>.5?0xbba8ff:0x9edfff,1+Math.random()*.72,.44,'twirl');sp.material.rotation=Math.random()*Math.PI;sp.userData.flyType=type;return sp}
+ const sp=glowSprite(0xb9dfff,.92+Math.random()*.55,.36,'star');sp.userData.flyType='cluster';return sp
+}
+function weightedNovelty(){
+ const total=NOVELTY_FLYBYS.reduce((sum,x)=>sum+x.weight,0);let r=Math.random()*total;
+ for(const x of NOVELTY_FLYBYS){r-=x.weight;if(r<=0)return x}
+ return NOVELTY_FLYBYS[0]
+}
+function cloneNoveltyModel(gltf,target){
+ if(!gltf)return null;const o=gltf.scene.clone(true);
+ o.traverse(n=>{if(!n.isMesh)return;n.geometry=n.geometry?.clone?.()||n.geometry;if(Array.isArray(n.material))n.material=n.material.map(m=>m?.clone?.()||m);else n.material=n.material?.clone?.()||n.material});
+ o.updateMatrixWorld(true);let box=new THREE.Box3().setFromObject(o),size=box.getSize(new THREE.Vector3()),base=Math.max(size.x,size.y,size.z)||1;
+ o.scale.multiplyScalar(target/base);o.updateMatrixWorld(true);box=new THREE.Box3().setFromObject(o);o.position.sub(box.getCenter(new THREE.Vector3()));return o
+}
+function applyNoveltyPalette(o,spec){
+ let index=0;const palette=spec.palette||[0xffffff],mix=spec.tint??.35;
+ o.traverse(n=>{if(!n.isMesh)return;const mats=Array.isArray(n.material)?n.material:[n.material];for(const m of mats){if(!m)continue;if(m.color)m.color.lerp(new THREE.Color(palette[index++%palette.length]),mix);if('roughness'in m)m.roughness=clamp(m.roughness??.72,.35,.9);if('metalness'in m&&spec.ufo)m.metalness=.5;m.needsUpdate=true}})
+}
+function addAstronautGear(group){
+ const helmet=new THREE.Mesh(new THREE.SphereGeometry(.31,22,16),new THREE.MeshPhysicalMaterial({color:0xbfe9ff,transparent:true,opacity:.22,roughness:.05,metalness:.05,depthWrite:false}));
+ helmet.position.set(0,.28,.03);
+ const pack=new THREE.Mesh(new THREE.BoxGeometry(.34,.5,.18),new THREE.MeshStandardMaterial({color:0xe8eef5,roughness:.7,metalness:.12}));
+ pack.position.set(0,.02,-.24);
+ const light=new THREE.Mesh(new THREE.SphereGeometry(.055,12,8),new THREE.MeshBasicMaterial({color:0x66dcff}));light.position.set(.18,.22,.2);
+ group.add(helmet,pack,light)
+}
+function wrapInUfo(alien){
+ const group=new THREE.Group(),saucer=new THREE.Mesh(new THREE.CylinderGeometry(.78,1.08,.22,32),new THREE.MeshStandardMaterial({color:0x8ea7bd,roughness:.35,metalness:.72}));
+ const dome=new THREE.Mesh(new THREE.SphereGeometry(.5,24,14,0,Math.PI*2,0,Math.PI/2),new THREE.MeshPhysicalMaterial({color:0x88e9ff,transparent:true,opacity:.34,roughness:.08,depthWrite:false}));
+ dome.position.y=.08;alien.position.y=.22;alien.scale.multiplyScalar(.82);group.add(saucer,dome,alien);
+ for(let i=0;i<6;i++){const a=i/6*Math.PI*2,l=new THREE.Mesh(new THREE.SphereGeometry(.055,10,8),new THREE.MeshBasicMaterial({color:i%2?0xff63d8:0x70efff}));l.position.set(Math.cos(a)*.72,-.15,Math.sin(a)*.72);group.add(l)}
+ return group
+}
+function addFishBubble(group){
+ const bubble=new THREE.Mesh(new THREE.SphereGeometry(.52,22,16),new THREE.MeshPhysicalMaterial({color:0x9deaff,transparent:true,opacity:.17,roughness:.03,depthWrite:false}));
+ group.add(bubble)
+}
+function disposeFlybyObject(o){
+ o.traverse?.(n=>{n.geometry?.dispose?.();const mats=Array.isArray(n.material)?n.material:[n.material];mats.forEach(m=>m?.dispose?.())})
+}
+function registerFlyby(obj,type,side,{novelty=false,id=null}={}){
+ const blackHole=state.stage>=12&&state.stage<=15,speed=(novelty?.85:.48)+Math.random()*(novelty?.45:.65)+(state.stage>=9?.12:0);
+ const data={obj,type,novelty,id,blackHole,side,vx:-side*speed,vy:(Math.random()-.5)*(novelty?.16:.08),spin:(Math.random()-.5)*(novelty?1.8:1.3),age:0,maxAge:blackHole?12:(novelty?16:20)};
+ if(blackHole){data.radius=Math.max(3.6,Math.hypot(obj.position.x,obj.position.y));data.angle=Math.atan2(obj.position.y,obj.position.x);data.angular=.55+Math.random()*.42+(state.stage-12)*.08;data.inward=.38+Math.random()*.24+(state.stage-12)*.09;data.captureScale=obj.scale.clone()}
+ activeFlybys.push(data)
+}
+async function spawnNoveltyFlyby(){
+ if(noveltyLoading||!running||paused||modalOpen)return;noveltyLoading=true;
+ const spec=weightedNovelty(),expectedStage=state.stage,gltf=await loadGLTF(ROOT+spec.path);noveltyLoading=false;
+ if(!gltf||!running||paused||modalOpen||state.stage!==expectedStage)return;
+ let obj=cloneNoveltyModel(gltf,spec.target);if(!obj)return;applyNoveltyPalette(obj,spec);
+ if(spec.astronaut)addAstronautGear(obj);if(spec.bubble)addFishBubble(obj);if(spec.ufo)obj=wrapInUfo(obj);
+ obj.userData.flyType='novelty';obj.userData.noveltyId=spec.id;
+ const side=Math.random()>.5?1:-1,y=(Math.random()-.5)*(innerWidth<680?3.8:4.8),x=side*(7.6+Math.random()*1.8);
+ // Novelty objects pass in the foreground so they cannot be mistaken for tiny background celestial bodies.
+ obj.position.set(x,y,.7+Math.random()*.6);obj.rotation.z=(Math.random()-.5)*.8;flybyGroup.add(obj);registerFlyby(obj,'novelty',side,{novelty:true,id:spec.id})
 }
 function spawnFlyby(){
  if(!running||paused||modalOpen)return;
- const type=flybyTypeForStage(),obj=makeFlybyBody(type),side=Math.random()>.5?1:-1;
+ const type=flybyTypeForStage();
+ if(type==='novelty'){spawnNoveltyFlyby();return}
+ const obj=makeFlybyBody(type),side=Math.random()>.5?1:-1;
  const y=(Math.random()-.5)*(innerWidth<680?5.1:6.4),z=-1.4-Math.random()*5.2,x=side*(7.2+Math.random()*2.8);
- obj.position.set(x,y,z);flybyGroup.add(obj);
- const blackHole=state.stage>=12&&state.stage<=15,speed=.48+Math.random()*.65+(state.stage>=9?.12:0);
- const data={obj,type,blackHole,side,vx:-side*speed,vy:(Math.random()-.5)*.08,spin:(Math.random()-.5)*1.3,age:0,maxAge:blackHole?12:20};
- if(blackHole){
-  data.radius=Math.max(3.6,Math.hypot(x,y));data.angle=Math.atan2(y,x);data.angular=.55+Math.random()*.42+(state.stage-12)*.08;data.inward=.38+Math.random()*.24+(state.stage-12)*.09;data.captureScale=obj.scale.clone();
- }
- activeFlybys.push(data)
+ obj.position.set(x,y,z);flybyGroup.add(obj);registerFlyby(obj,type,side)
 }
 function swallowFlyby(f){
  const o=f.obj,p=o.position;
- for(let i=0;i<(LOW_POWER?3:6);i++){const sp=spawnSpriteFx('spark',f.type==='star'?0xffd58c:0xaedcff,p.x+(Math.random()-.5)*.25,p.y+(Math.random()-.5)*.25,.12+Math.random()*.14,.45);sp.userData.vx=-p.x*.7;sp.userData.vy=-p.y*.7;activeFx[activeFx.length-1].kind='burst'}
- flybyGroup.remove(o);o.geometry?.dispose?.();o.material?.dispose?.();
+ for(let i=0;i<(LOW_POWER?3:6);i++){const sp=spawnSpriteFx('spark',f.type==='star'?0xffd58c:f.novelty?0x8feaff:0xaedcff,p.x+(Math.random()-.5)*.25,p.y+(Math.random()-.5)*.25,.12+Math.random()*.14,.45);sp.userData.vx=-p.x*.7;sp.userData.vy=-p.y*.7;activeFx[activeFx.length-1].kind='burst'}
+ flybyGroup.remove(o);disposeFlybyObject(o)
 }
 function updateFlybys(dt){
  flybyClock-=dt;
@@ -450,16 +519,16 @@ function updateFlybys(dt){
   if(f.blackHole){
    f.angle+=dt*f.angular*(1+Math.max(0,5-f.radius)*.18);f.radius-=dt*f.inward*(1+Math.max(0,4-f.radius)*.42);
    o.position.x=Math.cos(f.angle)*f.radius;o.position.y=Math.sin(f.angle)*f.radius*.72;o.position.z+=dt*.06;
-   const squeeze=clamp((f.radius-.55)/3.4,.08,1);
+   const squeeze=clamp((f.radius-.55)/3.4,.08,1);o.rotation.z+=dt*f.spin*(1+Math.max(0,3.5-f.radius)*.35);
    if(f.type==='rock')o.rotation.x+=dt*1.8;
    if((f.type==='galaxy'||f.type==='planet'||f.type==='star')&&o.material)o.material.rotation=(o.material.rotation||0)+dt*.6;
    o.scale.copy(f.captureScale).multiplyScalar(Math.max(.04,squeeze));
    if(f.radius<.62){swallowFlyby(f);activeFlybys.splice(i,1);continue}
   }else{
-   o.position.x+=f.vx*dt;o.position.y+=f.vy*dt;
+   o.position.x+=f.vx*dt;o.position.y+=f.vy*dt;o.rotation.z+=dt*f.spin*.18;
    if(f.type==='rock'){o.rotation.x+=dt*.42;o.rotation.y+=dt*.55}
    else if((f.type==='galaxy'||f.type==='planet')&&o.material)o.material.rotation=(o.material.rotation||0)+dt*.04;
-   if(Math.abs(o.position.x)>11||f.age>f.maxAge){flybyGroup.remove(o);o.geometry?.dispose?.();o.material?.dispose?.();activeFlybys.splice(i,1);continue}
+   if(Math.abs(o.position.x)>11||f.age>f.maxAge){flybyGroup.remove(o);disposeFlybyObject(o);activeFlybys.splice(i,1);continue}
   }
  }
 }
