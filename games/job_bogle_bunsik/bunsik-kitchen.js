@@ -1420,12 +1420,12 @@ function loop(ts){
 }
 function resetGameState(){
  restaurant.reset({keepLayout:true});
- state.phase='prep';state.time=SHIFT_SECONDS;state.revenue=0;state.served=0;state.perfect=0;state.missed=0;state.orders=[];state.nextOrder=1;state.spawnClock=0;state.uiClock=0;state.tray=null;state.busy=false;
+ state.phase='prep';state.time=SHIFT_SECONDS;state.revenue=0;state.served=0;state.perfect=0;state.missed=0;state.orders=[];state.nextOrder=1;state.spawnClock=0;state.uiClock=0;state.tray=null;state.busy=false;seenOrderTickets.clear();
  state.cleanPlates=3;state.dirtyPlates=0;state.washing=false;state.heldItem=null;state.helperUnlocked=progress.tutorialDone;state.helperEnabled=progress.tutorialDone;kitchen.clearPrepCounters();kitchen.resetHelper();kitchen.syncEquipmentVisibility();kitchen.applySavedEquipmentState();
  state.selectedPot=null;state.tutorial={active:!progress.tutorialDone,step:progress.tutorialDone?7:0};state.discardArmedUntil=0;state.discardArmedPot=null;state.trayDiscardArmedUntil=0;state.heldDiscardArmedUntil=0;
  state.pots=Array.from({length:POT_COUNT},(_,i)=>newPot(i));
  for(let i=0;i<POT_COUNT;i++)kitchen.clearPotVisual(i);
- kitchen.setTrayMeal(false);kitchen.serviceGroup?.position.copy(kitchen.serviceHome);kitchen.setSelectedPot(null);kitchen.setCarryVisual(null);kitchen.selectedLayoutStation=null;kitchen.setHelperEnabled(state.helperEnabled);if(kitchen.player)kitchen.player.position.set(0,0,3.45);renderHeldStatus();renderHelperButton();renderSmartFilterButton();renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();updateHud();updateDishHud()
+ kitchen.setTrayMeal(false);kitchen.serviceGroup?.position.copy(kitchen.serviceHome);kitchen.setSelectedPot(null);kitchen.setCarryVisual(null);kitchen.selectedLayoutStation=null;kitchen.setHelperEnabled(state.helperEnabled);if(kitchen.player)kitchen.player.position.set(0,0,3.55);renderHeldStatus();renderHelperButton();renderSmartFilterButton();renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();updateHud();updateDishHud()
 }
 function startGame(){
  resetGameState();state.running=true;state.last=performance.now();els.start.classList.remove('show');els.end.classList.remove('show');els.prepBar?.classList.remove('hidden');document.body.classList.add('layout-mode');renderEconomyProgress();
@@ -1452,7 +1452,7 @@ els.trayBtn.addEventListener('pointerdown',e=>{
 addEventListener('pointermove',e=>{if(!trayDrag)return;els.trayBtn.style.transform='translate('+(e.clientX-trayDrag.x)+'px,'+(e.clientY-trayDrag.y)+'px)'},{passive:true});
 addEventListener('pointerup',e=>{
  if(!trayDrag)return;els.trayBtn.style.pointerEvents='none';const hit=document.elementFromPoint(e.clientX,e.clientY),order=hit?.closest?.('[data-order]');els.trayBtn.style.pointerEvents='auto';resetTrayDrag();
- if(order)serveOrder(Number(order.dataset.order));else toast('쟁반을 주문 말풍선 위에 놓아 주세요',1400)
+ if(order)serveOrder(Number(order.dataset.order));else toast('쟁반을 주문 영수증 위에 놓아 주세요',1400)
 });
 $('#startBtn').addEventListener('click',startGame);
 $('#restartBtn').addEventListener('click',startGame);
