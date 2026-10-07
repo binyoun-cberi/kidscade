@@ -17,12 +17,12 @@ const catalogData = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.js
 const catalog = Array.isArray(catalogData) ? catalogData : catalogData.games;
 const game = catalog.find(g => g.id === 'job_teacher_classroom');
 
-test('teacher simulator v66 loads the six-period direct-control game', () => {
+test('teacher simulator v67 loads the six-period direct-control game', () => {
   assert.match(html, /id="game"/);
   assert.match(html, /id="joystick"/);
   assert.match(html, /id="actionButton"/);
   assert.match(html, /id="dayStrip"/);
-  assert.match(html, /school-day-game\.js\?v=66/);
+  assert.match(html, /school-day-game\.js\?v=67/);
   assert.match(html, /style\.css\?v=66/);
   assert.match(html, /건강/);
   assert.match(html, /안전교육/);
@@ -170,9 +170,16 @@ test('student navigation still uses exact furniture intersection checks', () => 
   assert.doesNotMatch(js, /\|\|actor\.kind==='student'/);
 });
 
-test('multi-room assets remain connected', () => {
+test('multi-room and non-Chibi character assets remain connected', () => {
   const assets = [
-    'assets/game/chibi/ChibiCharactersV1.2/ChibiCharacters/glb/allinonepr.glb',
+    'assets/game/npcs/glTF/Suit_Female.gltf',
+    'assets/game/npcs/glTF/Casual_Male.gltf',
+    'assets/game/npcs/glTF/Casual_Female.gltf',
+    'assets/game/npcs/glTF/Casual2_Male.gltf',
+    'assets/game/npcs/glTF/Casual2_Female.gltf',
+    'assets/game/npcs/glTF/Casual3_Male.gltf',
+    'assets/game/npcs/glTF/Casual3_Female.gltf',
+    'assets/game/npcs/glTF/Doctor_Female_Young.gltf',
     'assets/game/3d/interiors/kenney-furniture-kit/desk.glb',
     'assets/game/3d/interiors/kenney-furniture-kit/bench.glb',
     'assets/game/platformer/props/ball.glb',
@@ -181,6 +188,27 @@ test('multi-room assets remain connected', () => {
     'assets/game/3d/interiors/kenney-furniture-kit/computer-screen.glb'
   ];
   for (const rel of assets) assert.ok(fs.existsSync(path.join(root, rel)), 'missing teacher simulator asset: '+rel);
+  assert.match(js, /const CHARACTER_ROOT='\.\.\/\.\.\/assets\/game\/npcs\/glTF\/'/);
+  assert.match(js, /Suit_Female\.gltf/);
+  assert.match(js, /Casual3_Male\.gltf/);
+  assert.doesNotMatch(js, /ChibiCharacters|allinonepr|\/chibi\//i);
+});
+
+test('students use child-height variants while teacher remains adult height', () => {
+  assert.match(js, /teacher:\{file:'Suit_Female\.gltf',height:1\.68\}/);
+  const studentHeights = [...js.matchAll(/(?:minsu|jiwoo|seoyeon|taeho|junho|arin):\{file:'[^']+',height:(1\.\d+)\}/g)]
+    .map(m => Number(m[1]));
+  assert.equal(studentHeights.length, 6);
+  assert.ok(studentHeights.every(h => h >= 1.30 && h <= 1.45));
+});
+
+test('NPC character animations use in-place idle walk and gesture clips', () => {
+  assert.match(js, /function inPlaceCharacterClip\(/);
+  assert.match(js, /\/idle\|stand\/i/);
+  assert.match(js, /\/walk\|run\/i/);
+  assert.match(js, /push\|attack\|punch\|hit\|wave\|talk\|gesture\|point/);
+  assert.match(js, /cloneSkeleton\(gltf\.scene\)/);
+  assert.match(js, /await createActors\(\)/);
 });
 
 
@@ -222,9 +250,9 @@ test('friendship persists across the current day but is not written to storage',
   assert.doesNotMatch(js, /kidscade[^\n]*friendship/i);
 });
 
-test('catalog publishes teacher simulator v66', () => {
+test('catalog publishes teacher simulator v67', () => {
   assert.ok(game);
-  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=66');
+  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=67');
   assert.match(game.description, /건강/);
   assert.match(game.description, /안전교육/);
 });
