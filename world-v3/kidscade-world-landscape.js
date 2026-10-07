@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {WORLD_GRID} from './kidscade-world-grid.js?v=5';
+import {WORLD_GRID} from './kidscade-world-grid.js?v=6';
 
 const ROOT=new URL('../assets/game/3d/',import.meta.url).href;
 const NATURE=ROOT+'nature/kenney-nature-kit/';
