@@ -4,7 +4,7 @@ import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {
   AI_RULES,STUDENT_PROFILES,createStudentRuntime,resetFocusForLesson,updateLessonFocus,helpFocus,
   resetSocialForRecess,recoverSocial,drainSocial,conflictProbability,clamp
-} from './student-ai.mjs';
+} from './student-ai.mjs?v=61';
 
 const $=id=>document.getElementById(id);
 const ui={
