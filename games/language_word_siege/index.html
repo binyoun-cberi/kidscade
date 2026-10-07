@@ -33,6 +33,7 @@
 @media (orientation:portrait) and (max-width:700px){#app{grid-template-rows:auto minmax(300px,1fr) auto}.rack{grid-template-columns:repeat(6,1fr)}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
+<script src="../../kidscade-storage.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="language_word_siege" data-title="워드 시즈" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </head>
 <body>
@@ -59,6 +60,7 @@
       <div class="wordbox"><div class="current-word" id="currentWord">_</div><div class="word-meta" id="wordMeta">글자를 골라보세요</div></div>
       <div class="actions">
         <button class="action" id="clearBtn" type="button">지우기</button>
+        <button class="action" id="hintBtn" type="button">HINT</button>
         <button class="action swap" id="swapBtn" type="button">SWAP</button>
         <button class="action primary" id="buildBtn" type="button">BUILD</button>
       </div>
