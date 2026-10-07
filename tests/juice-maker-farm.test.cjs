@@ -26,3 +26,21 @@ test('새 게임의 인라인 ES module은 구문 오류가 없다',()=>{
   const js=m[1].replace(/^import .*?;\s*$/gm,'');
   assert.doesNotThrow(()=>new Function(js));
 });
+
+test('농장과 주스 가게는 색 보정과 실제 출입구를 가진다',()=>{
+  assert.match(game,/const PALETTE=\{/);
+  assert.match(game,/paintModel\(obj,role/);
+  assert.match(game,/paintFruit\(obj,key/);
+  assert.match(game,/stationPad\(stations\.sink\.x/);
+  assert.match(game,/2\.05,1\.2,-4\.45/);
+  assert.match(game,/2\.05,1\.2,4\.45/);
+  assert.doesNotMatch(game,/box\(\.22,2\.4,14,0xf2e3b9/);
+});
+
+test('믹서는 본체 대신 별도 회전부만 움직이고 주스는 레시피 색을 따른다',()=>{
+  assert.match(game,/mixerRotor=rotor/);
+  assert.match(game,/mixerRotor\.rotation\.z\+=dt\*15/);
+  assert.doesNotMatch(game,/mixerRotor=stations\.mixer\.group/);
+  assert.match(game,/function juiceHex\(\)/);
+  assert.match(game,/cupJuice\.material\.color\.setHex\(juiceHex\(\)\)/);
+});
