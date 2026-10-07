@@ -109,7 +109,7 @@ const starterInventory=()=>[
  {uid:'starter-carton',id:'carton',age:0},
  {uid:'starter-apple',id:'apple',age:0}
 ];
-let state={location:'home',phase:'loading',running:false,sound:true,day:1,slot:0,money:WEEKLY_BUDGET,hunger:58,dailyKcal:0,condition:75,satisfaction:62,weightKg:35,dailyNutrition:freshDailyNutrition(),dailyIncome:0,dailyExpense:0,dailyIncidents:[],injury:null,treatmentNeeded:false,workedDay:0,dogEventDay:0,inventory:starterInventory(),basket:[],hasCart:false,held:null,prep:[],dish:null,event:null,mealFoods:[],mealCooked:false,mealQuick:false,weekStats:freshStats(),checkoutMistakes:0,totalConfirmed:false,paid:0,changeConfirmed:false,scanned:new Set()};
+let state={location:'home',phase:'loading',running:false,sound:true,day:1,slot:0,money:WEEKLY_BUDGET,hunger:58,dailyKcal:0,condition:75,satisfaction:62,weightKg:35,dailyActivityKcal:0,dailyNutrition:freshDailyNutrition(),dailyIncome:0,dailyExpense:0,dailyIncidents:[],injury:null,treatmentNeeded:false,workedDay:0,dogEventDay:0,gymPassDay:0,gymWorkoutCount:0,inventory:starterInventory(),basket:[],hasCart:false,held:null,prep:[],dish:null,event:null,mealFoods:[],mealCooked:false,mealQuick:false,weekStats:freshStats(),checkoutMistakes:0,totalConfirmed:false,paid:0,changeConfirmed:false,scanned:new Set()};
 
 let audioCtx;
 function ensureAudio(){
@@ -145,7 +145,7 @@ function save(){
 function hasSave(){try{return !!localStorage.getItem(SAVE_KEY)}catch(_){return false}}
 function loadSave(){
  try{const x=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(!x)return false;state={...state,...x,dailyNutrition:{...freshDailyNutrition(),...(x.dailyNutrition||{})},dailyIncidents:x.dailyIncidents||[],weightKg:Number(x.weightKg)||35,mealFoods:x.mealFoods||[],mealCooked:!!x.mealCooked,mealQuick:!!x.mealQuick,scanned:new Set(x.scanned||[]),totalConfirmed:false,paid:0,changeConfirmed:false};state.location=x.location||'home';state.phase=state.location==='market'?'shopping':state.location;state.running=true;return true}catch(_){return false}}
-function newLife(){state={...state,location:'home',phase:'home',running:true,day:1,slot:0,money:WEEKLY_BUDGET,hunger:58,dailyKcal:0,condition:75,satisfaction:62,weightKg:35,dailyNutrition:freshDailyNutrition(),dailyIncome:0,dailyExpense:0,dailyIncidents:[],injury:null,treatmentNeeded:false,workedDay:0,dogEventDay:0,inventory:starterInventory(),basket:[],hasCart:false,held:null,prep:[],dish:null,event:null,mealFoods:[],mealCooked:false,mealQuick:false,weekStats:freshStats(),checkoutMistakes:0,totalConfirmed:false,paid:0,changeConfirmed:false,scanned:new Set()};rollEvent(true);save()}
+function newLife(){state={...state,location:'home',phase:'home',running:true,day:1,slot:0,money:WEEKLY_BUDGET,hunger:58,dailyKcal:0,condition:75,satisfaction:62,weightKg:35,dailyActivityKcal:0,dailyNutrition:freshDailyNutrition(),dailyIncome:0,dailyExpense:0,dailyIncidents:[],injury:null,treatmentNeeded:false,workedDay:0,dogEventDay:0,gymPassDay:0,gymWorkoutCount:0,inventory:starterInventory(),basket:[],hasCart:false,held:null,prep:[],dish:null,event:null,mealFoods:[],mealCooked:false,mealQuick:false,weekStats:freshStats(),checkoutMistakes:0,totalConfirmed:false,paid:0,changeConfirmed:false,scanned:new Set()};rollEvent(true);save()}
 
 
 const canvas=$('#scene');
@@ -199,7 +199,7 @@ function startModelAnimation(root,pattern=/walk|run|sprint/i){
 function box(size,pos,color,rough=.88,parent=world){const m=new THREE.Mesh(new THREE.BoxGeometry(...size),new THREE.MeshStandardMaterial({color,roughness:rough}));m.position.set(...pos);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function addCollider(x,z,w,d){colliders.push({x,z,w,d})}
 function canStand(x,z){
- const bounds=state.location==='market'?[-4.7,4.7,-4.2,4.2]:state.location==='home'?[-3.1,3.1,-2.8,3.1]:state.location==='convenience'?[-3.45,3.45,-2.95,2.95]:state.location==='fastfood'?[-3.75,3.75,-3.15,3.15]:state.location==='office'||state.location==='hospital'?[-4.4,4.4,-3.4,3.4]:[-16.5,16.5,-16.5,16.5];
+ const bounds=state.location==='market'?[-4.7,4.7,-4.2,4.2]:state.location==='home'?[-3.1,3.1,-2.8,3.1]:state.location==='convenience'?[-3.45,3.45,-2.95,2.95]:state.location==='fastfood'?[-3.75,3.75,-3.15,3.15]:state.location==='gym'?[-4.45,4.45,-3.45,3.45]:state.location==='office'||state.location==='hospital'?[-4.4,4.4,-3.4,3.4]:[-16.5,16.5,-16.5,16.5];
  if(x<bounds[0]||x>bounds[1]||z<bounds[2]||z>bounds[3])return false;for(const c of colliders)if(Math.abs(x-c.x)<c.w/2+.3&&Math.abs(z-c.z)<c.d/2+.3)return false;return true
 }
 function addCeilingLights(width,depth,height=3.12){const ceiling=box([width,.14,depth],[0,height,0],0xf5f1e8,.92);for(const x of [-width*.24,0,width*.24]){const panel=box([.85,.055,.28],[x,height-.1,0],0xfff6d8,.3);panel.material.emissive=new THREE.Color(0xffefbd);panel.material.emissiveIntensity=.85;const light=new THREE.PointLight(0xffefd0,.75,7,2);light.position.set(x,height-.28,0);world.add(light)}return ceiling}
