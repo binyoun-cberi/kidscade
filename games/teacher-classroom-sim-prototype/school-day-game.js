@@ -838,6 +838,7 @@ function updateLesson(dt){
     const was=s.runtime.mode;
     const chat=chatForStudent(s);
     const chatterDrain=chat?1.22:1;
+    if(chat)drainSocial(s.runtime,dt,.18);
     const drainMultiplier=(currentStep.focusDrain||1)*preferenceMultiplier(s.runtime.id,currentStep.subject)*chatterDrain;
     const recoveryMultiplier=healthRecoveryMultiplier(s.health);
     const evt=updateLessonFocus(s.runtime,dt,{teacherNear:teacherNearStudent(s),drainMultiplier,recoveryMultiplier});
