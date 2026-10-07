@@ -27,9 +27,9 @@
 .toast{position:fixed;left:50%;top:66px;z-index:30;transform:translate(-50%,-12px);opacity:0;pointer-events:none;padding:9px 14px;border-radius:999px;background:#20242c;color:#fff;font-size:12px;font-weight:950;box-shadow:0 10px 30px rgba(0,0,0,.24);transition:.18s}.toast.show{opacity:1;transform:translate(-50%,0)}
 .overlay{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:18px;background:rgba(29,29,27,.58);backdrop-filter:blur(5px)}.overlay.hidden{display:none}.panel{width:min(650px,94vw);max-height:88vh;overflow:auto;background:#fffdf0;border:3px solid #20242c;border-radius:24px;padding:24px;box-shadow:0 25px 80px rgba(0,0,0,.3)}.panel h1{font-size:clamp(34px,8vw,66px);margin:0;letter-spacing:-.07em;line-height:.95}.panel h1 span{color:#19bdb7}.panel .lead{color:#635f53;font-weight:750;line-height:1.55;margin:12px 0 16px}.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.rule{padding:12px;border-radius:14px;background:#f0ead3;border:1px solid #d5caaa}.rule b{display:block;font-size:13px}.rule span{display:block;color:#7b7461;font-size:11px;margin-top:4px;line-height:1.4}.start{width:100%;margin-top:15px;border:0;border-radius:15px;min-height:54px;background:#20242c;color:#fff;font-weight:1000;font-size:17px;cursor:pointer;box-shadow:0 5px 0 #090a0c}.start:active{transform:translateY(3px);box-shadow:0 2px 0 #090a0c}
 .dict-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.dict-head h2{margin:0;font-size:25px}.close{border:1px solid #c9bea0;background:#f3edd8;border-radius:11px;min-width:40px;height:40px;font-weight:1000}.dict-stats{color:#77705f;font-size:12px;font-weight:850;margin:8px 0 12px}.dict-list{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.dict-item{border:1px solid #d8ceb0;border-left:6px solid var(--c,#777);background:#fff;padding:9px 10px;border-radius:11px}.dict-item b{font:1000 16px/1 ui-monospace,monospace}.dict-item span{display:block;font-size:10px;color:#77705f;margin-top:4px;font-weight:800}.empty{padding:28px;text-align:center;color:#77705f;font-weight:850}
-.result-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:16px 0}.result-grid div{padding:11px 6px;background:#f1ebd5;border-radius:12px;text-align:center}.result-grid b{display:block;font-size:22px}.result-grid span{display:block;color:#77705f;font-size:10px;font-weight:850;margin-top:2px}
+ .result-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:16px 0}.result-grid div{padding:11px 6px;background:#f1ebd5;border-radius:12px;text-align:center}.result-grid b{display:block;font-size:22px}.result-grid span{display:block;color:#77705f;font-size:10px;font-weight:850;margin-top:2px}
 @media(max-width:820px){.brand small{display:none}.brand{min-width:120px}.chip{min-width:58px;padding:6px}.chip span{font-size:8px}.chip b{font-size:14px}.rack{gap:4px}.tile{height:48px}.status{max-width:55%}.compose{grid-template-columns:1fr}.actions{min-height:43px}.action{flex:1}.wordbox{min-height:43px}.bottom{padding-top:6px}.dict-list{grid-template-columns:1fr}}
-@media(max-width:620px){.brand{min-width:auto}.brand b{font-size:13px}.mark{width:34px;height:34px}.hud .chip:nth-child(4){display:none}.rack{grid-template-columns:repeat(6,1fr)}.tile{height:42px}.status{font-size:10px;left:7px;top:7px}.wave-btn{right:7px;top:7px;padding:8px 10px}.bottom{max-height:42vh;overflow:auto}.rules{grid-template-columns:1fr}.panel{padding:19px}.result-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.topbar{flex-wrap:wrap}.hud{order:3;flex-basis:100%;width:100%;gap:4px}.chip{flex:1;min-width:0}.brand{min-width:auto}.brand b{font-size:13px}.mark{width:34px;height:34px}.hud .chip:nth-child(4){display:none}.rack{grid-template-columns:repeat(6,1fr)}.tile{height:42px}.status{font-size:10px;left:7px;top:7px}.wave-btn{right:7px;top:7px;padding:8px 10px}.bottom{max-height:42vh;overflow:auto;touch-action:pan-y}.rules{grid-template-columns:1fr}.panel{padding:19px}.result-grid{grid-template-columns:repeat(2,1fr)}}
 @media (orientation:portrait) and (max-width:700px){#app{grid-template-rows:auto minmax(300px,1fr) auto}.rack{grid-template-columns:repeat(6,1fr)}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
@@ -60,8 +60,8 @@
       <div class="wordbox"><div class="current-word" id="currentWord">_</div><div class="word-meta" id="wordMeta">글자를 골라보세요</div></div>
       <div class="actions">
         <button class="action" id="clearBtn" type="button">지우기</button>
-        <button class="action" id="hintBtn" type="button">HINT</button>
-        <button class="action swap" id="swapBtn" type="button">SWAP</button>
+        <button class="action" id="hintBtn" type="button">힌트 -1</button>
+        <button class="action swap" id="swapBtn" type="button">교환 -2</button>
         <button class="action primary" id="buildBtn" type="button">BUILD</button>
       </div>
     </div>
@@ -72,11 +72,11 @@
 <div class="overlay" id="startOverlay">
   <div class="panel">
     <h1>WORD <span>SIEGE</span></h1>
-    <p class="lead">주어진 알파벳으로 영어 단어를 만들면, 그 단어가 뜻에 맞는 <b>WORD TOWER</b>가 됩니다. 어려운 단어일수록 강하고, 가까이 놓은 단어끼리는 서로 영향을 줍니다.</p>
+    <p class="lead">알파벳으로 영어 단어를 만들면 그 단어가 <b>WORD TOWER</b>가 됩니다. <b id="dictionaryTotal">437</b>개 단어와 다양한 고유 효과를 발견해 8번의 웨이브를 막으세요.</p>
     <div class="rules">
       <div class="rule"><b>1. 글자를 조합</b><span>아래 알파벳 타일을 눌러 아는 단어를 찾아보세요.</span></div>
-      <div class="rule"><b>2. 단어를 배치</b><span>BUILD 뒤 보드의 빈 칸을 누르면 Word Tower가 세워집니다.</span></div>
-      <div class="rule"><b>3. 웨이브 방어</b><span>MINER는 INK를 캐고 FIRE·ICE·FAST 같은 타워는 주변 타워를 강화합니다.</span></div>
+      <div class="rule"><b>2. INK로 건설</b><span>단어마다 비용이 다릅니다. BUILD → 보드 터치로 건설하세요.</span></div>
+      <div class="rule"><b>3. 단어 조합</b><span>MINER로 전투 중 INK를 캐고, FIRE+WIND처럼 서로 어울리는 단어를 가까이 놓아 콤보를 찾으세요.</span></div>
     </div>
     <button class="start" id="startBtn" type="button">바로 시작</button>
   </div>
@@ -97,6 +97,7 @@
       <div><b id="resultUnique">0</b><span>서로 다른 단어</span></div>
       <div><b id="resultLongest">-</b><span>가장 긴 단어</span></div>
       <div><b id="resultHardest">-</b><span>가장 어려운 단어</span></div>
+      <div><b id="resultCombos">0</b><span>발견한 콤보</span></div>
     </div>
     <button class="start" id="retryBtn" type="button">다시 플레이</button>
   </div>
