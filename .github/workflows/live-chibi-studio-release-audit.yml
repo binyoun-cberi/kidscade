@@ -1,0 +1,34 @@
+name: Live Chibi studio release audit
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect publicly served HTML and JS
+        shell: bash
+        run: |
+          set -u
+          ORIGIN="https://kidscade.binyoun.workers.dev"
+          NOW="$(date +%s)"
+          for target in "/teacher/character-3d-studio.html" "/teacher/character-3d-studio.js" "/kidscade-version.json"; do
+            echo "TARGET $target"
+            code="$(curl -L --max-time 25 --retry 2 --retry-delay 2 -sS -H 'Cache-Control: no-cache' -D /tmp/kc_headers -o /tmp/kc_body -w '%{http_code}' "$ORIGIN$target?live_audit=$NOW" || echo "ERROR")"
+            echo "HTTP $code"
+            echo "BYTES $(wc -c </tmp/kc_body 2>/dev/null || echo 0)"
+            grep -i -E '^(cache-control|cf-cache-status|etag|last-modified):' /tmp/kc_headers || true
+            if [[ "$target" == *.html ]]; then
+              echo "HTML_NEW_HAIR_OPTION $(grep -c 'value="kidscade_male_hair_short"' /tmp/kc_body || true)"
+              grep -o 'character-3d-studio.js?v=[^"]*' /tmp/kc_body | head -1 || true
+            elif [[ "$target" == *.js ]]; then
+              echo "JS_NEW_HAIR_CREATOR $(grep -c 'function createKidscadeMaleHairShort' /tmp/kc_body || true)"
+              echo "JS_PRESET_NEW_HAIR $(grep -c "male:\[...MALE_BASE_NODES,'kidscade_male_hair_short'" /tmp/kc_body || true)"
+            else
+              head -c 350 /tmp/kc_body; echo
+            fi
+          done
