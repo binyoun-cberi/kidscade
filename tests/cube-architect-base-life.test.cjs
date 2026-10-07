@@ -163,3 +163,40 @@ test('chairs lower first-person eye height without sinking the third-person avat
 test('homestead behavior refreshes the published runtime',()=>{
   assert.match(index,/cube-architect\.js\?v=20261007-homestead3/);
 });
+
+
+test('bookshelves visually fill as exploration collections grow',()=>{
+  assert.match(main,/function explorationCollectionProgress\(\)/);
+  assert.match(main,/const found=seenCreatureKinds\.size\+visitedBiomes\.size\+restoredLandmarks\.size/);
+  assert.match(main,/function refreshBookshelfMeshes\(\)/);
+  assert.match(main,/makeBookshelfObject\(data\.facing\|\|0,explorationCollectionProgress\(\)\)/);
+  assert.match(main,/visitedBiomes\.add\(region\);ambientAudioClock=0;refreshBookshelfMeshes\(\)/);
+  assert.match(main,/seenCreatureKinds\.add\(spec\.id\);lastCreatureHintAt=t;refreshBookshelfMeshes\(\)/);
+});
+
+test('desks can display exploration notes, flowers, lamps and landmark souvenirs',()=>{
+  assert.match(main,/function makeDeskObject\(facing=0,decor=''\)/);
+  assert.match(main,/decor==='notes'/);
+  assert.match(main,/decor==='flower'/);
+  assert.match(main,/decor==='lamp'/);
+  assert.match(main,/decor\.startsWith\('trophy:'\)/);
+  assert.match(main,/function setDeskDecor\(value\)/);
+  assert.match(main,/openLifePanel\('desk',x,y,z\)/);
+});
+
+test('pet persistence preserves zero coordinates and catch-up rejects occupied cells',()=>{
+  assert.match(main,/function finiteNumber\(value,fallback=0\)/);
+  assert.match(main,/record\.x=finiteNumber\(root\.position\.x,0\)/);
+  assert.match(main,/record\.homeZ=finiteNumber\(root\.userData\.homeZ,record\.z\)/);
+  assert.match(main,/const occupied=isSolidData\(bodyA/);
+  assert.match(main,/if\(!danger&&!occupied\)candidates\.push/);
+});
+
+test('mobile creature action labels distinguish taming and pet care',()=>{
+  assert.match(main,/tameable=!!TAME_RULES\[cu\?\.spec\?\.id\]/);
+  assert.match(main,/cu\?\.petId\?'돌보기':tameable\?'길들이기':'인사'/);
+});
+
+test('homestead polish refreshes the published runtime',()=>{
+  assert.match(index,/cube-architect\.js\?v=20261007-homestead4/);
+});
