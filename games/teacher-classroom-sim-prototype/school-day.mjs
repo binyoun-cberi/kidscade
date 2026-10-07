@@ -1,76 +1,66 @@
+// Fifteen pupils have assigned stations outside the collision area of school furniture.
+export const CLASS_SIZE=15;
+const STUDENT_COLUMNS=[-5.2,-2.6,0,2.6,5.2];
+const STUDENT_ROWS=[-2.15,.05,2.25];
+function rowStations(){return STUDENT_ROWS.flatMap(z=>STUDENT_COLUMNS.map(x=>({x,z})))}
+function rowWorkstations(){return STUDENT_ROWS.flatMap(z=>STUDENT_COLUMNS.map(x=>({x,z:z-1,hx:.67,hz:.43})))}
+const ACTIVITY_TABLES=[
+  {x:-2.7,z:-2.05,hx:1.28,hz:.58},{x:2.7,z:-2.05,hx:1.28,hz:.58},
+  {x:-2.3,z:.7,hx:1.16,hz:.58},{x:2.3,z:.7,hx:1.16,hz:.58}
+];
+function groupStations(){
+  return ACTIVITY_TABLES.flatMap(t=>[-.66,.66].flatMap(dx=>[
+    {x:t.x+dx,z:t.z-t.hz-.43},{x:t.x+dx,z:t.z+t.hz+.43}
+  ])).slice(0,CLASS_SIZE);
+}
+const MEAL_TABLES=[
+  {x:-3,z:-1.45,hx:1.45,hz:.7},
+  {x:1.6,z:-1.45,hx:1.45,hz:.7},
+  {x:-.7,z:1.3,hx:1.45,hz:.7}
+];
+function mealStations(){
+  return MEAL_TABLES.flatMap(t=>[
+    {x:t.x-.68,z:t.z-1.1},{x:t.x+.68,z:t.z-1.1},
+    {x:t.x-.68,z:t.z+1.1},{x:t.x+.68,z:t.z+1.1},
+    {x:t.x+t.hx+.43,z:t.z}
+  ]);
+}
 export const SCHOOL_SPACES=Object.freeze({
   classroom:{
     id:'classroom',name:'우리 교실',icon:'🏫',floor:'#c8a77d',wall:'#f1ead9',accent:'#355d4f',
     teachingPoint:{x:0,z:-4.1},
-    seats:[
-      {x:-3.2,z:-1.35},{x:0,z:-1.35},{x:3.2,z:-1.35},
-      {x:-3.2,z:1.05},{x:0,z:1.05},{x:3.2,z:1.05}
-    ],
-    obstacles:[
-      {x:-3.2,z:-2.4,hx:.80,hz:.66},{x:0,z:-2.4,hx:.80,hz:.66},{x:3.2,z:-2.4,hx:.80,hz:.66},
-      {x:-3.2,z:0,hx:.80,hz:.66},{x:0,z:0,hx:.80,hz:.66},{x:3.2,z:0,hx:.80,hz:.66},
-      {x:4.75,z:3.35,hx:1.18,hz:.70},{x:-6.25,z:-3.9,hx:.70,hz:.40}
-    ]
+    seats:rowStations(),
+    obstacles:[...rowWorkstations(),{x:6.02,z:3.65,hx:1.02,hz:.55},{x:-6.35,z:3.8,hx:.62,hz:.32}]
   },
   gym:{
     id:'gym',name:'체육관',icon:'🏀',floor:'#c98e55',wall:'#e9f1f4',accent:'#27709d',
     teachingPoint:{x:0,z:-3.65},
-    seats:[
-      {x:-3.75,z:.3},{x:-2.25,z:.3},{x:-.75,z:.3},{x:.75,z:.3},{x:2.25,z:.3},{x:3.75,z:.3}
-    ],
-    obstacles:[
-      {x:-6.25,z:3.5,hx:1.0,hz:.45},{x:6.25,z:3.5,hx:1.0,hz:.45},
-      {x:0,z:-4.45,hx:.55,hz:.28}
-    ]
+    seats:rowStations(),
+    obstacles:[{x:-6.25,z:3.5,hx:1.0,hz:.45},{x:6.25,z:3.5,hx:1.0,hz:.45},{x:0,z:-4.45,hx:.55,hz:.28}]
   },
   science:{
     id:'science',name:'과학실',icon:'🧪',floor:'#aab9b4',wall:'#e8f1ea',accent:'#2d6e65',
     teachingPoint:{x:0,z:-3.8},
-    seats:[
-      {x:-3.4,z:-1.22},{x:-1.8,z:-1.22},{x:1.8,z:-1.22},{x:3.4,z:-1.22},
-      {x:-2.2,z:1.48},{x:2.2,z:1.48}
-    ],
-    obstacles:[
-      {x:-2.6,z:-2.15,hx:1.35,hz:.62},{x:2.6,z:-2.15,hx:1.35,hz:.62},
-      {x:-2.2,z:.55,hx:1.15,hz:.62},{x:2.2,z:.55,hx:1.15,hz:.62},
-      {x:5.8,z:-3.9,hx:.85,hz:.48}
-    ]
+    seats:groupStations(),
+    obstacles:[...ACTIVITY_TABLES,{x:5.8,z:-3.9,hx:.85,hz:.48}]
   },
   cafeteria:{
     id:'cafeteria',name:'급식실',icon:'🍚',floor:'#d6c7a8',wall:'#fff1d4',accent:'#c76b3e',
     teachingPoint:{x:0,z:-3.6},
-    seats:[
-      {x:-3.7,z:-.42},{x:-2.3,z:-.42},{x:.9,z:-.42},{x:2.3,z:-.42},{x:-1.4,z:2.28},{x:0,z:2.28}
-    ],
-    obstacles:[
-      {x:-3,z:-1.45,hx:1.45,hz:.7},{x:1.6,z:-1.45,hx:1.45,hz:.7},
-      {x:-.7,z:1.25,hx:1.45,hz:.7},{x:5.75,z:-3.8,hx:1.05,hz:.55}
-    ]
+    seats:mealStations(),
+    obstacles:[...MEAL_TABLES,{x:5.75,z:-3.8,hx:1.05,hz:.55}]
   },
   art:{
     id:'art',name:'미술실',icon:'🎨',floor:'#d8c39d',wall:'#fff0e7',accent:'#a24a71',
     teachingPoint:{x:0,z:-3.8},
-    seats:[
-      {x:-3.5,z:-1.12},{x:-1.9,z:-1.12},{x:1.9,z:-1.12},{x:3.5,z:-1.12},
-      {x:-2.0,z:1.68},{x:2.0,z:1.68}
-    ],
-    obstacles:[
-      {x:-2.7,z:-2.05,hx:1.35,hz:.64},{x:2.7,z:-2.05,hx:1.35,hz:.64},
-      {x:-2,z:.75,hx:1.15,hz:.64},{x:2,z:.75,hx:1.15,hz:.64},
-      {x:-6.15,z:-3.9,hx:.75,hz:.45}
-    ]
+    seats:groupStations(),
+    obstacles:[...ACTIVITY_TABLES,{x:-6.15,z:-3.9,hx:.75,hz:.45}]
   },
   computer:{
     id:'computer',name:'컴퓨터실',icon:'💻',floor:'#9ba6b1',wall:'#e9eef5',accent:'#344f78',
     teachingPoint:{x:0,z:-3.85},
-    seats:[
-      {x:-3.6,z:-1.15},{x:-1.2,z:-1.15},{x:1.2,z:-1.15},{x:3.6,z:-1.15},
-      {x:-2.2,z:1.45},{x:2.2,z:1.45}
-    ],
-    obstacles:[
-      {x:-3.6,z:-2.05,hx:.9,hz:.64},{x:-1.2,z:-2.05,hx:.9,hz:.64},{x:1.2,z:-2.05,hx:.9,hz:.64},{x:3.6,z:-2.05,hx:.9,hz:.64},
-      {x:-2.2,z:.55,hx:.9,hz:.64},{x:2.2,z:.55,hx:.9,hz:.64},{x:5.8,z:3.45,hx:1.0,hz:.65}
-    ]
+    seats:rowStations(),
+    obstacles:[...rowWorkstations(),{x:6.15,z:3.8,hx:.8,hz:.55}]
   }
 });
 
