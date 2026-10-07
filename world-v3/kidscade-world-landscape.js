@@ -113,9 +113,9 @@ export async function buildWorldLandscape({parent,addModel}){
     addModel(parent,NATURE+'grass-large.glb',{x:-25.8,z:5.2,w:1.1,h:.70,d:1.1,rot:.2,name:'edge-grass-forest-home-a'}),
     addModel(parent,COMMUNITY.grass,{x:-22.2,z:-4.7,w:.82,h:.72,d:.82,rot:-.2,name:'edge-shared-grass-forest-home-b'}),
     addModel(parent,COMMUNITY.treeA,{x:-29.0,z:7.6,w:1.7,h:3.45,d:1.7,rot:.38,name:'forest-shared-tree-a'}),
-    addModel(parent,COMMUNITY.treeB,{x:-43.2,z:-6.8,w:1.75,h:3.55,d:1.75,rot:-.24,name:'forest-shared-tree-b'}),
-    addModel(parent,COMMUNITY.pineA,{x:-40.4,z:7.2,w:1.65,h:3.65,d:1.65,rot:.17,name:'forest-shared-pine-a'}),
-    addModel(parent,COMMUNITY.mossA,{x:-31.0,z:-6.1,w:1.0,h:.68,d:1.0,rot:.34,name:'forest-shared-moss-a'}),
+    addModel(parent,COMMUNITY.treeB,{x:-36.0,z:-6.2,w:1.75,h:3.55,d:1.75,rot:-.24,name:'forest-shared-tree-b'}),
+    addModel(parent,COMMUNITY.pineA,{x:-35.0,z:3.5,w:1.65,h:3.65,d:1.65,rot:.17,name:'forest-shared-pine-a'}),
+    addModel(parent,COMMUNITY.mossA,{x:-35.0,z:-8.7,w:1.0,h:.68,d:1.0,rot:.34,name:'forest-shared-moss-a'}),
     addModel(parent,NATURE+'grass-leafs-large.glb',{x:22.1,z:5.8,w:1.0,h:.75,d:1.0,rot:.1,name:'edge-grass-farm-quarry-a'}),
     addModel(parent,NATURE+'rock-small-flat-c.glb',{x:25.7,z:-4.8,w:.95,h:.42,d:.95,rot:-.1,name:'edge-rock-farm-quarry-b'})
   ]);
