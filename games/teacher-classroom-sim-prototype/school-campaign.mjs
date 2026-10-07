@@ -23,7 +23,7 @@ export const INITIAL_MASTERY=Object.freeze({
 });
 
 export const LEARNING_RULES=Object.freeze({
-  focusedPerSecond:.0038,
+  focusedPerSecond:.0045,
   focusHelpBonus:.18,
   offTaskMultiplier:.10,
   chatterMultiplier:.08,
