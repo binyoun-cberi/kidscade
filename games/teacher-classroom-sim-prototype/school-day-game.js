@@ -4,8 +4,8 @@ import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {
   AI_RULES,STUDENT_PROFILES,createStudentRuntime,resetFocusForLesson,updateLessonFocus,helpFocus,
   resetSocialForRecess,recoverSocial,drainSocial,conflictProbability,clamp
-} from './student-ai.mjs?v=68';
-import {SCHOOL_SPACES,DAY_STEPS,PERIODS} from './school-day.mjs?v=68';
+} from './student-ai.mjs?v=70';
+import {CLASS_SIZE,SCHOOL_SPACES,DAY_STEPS,PERIODS} from './school-day.mjs?v=70';
 import {
   preferenceFor,preferenceMultiplier,preferenceIcon,
   createDailyEnvironment,createDailyHealth,healthRecoveryMultiplier,tickHealth,nextHealthAction,
@@ -13,17 +13,18 @@ import {
   friendshipKey,friendshipInfo,addFriendship,friendshipConflictDuration,
   friendshipSelfReconcileChance,friendshipChatterChance,
   SAFETY_RULES,GROUP_RULES,FRIENDSHIP_RULES
-} from './student-life.mjs?v=68';
+} from './student-life.mjs?v=70';
 import {
   CAMPAIGN_DAYS,EXAM_DAYS,GRADE_ORDER,LEARNING_RULES,
   createCampaignState,normalizeCampaignState,examNumberForDay,nextExamInfo,
   gradeIndex,learningGain,addLearning,conductExam,latestExam,targetReachedCount
-} from './school-campaign.mjs?v=69';
+} from './school-campaign.mjs?v=70';
 
 const $=id=>document.getElementById(id);
 const ui={
   app:$('app'),canvas:$('game'),phase:$('phaseLabel'),clock:$('clock'),timer:$('phaseTimer'),
   classState:$('classState'),studentStrip:$('studentStrip'),dayStrip:$('dayStrip'),campaignStatus:$('campaignStatus'),
+  rosterToggle:$('rosterToggle'),
   guideKicker:$('guideKicker'),guideTitle:$('guideTitle'),guideText:$('guideText'),
   toast:$('toast'),action:$('actionButton'),actionIcon:$('actionIcon'),actionLabel:$('actionLabel'),
   intro:$('intro'),start:$('startButton'),help:$('help'),helpButton:$('helpButton'),
@@ -64,7 +65,9 @@ const DOOR_POINT=new THREE.Vector3(6.55,0,-3.55);
 const ENTRY_POINT=new THREE.Vector3(5.85,0,-3.0);
 const COLORS={
   minsu:'#e58b5a',jiwoo:'#65a79c',seoyeon:'#9d8bc5',taeho:'#e7bd55',
-  junho:'#d26f67',arin:'#69a8c2',teacher:'#4b79d1'
+  junho:'#d26f67',arin:'#69a8c2',haeun:'#d788b5',doyun:'#73b4a1',
+  yuna:'#b992d9',jisung:'#e8a764',soeun:'#9fca71',hyunwoo:'#718fd6',
+  sua:'#e58bb1',eunho:'#ccab62',narin:'#7dc0ba',teacher:'#4b79d1'
 };
 
 let furnitureRoot=new THREE.Group();roomRoot.add(furnitureRoot);
@@ -80,7 +83,7 @@ let obstacleRects=activeSpace.obstacles.map(o=>({...o}));
 let started=false,paused=false;
 let stepIndex=0,currentStep=DAY_STEPS[0],stepTime=0;
 let schoolMinute=9*60;
-let interactionScan=0,pairScan=0,currentAction={type:'none'};
+let interactionScan=0,pairScan=0,hudTimer=0,groupSignalCooldown=0,currentAction={type:'none'};
 let toastTimer=0,playerGestureTimer=0;
 const CHARACTER_ROOT='../../assets/game/npcs/glTF/';
 const CHARACTER_VISUALS=Object.freeze({
@@ -91,6 +94,15 @@ const CHARACTER_VISUALS=Object.freeze({
   taeho:{file:'Casual2_Male.gltf',height:1.39},
   junho:{file:'Casual3_Male.gltf',height:1.41},
   arin:{file:'Casual3_Female.gltf',height:1.32},
+  haeun:{file:'Casual_Female.gltf',height:1.35},
+  doyun:{file:'Casual2_Male.gltf',height:1.42},
+  yuna:{file:'Casual3_Female.gltf',height:1.40},
+  jisung:{file:'Casual_Male.gltf',height:1.31},
+  soeun:{file:'Casual2_Female.gltf',height:1.36},
+  hyunwoo:{file:'Casual3_Male.gltf',height:1.44},
+  sua:{file:'Casual_Female.gltf',height:1.39},
+  eunho:{file:'Casual_Male.gltf',height:1.37},
+  narin:{file:'Casual2_Female.gltf',height:1.34},
   nurse:{file:'Doctor_Female_Young.gltf',height:1.66}
 });
 const characterCache=new Map();
@@ -105,7 +117,7 @@ let teamPairs=[];
 let teamActive=false;
 let teamCheckTimer=0;
 let lessonAccidents=0;
-const CAMPAIGN_STORAGE_KEY='kidscade_teacher_campaign_v1';
+const CAMPAIGN_STORAGE_KEY='kidscade_teacher_campaign_v2';
 let campaign=loadCampaign();
 const campaignDayStartMastery={...campaign.mastery};
 let dayFinished=false;
@@ -114,7 +126,7 @@ let stats={
   focusHelps:0,conflictsMediated:0,fightsSeparated:0,missedFights:0,
   offTaskStarts:0,peacefulSocial:0,periodsCompleted:0,spacesVisited:new Set(['classroom']),
   healthChecks:0,nurseVisits:0,earlyDismissals:0,classroomRests:0,accidents:0,safetyMisses:0,teamConflicts:0,
-  friendshipLevelUps:0,selfReconciles:0,lessonChats:0,chatsStopped:0
+  friendshipLevelUps:0,selfReconciles:0,lessonChats:0,chatsStopped:0,groupSignals:0
 };
 const keys=new Set();
 const joy={active:false,id:null,x:0,y:0};
@@ -250,13 +262,13 @@ function addClassroom(space){
   const bookUrl='../../assets/game/3d/interiors/kenney-furniture-kit/bookcase-open.glb';
   const screenUrl='../../assets/game/3d/interiors/kenney-furniture-kit/computer-screen.glb';
   for(let i=0;i<space.seats.length;i++){
-    const s=space.seats[i],deskZ=i<3?-2.4:0;
+    const s=space.seats[i],deskZ=s.z-1;
     placeAsset(deskUrl,{x:s.x,z:deskZ,size:1.38,rot:Math.PI,fallback:[1.4,.65,.78,0xc99761]});
     placeAsset(chairUrl,{x:s.x,z:s.z-.30,size:.74,rot:Math.PI,fallback:[.64,.55,.62,0x5c8eb0]});
   }
-  placeAsset(bookUrl,{x:-6.25,z:-3.9,size:1.8,rot:Math.PI/2,fallback:[1.2,1.55,.55,0x967555]});
-  placeAsset(screenUrl,{x:4.75,y:.78,z:3.25,size:.68,rot:Math.PI,fallback:[.7,.5,.15,0x3b4855]});
-  const desk=box(2.2,.72,1.05,0x8b623f);desk.position.set(4.75,.36,3.35);furnitureRoot.add(desk);
+  placeAsset(bookUrl,{x:-6.35,z:3.8,size:1.8,rot:Math.PI/2,fallback:[1.2,1.55,.55,0x967555]});
+  placeAsset(screenUrl,{x:6.02,y:.78,z:3.55,size:.68,rot:Math.PI,fallback:[.7,.5,.15,0x3b4855]});
+  const desk=box(2.0,.72,1.05,0x8b623f);desk.position.set(6.02,.36,3.65);furnitureRoot.add(desk);
   const rug=plane(3.7,2.0,0x9ac2b6);rug.rotation.x=-Math.PI/2;rug.position.set(-4.8,.002,3.35);decoRoot.add(rug);
 }
 function addGym(){
@@ -665,8 +677,8 @@ function placeActorsAtEntry(){
   if(!player)return;
   player.root.position.copy(ENTRY_POINT);player.root.rotation.y=-Math.PI/2;
   students.forEach((s,i)=>{
-    let p=new THREE.Vector3(5.7,0,-2.2+i*.78);
-    if(isStudentBlocked(p.x,p.z))p=randomOpenPoint();
+    // Pupils appear at their assigned stations, never stacked beyond room boundaries near the door.
+    const p=activeSeats[i]||randomOpenPoint();
     s.actor.root.position.copy(p);s.actor.navGoal='';s.actor.navPath=[];hideBubble(s);
   });
   setStudentsToStations();
@@ -677,14 +689,14 @@ function transitionToSpace(spaceId){
 
 function enterStep(index,{spaceChanged=false}={}){
   stepIndex=clamp(index,0,DAY_STEPS.length-1);currentStep=DAY_STEPS[stepIndex];stepTime=currentStep.duration||0;
-  pairs=[];teamPairs=[];lessonChats=[];chatterScanTimer=.5;chatterCooldowns.clear();
+  pairs=[];teamPairs=[];lessonChats=[];chatterScanTimer=.5;chatterCooldowns.clear();groupSignalCooldown=0;
   teamActive=false;teamCheckTimer=0;lessonElapsed=0;lessonAccidents=0;
   hideAllBubbles();setTalk(false);fightsThisSocial=0;
   if(currentStep.location!==activeSpace.id){
     transitionToSpace(currentStep.location);spaceChanged=true;
   }
   syncStudentPresence();
-  if(teachingMarker)teachingMarker.visible=currentStep.kind==='prep';
+  if(teachingMarker)teachingMarker.visible=currentStep.kind==='prep'||currentStep.kind==='lesson';
   if(doorMarker)doorMarker.visible=currentStep.kind==='transition';
 
   if(currentStep.kind==='prep'){
@@ -721,7 +733,7 @@ function enterStep(index,{spaceChanged=false}={}){
     students.forEach((s,i)=>{
       if(!isStudentPresent(s))return;
       s.runtime.mode='solo';
-      s.actor.target=isStudentResting(s)?safeSeparatedTarget(-1):new THREE.Vector3(5.25,0,-1.9+i*.65);
+      s.actor.target=isStudentResting(s)?safeSeparatedTarget(-1):s.seat.clone();
     });
     const next=SCHOOL_SPACES[currentStep.nextLocation];
     updateBoard((next?.icon||'➡️')+' '+(next?.name||'다음 장소'));
