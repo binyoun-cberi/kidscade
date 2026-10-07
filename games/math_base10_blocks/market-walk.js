@@ -59,7 +59,7 @@ const PRODUCTS=[
  {id:'sodaBottle',name:'탄산음료',price:1900,model:'soda-bottle.glb',zone:'drinks',storage:'pantry',ready:true,kcal:240,protein:0,veg:0,sugar:32,sodium:2,satiety:4,mood:13,pos:[0,4.2]}
 ];
 const productById=id=>PRODUCTS.find(p=>p.id===id);
-function productAssetUrl(p){return PRODUCT_V4[p?.id]?ULTIMATE_FOOD+PRODUCT_V4[p.id]:productAssetUrl(p)}
+function productAssetUrl(p){return PRODUCT_V4[p?.id]?ULTIMATE_FOOD+PRODUCT_V4[p.id]:FOOD+p.model}
 
 const EVENTS=[
  {id:'sports',title:'체육을 신나게 한 날',text:'평소보다 배가 조금 더 고파요. 무엇을 먹을지는 자유예요.',hunger:-12},
