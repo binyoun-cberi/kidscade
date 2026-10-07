@@ -72,3 +72,53 @@ test('tracked map destinations have a live direction arrow and an explicit arriv
   assert.match(main,/arrived\?'도착 · 추적 끝':'추적 취소'/);
   assert.match(main,/function stopTrackedTarget\(\)/);
 });
+
+
+test('homestead furniture recipes and interactions are part of survival building',()=>{
+  const ids=new Set(rules.RECIPES.map(r=>r.id));
+  for(const id of ['chair','desk','bookshelf','sign'])assert.ok(ids.has(id),id);
+  for(const type of ['chair','desk','bookshelf','sign'])assert.match(main,new RegExp(type+":\\{name:"));
+  assert.match(main,/function makeChairObject/);
+  assert.match(main,/function makeDeskObject/);
+  assert.match(main,/function makeBookshelfObject/);
+  assert.match(main,/function makeSignObject/);
+  assert.match(main,/if\(type==='chair'\)return useChair/);
+  assert.match(main,/openLifePanel\('sign'/);
+  assert.match(main,/openLifePanel\('library'/);
+});
+
+test('sign text is bounded and rendered into the 3D sign texture',()=>{
+  assert.match(main,/function cleanSignText/);
+  assert.match(main,/split\('\\n'\)\.slice\(0,2\)/);
+  assert.match(main,/function makeSignTexture/);
+  assert.match(main,/function saveSignText/);
+  assert.match(main,/lifeSignText/);
+});
+
+test('four passive species can be tamed with farm and cooking outputs',()=>{
+  assert.match(main,/chicken:\{food:'wheatSeed',need:3/);
+  assert.match(main,/sheep:\{food:'wheat',need:2/);
+  assert.match(main,/cat:\{food:'cookedEgg',need:2/);
+  assert.match(main,/dog:\{food:'bread',need:2/);
+  assert.match(main,/function feedTameTarget/);
+  assert.match(main,/mode:'follow'/);
+  assert.match(main,/function setPetMode/);
+  assert.match(main,/function setPetName/);
+});
+
+test('tamed animals persist, restore, follow or stay and are not despawned as wild creatures',()=>{
+  assert.match(main,/pets:Object\.values\(tamedCreatures\)/);
+  assert.match(main,/function restoreTamedCreatures/);
+  assert.match(main,/restoreTamedCreatures\(\);maintainWildCreatures\(true\)/);
+  assert.match(main,/!root\.userData\.petId&&dist>56/);
+  assert.match(main,/pet\?\.mode==='follow'&&dist>24/);
+  assert.match(main,/if\(pet\.mode==='follow'\)/);
+  assert.match(main,/record\.mode==='stay'/);
+});
+
+test('homestead assets are cache-busted together',()=>{
+  assert.match(index,/cube-architect\.css\?v=20261007-homestead2/);
+  assert.match(index,/cube-architect-world\.js\?v=20261007-homestead2/);
+  assert.match(index,/cube-architect\.js\?v=20261007-homestead2/);
+  assert.match(css,/\.life-sign-text\{/);
+});
