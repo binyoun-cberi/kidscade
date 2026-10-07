@@ -51,9 +51,20 @@ button{font:inherit}
   font-size:10px;font-weight:950;line-height:1.35;pointer-events:none
 }
 #campaignStatus strong{color:#ffe28c}
-#studentStrip{
-  position:absolute;left:12px;top:122px;z-index:18;display:flex;gap:5px;flex-wrap:wrap;max-width:min(680px,70vw);pointer-events:none
+#rosterToggle{
+  position:absolute;left:12px;top:120px;z-index:31;
+  padding:7px 11px;border-radius:12px;color:#19334a;background:#eaf5ff;border:1px solid #c2dcee;
+  box-shadow:0 4px 12px rgba(0,0,0,.14);font-size:11px;font-weight:900
 }
+#studentStrip{
+  position:absolute;left:12px;top:157px;z-index:30;display:none;
+  width:min(560px,78vw);max-height:min(340px,48vh);overflow-y:auto;overscroll-behavior:contain;
+  grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:8px;
+  border-radius:17px;background:rgba(13,31,47,.93);
+  border:1px solid rgba(255,255,255,.16);box-shadow:0 14px 32px rgba(0,0,0,.28)
+}
+#studentStrip.open{display:grid}
+
 .studentChip{
   display:grid;grid-template-columns:auto auto auto;grid-template-rows:auto auto;align-items:center;column-gap:5px;row-gap:2px;
   min-height:38px;padding:5px 8px;border-radius:14px;background:rgba(255,255,255,.92);color:#213449;
@@ -130,7 +141,8 @@ button{font:inherit}
   width:min(610px,100%);padding:24px;border-radius:28px;background:#f8fbff;color:#1b2e42;
   border:1px solid rgba(255,255,255,.85);box-shadow:0 35px 90px rgba(0,0,0,.34)
 }
-.card.compact{width:min(500px,100%)}
+.card.compact{width:min(600px,100%)}
+.overlay .card{max-height:92dvh;overflow-y:auto}
 .eyebrow{display:inline-block;padding:5px 8px;border-radius:999px;background:#dbeafe;color:#24518a;font-size:9px;font-weight:1000;letter-spacing:.08em}
 .card h1{font-size:46px;line-height:.95;margin:10px 0 9px;letter-spacing:-.07em}
 .card h2{font-size:27px;margin:0 0 10px;letter-spacing:-.04em}
@@ -150,7 +162,7 @@ button{font:inherit}
 .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
 .summary div{display:flex;flex-direction:column;gap:2px}
 .summary strong{font-size:22px}.summary span{font-size:10px;color:#687d91}
-.examResults{display:grid;gap:6px;margin:12px 0}
+.examResults{display:grid;gap:6px;margin:12px 0;max-height:min(440px,48vh);overflow-y:auto;overscroll-behavior:contain;padding-right:3px}
 .examRow{
   display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;
   padding:9px 11px;border-radius:12px;background:#f2f6fb;border:1px solid #dce6f0;color:#253b50
@@ -173,6 +185,11 @@ code{display:block;padding:10px;border-radius:10px;background:#edf2f7;color:#405
 .statusBubble.fight{background:#ffd0d0;color:#8c1515}
 .statusBubble.health{background:#ffe7e3;color:#8d3028}
 .statusBubble.chat{background:#fff2b8;color:#75520b}
+.studentWorldLabel{
+  position:absolute;z-index:20;pointer-events:none;transform:translate(-50%,-110%);
+  padding:3px 6px;border-radius:8px;background:rgba(15,31,45,.83);
+  color:#fff;font-size:10px;font-weight:900;white-space:nowrap
+}
 
 @media(pointer:fine){
   #joystick{opacity:.28}
@@ -186,8 +203,10 @@ code{display:block;padding:10px;border-radius:10px;background:#edf2f7;color:#405
   #dayStrip span{min-width:40px;height:28px;padding:2px 4px;column-gap:2px}
   #dayStrip span i{font-size:12px}#dayStrip span small{display:none}
   #campaignStatus{top:101px;right:7px;max-width:42vw;padding:5px 7px;font-size:8px}
-  #studentStrip{top:102px;left:7px;max-width:55vw}
-  .studentChip{font-size:8px;min-height:25px;padding:4px 6px}
+  #rosterToggle{top:104px;left:7px;padding:5px 7px;font-size:9px}
+  #studentStrip{top:136px;left:7px;width:min(440px,94vw);max-height:40vh;grid-template-columns:repeat(3,minmax(0,1fr))}
+  .studentChip{font-size:9px;min-height:33px;padding:4px 5px}
+  .studentChip .meters{width:42px}
   #guide{top:132px;width:68vw}
   #joystick{width:116px;height:116px}
   #actionButton{width:112px;height:78px;border-radius:24px}
