@@ -2229,27 +2229,28 @@ async function buildPets(){
   // Ranch grows physically. The north strip is reserved for buildings, while the
   // south half remains a clear animal paddock and keeps the bus/road approach open.
   // Quaternius farm façades are treated as local -Z fronts, so PI turns doors toward
-  // +Z: the paddock and the player's southern approach. No barn door faces the cell edge.
+  // +Z: the paddock and the player's southern approach. North fence segments leave
+  // deliberate gate gaps in front of the barn/coop instead of blocking those façades.
   const RANCH_FRONT_ROT=Math.PI;
   const ranchLayouts={
     1:{
       ground:[9.0,-22.9,6.4,7.8],
-      fences:[[7.3,-26.8,0],[10.7,-26.8,0],[7.3,-19.0,0],[10.7,-19.0,0],[5.8,-24.4,Math.PI/2],[5.8,-21.5,Math.PI/2],[12.2,-24.4,Math.PI/2],[12.2,-21.5,Math.PI/2]],
+      fences:[[6.4,-26.8,0],[11.6,-26.8,0],[7.3,-19.0,0],[10.7,-19.0,0],[5.8,-24.4,Math.PI/2],[5.8,-21.5,Math.PI/2],[12.2,-24.4,Math.PI/2],[12.2,-21.5,Math.PI/2]],
       facilities:[['coop',ASSET.ranchCoop,9.0,-31.0,2.5,2.25,2.35,1.8,1.6]]
     },
     2:{
       ground:[9.8,-22.8,10.4,9.6],
-      fences:[[6.0,-27.7,0],[9.5,-27.7,0],[13.0,-27.7,0],[6.0,-18.0,0],[9.5,-18.0,0],[13.0,-18.0,0],[4.3,-25.0,Math.PI/2],[4.3,-21.0,Math.PI/2],[15.2,-25.0,Math.PI/2],[15.2,-21.0,Math.PI/2]],
+      fences:[[4.8,-27.7,0],[10.3,-27.7,0],[16.0,-27.7,0],[6.0,-18.0,0],[9.5,-18.0,0],[13.0,-18.0,0],[4.3,-25.0,Math.PI/2],[4.3,-21.0,Math.PI/2],[15.2,-25.0,Math.PI/2],[15.2,-21.0,Math.PI/2]],
       facilities:[['barn',ASSET.ranchBarn,7.0,-31.0,4.25,3.55,3.55,3.5,2.8],['coop',ASSET.ranchCoop,14.0,-31.0,2.4,2.2,2.3,1.8,1.6]]
     },
     3:{
       ground:[10.4,-22.8,13.8,11.0],
-      fences:[[5.0,-28.3,0],[8.5,-28.3,0],[12.0,-28.3,0],[15.5,-28.3,0],[5.0,-17.3,0],[8.5,-17.3,0],[12.0,-17.3,0],[15.5,-17.3,0],[3.4,-25.6,Math.PI/2],[3.4,-21.8,Math.PI/2],[17.3,-25.6,Math.PI/2],[17.3,-21.8,Math.PI/2]],
+      fences:[[3.8,-28.3,0],[9.0,-28.3,0],[14.1,-28.3,0],[18.0,-28.3,0],[5.0,-17.3,0],[8.5,-17.3,0],[12.0,-17.3,0],[15.5,-17.3,0],[3.4,-25.6,Math.PI/2],[3.4,-21.8,Math.PI/2],[17.3,-25.6,Math.PI/2],[17.3,-21.8,Math.PI/2]],
       facilities:[['barn',ASSET.ranchBarn,6.2,-31.0,4.1,3.5,3.5,3.4,2.8],['silo',ASSET.ranchSilo,12.0,-31.1,2.7,3.55,2.7,2.1,2.1],['coop',ASSET.ranchCoop,16.2,-31.0,2.35,2.2,2.25,1.8,1.6]]
     },
     4:{
       ground:[11.2,-22.6,16.0,12.2],
-      fences:[[4.4,-28.7,0],[7.9,-28.7,0],[11.4,-28.7,0],[14.9,-28.7,0],[18.2,-28.7,0],[4.4,-16.4,0],[7.9,-16.4,0],[11.4,-16.4,0],[14.9,-16.4,0],[18.2,-16.4,0],[3.2,-26.0,Math.PI/2],[3.2,-22.3,Math.PI/2],[3.2,-18.6,Math.PI/2],[19.2,-26.0,Math.PI/2],[19.2,-22.3,Math.PI/2],[19.2,-18.6,Math.PI/2]],
+      fences:[[3.0,-28.7,0],[8.4,-28.7,0],[11.3,-28.7,0],[16.1,-28.7,0],[19.2,-28.7,0],[4.4,-16.4,0],[7.9,-16.4,0],[11.4,-16.4,0],[14.9,-16.4,0],[18.2,-16.4,0],[3.2,-26.0,Math.PI/2],[3.2,-22.3,Math.PI/2],[3.2,-18.6,Math.PI/2],[19.2,-26.0,Math.PI/2],[19.2,-22.3,Math.PI/2],[19.2,-18.6,Math.PI/2]],
       facilities:[['barn',ASSET.ranchBarn,5.4,-31.0,4.0,3.45,3.45,3.3,2.75],['silo',ASSET.ranchSilo,10.4,-31.1,2.55,3.45,2.55,2.0,2.0],['coop',ASSET.ranchCoop,14.1,-31.0,2.25,2.1,2.2,1.7,1.55],['windmill',ASSET.ranchWindmill,18.0,-31.0,2.8,4.5,2.8,2.2,2.2]]
     }
   };
