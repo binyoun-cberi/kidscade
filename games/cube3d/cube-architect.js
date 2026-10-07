@@ -4382,7 +4382,7 @@ function chestMove(type,toChest,all=true){
   setWorldBlock(...target.p,{...target.data,items},true);refreshRecipeDiscoveries(true);buildHotbar();renderLifePanel();markFreeWorldDirty(250);
 }
 function chestDepositAll(){
-  const target=lifeTargetData();if(!target||target.data.type!=='chest')return;
+  const target=lifeTargetData();if(!target||!['chest','crate'].includes(target.data.type))return;
   const items={...(target.data.items||{})},equipped=new Set(Object.values(survivalEquipment||{}).filter(Boolean));
   for(const [type,n0] of Object.entries(survivalBag)){
     const n=Math.max(0,Number(n0)||0);if(!n||equipped.has(type))continue;
@@ -4391,7 +4391,7 @@ function chestDepositAll(){
   setWorldBlock(...target.p,{...target.data,items},true);buildHotbar();renderLifePanel();markFreeWorldDirty(250);
 }
 function setChestLabel(value){
-  const target=lifeTargetData();if(!target||target.data.type!=='chest')return;
+  const target=lifeTargetData();if(!target||!['chest','crate'].includes(target.data.type))return;
   setWorldBlock(...target.p,{...target.data,label:String(value||'').slice(0,18)},true);markFreeWorldDirty(250);
 }
 function mapTargetButton(target){
@@ -4462,7 +4462,7 @@ function renderLifePanel(){
     body.append(wrap);return;
   }
   if(lifePanelMode==='chest'){
-    const target=lifeTargetData();if(!target||target.data.type!=='chest'){closeLifePanel();return}
+    const target=lifeTargetData();if(!target||!['chest','crate'].includes(target.data.type)){closeLifePanel();return}
     title.textContent=target.data.label||'나무 상자';
     const label=document.createElement('input');label.className='life-name';label.maxLength=18;label.value=target.data.label||'';
     label.placeholder='상자 이름';label.onchange=()=>{setChestLabel(label.value);title.textContent=label.value||'나무 상자'};
