@@ -37,7 +37,7 @@ test('cosmic growth spans dust through quasar and reuses existing assets',()=>{
 
 test('cosmic growth keeps neighbouring celestial scenery visible across scales',()=>{
   for(const fn of ['addDustNeighborhood','addAsteroidNeighborhood','addDistantWorlds','addNeighborStars','addCompanionGalaxies','addDeepField']){
-    assert.match(js,new RegExp('function '+fn+'\\\\('));
+    assert.ok(js.includes('function '+fn+'('),fn);
   }
   assert.match(js,/if\(i<=1\)addDustNeighborhood/);
   assert.match(js,/if\(i>=6&&i<=8\).*addDistantWorlds/);
