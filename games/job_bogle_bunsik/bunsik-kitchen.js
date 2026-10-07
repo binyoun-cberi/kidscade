@@ -70,7 +70,7 @@ const els={
  selected:$('#selectedAction'),trayBtn:$('#trayBtn'),trayText:$('#trayText'),trayQuality:$('#trayQuality'),dock:$('#actionDock'),
  tutorialBanner:$('#tutorialBanner'),tutorialText:$('#tutorialText'),discard:$('#discardBtn'),
  toast:$('#toast'),start:$('#startOverlay'),end:$('#endOverlay'),endTitle:$('#endTitle'),endText:$('#endText'),
- endRevenue:$('#endRevenue'),endServed:$('#endServed'),endPerfect:$('#endPerfect'),sound:$('#soundBtn'),bankCash:$('#bankCash'),shopCash:$('#shopCash'),equipmentShop:$('#equipmentShop'),
+ endRevenue:$('#endRevenue'),endServed:$('#endServed'),endPerfect:$('#endPerfect'),endRep:$('#endRep'),sound:$('#soundBtn'),bankCash:$('#bankCash'),shopCash:$('#shopCash'),shopRep:$('#shopRep'),shopTabs:$('#shopTabs'),equipmentShop:$('#equipmentShop'),repHud:$('#repHud'),repStars:$('#repStars'),
  prepBar:$('#prepBar'),openShop:$('#openShopBtn'),rotate:$('#rotateStationBtn'),smartFilter:$('#smartFilterBtn'),stationHint:$('#stationHint'),dishStatus:$('#dishStatus'),moveControls:$('#moveControls'),heldStatus:$('#heldStatus'),helper:$('#helperBtn'),taskPanel:$('#taskPanel'),taskList:$('#taskList'),taskProgress:$('#taskProgress')
 };
 
@@ -1646,25 +1646,56 @@ function cycleSmartFilter(){
  const current=SMART_FILTERS.indexOf(g.userData.filterId),next=SMART_FILTERS[(current+1+SMART_FILTERS.length)%SMART_FILTERS.length];
  g.userData.filterId=next;progress.filters[g.userData.stationId]=next;kitchen.snapshotEquipmentLayout();renderSmartFilterButton();toast('Smart Grabber · '+ingredientLabel(next)+'만 통과',1200)
 }
+let shopCategory='all',shopRenderSignature='';
+function nextReputationTarget(){
+ const stars=reputationStars();return stars>=5?null:REP_THRESHOLDS[stars]
+}
+function shopLockReason(key,info,count){
+ if(count>=(info.max||1))return'구매 완료';
+ const stars=reputationStars();
+ if((info.minStars||1)>stars)return'★'.repeat(info.minStars)+' 평판 필요';
+ if(info.requires&&!hasUpgrade(info.requires)&&(progress.owned[info.requires]||0)<(SHOP_ITEMS[info.requires]?.min||1))return SHOP_ITEMS[info.requires]?.name+' 먼저 필요';
+ if(progress.cash<info.price)return'금고 잔액 부족';
+ return''
+}
+function renderEquipmentShop(force=false){
+ if(!els.equipmentShop)return;
+ const sig=[shopCategory,progress.cash,progress.reputation,...Object.keys(SHOP_ITEMS).map(k=>progress.owned[k]||0)].join('|');
+ if(!force&&sig===shopRenderSignature)return;shopRenderSignature=sig;
+ const entries=Object.entries(SHOP_ITEMS).filter(([,info])=>shopCategory==='all'||info.category===shopCategory);
+ const groups=new Map();
+ entries.forEach(([key,info])=>{if(!groups.has(info.category))groups.set(info.category,[]);groups.get(info.category).push([key,info])});
+ els.equipmentShop.innerHTML=[...groups].map(([cat,items])=>
+  '<section class="shop-category"><h3>'+SHOP_CATEGORY_LABELS[cat]+'</h3><div class="shop-category-grid">'+items.map(([key,info])=>{
+   const count=progress.owned[key]||0,max=info.max||1,reason=shopLockReason(key,info,count),owned=count>=max,locked=!!reason&&!owned;
+   const countText=max>1?'<span class="count-badge">'+count+'/'+max+'</span>':(owned?'<span class="count-badge">✓</span>':'');
+   return '<button type="button" class="shop-item '+(owned?'owned ':'')+(locked?'locked ':'')+'" data-buy="'+key+'" '+(reason?'disabled':'')+'>'+
+    '<span>'+info.icon+'</span><b>'+info.name+'</b><small>'+info.desc+'</small><em>'+money(info.price)+'</em>'+countText+
+    (reason?'<i class="shop-lock-reason">'+reason+'</i>':'')+'</button>'
+  }).join('')+'</div></section>'
+ ).join('');
+}
 function renderEconomyProgress(){
  if(els.bankCash)els.bankCash.textContent=money(progress.cash);
  if(els.shopCash)els.shopCash.textContent=money(progress.cash);
- els.equipmentShop?.querySelectorAll('[data-buy]').forEach(btn=>{
-  const key=btn.dataset.buy,info=EQUIPMENT[key],count=progress.owned[key]||0,maxed=count>=info.max,missing=info.requires&&(progress.owned[info.requires]||0)<1,poor=progress.cash<info.price;
-  btn.disabled=maxed||missing||poor;btn.classList.toggle('owned',count>info.min);btn.classList.toggle('locked',!!missing);
-  let badge=btn.querySelector('.count-badge');if(!badge){badge=document.createElement('span');badge.className='count-badge';btn.appendChild(badge)}
-  badge.textContent=count+'/'+info.max;
-  btn.title=maxed?'최대 보유':missing?EQUIPMENT[info.requires].name+'를 먼저 구매하세요':poor?'금고 잔액이 부족해요':info.name+' 구매'
- })
+ const stars=reputationStars(),next=nextReputationTarget(),label=reputationLabel();
+ if(els.repStars)els.repStars.textContent=String(stars);
+ if(els.endRep)els.endRep.textContent=label;
+ if(els.shopRep)els.shopRep.textContent=label+(next==null?' · 최고 평판!':' · 다음 별까지 '+Math.max(0,next-progress.reputation));
+ renderEquipmentShop()
 }
 function purchaseEquipment(key){
- const info=EQUIPMENT[key];if(!info||state.phase!=='ended')return false;
- const count=progress.owned[key]||0;if(count>=info.max){toast('이미 최대 수량이에요');return false}
- if(info.requires&&(progress.owned[info.requires]||0)<1){toast(EQUIPMENT[info.requires].name+'를 먼저 구매해야 해요',1600);return false}
- if(progress.cash<info.price){toast('금고 잔액이 부족해요');return false}
+ const info=SHOP_ITEMS[key];if(!info||state.phase!=='ended')return false;
+ const count=progress.owned[key]||0,max=info.max||1,reason=shopLockReason(key,info,count);
+ if(reason){toast(reason,1600);return false}
  progress.cash-=info.price;progress.owned[key]=count+1;
- const g=kitchen.revealNewestEquipment(key);if(g?.userData?.automationType==='smartGrabber')g.userData.filterId=progress.filters[g.userData.stationId]||'noodle';
- kitchen.snapshotEquipmentLayout();saveProgress();renderEconomyProgress();sfx('shop.purchase',{volume:.24,cooldownMs:150});toast(info.name+' 구매! 다음 영업 전에 배치해 보세요',1800);return true
+ if(EQUIPMENT[key]){
+  const g=kitchen.revealNewestEquipment(key);if(g?.userData?.automationType==='smartGrabber')g.userData.filterId=progress.filters[g.userData.stationId]||'noodle'
+ }
+ kitchen.syncProgressUpgrades();kitchen.snapshotEquipmentLayout();saveProgress();shopRenderSignature='';renderEconomyProgress();
+ sfx('shop.purchase',{volume:.24,cooldownMs:150});
+ const effect=key==='table3'||key==='table4'?'홀에 새 테이블이 생겼어요!':key==='hallExpansion'?'홀 확장 완료 · 5번 테이블 OPEN!':key==='hallStaff'?'홀 알바가 출근했어요!':key==='menuPlus'?'새 라면 2종이 주문에 등장해요!':key==='famousSign'?'간판 교체 완료 · 매출 10% 보너스!':info.name+' 적용!';
+ toast('🎉 '+effect,2100);return true
 }
 
 function renderHelperButton(){
@@ -1750,7 +1781,7 @@ function updateGame(dt){
 function endShift(){
  if(!state.running)return;
  state.running=false;state.phase='ended';restaurant.stopShift();cancelAnimationFrame(state.raf);kitchen.snapshotEquipmentLayout();
- const earned=Math.max(0,Math.round(state.revenue));progress.cash+=earned;progress.shifts+=1;saveProgress();
+ const earned=Math.max(0,Math.round(state.revenue));progress.cash+=earned;progress.shifts+=1;saveProgress();shopRenderSignature='';
  const win=state.revenue>=TARGET_REVENUE;
  els.endTitle.textContent=win?'오늘 목표 달성!':'오늘 영업 종료';
  els.endText.textContent=win?'매출이 금고에 적립됐어요. 장비를 사서 다음 주방 동선을 더 짧게 만들어 보세요.':'번 돈은 그대로 금고에 적립됐어요. 작은 장비부터 사서 다음 영업을 더 편하게 만들어 보세요.';
@@ -1804,6 +1835,10 @@ els.openShop?.addEventListener('click',beginService);
 els.rotate?.addEventListener('click',()=>kitchen.rotateSelectedAutomation());
 els.smartFilter?.addEventListener('click',cycleSmartFilter);
 els.equipmentShop?.addEventListener('click',e=>{const b=e.target.closest('[data-buy]');if(b&&!b.disabled)purchaseEquipment(b.dataset.buy)});
+els.shopTabs?.addEventListener('click',e=>{
+ const b=e.target.closest('[data-shop-category]');if(!b)return;shopCategory=b.dataset.shopCategory||'all';
+ els.shopTabs.querySelectorAll('[data-shop-category]').forEach(x=>x.classList.toggle('active',x===b));shopRenderSignature='';renderEquipmentShop(true)
+});
 els.sound.addEventListener('click',()=>{state.sound=!state.sound;els.sound.textContent=state.sound?'♪':'×';if(state.sound)sfx('collect.coin_pickup',{volume:.12,cooldownMs:50})});
 els.helper?.addEventListener('click',()=>{
  if(!state.helperUnlocked)return;
@@ -1827,4 +1862,4 @@ els.moveControls?.querySelectorAll('[data-move]').forEach(btn=>{
 });
 els.moveControls?.querySelector('[data-interact]')?.addEventListener('click',()=>kitchen.interactNearest());
 
-updateHud();updateDishHud();renderHeldStatus();renderHelperButton();renderSmartFilterButton();renderEconomyProgress();renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();kitchen.update(0);
+kitchen.syncProgressUpgrades();updateHud();updateDishHud();renderHeldStatus();renderHelperButton();renderSmartFilterButton();renderEconomyProgress();renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();kitchen.update(0);
