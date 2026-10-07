@@ -35,19 +35,24 @@ let chrome,ws;
   const userData=fs.mkdtempSync(path.join(os.tmpdir(),'word-siege-chrome-'));
   chrome=cp.spawn(chromePath,[
     '--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage',
-    '--no-first-run','--no-default-browser-check','--remote-debugging-port=9229',
+    '--no-first-run','--no-default-browser-check','--remote-debugging-port=0',
     '--user-data-dir='+userData,'about:blank'
-  ],{stdio:'ignore'});
-  let target;
-  for(let i=0;i<100;i++){
+  ],{stdio:['ignore','ignore','pipe']});
+  let diagnostic='',target;
+  chrome.stderr?.on('data',part=>{diagnostic+=String(part).slice(0,700)});
+  for(let i=0;i<300;i++){
     await pause(100);
-    if(chrome.exitCode!==null)throw new Error('Chrome exited '+chrome.exitCode);
+    if(chrome.exitCode!==null)throw new Error('Chrome exited '+chrome.exitCode+' '+diagnostic.slice(-600));
     try{
-      const res=await fetch('http://127.0.0.1:9229/json/list');
+      const portFile=path.join(userData,'DevToolsActivePort');
+      if(!fs.existsSync(portFile))continue;
+      const dynamicPort=Number(fs.readFileSync(portFile,'utf8').split('\\n')[0]);
+      if(!dynamicPort)continue;
+      const res=await fetch('http://127.0.0.1:'+dynamicPort+'/json/list');
       const all=await res.json();target=all.find(x=>x.type==='page');if(target)break;
     }catch{}
   }
-  if(!target)throw new Error('Chrome DevTools never opened');
+  if(!target)throw new Error('Chrome DevTools never opened '+diagnostic.slice(-700));
   ws=new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((resolve,reject)=>{ws.onopen=resolve;ws.onerror=reject});
   const pending=new Map(),pageErrors=[];let serial=0;
