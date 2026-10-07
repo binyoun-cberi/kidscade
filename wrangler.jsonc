@@ -74,7 +74,8 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "run_worker_first": [
-      "/api/*"
+      "/api/*",
+      "/teacher/character-3d-studio.html"
     ]
   },
   "d1_databases": [
