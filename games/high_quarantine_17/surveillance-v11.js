@@ -252,13 +252,26 @@ function registerGlobalOutbreak(info){
  addCampLog('외곽 격리선 경보 · '+(globalIncident.severity||'감염자 집단')+' 발생');
  renderAll();flashDock('station');
 }
+function fieldResidentSelection(active,liveResidents){
+ const anchors=active.concat(liveResidents.filter(function(r){return r.status==='bitten'}));
+ const score=function(r){
+  const dangerBonus=r.status==='bitten'?-10000:0;
+  if(anchors.length){
+   let d=Infinity;anchors.forEach(function(a){d=Math.min(d,Math.hypot((Number(r.x)||0)-(Number(a.x)||0),(Number(r.y)||0)-(Number(a.y)||0)))});
+   return dangerBonus+d;
+  }
+  return dangerBonus+Math.hypot((Number(r.x)||0)-94,(Number(r.y)||0)-51);
+ };
+ return liveResidents.slice().sort(function(a,b){const d=score(a)-score(b);if(Math.abs(d)>.001)return d;return String(a.id).localeCompare(String(b.id))}).slice(0,12)
+}
 function responsePayload(){
  const active=threats.filter(function(t){return t.phase==='infected'||t.phase==='zombie'});
  const liveResidents=residents.filter(function(r){return r.status!=='lost'&&r.status!=='zombie'});
+ const fieldResidents=fieldResidentSelection(active,liveResidents);
  return{
   name:active.length?active[0].name:'캠프 감염자',
-  threatCount:Math.max(1,active.length),survivorCount:liveResidents.length,
-  residents:liveResidents.map(function(r){return{id:r.id,personId:r.personId||null,name:r.name,role:r.role,status:r.status,sprite:r.sprite,x:r.x,y:r.y,dir:r.dir}}),
+  threatCount:Math.max(1,active.length),survivorCount:fieldResidents.length,totalResidentCount:liveResidents.length,
+  residents:fieldResidents.map(function(r){return{id:r.id,personId:r.personId||null,name:r.name,role:r.role,status:r.status,sprite:r.sprite,x:r.x,y:r.y,dir:r.dir}}),
   threats:active.map(function(t){return{id:t.personId||t.id,personId:t.personId||null,name:t.name,phase:t.phase,sprite:t.sprite,x:t.x,y:t.y,dir:t.dir,source:t.source}})
  };
 }
