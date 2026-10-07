@@ -3,15 +3,16 @@ import * as THREE from '../assets/vendor/three-r160/three.module.js';
 window.__kc3dStudioModuleReady=true;
 
 const ADMIN_KEY_NAME='kc_teacher_admin_key';
-const RIG_VERSION='kidscade-humanoid-v1';
+const RIG_VERSION='kidscade-humanoid-v2';
 const CLIP_NAMES=['IDLE','WALK','RUN','JUMP','ATTACK','HURT','DEAD'];
 const $=id=>document.getElementById(id);
 
 let scene,camera,renderer,controls,characterRoot,skinnedMesh,skeletonHelper,mixer;
 let clips=[],activeAction=null,activeClip='IDLE',lastTime=performance.now();
+let bodyStyle='chibi2',activeView='threeQuarter',currentDim=null;
 
 const params={
-  height:1.35,
+  height:1.25,
   headScale:1,
   shoulderScale:1,
   limbScale:1,
@@ -23,11 +24,19 @@ const params={
   eyeColor:'#1f2937'
 };
 
-const PRESETS={
-  kid:{height:1.35,headScale:1.02,shoulderScale:.94,limbScale:1.02,topColor:'#5b7cfa',bottomColor:'#34495e'},
-  chibi:{height:1.22,headScale:1.28,shoulderScale:.88,limbScale:1.08,topColor:'#ef6f9b',bottomColor:'#4d5f82'},
-  hero:{height:1.48,headScale:.90,shoulderScale:1.15,limbScale:1.08,topColor:'#2f8f6b',bottomColor:'#5a4538'},
-  slim:{height:1.52,headScale:.92,shoulderScale:.96,limbScale:.78,topColor:'#7758c8',bottomColor:'#30364a'}
+const BODY_STYLES={
+  legacy:{
+    label:'V1 기존 마네킹',
+    defaults:{height:1.35,headScale:1,shoulderScale:1,limbScale:1}
+  },
+  chibi2:{
+    label:'V2 SD 기본형',
+    defaults:{height:1.25,headScale:1,shoulderScale:1,limbScale:1}
+  },
+  action2:{
+    label:'V2 액션 과장형',
+    defaults:{height:1.28,headScale:.96,shoulderScale:1.06,limbScale:1.12}
+  }
 };
 
 function setStatus(text,error=false){
@@ -297,6 +306,82 @@ function cylinderPart(radius,height,center,boneIndex){
   const g=new THREE.CylinderGeometry(radius,radius*.97,height,8,1,false);
   const m=new THREE.Matrix4().makeTranslation(center[0],center[1],center[2]);
   return rigidGeometry(g,m,boneIndex);
+}
+
+function capsulePart(radius,height,center,boneIndex,scaleX=1,scaleZ=1){
+  const straight=Math.max(.001,height-radius*2);
+  const g=new THREE.CapsuleGeometry(radius,straight,3,8);
+  const m=new THREE.Matrix4().compose(
+    new THREE.Vector3(center[0],center[1],center[2]),
+    new THREE.Quaternion(),
+    new THREE.Vector3(scaleX,1,scaleZ)
+  );
+  return rigidGeometry(g,m,boneIndex);
+}
+
+function taperedPart(topRadius,bottomRadius,height,center,boneIndex,depthScale=.58){
+  const g=new THREE.CylinderGeometry(topRadius,bottomRadius,height,8,1,false);
+  const m=new THREE.Matrix4().compose(
+    new THREE.Vector3(center[0],center[1],center[2]),
+    new THREE.Quaternion(),
+    new THREE.Vector3(1,1,depthScale)
+  );
+  return rigidGeometry(g,m,boneIndex);
+}
+
+function bodyDimensions(style,H){
+  if(style==='legacy'){
+    return {
+      style,H,
+      ankleY:.065*H,kneeY:.292*H,hipY:.515*H,spineY:.615*H,chestY:.715*H,
+      shoulderY:.755*H,neckY:.835*H,headBoneY:.855*H,headCenterY:.925*H,
+      headRX:.092*H*params.headScale,headRY:.075*H*params.headScale,headRZ:.088*H*params.headScale,
+      shoulderX:.145*H*params.shoulderScale,hipX:.075*H,
+      upperArmLen:.185*H,lowerArmLen:.17*H,
+      upperLegLen:(.515-.292)*H,lowerLegLen:(.292-.065)*H,
+      limb:.055*H*params.limbScale,
+      handX:.032*H,handY:.038*H,handZ:.032*H,
+      footX:.070*H,footY:.055*H,footZ:.135*H,
+      eyeSize:.012*H,torsoH:.23*H,torsoCenterY:.695*H,torsoTop:.145*H,torsoBottom:.13*H,
+      rounded:false
+    };
+  }
+
+  const action=style==='action2';
+  return {
+    style,H,
+    ankleY:.078*H,
+    kneeY:.247*H,
+    hipY:.418*H,
+    spineY:.49*H,
+    chestY:.558*H,
+    shoulderY:.625*H,
+    neckY:.648*H,
+    headBoneY:.665*H,
+    headCenterY:.828*H,
+    headRX:(action?.175:.184)*H*params.headScale,
+    headRY:(action?.164:.172)*H*params.headScale,
+    headRZ:(action?.158:.166)*H*params.headScale,
+    shoulderX:(action?.176:.158)*H*params.shoulderScale,
+    hipX:(action?.082:.074)*H,
+    upperArmLen:(action?.137:.132)*H,
+    lowerArmLen:(action?.126:.122)*H,
+    upperLegLen:(.418-.247)*H,
+    lowerLegLen:(.247-.078)*H,
+    limb:(action?.078:.068)*H*params.limbScale,
+    handX:(action?.072:.056)*H,
+    handY:(action?.068:.058)*H,
+    handZ:(action?.064:.053)*H,
+    footX:(action?.116:.098)*H,
+    footY:(action?.078:.067)*H,
+    footZ:(action?.170:.148)*H,
+    eyeSize:(action?.020:.022)*H,
+    torsoH:(action?.205:.19)*H,
+    torsoCenterY:(action?.53:.535)*H,
+    torsoTop:(action?.17:.157)*H*params.shoulderScale,
+    torsoBottom:(action?.135:.128)*H,
+    rounded:true
+  };
 }
 
 function q(x=0,y=0,z=0){
