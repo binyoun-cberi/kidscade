@@ -1,4 +1,4 @@
-/* Kidscade Zombie vs Divisor Turrets 3D - fixed top-down rebuild v14 */
+/* Kidscade Zombie vs Divisor Turrets 3D - sci-fi arsenal redesign v15 */
 (function(){
 'use strict';
 
@@ -10,11 +10,11 @@ const canvas=$('world'),assetStatus=$('assetStatus');
 const GRID_W=16,GRID_H=10,CELL=1.05;
 const GAME_SPEEDS=[1,2,4,8,16],MAX_SIM_STEP=.05;
 const TOWERS={
-  SUB1:{id:'SUB1',name:'−1 교정기',short:'−1',cost:90,unlock:3,range:2.05,cool:.62,turnSpeed:5.2,projectileSpeed:7.0,color:'#fb7185',models:['subA','subB'],op:'-1'},
-  DIV2:{id:'DIV2',name:'÷2 속사 터렛',short:'÷2',cost:145,unlock:1,range:2.3,cool:.68,turnSpeed:7.2,projectileSpeed:10.5,color:'#38bdf8',models:['div2A','div2B'],op:'÷2',value:2},
-  DIV3:{id:'DIV3',name:'÷3 기어 캐논',short:'÷3',cost:205,unlock:2,range:2.35,cool:.82,turnSpeed:4.4,projectileSpeed:6.4,color:'#22c55e',models:['div3A','div3B'],op:'÷3',value:3},
-  ADD1:{id:'ADD1',name:'+1 변환기',short:'+1',cost:115,unlock:3,range:2.0,cool:.9,turnSpeed:5.6,projectileSpeed:7.4,color:'#fbbf24',models:['addA','addB'],op:'+1'},
-  DIV5:{id:'DIV5',name:'÷5 중포 터렛',short:'÷5',cost:295,unlock:4,range:2.5,cool:1.0,turnSpeed:3.6,projectileSpeed:5.2,color:'#a78bfa',models:['div5A','div5B'],op:'÷5',value:5}
+  SUB1:{id:'SUB1',name:'−1 EMP 교정기',short:'−1',cost:90,unlock:3,range:2.05,cool:.62,turnSpeed:5.2,projectileSpeed:7.0,color:'#fb7185',models:['emp'],visualSteps:[0],visualNames:['EMP FIELD'],op:'-1',projectile:'emp'},
+  DIV2:{id:'DIV2',name:'÷2 개틀링',short:'÷2',cost:145,unlock:1,range:2.3,cool:.68,turnSpeed:7.2,projectileSpeed:10.5,color:'#38bdf8',models:['gatling','flame'],visualSteps:[0,3],visualNames:['GATLING','FLAME ARRAY'],op:'÷2',value:2,projectile:'tracer'},
+  DIV3:{id:'DIV3',name:'÷3 하이브 캐논',short:'÷3',cost:205,unlock:2,range:2.35,cool:.82,turnSpeed:4.4,projectileSpeed:6.4,color:'#22c55e',models:['hive','lightning'],visualSteps:[0,3],visualNames:['HIVE','LIGHTNING'],op:'÷3',value:3,projectile:'plasma'},
+  ADD1:{id:'ADD1',name:'+1 실드 변환기',short:'+1',cost:115,unlock:3,range:2.0,cool:.9,turnSpeed:5.6,projectileSpeed:7.4,color:'#fbbf24',models:['shield'],visualSteps:[0],visualNames:['SHIELD FIELD'],op:'+1',projectile:'boost'},
+  DIV5:{id:'DIV5',name:'÷5 중화기',short:'÷5',cost:295,unlock:4,range:2.5,cool:1.0,turnSpeed:3.6,projectileSpeed:5.2,color:'#a78bfa',models:['gunCannon','missile','plasma','railGun'],visualSteps:[0,1,2,3],visualNames:['CANNON','MISSILE','PLASMA','RAIL GUN'],op:'÷5',value:5,projectile:'heavy'}
 };
 const WAVES=[
   {nums:[2,4,8,16],count:7,mission:'첫 감염체는 모두 2의 거듭제곱입니다. ÷2만으로 숫자를 1까지 분해하세요.'},
@@ -40,16 +40,16 @@ const modelUrl=p=>new URL(p,MODEL_ROOT).href;
 const gameUrl=p=>new URL(p,GAME_ROOT).href;
 const BGM_URL=new URL('../../assets/audio/incoming/newmusical/sergequadrado-cool-hip-hop-loop-275527.mp3',runtimeBase).href;
 const MODELS={
-  subA:gameUrl('turrets/FBX/Gun_2.fbx'),
-  subB:gameUrl('turrets/FBX/Gun_9.fbx'),
-  div2A:gameUrl('turrets/FBX/Gun_4.fbx'),
-  div2B:gameUrl('turrets/FBX/Gun_10.fbx'),
-  div3A:gameUrl('turrets/FBX/GearCannon_1.fbx'),
-  div3B:gameUrl('turrets/FBX/Laser_2.fbx'),
-  addA:gameUrl('turrets/FBX/Teleporter2.fbx'),
-  addB:gameUrl('turrets/FBX/Teleporter5.fbx'),
-  div5A:gameUrl('turrets/FBX/Cannon_3.fbx'),
-  div5B:gameUrl('turrets/FBX/Cannon_7.fbx'),
+  emp:modelUrl('weapons/scifi-turrets/emp-turret.glb'),
+  flame:modelUrl('weapons/scifi-turrets/flamethrower-turret.glb'),
+  gatling:modelUrl('weapons/scifi-turrets/gatelng-gun-turret.glb'),
+  gunCannon:modelUrl('weapons/scifi-turrets/gun-cannon-turret.glb'),
+  hive:modelUrl('weapons/scifi-turrets/hive-turret.glb'),
+  lightning:modelUrl('weapons/scifi-turrets/lighting-turret.glb'),
+  missile:modelUrl('weapons/scifi-turrets/missile-turret.glb'),
+  plasma:modelUrl('weapons/scifi-turrets/plasma-turret.glb'),
+  railGun:modelUrl('weapons/scifi-turrets/rail-gun-turret.glb'),
+  shield:modelUrl('weapons/scifi-turrets/shield-turret.glb'),
   zombieClassic:gameUrl('zombie/FBX/Zombie.fbx'),
   zombieSmooth:gameUrl('zombie/FBX/ZombieSmooth.fbx'),
   civilianMale:gameUrl('npcs/glTF/Casual_Male.gltf'),
@@ -63,6 +63,13 @@ const MODELS={
   building5:gameUrl('buildings/Models with Materials/FBX/4Story_Mat.fbx'),
   building6:gameUrl('buildings/Models with Materials/FBX/6Story_Stack_Mat.fbx'),
   cityLight:modelUrl('city/kenney-city-kit-roads/light-square.glb'),
+  trafficLight:modelUrl('city/kenney-city-kit-roads/traffic-light.glb'),
+  cone:modelUrl('city/kenney-city-kit-roads/construction-cone.glb'),
+  barrier:modelUrl('city/kenney-city-kit-roads/construction-barrier.glb'),
+  fence:modelUrl('city/kenney-city-kit-roads/construction-fence.glb'),
+  dumpster:modelUrl('city/kenney-city-kit-roads/dumpster.glb'),
+  ambulance:modelUrl('vehicles/kenney-car-kit/ambulance.glb'),
+  hydrant:modelUrl('city/poly-pizza-city-pack/fire-hydrant.glb'),
   treeDefault:modelUrl('nature/kenney-nature-kit/tree-default.glb'),
   treeDetailed:modelUrl('nature/kenney-nature-kit/tree-detailed.glb'),
   treeOak:modelUrl('nature/kenney-nature-kit/tree-oak.glb'),
@@ -199,15 +206,15 @@ function opSprite(text,color){return textSprite(text,'',color,.54)}
 
 function initThree(){
   scene=new THREE.Scene();
-  scene.background=new THREE.Color(0x71808d);
-  scene.fog=new THREE.Fog(0x7f8b93,20,55);
+  scene.background=new THREE.Color(0x637781);
+  scene.fog=new THREE.Fog(0x6f8188,19,48);
   camera=new THREE.OrthographicCamera(-1,1,1,-1,.1,80);
   renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));
   renderer.setSize(innerWidth,innerHeight,false);
   renderer.outputColorSpace=THREE.SRGBColorSpace;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-  renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.04;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;
 
   scene.add(new THREE.HemisphereLight(0xdde8ef,0x303a36,1.85));
   const sun=new THREE.DirectionalLight(0xffddb8,2.45);sun.position.set(-10,18,9);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-16;sun.shadow.camera.right=16;sun.shadow.camera.top=16;sun.shadow.camera.bottom=-16;scene.add(sun);
@@ -368,23 +375,35 @@ function rebuildSkyWorld(){
   const outerTrees=[[-12,-8,'treeDetailed'],[-9,-10,'treeOak'],[-5,-10.6,'treeDefault'],[5,-10.5,'treeOak'],[9,-9.4,'treeDetailed'],[12,-7.5,'treeDefault'],[-13,2,'treeOak'],[13,1,'treeDetailed'],[-12,8,'treeDefault'],[-7,10,'treeOak'],[7,10,'treeDetailed'],[12,8,'treeDefault']];
   for(const [x,z,key] of outerTrees){const t=cloneModel(key,.95);if(t){t.position.set(x,-.34,z);t.rotation.y=(x-z)*.17;skyGroup.add(t)}}
 
+  const placeStreet=(key,target,x,z,rot=0)=>{
+    const prop=cloneModel(key,target);if(!prop)return;prop.position.set(x,-.34,z);prop.rotation.y=rot;skyGroup.add(prop)
+  };
+  placeStreet('ambulance',2.15,9.0,4.55,-Math.PI/2);
+  placeStreet('trafficLight',1.25,-9.05,-4.65,Math.PI/2);
+  placeStreet('trafficLight',1.25,9.05,-4.65,-Math.PI/2);
+  placeStreet('dumpster',1.18,-9.15,4.65,.15);
+  placeStreet('hydrant',.72,9.18,-2.55,-.2);
+  for(const [x,z,r] of [[-9.05,.1,.2],[-9.1,.72,-.12],[-8.85,1.28,.08]])placeStreet('cone',.42,x,z,r);
+  for(const [x,z,r] of [[8.9,3.0,Math.PI/2],[8.9,4.0,Math.PI/2]])placeStreet('barrier',1.25,x,z,r);
+  for(const z of[2.15,3.15,4.15])placeStreet('fence',1.12,9.45,z,Math.PI/2);
+
   skyGroup.add(makeCloud(-13,10,-10,1.5),makeCloud(9,12,-15,1.25),makeCloud(15,9,4,1.05),makeCloud(-14,11,9,1.18));
 }
 
 
 async function loadAssets(){
   if(assetsLoading)return;assetsLoading=true;assetStatus.textContent='전투 모델 불러오는 중…';
-  const priority=['subA','div2A','div3A','addA','div5A','zombieClassic','zombieSmooth','cityLight','treeDefault','treeDetailed','treeOak','pine','bush','grass','flower'];
+  const priority=['emp','gatling','hive','shield','gunCannon','zombieClassic','zombieSmooth','cityLight','treeDefault','treeDetailed','treeOak','pine','bush','grass','flower'];
   await Promise.allSettled(priority.map(k=>loadModel(k,MODELS[k])));
   rebuildBoardDecor();
   for(const [t,n] of [...towerNodes]){towerGroup.remove(n);towerNodes.delete(t)}
   for(const [e,n] of [...enemyNodes]){enemyGroup.remove(n);enemyNodes.delete(e);enemyMixers.get(e)?.stopAllAction();enemyMixers.delete(e)}
-  assetStatus.textContent='전투 모델 준비 완료 · 도시 불러오는 중…';
+  assetStatus.textContent='기본 포탑 준비 완료 · 진화형 무기와 도시 소품 불러오는 중…';
   const rest=Object.keys(MODELS).filter(k=>!priority.includes(k));
   await Promise.allSettled(rest.map(k=>loadModel(k,MODELS[k])));
   rebuildBoardDecor();rebuildSkyWorld();
   for(const [t,n] of [...towerNodes]){towerGroup.remove(n);towerNodes.delete(t)}
-  assetStatus.textContent='좀비 도시 에셋 준비 완료';
+  assetStatus.textContent='SF 포탑 10종 · 감염 도시 에셋 준비 완료';
   setTimeout(()=>assetStatus.style.opacity='.35',1800)
 }
 
@@ -408,12 +427,28 @@ function refreshEnemyLabel(e,node){
   const tag=isPrime(e.hp)?'소수 감염':e.kind==='brute'?'대형 감염':'';
   const label=textSprite(e.hp,tag,enemyColor(e.hp),e.kind==='brute'?.82:.72);label.position.set(e.labelSide*.06,.92,-.56-e.labelLane*.11);node.add(label);node.userData.label=label;node.userData.hp=e.hp;node.userData.halo.material.color.setHex(colorHex(enemyColor(e.hp)))
 }
-function towerVisualKey(t){const def=TOWERS[t.id],i=t.level>=2?1:0;return def.models[Math.min(i,def.models.length-1)]}
+function towerVisualIndex(t){
+  const def=TOWERS[t.id],steps=def.visualSteps||def.models.map((_,i)=>i);let index=0;
+  for(let i=0;i<steps.length;i++)if(t.level>=steps[i])index=i;
+  return Math.min(index,def.models.length-1)
+}
+function towerVisualKey(t){const def=TOWERS[t.id];return def.models[towerVisualIndex(t)]}
+function towerVisualName(t){const def=TOWERS[t.id],i=towerVisualIndex(t);return def.visualNames?.[i]||String(def.models[i]||'TURRET').toUpperCase()}
+function nextTowerEvolution(t){
+  const def=TOWERS[t.id],current=towerVisualIndex(t),steps=def.visualSteps||[];
+  for(let i=current+1;i<steps.length;i++)if(steps[i]===t.level+1)return def.visualNames?.[i]||def.models[i];
+  return ''
+}
 function makeTowerNode(t){
-  const root=new THREE.Group(),def=TOWERS[t.id],base=new THREE.Mesh(new THREE.CylinderGeometry(.42,.52,.2,10),new THREE.MeshStandardMaterial({color:0x555f63,roughness:.62,metalness:.14}));base.position.y=.11;root.add(base);
-  const rr=ring(.48,colorHex(def.color),.65);rr.position.y=.21;root.add(rr);
-  const visual=towerVisualKey(t),model=cloneModel(visual,1.18);if(model){model.position.y=.21;root.add(model);root.userData.model=model}else{const f=box(.46,.58,.46,colorHex(def.color),.4);f.position.y=.51;root.add(f)}
-  const label=opSprite(def.short,def.color);label.position.y=1.18;root.add(label);root.userData.visual=visual;towerGroup.add(root);towerNodes.set(t,root);return root
+  const root=new THREE.Group(),def=TOWERS[t.id],base=new THREE.Mesh(new THREE.CylinderGeometry(.43,.54,.2,12),new THREE.MeshStandardMaterial({color:0x34444b,roughness:.5,metalness:.22}));base.position.y=.11;root.add(base);
+  const rr=ring(.49,colorHex(def.color),.7);rr.position.y=.215;root.add(rr);
+  const visual=towerVisualKey(t),model=cloneModel(visual,1.15);if(model){model.position.y=.21;root.add(model);root.userData.model=model}else{const f=box(.46,.58,.46,colorHex(def.color),.4);f.position.y=.51;root.add(f)}
+  const levelCount=Math.min(5,t.level+1);
+  for(let i=0;i<levelCount;i++){
+    const a=-Math.PI*.72+i*(Math.PI*1.44/4),lamp=new THREE.Mesh(new THREE.SphereGeometry(.035,7,6),new THREE.MeshStandardMaterial({color:colorHex(def.color),emissive:colorHex(def.color),emissiveIntensity:1.5,roughness:.2}));
+    lamp.position.set(Math.cos(a)*.37,.245,Math.sin(a)*.37);root.add(lamp)
+  }
+  const label=opSprite(def.short,def.color);label.position.y=1.2;root.add(label);root.userData.visual=visual;root.userData.weaponName=towerVisualName(t);towerGroup.add(root);towerNodes.set(t,root);return root
 }
 function enemyColor(n){if(isPrime(n))return '#fb7185';if(n%5===0)return '#a78bfa';if(n%3===0)return '#22c55e';if(n%2===0)return '#38bdf8';return '#e2e8f0'}
 
@@ -496,12 +531,23 @@ function removeProjectile(p){
   if(p.mesh?.parent)fxGroup.remove(p.mesh);
   p.mesh?.geometry?.dispose();p.mesh?.material?.dispose()
 }
+function projectileMesh(def,id){
+  const color=colorHex(def.color),style=def.projectile||'orb',mat=new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:1.15,roughness:.2,metalness:.08});
+  if(style==='heavy')return new THREE.Mesh(new THREE.OctahedronGeometry(.105,0),mat);
+  if(style==='plasma')return new THREE.Mesh(new THREE.IcosahedronGeometry(.082,1),mat);
+  if(style==='tracer')return new THREE.Mesh(new THREE.SphereGeometry(.052,8,8),mat);
+  if(style==='emp')return new THREE.Mesh(new THREE.TorusGeometry(.075,.024,7,18),mat);
+  if(style==='boost')return new THREE.Mesh(new THREE.OctahedronGeometry(.07,0),mat);
+  return new THREE.Mesh(new THREE.SphereGeometry(.06,8,8),mat)
+}
+function muzzleSparks(pos,color){
+  for(let i=0;i<3;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.026,5,5),new THREE.MeshBasicMaterial({color:colorHex(color)}));m.position.copy(pos);fxGroup.add(m);state.particles.push({mesh:m,vel:new THREE.Vector3((Math.random()-.5)*.8,.45+Math.random()*.55,(Math.random()-.5)*.8),life:.12+Math.random()*.08})}
+}
 function launchProjectile(t,e){
-  const def=TOWERS[t.id],start=cellWorld(t.x,t.y,.72),size=t.id==='DIV5'?.09:t.id==='DIV3'?.075:t.id==='DIV2'?.05:.06;
-  const mesh=new THREE.Mesh(new THREE.SphereGeometry(size,8,8),new THREE.MeshBasicMaterial({color:colorHex(def.color)}));
+  const def=TOWERS[t.id],start=cellWorld(t.x,t.y,.72),mesh=projectileMesh(def,t.id);
   mesh.position.copy(start);fxGroup.add(mesh);
   state.projectiles.push({mesh,target:e,tower:t,speed:def.projectileSpeed||7,life:1.4,color:def.color,id:t.id});
-  t.recoil=1;sfx.shoot()
+  muzzleSparks(start,def.color);t.recoil=1;sfx.shoot()
 }
 function updateProjectiles(sim){
   for(let i=state.projectiles.length-1;i>=0;i--){
@@ -536,16 +582,16 @@ function hitBurst(pos,color){for(let i=0;i<4;i++){const m=new THREE.Mesh(new THR
 function burst(pos,color){impactShake=Math.max(impactShake,.22);for(let i=0;i<10;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.045,6,6),new THREE.MeshBasicMaterial({color:colorHex(color)}));m.position.copy(pos).add(new THREE.Vector3(0,.45,0));fxGroup.add(m);state.particles.push({mesh:m,vel:new THREE.Vector3((Math.random()-.5)*2.4,1+Math.random()*2,(Math.random()-.5)*2.4),life:.4+Math.random()*.35})}}
 
 function startWave(){
-  if(state.waveActive||state.gameOver)return;const cfg=waveConfig();state.waveActive=true;state.spawnQueue=[];for(let i=0;i<cfg.count;i++)state.spawnQueue.push(cfg.nums[i%cfg.nums.length]);state.spawnTimer=.35;sfx.click();$('startWaveBtn').disabled=true;syncHUD()
+  if(state.waveActive||state.gameOver)return;const cfg=waveConfig();state.waveActive=true;state.spawnQueue=[];for(let i=0;i<cfg.count;i++)state.spawnQueue.push(cfg.nums[i%cfg.nums.length]);state.spawnTimer=.35;document.body.classList.add('wave-live');sfx.click();$('startWaveBtn').disabled=true;syncHUD()
 }
 function waveClear(){
-  state.waveActive=false;const bonus=70+state.wave*18;state.money+=bonus;state.wave++;if(state.wave>state.best){state.best=state.wave;try{localStorage.setItem('numTD_best',String(state.best))}catch(_){}}sfx.clear();toast('감염 웨이브 정화 완료! +'+bonus+' 자원');syncHUD();syncDeck();$('startWaveBtn').disabled=false
+  state.waveActive=false;document.body.classList.remove('wave-live');const bonus=70+state.wave*18;state.money+=bonus;state.wave++;if(state.wave>state.best){state.best=state.wave;try{localStorage.setItem('numTD_best',String(state.best))}catch(_){}}sfx.clear();toast('감염 웨이브 정화 완료! +'+bonus+' 자원');syncHUD();syncDeck();$('startWaveBtn').disabled=false
 }
 function loseCore(e){
   const dmg=Math.max(1,Math.ceil(e.hp/5));state.lives-=dmg;const n=enemyNodes.get(e);if(n){enemyGroup.remove(n);enemyNodes.delete(e)}enemyMixers.get(e)?.stopAllAction();enemyMixers.delete(e);state.enemies=state.enemies.filter(x=>x!==e);core.userData.orb.scale.setScalar(1.3);setTimeout(()=>core.userData.orb.scale.setScalar(1),150);sfx.hit();if(state.lives<=0)gameOver();syncHUD()
 }
 function gameOver(){
-  state.gameOver=true;state.waveActive=false;state.paused=true;syncBgm();const result='도달 웨이브 '+state.wave+' · 정화 '+state.kills+'마리';$('resultText').textContent=result;$('gameOverScreen').classList.add('show')
+  state.gameOver=true;state.waveActive=false;document.body.classList.remove('wave-live');state.paused=true;syncBgm();const result='도달 웨이브 '+state.wave+' · 정화 '+state.kills+'마리';$('resultText').textContent=result;$('gameOverScreen').classList.add('show')
 }
 
 function update(dt){
@@ -609,10 +655,10 @@ function loop(){
 
 function syncHUD(){
   $('waveValue').textContent=state.wave;$('moneyValue').textContent=state.money;$('coreValue').textContent=state.lives+'/'+state.maxLives;$('killValue').textContent=state.kills;
-  const cfg=waveConfig();$('enemyPreview').textContent=cfg.nums.join(' · ');$('enemyCount').textContent=cfg.count+' 감염체';$('waveMission').textContent=cfg.mission;$('missionLine').textContent=state.waveActive?'좀비 접근 중 · 약수 연쇄를 확인하세요':'터렛 배치 → 숫자 분해 → 대피소 방어';$('startWaveBtn').disabled=state.waveActive||state.gameOver;$('startWaveBtn').textContent=state.waveActive?'전투 진행 중':'▶ WAVE '+state.wave+' 시작'
+  const cfg=waveConfig(),threat=Math.min(5,1+Math.floor((state.wave-1)/2));$('enemyPreview').textContent=cfg.nums.join(' · ');$('enemyCount').textContent=cfg.count+' 감염체';$('waveMission').textContent=cfg.mission;$('threatLevel').textContent='위협도 '+threat;$('missionLine').textContent=state.waveActive?'감염체 접근 중 · FACTOR CHAIN 가동':'포탑 배치 → 숫자 분해 → 대피소 방어';$('startWaveBtn').disabled=state.waveActive||state.gameOver;$('startWaveBtn').textContent=state.waveActive?'● 방어 작전 진행 중':'▶ WAVE '+state.wave+' 시작'
 }
 function syncDeck(){
-  document.querySelectorAll('.towerCard[data-tower]').forEach(btn=>{const d=TOWERS[btn.dataset.tower],locked=state.wave<d.unlock;btn.classList.toggle('locked',locked);btn.classList.toggle('selected',selectedTower===d.id);btn.disabled=locked;const cost=btn.querySelector('small');if(cost)cost.textContent=d.cost});
+  document.querySelectorAll('.towerCard[data-tower]').forEach(btn=>{const d=TOWERS[btn.dataset.tower],locked=state.wave<d.unlock;btn.classList.toggle('locked',locked);btn.classList.toggle('selected',selectedTower===d.id);btn.disabled=locked;const cost=btn.querySelector('.costValue');if(cost)cost.textContent=d.cost});
   $('autoBtn').style.display=(state.wave===1&&!state.autoUsed&&!state.waveActive)?'block':'none';
   const hint=$('buildHint');
   if(hint){
@@ -623,7 +669,9 @@ function syncDeck(){
   applyBuildMode(Boolean(selectedTower))
 }
 function syncSelectedPanel(){
-  const p=$('selectedPanel');if(!selectedBuilt){p.classList.add('hidden');return}const d=TOWERS[selectedBuilt.id];p.classList.remove('hidden');$('selectedType').textContent=d.short+' 포탑';$('selectedName').textContent=d.name;$('selectedLevel').textContent='Lv.'+(selectedBuilt.level+1);$('upgradeBtn').textContent='강화 '+upgradeCost(selectedBuilt);$('sellBtn').textContent='판매 '+sellValue(selectedBuilt)
+  const p=$('selectedPanel');if(!selectedBuilt){p.classList.add('hidden');return}const d=TOWERS[selectedBuilt.id],next=nextTowerEvolution(selectedBuilt);
+  p.classList.remove('hidden');$('selectedType').textContent=d.short+' 포탑';$('selectedName').textContent=d.name;$('selectedLevel').textContent='Lv.'+(selectedBuilt.level+1);$('selectedWeapon').textContent=towerVisualName(selectedBuilt);
+  $('upgradeBtn').textContent=selectedBuilt.level>=4?'최대 강화':('강화 '+upgradeCost(selectedBuilt)+(next?' → '+next:''));$('sellBtn').textContent='판매 '+sellValue(selectedBuilt)
 }
 function feed(text,color){const wrap=$('calcFeed'),el=document.createElement('div');el.className='calcItem';el.textContent=text;el.style.borderColor=color;wrap.prepend(el);while(wrap.children.length>4)wrap.lastChild.remove();setTimeout(()=>el.remove(),900)}
 function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),1200)}
@@ -634,7 +682,7 @@ function resetGame(){
   for(const n of towerNodes.values())towerGroup.remove(n);for(const n of enemyNodes.values())enemyGroup.remove(n);for(const m of enemyMixers.values())m.stopAllAction();towerNodes.clear();enemyNodes.clear();enemyMixers.clear();
   for(const child of [...fxGroup.children]){fxGroup.remove(child);child.geometry?.dispose();child.material?.dispose()}
   for(const child of [...ui3dGroup.children]){if(child===hoverTile||child===rangeRing)continue;ui3dGroup.remove(child);child.material?.map?.dispose();child.material?.dispose()}
-  state.wave=1;state.money=520;state.lives=20;state.kills=0;state.towers=[];state.enemies=[];state.spawnQueue=[];state.spawnTimer=0;state.waveActive=false;state.paused=false;state.speed=1;state.gameOver=false;state.autoUsed=false;state.residualHintShown=false;state.beams=[];state.projectiles=[];state.texts=[];state.particles=[];selectedTower=null;selectedBuilt=null;hoverCell=null;hoverTile.visible=false;rangeRing.visible=false;for(const [key] of decorCells){const [x,y]=key.split(',').map(Number);setDecorBuilt(x,y,false)}applyBuildMode(false);syncHUD();syncDeck();syncSelectedPanel();setGameSpeed(1);$('pauseBtn').textContent='⏸';syncBgm()
+  document.body.classList.remove('wave-live');state.wave=1;state.money=520;state.lives=20;state.kills=0;state.towers=[];state.enemies=[];state.spawnQueue=[];state.spawnTimer=0;state.waveActive=false;state.paused=false;state.speed=1;state.gameOver=false;state.autoUsed=false;state.residualHintShown=false;state.beams=[];state.projectiles=[];state.texts=[];state.particles=[];selectedTower=null;selectedBuilt=null;hoverCell=null;hoverTile.visible=false;rangeRing.visible=false;for(const [key] of decorCells){const [x,y]=key.split(',').map(Number);setDecorBuilt(x,y,false)}applyBuildMode(false);syncHUD();syncDeck();syncSelectedPanel();setGameSpeed(1);$('pauseBtn').textContent='⏸';syncBgm()
 }
 
 document.querySelectorAll('.towerCard[data-tower]').forEach(btn=>btn.addEventListener('click',()=>{initAudio();const d=TOWERS[btn.dataset.tower];if(state.wave<d.unlock)return;selectedTower=selectedTower===d.id?null:d.id;selectedBuilt=null;sfx.click();syncDeck();syncSelectedPanel();syncSelection()}));
