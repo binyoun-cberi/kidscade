@@ -88,6 +88,9 @@ function blocked(e){
 function blockedAt(e,x,y){
  const ox=e.x,oy=e.y;e.x=x;e.y=y;const hit=blocked(e);e.x=ox;e.y=oy;return hit
 }
+function pointBlocked(x,y,r=12){
+ return state.obstacles.some(o=>rectHitCircle(o,{x,y,r},0))
+}
 function moveEntity(e,dx,dy){
  const ox=e.x,oy=e.y,nx=clamp(ox+dx,e.r+9,W-e.r-9),ny=clamp(oy+dy,e.r+9,H-e.r-9);
  if(!blockedAt(e,nx,ny)){e.x=nx;e.y=ny;return Math.hypot(e.x-ox,e.y-oy)}
@@ -95,14 +98,44 @@ function moveEntity(e,dx,dy){
  if(!blockedAt(e,e.x,ny))e.y=ny;
  return Math.hypot(e.x-ox,e.y-oy)
 }
+function segmentBlockedFor(e,x1,y1,x2,y2){
+ const pad=(e?.r||10)+2;
+ return state.obstacles.some(o=>segmentHitsRect(x1,y1,x2,y2,o,pad))
+}
+function fieldWaypoint(e,tx,ty){
+ if(!segmentBlockedFor(e,e.x,e.y,tx,ty)){e._routeHint=null;e._routeKey='';return{x:tx,y:ty}}
+ const step=24,r=e.r||10,minX=r+10,maxX=W-r-10,minY=r+10,maxY=H-r-10;
+ const keyTarget=Math.round(tx/step)+','+Math.round(ty/step),hint=e._routeHint;
+ if(hint&&e._routeKey===keyTarget&&Math.hypot(e.x-hint.x,e.y-hint.y)>8&&!pointBlocked(hint.x,hint.y,r))return hint;
+ const cols=Math.floor((maxX-minX)/step)+1,rows=Math.floor((maxY-minY)/step)+1;
+ const gx=x=>Math.round((clamp(x,minX,maxX)-minX)/step),gy=y=>Math.round((clamp(y,minY,maxY)-minY)/step);
+ const px=x=>minX+x*step,py=y=>minY+y*step,cellKey=(x,y)=>y*cols+x;
+ const free=(x,y)=>x>=0&&y>=0&&x<cols&&y<rows&&!pointBlocked(px(x),py(y),r);
+ const nearestFree=(cell,wx,wy)=>{
+  if(free(cell[0],cell[1]))return cell;
+  let best=null,bd=Infinity;
+  for(let y=0;y<rows;y++)for(let x=0;x<cols;x++)if(free(x,y)){const d=Math.hypot(px(x)-wx,py(y)-wy);if(d<bd){bd=d;best=[x,y]}}
+  return best||cell
+ };
+ const start=nearestFree([gx(e.x),gy(e.y)],e.x,e.y),goal=nearestFree([gx(tx),gy(ty)],tx,ty);
+ const queue=[start],prev=new Map([[cellKey(start[0],start[1]),null]]),dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+ for(let qi=0;qi<queue.length;qi++){
+  const cur=queue[qi];if(cur[0]===goal[0]&&cur[1]===goal[1])break;
+  for(const d of dirs){const nx=cur[0]+d[0],ny=cur[1]+d[1],k=cellKey(nx,ny);if(!free(nx,ny)||prev.has(k))continue;prev.set(k,cur);queue.push([nx,ny])}
+ }
+ if(!prev.has(cellKey(goal[0],goal[1])))return{x:tx,y:ty};
+ let cur=goal,parent=prev.get(cellKey(cur[0],cur[1]));
+ while(parent&&!(parent[0]===start[0]&&parent[1]===start[1])){cur=parent;parent=prev.get(cellKey(cur[0],cur[1]))}
+ const out={x:px(cur[0]),y:py(cur[1])};e._routeHint=out;e._routeKey=keyTarget;return out
+}
 function moveTowardSmart(e,tx,ty,speed,dt){
- const dx=tx-e.x,dy=ty-e.y,d=Math.hypot(dx,dy);if(d<.1)return 0;
+ const target=fieldWaypoint(e,tx,ty),dx=target.x-e.x,dy=target.y-e.y,d=Math.hypot(dx,dy);if(d<.1){e._routeHint=null;return 0}
  const step=Math.min(d,speed*dt),base=Math.atan2(dy,dx),offsets=[0,.42,-.42,.82,-.82,1.18,-1.18,1.57,-1.57];
  let best=null,bestD=Infinity;
  for(const off of offsets){
   const nx=clamp(e.x+Math.cos(base+off)*step,e.r+9,W-e.r-9),ny=clamp(e.y+Math.sin(base+off)*step,e.r+9,H-e.r-9);
   if(blockedAt(e,nx,ny))continue;
-  const nd=Math.hypot(tx-nx,ty-ny)+(Math.abs(off)*.12);
+  const nd=Math.hypot(target.x-nx,target.y-ny)+(Math.abs(off)*.12);
   if(nd<bestD){bestD=nd;best={x:nx,y:ny}}
  }
  if(!best)return 0;const moved=Math.hypot(best.x-e.x,best.y-e.y);e.x=best.x;e.y=best.y;return moved
@@ -135,7 +168,7 @@ function makeMap(){
  addObstacle(118,314,92,48,'텐트');addObstacle(230,378,100,48,'텐트');
  addObstacle(770,95,38,82,'금속 쉘터');addObstacle(815,334,72,44,'구급차');
  addObstacle(835,402,88,54,'경찰차');addObstacle(718,454,92,58,'지원 밴');
- addObstacle(820,225,58,54,'폐기물 컨테이너');addObstacle(640,404,64,46,'바리케이드');
+addObstacle(640,404,64,46,'바리케이드');
 }
 function resetMission(mode,payload,done){
  state.active=true;state.started=false;state.mode=mode;state.payload=payload||{};state.done=typeof done==='function'?done:null;
