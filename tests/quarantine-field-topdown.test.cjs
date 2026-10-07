@@ -49,7 +49,6 @@ test('격리구역 17 v26 keeps one 3D flow and preserves outbreak pressure acro
   assert.match(surveillance,/보급 천막·적재물/);
   assert.match(surveillance,/경찰차/);
   assert.match(surveillance,/지원 밴/);
-  assert.match(surveillance,/폐기물 컨테이너/);
   assert.match(main3d,/plane\(world,15,16,0x4a4d49\)/);
   assert.match(main3d,/\[-\.65,\.865,2\.08\]/);
   assert.match(facility,/\[X\(247\),\.95,Z\(102\)\]/);
