@@ -478,7 +478,7 @@ class RamenKitchen3D{
    }
    const item=g.userData.storedItem;if(!item)continue;
    const potIndex=this.findPotInDirection(g,item);
-   if(potIndex!=null&&addToPot(potIndex,item.id)){g.userData.storedItem=null;this.syncCounterVisual(g);sfx('collect.coin_drop',{volume:.06,rate:1.22,cooldownMs:80});continue}
+   if(potIndex!=null&&addToPot(potIndex,item.id,item.amount||1)){g.userData.storedItem=null;this.syncCounterVisual(g);sfx('collect.coin_drop',{volume:.06,rate:1.22,cooldownMs:80});continue}
    const target=this.findStorageInDirection(g,1,'empty');if(target)this.transferAutomationItem(g,target)
   }
  }
@@ -628,7 +628,7 @@ class RamenKitchen3D{
    if(task.phase==='toPot'){
     const p=state.pots[task.potIndex];
     if(this.helperCarry&&this.helperCanDeliver(this.helperCarry.id,p)){
-     const id=this.helperCarry.id;if(addToPot(task.potIndex,id)){this.setHelperCarry(null);sfx('collect.coin_drop',{volume:.07,rate:1.18,cooldownMs:80})}
+     const id=this.helperCarry.id;if(addToPot(task.potIndex,id,this.helperCarry.amount||1)){this.setHelperCarry(null);sfx('collect.coin_drop',{volume:.07,rate:1.18,cooldownMs:80})}
     }else this.returnHelperCarry();
     this.helperTask=null;this.helperThink=.35;return
    }
