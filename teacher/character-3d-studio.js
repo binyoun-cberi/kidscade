@@ -1409,18 +1409,39 @@ async function exportGlb(){
 function wireUi(){
   ['height','headScale','shoulderScale','limbScale'].forEach(id=>{
     $(id).addEventListener('input',syncOutputs);
-    $(id).addEventListener('change',buildCharacter);
+    $(id).addEventListener('change',()=>{if(bodyStyle!=='assetChibi')buildCharacter()});
   });
-  ['skinColor','hairColor','topColor','bottomColor','shoeColor','eyeColor'].forEach(id=>$(id).addEventListener('change',buildCharacter));
-  $('rebuild').addEventListener('click',buildCharacter);
+  ['skinColor','hairColor','topColor','bottomColor','shoeColor','eyeColor'].forEach(id=>{
+    $(id).addEventListener('change',()=>{if(bodyStyle!=='assetChibi')buildCharacter()});
+  });
+  $('rebuild').addEventListener('click',()=>{if(bodyStyle!=='assetChibi')buildCharacter()});
   $('showBones').addEventListener('change',()=>{if(skeletonHelper)skeletonHelper.visible=$('showBones').checked});
   $('resetPose').addEventListener('click',resetPose);
   $('exportGlb').addEventListener('click',exportGlb);
   $('exportSpec').addEventListener('click',exportSpec);
   $('speed').addEventListener('input',()=>{if(activeAction)activeAction.setEffectiveTimeScale(Number($('speed').value))});
-  document.querySelectorAll('[data-clip]').forEach(b=>b.addEventListener('click',()=>playClip(b.dataset.clip)));
-  document.querySelectorAll('[data-body-style]').forEach(b=>b.addEventListener('click',()=>applyBodyStyle(b.dataset.bodyStyle)));
+
+  $('clipGrid').addEventListener('click',event=>{
+    const button=event.target.closest('[data-clip]');
+    if(button)playClip(button.dataset.clip);
+  });
+
+  document.querySelectorAll('[data-body-style]').forEach(b=>b.addEventListener('click',()=>void applyBodyStyle(b.dataset.bodyStyle)));
   document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setCameraView(b.dataset.view)));
+  document.querySelectorAll('[data-chibi-preset]').forEach(b=>b.addEventListener('click',()=>applyChibiPreset(b.dataset.chibiPreset)));
+
+  $('chibiHair')?.addEventListener('change',event=>applyChibiHair(event.target.value));
+  $('chibiUnlit')?.addEventListener('change',event=>applyChibiMaterialMode(event.target.checked));
+  $('wardrobeParts')?.addEventListener('change',event=>{
+    const input=event.target.closest('[data-chibi-part]');
+    if(!input)return;
+    setChibiNodeVisible(input.dataset.chibiPart,input.checked);
+    const hair=CHIBI_HAIR_NODES.find(name=>chibiSourceScene?.getObjectByName(name)?.visible)||'';
+    if($('chibiHair'))$('chibiHair').value=hair;
+    document.querySelectorAll('[data-chibi-preset]').forEach(b=>b.classList.remove('active'));
+    chibiCurrentPreset='custom';
+    refreshChibiMetrics();
+  });
 }
 
 function loop(now){
@@ -1439,11 +1460,29 @@ async function boot(){
   initScene();
   wireUi();
   syncOutputs();
-  try{buildCharacter()}catch(error){
-    console.error(error);
-    setStatus('초기 캐릭터 생성 실패: '+(error?.message||error),true);
-  }
+  setStudioModePanels();
   requestAnimationFrame(loop);
+
+  try{
+    const loaded=await loadChibiAsset();
+    if(!loaded){
+      bodyStyle='soft3';
+      document.querySelectorAll('[data-body-style]').forEach(b=>b.classList.toggle('active',b.dataset.bodyStyle==='soft3'));
+      setStudioModePanels();
+      populateProceduralClipButtons();
+      buildCharacter();
+    }
+  }catch(error){
+    console.error(error);
+    bodyStyle='soft3';
+    document.querySelectorAll('[data-body-style]').forEach(b=>b.classList.toggle('active',b.dataset.bodyStyle==='soft3'));
+    setStudioModePanels();
+    populateProceduralClipButtons();
+    try{buildCharacter()}catch(inner){
+      console.error(inner);
+      setStatus('초기 캐릭터 생성 실패: '+(inner?.message||inner),true);
+    }
+  }
 }
 
 boot();
