@@ -361,10 +361,11 @@ function makeSolidMaterial(color,name){
 }
 
 function normalizeRuntimeBoneName(name){
-  return String(name||'')
-    .replace(/\\s/g,'_')
-    .replace(/[\\[\\]\\.:\\/]/g,'')
-    .toLowerCase();
+  const raw=String(name||'');
+  const sanitized=THREE.PropertyBinding?.sanitizeNodeName
+    ?THREE.PropertyBinding.sanitizeNodeName(raw)
+    :raw.split('.').join('').split(':').join('').split('/').join('').split('[').join('').split(']').join('').split(' ').join('_');
+  return sanitized.toLowerCase();
 }
 
 function resolveBoneIndex(skeleton,boneName){
