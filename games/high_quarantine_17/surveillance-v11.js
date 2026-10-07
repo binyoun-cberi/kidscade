@@ -226,7 +226,7 @@ function isolationTick(){
 }
 function onCampBreach(payload){
  const p={x:94,y:51};
- threats.push({id:'t'+(++seq),name:payload.name||'미확인 감염자',sprite:payload.sprite||'player',zone:'gate',phase:'infected',timerMs:6200,attackMs:0,source:'intruder',x:p.x,y:p.y,tx:82+Math.random()*7,ty:38+Math.random()*25,dir:-1,speed:2.45});
+ threats.push({id:'t'+(++seq),personId:payload.personId||null,name:payload.name||'미확인 감염자',sprite:payload.sprite||'player',zone:'gate',phase:'infected',timerMs:6200,attackMs:0,source:'intruder',x:p.x,y:p.y,tx:82+Math.random()*7,ty:38+Math.random()*25,dir:-1,speed:2.45});
  addCampLog('<b>'+esc(payload.name||'미확인 시민')+'</b> 감염 상태로 캠프 진입 · 경계초소에서 이상 행동');
  renderAll();flashDock('camp');
 }
@@ -242,7 +242,7 @@ function responsePayload(){
   name:active.length?active[0].name:'캠프 감염자',
   threatCount:Math.max(1,active.length),survivorCount:liveResidents.length,
   residents:liveResidents.map(function(r){return{id:r.id,name:r.name,role:r.role,status:r.status,sprite:r.sprite,x:r.x,y:r.y,dir:r.dir}}),
-  threats:active.map(function(t){return{id:t.id,name:t.name,phase:t.phase,sprite:t.sprite,x:t.x,y:t.y,dir:t.dir,source:t.source}})
+  threats:active.map(function(t){return{id:t.personId||t.id,personId:t.personId||null,name:t.name,phase:t.phase,sprite:t.sprite,x:t.x,y:t.y,dir:t.dir,source:t.source}})
  };
 }
 function applyCombatLosses(n,ids){
