@@ -1900,7 +1900,7 @@ function washOnePlate(){
  },hasUpgrade('wideSink')?900:1450)
 }
 function updateOrders(dt){
- if(state.tutorial.active)return;
+ if(state.tutorial.active||state.closing)return;
  const {expiredOrders}=restaurant.tick(dt,{
   advanceShift:false,
   advanceOrders:true,
@@ -1929,20 +1929,26 @@ function updateHud(){
  if(els.combo){els.combo.classList.toggle('hidden',state.combo<2);const b=els.combo.querySelector('b');if(b)b.textContent=state.combo}
  renderEconomyProgress()
 }
+function beginClosingShift(){
+ if(state.closing)return;state.closing=true;restaurant.stopShift();
+ const remaining=[...state.orders];
+ if(remaining.length){
+  remaining.forEach(o=>{releaseOrderBinding(o.id);kitchen.resetCustomerForOrder(o.id)});
+  state.missed+=remaining.length;restaurant.orders.replace([]);renderOrders();renderTaskPanel()
+ }
+ toast(kitchen.hasActiveDiningCustomers()?'🕘 주문 마감 · 식사 중 손님이 나가면 정산해요':'🕘 주문 마감 · 오늘 정산을 시작해요',2200)
+}
 function updateGame(dt){
  if(state.phase==='service'){
-  if(!state.tutorial.active){
+  if(!state.tutorial.active&&!state.closing){
    restaurant.tick(dt,{advanceShift:true,advanceOrders:false,advanceAutomation:false});
    state.spawnClock+=dt
   }
   updatePots(dt);updateOrders(dt);
-  if(hasUpgrade('dishCart')&&state.dirtyPlates>0&&!state.washing){
-   state.dishCartClock=(state.dishCartClock||0)+dt;
-   if(state.dishCartClock>=6){state.dishCartClock=0;state.dirtyPlates=Math.max(0,state.dirtyPlates-1);state.cleanPlates+=1;updateDishHud();sfx('collect.coin_pickup',{volume:.08,rate:1.3,cooldownMs:180});toast('🛒 퇴식 카트 · 깨끗한 그릇 +1',1050)}
-  }else if(!state.dirtyPlates)state.dishCartClock=0;
   const spawnInterval=hasUpgrade('hallExpansion')?9.2:11;
-  if(!state.tutorial.active&&state.time>0&&state.spawnClock>=spawnInterval){state.spawnClock=0;spawnOrder()}
-  if(state.time<=0&&!state.busy)endShift()
+  if(!state.tutorial.active&&!state.closing&&state.time>0&&state.spawnClock>=spawnInterval){state.spawnClock=0;spawnOrder()}
+  if(state.time<=0&&!state.closing&&!state.busy)beginClosingShift();
+  if(state.closing&&!state.busy&&!kitchen.hasActiveDiningCustomers())endShift()
  }
  state.uiClock+=dt;
  if(state.uiClock>=.13){state.uiClock=0;renderPotStrip();renderSelectedHelp();renderOrders();renderTutorial();updateActionButtons();updateHud();updateDishHud()}
@@ -1953,7 +1959,7 @@ function endShift(){
  const earned=Math.max(0,Math.round(state.revenue));progress.cash+=earned;progress.shifts+=1;saveProgress();shopRenderSignature='';
  const win=state.revenue>=TARGET_REVENUE;
  els.endTitle.textContent=win?'오늘 목표 달성!':'오늘 영업 종료';
- els.endText.textContent=win?'매출이 금고에 적립됐어요. 장비를 사서 다음 주방 동선을 더 짧게 만들어 보세요.':'번 돈은 그대로 금고에 적립됐어요. 작은 장비부터 사서 다음 영업을 더 편하게 만들어 보세요.';
+ els.endText.textContent=win?'마지막 손님까지 퇴장 완료! 오늘 매출이 금고에 적립됐어요. 다음 영업 전에 가게를 더 키워 보세요.':'마지막 손님까지 정리했어요. 번 돈은 그대로 금고에 적립됩니다.';
  els.endRevenue.textContent=money(state.revenue);els.endServed.textContent=String(state.served);els.endPerfect.textContent=String(state.perfect);els.end.classList.add('show');renderEconomyProgress();
  sfx(win?'success.victory_fanfare':'failure.fail_sting',{volume:.34,cooldownMs:900})
 }
@@ -1964,8 +1970,8 @@ function loop(ts){
 }
 function resetGameState(){
  restaurant.reset({keepLayout:true});
- state.phase='prep';state.time=SHIFT_SECONDS;state.revenue=0;state.served=0;state.perfect=0;state.missed=0;state.orders=[];state.nextOrder=1;state.spawnClock=0;state.uiClock=0;state.tray=null;state.busy=false;seenOrderTickets.clear();
- state.cleanPlates=hasUpgrade('dishRack')?5:3;state.dirtyPlates=0;state.washing=false;state.dishCartClock=0;state.heldItem=null;state.combo=0;state.maxCombo=0;state.helperUnlocked=progress.tutorialDone;state.helperEnabled=progress.tutorialDone;kitchen.clearPrepCounters();kitchen.resetHelper();kitchen.syncEquipmentVisibility();kitchen.applySavedEquipmentState();
+ state.phase='prep';state.time=SHIFT_SECONDS;state.revenue=0;state.served=0;state.perfect=0;state.missed=0;state.orders=[];state.nextOrder=1;state.spawnClock=0;state.uiClock=0;state.tray=null;state.busy=false;state.closing=false;seenOrderTickets.clear();
+ state.cleanPlates=hasUpgrade('dishRack')?5:3;state.dirtyPlates=0;state.washing=false;state.heldItem=null;state.combo=0;state.maxCombo=0;state.helperUnlocked=progress.tutorialDone;state.helperEnabled=progress.tutorialDone;kitchen.clearPrepCounters();kitchen.resetHelper();kitchen.syncEquipmentVisibility();kitchen.applySavedEquipmentState();
  state.selectedPot=null;state.tutorial={active:!progress.tutorialDone,step:progress.tutorialDone?7:0};state.discardArmedUntil=0;state.discardArmedPot=null;state.trayDiscardArmedUntil=0;state.heldDiscardArmedUntil=0;
  state.pots=Array.from({length:POT_COUNT},(_,i)=>newPot(i));kitchen.syncProgressUpgrades();kitchen.resetCustomerHall();
  for(let i=0;i<POT_COUNT;i++)kitchen.clearPotVisual(i);
