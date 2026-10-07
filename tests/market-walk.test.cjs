@@ -75,7 +75,7 @@ test('required 3D market and food assets exist',()=>{
 test('v4 asset pass upgrades products, kitchen detail, store fixtures, and neighborhood props',()=>{
   assert.match(js,/const ULTIMATE_FOOD=ROOT\+'3d\/food\/ultimate-food-pack\/'/);
   assert.match(js,/const CHARMING=ROOT\+'3d\/interiors\/charming-kitchen-set\/'/);
-  assert.match(js,/PRODUCT_V4=\{/);
+  assert.match(js,/PRODUCT_V4=\{/);assert.match(js,/function productAssetUrl\(p\)\{return PRODUCT_V4\[p\?\.id\]\?ULTIMATE_FOOD\+PRODUCT_V4\[p\.id\]:FOOD\+p\.model\}/);
   assert.match(js,/marketSurfaceModel\('?/);
   assert.match(js,/display-fruit/);
   assert.match(js,/freezers-standing/);
@@ -134,4 +134,4 @@ test('pedestrian gait simulation never lets feet enter the sidewalk',()=>{
   for(let i=0;i<1200;i++){c.updateCity(1/60);min=Math.min(min,c.pedestrianFootY(mover))}
   assert.ok(min>=.085-1e-9,'foot bottom '+min+' must stay at least 2.5 cm above the 0.06 sidewalk top');
 });
-test('market page cache-busts the v4 asset pass',()=>{assert.match(html,/market-walk\.js\?v=13-asset-pass/)});
+test('market page cache-busts the v4 asset pass',()=>{assert.match(html,/market-walk\\.js\\?v=14-asset-fix/)});
