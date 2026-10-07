@@ -10,6 +10,13 @@ const dir=path.join(root,'games','language_word_siege');
 const html=fs.readFileSync(path.join(dir,'index.html'),'utf8');
 const runtime=fs.readFileSync(path.join(dir,'game.js'),'utf8');
 const dataSource=fs.readFileSync(path.join(dir,'word-data.js'),'utf8');
+const stagesSource=fs.readFileSync(path.join(dir,'stages.js'),'utf8');
+const visualsSource=fs.readFileSync(path.join(dir,'visuals.js'),'utf8');
+function loadStages(){
+  const sandbox={window:{}};
+  vm.runInNewContext(stagesSource,sandbox,{filename:'stages.js'});
+  return sandbox.window.WordSiegeStages;
+}
 
 function loadData(){
   const sandbox={window:{}};
@@ -25,12 +32,16 @@ function canSpell(rack,word){
 }
 
 test('Word Siege runtime parses and uses Kidscade shared storage',()=>{
-  for(const file of ['game.js','word-data.js']){
+  for(const file of ['game.js','word-data.js','stages.js','visuals.js']){
     const src=fs.readFileSync(path.join(dir,file),'utf8');
     const parsed=spawnSync(process.execPath,['--check'],{input:src,encoding:'utf8'});
     assert.equal(parsed.status,0,parsed.stderr||parsed.stdout);
   }
   assert.ok(html.includes('../../kidscade-storage.js'));
+  assert.ok(html.includes('stages.js'));
+  assert.ok(html.includes('visuals.js'));
+  assert.ok(html.includes('id="stageList"'));
+  assert.ok(html.includes('id="waveProgress"'));
   assert.ok(html.includes('data-game-id="language_word_siege"'));
   assert.ok(!runtime.includes('localStorage.getItem('));
   assert.ok(!runtime.includes('localStorage.setItem('));
@@ -69,6 +80,7 @@ test('Word Siege storage keys are registered',()=>{
   const storage=fs.readFileSync(path.join(root,'kidscade-storage.js'),'utf8');
   assert.match(storage,/wordSiegeDictionary:\s*'kidscade_word_siege_discovered_v1'/);
   assert.match(storage,/wordSiegeBest:\s*'kidscade_word_siege_best_v1'/);
+  assert.match(storage,/wordSiegeStages:\s*'kidscade_word_siege_stage_v1'/);
 });
 
 test('Word Siege is registered as a language strategy game',()=>{
@@ -104,7 +116,7 @@ function headlessGame(){
   const d=loadData(), elements=new Map();
   class Element{
     constructor(){
-      this.innerHTML='';this.textContent='';this.disabled=false;this.style={};this.dataset={};
+      this.innerHTML='';this.textContent='';this.disabled=false;this.style={setProperty(){}};this.dataset={};
       this.classList={add(){},remove(){}};
     }
     addEventListener(){}
@@ -117,11 +129,11 @@ function headlessGame(){
     createElement(){return new Element()}
   };
   const window={
-    WordSiegeData:d,
-    KidscadeStorage:{getJson(){return []},setJson(){return true},getInt(){return 0},setRaw(){return true}},
+    WordSiegeData:d,WordSiegeStages:loadStages(),
+    KidscadeStorage:{getJson(){return []},setJson(){return true},getInt(key){return key==='kidscade_word_siege_stage_v1'?10:0},setRaw(){return true}},
     addEventListener(){},devicePixelRatio:1
   };
-  const hooks=`window.__headless={restart,startWave,update,beginPlacement,buildTower,makeTowerStats,towerCost,availableWords,validPlacement,rolePlacementValid,applyLinks,effectiveStats,showHint,swapOne, get state(){return state}};resize();`;
+  const hooks=`window.__headless={restart,startWave,update,beginPlacement,buildTower,makeTowerStats,towerCost,availableWords,validPlacement,rolePlacementValid,applyLinks,effectiveStats,showHint,swapOne,selectStage,currentStage,createWave, get state(){return state}};resize();`;
   const patched=runtime.replace('resize();requestAnimationFrame(loop);',hooks);
   assert.notEqual(patched,runtime,'headless hooks are missing');
   const ctx={window,document,performance:{now:()=>0},setTimeout(){return 0},clearTimeout(){},requestAnimationFrame(){}};
@@ -225,4 +237,55 @@ test('Word Siege full-wave bot simulations terminate without runtime errors', {t
   }
   console.log('WORD_SIEGE_SIMULATION '+JSON.stringify(results));
   assert.equal(results.length,4);
+});
+
+test('Word Siege campaign contains ten genuinely distinct maps and resource layouts',()=>{
+  const stages=loadStages();
+  assert.equal(stages.length,10);
+  assert.equal(new Set(stages.map(s=>s.name)).size,10);
+  assert.equal(new Set(stages.map(s=>JSON.stringify(s.path))).size,10);
+  assert.equal(new Set(stages.map(s=>s.focus)).size>=7,true);
+  for(const s of stages){
+    assert.equal(s.waves,8);
+    assert.ok(s.path.length>=9,s.name+' has a short route');
+    assert.ok(s.resources.length>=3,s.name+' has too few resource nodes');
+    assert.ok(s.path[0][0]<=.03&&s.path.at(-1)[0]>=.95);
+    assert.ok(s.resources.every(r=>r.x>.03&&r.x<.96&&r.y>.05&&r.y<.95));
+    for(const pair of s.path)assert.ok(pair.every(v=>v>=0&&v<=1),s.name+' path out of bounds');
+  }
+});
+
+test('Word Siege all ten stages permit word tower building and start unique waves',()=>{
+  const {h,d}=headlessGame(),stages=loadStages();
+  const focuses=new Set(),patterns=new Set();
+  for(let i=0;i<stages.length;i++){
+    assert.ok(h.selectStage(i),'cannot select stage '+(i+1));
+    h.restart();
+    assert.equal(h.currentStage().id,stages[i].id);
+    assert.equal(h.state.resources.length,stages[i].resources.length);
+    const places=[];
+    for(let y=.075;y<.94;y+=.045){
+      for(let x=.07;x<.95;x+=.045){
+        const p={x:+x.toFixed(4),y:+y.toFixed(4)};
+        if(h.validPlacement(p)&&h.rolePlacementValid(p,d.words.ARROW,'ARROW'))places.push(p);
+      }
+    }
+    assert.ok(places.length>=3,'stage '+(i+1)+' lacks attacking positions');
+    // A miner should have a legal node-adjacent position, not on the path.
+    let miners=0;
+    for(let y=.075;y<.94;y+=.045)for(let x=.07;x<.95;x+=.045){
+      const p={x:+x.toFixed(4),y:+y.toFixed(4)};
+      if(h.validPlacement(p)&&h.rolePlacementValid(p,d.words.MINER,'MINER'))miners++;
+    }
+    assert.ok(miners>=2,'stage '+(i+1)+' lacks mine locations');
+    assert.ok(buildMatching(h,d,'ARROW'),'stage '+(i+1)+' could not build ARROW');
+    h.startWave();assert.equal(h.state.wave,1);
+    const queue=h.createWave(8);
+    assert.ok(queue.length>=40);
+    focuses.add(stages[i].focus);patterns.add(queue.map(x=>x.type).join(','));
+    for(let j=0;j<100;j++)h.update(.04);
+    assert.ok(h.state.wave<=1||h.state.ended);
+  }
+  assert.ok(focuses.size>=7);
+  assert.ok(patterns.size>=7,'wave patterns should differ by stage');
 });
