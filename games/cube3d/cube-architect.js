@@ -3215,8 +3215,8 @@ function syncSurvivalAdventureState(announce=false){
     toast('추천 모험 달성 · '+goal.title+(goal.rewardLabel?' · 보상: '+goal.rewardLabel:''));
     pulseSurvivalQuest();sfx('good');
   }
-  if(!wasFinished&&survivalFinished){
-    toast('추천 모험 도감 완성! 이제도 하고 싶은 대로 계속 살아가면 돼요.');
+  if(announce&&!wasFinished&&survivalFinished){
+    toast('추천 모험 도감 완성! 이제 하고 싶은 대로 계속 살아가면 돼요.');
     reportResult('free-survival',100,true);
   }
   return newly.length>0||(!wasFinished&&survivalFinished);
@@ -4971,7 +4971,7 @@ function updateWildCreatures(dt,t){
         dir=Math.atan2(root.position.x-lightSource.x,root.position.z-lightSource.z);speed*=1.72;
       }else if(hardGround){
         dir=Math.atan2(-dx,-dz);speed*=1.55;
-      }else if(dist<spec.radius+3&&(!spec.elite||survivalStage>=4)){
+      }else if(dist<spec.radius+3&&(!spec.elite||(!campActive()&&survivalWorldTime>=180))){
         dir=Math.atan2(dx,dz);speed*=1.55;
       }else if(Math.hypot(root.position.x-u.homeX,root.position.z-u.homeZ)>spec.radius){
         dir=Math.atan2(u.homeX-root.position.x,u.homeZ-root.position.z);
@@ -5686,8 +5686,8 @@ function updateFirstJourney(){
   const available=mode==='free'&&gameFreeMode==='survival'&&!campActive()&&(survivalCamp.finished||survivalCamp.dismissed)&&!['done','skip'].includes(firstJourney.phase);
   card.classList.toggle('hidden',!available);if(!available)return;
   const idle=firstJourney.phase==='idle';$('journeyStart').classList.toggle('hidden',!idle);$('journeyHelp').classList.toggle('hidden',idle);
-  $('journeyTitle').textContent=idle?'첫 탐험 · 작은 다리':'첫 탐험 · 길을 이어 보자';
-  if(idle){$('journeyText').textContent='판자 세 칸으로 다리를 만들고 건너가 보자. 선물도 기다리고 있어!';return}
+  $('journeyTitle').textContent=idle?'추천 탐험 · 작은 다리':'추천 탐험 · 길을 이어 보자';
+  if(idle){$('journeyText').textContent='원하면 판자 세 칸으로 다리를 만들고 건너가 보자. 선물도 기다리고 있어!';return}
   const plan=firstJourney.plan;
   if(!plan)return;
   const ready=experience.bridgeReady(plan,getBlock);
