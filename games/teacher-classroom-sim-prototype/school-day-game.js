@@ -762,13 +762,83 @@ function updateSafety(dt){
     }
   }
 }
+function chatForStudent(s){return lessonChats.find(chat=>chat.a===s||chat.b===s)||null}
+function refreshStudentBubbleState(s){
+  if(!s||!isStudentPresent(s))return hideBubble(s);
+  if(s.accident)return showBubble(s,'⚠️','health');
+  if(s.health?.revealed&&s.health.state!=='healthy')return showBubble(s,'🤒','health');
+  const conflict=pairs.find(p=>p.state==='conflict'&&(p.a===s||p.b===s));
+  if(conflict)return showBubble(s,'!','conflict');
+  if(s.safetyRecord?.finished&&!s.safetyRecord.heard)return showBubble(s,'⚠️','');
+  if(s.runtime.mode==='offtask')return showBubble(s,'…','');
+  hideBubble(s);
+}
+function startLessonChat(a,b){
+  const range=FRIENDSHIP_RULES.chatterDurationSeconds;
+  const chat={
+    a,b,time:0,
+    duration:range[0]+Math.random()*(range[1]-range[0]),
+    key:friendshipKey(a.runtime.id,b.runtime.id),
+    level:friendInfo(a,b).level
+  };
+  lessonChats.push(chat);stats.lessonChats++;
+  showBubble(a,'😄','chat');showBubble(b,'😄','chat');
+  showToast('😄 '+a.runtime.name+'와 '+b.runtime.name+'가 수업 중 장난을 시작했어요.');
+}
+function stopLessonChat(chat,{teacher=false,natural=false}={}){
+  if(!chat)return;
+  lessonChats=lessonChats.filter(x=>x!==chat);
+  chatterCooldowns.set(chat.key,FRIENDSHIP_RULES.chatterCooldownSeconds);
+  if(natural)gainFriendship(chat.a,chat.b,FRIENDSHIP_RULES.lessonChatterGain);
+  if(teacher){stats.chatsStopped++;showToast('🤫 둘이 다시 수업에 집중해요.')}
+  refreshStudentBubbleState(chat.a);refreshStudentBubbleState(chat.b);
+}
+function updateLessonChatter(dt){
+  for(const [key,value] of [...chatterCooldowns]){
+    const next=value-dt;
+    if(next<=0)chatterCooldowns.delete(key);else chatterCooldowns.set(key,next);
+  }
+
+  for(const chat of lessonChats.slice()){
+    chat.time+=dt;
+    const invalid=!studentCanParticipate(chat.a)||!studentCanParticipate(chat.b)||
+      pairs.some(p=>p.state==='conflict'&&(p.a===chat.a||p.b===chat.a||p.a===chat.b||p.b===chat.b));
+    if(invalid){stopLessonChat(chat);continue}
+    faceDirection(chat.a.actor,chat.b.actor.root.position.x-chat.a.actor.root.position.x,chat.b.actor.root.position.z-chat.a.actor.root.position.z);
+    faceDirection(chat.b.actor,chat.a.actor.root.position.x-chat.b.actor.root.position.x,chat.a.actor.root.position.z-chat.b.actor.root.position.z);
+    if(chat.time>=chat.duration)stopLessonChat(chat,{natural:true});
+  }
+
+  chatterScanTimer-=dt;
+  if(chatterScanTimer>0||lessonChats.length||teamActive)return;
+  chatterScanTimer=FRIENDSHIP_RULES.chatterCheckSeconds;
+
+  const active=activeLessonStudents().filter(s=>!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy'));
+  const candidates=[];
+  for(let i=0;i<active.length;i++)for(let j=i+1;j<active.length;j++){
+    const a=active[i],b=active[j],info=friendInfo(a,b);
+    if(info.level<FRIENDSHIP_RULES.chatterMinLevel)continue;
+    const key=friendshipKey(a.runtime.id,b.runtime.id);
+    if(chatterCooldowns.has(key))continue;
+    if(distance2D(a.actor.root.position,b.actor.root.position)>FRIENDSHIP_RULES.chatterDistance)continue;
+    if(focusRatio(a)>FRIENDSHIP_RULES.chatterFocusRatio&&focusRatio(b)>FRIENDSHIP_RULES.chatterFocusRatio)continue;
+    if(pairs.some(p=>(p.a===a||p.b===a||p.a===b||p.b===b)&&p.state==='conflict'))continue;
+    candidates.push({a,b,level:info.level});
+  }
+  candidates.sort((x,y)=>y.level-x.level);
+  for(const candidate of candidates){
+    if(Math.random()<friendshipChatterChance(candidate.level)){startLessonChat(candidate.a,candidate.b);break}
+  }
+}
 function updateLesson(dt){
   stepTime-=dt;schoolMinute+=dt*.36;lessonElapsed+=dt;
   for(const s of students){
     if(!studentCanParticipate(s))continue;
     revealHealthIfNeeded(s,dt);
     const was=s.runtime.mode;
-    const drainMultiplier=(currentStep.focusDrain||1)*preferenceMultiplier(s.runtime.id,currentStep.subject);
+    const chat=chatForStudent(s);
+    const chatterDrain=chat?1.22:1;
+    const drainMultiplier=(currentStep.focusDrain||1)*preferenceMultiplier(s.runtime.id,currentStep.subject)*chatterDrain;
     const recoveryMultiplier=healthRecoveryMultiplier(s.health);
     const evt=updateLessonFocus(s.runtime,dt,{teacherNear:teacherNearStudent(s),drainMultiplier,recoveryMultiplier});
     if(evt==='offtask-start'){
@@ -780,13 +850,18 @@ function updateLesson(dt){
       if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy')&&!(s.safetyRecord?.finished&&!s.safetyRecord.heard))hideBubble(s);
     }
     if(s.runtime.mode==='offtask'){
-      if(!s.wander||distance2D(s.actor.root.position,s.wander)<.08)offTaskWander(s);
-      moveActorToward(s.actor,s.wander,dt,activeSpace.id==='gym'?.58:.42);
+      if(chat){
+        s.wander=null;moveActorToward(s.actor,s.seat,dt,.6);
+      }else{
+        if(!s.wander||distance2D(s.actor.root.position,s.wander)<.08)offTaskWander(s);
+        moveActorToward(s.actor,s.wander,dt,activeSpace.id==='gym'?.58:.42);
+      }
     }else{
       moveActorToward(s.actor,s.seat,dt,.72);
-      if(was==='offtask'&&!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy')&&!(s.safetyRecord?.finished&&!s.safetyRecord.heard))hideBubble(s);
+      if(was==='offtask'&&!chat&&!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy')&&!(s.safetyRecord?.finished&&!s.safetyRecord.heard))hideBubble(s);
     }
   }
+  updateLessonChatter(dt);
   updateTeamActivity(dt);
   updateSafety(dt);
   if(stepTime<=0){stats.periodsCompleted++;advanceStep()}
