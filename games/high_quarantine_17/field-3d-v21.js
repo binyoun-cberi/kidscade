@@ -24,7 +24,6 @@ const A={
  ambulance:'3d/vehicles/kenney-car-kit/ambulance.glb',
  police:'3d/vehicles/kenney-car-kit/police.glb',
  van:'3d/vehicles/kenney-car-kit/van.glb',
- dumpster:'3d/city/kenney-city-kit-roads/dumpster.glb',
  turret:'3d/weapons/scifi-turrets/gatelng-gun-turret.glb',
  crate:'3d/survival/kenney-survival-kit/box.glb',
  maleA:'characters/people/character-male-a.glb',
@@ -175,7 +174,6 @@ function buildBuildings(){
  addAsset(staticRoot,A.ambulance,sx(850),sz(356),2.45,0xe3e7e2,.24,Math.PI/2);
  addAsset(staticRoot,A.police,sx(870),sz(430),2.25,0xc8d2d5,.12,Math.PI);
  addAsset(staticRoot,A.van,sx(760),sz(480),2.20,0x69787b,.16,0);
- addAsset(staticRoot,A.dumpster,sx(845),sz(250),1.15,0x5d6b66,.18,Math.PI/2);
  addAsset(staticRoot,A.structureMetal,sx(789),sz(136),2.45,0x596467,.22,Math.PI/2);
  addAsset(staticRoot,A.barrier,sx(672),sz(427),1.3,0xc3953f,.48,0);
 
@@ -342,4 +340,4 @@ function frame(t){
  requestAnimationFrame(frame)
 }
 requestAnimationFrame(frame);
-window.Q17Field3D=Object.freeze({active:true,version:'21.6',scene,camera,renderer});
+window.Q17Field3D=Object.freeze({active:true,version:'21.7',scene,camera,renderer});
