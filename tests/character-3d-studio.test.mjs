@@ -148,3 +148,17 @@ test('hoodie pocket uses a thin shaped kangaroo geometry',()=>{
   assert.match(js,/kidscade_hoodie_blue_pocket/);
   assert.doesNotMatch(js,/new THREE\.BoxGeometry\(\.30,\.125,\.045/);
 });
+
+
+test('hoodie includes collar and garment seam details',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  assert.match(js,/kidscade_hoodie_blue_collar/);
+  assert.match(js,/kidscade_hoodie_blue_seam_left/);
+  assert.match(js,/kidscade_hoodie_blue_seam_right/);
+  assert.match(js,/kidscade_hoodie_blue_pocket_opening/);
+  assert.match(js,/kidscade_hoodie_blue_pocket_seam_left/);
+  assert.match(js,/kidscade_hoodie_blue_pocket_seam_right/);
+  assert.match(js,/function makeBoundSeam/);
+  assert.match(js,/function resolveFirstBoneName/);
+  assert.match(js,/if\(y>1\.06\)/);
+});

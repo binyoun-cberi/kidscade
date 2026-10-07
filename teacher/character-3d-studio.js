@@ -410,6 +410,32 @@ function makeRigidSkinnedPiece(template,geometry,boneName,material,name){
   return mesh;
 }
 
+function resolveFirstBoneName(skeleton,candidates){
+  for(const name of candidates){
+    if(resolveBoneIndex(skeleton,name)>=0)return name;
+  }
+  throw new Error('후드티용 본 후보를 찾지 못했습니다: '+candidates.join(', '));
+}
+
+function makeTubeGeometry(points,radius=.0045,tubularSegments=20){
+  const curve=new THREE.CatmullRomCurve3(points,false,'centripetal',.55);
+  const geometry=new THREE.TubeGeometry(curve,tubularSegments,radius,8,false);
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function makeBoundSeam(template,points,boneName,material,name,radius=.0045){
+  return makeRigidSkinnedPiece(
+    template,
+    makeTubeGeometry(points,radius,20),
+    boneName,
+    material,
+    name
+  );
+}
+
 function createKidscadeBlueHoodie(){
   if(getNode('kidscade_hoodie_blue'))return getNode('kidscade_hoodie_blue');
 
@@ -430,13 +456,21 @@ function createKidscadeBlueHoodie(){
   const pos=bodyGeometry.getAttribute('position');
   const centerY=.98;
   for(let i=0;i<pos.count;i++){
-    const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
-    pos.setXYZ(
-      i,
-      x*1.075,
-      centerY+(y-centerY)*1.035,
-      z*1.11+(z>0?.008:-.006)
-    );
+    let x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
+
+    x*=1.075;
+    y=centerY+(y-centerY)*1.035;
+    z=z*1.11+(z>0?.008:-.006);
+
+    // 원본 shirt의 깊은 넥홀을 살짝 조여 후드티 목이 뚫려 보이지 않게 한다.
+    if(y>1.06){
+      const t=Math.min(1,(y-1.06)/.16);
+      x*=1-t*.10;
+      z=z*(1-t*.18)+t*.014;
+      y+=t*.018;
+    }
+
+    pos.setXYZ(i,x,y,z);
   }
   pos.needsUpdate=true;
   bodyGeometry.computeVertexNormals();
@@ -445,6 +479,7 @@ function createKidscadeBlueHoodie(){
 
   const blue=makeSolidMaterial('#4f7df3','Kidscade Hoodie Blue');
   const darkBlue=makeSolidMaterial('#3b63cc','Kidscade Hoodie Detail');
+  const seamBlue=makeSolidMaterial('#7598f5','Kidscade Hoodie Stitch');
   const white=makeSolidMaterial('#f8fafc','Kidscade Hoodie String');
 
   const body=new THREE.SkinnedMesh(bodyGeometry,blue);
@@ -465,6 +500,47 @@ function createKidscadeBlueHoodie(){
   hoodGeometry.translate(0,1.235,-.105);
   group.add(makeRigidSkinnedPiece(
     shirt,hoodGeometry,'DEF-spine.003',blue,'kidscade_hoodie_blue_hood'
+  ));
+
+  const upperSpineBone=resolveFirstBoneName(shirt.skeleton,[
+    'DEF-spine.003','DEF-spine.002','DEF-spine.001','spine','Spine'
+  ]);
+  const lowerSpineBone=resolveFirstBoneName(shirt.skeleton,[
+    'DEF-spine.001','DEF-spine.002','spine','Spine'
+  ]);
+
+  // 목 시보리: 넥홀을 덮고 후드티 카라처럼 보이게 한다.
+  const collarGeometry=new THREE.TorusGeometry(.108,.015,10,28);
+  collarGeometry.rotateX(Math.PI/2);
+  collarGeometry.scale(1.02,.70,1);
+  collarGeometry.translate(0,1.118,.040);
+  collarGeometry.computeVertexNormals();
+  collarGeometry.computeBoundingBox();
+  collarGeometry.computeBoundingSphere();
+  group.add(makeRigidSkinnedPiece(
+    shirt,collarGeometry,upperSpineBone,darkBlue,'kidscade_hoodie_blue_collar'
+  ));
+
+  // 래글런 느낌의 몸통/소매 경계 재봉선.
+  group.add(makeBoundSeam(
+    shirt,
+    [
+      new THREE.Vector3(-.040,1.115,.105),
+      new THREE.Vector3(-.105,1.090,.105),
+      new THREE.Vector3(-.165,1.025,.102),
+      new THREE.Vector3(-.210,.935,.094)
+    ],
+    upperSpineBone,seamBlue,'kidscade_hoodie_blue_seam_left',.0038
+  ));
+  group.add(makeBoundSeam(
+    shirt,
+    [
+      new THREE.Vector3(.040,1.115,.105),
+      new THREE.Vector3(.105,1.090,.105),
+      new THREE.Vector3(.165,1.025,.102),
+      new THREE.Vector3(.210,.935,.094)
+    ],
+    upperSpineBone,seamBlue,'kidscade_hoodie_blue_seam_right',.0038
   ));
 
   // 몸통에 밀착되는 얇은 곡면형 캥거루 포켓
@@ -495,6 +571,36 @@ function createKidscadeBlueHoodie(){
 
   group.add(makeRigidSkinnedPiece(
     shirt,pocketGeometry,'DEF-spine.001',blue,'kidscade_hoodie_blue_pocket'
+  ));
+
+  // 캥거루 포켓 입구와 양 옆 봉제선.
+  group.add(makeBoundSeam(
+    shirt,
+    [
+      new THREE.Vector3(-.112,.905,.159),
+      new THREE.Vector3(-.055,.930,.162),
+      new THREE.Vector3(.055,.930,.162),
+      new THREE.Vector3(.112,.905,.159)
+    ],
+    lowerSpineBone,seamBlue,'kidscade_hoodie_blue_pocket_opening',.0030
+  ));
+  group.add(makeBoundSeam(
+    shirt,
+    [
+      new THREE.Vector3(-.114,.900,.158),
+      new THREE.Vector3(-.108,.852,.157),
+      new THREE.Vector3(-.096,.802,.155)
+    ],
+    lowerSpineBone,seamBlue,'kidscade_hoodie_blue_pocket_seam_left',.0027
+  ));
+  group.add(makeBoundSeam(
+    shirt,
+    [
+      new THREE.Vector3(.114,.900,.158),
+      new THREE.Vector3(.108,.852,.157),
+      new THREE.Vector3(.096,.802,.155)
+    ],
+    lowerSpineBone,seamBlue,'kidscade_hoodie_blue_pocket_seam_right',.0027
   ));
 
   for(const x of [-.055,.055]){

@@ -124,7 +124,10 @@
       "components": [
         "skinned shirt shell",
         "hood",
+        "neck rib collar",
+        "raglan seam lines",
         "shaped kangaroo pocket",
+        "pocket stitch lines",
         "drawstrings"
       ],
       "rigging": "shirt skin weights + rigid upper-spine detail pieces"
