@@ -47,7 +47,7 @@ test('plating animates into a meal carried by the player', () => {
   assert.match(js, /ramen\.glb/);
   assert.match(js, /animatePlate\(index,onDone\)/);
   assert.match(js, /p\.plating=true/);
-  assert.match(js, /state\.tray=\{recipeId:recipe\.id[\s\S]*ready:false/);
+  assert.match(js, /state\.tray=\{orderId,recipeId:recipe\.id[\s\S]*ready:false/);
   assert.match(js, /const meal=\{kind:'meal'/);
   assert.match(js, /setHeldItem\(meal\)/);
   assert.match(js, /kitchen\.setTrayMeal\(false\)/);
