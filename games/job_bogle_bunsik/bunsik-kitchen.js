@@ -29,11 +29,11 @@ const UPGRADES={
  table3:{name:'3번 테이블',price:1500,min:0,max:1,minStars:1,category:'hall',icon:'🪑',desc:'홀 좌석 +1 · 동시 손님 증가'},
  table4:{name:'4번 테이블',price:2800,min:0,max:1,minStars:2,requires:'table3',category:'hall',icon:'🪑',desc:'홀 좌석 +1 · 바쁜 시간 대응'},
  hallStaff:{name:'홀 알바 고용',price:3800,min:0,max:1,minStars:2,requires:'table3',category:'staff',icon:'🙋',desc:'배식대 근처 완성 메뉴를 자동으로 서빙'},
- dishCart:{name:'퇴식 카트',price:4200,min:0,max:1,minStars:3,requires:'hallStaff',category:'hall',icon:'🛒',desc:'더러운 그릇을 회수해 6초마다 한 장 자동 세척'},
+ dishCart:{name:'퇴식 카트',price:4200,min:0,max:1,minStars:3,requires:'hallStaff',category:'hall',icon:'🛒',desc:'테이블의 빈 그릇을 실제로 싱크까지 자동 운반'},
  helperSkill1:{name:'주방 알바 숙련 1',price:2500,min:0,max:1,minStars:2,category:'staff',icon:'👨‍🍳',desc:'주방 알바 이동·판단 속도 증가'},
  helperSkill2:{name:'주방 알바 숙련 2',price:5000,min:0,max:1,minStars:3,requires:'helperSkill1',category:'staff',icon:'⚡',desc:'주방 알바가 더 빠르게 다음 일을 찾음'},
  menuPlus:{name:'토핑 메뉴 연구',price:3500,min:0,max:1,minStars:3,category:'menu',icon:'📖',desc:'계란 파 라면·치즈 파 라면 주문 해금'},
- hallExpansion:{name:'홀 확장 공사',price:8000,min:0,max:1,minStars:4,requires:'table4',category:'expansion',icon:'🏗️',desc:'5번 테이블과 추가 손님 공간 개방'},
+ hallExpansion:{name:'홀 확장 공사',price:8000,min:0,max:1,minStars:4,requires:'table4',category:'expansion',icon:'🏗️',desc:'공사 가림벽 철거 · 확장 구역과 5번 테이블 개방'},
  famousSign:{name:'동네 명물 간판',price:18000,min:0,max:1,minStars:5,requires:'hallExpansion',category:'expansion',icon:'🌟',desc:'가게 외관 변화 · 모든 메뉴 매출 +10%'}
 };
 const SHOP_ITEMS={...EQUIPMENT,...UPGRADES};
@@ -103,7 +103,7 @@ function newPot(i){
 }
 let restaurant=null;
 const state={
- running:false,phase:'idle',sound:true,nextOrder:1,spawnClock:0,last:0,raf:0,uiClock:0,selectedPot:null,tray:null,busy:false,
+ running:false,phase:'idle',sound:true,nextOrder:1,spawnClock:0,last:0,raf:0,uiClock:0,selectedPot:null,tray:null,busy:false,closing:false,
  cleanPlates:3,dirtyPlates:0,washing:false,heldItem:null,helperUnlocked:false,helperEnabled:false,combo:0,maxCombo:0,
  tutorial:{active:true,step:0},discardArmedUntil:0,discardArmedPot:null,trayDiscardArmedUntil:0,heldDiscardArmedUntil:0,
  pots:Array.from({length:POT_COUNT},(_,i)=>newPot(i)),
@@ -174,7 +174,7 @@ class RamenKitchen3D{
   this.potVisuals=[];
   this.customerHolders=[];
   this.customerXs=[-3.3,-1.1,1.1,3.3,0];
-  this.hallSeats=[];this.hallTableGroups=[];this.customerStates=[];this.dishCartModel=null;this.hallEntrance=new THREE.Vector3(0,0,-12.95);this.hallDoor=null;this.hallDoorOpenUntil=0;this.hallSign=null;this.hallFamousSign=null;
+  this.hallSeats=[];this.hallTableGroups=[];this.customerStates=[];this.dishCartModel=null;this.dishCartQueue=[];this.dishCartTask=null;this.dishCartHome=new THREE.Vector3(-7.7,.02,-6.1);this.dishReturnPoint=new THREE.Vector3(-3.55,0,-4.35);this.hallExpansionLocked=null;this.hallExpansionOpen=null;this.hallEntrance=new THREE.Vector3(0,0,-12.95);this.hallDoor=null;this.hallDoorOpenUntil=0;this.hallSign=null;this.hallFamousSign=null;
   this.serviceGroup=null;this.serviceMeal=null;this.serviceHome=new THREE.Vector3(0,.92,5.25);
   this.cameraFocus=new THREE.Vector3(0,.9,.5);this.cameraGoal=new THREE.Vector3(0,10.5,10.8);
   this.raycaster=new THREE.Raycaster();
@@ -391,14 +391,48 @@ class RamenKitchen3D{
    this.loadModel(SUSHI,'table.glb',1.55).then(o=>{if(o){o.position.y=.03;group.add(o)}});
    this.loadModel(SUSHI,'chair.glb',.92).then(o=>{if(o){o.position.set(0,.03,1.08);o.rotation.y=Math.PI;group.add(o)}});
    this.loadModel(SUSHI,'chair.glb',.92).then(o=>{if(o){o.position.set(0,.03,-1.08);group.add(o)}});
+   const dishAnchor=new THREE.Group();dishAnchor.position.set(0,.86,0);group.add(dishAnchor);
    const enabled=!d.upgrade||hasUpgrade(d.upgrade);group.visible=enabled;
-   this.hallSeats.push({slot:i,tableNo:d.tableNo,position:new THREE.Vector3(d.seatX,0,d.seatZ),rotation:d.rot,occupiedBy:null,upgrade:d.upgrade||null,enabled})
+   this.hallSeats.push({slot:i,tableNo:d.tableNo,position:new THREE.Vector3(d.seatX,0,d.seatZ),tablePosition:new THREE.Vector3(d.x,0,d.z),rotation:d.rot,occupiedBy:null,upgrade:d.upgrade||null,enabled,dishAnchor,dishMode:'none',dishToken:0})
   });
   const aisle=this.box(2.2,.026,8.1,0xc99664,0,.028,-9.45,{roughness:.92,castShadow:false});aisle.receiveShadow=true;
+
+  // 셀프 반납대: 퇴식 카트가 없을 때 손님이 직접 빈 그릇을 가져오는 곳.
+  const returnBase=this.box(2.35,.72,.72,0x5a776e,-3.55,.36,-4.28,{roughness:.62});
+  const returnTop=this.box(2.45,.08,.82,0xe0c28e,-3.55,.76,-4.28,{roughness:.48});
+  const returnSign=this.makeTextSprite('그릇 반납');returnSign.position.set(-3.55,1.34,-4.22);returnSign.scale.set(1.25,.38,1);this.scene.add(returnSign);
+
+  // 홀 확장 전에는 실제로 오른쪽 뒤 공간을 막아 둔다.
+  this.hallExpansionLocked=new THREE.Group();this.scene.add(this.hallExpansionLocked);
+  const blockedFloor=new THREE.Mesh(new THREE.BoxGeometry(3.25,.055,6.4),this.material(0x756f69,{roughness:.95}));blockedFloor.position.set(7.95,.055,-10.1);this.hallExpansionLocked.add(blockedFloor);
+  const partition=new THREE.Mesh(new THREE.BoxGeometry(.18,2.35,6.35),this.material(0xb99a77,{roughness:.88}));partition.position.set(6.22,1.16,-10.05);this.hallExpansionLocked.add(partition);
+  const board=this.makeTextSprite('🚧 확장 공사 예정');board.position.set(6.08,1.55,-8.25);board.scale.set(1.75,.5,1);this.hallExpansionLocked.add(board);
+
+  this.hallExpansionOpen=new THREE.Group();this.scene.add(this.hallExpansionOpen);
+  const openFloor=new THREE.Mesh(new THREE.BoxGeometry(3.25,.04,6.4),this.material(0xd8b17d,{roughness:.9}));openFloor.position.set(7.95,.045,-10.1);this.hallExpansionOpen.add(openFloor);
+  const openLamp=new THREE.PointLight(0xffdf9a,3.4,5.5,2);openLamp.position.set(7.7,3.0,-10.1);this.hallExpansionOpen.add(openLamp);
+
   this.hallSign=this.makeTextSprite('어서오세요');this.hallSign.position.set(0,2.25,-13.82);this.hallSign.scale.set(1.7,.5,1);this.scene.add(this.hallSign);
   this.hallFamousSign=this.makeTextSprite('★ 동네 명물 분식집 ★');this.hallFamousSign.position.set(0,2.28,-13.8);this.hallFamousSign.scale.set(2.8,.62,1);this.scene.add(this.hallFamousSign);this.hallFamousSign.visible=hasUpgrade('famousSign');
-  this.dishCartModel=this.placeModel(MARKET,'shopping-cart.glb',1.15,-7.7,.02,-6.1,Math.PI/2);this.dishCartModel.visible=hasUpgrade('dishCart');
+  this.dishCartModel=this.placeModel(MARKET,'shopping-cart.glb',1.15,this.dishCartHome.x,this.dishCartHome.y,this.dishCartHome.z,Math.PI/2);this.dishCartModel.visible=hasUpgrade('dishCart');
   const cartLabel=this.makeRoleFloorLabel('퇴식 카트','#9ed6c4');cartLabel.position.set(0,.03,.72);cartLabel.scale.set(.78,.78,.78);this.dishCartModel.add(cartLabel)
+ }
+ setSeatDish(seat,mode='none'){
+  if(!seat?.dishAnchor)return;seat.dishMode=mode;seat.dishToken=(seat.dishToken||0)+1;const token=seat.dishToken;
+  while(seat.dishAnchor.children.length)seat.dishAnchor.remove(seat.dishAnchor.children[0]);
+  if(mode==='none')return;
+  const file=mode==='meal'?'ramen.glb':'plate.glb',scale=mode==='meal'?.66:.62;
+  this.loadModel(SUSHI,file,scale).then(o=>{if(!o||seat.dishToken!==token||seat.dishMode!==mode)return;o.position.y=.02;seat.dishAnchor.add(o)})
+ }
+ setCustomerDishCarry(c,show){
+  if(!c?.holder)return;
+  const old=c.holder.getObjectByName('dirtyDishCarry');if(old)c.holder.remove(old);
+  if(!show)return;
+  const sp=this.makeItemSprite({kind:'dirty'});sp.name='dirtyDishCarry';sp.position.set(.28,1.16,.12);sp.scale.set(.52,.52,1);c.holder.add(sp)
+ }
+ queueDishCart(c){
+  if(!c?.seat||!hasUpgrade('dishCart'))return;
+  if(!this.dishCartQueue.includes(c.seat.slot))this.dishCartQueue.push(c.seat.slot)
  }
  syncProgressUpgrades(){
   this.hallSeats.forEach((seat,i)=>{
@@ -407,6 +441,8 @@ class RamenKitchen3D{
   });
   if(this.hallWorker)this.hallWorker.visible=hasUpgrade('hallStaff');
   if(this.dishCartModel)this.dishCartModel.visible=hasUpgrade('dishCart');
+  if(this.hallExpansionLocked)this.hallExpansionLocked.visible=!hasUpgrade('hallExpansion');
+  if(this.hallExpansionOpen)this.hallExpansionOpen.visible=hasUpgrade('hallExpansion');
   if(this.hallSign)this.hallSign.visible=!hasUpgrade('famousSign');
   if(this.hallFamousSign)this.hallFamousSign.visible=hasUpgrade('famousSign')
  }
@@ -428,7 +464,7 @@ class RamenKitchen3D{
   return holder
  }
  makeItemSprite(item){
-  const icon=item?.kind==='meal'?'🍜':(INGREDIENTS[item?.id]?.icon||'📦');
+  const icon=item?.kind==='meal'?'🍜':item?.kind==='dirty'?'🍽️':(INGREDIENTS[item?.id]?.icon||'📦');
   const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;const g=canvas.getContext('2d');
   g.fillStyle='rgba(255,249,232,.96)';g.beginPath();g.arc(64,64,48,0,Math.PI*2);g.fill();g.strokeStyle='rgba(73,52,36,.32)';g.lineWidth=5;g.stroke();
   g.font='68px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText(icon,64,67);
