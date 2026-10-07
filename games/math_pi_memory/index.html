@@ -110,11 +110,13 @@ h1{font-size:clamp(22px,4vw,34px);margin:0;letter-spacing:-.04em}
 /* v2 PI LAB */
 body:before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(rgba(3,12,22,.72),rgba(3,12,22,.88)),url("../../assets/game/2d/classroom.png") center/cover no-repeat;filter:saturate(.75)}
 .hero{border:2px solid rgba(103,169,255,.28);background:linear-gradient(135deg,rgba(8,28,48,.94),rgba(12,49,56,.92))}.hero:before{content:"PI LAB";position:absolute;right:24px;top:20px;font:1000 13px/1 ui-monospace,monospace;letter-spacing:.22em;color:var(--mint);opacity:.7}
-.number-stage{position:relative;border-radius:22px;margin-top:10px;background:linear-gradient(180deg,rgba(1,9,16,.55),rgba(9,31,45,.72));border:1px solid rgba(78,230,177,.18);overflow:hidden}.number-stage:before{content:"DIGIT MEMORY CHAMBER";position:absolute;top:12px;left:16px;font:900 10px/1 ui-monospace,monospace;letter-spacing:.14em;color:#6e9aac}
-.pi-line{padding:38px 18px 20px;text-shadow:0 0 18px rgba(78,230,177,.18)}.keypad-card{background:linear-gradient(180deg,#182b3a,#0b1721);border:2px solid #304a5d;box-shadow:inset 0 0 0 4px rgba(0,0,0,.18),var(--shadow)}.keypad-title:before{content:"● ";color:#55f59d}
+.number-stage{position:relative;border-radius:22px;margin-top:10px;background:#fff;border:2px solid #d9e2e8;overflow:hidden;color:#17232c;box-shadow:inset 0 0 0 5px #f6f8f9}.number-stage:before{content:"π SPIRAL";position:absolute;top:12px;left:16px;z-index:2;font:1000 10px/1 ui-monospace,monospace;letter-spacing:.14em;color:#95a2aa}
+.spiral-wrap{width:100%;padding:30px 14px 12px;display:grid;place-items:center}.spiral-canvas{display:block;width:100%;height:auto;max-width:680px;aspect-ratio:1.25/1;background:#fff;border-radius:18px}.spiral-note{margin:0 auto 12px;color:#71808a;font-size:12px;font-weight:800;text-align:center}.spiral-note b{color:#263741}.practice-card{background:#fff;color:#17232c;border-color:#d9e2e8}.practice-card .tip,.practice-card .range{color:#71808a}
+.keypad-card{background:linear-gradient(180deg,#182b3a,#0b1721);border:2px solid #304a5d;box-shadow:inset 0 0 0 4px rgba(0,0,0,.18),var(--shadow)}.keypad-title:before{content:"● ";color:#55f59d}
 .key{border:0;border-bottom:5px solid #15202b;background:linear-gradient(#e6eef4,#9aabb8);color:#11202a;text-shadow:0 1px #fff;box-shadow:0 5px 0 #536571;font-size:28px}.key:active{transform:translateY(4px);box-shadow:0 1px 0 #536571}.hud-box{background:#081722;border-color:#284657}.hud-box b{color:#8fffd9;font-family:ui-monospace,monospace}
 .mile:before{content:"";width:15px;height:15px;background:url("../../assets/game/ui/icons/kenney-game-icons/white/1x/star.png") center/contain no-repeat;opacity:.55}.mile.done:before{opacity:1;filter:drop-shadow(0 0 5px #4ee6b1)}
-.lab-track{height:58px;display:flex;align-items:center;gap:5px;padding:8px 10px;margin-top:14px;border-radius:13px;background:repeating-linear-gradient(90deg,#122533 0 24px,#0c1922 24px 29px);border:2px solid #365262;overflow:hidden}.lab-digit{min-width:34px;height:38px;display:grid;place-items:center;border-radius:6px;background:linear-gradient(#d9e1e7,#8599a6);color:#14222b;font:1000 22px/1 ui-monospace,monospace;box-shadow:0 3px 0 #4d606b;animation:digitDrop .18s ease-out}@keyframes digitDrop{from{transform:translateY(-24px) scale(.7);opacity:0}}
+.result-spiral{display:block;width:min(320px,100%);aspect-ratio:1.25/1;margin:12px auto;background:#fff;border:1px solid #d8e0e5;border-radius:16px}
+.lab-track{display:none}
 </style>
 <script src="../../kidscade-game-sdk.js" data-game-id="math_pi_memory" data-title="원주율 외우기" data-shell="true" data-mute="false"></script>
 </head>
@@ -161,9 +163,9 @@ body:before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradi
           <div class="hud-box"><span id="thirdLabel">다음 목표</span><b id="thirdStat">10</b></div>
         </div>
         <div class="number-stage" id="numberStage">
-          <div id="challengePane">
-            <div class="pi-line" id="piLine"><span class="fixed">3.</span><span class="cursor"></span></div>
-            <div class="lab-track" id="labTrack" aria-label="입력한 원주율 숫자 트랙"></div><div class="tip">숫자 블록을 실험 장치에 차곡차곡 넣으세요. 한 번 틀리면 실험 종료!</div>
+          <div id="challengePane" style="width:100%">
+            <div class="spiral-wrap"><canvas id="piSpiral" class="spiral-canvas" width="800" height="640" aria-label="입력한 원주율 숫자가 나선 모양으로 이어지는 화면"></canvas></div>
+            <div class="spiral-note"><b>3.</b>에서 시작해 맞힌 숫자만큼 달팽이 껍데기처럼 나선이 자라요. 한 번 틀리면 기록 종료!</div>
           </div>
           <div id="practicePane" hidden>
             <div class="practice-card">
@@ -200,6 +202,7 @@ body:before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradi
     <div class="mini" id="resultTitle">이번 기록</div>
     <h3><span id="resultDigits">0</span>자리</h3>
     <div class="newbest" id="newBest">새로운 최고 기록!</div>
+    <canvas id="resultSpiral" class="result-spiral" width="520" height="416" aria-label="이번 도전에서 만든 원주율 나선"></canvas>
     <div class="answer-note" id="answerNote"></div>
     <div class="result-actions">
       <button class="primary" id="retryBtn" type="button">다시 도전</button>
@@ -295,16 +298,44 @@ body:before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradi
   function startChallenge(){
     ensurePi(1200); setView("challenge"); running=true; digits=""; startedAt=performance.now();
     $("modeLabel").textContent="🏆 기록 도전";$("challengePane").hidden=false;$("practicePane").hidden=true;$("practiceActions").hidden=true;
-    $("piLine").innerHTML='<span class="fixed">3.</span><span class="cursor"></span>';
+    drawPiSpiral($("piSpiral"),digits);
     refreshHud();
     try{window.KidscadeGame&&KidscadeGame.start&&KidscadeGame.start({mode:"challenge"})}catch(e){}
   }
-  function renderLabTrack(){var h=$("labTrack");if(!h)return;h.innerHTML=digits.slice(-12).split("").map(function(d){return '<span class="lab-digit">'+d+'</span>'}).join("");}
-  function renderChallenge(){
-    var visible=digits.slice(-40), prefix=digits.length>40?"…":"";
-    $("piLine").innerHTML='<span class="fixed">3.</span><span class="correct">'+prefix+visible+'</span><span class="cursor"></span>';
-    refreshHud();
+  function renderLabTrack(){}
+  function spiralPoints(count,w,h){
+    var pts=[],cx=w/2,cy=h/2,maxR=Math.min(w,h)*.46;
+    if(!count)return pts;
+    var rawMax=10+Math.pow(Math.max(1,count),.62)*8.8;
+    var scale=Math.min(1,maxR/rawMax);
+    for(var i=0;i<count;i++){
+      var t=i*.47+.55,r=(10+Math.pow(i+1,.62)*8.8)*scale;
+      pts.push({x:cx+Math.cos(t)*r,y:cy+Math.sin(t)*r,t:t,r:r,scale:scale});
+    }
+    return pts;
   }
+  function drawPiSpiral(canvas,value,wrongDigit){
+    if(!canvas)return;
+    var cssW=Math.max(260,canvas.clientWidth||canvas.width||600),cssH=Math.round(cssW/1.25),dpr=Math.min(window.devicePixelRatio||1,2);
+    canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);
+    var c=canvas.getContext("2d");c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,cssW,cssH);c.fillStyle="#fff";c.fillRect(0,0,cssW,cssH);
+    var pts=spiralPoints(value.length,cssW,cssH),font=Math.max(7,Math.min(20,18*(pts[0]?pts[0].scale:1)));
+    c.textAlign="center";c.textBaseline="middle";c.font="900 "+font+"px ui-monospace, SFMono-Regular, Consolas, monospace";
+    c.fillStyle="#17232c";c.font="1000 "+Math.max(18,font+7)+"px Georgia,serif";c.fillText("3.",cssW/2,cssH/2);
+    var colors=["#21313b","#2d6a72","#72512d","#68436c","#356243"];
+    c.font="900 "+font+"px ui-monospace, SFMono-Regular, Consolas, monospace";
+    for(var i=0;i<pts.length;i++){c.fillStyle=colors[Math.floor(i/10)%colors.length];c.fillText(value[i],pts[i].x,pts[i].y)}
+    if(pts.length){
+      var p=pts[pts.length-1];c.beginPath();c.arc(p.x,p.y,Math.max(2,font*.18),0,Math.PI*2);c.fillStyle="#4ee6b1";c.fill();
+      if((value.length%10)===0){c.fillStyle="#8a969d";c.font="800 "+Math.max(8,font*.55)+"px system-ui,sans-serif";c.fillText("★ "+value.length,p.x,p.y-Math.max(12,font))}
+    }
+    if(wrongDigit!==undefined&&wrongDigit!==null){
+      var n=value.length,t=n*.47+.55,base=10+Math.pow(n+1,.62)*8.8,scale=pts[0]?pts[0].scale:1,r=base*scale,x=cssW/2+Math.cos(t)*r,y=cssH/2+Math.sin(t)*r;
+      c.strokeStyle="#e65063";c.lineWidth=3;c.beginPath();c.moveTo(x-6,y-6);c.lineTo(x+6,y+6);c.moveTo(x+6,y-6);c.lineTo(x-6,y+6);c.stroke();
+      c.fillStyle="#e65063";c.font="900 "+Math.max(9,font*.75)+"px ui-monospace,monospace";c.fillText(String(wrongDigit),x,y-13);
+    }
+  }
+  function renderChallenge(){drawPiSpiral($("piSpiral"),digits);refreshHud();}
   function celebrateMilestone(n){
     if(milestones.indexOf(n)>=0){showToast("🎉 "+n+"자리 돌파!");soundMilestone();burst();
       try{window.KidscadeGame&&KidscadeGame.milestone&&KidscadeGame.milestone("pi_"+n,{digits:n,uniqueKey:"pi_"+n})}catch(e){}
@@ -313,7 +344,7 @@ body:before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradi
   function finishChallenge(wrongDigit){
     if(!running)return; running=false;
     var count=digits.length, expected=piDigits[count], elapsed=Math.max(.001,(performance.now()-startedAt)/1000), oldBest=best(), result=null;
-    soundWrong();$("playCard").classList.remove("flash");void $("playCard").offsetWidth;$("playCard").classList.add("flash");
+    soundWrong();drawPiSpiral($("piSpiral"),digits,wrongDigit);$("playCard").classList.remove("flash");void $("playCard").offsetWidth;$("playCard").classList.add("flash");
     try{
       if(window.KidscadeGame&&KidscadeGame.result)result=KidscadeGame.result({
         scope:"session",status:"completed",score:count,scoreOptions:{higherIsBetter:true,unit:"digits"},
@@ -324,6 +355,7 @@ body:before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradi
     $("resultDigits").textContent=count;$("newBest").classList.toggle("show",newBest);
     var pos=count+1;
     $("answerNote").innerHTML=pos+"번째 숫자는 <b style='color:#ffd76a'>"+expected+"</b>였어요.<br>입력한 숫자: <b style='color:#ff8390'>"+wrongDigit+"</b> · "+elapsed.toFixed(1)+"초";
+    drawPiSpiral($("resultSpiral"),digits,wrongDigit);
     $("resultOverlay").classList.add("show");
     if(newBest){setTimeout(function(){soundMilestone();burst()},200)}
     renderHome();refreshHud();
@@ -387,7 +419,7 @@ body:before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradi
     else if(e.key==="Enter"&&mode==="home"){startChallenge()}
   });
 
-  ensurePi(1200);renderHome();refreshHud();
+  window.addEventListener("resize",function(){if(mode==="challenge")drawPiSpiral($("piSpiral"),digits)});ensurePi(1200);renderHome();refreshHud();drawPiSpiral($("piSpiral"),"");
 })();
 </script>
 </body>
