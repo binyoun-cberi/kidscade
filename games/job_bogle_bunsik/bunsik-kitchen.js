@@ -713,8 +713,8 @@ class RamenKitchen3D{
   const seat=this.hallSeats[slot],guest=this.customerHolders[slot];if(!seat||!guest)return[];
   const laneZ=this.hallLaneZ(seat),end=new THREE.Vector3(guest.position.x,0,guest.position.z+.65);
   return[
-   new THREE.Vector3(0,0,-5.85),
-   new THREE.Vector3(0,0,laneZ),
+   new THREE.Vector3(.75,0,-5.85),
+   new THREE.Vector3(.75,0,laneZ),
    new THREE.Vector3(seat.position.x,0,laneZ),
    end
   ]
@@ -754,8 +754,8 @@ class RamenKitchen3D{
   const laneZ=this.hallLaneZ(seat);
   return[
    new THREE.Vector3(-6.3,.02,-8.35),
-   new THREE.Vector3(0,.02,-8.35),
-   new THREE.Vector3(0,.02,laneZ),
+   new THREE.Vector3(-.75,.02,-8.35),
+   new THREE.Vector3(-.75,.02,laneZ),
    new THREE.Vector3(seat.position.x,.02,laneZ),
    new THREE.Vector3(seat.tablePosition.x,.02,seat.tablePosition.z+.82)
   ]
@@ -764,17 +764,17 @@ class RamenKitchen3D{
   const laneZ=this.hallLaneZ(seat);
   return[
    new THREE.Vector3(seat.position.x,.02,laneZ),
-   new THREE.Vector3(0,.02,laneZ),
-   new THREE.Vector3(0,.02,-5.85),
-   new THREE.Vector3(0,.02,-2.8),
+   new THREE.Vector3(-.75,.02,laneZ),
+   new THREE.Vector3(-.75,.02,-5.85),
+   new THREE.Vector3(-.75,.02,-2.8),
    this.dishCartSinkTarget()
   ]
  }
  dishCartPathHome(){
   return[
-   new THREE.Vector3(0,.02,-2.8),
-   new THREE.Vector3(0,.02,-5.85),
-   new THREE.Vector3(0,.02,-8.35),
+   new THREE.Vector3(-.75,.02,-2.8),
+   new THREE.Vector3(-.75,.02,-5.85),
+   new THREE.Vector3(-.75,.02,-8.35),
    new THREE.Vector3(-6.3,.02,-8.35),
    this.dishCartHome.clone()
   ]
@@ -1102,7 +1102,8 @@ class RamenKitchen3D{
   const laneZ=this.hallLaneZ(seat);
   c.path=[
    new THREE.Vector3(0,0,-12.15),
-   new THREE.Vector3(0,0,laneZ),
+   new THREE.Vector3(-.45,0,-12.15),
+   new THREE.Vector3(-.45,0,laneZ),
    new THREE.Vector3(seat.position.x,0,laneZ),
    seat.position.clone()
   ];
@@ -1154,8 +1155,8 @@ class RamenKitchen3D{
   const laneZ=this.hallLaneZ(c.seat);
   c.path=[
    new THREE.Vector3(c.seat.position.x,0,laneZ),
-   new THREE.Vector3(0,0,laneZ),
-   new THREE.Vector3(0,0,-5.35),
+   new THREE.Vector3(.45,0,laneZ),
+   new THREE.Vector3(.45,0,-5.35),
    new THREE.Vector3(-2.15,0,-5.35),
    this.dishReturnPoint.clone()
   ]
@@ -1172,12 +1173,12 @@ class RamenKitchen3D{
   const fromReturn=c.phase==='returningDish'||Math.hypot(c.holder.position.x-this.dishReturnPoint.x,c.holder.position.z-this.dishReturnPoint.z)<.55;
   c.phase='leaving';c.holder.position.y=0;c.holder.scale.setScalar(1);c.holder.userData.seatedScaleY=1;c.holder.rotation.z=0;
   const z=c.holder.position.z,laneZ=c.seat?this.hallLaneZ(c.seat):z,path=[];
-  if(fromReturn)path.push(new THREE.Vector3(-2.15,0,-5.35),new THREE.Vector3(0,0,-5.35));
+  if(fromReturn)path.push(new THREE.Vector3(-2.15,0,-5.35),new THREE.Vector3(.45,0,-5.35));
   else{
    if(c.seat)path.push(new THREE.Vector3(c.seat.position.x,0,laneZ));
-   path.push(new THREE.Vector3(0,0,laneZ))
+   path.push(new THREE.Vector3(.45,0,laneZ))
   }
-  path.push(new THREE.Vector3(0,0,-12.15),this.hallEntrance.clone());c.path=path
+  path.push(new THREE.Vector3(.45,0,-12.15),new THREE.Vector3(0,0,-12.15),this.hallEntrance.clone());c.path=path
  }
  moveCustomerPath(c,dt,speed=2.25){
   const target=c.path[0];if(!target)return true;
