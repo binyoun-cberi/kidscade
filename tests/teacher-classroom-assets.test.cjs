@@ -17,7 +17,7 @@ const catalogData = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.js
 const catalog = Array.isArray(catalogData) ? catalogData : catalogData.games;
 const game = catalog.find(g => g.id === 'job_teacher_classroom');
 
-test('teacher simulator v64 loads the six-period direct-control game', () => {
+test('teacher simulator v65 loads the six-period direct-control game', () => {
   assert.match(html, /id="game"/);
   assert.match(html, /id="joystick"/);
   assert.match(html, /id="actionButton"/);
@@ -183,7 +183,7 @@ test('multi-room assets remain connected', () => {
   for (const rel of assets) assert.ok(fs.existsSync(path.join(root, rel)), 'missing teacher simulator asset: '+rel);
 });
 
-test('catalog publishes teacher simulator v64', () => {
+test('catalog publishes teacher simulator v65', () => {
   assert.ok(game);
   assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=64');
   assert.match(game.description, /건강/);
