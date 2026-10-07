@@ -6,7 +6,7 @@ const path=require('node:path');
 const ROOT=path.resolve(__dirname,'..');
 const gameDir=path.join(ROOT,'games','high_quarantine_17');
 
-test('격리구역 17 v24 keeps one 3D flow and preserves outbreak pressure across eight weeks',()=>{
+test('격리구역 17 v25 keeps one 3D flow and preserves outbreak pressure across eight weeks',()=>{
   const html=fs.readFileSync(path.join(gameDir,'격리구역 17.html'),'utf8');
   const outbreak=fs.readFileSync(path.join(gameDir,'outbreak-v3.js'),'utf8');
   const field=fs.readFileSync(path.join(gameDir,'field-topdown-v18.js'),'utf8');
@@ -18,13 +18,13 @@ test('격리구역 17 v24 keeps one 3D flow and preserves outbreak pressure acro
   const catalog=JSON.parse(fs.readFileSync(path.join(ROOT,'data','games.json'),'utf8'));
   const entry=(catalog.games||catalog).find(g=>g.id==='high_quarantine_17');
 
-  assert.match(html,/surveillance-v11\.js\?v=10/);
-  assert.match(html,/field-topdown-v18\.js\?v=10/);
-  assert.match(html,/facility-3d-v20\.js\?v=7/);
-  assert.match(html,/field-3d-v21\.js\?v=5/);
+  assert.match(html,/surveillance-v11\.js\?v=11/);
+  assert.match(html,/field-topdown-v18\.js\?v=11/);
+  assert.match(html,/facility-3d-v20\.js\?v=8/);
+  assert.match(html,/field-3d-v21\.js\?v=6/);
   assert.match(html,/three-r160\/three\.module\.js/);
   assert.match(html,/3D 격리시설\/CAMP-17/);
-  assert.equal(entry.href,'games/high_quarantine_17/격리구역 17.html?v=24');
+  assert.equal(entry.href,'games/high_quarantine_17/격리구역 17.html?v=25');
 
   assert.match(field,/api\.respondCamp=function/);
   assert.match(field,/api\.respondGlobal=function/);
@@ -41,6 +41,21 @@ test('격리구역 17 v24 keeps one 3D flow and preserves outbreak pressure acro
   assert.match(field,/bridge\(\)/);
   assert.doesNotMatch(field,/kidscade-avatar|avatar-studio-preview|guest-default\.png/);
   assert.match(field,/Q17Field3DBridge/);
+  assert.match(field,/지휘소 장비 책상/);
+  assert.match(field,/보급 천막·적재물/);
+  assert.match(field,/addObstacle\(770,95,38,82,'금속 쉘터'\)/);
+  assert.match(field,/\{x:760,y:395,r:15,opened:false/);
+  assert.match(surveillance,/지휘소 장비 책상/);
+  assert.match(surveillance,/보급 천막·적재물/);
+  assert.match(surveillance,/경찰차/);
+  assert.match(surveillance,/지원 밴/);
+  assert.match(surveillance,/폐기물 컨테이너/);
+  assert.match(main3d,/plane\(world,15,16,0x4a4d49\)/);
+  assert.match(main3d,/\[-\.65,\.865,2\.08\]/);
+  assert.match(facility,/\[X\(247\),\.95,Z\(102\)\]/);
+  assert.match(facility,/\[X\(273\),\.95,Z\(102\)\]/);
+  assert.match(facility,/\[\[520,234\],\[760,395\],\[350,288\]\]/);
+
   assert.match(field,/aimAt:\(x,y,down=false\)/);
   assert.match(field,/window\.Q17Field3D\?\.active/);
   assert.match(field,/function moveTowardSmart/);
@@ -70,14 +85,14 @@ test('격리구역 17 v24 keeps one 3D flow and preserves outbreak pressure acro
   assert.doesNotMatch(field3d,/kidscade-avatar|avatar-studio-preview|guest-default\.png/);
   assert.match(field3d,/q17FieldStage3D/);
   assert.match(field3d,/q17-field-input-layer/);
-  assert.match(field3d,/version:'21\.5'/);
+  assert.match(field3d,/version:'21\.6'/);
   assert.match(main3d,/Q-17 CHECKPOINT/);
   assert.match(main3d,/통과 · CAMP-17/);
   assert.match(main3d,/A 추가검사/);
   assert.match(main3d,/격리 · 소각 처리/);
   assert.match(main3d,/syncQueue/);
   assert.match(main3d,/q17-main3d/);
-  assert.match(main3d,/version:'22\.2'/);
+  assert.match(main3d,/version:'22\.3'/);
   assert.match(main3d,/bottom:390px/);
   assert.match(main3d,/camera\.aspect<\.9/);
   assert.match(main3d,/const DECISION_PATHS=/);
@@ -147,7 +162,7 @@ test('격리구역 17 v24 keeps one 3D flow and preserves outbreak pressure acro
   assert.match(facility,/\.3,tz=\(Number\(info\.y\)-50\)\*\.16875/);
   assert.match(facility,/campBeacon/);
   assert.match(facility,/mode==='camp'\?1\.88:1\.72/);
-  assert.match(facility,/version:'20\.6'/);
+  assert.match(facility,/version:'20\.7'/);
   for(const landmark of ['지휘소','A/B 격리동','보급창고','의무막사','외곽 검문 게이트']){
     assert.ok(facility.includes(landmark)&&field3d.includes(landmark),'same CAMP-17 landmarks: '+landmark);
   }
