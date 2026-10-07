@@ -236,7 +236,7 @@ function damageEnemy(e,amount,kind,tower){
 }
 function killEnemy(e){
   if(e.dead)return;e.dead=true;state.score+=e.boss?800:18+state.wave*2;state.ink+=e.boss?20:1;
-  flashEffect(e.x,e.y,e.color,e.boss?.09:.045);
+  flashEffect(e.x,e.y,e.color,e.boss ? .09 : .045);
   if(e.split&&!e.boss){for(let i=0;i<2;i++){const c={...e,id:state.uid++,type:'normal',hp:20,maxHp:20,speed:.095,r:.008,damage:3,color:'#2f3035',split:false,dead:false,pathT:Math.max(0,e.pathT-i*.025)};state.enemies.push(c)}}
 }
 
@@ -252,22 +252,23 @@ function towerUpdate(t,dt){
   const targets=state.enemies.filter(e=>!e.dead&&dist(t,e)<=s.range).sort((a,b)=>enemyProgress(b)-enemyProgress(a));
   if(!targets.length)return;
   const target=targets[0];t.cool=1/s.rate;t.pulse=.12;
+  const linkedElement=(t.links.find(m=>['burn','slow','poison'].includes(m.def.role))||{}).def?.role||'';
   if(s.beam||t.def.role==='pierce'||t.def.role==='push'||t.def.role==='gravity'){
     if(t.def.role==='pierce'){
       const ang=Math.atan2(target.y-t.y,target.x-t.x);let hit=0;
-      for(const e of targets){const dx=e.x-t.x,dy=e.y-t.y;const along=dx*Math.cos(ang)+dy*Math.sin(ang),perp=Math.abs(-dx*Math.sin(ang)+dy*Math.cos(ang));if(along>0&&perp<.025){damageEnemy(e,s.damage,'',t);hit++;if(hit>=4)break}}
+      for(const e of targets){const dx=e.x-t.x,dy=e.y-t.y;const along=dx*Math.cos(ang)+dy*Math.sin(ang),perp=Math.abs(-dx*Math.sin(ang)+dy*Math.cos(ang));if(along>0&&perp<.025){damageEnemy(e,s.damage,linkedElement,t);hit++;if(hit>=4)break}}
       lineEffect(t.x,t.y,target.x,target.y,t.def.color,.12,2);
     }else if(t.def.role==='push'){
-      damageEnemy(target,s.damage,'push',t);lineEffect(t.x,t.y,target.x,target.y,t.def.color,.14,2);
+      damageEnemy(target,s.damage,'push',t);if(linkedElement)damageEnemy(target,0,linkedElement,t);lineEffect(t.x,t.y,target.x,target.y,t.def.color,.14,2);
     }else if(t.def.role==='gravity'){
-      for(const e of targets.filter(e=>dist(t,e)<=s.area)) {damageEnemy(e,s.damage,'',t);e.pushBack=-.015}
+      for(const e of targets.filter(e=>dist(t,e)<=s.area)) {damageEnemy(e,s.damage,linkedElement,t);e.pushBack=Math.max(e.pushBack,.018)}
       ringEffect(t.x,t.y,s.area,t.def.color,.18);
     }else{
-      damageEnemy(target,s.damage,t.def.role==='slow'?'slow':'',t);lineEffect(t.x,t.y,target.x,target.y,t.def.color,.09,3);
+      damageEnemy(target,s.damage,linkedElement||(['burn','slow','poison'].includes(t.def.role)?t.def.role:''),t);lineEffect(t.x,t.y,target.x,target.y,t.def.color,.09,3);
       if((s.chain||0)>0&&targets[1]){damageEnemy(targets[1],s.damage*.55,'',t);lineEffect(target.x,target.y,targets[1].x,targets[1].y,t.def.color,.08,2)}
     }
   }else{
-    state.shots.push({x:t.x,y:t.y,target,damage:s.damage,speed:s.projectileSpeed||.55,color:t.def.color,area:s.area||0,kind:t.def.role,source:t,dead:false});
+    state.shots.push({x:t.x,y:t.y,target,damage:s.damage,speed:s.projectileSpeed||.55,color:t.def.color,area:s.area||0,kind:(linkedElement||t.def.role),source:t,dead:false});
   }
 }
 function shotUpdate(s,dt){
