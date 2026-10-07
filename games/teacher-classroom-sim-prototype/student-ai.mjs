@@ -3,6 +3,7 @@ export const AI_RULES=Object.freeze({
   focusOffTaskRatio:.10,
   focusReturnRatio:.55,
   teacherNearDistance:2.35,
+  focusNaturalRecoveryMultiplier:.50,
   teacherRecoveryMultiplier:2.35,
   focusHelpRatio:.30,
   focusGrowthPerHelp:.45,
@@ -12,6 +13,7 @@ export const AI_RULES=Object.freeze({
   maxFightsPerRecess:1,
   socialInteractionSeconds:[5,9],
   socialDrainPerSecond:1.9,
+  socialNaturalRecoveryMultiplier:.50,
   conflictSeconds:7,
   fightSeconds:7,
   conflictCooldownSeconds:8,
@@ -59,7 +61,7 @@ export function updateLessonFocus(student,dt,{teacherNear=false}={}){
     }
     return '';
   }
-  const mult=teacherNear?AI_RULES.teacherRecoveryMultiplier:1;
+  const mult=AI_RULES.focusNaturalRecoveryMultiplier*(teacherNear?AI_RULES.teacherRecoveryMultiplier:1);
   student.focus=Math.min(student.focusMax,student.focus+student.focusRecovery*mult*dt);
   if(student.focus>=student.focusMax*AI_RULES.focusReturnRatio){
     student.mode='focused';
@@ -83,7 +85,7 @@ export function resetSocialForRecess(student){
 }
 
 export function recoverSocial(student,dt,mult=1){
-  student.social=Math.min(student.socialMax,student.social+student.socialRecovery*mult*dt);
+  student.social=Math.min(student.socialMax,student.social+student.socialRecovery*AI_RULES.socialNaturalRecoveryMultiplier*mult*dt);
   student.cooldown=Math.max(0,student.cooldown-dt);
 }
 
