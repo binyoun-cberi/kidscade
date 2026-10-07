@@ -15,11 +15,11 @@ const catalogData = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.js
 const catalog = Array.isArray(catalogData) ? catalogData : catalogData.games;
 const game = catalog.find(g => g.id === 'job_teacher_classroom');
 
-test('teacher simulator v60 is a direct-control 3D classroom game', () => {
+test('teacher simulator v61 is a direct-control 3D classroom game', () => {
   assert.match(html, /id="game"/);
   assert.match(html, /id="joystick"/);
   assert.match(html, /id="actionButton"/);
-  assert.match(html, /game\.js\?v=60/);
+  assert.match(html, /game\.js\?v=61/);
   assert.match(html, /style\.css\?v=60/);
   assert.doesNotMatch(html, /waiting-panel/);
   assert.doesNotMatch(html, /visitorCard/);
@@ -44,7 +44,7 @@ test('teacher simulator reuses Chibi and committed furniture assets', () => {
   for (const rel of assets) assert.ok(fs.existsSync(path.join(root, rel)), 'missing teacher simulator asset: '+rel);
   assert.match(js, /allinonepr\.glb/);
   assert.match(js, /kenney-furniture-kit\/desk\.glb/);
-  assert.match(js, /student-ai\.mjs/);
+  assert.match(js, /student-ai\.mjs\?v=61/);
 });
 
 test('student AI safety rails cap simultaneous chaos', async () => {
@@ -71,6 +71,34 @@ test('focus cap and recovery create different student rhythms without personalit
   assert.ok(seoyeonStarts <= 1);
 });
 
+test('natural focus recovery leaves time to notice while teacher proximity helps', async () => {
+  const ai = await import(pathToFileURL(aiPath).href + '?recovery=' + Date.now());
+  assert.equal(ai.AI_RULES.focusNaturalRecoveryMultiplier, .5);
+  assert.equal(ai.AI_RULES.socialNaturalRecoveryMultiplier, .5);
+
+  const profile = ai.STUDENT_PROFILES.find(s => s.id === 'minsu');
+  const natural = ai.createStudentRuntime(profile);
+  natural.mode = 'offtask';
+  natural.focus = natural.focusMax * ai.AI_RULES.focusOffTaskRatio;
+  let naturalSeconds = 0;
+  while (natural.mode === 'offtask' && naturalSeconds < 30) {
+    ai.updateLessonFocus(natural, .1, {teacherNear:false});
+    naturalSeconds += .1;
+  }
+
+  const watched = ai.createStudentRuntime(profile);
+  watched.mode = 'offtask';
+  watched.focus = watched.focusMax * ai.AI_RULES.focusOffTaskRatio;
+  let watchedSeconds = 0;
+  while (watched.mode === 'offtask' && watchedSeconds < 30) {
+    ai.updateLessonFocus(watched, .1, {teacherNear:true});
+    watchedSeconds += .1;
+  }
+
+  assert.ok(naturalSeconds >= 5 && naturalSeconds <= 7);
+  assert.ok(watchedSeconds >= 2 && watchedSeconds <= 3.5);
+});
+
 test('low social energy raises conflict risk but teacher proximity suppresses it', async () => {
   const ai = await import(pathToFileURL(aiPath).href + '?social=' + Date.now());
   const a = ai.createStudentRuntime(ai.STUDENT_PROFILES[0]);
@@ -84,8 +112,34 @@ test('low social energy raises conflict risk but teacher proximity suppresses it
   assert.equal(ai.conflictProbability(a,b,{teacherNear:false,relationActive:true}),1);
 });
 
-test('catalog publishes teacher simulator v60', () => {
+test('student navigation does not bypass desks', () => {
+  assert.doesNotMatch(js, /\|\|actor\.kind==='student'/);
+  assert.match(js, /function segmentHitsRect\(/);
+  assert.match(js, /function studentSegmentClear\(/);
+  assert.match(js, /function findStudentPath\(/);
+  assert.match(js, /nearestConnectedNavCell/);
+});
+
+test('social timer starts only after students actually meet', () => {
+  const start = js.indexOf('function updateRecess(dt)');
+  const end = js.indexOf('function showBubble', start);
+  const block = js.slice(start,end);
+  const meetIndex = block.indexOf('if(meet){');
+  const timerIndex = block.indexOf('pair.time+=dt');
+  assert.ok(meetIndex >= 0 && timerIndex > meetIndex);
+});
+
+test('unhandled fights are not credited as player success', () => {
+  const start = js.indexOf('function autoResolveFight(pair)');
+  const end = js.indexOf('function updateRecess', start);
+  const block = js.slice(start,end);
+  assert.match(block, /stats\.missedFights\+\+/);
+  assert.doesNotMatch(block, /stats\.fightsSeparated\+\+/);
+  assert.match(js, /놓친 싸움/);
+});
+
+test('catalog publishes teacher simulator v61', () => {
   assert.ok(game);
-  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=60');
+  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=61');
   assert.match(game.description, /직접 움직여/);
 });
