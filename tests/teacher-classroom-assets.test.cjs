@@ -392,7 +392,7 @@ test('fifteenth pupil gets a three-person team instead of being omitted', async 
 
 test('teacher-wide signal helps fifteen pupils while capping lesson interactions', () => {
   assert.match(js,/type:'groupFocus'/);
-  assert.match(js,/groupSignalsThisLesson<2/);
+  assert.match(js,/groupSignalsThisLesson<TEACHING_RULES\.maxGroupFocusPerLesson/);
   assert.match(js,/groupSignalCooldown=30/);
   assert.match(js,/for\(const s of activeLessonStudents\(\)\)/);
   assert.match(js,/hudTimer=\.23/);
@@ -452,8 +452,8 @@ test('actual teacher position and student focus both affect each learner mastery
   assert.match(html, /id="instructionPanel"/);
   assert.match(html, /id="instructionBar"/);
   assert.match(css, /#instructionPanel/);
-  assert.match(js, /type:'assignWork'/);
-  assert.match(js, /type:'startRecap'/);
+  assert.match(js, /currentAction\.type==='assignWork'/);
+  assert.match(js, /currentAction\.type==='startRecap'/);
 });
 
 test('catalog publishes teacher simulator v71', () => {
