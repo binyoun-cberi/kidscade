@@ -134,4 +134,6 @@ test('pedestrian gait simulation never lets feet enter the sidewalk',()=>{
   for(let i=0;i<1200;i++){c.updateCity(1/60);min=Math.min(min,c.pedestrianFootY(mover))}
   assert.ok(min>=.085-1e-9,'foot bottom '+min+' must stay at least 2.5 cm above the 0.06 sidewalk top');
 });
-test('market page cache-busts the v4 asset pass',()=>{assert.match(html,/market-walk\\.js\\?v=14-asset-fix/)});
+test('town people use skeleton-safe clones and actual walk animation instead of collapsed skinned meshes',()=>{assert.match(js,/SkeletonUtils\\.js/);assert.match(js,/cloneSkeleton\\(g\\.scene\\)/);assert.match(js,/wrap\\.userData\\.animations=g\\.animations\\|\\|\\[\\]/);assert.match(js,/new THREE\\.AnimationMixer\\(root\\)/);assert.match(js,/m\\.mixer\\?\\.update\\(dt\\)/);assert.match(js,/mixer:startModelAnimation\\(r,\\/walk\\|sprint\\|run\\/i\\)/)});
+test('traffic crashes and dog attacks have distinct audible and visual feedback',()=>{assert.match(js,/function playCarImpactSound\\(/);assert.match(js,/function playDogSound\\(/);assert.match(js,/impactBurst\\(playerPos,'car'\\)/);assert.match(js,/triggerCameraImpact\\(\\.34,\\.52\\)/);assert.match(js,/playDogSound\\('bark'\\)/);assert.match(js,/dogBarkCooldown=1\\.35\\+Math\\.random\\(\\)\\*1\\.15/);assert.match(js,/playDogSound\\('bite'\\)/);assert.match(js,/updateCameraImpact\\(dt\\)/)});
+test('market page cache-busts the town feedback fix',()=>{assert.match(html,/market-walk\\.js\\?v=15-town-feedback/)});
