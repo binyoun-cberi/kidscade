@@ -1163,7 +1163,7 @@ const WORLD_VIEW_RADIUS=mobileModeEnabled?21:30;
 let streamCenterX=Infinity,streamCenterZ=Infinity;
 let gameFreeMode='survival',survivalBag={},survivalStage=0,freePhysicsY=0,legacyWorld=false,savedFreePosition=null,visitedBiomes=new Set();
 let survivalEquipment={head:'',chest:'',legs:'',feet:'',shield:''},survivalDamageCarry=0;
-let survivalStats={},survivalFinished=false,survivalExposure=0,survivalTimeAcc=0,firstNightStarted=false;
+let survivalStats={},survivalFinished=false,survivalAdventureDone=new Set(),survivalExposure=0,survivalTimeAcc=0,firstNightStarted=false;
 let discoveredLandmarks=new Set(),restoredLandmarks=new Set(),unlockedTech=new Set();
 let nearLandmarkPoi=null,restorationSession=null,dungeonSession=null;
 let dungeonYaw=0,dungeonPitch=0,dungeonKeys={},dungeonTargets=[],dungeonGates=[];
@@ -1221,7 +1221,7 @@ function recipeUnlocked(recipeId){
   return !tech||unlockedTech.has(tech)||gameFreeMode==='creative';
 }
 function survivalCuboidMax(){
-  return gameFreeMode==='creative'?8:(unlockedTech.has('largeCuboid')?6:3);
+  return gameFreeMode==='creative'?8:(unlockedTech.has('largeCuboid')?6:(survivalAdventureDone.has('geometry')?4:3));
 }
 function landmarkPoiBaseY(poi){
   const [ox,oz]=poi.origin,[w,,d]=poi.compact.size;
@@ -1830,7 +1830,6 @@ function initDungeon(){
 }
 function openLandmarkDungeon(poi){
   if(!poi||gameFreeMode!=='survival')return;
-  if(survivalStage<6){toast('먼저 첫 거점을 만들고 돌을 모아 탐험 준비를 해 보세요.');return}
   saveFreeWorld();
   const variant=dungeonShrineVariant(poi);
   dungeonSession={
@@ -3063,7 +3062,7 @@ function initFree(){
   freeSelectedShapeKey=null;weather='clear';weatherTimer=18;critters=[];
   freeAvatarFacingRight=false;
   freeAvatarAction='';freeAvatarActionStartedAt=0;freeAvatarActionUntil=0;freeAvatarDefeated=false;freeAvatarReturnAt=0;freeViewBeforeDefeat=null;
-  survivalBag={};survivalStage=0;savedFreePosition=null;visitedBiomes=new Set();
+  survivalBag={};survivalStage=0;survivalAdventureDone=new Set();savedFreePosition=null;visitedBiomes=new Set();
   firstJourney={phase:'idle',plan:null};buildingWorks=[];projectGuide='';journeyUiAt=0;
   survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;survivalHealth=5;healthRegenClock=0;lastCreatureDamage=0;lastCreatureAttackAt=0;
   freeFluidKind='';lastEnvironmentDamage=0;survivalBreath=100;lastDrownDamage=0;freeFallPeakY=0;
@@ -3099,7 +3098,7 @@ function initFree(){
   applyRestoredLandmarksToLoadedWorld();
   rebuildAllWorldMeshes();
   buildHotbar();buildInventory();setupShapeWorkbench();buildFurnaceRecipes();
-  $('actionXray').classList.toggle('hidden',survival&&survivalStage<3);
+  $('actionXray').classList.remove('hidden');
   setupWeather();spawnCritters();updateCreatureHealthUi();updateFreeMission();
   $('actionSave').onclick=()=>{saveFreeWorld();toast('월드를 저장했어요.')};
   $('actionWorks').classList.toggle('hidden',mobileModeEnabled);$('actionWorks').onclick=()=>toggleBuildingWorks(true);
@@ -3195,27 +3194,40 @@ function pulseSurvivalQuest(){
   card.classList.remove('quest-complete');void card.offsetWidth;card.classList.add('quest-complete');
   setTimeout(()=>card.classList.remove('quest-complete'),760);
 }
-function advanceSurvival(){
-  if(gameFreeMode!=='survival'||survivalFinished)return;
-  const previousStage=survivalStage;
-  let progressed=false;
-  while(survivalStage<worldRules.GOALS.length-1&&
-    worldRules.goalProgress(worldRules.GOALS[survivalStage],survivalStats)>=
-      worldRules.GOALS[survivalStage].need){
-    survivalStage++;progressed=true;
+function survivalAdventureGoals(){return worldRules.GOALS.filter(g=>g.kind==='adventure')}
+function survivalGoalDone(goal){
+  return worldRules.goalProgress(goal,survivalStats)>=goal.need;
+}
+function syncSurvivalAdventureState(announce=false){
+  const adventures=survivalAdventureGoals(),newly=[];
+  for(const goal of adventures){
+    if(survivalGoalDone(goal)&&!survivalAdventureDone.has(goal.id)){
+      survivalAdventureDone.add(goal.id);newly.push(goal);
+    }
   }
-  if(survivalStage===worldRules.GOALS.length-1&&
-    worldRules.goalProgress(worldRules.GOALS[survivalStage],survivalStats)>=
-      worldRules.GOALS[survivalStage].need){
-    survivalFinished=true;progressed=true;
-    toast('생존 원정 완료! 이제 자유롭게 더 탐험하고 건축해 보세요.');
+  // Keep the old numeric field only as a save/backward-compatibility summary.
+  const completedAll=worldRules.GOALS.filter(survivalGoalDone).length;
+  survivalStage=Math.max(0,Math.min(worldRules.GOALS.length-1,completedAll));
+  const wasFinished=survivalFinished;
+  survivalFinished=adventures.length>0&&adventures.every(g=>survivalAdventureDone.has(g.id));
+  if(announce&&newly.length){
+    const goal=newly[newly.length-1];
+    toast('추천 모험 달성 · '+goal.title+(goal.rewardLabel?' · 보상: '+goal.rewardLabel:''));
+    pulseSurvivalQuest();sfx('good');
+  }
+  if(!wasFinished&&survivalFinished){
+    toast('추천 모험 도감 완성! 이제도 하고 싶은 대로 계속 살아가면 돼요.');
     reportResult('free-survival',100,true);
-  }else if(progressed){
-    const discovered=refreshRecipeDiscoveries(true);
-    toast('새로운 목표 · '+worldRules.GOALS[survivalStage].title+(discovered.length?' · 새 제작법 '+discovered.length+'개 발견':''));
   }
-  if(progressed){pulseSurvivalQuest();sfx('good');saveFreeWorld()}
-  $('actionXray').classList.toggle('hidden',survivalStage<3);
+  return newly.length>0||(!wasFinished&&survivalFinished);
+}
+function advanceSurvival(){
+  if(gameFreeMode!=='survival')return;
+  const discovered=refreshRecipeDiscoveries(true);
+  const progressed=syncSurvivalAdventureState(true);
+  if(discovered.length&&!progressed)toast('새 제작법 '+discovered.length+'개 발견 · 가방에서 확인해 보세요.');
+  if(progressed||discovered.length)saveFreeWorld();
+  $('actionXray').classList.remove('hidden');
   configureMobileMode('free');updateFreeMission();
 }
 function putOnHotbar(type){
@@ -3288,7 +3300,7 @@ function refreshRecipeDiscoveries(markUnread=true){
   if(gameFreeMode!=='survival')return [];
   const added=[];
   for(const recipe of worldRules.RECIPES){
-    if(recipe.stage>survivalStage||!recipeUnlocked(recipe.id)||discoveredRecipeIds.has(recipe.id))continue;
+    if(!recipeUnlocked(recipe.id)||discoveredRecipeIds.has(recipe.id))continue;
     const clues=recipeDiscoveryClues(recipe);
     if(!clues.some(type=>discoveredResources.has(type)||bagCount(type)>0))continue;
     discoveredRecipeIds.add(recipe.id);if(markUnread)unreadRecipeIds.add(recipe.id);added.push(recipe);
@@ -3313,7 +3325,7 @@ function recipeCategory(recipe){
 function visibleSurvivalRecipes(){
   const biomeRecipes={flowerDye:'flowers',reedMat:'marsh',sandstone:'desert',
     snowBrick:'snow',cactusDye:'desert'};
-  return worldRules.RECIPES.filter(r=>(!campActive()||['planks','sticks','workbench','woodPick'].includes(r.id))&&discoveredRecipeIds.has(r.id)&&r.stage<=survivalStage&&recipeUnlocked(r.id)&&
+  return worldRules.RECIPES.filter(r=>(!campActive()||['planks','sticks','workbench','woodPick'].includes(r.id))&&discoveredRecipeIds.has(r.id)&&recipeUnlocked(r.id)&&
     (!['workbench','woodPick','stonePick','ironPick','woodSword','stoneSword','ironSword',...SURVIVAL_GEAR_TYPES].includes(r.id)||!bagCount(r.id))&&
     (!biomeRecipes[r.id]||visitedBiomes.has(biomeRecipes[r.id])||
       Object.keys(r.needs).some(item=>bagCount(item)>0)))
@@ -3433,7 +3445,7 @@ function buildInventory(category='전체'){
   $('survivalCraftPanel').classList.toggle('hidden',!survival);
   $('survivalBagHeader')?.classList.toggle('hidden',!survival);
   $('shapeWorkbench').classList.toggle('hidden',survival?
-    campActive()||survivalStage<3||!hasWorkbench():!(category==='도형'||category==='전체'));
+    campActive()||!hasWorkbench():!(category==='도형'||category==='전체'));
   $('inventoryNote').textContent=survival?
     '제작대를 설치하면 도형과 장비 제작이 열려요. 방어구·방패는 가방에서 눌러 장착하고, 검·곡괭이는 핫바에서 사용해요.':
     '물·모래·불과 식물은 서로 다른 물리·화학적 성질을 갖고 있어요.';
@@ -3548,13 +3560,13 @@ function updateFreeMission(){
       if(!discoveredLandmarks.has(close.id)){
         discoveredLandmarks.add(close.id);
         trackSurvival('find','landmark:'+close.id);
-        toast('랜드마크 발견 · '+close.name+'! 내부 던전의 비밀을 탐험할 수 있어요.');
+        toast('랜드마크 발견 · '+close.name+'! 원하면 바로 안쪽을 탐험할 수 있어요.');
         saveFreeWorld();
       }
       if(close.distance<=close.radius+3)nearLandmarkPoi=close;
     }
   }
-  const canRestore=gameFreeMode==='survival'&&survivalStage>=6&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
+  const canRestore=gameFreeMode==='survival'&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
   $('actionCheck').classList.toggle('hidden',!canRestore);
   if(canRestore){
     $('actionCheck').textContent='던전 입장';
@@ -3567,19 +3579,19 @@ function updateFreeMission(){
   }
   const chosen=blockDef(selectedType||'hand').name;
   if(gameFreeMode==='survival'){
-    const goal=worldRules.GOALS[survivalStage];
-    const progress=survivalFinished?goal.need:worldRules.goalProgress(goal,survivalStats);
-    $('freeQuestTitle').textContent=survivalFinished?'생존 원정 완료 · 자유 탐험':goal.title;
+    const adventures=survivalAdventureGoals();
+    const done=adventures.filter(g=>survivalAdventureDone.has(g.id)||survivalGoalDone(g)).length;
+    const pending=adventures.filter(g=>!survivalAdventureDone.has(g.id)&&!survivalGoalDone(g));
+    $('freeQuestTitle').textContent=survivalFinished?'자유 생존 · 추천 모험 완료':'자유 생존 · 원하는 대로';
     $('freeQuestDescription').textContent=survivalFinished?
-      '클리어한 랜드마크 던전과 해금된 건축 기술로 월드를 계속 발전시켜 보세요.':goal.description;
-    $('adventureCount').textContent=survivalFinished?'완료':
-      progress+'/'+goal.need+' · '+(survivalStage+1)+'/'+worldRules.GOALS.length;
-    $('adventureBar').style.width=(survivalFinished?100:Math.round(progress/goal.need*100))+'%';
+      '추천 모험은 모두 해봤어요. 이제 집을 짓거나 탐험하거나 원하는 놀이를 계속해 보세요.':
+      (pending.length?'추천: '+pending.slice(0,3).map(g=>g.title).join(' · ')+' · 안 해도 괜찮아요.':
+      '집을 짓거나 멀리 떠나거나 원하는 것을 만들어 보세요.');
+    $('adventureCount').textContent='추천 '+done+'/'+adventures.length;
+    $('adventureBar').style.width=(adventures.length?Math.round(done/adventures.length*100):0)+'%';
     $('freeState').textContent='생존 · '+(freeFluidKind==='water'?'수영 · ':freeFluidKind==='lava'?'용암 · ':'')+chosen;
     $('freeHint').textContent=canRestore?'Q · 랜드마크 던전 입장':
-      survivalStage<3?'좌클릭 유지 채집 · F 생물 상호작용 · E 가방·제작 · V 시점':
-      survivalStage<=4?'E로 가방 열기 · 곡괭이로 돌 캐기':
-      '좌클릭 채집·전투 · F 생물 상호작용 · E 제작 · V 시점 · P 색칠 · X 수학 렌즈';
+      'E 가방·제작 · F 생물 상호작용 · V 시점 · P 면 색칠 · X 수학 렌즈';
   }else{
     const total=5,done=collected.size;
     $('freeQuestTitle').textContent='월드 탐험 기록';
@@ -3590,7 +3602,7 @@ function updateFreeMission(){
     $('freeHint').textContent=nearRuin?'Q 폐허 설계도 · E 가방 · F 비행 · V 시점':
       'E 가방 · F 비행 · V 시점 · R 복사 · P 색칠 · X 수학 렌즈';
   }
-  if(mobileModeEnabled&&gameFreeMode==='survival')$('freeHint').textContent=canRestore?'가까운 유적에서 행동 버튼을 눌러 보자.':'가운데 +로 바라보고 행동 버튼을 눌러 보자.';
+  if(mobileModeEnabled&&gameFreeMode==='survival')$('freeHint').textContent=canRestore?'가까운 랜드마크에서 행동 버튼을 눌러 들어갈 수 있어요.':'가운데 +로 바라보고 행동 버튼을 눌러 보세요.';
   renderExplorationHint();
   if(campActive())renderCampQuest(campStep());
 }
@@ -3827,7 +3839,7 @@ function placementPreviewValid(type,p){
   if(!placementSupportValid(type,p.x,p.y,p.z))return false;
   if(type==='cuboid'){
     const dims=currentCuboidSpec.dims;
-    if(gameFreeMode==='survival'&&(survivalStage<3||!hasWorkbench()||bagCount('planks')<dims.reduce((a,b)=>a*b,1)))return false;
+    if(gameFreeMode==='survival'&&(!hasWorkbench()||bagCount('planks')<dims.reduce((a,b)=>a*b,1)))return false;
     for(let dx=0;dx<dims[0];dx++)for(let dy=0;dy<dims[1];dy++)for(let dz=0;dz<dims[2];dz++)
       if(!inWorld(p.x+dx,p.y+dy,p.z+dz)||getBlock(p.x+dx,p.y+dy,p.z+dz))return false;
     return true;
@@ -3946,7 +3958,7 @@ function placeFreeBlock(hit){
   if(survival){
     if(selectedType==='cuboid'){
       const volume=currentCuboidSpec.dims.reduce((a,b)=>a*b,1);
-      if(survivalStage<3||!hasWorkbench()||bagCount('planks')<volume){
+      if(!hasWorkbench()||bagCount('planks')<volume){
         toast('제작대와 판자 '+volume+'개가 필요해요.');return;
       }
     }else if(bagCount(selectedType)<1){
@@ -4233,7 +4245,7 @@ function saveFreeWorld(){
     dayTime,cuboidSpec:currentCuboidSpec,facePaintColor,campLesson:{...survivalCamp},
     firstJourney,buildingWorks,projectGuide,
     position:[camera.position.x,freePhysicsY,camera.position.z],
-    bag:survivalBag,stage:survivalStage,legacyTerrain:legacyWorld,visitedBiomes:[...visitedBiomes],
+    bag:survivalBag,stage:survivalStage,adventures:[...survivalAdventureDone],legacyTerrain:legacyWorld,visitedBiomes:[...visitedBiomes],
     discoveredResources:[...discoveredResources],discoveredRecipes:[...discoveredRecipeIds],unreadRecipes:[...unreadRecipeIds],
     stats:survivalStats,finished:survivalFinished,exposure:survivalExposure,
     firstNightStarted,health:survivalHealth,worldTime:survivalWorldTime,
@@ -4274,6 +4286,7 @@ function loadFreeWorld(){
           const saved=data.campLesson;survivalCamp={version:1,completed:Array.isArray(saved.completed)?saved.completed.filter(id=>window.CubeArchitectCamp.STEPS.some(s=>s.id===id)):[],dismissed:!!saved.dismissed,finished:!!saved.finished,baseline:saved.baseline||null,prepared:!!saved.prepared,site:Array.isArray(saved.site)&&saved.site.length===3&&saved.site.every(Number.isFinite)?saved.site:null};
         }
         survivalBag=data.bag&&typeof data.bag==='object'?data.bag:{};
+        survivalAdventureDone=new Set(Array.isArray(data.adventures)?data.adventures:[]);
         discoveredResources=new Set(Array.isArray(data.discoveredResources)?data.discoveredResources:[]);
         discoveredRecipeIds=new Set(Array.isArray(data.discoveredRecipes)?data.discoveredRecipes:[]);
         unreadRecipeIds=new Set(Array.isArray(data.unreadRecipes)?data.unreadRecipes:[]);
@@ -4339,7 +4352,7 @@ function loadFreeWorld(){
         }
         for(const [type,n] of Object.entries(survivalStats.placed||{}))if((Number(n)||0)>0)discoveredResources.add(type);
         for(const [type,n] of Object.entries(survivalStats.smelted||{}))if((Number(n)||0)>0)discoveredResources.add(type);
-        refreshRecipeDiscoveries(false);updateCraftDiscoveryHud();
+        refreshRecipeDiscoveries(false);syncSurvivalAdventureState(false);updateCraftDiscoveryHud();
       }
       for(const [key,value] of data.edits||[]){
         const [x,y,z]=parseWorldKey(key);
@@ -4587,7 +4600,7 @@ function creatureRosterForBiome(biome,night,includeElite=false){
   const specs=Object.values(window.CubeArchitectCreatures?.SPECIES||{});
   return specs.filter(spec=>spec.biomes?.includes(biome)&&
     (!spec.nocturnal||night)&&(includeElite||!spec.elite)&&
-    (!spec.elite||survivalStage>=4)&&creatureRespawnReady(spec));
+    (!spec.elite||(!campActive()&&survivalWorldTime>=180))&&creatureRespawnReady(spec));
 }
 function creatureRespawnReady(spec){
   const last=Number(creatureDefeats[spec.id]);
@@ -4621,7 +4634,7 @@ function spawnDynamicCreature(){
 }
 function tryRareEliteSpawn(){
   const biome=worldRules.region(camera.position.x,camera.position.z);
-  if(biome!=='badlands'||survivalStage<4||survivalWorldTime<nextEliteSpawnCheckAt)return false;
+  if(biome!=='badlands'||campActive()||survivalWorldTime<180||survivalWorldTime<nextEliteSpawnCheckAt)return false;
   nextEliteSpawnCheckAt=survivalWorldTime+45+Math.random()*30;
   const spec=window.CubeArchitectCreatures?.SPECIES?.cubeGolem;
   if(!spec||!creatureRespawnReady(spec)||creatureSpeciesCount(spec.id)>=1||Math.random()>=.12)return false;
@@ -5225,44 +5238,41 @@ function renderExplorationHint(){
   if(gameFreeMode!=='survival'){
     $('explorationHint').classList.add('hidden');return;
   }
-  const show=survivalStage>=4;
+  const show=!campActive()&&(survivalCamp.finished||survivalCamp.dismissed);
   $('explorationHint').classList.toggle('hidden',!show);
   if(!show)return;
   const x=Math.round(camera.position.x),z=Math.round(camera.position.z);
   if(nearLandmarkPoi){
     if(restoredLandmarks.has(nearLandmarkPoi.id))
-      $('explorationHint').textContent='던전 클리어 · '+nearLandmarkPoi.name+' · '+nearLandmarkPoi.tech.label;
-    else $('explorationHint').textContent='발견 · '+nearLandmarkPoi.name+
-      (survivalStage>=6?' · Q 또는 상단의 ‘던전 입장’을 눌러 탐험':
-      ' · 첫 거점과 돌 도구를 준비하면 던전에 들어갈 수 있어요.');
+      $('explorationHint').textContent='탐험 기록 · '+nearLandmarkPoi.name+' 던전 클리어 · '+nearLandmarkPoi.tech.label;
+    else $('explorationHint').textContent='발견 · '+nearLandmarkPoi.name+' · 원하면 Q/던전 입장으로 바로 탐험할 수 있어요.';
     return;
   }
   const smallPoi=nearestUncollectedMiniPoi(x,z,18);
   if(smallPoi){
     const dx=smallPoi.x-x,dz=smallPoi.z-z;
     const direction=(dz<-4?'북':dz>4?'남':'')+(dx>4?'동':dx<-4?'서':'');
-    $('explorationHint').textContent='근처 발견지 · '+smallPoi.label+' · '+(direction||'바로 근처')+'쪽 '+Math.max(1,Math.round(smallPoi.dist))+'칸';
+    $('explorationHint').textContent='추천 탐험 · '+smallPoi.label+' · '+(direction||'바로 근처')+'쪽 '+Math.max(1,Math.round(smallPoi.dist))+'칸';
     return;
   }
-  const landmark=nearestUnrestoredLandmark(x,z);
-  if(landmark&&survivalStage>=6){
-    const dx=landmark.center[0]-x,dz=landmark.center[1]-z;
-    const direction=(dz<-5?'북':dz>5?'남':'')+(dx>5?'동':dx<-5?'서':'');
-    const known=discoveredLandmarks.has(landmark.id);
-    $('explorationHint').textContent=(known?landmark.name:'멀리서 특이한 건축 흔적')+
-      ' · '+(direction||'근처')+'쪽 약 '+landmark.distance+'칸'+
-      (known?' · 던전 보상 '+landmark.tech.label:'');
-    return;
+  if(discoveredLandmarks.size){
+    const landmark=nearestUnrestoredLandmark(x,z);
+    if(landmark){
+      const dx=landmark.center[0]-x,dz=landmark.center[1]-z;
+      const direction=(dz<-5?'북':dz>5?'남':'')+(dx>5?'동':dx<-5?'서':'');
+      $('explorationHint').textContent='추천 탐험 · '+landmark.name+' · '+(direction||'근처')+'쪽 약 '+landmark.distance+'칸 · 보상 '+landmark.tech.label;
+      return;
+    }
   }
   const target=nearestUndiscoveredRegion(x,z);
   if(!target){
-    $('explorationHint').textContent='8개 바이옴을 모두 발견했어요. 이제 멀리 보이는 랜드마크를 찾아 던전을 탐험해 보세요.';
+    $('explorationHint').textContent='8개 바이옴을 모두 발견했어요. 이제도 원하는 곳을 자유롭게 돌아다녀 보세요.';
     return;
   }
   const dx=target.cx-x,dz=target.cz-z;
   const directions=(dz< -5?'북':dz>5?'남':'')+(dx>5?'동':dx< -5?'서':'');
   const info=worldRules.BIOME_REWARDS[target.id];
-  $('explorationHint').textContent='다음 지역: '+worldRules.BIOMES[target.id].name+
+  $('explorationHint').textContent='추천 탐험 · '+worldRules.BIOMES[target.id].name+
     ' · '+(directions||'근처')+'쪽 약 '+target.dist+'칸 · '+blockDef(info.resource).name;
 }
 function renderSurvivalSafety(shelter){
@@ -5529,7 +5539,7 @@ function configureMobileMode(target){
   $('mobileAvatar').classList.toggle('hidden',target!=='free'||!mobileUtilityOpen);
   $('mobileWorks').classList.toggle('hidden',target!=='free'||!mobileUtilityOpen);
   $('mobileFly').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival');
-  const poiRestore=target==='free'&&gameFreeMode==='survival'&&survivalStage>=6&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
+  const poiRestore=target==='free'&&gameFreeMode==='survival'&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id);
   $('mobileCheck').classList.toggle('hidden',target!=='challenge'&&!poiRestore&&target!=='dungeon');
   $('mobileCheck').textContent=target==='dungeon'?'조사':poiRestore?'던전':'검사';
   $('mobileSelect').classList.toggle('hidden',target!=='challenge');
@@ -5537,7 +5547,7 @@ function configureMobileMode(target){
   if(target==='dungeon')$('mobileNext').textContent='귀환';
   $('mobileCopy').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival'||!mobileUtilityOpen);
   $('mobileWeather').classList.toggle('hidden',target!=='free'||gameFreeMode==='survival'||!mobileUtilityOpen);
-  const geometryTools=target==='free'&&(gameFreeMode==='creative'||survivalStage>=3)&&mobileUtilityOpen;
+  const geometryTools=target==='free'&&mobileUtilityOpen;
   $('mobilePaint').classList.toggle('hidden',!geometryTools);
   $('mobileLens').classList.toggle('hidden',!geometryTools);
   const survivalActionHub=target==='free'&&gameFreeMode==='survival';
@@ -5601,7 +5611,7 @@ function mobileSpecialUseTarget(){
   }
   if(type==='furnace'){toggleFurnace(true);return true}
   if(type==='workbench'){survivalInventoryTab='craft';toggleInventory(true);return true}
-  if(survivalStage>=6&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
+  if(nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
     openLandmarkDungeon(nearLandmarkPoi);return true;
   }
   return false;
@@ -5673,7 +5683,7 @@ function helpFirstJourney(){
 }
 function updateFirstJourney(){
   const card=$('journeyCard');if(!card)return;
-  const available=mode==='free'&&gameFreeMode==='survival'&&!campActive()&&survivalStage>=6&&!['done','skip'].includes(firstJourney.phase);
+  const available=mode==='free'&&gameFreeMode==='survival'&&!campActive()&&(survivalCamp.finished||survivalCamp.dismissed)&&!['done','skip'].includes(firstJourney.phase);
   card.classList.toggle('hidden',!available);if(!available)return;
   const idle=firstJourney.phase==='idle';$('journeyStart').classList.toggle('hidden',!idle);$('journeyHelp').classList.toggle('hidden',idle);
   $('journeyTitle').textContent=idle?'첫 탐험 · 작은 다리':'첫 탐험 · 길을 이어 보자';
@@ -5873,7 +5883,7 @@ function initMobileControls(){
   tap('mobileCheck',()=>{
     if(mode==='challenge')checkChallenge();
     else if(mode==='dungeon')dungeonInteract();
-    else if(mode==='free'&&gameFreeMode==='survival'&&survivalStage>=6&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id))
+    else if(mode==='free'&&gameFreeMode==='survival'&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id))
       openLandmarkDungeon(nearLandmarkPoi);
   });
   tap('mobileSelect',()=>{if(mode==='challenge')selectLookedChallengePiece()});
@@ -6389,11 +6399,11 @@ document.addEventListener('keydown',e=>{
   if(e.code==='KeyF'&&gameFreeMode==='survival'){e.preventDefault();if(!interactWildCreature())toast('가까운 평화 생물을 십자선으로 바라보고 F를 눌러 보세요.');return}
   if(e.code==='KeyF'&&gameFreeMode==='creative'){freeFlying=!freeFlying;freeVelocityY=0;toast(freeFlying?'크리에이티브 비행 ON · Space 상승 / Shift 하강':'비행 OFF · 다시 지면의 물리를 따릅니다.');refreshMobileFly();updateFreeMission()}
   if(e.code==='KeyR'&&gameFreeMode==='creative')pickTargetBlock();
-  if(e.code==='KeyP'&&(gameFreeMode==='creative'||survivalStage>=3))paintLookedFace();
-  if(e.code==='KeyX'&&(gameFreeMode==='creative'||survivalStage>=3))toggleXray();
+  if(e.code==='KeyP')paintLookedFace();
+  if(e.code==='KeyX')toggleXray();
   if(e.code==='KeyT'&&gameFreeMode==='creative')cycleWeather();
   if(e.code==='KeyV'){cycleFreeView();return}
-  if(e.code==='KeyQ'&&gameFreeMode==='survival'&&survivalStage>=6&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
+  if(e.code==='KeyQ'&&gameFreeMode==='survival'&&nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
     openLandmarkDungeon(nearLandmarkPoi);return;
   }
   if(e.code==='KeyQ'&&gameFreeMode==='creative'&&nearRuin){
