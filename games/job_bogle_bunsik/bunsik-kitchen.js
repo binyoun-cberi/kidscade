@@ -1246,13 +1246,40 @@ function spawnOrder(forcedId=null){
 }
 function orderIngredientText(r){return r.need.map(id=>ingredientLabel(id)).join(' + ')}
 function orderIngredientIcons(r){return r.need.map(id=>INGREDIENTS[id]?.icon||'').join(' ')}
+const seenOrderTickets=new Set();
+function orderWaitState(patience){
+ const p=Math.max(0,Number(patience)||0);
+ if(p<=32)return{key:'urgent',label:'급해요!',icon:'⚠'};
+ if(p<=58)return{key:'hurry',label:'서둘러요',icon:'⏱'};
+ return{key:'calm',label:'대기 중',icon:'•'}
+}
+function orderTicketRows(r){
+ const rows=[['💧','물','2컵']];
+ r.need.forEach(id=>rows.push([INGREDIENTS[id]?.icon||'·',ingredientLabel(id),'1']));
+ return rows.map(([icon,name,count])=>'<div class="ticket-row"><span class="ticket-item"><i>'+icon+'</i>'+name+'</span><b>'+count+'</b></div>').join('')
+}
 function renderOrders(){
- els.orders.innerHTML='';const lefts=[25,41.5,58.5,75];
+ els.orders.innerHTML='';
  state.orders.forEach(o=>{
-  const r=recipeById(o.recipeId),d=document.createElement('button');d.type='button';const matching=(state.heldItem?.kind==='meal'&&state.heldItem.recipeId===o.recipeId)||(state.tray?.ready&&state.tray.recipeId===o.recipeId);
-  d.className='order-bubble'+(matching?' waiting':'')+(state.tutorial.active&&state.tutorial.step===6&&o.recipeId==='egg'?' target':'');d.dataset.order=String(o.id);d.style.setProperty('--left',(lefts[o.slot]||50)+'%');
-  d.innerHTML='<div class="order-main"><span class="customer-face">'+o.customer+'</span><span><b>'+r.name+'</b><span class="recipe-icons">'+orderIngredientIcons(r)+'</span></span></div><div class="patience"><i style="transform:scaleX('+(Math.max(0,o.patience)/100)+')"></i></div>';
-  d.addEventListener('click',()=>toast(state.heldItem?.kind==='meal'?'완성 라면을 들고 배식대에서 E를 눌러 주세요':'이 손님은 '+r.name+'을 기다리고 있어요',1300));els.orders.appendChild(d)
+  const r=recipeById(o.recipeId),d=document.createElement('button');d.type='button';
+  const matching=(state.heldItem?.kind==='meal'&&state.heldItem.recipeId===o.recipeId)||(state.tray?.ready&&state.tray.recipeId===o.recipeId);
+  const wait=orderWaitState(o.patience),fresh=!seenOrderTickets.has(o.id);seenOrderTickets.add(o.id);
+  d.className='order-ticket '+wait.key+(matching?' waiting':'')+(fresh?' printing':'')+(state.tutorial.active&&state.tutorial.step===6&&o.recipeId==='egg'?' target':'');
+  d.dataset.order=String(o.id);d.dataset.slot=String(o.slot);
+  d.innerHTML=
+   '<span class="ticket-tear ticket-tear-top" aria-hidden="true"></span>'+
+   '<div class="ticket-head"><span class="ticket-brand">BOGLE ORDER</span><span class="ticket-no">#'+String(o.id).padStart(3,'0')+'</span></div>'+
+   '<div class="ticket-customer"><span class="customer-face">'+o.customer+'</span><span><small>'+(Number(o.slot)+1)+'번 손님</small><strong>'+r.name+'</strong></span></div>'+
+   '<div class="ticket-rule"></div>'+
+   '<div class="ticket-items">'+orderTicketRows(r)+'</div>'+
+   '<div class="ticket-rule dotted"></div>'+
+   '<div class="ticket-route"><small>조리 힌트</small><b>물 → '+r.need.map(id=>ingredientLabel(id)).join(' → ')+'</b></div>'+
+   '<div class="ticket-wait"><span>'+wait.icon+' '+wait.label+'</span><em>'+Math.max(0,Math.round(o.patience))+'%</em></div>'+
+   '<div class="patience"><i style="transform:scaleX('+(Math.max(0,o.patience)/100)+')"></i></div>'+
+   '<span class="ticket-stamp" aria-hidden="true">완료</span>'+
+   '<span class="ticket-tear ticket-tear-bottom" aria-hidden="true"></span>';
+  d.addEventListener('click',()=>toast(state.heldItem?.kind==='meal'?'완성 라면을 들고 배식대에서 E를 눌러 주세요':'주문 '+String(o.id).padStart(3,'0')+' · '+r.name+'을 기다리고 있어요',1300));
+  els.orders.appendChild(d)
  })
 }
 function renderTray(){
@@ -1270,15 +1297,17 @@ function serveOrder(orderId){
  const quote=restaurant.quote(order.id,state.tray.recipeId,{quality:q}),earned=quote.earned,before=activePotCount();
  order.paused=true;state.busy=true;els.trayBtn.classList.add('hidden');updateActionButtons();toast('쟁반을 손님 앞으로 가져가는 중…',900);
  kitchen.animateServe(slot,()=>{
+  const ticket=els.orders.querySelector('[data-order="'+order.id+'"]');
   const sale=restaurant.serve(orderId,r.id,{quality:q});
   if(!sale.ok){order.paused=false;state.busy=false;renderOrders();updateActionButtons();toast('주문 상태가 바뀌었어요 · 다시 확인해 주세요',1700);return}
+  if(ticket){ticket.classList.add('served');ticket.setAttribute('aria-label',r.name+' 주문 완료')}
   state.tray=null;state.busy=false;setTimeout(()=>{if(state.running)addDirtyPlate()},1050);
   const after=activePotCount();
   if(wasTutorial){
    state.tutorial.active=false;state.tutorial.step=7;state.spawnClock=0;unlockHelper();
    setTimeout(()=>{if(state.running){spawnOrder();spawnOrder();toast('알바생 합류! 조리대에 올린 재료를 필요한 냄비로 옮겨줘요',3000)}},650)
   }else setTimeout(()=>{if(state.running)spawnOrder()},700);
-  renderTray();renderOrders();renderTutorial();renderPotStrip();renderSelectedHelp();updateActionButtons();updateHud();sfx(q>=82?'shop.purchase':'collect.coin_pickup',{volume:.25,cooldownMs:300});
+  renderTray();setTimeout(()=>renderOrders(),420);renderTutorial();renderPotStrip();renderSelectedHelp();updateActionButtons();updateHud();sfx(q>=82?'shop.purchase':'collect.coin_pickup',{volume:.25,cooldownMs:300});
   if(after>before)toast('새 화구가 열렸어요! 이제 냄비 '+after+'개를 쓸 수 있어요',2200);
   else if(wasTutorial)toast(r.name+' 첫 서빙 성공! +'+money(earned),1800);else toast(r.name+' 서빙 · '+qualityLabel(q)+' · +'+money(earned),1700)
  })
