@@ -189,8 +189,9 @@ test('friendship levels grow from repeated same-day interactions', async () => {
   const friendships = new Map();
   const a = 'minsu', b = 'jiwoo';
   assert.equal(life.friendshipInfo(friendships,a,b).level, 0);
-  for (let i=0;i<9;i++) life.addFriendship(friendships,a,b,1);
-  assert.ok(life.friendshipInfo(friendships,a,b).level >= 3);
+  for (let i=0;i<4;i++) life.addFriendship(friendships,a,b,1);
+  assert.equal(life.friendshipInfo(friendships,a,b).level, 3);
+  assert.deepEqual(life.FRIENDSHIP_RULES.levelThresholds, [0,1,2.5,4,6.5,9]);
   assert.equal(life.FRIENDSHIP_RULES.maxLevel, 5);
 });
 
@@ -211,6 +212,7 @@ test('friendship can cause one nearby classroom chatter pair but teacher can sto
   assert.match(js, /type:'quietFriends'/);
   assert.match(js, /function stopLessonChat\(/);
   assert.match(js, /chatterDrain=chat\?1\.22:1/);
+  assert.match(js, /if\(chat\)drainSocial\(s\.runtime,dt,\.18\)/);
 });
 
 test('friendship persists across the current day but is not written to storage', () => {
