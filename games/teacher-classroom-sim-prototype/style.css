@@ -153,6 +153,7 @@ code{display:block;padding:10px;border-radius:10px;background:#edf2f7;color:#405
 .statusBubble.conflict{background:#ffe0d7;color:#8b271b}
 .statusBubble.fight{background:#ffd0d0;color:#8c1515}
 .statusBubble.health{background:#ffe7e3;color:#8d3028}
+.statusBubble.chat{background:#fff2b8;color:#75520b}
 
 @media(pointer:fine){
   #joystick{opacity:.28}
