@@ -6,7 +6,7 @@ const path=require('node:path');
 const ROOT=path.resolve(__dirname,'..');
 const gameDir=path.join(ROOT,'games','high_quarantine_17');
 
-test('격리구역 17 v23 keeps one 3D flow and preserves outbreak pressure across eight weeks',()=>{
+test('격리구역 17 v24 keeps one 3D flow and preserves outbreak pressure across eight weeks',()=>{
   const html=fs.readFileSync(path.join(gameDir,'격리구역 17.html'),'utf8');
   const outbreak=fs.readFileSync(path.join(gameDir,'outbreak-v3.js'),'utf8');
   const field=fs.readFileSync(path.join(gameDir,'field-topdown-v18.js'),'utf8');
@@ -19,12 +19,12 @@ test('격리구역 17 v23 keeps one 3D flow and preserves outbreak pressure acro
   const entry=(catalog.games||catalog).find(g=>g.id==='high_quarantine_17');
 
   assert.match(html,/surveillance-v11\.js\?v=10/);
-  assert.match(html,/field-topdown-v18\.js\?v=9/);
-  assert.match(html,/facility-3d-v20\.js\?v=6/);
-  assert.match(html,/field-3d-v21\.js\?v=4/);
+  assert.match(html,/field-topdown-v18\.js\?v=10/);
+  assert.match(html,/facility-3d-v20\.js\?v=7/);
+  assert.match(html,/field-3d-v21\.js\?v=5/);
   assert.match(html,/three-r160\/three\.module\.js/);
   assert.match(html,/3D 격리시설\/CAMP-17/);
-  assert.equal(entry.href,'games/high_quarantine_17/격리구역 17.html?v=23');
+  assert.equal(entry.href,'games/high_quarantine_17/격리구역 17.html?v=24');
 
   assert.match(field,/api\.respondCamp=function/);
   assert.match(field,/api\.respondGlobal=function/);
@@ -39,8 +39,7 @@ test('격리구역 17 v23 keeps one 3D flow and preserves outbreak pressure acro
   assert.match(field,/state\.crates/);
   assert.match(field,/state\.survivors/);
   assert.match(field,/bridge\(\)/);
-  assert.match(field,/kidscade-avatar-studio-preview/);
-  assert.match(field,/guest-default\.png/);
+  assert.doesNotMatch(field,/kidscade-avatar|avatar-studio-preview|guest-default\.png/);
   assert.match(field,/Q17Field3DBridge/);
   assert.match(field,/aimAt:\(x,y,down=false\)/);
   assert.match(field,/window\.Q17Field3D\?\.active/);
@@ -61,21 +60,24 @@ test('격리구역 17 v23 keeps one 3D flow and preserves outbreak pressure acro
   assert.match(surveillance,/residents:fieldResidents\.map/);
   assert.match(surveillance,/threats:active\.map/);
   assert.match(surveillance,/applyCombatLosses\(result\.losses\|\|0,result\.lostIds\)/);
-  for(const asset of ['tent-detailed-open.glb','construction-fence.glb','ambulance.glb','gatelng-gun-turret.glb','character-female-a.glb']){
-    assert.ok(field3d.includes(asset),asset);
-  }
+  for(const asset of [
+    'tent-detailed-open.glb','bed-single.glb','construction-fence.glb','ambulance.glb',
+    'police.glb','van.glb','dumpster.glb','structure-metal.glb','structure-canvas.glb',
+    'fence-fortified.glb','box-large.glb','barrel.glb','radio.glb','laptop.glb',
+    'gatelng-gun-turret.glb','character-female-a.glb'
+  ]) assert.ok(field3d.includes(asset),asset);
   assert.match(field3d,/raycaster\.ray\.intersectPlane/);
-  assert.match(field3d,/kidscade-avatar-studio-preview/);
+  assert.doesNotMatch(field3d,/kidscade-avatar|avatar-studio-preview|guest-default\.png/);
   assert.match(field3d,/q17FieldStage3D/);
   assert.match(field3d,/q17-field-input-layer/);
-  assert.match(field3d,/version:'21\.3'/);
+  assert.match(field3d,/version:'21\.5'/);
   assert.match(main3d,/Q-17 CHECKPOINT/);
   assert.match(main3d,/통과 · CAMP-17/);
   assert.match(main3d,/A 추가검사/);
   assert.match(main3d,/격리 · 소각 처리/);
   assert.match(main3d,/syncQueue/);
   assert.match(main3d,/q17-main3d/);
-  assert.match(main3d,/version:'22\.1'/);
+  assert.match(main3d,/version:'22\.2'/);
   assert.match(main3d,/bottom:390px/);
   assert.match(main3d,/camera\.aspect<\.9/);
   assert.match(main3d,/const DECISION_PATHS=/);
@@ -113,9 +115,24 @@ test('격리구역 17 v23 keeps one 3D flow and preserves outbreak pressure acro
   assert.match(field,/personId:seed\?\.personId/);
   assert.match(field3d,/function actorPath/);
   assert.match(facility,/function personAsset/);
-  for(const asset of ['tent-detailed-open.glb','bed.glb','construction-fence.glb','ambulance.glb','gatelng-gun-turret.glb','character-male-a.glb']){
-    assert.ok(facility.includes(asset),asset);
-  }
+  assert.match(field3d,/const playerRoot=new THREE\.Group\(\)/);
+  assert.match(field3d,/cloneAsset\(A\.maleC,1\.72/);
+  assert.match(field,/경찰차/);
+  assert.match(field,/지원 밴/);
+  assert.match(field,/폐기물 컨테이너/);
+  assert.match(main3d,/A\.police/);
+  assert.match(main3d,/A\.fortifiedFence/);
+  assert.match(main3d,/A\.radio/);
+  assert.match(main3d,/A\.laptop/);
+  assert.match(facility,/A\.structureMetal/);
+  assert.match(facility,/A\.sideTable/);
+
+  for(const asset of [
+    'tent-detailed-open.glb','bed-single.glb','construction-fence.glb','ambulance.glb',
+    'police.glb','van.glb','dumpster.glb','structure-metal.glb','structure-canvas.glb',
+    'fence-fortified.glb','box-large.glb','barrel.glb','radio.glb','laptop.glb',
+    'trashcan.glb','gatelng-gun-turret.glb','character-male-a.glb'
+  ]) assert.ok(facility.includes(asset),asset);
   assert.match(facility,/Q17Surveillance/);
   assert.match(facility,/getIsolationSnapshot/);
   assert.match(facility,/applyNoveltyPalette|function tint\(/);
@@ -130,7 +147,7 @@ test('격리구역 17 v23 keeps one 3D flow and preserves outbreak pressure acro
   assert.match(facility,/\.3,tz=\(Number\(info\.y\)-50\)\*\.16875/);
   assert.match(facility,/campBeacon/);
   assert.match(facility,/mode==='camp'\?1\.88:1\.72/);
-  assert.match(facility,/version:'20\.5'/);
+  assert.match(facility,/version:'20\.6'/);
   for(const landmark of ['지휘소','A/B 격리동','보급창고','의무막사','외곽 검문 게이트']){
     assert.ok(facility.includes(landmark)&&field3d.includes(landmark),'same CAMP-17 landmarks: '+landmark);
   }
@@ -146,6 +163,20 @@ test('격리구역 17 v23 keeps one 3D flow and preserves outbreak pressure acro
   assert.match(game,/patrolWeek=\[1,3,5\]/);
   assert.match(game,/time:94/);
   assert.match(game,/time:102/);
+  for(const rel of [
+    'assets/game/3d/interiors/kenney-furniture-kit/bed-single.glb',
+    'assets/game/3d/interiors/kenney-furniture-kit/radio.glb',
+    'assets/game/3d/interiors/kenney-furniture-kit/laptop.glb',
+    'assets/game/3d/interiors/kenney-furniture-kit/trashcan.glb',
+    'assets/game/3d/survival/kenney-survival-kit/structure-metal.glb',
+    'assets/game/3d/survival/kenney-survival-kit/structure-canvas.glb',
+    'assets/game/3d/survival/kenney-survival-kit/fence-fortified.glb',
+    'assets/game/3d/survival/kenney-survival-kit/box-large.glb',
+    'assets/game/3d/survival/kenney-survival-kit/barrel.glb',
+    'assets/game/3d/vehicles/kenney-car-kit/police.glb',
+    'assets/game/3d/vehicles/kenney-car-kit/van.glb',
+    'assets/game/3d/city/kenney-city-kit-roads/dumpster.glb'
+  ]) assert.ok(fs.existsSync(path.join(ROOT,rel)),'missing Q17 shared asset '+rel);
   assert.doesNotThrow(()=>new Function(field));
   assert.doesNotThrow(()=>new Function(surveillance));
   assert.doesNotThrow(()=>new Function(facility.replace(/^import .*$/mg,'').replace(/import\.meta\.url/g,'document.baseURI')));
