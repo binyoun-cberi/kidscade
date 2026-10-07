@@ -43,7 +43,7 @@ export const GROUP_RULES=Object.freeze({
 
 export const FRIENDSHIP_RULES=Object.freeze({
   maxLevel:5,
-  levelThresholds:[0,2,5,9,14,20],
+  levelThresholds:[0,1,2.5,4,6.5,9],
   peacefulInteractionGain:1,
   teamInteractionGain:.45,
   lessonChatterGain:.20,
