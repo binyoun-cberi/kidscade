@@ -17,13 +17,13 @@ const catalogData = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.js
 const catalog = Array.isArray(catalogData) ? catalogData : catalogData.games;
 const game = catalog.find(g => g.id === 'job_teacher_classroom');
 
-test('teacher simulator v65 loads the six-period direct-control game', () => {
+test('teacher simulator v66 loads the six-period direct-control game', () => {
   assert.match(html, /id="game"/);
   assert.match(html, /id="joystick"/);
   assert.match(html, /id="actionButton"/);
   assert.match(html, /id="dayStrip"/);
-  assert.match(html, /school-day-game\.js\?v=64/);
-  assert.match(html, /style\.css\?v=64/);
+  assert.match(html, /school-day-game\.js\?v=66/);
+  assert.match(html, /style\.css\?v=66/);
   assert.match(html, /건강/);
   assert.match(html, /안전교육/);
   assert.match(css, /\.focusMeter/);
@@ -183,9 +183,46 @@ test('multi-room assets remain connected', () => {
   for (const rel of assets) assert.ok(fs.existsSync(path.join(root, rel)), 'missing teacher simulator asset: '+rel);
 });
 
-test('catalog publishes teacher simulator v65', () => {
+
+test('friendship levels grow from repeated same-day interactions', async () => {
+  const life = await import(pathToFileURL(lifePath).href + '?friend-level=' + Date.now());
+  const friendships = new Map();
+  const a = 'minsu', b = 'jiwoo';
+  assert.equal(life.friendshipInfo(friendships,a,b).level, 0);
+  for (let i=0;i<9;i++) life.addFriendship(friendships,a,b,1);
+  assert.ok(life.friendshipInfo(friendships,a,b).level >= 3);
+  assert.equal(life.FRIENDSHIP_RULES.maxLevel, 5);
+});
+
+test('high friendship speeds conflicts and sometimes allows self reconciliation', async () => {
+  const life = await import(pathToFileURL(lifePath).href + '?friend-conflict=' + Date.now());
+  assert.ok(life.friendshipConflictDuration(7,5) < life.friendshipConflictDuration(7,1));
+  assert.ok(life.friendshipSelfReconcileChance(5) > life.friendshipSelfReconcileChance(2));
+  assert.equal(life.friendshipSelfReconcileChance(0), 0);
+});
+
+test('friendship can cause one nearby classroom chatter pair but teacher can stop it', async () => {
+  const life = await import(pathToFileURL(lifePath).href + '?friend-chat=' + Date.now());
+  assert.equal(life.FRIENDSHIP_RULES.chatterMinLevel, 3);
+  assert.ok(life.FRIENDSHIP_RULES.chatterDistance <= 3);
+  assert.ok(life.FRIENDSHIP_RULES.chatterFocusRatio < .5);
+  assert.match(js, /let lessonChats=\[\]/);
+  assert.match(js, /lessonChats\.length\|\|teamActive/);
+  assert.match(js, /type:'quietFriends'/);
+  assert.match(js, /function stopLessonChat\(/);
+  assert.match(js, /chatterDrain=chat\?1\.22:1/);
+});
+
+test('friendship persists across the current day but is not written to storage', () => {
+  assert.match(js, /let friendships=new Map\(\)/);
+  assert.doesNotMatch(js, /friendships\.clear\(\)/);
+  assert.doesNotMatch(js, /localStorage[^\n]*friendship/i);
+  assert.doesNotMatch(js, /kidscade[^\n]*friendship/i);
+});
+
+test('catalog publishes teacher simulator v66', () => {
   assert.ok(game);
-  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=64');
+  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=66');
   assert.match(game.description, /건강/);
   assert.match(game.description, /안전교육/);
 });
