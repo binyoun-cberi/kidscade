@@ -867,14 +867,17 @@ function createKidscadeMaleSet(){
     'kidscade_male_body'
   ));
 
-  // 2) 눈 역시 원본 eyes mesh와 weights를 그대로 사용한다.
+  // 2) 원본 eyes의 topology, iris texture/UV, 78-bone weights를 유지한다.
+  // 기존 남자눈(.80)에 비해 세로를 추가로 12.5% 낮춰 둥근 눈 대신 차분한 소년형 눈매로 만든다.
+  // 홍채도 같은 메시 안에 있으므로 독립된 홍채 크기 조절은 하지 않는다.
   const eyeGeometry=eyesSource.geometry.clone();
   const ep=eyeGeometry.getAttribute('position');
   const eyeCenterY=1.620;
+  const maleEyeHeightScale=.70;
   for(let i=0;i<ep.count;i++){
     let x=ep.getX(i),y=ep.getY(i),z=ep.getZ(i);
-    x*=1.035;
-    y=eyeCenterY+(y-eyeCenterY)*.80;
+    x*=1.045;
+    y=eyeCenterY+(y-eyeCenterY)*maleEyeHeightScale;
     z+=.004;
     ep.setXYZ(i,x,y,z);
   }
@@ -883,36 +886,48 @@ function createKidscadeMaleSet(){
   eyeGeometry.computeBoundingBox();
   eyeGeometry.computeBoundingSphere();
 
-  group.add(cloneSkinnedMeshWithGeometry(
+  const maleEyes=cloneSkinnedMeshWithGeometry(
     eyesSource,
     eyeGeometry,
     Array.isArray(eyesSource.material)?eyesSource.material.slice():eyesSource.material,
     'kidscade_male_eyes'
-  ));
+  );
+  maleEyes.userData={...eyesSource.userData,generatedFrom:'eyes',eyeHeightScale:maleEyeHeightScale};
+  group.add(maleEyes);
 
-  // 3) 눈썹은 새 도형을 만들지 않고 원본 eyelashes mesh를 재성형해서 만든다.
+  // 3) 원본 eyelashes의 UV/topology/weights를 이용해 눈썹을 파생시킨다.
+  // 기존(.42,+.105)보다 24% 도톰하고 0.033 낮게, 눈 앞에서 명확히 보이게 정리한다.
   const browGeometry=lashesSource.geometry.clone();
   browGeometry.computeBoundingBox();
   const browBox=browGeometry.boundingBox;
   const browCenterY=(browBox.min.y+browBox.max.y)*.5;
   const br=browGeometry.getAttribute('position');
+  const maleBrowThickness=.52;
+  const maleBrowOffset=.072;
   for(let i=0;i<br.count;i++){
     let x=br.getX(i),y=br.getY(i),z=br.getZ(i);
-    x*=1.02;
-    y=browCenterY+(y-browCenterY)*.42+.105;
-    z+=.010;
+    x*=1.055;
+    y=browCenterY+(y-browCenterY)*maleBrowThickness+maleBrowOffset;
+    z+=.016;
     br.setXYZ(i,x,y,z);
   }
   br.needsUpdate=true;
   browGeometry.computeVertexNormals();
   browGeometry.computeBoundingBox();
   browGeometry.computeBoundingSphere();
-  group.add(cloneSkinnedMeshWithGeometry(
+  const maleBrows=cloneSkinnedMeshWithGeometry(
     lashesSource,
     browGeometry,
-    makeSolidMaterial('#3a2a24','Kidscade Male Brows'),
+    makeSolidMaterial('#30241f','Kidscade Male Brows'),
     'kidscade_male_brows'
-  ));
+  );
+  maleBrows.userData={
+    ...lashesSource.userData,
+    generatedFrom:'eyelashes',
+    browThickness:maleBrowThickness,
+    browOffset:maleBrowOffset
+  };
+  group.add(maleBrows);
 
   // 4) 기본 상의는 기존 shirt mesh 자체를 남자 체형에 맞춰 재성형한다.
   //    별도 CylinderGeometry 소매를 붙이지 않으므로 어깨/겨드랑이 deformation도 원본 weights를 따른다.

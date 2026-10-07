@@ -330,3 +330,23 @@ test('deployed Chibi studio uses commit-scoped HTML and JS assets',()=>{
   assert.match(worker,/x-kidscade-studio-build/);
   assert.match(wrangler,/\/teacher\/character-3d-studio\.html/);
 });
+
+
+test('male eyes and eyebrows preserve original Chibi skinned meshes and new proportions',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const manifest=JSON.parse(read('chibi/asset-manifest.json'));
+  const male=js.slice(js.indexOf('function createKidscadeMaleSet(){'),js.indexOf('function makeUnlitMaterial(source){'));
+  assert.match(male,/const eyeGeometry=eyesSource\.geometry\.clone\(\)/);
+  assert.match(male,/const maleEyeHeightScale=\.70/);
+  assert.match(male,/const maleBrowThickness=\.52/);
+  assert.match(male,/const maleBrowOffset=\.072/);
+  assert.match(male,/const browGeometry=lashesSource\.geometry\.clone\(\)/);
+  assert.match(male,/makeSolidMaterial\('#30241f','Kidscade Male Brows'\)/);
+  assert.match(male,/generatedFrom:'eyes'/);
+  assert.match(male,/generatedFrom:'eyelashes'/);
+  assert.doesNotMatch(male,/new THREE\.(?:SphereGeometry|TubeGeometry|ConeGeometry)/);
+  assert.equal(manifest.customParts.kidscade_male_eyes.revision,'boyish-eyes-v2');
+  assert.equal(manifest.customParts.kidscade_male_brows.revision,'defined-lower-brows-v2');
+  const html=read('teacher/character-3d-studio.html');
+  assert.match(html,/character-3d-studio\.js\?v=20261008-maleface2/);
+});
