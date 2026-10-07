@@ -24,30 +24,30 @@ const NOVELTY_FLYBYS=[
 const EARTH=5.9722e24,JUPITER=1.89813e27,SUN=1.98847e30;
 
 const STAGES=[
- {id:'dust',name:'우주 먼지',need:36,m0:1e-12,m1:1e-6,scale:'먼지 한 알보다 작음',fact:'우주 공간에도 아주 작은 고체 입자와 가스가 떠다닙니다.',discover:['cosmic_dust','micro_scale']},
- {id:'aggregate',name:'먼지 덩어리',need:100,m0:1e-6,m1:.05,scale:'눈에 겨우 보이는 알갱이',fact:'미세 입자들은 충돌하고 달라붙으며 더 큰 덩어리로 자랄 수 있습니다.',discover:['dust_aggregate']},
- {id:'pebble',name:'자갈 천체',need:240,m0:.05,m1:1e4,scale:'돌멩이에서 자동차 크기',fact:'작은 충돌이 계속되면 더 큰 덩어리가 되지만, 충돌이 너무 빠르면 다시 부서지기도 합니다.',discover:['collision_growth']},
- {id:'asteroid',name:'소행성',need:600,m0:1e4,m1:1e15,scale:'건물에서 작은 산 크기',fact:'질량이 커질수록 중력이 주변 물질의 경로를 더 크게 휘게 합니다.',discover:['asteroid','gravity']},
- {id:'planetesimal',name:'미행성',need:1300,m0:1e15,m1:1e21,scale:'거대한 산에서 작은 위성 크기',fact:'행성 형성 과정에서는 미행성들이 서로 충돌하고 합쳐져 더 큰 천체가 됩니다.',discover:['planetesimal']},
- {id:'protoplanet',name:'원시행성',need:2800,m0:1e21,m1:1e24,scale:'작은 행성 크기',fact:'충돌과 압축으로 내부가 뜨거워지고, 큰 천체는 중력 때문에 점점 둥글어집니다.',discover:['round_world','impact_heat']},
- {id:'rocky_planet',name:'암석행성',need:5500,m0:1e24,m1:2e26,scale:'지구와 비슷하거나 더 큰 행성',fact:'암석행성에는 충돌구·대기·위성처럼 서로 다른 흔적과 환경이 생길 수 있습니다.',discover:['rocky_planet','earth_scale']},
- {id:'gas_giant',name:'거대행성',need:9500,m0:2e26,m1:2.5e28,scale:'목성급 거대행성',fact:'거대행성은 두꺼운 수소·헬륨 대기를 가지며 강한 중력으로 많은 위성을 거느릴 수 있습니다.',discover:['gas_giant']},
- {id:'brown_dwarf',name:'갈색왜성',need:15000,m0:2.5e28,m1:1.6e29,scale:'행성과 별 사이의 질량',fact:'갈색왜성은 행성보다 훨씬 무겁지만 보통 별처럼 안정적인 수소 핵융합을 이어가기에는 부족합니다.',discover:['brown_dwarf']},
- {id:'star',name:'별',need:24000,m0:1.6e29,m1:4e31,scale:'태양급에서 거대질량별까지',fact:'중심의 압력과 온도가 충분히 높아지면 수소 핵융합이 시작되고 별이 스스로 빛납니다.',discover:['star_birth','fusion','solar_scale']},
- {id:'supergiant',name:'초거성',need:38000,m0:4e31,m1:9e31,scale:'태양보다 훨씬 무거운 별',fact:'매우 무거운 별은 연료를 빠르게 소모하고 마지막에는 핵붕괴를 겪을 수 있습니다.',discover:['supergiant','heavy_elements']},
+ {id:'dust',name:'우주 먼지',need:60,m0:1e-12,m1:1e-6,scale:'먼지 한 알보다 작음',fact:'우주 공간에도 아주 작은 고체 입자와 가스가 떠다닙니다.',discover:['cosmic_dust','micro_scale']},
+ {id:'aggregate',name:'먼지 덩어리',need:180,m0:1e-6,m1:.05,scale:'눈에 겨우 보이는 알갱이',fact:'미세 입자들은 충돌하고 달라붙으며 더 큰 덩어리로 자랄 수 있습니다.',discover:['dust_aggregate']},
+ {id:'pebble',name:'자갈 천체',need:500,m0:.05,m1:1e4,scale:'돌멩이에서 자동차 크기',fact:'작은 충돌이 계속되면 더 큰 덩어리가 되지만, 충돌이 너무 빠르면 다시 부서지기도 합니다.',discover:['collision_growth']},
+ {id:'asteroid',name:'소행성',need:1400,m0:1e4,m1:1e15,scale:'건물에서 작은 산 크기',fact:'질량이 커질수록 중력이 주변 물질의 경로를 더 크게 휘게 합니다.',discover:['asteroid','gravity']},
+ {id:'planetesimal',name:'미행성',need:3500,m0:1e15,m1:1e21,scale:'거대한 산에서 작은 위성 크기',fact:'행성 형성 과정에서는 미행성들이 서로 충돌하고 합쳐져 더 큰 천체가 됩니다.',discover:['planetesimal']},
+ {id:'protoplanet',name:'원시행성',need:8500,m0:1e21,m1:1e24,scale:'작은 행성 크기',fact:'충돌과 압축으로 내부가 뜨거워지고, 큰 천체는 중력 때문에 점점 둥글어집니다.',discover:['round_world','impact_heat']},
+ {id:'rocky_planet',name:'암석행성',need:19000,m0:1e24,m1:2e26,scale:'지구와 비슷하거나 더 큰 행성',fact:'암석행성에는 충돌구·대기·위성처럼 서로 다른 흔적과 환경이 생길 수 있습니다.',discover:['rocky_planet','earth_scale']},
+ {id:'gas_giant',name:'거대행성',need:38000,m0:2e26,m1:2.5e28,scale:'목성급 거대행성',fact:'거대행성은 두꺼운 수소·헬륨 대기를 가지며 강한 중력으로 많은 위성을 거느릴 수 있습니다.',discover:['gas_giant']},
+ {id:'brown_dwarf',name:'갈색왜성',need:70000,m0:2.5e28,m1:1.6e29,scale:'행성과 별 사이의 질량',fact:'갈색왜성은 행성보다 훨씬 무겁지만 보통 별처럼 안정적인 수소 핵융합을 이어가기에는 부족합니다.',discover:['brown_dwarf']},
+ {id:'star',name:'별',need:130000,m0:1.6e29,m1:4e31,scale:'태양급에서 거대질량별까지',fact:'중심의 압력과 온도가 충분히 높아지면 수소 핵융합이 시작되고 별이 스스로 빛납니다.',discover:['star_birth','fusion','solar_scale']},
+ {id:'supergiant',name:'초거성',need:230000,m0:4e31,m1:9e31,scale:'태양보다 훨씬 무거운 별',fact:'매우 무거운 별은 연료를 빠르게 소모하고 마지막에는 핵붕괴를 겪을 수 있습니다.',discover:['supergiant','heavy_elements']},
  {id:'supernova',name:'초신성 · 핵붕괴',need:100,m0:9e31,m1:6e31,scale:'별의 바깥층이 우주로 퍼지는 순간',fact:'핵붕괴 초신성에서는 별의 바깥층이 강하게 방출되고 중심에는 매우 조밀한 잔해가 남을 수 있습니다.',discover:['supernova'],auto:true},
- {id:'stellar_black_hole',name:'항성질량 블랙홀',need:60000,m0:2e31,m1:2e35,scale:'별 수 개에서 수만 개 질량',fact:'사건의 지평선 안쪽에서는 빛도 바깥으로 탈출할 수 없습니다.',discover:['black_hole','event_horizon']},
- {id:'intermediate_black_hole',name:'중간질량 블랙홀',need:95000,m0:2e35,m1:8e36,scale:'수백~수만 태양질량',fact:'중간질량 블랙홀은 항성질량과 초대질량 블랙홀 사이의 연결고리로 활발히 연구되고 있습니다.',discover:['intermediate_bh']},
- {id:'supermassive_black_hole',name:'초대질량 블랙홀',need:145000,m0:8e36,m1:1e39,scale:'은하 중심을 차지할 규모',fact:'많은 은하 중심에는 수백만~수십억 태양질량의 초대질량 블랙홀이 있습니다.',discover:['supermassive_bh','galaxy_scale']},
- {id:'quasar',name:'활동은하핵 · 퀘이사',need:210000,m0:1e39,m1:1e41,scale:'은하보다 멀리서도 보이는 밝은 핵',fact:'블랙홀 자체가 빛나는 것이 아니라, 주변 강착원반의 뜨거운 물질이 엄청난 빛을 냅니다.',discover:['quasar']},
- {id:'dwarf_galaxy',name:'왜소은하',need:280000,m0:1e41,m1:1e42,scale:'수천~수만 광년 · 별들이 이루는 작은 은하',fact:'여기부터는 블랙홀 한 개가 아니라 주변 별·가스·암흑물질을 포함한 구조 전체를 관측합니다. 블랙홀이 은하로 변하는 것은 아닙니다.',discover:['dwarf_galaxy','dark_matter']},
- {id:'spiral_galaxy',name:'나선은하',need:400000,m0:1e42,m1:3e42,scale:'약 10만 광년 · 나선팔을 펼친 은하',fact:'나선은하에는 별과 가스로 이루어진 원반과 나선팔이 있습니다. 우리 은하도 막대나선은하입니다.',discover:['spiral_galaxy','spiral_arms']},
- {id:'galaxy_group',name:'은하군',need:600000,m0:3e42,m1:2e43,scale:'수백만 광년 · 여러 은하의 모임',fact:'은하군은 중력으로 연결된 은하들의 모임입니다. 우리 은하와 안드로메다은하는 국부은하군에 속합니다.',discover:['galaxy_group','galaxy_merger']},
- {id:'galaxy_cluster',name:'은하단',need:900000,m0:2e43,m1:2e45,scale:'수백만~수천만 광년 · 수백~수천 은하',fact:'은하단은 많은 은하뿐 아니라 뜨거운 가스와 암흑물질을 포함하는 거대한 중력 결합 구조입니다.',discover:['galaxy_cluster','cluster_gas']},
- {id:'supercluster',name:'초은하단',need:1350000,m0:2e45,m1:2e47,scale:'수억 광년 · 은하군과 은하단의 큰 분포',fact:'초은하단은 여러 은하군과 은하단이 모인 넓은 영역입니다. 전체가 하나의 중력 결합 천체인 것은 아닙니다.',discover:['supercluster']},
- {id:'cosmic_filament',name:'우주 필라멘트',need:2000000,m0:2e47,m1:5e47,scale:'수억 광년 · 은하단 사이의 실 같은 구조',fact:'암흑물질과 가스, 은하들이 긴 실 모양으로 분포하며 은하단들을 연결합니다.',discover:['cosmic_filament','matter_flow']},
- {id:'galaxy_wall',name:'은하 장벽',need:3000000,m0:5e47,m1:1e48,scale:'수억 광년 이상 · 넓은 벽 모양의 분포',fact:'은하들은 실뿐 아니라 넓은 벽 모양으로도 분포합니다. 이 장벽은 단단한 벽이 아니라 은하들의 분포입니다.',discover:['galaxy_wall','cosmic_void']},
- {id:'cosmic_web',name:'우주 거대구조 · 코스믹 웹',need:4500000,m0:1e48,m1:1e49,scale:'필라멘트·장벽·은하단·거대공동의 그물망',fact:'코스믹 웹은 은하단과 필라멘트, 장벽, 은하가 드문 거대공동이 이루는 우주의 큰 분포입니다. 우주 전체의 끝을 뜻하지는 않습니다.',discover:['cosmic_web']}
+ {id:'stellar_black_hole',name:'항성질량 블랙홀',need:480000,m0:2e31,m1:2e35,scale:'별 수 개에서 수만 개 질량',fact:'사건의 지평선 안쪽에서는 빛도 바깥으로 탈출할 수 없습니다.',discover:['black_hole','event_horizon']},
+ {id:'intermediate_black_hole',name:'중간질량 블랙홀',need:880000,m0:2e35,m1:8e36,scale:'수백~수만 태양질량',fact:'중간질량 블랙홀은 항성질량과 초대질량 블랙홀 사이의 연결고리로 활발히 연구되고 있습니다.',discover:['intermediate_bh']},
+ {id:'supermassive_black_hole',name:'초대질량 블랙홀',need:1550000,m0:8e36,m1:1e39,scale:'은하 중심을 차지할 규모',fact:'많은 은하 중심에는 수백만~수십억 태양질량의 초대질량 블랙홀이 있습니다.',discover:['supermassive_bh','galaxy_scale']},
+ {id:'quasar',name:'활동은하핵 · 퀘이사',need:2600000,m0:1e39,m1:1e41,scale:'은하보다 멀리서도 보이는 밝은 핵',fact:'블랙홀 자체가 빛나는 것이 아니라, 주변 강착원반의 뜨거운 물질이 엄청난 빛을 냅니다.',discover:['quasar']},
+ {id:'dwarf_galaxy',name:'왜소은하',need:3950000,m0:1e41,m1:1e42,scale:'수천~수만 광년 · 별들이 이루는 작은 은하',fact:'여기부터는 블랙홀 한 개가 아니라 주변 별·가스·암흑물질을 포함한 구조 전체를 관측합니다. 블랙홀이 은하로 변하는 것은 아닙니다.',discover:['dwarf_galaxy','dark_matter']},
+ {id:'spiral_galaxy',name:'나선은하',need:6500000,m0:1e42,m1:3e42,scale:'약 10만 광년 · 나선팔을 펼친 은하',fact:'나선은하에는 별과 가스로 이루어진 원반과 나선팔이 있습니다. 우리 은하도 막대나선은하입니다.',discover:['spiral_galaxy','spiral_arms']},
+ {id:'galaxy_group',name:'은하군',need:11200000,m0:3e42,m1:2e43,scale:'수백만 광년 · 여러 은하의 모임',fact:'은하군은 중력으로 연결된 은하들의 모임입니다. 우리 은하와 안드로메다은하는 국부은하군에 속합니다.',discover:['galaxy_group','galaxy_merger']},
+ {id:'galaxy_cluster',name:'은하단',need:19300000,m0:2e43,m1:2e45,scale:'수백만~수천만 광년 · 수백~수천 은하',fact:'은하단은 많은 은하뿐 아니라 뜨거운 가스와 암흑물질을 포함하는 거대한 중력 결합 구조입니다.',discover:['galaxy_cluster','cluster_gas']},
+ {id:'supercluster',name:'초은하단',need:33200000,m0:2e45,m1:2e47,scale:'수억 광년 · 은하군과 은하단의 큰 분포',fact:'초은하단은 여러 은하군과 은하단이 모인 넓은 영역입니다. 전체가 하나의 중력 결합 천체인 것은 아닙니다.',discover:['supercluster']},
+ {id:'cosmic_filament',name:'우주 필라멘트',need:56500000,m0:2e47,m1:5e47,scale:'수억 광년 · 은하단 사이의 실 같은 구조',fact:'암흑물질과 가스, 은하들이 긴 실 모양으로 분포하며 은하단들을 연결합니다.',discover:['cosmic_filament','matter_flow']},
+ {id:'galaxy_wall',name:'은하 장벽',need:97500000,m0:5e47,m1:1e48,scale:'수억 광년 이상 · 넓은 벽 모양의 분포',fact:'은하들은 실뿐 아니라 넓은 벽 모양으로도 분포합니다. 이 장벽은 단단한 벽이 아니라 은하들의 분포입니다.',discover:['galaxy_wall','cosmic_void']},
+ {id:'cosmic_web',name:'우주 거대구조 · 코스믹 웹',need:168000000,m0:1e48,m1:1e49,scale:'필라멘트·장벽·은하단·거대공동의 그물망',fact:'코스믹 웹은 은하단과 필라멘트, 장벽, 은하가 드문 거대공동이 이루는 우주의 큰 분포입니다. 우주 전체의 끝을 뜻하지는 않습니다.',discover:['cosmic_web']}
 ];
 
 const DISCOVERIES=[
@@ -138,7 +138,7 @@ const ui={
 };
 
 function freshState(){
- return {stage:0,progress:0,insight:0,upgrades:{},discovered:{},taps:0,research:0,balanceVersion:2,startedAt:Date.now(),lastSave:Date.now(),sound:true,blackHoleEra:false};
+ return {stage:0,progress:0,insight:0,upgrades:{},discovered:{},taps:0,research:0,balanceVersion:3,startedAt:Date.now(),lastSave:Date.now(),sound:true,blackHoleEra:false};
 }
 let state=freshState(),running=false,paused=false,modalOpen=false,last=performance.now(),uiClock=0,saveClock=0;
 let eventNextAt=0,eventExpiresAt=0,currentEvent=null,eventSeenAt=0,toastTimer=0,evoTimer=0,tapPulse=0,lensPulse=0;
@@ -187,8 +187,13 @@ function load(){
  try{
   const raw=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
   if(!raw||!Number.isFinite(raw.stage))return false;
-  const oldNeeds=[18,24,34,48,65,90,120,160,190,240,300,100,360,520,720,1000];
-  if(raw.balanceVersion!==2){raw.progress=Math.min(1,Math.max(0,(raw.progress||0)/(oldNeeds[raw.stage]||1000)))*STAGES[clamp(Math.floor(raw.stage),0,15)].need;raw.balanceVersion=2}
+  const legacyNeeds=[18,24,34,48,65,90,120,160,190,240,300,100,360,520,720,1000];
+  const balanceV2Needs=[36,100,240,600,1300,2800,5500,9500,15000,24000,38000,100,60000,95000,145000,210000,280000,400000,600000,900000,1350000,2000000,3000000,4500000];
+  if(raw.balanceVersion!==3){
+   const idx=clamp(Math.floor(raw.stage),0,STAGES.length-1),source=raw.balanceVersion===2?balanceV2Needs:legacyNeeds;
+   const previousNeed=source[idx]||balanceV2Needs[idx]||1000,ratio=Math.min(1,Math.max(0,(raw.progress||0)/previousNeed));
+   raw.progress=ratio*STAGES[idx].need;raw.balanceVersion=3
+  }
   state={...freshState(),...raw,stage:clamp(Math.floor(raw.stage),0,STAGES.length-1),upgrades:raw.upgrades||{},discovered:raw.discovered||{}};
   state.progress=Math.max(0,Number.isFinite(state.progress)?state.progress:0);
   state.research=clamp(Math.floor(Number(state.research)||0),0,10);
@@ -310,11 +315,18 @@ async function replaceWithRock(stageIndex){
  clearGroup(bodyGroup);const o=normalizeClone(gltf,2.8);if(o){o.traverse(n=>{if(n.isMesh&&n.material){n.material.color?.setHex(materialColorForStage(stageIndex));n.material.roughness=.92}});bodyGroup.add(o)}
 }
 function makeDust(){
- const count=LOW_POWER?90:170,pos=new Float32Array(count*3);
- for(let i=0;i<count;i++){const r=Math.random()*.92+.08,a=Math.random()*Math.PI*2,b=(Math.random()-.5)*Math.PI;pos[i*3]=Math.cos(a)*Math.cos(b)*r;pos[i*3+1]=Math.sin(a)*Math.cos(b)*r;pos[i*3+2]=Math.sin(b)*r*.6}
+ const count=LOW_POWER?150:280,pos=new Float32Array(count*3);
+ for(let i=0;i<count;i++){const r=Math.pow(Math.random(),.72)*1.08+.04,a=Math.random()*Math.PI*2,b=(Math.random()-.5)*Math.PI;pos[i*3]=Math.cos(a)*Math.cos(b)*r;pos[i*3+1]=Math.sin(a)*Math.cos(b)*r;pos[i*3+2]=Math.sin(b)*r*.6}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
- const m=new THREE.PointsMaterial({color:state.stage?0xcabda6:0xe5d8bc,size:state.stage ? 0.07 : 0.045,transparent:true,opacity:.86,map:fxTextures.star||null,alphaTest:fxTextures.star ? 0.02 : 0,blending:THREE.AdditiveBlending});
+ // PointsMaterial.size is effectively a screen-space pixel size here. Fractions of a pixel made the opening dust invisible.
+ const m=new THREE.PointsMaterial({color:state.stage?0xd8c3a6:0xf1dfc7,size:state.stage?(LOW_POWER?3.0:3.8):(LOW_POWER?2.4:3.2),transparent:true,opacity:.96,map:fxTextures.star||null,alphaTest:0,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true});
  const pts=new THREE.Points(g,m);pts.userData.kind='dust';bodyGroup.add(pts);
+ if(fxTextures.smoke){
+  for(let i=0;i<(LOW_POWER?2:4);i++){
+   const haze=new THREE.Sprite(new THREE.SpriteMaterial({map:fxTextures.smoke,color:i%2?0xd4b893:0xb8cce4,transparent:true,opacity:.10+(i%2)*.035,depthWrite:false,blending:THREE.AdditiveBlending}));
+   haze.position.set((Math.random()-.5)*1.1,(Math.random()-.5)*.75,-.18-i*.08);const s=1.8+Math.random()*1.4;haze.scale.set(s,s*.62,1);haze.material.rotation=Math.random()*Math.PI;haze.userData.kind='dustHaze';bodyGroup.add(haze)
+  }
+ }
 }
 function glowSprite(color=0xffd477,scale=4,opacity=.7,tex='flare'){
  const mat=new THREE.SpriteMaterial({map:fxTextures[tex]||null,color,transparent:true,opacity,depthWrite:false,blending:THREE.AdditiveBlending});
@@ -361,9 +373,9 @@ function addPlanetSystem(count=5){
  }}
 function addDustNeighborhood(count=140){
  const pos=new Float32Array(count*3);
- for(let i=0;i<count;i++){const a=Math.random()*Math.PI*2,r=2.7+Math.pow(Math.random(),.72)*7.8;pos[i*3]=Math.cos(a)*r;pos[i*3+1]=Math.sin(a)*r*.64;pos[i*3+2]=-1.5-Math.random()*8}
+ for(let i=0;i<count;i++){const a=Math.random()*Math.PI*2,r=2.15+Math.pow(Math.random(),.72)*6.4;pos[i*3]=Math.cos(a)*r;pos[i*3+1]=Math.sin(a)*r*.64;pos[i*3+2]=-.5-Math.random()*4.8}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
- const m=new THREE.PointsMaterial({color:0xc9d7e5,size:LOW_POWER?.045:.065,map:fxTextures.star||null,transparent:true,opacity:.48,blending:THREE.AdditiveBlending,depthWrite:false});
+ const m=new THREE.PointsMaterial({color:0xd8e7f3,size:LOW_POWER?1.7:2.4,map:fxTextures.star||null,transparent:true,opacity:.68,alphaTest:0,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true});
  const p=new THREE.Points(g,m);p.userData.kind='ambientDust';contextGroup.add(p)
 }
 function addAsteroidNeighborhood(count=10){
@@ -418,7 +430,7 @@ function flybyTypeForStage(){
  const noveltyChance=i<6?0:(LOW_POWER?(i>=12?.08:.055):(i>=12?.14:.10));
  if(r<noveltyChance)return 'novelty';
  const n=noveltyChance?(r-noveltyChance)/(1-noveltyChance):r;
- if(i<=1)return n<.7?'dust':'rock';
+ if(i<=1)return n<.9?'dust':'rock';
  if(i<=4)return n<.16?'dust':'rock';
  if(i===5)return n<.78?'rock':'planet';
  if(i<=8)return n<.48?'rock':'planet';
