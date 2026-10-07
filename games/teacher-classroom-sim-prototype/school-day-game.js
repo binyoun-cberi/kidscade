@@ -4,8 +4,8 @@ import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {
   AI_RULES,STUDENT_PROFILES,createStudentRuntime,resetFocusForLesson,updateLessonFocus,helpFocus,
   resetSocialForRecess,recoverSocial,drainSocial,conflictProbability,clamp
-} from './student-ai.mjs?v=66';
-import {SCHOOL_SPACES,DAY_STEPS,PERIODS} from './school-day.mjs?v=66';
+} from './student-ai.mjs?v=68';
+import {SCHOOL_SPACES,DAY_STEPS,PERIODS} from './school-day.mjs?v=68';
 import {
   preferenceFor,preferenceMultiplier,preferenceIcon,
   createDailyEnvironment,createDailyHealth,healthRecoveryMultiplier,tickHealth,nextHealthAction,
@@ -13,7 +13,7 @@ import {
   friendshipKey,friendshipInfo,addFriendship,friendshipConflictDuration,
   friendshipSelfReconcileChance,friendshipChatterChance,
   SAFETY_RULES,GROUP_RULES,FRIENDSHIP_RULES
-} from './student-life.mjs?v=66';
+} from './student-life.mjs?v=68';
 
 const $=id=>document.getElementById(id);
 const ui={
@@ -198,7 +198,7 @@ function addClassroom(space){
   for(let i=0;i<space.seats.length;i++){
     const s=space.seats[i],deskZ=i<3?-2.4:0;
     placeAsset(deskUrl,{x:s.x,z:deskZ,size:1.38,rot:Math.PI,fallback:[1.4,.65,.78,0xc99761]});
-    placeAsset(chairUrl,{x:s.x,z:s.z,size:.74,rot:Math.PI,fallback:[.64,.55,.62,0x5c8eb0]});
+    placeAsset(chairUrl,{x:s.x,z:s.z-.30,size:.74,rot:Math.PI,fallback:[.64,.55,.62,0x5c8eb0]});
   }
   placeAsset(bookUrl,{x:-6.25,z:-3.9,size:1.8,rot:Math.PI/2,fallback:[1.2,1.55,.55,0x967555]});
   placeAsset(screenUrl,{x:4.75,y:.78,z:3.25,size:.68,rot:Math.PI,fallback:[.7,.5,.15,0x3b4855]});
@@ -224,7 +224,7 @@ function addScience(space){
   const stoolUrl='../../assets/game/3d/interiors/kenney-furniture-kit/stool-bar-square.glb';
   const sinkUrl='../../assets/game/3d/interiors/kenney-furniture-kit/kitchen-sink.glb';
   for(const o of space.obstacles.slice(0,4))placeAsset(tableUrl,{x:o.x,z:o.z,size:2.25,fallback:[o.hx*1.8,.7,o.hz*1.55,0x6b837d]});
-  for(const s of space.seats)placeAsset(stoolUrl,{x:s.x,z:s.z,size:.62,fallback:[.42,.55,.42,0x4f6f69]});
+  for(const s of space.seats)placeAsset(stoolUrl,{x:s.x,z:s.z-.28,size:.62,fallback:[.42,.55,.42,0x4f6f69]});
   placeAsset(sinkUrl,{x:5.8,z:-3.9,size:1.45,rot:-Math.PI/2,fallback:[1.55,.9,.68,0x879b96]});
   for(const [x,z,c] of [[-2.8,-2.1,0x64b5f6],[-2.3,-2.1,0xf6c85f],[2.3,-2.1,0xd77ac8],[2.8,-2.1,0x63c59c]]){
     const tube=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.5,12),new THREE.MeshStandardMaterial({color:c,roughness:.35,transparent:true,opacity:.82}));
@@ -238,7 +238,7 @@ function addCafeteria(space){
   const trayUrl='../../assets/game/3d/bakery/interior/serving-tray.glb';
   const foodUrl='../../assets/game/3d/bakery/restaurant-bits/food-dinner.glb';
   for(const o of space.obstacles.slice(0,3))placeAsset(tableUrl,{x:o.x,z:o.z,size:2.05,fallback:[2.0,.68,1.25,0xb8895d]});
-  for(const s of space.seats)placeAsset(chairUrl,{x:s.x,z:s.z,size:.68,fallback:[.56,.58,.56,0x78909c]});
+  for(const s of space.seats)placeAsset(chairUrl,{x:s.x,z:s.z-.30,size:.68,fallback:[.56,.58,.56,0x78909c]});
   placeAsset(counterUrl,{x:5.75,z:-3.8,size:2.0,rot:-Math.PI/2,fallback:[2.0,.9,.85,0xb47c4e]});
   for(const [x,z] of [[-3,-1.45],[1.6,-1.45],[-.7,1.25]])placeAsset(trayUrl,{x,y:.72,z,size:.58,fallback:[.62,.08,.42,0xb0bec5],parent:decoRoot});
   placeAsset(foodUrl,{x:5.45,y:.92,z:-3.8,size:.55,fallback:[.5,.22,.4,0x8fba65],parent:decoRoot});
@@ -248,7 +248,7 @@ function addArt(space){
   const stoolUrl='../../assets/game/3d/interiors/kenney-furniture-kit/stool-bar.glb';
   const bookUrl='../../assets/game/3d/interiors/kenney-furniture-kit/bookcase-open-low.glb';
   for(const o of space.obstacles.slice(0,4))placeAsset(tableUrl,{x:o.x,z:o.z,size:2.2,fallback:[o.hx*1.85,.7,o.hz*1.55,0xc18e68]});
-  for(const s of space.seats)placeAsset(stoolUrl,{x:s.x,z:s.z,size:.62,fallback:[.45,.55,.45,0x7290a0]});
+  for(const s of space.seats)placeAsset(stoolUrl,{x:s.x,z:s.z-.28,size:.62,fallback:[.45,.55,.45,0x7290a0]});
   placeAsset(bookUrl,{x:-6.1,z:-3.9,size:1.55,rot:Math.PI/2,fallback:[1.25,1.0,.5,0x916f59]});
   const colors=[0xee6b6e,0xf5c65c,0x63b38b,0x5b91d8,0xa276c8,0xf08aa8];
   colors.forEach((c,i)=>{
@@ -268,7 +268,7 @@ function addComputer(space){
   for(let i=0;i<space.seats.length;i++){
     const s=space.seats[i],o=space.obstacles[i];
     placeAsset(deskUrl,{x:o.x,z:o.z,size:1.45,fallback:[1.45,.64,.78,0x69798a]});
-    placeAsset(chairUrl,{x:s.x,z:s.z,size:.7,rot:Math.PI,fallback:[.62,.55,.6,0x4f6b83]});
+    placeAsset(chairUrl,{x:s.x,z:s.z-.28,size:.7,rot:Math.PI,fallback:[.62,.55,.6,0x4f6b83]});
     placeAsset(screenUrl,{x:o.x,y:.72,z:o.z-.05,size:.55,rot:Math.PI,fallback:[.5,.38,.12,0x293b4c],parent:decoRoot});
     placeAsset(keyUrl,{x:o.x,y:.72,z:o.z+.23,size:.38,rot:Math.PI,fallback:[.38,.05,.15,0x3a4650],parent:decoRoot});
     if(i<3)placeAsset(mouseUrl,{x:o.x+.38,y:.72,z:o.z+.22,size:.16,rot:Math.PI,fallback:[.12,.06,.16,0x3a4650],parent:decoRoot});
