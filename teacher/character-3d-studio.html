@@ -31,13 +31,14 @@
         <h2>체형 기준</h2>
         <div class="preset-grid">
           <button class="secondary" data-body-style="legacy">V1 · 기존 마네킹</button>
-          <button class="secondary active" data-body-style="chibi2">V2 · SD 기본형 — 큰 머리·짧은 몸통</button>
-          <button class="secondary" data-body-style="action2">V2 · 액션 과장형 — 큰 손·신발·굵은 팔다리</button>
+          <button class="secondary" data-body-style="chibi2">V2 · SD 기본형 — 도형 기반</button>
+          <button class="secondary" data-body-style="action2">V2 · 액션 과장형 — 도형 기반</button>
+          <button class="secondary active" data-body-style="soft3">V3 · SoftMesh SD — 기존 인간형 에셋 참고</button>
         </div>
-        <div class="style-note" style="margin-top:8px">V2는 특정 게임 캐릭터를 복제하지 않고, 3등신 전후의 SD 비율과 과장된 액션 실루엣만 참고한 Kidscade 고유 체형입니다.</div>
+        <div class="style-note" style="margin-top:8px">V3는 저장소의 기존 SkinnedMesh 인간형 GLB 구조를 참고해 연속형 몸통·팔다리와 관절 블렌드 웨이트를 사용합니다. 특정 게임 캐릭터를 복제하지 않습니다.</div>
         <div class="divider"></div>
         <div class="stack">
-          <label>키 <span id="heightOut">1.25 m</span><input id="height" type="range" min="1.00" max="1.60" step=".01" value="1.25"></label>
+          <label>키 <span id="heightOut">1.22 m</span><input id="height" type="range" min="1.00" max="1.60" step=".01" value="1.22"></label>
           <label>머리 크기 <span id="headOut">1.00×</span><input id="headScale" type="range" min=".86" max="1.18" step=".01" value="1"></label>
           <label>어깨 너비 <span id="shoulderOut">1.00×</span><input id="shoulderScale" type="range" min=".82" max="1.18" step=".01" value="1"></label>
           <label>팔다리 굵기 <span id="limbOut">1.00×</span><input id="limbScale" type="range" min=".82" max="1.24" step=".01" value="1"></label>
@@ -100,14 +101,14 @@
       <section class="card">
         <h2>모델 정보</h2>
         <div class="summary">
-          <div class="metric"><span>리그</span><b id="rigVersionLabel">Kidscade Humanoid v2</b></div>
-          <div class="metric"><span>방식</span><b>Rigid skin weights</b></div>
+          <div class="metric"><span>리그</span><b id="rigVersionLabel">Kidscade Humanoid v3</b></div>
+          <div class="metric"><span>방식</span><b id="skinningModeLabel">Blended skin weights</b></div>
           <div class="metric"><span>축</span><b>Y-up · meters</b></div>
           <div class="metric"><span>원점</span><b>발바닥 중앙</b></div>
           <div class="metric"><span>뼈</span><b id="boneCount">0</b></div>
           <div class="metric"><span>삼각형</span><b id="triangleCount">0</b></div>
         </div>
-        <div class="tip" style="margin-top:9px">V2는 약 3등신 전후의 큰 머리, 거의 보이지 않는 목, 짧은 몸통과 다리, 큰 손·신발을 기준으로 합니다. 18-bone 구조는 유지해 기존 애니메이션 재사용성을 보존합니다.</div>
+        <div class="tip" style="margin-top:9px">V3는 약 2.8등신의 SD 비율에 연속형 torso/arm/leg 메시를 사용하고 팔꿈치·무릎 주변을 부드러운 2-bone weight로 연결합니다. 얼굴·헤어·손·신발에 폴리를 더 배분하고 18-bone 구조는 유지합니다.</div>
       </section>
 
       <section class="card">
@@ -132,6 +133,6 @@ setTimeout(()=>{
   }
 },7000);
 </script>
-<script type="module" src="/teacher/character-3d-studio.js?v=20261007-chibi2"></script>
+<script type="module" src="/teacher/character-3d-studio.js?v=20261007-soft3"></script>
 </body>
 </html>
