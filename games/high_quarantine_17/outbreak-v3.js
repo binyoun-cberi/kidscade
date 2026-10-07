@@ -211,7 +211,7 @@ function resolveLab(d){
 }
 function addDetainee(p){
  const room=roomForNewDetainee();if(!room){notify('A 관찰실 정원 초과 · 음성 판정자를 퇴실시키거나 양성자를 B실로 보내세요.');openIsolation();return false}
- const d={id:++isoSeq,name:p.name,sprite:p.sprite||'player',room:room,infectedAtEntry:!!p.infected,wrong:p.correct!=='retest',status:'testing',stage:0,labStage:1,labResult:'pending',exposure:0,acquired:false,caseData:p.caseData||{}};
+ const d={id:++isoSeq,personId:p.personId||('iso'+isoSeq),name:p.name,sprite:p.sprite||'player',room:room,infectedAtEntry:!!p.infected,wrong:p.correct!=='retest',status:'testing',stage:0,labStage:1,labResult:'pending',exposure:0,acquired:false,caseData:p.caseData||{}};
  isolation.push(d);addIsoLog('<b>'+escapeHtml(d.name)+'</b> A 관찰실 입실 · 정밀검사 자동 접수'+(d.wrong?' · 지침상 추가검사 불필요':''));renderIsolation();return true;
 }
 function advanceIsolation(){
@@ -648,7 +648,7 @@ window.Q17Outbreak={
   return{won:false,cleared:0};
  },
  tickIsolation:function(){if(!active)advanceIsolation()},
- getIsolationSnapshot:function(){return isolation.map(function(d){return{id:d.id,name:d.name,room:d.room,status:d.status,labResult:d.labResult,infectedAtEntry:d.infectedAtEntry,acquired:d.acquired,stage:d.stage,labStage:d.labStage,exposure:d.exposure,sprite:d.sprite}})},
+ getIsolationSnapshot:function(){return isolation.map(function(d){return{id:d.id,personId:d.personId||('iso'+d.id),name:d.name,room:d.room,status:d.status,labResult:d.labResult,infectedAtEntry:d.infectedAtEntry,acquired:d.acquired,stage:d.stage,labStage:d.labStage,exposure:d.exposure,sprite:d.sprite}})},
  isCombatActive:function(){return !!active},
  respondCamp:function(payload,done){if(active)return false;return showCampBreach(payload||{name:'캠프 감염자',threatCount:1},typeof done==='function'?done:null)},
  respondGlobal:function(done){
