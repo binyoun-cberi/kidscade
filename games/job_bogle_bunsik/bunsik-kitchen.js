@@ -134,7 +134,7 @@ class RamenKitchen3D{
 
   this.scene=new THREE.Scene();
   this.scene.background=new THREE.Color(0xf1d2aa);
-  this.scene.fog=new THREE.Fog(0xf1d2aa,18,34);
+  this.scene.fog=new THREE.Fog(0xf1d2aa,22,42);
   this.camera=new THREE.PerspectiveCamera(42,1,.1,80);
   this.loader=new GLTFLoader();
   this.cache=new Map();
@@ -143,6 +143,7 @@ class RamenKitchen3D{
   this.potVisuals=[];
   this.customerHolders=[];
   this.customerXs=[-3.3,-1.1,1.1,3.3];
+  this.hallSeats=[];this.customerStates=[];this.hallEntrance=new THREE.Vector3(0,0,-12.95);
   this.serviceGroup=null;this.serviceMeal=null;this.serviceHome=new THREE.Vector3(0,.92,5.25);
   this.cameraFocus=new THREE.Vector3(0,.9,.5);this.cameraGoal=new THREE.Vector3(0,10.5,10.8);
   this.raycaster=new THREE.Raycaster();
@@ -156,6 +157,7 @@ class RamenKitchen3D{
   this.makeRoom();
   this.makeBurners();
   this.makeKitchenProps();
+  this.makeDiningHall();
   this.makePlateupStations();
   this.makeCustomers();
   this.makeServiceStation();
@@ -175,18 +177,30 @@ class RamenKitchen3D{
   const warm=new THREE.PointLight(0xffc26b,10,14,2);warm.position.set(0,5,-2.5);this.scene.add(warm);
  }
  makeRoom(){
-  // v18: 20 x 14 정도의 넓은 주방. 바닥 격자 한 칸을 약 1m 작업칸으로 사용한다.
-  this.box(20.4,.3,13.8,0xc58d5b,0,-.18,.35);
-  this.box(20.4,3.5,.25,0xf5ead7,0,1.55,-6.35);
-  this.box(.24,3.5,13.8,0xe7d4bb,-10.08,1.55,.35);
-  this.box(.24,3.5,13.8,0xe7d4bb,10.08,1.55,.35);
-  this.box(19.7,.58,.12,0xb93f35,0,.52,-6.18);
-  this.box(5.4,1.15,.09,0x27383a,0,2.02,-6.05,{roughness:.5});
-  this.box(4.7,.055,.09,0xf3d46e,0,2.36,-5.97);
+  // v24: 기존 주방은 유지하고 카운터 뒤쪽으로 손님 홀을 확장한다.
+  this.box(20.4,.3,21.6,0xc58d5b,0,-.18,-3.55);
+  this.box(.24,3.5,21.6,0xe7d4bb,-10.08,1.55,-3.55);
+  this.box(.24,3.5,21.6,0xe7d4bb,10.08,1.55,-3.55);
+
+  // 뒤 벽 가운데 2.2m는 실제 출입문 자리로 비운다.
+  this.box(9.1,3.5,.25,0xf5ead7,-5.65,1.55,-14.28);
+  this.box(9.1,3.5,.25,0xf5ead7,5.65,1.55,-14.28);
+  this.box(2.2,1.08,.25,0xf5ead7,0,2.96,-14.28);
+  this.box(19.7,.58,.12,0xb93f35,0,.52,-14.08,{roughness:.7});
+  this.box(5.4,1.15,.09,0x27383a,0,2.02,-14.02,{roughness:.5});
+  this.box(4.7,.055,.09,0xf3d46e,0,2.36,-13.96);
+
   for(const x of[-6.4,0,6.4]){
    const lamp=new THREE.PointLight(0xffd28a,5.5,7.5,2);lamp.position.set(x,3.25,-.8);this.scene.add(lamp);
+   const hallLamp=new THREE.PointLight(0xffdf9a,4.2,7.5,2);hallLamp.position.set(x,3.15,-9.2);this.scene.add(hallLamp);
   }
-  const floorGrid=new THREE.GridHelper(19.2,18,0x94654a,0xe1bc91);floorGrid.position.set(0,.005,.35);floorGrid.scale.z=.7;floorGrid.material.transparent=true;floorGrid.material.opacity=.22;this.scene.add(floorGrid);
+
+  const kitchenGrid=new THREE.GridHelper(19.2,18,0x94654a,0xe1bc91);kitchenGrid.position.set(0,.005,.35);kitchenGrid.scale.z=.7;kitchenGrid.material.transparent=true;kitchenGrid.material.opacity=.22;this.scene.add(kitchenGrid);
+  const hallFloor=this.box(19.4,.045,8.6,0xd5ad78,0,.003,-9.45,{roughness:.9,castShadow:false});hallFloor.receiveShadow=true;
+  const hallGrid=new THREE.GridHelper(18.6,16,0x9f7455,0xe7c89f);hallGrid.position.set(0,.03,-9.45);hallGrid.scale.z=.47;hallGrid.material.transparent=true;hallGrid.material.opacity=.14;this.scene.add(hallGrid);
+
+  this.placeModel(BAKERY,'door-modular.glb',2.35,0,.02,-14.12,Math.PI);
+  const mat=this.box(2.5,.035,1.15,0x86543d,0,.035,-13.35,{roughness:.9,castShadow:false});mat.receiveShadow=true;
  }
  async loadModel(root,file,size){
   const key=root+file;
@@ -326,9 +340,25 @@ class RamenKitchen3D{
   const mesh=new THREE.Mesh(new THREE.PlaneGeometry(1.15,.38),mat);mesh.rotation.x=-Math.PI/2;mesh.position.set(0,.032,.58);mesh.renderOrder=4;return mesh
  }
  makeKitchenProps(){
-  // 손님 테이블은 작업 동선을 막지 않도록 주방 바깥 배경 쪽으로 뺀다.
-  this.placeModel(SUSHI,'table.glb',1.45,-7.9,.02,5.95,0);
-  this.placeModel(SUSHI,'chair.glb',.95,-8.8,.02,5.95,Math.PI/2);
+  this.placeModel(SUSHI,'table.glb',1.2,-8.35,.02,5.7,0);
+  this.placeModel(SUSHI,'chair.glb',.82,-9.0,.02,5.7,Math.PI/2);
+ }
+ makeDiningHall(){
+  const defs=[
+   {tableNo:1,x:-4.65,z:-6.65,seatX:-4.65,seatZ:-5.55,rot:Math.PI},
+   {tableNo:2,x:4.65,z:-6.65,seatX:4.65,seatZ:-5.55,rot:Math.PI},
+   {tableNo:3,x:-4.65,z:-10.25,seatX:-4.65,seatZ:-9.15,rot:Math.PI},
+   {tableNo:4,x:4.65,z:-10.25,seatX:4.65,seatZ:-9.15,rot:Math.PI}
+  ];
+  defs.forEach((d,i)=>{
+   const rug=this.box(3.05,.025,2.75,i%2?0xe8cba8:0xefd7b7,d.x,.024,d.z,{roughness:.96,castShadow:false});rug.receiveShadow=true;
+   this.placeModel(SUSHI,'table.glb',1.55,d.x,.03,d.z,0);
+   this.placeModel(SUSHI,'chair.glb',.92,d.x,.03,d.z+1.08,Math.PI);
+   this.placeModel(SUSHI,'chair.glb',.92,d.x,.03,d.z-1.08,0);
+   this.hallSeats.push({slot:i,tableNo:d.tableNo,position:new THREE.Vector3(d.seatX,0,d.seatZ),rotation:d.rot,occupiedBy:null})
+  });
+  const aisle=this.box(2.2,.026,8.1,0xc99664,0,.028,-9.45,{roughness:.92,castShadow:false});aisle.receiveShadow=true;
+  const sign=this.makeTextSprite('어서오세요');sign.position.set(0,2.25,-13.82);sign.scale.set(1.7,.5,1);this.scene.add(sign);
  }
  makeLayoutStation(id,label,root,file,size,x,z,rot=0,radius=.82){
   const holder=new THREE.Group();holder.position.set(x,0,z);holder.rotation.y=rot;holder.userData.stationId=id;holder.userData.blockRadius=radius;this.scene.add(holder);
