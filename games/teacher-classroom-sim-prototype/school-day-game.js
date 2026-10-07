@@ -768,7 +768,7 @@ function enterStep(index,{spaceChanged=false}={}){
   stepIndex=clamp(index,0,DAY_STEPS.length-1);currentStep=DAY_STEPS[stepIndex];stepTime=currentStep.duration||0;
   pairs=[];teamPairs=[];lessonChats=[];chatterScanTimer=.5;chatterCooldowns.clear();groupSignalCooldown=0;groupSignalsThisLesson=0;
   teamActive=false;teamCheckTimer=0;lessonElapsed=0;lessonAccidents=0;
-  lessonFlow=currentStep.kind==='lesson'?createLessonFlow(currentStep.duration):null;
+  lessonFlow=currentStep.kind==='lesson'?createLessonFlow(currentStep.duration,{teamActivity:!!currentStep.teamActivity}):null;
   boardNear=false;teachingMultiplier=0;
   hideAllBubbles();setTalk(false);fightsThisSocial=0;
   if(currentStep.location!==activeSpace.id){
