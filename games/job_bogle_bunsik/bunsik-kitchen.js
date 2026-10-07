@@ -172,15 +172,15 @@ class RamenKitchen3D{
   this.pickables=[];
   this.potVisuals=[];
   this.customerHolders=[];
-  this.customerXs=[-3.3,-1.1,1.1,3.3];
-  this.hallSeats=[];this.customerStates=[];this.hallEntrance=new THREE.Vector3(0,0,-12.95);this.hallDoor=null;this.hallDoorOpenUntil=0;
+  this.customerXs=[-3.3,-1.1,1.1,3.3,0];
+  this.hallSeats=[];this.hallTableGroups=[];this.customerStates=[];this.hallEntrance=new THREE.Vector3(0,0,-12.95);this.hallDoor=null;this.hallDoorOpenUntil=0;this.hallSign=null;this.hallFamousSign=null;
   this.serviceGroup=null;this.serviceMeal=null;this.serviceHome=new THREE.Vector3(0,.92,5.25);
   this.cameraFocus=new THREE.Vector3(0,.9,.5);this.cameraGoal=new THREE.Vector3(0,10.5,10.8);
   this.raycaster=new THREE.Raycaster();
   this.pointer=new THREE.Vector2();
   this.layoutStations=[];this.stationPickables=[];this.dragLayout=null;this.selectedLayoutStation=null;
   this.player=null;this.playerRing=null;this.carryAnchor=null;this.carrySprite=null;this.moveKeys=new Set();this.nearestStation=null;this.dirtyPlateModels=[];this.staticBlockers=[];
-  this.helper=null;this.helperCarryAnchor=null;this.helperCarry=null;this.helperTask=null;this.helperPath=[];this.helperThink=0;
+  this.helper=null;this.helperCarryAnchor=null;this.helperCarry=null;this.helperTask=null;this.helperPath=[];this.helperThink=0;this.hallWorker=null;this.hallWorkerCarry=null;this.hallWorkerHome=new THREE.Vector3(2.6,0,-4.75);this.hallAutoHandoff=false;
   this.avatarSheetImage=null;this.avatarSheetPromise=null;
 
   this.makeLights();
@@ -193,6 +193,8 @@ class RamenKitchen3D{
   this.makeServiceStation();
   this.makePlayer();
   this.makeHelper();
+  this.makeHallWorker();
+  this.syncProgressUpgrades();
   this.resize();
   addEventListener('resize',()=>this.resize(),{passive:true});
   canvas.addEventListener('pointerdown',e=>this.pointerDown(e));
@@ -287,7 +289,7 @@ class RamenKitchen3D{
   ctx.beginPath();ctx.roundRect?.(39,8,50,20,7);ctx.fill();ctx.stroke();
   ctx.fillRect(44,22,40,9);ctx.strokeRect(44,22,40,9);
   // 앞치마가 멀리서도 보이도록 몸통 중앙을 단순한 색면으로 강조.
-  const apron=look.role==='player'?'#d95343':'#4b8fc7',trim=look.role==='player'?'#8f3028':'#285a83';
+  const apron=look.role==='player'?'#d95343':look.role==='hall'?'#e5a83d':'#4b8fc7',trim=look.role==='player'?'#8f3028':look.role==='hall'?'#8f6120':'#285a83';
   ctx.fillStyle=apron;ctx.fillRect(49,72,31,30);ctx.fillStyle='#fff6df';ctx.fillRect(57,75,15,4);
   ctx.fillStyle=trim;ctx.fillRect(49,98,31,4);ctx.fillRect(62,69,4,6);
   ctx.restore();look.texture.needsUpdate=true
@@ -378,18 +380,31 @@ class RamenKitchen3D{
   const defs=[
    {tableNo:1,x:-4.65,z:-6.65,seatX:-4.65,seatZ:-5.55,rot:Math.PI},
    {tableNo:2,x:4.65,z:-6.65,seatX:4.65,seatZ:-5.55,rot:Math.PI},
-   {tableNo:3,x:-4.65,z:-10.25,seatX:-4.65,seatZ:-9.15,rot:Math.PI},
-   {tableNo:4,x:4.65,z:-10.25,seatX:4.65,seatZ:-9.15,rot:Math.PI}
+   {tableNo:3,x:-4.65,z:-10.25,seatX:-4.65,seatZ:-9.15,rot:Math.PI,upgrade:'table3'},
+   {tableNo:4,x:4.65,z:-10.25,seatX:4.65,seatZ:-9.15,rot:Math.PI,upgrade:'table4'},
+   {tableNo:5,x:7.45,z:-10.35,seatX:7.45,seatZ:-9.25,rot:Math.PI,upgrade:'hallExpansion'}
   ];
   defs.forEach((d,i)=>{
-   const rug=this.box(3.05,.025,2.75,i%2?0xe8cba8:0xefd7b7,d.x,.024,d.z,{roughness:.96,castShadow:false});rug.receiveShadow=true;
-   this.placeModel(SUSHI,'table.glb',1.55,d.x,.03,d.z,0);
-   this.placeModel(SUSHI,'chair.glb',.92,d.x,.03,d.z+1.08,Math.PI);
-   this.placeModel(SUSHI,'chair.glb',.92,d.x,.03,d.z-1.08,0);
-   this.hallSeats.push({slot:i,tableNo:d.tableNo,position:new THREE.Vector3(d.seatX,0,d.seatZ),rotation:d.rot,occupiedBy:null})
+   const group=new THREE.Group();group.position.set(d.x,0,d.z);this.scene.add(group);this.hallTableGroups.push(group);
+   const rug=new THREE.Mesh(new THREE.BoxGeometry(3.05,.025,2.75),this.material(i%2?0xe8cba8:0xefd7b7,{roughness:.96}));rug.position.y=.024;rug.receiveShadow=true;group.add(rug);
+   this.loadModel(SUSHI,'table.glb',1.55).then(o=>{if(o){o.position.y=.03;group.add(o)}});
+   this.loadModel(SUSHI,'chair.glb',.92).then(o=>{if(o){o.position.set(0,.03,1.08);o.rotation.y=Math.PI;group.add(o)}});
+   this.loadModel(SUSHI,'chair.glb',.92).then(o=>{if(o){o.position.set(0,.03,-1.08);group.add(o)}});
+   const enabled=!d.upgrade||hasUpgrade(d.upgrade);group.visible=enabled;
+   this.hallSeats.push({slot:i,tableNo:d.tableNo,position:new THREE.Vector3(d.seatX,0,d.seatZ),rotation:d.rot,occupiedBy:null,upgrade:d.upgrade||null,enabled})
   });
   const aisle=this.box(2.2,.026,8.1,0xc99664,0,.028,-9.45,{roughness:.92,castShadow:false});aisle.receiveShadow=true;
-  const sign=this.makeTextSprite('어서오세요');sign.position.set(0,2.25,-13.82);sign.scale.set(1.7,.5,1);this.scene.add(sign);
+  this.hallSign=this.makeTextSprite('어서오세요');this.hallSign.position.set(0,2.25,-13.82);this.hallSign.scale.set(1.7,.5,1);this.scene.add(this.hallSign);
+  this.hallFamousSign=this.makeTextSprite('★ 동네 명물 분식집 ★');this.hallFamousSign.position.set(0,2.28,-13.8);this.hallFamousSign.scale.set(2.8,.62,1);this.scene.add(this.hallFamousSign);this.hallFamousSign.visible=hasUpgrade('famousSign')
+ }
+ syncProgressUpgrades(){
+  this.hallSeats.forEach((seat,i)=>{
+   const enabled=!seat.upgrade||hasUpgrade(seat.upgrade);seat.enabled=enabled;
+   if(this.hallTableGroups[i])this.hallTableGroups[i].visible=enabled
+  });
+  if(this.hallWorker)this.hallWorker.visible=hasUpgrade('hallStaff');
+  if(this.hallSign)this.hallSign.visible=!hasUpgrade('famousSign');
+  if(this.hallFamousSign)this.hallFamousSign.visible=hasUpgrade('famousSign')
  }
  makeLayoutStation(id,label,root,file,size,x,z,rot=0,radius=.82){
   const holder=new THREE.Group();holder.position.set(x,0,z);holder.rotation.y=rot;holder.userData.stationId=id;holder.userData.blockRadius=radius;this.scene.add(holder);
@@ -595,6 +610,33 @@ class RamenKitchen3D{
   this.helperCarryAnchor=new THREE.Group();this.helperCarryAnchor.position.set(.28,1.42,-.08);root.add(this.helperCarryAnchor);
   const role=this.makeRoleFloorLabel('알바','#78c9ff');role.scale.set(.9,.9,.9);root.add(role);root.userData.roleLabel=role
  }
+ makeHallWorker(){
+  const root=this.hallWorker=new THREE.Group();root.position.copy(this.hallWorkerHome);root.visible=hasUpgrade('hallStaff');this.scene.add(root);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.34,.45,28),new THREE.MeshBasicMaterial({color:0xf3bd54,transparent:true,opacity:.8,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=.02;root.add(ring);
+  const cute=this.makeCuteCook('hall');cute.sprite.scale.set(1.72,1.72,1);root.add(cute.sprite);root.userData.cute=cute;root.userData.moving=false;root.userData.faceRight=false;
+  const role=this.makeRoleFloorLabel('홀 알바','#f1bd55');role.scale.set(.92,.92,.92);root.add(role);
+  this.hallWorkerCarry=new THREE.Group();this.hallWorkerCarry.position.set(.28,1.35,-.08);root.add(this.hallWorkerCarry)
+ }
+ setHallWorkerCarry(show){
+  if(!this.hallWorkerCarry)return;
+  while(this.hallWorkerCarry.children.length){const n=this.hallWorkerCarry.children[0];this.hallWorkerCarry.remove(n);n.material?.map?.dispose?.();n.material?.dispose?.()}
+  if(show)this.hallWorkerCarry.add(this.makeItemSprite({kind:'meal'}))
+ }
+ animateHallWorkerServe(slot,onDone){
+  const worker=this.hallWorker,guest=this.customerHolders[slot];if(!worker||!guest){onDone?.();return}
+  worker.visible=true;worker.position.copy(this.hallWorkerHome);this.setHallWorkerCarry(true);
+  const start=this.hallWorkerHome.clone(),end=new THREE.Vector3(guest.position.x,0,guest.position.z+.65),started=performance.now();
+  const run=now=>{
+   const t=Math.min(1,(now-started)/780),e=1-Math.pow(1-t,3),dx=end.x-start.x;
+   worker.position.lerpVectors(start,end,e);worker.userData.moving=t<1;worker.userData.faceRight=dx>0;this.paintCuteCook(worker.userData.cute,t<1,dx>0);
+   if(t<1){requestAnimationFrame(run);return}
+   this.setHallWorkerCarry(false);if(this.serviceMeal)this.serviceMeal.visible=false;onDone?.();
+   const backStart=worker.position.clone(),backAt=performance.now(),back=now2=>{
+    const u=Math.min(1,(now2-backAt)/720),ee=u*u*(3-2*u);worker.position.lerpVectors(backStart,this.hallWorkerHome,ee);worker.userData.moving=u<1;worker.userData.faceRight=this.hallWorkerHome.x>backStart.x;this.paintCuteCook(worker.userData.cute,u<1,worker.userData.faceRight);
+    if(u<1)requestAnimationFrame(back);else worker.visible=hasUpgrade('hallStaff')
+   };requestAnimationFrame(back)
+  };requestAnimationFrame(run)
+ }
  setHelperCarry(item){
   this.helperCarry=item?{...item}:null;
   if(!this.helperCarryAnchor)return;
@@ -644,7 +686,7 @@ class RamenKitchen3D{
   const target=this.helperPath[0],dx=target.x-this.helper.position.x,dz=target.z-this.helper.position.z,d=Math.hypot(dx,dz);
   this.helper.userData.moving=true;if(dx>0)this.helper.userData.faceRight=true;else if(dx<0)this.helper.userData.faceRight=false;
   if(d<.08){this.helper.position.set(target.x,0,target.z);this.helperPath.shift();if(!this.helperPath.length)this.helper.userData.moving=false;return this.helperPath.length===0}
-  const speed=2.45,move=Math.min(d,speed*dt);this.helper.position.x+=dx/d*move;this.helper.position.z+=dz/d*move;this.helper.rotation.y=Math.atan2(dx,dz);return false
+  const speed=hasUpgrade('helperSkill2')?3.5:hasUpgrade('helperSkill1')?2.95:2.45,move=Math.min(d,speed*dt);this.helper.position.x+=dx/d*move;this.helper.position.z+=dz/d*move;this.helper.rotation.y=Math.atan2(dx,dz);return false
  }
  findHelperTask(){
   if(!state.helperEnabled||state.tutorial.active||this.helperTask||this.helperCarry)return false;
@@ -675,7 +717,7 @@ class RamenKitchen3D{
   this.helper.visible=true;
   if(!state.helperEnabled)return;
   this.helperThink-=dt;
-  if(!this.helperTask&&!this.helperCarry&&this.helperThink<=0){this.helperThink=.45;this.findHelperTask()}
+  if(!this.helperTask&&!this.helperCarry&&this.helperThink<=0){this.helperThink=hasUpgrade('helperSkill2')?.16:hasUpgrade('helperSkill1')?.28:.45;this.findHelperTask()}
   const task=this.helperTask;if(!task)return;
   if(!this.helperPath.length){
    if(task.phase==='toCounter'){
@@ -691,7 +733,7 @@ class RamenKitchen3D{
     if(this.helperCarry&&this.helperCanDeliver(this.helperCarry.id,p)){
      const id=this.helperCarry.id;if(addToPot(task.potIndex,id,this.helperCarry.amount||1)){this.setHelperCarry(null);sfx('collect.coin_drop',{volume:.07,rate:1.18,cooldownMs:80})}
     }else this.returnHelperCarry();
-    this.helperTask=null;this.helperThink=.35;return
+    this.helperTask=null;this.helperThink=hasUpgrade('helperSkill2')?.12:hasUpgrade('helperSkill1')?.22:.35;return
    }
   }
   this.moveHelperPath(dt)
@@ -767,6 +809,11 @@ class RamenKitchen3D{
   let nearest=null,best=1.55;
   candidates.forEach(item=>{const d=this.stationDistance(item.group);if(d<best){best=d;nearest=item}});
   this.nearestStation=nearest;
+  if(hasUpgrade('hallStaff')&&state.heldItem?.kind==='meal'&&!state.busy&&this.serviceGroup){
+   const d=this.stationDistance(this.serviceGroup);
+   if(d<1.58&&!this.hallAutoHandoff){this.hallAutoHandoff=true;queueMicrotask(()=>{if(state.heldItem?.kind==='meal'&&!state.busy)serveHeldMeal()})}
+   if(d>2.05)this.hallAutoHandoff=false
+  }else this.hallAutoHandoff=false;
   this.layoutStations.forEach(s=>{
    const near=nearest?.group===s.group,tile=s.group.userData.actionTile;
    s.group.userData.ring.material.opacity=0;this.updateStationFloorTile(s.group);
@@ -937,6 +984,7 @@ class RamenKitchen3D{
   };requestAnimationFrame(run)
  }
  animateServe(slot,onDone){
+  if(hasUpgrade('hallStaff')){this.animateHallWorkerServe(slot,onDone);return}
   if(!this.serviceGroup){onDone?.();return}
   const g=this.serviceGroup,start=this.serviceHome.clone(),guest=this.customerHolders[slot],end=new THREE.Vector3(guest?.position.x??(this.customerXs[slot]??0),.92,(guest?.position.z??-2.75)+.55),started=performance.now();
   const run=now=>{
@@ -1571,7 +1619,7 @@ function serveOrder(orderId){
   const sale=restaurant.serve(orderId,r.id,{quality:q});
   if(!sale.ok){order.paused=false;state.busy=false;renderOrders();updateActionButtons();toast('주문 상태가 바뀌었어요 · 다시 확인해 주세요',1700);return}
   if(ticket){ticket.classList.add('served');ticket.setAttribute('aria-label',r.name+' 주문 완료')}
-  const streak=applyServeCombo(q),totalEarned=earned+streak.bonus;releaseOrderBinding(order.id);kitchen.customerCelebrate(slot,q,streak.combo,totalEarned);pulseComboHud();
+  const streak=applyServeCombo(q),repGain=addServeReputation(q),totalEarned=earned+streak.bonus;releaseOrderBinding(order.id);kitchen.customerCelebrate(slot,q,streak.combo,totalEarned);pulseComboHud();
   setTimeout(()=>kitchen.resetCustomerForOrder(order.id),1180);
   state.tray=null;state.busy=false;setTimeout(()=>{if(state.running)addDirtyPlate()},1050);
   const after=activePotCount();
@@ -1580,7 +1628,7 @@ function serveOrder(orderId){
    setTimeout(()=>{if(state.running){spawnOrder();spawnOrder();toast('알바생 합류! 조리대에 올린 재료를 필요한 냄비로 옮겨줘요',3000)}},650)
   }else setTimeout(()=>{if(state.running)spawnOrder()},700);
   renderTray();setTimeout(()=>renderOrders(),420);renderTutorial();renderPotStrip();renderSelectedHelp();updateActionButtons();updateHud();sfx(q>=90||streak.combo>=3?'success.cheer_yay':q>=76?'shop.purchase':'collect.coin_pickup',{volume:q>=90?.32:.25,cooldownMs:300});
-  const comboText=streak.combo>=2?' · 🔥 '+streak.combo+'콤보'+(streak.bonus?' 보너스 +'+money(streak.bonus):''):'';
+  const comboText=streak.combo>=2?' · 🔥 '+streak.combo+'콤보'+(streak.bonus?' 보너스 +'+money(streak.bonus):''):'' ,repText=repGain?' · ⭐ 평판 +'+repGain:'';
   if(after>before)toast('🎉 새 화구 OPEN! 냄비 '+after+'개 · '+qualityLabel(q)+comboText,2400);
   else if(wasTutorial)toast('🎉 '+r.name+' 첫 서빙 성공! +'+money(totalEarned),1900);
   else toast((q>=90?'✨ PERFECT! ':q>=76?'😋 맛있음! ':'🍜 서빙! ')+ '+'+money(totalEarned)+comboText,2000)
@@ -1649,7 +1697,7 @@ function washOnePlate(){
   if(!state.running)return;
   state.dirtyPlates=Math.max(0,state.dirtyPlates-1);state.cleanPlates+=1;state.washing=false;updateDishHud();
   sfx('success.cheer_yay',{volume:.13,cooldownMs:150});toast('깨끗한 그릇 +1',1200)
- },1450)
+ },hasUpgrade('wideSink')?900:1450)
 }
 function updateOrders(dt){
  if(state.tutorial.active)return;
@@ -1688,7 +1736,12 @@ function updateGame(dt){
    state.spawnClock+=dt
   }
   updatePots(dt);updateOrders(dt);
-  if(!state.tutorial.active&&state.spawnClock>=11){state.spawnClock=0;spawnOrder()}
+  if(hasUpgrade('dishCart')&&state.dirtyPlates>0&&!state.washing){
+   state.dishCartClock=(state.dishCartClock||0)+dt;
+   if(state.dishCartClock>=6){state.dishCartClock=0;state.dirtyPlates=Math.max(0,state.dirtyPlates-1);state.cleanPlates+=1;updateDishHud();sfx('collect.coin_pickup',{volume:.08,rate:1.3,cooldownMs:180});toast('🛒 퇴식 카트 · 깨끗한 그릇 +1',1050)}
+  }else if(!state.dirtyPlates)state.dishCartClock=0;
+  const spawnInterval=hasUpgrade('hallExpansion')?9.2:11;
+  if(!state.tutorial.active&&state.spawnClock>=spawnInterval){state.spawnClock=0;spawnOrder()}
   if(state.time<=0)endShift()
  }
  state.uiClock+=dt;
@@ -1712,9 +1765,9 @@ function loop(ts){
 function resetGameState(){
  restaurant.reset({keepLayout:true});
  state.phase='prep';state.time=SHIFT_SECONDS;state.revenue=0;state.served=0;state.perfect=0;state.missed=0;state.orders=[];state.nextOrder=1;state.spawnClock=0;state.uiClock=0;state.tray=null;state.busy=false;seenOrderTickets.clear();
- state.cleanPlates=3;state.dirtyPlates=0;state.washing=false;state.heldItem=null;state.combo=0;state.maxCombo=0;state.helperUnlocked=progress.tutorialDone;state.helperEnabled=progress.tutorialDone;kitchen.clearPrepCounters();kitchen.resetHelper();kitchen.syncEquipmentVisibility();kitchen.applySavedEquipmentState();
+ state.cleanPlates=hasUpgrade('dishRack')?5:3;state.dirtyPlates=0;state.washing=false;state.dishCartClock=0;state.heldItem=null;state.combo=0;state.maxCombo=0;state.helperUnlocked=progress.tutorialDone;state.helperEnabled=progress.tutorialDone;kitchen.clearPrepCounters();kitchen.resetHelper();kitchen.syncEquipmentVisibility();kitchen.applySavedEquipmentState();
  state.selectedPot=null;state.tutorial={active:!progress.tutorialDone,step:progress.tutorialDone?7:0};state.discardArmedUntil=0;state.discardArmedPot=null;state.trayDiscardArmedUntil=0;state.heldDiscardArmedUntil=0;
- state.pots=Array.from({length:POT_COUNT},(_,i)=>newPot(i));kitchen.resetCustomerHall();
+ state.pots=Array.from({length:POT_COUNT},(_,i)=>newPot(i));kitchen.syncProgressUpgrades();kitchen.resetCustomerHall();
  for(let i=0;i<POT_COUNT;i++)kitchen.clearPotVisual(i);
  kitchen.setTrayMeal(false);kitchen.serviceGroup?.position.copy(kitchen.serviceHome);kitchen.setSelectedPot(null);kitchen.setCarryVisual(null);kitchen.selectedLayoutStation=null;kitchen.setHelperEnabled(state.helperEnabled);if(kitchen.player)kitchen.player.position.set(0,0,3.55);renderHeldStatus();renderHelperButton();renderSmartFilterButton();renderTray();renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons();updateHud();updateDishHud()
 }
