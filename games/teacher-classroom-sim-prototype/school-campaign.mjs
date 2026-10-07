@@ -1,4 +1,4 @@
-export const CAMPAIGN_VERSION=1;
+export const CAMPAIGN_VERSION=2;
 export const CAMPAIGN_DAYS=8;
 export const EXAM_DAYS=Object.freeze([2,4,6,8]);
 export const GRADE_ORDER=Object.freeze(['D','C','B','A','S']);
@@ -10,7 +10,16 @@ export const INITIAL_MASTERY=Object.freeze({
   seoyeon:54,
   taeho:30,
   junho:40,
-  arin:52
+  arin:52,
+  haeun:35,
+  doyun:44,
+  yuna:54,
+  jisung:32,
+  soeun:50,
+  hyunwoo:39,
+  sua:55,
+  eunho:34,
+  narin:47
 });
 
 export const LEARNING_RULES=Object.freeze({
