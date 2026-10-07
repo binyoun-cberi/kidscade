@@ -9,7 +9,7 @@ const ui = {
   modeList:$('modeList'), modeHint:$('modeHint'), difficultyCopy:$('difficultyCopy'), difficultyList:$('difficultyList'), calibrateBtn:$('calibrateBtn'), defaultBtn:$('defaultBtn'), introStatus:$('introStatus'),
   calOrb:$('calOrb'), calValue:$('calValue'), calNote:$('calNote'), calProgress:$('calProgress'), calHint:$('calHint'), calDescription:$('calDescription'),
   retryCalBtn:$('retryCalBtn'), cancelCalBtn:$('cancelCalBtn'),
-  modeLabel:$('modeLabel'), score:$('scoreText'), combo:$('comboText'), time:$('timeText'), thirdStatLabel:$('thirdStatLabel'),
+  modeLabel:$('modeLabel'), score:$('scoreText'), combo:$('comboText'), time:$('timeText'), thirdStatLabel:$('thirdStatLabel'), runProgress:$('runProgress'), coachPill:$('coachPill'),
   targetNote:$('targetNote'), targetText:$('targetText'), targetHz:$('targetHz'), currentNote:$('currentNote'), currentHz:$('currentHz'),
   tuneNeedle:$('tuneNeedle'), stage:$('stage'), stageWrap:$('stageWrap'), micBadge:$('micBadge'), micText:$('micText'), floatGrade:$('floatGrade'),
   resultTitle:$('resultTitle'), resultScore:$('resultScore'), resultGrade:$('resultGrade'), perfectCount:$('perfectCount'), goodCount:$('goodCount'),
