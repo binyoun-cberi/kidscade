@@ -18,9 +18,9 @@ const TOWERS={
 };
 const WAVES=[
   {nums:[2,4,8,16],count:7,mission:'첫 감염체는 모두 2의 거듭제곱입니다. ÷2만으로 숫자를 1까지 분해하세요.'},
-  {nums:[6,9,12,18],count:8,mission:'÷3 기어 캐논이 열렸습니다. 9·12·18의 약수를 골라 연쇄 분해하세요.'},
+  {nums:[6,9,12,18],count:8,mission:'÷3 에너지 포탑이 열렸습니다. 9·12·18의 약수를 골라 연쇄 분해하세요.'},
   {nums:[7,11,13],count:8,mission:'소수 감염 경보! ±1 교정기로 지금 해금된 2·3의 배수로 바꾼 뒤 분해하세요.'},
-  {nums:[10,15,20,25,30],count:9,mission:'÷5 중포가 열렸습니다. 큰 수를 빠르게 작은 인수로 쪼개세요.'},
+  {nums:[10,15,20,25,30],count:9,mission:'÷5 중화기 계열이 열렸습니다. 큰 수를 빠르게 작은 인수로 쪼개세요.'},
   {nums:[18,24,30,36,45],count:10,mission:'FACTOR CHAIN을 노리세요. 여러 약수 터렛이 이어질수록 강해집니다.'},
   {nums:[14,21,27,35,49],count:11,mission:'나눈 뒤 7 같은 소수가 다시 남습니다. 길 후반에도 교정기→나눗셈 2차 방어선을 이어 보세요.'},
   {nums:[17,19,23,29],count:12,mission:'소수 러시입니다. 교정기 위치와 나눗셈 터렛의 사거리를 연결하세요.'},
@@ -390,11 +390,11 @@ function rebuildSkyWorld(){
   const endPos=cellWorld(PATH[PATH.length-1].x,PATH[PATH.length-1].y,0);
   const shelter=cloneModel('building3',2.7);if(shelter){shelter.position.set(endPos.x+1.85,-.34,endPos.z+.95);shelter.rotation.y=-Math.PI/2;skyGroup.add(shelter)}
   const shelterPeople=[
-    ['soldier',.95,.62,-Math.PI/2,0x3b82f6],['doctor,',1.2,-.48,-Math.PI/2,0xf472b6],
+    ['soldier',.95,.62,-Math.PI/2,0x3b82f6],['doctor',1.2,-.48,-Math.PI/2,0xf472b6],
     ['civilianMale',2.0,.28,-Math.PI/2,0xf59e0b],['civilianFemale',1.9,-.82,-Math.PI/2,0x22c55e]
   ];
   for(const row of shelterPeople){
-    const [rawKey,dx,dz,rot,tint]=row,key=String(rawKey).replace(',',''),npc=cloneModel(key,1.0);
+    const [key,dx,dz,rot,tint]=row,npc=cloneModel(key,1.0);
     if(npc){tintCharacter(npc,tint);npc.position.set(endPos.x+dx,-.01,endPos.z+dz);npc.rotation.y=rot;skyGroup.add(npc)}
   }
 
