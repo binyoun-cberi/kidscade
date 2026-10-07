@@ -1073,3 +1073,15 @@ test('Seed World v3.59 makes school time reachable within a typical session',()=
   assert.ok(Number(speed[1])>=12,'clock does not advance enough for a school period');
   assert.ok((720-480)/Number(speed[1])<=20*60,'no lunch within twenty real minutes');
 });
+
+
+test('ranch facilities expose spatial care and milling actions without farming unlimited daily rewards',()=>{
+  assert.match(runtime,/function useRanchFacility\(kind\)/);
+  assert.match(runtime,/p\.ranchCare=\{fedDay:/);
+  assert.match(runtime,/if\(p\.ranchCare\.fedDay===day\)/);
+  assert.match(runtime,/removeInventoryItem\(feed,1\)/);
+  assert.match(runtime,/removeInventoryItem\('wheat',2\)/);
+  assert.match(runtime,/x,z\+2\.2,1\.5,labels\[key\]/);
+  assert.match(runtime,/for\(const q of actor\.interactions\|\|\[\]\)q\.enabled=active/);
+  assert.match(runtime,/interactables\.outdoor\.splice\(index,1\)/);
+});
