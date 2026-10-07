@@ -123,7 +123,13 @@ jobs:
             exit 1
           fi
           curl -fsS -H 'Cache-Control: no-cache' "https://kidscade.binyoun.workers.dev/home-v2.js?verify=${EXPECTED_BUILD}" -o /dev/null
-          echo "Production lobby smoke check passed for ${EXPECTED_BUILD:0:12}."
+
+          teacher_url="https://kidscade.binyoun.workers.dev/teacher/character-3d-studio.html?verify=${EXPECTED_BUILD}"
+          curl -fsS -D /tmp/kidscade-teacher.headers -H 'Cache-Control: no-cache' "$teacher_url" -o /tmp/kidscade-teacher.html
+          grep -q 'data-layout-version="left-rail-no-scroll-v4"' /tmp/kidscade-teacher.html
+          tr -d '\r' < /tmp/kidscade-teacher.headers | grep -i '^cache-control:.*no-store' >/dev/null
+
+          echo "Production lobby and teacher studio smoke checks passed for ${EXPECTED_BUILD:0:12}."
 
       - name: Static smoke — verify every gate image
         env:
