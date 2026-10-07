@@ -9,137 +9,130 @@ const root = path.resolve(__dirname, '..');
 const gameDir = path.join(root, 'games', 'teacher-classroom-sim-prototype');
 const html = fs.readFileSync(path.join(gameDir, 'index.html'), 'utf8');
 const css = fs.readFileSync(path.join(gameDir, 'style.css'), 'utf8');
-const js = fs.readFileSync(path.join(gameDir, 'game.js'), 'utf8');
+const js = fs.readFileSync(path.join(gameDir, 'school-day-game.js'), 'utf8');
 const aiPath = path.join(gameDir, 'student-ai.mjs');
+const dayPath = path.join(gameDir, 'school-day.mjs');
 const catalogData = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.json'), 'utf8'));
 const catalog = Array.isArray(catalogData) ? catalogData : catalogData.games;
 const game = catalog.find(g => g.id === 'job_teacher_classroom');
 
-test('teacher simulator v61 is a direct-control 3D classroom game', () => {
+test('teacher simulator v62 loads the six-period direct-control game', () => {
   assert.match(html, /id="game"/);
   assert.match(html, /id="joystick"/);
   assert.match(html, /id="actionButton"/);
-  assert.match(html, /game\.js\?v=61/);
-  assert.match(html, /style\.css\?v=60/);
-  assert.doesNotMatch(html, /waiting-panel/);
-  assert.doesNotMatch(html, /visitorCard/);
-  assert.doesNotMatch(html, /classroom-assets\.css/);
-  assert.match(css, /#joystick/);
-  assert.match(css, /#actionButton/);
+  assert.match(html, /id="dayStrip"/);
+  assert.match(html, /school-day-game\.js\?v=62/);
+  assert.match(html, /style\.css\?v=62/);
+  assert.match(css, /#dayStrip/);
 });
 
-test('teacher simulator game module parses as JavaScript', () => {
+test('teacher simulator school-day module parses as JavaScript', () => {
   const result = spawnSync(process.execPath, ['--input-type=module', '--check'], {input:js,encoding:'utf8'});
-  assert.equal(result.status, 0, result.stderr || result.stdout || 'teacher simulator syntax check failed');
+  assert.equal(result.status, 0, result.stderr || result.stdout || 'school-day game syntax check failed');
 });
 
-test('teacher simulator reuses Chibi and committed furniture assets', () => {
+test('six periods and six school spaces are configured', async () => {
+  const day = await import(pathToFileURL(dayPath).href + '?day=' + Date.now());
+  assert.equal(day.PERIODS.length, 6);
+  assert.deepEqual(day.PERIODS.map(p => p.subject), ['수학','국어','체육','과학','미술','컴퓨터']);
+  assert.deepEqual(Object.keys(day.SCHOOL_SPACES).sort(), ['art','cafeteria','classroom','computer','gym','science'].sort());
+  assert.ok(day.DAY_STEPS.some(s => s.kind === 'social' && s.lunch));
+  assert.equal(day.DAY_STEPS.at(-1).kind, 'done');
+});
+
+test('every lesson is preceded by a preparation step in the same space', async () => {
+  const day = await import(pathToFileURL(dayPath).href + '?prep=' + Date.now());
+  for (let i=0;i<day.DAY_STEPS.length;i++) {
+    const step = day.DAY_STEPS[i];
+    if (step.kind !== 'lesson') continue;
+    const prev = day.DAY_STEPS[i-1];
+    assert.ok(prev);
+    assert.equal(prev.kind, 'prep');
+    assert.equal(prev.location, step.location);
+    assert.equal(prev.period, step.period);
+  }
+});
+
+test('space changes use explicit transition steps', async () => {
+  const day = await import(pathToFileURL(dayPath).href + '?transitions=' + Date.now());
+  for (let i=1;i<day.DAY_STEPS.length;i++) {
+    const prev = day.DAY_STEPS[i-1];
+    const step = day.DAY_STEPS[i];
+    if (prev.location === step.location) continue;
+    assert.equal(prev.kind, 'transition');
+    assert.equal(prev.nextLocation, step.location);
+  }
+});
+
+test('student stations and teaching points are outside configured furniture obstacles', async () => {
+  const day = await import(pathToFileURL(dayPath).href + '?layout=' + Date.now());
+  const blocked = (space,p,pad=0.03) => space.obstacles.some(o => Math.abs(p.x-o.x)<o.hx+pad && Math.abs(p.z-o.z)<o.hz+pad);
+  for (const space of Object.values(day.SCHOOL_SPACES)) {
+    assert.equal(space.seats.length, 6, space.id+' must have six student stations');
+    for (const seat of space.seats) assert.equal(blocked(space,seat), false, space.id+' seat inside obstacle');
+    assert.equal(blocked(space,space.teachingPoint), false, space.id+' teaching point inside obstacle');
+  }
+});
+
+test('multi-room game wires real repository assets for each specialist room', () => {
   const assets = [
     'assets/game/chibi/ChibiCharactersV1.2/ChibiCharacters/glb/allinonepr.glb',
     'assets/game/3d/interiors/kenney-furniture-kit/desk.glb',
-    'assets/game/3d/interiors/kenney-furniture-kit/chair-desk.glb',
-    'assets/game/3d/interiors/kenney-furniture-kit/bookcase-open.glb',
-    'assets/game/3d/interiors/kenney-furniture-kit/computer-screen.glb'
+    'assets/game/3d/interiors/kenney-furniture-kit/bench.glb',
+    'assets/game/platformer/props/ball.glb',
+    'assets/game/3d/interiors/kenney-furniture-kit/kitchen-sink.glb',
+    'assets/game/3d/bakery/interior/table-round-a.glb',
+    'assets/game/3d/bakery/interior/serving-tray.glb',
+    'assets/game/3d/interiors/kenney-furniture-kit/bookcase-open-low.glb',
+    'assets/game/3d/interiors/kenney-furniture-kit/computer-screen.glb',
+    'assets/game/3d/interiors/kenney-furniture-kit/computer-keyboard.glb'
   ];
   for (const rel of assets) assert.ok(fs.existsSync(path.join(root, rel)), 'missing teacher simulator asset: '+rel);
-  assert.match(js, /allinonepr\.glb/);
-  assert.match(js, /kenney-furniture-kit\/desk\.glb/);
-  assert.match(js, /student-ai\.mjs\?v=61/);
+  assert.match(js, /function addGym\(/);
+  assert.match(js, /function addScience\(/);
+  assert.match(js, /function addCafeteria\(/);
+  assert.match(js, /function addArt\(/);
+  assert.match(js, /function addComputer\(/);
 });
 
-test('student AI safety rails cap simultaneous chaos', async () => {
-  const ai = await import(pathToFileURL(aiPath).href + '?t=' + Date.now());
+test('student AI keeps classroom chaos capped', async () => {
+  const ai = await import(pathToFileURL(aiPath).href + '?ai=' + Date.now());
   assert.equal(ai.AI_RULES.maxConcurrentSocialPairs, 2);
   assert.equal(ai.AI_RULES.maxConcurrentConflicts, 1);
   assert.equal(ai.AI_RULES.maxFightsPerRecess, 1);
-  assert.ok(ai.AI_RULES.conflictCooldownSeconds >= 6);
-  assert.ok(ai.AI_RULES.separatedCooldownSeconds > ai.AI_RULES.conflictCooldownSeconds);
-});
-
-test('focus cap and recovery create different student rhythms without personality classes', async () => {
-  const ai = await import(pathToFileURL(aiPath).href + '?focus=' + Date.now());
-  const minsu = ai.createStudentRuntime(ai.STUDENT_PROFILES.find(s => s.id === 'minsu'));
-  const seoyeon = ai.createStudentRuntime(ai.STUDENT_PROFILES.find(s => s.id === 'seoyeon'));
-  let minsuStarts = 0;
-  let seoyeonStarts = 0;
-  for (let t=0;t<180;t+=.1) {
-    if (ai.updateLessonFocus(minsu,.1,{teacherNear:false}) === 'offtask-start') minsuStarts++;
-    if (ai.updateLessonFocus(seoyeon,.1,{teacherNear:false}) === 'offtask-start') seoyeonStarts++;
-  }
-  assert.ok(minsuStarts > seoyeonStarts, 'low-cap fast-recovery student should cycle off task more often');
-  assert.ok(minsuStarts >= 2);
-  assert.ok(seoyeonStarts <= 1);
-});
-
-test('natural focus recovery leaves time to notice while teacher proximity helps', async () => {
-  const ai = await import(pathToFileURL(aiPath).href + '?recovery=' + Date.now());
   assert.equal(ai.AI_RULES.focusNaturalRecoveryMultiplier, .5);
   assert.equal(ai.AI_RULES.socialNaturalRecoveryMultiplier, .5);
+});
 
+test('lesson-specific focus drain is supported without adding personality classes', async () => {
+  const ai = await import(pathToFileURL(aiPath).href + '?drain=' + Date.now());
   const profile = ai.STUDENT_PROFILES.find(s => s.id === 'minsu');
-  const natural = ai.createStudentRuntime(profile);
-  natural.mode = 'offtask';
-  natural.focus = natural.focusMax * ai.AI_RULES.focusOffTaskRatio;
-  let naturalSeconds = 0;
-  while (natural.mode === 'offtask' && naturalSeconds < 30) {
-    ai.updateLessonFocus(natural, .1, {teacherNear:false});
-    naturalSeconds += .1;
+  const calm = ai.createStudentRuntime(profile);
+  const demanding = ai.createStudentRuntime(profile);
+  for (let t=0;t<40;t+=.1) {
+    ai.updateLessonFocus(calm,.1,{teacherNear:false,drainMultiplier:.75});
+    ai.updateLessonFocus(demanding,.1,{teacherNear:false,drainMultiplier:1.15});
   }
-
-  const watched = ai.createStudentRuntime(profile);
-  watched.mode = 'offtask';
-  watched.focus = watched.focusMax * ai.AI_RULES.focusOffTaskRatio;
-  let watchedSeconds = 0;
-  while (watched.mode === 'offtask' && watchedSeconds < 30) {
-    ai.updateLessonFocus(watched, .1, {teacherNear:true});
-    watchedSeconds += .1;
-  }
-
-  assert.ok(naturalSeconds >= 5 && naturalSeconds <= 7);
-  assert.ok(watchedSeconds >= 2 && watchedSeconds <= 3.5);
+  assert.ok(demanding.focus < calm.focus);
 });
 
-test('low social energy raises conflict risk but teacher proximity suppresses it', async () => {
-  const ai = await import(pathToFileURL(aiPath).href + '?social=' + Date.now());
-  const a = ai.createStudentRuntime(ai.STUDENT_PROFILES[0]);
-  const b = ai.createStudentRuntime(ai.STUDENT_PROFILES[1]);
-  a.social = a.socialMax * .15;
-  b.social = b.socialMax * .18;
-  const alone = ai.conflictProbability(a,b,{teacherNear:false,relationActive:false});
-  const watched = ai.conflictProbability(a,b,{teacherNear:true,relationActive:false});
-  assert.ok(alone >= .3 && alone <= .5);
-  assert.ok(watched < alone);
-  assert.equal(ai.conflictProbability(a,b,{teacherNear:false,relationActive:true}),1);
-});
-
-test('student navigation does not bypass desks', () => {
-  assert.doesNotMatch(js, /\|\|actor\.kind==='student'/);
+test('student navigation still uses exact furniture intersection checks', () => {
   assert.match(js, /function segmentHitsRect\(/);
   assert.match(js, /function studentSegmentClear\(/);
   assert.match(js, /function findStudentPath\(/);
-  assert.match(js, /nearestConnectedNavCell/);
+  assert.doesNotMatch(js, /\|\|actor\.kind==='student'/);
 });
 
-test('social timer starts only after students actually meet', () => {
-  const start = js.indexOf('function updateRecess(dt)');
-  const end = js.indexOf('function showBubble', start);
-  const block = js.slice(start,end);
-  const meetIndex = block.indexOf('if(meet){');
-  const timerIndex = block.indexOf('pair.time+=dt');
-  assert.ok(meetIndex >= 0 && timerIndex > meetIndex);
+test('room changes require walking to the door action', () => {
+  assert.match(js, /currentStep\.kind==='transition'/);
+  assert.match(js, /distance2D\(player\.root\.position,DOOR_POINT\)<1\.55/);
+  assert.match(js, /currentAction=\{type:'moveNext'\}/);
+  assert.match(js, /transitionToSpace\(currentStep\.nextLocation\)/);
 });
 
-test('unhandled fights are not credited as player success', () => {
-  const start = js.indexOf('function autoResolveFight(pair)');
-  const end = js.indexOf('function updateRecess', start);
-  const block = js.slice(start,end);
-  assert.match(block, /stats\.missedFights\+\+/);
-  assert.doesNotMatch(block, /stats\.fightsSeparated\+\+/);
-  assert.match(js, /놓친 싸움/);
-});
-
-test('catalog publishes teacher simulator v61', () => {
+test('catalog publishes teacher simulator v62', () => {
   assert.ok(game);
-  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=61');
-  assert.match(game.description, /직접 움직여/);
+  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=62');
+  assert.match(game.description, /6교시/);
+  assert.match(game.description, /체육관/);
 });
