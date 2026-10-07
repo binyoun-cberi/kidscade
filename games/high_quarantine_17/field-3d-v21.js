@@ -158,8 +158,8 @@ function buildBuildings(){
  worldRect(staticRoot,548,58,184,118,2.2,0x6b604d);worldRect(staticRoot,548,58,184,14,2.38,0x918269);
  l=labelSprite('보급창고','#efd697');l.position.set(sx(640),2.72,sz(62));staticRoot.add(l);
  addAsset(staticRoot,A.desk,sx(260),sz(102),1.35,0x657276,.18,Math.PI/2);
- addAsset(staticRoot,A.radio,sx(260),sz(102),.34,0x536166,.18,Math.PI/2).then(o=>{if(o)o.position.y=.82});
- addAsset(staticRoot,A.laptop,sx(260),sz(122),.40,0x5f6d70,.16,Math.PI/2).then(o=>{if(o)o.position.y=.82});
+ addAsset(staticRoot,A.radio,sx(247),sz(102),.34,0x536166,.18,Math.PI/2).then(o=>{if(o)o.position.y=.95});
+ addAsset(staticRoot,A.laptop,sx(273),sz(102),.40,0x5f6d70,.16,Math.PI/2).then(o=>{if(o)o.position.y=.95});
  addAsset(staticRoot,A.structureCanvas,sx(615),sz(193),2.4,0x6d6756,.20,0);
  addAsset(staticRoot,A.boxLarge,sx(590),sz(208),.82,0x82664c,.24,.12);
  addAsset(staticRoot,A.barrel,sx(660),sz(206),.72,0x596762,.20,0);
@@ -342,4 +342,4 @@ function frame(t){
  requestAnimationFrame(frame)
 }
 requestAnimationFrame(frame);
-window.Q17Field3D=Object.freeze({active:true,version:'21.5',scene,camera,renderer});
+window.Q17Field3D=Object.freeze({active:true,version:'21.6',scene,camera,renderer});
