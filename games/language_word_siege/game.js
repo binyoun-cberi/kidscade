@@ -13,22 +13,70 @@ const coreText=$('coreText'), waveText=$('waveText'), inkText=$('inkText'), scor
 const statusBox=$('statusBox'), inspectBox=$('inspectBox'), toastEl=$('toast');
 const startOverlay=$('startOverlay'), dictOverlay=$('dictOverlay'), resultOverlay=$('resultOverlay');
 const STORAGE_DISC='kidscade_word_siege_discovered_v1', STORAGE_BEST='kidscade_word_siege_best_v1';
+const STORAGE_STAGE='kidscade_word_siege_stage_v1';
+const STAGES=window.WordSiegeStages||[{
+  id:'stage-01',number:1,name:'GRID ZERO',subtitle:'기본 작전',description:'기본 방어',
+  colors:{background:'#f4ecd7',lane:'#d6c8ad',accent:'#c2b089',paper:'#fdf7e7'},multiplier:1,focus:'normal',waves:8,
+  path:[[.02,.28],[.16,.28],[.16,.61],[.31,.61],[.31,.40],[.47,.40],[.47,.72],[.64,.72],[.64,.31],[.80,.31],[.80,.57],[.96,.57]],
+  resources:[{x:.22,y:.18,amount:100},{x:.54,y:.18,amount:115},{x:.72,y:.78,amount:120}]
+}];
+let activeStage=0,selectedStage=0;
+function getUnlocked(){
+  try{return Math.min(STAGES.length,Math.max(1,KS?KS.getInt(STORAGE_STAGE,1):1))}catch{return 1}
+}
+function saveUnlocked(level){
+  try{if(KS)KS.setRaw(STORAGE_STAGE,String(Math.max(level,getUnlocked())))}catch{}
+}
+function currentStage(){return STAGES[activeStage]}
+
 
 let W=1000,H=600,dpr=1,last=performance.now(),running=false,muted=false;
 let state=null, audioCtx=null;
 
-const pathPts=[
-  [0.02,.28],[.16,.28],[.16,.61],[.31,.61],[.31,.40],[.47,.40],[.47,.72],[.64,.72],[.64,.31],[.80,.31],[.80,.57],[.96,.57]
-];
-const resourceSpots=[{x:.22,y:.18,r:.045},{x:.54,y:.18,r:.046},{x:.72,y:.78,r:.05}];
+let pathPts=STAGES[0].path;
+let resourceSpots=STAGES[0].resources;
+function selectStage(index){
+  if(index<0||index>=getUnlocked()||index>=STAGES.length)return false;
+  selectedStage=index;
+  renderStages();
+  return true;
+}
+function renderStages(){
+  const list=$('stageList');
+  if(!list)return;
+  const unlocked=getUnlocked();
+  $('stageProgressText').textContent=unlocked+' / '+STAGES.length+' 해금';
+  list.innerHTML='';
+  STAGES.forEach((stage,index)=>{
+    const accessible=index<unlocked;
+    const button=document.createElement('button');
+    button.type='button';button.className='stage-choice'+(index===selectedStage?' selected':'');
+    button.disabled=!accessible;
+    button.style.setProperty('--stage-paper',stage.colors.background);
+    button.style.setProperty('--stage-accent',stage.colors.accent);
+    button.innerHTML='<span class="stage-number">'+String(stage.number).padStart(2,'0')+'</span><span><b>'+stage.name+'</b><small>'+stage.subtitle+' · 8 WAVES</small></span>';
+    if(!accessible){const lock=document.createElement('span');lock.className='complete';lock.textContent='LOCKED';button.appendChild(lock)}
+    button.addEventListener('click',()=>selectStage(index));
+    list.appendChild(button);
+  });
+  $('stageDetail').textContent=STAGES[selectedStage].description;
+  $('startBtn').textContent='STAGE '+String(STAGES[selectedStage].number).padStart(2,'0')+' 시작';
+}
+function prepareStage(index){
+  activeStage=index;
+  pathPts=currentStage().path;
+  resourceSpots=currentStage().resources;
+  $('stageText').textContent=String(currentStage().number).padStart(2,'0');
+}
+
 
 function freshState(){
   return {
     core:100,wave:0,ink:20,score:0,inWave:false,waveTimer:0,spawnQueue:[],
     enemies:[],towers:[],shots:[],effects:[],rack:D.startRack.slice(0,D.maxRack),
     selected:[],placing:null,hover:null,uid:1,unique:new Set(),builtWords:[],
-    resources:resourceSpots.map((s,i)=>({...s,amount:70+i*20})),
-    discovered:new Set(loadDiscovered()), discoveredCombos:new Set(), ended:false,towerRevision:0
+    resources:resourceSpots.map((s,i)=>({...s,r:.045,amount:s.amount??(70+i*20)})),
+    discovered:new Set(loadDiscovered()), discoveredCombos:new Set(), ended:false,towerRevision:0,totalSpawns:0
   };
 }
 function loadDiscovered(){
@@ -303,7 +351,8 @@ function applyLinks(){
 }
 
 function createWave(n){
-  const arr=[];const count=7+n*4;
+  const arr=[];const stage=currentStage(),focus=stage.focus;
+  const count=7+n*4+Math.floor(activeStage/3)*2;
   for(let i=0;i<count;i++){
     let type='normal';
     if(n>=2&&i%5===3)type='fast';
@@ -312,9 +361,17 @@ function createWave(n){
     if(n>=5&&i%9===7)type='shield';
     if(n>=6&&i%11===9)type='split';
     if(n>=6&&i%13===11)type='regen';
-    arr.push({delay:i*(Math.max(.34,.78-n*.045)),type});
+    if(focus==='fast'&&n>=2&&i%3===0)type='fast';
+    if(focus==='armored'&&n>=2&&i%4===0)type='armored';
+    if(focus==='heavy'&&n>=2&&i%4===0)type='heavy';
+    if(focus==='split'&&n>=2&&i%4===0)type='split';
+    if(focus==='regen'&&n>=2&&i%4===0)type='regen';
+    if(focus==='shield'&&n>=2&&i%4===0)type='shield';
+    if(focus==='swarm'&&n>=2&&i%4===0)type='fast';
+    if(focus==='mixed'&&n>=2&&i%5===0)type=['fast','armored','shield','regen','split'][(i/5)%5];
+    arr.push({delay:i*(Math.max(.30,.78-n*.045)-(focus==='swarm'?.09:0)),type});
   }
-  if(n===8)arr.push({delay:count*.42+.7,type:'boss'});
+  if(n===8)arr.push({delay:Math.max(arr[arr.length-1]?.delay||0, count*.42)+1.1,type:'boss'});
   return arr;
 }
 function startWave(){
@@ -324,7 +381,7 @@ function startWave(){
     setStatus('공격 타워를 먼저 지어주세요','ARROW, FIRE, ICE처럼 적을 공격할 단어 타워가 필요해요.');
     toast('첫 웨이브 전에 공격 타워가 필요해요');return;
   }
-  state.wave++;state.inWave=true;state.waveTimer=0;state.spawnQueue=createWave(state.wave);
+  state.wave++;state.inWave=true;state.waveTimer=0;state.spawnQueue=createWave(state.wave);state.totalSpawns=state.spawnQueue.length;
   waveBtn.disabled=true;waveBtn.textContent='WAVE '+state.wave+' 진행 중';setStatus('WAVE '+state.wave,'적이 CORE를 향해 이동합니다. 전투 중에도 타워를 만들 수 있어요.');
   beep(250,.12,'sawtooth',.05);updateHud();
 }
@@ -342,7 +399,7 @@ function spawnEnemy(type){
   const a=ENEMY[type]||ENEMY.normal;
   const stage=state.wave-1,balance=D.waveBalance;
   const hpScale=1+balance.hpLinear*stage+balance.hpQuadratic*stage*stage;
-  const hp=Math.round(a.hp*hpScale);
+  const hp=Math.round(a.hp*hpScale*currentStage().multiplier);
   const e={id:state.uid++,type,hp,maxHp:hp,speed:a.speed*(1+stage*balance.speedGrowth),
     r:a.r,damage:Math.round(a.damage*(1+stage*.065)),color:a.color,
     shield:Math.round((a.shield||0)*hpScale),armor:a.armor||0,regen:a.regen||0,
@@ -370,7 +427,12 @@ function moveEnemy(e,dt){
   const a=pathPts[Math.min(e.pathIndex,pathPts.length-2)],b=pathPts[Math.min(e.pathIndex+1,pathPts.length-1)];
   e.x=a[0]+(b[0]-a[0])*e.pathT;e.y=a[1]+(b[1]-a[1])*e.pathT;
 }
-function reachCore(e){e.dead=true;state.core=Math.max(0,state.core-e.damage);flashEffect(.94,.57,'#ef5d67',.12);beep(120,.12,'sawtooth',.06);if(state.core<=0)endGame(false)}
+function reachCore(e){
+  e.dead=true;state.core=Math.max(0,state.core-e.damage);
+  const last=pathPts[pathPts.length-1];flashEffect(last[0],last[1],'#ef5d67',.12);
+  beep(120,.12,'sawtooth',.06);
+  if(state.core<=0)endGame(false)
+}
 function damageEnemy(e,amount,kind,tower){
   if(e.dead)return;
   if(e.shield>0){
@@ -473,6 +535,7 @@ function waveUpdate(dt){
   while(state.spawnQueue.length&&state.spawnQueue[0].delay<=state.waveTimer){spawnEnemy(state.spawnQueue.shift().type)}
   if(!state.spawnQueue.length&&!state.enemies.some(e=>!e.dead)){
     state.inWave=false;state.ink+=8+state.wave*2;state.score+=100*state.wave;waveBtn.disabled=false;
+    $('waveProgress').style.width='100%';
     if(state.wave>=8){endGame(true)}else{
       const bonusWord=giveNextWaveWord();
       waveBtn.textContent='WAVE '+(state.wave+1)+' 시작';
@@ -495,6 +558,11 @@ function update(dt){
   state.shots=state.shots.filter(s=>!s.dead);
   for(const ef of state.effects)ef.life-=dt;state.effects=state.effects.filter(e=>e.life>0);
   updateHud();
+  if(state.inWave){
+    const remaining=state.spawnQueue.length+state.enemies.length;
+    const done=Math.max(0,state.totalSpawns-remaining);
+    $('waveProgress').style.width=Math.round(done/Math.max(1,state.totalSpawns)*100)+'%';
+  }
   if(previousInk!==Math.floor(state.ink)){previousInk=Math.floor(state.ink);if(!state.placing)updateComposer()}
 }
 function updateHud(){
@@ -503,8 +571,11 @@ function updateHud(){
   for(const [el,value] of updates)if(el.textContent!==String(value))el.textContent=String(value);
 }
 function endGame(win){
-  state.ended=true;running=false;saveBest();$('resultTitle').textContent=win?'SIEGE CLEARED!':'CORE LOST';
-  $('resultLead').textContent=win?'8개의 웨이브를 모두 막았습니다.':'이번에는 '+state.wave+' 웨이브까지 버텼습니다.';
+  state.ended=true;running=false;saveBest();
+  if(win)saveUnlocked(Math.min(STAGES.length,activeStage+2));
+  $('nextBtn').hidden=!win||activeStage>=STAGES.length-1;
+  $('resultTitle').textContent=win?'SIEGE CLEARED!':'CORE LOST';
+  $('resultLead').textContent=(win?'STAGE '+currentStage().number+' · '+currentStage().name+' 완료! 다음 스테이지가 열렸습니다.':'STAGE '+currentStage().number+' · '+currentStage().name+' · '+state.wave+' 웨이브까지 버텼습니다.');
   $('resultScore').textContent=Math.floor(state.score);$('resultUnique').textContent=state.unique.size;
   const longest=state.builtWords.slice().sort((a,b)=>b.length-a.length)[0]||'-';
   const hardest=state.builtWords.slice().sort((a,b)=>(D.words[b]?.difficulty||0)-(D.words[a]?.difficulty||0))[0]||'-';
@@ -642,10 +713,31 @@ function openDictionary(){
   dictOverlay.classList.remove('hidden');
 }
 function restart(){
-  state=freshState();previousInk=-1;renderRack();updateComposer();updateHud();waveBtn.textContent='WAVE 1 시작';waveBtn.disabled=false;inspectBox.classList.remove('show');resultOverlay.classList.add('hidden');setStatus('첫 배치','시작 글자에는 MINER와 ARROW가 숨어 있어요. 둘 중 하나부터 만들어 보세요.');running=true;last=performance.now();
+  prepareStage(selectedStage);
+  state=freshState();previousInk=-1;renderRack();updateComposer();updateHud();
+  waveBtn.textContent='WAVE 1 시작';waveBtn.disabled=false;
+  $('waveProgress').style.width='0%';
+  inspectBox.classList.remove('show');resultOverlay.classList.add('hidden');
+  startOverlay.classList.add('hidden');
+  setStatus('STAGE '+currentStage().number+' · '+currentStage().name,
+    '시작 글자에는 MINER와 ARROW가 있어요. '+currentStage().description);
+  running=true;last=performance.now();
+}
+function openStageSelect(){
+  if(state?.inWave){toast('웨이브가 끝난 뒤 스테이지를 바꿀 수 있어요');return}
+  running=false;selectedStage=activeStage;renderStages();
+  $('stageClose').hidden=!state||state.ended;
+  startOverlay.classList.remove('hidden');
 }
 
-$('startBtn').addEventListener('click',()=>{startOverlay.classList.add('hidden');restart();beep(660,.1,'triangle')});
+$('startBtn').addEventListener('click',()=>{restart();beep(660,.1,'triangle')});
+$('stageBtn').addEventListener('click',openStageSelect);
+$('stageClose').addEventListener('click',()=>{startOverlay.classList.add('hidden');running=!!state&&!state.ended;});
+$('chooseBtn').addEventListener('click',()=>{resultOverlay.classList.add('hidden');openStageSelect()});
+$('nextBtn').addEventListener('click',()=>{
+  if(activeStage>=STAGES.length-1)return;
+  selectedStage=activeStage+1;renderStages();restart();
+});
 $('retryBtn').addEventListener('click',restart);
 waveBtn.addEventListener('click',startWave);buildBtn.addEventListener('click',beginPlacement);clearBtn.addEventListener('click',()=>{if(state.placing)cancelPlacement();clearSelection()});hintBtn.addEventListener('click',showHint);swapBtn.addEventListener('click',swapOne);
 $('dictBtn').addEventListener('click',openDictionary);$('dictClose').addEventListener('click',()=>dictOverlay.classList.add('hidden'));
@@ -663,5 +755,6 @@ function loop(now){
   const dt=Math.min(.04,(now-last)/1000||0);last=now;if(state){update(dt);draw()}requestAnimationFrame(loop)
 }
 $('dictionaryTotal').textContent=D.wordList.length;
+renderStages();
 resize();requestAnimationFrame(loop);
 })();
