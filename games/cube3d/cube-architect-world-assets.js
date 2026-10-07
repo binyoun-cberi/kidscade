@@ -55,7 +55,7 @@ const SURVIVAL_SPECS={
   tent:{url:SURVIVAL_ROOT+'tent-canvas.glb',height:.98,footprint:.98},
   bedroll:{url:SURVIVAL_ROOT+'bedroll.glb',height:.17,footprint:.92}
 };
-const PLACEMENT_SPECS={...FURNITURE_SPECS,...SURVIVAL_SPECS};
+const PLACEMENT_SPECS=Object.fromEntries(Object.entries({...FURNITURE_SPECS,...SURVIVAL_SPECS}).map(([key,spec])=>[key,{...spec,floorCentered:true}]));
 function cloneMaterial(material,tint){
   const next=material?.clone?material.clone():material;
   if(!next)return next;
