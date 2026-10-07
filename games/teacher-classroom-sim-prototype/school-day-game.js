@@ -700,6 +700,29 @@ function transitionToSpace(spaceId){
   buildSpace(spaceId);placeActorsAtEntry();showToast((SCHOOL_SPACES[spaceId]?.icon||'🏫')+' '+(SCHOOL_SPACES[spaceId]?.name||'다음 장소')+'에 도착!');
 }
 
+function buildNearbyTeams(active){
+  const remaining=active.slice(),teams=[];
+  while(remaining.length>=2){
+    let bestI=0,bestJ=1,bestDist=Infinity;
+    for(let i=0;i<remaining.length;i++)for(let j=i+1;j<remaining.length;j++){
+      const d=distance2D(remaining[i].seat,remaining[j].seat);
+      if(d<bestDist){bestDist=d;bestI=i;bestJ=j}
+    }
+    const b=remaining.splice(bestJ,1)[0],a=remaining.splice(bestI,1)[0];
+    teams.push([a,b]);
+  }
+  if(remaining.length){
+    const extra=remaining[0];
+    let nearest=teams[0],best=Infinity;
+    for(const team of teams){
+      const d=Math.min(...team.map(s=>distance2D(s.seat,extra.seat)));
+      if(d<best){best=d;nearest=team}
+    }
+    if(nearest)nearest.push(extra);
+    else teams.push([extra]);
+  }
+  return teams;
+}
 function enterStep(index,{spaceChanged=false}={}){
   stepIndex=clamp(index,0,DAY_STEPS.length-1);currentStep=DAY_STEPS[stepIndex];stepTime=currentStep.duration||0;
   pairs=[];teamPairs=[];lessonChats=[];chatterScanTimer=.5;chatterCooldowns.clear();groupSignalCooldown=0;groupSignalsThisLesson=0;
@@ -730,7 +753,7 @@ function enterStep(index,{spaceChanged=false}={}){
       s.accident=null;
     });
     if(currentStep.teamActivity){
-      teamPairs=buildPairs(activeLessonStudents());
+      teamPairs=buildNearbyTeams(activeLessonStudents());
       teamPairs.forEach((team,i)=>team.forEach(s=>s.teamId=i));
     }
     updateBoard(currentStep.board||currentStep.subject);
