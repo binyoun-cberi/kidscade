@@ -20,12 +20,12 @@ const HOME_DECOR_MODELS=['pan.glb','toaster.glb','kettle.glb','utensils-cup.glb'
 const CITY_DECOR_ASSETS={bench:ROOT+'3d/city/poly-pizza-city-pack/bench.glb',bicycle:ROOT+'3d/city/poly-pizza-city-pack/bicycle.glb',busStop:ROOT+'3d/city/poly-pizza-city-pack/bus-stop.glb',hydrant:ROOT+'3d/city/poly-pizza-city-pack/fire-hydrant.glb',planter:ROOT+'3d/city/poly-pizza-city-pack/planter-and-bushes.glb',trashCan:ROOT+'3d/city/poly-pizza-city-pack/trash-can.glb',mailbox:ROOT+'3d/city/poly-pizza-city-pack/mailbox.glb'};
 const CITY_ASSETS={house:ROOT+'3d/buildings/kenney-modular-buildings/building-sample-house-a.glb',tower:ROOT+'3d/buildings/kenney-modular-buildings/building-sample-tower-a.glb',tree:ROOT+'3d/nature/kenney-nature-kit/tree-small.glb',car:ROOT+'3d/vehicles/kenney-car-kit/sedan.glb',personA:ROOT+'characters/people/character-female-a.glb',personB:ROOT+'characters/people/character-male-b.glb',dog:ROOT+'characters/pets/animal-dog.glb'};
 const CITY_PEOPLE_ASSETS=[
- ROOT+'characters/people/character-female-a.glb',ROOT+'characters/people/character-female-b.glb',
- ROOT+'characters/people/character-female-c.glb',ROOT+'characters/people/character-female-d.glb',
- ROOT+'characters/people/character-female-e.glb',ROOT+'characters/people/character-female-f.glb',
- ROOT+'characters/people/character-male-a.glb',ROOT+'characters/people/character-male-b.glb',
- ROOT+'characters/people/character-male-c.glb',ROOT+'characters/people/character-male-d.glb',
- ROOT+'characters/people/character-male-e.glb',ROOT+'characters/people/character-male-f.glb'
+ ROOT+'characters/people/character-female-a.glb',ROOT+'characters/people/character-male-a.glb',
+ ROOT+'characters/people/character-female-b.glb',ROOT+'characters/people/character-male-b.glb',
+ ROOT+'characters/people/character-female-c.glb',ROOT+'characters/people/character-male-c.glb',
+ ROOT+'characters/people/character-female-d.glb',ROOT+'characters/people/character-male-d.glb',
+ ROOT+'characters/people/character-female-e.glb',ROOT+'characters/people/character-male-e.glb',
+ ROOT+'characters/people/character-female-f.glb',ROOT+'characters/people/character-male-f.glb'
 ];
 const DAILY_CAL_TARGET=1800;
 const BASE_WORK_PAY=28000;
@@ -442,7 +442,7 @@ async function buildConvenienceStore(){
   sign(item.label+' '+fmt(item.price),[itemXs[i],1.42,-.52],.15,'#2f8b5b');
   interactable('convenienceBuy',item.label,itemXs[i],.2,1.12,{productId:item.id,price:item.price})
  }
- box([2.1,.76,.68],[1.15,.38,-2.35],0x315d50,.84);box([2.18,.08,.76],[1.15,.8,-2.35],0xe8dfc8,.72);addCollider(1.15,-2.35,2.18,.76);await addMarket('cash-register',.62,[1.15,.84,-2.35],0);sign('빠른 계산 · 카트 필요 없음',[1.15,1.62,-2.27],.18,'#2f8b5b');
+ box([2.1,.76,.68],[1.15,.38,-2.35],0x315d50,.84);box([2.18,.08,.76],[1.15,.8,-2.35],0xe8dfc8,.72);addCollider(1.15,-2.35,2.18,.76);await addMarket('cash-register',.62,[1.15,.84,-2.35],0);await addMarket('character-employee',1.48,[1.15,0,-2.78],Math.PI,[0x2f8b5b,0xf4ead8,0x334a43]);sign('빠른 계산 · 카트 필요 없음',[1.15,1.62,-2.27],.18,'#2f8b5b');
  interactable('convenienceExit','동네로 나가기',-2.65,2.35,1.8);sign('밖으로',[-2.65,2.42,2.88],.21,'#2f8b5b');setSpawn('convenience');renderHud();save()
 }
 function buyConvenienceItem(productId,price){
@@ -460,6 +460,7 @@ async function buildFastFood(){
   const key=menuKeys[i],m=FAST_FOOD_MENU[key],root=await fitted(FOOD+m.model,.42);root.position.set(menuXs[i],.96,-2.15);world.add(root);
   sign(m.name+' '+fmt(m.price),[menuXs[i],1.72,-2.02],.17,'#d85642');interactable('fastFoodOrder',m.name,menuXs[i],-1.05,1.15,{menuKey:key})
  }
+ await addMarket('character-employee',1.48,[0,0,-2.78],Math.PI,[0xd85642,0xffd76b,0x3d2f2a]);
  await Promise.all([
   packDecor(FOOD+'fries.glb',.32,[0,.96,-2.15],.2,false),
   homeModel('table',1.25,[-2.25,0,.65],'x',0,true),
