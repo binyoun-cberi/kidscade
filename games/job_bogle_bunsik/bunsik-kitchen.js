@@ -1050,16 +1050,16 @@ function tutorialMessage(){
  const p=state.pots[0],held=state.heldItem;
  if(state.tutorial.step===0)return held?.id==='water'?'① 물 2컵을 들고 1번 냄비로 가서 E':'① 싱크대에서 주전자에 물 2컵을 받아 1번 냄비로 가져가요';
  if(state.tutorial.step===1)return held?.id==='water'?'① 물 2컵을 1번 냄비에 부어 주세요':'① 싱크대에서 물 2컵을 한 번에 받아 오세요';
- if(state.tutorial.step===2)return held?.id==='noodle'?'③ 면을 들고 1번 냄비에서 E':'③ 면 바구니로 가서 E로 면을 들고 와요';
- if(state.tutorial.step===3)return held?.id==='soup'?'④ 스프를 들고 냄비에서 E':'④ 스프 바구니에서 스프를 들고 냄비로 가져가요';
- if(state.tutorial.step===4)return held?.id==='egg'?'⑤ 계란을 들고 냄비에서 E':'⑤ 첫 주문은 계란 라면 · 토핑 냉장고에서 계란을 꺼내요';
+ if(state.tutorial.step===2)return held?.id==='noodle'?'② 면을 들고 1번 냄비에서 E':'② 면 바구니로 가서 E로 면을 들고 와요';
+ if(state.tutorial.step===3)return held?.id==='soup'?'③ 스프를 들고 냄비에서 E':'③ 스프 바구니에서 스프를 들고 냄비로 가져가요';
+ if(state.tutorial.step===4)return held?.id==='egg'?'④ 계란을 들고 냄비에서 E':'④ 첫 주문은 계란 라면 · 토핑 냉장고에서 계란을 꺼내요';
  if(state.tutorial.step===5){
-  if(p.noodleTime<5.5)return'⑥ 보글보글 끓는 동안 기다려요 · 아직 설익었어요';
-  if(p.noodleTime<8.2)return'⑥ 조금만 더! “딱 좋아요”가 될 때를 기다려요';
-  if(p.noodleTime<=11.5)return'⑥ 지금이 가장 맛있어요! 빈손으로 1번 냄비에서 E';
-  return'⑥ 면이 퍼지기 시작했어요! 냄비에서 E로 바로 담아요'
+  if(p.noodleTime<5.5)return'⑤ 보글보글 끓는 동안 기다려요 · 아직 설익었어요';
+  if(p.noodleTime<8.2)return'⑤ 조금만 더! “딱 좋아요”가 될 때를 기다려요';
+  if(p.noodleTime<=11.5)return'⑤ 지금이 가장 맛있어요! 빈손으로 1번 냄비에서 E';
+  return'⑤ 면이 퍼지기 시작했어요! 냄비에서 E로 바로 담아요'
  }
- if(state.tutorial.step===6)return'⑦ 완성 라면을 들고 배식대로 이동해 E로 서빙해요';
+ if(state.tutorial.step===6)return'⑥ 완성 라면을 들고 배식대로 이동해 E로 서빙해요';
  return''
 }
 function taskPlan(){
@@ -1228,7 +1228,7 @@ function nextInstruction(p){
  if(!p)return'싱크·면 바구니·스프 바구니·토핑 냉장고에서 재료를 하나씩 가져오세요';
  if(p.burnt)return'탔어요 · 왼쪽 아래 “냄비 비우기”로 새로 시작하세요';
  if(potEmpty(p))return'싱크에서 물을 받아 이 냄비로 가져오세요';
- if(p.water<1.5&&!p.ingredients.length)return'싱크에서 물 한 컵을 더 가져오세요';
+ if(p.water<1.5&&!p.ingredients.length)return'싱크대에서 주전자에 물 2컵을 받아 오세요';
  if(!hasIngredient(p,'noodle')&&!hasIngredient(p,'soup'))return'면 바구니와 스프 바구니를 차례로 다녀오세요';
  if(!hasIngredient(p,'noodle'))return'면 바구니에서 면을 가져오세요';
  if(!hasIngredient(p,'soup'))return'스프 바구니에서 스프를 가져오세요';
@@ -1542,11 +1542,11 @@ function applyServeCombo(quality){
  return{combo:state.combo,bonus}
 }
 function pulseComboHud(){
- if(!els.combo||state.combo<2)return;els.combo.classList.remove('hot');void els.combo.offsetWidth;els.combo.classList.add('hot')
+ if(!els.combo||state.combo<2)return;els.combo.classList.remove('hot');void els.combo.offsetWidth;els.combo.classList.add('hot');clearTimeout(pulseComboHud.t);pulseComboHud.t=setTimeout(()=>els.combo?.classList.remove('hot'),420)
 }
 function updateHud(){
  els.revenue.textContent=money(state.revenue);els.goal.textContent=money(TARGET_REVENUE);els.time.textContent=Math.max(0,Math.ceil(state.time));els.served.textContent=state.served;
- if(els.combo){els.combo.classList.toggle('hidden',state.combo<2);els.combo.classList.toggle('hot',state.combo>=3);const b=els.combo.querySelector('b');if(b)b.textContent=state.combo}
+ if(els.combo){els.combo.classList.toggle('hidden',state.combo<2);const b=els.combo.querySelector('b');if(b)b.textContent=state.combo}
  renderEconomyProgress()
 }
 function updateGame(dt){
