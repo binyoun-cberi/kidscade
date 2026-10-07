@@ -1,5 +1,6 @@
 (()=>{
 'use strict';
+const SENTENCE_TRAIN_BUILD='v5-depth-color';
 const THREE=window.THREE,GLTFLoader=window.GLTFLoader;
 const canvas=document.getElementById('train3d');
 if(!THREE||!GLTFLoader||!canvas)return;
