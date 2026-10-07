@@ -170,7 +170,7 @@ function resetMission(mode,payload,done){
   }
   const sourceThreats=Array.isArray(state.payload.threats)?state.payload.threats.filter(Boolean):[];
   state.explicitCampThreats=sourceThreats.length>0;
-  state.pendingThreats=sourceThreats.map((src,i)=>{const p=findWalkable(Number(src.x)*9.6,Number(src.y)*5.4,11);return{id:String(src.id??('camp'+i)),name:src.name||'캠프 감염자',x:p.x,y:p.y,phase:src.phase||'zombie'}})
+  state.pendingThreats=sourceThreats.map((src,i)=>{const p=findWalkable(Number(src.x)*9.6,Number(src.y)*5.4,11);return{id:String(src.id??('camp'+i)),personId:src.personId||src.id||null,name:src.name||'캠프 감염자',sprite:src.sprite||'player',x:p.x,y:p.y,phase:src.phase||'zombie'}})
   const t=clamp(Number(state.payload.threatCount)||Math.max(1,sourceThreats.length),1,8);
   state.waves=state.explicitCampThreats?[]:[t];
   ui.title.childNodes[0].nodeValue='CAMP-17 생존자 캠프 출동';
@@ -215,7 +215,7 @@ function spawnZombie(seed=null){
   const p=findWalkable(x,y,11);x=p.x;y=p.y
  }
  const elite=!seed&&state.wave>=2&&Math.random()<.22;
- state.zombies.push({id:seed?.id||('z'+(++state.zombieSeq)),name:seed?.name||'감염자',sourcePhase:seed?.phase||'zombie',x,y,r:11,hp:elite?4:2,speed:elite?48:55+Math.random()*8,attack:0,hit:0,phase:Math.random()*6.2,elite});
+ state.zombies.push({id:seed?.id||('z'+(++state.zombieSeq)),personId:seed?.personId||seed?.id||null,name:seed?.name||'감염자',sprite:seed?.sprite||'player',sourcePhase:seed?.phase||'zombie',x,y,r:11,hp:elite?4:2,speed:elite?48:55+Math.random()*8,attack:0,hit:0,phase:Math.random()*6.2,elite});
 }
 function startWave(){
  if(state.wave>=state.waves.length)return;
@@ -498,7 +498,7 @@ window.Q17Field3DBridge=Object.freeze({
   elapsed:state.elapsed,wave:state.wave,waveCount:state.waves.length,spawnQueue:state.spawnQueue,
   shake:state.shake,flash:state.flash,
   player:state.player?{x:state.player.x,y:state.player.y,hp:state.player.hp,maxHp:state.player.maxHp,ammo:state.player.ammo,reserve:state.player.reserve,reload:state.player.reload,scrap:state.player.scrap,ifr:state.player.ifr,facing:state.player.facing}:null,
-  zombies:state.zombies.map((z,i)=>({id:z.id??i,name:z.name||'',x:z.x,y:z.y,hp:z.hp,elite:!!z.elite,hit:z.hit||0,phase:z.phase||0,sourcePhase:z.sourcePhase||'zombie'})),
+  zombies:state.zombies.map((z,i)=>({id:z.id??i,personId:z.personId||null,name:z.name||'',sprite:z.sprite||'player',x:z.x,y:z.y,hp:z.hp,elite:!!z.elite,hit:z.hit||0,phase:z.phase||0,sourcePhase:z.sourcePhase||'zombie'})),
   survivors:state.survivors.map((s,i)=>({id:s.id??i,name:s.name||'',role:s.role||'',sourceStatus:s.sourceStatus||'safe',x:s.x,y:s.y,hp:s.hp,alive:s.alive,rescued:s.rescued,escorted:!!s.escorted,sprite:s.sprite})),
   bullets:state.bullets.map((b,i)=>({id:i,x:b.x,y:b.y,tx:b.tx,ty:b.ty,beam:!!b.beam,life:b.life})),
   pickups:state.pickups.map((p,i)=>({id:i,x:p.x,y:p.y,type:p.type})),
