@@ -467,10 +467,34 @@ function createKidscadeBlueHoodie(){
     shirt,hoodGeometry,'DEF-spine.003',blue,'kidscade_hoodie_blue_hood'
   ));
 
-  const pocketGeometry=new THREE.BoxGeometry(.30,.125,.045,2,2,1);
-  pocketGeometry.translate(0,.86,.177);
+  // 몸통에 밀착되는 얇은 곡면형 캥거루 포켓
+  const pocketShape=new THREE.Shape();
+  pocketShape.moveTo(-.135,.040);
+  pocketShape.lineTo(-.095,.090);
+  pocketShape.quadraticCurveTo(0,.118,.095,.090);
+  pocketShape.lineTo(.135,.040);
+  pocketShape.lineTo(.108,-.055);
+  pocketShape.quadraticCurveTo(0,-.092,-.108,-.055);
+  pocketShape.closePath();
+
+  const pocketGeometry=new THREE.ExtrudeGeometry(pocketShape,{
+    depth:.012,
+    bevelEnabled:true,
+    bevelThickness:.004,
+    bevelSize:.004,
+    bevelSegments:2,
+    curveSegments:10,
+    steps:1
+  });
+  pocketGeometry.translate(0,0,-.006);
+  pocketGeometry.scale(1,.94,1);
+  pocketGeometry.translate(0,.855,.151);
+  pocketGeometry.computeVertexNormals();
+  pocketGeometry.computeBoundingBox();
+  pocketGeometry.computeBoundingSphere();
+
   group.add(makeRigidSkinnedPiece(
-    shirt,pocketGeometry,'DEF-spine.001',darkBlue,'kidscade_hoodie_blue_pocket'
+    shirt,pocketGeometry,'DEF-spine.001',blue,'kidscade_hoodie_blue_pocket'
   ));
 
   for(const x of [-.055,.055]){
