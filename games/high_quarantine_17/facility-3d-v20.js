@@ -121,67 +121,63 @@ class View{
   const o=await model(path,scale,color,mix);if(!o)return;o.position.add(new THREE.Vector3(...pos));o.rotation.y=rot;this.root.add(o);return o
  }
  buildCamp(){
-  // Neutral terrain first: CAMP-17 should read as a lived-in emergency compound, not three colored board-game lanes.
-  plane(this.root,30,15,0x46473f);
-  const road=plane(this.root,28.8,3.15,0x5a5952,.012);road.position.z=.1;
-  for(let x=-12.2;x<=12.2;x+=2.45)roadDash(this.root,x,.1,1.15,.075);
-  const medPad=plane(this.root,7.3,4.8,0x505149,.017);medPad.position.set(-10.1,.017,-3.85);
-  const supplyPad=plane(this.root,7.5,5.0,0x514b41,.018);supplyPad.position.set(-.1,.018,-3.85);
-  const gatePad=plane(this.root,6.1,5.0,0x484d4a,.019);gatePad.position.set(10.2,.019,-3.85);
+  // CAMP-17 CCTV now uses the same landmark layout as the playable field mission.
+  const X=x=>(x/960-.5)*30,Z=y=>(y/540-.5)*16.875,WW=w=>w/960*30,DD=d=>d/540*16.875;
+  plane(this.root,30,16.875,0x444a41);
+  const roadH=plane(this.root,28.9,DD(92),0x595b57,.012);roadH.position.z=Z(234);
+  const roadV=plane(this.root,WW(82),15.8,0x565a58,.013);roadV.position.x=X(401);
+  for(let x=45;x<930;x+=72){const d=plane(this.root,WW(34),.055,0xb6a75f,.03);d.position.set(X(x),.03,Z(234))}
+  for(let y=35;y<510;y+=64){const d=plane(this.root,.055,DD(28),0xb6a75f,.031);d.position.set(X(401),.031,Z(y))}
 
-  // Permanent-looking service buildings sit at the rear, keeping the central road open for the simulation's resident paths.
-  box(this.root,-10.25,0,-4.35,5.6,1.9,2.45,0x74796b);box(this.root,-10.25,1.9,-4.35,5.6,.16,2.45,0xa9ad9f);
-  box(this.root,-.1,0,-4.25,6.15,2.35,3.0,0x655f4e);box(this.root,-.1,2.35,-4.25,6.15,.18,3.0,0x8b805d);
-  box(this.root,10.15,0,-4.3,3.55,2.55,2.35,0x59645f);box(this.root,10.15,2.55,-4.3,3.55,.16,2.35,0x7c8882);
+  // Command post, isolation block and supply warehouse mirror the field-mission silhouettes.
+  const building=(x,y,w,d,h,color,roof,labelText,labelColor)=>{
+   box(this.root,X(x+w/2),0,Z(y+d/2),WW(w),h,DD(d),color);
+   box(this.root,X(x+w/2),h,Z(y+7),WW(w),.16,DD(14),roof);
+   const l=label(labelText,labelColor);l.scale.set(2.35,.45,1);l.position.set(X(x+w/2),h+.62,Z(y+10));this.root.add(l)
+  };
+  building(65,55,185,122,2.15,0x4d656a,0x78898a,'지휘소','#d9eceb');
+  building(292,52,210,132,2.3,0x555e63,0x7a8588,'A/B 격리동','#d1e4e9');
+  building(548,58,184,118,2.15,0x6b604d,0x918269,'보급창고','#efd697');
 
-  signPost(this.root,'의무 · 주거',-12.8,-1.75,'#d8ece7');
-  signPost(this.root,'배급 · 작업',-2.85,-1.75,'#f0d998');
-  signPost(this.root,'경계 · 출입',7.45,-1.75,'#ffc3b7');
+  // Isolation block has the same visible containment seam as the field renderer.
+  box(this.root,X(397),.1,Z(118),.18,2.05,DD(116),0x899398);
+  glass(this.root,X(397),.62,Z(118),.10,1.35,DD(82),0xaed4df,.17);
 
-  // Residential cluster: more tents, slightly irregular angles and colors.
-  const tents=[
-   [A.tent,-11.7,3.2,2.25,0x8e7854,.10],[A.tentSmall,-8.8,4.15,1.75,0x70765c,-.08],
-   [A.tentSmall,-12.6,-.65,1.72,0x7a7d65,.04],[A.tentSmall,-8.25,-.75,1.7,0x82785c,-.12],
-   [A.tentSmall,-10.5,5.05,1.55,0x6b7259,.16]
-  ];
-  tents.forEach(t=>this.addAsset(t[0],[t[1],0,t[2]],t[3],t[4],.46,t[5]));
+  // Medical tent and residential tents occupy the same lower compound positions as the field map.
+  const medPad=plane(this.root,WW(166),DD(116),0x4d5e55,.018);medPad.position.set(X(501),.018,Z(410));
+  this.addAsset(A.tent,[X(500),0,Z(410)],2.5,0x75816b,.50,0);
+  this.addAsset(A.bed,[X(585),0,Z(390)],1.2,0xb5cfcb,.35,Math.PI/2);
+  const ml=label('의무막사','#c8eee4');ml.scale.set(1.9,.38,1);ml.position.set(X(500),2.45,Z(360));this.root.add(ml);
+  this.addAsset(A.tentSmall,[X(164),0,Z(338)],1.75,0x81745a,.47,.08);
+  this.addAsset(A.tentSmall,[X(280),0,Z(402)],1.75,0x766d55,.47,-.12);
+  for(const p of [[138,376],[184,390],[255,444],[305,455]])this.addAsset(A.crate,[X(p[0]),0,Z(p[1])],.58,0x9d7448,.42,0);
 
-  // Medical staging: ambulance, supplies and a small triage canopy/bed area.
-  this.addAsset(A.ambulance,[-7.15,0,-2.75],2.85,0xe8ece7,.24,Math.PI*.5);
-  this.addAsset(A.bed,[-6.15,0,-4.2],1.25,0xb7d2d0,.34,Math.PI*.5);
-  for(const p of [[-5.7,-2.1],[-5.7,-1.25],[-6.45,-1.7]])this.addAsset(A.crate,[p[0],0,p[1]],.58,0x9bb6b0,.40,0);
+  // The eastern service lane carries the same container, ambulance, barricade and gate seen during deployment.
+  box(this.root,X(789),0,Z(136),WW(38),2.15,DD(132),0x4d5457);
+  this.addAsset(A.ambulance,[X(850),0,Z(356)],2.45,0xe3e7e2,.24,Math.PI/2);
+  this.addAsset(A.barrier,[X(672),0,Z(427)],1.3,0xc3953f,.48,0);
+  this.addAsset(A.turret,[X(720),0,Z(286)],1.5,0x6f7976,.38,-Math.PI/2);
 
-  // Supply yard: stacked crates and improvised water storage make the centre feel used rather than empty.
-  for(const p of [[-2.55,2.75],[-1.35,3.15],[-.05,2.65],[1.25,3.05],[2.3,2.45],[-1.95,1.25],[-.45,1.2],[1.05,1.15],[2.15,1.05]])
-   this.addAsset(A.crate,[p[0],0,p[1]],.72+(Math.abs(p[0])%2)*.05,0xa87542,.42,(p[0]+p[1])*.07);
-  cylinder(this.root,3.05,0,3.45,.56,.62,1.7,0x6e8992,24,.56);
-  cylinder(this.root,3.05,1.7,3.45,.36,.36,.16,0x9db9bf,20,.48);
-  box(this.root,3.05,0,3.45,.12,.55,1.65,0x565f61);
-  box(this.root,3.05,0,3.45,1.65,.55,.12,0x565f61);
+  // Medical interaction marker and a small supply cluster make the route legible even before an emergency.
+  for(const p of [[520,234],[746,446],[350,288]])this.addAsset(A.crate,[X(p[0]),0,Z(p[1])],.70,0xa87542,.42,0);
+  const medCircle=new THREE.Mesh(new THREE.CircleGeometry(.48,36),new THREE.MeshBasicMaterial({color:0x79a6a5,transparent:true,opacity:.18,side:THREE.DoubleSide}));
+  medCircle.rotation.x=-Math.PI/2;medCircle.position.set(X(610),.028,Z(330));this.root.add(medCircle);
 
-  // Defensive perimeter. Fence is continuous enough to read as an enclosed camp instead of a decorative edge.
-  for(let i=0;i<9;i++)this.addAsset(A.fence,[13.75,0,-5.65+i*1.4],1.25,0x7b8780,.32,Math.PI/2);
-  for(let i=0;i<9;i++)this.addAsset(A.fence,[-13.7+i*3.35,0,6.35],1.25,0x7b8780,.32,0);
-  for(let i=0;i<9;i++)if(i<6||i>7)this.addAsset(A.fence,[-13.7+i*3.35,0,-6.35],1.25,0x7b8780,.32,0);
-  for(let i=0;i<5;i++)this.addAsset(A.fence,[-13.75,0,-5.2+i*2.65],1.25,0x7b8780,.32,Math.PI/2);
+  // Perimeter and gate: enough real fence assets to make the camp visibly enclosed.
+  for(const [x,y,r] of [[92,26,0],[245,26,0],[600,26,0],[760,26,0],[925,74,Math.PI/2],[925,120,Math.PI/2],[925,385,Math.PI/2],[925,455,Math.PI/2],[70,510,0],[225,510,0],[650,510,0],[805,510,0],[28,100,Math.PI/2],[28,245,Math.PI/2],[28,420,Math.PI/2]])
+   this.addAsset(A.fence,[X(x),0,Z(y)],1.25,0x77837d,.32,r);
+  box(this.root,X(900),0,Z(155),.22,2.4,.22,0x7b6868);box(this.root,X(900),0,Z(345),.22,2.4,.22,0x7b6868);
+  const gl=label('외곽 검문 게이트','#ffaaa9');gl.scale.set(2.15,.42,1);gl.position.set(X(850),2.75,Z(150));this.root.add(gl);
+  for(const p of [[65,205],[738,205],[770,360],[890,360]])this.addAsset(A.light,[X(p[0]),0,Z(p[1])],1.85,0xe5bd55,.28,0);
 
-  // Gate area gets the strongest silhouettes: tower, turret, floodlights and barricades.
-  const tower=new THREE.Group();box(tower,0,0,0,1.55,.22,1.55,0x69736d);box(tower,0,2.45,0,1.85,.24,1.85,0x737d77);
-  for(const [x,z] of [[-.62,-.62],[.62,-.62],[-.62,.62],[.62,.62]])box(tower,x,0,z,.12,2.45,.12,0x59615d);
-  tower.position.set(11.9,0,2.75);this.root.add(tower);
-  this.addAsset(A.turret,[8.35,0,.85],1.62,0x747f7b,.38,-Math.PI*.5);
-  for(const p of [[6.7,-2.5],[11.9,-2.3],[7.0,3.55],[12.0,3.75]])this.addAsset(A.light,[p[0],0,p[1]],1.95,0xf0c34f,.28);
-  for(const p of [[8.4,5.0],[9.9,5.0],[11.4,5.0],[12.8,5.0],[9.2,3.75],[10.9,3.75]])
-   this.addAsset(A.barrier,[p[0],0,p[1]],1.28,0xc28d36,.44,0);
-
-  // Safe zone stays clear and readable for field-mission continuity.
-  const safe=new THREE.Mesh(new THREE.CircleGeometry(1.35,44),new THREE.MeshBasicMaterial({color:0x7dca8e,transparent:true,opacity:.18,side:THREE.DoubleSide}));
-  safe.rotation.x=-Math.PI/2;safe.position.set(-5.75,.032,-.05);this.root.add(safe);
-  const safeRing=new THREE.Mesh(new THREE.RingGeometry(1.35,1.48,44),new THREE.MeshBasicMaterial({color:0xa8ddb1,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false}));
+  // Safe zone is identical to the field mission destination.
+  const safeX=X(270),safeZ=Z(205);
+  const safe=new THREE.Mesh(new THREE.CircleGeometry(1.05,42),new THREE.MeshBasicMaterial({color:0x6db581,transparent:true,opacity:.19,side:THREE.DoubleSide}));
+  safe.rotation.x=-Math.PI/2;safe.position.set(safeX,.03,safeZ);this.root.add(safe);
+  const safeRing=new THREE.Mesh(new THREE.RingGeometry(1.05,1.16,42),new THREE.MeshBasicMaterial({color:0xa9dcb4,transparent:true,opacity:.7,side:THREE.DoubleSide,depthWrite:false}));
   safeRing.rotation.x=-Math.PI/2;safeRing.position.copy(safe.position);this.root.add(safeRing);
 
-  // Warning beacon only becomes conspicuous when the live simulation contains a threat.
-  this.campBeacon=indicator(this.root,10.15,2.95,-4.3,0xa13e42);
+  this.campBeacon=indicator(this.root,X(900),2.7,Z(155),0xa13e42);
   this.campBeacon.material.emissiveIntensity=.15;this.campDanger=0;
  }
  buildIsolation(){
@@ -273,7 +269,7 @@ class View{
    }
    setInfo(g,info);
    if(mode==='camp'){
-    const tx=(Number(info.x)-50)*.27,tz=(Number(info.y)-50)*.12;g.position.x+=(tx-g.position.x)*.72;g.position.z+=(tz-g.position.z)*.72;g.position.y=.02;
+    const tx=(Number(info.x)-50)*.285,tz=(Number(info.y)-50)*.145;g.position.x+=(tx-g.position.x)*.72;g.position.z+=(tz-g.position.z)*.72;g.position.y=.02;
     const d=Number(info.dir)||1;g.rotation.y=d<0?Math.PI*.5:-Math.PI*.5
    }else{
     const slotsA=[[-7.2,-.5],[-3.3,-.5],[-7.2,3],[-3.3,3]],slotsB=[[3.4,-.3],[6.8,2.7]],p=(info.room==='B'?slotsB:slotsA)[info.slot]||[0,0];
@@ -322,6 +318,6 @@ function mount(){
  const campView=new View(cc,'camp'),isoView=new View(document.getElementById('q17Iso3D'),'isolation');
  setInterval(()=>{campView.update();isoView.update()},450);campView.update();isoView.update();
  let last=0;const loop=t=>{if(t-last>16){views.forEach(v=>v.render(t));last=t}requestAnimationFrame(loop)};requestAnimationFrame(loop);
- window.Q17Facility3D=Object.freeze({version:'20.1',camp:campView,isolation:isoView});return true
+ window.Q17Facility3D=Object.freeze({version:'20.2',camp:campView,isolation:isoView});return true
 }
 let tries=0;const timer=setInterval(()=>{if(mount()||++tries>80)clearInterval(timer)},50);
