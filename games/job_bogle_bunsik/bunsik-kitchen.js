@@ -176,7 +176,7 @@ class RamenKitchen3D{
   this.customerXs=[-3.3,-1.1,1.1,3.3,0];
   this.hallSeats=[];this.hallTableGroups=[];this.customerStates=[];this.dishCartModel=null;this.dishCartQueue=[];this.dishCartTask=null;this.dishCartHome=new THREE.Vector3(-7.7,.02,-6.1);this.dishReturnPoint=new THREE.Vector3(-3.55,0,-4.35);this.hallExpansionLocked=null;this.hallExpansionOpen=null;this.hallEntrance=new THREE.Vector3(0,0,-15.15);this.hallDoor=null;this.hallDoorOpenUntil=0;this.hallSign=null;this.hallFamousSign=null;
   this.serviceGroup=null;this.serviceMeal=null;this.serviceHome=new THREE.Vector3(0,.92,5.25);
-  this.cameraFocus=new THREE.Vector3(0,.9,.5);this.cameraGoal=new THREE.Vector3(0,10.5,10.8);
+  this.cameraFocus=new THREE.Vector3(0,.9,.5);this.cameraGoal=new THREE.Vector3(0,10.5,10.8);this.hallFocusUntil=0;this.hallFocusSlot=null;
   this.raycaster=new THREE.Raycaster();
   this.pointer=new THREE.Vector2();
   this.layoutStations=[];this.stationPickables=[];this.dragLayout=null;this.selectedLayoutStation=null;
@@ -389,7 +389,7 @@ class RamenKitchen3D{
   defs.forEach((d,i)=>{
    const group=new THREE.Group();group.position.set(d.x,0,d.z);this.scene.add(group);this.hallTableGroups.push(group);
    const rug=new THREE.Mesh(new THREE.BoxGeometry(3.05,.025,2.75),this.material(i%2?0xe8cba8:0xefd7b7,{roughness:.96}));rug.position.y=.024;rug.receiveShadow=true;group.add(rug);
-   this.loadModel(SUSHI,'table.glb',1.55).then(o=>{if(o){o.position.y=.03;group.add(o)}});
+   this.loadModel(SUSHI,'table.glb',1.55).then(o=>{if(o){o.position.y=.03;group.add(o);const box=new THREE.Box3().setFromObject(o),top=Math.max(.62,Math.min(1.18,box.max.y+.05));dishAnchor.position.y=top}});
    this.loadModel(SUSHI,'chair.glb',.92).then(o=>{if(o){o.position.set(0,.03,1.08);o.rotation.y=Math.PI;group.add(o)}});
    this.loadModel(SUSHI,'chair.glb',.92).then(o=>{if(o){o.position.set(0,.03,-1.08);group.add(o)}});
    const dishAnchor=new THREE.Group();dishAnchor.position.set(0,.86,0);group.add(dishAnchor);
@@ -1016,7 +1016,7 @@ class RamenKitchen3D{
  }
  finishDining(c){
   if(!c?.seat||c.phase!=='eating')return;
-  this.setSeatDish(c.seat,'dirty');c.phase='reviewing';c.reviewRemaining=1.65;
+  this.setSeatDish(c.seat,'dirty');c.phase='reviewing';c.reviewRemaining=2.0;this.hallFocusSlot=c.slot;this.hallFocusUntil=this.clock+1.9;
   const meta=c.mealMeta||{},text=this.customerFeedback(meta);
   this.customerCelebrate(c.slot,meta.quality||0,meta.combo||0,meta.earned||0,{text,burnt:!!meta.burnt});
   sfx((meta.quality||0)>=76?'success.cheer_yay':'failure.fail_sting',{volume:(meta.quality||0)>=76?.16:.11,cooldownMs:240})
@@ -1199,6 +1199,13 @@ class RamenKitchen3D{
    fz=Math.max(-1.9,Math.min(4.75,this.player.position.z))-.72;
    fy=.86;
    px=fx;py=mobile?7.0:6.05;pz=fz+(mobile?6.7:5.65);targetFov=mobile?44:35;
+   if(this.clock<this.hallFocusUntil&&this.hallFocusSlot!=null){
+    const guest=this.customerHolders[this.hallFocusSlot];
+    if(guest?.visible){
+     fx=Math.max(-5.6,Math.min(5.6,guest.position.x));fz=guest.position.z+.35;fy=.72;
+     px=fx*.72;py=mobile?8.5:7.35;pz=fz+(mobile?8.8:7.55);targetFov=mobile?48:42
+    }
+   }
   }
   const a=immediate?1:1-Math.exp(-Math.max(0,dt)*5.2);
   this.cameraGoal.set(px,py,pz);this.cameraFocus.lerp(new THREE.Vector3(fx,fy,fz),a);this.camera.position.lerp(this.cameraGoal,a);
