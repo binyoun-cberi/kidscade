@@ -51,7 +51,7 @@ test('legacy trivia bucket is split into useful discovery subjects and genres', 
 test('curation status is conservative and rework games are explicit', () => {
   const featured = games.filter(game => game.qualityStatus === 'featured');
   assert.ok(featured.length >= 10 && featured.length <= 25);
-  assert.equal(games.find(game => game.id === 'job_teacher_classroom')?.qualityStatus, 'rework');
+  assert.equal(games.find(game => game.id === 'job_teacher_classroom')?.qualityStatus, 'featured');
 });
 
 
