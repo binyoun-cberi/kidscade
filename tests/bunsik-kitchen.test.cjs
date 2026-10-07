@@ -494,7 +494,8 @@ test('Bunsik Kitchen v33 registers and loads persistent tycoon progression', () 
 });
 
 test('Bunsik Kitchen v33 starts as manual-first progression instead of granting automation', () => {
-  assert.match(js, /for\(const \[key,info\] of Object\.entries\(SHOP_ITEMS\)\)owned\[key\]=info\.min\|\|0/);\n  assert.match(js, /owned:\{\.\.\.owned,prepCounter:2\}/);
+  assert.match(js, /for\(const \[key,info\] of Object\.entries\(SHOP_ITEMS\)\)owned\[key\]=info\.min\|\|0/);
+  assert.match(js, /owned:\{\.\.\.owned,prepCounter:2\}/);
   assert.match(js, /syncEquipmentVisibility\(\)/);
   assert.match(js, /return \(progress\.owned\[key\]\|\|0\)>\(group\.userData\.equipmentIndex\|\|0\)/);
   assert.match(js, /g\.visible=active/);
