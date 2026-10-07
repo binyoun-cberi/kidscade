@@ -124,6 +124,7 @@ const loader=new GLTFLoader();
 const clock=new THREE.Clock();
 const raycaster=new THREE.Raycaster();
 const assetCache=new Map();
+const PALETTE={cream:0xfff1c9,mint:0x7fcf9a,teal:0x3d8f78,coral:0xef8068,yellow:0xf2c85b,sky:0x70bdd5,berry:0x9b70b6,wood:0xb97845,darkWood:0x71503a,steel:0xb7c5c2,leaf:0x5fae58,leafDark:0x3e854b};
 
 const ROOT='../../assets/game/';
 const MODEL={
@@ -194,9 +195,15 @@ function cyl(r,h,color,x,y,z,parent=world){
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(44,24),mat(0x84bd66));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;world.add(ground);
 const orchardSoil=new THREE.Mesh(new THREE.PlaneGeometry(19,15),mat(0x86b862));orchardSoil.rotation.x=-Math.PI/2;orchardSoil.position.set(-9.5,.01,0);world.add(orchardSoil);
 const shopFloor=new THREE.Mesh(new THREE.PlaneGeometry(17,14),mat(0xf3dfb2));shopFloor.rotation.x=-Math.PI/2;shopFloor.position.set(10.5,.025,0);shopFloor.receiveShadow=true;world.add(shopFloor);
-box(.22,2.4,14,0xf2e3b9,2.05,1.2,0,kitchen);
-box(17,.18,.18,0x7c6a53,10.5,.09,-6.9,kitchen);
-box(17,.18,.18,0x7c6a53,10.5,.09,6.9,kitchen);
+box(.22,2.4,5.0,0xffe7b5,2.05,1.2,-4.45,kitchen);
+box(.22,2.4,5.0,0xffe7b5,2.05,1.2,4.45,kitchen);
+box(.34,2.7,.34,0x4e8b64,2.05,1.35,-1.72,kitchen);
+box(.34,2.7,.34,0x4e8b64,2.05,1.35,1.72,kitchen);
+box(.34,.34,3.8,0xf2c85b,2.05,2.52,0,kitchen);
+box(6.4,.035,3.1,0xe8c879,-1.0,.05,0,world);
+box(4.6,.04,2.7,0xf6df9c,3.9,.055,0,world);
+box(17,.18,.18,0x8c6546,10.5,.09,-6.9,kitchen);
+box(17,.18,.18,0x8c6546,10.5,.09,6.9,kitchen);
 for(let z=-6;z<=6;z+=2)box(.12,.8,.12,0x866d4a,-18.5,.4,z,orchard);
 for(let i=0;i<18;i++){const x=-18+Math.random()*18,z=-6.5+Math.random()*13;const g=cyl(.05,.18,0xf2d762,x,.09,z,orchard);g.scale.y=.45+Math.random()*.7}
 for(let i=0;i<16;i++){const x=3+Math.random()*15,z=-6+Math.random()*12;const p=cyl(.035,.12,i%2?0xffffff:0xf5a6a0,x,.07,z,kitchen);p.scale.y=.5+Math.random()}
@@ -214,9 +221,47 @@ function normalize(obj,height){
  obj.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});
  return obj
 }
+function paintMaterial(src,color,metalness=0,roughness=.78){
+ const m=src?.clone?src.clone():new THREE.MeshStandardMaterial();
+ if(m.color)m.color.setHex(color);
+ if('metalness' in m)m.metalness=metalness;
+ if('roughness' in m)m.roughness=roughness;
+ return m
+}
+function paintModel(obj,role=''){
+ const sets={
+  basket:[PALETTE.wood,0xe6b86a,PALETTE.darkWood],
+  building:[PALETTE.mint,PALETTE.cream,0xe88968,0x5b9d82],
+  fridge:[PALETTE.cream,0x8ed0c0,PALETTE.steel],
+  cabinet:[0xf4d8a6,PALETTE.teal,PALETTE.cream],
+  sink:[PALETTE.cream,PALETTE.sky,PALETTE.steel],
+  mixer:[PALETTE.coral,PALETTE.cream,PALETTE.steel,PALETTE.yellow],
+  register:[PALETTE.yellow,PALETTE.teal,PALETTE.cream],
+  display:[PALETTE.wood,PALETTE.leaf,0xf3cf72,PALETTE.coral],
+  customer:[0x4d83b7,0xf0b36f,0xf1c798,0x35576c],
+  cup:[PALETTE.cream,PALETTE.sky]
+ };
+ const colors=sets[role];if(!colors)return obj;let i=0;
+ obj.traverse(n=>{if(!n.isMesh||!n.material)return;const name=((n.name||'')+' '+(n.material?.name||'')).toLowerCase();let color=colors[i++%colors.length],metal=0,rough=.78;
+  if(/metal|steel|chrome|blade|tap|faucet|handle/.test(name)){color=PALETTE.steel;metal=.28;rough=.42}
+  if(role==='building'&&/roof|top/.test(name))color=0xe97863;
+  if(role==='building'&&/window|glass/.test(name)){color=0x86cae1;rough=.22}
+  if(role==='sink'&&/basin|sink|bowl/.test(name))color=PALETTE.cream;
+  const mats=Array.isArray(n.material)?n.material:[n.material];n.material=mats.map(m=>paintMaterial(m,color,metal,rough));if(n.material.length===1)n.material=n.material[0]
+ });return obj
+}
+function paintFruit(obj,key){
+ const main=FRUITS[key]?.color||0xe75c58;let i=0;
+ obj.traverse(n=>{if(!n.isMesh||!n.material)return;const name=((n.name||'')+' '+(n.material?.name||'')).toLowerCase();let color=main;
+  if(/leaf|stem|stalk|green/.test(name))color=PALETTE.leafDark;
+  else if(/wood|branch/.test(name))color=PALETTE.darkWood;
+  else if(key==='banana'&&i++%4===3)color=0xd5ab35;
+  const mats=Array.isArray(n.material)?n.material:[n.material];n.material=mats.map(m=>paintMaterial(m,color,0,.62));if(n.material.length===1)n.material=n.material[0]
+ });return obj
+}
 async function addModel(url,opt){
  const src=await source(url);if(!src)return null;
- const obj=normalize(src.clone(true),opt.h||1);
+ const obj=normalize(src.clone(true),opt.h||1);paintModel(obj,opt.role||'');
  const group=new THREE.Group();group.position.set(opt.x||0,opt.y||0,opt.z||0);group.rotation.y=opt.rot||0;group.add(obj);(opt.parent||world).add(group);return group
 }
 function fallbackFruit(key,parent,scale=.18){
@@ -224,7 +269,7 @@ function fallbackFruit(key,parent,scale=.18){
 }
 async function fruitObject(key,parent,height=.32){
  const src=await source(FRUITS[key].model);if(!src)return fallbackFruit(key,parent,height*.45);
- const o=normalize(src.clone(true),height);parent.add(o);return o
+ const o=normalize(src.clone(true),height);paintFruit(o,key);parent.add(o);return o
 }
 
 const treeDefs=[
@@ -249,7 +294,7 @@ const avatarMat=new THREE.SpriteMaterial({map:avatarTex,transparent:true,depthWr
 const avatarSprite=new THREE.Sprite(avatarMat);avatarSprite.position.y=1.35;avatarSprite.scale.set(1.75,2.65,1);player.add(avatarSprite);
 const shadow=new THREE.Mesh(new THREE.CircleGeometry(.48,20),new THREE.MeshBasicMaterial({color:0x315a43,transparent:true,opacity:.25,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.02;player.add(shadow);
 let basketModel=null;
-async function loadPlayerBasket(){basketModel=await addModel(MODEL.basket,{x:.55,y:.05,z:.05,h:.65,parent:player,rot:-.35});if(!basketModel){basketModel=box(.7,.35,.46,0xb47b45,.55,.28,.05,player)}}
+async function loadPlayerBasket(){basketModel=await addModel(MODEL.basket,{x:.55,y:.05,z:.05,h:.65,parent:player,rot:-.35,role:'basket'});if(!basketModel){basketModel=box(.7,.35,.46,0xb47b45,.55,.28,.05,player)}}
 function drawAvatarFallback(){
  avatarCtx.clearRect(0,0,256,256);avatarCtx.fillStyle='#f5d39f';avatarCtx.beginPath();avatarCtx.arc(128,74,42,0,Math.PI*2);avatarCtx.fill();
  avatarCtx.fillStyle='#563b2c';avatarCtx.beginPath();avatarCtx.arc(128,59,45,Math.PI,Math.PI*2);avatarCtx.fill();
@@ -266,25 +311,28 @@ function loadAvatar(){
 loadAvatar();loadPlayerBasket();
 
 const stations={
- sink:{x:5.2,z:3.7,group:null,label:'싱크대'},
- mixer:{x:9.2,z:3.7,group:null,label:'믹서'},
- cup:{x:12.6,z:3.7,group:null,label:'컵'},
- serve:{x:15.5,z:0,group:null,label:'손님'}
+ sink:{x:5.2,z:4.05,group:null,label:'싱크대'},
+ mixer:{x:9.2,z:4.05,group:null,label:'믹서'},
+ cup:{x:12.6,z:4.05,group:null,label:'컵'},
+ serve:{x:15.7,z:0,group:null,label:'손님'}
 };
 let cupJuice=null,mixerRotor=null,customer=null;
+function stationPad(x,z,color){const m=new THREE.Mesh(new THREE.CircleGeometry(.72,24),new THREE.MeshStandardMaterial({color,transparent:true,opacity:.72,roughness:.9}));m.rotation.x=-Math.PI/2;m.position.set(x,.065,z);kitchen.add(m);return m}
+function juiceHex(){if(!currentRecipe)return 0xef5f63;let r=0,g=0,b=0,n=0;for(const [k,count] of Object.entries(currentRecipe.items)){const col=new THREE.Color(FRUITS[k].color);r+=col.r*count;g+=col.g*count;b+=col.b*count;n+=count}return new THREE.Color(r/n,g/n,b/n).getHex()}
 async function buildKitchen(){
- await addModel(MODEL.building,{x:11,y:0,z:-5.8,h:4.6,parent:kitchen,rot:Math.PI/2});
- await addModel(MODEL.fridge,{x:4,y:0,z:-4.8,h:2.3,parent:kitchen,rot:0});
- await addModel(MODEL.cabinet,{x:6,y:0,z:-4.9,h:1.5,parent:kitchen,rot:0});
- stations.sink.group=await addModel(MODEL.sink,{x:5.2,y:0,z:4.8,h:1.5,parent:kitchen,rot:Math.PI});
- stations.mixer.group=await addModel(MODEL.mixer,{x:9.2,y:.45,z:4.55,h:1.05,parent:kitchen,rot:Math.PI});
- if(stations.mixer.group){mixerRotor=stations.mixer.group}
- await addModel(MODEL.basketA,{x:7.1,y:0,z:4.5,h:.72,parent:kitchen,rot:.15});
- stations.cup.group=await addModel(MODEL.cup,{x:12.6,y:.72,z:4.55,h:.55,parent:kitchen,rot:0});
- const glass=new THREE.Mesh(new THREE.CylinderGeometry(.21,.18,.01,18),new THREE.MeshStandardMaterial({color:0xef5f63,transparent:true,opacity:.8,roughness:.35}));glass.position.set(12.6,.78,4.55);glass.scale.y=1;glass.visible=false;kitchen.add(glass);cupJuice=glass;
- await addModel(MODEL.register,{x:15,y:0,z:2.2,h:1.05,parent:kitchen,rot:-Math.PI/2});
- await addModel(MODEL.fruitDisplay,{x:15,y:0,z:-3.6,h:1.3,parent:kitchen,rot:Math.PI/2});
- customer=await addModel(MODEL.employee,{x:16.1,y:0,z:0,h:2,parent:kitchen,rot:-Math.PI/2});
+ await addModel(MODEL.building,{x:11,y:0,z:-5.8,h:4.6,parent:kitchen,rot:Math.PI/2,role:'building'});
+ await addModel(MODEL.fridge,{x:4,y:0,z:-4.8,h:2.3,parent:kitchen,rot:0,role:'fridge'});
+ await addModel(MODEL.cabinet,{x:6,y:0,z:-4.9,h:1.5,parent:kitchen,rot:0,role:'cabinet'});
+ stations.sink.group=await addModel(MODEL.sink,{x:5.2,y:0,z:4.8,h:1.5,parent:kitchen,rot:Math.PI,role:'sink'});
+ stations.mixer.group=await addModel(MODEL.mixer,{x:9.2,y:.45,z:4.55,h:1.05,parent:kitchen,rot:Math.PI,role:'mixer'});
+ const rotor=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.06,20),new THREE.MeshStandardMaterial({color:PALETTE.sky,transparent:true,opacity:.78,roughness:.3,metalness:.05}));rotor.position.set(9.2,1.06,4.36);rotor.rotation.x=Math.PI/2;kitchen.add(rotor);mixerRotor=rotor;
+ await addModel(MODEL.basketA,{x:7.1,y:0,z:4.5,h:.72,parent:kitchen,rot:.15,role:'basket'});
+ stations.cup.group=await addModel(MODEL.cup,{x:12.6,y:.72,z:4.55,h:.55,parent:kitchen,rot:0,role:'cup'});
+ const glass=new THREE.Mesh(new THREE.CylinderGeometry(.21,.18,.01,18),new THREE.MeshStandardMaterial({color:0xef5f63,transparent:true,opacity:.86,roughness:.28}));glass.position.set(12.6,.78,4.55);glass.scale.y=1;glass.visible=false;kitchen.add(glass);cupJuice=glass;
+ await addModel(MODEL.register,{x:15,y:0,z:2.2,h:1.05,parent:kitchen,rot:-Math.PI/2,role:'register'});
+ await addModel(MODEL.fruitDisplay,{x:15,y:0,z:-3.6,h:1.3,parent:kitchen,rot:Math.PI/2,role:'display'});
+ customer=await addModel(MODEL.employee,{x:16.1,y:0,z:0,h:2,parent:kitchen,rot:-Math.PI/2,role:'customer'});
+ stationPad(stations.sink.x,stations.sink.z,PALETTE.sky);stationPad(stations.mixer.x,stations.mixer.z,PALETTE.coral);stationPad(stations.cup.x,stations.cup.z,PALETTE.yellow);stationPad(stations.serve.x,stations.serve.z,PALETTE.mint);
  if(!customer){customer=new THREE.Group();customer.position.set(16.1,0,0);kitchen.add(customer);cyl(.38,1.4,0xe48a65,0,.7,0,customer);cyl(.28,.52,0xf2c793,0,1.65,0,customer)}
 }
 buildKitchen();
@@ -314,7 +362,7 @@ function nextRecipe(){
  if(orderIndex>=5){finishRun();return}
  const pool=[...RECIPES];const used=new Set(servedRecipes);let options=pool.filter((_,i)=>!used.has(i));if(!options.length)options=pool;
  let idx=RECIPES.indexOf(options[Math.floor(Math.random()*options.length)]);servedRecipes.push(idx);currentRecipe=RECIPES[idx];inventory={};orderTime=70;blendProgress=0;busy=null;
- if(cupJuice){cupJuice.visible=false;cupJuice.scale.y=.01}
+ if(cupJuice){cupJuice.visible=false;cupJuice.scale.y=.01;cupJuice.material.color.setHex(juiceHex())}
  phaseSet('harvest');player.position.set(-17,0,0);renderOrder();toast(currentRecipe.name+' 주문!')
 }
 function startRun(){
@@ -374,7 +422,7 @@ function doAction(){
  if(!runActive||busy)return;const n=nearestTarget();if(!n||n.d>1.9)return;
  if(phase==='harvest'){if(currentRecipe.items[n.ref.key]&&need(n.ref.key)>0)pickFruit(n.ref);return}
  if(phase==='wash'){busy={type:'wash',left:1.5,total:1.5};setProgress('촤아아— 과일을 씻는 중',0,true);sound('pour');return}
- if(phase==='pour'){busy={type:'pour',left:1.65,total:1.65};if(cupJuice){cupJuice.visible=true;cupJuice.scale.y=.01}setProgress('조르르— 컵에 담는 중',0,true);sound('pour');return}
+ if(phase==='pour'){busy={type:'pour',left:1.65,total:1.65};if(cupJuice){cupJuice.material.color.setHex(juiceHex());cupJuice.visible=true;cupJuice.scale.y=.01}setProgress('조르르— 컵에 담는 중',0,true);sound('pour');return}
  if(phase==='serve'){completeOrder()}
 }
 function blendHold(on){
@@ -402,7 +450,7 @@ function updateBusy(dt){
 function updateBlend(dt){
  if(phase!=='blend'){if(!busy)setProgress('',0,false);return}
  setProgress(holdingBlend?'우우웅— 갈리는 중!':'버튼을 꾹 눌러요',blendProgress,true);
- if(holdingBlend){blendProgress=Math.min(1,blendProgress+dt*.38);if(mixerRotor)mixerRotor.rotation.y+=dt*8;if(blendProgress>=1){holdingBlend=false;stopMotor();sound('good');sparkle(stations.mixer.x,stations.mixer.z,0x8bd6df);toast('부드러운 주스 완성!');setProgress('',0,false);phaseSet('pour')}}
+ if(holdingBlend){blendProgress=Math.min(1,blendProgress+dt*.38);if(mixerRotor)mixerRotor.rotation.z+=dt*15;if(blendProgress>=1){holdingBlend=false;stopMotor();sound('good');sparkle(stations.mixer.x,stations.mixer.z,0x8bd6df);toast('부드러운 주스 완성!');setProgress('',0,false);phaseSet('pour')}}
 }
 function updatePlayer(dt){
  let dx=(keys.right?1:0)-(keys.left?1:0),dz=(keys.down?1:0)-(keys.up?1:0);const len=Math.hypot(dx,dz);
