@@ -743,6 +743,8 @@ function buildCharacter(){
     upAxis:'Y',
     groundOrigin:true,
     designTarget:bodyStyle==='legacy'?'legacy mannequin':'Kidscade SD game character',
+    skinning:dim.soft?'blended-two-bone-joints':'rigid-single-bone-weight',
+    referenceAssets:dim.soft?['character-female-a.glb','character-male-a.glb']:[],
     generator:'Kidscade 3D Character Studio'
   };
   scene.add(characterRoot);
@@ -877,7 +879,8 @@ function buildCharacter(){
   $('polyBadge').textContent=triangles.toLocaleString()+' triangles';
   $('rigBadge').textContent='✓ '+(BODY_STYLES[bodyStyle]?.label||'Humanoid')+' · '+bones.length+' bones';
   $('clipBadge').textContent=clips.length+' clips';
-  if($('rigVersionLabel'))$('rigVersionLabel').textContent=bodyStyle==='legacy'?'Humanoid v2 · V1 body':'Kidscade Humanoid v2';
+  if($('rigVersionLabel'))$('rigVersionLabel').textContent=dim.soft?'Kidscade Humanoid v3':(bodyStyle==='legacy'?'Humanoid v3 · V1 body':'Kidscade Humanoid v3 · V2 body');
+  if($('skinningModeLabel'))$('skinningModeLabel').textContent=dim.soft?'Blended joint weights':'Rigid skin weights';
 
   setCameraView(activeView,false);
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===activeView));
@@ -954,7 +957,7 @@ function download(name,blob){
 function exportSpec(){
   readParams();
   const spec={
-    version:2,
+    version:3,
     type:'kidscade-humanoid-rig-spec',
     rigVersion:RIG_VERSION,
     bodyStyle,
@@ -964,10 +967,15 @@ function exportSpec(){
     parameters:{...params},
     proportionGuide:bodyStyle==='legacy'
       ?{headsTall:'legacy',headHeightRatio:.15}
-      :{headsTall:bodyStyle==='action2'?'about 3.05':'about 2.9',headHeightRatio:Number((currentDim?.headRY*2/currentDim?.H||0).toFixed(3))},
+      :{headsTall:bodyStyle==='soft3'?'about 2.78':(bodyStyle==='action2'?'about 3.05':'about 2.9'),headHeightRatio:Number((currentDim?.headRY*2/currentDim?.H||0).toFixed(3))},
     bones:skinnedMesh?.skeleton?.bones.map(b=>({name:b.name,parent:b.parent?.isBone?b.parent.name:null}))||[],
     clips:clips.map(c=>({name:c.name,duration:Number(c.duration.toFixed(3)),tracks:c.tracks.map(t=>t.name)})),
-    skinning:'rigid-single-bone-weight',
+    skinning:currentDim?.soft?'blended-two-bone-joints':'rigid-single-bone-weight',
+    referenceBaseline:currentDim?.soft?{
+      femaleA:{triangles:876,skinnedMeshes:2,joints:7},
+      maleA:{triangles:723,skinnedMeshes:2,joints:7},
+      note:'Existing Kidscade people GLBs were inspected as topology/skinning references; geometry is newly generated.'
+    }:null,
     reuseRule:'Characters using the same bone names and hierarchy can share retargeted Kidscade humanoid animations.'
   };
   download('kidscade-humanoid-rig-spec.json',new Blob([JSON.stringify(spec,null,2)+'\n'],{type:'application/json'}));
