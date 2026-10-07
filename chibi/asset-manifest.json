@@ -87,6 +87,16 @@
       "armorskirt",
       "armorthigh",
       "ceinture"
+    ],
+    "hoodie": [
+      "character_low",
+      "eyelashes",
+      "eyes",
+      "tooth",
+      "hairvariant",
+      "kidscade_hoodie_blue",
+      "pants",
+      "shoe"
     ]
   },
   "animations": [
@@ -104,5 +114,20 @@
   ],
   "mode": "chibi-only",
   "noProceduralFallback": true,
-  "repositoryPath": "assets/game/chibi/ChibiCharactersV1.2/ChibiCharacters/glb/allinonepr.glb"
+  "repositoryPath": "assets/game/chibi/ChibiCharactersV1.2/ChibiCharacters/glb/allinonepr.glb",
+  "customParts": {
+    "kidscade_hoodie_blue": {
+      "label": "파란 후드티",
+      "type": "garment",
+      "generatedFrom": "shirt",
+      "color": "#4f7df3",
+      "components": [
+        "skinned shirt shell",
+        "hood",
+        "kangaroo pocket",
+        "drawstrings"
+      ],
+      "rigging": "shirt skin weights + rigid upper-spine detail pieces"
+    }
+  }
 }
