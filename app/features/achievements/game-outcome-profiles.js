@@ -122,7 +122,7 @@
     ]),
     run:Object.freeze([
       'low_perfect_pitch','low_wordris','low_math_dog_runner','music_neon_rift','high_kite_wind_rider',
-      'sim_mosquito','low_word_blaster','hanja_survivors_8','high_rhythm_dash','snake_math','threes',
+      'sim_mosquito','low_word_blaster','language_word_siege','hanja_survivors_8','high_rhythm_dash','snake_math','threes',
       'math_tower_defense','high_gugudan_stairs','joseon_janggu','trash_runner','word_snake',
       'patience_tower','jineung_bird','triangle_situation','math_rune_forest','spelling_frog',
       'tod_emoji_pang','high_emergency_escape','tod_heaven_stairs'
