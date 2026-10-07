@@ -69,6 +69,22 @@ for(const [view,label] of [['front','FRONT'],['threeQuarter','45 DEG'],['side','
   idleViews.push({file:await capture('idle-'+view),label});
 }
 
+const hairs=[];
+for(const [value,label] of [
+  ['hairone','HAIR ONE'],
+  ['hairT','HAIR T'],
+  ['hairtail','HAIR TAIL'],
+  ['hairtailknight','KNIGHT HAIR'],
+  ['hairvariant','STUDENT HAIR'],
+  ['hairvariant.001','ARCHER HAIR']
+]){
+  await page.selectOption('#chibiHair',value);
+  await page.click('[data-view="threeQuarter"]');
+  await page.click('[data-clip="anim_iddle"]');
+  await page.waitForTimeout(350);
+  hairs.push({file:await capture('hair-'+value.replace('.','-')),label});
+}
+
 const motions=[];
 for(const [clip,label,wait] of [
   ['anim_walk','WALK',420],
@@ -116,8 +132,10 @@ async function makeSheet(items,cols,tileW,tileH,outFile){
 }
 
 const idleSheet=path.join(OUT,'idle-views-sheet.webp');
+const hairSheet=path.join(OUT,'hair-sheet.webp');
 const motionSheet=path.join(OUT,'motion-sheet.webp');
 await makeSheet(idleViews,2,220,220,idleSheet);
+await makeSheet(hairs,3,220,230,hairSheet);
 await makeSheet(motions,3,220,230,motionSheet);
 
 function printB64(tag,file){
@@ -128,6 +146,7 @@ function printB64(tag,file){
   console.log(tag+'_BYTES '+fs.statSync(file).size);
 }
 printB64('AUDIT_IDLE',idleSheet);
+printB64('AUDIT_HAIR',hairSheet);
 printB64('AUDIT_MOTION',motionSheet);
 
 await browser.close();
