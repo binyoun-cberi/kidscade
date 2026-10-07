@@ -18,7 +18,7 @@ let W=1000,H=600,dpr=1,last=performance.now(),running=false,muted=false;
 let state=null, audioCtx=null;
 
 const pathPts=[
-  [0.02,.28],[.16,.28],[.16,.61],[.31,.61],[.31,.40],[.47,.40],[.47,.72],[.64,.72],[.64,.31],[.80,.31],[.80,.57],[.98,.57]
+  [0.02,.28],[.16,.28],[.16,.61],[.31,.61],[.31,.40],[.47,.40],[.47,.72],[.64,.72],[.64,.31],[.80,.31],[.80,.57],[.96,.57]
 ];
 const resourceSpots=[{x:.22,y:.18,r:.045},{x:.54,y:.18,r:.046},{x:.72,y:.78,r:.05}];
 
@@ -325,7 +325,7 @@ function startWave(){
     toast('첫 웨이브 전에 공격 타워가 필요해요');return;
   }
   state.wave++;state.inWave=true;state.waveTimer=0;state.spawnQueue=createWave(state.wave);
-  waveBtn.disabled=true;setStatus('WAVE '+state.wave,'적이 CORE를 향해 이동합니다. 전투 중에도 타워를 만들 수 있어요.');
+  waveBtn.disabled=true;waveBtn.textContent='WAVE '+state.wave+' 진행 중';setStatus('WAVE '+state.wave,'적이 CORE를 향해 이동합니다. 전투 중에도 타워를 만들 수 있어요.');
   beep(250,.12,'sawtooth',.05);updateHud();
 }
 const ENEMY={
@@ -547,7 +547,7 @@ function drawPath(){
   ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#d8ccb1';ctx.lineWidth=Math.max(30,Math.min(W,H)*.065);
   ctx.beginPath();ctx.moveTo(px(pathPts[0][0]),py(pathPts[0][1]));for(let i=1;i<pathPts.length;i++)ctx.lineTo(px(pathPts[i][0]),py(pathPts[i][1]));ctx.stroke();
   ctx.strokeStyle='#b7aa8a';ctx.lineWidth=2;ctx.setLineDash([6,7]);ctx.stroke();ctx.setLineDash([]);
-  ctx.fillStyle='#263039';ctx.beginPath();ctx.arc(px(.985),py(.57),Math.max(10,H*.025),0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.font='900 10px sans-serif';ctx.textAlign='center';ctx.fillText('CORE',px(.955),py(.57)-H*.035)
+  ctx.fillStyle='#263039';ctx.beginPath();ctx.arc(px(.96),py(.57),Math.max(10,Math.min(W,H)*.025),0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.font='900 10px sans-serif';ctx.textAlign='center';ctx.fillText('CORE',px(.92),py(.57)-H*.035)
 }
 function drawResources(){
   for(const r of state.resources){if(r.amount<=0)continue;const x=px(r.x),y=py(r.y),rr=Math.max(12,Math.min(W,H)*r.r);
@@ -651,7 +651,7 @@ waveBtn.addEventListener('click',startWave);buildBtn.addEventListener('click',be
 $('dictBtn').addEventListener('click',openDictionary);$('dictClose').addEventListener('click',()=>dictOverlay.classList.add('hidden'));
 $('soundBtn').addEventListener('click',()=>{muted=!muted;$('soundBtn').textContent=muted?'🔇':'🔊';if(!muted)beep(520)});
 window.addEventListener('keydown',e=>{
-  if(!state||state.ended)return;
+  if(!state||state.ended||!dictOverlay.classList.contains('hidden')||!startOverlay.classList.contains('hidden'))return;
   const k=e.key.toUpperCase();
   if(/^[A-Z]$/.test(k)&&!state.placing){const idx=state.rack.findIndex((c,i)=>c===k&&!state.selected.includes(i));if(idx>=0){state.selected.push(idx);renderRack();updateComposer()}}
   else if(e.key==='Backspace'){state.selected.pop();renderRack();updateComposer();e.preventDefault()}
