@@ -58,9 +58,29 @@ test('required 3D market and food assets exist',()=>{
     'assets/game/food/egg.glb',
     'assets/game/food/tomato.glb',
     'assets/game/food/fish.glb',
-    'assets/game/food/pizza.glb'
+    'assets/game/food/pizza.glb',
+    'assets/game/3d/food/ultimate-food-pack/banana.glb',
+    'assets/game/3d/food/ultimate-food-pack/broccoli.glb',
+    'assets/game/3d/food/ultimate-food-pack/fries.glb',
+    'assets/game/3d/interiors/charming-kitchen-set/toaster.glb',
+    'assets/game/3d/interiors/charming-kitchen-set/kettle.glb',
+    'assets/game/3d/interiors/charming-kitchen-set/pan.glb',
+    'assets/game/3d/city/poly-pizza-city-pack/bench.glb',
+    'assets/game/3d/city/poly-pizza-city-pack/bicycle.glb',
+    'assets/game/3d/city/poly-pizza-city-pack/planter-and-bushes.glb'
   ];
   for(const rel of required)assert.ok(fs.existsSync(path.join(root,rel)),'missing asset: '+rel);
+});
+
+test('v4 asset pass upgrades products, kitchen detail, store fixtures, and neighborhood props',()=>{
+  assert.match(js,/const ULTIMATE_FOOD=ROOT\+'3d\/food\/ultimate-food-pack\/'/);
+  assert.match(js,/const CHARMING=ROOT\+'3d\/interiors\/charming-kitchen-set\/'/);
+  assert.match(js,/PRODUCT_V4=\{/);
+  assert.match(js,/marketSurfaceModel\('?/);
+  assert.match(js,/display-fruit/);
+  assert.match(js,/freezers-standing/);
+  assert.match(js,/CITY_DECOR_ASSETS=\{/);
+  assert.match(js,/planter-and-bushes\.glb/);
 });
 
 const vm=require('node:vm');
@@ -114,4 +134,4 @@ test('pedestrian gait simulation never lets feet enter the sidewalk',()=>{
   for(let i=0;i<1200;i++){c.updateCity(1/60);min=Math.min(min,c.pedestrianFootY(mover))}
   assert.ok(min>=.085-1e-9,'foot bottom '+min+' must stay at least 2.5 cm above the 0.06 sidewalk top');
 });
-test('market page cache-busts the grounded pedestrian build',()=>{assert.match(html,/market-walk\.js\?v=12-ped-ground/)});
+test('market page cache-busts the v4 asset pass',()=>{assert.match(html,/market-walk\.js\?v=13-asset-pass/)});
