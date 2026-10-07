@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>좀비 vs 약수 터렛 3D</title>
-<link rel="stylesheet" href="tower-defense.css?v=15-arsenal1">
+<link rel="stylesheet" href="tower-defense.css?v=16-visual1">
 </head>
 <body>
 <canvas id="world" aria-label="좀비 vs 약수 터렛 3D 전장"></canvas>
@@ -53,9 +53,9 @@
 
 <nav id="towerDeck" aria-label="타워 선택">
   <button class="towerCard" data-tower="SUB1" type="button" data-weapon="EMP"><span class="op sub">−1</span><span class="towerMeta"><b>EMP 교정기</b><small><strong class="costValue">90</strong> 자원</small></span><em>EMP</em><i>3웨이브</i></button>
-  <button class="towerCard" data-tower="DIV2" type="button" data-weapon="GATLING"><span class="op div2">÷2</span><span class="towerMeta"><b>개틀링</b><small><strong class="costValue">145</strong> 자원</small></span><em>GATLING</em></button>
-  <button class="towerCard" data-tower="DIV3" type="button" data-weapon="HIVE"><span class="op div3">÷3</span><span class="towerMeta"><b>하이브 캐논</b><small><strong class="costValue">205</strong> 자원</small></span><em>HIVE</em><i>2웨이브</i></button>
-  <button class="towerCard" data-tower="ADD1" type="button" data-weapon="SHIELD"><span class="op add">+1</span><span class="towerMeta"><b>실드 변환기</b><small><strong class="costValue">115</strong> 자원</small></span><em>SHIELD</em><i>3W</i></button>
+  <button class="towerCard" data-tower="DIV2" type="button" data-weapon="GATLING"><span class="op div2">÷2</span><span class="towerMeta"><b>속사 계열</b><small><strong class="costValue">145</strong> 자원</small></span><em>GATLING → FLAME</em></button>
+  <button class="towerCard" data-tower="DIV3" type="button" data-weapon="HIVE"><span class="op div3">÷3</span><span class="towerMeta"><b>에너지 계열</b><small><strong class="costValue">205</strong> 자원</small></span><em>HIVE → PLASMA</em><i>2웨이브</i></button>
+  <button class="towerCard" data-tower="ADD1" type="button" data-weapon="SHIELD"><span class="op add">+1</span><span class="towerMeta"><b>실드 변환기</b><small><strong class="costValue">115</strong> 자원</small></span><em>SHIELD</em><i>3웨이브</i></button>
   <button class="towerCard heavyCard" data-tower="DIV5" type="button" data-weapon="CANNON"><span class="op div5">÷5</span><span class="towerMeta"><b>중화기</b><small><strong class="costValue">295</strong> 자원</small></span><em>CANNON → RAIL</em><i>4웨이브</i></button>
   <button id="autoBtn" class="towerCard recommend" type="button"><span class="autoIcon">✨</span><span class="towerMeta"><b>추천 배치</b><small>첫 판 자동 설치</small></span><em>STARTER</em></button>
 </nav>
@@ -74,7 +74,7 @@
       <span><b>FACTOR CHAIN</b><small>약수 연산을 연속 성공해 완전 분해</small></span>
     </div>
     <div class="arsenalPreview">
-      <span><small>−1</small><b>EMP</b></span><span><small>÷2</small><b>GATLING</b></span><span><small>÷3</small><b>HIVE</b></span><span><small>+1</small><b>SHIELD</b></span>
+      <span><small>−1</small><b>EMP</b></span><span><small>÷2 진화</small><b>GATLING → CANNON → FLAME</b></span><span><small>÷3 진화</small><b>HIVE → LIGHTNING → PLASMA</b></span><span><small>+1</small><b>SHIELD</b></span>
       <span class="evolution"><small>÷5 업그레이드</small><b>CANNON → MISSILE → PLASMA → RAIL</b></span>
     </div>
     <button id="startGameBtn" class="primary" type="button">감염 도시 방어 시작</button>
@@ -91,6 +91,6 @@
 </section>
 
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
-<script type="module" src="tower-defense-loader.js?v=15-arsenal1"></script>
+<script type="module" src="tower-defense-loader.js?v=16-visual1"></script>
 </body>
 </html>
