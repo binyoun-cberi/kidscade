@@ -17,12 +17,12 @@ const catalogData = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.js
 const catalog = Array.isArray(catalogData) ? catalogData : catalogData.games;
 const game = catalog.find(g => g.id === 'job_teacher_classroom');
 
-test('teacher simulator v67 loads the six-period direct-control game', () => {
+test('teacher simulator v68 loads the six-period direct-control game', () => {
   assert.match(html, /id="game"/);
   assert.match(html, /id="joystick"/);
   assert.match(html, /id="actionButton"/);
   assert.match(html, /id="dayStrip"/);
-  assert.match(html, /school-day-game\.js\?v=67/);
+  assert.match(html, /school-day-game\.js\?v=68/);
   assert.match(html, /style\.css\?v=66/);
   assert.match(html, /건강/);
   assert.match(html, /안전교육/);
@@ -250,9 +250,32 @@ test('friendship persists across the current day but is not written to storage',
   assert.doesNotMatch(js, /kidscade[^\n]*friendship/i);
 });
 
-test('catalog publishes teacher simulator v67', () => {
+
+test('full-size student stations stay clear of desks and chairs', async () => {
+  const day = await import(pathToFileURL(dayPath).href + '?npc-layout=' + Date.now());
+  const room = day.SCHOOL_SPACES.classroom;
+  for (const seat of room.seats) {
+    const nearest = room.obstacles.reduce((best,o) => {
+      const dx = Math.max(Math.abs(seat.x-o.x)-o.hx,0);
+      const dz = Math.max(Math.abs(seat.z-o.z)-o.hz,0);
+      return Math.min(best,Math.hypot(dx,dz));
+    }, Infinity);
+    assert.ok(nearest >= .25, 'full-size classroom student too close to desk');
+  }
+  assert.match(js, /z:s\.z-\.30,size:\.74/);
+  assert.match(js, /z:s\.z-\.28,size:\.62/);
+  assert.match(js, /z:s\.z-\.30,size:\.68/);
+  assert.match(js, /z:s\.z-\.28,size:\.7/);
+});
+
+test('teacher simulator error UI no longer references Chibi', () => {
+  assert.doesNotMatch(html, /Chibi|allinonepr|\/chibi\//i);
+});
+
+test('catalog publishes teacher simulator v68', () => {
   assert.ok(game);
-  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=67');
+  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=68');
   assert.match(game.description, /건강/);
   assert.match(game.description, /안전교육/);
+  assert.equal(game.qualityStatus, 'featured');
 });
