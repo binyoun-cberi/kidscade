@@ -37,7 +37,7 @@ export const SAFETY_RULES=Object.freeze({
 export const GROUP_RULES=Object.freeze({
   socialDrainMultiplier:.72,
   conflictCheckEverySeconds:6,
-  unresolvedConflictChance:.82,
+  unresolvedConflictChance:1,
   tiredConflictChanceMultiplier:.65
 });
 
