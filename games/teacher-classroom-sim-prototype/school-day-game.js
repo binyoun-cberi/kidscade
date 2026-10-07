@@ -4,14 +4,14 @@ import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {
   AI_RULES,STUDENT_PROFILES,createStudentRuntime,resetFocusForLesson,updateLessonFocus,helpFocus,
   resetSocialForRecess,recoverSocial,drainSocial,conflictProbability,clamp
-} from './student-ai.mjs?v=64';
-import {SCHOOL_SPACES,DAY_STEPS,PERIODS} from './school-day.mjs?v=64';
+} from './student-ai.mjs?v=65';
+import {SCHOOL_SPACES,DAY_STEPS,PERIODS} from './school-day.mjs?v=65';
 import {
   preferenceFor,preferenceMultiplier,preferenceIcon,
   createDailyEnvironment,createDailyHealth,healthRecoveryMultiplier,tickHealth,nextHealthAction,
   beginSafetyRecord,tickSafetyRecord,unsafeAccidentChance,buildPairs,
   SAFETY_RULES,GROUP_RULES
-} from './student-life.mjs?v=64';
+} from './student-life.mjs?v=65';
 
 const $=id=>document.getElementById(id);
 const ui={
