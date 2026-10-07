@@ -118,7 +118,7 @@ const TEST_FILES = [
   "tests/world-v3-town.test.cjs",
   "tests/world-v3-survival-pets.test.cjs",
   "tests/seed-world-meta.test.cjs",
-  "tests/main-architecture.test.cjs"
+  "tests/juice-maker-farm.test.cjs",\n  "tests/main-architecture.test.cjs"
 ];
 
 const results = [];
