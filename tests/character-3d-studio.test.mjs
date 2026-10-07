@@ -189,3 +189,13 @@ test('left rail stays readable without nested scrolling',()=>{
   assert.match(html,/<aside class="side left">/);
   assert.match(html,/@media\(max-width:1250px\)/);
 });
+
+
+test('left rail v2 forces a wide non-scrolling desktop column',()=>{
+  const html=read('teacher/character-3d-studio.html');
+  const admin=read('teacher/index.html');
+  assert.match(html,/grid-template-columns:370px minmax\(560px,1fr\) 300px/);
+  assert.match(html,/\.left\{position:static!important;width:370px;max-width:370px;max-height:none!important;overflow:visible!important/);
+  assert.match(html,/data-layout-version="left-rail-v2"/);
+  assert.match(admin,/character-3d-studio\.html\?v=20261007-leftrail2/);
+});
