@@ -360,9 +360,29 @@ function makeSolidMaterial(color,name){
   return material;
 }
 
+function normalizeRuntimeBoneName(name){
+  return String(name||'')
+    .replace(/\\s/g,'_')
+    .replace(/[\\[\\]\\.:\\/]/g,'')
+    .toLowerCase();
+}
+
+function resolveBoneIndex(skeleton,boneName){
+  const wanted=normalizeRuntimeBoneName(boneName);
+  return skeleton.bones.findIndex(bone=>
+    bone.name===boneName || normalizeRuntimeBoneName(bone.name)===wanted
+  );
+}
+
 function addRigidSkinAttributes(geometry,skeleton,boneName){
-  const boneIndex=skeleton.bones.findIndex(bone=>bone.name===boneName);
-  if(boneIndex<0)throw new Error('후드티용 본을 찾지 못했습니다: '+boneName);
+  const boneIndex=resolveBoneIndex(skeleton,boneName);
+  if(boneIndex<0){
+    const spineNames=skeleton.bones
+      .map(bone=>bone.name)
+      .filter(name=>/spine/i.test(name))
+      .join(', ');
+    throw new Error('후드티용 본을 찾지 못했습니다: '+boneName+' · 사용 가능한 spine: '+spineNames);
+  }
   const count=geometry.getAttribute('position').count;
   const indices=new Uint16Array(count*4);
   const weights=new Float32Array(count*4);
