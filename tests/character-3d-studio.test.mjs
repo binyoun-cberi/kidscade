@@ -29,7 +29,7 @@ test('3D studio has no V1 V2 V3 procedural body UI or generator',()=>{
 
 test('Chibi studio uses one canonical GLB with no character fallback',()=>{
   const js=read('teacher/character-3d-studio.js');
-  assert.match(js,/const CHIBI_ASSET_URL='\/chibi\/glb\/allinonepr\.glb'/);
+  assert.match(js,/const CHIBI_ASSET_URL='\/assets\/game\/chibi\/ChibiCharactersV1\\.2\/ChibiCharacters\/glb\/allinonepr\\.glb'/);
   assert.equal(js.includes('CHIBI_ASSET_CANDIDATES'),false);
   assert.equal(js.toLowerCase().includes('fallback'),false);
   assert.match(js,/폴백 캐릭터는 사용하지 않습니다/);
@@ -91,6 +91,7 @@ test('Chibi asset manifest is canonical and has no fallback source',()=>{
   const manifest=JSON.parse(read('chibi/asset-manifest.json'));
   assert.equal(manifest.license,'CC0-1.0');
   assert.equal(manifest.primary,'glb/allinonepr.glb');
+  assert.equal(manifest.repositoryPath,'assets/game/chibi/ChibiCharactersV1.2/ChibiCharacters/glb/allinonepr.glb');
   assert.equal(Object.hasOwn(manifest,'fallbackPrimary'),false);
   assert.equal(manifest.animations.length,11);
   assert.ok(manifest.presets.student.includes('shirt'));

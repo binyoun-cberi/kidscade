@@ -3,7 +3,7 @@ import * as THREE from '../assets/vendor/three-r160/three.module.js';
 window.__kc3dStudioModuleReady=true;
 
 const ADMIN_KEY_NAME='kc_teacher_admin_key';
-const CHIBI_ASSET_URL='/chibi/glb/allinonepr.glb';
+const CHIBI_ASSET_URL='/assets/game/chibi/ChibiCharactersV1.2/ChibiCharacters/glb/allinonepr.glb';
 const CHIBI_SOURCE='Styloo Chibi Characters v1.2';
 const CHIBI_LICENSE='CC0-1.0';
 const TARGET_HEIGHT=1.22;
@@ -538,7 +538,7 @@ async function loadChibi(){
     gltf=await new GLTFLoader().loadAsync(CHIBI_ASSET_URL+'?v=20261007-chibi12');
   }catch(error){
     console.error(error);
-    showAssetError('<b>'+CHIBI_ASSET_URL+'</b> 파일을 찾지 못했습니다.<br>폴백 캐릭터는 사용하지 않습니다. Chibi 원본 GLB를 이 경로에 배치해 주세요.');
+    showAssetError('<b>'+CHIBI_ASSET_URL+'</b> 파일을 찾지 못했습니다.<br>폴백 캐릭터는 사용하지 않습니다. 저장소의 실제 Chibi GLB 경로를 확인해 주세요.');
     return false;
   }
 

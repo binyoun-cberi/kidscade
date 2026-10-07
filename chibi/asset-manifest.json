@@ -4,7 +4,7 @@
   "license": "CC0-1.0",
   "source": "https://styloo.itch.io/chibi",
   "primary": "glb/allinonepr.glb",
-  "expectedRoot": "/chibi/",
+  "expectedRoot": "/assets/game/chibi/ChibiCharactersV1.2/ChibiCharacters/",
   "baseNodes": [
     "character_low",
     "eyelashes",
@@ -103,5 +103,6 @@
     "anim_walk"
   ],
   "mode": "chibi-only",
-  "noProceduralFallback": true
+  "noProceduralFallback": true,
+  "repositoryPath": "assets/game/chibi/ChibiCharactersV1.2/ChibiCharacters/glb/allinonepr.glb"
 }
