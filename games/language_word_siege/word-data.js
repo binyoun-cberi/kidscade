@@ -684,6 +684,183 @@ const SIGNATURES={
 
 Object.assign(MODIFIERS,{"SMART":{"damage":1.1,"range":1.14},"WISE":{"range":1.18},"FOCUS":{"damage":1.2,"range":1.05},"LUCKY":{"damage":1.15,"rate":1.06},"LUCK":{"damage":1.1,"rate":1.08},"BRAVE":{"damage":1.28},"BOLD":{"damage":1.22},"SUPER":{"damage":1.23,"rate":1.1},"MIGHTY":{"damage":1.3},"FIERCE":{"damage":1.2,"rate":1.1},"PRECISE":{"range":1.24,"damage":1.12},"FOCUSED":{"damage":1.22},"STEADY":{"rate":1.17},"CHARGED":{"damage":1.22},"GOLDEN":{"damage":1.2},"SILENT":{"range":1.17},"HYPER":{"rate":1.34},"ENDLESS":{"range":1.26},"STABLE":{"range":1.14,"rate":1.08}});
 
+const COMBOS=[
+  {
+    "a": "FIRE",
+    "b": "WIND",
+    "name": "화염폭풍",
+    "bonus": {
+      "damage": 1.2,
+      "area": 1.25
+    }
+  },
+  {
+    "a": "ICE",
+    "b": "WATER",
+    "name": "얼음물",
+    "bonus": {
+      "slow": 0.77,
+      "range": 1.1
+    }
+  },
+  {
+    "a": "POISON",
+    "b": "ARROW",
+    "name": "독화살",
+    "bonus": {
+      "damage": 1.15,
+      "poison": 1.26
+    }
+  },
+  {
+    "a": "LASER",
+    "b": "PRISM",
+    "name": "굴절광",
+    "bonus": {
+      "chain": 1,
+      "range": 1.12
+    }
+  },
+  {
+    "a": "SPARK",
+    "b": "THUNDERBOLT",
+    "name": "연쇄방전",
+    "bonus": {
+      "rate": 1.12,
+      "damage": 1.16
+    }
+  },
+  {
+    "a": "ROOT",
+    "b": "WEB",
+    "name": "이중덫",
+    "bonus": {
+      "barrierSlow": 0.74,
+      "range": 1.15
+    }
+  },
+  {
+    "a": "MINER",
+    "b": "DRILL",
+    "name": "공동채굴",
+    "bonus": {
+      "harvest": 1.22
+    }
+  },
+  {
+    "a": "HOSPITAL",
+    "b": "DOCTOR",
+    "name": "의료지원",
+    "bonus": {
+      "heal": 1.32
+    }
+  },
+  {
+    "a": "BOMB",
+    "b": "CANNON",
+    "name": "포격폭발",
+    "bonus": {
+      "area": 1.22,
+      "damage": 1.12
+    }
+  },
+  {
+    "a": "SUN",
+    "b": "SOLAR",
+    "name": "태양광",
+    "bonus": {
+      "burn": 1.22,
+      "range": 1.12
+    }
+  },
+  {
+    "a": "SATURN",
+    "b": "GALAXY",
+    "name": "은하중력",
+    "bonus": {
+      "pull": 1.3,
+      "area": 1.25
+    }
+  },
+  {
+    "a": "GOLD",
+    "b": "DIAMOND",
+    "name": "보석광맥",
+    "bonus": {
+      "harvest": 1.27
+    }
+  },
+  {
+    "a": "RAINBOW",
+    "b": "PRISM",
+    "name": "일곱빛",
+    "bonus": {
+      "chain": 1,
+      "range": 1.12
+    }
+  },
+  {
+    "a": "SWORD",
+    "b": "SHARP",
+    "name": "날카로운 검",
+    "bonus": {
+      "damage": 1.18
+    }
+  },
+  {
+    "a": "SNAKE",
+    "b": "VENOM",
+    "name": "독사",
+    "bonus": {
+      "poison": 1.34
+    }
+  },
+  {
+    "a": "MUSIC",
+    "b": "RHYTHM",
+    "name": "공명",
+    "bonus": {
+      "rate": 1.28
+    }
+  },
+  {
+    "a": "FIREBALL",
+    "b": "BONFIRE",
+    "name": "불씨폭발",
+    "bonus": {
+      "burn": 1.24,
+      "area": 1.17
+    }
+  },
+  {
+    "a": "SHIELD",
+    "b": "CASTLE",
+    "name": "철벽",
+    "bonus": {
+      "barrierSlow": 0.8,
+      "range": 1.2
+    }
+  },
+  {
+    "a": "QUAKE",
+    "b": "ROOT",
+    "name": "땅의 속박",
+    "bonus": {
+      "slow": 0.77,
+      "area": 1.12
+    }
+  },
+  {
+    "a": "CLOCK",
+    "b": "TIME",
+    "name": "시간정지",
+    "bonus": {
+      "slow": 0.68,
+      "range": 1.15
+    }
+  }
+];
+
 const START_RACK='MINERARROWIC'.split('');
 const FILLER_FREQUENCY='EEEEEEEEEEEEAAAAAAAAAIIIIIIIIOOOOOOOONNNNNNRRRRRRTTTTTTLLLLSSSSUUUUDDDDGGGBBCCMMPPFFHHVVWWYYKJXQZ'.split('');
 
@@ -694,6 +871,7 @@ window.WordSiegeData={
   roleLabels:ROLE_LABELS,
   modifiers:MODIFIERS,
   signatures:SIGNATURES,
+  combos:COMBOS,
   startRack:START_RACK,
   fillerFrequency:FILLER_FREQUENCY,
   maxRack:12
