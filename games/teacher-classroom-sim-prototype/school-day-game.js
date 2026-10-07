@@ -472,6 +472,8 @@ function syncStudentPresence(){
       s.health.restUntilPeriod=0;
       s.health.resting=false;
     }
+    if(present&&s.accident)showBubble(s,'⚠️','health');
+    else if(present&&s.health?.revealed&&s.health.state!=='healthy')showBubble(s,'🤒','health');
   });
 }
 function focusRatio(s){return clamp(s.runtime.focus/Math.max(1,s.runtime.focusMax),0,1)}
@@ -761,6 +763,17 @@ function sendFightApart(pair){
 }
 function mediatePair(pair){
   relations.delete(relationKey(pair.a,pair.b));
+  if(pair.source==='team'){
+    [pair.a,pair.b].forEach(s=>{
+      s.runtime.social=Math.min(s.runtime.socialMax,s.runtime.social+s.runtime.socialMax*.22);
+      s.runtime.cooldown=AI_RULES.conflictCooldownSeconds;
+      if(studentCanParticipate(s))s.actor.target=s.seat.clone();
+      hideBubble(s);
+    });
+    pairs=pairs.filter(p=>p!==pair);stats.conflictsMediated++;
+    showToast('모둠 갈등을 풀었어요. 다시 활동할 수 있어요.');
+    return;
+  }
   [pair.a,pair.b].forEach((s,i)=>{s.runtime.social=Math.min(s.runtime.socialMax,s.runtime.social+s.runtime.socialMax*.28);s.runtime.cooldown=AI_RULES.conflictCooldownSeconds;s.runtime.mode='solo';s.actor.target=safeSeparatedTarget(i===0?-1:1);hideBubble(s)});
   pairs=pairs.filter(p=>p!==pair);stats.conflictsMediated++;showToast('둘이 진정했어요.');
 }
@@ -769,8 +782,17 @@ function autoResolveFight(pair){sendFightApart(pair);stats.missedFights++;showTo
 function updateSocial(dt){
   stepTime-=dt;schoolMinute+=dt*.36;pairScan-=dt;
   students.forEach(s=>{
+    if(!isStudentPresent(s))return;
+    if(isStudentResting(s)){
+      recoverSocial(s.runtime,dt,1.3);
+      s.runtime.focus=Math.min(s.runtime.focusMax,s.runtime.focus+s.runtime.focusRecovery*healthRecoveryMultiplier(s.health)*.45*dt);
+      moveActorToward(s.actor,s.actor.target,dt,.55);
+      return;
+    }
+    revealHealthIfNeeded(s,dt);
     if(!pairs.some(p=>p.a===s||p.b===s)){
       recoverSocial(s.runtime,dt,1);
+      s.runtime.focus=Math.min(s.runtime.focusMax,s.runtime.focus+s.runtime.focusRecovery*healthRecoveryMultiplier(s.health)*.18*dt);
       if(distance2D(s.actor.root.position,s.actor.target)<.12)s.actor.target=randomOpenPoint();
       moveActorToward(s.actor,s.actor.target,dt,.76);
     }
