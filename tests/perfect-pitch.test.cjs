@@ -39,6 +39,26 @@ test('Perfect Pitch includes endless high-note stair mode',()=>{
   assert.match(runtime,/큰 소리는 필요 없어요/);
 });
 
+test('Perfect Pitch has a complete three-act run loop',()=>{
+  assert.match(runtime,/countdownMs:2400/);
+  assert.match(runtime,/1막 · 목소리 깨우기/);
+  assert.match(runtime,/2막 · 멜로디 여행/);
+  assert.match(runtime,/3막 · 반짝 피날레/);
+  assert.match(runtime,/patterns:\{/);
+  assert.match(runtime,/FEVER!/);
+  assert.match(runtime,/kind:star\?'star':'note'/);
+  assert.match(runtime,/function classicStarCount/);
+  assert.ok(html.includes('id="runProgress"'));
+  assert.ok(html.includes('id="coachPill"'));
+});
+
+test('Perfect Pitch stair mode has checkpoints and changing sky zones',()=>{
+  assert.match(runtime,/STAIR_ZONES/);
+  assert.match(runtime,/구름 쉼터! \+300/);
+  assert.match(runtime,/내 최고 기록 돌파!/);
+  assert.match(runtime,/별빛 우주/);
+});
+
 test('Perfect Pitch runtime parses',()=>{
   const checked=spawnSync(process.execPath,['--check'],{input:runtime,encoding:'utf8'});
   assert.equal(checked.status,0,checked.stderr||checked.stdout);
