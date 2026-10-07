@@ -44,3 +44,18 @@ test('3D character studio remains global-admin only',()=>{
   assert.match(js,/\/api\/teacher\/overview/);
   assert.match(js,/body\.scope!=='global'/);
 });
+
+
+test('vendors every Three addon imported by the 3D studio',()=>{
+  const required=[
+    'assets/vendor/three-r160/addons/controls/OrbitControls.js',
+    'assets/vendor/three-r160/addons/exporters/GLTFExporter.js',
+    'assets/vendor/three-r160/addons/utils/BufferGeometryUtils.js',
+    'assets/vendor/three-r160/addons/utils/TextureUtils.js'
+  ];
+  for(const rel of required){
+    assert.ok(fs.existsSync(path.join(ROOT,rel)),rel+' must exist in the local Three r160 vendor');
+  }
+  const exporter=fs.readFileSync(path.join(ROOT,'assets/vendor/three-r160/addons/exporters/GLTFExporter.js'),'utf8');
+  assert.match(exporter,/\.\.\/utils\/TextureUtils\.js/);
+});
