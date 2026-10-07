@@ -1,7 +1,4 @@
-import * as THREE from 'three';
-import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
-import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
-import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+import * as THREE from '../assets/vendor/three-r160/three.module.js';
 
 window.__kc3dStudioModuleReady=true;
 
@@ -38,6 +35,104 @@ function setStatus(text,error=false){
   if(!el)return;
   el.textContent=text;
   el.className='status'+(error?' error':'');
+}
+
+function createSimpleOrbitControls(camera,domElement){
+  const target=new THREE.Vector3(0,.75,0);
+  let dragging=false,lastX=0,lastY=0;
+  let theta=.64,phi=1.18,radius=4.9;
+  let minDistance=1.3,maxDistance=7,maxPolarAngle=Math.PI*.49;
+
+  const syncFromCamera=()=>{
+    const offset=camera.position.clone().sub(target);
+    radius=Math.max(.01,offset.length());
+    theta=Math.atan2(offset.x,offset.z);
+    phi=Math.acos(THREE.MathUtils.clamp(offset.y/radius,-1,1));
+  };
+
+  const update=()=>{
+    radius=THREE.MathUtils.clamp(radius,minDistance,maxDistance);
+    phi=THREE.MathUtils.clamp(phi,.12,maxPolarAngle);
+    const sin=Math.sin(phi);
+    camera.position.set(
+      target.x+radius*sin*Math.sin(theta),
+      target.y+radius*Math.cos(phi),
+      target.z+radius*sin*Math.cos(theta)
+    );
+    camera.lookAt(target);
+  };
+
+  domElement.addEventListener('pointerdown',event=>{
+    dragging=true;lastX=event.clientX;lastY=event.clientY;
+    domElement.setPointerCapture?.(event.pointerId);
+  });
+  domElement.addEventListener('pointermove',event=>{
+    if(!dragging)return;
+    const dx=event.clientX-lastX,dy=event.clientY-lastY;
+    lastX=event.clientX;lastY=event.clientY;
+    theta-=dx*.008;
+    phi-=dy*.008;
+    update();
+  });
+  const stop=event=>{
+    dragging=false;
+    try{domElement.releasePointerCapture?.(event.pointerId)}catch(_){}
+  };
+  domElement.addEventListener('pointerup',stop);
+  domElement.addEventListener('pointercancel',stop);
+  domElement.addEventListener('wheel',event=>{
+    event.preventDefault();
+    radius*=Math.exp(event.deltaY*.0011);
+    update();
+  },{passive:false});
+
+  syncFromCamera();
+  update();
+
+  return {
+    target,
+    update,
+    syncFromCamera,
+    get minDistance(){return minDistance},
+    set minDistance(v){minDistance=v;update()},
+    get maxDistance(){return maxDistance},
+    set maxDistance(v){maxDistance=v;update()},
+    get maxPolarAngle(){return maxPolarAngle},
+    set maxPolarAngle(v){maxPolarAngle=v;update()},
+    enableDamping:false
+  };
+}
+
+function mergeRigidGeometries(geometries,materialSlots){
+  if(!geometries.length)throw new Error('병합할 캐릭터 메시가 없습니다.');
+  const names=Object.keys(geometries[0].attributes);
+  const merged=new THREE.BufferGeometry();
+  for(const name of names){
+    const first=geometries[0].getAttribute(name);
+    const ArrayType=first.array.constructor;
+    const total=geometries.reduce((sum,g)=>{
+      const attr=g.getAttribute(name);
+      if(!attr||attr.itemSize!==first.itemSize||attr.normalized!==first.normalized){
+        throw new Error('메시 속성 형식이 서로 달라 병합할 수 없습니다: '+name);
+      }
+      return sum+attr.array.length;
+    },0);
+    const array=new ArrayType(total);
+    let offset=0;
+    for(const g of geometries){
+      const attr=g.getAttribute(name);
+      array.set(attr.array,offset);
+      offset+=attr.array.length;
+    }
+    merged.setAttribute(name,new THREE.BufferAttribute(array,first.itemSize,first.normalized));
+  }
+  let start=0;
+  geometries.forEach((g,i)=>{
+    const count=g.getAttribute('position').count;
+    merged.addGroup(start,count,materialSlots[i]??0);
+    start+=count;
+  });
+  return merged;
 }
 
 function adminKey(){
@@ -105,7 +200,7 @@ function initScene(){
   grid.position.y=.003;
   scene.add(grid);
 
-  controls=new OrbitControls(camera,canvas);
+  controls=createSimpleOrbitControls(camera,canvas);
   controls.enableDamping=true;
   controls.target.set(0,.75,0);
   controls.minDistance=1.3;
@@ -433,10 +528,8 @@ function buildCharacter(){
     push(boxPart([dim.limb*1.28,.055*H,.135*H],[hipX,.033*H,.035*H],foot),3);
   }
 
-  const merged=mergeGeometries(geoms,true);
+  const merged=mergeRigidGeometries(geoms,materialSlots);
   geoms.forEach(g=>g.dispose());
-  if(!merged)throw new Error('캐릭터 메시 병합에 실패했습니다.');
-  for(let i=0;i<merged.groups.length;i++)merged.groups[i].materialIndex=materialSlots[i]??0;
   merged.computeBoundingSphere();
   merged.computeBoundingBox();
 
@@ -477,6 +570,7 @@ function buildCharacter(){
 
   controls.target.set(0,H*.52,0);
   camera.position.set(H*1.75,H*1.18,H*2.35);
+  controls.syncFromCamera?.();
   controls.update();
 
   playClip(activeClip);
@@ -564,7 +658,7 @@ function exportSpec(){
   setStatus('리그 규격 JSON을 저장했습니다.');
 }
 
-function exportGlb(){
+async function exportGlb(){
   if(!characterRoot||!skinnedMesh)return;
   setStatus('GLB를 만드는 중…');
   const wasHelper=skeletonHelper?.visible;
@@ -584,6 +678,16 @@ function exportGlb(){
     if(skeletonHelper)skeletonHelper.visible=wasHelper;
     if(resumeClip)playClip(resumeClip);
   };
+
+  let GLTFExporter;
+  try{
+    ({GLTFExporter}=await import('../assets/vendor/three-r160/addons/exporters/GLTFExporter.js'));
+  }catch(error){
+    restorePreview();
+    console.error(error);
+    setStatus('GLB exporter를 불러오지 못했습니다. 미리보기와 리깅은 정상 사용 가능합니다.',true);
+    return;
+  }
 
   const exporter=new GLTFExporter();
   exporter.parse(
