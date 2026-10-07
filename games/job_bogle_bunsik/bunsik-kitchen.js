@@ -711,7 +711,7 @@ class RamenKitchen3D{
  }
  hallWorkerServePath(slot){
   const seat=this.hallSeats[slot],guest=this.customerHolders[slot];if(!seat||!guest)return[];
-  const laneZ=this.hallLaneZ(seat),sideX=seat.position.x+(seat.position.x<0?.9:-.9),end=new THREE.Vector3(sideX,0,seat.position.z);
+  const laneZ=this.hallLaneZ(seat),sideX=seat.position.x+(seat.position.x < 0 ? .9 : -.9),end=new THREE.Vector3(sideX,0,seat.position.z);
   return[
    new THREE.Vector3(.75,0,-5.85),
    new THREE.Vector3(.75,0,laneZ),
