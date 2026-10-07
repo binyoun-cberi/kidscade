@@ -20,3 +20,9 @@ test('jump remains available briefly after walking off an edge',()=>{const h=har
 test('low ceiling stops ascent without leaving the body inside blocks',()=>{const h=harness();h.blocks.set('0,3,0',{type:'stone'});h.c.queueFreeJump();for(let i=0;i<40;i++){h.tick(1/60);assert.equal(h.c.playerCollidesAt(h.pos.x,h.pos.y,h.pos.z),false)}assert.equal(h.c.onGround,true)});
 test('fall catches a raised floor instead of passing through it',()=>{const h=harness();h.blocks.set('0,3,0',{type:'stone'});h.pos.y=7;h.c.onGround=false;h.c.freeVelocityY=-20;for(let i=0;i<30;i++)h.tick(.04);assert.ok(Math.abs(h.pos.y-5.62)<.001)});
 test('escape finds nearby safe floor without changing health or inventory',()=>{const h=harness();h.blocks.set('0,1,0',{type:'stone'});h.c.survivalHealth=2;h.c.survivalBag={log:3};assert.equal(h.c.escapeFreeOverlap(true),true);assert.equal(h.c.playerCollidesAt(h.pos.x,h.pos.y,h.pos.z),false);assert.equal(h.c.survivalHealth,2);assert.equal(h.c.survivalBag.log,3)});
+
+test('survival mobile jump label keeps its helper node intact',()=>{
+  assert.match(source,/const upHint=\$\('mobileUp'\)\?\.querySelector\('small'\);if\(upHint\)upHint\.textContent=/);
+  assert.match(source,/jumpHint=jump\?\.querySelector\('small'\)/);
+  assert.doesNotMatch(source,/jump\.textContent\s*=\s*'점프'/);
+});
