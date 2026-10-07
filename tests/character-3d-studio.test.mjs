@@ -24,7 +24,7 @@ test('3D character studio builds a reusable humanoid rig',()=>{
   assert.match(js,/new THREE\.Skeleton/);
   assert.match(js,/skinIndex/);
   assert.match(js,/skinWeight/);
-  assert.match(js,/kidscade-humanoid-v2/);
+  assert.match(js,/kidscade-humanoid-v3/);
 });
 
 test('3D character studio previews and exports the standard animation set',()=>{
@@ -35,7 +35,7 @@ test('3D character studio previews and exports the standard animation set',()=>{
   assert.match(js,/GLTFExporter/);
   assert.match(js,/binary:true/);
   assert.match(js,/animations:clips/);
-  assert.match(js,/kidscade-rigged-character\.glb/);
+  assert.match(js,/kidscade-'\+bodyStyle\+'-rigged-character\\.glb/);
 });
 
 test('3D character studio remains global-admin only',()=>{
@@ -94,4 +94,29 @@ test('3D studio offers four-way silhouette inspection',()=>{
   }
   assert.match(js,/function setCameraView/);
   assert.match(js,/data-body-style/);
+});
+
+
+test('SoftMesh v3 uses continuous skinned shells and blended joint weights',()=>{
+  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
+  const html=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.html'),'utf8');
+  assert.match(js,/soft3/);
+  assert.match(js,/function skinnedRingShell/);
+  assert.match(js,/function softTorsoGeometry/);
+  assert.match(js,/function softForearmGeometry/);
+  assert.match(js,/function softLegGeometry/);
+  assert.match(js,/blended-two-bone-joints/);
+  assert.match(js,/\[\[upperBone,\.86\],\[lowerBone,\.14\]\]/);
+  assert.match(js,/\[\[upperBone,\.35\],\[lowerBone,\.65\]\]/);
+  assert.match(html,/V3 · SoftMesh SD/);
+  assert.match(html,/Blended skin weights/);
+});
+
+test('SoftMesh v3 records the inspected Kidscade people GLB baseline',()=>{
+  const js=fs.readFileSync(path.join(ROOT,'teacher','character-3d-studio.js'),'utf8');
+  assert.match(js,/character-female-a\.glb/);
+  assert.match(js,/character-male-a\.glb/);
+  assert.match(js,/femaleA:\{triangles:876,skinnedMeshes:2,joints:7\}/);
+  assert.match(js,/maleA:\{triangles:723,skinnedMeshes:2,joints:7\}/);
+  assert.match(js,/Existing Kidscade people GLBs were inspected as topology\/skinning references/);
 });
