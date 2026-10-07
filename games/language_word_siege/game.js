@@ -32,13 +32,13 @@ function freshState(){
   };
 }
 function loadDiscovered(){
-  try{return KS?KS.getJson(STORAGE_DISC,[]):JSON.parse(localStorage.getItem(STORAGE_DISC)||'[]')}catch{return []}
+  try{return KS?KS.getJson(STORAGE_DISC,[]):[]}catch{return []}
 }
 function saveDiscovered(){
-  try{if(KS)KS.setJson(STORAGE_DISC,[...state.discovered]);else localStorage.setItem(STORAGE_DISC,JSON.stringify([...state.discovered]))}catch{}
+  try{if(KS)KS.setJson(STORAGE_DISC,[...state.discovered])}catch{}
 }
 function saveBest(){
-  try{const prev=KS?KS.getInt(STORAGE_BEST,0):Number(localStorage.getItem(STORAGE_BEST)||0);if(state.score>prev){if(KS)KS.setRaw(STORAGE_BEST,String(state.score));else localStorage.setItem(STORAGE_BEST,String(state.score))}}catch{}
+  try{if(!KS)return;const prev=KS.getInt(STORAGE_BEST,0);if(state.score>prev)KS.setRaw(STORAGE_BEST,String(state.score))}catch{}
 }
 
 function resize(){
