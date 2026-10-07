@@ -160,7 +160,7 @@ test('hoodie includes collar and garment seam details',()=>{
   assert.match(js,/kidscade_hoodie_blue_pocket_bottom_seam/);
   assert.match(js,/function makeBoundSeam/);
   assert.match(js,/function resolveFirstBoneName/);
-  assert.match(js,/if\(y>1\.06\)/);
+  assert.match(js,/if\(torsoVertex&&y>1\.075\)/);
 });
 
 test('hoodie v2 has sleeves hood volume and subtle seams',()=>{
