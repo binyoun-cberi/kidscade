@@ -14,11 +14,10 @@ test('cosmic growth game shell is wired to local Three and Kidscade SDK',()=>{
   assert.match(html,/<title>먼지에서 블랙홀까지<\/title>/);
   assert.match(html,/data-game-id="science_cosmic_growth"/);
   assert.match(html,/assets\/vendor\/three-r160\/three\.module\.js/);
-  assert.match(html,/game\.js\?v=4/);
+  assert.match(html,/game\.js\?v=5/);
   assert.match(html,/id="tapLayer"/);
   assert.match(html,/id="codex"/);
-  assert.match(html,/id="scaleCompare"/);
-  assert.match(html,/style\.css\?v=3/);
+  assert.match(html,/style\.css\?v=4/);
 });
 
 test('cosmic growth module has valid JS after module imports are stripped',()=>{
@@ -48,17 +47,17 @@ test('cosmic growth keeps neighbouring celestial scenery visible across scales',
   assert.doesNotMatch(js,/if\(i>=16\)return;/);
 });
 
-test('cosmic growth shows named real-universe scale references and persistent lensing around black holes',()=>{
-  for(const name of ['이토카와','베스타','세레스','지구','목성','태양','백조자리 X-1','궁수자리 A*','M87*','우리 은하','라니아케아 초은하단']){
-    assert.ok(js.includes(name),name);
-  }
-  for(const fn of ['scaleReference','comparisonText','makeLabelSprite','addScaleReference','addBlackHoleLensing']){
+test('cosmic growth has ambient flybys and black holes capture passing bodies',()=>{
+  for(const fn of ['flybyTypeForStage','makeFlybyBody','spawnFlyby','swallowFlyby','updateFlybys','addBlackHoleLensing']){
     assert.ok(js.includes('function '+fn+'('),fn);
   }
-  assert.match(js,/state\.stage<12\|\|state\.stage>15/);
-  assert.match(js,/RingGeometry\(r,r\+\.035,128\)/);
-  assert.match(css,/\.scaleCompare\{/);
-  assert.match(css,/\.scaleCompare\{left:7px;top:126px/);
+  assert.match(js,/const blackHole=state\.stage>=12&&state\.stage<=15/);
+  assert.match(js,/data\.radius=Math\.max\(3\.6,Math\.hypot\(x,y\)\)/);
+  assert.match(js,/f\.radius-=dt\*f\.inward/);
+  assert.match(js,/if\(f\.radius<\.62\)\{swallowFlyby\(f\)/);
+  assert.match(js,/updateFlybys\(dt\);updateFx\(dt\)/);
+  assert.doesNotMatch(html,/id="scaleCompare"/);
+  assert.doesNotMatch(css,/\.scaleCompare\{/);
 });
 
 test('science facts and observation events are part of actual progression',()=>{
