@@ -128,7 +128,7 @@
       'tod_emoji_pang','high_emergency_escape','tod_heaven_stairs'
     ]),
     stage:Object.freeze([
-      'high_code_quest','low_math_number_tower','high_classroom_war_3d','high_rule_lab','low_one_stroke',
+      'hanja_sichuan','high_code_quest','low_math_number_tower','high_classroom_war_3d','high_rule_lab','low_one_stroke',
       'tod_hidden_emoji','low_big_puzzle_time','tod_chick_shell','tod_antarctic_exploration',
       'tod_emoji_minesweeper','triangle_compare','lab_water_sort','low_rubiks_cube','geo_exorcist',
       'high_history_match','magic_scale','korea_puzzle','laser_angle','code_breaker','sudoku',
