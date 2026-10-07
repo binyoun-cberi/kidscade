@@ -1399,6 +1399,7 @@ function tutorialMessage(){
 function taskPlan(){
  if(!state.running)return[];
  if(state.phase==='prep')return[{label:'주방 배치를 확인하고 “영업 시작” 누르기',done:false,current:true}];
+ if(state.closing)return[{label:kitchen.hasActiveDiningCustomers()?'마감 정리 중 · 마지막 손님 퇴장과 그릇 회수를 기다리기':'오늘 영업 정산 중…',done:false,current:true}];
  if(state.tutorial.active){
   const labels=[
    '싱크대에서 물 2컵을 한 번에 받아 1번 냄비에 넣기',
@@ -1414,7 +1415,10 @@ function taskPlan(){
  const selectedIndex=state.selectedPot!=null?state.selectedPot:state.pots.findIndex(p=>orderForPot(p));
  const p=selectedIndex>=0?state.pots[selectedIndex]:state.pots[0],boundOrder=orderForPot(p),compatible=boundOrder||compatibleOrderForPot(p),order=compatible||(!p||potEmpty(p)?state.orders.find(o=>potIndexForOrder(o.id)<0)||state.orders[0]||null:null),r=order&&recipeById(order.recipeId);
  if(!order&&p&&!potEmpty(p))return[{label:'이 냄비의 손님이 떠났어요 · 냄비 비우기',done:false,current:true,urgent:true},{label:'새 주문을 냄비에 다시 배정하기',done:false,current:false}];
- if(!order)return[{label:'새 주문을 기다리는 중…',done:false,current:true}];
+ if(!order){
+  const dining=kitchen.customerStates.filter(c=>['eating','reviewing','returningDish','leaving'].includes(c.phase)).length;
+  return[{label:dining?'손님 '+dining+'명 식사 중 · 다음 주문을 준비하세요':'새 주문을 기다리는 중…',done:false,current:true}]
+ }
  if(p?.burnt)return[{label:'탄 냄비 비우기',done:false,current:true,urgent:true},{label:'새 냄비로 주문 다시 시작하기',done:false,current:false}];
  if(state.cleanPlates<=0&&state.dirtyPlates>0)return[{label:'싱크대에서 더러운 그릇 설거지하기',done:false,current:true,urgent:true},{label:r.name+' 조리 계속하기',done:false,current:false}];
  const mealReady=(state.heldItem?.kind==='meal'&&((state.heldItem.orderId!=null&&state.heldItem.orderId===order.id)||(state.heldItem.orderId==null&&state.heldItem.recipeId===order.recipeId)))||(state.tray?.ready&&((state.tray.orderId!=null&&state.tray.orderId===order.id)||(state.tray.orderId==null&&state.tray.recipeId===order.recipeId)));
