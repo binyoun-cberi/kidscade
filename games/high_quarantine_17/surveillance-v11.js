@@ -212,7 +212,12 @@ function responsePayload(){
   threats:active.map(function(t){return{id:t.id,name:t.name,phase:t.phase,sprite:t.sprite,x:t.x,y:t.y,dir:t.dir,source:t.source}})
  };
 }
-function applyCombatLosses(n){
+function applyCombatLosses(n,ids){
+ const wanted=new Set((ids||[]).map(String));
+ if(wanted.size){
+  residents.forEach(function(r){if(wanted.has(String(r.id))&&(r.status==='safe'||r.status==='bitten')){r.status='lost';r.task='진압 중 사망';addCampLog('<b>'+esc(r.name)+'</b> 진압 과정에서 사망')}});
+  return
+ }
  let candidates=residents.filter(function(r){return r.status==='safe'||r.status==='bitten'});
  n=Math.min(Number(n)||0,candidates.length);
  for(let i=0;i<n;i++){
@@ -225,14 +230,14 @@ function respondCamp(){
  const btn=document.getElementById('q17CampRespond');if(btn)btn.disabled=true;
  const ok=window.Q17Outbreak.respondCamp&&window.Q17Outbreak.respondCamp(responsePayload(),function(result){
   if(result&&result.won){
-   applyCombatLosses(result.losses||0);threats=[];
+   applyCombatLosses(result.losses||0,result.lostIds);threats=[];
    residents.forEach(function(r){
     if(r.status==='bitten'){r.status='safe';r.turnMs=0;r.task='응급 처치 후 안정';chooseRoutine(r)}
     else if(r.status==='zombie'){r.status='lost';r.task='진압 과정에서 제거됨'}
    });
    addCampLog('현장 진압 완료 · 캠프 내부 감염원 제거');
   }else{
-   applyCombatLosses(result&&result.losses||0);addCampLog('현장 진압 실패 · 캠프 감염 상황 지속');
+   applyCombatLosses(result&&result.losses||0,result&&result.lostIds);addCampLog('현장 진압 실패 · 캠프 감염 상황 지속');
   }
   renderAll();
  });
