@@ -4,6 +4,8 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 const loader=new GLTFLoader();
 const cache=new Map();
 const ROOT='../../assets/game/cube world/';
+const FURNITURE_ROOT='../../assets/game/3d/interiors/kenney-furniture-kit/';
+const SURVIVAL_ROOT='../../assets/game/3d/survival/kenney-survival-kit/';
 
 const PROP_SPECS={
   grassBig:{url:ROOT+'Environment/glTF/Grass_Big.gltf',height:.55},
@@ -32,6 +34,28 @@ const TOOL_SPECS={
   ironSword:{url:ROOT+'Tools/glTF/Sword_Gold.gltf',height:.78,tint:0xc6d0d8}
 };
 
+// Kept separate from vegetation: placement models are loaded only when a player builds one.
+const FURNITURE_SPECS={
+  chair:{url:FURNITURE_ROOT+'chair.glb',height:.87,footprint:.88},
+  desk:{url:FURNITURE_ROOT+'desk.glb',height:.84,footprint:.96},
+  bookshelf:{url:FURNITURE_ROOT+'bookcase-open.glb',height:.98,footprint:.93},
+  bed:{url:FURNITURE_ROOT+'bed-single.glb',height:.58,footprint:.97},
+  sofa:{url:FURNITURE_ROOT+'lounge-sofa.glb',height:.84,footprint:.96},
+  bench:{url:FURNITURE_ROOT+'bench.glb',height:.76,footprint:.98},
+  coffeeTable:{url:FURNITURE_ROOT+'table-coffee.glb',height:.58,footprint:.92},
+  floorLamp:{url:FURNITURE_ROOT+'lamp-round-floor.glb',height:1.3,footprint:.8},
+  rug:{url:FURNITURE_ROOT+'rug-round.glb',height:.045,footprint:.96}
+};
+const SURVIVAL_SPECS={
+  workbench:{url:SURVIVAL_ROOT+'workbench.glb',height:.87,footprint:.97},
+  chest:{url:SURVIVAL_ROOT+'chest.glb',height:.79,footprint:.9},
+  crate:{url:SURVIVAL_ROOT+'box-large.glb',height:.85,footprint:.92},
+  campfire:{url:SURVIVAL_ROOT+'campfire-pit.glb',height:.22,footprint:.84},
+  fence:{url:SURVIVAL_ROOT+'fence.glb',height:.92,footprint:.98},
+  tent:{url:SURVIVAL_ROOT+'tent-canvas.glb',height:.98,footprint:.98},
+  bedroll:{url:SURVIVAL_ROOT+'bedroll.glb',height:.17,footprint:.92}
+};
+const PLACEMENT_SPECS=Object.fromEntries(Object.entries({...FURNITURE_SPECS,...SURVIVAL_SPECS}).map(([key,spec])=>[key,{...spec,floorCentered:true}]));
 function cloneMaterial(material,tint){
   const next=material?.clone?material.clone():material;
   if(!next)return next;
@@ -62,13 +86,18 @@ function normalize(root,spec){
   root.updateMatrixWorld(true);
   const box=new THREE.Box3().setFromObject(root),size=new THREE.Vector3(),center=new THREE.Vector3();
   box.getSize(size);box.getCenter(center);
-  const h=Math.max(.001,size.y),scale=(spec.height||1)/h;
+  const h=Math.max(.001,size.y);
+  const width=Math.max(.001,size.x,size.z);
+  // A one-cell prop never extends into its neighboring cell.
+  const scale=Math.min((spec.height||1)/h,spec.footprint?spec.footprint/width:Infinity);
   root.scale.multiplyScalar(scale);
   root.position.x-=center.x*scale;
   root.position.z-=center.z*scale;
   root.updateMatrixWorld(true);
   const box2=new THREE.Box3().setFromObject(root);
   root.position.y-=box2.min.y;
+  // World block roots are centered half a block above the supporting floor.
+  if(spec.floorCentered)root.position.y-=.5;
   root.rotation.y=spec.rotationY??0;
   return root;
 }
@@ -92,6 +121,10 @@ async function loadFrom(key,specs){
 }
 function loadProp(key){return loadFrom(key,PROP_SPECS)}
 function loadTool(key){return loadFrom(key,TOOL_SPECS)}
+function loadPlacement(key){return loadFrom(key,PLACEMENT_SPECS)}
 
-window.CubeArchitectWorldAssets={PROP_SPECS,TOOL_SPECS,loadProp,loadTool};
+window.CubeArchitectWorldAssets={
+  PROP_SPECS,TOOL_SPECS,FURNITURE_SPECS,SURVIVAL_SPECS,PLACEMENT_SPECS,
+  loadProp,loadTool,loadPlacement
+};
 window.dispatchEvent(new CustomEvent('cube-architect-world-assets-ready'));
