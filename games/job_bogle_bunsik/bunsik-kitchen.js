@@ -143,7 +143,7 @@ class RamenKitchen3D{
   this.potVisuals=[];
   this.customerHolders=[];
   this.customerXs=[-3.3,-1.1,1.1,3.3];
-  this.hallSeats=[];this.customerStates=[];this.hallEntrance=new THREE.Vector3(0,0,-12.95);
+  this.hallSeats=[];this.customerStates=[];this.hallEntrance=new THREE.Vector3(0,0,-12.95);this.hallDoor=null;this.hallDoorOpenUntil=0;
   this.serviceGroup=null;this.serviceMeal=null;this.serviceHome=new THREE.Vector3(0,.92,5.25);
   this.cameraFocus=new THREE.Vector3(0,.9,.5);this.cameraGoal=new THREE.Vector3(0,10.5,10.8);
   this.raycaster=new THREE.Raycaster();
@@ -199,7 +199,8 @@ class RamenKitchen3D{
   const hallFloor=this.box(19.4,.045,8.6,0xd5ad78,0,.003,-9.45,{roughness:.9,castShadow:false});hallFloor.receiveShadow=true;
   const hallGrid=new THREE.GridHelper(18.6,16,0x9f7455,0xe7c89f);hallGrid.position.set(0,.03,-9.45);hallGrid.scale.z=.47;hallGrid.material.transparent=true;hallGrid.material.opacity=.14;this.scene.add(hallGrid);
 
-  this.placeModel(BAKERY,'door-modular.glb',2.35,0,.02,-14.12,Math.PI);
+  const doorPivot=this.hallDoor=new THREE.Group();doorPivot.position.set(-1.05,.02,-14.12);this.scene.add(doorPivot);
+  this.loadModel(BAKERY,'door-modular.glb',2.35).then(o=>{if(o){o.position.x+=1.05;o.rotation.y=Math.PI;doorPivot.add(o)}});
   const mat=this.box(2.5,.035,1.15,0x86543d,0,.035,-13.35,{roughness:.9,castShadow:false});mat.receiveShadow=true;
  }
  async loadModel(root,file,size){
@@ -809,7 +810,7 @@ class RamenKitchen3D{
  resetCustomerForOrder(orderId){
   const c=this.customerStateForOrder(orderId);if(!c)return;
   if(c.seat?.occupiedBy===orderId)c.seat.occupiedBy=null;
-  c.phase='idle';c.orderId=null;c.path.length=0;c.holder.visible=false;c.holder.position.copy(this.hallEntrance);c.holder.position.y=0;c.holder.rotation.set(0,0,0);c.holder.scale.setScalar(1)
+  c.phase='idle';c.orderId=null;c.path.length=0;c.holder.visible=false;c.holder.position.copy(this.hallEntrance);c.holder.position.y=0;c.holder.rotation.set(0,0,0);c.holder.scale.setScalar(1);c.holder.userData.seatedScaleY=1
  }
  resetCustomerHall(){
   this.hallSeats.forEach(seat=>seat.occupiedBy=null);
@@ -819,8 +820,10 @@ class RamenKitchen3D{
   if(!order)return false;
   const c=this.customerStates[order.slot],seat=this.hallSeats[order.slot];if(!c||!seat)return false;
   if(c.orderId!=null&&c.orderId!==order.id)this.resetCustomerForOrder(c.orderId);
-  seat.occupiedBy=order.id;c.seat=seat;c.orderId=order.id;c.phase='walking';c.walkClock=order.id*.41;
-  c.holder.visible=true;c.holder.position.copy(this.hallEntrance);c.holder.position.y=0;c.holder.scale.setScalar(1);
+  seat.occupiedBy=order.id;c.seat=seat;c.orderId=order.id;c.walkClock=order.id*.41;
+  const ahead=this.customerStates.filter(x=>x!==c&&(x.phase==='walking'||x.phase==='waiting')).length;c.wait=ahead*.55;c.phase=c.wait>0?'waiting':'walking';
+  c.holder.visible=c.phase==='walking';c.holder.position.copy(this.hallEntrance);c.holder.position.y=0;c.holder.scale.setScalar(1);
+  if(c.phase==='walking')this.hallDoorOpenUntil=Math.max(this.hallDoorOpenUntil,this.clock+1.25);
   const laneZ=seat.position.z+1.15;
   c.path=[
    new THREE.Vector3(0,0,-12.15),
@@ -833,13 +836,22 @@ class RamenKitchen3D{
  }
  seatCustomer(c){
   if(!c?.seat)return;
-  c.phase='seated';c.path.length=0;c.holder.position.copy(c.seat.position);c.holder.position.y=-.22;c.holder.rotation.set(0,c.seat.rotation,0);c.holder.scale.set(1,.93,1);
+  c.phase='seated';c.path.length=0;c.holder.position.copy(c.seat.position);c.holder.position.y=-.22;c.holder.rotation.set(0,c.seat.rotation,0);c.holder.scale.set(1,.93,1);c.holder.userData.seatedScaleY=.93;
   const order=state.orders.find(o=>o.id===c.orderId);
   if(order){order.paused=false;order.arriving=false;order.seated=true}
   sfx('collect.coin_pickup',{volume:.08,rate:1.28,cooldownMs:120})
  }
  updateCustomerHall(dt){
+  if(this.hallDoor){
+   const open=this.clock<this.hallDoorOpenUntil,target=open?-1.08:0;
+   this.hallDoor.rotation.y+=(target-this.hallDoor.rotation.y)*Math.min(1,dt*7.5)
+  }
   for(const c of this.customerStates){
+   if(c.phase==='waiting'){
+    c.wait=Math.max(0,(c.wait||0)-dt);
+    if(c.wait<=0){c.phase='walking';c.holder.visible=true;this.hallDoorOpenUntil=Math.max(this.hallDoorOpenUntil,this.clock+1.25)}
+    else continue
+   }
    if(c.phase!=='walking'||!c.holder.visible)continue;
    const target=c.path[0];if(!target){this.seatCustomer(c);continue}
    const dx=target.x-c.holder.position.x,dz=target.z-c.holder.position.z,d=Math.hypot(dx,dz),speed=2.25;
@@ -873,8 +885,8 @@ class RamenKitchen3D{
   requestAnimationFrame(run)
  }
  customerReact(slot,intensity=1){
-  const h=this.customerHolders[slot];if(!h)return;const baseY=h.position.y,started=performance.now();
-  const run=now=>{const t=Math.min(1,(now-started)/780);h.position.y=baseY+Math.sin(t*Math.PI*5)*.13*intensity*(1-t);h.rotation.z=Math.sin(t*Math.PI*6)*.075*intensity*(1-t);const s=1+Math.sin(Math.PI*Math.min(1,t*1.45))*.08*intensity;h.scale.setScalar(s);if(t<1)requestAnimationFrame(run);else{h.position.y=baseY;h.rotation.z=0;h.scale.setScalar(1)}};
+  const h=this.customerHolders[slot];if(!h)return;const baseY=h.position.y,baseSY=h.userData.seatedScaleY||1,started=performance.now();
+  const run=now=>{const t=Math.min(1,(now-started)/780);h.position.y=baseY+Math.sin(t*Math.PI*5)*.13*intensity*(1-t);h.rotation.z=Math.sin(t*Math.PI*6)*.075*intensity*(1-t);const sc=1+Math.sin(Math.PI*Math.min(1,t*1.45))*.08*intensity;h.scale.set(sc,sc*baseSY,sc);if(t<1)requestAnimationFrame(run);else{h.position.y=baseY;h.rotation.z=0;h.scale.set(1,baseSY,1)}};
   requestAnimationFrame(run)
  }
  customerCelebrate(slot,quality,combo,earned){
@@ -896,7 +908,7 @@ class RamenKitchen3D{
  }
  animateServe(slot,onDone){
   if(!this.serviceGroup){onDone?.();return}
-  const g=this.serviceGroup,start=this.serviceHome.clone(),end=new THREE.Vector3(this.customerXs[slot]??0,.92,-2.75),started=performance.now();
+  const g=this.serviceGroup,start=this.serviceHome.clone(),guest=this.customerHolders[slot],end=new THREE.Vector3(guest?.position.x??(this.customerXs[slot]??0),.92,(guest?.position.z??-2.75)+.55),started=performance.now();
   const run=now=>{
    const t=Math.min(1,(now-started)/700),e=1-Math.pow(1-t,3);g.position.lerpVectors(start,end,e);g.position.y=.92+Math.sin(Math.PI*t)*.3;
    if(t<1){requestAnimationFrame(run);return}
