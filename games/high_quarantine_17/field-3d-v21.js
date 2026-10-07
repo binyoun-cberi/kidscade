@@ -8,11 +8,23 @@ const ROOT=new URL('../../assets/game/',import.meta.url);
 const A={
  tent:'3d/nature/kenney-nature-kit/tent-detailed-open.glb',
  tentSmall:'3d/nature/kenney-nature-kit/tent-small-open.glb',
- bed:'3d/nature/kenney-nature-kit/bed.glb',
+ bed:'3d/interiors/kenney-furniture-kit/bed-single.glb',
+ desk:'3d/interiors/kenney-furniture-kit/desk.glb',
+ radio:'3d/interiors/kenney-furniture-kit/radio.glb',
+ laptop:'3d/interiors/kenney-furniture-kit/laptop.glb',
+ trashcan:'3d/interiors/kenney-furniture-kit/trashcan.glb',
+ structureMetal:'3d/survival/kenney-survival-kit/structure-metal.glb',
+ structureCanvas:'3d/survival/kenney-survival-kit/structure-canvas.glb',
+ fortifiedFence:'3d/survival/kenney-survival-kit/fence-fortified.glb',
+ boxLarge:'3d/survival/kenney-survival-kit/box-large.glb',
+ barrel:'3d/survival/kenney-survival-kit/barrel.glb',
  fence:'3d/city/kenney-city-kit-roads/construction-fence.glb',
  light:'3d/city/kenney-city-kit-roads/construction-light.glb',
  barrier:'3d/city/kenney-city-kit-roads/construction-barrier.glb',
  ambulance:'3d/vehicles/kenney-car-kit/ambulance.glb',
+ police:'3d/vehicles/kenney-car-kit/police.glb',
+ van:'3d/vehicles/kenney-car-kit/van.glb',
+ dumpster:'3d/city/kenney-city-kit-roads/dumpster.glb',
  turret:'3d/weapons/scifi-turrets/gatelng-gun-turret.glb',
  crate:'3d/city/poly-pizza-city-pack/box.glb',
  maleA:'characters/people/character-male-a.glb',
@@ -145,6 +157,12 @@ function buildBuildings(){
 
  worldRect(staticRoot,548,58,184,118,2.2,0x6b604d);worldRect(staticRoot,548,58,184,14,2.38,0x918269);
  l=labelSprite('보급창고','#efd697');l.position.set(sx(640),2.72,sz(62));staticRoot.add(l);
+ addAsset(staticRoot,A.desk,sx(260),sz(102),1.35,0x657276,.18,Math.PI/2);
+ addAsset(staticRoot,A.radio,sx(260),sz(102),.34,0x536166,.18,Math.PI/2).then(o=>{if(o)o.position.y=.82});
+ addAsset(staticRoot,A.laptop,sx(260),sz(122),.40,0x5f6d70,.16,Math.PI/2).then(o=>{if(o)o.position.y=.82});
+ addAsset(staticRoot,A.structureCanvas,sx(615),sz(193),2.4,0x6d6756,.20,0);
+ addAsset(staticRoot,A.boxLarge,sx(590),sz(208),.82,0x82664c,.24,.12);
+ addAsset(staticRoot,A.barrel,sx(660),sz(206),.72,0x596762,.20,0);
 
  // Medical obstacle is represented by a low service pad plus a real tent.
  const medPad=plane(staticRoot,sw(166),sd(116),0x4d5e55,.018);medPad.position.set(sx(501),.018,sz(410));
@@ -155,12 +173,16 @@ function buildBuildings(){
  addAsset(staticRoot,A.tentSmall,sx(164),sz(338),1.75,0x81745a,.47,.08);
  addAsset(staticRoot,A.tentSmall,sx(280),sz(402),1.75,0x766d55,.47,-.12);
  addAsset(staticRoot,A.ambulance,sx(850),sz(356),2.45,0xe3e7e2,.24,Math.PI/2);
- worldRect(staticRoot,770,70,38,132,2.25,0x4d5457);
+ addAsset(staticRoot,A.police,sx(870),sz(430),2.25,0xc8d2d5,.12,Math.PI);
+ addAsset(staticRoot,A.van,sx(760),sz(480),2.20,0x69787b,.16,0);
+ addAsset(staticRoot,A.dumpster,sx(845),sz(250),1.15,0x5d6b66,.18,Math.PI/2);
+ addAsset(staticRoot,A.structureMetal,sx(789),sz(136),2.45,0x596467,.22,Math.PI/2);
  addAsset(staticRoot,A.barrier,sx(672),sz(427),1.3,0xc3953f,.48,0);
 
  // A handful of actual fence assets make the CCTV-to-field transition recognizable without overloading mobile GPUs.
  for(const [x,y,r] of [[92,26,0],[245,26,0],[600,26,0],[760,26,0],[925,74,Math.PI/2],[925,120,Math.PI/2],[925,385,Math.PI/2],[925,455,Math.PI/2],[70,510,0],[225,510,0],[650,510,0],[805,510,0]])
   addAsset(staticRoot,A.fence,sx(x),sz(y),1.25,0x77837d,.32,r);
+ for(const [x,y,r] of [[365,26,0],[480,26,0],[925,245,Math.PI/2]])addAsset(staticRoot,A.fortifiedFence,sx(x),sz(y),1.55,0x6c7772,.18,r);
  for(const [x,y] of [[65,205],[738,205],[770,360],[890,360]])addAsset(staticRoot,A.light,sx(x),sz(y),1.85,0xe5bd55,.28,0);
 }
 function buildGameplayLandmarks(){
@@ -203,24 +225,11 @@ function removeMissing(prefix,keys){
  for(const [key,a] of actorMap)if(key.startsWith(prefix)&&!keys.has(key)){dynamicRoot.remove(a.root);actorMap.delete(key)}
 }
 
-let avatarMesh=null,avatarTexture=null;
-function avatarSource(){
- try{
-  const h=parent&&parent!==window&&parent.location.origin===location.origin?parent:window;
-  let src=h.localStorage?.getItem('kidscade-avatar-studio-preview')||localStorage.getItem('kidscade-avatar-studio-preview')||'';
-  if(!src&&typeof h.renderAvatarSVG==='function'){const svg=h.renderAvatarSVG();if(svg)src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}
-  return src||asset('characters/kidscade-avatar-v3/school-starter/guest-default.png')
- }catch(_){return asset('characters/kidscade-avatar-v3/school-starter/guest-default.png')}
-}
-function loadAvatar(){
- const src=avatarSource();new THREE.TextureLoader().load(src,t=>{
-  t.colorSpace=THREE.SRGBColorSpace;t.magFilter=THREE.NearestFilter;t.minFilter=THREE.LinearFilter;
-  if(avatarTexture)avatarTexture.dispose();avatarTexture=t;
-  if(!avatarMesh){avatarMesh=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false,side:THREE.DoubleSide}));avatarMesh.position.y=1;avatarMesh.renderOrder=8;dynamicRoot.add(avatarMesh)}
-  else{avatarMesh.material.map=t;avatarMesh.material.needsUpdate=true}
- },undefined,()=>{})
-}
-loadAvatar();window.addEventListener('kidscade-avatar-change',loadAvatar);
+const playerRoot=new THREE.Group(),playerHost=new THREE.Group();playerRoot.add(playerHost);dynamicRoot.add(playerRoot);
+playerHost.add(fallbackActor(0x526a78,false));
+cloneAsset(A.maleC,1.72,0x526a78,.22).then(o=>{if(o&&playerHost.parent){playerHost.clear();playerHost.add(o)}});
+const playerRing=new THREE.Mesh(new THREE.RingGeometry(.33,.42,30),new THREE.MeshBasicMaterial({color:0xe5cf68,transparent:true,opacity:.78,side:THREE.DoubleSide,depthWrite:false}));
+playerRing.rotation.x=-Math.PI/2;playerRing.position.y=.024;playerRoot.add(playerRing);playerRoot.visible=false;
 
 async function ensureCrate(q){
  if(crateMap.has(q.id))return crateMap.get(q.id);
@@ -251,11 +260,13 @@ function syncActors(s,t){
  });
  removeMissing('s',survivorKeys);
 
- if(avatarMesh&&s.player){
-  avatarMesh.visible=true;avatarMesh.position.set(sx(s.player.x),1.05,sz(s.player.y));
-  avatarMesh.quaternion.copy(camera.quaternion);avatarMesh.scale.set(s.player.facing>0?-1.65:1.65,1.65,1);
-  avatarMesh.material.opacity=s.player.ifr>0 ? .55 : 1
- }else if(avatarMesh)avatarMesh.visible=false
+ if(s.player){
+  playerRoot.visible=true;playerRoot.position.set(sx(s.player.x),.02,sz(s.player.y));
+  const aimDx=Number(s.player.aimX)-Number(s.player.x),aimDy=Number(s.player.aimY)-Number(s.player.y);
+  if(Number.isFinite(aimDx)&&Number.isFinite(aimDy)&&Math.hypot(aimDx,aimDy)>.01)playerRoot.rotation.y=Math.atan2(aimDx,aimDy);
+  else playerRoot.rotation.y=s.player.facing>0?-Math.PI/2:Math.PI/2;
+  playerHost.position.y=Math.sin(t*.008)*.018;playerRoot.traverse(n=>{if(n.isMesh&&n.material)n.material.opacity=s.player.ifr > 0 ? .62 : 1})
+ }else playerRoot.visible=false
 }
 function syncBullets(s){
  for(const o of bulletRoot.children)if(o.isLine){o.geometry?.dispose?.();o.material?.dispose?.()}
@@ -331,4 +342,4 @@ function frame(t){
  requestAnimationFrame(frame)
 }
 requestAnimationFrame(frame);
-window.Q17Field3D=Object.freeze({active:true,version:'21.3',scene,camera,renderer});
+window.Q17Field3D=Object.freeze({active:true,version:'21.4',scene,camera,renderer});
