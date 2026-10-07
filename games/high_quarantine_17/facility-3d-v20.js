@@ -200,6 +200,8 @@ class View{
 
   const slotsA=[[-7.4,-2.4],[-3,-2.4],[-7.4,2.5],[-3,2.5]],slotsB=[[3.2,-1.8],[6.9,1.8]];
   this.isoSlotLights={A:[],B:[]};
+  this.isoSlotAssignments={A:new Map(),B:new Map()};
+  this.isoActorSlots={A:[[-7.2,-.5],[-3.3,-.5],[-7.2,3],[-3.3,3]],B:[[3.4,-.3],[6.8,2.7]]};
 
   // Observation bays: beds, half-height dividers, small equipment blocks and one status lamp per patient.
   slotsA.forEach((p,i)=>{
@@ -245,13 +247,28 @@ class View{
   this.syncPeople(items,'camp')
  }
  syncIsolation(){
-  const api=window.Q17Outbreak;if(!api?.getIsolationSnapshot)return;const snap=api.getIsolationSnapshot(),byRoom={A:0,B:0};
-  const items=snap.map((d,i)=>{const room=d.room||'A',slot=byRoom[room]++;return{key:'i'+d.id,...d,room,slot,threat:d.status==='zombie'}});
+  const api=window.Q17Outbreak;if(!api?.getIsolationSnapshot)return;const snap=api.getIsolationSnapshot();
+  if(!this.isoSlotAssignments)this.isoSlotAssignments={A:new Map(),B:new Map()};
+  for(const room of ['A','B']){
+   const currentIds=new Set(snap.filter(d=>(d.room||'A')===room).map(d=>String(d.id)));
+   for(const id of [...this.isoSlotAssignments[room].keys()])if(!currentIds.has(id))this.isoSlotAssignments[room].delete(id)
+  }
+  const items=snap.map(d=>{
+   const room=d.room||'A',id=String(d.id);
+   const other=room==='A'?'B':'A';this.isoSlotAssignments[other].delete(id);
+   let slot=this.isoSlotAssignments[room].get(id);
+   if(slot===undefined){
+    const cap=room==='B'?2:4,used=new Set(this.isoSlotAssignments[room].values());
+    slot=Array.from({length:cap},(_,i)=>i).find(i=>!used.has(i));if(slot===undefined)slot=0;
+    this.isoSlotAssignments[room].set(id,slot)
+   }
+   return{key:'i'+d.id,...d,room,slot,threat:d.status==='zombie'}
+  });
   if(this.isoSlotLights){
    for(const room of ['A','B']){
-    const roomItems=items.filter(x=>x.room===room);
+    const bySlot=new Map(items.filter(x=>x.room===room).map(x=>[x.slot,x]));
     this.isoSlotLights[room].forEach((lamp,i)=>{
-     const d=roomItems[i],color=!d?0x65747b:personColor(d);lamp.material.color.setHex(color);lamp.material.emissive.setHex(color);
+     const d=bySlot.get(i),color=!d?0x65747b:personColor(d);lamp.material.color.setHex(color);lamp.material.emissive.setHex(color);
      lamp.material.emissiveIntensity=!d ? .18 : (d.status==='zombie'||d.status==='turning'||d.status==='positive'?1.65:.78)
     })
    }
@@ -269,10 +286,10 @@ class View{
    }
    setInfo(g,info);
    if(mode==='camp'){
-    const tx=(Number(info.x)-50)*.285,tz=(Number(info.y)-50)*.145;g.position.x+=(tx-g.position.x)*.72;g.position.z+=(tz-g.position.z)*.72;g.position.y=.02;
+    const tx=(Number(info.x)-50)*.3,tz=(Number(info.y)-50)*.16875;g.position.x+=(tx-g.position.x)*.72;g.position.z+=(tz-g.position.z)*.72;g.position.y=.02;
     const d=Number(info.dir)||1;g.rotation.y=d<0?Math.PI*.5:-Math.PI*.5
    }else{
-    const slotsA=[[-7.2,-.5],[-3.3,-.5],[-7.2,3],[-3.3,3]],slotsB=[[3.4,-.3],[6.8,2.7]],p=(info.room==='B'?slotsB:slotsA)[info.slot]||[0,0];
+    const positions=this.isoActorSlots||{A:[[-7.2,-.5],[-3.3,-.5],[-7.2,3],[-3.3,3]],B:[[3.4,-.3],[6.8,2.7]]},p=(positions[info.room]||positions.A)[info.slot]||[0,0];
     g.position.x+=(p[0]-g.position.x)*.8;g.position.z+=(p[1]-g.position.z)*.8;g.position.y=.02;g.rotation.y=Math.PI
    }
    const c=personColor(info);g.traverse(n=>{if(!n.isMesh||n.geometry?.type==='RingGeometry')return;const ms=Array.isArray(n.material)?n.material:[n.material];ms.forEach(m=>{if(m?.color)m.color.lerp(new THREE.Color(c),.08)})})
@@ -318,6 +335,6 @@ function mount(){
  const campView=new View(cc,'camp'),isoView=new View(document.getElementById('q17Iso3D'),'isolation');
  setInterval(()=>{campView.update();isoView.update()},450);campView.update();isoView.update();
  let last=0;const loop=t=>{if(t-last>16){views.forEach(v=>v.render(t));last=t}requestAnimationFrame(loop)};requestAnimationFrame(loop);
- window.Q17Facility3D=Object.freeze({version:'20.2',camp:campView,isolation:isoView});return true
+ window.Q17Facility3D=Object.freeze({version:'20.3',camp:campView,isolation:isoView});return true
 }
 let tries=0;const timer=setInterval(()=>{if(mount()||++tries>80)clearInterval(timer)},50);
