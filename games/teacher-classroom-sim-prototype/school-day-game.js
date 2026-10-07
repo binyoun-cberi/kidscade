@@ -469,8 +469,13 @@ function syncStudentPresence(){
       }
     }
     if(s.health?.restUntilPeriod&&currentPeriodNumber()>=s.health.restUntilPeriod){
-      s.health.restUntilPeriod=0;
-      s.health.resting=false;
+      s.health.restUntilPeriod=0;s.health.resting=false;s.health.checked=false;s.healthAction=null;
+      if(s.health.state==='mild'){
+        s.health.state='healthy';s.health.revealed=false;s.health.symptom=null;s.health.symptomTimer=Infinity;
+      }else if(s.health.state==='sick'){
+        s.health.state='mild';s.health.revealed=true;
+        s.health.symptom={id:'recovering',label:'아직 몸이 완전히 낫지 않았어요'};
+      }
     }
     if(present&&s.accident)showBubble(s,'⚠️','health');
     else if(present&&s.health?.revealed&&s.health.state!=='healthy')showBubble(s,'🤒','health');
