@@ -16,6 +16,16 @@ const A={
  light:'3d/city/kenney-city-kit-roads/construction-light.glb',
  barrier:'3d/city/kenney-city-kit-roads/construction-barrier.glb',
  ambulance:'3d/vehicles/kenney-car-kit/ambulance.glb',
+ police:'3d/vehicles/kenney-car-kit/police.glb',
+ van:'3d/vehicles/kenney-car-kit/van.glb',
+ cone:'3d/vehicles/kenney-car-kit/cone.glb',
+ dumpster:'3d/city/kenney-city-kit-roads/dumpster.glb',
+ fortifiedFence:'3d/survival/kenney-survival-kit/fence-fortified.glb',
+ boxLarge:'3d/survival/kenney-survival-kit/box-large.glb',
+ barrel:'3d/survival/kenney-survival-kit/barrel.glb',
+ radio:'3d/interiors/kenney-furniture-kit/radio.glb',
+ laptop:'3d/interiors/kenney-furniture-kit/laptop.glb',
+ trashcan:'3d/interiors/kenney-furniture-kit/trashcan.glb',
  crate:'3d/city/poly-pizza-city-pack/box.glb'
 };
 const loader=new GLTFLoader(),cache=new Map(),views=[];
@@ -125,6 +135,9 @@ function buildWorld(){
  const tempHead=box(world,-1.68,1.3,1.5,.18,.18,.32,0x6f858c);tempHead.material=glow(0x88cbd5,.18);
  const analyzer=box(world,1.55,1.36,1.7,.6,.18,.48,0x39454a);analyzer.material=glow(0x5e7f87,.12);
  for(let i=0;i<3;i++){const led=new THREE.Mesh(new THREE.SphereGeometry(.035,10,8),glow([0x65b7ca,0xd4b456,0xb85a5f][i],.3));led.position.set(1.36+i*.18,1.53,1.38);world.add(led)}
+ addAsset(world,A.laptop,[-.65,.91,2.08],.48,0x77888e,.16,Math.PI);
+ addAsset(world,A.radio,[.25,.91,2.07],.40,0x606d71,.18,Math.PI);
+ addAsset(world,A.trashcan,[2.85,0,2.35],.55,0x5f6869,.20,0);
 
  // scanner arch
  box(world,-1.35,0,.18,.13,2.75,.16,0x667379);box(world,1.35,0,.18,.13,2.75,.16,0x667379);box(world,0,2.62,.18,2.83,.13,.16,0x77858b);
@@ -156,10 +169,17 @@ function buildWorld(){
 
  // lane dividers and security furniture
  for(const p of [[-3.0,-3.7],[-3.0,-1.0],[3.0,-3.7],[3.0,-1.0]])addAsset(world,A.barrier,[p[0],0,p[1]],1.05,0xc0963f,.42,Math.PI/2);
+ for(const p of [[-2.65,-5.0],[2.65,-5.0],[-2.65,.72],[2.65,.72]])addAsset(world,A.cone,[p[0],0,p[1]],.42,0xd89136,.16,0);
  for(const p of [[-5.5,-.8],[5.5,-.3]])addAsset(world,A.crate,[p[0],0,p[1]],.65,0x8d6947,.36,0);
+ addAsset(world,A.boxLarge,[-6.2,0,-2.8],.82,0x846348,.28,.12);
+ addAsset(world,A.barrel,[-6.15,0,-3.75],.72,0x5f6d69,.24,0);
+ addAsset(world,A.dumpster,[6.1,0,-2.9],1.05,0x65716c,.22,-Math.PI/2);
 
+ addAsset(world,A.police,[5.25,0,-7.05],2.45,0xcbd6da,.12,-Math.PI/2);
  addAsset(world,A.ambulance,[-5.3,0,-7.1],2.55,0xe4e8e4,.22,Math.PI/2).then(o=>{ambulance=o;if(o)o.visible=false});
+ addAsset(world,A.van,[3.35,0,-7.35],2.25,0x6e7d80,.18,-Math.PI/2).then(o=>{if(o){o.visible=false;weekProps.push(o)}});
  for(const p of [[-5.3,-4.3],[5.3,-5.1],[-4.8,-5.25]])addAsset(world,A.barrier,[p[0],0,p[1]],1.12,0xc0913c,.48,0).then(o=>{if(o){o.visible=false;lateBarricades.push(o)}});
+ for(const x of [-4.0,4.0])addAsset(world,A.fortifiedFence,[x,0,-5.95],1.55,0x6d7772,.18,0);
 }
 buildWorld();
 
@@ -196,6 +216,7 @@ function syncSnapshot(s,force=false){
  lastSnapshot=s;
  ambulance&&(ambulance.visible=s.weekIndex>=3);
  lateBarricades.forEach((o,i)=>o.visible=s.weekIndex>=4+i%2);
+ weekProps.forEach(o=>o.visible=s.weekIndex>=5);
  const risk=clamp((s.infection-8)/24,0,1);
  scene.fog.near=lerp(14,10,risk);scene.fog.far=lerp(31,22,risk);
  scene.background.setHex(risk>.65?0x20191b:risk>.3?0x1b2021:0x172126);
