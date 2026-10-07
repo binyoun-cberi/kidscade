@@ -4,8 +4,8 @@ import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {
   AI_RULES,STUDENT_PROFILES,createStudentRuntime,resetFocusForLesson,updateLessonFocus,helpFocus,
   resetSocialForRecess,recoverSocial,drainSocial,conflictProbability,clamp
-} from './student-ai.mjs?v=70';
-import {CLASS_SIZE,SCHOOL_SPACES,DAY_STEPS,PERIODS} from './school-day.mjs?v=70';
+} from './student-ai.mjs?v=71';
+import {CLASS_SIZE,SCHOOL_SPACES,DAY_STEPS,PERIODS} from './school-day.mjs?v=71';
 import {
   preferenceFor,preferenceMultiplier,preferenceIcon,
   createDailyEnvironment,createDailyHealth,healthRecoveryMultiplier,tickHealth,nextHealthAction,
@@ -13,17 +13,23 @@ import {
   friendshipKey,friendshipInfo,addFriendship,friendshipConflictDuration,
   friendshipSelfReconcileChance,friendshipChatterChance,
   SAFETY_RULES,GROUP_RULES,FRIENDSHIP_RULES
-} from './student-life.mjs?v=70';
+} from './student-life.mjs?v=71';
 import {
   CAMPAIGN_DAYS,EXAM_DAYS,GRADE_ORDER,LEARNING_RULES,
   createCampaignState,normalizeCampaignState,examNumberForDay,nextExamInfo,
   gradeIndex,learningGain,addLearning,conductExam,latestExam,targetReachedCount
-} from './school-campaign.mjs?v=70';
+} from './school-campaign.mjs?v=71';
+import {
+  TEACHING_RULES,LESSON_PHASES,createLessonFlow,lessonFlowAction,
+  performLessonAction,tickLessonFlow,lessonTeachingEfficiency,lessonFlowProgress
+} from './lesson-instruction.mjs?v=71';
 
 const $=id=>document.getElementById(id);
 const ui={
   app:$('app'),canvas:$('game'),phase:$('phaseLabel'),clock:$('clock'),timer:$('phaseTimer'),
   classState:$('classState'),studentStrip:$('studentStrip'),dayStrip:$('dayStrip'),campaignStatus:$('campaignStatus'),
+  instructionPanel:$('instructionPanel'),instructionPhase:$('instructionPhase'),
+  instructionBar:$('instructionBar'),instructionHint:$('instructionHint'),
   rosterToggle:$('rosterToggle'),
   guideKicker:$('guideKicker'),guideTitle:$('guideTitle'),guideText:$('guideText'),
   toast:$('toast'),action:$('actionButton'),actionIcon:$('actionIcon'),actionLabel:$('actionLabel'),
@@ -113,6 +119,7 @@ let chatterScanTimer=0;
 let chatterCooldowns=new Map();
 let fightsThisSocial=0;
 let lessonElapsed=0;
+let lessonFlow=null,boardNear=false,teachingMultiplier=0;
 let teamPairs=[];
 let teamActive=false;
 let teamCheckTimer=0;
@@ -126,7 +133,8 @@ let stats={
   focusHelps:0,conflictsMediated:0,fightsSeparated:0,missedFights:0,
   offTaskStarts:0,peacefulSocial:0,periodsCompleted:0,spacesVisited:new Set(['classroom']),
   healthChecks:0,nurseVisits:0,earlyDismissals:0,classroomRests:0,accidents:0,safetyMisses:0,teamConflicts:0,
-  friendshipLevelUps:0,selfReconciles:0,lessonChats:0,chatsStopped:0,groupSignals:0
+  friendshipLevelUps:0,selfReconciles:0,lessonChats:0,chatsStopped:0,groupSignals:0,
+  lessonsRecapped:0,lessonsAssigned:0,lessonsWithoutRecap:0,boardExplanationSeconds:0
 };
 const keys=new Set();
 const joy={active:false,id:null,x:0,y:0};
@@ -633,6 +641,32 @@ function syncStudentPresence(){
     else if(present&&s.health?.revealed&&s.health.state!=='healthy')showBubble(s,'🤒','health');
   });
 }
+function isTeacherAtBoard(){
+  if(!player)return false;
+  const point=activeSpace.teachingPoint;
+  return distance2D(player.root.position,point)<=TEACHING_RULES.boardRadius;
+}
+function updateInstructionPanel(){
+  if(!ui.instructionPanel)return;
+  const active=currentStep.kind==='lesson'&&lessonFlow;
+  ui.instructionPanel.classList.toggle('hidden',!active);
+  if(!active)return;
+  const phase=LESSON_PHASES[lessonFlow.phase];
+  const progress=Math.round(lessonFlowProgress(lessonFlow)*100);
+  ui.instructionPhase.textContent=(phase?.label||'수업')+' · '+progress+'%';
+  ui.instructionBar.style.width=progress+'%';
+  const atBoard=isTeacherAtBoard();
+  const hints={
+    explain:atBoard?'설명 중 · 칠판에 머물러 주세요':'설명이 중단됐어요 · 칠판으로 돌아가세요',
+    assign:'칠판 앞에서 행동 버튼으로 과제를 내주세요',
+    practice:'학생들이 스스로 활동 중 · 지금 돌보러 다니세요',
+    recapReady:'과제 시간이 끝났어요 · 칠판으로 돌아와 정리하세요',
+    recap:atBoard?'내용 정리 중 · 조금 더 설명하세요':'정리가 멈췄어요 · 칠판으로 돌아가세요',
+    complete:'설명·과제·정리 완료 · 남은 시간은 학생을 살펴보세요'
+  };
+  const efficiency=Math.round(lessonTeachingEfficiency(lessonFlow,{teacherAtBoard:atBoard})*100);
+  ui.instructionHint.textContent=hints[lessonFlow.phase]+' · 학습 효율 '+efficiency+'%';
+}
 function focusRatio(s){return clamp(s.runtime.focus/Math.max(1,s.runtime.focusMax),0,1)}
 function socialRatio(s){return clamp(s.runtime.social/Math.max(1,s.runtime.socialMax),0,1)}
 function healthIcon(s){
@@ -680,6 +714,7 @@ function updateHud(){
   }).join('');
   updateDayStrip();
   updateCampaignStatus();
+  updateInstructionPanel();
 }
 
 function hideAllBubbles(){students.forEach(hideBubble)}
@@ -727,6 +762,8 @@ function enterStep(index,{spaceChanged=false}={}){
   stepIndex=clamp(index,0,DAY_STEPS.length-1);currentStep=DAY_STEPS[stepIndex];stepTime=currentStep.duration||0;
   pairs=[];teamPairs=[];lessonChats=[];chatterScanTimer=.5;chatterCooldowns.clear();groupSignalCooldown=0;groupSignalsThisLesson=0;
   teamActive=false;teamCheckTimer=0;lessonElapsed=0;lessonAccidents=0;
+  lessonFlow=currentStep.kind==='lesson'?createLessonFlow(currentStep.duration):null;
+  boardNear=false;teachingMultiplier=0;
   hideAllBubbles();setTalk(false);fightsThisSocial=0;
   if(currentStep.location!==activeSpace.id){
     transitionToSpace(currentStep.location);spaceChanged=true;
@@ -757,8 +794,8 @@ function enterStep(index,{spaceChanged=false}={}){
       teamPairs.forEach((team,i)=>team.forEach(s=>s.teamId=i));
     }
     updateBoard(currentStep.board||currentStep.subject);
-    const extra=currentStep.safetyRequired?' 안전교육을 놓치는 학생도 살펴보세요.':'';
-    setGuide(currentStep.period+'교시 · '+currentStep.subject,'학생들을 살펴보세요','딴짓하는 학생에게 직접 다가가 도와주세요.'+extra);
+    const extra=currentStep.safetyRequired?' 체육·과학 안전교육 시간에는 칠판 앞에서 설명해야 합니다.':'';
+    setGuide(currentStep.period+'교시 · '+currentStep.subject,'칠판 앞에서 직접 설명 중','설명을 마치고 과제를 내준 뒤 학생을 지도하고, 다시 칠판에서 정리하세요.'+extra);
     playAudio(ui.bell,.5);
   }else if(currentStep.kind==='social'){
     pairScan=.4;resetSocialScene();
@@ -857,13 +894,13 @@ function beginTeamConflict(a,b){
   showToast(a.runtime.name+'와 '+b.runtime.name+' 모둠에서 갈등이 생겼어요.'+lv);
 }
 function updateTeamActivity(dt){
-  if(!currentStep.teamActivity)return;
+  if(!currentStep.teamActivity||!lessonFlow?.assigned)return;
   const startAt=(currentStep.duration||1)*(currentStep.teamStartRatio||.5);
-  if(!teamActive&&lessonElapsed>=startAt){
+  if(!teamActive&&lessonElapsed>=startAt&&lessonFlow.phase==='practice'){
     teamActive=true;teamCheckTimer=.5;
     showToast('🤝 모둠 활동 시작!');
   }
-  if(!teamActive)return;
+  if(!teamActive||lessonFlow.phase!=='practice')return;
 
   for(const team of teamPairs){
     for(const s of team){
