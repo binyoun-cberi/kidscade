@@ -566,21 +566,36 @@ function exportGlb(){
   if(!characterRoot||!skinnedMesh)return;
   setStatus('GLB를 만드는 중…');
   const wasHelper=skeletonHelper?.visible;
+  const resumeClip=activeClip;
+  const resumeRotation=characterRoot.rotation.y;
   if(skeletonHelper)skeletonHelper.visible=false;
+
+  if(activeAction)activeAction.stop();
+  mixer?.stopAllAction();
+  skinnedMesh.skeleton.pose();
+  characterRoot.position.set(0,0,0);
+  characterRoot.rotation.set(0,0,0);
+  characterRoot.updateMatrixWorld(true);
+
+  const restorePreview=()=>{
+    characterRoot.rotation.y=resumeRotation;
+    if(skeletonHelper)skeletonHelper.visible=wasHelper;
+    if(resumeClip)playClip(resumeClip);
+  };
 
   const exporter=new GLTFExporter();
   exporter.parse(
     characterRoot,
     result=>{
-      if(skeletonHelper)skeletonHelper.visible=wasHelper;
+      restorePreview();
       const blob=result instanceof ArrayBuffer
         ?new Blob([result],{type:'model/gltf-binary'})
         :new Blob([JSON.stringify(result)],{type:'model/gltf+json'});
       download('kidscade-rigged-character.glb',blob);
-      setStatus('GLB 저장 완료 · 메시 + 스켈레톤 + '+clips.length+'개 애니메이션');
+      setStatus('GLB 저장 완료 · 바인드 자세 + 스켈레톤 + '+clips.length+'개 애니메이션');
     },
     error=>{
-      if(skeletonHelper)skeletonHelper.visible=wasHelper;
+      restorePreview();
       console.error(error);
       setStatus('GLB 내보내기에 실패했습니다: '+(error?.message||error),true);
     },
