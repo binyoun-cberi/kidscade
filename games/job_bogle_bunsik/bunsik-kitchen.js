@@ -715,7 +715,7 @@ class RamenKitchen3D{
   if(els.stationHint){
    if(state.phase==='prep')els.stationHint.textContent=this.selectedLayoutStation?.userData?.automationType?'자동화 장비 선택됨 · 드래그로 이동 / R 또는 회전 버튼으로 방향 변경':'가구를 드래그해 주방 동선을 바꿔 보세요';
    else if(!nearest)els.stationHint.textContent='WASD / 방향키로 가까이 가서 E로 상호작용';
-   else if(nearest.type==='sink')els.stationHint.textContent=state.heldItem?'E · 같은 물이면 돌려놓기':(state.dirtyPlates?'E · 설거지':'E · 물 한 컵 받기');
+   else if(nearest.type==='sink')els.stationHint.textContent=state.heldItem?'E · 같은 물이면 돌려놓기':(state.dirtyPlates?'E · 설거지':'E · 주전자에 물 2컵 받기');
    else if(nearest.type==='noodleSource')els.stationHint.textContent=state.heldItem?'E · 면이면 돌려놓기':'E · 면 들기';
    else if(nearest.type==='soupSource')els.stationHint.textContent=state.heldItem?'E · 스프면 돌려놓기':'E · 스프 들기';
    else if(nearest.type==='rack')els.stationHint.textContent='접시 선반 · 깨끗한 접시 '+state.cleanPlates+'개';
@@ -1082,7 +1082,7 @@ function taskPlan(){
  if(!order)return[{label:'새 주문을 기다리는 중…',done:false,current:true}];
  if(p?.burnt)return[{label:'탄 냄비 비우기',done:false,current:true,urgent:true},{label:'새 냄비로 주문 다시 시작하기',done:false,current:false}];
  if(state.cleanPlates<=0&&state.dirtyPlates>0)return[{label:'싱크대에서 더러운 그릇 설거지하기',done:false,current:true,urgent:true},{label:r.name+' 조리 계속하기',done:false,current:false}];
- const mealReady=state.heldItem?.kind==='meal'||!!state.tray;
+ const mealReady=(state.heldItem?.kind==='meal'&&((state.heldItem.orderId!=null&&state.heldItem.orderId===order.id)||(state.heldItem.orderId==null&&state.heldItem.recipeId===order.recipeId)))||(state.tray?.ready&&((state.tray.orderId!=null&&state.tray.orderId===order.id)||(state.tray.orderId==null&&state.tray.recipeId===order.recipeId)));
  const waterDone=mealReady||p.water>=2||p.ingredients.length>0;
  const noodleDone=mealReady||hasIngredient(p,'noodle');
  const soupDone=mealReady||hasIngredient(p,'soup');
