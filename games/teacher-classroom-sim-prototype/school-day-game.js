@@ -4,8 +4,8 @@ import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {
   AI_RULES,STUDENT_PROFILES,createStudentRuntime,resetFocusForLesson,updateLessonFocus,helpFocus,
   resetSocialForRecess,recoverSocial,drainSocial,conflictProbability,clamp
-} from './student-ai.mjs?v=62';
-import {SCHOOL_SPACES,DAY_STEPS,PERIODS} from './school-day.mjs?v=62';
+} from './student-ai.mjs?v=63';
+import {SCHOOL_SPACES,DAY_STEPS,PERIODS} from './school-day.mjs?v=63';
 
 const $=id=>document.getElementById(id);
 const ui={
