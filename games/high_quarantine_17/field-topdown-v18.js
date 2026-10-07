@@ -104,9 +104,9 @@ function segmentBlockedFor(e,x1,y1,x2,y2){
 }
 function fieldWaypoint(e,tx,ty){
  if(!segmentBlockedFor(e,e.x,e.y,tx,ty)){e._routeHint=null;e._routeKey='';return{x:tx,y:ty}}
- const step=24,r=e.r||10,minX=r+10,maxX=W-r-10,minY=r+10,maxY=H-r-10;
+ const step=20,r=e.r||10,minX=r+10,maxX=W-r-10,minY=r+10,maxY=H-r-10;
  const keyTarget=Math.round(tx/step)+','+Math.round(ty/step),hint=e._routeHint;
- if(hint&&e._routeKey===keyTarget&&Math.hypot(e.x-hint.x,e.y-hint.y)>8&&!pointBlocked(hint.x,hint.y,r))return hint;
+ if(hint&&e._routeKey===keyTarget&&Math.hypot(e.x-hint.x,e.y-hint.y)>6&&!pointBlocked(hint.x,hint.y,r))return hint;
  const cols=Math.floor((maxX-minX)/step)+1,rows=Math.floor((maxY-minY)/step)+1;
  const gx=x=>Math.round((clamp(x,minX,maxX)-minX)/step),gy=y=>Math.round((clamp(y,minY,maxY)-minY)/step);
  const px=x=>minX+x*step,py=y=>minY+y*step,cellKey=(x,y)=>y*cols+x;
