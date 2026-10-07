@@ -83,7 +83,7 @@ let obstacleRects=activeSpace.obstacles.map(o=>({...o}));
 let started=false,paused=false;
 let stepIndex=0,currentStep=DAY_STEPS[0],stepTime=0;
 let schoolMinute=9*60;
-let interactionScan=0,pairScan=0,hudTimer=0,groupSignalCooldown=0,currentAction={type:'none'};
+let interactionScan=0,pairScan=0,hudTimer=0,groupSignalCooldown=0,groupSignalsThisLesson=0,currentAction={type:'none'};
 let toastTimer=0,playerGestureTimer=0;
 const CHARACTER_ROOT='../../assets/game/npcs/glTF/';
 const CHARACTER_VISUALS=Object.freeze({
@@ -689,7 +689,7 @@ function transitionToSpace(spaceId){
 
 function enterStep(index,{spaceChanged=false}={}){
   stepIndex=clamp(index,0,DAY_STEPS.length-1);currentStep=DAY_STEPS[stepIndex];stepTime=currentStep.duration||0;
-  pairs=[];teamPairs=[];lessonChats=[];chatterScanTimer=.5;chatterCooldowns.clear();groupSignalCooldown=0;
+  pairs=[];teamPairs=[];lessonChats=[];chatterScanTimer=.5;chatterCooldowns.clear();groupSignalCooldown=0;groupSignalsThisLesson=0;
   teamActive=false;teamCheckTimer=0;lessonElapsed=0;lessonAccidents=0;
   hideAllBubbles();setTalk(false);fightsThisSocial=0;
   if(currentStep.location!==activeSpace.id){
@@ -846,16 +846,19 @@ function updateTeamActivity(dt){
   teamCheckTimer-=dt;
   if(teamCheckTimer>0)return;
   teamCheckTimer=GROUP_RULES.conflictCheckEverySeconds;
-  for(const [a,b] of teamPairs){
-    if(!studentCanParticipate(a)||!studentCanParticipate(b))continue;
-    if(pairs.some(p=>(p.a===a&&p.b===b)||(p.a===b&&p.b===a)))continue;
-    if(socialConflictCount()>=AI_RULES.maxConcurrentConflicts)break;
-    const unresolved=relations.has(relationKey(a,b));
-    const teacherNear=teacherNearStudent(a)||teacherNearStudent(b);
-    const base=conflictProbability(a.runtime,b.runtime,{teacherNear,relationActive:false});
-    const chance=unresolved?GROUP_RULES.unresolvedConflictChance:base*GROUP_RULES.tiredConflictChanceMultiplier;
-    if(Math.random()<chance){beginTeamConflict(a,b);break}
-    gainFriendship(a,b,FRIENDSHIP_RULES.teamInteractionGain);
+  for(const team of teamPairs){
+    for(let i=0;i<team.length;i++)for(let j=i+1;j<team.length;j++){
+      const a=team[i],b=team[j];
+      if(!studentCanParticipate(a)||!studentCanParticipate(b))continue;
+      if(pairs.some(p=>p.a===a||p.b===a||p.a===b||p.b===b))continue;
+      if(socialConflictCount()>=AI_RULES.maxConcurrentConflicts)return;
+      const unresolved=relations.has(relationKey(a,b));
+      const teacherNear=teacherNearStudent(a)||teacherNearStudent(b);
+      const base=conflictProbability(a.runtime,b.runtime,{teacherNear,relationActive:false});
+      const chance=unresolved?GROUP_RULES.unresolvedConflictChance:base*GROUP_RULES.tiredConflictChanceMultiplier;
+      if(Math.random()<chance){beginTeamConflict(a,b);return}
+      gainFriendship(a,b,FRIENDSHIP_RULES.teamInteractionGain);
+    }
   }
 }
 function updateSafety(dt){
@@ -961,6 +964,7 @@ function recordLessonLearning(s,dt,chat){
 }
 function updateLesson(dt){
   stepTime-=dt;schoolMinute+=dt*.36;lessonElapsed+=dt;
+  groupSignalCooldown=Math.max(0,groupSignalCooldown-dt);
   for(const s of students){
     if(!studentCanParticipate(s))continue;
     revealHealthIfNeeded(s,dt);
@@ -1185,6 +1189,11 @@ function scanAction(){
     const near=students.filter(s=>studentCanParticipate(s)&&(s.runtime.mode==='offtask'||(briefing&&focusRatio(s)<SAFETY_RULES.distractedFocusRatio))&&distance2D(player.root.position,s.actor.root.position)<2.35)
       .sort((a,b)=>distance2D(player.root.position,a.actor.root.position)-distance2D(player.root.position,b.actor.root.position))[0];
     if(near){currentAction={type:'focus',student:near};setAction('👀',near.runtime.name+' 집중 도와주기',true);return}
+
+    const point=new THREE.Vector3(activeSpace.teachingPoint.x,0,activeSpace.teachingPoint.z);
+    if(groupSignalCooldown<=0&&groupSignalsThisLesson<2&&distance2D(player.root.position,point)<1.75){
+      currentAction={type:'groupFocus'};setAction('📣','전체 집중시키기',true);return;
+    }
   }
 
   currentAction={type:'none'};setAction('✋','살펴보기',false);
@@ -1196,6 +1205,7 @@ function updateGuideByAction(){
   else if(currentAction.type==='healthCheck')setGuide('건강 확인',currentAction.student.runtime.name+'의 상태가 이상해 보여요','가까이에서 상태를 확인하세요.');
   else if(currentAction.type==='healthDecision')setGuide('건강 조치',healthStatusText(currentAction.student),'상황에 맞는 조치를 해주세요.');
   else if(currentAction.type==='safetyReview')setGuide('안전교육',currentAction.student.runtime.name+'가 안전수칙을 놓쳤어요','가까이에서 안전수칙을 다시 알려주세요.');
+  else if(currentAction.type==='groupFocus')setGuide('전체 집중 신호','반 전체가 다시 집중하도록 도와주세요','한 교시에 최대 2번 사용할 수 있어요.');
   else if(currentAction.type==='quietFriends')setGuide('수업 중 친구 장난',currentAction.chat.a.runtime.name+'와 '+currentAction.chat.b.runtime.name+'가 떠들고 있어요','친한 친구끼리도 지금은 수업에 집중하도록 조용히 알려주세요.');
 }
 function removeStudentFromActivePairs(s){
@@ -1251,6 +1261,18 @@ function useAction(){
   }
   if(currentAction.type==='quietFriends'){
     stopLessonChat(currentAction.chat,{teacher:true});playerGestureTimer=.45;playAnim(player,'push');return;
+  }
+  if(currentAction.type==='groupFocus'){
+    if(groupSignalCooldown>0||groupSignalsThisLesson>=2)return;
+    groupSignalCooldown=30;groupSignalsThisLesson++;stats.groupSignals++;
+    for(const s of activeLessonStudents()){
+      s.runtime.focus=Math.min(s.runtime.focusMax,s.runtime.focus+s.runtime.focusMax*.18);
+      if(s.runtime.mode==='offtask'&&s.runtime.focus>=s.runtime.focusMax*.34){
+        s.runtime.mode='focused';s.wander=null;s.actor.target=s.seat.clone();refreshStudentBubbleState(s);
+      }
+      addLearning(campaign,s.runtime.id,.075);
+    }
+    playerGestureTimer=.5;playAnim(player,'push');showToast('📣 반 전체에 집중 신호를 줬어요!');return;
   }
   if(currentAction.type==='focus'){
     const s=currentAction.student;helpFocus(s.runtime);addLearning(campaign,s.runtime.id,LEARNING_RULES.focusHelpBonus);stats.focusHelps++;s.wander=null;s.actor.target=s.seat.clone();playerGestureTimer=.5;playAnim(player,'push');
@@ -1321,7 +1343,8 @@ function finishDay(){
     '<div><strong>+'+learningTotal.toFixed(1)+'</strong><span>반 전체 학습 성장</span></div>'+
     '<div><strong>'+stats.focusHelps+'</strong><span>집중 도움</span></div>'+
     '<div><strong>'+stats.conflictsMediated+'</strong><span>갈등 중재</span></div>'+
-    '<div><strong>'+stats.healthChecks+'</strong><span>건강 확인</span></div>';
+    '<div><strong>'+stats.healthChecks+'</strong><span>건강 확인</span></div>'+
+    '<div><strong>'+stats.groupSignals+'</strong><span>전체 집중 신호</span></div>';
 
   if(exam){
     renderExamResults(exam);
