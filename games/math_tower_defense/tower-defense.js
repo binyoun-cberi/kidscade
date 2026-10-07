@@ -505,7 +505,8 @@ function upgradeCost(t){return Math.floor(TOWERS[t.id].cost*(.75+.6*t.level))}
 function sellValue(t){let total=TOWERS[t.id].cost;for(let i=0;i<t.level;i++)total+=Math.floor(TOWERS[t.id].cost*(.75+.6*i));return Math.floor(total*.75)}
 function upgradeTower(){
   const t=selectedBuilt;if(!t)return;const cost=upgradeCost(t);if(t.level>=4)return toast('최대 강화입니다.');if(state.money<cost)return toast('자원이 부족해요.');
-  state.money-=cost;t.level++;t.cool=Math.max(.18,t.cool*.78);t.range+=.12;const old=towerNodes.get(t);if(old){towerGroup.remove(old);towerNodes.delete(t)}sfx.build();syncHUD();syncSelectedPanel();syncSelection()
+  const beforeVisual=towerVisualName(t);state.money-=cost;t.level++;t.cool=Math.max(.18,t.cool*.78);t.range+=.12;const afterVisual=towerVisualName(t),old=towerNodes.get(t);if(old){towerGroup.remove(old);towerNodes.delete(t)}
+  sfx.build();if(beforeVisual!==afterVisual){burst(cellWorld(t.x,t.y,.18),TOWERS[t.id].color);toast(beforeVisual+' → '+afterVisual+' 포탑 진화!')}syncHUD();syncSelectedPanel();syncSelection()
 }
 function sellTower(){
   const t=selectedBuilt;if(!t)return;state.money+=sellValue(t);state.towers=state.towers.filter(x=>x!==t);const n=towerNodes.get(t);if(n)towerGroup.remove(n);towerNodes.delete(t);setDecorBuilt(t.x,t.y,false);selectedBuilt=null;sfx.click();syncHUD();syncSelectedPanel();syncSelection()
@@ -585,7 +586,8 @@ function startWave(){
   if(state.waveActive||state.gameOver)return;const cfg=waveConfig();state.waveActive=true;state.spawnQueue=[];for(let i=0;i<cfg.count;i++)state.spawnQueue.push(cfg.nums[i%cfg.nums.length]);state.spawnTimer=.35;document.body.classList.add('wave-live');sfx.click();$('startWaveBtn').disabled=true;syncHUD()
 }
 function waveClear(){
-  state.waveActive=false;document.body.classList.remove('wave-live');const bonus=70+state.wave*18;state.money+=bonus;state.wave++;if(state.wave>state.best){state.best=state.wave;try{localStorage.setItem('numTD_best',String(state.best))}catch(_){}}sfx.clear();toast('감염 웨이브 정화 완료! +'+bonus+' 자원');syncHUD();syncDeck();$('startWaveBtn').disabled=false
+  state.waveActive=false;document.body.classList.remove('wave-live');const bonus=70+state.wave*18;state.money+=bonus;state.wave++;if(state.wave>state.best){state.best=state.wave;try{localStorage.setItem('numTD_best',String(state.best))}catch(_){}}
+  const unlocked=Object.values(TOWERS).filter(d=>d.unlock===state.wave).map(d=>d.name);sfx.clear();toast('감염 웨이브 정화! +'+bonus+' 자원'+(unlocked.length?' · 신규 '+unlocked.join(' / '):''));syncHUD();syncDeck();$('startWaveBtn').disabled=false
 }
 function loseCore(e){
   const dmg=Math.max(1,Math.ceil(e.hp/5));state.lives-=dmg;const n=enemyNodes.get(e);if(n){enemyGroup.remove(n);enemyNodes.delete(e)}enemyMixers.get(e)?.stopAllAction();enemyMixers.delete(e);state.enemies=state.enemies.filter(x=>x!==e);core.userData.orb.scale.setScalar(1.3);setTimeout(()=>core.userData.orb.scale.setScalar(1),150);sfx.hit();if(state.lives<=0)gameOver();syncHUD()
