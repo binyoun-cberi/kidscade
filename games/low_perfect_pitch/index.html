@@ -72,6 +72,9 @@ button:focus-visible{outline:3px solid white;outline-offset:3px}
 .progress>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#65e6ff,#8b81ff,#ff78d1);transition:width .08s}
 .cal-hint{font-size:13px;color:#aab3d7}
 .topbar{position:fixed;left:0;right:0;top:0;z-index:30;height:68px;padding:9px max(12px,env(safe-area-inset-left));display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:#070a21e8;border-bottom:1px solid #263463;backdrop-filter:blur(12px)}
+.run-progress{position:absolute;left:0;right:0;bottom:-1px;height:5px;background:#e9e0ef;overflow:hidden}
+.run-progress i{display:block;width:0;height:100%;background:linear-gradient(90deg,#74dce8,#f3a6cc,#f2c653);transition:width .18s ease}
+.hud-pill.fever{background:#fff0bf;border-color:#efbd45;color:#8d5d08;box-shadow:0 0 0 3px #fff4c9,0 5px 18px #eeb94330}
 .hud-left{font-weight:1000}.hud-left small{display:block;font-size:10px;color:#9ba6d4;margin-top:1px}
 .hud-center{display:flex;gap:8px;align-items:center}.hud-pill{padding:7px 11px;border-radius:999px;background:#11183a;border:1px solid #35437a;font-size:12px;font-weight:950}
 .hud-right{display:flex;justify-content:flex-end;gap:7px}.hud-stat{text-align:right;min-width:58px}.hud-stat b{display:block;font-size:19px;line-height:1}.hud-stat small{color:#9ea8d1;font-size:9px;font-weight:900}
@@ -192,8 +195,8 @@ html,body{background:var(--bg);color:var(--text)}
         <div class="kicker">플레이 선택</div>
         <h2>어떻게 목소리를 움직일까?</h2>
         <div class="mode-tabs" id="modeList">
-          <button class="mode-btn active" data-mode="classic"><b>🎵 음표 문</b><small>제한시간 동안 여러 음을 오가며 통과</small></button>
-          <button class="mode-btn" data-mode="stair"><b>🪜 무한 고음 계단</b><small>한 음씩 올라가 최고 높이에 도전</small></button>
+          <button class="mode-btn active" data-mode="classic"><b>🎵 노래길</b><small>워밍업 → 멜로디 → 피날레, 5콤보 FEVER</small></button>
+          <button class="mode-btn" data-mode="stair"><b>🪜 무한 고음 계단</b><small>7층마다 쉼터 · 풍경 변화 · 최고 높이 도전</small></button>
         </div>
         <div id="modeHint" class="mode-hint">일반 모드 · 목소리를 위아래로 움직여 다가오는 음표 문을 통과해요.</div>
         <p id="difficultyCopy">처음에는 초급을 추천해요. 판정 폭과 음표 수가 난이도에 따라 달라집니다.</p>
@@ -231,12 +234,13 @@ html,body{background:var(--bg);color:var(--text)}
 <section id="gameScreen" class="screen">
   <header class="topbar">
     <div class="hud-left">PERFECT PITCH<small id="modeLabel">초급 · 맞춤 음역</small></div>
-    <div class="hud-center"><span class="hud-pill">🎤 목소리로 공을 움직여요</span></div>
+    <div class="hud-center"><span id="coachPill" class="hud-pill">🎤 5콤보마다 FEVER!</span></div>
     <div class="hud-right">
       <div class="hud-stat"><b id="scoreText">0</b><small>점수</small></div>
       <div class="hud-stat"><b id="comboText">0</b><small>콤보</small></div>
       <div class="hud-stat"><b id="timeText">30</b><small id="thirdStatLabel">남은 시간</small></div>
     </div>
+    <div class="run-progress" aria-hidden="true"><i id="runProgress"></i></div>
   </header>
   <div class="game-layout">
     <div class="game-info">
@@ -272,6 +276,6 @@ html,body{background:var(--bg);color:var(--text)}
   </div>
 </section>
 </div>
-<script src="game.js?v=4"></script>
+<script src="game.js?v=5"></script>
 </body>
 </html>
