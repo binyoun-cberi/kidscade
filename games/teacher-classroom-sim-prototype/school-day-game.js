@@ -1297,7 +1297,7 @@ function useAction(){
       if(s.runtime.mode==='offtask'&&s.runtime.focus>=s.runtime.focusMax*.34){
         s.runtime.mode='focused';s.wander=null;s.actor.target=s.seat.clone();refreshStudentBubbleState(s);
       }
-      addLearning(campaign,s.runtime.id,.075);
+      addLearning(campaign,s.runtime.id,.055);
     }
     playerGestureTimer=.5;playAnim(player,'push');showToast('📣 반 전체에 집중 신호를 줬어요!');return;
   }
