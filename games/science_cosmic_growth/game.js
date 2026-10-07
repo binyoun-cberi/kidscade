@@ -344,6 +344,48 @@ function addPlanetSystem(count=5){
   else o=new THREE.Mesh(new THREE.SphereGeometry(.11,12,8),new THREE.MeshBasicMaterial({color:new THREE.Color().setHSL(i/count,.55,.55)}));
   o.userData={orbit:true,r,angle:Math.random()*6.28,speed:.12/(1+i*.22),flatten:.55};contextGroup.add(o)
  }}
+function addDustNeighborhood(count=140){
+ const pos=new Float32Array(count*3);
+ for(let i=0;i<count;i++){const a=Math.random()*Math.PI*2,r=2.7+Math.pow(Math.random(),.72)*7.8;pos[i*3]=Math.cos(a)*r;pos[i*3+1]=Math.sin(a)*r*.64;pos[i*3+2]=-1.5-Math.random()*8}
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+ const m=new THREE.PointsMaterial({color:0xc9d7e5,size:LOW_POWER?.045:.065,map:fxTextures.star||null,transparent:true,opacity:.48,blending:THREE.AdditiveBlending,depthWrite:false});
+ const p=new THREE.Points(g,m);p.userData.kind='ambientDust';contextGroup.add(p)
+}
+function addAsteroidNeighborhood(count=10){
+ for(let i=0;i<count;i++){
+  const a=(i/count)*Math.PI*2+Math.random()*.55,r=3.5+Math.random()*5.2,s=.07+Math.random()*.16;
+  const rock=new THREE.Mesh(new THREE.IcosahedronGeometry(s,1),new THREE.MeshStandardMaterial({color:i%3===0?0x9a8a78:0x6f6870,roughness:.96,metalness:.03}));
+  rock.position.set(Math.cos(a)*r,Math.sin(a)*r*.62,-1.2-Math.random()*5);rock.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);
+  rock.userData={kind:'sceneryRock',spinX:(Math.random()-.5)*.35,spinY:(Math.random()-.5)*.45};contextGroup.add(rock)
+ }
+}
+function addDistantWorlds(count=2){
+ for(let i=0;i<count;i++){
+  const a=(i/count)*Math.PI*2+1.1+Math.random()*.55,r=4.8+i*1.35+Math.random()*.8,tex=planetTextures.length?planetTextures[(state.stage+i*3+1)%planetTextures.length]:null;let o;
+  if(tex){o=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,opacity:.78}));const s=.38+i*.08;o.scale.set(s,s,1);o.userData.kind='sceneryWorld'}
+  else{o=new THREE.Mesh(new THREE.SphereGeometry(.16+i*.025,16,10),new THREE.MeshStandardMaterial({color:new THREE.Color().setHSL(.52+i*.12,.48,.52),roughness:.86}));o.userData.kind='sceneryWorld'}
+  o.position.set(Math.cos(a)*r,Math.sin(a)*r*.58,-3-i*.9);contextGroup.add(o)
+ }
+}
+function addNeighborStars(count=4){
+ for(let i=0;i<count;i++){
+  const a=(i/count)*Math.PI*2+.45+Math.random()*.5,r=4.4+Math.random()*4.6,sp=glowSprite(i%3===0?0x9ed9ff:i%3===1?0xffdd9b:0xffa785,.55+Math.random()*.45,.55,'star');
+  sp.position.set(Math.cos(a)*r,Math.sin(a)*r*.64,-4-Math.random()*5);sp.userData.kind='neighborStar';contextGroup.add(sp)
+ }
+}
+function addCompanionGalaxies(count=3){
+ for(let i=0;i<count;i++){
+  const a=(i/count)*Math.PI*2+.7+Math.random()*.35,r=4.2+Math.random()*4.7,sp=glowSprite(i%2?0xbda7ff:0x9fdfff,.85+Math.random()*.75,.34,'twirl');
+  sp.position.set(Math.cos(a)*r,Math.sin(a)*r*.61,-4-Math.random()*5);sp.material.rotation=Math.random()*Math.PI;sp.userData.kind='companionGalaxy';contextGroup.add(sp)
+ }
+}
+function addDeepField(count=LOW_POWER?90:220){
+ const pos=new Float32Array(count*3);
+ for(let i=0;i<count;i++){pos[i*3]=(Math.random()-.5)*19;pos[i*3+1]=(Math.random()-.5)*11;pos[i*3+2]=-5-Math.random()*16}
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+ const m=new THREE.PointsMaterial({color:0x9eb9da,size:LOW_POWER?.035:.05,map:fxTextures.star||null,transparent:true,opacity:.34,blending:THREE.AdditiveBlending,depthWrite:false});
+ const p=new THREE.Points(g,m);p.userData.kind='deepField';contextGroup.add(p)
+}
 function addCluster(count){
  const pos=new Float32Array(count*3);for(let i=0;i<count;i++){const a=Math.random()*6.28,r=2.4+Math.pow(Math.random(),.6)*8.5;pos[i*3]=Math.cos(a)*r;pos[i*3+1]=Math.sin(a)*r*.62;pos[i*3+2]=-1-Math.random()*5}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));const m=new THREE.PointsMaterial({color:0xddeaff,size:LOW_POWER ? 0.035 : 0.055,map:fxTextures.star||null,transparent:true,opacity:.85,blending:THREE.AdditiveBlending,depthWrite:false});
@@ -389,13 +431,19 @@ function makeLargeStructure(index){
 function rebuildContext(){
  clearGroup(contextGroup);galaxyGroup=null;
  const i=state.stage;
- if(i>=16)return;
- if(i>=6&&i<=8)addMoonContext(i===7?5:2);
- if(i>=9&&i<=10)addPlanetSystem(LOW_POWER?4:6);
- if(i===11)addCluster(LOW_POWER?120:280);
- if(i===12)addCluster(LOW_POWER?170:420);
- if(i===13)addCluster(LOW_POWER?320:900);
- if(i>=14&&i<=15){addGalaxy(LOW_POWER?900:2600);if(i>=15)addQuasarJets()}
+ // Every scale keeps visible neighbours so the player feels embedded in a living universe,
+ // while the central body remains the clear focus and scale reference.
+ if(i<=1)addDustNeighborhood(LOW_POWER?80:180);
+ if(i>=2&&i<=5){addDustNeighborhood(LOW_POWER?45:90);addAsteroidNeighborhood(LOW_POWER?6:12);if(i>=4)addDistantWorlds(1)}
+ if(i>=6&&i<=8){addMoonContext(i===7?5:2);addDistantWorlds(i===8?3:2);addAsteroidNeighborhood(LOW_POWER?3:6)}
+ if(i>=9&&i<=10){addPlanetSystem(LOW_POWER?4:6);addNeighborStars(LOW_POWER?2:4)}
+ if(i===11){addCluster(LOW_POWER?120:280);addNeighborStars(LOW_POWER?3:5)}
+ if(i===12){addCluster(LOW_POWER?170:420);addNeighborStars(LOW_POWER?3:6)}
+ if(i===13){addCluster(LOW_POWER?320:900);addNeighborStars(LOW_POWER?4:7)}
+ if(i>=14&&i<=15){addGalaxy(LOW_POWER?900:2600);addCompanionGalaxies(i===15?3:2);if(i>=15)addQuasarJets()}
+ if(i>=16&&i<=17){addDeepField();addCompanionGalaxies(LOW_POWER?3:6)}
+ if(i>=18&&i<=20){addDeepField();addCompanionGalaxies(LOW_POWER?4:8)}
+ if(i>=21){addDeepField(LOW_POWER?120:320);addCompanionGalaxies(LOW_POWER?5:10)}
 }
 function rebuildVisual(noZoom=false){
  clearGroup(bodyGroup);const i=state.stage;
@@ -460,7 +508,12 @@ function updateScene(dt){
  if(starField){starField.rotation.z+=dt*.002;if(lensPulse>0){lensPulse=Math.max(0,lensPulse-dt);starField.scale.setScalar(1+Math.sin(lensPulse*8)*.018)}else starField.scale.setScalar(1)}
  bodyRoot.rotation.z+=dt*(state.stage>=18?0:state.stage<=5 ? 0.08 : 0.018);tapPulse=Math.max(0,tapPulse-dt*3.4);const pulse=1+tapPulse*.075;bodyRoot.scale.setScalar(pulse);
  for(const o of bodyGroup.children){if(o.userData.kind==='planetSprite')o.material.rotation=(o.material.rotation||0)+dt*.035;if(o.userData.kind==='diskSprite')o.material.rotation=(o.material.rotation||0)+dt*.14;if(o.userData.kind==='accretion')o.rotation.z+=dt*o.userData.speed;if(o.userData.kind==='starCore'){const s=1+Math.sin(performance.now()*.003)*.02;o.scale.setScalar(s)}}
- for(const o of contextGroup.children)if(o.userData?.orbit){o.userData.angle+=dt*o.userData.speed;o.position.set(Math.cos(o.userData.angle)*o.userData.r,Math.sin(o.userData.angle)*o.userData.r*o.userData.flatten,-.1)}
+ for(const o of contextGroup.children){
+  if(o.userData?.orbit){o.userData.angle+=dt*o.userData.speed;o.position.set(Math.cos(o.userData.angle)*o.userData.r,Math.sin(o.userData.angle)*o.userData.r*o.userData.flatten,-.1)}
+  else if(o.userData?.kind==='sceneryRock'){o.rotation.x+=dt*o.userData.spinX;o.rotation.y+=dt*o.userData.spinY}
+  else if(o.userData?.kind==='companionGalaxy'&&o.material)o.material.rotation=(o.material.rotation||0)+dt*.018;
+ }
+ contextGroup.rotation.z+=dt*.0012;
  if(galaxyGroup)galaxyGroup.rotation.z+=dt*.006;
  if(cameraTween>0){cameraTween=Math.max(0,cameraTween-dt*.6);camera.position.z=12+Math.sin((1-cameraTween)*Math.PI)*5.5}else camera.position.z+=(12-camera.position.z)*dt*4;
  updateFx(dt);
