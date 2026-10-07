@@ -235,7 +235,7 @@ function syncActors(s,t){
   const x=sx(z.x),zz=sz(z.y),dx=a.lastX===null?0:z.x-a.lastX,dy=a.lastY===null?0:z.y-a.lastY;
   a.root.position.set(x,.02,zz);if(Math.hypot(dx,dy)>.05)a.root.rotation.y=Math.atan2(dx,dy);
   a.root.position.y=.02+Math.sin(t*.006+(z.phase||0))*.035;a.root.scale.setScalar(z.hit>0?1.08:1);
-  a.ring.material.color.setHex(z.elite?0xff8d79:0xd85960);a.ring.material.opacity=z.elite?.9:.62;a.lastX=z.x;a.lastY=z.y
+  a.ring.material.color.setHex(z.elite?0xff8d79:0xd85960);a.ring.material.opacity=z.elite ? .9 : .62;a.lastX=z.x;a.lastY=z.y
  });
  removeMissing('z',zombieKeys);
 
@@ -244,7 +244,7 @@ function syncActors(s,t){
   a.root.visible=!!p.alive&&!p.rescued;if(!a.root.visible)return;
   const dx=a.lastX===null?0:p.x-a.lastX,dy=a.lastY===null?0:p.y-a.lastY;
   a.root.position.set(sx(p.x),.02,sz(p.y));if(Math.hypot(dx,dy)>.05)a.root.rotation.y=Math.atan2(dx,dy);
-  a.root.position.y=.02+Math.sin(t*.005+i)*.02;a.ring.material.color.setHex(p.escorted?0xa8e0af:0x7fc68e);a.ring.material.opacity=p.escorted?.9:.55;
+  a.root.position.y=.02+Math.sin(t*.005+i)*.02;a.ring.material.color.setHex(p.escorted?0xa8e0af:0x7fc68e);a.ring.material.opacity=p.escorted ? .9 : .55;
   a.lastX=p.x;a.lastY=p.y
  });
  removeMissing('s',survivorKeys);
@@ -252,7 +252,7 @@ function syncActors(s,t){
  if(avatarMesh&&s.player){
   avatarMesh.visible=true;avatarMesh.position.set(sx(s.player.x),1.05,sz(s.player.y));
   avatarMesh.quaternion.copy(camera.quaternion);avatarMesh.scale.set(s.player.facing>0?-1.65:1.65,1.65,1);
-  avatarMesh.material.opacity=s.player.ifr>0?.55:1
+  avatarMesh.material.opacity=s.player.ifr>0 ? .55 : 1
  }else if(avatarMesh)avatarMesh.visible=false
 }
 function syncBullets(s){
@@ -275,7 +275,7 @@ function syncPickups(s,t){
 }
 function syncGameplay(s,t){
  for(const q of s.crates||[]){const o=crateMap.get(q.id);if(o)o.visible=!q.opened}
- if(fieldTurret){fieldTurret.rotation.y=-Math.PI/2+Math.sin(t*.002)*.18;fieldTurret.traverse(n=>{if(!n.isMesh)return;const ms=Array.isArray(n.material)?n.material:[n.material];ms.forEach(m=>{if(m?.emissive){m.emissive.setHex(s.turret?.active?0xe6c654:0x24282a);m.emissiveIntensity=s.turret?.active?.7:.08}})})}
+ if(fieldTurret){fieldTurret.rotation.y=-Math.PI/2+Math.sin(t*.002)*.18;fieldTurret.traverse(n=>{if(!n.isMesh)return;const ms=Array.isArray(n.material)?n.material:[n.material];ms.forEach(m=>{if(m?.emissive){m.emissive.setHex(s.turret?.active?0xe6c654:0x24282a);m.emissiveIntensity=s.turret?.active ? .7 : .08}})})}
  if(rangeRing)rangeRing.visible=!!s.turret?.active;
  emergencyLight.intensity=(s.zombies.length+s.spawnQueue)>0?2.1+Math.max(0,Math.sin(t*.012))*2.2:0;
  wave.textContent=s.started?'웨이브 '+Math.max(1,s.wave)+' / '+Math.max(1,s.waveCount)+' · 남은 위협 '+(s.zombies.length+s.spawnQueue):'현장 진입 대기';
