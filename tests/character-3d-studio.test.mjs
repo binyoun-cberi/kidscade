@@ -240,3 +240,37 @@ test('Chibi hair is mutually exclusive across presets dropdown and part toggles'
   assert.match(js,/if\(HAIR_NODES\.includes\(part\)\)/);
   assert.match(js,/applyHair\(input\.checked\?part:''\)/);
 });
+
+
+test('male Chibi preset has its own rigged base face hair and clothes',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const html=read('teacher/character-3d-studio.html');
+  for(const name of [
+    'kidscade_male_body','kidscade_male_eyes','kidscade_male_brows',
+    'kidscade_male_hair_short','kidscade_male_tshirt','kidscade_male_shorts'
+  ]) assert.match(js,new RegExp(name));
+  assert.match(js,/function createKidscadeMaleSet/);
+  assert.match(js,/broader shoulders|어깨\/몸통을 넓히고/);
+  assert.match(js,/eyeCenterY=1\.620/);
+  assert.match(js,/DEF-face/);
+  assert.match(html,/data-chibi-preset="male"/);
+  assert.match(html,/남자 기본/);
+  assert.match(html,/kidscade_male_hair_short/);
+});
+
+test('male and female Chibi bases are mutually exclusive',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  assert.match(js,/const FEMALE_BASE_NODES=/);
+  assert.match(js,/const MALE_BASE_NODES=/);
+  assert.match(js,/BASE_VARIANT_NODES\.forEach\(node=>setNodeVisible\(node,false\)\)/);
+  assert.match(js,/PRESETS=\{[\s\S]*male:\[\.\.\.MALE_BASE_NODES/);
+});
+
+test('male Chibi manifest records the generated base set',()=>{
+  const manifest=JSON.parse(read('chibi/asset-manifest.json'));
+  assert.ok(manifest.presets.male.includes('kidscade_male_body'));
+  assert.ok(manifest.presets.male.includes('kidscade_male_hair_short'));
+  assert.equal(manifest.customParts.kidscade_male_body.type,'body');
+  assert.equal(manifest.customParts.kidscade_male_tshirt.type,'garment');
+  assert.equal(manifest.customParts.kidscade_male_shorts.type,'garment');
+});
