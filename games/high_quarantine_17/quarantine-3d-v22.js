@@ -93,7 +93,7 @@ const style=document.createElement('style');style.id='q17Main3DStyle';style.text
 .booth.q17-main3d>.desk{z-index:8}
 .q17-main3d-badge{position:absolute;left:12px;top:10px;z-index:5;padding:5px 7px;border:1px solid #5a6970;background:#0a1115c9;color:#aebbc0;font:900 9px ui-monospace,monospace;letter-spacing:.08em;pointer-events:none}
 .q17-main3d-badge b{color:#d8e0e2}
-@media(max-width:680px){#q17Main3D{bottom:255px;height:calc(100% - 255px)}.booth.q17-main3d>.speech{top:39px;right:8px;max-width:145px;font-size:11px;padding:7px 8px}.q17-main3d-badge{font-size:7px;padding:4px 5px}}
+@media(max-width:680px){#q17Main3D{bottom:390px;height:calc(100% - 390px)}.booth.q17-main3d>.speech{top:39px;right:8px;max-width:145px;font-size:11px;padding:7px 8px}.q17-main3d-badge{font-size:7px;padding:4px 5px}}
 `;document.head.appendChild(style);
 const badge=document.createElement('div');badge.className='q17-main3d-badge';badge.innerHTML='<b>Q-17 CHECKPOINT</b> · LIVE 3D';booth.appendChild(badge);
 
@@ -129,7 +129,15 @@ function buildWorld(){
  // scanner arch
  box(world,-1.35,0,.18,.13,2.75,.16,0x667379);box(world,1.35,0,.18,.13,2.75,.16,0x667379);box(world,0,2.62,.18,2.83,.13,.16,0x77858b);
  const scanBar=box(world,0,2.42,.12,2.4,.08,.06,0x5f777e);scanBar.material=glow(0x82d2de,.18);
- world.userData.scanBar=scanBar;world.userData.analyzer=analyzer;world.userData.tempHead=tempHead;
+ const idScanner=box(world,-.88,.86,1.74,.52,.10,.62,0x4d5d63);idScanner.material=glow(0x6b9ba6,.14);
+ const docPad=box(world,-.22,.86,1.72,.58,.07,.66,0x544f43);docPad.material=glow(0xc2a65a,.10);
+ const respSensor=box(world,.78,.86,1.72,.16,.62,.16,0x4d5f63);respSensor.material=glow(0x70a8af,.10);
+ const bagTray=new THREE.Group();box(bagTray,0,0,0,1.05,.10,.72,0x5a554c);box(bagTray,-.48,.1,0,.08,.18,.72,0x777167);box(bagTray,.48,.1,0,.08,.18,.72,0x777167);bagTray.position.set(2.18,.88,1.72);world.add(bagTray);
+ const breathRing=new THREE.Mesh(new THREE.TorusGeometry(.24,.035,8,28),new THREE.MeshBasicMaterial({color:0x8ed9dc,transparent:true,opacity:0,depthWrite:false}));breathRing.rotation.y=Math.PI/2;breathRing.position.set(.55,1.72,.38);fx.add(breathRing);
+ const uvSpots=new THREE.Group();
+ for(const p of [[-.22,1.18,.23],[.25,1.42,.16]]){const m=new THREE.Mesh(new THREE.SphereGeometry(.085,12,8),new THREE.MeshBasicMaterial({color:0x61f1ff,transparent:true,opacity:0,depthWrite:false}));m.position.set(...p);uvSpots.add(m)}
+ fx.add(uvSpots);
+ world.userData.scanBar=scanBar;world.userData.analyzer=analyzer;world.userData.tempHead=tempHead;world.userData.idScanner=idScanner;world.userData.docPad=docPad;world.userData.respSensor=respSensor;world.userData.bagTray=bagTray;world.userData.breathRing=breathRing;world.userData.uvSpots=uvSpots;
 
  // background wall/fence
  box(world,0,0,-6.1,14,.5,.22,0x6b7472);
@@ -144,7 +152,7 @@ function buildWorld(){
  };
  gateLights.pass=gate(-4.65,-2.1,'통과 · CAMP-17',0x58b870);
  gateLights.retest=gate(4.1,-1.45,'A 추가검사',0xd1a94d);
- gateLights.quarantine=gate(4.65,-4.45,'고위험 격리',0xc34f56);
+ gateLights.quarantine=gate(4.65,-4.45,'격리 · 소각 처리',0xc34f56);
 
  // lane dividers and security furniture
  for(const p of [[-3.0,-3.7],[-3.0,-1.0],[3.0,-3.7],[3.0,-1.0]])addAsset(world,A.barrier,[p[0],0,p[1]],1.05,0xc0963f,.42,Math.PI/2);
@@ -165,8 +173,11 @@ function removeActor(a){if(a?.root?.parent)a.root.parent.remove(a.root)}
 function spawnCurrent(info){
  caseEpoch++;
  if(currentActor)removeActor(currentActor);
- currentActor=createActor(info,1.78);currentActor.root.position.set(-2.15,0,-4.35);currentActor.root.rotation.y=0;
- currentActor.enteredAt=performance.now();currentActor.epoch=caseEpoch;decision=null
+ const queued=queueActors.get(info?.id);
+ if(queued){queueActors.delete(info.id);currentActor=queued;currentActor.info=info}
+ else{currentActor=createActor(info,1.78);currentActor.root.position.set(-2.15,0,-4.65)}
+ currentActor.entryStart={x:currentActor.root.position.x,z:currentActor.root.position.z};
+ currentActor.root.rotation.y=0;currentActor.enteredAt=performance.now();currentActor.epoch=caseEpoch;decision=null
 }
 function syncQueue(queue){
  const keep=new Set((queue||[]).map(q=>q.id));
@@ -195,13 +206,36 @@ function pulseGate(action,intensity){
  for(const [k,l] of Object.entries(gateLights))if(l){l.material.emissiveIntensity=k===action?intensity:.25;l.scale.setScalar(k===action?1.18:1)}
 }
 function inspect(tool){
- effect={tool,until:performance.now()+(tool==='blood'?1150:tool==='uv'?1050:760)};
+ effect={tool,until:performance.now()+(tool==='blood'?1150:tool==='uv'?1050:tool==='bag'?900:760)};
  if(tool==='uv')uvLight.intensity=3.4;
  if(tool==='temp'&&world.userData.tempHead)world.userData.tempHead.material.emissiveIntensity=2.0;
  if(tool==='blood'&&world.userData.analyzer)world.userData.analyzer.material.emissiveIntensity=2.2;
+ if(tool==='id'&&world.userData.idScanner)world.userData.idScanner.material.emissiveIntensity=2.0;
+ if(tool==='doc'&&world.userData.docPad)world.userData.docPad.material.emissiveIntensity=2.0;
+ if(tool==='resp'&&world.userData.respSensor)world.userData.respSensor.material.emissiveIntensity=2.2;
+}
+const DECISION_PATHS={
+ pass:[[0,.25],[-1.65,.45],[-4.65,.32],[-4.65,-2.1]],
+ retest:[[0,.25],[1.65,.48],[4.1,.35],[4.1,-1.45]],
+ quarantine:[[0,.25],[1.35,-.35],[1.8,-2.65],[4.65,-2.65],[4.65,-4.45]]
+};
+function pathPoint(points,p){
+ if(!points?.length)return{x:0,z:0};
+ const segs=[],lens=[];let total=0;
+ for(let i=1;i<points.length;i++){const l=Math.hypot(points[i][0]-points[i-1][0],points[i][1]-points[i-1][1]);lens.push(l);total+=l}
+ let d=clamp(p,0,1)*total;
+ for(let i=0;i<lens.length;i++){if(d<=lens[i]){const q=lens[i]?d/lens[i]:1;return{x:lerp(points[i][0],points[i+1][0],q),z:lerp(points[i][1],points[i+1][1],q)}}d-=lens[i]}
+ const last=points[points.length-1];return{x:last[0],z:last[1]}
+}
+function walkPose(a,t,speed=1){
+ if(!a?.host)return;
+ const phase=t*.012*speed+hash(a.info?.id)*.001;a.host.position.y=Math.abs(Math.sin(phase))*.045;a.host.rotation.z=Math.sin(phase)*.018;a.host.rotation.x=Math.sin(phase*2)*.008
+}
+function idlePose(a,t){
+ if(!a?.host)return;const phase=t*.0023+hash(a.info?.id)*.001;a.host.position.y=Math.sin(phase)*.012;a.host.rotation.z=Math.sin(phase*.8)*.006;a.host.rotation.x=0
 }
 function decide(action){
- if(!currentActor)return;decision={action,start:performance.now(),actor:currentActor};
+ if(!currentActor)return;decision={action,start:performance.now(),actor:currentActor,path:DECISION_PATHS[action]||DECISION_PATHS.pass};
  pulseGate(action,2.2)
 }
 window.addEventListener('q17-main3d',e=>{
@@ -214,53 +248,81 @@ function updateCurrent(t){
  if(!currentActor)return;
  const a=currentActor,s=lastSnapshot,c=s?.current||a.info;
  if(decision&&decision.actor===a){
-  const p=clamp((t-decision.start)/620,0,1),ease=1-Math.pow(1-p,3);
-  const targets={pass:[-4.65,-2.1],retest:[4.1,-1.45],quarantine:[4.65,-4.45]},to=targets[decision.action]||[0,-3];
-  a.root.position.x=lerp(0,to[0],ease);a.root.position.z=lerp(.25,to[1],ease);
-  a.root.rotation.y=Math.atan2(to[0]-a.root.position.x,to[1]-a.root.position.z);
+  const p=clamp((t-decision.start)/930,0,1),pos=pathPoint(decision.path,p),ahead=pathPoint(decision.path,Math.min(1,p+.02));
+  a.root.position.x=pos.x;a.root.position.z=pos.z;a.root.position.y=.02;a.root.rotation.y=Math.atan2(ahead.x-pos.x,ahead.z-pos.z);walkPose(a,t,1.25);
   if(p>=1)a.root.visible=false;return
  }
  a.root.visible=true;
- const enter=clamp((t-(a.enteredAt||t))/480,0,1),e=1-Math.pow(1-enter,3);
- a.root.position.x=lerp(-2.15,0,e);a.root.position.z=lerp(-4.35,.25,e);
- const idle=Math.sin(t*.0025+hash(c?.id)*.001);
- a.root.position.y=.02+idle*.025;
- a.root.rotation.y=idle*.018;
- if(c?.cough&&Math.sin(t*.006)> .72){a.root.rotation.z=Math.sin(t*.028)*.045;a.root.position.x+=.035}else a.root.rotation.z=0;
- if(Number(c?.temp)>=38.5)a.root.rotation.y+=Math.sin(t*.018)*.012
+ const enter=clamp((t-(a.enteredAt||t))/760,0,1),e=1-Math.pow(1-enter,2);
+ const start=a.entryStart||{x:-2.15,z:-4.65},p1={x:-1.55,z:-3.05},p2={x:-1.05,z:-1.25};
+ let pos;
+ if(e<.42){const q=e/.42;pos={x:lerp(start.x,p1.x,q),z:lerp(start.z,p1.z,q)}}
+ else if(e<.78){const q=(e-.42)/.36;pos={x:lerp(p1.x,p2.x,q),z:lerp(p1.z,p2.z,q)}}
+ else{const q=(e-.78)/.22;pos={x:lerp(p2.x,0,q),z:lerp(p2.z,.25,q)}}
+ a.root.position.x=pos.x;a.root.position.z=pos.z;a.root.position.y=.02;
+ if(enter<1){const q2=Math.min(1,enter+.025),ahead=q2<.42?{x:lerp(start.x,p1.x,q2/.42),z:lerp(start.z,p1.z,q2/.42)}:q2<.78?{x:lerp(p1.x,p2.x,(q2-.42)/.36),z:lerp(p1.z,p2.z,(q2-.42)/.36)}:{x:lerp(p2.x,0,(q2-.78)/.22),z:lerp(p2.z,.25,(q2-.78)/.22)};a.root.rotation.y=Math.atan2(ahead.x-pos.x,ahead.z-pos.z);walkPose(a,t,1.05)}
+ else{a.root.rotation.y=Math.sin(t*.0018)*.018;idlePose(a,t)}
+ if(c?.cough&&enter>=1&&Math.sin(t*.006)>.72){a.host.rotation.z+=Math.sin(t*.028)*.045}
+ if(Number(c?.temp)>=38.5&&enter>=1)a.root.rotation.y+=Math.sin(t*.018)*.012
 }
 function updateQueue(t){
- let i=0;for(const a of queueActors.values()){a.root.position.y=.01+Math.sin(t*.0017+i*.9)*.018;a.root.rotation.y=Math.sin(t*.0012+i)*.025;i++}
+ let i=0;for(const a of queueActors.values()){a.root.position.y=.01;idlePose(a,t+i*120);a.root.rotation.y=Math.sin(t*.0012+i)*.025;i++}
 }
 function updateEffects(t){
+ const u=world.userData;
  if(t>effect.until){
   uvLight.intensity*=.86;if(uvLight.intensity<.03)uvLight.intensity=0;
-  if(world.userData.tempHead)world.userData.tempHead.material.emissiveIntensity=lerp(world.userData.tempHead.material.emissiveIntensity,.18,.18);
-  if(world.userData.analyzer)world.userData.analyzer.material.emissiveIntensity=lerp(world.userData.analyzer.material.emissiveIntensity,.12,.18);
+  for(const [obj,base] of [[u.tempHead,.18],[u.analyzer,.12],[u.idScanner,.14],[u.docPad,.10],[u.respSensor,.10]])if(obj)obj.material.emissiveIntensity=lerp(obj.material.emissiveIntensity,base,.18);
+  if(u.breathRing)u.breathRing.material.opacity=lerp(u.breathRing.material.opacity,0,.22);
+  if(u.uvSpots)u.uvSpots.children.forEach(m=>m.material.opacity=lerp(m.material.opacity,0,.2));
+  if(u.bagTray){u.bagTray.position.x=lerp(u.bagTray.position.x,2.18,.18);u.bagTray.rotation.y=lerp(u.bagTray.rotation.y,0,.18)}
   effect.tool=null
  }else if(effect.tool==='uv'){
-  uvLight.intensity=2.7+Math.max(0,Math.sin(t*.018))*1.5
- }else if(effect.tool==='temp'&&world.userData.tempHead){
-  world.userData.tempHead.material.emissiveIntensity=1.3+Math.max(0,Math.sin(t*.025))*1.5
- }else if(effect.tool==='blood'&&world.userData.analyzer){
-  world.userData.analyzer.material.emissiveIntensity=.8+Math.max(0,Math.sin(t*.02))*2.1
+  uvLight.intensity=2.7+Math.max(0,Math.sin(t*.018))*1.5;
+  if(u.uvSpots){u.uvSpots.position.set(currentActor?.root.position.x||0,0,currentActor?.root.position.z||.25);u.uvSpots.children.forEach(m=>m.material.opacity=lastSnapshot?.current?.uv?.9:.08)}
+ }else if(effect.tool==='temp'&&u.tempHead){
+  u.tempHead.material.emissiveIntensity=1.3+Math.max(0,Math.sin(t*.025))*1.5
+ }else if(effect.tool==='blood'&&u.analyzer){
+  u.analyzer.material.emissiveIntensity=.8+Math.max(0,Math.sin(t*.02))*2.1
+ }else if(effect.tool==='id'&&u.idScanner){
+  u.idScanner.material.emissiveIntensity=.8+Math.max(0,Math.sin(t*.025))*2.0;if(u.scanBar)u.scanBar.material.emissiveIntensity=1.2+Math.max(0,Math.sin(t*.02))*1.4
+ }else if(effect.tool==='doc'&&u.docPad){
+  u.docPad.material.emissiveIntensity=.7+Math.max(0,Math.sin(t*.022))*2.0
+ }else if(effect.tool==='resp'&&u.respSensor){
+  u.respSensor.material.emissiveIntensity=.7+Math.max(0,Math.sin(t*.02))*2.2;
+  if(u.breathRing){u.breathRing.position.x=(currentActor?.root.position.x||0)+.42;u.breathRing.position.z=(currentActor?.root.position.z||.25)+.06;u.breathRing.material.opacity=.35+Math.max(0,Math.sin(t*.018))*.55;u.breathRing.scale.setScalar(1+Math.max(0,Math.sin(t*.018))*.28)}
+ }else if(effect.tool==='bag'&&u.bagTray){
+  const p=clamp((effect.until-t)/900,0,1);u.bagTray.position.x=lerp(1.2,2.18,p);u.bagTray.rotation.y=Math.sin(t*.012)*.04
  }
+ if(u.scanBar&&effect.tool!=='id')u.scanBar.material.emissiveIntensity=lerp(u.scanBar.material.emissiveIntensity,.18,.15);
  if(decision){
-  const elapsed=t-decision.start;if(elapsed>760){pulseGate('',.25);decision=null}else pulseGate(decision.action,1.2+Math.max(0,Math.sin(t*.024))*1.5)
+  const elapsed=t-decision.start;if(elapsed>1040){pulseGate('',.25);decision=null}else pulseGate(decision.action,1.2+Math.max(0,Math.sin(t*.024))*1.5)
  }
  const risk=lastSnapshot?.infection||0;if(risk>=24)emergency.intensity=1.4+Math.max(0,Math.sin(t*.009))*2.1
 }
 function resize(){
- const r=canvas.getBoundingClientRect();if(!r.width||!r.height)return;renderer.setSize(Math.round(r.width),Math.round(r.height),false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix()
+ const r=canvas.getBoundingClientRect();if(!r.width||!r.height)return;renderer.setSize(Math.round(r.width),Math.round(r.height),false);camera.aspect=r.width/r.height;
+ if(camera.aspect<.9){camera.fov=52;camera.position.set(0,6.25,12.6);camera.lookAt(0,1.05,-1.55)}
+ else{camera.fov=43;camera.position.set(0,5.7,9.3);camera.lookAt(0,1.1,-1.25)}
+ camera.updateProjectionMatrix()
 }
 new ResizeObserver(resize).observe(booth);resize();
 
+function mainSceneVisible(){
+ if(document.visibilityState==='hidden'||!canvas.offsetParent)return false;
+ if(document.querySelector('.modal.show'))return false;
+ if(document.getElementById('q17Isolation')?.classList.contains('show'))return false;
+ if(document.getElementById('q17Camp')?.classList.contains('show'))return false;
+ if(document.getElementById('q17Outbreak')?.classList.contains('show'))return false;
+ return true
+}
 let lastSync=0;
 function frame(t){
+ if(!mainSceneVisible()){lastSync=t;requestAnimationFrame(frame);return}
  if(t-lastSync>300){syncSnapshot(snapshot());lastSync=t}
  updateCurrent(t);updateQueue(t);updateEffects(t);
  renderer.render(scene,camera);requestAnimationFrame(frame)
 }
 syncSnapshot(snapshot(),true);requestAnimationFrame(frame);
 
-window.Q17Quarantine3D=Object.freeze({active:true,version:'22.0',scene,camera,renderer,sync:()=>syncSnapshot(snapshot(),true)});
+window.Q17Quarantine3D=Object.freeze({active:true,version:'22.1',scene,camera,renderer,sync:()=>syncSnapshot(snapshot(),true)});
