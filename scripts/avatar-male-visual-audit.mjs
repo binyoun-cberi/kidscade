@@ -96,6 +96,10 @@ for(const [value,label] of [
   hairs.push({file:await capture('hair-'+value.replace('.','-')),label});
 }
 
+// Re-select the male preset after the hair comparison so every motion checks the new short haircut.
+await page.click('[data-chibi-preset="male"]');
+const maleHairOn=await page.evaluate(()=>window.__kcHairAudit().maleVisible);
+if(!maleHairOn)throw new Error('Male haircut was not restored before animation sampling');
 const motions=[];
 for(const [clip,label,wait] of [
   ['anim_walk','WALK',420],
