@@ -36,6 +36,21 @@ test('Sentence Train uses tracked Kenney Train Kit assets',()=>{
   assert.match(runtime,/railroad-straight\.glb/);
 });
 
+test('Sentence Train v4 is a platform-first 3D rebuild',()=>{
+  assert.match(html,/Sentence Train v4 · platform-first overhaul/);
+  assert.match(html,/PLATFORM 01/);
+  assert.match(html,/KIDSCADE RAIL · JOURNEY/);
+  assert.match(html,/scene-loading/);
+  assert.match(html,/document\.body\.dataset\.trainTheme=level/);
+  assert.match(html,/SentenceTrain3D\?\.setTheme/);
+  assert.match(runtime,/train-locomotive-passenger-a\.glb/);
+  assert.match(runtime,/train-diesel-a\.glb/);
+  assert.match(runtime,/train-electric-city-a\.glb/);
+  assert.match(runtime,/function setTheme/);
+  assert.doesNotMatch(html,/id="weatherIcon"/);
+  assert.doesNotMatch(html,/id="stationBuilding"/);
+});
+
 test('Sentence Train replaces drawn station scenery with real tracked assets',()=>{
   const required=[
     'assets/game/3d/city/kenney-city-kit-suburban/building-type-f.glb',
@@ -70,14 +85,14 @@ test('Sentence Train keeps sentence ordering gameplay while syncing 3D carriage 
 test('Sentence Train has local Three.js and CSS fallback train',()=>{
   assert.match(html,/id="train3d"/);
   assert.match(html,/assets\/vendor\/three-r160\/three\.module\.js/);
-  assert.match(html,/sentence-train-3d-loader\.js\?v=2/);
+  assert.match(html,/sentence-train-3d-loader\.js\?v=3/);
   assert.match(html,/function engineMarkup\(\)/);
   assert.match(html,/sentence-train-3d-ready/);
 });
 
-test('Sentence Train catalog points to v3',()=>{
+test('Sentence Train catalog points to v4',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='kor_sentence_train');
   assert.ok(game);
-  assert.equal(game.href,'문장열차.html?v=3');
+  assert.equal(game.href,'문장열차.html?v=4');
 });
