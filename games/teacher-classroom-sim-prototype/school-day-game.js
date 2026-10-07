@@ -469,6 +469,7 @@ async function createActors(){
     const label=document.createElement('div');
     label.className='studentWorldLabel';
     label.textContent=s.runtime.name;
+    label.style.borderLeft='3px solid '+(COLORS[s.runtime.id]||'#fff');
     label.style.display='none';
     ui.app.appendChild(label);
     s.nameLabel=label;
