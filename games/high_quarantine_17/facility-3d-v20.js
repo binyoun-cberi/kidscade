@@ -375,6 +375,6 @@ function mount(){
  const campView=new View(cc,'camp'),isoView=new View(document.getElementById('q17Iso3D'),'isolation');
  setInterval(()=>{campView.update();isoView.update()},450);campView.update();isoView.update();
  let last=0;const loop=t=>{if(t-last>16){views.forEach(v=>v.render(t));last=t}requestAnimationFrame(loop)};requestAnimationFrame(loop);
- window.Q17Facility3D=Object.freeze({version:'20.5',camp:campView,isolation:isoView});return true
+ window.Q17Facility3D=Object.freeze({version:'20.6',camp:campView,isolation:isoView});return true
 }
 let tries=0;const timer=setInterval(()=>{if(mount()||++tries>80)clearInterval(timer)},50);
