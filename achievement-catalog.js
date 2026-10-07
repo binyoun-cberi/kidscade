@@ -152,6 +152,10 @@
   const PILOT_GAME_IDS = new Set(['cube3d','high_micro_evolution','infinite_gugudan']);
 
   const LIVE_RULES = Object.freeze({
+    hanja_sichuan: {
+      mastery:{event:'result',field:'maxCombo',op:'gte',value:10},
+      secret:{event:'result',field:'clean',op:'truthy'}
+    },
     low_perfect_pitch: {
       mastery:{event:'game-over', field:'maxCombo', op:'gte', value:10},
       secret:{event:'game-over', field:'stairPeak', op:'gte', value:10}
