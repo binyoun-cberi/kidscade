@@ -661,7 +661,7 @@ function updateHud(){
   const needsAttention=students.filter(s=>studentCanParticipate(s)&&
     (s.runtime.mode==='offtask'||(s.health?.revealed&&!s.health.checked)||s.accident)).length;
   ui.rosterToggle.textContent='학생 '+CLASS_SIZE+'명 · '+(needsAttention?'살펴볼 학생 '+needsAttention+'명':'명단 보기');
-  ui.studentStrip.innerHTML=students.map(s=>{
+  if(ui.studentStrip.classList.contains('open'))ui.studentStrip.innerHTML=students.map(s=>{
     let cls='',icon='🙂';
     const pair=pairs.find(p=>p.a===s||p.b===s);
     if(s.runtime.mode==='offtask'){cls='offtask';icon='😶‍🌫️'}
@@ -1405,6 +1405,7 @@ function setupInput(){
   ui.rosterToggle.addEventListener('click',()=>{
     const isOpen=ui.studentStrip.classList.toggle('open');
     ui.rosterToggle.setAttribute('aria-expanded',String(isOpen));
+    if(isOpen)updateHud();
   });
   addEventListener('keydown',e=>{keys.add(e.code);if((e.code==='Space'||e.code==='KeyE')&&!e.repeat){e.preventDefault();useAction()}});
   addEventListener('keyup',e=>keys.delete(e.code));ui.action.addEventListener('pointerdown',e=>{e.preventDefault();useAction()});
