@@ -142,7 +142,7 @@ const GOALS=[
   progress:s=>(s.restored||[]).length}
 ];
 function goalProgress(goal,stats){return Math.min(goal.need,Math.max(0,goal.progress(stats)))}
-const SHELTER_PASSABLE=new Set(['air','water','lava','fire','leaves','pineLeaves','flower','reed','sapling','torch']);
+const SHELTER_PASSABLE=new Set(['air','water','lava','fire','leaves','pineLeaves','flower','reed','sapling','torch','chair','sign','sofa','bench','coffeeTable','floorLamp','rug','campfire','fence','tent','bedroll']);
 function shelterBlock(d,role='wall'){
  if(!d||SHELTER_PASSABLE.has(d.type)||d.type==='cactus')return false;
  if((d.type==='door'||d.type==='doorTop')&&d.open)return false;
