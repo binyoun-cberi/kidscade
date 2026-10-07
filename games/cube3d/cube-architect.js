@@ -3979,6 +3979,7 @@ function placementSupportValid(type,x,y,z){
   if(type==='sapling'||type==='flower')return ['grass','dirt'].includes(belowType);
   if(type==='reed')return ['grass','dirt','clay','sand'].includes(belowType);
   if(type==='cactus')return ['sand','redSand','cactus'].includes(belowType);
+  if(FARM_CROP_TYPES.includes(type))return belowType==='tilledSoil';
   if(['door','torch','fire','chest','bed','mapBoard','displayStand'].includes(type))return fullSupportBelow(x,y,z);
   return true;
 }
@@ -4125,13 +4126,16 @@ function renderLifePanel(){
       const active=document.createElement('div');active.className='life-tracked';active.textContent='현재 추적 · '+trackedTarget.label;
       const stop=document.createElement('button');stop.textContent='추적 그만하기';stop.onclick=()=>{trackedTarget=null;renderLifePanel();updateFreeMission();saveFreeWorld()};active.append(stop);body.append(active);
     }
-    const sections=[['발견한 지역',[]],['발견한 랜드마크',[]]];
+    const sections=[['발견한 지역',[]],['발견한 장소',[]],['발견한 랜드마크',[]]];
     for(const biomeId of visitedBiomes){
       const center=(worldRules.CENTERS||[]).find(c=>c[2]===biomeId);if(!center)continue;
       sections[0][1].push({kind:'biome',id:biomeId,label:worldRules.BIOMES[biomeId]?.name||biomeId,x:center[0],z:center[1]});
     }
+    for(const spec of buildMiniPoiCatalog()){
+      if(collected.has('mini:'+spec.id))sections[1][1].push({kind:'mini',id:spec.id,label:spec.label,x:spec.x,z:spec.z});
+    }
     for(const id of discoveredLandmarks){
-      const poi=poiRules.poiById(id);if(poi)sections[1][1].push({kind:'landmark',id,label:poi.name,x:poi.center[0],z:poi.center[1]});
+      const poi=poiRules.poiById(id);if(poi)sections[2][1].push({kind:'landmark',id,label:poi.name,x:poi.center[0],z:poi.center[1]});
     }
     for(const [name,targets] of sections){
       const box=document.createElement('section');box.className='life-map-section';const h=document.createElement('h4');h.textContent=name;box.append(h);
@@ -4143,11 +4147,18 @@ function renderLifePanel(){
 }
 function useBed(x,y,z){
   if(gameFreeMode!=='survival')return false;
-  const shelter=worldRules.shelterAt(getBlock,x,y+1,z);
+  const shelter=worldRules.shelterAt(getBlock,x,y,z);
   if(!shelter.sheltered){toast('침대는 지붕과 벽이 있는 거점 안에서 사용해 주세요.');return true}
-  const data=getBlock(x,y,z),f=((data?.facing||0)%4+4)%4,dirs=[[0,1],[1,0],[0,-1],[-1,0]],d=dirs[f];
-  const px=x-d[0]*1.15,pz=z-d[1]*1.15;
-  survivalHome={bed:[x,y,z],position:[px,y+1.62,pz]};
+  const data=getBlock(x,y,z),f=((data?.facing||0)%4+4)%4;
+  const around=[[0,-1],[1,0],[0,1],[-1,0]],ordered=[around[f],...around.filter((_,i)=>i!==f)];
+  let pos=null;
+  for(const [dx,dz] of ordered){
+    const sx=x+dx,sz=z+dz;
+    if(!isSolidData(getBlock(sx,y,sz),sx,y,sz)&&!isSolidData(getBlock(sx,y+1,sz),sx,y+1,sz)&&
+      isSolidData(getBlock(sx,y-1,sz),sx,y-1,sz)){pos=[sx,y+1.62,sz];break}
+  }
+  if(!pos)pos=[x,y+1.62,z];
+  survivalHome={bed:[x,y,z],position:pos};
   const night=dayTime>=.74||dayTime<.18;
   if(night){dayTime=.28;survivalExposure=Math.min(15,survivalExposure);survivalHealth=Math.min(5,survivalHealth+1);toast('푹 쉬고 아침이 되었어요. 이 침대가 귀환 지점이에요.');}
   else toast('이 침대를 내 귀환 지점으로 정했어요. 밤에는 여기서 아침까지 쉴 수 있어요.');
@@ -5061,8 +5072,10 @@ function beginFreeAvatarDefeat(now=performance.now()){
   triggerFreeAvatarAction('dead',FREE_AVATAR_ACTION_MS.dead,now);
 }
 function survivalReturnPoint(){
-  const p=survivalHome?.position;
-  if(Array.isArray(p)&&p.length===3&&p.every(Number.isFinite))return p;
+  const p=survivalHome?.position,b=survivalHome?.bed;
+  if(Array.isArray(p)&&p.length===3&&p.every(Number.isFinite)&&Array.isArray(b)&&b.length===3){
+    const bed=getBlock(...b);if(bed?.type==='bed')return p;survivalHome=null;
+  }
   return [0,safeReturnEyeY(),5];
 }
 function returnAfterCreatureDefeat(){
