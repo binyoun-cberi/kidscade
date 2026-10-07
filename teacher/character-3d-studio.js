@@ -3,6 +3,8 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
+window.__kc3dStudioModuleReady=true;
+
 const ADMIN_KEY_NAME='kc_teacher_admin_key';
 const RIG_VERSION='kidscade-humanoid-v1';
 const CLIP_NAMES=['IDLE','WALK','RUN','JUMP','ATTACK','HURT','DEAD'];
