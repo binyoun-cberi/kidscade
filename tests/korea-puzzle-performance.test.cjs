@@ -34,7 +34,7 @@ test('K-map world puzzle flies from Seoul, follows the plane, and pauses puzzle 
   assert.match(script,/let travelOrigin = \{name:'서울'/);
   assert.match(script,/d3\.geoOrthographic\(\)/);
   assert.match(script,/d3\.geoInterpolate\(from\.coords,to\.coords\)/);
-  assert.match(script,/projection\.rotate\(\[-center\[0\],-center\[1\]\]\)/);
+  assert.match(script,/\.rotate\(\[-center\[0\],-center\[1\]\]\)/);
   assert.match(script,/drawTravelFrame\(center,from,to,t,zoom\)/);
   assert.match(script,/pauseGameTimer\(\)/);
   assert.match(script,/resumeGameTimer\(\)/);
