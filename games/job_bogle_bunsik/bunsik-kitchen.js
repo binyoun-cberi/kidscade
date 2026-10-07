@@ -814,7 +814,7 @@ class RamenKitchen3D{
  }
  resetCustomerHall(){
   this.hallSeats.forEach(seat=>seat.occupiedBy=null);
-  this.customerStates.forEach(c=>{c.phase='idle';c.orderId=null;c.path.length=0;c.holder.visible=false;c.holder.position.copy(this.hallEntrance);c.holder.position.y=0;c.holder.rotation.set(0,0,0);c.holder.scale.setScalar(1)})
+  this.customerStates.forEach(c=>{c.phase='idle';c.orderId=null;c.path.length=0;c.holder.visible=false;c.holder.position.copy(this.hallEntrance);c.holder.position.y=0;c.holder.rotation.set(0,0,0);c.holder.scale.setScalar(1);c.holder.userData.seatedScaleY=1})
  }
  beginCustomerArrival(order){
   if(!order)return false;
@@ -1627,7 +1627,7 @@ function updateOrders(dt){
  });
  if(expiredOrders.length){
   const affected=expiredOrders.map(o=>potIndexForOrder(o.id)).filter(i=>i>=0);
-  expiredOrders.forEach(o=>releaseOrderBinding(o.id));
+  expiredOrders.forEach(o=>{releaseOrderBinding(o.id);kitchen.resetCustomerForOrder(o.id)});
   affected.forEach(i=>ensurePotOrder(i));
   state.combo=0;sfx('failure.fail_sting',{volume:.16,cooldownMs:300});toast('기다리던 손님이 떠났어요 · 콤보가 끊겼어요',1500);renderOrders();renderTaskPanel();updateHud()
  }
