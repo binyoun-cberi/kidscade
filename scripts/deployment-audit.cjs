@@ -76,7 +76,16 @@ function resolveLocalTarget(fromFile, raw) {
   if (!cleaned) return null;
   let decoded = cleaned;
   try { decoded = decodeURIComponent(cleaned); } catch (_) {}
-  if (decoded.startsWith('/')) return path.join(ROOT, decoded.replace(/^\/+/, ''));
+  if (decoded.startsWith('/')) {
+    const relative=decoded.replace(/^\/+/, '');
+    // dist/ HTML can reference generated build-specific assets that are not
+    // tracked at the repository root (e.g. the versioned 3D studio script).
+    if(rel(fromFile).startsWith('dist/')){
+      const built=path.join(ROOT,'dist',relative);
+      if(fs.existsSync(built))return built;
+    }
+    return path.join(ROOT,relative);
+  }
   return path.resolve(path.dirname(fromFile), decoded);
 }
 
