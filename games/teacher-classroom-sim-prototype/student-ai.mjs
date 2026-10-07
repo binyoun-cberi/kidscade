@@ -8,7 +8,7 @@ export const AI_RULES=Object.freeze({
   focusHelpRatio:.30,
   focusGrowthPerHelp:.45,
   maxFocus:100,
-  maxConcurrentSocialPairs:2,
+  maxConcurrentSocialPairs:3,
   maxConcurrentConflicts:1,
   maxFightsPerRecess:1,
   socialInteractionSeconds:[5,9],
@@ -27,7 +27,16 @@ export const STUDENT_PROFILES=Object.freeze([
   {id:'seoyeon',name:'서연',focusMax:88,focusRecovery:2.8,socialMax:72,socialRecovery:4.4,hair:'hairtail'},
   {id:'taeho',name:'태호',focusMax:52,focusRecovery:6.6,socialMax:42,socialRecovery:7.2,hair:'hairone'},
   {id:'junho',name:'준호',focusMax:74,focusRecovery:4.0,socialMax:48,socialRecovery:3.6,hair:'hairvariant.001'},
-  {id:'arin',name:'아린',focusMax:92,focusRecovery:6.4,socialMax:86,socialRecovery:7.0,hair:'hairtailknight'}
+  {id:'arin',name:'아린',focusMax:92,focusRecovery:6.4,socialMax:86,socialRecovery:7.0,hair:'hairtailknight'},
+  {id:'haeun',name:'하은',focusMax:55,focusRecovery:6.3,socialMax:75,socialRecovery:5.8},
+  {id:'doyun',name:'도윤',focusMax:72,focusRecovery:4.1,socialMax:48,socialRecovery:7.4},
+  {id:'yuna',name:'유나',focusMax:84,focusRecovery:3.8,socialMax:67,socialRecovery:5.7},
+  {id:'jisung',name:'지성',focusMax:43,focusRecovery:8.0,socialMax:52,socialRecovery:6.2},
+  {id:'soeun',name:'소은',focusMax:76,focusRecovery:5.2,socialMax:87,socialRecovery:3.8},
+  {id:'hyunwoo',name:'현우',focusMax:61,focusRecovery:5.5,socialMax:65,socialRecovery:5.0},
+  {id:'sua',name:'수아',focusMax:96,focusRecovery:2.7,socialMax:57,socialRecovery:6.4},
+  {id:'eunho',name:'은호',focusMax:48,focusRecovery:6.9,socialMax:89,socialRecovery:5.7},
+  {id:'narin',name:'나린',focusMax:82,focusRecovery:4.6,socialMax:59,socialRecovery:4.7}
 ]);
 
 export const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
