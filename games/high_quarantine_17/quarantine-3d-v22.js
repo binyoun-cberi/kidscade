@@ -346,4 +346,4 @@ function frame(t){
 }
 syncSnapshot(snapshot(),true);requestAnimationFrame(frame);
 
-window.Q17Quarantine3D=Object.freeze({active:true,version:'22.1',scene,camera,renderer,sync:()=>syncSnapshot(snapshot(),true)});
+window.Q17Quarantine3D=Object.freeze({active:true,version:'22.2',scene,camera,renderer,sync:()=>syncSnapshot(snapshot(),true)});
