@@ -657,7 +657,7 @@ test('World v3 road-first grid keeps the core town plus museum district connecte
 
 test('Seed World landscape visually connects nature districts and softens the rigid grid',()=>{
   assert.match(runtime,/buildWorldLandscape\(\{parent:outdoor,addModel,box,plane\}\)/);
-  assert.match(runtime,/kidscade-world-landscape\.js\?v=2/);
+  assert.match(runtime,/kidscade-world-landscape\.js\?v=3/);
   assert.match(landscape,/bridge-wood-narrow\.glb/);
   assert.match(landscape,/tree-palm-detailed-tall\.glb/);
   assert.match(landscape,/tent-detailed-open\.glb/);
@@ -740,7 +740,7 @@ test('Cube Pets are separated into home yard ranch and biome habitats',()=>{
   assert.match(runtime,/if\(isCityArea\(a\.targetX,a\.targetZ\)\)/);
   assert.match(runtime,/a\.interaction\.x=a\.object\.position\.x/);
   assert.match(runtime,/a\.interaction\.z=a\.object\.position\.z/);
-  assert.match(runtime,/const LAYOUT_VERSION=9/);
+  assert.match(runtime,/const LAYOUT_VERSION=10/);
 });
 
 test('regression: NPCs and animals preserve GLB ground offsets instead of sinking or floating',()=>{
@@ -938,7 +938,7 @@ test('four city squares use only shared road gutters and centered crosswalks',()
   assert.match(city,/for\(const x of \[-12,12\]\)/);
   assert.match(city,/for\(const z of \[10\.8,11\.55,12\.3,13\.05\]\)/);
   assert.match(city,/for\(const z of \[24,48\]\)/);
-  assert.match(runtime,/const LAYOUT_VERSION=9/);
+  assert.match(runtime,/const LAYOUT_VERSION=10/);
 });
 
 
@@ -1029,4 +1029,59 @@ test('Seed Natural Museum tracks source-aware specimens and one-by-one exhibit g
   assert.match(city,/\['museum',museum\.x,museum\.z-\.55/);
   assert.match(grid,/museum:\{id:'museum',name:'씨앗 자연박물관',cx:-36,cz:48/);
   assert.match(runtime,/museum:\{x:-36,z:52\.0,name:'씨앗 자연박물관'\}/);
+});
+
+
+test('Seed World v3.59 loads only the active ranch tier, preserves pasture level and leaves no stale colliders',()=>{
+  assert.match(runtime,/const ranchLevelJobs=new Map\(\)/);
+  assert.match(runtime,/ranchLevelLoader=level=>/);
+  assert.match(runtime,/await ranchLevelLoader\(devState\(\)\.ranchLevel\)/);
+  assert.match(runtime,/if\(track==='ranch'\)void ensurePetsBuilt\(\)\.then/);
+  assert.match(runtime,/for\(const actor of ranchVisualActors\.splice\(0\)\)/);
+  assert.match(runtime,/colliders\.outdoor\.splice\(index,1\)/);
+  assert.doesNotMatch(runtime,/for\(const \[levelKey,layout\] of Object\.entries\(ranchLayouts\)\)/);
+  assert.match(runtime,/layout\.ground\[3\],0x91a95f,-\.035/);
+});
+
+test('Seed World v3.59 resolves tower and tree placement conflicts and keeps bus inside north boundary',()=>{
+  const tower=runtime.match(/homeWaterTowerObject=await addModel\(outdoor,ASSET\.sharedWaterTower,\{x:h\.x\+([\d.]+),z:h\.z\+([\d.]+)/);
+  assert.ok(tower,'water tower must be built');
+  const tx=-12+Number(tower[1]),tz=Number(tower[2]);
+  const chest={x:-12+6.1,z:-5.0,w:1.15,d:.95};
+  const overlaps=(a,b)=>Math.abs(a.x-b.x)<(a.w+b.w)/2&&Math.abs(a.z-b.z)<(a.d+b.d)/2;
+  assert.equal(overlaps({x:tx,z:tz,w:2.5,d:2.5},chest),false,'tower overlaps starter chest');
+  assert.match(runtime,/homeWaterTowerCollider=collider\('outdoor',h\.x\+7\.4,h\.z\+\.7/);
+  const originals=[[-43,-7],[-39,-8],[-32,-7],[-43,-3],[-39,-3],[-31,-2],[-43,4],[-39,6],[-31,5],[-42,8],[-32,8]];
+  const extra=[...landscape.matchAll(/x:([-\d.]+),z:([-\d.]+),w:([\d.]+),h:([\d.]+),d:([\d.]+),rot:[^}]+name:'forest-shared-(?:tree|pine)-[^']+'/g)];
+  assert.ok(extra.length>=3,'expected varied shared forest models');
+  for(const m of extra){
+    const x=Number(m[1]),z=Number(m[2]),w=Number(m[3]),d=Number(m[5]);
+    for(const [ox,oz] of originals){
+      assert.ok(!overlaps({x,z,w,d},{x:ox,z:oz,w:2.5,d:2.5}),'shared forest model overlaps legacy tree');
+    }
+  }
+  const park=city.match(/const schoolBusPark=\{x:transit\.x\+([\d.]+),z:transit\.z\+([\d.]+)\}/);
+  const approach=city.match(/if\(elapsed<edge\)offset=\(1-elapsed\/edge\)\*([\d.]+)/);
+  assert.ok(park&&approach,'bus movement must be configured');
+  const northmost=48+Number(park[2])+Number(approach[1])+4.65/2;
+  assert.ok(northmost<=58,'school bus starts outside world bounds');
+});
+
+test('Seed World v3.59 makes school time reachable within a typical session',()=>{
+  const speed=runtime.match(/s\.time\+=dt\*(\d+)/);
+  assert.ok(speed);
+  assert.ok(Number(speed[1])>=12,'clock does not advance enough for a school period');
+  assert.ok((720-480)/Number(speed[1])<=20*60,'no lunch within twenty real minutes');
+});
+
+
+test('ranch facilities expose spatial care and milling actions without farming unlimited daily rewards',()=>{
+  assert.match(runtime,/function useRanchFacility\(kind\)/);
+  assert.match(runtime,/p\.ranchCare=\{fedDay:/);
+  assert.match(runtime,/if\(p\.ranchCare\.fedDay===day\)/);
+  assert.match(runtime,/removeInventoryItem\(feed,1\)/);
+  assert.match(runtime,/removeInventoryItem\('wheat',2\)/);
+  assert.match(runtime,/x,z\+2\.2,1\.5,labels\[key\]/);
+  assert.match(runtime,/for\(const q of actor\.interactions\|\|\[\]\)q\.enabled=active/);
+  assert.match(runtime,/interactables\.outdoor\.splice\(index,1\)/);
 });
