@@ -107,6 +107,7 @@ let teamCheckTimer=0;
 let lessonAccidents=0;
 const CAMPAIGN_STORAGE_KEY='kidscade_teacher_campaign_v1';
 let campaign=loadCampaign();
+const campaignDayStartMastery={...campaign.mastery};
 let dayFinished=false;
 let environment=createDailyEnvironment();
 let stats={
@@ -1272,21 +1273,69 @@ function updateMarkers(t){
   if(doorMarker?.visible){const s=1+Math.sin(t*5)*.09;doorMarker.scale.setScalar(s)}
 }
 
+function renderExamResults(exam){
+  if(!exam){ui.examResults.classList.add('hidden');ui.examResults.innerHTML='';return}
+  const final=exam.examNumber===4;
+  const headline=exam.examNumber===1
+    ? '1차 시험이 기준이에요. 8일차까지 학생마다 한 단계씩 올려 주세요.'
+    : '현재 목표 달성 '+exam.reached+'/'+exam.total+'명 · '+(final?'최종 판정':'아직 남은 시험이 있어요.');
+  const headlineClass=final?(exam.success?' success':' fail'):'';
+  const rows=exam.rows.map(row=>{
+    const target=campaign.targetGrades[row.id]||row.grade;
+    const reached=gradeIndex(row.grade)>=gradeIndex(target);
+    const cls=exam.examNumber===1?'':(reached?' goal':' miss');
+    const label=exam.examNumber===1
+      ? row.grade+' → 목표 '+target
+      : row.grade+' / 목표 '+target+(reached?' ✓':'');
+    return '<div class="examRow'+cls+'"><b>'+row.name+'</b><span class="grade">'+label+'</span><span>'+Math.round(row.mastery)+'점</span></div>';
+  }).join('');
+  ui.examResults.innerHTML='<div class="examHeadline'+headlineClass+'">'+headline+'</div>'+rows;
+  ui.examResults.classList.remove('hidden');
+}
 function finishDay(){
-  setTalk(false);pairs=[];playAudio(ui.bell,.55);updateBoard('오늘도 수고했어요!');
+  if(dayFinished)return;
+  dayFinished=true;
+  setTalk(false);pairs=[];playAudio(ui.bell,.55);
   if(teachingMarker)teachingMarker.visible=false;if(doorMarker)doorMarker.visible=false;
+
+  const exam=examNumberForDay(campaign.day)?conductExam(campaign,STUDENT_PROFILES):null;
+  campaign.dayComplete=true;
+  saveCampaign();
+
+  const learningTotal=STUDENT_PROFILES.reduce((sum,s)=>sum+Math.max(0,(campaign.mastery[s.id]||0)-(campaignDayStartMastery[s.id]||0)),0);
   ui.summary.innerHTML=
+    '<div><strong>'+campaign.day+'/'+CAMPAIGN_DAYS+'</strong><span>캠페인 일차</span></div>'+
     '<div><strong>'+stats.periodsCompleted+'/6</strong><span>마친 수업</span></div>'+
+    '<div><strong>+'+learningTotal.toFixed(1)+'</strong><span>반 전체 학습 성장</span></div>'+
     '<div><strong>'+stats.focusHelps+'</strong><span>집중 도움</span></div>'+
     '<div><strong>'+stats.conflictsMediated+'</strong><span>갈등 중재</span></div>'+
-    '<div><strong>'+stats.healthChecks+'</strong><span>건강 확인</span></div>'+
-    '<div><strong>'+stats.accidents+'</strong><span>안전 사고</span></div>'+
-    '<div><strong>'+stats.safetyMisses+'</strong><span>놓친 안전교육</span></div>'+
-    '<div><strong>'+stats.nurseVisits+'</strong><span>보건실 이용</span></div>'+
-    '<div><strong>'+stats.earlyDismissals+'</strong><span>조퇴</span></div>'+
-    '<div><strong>'+stats.teamConflicts+'</strong><span>모둠 갈등</span></div>'+
-    '<div><strong>'+stats.selfReconciles+'</strong><span>친구끼리 화해</span></div>'+
-    '<div><strong>'+stats.chatsStopped+'</strong><span>수업 장난 정리</span></div>';
+    '<div><strong>'+stats.healthChecks+'</strong><span>건강 확인</span></div>';
+
+  if(exam){
+    renderExamResults(exam);
+    ui.endEyebrow.textContent=campaign.day+'일차 · '+exam.examNumber+'차 시험';
+    if(exam.examNumber===4){
+      if(exam.success){
+        ui.endTitle.textContent='🏆 우리 반 성장 성공!';
+        updateBoard('우리 모두 한 단계 성장했어요!');
+      }else{
+        ui.endTitle.textContent='이번 도전은 목표 미달';
+        updateBoard('다음 도전에서는 모두 함께 성장해요!');
+      }
+      ui.restart.textContent='새 캠페인 시작';
+    }else{
+      ui.endTitle.textContent=exam.examNumber+'차 시험 결과';
+      updateBoard(exam.examNumber+'차 시험을 마쳤어요!');
+      ui.restart.textContent=(campaign.day+1)+'일차 시작';
+    }
+  }else{
+    renderExamResults(null);
+    ui.endEyebrow.textContent='8일 성장 캠페인';
+    ui.endTitle.textContent=campaign.day+'일차를 마쳤어요';
+    updateBoard('오늘도 수고했어요!');
+    ui.restart.textContent=(campaign.day+1)+'일차 시작';
+  }
+  updateCampaignStatus();
   ui.end.classList.remove('hidden');
 }
 
@@ -1306,7 +1355,10 @@ function setupInput(){
 function resize(){renderer.setSize(Math.max(1,innerWidth),Math.max(1,innerHeight),false);camera.aspect=innerWidth/Math.max(1,innerHeight);camera.updateProjectionMatrix()}
 addEventListener('resize',resize);resize();
 
-ui.restart.addEventListener('click',()=>location.reload());
+ui.restart.addEventListener('click',()=>{
+  if(campaign.day>=CAMPAIGN_DAYS&&campaign.dayComplete)resetCampaign();
+  location.reload();
+});
 ui.helpButton.addEventListener('click',()=>{paused=true;ui.help.classList.remove('hidden')});
 ui.closeHelp.addEventListener('click',()=>{ui.help.classList.add('hidden');paused=false;clock3d.getDelta()});
 
@@ -1316,7 +1368,7 @@ async function boot(){
   try{await createActors()}catch(err){
     console.error('[TeacherSim] character load failed',err);ui.intro.classList.add('hidden');ui.assetError.classList.remove('hidden');return;
   }
-  enterStep(0);ui.start.disabled=false;ui.start.textContent='등교하기';
+  enterStep(0);ui.start.disabled=false;ui.start.textContent=campaign.day+'일차 등교하기';updateCampaignStatus();
   ui.start.addEventListener('click',()=>{started=true;ui.intro.classList.add('hidden');clock3d.getDelta()});
   camera.position.set(0,7.7,11.6);camera.lookAt(0,.7,-.5);requestAnimationFrame(loop);
 }
