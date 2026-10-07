@@ -444,6 +444,46 @@ function updateDayStrip(){
   const p=activePeriod();
   ui.dayStrip.innerHTML=PERIODS.map(item=>'<span class="'+(item.period===p?'active ':'')+(item.period< p?'done':'')+'"><i>'+item.icon+'</i><b>'+item.period+'</b><small>'+item.subject+'</small></span>').join('');
 }
+function currentPeriodNumber(){return activePeriod()}
+function isStudentPresent(s){
+  if(s.health?.dismissed)return false;
+  const awayUntil=s.health?.awayUntilPeriod||0;
+  return !(awayUntil&&currentPeriodNumber()<awayUntil);
+}
+function isStudentResting(s){
+  const until=s.health?.restUntilPeriod||0;
+  return !!until&&currentPeriodNumber()<until;
+}
+function studentCanParticipate(s){return isStudentPresent(s)&&!isStudentResting(s)}
+function syncStudentPresence(){
+  students.forEach(s=>{
+    const present=isStudentPresent(s);
+    s.actor.root.visible=present;
+    if(present&&s.health?.awayUntilPeriod&&currentPeriodNumber()>=s.health.awayUntilPeriod){
+      s.health.awayUntilPeriod=0;
+      if(s.health.state!=='healthy'){
+        s.health.state='mild';
+        s.health.checked=false;
+        s.health.revealed=false;
+        s.health.symptomTimer=42+Math.random()*28;
+      }
+    }
+    if(s.health?.restUntilPeriod&&currentPeriodNumber()>=s.health.restUntilPeriod){
+      s.health.restUntilPeriod=0;
+      s.health.resting=false;
+    }
+  });
+}
+function focusRatio(s){return clamp(s.runtime.focus/Math.max(1,s.runtime.focusMax),0,1)}
+function socialRatio(s){return clamp(s.runtime.social/Math.max(1,s.runtime.socialMax),0,1)}
+function healthIcon(s){
+  if(s.health?.dismissed)return '🏠';
+  if(!isStudentPresent(s))return '🏥';
+  if(s.accident)return '⚠️';
+  if(s.health?.revealed&&s.health.state!=='healthy')return '🤒';
+  return '';
+}
+function activeLessonStudents(){return students.filter(studentCanParticipate)}
 function updateHud(){
   const space=SCHOOL_SPACES[currentStep.location]||activeSpace;
   ui.phase.parentElement?.querySelector('small')?.replaceChildren(document.createTextNode(space.icon+' '+space.name+' · 월요일'));
@@ -458,10 +498,20 @@ function updateHud(){
   const conflict=pairs.some(p=>p.state==='fight')?'싸움 발생':pairs.some(p=>p.state==='conflict')?'말다툼':null;
   ui.classState.textContent=conflict||(off>=3?'산만함':off?'조금 산만':'차분함');
   ui.studentStrip.innerHTML=students.map(s=>{
-    let cls='',icon='🙂';if(s.runtime.mode==='offtask'){cls='offtask';icon='😶‍🌫️'}
+    let cls='',icon='🙂';
     const pair=pairs.find(p=>p.a===s||p.b===s);
-    if(pair?.state==='conflict'){cls='conflict';icon='💬'}if(pair?.state==='fight'){cls='fight';icon='💥'}
-    return '<div class="studentChip '+cls+'"><i>'+icon+'</i><span>'+s.runtime.name+'</span></div>';
+    if(s.runtime.mode==='offtask'){cls='offtask';icon='😶‍🌫️'}
+    if(pair?.state==='conflict'){cls='conflict';icon='💬'}
+    if(pair?.state==='fight'){cls='fight';icon='💥'}
+    const hIcon=healthIcon(s);if(hIcon){icon=hIcon;cls+=' health'}
+    if(!isStudentPresent(s))cls+=' away';
+    if(isStudentResting(s))cls+=' resting';
+    const pref=currentStep.kind==='lesson'?preferenceFor(s.runtime.id,currentStep.subject):'neutral';
+    const prefMark=currentStep.kind==='lesson'?preferenceIcon(pref):'';
+    const f=Math.round(focusRatio(s)*100),so=Math.round(socialRatio(s)*100);
+    return '<div class="studentChip '+cls+'"><i class="face">'+icon+'</i><span class="studentName">'+s.runtime.name+'</span>'+
+      (prefMark?'<em class="pref">'+prefMark+'</em>':'')+
+      '<span class="meters"><b class="focusMeter" style="width:'+f+'%"></b><b class="socialMeter" style="width:'+so+'%"></b></span></div>';
   }).join('');
   updateDayStrip();
 }
