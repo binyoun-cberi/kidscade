@@ -149,7 +149,7 @@ const keys={};const touch={x:0,y:0,active:false,pointer:null};let lookPointer=nu
 function clearGroup(g){while(g.children.length)g.remove(g.children[0])}
 async function asset(url){if(!cache.has(url))cache.set(url,loader.loadAsync(url).catch(err=>{cache.delete(url);throw err}));return cache.get(url)}
 function recolor(root,palette){root.traverse(o=>{if(!o.isMesh)return;const arr=Array.isArray(o.material)?o.material:[o.material];const made=arr.map((m,i)=>{const n=m.clone();if(palette?.length&&n.color)n.color.setHex(palette[i%palette.length]);if('roughness'in n)n.roughness=Math.max(.48,n.roughness??.7);return n});o.material=Array.isArray(o.material)?made:made[0];o.castShadow=true;o.receiveShadow=true})}
-async function fitted(url,size=1,palette=null){const g=await asset(url),clone=cloneSkeleton(g.scene),wrap=new THREE.Group();wrap.add(clone);recolor(clone,palette);let b=new THREE.Box3().setFromObject(clone),s=new THREE.Vector3();b.getSize(s);clone.scale.multiplyScalar(size/(Math.max(s.x,s.y,s.z)||1));clone.updateMatrixWorld(true);b=new THREE.Box3().setFromObject(clone);const center=b.getCenter(new THREE.Vector3());clone.position.x-=center.x;clone.position.z-=center.z;clone.position.y-=b.min.y;wrap.userData.animations=g.animations||[];return wrap}
+async function fitted(url,size=1,palette=null){const g=await asset(url),clone=cloneSkeleton(g.scene),wrap=new THREE.Group();wrap.add(clone);recolor(clone,palette);clone.traverse(n=>{if(n.isSkinnedMesh)n.frustumCulled=false});let b=new THREE.Box3().setFromObject(clone),s=new THREE.Vector3();b.getSize(s);clone.scale.multiplyScalar(size/(Math.max(s.x,s.y,s.z)||1));clone.updateMatrixWorld(true);b=new THREE.Box3().setFromObject(clone);const center=b.getCenter(new THREE.Vector3());clone.position.x-=center.x;clone.position.z-=center.z;clone.position.y-=b.min.y;wrap.userData.animations=g.animations||[];return wrap}
 function groundModel(root,surfaceY=0,clearance=.035){
  root.updateMatrixWorld(true);
  const before=new THREE.Box3().setFromObject(root),targetMin=surfaceY+clearance,delta=targetMin-before.min.y;
@@ -169,8 +169,13 @@ function keepPedestrianAboveGround(m,minClearance=.02){
  const surface=Number.isFinite(m.surfaceY)?m.surfaceY:0,target=surface+minClearance,foot=pedestrianFootY(m);
  if(foot<target)m.root.position.y+=target-foot
 }
+function inPlaceCharacterClip(source){
+ if(!source)return null;const clip=source.clone?source.clone():source;
+ if(clip?.tracks)clip.tracks=clip.tracks.filter(track=>!/(^|[./])(?:root|bone)\.position$/i.test(String(track.name||'')));
+ return clip
+}
 function startModelAnimation(root,pattern=/walk|run|sprint/i){
- const clips=root?.userData?.animations||[],clip=clips.find(c=>pattern.test(c.name||''))||clips.find(c=>/idle/i.test(c.name||''))||clips[0];if(!clip)return null;
+ const clips=root?.userData?.animations||[],source=clips.find(c=>pattern.test(c.name||''))||clips.find(c=>/idle/i.test(c.name||''))||clips[0],clip=inPlaceCharacterClip(source);if(!clip)return null;
  const mixer=new THREE.AnimationMixer(root);mixer.clipAction(clip).reset().play();return mixer
 }
 function box(size,pos,color,rough=.88,parent=world){const m=new THREE.Mesh(new THREE.BoxGeometry(...size),new THREE.MeshStandardMaterial({color,roughness:rough}));m.position.set(...pos);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}

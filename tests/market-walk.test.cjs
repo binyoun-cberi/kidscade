@@ -142,6 +142,12 @@ test('town people use skeleton-safe clones and actual walk animation instead of 
   assert.ok(js.includes("m.mixer?.update(dt)"));
   assert.ok(js.includes("mixer=startModelAnimation(r,/walk|sprint|run/i)"));
 });
+test('town character animation strips root motion and disables skinned-mesh frustum culling',()=>{
+  assert.ok(js.includes("if(n.isSkinnedMesh)n.frustumCulled=false"));
+  assert.ok(js.includes("function inPlaceCharacterClip(source)"));
+  assert.ok(js.includes("(?:root|bone)\\.position$"));
+  assert.ok(js.includes("clip=inPlaceCharacterClip(source)"));
+});
 test('traffic crashes and dog attacks have distinct audible and visual feedback',()=>{
   assert.ok(js.includes("function playCarImpactSound("));
   assert.ok(js.includes("function playDogSound("));
@@ -152,4 +158,4 @@ test('traffic crashes and dog attacks have distinct audible and visual feedback'
   assert.ok(js.includes("playDogSound('bite')"));
   assert.ok(js.includes("updateCameraImpact(dt)"));
 });
-test('market page cache-busts the town feedback fix',()=>{assert.ok(html.includes('market-walk.js?v=15-town-feedback'))});
+test('market page cache-busts the town animation safety fix',()=>{assert.ok(html.includes('market-walk.js?v=16-town-animation'))});
