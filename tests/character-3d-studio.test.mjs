@@ -34,7 +34,7 @@ test('3D character studio previews and exports the standard animation set',()=>{
   }
   assert.match(js,/GLTFExporter/);
   assert.match(js,/binary:true/);
-  assert.match(js,/animations:clips/);
+  assert.match(js,/animations:bodyStyle==='assetChibi'\\?chibiAnimations:clips/);
   assert.match(js,/kidscade-'\+bodyStyle\+'-rigged-character\\.glb/);
 });
 
