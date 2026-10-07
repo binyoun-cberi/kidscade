@@ -238,20 +238,22 @@ test('Chibi hair is mutually exclusive across presets dropdown and part toggles'
 });
 
 
-test('male Chibi preset has its own rigged base face hair and clothes',()=>{
+test('male Chibi preset reuses source meshes for body face hair and clothes',()=>{
   const js=read('teacher/character-3d-studio.js');
   const html=read('teacher/character-3d-studio.html');
   for(const name of [
     'kidscade_male_body','kidscade_male_eyes','kidscade_male_brows',
-    'kidscade_male_hair_short','kidscade_male_tshirt','kidscade_male_shorts'
+    'kidscade_male_tshirt','kidscade_male_shorts'
   ]) assert.match(js,new RegExp(name));
   assert.match(js,/function createKidscadeMaleSet/);
-  assert.match(js,/broader shoulders|어깨\/몸통을 넓히고/);
+  assert.match(js,/const lashesSource=getNode\('eyelashes'\)/);
+  assert.match(js,/const shirtSource=getNode\('shirt'\)/);
+  assert.match(js,/const shortsSource=getNode\('ninjasuitshort'\)/);
+  assert.match(js,/male:\[\.\.\.MALE_BASE_NODES,'hairone'/);
   assert.match(js,/eyeCenterY=1\.620/);
-  assert.match(js,/DEF-face/);
   assert.match(html,/data-chibi-preset="male"/);
   assert.match(html,/남자 기본/);
-  assert.match(html,/kidscade_male_hair_short/);
+  assert.doesNotMatch(html,/kidscade_male_hair_short/);
 });
 
 test('male and female Chibi bases are mutually exclusive',()=>{
@@ -262,11 +264,33 @@ test('male and female Chibi bases are mutually exclusive',()=>{
   assert.match(js,/PRESETS=\{[\s\S]*male:\[\.\.\.MALE_BASE_NODES/);
 });
 
-test('male Chibi manifest records the generated base set',()=>{
+test('male Chibi manifest records source-mesh reuse',()=>{
   const manifest=JSON.parse(read('chibi/asset-manifest.json'));
   assert.ok(manifest.presets.male.includes('kidscade_male_body'));
-  assert.ok(manifest.presets.male.includes('kidscade_male_hair_short'));
+  assert.ok(manifest.presets.male.includes('hairone'));
   assert.equal(manifest.customParts.kidscade_male_body.type,'body');
-  assert.equal(manifest.customParts.kidscade_male_tshirt.type,'garment');
-  assert.equal(manifest.customParts.kidscade_male_shorts.type,'garment');
+  assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
+  assert.equal(manifest.customParts.kidscade_male_tshirt.generatedFrom,'shirt');
+  assert.equal(manifest.customParts.kidscade_male_shorts.generatedFrom,'ninjasuitshort');
+  assert.match(manifest.customParts.kidscade_male_set_policy.rule,/no procedural hair, sleeves/);
+});
+
+
+test('male Chibi generator does not create procedural hair sleeves or compressed pants',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const start=js.indexOf('function createKidscadeMaleSet(){');
+  const end=js.indexOf('function makeUnlitMaterial(source){',start);
+  assert.ok(start>=0&&end>start);
+  const male=js.slice(start,end);
+  assert.doesNotMatch(male,/SphereGeometry|ConeGeometry|makeSleeveGeometry/);
+  assert.doesNotMatch(male,/pantsSource|getNode\('pants'\)|shortsTop/);
+  assert.match(male,/getNode\('ninjasuitshort'\)/);
+  assert.match(male,/meshPolicy:'reuse-source-meshes-only'/);
+});
+
+
+test('avatar spec tracks visible base meshes as well as wardrobe toggles',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  assert.match(js,/const TRACKED_PART_NODES=\[\.\.\.new Set\(\[\.\.\.BASE_VARIANT_NODES,\.\.\.TOGGLE_NODES\]\)\]/);
+  assert.match(js,/return TRACKED_PART_NODES\.filter\(name=>getNode\(name\)\?\.visible\)/);
 });

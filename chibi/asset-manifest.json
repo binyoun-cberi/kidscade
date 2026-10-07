@@ -103,7 +103,7 @@
       "kidscade_male_eyes",
       "kidscade_male_brows",
       "tooth",
-      "kidscade_male_hair_short",
+      "hairone",
       "kidscade_male_tshirt",
       "kidscade_male_shorts",
       "shoe"
@@ -149,42 +149,44 @@
       "label": "남자 기본 바디",
       "type": "body",
       "generatedFrom": "character_low",
-      "rigging": "source 78-bone skin weights",
-      "shaping": "broader shoulders, straighter torso, narrower hips, flatter chest"
+      "rigging": "source character_low topology + 78-bone skin weights",
+      "shaping": "broader shoulders, straighter torso, narrower hips, flatter chest, stronger jaw"
     },
     "kidscade_male_eyes": {
       "label": "남자 기본 눈",
       "type": "face",
       "generatedFrom": "eyes",
-      "rigging": "source eye skin weights",
+      "rigging": "source eyes topology + skin weights",
       "shaping": "reduced vertical eye height, slightly increased width"
     },
     "kidscade_male_brows": {
       "label": "남자 기본 눈썹",
       "type": "face-detail",
-      "generatedFrom": "procedural tubes",
-      "rigging": "rigid DEF-face"
-    },
-    "kidscade_male_hair_short": {
-      "label": "남자 짧은 머리",
-      "type": "hair",
-      "generatedFrom": "procedural cap + fringe",
-      "rigging": "rigid DEF-face",
-      "color": "#3b2a22"
+      "generatedFrom": "eyelashes",
+      "rigging": "source eyelashes topology + skin weights",
+      "shaping": "raised and vertically compressed into brows"
     },
     "kidscade_male_tshirt": {
       "label": "남자 기본 티셔츠",
       "type": "garment",
       "generatedFrom": "shirt",
-      "rigging": "shirt skin weights + upper-arm sleeves",
-      "color": "#4d78d6"
+      "rigging": "source shirt topology + skin weights",
+      "color": "#4d78d6",
+      "shaping": "wider torso fit; no procedural sleeves"
     },
     "kidscade_male_shorts": {
       "label": "남자 기본 반바지",
       "type": "garment",
-      "generatedFrom": "pants",
-      "rigging": "pants skin weights",
-      "color": "#29446f"
+      "generatedFrom": "ninjasuitshort",
+      "rigging": "source ninjasuitshort topology + skin weights",
+      "color": "#29446f",
+      "shaping": "minor width/depth adjustment only"
+    },
+    "kidscade_male_set_policy": {
+      "label": "남자 기본 세트 메시 정책",
+      "type": "policy",
+      "rule": "reuse existing Chibi mesh topology and source skin weights; no procedural hair, sleeves, or compressed long-pants shortcuts",
+      "defaultHair": "hairone"
     }
   }
 }
