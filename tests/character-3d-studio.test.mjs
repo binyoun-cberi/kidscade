@@ -137,3 +137,14 @@ test('hoodie bone resolver tolerates Three-sanitized Blender names',()=>{
   assert.match(js,/function resolveBoneIndex/);
   assert.match(js,/normalizeRuntimeBoneName\(bone\.name\)===wanted/);
 });
+
+
+test('hoodie pocket uses a thin shaped kangaroo geometry',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  assert.match(js,/new THREE\.Shape\(\)/);
+  assert.match(js,/quadraticCurveTo\(0,\.118,\.095,\.090\)/);
+  assert.match(js,/new THREE\.ExtrudeGeometry\(pocketShape/);
+  assert.match(js,/depth:\.012/);
+  assert.match(js,/kidscade_hoodie_blue_pocket/);
+  assert.doesNotMatch(js,/new THREE\.BoxGeometry\(\.30,\.125,\.045/);
+});
