@@ -25,7 +25,23 @@
 .compose{display:grid;grid-template-columns:minmax(180px,1fr) auto;gap:8px;align-items:stretch;max-width:1200px;margin:0 auto 7px}.wordbox{min-height:46px;border:2px solid #c8bea0;border-radius:13px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:6px 12px;gap:12px}.current-word{font:1000 clamp(19px,3vw,30px)/1 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.word-meta{text-align:right;color:#797463;font-size:10px;font-weight:850;line-height:1.3}.actions{display:flex;gap:6px}.action{border:1px solid #c8bea0;border-radius:12px;background:#f5f0dc;color:#3b3932;padding:0 12px;font-weight:950;min-width:65px;cursor:pointer}.action.primary{background:#20242c;border-color:#20242c;color:#fff;min-width:86px}.action.swap{background:#dcf6ef;border-color:#9dd7c9}.action:disabled{opacity:.42;cursor:default}
 .rack{display:grid;grid-template-columns:repeat(12,minmax(34px,1fr));gap:6px;max-width:1200px;margin:0 auto;padding-right:70px}/* Reserved for the floating Kidscade game menu; never cover letter tiles. */.tile{height:52px;border:1px solid #b7ac89;border-bottom:5px solid #968b6c;border-radius:11px;background:linear-gradient(#fffdf7,#eee6cb);font:1000 clamp(19px,2.6vw,27px)/1 ui-monospace,monospace;color:#22242a;box-shadow:0 3px 7px rgba(82,69,36,.11);cursor:pointer;position:relative}.tile:active{transform:translateY(3px);border-bottom-width:2px}.tile.sel{background:linear-gradient(#30d9d2,#16aaa7);border-color:#0e9694;border-bottom-color:#087f7d;color:#052f2e;transform:translateY(2px)}.tile.sel:after{content:attr(data-order);position:absolute;right:5px;top:4px;width:15px;height:15px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#12716f;font:900 9px/1 sans-serif}
 .toast{position:fixed;left:50%;top:66px;z-index:30;transform:translate(-50%,-12px);opacity:0;pointer-events:none;padding:9px 14px;border-radius:999px;background:#20242c;color:#fff;font-size:12px;font-weight:950;box-shadow:0 10px 30px rgba(0,0,0,.24);transition:.18s}.toast.show{opacity:1;transform:translate(-50%,0)}
-.overlay{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:18px;background:rgba(29,29,27,.58);backdrop-filter:blur(5px)}.overlay.hidden{display:none}.panel{width:min(650px,94vw);max-height:88vh;overflow:auto;background:#fffdf0;border:3px solid #20242c;border-radius:24px;padding:24px;box-shadow:0 25px 80px rgba(0,0,0,.3)}.panel h1{font-size:clamp(34px,8vw,66px);margin:0;letter-spacing:-.07em;line-height:.95}.panel h1 span{color:#19bdb7}.panel .lead{color:#635f53;font-weight:750;line-height:1.55;margin:12px 0 16px}.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.rule{padding:12px;border-radius:14px;background:#f0ead3;border:1px solid #d5caaa}.rule b{display:block;font-size:13px}.rule span{display:block;color:#7b7461;font-size:11px;margin-top:4px;line-height:1.4}.start{width:100%;margin-top:15px;border:0;border-radius:15px;min-height:54px;background:#20242c;color:#fff;font-weight:1000;font-size:17px;cursor:pointer;box-shadow:0 5px 0 #090a0c}.start:active{transform:translateY(3px);box-shadow:0 2px 0 #090a0c}
+.overlay{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:18px;background:rgba(29,29,27,.58);backdrop-filter:blur(5px)}.overlay.hidden{display:none}.panel{width:min(650px,94vw);max-height:88vh;overflow:auto;background:#fffdf0;border:3px solid #20242c;border-radius:24px;padding:24px;box-shadow:0 25px 80px rgba(0,0,0,.3)}.panel h1{font-size:clamp(34px,8vw,66px);margin:0;letter-spacing:-.07em;line-height:.95}.panel h1 span{color:#19bdb7}.panel .lead{color:#635f53;font-weight:750;line-height:1.55;margin:12px 0 16px}.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.rule{padding:12px;border-radius:14px;background:#f0ead3;border:1px solid #d5caaa}.rule b{display:block;font-size:13px}.rule span{display:block;color:#7b7461;font-size:11px;margin-top:4px;line-height:1.4}.start{width:100%;margin-top:15px;border:0;border-radius:15px;min-height:54px;background:#20242c;color:#fff;font-weight:1000;font-size:17px;cursor:pointer;box-shadow:0 5px 0 #090a0c}.start:active{transform:translateY(3px);box-shadow:0 2px 0 #090a0c}.secondary-start{background:#ede6d1;color:#292d31;border:1px solid #cfc4a1;box-shadow:none;min-height:43px;font-size:13px}.secondary-start:active{box-shadow:none}
+.stage-trigger{display:flex;align-items:center;gap:5px;min-height:37px;background:#20242c;color:#fff;border:0;border-radius:10px;padding:6px 11px;font-weight:950;font-size:11px;cursor:pointer;white-space:nowrap}
+.stage-trigger b{font-size:15px;color:#8de1db}
+.stage-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:15px 0 10px}
+.stage-choice{position:relative;text-align:left;display:flex;gap:9px;min-height:77px;align-items:center;padding:10px;background:var(--stage-paper,#f0ebd9);border:2px solid var(--stage-accent,#c7b990);border-radius:14px;color:#23252b;cursor:pointer}
+.stage-choice b{display:block;font-size:13px;letter-spacing:.02em}.stage-choice small{display:block;color:#6a665f;margin-top:3px;font-size:11px;line-height:1.25}
+.stage-choice .stage-number{flex-shrink:0;display:grid;place-items:center;width:35px;height:35px;border-radius:10px;background:var(--stage-accent,#c7b990);color:#fff;font-size:17px;font-weight:950}
+.stage-choice.selected{outline:3px solid #1cc8bd;outline-offset:-1px;box-shadow:0 4px 14px rgba(15,114,113,.16)}
+.stage-choice:disabled{opacity:.42;filter:grayscale(.5);cursor:default}
+.stage-choice .complete{position:absolute;right:7px;top:5px;font-size:10px;font-weight:900;color:#287a67}
+.stage-subhead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.stage-subhead b{font-size:14px}.stage-subhead span{font-size:11px;color:#6c6556}
+#stageDetail{font-size:12px;line-height:1.5;margin:7px 0 9px;color:#575b61}
+.wave-progress{position:absolute;left:12px;right:12px;bottom:8px;height:5px;background:rgba(42,45,50,.12);border-radius:99px;overflow:hidden;pointer-events:none}
+.wave-progress span{display:block;height:100%;width:0;background:#27bdb5;border-radius:99px;transition:width .16s}
+@media(max-width:620px){.stage-list{grid-template-columns:1fr}.stage-trigger{padding:5px 8px;font-size:10px}}
+@media (orientation:landscape) and (max-height:500px){.stage-trigger{min-height:33px}}
 .dict-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.dict-head h2{margin:0;font-size:25px}.close{border:1px solid #c9bea0;background:#f3edd8;border-radius:11px;min-width:40px;height:40px;font-weight:1000}.dict-stats{color:#77705f;font-size:12px;font-weight:850;margin:8px 0 12px}.dict-list{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.dict-item{border:1px solid #d8ceb0;border-left:6px solid var(--c,#777);background:#fff;padding:9px 10px;border-radius:11px}.dict-item b{font:1000 16px/1 ui-monospace,monospace}.dict-item span{display:block;font-size:10px;color:#77705f;margin-top:4px;font-weight:800}.empty{padding:28px;text-align:center;color:#77705f;font-weight:850}
  .result-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:16px 0}.result-grid div{padding:11px 6px;background:#f1ebd5;border-radius:12px;text-align:center}.result-grid b{display:block;font-size:22px}.result-grid span{display:block;color:#77705f;font-size:10px;font-weight:850;margin-top:2px}
 @media(max-width:820px){.brand small{display:none}.brand{min-width:120px}.chip{min-width:58px;padding:6px}.chip span{font-size:8px}.chip b{font-size:14px}.rack{gap:4px}.tile{height:48px}.status{max-width:55%}.compose{grid-template-columns:1fr}.actions{min-height:43px}.action{flex:1}.wordbox{min-height:43px}.bottom{padding-top:6px}.dict-list{grid-template-columns:1fr}}
@@ -58,6 +74,7 @@
       <div class="chip"><span>INK</span><b id="inkText">20</b></div>
       <div class="chip"><span>SCORE</span><b id="scoreText">0</b></div>
     </div>
+    <button class="stage-trigger" id="stageBtn" type="button" aria-label="스테이지 선택">STAGE <b id="stageText">01</b></button>
     <button class="iconbtn" id="dictBtn" type="button" aria-label="단어 도감">Aa</button>
     <button class="iconbtn" id="soundBtn" type="button" aria-label="효과음">🔊</button>
   </header>
@@ -66,6 +83,7 @@
     <div class="status" id="statusBox"><b>준비</b><div>글자를 눌러 단어를 만든 뒤 타워를 배치하세요.</div></div>
     <button class="wave-btn" id="waveBtn" type="button">WAVE 1 시작</button>
     <div class="inspect" id="inspectBox"></div>
+    <div class="wave-progress" aria-label="현재 웨이브 진행도"><span id="waveProgress"></span></div>
   </main>
   <section class="bottom">
     <div class="compose">
@@ -85,12 +103,10 @@
   <div class="panel">
     <h1>WORD <span>SIEGE</span></h1>
     <p class="lead">알파벳으로 영어 단어를 만들면 그 단어가 <b>WORD TOWER</b>가 됩니다. <b id="dictionaryTotal">437</b>개 단어와 다양한 고유 효과를 발견해 8번의 웨이브를 막으세요.</p>
-    <div class="rules">
-      <div class="rule"><b>1. 글자를 조합</b><span>아래 알파벳 타일을 눌러 아는 단어를 찾아보세요.</span></div>
-      <div class="rule"><b>2. INK로 건설</b><span>단어마다 비용이 다릅니다. BUILD → 보드 터치로 건설하세요.</span></div>
-      <div class="rule"><b>3. 단어 조합</b><span>MINER로 전투 중 INK를 캐고, FIRE+WIND처럼 서로 어울리는 단어를 가까이 놓아 콤보를 찾으세요.</span></div>
-    </div>
-    <button class="start" id="startBtn" type="button">바로 시작</button>
+    <div class="stage-subhead"><b>SELECT STAGE</b><span id="stageProgressText">1 / 10 해금</span></div>
+    <div class="stage-list" id="stageList" aria-label="스테이지 목록"></div>
+    <p id="stageDetail">단어 타워를 배치해 웨이브를 막으세요.</p>
+    <button class="start" id="startBtn" type="button">STAGE 01 시작</button>
   </div>
 </div>
 <div class="overlay hidden" id="dictOverlay">
@@ -111,10 +127,13 @@
       <div><b id="resultHardest">-</b><span>가장 어려운 단어</span></div>
       <div><b id="resultCombos">0</b><span>발견한 콤보</span></div>
     </div>
+    <button class="start" id="nextBtn" type="button" hidden>다음 스테이지</button>
     <button class="start" id="retryBtn" type="button">다시 플레이</button>
+    <button class="start secondary-start" id="chooseBtn" type="button">스테이지 선택</button>
   </div>
 </div>
 <script src="word-data.js"></script>
+<script src="stages.js"></script>
 <script src="game.js"></script>
 </body>
 </html>
