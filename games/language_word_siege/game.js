@@ -3,11 +3,12 @@
 
 const D=window.WordSiegeData;
 if(!D) throw new Error('WordSiegeData missing');
+const KS=window.KidscadeStorage||null;
 
 const $=id=>document.getElementById(id);
 const canvas=$('game'), ctx=canvas.getContext('2d');
 const boardWrap=$('boardWrap'), rackEl=$('rack'), currentWordEl=$('currentWord'), wordMetaEl=$('wordMeta');
-const waveBtn=$('waveBtn'), buildBtn=$('buildBtn'), clearBtn=$('clearBtn'), swapBtn=$('swapBtn');
+const waveBtn=$('waveBtn'), buildBtn=$('buildBtn'), clearBtn=$('clearBtn'), hintBtn=$('hintBtn'), swapBtn=$('swapBtn');
 const coreText=$('coreText'), waveText=$('waveText'), inkText=$('inkText'), scoreText=$('scoreText');
 const statusBox=$('statusBox'), inspectBox=$('inspectBox'), toastEl=$('toast');
 const startOverlay=$('startOverlay'), dictOverlay=$('dictOverlay'), resultOverlay=$('resultOverlay');
@@ -30,9 +31,15 @@ function freshState(){
     discovered:new Set(loadDiscovered()), ended:false
   };
 }
-function loadDiscovered(){try{return JSON.parse(localStorage.getItem(STORAGE_DISC)||'[]')}catch{return []}}
-function saveDiscovered(){try{localStorage.setItem(STORAGE_DISC,JSON.stringify([...state.discovered]))}catch{}}
-function saveBest(){try{const prev=Number(localStorage.getItem(STORAGE_BEST)||0); if(state.score>prev)localStorage.setItem(STORAGE_BEST,String(state.score))}catch{}}
+function loadDiscovered(){
+  try{return KS?KS.getJson(STORAGE_DISC,[]):JSON.parse(localStorage.getItem(STORAGE_DISC)||'[]')}catch{return []}
+}
+function saveDiscovered(){
+  try{if(KS)KS.setJson(STORAGE_DISC,[...state.discovered]);else localStorage.setItem(STORAGE_DISC,JSON.stringify([...state.discovered]))}catch{}
+}
+function saveBest(){
+  try{const prev=KS?KS.getInt(STORAGE_BEST,0):Number(localStorage.getItem(STORAGE_BEST)||0);if(state.score>prev){if(KS)KS.setRaw(STORAGE_BEST,String(state.score));else localStorage.setItem(STORAGE_BEST,String(state.score))}}catch{}
+}
 
 function resize(){
   const r=boardWrap.getBoundingClientRect(); dpr=Math.min(2,window.devicePixelRatio||1);
@@ -77,7 +84,7 @@ function renderRack(){
 function updateComposer(){
   const w=tileWord();currentWordEl.textContent=w||'_';
   const def=D.words[w];
-  if(!w) wordMetaEl.textContent='글자를 골라보세요';
+  if(!w){const n=availableWords().length;wordMetaEl.textContent=n?'현재 만들 수 있는 단어 '+n+'개':'글자를 골라보세요'}
   else if(def) wordMetaEl.innerHTML=def.meaning+' · '+def.roleLabel+'<br>난도 '+('★'.repeat(def.difficulty));
   else wordMetaEl.textContent='등록되지 않은 단어';
   buildBtn.disabled=!def||!!state.placing;
@@ -95,6 +102,27 @@ function canSpell(word){
   const counts={}; for(const c of state.rack)counts[c]=(counts[c]||0)+1;
   for(const c of word){if(!counts[c])return false;counts[c]--}
   return true;
+}
+function availableWords(){
+  if(!state)return [];
+  return D.wordList.filter(w=>w.length<=D.maxRack&&canSpell(w));
+}
+function showHint(){
+  if(state.placing)return;
+  if(state.ink<1){toast('HINT에는 INK가 1 필요해요');return}
+  let list=availableWords();
+  if(!list.length){ensurePlayableRack();renderRack();updateComposer();list=availableWords()}
+  if(!list.length){toast('단어를 찾지 못했어요. SWAP을 해보세요');return}
+  list.sort((a,b)=>{
+    const ad=state.discovered.has(a)?1:0,bd=state.discovered.has(b)?1:0;
+    if(ad!==bd)return ad-bd;
+    const da=D.words[a].difficulty,db=D.words[b].difficulty;
+    if(da!==db)return da-db;
+    return a.length-b.length;
+  });
+  const w=list[0],def=D.words[w];state.ink-=1;updateHud();
+  const pattern=w[0]+' '+Array(Math.max(0,w.length-1)).fill('_').join(' ');
+  setStatus('HINT · '+def.meaning,pattern+' · '+w.length+'글자');toast(def.meaning+' · '+pattern);beep(760,.08,'triangle',.025)
 }
 function ensurePlayableRack(){
   const has=D.wordList.some(w=>w.length<=7&&canSpell(w));
@@ -117,7 +145,7 @@ function swapOne(){
 function beginPlacement(){
   const w=tileWord(),def=D.words[w]; if(!def)return;
   state.placing={word:w,def,indices:state.selected.slice()};
-  setStatus('배치 중 · '+w,'빈 공간을 눌러 Word Tower를 세우세요. 경로 위에는 놓을 수 없습니다.');
+  setStatus('배치 중 · '+w,def.role==='resource'?'녹색 INK 광석 가까운 빈 공간을 누르세요.':'빈 공간을 눌러 Word Tower를 세우세요. 경로 위에는 놓을 수 없습니다.');
   buildBtn.disabled=true;beep(700,.07,'square');
 }
 function cancelPlacement(){state.placing=null;setStatus(state.inWave?'전투 중':'준비','글자를 눌러 단어를 만든 뒤 타워를 배치하세요.');updateComposer()}
@@ -152,6 +180,11 @@ function buildTower(p){
   if(word==='VOLCANO'){stats.damage*=1.55;stats.area=.14;stats.burn=12}
   if(word==='DRAGON'){stats.damage*=1.45;stats.burn=11}
   if(word==='JUGGERNAUT'){stats.damage*=1.65;stats.area=.13}
+  if(def.role==='resource'&&!state.resources.some(r=>r.amount>0&&dist(p,r)<=stats.range)){
+    toast('채굴 타워는 녹색 INK 광석 가까이에 놓아야 해요');
+    setStatus('배치 위치 다시 선택','MINER·DRILL 같은 채굴 타워는 INK 광석이 범위 안에 있어야 합니다.');
+    return;
+  }
   const tower={id:state.uid++,x:p.x,y:p.y,word,def,stats,cool:Math.random()*.3,harvestClock:0,links:[],pulse:0};
   state.towers.push(tower); state.unique.add(word); state.builtWords.push(word);
   const newly=!state.discovered.has(word);state.discovered.add(word);saveDiscovered();
@@ -422,7 +455,7 @@ function restart(){
 
 $('startBtn').addEventListener('click',()=>{startOverlay.classList.add('hidden');restart();beep(660,.1,'triangle')});
 $('retryBtn').addEventListener('click',restart);
-waveBtn.addEventListener('click',startWave);buildBtn.addEventListener('click',beginPlacement);clearBtn.addEventListener('click',()=>{if(state.placing)cancelPlacement();clearSelection()});swapBtn.addEventListener('click',swapOne);
+waveBtn.addEventListener('click',startWave);buildBtn.addEventListener('click',beginPlacement);clearBtn.addEventListener('click',()=>{if(state.placing)cancelPlacement();clearSelection()});hintBtn.addEventListener('click',showHint);swapBtn.addEventListener('click',swapOne);
 $('dictBtn').addEventListener('click',openDictionary);$('dictClose').addEventListener('click',()=>dictOverlay.classList.add('hidden'));
 $('soundBtn').addEventListener('click',()=>{muted=!muted;$('soundBtn').textContent=muted?'🔇':'🔊';if(!muted)beep(520)});
 window.addEventListener('keydown',e=>{
