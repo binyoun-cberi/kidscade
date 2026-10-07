@@ -106,3 +106,25 @@ test('Chibi studio provides an import map for Three addons',()=>{
   assert.match(html,/"three": "\/assets\/vendor\/three-r160\/three\.module\.js"/);
   assert.match(html,/"three\/addons\/": "\/assets\/vendor\/three-r160\/addons\/"/);
 });
+
+
+test('Kidscade blue hoodie is generated from the source skinned shirt',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const html=read('teacher/character-3d-studio.html');
+  assert.match(js,/kidscade_hoodie_blue/);
+  assert.match(js,/createKidscadeBlueHoodie/);
+  assert.match(js,/const shirt=getNode\('shirt'\)/);
+  assert.match(js,/body\.bind\(shirt\.skeleton,shirt\.bindMatrix\)/);
+  assert.match(js,/DEF-spine\.003/);
+  assert.match(js,/kidscade_hoodie_blue_pocket/);
+  assert.match(js,/kidscade_hoodie_string_/);
+  assert.match(html,/data-chibi-preset="hoodie"/);
+});
+
+test('Chibi manifest records the custom hoodie part',()=>{
+  const manifest=JSON.parse(read('chibi/asset-manifest.json'));
+  assert.ok(manifest.presets.hoodie.includes('kidscade_hoodie_blue'));
+  assert.equal(manifest.customParts.kidscade_hoodie_blue.type,'garment');
+  assert.equal(manifest.customParts.kidscade_hoodie_blue.generatedFrom,'shirt');
+  assert.equal(manifest.customParts.kidscade_hoodie_blue.color,'#4f7df3');
+});
