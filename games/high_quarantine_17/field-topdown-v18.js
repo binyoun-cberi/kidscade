@@ -179,7 +179,7 @@ function resetMission(mode,payload,done){
   ui.briefText.innerHTML='검역을 통과한 감염자가 캠프 안으로 들어왔습니다. 주민은 혼자 대피하지 못합니다. <b>가까이 붙어 호위</b>해야 안전구역으로 움직이며, 보급상자의 부품으로 자동포탑을 재가동할 수 있습니다.';
   ui.objective.textContent='목표 · 주민 곁에서 호위해 안전구역까지 대피 + 위협 제거';
  }else if(mode==='isolation'){
-  state.player.x=390;state.player.y=238;state.waves=[Math.max(3,Number(state.payload.count)||3)];
+  state.player.x=390;state.player.y=238;state.waves=[Math.max(1,Number(state.payload.count)||1)];
   ui.title.childNodes[0].nodeValue='CAMP-17 격리동 직접 진입';
   ui.sub.textContent='격리동 앞마당 감염자를 제거하고 시설을 다시 확보하세요.';
   ui.briefTitle.textContent='격리동 내부 붕괴';
@@ -376,7 +376,7 @@ function finish(won){
    if(won){const reduction=losses===0?4:Math.max(1,3-losses);b.applyOutbreakResult({won:true,infectionDelta:-reduction,trustDelta:-(losses*2),scoreDelta:Math.max(80,340-losses*70)});}
    else b.applyOutbreakResult({won:false,infectionDelta:5,trustDelta:-7,scoreDelta:-240});
   }
-  if(done)setTimeout(()=>done({won,mode:'camp',losses}),120);
+  if(done)setTimeout(()=>done({won,mode:'camp',losses,lostIds:state.survivors.filter(s=>!s.alive).map(s=>String(s.id)),rescuedIds:state.survivors.filter(s=>s.rescued).map(s=>String(s.id))}),120);
  }else if(mode==='patrol'){
   if(b)b.applyOutbreakResult(won?{won:true,infectionDelta:-2,trustDelta:1,scoreDelta:220}:{won:false,infectionDelta:3,trustDelta:-2,scoreDelta:-120});
   if(done)setTimeout(()=>done({won,mode:'patrol',losses:0}),120);
