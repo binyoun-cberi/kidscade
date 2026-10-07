@@ -875,11 +875,23 @@ class RamenKitchen3D{
   if(this.serviceGroup&&Math.hypot(this.serviceGroup.position.x-x,this.serviceGroup.position.z-z)<r+1.05)return true;
   return this.staticBlockers.some(b=>Math.hypot(b.x-x,b.z-z)<r+b.r+.25)
  }
+ hallBlockedPosition(x,z,pr=.34){
+  // 주방과 홀 사이 카운터는 중앙 2.1m만 통로로 비운다.
+  const divider=z>-4.18-pr&&z<-3.12+pr&&Math.abs(x)>1.05-pr&&Math.abs(x)<4.82+pr;
+  if(divider)return true;
+  if(this.hallSeats.some(seat=>seat.enabled&&Math.hypot(seat.tablePosition.x-x,seat.tablePosition.z-z)<1.42+pr))return true;
+  if(Math.hypot(x+3.55,z+4.28)<1.2+pr)return true;
+  if(Math.hypot(x+8.72,z+8.55)<.78+pr)return true;
+  if(Math.hypot(x+8.05,z+12.35)<1.02+pr)return true;
+  if(!hasUpgrade('hallExpansion')&&x>6.02-pr&&z<-6.85+pr)return true;
+  return false
+ }
  isBlockedPosition(x,z,pr=.34){
-  if(x<-8.9||x>8.9||z<-3.55||z>6.0)return true;
+  if(x<-9.25||x>9.25||z<-13.45||z>6.0)return true;
   if(this.potVisuals.some(v=>Math.hypot(v.root.position.x-x,v.root.position.z-z)<.84+pr))return true;
   if(this.layoutStations.some(s=>s.group.visible&&Math.hypot(s.group.position.x-x,s.group.position.z-z)<(s.group.userData.blockRadius||.72)+pr))return true;
   if(this.serviceGroup&&Math.hypot(this.serviceGroup.position.x-x,this.serviceGroup.position.z-z)<.82+pr)return true;
+  if(z<-3.0&&this.hallBlockedPosition(x,z,pr))return true;
   return this.staticBlockers.some(b=>Math.hypot(b.x-x,b.z-z)<b.r+pr)
  }
  stationDistance(group){return this.player?Math.hypot(group.position.x-this.player.position.x,group.position.z-this.player.position.z):999}
@@ -924,7 +936,7 @@ class RamenKitchen3D{
   if(this.serviceGroup?.userData?.actionTile){const near=nearest?.group===this.serviceGroup,t=this.serviceGroup.userData.actionTile;t.material.opacity=near?.98:.68;t.scale.setScalar(near?1.08:1)}
   if(els.stationHint){
    if(state.phase==='prep')els.stationHint.textContent=this.selectedLayoutStation?.userData?.automationType?'자동화 장비 선택됨 · 드래그로 이동 / R 또는 회전 버튼으로 방향 변경':'가구를 드래그해 주방 동선을 바꿔 보세요';
-   else if(!nearest)els.stationHint.textContent='WASD / 방향키로 가까이 가서 E로 상호작용';
+   else if(!nearest)els.stationHint.textContent=this.player.position.z<-3.8?'홀 · 손님 식사와 퇴식 모습을 둘러볼 수 있어요 · 아래쪽으로 이동하면 주방':'WASD / 방향키로 가까이 가서 E로 상호작용';
    else if(nearest.type==='sink')els.stationHint.textContent=state.heldItem?'E · 같은 물이면 돌려놓기':(state.dirtyPlates?'E · 설거지':'E · 주전자에 물 2컵 받기');
    else if(nearest.type==='noodleSource')els.stationHint.textContent=state.heldItem?'E · 면이면 돌려놓기':'E · 면 들기';
    else if(nearest.type==='soupSource')els.stationHint.textContent=state.heldItem?'E · 스프면 돌려놓기':'E · 스프 들기';
@@ -981,9 +993,13 @@ class RamenKitchen3D{
    this.customerStates.push(cs);
    this.loadModel(spec.root,spec.file,1.65).then(o=>{if(o){o.rotation.y=Math.PI;holder.add(o);cs.model=o}});
   });
-  // 주방과 홀 사이의 낮은 카운터. 홀의 손님 움직임이 주방에서 보이도록 상부는 열어 둔다.
-  this.box(9.4,.86,1.0,0x416c62,0,.38,-3.62,{roughness:.58});
-  this.box(9.5,.11,1.08,0xe4c489,0,.86,-3.62,{roughness:.5});
+  // 주방과 홀 사이의 낮은 카운터. 중앙은 플레이어가 직접 오갈 수 있는 통로로 비운다.
+  for(const x of[-2.88,2.88]){
+   this.box(3.65,.86,1.0,0x416c62,x,.38,-3.62,{roughness:.58});
+   this.box(3.72,.11,1.08,0xe4c489,x,.86,-3.62,{roughness:.5});
+  }
+  const hallThreshold=this.box(2.05,.026,1.08,0xd9ad73,0,.029,-3.62,{roughness:.9,castShadow:false});hallThreshold.receiveShadow=true;
+  const hallArrow=this.makeRoleFloorLabel('홀 ↕ 주방','#f3cf72');hallArrow.position.set(0,.034,-3.62);hallArrow.scale.set(.95,.95,.95);this.scene.add(hallArrow);
  }
  customerStateForOrder(orderId){return this.customerStates.find(c=>c.orderId===orderId)||null}
  resetCustomerForOrder(orderId){
@@ -1240,10 +1256,11 @@ class RamenKitchen3D{
   const w=this.canvas.clientWidth||innerWidth,mobile=w<650,service=state.phase==='service'&&this.player;
   let fx=0,fz=.45,fy=.9,px=0,py=mobile?12.2:10.5,pz=mobile?12.6:11.2,targetFov=mobile?50:43;
   if(service){
-   fx=Math.max(-5.85,Math.min(5.85,this.player.position.x));
-   fz=Math.max(-1.9,Math.min(4.75,this.player.position.z))-.72;
+   const inHall=this.player.position.z<-3.3;
+   fx=Math.max(-7.7,Math.min(7.7,this.player.position.x));
+   fz=Math.max(-12.8,Math.min(4.75,this.player.position.z))-(inHall?.38:.72);
    fy=.86;
-   px=fx;py=mobile?7.0:6.05;pz=fz+(mobile?6.7:5.65);targetFov=mobile?44:35;
+   px=fx;py=inHall?(mobile?8.2:7.05):(mobile?7.0:6.05);pz=fz+(inHall?(mobile?7.7:6.35):(mobile?6.7:5.65));targetFov=inHall?(mobile?48:40):(mobile?44:35);
    if(this.clock<this.hallFocusUntil&&this.hallFocusSlot!=null){
     const guest=this.customerHolders[this.hallFocusSlot];
     if(guest?.visible){
