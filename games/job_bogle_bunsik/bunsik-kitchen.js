@@ -30,7 +30,7 @@ const UPGRADES={
  table3:{name:'3번 테이블',price:1500,min:0,max:1,minStars:1,category:'hall',icon:'🪑',desc:'홀 좌석 +1 · 동시 손님 증가'},
  table4:{name:'4번 테이블',price:2800,min:0,max:1,minStars:2,requires:'table3',category:'hall',icon:'🪑',desc:'홀 좌석 +1 · 바쁜 시간 대응'},
  hallStaff:{name:'홀 알바 고용',price:3800,min:0,max:1,minStars:2,requires:'table3',category:'staff',icon:'🙋',desc:'배식대 근처 완성 메뉴를 자동으로 서빙'},
- dishCart:{name:'퇴식 카트',price:4200,min:0,max:1,minStars:3,requires:'hallStaff',category:'hall',icon:'🛒',desc:'테이블의 빈 그릇을 실제로 싱크까지 자동 운반'},
+ dishCart:{name:'퇴식 카트',price:4200,min:0,max:1,minStars:3,requires:'hallStaff',category:'hall',icon:'🛒',desc:'식사 끝난 테이블의 그릇을 싱크대로 자동 회수'},
  helperSkill1:{name:'주방 알바 숙련 1',price:2500,min:0,max:1,minStars:2,category:'staff',icon:'👨‍🍳',desc:'주방 알바 이동·판단 속도 증가'},
  helperSkill2:{name:'주방 알바 숙련 2',price:5000,min:0,max:1,minStars:3,requires:'helperSkill1',category:'staff',icon:'⚡',desc:'주방 알바가 더 빠르게 다음 일을 찾음'},
  menuPlus:{name:'토핑 메뉴 연구',price:3500,min:0,max:1,minStars:3,category:'menu',icon:'📖',desc:'계란 파 라면·치즈 파 라면 주문 해금'},
