@@ -665,7 +665,11 @@ function updateInstructionPanel(){
     complete:'설명·과제·정리 완료 · 남은 시간은 학생을 살펴보세요'
   };
   const efficiency=Math.round(lessonTeachingEfficiency(lessonFlow,{teacherAtBoard:atBoard})*100);
-  ui.instructionHint.textContent=hints[lessonFlow.phase]+' · 학습 효율 '+efficiency+'%';
+  const inSafety=currentStep.safetyRequired&&lessonElapsed>=SAFETY_RULES.briefingStartSeconds&&
+    lessonElapsed<SAFETY_RULES.briefingStartSeconds+SAFETY_RULES.briefingDurationSeconds;
+  ui.instructionHint.textContent=inSafety
+    ? (atBoard?'🦺 안전교육 중 · 집중하는 학생만 수칙을 기억해요':'⚠️ 안전교육 중단 · 칠판으로 돌아가야 해요')
+    : hints[lessonFlow.phase]+' · 학습 효율 '+efficiency+'%';
 }
 function focusRatio(s){return clamp(s.runtime.focus/Math.max(1,s.runtime.focusMax),0,1)}
 function socialRatio(s){return clamp(s.runtime.social/Math.max(1,s.runtime.socialMax),0,1)}
@@ -691,7 +695,9 @@ function updateHud(){
   const accident=students.some(s=>s.accident&&isStudentPresent(s));
   const sick=students.some(s=>isStudentPresent(s)&&s.health?.revealed&&s.health.state!=='healthy'&&!s.health.checked);
   const conflict=pairs.some(p=>p.state==='fight')?'싸움 발생':pairs.some(p=>p.state==='conflict')?'갈등 발생':null;
-  ui.classState.textContent=accident?'사고 확인 필요':sick?'건강 확인 필요':conflict||(off>=5?'산만함':off?'조금 산만':'차분함');
+  const instructionLate=currentStep.kind==='lesson'&&lessonElapsed>30&&lessonFlow&&!lessonFlow.assigned;
+  ui.classState.textContent=accident?'사고 확인 필요':sick?'건강 확인 필요':conflict||
+    (instructionLate?'수업 지연':off>=5?'산만함':off?'조금 산만':'차분함');
   const needsAttention=students.filter(s=>studentCanParticipate(s)&&
     (s.runtime.mode==='offtask'||(s.health?.revealed&&!s.health.checked)||s.accident)).length;
   ui.rosterToggle.textContent='학생 '+CLASS_SIZE+'명 · '+(needsAttention?'살펴볼 학생 '+needsAttention+'명':'명단 보기');
@@ -1038,10 +1044,11 @@ function recordLessonLearning(s,dt,chat){
   addLearning(campaign,s.runtime.id,gain*teachingMultiplier);
 }
 function endGroupActivitiesForRecap(){
-  for(const pair of pairs.filter(p=>p.source==='team')){
+  const ended=pairs.filter(p=>p.source==='team');
+  pairs=pairs.filter(p=>p.source!=='team');
+  for(const pair of ended){
     refreshStudentBubbleState(pair.a);refreshStudentBubbleState(pair.b);
   }
-  pairs=pairs.filter(p=>p.source!=='team');
   teamActive=false;
 }
 function updateLesson(dt){
@@ -1288,6 +1295,10 @@ function scanAction(){
   }
 
   if(currentStep.kind==='lesson'){
+    const flowAction=lessonFlowAction(lessonFlow);
+    if(flowAction&&isTeacherAtBoard()){
+      currentAction={type:flowAction.type};setAction(flowAction.icon,flowAction.label,true);return;
+    }
     const unsafe=students.filter(s=>studentCanParticipate(s)&&s.safetyRecord?.finished&&!s.safetyRecord.heard&&!s.accident&&distance2D(player.root.position,s.actor.root.position)<2.35)
       .sort((a,b)=>distance2D(player.root.position,a.actor.root.position)-distance2D(player.root.position,b.actor.root.position))[0];
     if(unsafe){currentAction={type:'safetyReview',student:unsafe};setAction('🦺',unsafe.runtime.name+' 안전수칙 다시',true);return}
@@ -1306,10 +1317,6 @@ function scanAction(){
       .sort((a,b)=>distance2D(player.root.position,a.actor.root.position)-distance2D(player.root.position,b.actor.root.position))[0];
     if(near){currentAction={type:'focus',student:near};setAction('👀',near.runtime.name+' 집중 도와주기',true);return}
 
-    const flowAction=lessonFlowAction(lessonFlow);
-    if(flowAction&&isTeacherAtBoard()){
-      currentAction={type:flowAction.type};setAction(flowAction.icon,flowAction.label,true);return;
-    }
     if(groupSignalCooldown<=0&&groupSignalsThisLesson<TEACHING_RULES.maxGroupFocusPerLesson&&isTeacherAtBoard()){
       currentAction={type:'groupFocus'};setAction('📣','전체 집중시키기',true);return;
     }
