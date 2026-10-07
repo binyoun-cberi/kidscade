@@ -9,6 +9,7 @@ const KITCHEN=new URL('../../assets/game/3d/interiors/charming-kitchen-set/',imp
 const SUSHI=new URL('../../assets/game/3d/interiors/modular-sushi-restaurant-kit/',import.meta.url).href;
 const BAKERY=new URL('../../assets/game/3d/bakery/interior/',import.meta.url).href;
 const BAKERY_BITS=new URL('../../assets/game/3d/bakery/restaurant-bits/',import.meta.url).href;
+const AVATAR_SHEET=new URL('../../assets/game/characters/kidscade-avatar-v3/school-starter/school-starter-sheet.png',import.meta.url).href;
 
 const SHIFT_SECONDS=150;
 const TARGET_REVENUE=5200;
@@ -148,6 +149,7 @@ class RamenKitchen3D{
   this.layoutStations=[];this.stationPickables=[];this.dragLayout=null;this.selectedLayoutStation=null;
   this.player=null;this.playerRing=null;this.carryAnchor=null;this.carrySprite=null;this.moveKeys=new Set();this.nearestStation=null;this.dirtyPlateModels=[];this.staticBlockers=[];
   this.helper=null;this.helperCarryAnchor=null;this.helperCarry=null;this.helperTask=null;this.helperPath=[];this.helperThink=0;
+  this.avatarSheetImage=null;this.avatarSheetPromise=null;
 
   this.makeLights();
   this.makeRoom();
@@ -202,6 +204,46 @@ class RamenKitchen3D{
   const holder=new THREE.Group();holder.position.set(x,y,z);holder.rotation.y=rot;this.scene.add(holder);
   this.loadModel(root,file,size).then(o=>{if(o)holder.add(o)});
   return holder;
+ }
+ loadAvatarSheet(){
+  if(this.avatarSheetImage?.complete&&this.avatarSheetImage.naturalWidth)return Promise.resolve(this.avatarSheetImage);
+  if(this.avatarSheetPromise)return this.avatarSheetPromise;
+  this.avatarSheetPromise=new Promise(resolve=>{
+   const img=new Image();img.decoding='async';img.onload=()=>{this.avatarSheetImage=img;resolve(img)};img.onerror=()=>resolve(null);img.src=AVATAR_SHEET
+  });
+  return this.avatarSheetPromise
+ }
+ makeCuteCook(role='player'){
+  const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;
+  const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.magFilter=THREE.NearestFilter;texture.minFilter=THREE.NearestFilter;
+  const material=new THREE.SpriteMaterial({map:texture,transparent:true,alphaTest:.025,depthWrite:false});
+  const sprite=new THREE.Sprite(material);sprite.center.set(.5,.02);sprite.position.set(0,.02,0);sprite.scale.set(1.9,1.9,1);
+  const look={role,canvas,ctx,texture,sprite,img:null,key:'',faceRight:false};
+  this.loadAvatarSheet().then(img=>{look.img=img;this.paintCuteCook(look,false,false,true)});
+  this.paintCuteCook(look,false,false,true);
+  return look
+ }
+ paintCuteCook(look,moving=false,faceRight=false,force=false){
+  if(!look)return;
+  const frames=moving?[2,3,4,5]:[0,1],speed=moving?.14:.48,index=frames[Math.floor(this.clock/speed)%frames.length],key=index+':'+(faceRight?'R':'L');
+  if(!force&&look.key===key)return;look.key=key;look.faceRight=faceRight;
+  const {ctx,canvas,img}=look;ctx.clearRect(0,0,128,128);ctx.save();
+  if(faceRight){ctx.translate(128,0);ctx.scale(-1,1)}
+  if(img?.complete&&img.naturalWidth>=128*(index+1))ctx.drawImage(img,index*128,0,128,128,0,0,128,128);
+  else{
+   ctx.fillStyle='#f0b98d';ctx.fillRect(48,30,32,30);ctx.fillStyle='#3a2b28';ctx.fillRect(45,20,38,15);
+   ctx.fillStyle=look.role==='player'?'#d95746':'#4d8ec7';ctx.fillRect(48,61,32,42);ctx.fillStyle='#f0b98d';ctx.fillRect(42,66,7,29);ctx.fillRect(79,66,7,29)
+  }
+  // 분식집 전용 픽셀 셰프 모자.
+  ctx.fillStyle='#fffdf6';ctx.strokeStyle='#6f655d';ctx.lineWidth=2;
+  ctx.beginPath();ctx.roundRect?.(39,8,50,20,7);ctx.fill();ctx.stroke();
+  ctx.fillRect(44,22,40,9);ctx.strokeRect(44,22,40,9);
+  // 앞치마가 멀리서도 보이도록 몸통 중앙을 단순한 색면으로 강조.
+  const apron=look.role==='player'?'#d95343':'#4b8fc7',trim=look.role==='player'?'#8f3028':'#285a83';
+  ctx.fillStyle=apron;ctx.fillRect(49,72,31,30);ctx.fillStyle='#fff6df';ctx.fillRect(57,75,15,4);
+  ctx.fillStyle=trim;ctx.fillRect(49,98,31,4);ctx.fillRect(62,69,4,6);
+  ctx.restore();look.texture.needsUpdate=true
  }
  makeBurners(){
   const xs=[-3.45,-1.15,1.15,3.45];
@@ -422,11 +464,11 @@ class RamenKitchen3D{
  }
  makePlayer(){
   const root=this.player=new THREE.Group();root.position.set(0,0,3.45);this.scene.add(root);
-  const ring=this.playerRing=new THREE.Mesh(new THREE.RingGeometry(.38,.5,30),new THREE.MeshBasicMaterial({color:0xffe172,transparent:true,opacity:.9,depthWrite:false}));
+  const ring=this.playerRing=new THREE.Mesh(new THREE.RingGeometry(.42,.55,30),new THREE.MeshBasicMaterial({color:0xffe172,transparent:true,opacity:.9,depthWrite:false}));
   ring.rotation.x=-Math.PI/2;ring.position.y=.025;root.add(ring);
-  const fallback=new THREE.Mesh(new THREE.CapsuleGeometry(.28,.72,5,10),this.material(0xe4634d,{roughness:.75}));fallback.position.y=.72;root.add(fallback);root.userData.fallback=fallback;
-  this.carryAnchor=new THREE.Group();this.carryAnchor.position.set(0,1.72,-.12);root.add(this.carryAnchor);
-  this.loadModel(NPCS,'Chef_Female.gltf',1.42).then(o=>{if(o){o.rotation.y=Math.PI;root.add(o);fallback.visible=false}});
+  const cute=this.makeCuteCook('player');root.add(cute.sprite);root.userData.cute=cute;root.userData.moving=false;root.userData.faceRight=false;
+  const me=this.makeTextSprite('나 · 점장');me.position.set(0,1.92,0);me.scale.set(1.2,.36,1);root.add(me);
+  this.carryAnchor=new THREE.Group();this.carryAnchor.position.set(.3,1.48,-.08);root.add(this.carryAnchor);
  }
  setCarryVisual(item){
   if(!this.carryAnchor)return;
@@ -440,12 +482,11 @@ class RamenKitchen3D{
  }
  makeHelper(){
   const root=this.helper=new THREE.Group();root.position.set(2.55,0,4.05);root.visible=false;this.scene.add(root);
-  const ring=new THREE.Mesh(new THREE.RingGeometry(.34,.44,28),new THREE.MeshBasicMaterial({color:0x77c9ff,transparent:true,opacity:.82,depthWrite:false}));
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.36,.47,28),new THREE.MeshBasicMaterial({color:0x77c9ff,transparent:true,opacity:.82,depthWrite:false}));
   ring.rotation.x=-Math.PI/2;ring.position.y=.02;root.add(ring);
-  const fallback=new THREE.Mesh(new THREE.CapsuleGeometry(.26,.68,5,10),this.material(0x4f86b8,{roughness:.72}));fallback.position.y=.7;root.add(fallback);root.userData.fallback=fallback;
-  this.helperCarryAnchor=new THREE.Group();this.helperCarryAnchor.position.set(0,1.68,-.1);root.add(this.helperCarryAnchor);
-  const label=this.makeTextSprite('알바');label.position.set(0,2.0,0);label.scale.set(1.05,.34,1);root.add(label);
-  this.loadModel(NPCS,'Chef_Male.gltf',1.38).then(o=>{if(o){o.rotation.y=Math.PI;root.add(o);fallback.visible=false}})
+  const cute=this.makeCuteCook('helper');cute.sprite.scale.set(1.78,1.78,1);root.add(cute.sprite);root.userData.cute=cute;root.userData.moving=false;root.userData.faceRight=false;
+  this.helperCarryAnchor=new THREE.Group();this.helperCarryAnchor.position.set(.28,1.42,-.08);root.add(this.helperCarryAnchor);
+  const label=this.makeTextSprite('알바생');label.position.set(0,1.84,0);label.scale.set(1.05,.34,1);root.add(label)
  }
  setHelperCarry(item){
   this.helperCarry=item?{...item}:null;
@@ -492,9 +533,10 @@ class RamenKitchen3D{
   return path.reverse()
  }
  moveHelperPath(dt){
-  if(!this.helperPath.length)return true;
+  if(!this.helperPath.length){if(this.helper)this.helper.userData.moving=false;return true}
   const target=this.helperPath[0],dx=target.x-this.helper.position.x,dz=target.z-this.helper.position.z,d=Math.hypot(dx,dz);
-  if(d<.08){this.helper.position.set(target.x,0,target.z);this.helperPath.shift();return this.helperPath.length===0}
+  this.helper.userData.moving=true;if(dx>0)this.helper.userData.faceRight=true;else if(dx<0)this.helper.userData.faceRight=false;
+  if(d<.08){this.helper.position.set(target.x,0,target.z);this.helperPath.shift();if(!this.helperPath.length)this.helper.userData.moving=false;return this.helperPath.length===0}
   const speed=2.45,move=Math.min(d,speed*dt);this.helper.position.x+=dx/d*move;this.helper.position.z+=dz/d*move;this.helper.rotation.y=Math.atan2(dx,dz);return false
  }
  findHelperTask(){
@@ -592,6 +634,8 @@ class RamenKitchen3D{
    if(this.moveKeys.has('KeyW')||this.moveKeys.has('ArrowUp'))dz-=1;
    if(this.moveKeys.has('KeyS')||this.moveKeys.has('ArrowDown'))dz+=1;
   }
+  this.player.userData.moving=!!(dx||dz);
+  if(dx>0)this.player.userData.faceRight=true;else if(dx<0)this.player.userData.faceRight=false;
   if(dx||dz){
    const len=Math.hypot(dx,dz)||1,speed=3.35;dx/=len;dz/=len;
    const nx=this.player.position.x+dx*speed*dt,nz=this.player.position.z+dz*speed*dt;
@@ -599,6 +643,7 @@ class RamenKitchen3D{
    if(!this.isBlockedPosition(this.player.position.x,nz))this.player.position.z=nz;
    this.player.rotation.y=Math.atan2(dx,dz);
   }
+  this.paintCuteCook(this.player.userData.cute,this.player.userData.moving,this.player.userData.faceRight);
   const candidates=[
    ...this.layoutStations.filter(s=>s.group.visible).map(s=>({type:s.id,label:s.label,group:s.group})),
    ...this.potVisuals.slice(0,activePotCount()).map((v,i)=>({type:'pot',label:'냄비 '+(i+1),group:v.root,potIndex:i})),
@@ -749,6 +794,7 @@ class RamenKitchen3D{
   this.clock+=dt;
   this.updatePlayer(dt);
   this.updateHelper(dt);
+  if(this.helper?.userData?.cute)this.paintCuteCook(this.helper.userData.cute,!!this.helper.userData.moving,!!this.helper.userData.faceRight);
   this.updateAutomation(dt);
   state.pots.forEach((p,i)=>{
    const v=this.potVisuals[i];if(!v)return;
