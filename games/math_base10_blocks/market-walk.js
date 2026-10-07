@@ -205,6 +205,17 @@ function updateInjuryParticles(dt){
 
 
 function sign(text,pos,scale=1,color='#2f7d60',parent=world){const c=document.createElement('canvas');c.width=512;c.height=150;const x=c.getContext('2d');x.fillStyle='#fff8e9';x.fillRect(0,0,512,150);x.fillStyle=color;x.fillRect(0,0,512,23);x.fillStyle='#173b31';x.font='900 46px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(text,256,86);const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true}));sp.position.set(...pos);sp.scale.set(4.1*scale,1.2*scale,1);parent.add(sp);return sp}
+function wallSign(text,pos,width=1.75,color='#2f7d60',rot=0,parent=world){
+ const c=document.createElement('canvas');c.width=768;c.height=220;const x=c.getContext('2d');
+ x.fillStyle='#f7f3ea';x.fillRect(0,0,c.width,c.height);
+ x.fillStyle=color;x.fillRect(0,0,c.width,24);
+ x.fillStyle='#173b31';x.font='900 64px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(text,c.width/2,c.height*.58);
+ const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
+ const h=width*(c.height/c.width),g=new THREE.Group();g.position.set(...pos);g.rotation.y=rot;parent.add(g);
+ box([width+.08,h+.08,.055],[0,0,0],0xd8d2c6,.82,g);
+ const face=new THREE.Mesh(new THREE.PlaneGeometry(width,h),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
+ face.position.z=.032;g.add(face);return g
+}
 async function addMarket(name,size,pos,rot=0,palette=null){try{const r=await fitted(MARKET+name+'.glb',size,palette);r.position.set(...pos);r.rotation.y=rot;world.add(r);return r}catch(e){console.warn('asset failed',name,e);return null}}
 function interactable(type,name,x,z,range=1.5,extra={}){interactables.push({type,name,x,z,range,...extra})}
 
@@ -321,7 +332,7 @@ async function toggleStorage(kind){storageOpen[kind]=!storageOpen[kind];for(cons
 async function buildHome(){
  endDog(false);document.body.classList.remove('lifeTown');state.location='home';state.phase='home';colliders=[];interactables=[];kitchenStorage={fridge:[],pantry:[]};storageOpen={fridge:false,pantry:false};ui.labels.innerHTML='';labelViews=[];clearGroup(world);clearGroup(homeFoodGroup);if(cart){cart.removeFromParent();cart=null}scene.background.set(0xb9dce9);scene.fog.color.set(0xb9dce9);scene.fog.near=30;scene.fog.far=65;await ensureCity();
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(6.8,6.4),new THREE.MeshStandardMaterial({color:0xd8c7ad,roughness:.96}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;world.add(floor);
- windowWall(6.8,3.3,[0,0,-3.05],0,1.02,3.0);windowWall(6.4,3.3,[-3.35,0,0],Math.PI/2,.92,2.05);windowWall(6.4,3.3,[3.35,0,0],Math.PI/2,.92,2.05);entryWall(6.8,3.3,3.2,-2.4,1.34,.92,0x9c6a43,false);addCeilingLights(6.8,6.4,3.22);sign('우리 집 부엌',[0,2.55,-2.95],.42,'#ba7c50');
+ windowWall(6.8,3.3,[0,0,-3.05],0,1.02,3.0);windowWall(6.4,3.3,[-3.35,0,0],Math.PI/2,.92,2.05);windowWall(6.4,3.3,[3.35,0,0],Math.PI/2,.92,2.05);entryWall(6.8,3.3,3.2,-2.4,1.34,.92,0x9c6a43,false);addCeilingLights(6.8,6.4,3.22);wallSign('우리 집 부엌',[0,2.55,-2.92],1.72,'#ba7c50');
  // The side runs face inward; the back run faces the open side of the U.
  const fridge=await homeModel('kitchen-fridge',2.25,[-2.65,0,-.9],'y',Math.PI/2);kitchenStorage.fridge.push(fridge);interactable('fridge','냉장고',-1.25,-.9,1.7);
  for(const y of [0,1.05])kitchenStorage.pantry.push(await homeModel('kitchen-cabinet-upper-double',1.05,[-2.65,y,.65],'x',Math.PI/2));interactable('pantry','찬장',-1.25,.65,1.7);
@@ -347,7 +358,7 @@ async function buildHome(){
 
 async function buildStore(){
  endDog(false);document.body.classList.remove('lifeTown');state.location='market';state.phase='shopping';homeInventoryRevision++;colliders=[];interactables=[];ui.labels.innerHTML='';labelViews=[];clearGroup(world);clearGroup(homeFoodGroup);scene.background.set(0xb9dce9);scene.fog.color.set(0xb9dce9);scene.fog.near=30;scene.fog.far=65;await ensureCity();
- const floor=new THREE.Mesh(new THREE.PlaneGeometry(10,9),new THREE.MeshStandardMaterial({color:0xd4d0bd,roughness:.98}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;world.add(floor);windowWall(10,3.1,[0,0,-4.4],0,.82,5.2);windowWall(9,3.1,[-4.9,0,0],Math.PI/2,.8,2.7);windowWall(9,3.1,[4.9,0,0],Math.PI/2,.8,2.7);entryWall(10,3.1,4.45,1.05,1.48,.8,0x2f7d60,true);addCeilingLights(10,9,3.22);sign('우리 동네 마트',[0,2.5,-4.25],.42,'#2f7d60');
+ const floor=new THREE.Mesh(new THREE.PlaneGeometry(10,9),new THREE.MeshStandardMaterial({color:0xd4d0bd,roughness:.98}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;world.add(floor);windowWall(10,3.1,[0,0,-4.4],0,.82,5.2);windowWall(9,3.1,[-4.9,0,0],Math.PI/2,.8,2.7);windowWall(9,3.1,[4.9,0,0],Math.PI/2,.8,2.7);entryWall(10,3.1,4.45,1.05,1.48,.8,0x2f7d60,true);addCeilingLights(10,9,3.22);wallSign('우리 동네 마트',[0,2.5,-4.27],1.78,'#2f7d60');
  marketDisplays={};marketDisplaySurfaces={};
  // Keep a clear central aisle and put goods inside/on their real fixtures instead of at each model's bounding-box peak.
  const displayDefs=[
@@ -382,7 +393,7 @@ async function buildTown(from='home'){
 async function buildOffice(){
  endDog(false);state.location='office';state.phase='office';colliders=[];interactables=[];ui.labels.innerHTML='';labelViews=[];clearGroup(world);scene.background.set(0xc9dce5);scene.fog.near=25;scene.fog.far=55;document.body.classList.remove('lifeTown');
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(9,7),new THREE.MeshStandardMaterial({color:0xc9b99e,roughness:.95}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;world.add(floor);
- windowWall(9,3.2,[0,0,-3.35],0,.88,4.4);windowWall(7,3.2,[-4.45,0,0],Math.PI/2,.86,2.2);windowWall(7,3.2,[4.45,0,0],Math.PI/2,.86,2.2);entryWall(9,3.2,3.35,-3.5,1.38,.86,0x4d6f91,true);addCeilingLights(9,7,3.25);sign('우리 사무실',[0,2.45,-3.2],.36,'#4d7ea8');
+ windowWall(9,3.2,[0,0,-3.35],0,.88,4.4);windowWall(7,3.2,[-4.45,0,0],Math.PI/2,.86,2.2);windowWall(7,3.2,[4.45,0,0],Math.PI/2,.86,2.2);entryWall(9,3.2,3.35,-3.5,1.38,.86,0x4d6f91,true);addCeilingLights(9,7,3.25);wallSign('우리 사무실',[0,2.5,-3.22],1.6,'#4d7ea8');
  const desk=await homeModel('desk',1.58,[0,0,-1.05],'x',0),deskTop=desk.userData.closedBounds.max.y;interactable('workDesk','내 자리',0,.25,1.9);
  await homeModel('chair-desk',.82,[0,0,.05],'y',Math.PI);
  await Promise.all([
@@ -391,7 +402,7 @@ async function buildOffice(){
  ]);
  interactable('officeExit','퇴근 · 밖으로',-3.5,2.6,1.8);sign('밖으로',[-3.5,2.46,3.17],.22,'#4d7ea8');setSpawn('office');renderHud();save()
 }
-async function buildHospital(source='walk'){endDog(false);state.location='hospital';state.phase='hospital';colliders=[];interactables=[];ui.labels.innerHTML='';labelViews=[];clearGroup(world);scene.background.set(0xdbe9e8);scene.fog.near=25;scene.fog.far=55;document.body.classList.remove('lifeTown');const floor=new THREE.Mesh(new THREE.PlaneGeometry(9,7),new THREE.MeshStandardMaterial({color:0xdde2dd,roughness:.95}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;world.add(floor);windowWall(9,3.2,[0,0,-3.35],0,.88,3.8);windowWall(7,3.2,[-4.45,0,0],Math.PI/2,.86,2.2);windowWall(7,3.2,[4.45,0,0],Math.PI/2,.86,2.2);entryWall(9,3.2,3.35,-3.5,1.38,.86,0xb94f4b,true);addCeilingLights(9,7,3.25);sign('동네 병원',[0,2.45,-3.2],.42,'#d65b52');box([2.8,.85,.8],[0,.43,-1.25],0xe6f1ed);box([2.7,.08,.72],[0,.88,-1.25],0x4d7ea8);interactable('treat','진료 접수',0,-.15,2.0);sign(state.treatmentNeeded?'진료가 필요해요':'진료 접수',[0,1.65,-1.25],.32,'#d65b52');interactable('hospitalExit','밖으로',-3.5,2.6,1.8);sign('밖으로',[-3.5,2.32,3.16],.27,'#2f7d60');setSpawn('hospital');if(source==='ambulance')toast('응급실에 도착했어요. 접수대에서 치료를 받아야 해요.',true);renderHud();save()}
+async function buildHospital(source='walk'){endDog(false);state.location='hospital';state.phase='hospital';colliders=[];interactables=[];ui.labels.innerHTML='';labelViews=[];clearGroup(world);scene.background.set(0xdbe9e8);scene.fog.near=25;scene.fog.far=55;document.body.classList.remove('lifeTown');const floor=new THREE.Mesh(new THREE.PlaneGeometry(9,7),new THREE.MeshStandardMaterial({color:0xdde2dd,roughness:.95}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;world.add(floor);windowWall(9,3.2,[0,0,-3.35],0,.88,3.8);windowWall(7,3.2,[-4.45,0,0],Math.PI/2,.86,2.2);windowWall(7,3.2,[4.45,0,0],Math.PI/2,.86,2.2);entryWall(9,3.2,3.35,-3.5,1.38,.86,0xb94f4b,true);addCeilingLights(9,7,3.25);wallSign('동네 병원',[0,2.5,-3.22],1.58,'#d65b52');box([2.8,.85,.8],[0,.43,-1.25],0xe6f1ed);box([2.7,.08,.72],[0,.88,-1.25],0x4d7ea8);interactable('treat','진료 접수',0,-.15,2.0);sign(state.treatmentNeeded?'진료가 필요해요':'진료 접수',[0,1.65,-1.25],.32,'#d65b52');interactable('hospitalExit','밖으로',-3.5,2.6,1.8);sign('밖으로',[-3.5,2.32,3.16],.27,'#2f7d60');setSpawn('hospital');if(source==='ambulance')toast('응급실에 도착했어요. 접수대에서 치료를 받아야 해요.',true);renderHud();save()}
 function workOffice(){if(state.workedDay===state.day)return toast('오늘 근무는 이미 마쳤어요. 내일 다시 출근해요.');const healthFactor=.55+.45*(state.condition/100),injuryFactor=state.treatmentNeeded ? .72 : 1,pay=Math.max(9000,Math.round(BASE_WORK_PAY*healthFactor*injuryFactor/100)*100);state.money+=pay;state.dailyIncome+=pay;state.workedDay=state.day;state.hunger=clamp(state.hunger-16,0,100);state.condition=clamp(state.condition-7,5,100);state.dailyIncidents.push('💼 사무실에서 '+fmt(pay)+'을 벌었어요'+(state.treatmentNeeded?' (몸이 좋지 않아 급여가 줄었어요).':'.'));tone('cash');renderHud();save();toast('오늘 근무 완료! '+fmt(pay)+'이 들어왔어요.')}
 function treatAtHospital(){if(!state.treatmentNeeded)return toast('지금은 꼭 치료가 필요한 상태가 아니에요.');const kind=state.injury||'sick',cost=HOSPITAL_COST[kind]||HOSPITAL_COST.sick;state.money-=cost;state.dailyExpense+=cost;state.condition=kind==='car'?clamp(state.condition+32,0,100):clamp(state.condition+24,0,100);state.dailyIncidents.push('🏥 '+(kind==='dog'?'강아지 물림':kind==='car'?'교통사고':'몸 상태')+' 치료비 '+fmt(cost)+'을 냈어요.');state.injury=null;state.treatmentNeeded=false;tone('good');renderHud();save();toast('치료를 받았어요. 진료비 '+fmt(cost)+'이 나갔어요.')}
 
