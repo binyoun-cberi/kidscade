@@ -124,7 +124,7 @@
       "components": [
         "skinned shirt shell",
         "hood",
-        "kangaroo pocket",
+        "shaped kangaroo pocket",
         "drawstrings"
       ],
       "rigging": "shirt skin weights + rigid upper-spine detail pieces"
