@@ -1012,11 +1012,58 @@ function tutorialMessage(){
  if(state.tutorial.step===6)return'⑦ 완성 라면을 들고 배식대로 이동해 E로 서빙해요';
  return''
 }
+function taskPlan(){
+ if(!state.running)return[];
+ if(state.phase==='prep')return[{label:'주방 배치를 확인하고 “영업 시작” 누르기',done:false,current:true}];
+ if(state.tutorial.active){
+  const labels=[
+   '싱크대에서 물 1컵 받아 1번 냄비에 넣기',
+   '싱크대에서 물을 한 컵 더 가져오기',
+   '면 바구니에서 면을 가져와 넣기',
+   '스프 바구니에서 스프를 가져와 넣기',
+   '토핑 냉장고에서 계란을 꺼내 넣기',
+   '“딱 좋아요”일 때 라면을 그릇에 담기',
+   '완성 라면을 배식대에서 서빙하기'
+  ];
+  return labels.map((label,i)=>({label,done:i<state.tutorial.step,current:i===Math.min(state.tutorial.step,6)}))
+ }
+ const order=state.orders[0]||null,r=order&&recipeById(order.recipeId);
+ if(!order)return[{label:'새 주문을 기다리는 중…',done:false,current:true}];
+ const p=(state.selectedPot!=null&&state.pots[state.selectedPot])||state.pots.find(q=>!potEmpty(q))||state.pots[0];
+ if(p?.burnt)return[{label:'탄 냄비 비우기',done:false,current:true,urgent:true},{label:'새 냄비로 주문 다시 시작하기',done:false,current:false}];
+ if(state.cleanPlates<=0&&state.dirtyPlates>0)return[{label:'싱크대에서 더러운 그릇 설거지하기',done:false,current:true,urgent:true},{label:r.name+' 조리 계속하기',done:false,current:false}];
+ const mealReady=state.heldItem?.kind==='meal'||!!state.tray;
+ const waterDone=mealReady||p.water>=2||p.ingredients.length>0;
+ const noodleDone=mealReady||hasIngredient(p,'noodle');
+ const soupDone=mealReady||hasIngredient(p,'soup');
+ const toppings=(r?.need||[]).filter(id=>!['noodle','soup'].includes(id));
+ const toppingDone=mealReady||toppings.every(id=>hasIngredient(p,id));
+ const recipeReady=!mealReady&&!!identifyRecipe(p);
+ const plateDone=mealReady;
+ const toppingName=toppings.length?toppings.map(ingredientLabel).join(' + '):'토핑';
+ const steps=[
+  {label:'싱크대에서 물 2컵 받아 냄비에 넣기',done:waterDone},
+  {label:'면 바구니에서 면 가져오기',done:noodleDone},
+  {label:'스프 바구니에서 스프 가져오기',done:soupDone},
+  {label:'토핑 냉장고에서 '+toppingName+' 넣기',done:toppingDone},
+  {label:recipeReady&&p.noodleTime>11.5?'면이 퍼지기 전에 바로 그릇에 담기':'“딱 좋아요”일 때 그릇에 담기',done:plateDone,urgent:recipeReady&&p.noodleTime>11.5},
+  {label:r.name+'을 배식대에서 서빙하기',done:false}
+ ];
+ let current=steps.findIndex(x=>!x.done);if(current<0)current=steps.length-1;
+ steps.forEach((x,i)=>x.current=i===current);return steps
+}
+function renderTaskPanel(){
+ if(!els.taskList)return;
+ const steps=taskPlan(),done=steps.filter(x=>x.done).length;
+ els.taskProgress.textContent=steps.length?done+'/'+steps.length:'';
+ els.taskList.innerHTML=steps.map((x,i)=>'<li data-step="'+(i+1)+'" class="'+(x.done?'done ':(x.current?'current ':'')+(x.urgent?'urgent ':''))+'">'+x.label+'</li>').join('')
+}
 function renderTutorial(){
  const active=state.running&&state.phase==='service'&&state.tutorial.active;
  document.body.classList.toggle('tutorial-mode',active);
  els.tutorialBanner.classList.toggle('hidden',!active);
- if(active)els.tutorialText.textContent=tutorialMessage()
+ if(active)els.tutorialText.textContent=tutorialMessage();
+ renderTaskPanel()
 }
 function compatibleOrderForPot(p){
  return state.orders.find(o=>{
@@ -1270,7 +1317,7 @@ function renderPotStrip(){
 }
 function renderSelectedHelp(){
  const p=state.selectedPot==null?null:state.pots[state.selectedPot];
- els.selected.textContent=nextInstruction(p)
+ els.selected.textContent=nextInstruction(p);renderTaskPanel()
 }
 function makeOrder(forcedId=null){
  const used=new Set(state.orders.map(o=>o.slot));
@@ -1318,7 +1365,8 @@ function renderOrders(){
    '<span class="ticket-tear ticket-tear-bottom" aria-hidden="true"></span>';
   d.addEventListener('click',()=>toast(state.heldItem?.kind==='meal'?'완성 라면을 들고 배식대에서 E를 눌러 주세요':'주문 '+String(o.id).padStart(3,'0')+' · '+r.name+'을 기다리고 있어요',1300));
   els.orders.appendChild(d)
- })
+ });
+ renderTaskPanel()
 }
 function renderTray(){
  els.trayBtn.classList.add('hidden')
