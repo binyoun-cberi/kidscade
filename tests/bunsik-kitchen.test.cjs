@@ -784,7 +784,9 @@ test('Bunsik Kitchen v33 gates five dining seats behind visible hall upgrades', 
   assert.match(js, /seat\.enabled=enabled/);
   assert.match(js, /function unlockedSeatSlots\(\)/);
   assert.match(js, /hallSeats\?\.filter\(s=>s\.enabled&&!s\.occupiedBy&&!s\.dirtyPending\)/);
-  assert.match(js, /state\.orders\.length>=MAX_ORDERS/);\n  assert.match(js, /const used=new Set\(state\.orders\.map\(o=>o\.slot\)\),slots=unlockedSeatSlots\(\),slot=slots\.find\(n=>!used\.has\(n\)\)/);\n  assert.match(js, /if\(slot==null\)return null/);
+  assert.match(js, /state\.orders\.length>=MAX_ORDERS/);
+  assert.match(js, /const used=new Set\(state\.orders\.map\(o=>o\.slot\)\),slots=unlockedSeatSlots\(\),slot=slots\.find\(n=>!used\.has\(n\)\)/);
+  assert.match(js, /if\(slot==null\)return null/);
 });
 
 test('Bunsik Kitchen v33 growth shop has real kitchen hall staff menu and expansion effects', () => {
@@ -833,7 +835,8 @@ test('Bunsik Kitchen v33 keeps bound multi-topping orders authoritative over sub
 });
 
 test('Bunsik Kitchen v33 does not bank the shift before an active serve or plating finishes', () => {
-  assert.match(js, /if\(state\.time<=0&&!state\.closing&&!state\.busy\)beginClosingShift\(\)/);\n  assert.match(js, /if\(!state\.busy&&state\.orders\.length===0&&!kitchen\.hasActiveDiningCustomers\(\)\)endShift\(\)/);
+  assert.match(js, /if\(state\.time<=0&&!state\.closing&&!state\.busy\)beginClosingShift\(\)/);
+  assert.match(js, /if\(!state\.busy&&state\.orders\.length===0&&!kitchen\.hasActiveDiningCustomers\(\)\)endShift\(\)/);
   assert.match(js, /state\.time>0&&state\.spawnClock>=spawnInterval/);
 });
 
