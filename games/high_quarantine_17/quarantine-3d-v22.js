@@ -26,7 +26,7 @@ const A={
  radio:'3d/interiors/kenney-furniture-kit/radio.glb',
  laptop:'3d/interiors/kenney-furniture-kit/laptop.glb',
  trashcan:'3d/interiors/kenney-furniture-kit/trashcan.glb',
- crate:'3d/city/poly-pizza-city-pack/box.glb'
+ crate:'3d/survival/kenney-survival-kit/box.glb'
 };
 const loader=new GLTFLoader(),cache=new Map(),views=[];
 const lowPower=innerWidth<720||(navigator.hardwareConcurrency||8)<=4||(navigator.deviceMemory||8)<=4;
