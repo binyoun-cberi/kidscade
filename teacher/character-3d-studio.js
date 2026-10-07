@@ -333,7 +333,124 @@ function taperedPart(topRadius,bottomRadius,height,center,boneIndex,depthScale=.
   return rigidGeometry(g,m,boneIndex);
 }
 
+function normalizeBoneWeights(pairs){
+  const clean=(pairs||[]).filter(p=>p&&p[1]>0).slice(0,4);
+  const total=clean.reduce((s,p)=>s+p[1],0)||1;
+  const indices=[0,0,0,0],weights=[0,0,0,0];
+  clean.forEach((p,i)=>{indices[i]=p[0];weights[i]=p[1]/total});
+  return {indices,weights};
+}
+
+function skinnedRingShell(rings,segments=14){
+  const pos=[],skinI=[],skinW=[],idx=[];
+  for(const ring of rings){
+    const weights=normalizeBoneWeights(ring.weights);
+    for(let s=0;s<segments;s++){
+      const a=s/segments*Math.PI*2;
+      pos.push(
+        (ring.cx||0)+Math.cos(a)*ring.rx,
+        ring.y,
+        (ring.cz||0)+Math.sin(a)*ring.rz
+      );
+      skinI.push(...weights.indices);
+      skinW.push(...weights.weights);
+    }
+  }
+  for(let r=0;r<rings.length-1;r++){
+    for(let s=0;s<segments;s++){
+      const n=(s+1)%segments;
+      const a=r*segments+s,b=r*segments+n,c=(r+1)*segments+s,d=(r+1)*segments+n;
+      idx.push(a,c,b,b,c,d);
+    }
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(skinI,4));
+  g.setAttribute('skinWeight',new THREE.Float32BufferAttribute(skinW,4));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  const non=g.toNonIndexed();
+  g.dispose();
+  return non;
+}
+
+function softTorsoGeometry(dim,boneIndex){
+  const H=dim.H;
+  const sh=params.shoulderScale;
+  return skinnedRingShell([
+    {y:dim.hipY-.010*H,rx:.105*H,rz:.090*H,weights:[[boneIndex.Hips,1]]},
+    {y:dim.hipY+.025*H,rx:.122*H,rz:.101*H,weights:[[boneIndex.Hips,.82],[boneIndex.Spine,.18]]},
+    {y:dim.spineY-.018*H,rx:.135*H,rz:.108*H,weights:[[boneIndex.Hips,.32],[boneIndex.Spine,.68]]},
+    {y:dim.spineY+.026*H,rx:.151*H,rz:.113*H,weights:[[boneIndex.Spine,.82],[boneIndex.Chest,.18]]},
+    {y:dim.chestY-.015*H,rx:.164*H*sh,rz:.118*H,weights:[[boneIndex.Spine,.28],[boneIndex.Chest,.72]]},
+    {y:dim.shoulderY-.020*H,rx:.178*H*sh,rz:.116*H,weights:[[boneIndex.Chest,1]]},
+    {y:dim.shoulderY+.012*H,rx:.150*H*sh,rz:.105*H,weights:[[boneIndex.Chest,1]]},
+    {y:dim.neckY-.006*H,rx:.072*H,rz:.070*H,weights:[[boneIndex.Chest,.72],[boneIndex.Neck,.28]]}
+  ],16);
+}
+
+function softForearmGeometry(dim,x,upperBone,lowerBone){
+  const H=dim.H;
+  const elbow=dim.shoulderY-dim.upperArmLen;
+  const wrist=elbow-dim.lowerArmLen;
+  const r=dim.limb*.54;
+  return skinnedRingShell([
+    {cx:x,y:elbow+.030*H,rx:r*1.08,rz:r*.94,weights:[[upperBone,.86],[lowerBone,.14]]},
+    {cx:x,y:elbow+.010*H,rx:r*1.12,rz:r*.97,weights:[[upperBone,.64],[lowerBone,.36]]},
+    {cx:x,y:elbow-.010*H,rx:r*1.10,rz:r*.96,weights:[[upperBone,.36],[lowerBone,.64]]},
+    {cx:x,y:elbow-.045*H,rx:r,rz:r*.92,weights:[[lowerBone,.94],[upperBone,.06]]},
+    {cx:x,y:(elbow+wrist)*.5,rx:r*.91,rz:r*.86,weights:[[lowerBone,1]]},
+    {cx:x,y:wrist+.018*H,rx:r*.83,rz:r*.80,weights:[[lowerBone,1]]}
+  ],14);
+}
+
+function softLegGeometry(dim,x,upperBone,lowerBone){
+  const H=dim.H;
+  const knee=dim.kneeY,ankle=dim.ankleY;
+  const r=dim.limb*.63;
+  const shortsBottom=dim.hipY-.085*H;
+  return skinnedRingShell([
+    {cx:x,y:shortsBottom+.016*H,rx:r*1.04,rz:r*.98,weights:[[upperBone,1]]},
+    {cx:x,y:shortsBottom-.010*H,rx:r,rz:r*.94,weights:[[upperBone,1]]},
+    {cx:x,y:knee+.030*H,rx:r*.91,rz:r*.90,weights:[[upperBone,.88],[lowerBone,.12]]},
+    {cx:x,y:knee+.010*H,rx:r*.88,rz:r*.88,weights:[[upperBone,.63],[lowerBone,.37]]},
+    {cx:x,y:knee-.012*H,rx:r*.86,rz:r*.87,weights:[[upperBone,.35],[lowerBone,.65]]},
+    {cx:x,y:knee-.045*H,rx:r*.82,rz:r*.85,weights:[[lowerBone,.96],[upperBone,.04]]},
+    {cx:x,y:(knee+ankle)*.5,rx:r*.76,rz:r*.82,weights:[[lowerBone,1]]},
+    {cx:x,y:ankle+.020*H,rx:r*.70,rz:r*.78,weights:[[lowerBone,1]]}
+  ],14);
+}
+
 function bodyDimensions(style,H){
+  if(style==='soft3'){
+    return {
+      style,H,
+      ankleY:.082*H,
+      kneeY:.252*H,
+      hipY:.425*H,
+      spineY:.505*H,
+      chestY:.570*H,
+      shoulderY:.626*H,
+      neckY:.648*H,
+      headBoneY:.662*H,
+      headCenterY:.820*H,
+      headRX:.183*H*params.headScale,
+      headRY:.180*H*params.headScale,
+      headRZ:.168*H*params.headScale,
+      shoulderX:.165*H*params.shoulderScale,
+      hipX:.076*H,
+      upperArmLen:.136*H,
+      lowerArmLen:.126*H,
+      upperLegLen:(.425-.252)*H,
+      lowerLegLen:(.252-.082)*H,
+      limb:.072*H*params.limbScale,
+      handX:.061*H,handY:.066*H,handZ:.056*H,
+      footX:.108*H,footY:.066*H,footZ:.157*H,
+      eyeSize:.021*H,
+      torsoH:.20*H,torsoCenterY:.535*H,torsoTop:.17*H,torsoBottom:.13*H,
+      rounded:true,soft:true
+    };
+  }
   if(style==='legacy'){
     return {
       style,H,
@@ -347,7 +464,7 @@ function bodyDimensions(style,H){
       handX:.032*H,handY:.038*H,handZ:.032*H,
       footX:.070*H,footY:.055*H,footZ:.135*H,
       eyeSize:.012*H,torsoH:.23*H,torsoCenterY:.695*H,torsoTop:.145*H,torsoBottom:.13*H,
-      rounded:false
+      rounded:false,soft:false
     };
   }
 
@@ -384,7 +501,7 @@ function bodyDimensions(style,H){
     torsoCenterY:(action ? .53 : .535)*H,
     torsoTop:(action ? .17 : .157)*H*params.shoulderScale,
     torsoBottom:(action ? .135 : .128)*H,
-    rounded:true
+    rounded:true,soft:false
   };
 }
 
