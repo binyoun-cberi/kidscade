@@ -16,7 +16,7 @@ test('격리구역 17 v20 uses 3D CAMP-17 and isolation views with field mission
   const entry=(catalog.games||catalog).find(g=>g.id==='high_quarantine_17');
 
   assert.match(html,/field-topdown-v18\.js\?v=3/);
-  assert.match(html,/facility-3d-v20\.js\?v=1/);
+  assert.match(html,/facility-3d-v20\.js\?v=2/);
   assert.match(html,/three-r160\/three\.module\.js/);
   assert.match(html,/3D 격리시설\/CAMP-17/);
   assert.equal(entry.href,'games/high_quarantine_17/격리구역 17.html?v=20');
@@ -44,6 +44,15 @@ test('격리구역 17 v20 uses 3D CAMP-17 and isolation views with field mission
   assert.match(facility,/applyNoveltyPalette|function tint\(/);
   assert.match(facility,/q17Camp3D/);
   assert.match(facility,/q17Iso3D/);
+  assert.match(facility,/position\.set\(0,13\.2,15\.8\)/);
+  assert.match(facility,/position\.set\(0,10\.8,12\.5\)/);
+  assert.match(facility,/Residential cluster/);
+  assert.match(facility,/Defensive perimeter/);
+  assert.match(facility,/air-lock entry/);
+  assert.match(facility,/isoSlotLights/);
+  assert.match(facility,/campBeacon/);
+  assert.match(facility,/mode==='camp'\?1\.88:1\.72/);
+  assert.match(facility,/version:'20\.1'/);
   assert.match(outbreak,/resolveIsolationField:function/);
   assert.match(outbreak,/현장 소탕 완료/);
 
