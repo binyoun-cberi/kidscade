@@ -13,17 +13,18 @@ const js = fs.readFileSync(path.join(gameDir, 'school-day-game.js'), 'utf8');
 const aiPath = path.join(gameDir, 'student-ai.mjs');
 const dayPath = path.join(gameDir, 'school-day.mjs');
 const lifePath = path.join(gameDir, 'student-life.mjs');
+const campaignPath = path.join(gameDir, 'school-campaign.mjs');
 const catalogData = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.json'), 'utf8'));
 const catalog = Array.isArray(catalogData) ? catalogData : catalogData.games;
 const game = catalog.find(g => g.id === 'job_teacher_classroom');
 
-test('teacher simulator v68 loads the six-period direct-control game', () => {
+test('teacher simulator v69 loads the six-period direct-control game', () => {
   assert.match(html, /id="game"/);
   assert.match(html, /id="joystick"/);
   assert.match(html, /id="actionButton"/);
   assert.match(html, /id="dayStrip"/);
-  assert.match(html, /school-day-game\.js\?v=68/);
-  assert.match(html, /style\.css\?v=66/);
+  assert.match(html, /school-day-game\.js\?v=69/);
+  assert.match(html, /style\.css\?v=69/);
   assert.match(html, /건강/);
   assert.match(html, /안전교육/);
   assert.match(css, /\.focusMeter/);
@@ -31,7 +32,7 @@ test('teacher simulator v68 loads the six-period direct-control game', () => {
 });
 
 test('teacher simulator modules parse as JavaScript', () => {
-  for (const name of ['school-day-game.js','school-day.mjs','student-ai.mjs','student-life.mjs']) {
+  for (const name of ['school-day-game.js','school-day.mjs','student-ai.mjs','student-life.mjs','school-campaign.mjs']) {
     const src = fs.readFileSync(path.join(gameDir, name), 'utf8');
     const result = spawnSync(process.execPath, ['--input-type=module', '--check'], {input:src,encoding:'utf8'});
     assert.equal(result.status, 0, name+': '+(result.stderr || result.stdout || 'syntax check failed'));
@@ -272,10 +273,70 @@ test('teacher simulator error UI no longer references Chibi', () => {
   assert.doesNotMatch(html, /Chibi|allinonepr|\/chibi\//i);
 });
 
-test('catalog publishes teacher simulator v68', () => {
+
+test('eight-day campaign schedules four exams and a clear final goal', async () => {
+  const campaign = await import(pathToFileURL(campaignPath).href + '?campaign-days=' + Date.now());
+  assert.equal(campaign.CAMPAIGN_DAYS, 8);
+  assert.deepEqual(campaign.EXAM_DAYS, [2,4,6,8]);
+  assert.deepEqual(campaign.GRADE_ORDER, ['D','C','B','A','S']);
+  assert.equal(campaign.examNumberForDay(2), 1);
+  assert.equal(campaign.examNumberForDay(8), 4);
+  assert.equal(campaign.examNumberForDay(7), 0);
+  assert.match(html, /학생 6명 모두 1차 시험보다 한 단계 이상/);
+  assert.match(html, /id="campaignStatus"/);
+  assert.match(html, /id="examResults"/);
+});
+
+test('first exam sets one-grade targets and fourth exam decides success', async () => {
+  const ai = await import(pathToFileURL(aiPath).href + '?campaign-ai=' + Date.now());
+  const campaign = await import(pathToFileURL(campaignPath).href + '?campaign-exam=' + Date.now());
+  const state = campaign.createCampaignState(ai.STUDENT_PROFILES.map(s => s.id));
+  state.day = 2;
+  const first = campaign.conductExam(state, ai.STUDENT_PROFILES);
+  assert.equal(first.examNumber, 1);
+  for (const row of first.rows) {
+    const target = state.targetGrades[row.id];
+    assert.equal(campaign.gradeIndex(target), Math.min(campaign.GRADE_ORDER.length-1, campaign.gradeIndex(row.grade)+1));
+  }
+
+  for (const row of first.rows) {
+    const target = state.targetGrades[row.id];
+    state.mastery[row.id] = campaign.GRADE_THRESHOLDS[target] + .5;
+  }
+  state.day = 8;
+  const fourth = campaign.conductExam(state, ai.STUDENT_PROFILES);
+  assert.equal(fourth.examNumber, 4);
+  assert.equal(fourth.reached, 6);
+  assert.equal(fourth.success, true);
+  assert.equal(state.finalSuccess, true);
+});
+
+test('learning accumulates continuously and direct focus support gives a small bonus', async () => {
+  const campaign = await import(pathToFileURL(campaignPath).href + '?campaign-learning=' + Date.now());
+  const focused = campaign.learningGain(10,'수학',{focused:true});
+  const offTask = campaign.learningGain(10,'수학',{focused:false});
+  const chatter = campaign.learningGain(10,'수학',{focused:true,chatting:true});
+  const conflict = campaign.learningGain(10,'수학',{focused:true,conflict:true});
+  assert.ok(focused > offTask);
+  assert.ok(offTask > chatter);
+  assert.ok(chatter > conflict);
+  assert.equal(campaign.LEARNING_RULES.focusHelpBonus, .18);
+  assert.match(js, /recordLessonLearning\(s,dt,chat\)/);
+  assert.match(js, /addLearning\(campaign,s\.runtime\.id,LEARNING_RULES\.focusHelpBonus\)/);
+});
+
+test('campaign persistence stores growth progress but not health friendship or conflicts', () => {
+  assert.match(js, /kidscade_teacher_campaign_v1/);
+  assert.match(js, /localStorage\.setItem\(CAMPAIGN_STORAGE_KEY/);
+  assert.doesNotMatch(js, /CAMPAIGN_STORAGE_KEY[^\n]*(friendship|relations|health)/i);
+});
+
+test('catalog publishes teacher simulator v69', () => {
   assert.ok(game);
-  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=68');
+  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=69');
   assert.match(game.description, /건강/);
   assert.match(game.description, /안전교육/);
+  assert.match(game.description, /8일/);
+  assert.match(game.description, /4번의 시험/);
   assert.equal(game.qualityStatus, 'featured');
 });
