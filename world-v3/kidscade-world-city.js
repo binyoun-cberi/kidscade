@@ -226,7 +226,7 @@ export async function buildKidscadeCity(ctx){
   const addSharedStatic=async(id,{x=0,z=0,target=1,name='',forwardX=0,forwardZ=1}={})=>{
     if(!shared3DCanUse(id))return null;
     try{
-      const base=await loadGLB(shared3DPath(id,'../')),visual=prepareShared3DObject(base.clone(true),id,target);
+      const sharedSource=await loadGLB(shared3DPath(id,'../')),visual=prepareShared3DObject(sharedSource.clone(true),id,target);
       if(!visual)return null;
       const anchor=new THREE.Group();anchor.name=name;anchor.position.set(x,0,z);anchor.rotation.y=yawToward(visual,forwardX,forwardZ);anchor.add(visual);parent.add(anchor);
       anchor.userData.forwardAudit={targetX:forwardX,targetZ:forwardZ,yaw:anchor.rotation.y};return anchor;
