@@ -105,7 +105,7 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
   const DATA=window.KIDSCADE_HANJA_GRADE_DATA;
   const SDK=window.KidscadeGame;
   const $=id=>document.getElementById(id);
-  const MODES={start:[4,4,0],easy:[6,6,210],normal:[8,6,270],hard:[8,8,330],master:[10,8,390]};
+  const MODES={start:[4,4,150],easy:[6,6,210],normal:[8,6,270],hard:[8,8,330],master:[10,8,390]};
   const st={board:[],cols:8,rows:6,grade:8,difficulty:'normal',mode:'relaxed',active:false,paused:false,selected:-1,locked:false,score:0,combo:0,maxCombo:0,wrong:0,hints:0,shuffles:0,remaining:0,elapsed:0,deadline:0,pauseAt:0,startedAt:0,token:0,dialogOpen:false};
   let audioContext=null,unlockTimer=0,lineTimer=0,hintTimer=0,toastTimer=0;
   const now=()=>Date.now();
@@ -276,8 +276,7 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
     const dialog=$('finishDialog');
     if(!dialog.open)dialog.showModal();
     if(SDK?.result){
-      SDK.result({scope:'stage',status:clear?'completed':'failed',outcome:clear?'clear':'fail',score:st.score,stage:st.difficulty,grade:st.grade,mode:st.mode,wrong:st.wrong,hints:st.hints,elapsedSeconds:elapsed});
-      if(clear&&st.wrong===0&&st.hints===0)SDK.achievement?.('hanja_sichuan.clean_clear');
+      SDK.result({scope:'stage',status:clear?'completed':'failed',outcome:clear?'clear':'fail',score:st.score,stage:st.difficulty,grade:st.grade,mode:st.mode,wrong:st.wrong,hints:st.hints,maxCombo:st.maxCombo,clean:clear&&st.wrong===0&&st.hints===0&&st.shuffles===0,elapsedSeconds:elapsed});
     }
     announce(title);
   }
