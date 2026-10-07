@@ -29,7 +29,7 @@ test('3D studio has no V1 V2 V3 procedural body UI or generator',()=>{
 
 test('Chibi studio uses one canonical GLB with no character fallback',()=>{
   const js=read('teacher/character-3d-studio.js');
-  assert.match(js,/const CHIBI_ASSET_URL='\/assets\/game\/chibi\/ChibiCharactersV1\\.2\/ChibiCharacters\/glb\/allinonepr\\.glb'/);
+  assert.match(js,/const CHIBI_ASSET_URL='\/assets\/game\/chibi\/ChibiCharactersV1\.2\/ChibiCharacters\/glb\/allinonepr\.glb'/);
   assert.equal(js.includes('CHIBI_ASSET_CANDIDATES'),false);
   assert.equal(js.toLowerCase().includes('fallback'),false);
   assert.match(js,/폴백 캐릭터는 사용하지 않습니다/);
@@ -155,14 +155,13 @@ test('hoodie includes collar and garment seam details',()=>{
   assert.match(js,/kidscade_hoodie_blue_collar/);
   assert.match(js,/kidscade_hoodie_blue_seam_left/);
   assert.match(js,/kidscade_hoodie_blue_seam_right/);
-  assert.match(js,/kidscade_hoodie_blue_pocket_opening/);
-  assert.match(js,/kidscade_hoodie_blue_pocket_seam_left/);
-  assert.match(js,/kidscade_hoodie_blue_pocket_seam_right/);
+  assert.match(js,/kidscade_hoodie_blue_pocket_opening_L/);
+  assert.match(js,/kidscade_hoodie_blue_pocket_opening_R/);
+  assert.match(js,/kidscade_hoodie_blue_pocket_bottom_seam/);
   assert.match(js,/function makeBoundSeam/);
   assert.match(js,/function resolveFirstBoneName/);
   assert.match(js,/if\(y>1\.06\)/);
 });
-
 
 test('hoodie v2 has sleeves hood volume and subtle seams',()=>{
   const js=read('teacher/character-3d-studio.js');
@@ -182,30 +181,27 @@ test('hoodie v2 has sleeves hood volume and subtle seams',()=>{
 
 test('left rail stays readable without nested scrolling',()=>{
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/grid-template-columns:minmax\(350px,370px\)/);
-  assert.match(html,/\.left\{position:static;max-height:none;overflow:visible\}/);
-  assert.match(html,/\.wardrobe-grid\{display:grid;grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\);gap:6px;max-height:none;overflow:visible/);
+  assert.match(html,/grid-template-columns:370px minmax\(560px,1fr\) 300px/);
+  assert.match(html,/\.left-rail\{display:grid;gap:10px;width:370px;max-width:370px;min-width:0;align-self:start;position:static;max-height:none;overflow:clip\}/);
   assert.match(html,/font-size:\.64rem/);
-  assert.match(html,/<aside class="side left">/);
+  assert.match(html,/<aside class="left-rail">/);
   assert.match(html,/@media\(max-width:1250px\)/);
 });
-
 
 test('left rail v2 forces a wide non-scrolling desktop column',()=>{
   const html=read('teacher/character-3d-studio.html');
   const admin=read('teacher/index.html');
   assert.match(html,/grid-template-columns:370px minmax\(560px,1fr\) 300px/);
-  assert.match(html,/\.left\{position:static!important;width:370px;max-width:370px;max-height:none!important;overflow:visible!important/);
-  assert.match(html,/data-layout-version="left-rail-v2"/);
-  assert.match(admin,/character-3d-studio\.html\?v=20261007-leftrail2/);
+  assert.match(html,/\.left-rail\{[^}]*width:370px;max-width:370px;[^}]*overflow:clip/);
+  assert.match(html,/data-layout-version="left-rail-no-scroll-v4"/);
+  assert.match(admin,/character-3d-studio\.html\?v=20261007-noscroll4/);
 });
-
 
 test('left rail never inherits side scrolling',()=>{
   const html=read('teacher/character-3d-studio.html');
   assert.match(html,/<aside class="left-rail">/);
   assert.doesNotMatch(html,/<aside class="side left">/);
-  assert.match(html,/\.left-rail\{display:grid;gap:10px;width:370px;max-width:370px;min-width:0;align-self:start;position:static;overflow:visible\}/);
+  assert.match(html,/\.left-rail\{[^}]*position:static;max-height:none;overflow:clip\}/);
   assert.match(html,/data-layout-version="left-rail-no-scroll-v4"/);
 });
 
