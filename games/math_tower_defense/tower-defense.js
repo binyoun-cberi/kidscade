@@ -376,7 +376,7 @@ function rebuildSkyWorld(){
   for(const [x,z,key] of outerTrees){const t=cloneModel(key,.95);if(t){t.position.set(x,-.34,z);t.rotation.y=(x-z)*.17;skyGroup.add(t)}}
 
   const placeStreet=(key,target,x,z,rot=0)=>{
-    const prop=cloneModel(key,target);if(!prop)return;prop.position.set(x,-.34,z);prop.rotation.y=rot;skyGroup.add(prop)
+    const prop=cloneModel(key,target);if(!prop)return;prop.position.set(x,-.08,z);prop.rotation.y=rot;skyGroup.add(prop)
   };
   placeStreet('ambulance',2.15,9.0,4.55,-Math.PI/2);
   placeStreet('trafficLight',1.25,-9.05,-4.65,Math.PI/2);
