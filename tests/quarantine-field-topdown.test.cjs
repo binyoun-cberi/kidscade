@@ -10,13 +10,17 @@ test('격리구역 17 v18 uses CAMP-17 topdown field missions',()=>{
   const html=fs.readFileSync(path.join(gameDir,'격리구역 17.html'),'utf8');
   const outbreak=fs.readFileSync(path.join(gameDir,'outbreak-v3.js'),'utf8');
   const field=fs.readFileSync(path.join(gameDir,'field-topdown-v18.js'),'utf8');
+  const facility=fs.readFileSync(path.join(gameDir,'facility-3d-v20.js'),'utf8');
   const game=fs.readFileSync(path.join(gameDir,'game-v2.js'),'utf8');
   const catalog=JSON.parse(fs.readFileSync(path.join(ROOT,'data','games.json'),'utf8'));
   const entry=(catalog.games||catalog).find(g=>g.id==='high_quarantine_17');
 
-  assert.match(html,/field-topdown-v18\.js\?v=2/);
+  assert.match(html,/field-topdown-v18\.js\?v=3/);
+  assert.match(html,/facility-3d-v20\.js\?v=1/);
+  assert.match(html,/three-r160\/three\.module\.js/);
+  assert.match(html,/3D 격리시설\/CAMP-17/);
   assert.match(html,/CAMP-17 탑다운 현장 출동/);
-  assert.equal(entry.href,'games/high_quarantine_17/격리구역 17.html?v=19');
+  assert.equal(entry.href,'games/high_quarantine_17/격리구역 17.html?v=20');
 
   assert.match(field,/api\.respondCamp=function/);
   assert.match(field,/api\.respondGlobal=function/);
@@ -31,6 +35,16 @@ test('격리구역 17 v18 uses CAMP-17 topdown field missions',()=>{
   assert.match(field,/state\.crates/);
   assert.match(field,/state\.survivors/);
   assert.match(field,/bridge\(\)/);
+  assert.match(field,/kidscade-avatar-studio-preview/);
+  assert.match(field,/guest-default\.png/);
+  for(const asset of ['tent-detailed-open.glb','bed.glb','construction-fence.glb','ambulance.glb','gatelng-gun-turret.glb','character-male-a.glb']){
+    assert.ok(facility.includes(asset),asset);
+  }
+  assert.match(facility,/Q17Surveillance/);
+  assert.match(facility,/getIsolationSnapshot/);
+  assert.match(facility,/applyNoveltyPalette|function tint\(/);
+  assert.match(facility,/q17Camp3D/);
+  assert.match(facility,/q17Iso3D/);
   assert.match(outbreak,/resolveIsolationField:function/);
   assert.match(outbreak,/현장 소탕 완료/);
 
@@ -38,6 +52,7 @@ test('격리구역 17 v18 uses CAMP-17 topdown field missions',()=>{
   assert.match(game,/time:94/);
   assert.match(game,/time:102/);
   assert.doesNotThrow(()=>new Function(field));
+  assert.doesNotThrow(()=>new Function(facility.replace(/^import .*$/mg,'')));
   assert.doesNotThrow(()=>new Function(game));
   assert.doesNotThrow(()=>new Function(outbreak));
 });
