@@ -17,7 +17,7 @@ test('격리구역 17 v21 uses the same 3D camp language for CCTV and field miss
   const catalog=JSON.parse(fs.readFileSync(path.join(ROOT,'data','games.json'),'utf8'));
   const entry=(catalog.games||catalog).find(g=>g.id==='high_quarantine_17');
 
-  assert.match(html,/surveillance-v11\.js\?v=6/);
+  assert.match(html,/surveillance-v11\.js\?v=7/);
   assert.match(html,/field-topdown-v18\.js\?v=5/);
   assert.match(html,/facility-3d-v20\.js\?v=4/);
   assert.match(html,/field-3d-v21\.js\?v=3/);
@@ -53,6 +53,8 @@ test('격리구역 17 v21 uses the same 3D camp language for CCTV and field miss
   assert.match(field,/Math\.max\(1,Number\(state\.payload\.count\)\|\|1\)/);
   assert.match(surveillance,/const CAMP_OBSTACLES=/);
   assert.match(surveillance,/function campBlockedAt/);
+  assert.match(surveillance,/function campWaypoint/);
+  assert.match(surveillance,/const step=3,minX=4,maxX=96/);
   assert.match(surveillance,/residents:liveResidents\.map/);
   assert.match(surveillance,/threats:active\.map/);
   assert.match(surveillance,/applyCombatLosses\(result\.losses\|\|0,result\.lostIds\)/);
