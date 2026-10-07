@@ -14,7 +14,7 @@ test('cosmic growth game shell is wired to local Three and Kidscade SDK',()=>{
   assert.match(html,/<title>먼지에서 블랙홀까지<\/title>/);
   assert.match(html,/data-game-id="science_cosmic_growth"/);
   assert.match(html,/assets\/vendor\/three-r160\/three\.module\.js/);
-  assert.match(html,/game\.js\?v=5/);
+  assert.match(html,/game\.js\?v=6/);
   assert.match(html,/id="tapLayer"/);
   assert.match(html,/id="codex"/);
   assert.match(html,/style\.css\?v=4/);
@@ -58,6 +58,20 @@ test('cosmic growth has ambient flybys and black holes capture passing bodies',(
   assert.match(js,/updateFlybys\(dt\);updateFx\(dt\)/);
   assert.doesNotMatch(html,/id="scaleCompare"/);
   assert.doesNotMatch(css,/\.scaleCompare\{/);
+});
+
+test('early rock eras never use planet art and novelty flybys reuse colored existing assets',()=>{
+  assert.match(js,/if\(i<=4\)return n<\.16\?'dust':'rock'/);
+  assert.doesNotMatch(js,/if\(i>=4\)addDistantWorlds\(1\)/);
+  assert.match(js,/const noveltyChance=i<6\?0/);
+  for(const asset of ['animal-dog.glb','animal-cat.glb','animal-cow.glb','animal-penguin.glb','character-male-a.glb','alien.glb','pizza.glb','ball.glb']){
+    assert.ok(js.includes(asset),asset);
+  }
+  for(const fn of ['applyNoveltyPalette','addAstronautGear','wrapInUfo','spawnNoveltyFlyby']){
+    assert.ok(js.includes('function '+fn+'('),fn);
+  }
+  assert.match(js,/palette:\[/);
+  assert.match(js,/obj\.position\.set\(x,y,\.7\+Math\.random\(\)\*\.6\)/);
 });
 
 test('science facts and observation events are part of actual progression',()=>{
