@@ -357,9 +357,26 @@ async function ensureCity(){if(cityReady)return cityReady;cityReady=(async()=>{
 // Furniture keeps its source proportions. Scale to height (or width for tables),
 // center the footprint, and ground the model before deriving closed-body collisions.
 async function homeModel(name,value,pos,axis='y',rot=0,solid=true){const data=await asset(KITCHEN+name+'.glb'),clone=data.scene.clone(true),root=new THREE.Group();root.add(clone);recolor(clone,null);let bounds=new THREE.Box3().setFromObject(clone),size=bounds.getSize(new THREE.Vector3());clone.scale.multiplyScalar(value/(size[axis]||1));bounds=new THREE.Box3().setFromObject(clone);const center=bounds.getCenter(new THREE.Vector3());clone.position.x-=center.x;clone.position.z-=center.z;clone.position.y-=bounds.min.y;root.userData.localBounds=new THREE.Box3().setFromObject(root);root.rotation.y=rot;root.position.set(...pos);world.add(root);bounds=new THREE.Box3().setFromObject(root);size=bounds.getSize(new THREE.Vector3());root.userData.closedBounds=bounds.clone();if(solid)addCollider((bounds.min.x+bounds.max.x)/2,(bounds.min.z+bounds.max.z)/2,size.x,size.z);return root}
-async function indoorResident(url,pos,rot=0,role='주민'){
- const r=await fitted(url,1.55);r.position.set(...pos);r.rotation.y=rot;r.userData.role=role;world.add(r);groundModel(r,pos[1]||0,.025);
- const mixer=startModelAnimation(r,/idle/i);if(mixer)roomMixers.push(mixer);return r
+async function indoorResident(url,pos,rot=0,role='주민',pattern=/idle/i,surfaceY=pos[1]||0){
+ const r=await fitted(url,1.55);r.position.set(...pos);r.rotation.y=rot;r.userData.role=role;world.add(r);groundModel(r,surfaceY,.025);
+ const mixer=startModelAnimation(r,pattern);if(mixer)roomMixers.push(mixer);return r
+}
+function addGymTreadmill(x,z){
+ const g=new THREE.Group();g.position.set(x,0,z);world.add(g);
+ box([.92,.12,1.82],[0,.12,0],0x303842,.72,g);box([.68,.035,1.48],[0,.195,.08],0x171c22,.52,g);
+ box([.055,.9,.055],[-.36,.62,-.68],0x707b87,.5,g);box([.055,.9,.055],[.36,.62,-.68],0x707b87,.5,g);
+ box([.82,.07,.08],[0,.93,-.68],0x596573,.46,g);box([.46,.26,.08],[0,1.12,-.68],0x4659a6,.38,g);
+ addCollider(x,z,.92,1.82);return g
+}
+function addGymDumbbellRack(x,z){
+ const g=new THREE.Group();g.position.set(x,0,z);world.add(g);
+ box([1.55,.08,.46],[0,.48,0],0x404852,.65,g);box([.08,.82,.08],[-.66,.41,0],0x69737d,.5,g);box([.08,.82,.08],[.66,.41,0],0x69737d,.5,g);
+ const metal=new THREE.MeshStandardMaterial({color:0xa8b0b7,roughness:.38,metalness:.42}),plateMat=new THREE.MeshStandardMaterial({color:0x252b31,roughness:.72});
+ for(let j=0;j<5;j++){const dx=-.48+j*.24,bar=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.32,10),metal);bar.rotation.z=Math.PI/2;bar.position.set(dx,.56,0);g.add(bar);for(const ox of [-.14,.14]){const p=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,.045,12),plateMat);p.rotation.z=Math.PI/2;p.position.set(dx+ox,.56,0);g.add(p)}}
+ addCollider(x,z,1.55,.46);return g
+}
+function addGymMat(x,z,color){
+ const g=new THREE.Group();g.position.set(x,.025,z);world.add(g);box([1.55,.045,.68],[0,0,0],color,.84,g);return g
 }
 async function marketSurfaceModel(name,value,pos,axis='x',rot=0,solid=true){const data=await asset(MARKET+name+'.glb'),clone=data.scene.clone(true),root=new THREE.Group();root.add(clone);recolor(clone,null);let bounds=new THREE.Box3().setFromObject(clone),size=bounds.getSize(new THREE.Vector3());clone.scale.multiplyScalar(value/(size[axis]||1));bounds=new THREE.Box3().setFromObject(clone);const center=bounds.getCenter(new THREE.Vector3());clone.position.x-=center.x;clone.position.z-=center.z;clone.position.y-=bounds.min.y;root.userData.localBounds=new THREE.Box3().setFromObject(root);root.rotation.y=rot;root.position.set(...pos);world.add(root);bounds=new THREE.Box3().setFromObject(root);size=bounds.getSize(new THREE.Vector3());root.userData.closedBounds=bounds.clone();if(solid)addCollider((bounds.min.x+bounds.max.x)/2,(bounds.min.z+bounds.max.z)/2,size.x,size.z);return root}
 async function packDecor(url,size,pos,rot=0,solid=false,palette=null,parent=world){try{const r=await fitted(url,size,palette);r.position.set(pos[0],0,pos[2]);r.rotation.y=rot;groundModel(r,pos[1]??0,.01);parent.add(r);if(solid){const b=new THREE.Box3().setFromObject(r),s=b.getSize(new THREE.Vector3());addCollider((b.min.x+b.max.x)/2,(b.min.z+b.max.z)/2,s.x,s.z)}return r}catch(e){console.warn('optional decor failed',url,e);return null}}
