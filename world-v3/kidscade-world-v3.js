@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
-import {buildKidscadeCity} from './kidscade-world-city.js?v=31';
+import {buildKidscadeCity} from './kidscade-world-city.js?v=32';
 import {createDailyDirector} from './kidscade-world-daily.js?v=3';
 import {createDailyLife} from './kidscade-world-daily-life.js?v=3';
 import {buildVenueInteriors,VENUE_MODES,VENUE_INFO,VENUE_BOUNDS} from './kidscade-world-interiors.js?v=10';
@@ -11,7 +11,7 @@ import {createFurnishingSystem} from './kidscade-world-furnishing.js?v=10';
 import {buildHomeInterior,HOME_INTERIOR_LEVELS,homeInteriorCameraProfile} from './kidscade-world-interior-kit.js?v=2';
 import {createWorldAudio} from './kidscade-world-audio.js?v=1';
 import {WORLD_GRID,WORLD_BOUNDS,CITY_BOUNDS,ROAD_X,ROAD_Z,zoneAt,isCityArea,isTravelCorridor,footprintTouchesRoad} from './kidscade-world-grid.js?v=6';
-import {buildWorldLandscape} from './kidscade-world-landscape.js?v=2';
+import {buildWorldLandscape} from './kidscade-world-landscape.js?v=3';
 
 const V2=window.KidscadeWorldV2||{};
 const Storage=V2.Storage;
@@ -637,6 +637,7 @@ function upgradeDevelopment(track){
   if(!spent?.ok){toast('씨앗이 부족해요. 다른 게임을 플레이해서 씨앗을 모아보세요.');return;}
   payDevelopmentMaterials(req);d[def.key]=next;persist();
   updateFarmExpansionVisuals();updateOrchardVisuals?.();updateRanchExpansionVisuals?.();updateHomesteadVisuals?.();updateStatus();
+  if(track==='ranch')void ensurePetsBuilt().then(()=>ranchLevelLoader?.(devState().ranchLevel)).catch(err=>console.warn('[World v3] ranch upgrade visual deferred',err));
   worldAudio.sfx('success',.14);toast(def.icon+' '+def.name+' '+next+'단계! · '+developmentEffect(def,next));developmentPanel();
 }
 
@@ -1226,7 +1227,7 @@ if(mobileInteractBtn){
   mobileInteractBtn.addEventListener('pointercancel',()=>{clearTimeout(mobileInteractTimer);mobileInteractTimer=0;mobileInteractLong=false;});
 }
 
-const LAYOUT_VERSION=9;
+const LAYOUT_VERSION=10;
 let homePondGroup=null,homePondInteraction=null,homeWellGroup=null,homeWellInteraction=null,homePumpGroup=null,homePumpInteraction=null;
 let homeWaterTowerObject=null,homeWaterTowerCollider=null;
 let homeCampfireObject=null,homeCampfireLight=null,homeCampfireInteraction=null,homeHouseObject=null,homeHouseBaseScale=null,homeHouseCollider=null;
@@ -1846,8 +1847,8 @@ async function buildOutdoor(onProgress=()=>{}){
     pipe.rotation.z=Math.PI/2;pipe.position.set(pumpX+.30,1.18,pumpZ);homePumpGroup.add(pipe);
     box(homePumpGroup,pumpX+.10,pumpZ,.92,.16,.12,0x657c79,1.52);
 
-    homeWaterTowerObject=await addModel(outdoor,ASSET.sharedWaterTower,{x:h.x+7.0,z:h.z-5.2,w:2.5,h:4.6,d:2.5,rot:0,name:'home-water-tower'});
-    homeWaterTowerCollider=collider('outdoor',h.x+7.0,h.z-5.2,1.75,1.75);
+    homeWaterTowerObject=await addModel(outdoor,ASSET.sharedWaterTower,{x:h.x+7.4,z:h.z+.7,w:2.5,h:4.6,d:2.5,rot:0,name:'home-water-tower'});
+    homeWaterTowerCollider=collider('outdoor',h.x+7.4,h.z+.7,1.75,1.75);
 
     homeCampfireObject=await addModel(outdoor,ASSET.campfire,{x:h.x+3.2,z:h.z+7.2,w:1.55,h:.72,d:1.55,rot:0,name:'home-campfire'});
     homeCampfireLight=new THREE.PointLight(0xff9b45,0,7,2);homeCampfireLight.position.set(h.x+3.2,1.25,h.z+7.2);homeCampfireLight.userData.campfire=true;outdoor.add(homeCampfireLight);
@@ -2254,16 +2255,37 @@ async function buildPets(){
       facilities:[['barn',ASSET.ranchBarn,5.4,-31.0,4.0,3.45,3.45,3.3,2.75],['silo',ASSET.ranchSilo,10.4,-31.1,2.55,3.45,2.55,2.0,2.0],['coop',ASSET.ranchCoop,14.1,-31.0,2.25,2.1,2.2,1.7,1.55],['windmill',ASSET.ranchWindmill,18.0,-31.0,2.8,4.5,2.8,2.2,2.2]]
     }
   };
-  for(const [levelKey,layout] of Object.entries(ranchLayouts)){
-    const level=Number(levelKey),group=new THREE.Group(),facilityColliders=[];group.visible=false;outdoor.add(group);
-    for(const [x,z,rot] of layout.fences)await addFence(group,x,z,rot,{length:2.8,height:.82});
-    plane(group,layout.ground[0],layout.ground[1],layout.ground[2],layout.ground[3],0x91a95f,-.055);
-    for(const [key,url,x,z,w,h,d,cw,cd] of layout.facilities){
-      const model=await addModel(group,url,{x,z,w,h,d,rot:RANCH_FRONT_ROT,name:'ranch-'+level+'-'+key});
-      if(model)facilityColliders.push(collider('outdoor',x,z,cw,cd));
-    }
-    ranchVisualActors.push({level,group,colliders:facilityColliders});
-  }
+  // Build only the visible ranch tier. Locked stages previously spawned 46 fences
+  // and 10 GLB instances on every visit, even at ranch level zero.
+  const ranchLevelJobs=new Map();
+  ranchLevelLoader=level=>{
+    if(!ranchLayouts[level])return Promise.resolve();
+    if(ranchLevelJobs.has(level))return ranchLevelJobs.get(level);
+    const job=(async()=>{
+      const layout=ranchLayouts[level],group=new THREE.Group(),facilityColliders=[];group.visible=false;outdoor.add(group);
+      await Promise.all(layout.fences.map(([x,z,rot])=>addFence(group,x,z,rot,{length:2.8,height:.82})));
+      // Parcel tile top is -.05; the pasture must be slightly above it.
+      plane(group,layout.ground[0],layout.ground[1],layout.ground[2],layout.ground[3],0x91a95f,-.035);
+      await Promise.all(layout.facilities.map(async([key,url,x,z,w,h,d,cw,cd])=>{
+        const model=await addModel(group,url,{x,z,w,h,d,rot:RANCH_FRONT_ROT,name:'ranch-'+level+'-'+key});
+        if(model)facilityColliders.push(collider('outdoor',x,z,cw,cd));
+      }));
+      // Keep at most the current stage in the scene and collider registry.
+      for(const actor of ranchVisualActors.splice(0)){
+        actor.group.visible=false;outdoor.remove(actor.group);actor.group.clear();
+        for(const c of actor.colliders){
+          c.enabled=false;
+          const index=colliders.outdoor.indexOf(c);
+          if(index>=0)colliders.outdoor.splice(index,1);
+        }
+      }
+      ranchVisualActors.push({level,group,colliders:facilityColliders});
+      updateRanchExpansionVisuals();
+    })().catch(err=>{ranchLevelJobs.delete(level);throw err});
+    ranchLevelJobs.set(level,job);
+    return job;
+  };
+  await ranchLevelLoader(devState().ranchLevel);
   ranchProduceObject=await addModel(outdoor,ASSET.chest,{x:18.1,z:-18.2,w:1.1,h:.82,d:.9,rot:0,name:'ranch-produce-crate'});
   ranchSignObject=await addModel(outdoor,ASSET.signpost,{x:15.7,z:-15.9,w:.7,h:1.45,d:.7,rot:0,name:'ranch-sign'});
   ranchProduceInteraction=interact('outdoor',18.0,-18.2,1.7,'목장 생산물 확인하기',ranchPanel);
@@ -2279,7 +2301,7 @@ async function buildPets(){
     actor.interaction=interact('outdoor',pos.x,pos.z,1.25,(CUBE_PETS[id]?.name||id)+'에게 다가가기',()=>tamePet(id));
   }
 }
-let petsBuildPromise=null;
+let petsBuildPromise=null,ranchLevelLoader=null;
 function ensurePetsBuilt(){
   if(petsBuildPromise)return petsBuildPromise;
   petsBuildPromise=buildPets().then(()=>{updateRanchExpansionVisuals();updateStatus();return true}).catch(err=>{console.warn('[World v3] background pet load failed',err);return false});
@@ -2390,7 +2412,7 @@ let survivalUiClock=0;
 function updateSurvival(dt,moving){
   const p=prog(),s=p.survival;
   const prevTime=s.time;
-  s.time+=dt*3;
+  s.time+=dt*15; // Short sessions now reach recess, lunch and dismissal without hours of waiting.
   if(s.time>=1440){s.time-=1440;s.day+=1;toast('새로운 하루가 시작됐어요. Day '+s.day);}
   const night=isNightTime(s.time);
   const pet=companionId(),hungerMul=pet==='deer' ? .93 : pet==='cow' ? .96 : 1;
