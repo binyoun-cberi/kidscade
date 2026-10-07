@@ -137,3 +137,162 @@ body.build-mode #buildHint{border-color:rgba(248,113,113,.68);background:rgba(45
 .eyebrow{background:rgba(248,113,113,.13);color:#fecaca}
 .modalCard h1 em{color:#fca5a5}
 .primary{background:linear-gradient(135deg,#dc2626,#ea580c);box-shadow:0 10px 24px rgba(220,38,38,.22)}
+
+
+/* ===== v15 sci-fi arsenal / outbreak command redesign ===== */
+:root{
+  --hud:#07141f;--hud2:#0b2230;--glass:rgba(8,24,35,.92);--glass2:rgba(13,35,48,.9);
+  --cyan:#55d9ff;--green:#55e08d;--yellow:#ffd15c;--red:#ff6b77;--purple:#be9cff;
+}
+html,body,#world{background:linear-gradient(#81929e,#9ea9ae 52%,#3e4945 52%)}
+#topHud{
+  min-height:72px;padding:9px 14px;
+  background:linear-gradient(180deg,rgba(5,18,28,.985),rgba(6,20,30,.91));
+  border-bottom:1px solid rgba(98,211,238,.22);
+  box-shadow:0 10px 30px rgba(0,0,0,.18)
+}
+.brandIcon{
+  background:radial-gradient(circle at 35% 28%,#a7f3d0 0 12%,#3fd38a 13% 38%,#153e35 39% 100%);
+  box-shadow:0 0 0 1px rgba(154,255,213,.24),0 0 28px rgba(63,211,138,.18)
+}
+.brand b{font-size:18px;letter-spacing:-.025em}
+.brand small{color:#91acbd}
+.stats span{
+  background:linear-gradient(180deg,rgba(18,44,58,.92),rgba(10,28,40,.92));
+  border-color:rgba(100,203,228,.18);box-shadow:inset 0 1px rgba(255,255,255,.03)
+}
+.stats b{color:#f8fcff}
+.iconBtn,.speedBtn{background:linear-gradient(180deg,#17394c,#102a39);border-color:rgba(111,205,228,.24)}
+.iconBtn:hover,.speedBtn:hover{background:linear-gradient(180deg,#1b465e,#123448)}
+
+#waveCard{
+  top:86px;left:16px;width:354px;padding:12px 13px 13px;
+  background:linear-gradient(155deg,rgba(15,31,40,.96),rgba(16,22,29,.95));
+  border:1px solid rgba(255,107,119,.34);
+  box-shadow:0 18px 48px rgba(20,0,6,.28),inset 0 1px rgba(255,255,255,.04)
+}
+.waveCardHead{display:flex!important;align-items:center!important;justify-content:space-between!important;margin-bottom:7px}
+.waveKicker{
+  font-size:9px;font-weight:1000;letter-spacing:.16em;color:#ff9ca5;
+  padding:4px 7px;border-radius:999px;background:rgba(255,107,119,.09);border:1px solid rgba(255,107,119,.2)
+}
+#threatLevel{font-size:9px;font-weight:1000;color:#ffd7d9}
+.waveNumbers{display:flex!important;align-items:baseline!important;gap:8px!important}
+.waveNumbers small{color:#8fa5b5!important}
+#enemyPreview{font-size:21px;color:#fff1b6;text-shadow:0 0 16px rgba(255,209,92,.18)}
+#enemyCount{padding:3px 6px;border-radius:999px;background:rgba(255,255,255,.06);color:#bcd0dc}
+#waveMission{font-size:11px;color:#d9e6ed;line-height:1.42}
+#startWaveBtn{
+  background:linear-gradient(135deg,#ef4444,#f97316 58%,#f59e0b);
+  border:1px solid rgba(255,216,160,.2);box-shadow:0 8px 22px rgba(220,38,38,.25);
+  letter-spacing:-.01em
+}
+body.wave-live #waveCard{
+  border-color:rgba(255,82,95,.78);
+  box-shadow:0 0 0 2px rgba(255,82,95,.08),0 18px 48px rgba(55,4,11,.34);
+  animation:threatPulse 1.15s ease-in-out infinite alternate
+}
+body.wave-live #topHud{border-bottom-color:rgba(255,91,104,.34)}
+@keyframes threatPulse{to{box-shadow:0 0 0 4px rgba(255,82,95,.06),0 18px 54px rgba(85,5,15,.38)}}
+
+#towerDeck{
+  justify-content:center;gap:8px;padding:9px 12px calc(9px + env(safe-area-inset-bottom));
+  background:linear-gradient(0deg,rgba(4,16,25,.995),rgba(5,21,31,.94));
+  border-top:1px solid rgba(91,207,232,.22);box-shadow:0 -12px 36px rgba(0,0,0,.22)
+}
+.towerCard{
+  flex:0 0 132px;min-height:82px;padding:8px;
+  display:grid;grid-template-columns:40px 1fr;grid-template-rows:1fr auto;column-gap:8px;align-items:center;
+  overflow:hidden;background:linear-gradient(145deg,rgba(18,45,59,.97),rgba(10,27,38,.98));
+  border:1px solid rgba(116,202,222,.2);box-shadow:inset 0 1px rgba(255,255,255,.035);
+  transition:transform .14s,border-color .14s,background .14s
+}
+.towerCard:before{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.2;
+  background:radial-gradient(circle at 8% 20%,var(--towerGlow,#55d9ff),transparent 42%)
+}
+.towerCard[data-tower="SUB1"]{--towerGlow:#fb7185}
+.towerCard[data-tower="DIV2"]{--towerGlow:#38bdf8}
+.towerCard[data-tower="DIV3"]{--towerGlow:#22c55e}
+.towerCard[data-tower="ADD1"]{--towerGlow:#fbbf24}
+.towerCard[data-tower="DIV5"]{--towerGlow:#a78bfa}
+.towerCard .op{grid-row:1/3;position:relative;z-index:1;width:38px;height:38px;border-radius:12px;box-shadow:0 6px 16px rgba(0,0,0,.2)}
+.towerMeta{position:relative;z-index:1;min-width:0;align-self:center}
+.towerMeta b{display:block;margin:0!important;font-size:11px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.towerMeta small{display:block;margin-top:2px;font-size:9px!important;color:#c1d4df!important}
+.towerMeta small strong{color:#ffe28c;font-size:11px}
+.towerCard>em{
+  position:absolute;left:8px;bottom:5px;font-style:normal;font-size:7px;font-weight:1000;letter-spacing:.07em;color:#8faabc;
+  padding:2px 5px;border-radius:6px;background:rgba(0,0,0,.2)
+}
+.towerCard>i{right:6px;top:5px;font-size:8px!important;color:#e2edf4!important;background:rgba(0,0,0,.28)}
+.towerCard.selected{
+  outline:0;border-color:var(--towerGlow,#67e8f9);
+  background:linear-gradient(145deg,rgba(18,67,78,.98),rgba(8,33,45,.98));
+  transform:translateY(-5px);box-shadow:0 8px 24px rgba(0,0,0,.2),0 0 0 2px color-mix(in srgb,var(--towerGlow,#67e8f9) 30%,transparent)
+}
+.towerCard.locked{filter:saturate(.25);opacity:.38;transform:none}
+.heavyCard{min-width:148px}
+.recommend{--towerGlow:#ffd15c;background:linear-gradient(145deg,rgba(77,57,17,.95),rgba(34,30,18,.98))}
+.recommend .autoIcon{grid-row:1/3;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:19px;background:linear-gradient(135deg,#ffd15c,#f59e0b);color:#281c05}
+
+#selectedPanel{
+  bottom:106px;width:min(480px,calc(100vw - 24px));grid-template-columns:1fr auto auto auto;
+  padding:9px 10px;background:linear-gradient(160deg,rgba(7,26,38,.98),rgba(9,18,27,.98));
+  border-color:rgba(111,211,232,.28)
+}
+#selectedPanel b{font-size:12px}
+#selectedPanel #selectedLevel{display:inline-block;padding:2px 5px;border-radius:999px;background:rgba(255,209,92,.1);color:#ffe08b}
+#selectedPanel #selectedWeapon{display:block;margin-top:3px;font-style:normal;color:#77e7ff;font-size:8px;font-weight:1000;letter-spacing:.08em}
+#upgradeBtn{background:linear-gradient(135deg,#0f7da6,#0d9488)!important;min-width:108px}
+#sellBtn{background:#663744!important}
+
+#buildHint{
+  bottom:116px;padding:7px 13px;background:rgba(4,20,28,.94);border-color:rgba(95,221,227,.5);
+  box-shadow:0 8px 24px rgba(0,0,0,.2)
+}
+#toast{top:24%;font-size:12px;background:rgba(5,20,29,.96);border-color:rgba(116,220,232,.3)}
+.calcItem{background:rgba(5,23,32,.86);box-shadow:0 6px 16px rgba(0,0,0,.15)}
+
+.modalCard{
+  background:
+    radial-gradient(circle at 15% 0%,rgba(20,184,166,.12),transparent 32%),
+    radial-gradient(circle at 86% 0%,rgba(239,68,68,.12),transparent 34%),
+    linear-gradient(180deg,rgba(10,31,43,.99),rgba(5,16,25,.99));
+  border-color:rgba(105,211,232,.25)
+}
+.eyebrow{background:rgba(255,88,100,.09);color:#ff9ca5;border:1px solid rgba(255,88,100,.18)}
+.modalCard h1 em{color:#61ddff}
+.ruleGrid span{background:rgba(255,255,255,.035);border-color:rgba(112,208,227,.11)}
+.arsenalPreview{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:-5px 0 18px;padding:9px;border-radius:17px;
+  background:rgba(3,14,23,.62);border:1px solid rgba(101,204,225,.13)
+}
+.arsenalPreview span{padding:8px;border-radius:12px;background:linear-gradient(180deg,rgba(24,56,70,.78),rgba(12,32,43,.78));text-align:left}
+.arsenalPreview small{display:block;color:#86a9bc;font-size:8px;font-weight:1000}
+.arsenalPreview b{display:block;margin-top:2px;color:#eafdff;font-size:11px}
+.arsenalPreview .evolution{grid-column:1/-1;background:linear-gradient(90deg,rgba(115,77,160,.28),rgba(17,76,98,.5))}
+.arsenalPreview .evolution b{color:#e9d9ff;letter-spacing:.03em}
+.primary{background:linear-gradient(135deg,#0891b2,#0f766e 62%,#16a34a);box-shadow:0 10px 28px rgba(8,145,178,.22)}
+
+#assetStatus{bottom:106px;background:rgba(3,20,28,.78);color:#b6e8f4;border-color:rgba(95,210,229,.3)}
+#credit{bottom:104px;background:rgba(238,248,244,.68);color:rgba(38,71,62,.72)}
+
+@media(max-width:700px){
+  #topHud{min-height:62px}
+  #waveCard{top:88px;left:7px;width:calc(100vw - 14px);padding:8px 9px}
+  .waveCardHead{margin-bottom:4px}.waveKicker,#threatLevel{font-size:7px}
+  .waveNumbers{gap:5px!important}#enemyPreview{font-size:14px}
+  #waveMission{font-size:9px;margin:4px 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #towerDeck{justify-content:flex-start;gap:6px;padding:6px 7px calc(6px + env(safe-area-inset-bottom))}
+  .towerCard{flex-basis:104px;min-height:69px;grid-template-columns:31px 1fr;column-gap:5px;padding:6px}
+  .towerCard .op,.recommend .autoIcon{width:30px;height:30px;border-radius:10px}
+  .towerMeta b{font-size:9px!important}.towerMeta small{font-size:8px!important}.towerMeta small strong{font-size:9px}
+  .towerCard>em{font-size:6px;bottom:3px;left:6px}.towerCard>i{font-size:7px!important}
+  .heavyCard{min-width:116px}
+  #selectedPanel{bottom:88px;width:calc(100vw - 14px);grid-template-columns:1fr auto auto auto;padding:7px}
+  #selectedPanel #selectedWeapon{font-size:7px}#upgradeBtn{min-width:78px}
+  #buildHint{bottom:93px;font-size:8px;max-width:94vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #assetStatus{bottom:89px}
+  .arsenalPreview{grid-template-columns:1fr 1fr;gap:5px}.arsenalPreview .evolution{grid-column:1/-1}.arsenalPreview span{padding:6px}
+}
