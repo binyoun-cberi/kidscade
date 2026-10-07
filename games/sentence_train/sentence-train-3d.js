@@ -19,6 +19,11 @@ const MODEL={
  stationB:asset('3d/city/kenney-city-kit-suburban/building-type-h.glb'),
  stationC:asset('3d/city/kenney-city-kit-suburban/building-type-d.glb'),
  stationD:asset('3d/city/kenney-city-kit-suburban/building-type-q.glb'),
+ locoPassenger:asset('3d/rail/kenney-train-kit/train-locomotive-passenger-a.glb'),
+ diesel:asset('3d/rail/kenney-train-kit/train-diesel-a.glb'),
+ electric:asset('3d/rail/kenney-train-kit/train-electric-city-a.glb'),
+ woodCar:asset('3d/rail/kenney-train-kit/train-carriage-wood.glb'),
+ flatCar:asset('3d/rail/kenney-train-kit/train-carriage-flatbed-wood.glb'),
  bench:asset('3d/interiors/kenney-furniture-kit/bench.glb'),
  lamp:asset('3d/city/kenney-city-kit-roads/light-curved.glb'),
  bush:asset('3d/nature/kenney-nature-kit/plant-bush.glb'),
@@ -26,7 +31,7 @@ const MODEL={
  sign:asset('3d/nature/kenney-nature-kit/sign.glb')
 };
 let scene,camera,renderer,loader,trainGroup,railGroup,decorGroup,stationGroup;
-let models=new Map(),ready=false,departT=-1,last=performance.now(),carCount=4,pulse=0,stationIndex=0;
+let models=new Map(),ready=false,departT=-1,last=performance.now(),carCount=4,pulse=0,stationIndex=0,trainTheme='easy';
 const palette=['blue','green','red','box'];
 
 function prep(obj){obj.traverse(n=>{if(!n.isMesh)return;n.castShadow=true;n.receiveShadow=true;if(n.material){const mats=Array.isArray(n.material)?n.material:[n.material];n.material=Array.isArray(n.material)?mats.map(m=>m.clone()):mats[0].clone()}});return obj}
@@ -57,6 +62,9 @@ function addRails(){
 }
 function addDecor(){
  clear(decorGroup);
+ const ground=box(34,.12,7.2,0xa7c984);ground.position.set(0,-.08,-2.35);ground.receiveShadow=true;decorGroup.add(ground);
+ const platform=box(14,.28,2.15,0xa9b2ba);platform.position.set(3.5,.10,-1.38);decorGroup.add(platform);
+ const edge=box(14,.12,.18,0xe2bd4d);edge.position.set(3.5,.29,-.28);decorGroup.add(edge);
  for(const x of[-9,-6.4,7.7,10.1]){
    const t=clone('tree',1.8,'height');
    if(t){t.position.set(x,.02,-3.35);t.rotation.y=(x<0?.5:-.4);decorGroup.add(t)}
@@ -93,8 +101,9 @@ function buildTrain(count=carCount){
  carCount=Math.max(3,Math.min(8,count||4));
  clear(trainGroup);trainGroup.position.set(0,0,0);trainGroup.rotation.set(0,0,0);
  const spacing=2.18,total=(carCount+1)*spacing;
+ const themeCars=trainTheme==='hard'?['red','box','woodCar','flatCar']:trainTheme==='normal'?['green','blue','box','woodCar']:['blue','green','red','box'];
  for(let i=0;i<carCount;i++){
-  const key=palette[i%palette.length],car=clone(key,1.86,'width')||makeFallbackCar([0x4f83c7,0x5da66f,0xd45a58,0xa07b4e][i%4]);
+  const key=themeCars[i%themeCars.length],car=clone(key,1.86,'width')||makeFallbackCar([0x4f83c7,0x5da66f,0xd45a58,0xa07b4e][i%4]);
   car.rotation.y=Math.PI/2;
   car.position.set(-total/2+i*spacing,.02,.02);
   trainGroup.add(car);
@@ -102,7 +111,8 @@ function buildTrain(count=carCount){
     const con=clone('connector',.36,'width');if(con){con.rotation.y=Math.PI/2;con.position.set(-total/2+i*spacing+spacing*.5,.19,.02);trainGroup.add(con)}
   }
  }
- const loco=clone('loco',2.2,'width')||makeFallbackCar(0xd9544f);
+ const locoKey=trainTheme==='hard'?'electric':trainTheme==='normal'?'diesel':'locoPassenger';
+ const loco=clone(locoKey,2.25,'width')||clone('loco',2.2,'width')||makeFallbackCar(0xd9544f);
  loco.rotation.y=Math.PI/2;loco.position.set(-total/2+carCount*spacing,.02,.02);trainGroup.add(loco);
  fitCamera();
 }
@@ -114,7 +124,7 @@ function fitCamera(){
 function init(){
  scene=new THREE.Scene();
  camera=new THREE.OrthographicCamera(-8,8,4.2,-1.15,-20,40);
- camera.position.set(7.4,5.2,10.5);camera.lookAt(0,.55,0);
+ camera.position.set(8.6,5.8,11.8);camera.lookAt(.8,.55,-.55);
  renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(canvas.clientWidth||900,canvas.clientHeight||285,false);
  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -133,6 +143,7 @@ function resize(){
  const rect=canvas.getBoundingClientRect();renderer.setSize(Math.max(1,rect.width),Math.max(1,rect.height),false);fitCamera();
 }
 function setCars(n){carCount=n; if(ready)buildTrain(n)}
+function setTheme(theme){trainTheme=['easy','normal','hard'].includes(theme)?theme:'easy';if(ready)buildTrain(carCount)}
 function setStation(index){stationIndex=Math.max(0,Math.min(3,index|0));if(ready)buildStation(stationIndex)}
 function reset(){departT=-1;if(trainGroup){trainGroup.position.x=0;trainGroup.rotation.z=0;trainGroup.visible=true}}
 function depart(){if(!trainGroup)return;departT=0}
@@ -154,6 +165,6 @@ function loop(now){
  if(pulse>0){pulse=Math.max(0,pulse-dt);renderer.toneMappingExposure=1.05+pulse*.38}else renderer.toneMappingExposure+=(1.05-renderer.toneMappingExposure)*.12;
  renderer.render(scene,camera);
 }
-window.SentenceTrain3D={setCars,setStation,reset,depart,celebrate,resize,ready:()=>ready};
+window.SentenceTrain3D={setCars,setTheme,setStation,reset,depart,celebrate,resize,ready:()=>ready};
 init();
 })();
