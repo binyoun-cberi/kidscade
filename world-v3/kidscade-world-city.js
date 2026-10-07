@@ -590,7 +590,7 @@ const npcDefs=[
     const span=phase.end-phase.start,edge=Math.min(18,span*.22),elapsed=minutes-phase.start;
     let offset=0;
     if(elapsed<edge)offset=(1-elapsed/edge)*3.4;
-    else if(elapsed>span-edge)offset=((elapsed-(span-edge))/edge)*3.4;
+    else if(elapsed>span-edge)offset=-((elapsed-(span-edge))/edge)*3.4;
     // Approach/departure happens along the same forward axis, never sideways through the shelter.
     schoolBus.position.x=schoolBusPark.x;schoolBus.position.z=schoolBusPark.z+offset;
     schoolBusCollider.x=schoolBus.position.x;schoolBusCollider.z=schoolBus.position.z;
