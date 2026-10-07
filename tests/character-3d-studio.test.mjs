@@ -199,3 +199,17 @@ test('left rail v2 forces a wide non-scrolling desktop column',()=>{
   assert.match(html,/data-layout-version="left-rail-v2"/);
   assert.match(admin,/character-3d-studio\.html\?v=20261007-leftrail2/);
 });
+
+
+test('left rail never inherits side scrolling',()=>{
+  const html=read('teacher/character-3d-studio.html');
+  assert.match(html,/<aside class="left-rail">/);
+  assert.doesNotMatch(html,/<aside class="side left">/);
+  assert.match(html,/\.left-rail\{display:grid;gap:10px;width:370px;max-width:370px;min-width:0;align-self:start;position:static;overflow:visible\}/);
+  assert.match(html,/data-layout-version="left-rail-no-scroll-v3"/);
+});
+
+test('admin navigation cache-busts the no-scroll layout',()=>{
+  const admin=read('teacher/index.html');
+  assert.match(admin,/character-3d-studio\.html\?v=20261007-noscroll3/);
+});
