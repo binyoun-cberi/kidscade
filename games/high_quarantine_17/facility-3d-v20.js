@@ -25,7 +25,7 @@ const A={
  van:'3d/vehicles/kenney-car-kit/van.glb',
  dumpster:'3d/city/kenney-city-kit-roads/dumpster.glb',
  turret:'3d/weapons/scifi-turrets/gatelng-gun-turret.glb',
- crate:'3d/city/poly-pizza-city-pack/box.glb',
+ crate:'3d/survival/kenney-survival-kit/box.glb',
  maleA:'characters/people/character-male-a.glb',
  maleB:'characters/people/character-male-b.glb',
  maleC:'characters/people/character-male-c.glb',
