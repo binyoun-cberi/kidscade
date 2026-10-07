@@ -23,8 +23,8 @@ test('teacher simulator v70 loads the six-period direct-control game', () => {
   assert.match(html, /id="joystick"/);
   assert.match(html, /id="actionButton"/);
   assert.match(html, /id="dayStrip"/);
-  assert.match(html, /school-day-game\.js\?v=69/);
-  assert.match(html, /style\.css\?v=69/);
+  assert.match(html, /school-day-game\.js\?v=70/);
+  assert.match(html, /style\.css\?v=70/);
   assert.match(html, /건강/);
   assert.match(html, /안전교육/);
   assert.match(css, /\.focusMeter/);
@@ -345,11 +345,11 @@ test('all fifteen pupils have profiles preferences mastery and distinct visual i
   for (const id of ids) {
     assert.equal(Object.keys(life.SUBJECT_PREFERENCES[id]).length, 6);
     assert.ok(Number.isFinite(campaign.INITIAL_MASTERY[id]));
-    assert.match(js, new RegExp(id + ':\\\\{file:'));
+    assert.ok(js.includes(id + ":{file:'"), 'missing model for ' + id);
   }
   assert.match(js, /studentWorldLabel/);
   assert.match(html, /id="rosterToggle"/);
-  assert.match(css, /#studentStrip\\.open/);
+  assert.match(css, /#studentStrip\.open/);
   const state = campaign.createCampaignState(ids);
   assert.equal(Object.keys(state.mastery).length, 15);
   assert.equal(Object.keys(campaign.normalizeCampaignState({version:1},ids).mastery).length, 15);
@@ -374,7 +374,7 @@ test('every school space has fifteen reachable nonoverlapping stations', async (
       }
     }
   }
-  assert.match(js, /deskZ=s\\.z-1/);
+  assert.match(js, /deskZ=s\.z-1/);
 });
 
 test('fifteenth pupil gets a three-person team instead of being omitted', async () => {
@@ -384,15 +384,15 @@ test('fifteenth pupil gets a three-person team instead of being omitted', async 
   assert.equal(groups.length,7);
   assert.deepEqual(groups.map(t=>t.length).sort((a,b)=>a-b),[2,2,2,2,2,2,3]);
   assert.equal(new Set(groups.flat().map(s=>s.id)).size,15);
-  assert.match(js,/for\\(const team of teamPairs\\)/);
+  assert.match(js,/for\(const team of teamPairs\)/);
 });
 
 test('teacher-wide signal helps fifteen pupils while capping lesson interactions', () => {
   assert.match(js,/type:'groupFocus'/);
   assert.match(js,/groupSignalsThisLesson<2/);
   assert.match(js,/groupSignalCooldown=30/);
-  assert.match(js,/for\\(const s of activeLessonStudents\\(\\)\\)/);
-  assert.match(js,/hudTimer=\\.23/);
+  assert.match(js,/for\(const s of activeLessonStudents\(\)\)/);
+  assert.match(js,/hudTimer=\.23/);
   assert.match(html,/학생 15명/);
 });
 
