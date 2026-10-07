@@ -71,6 +71,7 @@ let students=[];
 let pairs=[];
 let relations=new Set();
 let fightsThisRecess=0;
+let playerGestureTimer=0;
 let stats={focusHelps:0,conflictsMediated:0,fightsSeparated:0,offTaskStarts:0,peacefulSocial:0};
 const keys=new Set();
 const joy={active:false,id:null,x:0,y:0};
@@ -479,6 +480,7 @@ function updateRecess(dt){
           else releasePair(pair,AI_RULES.conflictCooldownSeconds);
         }
       }else if(pair.state==='fight'){
+        playAnim(pair.a.actor,'push');playAnim(pair.b.actor,'push');
         if(pair.time>=pair.duration)separateFight(pair);
       }
     }
@@ -556,13 +558,14 @@ function useAction(){
   if(currentAction.type==='startLesson'){startLesson(phase==='prep1'?1:2);return}
   if(currentAction.type==='focus'){
     const s=currentAction.student;helpFocus(s.runtime);stats.focusHelps++;s.wander=null;s.actor.target=s.seat.clone();
-    playAnim(player,'push',true);showToast(s.runtime.name+'에게 관심을 줬어요.');hideBubble(s);return;
+    playerGestureTimer=.5;playAnim(player,'push');showToast(s.runtime.name+'에게 관심을 줬어요.');hideBubble(s);return;
   }
-  if(currentAction.type==='mediate'){mediatePair(currentAction.pair);playAnim(player,'push',true);return}
-  if(currentAction.type==='separate'){separateFight(currentAction.pair);playAnim(player,'push',true);return}
+  if(currentAction.type==='mediate'){mediatePair(currentAction.pair);playerGestureTimer=.5;playAnim(player,'push');return}
+  if(currentAction.type==='separate'){separateFight(currentAction.pair);playerGestureTimer=.65;playAnim(player,'push');return}
   showToast(phase==='recess'?'학생들을 조금 더 살펴보세요.':'필요한 학생 가까이 가 보세요.');
 }
 function updatePlayer(dt){
+  if(playerGestureTimer>0){playerGestureTimer=Math.max(0,playerGestureTimer-dt);playAnim(player,'push');return}
   let x=0,z=0;
   if(keys.has('KeyA')||keys.has('ArrowLeft'))x-=1;
   if(keys.has('KeyD')||keys.has('ArrowRight'))x+=1;
