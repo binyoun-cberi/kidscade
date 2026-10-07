@@ -106,7 +106,11 @@ const RECIPES=[
  {id:'bed',name:'양털 침대',needs:{planks:3,wool:2},gives:{bed:1},stage:2,bench:true},
  {id:'mapBoard',name:'탐험 지도판',needs:{planks:4,sticks:2},gives:{mapBoard:1},stage:2,bench:true},
  {id:'displayStand',name:'기념품 전시대',needs:{planks:2,stone:1},gives:{displayStand:1},stage:2,bench:true},
- {id:'bread',name:'빵',needs:{wheat:3},gives:{bread:1},stage:2,bench:true}
+ {id:'bread',name:'빵',needs:{wheat:3},gives:{bread:1},stage:2,bench:true},
+ {id:'chair',name:'나무 의자',needs:{planks:2,sticks:2},gives:{chair:1},stage:2,bench:true},
+ {id:'desk',name:'나무 책상',needs:{planks:4,sticks:2},gives:{desk:1},stage:2,bench:true},
+ {id:'bookshelf',name:'탐험 책장',needs:{planks:6,sticks:2},gives:{bookshelf:1},stage:2,bench:true},
+ {id:'sign',name:'나무 표지판 ×2',needs:{planks:2,sticks:1},gives:{sign:2},stage:2,bench:true}
 ];
 const GOALS=[
  {id:'wood',kind:'training',title:'첫날 · 원목 3개 채집',description:'나무를 바라보고 파괴를 길게 눌러 원목을 3개 모으세요.',need:3,progress:s=>s.harvestedWood||0},
