@@ -125,6 +125,73 @@
             background: #ffffff;
             padding: 4px;
         }
+
+        /* 세계 퍼즐 정답 후 서울(또는 직전 도착지)에서 출발하는 여행 연출 */
+        .travel-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 35;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 38%, #dff7ff 0, #c7ecf7 45%, #9ccddd 100%);
+            pointer-events: auto;
+        }
+        .travel-overlay.hidden { display: none; }
+        #travel-canvas { width: 100%; height: 100%; display: block; }
+        .travel-hud {
+            position: absolute;
+            left: 50%;
+            top: 14px;
+            transform: translateX(-50%);
+            width: min(560px, calc(100% - 24px));
+            padding: 10px 14px;
+            border: 2px solid rgba(255,255,255,.9);
+            border-radius: 18px;
+            background: rgba(255,255,255,.9);
+            box-shadow: 0 8px 24px rgba(16,65,83,.18);
+            text-align: center;
+            backdrop-filter: blur(8px);
+        }
+        .travel-hud strong { display: block; color: #0f766e; font-size: 15px; font-weight: 900; }
+        .travel-hud span { display: block; margin-top: 2px; color: #64748b; font-size: 11px; font-weight: 800; }
+        .arrival-modal {
+            position: absolute;
+            inset: 0;
+            z-index: 42;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: rgba(10,35,46,.38);
+            backdrop-filter: blur(5px);
+        }
+        .arrival-modal.hidden { display: none; }
+        .arrival-card {
+            width: min(390px, 92%);
+            padding: 22px;
+            border: 3px solid #ffffff;
+            border-radius: 26px;
+            background: rgba(255,255,255,.97);
+            box-shadow: 0 24px 60px rgba(17,56,72,.3);
+            text-align: center;
+            animation: arrivalPop .3s cubic-bezier(.2,1.25,.35,1) both;
+        }
+        .arrival-flag { font-size: 54px; line-height: 1; }
+        .arrival-card h2 { margin: 8px 0 2px; color: #0f766e; font-size: 25px; font-weight: 1000; }
+        .arrival-route { color: #475569; font-size: 12px; font-weight: 900; }
+        .arrival-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 15px 0; }
+        .arrival-facts div { padding: 9px 7px; border-radius: 14px; background: #f0fdfa; border: 1px solid #ccfbf1; }
+        .arrival-facts small { display: block; color: #64748b; font-size: 9px; font-weight: 900; }
+        .arrival-facts b { display: block; margin-top: 2px; color: #164e63; font-size: 13px; font-weight: 1000; }
+        #btn-arrival-continue { width: 100%; min-height: 48px; border: 0; border-radius: 14px; background: #14b8a6; color: #fff; font-size: 15px; font-weight: 1000; box-shadow: 0 4px 0 #0f766e; cursor: pointer; }
+        #btn-arrival-continue:active { transform: translateY(3px); box-shadow: 0 1px 0 #0f766e; }
+        @keyframes arrivalPop { from { transform: translateY(18px) scale(.9); opacity: 0; } to { transform: none; opacity: 1; } }
+        @media (max-width: 560px) {
+            .travel-hud { top: 8px; padding: 8px 10px; }
+            .travel-hud strong { font-size: 13px; }
+            .arrival-card { padding: 18px; }
+            .arrival-flag { font-size: 46px; }
+            .arrival-card h2 { font-size: 22px; }
+        }
     </style>
 </head>
 <body class="flex flex-col h-screen select-none">
@@ -182,6 +249,7 @@
                     </optgroup>
                 </select>
                 <p class="text-xs text-teal-600 mt-2 font-semibold">* 상세 지역은 데이터가 많아 로딩이 길 수 있습니다.</p>
+                <p class="text-xs text-sky-700 mt-2 font-black">✈️ 세계 퍼즐은 서울에서 출발해, 맞힌 나라로 직접 여행합니다.</p>
             </div>
 
             <button id="btn-start-game" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-black py-4 px-4 rounded-xl shadow-[0_4px_0_rgb(13,148,136)] active:shadow-[0_0px_0_rgb(13,148,136)] active:translate-y-1 transition-all text-xl">
@@ -227,6 +295,26 @@
     <!-- 게임 화면 -->
     <main id="game-board" class="flex-1 w-full relative bg-gradient-to-b from-teal-50/50 to-white">
         <svg id="map-svg" class="w-full h-full"></svg>
+
+        <div id="travel-overlay" class="travel-overlay hidden" aria-hidden="true">
+            <canvas id="travel-canvas" aria-label="비행기를 따라 이동하는 세계 여행 지도"></canvas>
+            <div class="travel-hud">
+                <strong id="travel-route">🇰🇷 서울 → 목적지</strong>
+                <span id="travel-status">탑승 준비 중…</span>
+            </div>
+            <div id="arrival-modal" class="arrival-modal hidden" role="dialog" aria-modal="true" aria-labelledby="arrival-title">
+                <div class="arrival-card">
+                    <div id="arrival-flag" class="arrival-flag">🌍</div>
+                    <h2 id="arrival-title">도착!</h2>
+                    <p id="arrival-route" class="arrival-route">서울 → 목적지</p>
+                    <div class="arrival-facts">
+                        <div><small>대륙</small><b id="arrival-continent">-</b></div>
+                        <div><small>이번 비행</small><b id="arrival-distance">- km</b></div>
+                    </div>
+                    <button id="btn-arrival-continue" type="button">지도 퍼즐 계속하기 →</button>
+                </div>
+            </div>
+        </div>
         
         <!-- 로딩 오버레이 -->
         <div id="loading-overlay" class="absolute inset-0 bg-white/90 backdrop-blur-sm hidden flex-col justify-center items-center z-20">
@@ -318,8 +406,13 @@
         let currentMapData = null;
         let currentMode = 'korea';
         let totalPieces = 0, placedPieces = 0;
-        let startTime = null, timerInterval = null, gameActive = false;
+        let startTime = null, timerInterval = null, timerPauseStarted = 0, gameActive = false;
         let bgmPlaying = false;
+        const SEOUL_COORDS = [126.9780, 37.5665];
+        const CONTINENT_KO = {'Asia':'아시아','Europe':'유럽','Africa':'아프리카','North America':'북아메리카','South America':'남아메리카','Oceania':'오세아니아'};
+        let worldTravelData = null;
+        let travelOrigin = {name:'서울', flag:'🇰🇷', coords:SEOUL_COORDS};
+        let travelBusy = false, arrivalResolve = null;
 
         // DOM 
         const svg = d3.select("#map-svg");
@@ -331,6 +424,11 @@
         const modalContent = document.getElementById("modal-content");
         const bgmAudio = document.getElementById("bgm");
         const gameBoard = document.getElementById("game-board");
+        const travelOverlay = document.getElementById("travel-overlay");
+        const travelCanvas = document.getElementById("travel-canvas");
+        const travelRoute = document.getElementById("travel-route");
+        const travelStatus = document.getElementById("travel-status");
+        const arrivalModal = document.getElementById("arrival-modal");
 
         // 드래그 이벤트는 포인터 입력 속도(60~200Hz)만큼 발생할 수 있으므로
         // 실제 SVG transform 반영은 화면 주사율에 맞춰 한 프레임에 한 번만 처리한다.
@@ -429,6 +527,100 @@
             bgmPlaying = !bgmPlaying;
         });
 
+        function countryName(feature) {
+            const p = feature?.properties || {};
+            return p.NAME_KO || p.name_ko || p.NAME || p.name || p.name_eng || '목적지';
+        }
+        function countryFlag(feature) {
+            const iso = String(feature?.properties?.ISO_A2 || '').toUpperCase();
+            if(iso.length !== 2 || iso.includes('-')) return '🌍';
+            return [...iso].map(c => String.fromCodePoint(127397 + c.charCodeAt())).join('');
+        }
+        function countryStop(feature) {
+            const p = feature?.properties || {};
+            const label = [Number(p.LABEL_X), Number(p.LABEL_Y)];
+            const coords = Number.isFinite(label[0]) && Number.isFinite(label[1]) ? label : d3.geoCentroid(feature);
+            return {name:countryName(feature), flag:countryFlag(feature), coords, continent:p.CONTINENT || ''};
+        }
+        function flightDistanceKm(a,b) {
+            return Math.round(d3.geoDistance(a,b) * 6371);
+        }
+        function flightBearing(a,b) {
+            const l1=a[0]*Math.PI/180,p1=a[1]*Math.PI/180,l2=b[0]*Math.PI/180,p2=b[1]*Math.PI/180,dl=l2-l1;
+            return Math.atan2(Math.sin(dl)*Math.cos(p2),Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(dl));
+        }
+        function setTravelCanvasSize() {
+            const rect=travelCanvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);
+            const w=Math.max(1,Math.round(rect.width)),h=Math.max(1,Math.round(rect.height));
+            if(travelCanvas.width!==Math.round(w*dpr)||travelCanvas.height!==Math.round(h*dpr)){travelCanvas.width=Math.round(w*dpr);travelCanvas.height=Math.round(h*dpr)}
+            return {w,h,dpr};
+        }
+        function drawTravelFrame(center,from,to,t,zoom) {
+            if(!worldTravelData) return;
+            const {w,h,dpr}=setTravelCanvasSize(),ctx=travelCanvas.getContext('2d');
+            ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+            const projection=d3.geoOrthographic().translate([w/2,h/2]).scale(Math.min(w,h)*.46*zoom).clipAngle(90).precision(.5).rotate([-center[0],-center[1]]);
+            const path=d3.geoPath(projection,ctx);
+            ctx.beginPath();path({type:'Sphere'});ctx.fillStyle='#cdeefa';ctx.fill();ctx.strokeStyle='#87bacb';ctx.lineWidth=1.2;ctx.stroke();
+            ctx.beginPath();path(worldTravelData);ctx.fillStyle='#f7fbf6';ctx.fill();ctx.strokeStyle='#a8bec2';ctx.lineWidth=.65;ctx.stroke();
+            const destFeature=worldTravelData.features?.find(f=>countryName(f)===to.name);
+            if(destFeature){ctx.beginPath();path(destFeature);ctx.fillStyle='#8edbc8';ctx.fill();ctx.strokeStyle='#0f766e';ctx.lineWidth=1.2;ctx.stroke()}
+            const interpolate=d3.geoInterpolate(from.coords,to.coords),route=[];
+            for(let i=0;i<=64;i++)route.push(interpolate(i/64));
+            ctx.beginPath();path({type:'LineString',coordinates:route});ctx.strokeStyle='#e05c67';ctx.lineWidth=2.3;ctx.setLineDash([6,5]);ctx.stroke();ctx.setLineDash([]);
+            for(const stop of [from,to]){
+                if(d3.geoDistance(center,stop.coords)>Math.PI/2) continue;
+                const q=projection(stop.coords);if(!q)continue;
+                ctx.beginPath();ctx.arc(q[0],q[1],5,0,Math.PI*2);ctx.fillStyle=stop===to?'#e11d48':'#0f766e';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();
+                ctx.font='800 11px "Noto Sans KR", sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillStyle='#17324d';ctx.fillText(stop.name,q[0],q[1]-8);
+            }
+            const next=d3.geoInterpolate(from.coords,to.coords)(Math.min(1,t+.006)),bearing=flightBearing(center,next);
+            ctx.save();ctx.translate(w/2,h/2);ctx.rotate(bearing-Math.PI/2);
+            ctx.beginPath();ctx.arc(0,0,26,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,.92)';ctx.fill();ctx.strokeStyle='rgba(15,118,110,.25)';ctx.lineWidth=2;ctx.stroke();
+            ctx.font='30px "Apple Color Emoji","Segoe UI Emoji",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('✈️',0,1);ctx.restore();
+        }
+        function pauseGameTimer() {
+            if(timerPauseStarted || !startTime) return;
+            timerPauseStarted=Date.now();clearInterval(timerInterval);
+        }
+        function resumeGameTimer() {
+            if(!timerPauseStarted || !startTime) return;
+            startTime += Date.now()-timerPauseStarted;timerPauseStarted=0;
+            clearInterval(timerInterval);timerInterval=setInterval(updateTimerDisplay,1000);updateTimerDisplay();
+        }
+        function showArrival(from,to) {
+            document.getElementById('arrival-flag').textContent=to.flag;
+            document.getElementById('arrival-title').textContent=to.name+' 도착!';
+            document.getElementById('arrival-route').textContent=from.flag+' '+from.name+' → '+to.flag+' '+to.name;
+            document.getElementById('arrival-continent').textContent=CONTINENT_KO[to.continent]||to.continent||'세계';
+            document.getElementById('arrival-distance').textContent=flightDistanceKm(from.coords,to.coords).toLocaleString('ko-KR')+' km';
+            arrivalModal.classList.remove('hidden');
+            return new Promise(resolve=>{arrivalResolve=resolve});
+        }
+        async function runWorldTravel(feature) {
+            if(!currentMode.startsWith('world_') || !worldTravelData || travelBusy) return;
+            travelBusy=true;gameActive=false;pauseGameTimer();
+            const from={...travelOrigin,coords:[...travelOrigin.coords]},to=countryStop(feature),interpolate=d3.geoInterpolate(from.coords,to.coords);
+            travelOverlay.classList.remove('hidden');travelOverlay.setAttribute('aria-hidden','false');arrivalModal.classList.add('hidden');
+            travelRoute.textContent=from.flag+' '+from.name+' → '+to.flag+' '+to.name;
+            const reduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches,duration=reduced?420:2100,start=performance.now();
+            await new Promise(resolve=>{
+                const frame=now=>{
+                    const raw=Math.min(1,(now-start)/duration),t=d3.easeCubicInOut(raw),center=interpolate(t),zoom=1.42-.48*Math.sin(Math.PI*t);
+                    travelStatus.textContent=raw<.12?from.name+'에서 이륙!':raw<.78?'비행기를 따라 이동 중…':raw<1?to.name+'에 접근 중…':'도착!';
+                    drawTravelFrame(center,from,to,t,zoom);
+                    if(raw<1)requestAnimationFrame(frame);else resolve();
+                };requestAnimationFrame(frame)
+            });
+            travelOrigin=to;travelStatus.textContent=to.name+' 도착!';
+            await showArrival(from,to);
+            arrivalModal.classList.add('hidden');travelOverlay.classList.add('hidden');travelOverlay.setAttribute('aria-hidden','true');
+            travelBusy=false;resumeGameTimer();
+        }
+        document.getElementById('btn-arrival-continue').addEventListener('click',()=>{
+            if(arrivalResolve){const r=arrivalResolve;arrivalResolve=null;r()}
+        });
+
         // --- 데이터 로딩 및 필터링 ---
         async function loadAndStartGame(mode) {
             initAudio(); 
@@ -466,6 +658,7 @@
                 }
 
                 let filteredFeatures = geoJson.features;
+                if (isWorldMode) worldTravelData = geoJson;
                 
                 if (isWorldMode) {
                     const continent = WORLD_MODES[mode];
@@ -569,6 +762,9 @@
         // --- 퍼즐 렌더링 로직 ---
         function renderGame() {
             placedPieces = 0;
+            travelOrigin = {name:'서울', flag:'🇰🇷', coords:[...SEOUL_COORDS]};
+            travelBusy = false;arrivalResolve = null;
+            travelOverlay.classList.add('hidden');arrivalModal.classList.add('hidden');
             document.getElementById("held-country").innerText = currentMode.startsWith('world_') ? "조각을 잡으면 나라 이름이 보여요" : "조각을 잡아보세요";
             updateProgress();
             resetTimer();
@@ -653,7 +849,14 @@
                         playDingSound();
                         placedPieces++;
                         updateProgress();
-                        checkWin();
+                        if(currentMode.startsWith('world_')){
+                            runWorldTravel(d).then(()=>{
+                                if(placedPieces === totalPieces) checkWin();
+                                else gameActive = true;
+                            });
+                        } else {
+                            checkWin();
+                        }
                     }
                 });
 
@@ -743,18 +946,19 @@
         }
 
         // --- 타이머 ---
+        function updateTimerDisplay() {
+            if(!startTime) return;
+            const now=timerPauseStarted||Date.now(),elapsed=Math.floor((now-startTime)/1000);
+            const m=String(Math.floor(elapsed/60)).padStart(2,'0'),sec=String(elapsed%60).padStart(2,'0');
+            timerText.innerText=`${m}:${sec}`;
+        }
         function startTimer() {
-            startTime = Date.now();
-            timerInterval = setInterval(() => {
-                const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
-                const s = String(elapsed % 60).padStart(2, '0');
-                timerText.innerText = `${m}:${s}`;
-            }, 1000);
+            startTime = Date.now();timerPauseStarted=0;
+            clearInterval(timerInterval);timerInterval=setInterval(updateTimerDisplay,1000);updateTimerDisplay();
         }
 
         function resetTimer() {
-            clearInterval(timerInterval);
+            clearInterval(timerInterval);timerPauseStarted=0;startTime=null;
             timerText.innerText = "00:00";
         }
 
@@ -770,6 +974,7 @@
             }
             clearInterval(timerInterval);
             resetPendingPieceTransforms();
+            travelBusy=false;arrivalResolve=null;travelOverlay.classList.add('hidden');arrivalModal.classList.add('hidden');
             svg.selectAll("*").remove();
             gameBoard.classList.remove("performance-mode");
             startScreen.classList.remove("opacity-0", "pointer-events-none");
