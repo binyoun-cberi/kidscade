@@ -80,7 +80,8 @@ const state={
  active:false,started:false,mode:'camp',done:null,payload:null,
  player:null,zombies:[],bullets:[],survivors:[],pickups:[],crates:[],obstacles:[],
  turret:null,wave:0,waves:[],spawnQueue:0,spawnCd:0,wavePause:0,
- elapsed:0,losses:0,rescued:0,medCharges:1,shake:0,flash:0
+ elapsed:0,losses:0,rescued:0,medCharges:1,shake:0,flash:0,
+ zombieSeq:0,survivorSeq:0,pendingThreats:[],explicitCampThreats:false
 };
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
@@ -96,18 +97,53 @@ function rectHitCircle(r,e,pad=0){
 function blocked(e){
  return state.obstacles.some(o=>rectHitCircle(o,e,0));
 }
-function moveEntity(e,dx,dy){
- const ox=e.x,oy=e.y;
- e.x=clamp(e.x+dx,e.r+9,W-e.r-9);if(blocked(e))e.x=ox;
- e.y=clamp(e.y+dy,e.r+9,H-e.r-9);if(blocked(e))e.y=oy;
+function blockedAt(e,x,y){
+ const ox=e.x,oy=e.y;e.x=x;e.y=y;const hit=blocked(e);e.x=ox;e.y=oy;return hit
 }
+function moveEntity(e,dx,dy){
+ const ox=e.x,oy=e.y,nx=clamp(ox+dx,e.r+9,W-e.r-9),ny=clamp(oy+dy,e.r+9,H-e.r-9);
+ if(!blockedAt(e,nx,ny)){e.x=nx;e.y=ny;return Math.hypot(e.x-ox,e.y-oy)}
+ if(!blockedAt(e,nx,oy))e.x=nx;
+ if(!blockedAt(e,e.x,ny))e.y=ny;
+ return Math.hypot(e.x-ox,e.y-oy)
+}
+function moveTowardSmart(e,tx,ty,speed,dt){
+ const dx=tx-e.x,dy=ty-e.y,d=Math.hypot(dx,dy);if(d<.1)return 0;
+ const step=Math.min(d,speed*dt),base=Math.atan2(dy,dx),offsets=[0,.42,-.42,.82,-.82,1.18,-1.18,1.57,-1.57];
+ let best=null,bestD=Infinity;
+ for(const off of offsets){
+  const nx=clamp(e.x+Math.cos(base+off)*step,e.r+9,W-e.r-9),ny=clamp(e.y+Math.sin(base+off)*step,e.r+9,H-e.r-9);
+  if(blockedAt(e,nx,ny))continue;
+  const nd=Math.hypot(tx-nx,ty-ny)+(Math.abs(off)*.12);
+  if(nd<bestD){bestD=nd;best={x:nx,y:ny}}
+ }
+ if(!best)return 0;const moved=Math.hypot(best.x-e.x,best.y-e.y);e.x=best.x;e.y=best.y;return moved
+}
+function findWalkable(x,y,r=10){
+ const probe={x:clamp(x,r+10,W-r-10),y:clamp(y,r+10,H-r-10),r};
+ if(!blocked(probe))return{x:probe.x,y:probe.y};
+ for(let radius=18;radius<=126;radius+=18){
+  for(let i=0;i<16;i++){
+   const a=i/16*Math.PI*2,nx=clamp(x+Math.cos(a)*radius,r+10,W-r-10),ny=clamp(y+Math.sin(a)*radius,r+10,H-r-10);
+   probe.x=nx;probe.y=ny;if(!blocked(probe))return{x:nx,y:ny}
+  }
+ }
+ return{x:460,y:274}
+}
+function segmentHitsRect(x1,y1,x2,y2,r,pad=2){
+ const minX=r.x-pad,maxX=r.x+r.w+pad,minY=r.y-pad,maxY=r.y+r.h+pad;
+ let t0=0,t1=1,dx=x2-x1,dy=y2-y1;
+ const clip=(p,q)=>{if(Math.abs(p)<1e-9)return q>=0;const t=q/p;if(p<0){if(t>t1)return false;if(t>t0)t0=t}else{if(t<t0)return false;if(t<t1)t1=t}return true};
+ return clip(-dx,x1-minX)&&clip(dx,maxX-x1)&&clip(-dy,y1-minY)&&clip(dy,maxY-y1)
+}
+function segmentBlocked(x1,y1,x2,y2){return state.obstacles.some(o=>segmentHitsRect(x1,y1,x2,y2,o,1))}
 function addObstacle(x,y,w,h,label){state.obstacles.push({x,y,w,h,label});}
 function makeMap(){
  state.obstacles=[];
  addObstacle(0,0,W,18,'북쪽 울타리');addObstacle(0,H-18,W,18,'남쪽 울타리');
  addObstacle(0,0,18,H,'서쪽 울타리');addObstacle(W-18,0,18,H,'동쪽 울타리');
  addObstacle(65,55,185,122,'지휘소');addObstacle(292,52,210,132,'격리동');
- addObstacle(548,58,184,118,'보급창고');addObstacle(418,352,166,116,'의무막사');
+ addObstacle(548,58,184,118,'보급창고');addObstacle(455,374,92,72,'의무막사 텐트');
  addObstacle(118,314,92,48,'텐트');addObstacle(230,378,100,48,'텐트');
  addObstacle(770,70,38,132,'컨테이너');addObstacle(815,334,72,44,'차량');
  addObstacle(640,404,64,46,'바리케이드');
@@ -115,7 +151,7 @@ function makeMap(){
 function resetMission(mode,payload,done){
  state.active=true;state.started=false;state.mode=mode;state.payload=payload||{};state.done=typeof done==='function'?done:null;
  state.zombies=[];state.bullets=[];state.survivors=[];state.pickups=[];state.crates=[];state.wave=0;state.spawnQueue=0;state.spawnCd=0;state.wavePause=0;
- state.elapsed=0;state.losses=0;state.rescued=0;state.medCharges=1;state.shake=0;state.flash=0;keys.mobileFire=false;pointer.down=false;
+ state.elapsed=0;state.losses=0;state.rescued=0;state.medCharges=1;state.shake=0;state.flash=0;state.zombieSeq=0;state.survivorSeq=0;state.pendingThreats=[];state.explicitCampThreats=false;keys.mobileFire=false;pointer.down=false;
  makeMap();
  state.player={x:460,y:274,r:12,hp:100,maxHp:100,ammo:12,reserve:36,reload:0,shotCd:0,scrap:0,ifr:0,facing:1};
  state.turret={x:720,y:286,r:15,active:false,cooldown:0,range:190};
@@ -125,10 +161,18 @@ function resetMission(mode,payload,done){
   {x:350,y:288,r:15,opened:false,loot:['ammo','scrap']}
  ];
  if(mode==='camp'){
-  const count=clamp(Number(state.payload.survivorCount)||5,3,7);
-  for(let i=0;i<count;i++)state.survivors.push({x:118+(i%3)*48,y:248+Math.floor(i/3)*45,r:10,hp:3,alive:true,rescued:false,phase:i*.8,sprite:i%2?'female':'adventurer',escorted:false});
-  const t=clamp(Number(state.payload.threatCount)||1,1,6);
-  state.waves=[t+3,t+4];
+  const sourceResidents=Array.isArray(state.payload.residents)?state.payload.residents.filter(r=>r&&r.status!=='lost'&&r.status!=='zombie').slice(0,8):[];
+  const fallbackSpawns=[[118,248],[166,248],[214,248],[118,293],[166,293],[214,293],[262,293],[305,248]];
+  const residentCount=sourceResidents.length||clamp(Number(state.payload.survivorCount)||5,3,8);
+  for(let i=0;i<residentCount;i++){
+   const src=sourceResidents[i]||{},rawX=sourceResidents.length?Number(src.x)*9.6:fallbackSpawns[i][0],rawY=sourceResidents.length?Number(src.y)*5.4:fallbackSpawns[i][1],p=findWalkable(rawX,rawY,10);
+   state.survivors.push({id:String(src.id??(++state.survivorSeq)),name:src.name||('생존자 '+(i+1)),role:src.role||'',sourceStatus:src.status||'safe',x:p.x,y:p.y,r:10,hp:src.status==='bitten'?2:3,alive:true,rescued:false,phase:i*.8,sprite:src.sprite|| (i%2?'female':'adventurer'),escorted:false});
+  }
+  const sourceThreats=Array.isArray(state.payload.threats)?state.payload.threats.filter(Boolean):[];
+  state.explicitCampThreats=sourceThreats.length>0;
+  state.pendingThreats=sourceThreats.map((src,i)=>{const p=findWalkable(Number(src.x)*9.6,Number(src.y)*5.4,11);return{id:String(src.id??('camp'+i)),name:src.name||'캠프 감염자',x:p.x,y:p.y,phase:src.phase||'zombie'}})
+  const t=clamp(Number(state.payload.threatCount)||Math.max(1,sourceThreats.length),1,8);
+  state.waves=state.explicitCampThreats?[]:[t];
   ui.title.childNodes[0].nodeValue='CAMP-17 생존자 캠프 출동';
   ui.sub.textContent='감염자를 차단하고 주민을 지휘소 안전구역으로 유도하세요.';
   ui.briefTitle.textContent='생존자 캠프 감염 경보';
@@ -163,11 +207,15 @@ function resetMission(mode,payload,done){
  host.classList.add('show');ui.brief.style.display='block';updateHUD();draw();
  cancelAnimationFrame(raf);last=performance.now();raf=requestAnimationFrame(loop);
 }
-function spawnZombie(){
- const side=Math.random()<.78?'right':(Math.random()<.5?'top':'bottom');
- let x,y;if(side==='right'){x=920;y=205+Math.random()*250}else if(side==='top'){x=540+Math.random()*340;y=28}else{x=620+Math.random()*280;y=510}
- const elite=state.wave>=2&&Math.random()<.22;
- state.zombies.push({x,y,r:11,hp:elite?4:2,speed:elite?48:55+Math.random()*8,attack:0,hit:0,phase:Math.random()*6.2,elite});
+function spawnZombie(seed=null){
+ let x,y;
+ if(seed){x=seed.x;y=seed.y}else{
+  const side=Math.random()<.78?'right':(Math.random()<.5?'top':'bottom');
+  if(side==='right'){x=920;y=205+Math.random()*250}else if(side==='top'){x=540+Math.random()*340;y=28}else{x=620+Math.random()*280;y=510}
+  const p=findWalkable(x,y,11);x=p.x;y=p.y
+ }
+ const elite=!seed&&state.wave>=2&&Math.random()<.22;
+ state.zombies.push({id:seed?.id||('z'+(++state.zombieSeq)),name:seed?.name||'감염자',sourcePhase:seed?.phase||'zombie',x,y,r:11,hp:elite?4:2,speed:elite?48:55+Math.random()*8,attack:0,hit:0,phase:Math.random()*6.2,elite});
 }
 function startWave(){
  if(state.wave>=state.waves.length)return;
@@ -192,7 +240,7 @@ function updateSurvivors(dt){
   const dx=safe.x-s.x,dy=safe.y-s.y,d=Math.hypot(dx,dy)||1;
   const threatened=state.zombies.some(z=>dist(z,s)<90);
   const speed=threatened?18:25;
-  moveEntity(s,dx/d*speed*dt,dy/d*speed*dt);
+  moveTowardSmart(s,safe.x,safe.y,speed,dt);
   if(Math.hypot(s.x-safe.x,s.y-safe.y)<28){s.rescued=true;state.rescued++;toast('호위 성공 · 생존자 안전구역 도착');}
  });
 }
@@ -200,7 +248,7 @@ function updateZombies(dt){
  state.zombies.forEach(z=>{
   z.hit=Math.max(0,z.hit-dt);z.attack=Math.max(0,z.attack-dt);
   const target=nearestTarget(z),dx=target.x-z.x,dy=target.y-z.y,d=Math.hypot(dx,dy)||1;
-  moveEntity(z,dx/d*z.speed*dt,dy/d*z.speed*dt);
+  moveTowardSmart(z,target.x,target.y,z.speed,dt);
   if(dist(z,target)<z.r+target.r+4&&z.attack<=0){
    z.attack=.75;
    if(target===state.player){
@@ -226,8 +274,9 @@ function startReload(){
 }
 function updateBullets(dt){
  state.bullets.forEach(b=>{
-  b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
-  if(b.x<0||b.y<0||b.x>W||b.y>H)b.life=0;
+  if(b.beam){b.life-=dt;return}
+  const px=b.x,py=b.y;b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
+  if(b.x<0||b.y<0||b.x>W||b.y>H||segmentBlocked(px,py,b.x,b.y))b.life=0;
   for(const z of state.zombies){
    if(b.life<=0)break;
    if(Math.hypot(b.x-z.x,b.y-z.y)<z.r+4){
@@ -270,7 +319,7 @@ function interact(){
 function updateTurret(dt){
  const t=state.turret;t.cooldown=Math.max(0,t.cooldown-dt);if(!t.active||t.cooldown>0)return;
  let target=null,bd=t.range;
- state.zombies.forEach(z=>{const d=dist(t,z);if(d<bd){bd=d;target=z}});
+ state.zombies.forEach(z=>{const d=dist(t,z);if(d<bd&&!segmentBlocked(t.x,t.y,z.x,z.y)){bd=d;target=z}});
  if(target){target.hp-=1;target.hit=.12;t.cooldown=.46;state.bullets.push({x:t.x,y:t.y,vx:0,vy:0,life:.08,beam:true,tx:target.x,ty:target.y});}
 }
 function updatePlayer(dt){
@@ -394,7 +443,12 @@ function loop(t){
  if(!state.active)return;const dt=Math.min(.034,(t-last)/1000||0);last=t;update(dt);draw();raf=requestAnimationFrame(loop);
 }
 function start(){
- if(!state.active)return;state.started=true;ui.brief.style.display='none';state.wavePause=.15;startWave();last=performance.now();
+ if(!state.active)return;state.started=true;ui.brief.style.display='none';
+ if(state.mode==='camp'&&state.explicitCampThreats){
+  state.pendingThreats.forEach(t=>spawnZombie(t));state.pendingThreats=[];state.wavePause=-1;
+  toast('CCTV에서 확인된 위협 '+state.zombies.length+'명 현장 확인');
+ }else{state.wavePause=.15;startWave()}
+ last=performance.now();
 }
 document.getElementById('q17FieldStart').addEventListener('click',start);
 document.getElementById('q17FieldBriefRetreat').addEventListener('click',()=>finish(false));
@@ -444,8 +498,8 @@ window.Q17Field3DBridge=Object.freeze({
   elapsed:state.elapsed,wave:state.wave,waveCount:state.waves.length,spawnQueue:state.spawnQueue,
   shake:state.shake,flash:state.flash,
   player:state.player?{x:state.player.x,y:state.player.y,hp:state.player.hp,maxHp:state.player.maxHp,ammo:state.player.ammo,reserve:state.player.reserve,reload:state.player.reload,scrap:state.player.scrap,ifr:state.player.ifr,facing:state.player.facing}:null,
-  zombies:state.zombies.map((z,i)=>({id:i,x:z.x,y:z.y,hp:z.hp,elite:!!z.elite,hit:z.hit||0,phase:z.phase||0})),
-  survivors:state.survivors.map((s,i)=>({id:i,x:s.x,y:s.y,hp:s.hp,alive:s.alive,rescued:s.rescued,escorted:!!s.escorted,sprite:s.sprite})),
+  zombies:state.zombies.map((z,i)=>({id:z.id??i,name:z.name||'',x:z.x,y:z.y,hp:z.hp,elite:!!z.elite,hit:z.hit||0,phase:z.phase||0,sourcePhase:z.sourcePhase||'zombie'})),
+  survivors:state.survivors.map((s,i)=>({id:s.id??i,name:s.name||'',role:s.role||'',sourceStatus:s.sourceStatus||'safe',x:s.x,y:s.y,hp:s.hp,alive:s.alive,rescued:s.rescued,escorted:!!s.escorted,sprite:s.sprite})),
   bullets:state.bullets.map((b,i)=>({id:i,x:b.x,y:b.y,tx:b.tx,ty:b.ty,beam:!!b.beam,life:b.life})),
   pickups:state.pickups.map((p,i)=>({id:i,x:p.x,y:p.y,type:p.type})),
   crates:state.crates.map((q,i)=>({id:i,x:q.x,y:q.y,opened:q.opened})),
