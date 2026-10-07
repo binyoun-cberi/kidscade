@@ -3,16 +3,16 @@ import * as THREE from '../assets/vendor/three-r160/three.module.js';
 window.__kc3dStudioModuleReady=true;
 
 const ADMIN_KEY_NAME='kc_teacher_admin_key';
-const RIG_VERSION='kidscade-humanoid-v2';
+const RIG_VERSION='kidscade-humanoid-v3';
 const CLIP_NAMES=['IDLE','WALK','RUN','JUMP','ATTACK','HURT','DEAD'];
 const $=id=>document.getElementById(id);
 
 let scene,camera,renderer,controls,characterRoot,skinnedMesh,skeletonHelper,mixer;
 let clips=[],activeAction=null,activeClip='IDLE',lastTime=performance.now();
-let bodyStyle='chibi2',activeView='threeQuarter',currentDim=null;
+let bodyStyle='soft3',activeView='threeQuarter',currentDim=null;
 
 const params={
-  height:1.25,
+  height:1.22,
   headScale:1,
   shoulderScale:1,
   limbScale:1,
@@ -36,6 +36,10 @@ const BODY_STYLES={
   action2:{
     label:'V2 액션 과장형',
     defaults:{height:1.28,headScale:.96,shoulderScale:1.06,limbScale:1.12}
+  },
+  soft3:{
+    label:'V3 SoftMesh SD',
+    defaults:{height:1.22,headScale:1,shoulderScale:1,limbScale:1}
   }
 };
 
