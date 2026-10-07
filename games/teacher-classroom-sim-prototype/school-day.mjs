@@ -64,8 +64,8 @@ export const SCHOOL_SPACES=Object.freeze({
     id:'computer',name:'컴퓨터실',icon:'💻',floor:'#9ba6b1',wall:'#e9eef5',accent:'#344f78',
     teachingPoint:{x:0,z:-3.85},
     seats:[
-      {x:-3.6,z:-1.45},{x:-1.2,z:-1.45},{x:1.2,z:-1.45},{x:3.6,z:-1.45},
-      {x:-2.2,z:1.15},{x:2.2,z:1.15}
+      {x:-3.6,z:-1.15},{x:-1.2,z:-1.15},{x:1.2,z:-1.15},{x:3.6,z:-1.15},
+      {x:-2.2,z:1.45},{x:2.2,z:1.45}
     ],
     obstacles:[
       {x:-3.6,z:-2.05,hx:.9,hz:.64},{x:-1.2,z:-2.05,hx:.9,hz:.64},{x:1.2,z:-2.05,hx:.9,hz:.64},{x:3.6,z:-2.05,hx:.9,hz:.64},
