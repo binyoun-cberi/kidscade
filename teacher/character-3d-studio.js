@@ -296,8 +296,26 @@ function visibleBounds(root){
   return found?box:null;
 }
 
+function normalizeRuntimeNodeName(name){
+  const raw=String(name||'');
+  const sanitized=THREE.PropertyBinding?.sanitizeNodeName
+    ?THREE.PropertyBinding.sanitizeNodeName(raw)
+    :raw.split('.').join('').split(':').join('').split('/').join('').split('[').join('').split(']').join('').split(' ').join('_');
+  return sanitized.toLowerCase();
+}
+
 function getNode(name){
-  return sourceScene?.getObjectByName(name)||null;
+  if(!sourceScene)return null;
+  const direct=sourceScene.getObjectByName(name);
+  if(direct)return direct;
+
+  const wanted=normalizeRuntimeNodeName(name);
+  let found=null;
+  sourceScene.traverse(object=>{
+    if(found)return;
+    if(normalizeRuntimeNodeName(object.name)===wanted)found=object;
+  });
+  return found;
 }
 
 function setNodeVisible(name,visible){
@@ -339,8 +357,15 @@ function applyPreset(name){
   currentPreset=name;
   const wanted=new Set(PRESETS[name]);
   BASE_NODES.forEach(node=>setNodeVisible(node,true));
-  TOGGLE_NODES.forEach(node=>setNodeVisible(node,wanted.has(node)));
+
+  // 헤어는 항상 배타적으로 관리한다. GLB 기본 visibility가 무엇이든 먼저 전부 끈다.
+  HAIR_NODES.forEach(node=>setNodeVisible(node,false));
+  TOGGLE_NODES.filter(node=>!HAIR_NODES.includes(node)).forEach(node=>{
+    setNodeVisible(node,wanted.has(node));
+  });
+
   const hair=HAIR_NODES.find(node=>wanted.has(node))||'';
+  if(hair)setNodeVisible(hair,true);
   $('chibiHair').value=hair;
   document.querySelectorAll('[data-chibi-preset]').forEach(button=>{
     button.classList.toggle('active',button.dataset.chibiPreset===name);
@@ -1093,12 +1118,18 @@ function wireUi(){
   $('wardrobeParts').addEventListener('change',event=>{
     const input=event.target.closest('[data-chibi-part]');
     if(!input)return;
-    setNodeVisible(input.dataset.chibiPart,input.checked);
-    const activeHair=HAIR_NODES.find(name=>getNode(name)?.visible)||'';
-    $('chibiHair').value=activeHair;
+
+    const part=input.dataset.chibiPart;
+    if(HAIR_NODES.includes(part)){
+      applyHair(input.checked?part:'');
+    }else{
+      setNodeVisible(part,input.checked);
+      refreshPartChecks();
+      refreshMetrics();
+    }
+
     currentPreset='custom';
     document.querySelectorAll('[data-chibi-preset]').forEach(button=>button.classList.remove('active'));
-    refreshMetrics();
   });
 }
 

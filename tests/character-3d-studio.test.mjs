@@ -223,3 +223,20 @@ test('left rail clips overflow instead of creating scrollbars',()=>{
   assert.match(html,/overflow-wrap:anywhere/);
   assert.match(html,/data-layout-version="left-rail-no-scroll-v4"/);
 });
+
+
+test('sanitized Chibi node names are resolved',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  assert.match(js,/function normalizeRuntimeNodeName/);
+  assert.match(js,/THREE\.PropertyBinding\?\.sanitizeNodeName/);
+  assert.match(js,/normalizeRuntimeNodeName\(object\.name\)===wanted/);
+  assert.match(js,/hairvariant\.001/);
+});
+
+test('Chibi hair is mutually exclusive across presets dropdown and part toggles',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  assert.match(js,/HAIR_NODES\.forEach\(node=>setNodeVisible\(node,false\)\)/);
+  assert.match(js,/if\(hair\)setNodeVisible\(hair,true\)/);
+  assert.match(js,/if\(HAIR_NODES\.includes\(part\)\)/);
+  assert.match(js,/applyHair\(input\.checked\?part:''\)/);
+});
