@@ -14,9 +14,11 @@ test('cosmic growth game shell is wired to local Three and Kidscade SDK',()=>{
   assert.match(html,/<title>먼지에서 블랙홀까지<\/title>/);
   assert.match(html,/data-game-id="science_cosmic_growth"/);
   assert.match(html,/assets\/vendor\/three-r160\/three\.module\.js/);
-  assert.match(html,/game\.js\?v=3/);
+  assert.match(html,/game\.js\?v=4/);
   assert.match(html,/id="tapLayer"/);
   assert.match(html,/id="codex"/);
+  assert.match(html,/id="scaleCompare"/);
+  assert.match(html,/style\.css\?v=3/);
 });
 
 test('cosmic growth module has valid JS after module imports are stripped',()=>{
@@ -44,6 +46,19 @@ test('cosmic growth keeps neighbouring celestial scenery visible across scales',
   assert.match(js,/if\(i>=9&&i<=10\).*addNeighborStars/);
   assert.match(js,/if\(i>=16&&i<=17\).*addCompanionGalaxies/);
   assert.doesNotMatch(js,/if\(i>=16\)return;/);
+});
+
+test('cosmic growth shows named real-universe scale references and persistent lensing around black holes',()=>{
+  for(const name of ['이토카와','베스타','세레스','지구','목성','태양','백조자리 X-1','궁수자리 A*','M87*','우리 은하','라니아케아 초은하단']){
+    assert.ok(js.includes(name),name);
+  }
+  for(const fn of ['scaleReference','comparisonText','makeLabelSprite','addScaleReference','addBlackHoleLensing']){
+    assert.ok(js.includes('function '+fn+'('),fn);
+  }
+  assert.match(js,/state\.stage<12\|\|state\.stage>15/);
+  assert.match(js,/RingGeometry\(r,r\+\.035,128\)/);
+  assert.match(css,/\.scaleCompare\{/);
+  assert.match(css,/\.scaleCompare\{left:7px;top:126px/);
 });
 
 test('science facts and observation events are part of actual progression',()=>{
@@ -75,7 +90,7 @@ test('mobile layout keeps the upgrade strip compact',()=>{
 });
 const vm=require('node:vm');
 function progression(){
- const head=js.slice(js.indexOf('const STAGES='),js.indexOf('const ui='));
+ const head=js.slice(js.indexOf('const EARTH='),js.indexOf('const ui='));
  const rates=js.slice(js.indexOf('function tapPower()'),js.indexOf('function save()'));
  const box={};vm.createContext(box);vm.runInContext(head+";let state={stage:0,research:0,upgrades:{}};"+rates+";this.api={STAGES,DISCOVERIES,UPGRADES,tapPower,autoRate,setState:s=>state=s};",box);return box.api;
 }
