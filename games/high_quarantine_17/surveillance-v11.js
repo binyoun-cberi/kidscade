@@ -15,6 +15,17 @@ const ZONES=[
  {id:'supply',name:'배급·작업구역',desc:'식량 · 식수 · 물자',x1:37,x2:67,y1:22,y2:78},
  {id:'gate',name:'경계구역',desc:'철책 · 초소 · 출입문',x1:71,x2:94,y1:23,y2:78}
 ];
+const CAMP_OBSTACLES=[
+ {x:6.8,y:10.2,w:19.3,h:22.6,label:'지휘소'},
+ {x:30.4,y:9.6,w:21.9,h:24.5,label:'격리동'},
+ {x:57.1,y:10.7,w:19.2,h:21.9,label:'보급창고'},
+ {x:47.4,y:69.3,w:9.6,h:13.3,label:'의무막사 텐트'},
+ {x:12.3,y:58.1,w:9.6,h:8.9,label:'생존자 텐트'},
+ {x:24.0,y:70.0,w:10.5,h:8.9,label:'생존자 텐트'},
+ {x:80.2,y:13.0,w:4.0,h:24.5,label:'컨테이너'},
+ {x:84.9,y:61.9,w:7.5,h:8.2,label:'구급차'},
+ {x:66.7,y:74.8,w:6.7,h:8.5,label:'바리케이드'}
+];
 const TASKS={
  residential:['침상 정리','휴식','의무막사 보조','세탁물 정리'],
  supply:['식량 배급','식수 운반','물자 정리','배급표 확인'],
@@ -34,8 +45,19 @@ function bridge(){return window.Q17Bridge||null}
 function zoneInfo(id){return ZONES.find(function(z){return z.id===id})||ZONES[0]}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function campBlockedAt(x,y,r){
+ r=r||1.05;
+ return CAMP_OBSTACLES.some(function(o){return x+r>o.x&&x-r<o.x+o.w&&y+r>o.y&&y-r<o.y+o.h})
+}
 function pointInZone(zone,pad){
- pad=pad||0;return{x:zone.x1+pad+Math.random()*Math.max(1,zone.x2-zone.x1-pad*2),y:zone.y1+pad+Math.random()*Math.max(1,zone.y2-zone.y1-pad*2)};
+ pad=pad||0;
+ for(let n=0;n<28;n++){
+  const p={x:zone.x1+pad+Math.random()*Math.max(1,zone.x2-zone.x1-pad*2),y:zone.y1+pad+Math.random()*Math.max(1,zone.y2-zone.y1-pad*2)};
+  if(!campBlockedAt(p.x,p.y,1.1))return p
+ }
+ const cx=(zone.x1+zone.x2)/2,cy=(zone.y1+zone.y2)/2;
+ for(let r=2;r<=18;r+=2)for(let i=0;i<12;i++){const a=i/12*Math.PI*2,x=clamp(cx+Math.cos(a)*r,5,95),y=clamp(cy+Math.sin(a)*r,18,83);if(!campBlockedAt(x,y,1.1))return{x,y}}
+ return{x:cx,y:cy}
 }
 function zoneFromPos(x){
  if(x<35.5)return 'residential';
@@ -69,10 +91,17 @@ function chooseRoutine(r){
  r.zone=zid;r.task=rand(TASKS[zid]);r.tx=p.x;r.ty=p.y;r.routineMs=4500+Math.random()*8500;
 }
 function moveToward(e,tx,ty,speed,dt){
- const dx=tx-e.x,dy=ty-e.y,d=Math.hypot(dx,dy);
- if(d<.15)return false;
- const step=Math.min(d,speed*dt);
- e.x+=dx/d*step;e.y+=dy/d*step;e.dir=dx>=0?1:-1;e.zone=zoneFromPos(e.x);return step>.04;
+ const dx=tx-e.x,dy=ty-e.y,d=Math.hypot(dx,dy);if(d<.15)return false;
+ const step=Math.min(d,speed*dt),base=Math.atan2(dy,dx),offsets=[0,.42,-.42,.82,-.82,1.2,-1.2,1.57,-1.57];
+ let best=null,bestD=Infinity;
+ for(const off of offsets){
+  const nx=clamp(e.x+Math.cos(base+off)*step,4,96),ny=clamp(e.y+Math.sin(base+off)*step,17,84);
+  if(campBlockedAt(nx,ny,1.05))continue;
+  const nd=Math.hypot(tx-nx,ty-ny)+Math.abs(off)*.08;
+  if(nd<bestD){bestD=nd;best={x:nx,y:ny}}
+ }
+ if(!best)return false;
+ e.dir=best.x>=e.x?1:-1;e.x=best.x;e.y=best.y;e.zone=zoneFromPos(e.x);return true
 }
 function fleeFrom(r,z,dt){
  const dx=r.x-z.x,dy=r.y-z.y,d=Math.hypot(dx,dy)||1;
@@ -175,7 +204,13 @@ function registerGlobalOutbreak(info){
 }
 function responsePayload(){
  const active=threats.filter(function(t){return t.phase==='infected'||t.phase==='zombie'});
- return{name:active.length?active[0].name:'캠프 감염자',threatCount:Math.max(1,active.length),survivorCount:livingCount()};
+ const liveResidents=residents.filter(function(r){return r.status!=='lost'&&r.status!=='zombie'});
+ return{
+  name:active.length?active[0].name:'캠프 감염자',
+  threatCount:Math.max(1,active.length),survivorCount:liveResidents.length,
+  residents:liveResidents.map(function(r){return{id:r.id,name:r.name,role:r.role,status:r.status,sprite:r.sprite,x:r.x,y:r.y,dir:r.dir}}),
+  threats:active.map(function(t){return{id:t.id,name:t.name,phase:t.phase,sprite:t.sprite,x:t.x,y:t.y,dir:t.dir,source:t.source}})
+ };
 }
 function applyCombatLosses(n){
  let candidates=residents.filter(function(r){return r.status==='safe'||r.status==='bitten'});
