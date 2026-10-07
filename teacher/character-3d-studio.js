@@ -593,50 +593,101 @@ function buildClips(dim){
 
 function addHeadDetails(headBone,dim,materials){
   const chibi=dim.style!=='legacy';
+  const soft=dim.style==='soft3';
+  const H=dim.H;
+
   const hair=new THREE.Mesh(
-    new THREE.SphereGeometry(1,chibi?12:10,chibi?8:6,0,Math.PI*2,0,Math.PI*(chibi?.46:.57)),
+    new THREE.SphereGeometry(1,soft?20:(chibi?12:10),soft?12:(chibi?8:6),0,Math.PI*2,0,Math.PI*(soft?.50:(chibi?.46:.57))),
     materials[4]
   );
   hair.name='Hair';
-  hair.scale.set(dim.headRX*1.055,dim.headRY*1.035,dim.headRZ*1.055);
-  hair.position.set(0,dim.headCenterY-dim.headBoneY+(chibi?.010:.014)*dim.H,-(chibi?.012:.005)*dim.H);
+  hair.scale.set(dim.headRX*(soft?1.075:1.055),dim.headRY*(soft?1.055:1.035),dim.headRZ*(soft?1.065:1.055));
+  hair.position.set(0,dim.headCenterY-dim.headBoneY+(soft?.006:(chibi?.010:.014))*H,-(soft?.010:(chibi?.012:.005))*H);
   hair.castShadow=true;
   headBone.add(hair);
 
+  const faceY=dim.headCenterY-dim.headBoneY;
+  if(soft){
+    const whiteMat=mat('#f8fafc',.70);
+    whiteMat.name='EyeWhite';
+    const eyeWhiteGeo=new THREE.SphereGeometry(1,12,8);
+    const pupilGeo=new THREE.SphereGeometry(1,10,7);
+    for(const side of [-1,1]){
+      const white=new THREE.Mesh(eyeWhiteGeo.clone(),whiteMat);
+      white.name=side<0?'EyeWhite_L':'EyeWhite_R';
+      white.scale.set(.030*H,.039*H,.010*H);
+      white.position.set(side*dim.headRX*.39,faceY-.022*H,dim.headRZ*.935);
+      headBone.add(white);
+
+      const pupil=new THREE.Mesh(pupilGeo.clone(),materials[5]);
+      pupil.name=side<0?'Eye_L':'Eye_R';
+      pupil.scale.set(.0135*H,.018*H,.007*H);
+      pupil.position.set(side*dim.headRX*.39,faceY-.023*H,dim.headRZ*.979);
+      headBone.add(pupil);
+
+      const brow=new THREE.Mesh(new THREE.BoxGeometry(.041*H,.006*H,.006*H),materials[4]);
+      brow.name=side<0?'Brow_L':'Brow_R';
+      brow.position.set(side*dim.headRX*.39,faceY+.025*H,dim.headRZ*.972);
+      brow.rotation.z=side*.08;
+      headBone.add(brow);
+
+      const ear=new THREE.Mesh(new THREE.SphereGeometry(1,10,7),materials[0]);
+      ear.name=side<0?'Ear_L':'Ear_R';
+      ear.scale.set(.020*H,.030*H,.016*H);
+      ear.position.set(side*dim.headRX*.99,faceY-.006*H,0);
+      headBone.add(ear);
+    }
+
+    const mouth=new THREE.Mesh(new THREE.BoxGeometry(.041*H,.006*H,.006*H),materials[5]);
+    mouth.name='Mouth';
+    mouth.position.set(0,faceY-.093*H,dim.headRZ*.972);
+    headBone.add(mouth);
+
+    const bangGeo=new THREE.ConeGeometry(.026*H,.070*H,7);
+    const bangs=[[-.098,.24],[-.050,.12],[0,0],[.050,-.12],[.098,-.24]];
+    for(const [x,rot] of bangs){
+      const bang=new THREE.Mesh(bangGeo.clone(),materials[4]);
+      bang.name='HairFringe';
+      bang.position.set(x*H,faceY+.071*H,dim.headRZ*.91);
+      bang.rotation.z=rot;
+      bang.rotation.x=-.08;
+      bang.castShadow=true;
+      headBone.add(bang);
+    }
+    return;
+  }
+
   const eyeGeo=new THREE.SphereGeometry(dim.eyeSize,chibi?9:7,chibi?7:5);
   const eyeMat=materials[5];
-  const eyeY=dim.headCenterY-dim.headBoneY+(chibi?-.018:.012)*dim.H;
+  const eyeY=faceY+(chibi?-.018:.012)*H;
   for(const side of [-1,1]){
     const eye=new THREE.Mesh(eyeGeo.clone(),eyeMat);
     eye.name=side<0?'Eye_L':'Eye_R';
-    eye.position.set(side*dim.headRX*(chibi?.38:.39),eyeY,dim.headRZ*(chibi?.91:.91));
+    eye.position.set(side*dim.headRX*(chibi?.38:.39),eyeY,dim.headRZ*.91);
     eye.scale.set(chibi?.86:1,chibi?1.12:.88,.48);
     headBone.add(eye);
   }
 
   if(chibi){
-    const mouth=new THREE.Mesh(
-      new THREE.BoxGeometry(.037*dim.H,.007*dim.H,.006*dim.H),
-      materials[5]
-    );
+    const mouth=new THREE.Mesh(new THREE.BoxGeometry(.037*H,.007*H,.006*H),materials[5]);
     mouth.name='Mouth';
-    mouth.position.set(0,dim.headCenterY-dim.headBoneY-.078*dim.H,dim.headRZ*.955);
+    mouth.position.set(0,faceY-.078*H,dim.headRZ*.955);
     headBone.add(mouth);
 
-    const bangGeo=new THREE.ConeGeometry(.030*dim.H,.075*dim.H,5);
+    const bangGeo=new THREE.ConeGeometry(.030*H,.075*H,5);
     for(const [x,rot] of [[-.065,.18],[0,0],[.065,-.18]]){
       const bang=new THREE.Mesh(bangGeo.clone(),materials[4]);
       bang.name='HairFringe';
-      bang.position.set(x*dim.H,dim.headCenterY-dim.headBoneY+.055*dim.H,dim.headRZ*.89);
+      bang.position.set(x*H,faceY+.055*H,dim.headRZ*.89);
       bang.rotation.z=rot;
       bang.rotation.x=-.10;
       bang.castShadow=true;
       headBone.add(bang);
     }
   }else{
-    const nose=new THREE.Mesh(new THREE.BoxGeometry(.018*dim.H,.018*dim.H,.025*dim.H),materials[0]);
+    const nose=new THREE.Mesh(new THREE.BoxGeometry(.018*H,.018*H,.025*H),materials[0]);
     nose.name='Nose';
-    nose.position.set(0,dim.headCenterY-dim.headBoneY-.018*dim.H,dim.headRZ*.96);
+    nose.position.set(0,faceY-.018*H,dim.headRZ*.96);
     headBone.add(nose);
   }
 }
