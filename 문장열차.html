@@ -211,6 +211,26 @@ body[data-station-index="3"] .scene-destination{background:#c9a6e6}
 @media(max-width:900px){.scene{height:420px;min-height:420px}.carriage-order .slot,body.sentence-train-3d-ready .carriage-order .slot{min-width:94px}.order-title>span{display:none}}
 @media(max-width:560px){.scene{height:370px;min-height:370px}.carriage-order{padding:10px}.carriage-order .slot,body.sentence-train-3d-ready .carriage-order .slot{min-width:88px;height:50px}.carriage-order .token.in-slot,body.sentence-train-3d-ready .carriage-order .token.in-slot{font-size:13px!important}}
 
+
+/* ===== Sentence Train v6 · composition pass ===== */
+.scene{height:420px;min-height:420px;background:
+ radial-gradient(circle at 76% 14%,rgba(255,239,154,.58),transparent 18%),
+ linear-gradient(180deg,var(--sky1) 0 54%,#cfe5ad 54% 66%,#a9b8c5 66% 100%);box-shadow:0 14px 30px rgba(31,53,74,.11)}
+.scene-head{left:16px;top:14px;padding:8px 10px;border-radius:13px;background:rgba(21,39,58,.82);box-shadow:0 6px 16px rgba(16,34,52,.18)}
+.scene-head small{font-size:8px}.scene-head strong{font-size:16px}.scene-destination{font-size:8px;padding:4px 6px}
+.platform-edge{height:17px;border-top-width:4px;background:#65717c}.platform-edge span{margin-top:6px;height:5px}
+#train3d{filter:saturate(1.28) contrast(1.08)}
+.carriage-order{margin-top:9px;padding:11px 13px 13px;border-radius:17px;background:#172940}
+.order-title{margin-bottom:7px}.order-title h3{font-size:16px}.order-title>span{font-size:10px}
+.carriage-order .track-row,body.sentence-train-3d-ready .carriage-order .track-row{min-height:61px!important;padding:6px!important;border-radius:12px}
+.carriage-order .slot,body.sentence-train-3d-ready .carriage-order .slot{min-width:96px;height:48px;border-radius:9px;padding:8px 5px 4px;background:#f7fbff}
+.carriage-order .token.in-slot,body.sentence-train-3d-ready .carriage-order .token.in-slot{font-size:13px!important}
+.platform{margin-top:9px;padding:13px 14px;border-radius:17px}.tokens{min-height:66px;padding:9px}.token{font-size:16px;padding:11px 14px}
+.controls{margin-top:8px}.btn{padding:11px 13px}.feedback{min-height:54px}
+.route-panel{padding-top:12px;padding-bottom:18px}.route-title{margin-bottom:12px}.route-line{height:55px}.route-line:before,.route-line .route-fill{top:21px}.route-line:after{top:29px}.route-start{top:23px}.route-train{top:7px}.route-stop{top:2px}
+@media(max-width:900px){.scene{height:385px;min-height:385px}.carriage-order .slot,body.sentence-train-3d-ready .carriage-order .slot{min-width:88px}.scene-head{left:10px;top:10px}}
+@media(max-width:560px){.scene{height:335px;min-height:335px}.scene-head strong{font-size:14px}.carriage-order{padding:9px}.carriage-order .slot,body.sentence-train-3d-ready .carriage-order .slot{min-width:82px;height:46px}}
+
 </style>
 </head>
 <body>
@@ -284,6 +304,6 @@ function updateStats(){$('#completedStat').textContent=Math.min(corrects,questio
 function finish(){$('#game').classList.remove('active');$('#result').classList.add('active');const acc=attempts?Math.round(corrects/attempts*100):100;$('#resultTitle').textContent='🎉 엄청나역 도착!';$('#journeyResult').textContent=`${corrects}개의 문장을 끝까지 완성했어요!`;$('#completedResult').textContent=corrects+'개';$('#accuracy').textContent=acc+'%';$('#usedHints').textContent=hintsUsed+'개';$('#stationsDone').textContent=stationCount(corrects)+'곳';try{parent.postMessage({type:'kidscade-result',game:'문장열차',score:corrects*100,completed:corrects,cleared:true,accuracy:acc,difficulty:level},'*')}catch(e){}scrollTo({top:0,behavior:'smooth'})}
 </script>
 <script type="importmap">{"imports":{"three":"/assets/vendor/three-r160/three.module.js","three/addons/":"/assets/vendor/three-r160/addons/"}}</script>
-<script type="module" src="games/sentence_train/sentence-train-3d-loader.js?v=4"></script>
+<script type="module" src="games/sentence_train/sentence-train-3d-loader.js?v=5"></script>
 </body>
 </html>
