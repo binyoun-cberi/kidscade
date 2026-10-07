@@ -104,21 +104,22 @@ const RECIPES=[
  {id:'windowFrame',name:'창문틀 ×2',needs:{planks:3,glass:1},gives:{windowFrame:2},stage:7,bench:true}
 ];
 const GOALS=[
- {title:'첫날 · 원목 3개 채집',description:'나무를 바라보고 파괴를 길게 눌러 원목을 3개 모으세요.',need:3,progress:s=>s.harvestedWood||0},
- {title:'판자 제작',description:'가방(E)에서 원목을 판자로 가공해 보세요.',need:1,progress:s=>s.crafted?.planks||0},
- {title:'제작대 설치',description:'판자 4개로 제작대를 만들고 가까운 땅에 설치하세요.',need:1,progress:s=>s.placed?.workbench||0},
- {title:'나무 곡괭이 만들기',description:'제작대 가까이에서 막대와 나무 곡괭이를 만들어 보세요.',need:1,progress:s=>s.crafted?.woodPick||0},
- {title:'첫 돌 캐기',description:'나무 곡괭이를 고르고 돌 하나를 캐 보세요.',need:1,progress:s=>s.harvestedStone||0},
- {title:'첫 거점 만들기',description:'판자나 흙으로 벽과 지붕을 만들고 그 안에 들어가 보세요.',need:1,
+ {id:'wood',kind:'training',title:'첫날 · 원목 3개 채집',description:'나무를 바라보고 파괴를 길게 눌러 원목을 3개 모으세요.',need:3,progress:s=>s.harvestedWood||0},
+ {id:'planks',kind:'training',title:'판자 제작',description:'가방(E)에서 원목을 판자로 가공해 보세요.',need:1,progress:s=>s.crafted?.planks||0},
+ {id:'workbench',kind:'training',title:'제작대 설치',description:'판자 4개로 제작대를 만들고 가까운 땅에 설치하세요.',need:1,progress:s=>s.placed?.workbench||0},
+ {id:'woodPick',kind:'training',title:'나무 곡괭이 만들기',description:'제작대 가까이에서 막대와 나무 곡괭이를 만들어 보세요.',need:1,progress:s=>s.crafted?.woodPick||0},
+ {id:'firstStone',kind:'training',title:'첫 돌 캐기',description:'나무 곡괭이를 고르고 돌 하나를 캐 보세요.',need:1,progress:s=>s.harvestedStone||0},
+ {id:'shelter',kind:'training',title:'첫 거점 만들기',description:'판자나 흙으로 벽과 지붕을 만들고 그 안에 들어가 보세요.',need:1,
   progress:s=>Number(!!s.shelterBuilt)},
- {title:'돌과 새로운 지역',description:'돌 8개를 캐고 출발 초원 이외의 바이옴을 발견하세요.',need:2,
+ {id:'explore',kind:'adventure',title:'돌과 새로운 지역',description:'돌을 더 모으거나 출발 초원 밖의 새로운 지역을 찾아가 보세요.',need:2,
   progress:s=>Number((s.harvestedStone||0)>=8)+Number((s.biomes||[]).some(b=>b!=='meadow'))},
- {title:'화로 제작과 설치',description:'돌 8개로 화로를 제작해 거점 근처에 설치하세요.',need:1,progress:s=>s.placed?.furnace||0},
- {title:'화로로 새 재료 만들기',description:'원목이나 숯을 연료로 사용해 화로에서 아무 재료나 한 번 가공해 보세요.',need:1,
+ {id:'furnace',kind:'adventure',title:'화로 만들어 보기',description:'돌 8개로 화로를 만들어 원하는 곳에 설치해 보세요.',need:1,progress:s=>s.placed?.furnace||0},
+ {id:'smelt',kind:'adventure',title:'새 재료 구워 보기',description:'화로에서 원하는 재료를 한 번 가공해 보세요.',need:1,
   progress:s=>Number(Object.values(s.smelted||{}).some(v=>(Number(v)||0)>0))},
- {title:'도형을 읽는 탐험가',description:'직육면체의 서로 다른 면을 2개 이상 칠하고, 총 3개 이상의 바이옴을 탐험하거나 설계도 조각을 발견하세요.',need:2,
-  progress:s=>Number((s.paintedFaces||[]).length>=2)+Number((s.biomes||[]).length>=3||(s.found||[]).length>=1)},
- {title:'첫 랜드마크 던전',description:'랜드마크 안에서 구조 퍼즐을 풀고 최심부 설계실의 겨냥도를 해독하세요.',need:1,
+ {id:'geometry',kind:'adventure',title:'도형을 읽는 탐험가',description:'직육면체의 서로 다른 면을 2개 이상 칠하고, 3개 이상의 바이옴을 탐험하거나 설계도 조각을 발견해 보세요.',need:2,
+  progress:s=>Number((s.paintedFaces||[]).length>=2)+Number((s.biomes||[]).length>=3||(s.found||[]).length>=1),
+  rewardLabel:'직육면체 제작 크기 4칸까지 확장'},
+ {id:'landmark',kind:'adventure',title:'랜드마크 던전 탐험',description:'마음에 드는 랜드마크를 찾아 내부의 공간 퍼즐에 도전해 보세요.',need:1,
   progress:s=>(s.restored||[]).length}
 ];
 function goalProgress(goal,stats){return Math.min(goal.need,Math.max(0,goal.progress(stats)))}
