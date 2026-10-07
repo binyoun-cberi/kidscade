@@ -35,6 +35,33 @@ const STAGES=[
  {id:'cosmic_web',name:'우주 거대구조 · 코스믹 웹',need:4500000,m0:1e48,m1:1e49,scale:'필라멘트·장벽·은하단·거대공동의 그물망',fact:'코스믹 웹은 은하단과 필라멘트, 장벽, 은하가 드문 거대공동이 이루는 우주의 큰 분포입니다. 우주 전체의 끝을 뜻하지는 않습니다.',discover:['cosmic_web']}
 ];
 
+const SCALE_REFERENCES={
+  0:{name:'성간 먼지',detail:'보통 수 μm 이하의 아주 작은 입자',kind:'dust'},
+  1:{name:'먼지 응집체',detail:'아직 천체라기보다 입자들이 붙은 덩어리',kind:'dust'},
+  2:{name:'작은 유성체',detail:'자갈~바위 크기의 우주 암석',kind:'rock'},
+  3:{name:'이토카와',detail:'길이 약 535 m의 소행성',kind:'rock',mass:3.51e10},
+  4:{name:'베스타',detail:'지름 약 525 km의 거대 소행성',kind:'rock',mass:2.59e20},
+  5:{name:'세레스',detail:'지름 약 940 km의 왜행성',kind:'planet',mass:9.39e20},
+  6:{name:'지구',detail:'질량 1 M⊕ · 지름 약 12,742 km',kind:'earth',mass:EARTH},
+  7:{name:'목성',detail:'질량 1 M♃ · 지름 약 14만 km',kind:'jupiter',mass:JUPITER},
+  8:{name:'갈색왜성 경계',detail:'약 13 M♃부터 중수소 핵융합이 가능해지는 영역',kind:'brown',mass:JUPITER*13},
+  9:{name:'태양',detail:'질량 1 M☉ · 지름 약 139만 km',kind:'sun',mass:SUN},
+ 10:{name:'태양',detail:'초거성 단계에서는 태양 수십 개 질량과 비교',kind:'sun',mass:SUN},
+ 11:{name:'초신성 잔해',detail:'폭발 뒤 팽창하는 가스와 중심 잔해를 함께 관측',kind:'supernova'},
+ 12:{name:'백조자리 X-1',detail:'대표적인 항성질량 블랙홀 · 약 20 M☉급',kind:'blackhole',mass:SUN*21},
+ 13:{name:'중간질량 블랙홀 후보',detail:'항성질량과 초대질량 블랙홀 사이의 빈 구간',kind:'blackhole'},
+ 14:{name:'궁수자리 A*',detail:'우리 은하 중심 · 약 430만 M☉',kind:'blackhole',mass:SUN*4.3e6},
+ 15:{name:'M87*',detail:'처녀자리 A 은하 중심 · 약 65억 M☉',kind:'blackhole',mass:SUN*6.5e9},
+ 16:{name:'대마젤란은하',detail:'우리 은하의 동반은하 · 폭 수만 광년',kind:'galaxy'},
+ 17:{name:'우리 은하',detail:'별 원반의 지름 약 10만 광년 규모',kind:'galaxy'},
+ 18:{name:'국부은하군',detail:'우리 은하·안드로메다를 포함한 수백만 광년 규모',kind:'cluster'},
+ 19:{name:'처녀자리 은하단',detail:'수많은 은하가 모인 수천만 광년 규모',kind:'cluster'},
+ 20:{name:'라니아케아 초은하단',detail:'수억 광년에 걸친 거대한 은하 분포',kind:'web'},
+ 21:{name:'우주 필라멘트',detail:'은하와 가스가 수억 광년 길이로 이어지는 구조',kind:'web'},
+ 22:{name:'슬론 장벽',detail:'10억 광년 안팎으로 이어지는 거대 은하 분포',kind:'web'},
+ 23:{name:'관측 가능한 우주',detail:'지름 약 930억 광년 · 코스믹 웹은 그 내부의 구조',kind:'web'}
+};
+
 const DISCOVERIES=[
  {id:'cosmic_dust',cat:'body',min:0,icon:'✦',title:'우주 먼지',text:'성간 공간에는 규산염·탄소 성분 등을 포함한 매우 작은 고체 입자가 존재합니다.'},
  {id:'micro_scale',cat:'scale',min:0,icon:'🔬',title:'미세한 시작',text:'게임의 출발점은 눈으로 보기 어려운 미세 입자 규모입니다. 이후 크기 단위가 mm, m, km를 넘어 천문 단위까지 커집니다.'},
@@ -116,6 +143,7 @@ const UPGRADES=[
 const ui={
  stage:$('stageLabel'),era:$('eraLabel'),scale:$('scaleLabel'),mass:$('massLabel'),fill:$('progressFill'),next:$('nextLabel'),insight:$('insightLabel'),
  rate:$('rateLabel'),upgrades:$('upgradeList'),discCount:$('discoveredCount'),discTotal:$('discoveryTotal'),codexProgress:$('codexProgress'),
+ compare:$('scaleCompare'),compareName:$('compareName'),compareDetail:$('compareDetail'),compareRatio:$('compareRatio'),
  event:$('eventPill'),eventIcon:$('eventIcon'),eventLabel:$('eventLabel'),eventTimer:$('eventTimer'),hint:$('tapHint'),toast:$('toast'),
  evo:$('evolution'),evoKicker:$('evoKicker'),evoTitle:$('evoTitle'),evoFact:$('evoFact'),intro:$('intro'),continueBtn:$('continueBtn'),
  science:$('scienceModal'),scienceIcon:$('scienceIcon'),scienceCategory:$('scienceCategory'),scienceTitle:$('scienceTitle'),scienceText:$('scienceText'),scienceBonus:$('scienceBonus'),
@@ -151,6 +179,24 @@ function formatMass(kg){
  if(kg<JUPITER*.1)return formatNumber(kg/EARTH,2)+' M⊕';
  if(kg<SUN*.08)return formatNumber(kg/JUPITER,2)+' M♃';
  return formatNumber(kg/SUN,2)+' M☉';
+}
+function scaleReference(){return SCALE_REFERENCES[state.stage]||SCALE_REFERENCES[23]}
+function comparisonText(){
+ const ref=scaleReference();if(!ref.mass)return '대표 규모와 비교';
+ const ratio=massNow()/ref.mass;
+ if(ratio>=1000)return '현재 약 '+formatNumber(ratio,0)+'배';
+ if(ratio>=1)return '현재 약 '+formatNumber(ratio,2)+'배';
+ if(ratio>=.01)return '현재 약 '+formatNumber(ratio*100,1)+'%';
+ const inv=1/Math.max(ratio,1e-12);return '현재 약 1/'+formatNumber(inv,inv<100?1:0);
+}
+function makeLabelSprite(title,sub=''){
+ const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;const ctx=canvas.getContext('2d');
+ ctx.clearRect(0,0,512,128);ctx.fillStyle='rgba(2,8,20,.78)';ctx.strokeStyle='rgba(150,220,255,.5)';ctx.lineWidth=3;
+ if(ctx.roundRect){ctx.beginPath();ctx.roundRect(8,8,496,112,24);ctx.fill();ctx.stroke()}else{ctx.fillRect(8,8,496,112);ctx.strokeRect(8,8,496,112)}
+ ctx.fillStyle='#f7fbff';ctx.font='800 34px system-ui, sans-serif';ctx.textAlign='center';ctx.fillText(title,256,56);
+ ctx.fillStyle='#a9c0d9';ctx.font='700 20px system-ui, sans-serif';ctx.fillText(sub,256,91);
+ const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
+ const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false}));sp.scale.set(3.6,.9,1);sp.userData.kind='referenceLabel';return sp
 }
 function tapPower(){
  let p=(1+state.stage*.06)*(1+state.research*.12);
@@ -386,6 +432,34 @@ function addDeepField(count=LOW_POWER?90:220){
  const m=new THREE.PointsMaterial({color:0x9eb9da,size:LOW_POWER?.035:.05,map:fxTextures.star||null,transparent:true,opacity:.34,blending:THREE.AdditiveBlending,depthWrite:false});
  const p=new THREE.Points(g,m);p.userData.kind='deepField';contextGroup.add(p)
 }
+function addScaleReference(){
+ const ref=scaleReference(),g=new THREE.Group();g.userData.kind='scaleReference';g.position.set(innerWidth<680?-3.25:-4.45,innerWidth<680?1.65:2.2,-1.25);
+ let o;
+ if(ref.kind==='dust'){o=glowSprite(0xdcecff,.42,.8,'star')}
+ else if(ref.kind==='rock'){o=new THREE.Mesh(new THREE.IcosahedronGeometry(.28,1),new THREE.MeshStandardMaterial({color:0x8b8176,roughness:.96}));o.userData.kind='referenceRock'}
+ else if(ref.kind==='planet'||ref.kind==='earth'||ref.kind==='jupiter'||ref.kind==='brown'){
+  const tex=planetTextures.length?planetTextures[(state.stage+2)%planetTextures.length]:null;
+  if(tex){o=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false}));o.scale.set(1,1,1)}
+  else o=new THREE.Mesh(new THREE.SphereGeometry(.42,24,16),new THREE.MeshStandardMaterial({color:ref.kind==='jupiter'?0xd7a779:ref.kind==='brown'?0x8e5f48:0x6fa5c8,roughness:.8}));
+ }else if(ref.kind==='sun'||ref.kind==='supernova'){o=glowSprite(ref.kind==='supernova'?0xff9b70:0xffd278,1.35,.8,'flare')}
+ else if(ref.kind==='blackhole'){
+  o=new THREE.Group();const core=new THREE.Mesh(new THREE.SphereGeometry(.28,24,16),new THREE.MeshBasicMaterial({color:0x000000}));
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.38,.72,64),new THREE.MeshBasicMaterial({color:0xffb064,transparent:true,opacity:.72,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));ring.rotation.x=1.05;o.add(ring,core);o.userData.kind='referenceBlackHole'
+ }else if(ref.kind==='galaxy'){o=glowSprite(0xb9c5ff,1.35,.52,'twirl')}
+ else if(ref.kind==='cluster'){o=glowSprite(0xaedcff,1.5,.42,'star')}
+ else{o=glowSprite(0xa88dff,1.55,.36,'twirl')}
+ o.position.set(0,0,0);g.add(o);const label=makeLabelSprite(ref.name,comparisonText());label.position.set(0,-.92,0);g.add(label);contextGroup.add(g)
+}
+function addBlackHoleLensing(){
+ if(state.stage<12||state.stage>15)return;
+ const lens=new THREE.Group();lens.userData.kind='lensingField';lens.position.z=-1.1;
+ for(const [r,op] of [[2.35,.13],[2.72,.08]]){
+  const ring=new THREE.Mesh(new THREE.RingGeometry(r,r+.035,128),new THREE.MeshBasicMaterial({color:0xcde7ff,transparent:true,opacity:op,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));
+  ring.scale.y=.72;lens.add(ring)
+ }
+ for(let i=0;i<8;i++){const a=i/8*Math.PI*2,sp=glowSprite(i%2?0xffe1ae:0xc8eaff,.22+i%3*.04,.48,'star');sp.position.set(Math.cos(a)*2.55,Math.sin(a)*2.55*.72,-.05);lens.add(sp)}
+ contextGroup.add(lens)
+}
 function addCluster(count){
  const pos=new Float32Array(count*3);for(let i=0;i<count;i++){const a=Math.random()*6.28,r=2.4+Math.pow(Math.random(),.6)*8.5;pos[i*3]=Math.cos(a)*r;pos[i*3+1]=Math.sin(a)*r*.62;pos[i*3+2]=-1-Math.random()*5}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));const m=new THREE.PointsMaterial({color:0xddeaff,size:LOW_POWER ? 0.035 : 0.055,map:fxTextures.star||null,transparent:true,opacity:.85,blending:THREE.AdditiveBlending,depthWrite:false});
@@ -444,6 +518,8 @@ function rebuildContext(){
  if(i>=16&&i<=17){addDeepField();addCompanionGalaxies(LOW_POWER?3:6)}
  if(i>=18&&i<=20){addDeepField();addCompanionGalaxies(LOW_POWER?4:8)}
  if(i>=21){addDeepField(LOW_POWER?120:320);addCompanionGalaxies(LOW_POWER?5:10)}
+ addBlackHoleLensing();
+ addScaleReference();
 }
 function rebuildVisual(noZoom=false){
  clearGroup(bodyGroup);const i=state.stage;
@@ -512,6 +588,9 @@ function updateScene(dt){
   if(o.userData?.orbit){o.userData.angle+=dt*o.userData.speed;o.position.set(Math.cos(o.userData.angle)*o.userData.r,Math.sin(o.userData.angle)*o.userData.r*o.userData.flatten,-.1)}
   else if(o.userData?.kind==='sceneryRock'){o.rotation.x+=dt*o.userData.spinX;o.rotation.y+=dt*o.userData.spinY}
   else if(o.userData?.kind==='companionGalaxy'&&o.material)o.material.rotation=(o.material.rotation||0)+dt*.018;
+  else if(o.userData?.kind==='scaleReference'){o.position.y+=(Math.sin(performance.now()*.0015)*.00035)}
+  else if(o.userData?.kind==='lensingField'){o.rotation.z+=dt*.018}
+  else if(o.userData?.kind==='referenceRock'){o.rotation.x+=dt*.25;o.rotation.y+=dt*.32}
  }
  contextGroup.rotation.z+=dt*.0012;
  if(galaxyGroup)galaxyGroup.rotation.z+=dt*.006;
@@ -574,6 +653,7 @@ function renderUI(){
  ui.scale.textContent=s.scale;ui.mass.textContent=formatMass(massNow());ui.fill.style.width=(r*100).toFixed(1)+'%';
  ui.next.textContent=state.stage===STAGES.length-1?'코스믹 웹 관측을 계속 확장하는 중':s.auto?'핵붕괴 응집 · '+Math.round(r*100)+'%':STAGES[state.stage+1].name+'까지 '+Math.round(r*100)+'%';
  ui.insight.textContent=state.insight;ui.rate.textContent='탭 +'+tapPower().toFixed(1)+'/회';ui.discCount.textContent=disc;ui.discTotal.textContent=DISCOVERIES.length;ui.codexProgress.textContent=disc+' / '+DISCOVERIES.length;
+ const ref=scaleReference();ui.compareName.textContent=ref.name;ui.compareDetail.textContent=ref.detail;ui.compareRatio.textContent=comparisonText();
 }
 function scheduleEvent(delay){
  eventNextAt=performance.now()+(delay??(15000+Math.random()*12000));eventExpiresAt=0;currentEvent=null;ui.event.classList.add('hidden')
