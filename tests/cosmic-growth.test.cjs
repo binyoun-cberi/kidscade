@@ -35,6 +35,17 @@ test('cosmic growth spans dust through quasar and reuses existing assets',()=>{
   assert.match(js,/LOW_POWER/);
 });
 
+test('cosmic growth keeps neighbouring celestial scenery visible across scales',()=>{
+  for(const fn of ['addDustNeighborhood','addAsteroidNeighborhood','addDistantWorlds','addNeighborStars','addCompanionGalaxies','addDeepField']){
+    assert.match(js,new RegExp('function '+fn+'\\\\('));
+  }
+  assert.match(js,/if\(i<=1\)addDustNeighborhood/);
+  assert.match(js,/if\(i>=6&&i<=8\).*addDistantWorlds/);
+  assert.match(js,/if\(i>=9&&i<=10\).*addNeighborStars/);
+  assert.match(js,/if\(i>=16&&i<=17\).*addCompanionGalaxies/);
+  assert.doesNotMatch(js,/if\(i>=16\)return;/);
+});
+
 test('science facts and observation events are part of actual progression',()=>{
   for(const id of ['fusion','aurora','supernova','event_horizon','lensing','spaghettification','gravity_wave','jet']){
     assert.match(js,new RegExp("id:'"+id+"'"));
