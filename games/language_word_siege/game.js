@@ -50,6 +50,9 @@ function resize(){
   canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0);
 }
 window.addEventListener('resize',resize);
+// Game shells, mobile toolbars and font loading can change board height without
+// emitting a window resize event. Keep draw size and pointer hit area synchronized.
+if(typeof ResizeObserver!=='undefined')new ResizeObserver(resize).observe(boardWrap);
 
 function beep(freq=440,dur=.07,type='sine',gain=.035){
   if(muted)return; try{
