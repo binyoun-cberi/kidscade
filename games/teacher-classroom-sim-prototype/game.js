@@ -72,7 +72,7 @@ let pairs=[];
 let relations=new Set();
 let fightsThisRecess=0;
 let playerGestureTimer=0;
-let stats={focusHelps:0,conflictsMediated:0,fightsSeparated:0,offTaskStarts:0,peacefulSocial:0};
+let stats={focusHelps:0,conflictsMediated:0,fightsSeparated:0,missedFights:0,offTaskStarts:0,peacefulSocial:0};
 const keys=new Set();
 const joy={active:false,id:null,x:0,y:0};
 
@@ -264,29 +264,121 @@ function createActors(){
     return {runtime,actor,seat:new THREE.Vector3(seat.x,0,seat.z+.62),wander:null,bubble:null};
   });
 }
-function isBlocked(x,z){
-  if(x<ROOM.minX+.35||x>ROOM.maxX-.35||z<ROOM.minZ+.35||z>ROOM.maxZ-.35)return true;
-  for(const r of deskRects)if(Math.abs(x-r.x)<r.hx+.25&&Math.abs(z-r.z)<r.hz+.25)return true;
-  if(Math.abs(x-4.75)<1.25&&Math.abs(z-3.35)<.8)return true;
+function isBlockedWithPadding(x,z,pad){
+  if(x<ROOM.minX+.22+pad||x>ROOM.maxX-.22-pad||z<ROOM.minZ+.22+pad||z>ROOM.maxZ-.22-pad)return true;
+  for(const r of deskRects)if(Math.abs(x-r.x)<r.hx+pad&&Math.abs(z-r.z)<r.hz+pad)return true;
+  if(Math.abs(x-4.75)<1.05+pad&&Math.abs(z-3.35)<.58+pad)return true;
   return false;
 }
+function isBlocked(x,z){return isBlockedWithPadding(x,z,.25)}
+function isStudentBlocked(x,z){return isBlockedWithPadding(x,z,.08)}
 function randomOpenPoint(){
-  for(let i=0;i<30;i++){
+  for(let i=0;i<36;i++){
     const x=-5.8+Math.random()*11.6,z=-3.8+Math.random()*7.4;
-    if(!isBlocked(x,z))return new THREE.Vector3(x,0,z);
+    if(!isStudentBlocked(x,z))return new THREE.Vector3(x,0,z);
   }
   return new THREE.Vector3(0,0,2.5);
 }
-function moveActorToward(actor,target,dt,speed){
-  const dx=target.x-actor.root.position.x,dz=target.z-actor.root.position.z;
-  const d=Math.hypot(dx,dz);
-  if(d<.06){playAnim(actor,'idle');return true}
-  const s=Math.min(d,(speed||actor.speed)*dt);
-  const nx=actor.root.position.x+dx/d*s,nz=actor.root.position.z+dz/d*s;
-  if(!isBlocked(nx,nz)||actor.kind==='student'){
-    actor.root.position.x=nx;actor.root.position.z=nz;
+
+const NAV_STEP=.42;
+const NAV_MIN_X=ROOM.minX+.36;
+const NAV_MIN_Z=ROOM.minZ+.36;
+const NAV_COLS=Math.floor((ROOM.maxX-ROOM.minX-.72)/NAV_STEP)+1;
+const NAV_ROWS=Math.floor((ROOM.maxZ-ROOM.minZ-.72)/NAV_STEP)+1;
+function navCell(ix,iz){return new THREE.Vector3(NAV_MIN_X+ix*NAV_STEP,0,NAV_MIN_Z+iz*NAV_STEP)}
+function navKey(ix,iz){return ix+','+iz}
+function pointToNavCell(point){
+  return {
+    ix:clamp(Math.round((point.x-NAV_MIN_X)/NAV_STEP),0,NAV_COLS-1),
+    iz:clamp(Math.round((point.z-NAV_MIN_Z)/NAV_STEP),0,NAV_ROWS-1)
+  };
+}
+function nearestOpenNavCell(point){
+  const base=pointToNavCell(point);
+  for(let radius=0;radius<=7;radius++){
+    for(let dz=-radius;dz<=radius;dz++){
+      for(let dx=-radius;dx<=radius;dx++){
+        if(radius&&Math.abs(dx)!==radius&&Math.abs(dz)!==radius)continue;
+        const ix=base.ix+dx,iz=base.iz+dz;
+        if(ix<0||iz<0||ix>=NAV_COLS||iz>=NAV_ROWS)continue;
+        const p=navCell(ix,iz);
+        if(!isStudentBlocked(p.x,p.z))return {ix,iz};
+      }
+    }
   }
-  faceDirection(actor,dx,dz);playAnim(actor,'walk');return false;
+  return base;
+}
+function simplifyStudentPath(points,start,target){
+  if(!points.length)return [target.clone()];
+  const all=[start.clone(),...points,target.clone()];
+  const out=[];
+  let anchor=all[0];
+  for(let i=1;i<all.length-1;i++){
+    const a=all[i].clone().sub(anchor);a.y=0;
+    const b=all[i+1].clone().sub(all[i]);b.y=0;
+    const cross=Math.abs(a.x*b.z-a.z*b.x);
+    if(cross>.001){out.push(all[i].clone());anchor=all[i];}
+  }
+  out.push(target.clone());
+  return out;
+}
+function findStudentPath(start,target){
+  if(!isStudentBlocked(target.x,target.z)){
+    const samples=Math.max(1,Math.ceil(distance2D(start,target)/.28));
+    let clear=true;
+    for(let i=1;i<samples;i++){
+      const t=i/samples,x=THREE.MathUtils.lerp(start.x,target.x,t),z=THREE.MathUtils.lerp(start.z,target.z,t);
+      if(isStudentBlocked(x,z)){clear=false;break}
+    }
+    if(clear)return [target.clone()];
+  }
+  const s=nearestOpenNavCell(start),g=nearestOpenNavCell(target);
+  const startKey=navKey(s.ix,s.iz),goalKey=navKey(g.ix,g.iz);
+  const queue=[s],came=new Map([[startKey,null]]);let head=0;
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  while(head<queue.length&&queue.length<2200){
+    const cur=queue[head++],key=navKey(cur.ix,cur.iz);
+    if(key===goalKey)break;
+    for(const [dx,dz] of dirs){
+      const ix=cur.ix+dx,iz=cur.iz+dz,nk=navKey(ix,iz);
+      if(ix<0||iz<0||ix>=NAV_COLS||iz>=NAV_ROWS||came.has(nk))continue;
+      const p=navCell(ix,iz);
+      if(isStudentBlocked(p.x,p.z))continue;
+      came.set(nk,key);queue.push({ix,iz});
+    }
+  }
+  if(!came.has(goalKey))return [target.clone()];
+  const cells=[];let key=goalKey;
+  while(key&&key!==startKey){
+    const [ix,iz]=key.split(',').map(Number);cells.push(navCell(ix,iz));key=came.get(key);
+  }
+  cells.reverse();
+  return simplifyStudentPath(cells,start,target);
+}
+function moveActorToward(actor,target,dt,speed){
+  let waypoint=target;
+  if(actor.kind==='student'){
+    const goalKey=target.x.toFixed(2)+','+target.z.toFixed(2);
+    if(actor.navGoal!==goalKey||!Array.isArray(actor.navPath)){
+      actor.navGoal=goalKey;
+      actor.navPath=findStudentPath(actor.root.position,target);
+    }
+    while(actor.navPath.length&&distance2D(actor.root.position,actor.navPath[0])<.09)actor.navPath.shift();
+    waypoint=actor.navPath[0]||target;
+  }
+  const dx=waypoint.x-actor.root.position.x,dz=waypoint.z-actor.root.position.z;
+  const d=Math.hypot(dx,dz);
+  if(d<.06){playAnim(actor,'idle');return distance2D(actor.root.position,target)<.1}
+  const step=Math.min(d,(speed||actor.speed)*dt);
+  const nx=actor.root.position.x+dx/d*step,nz=actor.root.position.z+dz/d*step;
+  const blocked=actor.kind==='student'?isStudentBlocked(nx,nz):isBlocked(nx,nz);
+  if(!blocked){
+    actor.root.position.x=nx;actor.root.position.z=nz;
+  }else if(actor.kind==='student'){
+    actor.navGoal='';actor.navPath=[];
+  }
+  faceDirection(actor,dx,dz);playAnim(actor,'walk');
+  return distance2D(actor.root.position,target)<.1;
 }
 function distance2D(a,b){return Math.hypot(a.x-b.x,a.z-b.z)}
 
@@ -368,15 +460,20 @@ function finishDay(){
   ui.summary.innerHTML=
     '<div><strong>'+stats.focusHelps+'</strong><span>집중 도와준 횟수</span></div>'+
     '<div><strong>'+stats.conflictsMediated+'</strong><span>말다툼 중재</span></div>'+
-    '<div><strong>'+stats.fightsSeparated+'</strong><span>싸움 분리</span></div>'+
+    '<div><strong>'+stats.fightsSeparated+'</strong><span>직접 싸움 분리</span></div>'+
+    '<div><strong>'+stats.missedFights+'</strong><span>놓친 싸움</span></div>'+
     '<div><strong>'+stats.peacefulSocial+'</strong><span>평화로운 어울림</span></div>';
   ui.end.classList.remove('hidden');
 }
 
 function offTaskWander(s){
   const base=s.seat;
-  const angle=Math.random()*Math.PI*2,r=.45+Math.random()*.45;
-  s.wander=new THREE.Vector3(base.x+Math.cos(angle)*r,0,base.z+Math.sin(angle)*r);
+  for(let i=0;i<12;i++){
+    const angle=Math.random()*Math.PI*2,r=.38+Math.random()*.5;
+    const candidate=new THREE.Vector3(base.x+Math.cos(angle)*r,0,base.z+Math.sin(angle)*r);
+    if(!isStudentBlocked(candidate.x,candidate.z)){s.wander=candidate;return;}
+  }
+  s.wander=base.clone();
 }
 function updateLesson(dt){
   phaseTime-=dt;elapsedSchoolSeconds+=dt;
@@ -401,13 +498,23 @@ function updateLesson(dt){
 
 function freeStudents(){return students.filter(s=>!pairs.some(p=>p.a===s||p.b===s)&&s.runtime.cooldown<=0)}
 function socialConflictCount(){return pairs.filter(p=>p.state==='conflict'||p.state==='fight').length}
+function socialMeetingTargets(a,b){
+  const midpoint=a.actor.root.position.clone().add(b.actor.root.position).multiplyScalar(.5);
+  for(let i=0;i<18;i++){
+    const center=i===0?midpoint.clone():randomOpenPoint();
+    center.x=clamp(center.x,-5.6,5.6);center.z=clamp(center.z,-3.5,3.7);
+    const angle=Math.random()*Math.PI;
+    const side=new THREE.Vector3(.48,0,0).applyAxisAngle(new THREE.Vector3(0,1,0),angle);
+    const pa=center.clone().add(side),pb=center.clone().sub(side);
+    if(!isStudentBlocked(pa.x,pa.z)&&!isStudentBlocked(pb.x,pb.z))return {pa,pb};
+  }
+  return {pa:randomOpenPoint(),pb:randomOpenPoint()};
+}
 function startPair(a,b){
-  const center=a.actor.root.position.clone().add(b.actor.root.position).multiplyScalar(.5);
-  center.x=clamp(center.x,-5.6,5.6);center.z=clamp(center.z,-3.5,3.7);
-  const side=new THREE.Vector3(.5,0,0).applyAxisAngle(new THREE.Vector3(0,1,0),Math.random()*Math.PI);
-  a.actor.target=center.clone().add(side);b.actor.target=center.clone().sub(side);
+  const targets=socialMeetingTargets(a,b);
+  a.actor.target=targets.pa;b.actor.target=targets.pb;
   a.runtime.mode='social';b.runtime.mode='social';
-  pairs.push({a,b,state:'social',time:0,duration:5+Math.random()*4});
+  pairs.push({a,b,state:'social',time:0,duration:AI_RULES.socialInteractionSeconds[0]+Math.random()*(AI_RULES.socialInteractionSeconds[1]-AI_RULES.socialInteractionSeconds[0])});
 }
 function releasePair(pair,cooldown=3){
   pairs=pairs.filter(p=>p!==pair);
@@ -438,13 +545,20 @@ function mediatePair(pair){
   });
   pairs=pairs.filter(p=>p!==pair);stats.conflictsMediated++;showToast('둘이 진정했어요.');
 }
-function separateFight(pair){
+function sendFightApart(pair){
   [pair.a,pair.b].forEach((s,i)=>{
     s.runtime.cooldown=AI_RULES.separatedCooldownSeconds;
     s.runtime.mode='solo';
     s.actor.target=new THREE.Vector3(i===0?-5.6:5.6,0,3.4);hideBubble(s);
   });
-  pairs=pairs.filter(p=>p!==pair);stats.fightsSeparated++;showToast('둘을 떨어뜨렸어요. 잠깐 쉬게 해주세요.');
+  pairs=pairs.filter(p=>p!==pair);
+}
+function separateFight(pair){
+  sendFightApart(pair);stats.fightsSeparated++;showToast('둘을 떨어뜨렸어요. 잠깐 쉬게 해주세요.');
+}
+function autoResolveFight(pair){
+  sendFightApart(pair);stats.missedFights++;
+  showToast('옆반 선생님이 와서 싸움을 말렸어요.');
 }
 function updateRecess(dt){
   phaseTime-=dt;elapsedSchoolSeconds+=dt;pairScan-=dt;
@@ -457,11 +571,11 @@ function updateRecess(dt){
   });
 
   for(const pair of pairs.slice()){
-    pair.time+=dt;
     const meet=distance2D(pair.a.actor.root.position,pair.a.actor.target)<.16&&distance2D(pair.b.actor.root.position,pair.b.actor.target)<.16;
     moveActorToward(pair.a.actor,pair.a.actor.target,dt,.78);
     moveActorToward(pair.b.actor,pair.b.actor.target,dt,.78);
     if(meet){
+      pair.time+=dt;
       faceDirection(pair.a.actor,pair.b.actor.root.position.x-pair.a.actor.root.position.x,pair.b.actor.root.position.z-pair.a.actor.root.position.z);
       faceDirection(pair.b.actor,pair.a.actor.root.position.x-pair.b.actor.root.position.x,pair.a.actor.root.position.z-pair.b.actor.root.position.z);
       if(pair.state==='social'){
@@ -481,7 +595,7 @@ function updateRecess(dt){
         }
       }else if(pair.state==='fight'){
         playAnim(pair.a.actor,'push');playAnim(pair.b.actor,'push');
-        if(pair.time>=pair.duration)separateFight(pair);
+        if(pair.time>=pair.duration)autoResolveFight(pair);
       }
     }
   }
