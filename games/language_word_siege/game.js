@@ -145,6 +145,13 @@ function buildTower(p){
   const stats={...D.roleStats[def.role]};
   const scale=1+(def.difficulty-1)*.085;
   stats.damage=(stats.damage||0)*scale;stats.range=(stats.range||.16)*(1+Math.min(.18,(def.difficulty-1)*.02));
+  if(stats.area)stats.area*=1+Math.min(.22,(def.difficulty-1)*.022);
+  if(word==='NUKE'){stats.damage*=2.6;stats.area=.22;stats.rate=.12}
+  if(word==='BLACKHOLE'){stats.range=.24;stats.pull=.075;stats.damage=11}
+  if(word==='TORNADO'){stats.push=.095;stats.area=.18}
+  if(word==='VOLCANO'){stats.damage*=1.55;stats.area=.14;stats.burn=12}
+  if(word==='DRAGON'){stats.damage*=1.45;stats.burn=11}
+  if(word==='JUGGERNAUT'){stats.damage*=1.65;stats.area=.13}
   const tower={id:state.uid++,x:p.x,y:p.y,word,def,stats,cool:Math.random()*.3,harvestClock:0,links:[],pulse:0};
   state.towers.push(tower); state.unique.add(word); state.builtWords.push(word);
   const newly=!state.discovered.has(word);state.discovered.add(word);saveDiscovered();
@@ -160,6 +167,8 @@ function effectiveStats(t){
     if(mod.rate)rateMul*=mod.rate;if(mod.damage)damageMul*=mod.damage;if(mod.range)rangeMul*=mod.range;if(mod.area)areaMul*=mod.area;if(mod.push)pushMul*=mod.push;
   }
   if(s.rate)s.rate*=rateMul;if(s.damage)s.damage*=damageMul;if(s.range)s.range*=rangeMul;if(s.area)s.area*=areaMul;if(s.push)s.push*=pushMul;
+  const duplicates=state.towers.filter(o=>o!==t&&o.word===t.word).length;
+  if(s.damage)s.damage*=Math.max(.65,Math.pow(.93,duplicates));
   return s;
 }
 function applyLinks(){
