@@ -101,4 +101,17 @@ test('city traffic remains outside both rooms, wraps smoothly, and pauses offscr
 
 test('every neighborhood backdrop model resolves to an existing bundled asset',()=>{const c={ROOT:'assets/game/'};vm.createContext(c);vm.runInContext(js.slice(js.indexOf('const CITY_ASSETS='),js.indexOf('const SAVE_KEY='))+'globalThis.models=CITY_ASSETS;',c);assert.equal(Object.keys(c.models).length,7);for(const file of Object.values(c.models))assert.ok(fs.existsSync(path.join(root,file)),file)});
 
-test('town doors are visible and pedestrians keep a grounded Y offset',()=>{assert.match(js,/function visibleDoor\(/);assert.match(js,/visibleDoor\(\[-2\.4,0,3\.11\]/);assert.match(js,/visibleDoor\(\[\.8,0,4\.36\]/);assert.match(js,/visibleDoor\(\[-3\.5,0,3\.27\]/);assert.match(js,/groundY=groundModel\(r,\.08\)/);assert.match(js,/baseY\+\(m\.walk\?Math\.sin/)});
+test('town doors are visible and pedestrians are grounded to the sidewalk surface',()=>{assert.match(js,/function visibleDoor\(/);assert.match(js,/visibleDoor\(\[-2\.4,0,3\.11\]/);assert.match(js,/visibleDoor\(\[\.8,0,4\.36\]/);assert.match(js,/visibleDoor\(\[-3\.5,0,3\.27\]/);assert.match(js,/groundY=groundModel\(r,surfaceY,\.04\)/);assert.match(js,/surfaceY=\.06/);assert.match(js,/keepPedestrianAboveGround\(m,\.025\)/);assert.match(js,/footLocalY:r\.userData\.footLocalY/)});
+
+test('pedestrian gait simulation never lets feet enter the sidewalk',()=>{
+  const helperSource=js.slice(js.indexOf('function pedestrianFootY('),js.indexOf('function box('));
+  const citySource=js.slice(js.indexOf('function trafficPhase('),js.indexOf('async function ensureCity('));
+  const pos={x:4.9,y:.1,z:-9,set(x,y,z){this.x=x;this.y=y;this.z=z}};
+  const mover={root:{position:pos,rotation:{y:0}},lane:4.9,z:-9,speed:.75,offset:4,walk:true,groundY:.1,surfaceY:.06,footLocalY:0};
+  const c={state:{running:true,location:'town',phase:'town'},document:{hidden:false},cityTime:0,carHitCooldown:0,trafficSignalMeshes:[],cityMovers:[mover],playerPos:{x:99,z:99},tone(){},renderHud(){},save(){},toast(){},injuryBurst(){},setTimeout(){},buildHospital(){},clamp:(x,a,b)=>Math.min(b,Math.max(a,x))};
+  vm.createContext(c);vm.runInContext(helperSource,c);vm.runInContext(citySource,c);
+  let min=Infinity;
+  for(let i=0;i<1200;i++){c.updateCity(1/60);min=Math.min(min,c.pedestrianFootY(mover))}
+  assert.ok(min>=.085-1e-9,'foot bottom '+min+' must stay at least 2.5 cm above the 0.06 sidewalk top');
+});
+test('market page cache-busts the grounded pedestrian build',()=>{assert.match(html,/market-walk\.js\?v=12-ped-ground/)});
