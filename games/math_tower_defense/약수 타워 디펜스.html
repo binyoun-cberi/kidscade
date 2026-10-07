@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>좀비 vs 약수 터렛 3D</title>
-<link rel="stylesheet" href="tower-defense.css?v=12-topdown1">
+<link rel="stylesheet" href="tower-defense.css?v=15-arsenal1">
 </head>
 <body>
 <canvas id="world" aria-label="좀비 vs 약수 터렛 3D 전장"></canvas>
@@ -34,7 +34,8 @@
 </header>
 
 <section id="waveCard">
-  <div><small>감염 숫자</small><b id="enemyPreview">2 · 4 · 8 · 16</b><span id="enemyCount">7 감염체</span></div>
+  <div class="waveCardHead"><span class="waveKicker">OUTBREAK SCAN</span><span id="threatLevel">위협도 1</span></div>
+  <div class="waveNumbers"><small>감염 숫자</small><b id="enemyPreview">2 · 4 · 8 · 16</b><span id="enemyCount">7 감염체</span></div>
   <p id="waveMission">첫 감염체는 모두 2의 거듭제곱입니다. ÷2만으로 숫자를 1까지 분해하세요.</p>
   <button id="startWaveBtn" type="button">▶ WAVE 1 시작</button>
 </section>
@@ -44,23 +45,23 @@
 <div id="calcFeed"></div>
 
 <section id="selectedPanel" class="hidden">
-  <div><small id="selectedType">선택한 터렛</small><b id="selectedName">÷2 속사 터렛</b><span id="selectedLevel">Lv.1</span></div>
+  <div><small id="selectedType">선택한 터렛</small><b id="selectedName">÷2 개틀링</b><span id="selectedLevel">Lv.1</span><em id="selectedWeapon">GATLING</em></div>
   <button id="upgradeBtn" type="button">강화</button>
   <button id="sellBtn" type="button">판매</button>
   <button id="closeSelectedBtn" type="button" class="ghost">×</button>
 </section>
 
 <nav id="towerDeck" aria-label="타워 선택">
-  <button class="towerCard" data-tower="SUB1" type="button"><span class="op sub">−1</span><b>교정기</b><small>90</small><i>3웨이브</i></button>
-  <button class="towerCard" data-tower="DIV2" type="button"><span class="op div2">÷2</span><b>속사 터렛</b><small>145</small></button>
-  <button class="towerCard" data-tower="DIV3" type="button"><span class="op div3">÷3</span><b>기어 캐논</b><small>205</small><i>2웨이브</i></button>
-  <button class="towerCard" data-tower="ADD1" type="button"><span class="op add">+1</span><b>변환기</b><small>115</small><i>3웨이브</i></button>
-  <button class="towerCard" data-tower="DIV5" type="button"><span class="op div5">÷5</span><b>중포 터렛</b><small>295</small><i>4웨이브</i></button>
-  <button id="autoBtn" class="towerCard recommend" type="button"><span>✨</span><b>추천 배치</b><small>첫 판</small></button>
+  <button class="towerCard" data-tower="SUB1" type="button" data-weapon="EMP"><span class="op sub">−1</span><span class="towerMeta"><b>EMP 교정기</b><small><strong class="costValue">90</strong> 자원</small></span><em>EMP</em><i>3W</i></button>
+  <button class="towerCard" data-tower="DIV2" type="button" data-weapon="GATLING"><span class="op div2">÷2</span><span class="towerMeta"><b>개틀링</b><small><strong class="costValue">145</strong> 자원</small></span><em>GATLING</em></button>
+  <button class="towerCard" data-tower="DIV3" type="button" data-weapon="HIVE"><span class="op div3">÷3</span><span class="towerMeta"><b>하이브 캐논</b><small><strong class="costValue">205</strong> 자원</small></span><em>HIVE</em><i>2W</i></button>
+  <button class="towerCard" data-tower="ADD1" type="button" data-weapon="SHIELD"><span class="op add">+1</span><span class="towerMeta"><b>실드 변환기</b><small><strong class="costValue">115</strong> 자원</small></span><em>SHIELD</em><i>3W</i></button>
+  <button class="towerCard heavyCard" data-tower="DIV5" type="button" data-weapon="CANNON"><span class="op div5">÷5</span><span class="towerMeta"><b>중화기</b><small><strong class="costValue">295</strong> 자원</small></span><em>CANNON → RAIL</em><i>4W</i></button>
+  <button id="autoBtn" class="towerCard recommend" type="button"><span class="autoIcon">✨</span><span class="towerMeta"><b>추천 배치</b><small>첫 판 자동 설치</small></span><em>STARTER</em></button>
 </nav>
 
 <div id="assetStatus">3D 엔진 준비 중…</div>
-<div id="credit">Zombies · NPCs · Turrets · Buildings: Quaternius · CC0 / Environment: Kenney · CC0 / BGM: SergeQuadrado · Pixabay</div>
+<div id="credit">Zombies · NPCs · Buildings: Quaternius · CC0 / Sci-Fi Turrets: Zsky · CC BY / Environment · Vehicles: Kenney · CC0 / BGM: SergeQuadrado · Pixabay</div>
 
 <section id="startScreen" class="overlay show">
   <div class="modalCard">
@@ -71,6 +72,10 @@
       <span><b>÷2 · ÷3 · ÷5</b><small>나누어지는 수만 공격</small></span>
       <span><b>+1 · −1</b><small>바로 나눌 수 없는 수를 배수로 교정</small></span>
       <span><b>FACTOR CHAIN</b><small>약수 연산을 연속 성공해 완전 분해</small></span>
+    </div>
+    <div class="arsenalPreview">
+      <span><small>−1</small><b>EMP</b></span><span><small>÷2</small><b>GATLING</b></span><span><small>÷3</small><b>HIVE</b></span><span><small>+1</small><b>SHIELD</b></span>
+      <span class="evolution"><small>÷5 업그레이드</small><b>CANNON → MISSILE → PLASMA → RAIL</b></span>
     </div>
     <button id="startGameBtn" class="primary" type="button">감염 도시 방어 시작</button>
   </div>
@@ -86,6 +91,6 @@
 </section>
 
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
-<script type="module" src="tower-defense-loader.js?v=14-topdown1"></script>
+<script type="module" src="tower-defense-loader.js?v=15-arsenal1"></script>
 </body>
 </html>
