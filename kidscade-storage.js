@@ -92,7 +92,8 @@
     weathercasterVoice: 'kidscade_weathercaster_voice_v1',
     hanjaSelectedGrade: 'kidscade_hanja_selected_grade_v1',
     hanjaCardPoints: 'kidscade_hanja_card_points_v1',
-    bunsikTycoonProgressV1: 'kidscade_bunsik_tycoon_progress_v1'
+    bunsikTycoonProgressV1: 'kidscade_bunsik_tycoon_progress_v1',
+    juiceFarmV3: 'kidscade_juice_farm_v3'
   });
 
   // Dynamic namespaces are prefixes, not concrete localStorage records.
