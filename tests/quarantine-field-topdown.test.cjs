@@ -18,6 +18,7 @@ test('격리구역 17 v21 uses the same 3D camp language for CCTV and field miss
 
   assert.match(html,/field-topdown-v18\.js\?v=4/);
   assert.match(html,/facility-3d-v20\.js\?v=3/);
+  assert.match(html,/field-3d-v21\.js\?v=2/);
   assert.match(html,/three-r160\/three\.module\.js/);
   assert.match(html,/3D 격리시설\/CAMP-17/);
   assert.equal(entry.href,'games/high_quarantine_17/격리구역 17.html?v=21');
