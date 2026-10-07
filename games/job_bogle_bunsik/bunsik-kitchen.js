@@ -833,6 +833,7 @@ class RamenKitchen3D{
   if(state.selectedPot!==index){state.discardArmedUntil=0;state.discardArmedPot=null;els.discard.classList.remove('armed')}
   state.selectedPot=index;
   if(state.tutorial.active&&state.tutorial.step===0&&index===0)state.tutorial.step=1;
+  if(state.phase==='service')ensurePotOrder(index);
   this.potVisuals.forEach((v,i)=>v.selectRing.visible=i===index);
   renderPotStrip();renderSelectedHelp();renderTutorial();updateActionButtons()
  }
@@ -985,15 +986,41 @@ function insertHeldIntoPot(index){
 function serveHeldMeal(){
  const held=state.heldItem;
  if(!held||held.kind!=='meal'){toast('완성된 라면을 들고 배식대로 와 주세요');return}
- const order=state.orders.find(o=>o.recipeId===held.recipeId);
+ const order=(held.orderId!=null&&state.orders.find(o=>o.id===held.orderId))||state.orders.find(o=>o.recipeId===held.recipeId);
  if(!order){toast('이 라면을 기다리는 손님이 없어요');return}
- state.tray={recipeId:held.recipeId,name:held.name,quality:held.quality,label:held.label,burnt:held.burnt,ready:true};
+ state.tray={orderId:order.id,recipeId:held.recipeId,name:held.name,quality:held.quality,label:held.label,burnt:held.burnt,ready:true};
  setHeldItem(null);serveOrder(order.id)
 }
 
 function activePotCount(){return state.tutorial.active?2:state.served>=6?4:state.served>=3?3:2}
-function resetPot(index){
- state.pots[index]=newPot(index);kitchen.clearPotVisual(index);renderPotStrip();renderSelectedHelp();updateActionButtons()
+function potIndexForOrder(orderId){return state.pots.findIndex(p=>p.orderId===orderId)}
+function orderForPot(p){return p?.orderId==null?null:(state.orders.find(o=>o.id===p.orderId)||null)}
+function releaseOrderBinding(orderId){state.pots.forEach(p=>{if(p.orderId===orderId)p.orderId=null})}
+function assignOrderToPot(index,orderId,announce=true){
+ const p=state.pots[index],order=state.orders.find(o=>o.id===orderId);if(!p||!order||index>=activePotCount())return false;
+ const other=potIndexForOrder(orderId);if(other>=0&&other!==index){if(announce)toast('이 주문은 이미 냄비 '+(other+1)+'에서 만들고 있어요');return false}
+ const recipe=recipeById(order.recipeId);
+ if(p.orderId!==orderId&&!potEmpty(p)){if(announce)toast('냄비 '+(index+1)+'은 이미 조리 중이에요');return false}
+ if(p.ingredients.some(id=>!recipe.need.includes(id))){if(announce)toast('이 냄비 재료와 '+recipe.name+' 주문이 맞지 않아요');return false}
+ p.orderId=orderId;if(announce)toast('🧾 주문 #'+String(order.id).padStart(3,'0')+' → 냄비 '+(index+1),1300);
+ renderOrders();renderTaskPanel();return true
+}
+function ensurePotOrder(index){
+ const p=state.pots[index];if(!p||orderForPot(p))return orderForPot(p);
+ const candidate=state.orders.find(o=>potIndexForOrder(o.id)<0&&p.ingredients.every(id=>recipeById(o.recipeId)?.need.includes(id)));
+ if(candidate){assignOrderToPot(index,candidate.id,false);return candidate}
+ return null
+}
+function focusOrder(orderId){
+ const bound=potIndexForOrder(orderId);
+ if(bound>=0){kitchen.setSelectedPot(bound);toast('🧾 이 주문은 냄비 '+(bound+1)+'에서 조리 중이에요',1100);return}
+ let index=state.selectedPot;
+ if(index==null||index>=activePotCount()||!potEmpty(state.pots[index])||state.pots[index].orderId!=null)index=state.pots.findIndex((p,i)=>i<activePotCount()&&potEmpty(p)&&p.orderId==null);
+ if(index<0){toast('빈 냄비가 없어요 · 하나를 먼저 비우거나 서빙해 주세요',1500);return}
+ if(assignOrderToPot(index,orderId,false)){kitchen.setSelectedPot(index);toast('🧾 주문을 냄비 '+(index+1)+'에 붙였어요',1200)}
+}
+function resetPot(index,keepOrder=true){
+ const orderId=keepOrder?state.pots[index]?.orderId:null;state.pots[index]=newPot(index);state.pots[index].orderId=orderId??null;kitchen.clearPotVisual(index);renderPotStrip();renderSelectedHelp();updateActionButtons()
 }
 function hasIngredient(p,id){return !!p&&p.ingredients.includes(id)}
 function potEmpty(p){return !!p&&p.water<=.05&&!p.ingredients.length}
@@ -1033,9 +1060,9 @@ function taskPlan(){
   const doneCount=state.tutorial.step<=1?0:Math.min(5,state.tutorial.step-1);
   return labels.map((label,i)=>({label,done:i<doneCount,current:i===Math.min(doneCount,5)}))
  }
- const order=state.orders[0]||null,r=order&&recipeById(order.recipeId);
+ const selectedIndex=state.selectedPot!=null?state.selectedPot:state.pots.findIndex(p=>orderForPot(p));
+ const p=selectedIndex>=0?state.pots[selectedIndex]:state.pots[0],order=orderForPot(p)||state.orders.find(o=>potIndexForOrder(o.id)<0)||state.orders[0]||null,r=order&&recipeById(order.recipeId);
  if(!order)return[{label:'새 주문을 기다리는 중…',done:false,current:true}];
- const p=(state.selectedPot!=null&&state.pots[state.selectedPot])||state.pots.find(q=>!potEmpty(q))||state.pots[0];
  if(p?.burnt)return[{label:'탄 냄비 비우기',done:false,current:true,urgent:true},{label:'새 냄비로 주문 다시 시작하기',done:false,current:false}];
  if(state.cleanPlates<=0&&state.dirtyPlates>0)return[{label:'싱크대에서 더러운 그릇 설거지하기',done:false,current:true,urgent:true},{label:r.name+' 조리 계속하기',done:false,current:false}];
  const mealReady=state.heldItem?.kind==='meal'||!!state.tray;
@@ -1060,8 +1087,8 @@ function taskPlan(){
 }
 function renderTaskPanel(){
  if(!els.taskList)return;
- const steps=taskPlan(),done=steps.filter(x=>x.done).length;
- els.taskProgress.textContent=steps.length?done+'/'+steps.length:'';
+ const steps=taskPlan(),done=steps.filter(x=>x.done).length,p=state.selectedPot!=null?state.pots[state.selectedPot]:null,o=orderForPot(p);
+ els.taskProgress.textContent=o?'냄비 '+(state.selectedPot+1)+' · #'+String(o.id).padStart(3,'0'):(steps.length?done+'/'+steps.length:'');
  els.taskList.innerHTML=steps.map((x,i)=>'<li data-step="'+(i+1)+'" class="'+(x.done?'done ':(x.current?'current ':'')+(x.urgent?'urgent ':''))+'">'+x.label+'</li>').join('')
 }
 function renderTutorial(){
@@ -1072,7 +1099,10 @@ function renderTutorial(){
  renderTaskPanel()
 }
 function compatibleOrderForPot(p){
+ const bound=orderForPot(p);
+ if(bound){const r=recipeById(bound.recipeId);return r&&p.ingredients.every(id=>r.need.includes(id))?bound:null}
  return state.orders.find(o=>{
+  if(potIndexForOrder(o.id)>=0)return false;
   const r=recipeById(o.recipeId);if(!r)return false;
   return p.ingredients.every(id=>r.need.includes(id))
  })||null
@@ -1128,9 +1158,9 @@ function contextActionsForPot(p){
  if(potEmpty(p)||p.water<1.5&&!p.ingredients.length)return['water'];
  const basics=[];if(!hasIngredient(p,'noodle'))basics.push('noodle');if(!hasIngredient(p,'soup'))basics.push('soup');if(basics.length)return basics;
  const recipe=identifyRecipe(p);if(recipe)return p.noodleTime>=5.5?['plate']:[];
- const toppings=new Set();
- state.orders.forEach(o=>{const r=recipeById(o.recipeId);if(r&&p.ingredients.every(id=>r.need.includes(id)))r.need.forEach(id=>{if(['egg','green','cheese'].includes(id)&&!hasIngredient(p,id))toppings.add(id)})});
- return toppings.size?[...toppings]:['egg','green','cheese']
+ const order=compatibleOrderForPot(p),r=order&&recipeById(order.recipeId);
+ if(r)return r.need.filter(id=>['egg','green','cheese'].includes(id)&&!hasIngredient(p,id));
+ return['egg','green','cheese']
 }
 function updateActionButtons(){
  els.dock.innerHTML='';
@@ -1244,13 +1274,15 @@ function platePot(index){
  if(state.cleanPlates<=0){toast('깨끗한 그릇이 없어요 · 싱크에서 더러운 그릇을 씻어 주세요',1900);return false}
  const p=state.pots[index];if(!hasIngredient(p,'noodle')){toast('면이 들어간 라면만 담을 수 있어요');return false}
  const recipe=identifyRecipe(p);if(!recipe){toast('주문에 맞는 토핑을 확인해 주세요');return false}
- const quality=qualityFor(p,recipe),tutorialPlate=state.tutorial.active&&state.tutorial.step===5&&index===0;
+ const boundOrder=orderForPot(p)||compatibleOrderForPot(p);if(boundOrder&&!p.orderId)p.orderId=boundOrder.id;
+ if(boundOrder&&boundOrder.recipeId!==recipe.id){toast('냄비 '+(index+1)+'은 '+recipeById(boundOrder.recipeId).name+' 주문이에요',1600);return false}
+ const quality=qualityFor(p,recipe),tutorialPlate=state.tutorial.active&&state.tutorial.step===5&&index===0,orderId=p.orderId;
  state.cleanPlates=Math.max(0,state.cleanPlates-1);updateDishHud();
- p.plating=true;state.busy=true;state.tray={recipeId:recipe.id,name:recipe.name,quality,label:qualityLabel(quality,p.burnt),burnt:p.burnt,ready:false};
+ p.plating=true;state.busy=true;state.tray={orderId,recipeId:recipe.id,name:recipe.name,quality,label:qualityLabel(quality,p.burnt),burnt:p.burnt,ready:false};
  renderTray();renderOrders();renderSelectedHelp();updateActionButtons();toast('냄비를 기울여 그릇에 담는 중…',1200);
  kitchen.animatePlate(index,()=>{
   resetPot(index);state.busy=false;if(!state.tray)return;state.tray.ready=true;kitchen.setTrayMeal(false);
-  const meal={kind:'meal',recipeId:state.tray.recipeId,name:state.tray.name,quality:state.tray.quality,label:state.tray.label,burnt:state.tray.burnt};state.tray=null;setHeldItem(meal);
+  const meal={kind:'meal',orderId:state.tray.orderId,recipeId:state.tray.recipeId,name:state.tray.name,quality:state.tray.quality,label:state.tray.label,burnt:state.tray.burnt};state.tray=null;setHeldItem(meal);
   if(tutorialPlate)state.tutorial.step=6;
   renderTray();renderOrders();renderTutorial();renderSelectedHelp();updateActionButtons();sfx(quality>=75?'success.cheer_yay':'failure.fail_sting',{volume:.18,cooldownMs:250});
   toast(meal.name+' 완성! 직접 들고 배식대로 가져가세요',1900)
@@ -1333,6 +1365,8 @@ function makeOrder(forcedId=null){
 function spawnOrder(forcedId=null){
  if(!state.running||state.orders.length>=MAX_ORDERS)return;
  const order=makeOrder(forcedId);if(!order)return;
+ if(state.tutorial.active&&!state.pots[0].orderId)assignOrderToPot(0,order.id,false);
+ else if(state.selectedPot!=null&&state.selectedPot<activePotCount()&&potEmpty(state.pots[state.selectedPot])&&state.pots[state.selectedPot].orderId==null)assignOrderToPot(state.selectedPot,order.id,false);
  renderOrders();sfx('collect.coin_drop',{volume:.11,rate:1.12,cooldownMs:150})
 }
 function orderIngredientText(r){return r.need.map(id=>ingredientLabel(id)).join(' + ')}
@@ -1352,15 +1386,16 @@ function orderTicketRows(r){
 function renderOrders(){
  els.orders.innerHTML='';
  state.orders.forEach(o=>{
-  const r=recipeById(o.recipeId),d=document.createElement('button');d.type='button';
-  const matching=(state.heldItem?.kind==='meal'&&state.heldItem.recipeId===o.recipeId)||(state.tray?.ready&&state.tray.recipeId===o.recipeId);
+  const r=recipeById(o.recipeId),d=document.createElement('button');d.type='button',potIndex=potIndexForOrder(o.id);
+  const matching=(state.heldItem?.kind==='meal'&&((state.heldItem.orderId!=null&&state.heldItem.orderId===o.id)||(state.heldItem.orderId==null&&state.heldItem.recipeId===o.recipeId)))||(state.tray?.ready&&((state.tray.orderId!=null&&state.tray.orderId===o.id)||(state.tray.orderId==null&&state.tray.recipeId===o.recipeId)));
   const wait=orderWaitState(o.patience),fresh=!seenOrderTickets.has(o.id);seenOrderTickets.add(o.id);
-  d.className='order-ticket '+wait.key+(matching?' waiting':'')+(fresh?' printing':'')+(state.tutorial.active&&state.tutorial.step===6&&o.recipeId==='egg'?' target':'');
+  d.className='order-ticket '+wait.key+(potIndex>=0?' bound':'')+(matching?' waiting':'')+(fresh?' printing':'')+(state.tutorial.active&&state.tutorial.step===6&&o.recipeId==='egg'?' target':'');
   d.dataset.order=String(o.id);d.dataset.slot=String(o.slot);
   d.innerHTML=
    '<span class="ticket-tear ticket-tear-top" aria-hidden="true"></span>'+
    '<div class="ticket-head"><span class="ticket-brand">BOGLE ORDER</span><span class="ticket-no">#'+String(o.id).padStart(3,'0')+'</span></div>'+
    '<div class="ticket-customer"><span class="customer-face">'+o.customer+'</span><span><small>'+(Number(o.slot)+1)+'번 손님</small><strong>'+r.name+'</strong></span></div>'+
+   '<div class="ticket-assignment '+(potIndex>=0?'assigned':'')+'">'+(potIndex>=0?'🍳 냄비 '+(potIndex+1):'＋ 냄비에 배정')+'</div>'+
    '<div class="ticket-rule"></div>'+
    '<div class="ticket-items">'+orderTicketRows(r)+'</div>'+
    '<div class="ticket-rule dotted"></div>'+
@@ -1369,7 +1404,7 @@ function renderOrders(){
    '<div class="patience"><i style="transform:scaleX('+(Math.max(0,o.patience)/100)+')"></i></div>'+
    '<span class="ticket-stamp" aria-hidden="true">완료</span>'+
    '<span class="ticket-tear ticket-tear-bottom" aria-hidden="true"></span>';
-  d.addEventListener('click',()=>toast(state.heldItem?.kind==='meal'?'완성 라면을 들고 배식대에서 E를 눌러 주세요':'주문 '+String(o.id).padStart(3,'0')+' · '+r.name+'을 기다리고 있어요',1300));
+  d.addEventListener('click',()=>{if(state.heldItem?.kind==='meal')toast('완성 라면을 들고 배식대에서 E를 눌러 주세요');else focusOrder(o.id)});
   els.orders.appendChild(d)
  });
  renderTaskPanel()
@@ -1477,7 +1512,7 @@ function updateOrders(dt){
   advanceAutomation:false,
   context:{served:state.served}
  });
- if(expiredOrders.length){sfx('failure.fail_sting',{volume:.16,cooldownMs:300});toast('기다리던 손님이 떠났어요',1400);renderOrders()}
+ if(expiredOrders.length){expiredOrders.forEach(o=>releaseOrderBinding(o.id));state.combo=0;sfx('failure.fail_sting',{volume:.16,cooldownMs:300});toast('기다리던 손님이 떠났어요 · 콤보가 끊겼어요',1500);renderOrders();updateHud()}
 }
 function updateHud(){
  els.revenue.textContent=money(state.revenue);els.goal.textContent=money(TARGET_REVENUE);els.time.textContent=Math.max(0,Math.ceil(state.time));els.served.textContent=state.served;renderEconomyProgress()
