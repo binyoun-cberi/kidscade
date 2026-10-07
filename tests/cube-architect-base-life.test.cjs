@@ -48,12 +48,27 @@ test('three crops grow on tilled soil and can be harvested',()=>{
   assert.match(main,/function plantFarmItem\(hit\)/);
   assert.match(main,/function harvestCrop\(x,y,z,data\)/);
   assert.match(main,/CROP_MATURE_AGE=24/);
+  assert.match(main,/CROP_MATURE_SECONDS=150/);
+  assert.match(main,/plantedAt:survivalWorldTime,lastGrowAt:survivalWorldTime/);
+  assert.match(main,/const elapsed=Math\.max\(0,now-last\),rate=CROP_MATURE_AGE\/CROP_MATURE_SECONDS/);
 });
 
 test('base life panel is published and mobile interactions can use it',()=>{
   assert.match(index,/id="lifePanel"/);
-  assert.match(index,/cube-architect\.css\?v=20261007-base-life1/);
-  assert.match(index,/cube-architect\.js\?v=20261007-base-life2/);
+  assert.match(index,/cube-architect\\.css\\?v=20261007-base-life2/);
+  assert.match(index,/cube-architect\\.js\\?v=20261007-base-life3/);
   assert.match(css,/#lifePanel\{/);
   assert.match(main,/interactLifeBlock\(type,u\.gx,u\.gy,u\.gz\)/);
+  assert.match(main,/!PLACEABLE_TYPES\.includes\(selectedType\)&&!FARM_PLANT_TYPES\.includes\(selectedType\)/);
+  assert.match(main,/PLACEABLE_TYPES\.includes\(selectedType\)\|\|FARM_PLANT_TYPES\.includes\(selectedType\)/);
+});
+
+test('tracked map destinations have a live direction arrow and an explicit arrival finish',()=>{
+  assert.match(index,/id="trackingGuide"/);
+  assert.match(index,/id="trackingArrow"/);
+  assert.match(index,/id="trackingStop"/);
+  assert.match(main,/function updateTrackingGuide\(\)/);
+  assert.match(main,/Math\.atan2\(lookX\*tz-lookZ\*tx,lookX\*tx\+lookZ\*tz\)/);
+  assert.match(main,/arrived\?'도착 · 추적 끝':'추적 취소'/);
+  assert.match(main,/function stopTrackedTarget\(\)/);
 });
