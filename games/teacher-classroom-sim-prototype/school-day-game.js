@@ -63,6 +63,7 @@ const fxRoot=new THREE.Group();world.add(fxRoot);
 scene.add(new THREE.HemisphereLight(0xffffff,0xa89983,2.5));
 const sun=new THREE.DirectionalLight(0xffffff,2.35);
 sun.position.set(-6,12,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
+sun.shadow.radius=2.7;sun.shadow.normalBias=.025;
 sun.shadow.camera.left=-12;sun.shadow.camera.right=12;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-12;
 scene.add(sun);
 const fill=new THREE.DirectionalLight(0xcde8ff,.8);fill.position.set(7,6,-8);scene.add(fill);
@@ -211,7 +212,7 @@ function writeTextPlane(mesh,text){
   const {canvas:c,ctx,texture,color,bg}=mesh.userData;
   ctx.fillStyle=bg;ctx.fillRect(0,0,c.width,c.height);
   ctx.fillStyle=color;ctx.font='900 68px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText(text,c.width/2,c.height/2);texture.needsUpdate=true;
+  ctx.fillText(text,c.width/2,c.height/2,c.width*.92);texture.needsUpdate=true;
 }
 function updateBoard(text){writeTextPlane(boardMesh,text)}
 
@@ -246,9 +247,9 @@ function placeAsset(url,{x=0,y=0,z=0,size=1,rot=0,fallback=[.8,.5,.8,0x8c9aa5],p
 
 function addWalls(space){
   const floor=box(15,.18,10.8,space.floor);floor.position.y=-.12;roomRoot.add(floor);
-  const back=box(15,3.7,.18,space.wall);back.position.set(0,1.75,-5.35);roomRoot.add(back);
-  const left=box(.18,3.7,10.8,space.wall);left.position.set(-7.55,1.75,0);roomRoot.add(left);
-  const right=box(.18,3.7,10.8,space.wall);right.position.set(7.55,1.75,0);roomRoot.add(right);
+  const back=box(15,3.7,.18,space.wall);back.position.set(0,1.75,-5.35);back.castShadow=false;roomRoot.add(back);
+  const left=box(.18,3.7,10.8,space.wall);left.position.set(-7.55,1.75,0);left.castShadow=false;roomRoot.add(left);
+  const right=box(.18,3.7,10.8,space.wall);right.position.set(7.55,1.75,0);right.castShadow=false;roomRoot.add(right);
 
   const frame=box(6.55,2.18,.09,0x8f6848);frame.position.set(0,2.15,-5.24);roomRoot.add(frame);
   const board=box(6.2,1.9,.14,Number.parseInt(space.accent.slice(1),16));board.position.set(0,2.15,-5.10);roomRoot.add(board);
@@ -467,10 +468,11 @@ function pickCharacterClips(gltf){
   const idle=inPlaceCharacterClip(clips.find(c=>/idle|stand/i.test(c.name))||clips[0]||null);
   const walk=inPlaceCharacterClip(clips.find(c=>/walk|run/i.test(c.name))||idle);
   const gesture=inPlaceCharacterClip(
-    clips.find(c=>/push|attack|punch|hit|wave|talk|gesture|point/i.test(c.name))||idle
+    clips.find(c=>/wave|point|talk|gesture|pick.?up/i.test(c.name))||idle
   );
+  const hit=inPlaceCharacterClip(clips.find(c=>/punch|attack|hit/i.test(c.name))||gesture);
   const sit=inPlaceCharacterClip(clips.find(c=>/sit|seated|chair/i.test(c.name))||null);
-  return {idle,walk,push:gesture,sit};
+  return {idle,walk,push:gesture,hit,sit};
 }
 async function makeActor(kind,profile,index,pos){
   const visual=kind==='teacher'?CHARACTER_VISUALS.teacher:(CHARACTER_VISUALS[profile?.id]||CHARACTER_VISUALS.minsu);
@@ -1316,7 +1318,7 @@ function beginConflict(pair){
 }
 function beginFight(pair){
   pair.state='fight';pair.time=0;pair.duration=AI_RULES.fightSeconds;fightsThisSocial++;pair.a.runtime.mode=pair.b.runtime.mode='fight';
-  showBubble(pair.a,'💥','fight');showBubble(pair.b,'💥','fight');playAnim(pair.a.actor,'push');playAnim(pair.b.actor,'push');playAudio(ui.fight,.42);
+  showBubble(pair.a,'💥','fight');showBubble(pair.b,'💥','fight');playAnim(pair.a.actor,'hit');playAnim(pair.b.actor,'hit');playAudio(ui.fight,.42);
 }
 function safeSeparatedTarget(side){
   const p=new THREE.Vector3(side<0?-5.6:5.6,0,2.8);return isStudentBlocked(p.x,p.z)?randomOpenPoint():p;
@@ -1388,7 +1390,7 @@ function updateSocial(dt){
         else releasePair(pair,AI_RULES.conflictCooldownSeconds);
       }
     }else if(pair.state==='fight'){
-      playAnim(pair.a.actor,'push');playAnim(pair.b.actor,'push');if(pair.time>=pair.duration)autoResolveFight(pair);
+      playAnim(pair.a.actor,'hit');playAnim(pair.b.actor,'hit');if(pair.time>=pair.duration)autoResolveFight(pair);
     }
   }
   if(pairScan<=0){
