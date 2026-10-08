@@ -529,6 +529,7 @@ test('one-touch mobile Chibi controls are wired to the same real animation, view
   assert.match(js,/const clip=animations\.find\(item=>clipLabel\(item\.name\)===button\.dataset\.quickClip\)/);
   assert.match(js,/if\(clip\)playClip\(clip\.name\)/);
   assert.match(js,/setCameraView\(button\.dataset\.quickView\)/);
+  assert.match(js,/\[data-chibi-preset\],\[data-view\],\[data-quick-clip\],\[data-quick-view\],\[data-quick-speed\]/);
   assert.match(js,/\$\('speed'\)\.value=button\.dataset\.quickSpeed/);
   assert.match(html,/character-3d-studio\.js\?v=20261008-chibi-audit41/);
 });
