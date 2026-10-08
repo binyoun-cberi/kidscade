@@ -124,7 +124,7 @@ test('beginner experience includes wayfinding, actionable hints, and camera obst
   assert.match(js,/showLesson\('첫 임무/);
   assert.match(js,/showLesson\('첫 만남/);
   assert.match(js,/showLesson\('관찰 성공/);
-  assert.match(js,/camera\.position\.lerp\(safe/);
+  assert.match(js,/camera\.position\.copy\(safe\)/);
   assert.match(js,/ui\.reticle\.classList\.toggle\('locked'/);
   assert.match(html,/id="navRange"/);
   assert.match(html,/id="lessonText"/);
