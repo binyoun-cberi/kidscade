@@ -91,9 +91,9 @@ let chrome,ws;
     })()`);
     assert.ok(status.all.every(Boolean),'Missing essential DOM: '+config.name);
     const stageCount=await evaluate("document.querySelectorAll('#stageList .stage-choice').length");
-    assert.equal(stageCount,10,'stage selection must contain ten boards');
+    assert.equal(stageCount,20,'stage selection must contain twenty boards');
     const initiallyLocked=await evaluate("document.querySelectorAll('#stageList .stage-choice:disabled').length");
-    assert.ok(initiallyLocked>=9,'fresh campaign should lock later boards');
+    assert.ok(initiallyLocked>=19,'fresh campaign should lock later boards');
     const selectorGeometry=await evaluate(`(()=>{
       const panel=document.querySelector('#startOverlay .panel').getBoundingClientRect();
       const start=document.getElementById('startBtn').getBoundingClientRect();
@@ -173,10 +173,10 @@ let chrome,ws;
       console.log('WORD_SIEGE_IMAGE_'+config.name+'='+shot.data);
     }
   }
-  // Open two advanced boards through the same stored unlock the game writes on victory.
-  await evaluate("window.KidscadeStorage.setRaw('kidscade_word_siege_stage_v1','10')");
+  // Open later campaign boards through the same stored unlock the game writes on victory.
+  await evaluate("window.KidscadeStorage.setRaw('kidscade_word_siege_stage_v1','20')");
   await send('Emulation.setDeviceMetricsOverride',{width:1024,height:768,deviceScaleFactor:1,mobile:true});
-  for(const index of [5,9]){
+  for(const index of [5,9,14,19]){
     await send('Page.navigate',{url:'http://127.0.0.1:'+port+'/games/language_word_siege/index.html?stageAudit='+index});
     await pause(700);
     const selected=await evaluate(`(()=>{
@@ -188,9 +188,9 @@ let chrome,ws;
     })()`);
     assert.equal(selected,String(index+1).padStart(2,'0'),'Could not load advanced stage '+index);
     await pause(300);
-    if(index===9){
+    if(index===9||index===19){
       const shot=await send('Page.captureScreenshot',{format:'jpeg',quality:42,captureBeyondViewport:false});
-      console.log('WORD_SIEGE_IMAGE_final-stage='+shot.data);
+      console.log('WORD_SIEGE_IMAGE_'+(index===19?'apocalypse-stage':'first-finale')+'='+shot.data);
     }
     console.log('WORD_SIEGE_CAMPAIGN '+JSON.stringify({index:index+1,selected}));
   }
