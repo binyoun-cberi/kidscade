@@ -770,14 +770,15 @@ function createKidscadeMaleHairShort(){
     const oy=positions.getY(i);
     const oz=positions.getZ(i);
     const lower=THREE.MathUtils.clamp((cutoff-oy)/lowerRange,0,1);
+    const taper=lower*lower*(3-2*lower);
 
-    // 머리 윗부분은 그대로 두고, 귀·목 아래로 늘어진 보브컷 부분만 단축한다.
-    // 선형 압축은 정점의 세로 순서를 보존해 긴 머리 끝의 뒤집힘을 막는다.
-    const y=oy<cutoff?cutoff-(cutoff-oy)*.40:oy;
+    // 보브컷 절단선에서 기울기가 갑자기 변하지 않게, 아래쪽으로 갈수록
+    // 압축 강도를 늘린다. 윗머리는 원본을 보존하고 짧은 머리 끝은 매끈하게 잇는다.
+    const y=oy+(cutoff-oy)*.58*taper;
 
-    // 아래로 내려갈수록 관자놀이/뒤통수 방향으로 볼륨을 줄여 숏컷 윤곽을 만든다.
-    const x=centerX+(ox-centerX)*(1-.17*lower);
-    const z=centerZ+(oz-centerZ)*(1-.11*lower);
+    // 옆머리와 뒷머리도 같은 부드러운 가중치로 줄여 갑작스러운 단차를 막는다.
+    const x=centerX+(ox-centerX)*(1-.17*taper);
+    const z=centerZ+(oz-centerZ)*(1-.11*taper);
     positions.setXYZ(i,x,y,z);
   }
   // 원본 긴 머리의 끝 정점 일부가 위쪽으로 압축되면서 눈높이까지 올라온다.
