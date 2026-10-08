@@ -598,6 +598,175 @@ function projectile(t,target,s,opts={}){
     delay:opts.delay||0,point:{x:target.x,y:target.y},travel:0
   });
 }
+// Short, legible spectacle: each existing English word performs its meaning.
+// Uses the standard enemy, cooldown, INK and field systems (no summoned NPCs).
+function playfulTowerAttack(t,s,targets,target){
+  const mode=s.mode;
+  const hit=(e,power=.6,element='')=>attackEnemy(t,e,s.damage*power,element);
+  const nearby=(x,y,r,max=6)=>targets.filter(e=>dist(e,{x,y})<=r).slice(0,max);
+  const label=(value,color=t.def.color)=>floatEffect(target.x,target.y,value,color);
+  const field=(kind,radius,life,damage,slow=1)=>{
+    if(state.fields.filter(f=>f.source.id===t.id).length>=3)return;
+    state.fields.push({x:target.x,y:target.y,radius,life,clock:.05,interval:.60,
+      damage,kind,slow,source:t});
+    ringEffect(target.x,target.y,radius,t.def.color,.35);
+  };
+  if(mode==='disco'){
+    for(const e of targets.slice(0,7)){
+      hit(e,.24);e.slow=Math.min(e.slow,.45);
+      e.danceTime=.75;e.stunTime=Math.max(e.stunTime||0,.25);
+    }
+    ringEffect(t.x,t.y,s.range,t.def.color,.42);
+    label('♫ DANCE!','#d789e9');beep(440+(t.castCount||0)%4*110,.12,'triangle',.025);
+    t.castCount=(t.castCount||0)+1;return true;
+  }
+  if(mode==='pinball'){
+    const used=new Set();let previous={x:t.x,y:t.y},current=target;
+    for(let n=0;n<5&&current;n++){
+      used.add(current.id);hit(current,Math.pow(.73,n)*.80);
+      lineEffect(previous.x,previous.y,current.x,current.y,n%2?'#fff3a0':'#ff9b63',.18,2);
+      ringEffect(current.x,current.y,.022,t.def.color,.20);previous=current;
+      current=targets.filter(e=>!used.has(e.id)&&dist(e,previous)<.14)
+        .sort((a,b)=>dist(a,previous)-dist(b,previous))[0];
+    }
+    label('PING!','#ee9c47');beep(620,.09,'square',.02);return true;
+  }
+  if(mode==='spring'){
+    for(const e of nearby(target.x,target.y,.085,3)){
+      hit(e,.45);e.pushBack=Math.max(e.pushBack,e.boss?.016:.048);
+      e.stunTime=Math.max(e.stunTime||0,.22);
+    }
+    ringEffect(target.x,target.y,.087,'#e0fc91',.25);
+    label('BOING!','#a6dc51');beep(330,.13,'sine',.03);return true;
+  }
+  if(mode==='bubble'){
+    const e=targets.find(e=>(e.bubbleTime||0)<=0)||target;
+    if(e.bubbleTime>0){hit(e,.25);return true}
+    hit(e,.27);if(e.dead)return true;
+    e.bubbleTime=e.boss?.55:1.35;e.bubblePower=Math.min(55,s.damage*.72);
+    e.bubbleSource=t;
+    ringEffect(e.x,e.y,.046,'#b5f8f5',.45);
+    floatEffect(e.x,e.y,'BUBBLE!','#67c8c5');beep(880,.07,'sine',.02);return true;
+  }
+  if(mode==='mirror'){
+    const peer=state.towers.filter(other=>other!==t&&other.stats.damage>0&&other.stats.mode!=='mirror'&&dist(t,other)<.20)
+      .sort((a,b)=>dist(t,a)-dist(t,b))[0];
+    const source=peer||t;
+    const borrowed=peer?effectiveStats(peer):s;
+    const damage=Math.min(74,borrowed.damage*.62);
+    const count=peer&&(borrowed.area||borrowed.beam)?3:1;
+    const victims=nearby(target.x,target.y,peer?Math.max(.065,borrowed.area||.09):.02,count);
+    for(const e of victims){
+      attackEnemy(source,e,damage);
+      if(borrowed.burn||source.def.role==='burn')damageEnemy(e,0,'burn',source);
+      if(borrowed.slow||source.def.role==='slow')damageEnemy(e,0,'slow',source);
+      if(borrowed.poison||source.def.role==='poison')damageEnemy(e,0,'poison',source);
+    }
+    if(peer)lineEffect(t.x,t.y,peer.x,peer.y,'#faf3ff',.28,3);
+    lineEffect(peer?.x??t.x,peer?.y??t.y,target.x,target.y,'#f6d5ff',.21,3);
+    label(peer?'COPY '+peer.word:'REFLECT','#c99cf2');return true;
+  }
+  if(mode==='boo'){
+    for(const e of nearby(target.x,target.y,.11,4)){
+      hit(e,.36);e.pushBack=Math.max(e.pushBack,e.boss?.018:.047);
+      e.stunTime=Math.max(e.stunTime||0,.35);
+    }
+    ringEffect(target.x,target.y,.11,'#b8b1f3',.40);
+    label('BOO!','#b8b1f3');beep(240,.16,'sine',.03);return true;
+  }
+  if(mode==='spellbook'){
+    const spells=['burn','slow','poison','push'];
+    const cast=spells[(t.castCount||0)%spells.length];t.castCount=(t.castCount||0)+1;
+    const victims=targets.slice(0,t.word==='WIZARD'?2:1);
+    for(const e of victims){
+      hit(e,.58,cast);
+      if(cast==='push')e.pushBack=Math.max(e.pushBack,.033);
+      if(cast==='slow')e.freezeTime=Math.max(e.freezeTime||0,.20);
+      ringEffect(e.x,e.y,.035,cast==='burn'?'#ff9350':cast==='slow'?'#9bdcff':cast==='poison'?'#a6e77a':'#c4aaf2',.24);
+    }
+    label(['FIRE!','ICE!','POISON!','WIND!'][(t.castCount-1)%4]);
+    beep(460+(t.castCount%4)*130,.08,'triangle',.022);return true;
+  }
+  if(mode==='rainbow'){
+    let last={x:t.x,y:t.y};
+    for(const [i,e] of targets.slice(0,4).entries()){
+      const color=['#ee6b85','#ffb554','#77d3c7','#9686ec'][i];
+      hit(e,.43,['burn','slow','poison','slow'][i]);
+      lineEffect(last.x,last.y,e.x,e.y,color,.23,3);last=e;
+    }
+    ringEffect(target.x,target.y,.05,'#ffcb74',.22);return true;
+  }
+  if(mode==='boomerang'){
+    const along=targets.filter(e=>{
+      const dx=target.x-t.x,dy=target.y-t.y,m=dx*dx+dy*dy||1;
+      const fraction=((e.x-t.x)*dx+(e.y-t.y)*dy)/m;
+      return fraction>=0&&fraction<=1&&Math.hypot(e.x-(t.x+dx*fraction),e.y-(t.y+dy*fraction))<.033;
+    }).slice(0,5);
+    for(const e of along){hit(e,.63);hit(e,.42)}
+    lineEffect(t.x,t.y,target.x,target.y,'#fff6a4',.23,3);
+    lineEffect(target.x,target.y,t.x,t.y,'#68ceba',.37,2);
+    label('RETURN!','#61c9bc');beep(540,.09,'triangle',.025);return true;
+  }
+  if(mode==='spores'){
+    hit(target,.32,'poison');field('poison',.11,3.35,s.damage*.115);
+    particleEffect(target.x,target.y,'#b4e77a',12,.12);
+    label('SPORES!','#81ba55');return true;
+  }
+  if(mode==='slimepool'){
+    hit(target,.24,'poison');field('slow',.10,4,s.damage*.09,.44);
+    label('SPLAT!','#8bc75f');return true;
+  }
+  if(mode==='vacuum'){
+    for(const e of nearby(target.x,target.y,.135,6)){
+      hit(e,.29);e.pushBack=Math.max(e.pushBack,e.boss?.016:.036);
+      e.slow=Math.min(e.slow,.63);
+    }
+    ringEffect(target.x,target.y,.14,'#d5a8ef',.40);
+    label('WHOOOSH!','#c9a2e9');return true;
+  }
+  if(mode==='magnet'){
+    const pulled=targets.slice().sort((a,b)=>
+      ((b.shield>0?2:0)+(b.armor>0?1:0))-((a.shield>0?2:0)+(a.armor>0?1:0))).slice(0,3);
+    for(const e of pulled){
+      e.shield=Math.max(0,e.shield-s.damage*.65);
+      hit(e,.49);e.pushBack=Math.max(e.pushBack,e.boss?.012:.032);
+    }
+    lineEffect(t.x,t.y,pulled[0].x,pulled[0].y,'#8fd4ea',.22,3);
+    label('CLANK!','#85cce2');return true;
+  }
+  if(mode==='sleep'){
+    const e=targets.find(e=>(e.sleepTime||0)<=0)||target;
+    hit(e,.24);
+    e.sleepTime=e.boss?.55:1.7;
+    e.stunTime=Math.max(e.stunTime||0,e.sleepTime);
+    ringEffect(e.x,e.y,.048,'#a4a0e5',.36);
+    floatEffect(e.x,e.y,'Zzz...','#8f87db');return true;
+  }
+  if(mode==='shootingstars'){
+    for(const [i,e] of targets.slice(0,4).entries()){
+      projectile(t,e,s,{area:0,damage:s.damage*.42,mode:'shootingstars'});
+      ringEffect(e.x,e.y,.022,i%2?'#e2bcff':'#ffe399',.15);
+    }
+    if(targets.length===1)projectile(t,target,s,{area:0,damage:s.damage*.32,mode:'shootingstars'});
+    label('★ ★ ★','#f3d075');return true;
+  }
+  if(mode==='snowball'){
+    projectile(t,target,s,{area:.055,damage:s.damage*.83,mode:'snowball'});
+    label('ROLL!','#90cbe7');return true;
+  }
+  if(mode==='raincloud'){
+    hit(target,.32,'slow');field('slow',.13,3.8,s.damage*.07,.46);
+    label('DRIZZLE','#76b7e7');return true;
+  }
+  if(mode==='sunray'){
+    const victims=nearby(target.x,target.y,.065,4);
+    for(const e of victims)hit(e,.76,'burn');
+    lineEffect(t.x,t.y,target.x,target.y,'#f8c24e',.28,5);
+    ringEffect(target.x,target.y,.065,'#fff0a7',.28);
+    label('SUNSHINE!','#e6a748');return true;
+  }
+  return false;
+}
 function towerUpdate(t,dt){
   const s=effectiveStats(t),mode=s.mode;
   t.pulse=Math.max(0,(t.pulse||0)-dt);
@@ -662,6 +831,7 @@ function towerUpdate(t,dt){
     return Math.abs(Math.atan2(Math.sin(a-angle),Math.cos(a-angle)))<width;
   }).slice(0,limit);
   const angle=Math.atan2(target.y-t.y,target.x-t.x);
+  if(playfulTowerAttack(t,s,targets,target))return;
   if(mode==='rail'||mode==='cleave'||t.def.role==='pierce'){
     if(mode==='cleave'){
       for(const e of coneTargets(angle,1.1,6))hit(e,.85);
