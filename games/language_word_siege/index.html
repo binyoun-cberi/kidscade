@@ -36,6 +36,7 @@
 .stage-choice{position:relative;text-align:left;display:flex;gap:9px;min-height:77px;align-items:center;padding:10px;background:var(--stage-paper,#f0ebd9);border:2px solid var(--stage-accent,#c7b990);border-radius:14px;color:#23252b;cursor:pointer}
 .stage-choice b{display:block;font-size:13px;letter-spacing:.02em}.stage-choice small{display:block;color:#6a665f;margin-top:3px;font-size:11px;line-height:1.25}
 .stage-choice .stage-number{flex-shrink:0;display:grid;place-items:center;width:35px;height:35px;border-radius:10px;background:var(--stage-accent,#c7b990);color:#fff;font-size:17px;font-weight:950}
+.stage-chapter{grid-column:1/-1;padding:7px 9px 4px;font-size:11px;font-weight:950;letter-spacing:.10em;color:#78694f;border-bottom:1px solid #d8ceb9}
 .stage-choice.selected{outline:3px solid #1cc8bd;outline-offset:-1px;box-shadow:0 4px 14px rgba(15,114,113,.16)}
 .stage-choice:disabled{opacity:.42;filter:grayscale(.5);cursor:default}
 .stage-choice .complete{position:absolute;right:7px;top:5px;font-size:10px;font-weight:900;color:#287a67}
@@ -144,7 +145,7 @@
     <h1>WORD <span>SIEGE</span></h1>
     <p class="lead">알파벳으로 영어 단어를 만들면 그 단어가 <b>WORD TOWER</b>가 됩니다. <b id="dictionaryTotal">20,000+</b>개 단어와 다양한 고유 효과를 발견해 8번의 웨이브를 막으세요.</p>
     <p class="lead" style="margin:5px 0 9px;font-size:12px">글자 패로 조합하거나 영어 단어를 직접 입력하세요. <b>MUSIC</b>은 춤추게 하고 <b>BUBBLE</b>은 가두고 <b>MIRROR</b>는 복사해요! 뜻밖의 타워와 조합을 찾아보세요. <b>BOOK</b>의 OO는 핀볼, <b>-ING</b>는 부메랑, 모음이 많은 단어는 무지개 광선! 철자도 전술이에요. 직접 입력은 INK가 조금 더 필요해요.</p>
-    <div class="stage-subhead"><b>SELECT STAGE</b><span id="stageProgressText">1 / 10 해금</span></div>
+    <div class="stage-subhead"><b>SELECT STAGE</b><span id="stageProgressText">1 / 20 해금</span></div>
     <div class="stage-list" id="stageList" aria-label="스테이지 목록"></div>
     <p id="stageDetail">단어 타워를 배치해 웨이브를 막으세요.</p>
     <button class="start" id="startBtn" type="button">STAGE 01 시작</button>
