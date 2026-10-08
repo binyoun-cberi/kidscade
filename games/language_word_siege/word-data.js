@@ -1204,6 +1204,7 @@ const BEHAVIORS=Object.freeze({
 // fighting style. Curated word semantics take precedence over spelling.
 const STYLE_FAMILIES=Object.freeze({
   volley:{label:'연사 화살',description:'두 탄환을 연달아 발사'},
+  milk:{label:'우유탄',description:'우유 구슬이 옆의 적에게 통통 튕김'},
   pinball:{label:'통통 핀볼',description:'적들을 차례로 튕기는 고무공'},
   boomerang:{label:'왕복 타격',description:'갔다 돌아오며 두 번 타격'},
   snowball:{label:'성장 눈덩이',description:'날아가며 커지는 범위 공격'},
