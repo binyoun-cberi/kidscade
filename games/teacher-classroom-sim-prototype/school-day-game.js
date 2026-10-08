@@ -279,17 +279,17 @@ function addClassroom(space){
   const frontDesk=box(1.38,.72,.76,0xb9895e);
   frontDesk.position.set(-6.05,.36,-4.32);furnitureRoot.add(frontDesk);
   placeAsset(screenUrl,{x:-6.05,y:.73,z:-4.43,size:.56,rot:Math.PI,fallback:[.55,.42,.13,0x39495d]});
-  const teacherChair=box(.55,.49,.55,0x66829a);teacherChair.position.set(-6.05,.245,-3.72);furnitureRoot.add(teacherChair);
+  const teacherChair=box(.55,.49,.55,0x66829a);teacherChair.position.set(-6.42,.245,-3.72);furnitureRoot.add(teacherChair);
   const rug=plane(3.7,1.35,0x9ac2b6);rug.rotation.x=-Math.PI/2;rug.position.set(-4.8,.002,3.8);decoRoot.add(rug);
-  for(const x of [-4.9,-2.7,2.7,4.9]){
-    const poster=box(1.48,.9,.035,x<0?0xcfe2ff:0xf7d3cd);
-    poster.position.set(x,2.05,4.98);decoRoot.add(poster);
+  for(const x of [-5.15,5.15]){
+    const poster=box(1.55,.85,.04,x<0?0xcfe2ff:0xf7d3cd);
+    poster.position.set(x,2.14,-5.13);decoRoot.add(poster);
   }
-  for(const x of [-3.5,0,3.5]){
-    const windowFrame=box(2.2,1.35,.055,0xeaf7ff);
-    windowFrame.position.set(x,2.5,4.99);decoRoot.add(windowFrame);
-    const pane=box(2.0,1.13,.062,0x92d7ec);
-    pane.position.set(x,2.5,4.94);decoRoot.add(pane);
+  for(const z of [-2.8,.3,3.25]){
+    const frame=box(.075,1.35,2.15,0xeaf7ff);
+    frame.position.set(-7.42,2.55,z);decoRoot.add(frame);
+    const glass=box(.083,1.14,1.97,0xa9dbe9);
+    glass.position.set(-7.37,2.55,z);decoRoot.add(glass);
   }
 }
 function addGym(){
@@ -512,22 +512,32 @@ function playAnim(actor,name){
   const next=actor.mixer.clipAction(clip);
   if(!next){actor.anim=name;return}
   if(actor.action&&actor.action!==next)actor.action.fadeOut(.1);
-  next.reset().setLoop(THREE.LoopRepeat,Infinity).fadeIn(.1).play();
+  next.reset();
+  if(name==='sit'&&actor.clips.sit){
+    next.setLoop(THREE.LoopOnce,1);
+    next.clampWhenFinished=true; // SitDown finishes in a stable chair pose.
+  }else{
+    next.setLoop(THREE.LoopRepeat,Infinity);
+    next.clampWhenFinished=false;
+  }
+  next.fadeIn(.14).play();
   actor.action=next;actor.anim=name;
 }
 function setSeatedPose(actor,shouldSit,dt){
   if(actor.kind!=='student')return;
   actor.poseBlend=THREE.MathUtils.damp(actor.poseBlend,shouldSit?1:0,11,dt);
+  const wasSeated=actor.seated;
   actor.seated=shouldSit;
   const nativeSit=!!actor.clips.sit;
   if(shouldSit)playAnim(actor,nativeSit?'sit':'idle');
+  else if(wasSeated&&actor.anim==='sit')playAnim(actor,'idle');
   if(!nativeSit){
     for(const entry of actor.seatBones.upper)
       entry.bone.quaternion.copy(entry.base).slerp(entry.base.clone().multiply(SIT_UPPER),actor.poseBlend);
     for(const entry of actor.seatBones.lower)
       entry.bone.quaternion.copy(entry.base).slerp(entry.base.clone().multiply(SIT_LOWER),actor.poseBlend);
   }
-  actor.model.position.y=actor.restY-(nativeSit?.06:.26)*actor.poseBlend;
+  actor.model.position.y=actor.restY-(nativeSit?0:.26)*actor.poseBlend;
 }
 function updateStudentPose(s,dt){
   const classTime=currentStep.kind==='lesson'||currentStep.kind==='prep';
