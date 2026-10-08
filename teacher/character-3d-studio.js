@@ -872,17 +872,17 @@ function createKidscadeMaleSet(){
   ));
 
   // 2) 원본 eyes의 topology, iris texture/UV, 78-bone weights를 유지한다.
-  // 기존 남자눈(.80)에 비해 세로를 추가로 12.5% 낮춰 둥근 눈 대신 차분한 소년형 눈매로 만든다.
+  // 원본 대비 눈 세로 높이를 64%로 낮추고 가로는 거의 유지해 과장된 둥근 인상을 정리한다.
   // 홍채도 같은 메시 안에 있으므로 독립된 홍채 크기 조절은 하지 않는다.
   const eyeGeometry=eyesSource.geometry.clone();
   const ep=eyeGeometry.getAttribute('position');
   const eyeCenterY=1.620;
-  const maleEyeHeightScale=.70;
+  const maleEyeHeightScale=.64;
   for(let i=0;i<ep.count;i++){
     let x=ep.getX(i),y=ep.getY(i),z=ep.getZ(i);
-    x*=1.045;
-    y=eyeCenterY+(y-eyeCenterY)*maleEyeHeightScale;
-    z+=.004;
+    x*=1.01;
+    y=eyeCenterY+(y-eyeCenterY)*maleEyeHeightScale-.006;
+    z+=.002;
     ep.setXYZ(i,x,y,z);
   }
   ep.needsUpdate=true;
