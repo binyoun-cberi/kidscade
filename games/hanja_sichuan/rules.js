@@ -32,5 +32,17 @@
     if(zoomed)return 68;
     return Math.max(24,Math.min(72,Math.floor((view-5)/(cols+1.08))));
   }
-  return Object.freeze({COSTS,score,rewards,tileSize});
+  const TUTORIAL_REQUIRED=2;
+  function tutorialState(value){
+    const numeric=Number(value);
+    const clears=Number.isFinite(numeric)?Math.min(TUTORIAL_REQUIRED,Math.max(0,Math.trunc(numeric))):0;
+    return Object.freeze({clears,required:TUTORIAL_REQUIRED,completed:clears>=TUTORIAL_REQUIRED,nextDifficulty:clears>=TUTORIAL_REQUIRED?'easy':'start'});
+  }
+  function tutorialAfterGame(value,{clear=false,difficulty=''}={}){
+    const previous=tutorialState(value);
+    const advanced=Boolean(clear&&difficulty==='start'&&!previous.completed);
+    const next=tutorialState(previous.clears+(advanced?1:0));
+    return Object.freeze({...next,advanced});
+  }
+  return Object.freeze({COSTS,score,rewards,tileSize,TUTORIAL_REQUIRED,tutorialState,tutorialAfterGame});
 });
