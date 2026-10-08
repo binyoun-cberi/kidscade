@@ -200,8 +200,14 @@ const TWO_LEG_STYLES=new Set([
   'chibi_male_jeans','chibi_male_joggers','chibi_male_chinos',
   'chibi_female_jeans','chibi_female_widepants'
 ]);
-function makeTrouserLegs({source,style,group,material,cloneSkinnedMeshWithGeometry}){
+function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWithGeometry}){
   const skeleton=source.skeleton;
+  const reference=getNode(style.fit==='male'?'kidscade_male_body':'character_low');
+  if(!reference?.isSkinnedMesh)throw new Error('Missing fit body for trouser skin transfer');
+  const refPositions=reference.geometry.getAttribute('position');
+  const refIndices=reference.geometry.getAttribute('skinIndex');
+  const refWeights=reference.geometry.getAttribute('skinWeight');
+  if(!refPositions||!refIndices||!refWeights)throw new Error('Chibi body missing reference skin weights');
   for(const side of ['left','right']){
     const sign=side==='left'?-1:1;
     // These indices resolve actual GLTFLoader-sanitized Chibi bones.
@@ -219,14 +225,24 @@ function makeTrouserLegs({source,style,group,material,cloneSkinnedMeshWithGeomet
     const positions=geometry.getAttribute('position');
     const indices=new Uint16Array(positions.count*4);
     const weights=new Float32Array(positions.count*4);
+    // Match the nearest bind-pose body surface vertex. The original body
+    // has blended pelvis, thigh, knee and shin weights which keep trouser
+    // openings aligned with the shorts and eliminate exposed wedge seams.
     for(let i=0;i<positions.count;i++){
-      const y=positions.getY(i);
-      const topWeight=smooth(.17,.47,y);
+      const x=positions.getX(i),y=positions.getY(i),z=positions.getZ(i);
+      let nearest=-1,best=Infinity;
+      for(let j=0;j<refPositions.count;j++){
+        const rx=refPositions.getX(j),ry=refPositions.getY(j),rz=refPositions.getZ(j);
+        if(Math.sign(rx)!==sign&&Math.abs(rx)>.03)continue;
+        const d=(x-rx)**2+(y-ry)**2*1.35+(z-rz)**2;
+        if(d<best){best=d;nearest=j;}
+      }
+      if(nearest<0)throw new Error('Unable to resolve trouser skin reference');
       const offset=i*4;
-      indices[offset]=thigh;
-      indices[offset+1]=shin;
-      weights[offset]=topWeight;
-      weights[offset+1]=1-topWeight;
+      for(let k=0;k<4;k++){
+        indices[offset+k]=refIndices.getComponent(nearest,k);
+        weights[offset+k]=refWeights.getComponent(nearest,k);
+      }
     }
     geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(indices,4));
     geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
@@ -234,7 +250,7 @@ function makeTrouserLegs({source,style,group,material,cloneSkinnedMeshWithGeomet
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
     const leg=cloneSkinnedMeshWithGeometry(source,geometry,material,style.id+'_leg_'+side);
-    leg.userData={part:'trouser-leg',side,fit:style.fit,articulation:'thigh-to-shin-blend'};
+    leg.userData={part:'trouser-leg',side,fit:style.fit,articulation:'nearest-body-surface-skin-weights',thighBone:thigh,shinBone:shin};
     group.add(leg);
   }
 }
@@ -259,7 +275,7 @@ export function createOutfitPack({
     };
     const shell=cloneSkinnedMeshWithGeometry(source,geometry,material,style.id+'_shell');
     group.add(shell);
-    if(TWO_LEG_STYLES.has(style.id))makeTrouserLegs({source,style,group,material,cloneSkinnedMeshWithGeometry});
+    if(TWO_LEG_STYLES.has(style.id))makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWithGeometry});
     add3dDetails({THREE,source,style,group,makeSolidMaterial,makeRigidSkinnedPiece,resolveFirstBoneName});
     source.parent.add(group);
     group.visible=false;
