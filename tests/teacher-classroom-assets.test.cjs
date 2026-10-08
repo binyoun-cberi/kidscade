@@ -19,13 +19,13 @@ const catalogData = JSON.parse(fs.readFileSync(path.join(root, 'data', 'games.js
 const catalog = Array.isArray(catalogData) ? catalogData : catalogData.games;
 const game = catalog.find(g => g.id === 'job_teacher_classroom');
 
-test('teacher simulator v71 loads the six-period direct-control game', () => {
+test('teacher simulator v72 loads the six-period direct-control game', () => {
   assert.match(html, /id="game"/);
   assert.match(html, /id="joystick"/);
   assert.match(html, /id="actionButton"/);
   assert.match(html, /id="dayStrip"/);
-  assert.match(html, /school-day-game\.js\?v=71/);
-  assert.match(html, /style\.css\?v=71/);
+  assert.match(html, /school-day-game\.js\?v=72/);
+  assert.match(html, /style\.css\?v=72/);
   assert.match(html, /건강/);
   assert.match(html, /안전교육/);
   assert.match(css, /\.focusMeter/);
@@ -266,7 +266,7 @@ test('full-size student stations stay clear of desks and chairs', async () => {
     }, Infinity);
     assert.ok(nearest >= .25, 'full-size classroom student too close to desk');
   }
-  assert.match(js, /z:s\.z-\.30,size:\.74/);
+  assert.match(js, /z:s\.z\+\.03,size:\.74/);
   assert.match(js, /z:s\.z-\.28,size:\.62/);
   assert.match(js, /z:s\.z-\.30,size:\.68/);
   assert.match(js, /z:s\.z-\.28,size:\.7/);
@@ -456,9 +456,60 @@ test('actual teacher position and student focus both affect each learner mastery
   assert.match(js, /currentAction\.type==='startRecap'/);
 });
 
-test('catalog publishes teacher simulator v71', () => {
+
+test('NPC skin and animations render child-friendly seated pupils instead of black standing figures', () => {
+  for(const name of ['Casual_Male.gltf','Casual_Female.gltf']){
+    const model=JSON.parse(fs.readFileSync(path.join(root,'assets/game/npcs/glTF',name),'utf8'));
+    assert.ok(model.animations.some(a=>a.name==='SitDown'),name+' missing seat clip');
+    assert.ok(model.materials.some(m=>m.name==='Skin'&&Math.max(...m.pbrMetallicRoughness.baseColorFactor.slice(0,3))<.05),name+' did not have the original dark skin material');
+  }
+  assert.match(js, /function improveNpcMaterials\(/);
+  assert.match(js, /material\.color\.copy\(skin\)/);
+  assert.match(js, /if\(name==='sit'&&actor\.clips\.sit\)/);
+  assert.match(js, /THREE\.LoopOnce/);
+  assert.match(js, /next\.clampWhenFinished=true/);
+  assert.match(js, /function updateStudentPose\(/);
+  assert.match(js, /faceDirection\(s\.actor,0,-1\)/);
+  assert.match(js, /students\.forEach\(s=>updateStudentPose\(s,dt\)\)/);
+});
+
+test('teacher desk is at the front instead of behind the classroom', async () => {
+  const day=await import(pathToFileURL(dayPath).href + '?front-teacher=' + Date.now());
+  const desk=day.SCHOOL_SPACES.classroom.obstacles.find(o=>o.x< -5.5&&o.z< -3.8);
+  assert.ok(desk,'teacher desk obstacle missing from front');
+  assert.match(js, /frontDesk\.position\.set\(-6\.05,\.36,-4\.32\)/);
+  assert.match(js, /x:-6\.05,y:\.73,z:-4\.43/);
+  assert.doesNotMatch(js, /desk\.position\.set\(6\.02,\.36,3\.65\)/);
+});
+
+test('lesson UI shows a number, total animated bar and 3 independent phase bars', () => {
+  for(const id of ['instructionPercent','instructionBar','explainBar','practiceBar','recapBar']){
+    assert.match(html,new RegExp('id="'+id+'"'));
+    assert.match(js,new RegExp("\\$\\('"+id+"'\\)"));
+  }
+  assert.match(html, /role="progressbar"/);
+  assert.match(js, /setAttribute\('aria-valuenow',String\(completed\)\)/);
+  assert.match(js, /Math\.round\(\(explain\+practice\+recap\)\/3\)/);
+  assert.match(css, /\.instructionStages/);
+  assert.match(css, /#instructionBar/);
+  assert.match(css, /#guide\{[^}]*bottom:/);
+});
+
+test('major teacher actions display feedback and use classroom audio', () => {
+  assert.match(html, /id="ambienceAudio"/);
+  assert.ok(fs.existsSync(path.join(gameDir,'assets/audio/classroom-ambience.mp3')));
+  assert.match(js,/function actionFeedback\(/);
+  assert.match(js,/function playCue\(/);
+  assert.match(js,/actionFeedback\(s\.actor\.root\.position,'집중 회복 \+'/);
+  assert.match(js,/actionFeedback\(player\.root\.position,'과제 배부'/);
+  assert.match(js,/actionFeedback\(player\.root\.position,'학습 성장 \+'/);
+  assert.match(js,/ui\.ambience\.play\(\)\.catch/);
+  assert.match(css,/\.actionFeedback\{/);
+});
+
+test('catalog publishes teacher simulator v72', () => {
   assert.ok(game);
-  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=71');
+  assert.equal(game.href, 'games/teacher-classroom-sim-prototype/index.html?v=72');
   assert.match(game.description, /건강/);
   assert.match(game.description, /안전교육/);
   assert.match(game.description, /8일/);
