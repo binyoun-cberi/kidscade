@@ -102,6 +102,7 @@
     "male": [
       "kidscade_male_body",
       "kidscade_male_eyes",
+      "kidscade_male_brows",
       "tooth",
       "kidscade_male_hair_short",
       "kidscade_male_tshirt",
@@ -183,7 +184,7 @@
       "type": "policy",
       "rule": "reuse existing Chibi mesh topology and source skin weights; no procedural hair, sleeves, or compressed long-pants shortcuts",
       "defaultHair": "kidscade_male_hair_short",
-      "faceRule": "Do not create separate eyebrows/lashes; original character_low head already includes them in its material; only source-aligned eyes geometry is visible"
+      "faceRule": "The body already paints eye whites and eyelid lines. Use unmodified source eyes alignment and only the 24 original eyebrow triangles; never draw a second set of lashes."
     },
     "kidscade_male_hair_short": {
       "label": "남자 짧은 머리",
@@ -192,6 +193,15 @@
       "rigging": "source hairone topology, UVs, materials and skin weights",
       "shaping": "lower bob silhouette shortened using original geometry bounds; narrower sides and nape",
       "revision": "v3-existing-mesh-short-hair"
+    },
+    "kidscade_male_brows": {
+      "label": "남자 기본 눈썹",
+      "type": "face-detail",
+      "generatedFrom": "eyelashes",
+      "rigging": "original 78-bone skin weights and UVs; only the two connected source eyebrow islands (24 triangles)",
+      "shaping": "source left and right eyebrows only; all 180 lash/eye-corner triangles excluded",
+      "color": "#332723",
+      "revision": "two-native-brow-islands-v6"
     }
   }
 }
