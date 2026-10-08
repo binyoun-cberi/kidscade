@@ -256,6 +256,14 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
     const geometry=new THREE.CylinderGeometry(upperRadius,lowerRadius,top-bottom,16,9,false);
     geometry.translate(sign*(wide?.166:.153),(top+bottom)*.5,0);
     const positions=geometry.getAttribute('position');
+    // Body knees and upper thighs protrude more toward +Z than a round tube.
+    // Give the front thigh an anatomically shaped clearance allowance.
+    for(let i=0;i<positions.count;i++){
+      const y=positions.getY(i),z=positions.getZ(i);
+      const thighFront=smooth(.22,.36,y)*(1-smooth(.58,.75,y));
+      if(z>0)positions.setZ(i,z*(1+.40*thighFront));
+    }
+    positions.needsUpdate=true;
     const indices=new Uint16Array(positions.count*4);
     const weights=new Float32Array(positions.count*4);
     // Match the nearest bind-pose body surface vertex. The original body
