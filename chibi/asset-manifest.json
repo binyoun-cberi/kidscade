@@ -193,7 +193,7 @@
         "pelvisLateralScale": 0.43,
         "pelvisRollScale": 0.38,
         "lowerSpineRollScale": 0.55,
-        "preserved": "all 11 source animations and clip names; stride, knees, ankle/foot-contact tracks unchanged; upper-arm pitch/roll reduced relative to the original bind pose",
+        "preserved": "all 11 source animations and clip names; stride, knees, ankle/foot-contact tracks unchanged; upper-arm pitch/roll retuned relative to the original bind pose",
         "exportBehavior": "derived WALK and RUN replace their source counterparts in export when the male body is visible; all public names and the 11-clip count remain unchanged"
       },
       "runAnimation": {
@@ -210,8 +210,8 @@
       "type": "hair",
       "generatedFrom": "hairone",
       "rigging": "source hairone topology, UVs, materials and skin weights",
-      "shaping": "lower source-bob silhouette compressed; eye-level frontal/temple triangles culled below source eyes upper bound +0.02, rear hair kept",
-      "revision": "v4-eye-clearance-hairone",
+      "shaping": "lower source-bob silhouette compressed with smoothstep taper to avoid cutoff creases; eye-level frontal/temple triangles culled below source eyes upper bound +0.02, rear hair kept",
+      "revision": "v5-smooth-short-hair",
       "geometryPolicy": "source rig/UV/weights retained, filtered index faces only"
     },
     "kidscade_male_brows": {
