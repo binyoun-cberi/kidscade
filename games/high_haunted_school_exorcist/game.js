@@ -1039,6 +1039,7 @@ function cameraFollowTarget(eye,desired){
     }
     if(hit&&exit>=0&&enter<=1)closest=Math.min(closest,Math.max(0,enter));
   }
+  if(closest===1)return desired;
   return eye.clone().lerp(desired,Math.max(0,closest-.08/length));
 }
 function updateCamera(dt){
