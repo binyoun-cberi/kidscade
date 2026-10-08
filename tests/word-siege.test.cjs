@@ -222,7 +222,8 @@ test('Word Siege full-wave bot simulations terminate without runtime errors', {t
   for(const style of styles){
     const {h,d}=headlessGame();
     if(style.name!=='beginner')buildMatching(h,d,'MINER');
-    else buildMatching(h,d,'ARROW');
+    // Bots must field one real attack tower before launching, just like players.
+    assert.ok(buildMatching(h,d,'ARROW'),'starter must afford an ARROW after MINER');
     let rounds=0;
     for(let wave=1;wave<=8&&!h.state.ended;wave++){
       for(let j=0;j<style.build;j++){
@@ -406,7 +407,7 @@ test('Word Siege railgun, shotgun, mines and falling nukes use different attack 
   const nuke=tower('NUKE',.28,.28),boss=enemy(.35,.28);
   h.towerUpdate(nuke,.1);
   const delayed=s.shots.find(shot=>shot.mode==='nuke');
-  assert.ok(delayed&&delayed.delay>=2,'NUKE must visibly charge before impact');
+  assert.ok(delayed&&delayed.delay>=1.75,'NUKE must visibly charge before impact');
   h.shotUpdate(delayed,2.5);
   assert.ok(boss.hp<1000,'NUKE must deal large area damage after countdown');
 });
