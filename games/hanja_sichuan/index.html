@@ -347,7 +347,7 @@ dialog p{color:#657369;line-height:1.6}
     $('tutorialStatus').textContent=tutorial.completed
       ? (current==='start'?'입문 복습 중 · 기본 6×6을 자유롭게 선택할 수 있어요.':'입문 완료 · 기본판 6×6부터 즐겨 보세요.')
       : (current==='start'
-        ? '입문 '+(tutorial.clears+1)+'/2 · 4×4 완료 두 번이면 기본 6×6으로 넘어가요.'
+        ? '입문 '+(tutorial.clears+1)+'/2 · '+(tutorial.clears?'이번 판을 풀면 기본 6×6으로 올라가요.':'한자와 뜻·음을 찾아 두 번 이하 꺾어 연결해 보세요.')
         : '기본판 자유 선택 가능 · 입문 4×4를 두 번 완료하면 추천 난이도가 저장돼요.');
   }
   function tone(kind){
