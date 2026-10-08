@@ -7,7 +7,7 @@ const ui={canvas:$('game'),intro:$('intro'),end:$('end'),endTitle:$('endTitle'),
   mission:$('mission'),detail:$('detail'),progress:$('progress'),health:$('health'),battery:$('battery'),
   time:$('time'),toast:$('toast'),action:$('action'),actionText:$('actionText'),joy:$('joystick'),knob:$('knob'),
   map:$('minimap'),help:$('help'),flash:$('flash'),gaze:$('gaze'),gazeValue:$('gazeValue'),
-  navArrow:$('navArrow'),navTitle:$('navTitle'),navRange:$('navRange'),
+  navigation:$('navigation'),navArrow:$('navArrow'),navTitle:$('navTitle'),navRange:$('navRange'),
   lesson:$('lesson'),lessonTitle:$('lessonTitle'),lessonText:$('lessonText'),reticle:$('reticle'),gazeLabel:$('gazeLabel')};
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090f19);scene.fog=new THREE.FogExp2(0x090f19,.019);
 const renderer=new THREE.WebGLRenderer({canvas:ui.canvas,antialias:true,powerPreference:'high-performance'});
@@ -117,6 +117,9 @@ function setGuidePath(path){
 }
 function updateNavigation(dt,force=false){
   const target=navigationTarget();if(!target||!started)return;
+  const facingGhost=stage===2&&maidenPhase!=='approach';
+  ui.navigation.classList.toggle('hidden',facingGhost);
+  if(facingGhost){if(guidance.points.length)setGuidePath([]);return;}
   guidance.clock+=dt;
   const changed=target.key!==guidance.key;
   const moved=Math.hypot(player.x-guidance.fromX,player.z-guidance.fromZ)>2.4;
@@ -366,6 +369,7 @@ function updateHud(){
   ui.health.textContent='♥'.repeat(hp)+'♡'.repeat(3-hp);
   ui.battery.textContent=Math.floor(power)+'%';ui.flash.textContent=flashOn?'손전등 켜짐 [F]':'손전등 꺼짐 [F]';
   const isGhostEncounter=stage===2&&maidenPhase!=='approach';
+  ui.lesson.classList.toggle('encounter',isGhostEncounter);
   ui.gaze.classList.toggle('hidden',!isGhostEncounter);
   ui.reticle.classList.toggle('hidden',!isGhostEncounter);
   ui.reticle.classList.toggle('active',isGhostEncounter);
