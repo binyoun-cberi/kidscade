@@ -653,7 +653,8 @@ test('male Chibi v7 preserves outer temple triangle connectivity while still cle
   const male=js.slice(js.indexOf('function createKidscadeMaleHairShort(){'),js.indexOf('const HAIR_STYLE_PARAMETERS='));
   assert.match(male,/const originalPositions=source\.geometry\.getAttribute\('position'\)/);
   assert.match(male,/const center=\(originalPositions\.getX\(a\)\+originalPositions\.getX\(b\)\+originalPositions\.getX\(c\)\)\/3/);
-  assert.match(male,/const outerTemple=lateral>=\.49&&lowest>=eyeClearanceY-\.105/);
+  assert.match(male,/const outerTemple=lateral>=\.49&&lowest>=eyeClearanceY-\.135&&/);
+  assert.match(male,/rear<=centerZ\+size\.z\*\.12/);
   assert.match(male,/const faceOverhang=lowest<eyeClearanceY&&foremost>backOfFaceZ/);
   assert.match(male,/if\(!faceOverhang\|\|outerTemple\)/);
   assert.match(male,/if\(faceOverhang&&outerTemple\)preservedTempleTriangles\+\+/);
