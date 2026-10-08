@@ -617,6 +617,9 @@ test('v5.2 outfits reshape actual skinned geometry and add three-dimensional sle
   assert.match(pack,/indices\[offset\+k\]=refIndices\.getComponent\(nearest,k\)/);
   assert.match(pack,/weights\[offset\+k\]=refWeights\.getComponent\(nearest,k\)/);
   assert.match(pack,/articulation:'nearest-body-surface-skin-weights'/);
+  assert.match(pack,/sourceWeights:'nearest-fit-body-arm'/);
+  assert.match(pack,/refIndex\.getComponent\(nearest,k\)/);
+  assert.match(pack,/refWeight\.getComponent\(nearest,k\)/);
   assert.match(pack,/style\.id\+'_leg_'\+side/);
   for(const id of newIds){
     assert.ok(pack.includes('id:\''+id+'\''),'Style definition missing '+id);
