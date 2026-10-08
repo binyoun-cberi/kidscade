@@ -242,11 +242,13 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
     const wide=style.id==='chibi_female_widepants';
     const jogger=style.id==='chibi_male_joggers';
     const chino=style.id==='chibi_male_chinos';
-    const upperRadius=wide?.145:jogger?.134:chino?.120:.118;
-    const lowerRadius=wide?.137:jogger?.075:chino?.076:.088;
-    const top=.59,bottom=.082;
+    // Overlap the original shorts cuff at the upper thigh to prevent skin
+    // wedges between the pelvis shell and the independent leg cylinders.
+    const upperRadius=wide?.151:jogger?.154:chino?.145:.143;
+    const lowerRadius=wide?.116:jogger?.075:chino?.076:.088;
+    const top=.755,bottom=.082;
     const geometry=new THREE.CylinderGeometry(upperRadius,lowerRadius,top-bottom,16,9,false);
-    geometry.translate(sign*.153,(top+bottom)*.5,0);
+    geometry.translate(sign*(wide?.166:.153),(top+bottom)*.5,0);
     const positions=geometry.getAttribute('position');
     const indices=new Uint16Array(positions.count*4);
     const weights=new Float32Array(positions.count*4);
