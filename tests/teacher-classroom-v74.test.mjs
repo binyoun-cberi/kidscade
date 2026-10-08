@@ -48,6 +48,10 @@ test('visual animation and answerable questions stay coupled to student state',(
   assert.match(js,/if\(currentAction\.type==='answerQuestion'\)/);
   assert.match(js,/s\.answeredWindow=questionWindow|s\.answeredWindow=Math\.floor\(lessonElapsed\/24\)/);
   assert.match(js,/ROW_DESK_FORWARD/);
+  assert.match(js,/seatFurnitureRects=seatFurnitureForSpace\(space\)/);
+  assert.match(js,/const allowedChair=actor\.kind==='student'/);
+  assert.match(js,/studentSegmentClear\(curPoint,p,allowChair\)/);
+  assert.match(js,/findStudentPath\(actor\.root\.position,target,allowedChair\)/);
 });
 
 test('compact UI hides conflicting panels when the roster opens',()=>{
