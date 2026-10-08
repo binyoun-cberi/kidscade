@@ -144,7 +144,7 @@ function headlessGame(){
     KidscadeStorage:{getJson(){return []},setJson(){return true},getInt(key){return key==='kidscade_word_siege_stage_v1'?10:0},setRaw(){return true}},
     addEventListener(){},devicePixelRatio:1
   };
-  const hooks=`window.__headless={restart,startWave,update,beginPlacement,buildTower,makeTowerStats,towerCost,availableWords,validPlacement,rolePlacementValid,applyLinks,effectiveStats,showHint,swapOne,selectStage,currentStage,createWave,tileWord,typedWord,attackEnemy,towerUpdate,shotUpdate,updateTraps,updateFields,spawnEnemy,getInput:()=>freeWord, get state(){return state}};resize();`;
+  const hooks=`window.__headless={restart,startWave,update,beginPlacement,buildTower,makeTowerStats,towerCost,availableWords,validPlacement,rolePlacementValid,applyLinks,effectiveStats,showHint,swapOne,selectStage,currentStage,createWave,tileWord,typedWord,attackEnemy,towerUpdate,shotUpdate,updateTraps,updateFields,spawnEnemy,inspectAt,upgradeInspectedTower,upgradeCost,getInput:()=>freeWord, get state(){return state}};resize();`;
   const patched=runtime.replace('resize();requestAnimationFrame(loop);',hooks);
   assert.notEqual(patched,runtime,'headless hooks are missing');
   const ctx={window,document,performance:{now:()=>0},setTimeout(){return 0},clearTimeout(){},requestAnimationFrame(){}};
@@ -461,4 +461,38 @@ test('Word Siege tactical and visual feedback stay present in mobile UI',()=>{
   assert.match(runtime,/e\.freezeTime>0/);
   assert.match(html,/line-clamp:2/);
   assert.match(html,/\.wave-btn\{max-width:47%/);
+});
+
+test('Word Siege upgrading a tower strengthens its role while consuming INK',()=>{
+  const {h,d}=headlessGame(),state=h.state;
+  const word='ARROW',def=d.words[word],stats=h.makeTowerStats(word,def);
+  const tower={id:state.uid++,x:.39,y:.55,word,def,stats,level:1,
+    cool:0,harvestClock:0,pulse:0,links:[],combos:[]};
+  state.towers.push(tower);h.applyLinks();
+  state.ink=90;
+  const before=h.effectiveStats(tower);
+  const price1=h.upgradeCost(tower);
+  h.inspectAt({x:tower.x,y:tower.y});
+  h.upgradeInspectedTower();
+  assert.equal(tower.level,2);
+  assert.equal(state.ink,90-price1);
+  const upgraded=h.effectiveStats(tower);
+  assert.ok(upgraded.damage>before.damage);
+  assert.ok(upgraded.rate>before.rate);
+  assert.ok(upgraded.range>before.range);
+  const price2=h.upgradeCost(tower),ink=state.ink;
+  h.upgradeInspectedTower();
+  assert.equal(tower.level,3);
+  assert.equal(state.ink,ink-price2);
+  const capped=state.ink;
+  h.upgradeInspectedTower();
+  assert.equal(tower.level,3);
+  assert.equal(state.ink,capped);
+  assert.equal(h.upgradeCost(tower),Infinity);
+});
+
+test('Word Siege upgrade control is accessible on touch and maintains visual state',()=>{
+  assert.match(html,/\.tower-upgrade\{/);
+  assert.match(runtime,/towerUpgradeBtn/);
+  assert.match(visualsSource,/t\.level\|\|1/);
 });
