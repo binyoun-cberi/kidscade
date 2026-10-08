@@ -41,6 +41,7 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
 #reticle:after{content:'';position:absolute;inset:10px;background:#b8d4ddaa;border-radius:50%}
 #reticle.active{opacity:1}#reticle.locked{border-color:#aaf2be;box-shadow:0 0 18px #90ffacaa}#reticle.locked:after{background:#aaf2be}
 #lesson{position:absolute;bottom:134px;left:50%;width:min(460px,78vw);transform:translateX(-50%);text-align:center;padding:12px 16px;border:1px solid #f6d293b5;border-radius:12px;background:#172637ec;box-shadow:0 10px 35px #000b;pointer-events:none}
+#lesson.encounter{bottom:205px}
 #lesson strong{font-size:14px;color:#f8dfb2}#lesson p{font-size:12px;line-height:1.45;margin:5px 0 0;color:#d6e5e8}
 #toast{position:absolute;top:34%;left:50%;width:min(480px,84vw);transform:translate(-50%,-4px);padding:12px 17px;text-align:center;background:#07131df5;border:1px solid #dfb47c9c;box-shadow:0 10px 35px #0008;border-radius:12px;color:#f9dfb7;font-weight:750;font-size:14px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none}
 #toast.show{opacity:1;transform:translate(-50%,0)}
@@ -67,6 +68,7 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
  #navigation{top:auto;bottom:194px;left:50%;width:min(250px,64vw);padding:8px 10px}
  #navArrow{font-size:17px;margin-right:3px}#navTitle{font-size:10px}#navRange{font-size:9px}
  #lesson{bottom:101px;width:min(310px,55vw);padding:7px 9px}
+ #lesson.encounter{bottom:180px}
  #lesson strong{font-size:11px}#lesson p{font-size:10px}
  #reticle{width:24px;height:24px}
 
@@ -90,6 +92,7 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
 @media(max-height:480px){
   #navigation{top:auto;bottom:147px;left:50%;width:190px;padding:5px}
   #lesson{bottom:75px;max-width:275px;padding:5px 7px}
+  #lesson.encounter{bottom:171px}
 
   #missionPanel{top:63px;max-height:105px;overflow:auto}
   #minimapWrap{top:63px}

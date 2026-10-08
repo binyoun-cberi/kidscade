@@ -1,9 +1,13 @@
 // Fifteen pupils have assigned stations outside the collision area of school furniture.
 export const CLASS_SIZE=15;
+// Positions are measured at the pupil's hips/seat center, not at the desk.
+export const ROW_DESK_FORWARD=.78;
+export const ROW_CHAIR_OFFSET=.03;
+export const SEAT_SURFACE_HEIGHT=Object.freeze({classroom:.25,computer:.23,science:.62,art:.62,cafeteria:.38});
 const STUDENT_COLUMNS=[-5.2,-2.6,0,2.6,5.2];
 const STUDENT_ROWS=[-2.15,.05,2.25];
 function rowStations(){return STUDENT_ROWS.flatMap(z=>STUDENT_COLUMNS.map(x=>({x,z})))}
-function rowWorkstations(){return STUDENT_ROWS.flatMap(z=>STUDENT_COLUMNS.map(x=>({x,z:z-1,hx:.67,hz:.43})))}
+function rowWorkstations(){return STUDENT_ROWS.flatMap(z=>STUDENT_COLUMNS.map(x=>({x,z:z-ROW_DESK_FORWARD,hx:.69,hz:.39})))}
 const ACTIVITY_TABLES=[
   {x:-2.7,z:-2.05,hx:1.28,hz:.58},{x:2.7,z:-2.05,hx:1.28,hz:.58},
   {x:-2.3,z:.7,hx:1.16,hz:.58},{x:2.3,z:.7,hx:1.16,hz:.58}
