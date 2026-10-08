@@ -1,0 +1,21 @@
+name: Teacher Simulator V74 Browser Audit
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/teacher-v74-browser-audit.yml'
+      - 'tests/teacher-v74-browser-audit.cjs'
+      - 'games/teacher-classroom-sim-prototype/**'
+  workflow_dispatch:
+jobs:
+  chrome-render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Korean fonts
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk
+      - name: Audit rendered classroom and accelerated lesson in Chrome
+        run: node tests/teacher-v74-browser-audit.cjs
