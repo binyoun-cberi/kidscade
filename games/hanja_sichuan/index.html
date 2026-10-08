@@ -232,6 +232,13 @@ dialog p{color:#657369;line-height:1.6}
  .tile{transition:none}.tile.clearing,.tile.hinted{animation:none}
  .tile.clearing{opacity:.35}
 }
+/* On desktop, game messages share one small footer strip under the tabletop. */
+@media(min-width:981px){
+ .game{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+ .game .board-toolbar,.game .board-scroller{grid-column:1/-1}
+ .selected-info{border-top:1px solid #c7e5c358;margin:0;padding:9px 6px;text-align:left}
+ .toast{border-top:1px solid #c7e5c358;display:flex;align-items:center;justify-content:flex-end;text-align:right;padding:7px 8px}
+}
 </style>
 <script src="../../kidscade-game-sdk.js" data-game-id="hanja_sichuan" data-title="한자 사천성" data-shell="true" data-orientation="any"></script>
 <script src="../hanja_test/data/hanja-grade-data.js"></script>
@@ -358,7 +365,7 @@ dialog p{color:#657369;line-height:1.6}
   function currentCell(){
     const vw=window.innerWidth||1024;
     const boardRoom=vw>980?Math.min(900,vw-345):Math.max(280,vw-26);
-    return Rules.tileSize({viewportWidth:vw,boardWidth:boardRoom,cols:st.cols,zoomed:st.zoomed});
+    return Rules.tileSize({viewportWidth:vw,viewportHeight:window.innerHeight||1080,boardWidth:boardRoom,cols:st.cols,zoomed:st.zoomed});
   }
   function updateViewControls(){
     const mobile=(window.innerWidth||1024)<=640;
