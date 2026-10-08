@@ -87,6 +87,9 @@ let chrome,ws;
  await evaluate('window.__teacherQa.camera([0,12.5,10.6],[0,.3,-.3])');
  await wait(400);
  await shot('initial-15-students');
+ await evaluate('window.__teacherQa.camera([7,4.8,3.1],[1.4,.62,-1.2])');
+ await wait(250);await shot('student-side-view');
+ await evaluate('window.__teacherQa.camera([0,12.5,10.6],[0,.3,-.3])');
  console.log('TEACHER_QA_INITIAL '+JSON.stringify(await evaluate('window.__teacherQa.info()')));
  const panelWide=await metrics();console.log('TEACHER_QA_UI_DESKTOP '+JSON.stringify(panelWide));
  await evaluate('window.__teacherQa.moveToBoard()');
@@ -112,11 +115,21 @@ let chrome,ws;
  await shot('lesson-complete');
  await send('Emulation.setDeviceMetricsOverride',{width:844,height:390,deviceScaleFactor:1,mobile:true});
  await wait(450);
- console.log('TEACHER_QA_UI_COMPACT '+JSON.stringify(await metrics()));
+ const compact=await metrics();
+ console.log('TEACHER_QA_UI_COMPACT '+JSON.stringify(compact));
+ function collision(a,b){return a.show&&b.show&&a.x<b.x+b.w&&b.x<a.x+a.w&&a.y<b.y+b.h&&b.y<a.y+a.h}
+ function checkNoOverlap(data,left,right){
+   const a=data.nodes.find(x=>x.id===left),b=data.nodes.find(x=>x.id===right);
+   if(collision(a,b))throw Error('UI overlaps: '+left+' / '+right+' / '+JSON.stringify(data));
+ }
+ checkNoOverlap(compact,'dayStrip','campaignStatus');
+ checkNoOverlap(compact,'instructionPanel','joystick');
  await shot('compact-landscape');
  await evaluate("document.getElementById('rosterToggle').click()");
  await wait(150);
- console.log('TEACHER_QA_UI_ROSTER '+JSON.stringify(await metrics()));
+ const rosterGeometry=await metrics();
+ console.log('TEACHER_QA_UI_ROSTER '+JSON.stringify(rosterGeometry));
+ checkNoOverlap(rosterGeometry,'studentStrip','joystick');
  await shot('roster-open-compact');
  await evaluate("document.getElementById('rosterToggle').click()");
  await send('Emulation.setDeviceMetricsOverride',{width:1024,height:768,deviceScaleFactor:1,mobile:true});
@@ -124,6 +137,8 @@ let chrome,ws;
  await wait(1500);
  console.log('TEACHER_QA_ROOM_SCIENCE '+JSON.stringify(await evaluate('window.__teacherQa.info()')));
  await shot('science-stools');
+ await evaluate('window.__teacherQa.camera([6.5,3.7,4.0],[0,.62,-.9])');
+ await wait(260);await shot('science-stools-side');
  console.log('TEACHER_QA_ERRORS '+JSON.stringify(runtimeErrors.slice(0,20)));
  console.log('TEACHER_QA_DONE');
 })().catch(e=>{console.error('TEACHER_QA_FAILED',e.stack||String(e));process.exitCode=1}).finally(()=>{
