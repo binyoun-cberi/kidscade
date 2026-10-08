@@ -415,7 +415,7 @@ function advanceGhostToward(target,dt){
 }
 function beginMaidenPractice(){
   maidenPhase='practice';maiden.root.visible=true;maiden.charge=0;ghostWaiting=0;
-  showLesson('첫 만남 · 안전한 연습','과학실 안의 흰 유령을 찾아 화면 중앙으로 바라보세요. 지금은 공격하지 않아요.',16);
+  showLesson('첫 만남 · 안전한 연습','흰 유령은 눈을 돌리면 다가오고 바라보면 멈춰요. 화면 중앙에 맞춰 보세요. 지금은 공격하지 않아요.',16);
   showToast('처녀귀신의 움직임을 관찰하세요. 지금은 연습 시간입니다.');
   sfx('amb_scary_music_box.mp3',.17);
   updateNavigation(0,true);
@@ -437,7 +437,8 @@ function updateGhost(dt){
   maiden.root.rotation.y=Math.atan2(player.x-maiden.x,player.z-maiden.z);
   gazeLocked=gazingAtGhost();
   if(maidenPhase==='practice'){
-    // No damage or chase while the pupil is discovering the sight rule.
+    // She slowly approaches when ignored, then freezes when watched; this is always nonlethal.
+    if(!gazeLocked&&dist(maiden,player)>3.3)advanceGhostToward(player,dt*.55);
     maiden.charge=Math.max(0,Math.min(1.8,maiden.charge+dt*(gazeLocked?1:-.1)));
     if(maiden.charge>=1.8)beginMaidenHunt();
     return;
