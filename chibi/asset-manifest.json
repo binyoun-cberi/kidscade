@@ -167,9 +167,9 @@
       "type": "face-detail",
       "generatedFrom": "eyelashes",
       "rigging": "source eyelashes topology + skin weights",
-      "shaping": "only upper eyebrow triangles from original eyelashes indexed SkinnedMesh; original UVs/weights; pointed lower eyelashes removed",
+      "shaping": "Retains only the two original connected eyebrow islands (12 triangles each) from eyelashes; excludes all eyelashes and eye corners; original UV and skin weights shared",
       "color": "#332723",
-      "revision": "upper-brow-faces-v3"
+      "revision": "separate-eyebrow-islands-v4"
     },
     "kidscade_male_tshirt": {
       "label": "남자 기본 티셔츠",
