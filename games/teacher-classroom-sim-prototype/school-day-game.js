@@ -1186,8 +1186,11 @@ function updateLesson(dt){
   const phaseEvent=tickLessonFlow(lessonFlow,dt,{teacherAtBoard:boardNear});
   if(lessonFlow.phase==='explain'&&boardNear)stats.boardExplanationSeconds+=dt;
   if(phaseEvent==='explanation-complete'){
+    playCue('write');actionFeedback(player.root.position,'설명 완료','write');
+    updateBoard('① 설명 완료 · 과제 내주기');
     showToast('📖 설명 완료! 칠판 앞에서 과제를 내주세요.');
   }else if(phaseEvent==='practice-complete'){
+    playCue('paper');updateBoard('③ 칠판에서 정리할 시간');
     showToast('📝 활동 시간이 끝났어요. 칠판으로 돌아와 정리하세요.');
     endGroupActivitiesForRecap();
   }else if(phaseEvent==='recap-complete'){
@@ -1196,6 +1199,8 @@ function updateLesson(dt){
       const weight=LEARNING_RULES.subjectWeights[currentStep.subject]??.5;
       addLearning(campaign,student.runtime.id,TEACHING_RULES.recapLearningBonus*weight);
     }
+    actionFeedback(player.root.position,'학습 성장 +','recap');
+    updateBoard('✔ 오늘 배운 내용을 기억해요!');
     showToast('📚 핵심 내용을 정리했어요. 학생들이 더 잘 기억해요.');
   }
   teachingMultiplier=lessonTeachingEfficiency(lessonFlow,{teacherAtBoard:boardNear});
@@ -1515,25 +1520,33 @@ function useAction(){
   if(currentAction.type==='moveNext'){
     transitionToSpace(currentStep.nextLocation);enterStep(stepIndex+1,{spaceChanged:true});return;
   }
-  if(currentAction.type==='healthCheck'){checkStudentHealth(currentAction.student);playerGestureTimer=.45;playAnim(player,'push');return}
+  if(currentAction.type==='healthCheck'){checkStudentHealth(currentAction.student);actionFeedback(currentAction.student.actor.root.position,'건강 확인','health');playerGestureTimer=.45;playAnim(player,'push');return}
   if(currentAction.type==='healthDecision'){applyHealthDecision(currentAction.student,currentAction.decision);playerGestureTimer=.5;playAnim(player,'push');return}
   if(currentAction.type==='safetyReview'){
     const s=currentAction.student;s.safetyRecord.heard=true;s.safetyRecord.finished=true;
     if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy'))hideBubble(s);
+    actionFeedback(s.actor.root.position,'안전수칙 확인','calm');
     playerGestureTimer=.45;playAnim(player,'push');showToast(s.runtime.name+'에게 안전수칙을 다시 알려줬어요.');return;
   }
   if(currentAction.type==='quietFriends'){
-    stopLessonChat(currentAction.chat,{teacher:true});playerGestureTimer=.45;playAnim(player,'push');return;
+    const point=currentAction.chat.a.actor.root.position.clone();
+    stopLessonChat(currentAction.chat,{teacher:true});actionFeedback(point,'다시 집중!','calm');
+    playerGestureTimer=.45;playAnim(player,'push');return;
   }
   if(currentAction.type==='assignWork'){
     if(isTeacherAtBoard()&&performLessonAction(lessonFlow,'assignWork')){
-      stats.lessonsAssigned++;showToast('📝 과제를 냈어요. 학생들이 스스로 활동합니다.');
+      stats.lessonsAssigned++;playCue('paper');
+      actionFeedback(player.root.position,'과제 배부','paper');
+      updateBoard('② 스스로 풀어보기 · 문제 해결');
+      showToast('📝 과제를 냈어요. 학생들이 스스로 활동합니다.');
       playerGestureTimer=.45;playAnim(player,'push');
     }
     return;
   }
   if(currentAction.type==='startRecap'){
     if(isTeacherAtBoard()&&performLessonAction(lessonFlow,'startRecap')){
+      actionFeedback(player.root.position,'오늘의 핵심 정리','write');
+      updateBoard('③ 오늘의 핵심 · 정리하기');
       showToast('📖 정리를 시작해요. 칠판에서 끝까지 설명해 주세요.');
       playerGestureTimer=.45;playAnim(player,'push');
     }
@@ -1549,15 +1562,25 @@ function useAction(){
       }
       addLearning(campaign,s.runtime.id,.055);
     }
+    actionFeedback(player.root.position,'전체 집중!','group');
     playerGestureTimer=.5;playAnim(player,'push');showToast('📣 반 전체에 집중 신호를 줬어요!');return;
   }
   if(currentAction.type==='focus'){
     const s=currentAction.student;helpFocus(s.runtime);addLearning(campaign,s.runtime.id,LEARNING_RULES.focusHelpBonus);stats.focusHelps++;s.wander=null;s.actor.target=s.seat.clone();playerGestureTimer=.5;playAnim(player,'push');
     if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy')&&!(s.safetyRecord?.finished&&!s.safetyRecord.heard))hideBubble(s);
+    actionFeedback(s.actor.root.position,'집중 회복 +','attention');
     showToast(s.runtime.name+'에게 관심을 줬어요.');return;
   }
-  if(currentAction.type==='mediate'){mediatePair(currentAction.pair);playerGestureTimer=.5;playAnim(player,'push');return}
-  if(currentAction.type==='separate'){separateFight(currentAction.pair);playerGestureTimer=.65;playAnim(player,'push');return}
+  if(currentAction.type==='mediate'){
+    const target=currentAction.pair.a.actor.root.position.clone();
+    mediatePair(currentAction.pair);actionFeedback(target,'화해 성공','calm');
+    playerGestureTimer=.5;playAnim(player,'push');return
+  }
+  if(currentAction.type==='separate'){
+    const target=currentAction.pair.a.actor.root.position.clone();
+    separateFight(currentAction.pair);actionFeedback(target,'싸움 중재','warning');
+    playerGestureTimer=.65;playAnim(player,'push');return
+  }
   showToast(currentStep.kind==='transition'?'출입문 가까이 가 보세요.':'필요한 학생 가까이 가 보세요.');
 }
 
