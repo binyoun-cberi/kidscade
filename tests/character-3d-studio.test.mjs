@@ -337,16 +337,32 @@ test('male eyes and eyebrows preserve original Chibi skinned meshes and new prop
   const manifest=JSON.parse(read('chibi/asset-manifest.json'));
   const male=js.slice(js.indexOf('function createKidscadeMaleSet(){'),js.indexOf('function makeUnlitMaterial(source){'));
   assert.match(male,/const eyeGeometry=eyesSource\.geometry\.clone\(\)/);
-  assert.match(male,/const maleEyeHeightScale=\.70/);
-  assert.match(male,/const maleBrowThickness=\.52/);
-  assert.match(male,/const maleBrowOffset=\.072/);
+  assert.match(male,/const maleEyeHeightScale=\.64/);
+  assert.match(male,/const browCut=/);
+  assert.match(male,/browGeometry\.setIndex\(kept\)/);
+  assert.match(male,/extractedBrowTriangles:kept\.length\/3/);
+  assert.match(male,/const kept=\[\]/);
   assert.match(male,/const browGeometry=lashesSource\.geometry\.clone\(\)/);
-  assert.match(male,/makeSolidMaterial\('#30241f','Kidscade Male Brows'\)/);
+  assert.match(male,/makeSolidMaterial\('#332723','Kidscade Male Brows'\)/);
   assert.match(male,/generatedFrom:'eyes'/);
   assert.match(male,/generatedFrom:'eyelashes'/);
   assert.doesNotMatch(male,/new THREE\.(?:SphereGeometry|TubeGeometry|ConeGeometry)/);
-  assert.equal(manifest.customParts.kidscade_male_eyes.revision,'boyish-eyes-v2');
-  assert.equal(manifest.customParts.kidscade_male_brows.revision,'defined-lower-brows-v2');
+  assert.equal(manifest.customParts.kidscade_male_eyes.revision,'boyish-eyes-v3');
+  assert.equal(manifest.customParts.kidscade_male_brows.revision,'upper-brow-faces-v3');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261008-maleface2/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-malefix3/);
+});
+
+
+test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const male=js.slice(js.indexOf('function createKidscadeMaleSet(){'),js.indexOf('function makeUnlitMaterial(source){'));
+  assert.match(male,/const torsoY=smooth\(\.78,1\.04,y\)/);
+  assert.match(male,/const torsoX=1-smooth\(\.23,\.46,Math\.abs\(x\)\)/);
+  assert.match(male,/const sleeve=smooth\(\.10,\.23,Math\.abs\(x\)\)/);
+  assert.match(male,/const maleTshirt=cloneSkinnedMeshWithGeometry\(/);
+  assert.match(male,/generatedFrom:'shirt',fit:'smooth shoulder\/sleeve clearance'/);
+  assert.doesNotMatch(male,/new THREE\.(?:CylinderGeometry|SphereGeometry|BoxGeometry)/);
+  const manifest=JSON.parse(read('chibi/asset-manifest.json'));
+  assert.equal(manifest.customParts.kidscade_male_tshirt.revision,'shoulder-clearance-v3');
 });
