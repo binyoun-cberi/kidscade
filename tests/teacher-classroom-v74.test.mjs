@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
-  CLASS_SIZE,SCHOOL_SPACES,ROW_DESK_FORWARD,ROW_CHAIR_OFFSET,SEAT_SURFACE_HEIGHT
+  CLASS_SIZE,SCHOOL_SPACES,ROW_DESK_FORWARD,ROW_CHAIR_OFFSET,SEAT_SURFACE_HEIGHT,seatHeightAdjustment
 } from '../games/teacher-classroom-sim-prototype/school-day.mjs';
 
 const source=(name)=>readFileSync(new URL('../games/teacher-classroom-sim-prototype/'+name,import.meta.url),'utf8');
@@ -67,4 +67,21 @@ test('the teacher game catalog entry does not reintroduce legacy version pins',(
   const teacher=catalog.games.find(game=>game.id==='job_teacher_classroom');
   assert.ok(teacher,'teacher simulator remains registered');
   assert.equal(teacher.href,'games/teacher-classroom-sim-prototype/index.html');
+});
+
+test('animated pelvis correction handles tall laboratory stools as well as low chairs',()=>{
+  assert.equal(seatHeightAdjustment(.62,.34),.28);
+  assert.ok(Math.abs(seatHeightAdjustment(.25,.34)+.09)<1e-8);
+  assert.equal(seatHeightAdjustment(.90,.10),.5);
+  assert.equal(seatHeightAdjustment(.10,1.10),-.5);
+  const game=source('school-day-game.js');
+  assert.match(game,/actor\.hipBone\?\.getWorldPosition/);
+  assert.match(game,/model\.scale\.x\*=spread/);
+  assert.match(game,/spread:1\.65/);
+});
+test('landscape tablet controls no longer overlap the roster or teaching panel',()=>{
+  const css=source('style.css');
+  assert.match(css, /#instructionPanel\{top:160px;left:160px/);
+  assert.match(css, /#studentStrip\{top:157px;left:160px/);
+  assert.match(css, /#dayStrip\{left:calc\(50% - 10px\)/);
 });
