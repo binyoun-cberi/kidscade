@@ -357,7 +357,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261008-grounded-boy3/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-chibi-audit41/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
@@ -447,7 +447,7 @@ test('male base opens first and provides brows visibility, face zoom and gait st
   assert.match(html,/id="gaitBadge"/);
   assert.match(html,/data-view="face"/);
   assert.match(html,/data-chibi-preset="male">남자 기본/);
-  assert.match(html,/character-3d-studio\.js\?v=20261008-grounded-boy3/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-chibi-audit41/);
 });
 
 test('mobile studio shows the live avatar preview before the long wardrobe',()=>{
@@ -502,4 +502,33 @@ test('grounded male gait damps vertical hip hop and splayed thigh swing in WALK 
   const manifest=JSON.parse(read('chibi/asset-manifest.json'));
   assert.equal(manifest.animations.length,11);
   assert.equal(manifest.customParts.kidscade_male_set_policy.runAnimation.pelvisVerticalScale,.66);
+});
+
+
+test('local-only Chibi audit samples real mixer poses without production auth changes',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const html=read('teacher/character-3d-studio.html');
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(js,/localVisualAudit=\/\^\(\?:localhost\|127\\\.0\\\.0\\\.1\)\$/);
+  assert.match(js,/window\.__kc3dAudit=\{/);
+  assert.match(js,/if\(mixer&&!localVisualAudit\)mixer\.update\(dt\)/);
+  assert.match(js,/mixer\.setTime\(source\.duration\*fraction\)/);
+  assert.match(js,/sampledBones:bones/);
+  assert.match(audit,/Page\.captureScreenshot/);
+  assert.match(audit,/KIDSCADE_CHIBI_AUDIT_OUT/);
+  assert.match(audit,/Chibi WebGL never became ready/);
+  assert.match(html,/id="view"/);
+});
+
+test('one-touch mobile Chibi controls are wired to the same real animation, view and speed',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const html=read('teacher/character-3d-studio.html');
+  for(const clip of ['IDLE','WALK','RUN','JUMP'])assert.ok(html.includes('data-quick-clip="'+clip+'"'));
+  for(const view of ['front','threeQuarter','side','back'])assert.ok(html.includes('data-quick-view="'+view+'"'));
+  for(const speed of ['0.5','1','1.5'])assert.ok(html.includes('data-quick-speed="'+speed+'"'));
+  assert.match(js,/const clip=animations\.find\(item=>clipLabel\(item\.name\)===button\.dataset\.quickClip\)/);
+  assert.match(js,/if\(clip\)playClip\(clip\.name\)/);
+  assert.match(js,/setCameraView\(button\.dataset\.quickView\)/);
+  assert.match(js,/\$\('speed'\)\.value=button\.dataset\.quickSpeed/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-chibi-audit41/);
 });
