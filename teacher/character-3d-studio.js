@@ -775,6 +775,36 @@ function createKidscadeMaleHairShort(){
     const z=centerZ+(oz-centerZ)*(1-.11*lower);
     positions.setXYZ(i,x,y,z);
   }
+  // 원본 긴 머리의 끝 정점 일부가 위쪽으로 압축되면서 눈높이까지 올라온다.
+  // 눈 앞쪽/관자놀이 쪽에서는 그 면을 렌더링하지 않고, 뒤통수 아래쪽만 살린다.
+  // hairone의 UV, geometry 속성, skinIndex/skinWeight, skeleton은 그대로 유지한다.
+  const eyes=getNode('eyes');
+  if(!eyes?.isSkinnedMesh){
+    geometry.dispose();
+    throw new Error('남자 숏컷 충돌 검사에 필요한 eyes SkinnedMesh를 찾지 못했습니다.');
+  }
+  eyes.geometry.computeBoundingBox();
+  const eyeClearanceY=eyes.geometry.boundingBox.max.y+.02;
+  const backOfFaceZ=centerZ-.045;
+  const originalIndex=geometry.getIndex();
+  if(!originalIndex){
+    geometry.dispose();
+    throw new Error('남자 숏컷의 hairone 메시에는 삼각형 인덱스가 필요합니다.');
+  }
+  const kept=[];
+  for(let j=0;j<originalIndex.count;j+=3){
+    const a=originalIndex.getX(j),b=originalIndex.getX(j+1),c=originalIndex.getX(j+2);
+    const lowest=Math.min(positions.getY(a),positions.getY(b),positions.getY(c));
+    const foremost=Math.max(positions.getZ(a),positions.getZ(b),positions.getZ(c));
+    if(lowest>=eyeClearanceY || foremost<=backOfFaceZ){
+      kept.push(a,b,c);
+    }
+  }
+  if(kept.length<originalIndex.count*.40){
+    geometry.dispose();
+    throw new Error('남자 숏컷의 눈가 영역 제거 범위가 너무 큽니다.');
+  }
+  geometry.setIndex(kept);
   positions.needsUpdate=true;
   geometry.computeVertexNormals();
   geometry.computeBoundingBox();
@@ -793,7 +823,10 @@ function createKidscadeMaleHairShort(){
     generatedFrom:'hairone',
     geometryPolicy:'retains-source-uv-indices-and-skin-weights',
     sourceHeight:size.y,
-    shapedHeight:geometry.boundingBox.max.y-geometry.boundingBox.min.y
+    shapedHeight:geometry.boundingBox.max.y-geometry.boundingBox.min.y,
+    eyeClearanceY,
+    removedEyeLevelTriangles:(originalIndex.count-kept.length)/3,
+    eyeClearancePolicy:'trim front/side hair faces below upper-eye clearance; keep rear nape'
   };
 
   source.parent.add(hair);
