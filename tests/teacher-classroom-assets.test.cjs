@@ -210,7 +210,9 @@ test('NPC character animations use in-place idle walk and gesture clips', () => 
   assert.match(js, /function inPlaceCharacterClip\(/);
   assert.match(js, /\/idle\|stand\/i/);
   assert.match(js, /\/walk\|run\/i/);
-  assert.match(js, /push\|attack\|punch\|hit\|wave\|talk\|gesture\|point/);
+  assert.match(js, /wave\|point\|talk\|gesture\|pick/);
+  assert.match(js, /punch\|attack\|hit/);
+  assert.match(js, /playAnim\(pair\.a\.actor,'hit'\)/);
   assert.match(js, /cloneSkeleton\(gltf\.scene\)/);
   assert.match(js, /await createActors\(\)/);
 });
