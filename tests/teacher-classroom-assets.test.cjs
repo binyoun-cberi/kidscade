@@ -269,9 +269,9 @@ test('full-size student stations stay clear of desks and chairs', async () => {
     assert.ok(nearest >= .25, 'full-size classroom student too close to desk');
   }
   assert.match(js, /z:s\.z\+\.03,size:\.74/);
-  assert.match(js, /z:s\.z-\.28,size:\.62/);
+  assert.match(js, /z:s\.z\+\.02,size:\.62/);
   assert.match(js, /z:s\.z-\.30,size:\.68/);
-  assert.match(js, /z:s\.z-\.28,size:\.7/);
+  assert.match(js, /z:s\.z\+\.02,size:\.7/);
 });
 
 test('teacher simulator error UI no longer references Chibi', () => {
