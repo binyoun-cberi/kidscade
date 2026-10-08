@@ -263,6 +263,24 @@ let chrome,ws;
   const musicShot=await send('Page.captureScreenshot',{format:'jpeg',quality:46,captureBeyondViewport:false});
   console.log('WORD_SIEGE_FUN_MUSIC '+JSON.stringify(music));
   console.log('WORD_SIEGE_IMAGE_fun-music='+musicShot.data);
+  const vocabulary=await evaluate(`(()=>{
+    const input=document.getElementById('freeWord'),meta=document.getElementById('wordMeta');
+    const result={};
+    for(const word of ['BOOK','APPLE','CONVERSATION','FIREWORK']){
+      input.value=word;input.dispatchEvent(new Event('input',{bubbles:true}));
+      result[word]=meta.textContent;
+    }
+    return result;
+  })()`);
+  for(const [word,description] of Object.entries(vocabulary)){
+    assert.ok(description&&!description.includes('빠른 공격'),'No generic rapid text for '+word);
+  }
+  assert.match(vocabulary.BOOK,/핀볼|튕김/);
+  assert.match(vocabulary.APPLE,/과즙/);
+  assert.match(vocabulary.CONVERSATION,/무지개|광선/);
+  assert.match(vocabulary.FIREWORK,/불꽃/);
+  console.log('WORD_SIEGE_VOCABULARY_ABILITIES '+JSON.stringify(vocabulary));
+
   assert.equal(pageErrors.length,0,'Browser JavaScript errors: '+JSON.stringify(pageErrors));
   console.log('WORD_SIEGE_BROWSER_AUDIT_PASSED 4 sizes, 10 stage selectors, 2 advanced stage renders and pointer gameplay');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1}).finally(async()=>{
