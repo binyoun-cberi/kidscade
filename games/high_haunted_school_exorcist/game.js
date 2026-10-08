@@ -488,6 +488,10 @@ function act(){
   if(item.type==='fix'){
     const obj=disturbed[item.i];obj.done=true;obj.object.visible=false;obj.marker.visible=false;fixes++;sfx('sfx_child_giggle.mp3',.13);
     showToast('이상현상을 바로잡았어요 · '+fixes+'/3');
+    if(fixes===1){
+      showLesson('첫 조사 성공 · 튜토리얼 완료','이제 안내선 없이 직접 탐색하세요. 미니맵에 표시된 남은 주황색 점과 교실 이름을 확인하세요.',12);
+      updateNavigation(0,true);
+    }
     if(fixes===3){trickCircle.visible=true;showToast('세 가지 장난 해결! 교실 중앙의 주황색 봉인진으로 가세요.');}
   }else if(item.type==='trick'){sfx('sfx_school_alarm_bell.mp3',.18);setStage(2);}
   else if(item.type==='maiden'){sfx('sfx_school_alarm_bell.mp3',.18);setStage(4);}
