@@ -272,12 +272,24 @@ function addClassroom(space){
   for(let i=0;i<space.seats.length;i++){
     const s=space.seats[i],deskZ=s.z-1;
     placeAsset(deskUrl,{x:s.x,z:deskZ,size:1.38,rot:Math.PI,fallback:[1.4,.65,.78,0xc99761]});
-    placeAsset(chairUrl,{x:s.x,z:s.z-.30,size:.74,rot:Math.PI,fallback:[.64,.55,.62,0x5c8eb0]});
+    placeAsset(chairUrl,{x:s.x,z:s.z+.03,size:.74,rot:Math.PI,fallback:[.64,.55,.62,0x5c8eb0]});
   }
   placeAsset(bookUrl,{x:-6.35,z:3.8,size:1.8,rot:Math.PI/2,fallback:[1.2,1.55,.55,0x967555]});
-  placeAsset(screenUrl,{x:6.02,y:.78,z:3.55,size:.68,rot:Math.PI,fallback:[.7,.5,.15,0x3b4855]});
-  const desk=box(2.0,.72,1.05,0x8b623f);desk.position.set(6.02,.36,3.65);furnitureRoot.add(desk);
-  const rug=plane(3.7,2.0,0x9ac2b6);rug.rotation.x=-Math.PI/2;rug.position.set(-4.8,.002,3.35);decoRoot.add(rug);
+  const frontDesk=box(1.38,.72,.76,0xb9895e);
+  frontDesk.position.set(-6.05,.36,-4.32);furnitureRoot.add(frontDesk);
+  placeAsset(screenUrl,{x:-6.05,y:.73,z:-4.43,size:.56,rot:Math.PI,fallback:[.55,.42,.13,0x39495d]});
+  const teacherChair=box(.55,.49,.55,0x66829a);teacherChair.position.set(-6.05,.245,-3.72);furnitureRoot.add(teacherChair);
+  const rug=plane(3.7,1.35,0x9ac2b6);rug.rotation.x=-Math.PI/2;rug.position.set(-4.8,.002,3.8);decoRoot.add(rug);
+  for(const x of [-4.9,-2.7,2.7,4.9]){
+    const poster=box(1.48,.9,.035,x<0?0xcfe2ff:0xf7d3cd);
+    poster.position.set(x,2.05,4.98);decoRoot.add(poster);
+  }
+  for(const x of [-3.5,0,3.5]){
+    const windowFrame=box(2.2,1.35,.055,0xeaf7ff);
+    windowFrame.position.set(x,2.5,4.99);decoRoot.add(windowFrame);
+    const pane=box(2.0,1.13,.062,0x92d7ec);
+    pane.position.set(x,2.5,4.94);decoRoot.add(pane);
+  }
 }
 function addGym(){
   for(let z=-3;z<=3;z+=2)addLine(0,z,12.4,.05);
