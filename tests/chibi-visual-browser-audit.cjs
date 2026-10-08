@@ -203,6 +203,10 @@ const errors=[];
   assert.equal(newStyles.length,15,'Must have 15 new generated styles');
   assert.equal(new Set(newStyles.map(x=>x.fingerprint)).size,15,
     'New garments do not all have distinct skinned-shell geometry');
+  for(const name of ['chibi_male_jeans','chibi_male_joggers','chibi_male_chinos','chibi_female_jeans','chibi_female_widepants']){
+    const style=catalog3d.find(x=>x.name===name);
+    assert.ok(style?.extras>=3,'Trousers must have separate left and right skinned leg meshes: '+name);
+  }
 
   for(const fit of ['male','female']){
     await setFit(fit);
