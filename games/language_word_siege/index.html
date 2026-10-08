@@ -72,6 +72,19 @@
   #startOverlay #stageDetail{font-size:11px;line-height:1.25;margin:3px 0}
   #startBtn{position:static;min-height:41px;margin-top:5px}
 }
+/* Keep tactical guidance readable without covering enemy spawn lanes. */
+.status{max-width:min(320px,45%);padding:7px 10px;background:rgba(255,253,240,.94)}
+.status b{font-size:12px;letter-spacing:.01em}
+.status div{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-clamp:2}
+@media(max-width:620px){
+  .status{max-width:46%;padding:6px 8px;top:6px;left:6px}
+  .status b{font-size:10px}.status div{font-size:10px;line-height:1.25;margin-top:1px}
+  .wave-btn{max-width:47%;font-size:12px;line-height:1.2}
+}
+@media (orientation:landscape) and (max-height:500px) and (min-width:500px){
+  .status{max-width:34%;padding:5px 8px;top:4px}
+  .status div{font-size:10px}
+}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <script src="../../kidscade-storage.js"></script>
