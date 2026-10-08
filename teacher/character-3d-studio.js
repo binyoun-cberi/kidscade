@@ -831,26 +831,31 @@ function createKidscadeMaleSet(){
     meshPolicy:'reuse-source-meshes-only'
   };
 
-  // 1) 바디는 character_low의 topology와 skin weights를 그대로 유지한 채 실루엣만 재성형한다.
+  // 1) 어깨만 부풀리던 기존 일괄 x 변형은 소매 안쪽에서 피부 관통을 일으켰다.
+  //    손/팔 정점은 거의 유지하고 몸통 상단만 매끄러운 가중치로 재성형한다.
+  const smooth=(a,b,v)=>{
+    const t=THREE.MathUtils.clamp((v-a)/(b-a),0,1);
+    return t*t*(3-2*t);
+  };
   const bodyGeometry=bodySource.geometry.clone();
   const bp=bodyGeometry.getAttribute('position');
   for(let i=0;i<bp.count;i++){
     let x=bp.getX(i),y=bp.getY(i),z=bp.getZ(i);
 
-    if(y>=.86&&y<=1.30){
-      const shoulder=Math.max(0,Math.min(1,(y-.86)/.44));
-      x*=1.07+shoulder*.08;
-      z*=1.015;
-      if(z>0)z*=.91;
-    }else if(y>=.48&&y<.86){
-      x*=.94;
-      if(z>0)z*=.955;
-    }
+    const torsoY=smooth(.78,1.04,y)*(1-smooth(1.22,1.39,y));
+    const torsoX=1-smooth(.23,.46,Math.abs(x));
+    x*=1+torsoY*(.087*torsoX+.012*(1-torsoX));
+    if(z>0)z*=1-.028*torsoY*torsoX;
 
-    // 턱과 하관은 원본 얼굴 topology를 유지하며 약간 각지게 만든다.
+    // 무릎 위~허리선 연결도 경계 없이 부드럽게 처리한다.
+    const waist=smooth(.45,.60,y)*(1-smooth(.79,.93,y));
+    x*=1-.032*waist*(1-smooth(.24,.45,Math.abs(x)));
+
+    // 얼굴 아래쪽만 조심스럽게 손질. 눈·귀·목은 변형하지 않는다.
     if(y>=1.34&&y<=1.60&&z>.05){
-      x*=1.04;
-      z*=.97;
+      const jaw=smooth(1.34,1.42,y)*(1-smooth(1.52,1.60,y));
+      x*=1+.036*jaw;
+      z*=1-.018*jaw;
     }
 
     bp.setXYZ(i,x,y,z);
@@ -861,8 +866,7 @@ function createKidscadeMaleSet(){
   bodyGeometry.computeBoundingSphere();
 
   group.add(cloneSkinnedMeshWithGeometry(
-    bodySource,
-    bodyGeometry,
+    bodySource,bodyGeometry,
     Array.isArray(bodySource.material)?bodySource.material.slice():bodySource.material,
     'kidscade_male_body'
   ));
@@ -895,59 +899,81 @@ function createKidscadeMaleSet(){
   maleEyes.userData={...eyesSource.userData,generatedFrom:'eyes',eyeHeightScale:maleEyeHeightScale};
   group.add(maleEyes);
 
-  // 3) 원본 eyelashes의 UV/topology/weights를 이용해 눈썹을 파생시킨다.
-  // 기존(.42,+.105)보다 24% 도톰하고 0.033 낮게, 눈 앞에서 명확히 보이게 정리한다.
+  // 3) 기존에는 eyelashes 전체(눈꼬리 가시 포함)를 눈썹 위치로 옮겼다.
+  //    원본 삼각형에서 '위쪽 눈썹 호'에 속한 면만 추출해 찢어진 속눈썹 잔여를 제거한다.
+  //    임의 도형 생성 없이 원본 위치/UV/skinWeight를 그대로 사용한다.
   const browGeometry=lashesSource.geometry.clone();
   browGeometry.computeBoundingBox();
   const browBox=browGeometry.boundingBox;
-  const browCenterY=(browBox.min.y+browBox.max.y)*.5;
+  const browTop=browBox.max.y;
+  const browCut=browBox.min.y+(browTop-browBox.min.y)*.61;
+  const browXLimit=Math.max(Math.abs(browBox.min.x),Math.abs(browBox.max.x))*.91;
   const br=browGeometry.getAttribute('position');
-  const maleBrowThickness=.52;
-  const maleBrowOffset=.072;
+  const originalIndex=browGeometry.getIndex();
+  if(!originalIndex){
+    throw new Error('Chibi eyelashes has no indexed faces to isolate brows.');
+  }
+  const kept=[];
+  const oldIndices=originalIndex.array;
+  for(let j=0;j<oldIndices.length;j+=3){
+    const a=oldIndices[j],b=oldIndices[j+1],c=oldIndices[j+2];
+    const y0=br.getY(a),y1=br.getY(b),y2=br.getY(c);
+    const x0=Math.abs(br.getX(a)),x1=Math.abs(br.getX(b)),x2=Math.abs(br.getX(c));
+    // 삼각형 단위로만 제거한다. 정점을 얼굴 뒤로 숨기는 방식은 쓰지 않는다.
+    if(Math.min(y0,y1,y2)>=browCut-.006&&Math.max(x0,x1,x2)<=browXLimit){
+      kept.push(a,b,c);
+    }
+  }
+  if(kept.length<12){
+    throw new Error('Chibi eyebrow upper-band faces not found.');
+  }
+  browGeometry.setIndex(kept);
+  const browCenterY=(browCut+browTop)*.5;
   for(let i=0;i<br.count;i++){
-    let x=br.getX(i),y=br.getY(i),z=br.getZ(i);
-    x*=1.055;
-    y=browCenterY+(y-browCenterY)*maleBrowThickness+maleBrowOffset;
-    z+=.016;
-    br.setXYZ(i,x,y,z);
+    const x=br.getX(i),y=br.getY(i),z=br.getZ(i);
+    // 보존된 눈썹 면을 얇고 거의 수평인 형태로 정리한다.
+    br.setXYZ(i,x*1.022,browCenterY+(y-browCenterY)*.66-.006,z+.010);
   }
   br.needsUpdate=true;
   browGeometry.computeVertexNormals();
   browGeometry.computeBoundingBox();
   browGeometry.computeBoundingSphere();
   const maleBrows=cloneSkinnedMeshWithGeometry(
-    lashesSource,
-    browGeometry,
-    makeSolidMaterial('#30241f','Kidscade Male Brows'),
+    lashesSource,browGeometry,makeSolidMaterial('#332723','Kidscade Male Brows'),
     'kidscade_male_brows'
   );
   maleBrows.userData={
     ...lashesSource.userData,
     generatedFrom:'eyelashes',
-    browThickness:maleBrowThickness,
-    browOffset:maleBrowOffset
+    extractedBrowTriangles:kept.length/3,
+    originalTriangles:oldIndices.length/3,
+    region:'upper eyebrow faces only'
   };
   group.add(maleBrows);
 
-  // 4) 기본 상의는 기존 shirt mesh 자체를 남자 체형에 맞춰 재성형한다.
-  //    별도 CylinderGeometry 소매를 붙이지 않으므로 어깨/겨드랑이 deformation도 원본 weights를 따른다.
+  // 4) 기존 shirt의 topology/skinWeight를 그대로 쓰되, 소매 외곽만 확장한다.
+  //    목선은 유지해 구멍이 커지지 않게 하고 어깨 앞쪽 여유를 둬 피부 관통을 방지한다.
   const tshirtMaterial=makeSolidMaterial('#4d78d6','Kidscade Male T-shirt');
   const tshirtGeometry=shirtSource.geometry.clone();
   const tp=tshirtGeometry.getAttribute('position');
   for(let i=0;i<tp.count;i++){
     let x=tp.getX(i),y=tp.getY(i),z=tp.getZ(i);
-    x*=1.075;
-    z*=1.025;
-    if(y<.88)x*=1.02;
+    const shoulder=smooth(.88,1.03,y)*(1-smooth(1.15,1.24,y));
+    const sleeve=smooth(.10,.23,Math.abs(x));
+    x*=1.095+.090*shoulder*sleeve;
+    z*=1.04+.065*shoulder;
+    if(z>0)z+=.006*shoulder;
     tp.setXYZ(i,x,y,z);
   }
   tp.needsUpdate=true;
   tshirtGeometry.computeVertexNormals();
   tshirtGeometry.computeBoundingBox();
   tshirtGeometry.computeBoundingSphere();
-  group.add(cloneSkinnedMeshWithGeometry(
+  const maleTshirt=cloneSkinnedMeshWithGeometry(
     shirtSource,tshirtGeometry,tshirtMaterial,'kidscade_male_tshirt'
-  ));
+  );
+  maleTshirt.userData={...shirtSource.userData,generatedFrom:'shirt',fit:'smooth shoulder/sleeve clearance'};
+  group.add(maleTshirt);
 
   // 5) 반바지는 긴 pants를 압축하지 않는다.
   //    원본 GLB에 이미 존재하는 ninjasuitshort mesh/topology/weights를 그대로 가져와 재질과 폭만 다듬는다.
