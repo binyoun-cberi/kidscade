@@ -30,7 +30,7 @@ export const SCHOOL_SPACES=Object.freeze({
     id:'classroom',name:'우리 교실',icon:'🏫',floor:'#c8a77d',wall:'#f1ead9',accent:'#355d4f',
     teachingPoint:{x:0,z:-4.1},
     seats:rowStations(),
-    obstacles:[...rowWorkstations(),{x:6.02,z:3.65,hx:1.02,hz:.55},{x:-6.35,z:3.8,hx:.62,hz:.32}]
+    obstacles:[...rowWorkstations(),{x:-6.05,z:-4.32,hx:.72,hz:.38},{x:-6.35,z:3.8,hx:.62,hz:.32}]
   },
   gym:{
     id:'gym',name:'체육관',icon:'🏀',floor:'#c98e55',wall:'#e9f1f4',accent:'#27709d',
