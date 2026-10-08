@@ -234,10 +234,10 @@ dialog p{color:#657369;line-height:1.6}
 }
 /* On desktop, game messages share one small footer strip under the tabletop. */
 @media(min-width:981px){
- .game{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
- .game .board-toolbar,.game .board-scroller{grid-column:1/-1}
- .selected-info{border-top:1px solid #c7e5c358;margin:0;padding:9px 6px;text-align:left}
- .toast{border-top:1px solid #c7e5c358;display:flex;align-items:center;justify-content:flex-end;text-align:right;padding:7px 8px}
+ .feedback-strip{display:flex;align-items:stretch;min-width:0}
+ .selected-info,.toast{flex:1;min-width:0;border-top:1px solid #c7e5c358}
+ .selected-info{margin:0;padding:9px 6px;text-align:left}
+ .toast{display:flex;align-items:center;justify-content:flex-end;text-align:right;padding:7px 8px}
 }
 </style>
 <script src="../../kidscade-game-sdk.js" data-game-id="hanja_sichuan" data-title="한자 사천성" data-shell="true" data-orientation="any"></script>
@@ -293,8 +293,10 @@ dialog p{color:#657369;line-height:1.6}
       </div>
     </div>
     <div id="pauseOverlay" class="pause-overlay" hidden>일시 정지 · 계속하기를 눌러주세요</div>
-    <div id="selectedInfo" class="selected-info" role="status" aria-live="polite">패를 고르면 여기에 글자를 크게 보여줘요.</div>
-    <div id="toast" class="toast" role="status" aria-live="polite">새 판 시작을 누르면 게임이 시작돼요.</div>
+    <div class="feedback-strip">
+      <div id="selectedInfo" class="selected-info" role="status" aria-live="polite">패를 고르면 여기에 글자를 크게 보여줘요.</div>
+      <div id="toast" class="toast" role="status" aria-live="polite">새 판 시작을 누르면 게임이 시작돼요.</div>
+    </div>
   </main>
   <nav class="actions" aria-label="게임 기능">
     <button type="button" id="hintBtn">힌트 보기 (−80점)</button>
