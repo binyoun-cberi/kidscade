@@ -1817,6 +1817,7 @@ function finishDay(){
 function setupInput(){
   ui.rosterToggle.addEventListener('click',()=>{
     const isOpen=ui.studentStrip.classList.toggle('open');
+    ui.app.classList.toggle('roster-open',isOpen);
     ui.rosterToggle.setAttribute('aria-expanded',String(isOpen));
     if(isOpen)updateHud();
   });
