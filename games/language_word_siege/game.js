@@ -74,7 +74,7 @@ function prepareStage(index){
 function freshState(){
   return {
     core:100,wave:0,ink:20,score:0,inWave:false,waveTimer:0,spawnQueue:[],
-    enemies:[],towers:[],shots:[],effects:[],rack:D.startRack.slice(0,D.maxRack),
+    enemies:[],towers:[],shots:[],traps:[],fields:[],effects:[],rack:D.startRack.slice(0,D.maxRack),
     selected:[],placing:null,hover:null,uid:1,unique:new Set(),builtWords:[],elapsed:0,
     resources:resourceSpots.map((s,i)=>({...s,r:.045,amount:s.amount??(70+i*20)})),
     discovered:new Set(loadDiscovered()), discoveredCombos:new Set(), ended:false,towerRevision:0,totalSpawns:0
@@ -154,9 +154,9 @@ function updateComposer(){
   const def=D.words[w];
   if(!w){const n=availableWords().length;wordMetaEl.textContent=n?'현재 만들 수 있는 단어 '+n+'개':'글자를 골라보세요'}
   else if(def){
-    const cost=towerCost(def,w,free),sig=D.signatures?.[w],affordable=state.ink>=cost;
+    const cost=towerCost(def,w,free),sig=D.signatures?.[w],behavior=D.behaviors?.[w],affordable=state.ink>=cost;
     wordMetaEl.textContent=def.meaning+' · '+def.roleLabel+' · INK '+cost+
-      (affordable?'':' (부족)')+(sig?.flavor?' · '+sig.flavor:'');
+      (affordable?'':' (부족)')+(behavior?.description?' · '+behavior.description:(sig?.flavor?' · '+sig.flavor:''));
   }else wordMetaEl.textContent=w?'사전에 없는 단어 · 철자를 확인하세요':'글자를 골라보세요';
   buildBtn.disabled=!def||!!state.placing||state.ink<towerCost(def,w,free);
 }
@@ -280,7 +280,7 @@ function makeTowerStats(word,def){
   const scale=1+(def.difficulty-1)*.085;
   stats.damage=(stats.damage||0)*scale;stats.range=(stats.range||.16)*(1+Math.min(.18,(def.difficulty-1)*.02));
   if(stats.area)stats.area*=1+Math.min(.22,(def.difficulty-1)*.022);
-  if(word==='NUKE'){stats.damage*=2.6;stats.area=.22;stats.rate=.12}
+  if(word==='NUKE'){stats.area=.22;stats.rate=.12}
   if(word==='BLACKHOLE'){stats.range=.24;stats.pull=.075;stats.damage=11}
   if(word==='TORNADO'){stats.push=.095;stats.area=.18}
   if(word==='VOLCANO'){stats.damage*=1.55;stats.area=.14;stats.burn=12}
@@ -298,11 +298,14 @@ function makeTowerStats(word,def){
     if(signature.shieldBreak)stats.shieldBreak=signature.shieldBreak;
     if(signature.element)stats.element=signature.element;
   }
+  stats.mode=D.behaviors?.[word]?.mode||'';
+  if(['gatling','shotgun','rail'].includes(stats.mode))stats.area=0;
+  if(word==='NUKE'){stats.damage=Math.max(240,stats.damage);stats.area=Math.max(.24,stats.area);stats.rate=.105}
   return stats;
 }
 function rolePlacementValid(p,def,word){
   const s=makeTowerStats(word||def.word,def);
-  if(def.role==='resource')return state.resources.some(r=>r.amount>0&&dist(p,r)<=s.range);
+  if(def.role==='resource')return s.mode==='interest'||state.resources.some(r=>r.amount>0&&dist(p,r)<=s.range);
   if((s.damage||0)>0||def.role==='barrier')return minPathDistance(p)<=s.range;
   return true;
 }
@@ -431,14 +434,15 @@ function spawnEnemy(type){
     r:a.r,damage:Math.round(a.damage*(1+stage*.065)),color:a.color,
     shield:Math.round((a.shield||0)*hpScale),armor:a.armor||0,regen:a.regen||0,
     split:a.split||false,boss:a.boss||false,pathIndex:0,pathT:0,x:pathPts[0][0],y:pathPts[0][1],
-    burn:0,burnDps:0,poison:0,poisonDps:0,slow:1,pushBack:0,dead:false};
+    burn:0,burnDps:0,poison:0,poisonDps:0,slow:1,pushBack:0,dead:false,
+    corrosion:0,corrosionTime:0,chillStacks:0,freezeTime:0,stunTime:0,infected:false};
   state.enemies.push(e);
 }
 function enemyProgress(e){return e.pathIndex+e.pathT}
 function moveEnemy(e,dt){
   if(e.dead)return;
   e.slow+=(1-e.slow)*Math.min(1,dt*1.7);
-  let step=e.speed*e.slow*dt;
+  let step=e.speed*(e.freezeTime>0||e.stunTime>0?0:e.slow)*dt;
   if(e.pushBack>0){step-=e.pushBack;e.pushBack=0}
   while(Math.abs(step)>.00001){
     if(step>=0){
@@ -467,71 +471,277 @@ function damageEnemy(e,amount,kind,tower){
     const used=Math.min(e.shield,amount*multiplier);
     e.shield-=used;amount-=used/multiplier;
   }
-  const effectiveArmor=e.armor*(tower?.def.role==='pierce'?.28:1);
+  const effectiveArmor=Math.max(0,e.armor-(e.corrosion||0))*(tower?.def.role==='pierce'?.28:1);
   e.hp-=Math.max(0,amount)*(1-effectiveArmor);
-  if(kind==='burn'){e.burn=2.8;e.burnDps=Math.max(e.burnDps,(tower?.stats.burn||7)+(tower?.def.difficulty||1))}
-  if(kind==='poison'){e.poison=4.5;e.poisonDps=Math.max(e.poisonDps,(tower?.stats.poison||6)+(tower?.def.difficulty||1))}
-  if(kind==='slow')e.slow=Math.min(e.slow,tower?.stats.slow||.52);
-  if(kind==='push')e.pushBack=Math.max(e.pushBack,(tower?.stats.push||.045)*.75);
+  if(kind==='burn'){e.burn=2.8;e.burnDps=Math.max(e.burnDps,(tower?effectiveStats(tower).burn:0)||7)}
+  if(kind==='poison'){e.poison=4.5;e.poisonDps=Math.max(e.poisonDps,(tower?effectiveStats(tower).poison:0)||6)}
+  if(kind==='slow')e.slow=Math.min(e.slow,(tower?effectiveStats(tower).slow:0)||.52);
+  if(kind==='push')e.pushBack=Math.max(e.pushBack,((tower?effectiveStats(tower).push:0)||.045)*.75);
   if(e.hp<=0)killEnemy(e);
+}
+// Primary and linked elemental effects are additive, not mutually exclusive.
+// In particular FIRE + ICE retains burn and slow, and SPIDER applies both effects.
+function attackEnemy(t,e,damage,extra=''){
+  if(!e||e.dead)return;
+  damageEnemy(e,damage,'',t);
+  if(e.dead)return;
+  const s=effectiveStats(t);
+  const kinds=new Set();
+  if(['burn','slow','poison','push'].includes(t.def.role))kinds.add(t.def.role);
+  if(['burn','slow','poison','push'].includes(s.element))kinds.add(s.element);
+  if(['burn','slow','poison'].includes(extra))kinds.add(extra);
+  for(const m of t.links||[])if(['burn','slow','poison'].includes(m.def.role))kinds.add(m.def.role);
+  for(const kind of kinds)damageEnemy(e,0,kind,t);
+  if(s.mode==='webpoison'){damageEnemy(e,0,'slow',t);e.slow=Math.min(e.slow,.60)}
+  if(s.mode==='corrosion'){e.corrosion=Math.min(.30,(e.corrosion||0)+.075);e.corrosionTime=4}
+  if(s.mode==='infection')e.infected=true;
+  if(s.mode==='freeze'){
+    e.chillStacks=(e.chillStacks||0)+1;
+    if(e.chillStacks>=3){e.chillStacks=0;e.freezeTime=Math.max(e.freezeTime||0,.85);ringEffect(e.x,e.y,.025,'#a8efff',.25)}
+  }
+  if(s.mode==='stun')e.stunTime=Math.max(e.stunTime||0,.42);
 }
 function killEnemy(e){
   if(e.dead)return;e.dead=true;state.score+=e.boss?800:18+state.wave*2;state.ink+=e.boss?20:((e.armor||e.regen||e.shield)?2:1);
   flashEffect(e.x,e.y,e.color,e.boss ? .09 : .045);
   particleEffect(e.x,e.y,e.color,e.boss?14:4,e.boss?.10:.032);
+  if(e.infected){
+    for(const other of state.enemies){
+      if(other.dead||other===e||dist(e,other)>.12)continue;
+      other.poison=Math.max(other.poison,3);other.poisonDps=Math.max(other.poisonDps,e.poisonDps*.75||5);
+      other.infected=true;
+    }
+    ringEffect(e.x,e.y,.12,'#86c959',.30);
+  }
   if(e.split&&!e.boss){for(let i=0;i<2;i++){const c={...e,id:state.uid++,type:'normal',hp:20,maxHp:20,speed:.095,r:.008,damage:3,color:'#2f3035',split:false,dead:false,pathT:Math.max(0,e.pathT-i*.025)};state.enemies.push(c)}}
 }
 
+// Route projection lets deployed mines sit on the enemy lane, never inside the tower.
+function closestLanePoint(p){
+  let closest={x:p.x,y:p.y,d:Infinity};
+  for(let i=0;i<pathPts.length-1;i++){
+    const a=pathPts[i],b=pathPts[i+1],vx=b[0]-a[0],vy=b[1]-a[1];
+    const frac=Math.max(0,Math.min(1,((p.x-a[0])*vx+(p.y-a[1])*vy)/(vx*vx+vy*vy||1)));
+    const x=a[0]+vx*frac,y=a[1]+vy*frac,d=Math.hypot(p.x-x,p.y-y);
+    if(d<closest.d)closest={x,y,d};
+  }
+  return closest;
+}
+function updateTraps(dt){
+  for(const mine of state.traps){
+    mine.life-=dt;
+    if(mine.life<=0)continue;
+    const nearby=state.enemies.find(e=>!e.dead&&dist(mine,e)<mine.trigger);
+    if(!nearby)continue;
+    mine.life=0;
+    for(const e of state.enemies)if(!e.dead&&dist(mine,e)<=mine.radius)attackEnemy(mine.source,e,mine.damage);
+    ringEffect(mine.x,mine.y,mine.radius,mine.source.def.color,.35);
+    particleEffect(mine.x,mine.y,mine.source.def.color,12,mine.radius*.8);
+    beep(110,.13,'sawtooth',.02);
+  }
+  state.traps=state.traps.filter(m=>m.life>0);
+}
+function updateFields(dt){
+  for(const f of state.fields){
+    f.life-=dt;f.clock-=dt;
+    if(f.clock>0)continue;
+    f.clock=.62;
+    for(const e of state.enemies){
+      if(e.dead||dist(e,f)>f.radius)continue;
+      attackEnemy(f.source,e,f.damage,'burn');
+    }
+  }
+  state.fields=state.fields.filter(f=>f.life>0);
+}
+function projectile(t,target,s,opts={}){
+  state.shots.push({
+    x:t.x,y:t.y,target,damage:opts.damage??s.damage,
+    speed:s.projectileSpeed||.55,color:t.def.color,area:opts.area??(s.area||0),
+    kind:t.def.role,mode:opts.mode||s.mode||'',source:t,dead:false,
+    delay:opts.delay||0,point:{x:target.x,y:target.y}
+  });
+}
 function towerUpdate(t,dt){
-  const s=effectiveStats(t);t.pulse=Math.max(0,t.pulse-dt);
+  const s=effectiveStats(t),mode=s.mode;
+  t.pulse=Math.max(0,(t.pulse||0)-dt);
   if(t.def.role==='resource'){
-    if(!state.inWave)return;
-    t.harvestClock+=dt; if(t.harvestClock>=2.3){t.harvestClock=0;const node=state.resources.filter(r=>r.amount>0&&dist(t,r)<=s.range).sort((a,b)=>dist(t,a)-dist(t,b))[0];if(node){const amt=Math.min(node.amount,Math.max(1,Math.round((s.harvest||3)*(1+t.def.difficulty*.08))));node.amount-=amt;state.ink+=amt;state.score+=amt*2;t.pulse=.35;floatEffect(t.x,t.y,'+'+amt+' INK','#4b9f38')}}
+    if(mode==='interest'||!state.inWave)return;
+    t.harvestClock+=dt;
+    const interval=mode==='drill'?1.25:2.3;
+    if(t.harvestClock>=interval){
+      t.harvestClock=0;
+      const node=state.resources.filter(r=>r.amount>0&&dist(t,r)<=s.range).sort((a,b)=>dist(t,a)-dist(t,b))[0];
+      if(node){
+        const base=Math.max(1,Math.round((s.harvest||3)*(1+t.def.difficulty*.08)));
+        const amt=Math.min(node.amount,mode==='drill'?Math.ceil(base*1.5):base);
+        node.amount-=amt;state.ink+=amt;state.score+=amt*2;t.pulse=.35;
+        floatEffect(t.x,t.y,'+'+amt+' INK','#4b9f38');
+      }
+    }
     return;
   }
-  if(t.def.role==='repair'){if(!state.inWave)return;t.harvestClock+=dt;if(t.harvestClock>2.5){t.harvestClock=0;state.core=Math.min(100,state.core+(s.heal||2));t.pulse=.3}return}
+  if(t.def.role==='repair'){
+    if(!state.inWave||state.core>=100)return;
+    t.harvestClock+=dt;
+    const interval=mode==='bandage'?1.25:mode==='hospital'?4.2:2.5;
+    if(t.harvestClock>=interval){
+      t.harvestClock=0;
+      const heal=(s.heal||2)*(mode==='hospital'?2.2:1);
+      state.core=Math.min(100,state.core+heal);t.pulse=.3;
+      floatEffect(t.x,t.y,'+'+Math.round(heal)+' CORE','#51c79b');
+    }
+    return;
+  }
   if(t.def.role==='modifier'||s.rate<=0)return;
-  t.cool-=dt;if(t.cool>0)return;
-  const targets=state.enemies.filter(e=>!e.dead&&dist(t,e)<=s.range).sort((a,b)=>enemyProgress(b)-enemyProgress(a));
-  if(!targets.length)return;
-  const target=targets[0];t.cool=1/s.rate;t.pulse=.24;
-  if(t.def.role==='explosive'||t.def.role==='burst')ringEffect(t.x,t.y,.025,t.def.color,.13);
-  const linkedElement=s.element||(t.links.find(m=>['burn','slow','poison'].includes(m.def.role))||{}).def?.role||'';
-  if(s.beam||t.def.role==='pierce'||t.def.role==='push'||t.def.role==='gravity'){
-    if(t.def.role==='pierce'){
-      const ang=Math.atan2(target.y-t.y,target.x-t.x);let hit=0;
-      for(const e of targets){const dx=e.x-t.x,dy=e.y-t.y;const along=dx*Math.cos(ang)+dy*Math.sin(ang),perp=Math.abs(-dx*Math.sin(ang)+dy*Math.cos(ang));if(along>0&&perp<.025){damageEnemy(e,s.damage,linkedElement,t);hit++;if(hit>=4)break}}
-      lineEffect(t.x,t.y,target.x,target.y,t.def.color,.12,2);
-    }else if(t.def.role==='push'){
-      const impacted=s.area?targets.filter(e=>dist(e,target)<=s.area):[target];
-      for(const e of impacted){damageEnemy(e,s.damage,e===target?'push':(linkedElement||'push'),t);if(linkedElement&&linkedElement!=='push')damageEnemy(e,0,linkedElement,t)}
-      lineEffect(t.x,t.y,target.x,target.y,t.def.color,.14,2);
-      if(s.area)ringEffect(target.x,target.y,s.area,t.def.color,.2);
-    }else if(t.def.role==='gravity'){
-      for(const e of targets.filter(e=>dist(t,e)<=s.area)) {damageEnemy(e,s.damage,linkedElement,t);e.pushBack=Math.max(e.pushBack,(s.pull||.032)*.55)}
-      ringEffect(t.x,t.y,s.area,t.def.color,.18);
+  t.cool-=dt;
+  if(mode==='mine'){
+    if(!state.inWave||t.cool>0)return;
+    const place=closestLanePoint(t);
+    if(place.d>s.range)return;
+    const deployed=state.traps.filter(m=>m.source.id===t.id).length;
+    if(deployed>=3)return;
+    t.cool=1/s.rate;t.pulse=.3;
+    state.traps.push({x:place.x,y:place.y,trigger:.023,radius:Math.min(.125,s.area||.09),
+      damage:s.damage*1.25,source:t,life:18});
+    ringEffect(place.x,place.y,.035,t.def.color,.24);
+    return;
+  }
+  const targets=state.enemies.filter(e=>!e.dead&&dist(t,e)<=s.range)
+    .sort((a,b)=>enemyProgress(b)-enemyProgress(a));
+  if(!targets.length){
+    if(mode==='gatling')t.spin=Math.max(0,(t.spin||0)-dt*1.2);
+    return;
+  }
+  if(t.cool>0)return;
+  const target=mode==='assassin'
+    ?targets.slice().sort((a,b)=>(b.type==='fast'?1:0)-(a.type==='fast'?1:0)||enemyProgress(b)-enemyProgress(a))[0]
+    :targets[0];
+  if(mode==='gatling')t.spin=Math.min(2,(t.spin||0)+.32);
+  t.cool=1/(s.rate*(mode==='gatling'?1+(t.spin||0)*.7:1));
+  t.pulse=.24;
+  const hit=(e,scale=1)=>attackEnemy(t,e,s.damage*scale);
+  const coneTargets=(angle,width,limit)=>targets.filter(e=>{
+    const a=Math.atan2(e.y-t.y,e.x-t.x);
+    return Math.abs(Math.atan2(Math.sin(a-angle),Math.cos(a-angle)))<width;
+  }).slice(0,limit);
+  const angle=Math.atan2(target.y-t.y,target.x-t.x);
+  if(mode==='rail'||mode==='cleave'||t.def.role==='pierce'){
+    if(mode==='cleave'){
+      for(const e of coneTargets(angle,1.1,6))hit(e,.85);
+      ringEffect(t.x,t.y,Math.min(.12,s.range),t.def.color,.15);
     }else{
-      damageEnemy(target,s.damage,linkedElement||(['burn','slow','poison'].includes(t.def.role)?t.def.role:''),t);lineEffect(t.x,t.y,target.x,target.y,t.def.color,.09,3);
-      const chained=targets.slice(1,1+Math.min(4,s.chain||0));
+      const hits=targets.filter(e=>{
+        const dx=e.x-t.x,dy=e.y-t.y;
+        return dx*Math.cos(angle)+dy*Math.sin(angle)>0&&Math.abs(-dx*Math.sin(angle)+dy*Math.cos(angle))<(mode==='rail'?.017:.025);
+      }).slice(0,mode==='rail'?9:4);
+      for(const e of hits)hit(e,mode==='rail'?1.28:1);
+      lineEffect(t.x,t.y,t.x+Math.cos(angle)*s.range,t.y+Math.sin(angle)*s.range,
+        t.def.color,mode==='rail'?.20:.12,mode==='rail'?4:2);
+    }
+  }else if(mode==='shotgun'||mode==='flamethrower'){
+    for(const e of coneTargets(angle,mode==='shotgun'?.65:.48,8)){
+      const proximity=Math.max(.3,1-dist(t,e)/s.range);
+      hit(e,mode==='shotgun'?.45+proximity*1.25:.38);
+    }
+    for(const delta of [-.45,0,.45]){
+      lineEffect(t.x,t.y,t.x+Math.cos(angle+delta)*s.range*.65,
+        t.y+Math.sin(angle+delta)*s.range*.65,t.def.color,.12,mode==='shotgun'?2:4);
+    }
+  }else if(mode==='stun'||mode==='assassin'){
+    hit(target,mode==='assassin'&&target.type==='fast'?1.65:1);
+    lineEffect(t.x,t.y,target.x,target.y,t.def.color,.15,2);
+  }else if(mode==='blizzard'||mode==='tidal'||mode==='vortex'||mode==='teleport'){
+    const radius=Math.max(.065,s.area||.10);
+    const group=targets.filter(e=>dist(e,target)<=radius);
+    for(const e of group){
+      hit(e,mode==='blizzard'?.64:1);
+      if(mode==='tidal')e.pushBack=Math.max(e.pushBack,(s.push||.045)*1.3);
+      if(mode==='vortex'){e.pushBack=Math.max(e.pushBack,(s.pull||.032)*1.1);e.slow=Math.min(e.slow,.46)}
+      if(mode==='teleport'){e.pushBack=Math.max(e.pushBack,.115);e.stunTime=.20}
+    }
+    ringEffect(mode==='vortex'?t.x:target.x,mode==='vortex'?t.y:target.y,radius,t.def.color,.28);
+  }else if(s.beam||t.def.role==='push'||t.def.role==='gravity'){
+    if(t.def.role==='push'||t.def.role==='gravity'){
+      const group=targets.filter(e=>dist(e,target)<=Math.max(.04,s.area||.04));
+      for(const e of group){
+        hit(e,1);
+        if(t.def.role==='gravity'){e.pushBack=Math.max(e.pushBack,(s.pull||.032)*.55)}
+      }
+      ringEffect(target.x,target.y,Math.max(.04,s.area||.04),t.def.color,.2);
+    }else{
+      hit(target,1);lineEffect(t.x,t.y,target.x,target.y,t.def.color,.10,3);
       let previous=target;
-      chained.forEach((next,i)=>{damageEnemy(next,s.damage*Math.pow(.58,i+1),linkedElement,t);lineEffect(previous.x,previous.y,next.x,next.y,t.def.color,.08,2);previous=next});
+      targets.slice(1,1+Math.min(4,s.chain||0)).forEach((e,i)=>{
+        hit(e,Math.pow(.58,i+1));lineEffect(previous.x,previous.y,e.x,e.y,t.def.color,.1,2);previous=e;
+      });
     }
   }else{
-    state.shots.push({x:t.x,y:t.y,target,damage:s.damage,speed:s.projectileSpeed||.55,color:t.def.color,area:s.area||0,kind:(linkedElement||t.def.role),source:t,dead:false});
+    if(mode==='nuke'||mode==='meteor') {
+      projectile(t,target,s,{delay:mode==='nuke'?2.2:1.05,mode});
+      ringEffect(target.x,target.y,s.area,t.def.color,mode==='nuke'?1.5:.75);
+      beep(mode==='nuke'?150:320,.16,'sawtooth',.04);
+    }else if(mode==='volley'){
+      projectile(t,target,s,{damage:s.damage*.60});
+      projectile(t,targets[1]||target,s,{damage:s.damage*.60});
+    }else{
+      projectile(t,target,s);
+    }
   }
 }
 function shotUpdate(s,dt){
-  if(s.dead||!s.target||s.target.dead){s.dead=true;return}
+  if(s.dead)return;
+  if(s.mode==='nuke'||s.mode==='meteor'){
+    s.delay-=dt;
+    if(s.delay>0)return;
+    const center=s.point;
+    for(const e of state.enemies)if(!e.dead&&dist(e,center)<=s.area)
+      attackEnemy(s.source,e,s.damage*(s.mode==='nuke'?1:0.9));
+    ringEffect(center.x,center.y,s.area,s.color,.50);
+    particleEffect(center.x,center.y,s.color,18,s.area*.9);
+    flashEffect(center.x,center.y,s.color,s.area*.62);
+    beep(s.mode==='nuke'?85:140,.28,'sawtooth',s.mode==='nuke'?.065:.045);
+    s.dead=true;return;
+  }
+  if(!s.target||s.target.dead){
+    if(s.mode==='homing'){
+      const next=state.enemies.filter(e=>!e.dead&&dist(s,e)<.20)
+        .sort((a,b)=>dist(s,a)-dist(s,b))[0];
+      if(next)s.target=next;
+    }
+    if(!s.target||s.target.dead){
+      if(!s.area){s.dead=true;return}
+      s.target={x:s.point.x,y:s.point.y,dead:false};
+    }
+  }
+  s.point={x:s.target.x,y:s.target.y};
   const dx=s.target.x-s.x,dy=s.target.y-s.y,d=Math.hypot(dx,dy),mv=s.speed*dt;
   if(d<=mv+.008){
+    const impact=s.target;
     if(s.area>0){
-      for(const e of state.enemies)if(!e.dead&&dist(e,s.target)<=s.area)damageEnemy(e,s.damage*(e===s.target?1:.72),s.kind,s.source);
-      ringEffect(s.target.x,s.target.y,s.area,s.color,.28);
-      particleEffect(s.target.x,s.target.y,s.color,Math.min(15,5+Math.round(s.area*25)),s.area*.65);
+      for(const e of state.enemies)if(!e.dead&&dist(e,impact)<=s.area)
+        attackEnemy(s.source,e,s.damage*(e===impact?1:.72));
+      ringEffect(impact.x,impact.y,s.area,s.color,.28);
+      particleEffect(impact.x,impact.y,s.color,Math.min(15,5+Math.round(s.area*25)),s.area*.65);
+    }else if(!impact.dead&&state.enemies.includes(impact)){
+      attackEnemy(s.source,impact,s.damage);
+      particleEffect(impact.x,impact.y,s.color,3,.025);
     }
-    else{
-      damageEnemy(s.target,s.damage,s.kind,s.source);
-      particleEffect(s.target.x,s.target.y,s.color,3,.025);
+    if(s.mode==='cluster'){
+      for(const dir of [-1,1]){
+        const p={x:impact.x+dir*.035,y:impact.y+dir*.025};
+        for(const e of state.enemies)if(!e.dead&&dist(e,p)<=Math.min(.08,s.area*.6))
+          attackEnemy(s.source,e,s.damage*.35);
+        ringEffect(p.x,p.y,Math.min(.08,s.area*.6),s.color,.20);
+      }
+    }
+    if(s.mode==='ricochet'||s.mode==='milk'){
+      const next=state.enemies.filter(e=>!e.dead&&e!==impact&&dist(e,impact)<.14)
+        .sort((a,b)=>dist(a,impact)-dist(b,impact))[0];
+      if(next){attackEnemy(s.source,next,s.damage*.55);lineEffect(impact.x,impact.y,next.x,next.y,s.color,.12,2)}
+    }
+    if(s.mode==='firefield'||s.mode==='lavafield'){
+      state.fields.push({x:impact.x,y:impact.y,radius:Math.min(.14,s.area||.085),life:s.mode==='lavafield'?5.4:3.5,
+        clock:.2,damage:s.damage*.13,source:s.source});
     }
     s.dead=true;return;
   }
@@ -544,6 +754,10 @@ function barrierEffects(){
   for(const e of state.enemies){if(e.dead)continue;for(const {t,s} of barriers){if(dist(e,t)<s.range*.84){e.slow=Math.min(e.slow,s.barrierSlow||.62);break}}}
 }
 function statusEffects(e,dt){
+  e.freezeTime=Math.max(0,(e.freezeTime||0)-dt);
+  e.stunTime=Math.max(0,(e.stunTime||0)-dt);
+  e.corrosionTime=Math.max(0,(e.corrosionTime||0)-dt);
+  if(!e.corrosionTime)e.corrosion=0;
   if(e.burn>0){e.burn-=dt;e.hp-=e.burnDps*dt}
   if(e.poison>0){e.poison-=dt;e.hp-=e.poisonDps*dt}
   if(e.regen&&!e.dead&&e.poison<=0&&e.hp>0)e.hp=Math.min(e.maxHp,e.hp+e.regen*dt);
@@ -570,7 +784,10 @@ function waveUpdate(dt){
   state.waveTimer+=dt;
   while(state.spawnQueue.length&&state.spawnQueue[0].delay<=state.waveTimer){spawnEnemy(state.spawnQueue.shift().type)}
   if(!state.spawnQueue.length&&!state.enemies.some(e=>!e.dead)){
-    state.inWave=false;state.ink+=8+state.wave*2;state.score+=100*state.wave;waveBtn.disabled=false;
+    state.inWave=false;state.ink+=8+state.wave*2;state.score+=100*state.wave;
+    const banks=state.towers.filter(t=>t.stats.mode==='interest').length;
+    if(banks){const interest=Math.min(24,Math.floor(state.ink*.06*Math.min(3,banks)));state.ink+=interest;if(interest)floatEffect(.5,.14,'BANK +'+interest+' INK','#83c962')}
+    waveBtn.disabled=false;
     $('waveProgress').style.width='100%';
     if(state.wave>=8){endGame(true)}else{
       const bonusWord=giveNextWaveWord();
@@ -589,6 +806,7 @@ function update(dt){
   state.elapsed+=dt;
   waveUpdate(dt);barrierEffects();
   for(const e of state.enemies){if(!e.dead){statusEffects(e,dt);moveEnemy(e,dt)}}
+  updateTraps(dt);updateFields(dt);
   for(const t of state.towers)towerUpdate(t,dt);
   for(const s of state.shots)shotUpdate(s,dt);
   state.enemies=state.enemies.filter(e=>!e.dead);
@@ -650,7 +868,7 @@ function particleEffect(x,y,color,count=6,radius=.04){
 
 function draw(){
   ctx.clearRect(0,0,W,H);
-  drawGrid();drawPath();drawResources();drawLinks();drawTowers();
+  drawGrid();drawPath();drawResources();drawFields();drawLinks();drawTowers();drawTraps();
   drawEnemies();drawShots();drawEffects();drawPlacement();
 }
 function px(x){return x*W}function py(y){return y*H}
@@ -731,6 +949,27 @@ function drawLinks(){
   ctx.restore();
 }
 function towerRadius(t){return Math.max(19,Math.min(W,H)*(.029+t.def.difficulty*.0015))}
+function drawFields(){
+  for(const field of state.fields){
+    const progress=Math.max(0,field.life/(field.source.stats.mode==='lavafield'?5.4:3.5));
+    const x=px(field.x),y=py(field.y);
+    ctx.save();ctx.globalAlpha=.10+.16*progress;ctx.fillStyle='#f36c32';
+    ctx.beginPath();ctx.ellipse(x,y,field.radius*W,field.radius*H,0,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=.30*progress;ctx.strokeStyle='#ffb656';ctx.lineWidth=2;
+    ctx.beginPath();ctx.ellipse(x,y,field.radius*W,field.radius*H,0,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+  }
+}
+function drawTraps(){
+  for(const trap of state.traps){
+    const x=px(trap.x),y=py(trap.y),r=Math.max(5,Math.min(W,H)*.012);
+    ctx.save();ctx.translate(x,y);
+    ctx.fillStyle='#43414a';ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#ffdc77';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,r*.65,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle=Math.sin(state.elapsed*5)>0?'#f26947':'#e5b347';
+    ctx.fillRect(-2,-2,4,4);ctx.restore();
+  }
+}
 function drawTowers(){
   const drawnLabels=[];
   for(const t of state.towers){
@@ -775,6 +1014,20 @@ function drawEnemies(){
 }
 function drawShots(){
   for(const shot of state.shots){
+    if((shot.mode==='nuke'||shot.mode==='meteor')&&shot.delay>0){
+      const x=px(shot.point.x),y=py(shot.point.y),r=Math.max(12,shot.area*Math.min(W,H));
+      ctx.save();
+      ctx.strokeStyle=shot.mode==='nuke'?'#fb5f47':'#ec9955';ctx.lineWidth=3;
+      ctx.globalAlpha=.45+.35*Math.sin(state.elapsed*9);
+      ctx.beginPath();ctx.ellipse(x,y,shot.area*W,shot.area*H,0,0,Math.PI*2);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(x-r*.5,y);ctx.lineTo(x+r*.5,y);
+      ctx.moveTo(x,y-r*.5);ctx.lineTo(x,y+r*.5);ctx.stroke();
+      if(shot.mode==='meteor'){
+        ctx.fillStyle='#f7b451';ctx.beginPath();
+        ctx.arc(x+shot.delay*25,y-shot.delay*100,Math.max(6,r*.11),0,Math.PI*2);ctx.fill();
+      }
+      ctx.restore();continue;
+    }
     if(V)V.drawShot(ctx,shot,W,H,state.elapsed);
     else{ctx.fillStyle=shot.color;ctx.beginPath();ctx.arc(px(shot.x),py(shot.y),4,0,Math.PI*2);ctx.fill()}
   }
@@ -824,7 +1077,7 @@ function roundRect(c,x,y,w,h,r,fill,stroke){c.beginPath();c.roundRect?c.roundRec
 function inspectAt(p){
   const t=state.towers.map(t=>({t,d:dist(p,t)})).sort((a,b)=>a.d-b.d)[0];
   if(!t||t.d>.06){inspectBox.classList.remove('show');return}
-  const s=effectiveStats(t.t),signature=D.signatures?.[t.t.word];inspectBox.innerHTML='<strong>'+escapeHtml(t.t.word)+'</strong><small>'+escapeHtml(t.t.def.meaning)+' · '+escapeHtml(t.t.def.roleLabel)+(signature?.flavor?' · '+escapeHtml(signature.flavor):'')+'</small><div class="meter">난도 '+('★'.repeat(t.t.def.difficulty))+' · INK '+towerCost(t.t.def)+(s.damage?' · DMG '+Math.round(s.damage):'')+(s.range?' · RANGE '+Math.round(s.range*100):'')+(t.t.links.length?' · LINK '+t.t.links.map(x=>x.word).join(', '):'')+(t.t.combos?.length?' · COMBO '+t.t.combos.map(x=>x.name).join(', '):'')+'</div>';inspectBox.classList.add('show');
+  const s=effectiveStats(t.t),signature=D.signatures?.[t.t.word],behavior=D.behaviors?.[t.t.word];inspectBox.innerHTML='<strong>'+escapeHtml(t.t.word)+'</strong><small>'+escapeHtml(t.t.def.meaning)+' · '+escapeHtml(t.t.def.roleLabel)+(behavior?.description?' · '+escapeHtml(behavior.description):(signature?.flavor?' · '+escapeHtml(signature.flavor):''))+'</small><div class="meter">난도 '+('★'.repeat(t.t.def.difficulty))+' · INK '+towerCost(t.t.def)+(s.damage?' · DMG '+Math.round(s.damage):'')+(s.range?' · RANGE '+Math.round(s.range*100):'')+(t.t.links.length?' · LINK '+t.t.links.map(x=>x.word).join(', '):'')+(t.t.combos?.length?' · COMBO '+t.t.combos.map(x=>x.name).join(', '):'')+'</div>';inspectBox.classList.add('show');
 }
 canvas.addEventListener('pointermove',e=>{if(!state)return;state.hover=boardPos(e)});
 canvas.addEventListener('pointerleave',()=>{if(state)state.hover=null});
@@ -833,7 +1086,7 @@ canvas.addEventListener('pointerdown',e=>{if(!state||state.ended)return;const p=
 function openDictionary(){
   const list=[...state.discovered].filter(w=>D.words[w]).sort();
   $('dictStats').textContent=list.length.toLocaleString()+' / '+(D.totalWords||D.wordList.length).toLocaleString()+' 단어 발견';
-  $('dictList').innerHTML=list.length?list.map(w=>{const d=D.words[w],sig=D.signatures?.[w];return '<div class="dict-item" style="--c:'+d.color+'"><b>'+escapeHtml(w)+'</b><span>'+escapeHtml(d.meaning)+' · '+escapeHtml(d.roleLabel)+' · INK '+towerCost(d)+(sig?.flavor?' · '+escapeHtml(sig.flavor):'')+'</span></div>'}).join(''):'<div class="empty">아직 발견한 단어가 없습니다.</div>';
+  $('dictList').innerHTML=list.length?list.map(w=>{const d=D.words[w],sig=D.signatures?.[w],behavior=D.behaviors?.[w];return '<div class="dict-item" style="--c:'+d.color+'"><b>'+escapeHtml(w)+'</b><span>'+escapeHtml(d.meaning)+' · '+escapeHtml(d.roleLabel)+' · INK '+towerCost(d)+(behavior?.description?' · '+escapeHtml(behavior.description):(sig?.flavor?' · '+escapeHtml(sig.flavor):''))+'</span></div>'}).join(''):'<div class="empty">아직 발견한 단어가 없습니다.</div>';
   dictOverlay.classList.remove('hidden');
 }
 function restart(){

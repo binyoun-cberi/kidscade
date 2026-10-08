@@ -1128,6 +1128,48 @@ Object.assign(SIGNATURES,{
   NUKE:{damage:2.6,area:1.15,rate:.55,flavor:'초대형 핵폭발'}
 });
 
+// Behavior variants are separate from role stats: a WORD changes *how* a tower fights,
+// not only its damage multiplier. Unlisted dictionary entries still use their role default.
+const BEHAVIORS=Object.freeze({
+  ARROW:{mode:'volley',description:'두 발의 빠른 화살'},
+  COW:{mode:'milk',description:'작은 우유탄이 옆의 적에게 튐'},
+  BANANA:{mode:'ricochet',description:'껍질탄이 두 번째 적에게 튐'},
+  RAILGUN:{mode:'rail',description:'충전 후 일직선 장거리 관통'},
+  BALLISTA:{mode:'rail',description:'한 줄로 꿰뚫는 거대한 쇠뇌'},
+  SHOTGUN:{mode:'shotgun',description:'가까울수록 강한 부채꼴 산탄'},
+  GATLING:{mode:'gatling',description:'사격을 유지하면 발사속도 상승'},
+  MACHINEGUN:{mode:'gatling',description:'연속 사격으로 예열하는 기관총'},
+  SCYTHE:{mode:'cleave',description:'주위의 여러 적을 한번에 베기'},
+  CLAW:{mode:'cleave',description:'빠른 근접 휘두르기'},
+  DAGGER:{mode:'assassin',description:'빠른 적을 우선 추적'},
+  HAMMER:{mode:'stun',description:'적을 잠깐 기절시키는 타격'},
+  LANDMINE:{mode:'mine',description:'길에 지뢰를 심어 접근하면 폭발'},
+  MISSILE:{mode:'homing',description:'적을 따라가는 추적 미사일'},
+  ROCKET:{mode:'homing',description:'표적을 끝까지 따라가는 로켓'},
+  GRENADE:{mode:'cluster',description:'폭발 후 작은 폭발 두 번'},
+  METEOR:{mode:'meteor',description:'경고 후 하늘에서 운석 낙하'},
+  NUKE:{mode:'nuke',description:'긴 충전 후 매우 큰 핵폭발'},
+  FIREBALL:{mode:'firefield',description:'명중한 곳에 잠깐 불길'},
+  INFERNO:{mode:'flamethrower',description:'전방 부채꼴 지속 화염'},
+  VOLCANO:{mode:'lavafield',description:'폭발 자리에 용암 지대'},
+  FREEZE:{mode:'freeze',description:'냉기가 쌓이면 적을 완전히 빙결'},
+  ICE:{mode:'freeze',description:'냉기를 누적해 짧게 얼리기'},
+  BLIZZARD:{mode:'blizzard',description:'범위 내 다수에게 눈보라'},
+  SPIDER:{mode:'webpoison',description:'독과 거미줄 둔화를 동시에'},
+  VIRUS:{mode:'infection',description:'감염된 적이 쓰러지면 전파'},
+  ACID:{mode:'corrosion',description:'지속 피해와 방어력 감소'},
+  TSUNAMI:{mode:'tidal',description:'파도가 다수의 적을 후퇴시킴'},
+  BLACKHOLE:{mode:'vortex',description:'한 지점으로 모아 긴 시간 묶음'},
+  SINGULARITY:{mode:'vortex',description:'강력한 중력 중심 생성'},
+  PORTAL:{mode:'teleport',description:'적을 이동 경로 뒤쪽으로 이동'},
+  DRILL:{mode:'drill',description:'광석을 빠르게 소모하며 채굴'},
+  BANK:{mode:'interest',description:'웨이브 종료 시 보유 INK 이자'},
+  HOSPITAL:{mode:'hospital',description:'천천히 큰 양의 CORE 회복'},
+  BANDAGE:{mode:'bandage',description:'다친 CORE를 신속하게 회복'},
+  CLOCK:{mode:'freeze',description:'시간 감속이 누적되면 정지'},
+  TIME:{mode:'freeze',description:'시간 정지 효과를 누적'}
+});
+
 const START_RACK='MINERARROWIC'.split('');
 const FILLER_FREQUENCY='EEEEEEEEEEEEAAAAAAAAAIIIIIIIIOOOOOOOONNNNNNRRRRRRTTTTTTLLLLSSSSUUUUDDDDGGGBBCCMMPPFFHHVVWWYYKJXQZ'.split('');
 
@@ -1141,6 +1183,7 @@ window.WordSiegeData={
   roleLabels:ROLE_LABELS,
   modifiers:MODIFIERS,
   signatures:SIGNATURES,
+  behaviors:BEHAVIORS,
   combos:COMBOS,
   waveBalance:WAVE_BALANCE,
   startRack:START_RACK,

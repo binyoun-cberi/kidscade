@@ -144,7 +144,7 @@ function headlessGame(){
     KidscadeStorage:{getJson(){return []},setJson(){return true},getInt(key){return key==='kidscade_word_siege_stage_v1'?10:0},setRaw(){return true}},
     addEventListener(){},devicePixelRatio:1
   };
-  const hooks=`window.__headless={restart,startWave,update,beginPlacement,buildTower,makeTowerStats,towerCost,availableWords,validPlacement,rolePlacementValid,applyLinks,effectiveStats,showHint,swapOne,selectStage,currentStage,createWave,tileWord,typedWord,getInput:()=>freeWord, get state(){return state}};resize();`;
+  const hooks=`window.__headless={restart,startWave,update,beginPlacement,buildTower,makeTowerStats,towerCost,availableWords,validPlacement,rolePlacementValid,applyLinks,effectiveStats,showHint,swapOne,selectStage,currentStage,createWave,tileWord,typedWord,attackEnemy,towerUpdate,shotUpdate,updateTraps,updateFields,getInput:()=>freeWord, get state(){return state}};resize();`;
   const patched=runtime.replace('resize();requestAnimationFrame(loop);',hooks);
   assert.notEqual(patched,runtime,'headless hooks are missing');
   const ctx={window,document,performance:{now:()=>0},setTimeout(){return 0},clearTimeout(){},requestAnimationFrame(){}};
@@ -336,4 +336,77 @@ test('Word Siege free typing costs INK but does not consume rack letters',()=>{
   assert.ok(h.towerCost(d.words.NUKE,'NUKE',true)>20,'legendary tower must not be cheap');
   h.beginPlacement();
   assert.ok(!h.state.placing,'cannot place unaffordable NUKE');
+});
+
+test('Word Siege words have genuinely distinct weapon modes and descriptions',()=>{
+  const {h,d}=headlessGame();
+  assert.ok(Object.keys(d.behaviors).length>=35);
+  for(const [word,b] of Object.entries(d.behaviors)){
+    assert.ok(d.words[word],'behavior word missing from dictionary: '+word);
+    assert.ok(b.description,'missing readable behavior: '+word);
+    assert.equal(h.makeTowerStats(word,d.words[word]).mode,b.mode);
+  }
+  assert.equal(h.makeTowerStats('RAILGUN',d.words.RAILGUN).mode,'rail');
+  assert.equal(h.makeTowerStats('SHOTGUN',d.words.SHOTGUN).mode,'shotgun');
+  assert.equal(h.makeTowerStats('GATLING',d.words.GATLING).area,0);
+  const nuke=h.makeTowerStats('NUKE',d.words.NUKE);
+  assert.ok(nuke.damage>=200&&nuke.damage<500,'NUKE should be strong without double scaling');
+  assert.ok(nuke.rate<.2&&nuke.area>=.22);
+});
+
+test('Word Siege applies fire and ice together and spider really slows targets',()=>{
+  const {h,d}=headlessGame(),s=h.state;
+  const make=(word)=>({
+    id:s.uid++,word,def:d.words[word],stats:h.makeTowerStats(word,d.words[word]),
+    x:.4,y:.4,cool:0,harvestClock:0,pulse:0,links:[],combos:[]
+  });
+  const enemy=()=>({
+    id:s.uid++,hp:300,maxHp:300,x:.45,y:.4,armor:.3,shield:0,
+    poison:0,poisonDps:0,burn:0,burnDps:0,slow:1,pushBack:0,dead:false
+  });
+  const fire=make('FIRE'),ice=make('ICE'),spider=make('SPIDER');
+  fire.links=[ice];s.towers.push(fire,ice,spider);
+  const a=enemy();s.enemies.push(a);
+  h.attackEnemy(fire,a,10);
+  assert.ok(a.burn>0,'FIRE should apply burning');
+  assert.ok(a.slow<1,'linked ICE should still apply slowing');
+  const b=enemy();s.enemies.push(b);
+  h.attackEnemy(spider,b,10);
+  assert.ok(b.poison>0&&b.slow<1,'SPIDER must inflict both poison and web slow');
+});
+
+test('Word Siege railgun, shotgun, mines and falling nukes use different attack paths',()=>{
+  const {h,d}=headlessGame(),s=h.state;
+  function tower(word,x=.35,y=.3){
+    const t={id:s.uid++,word,x,y,def:d.words[word],stats:h.makeTowerStats(word,d.words[word]),
+      cool:0,harvestClock:0,pulse:0,links:[],combos:[]};
+    s.towers.push(t);return t;
+  }
+  function enemy(x,y,hp=1000){
+    const e={id:s.uid++,type:'normal',x,y,hp,maxHp:hp,shield:0,armor:0,
+      burn:0,burnDps:0,poison:0,poisonDps:0,slow:1,pushBack:0,
+      pathIndex:0,pathT:0,dead:false};
+    s.enemies.push(e);return e;
+  }
+  const rail=tower('RAILGUN'),e1=enemy(.42,.3),e2=enemy(.48,.3);
+  h.towerUpdate(rail,.1);
+  assert.ok(e1.hp<1000&&e2.hp<1000,'RAILGUN must penetrate aligned enemies');
+  s.enemies.length=0;s.towers.length=0;s.shots.length=0;
+  const gun=tower('SHOTGUN'),e3=enemy(.39,.30),e4=enemy(.40,.315);
+  h.towerUpdate(gun,.1);
+  assert.ok(e3.hp<1000&&e4.hp<1000,'SHOTGUN must hit multiple cone targets without projectiles');
+  s.enemies.length=0;s.towers.length=0;
+  const mine=tower('LANDMINE',.20,.28);s.inWave=true;
+  h.towerUpdate(mine,.1);
+  assert.ok(s.traps.length>0,'LANDMINE must deploy a physical trap on the path');
+  const trap=s.traps[0],victim=enemy(trap.x,trap.y);
+  h.updateTraps(.04);
+  assert.ok(victim.hp<1000&&s.traps.length===0,'LANDMINE must detonate on contact');
+  s.enemies.length=0;s.towers.length=0;
+  const nuke=tower('NUKE',.28,.28),boss=enemy(.35,.28);
+  h.towerUpdate(nuke,.1);
+  const delayed=s.shots.find(shot=>shot.mode==='nuke');
+  assert.ok(delayed&&delayed.delay>=2,'NUKE must visibly charge before impact');
+  h.shotUpdate(delayed,2.5);
+  assert.ok(boss.hp<1000,'NUKE must deal large area damage after countdown');
 });
