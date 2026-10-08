@@ -894,6 +894,7 @@ function createKidscadeMaleHairShort(){
     throw new Error('남자 숏컷의 hairone 메시에는 삼각형 인덱스가 필요합니다.');
   }
   const kept=[];
+  const originalPositions=source.geometry.getAttribute('position');
   let preservedTempleTriangles=0,removedFaceTriangles=0;
   for(let j=0;j<originalIndex.count;j+=3){
     const a=originalIndex.getX(j),b=originalIndex.getX(j+1),c=originalIndex.getX(j+2);
@@ -902,8 +903,7 @@ function createKidscadeMaleHairShort(){
     // Use the triangle's original side location, not its already compressed
     // location: the latter is why side polygons were falsely classified as
     // frontal eye-covering pieces after squashing the bob.
-    const original=source.geometry.getAttribute('position');
-    const center=(original.getX(a)+original.getX(b)+original.getX(c))/3;
+    const center=(originalPositions.getX(a)+originalPositions.getX(b)+originalPositions.getX(c))/3;
     const lateral=Math.abs(center-centerX)/(size.x*.5);
     const outerTemple=lateral>=.49;
     const faceOverhang=lowest<eyeClearanceY&&foremost>backOfFaceZ;
@@ -1952,6 +1952,9 @@ function installLocalVisualAudit(){
         return {name,available:!!mesh?.isSkinnedMesh,fit:PART_FIT(name),
           visible:!!mesh?.visible,
           vertices:positions?.count||0,
+          preservedTempleTriangles:mesh?.userData?.preservedTempleTriangles||0,
+          removedEyeLevelTriangles:mesh?.userData?.removedEyeLevelTriangles||0,
+          templeBridgeVersion:mesh?.userData?.templeBridgeVersion||null,
           fingerprint:fingerprint>>>0};
       });
     },
