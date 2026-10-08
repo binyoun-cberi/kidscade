@@ -77,6 +77,7 @@ const TEST_FILES = [
   "tests/police-patrol.test.cjs",
   "tests/driver-license.test.cjs",
   "tests/folklore-night-guard-persistence.test.cjs",
+  "tests/haunted-school-exorcist.test.cjs",
   "tests/quarantine-field-topdown.test.cjs",
   "tests/drone-pilot-v3.test.cjs",
   "tests/byeokrando-tutorial.test.cjs",
