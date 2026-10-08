@@ -86,7 +86,7 @@ function freshState(){
   return {
     core:100,wave:0,ink:20,score:0,inWave:false,waveTimer:0,spawnQueue:[],
     enemies:[],towers:[],shots:[],traps:[],fields:[],effects:[],rack:D.startRack.slice(0,D.maxRack),
-    selected:[],placing:null,hover:null,uid:1,unique:new Set(),builtWords:[],elapsed:0,
+    selected:[],placing:null,hover:null,inspectedTowerId:null,uid:1,unique:new Set(),builtWords:[],elapsed:0,
     resources:resourceSpots.map((s,i)=>({...s,r:.045,amount:s.amount??(70+i*20)})),
     discovered:new Set(loadDiscovered()), discoveredCombos:new Set(), ended:false,towerRevision:0,totalSpawns:0
   };
@@ -332,7 +332,7 @@ function buildTower(p){
   if(state.ink<cost){toast('INK가 부족해요');return}
   const stats=makeTowerStats(word,def);
   state.ink-=cost;
-  const tower={id:state.uid++,x:p.x,y:p.y,word,def,stats,cool:Math.random()*.3,harvestClock:0,links:[],pulse:0};
+  const tower={id:state.uid++,x:p.x,y:p.y,word,def,stats,level:1,cool:Math.random()*.3,harvestClock:0,links:[],pulse:0};
   state.towers.push(tower); state.unique.add(word); state.builtWords.push(word);
   ringEffect(p.x,p.y,.05,def.color,.36);
   if(V)particleEffect(p.x,p.y,def.color,9,.05);
@@ -359,6 +359,18 @@ function effectiveStats(t){
     if(bonus.chain)s.chain=(s.chain||0)+bonus.chain;
   }
   if(s.rate)s.rate*=Math.min(2.4,rateMul);if(s.damage)s.damage*=Math.min(2.5,damageMul);if(s.range)s.range*=Math.min(1.85,rangeMul);if(s.area)s.area*=Math.min(1.9,areaMul);if(s.push)s.push*=Math.min(2,pushMul);
+  // Level upgrades make scarce tower slots more valuable and absorb surplus INK.
+  const level=Math.max(1,Math.min(3,t.level||1));
+  if(level>1){
+    if(s.damage)s.damage*=1+.27*(level-1);
+    if(s.rate)s.rate*=1+.12*(level-1);
+    if(s.range)s.range*=1+.05*(level-1);
+    if(s.area)s.area*=1+.05*(level-1);
+    if(s.harvest)s.harvest*=1+.16*(level-1);
+    if(s.heal)s.heal*=1+.28*(level-1);
+    if(s.barrierSlow)s.barrierSlow*=Math.pow(.87,level-1);
+    if(s.slow)s.slow*=Math.pow(.93,level-1);
+  }
   const duplicates=state.towers.filter(o=>o!==t&&o.word===t.word).length;
   if(s.damage)s.damage*=Math.max(.65,Math.pow(.93,duplicates));
   t._effectiveStats=s;t._effectiveRevision=state.towerRevision;
@@ -1117,10 +1129,44 @@ function drawPlacement(){
 }
 function roundRect(c,x,y,w,h,r,fill,stroke){c.beginPath();c.roundRect?c.roundRect(x,y,w,h,r):(c.rect(x,y,w,h));if(fill)c.fill();if(stroke)c.stroke()}
 
+function upgradeCost(t){
+  if(!t||(t.level||1)>=3)return Infinity;
+  return Math.ceil(towerCost(t.def,t.word)*((t.level||1)===2?2.1:1.45));
+}
+function upgradeInspectedTower(){
+  if(!state||state.ended)return;
+  const t=state.towers.find(t=>t.id===state.inspectedTowerId);
+  const price=upgradeCost(t);
+  if(!t||state.ink<price){toast(t&&(t.level||1)>=3?'최대 레벨입니다':'강화할 INK가 부족해요');return}
+  state.ink-=price;t.level=(t.level||1)+1;t.pulse=.55;
+  state.towerRevision++;
+  ringEffect(t.x,t.y,.06,'#ffdc76',.55);
+  particleEffect(t.x,t.y,'#fff2a6',12,.09);
+  floatEffect(t.x,t.y,'LEVEL '+t.level,'#ead04c');
+  beep(850,.16,'triangle',.045);
+  toast(t.word+' LV.'+t.level+' 강화!');
+  inspectAt({x:t.x,y:t.y});updateHud();updateComposer();
+}
+inspectBox.addEventListener('click',event=>{
+  if(event.target?.id==='towerUpgradeBtn')upgradeInspectedTower();
+});
 function inspectAt(p){
   const t=state.towers.map(t=>({t,d:dist(p,t)})).sort((a,b)=>a.d-b.d)[0];
-  if(!t||t.d>.06){inspectBox.classList.remove('show');return}
-  const s=effectiveStats(t.t),signature=D.signatures?.[t.t.word],behavior=D.behaviors?.[t.t.word];inspectBox.innerHTML='<strong>'+escapeHtml(t.t.word)+'</strong><small>'+escapeHtml(t.t.def.meaning)+' · '+escapeHtml(t.t.def.roleLabel)+(behavior?.description?' · '+escapeHtml(behavior.description):(signature?.flavor?' · '+escapeHtml(signature.flavor):''))+'</small><div class="meter">난도 '+('★'.repeat(t.t.def.difficulty))+' · INK '+towerCost(t.t.def)+(s.damage?' · DMG '+Math.round(s.damage):'')+(s.range?' · RANGE '+Math.round(s.range*100):'')+(t.t.links.length?' · LINK '+t.t.links.map(x=>x.word).join(', '):'')+(t.t.combos?.length?' · COMBO '+t.t.combos.map(x=>x.name).join(', '):'')+'</div>';inspectBox.classList.add('show');
+  if(!t||t.d>.06){state.inspectedTowerId=null;inspectBox.classList.remove('show');return}
+  state.inspectedTowerId=t.t.id;
+  const s=effectiveStats(t.t),signature=D.signatures?.[t.t.word],behavior=D.behaviors?.[t.t.word];
+  const price=upgradeCost(t.t);
+  const detail='난도 '+('★'.repeat(t.t.def.difficulty))+' · INK '+towerCost(t.t.def)+
+    (s.damage?' · DMG '+Math.round(s.damage):'')+(s.range?' · RANGE '+Math.round(s.range*100):'')+
+    (t.t.links.length?' · LINK '+t.t.links.map(x=>x.word).join(', '):'')+
+    (t.t.combos?.length?' · COMBO '+t.t.combos.map(x=>x.name).join(', '):'');
+  inspectBox.innerHTML='<strong>'+escapeHtml(t.t.word)+' <span class="tower-level">LV.'+(t.t.level||1)+'</span></strong>'+
+    '<small>'+escapeHtml(t.t.def.meaning)+' · '+escapeHtml(t.t.def.roleLabel)+
+    (behavior?.description?' · '+escapeHtml(behavior.description):(signature?.flavor?' · '+escapeHtml(signature.flavor):''))+
+    '</small><div class="meter">'+escapeHtml(detail)+'</div>'+
+    '<button type="button" class="tower-upgrade" id="towerUpgradeBtn" '+(!Number.isFinite(price)||state.ink<price?'disabled':'')+'>'+
+    (Number.isFinite(price)?'타워 강화 · INK '+price:'최대 강화 완료')+'</button>';
+  inspectBox.classList.add('show');
 }
 canvas.addEventListener('pointermove',e=>{if(!state)return;state.hover=boardPos(e)});
 canvas.addEventListener('pointerleave',()=>{if(state)state.hover=null});
@@ -1140,7 +1186,7 @@ function restart(){
   inspectBox.classList.remove('show');resultOverlay.classList.add('hidden');
   startOverlay.classList.add('hidden');
   setStatus('STAGE '+currentStage().number+' · '+currentStage().name,
-    'MINER와 ARROW로 시작하세요. '+(FOCUS_TIPS[currentStage().focus]||FOCUS_TIPS.normal));
+    'MINER와 ARROW로 시작하세요. 타워를 눌러 강화할 수 있어요. '+(FOCUS_TIPS[currentStage().focus]||FOCUS_TIPS.normal));
   running=true;last=performance.now();
 }
 function openStageSelect(){
