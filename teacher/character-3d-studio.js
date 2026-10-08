@@ -20,7 +20,7 @@ const MALE_HAIR_STYLES=[
 ];
 const FEMALE_HAIR_STYLES=[
   'hairone','hairT','hairtail','hairtailknight','hairvariant','hairvariant.001',
-  'kidscade_female_hair_bob','kidscade_female_hair_layered'
+  'chibi_female_hair_bob','chibi_female_hair_layered'
 ];
 const HAIR_NODES=[...FEMALE_HAIR_STYLES,...MALE_HAIR_STYLES];
 
@@ -53,7 +53,7 @@ const PART_LABELS={
   kidscade_male_hair_textured:'텍스처 숏컷',kidscade_male_hair_fringe:'덮은 머리',
   kidscade_male_hair_undercut:'언더컷',kidscade_male_hair_round:'라운드컷',
   kidscade_male_hair_swept:'스윕 헤어',
-  kidscade_female_hair_bob:'둥근 단발',kidscade_female_hair_layered:'레이어드'
+  chibi_female_hair_bob:'둥근 단발',chibi_female_hair_layered:'레이어드'
 };
 
 // Fit means compatible with the current body geometry, never a restriction on identity.
@@ -935,8 +935,8 @@ const HAIR_STYLE_PARAMETERS={
   kidscade_male_hair_undercut:{crown:.06,side:-.28,front:.10,part:.03,wave:0},
   kidscade_male_hair_round:{crown:.06,side:.075,front:0,part:0,wave:.01},
   kidscade_male_hair_swept:{crown:.035,side:-.01,front:.05,part:.20,wave:0},
-  kidscade_female_hair_bob:{crown:.03,side:.035,front:-.015,part:0,wave:.015},
-  kidscade_female_hair_layered:{crown:.06,side:-.08,front:.03,part:-.055,wave:.03}
+  chibi_female_hair_bob:{crown:.03,side:.035,front:-.015,part:0,wave:.015},
+  chibi_female_hair_layered:{crown:.06,side:-.08,front:.03,part:-.055,wave:.03}
 };
 function createKidscadeHairCollection(){
   const maleBase=getNode('kidscade_male_hair_short');
