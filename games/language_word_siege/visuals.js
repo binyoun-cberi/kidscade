@@ -158,6 +158,11 @@ function drawTower(c,t,r,clock){
     stroke(c,'#fff6d2',2.5);c.beginPath();c.arc(0,0,r*(1.03+(.28-t.pulse)*1.2),0,TAU);c.stroke();
     c.globalAlpha=1;
   }
+  if((t.level||1)>1){
+    stroke(c,'#ffe3a0',2.4);c.strokeRect(-width*.5,top,width,height);
+    const count=Math.min(3,t.level||1);
+    for(let i=0;i<count;i++)disc(c,-width*.29+i*width*.29,top+r*.10,r*.045,'#fff1ac');
+  }
   if(t.combos?.length){c.fillStyle='#ffcc65';c.beginPath();c.arc(r*.67,-r*.35,r*.20,0,TAU);c.fill();stroke(c,'#523a13',1);c.stroke();}
   if(t.links?.length){disc(c,-r*.63,r*.58,r*.16,'#dffdf5');}
   c.restore();
