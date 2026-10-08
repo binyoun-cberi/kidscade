@@ -120,7 +120,7 @@ const errors=[];
   const clipNames=await evalPage('window.__kc3dAudit.clips.map(x=>x.label)');
   for(const name of ['IDLE','WALK','RUN','JUMP'])assert.ok(clipNames.includes(name),'Missing '+name+' clip');
 
-  const report={version:'chibi-v4.1',source:'Styloo Chibi real GLB in local Chrome',cases:[],warnings:[]};
+  const report={version:'chibi-v5.2',source:'Styloo Chibi real GLB in local Chrome',cases:[],warnings:[]};
   // Test actual GLB mesh availability, geometry variation and one-visible-hair
   // invariant for each gender-fit tab rather than just counting HTML options.
   const catalog=JSON.parse(fs.readFileSync(path.join(ROOT,'chibi/asset-manifest.json'),'utf8'))
@@ -256,6 +256,13 @@ const errors=[];
   }
   await setFit('male');
   report.outfitPack.notes.push('Animated-pose proximity is a diagnostic, not definitive triangle-mesh penetration certification.');
+  const allMotion=report.outfitPack.styles.flatMap(style=>style.motion);
+  const nearCount=allMotion.reduce((sum,row)=>sum+row.closeSurfaceSamples,0);
+  const testedCount=allMotion.reduce((sum,row)=>sum+row.tested,0);
+  console.log('CHIBI_OUTFIT_AUDIT '+JSON.stringify({styles:report.outfitPack.styles.length,
+    exportedGlbs:report.outfitPack.roundtrip.length,nearSamples:nearCount,
+    testedSamples:testedCount,nearRatio:Number((nearCount/Math.max(testedCount,1)).toFixed(4)),
+    caveat:'proximity is not proof of zero intersection'}));
 
   // Collect joint trajectories as evidence, but do not claim automatic
   // foot-ground/contact correctness based on bone-pivot height alone.
