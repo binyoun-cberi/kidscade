@@ -14,6 +14,14 @@ const statusBox=$('statusBox'), inspectBox=$('inspectBox'), toastEl=$('toast'), 
 const startOverlay=$('startOverlay'), dictOverlay=$('dictOverlay'), resultOverlay=$('resultOverlay');
 const STORAGE_DISC='kidscade_word_siege_discovered_v1', STORAGE_BEST='kidscade_word_siege_best_v1';
 const STORAGE_STAGE='kidscade_word_siege_stage_v1';
+// Ordinary lexicon towers also have distinct team colors by their word pattern.
+const WORD_STYLE_COLORS={
+  volley:'#eab351',pinball:'#ec996e',boomerang:'#65c8b8',snowball:'#84bddf',
+  shootingstars:'#b794ed',spring:'#90c874',rainbow:'#9984ec',
+  splat:'#eaa46a',firework:'#e985bd',snap:'#96b46b',
+  echo:'#83b7de',hailstorm:'#90cbe2',ricochet:'#dfab63',
+  rail:'#dc8f7e',shotgun:'#bd8b5e'
+};
 const FOCUS_TIPS={
   normal:'ARROW로 시작하고 ICE나 FIRE를 더해 보세요.',
   fast:'ICE·FREEZE로 빠른 적을 늦추고 ARROW로 마무리하세요.',
@@ -311,6 +319,7 @@ function makeTowerStats(word,def){
     if(signature.element)stats.element=signature.element;
   }
   stats.mode=D.behaviorFor(word)?.mode||'';
+  if(def.role==='rapid'&&WORD_STYLE_COLORS[stats.mode])def.color=WORD_STYLE_COLORS[stats.mode];
   if(['disco','spellbook','rainbow','boomerang','pinball','spring','boo','sleep','shootingstars','snowball','slimepool','raincloud','spores','bubble','sunray','magnet','vacuum','mirror','splat','firework','snap','echo','hailstorm'].includes(stats.mode)){
     stats.rate=Math.min(1.35,Math.max(.55,stats.rate||.65));
   }
