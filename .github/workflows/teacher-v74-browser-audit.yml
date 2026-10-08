@@ -1,0 +1,42 @@
+name: Teacher Simulator V74 Browser Audit
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/teacher-v74-browser-audit.yml'
+      - 'tests/teacher-v74-browser-audit.cjs'
+      - 'games/teacher-classroom-sim-prototype/**'
+  workflow_dispatch:
+jobs:
+  chrome-render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            games/teacher-classroom-sim-prototype
+            assets/vendor/three-r160
+            assets/game/npcs/glTF
+            assets/game/3d/interiors/kenney-furniture-kit
+            assets/game/3d/bakery/interior
+            assets/game/3d/bakery/restaurant-bits
+            assets/game/platformer/props
+            kidscade-storage.js
+            kidscade-game-sdk.js
+            tests/teacher-v74-browser-audit.cjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Korean fonts
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk
+      - name: Audit rendered classroom and accelerated lesson in Chrome
+        run: node tests/teacher-v74-browser-audit.cjs
+      - name: Save real browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: teacher-v75-visual-screenshots
+          path: teacher-visual-audit/*.jpg
+          if-no-files-found: warn
