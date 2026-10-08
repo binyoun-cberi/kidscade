@@ -141,7 +141,7 @@ function headlessGame(){
   };
   const window={
     WordSiegeData:d,WordSiegeStages:loadStages(),
-    KidscadeStorage:{getJson(){return []},setJson(){return true},getInt(key){return key==='kidscade_word_siege_stage_v1'?10:0},setRaw(){return true}},
+    KidscadeStorage:{getJson(){return []},setJson(){return true},getInt(key){return key==='kidscade_word_siege_stage_v1'?20:0},setRaw(){return true}},
     addEventListener(){},devicePixelRatio:1
   };
   const hooks=`window.__headless={restart,startWave,update,beginPlacement,buildTower,makeTowerStats,towerCost,availableWords,validPlacement,rolePlacementValid,applyLinks,effectiveStats,showHint,swapOne,selectStage,currentStage,createWave,tileWord,typedWord,attackEnemy,towerUpdate,shotUpdate,statusEffects,updateTraps,updateFields,spawnEnemy,updateComposer,inspectAt,upgradeInspectedTower,upgradeCost,moveEnemy,useWordRush,rushCost,getInput:()=>freeWord, get state(){return state}};resize();`;
@@ -251,12 +251,12 @@ test('Word Siege full-wave bot simulations terminate without runtime errors', {t
   assert.equal(results.length,4);
 });
 
-test('Word Siege campaign contains ten genuinely distinct maps and resource layouts',()=>{
+test('Word Siege campaign contains twenty genuinely distinct maps and resource layouts',()=>{
   const stages=loadStages();
-  assert.equal(stages.length,10);
-  assert.equal(new Set(stages.map(s=>s.name)).size,10);
-  assert.equal(new Set(stages.map(s=>JSON.stringify(s.path))).size,10);
-  assert.equal(new Set(stages.map(s=>s.focus)).size>=7,true);
+  assert.equal(stages.length,20);
+  assert.equal(new Set(stages.map(s=>s.name)).size,20);
+  assert.equal(new Set(stages.map(s=>JSON.stringify(s.path))).size,20);
+  assert.ok(new Set(stages.map(s=>s.focus)).size>=17);
   for(const s of stages){
     assert.equal(s.waves,8);
     assert.ok(s.path.length>=9,s.name+' has a short route');
@@ -267,7 +267,7 @@ test('Word Siege campaign contains ten genuinely distinct maps and resource layo
   }
 });
 
-test('Word Siege all ten stages permit word tower building and start unique waves',()=>{
+test('Word Siege all twenty stages permit word tower building and start unique waves',()=>{
   const {h,d}=headlessGame(),stages=loadStages();
   const focuses=new Set(),patterns=new Set();
   for(let i=0;i<stages.length;i++){
@@ -298,8 +298,8 @@ test('Word Siege all ten stages permit word tower building and start unique wave
     for(let j=0;j<100;j++)h.update(.04);
     assert.ok(h.state.wave<=1||h.state.ended);
   }
-  assert.ok(focuses.size>=7);
-  assert.ok(patterns.size>=7,'wave patterns should differ by stage');
+  assert.ok(focuses.size>=17);
+  assert.ok(patterns.size>=15,'wave patterns should differ by stage');
 });
 
 test('Word Siege dictionary rejects gibberish and supports example words',()=>{
@@ -836,4 +836,47 @@ test('Word Siege exposes boss resolve and timing choices to players',()=>{
   assert.match(runtime,/BREAK! \+38%/);
   assert.match(runtime,/function useWordRush/);
   assert.match(runtime,/FOUNDATION_WORDS/);
+});
+
+test('Word Siege stages 11–20 preserve eight waves and add deliberate attack patterns',()=>{
+  const {h}=headlessGame(),maps=loadStages();
+  assert.equal(maps.length,20);
+  const signatures=new Set(),wave8BossCounts=[];
+  for(let i=10;i<20;i++){
+    assert.ok(h.selectStage(i),'new stage '+(i+1)+' must be selectable when unlocked');
+    h.restart();
+    const stage=maps[i];
+    assert.equal(stage.number,i+1);
+    assert.equal(stage.waves,8);
+    assert.equal(stage.resources.length,4);
+    assert.ok(stage.path.length>=12);
+    assert.ok(stage.multiplier>maps[i-1].multiplier-.05);
+    assert.ok(stage.description.includes('세요')||stage.description.includes('합니다'));
+    const wave=h.createWave(4);
+    assert.ok(wave.length>=25,'new mid-wave must have attackers');
+    assert.ok(wave.every((x,j)=>j===0||x.delay>=wave[j-1].delay),'spawn queue must remain ordered');
+    signatures.add(wave.map(x=>x.type).join(','));
+    const wave8=h.createWave(8);
+    wave8BossCounts.push(wave8.filter(x=>x.type==='boss').length);
+    assert.equal(wave8.filter(x=>x.type==='boss').length,i===19?2:1);
+  }
+  assert.ok(signatures.size>=8,'new stage encounters should have distinct compositions');
+  assert.deepEqual(wave8BossCounts,[1,1,1,1,1,1,1,1,1,2]);
+  assert.ok(maps[17].focus==='echo');
+  const burst=h.selectStage(17);
+  assert.ok(burst);
+  h.restart();
+  const arrivals=h.createWave(4).slice(0,11).map(x=>x.delay);
+  assert.ok(arrivals[5]-arrivals[4]>.1,'echo waves should pause between enemy packs');
+});
+
+test('Word Siege campaign selector shows two parts, can access stage 20 and retains older save keys',()=>{
+  const {h}=headlessGame();
+  assert.ok(h.selectStage(19));
+  h.restart();
+  assert.equal(h.currentStage().name,'WORD APOCALYPSE');
+  assert.match(runtime,/PART II · 단어 전술 원정/);
+  assert.match(html,/\.stage-chapter/);
+  assert.match(html,/1 \/ 20 해금/);
+  assert.match(runtime,/STORAGE_STAGE='kidscade_word_siege_stage_v1'/);
 });
