@@ -57,6 +57,7 @@ const CLIP_LABELS={
 let scene,camera,renderer,controls;
 let avatarRoot=null,sourceScene=null,primarySkinnedMesh=null,skeletonHelper=null,mixer=null;
 let animations=[],activeAction=null,activeClip='',currentPreset='hoodie',activeView='threeQuarter';
+let maleWalkClips=new Map();
 let originalMaterials=new Map();
 let loaded=false;
 let lastTime=performance.now();
@@ -385,6 +386,8 @@ function applyPreset(name){
   });
   refreshPartChecks();
   refreshMetrics();
+  // 프리셋 전환 중 WALK를 재생하고 있었다면 현재 몸체에 맞는 클립으로 전환한다.
+  syncActiveWalkStyle();
 }
 
 
@@ -1140,10 +1143,78 @@ function idleClipName(){
     ||'';
 }
 
+/**
+ * Source Chibi WALK has ±0.0308m hip translation, ±8.6° spine roll,
+ * and a second lower-spine roll. The boy's straighter gait reduces only
+ * central-body side motion; leg and foot animation tracks are not modified.
+ * A derived clip is never added to the 11 selectable source clips.
+ */
+const MALE_WALK_POSITION_X=.43;
+const MALE_WALK_SPINE_FACTORS={
+  'DEF-spine':{roll:.38,yaw:.70},
+  'DEF-spine001':{roll:.55,yaw:.85},
+  'DEF-spine002':{roll:.72,yaw:.82},
+  'DEF-spine003':{roll:.85,yaw:.72},
+  'DEF-spine004':{roll:.90,yaw:.78}
+};
+
+function isWalkClipName(name){
+  return name==='anim_walk'||name==='walkanim_';
+}
+
+function isMaleBodyVisible(){
+  return !!getNode('kidscade_male_body')?.visible;
+}
+
+function buildMaleWalkClip(sourceClip){
+  const result=sourceClip.clone();
+  // Keep the source clip's public name (export, selectors and achievement logic).
+  result.name=sourceClip.name;
+  const quaternion=new THREE.Quaternion(),euler=new THREE.Euler(0,0,0,'XYZ');
+  for(const track of result.tracks){
+    if(track.name==='DEF-spine.position'){
+      const v=track.values;
+      let min=Infinity,max=-Infinity;
+      for(let i=0;i<v.length;i+=3){min=Math.min(min,v[i]);max=Math.max(max,v[i]);}
+      const middle=(min+max)*.5;
+      for(let i=0;i<v.length;i+=3){
+        v[i]=middle+(v[i]-middle)*MALE_WALK_POSITION_X;
+      }
+    }
+    const dot=track.name.lastIndexOf('.');
+    const bone=track.name.slice(0,dot);
+    if(track.name.slice(dot+1)!=='quaternion'||!MALE_WALK_SPINE_FACTORS[bone])continue;
+    const factors=MALE_WALK_SPINE_FACTORS[bone];
+    for(let i=0;i<track.values.length;i+=4){
+      const values=track.values;
+      quaternion.set(values[i],values[i+1],values[i+2],values[i+3]).normalize();
+      euler.setFromQuaternion(quaternion,'XYZ');
+      euler.y*=factors.yaw;
+      euler.z*=factors.roll;
+      quaternion.setFromEuler(euler).normalize();
+      values[i]=quaternion.x;values[i+1]=quaternion.y;
+      values[i+2]=quaternion.z;values[i+3]=quaternion.w;
+    }
+  }
+  result.userData={...sourceClip.userData,kidscadeMaleStraightWalk:true};
+  return result;
+}
+
+function resolvePlaybackClip(sourceClip){
+  return isMaleBodyVisible()&&isWalkClipName(sourceClip.name)
+    ?(maleWalkClips.get(sourceClip.name)||sourceClip)
+    :sourceClip;
+}
+
+function syncActiveWalkStyle(){
+  if(activeClip&&isWalkClipName(activeClip))playClip(activeClip);
+}
+
 function playClip(name){
   if(!mixer)return;
-  const clip=animations.find(item=>item.name===name);
-  if(!clip)return;
+  const sourceClip=animations.find(item=>item.name===name);
+  if(!sourceClip)return;
+  const clip=resolvePlaybackClip(sourceClip);
 
   activeClip=name;
   document.querySelectorAll('[data-clip]').forEach(button=>{
@@ -1230,6 +1301,10 @@ async function loadChibi(){
   sourceScene=gltf.scene;
   sourceScene.name='StylooChibiAllInOne';
   animations=gltf.animations||[];
+  maleWalkClips=new Map(
+    animations.filter(clip=>isWalkClipName(clip.name))
+      .map(clip=>[clip.name,buildMaleWalkClip(clip)])
+  );
   originalMaterials=new Map();
 
   TOGGLE_NODES.forEach(name=>setNodeVisible(name,false));
@@ -1344,6 +1419,7 @@ function exportSpec(){
       name:clip.name,
       duration:Number(clip.duration.toFixed(3))
     })),
+    walkStyle:isMaleBodyVisible()?'reduced-hip-sway':'source',
     coordinateSystem:{up:'Y',units:'meters',origin:'ground-center'}
   };
   download(
@@ -1405,7 +1481,8 @@ async function exportGlb(){
       binary:true,
       trs:true,
       onlyVisible:true,
-      animations,
+      // Keep 11 clip names while exporting the tuned WALK only for a visible male base.
+      animations:animations.map(clip=>resolvePlaybackClip(clip)),
       includeCustomExtensions:false
     }
   );
@@ -1460,6 +1537,8 @@ function wireUi(){
 
     currentPreset='custom';
     document.querySelectorAll('[data-chibi-preset]').forEach(button=>button.classList.remove('active'));
+    // Custom wardrobe can toggle the male body independently of preset buttons.
+    if(part==='kidscade_male_body'||BASE_VARIANT_NODES.includes(part))syncActiveWalkStyle();
   });
 }
 

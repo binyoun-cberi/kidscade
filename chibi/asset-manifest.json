@@ -185,7 +185,17 @@
       "type": "policy",
       "rule": "reuse existing Chibi mesh topology and source skin weights; no procedural hair, sleeves, or compressed long-pants shortcuts",
       "defaultHair": "kidscade_male_hair_short",
-      "faceRule": "The body already paints eye whites and eyelid lines. Use unmodified source eyes alignment and only the 24 original eyebrow triangles; never draw a second set of lashes."
+      "faceRule": "The body already paints eye whites and eyelid lines. Use unmodified source eyes alignment and only the 24 original eyebrow triangles; never draw a second set of lashes.",
+      "walkStyle": "reduced-hip-sway-v1",
+      "walkAnimation": {
+        "source": "anim_walk",
+        "specialHandling": "only when kidscade_male_body visible",
+        "pelvisLateralScale": 0.43,
+        "pelvisRollScale": 0.38,
+        "lowerSpineRollScale": 0.55,
+        "preserved": "original source animations unchanged; stride, knees, ankles and arms use source tracks",
+        "exportBehavior": "derived WALK replaces source WALK in export when male body visible; clip count and public name remain unchanged"
+      }
     },
     "kidscade_male_hair_short": {
       "label": "남자 짧은 머리",
