@@ -1927,7 +1927,8 @@ function installLocalVisualAudit(){
       return Object.entries(OUTFIT_LIBRARY).flatMap(([fit,categories])=>
         Object.entries(categories).flatMap(([category,names])=>names.map(name=>{
           const group=getNode(name);
-          const shell=group?.isSkinnedMesh?group:group?.getObjectByName(name+'_shell');
+          let shell=group?.isSkinnedMesh?group:group?.getObjectByName(name+'_shell');
+          if(!shell)group?.traverse?.(object=>{if(!shell&&object.isSkinnedMesh)shell=object});
           const pos=shell?.geometry?.getAttribute('position');
           let hash=2166136261;
           if(pos)for(let i=0;i<pos.array.length;i+=3){
@@ -1970,7 +1971,7 @@ function installLocalVisualAudit(){
         if(!node)continue;
         const shells=[];
         if(node.isSkinnedMesh)shells.push(node);
-        node.traverse?.(object=>{if(object.isSkinnedMesh&&object.name.endsWith('_shell'))shells.push(object)});
+        node.traverse?.(object=>{if(object.isSkinnedMesh&&(object.name.endsWith('_shell')||object.name.endsWith('_body')))shells.push(object)});
         let tested=0,close=0,minimum=Infinity;
         for(const shell of shells){
           for(const g of sampleMesh(shell,200)){
