@@ -44,7 +44,7 @@ const renderer=new THREE.WebGLRenderer({canvas:ui.canvas,antialias:true,powerPre
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.65));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.04;
+renderer.toneMappingExposure=1.22;
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 
@@ -59,7 +59,7 @@ const roomRoot=new THREE.Group();world.add(roomRoot);
 const actorRoot=new THREE.Group();world.add(actorRoot);
 const fxRoot=new THREE.Group();world.add(fxRoot);
 
-scene.add(new THREE.HemisphereLight(0xf6fbff,0x78654f,2.25));
+scene.add(new THREE.HemisphereLight(0xffffff,0xa89983,2.5));
 const sun=new THREE.DirectionalLight(0xffffff,2.35);
 sun.position.set(-6,12,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
 sun.shadow.camera.left=-12;sun.shadow.camera.right=12;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-12;
@@ -419,6 +419,48 @@ function makeFallbackPerson(height,color){
   head.position.y=height*.83;head.castShadow=true;root.add(head);
   return root;
 }
+function improveNpcMaterials(model,visualId){
+  const accent=new THREE.Color(COLORS[visualId]||'#678eac'),skin=new THREE.Color(0xf3c4a0);
+  model.traverse(mesh=>{
+    if(!mesh.isMesh)return;
+    mesh.castShadow=true;mesh.receiveShadow=false;
+    const materials=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+    const corrected=materials.map(source=>{
+      if(!source?.isMeshStandardMaterial)return source;
+      const material=source.clone();
+      const key=((material.name||'')+' '+(mesh.name||'')).toLowerCase();
+      const eye=/eye|pupil|lash|brow/.test(key);
+      const skinMaterial=/skin|face|hand|headskin/.test((material.name||'').toLowerCase());
+      const hair=/hair|beard/.test(key);
+      const maxLightness=Math.max(material.color.r,material.color.g,material.color.b);
+      if(skinMaterial){
+        material.map=null;material.color.copy(skin);
+      }else if(!eye&&!hair&&maxLightness<.19){
+        material.map=null;
+        material.color.copy(accent).lerp(new THREE.Color(0xe1ebf0),.22);
+      }
+      if(!eye){
+        material.emissive.copy(skinMaterial?skin:material.color).multiplyScalar(skinMaterial?.13:.05);
+        material.roughness=Math.max(.72,material.roughness??.8);
+      }
+      material.needsUpdate=true;
+      return material;
+    });
+    mesh.material=Array.isArray(mesh.material)?corrected:corrected[0];
+  });
+}
+function collectSeatedBones(model){
+  const legs={upper:[],lower:[]};
+  model.traverse(node=>{
+    if(!node.isBone)return;
+    const n=(node.name||'').toLowerCase();
+    if(/thigh|upleg|upperleg/.test(n))legs.upper.push({bone:node,base:node.quaternion.clone()});
+    else if(/calf|shin|lowerleg|(?:left|right)leg$/.test(n))legs.lower.push({bone:node,base:node.quaternion.clone()});
+  });
+  return legs;
+}
+const SIT_UPPER=new THREE.Quaternion().setFromEuler(new THREE.Euler(1.08,0,0));
+const SIT_LOWER=new THREE.Quaternion().setFromEuler(new THREE.Euler(-1.02,0,0));
 function pickCharacterClips(gltf){
   const clips=Array.isArray(gltf?.animations)?gltf.animations:[];
   const idle=inPlaceCharacterClip(clips.find(c=>/idle|stand/i.test(c.name))||clips[0]||null);
@@ -426,7 +468,8 @@ function pickCharacterClips(gltf){
   const gesture=inPlaceCharacterClip(
     clips.find(c=>/push|attack|punch|hit|wave|talk|gesture|point/i.test(c.name))||idle
   );
-  return {idle,walk,push:gesture};
+  const sit=inPlaceCharacterClip(clips.find(c=>/sit|seated|chair/i.test(c.name))||null);
+  return {idle,walk,push:gesture,sit};
 }
 async function makeActor(kind,profile,index,pos){
   const visual=kind==='teacher'?CHARACTER_VISUALS.teacher:(CHARACTER_VISUALS[profile?.id]||CHARACTER_VISUALS.minsu);
@@ -435,6 +478,7 @@ async function makeActor(kind,profile,index,pos){
     const gltf=await loadCharacterAsset(visual.file);
     model=cloneSkeleton(gltf.scene);
     normalizeCharacterModel(model,visual.height);
+    improveNpcMaterials(model,kind==='teacher'?'teacher':profile.id);
     model.traverse(o=>{
       if(o.isMesh){o.castShadow=true;o.receiveShadow=true}
       if(o.isSkinnedMesh)o.frustumCulled=false;
@@ -454,7 +498,8 @@ async function makeActor(kind,profile,index,pos){
   const actor={
     root,model,mixer,clips,action:null,anim:'',target:pos.clone(),
     speed:kind==='teacher'?3.2:1.15,kind,navGoal:'',navPath:[],
-    visualId:kind==='teacher'?'teacher':profile?.id,usingFallback
+    visualId:kind==='teacher'?'teacher':profile?.id,usingFallback,
+    restY:model.position.y,seated:false,seatBones:collectSeatedBones(model),poseBlend:0
   };
   playAnim(actor,'idle');
   return actor;
@@ -468,6 +513,28 @@ function playAnim(actor,name){
   if(actor.action&&actor.action!==next)actor.action.fadeOut(.1);
   next.reset().setLoop(THREE.LoopRepeat,Infinity).fadeIn(.1).play();
   actor.action=next;actor.anim=name;
+}
+function setSeatedPose(actor,shouldSit,dt){
+  if(actor.kind!=='student')return;
+  actor.poseBlend=THREE.MathUtils.damp(actor.poseBlend,shouldSit?1:0,11,dt);
+  actor.seated=shouldSit;
+  const nativeSit=!!actor.clips.sit;
+  if(shouldSit)playAnim(actor,nativeSit?'sit':'idle');
+  if(!nativeSit){
+    for(const entry of actor.seatBones.upper)
+      entry.bone.quaternion.copy(entry.base).slerp(entry.base.clone().multiply(SIT_UPPER),actor.poseBlend);
+    for(const entry of actor.seatBones.lower)
+      entry.bone.quaternion.copy(entry.base).slerp(entry.base.clone().multiply(SIT_LOWER),actor.poseBlend);
+  }
+  actor.model.position.y=actor.restY-(nativeSit?.06:.26)*actor.poseBlend;
+}
+function updateStudentPose(s,dt){
+  const classTime=currentStep.kind==='lesson'||currentStep.kind==='prep';
+  const canSit=activeSpace.id!=='gym'&&classTime&&studentCanParticipate(s)&&
+    distance2D(s.actor.root.position,s.seat)<.17&&
+    s.runtime.mode!=='offtask'&&!s.wander;
+  if(canSit)faceDirection(s.actor,0,-1);
+  setSeatedPose(s.actor,canSit,dt);
 }
 function faceDirection(actor,dx,dz){
   if(Math.abs(dx)+Math.abs(dz)>.001)actor.root.rotation.y=Math.atan2(dx,dz);
