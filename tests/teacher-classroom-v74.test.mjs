@@ -85,3 +85,12 @@ test('landscape tablet controls no longer overlap the roster or teaching panel',
   assert.match(css, /#studentStrip\{top:157px;left:160px/);
   assert.match(css, /#dayStrip\{left:calc\(50% - 10px\)/);
 });
+
+test('seated characters track the 3D stool center and face their activity table',()=>{
+  const game=source('school-day-game.js');
+  assert.match(game,/chair\.x-\(pelvisWorld\.x-pelvisShiftWorld\.x\)/);
+  assert.match(game,/chair\.z-\(pelvisWorld\.z-pelvisShiftWorld\.z\)/);
+  assert.match(game,/actor\.model\.position\.x=actor\.restX/);
+  assert.match(game,/activeSpace\.id==='cafeteria'\?3:4/);
+  assert.match(game,/faceDirection\(s\.actor,closest\.t\.x-s\.seat\.x,closest\.t\.z-s\.seat\.z\)/);
+});
