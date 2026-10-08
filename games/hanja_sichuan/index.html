@@ -142,7 +142,7 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
   const SDK=window.KidscadeGame;
   const $=id=>document.getElementById(id);
   const MODES={start:[4,4,150],easy:[6,6,210],normal:[8,6,270],hard:[8,8,330],master:[10,8,390]};
-  const st={board:[],cols:4,rows:4,grade:8,difficulty:'start',mode:'relaxed',active:false,paused:false,selected:-1,locked:false,zoomed:false,score:0,points:0,penaltyPoints:0,combo:0,maxCombo:0,wrong:0,hints:0,shuffles:0,remaining:0,elapsed:0,deadline:0,pauseAt:0,startedAt:0,token:0,dialogOpen:false};
+  const st={board:[],cols:4,rows:4,grade:8,difficulty:'start',mode:'relaxed',active:false,paused:false,selected:-1,locked:false,zoomed:false,score:0,points:0,penaltyPoints:0,combo:0,maxCombo:0,wrong:0,hints:0,shuffles:0,remaining:0,elapsed:0,deadline:0,pauseAt:0,startedAt:0,token:0,dialogOpen:false,reviewAutoPaused:false};
   let audioContext=null,unlockTimer=0,lineTimer=0,hintTimer=0,toastTimer=0;
   const now=()=>Date.now();
   const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
@@ -380,6 +380,8 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
       const pairs=E.pickEntries(DATA.entries,grade,cols*rows/2);
       const generated=E.generateBoard(pairs,cols,rows);
       Object.assign(st,{board:generated.board,cols,rows,grade,difficulty,mode,active:true,paused:false,selected:-1,locked:false,zoomed:((window.innerWidth||1024)<=640&&cols>=8),score:0,points:0,penaltyPoints:0,combo:0,maxCombo:0,wrong:0,hints:0,shuffles:0,remaining:pairs.length,startedAt:now(),deadline:mode==='timed'?now()+seconds*1000:0,pauseAt:0});
+      st.reviewAutoPaused=false;
+      $('reviewDialog').close();
       $('finishDialog').close();
       drawBoard();updateHud();
       $('boardScroll').scrollLeft=0;
@@ -418,8 +420,16 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
   }
   $('panLeft').addEventListener('click',()=>pan(-1));
   $('panRight').addEventListener('click',()=>pan(1));
-  $('reviewBtn').addEventListener('click',openReview);
+  $('reviewBtn').addEventListener('click',()=>{
+    st.reviewAutoPaused=st.active&&!st.paused;
+    if(st.reviewAutoPaused)togglePause();
+    openReview();
+  });
   $('closeReviewBtn').addEventListener('click',()=>$('reviewDialog').close());
+  $('reviewDialog').addEventListener('close',()=>{
+    if(st.reviewAutoPaused&&st.active&&st.paused)togglePause();
+    st.reviewAutoPaused=false;
+  });
   $('clearReviewBtn').addEventListener('click',()=>{storage.write('hanja_sichuan_review_'+Number($('grade').value),[]);openReview();});
   $('shuffleBtn').addEventListener('click',()=>{if(st.active&&!st.paused&&!st.locked)rearrange(false);});
   $('pauseBtn').addEventListener('click',togglePause);
