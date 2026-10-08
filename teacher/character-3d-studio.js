@@ -56,8 +56,8 @@ const CLIP_LABELS={
 
 let scene,camera,renderer,controls;
 let avatarRoot=null,sourceScene=null,primarySkinnedMesh=null,skeletonHelper=null,mixer=null;
-let animations=[],activeAction=null,activeClip='',currentPreset='hoodie',activeView='threeQuarter';
-let maleWalkClips=new Map();
+let animations=[],activeAction=null,activeClip='',currentPreset='male',activeView='threeQuarter';
+let maleWalkClips=new Map(),maleRunClips=new Map();
 let originalMaterials=new Map();
 let loaded=false;
 let lastTime=performance.now();
@@ -365,6 +365,8 @@ function applyPreset(name){
   if(!sourceScene||!PRESETS[name])return;
   currentPreset=name;
   const wanted=new Set(PRESETS[name]);
+  if(name==='male'&&!$('maleBrowPreview').checked)wanted.delete('kidscade_male_brows');
+  $('maleBrowPreview').disabled=name!=='male';
 
   // 여자/남자 베이스는 동시에 켜지지 않는다.
   BASE_VARIANT_NODES.forEach(node=>setNodeVisible(node,false));
@@ -768,14 +770,15 @@ function createKidscadeMaleHairShort(){
     const oy=positions.getY(i);
     const oz=positions.getZ(i);
     const lower=THREE.MathUtils.clamp((cutoff-oy)/lowerRange,0,1);
+    const taper=lower*lower*(3-2*lower);
 
-    // 머리 윗부분은 그대로 두고, 귀·목 아래로 늘어진 보브컷 부분만 단축한다.
-    // 선형 압축은 정점의 세로 순서를 보존해 긴 머리 끝의 뒤집힘을 막는다.
-    const y=oy<cutoff?cutoff-(cutoff-oy)*.40:oy;
+    // 보브컷 절단선에서 기울기가 갑자기 변하지 않게, 아래쪽으로 갈수록
+    // 압축 강도를 늘린다. 윗머리는 원본을 보존하고 짧은 머리 끝은 매끈하게 잇는다.
+    const y=oy+(cutoff-oy)*.58*taper;
 
-    // 아래로 내려갈수록 관자놀이/뒤통수 방향으로 볼륨을 줄여 숏컷 윤곽을 만든다.
-    const x=centerX+(ox-centerX)*(1-.17*lower);
-    const z=centerZ+(oz-centerZ)*(1-.11*lower);
+    // 옆머리와 뒷머리도 같은 부드러운 가중치로 줄여 갑작스러운 단차를 막는다.
+    const x=centerX+(ox-centerX)*(1-.17*taper);
+    const z=centerZ+(oz-centerZ)*(1-.11*taper);
     positions.setXYZ(i,x,y,z);
   }
   // 원본 긴 머리의 끝 정점 일부가 위쪽으로 압축되면서 눈높이까지 올라온다.
@@ -1144,12 +1147,13 @@ function idleClipName(){
 }
 
 /**
- * Source Chibi WALK has ±0.0308m hip translation, ±8.6° spine roll,
- * and a second lower-spine roll. The boy's straighter gait reduces only
- * central-body side motion; leg and foot animation tracks are not modified.
- * A derived clip is never added to the 11 selectable source clips.
+ * Locomotion variants retain source stride, foot-contact timing and all public
+ * clip names, but rebalance the torso and upper-arm swing around each bone's
+ * bind quaternion. Scaling the absolute Euler angles used to tilt the resting
+ * pose as well as the movement, which caused unnatural shoulder posture.
  */
 const MALE_WALK_POSITION_X=.43;
+const MALE_RUN_POSITION_X=.60;
 const MALE_WALK_SPINE_FACTORS={
   'DEF-spine':{roll:.38,yaw:.70},
   'DEF-spine001':{roll:.55,yaw:.85},
@@ -1157,57 +1161,132 @@ const MALE_WALK_SPINE_FACTORS={
   'DEF-spine003':{roll:.85,yaw:.72},
   'DEF-spine004':{roll:.90,yaw:.78}
 };
+const MALE_RUN_SPINE_FACTORS={
+  'DEF-spine':{roll:.55,yaw:.78},
+  'DEF-spine001':{roll:.65,yaw:.90},
+  'DEF-spine002':{roll:.78,yaw:.88},
+  'DEF-spine003':{roll:.90,yaw:.85},
+  'DEF-spine004':{roll:.92,yaw:.90}
+};
 
 function isWalkClipName(name){
   return name==='anim_walk'||name==='walkanim_';
+}
+
+function isRunClipName(name){
+  return name==='anim_run'||name==='runanim_';
 }
 
 function isMaleBodyVisible(){
   return !!getNode('kidscade_male_body')?.visible;
 }
 
-function buildMaleWalkClip(sourceClip){
+function sourceBone(name){
+  const wanted=normalizeRuntimeBoneName(name);
+  let found=null;
+  sourceScene?.traverse?.(object=>{
+    if(!found&&object.isBone&&normalizeRuntimeBoneName(object.name)===wanted)found=object;
+  });
+  return found;
+}
+
+function buildMaleLocomotionClip(sourceClip,settings){
   const result=sourceClip.clone();
-  // Keep the source clip's public name (export, selectors and achievement logic).
   result.name=sourceClip.name;
-  const quaternion=new THREE.Quaternion(),euler=new THREE.Euler(0,0,0,'XYZ');
+  const base=new THREE.Quaternion();
+  const invertedBase=new THREE.Quaternion();
+  const delta=new THREE.Quaternion();
+  const animated=new THREE.Quaternion();
+  const euler=new THREE.Euler(0,0,0,'XYZ');
+
   for(const track of result.tracks){
-    if(track.name==='DEF-spine.position'){
-      const v=track.values;
-      let min=Infinity,max=-Infinity;
-      for(let i=0;i<v.length;i+=3){min=Math.min(min,v[i]);max=Math.max(max,v[i]);}
-      const middle=(min+max)*.5;
-      for(let i=0;i<v.length;i+=3){
-        v[i]=middle+(v[i]-middle)*MALE_WALK_POSITION_X;
-      }
-    }
     const dot=track.name.lastIndexOf('.');
-    const bone=track.name.slice(0,dot);
-    if(track.name.slice(dot+1)!=='quaternion'||!MALE_WALK_SPINE_FACTORS[bone])continue;
-    const factors=MALE_WALK_SPINE_FACTORS[bone];
-    for(let i=0;i<track.values.length;i+=4){
+    if(dot<0)continue;
+    const rawBone=track.name.slice(0,dot);
+    const bone=normalizeRuntimeBoneName(rawBone);
+    const property=track.name.slice(dot+1);
+    if(bone===normalizeRuntimeBoneName('DEF-spine')&&property==='position'){
       const values=track.values;
-      quaternion.set(values[i],values[i+1],values[i+2],values[i+3]).normalize();
-      euler.setFromQuaternion(quaternion,'XYZ');
-      euler.y*=factors.yaw;
-      euler.z*=factors.roll;
-      quaternion.setFromEuler(euler).normalize();
-      values[i]=quaternion.x;values[i+1]=quaternion.y;
-      values[i+2]=quaternion.z;values[i+3]=quaternion.w;
+      let min=Infinity,max=-Infinity;
+      for(let i=0;i<values.length;i+=3){
+        min=Math.min(min,values[i]);
+        max=Math.max(max,values[i]);
+      }
+      const center=(min+max)*.5;
+      for(let i=0;i<values.length;i+=3){
+        values[i]=center+(values[i]-center)*settings.lateralScale;
+      }
+      continue;
+    }
+    if(property!=='quaternion')continue;
+
+    const factorEntry=Object.entries(settings.spineFactors)
+      .find(([name])=>normalizeRuntimeBoneName(name)===bone);
+    const factors=factorEntry?.[1];
+    const upperArm=/upper[_-]?arm/i.test(bone);
+    if(!factors&&!upperArm)continue;
+
+    const bindBone=sourceBone(rawBone);
+    if(!bindBone)continue; // Unknown rig: use untouched source animation.
+    base.copy(bindBone.quaternion).normalize();
+    invertedBase.copy(base).invert();
+
+    const values=track.values;
+    for(let i=0;i<values.length;i+=4){
+      animated.set(values[i],values[i+1],values[i+2],values[i+3]).normalize();
+      delta.copy(invertedBase).multiply(animated).normalize();
+      euler.setFromQuaternion(delta,'XYZ');
+      if(factors){
+        euler.y*=factors.yaw;
+        euler.z*=factors.roll;
+      }
+      if(upperArm){
+        euler.x*=settings.armPitch;
+        euler.z*=settings.armRoll;
+      }
+      animated.copy(base).multiply(delta.setFromEuler(euler)).normalize();
+      values[i]=animated.x;
+      values[i+1]=animated.y;
+      values[i+2]=animated.z;
+      values[i+3]=animated.w;
     }
   }
-  result.userData={...sourceClip.userData,kidscadeMaleStraightWalk:true};
+  result.userData={
+    ...sourceClip.userData,
+    kidscadeMaleBalancedLocomotion:true,
+    sourceClip:sourceClip.name,
+    lateralScale:settings.lateralScale
+  };
   return result;
 }
 
+function buildMaleWalkClip(sourceClip){
+  return buildMaleLocomotionClip(sourceClip,{
+    lateralScale:MALE_WALK_POSITION_X,
+    spineFactors:MALE_WALK_SPINE_FACTORS,
+    armPitch:1.10,
+    armRoll:.88
+  });
+}
+
+function buildMaleRunClip(sourceClip){
+  return buildMaleLocomotionClip(sourceClip,{
+    lateralScale:MALE_RUN_POSITION_X,
+    spineFactors:MALE_RUN_SPINE_FACTORS,
+    armPitch:1.08,
+    armRoll:.94
+  });
+}
+
 function resolvePlaybackClip(sourceClip){
-  return isMaleBodyVisible()&&isWalkClipName(sourceClip.name)
-    ?(maleWalkClips.get(sourceClip.name)||sourceClip)
-    :sourceClip;
+  if(!isMaleBodyVisible())return sourceClip;
+  if(isWalkClipName(sourceClip.name))return maleWalkClips.get(sourceClip.name)||sourceClip;
+  if(isRunClipName(sourceClip.name))return maleRunClips.get(sourceClip.name)||sourceClip;
+  return sourceClip;
 }
 
 function syncActiveWalkStyle(){
-  if(activeClip&&isWalkClipName(activeClip))playClip(activeClip);
+  if(activeClip&&(isWalkClipName(activeClip)||isRunClipName(activeClip)))playClip(activeClip);
 }
 
 function playClip(name){
@@ -1215,6 +1294,9 @@ function playClip(name){
   const sourceClip=animations.find(item=>item.name===name);
   if(!sourceClip)return;
   const clip=resolvePlaybackClip(sourceClip);
+  const derived=clip!==sourceClip;
+  const gaitBadge=$('gaitBadge');
+  if(gaitBadge)gaitBadge.textContent=derived?'남자형 동작 보정 · '+clipLabel(name):'원본 동작 · '+clipLabel(name);
 
   activeClip=name;
   document.querySelectorAll('[data-clip]').forEach(button=>{
@@ -1249,7 +1331,11 @@ function resetPose(){
 function setCameraView(name){
   activeView=name;
   controls.target.set(0,TARGET_HEIGHT*.52,0);
-  if(name==='front')camera.position.set(0,TARGET_HEIGHT*.76,TARGET_HEIGHT*2.25);
+  if(name==='face'){
+    controls.target.set(0,TARGET_HEIGHT*.82,0);
+    camera.position.set(0,TARGET_HEIGHT*.86,TARGET_HEIGHT*1.02);
+  }
+  else if(name==='front')camera.position.set(0,TARGET_HEIGHT*.76,TARGET_HEIGHT*2.25);
   else if(name==='side')camera.position.set(TARGET_HEIGHT*2.25,TARGET_HEIGHT*.76,0);
   else if(name==='back')camera.position.set(0,TARGET_HEIGHT*.76,-TARGET_HEIGHT*2.25);
   else camera.position.set(TARGET_HEIGHT*1.52,TARGET_HEIGHT*.82,TARGET_HEIGHT*1.72);
@@ -1304,6 +1390,10 @@ async function loadChibi(){
   maleWalkClips=new Map(
     animations.filter(clip=>isWalkClipName(clip.name))
       .map(clip=>[clip.name,buildMaleWalkClip(clip)])
+  );
+  maleRunClips=new Map(
+    animations.filter(clip=>isRunClipName(clip.name))
+      .map(clip=>[clip.name,buildMaleRunClip(clip)])
   );
   originalMaterials=new Map();
 
@@ -1370,7 +1460,7 @@ async function loadChibi(){
   populateBoneList();
   populateAnimationButtons();
   renderPartChecks();
-  applyPreset('hoodie');
+  applyPreset('male');
   applyMaterialMode($('chibiUnlit').checked);
   setCameraView(activeView);
 
@@ -1379,7 +1469,7 @@ async function loadChibi(){
   refreshMetrics();
   clearAssetError();
 
-  setAssetStatus('로드 완료 · 후드티 + 남자 기본형 제작 완료 · '+uniqueBones().length+' bones · '+animations.length+' animations');
+  setAssetStatus('로드 완료 · 남자 기본형 선택 · WALK/RUN 보정 · '+uniqueBones().length+' bones · '+animations.length+' animations');
   setStatus('Chibi 제작실 준비 완료');
 
   const idle=idleClipName();
@@ -1419,7 +1509,7 @@ function exportSpec(){
       name:clip.name,
       duration:Number(clip.duration.toFixed(3))
     })),
-    walkStyle:isMaleBodyVisible()?'reduced-hip-sway':'source',
+    walkStyle:isMaleBodyVisible()?'balanced-locomotion-v2':'source',
     coordinateSystem:{up:'Y',units:'meters',origin:'ground-center'}
   };
   download(
@@ -1521,6 +1611,11 @@ function wireUi(){
   });
 
   $('chibiUnlit').addEventListener('change',event=>applyMaterialMode(event.target.checked));
+  $('maleBrowPreview').addEventListener('change',event=>{
+    if(currentPreset!=='male')return;
+    setNodeVisible('kidscade_male_brows',event.target.checked);
+    refreshMetrics();
+  });
 
   $('wardrobeParts').addEventListener('change',event=>{
     const input=event.target.closest('[data-chibi-part]');
@@ -1537,7 +1632,7 @@ function wireUi(){
 
     currentPreset='custom';
     document.querySelectorAll('[data-chibi-preset]').forEach(button=>button.classList.remove('active'));
-    // Custom wardrobe can toggle the male body independently of preset buttons.
+    // Preserve the correct WALK/RUN clip when switching into a custom preset.
     if(part==='kidscade_male_body'||BASE_VARIANT_NODES.includes(part))syncActiveWalkStyle();
   });
 }
