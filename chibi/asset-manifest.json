@@ -425,7 +425,7 @@
       "type": "rigged-garment",
       "fit": "male",
       "category": "bottom",
-      "generatedFrom": "pants",
+      "generatedFrom": "kidscade_male_shorts",
       "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
       "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
       "revision": "v5.2"
@@ -435,7 +435,7 @@
       "type": "rigged-garment",
       "fit": "male",
       "category": "bottom",
-      "generatedFrom": "pants",
+      "generatedFrom": "kidscade_male_shorts",
       "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
       "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
       "revision": "v5.2"
@@ -445,7 +445,7 @@
       "type": "rigged-garment",
       "fit": "male",
       "category": "bottom",
-      "generatedFrom": "pants",
+      "generatedFrom": "kidscade_male_shorts",
       "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
       "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
       "revision": "v5.2"
@@ -455,7 +455,7 @@
       "type": "rigged-garment",
       "fit": "female",
       "category": "bottom",
-      "generatedFrom": "pants",
+      "generatedFrom": "ninjasuitshort",
       "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
       "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
       "revision": "v5.2"
@@ -475,7 +475,7 @@
       "type": "rigged-garment",
       "fit": "female",
       "category": "bottom",
-      "generatedFrom": "pants",
+      "generatedFrom": "ninjasuitshort",
       "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
       "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
       "revision": "v5.2"
@@ -573,8 +573,9 @@
         "chibi_female_widepants"
       ]
     },
-    "geometryPolicy": "15 new rigged garments clone original source SkinnedMesh geometry and preserve bind matrix, source skin weights, UVs and source 78-bone skeleton; morph torso, sleeve, hem, waist and legs independently. Selected styles add physically volumetric 3D details rigged to source spine. Five existing garments retained.",
+    "geometryPolicy": "15 new rigged garments clone original source SkinnedMesh geometry and preserve bind matrix, source skin weights, UVs and source 78-bone skeleton; morph torso, sleeve, hem, waist and legs independently. Selected styles add physically volumetric 3D details rigged to source spine. Five existing garments retained. Trouser styles use separate left/right tube meshes with knee-graded thigh/shin skin weights, rather than a tube-like source pants skirt.",
     "collisionPolicy": "Garment shell has additional torso/leg clearance. Sampled animated-pose penetration survey and screenshot review required for each style; do not treat numeric clearance estimates as proof of zero intersections.",
-    "exportPolicy": "Visible outfit group plus shared source skeleton and original 11 named animations, male WALK/RUN variants if male body visible."
+    "exportPolicy": "Visible outfit group plus shared source skeleton and original 11 named animations, male WALK/RUN variants if male body visible.",
+    "trouserLegPolicy": "Five full-length trousers have two independently skinned left/right leg meshes, blended from DEF-thighL/R to DEF-shinL/R source Chibi bones."
   }
 }
