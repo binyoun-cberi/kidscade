@@ -144,7 +144,7 @@
     ]),
     mission:Object.freeze([
       'high_weathercaster_simulator','job_police_car','job_drone_pilot','job_driver_license',
-      'job_scuba_diver','job_internal_medicine','low_cleanup_squad','high_disaster_city','high_haunted_school_exorcist'
+      'job_scuba_diver','job_internal_medicine','low_cleanup_squad','high_disaster_city'
     ]),
     campaign:Object.freeze([
       'high_twelve_island','high_byeokrando_voyage','high_quarantine_17','trivia_school_survival',
