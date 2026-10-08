@@ -1198,6 +1198,148 @@ const BEHAVIORS=Object.freeze({
   TIME:{mode:'freeze',description:'시간 정지 효과를 누적'}
 });
 
+// Most imported dictionary entries were tagged "rapid" by the source dataset.
+// Rather than pretending AND, APPLE, THUNDER and RETURN are the same weapon,
+// the word's meaning (when recognizable) and its spelling determine a real
+// fighting style. Curated word semantics take precedence over spelling.
+const STYLE_FAMILIES=Object.freeze({
+  volley:{label:'연사 화살',description:'두 탄환을 연달아 발사'},
+  pinball:{label:'통통 핀볼',description:'적들을 차례로 튕기는 고무공'},
+  boomerang:{label:'왕복 타격',description:'갔다 돌아오며 두 번 타격'},
+  snowball:{label:'성장 눈덩이',description:'날아가며 커지는 범위 공격'},
+  shootingstars:{label:'별똥별 폭격',description:'여러 목표에 작은 별똥별 발사'},
+  spring:{label:'스프링',description:'적을 순간적으로 뒤로 튕김'},
+  rainbow:{label:'다채로운 광선',description:'연쇄 공격과 화상·둔화·독'},
+  splat:{label:'과즙 폭발',description:'과즙이 튀어 적들을 미끄러뜨림'},
+  firework:{label:'불꽃놀이',description:'세 곳에 번갈아 색색의 폭발'},
+  snap:{label:'함정 타격',description:'가까이 모인 적들의 발을 묶음'},
+  echo:{label:'메아리 파동',description:'첫 공격 후 두 번째 파동이 돌아옴'},
+  hailstorm:{label:'얼음 소나기',description:'주변에 우박을 떨어뜨리고 둔화'},
+  ricochet:{label:'반사 탄환',description:'타격 뒤 근처 적에게 한 번 더 반사'},
+  rail:{label:'직선 관통',description:'한 줄에 놓인 적을 꿰뚫음'},
+  shotgun:{label:'부채꼴 공격',description:'가까운 적 여러 명을 동시에 공격'},
+  gatling:{label:'회전 연사',description:'연속 사격할수록 공격 속도 상승'},
+  cluster:{label:'연쇄 폭발',description:'폭발 뒤 작은 폭발을 연달아 생성'},
+  meteor:{label:'운석 낙하',description:'표적을 예고하고 하늘에서 낙하'},
+  stun:{label:'기절 공격',description:'강한 타격으로 적을 잠깐 멈춤'},
+  assassin:{label:'추적 암살',description:'빠른 적을 우선 노림'},
+  cleave:{label:'광역 베기',description:'주위의 적을 함께 휘두르며 타격'},
+  spores:{label:'독 포자',description:'적 무리에 독 포자를 흩뿌림'},
+  slimepool:{label:'끈적 웅덩이',description:'오랫동안 남는 둔화 지대'},
+  raincloud:{label:'비구름',description:'넓은 지역을 비로 느리게 만듦'},
+  sleep:{label:'수면 마법',description:'재우고 잠깐 움직이지 못하게 함'},
+  boo:{label:'깜짝 공포',description:'놀란 적을 뒤로 도망가게 함'},
+  spellbook:{label:'순환 마법',description:'불·얼음·독·바람을 번갈아 시전'},
+  disco:{label:'춤추는 음파',description:'적들이 박자에 맞춰 멈춤'},
+  magnet:{label:'보호막 견인',description:'보호막·갑옷 적을 먼저 잡음'},
+  vacuum:{label:'흡입 소용돌이',description:'적 무리를 뒤로 휘감아 당김'},
+  sunray:{label:'햇살 소각',description:'여러 적을 햇살로 태움'},
+  freeze:{label:'빙결 누적',description:'냉기가 쌓이면 완전히 얼림'},
+  tidal:{label:'거센 파도',description:'여러 적을 일제히 밀어냄'},
+  vortex:{label:'중력 포획',description:'범위 안 적을 당기고 느리게 함'},
+  mine:{label:'길목 지뢰',description:'적이 지날 때 폭발하는 덫'},
+  barrier:{label:'방어진',description:'길목의 적에게 지속적인 감속'},
+  resource:{label:'자원 장치',description:'주변 광맥을 채굴하여 INK 획득'},
+  repair:{label:'CORE 치유',description:'손상된 CORE를 일정 시간마다 회복'},
+  modifier:{label:'전투 지원',description:'주변 타워 성능을 강화'}
+});
+const CURATED_STYLE_GROUPS={
+  splat:'APPLE,PEAR,PEACH,PLUM,GRAPE,LEMON,BERRY,BEAN,ACORN,PEA,SEED,PETAL,DROPLET,ORANGE',
+  pinball:'BALL,DISC,MARBLE,COIN,PEBBLE,PEBBLES,ROCK,STONE,BOULDER,SLINGSHOT,BOUNCE,RUBBER',
+  boomerang:'DART,BOLT,SLING,SHOT,FEATHER,LEAF,PAPER,SHELL,SNAP,DROP',
+  snowball:'BRICK,ICEBERG,HAIL,HAILSTONE,ICICLE,GLACIER,SNOWBALL,SLEET',
+  shootingstars:'STAR,SPARK,PHOTON,GLINT,GLEAM,STARDUST,ASTEROID,COMET',
+  spring:'PING,PEA,PIN,NAIL,SEEDLING,SPRING,GUST,BREEZE,WHISTLE',
+  firework:'FIREWORK,FIRECRACKER,CRACKER,SPARKLER,FLASHBANG,FLASH,STROBE,BLAZE',
+  snap:'THORN,STING,FANG,TALON,HOOK,BARB,RAZOR,NET,WEB,ROOT,HEDGE,ROPE,LOCK,CAGE',
+  echo:'ECHO,RHYTHM,SONIC,SOUND,SONG,BELL,SHOCK,PULSE,FANFARE,CRYSTAL,RESONANCE',
+  hailstorm:'FROST,CHILL,COLD,WINTER,SLUSH,ICECUBE,SNOWFLAKE,PERMAFROST',
+  ricochet:'BULLET,PELLET,SHRAPNEL,CANNONBALL,SLUG,BATTERY,FLAK,SHOOTER',
+  rail:'LANCE,SPEAR,PIKE,TRIDENT,HARPOON,JAVELIN,RAPIER,ARROWHEAD,SPEARHEAD,LANCET,CROSSBOW',
+  shotgun:'BARRAGE,SHRAPNEL,FLAK,THROWER,MUSKET,GUN,RIFLE,BLASTER,TURRET',
+  gatling:'BULLET,PELLET,BATTERY,TURRET,MUSKET',
+  cluster:'BOMB,BLAST,BURST,EXPLOSION,DYNAMITE,FUSE,DETONATOR,DETONATION,CHARGE,SHOCKWAVE,BLASTWAVE',
+  meteor:'CATAPULT,ARTILLERY,MORTAR,HOWITZER,TREBUCHET,CRATER,ERUPTION,QUAKE,EARTHQUAKE',
+  stun:'HAMMER,AXE,CHISEL,SAW,HORN,TUSK,PRONG',
+  assassin:'DAGGER,KNIFE,KATANA,SABER,NEEDLE,STINGER,LANCET',
+  cleave:'SWORD,BLADE,SCYTHE,CLAW,SAW,RAZOR',
+  spores:'TOXIN,TOXIC,FUME,SPORE,FUNGUS,MOLD,GERM,BACTERIA,POLLUTION,SMOG,JELLYFISH,NETTLE,WASP',
+  slimepool:'SLIME,ALGAE,MIDGE,MOSQUITO,TOADSTOOL,COBRA,SCORPION',
+  raincloud:'WATER,MIST,DRIZZLE,DEW,PUDDLE,FLOOD,WET,WATERFALL,FOG,SPRINKLER',
+  sleep:'SHADE,SHADOW,ILLUSION,PHANTOM,SPECTER',
+  boo:'GHOST,PHANTOM,SPECTER',
+  spellbook:'SPELL,RIDDLE,CHAOS,PARADOX,SPECTRUM,CHRONOS',
+  disco:'MUSIC,SONG,RHYTHM,SONIC,BELL',
+  magnet:'MAGNET,MASS,IRON,COPPER,STEEL',
+  vacuum:'VORTEX,WHIRL,WHIRLWIND,WHIRLPOOL,TORNADO,CYCLONE',
+  sunray:'HEAT,FLAME,FIRE,BONFIRE,CAMPFIRE,CANDLE,TORCH,OVEN,FURNACE,KILN,HEATER,SUNLIGHT,SUNBEAM,SOLAR',
+  freeze:'ICE,FROST,FREEZE,GLACIER,ICECUBE,PERMAFROST',
+  tidal:'PUSH,WAVE,WIND,STORM,GALE,HURRICANE,TYPHOON,TSUNAMI,TIDAL,CURRENT,JETSTREAM',
+  vortex:'GRAVITY,ORBIT,MOON,PLANET,SATURN,JUPITER,GALAXY,NEBULA,COSMOS,VOID,QUASAR,WORMHOLE',
+  mine:'TRAP,LANDMINE,CAGE',
+  barrier:'WALL,SHIELD,ARMOR,BARRIER,BLOCK,FORT,FENCE,GATE,CASTLE,BUNKER,DOME,COVER,GUARD,FORTRESS,RAMPART,BASTION,DOOR,TOWER,KEEP,BUSH,TREE,TRUNK,BLANKET',
+  resource:'MINER,DIGGER,PICKAXE,SHOVEL,QUARRY,EXCAVATOR,PROSPECTOR,BUCKET,CRANE,SCOOP,TUNNEL,ORE,FARM,MILL,MINT,GOLD,SILVER,DIAMOND,RUBY,GEM,TREASURE,MACHINE,PUMP,MOTOR,TOOL,FACTORY,MINE,REFINERY,HARVEST,GEMSTONE,RIG,SMELTER',
+  repair:'HEAL,REPAIR,MEND,FIX,CURE,MEDIC,NURSE,DOCTOR,RESTORE,PATCH,CARE,AID,HELP,HEALTH,MEDICINE,CLINIC,POTION,BALM,HERB,TONIC,VITAMIN,ANTIDOTE,PLASTER,ELIXIR,FIRSTAID,RESCUE,HEALER,REVIVE,REMEDY,RECOVER',
+  modifier:'FAST,SPEED,BIG,LONG,HEAVY,DOUBLE,POWER,BOOST,STRONG,QUICK,WIDE,RAPID,SWIFT,GIANT,HUGE,SHARP,HARD,TRIPLE,ULTRA,MEGA,DEEP,BRIGHT,SMART,WISE,FOCUS,LUCKY,LUCK,BRAVE,BOLD,SUPER,MIGHTY,FIERCE,PRECISE,FOCUSED,STEADY,CHARGED,GOLDEN,SILENT,HYPER,ENDLESS,STABLE,TINY,EXTRA,EPIC,OVERDRIVE,MAXIMUM'
+};
+const CURATED_STYLES=Object.create(null);
+for(const [mode,csv] of Object.entries(CURATED_STYLE_GROUPS))
+  for(const word of csv.split(','))if(words[word]&&!CURATED_STYLES[word])CURATED_STYLES[word]=mode;
+const VOWELS=/[AEIOU]/g;
+const MEANING_THEMES=[
+  [/^(?:사과|딸기|배|복숭아|포도|레몬|바나나|과일|주스|감자|토마토|양파|귤|수박|버섯|수프)/,'splat'],
+  [/^(?:춤|노래|음악|리듬|멜로디|연주|합창|악기|축제|파티)/,'disco'],
+  [/^(?:거울|반사|유리|반짝|보석|수정)/,'rainbow'],
+  [/^(?:고양이|강아지|개|호랑이|사자|토끼|말|소|돼지|새|독수리|곤충|벌|나비)/,'spring'],
+  [/^(?:자동차|기차|비행기|로켓|우주선|버스|지하철|기관차)/,'rail'],
+  [/^(?:비|구름|눈|안개|물|호수|바다|강|폭포|습기)/,'raincloud'],
+  [/^(?:불|태양|햇빛|열|뜨거|불꽃|난로|화산)/,'sunray'],
+  [/^(?:잠|졸음|꿈|자다|수면|하품)/,'sleep'],
+  [/^(?:던지|튕기|돌아오|되돌아|귀환|반복|회전)/,'boomerang'],
+  [/^(?:발견|탐색|비밀|단서|찾다|수수께끼)/,'echo'],
+  [/^(?:달리|뛰|점프|높이뛰|뛰어|도약)/,'spring']
+];
+// Built-in signatures stay hand-designed. For other words, the *spelling*
+// is a transparent rule, not a randomly assigned superpower.
+function spellingStyle(word){
+  const vowels=(word.match(VOWELS)||[]).length;
+  if(/([A-Z])\\1/.test(word))return {mode:'pinball',reason:'같은 글자가 이어져 핀볼처럼 튕김'};
+  if(/[QXZ]/.test(word))return {mode:'shootingstars',reason:'희귀 글자 Q·X·Z가 별똥별을 부름'};
+  if(word.endsWith('ING'))return {mode:'boomerang',reason:'-ING 꼬리가 부메랑처럼 되돌아옴'};
+  if(vowels>=4)return {mode:'rainbow',reason:'모음 '+vowels+'개가 무지개 광선을 연결'};
+  if(word.length>=9)return {mode:'rail',reason:'긴 '+word.length+'글자가 한 줄로 관통'};
+  if(/^[AEIOU]/.test(word))return {mode:'spring',reason:'모음으로 시작해 적을 통통 밀어냄'};
+  if(word.length<=4)return {mode:'volley',reason:'짧은 '+word.length+'글자가 두 발로 나뉘어 발사'};
+  if(vowels===1)return {mode:'shotgun',reason:'모음이 하나라 여러 방향으로 흩뿌림'};
+  if(word.length>=7)return {mode:'snowball',reason:'긴 글자를 모아 커지는 눈덩이 발사'};
+  return {mode:'ricochet',reason:'글자 끝에서 탄환이 한 번 더 반사'};
+}
+const behaviorCache=Object.create(null);
+function behaviorFor(word){
+  if(BEHAVIORS[word])return BEHAVIORS[word];
+  if(behaviorCache[word])return behaviorCache[word];
+  const def=words[word];
+  if(!def)return null;
+  if(def.role!=='rapid'){
+    const mode=CURATED_STYLES[word];
+    if(!mode||!STYLE_FAMILIES[mode])return null;
+    return behaviorCache[word]={mode,description:STYLE_FAMILIES[mode].description,source:'meaning'};
+  }
+  let mode=CURATED_STYLES[word],reason='';
+  if(!mode){
+    const meaning=String(def.meaning||'');
+    const theme=MEANING_THEMES.find(([pattern])=>pattern.test(meaning));
+    if(theme){mode=theme[1];reason='뜻에 맞는 '+STYLE_FAMILIES[mode].label}
+  }
+  if(!mode){const profile=spellingStyle(word);mode=profile.mode;reason=profile.reason}
+  const style=STYLE_FAMILIES[mode];
+  return behaviorCache[word]={mode,description:reason||style.description,source:reason?'spelling-or-meaning':'meaning'};
+}
+function displayRole(word,def){
+  const behavior=behaviorFor(word);
+  return behavior&&def.role==='rapid'?(STYLE_FAMILIES[behavior.mode]?.label||def.roleLabel):def.roleLabel;
+}
+
 const START_RACK='MINERARROWIC'.split('');
 const FILLER_FREQUENCY='EEEEEEEEEEEEAAAAAAAAAIIIIIIIIOOOOOOOONNNNNNRRRRRRTTTTTTLLLLSSSSUUUUDDDDGGGBBCCMMPPFFHHVVWWYYKJXQZ'.split('');
 
@@ -1212,6 +1354,9 @@ window.WordSiegeData={
   modifiers:MODIFIERS,
   signatures:SIGNATURES,
   behaviors:BEHAVIORS,
+  behaviorFor,
+  displayRole,
+  styleFamilies:STYLE_FAMILIES,
   combos:COMBOS,
   waveBalance:WAVE_BALANCE,
   startRack:START_RACK,
