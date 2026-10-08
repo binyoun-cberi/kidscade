@@ -39,7 +39,7 @@ const errors=[];
   await once(server,'listening');
   userDir=fs.mkdtempSync(path.join(os.tmpdir(),'kidscade-chibi-cdp-'));
   chrome=cp.spawn(CHROME,[
-    '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-software-rasterizer=false',
+    '--headless=new','--no-sandbox','--disable-dev-shm-usage',
     '--use-angle=swiftshader','--enable-unsafe-swiftshader','--remote-allow-origins=*',
     '--disable-background-networking','--no-first-run','--remote-debugging-port=0',
     '--user-data-dir='+userDir,'about:blank'
