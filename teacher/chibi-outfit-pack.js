@@ -152,10 +152,16 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
         ));
         return geometry;
       };
-      const upper=makeTube(start,elbow,puff?.100:.077,puff?.078:.067);
+      // Rounded shoulder insert closes the seam between the modified shirt
+      // shoulder and the separately articulated extension in WALK/RUN.
+      const shoulderCap=new THREE.SphereGeometry(puff?.110:.096,14,10);
+      shoulderCap.scale(1.02,.90,.83);
+      shoulderCap.translate(sign*.20,1.044,-.018);
+      addMatchedSleeve(shoulderCap,sign<0?'shoulderCap_left':'shoulderCap_right',sign);
+      const upper=makeTube(start,elbow,puff?.105:.086,puff?.086:.076);
       addMatchedSleeve(upper,sign<0?'upperSleeve_left':'upperSleeve_right',sign);
       if(!puff){
-        const lower=makeTube(elbow,cuff,.069,.050);
+        const lower=makeTube(elbow,cuff,.081,.065);
         addMatchedSleeve(lower,sign<0?'forearmSleeve_left':'forearmSleeve_right',sign);
       }
     }
