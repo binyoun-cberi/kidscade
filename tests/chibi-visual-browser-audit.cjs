@@ -183,6 +183,8 @@ const errors=[];
   const baseTemples=await evalPage("window.__kc3dAudit.hairCatalog().find(x=>x.name==='kidscade_male_hair_short')");
   assert.ok(baseTemples?.preservedTempleTriangles>0,
     'Source temple geometry has no preserved exterior eye-level triangles');
+  assert.ok(baseTemples.preservedTempleTriangles<100,
+    'Temple fix brought back too many long bob side faces');
   assert.ok(baseTemples?.removedEyeLevelTriangles>0,
     'Central eye-overhang crop stopped functioning');
   report.templeAudit.counts={
