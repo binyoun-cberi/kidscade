@@ -1039,7 +1039,8 @@ function updateCamera(dt){
   // Even if both endpoints are safe, interpolation across a school corner
   // can put the camera through a wall on rapid turns.
   const crossed=walls.some(w=>segmentHitsRect(camera.position.x,camera.position.z,next.x,next.z,w,.17));
-  if(crossed||cameraWallHit(next.x,next.z))camera.position.copy(safe);
+  const obscured=walls.some(w=>segmentHitsRect(player.x,player.z,next.x,next.z,w,.17));
+  if(crossed||obscured||cameraWallHit(next.x,next.z))camera.position.copy(safe);
   else camera.position.copy(next);
   camera.lookAt(
     player.x+fx*CAMERA_FOLLOW.lookAhead,
