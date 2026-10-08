@@ -31,7 +31,7 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
 .track>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#77a5bc,#a4edcd,#f1ca7e);border-radius:20px;transition:width .22s}
 #minimapWrap{position:absolute;right:16px;top:96px;padding:9px;background:#07151ee1;border-radius:11px;border:1px solid #6582947b;box-shadow:0 8px 30px #0006;pointer-events:none}
 #minimapWrap small{color:#c7d3de;font-size:10px;letter-spacing:.13em}
-#minimap{display:block;margin-top:5px;width:178px;height:114px}
+#minimap{display:block;margin-top:5px;width:210px;height:142px}
 #controlHint{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);border-radius:40px;background:#07131dd4;padding:9px 14px;font-size:11px;color:#b9cbd6;border:1px solid #52687977;pointer-events:none;white-space:nowrap}
 #navigation{position:absolute;left:50%;top:18px;transform:translateX(-50%);width:min(345px,32vw);padding:9px 14px;background:#071a25ea;border:1px solid #89b2bd8a;box-shadow:0 9px 30px #0008;border-radius:12px;text-align:center;pointer-events:none}
 #navArrow{display:inline-block;color:#ffe2a5;font-size:22px;margin-right:9px;vertical-align:middle;transition:transform .18s}
@@ -80,7 +80,7 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
   #missionPanel{left:7px;top:73px;width:min(285px,57vw);padding:9px}
   #mission{font-size:13px}#detail{font-size:10px;margin:5px 0}
   #minimapWrap{right:7px;top:73px;padding:5px}
-  #minimap{width:118px;height:80px}#minimapWrap small{font-size:8px}
+  #minimap{width:128px;height:92px}#minimapWrap small{font-size:8px}
   #controlHint{display:none}
   #joystick{left:20px;bottom:18px;width:99px;height:99px}
   .controls{right:12px;bottom:16px;gap:7px;flex-direction:column}
@@ -120,7 +120,7 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
   <div id="detail">6-1 교실로 이동하세요.</div>
   <div class="track" aria-label="퇴마 진행률"><i id="progress"></i></div>
 </section>
-<div id="minimapWrap"><small>학교 내부 지도 · 하늘색 점은 플레이어</small><canvas width="178" height="114" id="minimap" aria-label="현재 위치 미니맵"></canvas></div>
+<div id="minimapWrap"><small>ㄷ자 학교 지도 · 하늘색은 내 위치</small><canvas width="210" height="142" id="minimap" aria-label="ㄷ자 학교 내부 미니맵"></canvas></div>
 <div id="navigation" aria-live="off"><span id="navArrow" aria-hidden="true">↑</span><span id="navTitle">관리실에서 교실로 이동</span><small id="navRange">노란 안내선을 따라가세요</small></div>
 <div id="reticle" class="hidden" aria-hidden="true"></div>
 <div id="lesson" class="hidden" role="status" aria-live="polite"><strong id="lessonTitle"></strong><p id="lessonText"></p></div>
@@ -136,9 +136,9 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
   <div class="card">
     <span class="eyebrow">CASE 001 · 자정의 학교</span>
     <h1>괴담 학교 퇴마</h1>
-    <p class="introLead">문이 잠긴 학교에 두 종류의 괴이가 남아 있습니다. 직접 이동하며 괴이의 규칙을 파악하고 퇴마하세요. 안내 화살표와 바닥의 빛나는 길을 따라가면 됩니다.</p>
-    <div class="rule"><b>1. 도깨비</b> · 왼쪽 6-1 교실에서 변한 물건 3개를 직접 찾아 원상복구하고, 봉인진을 작동하세요.</div>
-    <div class="rule"><b>2. 처녀귀신</b> · 오른쪽 과학실에 나타납니다. 바라보면 멈추고, 등 돌리면 다가옵니다. 충분히 관찰한 후 과학실 봉인진을 활성화하세요.</div>
+    <p class="introLead">ㄷ자 형태의 학교에 두 괴이가 숨어 있습니다. 두 날개를 잇는 서쪽 연결동 중앙 관리실에서 출발하세요. 첫 조사에서만 안내선이 나오고, 그 뒤에는 미니맵으로 직접 탐색합니다.</p>
+    <div class="rule"><b>1. 도깨비</b> · 북쪽 날개 첫 번째 6-1 교실에서 변한 물건 3개를 찾아 복구하고 봉인하세요. 첫 번째 물건까지만 노란 길을 안내합니다.</div>
+    <div class="rule"><b>2. 처녀귀신</b> · 북쪽 날개 맨 끝 과학실에 나타납니다. 바라보면 멈추고, 등 돌리면 다가옵니다. 충분히 관찰한 후 과학실 봉인진을 활성화하세요.</div>
     <div class="rule"><b>3. 돌아가기</b> · 모든 퇴마가 끝나면 관리실로 돌아와 보고서를 제출하세요. 세 번 붙잡히면 실패합니다.</div>
     <button id="start" type="button" class="primary">학교에 들어가기</button>
     <small class="note">PC: WASD 이동 · 마우스 드래그로 카메라 회전 · E 행동 · F 손전등 · Shift 달리기. 모바일: 왼쪽 스틱과 오른쪽 화면 드래그, 오른쪽 행동 버튼. 기존 키즈케이드 3D·괴담 야간경비 에셋을 활용한 프로토타입입니다.</small>
@@ -163,6 +163,6 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
   </div>
 </section>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_haunted_school_exorcist" data-title="괴담 학교 퇴마" data-shell="true" data-pauseable="true" data-orientation="landscape"></script>
-<script type="module" src="./game.js?v=3"></script>
+<script type="module" src="./game.js?v=4"></script>
 </body>
 </html>
