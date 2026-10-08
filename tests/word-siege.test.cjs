@@ -144,7 +144,7 @@ function headlessGame(){
     KidscadeStorage:{getJson(){return []},setJson(){return true},getInt(key){return key==='kidscade_word_siege_stage_v1'?10:0},setRaw(){return true}},
     addEventListener(){},devicePixelRatio:1
   };
-  const hooks=`window.__headless={restart,startWave,update,beginPlacement,buildTower,makeTowerStats,towerCost,availableWords,validPlacement,rolePlacementValid,applyLinks,effectiveStats,showHint,swapOne,selectStage,currentStage,createWave,tileWord,typedWord,attackEnemy,towerUpdate,shotUpdate,updateTraps,updateFields,spawnEnemy,inspectAt,upgradeInspectedTower,upgradeCost,getInput:()=>freeWord, get state(){return state}};resize();`;
+  const hooks=`window.__headless={restart,startWave,update,beginPlacement,buildTower,makeTowerStats,towerCost,availableWords,validPlacement,rolePlacementValid,applyLinks,effectiveStats,showHint,swapOne,selectStage,currentStage,createWave,tileWord,typedWord,attackEnemy,towerUpdate,shotUpdate,statusEffects,updateTraps,updateFields,spawnEnemy,inspectAt,upgradeInspectedTower,upgradeCost,getInput:()=>freeWord, get state(){return state}};resize();`;
   const patched=runtime.replace('resize();requestAnimationFrame(loop);',hooks);
   assert.notEqual(patched,runtime,'headless hooks are missing');
   const ctx={window,document,performance:{now:()=>0},setTimeout(){return 0},clearTimeout(){},requestAnimationFrame(){}};
@@ -496,4 +496,116 @@ test('Word Siege upgrade control is accessible on touch and maintains visual sta
   assert.match(html,/\.tower-upgrade\{/);
   assert.match(runtime,/towerUpgradeBtn/);
   assert.match(visualsSource,/t\.level\|\|1/);
+});
+
+test('Word Siege playful signatures cover 19 familiar words and are valid for every dictionary entry',()=>{
+  const {d,h}=headlessGame();
+  const words=['MUSIC','RUBBER','BOUNCE','BUBBLE','MIRROR','GHOST','MAGIC','WIZARD',
+    'RAINBOW','BOOMERANG','MUSHROOM','SLIME','VACUUM','MAGNET','DREAM','STAR','SNOW','RAIN','SUN'];
+  const modes=new Set();
+  for(const word of words){
+    const def=d.words[word],behavior=d.behaviors[word];
+    assert.ok(def,'unrecognized English word: '+word);
+    assert.ok(behavior&&behavior.description.length>6,'missing amusing description: '+word);
+    assert.equal(h.makeTowerStats(word,def).mode,behavior.mode);
+    assert.ok(h.makeTowerStats(word,def).rate>0);
+    modes.add(behavior.mode);
+  }
+  assert.equal(modes.size,18,'most towers should actually use a different mechanism');
+  assert.match(visualsSource,/playfulSymbol/);
+  assert.match(visualsSource,/s\.mode==='snowball'/);
+});
+
+test('Word Siege playful tower mechanics can fire at moving wave targets without exceptions',()=>{
+  const {h,d}=headlessGame(),s=h.state;
+  const names=['MUSIC','RUBBER','BOUNCE','BUBBLE','MIRROR','GHOST','MAGIC','WIZARD',
+    'RAINBOW','BOOMERANG','MUSHROOM','SLIME','VACUUM','MAGNET','DREAM','STAR','SNOW','RAIN','SUN'];
+  function enemy(x,y){
+    return {id:s.uid++,x,y,type:'normal',hp:2500,maxHp:2500,
+      shield:40,armor:.12,regen:0,burn:0,burnDps:0,
+      poison:0,poisonDps:0,slow:1,pushBack:0,pathIndex:1,pathT:.4,dead:false,
+      bubbleTime:0,danceTime:0,sleepTime:0,stunTime:0,freezeTime:0};
+  }
+  for(const word of names){
+    s.towers=[];s.enemies=[];s.shots=[];s.fields=[];s.effects=[];
+    const t={id:s.uid++,word,def:d.words[word],stats:h.makeTowerStats(word,d.words[word]),
+      x:.3,y:.3,cool:0,harvestClock:0,pulse:0,links:[],combos:[]};
+    s.towers.push(t);
+    if(word==='MIRROR'){
+      const ally={...t,id:s.uid++,word:'FIRE',def:d.words.FIRE,
+        stats:h.makeTowerStats('FIRE',d.words.FIRE),x:.32,y:.33};
+      s.towers.push(ally);
+    }
+    const targets=[enemy(.39,.30),enemy(.405,.31),enemy(.41,.305),enemy(.445,.30)];
+    s.enemies.push(...targets);
+    const before=targets.reduce((total,e)=>total+e.hp+e.shield,0);
+    assert.doesNotThrow(()=>h.towerUpdate(t,.04),word+' should execute');
+    for(let i=0;i<80;i++){
+      for(const shot of s.shots)h.shotUpdate(shot,.05);
+      s.shots=s.shots.filter(shot=>!shot.dead);
+      h.updateFields(.05);
+      for(const e of targets)if(!e.dead)h.statusEffects(e,.05);
+    }
+    const after=targets.reduce((total,e)=>total+e.hp+e.shield,0);
+    assert.ok(after<before||s.fields.length>0,word+' must have an actual combat result');
+  }
+});
+
+test('Word Siege BUBBLE traps before popping, MUSIC dances, and GHOST knocks enemies back',()=>{
+  const {h,d}=headlessGame(),s=h.state;
+  function place(word){
+    const t={id:s.uid++,word,x:.3,y:.3,def:d.words[word],
+      stats:h.makeTowerStats(word,d.words[word]),cool:0,pulse:0,links:[],combos:[]};
+    s.towers.push(t);return t;
+  }
+  function target(){
+    const e={id:s.uid++,x:.38,y:.30,type:'normal',hp:2000,maxHp:2000,
+      shield:0,armor:0,burn:0,burnDps:0,poison:0,poisonDps:0,slow:1,
+      pushBack:0,pathIndex:1,pathT:.5,dead:false};
+    s.enemies.push(e);return e;
+  }
+  const bubble=place('BUBBLE'),b=target();h.towerUpdate(bubble,.04);
+  assert.ok(b.bubbleTime>=1,'BUBBLE must actually encase the enemy');
+  const hp=b.hp;
+  for(let i=0;i<40;i++)h.statusEffects(b,.05);
+  assert.ok(b.bubbleTime<=0,'bubble timer should expire');
+  assert.ok(b.hp<hp,'bubble should pop and deal delayed damage');
+  s.towers=[];s.enemies=[];
+  const music=place('MUSIC'),m=target();h.towerUpdate(music,.04);
+  assert.ok(m.danceTime>0&&m.stunTime>0,'MUSIC should cause visible dancing and a brief stop');
+  s.towers=[];s.enemies=[];
+  const ghost=place('GHOST'),g=target();h.towerUpdate(ghost,.04);
+  assert.ok(g.pushBack>.02,'GHOST should make enemies run backwards');
+});
+
+test('Word Siege mirror copies nearby elements, rain creates fields and snowballs grow',()=>{
+  const {h,d}=headlessGame(),s=h.state;
+  function make(word,x=.30,y=.30){
+    const t={id:s.uid++,word,x,y,def:d.words[word],
+      stats:h.makeTowerStats(word,d.words[word]),cool:0,pulse:0,links:[],combos:[]};
+    s.towers.push(t);return t;
+  }
+  function enemy(){
+    const e={id:s.uid++,type:'normal',x:.40,y:.30,hp:2000,maxHp:2000,
+      shield:0,armor:0,burn:0,burnDps:0,poison:0,poisonDps:0,
+      slow:1,pushBack:0,pathIndex:0,pathT:0,dead:false};
+    s.enemies.push(e);return e;
+  }
+  make('FIRE',.32,.34);
+  const mirror=make('MIRROR'),victim=enemy();
+  h.towerUpdate(mirror,.04);
+  assert.ok(victim.hp<2000&&victim.burn>0,'MIRROR should borrow nearby FIRE element');
+  s.towers=[];s.enemies=[];
+  const rain=make('RAIN');enemy();
+  h.towerUpdate(rain,.04);
+  assert.ok(s.fields.some(f=>f.kind==='slow'),'RAIN should leave a slowing rain cloud');
+  s.towers=[];s.enemies=[];s.fields=[];s.shots=[];
+  const snow=make('SNOW');enemy();
+  h.towerUpdate(snow,.04);
+  const shot=s.shots.find(shot=>shot.mode==='snowball');
+  assert.ok(shot,'SNOW should launch a projectile');
+  const initial=shot.area;
+  h.shotUpdate(shot,.12);
+  assert.ok(shot.area>=initial,'snowball area should grow during flight');
+  assert.match(runtime,/s\.travel=\(s\.travel\|\|0\)\+mv/);
 });
