@@ -5,7 +5,7 @@ import {
   AI_RULES,STUDENT_PROFILES,createStudentRuntime,resetFocusForLesson,updateLessonFocus,helpFocus,
   resetSocialForRecess,recoverSocial,drainSocial,conflictProbability,chooseOffTaskBehavior,clamp
 } from './student-ai.mjs?v=73';
-import {CLASS_SIZE,SCHOOL_SPACES,DAY_STEPS,PERIODS} from './school-day.mjs?v=71';
+import {CLASS_SIZE,SCHOOL_SPACES,DAY_STEPS,PERIODS,ROW_DESK_FORWARD,ROW_CHAIR_OFFSET,SEAT_SURFACE_HEIGHT} from './school-day.mjs?v=74';
 import {
   preferenceFor,preferenceMultiplier,preferenceIcon,
   createDailyEnvironment,createDailyHealth,healthRecoveryMultiplier,tickHealth,nextHealthAction,
@@ -272,9 +272,13 @@ function addClassroom(space){
   const bookUrl='../../assets/game/3d/interiors/kenney-furniture-kit/bookcase-open.glb';
   const screenUrl='../../assets/game/3d/interiors/kenney-furniture-kit/computer-screen.glb';
   for(let i=0;i<space.seats.length;i++){
-    const s=space.seats[i],deskZ=s.z-1;
+    const s=space.seats[i],deskZ=s.z-ROW_DESK_FORWARD;
     placeAsset(deskUrl,{x:s.x,z:deskZ,size:1.38,rot:Math.PI,fallback:[1.4,.65,.78,0xc99761]});
-    placeAsset(chairUrl,{x:s.x,z:s.z+.03,size:.74,rot:Math.PI,fallback:[.64,.55,.62,0x5c8eb0]});
+    placeAsset(chairUrl,{x:s.x,z:s.z+ROW_CHAIR_OFFSET,size:.74,rot:Math.PI,fallback:[.41,.74,.38,0x5c8eb0]});
+    const sheet=box(.48,.012,.28,0xf9fbf3);
+    sheet.position.set(s.x+.02,.735,deskZ+.10);decoRoot.add(sheet);
+    const pencil=box(.025,.022,.29,0xf1b541);
+    pencil.position.set(s.x+.18,.75,deskZ+.12);pencil.rotation.y=.24;decoRoot.add(pencil);
   }
   placeAsset(bookUrl,{x:-6.35,z:3.8,size:1.8,rot:Math.PI/2,fallback:[1.2,1.55,.55,0x967555]});
   const frontDesk=box(1.38,.72,.76,0xb9895e);
@@ -356,7 +360,7 @@ function addComputer(space){
   for(let i=0;i<space.seats.length;i++){
     const s=space.seats[i],o=space.obstacles[i];
     placeAsset(deskUrl,{x:o.x,z:o.z,size:1.45,fallback:[1.45,.64,.78,0x69798a]});
-    placeAsset(chairUrl,{x:s.x,z:s.z+.02,size:.7,rot:Math.PI,fallback:[.62,.55,.6,0x4f6b83]});
+    placeAsset(chairUrl,{x:s.x,z:s.z+ROW_CHAIR_OFFSET,size:.7,rot:Math.PI,fallback:[.4,.7,.36,0x4f6b83]});
     placeAsset(screenUrl,{x:o.x,y:.72,z:o.z-.05,size:.55,rot:Math.PI,fallback:[.5,.38,.12,0x293b4c],parent:decoRoot});
     placeAsset(keyUrl,{x:o.x,y:.72,z:o.z+.23,size:.38,rot:Math.PI,fallback:[.38,.05,.15,0x3a4650],parent:decoRoot});
     if(i<3)placeAsset(mouseUrl,{x:o.x+.38,y:.72,z:o.z+.22,size:.16,rot:Math.PI,fallback:[.12,.06,.16,0x3a4650],parent:decoRoot});
@@ -451,6 +455,16 @@ function improveNpcMaterials(model,visualId){
     mesh.material=Array.isArray(mesh.material)?corrected:corrected[0];
   });
 }
+function collectGestureBones(model){
+  const upper=[],lower=[];
+  model.traverse(node=>{
+    if(!node.isBone)return;
+    const n=(node.name||'').toLowerCase();
+    if(/forearm|lowerarm/.test(n))lower.push({bone:node,base:node.quaternion.clone()});
+    else if(/upperarm|(?:left|right)arm$/.test(n))upper.push({bone:node,base:node.quaternion.clone()});
+  });
+  return {upper,lower};
+}
 function collectSeatedBones(model){
   const legs={upper:[],lower:[]};
   model.traverse(node=>{
@@ -502,8 +516,12 @@ async function makeActor(kind,profile,index,pos){
     root,model,mixer,clips,action:null,anim:'',target:pos.clone(),
     speed:kind==='teacher'?3.2:1.15,kind,navGoal:'',navPath:[],
     visualId:kind==='teacher'?'teacher':profile?.id,usingFallback,
-    restY:model.position.y,restRotation:model.rotation.clone(),seated:false,seatBones:collectSeatedBones(model),poseBlend:0
+    restY:model.position.y,restRotation:model.rotation.clone(),seated:false,seatBones:collectSeatedBones(model),gestureBones:collectGestureBones(model),poseBlend:0,seatHipY:null
   };
+  root.updateMatrixWorld(true);
+  let hips=null;
+  model.traverse(node=>{if(node.isBone&&!hips&&/hips|pelvis/i.test(node.name||''))hips=node});
+  if(hips)actor.seatHipY=hips.getWorldPosition(new THREE.Vector3()).y;
   playAnim(actor,'idle');
   return actor;
 }
@@ -539,7 +557,9 @@ function setSeatedPose(actor,shouldSit,dt){
     for(const entry of actor.seatBones.lower)
       entry.bone.quaternion.copy(entry.base).slerp(entry.base.clone().multiply(SIT_LOWER),actor.poseBlend);
   }
-  actor.model.position.y=actor.restY-(nativeSit?0:.26)*actor.poseBlend;
+  const surface=SEAT_SURFACE_HEIGHT[activeSpace.id]??.3;
+  const offset=Number.isFinite(actor.seatHipY)?clamp(surface-actor.seatHipY,-.55,-.12):-.3;
+  actor.model.position.y=actor.restY+(nativeSit?0:offset)*actor.poseBlend;
 }
 function updateStudentPose(s,dt){
   const classTime=currentStep.kind==='lesson'||currentStep.kind==='prep';
@@ -564,7 +584,7 @@ async function createActors(){
     const runtime=createStudentRuntime(profile),seat=activeSeats[i]||new THREE.Vector3();
     const actor=await makeActor('student',profile,i,seat.clone());
     return {
-      runtime,actor,seat:seat.clone(),wander:null,offTaskKind:'',wanderTimer:0,fidgetOffset:i*.91,bubble:null,
+      runtime,actor,seat:seat.clone(),wander:null,offTaskKind:'',wanderTimer:0,fidgetOffset:i*.91,visualIndex:i,questionActive:false,answeredWindow:-1,wasGesturing:false,bubble:null,
       health:healthToday[i],healthAction:null,
       safetyRecord:null,accident:null,teamId:-1
     };
