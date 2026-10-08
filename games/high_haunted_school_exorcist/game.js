@@ -467,14 +467,14 @@ function ghostShape(x,z,color,size=1.7){
   }));head.position.y=size+.16;root.add(head);
   return {root,body,head};
 }
-function dressGhost(url,root,height,tint){
+function dressGhost(url,root,height,tint,blend=.26){
   loader.loadAsync(url).then(gltf=>{
     const model=cloneSkeleton(gltf.scene);normalize(model,height);
     model.traverse(node=>{
       if(!node.isMesh)return;
       const tintMat=m=>{
         const copy=m.clone();
-        if(copy.color)copy.color.lerp(new THREE.Color(tint),.26);
+        if(copy.color)copy.color.lerp(new THREE.Color(tint),blend);
         if(copy.emissive)copy.emissive=new THREE.Color(tint);
         if(copy.emissiveIntensity!==undefined)copy.emissiveIntensity=.24;
         return copy;
@@ -493,8 +493,8 @@ const wolfFallback=new THREE.Group();encounter.wolf.root.add(wolfFallback);
 cube(wolfFallback,0,.75,0,.62,.73,1.05,mat(0x61535a));
 for(const x of [-.22,.22])for(const z of [-.35,.35])cube(wolfFallback,x,.26,z,.20,.50,.19,mat(0x443c46));
 cube(wolfFallback,0,1.04,-.59,.50,.44,.45,mat(0x75666c));
-dressGhost('../../assets/game/3d/characters/monsters/ultimate-monsters-bundle/yeti.glb',yuki.root,2.0,0x98e1f4);
-dressGhost('../../assets/game/3d/characters/monsters/ultimate-monsters-bundle/demon.glb',reaper.root,2.18,0x7e6d9f);
+dressGhost('../../assets/game/npcs/glTF/Casual_Female.gltf',yuki.root,1.85,0xa9efff,.70);
+dressGhost('../../assets/game/3d/characters/monsters/ultimate-monsters-bundle/ghost-skull.glb',reaper.root,2.18,0x75648e,.45);
 loader.loadAsync('../../assets/game/cube world/Animals/glTF/Wolf.gltf').then(gltf=>{
   const model=cloneSkeleton(gltf.scene);normalize(model,1.08);
   encounter.wolf.root.clear();encounter.wolf.root.add(model);
@@ -573,7 +573,7 @@ function setStage(next){
   }
   if(stage===9)showLesson('저승사자 퇴각','전기실 안쪽의 보랏빛 봉인진을 확인하세요.',9);
   if(stage===10){
-    const w=encounter.wolf;w.x=-1.5;w.z=16.8;w.nav=null;w.grace=7;w.lureTime=0;w.ready=false;w.active=false;
+    const w=encounter.wolf;w.x=-1.5;w.z=16.8;w.nav=null;w.grace=7;w.lureTime=0;w.soundClock=0;w.ready=false;w.active=false;
     showLesson('마지막 괴이 · 늑대인간','남쪽 복도 스피커를 찾아 소리를 내세요. 늑대가 함정으로 뛰어들면 봉인할 수 있어요.',15);
     sfx('sfx_wolf_howl.mp3',.22);
   }
@@ -632,13 +632,14 @@ function act(){
     setStage(9);
   }else if(item.type==='reaperSeal'){sfx('sfx_school_alarm_bell.mp3',.16);setStage(10);}
   else if(item.type==='speaker'){
-    const w=encounter.wolf;w.lureTime=26;w.nav=null;w.ready=false;w.active=true;
-    sfx('sfx_wolf_howl.mp3',.27);setStage(11);
+    const w=encounter.wolf;w.lureTime=26;w.soundClock=0;w.nav=null;w.ready=false;w.active=true;
+    sfx('sfx_school_alarm_bell.mp3',.28);sfx('sfx_wolf_howl.mp3',.18);setStage(11);
   }else if(item.type==='wolfSeal'){sfx('sfx_school_alarm_bell.mp3',.20);setStage(12);}
   else if(item.type==='report')finish(true);
 }
 function finish(ok){
   ended=true;started=false;bgm.pause();const score=ok?Math.max(350,2400-Math.round(elapsed)*1.3-(3-hp)*125):0;
+  if(ok)ui.progress.style.width='100%';
   ui.endTitle.textContent=ok?'퇴마 성공 · 학교의 평화를 되찾았어요!':'퇴마 실패 · 학교에서 쫓겨났어요';
   ui.endText.textContent=ok?'학교의 여섯 괴이를 모두 봉인했습니다. 소요 시간 '+Math.floor(elapsed/60)+'분 '+Math.floor(elapsed%60)+'초.':'생명이 모두 소진됐어요. '+(lastMistake||'각 괴이는 대응 방법이 달라요.')+' 다시 시작하면 괴이별 규칙을 활용해 보세요.';
   ui.end.classList.remove('hidden');
@@ -656,7 +657,7 @@ function reset(){
   encounter.cold=0;encounter.frost=0;encounter.eggCharge=0;encounter.eggFear=0;
   encounter.bellCount=0;encounter.bellClock=0;encounter.bellWindow=0;encounter.doorClosed=false;
   encounter.wolf.x=-1.5;encounter.wolf.z=16.8;encounter.wolf.nav=null;
-  encounter.wolf.ready=false;encounter.wolf.active=false;encounter.wolf.lureTime=0;encounter.wolf.grace=5;
+  encounter.wolf.ready=false;encounter.wolf.active=false;encounter.wolf.lureTime=0;encounter.wolf.grace=5;encounter.wolf.soundClock=0;
   trickCircle.visible=false;maidenCircle.visible=false;exitCircle.visible=false;maiden.root.visible=false;
   presentEncounterModels();
   ui.intro.classList.add('hidden');ui.end.classList.add('hidden');ui.help.classList.add('hidden');
@@ -929,6 +930,8 @@ function updateNewEncounters(dt){
       }
     }else{
       w.lureTime=Math.max(0,w.lureTime-dt);
+      w.soundClock=(w.soundClock||0)+dt;
+      if(w.soundClock>=4.7){w.soundClock=0;sfx('sfx_school_alarm_bell.mp3',.14);}
       if(!w.ready)moveWolfToward(wolfTrap,dt);
       if(dist(w,wolfTrap)<1.8&&!w.ready){
         w.ready=true;w.nav=null;
