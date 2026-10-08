@@ -23,6 +23,22 @@ window.__auditFace=()=>{
  }
  return obj;
 };
+window.__componentStats=()=>{
+ const mesh=getNode('eyelashes'),g=mesh.geometry,p=g.getAttribute('position'),indices=g.index.array;
+ const root=Array.from({length:p.count},(_,i)=>i);
+ const find=x=>{let r=x;while(root[r]!==r)r=root[r];while(root[x]!==x){let q=root[x];root[x]=r;x=q;}return r;};
+ const merge=(a,b)=>{a=find(a);b=find(b);if(a!==b)root[b]=a;};
+ for(let i=0;i<indices.length;i+=3){merge(indices[i],indices[i+1]);merge(indices[i],indices[i+2]);}
+ const comps=new Map();
+ for(let i=0;i<p.count;i++){
+  const r=find(i);if(!comps.has(r))comps.set(r,{verts:0,tris:0,min:[Infinity,Infinity,Infinity],max:[-Infinity,-Infinity,-Infinity],sum:[0,0,0]});
+  const d=comps.get(r);d.verts++;
+  for(let a=0;a<3;a++){const v=a===0?p.getX(i):a===1?p.getY(i):p.getZ(i);d.min[a]=Math.min(d.min[a],v);d.max[a]=Math.max(d.max[a],v);d.sum[a]+=v;}
+ }
+ for(let i=0;i<indices.length;i+=3)comps.get(find(indices[i])).tris++;
+ const arr=[...comps.values()].map(d=>({...d,center:d.sum.map(v=>v/d.verts)}));
+ return arr.sort((a,b)=>b.tris-a.tris);
+};
 window.__changeFace=(show)=>{
  for(const name of ['eyes','eyelashes','kidscade_male_eyes','kidscade_male_brows','kidscade_male_hair_short']){
    setNodeVisible(name,show.includes(name));
@@ -38,6 +54,7 @@ await page.click('[data-view="front"]');
 await page.click('[data-clip="anim_iddle"]');
 await page.waitForTimeout(420);
 console.log('AUDIT_VISIBLE_DEFAULT '+JSON.stringify(await page.evaluate(()=>window.__auditFace())));
+console.log('AUDIT_LASH_COMPONENTS '+JSON.stringify(await page.evaluate(()=>window.__componentStats())));
 const cases=[
  ['MALE DEFAULT',['kidscade_male_eyes','kidscade_male_brows','kidscade_male_hair_short']],
  ['NO BROWS',['kidscade_male_eyes','kidscade_male_hair_short']],
