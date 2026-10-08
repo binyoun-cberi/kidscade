@@ -904,10 +904,12 @@ function createKidscadeMaleHairShort(){
     // location: the latter is why side polygons were falsely classified as
     // frontal eye-covering pieces after squashing the bob.
     const center=(originalPositions.getX(a)+originalPositions.getX(b)+originalPositions.getX(c))/3;
+    const rear=(originalPositions.getZ(a)+originalPositions.getZ(b)+originalPositions.getZ(c))/3;
     const lateral=Math.abs(center-centerX)/(size.x*.5);
-    // Do not restore the entire old bob side curtain. Keep only the thin
-    // eye-height strip needed to connect the fringe to the crown above the ear.
-    const outerTemple=lateral>=.49&&lowest>=eyeClearanceY-.105;
+    // Reconnect the rear temple just above the ear, not the forward dangling
+    // bob panels: those covered the eye when all outer triangles were restored.
+    const outerTemple=lateral>=.49&&lowest>=eyeClearanceY-.135&&
+      rear<=centerZ+size.z*.12;
     const faceOverhang=lowest<eyeClearanceY&&foremost>backOfFaceZ;
     if(!faceOverhang||outerTemple){
       kept.push(a,b,c);
@@ -941,7 +943,7 @@ function createKidscadeMaleHairShort(){
     eyeClearanceY,
     removedEyeLevelTriangles:removedFaceTriangles,
     preservedTempleTriangles,
-    sideHairPolicy:'v7 narrow temple bridge: retain only outer eye-height side polygons, suppress long bob curtain',
+    sideHairPolicy:'v7 rear-temple bridge: protect hair behind ear, reject front dangling bob panels',
     eyeClearancePolicy:'trim central/front eye-level faces only; retain original outer temple and rear nape'
   };
 
