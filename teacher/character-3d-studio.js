@@ -10,7 +10,7 @@ const TARGET_HEIGHT=1.22;
 const $=id=>document.getElementById(id);
 
 const FEMALE_BASE_NODES=['character_low','eyelashes','eyes','tooth'];
-const MALE_BASE_NODES=['kidscade_male_body','kidscade_male_eyes','kidscade_male_brows','tooth'];
+const MALE_BASE_NODES=['kidscade_male_body','kidscade_male_eyes','tooth'];
 const BASE_VARIANT_NODES=[...new Set([...FEMALE_BASE_NODES,...MALE_BASE_NODES])];
 const BASE_NODES=FEMALE_BASE_NODES;
 const HAIR_NODES=['hairone','hairT','hairtail','hairtailknight','hairvariant','hairvariant.001','kidscade_male_hair_short'];
@@ -806,17 +806,15 @@ function createKidscadeMaleSet(){
 
   const bodySource=getNode('character_low');
   const eyesSource=getNode('eyes');
-  const lashesSource=getNode('eyelashes');
   const shirtSource=getNode('shirt');
   const shortsSource=getNode('ninjasuitshort');
   if(
     !bodySource?.isSkinnedMesh||
     !eyesSource?.isSkinnedMesh||
-    !lashesSource?.isSkinnedMesh||
     !shirtSource?.isSkinnedMesh||
     !shortsSource?.isSkinnedMesh
   ){
-    throw new Error('남자 베이스 제작에 필요한 character_low / eyes / eyelashes / shirt / ninjasuitshort SkinnedMesh를 찾지 못했습니다.');
+    throw new Error('남자 베이스 제작에 필요한 character_low / eyes / shirt / ninjasuitshort SkinnedMesh를 찾지 못했습니다.');
   }
 
   const root=bodySource.parent;
@@ -871,82 +869,23 @@ function createKidscadeMaleSet(){
     'kidscade_male_body'
   ));
 
-  // 2) 원본 eyes의 topology, iris texture/UV, 78-bone weights를 유지한다.
-  // 원본 대비 눈 세로 높이를 64%로 낮추고 가로는 거의 유지해 과장된 둥근 인상을 정리한다.
-  // 홍채도 같은 메시 안에 있으므로 독립된 홍채 크기 조절은 하지 않는다.
+  // 2) character_low 머리에는 눈 흰자/속눈썹/눈썹이 이미 들어 있다.
+  //    별도 eyes 메시를 축소하면 기존 얼굴 화장과 틀어져 두 눈처럼 보인다.
+  //    원본 눈 메시를 같은 정점/UV/가중치/위치로 사용하고, 별도 눈썹은 만들지 않는다.
   const eyeGeometry=eyesSource.geometry.clone();
-  const ep=eyeGeometry.getAttribute('position');
-  const eyeCenterY=1.620;
-  const maleEyeHeightScale=.64;
-  for(let i=0;i<ep.count;i++){
-    let x=ep.getX(i),y=ep.getY(i),z=ep.getZ(i);
-    x*=1.01;
-    y=eyeCenterY+(y-eyeCenterY)*maleEyeHeightScale-.006;
-    z+=.002;
-    ep.setXYZ(i,x,y,z);
-  }
-  ep.needsUpdate=true;
-  eyeGeometry.computeVertexNormals();
-  eyeGeometry.computeBoundingBox();
-  eyeGeometry.computeBoundingSphere();
-
   const maleEyes=cloneSkinnedMeshWithGeometry(
     eyesSource,
     eyeGeometry,
     Array.isArray(eyesSource.material)?eyesSource.material.slice():eyesSource.material,
     'kidscade_male_eyes'
   );
-  maleEyes.userData={...eyesSource.userData,generatedFrom:'eyes',eyeHeightScale:maleEyeHeightScale};
-  group.add(maleEyes);
-
-  // 3) 원본 eyelashes는 눈썹 두 섬(각 12 triangles)과 속눈썹·눈꼬리 섬이
-  //    하나의 SkinnedMesh에 들어 있다. 눈썹보다 아래에 있는 면은 절대 가져오지 않는다.
-  //    기존 y>.61 범위 추출은 위쪽 속눈썹까지 포함해 두 눈이 겹쳐 보이게 했다.
-  const browGeometry=lashesSource.geometry.clone();
-  const br=browGeometry.getAttribute('position');
-  const originalIndex=browGeometry.getIndex();
-  if(!originalIndex){
-    throw new Error('Chibi eyelashes has no indexed faces to isolate brows.');
-  }
-  // allinonepr.glb: eyebrow islands y=1.772..1.812, lashes y<=1.726.
-  // The gap between islands allows selecting only the two original eyebrow meshes.
-  const eyebrowRegionFloor=1.76;
-  const kept=[];
-  const oldIndices=originalIndex.array;
-  for(let j=0;j<oldIndices.length;j+=3){
-    const a=oldIndices[j],b=oldIndices[j+1],c=oldIndices[j+2];
-    if(Math.min(br.getY(a),br.getY(b),br.getY(c))>=eyebrowRegionFloor){
-      kept.push(a,b,c);
-    }
-  }
-  if(kept.length!==72){
-    browGeometry.dispose();
-    throw new Error('Chibi eyebrow islands changed: expected 24 triangles, received '+kept.length/3);
-  }
-  browGeometry.setIndex(kept);
-  // Only the 24 retained triangles are rendered. Remaining buffer vertices do not
-  // contribute triangles, preserving original UV and 78-bone skin attributes.
-  const browCenterY=1.792;
-  for(let i=0;i<br.count;i++){
-    const x=br.getX(i),y=br.getY(i),z=br.getZ(i);
-    br.setXYZ(i,x*1.022,browCenterY+(y-browCenterY)*.70-.024,z+.010);
-  }
-  br.needsUpdate=true;
-  browGeometry.computeVertexNormals();
-  browGeometry.computeBoundingBox();
-  browGeometry.computeBoundingSphere();
-  const maleBrows=cloneSkinnedMeshWithGeometry(
-    lashesSource,browGeometry,makeSolidMaterial('#332723','Kidscade Male Brows'),
-    'kidscade_male_brows'
-  );
-  maleBrows.userData={
-    ...lashesSource.userData,
-    generatedFrom:'eyelashes',
-    extractedBrowTriangles:kept.length/3,
-    originalTriangles:oldIndices.length/3,
-    region:'separate original left/right eyebrow mesh islands'
+  maleEyes.userData={
+    ...eyesSource.userData,
+    generatedFrom:'eyes',
+    eyeHeightScale:1,
+    alignsWith:'character_low native face markings'
   };
-  group.add(maleBrows);
+  group.add(maleEyes);
 
   // 4) 기존 shirt의 topology/skinWeight를 그대로 쓰되, 소매 외곽만 확장한다.
   //    목선은 유지해 구멍이 커지지 않게 하고 어깨 앞쪽 여유를 둬 피부 관통을 방지한다.
@@ -993,7 +932,7 @@ function createKidscadeMaleSet(){
 
   root.add(group);
   group.visible=true;
-  ['kidscade_male_body','kidscade_male_eyes','kidscade_male_brows','kidscade_male_tshirt','kidscade_male_shorts']
+  ['kidscade_male_body','kidscade_male_eyes','kidscade_male_tshirt','kidscade_male_shorts']
     .forEach(name=>setNodeVisible(name,false));
   return group;
 }
