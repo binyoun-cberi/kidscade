@@ -899,40 +899,37 @@ function createKidscadeMaleSet(){
   maleEyes.userData={...eyesSource.userData,generatedFrom:'eyes',eyeHeightScale:maleEyeHeightScale};
   group.add(maleEyes);
 
-  // 3) 기존에는 eyelashes 전체(눈꼬리 가시 포함)를 눈썹 위치로 옮겼다.
-  //    원본 삼각형에서 '위쪽 눈썹 호'에 속한 면만 추출해 찢어진 속눈썹 잔여를 제거한다.
-  //    임의 도형 생성 없이 원본 위치/UV/skinWeight를 그대로 사용한다.
+  // 3) 원본 eyelashes는 눈썹 두 섬(각 12 triangles)과 속눈썹·눈꼬리 섬이
+  //    하나의 SkinnedMesh에 들어 있다. 눈썹보다 아래에 있는 면은 절대 가져오지 않는다.
+  //    기존 y>.61 범위 추출은 위쪽 속눈썹까지 포함해 두 눈이 겹쳐 보이게 했다.
   const browGeometry=lashesSource.geometry.clone();
-  browGeometry.computeBoundingBox();
-  const browBox=browGeometry.boundingBox;
-  const browTop=browBox.max.y;
-  const browCut=browBox.min.y+(browTop-browBox.min.y)*.61;
-  const browXLimit=Math.max(Math.abs(browBox.min.x),Math.abs(browBox.max.x))*.91;
   const br=browGeometry.getAttribute('position');
   const originalIndex=browGeometry.getIndex();
   if(!originalIndex){
     throw new Error('Chibi eyelashes has no indexed faces to isolate brows.');
   }
+  // allinonepr.glb: eyebrow islands y=1.772..1.812, lashes y<=1.726.
+  // The gap between islands allows selecting only the two original eyebrow meshes.
+  const eyebrowRegionFloor=1.76;
   const kept=[];
   const oldIndices=originalIndex.array;
   for(let j=0;j<oldIndices.length;j+=3){
     const a=oldIndices[j],b=oldIndices[j+1],c=oldIndices[j+2];
-    const y0=br.getY(a),y1=br.getY(b),y2=br.getY(c);
-    const x0=Math.abs(br.getX(a)),x1=Math.abs(br.getX(b)),x2=Math.abs(br.getX(c));
-    // 삼각형 단위로만 제거한다. 정점을 얼굴 뒤로 숨기는 방식은 쓰지 않는다.
-    if(Math.min(y0,y1,y2)>=browCut-.006&&Math.max(x0,x1,x2)<=browXLimit){
+    if(Math.min(br.getY(a),br.getY(b),br.getY(c))>=eyebrowRegionFloor){
       kept.push(a,b,c);
     }
   }
-  if(kept.length<12){
-    throw new Error('Chibi eyebrow upper-band faces not found.');
+  if(kept.length!==72){
+    browGeometry.dispose();
+    throw new Error('Chibi eyebrow islands changed: expected 24 triangles, received '+kept.length/3);
   }
   browGeometry.setIndex(kept);
-  const browCenterY=(browCut+browTop)*.5;
+  // Only the 24 retained triangles are rendered. Remaining buffer vertices do not
+  // contribute triangles, preserving original UV and 78-bone skin attributes.
+  const browCenterY=1.792;
   for(let i=0;i<br.count;i++){
     const x=br.getX(i),y=br.getY(i),z=br.getZ(i);
-    // 보존된 눈썹 면을 얇고 거의 수평인 형태로 정리한다.
-    br.setXYZ(i,x*1.022,browCenterY+(y-browCenterY)*.66-.006,z+.010);
+    br.setXYZ(i,x*1.022,browCenterY+(y-browCenterY)*.70-.024,z+.010);
   }
   br.needsUpdate=true;
   browGeometry.computeVertexNormals();
@@ -947,7 +944,7 @@ function createKidscadeMaleSet(){
     generatedFrom:'eyelashes',
     extractedBrowTriangles:kept.length/3,
     originalTriangles:oldIndices.length/3,
-    region:'upper eyebrow faces only'
+    region:'separate original left/right eyebrow mesh islands'
   };
   group.add(maleBrows);
 
