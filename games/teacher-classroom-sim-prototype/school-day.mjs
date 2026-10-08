@@ -4,6 +4,11 @@ export const CLASS_SIZE=15;
 export const ROW_DESK_FORWARD=.78;
 export const ROW_CHAIR_OFFSET=.03;
 export const SEAT_SURFACE_HEIGHT=Object.freeze({classroom:.25,computer:.23,science:.62,art:.62,cafeteria:.38});
+/** Align a seated pupil's *animated pelvis* with the real furniture seat surface. */
+export function seatHeightAdjustment(seatSurfaceY,animatedPelvisY){
+  if(!Number.isFinite(seatSurfaceY)||!Number.isFinite(animatedPelvisY))return 0;
+  return Math.max(-.5,Math.min(.5,seatSurfaceY-animatedPelvisY));
+}
 const STUDENT_COLUMNS=[-5.2,-2.6,0,2.6,5.2];
 const STUDENT_ROWS=[-2.15,.05,2.25];
 function rowStations(){return STUDENT_ROWS.flatMap(z=>STUDENT_COLUMNS.map(x=>({x,z})))}
