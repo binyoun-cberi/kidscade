@@ -1178,7 +1178,7 @@ function updateHud(){
     if(rushBtn.textContent!==label)rushBtn.textContent=label;
     rushBtn.disabled=!active||state.rushTime>0||state.rushCooldown>0||
       state.rushUses>=RUSH_LIMIT||state.ink<rushCost();
-    rushBtn.classList.toggle('active',state.rushTime>0);
+    if(state.rushTime>0)rushBtn.classList.add('active');else rushBtn.classList.remove('active');
   }
   const updates=[[coreText,Math.ceil(state.core)],[waveText,state.wave+' / 8'],
     [inkText,Math.floor(state.ink)],[scoreText,Math.floor(state.score)]];
