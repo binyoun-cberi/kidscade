@@ -311,6 +311,9 @@ function makeTowerStats(word,def){
     if(signature.element)stats.element=signature.element;
   }
   stats.mode=D.behaviors?.[word]?.mode||'';
+  if(['disco','spellbook','rainbow','boomerang','pinball','spring','boo','sleep','shootingstars','snowball','slimepool','raincloud','spores','bubble','sunray','magnet','vacuum','mirror'].includes(stats.mode)){
+    stats.rate=Math.min(1.35,Math.max(.55,stats.rate||.65));
+  }
   if(['gatling','shotgun','rail'].includes(stats.mode))stats.area=0;
   if(word==='NUKE'){stats.damage=Math.max(355,stats.damage);stats.area=Math.max(.255,stats.area);stats.rate=.135}
   return stats;
@@ -463,14 +466,15 @@ function spawnEnemy(type){
     shield:Math.round((a.shield||0)*hpScale),armor:a.armor||0,regen:a.regen||0,
     split:a.split||false,boss:a.boss||false,pathIndex:0,pathT:0,x:pathPts[0][0],y:pathPts[0][1],
     burn:0,burnDps:0,poison:0,poisonDps:0,slow:1,pushBack:0,dead:false,
-    corrosion:0,corrosionTime:0,chillStacks:0,freezeTime:0,stunTime:0,infected:false};
+    corrosion:0,corrosionTime:0,chillStacks:0,freezeTime:0,stunTime:0,infected:false,
+    bubbleTime:0,bubblePower:0,bubbleSource:null,bubbleCombo:false,danceTime:0,sleepTime:0};
   state.enemies.push(e);
 }
 function enemyProgress(e){return e.pathIndex+e.pathT}
 function moveEnemy(e,dt){
   if(e.dead)return;
   e.slow+=(1-e.slow)*Math.min(1,dt*1.7);
-  let step=e.speed*(e.freezeTime>0||e.stunTime>0?0:e.slow)*dt;
+  let step=e.speed*(e.freezeTime>0||e.stunTime>0||e.bubbleTime>0?0:e.slow)*dt;
   if(e.pushBack>0){step-=e.pushBack;e.pushBack=0}
   while(Math.abs(step)>.00001){
     if(step>=0){
@@ -577,10 +581,11 @@ function updateFields(dt){
   for(const f of state.fields){
     f.life-=dt;f.clock-=dt;
     if(f.clock>0)continue;
-    f.clock=.62;
+    f.clock=f.interval||.62;
     for(const e of state.enemies){
       if(e.dead||dist(e,f)>f.radius)continue;
-      attackEnemy(f.source,e,f.damage,'burn');
+      attackEnemy(f.source,e,f.damage,f.kind||'burn');
+      if(f.kind==='slow')e.slow=Math.min(e.slow,f.slow||.58);
     }
   }
   state.fields=state.fields.filter(f=>f.life>0);
@@ -590,8 +595,183 @@ function projectile(t,target,s,opts={}){
     x:t.x,y:t.y,target,damage:opts.damage??s.damage,
     speed:s.projectileSpeed||.55,color:t.def.color,area:opts.area??(s.area||0),
     kind:t.def.role,mode:opts.mode||s.mode||'',source:t,dead:false,
-    delay:opts.delay||0,point:{x:target.x,y:target.y}
+    delay:opts.delay||0,point:{x:target.x,y:target.y},travel:0
   });
+}
+// Short, legible spectacle: each existing English word performs its meaning.
+// Uses the standard enemy, cooldown, INK and field systems (no summoned NPCs).
+function playfulTowerAttack(t,s,targets,target){
+  const mode=s.mode;
+  const combo=name=>(t.combos||[]).some(entry=>entry.name===name);
+  const hit=(e,power=.6,element='')=>attackEnemy(t,e,s.damage*power,element);
+  const nearby=(x,y,r,max=6)=>targets.filter(e=>dist(e,{x,y})<=r).slice(0,max);
+  const label=(value,color=t.def.color)=>floatEffect(target.x,target.y,value,color);
+  const field=(kind,radius,life,damage,slow=1)=>{
+    if(state.fields.filter(f=>f.source.id===t.id).length>=3)return;
+    state.fields.push({x:target.x,y:target.y,radius,life,clock:.05,interval:.60,
+      damage,kind,slow,source:t});
+    ringEffect(target.x,target.y,radius,t.def.color,.35);
+  };
+  if(mode==='disco'){
+    for(const e of targets.slice(0,7)){
+      hit(e,.24);e.slow=Math.min(e.slow,.45);
+      e.danceTime=.75;e.stunTime=Math.max(e.stunTime||0,.25);
+      if(combo('무지개 디스코'))damageEnemy(e,0,'burn',t);
+    }
+    ringEffect(t.x,t.y,s.range,t.def.color,.42);
+    label('♫ DANCE!','#d789e9');beep(440+(t.castCount||0)%4*110,.12,'triangle',.025);
+    t.castCount=(t.castCount||0)+1;return true;
+  }
+  if(mode==='pinball'){
+    const used=new Set();let previous={x:t.x,y:t.y},current=target;
+    for(let n=0;n<(combo('별똥별 핀볼')?6:5)&&current;n++){
+      used.add(current.id);hit(current,Math.pow(.73,n)*.80);
+      lineEffect(previous.x,previous.y,current.x,current.y,n%2?'#fff3a0':'#ff9b63',.18,2);
+      ringEffect(current.x,current.y,.022,t.def.color,.20);previous=current;
+      current=targets.filter(e=>!used.has(e.id)&&dist(e,previous)<.14)
+        .sort((a,b)=>dist(a,previous)-dist(b,previous))[0];
+    }
+    label('PING!','#ee9c47');beep(620,.09,'square',.02);return true;
+  }
+  if(mode==='spring'){
+    for(const e of nearby(target.x,target.y,.085,3)){
+      hit(e,.45);e.pushBack=Math.max(e.pushBack,e.boss?.016:.048);
+      e.stunTime=Math.max(e.stunTime||0,.22);
+    }
+    ringEffect(target.x,target.y,.087,'#e0fc91',.25);
+    label('BOING!','#a6dc51');beep(330,.13,'sine',.03);return true;
+  }
+  if(mode==='bubble'){
+    const e=targets.find(e=>(e.bubbleTime||0)<=0)||target;
+    if(e.bubbleTime>0){hit(e,.25);return true}
+    hit(e,.27);if(e.dead)return true;
+    e.bubbleTime=e.boss?.55:1.35;e.bubblePower=Math.min(55,s.damage*.72);
+    e.bubbleSource=t;e.bubbleCombo=combo('거품 트램펄린');
+    ringEffect(e.x,e.y,.046,'#b5f8f5',.45);
+    floatEffect(e.x,e.y,'BUBBLE!','#67c8c5');beep(880,.07,'sine',.02);return true;
+  }
+  if(mode==='mirror'){
+    const peer=state.towers.filter(other=>other!==t&&other.stats.damage>0&&other.stats.mode!=='mirror'&&dist(t,other)<.20)
+      .sort((a,b)=>dist(t,a)-dist(t,b))[0];
+    const source=peer||t;
+    const borrowed=peer?effectiveStats(peer):s;
+    // The mirror borrows elemental utility without being punished for a low-DPS neighbor.
+    const damage=Math.min(74,Math.max(s.damage*.38,borrowed.damage*.62));
+    const count=combo('매직 미러')?3:peer&&(borrowed.area||borrowed.beam)?3:1;
+    const victims=nearby(target.x,target.y,peer?Math.max(.065,borrowed.area||.09):.02,count);
+    for(const e of victims){
+      attackEnemy(source,e,damage);
+      if(borrowed.burn||source.def.role==='burn')damageEnemy(e,0,'burn',source);
+      if(borrowed.slow||source.def.role==='slow')damageEnemy(e,0,'slow',source);
+      if(borrowed.poison||source.def.role==='poison')damageEnemy(e,0,'poison',source);
+      if(combo('매직 미러')&&source.stats.mode==='spellbook')damageEnemy(e,0,(t.castCount||0)%2?'slow':'burn',source);
+    }
+    if(peer)lineEffect(t.x,t.y,peer.x,peer.y,'#faf3ff',.28,3);
+    lineEffect(peer?.x??t.x,peer?.y??t.y,target.x,target.y,'#f6d5ff',.21,3);
+    t.castCount=(t.castCount||0)+1;
+    label(peer?'COPY '+peer.word:'REFLECT','#c99cf2');return true;
+  }
+  if(mode==='boo'){
+    for(const e of nearby(target.x,target.y,.11,4)){
+      hit(e,.36);e.pushBack=Math.max(e.pushBack,e.boss?.018:.047);
+      e.stunTime=Math.max(e.stunTime||0,combo('유령의 악몽')?.85:.35);
+      if(combo('유령의 악몽'))e.sleepTime=Math.max(e.sleepTime||0,.85);
+    }
+    ringEffect(target.x,target.y,.11,'#b8b1f3',.40);
+    label('BOO!','#b8b1f3');beep(240,.16,'sine',.03);return true;
+  }
+  if(mode==='spellbook'){
+    const spells=['burn','slow','poison','push'];
+    const cast=spells[(t.castCount||0)%spells.length];t.castCount=(t.castCount||0)+1;
+    const victims=targets.slice(0,t.word==='WIZARD'?2:1);
+    for(const e of victims){
+      hit(e,.58,cast);
+      if(cast==='push')e.pushBack=Math.max(e.pushBack,.033);
+      if(cast==='slow')e.freezeTime=Math.max(e.freezeTime||0,.20);
+      ringEffect(e.x,e.y,.035,cast==='burn'?'#ff9350':cast==='slow'?'#9bdcff':cast==='poison'?'#a6e77a':'#c4aaf2',.24);
+    }
+    label(['FIRE!','ICE!','POISON!','WIND!'][(t.castCount-1)%4]);
+    beep(460+(t.castCount%4)*130,.08,'triangle',.022);return true;
+  }
+  if(mode==='rainbow'){
+    let last={x:t.x,y:t.y};
+    for(const [i,e] of targets.slice(0,4).entries()){
+      const color=['#ee6b85','#ffb554','#77d3c7','#9686ec'][i];
+      hit(e,.43,['burn','slow','poison','slow'][i]);
+      lineEffect(last.x,last.y,e.x,e.y,color,.23,3);last=e;
+    }
+    ringEffect(target.x,target.y,.05,'#ffcb74',.22);return true;
+  }
+  if(mode==='boomerang'){
+    const along=targets.filter(e=>{
+      const dx=target.x-t.x,dy=target.y-t.y,m=dx*dx+dy*dy||1;
+      const fraction=((e.x-t.x)*dx+(e.y-t.y)*dy)/m;
+      return fraction>=0&&fraction<=1&&Math.hypot(e.x-(t.x+dx*fraction),e.y-(t.y+dy*fraction))<.033;
+    }).slice(0,5);
+    for(const e of along){hit(e,.63);hit(e,.42)}
+    lineEffect(t.x,t.y,target.x,target.y,'#fff6a4',.23,3);
+    lineEffect(target.x,target.y,t.x,t.y,'#68ceba',.37,2);
+    label('RETURN!','#61c9bc');beep(540,.09,'triangle',.025);return true;
+  }
+  if(mode==='spores'){
+    hit(target,.32,'poison');field('poison',.11,3.35,s.damage*.115);
+    particleEffect(target.x,target.y,'#b4e77a',12,.12);
+    label('SPORES!','#81ba55');return true;
+  }
+  if(mode==='slimepool'){
+    hit(target,.24,'poison');field('slow',.10,4,s.damage*.09,.44);
+    label('SPLAT!','#8bc75f');return true;
+  }
+  if(mode==='vacuum'){
+    for(const e of nearby(target.x,target.y,.135,6)){
+      hit(e,.29);e.pushBack=Math.max(e.pushBack,e.boss?.016:.036);
+      e.slow=Math.min(e.slow,.63);
+    }
+    ringEffect(target.x,target.y,.14,'#d5a8ef',.40);
+    label('WHOOOSH!','#c9a2e9');return true;
+  }
+  if(mode==='magnet'){
+    const pulled=targets.slice().sort((a,b)=>
+      ((b.shield>0?2:0)+(b.armor>0?1:0))-((a.shield>0?2:0)+(a.armor>0?1:0))).slice(0,3);
+    for(const e of pulled){
+      e.shield=Math.max(0,e.shield-s.damage*.65);
+      hit(e,.49);e.pushBack=Math.max(e.pushBack,e.boss?.012:.032);
+    }
+    lineEffect(t.x,t.y,pulled[0].x,pulled[0].y,'#8fd4ea',.22,3);
+    label('CLANK!','#85cce2');return true;
+  }
+  if(mode==='sleep'){
+    const e=targets.find(e=>(e.sleepTime||0)<=0)||target;
+    hit(e,.24);
+    e.sleepTime=e.boss?.55:1.7;
+    e.stunTime=Math.max(e.stunTime||0,e.sleepTime);
+    ringEffect(e.x,e.y,.048,'#a4a0e5',.36);
+    floatEffect(e.x,e.y,'Zzz...','#8f87db');return true;
+  }
+  if(mode==='shootingstars'){
+    for(const [i,e] of targets.slice(0,4).entries()){
+      projectile(t,e,s,{area:0,damage:s.damage*.42,mode:'shootingstars'});
+      ringEffect(e.x,e.y,.022,i%2?'#e2bcff':'#ffe399',.15);
+    }
+    if(targets.length===1)projectile(t,target,s,{area:0,damage:s.damage*.32,mode:'shootingstars'});
+    label('★ ★ ★','#f3d075');return true;
+  }
+  if(mode==='snowball'){
+    projectile(t,target,s,{area:.055,damage:s.damage*.83,mode:'snowball'});
+    label('ROLL!','#90cbe7');return true;
+  }
+  if(mode==='raincloud'){
+    hit(target,.32,'slow');field('slow',.13,3.8,s.damage*.07,.46);
+    label('DRIZZLE','#76b7e7');return true;
+  }
+  if(mode==='sunray'){
+    const victims=nearby(target.x,target.y,.065,4);
+    for(const e of victims)hit(e,.76,'burn');
+    lineEffect(t.x,t.y,target.x,target.y,'#f8c24e',.28,5);
+    ringEffect(target.x,target.y,.065,'#fff0a7',.28);
+    label('SUNSHINE!','#e6a748');return true;
+  }
+  return false;
 }
 function towerUpdate(t,dt){
   const s=effectiveStats(t),mode=s.mode;
@@ -657,6 +837,7 @@ function towerUpdate(t,dt){
     return Math.abs(Math.atan2(Math.sin(a-angle),Math.cos(a-angle)))<width;
   }).slice(0,limit);
   const angle=Math.atan2(target.y-t.y,target.x-t.x);
+  if(playfulTowerAttack(t,s,targets,target))return;
   if(mode==='rail'||mode==='cleave'||t.def.role==='pierce'){
     if(mode==='cleave'){
       for(const e of coneTargets(angle,1.1,6))hit(e,.85);
@@ -747,6 +928,7 @@ function shotUpdate(s,dt){
   }
   s.point={x:s.target.x,y:s.target.y};
   const dx=s.target.x-s.x,dy=s.target.y-s.y,d=Math.hypot(dx,dy),mv=s.speed*dt;
+  if(s.mode==='snowball')s.area=Math.min(.12,.055+(s.travel||0)*.14);
   if(d<=mv+.008){
     const impact=s.target;
     if(s.area>0){
@@ -778,6 +960,7 @@ function shotUpdate(s,dt){
     s.dead=true;return;
   }
   s.x+=dx/d*mv;s.y+=dy/d*mv;
+  s.travel=(s.travel||0)+mv;
 }
 
 function barrierEffects(){
@@ -788,6 +971,22 @@ function barrierEffects(){
 function statusEffects(e,dt){
   e.freezeTime=Math.max(0,(e.freezeTime||0)-dt);
   e.stunTime=Math.max(0,(e.stunTime||0)-dt);
+  e.danceTime=Math.max(0,(e.danceTime||0)-dt);
+  e.sleepTime=Math.max(0,(e.sleepTime||0)-dt);
+  if(e.bubbleTime>0){
+    e.bubbleTime-=dt;
+    if(e.bubbleTime<=0&&!e.dead){
+      const damage=e.bubblePower||8;
+      const radius=e.bubbleCombo?.10:.065;
+      for(const other of state.enemies)if(!other.dead&&dist(e,other)<radius){
+        if(e.bubbleSource)attackEnemy(e.bubbleSource,other,other===e?damage:damage*.45);
+        if(e.bubbleCombo)other.pushBack=Math.max(other.pushBack,other.boss?.015:.035);
+      }
+      ringEffect(e.x,e.y,radius,'#b5f8f5',.40);
+      floatEffect(e.x,e.y,'POP!','#59bdb2');
+      e.bubbleSource=null;e.bubblePower=0;e.bubbleCombo=false;
+    }
+  }
   e.corrosionTime=Math.max(0,(e.corrosionTime||0)-dt);
   if(!e.corrosionTime)e.corrosion=0;
   if(e.burn>0){e.burn-=dt;e.hp-=e.burnDps*dt}
@@ -985,12 +1184,20 @@ function drawLinks(){
 function towerRadius(t){return Math.max(21,Math.min(W,H)*(.0305+t.def.difficulty*.00165))}
 function drawFields(){
   for(const field of state.fields){
-    const progress=Math.max(0,field.life/(field.source.stats.mode==='lavafield'?5.4:3.5));
+    const color=field.kind==='poison'?'#96c94b':field.kind==='slow'?
+      (field.source.stats.mode==='raincloud'?'#7fb1db':'#71b998'):'#f36c32';
     const x=px(field.x),y=py(field.y);
-    ctx.save();ctx.globalAlpha=.10+.16*progress;ctx.fillStyle='#f36c32';
+    ctx.save();ctx.globalAlpha=.16;ctx.fillStyle=color;
     ctx.beginPath();ctx.ellipse(x,y,field.radius*W,field.radius*H,0,0,Math.PI*2);ctx.fill();
-    ctx.globalAlpha=.30*progress;ctx.strokeStyle='#ffb656';ctx.lineWidth=2;
+    ctx.globalAlpha=.46;ctx.strokeStyle=color;ctx.lineWidth=2.5;
+    ctx.setLineDash(field.kind==='poison'?[2,7]:field.kind==='slow'?[5,5]:[]);
     ctx.beginPath();ctx.ellipse(x,y,field.radius*W,field.radius*H,0,0,Math.PI*2);ctx.stroke();
+    ctx.setLineDash([]);
+    if(field.kind==='poison'){
+      ctx.fillStyle=color;ctx.globalAlpha=.57;
+      for(let i=0;i<5;i++){const a=i*2.4+state.elapsed*.8;
+        ctx.beginPath();ctx.arc(x+Math.cos(a)*field.radius*W*.65,y+Math.sin(a)*field.radius*H*.65,2.6,0,Math.PI*2);ctx.fill()}
+    }
     ctx.restore();
   }
 }
@@ -1060,6 +1267,17 @@ function drawEnemies(){
         ctx.fillStyle=color;ctx.beginPath();ctx.arc(xx,y+r+6,2.6,0,Math.PI*2);ctx.fill();
       });
       ctx.restore();
+    }
+    if(e.bubbleTime>0){
+      ctx.save();ctx.strokeStyle='#9ae9e9';ctx.fillStyle='rgba(190,255,252,.17)';
+      ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(x,y,r*1.8,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x-r*.58,y-r*.60,Math.max(2,r*.21),0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    }
+    if(e.danceTime>0||e.sleepTime>0){
+      ctx.save();ctx.fillStyle=e.danceTime>0?'#bf64d9':'#9b91df';
+      ctx.font='900 '+Math.max(13,r*1.2)+'px system-ui,sans-serif';
+      ctx.textAlign='center';ctx.fillText(e.danceTime>0?'♫':'Z',x+r*1.3,y-r*1.1);ctx.restore();
     }
     if(e.freezeTime>0){
       ctx.save();ctx.strokeStyle='#b4f0ff';ctx.lineWidth=2.2;

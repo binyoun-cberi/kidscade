@@ -229,6 +229,40 @@ let chrome,ws;
   assert.ok(cow.nukeDisabled,'NUKE is too cheap at the start');
   assert.ok(cow.gibberishDisabled,'gibberish should be rejected');
   console.log('WORD_SIEGE_FREE_TYPE '+JSON.stringify(cow));
+
+  // A real browser exercises the silly tower through the same touch controls as a child.
+  await send('Page.navigate',{url:'http://127.0.0.1:'+port+'/games/language_word_siege/index.html?funMusicAudit=1'});
+  await pause(650);
+  const music=await evaluate(`(()=>{
+    document.getElementById('startBtn').click();
+    const word=document.getElementById('freeWord');
+    word.value='music';word.dispatchEvent(new Event('input',{bubbles:true}));
+    const data={
+      name:document.getElementById('currentWord').textContent,
+      description:document.getElementById('wordMeta').textContent,
+      affordable:!document.getElementById('buildBtn').disabled
+    };
+    if(data.affordable){
+      document.getElementById('buildBtn').click();
+      const board=document.getElementById('game').getBoundingClientRect();
+      document.getElementById('game').dispatchEvent(new PointerEvent('pointerdown',{
+        bubbles:true,clientX:board.left+board.width*.22,clientY:board.top+board.height*.18,pointerType:'touch'
+      }));
+    }
+    data.result=document.getElementById('statusBox').textContent;
+    if(data.result.includes('배치 완료'))document.getElementById('waveBtn').click();
+    data.wave=document.getElementById('waveText').textContent;
+    return data;
+  })()`);
+  assert.equal(music.name,'MUSIC');
+  assert.ok(music.description.includes('춤'),'MUSIC must explain its funny behavior');
+  assert.equal(music.affordable,true);
+  assert.ok(music.result.includes('배치 완료'),'MUSIC should be placeable by touch');
+  assert.ok(music.wave.startsWith('1 / '),'MUSIC must actually launch a defensive wave');
+  await pause(1800);
+  const musicShot=await send('Page.captureScreenshot',{format:'jpeg',quality:46,captureBeyondViewport:false});
+  console.log('WORD_SIEGE_FUN_MUSIC '+JSON.stringify(music));
+  console.log('WORD_SIEGE_IMAGE_fun-music='+musicShot.data);
   assert.equal(pageErrors.length,0,'Browser JavaScript errors: '+JSON.stringify(pageErrors));
   console.log('WORD_SIEGE_BROWSER_AUDIT_PASSED 4 sizes, 10 stage selectors, 2 advanced stage renders and pointer gameplay');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1}).finally(async()=>{
