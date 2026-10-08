@@ -1303,7 +1303,7 @@ const MEANING_THEMES=[
 // is a transparent rule, not a randomly assigned superpower.
 function spellingStyle(word){
   const vowels=(word.match(VOWELS)||[]).length;
-  if(/([A-Z])\\1/.test(word))return {mode:'pinball',reason:'같은 글자가 이어져 핀볼처럼 튕김'};
+  if(/([A-Z])\1/.test(word))return {mode:'pinball',reason:'같은 글자가 이어져 핀볼처럼 튕김'};
   if(/[QXZ]/.test(word))return {mode:'shootingstars',reason:'희귀 글자 Q·X·Z가 별똥별을 부름'};
   if(word.endsWith('ING'))return {mode:'boomerang',reason:'-ING 꼬리가 부메랑처럼 되돌아옴'};
   if(vowels>=4)return {mode:'rainbow',reason:'모음 '+vowels+'개가 무지개 광선을 연결'};
