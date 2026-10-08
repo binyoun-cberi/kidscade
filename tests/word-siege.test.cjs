@@ -71,7 +71,7 @@ test('Word Siege starts with a guaranteed economy and attack choice',()=>{
   assert.equal(data.words.FIGHT.meaning,'싸우다');
   assert.equal(data.words.FIGHT.role,'pierce');
   assert.ok(data.words.NUKE&&data.signatures.NUKE);
-  assert.equal(data.combos.length,20);
+  assert.equal(data.combos.length,25);
   assert.ok(Object.keys(data.signatures).length>=60);
 });
 
@@ -608,4 +608,49 @@ test('Word Siege mirror copies nearby elements, rain creates fields and snowball
   h.shotUpdate(shot,.12);
   assert.ok(shot.area>=initial,'snowball area should grow during flight');
   assert.match(runtime,/s\.travel=\(s\.travel\|\|0\)\+mv/);
+});
+
+test('Word Siege funny pair bonuses change actual enemy states, not only text labels',()=>{
+  const {h,d}=headlessGame(),s=h.state;
+  const tower=(word,x,y)=>({
+    id:s.uid++,word,def:d.words[word],stats:h.makeTowerStats(word,d.words[word]),
+    x,y,cool:0,harvestClock:0,pulse:0,links:[],combos:[]
+  });
+  const enemy=(x=.38,y=.3)=>({
+    id:s.uid++,x,y,type:'normal',hp:2000,maxHp:2000,shield:0,armor:0,
+    burn:0,burnDps:0,poison:0,poisonDps:0,slow:1,pushBack:0,pathIndex:1,pathT:.2,dead:false
+  });
+  const music=tower('MUSIC',.3,.3),rainbow=tower('RAINBOW',.37,.34);
+  s.towers.push(music,rainbow);
+  h.applyLinks();
+  assert.ok(music.combos.some(c=>c.name==='무지개 디스코'));
+  let victim=enemy();s.enemies.push(victim);
+  h.towerUpdate(music,.04);
+  assert.ok(victim.danceTime>0&&victim.burn>0,'disco should dance AND burn with rainbow bonus');
+  s.towers=[];s.enemies=[];s.effects=[];
+  const bubble=tower('BUBBLE',.3,.3),bounce=tower('BOUNCE',.36,.31);
+  s.towers.push(bubble,bounce);h.applyLinks();
+  victim=enemy();s.enemies.push(victim);
+  h.towerUpdate(bubble,.04);
+  assert.ok(victim.bubbleTime>0&&victim.bubbleCombo,'combo should mark a bouncy bubble');
+  for(let i=0;i<50;i++)h.statusEffects(victim,.05);
+  assert.ok(victim.pushBack>.02,'trampoline POP should push enemies back');
+  s.towers=[];s.enemies=[];s.effects=[];
+  const ghost=tower('GHOST',.3,.3),dream=tower('DREAM',.36,.31);
+  s.towers.push(ghost,dream);h.applyLinks();
+  victim=enemy();s.enemies.push(victim);
+  h.towerUpdate(ghost,.04);
+  assert.ok(victim.stunTime>=.8&&victim.sleepTime>0,'nightmare should really scare enemies to sleep');
+});
+
+test('Word Siege new funny combinations are all discoverable by valid existing words',()=>{
+  const d=loadData();
+  const discovered=new Set(['거품 트램펄린','무지개 디스코','매직 미러','유령의 악몽','별똥별 핀볼']);
+  assert.equal(discovered.size,5);
+  for(const c of d.combos.filter(x=>discovered.has(x.name))){
+    assert.ok(d.words[c.a]&&d.words[c.b],c.name+' requires two real dictionary words');
+    assert.ok(c.bonus.damage||c.bonus.rate||c.bonus.range,c.name+' must reward player strategy');
+    discovered.delete(c.name);
+  }
+  assert.equal(discovered.size,0,'every funny combo must actually exist');
 });
