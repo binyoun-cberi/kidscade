@@ -515,56 +515,232 @@ function killEnemy(e){
   if(e.split&&!e.boss){for(let i=0;i<2;i++){const c={...e,id:state.uid++,type:'normal',hp:20,maxHp:20,speed:.095,r:.008,damage:3,color:'#2f3035',split:false,dead:false,pathT:Math.max(0,e.pathT-i*.025)};state.enemies.push(c)}}
 }
 
+// Route projection lets deployed mines sit on the enemy lane, never inside the tower.
+function closestLanePoint(p){
+  let closest={x:p.x,y:p.y,d:Infinity};
+  for(let i=0;i<pathPts.length-1;i++){
+    const a=pathPts[i],b=pathPts[i+1],vx=b[0]-a[0],vy=b[1]-a[1];
+    const frac=Math.max(0,Math.min(1,((p.x-a[0])*vx+(p.y-a[1])*vy)/(vx*vx+vy*vy||1)));
+    const x=a[0]+vx*frac,y=a[1]+vy*frac,d=Math.hypot(p.x-x,p.y-y);
+    if(d<closest.d)closest={x,y,d};
+  }
+  return closest;
+}
+function updateTraps(dt){
+  for(const mine of state.traps){
+    mine.life-=dt;
+    if(mine.life<=0)continue;
+    const nearby=state.enemies.find(e=>!e.dead&&dist(mine,e)<mine.trigger);
+    if(!nearby)continue;
+    mine.life=0;
+    for(const e of state.enemies)if(!e.dead&&dist(mine,e)<=mine.radius)attackEnemy(mine.source,e,mine.damage);
+    ringEffect(mine.x,mine.y,mine.radius,mine.source.def.color,.35);
+    particleEffect(mine.x,mine.y,mine.source.def.color,12,mine.radius*.8);
+    beep(110,.13,'sawtooth',.02);
+  }
+  state.traps=state.traps.filter(m=>m.life>0);
+}
+function updateFields(dt){
+  for(const f of state.fields){
+    f.life-=dt;f.clock-=dt;
+    if(f.clock>0)continue;
+    f.clock=.62;
+    for(const e of state.enemies){
+      if(e.dead||dist(e,f)>f.radius)continue;
+      attackEnemy(f.source,e,f.damage,'burn');
+    }
+  }
+  state.fields=state.fields.filter(f=>f.life>0);
+}
+function projectile(t,target,s,opts={}){
+  state.shots.push({
+    x:t.x,y:t.y,target,damage:opts.damage??s.damage,
+    speed:s.projectileSpeed||.55,color:t.def.color,area:opts.area??(s.area||0),
+    kind:t.def.role,mode:opts.mode||s.mode||'',source:t,dead:false,
+    delay:opts.delay||0,point:{x:target.x,y:target.y}
+  });
+}
 function towerUpdate(t,dt){
-  const s=effectiveStats(t);t.pulse=Math.max(0,t.pulse-dt);
+  const s=effectiveStats(t),mode=s.mode;
+  t.pulse=Math.max(0,(t.pulse||0)-dt);
   if(t.def.role==='resource'){
-    if(!state.inWave)return;
-    t.harvestClock+=dt; if(t.harvestClock>=2.3){t.harvestClock=0;const node=state.resources.filter(r=>r.amount>0&&dist(t,r)<=s.range).sort((a,b)=>dist(t,a)-dist(t,b))[0];if(node){const amt=Math.min(node.amount,Math.max(1,Math.round((s.harvest||3)*(1+t.def.difficulty*.08))));node.amount-=amt;state.ink+=amt;state.score+=amt*2;t.pulse=.35;floatEffect(t.x,t.y,'+'+amt+' INK','#4b9f38')}}
+    if(mode==='interest'||!state.inWave)return;
+    t.harvestClock+=dt;
+    const interval=mode==='drill'?1.25:2.3;
+    if(t.harvestClock>=interval){
+      t.harvestClock=0;
+      const node=state.resources.filter(r=>r.amount>0&&dist(t,r)<=s.range).sort((a,b)=>dist(t,a)-dist(t,b))[0];
+      if(node){
+        const base=Math.max(1,Math.round((s.harvest||3)*(1+t.def.difficulty*.08)));
+        const amt=Math.min(node.amount,mode==='drill'?Math.ceil(base*1.5):base);
+        node.amount-=amt;state.ink+=amt;state.score+=amt*2;t.pulse=.35;
+        floatEffect(t.x,t.y,'+'+amt+' INK','#4b9f38');
+      }
+    }
     return;
   }
-  if(t.def.role==='repair'){if(!state.inWave)return;t.harvestClock+=dt;if(t.harvestClock>2.5){t.harvestClock=0;state.core=Math.min(100,state.core+(s.heal||2));t.pulse=.3}return}
+  if(t.def.role==='repair'){
+    if(!state.inWave||state.core>=100)return;
+    t.harvestClock+=dt;
+    const interval=mode==='bandage'?1.25:mode==='hospital'?4.2:2.5;
+    if(t.harvestClock>=interval){
+      t.harvestClock=0;
+      const heal=(s.heal||2)*(mode==='hospital'?2.2:1);
+      state.core=Math.min(100,state.core+heal);t.pulse=.3;
+      floatEffect(t.x,t.y,'+'+Math.round(heal)+' CORE','#51c79b');
+    }
+    return;
+  }
   if(t.def.role==='modifier'||s.rate<=0)return;
-  t.cool-=dt;if(t.cool>0)return;
-  const targets=state.enemies.filter(e=>!e.dead&&dist(t,e)<=s.range).sort((a,b)=>enemyProgress(b)-enemyProgress(a));
-  if(!targets.length)return;
-  const target=targets[0];t.cool=1/s.rate;t.pulse=.24;
-  if(t.def.role==='explosive'||t.def.role==='burst')ringEffect(t.x,t.y,.025,t.def.color,.13);
-  const linkedElement=s.element||(t.links.find(m=>['burn','slow','poison'].includes(m.def.role))||{}).def?.role||'';
-  if(s.beam||t.def.role==='pierce'||t.def.role==='push'||t.def.role==='gravity'){
-    if(t.def.role==='pierce'){
-      const ang=Math.atan2(target.y-t.y,target.x-t.x);let hit=0;
-      for(const e of targets){const dx=e.x-t.x,dy=e.y-t.y;const along=dx*Math.cos(ang)+dy*Math.sin(ang),perp=Math.abs(-dx*Math.sin(ang)+dy*Math.cos(ang));if(along>0&&perp<.025){damageEnemy(e,s.damage,linkedElement,t);hit++;if(hit>=4)break}}
-      lineEffect(t.x,t.y,target.x,target.y,t.def.color,.12,2);
-    }else if(t.def.role==='push'){
-      const impacted=s.area?targets.filter(e=>dist(e,target)<=s.area):[target];
-      for(const e of impacted){damageEnemy(e,s.damage,e===target?'push':(linkedElement||'push'),t);if(linkedElement&&linkedElement!=='push')damageEnemy(e,0,linkedElement,t)}
-      lineEffect(t.x,t.y,target.x,target.y,t.def.color,.14,2);
-      if(s.area)ringEffect(target.x,target.y,s.area,t.def.color,.2);
-    }else if(t.def.role==='gravity'){
-      for(const e of targets.filter(e=>dist(t,e)<=s.area)) {damageEnemy(e,s.damage,linkedElement,t);e.pushBack=Math.max(e.pushBack,(s.pull||.032)*.55)}
-      ringEffect(t.x,t.y,s.area,t.def.color,.18);
+  t.cool-=dt;
+  if(mode==='mine'){
+    if(!state.inWave||t.cool>0)return;
+    const place=closestLanePoint(t);
+    if(place.d>s.range)return;
+    const deployed=state.traps.filter(m=>m.source.id===t.id).length;
+    if(deployed>=3)return;
+    t.cool=1/s.rate;t.pulse=.3;
+    state.traps.push({x:place.x,y:place.y,trigger:.023,radius:Math.min(.125,s.area||.09),
+      damage:s.damage*1.25,source:t,life:18});
+    ringEffect(place.x,place.y,.035,t.def.color,.24);
+    return;
+  }
+  const targets=state.enemies.filter(e=>!e.dead&&dist(t,e)<=s.range)
+    .sort((a,b)=>enemyProgress(b)-enemyProgress(a));
+  if(!targets.length){
+    if(mode==='gatling')t.spin=Math.max(0,(t.spin||0)-dt*1.2);
+    return;
+  }
+  if(t.cool>0)return;
+  const target=mode==='assassin'
+    ?targets.slice().sort((a,b)=>(b.type==='fast'?1:0)-(a.type==='fast'?1:0)||enemyProgress(b)-enemyProgress(a))[0]
+    :targets[0];
+  if(mode==='gatling')t.spin=Math.min(2,(t.spin||0)+.32);
+  t.cool=1/(s.rate*(mode==='gatling'?1+(t.spin||0)*.7:1));
+  t.pulse=.24;
+  const hit=(e,scale=1)=>attackEnemy(t,e,s.damage*scale);
+  const coneTargets=(angle,width,limit)=>targets.filter(e=>{
+    const a=Math.atan2(e.y-t.y,e.x-t.x);
+    return Math.abs(Math.atan2(Math.sin(a-angle),Math.cos(a-angle)))<width;
+  }).slice(0,limit);
+  const angle=Math.atan2(target.y-t.y,target.x-t.x);
+  if(mode==='rail'||mode==='cleave'||t.def.role==='pierce'){
+    if(mode==='cleave'){
+      for(const e of coneTargets(angle,1.1,6))hit(e,.85);
+      ringEffect(t.x,t.y,Math.min(.12,s.range),t.def.color,.15);
     }else{
-      damageEnemy(target,s.damage,linkedElement||(['burn','slow','poison'].includes(t.def.role)?t.def.role:''),t);lineEffect(t.x,t.y,target.x,target.y,t.def.color,.09,3);
-      const chained=targets.slice(1,1+Math.min(4,s.chain||0));
+      const hits=targets.filter(e=>{
+        const dx=e.x-t.x,dy=e.y-t.y;
+        return dx*Math.cos(angle)+dy*Math.sin(angle)>0&&Math.abs(-dx*Math.sin(angle)+dy*Math.cos(angle))<(mode==='rail'?.017:.025);
+      }).slice(0,mode==='rail'?9:4);
+      for(const e of hits)hit(e,mode==='rail'?1.28:1);
+      lineEffect(t.x,t.y,t.x+Math.cos(angle)*s.range,t.y+Math.sin(angle)*s.range,
+        t.def.color,mode==='rail'?.20:.12,mode==='rail'?4:2);
+    }
+  }else if(mode==='shotgun'||mode==='flamethrower'){
+    for(const e of coneTargets(angle,mode==='shotgun'?.65:.48,8)){
+      const proximity=Math.max(.3,1-dist(t,e)/s.range);
+      hit(e,mode==='shotgun'?.45+proximity*1.25:.38);
+    }
+    for(const delta of [-.45,0,.45]){
+      lineEffect(t.x,t.y,t.x+Math.cos(angle+delta)*s.range*.65,
+        t.y+Math.sin(angle+delta)*s.range*.65,t.def.color,.12,mode==='shotgun'?2:4);
+    }
+  }else if(mode==='stun'||mode==='assassin'){
+    hit(target,mode==='assassin'&&target.type==='fast'?1.65:1);
+    lineEffect(t.x,t.y,target.x,target.y,t.def.color,.15,2);
+  }else if(mode==='blizzard'||mode==='tidal'||mode==='vortex'||mode==='teleport'){
+    const radius=Math.max(.065,s.area||.10);
+    const group=targets.filter(e=>dist(e,target)<=radius);
+    for(const e of group){
+      hit(e,mode==='blizzard'?.64:1);
+      if(mode==='tidal')e.pushBack=Math.max(e.pushBack,(s.push||.045)*1.3);
+      if(mode==='vortex'){e.pushBack=Math.max(e.pushBack,(s.pull||.032)*1.1);e.slow=Math.min(e.slow,.46)}
+      if(mode==='teleport'){e.pushBack=Math.max(e.pushBack,.115);e.stunTime=.20}
+    }
+    ringEffect(mode==='vortex'?t.x:target.x,mode==='vortex'?t.y:target.y,radius,t.def.color,.28);
+  }else if(s.beam||t.def.role==='push'||t.def.role==='gravity'){
+    if(t.def.role==='push'||t.def.role==='gravity'){
+      const group=targets.filter(e=>dist(e,target)<=Math.max(.04,s.area||.04));
+      for(const e of group){
+        hit(e,1);
+        if(t.def.role==='gravity'){e.pushBack=Math.max(e.pushBack,(s.pull||.032)*.55)}
+      }
+      ringEffect(target.x,target.y,Math.max(.04,s.area||.04),t.def.color,.2);
+    }else{
+      hit(target,1);lineEffect(t.x,t.y,target.x,target.y,t.def.color,.10,3);
       let previous=target;
-      chained.forEach((next,i)=>{damageEnemy(next,s.damage*Math.pow(.58,i+1),linkedElement,t);lineEffect(previous.x,previous.y,next.x,next.y,t.def.color,.08,2);previous=next});
+      targets.slice(1,1+Math.min(4,s.chain||0)).forEach((e,i)=>{
+        hit(e,Math.pow(.58,i+1));lineEffect(previous.x,previous.y,e.x,e.y,t.def.color,.1,2);previous=e;
+      });
     }
   }else{
-    state.shots.push({x:t.x,y:t.y,target,damage:s.damage,speed:s.projectileSpeed||.55,color:t.def.color,area:s.area||0,kind:(linkedElement||t.def.role),source:t,dead:false});
+    if(mode==='nuke'||mode==='meteor') {
+      projectile(t,target,s,{delay:mode==='nuke'?2.2:1.05,mode});
+      ringEffect(target.x,target.y,s.area,t.def.color,mode==='nuke'?1.5:.75);
+      beep(mode==='nuke'?150:320,.16,'sawtooth',.04);
+    }else if(mode==='volley'){
+      projectile(t,target,s,{damage:s.damage*.60});
+      projectile(t,targets[1]||target,s,{damage:s.damage*.60});
+    }else{
+      projectile(t,target,s);
+    }
   }
 }
 function shotUpdate(s,dt){
-  if(s.dead||!s.target||s.target.dead){s.dead=true;return}
+  if(s.dead)return;
+  if(s.mode==='nuke'||s.mode==='meteor'){
+    s.delay-=dt;
+    if(s.delay>0)return;
+    const center=s.point;
+    for(const e of state.enemies)if(!e.dead&&dist(e,center)<=s.area)
+      attackEnemy(s.source,e,s.damage*(s.mode==='nuke'?1:0.9));
+    ringEffect(center.x,center.y,s.area,s.color,.50);
+    particleEffect(center.x,center.y,s.color,18,s.area*.9);
+    flashEffect(center.x,center.y,s.color,s.area*.62);
+    beep(s.mode==='nuke'?85:140,.28,'sawtooth',s.mode==='nuke'?.065:.045);
+    s.dead=true;return;
+  }
+  if(!s.target||s.target.dead){
+    if(s.mode==='homing'){
+      const next=state.enemies.filter(e=>!e.dead&&dist(s,e)<.20)
+        .sort((a,b)=>dist(s,a)-dist(s,b))[0];
+      if(next)s.target=next;
+    }
+    if(!s.target||s.target.dead){
+      if(!s.area){s.dead=true;return}
+      s.target={x:s.point.x,y:s.point.y,dead:false};
+    }
+  }
+  s.point={x:s.target.x,y:s.target.y};
   const dx=s.target.x-s.x,dy=s.target.y-s.y,d=Math.hypot(dx,dy),mv=s.speed*dt;
   if(d<=mv+.008){
+    const impact=s.target;
     if(s.area>0){
-      for(const e of state.enemies)if(!e.dead&&dist(e,s.target)<=s.area)damageEnemy(e,s.damage*(e===s.target?1:.72),s.kind,s.source);
-      ringEffect(s.target.x,s.target.y,s.area,s.color,.28);
-      particleEffect(s.target.x,s.target.y,s.color,Math.min(15,5+Math.round(s.area*25)),s.area*.65);
+      for(const e of state.enemies)if(!e.dead&&dist(e,impact)<=s.area)
+        attackEnemy(s.source,e,s.damage*(e===impact?1:.72));
+      ringEffect(impact.x,impact.y,s.area,s.color,.28);
+      particleEffect(impact.x,impact.y,s.color,Math.min(15,5+Math.round(s.area*25)),s.area*.65);
+    }else if(!impact.dead&&state.enemies.includes(impact)){
+      attackEnemy(s.source,impact,s.damage);
+      particleEffect(impact.x,impact.y,s.color,3,.025);
     }
-    else{
-      damageEnemy(s.target,s.damage,s.kind,s.source);
-      particleEffect(s.target.x,s.target.y,s.color,3,.025);
+    if(s.mode==='cluster'){
+      for(const dir of [-1,1]){
+        const p={x:impact.x+dir*.035,y:impact.y+dir*.025};
+        for(const e of state.enemies)if(!e.dead&&dist(e,p)<=Math.min(.08,s.area*.6))
+          attackEnemy(s.source,e,s.damage*.35);
+        ringEffect(p.x,p.y,Math.min(.08,s.area*.6),s.color,.20);
+      }
+    }
+    if(s.mode==='ricochet'||s.mode==='milk'){
+      const next=state.enemies.filter(e=>!e.dead&&e!==impact&&dist(e,impact)<.14)
+        .sort((a,b)=>dist(a,impact)-dist(b,impact))[0];
+      if(next){attackEnemy(s.source,next,s.damage*.55);lineEffect(impact.x,impact.y,next.x,next.y,s.color,.12,2)}
+    }
+    if(s.mode==='firefield'||s.mode==='lavafield'){
+      state.fields.push({x:impact.x,y:impact.y,radius:Math.min(.14,s.area||.085),life:s.mode==='lavafield'?5.4:3.5,
+        clock:.2,damage:s.damage*.13,source:s.source});
     }
     s.dead=true;return;
   }
