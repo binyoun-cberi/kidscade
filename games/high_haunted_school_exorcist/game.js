@@ -16,10 +16,12 @@ renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFi
 const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,90);
 scene.add(new THREE.HemisphereLight(0xa3bbef,0x202a2d,1.55));
 const moon=new THREE.DirectionalLight(0x9eb1da,1.35);moon.position.set(-7,13,8);scene.add(moon);
-const hallLight=new THREE.PointLight(0xb1c6e2,19,21,2);hallLight.position.set(0,3.1,0);scene.add(hallLight);
-const officeLight=new THREE.PointLight(0xffcd81,13,12,2);officeLight.position.set(0,3,9);scene.add(officeLight);
-const westLight=new THREE.PointLight(0x95aed2,9,16,2);westLight.position.set(-10,3,-9);scene.add(westLight);
-const eastLight=new THREE.PointLight(0xb5d3e3,8,16,2);eastLight.position.set(10,3,-9);scene.add(eastLight);
+const hallLight=new THREE.PointLight(0xb1c6e2,20,23,2);hallLight.position.set(-17.5,3.1,0);scene.add(hallLight);
+const officeLight=new THREE.PointLight(0xffcd81,13,13,2);officeLight.position.set(-24.2,3,0);scene.add(officeLight);
+const westLight=new THREE.PointLight(0x95aed2,12,23,2);westLight.position.set(-2,3,-12);scene.add(westLight);
+const eastLight=new THREE.PointLight(0xb5d3e3,11,23,2);eastLight.position.set(22,3,-12);scene.add(eastLight);
+const southLight=new THREE.PointLight(0xc4c5ae,13,28,2);southLight.position.set(8,3,12);scene.add(southLight);
+const southEndLight=new THREE.PointLight(0xb4c8de,8,18,2);southEndLight.position.set(26,3,12);scene.add(southEndLight);
 const torchTarget=new THREE.Object3D();scene.add(torchTarget);
 const torch=new THREE.SpotLight(0xeaf2ff,23,18,.53,.47,1.3);torch.target=torchTarget;scene.add(torch);
 
@@ -28,9 +30,12 @@ const FURN='../../assets/game/3d/interiors/kenney-furniture-kit/';
 const MAN='../../assets/game/npcs/glTF/Casual_Male.gltf';
 const MONSTER='../../assets/game/3d/characters/monsters/ultimate-monsters-bundle/ghost.glb';
 const AUDIO='../../assets/kidscade_folklore_night_guard_renamed_assets/';
-const LIMITS={x1:-18,x2:18,z1:-15,z2:13},walls=[],furniture=[],glowThings=[],mixers=[];
-const keys=new Set(),joy={x:0,y:0},player={x:0,z:9,yaw:Math.PI,root:new THREE.Group(),model:null};
-const maiden={x:12,z:-10,root:new THREE.Group(),speed:1.2,charge:0,attacks:0};
+const SCHOOL={west:-28,east:30,north:-20,south:20,spineEnd:-15,courtyardWest:-15,
+  roomCenters:[-10.5,-1.5,7.5,16.5,25.5],guard:{x:-24.2,z:0},
+  dokkaebi:{x:-10.5,z:-14.8},science:{x:25.5,z:-15.2},maidenSpawn:{x:25.5,z:-16.8}};
+const LIMITS={x1:-28,x2:30,z1:-20,z2:20},walls=[],furniture=[],glowThings=[],mixers=[];
+const keys=new Set(),joy={x:0,y:0},player={x:SCHOOL.guard.x,z:SCHOOL.guard.z,yaw:Math.PI/2,root:new THREE.Group(),model:null};
+const maiden={x:SCHOOL.maidenSpawn.x,z:SCHOOL.maidenSpawn.z,root:new THREE.Group(),speed:1.2,charge:0,attacks:0};
 const disturbed=[],stageNames=['','3개의 장난 찾기','처녀귀신 관찰','과학실 봉인진 가동','관리실로 귀환'];
 let started=false,ended=false,paused=false,stage=1,fixes=0,hp=3,power=100,flashOn=true,elapsed=0;
 let viewYaw=0,turnPointer=null,prevX=0,last=performance.now(),hudClock=0,miniClock=0,toastSeconds=0;
@@ -61,16 +66,17 @@ function wall(x,z,w,d){
 function wallSplit(z,parts){for(const [x,w] of parts)wall(x,z,w,.29);}
 function collides(x,z,rect,r=.34){return Math.abs(x-rect.x)<rect.hx+r&&Math.abs(z-rect.z)<rect.hz+r;}
 function onFloor(x,z){
-  return (x>-17.7&&x<17.7&&z>-3.04&&z<4.7)||
-  (x>-16.8&&x<-4.2&&z>-14.8&&z< -2.86)||
-  (x>4.2&&x<16.8&&z>-14.8&&z< -2.86)||
-  (x>-4.75&&x<4.75&&z>4.4&&z<12.75);
+  // ㄷ footprint: western connector + north and south wings, with open-air inner courtyard.
+  return (x>-27.75&&x<-14.7&&z>-19.75&&z<19.75)||
+    (x>-15.15&&x<29.75&&z>-19.75&&z< -7.1)||
+    (x>-15.15&&x<29.75&&z>7.1&&z<19.75);
 }
 function canWalk(x,z){return onFloor(x,z)&&!walls.some(w=>collides(x,z,w))&&!furniture.some(o=>collides(x,z,o));}
 // Shared grid navigation prevents the guide line from crossing walls and desks.
 function routePlan(start,goal,reach=1.05){
-  const step=.5,round=v=>Math.round(v/step)*step;
-  const key=(x,z)=>Math.round(x/step)+','+Math.round(z/step);
+  // A* instead of an expanding breadth-first search: the larger ㄷ school remains
+  // inexpensive to navigate even on tablets, and ghosts share the same safe floor.
+  const step=.5,round=v=>Math.round(v/step)*step,key=(x,z)=>Math.round(x/step)+','+Math.round(z/step);
   let sx=round(start.x),sz=round(start.z);
   if(!canWalk(sx,sz)){
     let best=Infinity;
@@ -80,34 +86,63 @@ function routePlan(start,goal,reach=1.05){
     }
     if(!isFinite(best))return [];
   }
-  const nodes=[{x:sx,z:sz,parent:-1}],seen=new Set([key(sx,sz)]);
-  let goalIndex=-1;
-  for(let head=0;head<nodes.length&&head<7000;head++){
-    const p=nodes[head];
-    if(Math.hypot(p.x-goal.x,p.z-goal.z)<reach){goalIndex=head;break;}
+  const heuristic=(x,z)=>Math.hypot(x-goal.x,z-goal.z);
+  const heap=[];
+  const push=item=>{
+    heap.push(item);
+    for(let i=heap.length-1;i>0;){
+      const p=(i-1)>>1;if(heap[p].f<=heap[i].f)break;
+      [heap[p],heap[i]]=[heap[i],heap[p]];i=p;
+    }
+  };
+  const pop=()=>{
+    const top=heap[0],last=heap.pop();
+    if(heap.length){
+      heap[0]=last;
+      for(let i=0;;){
+        const left=i*2+1,right=left+1;
+        if(left>=heap.length)break;
+        const small=right<heap.length&&heap[right].f<heap[left].f?right:left;
+        if(heap[i].f<=heap[small].f)break;
+        [heap[i],heap[small]]=[heap[small],heap[i]];i=small;
+      }
+    }
+    return top;
+  };
+  const nodes=new Map(),startKey=key(sx,sz);
+  const first={x:sx,z:sz,g:0,f:heuristic(sx,sz),parent:null};
+  nodes.set(startKey,first);push({key:startKey,f:first.f,g:0});
+  const closed=new Set();let last=null;
+  while(heap.length&&closed.size<16000){
+    const current=pop(),node=nodes.get(current.key);
+    if(closed.has(current.key)||node.g!==current.g)continue;
+    closed.add(current.key);
+    if(heuristic(node.x,node.z)<reach){last=node;break;}
     for(const [dx,dz] of [[step,0],[-step,0],[0,step],[0,-step]]){
-      const x=p.x+dx,z=p.z+dz,k=key(x,z);
-      if(seen.has(k)||!canWalk(x,z))continue;
-      seen.add(k);nodes.push({x,z,parent:head});
+      const x=node.x+dx,z=node.z+dz,k=key(x,z);
+      if(closed.has(k)||!canWalk(x,z))continue;
+      const g=node.g+step,prior=nodes.get(k);
+      if(prior&&g>=prior.g)continue;
+      const next={x,z,g,f:g+heuristic(x,z),parent:node};
+      nodes.set(k,next);push({key:k,g,f:next.f});
     }
   }
-  if(goalIndex===-1)return [];
-  const path=[];
-  for(let i=goalIndex;i!==-1;i=nodes[i].parent)path.push({x:nodes[i].x,z:nodes[i].z});
-  return path.reverse();
+  if(!last)return [];
+  const result=[];for(let n=last;n;n=n.parent)result.push({x:n.x,z:n.z});
+  return result.reverse();
 }
 function navigationTarget(){
   if(stage===1){
     const i=disturbed.findIndex(d=>!d.done);
-    if(i>=0)return {key:'fix'+i,x:disturbed[i].x,z:disturbed[i].z,name:disturbed[i].name};
-    return {key:'dokkaebi',x:-10.3,z:-6,name:'도깨비 봉인진'};
+    if(i>=0)return {key:'fix'+i,x:disturbed[i].x,z:disturbed[i].z,name:'6-1 교실 · '+disturbed[i].name};
+    return {key:'dokkaebi',x:SCHOOL.dokkaebi.x,z:SCHOOL.dokkaebi.z,name:'6-1 교실 · 도깨비 봉인진'};
   }
   if(stage===2){
-    if(maidenPhase==='approach')return {key:'science',x:10.25,z:-5.5,name:'과학실로 이동'};
+    if(maidenPhase==='approach')return {key:'science',x:SCHOOL.science.x,z:SCHOOL.science.z,name:'북쪽 날개 끝 · 과학실'};
     return {key:'maiden',x:maiden.x,z:maiden.z,name:'처녀귀신을 바라보기'};
   }
-  if(stage===3)return {key:'maidenSeal',x:12.5,z:-6,name:'보라색 봉인진'};
-  if(stage===4)return {key:'report',x:0,z:10.35,name:'관리실로 돌아가기'};
+  if(stage===3)return {key:'maidenSeal',x:SCHOOL.science.x,z:-13.1,name:'과학실 · 보라색 봉인진'};
+  if(stage===4)return {key:'report',x:SCHOOL.guard.x,z:SCHOOL.guard.z,name:'서쪽 연결동 · 관리실 귀환'};
   return null;
 }
 function setGuidePath(path){
@@ -172,12 +207,12 @@ function loadTemplate(url){
   if(!assetCache.has(url))assetCache.set(url,loader.loadAsync(url));
   return assetCache.get(url).then(g=>g.scene);
 }
-function addLabel(text,x,z,color=0xb9dfe9){
+function addLabel(text,x,z,color=0xb9dfe9,angle=0){
   const c=document.createElement('canvas');c.width=512;c.height=96;
   const ctx=c.getContext('2d');ctx.clearRect(0,0,512,96);ctx.font='bold 40px sans-serif';ctx.textAlign='center';
   ctx.fillStyle='#071019';ctx.fillText(text,258,59);ctx.fillStyle='#'+color.toString(16).padStart(6,'0');ctx.fillText(text,256,56);
   const texture=new THREE.CanvasTexture(c),p=new THREE.Mesh(new THREE.PlaneGeometry(4.2,.79),new THREE.MeshBasicMaterial({map:texture,transparent:true,side:THREE.DoubleSide,depthWrite:false}));
-  p.position.set(x,2.65,z);scene.add(p);
+  p.position.set(x,2.65,z);p.rotation.y=angle;scene.add(p);
 }
 function createMark(x,z,color){
   const holder=new THREE.Group();holder.position.set(x,.06,z);scene.add(holder);
@@ -187,40 +222,145 @@ function createMark(x,z,color){
   orb.position.y=.85;holder.add(orb);glowThings.push({holder,orb});
   return holder;
 }
-function createRoom(){
-  ground(0,.8,36,7.4,0x344455);
-  ground(-10.5,-9,13,12,0x51515c);ground(10.5,-9,13,12,0x44555b);
-  ground(0,8.75,10,8.5,0x5c4d45);
-  // Three rooms connect through deliberate gaps in the corridor walls.
-  wall(-10.5,-15,13,.29);
-  wall(10.5,-15,13,.29);
-  wall(-17,-9,.29,12);wall(-4,-9,.29,12);
-  wall(4,-9,.29,12);wall(17,-9,.29,12);
-  wallSplit(-3,[[-14.25,5.5],[-6.55,5.1],[6.55,5.1],[14.25,5.5]]);
-  wall(0,-3,8,.29);
-  wall(-18,.7,.29,7.6);wall(18,.7,.29,7.6);
-  wallSplit(4.5,[[-10,16],[10,16]]);
-  wall(-5,8.8,.29,8.6);wall(5,8.8,.29,8.6);wall(0,13,10,.29);
-  addLabel('6-1 교실',-10.2,-14.68);addLabel('과학실',10.2,-14.68);addLabel('관리실',0,12.66,0xffd09a);
-  // Interior furniture uses approved Kenney furniture models already found in the site.
-  for(const z of [-11.5,-7.9]){
-    for(const x of [-14,-10,-6.1])placeFurniture('desk.glb',x,z,.83,Math.PI,[1.30,.67]);
-    for(const x of [6.1,10,14])placeFurniture('table.glb',x,z,.82,0,[1.3,.75]);
-  }
-  placeFurniture('bookcase-open.glb',-16.1,-5.1,1.95,Math.PI/2,[.6,.5]);
-  placeFurniture('bookcase-open.glb',16,-5.1,1.95,-Math.PI/2,[.6,.5]);
-  placeFurniture('table.glb',-2.7,10.9,.85,Math.PI,[1.2,.6]);
-  const officeMonitor=placeFurniture('computer-screen.glb',-2.7,10.9,.58,Math.PI);
-  officeMonitor.position.y=.75;
-  placeFurniture('chair-desk.glb',-2.7,11.85,.77,Math.PI);
-  const chalk=mat(0x253c38),board=cube(scene,-10.5,1.85,-14.79,5.7,1.3,.08,chalk);
-  cube(scene,10.5,1.9,-14.79,5.5,1.3,.06,mat(0x394e5d));
-  for(const x of [-13,-8,-3,3,8,13]) {
-    const strip=cube(scene,x,3.18,-2.95,2.4,.12,.12,mat(0xc4c5b6));strip.material.emissive=new THREE.Color(0x727b88);strip.material.emissiveIntensity=.3;
-  }
-  const door1=createMark(-10.25,-2.8,0x86c5d4),door2=createMark(10.25,-2.8,0x86c5d4),officeDoor=createMark(0,4.85,0xf5c47d);
-  [door1,door2,officeDoor].forEach(m=>{m.scale.setScalar(.38);m.userData.decorative=true;});
+// Room metadata is shared by 3D construction and the minimap. North and south
+// wings each have five rooms; the western connector contains five support rooms.
+const NORTH_ROOMS=['6-1 교실','6-2 교실','음악실','미술실','과학실'];
+const SOUTH_ROOMS=['5-1 교실','5-2 교실','컴퓨터실','방송실','가사실'];
+const SPINE_ROOMS=['자료실','보건실','관리실','전기실','교무실'];
+function windowWall(x,z,width=3.4){
+  // A pane framed by non-overlapping sill, glass and lintel: no z-fighting.
+  const d=.29;
+  cube(scene,x,.55,z,width,1.10,d,materials.wall);
+  cube(scene,x,2.77,z,width,.70,d,materials.wall);
+  cube(scene,x,1.80,z,width-.12,1.26,.075,new THREE.MeshStandardMaterial({
+    color:0x6a9ca9,transparent:true,opacity:.31,roughness:.2,metalness:.08,depthWrite:false,
+    side:THREE.DoubleSide
+  }));
+  walls.push({x,z,hx:width/2,hz:d/2});
 }
+function courtyardFacade(z){
+  // Windows overlook the inner courtyard between the two parallel school wings.
+  let cursor=-15;
+  for(const cx of SCHOOL.roomCenters){
+    const begin=cx-1.7,width=begin-cursor;
+    if(width>.01)wall(cursor+width/2,z,width,.29);
+    windowWall(cx,z);
+    cursor=cx+1.7;
+  }
+  const remaining=30-cursor;
+  if(remaining>.01)wall(cursor+remaining/2,z,remaining,.29);
+}
+function ceilingFixture(x,z){
+  const caseMesh=cube(scene,x,3.08,z,3.7,.10,.42,mat(0xb5bfc3));
+  const lamp=cube(scene,x,3.013,z,3.28,.025,.24,new THREE.MeshBasicMaterial({color:0xd6e4ec}));
+  caseMesh.userData.decorative=true;lamp.userData.decorative=true;
+}
+function classroomFurniture(cx,north,index){
+  const roomZ=north?-15.25:15.25;
+  const zs=north?[-16.7,-13.8]:[13.8,16.7];
+  const specialty=(north&&index>1)||(!north&&index>1);
+  for(const z of zs)for(const x of [cx-2.1,cx+1.85]){
+    // Furniture stays away from the 2.7m door at z +-10.2.
+    const prop=(specialty?'table.glb':'desk.glb');
+    placeFurniture(prop,x,z,.78,0,[1.13,.66]);
+  }
+  if(north&&index===1||!north&&index===1)
+    placeFurniture('bookcase-open.glb',cx-3.45,roomZ,1.75,Math.PI/2,[.55,.58]);
+  if(north&&index===2){
+    placeFurniture('bench.glb',cx,roomZ,1.05,0,[1.35,.42]);
+  }
+  if(north&&index===4){
+    // Science lab: separate prep workstation and apparatus shelf.
+    placeFurniture('bookcase-open.glb',cx+3.35,-17.4,1.8,Math.PI/2,[.55,.54]);
+  }
+  if(!north&&index===2){
+    for(const x of [cx-2.1,cx+1.85]){
+      const monitor=placeFurniture('computer-screen.glb',x,13.8,.5,0);
+      monitor.position.y=.80;
+    }
+  }
+  const boardZ=north?-19.72:19.72;
+  cube(scene,cx,1.95,boardZ,5.4,1.38,.07,mat(specialty?0x344956:0x284a40));
+}
+function createRoom(){
+  // ㄷ floorplan with WEST connector (management office) and EAST-facing
+  // upper/lower wings; the rectangular inner court is outdoors, not a shortcut.
+  ground(-21.5,0,13,40,0x46535b);
+  ground(7.5,-13.5,45,13,0x495361);
+  ground(7.5,13.5,45,13,0x4e555f);
+  // Visually accessible courtyard: lower ground is deliberately non-walkable.
+  const courtyard=cube(scene,7.5,-.35,0,44.5,.19,13.8,mat(0x263a30));
+  courtyard.userData.decorative=true;
+  for(const x of [-10,-1,8,17,26]){
+    const bed=cube(scene,x,-.205,0,2.7,.08,1.65,mat(0x425e46));
+    bed.userData.decorative=true;
+    const trunk=cube(scene,x,-.03,0,.20,.62,.2,mat(0x5d5546));
+    trunk.userData.decorative=true;
+    const leaves=new THREE.Mesh(new THREE.IcosahedronGeometry(.8,1),mat(0x3b665b));
+    leaves.position.set(x,.88,0);scene.add(leaves);
+  }
+  // Outer perimeter walls.
+  wall(1,-20,58,.29);wall(1,20,58,.29);
+  wall(-28,0,.29,40);
+  wall(30,-13.5,.29,13);wall(30,13.5,.29,13);
+  wall(-15,0,.29,14);
+  courtyardFacade(-7);courtyardFacade(7);
+  // Five equal-size rooms along each wing. Every doorway faces its own hallway.
+  for(let i=0;i<5;i++){
+    const cx=SCHOOL.roomCenters[i];
+    const side=3.15,off=2.925;
+    for(const z of [-10.2,10.2]){
+      wall(cx-off,z,side,.29);
+      wall(cx+off,z,side,.29);
+    }
+    addLabel(NORTH_ROOMS[i],cx,-9.94,0xb9dfe9);
+    addLabel(SOUTH_ROOMS[i],cx,9.94,0xb9dfe9);
+    classroomFurniture(cx,true,i);
+    classroomFurniture(cx,false,i);
+    if(i<4){
+      const divider=-6+9*i;
+      wall(divider,-15.1,.29,9.8);
+      wall(divider,15.1,.29,9.8);
+    }
+    const doorN=createMark(cx,-10.03,0x659aab),doorS=createMark(cx,10.03,0x659aab);
+    for(const marker of [doorN,doorS]){
+      marker.scale.setScalar(.25);marker.userData.decorative=true;
+    }
+  }
+  // Connecting spine: left-hand office row; through-hall on the right.
+  // The guard room sits precisely at the middle of this connecting corridor.
+  for(let i=0;i<5;i++){
+    const cz=-16+8*i;
+    // 2.7m opening into the hall (not a solid wall behind the doorway).
+    wall(-20.5,cz-2.675,.29,2.65);
+    wall(-20.5,cz+2.675,.29,2.65);
+    addLabel(SPINE_ROOMS[i],-20.19,cz,i===2?0xffd09a:0xa8c6d1,Math.PI/2);
+    const entrance=createMark(-20.36,cz,i===2?0xf8bd75:0x75afba);
+    entrance.scale.setScalar(.28);entrance.userData.decorative=true;
+    if(i!==2){
+      placeFurniture('bookcase-open.glb',-26.7,cz-1.6,1.72,Math.PI/2,[.55,.55]);
+      placeFurniture('table.glb',-24.8,cz+2,.77,0,[1.15,.64]);
+    }
+  }
+  for(const z of [-12,-4,4,12])wall(-24.25,z,7.5,.29);
+  // Guard office focal point (desk faces connecting hallway, not its rear wall).
+  placeFurniture('table.glb',-25.45,.9,.83,Math.PI/2,[1.24,.64]);
+  const monitor=placeFurniture('computer-screen.glb',-25.45,.9,.53,Math.PI/2);
+  monitor.position.y=.78;
+  placeFurniture('chair-desk.glb',-26.25,.9,.75,-Math.PI/2);
+  // Long, readable corridor fixtures, plus contrasting color on the north wing.
+  for(const x of [-11,-3,5,13,21,28]){
+    ceilingFixture(x,-8.5);ceilingFixture(x,8.5);
+  }
+  for(const z of [-17,-10,-3,4,11,18])ceilingFixture(-17.6,z);
+  // Courtyard benches are scenery, not walkable navigation cells.
+  const benches=[-5,12,22];
+  for(const x of benches){
+    cube(scene,x,.28,2.8,2.4,.15,.55,mat(0x826b51));
+    cube(scene,x,.07,2.65,2.15,.35,.25,mat(0x474b54));
+  }
+}
+
 createRoom();
 
 function repairCharacterSkin(root){
@@ -271,7 +411,7 @@ loader.loadAsync(MONSTER).then(gltf=>{
   if(clip){const mix=new THREE.AnimationMixer(root);mix.clipAction(clip).play();mixers.push(mix);}
 }).catch(()=>{});
 maiden.root.visible=false;
-const fixPositions=[[-13.4,-6.0],[-8.2,-5.8],[-12.6,-12.65]];
+const fixPositions=[[-12.7,-12.85],[-8.3,-14.2],[-11.3,-18.1]];
 const fixLabels=['거꾸로 놓인 화분','공중에 뜬 책','움직이는 시계'];
 for(let i=0;i<3;i++){
   const [x,z]=fixPositions[i],marker=createMark(x,z,0xf3b96f);
@@ -288,9 +428,9 @@ for(let i=0;i<3;i++){
   }
   disturbed.push({x,z,object,marker,done:false,name:fixLabels[i],phase:i*2.1});
 }
-const trickCircle=createMark(-10.3,-6.0,0xf5bd72);trickCircle.visible=false;
-const maidenCircle=createMark(12.5,-6,0xc5a1f8);maidenCircle.visible=false;
-const exitCircle=createMark(0,10.35,0x82dabe);exitCircle.visible=false;
+const trickCircle=createMark(SCHOOL.dokkaebi.x,SCHOOL.dokkaebi.z,0xf5bd72);trickCircle.visible=false;
+const maidenCircle=createMark(SCHOOL.science.x,-13.1,0xc5a1f8);maidenCircle.visible=false;
+const exitCircle=createMark(SCHOOL.guard.x,SCHOOL.guard.z,0x82dabe);exitCircle.visible=false;
 
 function dist(a,b){return Math.hypot(a.x-b.x,a.z-b.z);}
 function showToast(message){ui.toast.textContent=message;ui.toast.classList.add('show');toastSeconds=3.5;}
@@ -304,9 +444,9 @@ function setStage(next){
   maidenCircle.visible=stage===3;exitCircle.visible=stage===4;
   maiden.root.visible=stage===2&&maidenPhase!=='approach';
   if(stage===2){
-    maiden.x=12;maiden.z=-10;maiden.charge=0;ghostNav=null;maidenPhase='approach';ghostWaiting=0;
-    showLesson('다음 사건 · 과학실로 이동','안내선을 따라 과학실로 들어가세요. 첫 만남은 공격 없는 연습입니다.',14);
-    showToast('도깨비 봉인 성공! 이제 과학실로 이동하세요.');
+    maiden.x=SCHOOL.maidenSpawn.x;maiden.z=SCHOOL.maidenSpawn.z;maiden.charge=0;ghostNav=null;maidenPhase='approach';ghostWaiting=0;
+    showLesson('다음 사건 · 과학실로 이동','북쪽 날개 복도 끝의 과학실로 이동하세요. 첫 만남은 공격 없는 연습입니다.',14);
+    showToast('도깨비 봉인 성공! 같은 북쪽 날개의 끝에 있는 과학실로 가세요.');
   }
   if(stage===3){maiden.root.visible=false;
     showLesson('퇴마 준비 완료','유령이 물러났어요. 바닥의 보라색 봉인진에 다가가서 봉인하세요.',11);
@@ -321,10 +461,10 @@ function setStage(next){
 function nearAction(){
   if(stage===1){
     for(let i=0;i<disturbed.length;i++){const o=disturbed[i];if(!o.done&&dist(o,player)<1.95)return {type:'fix',i,text:o.name+' 바로잡기'};}
-    if(fixes===3&&dist(player,{x:-10.3,z:-6})<2.15)return {type:'trick',text:'도깨비 봉인하기'};
+    if(fixes===3&&dist(player,SCHOOL.dokkaebi)<2.15)return {type:'trick',text:'도깨비 봉인하기'};
   }
-  if(stage===3&&dist(player,{x:12.5,z:-6})<2.2)return {type:'maiden',text:'처녀귀신 봉인하기'};
-  if(stage===4&&dist(player,{x:0,z:10.35})<2.3)return {type:'report',text:'퇴마 보고서 제출'};
+  if(stage===3&&dist(player,{x:SCHOOL.science.x,z:-13.1})<2.2)return {type:'maiden',text:'처녀귀신 봉인하기'};
+  if(stage===4&&dist(player,SCHOOL.guard)<2.3)return {type:'report',text:'퇴마 보고서 제출'};
   return null;
 }
 function act(){
@@ -347,7 +487,7 @@ function finish(ok){
 }
 function reset(){
   fixes=0;hp=3;power=100;flashOn=true;elapsed=0;stage=1;ended=false;paused=false;started=true;
-  viewYaw=0;player.x=0;player.z=9;player.yaw=Math.PI;player.root.rotation.y=player.yaw;maiden.attacks=0;maiden.charge=0;invulnerable=0;ghostWaiting=0;
+  viewYaw=-Math.PI/2;player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;player.yaw=Math.PI/2;player.root.rotation.y=player.yaw;maiden.attacks=0;maiden.charge=0;invulnerable=0;ghostWaiting=0;
   maidenPhase='approach';ghostNav=null;gazeLocked=false;
   guidance.key='';guidance.points=[];lastMistake='';tutorialCount=0;
   disturbed.forEach(o=>{o.done=false;o.object.visible=true;o.marker.visible=true;});
@@ -355,17 +495,17 @@ function reset(){
   ui.intro.classList.add('hidden');ui.end.classList.add('hidden');ui.help.classList.add('hidden');
   bgm.currentTime=0;bgm.play().catch(()=>{});sfx('sfx_school_alarm_bell.mp3',.12);
   window.KidscadeGame?.start?.({mode:'prototype',ghosts:['dokkaebi','maiden']});
-  showLesson('첫 임무 · 6-1 교실','화면 위 화살표와 바닥 노란 안내선을 따라 서쪽 교실로 가세요. 주황색 물건에 다가가면 행동 버튼이 켜집니다.',16);
-  showToast('관리실에서 출발하세요. 서쪽 6-1 교실부터 조사합니다.');
+  showLesson('첫 임무 · 6-1 교실','ㄷ자 학교의 북쪽 날개로 이동하세요. 화면 위 화살표와 바닥 노란 안내선을 따라 6-1 교실로 가세요. 주황색 물건에 다가가면 행동 버튼이 켜집니다.',16);
+  showToast('서쪽 연결동 관리실에서 출발합니다. 북쪽 날개의 6-1 교실로 가세요.');
   updateHud();updateNavigation(0,true);
 }
 function updateHud(){
   const titles={1:'도깨비 조사 · 6-1 교실',2:'처녀귀신 관찰 · 과학실',3:'처녀귀신 봉인 · 과학실',4:'관리실로 귀환'};
   const details={
-    1:fixes===3?'모든 장난을 해결했어요. 주황색 봉인진을 작동하세요.':'6-1 교실에서 비정상적인 물건을 찾아 제자리에 돌려놓으세요. ('+fixes+'/3)',
-    2:maidenPhase==='approach'?'과학실로 이동하세요. 처음 만났을 때는 공격하지 않습니다.':maidenPhase==='practice'?'안전한 연습: 처녀귀신을 화면 중앙에 놓고 2초 정도 바라보세요.':'실제 퇴마: 처녀귀신을 4초 이상 바라보세요. 화면 중앙의 초록색 표시를 확인하세요.',
+    1:fixes===3?'6-1 교실의 주황색 봉인진으로 돌아가세요.':'ㄷ자 학교 북쪽 날개의 6-1 교실에서 물건을 바로잡으세요. ('+fixes+'/3)',
+    2:maidenPhase==='approach'?'북쪽 날개 맨 끝의 과학실로 이동하세요. 첫 만남은 안전한 연습입니다.':maidenPhase==='practice'?'안전한 연습: 처녀귀신을 화면 중앙에 놓고 2초 정도 바라보세요.':'실제 퇴마: 처녀귀신을 4초 이상 바라보세요. 화면 중앙의 초록색 표시를 확인하세요.',
     3:'과학실 안쪽 보라색 봉인진으로 이동해 봉인을 완료하세요.',
-    4:'관리실의 초록색 보고 지점에서 퇴마 결과를 제출하세요.'
+    4:'서쪽 연결동 중앙의 관리실로 돌아가 초록색 보고 지점에서 보고하세요.'
   };
   ui.mission.textContent=titles[stage]||stageNames[stage];
   ui.detail.textContent=details[stage]||'';
@@ -439,7 +579,7 @@ function updateGhost(dt){
   if(stage!==2){gazeLocked=false;return;}
   if(maidenPhase==='approach'){
     gazeLocked=false;
-    if(player.x>4.55&&player.z<-3.4)beginMaidenPractice();
+    if(player.x>21&&player.z< -10.45)beginMaidenPractice();
     else return;
   }
   maiden.root.position.set(maiden.x,.12+Math.sin(elapsed*2.8)*.12,maiden.z);
@@ -458,25 +598,15 @@ function updateGhost(dt){
     if(maiden.charge>=4.2){setStage(3);return;}
   }else{
     maiden.charge=Math.max(0,maiden.charge-dt*.11);
-    let target={x:player.x,z:player.z};
-    const inEast=maiden.z<-3.15&&maiden.x>4.05;
-    const inWest=maiden.z<-3.15&&maiden.x<-4.05;
-    const inOffice=maiden.z>4.55&&Math.abs(maiden.x)<5;
-    const playerEast=player.z<-3.15&&player.x>4.05;
-    const playerWest=player.z<-3.15&&player.x<-4.05;
-    const playerOffice=player.z>4.55&&Math.abs(player.x)<5;
-    if(inEast&&!playerEast)target={x:10.25,z:.5};
-    else if(inWest&&!playerWest)target={x:-10.25,z:.5};
-    else if(inOffice&&!playerOffice)target={x:0,z:2.65};
-    else if(!inEast&&!inWest&&!inOffice&&playerEast)target={x:10.25,z:-4.5};
-    else if(!inEast&&!inWest&&!inOffice&&playerWest)target={x:-10.25,z:-4.5};
-    else if(!inEast&&!inWest&&!inOffice&&playerOffice)target={x:0,z:6.1};
+    // Both arms are connected ONLY through the western corridor.
+    // Shared A* prevents ghosts from cutting across the open-air courtyard.
+    const target={x:player.x,z:player.z};
     advanceGhostToward(target,dt);
   }
   const distance=Math.hypot(maiden.x-player.x,maiden.z-player.z);
   if(distance<1.18&&invulnerable<=0&&clearGhostSight(maiden.x,maiden.z,player.x,player.z)){
-    hp--;maiden.attacks++;invulnerable=2.5;player.x=0;player.z=9;
-    maiden.x=12;maiden.z=-10;ghostNav=null;ghostWaiting=10;
+    hp--;maiden.attacks++;invulnerable=2.5;player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;
+    maiden.x=SCHOOL.maidenSpawn.x;maiden.z=SCHOOL.maidenSpawn.z;ghostNav=null;ghostWaiting=10;
     maiden.charge=0;
     sfx('sfx_scream_01.mp3',.25);
     lastMistake='처녀귀신을 똑바로 바라봐야 움직임이 멈춰요. 과학실에 들어가면 먼저 카메라를 돌려 귀신을 찾으세요.';
@@ -537,18 +667,46 @@ function updateProps(dt){
 function drawMap(){
   const ctx=ui.map.getContext('2d'),w=ui.map.width,h=ui.map.height;
   ctx.clearRect(0,0,w,h);ctx.fillStyle='#08131bea';ctx.fillRect(0,0,w,h);
-  const tx=x=>(x+19)/38*w,tz=z=>(z+16)/30*h;
-  for(const rect of [{x:-17,z:-15,w:13,h:12},{x:4,z:-15,w:13,h:12},{x:-18,z:-3,w:36,h:7.5},{x:-5,z:4.5,w:10,h:8.5}]){
-    ctx.fillStyle='#38495b';ctx.fillRect(tx(rect.x),tz(rect.z),rect.w/38*w,rect.h/30*h);
-    ctx.strokeStyle='#809ba76a';ctx.strokeRect(tx(rect.x),tz(rect.z),rect.w/38*w,rect.h/30*h);
+  const tx=x=>(x+29)/60*w,tz=z=>(z+21)/42*h;
+  const cells=[
+    {x:-28,z:-20,w:13,h:40},
+    {x:-15,z:-20,w:45,h:13},
+    {x:-15,z:7,w:45,h:13}
+  ];
+  for(const p of cells){
+    ctx.fillStyle='#38495b';ctx.fillRect(tx(p.x),tz(p.z),p.w/60*w,p.h/42*h);
+    ctx.strokeStyle='#809ba78b';ctx.strokeRect(tx(p.x),tz(p.z),p.w/60*w,p.h/42*h);
+  }
+  // Unwalkable courtyard visually separates the arms of the ㄷ.
+  ctx.fillStyle='#263f34';ctx.fillRect(tx(-15),tz(-7),45/60*w,14/42*h);
+  ctx.strokeStyle='#6a8c7c66';ctx.strokeRect(tx(-15),tz(-7),45/60*w,14/42*h);
+  // Connecting spine corridor and both wing halls.
+  ctx.fillStyle='#6d80925a';
+  ctx.fillRect(tx(-20.5),tz(-19.6),5.5/60*w,39.2/42*h);
+  ctx.fillRect(tx(-15),tz(-10.2),45/60*w,3.2/42*h);
+  ctx.fillRect(tx(-15),tz(7),45/60*w,3.2/42*h);
+  ctx.strokeStyle='#a3b3bf55';ctx.lineWidth=.8;
+  for(const x of [-6,3,12,21]){
+    for(const [za,zb] of [[-20,-10.2],[10.2,20]]){
+      ctx.beginPath();ctx.moveTo(tx(x),tz(za));ctx.lineTo(tx(x),tz(zb));ctx.stroke();
+    }
+  }
+  for(const z of [-12,-4,4,12]){
+    ctx.beginPath();ctx.moveTo(tx(-28),tz(z));ctx.lineTo(tx(-20.5),tz(z));ctx.stroke();
   }
   const marker=(x,z,c,r=3)=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(tx(x),tz(z),r,0,Math.PI*2);ctx.fill();};
-  if(stage===1){for(const item of disturbed)if(!item.done)marker(item.x,item.z,'#f5b869',2.5);if(fixes===3)marker(-10.3,-6,'#ffc86f',4);}
-  if(stage===2)marker(10.25,-5.5,'#c4b1ff',4);
-  if(stage===3)marker(12.5,-6,'#ca99ff',4);
-  if(stage===4)marker(0,10.35,'#79e0bd',4);
+  marker(SCHOOL.guard.x,SCHOOL.guard.z,'#e8c78f',3.8);
+  if(stage===1){
+    for(const item of disturbed)if(!item.done)marker(item.x,item.z,'#f5b869',2.5);
+    if(fixes===3)marker(SCHOOL.dokkaebi.x,SCHOOL.dokkaebi.z,'#ffc86f',4);
+  }
+  if(stage===2)marker(SCHOOL.science.x,SCHOOL.science.z,'#c4b1ff',4);
+  if(stage===3)marker(SCHOOL.science.x,-13.1,'#ca99ff',4);
+  if(stage===4)marker(SCHOOL.guard.x,SCHOOL.guard.z,'#79e0bd',4);
   marker(player.x,player.z,'#7ddaf4',4);
-  ctx.strokeStyle='#7ddaf4';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(tx(player.x),tz(player.z));ctx.lineTo(tx(player.x)-Math.sin(viewYaw)*9,tz(player.z)-Math.cos(viewYaw)*9);ctx.stroke();
+  ctx.strokeStyle='#7ddaf4';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(tx(player.x),tz(player.z));
+  ctx.lineTo(tx(player.x)-Math.sin(viewYaw)*7,tz(player.z)-Math.cos(viewYaw)*7);ctx.stroke();
 }
 function loop(now){
   requestAnimationFrame(loop);const dt=Math.min(.045,Math.max(0,(now-last)/1000));last=now;
