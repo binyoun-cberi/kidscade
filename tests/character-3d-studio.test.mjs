@@ -250,7 +250,9 @@ test('male Chibi preset reuses source meshes for body face hair and clothes',()=
   assert.match(js,/const shirtSource=getNode\('shirt'\)/);
   assert.match(js,/const shortsSource=getNode\('ninjasuitshort'\)/);
   assert.match(js,/male:\[\.\.\.MALE_BASE_NODES,'kidscade_male_hair_short'/);
-  assert.match(js,/eyeCenterY=1\.620/);
+  assert.match(js,/const eyebrowRegionFloor=1\.76/);
+  assert.match(js,/const browCenterY=1\.792/);
+  assert.match(js,/extractedBrowTriangles:kept\.length\/3/);
   assert.match(html,/data-chibi-preset="male"/);
   assert.match(html,/남자 기본/);
   assert.match(html,/value="kidscade_male_hair_short">남자 짧은 머리/);
