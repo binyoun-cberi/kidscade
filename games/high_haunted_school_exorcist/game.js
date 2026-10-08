@@ -681,7 +681,7 @@ function finish(ok){
 }
 function reset(){
   fixes=0;hp=3;power=100;flashOn=true;elapsed=0;stage=1;ended=false;paused=false;started=true;
-  viewYaw=-Math.PI/2;player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;
+  viewYaw=-Math.PI/2;cameraFollowState.ready=false;player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;
   player.yaw=Math.PI/2;player.root.rotation.y=player.yaw;
   maiden.attacks=0;maiden.charge=0;invulnerable=0;ghostWaiting=0;
   maidenPhase='approach';ghostNav=null;gazeLocked=false;
@@ -1012,6 +1012,7 @@ function updatePlayer(dt){
 // Use a close over-the-shoulder height while aiming past the avatar's head.
 // Sweep both the target and the smoothed movement to avoid crossing solid walls.
 const CAMERA_FOLLOW={distance:4.7,height:3.45,lookAhead:4.8,lookHeight:1.55};
+const cameraFollowState={ready:false,lastX:0,lastZ:0};
 function cameraWallHit(x,z,r=.17){
   return walls.some(w=>collides(x,z,w,r));
 }
@@ -1035,17 +1036,36 @@ function updateCamera(dt){
     player.z-fz*CAMERA_FOLLOW.distance
   );
   const safe=cameraFollowTarget(origin,desired);
-  const next=camera.position.clone().lerp(safe,Math.min(1,dt*12));
-  // Even if both endpoints are safe, interpolation across a school corner
-  // can put the camera through a wall on rapid turns.
-  const crossed=walls.some(w=>segmentHitsRect(camera.position.x,camera.position.z,next.x,next.z,w,.17));
-  const obscured=walls.some(w=>segmentHitsRect(player.x,player.z,next.x,next.z,w,.17));
-  if(crossed||obscured||cameraWallHit(next.x,next.z))camera.position.copy(safe);
-  else camera.position.copy(next);
+  const playerDx=player.x-cameraFollowState.lastX;
+  const playerDz=player.z-cameraFollowState.lastZ;
+  const teleported=Math.hypot(playerDx,playerDz)>2.5;
+  // The camera is attached to the player's *translation*: WASD moves both
+  // together. Only a real look input changes viewYaw / the viewing direction.
+  // Smooth only the orbit and wall-driven dolly, never the player's movement.
+  if(!cameraFollowState.ready||teleported){
+    camera.position.copy(safe);
+    cameraFollowState.ready=true;
+  }else{
+    camera.position.x+=playerDx;
+    camera.position.z+=playerDz;
+    const next=camera.position.clone().lerp(safe,Math.min(1,dt*12));
+    const crossed=walls.some(w=>segmentHitsRect(camera.position.x,camera.position.z,next.x,next.z,w,.17));
+    const obscured=walls.some(w=>segmentHitsRect(player.x,player.z,next.x,next.z,w,.17));
+    if(crossed||obscured||cameraWallHit(next.x,next.z))camera.position.copy(safe);
+    else camera.position.copy(next);
+  }
+  cameraFollowState.lastX=player.x;
+  cameraFollowState.lastZ=player.z;
+
+  // Aim relative to the camera, NOT at a player-relative world point.
+  // Previously the player moved immediately while the camera lagged, causing
+  // WASD strafing to steer the lens a little without any mouse input.
+  const arm=Math.hypot(safe.x-player.x,safe.z-player.z);
+  const lookLength=arm+CAMERA_FOLLOW.lookAhead;
   camera.lookAt(
-    player.x+fx*CAMERA_FOLLOW.lookAhead,
-    CAMERA_FOLLOW.lookHeight,
-    player.z+fz*CAMERA_FOLLOW.lookAhead
+    camera.position.x+fx*lookLength,
+    camera.position.y+CAMERA_FOLLOW.lookHeight-safe.y,
+    camera.position.z+fz*lookLength
   );
   torch.position.set(player.x,1.85,player.z);
   torchTarget.position.set(player.x+fx*4,1.30,player.z+fz*4);
