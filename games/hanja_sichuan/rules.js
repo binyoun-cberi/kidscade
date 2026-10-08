@@ -28,7 +28,7 @@
       return Math.max(52,Math.min(desired,Math.floor((view-10)/(cols+1.08))));
     }
     if(zoomed)return 68;
-    return Math.max(28,Math.min(72,Math.floor((view-5)/(cols+1.08))));
+    return Math.max(24,Math.min(72,Math.floor((view-5)/(cols+1.08))));
   }
   return Object.freeze({COSTS,score,rewards,tileSize});
 });
