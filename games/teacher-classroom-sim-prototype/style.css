@@ -71,6 +71,8 @@ button{font:inherit}
 .instructionStage span{display:block;font-size:10px;font-weight:900;margin-bottom:4px}
 .stageTrack{height:5px;border-radius:99px;background:rgba(255,255,255,.17);overflow:hidden}
 .stageTrack i{display:block;height:100%;width:0;background:#f2ce64;border-radius:99px;transition:width .18s linear}
+.instructionBudget{font-size:10px;font-weight:800;color:#d9efe9;background:rgba(57,125,110,.26);padding:6px 8px;border-radius:8px;line-height:1.35}
+.instructionBudget.urgent{background:rgba(179,65,45,.5);color:#ffe4d3;outline:1px solid rgba(255,174,129,.65)}
 .actionFeedback{
   position:absolute;z-index:24;transform:translate(-50%,-50%);
   pointer-events:none;padding:5px 11px;border-radius:16px;white-space:nowrap;
@@ -236,6 +238,7 @@ code{display:block;padding:10px;border-radius:10px;background:#edf2f7;color:#405
   #instructionPanel{top:170px;left:7px;width:min(330px,43vw);padding:6px 8px;gap:4px}
   #instructionPanel strong{font-size:10px}
   #instructionPanel>span{font-size:9px}
+  .instructionBudget{font-size:9px;padding:4px 5px}
   .instructionStage span{font-size:8px}
   #guide{bottom:9px;width:min(360px,calc(100vw - 285px));padding:5px 7px}
   #guide strong{font-size:11px}
@@ -252,7 +255,7 @@ code{display:block;padding:10px;border-radius:10px;background:#edf2f7;color:#405
   .card{padding:18px}.card h1{font-size:37px}
 }
 @media(max-height:520px){
-  #instructionPanel{top:117px;left:7px;padding:6px 8px;max-height:120px}
+  #instructionPanel{top:117px;left:7px;padding:6px 8px;max-height:none}
   #guide{bottom:7px;max-height:55px;overflow:hidden}
   #guide{display:none}
   .card{max-height:94vh;overflow:auto}

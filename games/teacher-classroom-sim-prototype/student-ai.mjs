@@ -39,6 +39,13 @@ export const STUDENT_PROFILES=Object.freeze([
   {id:'narin',name:'나린',focusMax:82,focusRecovery:4.6,socialMax:59,socialRecovery:4.7}
 ]);
 
+// Distracted students usually fidget at their own desks; only a few get up.
+// A seeded RNG can be injected in simulations and automated tests.
+export function chooseOffTaskBehavior({location='classroom',teamActivity=false}={},rng=Math.random){
+  const roamChance=location==='gym'?.88:(teamActivity?.20:.14);
+  return rng()<roamChance?'wander':'fidget';
+}
+
 export const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
 export function createStudentRuntime(profile){
