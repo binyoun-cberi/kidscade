@@ -864,8 +864,8 @@ function createKidscadeMaleSet(){
     meshPolicy:'reuse-source-meshes-only'
   };
 
-  // 1) 어깨만 부풀리던 기존 일괄 x 변형은 소매 안쪽에서 피부 관통을 일으켰다.
-  //    손/팔 정점은 거의 유지하고 몸통 상단만 매끄러운 가중치로 재성형한다.
+  // 1) 상체 폭을 키우고 허벅지/종아리 두께를 줄여 소년형 실루엣을 정리한다.
+  //    몸통과 다리 각 부위에 부드러운 가중치를 사용해 원래 리깅/관절을 유지한다.
   const smooth=(a,b,v)=>{
     const t=THREE.MathUtils.clamp((v-a)/(b-a),0,1);
     return t*t*(3-2*t);
@@ -875,14 +875,30 @@ function createKidscadeMaleSet(){
   for(let i=0;i<bp.count;i++){
     let x=bp.getX(i),y=bp.getY(i),z=bp.getZ(i);
 
-    const torsoY=smooth(.78,1.04,y)*(1-smooth(1.22,1.39,y));
-    const torsoX=1-smooth(.23,.46,Math.abs(x));
-    x*=1+torsoY*(.087*torsoX+.012*(1-torsoX));
-    if(z>0)z*=1-.028*torsoY*torsoX;
+    const ax=Math.abs(x);
 
-    // 무릎 위~허리선 연결도 경계 없이 부드럽게 처리한다.
-    const waist=smooth(.45,.60,y)*(1-smooth(.79,.93,y));
-    x*=1-.032*waist*(1-smooth(.24,.45,Math.abs(x)));
+    // 상체를 좌우로 한 단계 넓힌다. 팔 끝과 목에는 영향이 줄어들도록
+    // 몸통 중앙과 가슴/어깨 높이에만 연속적인 가중치를 적용한다.
+    const upperTorso=smooth(.76,1.02,y)*(1-smooth(1.22,1.40,y));
+    const torsoCore=1-smooth(.21,.48,ax);
+    x*=1+upperTorso*(.145*torsoCore+.018*(1-torsoCore));
+    if(z>0)z*=1-.022*upperTorso*torsoCore;
+
+    // 허리~골반은 갑자기 잘록해지지 않도록 연결부만 아주 약하게 보완한다.
+    const waist=smooth(.48,.66,y)*(1-smooth(.82,.98,y));
+    x*=1+.012*waist*(1-smooth(.18,.36,ax));
+
+    // 다리를 중앙으로 옮기지 않고 각 다리의 중심축을 기준으로만 가늘게 만든다.
+    // 발, 손, 무릎/골반 접합부와 머리에는 영향을 주지 않는다.
+    const thigh=smooth(.18,.36,y)*(1-smooth(.62,.81,y));
+    const calf=smooth(.025,.12,y)*(1-smooth(.34,.51,y));
+    const legBand=smooth(.055,.14,ax)*(1-smooth(.39,.52,ax));
+    const legSlim=legBand*(.115*thigh+.085*calf);
+    if(legSlim>0){
+      const legCenter=Math.sign(x)*.145;
+      x=legCenter+(x-legCenter)*(1-legSlim);
+      z*=1-legBand*(.04*thigh+.028*calf);
+    }
 
     // 얼굴 아래쪽만 조심스럽게 손질. 눈·귀·목은 변형하지 않는다.
     if(y>=1.34&&y<=1.60&&z>.05){
@@ -967,7 +983,8 @@ function createKidscadeMaleSet(){
     let x=tp.getX(i),y=tp.getY(i),z=tp.getZ(i);
     const shoulder=smooth(.88,1.03,y)*(1-smooth(1.15,1.24,y));
     const sleeve=smooth(.10,.23,Math.abs(x));
-    x*=1.095+.090*shoulder*sleeve;
+    // 몸통이 넓어진 만큼 셔츠도 여유 있게 맞추되, 기존 소매 가중치를 유지한다.
+    x*=1.135+.065*shoulder*sleeve;
     z*=1.04+.065*shoulder;
     if(z>0)z+=.006*shoulder;
     tp.setXYZ(i,x,y,z);
@@ -983,14 +1000,21 @@ function createKidscadeMaleSet(){
   group.add(maleTshirt);
 
   // 5) 반바지는 긴 pants를 압축하지 않는다.
-  //    원본 GLB에 이미 존재하는 ninjasuitshort mesh/topology/weights를 그대로 가져와 재질과 폭만 다듬는다.
+  //    원본 ninjasuitshort의 topology/weights를 유지하며 밑단만 하체와 함께 살짝 슬림화한다.
   const shortsMaterial=makeSolidMaterial('#29446f','Kidscade Male Shorts');
   const shortsGeometry=shortsSource.geometry.clone();
   const sp=shortsGeometry.getAttribute('position');
   for(let i=0;i<sp.count;i++){
     let x=sp.getX(i),y=sp.getY(i),z=sp.getZ(i);
+    const ax=Math.abs(x);
+    // 반바지 밑단도 조금 슬림하게. 허리/골반은 그대로 두어 몸체와 관통하지 않는다.
+    const legOpening=smooth(.24,.37,y)*(1-smooth(.59,.75,y));
+    const legBand=smooth(.055,.14,ax)*(1-smooth(.39,.52,ax));
+    const openingTrim=.072*legOpening*legBand;
+    const legCenter=Math.sign(x)*.145;
+    x=legCenter+(x-legCenter)*(1-openingTrim);
     x*=1.015;
-    z*=1.01;
+    z*=1.01-.018*legOpening*legBand;
     sp.setXYZ(i,x,y,z);
   }
   sp.needsUpdate=true;

@@ -151,8 +151,8 @@
       "type": "body",
       "generatedFrom": "character_low",
       "rigging": "source character_low topology + 78-bone skin weights",
-      "shaping": "smooth upper torso/arm transition, preserved original skin weights; no abrupt shoulder cutoff",
-      "revision": "smooth-shoulder-v3"
+      "shaping": "upper torso widened smoothly (+14.5% at torso core), thighs slimmed 11.5% and calves 8.5% about each leg axis; native rig and skin weights preserved",
+      "revision": "balanced-boy-proportions-v4"
     },
     "kidscade_male_eyes": {
       "label": "남자 기본 눈",
@@ -168,8 +168,8 @@
       "generatedFrom": "shirt",
       "rigging": "source shirt topology + skin weights",
       "color": "#4d78d6",
-      "shaping": "smooth expanded upper sleeves and forward shoulder clearance; original shirt topology and weights retained",
-      "revision": "shoulder-clearance-v3"
+      "shaping": "shirt width increased to follow widened chest and existing animated sleeve clearance; original shirt skin weights preserved",
+      "revision": "wide-upper-torso-fit-v4"
     },
     "kidscade_male_shorts": {
       "label": "남자 기본 반바지",
@@ -177,7 +177,8 @@
       "generatedFrom": "ninjasuitshort",
       "rigging": "source ninjasuitshort topology + skin weights",
       "color": "#29446f",
-      "shaping": "minor width/depth adjustment only"
+      "shaping": "original ninjasuitshort mesh with 7.2% smooth leg opening trim about each leg center, hip/waist retained",
+      "revision": "slim-leg-openings-v4"
     },
     "kidscade_male_set_policy": {
       "label": "남자 기본 세트 메시 정책",

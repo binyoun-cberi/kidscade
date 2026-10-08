@@ -355,20 +355,20 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261008-hairclear7/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-maleproportion8/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
   const js=read('teacher/character-3d-studio.js');
   const male=js.slice(js.indexOf('function createKidscadeMaleSet(){'),js.indexOf('function makeUnlitMaterial(source){'));
-  assert.match(male,/const torsoY=smooth\(\.78,1\.04,y\)/);
-  assert.match(male,/const torsoX=1-smooth\(\.23,\.46,Math\.abs\(x\)\)/);
+  assert.match(male,/const upperTorso=smooth\(\.76,1\.02,y\)/);
+  assert.match(male,/const torsoCore=1-smooth\(\.21,\.48,ax\)/);
   assert.match(male,/const sleeve=smooth\(\.10,\.23,Math\.abs\(x\)\)/);
   assert.match(male,/const maleTshirt=cloneSkinnedMeshWithGeometry\(/);
   assert.match(male,/generatedFrom:'shirt',fit:'smooth shoulder\/sleeve clearance'/);
   assert.doesNotMatch(male,/new THREE\.(?:CylinderGeometry|SphereGeometry|BoxGeometry)/);
   const manifest=JSON.parse(read('chibi/asset-manifest.json'));
-  assert.equal(manifest.customParts.kidscade_male_tshirt.revision,'shoulder-clearance-v3');
+  assert.equal(manifest.customParts.kidscade_male_tshirt.revision,'wide-upper-torso-fit-v4');
 });
 
 test('male face preset uses one native-aligned pair of eyes and only original eyebrow islands',()=>{
@@ -387,4 +387,21 @@ test('male haircut never disables depth testing or mutates source hair materials
   assert.doesNotMatch(male,/transparent\s*=|renderOrder\s*=|depthTest\s*=|depthWrite\s*=/);
   assert.match(male,/const geometry=source\.geometry\.clone\(\)/);
   assert.match(male,/source\.parent\.add\(hair\)/);
+});
+
+test('male Chibi proportional rework widens upper torso and slims individual legs and shorts',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const male=js.slice(js.indexOf('function createKidscadeMaleSet(){'),js.indexOf('function makeUnlitMaterial(source){'));
+  assert.match(male,/upperTorso\*\(\.145\*torsoCore\+\.018\*\(1-torsoCore\)\)/);
+  assert.match(male,/const thigh=smooth\(\.18,\.36,y\)/);
+  assert.match(male,/const calf=smooth\(\.025,\.12,y\)/);
+  assert.match(male,/const legSlim=legBand\*\(\.115\*thigh\+\.085\*calf\)/);
+  assert.match(male,/const legCenter=Math\.sign\(x\)\*\.145/);
+  assert.match(male,/x=legCenter\+\(x-legCenter\)\*\(1-legSlim\)/);
+  assert.match(male,/const openingTrim=\.072\*legOpening\*legBand/);
+  assert.match(male,/x\*=1\.135\+\.065\*shoulder\*sleeve/);
+  assert.doesNotMatch(male,/new THREE\.(?:CylinderGeometry|SphereGeometry|BoxGeometry)/);
+  const manifest=JSON.parse(read('chibi/asset-manifest.json'));
+  assert.equal(manifest.customParts.kidscade_male_body.revision,'balanced-boy-proportions-v4');
+  assert.equal(manifest.customParts.kidscade_male_shorts.revision,'slim-leg-openings-v4');
 });
