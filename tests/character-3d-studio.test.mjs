@@ -310,6 +310,8 @@ test('male short hair reuses hairone topology, materials and original skin weigh
   assert.match(maleHair,/const geometry=source\.geometry\.clone\(\)/);
   assert.match(maleHair,/geometry\.computeBoundingBox\(\)/);
   assert.match(maleHair,/positions\.setXYZ\(i,x,y,z\)/);
+  assert.match(maleHair,/const taper=lower\*lower\*\(3-2\*lower\)/);
+  assert.match(maleHair,/const y=oy\+\(cutoff-oy\)\*\.58\*taper/);
   assert.match(maleHair,/const eyeClearanceY=eyes\.geometry\.boundingBox\.max\.y\+\.02/);
   assert.match(maleHair,/const backOfFaceZ=centerZ-\.045/);
   assert.match(maleHair,/if\(lowest>=eyeClearanceY \|\| foremost<=backOfFaceZ\)/);
