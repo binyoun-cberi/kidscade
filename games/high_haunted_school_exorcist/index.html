@@ -33,6 +33,15 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
 #minimapWrap small{color:#c7d3de;font-size:10px;letter-spacing:.13em}
 #minimap{display:block;margin-top:5px;width:178px;height:114px}
 #controlHint{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);border-radius:40px;background:#07131dd4;padding:9px 14px;font-size:11px;color:#b9cbd6;border:1px solid #52687977;pointer-events:none;white-space:nowrap}
+#navigation{position:absolute;left:50%;top:18px;transform:translateX(-50%);width:min(345px,32vw);padding:9px 14px;background:#071a25ea;border:1px solid #89b2bd8a;box-shadow:0 9px 30px #0008;border-radius:12px;text-align:center;pointer-events:none}
+#navArrow{display:inline-block;color:#ffe2a5;font-size:22px;margin-right:9px;vertical-align:middle;transition:transform .18s}
+#navTitle{font-weight:850;font-size:13px}
+#navRange{display:block;margin-top:2px;font-size:11px;color:#b5cfdd}
+#reticle{position:absolute;top:50%;left:50%;width:30px;height:30px;border:2px solid #a9bacacc;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;opacity:.35;transition:border .18s,opacity .18s,box-shadow .18s}
+#reticle:after{content:'';position:absolute;inset:10px;background:#b8d4ddaa;border-radius:50%}
+#reticle.active{opacity:1}#reticle.locked{border-color:#aaf2be;box-shadow:0 0 18px #90ffacaa}#reticle.locked:after{background:#aaf2be}
+#lesson{position:absolute;bottom:134px;left:50%;width:min(460px,78vw);transform:translateX(-50%);text-align:center;padding:12px 16px;border:1px solid #f6d293b5;border-radius:12px;background:#172637ec;box-shadow:0 10px 35px #000b;pointer-events:none}
+#lesson strong{font-size:14px;color:#f8dfb2}#lesson p{font-size:12px;line-height:1.45;margin:5px 0 0;color:#d6e5e8}
 #toast{position:absolute;top:34%;left:50%;width:min(480px,84vw);transform:translate(-50%,-4px);padding:12px 17px;text-align:center;background:#07131df5;border:1px solid #dfb47c9c;box-shadow:0 10px 35px #0008;border-radius:12px;color:#f9dfb7;font-weight:750;font-size:14px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 .controls{position:absolute;bottom:20px;right:22px;display:flex;align-items:flex-end;gap:13px}
@@ -55,6 +64,12 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
 .card button.primary{width:100%;margin-top:13px;padding:14px 18px;border-radius:10px;border:1px solid #ffe6b6ad;background:linear-gradient(120deg,#c5a06b,#8b633e);font-weight:850;font-size:15px;color:#101a23}
 .note{display:block;color:#9db3bc;font-size:11px;line-height:1.5;margin-top:12px}
 @media(max-width:720px){
+ #navigation{top:48px;left:50%;width:min(230px,43vw);padding:6px 8px}
+ #navArrow{font-size:17px;margin-right:3px}#navTitle{font-size:10px}#navRange{font-size:9px}
+ #lesson{bottom:101px;width:min(310px,55vw);padding:7px 9px}
+ #lesson strong{font-size:11px}#lesson p{font-size:10px}
+ #reticle{width:24px;height:24px}
+
   header{top:7px;left:7px;right:7px;gap:5px}
   .logo,.stats{padding:7px 8px;border-radius:8px}
   .logo strong{font-size:13px}.logo small{font-size:8px}
@@ -73,6 +88,9 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
   .card{padding:18px}.card h1{font-size:22px}
 }
 @media(max-height:480px){
+  #navigation{top:10px;left:53%;width:190px;padding:5px}
+  #lesson{bottom:75px;max-width:275px;padding:5px 7px}
+
   #missionPanel{top:63px;max-height:105px;overflow:auto}
   #minimapWrap{top:63px}
   #joystick{width:86px;height:86px;bottom:8px}
@@ -100,6 +118,9 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
   <div class="track" aria-label="퇴마 진행률"><i id="progress"></i></div>
 </section>
 <div id="minimapWrap"><small>학교 내부 지도 · 하늘색 점은 플레이어</small><canvas width="178" height="114" id="minimap" aria-label="현재 위치 미니맵"></canvas></div>
+<div id="navigation" aria-live="off"><span id="navArrow" aria-hidden="true">↑</span><span id="navTitle">관리실에서 교실로 이동</span><small id="navRange">노란 안내선을 따라가세요</small></div>
+<div id="reticle" class="hidden" aria-hidden="true"></div>
+<div id="lesson" class="hidden" role="status" aria-live="polite"><strong id="lessonTitle"></strong><p id="lessonText"></p></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="gaze" class="hidden">처녀귀신 관찰 진행 <div class="track"><i id="gazeValue"></i></div></div>
 <div id="joystick" aria-label="가상 이동 스틱"><div id="knob"></div></div>
@@ -112,7 +133,7 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
   <div class="card">
     <span class="eyebrow">CASE 001 · 자정의 학교</span>
     <h1>괴담 학교 퇴마</h1>
-    <p class="introLead">문이 잠긴 학교에 두 종류의 괴이가 남아 있습니다. 직접 이동하며 괴이의 규칙을 파악하고 퇴마하세요.</p>
+    <p class="introLead">문이 잠긴 학교에 두 종류의 괴이가 남아 있습니다. 직접 이동하며 괴이의 규칙을 파악하고 퇴마하세요. 안내 화살표와 바닥의 빛나는 길을 따라가면 됩니다.</p>
     <div class="rule"><b>1. 도깨비</b> · 왼쪽 6-1 교실에서 변한 물건 3개를 직접 찾아 원상복구하고, 봉인진을 작동하세요.</div>
     <div class="rule"><b>2. 처녀귀신</b> · 오른쪽 과학실에 나타납니다. 바라보면 멈추고, 등 돌리면 다가옵니다. 충분히 관찰한 후 과학실 봉인진을 활성화하세요.</div>
     <div class="rule"><b>3. 돌아가기</b> · 모든 퇴마가 끝나면 관리실로 돌아와 보고서를 제출하세요. 세 번 붙잡히면 실패합니다.</div>
@@ -139,6 +160,6 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
   </div>
 </section>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_haunted_school_exorcist" data-title="괴담 학교 퇴마" data-shell="true" data-pauseable="true" data-orientation="landscape"></script>
-<script type="module" src="./game.js?v=1"></script>
+<script type="module" src="./game.js?v=2"></script>
 </body>
 </html>
