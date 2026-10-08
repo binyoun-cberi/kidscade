@@ -15,7 +15,7 @@ test('3D school gameplay is a parseable local Three.js module',()=>{
   const result=spawnSync(process.execPath,['--input-type=module','--check'],{input:js,encoding:'utf8'});
   assert.equal(result.status,0,result.stderr||result.stdout);
   assert.match(html,/assets\/vendor\/three-r160\/three\.module\.js/);
-  assert.match(html,/src="\.\/game\.js\?v=3"/);
+  assert.match(html,/src="\.\/game\.js\?v=4"/);
   assert.match(js,/new THREE\.WebGLRenderer/);
   assert.match(js,/new THREE\.PerspectiveCamera/);
   assert.match(js,/GLTFLoader/);
@@ -209,5 +209,5 @@ test('player body faces the actual movement direction on W A S D and turned came
     assert.ok(Math.abs(faceX-moveX)<.001,'body faces walk X '+keysInput+' yaw '+yaw);
     assert.ok(Math.abs(faceZ-moveZ)<.001,'body faces walk Z '+keysInput+' yaw '+yaw);
   }
-  assert.match(js,/player\.yaw=Math\.PI;player\.root\.rotation\.y=player\.yaw/,'retry direction resets too');
+  assert.match(js,/player\.yaw=Math\.PI\/2;player\.root\.rotation\.y=player\.yaw/,'retry direction resets too');
 });
