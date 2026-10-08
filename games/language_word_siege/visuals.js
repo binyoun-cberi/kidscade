@@ -222,11 +222,139 @@ function towerHardware(c,mode,r,phase,pulse){
   if(pulse>0){c.globalAlpha=Math.min(.6,pulse*2);disc(c,0,0,r*.27,'#fff1ba')}
   c.restore();
 }
+// The playful towers are *not* recolored letter pylons: each gets a recognizable
+// machine / creature silhouette. Keep the letter on its own raised medallion.
+const PLAYFUL_MODES=new Set(['disco','pinball','spring','bubble','mirror','boo','spellbook',
+  'rainbow','boomerang','spores','slimepool','vacuum','magnet','sleep','shootingstars',
+  'snowball','raincloud','sunray']);
+function playfulTowerBody(c,t,r,phase){
+  const mode=t.stats?.mode;
+  if(!PLAYFUL_MODES.has(mode))return false;
+  c.save();
+  c.fillStyle='rgba(34,34,44,.19)';
+  c.beginPath();c.ellipse(r*.09,r*.91,r*.81,r*.26,0,0,TAU);c.fill();
+  const bob=Math.sin(phase*2.2)*r*.045;
+  c.translate(0,bob);
+  // Every shape has its own footprint but shares the original collision radius.
+  if(mode==='disco'){
+    disc(c,0,-r*.28,r*.73,'#7056a2');
+    for(let j=0;j<7;j++)for(let i=0;i<4;i++){
+      const x=(i-1.5)*r*.29,y=(j-3)*r*.20;
+      if(x*x+y*y>r*r*.40)continue;
+      c.fillStyle=['#e4b4ef','#9cdde4','#f5cf8d','#d0bff5'][(i+j)%4];
+      c.fillRect(x-r*.075,y-r*.065,r*.14,r*.12);
+    }
+    disc(c,0,-r*.28,r*.27,'#52457c');
+    stroke(c,'#fff3c5',2);c.beginPath();c.arc(0,-r*.28,r*.75,0,TAU);c.stroke();
+  }else if(mode==='bubble'){
+    c.fillStyle='#72a3bd';c.fillRect(-r*.61,r*.22,r*1.22,r*.45);
+    disc(c,0,-r*.25,r*.69,'rgba(173,240,246,.48)');
+    stroke(c,'#b7fcff',3);c.beginPath();c.arc(0,-r*.25,r*.68,0,TAU);c.stroke();
+    disc(c,-r*.25,-r*.53,r*.14,'#fff');
+    disc(c,r*.32,r*.01,r*.12,'#d3fff9');
+  }else if(mode==='boo'){
+    disc(c,0,-r*.40,r*.66,'#eff0ff');
+    poly(c,[[-r*.65,-r*.43],[r*.65,-r*.43],[r*.65,r*.56],[r*.35,r*.28],
+      [0,r*.59],[-r*.32,r*.31],[-r*.65,r*.55]],'#eff0ff');
+    disc(c,-r*.23,-r*.37,r*.09,'#29344e');
+    disc(c,r*.23,-r*.37,r*.09,'#29344e');
+    disc(c,0,-r*.10,r*.12,'#29344e');
+  }else if(mode==='mirror'){
+    c.fillStyle='#334259';c.fillRect(-r*.72,-r*.77,r*1.44,r*1.47);
+    c.fillStyle='#a7d3f0';c.fillRect(-r*.59,-r*.66,r*1.18,r*1.21);
+    poly(c,[[-r*.50,-r*.57],[r*.41,-r*.57],[-r*.50,r*.43]],'#e2f5ff');
+    stroke(c,'#fff1d3',3);c.strokeRect(-r*.72,-r*.77,r*1.44,r*1.47);
+  }else if(mode==='spellbook'){
+    poly(c,[[-r*.74,-r*.30],[-r*.1,-r*.51],[0,-r*.25],[r*.64,-r*.50],[r*.78,r*.50],[0,r*.32],[-r*.74,r*.53]],'#735ac5');
+    poly(c,[[-r*.66,-r*.23],[-r*.06,-r*.39],[0,-r*.18],[0,r*.28],[-r*.68,r*.43]],'#f8e4c2');
+    poly(c,[[0,-r*.18],[r*.6,-r*.39],[r*.67,r*.42],[0,r*.28]],'#f9edda');
+    stroke(c,'#f4b853',2);line(c,0,-r*.25,0,r*.30);
+    c.save();c.translate(r*.32,-r*.70);star(c,5,r*.11,r*.32,phase*.3);
+    c.fillStyle='#fff9a7';c.fill();c.restore();
+  }else if(mode==='spores'){
+    c.fillStyle='#f9e7c6';c.fillRect(-r*.21,-r*.12,r*.42,r*.76);
+    c.fillStyle='#cf674c';c.beginPath();c.ellipse(0,-r*.21,r*.78,r*.55,0,PI,TAU);c.fill();
+    for(let i=0;i<4;i++)disc(c,(i-1.5)*r*.30,-r*(.45+(i%2)*.12),r*.09,'#fff0b5');
+  }else if(mode==='slimepool'){
+    poly(c,[[-r*.82,r*.55],[-r*.62,-r*.13],[-r*.30,-r*.63],[r*.24,-r*.68],
+      [r*.67,-r*.10],[r*.83,r*.55]],'#81bd5a');
+    disc(c,-r*.24,-r*.26,r*.08,'#e6f9bb');disc(c,r*.26,-r*.26,r*.08,'#e6f9bb');
+  }else if(mode==='raincloud'){
+    for(const [x,y,rr]of [[-.38,-.23,.40],[0,-.43,.52],[.43,-.20,.36]]){
+      disc(c,x*r,y*r,rr*r,'#c0e5f2');
+    }
+    for(let i=0;i<3;i++){
+      stroke(c,'#5e9bc1',2.5);line(c,(i-1)*r*.4,r*.27+Math.sin(phase*3+i)*r*.1,
+        (i-1)*r*.4-r*.08,r*.61+Math.sin(phase*3+i)*r*.1);
+    }
+  }else if(mode==='snowball'){
+    disc(c,0,-r*.35,r*.51,'#e3f7fe');
+    disc(c,0,r*.28,r*.64,'#ccecf9');
+    disc(c,-r*.18,-r*.45,r*.07,'#31475e');disc(c,r*.18,-r*.45,r*.07,'#31475e');
+    poly(c,[[0,-r*.31],[r*.30,-r*.21],[0,-r*.15]],'#ed9f53');
+  }else if(mode==='shootingstars'){
+    c.save();c.rotate(phase*.2);star(c,5,r*.34,r*.81,-PI/2);
+    c.fillStyle='#ffe28f';c.fill();stroke(c,'#fff9da',2);c.stroke();c.restore();
+  }else if(mode==='sunray'){
+    c.save();c.rotate(phase*.12);star(c,10,r*.51,r*.87);
+    c.fillStyle='#ffc66c';c.fill();c.restore();
+    disc(c,0,0,r*.51,'#ffeab0');
+  }else if(mode==='rainbow'){
+    c.save();c.rotate(phase*.24);
+    poly(c,[[0,-r*.85],[r*.83,r*.64],[-r*.83,r*.64]],'#9bd8ef');
+    for(let i=0;i<4;i++){stroke(c,['#ed6a76','#f7c469','#74dbaa','#9f8de1'][i],2.5);
+      line(c,-r*.40+i*r*.20,r*.22,r*.32+i*r*.11,-r*.12)}
+    c.restore();
+  }else if(mode==='magnet'){
+    stroke(c,'#7ed8ec',r*.25);c.beginPath();c.arc(0,-r*.09,r*.54,0,PI);c.stroke();
+    c.fillStyle='#e66d59';c.fillRect(-r*.66,-r*.14,r*.27,r*.72);
+    c.fillStyle='#85bcec';c.fillRect(r*.39,-r*.14,r*.27,r*.72);
+  }else if(mode==='vacuum'){
+    disc(c,0,-r*.13,r*.70,'#646184');
+    c.save();c.rotate(phase*1.6);
+    for(let i=0;i<4;i++){c.save();c.rotate(i*PI/2);poly(c,[[0,0],[r*.59,-r*.15],[r*.43,r*.21]],'#d7b5f5');c.restore()}
+    c.restore();disc(c,0,-r*.13,r*.16,'#f6dbff');
+  }else if(mode==='sleep'){
+    disc(c,0,-r*.17,r*.68,'#b1a5ef');
+    disc(c,r*.20,-r*.30,r*.57,'#f1edff');
+    c.font='900 '+r*.64+'px sans-serif';c.textAlign='center';c.textBaseline='middle';
+    c.fillStyle='#776ab3';c.fillText('Z',-r*.08,-r*.12);
+  }else if(mode==='boomerang'){
+    stroke(c,'#ecc07a',r*.23);line(c,-r*.72,r*.41,0,-r*.66);line(c,0,-r*.66,r*.70,r*.42);
+  }else if(mode==='spring'){
+    c.fillStyle='#71968f';c.fillRect(-r*.68,r*.38,r*1.36,r*.34);
+    stroke(c,'#dcf3a2',r*.17);
+    for(let i=0;i<4;i++)line(c,-r*.57+i*r*.34,r*.35,-r*.40+i*r*.34,-r*.52);
+    c.fillStyle='#c7eaa5';c.fillRect(-r*.65,-r*.72,r*1.30,r*.21);
+  }else if(mode==='pinball'){
+    disc(c,0,-r*.07,r*.67,'#ffa77c');stroke(c,'#fff3ce',3);
+    c.beginPath();c.arc(0,-r*.07,r*.68,0,TAU);c.stroke();
+    for(let i=0;i<3;i++)disc(c,Math.cos(phase+i*TAU/3)*r*.40,
+      -r*.07+Math.sin(phase+i*TAU/3)*r*.40,r*.105,'#fff1b9');
+  }
+  // Single raised letter badge on all playful machines remains legible on phones.
+  disc(c,0,r*.56,r*.33,'#273541');
+  stroke(c,'#fdf1cb',2);c.beginPath();c.arc(0,r*.56,r*.33,0,TAU);c.stroke();
+  c.fillStyle='#fff';c.textAlign='center';c.textBaseline='middle';
+  c.font='1000 '+r*.38+'px system-ui,sans-serif';c.fillText(t.word[0],0,r*.58);
+  if(t.pulse>0){
+    c.globalAlpha=Math.min(.85,(t.pulse||0)*2);
+    stroke(c,'#fff7c2',3);c.beginPath();c.arc(0,-r*.10,r*(.83+t.pulse*.45),0,TAU);c.stroke();
+  }
+  if((t.level||1)>1){
+    stroke(c,'#ffda76',2.5);c.beginPath();c.arc(0,-r*.10,r*.91,0,TAU);c.stroke();
+  }
+  if(t.combos?.length)disc(c,r*.67,-r*.59,r*.15,'#ffd56b');
+  if(t.links?.length)disc(c,-r*.66,r*.38,r*.14,'#c0f6e6');
+  c.restore();
+  return true;
+}
 function drawTower(c,t,r,clock){
   const role=t.def.role;
   const animate=clock+(t.id||0)*.63;
   const busy=(t.pulse||0)>0;
   c.save();
+  if(playfulTowerBody(c,t,r,animate)){c.restore();return}
   // Soft range glow is intentionally subtle: the word label remains primary.
   if(['slow','gravity','modifier','resource','repair'].includes(role)){
     c.globalAlpha=.13+.045*Math.sin(animate*2);
