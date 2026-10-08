@@ -1377,9 +1377,8 @@ function updateLesson(dt){
       stats.offTaskStarts++;
       s.offTaskKind=chooseOffTaskBehavior({location:activeSpace.id,teamActivity:!!currentStep.teamActivity});
       s.wanderTimer=s.offTaskKind==='wander'?4+Math.random()*3:0;
-      if(s.offTaskKind==='wander'){offTaskWander(s);soundscape.play('chair',{volume:.6})}
-      else soundscape.play('offTask',{volume:.5});
-      else s.wander=null;
+      if(s.offTaskKind==='wander'){offTaskWander(s);soundscape.play('chair',{volume:.6});}
+      else{s.wander=null;soundscape.play('offTask',{volume:.5});}
       if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy'))
         showBubble(s,s.offTaskKind==='wander'?'🚶':'딴짓','');
     }
