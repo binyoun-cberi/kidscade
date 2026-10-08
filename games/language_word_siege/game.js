@@ -14,6 +14,17 @@ const statusBox=$('statusBox'), inspectBox=$('inspectBox'), toastEl=$('toast'), 
 const startOverlay=$('startOverlay'), dictOverlay=$('dictOverlay'), resultOverlay=$('resultOverlay');
 const STORAGE_DISC='kidscade_word_siege_discovered_v1', STORAGE_BEST='kidscade_word_siege_best_v1';
 const STORAGE_STAGE='kidscade_word_siege_stage_v1';
+const FOCUS_TIPS={
+  normal:'ARROW로 시작하고 ICE나 FIRE를 더해 보세요.',
+  fast:'ICE·FREEZE로 빠른 적을 늦추고 ARROW로 마무리하세요.',
+  armored:'SPEAR·RAILGUN·ACID로 장갑을 돌파하세요.',
+  heavy:'RAILGUN·ACID·ICE가 중장갑 적에게 효과적입니다.',
+  split:'BOMB·SHOTGUN처럼 여러 적을 공격하는 타워를 준비하세요.',
+  regen:'POISON·VIRUS로 적의 재생을 막으세요.',
+  shield:'HAMMER·SPIKE·ACID로 보호막을 먼저 무너뜨리세요.',
+  swarm:'SHOTGUN·FIREBALL·GRENADE로 밀집한 적을 처리하세요.',
+  mixed:'ICE·ACID·광역 타워를 함께 배치해 역할을 나누세요.'
+};
 const STAGES=window.WordSiegeStages||[{
   id:'stage-01',number:1,name:'GRID ZERO',subtitle:'기본 작전',description:'기본 방어',
   colors:{background:'#f4ecd7',lane:'#d6c8ad',accent:'#c2b089',paper:'#fdf7e7'},multiplier:1,focus:'normal',waves:8,
@@ -60,7 +71,7 @@ function renderStages(){
     button.addEventListener('click',()=>selectStage(index));
     list.appendChild(button);
   });
-  $('stageDetail').textContent=STAGES[selectedStage].description;
+  $('stageDetail').textContent=STAGES[selectedStage].description+'  추천: '+(FOCUS_TIPS[STAGES[selectedStage].focus]||FOCUS_TIPS.normal);
   $('startBtn').textContent='STAGE '+String(STAGES[selectedStage].number).padStart(2,'0')+' 시작';
 }
 function prepareStage(index){
@@ -144,10 +155,11 @@ function towerCost(def,word=def?.word,free=false){
   const baseline=(def.role==='resource'?5:def.role==='modifier'?6:def.role==='repair'?7:6)
     +Math.ceil(def.difficulty*.75)+(def.role==='special'?3:0);
   // Mass destruction must be an earned strategic decision, not a cheap 4-letter exploit.
-  const legendary={NUKE:38,BLACKHOLE:30,SUPERNOVA:31,SINGULARITY:32,VOLCANO:18};
+  const legendary={NUKE:39,BLACKHOLE:30,SUPERNOVA:31,SINGULARITY:32,VOLCANO:18};
+  const premium={MACHINEGUN:14,GATLING:14,RAILGUN:13,BALLISTA:13,FIREBALL:11,GRENADE:11,SHOTGUN:10};
   const powerCost=legendary[word]||0;
   const direct=free?Math.max(3,Math.ceil(word.length/3)+Math.ceil(def.difficulty*.7)+1):0;
-  return Math.max(baseline,powerCost)+direct;
+  return Math.max(baseline,powerCost,premium[word]||0)+direct;
 }
 function updateComposer(){
   const w=tileWord(),free=!!typedWord();currentWordEl.textContent=w||'_';
@@ -300,7 +312,7 @@ function makeTowerStats(word,def){
   }
   stats.mode=D.behaviors?.[word]?.mode||'';
   if(['gatling','shotgun','rail'].includes(stats.mode))stats.area=0;
-  if(word==='NUKE'){stats.damage=Math.max(240,stats.damage);stats.area=Math.max(.24,stats.area);stats.rate=.105}
+  if(word==='NUKE'){stats.damage=Math.max(355,stats.damage);stats.area=Math.max(.255,stats.area);stats.rate=.135}
   return stats;
 }
 function rolePlacementValid(p,def,word){
@@ -412,7 +424,7 @@ function startWave(){
   }
   state.wave++;state.inWave=true;state.waveTimer=0;state.spawnQueue=createWave(state.wave);state.totalSpawns=state.spawnQueue.length;
   state.effects.push({type:'banner',text:'WAVE '+state.wave,x:.5,y:.38,color:currentStage().colors.accent,life:1.1,max:1.1});
-  waveBtn.disabled=true;waveBtn.textContent='WAVE '+state.wave+' 진행 중';setStatus('WAVE '+state.wave,'적이 CORE를 향해 이동합니다. 전투 중에도 타워를 만들 수 있어요.');
+  waveBtn.disabled=true;waveBtn.textContent='WAVE '+state.wave+' 진행 중';setStatus('WAVE '+state.wave,'전투 중에도 타워를 지을 수 있어요. '+(FOCUS_TIPS[currentStage().focus]||FOCUS_TIPS.normal));
   beep(250,.12,'sawtooth',.05);updateHud();
 }
 const ENEMY={
@@ -429,7 +441,11 @@ function spawnEnemy(type){
   const a=ENEMY[type]||ENEMY.normal;
   const stage=state.wave-1,balance=D.waveBalance;
   const hpScale=1+balance.hpLinear*stage+balance.hpQuadratic*stage*stage;
-  const hp=Math.round(a.hp*hpScale*currentStage().multiplier);
+  // Early waves teach the counter-strategy before full stage difficulty arrives.
+  // Wave 8 still uses the stage's intended enemy HP multiplier.
+  const difficultyBlend=Math.min(1,(balance.openingPressure||.28)+(state.wave-1)*(balance.pressurePerWave||.14));
+  const stageMultiplier=1+(currentStage().multiplier-1)*difficultyBlend;
+  const hp=Math.round(a.hp*hpScale*stageMultiplier);
   const e={id:state.uid++,type,hp,maxHp:hp,speed:a.speed*(1+stage*balance.speedGrowth),
     r:a.r,damage:Math.round(a.damage*(1+stage*.065)),color:a.color,
     shield:Math.round((a.shield||0)*hpScale),armor:a.armor||0,regen:a.regen||0,
@@ -467,7 +483,7 @@ function reachCore(e){
 function damageEnemy(e,amount,kind,tower){
   if(e.dead)return;
   if(e.shield>0){
-    const multiplier=tower?.stats.shieldBreak||1;
+    const multiplier=(tower?.stats.shieldBreak||1);
     const used=Math.min(e.shield,amount*multiplier);
     e.shield-=used;amount-=used/multiplier;
   }
@@ -483,7 +499,11 @@ function damageEnemy(e,amount,kind,tower){
 // In particular FIRE + ICE retains burn and slow, and SPIDER applies both effects.
 function attackEnemy(t,e,damage,extra=''){
   if(!e||e.dead)return;
-  damageEnemy(e,damage,'',t);
+  // Mixed-element setups have a payoff beyond raw damage stacking.
+  const chilled=(e.slow||1)<.87||(e.freezeTime||0)>0;
+  const corroded=(e.corrosion||0)>.01;
+  const synergy=chilled&&t.def.role==='pierce'?1.16:corroded&&['burst','explosive'].includes(t.def.role)?1.12:1;
+  damageEnemy(e,damage*synergy,'',t);
   if(e.dead)return;
   const s=effectiveStats(t);
   const kinds=new Set();
@@ -567,13 +587,13 @@ function towerUpdate(t,dt){
   if(t.def.role==='resource'){
     if(mode==='interest'||!state.inWave)return;
     t.harvestClock+=dt;
-    const interval=mode==='drill'?1.25:2.3;
+    const interval=mode==='drill'?2.05:3.25;
     if(t.harvestClock>=interval){
       t.harvestClock=0;
       const node=state.resources.filter(r=>r.amount>0&&dist(t,r)<=s.range).sort((a,b)=>dist(t,a)-dist(t,b))[0];
       if(node){
-        const base=Math.max(1,Math.round((s.harvest||3)*(1+t.def.difficulty*.08)));
-        const amt=Math.min(node.amount,mode==='drill'?Math.ceil(base*1.5):base);
+        const base=Math.max(1,Math.round((s.harvest||3)*.64*(1+t.def.difficulty*.07)));
+        const amt=Math.min(node.amount,mode==='drill'?Math.ceil(base*1.35):base);
         node.amount-=amt;state.ink+=amt;state.score+=amt*2;t.pulse=.35;
         floatEffect(t.x,t.y,'+'+amt+' INK','#4b9f38');
       }
@@ -677,8 +697,8 @@ function towerUpdate(t,dt){
     }
   }else{
     if(mode==='nuke'||mode==='meteor') {
-      projectile(t,target,s,{delay:mode==='nuke'?2.2:1.05,mode});
-      ringEffect(target.x,target.y,s.area,t.def.color,mode==='nuke'?1.5:.75);
+      projectile(t,target,s,{delay:mode==='nuke'?1.8:1.05,mode});
+      ringEffect(target.x,target.y,s.area,t.def.color,mode==='nuke'?1.65:.75);
       beep(mode==='nuke'?150:320,.16,'sawtooth',.04);
     }else if(mode==='volley'){
       projectile(t,target,s,{damage:s.damage*.60});
@@ -786,15 +806,17 @@ function waveUpdate(dt){
   if(!state.spawnQueue.length&&!state.enemies.some(e=>!e.dead)){
     state.inWave=false;state.ink+=8+state.wave*2;state.score+=100*state.wave;
     const banks=state.towers.filter(t=>t.stats.mode==='interest').length;
-    if(banks){const interest=Math.min(24,Math.floor(state.ink*.06*Math.min(3,banks)));state.ink+=interest;if(interest)floatEffect(.5,.14,'BANK +'+interest+' INK','#83c962')}
+    if(banks){const interest=Math.min(10,Math.floor(state.ink*.025*Math.min(2,banks)));state.ink+=interest;if(interest)floatEffect(.5,.14,'BANK +'+interest+' INK','#83c962')}
     waveBtn.disabled=false;
     $('waveProgress').style.width='100%';
     if(state.wave>=8){endGame(true)}else{
       const bonusWord=giveNextWaveWord();
       waveBtn.textContent='WAVE '+(state.wave+1)+' 시작';
-      setStatus('WAVE '+state.wave+' 완료 · INK 획득',bonusWord
-        ?'새 단어 기회! '+D.words[bonusWord].meaning+' · '+bonusWord[0]+'로 시작하는 '+bonusWord.length+'글자를 찾아보세요.'
-        :'INK 보너스를 받았습니다. 다음 웨이브 전까지 단어를 준비하세요.');
+      const tip=state.ink>=80?'INK가 넉넉해요! 공격·제어 타워를 추가하세요. ':
+        state.core<55?'CORE가 위험해요! HEAL·ICE로 방어선을 보강하세요. ':'';
+      setStatus('WAVE '+state.wave+' 완료 · 다음 작전',tip+(bonusWord
+        ?'새 단어 기회: '+bonusWord+' · '+D.words[bonusWord].meaning
+        :(FOCUS_TIPS[currentStage().focus]||FOCUS_TIPS.normal)));
       beep(780,.16,'triangle',.045);
     }
   }
@@ -1097,7 +1119,7 @@ function restart(){
   inspectBox.classList.remove('show');resultOverlay.classList.add('hidden');
   startOverlay.classList.add('hidden');
   setStatus('STAGE '+currentStage().number+' · '+currentStage().name,
-    '시작 글자에는 MINER와 ARROW가 있어요. '+currentStage().description);
+    'MINER와 ARROW로 시작하세요. '+(FOCUS_TIPS[currentStage().focus]||FOCUS_TIPS.normal));
   running=true;last=performance.now();
 }
 function openStageSelect(){
