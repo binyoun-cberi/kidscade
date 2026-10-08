@@ -85,6 +85,11 @@
   .status{max-width:34%;padding:5px 8px;top:4px}
   .status div{font-size:10px}
 }
+.inspect{pointer-events:auto;max-height:54%;overflow-y:auto;touch-action:pan-y}
+.tower-level{font:900 11px/1 ui-monospace,monospace;color:#ffe59a;white-space:nowrap}
+.tower-upgrade{width:100%;padding:9px 10px;margin-top:10px;border:1px solid #eedb8b;border-radius:10px;background:#f5d36a;color:#313035;font-size:12px;font-weight:950;cursor:pointer;touch-action:manipulation}
+.tower-upgrade:disabled{cursor:default;background:#5b6069;border-color:#777b80;color:#ced1d6}
+@media(max-width:620px){.inspect{width:min(270px,60%);right:7px;bottom:14px;padding:8px 9px}.tower-upgrade{padding:9px 6px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <script src="../../kidscade-storage.js"></script>
