@@ -10,6 +10,7 @@
     "health": "node scripts/platform-health-report.cjs",
     "health:strict": "node scripts/platform-health-report.cjs --strict",
     "test:ci": "node scripts/run-ci-tests.cjs",
+    "test:chibi:visual": "node tests/chibi-visual-browser-audit.cjs",
     "architecture:ratchet": "node scripts/architecture-ratchet.cjs"
   },
   "devDependencies": {
