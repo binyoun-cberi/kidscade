@@ -311,6 +311,9 @@ function makeTowerStats(word,def){
     if(signature.element)stats.element=signature.element;
   }
   stats.mode=D.behaviors?.[word]?.mode||'';
+  if(['disco','spellbook','rainbow','boomerang','pinball','spring','boo','sleep','shootingstars','snowball','slimepool','raincloud','spores','bubble','sunray','magnet','vacuum','mirror'].includes(stats.mode)){
+    stats.rate=Math.min(1.35,Math.max(.55,stats.rate||.65));
+  }
   if(['gatling','shotgun','rail'].includes(stats.mode))stats.area=0;
   if(word==='NUKE'){stats.damage=Math.max(355,stats.damage);stats.area=Math.max(.255,stats.area);stats.rate=.135}
   return stats;
@@ -463,14 +466,15 @@ function spawnEnemy(type){
     shield:Math.round((a.shield||0)*hpScale),armor:a.armor||0,regen:a.regen||0,
     split:a.split||false,boss:a.boss||false,pathIndex:0,pathT:0,x:pathPts[0][0],y:pathPts[0][1],
     burn:0,burnDps:0,poison:0,poisonDps:0,slow:1,pushBack:0,dead:false,
-    corrosion:0,corrosionTime:0,chillStacks:0,freezeTime:0,stunTime:0,infected:false};
+    corrosion:0,corrosionTime:0,chillStacks:0,freezeTime:0,stunTime:0,infected:false,
+    bubbleTime:0,bubblePower:0,bubbleSource:null,danceTime:0,sleepTime:0};
   state.enemies.push(e);
 }
 function enemyProgress(e){return e.pathIndex+e.pathT}
 function moveEnemy(e,dt){
   if(e.dead)return;
   e.slow+=(1-e.slow)*Math.min(1,dt*1.7);
-  let step=e.speed*(e.freezeTime>0||e.stunTime>0?0:e.slow)*dt;
+  let step=e.speed*(e.freezeTime>0||e.stunTime>0||e.bubbleTime>0?0:e.slow)*dt;
   if(e.pushBack>0){step-=e.pushBack;e.pushBack=0}
   while(Math.abs(step)>.00001){
     if(step>=0){
@@ -577,10 +581,11 @@ function updateFields(dt){
   for(const f of state.fields){
     f.life-=dt;f.clock-=dt;
     if(f.clock>0)continue;
-    f.clock=.62;
+    f.clock=f.interval||.62;
     for(const e of state.enemies){
       if(e.dead||dist(e,f)>f.radius)continue;
-      attackEnemy(f.source,e,f.damage,'burn');
+      attackEnemy(f.source,e,f.damage,f.kind||'burn');
+      if(f.kind==='slow')e.slow=Math.min(e.slow,f.slow||.58);
     }
   }
   state.fields=state.fields.filter(f=>f.life>0);
@@ -590,7 +595,7 @@ function projectile(t,target,s,opts={}){
     x:t.x,y:t.y,target,damage:opts.damage??s.damage,
     speed:s.projectileSpeed||.55,color:t.def.color,area:opts.area??(s.area||0),
     kind:t.def.role,mode:opts.mode||s.mode||'',source:t,dead:false,
-    delay:opts.delay||0,point:{x:target.x,y:target.y}
+    delay:opts.delay||0,point:{x:target.x,y:target.y},travel:0
   });
 }
 function towerUpdate(t,dt){
@@ -788,6 +793,19 @@ function barrierEffects(){
 function statusEffects(e,dt){
   e.freezeTime=Math.max(0,(e.freezeTime||0)-dt);
   e.stunTime=Math.max(0,(e.stunTime||0)-dt);
+  e.danceTime=Math.max(0,(e.danceTime||0)-dt);
+  e.sleepTime=Math.max(0,(e.sleepTime||0)-dt);
+  if(e.bubbleTime>0){
+    e.bubbleTime-=dt;
+    if(e.bubbleTime<=0&&!e.dead){
+      const damage=e.bubblePower||8;
+      for(const other of state.enemies)if(!other.dead&&dist(e,other)<.065)
+        attackEnemy(e.bubbleSource||{...e,def:{role:'special'},stats:{damage:0},links:[]},other,other===e?damage:damage*.45);
+      ringEffect(e.x,e.y,.07,'#b5f8f5',.40);
+      floatEffect(e.x,e.y,'POP!','#59bdb2');
+      e.bubbleSource=null;e.bubblePower=0;
+    }
+  }
   e.corrosionTime=Math.max(0,(e.corrosionTime||0)-dt);
   if(!e.corrosionTime)e.corrosion=0;
   if(e.burn>0){e.burn-=dt;e.hp-=e.burnDps*dt}
