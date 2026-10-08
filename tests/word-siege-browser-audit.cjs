@@ -194,6 +194,41 @@ let chrome,ws;
     }
     console.log('WORD_SIEGE_CAMPAIGN '+JSON.stringify({index:index+1,selected}));
   }
+  // Test arbitrary English entry on the real browser, independent of rack order.
+  await send('Page.navigate',{url:'http://127.0.0.1:'+port+'/games/language_word_siege/index.html?typingAudit=1'});
+  await pause(650);
+  const cow=await evaluate(`(()=>{
+    const field=document.getElementById('freeWord');
+    const result={};
+    document.getElementById('startBtn').click();
+    const initial=[...document.querySelectorAll('#rack .tile')].map(t=>t.textContent).join('');
+    field.value='cow';field.dispatchEvent(new Event('input',{bubbles:true}));
+    result.cowWord=document.getElementById('currentWord').textContent;
+    result.cowDefinition=document.getElementById('wordMeta').textContent;
+    result.cowEnabled=!document.getElementById('buildBtn').disabled;
+    document.getElementById('buildBtn').click();
+    const box=document.getElementById('game').getBoundingClientRect();
+    document.getElementById('game').dispatchEvent(new PointerEvent('pointerdown',{
+      bubbles:true,clientX:box.left+box.width*.39,clientY:box.top+box.height*.55,pointerType:'touch'
+    }));
+    result.after=document.getElementById('statusBox').textContent;
+    result.rackUnchanged=initial===[...document.querySelectorAll('#rack .tile')].map(t=>t.textContent).join('');
+    field.value='nuke';field.dispatchEvent(new Event('input',{bubbles:true}));
+    result.nukeDefinition=document.getElementById('wordMeta').textContent;
+    result.nukeDisabled=document.getElementById('buildBtn').disabled;
+    field.value='asdfgh';field.dispatchEvent(new Event('input',{bubbles:true}));
+    result.gibberishDisabled=document.getElementById('buildBtn').disabled;
+    return result;
+  })()`);
+  assert.equal(cow.cowWord,'COW','direct input must capitalize');
+  assert.ok(cow.cowDefinition.includes('소'));
+  assert.ok(cow.cowEnabled);
+  assert.ok(cow.after.includes('배치 완료'),'direct COW failed to build: '+JSON.stringify(cow));
+  assert.ok(cow.rackUnchanged,'direct input should not consume alphabet tiles');
+  assert.ok(cow.nukeDefinition.includes('핵'));
+  assert.ok(cow.nukeDisabled,'NUKE is too cheap at the start');
+  assert.ok(cow.gibberishDisabled,'gibberish should be rejected');
+  console.log('WORD_SIEGE_FREE_TYPE '+JSON.stringify(cow));
   assert.equal(pageErrors.length,0,'Browser JavaScript errors: '+JSON.stringify(pageErrors));
   console.log('WORD_SIEGE_BROWSER_AUDIT_PASSED 4 sizes, 10 stage selectors, 2 advanced stage renders and pointer gameplay');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1}).finally(async()=>{

@@ -10,8 +10,33 @@ function poly(c,points,fill){c.beginPath();c.moveTo(points[0][0],points[0][1]);f
 function disc(c,x,y,r,color){c.beginPath();c.arc(x,y,r,0,TAU);c.fillStyle=color;c.fill()}
 function line(c,x,y,x2,y2){c.beginPath();c.moveTo(x,y);c.lineTo(x2,y2);c.stroke()}
 function star(c,n,inner,outer,phase=0){c.beginPath();for(let i=0;i<n*2;i++){const a=phase+i*PI/n,r=i%2?inner:outer;const x=Math.cos(a)*r,y=Math.sin(a)*r;if(i===0)c.moveTo(x,y);else c.lineTo(x,y)}c.closePath()}
-function symbol(c,role,r,t){
+function symbol(c,role,r,t,word){
   const s=r*.45,phase=t*.95; c.save();c.translate(r*.03,-r*.97);
+  // These are still towers: the symbol only conveys the English word's meaning.
+  if(word==='COW'){
+    c.fillStyle='#fff';c.fillRect(-s*.65,-s*.5,s*1.3,s*.95);
+    poly(c,[[-s*.65,-s*.28],[-s*.97,-s*.8],[-s*.2,-s*.52]],'#fff6ed');
+    poly(c,[[s*.65,-s*.28],[s*.97,-s*.8],[s*.2,-s*.52]],'#fff6ed');
+    disc(c,-s*.27,-s*.1,s*.09,'#252b2e');disc(c,s*.27,-s*.1,s*.09,'#252b2e');
+    c.fillStyle='#f4b5b9';c.fillRect(-s*.36,s*.18,s*.72,s*.26);
+    c.restore();return;
+  }
+  if(word==='FIGHT'){
+    c.fillStyle='#fff5df';
+    c.fillRect(-s*.62,-s*.37,s*1.02,s*.86);
+    c.fillRect(s*.30,-s*.65,s*.35,s*.60);
+    c.fillStyle='#df6251';c.fillRect(-s*.5,s*.3,s*.95,s*.22);
+    c.restore();return;
+  }
+  if(word==='NUKE'){
+    disc(c,0,0,s*.90,'#ffdf67');disc(c,0,0,s*.30,'#212830');
+    for(let i=0;i<3;i++){
+      c.save();c.rotate(i*Math.PI*2/3+Math.PI*.25);
+      c.beginPath();c.moveTo(0,-s*.32);c.arc(0,0,s*.79,-Math.PI*.57,-Math.PI*.43);
+      c.closePath();c.fillStyle='#212830';c.fill();c.restore();
+    }
+    c.restore();return;
+  }
   switch(role){
     case 'rapid':
       stroke(c,'#fff3d7',2.5);line(c,-s*.6,0,s*.6,0);poly(c,[[s*.85,0],[s*.1,-s*.45],[s*.1,s*.45]],'#fff3d7');break;
@@ -78,7 +103,7 @@ function drawTower(c,t,r,clock){
   c.shadowColor='rgba(0,0,0,.24)';c.shadowBlur=2;c.fillText(t.word[0],0,r*.05);
   c.shadowBlur=0;
   // Mechanical badge and role pictogram sit above the letter, not on top of it.
-  disc(c,0,-r*.96,r*.30,'#27313a');symbol(c,role,r,animate);
+  disc(c,0,-r*.96,r*.30,'#27313a');symbol(c,role,r,animate,t.word);
   if(busy){
     c.globalAlpha=.4+.55*Math.min(1,t.pulse/.25);
     stroke(c,'#fff6d2',2.5);c.beginPath();c.arc(0,0,r*(1.03+(.28-t.pulse)*1.2),0,TAU);c.stroke();
@@ -93,6 +118,14 @@ function drawShot(c,s,W,H,clock){
   const role=s.kind;
   const radius=role==='explosive'||role==='burst'||role==='special'?6:3.5;
   c.save();c.translate(x,y);
+  if(s.source?.word==='COW'){
+    disc(c,0,0,5,'#ffffff');disc(c,-1,-2,1.6,'#bfdbe9');
+    c.restore();return;
+  }
+  if(s.source?.word==='NUKE'){
+    disc(c,0,0,7,'#ffd747');disc(c,0,0,4,'#fa6b2b');
+    c.restore();return;
+  }
   c.shadowColor=s.color;c.shadowBlur=8;
   if(role==='slow'){
     c.rotate(clock*4);stroke(c,'#d9f6ff',2);poly(c,[[0,-7],[5,0],[0,7],[-5,0]],'#c8f3ff');c.stroke();
