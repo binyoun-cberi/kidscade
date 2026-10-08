@@ -92,7 +92,7 @@ function remeshSource(source,style){
   return geometry;
 }
 
-function add3dDetails({THREE: _THREE, source,style,group,makeSolidMaterial,makeRigidSkinnedPiece,resolveFirstBoneName}){
+function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,source,style,group,makeSolidMaterial,makeRigidSkinnedPiece,resolveFirstBoneName}){
   const spine=resolveFirstBoneName(source.skeleton,['DEF-spine.002','DEF-spine.003','DEF-spine.001','spine']);
   const pelvis=resolveFirstBoneName(source.skeleton,['DEF-spine','DEF-spine.001','spine']);
   const accent=makeSolidMaterial(style.color==='\x23f0e2d5'?'#ccb7ae':'#ecedf0',style.label+' 마감');
@@ -102,16 +102,43 @@ function add3dDetails({THREE: _THREE, source,style,group,makeSolidMaterial,makeR
     geometry.computeBoundingSphere();
     group.add(makeRigidSkinnedPiece(source,geometry,bone,material,style.id+'_'+id));
   };
+  const fitBody=getNode(style.fit==='male'?'kidscade_male_body':'character_low');
+  const addMatchedSleeve=(geometry,id,sign)=>{
+    if(!fitBody?.isSkinnedMesh)throw new Error('Sleeve skin reference body unavailable');
+    const reference=fitBody.geometry;
+    const refPos=reference.getAttribute('position');
+    const refIndex=reference.getAttribute('skinIndex');
+    const refWeight=reference.getAttribute('skinWeight');
+    const p=geometry.getAttribute('position');
+    const indices=new Uint16Array(p.count*4);
+    const weights=new Float32Array(p.count*4);
+    for(let i=0;i<p.count;i++){
+      const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
+      let nearest=-1,score=Infinity;
+      for(let j=0;j<refPos.count;j++){
+        const bx=refPos.getX(j),by=refPos.getY(j),bz=refPos.getZ(j);
+        if(Math.sign(bx)!==sign||Math.abs(bx)<.135||by<.67||by>1.20)continue;
+        const distance=(x-bx)**2+(y-by)**2*1.4+(z-bz)**2;
+        if(distance<score){score=distance;nearest=j;}
+      }
+      if(nearest<0)throw new Error('No suitable original Chibi arm weights');
+      for(let k=0;k<4;k++){
+        indices[i*4+k]=refIndex.getComponent(nearest,k);
+        weights[i*4+k]=refWeight.getComponent(nearest,k);
+      }
+    }
+    geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(indices,4));
+    geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
+    geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    const mesh=cloneSkinnedMeshWithGeometry(
+      source,geometry,makeSolidMaterial(style.color,style.label+' 연결 소매'),style.id+'_'+id
+    );
+    mesh.userData={type:'skinned-sleeve',sourceWeights:'nearest-fit-body-arm'};
+    group.add(mesh);
+  };
   if(style.details.includes('longSleeve')||style.details.includes('puffSleeve')){
     const puff=style.details.includes('puffSleeve');
     for(const sign of [-1,1]){
-      const bone=resolveFirstBoneName(source.skeleton,[
-        sign<0?'DEF-upper_arm.L':'DEF-upper_arm.R',
-        sign<0?'DEF-upper_armL':'DEF-upper_armR'
-      ]);
-      const forearm=source.skeleton.bones.find(candidate=>
-        /forearm/i.test(candidate.name)&&candidate.name.endsWith(sign<0?'L':'R')
-      )?.name||bone;
       const start=new THREE.Vector3(sign*.20,1.08,-.026);
       const elbow=new THREE.Vector3(sign*.30,.91,-.039);
       const cuff=new THREE.Vector3(sign*.345,.775,-.044);
@@ -126,12 +153,10 @@ function add3dDetails({THREE: _THREE, source,style,group,makeSolidMaterial,makeR
         return geometry;
       };
       const upper=makeTube(start,elbow,puff?.100:.077,puff?.078:.067);
-      add(upper,makeSolidMaterial(style.color,style.label+' 소매'),
-        sign<0?'upperSleeve_left':'upperSleeve_right',bone);
+      addMatchedSleeve(upper,sign<0?'upperSleeve_left':'upperSleeve_right',sign);
       if(!puff){
         const lower=makeTube(elbow,cuff,.069,.050);
-        add(lower,makeSolidMaterial(style.color,style.label+' 긴소매'),
-          sign<0?'forearmSleeve_left':'forearmSleeve_right',forearm);
+        addMatchedSleeve(lower,sign<0?'forearmSleeve_left':'forearmSleeve_right',sign);
       }
     }
   }
@@ -276,7 +301,7 @@ export function createOutfitPack({
     const shell=cloneSkinnedMeshWithGeometry(source,geometry,material,style.id+'_shell');
     group.add(shell);
     if(TWO_LEG_STYLES.has(style.id))makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWithGeometry});
-    add3dDetails({THREE,source,style,group,makeSolidMaterial,makeRigidSkinnedPiece,resolveFirstBoneName});
+    add3dDetails({THREE,getNode,cloneSkinnedMeshWithGeometry,source,style,group,makeSolidMaterial,makeRigidSkinnedPiece,resolveFirstBoneName});
     source.parent.add(group);
     group.visible=false;
     created.push(group);
