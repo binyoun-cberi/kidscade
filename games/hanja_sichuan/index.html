@@ -38,10 +38,36 @@ h1{font-size:clamp(26px,4vw,38px);margin:0;letter-spacing:-.05em}.tagline{color:
 dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #c0a875;border-radius:22px;padding:29px;background:#20354f;color:white;box-shadow:0 25px 75px #0009;z-index:30;text-align:center}dialog::backdrop{background:#0b1529d9;backdrop-filter:blur(5px)}dialog h2{font-size:30px;margin:0 0 10px}dialog p{line-height:1.7;color:#d4e1ed}.result-score{font-size:41px;color:var(--gold);font-weight:950;margin:5px 0}.dialog-buttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.dialog-buttons button{min-height:44px}
 @media(max-width:600px){:root{--tile:62px}.app{padding:12px 8px 82px}header{margin:6px 5px 14px}h1{font-size:25px}.brand-icon{width:45px;height:45px;font-size:29px}.tagline{font-size:11px}.config{gap:8px;padding:11px;border-radius:15px}.config label{flex:1 1 85px}.config select{min-width:0;width:100%;font-size:13px}.config .primary{flex:1 1 100%;font-size:15px}.hud{gap:5px}.stat{padding:8px 3px;border-radius:10px}.stat span{font-size:10px}.stat strong{font-size:17px}.board-wrap{margin:calc(var(--tile)*.52)}.game{padding:3px;border-radius:14px}.actions{gap:6px}.actions button{flex:1 1 auto;padding:8px 11px;font-size:12px}.guide{font-size:12px;margin:10px 4px}.tile{border-radius:9px}.tile.reading .meaning,.tile.reading .reading-text{font-size:12px}}
 @media(prefers-reduced-motion:reduce){.tile,.stat{transition:none}.tile.clearing,.tile.hinted{animation:none}}
+
+/* Readability and small-screen navigation */
+.score-note{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#b8cfe2;font-weight:800;font-size:12px;padding:0 5px 8px;flex-wrap:wrap}
+#penalty{color:#ffd09b}
+.board-toolbar{display:flex;justify-content:space-between;align-items:center;min-height:41px;gap:8px;padding:4px 9px 7px;color:#d7e8ef;font-size:12px;font-weight:750}
+.board-viewport-controls{display:flex;gap:6px;align-items:center}
+.board-viewport-controls button{border:1px solid #8095ad;background:#314a67;color:white;min-height:38px;min-width:38px;border-radius:10px;font-size:12px;font-weight:900;padding:6px 9px}
+.board-scroller{min-height:unset;max-width:100%;-webkit-overflow-scrolling:touch}
+.board-wrap{margin:calc(var(--tile)*.52)}
+.tile.reading .meaning{max-width:94%;max-height:67%;overflow:hidden;white-space:normal;text-overflow:clip;overflow-wrap:anywhere;word-break:keep-all;line-height:1.06;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;text-align:center}
+.tile.reading.long-meaning .meaning{font-size:clamp(9px,calc(var(--tile)*.155),12px);-webkit-line-clamp:4}
+.tile.reading .reading-text{flex:none}
+.tile.clearing{animation-duration:.19s;pointer-events:none}
+.selected-info{border-top:1px solid #49647a;margin:0 9px;padding:10px 5px;color:#fff0bf;font-size:clamp(14px,2.3vw,18px);font-weight:900;text-align:center;min-height:41px;overflow-wrap:anywhere}
+.pause-overlay{position:absolute;inset:42px 0 0;display:grid;place-items:center;z-index:15;background:#0a1924e8;backdrop-filter:blur(8px);font-weight:900;text-align:center;padding:12px}
+@media(max-width:640px){
+ .tile.reading .meaning{font-size:clamp(10px,calc(var(--tile)*.2),13px)}
+ .tile.reading .reading-text{font-size:clamp(10px,calc(var(--tile)*.2),13px)}
+ .tile.reading.long-meaning .meaning{font-size:clamp(9px,calc(var(--tile)*.16),12px)}
+ .board-toolbar{flex-wrap:wrap}
+ .board-viewport-controls{margin-left:auto}
+ .game{padding:4px}
+ .board-scroller{touch-action:pan-x pan-y}
+}
+@media(prefers-reduced-motion:reduce){.tile.clearing{opacity:.35}}
 </style>
 <script src="../../kidscade-game-sdk.js" data-game-id="hanja_sichuan" data-title="한자 사천성" data-shell="true" data-orientation="any"></script>
 <script src="../hanja_test/data/hanja-grade-data.js"></script>
 <script src="./engine.js"></script>
+<script src="./rules.js"></script>
 </head>
 <body>
 <div class="app">
@@ -57,8 +83,8 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
       <option value="2">2급 · 2,355자</option><option value="1">1급 · 3,500자</option>
     </select></label>
     <label>판 크기<select id="difficulty">
-      <option value="start">입문 · 4×4</option><option value="easy">초급 · 6×6</option>
-      <option value="normal" selected>중급 · 8×6</option><option value="hard">고급 · 8×8</option>
+      <option value="start" selected>입문 · 4×4</option><option value="easy">초급 · 6×6</option>
+      <option value="normal">중급 · 8×6</option><option value="hard">고급 · 8×8</option>
       <option value="master">달인 · 10×8</option>
     </select></label>
     <label>방식<select id="mode"><option value="relaxed" selected>천천히 · 연습</option><option value="timed">시간 도전</option></select></label>
@@ -72,18 +98,25 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
     <div class="stat timing" id="timeBox"><span id="timeLabel">경과 시간</span><strong id="clock">00:00</strong></div>
     <div class="stat"><span>최고 점수</span><strong id="best">0</strong></div>
   </section>
-  <main class="game">
+  <div class="score-note" aria-live="polite"><span id="recordScope">8급 · 입문 · 연습</span><span id="penalty">차감 누적 0점</span></div>
+  <main class="game" id="gamePanel">
+    <div class="board-toolbar">
+      <span id="boardHelp">패를 눌러 시작하세요.</span>
+      <div class="board-viewport-controls"><button type="button" id="panLeft" aria-label="게임판 왼쪽으로 이동" hidden>◀</button><button type="button" id="viewToggle" aria-pressed="false" hidden>전체판 보기</button><button type="button" id="panRight" aria-label="게임판 오른쪽으로 이동" hidden>▶</button></div>
+    </div>
     <div class="board-scroller" id="boardScroll" aria-label="한자 사천성 게임판" tabindex="0">
       <div class="board-wrap" id="boardWrap">
         <div id="board" class="board" role="group" aria-label="한자와 훈음 연결 게임판"></div>
         <svg id="linkLayer" class="link-layer" aria-hidden="true"></svg>
       </div>
     </div>
+    <div id="pauseOverlay" class="pause-overlay" hidden>일시 정지 · 계속하기를 눌러주세요</div>
+    <div id="selectedInfo" class="selected-info" role="status" aria-live="polite">패를 고르면 여기에 글자를 크게 보여줘요.</div>
     <div id="toast" class="toast" role="status" aria-live="polite">새 판 시작을 누르면 게임이 시작돼요.</div>
   </main>
   <nav class="actions" aria-label="게임 기능">
-    <button type="button" id="hintBtn">힌트 보기 (−20점)</button>
-    <button type="button" id="shuffleBtn">패 섞기 (−50점)</button>
+    <button type="button" id="hintBtn">힌트 보기 (−80점)</button>
+    <button type="button" id="shuffleBtn">패 섞기 (−120점)</button>
     <button type="button" id="pauseBtn">잠시 멈춤</button>
     <button type="button" id="reviewBtn">오답 복습</button>
   </nav>
@@ -104,11 +137,12 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
 (()=>{
   'use strict';
   const E=window.HanjaSichuanEngine;
+  const Rules=window.HanjaSichuanRules;
   const DATA=window.KIDSCADE_HANJA_GRADE_DATA;
   const SDK=window.KidscadeGame;
   const $=id=>document.getElementById(id);
   const MODES={start:[4,4,150],easy:[6,6,210],normal:[8,6,270],hard:[8,8,330],master:[10,8,390]};
-  const st={board:[],cols:8,rows:6,grade:8,difficulty:'normal',mode:'relaxed',active:false,paused:false,selected:-1,locked:false,score:0,combo:0,maxCombo:0,wrong:0,hints:0,shuffles:0,remaining:0,elapsed:0,deadline:0,pauseAt:0,startedAt:0,token:0,dialogOpen:false};
+  const st={board:[],cols:4,rows:4,grade:8,difficulty:'start',mode:'relaxed',active:false,paused:false,selected:-1,locked:false,zoomed:false,score:0,points:0,penaltyPoints:0,combo:0,maxCombo:0,wrong:0,hints:0,shuffles:0,remaining:0,elapsed:0,deadline:0,pauseAt:0,startedAt:0,token:0,dialogOpen:false};
   let audioContext=null,unlockTimer=0,lineTimer=0,hintTimer=0,toastTimer=0;
   const now=()=>Date.now();
   const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
@@ -140,9 +174,34 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
     $('toast').textContent=message;
     toastTimer=setTimeout(()=>{if(st.active)$('toast').textContent='한자와 뜻·음 패를 순서대로 선택하세요.';},2600);
   }
+  function charge(kind){
+    st.penaltyPoints+=Rules.COSTS[kind];
+    st.score=Rules.score(st.points,st.penaltyPoints);
+  }
+  function currentCell(){
+    return Rules.tileSize({viewportWidth:window.innerWidth||1024,boardWidth:$('boardScroll').clientWidth||Math.max(280,(window.innerWidth||1024)-30),cols:st.cols,zoomed:st.zoomed});
+  }
+  function updateViewControls(){
+    const mobile=(window.innerWidth||1024)<=640;
+    $('viewToggle').hidden=!mobile;
+    $('panLeft').hidden=!mobile||!st.zoomed;
+    $('panRight').hidden=!mobile||!st.zoomed;
+    $('viewToggle').textContent=st.zoomed?'전체판 보기':'글씨 크게';
+    $('viewToggle').setAttribute('aria-pressed',String(st.zoomed));
+    $('boardHelp').textContent=mobile?(st.zoomed?'손가락으로 밀어 양쪽 패를 찾아보세요.':'전체판을 보고 패를 터치하세요. 작으면 글씨 크게를 누르세요.'):'한자와 뜻·음 패를 연결하세요.';
+  }
+  function updateSelection(){
+    $('board').querySelectorAll('.selected').forEach(el=>el.classList.remove('selected'));
+    const tile=st.board[st.selected];
+    if(tile)$('board').children[st.selected]?.classList.add('selected');
+    $('selectedInfo').textContent=tile?(tile.kind==='hanja'?'선택한 한자: '+tile.hanja:'선택한 뜻과 음: '+tile.label):'패를 선택하면 이곳에 전체 글자가 표시돼요.';
+  }
   function updateHud(){
     $('remaining').textContent=st.remaining;
     $('score').textContent=st.score.toLocaleString('ko-KR');
+    $('penalty').textContent='차감 누적 '+st.penaltyPoints.toLocaleString('ko-KR')+'점';
+    const names={start:'입문',easy:'초급',normal:'중급',hard:'고급',master:'달인'};
+    $('recordScope').textContent=st.grade+'급 · '+names[st.difficulty]+' · '+(st.mode==='timed'?'시간 도전':'연습');
     $('combo').textContent=st.combo;
     $('best').textContent=Number(storage.read(key(),0)).toLocaleString('ko-KR');
     const secs=st.mode==='timed' ? Math.max(0,Math.ceil((st.deadline-(st.paused?st.pauseAt:now()))/1000)) : Math.max(0,Math.floor((st.paused?st.pauseAt:now())-st.startedAt)/1000);
@@ -151,6 +210,9 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
     $('timeBox').classList.toggle('urgent',st.mode==='timed'&&secs<=20);
     $('pauseBtn').textContent=st.paused?'계속하기':'잠시 멈춤';
     ['hintBtn','shuffleBtn','pauseBtn'].forEach(id=>$(id).disabled=!st.active);
+    $('hintBtn').disabled=$('shuffleBtn').disabled=!st.active||st.paused||st.locked;
+    $('pauseOverlay').hidden=!st.paused;
+    updateViewControls();
   }
   function clearEffects(){
     clearTimeout(unlockTimer);clearTimeout(lineTimer);clearTimeout(hintTimer);
@@ -158,7 +220,7 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
     document.querySelectorAll('.hinted,.clearing').forEach(el=>el.classList.remove('hinted','clearing'));
   }
   function drawBoard(){
-    const cell=matchMedia('(max-width:600px)').matches?62:72;
+    const cell=currentCell();
     const b=$('board');
     $('boardWrap').style.setProperty('--tile',cell+'px');
     $('boardWrap').style.setProperty('--cols',st.cols);
@@ -177,18 +239,21 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
         const meaning=document.createElement('span');meaning.className='meaning';meaning.textContent=tile.meaning;
         const reading=document.createElement('span');reading.className='reading-text';reading.textContent=tile.reading;
         btn.append(meaning,reading);btn.setAttribute('aria-label','뜻과 음 '+tile.label);
+        btn.title=tile.label;
+        if(tile.meaning.length>=5)btn.classList.add('long-meaning');
       }
       if(st.selected===index)btn.classList.add('selected');
       btn.disabled=!st.active||st.paused||st.locked;
       fragment.appendChild(btn);
     });
     b.appendChild(fragment);
+    updateSelection();
     const svg=$('linkLayer');
     svg.setAttribute('viewBox','0 0 '+st.cols*cell+' '+st.rows*cell);
     svg.style.width=st.cols*cell+'px';svg.style.height=st.rows*cell+'px';
   }
   function line(path){
-    const cell=matchMedia('(max-width:600px)').matches?62:72;
+    const cell=currentCell();
     const d=path.map((p,i)=>(i?'L':'M')+' '+((p.x+.5)*cell)+' '+((p.y+.5)*cell)).join(' ');
     const svg=$('linkLayer');svg.replaceChildren();
     const back=document.createElementNS('http://www.w3.org/2000/svg','path');
@@ -215,27 +280,28 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
     clearEffects();st.token++;st.selected=-1;st.locked=false;
     try{
       st.board=E.generateBoard(pairs,st.cols,st.rows).board;
-      if(!automatic){st.score=Math.max(0,st.score-50);st.shuffles++;st.combo=0;tone('bad');announce('패를 다시 섞었어요. −50점');}
+      if(!automatic){charge('shuffle');st.shuffles++;st.combo=0;tone('bad');announce('패를 다시 섞었어요. −120점');}
       drawBoard();updateHud();
     }catch(error){console.error(error);announce('패를 섞지 못했어요. 다시 시도해 주세요.');}
   }
   function pick(index){
     if(!st.active||st.paused||st.locked||!st.board[index])return;
-    if(st.selected<0){st.selected=index;drawBoard();return;}
-    if(st.selected===index){st.selected=-1;drawBoard();return;}
+    if(st.selected<0){st.selected=index;updateSelection();return;}
+    if(st.selected===index){st.selected=-1;updateSelection();return;}
     const before=st.selected;st.selected=-1;
     const a=st.board[before],b=st.board[index];
     const path=E.matchPath(st.board,st.cols,st.rows,before,index);
     if(!path){
-      st.wrong++;st.combo=0;st.score=Math.max(0,st.score-5);tone('bad');
-      if(a.pairId!==b.pairId){saveWrong(a);saveWrong(b);announce('다른 한자예요! 뜻과 음을 다시 확인하세요. −5점');}
-      else announce('길이 막혔어요! 두 번 이하 꺾여야 연결돼요. −5점');
-      drawBoard();updateHud();return;
+      st.wrong++;st.combo=0;charge('wrong');tone('bad');
+      if(a.pairId!==b.pairId){saveWrong(a);saveWrong(b);announce('다른 한자예요! 뜻과 음을 다시 확인하세요. −25점');}
+      else announce('길이 막혔어요! 두 번 이하 꺾여야 연결돼요. −25점');
+      updateSelection();updateHud();return;
     }
     st.locked=true;st.combo++;st.maxCombo=Math.max(st.maxCombo,st.combo);
-    const gained=100+Math.min(st.combo-1,10)*10;st.score+=gained;
+    const gained=100+Math.min(st.combo-1,10)*10;
+    st.points+=gained;st.score=Rules.score(st.points,st.penaltyPoints);
     st.remaining--;tone('good');
-    drawBoard();line(path);
+    updateSelection();line(path);
     const cellButtons=$('board').children;
     cellButtons[before]?.classList.add('clearing');cellButtons[index]?.classList.add('clearing');
     announce(a.hanja+' — '+a.label+' · +'+gained+'점'+(st.combo>=3?' · '+st.combo+'콤보!':''));
@@ -246,26 +312,27 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
       $('linkLayer').replaceChildren();drawBoard();updateHud();
       if(!st.remaining)finish(true);
       else noMovesRescue();
-    },340);
+    },190);
   }
   function hint(){
     if(!st.active||st.paused||st.locked)return;
     const moves=E.availableMatches(st.board,st.cols,st.rows);
     if(!moves.length){rearrange(true);return;}
     const {a,b}=moves[0];
-    st.hints++;st.combo=0;st.score=Math.max(0,st.score-20);
+    st.hints++;st.combo=0;charge('hint');
     document.querySelector('[data-index="'+a+'"]')?.classList.add('hinted');
     document.querySelector('[data-index="'+b+'"]')?.classList.add('hinted');
     clearTimeout(hintTimer);
     hintTimer=setTimeout(()=>document.querySelectorAll('.hinted').forEach(el=>el.classList.remove('hinted')),1600);
-    announce('반짝이는 두 패를 찾아보세요. −20점');updateHud();
+    announce('반짝이는 두 패를 찾아보세요. −80점');updateHud();
   }
   function finish(clear){
     if(!st.active)return;
     st.active=false;st.locked=false;st.token++;clearEffects();
     const elapsed=Math.max(0,Math.floor((now()-st.startedAt)/1000));
-    const bonus=clear&&st.mode==='timed'?Math.max(0,Math.ceil((st.deadline-now())/1000))*3:0;
-    st.score+=bonus;
+    const bonuses=Rules.rewards({clear,wrong:st.wrong,hints:st.hints,shuffles:st.shuffles,mode:st.mode,secondsLeft:Math.max(0,Math.ceil((st.deadline-now())/1000))});
+    st.points+=bonuses.total;
+    st.score=Rules.score(st.points,st.penaltyPoints);
     const previous=Number(storage.read(key(),0));
     if(clear&&st.score>previous)storage.write(key(),st.score);
     updateHud();drawBoard();
@@ -274,11 +341,11 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
     $('finishTitle').textContent=title;
     $('finishScore').textContent=st.score.toLocaleString('ko-KR')+'점';
     $('finishMessage').textContent=clear?'한자와 뜻·음을 모두 찾아냈어요!':'다시 도전해 기록을 높여보세요.';
-    $('finishDetail').textContent='최대 '+st.maxCombo+'콤보 · 실수 '+st.wrong+'회 · 힌트 '+st.hints+'회 · 섞기 '+st.shuffles+'회'+(bonus?' · 시간 보너스 '+bonus+'점':'');
+    $('finishDetail').textContent='최대 '+st.maxCombo+'콤보 · 실수 '+st.wrong+'회 · 힌트 '+st.hints+'회 · 섞기 '+st.shuffles+'회 · 차감 '+st.penaltyPoints+'점'+(bonuses.independent?' · 힌트 없이 +100점':'')+(bonuses.accuracy?' · 완벽 클리어 +300점':'')+(bonuses.time?' · 시간 보너스 +'+bonuses.time+'점':'');
     const dialog=$('finishDialog');
     if(!dialog.open)dialog.showModal();
     if(SDK?.result){
-      SDK.result({scope:'stage',status:clear?'completed':'failed',outcome:clear?'clear':'fail',score:st.score,stage:st.difficulty,grade:st.grade,mode:st.mode,wrong:st.wrong,hints:st.hints,maxCombo:st.maxCombo,clean:clear&&st.wrong===0&&st.hints===0&&st.shuffles===0,elapsedSeconds:elapsed});
+      SDK.result({scope:'stage',status:clear?'completed':'failed',outcome:clear?'clear':'fail',score:st.score,stage:st.difficulty,grade:st.grade,mode:st.mode,wrong:st.wrong,hints:st.hints,shuffles:st.shuffles,maxCombo:st.maxCombo,penalties:st.penaltyPoints,clean:bonuses.perfect,elapsedSeconds:elapsed});
     }
     announce(title);
   }
@@ -298,12 +365,12 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
   function newGame(){
     const grade=Number($('grade').value),difficulty=$('difficulty').value,mode=$('mode').value;
     const [cols,rows,seconds]=MODES[difficulty];
-    if(!E||!DATA||!Array.isArray(DATA.entries)){announce('한자 데이터를 읽지 못했어요. 새로고침해 주세요.');return;}
+    if(!E||!Rules||!DATA||!Array.isArray(DATA.entries)){announce('한자 데이터를 읽지 못했어요. 새로고침해 주세요.');return;}
     clearEffects();st.token++;
     try{
       const pairs=E.pickEntries(DATA.entries,grade,cols*rows/2);
       const generated=E.generateBoard(pairs,cols,rows);
-      Object.assign(st,{board:generated.board,cols,rows,grade,difficulty,mode,active:true,paused:false,selected:-1,locked:false,score:0,combo:0,maxCombo:0,wrong:0,hints:0,shuffles:0,remaining:pairs.length,startedAt:now(),deadline:mode==='timed'?now()+seconds*1000:0,pauseAt:0});
+      Object.assign(st,{board:generated.board,cols,rows,grade,difficulty,mode,active:true,paused:false,selected:-1,locked:false,zoomed:((window.innerWidth||1024)<=640&&cols>=8),score:0,points:0,penaltyPoints:0,combo:0,maxCombo:0,wrong:0,hints:0,shuffles:0,remaining:pairs.length,startedAt:now(),deadline:mode==='timed'?now()+seconds*1000:0,pauseAt:0});
       $('finishDialog').close();
       drawBoard();updateHud();
       $('boardScroll').scrollLeft=0;
@@ -329,6 +396,19 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
   $('againBtn').addEventListener('click',newGame);
   $('closeBtn').addEventListener('click',()=>$('finishDialog').close());
   $('hintBtn').addEventListener('click',hint);
+  $('viewToggle').addEventListener('click',()=>{
+    if(!st.board.length||st.locked)return;
+    st.zoomed=!st.zoomed;
+    $('linkLayer').replaceChildren();drawBoard();updateViewControls();
+    $('boardScroll').scrollLeft=0;
+  });
+  function pan(dir){
+    const scroller=$('boardScroll');const amount=currentCell()*Math.min(3,st.cols);
+    if(typeof scroller.scrollBy==='function')scroller.scrollBy({left:amount*dir,behavior:'smooth'});
+    else scroller.scrollLeft+=amount*dir;
+  }
+  $('panLeft').addEventListener('click',()=>pan(-1));
+  $('panRight').addEventListener('click',()=>pan(1));
   $('reviewBtn').addEventListener('click',openReview);
   $('closeReviewBtn').addEventListener('click',()=>$('reviewDialog').close());
   $('clearReviewBtn').addEventListener('click',()=>{storage.write('hanja_sichuan_review_'+Number($('grade').value),[]);openReview();});
@@ -344,7 +424,7 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&st.active&&!st.paused)togglePause();});
   setInterval(()=>{
     if(!st.active||st.paused)return;
-    if(st.mode==='timed'&&now()>=st.deadline){finish(false);return;}
+    if(st.mode==='timed'&&now()>=st.deadline&&!(st.locked&&st.remaining===0)){finish(false);return;}
     updateHud();
   },350);
   newGame();
