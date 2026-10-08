@@ -311,13 +311,15 @@ test('male short hair reuses hairone topology, materials and original skin weigh
   assert.match(maleHair,/geometry\.computeBoundingBox\(\)/);
   assert.match(maleHair,/positions\.setXYZ\(i,x,y,z\)/);
   assert.match(maleHair,/const taper=lower\*lower\*\(3-2\*lower\)/);
-  assert.match(maleHair,/const y=oy\+\(cutoff-oy\)\*\.58\*taper\+size\.y\*\.045\*temple/);
+  assert.match(maleHair,/const y=oy\+\(cutoff-oy\)\*\.58\*taper\+size\.y\*\(\.045\*temple-\.075\*templeBridge-\.018\*sideburn\)/);
   assert.match(maleHair,/const eyeClearanceY=eyes\.geometry\.boundingBox\.max\.y\+\.02/);
   assert.match(maleHair,/const backOfFaceZ=centerZ-\.045/);
-  assert.match(maleHair,/if\(lowest>=eyeClearanceY \|\| foremost<=backOfFaceZ\)/);
+  assert.match(maleHair,/const faceOverhang=lowest<eyeClearanceY&&foremost>backOfFaceZ/);
+  assert.match(maleHair,/if\(!faceOverhang\|\|outerTemple\)/);
   assert.match(maleHair,/geometry\.setIndex\(kept\)/);
-  assert.match(maleHair,/removedEyeLevelTriangles:\(originalIndex\.count-kept\.length\)\/3/);
-  assert.match(maleHair,/eyeClearancePolicy:'trim front\/side hair faces below upper-eye clearance; keep rear nape'/);
+  assert.match(maleHair,/removedEyeLevelTriangles:removedFaceTriangles/);
+  assert.match(maleHair,/preservedTempleTriangles/);
+  assert.match(maleHair,/eyeClearancePolicy:'trim central\/front eye-level faces only; retain original outer temple and rear nape'/);
   assert.match(maleHair,/cloneSkinnedMeshWithGeometry\(/);
   assert.match(maleHair,/source\.parent\.add\(hair\)/);
   assert.doesNotMatch(maleHair,/SphereGeometry|ConeGeometry|CylinderGeometry|TubeGeometry/);
@@ -476,13 +478,15 @@ test('male ear-side bob flap is drawn toward the head with a continuous weighted
   const js=read('teacher/character-3d-studio.js');
   const hair=js.slice(js.indexOf('function createKidscadeMaleHairShort(){'),js.indexOf('function createKidscadeMaleSet(){'));
   assert.match(hair,/const temple=smooth\(\.43,\.83,side\)\*smooth\(\.08,\.60,lower\)/);
-  assert.match(hair,/const x=centerX\+\(ox-centerX\)\*\(1-\.18\*taper-\.16\*temple\)/);
-  assert.match(hair,/const z=centerZ\+\(oz-centerZ\)\*\(1-\.10\*taper-\.16\*temple\)/);
+  assert.match(hair,/const x=centerX\+\(ox-centerX\)\*/);
+  assert.match(hair,/\.095\*templeBridge/);
+  assert.match(hair,/const z=centerZ\+\(oz-centerZ\)\*/);
+  assert.match(hair,/\.018\*templeBridge/);
   assert.match(hair,/sideHairPolicy:/);
   assert.match(hair,/geometry\.setIndex\(kept\)/);
   assert.doesNotMatch(hair,/new THREE\.(?:SphereGeometry|ConeGeometry|CylinderGeometry)/);
   const manifest=JSON.parse(read('chibi/asset-manifest.json'));
-  assert.equal(manifest.customParts.kidscade_male_hair_short.revision,'v6-temple-ear-shortcut');
+  assert.equal(manifest.customParts.kidscade_male_hair_short.revision,'v7-temple-bridge');
 });
 
 test('grounded male gait damps vertical hip hop and splayed thigh swing in WALK and RUN',()=>{
@@ -573,7 +577,7 @@ test('Chibi v5 provides eight distinct skinned hair entries per body fit, with u
   assert.match(js,/styleParameters:\{\.\.\.style\}/);
   for(const name of [...male.slice(1),...female.slice(-2)]){
     assert.ok(js.includes(name),'Style not declared in client: '+name);
-    assert.equal(m.customParts[name].revision,'v5-wardrobe-hair-pack-1');
+    assert.equal(m.customParts[name].revision,name.startsWith('kidscade_male_')?'v7-male-temple-fill':'v5-wardrobe-hair-pack-1');
   }
 });
 
@@ -641,4 +645,32 @@ test('v5.2 local browser audit surveys animated garments and reimports rigged GL
   assert.match(audit,/window\.__kc3dAudit\.roundtripExport\(\)/);
   assert.match(audit,/assert\.equal\(exported\.clips\.length,11/);
   assert.match(audit,/outfit-'\+name/);
+});
+
+
+test('male Chibi v7 preserves outer temple triangle connectivity while still clearing frontal eye overhang',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const male=js.slice(js.indexOf('function createKidscadeMaleHairShort(){'),js.indexOf('const HAIR_STYLE_PARAMETERS='));
+  assert.match(male,/const originalPositions=source\.geometry\.getAttribute\('position'\)/);
+  assert.match(male,/const center=\(originalPositions\.getX\(a\)\+originalPositions\.getX\(b\)\+originalPositions\.getX\(c\)\)\/3/);
+  assert.match(male,/const outerTemple=lateral>=\.49/);
+  assert.match(male,/const faceOverhang=lowest<eyeClearanceY&&foremost>backOfFaceZ/);
+  assert.match(male,/if\(!faceOverhang\|\|outerTemple\)/);
+  assert.match(male,/if\(faceOverhang&&outerTemple\)preservedTempleTriangles\+\+/);
+  assert.match(male,/const templeBridge=smooth\(\.43,\.72,side\)\*smooth\(\.12,\.52,lower\)/);
+  assert.match(male,/const sideburn=smooth\(\.52,\.82,side\)\*smooth\(\.46,\.88,lower\)/);
+  assert.doesNotMatch(male,/new THREE\.(SphereGeometry|CylinderGeometry|ConeGeometry)/);
+  const manifest=JSON.parse(read('chibi/asset-manifest.json'));
+  assert.equal(manifest.wardrobeLibrary.hairTempleRevision,'v7-temple-bridge');
+});
+
+test('seven derived male hairstyles keep the temple cover without affecting female hairstyles',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const styles=js.slice(js.indexOf('const HAIR_STYLE_PARAMETERS='),js.indexOf('function createKidscadeHairCollection(){'));
+  const maleLines=styles.split('\n').filter(line=>line.trim().startsWith('kidscade_male_hair_'));
+  assert.equal(maleLines.length,7);
+  assert.ok(maleLines.every(line=>/templeFill:\.\d+/.test(line)));
+  assert.match(js,/const safeSide=style\.templeFill===undefined\?style\.side:Math\.max\(style\.side,-\.12\)/);
+  assert.match(js,/templeBridgeVersion:style\.templeFill===undefined\?null:'v7'/);
+  assert.match(js,/preservedTempleTriangles:mesh\?\.userData\?\.preservedTempleTriangles\|\|0/);
 });
