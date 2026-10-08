@@ -8,7 +8,7 @@ const KS=window.KidscadeStorage||null;
 const $=id=>document.getElementById(id);
 const canvas=$('game'), ctx=canvas.getContext('2d');
 const boardWrap=$('boardWrap'), rackEl=$('rack'), currentWordEl=$('currentWord'), wordMetaEl=$('wordMeta');
-const waveBtn=$('waveBtn'), buildBtn=$('buildBtn'), clearBtn=$('clearBtn'), hintBtn=$('hintBtn'), swapBtn=$('swapBtn');
+const waveBtn=$('waveBtn'), rushBtn=$('rushBtn'), buildBtn=$('buildBtn'), clearBtn=$('clearBtn'), hintBtn=$('hintBtn'), swapBtn=$('swapBtn');
 const coreText=$('coreText'), waveText=$('waveText'), inkText=$('inkText'), scoreText=$('scoreText');
 const statusBox=$('statusBox'), inspectBox=$('inspectBox'), toastEl=$('toast'), freeWord=$('freeWord');
 const startOverlay=$('startOverlay'), dictOverlay=$('dictOverlay'), resultOverlay=$('resultOverlay');
@@ -22,6 +22,10 @@ const WORD_STYLE_COLORS={
   echo:'#83b7de',hailstorm:'#90cbe2',ricochet:'#dfab63',
   rail:'#dc8f7e',shotgun:'#bd8b5e'
 };
+// Familiar starter words remain useful when players invest in them.
+const FOUNDATION_WORDS=new Set(['ARROW','BOOK','FIRE','ICE','APPLE','BOMB','BALL','COW']);
+const RUSH_DURATION=9,RUSH_COOLDOWN=24,RUSH_LIMIT=2;
+function rushCost(){return 24+Math.min(24,state.wave*3)}
 const FOCUS_TIPS={
   normal:'ARROW로 시작하고 ICE나 FIRE를 더해 보세요.',
   fast:'ICE·FREEZE로 빠른 적을 늦추고 ARROW로 마무리하세요.',
@@ -93,6 +97,7 @@ function prepareStage(index){
 function freshState(){
   return {
     core:100,wave:0,ink:20,score:0,inWave:false,waveTimer:0,spawnQueue:[],
+    rushTime:0,rushCooldown:0,rushUses:0,
     enemies:[],towers:[],shots:[],traps:[],fields:[],effects:[],rack:D.startRack.slice(0,D.maxRack),
     selected:[],placing:null,hover:null,inspectedTowerId:null,uid:1,unique:new Set(),builtWords:[],elapsed:0,
     resources:resourceSpots.map((s,i)=>({...s,r:.045,amount:s.amount??(70+i*20)})),
@@ -359,7 +364,7 @@ function buildTower(p){
 
 function effectiveStats(t){
   // Links and duplicates change only when a tower is constructed.
-  if(t._effectiveRevision===state.towerRevision)return t._effectiveStats;
+  if(t._effectiveRevision===state.towerRevision&&t._effectiveWave===state.wave)return t._effectiveStats;
   const s={...t.stats}; let rateMul=1,damageMul=1,rangeMul=1,areaMul=1,pushMul=1;
   for(const m of t.links){
     const mod=D.modifiers[m.word]; if(!mod)continue;
@@ -376,8 +381,8 @@ function effectiveStats(t){
   // Level upgrades make scarce tower slots more valuable and absorb surplus INK.
   const level=Math.max(1,Math.min(3,t.level||1));
   if(level>1){
-    if(s.damage)s.damage*=1+.27*(level-1);
-    if(s.rate)s.rate*=1+.12*(level-1);
+    if(s.damage)s.damage*=1+(FOUNDATION_WORDS.has(t.word)?.39:.27)*(level-1);
+    if(s.rate)s.rate*=1+(FOUNDATION_WORDS.has(t.word)?.18:.12)*(level-1);
     if(s.range)s.range*=1+.05*(level-1);
     if(s.area)s.area*=1+.05*(level-1);
     if(s.harvest)s.harvest*=1+.16*(level-1);
@@ -385,9 +390,20 @@ function effectiveStats(t){
     if(s.barrierSlow)s.barrierSlow*=Math.pow(.87,level-1);
     if(s.slow)s.slow*=Math.pow(.93,level-1);
   }
+  // Early vocabulary has its own progression: short, accessible words remain
+  // worth using in waves 5–8 without trivializing expensive specialty towers.
+  if(FOUNDATION_WORDS.has(t.word)){
+    if(s.damage)s.damage*=1+Math.min(.42,Math.max(0,state.wave-1)*.06);
+    if(s.rate)s.rate*=1+Math.min(.21,Math.max(0,state.wave-1)*.03);
+  }
+  if(state.rushTime>0){
+    const starter=FOUNDATION_WORDS.has(t.word);
+    if(s.damage)s.damage*=starter?1.40:1.10;
+    if(s.rate)s.rate*=starter?1.30:1.12;
+  }
   const duplicates=state.towers.filter(o=>o!==t&&o.word===t.word).length;
   if(s.damage)s.damage*=Math.max(.65,Math.pow(.93,duplicates));
-  t._effectiveStats=s;t._effectiveRevision=state.towerRevision;
+  t._effectiveStats=s;t._effectiveWave=state.wave;t._effectiveRevision=state.towerRevision;
   return s;
 }
 function applyLinks(){
@@ -449,6 +465,7 @@ function startWave(){
     toast('첫 웨이브 전에 공격 타워가 필요해요');return;
   }
   state.wave++;state.inWave=true;state.waveTimer=0;state.spawnQueue=createWave(state.wave);state.totalSpawns=state.spawnQueue.length;
+  state.rushUses=0;state.rushTime=0;state.rushCooldown=0;state.towerRevision++;
   state.effects.push({type:'banner',text:'WAVE '+state.wave,x:.5,y:.38,color:currentStage().colors.accent,life:1.1,max:1.1});
   waveBtn.disabled=true;waveBtn.textContent='WAVE '+state.wave+' 진행 중';setStatus('WAVE '+state.wave,'전투 중에도 타워를 지을 수 있어요. '+(FOCUS_TIPS[currentStage().focus]||FOCUS_TIPS.normal));
   beep(250,.12,'sawtooth',.05);updateHud();
@@ -478,15 +495,42 @@ function spawnEnemy(type){
     split:a.split||false,boss:a.boss||false,pathIndex:0,pathT:0,x:pathPts[0][0],y:pathPts[0][1],
     burn:0,burnDps:0,poison:0,poisonDps:0,slow:1,pushBack:0,dead:false,
     corrosion:0,corrosionTime:0,chillStacks:0,freezeTime:0,stunTime:0,infected:false,
-    bubbleTime:0,bubblePower:0,bubbleSource:null,bubbleCombo:false,danceTime:0,sleepTime:0};
+    bubbleTime:0,bubblePower:0,bubbleSource:null,bubbleCombo:false,danceTime:0,sleepTime:0,
+    controlPressure:0,unstoppableTime:0,exposedTime:0};
   state.enemies.push(e);
 }
 function enemyProgress(e){return e.pathIndex+e.pathT}
 function moveEnemy(e,dt){
   if(e.dead)return;
+  if(e.boss){
+    // Boss resolve: crowd control still buys time, but cannot pin the final
+    // enemy forever. Breaking resolve gives players a short damage window.
+    e.unstoppableTime=Math.max(0,(e.unstoppableTime||0)-dt);
+    e.exposedTime=Math.max(0,(e.exposedTime||0)-dt);
+    const pinned=e.freezeTime>0||e.stunTime>0||e.bubbleTime>0;
+    const controlled=pinned||e.slow<.85||e.pushBack>.001;
+    if(e.unstoppableTime<=0){
+      e.controlPressure=Math.max(0,(e.controlPressure||0)+(controlled?dt*(pinned?1.25:.75):-dt*.65));
+      if(e.controlPressure>=1.85){
+        e.unstoppableTime=4.6;e.exposedTime=3.4;e.controlPressure=0;
+        e.stunTime=0;e.freezeTime=0;e.bubbleTime=0;e.pushBack=0;
+        ringEffect(e.x,e.y,.085,'#ffcd78',.58);
+        floatEffect(e.x,e.y,'BREAK! +DMG','#f6ad58');
+        beep(340,.13,'sawtooth',.028);
+      }
+    }
+  }
   e.slow+=(1-e.slow)*Math.min(1,dt*1.7);
-  let step=e.speed*(e.freezeTime>0||e.stunTime>0||e.bubbleTime>0?0:e.slow)*dt;
-  if(e.pushBack>0){step-=e.pushBack;e.pushBack=0}
+  const pinned=e.freezeTime>0||e.stunTime>0||e.bubbleTime>0;
+  // Even during ordinary resistance the boss has a guaranteed minimum
+  // forward pace. Regular enemies retain full snare/knockback behavior.
+  let step=e.boss
+    ?e.speed*(e.unstoppableTime>0?1.25:pinned?.47:Math.max(.57,e.slow))*dt
+    :e.speed*(pinned?0:e.slow)*dt;
+  if(e.pushBack>0){
+    const push=e.boss?Math.min(e.pushBack,e.unstoppableTime>0?0:e.speed*dt*.35):e.pushBack;
+    step-=push;e.pushBack=0;
+  }
   while(Math.abs(step)>.00001){
     if(step>=0){
       if(e.pathIndex>=pathPts.length-1){reachCore(e);return}
@@ -515,7 +559,7 @@ function damageEnemy(e,amount,kind,tower){
     e.shield-=used;amount-=used/multiplier;
   }
   const effectiveArmor=Math.max(0,e.armor-(e.corrosion||0))*(tower?.def.role==='pierce'?.28:1);
-  e.hp-=Math.max(0,amount)*(1-effectiveArmor);
+  e.hp-=Math.max(0,amount)*(1-effectiveArmor)*(e.boss&&e.exposedTime>0?1.38:1);
   if(kind==='burn'){e.burn=2.8;e.burnDps=Math.max(e.burnDps,(tower?effectiveStats(tower).burn:0)||7)}
   if(kind==='poison'){e.poison=4.5;e.poisonDps=Math.max(e.poisonDps,(tower?effectiveStats(tower).poison:0)||6)}
   if(kind==='slow')e.slow=Math.min(e.slow,(tower?effectiveStats(tower).slow:0)||.52);
@@ -1088,8 +1132,25 @@ function waveUpdate(dt){
 }
 
 let previousInk=-1;
+function useWordRush(){
+  if(!state||!state.inWave||state.ended)return;
+  const cost=rushCost();
+  if(state.rushTime>0||state.rushCooldown>0||state.rushUses>=RUSH_LIMIT||state.ink<cost)return;
+  state.ink-=cost;state.rushUses++;state.rushTime=RUSH_DURATION;state.rushCooldown=RUSH_COOLDOWN;
+  state.towerRevision++;
+  for(const t of state.towers)if((t.stats.damage||0)>0)t.pulse=.52;
+  ringEffect(.5,.5,.34,'#ffd564',.62);
+  floatEffect(.5,.29,'WORD RUSH!','#e9b34c');
+  setStatus('WORD RUSH · '+RUSH_DURATION+'초','기본 단어 타워가 특히 강해져요. INK -'+cost);
+  beep(690,.19,'triangle',.055);updateHud();updateComposer();
+}
+rushBtn.addEventListener('click',useWordRush);
 function update(dt){
   if(!running||state.ended)return;
+  const rushWasActive=state.rushTime>0;
+  state.rushTime=Math.max(0,state.rushTime-dt);
+  state.rushCooldown=Math.max(0,state.rushCooldown-dt);
+  if(rushWasActive&&state.rushTime<=0)state.towerRevision++;
   state.elapsed+=dt;
   waveUpdate(dt);barrierEffects();
   for(const e of state.enemies){if(!e.dead){statusEffects(e,dt);moveEnemy(e,dt)}}
@@ -1108,6 +1169,17 @@ function update(dt){
   if(previousInk!==Math.floor(state.ink)){previousInk=Math.floor(state.ink);if(!state.placing)updateComposer()}
 }
 function updateHud(){
+  if(rushBtn){
+    const active=state.inWave&&!state.ended;
+    const label=state.rushTime>0?'WORD RUSH '+Math.ceil(state.rushTime)+'초':
+      state.rushUses>=RUSH_LIMIT?'RUSH 사용 완료':
+      state.rushCooldown>0?'RUSH 대기 '+Math.ceil(state.rushCooldown)+'초':
+      'WORD RUSH · '+rushCost()+' INK';
+    if(rushBtn.textContent!==label)rushBtn.textContent=label;
+    rushBtn.disabled=!active||state.rushTime>0||state.rushCooldown>0||
+      state.rushUses>=RUSH_LIMIT||state.ink<rushCost();
+    rushBtn.classList.toggle('active',state.rushTime>0);
+  }
   const updates=[[coreText,Math.ceil(state.core)],[waveText,state.wave+' / 8'],
     [inkText,Math.floor(state.ink)],[scoreText,Math.floor(state.score)]];
   for(const [el,value] of updates)if(el.textContent!==String(value))el.textContent=String(value);
@@ -1302,6 +1374,14 @@ function drawEnemies(){
     ctx.fillStyle='rgba(0,0,0,.16)';ctx.beginPath();ctx.ellipse(2,r*.65,r*1.15,r*.45,0,0,Math.PI*2);ctx.fill();
     ctx.fillStyle=e.color;ctx.rotate(enemyProgress(e)*.12);ctx.fillRect(-r,-r,r*2,r*2);ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(-r*.65,-r*.65,r*.55,r*.55);ctx.restore();
     const bw=Math.max(18,r*2.1);ctx.fillStyle='#5f504c';ctx.fillRect(x-bw/2,y-r-7,bw,3);ctx.fillStyle=e.boss?'#ff4c5e':'#53bd64';ctx.fillRect(x-bw/2,y-r-7,bw*Math.max(0,e.hp/e.maxHp),3);
+    if(e.boss){
+      ctx.save();ctx.font='900 '+Math.max(9,r*.55)+'px system-ui,sans-serif';
+      ctx.textAlign='center';
+      const open=e.unstoppableTime>0;
+      ctx.fillStyle=open?'#ffd073':'#c8d5e3';
+      ctx.fillText(open?'BREAK! +38%':'RESOLVE '+Math.round(Math.min(100,(e.controlPressure||0)/1.85*100))+'%',x,y-r-14);
+      ctx.restore();
+    }
     if(e.shield>0){ctx.strokeStyle='#4ca7e8';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,r*1.35,0,Math.PI*2);ctx.stroke()}
     if(e.armor){ctx.strokeStyle='#b6bdc9';ctx.lineWidth=3;ctx.strokeRect(x-r*1.12,y-r*1.12,r*2.24,r*2.24)}
     if(e.regen){ctx.fillStyle='#b2ffd6';ctx.font='900 11px sans-serif';ctx.fillText('+',x,y+3)}
@@ -1453,7 +1533,7 @@ function openDictionary(){
 function restart(){
   prepareStage(selectedStage);
   state=freshState();previousInk=-1;if(freeWord){freeWord.value='';freeWord.disabled=false}renderRack();updateComposer();updateHud();
-  waveBtn.textContent='WAVE 1 시작';waveBtn.disabled=false;
+  waveBtn.textContent='WAVE 1 시작';waveBtn.disabled=false;updateHud();
   $('waveProgress').style.width='0%';
   inspectBox.classList.remove('show');resultOverlay.classList.add('hidden');
   startOverlay.classList.add('hidden');
