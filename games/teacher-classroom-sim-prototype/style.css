@@ -217,6 +217,9 @@ code{display:block;padding:10px;border-radius:10px;background:#edf2f7;color:#405
 .statusBubble.fight{background:#ffd0d0;color:#8c1515}
 .statusBubble.health{background:#ffe7e3;color:#8d3028}
 .statusBubble.chat{background:#fff2b8;color:#75520b}
+.statusBubble.question{background:#f0e6ff;color:#633b99;border:1px solid #c5a7f5}
+#app.roster-open #instructionPanel{visibility:hidden;pointer-events:none}
+#app.roster-open #guide{visibility:hidden}
 .studentWorldLabel{
   position:absolute;z-index:20;pointer-events:none;transform:translate(-50%,-110%);
   padding:3px 6px;border-radius:8px;background:rgba(15,31,45,.83);
@@ -247,7 +250,8 @@ code{display:block;padding:10px;border-radius:10px;background:#edf2f7;color:#405
   #studentStrip{top:136px;left:7px;width:min(440px,94vw);max-height:40vh;grid-template-columns:repeat(3,minmax(0,1fr))}
   .studentChip{font-size:9px;min-height:33px;padding:4px 5px}
   .studentChip .meters{width:42px}
-  #guide{top:132px;width:68vw}
+  #guide{top:auto;bottom:max(7px,env(safe-area-inset-bottom));left:50%;
+    width:min(340px,calc(100vw - 270px));max-height:70px;overflow:hidden}
   #joystick{width:116px;height:116px}
   #actionButton{width:112px;height:78px;border-radius:24px}
   .rules{grid-template-columns:1fr}
@@ -255,9 +259,33 @@ code{display:block;padding:10px;border-radius:10px;background:#edf2f7;color:#405
   .card{padding:18px}.card h1{font-size:37px}
 }
 @media(max-height:520px){
-  #instructionPanel{top:117px;left:7px;padding:6px 8px;max-height:none}
-  #guide{bottom:7px;max-height:55px;overflow:hidden}
-  #guide{display:none}
+  #instructionPanel{
+    top:139px;left:max(137px,calc((100vw - 350px)/2));
+    width:min(310px,calc(100vw - 280px));
+    max-height:calc(100vh - 232px);padding:5px 7px;gap:3px;border-radius:10px;
+    overflow:hidden;
+  }
+  #instructionPanel>span{display:none}
+  #instructionPanel .instructionPercent{font-size:13px}
+  .instructionHeading{min-height:15px}
+  .instructionTrack{height:6px}
+  .instructionStages{gap:3px}
+  .instructionStage{padding:3px 4px}
+  .instructionStage span{font-size:8px;margin-bottom:2px}
+  .instructionBudget{font-size:8px;padding:3px 4px}
+  #guide{top:auto;bottom:6px;max-height:45px;width:min(340px,calc(100vw - 265px))}
+  #guide small{display:none}
+  #guide span{font-size:9px}
   .card{max-height:94vh;overflow:auto}
   .rules{margin:10px 0}
+}
+@media(max-height:360px){
+  #instructionPanel{top:134px;max-height:85px}
+  .instructionBudget{display:none}
+  .instructionStage{padding:2px 3px}
+  #guide{display:none}
+}
+@media(min-width:761px) and (max-height:520px){
+  #instructionPanel{top:130px;left:12px;max-height:calc(100vh - 215px)}
+  #guide{display:none}
 }
