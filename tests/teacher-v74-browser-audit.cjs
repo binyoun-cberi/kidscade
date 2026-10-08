@@ -43,11 +43,12 @@ let chrome,ws;
  if(!target)throw Error('Chrome unavailable at '+chromePath+', process='+chrome.pid+', diagnostic='+browserErrors.slice(-4500));
  ws=new WebSocket(target.webSocketDebuggerUrl);
  await new Promise((yes,no)=>{ws.onopen=yes;ws.onerror=no});
- const pending=new Map(),runtimeErrors=[];let seq=0;
+ const pending=new Map(),runtimeErrors=[],networkErrors=[];let seq=0;
  ws.onmessage=e=>{
    const m=JSON.parse(e.data);
    if(m.method==='Runtime.exceptionThrown')runtimeErrors.push(m.params?.exceptionDetails?.exception?.description||m.params?.exceptionDetails?.text);
    if(m.method==='Log.entryAdded'&&m.params?.entry?.level==='error')runtimeErrors.push('console:'+m.params.entry.text);
+   if(m.method==='Network.responseReceived'&&m.params?.response?.status>=400)networkErrors.push({status:m.params.response.status,url:m.params.response.url});
    if(!m.id)return;
    const call=pending.get(m.id);if(!call)return;pending.delete(m.id);
    if(m.error)call.no(Error(m.error.message));else call.yes(m.result||{});
@@ -60,6 +61,9 @@ let chrome,ws;
  };
  const shot=async name=>{
    const r=await send('Page.captureScreenshot',{format:'jpeg',quality:34,captureBeyondViewport:false,fromSurface:true});
+   const directory=path.join(root,'teacher-visual-audit');
+   fs.mkdirSync(directory,{recursive:true});
+   fs.writeFileSync(path.join(directory,name+'.jpg'),Buffer.from(r.data,'base64'));
    console.log('TEACHER_QA_IMAGE_'+name+'='+r.data);
  };
  const metrics=()=>evaluate(`(()=>{
@@ -71,7 +75,7 @@ let chrome,ws;
    };
    return {viewport:[innerWidth,innerHeight],nodes:ids.map(visible),scrollWidth:document.documentElement.scrollWidth};
  })()`);
- await send('Page.enable');await send('Runtime.enable');await send('Log.enable');
+ await send('Page.enable');await send('Runtime.enable');await send('Log.enable');await send('Network.enable');
  await send('Emulation.setDeviceMetricsOverride',{width:1280,height:800,deviceScaleFactor:1,mobile:false});
  await send('Page.navigate',{url:'http://127.0.0.1:'+port+'/games/teacher-classroom-sim-prototype/index.html?teacherQa=1'});
  let ready=false;
@@ -140,6 +144,7 @@ let chrome,ws;
  await evaluate('window.__teacherQa.camera([6.5,3.7,4.0],[0,.62,-.9])');
  await wait(260);await shot('science-stools-side');
  console.log('TEACHER_QA_ERRORS '+JSON.stringify(runtimeErrors.slice(0,20)));
+ console.log('TEACHER_QA_NETWORK '+JSON.stringify(networkErrors.slice(0,20)));
  console.log('TEACHER_QA_DONE');
 })().catch(e=>{console.error('TEACHER_QA_FAILED',e.stack||String(e));process.exitCode=1}).finally(()=>{
  try{ws?.close()}catch{}
