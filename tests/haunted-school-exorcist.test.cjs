@@ -441,3 +441,52 @@ test('real Kenney furniture proportions are applied to collision footprint befor
   assert.match(js,/const fixPositions=\[\[-12\.7,-12\.85\],\[-8\.2,-12\.55\]/);
   assert.match(js,/\[24\.0,11\.8,'난방 배관'\]/);
 });
+
+
+test('closer shoulder camera stays clear of walls on slow walks and rapid turns',()=>{
+  const start=js.indexOf('const CAMERA_FOLLOW='),end=js.indexOf('function updateProps(dt){',start);
+  const rayStart=js.indexOf('function segmentHitsRect(');
+  const rayEnd=js.indexOf('function clearGhostSight(',rayStart);
+  assert.ok(start>=0&&end>start&&rayStart>=0&&rayEnd>rayStart);
+  const segmentHitsRect=new Function(js.slice(rayStart,rayEnd)+'return segmentHitsRect;')();
+  class Vec3{
+    constructor(x=0,y=0,z=0){this.x=x;this.y=y;this.z=z;}
+    clone(){return new Vec3(this.x,this.y,this.z);}
+    lerp(p,t){this.x+=(p.x-this.x)*t;this.y+=(p.y-this.y)*t;this.z+=(p.z-this.z)*t;return this;}
+    copy(p){this.x=p.x;this.y=p.y;this.z=p.z;return this;}
+  }
+  function makeRig(walls){
+    const controls={yaw:0},player={x:0,z:0},camera={position:new Vec3(),lookAt(...a){this.aim=a;}};
+    const torch={position:{set(){}},intensity:0},torchTarget={position:{set(){}}};
+    const context={THREE:{Vector3:Vec3},walls,player,camera,torch,torchTarget,power:100,
+      flashOn:true,controls,segmentHitsRect,
+      collides:(x,z,w,r)=>Math.abs(x-w.x)<w.hx+r&&Math.abs(z-w.z)<w.hz+r};
+    const src=js.slice(start,end).replaceAll('viewYaw','controls.yaw');
+    const rig=new Function(...Object.keys(context),src+
+      'return {updateCamera,cameraWallHit,CAMERA_FOLLOW};')(...Object.values(context));
+    return {...rig,controls,player,camera};
+  }
+  const normal=makeRig([]);
+  for(let i=0;i<100;i++)normal.updateCamera(.0167);
+  assert.equal(normal.CAMERA_FOLLOW.distance,4.7);
+  assert.equal(normal.CAMERA_FOLLOW.height,3.45);
+  assert.ok(Math.abs(normal.camera.position.z-4.7)<.002);
+  assert.ok(Math.abs(normal.camera.position.y-3.45)<.002);
+  assert.equal(normal.camera.aim[2],-4.8,'aim past the player, not at the ground');
+  const behind=makeRig([{x:0,z:2,hx:2,hz:.2}]);
+  for(let i=0;i<100;i++)behind.updateCamera(.0167);
+  assert.ok(behind.camera.position.z<1.65,'move camera in before the wall');
+  assert.ok(!behind.cameraWallHit(behind.camera.position.x,behind.camera.position.z));
+  const wall={x:0,z:3.3,hx:.55,hz:.25};
+  const quickTurn=makeRig([wall]);
+  quickTurn.controls.yaw=-Math.PI/4;
+  for(let i=0;i<70;i++)quickTurn.updateCamera(.0167);
+  quickTurn.controls.yaw=Math.PI/4;
+  for(let i=0;i<70;i++){
+    quickTurn.updateCamera(.0167);
+    const p=quickTurn.camera.position;
+    assert.ok(!quickTurn.cameraWallHit(p.x,p.z),'must not put camera inside a wall');
+    assert.ok(!segmentHitsRect(0,0,p.x,p.z,wall,.17),'must not put wall between player and camera');
+  }
+  assert.ok(quickTurn.camera.position.x>3,'should finish new turn facing the correct way');
+});
