@@ -151,24 +151,25 @@
       "type": "body",
       "generatedFrom": "character_low",
       "rigging": "source character_low topology + 78-bone skin weights",
-      "shaping": "broader shoulders, straighter torso, narrower hips, flatter chest, stronger jaw"
+      "shaping": "smooth upper torso/arm transition, preserved original skin weights; no abrupt shoulder cutoff",
+      "revision": "smooth-shoulder-v3"
     },
     "kidscade_male_eyes": {
       "label": "남자 기본 눈",
       "type": "face",
       "generatedFrom": "eyes",
       "rigging": "source eyes topology + skin weights",
-      "shaping": "vertical silhouette 0.70x original, width 1.045x; original iris textures/UV and 78-bone skin weights unchanged",
-      "revision": "boyish-eyes-v2"
+      "shaping": "original eye mesh/UV and 78-bone skin weights; 0.64x height, 1.01x width",
+      "revision": "boyish-eyes-v3"
     },
     "kidscade_male_brows": {
       "label": "남자 기본 눈썹",
       "type": "face-detail",
       "generatedFrom": "eyelashes",
       "rigging": "source eyelashes topology + skin weights",
-      "shaping": "original eyelashes mesh widened 1.055x, thickness 0.52x original, lowered to +0.072 Y and projected +0.016 Z",
-      "color": "#30241f",
-      "revision": "defined-lower-brows-v2"
+      "shaping": "only upper eyebrow triangles from original eyelashes indexed SkinnedMesh; original UVs/weights; pointed lower eyelashes removed",
+      "color": "#332723",
+      "revision": "upper-brow-faces-v3"
     },
     "kidscade_male_tshirt": {
       "label": "남자 기본 티셔츠",
@@ -176,7 +177,8 @@
       "generatedFrom": "shirt",
       "rigging": "source shirt topology + skin weights",
       "color": "#4d78d6",
-      "shaping": "wider torso fit; no procedural sleeves"
+      "shaping": "smooth expanded upper sleeves and forward shoulder clearance; original shirt topology and weights retained",
+      "revision": "shoulder-clearance-v3"
     },
     "kidscade_male_shorts": {
       "label": "남자 기본 반바지",
