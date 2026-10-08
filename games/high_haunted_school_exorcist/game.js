@@ -31,7 +31,7 @@ const AUDIO='../../assets/kidscade_folklore_night_guard_renamed_assets/';
 const LIMITS={x1:-18,x2:18,z1:-15,z2:13},walls=[],furniture=[],glowThings=[],mixers=[];
 const keys=new Set(),joy={x:0,y:0},player={x:0,z:9,yaw:Math.PI,root:new THREE.Group(),model:null};
 const maiden={x:12,z:-10,root:new THREE.Group(),speed:1.2,charge:0,attacks:0};
-const disturbed=[],stageNames=['','3개의 장난 찾기','처녀귀신 관찰','2층 봉인진 가동','관리실로 귀환'];
+const disturbed=[],stageNames=['','3개의 장난 찾기','처녀귀신 관찰','과학실 봉인진 가동','관리실로 귀환'];
 let started=false,ended=false,paused=false,stage=1,fixes=0,hp=3,power=100,flashOn=true,elapsed=0;
 let viewYaw=0,turnPointer=null,prevX=0,last=performance.now(),hudClock=0,miniClock=0,toastSeconds=0;
 let invulnerable=0,ghostWaiting=0,maidenPhase='approach',tutorialCount=0,lessonTimer=0,lastMistake='';
@@ -110,7 +110,7 @@ function setGuidePath(path){
   guidance.points=path;
   if(path.length<2)return;
   // Thin floor-level line: a trail, not a wall or obstacle.
-  const pts=path.filter((_,i)=>i===0||i%2===0||i===path.length-1).map(p=>new THREE.Vector3(p.x,.075,p.z));
+  const pts=path.map(p=>new THREE.Vector3(p.x,.075,p.z));
   const geom=new THREE.BufferGeometry().setFromPoints(pts);
   const line=new THREE.Line(geom,new THREE.LineDashedMaterial({color:0xf4c878,dashSize:.36,gapSize:.23,transparent:true,opacity:.82,depthWrite:false}));
   line.computeLineDistances();line.frustumCulled=false;scene.add(line);guidance.mesh=line;
@@ -541,7 +541,7 @@ function loop(now){
   requestAnimationFrame(loop);const dt=Math.min(.045,Math.max(0,(now-last)/1000));last=now;
   if(started&&!paused&&!ended){
     elapsed+=dt;invulnerable=Math.max(0,invulnerable-dt);
-    if(flashOn)power=Math.max(0,power-dt*.95);else power=Math.min(100,power+dt*2.8);
+    if(flashOn)power=Math.max(0,power-dt*.28);else power=Math.min(100,power+dt*2.8);
     if(power===0)flashOn=false;
     updatePlayer(dt);updateGhost(dt);updateProps(dt);
     updateNavigation(dt);
