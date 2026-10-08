@@ -144,7 +144,7 @@ function headlessGame(){
     KidscadeStorage:{getJson(){return []},setJson(){return true},getInt(key){return key==='kidscade_word_siege_stage_v1'?10:0},setRaw(){return true}},
     addEventListener(){},devicePixelRatio:1
   };
-  const hooks=`window.__headless={restart,startWave,update,beginPlacement,buildTower,makeTowerStats,towerCost,availableWords,validPlacement,rolePlacementValid,applyLinks,effectiveStats,showHint,swapOne,selectStage,currentStage,createWave,tileWord,typedWord,attackEnemy,towerUpdate,shotUpdate,statusEffects,updateTraps,updateFields,spawnEnemy,inspectAt,upgradeInspectedTower,upgradeCost,getInput:()=>freeWord, get state(){return state}};resize();`;
+  const hooks=`window.__headless={restart,startWave,update,beginPlacement,buildTower,makeTowerStats,towerCost,availableWords,validPlacement,rolePlacementValid,applyLinks,effectiveStats,showHint,swapOne,selectStage,currentStage,createWave,tileWord,typedWord,attackEnemy,towerUpdate,shotUpdate,statusEffects,updateTraps,updateFields,spawnEnemy,updateComposer,inspectAt,upgradeInspectedTower,upgradeCost,getInput:()=>freeWord, get state(){return state}};resize();`;
   const patched=runtime.replace('resize();requestAnimationFrame(loop);',hooks);
   assert.notEqual(patched,runtime,'headless hooks are missing');
   const ctx={window,document,performance:{now:()=>0},setTimeout(){return 0},clearTimeout(){},requestAnimationFrame(){}};
@@ -655,4 +655,98 @@ test('Word Siege new funny combinations are all discoverable by valid existing w
     discovered.delete(c.name);
   }
   assert.equal(discovered.size,0,'every funny combo must actually exist');
+});
+
+test('Word Siege assigns non-generic, explainable powers to all imported rapid words',()=>{
+  const d=loadData(),counts=new Map();
+  const rapid=Object.values(d.words).filter(w=>w.role==='rapid');
+  assert.ok(rapid.length>19000);
+  for(const word of rapid){
+    const behavior=d.behaviorFor(word.word);
+    assert.ok(behavior&&behavior.mode,'missing tower action: '+word.word);
+    assert.ok(behavior.description.length>7,'missing ability explanation: '+word.word);
+    assert.notEqual(d.displayRole(word.word,word),'빠른 공격','generic tower role: '+word.word);
+    counts.set(behavior.mode,(counts.get(behavior.mode)||0)+1);
+  }
+  assert.ok(counts.size>=10,'lexicon should contain multiple distinguishable strategies');
+  assert.equal(d.behaviorFor('BOOK').mode,'pinball');
+  assert.equal(d.behaviorFor('RUNNING').mode,'spring');
+  assert.equal(d.behaviorFor('APPLE').mode,'splat');
+  assert.equal(d.behaviorFor('CONVERSATION').mode,'rainbow');
+  assert.equal(d.behaviorFor('FIREWORK').mode,'firework');
+  assert.equal(d.behaviorFor('MUSIC').mode,'disco','existing signature must win');
+});
+
+test('Word Siege attacks actually differ across semantic and spelling-generated styles',()=>{
+  const {h,d}=headlessGame(),s=h.state;
+  const used=['BOOK','RUNNING','APPLE','CONVERSATION','FIREWORK','ECHO','SNOWFLAKE',
+    'DART','CANNON','TRIDENT','SCHOOL','PIZZA','HELLO','GREAT','NETWORK'];
+  const projectileRoles=new Set(['rapid','pierce','burst','explosive','beam','burn','slow','poison','push','gravity','special']);
+  for(const word of used){
+    const def=d.words[word];assert.ok(def,'missing example word '+word);
+    const mode=d.behaviorFor(word)?.mode||'';
+    const s0=h.makeTowerStats(word,def);
+    assert.equal(s0.mode,mode,'wrong mode '+word);
+    if(!projectileRoles.has(def.role))continue;
+    s.towers.length=0;s.enemies.length=0;s.shots.length=0;s.effects.length=0;s.fields.length=0;
+    const tower={id:s.uid++,word,x:.3,y:.3,def,stats:s0,cool:0,harvestClock:0,pulse:0,links:[],combos:[]};
+    s.towers.push(tower);
+    const targets=Array.from({length:5},(_,i)=>({
+      id:s.uid++,x:.37+i*.012,y:.3+(i%2)*.008,type:'normal',
+      hp:3000,maxHp:3000,shield:0,armor:0,pathIndex:1,pathT:i*.05,
+      burn:0,burnDps:0,poison:0,poisonDps:0,slow:1,pushBack:0,dead:false
+    }));
+    s.enemies.push(...targets);
+    const before=targets.reduce((a,e)=>a+e.hp,0);
+    assert.doesNotThrow(()=>h.towerUpdate(tower,.04),word+' attack');
+    for(let k=0;k<40;k++){
+      for(const shot of s.shots)h.shotUpdate(shot,.05);
+      s.shots=s.shots.filter(x=>!x.dead);
+      h.updateFields(.05);
+      for(const e of targets)if(!e.dead)h.statusEffects(e,.05);
+    }
+    assert.ok(targets.reduce((a,e)=>a+e.hp,0)<before,word+' must truly affect enemies');
+  }
+});
+
+test('Word Siege new SPLAT, FIREWORK, SNAP, ECHO and HAILSTORM are tangible abilities',()=>{
+  const {h,d}=headlessGame(),s=h.state;
+  for(const [word,mode] of [['APPLE','splat'],['FIREWORK','firework'],
+    ['THORN','snap'],['ECHO','echo'],['HAIL','hailstorm']]){
+    const def=d.words[word],stats=h.makeTowerStats(word,def);
+    assert.equal(stats.mode,mode,word);
+    s.towers=[];s.enemies=[];s.shots=[];s.fields=[];s.effects=[];
+    const tower={id:s.uid++,word,x:.3,y:.3,def,stats,cool:0,harvestClock:0,pulse:0,links:[],combos:[]};
+    s.towers.push(tower);
+    const targets=[0,1,2,3].map(i=>({id:s.uid++,x:.38+i*.014,y:.3,
+      hp:1500,maxHp:1500,shield:0,armor:0,slow:1,pushBack:0,dead:false,
+      burn:0,burnDps:0,poison:0,poisonDps:0,pathIndex:1,pathT:0,type:'normal'}));
+    s.enemies.push(...targets);
+    h.towerUpdate(tower,.04);
+    assert.ok(s.effects.length>0,word+' should show a distinct effect');
+    if(mode==='splat')assert.ok(targets.some(e=>e.slow<1));
+    if(mode==='firework')assert.ok(targets.filter(e=>e.hp<1500).length>1);
+    if(mode==='snap')assert.ok(targets.some(e=>e.stunTime>0));
+    if(mode==='echo'){
+      assert.ok(s.fields.some(f=>f.echo),'ECHO needs delayed field');
+      const hp=targets[0].hp;
+      for(let i=0;i<10;i++)h.updateFields(.05);
+      assert.ok(targets[0].hp<hp,'returning echo must deal extra damage');
+    }
+    if(mode==='hailstorm')assert.ok(targets.some(e=>e.freezeTime>0));
+  }
+  assert.match(visualsSource,/mode==='firework'/);
+  assert.match(visualsSource,/mode==='hailstorm'/);
+});
+
+test('Word Siege visible word and dictionary labels match the real generated power',()=>{
+  const {h,d}=headlessGame();
+  h.state.ink=100;
+  const input=h.getInput();
+  input.value='BOOK';
+  h.updateComposer();
+  assert.notEqual(d.displayRole('BOOK',d.words.BOOK),'빠른 공격');
+  assert.match(runtime,/D\.displayRole\(w,def\)/);
+  assert.match(runtime,/D\.behaviorFor\(w\)/);
+  assert.match(runtime,/D\.displayRole\(w,d\)/);
 });
