@@ -582,6 +582,7 @@ function updateFields(dt){
     f.life-=dt;f.clock-=dt;
     if(f.clock>0)continue;
     f.clock=f.interval||.62;
+    if(f.echo)f.life=Math.min(f.life,.025);
     for(const e of state.enemies){
       if(e.dead||dist(e,f)>f.radius)continue;
       attackEnemy(f.source,e,f.damage,f.kind||'burn');
@@ -770,6 +771,48 @@ function playfulTowerAttack(t,s,targets,target){
     lineEffect(t.x,t.y,target.x,target.y,'#f8c24e',.28,5);
     ringEffect(target.x,target.y,.065,'#fff0a7',.28);
     label('SUNSHINE!','#e6a748');return true;
+  }
+  if(mode==='splat'){
+    const list=nearby(target.x,target.y,.088,7);
+    for(const e of list){hit(e,e===target?.72:.40);e.slow=Math.min(e.slow,.60)}
+    ringEffect(target.x,target.y,.085,'#f5c35b',.28);
+    particleEffect(target.x,target.y,'#f7a957',9,.085);
+    label('SPLAT!','#dc9860');return true;
+  }
+  if(mode==='firework'){
+    for(const [i,e] of targets.slice(0,3).entries()){
+      const shade=['#ffa465','#dd8cff','#94dec9'][i];
+      for(const victim of nearby(e.x,e.y,.044,4))hit(victim,.36,i===0?'burn':'');
+      ringEffect(e.x,e.y,.047,shade,.30);
+      particleEffect(e.x,e.y,shade,6,.046);
+    }
+    label('POP! POP!','#d87bb5');beep(680,.085,'square',.025);return true;
+  }
+  if(mode==='snap'){
+    for(const e of nearby(target.x,target.y,.075,5)){
+      hit(e,.43);e.stunTime=Math.max(e.stunTime||0,.42);
+      e.pushBack=Math.max(e.pushBack,e.boss?.008:.023);
+    }
+    ringEffect(target.x,target.y,.075,'#b2cc69',.33);
+    label('SNAP!','#789c50');return true;
+  }
+  if(mode==='echo'){
+    hit(target,.49);
+    if(state.fields.filter(f=>f.source.id===t.id&&f.echo).length<3)
+      state.fields.push({x:target.x,y:target.y,radius:.10,life:.75,clock:.38,interval:99,
+        damage:s.damage*.54,kind:'',slow:1,source:t,echo:true});
+    lineEffect(t.x,t.y,target.x,target.y,'#9bd8ef',.16,2);
+    ringEffect(target.x,target.y,.033,'#99cfe9',.37);
+    label('ECHO!','#75b6db');return true;
+  }
+  if(mode==='hailstorm'){
+    for(const e of nearby(target.x,target.y,.12,6)){
+      hit(e,.43,'slow');e.slow=Math.min(e.slow,.54);
+      e.freezeTime=Math.max(e.freezeTime||0,.22);
+      particleEffect(e.x,e.y,'#d5f4fc',3,.035);
+    }
+    ringEffect(target.x,target.y,.12,'#88c7e3',.35);
+    label('HAIL!','#77b7d6');return true;
   }
   return false;
 }
