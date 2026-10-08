@@ -583,8 +583,8 @@
       ]
     },
     "geometryPolicy": "15 new rigged garments clone original source SkinnedMesh geometry and preserve bind matrix, source skin weights, UVs and source 78-bone skeleton; morph torso, sleeve, hem, waist and legs independently. Selected styles add physically volumetric 3D details rigged to source spine. Five existing garments retained. Trouser styles use separate left/right tube meshes with knee-graded thigh/shin skin weights, rather than a tube-like source pants skirt. Eight tops have modeled articulated upper/forearm sleeve tubes and one blouse has puffed short sleeves; colors alone do not define styles.",
-    "collisionPolicy": "Garment shell has additional torso/leg clearance. Sampled animated-pose penetration survey and screenshot review required for each style; do not treat numeric clearance estimates as proof of zero intersections.",
+    "collisionPolicy": "Garment shell has additional torso/leg clearance. Sampled animated-pose penetration survey and screenshot review required for each style; do not treat numeric clearance estimates as proof of zero intersections. Close-surface samples are reported as possible collision areas, not automatically declared fixed.",
     "exportPolicy": "Visible outfit group plus shared source skeleton and original 11 named animations, male WALK/RUN variants if male body visible.",
-    "trouserLegPolicy": "Five full-length trousers have two independently skinned left/right leg meshes, blended from DEF-thighL/R to DEF-shinL/R source Chibi bones."
+    "trouserLegPolicy": "Five full-length trousers have two independent leg meshes. Each vertex receives the closest original fitted body surface vertex's four source bone indices and weights; keeps original pelvis/thigh/knee/shin blends."
   }
 }
