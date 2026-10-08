@@ -70,6 +70,7 @@ for(const name of ['bag','hat','ninjassuitmask','armorhelmet','greenoutfitbelt',
 // Preserve legacy costume parts under 기타 without swelling the curated v5.2
 // 6-top/4-bottom lists. They remain available to old preset users.
 for(const name of ['chemise','greenoutfit','ninjassuit','amorplastron','pants','ninjasuitshort','armorlegs','armorskirt'])PART_CATEGORY[name]='costume';
+const LEGACY_OUTFIT_SLOTS={chemise:'top',greenoutfit:'top',ninjassuit:'top',amorplastron:'top',pants:'bottom',ninjasuitshort:'bottom',armorlegs:'bottom',armorskirt:'bottom'};
 const MALE_FIT_PARTS=new Set([...MALE_HAIR_STYLES,'kidscade_male_tshirt','kidscade_male_shorts',...OUTFIT_STYLES.filter(style=>style.fit==='male').map(style=>style.id)]);
 const SHARED_FIT_PARTS=new Set(['shoe','bottes','bottesgreen','ninjassuitshoe','armorshoe','bag','hat','armorhelmet','ninjassuitmask']);
 const PART_FIT=name=>MALE_FIT_PARTS.has(name)?'male':SHARED_FIT_PARTS.has(name)?'shared':'female';
@@ -1872,9 +1873,9 @@ function wireUi(){
 
     const part=input.dataset.chibiPart;
     if(!compatiblePart(part)){refreshPartChecks();return;}
-    const exclusive=PART_GROUP(part);
+    const exclusive=LEGACY_OUTFIT_SLOTS[part]||PART_GROUP(part);
     if(input.checked&&['top','bottom','shoes'].includes(exclusive)){
-      TOGGLE_NODES.filter(name=>name!==part&&PART_GROUP(name)===exclusive)
+      TOGGLE_NODES.filter(name=>name!==part&&(LEGACY_OUTFIT_SLOTS[name]||PART_GROUP(name))===exclusive)
         .forEach(name=>setNodeVisible(name,false));
     }
     if(HAIR_NODES.includes(part)){
