@@ -1,4 +1,5 @@
 import * as THREE from '../assets/vendor/three-r160/three.module.js';
+import {OUTFIT_LIBRARY,OUTFIT_STYLES,createOutfitPack} from './chibi-outfit-pack.js';
 
 window.__kc3dStudioModuleReady=true;
 
@@ -23,6 +24,7 @@ const FEMALE_HAIR_STYLES=[
   'chibi_female_hair_bob','chibi_female_hair_layered'
 ];
 const HAIR_NODES=[...FEMALE_HAIR_STYLES,...MALE_HAIR_STYLES];
+const OUTFIT_NODES=OUTFIT_STYLES.map(style=>style.id);
 
 const PRESETS={
   base:[...FEMALE_BASE_NODES],
@@ -53,19 +55,22 @@ const PART_LABELS={
   kidscade_male_hair_textured:'텍스처 숏컷',kidscade_male_hair_fringe:'덮은 머리',
   kidscade_male_hair_undercut:'언더컷',kidscade_male_hair_round:'라운드컷',
   kidscade_male_hair_swept:'스윕 헤어',
-  chibi_female_hair_bob:'둥근 단발',chibi_female_hair_layered:'레이어드'
+  chibi_female_hair_bob:'둥근 단발',chibi_female_hair_layered:'레이어드',
+  ...Object.fromEntries(OUTFIT_STYLES.map(style=>[style.id,style.label]))
 };
 
 // Fit means compatible with the current body geometry, never a restriction on identity.
 const PART_CATEGORY={};
 for(const name of HAIR_NODES)PART_CATEGORY[name]='hair';
+for(const style of OUTFIT_STYLES)PART_CATEGORY[style.id]=style.category;
 for(const name of ['shirt','chemise','greenoutfit','ninjassuit','amorplastron','kidscade_hoodie_blue','kidscade_male_tshirt'])PART_CATEGORY[name]='top';
 for(const name of ['skirt','pants','ninjasuitshort','armorlegs','armorskirt','kidscade_male_shorts'])PART_CATEGORY[name]='bottom';
 for(const name of ['shoe','bottes','bottesgreen','ninjassuitshoe','armorshoe'])PART_CATEGORY[name]='shoes';
 for(const name of ['bag','hat','ninjassuitmask','armorhelmet','greenoutfitbelt','greenoutfitneckless','ceinture'])PART_CATEGORY[name]='accessory';
-const MALE_FIT_PARTS=new Set([...MALE_HAIR_STYLES,'kidscade_male_tshirt','kidscade_male_shorts']);
+const MALE_FIT_PARTS=new Set([...MALE_HAIR_STYLES,'kidscade_male_tshirt','kidscade_male_shorts',...OUTFIT_STYLES.filter(style=>style.fit==='male').map(style=>style.id)]);
+const FEMALE_FIT_PARTS=new Set(OUTFIT_STYLES.filter(style=>style.fit==='female').map(style=>style.id));
 const SHARED_FIT_PARTS=new Set(['shoe','bottes','bottesgreen','ninjassuitshoe','armorshoe','bag','hat','armorhelmet','ninjassuitmask']);
-const PART_FIT=name=>MALE_FIT_PARTS.has(name)?'male':SHARED_FIT_PARTS.has(name)?'shared':'female';
+const PART_FIT=name=>MALE_FIT_PARTS.has(name)?'male':SHARED_FIT_PARTS.has(name)?'shared':FEMALE_FIT_PARTS.has(name)?'female':'female';
 const PART_GROUP=name=>PART_CATEGORY[name]||'costume';
 const WARDROBE_CATEGORIES=['hair','top','bottom','shoes','accessory','costume'];
 const WARDROBE_CATEGORY_LABELS={hair:'헤어',top:'상의',bottom:'하의',shoes:'신발',accessory:'액세서리',costume:'기타'};
@@ -1650,6 +1655,7 @@ async function loadChibi(){
     createKidscadeMaleSet();
     createKidscadeMaleHairShort();
     createKidscadeHairCollection();
+    createOutfitPack({getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial,makeRigidSkinnedPiece,resolveFirstBoneName});
   }catch(error){
     console.error(error);
     showAssetError('Chibi 본체는 열렸지만 커스텀 파츠 생성에 실패했습니다: '+(error?.message||error));
@@ -1708,7 +1714,8 @@ function exportSpec(){
     asset:CHIBI_ASSET_URL,
     preset:currentPreset,
     bodyFit:activeBodyFit,
-    partLibraryVersion:'chibi-v5.0',
+    partLibraryVersion:'chibi-v5.2',
+    outfitLibrary:OUTFIT_LIBRARY,
     materialMode:$('chibiUnlit').checked?'unlit-npr':'original-pbr',
     visibleParts:selectedParts(),
     triangles:countVisibleTriangles(avatarRoot),
@@ -1782,7 +1789,7 @@ async function exportGlb(){
       binary:true,
       trs:true,
       onlyVisible:true,
-      // Keep 11 clip names while exporting the tuned WALK only for a visible male base.
+      // Preserve 11 public clips, resolving tuned WALK/RUN for the male body.
       animations:animations.map(clip=>resolvePlaybackClip(clip)),
       includeCustomExtensions:false
     }
