@@ -314,6 +314,8 @@ function makeTowerStats(word,def){
   if(['disco','spellbook','rainbow','boomerang','pinball','spring','boo','sleep','shootingstars','snowball','slimepool','raincloud','spores','bubble','sunray','magnet','vacuum','mirror','splat','firework','snap','echo','hailstorm'].includes(stats.mode)){
     stats.rate=Math.min(1.35,Math.max(.55,stats.rate||.65));
   }
+  if(def.role==='rapid'&&['rail','shotgun','firework','hailstorm','echo'].includes(stats.mode))
+    stats.rate=Math.min(stats.rate,stats.mode==='rail'?.92:1.18);
   if(['gatling','shotgun','rail'].includes(stats.mode))stats.area=0;
   if(word==='NUKE'){stats.damage=Math.max(355,stats.damage);stats.area=Math.max(.255,stats.area);stats.rate=.135}
   return stats;
