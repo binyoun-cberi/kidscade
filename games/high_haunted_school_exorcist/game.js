@@ -116,7 +116,7 @@ function setGuidePath(path){
   line.computeLineDistances();line.frustumCulled=false;scene.add(line);guidance.mesh=line;
 }
 function updateNavigation(dt,force=false){
-  const target=navigationTarget();if(!target)return;
+  const target=navigationTarget();if(!target||!started)return;
   guidance.clock+=dt;
   const changed=target.key!==guidance.key;
   const moved=Math.hypot(player.x-guidance.fromX,player.z-guidance.fromZ)>2.4;
@@ -127,7 +127,12 @@ function updateNavigation(dt,force=false){
     setGuidePath(routePlan(player,target,1.15));
   }
   const pts=guidance.points;
-  const upcoming=pts.find(p=>Math.hypot(p.x-player.x,p.z-player.z)>1.65)||target;
+  let closest=0,closestD=Infinity;
+  for(let i=0;i<pts.length;i++){
+    const d=Math.hypot(pts[i].x-player.x,pts[i].z-player.z);
+    if(d<closestD){closest=i;closestD=d;}
+  }
+  const upcoming=pts[Math.min(pts.length-1,closest+4)]||target;
   const dx=upcoming.x-player.x,dz=upcoming.z-player.z;
   const fwd=-Math.sin(viewYaw)*dx-Math.cos(viewYaw)*dz;
   const side=Math.cos(viewYaw)*dx-Math.sin(viewYaw)*dz;
@@ -328,18 +333,23 @@ function act(){
 function finish(ok){
   ended=true;started=false;bgm.pause();const score=ok?Math.max(200,1000-Math.round(elapsed)*2-maiden.attacks*90):0;
   ui.endTitle.textContent=ok?'퇴마 성공 · 학교의 평화를 되찾았어요!':'퇴마 실패 · 학교에서 쫓겨났어요';
-  ui.endText.textContent=ok?'도깨비의 장난 3개 복구와 처녀귀신 봉인을 완료했어요. 소요 시간 '+Math.floor(elapsed/60)+'분 '+Math.floor(elapsed%60)+'초.':'괴이에게 너무 가까이 접근했어요. 시선을 유지하며 거리를 확보해 보세요.';
+  ui.endText.textContent=ok?'도깨비의 장난 3개 복구와 처녀귀신 봉인을 완료했어요. 소요 시간 '+Math.floor(elapsed/60)+'분 '+Math.floor(elapsed%60)+'초.':'세 번 붙잡혀서 실패했어요. '+(lastMistake||'괴이의 행동 규칙을 확인하세요.')+' 다시 시작하면 첫 만남부터 안전하게 연습할 수 있습니다.';
   ui.end.classList.remove('hidden');
   window.KidscadeGame?.result?.({scope:'mission',status:ok?'completed':'failed',outcome:ok?'clear':'fail',score,cleared:ok,timeSeconds:Math.round(elapsed)});
 }
 function reset(){
   fixes=0;hp=3;power=100;flashOn=true;elapsed=0;stage=1;ended=false;paused=false;started=true;
   viewYaw=0;player.x=0;player.z=9;maiden.attacks=0;maiden.charge=0;invulnerable=0;ghostWaiting=0;
+  maidenPhase='approach';ghostNav=null;gazeLocked=false;
+  guidance.key='';guidance.points=[];lastMistake='';tutorialCount=0;
   disturbed.forEach(o=>{o.done=false;o.object.visible=true;o.marker.visible=true;});
   trickCircle.visible=false;maidenCircle.visible=false;exitCircle.visible=false;maiden.root.visible=false;
   ui.intro.classList.add('hidden');ui.end.classList.add('hidden');ui.help.classList.add('hidden');
   bgm.currentTime=0;bgm.play().catch(()=>{});sfx('sfx_school_alarm_bell.mp3',.12);
-  window.KidscadeGame?.start?.({mode:'prototype',ghosts:['dokkaebi','maiden']});showToast('관리실에서 출발하세요. 서쪽 6-1 교실부터 조사합니다.');updateHud();
+  window.KidscadeGame?.start?.({mode:'prototype',ghosts:['dokkaebi','maiden']});
+  showLesson('첫 임무 · 6-1 교실','화면 위 화살표와 바닥 노란 안내선을 따라 서쪽 교실로 가세요. 주황색 물건에 다가가면 행동 버튼이 켜집니다.',16);
+  showToast('관리실에서 출발하세요. 서쪽 6-1 교실부터 조사합니다.');
+  updateHud();updateNavigation(0,true);
 }
 function updateHud(){
   const titles={1:'도깨비 조사 · 6-1 교실',2:'처녀귀신 관찰 · 과학실',3:'처녀귀신 봉인 · 과학실',4:'관리실로 귀환'};
@@ -484,8 +494,18 @@ function updatePlayer(dt){
 }
 function updateCamera(dt){
   const fx=-Math.sin(viewYaw),fz=-Math.cos(viewYaw);
-  const desired=new THREE.Vector3(player.x-fx*8.5,6.1,player.z-fz*8.5);
-  camera.position.lerp(desired,Math.min(1,dt*8));camera.lookAt(player.x+fx*1.4,1.15,player.z+fz*1.4);
+  const origin=new THREE.Vector3(player.x,1.76,player.z);
+  const far=new THREE.Vector3(player.x-fx*8.5,6.1,player.z-fz*8.5);
+  let safe=far;
+  // Sweep between player and trailing camera; do not let solid walls obscure the view.
+  for(let t=.03;t<=1.001;t+=.025){
+    const p=origin.clone().lerp(far,Math.min(1,t));
+    if(p.y<3.23&&walls.some(w=>collides(p.x,p.z,w,.16))){
+      safe=origin.clone().lerp(far,Math.max(.05,t-.065));break;
+    }
+  }
+  camera.position.lerp(safe,Math.min(1,dt*11));
+  camera.lookAt(player.x+fx*10,1.6,player.z+fz*10);
   torch.position.set(player.x,1.85,player.z);torchTarget.position.set(player.x+fx*4,1.30,player.z+fz*4);
   torch.intensity=flashOn&&power>0?23:0;
 }
@@ -511,6 +531,7 @@ function drawMap(){
   }
   const marker=(x,z,c,r=3)=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(tx(x),tz(z),r,0,Math.PI*2);ctx.fill();};
   if(stage===1){for(const item of disturbed)if(!item.done)marker(item.x,item.z,'#f5b869',2.5);if(fixes===3)marker(-10.3,-6,'#ffc86f',4);}
+  if(stage===2)marker(10.25,-5.5,'#c4b1ff',4);
   if(stage===3)marker(12.5,-6,'#ca99ff',4);
   if(stage===4)marker(0,10.35,'#79e0bd',4);
   marker(player.x,player.z,'#7ddaf4',4);
@@ -523,6 +544,8 @@ function loop(now){
     if(flashOn)power=Math.max(0,power-dt*.95);else power=Math.min(100,power+dt*2.8);
     if(power===0)flashOn=false;
     updatePlayer(dt);updateGhost(dt);updateProps(dt);
+    updateNavigation(dt);
+    if(lessonTimer>0){lessonTimer-=dt;if(lessonTimer<=0)ui.lesson.classList.add('hidden');}
     for(const mixer of mixers)mixer.update(dt);
     hudClock+=dt;miniClock+=dt;
     if(hudClock>.12){updateHud();hudClock=0;}
