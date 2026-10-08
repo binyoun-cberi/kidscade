@@ -418,3 +418,26 @@ test('a timed closed reaper door reopens before the required inner seal',()=>{
   assert.match(js,/encounter\.doorVisual\.rotation\.y=-1\.30/);
   assert.match(js,/encounter\.doorClosed=false/);
 });
+
+
+test('real Kenney furniture proportions are applied to collision footprint before models load',()=>{
+  const begin=js.indexOf('const KIT_SIZE_RATIOS=');
+  const end=js.indexOf('function normalize(root,height){',begin);
+  assert.ok(begin>0&&end>begin);
+  const furniture=[],THREE={Group:class{constructor(){this.position={set(){}};this.rotation={y:0}}}};
+  const loadTemplate=()=>({then(){return{catch(){}}}});
+  const place=new Function('THREE','scene','furniture','materials','cube','loadTemplate','FURN',
+    js.slice(begin,end)+'return placeFurniture;')(
+      THREE,{add(){}},furniture,{desk:{}},()=>{},loadTemplate,'');
+  place('desk.glb',0,0,.78,0,[1.13,.66]);
+  place('table.glb',3,0,.78,0,[1.13,.66]);
+  place('bookcase-open.glb',8,0,1.75,Math.PI/2,[.55,.58]);
+  place('chair-desk.glb',12,0,.77,0);
+  assert.equal(furniture.length,4);
+  assert.ok(furniture[0].hx>.70&&furniture[0].hz>.52,'desk blocks visible tabletop');
+  assert.ok(furniture[1].hx>.95&&furniture[1].hz>.50,'large table blocks visible tabletop');
+  assert.ok(furniture[2].hz>.38,'rotated bookcase footprint swaps width and depth');
+  assert.ok(furniture[3].hx>.40,'office chair is no longer pass-through');
+  assert.match(js,/const fixPositions=\[\[-12\.7,-12\.85\],\[-8\.2,-12\.55\]/);
+  assert.match(js,/\[24\.0,11\.8,'난방 배관'\]/);
+});
