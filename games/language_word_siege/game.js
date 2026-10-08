@@ -112,7 +112,9 @@ function prepareStage(index){
 
 function freshState(){
   return {
-    core:100,wave:0,ink:20,score:0,inWave:false,waveTimer:0,spawnQueue:[],
+    // Part II opens with a few more placement choices; later waves, not the
+    // first minute, are where the advanced campaign increases the pressure.
+    core:100,wave:0,ink:activeStage>=10?28+Math.floor((activeStage-10)/3)*3:20,score:0,inWave:false,waveTimer:0,spawnQueue:[],
     rushTime:0,rushCooldown:0,rushUses:0,
     enemies:[],towers:[],shots:[],traps:[],fields:[],effects:[],rack:D.startRack.slice(0,D.maxRack),
     selected:[],placing:null,hover:null,inspectedTowerId:null,uid:1,unique:new Set(),builtWords:[],elapsed:0,
@@ -451,7 +453,9 @@ function applyLinks(){
 
 function createWave(n){
   const arr=[];const stage=currentStage(),focus=stage.focus;
-  const count=7+n*4+Math.floor(activeStage/3)*2+(stage.countBonus||0);
+  const earlyStageCount=7+n*4+Math.floor(Math.min(activeStage,9)/3)*2;
+  const latePressure=activeStage>=10?Math.floor((activeStage-9)/4)*Math.min(3,Math.max(0,n-2)):0;
+  const count=earlyStageCount+latePressure+(n>=3?(stage.countBonus||0):0);
   for(let i=0;i<count;i++){
     let type='normal';
     if(n>=2&&i%5===3)type='fast';
@@ -470,19 +474,23 @@ function createWave(n){
     if(focus==='mixed'&&n>=2&&i%5===0)type=['fast','armored','shield','regen','split'][(i/5)%5];
     if(n>=2){
       if(focus==='carnival')type=i%4===0?'split':i%4===2?'fast':type;
-      if(focus==='fortress')type=i%4===0?'armored':i%4===2?'shield':type;
+      if(focus==='fortress')type=n>=3&&i%4===0?'armored':i%4===2?'shield':type;
       if(focus==='phantom')type=i%5===0?'regen':i%5===2?'fast':type;
       if(focus==='cascade')type=i%3===0?'split':i%3===1?'fast':type;
       if(focus==='tempest')type=i%4===0?'shield':i%4===1||i%4===3?'fast':type;
       if(focus==='goldrush')type=i%5===0?'heavy':i%5===3?'fast':type;
       if(focus==='duet')type=n%2===0?(i%3===0?'fast':i%3===1?'heavy':type):
         (i%3===0?'heavy':i%3===1?'shield':type);
-      if(focus==='echo')type=i%5===0?'shield':i%5===1?'fast':i%5===4?'split':type;
-      if(focus==='siege')type=i%4===0?'heavy':i%4===1?'armored':i%4===3?'shield':type;
-      if(focus==='finale')type=['fast','armored','split','regen','shield','heavy','normal'][i%7];
+      if(focus==='echo')type=n>=4&&i%5===0?'shield':i%5===1?'fast':i%5===4?'split':type;
+      if(focus==='siege')type=n>=4&&i%4===0?'heavy':n>=3&&i%4===1?'armored':n>=4&&i%4===3?'shield':type;
+      if(focus==='finale'){
+        const lineup=['fast',n>=4?'armored':'normal','split',n>=5?'regen':'normal',
+          n>=5?'shield':'normal',n>=4?'heavy':'fast','normal'];
+        type=lineup[i%7];
+      }
     }
     const gap=Math.max(.30,.78-n*.045)*(stage.spawnGap||1)-(focus==='swarm'?.09:0);
-    const delay=focus==='echo'?Math.floor(i/5)*Math.max(.66,gap*2.8)+(i%5)*.13:
+    const delay=focus==='echo'?Math.floor(i/5)*Math.max(.96,gap*3.6)+(i%5)*.13:
       i*Math.max(.22,gap);
     arr.push({delay,type});
   }
