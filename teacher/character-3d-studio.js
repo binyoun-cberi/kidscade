@@ -85,7 +85,7 @@ function setReady(ready){
   $('exportSpec').disabled=!ready;
   $('chibiHair').disabled=!ready;
   $('chibiUnlit').disabled=!ready;
-  document.querySelectorAll('[data-chibi-preset],[data-view],[data-quick-clip],[data-quick-speed]').forEach(el=>el.disabled=!ready);
+  document.querySelectorAll('[data-chibi-preset],[data-view],[data-quick-clip],[data-quick-view],[data-quick-speed]').forEach(el=>el.disabled=!ready);
 }
 
 function showAssetError(message){
