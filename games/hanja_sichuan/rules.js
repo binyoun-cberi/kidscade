@@ -23,7 +23,10 @@
       Math.max(240,(Number(viewportWidth)||375)-16)
     ));
     const mobile=(Number(viewportWidth)||375)<=640;
-    if(!mobile)return 72;
+    if(!mobile){
+      const desired={4:114,6:100,8:84,10:72}[cols]||72;
+      return Math.max(52,Math.min(desired,Math.floor((view-10)/(cols+1.08))));
+    }
     if(zoomed)return 68;
     return Math.max(28,Math.min(72,Math.floor((view-5)/(cols+1.08))));
   }
