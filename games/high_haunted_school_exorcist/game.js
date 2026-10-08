@@ -541,45 +541,99 @@ const bgm=new Audio(AUDIO+'amb_scary_night.mp3');bgm.loop=true;bgm.volume=.09;
 function setStage(next){
   stage=next;
   trickCircle.visible=stage===1&&fixes===3;
-  maidenCircle.visible=stage===3;exitCircle.visible=stage===4;
+  maidenCircle.visible=stage===3;
+  exitCircle.visible=stage===12;
   maiden.root.visible=stage===2&&maidenPhase!=='approach';
   if(stage===2){
-    maiden.x=SCHOOL.maidenSpawn.x;maiden.z=SCHOOL.maidenSpawn.z;maiden.charge=0;ghostNav=null;maidenPhase='approach';ghostWaiting=0;
-    showLesson('다음 사건 · 과학실로 이동','북쪽 날개 복도 끝의 과학실로 이동하세요. 첫 만남은 공격 없는 연습입니다.',14);
-    showToast('도깨비 봉인 성공! 같은 북쪽 날개의 끝에 있는 과학실로 가세요.');
+    maiden.x=SCHOOL.maidenSpawn.x;maiden.z=SCHOOL.maidenSpawn.z;
+    maiden.charge=0;ghostNav=null;maidenPhase='approach';ghostWaiting=0;
+    showLesson('두 번째 괴이 · 처녀귀신','북쪽 날개 맨 끝 과학실에서 직접 바라보면 멈춥니다. 처음에는 안전하게 연습해요.',12);
   }
-  if(stage===3){maiden.root.visible=false;
-    showLesson('퇴마 준비 완료','유령이 물러났어요. 바닥의 보라색 봉인진에 다가가서 봉인하세요.',11);
-    showToast('처녀귀신이 물러났어요. 과학실의 봉인진을 찾아가세요.');sfx('sfx_horror_sting_01.mp3',.20);}
+  if(stage===3){
+    maiden.root.visible=false;
+    showLesson('관찰 성공!','과학실의 보라색 봉인진을 찾아 봉인하세요.',9);
+  }
   if(stage===4){
-    showLesson('마지막 단계','노란 길을 따라 관리실로 돌아가 초록색 보고 지점에서 완료하세요.',12);
-    showToast('두 괴이를 봉인했어요. 관리실로 돌아가 사건을 보고하세요.');
+    encounter.cold=0;encounter.frost=0;
+    showLesson('세 번째 괴이 · 유키온나','남쪽 날개 맨 끝 가사실의 차가운 배관·히터·온도계를 모두 복구하세요. 오래 있으면 얼어붙어요.',15);
+    sfx('sfx_school_alarm_bell.mp3',.13);
   }
-  updateNavigation(0,true);
-  updateHud();
+  if(stage===5){
+    showLesson('냉기 해결!','가사실에 생긴 하늘색 봉인진으로 유키온나를 봉인하세요.',9);
+  }
+  if(stage===6){
+    encounter.eggCharge=0;encounter.eggFear=0;
+    showLesson('네 번째 괴이 · 달걀귀신','북쪽 음악실에서 달걀귀신에게 등을 돌리고 4초 버텨요. 처녀귀신과는 정반대!',15);
+  }
+  if(stage===7)showLesson('달걀귀신 물러남','음악실의 흰색 봉인진을 사용하세요.',9);
+  if(stage===8){
+    encounter.bellCount=0;encounter.bellClock=1;encounter.bellWindow=0;encounter.doorClosed=false;
+    showLesson('다섯 번째 괴이 · 저승사자','서쪽 연결동 전기실 문에 다가가세요. 종이 세 번 울린 직후 문을 닫아야 해요.',15);
+  }
+  if(stage===9)showLesson('저승사자 퇴각','전기실 안쪽의 보랏빛 봉인진을 확인하세요.',9);
+  if(stage===10){
+    const w=encounter.wolf;w.x=-1.5;w.z=16.8;w.nav=null;w.grace=7;w.lureTime=0;w.ready=false;w.active=false;
+    showLesson('마지막 괴이 · 늑대인간','남쪽 복도 스피커를 찾아 소리를 내세요. 늑대가 함정으로 뛰어들면 봉인할 수 있어요.',15);
+    sfx('sfx_wolf_howl.mp3',.22);
+  }
+  if(stage===11)showLesson('소리 유인 시작!','늑대가 5-1 교실의 붉은 함정으로 이동해요. 따라가서 들어온 순간 봉인 버튼을 누르세요.',14);
+  if(stage===12){
+    showLesson('여섯 괴이 퇴마 성공!','관리실로 돌아가 보고하면 이번 사건이 끝나요.',14);
+    showToast('모든 괴이를 봉인했어요. 서쪽 연결동 관리실로 돌아가세요.');
+  }
+  presentEncounterModels();updateNavigation(0,true);updateHud();
 }
 function nearAction(){
   if(stage===1){
-    for(let i=0;i<disturbed.length;i++){const o=disturbed[i];if(!o.done&&dist(o,player)<1.95)return {type:'fix',i,text:o.name+' 바로잡기'};}
-    if(fixes===3&&dist(player,SCHOOL.dokkaebi)<2.15)return {type:'trick',text:'도깨비 봉인하기'};
+    for(let i=0;i<disturbed.length;i++){const o=disturbed[i];if(!o.done&&dist(o,player)<1.95)return{type:'fix',i,text:o.name+' 바로잡기'};}
+    if(fixes===3&&dist(player,SCHOOL.dokkaebi)<2.15)return{type:'trick',text:'도깨비 봉인하기'};
   }
-  if(stage===3&&dist(player,{x:SCHOOL.science.x,z:-13.1})<2.2)return {type:'maiden',text:'처녀귀신 봉인하기'};
-  if(stage===4&&dist(player,SCHOOL.guard)<2.3)return {type:'report',text:'퇴마 보고서 제출'};
+  if(stage===3&&dist(player,{x:SCHOOL.science.x,z:-13.1})<2.2)return{type:'maiden',text:'처녀귀신 봉인하기'};
+  if(stage===4){
+    for(let i=0;i<encounter.heatNodes.length;i++){
+      const o=encounter.heatNodes[i];
+      if(!o.done&&dist(player,o)<2.0)return{type:'heater',i,text:o.label+' 복구하기'};
+    }
+  }
+  if(stage===5&&dist(player,{x:25.5,z:13.1})<2.2)return{type:'yuki',text:'유키온나 봉인하기'};
+  if(stage===7&&dist(player,{x:7.5,z:-13.1})<2.2)return{type:'eggSeal',text:'달걀귀신 봉인하기'};
+  if(stage===8&&dist(player,bellDoor)<2.7&&encounter.bellCount>=3&&encounter.bellWindow>0)
+    return{type:'closeDoor',text:'세 번째 종! 문 닫기 [E]'};
+  if(stage===9&&dist(player,{x:-25.3,z:8})<2.2)return{type:'reaperSeal',text:'저승사자 봉인하기'};
+  if(stage===10&&dist(player,{x:-7.5,z:8.55})<2.25)return{type:'speaker',text:'유인 스피커 켜기'};
+  if(stage===11&&encounter.wolf.ready&&dist(player,wolfTrap)<2.7)return{type:'wolfSeal',text:'늑대 함정 봉인하기'};
+  if(stage===12&&dist(player,SCHOOL.guard)<2.3)return{type:'report',text:'퇴마 보고서 제출'};
   return null;
 }
 function act(){
   if(!started||paused||ended)return;
-  const item=nearAction();if(!item){showToast('주변에 조사하거나 조작할 물건이 없어요.');return;}
+  const item=nearAction();if(!item){showToast('주변에 지금 조작할 수 있는 물건이 없어요.');return;}
   if(item.type==='fix'){
     const obj=disturbed[item.i];obj.done=true;obj.object.visible=false;obj.marker.visible=false;fixes++;sfx('sfx_child_giggle.mp3',.13);
     showToast('이상현상을 바로잡았어요 · '+fixes+'/3');
     if(fixes===1){
-      showLesson('첫 조사 성공 · 튜토리얼 완료','이제 안내선 없이 직접 탐색하세요. 미니맵에 표시된 남은 주황색 점과 교실 이름을 확인하세요.',12);
+      showLesson('첫 조사 성공 · 튜토리얼 완료','이제 안내선 없이 미니맵의 점과 교실 이름으로 탐색하세요.',12);
       updateNavigation(0,true);
     }
-    if(fixes===3){trickCircle.visible=true;showToast('세 가지 장난 해결! 교실 중앙의 주황색 봉인진으로 가세요.');}
+    if(fixes===3){trickCircle.visible=true;showToast('세 장난을 해결했어요. 교실 중앙의 봉인진을 이용하세요.');}
   }else if(item.type==='trick'){sfx('sfx_school_alarm_bell.mp3',.18);setStage(2);}
   else if(item.type==='maiden'){sfx('sfx_school_alarm_bell.mp3',.18);setStage(4);}
+  else if(item.type==='heater'){
+    const o=encounter.heatNodes[item.i];o.done=true;o.marker.visible=false;
+    encounter.cold++;encounter.frost=Math.max(0,encounter.frost-1.7);
+    showToast(o.label+' 복구 완료 · '+encounter.cold+'/3');sfx('sfx_school_alarm_bell.mp3',.10);
+    if(encounter.cold>=3)setStage(5);
+  }else if(item.type==='yuki'){sfx('sfx_school_alarm_bell.mp3',.16);setStage(6);}
+  else if(item.type==='eggSeal'){sfx('sfx_school_alarm_bell.mp3',.16);setStage(8);}
+  else if(item.type==='closeDoor'){
+    encounter.doorClosed=true;encounter.bellWindow=0;encounter.doorVisual.rotation.y=0;
+    sfx('sfx_school_alarm_bell.mp3',.23);showToast('세 번째 종에 맞춰 문을 닫았어요!');
+    setStage(9);
+  }else if(item.type==='reaperSeal'){sfx('sfx_school_alarm_bell.mp3',.16);setStage(10);}
+  else if(item.type==='speaker'){
+    const w=encounter.wolf;w.lureTime=26;w.nav=null;w.ready=false;w.active=true;
+    sfx('sfx_wolf_howl.mp3',.27);setStage(11);
+  }else if(item.type==='wolfSeal'){sfx('sfx_school_alarm_bell.mp3',.20);setStage(12);}
   else if(item.type==='report')finish(true);
 }
 function finish(ok){
