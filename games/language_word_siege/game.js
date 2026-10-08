@@ -35,7 +35,17 @@ const FOCUS_TIPS={
   regen:'POISON·VIRUS로 적의 재생을 막으세요.',
   shield:'HAMMER·SPIKE·ACID로 보호막을 먼저 무너뜨리세요.',
   swarm:'SHOTGUN·FIREBALL·GRENADE로 밀집한 적을 처리하세요.',
-  mixed:'ICE·ACID·광역 타워를 함께 배치해 역할을 나누세요.'
+  mixed:'ICE·ACID·광역 타워를 함께 배치해 역할을 나누세요.',
+  carnival:'BUBBLE·BOUNCE·MUSIC로 빠른 분열 적들을 재미있게 막아 보세요.',
+  fortress:'RAILGUN·ACID·HAMMER로 강철 보호막을 깨세요.',
+  phantom:'POISON·VIRUS·FREEZE로 재생·속도 혼합 행진을 저지하세요.',
+  cascade:'SHOTGUN·FIREBALL·BOOMERANG의 다중 공격이 핵심입니다.',
+  tempest:'ICE·MAGNET과 관통 타워를 함께 사용하세요.',
+  goldrush:'MINER·DRILL로 자원을 확보하고 WORD RUSH로 반격하세요.',
+  duet:'빠른 적과 무거운 적의 출현 박자에 맞춰 역할을 나누세요.',
+  echo:'다섯 마리씩 몰려오는 적을 ECHO·LANDMINE·GRENADE로 처리하세요.',
+  siege:'ACID·RAILGUN·MACHINEGUN로 장갑과 보호막을 돌파하세요.',
+  finale:'마지막 두 보스까지! 다양한 역할의 타워를 강화하고 WORD RUSH를 활용하세요.'
 };
 const STAGES=window.WordSiegeStages||[{
   id:'stage-01',number:1,name:'GRID ZERO',subtitle:'기본 작전',description:'기본 방어',
@@ -72,6 +82,12 @@ function renderStages(){
   $('stageProgressText').textContent=unlocked+' / '+STAGES.length+' 해금';
   list.innerHTML='';
   STAGES.forEach((stage,index)=>{
+    if(index===0||index===10){
+      const chapter=document.createElement('div');
+      chapter.className='stage-chapter';
+      chapter.textContent=index===0?'PART I · 단어 방어 훈련 (01–10)':'PART II · 단어 전술 원정 (11–20)';
+      list.appendChild(chapter);
+    }
     const accessible=index<unlocked;
     const button=document.createElement('button');
     button.type='button';button.className='stage-choice'+(index===selectedStage?' selected':'');
@@ -435,7 +451,7 @@ function applyLinks(){
 
 function createWave(n){
   const arr=[];const stage=currentStage(),focus=stage.focus;
-  const count=7+n*4+Math.floor(activeStage/3)*2;
+  const count=7+n*4+Math.floor(activeStage/3)*2+(stage.countBonus||0);
   for(let i=0;i<count;i++){
     let type='normal';
     if(n>=2&&i%5===3)type='fast';
@@ -452,9 +468,29 @@ function createWave(n){
     if(focus==='shield'&&n>=2&&i%4===0)type='shield';
     if(focus==='swarm'&&n>=2&&i%4===0)type='fast';
     if(focus==='mixed'&&n>=2&&i%5===0)type=['fast','armored','shield','regen','split'][(i/5)%5];
-    arr.push({delay:i*(Math.max(.30,.78-n*.045)-(focus==='swarm'?.09:0)),type});
+    if(n>=2){
+      if(focus==='carnival')type=i%4===0?'split':i%4===2?'fast':type;
+      if(focus==='fortress')type=i%4===0?'armored':i%4===2?'shield':type;
+      if(focus==='phantom')type=i%5===0?'regen':i%5===2?'fast':type;
+      if(focus==='cascade')type=i%3===0?'split':i%3===1?'fast':type;
+      if(focus==='tempest')type=i%4===0?'shield':i%4===1||i%4===3?'fast':type;
+      if(focus==='goldrush')type=i%5===0?'heavy':i%5===3?'fast':type;
+      if(focus==='duet')type=n%2===0?(i%3===0?'fast':i%3===1?'heavy':type):
+        (i%3===0?'heavy':i%3===1?'shield':type);
+      if(focus==='echo')type=i%5===0?'shield':i%5===1?'fast':i%5===4?'split':type;
+      if(focus==='siege')type=i%4===0?'heavy':i%4===1?'armored':i%4===3?'shield':type;
+      if(focus==='finale')type=['fast','armored','split','regen','shield','heavy','normal'][i%7];
+    }
+    const gap=Math.max(.30,.78-n*.045)*(stage.spawnGap||1)-(focus==='swarm'?.09:0);
+    const delay=focus==='echo'?Math.floor(i/5)*Math.max(.66,gap*2.8)+(i%5)*.13:
+      i*Math.max(.22,gap);
+    arr.push({delay,type});
   }
-  if(n===8)arr.push({delay:Math.max(arr[arr.length-1]?.delay||0, count*.42)+1.1,type:'boss'});
+  if(n===8){
+    const firstBoss=Math.max(arr[arr.length-1]?.delay||0,count*.42)+1.1;
+    for(let j=0;j<Math.min(2,stage.bosses||1);j++)
+      arr.push({delay:firstBoss+j*5,type:'boss'});
+  }
   return arr;
 }
 function startWave(){
