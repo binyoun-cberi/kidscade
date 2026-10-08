@@ -1562,7 +1562,7 @@ function exportSpec(){
       name:clip.name,
       duration:Number(clip.duration.toFixed(3))
     })),
-    walkStyle:isMaleBodyVisible()?'balanced-locomotion-v2':'source',
+    walkStyle:isMaleBodyVisible()?'grounded-boy-locomotion-v3':'source',
     coordinateSystem:{up:'Y',units:'meters',origin:'ground-center'}
   };
   download(
