@@ -765,7 +765,7 @@ function advanceGhostToward(target,dt){
     ghostNav={points:routePlan(maiden,target,.65),toX:target.x,toZ:target.z,age:0};
   }
   ghostNav.age+=dt;
-  while(ghostNav.points.length>1&&dist(ghostNav.points[0],maiden)<.52)ghostNav.points.shift();
+  while(ghostNav.points.length>1&&dist(ghostNav.points[0],maiden)<.14)ghostNav.points.shift();
   const waypoint=ghostNav.points[0]||target;
   const dx=waypoint.x-maiden.x,dz=waypoint.z-maiden.z,d=Math.hypot(dx,dz);
   if(d<=.08)return;
@@ -847,7 +847,7 @@ function moveWolfToward(target,dt){
     w.nav={path:routePlan(w,target,.9),age:0,target:{x:target.x,z:target.z}};
   }
   w.nav.age+=dt;
-  while(w.nav.path.length>1&&dist(w,w.nav.path[0])<.65)w.nav.path.shift();
+  while(w.nav.path.length>1&&dist(w,w.nav.path[0])<.14)w.nav.path.shift();
   const point=w.nav.path[0]||target,dx=point.x-w.x,dz=point.z-w.z,length=Math.hypot(dx,dz);
   if(length<.08)return;
   const step=Math.min(length,w.speed*dt),newX=w.x+dx/length*step,newZ=w.z+dz/length*step;
