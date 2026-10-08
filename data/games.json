@@ -687,6 +687,29 @@
       "classroom": false
     },
     {
+      "id": "high_haunted_school_exorcist",
+      "title": "괴담 학교 퇴마",
+      "href": "games/high_haunted_school_exorcist/index.html?v=1",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🏫",
+      "cover": "assets/gate-image/nightshift horror.png",
+      "description": "3D 학교에 직접 들어가 괴이별 규칙을 공략하세요. 도깨비가 바꿔 놓은 물건을 바로잡고 처녀귀신을 바라보며 접근을 막아 두 괴이를 봉인하는 3D 탐험 공포 프로토타입!",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 12,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "rework",
+      "classroom": false
+    },
+    {
       "id": "job_nail_artist",
       "title": "네일 아티스트 타이쿤",
       "href": "games/job_nail_artist/네일 아티스트 타이쿤.html",
