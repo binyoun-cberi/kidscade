@@ -227,9 +227,10 @@
       "type": "hair",
       "generatedFrom": "hairone",
       "rigging": "source hairone topology, UVs, materials and skin weights",
-      "shaping": "retain original top/fringe; selectively shorten lower bob sections and pull ear-side temple panels toward the scalp using smooth height and side taper, while retaining eye clearance",
-      "revision": "v6-temple-ear-shortcut",
-      "geometryPolicy": "source rig/UV/weights retained, filtered index faces only"
+      "shaping": "retain continuous side polygons at the eye/temple threshold; reverse bob-side overcompression; drop and widen temple bridge, slightly lower sideburn, preserve fringe and source skin weights",
+      "revision": "v7-temple-bridge",
+      "geometryPolicy": "source rig/UV/weights preserved; central/front low eye-overhang triangles trimmed, outer temple triangles retained",
+      "visualAudit": "8 male styles x WALK/RUN x side/45 degrees; side gap to be judged from captured frames"
     },
     "kidscade_male_brows": {
       "label": "남자 기본 눈썹",
@@ -247,8 +248,9 @@
       "generatedFrom": "kidscade_male_hair_short",
       "geometryPolicy": "source-skinned-hair-silhouette-variant",
       "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
-      "revision": "v5-wardrobe-hair-pack-1",
-      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
+      "revision": "v7-male-temple-fill",
+      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt",
+      "styleGuarantee": "temple fill and safe side-shrink floor -0.12, preserving original skeleton/UV/weights"
     },
     "kidscade_male_hair_sidepart": {
       "label": "sidepart",
@@ -257,8 +259,9 @@
       "generatedFrom": "kidscade_male_hair_short",
       "geometryPolicy": "source-skinned-hair-silhouette-variant",
       "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
-      "revision": "v5-wardrobe-hair-pack-1",
-      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
+      "revision": "v7-male-temple-fill",
+      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt",
+      "styleGuarantee": "temple fill and safe side-shrink floor -0.12, preserving original skeleton/UV/weights"
     },
     "kidscade_male_hair_textured": {
       "label": "textured",
@@ -267,8 +270,9 @@
       "generatedFrom": "kidscade_male_hair_short",
       "geometryPolicy": "source-skinned-hair-silhouette-variant",
       "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
-      "revision": "v5-wardrobe-hair-pack-1",
-      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
+      "revision": "v7-male-temple-fill",
+      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt",
+      "styleGuarantee": "temple fill and safe side-shrink floor -0.12, preserving original skeleton/UV/weights"
     },
     "kidscade_male_hair_fringe": {
       "label": "fringe",
@@ -277,8 +281,9 @@
       "generatedFrom": "kidscade_male_hair_short",
       "geometryPolicy": "source-skinned-hair-silhouette-variant",
       "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
-      "revision": "v5-wardrobe-hair-pack-1",
-      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
+      "revision": "v7-male-temple-fill",
+      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt",
+      "styleGuarantee": "temple fill and safe side-shrink floor -0.12, preserving original skeleton/UV/weights"
     },
     "kidscade_male_hair_undercut": {
       "label": "undercut",
@@ -287,8 +292,9 @@
       "generatedFrom": "kidscade_male_hair_short",
       "geometryPolicy": "source-skinned-hair-silhouette-variant",
       "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
-      "revision": "v5-wardrobe-hair-pack-1",
-      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
+      "revision": "v7-male-temple-fill",
+      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt",
+      "styleGuarantee": "temple fill and safe side-shrink floor -0.12, preserving original skeleton/UV/weights"
     },
     "kidscade_male_hair_round": {
       "label": "round",
@@ -297,8 +303,9 @@
       "generatedFrom": "kidscade_male_hair_short",
       "geometryPolicy": "source-skinned-hair-silhouette-variant",
       "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
-      "revision": "v5-wardrobe-hair-pack-1",
-      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
+      "revision": "v7-male-temple-fill",
+      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt",
+      "styleGuarantee": "temple fill and safe side-shrink floor -0.12, preserving original skeleton/UV/weights"
     },
     "kidscade_male_hair_swept": {
       "label": "swept",
@@ -307,8 +314,9 @@
       "generatedFrom": "kidscade_male_hair_short",
       "geometryPolicy": "source-skinned-hair-silhouette-variant",
       "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
-      "revision": "v5-wardrobe-hair-pack-1",
-      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
+      "revision": "v7-male-temple-fill",
+      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt",
+      "styleGuarantee": "temple fill and safe side-shrink floor -0.12, preserving original skeleton/UV/weights"
     },
     "chibi_female_hair_bob": {
       "label": "bob",
@@ -538,7 +546,8 @@
       "female": 8,
       "newVariants": 9
     },
-    "variationPolicy": "The 9 new meshes are derived from original rigged Chibi hair silhouettes by vertex-region deformation, not independently sculpted original meshes. UV, skeleton and skin weights are retained."
+    "variationPolicy": "The 9 new meshes are derived from original rigged Chibi hair silhouettes by vertex-region deformation, not independently sculpted original meshes. UV, skeleton and skin weights are retained.",
+    "hairTempleRevision": "v7-temple-bridge"
   },
   "outfitLibrary": {
     "version": "chibi-v5.2",
