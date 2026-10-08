@@ -135,7 +135,8 @@
         "keyboard"
       ],
       "qualityStatus": "standard",
-      "classroom": true
+      "classroom": true,
+      "cover": "assets/gate-image/원주율 외우기.png"
     },
     {
       "id": "high_human_history_cards",
