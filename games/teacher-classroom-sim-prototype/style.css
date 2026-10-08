@@ -52,15 +52,34 @@ button{font:inherit}
 }
 #campaignStatus strong{color:#ffe28c}
 #instructionPanel{
-  position:absolute;right:12px;top:173px;z-index:19;width:min(322px,36vw);
-  padding:9px 11px;border-radius:14px;color:#fff;background:rgba(14,32,49,.87);
-  border:1px solid rgba(255,255,255,.17);box-shadow:0 8px 23px rgba(0,0,0,.2);
-  backdrop-filter:blur(7px);pointer-events:none;display:flex;flex-direction:column;gap:5px
+  position:absolute;left:12px;top:177px;z-index:19;
+  width:min(370px,35vw);padding:10px 12px;
+  border-radius:15px;color:#fff;background:rgba(14,32,49,.88);
+  border:1px solid rgba(255,255,255,.16);box-shadow:0 7px 18px rgba(0,0,0,.18);
+  pointer-events:none;display:flex;flex-direction:column;gap:7px
 }
+.instructionHeading{display:flex;align-items:center;justify-content:space-between;gap:8px}
 #instructionPanel strong{font-size:12px}
-#instructionPanel span{font-size:10px;line-height:1.4;color:#dbe7f4}
-.instructionTrack{height:7px;border-radius:99px;background:rgba(255,255,255,.15);overflow:hidden}
+#instructionPanel .instructionPercent{font-size:16px;color:#f6d477;font-variant-numeric:tabular-nums}
+#instructionPanel>span{font-size:10px;line-height:1.4;color:#dbe7f4}
+.instructionTrack{height:10px;border-radius:99px;background:rgba(255,255,255,.19);overflow:hidden}
 #instructionBar{width:0;height:100%;border-radius:99px;background:#f2ce64;transition:width .18s linear}
+.instructionStages{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.instructionStage{border-radius:8px;padding:5px 6px;background:rgba(255,255,255,.085);opacity:.63}
+.instructionStage.active{background:rgba(246,210,111,.19);outline:1px solid rgba(255,222,128,.5);opacity:1}
+.instructionStage.done{opacity:.88}
+.instructionStage span{display:block;font-size:10px;font-weight:900;margin-bottom:4px}
+.stageTrack{height:5px;border-radius:99px;background:rgba(255,255,255,.17);overflow:hidden}
+.stageTrack i{display:block;height:100%;width:0;background:#f2ce64;border-radius:99px;transition:width .18s linear}
+.actionFeedback{
+  position:absolute;z-index:24;transform:translate(-50%,-50%);
+  pointer-events:none;padding:5px 11px;border-radius:16px;white-space:nowrap;
+  background:rgba(251,243,185,.94);color:#534014;border:1px solid rgba(255,255,255,.85);
+  font-size:12px;font-weight:1000;text-shadow:none;box-shadow:0 4px 14px rgba(0,0,0,.18);
+}
+.actionFeedback.calm,.actionFeedback.attention,.actionFeedback.recap{background:#dcf9e6;color:#176c3e}
+.actionFeedback.warning{background:#fff0df;color:#9d3a24}
+.actionFeedback.health{background:#e5f1ff;color:#285986}
 #rosterToggle{
   position:absolute;left:12px;top:120px;z-index:31;
   padding:7px 11px;border-radius:12px;color:#19334a;background:#eaf5ff;border:1px solid #c2dcee;
@@ -97,8 +116,8 @@ button{font:inherit}
 @keyframes pulse{to{transform:scale(1.05)}}
 
 #guide{
-  position:absolute;left:50%;top:120px;transform:translateX(-50%);z-index:17;
-  width:min(520px,56vw);padding:8px 12px;border-radius:13px;background:rgba(248,252,255,.9);color:#1e3348;
+  position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:17;
+  width:min(440px,calc(100vw - 345px));padding:7px 11px;border-radius:13px;background:rgba(248,252,255,.9);color:#1e3348;
   box-shadow:0 8px 22px rgba(0,0,0,.14);text-align:center;pointer-events:none
 }
 #guide small,#guide strong,#guide span{display:block}
@@ -214,9 +233,13 @@ code{display:block;padding:10px;border-radius:10px;background:#edf2f7;color:#405
   #dayStrip span{min-width:40px;height:28px;padding:2px 4px;column-gap:2px}
   #dayStrip span i{font-size:12px}#dayStrip span small{display:none}
   #campaignStatus{top:101px;right:7px;max-width:42vw;padding:5px 7px;font-size:8px}
-  #instructionPanel{top:174px;right:7px;width:min(260px,39vw);padding:6px 8px}
+  #instructionPanel{top:170px;left:7px;width:min(330px,43vw);padding:6px 8px;gap:4px}
   #instructionPanel strong{font-size:10px}
-  #instructionPanel span{font-size:9px}
+  #instructionPanel>span{font-size:9px}
+  .instructionStage span{font-size:8px}
+  #guide{bottom:9px;width:min(360px,calc(100vw - 285px));padding:5px 7px}
+  #guide strong{font-size:11px}
+  #guide span{font-size:8px}
   #rosterToggle{top:104px;left:7px;padding:5px 7px;font-size:9px}
   #studentStrip{top:136px;left:7px;width:min(440px,94vw);max-height:40vh;grid-template-columns:repeat(3,minmax(0,1fr))}
   .studentChip{font-size:9px;min-height:33px;padding:4px 5px}
@@ -229,7 +252,8 @@ code{display:block;padding:10px;border-radius:10px;background:#edf2f7;color:#405
   .card{padding:18px}.card h1{font-size:37px}
 }
 @media(max-height:520px){
-  #instructionPanel{top:117px;right:7px;padding:6px 8px}
+  #instructionPanel{top:117px;left:7px;padding:6px 8px;max-height:120px}
+  #guide{bottom:7px;max-height:55px;overflow:hidden}
   #guide{display:none}
   .card{max-height:94vh;overflow:auto}
   .rules{margin:10px 0}
