@@ -156,10 +156,18 @@ function setGuidePath(path){
   line.computeLineDistances();line.frustumCulled=false;scene.add(line);guidance.mesh=line;
 }
 function updateNavigation(dt,force=false){
-  const target=navigationTarget();if(!target||!started)return;
-  const facingGhost=stage===2&&maidenPhase!=='approach';
-  ui.navigation.classList.toggle('hidden',facingGhost);
-  if(facingGhost){if(guidance.points.length)setGuidePath([]);return;}
+  if(!started)return;
+  // An explicit beginner tutorial only. After the first repaired anomaly,
+  // the school must be explored using room names, missions and the minimap.
+  const showTutorialTrail=stage===1&&fixes===0;
+  ui.navigation.classList.toggle('hidden',!showTutorialTrail);
+  if(!showTutorialTrail){
+    if(guidance.mesh)setGuidePath([]);
+    guidance.key='';
+    return;
+  }
+  const target=navigationTarget();
+  if(!target)return;
   guidance.clock+=dt;
   const changed=target.key!==guidance.key;
   const moved=Math.hypot(player.x-guidance.fromX,player.z-guidance.fromZ)>2.4;
@@ -183,7 +191,7 @@ function updateNavigation(dt,force=false){
   ui.navArrow.style.transform='rotate('+angle.toFixed(0)+'deg)';
   ui.navTitle.textContent=target.name;
   const destinationDist=Math.round(Math.hypot(target.x-player.x,target.z-player.z));
-  ui.navRange.textContent=destinationDist<2?'목표 근처 · 행동 버튼을 확인하세요':destinationDist+'m · 바닥의 노란 길을 따라 이동';
+  ui.navRange.textContent=destinationDist<2?'첫 번째 물건 · 행동 버튼으로 조사':destinationDist+'m · 첫 조사까지 노란 길 안내';
 }
 function showLesson(title,text,seconds=9){
   ui.lessonTitle.textContent=title;ui.lessonText.textContent=text;
@@ -232,11 +240,11 @@ function windowWall(x,z,width=3.4){
   const d=.29;
   cube(scene,x,.55,z,width,1.10,d,materials.wall);
   cube(scene,x,2.77,z,width,.70,d,materials.wall);
-  cube(scene,x,1.80,z,width-.12,1.26,.075,new THREE.MeshStandardMaterial({
+  cube(scene,x,1.765,z,width-.12,1.29,.075,new THREE.MeshStandardMaterial({
     color:0x6a9ca9,transparent:true,opacity:.31,roughness:.2,metalness:.08,depthWrite:false,
     side:THREE.DoubleSide
   }));
-  walls.push({x,z,hx:width/2,hz:d/2});
+  walls.push({x,z,hx:width/2,hz:d/2,transparent:true});
 }
 function courtyardFacade(z){
   // Windows overlook the inner courtyard between the two parallel school wings.
@@ -314,7 +322,7 @@ function createRoom(){
       wall(cx+off,z,side,.29);
     }
     addLabel(NORTH_ROOMS[i],cx,-9.94,0xb9dfe9);
-    addLabel(SOUTH_ROOMS[i],cx,9.94,0xb9dfe9);
+    addLabel(SOUTH_ROOMS[i],cx,9.94,0xb9dfe9,Math.PI);
     classroomFurniture(cx,true,i);
     classroomFurniture(cx,false,i);
     if(i<4){
@@ -352,6 +360,13 @@ function createRoom(){
   for(const x of [-11,-3,5,13,21,28]){
     ceilingFixture(x,-8.5);ceilingFixture(x,8.5);
   }
+  // Color-coded corridor flooring provides orientation without an always-on
+  // quest trail. Keep the stripes 2mm above the floor to avoid z-fighting.
+  const blueLine=new THREE.MeshBasicMaterial({color:0x5485ae});
+  const amberLine=new THREE.MeshBasicMaterial({color:0xb48c62});
+  cube(scene,7.5,.013,-8.83,44,.022,.17,blueLine);
+  cube(scene,7.5,.013,8.83,44,.022,.17,amberLine);
+  cube(scene,-17.45,.013,0,.17,.022,38.2,mat(0x9baeb0));
   for(const z of [-17,-10,-3,4,11,18])ceilingFixture(-17.6,z);
   // Courtyard benches are scenery, not walkable navigation cells.
   const benches=[-5,12,22];
@@ -538,7 +553,7 @@ function segmentHitsRect(ax,az,bx,bz,rect,margin=.012){
   return exit>.015&&enter<.985;
 }
 function clearGhostSight(ax,az,bx,bz){
-  return !walls.some(rect=>segmentHitsRect(ax,az,bx,bz,rect));
+  return !walls.some(rect=>!rect.transparent&&segmentHitsRect(ax,az,bx,bz,rect));
 }
 function gazingAtGhost(){
   const gx=maiden.x-player.x,gz=maiden.z-player.z,d=Math.hypot(gx,gz);
@@ -685,6 +700,10 @@ function drawMap(){
   ctx.fillRect(tx(-20.5),tz(-19.6),5.5/60*w,39.2/42*h);
   ctx.fillRect(tx(-15),tz(-10.2),45/60*w,3.2/42*h);
   ctx.fillRect(tx(-15),tz(7),45/60*w,3.2/42*h);
+  ctx.fillStyle='#a9d4fb';ctx.font='bold 9px system-ui';ctx.fillText('북쪽 동',tx(1),tz(-8.2));
+  ctx.fillStyle='#eec89b';ctx.fillText('남쪽 동',tx(1),tz(9.0));
+  ctx.fillStyle='#dfd3b5';ctx.save();ctx.translate(tx(-18),tz(1));ctx.rotate(-Math.PI/2);
+  ctx.fillText('연결동',0,0);ctx.restore();
   ctx.strokeStyle='#a3b3bf55';ctx.lineWidth=.8;
   for(const x of [-6,3,12,21]){
     for(const [za,zb] of [[-20,-10.2],[10.2,20]]){
