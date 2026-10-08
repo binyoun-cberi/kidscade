@@ -113,14 +113,14 @@ test('first maiden encounter is a safe rehearsal and teaches before the chase',(
   assert.match(js,/maidenPhase='hunt';maiden\.charge=0;ghostWaiting=6/);
   assert.match(js,/ghostWaiting=10/);
   assert.match(js,/lastMistake='처녀귀신/);
-  assert.match(js,/세 번 붙잡혀서 실패했어요/);
+  assert.match(js,/생명이 모두 소진됐어요/);
 });
 
 test('beginner experience includes wayfinding, actionable hints, and camera obstruction repair',()=>{
   assert.match(js,/function updateNavigation\(dt,force=false\)/);
   assert.match(js,/function setGuidePath\(path\)/);
   assert.match(js,/routePlan\(player,target,1\.15\)/);
-  assert.match(js,/노란 안내선/);
+  assert.match(js,/첫 조사까지 노란 길 안내/);
   assert.match(js,/showLesson\('첫 임무/);
   assert.match(js,/showLesson\('첫 만남/);
   assert.match(js,/showLesson\('관찰 성공/);
