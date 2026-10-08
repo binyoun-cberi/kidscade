@@ -490,3 +490,74 @@ test('closer shoulder camera stays clear of walls on slow walks and rapid turns'
   }
   assert.ok(quickTurn.camera.position.x>3,'should finish new turn facing the correct way');
 });
+
+
+test('keyboard movement cannot steer or lag the camera independently',()=>{
+  const playerStart=js.indexOf('function updatePlayer(dt){');
+  const camStart=js.indexOf('const CAMERA_FOLLOW=');
+  const camEnd=js.indexOf('function updateProps(dt){',camStart);
+  const rayStart=js.indexOf('function segmentHitsRect(');
+  const rayEnd=js.indexOf('function clearGhostSight(',rayStart);
+  assert.ok(playerStart>=0&&camStart>playerStart&&camEnd>camStart&&rayEnd>rayStart);
+  const playerCode=js.slice(playerStart,camStart).replaceAll('viewYaw','view.yaw');
+  const camCode=js.slice(camStart,camEnd).replaceAll('viewYaw','view.yaw');
+  const rayCode=js.slice(rayStart,rayEnd);
+  class Vec{
+    constructor(x=0,y=0,z=0){this.x=x;this.y=y;this.z=z;}
+    clone(){return new Vec(this.x,this.y,this.z);}
+    copy(v){this.x=v.x;this.y=v.y;this.z=v.z;return this;}
+    lerp(v,t){this.x+=(v.x-this.x)*t;this.y+=(v.y-this.y)*t;this.z+=(v.z-this.z)*t;return this;}
+  }
+  const scenarios=['w','a','s','d','w+d','idle'];
+  for(const yaw of [0,Math.PI/2,-Math.PI/2,Math.PI,.85]){
+    const keys=new Set(),joy={x:0,y:0},view={yaw};
+    const player={x:0,z:0,yaw:Math.PI,root:{position:{set(){}},rotation:{y:0}},animation:null};
+    const camera={position:new Vec(),lookAt(x,y,z){this.aim={x,y,z};}};
+    const torch={position:{set(){}},intensity:0},torchTarget={position:{set(){}}};
+    const vars={THREE:{Vector3:Vec},player,keys,joy,view,elapsed:0,invulnerable:0,
+      camera,torch,torchTarget,power:100,flashOn:true,walls:[],canWalk:()=>true,collides:()=>false};
+    const funcs=new Function(...Object.keys(vars),rayCode+playerCode+camCode+
+      'return {updatePlayer,updateCamera,cameraFollowState,CAMERA_FOLLOW};')(...Object.values(vars));
+    const step=()=>{funcs.updatePlayer(.0167);funcs.updateCamera(.0167);};
+    const heading=()=>Math.atan2(camera.aim.x-camera.position.x,-(camera.aim.z-camera.position.z));
+    for(let i=0;i<100;i++)step();
+    const base=heading();
+    const relative={x:camera.position.x-player.x,z:camera.position.z-player.z};
+    assert.equal(funcs.CAMERA_FOLLOW.distance,4.7,'keep camera zoom');
+    assert.equal(funcs.CAMERA_FOLLOW.height,3.45,'keep camera height');
+    for(const keysHeld of scenarios){
+      keys.clear();
+      for(const k of keysHeld.split('+'))if(k!=='idle')keys.add(k);
+      let moved=0;
+      for(let i=0;i<100;i++){
+        const oldX=player.x,oldZ=player.z;
+        step();
+        moved+=Math.hypot(player.x-oldX,player.z-oldZ);
+        const angularDelta=Math.atan2(Math.sin(heading()-base),Math.cos(heading()-base));
+        assert.ok(Math.abs(angularDelta)<1e-9,'WASD must never rotate the camera: '+keysHeld+' yaw '+yaw);
+        assert.ok(Math.abs(camera.position.x-player.x-relative.x)<1e-8,
+          'camera horizontal X must track player directly without lag');
+        assert.ok(Math.abs(camera.position.z-player.z-relative.z)<1e-8,
+          'camera horizontal Z must track player directly without lag');
+      }
+      assert.equal(moved>0,keysHeld!=='idle','expected movement for '+keysHeld);
+    }
+    // An actual touch/mouse drag is allowed to change the heading.
+    view.yaw=yaw+.35;
+    for(let i=0;i<80;i++)step();
+    const delta=Math.atan2(Math.sin(heading()-base),Math.cos(heading()-base));
+    assert.ok(Math.abs(delta)>.3,'drag must remain able to rotate camera');
+  }
+  assert.match(js,/cameraFollowState\.ready=false;player\.x=SCHOOL\.guard\.x/,
+    'reset should snap camera to the new character location');
+});
+
+test('camera wall occlusion uses exact ray entry, not sparse samples',()=>{
+  assert.match(js,/function cameraFollowTarget\(eye,desired\)/);
+  assert.match(js,/const dx=desired\.x-eye\.x,dz=desired\.z-eye\.z,length=Math\.hypot\(dx,dz\)/);
+  assert.match(js,/camera\.position\.x\+=playerDx/);
+  assert.match(js,/camera\.position\.z\+=playerDz/);
+  assert.match(js,/const obscured=walls\.some\(w=>segmentHitsRect\(player\.x,player\.z,next\.x,next\.z,w/);
+  assert.match(js,/const lookLength=arm\+CAMERA_FOLLOW\.lookAhead/);
+  assert.match(js,/camera\.position\.x\+fx\*lookLength/);
+});
