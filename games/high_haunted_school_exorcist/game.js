@@ -6,7 +6,9 @@ const $=id=>document.getElementById(id);
 const ui={canvas:$('game'),intro:$('intro'),end:$('end'),endTitle:$('endTitle'),endText:$('endText'),
   mission:$('mission'),detail:$('detail'),progress:$('progress'),health:$('health'),battery:$('battery'),
   time:$('time'),toast:$('toast'),action:$('action'),actionText:$('actionText'),joy:$('joystick'),knob:$('knob'),
-  map:$('minimap'),help:$('help'),flash:$('flash'),gaze:$('gaze'),gazeValue:$('gazeValue')};
+  map:$('minimap'),help:$('help'),flash:$('flash'),gaze:$('gaze'),gazeValue:$('gazeValue'),
+  navArrow:$('navArrow'),navTitle:$('navTitle'),navRange:$('navRange'),
+  lesson:$('lesson'),lessonTitle:$('lessonTitle'),lessonText:$('lessonText'),reticle:$('reticle')};
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090f19);scene.fog=new THREE.FogExp2(0x090f19,.019);
 const renderer=new THREE.WebGLRenderer({canvas:ui.canvas,antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);
@@ -32,7 +34,9 @@ const maiden={x:12,z:-10,root:new THREE.Group(),speed:1.2,charge:0,attacks:0};
 const disturbed=[],stageNames=['','3개의 장난 찾기','처녀귀신 관찰','2층 봉인진 가동','관리실로 귀환'];
 let started=false,ended=false,paused=false,stage=1,fixes=0,hp=3,power=100,flashOn=true,elapsed=0;
 let viewYaw=0,turnPointer=null,prevX=0,last=performance.now(),hudClock=0,miniClock=0,toastSeconds=0;
-let invulnerable=0,ghostWaiting=0,maidenVisible=false;
+let invulnerable=0,ghostWaiting=0,maidenPhase='approach',tutorialCount=0,lessonTimer=0,lastMistake='';
+const guidance={key:'',points:[],mesh:null,clock:0,fromX:0,fromZ:0,goalX:0,goalZ:0};
+let gazeLocked=false,ghostNav=null;
 const forward=new THREE.Vector3(),modelTime=new THREE.Clock();
 scene.add(player.root,maiden.root);
 
@@ -58,6 +62,85 @@ function onFloor(x,z){
   (x>-4.75&&x<4.75&&z>4.4&&z<12.75);
 }
 function canWalk(x,z){return onFloor(x,z)&&!walls.some(w=>collides(x,z,w))&&!furniture.some(o=>collides(x,z,o));}
+// Shared grid navigation prevents the guide line from crossing walls and desks.
+function routePlan(start,goal,reach=1.05){
+  const step=.5,round=v=>Math.round(v/step)*step;
+  const key=(x,z)=>Math.round(x/step)+','+Math.round(z/step);
+  let sx=round(start.x),sz=round(start.z);
+  if(!canWalk(sx,sz)){
+    let best=Infinity;
+    for(let dx=-1.5;dx<=1.5;dx+=step)for(let dz=-1.5;dz<=1.5;dz+=step){
+      const x=sx+dx,z=sz+dz,d=dx*dx+dz*dz;
+      if(d<best&&canWalk(x,z)){sx=x;sz=z;best=d;}
+    }
+    if(!isFinite(best))return [];
+  }
+  const nodes=[{x:sx,z:sz,parent:-1}],seen=new Set([key(sx,sz)]);
+  let goalIndex=-1;
+  for(let head=0;head<nodes.length&&head<7000;head++){
+    const p=nodes[head];
+    if(Math.hypot(p.x-goal.x,p.z-goal.z)<reach){goalIndex=head;break;}
+    for(const [dx,dz] of [[step,0],[-step,0],[0,step],[0,-step]]){
+      const x=p.x+dx,z=p.z+dz,k=key(x,z);
+      if(seen.has(k)||!canWalk(x,z))continue;
+      seen.add(k);nodes.push({x,z,parent:head});
+    }
+  }
+  if(goalIndex===-1)return [];
+  const path=[];
+  for(let i=goalIndex;i!==-1;i=nodes[i].parent)path.push({x:nodes[i].x,z:nodes[i].z});
+  return path.reverse();
+}
+function navigationTarget(){
+  if(stage===1){
+    const i=disturbed.findIndex(d=>!d.done);
+    if(i>=0)return {key:'fix'+i,x:disturbed[i].x,z:disturbed[i].z,name:disturbed[i].name};
+    return {key:'dokkaebi',x:-10.3,z:-6,name:'도깨비 봉인진'};
+  }
+  if(stage===2){
+    if(maidenPhase==='approach')return {key:'science',x:10.25,z:-5.5,name:'과학실로 이동'};
+    return {key:'maiden',x:maiden.x,z:maiden.z,name:'처녀귀신을 바라보기'};
+  }
+  if(stage===3)return {key:'maidenSeal',x:12.5,z:-6,name:'보라색 봉인진'};
+  if(stage===4)return {key:'report',x:0,z:10.35,name:'관리실로 돌아가기'};
+  return null;
+}
+function setGuidePath(path){
+  if(guidance.mesh){scene.remove(guidance.mesh);guidance.mesh.geometry.dispose();guidance.mesh.material.dispose();guidance.mesh=null;}
+  guidance.points=path;
+  if(path.length<2)return;
+  // Thin floor-level line: a trail, not a wall or obstacle.
+  const pts=path.filter((_,i)=>i===0||i%2===0||i===path.length-1).map(p=>new THREE.Vector3(p.x,.075,p.z));
+  const geom=new THREE.BufferGeometry().setFromPoints(pts);
+  const line=new THREE.Line(geom,new THREE.LineDashedMaterial({color:0xf4c878,dashSize:.36,gapSize:.23,transparent:true,opacity:.82,depthWrite:false}));
+  line.computeLineDistances();line.frustumCulled=false;scene.add(line);guidance.mesh=line;
+}
+function updateNavigation(dt,force=false){
+  const target=navigationTarget();if(!target)return;
+  guidance.clock+=dt;
+  const changed=target.key!==guidance.key;
+  const moved=Math.hypot(player.x-guidance.fromX,player.z-guidance.fromZ)>2.4;
+  const targetMoved=Math.hypot(target.x-guidance.goalX,target.z-guidance.goalZ)>2;
+  if(force||changed||(guidance.clock>2.8&&(moved||targetMoved))){
+    guidance.key=target.key;guidance.clock=0;guidance.fromX=player.x;guidance.fromZ=player.z;
+    guidance.goalX=target.x;guidance.goalZ=target.z;
+    setGuidePath(routePlan(player,target,1.15));
+  }
+  const pts=guidance.points;
+  const upcoming=pts.find(p=>Math.hypot(p.x-player.x,p.z-player.z)>1.65)||target;
+  const dx=upcoming.x-player.x,dz=upcoming.z-player.z;
+  const fwd=-Math.sin(viewYaw)*dx-Math.cos(viewYaw)*dz;
+  const side=Math.cos(viewYaw)*dx-Math.sin(viewYaw)*dz;
+  const angle=Math.atan2(side,fwd)*180/Math.PI;
+  ui.navArrow.style.transform='rotate('+angle.toFixed(0)+'deg)';
+  ui.navTitle.textContent=target.name;
+  const destinationDist=Math.round(Math.hypot(target.x-player.x,target.z-player.z));
+  ui.navRange.textContent=destinationDist<2?'목표 근처 · 행동 버튼을 확인하세요':destinationDist+'m · 바닥의 노란 길을 따라 이동';
+}
+function showLesson(title,text,seconds=9){
+  ui.lessonTitle.textContent=title;ui.lessonText.textContent=text;
+  ui.lesson.classList.remove('hidden');lessonTimer=seconds;
+}
 function placeFurniture(file,x,z,height,rot=0,boxSize=null){
   if(boxSize)furniture.push({x,z,hx:boxSize[0]/2,hz:boxSize[1]/2});
   const host=new THREE.Group();host.position.set(x,0,z);host.rotation.y=rot;scene.add(host);
