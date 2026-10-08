@@ -186,15 +186,23 @@
       "rule": "reuse existing Chibi mesh topology and source skin weights; no procedural hair, sleeves, or compressed long-pants shortcuts",
       "defaultHair": "kidscade_male_hair_short",
       "faceRule": "The body already paints eye whites and eyelid lines. Use unmodified source eyes alignment and only the 24 original eyebrow triangles; never draw a second set of lashes.",
-      "walkStyle": "reduced-hip-sway-v1",
+      "walkStyle": "balanced-locomotion-v2",
       "walkAnimation": {
         "source": "anim_walk",
         "specialHandling": "only when kidscade_male_body visible",
         "pelvisLateralScale": 0.43,
         "pelvisRollScale": 0.38,
         "lowerSpineRollScale": 0.55,
-        "preserved": "original source animations unchanged; stride, knees, ankles and arms use source tracks",
-        "exportBehavior": "derived WALK replaces source WALK in export when male body visible; clip count and public name remain unchanged"
+        "preserved": "all 11 source animations and clip names; stride, knees, ankle/foot-contact tracks unchanged; upper-arm pitch/roll reduced relative to the original bind pose",
+        "exportBehavior": "derived WALK and RUN replace their source counterparts in export when the male body is visible; all public names and the 11-clip count remain unchanged"
+      },
+      "runAnimation": {
+        "source": "anim_run",
+        "specialHandling": "only when kidscade_male_body visible",
+        "pelvisLateralScale": 0.60,
+        "pelvisRollScale": 0.55,
+        "preserved": "original stride, knee and foot-contact timing",
+        "upperArms": "bind-pose-relative swing tuning"
       }
     },
     "kidscade_male_hair_short": {
