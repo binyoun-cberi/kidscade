@@ -281,7 +281,7 @@ function validPlacement(p){
   // Keep the actual tower body clear of the visibly stroked enemy lane.
   const unit=Math.min(W,H);
   const laneHalfWidth=Math.max(30,unit*.065)/2;
-  const towerHalfWidth=Math.max(19,unit*.034)*.55;
+  const towerHalfWidth=Math.max(21,unit*.036)*.58;
   if(minPathPixels(p)<laneHalfWidth+towerHalfWidth+3)return false;
   const minSpacing=towerHalfWidth*2+7;
   if(state.towers.some(t=>Math.hypot((p.x-t.x)*W,(p.y-t.y)*H)<minSpacing))return false;
@@ -483,7 +483,7 @@ function reachCore(e){
 function damageEnemy(e,amount,kind,tower){
   if(e.dead)return;
   if(e.shield>0){
-    const multiplier=(tower?.stats.shieldBreak||1);
+    const multiplier=tower?(effectiveStats(tower).shieldBreak||1):1;
     const used=Math.min(e.shield,amount*multiplier);
     e.shield-=used;amount-=used/multiplier;
   }
@@ -970,7 +970,7 @@ function drawLinks(){
   }
   ctx.restore();
 }
-function towerRadius(t){return Math.max(19,Math.min(W,H)*(.029+t.def.difficulty*.0015))}
+function towerRadius(t){return Math.max(21,Math.min(W,H)*(.0305+t.def.difficulty*.00165))}
 function drawFields(){
   for(const field of state.fields){
     const progress=Math.max(0,field.life/(field.source.stats.mode==='lavafield'?5.4:3.5));
@@ -1032,6 +1032,27 @@ function drawEnemies(){
     if(e.shield>0){ctx.strokeStyle='#4ca7e8';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,r*1.35,0,Math.PI*2);ctx.stroke()}
     if(e.armor){ctx.strokeStyle='#b6bdc9';ctx.lineWidth=3;ctx.strokeRect(x-r*1.12,y-r*1.12,r*2.24,r*2.24)}
     if(e.regen){ctx.fillStyle='#b2ffd6';ctx.font='900 11px sans-serif';ctx.fillText('+',x,y+3)}
+    // Small, consistent combat-status pips make elemental combinations visible
+    // without covering the route with floating text.
+    const statuses=[
+      e.freezeTime>0?'#c0f4ff':e.slow<.79?'#7cd4ff':null,
+      e.burn>0?'#ff8d43':null,
+      e.poison>0?'#98d65d':null,
+      e.corrosion>0?'#e7d36b':null
+    ].filter(Boolean);
+    if(statuses.length){
+      ctx.save();
+      statuses.forEach((color,index)=>{
+        const xx=x+(index-(statuses.length-1)/2)*6;
+        ctx.fillStyle='#25303b';ctx.beginPath();ctx.arc(xx,y+r+6,3.6,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle=color;ctx.beginPath();ctx.arc(xx,y+r+6,2.6,0,Math.PI*2);ctx.fill();
+      });
+      ctx.restore();
+    }
+    if(e.freezeTime>0){
+      ctx.save();ctx.strokeStyle='#b4f0ff';ctx.lineWidth=2.2;
+      ctx.strokeRect(x-r*1.42,y-r*1.42,r*2.84,r*2.84);ctx.restore();
+    }
   }
 }
 function drawShots(){
