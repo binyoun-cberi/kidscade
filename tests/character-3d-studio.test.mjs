@@ -42,7 +42,7 @@ test('Chibi studio loads source rig and exports visible parts only',()=>{
   assert.match(js,/choosePrimarySkinnedMesh/);
   assert.match(js,/uniqueBones/);
   assert.match(js,/onlyVisible:true/);
-  assert.match(js,/animations,/);
+  assert.match(js,/animations:animations\.map\(clip=>resolvePlaybackClip\(clip\)\)/);
   assert.match(js,/kidscade-chibi-/);
 });
 
@@ -355,7 +355,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261008-maleproportion8/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-malewalk9/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
