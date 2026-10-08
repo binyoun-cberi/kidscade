@@ -61,6 +61,9 @@ let maleWalkClips=new Map(),maleRunClips=new Map();
 let originalMaterials=new Map();
 let loaded=false;
 let lastTime=performance.now();
+// Instrumentation is only reachable from a local browser audit; production auth remains unchanged.
+const localVisualAudit=/^(?:localhost|127\.0\.0\.1)$/.test(location.hostname)
+  &&new URLSearchParams(location.search).get('audit')==='1';
 
 function setStatus(text,error=false){
   const el=$('status');
@@ -82,7 +85,7 @@ function setReady(ready){
   $('exportSpec').disabled=!ready;
   $('chibiHair').disabled=!ready;
   $('chibiUnlit').disabled=!ready;
-  document.querySelectorAll('[data-chibi-preset],[data-view]').forEach(el=>el.disabled=!ready);
+  document.querySelectorAll('[data-chibi-preset],[data-view],[data-quick-clip],[data-quick-speed]').forEach(el=>el.disabled=!ready);
 }
 
 function showAssetError(message){
@@ -1342,6 +1345,13 @@ function syncActiveWalkStyle(){
   if(activeClip&&(isWalkClipName(activeClip)||isRunClipName(activeClip)))playClip(activeClip);
 }
 
+function syncQuickClip(){
+  document.querySelectorAll('[data-quick-clip]').forEach(button=>{
+    const target=animations.find(clip=>clipLabel(clip.name)===button.dataset.quickClip);
+    button.classList.toggle('active',!!target&&target.name===activeClip);
+  });
+}
+
 function playClip(name){
   if(!mixer)return;
   const sourceClip=animations.find(item=>item.name===name);
@@ -1352,6 +1362,7 @@ function playClip(name){
   if(gaitBadge)gaitBadge.textContent=derived?'남자형 동작 보정 · '+clipLabel(name):'원본 동작 · '+clipLabel(name);
 
   activeClip=name;
+  syncQuickClip();
   document.querySelectorAll('[data-clip]').forEach(button=>{
     button.classList.toggle('active',button.dataset.clip===name);
   });
@@ -1377,6 +1388,7 @@ function resetPose(){
     if(object.isSkinnedMesh)object.skeleton?.pose?.();
   });
   activeClip='';
+  syncQuickClip();
   document.querySelectorAll('[data-clip]').forEach(button=>button.classList.remove('active'));
   setStatus('원본 바인드 자세로 돌아왔습니다.');
 }
@@ -1394,8 +1406,8 @@ function setCameraView(name){
   else camera.position.set(TARGET_HEIGHT*1.52,TARGET_HEIGHT*.82,TARGET_HEIGHT*1.72);
   controls.syncFromCamera();
   controls.update();
-  document.querySelectorAll('[data-view]').forEach(button=>{
-    button.classList.toggle('active',button.dataset.view===name);
+  document.querySelectorAll('[data-view],[data-quick-view]').forEach(button=>{
+    button.classList.toggle('active',(button.dataset.view||button.dataset.quickView)===name);
   });
 }
 
@@ -1636,8 +1648,28 @@ function wireUi(){
     if(skeletonHelper)skeletonHelper.visible=$('showBones').checked;
   });
 
-  $('speed').addEventListener('input',()=>{
-    if(activeAction)activeAction.setEffectiveTimeScale(Number($('speed').value));
+  const syncQuickSpeed=()=>{
+    const value=Number($('speed').value);
+    document.querySelectorAll('[data-quick-speed]').forEach(button=>{
+      button.classList.toggle('active',Number(button.dataset.quickSpeed)===value);
+    });
+    if(activeAction)activeAction.setEffectiveTimeScale(value);
+  };
+  $('speed').addEventListener('input',syncQuickSpeed);
+  document.querySelectorAll('[data-quick-speed]').forEach(button=>{
+    button.addEventListener('click',()=>{
+      $('speed').value=button.dataset.quickSpeed;
+      syncQuickSpeed();
+    });
+  });
+  document.querySelectorAll('[data-quick-clip]').forEach(button=>{
+    button.addEventListener('click',()=>{
+      const clip=animations.find(item=>clipLabel(item.name)===button.dataset.quickClip);
+      if(clip)playClip(clip.name);
+    });
+  });
+  document.querySelectorAll('[data-quick-view]').forEach(button=>{
+    button.addEventListener('click',()=>setCameraView(button.dataset.quickView));
   });
 
   $('resetPose').addEventListener('click',resetPose);
@@ -1694,10 +1726,53 @@ function loop(now){
   requestAnimationFrame(loop);
   const dt=Math.min(.05,(now-lastTime)/1000);
   lastTime=now;
-  if(mixer)mixer.update(dt);
-  if(avatarRoot&&$('autoRotate').checked)avatarRoot.rotation.y+=dt*.55;
+  if(mixer&&!localVisualAudit)mixer.update(dt);
+  if(avatarRoot&&!localVisualAudit&&$('autoRotate').checked)avatarRoot.rotation.y+=dt*.55;
   controls?.update();
   renderer?.render(scene,camera);
+}
+
+/** Local-only diagnostic hook used by the Chrome visual-audit runner.
+ * It exposes sampled skeleton positions and deterministic poses, not auth or export APIs.
+ * Regular production hosts never install this hook.
+ */
+function installLocalVisualAudit(){
+  if(!localVisualAudit||!loaded)return;
+  window.__kc3dAudit={
+    ready:true,
+    clips:animations.map(clip=>({name:clip.name,label:clipLabel(clip.name),duration:clip.duration})),
+    sample(label,view,fraction){
+      const source=animations.find(clip=>clip.name===label||clipLabel(clip.name)===label);
+      if(!source)throw new Error('Unknown Chibi animation: '+label);
+      if(!(fraction>=0&&fraction<1))throw new Error('Frame fraction outside [0,1)');
+      mixer.stopAllAction();
+      activeAction=null;
+      playClip(source.name);
+      activeAction.stopFading();
+      activeAction.setEffectiveWeight(1);
+      activeAction.setEffectiveTimeScale(1);
+      mixer.setTime(0);
+      mixer.setTime(source.duration*fraction);
+      setCameraView(view);
+      avatarRoot.rotation.y=0;
+      scene.updateMatrixWorld(true);
+      renderer.render(scene,camera);
+      const bones={};
+      uniqueBones().forEach(bone=>{
+        if(!/(?:foot|toe|thigh|shin|spine|pelvis)/i.test(bone.name))return;
+        const p=bone.getWorldPosition(new THREE.Vector3());
+        bones[bone.name]=[p.x,p.y,p.z].map(value=>Number(value.toFixed(5)));
+      });
+      return {
+        clip:source.name,view,fraction,
+        selectedParts:selectedParts(),
+        triangles:countVisibleTriangles(avatarRoot),
+        skeletonBones:uniqueBones().length,
+        sampledBones:bones,
+        canvas:{width:$('view').width,height:$('view').height}
+      };
+    }
+  };
 }
 
 async function boot(){
@@ -1706,7 +1781,7 @@ async function boot(){
   initScene();
   wireUi();
   requestAnimationFrame(loop);
-  await loadChibi();
+  if(await loadChibi())installLocalVisualAudit();
 }
 
 boot();
