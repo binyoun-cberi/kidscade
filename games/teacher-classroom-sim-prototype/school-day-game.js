@@ -2002,7 +2002,7 @@ if(location.hostname==='127.0.0.1'&&new URLSearchParams(location.search).has('te
       currentStep={kind:'prep',location:id,subject:'과학'};
       students.forEach(s=>updateStudentPose(s,.2));updateCamera(1);
     },
-    audio(){return {enabled:soundscape.enabled,hasContext:soundscape.hasContext,stats:soundscape.stats(),mediaMuted:[ui.bell,ui.talk,ui.fight,ui.ambience].map(el=>el.muted)}},
+    audio(){return {enabled:soundscape.enabled,hasContext:soundscape.hasContext,contextState:soundscape.contextState,stats:soundscape.stats(),mediaMuted:[ui.bell,ui.talk,ui.fight,ui.ambience].map(el=>el.muted)}},
     info(){
       const status=students.map(s=>{
         const hips=s.actor.seatHipY;
