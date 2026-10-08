@@ -85,6 +85,13 @@
   .status{max-width:34%;padding:5px 8px;top:4px}
   .status div{font-size:10px}
 }
+.rush-btn{position:absolute;top:64px;right:12px;z-index:4;padding:8px 12px;border-radius:12px;
+  border:2px solid #d3af68;background:#fff5d3;color:#725020;font-size:12px;font-weight:950;
+  box-shadow:0 3px 0 #caad76;cursor:pointer;touch-action:manipulation}
+.rush-btn:disabled{opacity:.58;cursor:default;filter:saturate(.6)}
+.rush-btn.active{background:#ffe06b;color:#553100;border-color:#edb535;box-shadow:0 0 17px rgba(255,204,71,.65)}
+@media(max-width:620px){.rush-btn{top:48px;right:7px;font-size:10px;padding:7px 9px}}
+@media(orientation:landscape) and (max-height:500px){.rush-btn{top:44px;right:7px;padding:5px 8px;font-size:10px}}
 .inspect{pointer-events:auto;max-height:54%;overflow-y:auto;touch-action:pan-y}
 .tower-level{font:900 11px/1 ui-monospace,monospace;color:#ffe59a;white-space:nowrap}
 .tower-upgrade{width:100%;padding:9px 10px;margin-top:10px;border:1px solid #eedb8b;border-radius:10px;background:#f5d36a;color:#313035;font-size:12px;font-weight:950;cursor:pointer;touch-action:manipulation}
@@ -113,6 +120,7 @@
     <canvas id="game" aria-label="워드 시즈 게임 보드"></canvas>
     <div class="status" id="statusBox"><b>준비</b><div>글자를 눌러 단어를 만든 뒤 타워를 배치하세요.</div></div>
     <button class="wave-btn" id="waveBtn" type="button">WAVE 1 시작</button>
+    <button class="rush-btn" id="rushBtn" type="button" disabled title="전투 중 INK를 사용해 9초 동안 타워 공격을 강화합니다. 한 웨이브에 두 번까지.">WORD RUSH</button>
     <div class="inspect" id="inspectBox"></div>
     <div class="wave-progress" aria-label="현재 웨이브 진행도"><span id="waveProgress"></span></div>
   </main>
