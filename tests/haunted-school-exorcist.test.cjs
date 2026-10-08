@@ -305,8 +305,8 @@ test('six anomalies use different rituals without an ever-present navigation tra
   assert.match(js,/encounter\.wolf\.ready&&dist\(player,wolfTrap\)/);
   assert.match(js,/stage===1&&fixes===0/);
   assert.match(js,/Animals\/glTF\/Wolf\.gltf/);
-  assert.match(js,/ultimate-monsters-bundle\/yeti\.glb/);
-  assert.match(js,/ultimate-monsters-bundle\/demon\.glb/);
+  assert.match(js,/npcs\/glTF\/Casual_Female\.gltf/);
+  assert.match(js,/ultimate-monsters-bundle\/ghost-skull\.glb/);
   for(const ghost of ['도깨비','처녀귀신','유키온나','달걀귀신','저승사자','늑대인간']){
     assert.ok(html.includes(ghost),ghost+' should have clear directions');
   }
