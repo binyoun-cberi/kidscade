@@ -1,0 +1,23 @@
+name: Temporary Chibi male walk motion audit
+on:
+  push:
+    branches: [feat/chibi-male-straighter-walk-20261008]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm ci --no-audit --no-fund
+      - run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/chibi-walk-inspect.log 2>&1 &
+          sleep 2
+      - run: node scripts/chibi-male-walk-audit.mjs
