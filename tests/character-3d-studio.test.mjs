@@ -612,6 +612,12 @@ test('v5.2 outfits reshape actual skinned geometry and add three-dimensional sle
   assert.match(pack,/const shell=cloneSkinnedMeshWithGeometry\(source,geometry,material,style\.id\+'_shell'\)/);
   assert.match(pack,/group\.add\(makeRigidSkinnedPiece\(source,geometry,bone,material,style\.id\+'_'\+id\)\)/);
   assert.match(pack,/source\.parent\.add\(group\)/);
+  assert.match(pack,/function makeTrouserLegs\(/);
+  assert.match(pack,/const geometry=new THREE\.CylinderGeometry\(upperRadius,lowerRadius,top-bottom,16,9,false\)/);
+  assert.match(pack,/indices\[offset\]=thigh/);
+  assert.match(pack,/indices\[offset\+1\]=shin/);
+  assert.match(pack,/weights\[offset\]=topWeight/);
+  assert.match(pack,/style\.id\+'_leg_'\+side/);
   for(const id of newIds){
     assert.ok(pack.includes('id:\''+id+'\''),'Style definition missing '+id);
     assert.equal(m.customParts[id].rigging.includes('78-bone'),true);
