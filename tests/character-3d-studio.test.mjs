@@ -310,6 +310,12 @@ test('male short hair reuses hairone topology, materials and original skin weigh
   assert.match(maleHair,/const geometry=source\.geometry\.clone\(\)/);
   assert.match(maleHair,/geometry\.computeBoundingBox\(\)/);
   assert.match(maleHair,/positions\.setXYZ\(i,x,y,z\)/);
+  assert.match(maleHair,/const eyeClearanceY=eyes\.geometry\.boundingBox\.max\.y\+\.02/);
+  assert.match(maleHair,/const backOfFaceZ=centerZ-\.045/);
+  assert.match(maleHair,/if\(lowest>=eyeClearanceY \|\| foremost<=backOfFaceZ\)/);
+  assert.match(maleHair,/geometry\.setIndex\(kept\)/);
+  assert.match(maleHair,/removedEyeLevelTriangles:\(originalIndex\.count-kept\.length\)\/3/);
+  assert.match(maleHair,/eyeClearancePolicy:'trim front\/side hair faces below upper-eye clearance; keep rear nape'/);
   assert.match(maleHair,/cloneSkinnedMeshWithGeometry\(/);
   assert.match(maleHair,/source\.parent\.add\(hair\)/);
   assert.doesNotMatch(maleHair,/SphereGeometry|ConeGeometry|CylinderGeometry|TubeGeometry/);
@@ -349,7 +355,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261008-alignedface6/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-hairclear7/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
@@ -373,4 +379,12 @@ test('male face preset uses one native-aligned pair of eyes and only original ey
   assert.match(js,/BASE_VARIANT_NODES\.forEach\(node=>setNodeVisible\(node,false\)\)/);
   assert.deepEqual(manifest.presets.male.filter(name=>/eyes|eyelashes|brows/.test(name)),['kidscade_male_eyes','kidscade_male_brows']);
   assert.match(js,/const lashesSource=getNode\('eyelashes'\)/);
+});
+
+test('male haircut never disables depth testing or mutates source hair materials',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const male=js.slice(js.indexOf('function createKidscadeMaleHairShort(){'),js.indexOf('function createKidscadeMaleSet(){'));
+  assert.doesNotMatch(male,/transparent\s*=|renderOrder\s*=|depthTest\s*=|depthWrite\s*=/);
+  assert.match(male,/const geometry=source\.geometry\.clone\(\)/);
+  assert.match(male,/source\.parent\.add\(hair\)/);
 });
