@@ -188,7 +188,7 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
     $('panRight').hidden=!mobile||!st.zoomed;
     $('viewToggle').textContent=st.zoomed?'전체판 보기':'글씨 크게';
     $('viewToggle').setAttribute('aria-pressed',String(st.zoomed));
-    $('boardHelp').textContent=mobile?(st.zoomed?'손가락으로 밀어 양쪽 패를 찾아보세요.':'전체판을 보고 패를 터치하세요. 작으면 글씨 크게를 누르세요.'):'한자와 뜻·음 패를 연결하세요.';
+    $('boardHelp').textContent=mobile?(st.zoomed?'손가락으로 밀어 양쪽 패를 찾아보세요.':(currentCell()<44?'전체판에서 위치를 터치하면 그 부분이 확대돼요.':'한자와 뜻·음 패를 골라보세요.')):'한자와 뜻·음 패를 연결하세요.';
   }
   function updateSelection(){
     $('board').querySelectorAll('.selected').forEach(el=>el.classList.remove('selected'));
@@ -286,6 +286,15 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
   }
   function pick(index){
     if(!st.active||st.paused||st.locked||!st.board[index])return;
+    // Dense overviews are for navigation, not error-prone tiny touch targets.
+    if(!st.zoomed&&(window.innerWidth||1024)<=640&&currentCell()<44){
+      st.zoomed=true;
+      drawBoard();updateViewControls();
+      const tile=currentCell();
+      $('boardScroll').scrollLeft=Math.max(0,(index%st.cols+.5)*tile-$('boardScroll').clientWidth/2);
+      announce('이 부분을 크게 보여줘요. 이제 두 패를 선택하세요.');
+      return;
+    }
     if(st.selected<0){st.selected=index;updateSelection();return;}
     if(st.selected===index){st.selected=-1;updateSelection();return;}
     const before=st.selected;st.selected=-1;
