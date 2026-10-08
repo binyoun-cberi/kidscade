@@ -13,7 +13,7 @@ const scene=new THREE.Scene();scene.background=new THREE.Color(0x090f19);scene.f
 const renderer=new THREE.WebGLRenderer({canvas:ui.canvas,antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);
 renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.32;
-const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,90);
+const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.09,90);
 scene.add(new THREE.HemisphereLight(0xa3bbef,0x202a2d,1.55));
 const moon=new THREE.DirectionalLight(0x9eb1da,1.35);moon.position.set(-7,13,8);scene.add(moon);
 const hallLight=new THREE.PointLight(0xb1c6e2,20,23,2);hallLight.position.set(-17.5,3.1,0);scene.add(hallLight);
@@ -39,7 +39,7 @@ const maiden={x:SCHOOL.maidenSpawn.x,z:SCHOOL.maidenSpawn.z,root:new THREE.Group
 const disturbed=[];
 const stageNames=['','도깨비 장난 조사','처녀귀신 관찰','처녀귀신 봉인','유키온나 난방 복구','유키온나 봉인','달걀귀신 시선 회피','달걀귀신 봉인','저승사자 종소리','저승사자 봉인','늑대인간 소리 유인','늑대인간 봉인','관리실 보고'];
 let started=false,ended=false,paused=false,stage=1,fixes=0,hp=3,power=100,flashOn=true,elapsed=0;
-let viewYaw=0,turnPointer=null,prevX=0,last=performance.now(),hudClock=0,miniClock=0,toastSeconds=0;
+let viewYaw=0,viewPitch=0,turnPointer=null,prevX=0,prevY=0,last=performance.now(),hudClock=0,miniClock=0,toastSeconds=0;
 let invulnerable=0,ghostWaiting=0,maidenPhase='approach',tutorialCount=0,lessonTimer=0,lastMistake='';
 const guidance={key:'',points:[],mesh:null,clock:0,fromX:0,fromZ:0,goalX:0,goalZ:0};
 let gazeLocked=false,ghostNav=null;
@@ -49,8 +49,12 @@ const encounter={
  wolf:{x:-1.5,z:16.8,root:new THREE.Group(),nav:null,speed:2.25,grace:5,lureTime:0,ready:false,active:false}
 };
 const encounterModels={};
+const FIRST_PERSON_EYE_HEIGHT=1.62;
 const forward=new THREE.Vector3(),modelTime=new THREE.Clock();
 scene.add(player.root,maiden.root,encounter.wolf.root);
+// The local avatar still exists for animations/collisions, but its head must
+// not be rendered in front of its own first-person camera.
+player.root.visible=false;
 
 function mat(color,roughness=.94){return new THREE.MeshStandardMaterial({color,roughness});}
 const materials={floor:mat(0x415568),corridor:mat(0x394657),wall:mat(0x7c8995),skirt:mat(0x273646),
@@ -681,8 +685,8 @@ function finish(ok){
 }
 function reset(){
   fixes=0;hp=3;power=100;flashOn=true;elapsed=0;stage=1;ended=false;paused=false;started=true;
-  viewYaw=-Math.PI/2;cameraFollowState.ready=false;player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;
-  player.yaw=Math.PI/2;player.root.rotation.y=player.yaw;
+  viewYaw=-Math.PI/2;viewPitch=0;player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;
+  player.yaw=viewYaw+Math.PI;player.root.rotation.y=player.yaw;
   maiden.attacks=0;maiden.charge=0;invulnerable=0;ghostWaiting=0;
   maidenPhase='approach';ghostNav=null;gazeLocked=false;
   guidance.key='';guidance.points=[];lastMistake='';tutorialCount=0;
@@ -745,7 +749,7 @@ function updateHud(){
   const threat=[4,6,8,11].includes(stage);
   ui.lesson.classList.toggle('encounter',ghostLesson||threat);
   ui.gaze.classList.toggle('hidden',!ghostLesson&&!threat);
-  ui.reticle.classList.toggle('hidden',!ghostLesson&&stage!==6);
+  ui.reticle.classList.toggle('hidden',!started||ended);
   ui.reticle.classList.toggle('active',ghostLesson||stage===6);
   ui.reticle.classList.toggle('locked',ghostLesson&&gazeLocked);
   let gauge=0,label='';
@@ -786,11 +790,17 @@ function segmentHitsRect(ax,az,bx,bz,rect,margin=.012){
 function clearGhostSight(ax,az,bx,bz){
   return !walls.some(rect=>!rect.transparent&&segmentHitsRect(ax,az,bx,bz,rect));
 }
+function playerLookDirection(){
+  const cp=Math.cos(viewPitch);
+  return {x:-Math.sin(viewYaw)*cp,y:Math.sin(viewPitch),z:-Math.cos(viewYaw)*cp};
+}
 function gazingAtGhost(){
-  const gx=maiden.x-player.x,gz=maiden.z-player.z,d=Math.hypot(gx,gz);
+  const gx=maiden.x-player.x,gy=1.60-FIRST_PERSON_EYE_HEIGHT,gz=maiden.z-player.z;
+  const d=Math.hypot(gx,gy,gz);
   if(d<.01||d>=12)return false;
-  forward.set(-Math.sin(viewYaw),0,-Math.cos(viewYaw));
-  return (forward.x*gx+forward.z*gz)/d>.92&&clearGhostSight(player.x,player.z,maiden.x,maiden.z);
+  const look=playerLookDirection();
+  return (look.x*gx+look.y*gy+look.z*gz)/d>.92&&
+    clearGhostSight(player.x,player.z,maiden.x,maiden.z);
 }
 function advanceGhostToward(target,dt){
   if(!ghostNav||ghostNav.points.length===0||
@@ -853,7 +863,7 @@ function updateGhost(dt){
   if(distance<1.18&&invulnerable<=0&&clearGhostSight(maiden.x,maiden.z,player.x,player.z)){
     hp--;maiden.attacks++;invulnerable=2.5;player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;
     maiden.x=SCHOOL.maidenSpawn.x;maiden.z=SCHOOL.maidenSpawn.z;ghostNav=null;ghostWaiting=10;
-    maiden.charge=0;
+    maiden.charge=0;viewYaw=-Math.PI/2;viewPitch=0;player.yaw=viewYaw+Math.PI;
     sfx('sfx_scream_01.mp3',.25);
     lastMistake='처녀귀신을 똑바로 바라봐야 움직임이 멈춰요. 과학실에 들어가면 먼저 카메라를 돌려 귀신을 찾으세요.';
     if(hp<=0){finish(false);return;}
@@ -866,7 +876,7 @@ function takeAnomalyHit(reason,resetToStage=null){
   if(invulnerable>0||!started||ended)return;
   hp--;invulnerable=3;
   player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;
-  viewYaw=-Math.PI/2;player.yaw=Math.PI/2;
+  viewYaw=-Math.PI/2;viewPitch=0;player.yaw=viewYaw+Math.PI;
   lastMistake=reason;
   sfx('sfx_horror_sting_01.mp3',.19);
   if(hp<=0){finish(false);return;}
@@ -904,7 +914,11 @@ function updateNewEncounters(dt){
   if(stage===6){
     const d=dist(player,eggLocation);
     const dx=eggLocation.x-player.x,dz=eggLocation.z-player.z;
-    const dot=d>0.001?(-Math.sin(viewYaw)*dx-Math.cos(viewYaw)*dz)/d:1;
+    // This is the player's actual eye direction, including vertical look:
+    // glancing above or away from the faceless ghost is not 'staring'.
+    const look=playerLookDirection(),dy=1.86-FIRST_PERSON_EYE_HEIGHT;
+    const d3=Math.hypot(dx,dy,dz);
+    const dot=d3>0.001?(look.x*dx+look.y*dy+look.z*dz)/d3:1;
     const sameRoom=player.x>3.1&&player.x<11.8&&player.z< -10.5;
     const unobstructed=clearGhostSight(player.x,player.z,eggLocation.x,eggLocation.z);
     const away=sameRoom&&d<8.3&&d>1.5&&unobstructed&&dot<-.28;
@@ -999,91 +1013,31 @@ function updatePlayer(dt){
   const vx=(fx*f+rx*r)*speed*dt,vz=(fz*f+rz*r)*speed*dt;
   if(canWalk(player.x+vx,player.z))player.x+=vx;
   if(canWalk(player.x,player.z+vz))player.z+=vz;
-  // Casual_Male.gltf, as in the teacher classroom simulator, faces LOCAL +Z.
-  // Forward movement in world -Z therefore needs yaw PI, not zero.
-  // Use actual input velocity rather than the camera look angle.
-  if(mag>.07)player.yaw=Math.atan2(fx*f+rx*r,fz*f+rz*r);
+  // First person: the body faces the view, even while strafing or walking
+  // backward. Local +Z is the model's forward direction.
+  player.yaw=viewYaw+Math.PI;
   player.root.position.set(player.x,invulnerable>0&&Math.floor(elapsed*10)%2===0?-.03:0,player.z);
   player.root.rotation.y=player.yaw;
   const anim=player.animation;
   if(anim){if(anim.walk)anim.walk.setEffectiveWeight(Math.min(1,mag));if(anim.idle)anim.idle.setEffectiveWeight(1-Math.min(1,mag));}
 }
-// The previous 8.5m/6.1m overhead chase camera made a 1.7m avatar tiny.
-// Use a close over-the-shoulder height while aiming past the avatar's head.
-// Sweep both the target and the smoothed movement to avoid crossing solid walls.
-const CAMERA_FOLLOW={distance:4.7,height:3.45,lookAhead:4.8,lookHeight:1.55};
-const cameraFollowState={ready:false,lastX:0,lastZ:0};
-function cameraWallHit(x,z,r=.17){
-  return walls.some(w=>collides(x,z,w,r));
-}
-function cameraFollowTarget(eye,desired){
-  // Exact 2D ray-vs-rectangle entry rather than point samples: thin door corners
-  // must not flash in front of the camera between sample locations.
-  const dx=desired.x-eye.x,dz=desired.z-eye.z,length=Math.hypot(dx,dz);
-  if(length<.001)return desired;
-  let closest=1;
-  for(const rect of walls){
-    let enter=0,exit=1,hit=true;
-    for(const [start,dir,lo,hi] of [
-      [eye.x,dx,rect.x-rect.hx-.17,rect.x+rect.hx+.17],
-      [eye.z,dz,rect.z-rect.hz-.17,rect.z+rect.hz+.17]
-    ]){
-      if(Math.abs(dir)<1e-8){
-        if(start<lo||start>hi){hit=false;break;}
-      }else{
-        let near=(lo-start)/dir,far=(hi-start)/dir;
-        if(near>far){const tmp=near;near=far;far=tmp;}
-        enter=Math.max(enter,near);exit=Math.min(exit,far);
-        if(enter>exit){hit=false;break;}
-      }
-    }
-    if(hit&&exit>=0&&enter<=1)closest=Math.min(closest,Math.max(0,enter));
-  }
-  if(closest===1)return desired;
-  return eye.clone().lerp(desired,Math.max(0,closest-.08/length));
-}
+// Camera permanently occupies the character's eyes. Moving with WASD does
+// not translate a separate camera rig, and dragging the look view also
+// turns the character. This makes gaze-based hauntings literal and predictable.
 function updateCamera(dt){
-  const fx=-Math.sin(viewYaw),fz=-Math.cos(viewYaw);
-  const origin=new THREE.Vector3(player.x,1.76,player.z);
-  const desired=new THREE.Vector3(
-    player.x-fx*CAMERA_FOLLOW.distance,
-    CAMERA_FOLLOW.height,
-    player.z-fz*CAMERA_FOLLOW.distance
-  );
-  const safe=cameraFollowTarget(origin,desired);
-  const playerDx=player.x-cameraFollowState.lastX;
-  const playerDz=player.z-cameraFollowState.lastZ;
-  const teleported=Math.hypot(playerDx,playerDz)>2.5;
-  // The camera is attached to the player's *translation*: WASD moves both
-  // together. Only a real look input changes viewYaw / the viewing direction.
-  // Smooth only the orbit and wall-driven dolly, never the player's movement.
-  if(!cameraFollowState.ready||teleported){
-    camera.position.copy(safe);
-    cameraFollowState.ready=true;
-  }else{
-    camera.position.x+=playerDx;
-    camera.position.z+=playerDz;
-    const next=camera.position.clone().lerp(safe,Math.min(1,dt*12));
-    const crossed=walls.some(w=>segmentHitsRect(camera.position.x,camera.position.z,next.x,next.z,w,.17));
-    const obscured=walls.some(w=>segmentHitsRect(player.x,player.z,next.x,next.z,w,.17));
-    if(crossed||obscured||cameraWallHit(next.x,next.z))camera.position.copy(safe);
-    else camera.position.copy(next);
-  }
-  cameraFollowState.lastX=player.x;
-  cameraFollowState.lastZ=player.z;
-
-  // Aim relative to the camera, NOT at a player-relative world point.
-  // Previously the player moved immediately while the camera lagged, causing
-  // WASD strafing to steer the lens a little without any mouse input.
-  const arm=Math.hypot(safe.x-player.x,safe.z-player.z);
-  const lookLength=arm+CAMERA_FOLLOW.lookAhead;
+  camera.position.set(player.x,FIRST_PERSON_EYE_HEIGHT,player.z);
+  const look=playerLookDirection();
   camera.lookAt(
-    camera.position.x+fx*lookLength,
-    camera.position.y+CAMERA_FOLLOW.lookHeight-safe.y,
-    camera.position.z+fz*lookLength
+    player.x+look.x*6,
+    FIRST_PERSON_EYE_HEIGHT+look.y*6,
+    player.z+look.z*6
   );
-  torch.position.set(player.x,1.85,player.z);
-  torchTarget.position.set(player.x+fx*4,1.30,player.z+fz*4);
+  torch.position.set(player.x,FIRST_PERSON_EYE_HEIGHT,player.z);
+  torchTarget.position.set(
+    player.x+look.x*4,
+    FIRST_PERSON_EYE_HEIGHT+look.y*4,
+    player.z+look.z*4
+  );
   torch.intensity=flashOn&&power>0?23:0;
 }
 function updateProps(dt){
@@ -1183,10 +1137,12 @@ document.addEventListener('keydown',e=>{
 });
 document.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
 addEventListener('blur',()=>{keys.clear();joy.x=joy.y=0;ui.knob.style.transform='translate(0,0)';});
-ui.canvas.addEventListener('pointerdown',e=>{turnPointer=e.pointerId;prevX=e.clientX;ui.canvas.setPointerCapture(e.pointerId);});
+ui.canvas.addEventListener('pointerdown',e=>{turnPointer=e.pointerId;prevX=e.clientX;prevY=e.clientY;ui.canvas.setPointerCapture(e.pointerId);});
 ui.canvas.addEventListener('pointermove',e=>{
   if(turnPointer!==e.pointerId||!started||paused)return;
-  viewYaw+=Math.max(-55,Math.min(55,e.clientX-prevX))*.0064;prevX=e.clientX;
+  viewYaw+=Math.max(-55,Math.min(55,e.clientX-prevX))*.0064;
+  viewPitch=Math.max(-.72,Math.min(.72,viewPitch-Math.max(-45,Math.min(45,e.clientY-prevY))*.0054));
+  prevX=e.clientX;prevY=e.clientY;
 });
 for(const evt of ['pointerup','pointercancel'])ui.canvas.addEventListener(evt,e=>{if(turnPointer===e.pointerId)turnPointer=null;});
 let joyPointer=null;
