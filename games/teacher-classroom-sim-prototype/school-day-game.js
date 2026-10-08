@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {createSchoolSoundscape} from './school-soundscape.mjs?v=76';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {
@@ -37,7 +38,7 @@ const ui={
   intro:$('intro'),start:$('startButton'),help:$('help'),helpButton:$('helpButton'),
   closeHelp:$('closeHelpButton'),end:$('endPanel'),summary:$('summary'),restart:$('restartButton'),
   endEyebrow:$('endEyebrow'),endTitle:$('endTitle'),examResults:$('examResults'),
-  assetError:$('assetError'),joy:$('joystick'),joyKnob:$('joyKnob'),
+  assetError:$('assetError'),joy:$('joystick'),joyKnob:$('joyKnob'),soundButton:$('soundButton'),
   bell:$('bellAudio'),talk:$('talkAudio'),fight:$('fightAudio'),ambience:$('ambienceAudio')
 };
 
@@ -767,32 +768,32 @@ function moveActorToward(actor,target,dt,speed){
   faceDirection(actor,dx,dz);playAnim(actor,'walk');return distance2D(actor.root.position,target)<.1;
 }
 
-let audioContext=null;
-const actionFlashes=[];
-function playCue(kind){
-  try{
-    const Audio=window.AudioContext||window.webkitAudioContext;
-    if(!Audio)return;
-    if(!audioContext)audioContext=new Audio();
-    if(audioContext.state==='suspended')audioContext.resume().catch(()=>{});
-    const melodies={
-      write:[440,580],paper:[480,610],attention:[630,830],recap:[525,659,784],
-      warning:[310,250],calm:[392,524],health:[520,660],group:[540,700],grade:[523,659,784,1046]
-    };
-    const tones=melodies[kind]||melodies.write,when=audioContext.currentTime+.015;
-    tones.forEach((freq,i)=>{
-      const oscillator=audioContext.createOscillator(),gain=audioContext.createGain();
-      oscillator.type=kind==='warning'?'triangle':'sine';
-      oscillator.frequency.setValueAtTime(freq,when+i*.075);
-      const t=when+i*.075;
-      gain.gain.setValueAtTime(.0001,t);
-      gain.gain.exponentialRampToValueAtTime(.055,t+.014);
-      gain.gain.exponentialRampToValueAtTime(.0001,t+.125);
-      oscillator.connect(gain);gain.connect(audioContext.destination);
-      oscillator.start(t);oscillator.stop(t+.13);
-    });
-  }catch(_){}
+const soundscape=createSchoolSoundscape();
+const SOUND_PREF_KEY='kidscade_teacher_sound_muted_v1';
+let soundEnabled=true;
+try{soundEnabled=localStorage.getItem(SOUND_PREF_KEY)!=='1'}catch(_){}
+soundscape.setEnabled(soundEnabled);
+function applySoundSetting(enabled,{persist=false}={}){
+  soundEnabled=soundscape.setEnabled(enabled);
+  ui.soundButton.textContent=soundEnabled?'🔊':'🔇';
+  ui.soundButton.setAttribute('aria-label',soundEnabled?'소리 끄기':'소리 켜기');
+  ui.soundButton.setAttribute('aria-pressed',String(soundEnabled));
+  ui.soundButton.title=soundEnabled?'소리 끄기':'소리 켜기';
+  ui.soundButton.classList.toggle('muted',!soundEnabled);
+  for(const el of [ui.bell,ui.talk,ui.fight,ui.ambience]){
+    if(!el)continue;
+    el.muted=!soundEnabled;
+    if(!soundEnabled)el.pause();
+  }
+  if(soundEnabled&&started&&!paused){
+    soundscape.unlock();
+    ui.ambience?.play().catch(()=>{});
+    if(currentStep.kind==='social')ui.talk?.play().catch(()=>{});
+  }
+  if(persist)try{localStorage.setItem(SOUND_PREF_KEY,soundEnabled?'0':'1')}catch(_){}
 }
+function playCue(kind){soundscape.cue(kind)}
+const actionFlashes=[];
 function actionFeedback(position,message,kind='attention'){
   const item=document.createElement('div');
   item.className='actionFeedback '+kind;
@@ -816,12 +817,12 @@ function updateActionFlashes(dt){
   }
 }
 function showToast(text){ui.toast.textContent=text;ui.toast.classList.add('show');toastTimer=2.0}
-function playAudio(el,volume=.7){try{el.volume=volume;el.currentTime=0;el.play().catch(()=>{})}catch(_){}}
+function playAudio(el,volume=.7){if(!soundEnabled||!el)return;try{el.volume=volume;el.currentTime=0;el.play().catch(()=>{})}catch(_){}}
 function setTalk(on){
   try{
     ui.talk.volume=.12;
     if(ui.ambience)ui.ambience.volume=on?.045:.09;
-    if(on)ui.talk.play().catch(()=>{});
+    if(on&&soundEnabled)ui.talk.play().catch(()=>{});
     else ui.talk.pause();
   }catch(_){}
 }
@@ -1081,12 +1082,14 @@ function enterStep(index,{spaceChanged=false}={}){
     updateBoard(currentStep.board||currentStep.subject);
     const extra=currentStep.safetyRequired?' 체육·과학 안전교육 시간에는 칠판 앞에서 설명해야 합니다.':'';
     setGuide(currentStep.period+'교시 · '+currentStep.subject,'칠판 앞에서 직접 설명 중','설명을 마치고 과제를 내준 뒤 학생을 지도하고, 다시 칠판에서 정리하세요.'+extra);
-    playAudio(ui.bell,.5);
+    playAudio(ui.bell,.28);
+    soundscape.play('paper',{volume:.8});
   }else if(currentStep.kind==='social'){
     pairScan=.4;resetSocialScene();
     updateBoard(currentStep.title||'쉬는 시간');setTalk(true);
     setGuide(currentStep.lunch?'점심시간':'쉬는 시간',currentStep.lunch?'먹고 쉬며 친구들과 어울려요':'학생들이 스스로 어울립니다','말다툼이 생기면 가까이 가서 중재하세요.');
-    playAudio(ui.bell,.45);
+    playAudio(ui.bell,.27);
+    soundscape.play('chair',{volume:.65});
   }else if(currentStep.kind==='transition'){
     students.forEach((s,i)=>{
       if(!isStudentPresent(s))return;
@@ -1136,6 +1139,7 @@ function createSafetyAccident(s){
   s.runtime.mode='offtask';s.runtime.focus=Math.min(s.runtime.focus,s.runtime.focusMax*.08);
   showBubble(s,'⚠️','health');
   showToast('⚠️ '+s.runtime.name+'에게 사고가 났어요!');
+  soundscape.play('alert');
 }
 function configureFriendConflict(pair){
   const meta=friendConflictMeta(pair.a,pair.b);
@@ -1265,6 +1269,7 @@ function startLessonChat(a,b){
   };
   lessonChats.push(chat);stats.lessonChats++;
   showBubble(a,'😄','chat');showBubble(b,'😄','chat');
+  soundscape.play('whisper',{volume:.7});
   showToast('😄 '+a.runtime.name+'와 '+b.runtime.name+'가 수업 중 장난을 시작했어요. · 친분 Lv.'+chat.level);
 }
 function stopLessonChat(chat,{teacher=false,natural=false}={}){
@@ -1339,11 +1344,11 @@ function updateLesson(dt){
   const phaseEvent=tickLessonFlow(lessonFlow,dt,{teacherAtBoard:boardNear});
   if(lessonFlow.phase==='explain'&&boardNear)stats.boardExplanationSeconds+=dt;
   if(phaseEvent==='explanation-complete'){
-    playCue('write');actionFeedback(player.root.position,'설명 완료','write');
+    soundscape.play('chalk',{volume:.8});actionFeedback(player.root.position,'설명 완료','write');
     updateBoard('① 설명 완료 · 과제 내주기');
     showToast('📖 설명 완료! 칠판 앞에서 과제를 내주세요.');
   }else if(phaseEvent==='practice-complete'){
-    playCue('paper');updateBoard('③ 칠판에서 정리할 시간');
+    soundscape.play('paper');updateBoard('③ 칠판에서 정리할 시간');
     showToast('📝 활동 시간이 끝났어요. 칠판으로 돌아와 정리하세요.');
     endGroupActivitiesForRecap();
   }else if(phaseEvent==='recap-complete'){
@@ -1372,8 +1377,8 @@ function updateLesson(dt){
       stats.offTaskStarts++;
       s.offTaskKind=chooseOffTaskBehavior({location:activeSpace.id,teamActivity:!!currentStep.teamActivity});
       s.wanderTimer=s.offTaskKind==='wander'?4+Math.random()*3:0;
-      if(s.offTaskKind==='wander')offTaskWander(s);
-      else s.wander=null;
+      if(s.offTaskKind==='wander'){offTaskWander(s);soundscape.play('chair',{volume:.6});}
+      else{s.wander=null;soundscape.play('offTask',{volume:.5});}
       if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy'))
         showBubble(s,s.offTaskKind==='wander'?'🚶':'딴짓','');
     }
@@ -1412,7 +1417,7 @@ function updateLesson(dt){
     if(next!==s.questionActive){
       s.questionActive=next;
       if(!next&&s.bubble?.textContent==='?')refreshStudentBubbleState(s);
-      else if(next)showBubble(s,'?','question');
+      else if(next){showBubble(s,'?','question');soundscape.play('question');}
     }
   });
   if(stepTime<=0){
@@ -1454,6 +1459,7 @@ function releasePair(pair,cooldown=3){
 function beginConflict(pair){
   pair.state='conflict';pair.time=0;configureFriendConflict(pair);pair.a.runtime.mode=pair.b.runtime.mode='conflict';
   relations.add(relationKey(pair.a,pair.b));showBubble(pair.a,'!','conflict');showBubble(pair.b,'!','conflict');
+  soundscape.play('alert',{volume:.72});
 }
 function beginFight(pair){
   pair.state='fight';pair.time=0;pair.duration=AI_RULES.fightSeconds;fightsThisSocial++;pair.a.runtime.mode=pair.b.runtime.mode='fight';
@@ -1698,9 +1704,9 @@ function applyHealthDecision(s,decision){
 }
 function useAction(){
   if(!started||paused)return;
-  if(currentAction.type==='startLesson'){advanceStep();return}
+  if(currentAction.type==='startLesson'){soundscape.play('paper');advanceStep();return}
   if(currentAction.type==='moveNext'){
-    transitionToSpace(currentStep.nextLocation);enterStep(stepIndex+1,{spaceChanged:true});return;
+    soundscape.play('door');transitionToSpace(currentStep.nextLocation);enterStep(stepIndex+1,{spaceChanged:true});return;
   }
   if(currentAction.type==='healthCheck'){checkStudentHealth(currentAction.student);actionFeedback(currentAction.student.actor.root.position,'건강 확인','health');playerGestureTimer=.45;playAnim(player,'push');return}
   if(currentAction.type==='healthDecision'){applyHealthDecision(currentAction.student,currentAction.decision);playerGestureTimer=.5;playAnim(player,'push');return}
@@ -1717,7 +1723,7 @@ function useAction(){
   }
   if(currentAction.type==='assignWork'){
     if(isTeacherAtBoard()&&performLessonAction(lessonFlow,'assignWork')){
-      stats.lessonsAssigned++;playCue('paper');
+      stats.lessonsAssigned++;soundscape.play('paper');
       actionFeedback(player.root.position,'과제 배부','paper');
       updateBoard('② 스스로 풀어보기 · 문제 해결');
       showToast('📝 과제를 냈어요. 학생들이 스스로 활동합니다.');
@@ -1727,7 +1733,7 @@ function useAction(){
   }
   if(currentAction.type==='startRecap'){
     if(isTeacherAtBoard()&&performLessonAction(lessonFlow,'startRecap')){
-      actionFeedback(player.root.position,'오늘의 핵심 정리','write');
+      soundscape.play('chalk');actionFeedback(player.root.position,'오늘의 핵심 정리','write');
       updateBoard('③ 오늘의 핵심 · 정리하기');
       showToast('📖 정리를 시작해요. 칠판에서 끝까지 설명해 주세요.');
       playerGestureTimer=.45;playAnim(player,'push');
@@ -1738,6 +1744,7 @@ function useAction(){
     const s=currentAction.student;
     if(!s.questionActive)return;
     s.questionActive=false;s.answeredWindow=Math.floor(lessonElapsed/24);
+    soundscape.play('answer');
     s.runtime.focus=Math.min(s.runtime.focusMax,s.runtime.focus+s.runtime.focusMax*.12);
     addLearning(campaign,s.runtime.id,.14);refreshStudentBubbleState(s);
     actionFeedback(s.actor.root.position,'질문 해결 +','attention');
@@ -1754,13 +1761,13 @@ function useAction(){
       }
       addLearning(campaign,s.runtime.id,.055);
     }
-    actionFeedback(player.root.position,'전체 집중!','group');
+    soundscape.play('group');actionFeedback(player.root.position,'전체 집중!','group');
     playerGestureTimer=.5;playAnim(player,'push');showToast('📣 반 전체에 집중 신호를 줬어요!');return;
   }
   if(currentAction.type==='focus'){
     const s=currentAction.student;helpFocus(s.runtime);addLearning(campaign,s.runtime.id,LEARNING_RULES.focusHelpBonus);stats.focusHelps++;s.wander=null;s.actor.target=s.seat.clone();playerGestureTimer=.5;playAnim(player,'push');
     if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy')&&!(s.safetyRecord?.finished&&!s.safetyRecord.heard))hideBubble(s);
-    actionFeedback(s.actor.root.position,'집중 회복 +','attention');
+    soundscape.play('attention');actionFeedback(s.actor.root.position,'집중 회복 +','attention');
     showToast(s.runtime.name+'에게 관심을 줬어요.');return;
   }
   if(currentAction.type==='mediate'){
@@ -1824,7 +1831,7 @@ function renderExamResults(exam){
 function finishDay(){
   if(dayFinished)return;
   dayFinished=true;
-  setTalk(false);ui.ambience?.pause();pairs=[];playAudio(ui.bell,.55);
+  setTalk(false);ui.ambience?.pause();pairs=[];playAudio(ui.bell,.32);
   if(teachingMarker)teachingMarker.visible=false;if(doorMarker)doorMarker.visible=false;
 
   const exam=examNumberForDay(campaign.day)?conductExam(campaign,STUDENT_PROFILES):null;
@@ -1872,6 +1879,7 @@ function finishDay(){
 }
 
 function setupInput(){
+  ui.soundButton.addEventListener('click',()=>applySoundSetting(!soundEnabled,{persist:true}));
   ui.rosterToggle.addEventListener('click',()=>{
     const isOpen=ui.studentStrip.classList.toggle('open');
     ui.app.classList.toggle('roster-open',isOpen);
@@ -1898,18 +1906,18 @@ ui.restart.addEventListener('click',()=>{
   location.reload();
 });
 ui.helpButton.addEventListener('click',()=>{
-  paused=true;ui.help.classList.remove('hidden');
+  paused=true;soundscape.setPaused(true);ui.help.classList.remove('hidden');
   ui.ambience?.pause();ui.talk?.pause();
 });
 ui.closeHelp.addEventListener('click',()=>{
-  ui.help.classList.add('hidden');paused=false;
-  ui.ambience?.play().catch(()=>{});
-  if(currentStep.kind==='social')ui.talk?.play().catch(()=>{});
+  ui.help.classList.add('hidden');paused=false;soundscape.setPaused(false);
+  if(soundEnabled){soundscape.unlock();ui.ambience?.play().catch(()=>{});
+    if(currentStep.kind==='social')ui.talk?.play().catch(()=>{});}
   clock3d.getDelta();
 });
 
 async function boot(){
-  buildSpace('classroom');setupInput();updateDayStrip();
+  buildSpace('classroom');setupInput();applySoundSetting(soundEnabled);updateDayStrip();
   ui.start.disabled=true;ui.start.textContent='학교 준비 중…';
   try{await createActors()}catch(err){
     console.error('[TeacherSim] character load failed',err);ui.intro.classList.add('hidden');ui.assetError.classList.remove('hidden');return;
@@ -1917,7 +1925,8 @@ async function boot(){
   enterStep(0);ui.start.disabled=false;ui.start.textContent=campaign.day+'일차 등교하기';updateCampaignStatus();
   ui.start.addEventListener('click',()=>{
     started=true;ui.intro.classList.add('hidden');
-    if(ui.ambience){ui.ambience.volume=.09;ui.ambience.play().catch(()=>{});}
+    soundscape.unlock();
+    if(soundEnabled&&ui.ambience){ui.ambience.volume=.08;ui.ambience.play().catch(()=>{});}
     playCue('write');clock3d.getDelta();
   });
   camera.position.set(0,7.7,11.6);camera.lookAt(0,.7,-.5);requestAnimationFrame(loop);
@@ -1936,6 +1945,12 @@ function loop(now){
       hudTimer-=dt;
       if(hudTimer<=0){hudTimer=.23;updateHud();}
     }else updateCamera(dt);
+  }
+  if(started&&!paused&&currentStep.kind!=='done'){
+    const playerMoving=player?.anim==='walk';
+    soundscape.tick(dt,{phase:currentStep.kind==='lesson'?lessonFlow?.phase:currentStep.kind,
+      room:activeSpace.id,moving:playerMoving,
+      studentMotion:students.some(s=>s.actor.anim==='walk'&&s.actor.root.visible)});
   }
   if(toastTimer>0){toastTimer-=dt;if(toastTimer<=0)ui.toast.classList.remove('show')}
   students.forEach(s=>updateStudentPose(s,dt));
