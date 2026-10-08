@@ -40,15 +40,17 @@ await page.click('[data-clip="anim_iddle"]');
 await page.waitForTimeout(500);
 console.log('AUDIT_MESH_DATA '+JSON.stringify(await page.evaluate(()=>window.__auditMeshes())));
 const shots=[];
+let itemIndex=0;
 for(const [name,label] of [['kidscade_male_tshirt','MALE TEE'],['shirt','ORIGINAL SHIRT'],['chemise','MERCHANT CHEMISE'],['ninjassuit','NINJA SUIT'],['greenoutfit','ARCHER OUTFIT']]){
   await page.evaluate(x=>window.__showOutfit(x),name);
   await page.waitForTimeout(250);
   const png=await page.locator('#view').screenshot({type:'png'});
   const met=await sharp(png).metadata();
   const im=await sharp(png).extract({left:Math.round(met.width*.22),top:Math.round(met.height*.08),width:Math.round(met.width*.56),height:Math.round(met.height*.63)}).resize(260,325,{fit:'cover'}).webp({quality:38}).toBuffer();
-  shots.push({input:im,left:(shots.length%3)*260,top:Math.floor(shots.length/3)*345});
+  shots.push({input:im,left:(itemIndex%3)*260,top:Math.floor(itemIndex/3)*345+24});
   const svg=Buffer.from('<svg width="260" height="24" xmlns="http://www.w3.org/2000/svg"><rect width="260" height="24" fill="#fff"/><text x="6" y="17" font-size="14" fill="#111">'+label+'</text></svg>');
-  shots.push({input:svg,left:((shots.length-1)/2%3)*260,top:Math.floor((shots.length-1)/6)*345});
+  shots.push({input:svg,left:(itemIndex%3)*260,top:Math.floor(itemIndex/3)*345});
+  itemIndex++;
 }
 const sheet=await sharp({create:{width:780,height:690,channels:4,background:'#1b2732'}}).composite(shots).webp({quality:39}).toBuffer();
 console.log('AUDIT_IMAGE_START');
