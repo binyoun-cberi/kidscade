@@ -132,28 +132,28 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
   <button id="flash" type="button">손전등 켜짐 [F]</button>
   <button id="action" type="button" disabled><strong id="actionText">가까이에서 조사 [E]</strong></button>
 </div>
-<div id="controlHint">WASD 이동 · 화면 드래그로 시야 회전 · E 조사 · F 손전등 · Shift 달리기</div>
+<div id="controlHint">1인칭 시점 · WASD 이동 · 마우스 드래그로 고개 돌리기 · E 조사 · F 손전등</div>
 <section id="intro" class="overlay">
   <div class="card">
     <span class="eyebrow">CASE 001 · 자정의 학교 · SIX ANOMALIES</span>
     <h1>괴담 학교 퇴마</h1>
     <p class="introLead">ㄷ자 학교에 괴이 여섯이 숨어 있습니다. 서쪽 연결동 관리실에서 출발해 교실을 직접 조사하고, 각 괴이의 약점을 알아내 봉인하세요.</p>
     <div class="rule"><b>1. 도깨비 · 북쪽 6-1</b> · 처음 물건까지 안내선이 나타납니다. 물건 세 개를 바로잡고 봉인하세요.</div>
-    <div class="rule"><b>2. 처녀귀신 · 북쪽 과학실</b> · 바라보면 멈춥니다. 첫 만남은 공격 없는 연습입니다.</div>
+    <div class="rule"><b>2. 처녀귀신 · 북쪽 과학실</b> · 직접 얼굴을 바라보면 멈춥니다. 마우스나 화면을 돌려 시선을 맞추세요. 첫 만남은 안전한 연습입니다.</div>
     <div class="rule"><b>3. 유키온나 · 남쪽 가사실</b> · 얼어붙기 전에 난방장치 세 곳을 복구하세요.</div>
-    <div class="rule"><b>4. 달걀귀신 · 북쪽 음악실</b> · 바라보면 위험합니다. 등을 돌리고 버티세요.</div>
+    <div class="rule"><b>4. 달걀귀신 · 북쪽 음악실</b> · 바라보면 위험합니다. 화면을 돌려 진짜로 등을 돌린 채 4초를 버티세요.</div>
     <div class="rule"><b>5. 저승사자 · 연결동 전기실</b> · 종소리 세 번을 듣고 마지막 종에 맞춰 문을 닫으세요.</div>
     <div class="rule"><b>6. 늑대인간 · 남쪽 날개</b> · 소리를 따라오는 늑대를 스피커로 함정에 유인하세요.</div>
     <button id="start" type="button" class="primary">학교에 들어가기</button>
-    <small class="note">PC: WASD 이동 · 드래그 시야 회전 · E 행동 · F 손전등 · Shift 달리기. 모바일: 왼쪽 조이스틱, 오른쪽 화면 드래그, 행동 버튼. 안내선은 튜토리얼 첫 번째 물건까지 나타납니다.</small>
+    <small class="note">1인칭 시점 · 카메라가 캐릭터 눈에 고정됩니다. PC: WASD 이동 · 마우스 드래그로 고개 돌리기(위아래 가능) · E 조사 · F 손전등 · Shift 달리기. 모바일: 왼쪽 스틱 이동, 오른쪽 화면 드래그로 보기. 노란 안내선은 첫 조사까지만 나타납니다.</small>
   </div>
 </section>
 <section id="help" class="overlay hidden">
   <div class="card">
     <h2>조작과 괴이 대응법</h2>
-    <div class="rule"><b>움직이기</b> · 키보드 WASD 또는 왼쪽 가상 스틱. 화면 드래그로 바라보는 방향을 돌립니다.</div>
+    <div class="rule"><b>1인칭 이동</b> · 카메라는 캐릭터의 눈과 같습니다. WASD 또는 왼쪽 스틱으로 이동하고, 화면을 드래그하면 캐릭터도 고개를 돌립니다. 위아래로도 볼 수 있습니다.</div>
     <div class="rule"><b>조사하기</b> · 물건 바로 옆에 다가가면 오른쪽 행동 버튼이 활성화됩니다. E 키로도 행동할 수 있습니다.</div>
-    <div class="rule"><b>처녀귀신</b> · 시선을 정면으로 두고 접근을 막으세요. 다가오면 이동해 거리를 확보하세요. 눈을 떼면 관찰 게이지가 조금씩 줄어듭니다.</div>
+    <div class="rule"><b>처녀귀신과 달걀귀신</b> · 처녀귀신을 눈으로 똑바로 보면 멈추고, 달걀귀신을 똑바로 보면 위험합니다. 화면이 바라보는 방향이 실제 판정 방향이므로 마우스·손가락으로 시선을 바꿔 대응하세요.</div>
     <div class="rule"><b>지도</b> · 황색 점은 물건이나 봉인진, 하늘색 점은 현재 내 위치입니다. 지도에는 적 위치가 표시되지 않습니다.</div>
     <div class="rule"><b>추가 괴이</b> · 유키온나: 난방장치 복구 / 달걀귀신: 등 돌리고 4초 / 저승사자: 세 번째 종에 문 닫기 / 늑대인간: 스피커와 함정.</div>
     <button id="closeHelp" type="button" class="primary">학교로 돌아가기</button>
