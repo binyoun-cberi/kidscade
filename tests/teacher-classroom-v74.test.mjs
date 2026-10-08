@@ -70,7 +70,7 @@ test('the teacher game catalog entry does not reintroduce legacy version pins',(
 });
 
 test('animated pelvis correction handles tall laboratory stools as well as low chairs',()=>{
-  assert.equal(seatHeightAdjustment(.62,.34),.28);
+  assert.ok(Math.abs(seatHeightAdjustment(.62,.34)-.28)<1e-8);
   assert.ok(Math.abs(seatHeightAdjustment(.25,.34)+.09)<1e-8);
   assert.equal(seatHeightAdjustment(.90,.10),.5);
   assert.equal(seatHeightAdjustment(.10,1.10),-.5);
