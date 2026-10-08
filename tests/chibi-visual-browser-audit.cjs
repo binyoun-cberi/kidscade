@@ -172,6 +172,42 @@ const errors=[];
     }
   }
 
+
+  // Reproduce the user's exposed temple while the head turns during WALK/RUN.
+  // The right-hand side silhouette can look continuous in IDLE but crack in
+  // animated poses; cover side + 45deg and both halves of the movement cycle.
+  report.templeAudit={version:'v7',cases:[],counts:{}};
+  const templeCatalog=JSON.parse(fs.readFileSync(path.join(ROOT,'chibi/asset-manifest.json'),'utf8'))
+    .wardrobeLibrary.hairStyles.male;
+  await evalPage("document.querySelector('[data-body-fit=\"male\"]').click()");
+  const baseTemples=await evalPage("window.__kc3dAudit.hairCatalog().find(x=>x.name==='kidscade_male_hair_short')");
+  assert.ok(baseTemples?.preservedTempleTriangles>0,
+    'Source temple geometry has no preserved exterior eye-level triangles');
+  assert.ok(baseTemples.preservedTempleTriangles<100,
+    'Temple fix brought back too many long bob side faces');
+  assert.ok(baseTemples?.removedEyeLevelTriangles>0,
+    'Central eye-overhang crop stopped functioning');
+  report.templeAudit.counts={
+    preservedSideTriangles:baseTemples.preservedTempleTriangles,
+    trimmedFrontTriangles:baseTemples.removedEyeLevelTriangles
+  };
+  for(const name of templeCatalog){
+    const state=await evalPage("(()=>{const el=document.getElementById('chibiHair');el.value="+
+      JSON.stringify(name)+";el.dispatchEvent(new Event('change',{bubbles:true}));"+
+      "return window.__kc3dAudit.hairCatalog().find(x=>x.name==="+JSON.stringify(name)+")})()");
+    assert.ok(state?.visible&&state?.preservedTempleTriangles===baseTemples.preservedTempleTriangles,
+      'Male hair lost the v7 temple polygon repair: '+name);
+    for(const clip of ['WALK','RUN']){
+      for(const [view,fraction] of [['side',.25],['side',.75],['threeQuarter',.5]]){
+        const pose=await sample(clip,view,fraction,'temple-'+name);
+        assert.ok(pose.selectedParts.includes(name),'Missing hairstyle in animated frame '+name);
+        report.templeAudit.cases.push({name,clip,view,fraction});
+      }
+    }
+  }
+  // Existing full-body samples use male default after this focused audit.
+  await evalPage("document.querySelector('[data-body-fit=\"male\"]').click()");
+
   await sample('IDLE','side',0,'male-hair');
   await evalPage("(()=>{const select=document.querySelector('#chibiHair');select.value='kidscade_male_hair_swept';select.dispatchEvent(new Event('change',{bubbles:true}))})()");
   await sample('IDLE','side',0,'male-hair-swept');

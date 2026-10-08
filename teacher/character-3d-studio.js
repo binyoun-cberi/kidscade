@@ -859,20 +859,31 @@ function createKidscadeMaleHairShort(){
     const taper=lower*lower*(3-2*lower);
     const side=THREE.MathUtils.clamp(Math.abs(ox-centerX)/(size.x*.5),0,1);
     const temple=smooth(.43,.83,side)*smooth(.08,.60,lower);
+    // The former bob-cut taper collapsed the temple and moved it upwards.
+    // Preserve a continuous side panel above the ear, but keep the very
+    // bottom of the original long bob raised into a short haircut.
+    const templeBridge=smooth(.43,.72,side)*smooth(.12,.52,lower)*
+      (1-smooth(.84,1,lower));
+    const sideburn=smooth(.52,.82,side)*smooth(.46,.88,lower);
+    // The remaining temple bridge must climb towards the fringe at the
+    // front; a flat lower edge looked like a rectangular sideburn plate.
+    const templeFringeBlend=templeBridge*
+      smooth(.05,.36,(oz-centerZ)/size.z);
 
-    // 윗머리/앞머리는 그대로 두고 귀 아래의 긴 단발 자락만 짧게 올린다.
-    // 형태를 급하게 자르지 않고 매끄럽게 당겨 얼굴 옆 '접힌 패널'을 줄인다.
-    const y=oy+(cutoff-oy)*.58*taper+size.y*.045*temple;
-
-    // 관자놀이 양옆의 자락을 두상 안쪽과 뒤쪽으로 모아 보브컷 날개를 없앤다.
-    // 원본 UV/skinWeight와 머리 윗부분의 결은 유지한다.
-    const x=centerX+(ox-centerX)*(1-.18*taper-.16*temple);
-    const z=centerZ+(oz-centerZ)*(1-.10*taper-.16*temple);
+    // Raise the long nape while forming a sloped, cropped side-hair line.
+    const y=oy+(cutoff-oy)*.58*taper+size.y*(.045*temple-.035*templeBridge-.010*sideburn+
+      .135*templeFringeBlend);
+    const x=centerX+(ox-centerX)*
+      (1-.18*taper-.075*temple+.095*templeBridge);
+    const z=centerZ+(oz-centerZ)*
+      (1-.10*taper-.055*temple+.045*templeBridge)+size.z*.018*templeBridge;
     positions.setXYZ(i,x,y,z);
   }
-  // 원본 긴 머리의 끝 정점 일부가 위쪽으로 압축되면서 눈높이까지 올라온다.
-  // 눈 앞쪽/관자놀이 쪽에서는 그 면을 렌더링하지 않고, 뒤통수 아래쪽만 살린다.
-  // hairone의 UV, geometry 속성, skinIndex/skinWeight, skeleton은 그대로 유지한다.
+  // Previous pruning also deleted the temple/sideburn triangles; it literally
+  // made a hole between fringe and back hair during WALK/RUN head turns.
+  // Trim only frontal face-covering triangles while preserving the full
+  // original triangle connectivity in the outer temple strips.
+  // Original UV, skinIndex/skinWeight and source skeleton are untouched.
   const eyes=getNode('eyes');
   if(!eyes?.isSkinnedMesh){
     geometry.dispose();
@@ -887,13 +898,27 @@ function createKidscadeMaleHairShort(){
     throw new Error('남자 숏컷의 hairone 메시에는 삼각형 인덱스가 필요합니다.');
   }
   const kept=[];
+  const originalPositions=source.geometry.getAttribute('position');
+  let preservedTempleTriangles=0,removedFaceTriangles=0;
   for(let j=0;j<originalIndex.count;j+=3){
     const a=originalIndex.getX(j),b=originalIndex.getX(j+1),c=originalIndex.getX(j+2);
     const lowest=Math.min(positions.getY(a),positions.getY(b),positions.getY(c));
     const foremost=Math.max(positions.getZ(a),positions.getZ(b),positions.getZ(c));
-    if(lowest>=eyeClearanceY || foremost<=backOfFaceZ){
+    // Use the triangle's original side location, not its already compressed
+    // location: the latter is why side polygons were falsely classified as
+    // frontal eye-covering pieces after squashing the bob.
+    const center=(originalPositions.getX(a)+originalPositions.getX(b)+originalPositions.getX(c))/3;
+    const rear=(originalPositions.getZ(a)+originalPositions.getZ(b)+originalPositions.getZ(c))/3;
+    const lateral=Math.abs(center-centerX)/(size.x*.5);
+    // Reconnect the rear temple just above the ear, not the forward dangling
+    // bob panels: those covered the eye when all outer triangles were restored.
+    const outerTemple=lateral>=.49&&lowest>=eyeClearanceY-.135&&
+      rear<=centerZ+size.z*.12;
+    const faceOverhang=lowest<eyeClearanceY&&foremost>backOfFaceZ;
+    if(!faceOverhang||outerTemple){
       kept.push(a,b,c);
-    }
+      if(faceOverhang&&outerTemple)preservedTempleTriangles++;
+    }else removedFaceTriangles++;
   }
   if(kept.length<originalIndex.count*.40){
     geometry.dispose();
@@ -920,9 +945,10 @@ function createKidscadeMaleHairShort(){
     sourceHeight:size.y,
     shapedHeight:geometry.boundingBox.max.y-geometry.boundingBox.min.y,
     eyeClearanceY,
-    removedEyeLevelTriangles:(originalIndex.count-kept.length)/3,
-    sideHairPolicy:'smooth temple-to-ear taper with raised side ends; retain source UV and weights',
-    eyeClearancePolicy:'trim front/side hair faces below upper-eye clearance; keep rear nape'
+    removedEyeLevelTriangles:removedFaceTriangles,
+    preservedTempleTriangles,
+    sideHairPolicy:'v7 rear temple with fringe-sloped edge: retain short rear polygon strip without a squared-off front plate',
+    eyeClearancePolicy:'trim central/front eye-level faces only; retain original outer temple and rear nape'
   };
 
   source.parent.add(hair);
@@ -936,13 +962,13 @@ function createKidscadeMaleHairShort(){
  * independently modeled assets; every variant preserves UV and skin weights.
  */
 const HAIR_STYLE_PARAMETERS={
-  kidscade_male_hair_crop:{crown:-.045,side:-.14,front:.07,part:0,wave:0},
-  kidscade_male_hair_sidepart:{crown:.04,side:-.03,front:.02,part:.12,wave:0},
-  kidscade_male_hair_textured:{crown:.075,side:-.03,front:.035,part:0,wave:.055},
-  kidscade_male_hair_fringe:{crown:.01,side:-.06,front:-.08,part:0,wave:0},
-  kidscade_male_hair_undercut:{crown:.06,side:-.28,front:.10,part:.03,wave:0},
-  kidscade_male_hair_round:{crown:.06,side:.075,front:0,part:0,wave:.01},
-  kidscade_male_hair_swept:{crown:.035,side:-.01,front:.05,part:.20,wave:0},
+  kidscade_male_hair_crop:{crown:-.045,side:-.14,front:.07,part:0,wave:0,templeFill:.10},
+  kidscade_male_hair_sidepart:{crown:.04,side:-.03,front:.02,part:.12,wave:0,templeFill:.08},
+  kidscade_male_hair_textured:{crown:.075,side:-.03,front:.035,part:0,wave:.055,templeFill:.09},
+  kidscade_male_hair_fringe:{crown:.01,side:-.06,front:-.08,part:0,wave:0,templeFill:.11},
+  kidscade_male_hair_undercut:{crown:.06,side:-.28,front:.10,part:.03,wave:0,templeFill:.05},
+  kidscade_male_hair_round:{crown:.06,side:.075,front:0,part:0,wave:.01,templeFill:.12},
+  kidscade_male_hair_swept:{crown:.035,side:-.01,front:.05,part:.20,wave:0,templeFill:.09},
   chibi_female_hair_bob:{crown:.03,side:.035,front:-.015,part:0,wave:.015},
   chibi_female_hair_layered:{crown:.06,side:-.08,front:.03,part:-.055,wave:.03}
 };
@@ -975,9 +1001,19 @@ function createKidscadeHairCollection(){
       const front=smooth(.12,.68,nz)*(1-smooth(.88,1,ny));
       const part=style.part*size.x*crown*(.25+.75*front);
       const wave=style.wave*size.y*Math.sin(nx*10+nz*6)*crown*crown;
-      const px=x+part+nx*size.x*style.side*side*.35;
-      const py=y+size.y*(style.crown*crown*.4+style.front*front*.26)+wave;
-      const pz=z+size.z*(style.front*front*.12+style.crown*crown*.025);
+      // All derived male cuts must keep the newly bridged temple covered.
+      // Undercut compresses the lower side, not the eye-level hairline.
+      const temple=smooth(.36,.70,Math.abs(nx))*
+        (1-smooth(.79,1,Math.abs(nx)))*
+        smooth(.24,.50,ny)*(1-smooth(.78,.95,ny));
+      const templeFill=style.templeFill||0;
+      const safeSide=style.templeFill===undefined?style.side:Math.max(style.side,-.12);
+      const px=x+part+nx*size.x*safeSide*side*.35+
+        Math.sign(nx)*size.x*templeFill*temple*.18;
+      const py=y+size.y*(style.crown*crown*.4+style.front*front*.26-
+        templeFill*temple*.11)+wave;
+      const pz=z+size.z*(style.front*front*.12+style.crown*crown*.025+
+        templeFill*temple*.055);
       points.setXYZ(i,px,py,pz);
     }
     points.needsUpdate=true;
@@ -995,7 +1031,8 @@ function createKidscadeHairCollection(){
       generatedFrom:template.name,
       fit:name.startsWith('kidscade_male_')?'male':'female',
       geometryPolicy:'source-skinned-hair-silhouette-variant',
-      styleParameters:{...style}
+      styleParameters:{...style},
+      templeBridgeVersion:style.templeFill===undefined?null:'v7'
     };
     template.parent.add(hair);
     hair.visible=false;
@@ -1923,6 +1960,9 @@ function installLocalVisualAudit(){
         return {name,available:!!mesh?.isSkinnedMesh,fit:PART_FIT(name),
           visible:!!mesh?.visible,
           vertices:positions?.count||0,
+          preservedTempleTriangles:mesh?.userData?.preservedTempleTriangles||0,
+          removedEyeLevelTriangles:mesh?.userData?.removedEyeLevelTriangles||0,
+          templeBridgeVersion:mesh?.userData?.templeBridgeVersion||null,
           fingerprint:fingerprint>>>0};
       });
     },
