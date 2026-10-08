@@ -1084,6 +1084,13 @@ const COMBOS=[
       "range": 1.15
     }
   }
+  ,
+  // Playful pair discoveries reward experimentation, not just raw attack stacking.
+  {a:'BUBBLE',b:'BOUNCE',name:'거품 트램펄린',bonus:{damage:1.12,range:1.06}},
+  {a:'MUSIC',b:'RAINBOW',name:'무지개 디스코',bonus:{damage:1.08,rate:1.12}},
+  {a:'MIRROR',b:'MAGIC',name:'매직 미러',bonus:{rate:1.12,damage:1.10}},
+  {a:'GHOST',b:'DREAM',name:'유령의 악몽',bonus:{range:1.08,damage:1.06}},
+  {a:'RUBBER',b:'STAR',name:'별똥별 핀볼',bonus:{rate:1.10,damage:1.08}}
 ];
 
 const WAVE_BALANCE={
