@@ -286,6 +286,6 @@ code{display:block;padding:10px;border-radius:10px;background:#edf2f7;color:#405
   #guide{display:none}
 }
 @media(min-width:761px) and (max-height:520px){
-  #instructionPanel{top:130px;left:12px;max-height:calc(100vh - 215px)}
+  #instructionPanel{top:160px;left:12px;max-height:calc(100vh - 195px)}
   #guide{display:none}
 }
