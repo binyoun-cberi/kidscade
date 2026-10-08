@@ -338,9 +338,10 @@ test('male eyes and eyebrows preserve original Chibi skinned meshes and new prop
   const male=js.slice(js.indexOf('function createKidscadeMaleSet(){'),js.indexOf('function makeUnlitMaterial(source){'));
   assert.match(male,/const eyeGeometry=eyesSource\.geometry\.clone\(\)/);
   assert.match(male,/const maleEyeHeightScale=\.64/);
-  assert.match(male,/const browCut=/);
+  assert.match(male,/const eyebrowRegionFloor=1\.76/);
   assert.match(male,/browGeometry\.setIndex\(kept\)/);
   assert.match(male,/extractedBrowTriangles:kept\.length\/3/);
+  assert.match(male,/if\(kept\.length!==72\)/);
   assert.match(male,/const kept=\[\]/);
   assert.match(male,/const browGeometry=lashesSource\.geometry\.clone\(\)/);
   assert.match(male,/makeSolidMaterial\('#332723','Kidscade Male Brows'\)/);
@@ -348,9 +349,9 @@ test('male eyes and eyebrows preserve original Chibi skinned meshes and new prop
   assert.match(male,/generatedFrom:'eyelashes'/);
   assert.doesNotMatch(male,/new THREE\.(?:SphereGeometry|TubeGeometry|ConeGeometry)/);
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'boyish-eyes-v3');
-  assert.equal(manifest.customParts.kidscade_male_brows.revision,'upper-brow-faces-v3');
+  assert.equal(manifest.customParts.kidscade_male_brows.revision,'separate-eyebrow-islands-v4');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261008-malefix3/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-browislands4/);
 });
 
 
@@ -365,4 +366,14 @@ test('male shoulders and sleeves use smooth weighting without extra procedural m
   assert.doesNotMatch(male,/new THREE\.(?:CylinderGeometry|SphereGeometry|BoxGeometry)/);
   const manifest=JSON.parse(read('chibi/asset-manifest.json'));
   assert.equal(manifest.customParts.kidscade_male_tshirt.revision,'shoulder-clearance-v3');
+});
+
+test('male face preset disables both original eye layers and keeps rigged replacement brows',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  assert.match(js,/const FEMALE_BASE_NODES=\['character_low','eyelashes','eyes','tooth'\]/);
+  assert.match(js,/const MALE_BASE_NODES=\['kidscade_male_body','kidscade_male_eyes','kidscade_male_brows','tooth'\]/);
+  assert.match(js,/BASE_VARIANT_NODES\.forEach\(node=>setNodeVisible\(node,false\)\)/);
+  assert.match(js,/const eyebrowRegionFloor=1\.76/);
+  assert.match(js,/if\(kept\.length!==72\)/);
+  assert.doesNotMatch(js.slice(js.indexOf('function createKidscadeMaleSet()'),js.indexOf('function makeUnlitMaterial(source)')),/new THREE\.(?:TubeGeometry|SphereGeometry|ConeGeometry)/);
 });
