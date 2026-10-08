@@ -637,48 +637,100 @@ function act(){
   else if(item.type==='report')finish(true);
 }
 function finish(ok){
-  ended=true;started=false;bgm.pause();const score=ok?Math.max(200,1000-Math.round(elapsed)*2-maiden.attacks*90):0;
+  ended=true;started=false;bgm.pause();const score=ok?Math.max(350,2400-Math.round(elapsed)*1.3-(3-hp)*125):0;
   ui.endTitle.textContent=ok?'퇴마 성공 · 학교의 평화를 되찾았어요!':'퇴마 실패 · 학교에서 쫓겨났어요';
-  ui.endText.textContent=ok?'도깨비의 장난 3개 복구와 처녀귀신 봉인을 완료했어요. 소요 시간 '+Math.floor(elapsed/60)+'분 '+Math.floor(elapsed%60)+'초.':'세 번 붙잡혀서 실패했어요. '+(lastMistake||'괴이의 행동 규칙을 확인하세요.')+' 다시 시작하면 첫 만남부터 안전하게 연습할 수 있습니다.';
+  ui.endText.textContent=ok?'학교의 여섯 괴이를 모두 봉인했습니다. 소요 시간 '+Math.floor(elapsed/60)+'분 '+Math.floor(elapsed%60)+'초.':'생명이 모두 소진됐어요. '+(lastMistake||'각 괴이는 대응 방법이 달라요.')+' 다시 시작하면 괴이별 규칙을 활용해 보세요.';
   ui.end.classList.remove('hidden');
   window.KidscadeGame?.result?.({scope:'mission',status:ok?'completed':'failed',outcome:ok?'clear':'fail',score,cleared:ok,timeSeconds:Math.round(elapsed)});
 }
 function reset(){
   fixes=0;hp=3;power=100;flashOn=true;elapsed=0;stage=1;ended=false;paused=false;started=true;
-  viewYaw=-Math.PI/2;player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;player.yaw=Math.PI/2;player.root.rotation.y=player.yaw;maiden.attacks=0;maiden.charge=0;invulnerable=0;ghostWaiting=0;
+  viewYaw=-Math.PI/2;player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;
+  player.yaw=Math.PI/2;player.root.rotation.y=player.yaw;
+  maiden.attacks=0;maiden.charge=0;invulnerable=0;ghostWaiting=0;
   maidenPhase='approach';ghostNav=null;gazeLocked=false;
   guidance.key='';guidance.points=[];lastMistake='';tutorialCount=0;
   disturbed.forEach(o=>{o.done=false;o.object.visible=true;o.marker.visible=true;});
+  encounter.heatNodes.forEach(o=>{o.done=false;o.marker.visible=false;});
+  encounter.cold=0;encounter.frost=0;encounter.eggCharge=0;encounter.eggFear=0;
+  encounter.bellCount=0;encounter.bellClock=0;encounter.bellWindow=0;encounter.doorClosed=false;
+  encounter.wolf.x=-1.5;encounter.wolf.z=16.8;encounter.wolf.nav=null;
+  encounter.wolf.ready=false;encounter.wolf.active=false;encounter.wolf.lureTime=0;encounter.wolf.grace=5;
   trickCircle.visible=false;maidenCircle.visible=false;exitCircle.visible=false;maiden.root.visible=false;
+  presentEncounterModels();
   ui.intro.classList.add('hidden');ui.end.classList.add('hidden');ui.help.classList.add('hidden');
   bgm.currentTime=0;bgm.play().catch(()=>{});sfx('sfx_school_alarm_bell.mp3',.12);
-  window.KidscadeGame?.start?.({mode:'prototype',ghosts:['dokkaebi','maiden']});
-  showLesson('첫 임무 · 6-1 교실','ㄷ자 학교의 북쪽 날개로 이동하세요. 화면 위 화살표와 바닥 노란 안내선을 따라 6-1 교실로 가세요. 주황색 물건에 다가가면 행동 버튼이 켜집니다.',16);
-  showToast('서쪽 연결동 관리실에서 출발합니다. 북쪽 날개의 6-1 교실로 가세요.');
+  window.KidscadeGame?.start?.({mode:'prototype',ghosts:['dokkaebi','maiden','yuki','egg','reaper','wolf']});
+  showLesson('첫 임무 · 6-1 교실','ㄷ자 학교 북쪽 날개로 이동하세요. 첫 번째 조사까지만 노란 길이 나오고 이후에는 직접 탐험합니다.',16);
+  showToast('연결동 관리실에서 출발합니다. 북쪽 6-1 교실을 조사하세요.');
   updateHud();updateNavigation(0,true);
 }
 function updateHud(){
-  const titles={1:'도깨비 조사 · 6-1 교실',2:'처녀귀신 관찰 · 과학실',3:'처녀귀신 봉인 · 과학실',4:'관리실로 귀환'};
+  const titles={
+    1:'① 도깨비 · 6-1 교실',2:'② 처녀귀신 · 과학실',3:'② 처녀귀신 봉인',
+    4:'③ 유키온나 · 남쪽 가사실',5:'③ 유키온나 봉인',
+    6:'④ 달걀귀신 · 북쪽 음악실',7:'④ 달걀귀신 봉인',
+    8:'⑤ 저승사자 · 연결동 전기실',9:'⑤ 저승사자 봉인',
+    10:'⑥ 늑대인간 · 남쪽 복도',11:'⑥ 늑대인간 봉인',12:'퇴마 완료 · 관리실 보고'
+  };
   const details={
-    1:fixes===3?'6-1 교실의 주황색 봉인진으로 돌아가세요.':'ㄷ자 학교 북쪽 날개의 6-1 교실에서 물건을 바로잡으세요. ('+fixes+'/3)',
-    2:maidenPhase==='approach'?'북쪽 날개 맨 끝의 과학실로 이동하세요. 첫 만남은 안전한 연습입니다.':maidenPhase==='practice'?'안전한 연습: 처녀귀신을 화면 중앙에 놓고 2초 정도 바라보세요.':'실제 퇴마: 처녀귀신을 4초 이상 바라보세요. 화면 중앙의 초록색 표시를 확인하세요.',
-    3:'과학실 안쪽 보라색 봉인진으로 이동해 봉인을 완료하세요.',
-    4:'서쪽 연결동 중앙의 관리실로 돌아가 초록색 보고 지점에서 보고하세요.'
+    1:fixes===3?'6-1 교실 중앙의 주황 봉인진을 작동하세요.':'6-1 교실의 이상한 물건을 바로잡으세요. ('+fixes+'/3)',
+    2:maidenPhase==='approach'?'북쪽 날개 끝 과학실로 이동하세요. 처음은 안전한 연습입니다.':
+      maidenPhase==='practice'?'바라보면 멈춰요! 화면 중앙에 2초간 바라보세요.':'처녀귀신을 화면 가운데 두고 4초 이상 바라보세요.',
+    3:'과학실의 보라색 봉인진을 작동하세요.',
+    4:'가사실 난방장치를 복구하세요. 차가운 기운을 오래 견디지 마세요. ('+encounter.cold+'/3)',
+    5:'가사실 안 하늘색 봉인진을 작동하세요.',
+    6:'음악실의 얼굴 없는 귀신에게 등을 돌리고 4초를 버티세요. 절대 빤히 보지 마세요.',
+    7:'음악실의 흰색 봉인진을 작동하세요.',
+    8:encounter.bellCount===0?'전기실 문 근처에 가면 저승사자의 종이 울립니다.':
+      encounter.bellCount<3?'종소리를 기다리세요. '+encounter.bellCount+'/3':
+      encounter.bellWindow>0?'세 번째 종이 울렸어요! E를 눌러 문을 닫으세요!':'종소리 확인 중',
+    9:'전기실 안의 보랏빛 봉인진을 작동하세요.',
+    10:'남쪽 복도에서 노란 스피커를 찾아 울리세요. 늑대인간은 소리를 따라갑니다.',
+    11:encounter.wolf.ready?'늑대인간이 붉은 함정에 도착했어요. 다가가 봉인하세요!':
+      '5-1 교실의 붉은 함정으로 이동하세요. 늑대가 소리를 따라가고 있어요.',
+    12:'여섯 괴이를 봉인했어요! 서쪽 연결동 중앙 관리실에서 보고서를 제출하세요.'
   };
   ui.mission.textContent=titles[stage]||stageNames[stage];
   ui.detail.textContent=details[stage]||'';
-  const done=stage===1?fixes/3*.5:stage===2?.50+(maidenPhase==='hunt'?.08:0)+maiden.charge/(maidenPhase==='practice'?1.8:4.2)*.12:stage===3?.75:.90;
+  let partial=0;
+  if(stage===1)partial=fixes/3;
+  else if(stage===2)partial=maiden.charge/(maidenPhase==='practice'?1.8:4.2);
+  else if(stage===4)partial=encounter.cold/3;
+  else if(stage===6)partial=encounter.eggCharge/4;
+  else if(stage===8)partial=encounter.bellCount/3;
+  else if(stage===11)partial=encounter.wolf.ready?1:.35;
+  const done=(stage-1+Math.min(1,partial))/12;
   ui.progress.style.width=(Math.min(1,done)*100)+'%';
-  ui.health.textContent='♥'.repeat(hp)+'♡'.repeat(3-hp);
-  ui.battery.textContent=Math.floor(power)+'%';ui.flash.textContent=flashOn?'손전등 켜짐 [F]':'손전등 꺼짐 [F]';
-  const isGhostEncounter=stage===2&&maidenPhase!=='approach';
-  ui.lesson.classList.toggle('encounter',isGhostEncounter);
-  ui.gaze.classList.toggle('hidden',!isGhostEncounter);
-  ui.reticle.classList.toggle('hidden',!isGhostEncounter);
-  ui.reticle.classList.toggle('active',isGhostEncounter);
-  ui.reticle.classList.toggle('locked',isGhostEncounter&&gazeLocked);
-  ui.gazeLabel.textContent=maidenPhase==='practice'?'연습 · 유령을 화면 가운데 바라보세요':gazeLocked?'관찰 성공 · 계속 바라보세요':'유령을 다시 화면 가운데 맞추세요';
-  ui.gazeValue.style.width=(Math.max(0,maiden.charge)/(maidenPhase==='practice'?1.8:4.2)*100)+'%';
+  ui.health.textContent='♥'.repeat(Math.max(0,hp))+'♡'.repeat(3-Math.max(0,hp));
+  ui.battery.textContent=Math.floor(power)+'%';
+  ui.flash.textContent=flashOn?'손전등 켜짐 [F]':'손전등 꺼짐 [F]';
+  const ghostLesson=stage===2&&maidenPhase!=='approach';
+  const threat=[4,6,8,11].includes(stage);
+  ui.lesson.classList.toggle('encounter',ghostLesson||threat);
+  ui.gaze.classList.toggle('hidden',!ghostLesson&&!threat);
+  ui.reticle.classList.toggle('hidden',!ghostLesson&&stage!==6);
+  ui.reticle.classList.toggle('active',ghostLesson||stage===6);
+  ui.reticle.classList.toggle('locked',ghostLesson&&gazeLocked);
+  let gauge=0,label='';
+  if(ghostLesson){
+    label=maidenPhase==='practice'?'연습 · 유령을 화면 가운데 바라보세요':
+      gazeLocked?'관찰 성공 · 계속 바라보세요':'유령을 다시 화면 가운데 맞추세요';
+    gauge=maiden.charge/(maidenPhase==='practice'?1.8:4.2);
+  }else if(stage===4){
+    label='냉기 위험 · 난방장치를 수리하면 감소';gauge=encounter.frost/12;
+  }else if(stage===6){
+    label='달걀귀신 등 돌리기 · '+Math.floor(encounter.eggCharge/4*100)+'%';
+    gauge=encounter.eggCharge/4;
+  }else if(stage===8){
+    label=encounter.bellWindow>0?'세 번째 종! 문을 닫으세요!':'종소리 '+encounter.bellCount+'/3';
+    gauge=encounter.bellWindow>0?encounter.bellWindow/5:encounter.bellCount/3;
+  }else if(stage===11){
+    label=encounter.wolf.ready?'늑대 함정 포획! 서둘러 봉인':'늑대 유인 · '+Math.ceil(encounter.wolf.lureTime)+'초 남음';
+    gauge=encounter.wolf.lureTime/26;
+  }
+  ui.gazeLabel.textContent=label;
+  ui.gazeValue.style.width=(Math.max(0,Math.min(1,gauge))*100)+'%';
   const action=nearAction();ui.action.disabled=!action;
   ui.actionText.textContent=action?action.text:'가까이에서 조사 [E]';
 }
