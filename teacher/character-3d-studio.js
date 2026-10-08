@@ -71,9 +71,8 @@ for(const name of ['bag','hat','ninjassuitmask','armorhelmet','greenoutfitbelt',
 // 6-top/4-bottom lists. They remain available to old preset users.
 for(const name of ['chemise','greenoutfit','ninjassuit','amorplastron','pants','ninjasuitshort','armorlegs','armorskirt'])PART_CATEGORY[name]='costume';
 const MALE_FIT_PARTS=new Set([...MALE_HAIR_STYLES,'kidscade_male_tshirt','kidscade_male_shorts',...OUTFIT_STYLES.filter(style=>style.fit==='male').map(style=>style.id)]);
-const FEMALE_FIT_PARTS=new Set(OUTFIT_STYLES.filter(style=>style.fit==='female').map(style=>style.id));
 const SHARED_FIT_PARTS=new Set(['shoe','bottes','bottesgreen','ninjassuitshoe','armorshoe','bag','hat','armorhelmet','ninjassuitmask']);
-const PART_FIT=name=>MALE_FIT_PARTS.has(name)?'male':SHARED_FIT_PARTS.has(name)?'shared':FEMALE_FIT_PARTS.has(name)?'female':'female';
+const PART_FIT=name=>MALE_FIT_PARTS.has(name)?'male':SHARED_FIT_PARTS.has(name)?'shared':'female';
 const PART_GROUP=name=>PART_CATEGORY[name]||'costume';
 const WARDROBE_CATEGORIES=['hair','top','bottom','shoes','accessory','costume'];
 const WARDROBE_CATEGORY_LABELS={hair:'헤어',top:'상의',bottom:'하의',shoes:'신발',accessory:'액세서리',costume:'기타'};
