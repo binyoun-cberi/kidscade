@@ -1087,9 +1087,11 @@ const COMBOS=[
 ];
 
 const WAVE_BALANCE={
-  hpLinear:.18,
-  hpQuadratic:.08,
-  speedGrowth:.035
+  hpLinear:.16,
+  hpQuadratic:.065,
+  speedGrowth:.034,
+  openingPressure:.28,
+  pressurePerWave:.14
 };
 
 // The compact hand-curated set wins whenever a meaning or role conflicts with
