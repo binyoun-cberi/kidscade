@@ -311,7 +311,7 @@ test('male short hair reuses hairone topology, materials and original skin weigh
   assert.match(maleHair,/geometry\.computeBoundingBox\(\)/);
   assert.match(maleHair,/positions\.setXYZ\(i,x,y,z\)/);
   assert.match(maleHair,/const taper=lower\*lower\*\(3-2\*lower\)/);
-  assert.match(maleHair,/const y=oy\+\(cutoff-oy\)\*\.58\*taper\+size\.y\*\(\.045\*temple-\.075\*templeBridge-\.018\*sideburn\)/);
+  assert.match(maleHair,/const y=oy\+\(cutoff-oy\)\*\.58\*taper\+size\.y\*\(\.045\*temple-\.035\*templeBridge-\.010\*sideburn\)/);
   assert.match(maleHair,/const eyeClearanceY=eyes\.geometry\.boundingBox\.max\.y\+\.02/);
   assert.match(maleHair,/const backOfFaceZ=centerZ-\.045/);
   assert.match(maleHair,/const faceOverhang=lowest<eyeClearanceY&&foremost>backOfFaceZ/);
@@ -653,7 +653,7 @@ test('male Chibi v7 preserves outer temple triangle connectivity while still cle
   const male=js.slice(js.indexOf('function createKidscadeMaleHairShort(){'),js.indexOf('const HAIR_STYLE_PARAMETERS='));
   assert.match(male,/const originalPositions=source\.geometry\.getAttribute\('position'\)/);
   assert.match(male,/const center=\(originalPositions\.getX\(a\)\+originalPositions\.getX\(b\)\+originalPositions\.getX\(c\)\)\/3/);
-  assert.match(male,/const outerTemple=lateral>=\.49/);
+  assert.match(male,/const outerTemple=lateral>=\.49&&lowest>=eyeClearanceY-\.105/);
   assert.match(male,/const faceOverhang=lowest<eyeClearanceY&&foremost>backOfFaceZ/);
   assert.match(male,/if\(!faceOverhang\|\|outerTemple\)/);
   assert.match(male,/if\(faceOverhang&&outerTemple\)preservedTempleTriangles\+\+/);
