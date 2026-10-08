@@ -467,7 +467,7 @@ function spawnEnemy(type){
     split:a.split||false,boss:a.boss||false,pathIndex:0,pathT:0,x:pathPts[0][0],y:pathPts[0][1],
     burn:0,burnDps:0,poison:0,poisonDps:0,slow:1,pushBack:0,dead:false,
     corrosion:0,corrosionTime:0,chillStacks:0,freezeTime:0,stunTime:0,infected:false,
-    bubbleTime:0,bubblePower:0,bubbleSource:null,danceTime:0,sleepTime:0};
+    bubbleTime:0,bubblePower:0,bubbleSource:null,bubbleCombo:false,danceTime:0,sleepTime:0};
   state.enemies.push(e);
 }
 function enemyProgress(e){return e.pathIndex+e.pathT}
@@ -602,6 +602,7 @@ function projectile(t,target,s,opts={}){
 // Uses the standard enemy, cooldown, INK and field systems (no summoned NPCs).
 function playfulTowerAttack(t,s,targets,target){
   const mode=s.mode;
+  const combo=name=>(t.combos||[]).some(entry=>entry.name===name);
   const hit=(e,power=.6,element='')=>attackEnemy(t,e,s.damage*power,element);
   const nearby=(x,y,r,max=6)=>targets.filter(e=>dist(e,{x,y})<=r).slice(0,max);
   const label=(value,color=t.def.color)=>floatEffect(target.x,target.y,value,color);
@@ -615,6 +616,7 @@ function playfulTowerAttack(t,s,targets,target){
     for(const e of targets.slice(0,7)){
       hit(e,.24);e.slow=Math.min(e.slow,.45);
       e.danceTime=.75;e.stunTime=Math.max(e.stunTime||0,.25);
+      if(combo('무지개 디스코'))damageEnemy(e,0,'burn',t);
     }
     ringEffect(t.x,t.y,s.range,t.def.color,.42);
     label('♫ DANCE!','#d789e9');beep(440+(t.castCount||0)%4*110,.12,'triangle',.025);
@@ -622,7 +624,7 @@ function playfulTowerAttack(t,s,targets,target){
   }
   if(mode==='pinball'){
     const used=new Set();let previous={x:t.x,y:t.y},current=target;
-    for(let n=0;n<5&&current;n++){
+    for(let n=0;n<(combo('별똥별 핀볼')?6:5)&&current;n++){
       used.add(current.id);hit(current,Math.pow(.73,n)*.80);
       lineEffect(previous.x,previous.y,current.x,current.y,n%2?'#fff3a0':'#ff9b63',.18,2);
       ringEffect(current.x,current.y,.022,t.def.color,.20);previous=current;
@@ -644,7 +646,7 @@ function playfulTowerAttack(t,s,targets,target){
     if(e.bubbleTime>0){hit(e,.25);return true}
     hit(e,.27);if(e.dead)return true;
     e.bubbleTime=e.boss?.55:1.35;e.bubblePower=Math.min(55,s.damage*.72);
-    e.bubbleSource=t;
+    e.bubbleSource=t;e.bubbleCombo=combo('거품 트램펄린');
     ringEffect(e.x,e.y,.046,'#b5f8f5',.45);
     floatEffect(e.x,e.y,'BUBBLE!','#67c8c5');beep(880,.07,'sine',.02);return true;
   }
@@ -655,22 +657,25 @@ function playfulTowerAttack(t,s,targets,target){
     const borrowed=peer?effectiveStats(peer):s;
     // The mirror borrows elemental utility without being punished for a low-DPS neighbor.
     const damage=Math.min(74,Math.max(s.damage*.38,borrowed.damage*.62));
-    const count=peer&&(borrowed.area||borrowed.beam)?3:1;
+    const count=combo('매직 미러')?3:peer&&(borrowed.area||borrowed.beam)?3:1;
     const victims=nearby(target.x,target.y,peer?Math.max(.065,borrowed.area||.09):.02,count);
     for(const e of victims){
       attackEnemy(source,e,damage);
       if(borrowed.burn||source.def.role==='burn')damageEnemy(e,0,'burn',source);
       if(borrowed.slow||source.def.role==='slow')damageEnemy(e,0,'slow',source);
       if(borrowed.poison||source.def.role==='poison')damageEnemy(e,0,'poison',source);
+      if(combo('매직 미러')&&source.stats.mode==='spellbook')damageEnemy(e,0,(t.castCount||0)%2?'slow':'burn',source);
     }
     if(peer)lineEffect(t.x,t.y,peer.x,peer.y,'#faf3ff',.28,3);
     lineEffect(peer?.x??t.x,peer?.y??t.y,target.x,target.y,'#f6d5ff',.21,3);
+    t.castCount=(t.castCount||0)+1;
     label(peer?'COPY '+peer.word:'REFLECT','#c99cf2');return true;
   }
   if(mode==='boo'){
     for(const e of nearby(target.x,target.y,.11,4)){
       hit(e,.36);e.pushBack=Math.max(e.pushBack,e.boss?.018:.047);
-      e.stunTime=Math.max(e.stunTime||0,.35);
+      e.stunTime=Math.max(e.stunTime||0,combo('유령의 악몽')?.85:.35);
+      if(combo('유령의 악몽'))e.sleepTime=Math.max(e.sleepTime||0,.85);
     }
     ringEffect(target.x,target.y,.11,'#b8b1f3',.40);
     label('BOO!','#b8b1f3');beep(240,.16,'sine',.03);return true;
@@ -972,11 +977,14 @@ function statusEffects(e,dt){
     e.bubbleTime-=dt;
     if(e.bubbleTime<=0&&!e.dead){
       const damage=e.bubblePower||8;
-      for(const other of state.enemies)if(!other.dead&&dist(e,other)<.065)
-        attackEnemy(e.bubbleSource||{...e,def:{role:'special'},stats:{damage:0},links:[]},other,other===e?damage:damage*.45);
-      ringEffect(e.x,e.y,.07,'#b5f8f5',.40);
+      const radius=e.bubbleCombo?.10:.065;
+      for(const other of state.enemies)if(!other.dead&&dist(e,other)<radius){
+        if(e.bubbleSource)attackEnemy(e.bubbleSource,other,other===e?damage:damage*.45);
+        if(e.bubbleCombo)other.pushBack=Math.max(other.pushBack,other.boss?.015:.035);
+      }
+      ringEffect(e.x,e.y,radius,'#b5f8f5',.40);
       floatEffect(e.x,e.y,'POP!','#59bdb2');
-      e.bubbleSource=null;e.bubblePower=0;
+      e.bubbleSource=null;e.bubblePower=0;e.bubbleCombo=false;
     }
   }
   e.corrosionTime=Math.max(0,(e.corrosionTime||0)-dt);
