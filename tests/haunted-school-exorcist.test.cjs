@@ -265,6 +265,43 @@ test('ㄷ-shaped campus keeps west guard office connected to all fifteen rooms',
     assert.ok(path.every(p=>navigation.canWalk(p.x,p.z)),'path never crosses a wall or furniture');
     assert.ok(Math.hypot(path.at(-1).x-target.x,path.at(-1).z-target.z)<1.05,'close enough to target');
   }
+  // Unlike static A*, moving NPCs must not cut classroom door corners.
+  const wolfSrc=js.slice(js.indexOf('function moveWolfToward(target,dt){'),js.indexOf('function updateNewEncounters(dt){'));
+  const maidenSrc=js.slice(js.indexOf('function advanceGhostToward(target,dt){'),js.indexOf('function beginMaidenPractice(){'));
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
+  for(const frameStep of [.0167,.0333,.045]){
+    const encounter={wolf:{x:-1.5,z:16.8,speed:2.25,nav:null,root:{rotation:{y:0}}}};
+    const chaseWolf=new Function('encounter','routePlan','dist','canWalk',wolfSrc+'return moveWolfToward;')(
+      encounter,navigation.routePlan,dist,navigation.canWalk);
+    let wolfDone=false;
+    for(let i=0;i<Math.ceil(26/frameStep);i++){
+      chaseWolf({x:-10.5,z:14},frameStep);
+      const w=encounter.wolf;
+      assert.ok(navigation.canWalk(w.x,w.z),'wolf never clips through classroom walls');
+      if(dist(w,{x:-10.5,z:14})<1.8){wolfDone=true;break;}
+    }
+    assert.ok(wolfDone,'wolf must reach the trap inside 26 seconds at frame dt '+frameStep);
+    const maiden={x:25.5,z:-16.8,speed:1.2,root:{rotation:{y:0}}};
+    const chaseMaiden=new Function('maiden','ghostNav','routePlan','dist','canWalk',maidenSrc+'return advanceGhostToward;')(
+      maiden,null,navigation.routePlan,dist,navigation.canWalk);
+    let maidenDone=false;
+    for(let i=0;i<Math.ceil(33/frameStep);i++){
+      chaseMaiden({x:7.5,z:-14},frameStep);
+      assert.ok(navigation.canWalk(maiden.x,maiden.z),'maiden never clips through classroom walls');
+      if(dist(maiden,{x:7.5,z:-14})<1.8){maidenDone=true;break;}
+    }
+    assert.ok(maidenDone,'maiden must reach music room without door-corner stall at '+frameStep);
+  }
+  // Closed reaper doors must block physical passage but reopen for the seal.
+  const doorState={doorClosed:false};
+  const realDoors=new Function('walls','furniture','encounter',physics+'return {canWalk,routePlan};')(
+    walls,furniture,doorState);
+  const doorFrom={x:-19.2,z:8},doorInside={x:-24.2,z:8};
+  assert.ok(realDoors.routePlan(doorFrom,doorInside,1).length>0,'open door is passable');
+  doorState.doorClosed=true;
+  assert.equal(realDoors.routePlan(doorFrom,doorInside,1).length,0,'closed door blocks the room');
+  doorState.doorClosed=false;
+  assert.ok(realDoors.routePlan(doorFrom,doorInside,1).length>0,'reopened door restores route');
 });
 
 test('the navigation trail is visible only until the first tutorial anomaly is fixed',()=>{
@@ -361,4 +398,23 @@ test('wolf chases the decoy sound into the sealable trap before the timer ends',
   assert.equal(result.stage,11);
   assert.equal(result.wolfReady,true);
   assert.ok(result.wolfTime>0);
+});
+
+
+test('narrow mobile widths avoid map overlap and keep game controls visible',()=>{
+  assert.match(html,/#missionPanel\{left:7px;top:73px;width:min\(285px,57vw,calc\(100vw - 160px\)\)/);
+  assert.match(html,/#lesson\{bottom:135px/);
+  assert.match(html,/#gaze\{bottom:129px/);
+  for(const vw of [280,320,360,375,430]){
+    const missionRight=7+Math.min(285,vw*.57,vw-160);
+    const mapLeft=vw-7-128-10-2;
+    assert.ok(missionRight<=mapLeft-3,'mission and minimap overlap on '+vw+'px');
+  }
+});
+
+test('a timed closed reaper door reopens before the required inner seal',()=>{
+  assert.match(js,/encounter\.doorRelease=1\.6/);
+  assert.match(js,/if\(stage===9&&encounter\.doorClosed\)/);
+  assert.match(js,/encounter\.doorVisual\.rotation\.y=-1\.30/);
+  assert.match(js,/encounter\.doorClosed=false/);
 });
