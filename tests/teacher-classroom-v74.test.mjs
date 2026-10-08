@@ -61,3 +61,10 @@ test('compact UI hides conflicting panels when the roster opens',()=>{
   assert.match(css,/top:139px/);
   assert.match(js,/ui\.app\.classList\.toggle\('roster-open',isOpen\)/);
 });
+
+test('the teacher game catalog entry does not reintroduce legacy version pins',()=>{
+  const catalog=JSON.parse(readFileSync(new URL('../data/games.json',import.meta.url),'utf8'));
+  const teacher=catalog.games.find(game=>game.id==='job_teacher_classroom');
+  assert.ok(teacher,'teacher simulator remains registered');
+  assert.equal(teacher.href,'games/teacher-classroom-sim-prototype/index.html');
+});

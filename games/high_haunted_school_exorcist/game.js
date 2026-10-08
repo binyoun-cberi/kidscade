@@ -48,9 +48,14 @@ function cube(parent,x,y,z,w,h,d,material){
   m.receiveShadow=false;parent.add(m);return m;
 }
 function ground(x,z,w,d,c){cube(scene,x,-.13,z,w,.26,d,mat(c));}
+// Adjacent wall and skirt volumes must not share coplanar front/back faces.
+// Previously the full-height wall overlapped the skirting from y=0 to y=.38,
+// making the two surfaces fight for depth and flash as the camera moved.
+const WALL_HEIGHT=3.12,SKIRT_HEIGHT=.38;
 function wall(x,z,w,d){
-  cube(scene,x,1.56,z,w,3.12,d,materials.wall);
-  cube(scene,x,.19,z,w,.38,d,materials.skirt);
+  const upperHeight=WALL_HEIGHT-SKIRT_HEIGHT;
+  cube(scene,x,SKIRT_HEIGHT+upperHeight/2,z,w,upperHeight,d,materials.wall);
+  cube(scene,x,SKIRT_HEIGHT/2,z,w,SKIRT_HEIGHT,d,materials.skirt);
   walls.push({x,z,hx:w/2,hz:d/2});
 }
 function wallSplit(z,parts){for(const [x,w] of parts)wall(x,z,w,.29);}
@@ -342,7 +347,7 @@ function finish(ok){
 }
 function reset(){
   fixes=0;hp=3;power=100;flashOn=true;elapsed=0;stage=1;ended=false;paused=false;started=true;
-  viewYaw=0;player.x=0;player.z=9;maiden.attacks=0;maiden.charge=0;invulnerable=0;ghostWaiting=0;
+  viewYaw=0;player.x=0;player.z=9;player.yaw=Math.PI;player.root.rotation.y=player.yaw;maiden.attacks=0;maiden.charge=0;invulnerable=0;ghostWaiting=0;
   maidenPhase='approach';ghostNav=null;gazeLocked=false;
   guidance.key='';guidance.points=[];lastMistake='';tutorialCount=0;
   disturbed.forEach(o=>{o.done=false;o.object.visible=true;o.marker.visible=true;});
@@ -491,7 +496,10 @@ function updatePlayer(dt){
   const vx=(fx*f+rx*r)*speed*dt,vz=(fz*f+rz*r)*speed*dt;
   if(canWalk(player.x+vx,player.z))player.x+=vx;
   if(canWalk(player.x,player.z+vz))player.z+=vz;
-  if(mag>.07)player.yaw=Math.atan2(-(fx*f+rx*r),-(fz*f+rz*r));
+  // Casual_Male.gltf, as in the teacher classroom simulator, faces LOCAL +Z.
+  // Forward movement in world -Z therefore needs yaw PI, not zero.
+  // Use actual input velocity rather than the camera look angle.
+  if(mag>.07)player.yaw=Math.atan2(fx*f+rx*r,fz*f+rz*r);
   player.root.position.set(player.x,invulnerable>0&&Math.floor(elapsed*10)%2===0?-.03:0,player.z);
   player.root.rotation.y=player.yaw;
   const anim=player.animation;

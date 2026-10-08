@@ -332,27 +332,23 @@ test('deployed Chibi studio uses commit-scoped HTML and JS assets',()=>{
 });
 
 
-test('male eyes and eyebrows preserve original Chibi skinned meshes and new proportions',()=>{
+test('male Chibi eyes align with native face markings and eyebrows only use two source islands',()=>{
   const js=read('teacher/character-3d-studio.js');
   const manifest=JSON.parse(read('chibi/asset-manifest.json'));
   const male=js.slice(js.indexOf('function createKidscadeMaleSet(){'),js.indexOf('function makeUnlitMaterial(source){'));
   assert.match(male,/const eyeGeometry=eyesSource\.geometry\.clone\(\)/);
-  assert.match(male,/const maleEyeHeightScale=\.64/);
-  assert.match(male,/const browCut=/);
-  assert.match(male,/browGeometry\.setIndex\(kept\)/);
-  assert.match(male,/extractedBrowTriangles:kept\.length\/3/);
-  assert.match(male,/const kept=\[\]/);
+  assert.match(male,/eyeHeightScale:1/);
+  assert.match(male,/alignsWith:'character_low native face markings'/);
   assert.match(male,/const browGeometry=lashesSource\.geometry\.clone\(\)/);
-  assert.match(male,/makeSolidMaterial\('#332723','Kidscade Male Brows'\)/);
-  assert.match(male,/generatedFrom:'eyes'/);
-  assert.match(male,/generatedFrom:'eyelashes'/);
+  assert.match(male,/const eyebrowRegionFloor=1\.76/);
+  assert.match(male,/if\(kept\.length!==72\)/);
+  assert.match(male,/browGeometry\.setIndex\(kept\)/);
   assert.doesNotMatch(male,/new THREE\.(?:SphereGeometry|TubeGeometry|ConeGeometry)/);
-  assert.equal(manifest.customParts.kidscade_male_eyes.revision,'boyish-eyes-v3');
-  assert.equal(manifest.customParts.kidscade_male_brows.revision,'upper-brow-faces-v3');
+  assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
+  assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261008-malefix3/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-alignedface6/);
 });
-
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
   const js=read('teacher/character-3d-studio.js');
@@ -365,4 +361,14 @@ test('male shoulders and sleeves use smooth weighting without extra procedural m
   assert.doesNotMatch(male,/new THREE\.(?:CylinderGeometry|SphereGeometry|BoxGeometry)/);
   const manifest=JSON.parse(read('chibi/asset-manifest.json'));
   assert.equal(manifest.customParts.kidscade_male_tshirt.revision,'shoulder-clearance-v3');
+});
+
+test('male face preset uses one native-aligned pair of eyes and only original eyebrow islands',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const manifest=JSON.parse(read('chibi/asset-manifest.json'));
+  assert.match(js,/const FEMALE_BASE_NODES=\['character_low','eyelashes','eyes','tooth'\]/);
+  assert.match(js,/const MALE_BASE_NODES=\['kidscade_male_body','kidscade_male_eyes','kidscade_male_brows','tooth'\]/);
+  assert.match(js,/BASE_VARIANT_NODES\.forEach\(node=>setNodeVisible\(node,false\)\)/);
+  assert.deepEqual(manifest.presets.male.filter(name=>/eyes|eyelashes|brows/.test(name)),['kidscade_male_eyes','kidscade_male_brows']);
+  assert.match(js,/const lashesSource=getNode\('eyelashes'\)/);
 });
