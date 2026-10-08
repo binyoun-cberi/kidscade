@@ -87,6 +87,14 @@ let spaceBuildSerial=0;
 let activeSpace=SCHOOL_SPACES.classroom;
 let activeSeats=activeSpace.seats.map(p=>new THREE.Vector3(p.x,0,p.z));
 let obstacleRects=activeSpace.obstacles.map(o=>({...o}));
+function seatFurnitureForSpace(space){
+  if(space.id==='gym')return [];
+  const lab=space.id==='science'||space.id==='art',meal=space.id==='cafeteria';
+  const depth=meal?-.30:lab?.02:ROW_CHAIR_OFFSET;
+  const half=meal?.30:lab?.19:.23;
+  return space.seats.map((p,i)=>({id:i,x:p.x,z:p.z+depth,hx:half,hz:half}));
+}
+let seatFurnitureRects=seatFurnitureForSpace(activeSpace);
 
 let started=false,paused=false;
 let stepIndex=0,currentStep=DAY_STEPS[0],stepTime=0;
@@ -370,6 +378,7 @@ function buildSpace(spaceId){
   const space=SCHOOL_SPACES[spaceId]||SCHOOL_SPACES.classroom;
   activeSpace=space;activeSeats=space.seats.map(p=>new THREE.Vector3(p.x,0,p.z));
   obstacleRects=space.obstacles.map(o=>({...o}));
+  seatFurnitureRects=seatFurnitureForSpace(space);
   stats.spacesVisited.add(space.id);
   spaceBuildSerial++;
   clearGroup(roomRoot);
@@ -515,7 +524,7 @@ async function makeActor(kind,profile,index,pos){
   const actor={
     root,model,mixer,clips,action:null,anim:'',target:pos.clone(),
     speed:kind==='teacher'?3.2:1.15,kind,navGoal:'',navPath:[],
-    visualId:kind==='teacher'?'teacher':profile?.id,usingFallback,
+    visualId:kind==='teacher'?'teacher':profile?.id,usingFallback,seatIndex:kind==='student'?index:-1,
     restY:model.position.y,restRotation:model.rotation.clone(),seated:false,seatBones:collectSeatedBones(model),gestureBones:collectGestureBones(model),poseBlend:0,seatHipY:null
   };
   root.updateMatrixWorld(true);
@@ -625,13 +634,17 @@ async function createActors(){
   }
 }
 
-function isBlockedWithPadding(x,z,pad){
+function isBlockedWithPadding(x,z,pad,allowChair=null,checkChairs=true){
   if(x<ROOM.minX+.22+pad||x>ROOM.maxX-.22-pad||z<ROOM.minZ+.22+pad||z>ROOM.maxZ-.22-pad)return true;
   for(const r of obstacleRects)if(Math.abs(x-r.x)<r.hx+pad&&Math.abs(z-r.z)<r.hz+pad)return true;
+  if(checkChairs)for(const chair of seatFurnitureRects){
+    if(chair===allowChair)continue;
+    if(Math.abs(x-chair.x)<chair.hx+pad&&Math.abs(z-chair.z)<chair.hz+pad)return true;
+  }
   return false;
 }
-function isBlocked(x,z){return isBlockedWithPadding(x,z,.25)}
-function isStudentBlocked(x,z){return isBlockedWithPadding(x,z,.08)}
+function isBlocked(x,z){return isBlockedWithPadding(x,z,.20)}
+function isStudentBlocked(x,z,allowChair=null){return isBlockedWithPadding(x,z,.08,allowChair)}
 function distance2D(a,b){return Math.hypot(a.x-b.x,a.z-b.z)}
 function randomOpenPoint(){
   for(let i=0;i<50;i++){const x=-5.8+Math.random()*11.6,z=-3.8+Math.random()*7.4;if(!isStudentBlocked(x,z))return new THREE.Vector3(x,0,z)}
@@ -646,9 +659,12 @@ function segmentHitsRect(a,b,minX,maxX,minZ,maxZ){
   }
   return tMax>=0&&tMin<=1;
 }
-function studentSegmentClear(a,b){
-  const pad=.08;if(isStudentBlocked(a.x,a.z)||isStudentBlocked(b.x,b.z))return false;
-  for(const r of obstacleRects)if(segmentHitsRect(a,b,r.x-r.hx-pad,r.x+r.hx+pad,r.z-r.hz-pad,r.z+r.hz+pad))return false;
+function studentSegmentClear(a,b,allowChair=null){
+  const pad=.08;if(isStudentBlocked(a.x,a.z,allowChair)||isStudentBlocked(b.x,b.z,allowChair))return false;
+  for(const r of [...obstacleRects,...seatFurnitureRects]){
+    if(r===allowChair)continue;
+    if(segmentHitsRect(a,b,r.x-r.hx-pad,r.x+r.hx+pad,r.z-r.hz-pad,r.z+r.hz+pad))return false;
+  }
   return true;
 }
 const NAV_STEP=.42,NAV_MIN_X=ROOM.minX+.36,NAV_MIN_Z=ROOM.minZ+.36;
@@ -656,12 +672,12 @@ const NAV_COLS=Math.floor((ROOM.maxX-ROOM.minX-.72)/NAV_STEP)+1,NAV_ROWS=Math.fl
 function navCell(ix,iz){return new THREE.Vector3(NAV_MIN_X+ix*NAV_STEP,0,NAV_MIN_Z+iz*NAV_STEP)}
 function navKey(ix,iz){return ix+','+iz}
 function pointToNavCell(point){return {ix:clamp(Math.round((point.x-NAV_MIN_X)/NAV_STEP),0,NAV_COLS-1),iz:clamp(Math.round((point.z-NAV_MIN_Z)/NAV_STEP),0,NAV_ROWS-1)}}
-function nearestConnectedNavCell(point){
+function nearestConnectedNavCell(point,allowChair=null){
   const base=pointToNavCell(point);
   for(let radius=0;radius<=10;radius++)for(let dz=-radius;dz<=radius;dz++)for(let dx=-radius;dx<=radius;dx++){
     if(radius&&Math.abs(dx)!==radius&&Math.abs(dz)!==radius)continue;
     const ix=base.ix+dx,iz=base.iz+dz;if(ix<0||iz<0||ix>=NAV_COLS||iz>=NAV_ROWS)continue;
-    const p=navCell(ix,iz);if(!isStudentBlocked(p.x,p.z)&&studentSegmentClear(point,p))return {ix,iz};
+    const p=navCell(ix,iz);if(!isStudentBlocked(p.x,p.z,allowChair)&&studentSegmentClear(point,p,allowChair))return {ix,iz};
   }
   return null;
 }
@@ -674,30 +690,31 @@ function simplifyStudentPath(points,start,target){
   }
   out.push(target.clone());return out;
 }
-function findStudentPath(start,target){
-  if(!isStudentBlocked(target.x,target.z)&&studentSegmentClear(start,target))return [target.clone()];
-  const s=nearestConnectedNavCell(start),g=nearestConnectedNavCell(target);if(!s||!g)return [];
+function findStudentPath(start,target,allowChair=null){
+  if(!isStudentBlocked(target.x,target.z,allowChair)&&studentSegmentClear(start,target,allowChair))return [target.clone()];
+  const s=nearestConnectedNavCell(start,allowChair),g=nearestConnectedNavCell(target,allowChair);if(!s||!g)return [];
   const startKey=navKey(s.ix,s.iz),goalKey=navKey(g.ix,g.iz),queue=[s],came=new Map([[startKey,null]]);let head=0;
   const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
   while(head<queue.length&&queue.length<2400){
     const cur=queue[head++],key=navKey(cur.ix,cur.iz);if(key===goalKey)break;const curPoint=navCell(cur.ix,cur.iz);
     for(const [dx,dz] of dirs){
       const ix=cur.ix+dx,iz=cur.iz+dz,nk=navKey(ix,iz);if(ix<0||iz<0||ix>=NAV_COLS||iz>=NAV_ROWS||came.has(nk))continue;
-      const p=navCell(ix,iz);if(isStudentBlocked(p.x,p.z)||!studentSegmentClear(curPoint,p))continue;
+      const p=navCell(ix,iz);if(isStudentBlocked(p.x,p.z,allowChair)||!studentSegmentClear(curPoint,p,allowChair))continue;
       came.set(nk,key);queue.push({ix,iz});
     }
   }
   if(!came.has(goalKey))return [];
   const cells=[];let key=goalKey;while(key&&key!==startKey){const [ix,iz]=key.split(',').map(Number);cells.push(navCell(ix,iz));key=came.get(key)}
   cells.reverse();const route=simplifyStudentPath(cells,start,target);let prev=start;
-  for(const p of route){if(!studentSegmentClear(prev,p))return [...cells,target.clone()];prev=p}
+  for(const p of route){if(!studentSegmentClear(prev,p,allowChair))return [...cells,target.clone()];prev=p}
   return route;
 }
 function moveActorToward(actor,target,dt,speed){
   let waypoint=target;
+  const allowedChair=actor.kind==='student'?seatFurnitureRects[actor.seatIndex]||null:null;
   if(actor.kind==='student'){
     const goalKey=target.x.toFixed(2)+','+target.z.toFixed(2);
-    if(actor.navGoal!==goalKey||!Array.isArray(actor.navPath)){actor.navGoal=goalKey;actor.navPath=findStudentPath(actor.root.position,target)}
+    if(actor.navGoal!==goalKey||!Array.isArray(actor.navPath)){actor.navGoal=goalKey;actor.navPath=findStudentPath(actor.root.position,target,allowedChair)}
     while(actor.navPath.length&&distance2D(actor.root.position,actor.navPath[0])<.09)actor.navPath.shift();
     if(!actor.navPath.length&&distance2D(actor.root.position,target)>.12){actor.navGoal='';playAnim(actor,'idle');return false}
     waypoint=actor.navPath[0]||target;
@@ -705,7 +722,7 @@ function moveActorToward(actor,target,dt,speed){
   const dx=waypoint.x-actor.root.position.x,dz=waypoint.z-actor.root.position.z,d=Math.hypot(dx,dz);
   if(d<.06){if(!actor.seated)playAnim(actor,'idle');return distance2D(actor.root.position,target)<.1}
   const step=Math.min(d,(speed||actor.speed)*dt),nx=actor.root.position.x+dx/d*step,nz=actor.root.position.z+dz/d*step;
-  const blocked=actor.kind==='student'?isStudentBlocked(nx,nz):isBlocked(nx,nz);
+  const blocked=actor.kind==='student'?isStudentBlocked(nx,nz,allowedChair):isBlocked(nx,nz);
   if(!blocked){actor.root.position.x=nx;actor.root.position.z=nz}else if(actor.kind==='student'){actor.navGoal='';actor.navPath=[]}
   faceDirection(actor,dx,dz);playAnim(actor,'walk');return distance2D(actor.root.position,target)<.1;
 }
