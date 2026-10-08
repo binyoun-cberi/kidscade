@@ -18,7 +18,16 @@
     "hairtailknight",
     "hairvariant",
     "hairvariant.001",
-    "kidscade_male_hair_short"
+    "chibi_female_hair_bob",
+    "chibi_female_hair_layered",
+    "kidscade_male_hair_short",
+    "kidscade_male_hair_crop",
+    "kidscade_male_hair_sidepart",
+    "kidscade_male_hair_textured",
+    "kidscade_male_hair_fringe",
+    "kidscade_male_hair_undercut",
+    "kidscade_male_hair_round",
+    "kidscade_male_hair_swept"
   ],
   "presets": {
     "base": [
@@ -230,6 +239,146 @@
       "shaping": "source left and right eyebrows only; all 180 lash/eye-corner triangles excluded",
       "color": "#332723",
       "revision": "two-native-brow-islands-v6"
+    },
+    "kidscade_male_hair_crop": {
+      "label": "crop",
+      "type": "hair",
+      "fit": "male",
+      "generatedFrom": "kidscade_male_hair_short",
+      "geometryPolicy": "source-skinned-hair-silhouette-variant",
+      "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
+      "revision": "v5-wardrobe-hair-pack-1",
+      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
+    },
+    "kidscade_male_hair_sidepart": {
+      "label": "sidepart",
+      "type": "hair",
+      "fit": "male",
+      "generatedFrom": "kidscade_male_hair_short",
+      "geometryPolicy": "source-skinned-hair-silhouette-variant",
+      "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
+      "revision": "v5-wardrobe-hair-pack-1",
+      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
+    },
+    "kidscade_male_hair_textured": {
+      "label": "textured",
+      "type": "hair",
+      "fit": "male",
+      "generatedFrom": "kidscade_male_hair_short",
+      "geometryPolicy": "source-skinned-hair-silhouette-variant",
+      "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
+      "revision": "v5-wardrobe-hair-pack-1",
+      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
+    },
+    "kidscade_male_hair_fringe": {
+      "label": "fringe",
+      "type": "hair",
+      "fit": "male",
+      "generatedFrom": "kidscade_male_hair_short",
+      "geometryPolicy": "source-skinned-hair-silhouette-variant",
+      "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
+      "revision": "v5-wardrobe-hair-pack-1",
+      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
+    },
+    "kidscade_male_hair_undercut": {
+      "label": "undercut",
+      "type": "hair",
+      "fit": "male",
+      "generatedFrom": "kidscade_male_hair_short",
+      "geometryPolicy": "source-skinned-hair-silhouette-variant",
+      "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
+      "revision": "v5-wardrobe-hair-pack-1",
+      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
+    },
+    "kidscade_male_hair_round": {
+      "label": "round",
+      "type": "hair",
+      "fit": "male",
+      "generatedFrom": "kidscade_male_hair_short",
+      "geometryPolicy": "source-skinned-hair-silhouette-variant",
+      "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
+      "revision": "v5-wardrobe-hair-pack-1",
+      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
+    },
+    "kidscade_male_hair_swept": {
+      "label": "swept",
+      "type": "hair",
+      "fit": "male",
+      "generatedFrom": "kidscade_male_hair_short",
+      "geometryPolicy": "source-skinned-hair-silhouette-variant",
+      "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
+      "revision": "v5-wardrobe-hair-pack-1",
+      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
+    },
+    "chibi_female_hair_bob": {
+      "label": "bob",
+      "type": "hair",
+      "fit": "female",
+      "generatedFrom": "hairone",
+      "geometryPolicy": "source-skinned-hair-silhouette-variant",
+      "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
+      "revision": "v5-wardrobe-hair-pack-1",
+      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
+    },
+    "chibi_female_hair_layered": {
+      "label": "layered",
+      "type": "hair",
+      "fit": "female",
+      "generatedFrom": "hairone",
+      "geometryPolicy": "source-skinned-hair-silhouette-variant",
+      "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
+      "revision": "v5-wardrobe-hair-pack-1",
+      "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
     }
+  },
+  "wardrobeLibrary": {
+    "version": "chibi-v5.0",
+    "bodyFits": {
+      "male": {
+        "baseNode": "kidscade_male_body",
+        "label": "남자형"
+      },
+      "female": {
+        "baseNode": "character_low",
+        "label": "여자형"
+      }
+    },
+    "fitMeaning": "Target body fit, not a restriction on who can wear a part. Public buttons filter for compatible skinned geometry.",
+    "categories": [
+      "hair",
+      "top",
+      "bottom",
+      "shoes",
+      "accessory",
+      "costume"
+    ],
+    "hairStyles": {
+      "male": [
+        "kidscade_male_hair_short",
+        "kidscade_male_hair_crop",
+        "kidscade_male_hair_sidepart",
+        "kidscade_male_hair_textured",
+        "kidscade_male_hair_fringe",
+        "kidscade_male_hair_undercut",
+        "kidscade_male_hair_round",
+        "kidscade_male_hair_swept"
+      ],
+      "female": [
+        "hairone",
+        "hairT",
+        "hairtail",
+        "hairtailknight",
+        "hairvariant",
+        "hairvariant.001",
+        "chibi_female_hair_bob",
+        "chibi_female_hair_layered"
+      ]
+    },
+    "counts": {
+      "male": 8,
+      "female": 8,
+      "newVariants": 9
+    },
+    "variationPolicy": "The 9 new meshes are derived from original rigged Chibi hair silhouettes by vertex-region deformation, not independently sculpted original meshes. UV, skeleton and skin weights are retained."
   }
 }
