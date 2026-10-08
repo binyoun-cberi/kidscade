@@ -10,6 +10,7 @@ const dir=path.join(root,'games','language_word_siege');
 const html=fs.readFileSync(path.join(dir,'index.html'),'utf8');
 const runtime=fs.readFileSync(path.join(dir,'game.js'),'utf8');
 const dataSource=fs.readFileSync(path.join(dir,'word-data.js'),'utf8');
+const lexiconSource=fs.readFileSync(path.join(dir,'open-lexicon.js'),'utf8');
 const stagesSource=fs.readFileSync(path.join(dir,'stages.js'),'utf8');
 const visualsSource=fs.readFileSync(path.join(dir,'visuals.js'),'utf8');
 function loadStages(){
@@ -20,6 +21,7 @@ function loadStages(){
 
 function loadData(){
   const sandbox={window:{}};
+  vm.runInNewContext(lexiconSource,sandbox,{filename:'open-lexicon.js'});
   vm.runInNewContext(dataSource,sandbox,{filename:'word-data.js'});
   return sandbox.window.WordSiegeData;
 }
@@ -32,13 +34,15 @@ function canSpell(rack,word){
 }
 
 test('Word Siege runtime parses and uses Kidscade shared storage',()=>{
-  for(const file of ['game.js','word-data.js','stages.js','visuals.js']){
+  for(const file of ['game.js','word-data.js','open-lexicon.js','stages.js','visuals.js']){
     const src=fs.readFileSync(path.join(dir,file),'utf8');
     const parsed=spawnSync(process.execPath,['--check'],{input:src,encoding:'utf8'});
     assert.equal(parsed.status,0,parsed.stderr||parsed.stdout);
   }
   assert.ok(html.includes('../../kidscade-storage.js'));
   assert.ok(html.includes('stages.js'));
+  assert.ok(html.includes('open-lexicon.js'));
+  assert.ok(html.includes('id="freeWord"'));
   assert.ok(html.includes('visuals.js'));
   assert.ok(html.includes('id="stageList"'));
   assert.ok(html.includes('id="waveProgress"'));
@@ -59,7 +63,14 @@ test('Word Siege starts with a guaranteed economy and attack choice',()=>{
   assert.equal(data.words.ICE.role,'slow');
   assert.equal(data.words.FAST.role,'modifier');
   assert.ok(Object.keys(data.words).length>=400);
-  assert.equal(data.wordList.length,501);
+  assert.equal(data.wordList.length,4101);
+  assert.ok(data.totalWords>=19000,'Expected a substantially expanded word dictionary');
+  assert.ok(data.importedWords>=18000);
+  assert.equal(data.words.COW.meaning,'소');
+  assert.equal(data.words.COW.role,'rapid');
+  assert.equal(data.words.FIGHT.meaning,'싸우다');
+  assert.equal(data.words.FIGHT.role,'pierce');
+  assert.ok(data.words.NUKE&&data.signatures.NUKE);
   assert.equal(data.combos.length,20);
   assert.ok(Object.keys(data.signatures).length>=60);
 });
@@ -116,7 +127,7 @@ function headlessGame(){
   const d=loadData(), elements=new Map();
   class Element{
     constructor(){
-      this.innerHTML='';this.textContent='';this.disabled=false;this.style={setProperty(){}};this.dataset={};
+      this.innerHTML='';this.textContent='';this.value='';this.disabled=false;this.style={setProperty(){}};this.dataset={};
       this.classList={add(){},remove(){}};
     }
     addEventListener(){}
@@ -133,7 +144,7 @@ function headlessGame(){
     KidscadeStorage:{getJson(){return []},setJson(){return true},getInt(key){return key==='kidscade_word_siege_stage_v1'?10:0},setRaw(){return true}},
     addEventListener(){},devicePixelRatio:1
   };
-  const hooks=`window.__headless={restart,startWave,update,beginPlacement,buildTower,makeTowerStats,towerCost,availableWords,validPlacement,rolePlacementValid,applyLinks,effectiveStats,showHint,swapOne,selectStage,currentStage,createWave, get state(){return state}};resize();`;
+  const hooks=`window.__headless={restart,startWave,update,beginPlacement,buildTower,makeTowerStats,towerCost,availableWords,validPlacement,rolePlacementValid,applyLinks,effectiveStats,showHint,swapOne,selectStage,currentStage,createWave,tileWord,typedWord,getInput:()=>freeWord, get state(){return state}};resize();`;
   const patched=runtime.replace('resize();requestAnimationFrame(loop);',hooks);
   assert.notEqual(patched,runtime,'headless hooks are missing');
   const ctx={window,document,performance:{now:()=>0},setTimeout(){return 0},clearTimeout(){},requestAnimationFrame(){}};
@@ -288,4 +299,41 @@ test('Word Siege all ten stages permit word tower building and start unique wave
   }
   assert.ok(focuses.size>=7);
   assert.ok(patterns.size>=7,'wave patterns should differ by stage');
+});
+
+test('Word Siege dictionary rejects gibberish and supports example words',()=>{
+  const d=loadData();
+  for(const w of ['COW','FIGHT','NUKE','DOG','HORSE','COMPUTER','HAPPY','RIVER','EAGLE','BANANA']){
+    assert.ok(d.words[w],'missing playable word '+w);
+    assert.ok(d.words[w].meaning.length>0);
+  }
+  for(const w of ['ASDFGH','QWERTYUIOP','ZZZZQQQ','FUCK','SHIT']){
+    assert.ok(!d.words[w],'unwanted word accepted '+w);
+  }
+  assert.equal(new Set(d.allWordList).size,d.allWordList.length,'duplicate word entries');
+  assert.equal(d.allWordList.length,d.totalWords);
+});
+
+test('Word Siege free typing costs INK but does not consume rack letters',()=>{
+  const {h,d}=headlessGame();
+  const input=h.getInput();
+  const firstRack=h.state.rack.join('');
+  input.value='COW';
+  assert.equal(h.tileWord(),'COW');
+  const c=h.towerCost(d.words.COW,'COW',true);
+  assert.ok(c>h.towerCost(d.words.COW));
+  assert.ok(h.state.ink>=c);
+  h.beginPlacement();
+  assert.ok(h.state.placing?.fromTyping);
+  assert.equal(h.state.placing.cost,c);
+  const p={x:.39,y:.55};
+  assert.ok(h.validPlacement(p)&&h.rolePlacementValid(p,d.words.COW,'COW'));
+  h.buildTower(p);
+  assert.ok(h.state.towers.some(t=>t.word==='COW'));
+  assert.equal(h.state.rack.join(''),firstRack);
+  assert.equal(input.value,'');
+  input.value='NUKE';
+  assert.ok(h.towerCost(d.words.NUKE,'NUKE',true)>20,'legendary tower must not be cheap');
+  h.beginPlacement();
+  assert.ok(!h.state.placing,'cannot place unaffordable NUKE');
 });
