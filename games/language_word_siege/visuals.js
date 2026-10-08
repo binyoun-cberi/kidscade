@@ -195,7 +195,30 @@ function towerHardware(c,mode,r,phase,pulse){
     if(mode==='spring'){
       stroke(c,'#d8fba2',3);
       for(let i=0;i<4;i++)line(c,-r*.3+i*r*.20,r*.30,-r*.24+i*r*.20,-r*.2);
-    }else if(mode==='boomerang'){
+    }else if(mode==='splat'){
+    disc(c,0,-r*.25,r*.67,'#faad65');
+    for(let i=0;i<5;i++){const ang=phase*.3+i*Math.PI*2/5;
+      disc(c,Math.cos(ang)*r*.65,-r*.25+Math.sin(ang)*r*.64,r*.13,'#ffdf90')}
+    disc(c,-r*.2,-r*.39,r*.09,'#fff3d8');
+  }else if(mode==='firework'){
+    c.fillStyle='#574675';c.fillRect(-r*.46,-r*.22,r*.92,r*.90);
+    for(let j=0;j<3;j++){const angle=phase*.65+j*Math.PI*2/3;
+      c.save();c.translate(Math.cos(angle)*r*.47,Math.sin(angle)*r*.47-r*.24);
+      star(c,5,r*.11,r*.29,angle);c.fillStyle=['#faba6e','#ee9dd2','#a1dded'][j];c.fill();c.restore()}
+    stroke(c,'#fff2c9',2);line(c,0,r*.38,0,-r*.18);
+  }else if(mode==='snap'){
+    c.fillStyle='#6a935f';c.fillRect(-r*.74,r*.40,r*1.48,r*.30);
+    poly(c,[[-r*.66,r*.22],[-r*.40,-r*.45],[-r*.11,r*.21]],'#eaf4c3');
+    poly(c,[[r*.66,r*.22],[r*.4,-r*.45],[r*.11,r*.21]],'#eaf4c3');
+    disc(c,0,r*.2,r*.25,'#98cc69');
+  }else if(mode==='echo'){
+    for(let i=3;i>=1;i--){stroke(c,'#a5dbef',2.2);
+      c.beginPath();c.arc(0,-r*.16,r*(.20+i*.22),phase*.18,phase*.18+Math.PI*1.36);c.stroke()}
+    disc(c,0,-r*.14,r*.18,'#e0f3ff');
+  }else if(mode==='hailstorm'){
+    disc(c,0,-r*.3,r*.63,'#a7d5e8');
+    for(let i=0;i<5;i++)poly(c,[[(i-2)*r*.26,r*.06],[(i-2)*r*.26+r*.12,r*.39],[(i-2)*r*.26-r*.12,r*.39]],'#e4f7ff');
+  }else if(mode==='boomerang'){
       stroke(c,'#f7d99d',3);line(c,-r*.3,r*.2,0,-r*.30);line(c,0,-r*.3,r*.3,r*.2);
     }else{
       disc(c,0,0,r*.19,mode==='bubble'?'#b9faf6':'#ffb97c');
@@ -226,7 +249,7 @@ function towerHardware(c,mode,r,phase,pulse){
 // machine / creature silhouette. Keep the letter on its own raised medallion.
 const PLAYFUL_MODES=new Set(['disco','pinball','spring','bubble','mirror','boo','spellbook',
   'rainbow','boomerang','spores','slimepool','vacuum','magnet','sleep','shootingstars',
-  'snowball','raincloud','sunray']);
+  'snowball','raincloud','sunray','splat','firework','snap','echo','hailstorm']);
 function playfulTowerBody(c,t,r,phase){
   const mode=t.stats?.mode;
   if(!PLAYFUL_MODES.has(mode))return false;
