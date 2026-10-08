@@ -1923,6 +1923,111 @@ function installLocalVisualAudit(){
           fingerprint:fingerprint>>>0};
       });
     },
+    outfitCatalog(){
+      return Object.entries(OUTFIT_LIBRARY).flatMap(([fit,categories])=>
+        Object.entries(categories).flatMap(([category,names])=>names.map(name=>{
+          const group=getNode(name);
+          const shell=group?.isSkinnedMesh?group:group?.getObjectByName(name+'_shell');
+          const pos=shell?.geometry?.getAttribute('position');
+          let hash=2166136261;
+          if(pos)for(let i=0;i<pos.array.length;i+=3){
+            hash=Math.imul(hash^Math.round(pos.array[i]*100000),16777619);
+          }
+          return {name,fit,category,available:!!shell?.isSkinnedMesh,
+            visible:!!group?.visible,vertices:pos?.count||0,
+            fingerprint:hash>>>0,
+            extras:group?.isGroup?group.children.length-1:0,
+            rigBones:shell?.skeleton?.bones.length||0};
+        }))
+      );
+    },
+    garmentSurvey(){
+      // Conservative animated-pose proximity diagnostic. Sampled 3D
+      // vertex profiles can flag likely cloth/body overlaps, not certify zero
+      // intersections; produce evidence for manual screenshot review.
+      const body=getNode(activeBodyFit==='male'?'kidscade_male_body':'character_low');
+      const garments=selectedParts().filter(name=>
+        ['top','bottom'].includes(PART_GROUP(name)));
+      const sampleMesh=(mesh,max)=>{
+        if(!mesh?.isSkinnedMesh)return [];
+        const count=mesh.geometry.getAttribute('position')?.count||0;
+        const points=[];
+        const stride=Math.max(1,Math.ceil(count/max));
+        mesh.updateMatrixWorld(true);
+        for(let i=0;i<count;i+=stride){
+          const p=mesh.geometry.getAttribute('position');
+          const vertex=new THREE.Vector3(p.getX(i),p.getY(i),p.getZ(i));
+          mesh.applyBoneTransform(i,vertex);
+          vertex.applyMatrix4(mesh.matrixWorld);
+          points.push(vertex);
+        }
+        return points;
+      };
+      const bodyPoints=sampleMesh(body,750);
+      const out=[];
+      for(const name of garments){
+        const node=getNode(name);
+        if(!node)continue;
+        const shells=[];
+        if(node.isSkinnedMesh)shells.push(node);
+        node.traverse?.(object=>{if(object.isSkinnedMesh&&object.name.endsWith('_shell'))shells.push(object)});
+        let tested=0,close=0,minimum=Infinity;
+        for(const shell of shells){
+          for(const g of sampleMesh(shell,200)){
+            let nearest=Infinity;
+            for(const b of bodyPoints){
+              if(Math.abs(b.y-g.y)>.055)continue;
+              nearest=Math.min(nearest,b.distanceToSquared(g));
+            }
+            if(nearest===Infinity)continue;
+            const dist=Math.sqrt(nearest);
+            minimum=Math.min(minimum,dist);tested++;
+            if(dist<.008)close++;
+          }
+        }
+        out.push({name,tested,closeSurfaceSamples:close,
+          minimumVertexDistance:Number.isFinite(minimum)?Number(minimum.toFixed(5)):null,
+          warning:'proximity only; cannot certify absence of triangle intersections'});
+      }
+      return out;
+    },
+    async roundtripExport(){
+      const wasHelper=skeletonHelper?.visible;
+      const previousClip=activeClip,previousRotation=avatarRoot.rotation.y;
+      if(skeletonHelper)skeletonHelper.visible=false;
+      activeAction?.stop();
+      mixer?.stopAllAction();
+      sourceScene.traverse(object=>{
+        if(object.isSkinnedMesh)object.skeleton?.pose?.();
+      });
+      avatarRoot.rotation.set(0,0,0);
+      avatarRoot.updateMatrixWorld(true);
+      try{
+        const [{GLTFExporter},{GLTFLoader}]=await Promise.all([
+          import('../assets/vendor/three-r160/addons/exporters/GLTFExporter.js'),
+          import('../assets/vendor/three-r160/addons/loaders/GLTFLoader.js')
+        ]);
+        const binary=await new GLTFExporter().parseAsync(avatarRoot,{
+          binary:true,trs:true,onlyVisible:true,
+          animations:animations.map(clip=>resolvePlaybackClip(clip)),
+          includeCustomExtensions:false
+        });
+        if(!(binary instanceof ArrayBuffer))throw new Error('GLB exporter returned non-binary payload');
+        const gltf=await new GLTFLoader().parseAsync(binary,'');
+        const names=[],skins=[];
+        gltf.scene.traverse(object=>{
+          names.push(object.name);
+          if(object.isSkinnedMesh)skins.push({name:object.name,bones:object.skeleton.bones.length});
+        });
+        return {bytes:binary.byteLength,clips:gltf.animations.map(clip=>clip.name),
+          skins,partNames:selectedParts(),nodeNames:names,
+          fit:activeBodyFit};
+      }finally{
+        avatarRoot.rotation.y=previousRotation;
+        if(skeletonHelper)skeletonHelper.visible=wasHelper;
+        if(previousClip)playClip(previousClip);
+      }
+    },
     sample(label,view,fraction){
       const source=animations.find(clip=>clip.name===label||clipLabel(clip.name)===label);
       if(!source)throw new Error('Unknown Chibi animation: '+label);
