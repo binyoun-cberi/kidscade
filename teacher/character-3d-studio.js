@@ -67,6 +67,9 @@ for(const name of ['shirt','chemise','greenoutfit','ninjassuit','amorplastron','
 for(const name of ['skirt','pants','ninjasuitshort','armorlegs','armorskirt','kidscade_male_shorts'])PART_CATEGORY[name]='bottom';
 for(const name of ['shoe','bottes','bottesgreen','ninjassuitshoe','armorshoe'])PART_CATEGORY[name]='shoes';
 for(const name of ['bag','hat','ninjassuitmask','armorhelmet','greenoutfitbelt','greenoutfitneckless','ceinture'])PART_CATEGORY[name]='accessory';
+// Preserve legacy costume parts under 기타 without swelling the curated v5.2
+// 6-top/4-bottom lists. They remain available to old preset users.
+for(const name of ['chemise','greenoutfit','ninjassuit','amorplastron','pants','ninjasuitshort','armorlegs','armorskirt'])PART_CATEGORY[name]='costume';
 const MALE_FIT_PARTS=new Set([...MALE_HAIR_STYLES,'kidscade_male_tshirt','kidscade_male_shorts',...OUTFIT_STYLES.filter(style=>style.fit==='male').map(style=>style.id)]);
 const FEMALE_FIT_PARTS=new Set(OUTFIT_STYLES.filter(style=>style.fit==='female').map(style=>style.id));
 const SHARED_FIT_PARTS=new Set(['shoe','bottes','bottesgreen','ninjassuitshoe','armorshoe','bag','hat','armorhelmet','ninjassuitmask']);
