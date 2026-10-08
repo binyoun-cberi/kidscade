@@ -746,17 +746,17 @@ function updateCpu(dt){
   if(cpu.phaseTimer<=0){
     if(cpu.charging){
       cpu.charging=false;
-      cpu.phaseTimer=1.1+Math.random()*.9;
+      cpu.phaseTimer=1.5+Math.random()*.85;
       if(Math.random()<.35)cpu.orbitDir*=-1;
     }else{
       cpu.charging=true;
-      cpu.phaseTimer=Math.max(.62,1.05-elapsed*.003)+Math.random()*.22;
+      cpu.phaseTimer=Math.max(.7,1.04-elapsed*.002)+Math.random()*.2;
     }
   }
   cpu.chargeGlow+=((cpu.charging?1:0)-cpu.chargeGlow)*Math.min(1,dt*7);
 
   let desiredX=0,desiredZ=0;
-  const difficulty=Math.min(1,elapsed/80);
+  const difficulty=Math.min(1,elapsed/110);
   if(cpu.recoilTimer>0){
     const dx=cpu.x-top.x,dz=cpu.z-top.z,l=Math.hypot(dx,dz)||1;
     desiredX=dx/l*(.95+difficulty*.3);
@@ -765,7 +765,7 @@ function updateCpu(dt){
     const lead=.2+difficulty*.15;
     const tx=top.x+top.vx*lead,tz=top.z+top.vz*lead;
     const dx=tx-cpu.x,dz=tz-cpu.z,l=Math.hypot(dx,dz)||1;
-    const chargeSpeed=1.24+difficulty*.9;
+    const chargeSpeed=1.12+difficulty*.76;
     desiredX=dx/l*chargeSpeed;
     desiredZ=dz/l*chargeSpeed;
   }else{
@@ -774,7 +774,7 @@ function updateCpu(dt){
     const tx=Math.cos(a)*orbitRadius+top.x*.08;
     const tz=Math.sin(a)*orbitRadius+top.z*.08;
     const dx=tx-cpu.x,dz=tz-cpu.z,l=Math.hypot(dx,dz)||1;
-    const cruise=.86+difficulty*.36;
+    const cruise=.77+difficulty*.30;
     desiredX=dx/l*cruise;
     desiredZ=dz/l*cruise;
   }
@@ -809,36 +809,46 @@ function updateCpu(dt){
 function resolveTopCollision(){
   const dx=top.x-cpu.x,dz=top.z-cpu.z;
   let dist=Math.hypot(dx,dz);
-  const minDist=1.28;
+  const minDist=1.18;
   if(dist>=minDist)return;
   if(dist<.001)dist=.001;
   const nx=dx/dist,nz=dz/dist;
   const penetration=minDist-dist;
-  top.x+=nx*penetration*.68;top.z+=nz*penetration*.68;
-  cpu.x-=nx*penetration*.32;cpu.z-=nz*penetration*.32;
+  top.x+=nx*penetration*.52;top.z+=nz*penetration*.52;
+  cpu.x-=nx*penetration*.48;cpu.z-=nz*penetration*.48;
 
   if(cpu.collisionCooldown>0)return;
   const rel=(top.vx-cpu.vx)*nx+(top.vz-cpu.vz)*nz;
-  const difficulty=Math.min(1,elapsed/80);
-  const power=Math.min(1.8,.68+Math.max(0,-rel)*.28+(cpu.charging?.3:0)+difficulty*.2);
+  const difficulty=Math.min(1,elapsed/110);
+  const guarded=elapsed<top.guardUntil && top.guardLevel>.26;
+  const block=guarded?Math.min(.8,.32+top.guardLevel*.54):0;
+  const power=Math.min(1.55,.52+Math.max(0,-rel)*.20+(cpu.charging?.22:0)+difficulty*.17);
   const tangentX=-nz*cpu.orbitDir,tangentZ=nx*cpu.orbitDir;
 
-  top.vx+=nx*power*.68+tangentX*.1;
-  top.vz+=nz*power*.68+tangentZ*.1;
-  cpu.vx-=nx*power*.38;
-  cpu.vz-=nz*power*.38;
-  top.spin=Math.max(0,top.spin-(.18+power*.12));
-  top.balance=Math.max(0,top.balance-(.035+power*.024+difficulty*.02));
-  top.wobble=Math.min(.62,top.wobble+.025+power*.018);
+  // Precision guard turns one dangerous collision into a counter.
+  const impulse=power*.40*(1-block);
+  top.vx+=nx*impulse+tangentX*.05*(1-block);
+  top.vz+=nz*impulse+tangentZ*.05*(1-block);
+  cpu.vx-=nx*power*(guarded?.68:.42);
+  cpu.vz-=nz*power*(guarded?.68:.42);
+  top.spin=Math.max(0,top.spin-(.13+power*.1)*(1-block*.7));
+  top.balance=Math.max(0,top.balance-(.024+power*.021+difficulty*.014)*(1-block*.78));
+  top.wobble=Math.min(.62,top.wobble+(.018+power*.017)*(1-block));
+  if(guarded){
+    guardBlocks++;
+    score+=Math.round(130+top.guardLevel*100);
+    top.guardUntil=-1; // One blocked collision per precise swipe.
+    spawnCollisionFx((top.x+cpu.x)*.5,(top.z+cpu.z)*.5,power+.35);
+  }
 
   collisionCount++;
   lastCollisionAt=elapsed;
   score+=Math.round(55+power*46);
   shake=Math.min(1,shake+.38+power*.12);
-  cpu.collisionCooldown=.3;
+  cpu.collisionCooldown=.47;
   cpu.charging=false;
-  cpu.phaseTimer=1.05+Math.random()*.55;
-  cpu.recoilTimer=.72;
+  cpu.phaseTimer=1.45+Math.random()*.7;
+  cpu.recoilTimer=.95;
   spawnCollisionFx((top.x+cpu.x)*.5,(top.z+cpu.z)*.5,power);
   sfxCollision(power);
 }
@@ -871,13 +881,13 @@ function update(dt){
 
   const speed=Math.hypot(top.vx,top.vz);
   top.targetAngle+=top.targetSpeed*dt*(.72+Math.min(1,top.spin/18)*.5);
-  const decay=.64+speed*.08+top.wobble*.36+(1-top.balance)*.18;
+  const decay=.85+speed*.08+top.wobble*.4+(1-top.balance)*.19;
   top.spin=Math.max(0,top.spin-decay*dt);
   top.angle+=top.spin*dt;
   top.wobblePhase+=dt*(4.2+Math.max(0,12-top.spin)*.24);
   const targetWobble=.03+Math.max(0,13.5-top.spin)*.028+(1-top.balance)*.23;
   top.wobble+=(targetWobble-top.wobble)*Math.min(1,dt*2.8);
-  const recovery=(top.spin>10&&top.spin<28)?.025:.008;
+  const recovery=(top.spin>10&&top.spin<28)?.045:.014;
   top.balance=Math.min(1,top.balance+recovery*dt);
   const instability=Math.max(0,14-top.spin)/14;
   const balanceDanger=1-top.balance;
@@ -885,7 +895,7 @@ function update(dt){
   top.vx+=Math.sin(top.wobblePhase*1.08)*top.wobble*drift*dt;
   top.vz+=Math.cos(top.wobblePhase*.94)*top.wobble*drift*dt;
   top.x+=top.vx*dt;top.z+=top.vz*dt;
-  const friction=Math.pow(.986,dt*60);top.vx*=friction;top.vz*=friction;
+  const friction=Math.pow(.977,dt*60);top.vx*=friction;top.vz*=friction;
 
   updateCpu(dt);
   resolveTopCollision();
@@ -893,15 +903,31 @@ function update(dt){
   const r=Math.hypot(top.x,top.z);
   const edgeLimit=arena.currentEdge;
   if(r>edgeLimit+.06){
-    top.falling=true;
-    top.fallTime=0;
-    top.fallTilt=0;
-    top.vx*=1.16;
-    top.vz*=1.16;
-    shake=Math.min(1,shake+.7);
-    const q=worldToScreen(top.x,.35,top.z);
-    spawnSparks(q.x,q.y,12,top.x*45,top.z*45);
-    sfxWall();
+    // One recoverable scrape per cooldown; repeated hits still cause ring-outs.
+    const nx=top.x/r,nz=top.z/r;
+    const outward=top.vx*nx+top.vz*nz;
+    const recoverable=elapsed-top.lastEdgeSave>19 && top.spin>10 && top.balance>.31 && outward<1.65;
+    if(recoverable){
+      top.lastEdgeSave=elapsed;edgeRescues++;
+      top.x=nx*(edgeLimit-.11);top.z=nz*(edgeLimit-.11);
+      top.vx-=nx*(Math.max(0,outward)+.35);
+      top.vz-=nz*(Math.max(0,outward)+.35);
+      top.spin=Math.max(0,top.spin-2.2);
+      top.balance=Math.max(0,top.balance-.11);
+      shake=Math.min(1,shake+.45);
+      const q=worldToScreen(top.x,.35,top.z);
+      spawnSparks(q.x,q.y,15,-top.x*60,-top.z*60);sfxWall();
+    }else{
+      top.falling=true;
+      top.fallTime=0;
+      top.fallTilt=0;
+      top.vx*=1.16;
+      top.vz*=1.16;
+      shake=Math.min(1,shake+.7);
+      const q=worldToScreen(top.x,.35,top.z);
+      spawnSparks(q.x,q.y,12,top.x*45,top.z*45);
+      sfxWall();
+    }
   }
 
   if(top.spin<2.0||top.balance<.035)fallTimer+=dt;
