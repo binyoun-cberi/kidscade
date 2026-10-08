@@ -45,6 +45,7 @@ const TEST_FILES = [
   "tests/account-ui-observer.test.cjs",
   "tests/teacher-management.test.mjs",
   "tests/teacher-classroom-v73.test.mjs",
+  "tests/teacher-classroom-v74.test.mjs",
   "tests/character-3d-studio.test.mjs",
   "tests/economy.test.mjs",
   "tests/economy-v3.test.mjs",
