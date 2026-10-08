@@ -8,7 +8,7 @@ const ui={canvas:$('game'),intro:$('intro'),end:$('end'),endTitle:$('endTitle'),
   time:$('time'),toast:$('toast'),action:$('action'),actionText:$('actionText'),joy:$('joystick'),knob:$('knob'),
   map:$('minimap'),help:$('help'),flash:$('flash'),gaze:$('gaze'),gazeValue:$('gazeValue'),
   navArrow:$('navArrow'),navTitle:$('navTitle'),navRange:$('navRange'),
-  lesson:$('lesson'),lessonTitle:$('lessonTitle'),lessonText:$('lessonText'),reticle:$('reticle')};
+  lesson:$('lesson'),lessonTitle:$('lessonTitle'),lessonText:$('lessonText'),reticle:$('reticle'),gazeLabel:$('gazeLabel')};
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090f19);scene.fog=new THREE.FogExp2(0x090f19,.019);
 const renderer=new THREE.WebGLRenderer({canvas:ui.canvas,antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);
@@ -289,11 +289,20 @@ function setStage(next){
   stage=next;
   trickCircle.visible=stage===1&&fixes===3;
   maidenCircle.visible=stage===3;exitCircle.visible=stage===4;
-  maiden.root.visible=stage===2;
-  if(stage===2){maiden.x=12;maiden.z=-10;maiden.charge=0;ghostWaiting=3.4;
-    showToast('과학실에서 흰 형체가 발견됐어요. 시선을 돌리지 마세요!');sfx('amb_scary_music_box.mp3',.24);}
-  if(stage===3){maiden.root.visible=false;showToast('처녀귀신이 물러났어요. 과학실의 봉인진을 찾아가세요.');sfx('sfx_horror_sting_01.mp3',.20);}
-  if(stage===4)showToast('두 괴이를 봉인했어요. 관리실로 돌아가 사건을 보고하세요.');
+  maiden.root.visible=stage===2&&maidenPhase!=='approach';
+  if(stage===2){
+    maiden.x=12;maiden.z=-10;maiden.charge=0;ghostNav=null;maidenPhase='approach';ghostWaiting=0;
+    showLesson('다음 사건 · 과학실로 이동','안내선을 따라 과학실로 들어가세요. 첫 만남은 공격 없는 연습입니다.',14);
+    showToast('도깨비 봉인 성공! 이제 과학실로 이동하세요.');
+  }
+  if(stage===3){maiden.root.visible=false;
+    showLesson('퇴마 준비 완료','유령이 물러났어요. 바닥의 보라색 봉인진에 다가가서 봉인하세요.',11);
+    showToast('처녀귀신이 물러났어요. 과학실의 봉인진을 찾아가세요.');sfx('sfx_horror_sting_01.mp3',.20);}
+  if(stage===4){
+    showLesson('마지막 단계','노란 길을 따라 관리실로 돌아가 초록색 보고 지점에서 완료하세요.',12);
+    showToast('두 괴이를 봉인했어요. 관리실로 돌아가 사건을 보고하세요.');
+  }
+  updateNavigation(0,true);
   updateHud();
 }
 function nearAction(){
@@ -336,51 +345,125 @@ function updateHud(){
   const titles={1:'도깨비 조사 · 6-1 교실',2:'처녀귀신 관찰 · 과학실',3:'처녀귀신 봉인 · 과학실',4:'관리실로 귀환'};
   const details={
     1:fixes===3?'모든 장난을 해결했어요. 주황색 봉인진을 작동하세요.':'6-1 교실에서 비정상적인 물건을 찾아 제자리에 돌려놓으세요. ('+fixes+'/3)',
-    2:'카메라 중앙에 처녀귀신을 두고 계속 바라보세요. 가까이 오면 위험합니다.',
+    2:maidenPhase==='approach'?'과학실로 이동하세요. 처음 만났을 때는 공격하지 않습니다.':maidenPhase==='practice'?'안전한 연습: 처녀귀신을 화면 중앙에 놓고 2초 정도 바라보세요.':'실제 퇴마: 처녀귀신을 4초 이상 바라보세요. 화면 중앙의 초록색 표시를 확인하세요.',
     3:'과학실 안쪽 보라색 봉인진으로 이동해 봉인을 완료하세요.',
     4:'관리실의 초록색 보고 지점에서 퇴마 결과를 제출하세요.'
   };
   ui.mission.textContent=titles[stage]||stageNames[stage];
   ui.detail.textContent=details[stage]||'';
-  const done=stage===1?fixes/3*.5:stage===2?.50+maiden.charge/4.2*.2:stage===3?.75:.90;
+  const done=stage===1?fixes/3*.5:stage===2?.50+(maidenPhase==='hunt'?.08:0)+maiden.charge/(maidenPhase==='practice'?1.8:4.2)*.12:stage===3?.75:.90;
   ui.progress.style.width=(Math.min(1,done)*100)+'%';
   ui.health.textContent='♥'.repeat(hp)+'♡'.repeat(3-hp);
   ui.battery.textContent=Math.floor(power)+'%';ui.flash.textContent=flashOn?'손전등 켜짐 [F]':'손전등 꺼짐 [F]';
-  ui.gaze.classList.toggle('hidden',stage!==2);ui.gazeValue.style.width=(Math.max(0,maiden.charge)/4.2*100)+'%';
+  const isGhostEncounter=stage===2&&maidenPhase!=='approach';
+  ui.gaze.classList.toggle('hidden',!isGhostEncounter);
+  ui.reticle.classList.toggle('hidden',!isGhostEncounter);
+  ui.reticle.classList.toggle('active',isGhostEncounter);
+  ui.reticle.classList.toggle('locked',isGhostEncounter&&gazeLocked);
+  ui.gazeLabel.textContent=maidenPhase==='practice'?'연습 · 유령을 화면 가운데 바라보세요':gazeLocked?'관찰 성공 · 계속 바라보세요':'유령을 다시 화면 가운데 맞추세요';
+  ui.gazeValue.style.width=(Math.max(0,maiden.charge)/(maidenPhase==='practice'?1.8:4.2)*100)+'%';
   const action=nearAction();ui.action.disabled=!action;
   ui.actionText.textContent=action?action.text:'가까이에서 조사 [E]';
 }
-function updateGhost(dt){
-  if(stage!==2)return;
-  maiden.root.position.set(maiden.x,.12+Math.sin(elapsed*2.8)*.12,maiden.z);
-  if(ghostWaiting>0){ghostWaiting-=dt;return;}
+// The ghost is not visible through a solid classroom wall.
+function segmentHitsRect(ax,az,bx,bz,rect,margin=.012){
+  const dx=bx-ax,dz=bz-az;
+  let enter=0,exit=1;
+  for(const [a,v,lo,hi] of [[ax,dx,rect.x-rect.hx-margin,rect.x+rect.hx+margin],[az,dz,rect.z-rect.hz-margin,rect.z+rect.hz+margin]]){
+    if(Math.abs(v)<1e-8){if(a<lo||a>hi)return false;continue;}
+    let t0=(lo-a)/v,t1=(hi-a)/v;
+    if(t0>t1){const tmp=t0;t0=t1;t1=tmp;}
+    enter=Math.max(enter,t0);exit=Math.min(exit,t1);
+    if(enter>exit)return false;
+  }
+  return exit>.015&&enter<.985;
+}
+function clearGhostSight(ax,az,bx,bz){
+  return !walls.some(rect=>segmentHitsRect(ax,az,bx,bz,rect));
+}
+function gazingAtGhost(){
   const gx=maiden.x-player.x,gz=maiden.z-player.z,d=Math.hypot(gx,gz);
+  if(d<.01||d>=12)return false;
   forward.set(-Math.sin(viewYaw),0,-Math.cos(viewYaw));
-  const watched=d<12&&d>0.01&&(forward.x*gx+forward.z*gz)/d>.92;
-  maiden.root.rotation.y=Math.atan2(-gx,-gz);
-  if(watched){maiden.charge=Math.min(4.2,maiden.charge+dt);if(maiden.charge>=4.2){setStage(3);return;}}
-  else{
+  return (forward.x*gx+forward.z*gz)/d>.92&&clearGhostSight(player.x,player.z,maiden.x,maiden.z);
+}
+function advanceGhostToward(target,dt){
+  if(!ghostNav||ghostNav.points.length===0||
+     Math.hypot(ghostNav.toX-target.x,ghostNav.toZ-target.z)>1.5||
+     ghostNav.age>4.5){
+    ghostNav={points:routePlan(maiden,target,.65),toX:target.x,toZ:target.z,age:0};
+  }
+  ghostNav.age+=dt;
+  while(ghostNav.points.length>1&&dist(ghostNav.points[0],maiden)<.52)ghostNav.points.shift();
+  const waypoint=ghostNav.points[0]||target;
+  const dx=waypoint.x-maiden.x,dz=waypoint.z-maiden.z,d=Math.hypot(dx,dz);
+  if(d<=.08)return;
+  const speed=Math.min(d,maiden.speed*dt);
+  const x=maiden.x+dx/d*speed,z=maiden.z+dz/d*speed;
+  if(canWalk(x,z)){maiden.x=x;maiden.z=z;}
+  else ghostNav=null;
+}
+function beginMaidenPractice(){
+  maidenPhase='practice';maiden.root.visible=true;maiden.charge=0;ghostWaiting=0;
+  showLesson('첫 만남 · 안전한 연습','과학실 안의 흰 유령을 찾아 화면 중앙으로 바라보세요. 지금은 공격하지 않아요.',16);
+  showToast('처녀귀신의 움직임을 관찰하세요. 지금은 연습 시간입니다.');
+  sfx('amb_scary_music_box.mp3',.17);
+  updateNavigation(0,true);
+}
+function beginMaidenHunt(){
+  maidenPhase='hunt';maiden.charge=0;ghostWaiting=6;ghostNav=null;
+  showLesson('관찰 성공! 이제 실제 퇴마','잘했어요! 시선을 유지하면 유령이 멈춥니다. 이번에는 4초 이상 바라봐서 물러나게 하세요.',13);
+  showToast('연습 완료! 6초 뒤 처녀귀신이 움직입니다.');
+  sfx('sfx_horror_sting_01.mp3',.11);
+}
+function updateGhost(dt){
+  if(stage!==2){gazeLocked=false;return;}
+  if(maidenPhase==='approach'){
+    gazeLocked=false;
+    if(player.x>4.55&&player.z<-3.4)beginMaidenPractice();
+    else return;
+  }
+  maiden.root.position.set(maiden.x,.12+Math.sin(elapsed*2.8)*.12,maiden.z);
+  maiden.root.rotation.y=Math.atan2(player.x-maiden.x,player.z-maiden.z);
+  gazeLocked=gazingAtGhost();
+  if(maidenPhase==='practice'){
+    // No damage or chase while the pupil is discovering the sight rule.
+    maiden.charge=Math.max(0,Math.min(1.8,maiden.charge+dt*(gazeLocked?1:-.1)));
+    if(maiden.charge>=1.8)beginMaidenHunt();
+    return;
+  }
+  if(ghostWaiting>0){ghostWaiting=Math.max(0,ghostWaiting-dt);return;}
+  if(gazeLocked){
+    maiden.charge=Math.min(4.2,maiden.charge+dt);
+    if(maiden.charge>=4.2){setStage(3);return;}
+  }else{
     maiden.charge=Math.max(0,maiden.charge-dt*.11);
     let target={x:player.x,z:player.z};
-    const gEast=maiden.z< -3.15&&maiden.x>4.05,pEast=player.z< -3.15&&player.x>4.05;
-    const gWest=maiden.z< -3.15&&maiden.x< -4.05,pWest=player.z< -3.15&&player.x< -4.05;
-    const gOffice=maiden.z>4.55&&Math.abs(maiden.x)<5,pOffice=player.z>4.55&&Math.abs(player.x)<5;
-    if(gEast&&!pEast)target={x:10.25,z:.45};
-    else if(gWest&&!pWest)target={x:-10.25,z:.45};
-    else if(gOffice&&!pOffice)target={x:0,z:2.65};
-    else if(!gEast&&!gWest&&!gOffice&&pEast)target=Math.abs(maiden.x-10.25)>1.1||maiden.z>1.2?{x:10.25,z:.45}:{x:10.25,z:-4.45};
-    else if(!gEast&&!gWest&&!gOffice&&pWest)target=Math.abs(maiden.x+10.25)>1.1||maiden.z>1.2?{x:-10.25,z:.45}:{x:-10.25,z:-4.45};
-    else if(!gEast&&!gWest&&!gOffice&&pOffice)target=Math.abs(maiden.x)>1.1?{x:0,z:2.65}:{x:0,z:6.25};
-    const dx=target.x-maiden.x,dz=target.z-maiden.z,len=Math.hypot(dx,dz);
-    if(len>.12){const step=Math.min(len,maiden.speed*dt);maiden.x+=dx/len*step;maiden.z+=dz/len*step;}
+    const inEast=maiden.z<-3.15&&maiden.x>4.05;
+    const inWest=maiden.z<-3.15&&maiden.x<-4.05;
+    const inOffice=maiden.z>4.55&&Math.abs(maiden.x)<5;
+    const playerEast=player.z<-3.15&&player.x>4.05;
+    const playerWest=player.z<-3.15&&player.x<-4.05;
+    const playerOffice=player.z>4.55&&Math.abs(player.x)<5;
+    if(inEast&&!playerEast)target={x:10.25,z:.5};
+    else if(inWest&&!playerWest)target={x:-10.25,z:.5};
+    else if(inOffice&&!playerOffice)target={x:0,z:2.65};
+    else if(!inEast&&!inWest&&!inOffice&&playerEast)target={x:10.25,z:-4.5};
+    else if(!inEast&&!inWest&&!inOffice&&playerWest)target={x:-10.25,z:-4.5};
+    else if(!inEast&&!inWest&&!inOffice&&playerOffice)target={x:0,z:6.1};
+    advanceGhostToward(target,dt);
   }
-  const actual=Math.hypot(maiden.x-player.x,maiden.z-player.z);
-  if(actual<1.18&&invulnerable<=0){
+  const distance=Math.hypot(maiden.x-player.x,maiden.z-player.z);
+  if(distance<1.18&&invulnerable<=0&&clearGhostSight(maiden.x,maiden.z,player.x,player.z)){
     hp--;maiden.attacks++;invulnerable=2.5;player.x=0;player.z=9;
-    maiden.x=12;maiden.z=-10;ghostWaiting=4;maiden.charge=Math.max(0,maiden.charge-1.25);
+    maiden.x=12;maiden.z=-10;ghostNav=null;ghostWaiting=10;
+    maiden.charge=0;
     sfx('sfx_scream_01.mp3',.25);
+    lastMistake='처녀귀신을 똑바로 바라봐야 움직임이 멈춰요. 과학실에 들어가면 먼저 카메라를 돌려 귀신을 찾으세요.';
     if(hp<=0){finish(false);return;}
-    showToast('처녀귀신에게 붙잡혔어요! 관리실에서 다시 시작합니다.');
+    showLesson('다시 도전할 기회가 있어요',lastMistake,13);
+    showToast('붙잡혔지만 관리실에서 다시 시작합니다. 생명 '+hp+'개 남았어요.');
+    updateNavigation(0,true);
   }
 }
 function updatePlayer(dt){
