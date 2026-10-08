@@ -135,8 +135,8 @@ test('first encounter remains harmless until the player learns the stare mechani
   assert.ok(start>=0&&end>start);
   const simulation=new Function('aim',`
     const walls=[],furniture=[];
-    const player={x:-10.3,z:-6};
-    const maiden={x:12,z:-10,speed:1.2,charge:0,attacks:0,root:{visible:false,position:{set(){}},rotation:{y:0}}};
+    const player={x:-10.5,z:-14.8};
+    const maiden={x:25.5,z:-16.8,speed:1.2,charge:0,attacks:0,root:{visible:false,position:{set(){}},rotation:{y:0}}};
     const forward={x:0,z:0,set(x,y,z){this.x=x;this.z=z}};
     let stage=2,hp=3,elapsed=0,invulnerable=0,ghostWaiting=0,ghostNav=null,gazeLocked=false,maidenPhase='approach',viewYaw=0;
     const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
@@ -150,8 +150,8 @@ test('first encounter remains harmless until the player learns the stare mechani
     }
     tick(80);
     const safeBeforeEncounter=maidenPhase==='approach'&&hp===3&&maiden.root.visible===false;
-    player.x=10.25;player.z=-4.5;
-    viewYaw=aim?-Math.atan2(1.75,5.5):Math.PI;
+    player.x=25.5;player.z=-13.8;
+    viewYaw=aim?0:Math.PI;
     tick(2.1);
     const protectedPractice=aim?maidenPhase==='hunt'&&hp===3:maidenPhase==='practice'&&hp===3;
     tick(15);
@@ -210,4 +210,87 @@ test('player body faces the actual movement direction on W A S D and turned came
     assert.ok(Math.abs(faceZ-moveZ)<.001,'body faces walk Z '+keysInput+' yaw '+yaw);
   }
   assert.match(js,/player\.yaw=Math\.PI\/2;player\.root\.rotation\.y=player\.yaw/,'retry direction resets too');
+});
+
+
+test('ㄷ-shaped campus keeps west guard office connected to all fifteen rooms',()=>{
+  assert.match(js,/const SCHOOL=\{/);
+  assert.match(js,/NORTH_ROOMS=\[/);
+  assert.match(js,/SOUTH_ROOMS=\[/);
+  assert.match(js,/SPINE_ROOMS=\[/);
+  const layout=js.match(/const SCHOOL=(\{[\s\S]*?\});/);
+  assert.ok(layout,'school coordinates');
+  const school=new Function(layout[0]+'return SCHOOL;')();
+  const walls=[],furniture=[],labels=[];
+  const scene={add(){}},THREE={
+    MeshStandardMaterial:class{},MeshBasicMaterial:class{},DoubleSide:1,
+    Mesh:class{constructor(){this.position={set(){}}}},IcosahedronGeometry:class{},Color:class{}
+  };
+  const cube=()=>({material:{emissive:{}},userData:{}});
+  const wall=(x,z,w,d)=>walls.push({x,z,hx:w/2,hz:d/2});
+  const ground=()=>{};
+  const addLabel=(...args)=>labels.push(args);
+  const createMark=()=>({scale:{setScalar(){}},userData:{}});
+  const placeFurniture=(file,x,z,height,rot,box)=>{
+    if(box)furniture.push({x,z,hx:box[0]/2,hz:box[1]/2});
+    return {position:{y:0}};
+  };
+  const mat=()=>({});
+  const materials={wall:{},skirt:{}};
+  const north=['6-1 교실','6-2 교실','음악실','미술실','과학실'];
+  const south=['5-1 교실','5-2 교실','컴퓨터실','방송실','가사실'];
+  const spine=['자료실','보건실','관리실','전기실','교무실'];
+  const layoutFunctions=js.slice(js.indexOf('function windowWall('),js.indexOf('createRoom();'));
+  const create=new Function('SCHOOL','walls','scene','THREE','cube','wall','ground','addLabel','createMark',
+     'placeFurniture','mat','materials','NORTH_ROOMS','SOUTH_ROOMS','SPINE_ROOMS',
+     layoutFunctions+'return createRoom;')(
+     school,walls,scene,THREE,cube,wall,ground,addLabel,createMark,
+     placeFurniture,mat,materials,north,south,spine);
+  create();
+  assert.equal(north.length+south.length+spine.length,15);
+  assert.deepEqual(labels.map(l=>l[0]).sort(),[...north,...south,...spine].sort());
+  const physics=js.slice(js.indexOf('function collides('),js.indexOf('function navigationTarget()'));
+  const navigation=new Function('walls','furniture',physics+'return {canWalk,routePlan};')(walls,furniture);
+  assert.equal(navigation.canWalk(school.guard.x,school.guard.z),true,'guard starts in the office');
+  assert.equal(navigation.canWalk(8,0),false,'the central courtyard must not be walkable');
+  for(const target of [
+    ...school.roomCenters.map(x=>({x,z:-13.2})),
+    ...school.roomCenters.map(x=>({x,z:13.2})),
+    ...[-16,-8,0,8,16].map(z=>({x:-24.2,z})),
+    {x:-12.7,z:-12.85},{x:-8.3,z:-14.2},{x:-11.3,z:-18.1},
+    {x:school.science.x,z:-13.1}
+  ]){
+    const path=navigation.routePlan(school.guard,target,1.05);
+    assert.ok(path.length>0,'guard can reach '+JSON.stringify(target));
+    assert.ok(path.every(p=>navigation.canWalk(p.x,p.z)),'path never crosses a wall or furniture');
+    assert.ok(Math.hypot(path.at(-1).x-target.x,path.at(-1).z-target.z)<1.05,'close enough to target');
+  }
+});
+
+test('the navigation trail is visible only until the first tutorial anomaly is fixed',()=>{
+  const start=js.indexOf('function updateNavigation(dt,force=false){');
+  const end=js.indexOf('function showLesson(',start);
+  assert.ok(start>=0&&end>start);
+  const ui={navigation:{classList:{hidden:false,toggle(name,hidden){this.hidden=hidden}}},
+    navArrow:{style:{}},navTitle:{textContent:''},navRange:{textContent:''}};
+  const player={x:0,z:0};
+  const guide={mesh:null,points:[],key:'',clock:0,fromX:0,fromZ:0,goalX:0,goalZ:0};
+  const fakeTarget={key:'fix0',name:'first object',x:5,z:0};
+  let fixes=0,stage=1,started=true,viewYaw=0;
+  const state=new Function('ui','player','guidance','navigationTarget','routePlan','setGuidePath','viewYaw',
+    'startedRef',js.slice(start,end)+'return updateNavigation;');
+  const run=new Function('ui','player','guidance','navigationTarget','routePlan','viewYaw',
+    'let fixes=0,stage=1,started=true;'+
+    'const setGuidePath=(points)=>{guidance.points=points;guidance.mesh=points.length?{}:null;};'+
+    js.slice(start,end)+
+    'updateNavigation(0,true);const first={hidden:ui.navigation.classList.hidden,trail:guidance.points.length};'+
+    'fixes=1;updateNavigation(0,true);const second={hidden:ui.navigation.classList.hidden,trail:guidance.points.length};'+
+    'stage=4;updateNavigation(0,true);return {first,second,lastHidden:ui.navigation.classList.hidden};'
+  );
+  const result=run(ui,player,guide,()=>fakeTarget,()=>[{x:0,z:0},{x:5,z:0}],0);
+  assert.equal(result.first.hidden,false);
+  assert.equal(result.first.trail,2);
+  assert.equal(result.second.hidden,true);
+  assert.equal(result.second.trail,0);
+  assert.equal(result.lastHidden,true);
 });
