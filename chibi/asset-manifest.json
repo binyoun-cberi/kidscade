@@ -151,8 +151,8 @@
       "type": "body",
       "generatedFrom": "character_low",
       "rigging": "source character_low topology + 78-bone skin weights",
-      "shaping": "upper torso widened smoothly (+14.5% at torso core), thighs slimmed 11.5% and calves 8.5% about each leg axis; native rig and skin weights preserved",
-      "revision": "balanced-boy-proportions-v4"
+      "shaping": "upper torso widened smoothly (+14.5% at torso core), thighs slimmed 11.5% and calves 8.5% about each leg axis; native rig and skin weights preserved; tapered pelvis width by up to 8.5% and rear glute volume by 10.5% in waist-to-upper-thigh band",
+      "revision": "balanced-boy-pelvis-v5"
     },
     "kidscade_male_eyes": {
       "label": "남자 기본 눈",
@@ -177,8 +177,8 @@
       "generatedFrom": "ninjasuitshort",
       "rigging": "source ninjasuitshort topology + skin weights",
       "color": "#29446f",
-      "shaping": "original ninjasuitshort mesh with 7.2% smooth leg opening trim about each leg center, hip/waist retained",
-      "revision": "slim-leg-openings-v4"
+      "shaping": "original ninjasuitshort mesh with 7.2% smooth leg opening trim about each leg center, hip/waist retained; pelvic fabric narrowed 6.5% and rear volume reduced 8% to follow the body without narrowing leg openings",
+      "revision": "slim-pelvis-shorts-v5"
     },
     "kidscade_male_set_policy": {
       "label": "남자 기본 세트 메시 정책",
@@ -186,23 +186,31 @@
       "rule": "reuse existing Chibi mesh topology and source skin weights; no procedural hair, sleeves, or compressed long-pants shortcuts",
       "defaultHair": "kidscade_male_hair_short",
       "faceRule": "The body already paints eye whites and eyelid lines. Use unmodified source eyes alignment and only the 24 original eyebrow triangles; never draw a second set of lashes.",
-      "walkStyle": "balanced-locomotion-v2",
+      "walkStyle": "grounded-boy-locomotion-v3",
       "walkAnimation": {
         "source": "anim_walk",
         "specialHandling": "only when kidscade_male_body visible",
-        "pelvisLateralScale": 0.43,
+        "pelvisLateralScale": 0.3,
         "pelvisRollScale": 0.38,
         "lowerSpineRollScale": 0.55,
-        "preserved": "all 11 source animations and clip names; stride, knees, ankle/foot-contact tracks unchanged; upper-arm pitch/roll retuned relative to the original bind pose",
-        "exportBehavior": "derived WALK and RUN replace their source counterparts in export when the male body is visible; all public names and the 11-clip count remain unchanged"
+        "preserved": "source clip names, all original feet/ankle tracks and gait timing; relative upper-arm, thigh and shin motions tuned only when male body is visible",
+        "exportBehavior": "derived WALK and RUN replace their source counterparts in export when the male body is visible; all public names and the 11-clip count remain unchanged",
+        "pelvisVerticalScale": 0.72,
+        "thighAbductionRollScale": 0.62,
+        "thighPitchScale": 0.92,
+        "shinPitchScale": 0.96
       },
       "runAnimation": {
         "source": "anim_run",
         "specialHandling": "only when kidscade_male_body visible",
-        "pelvisLateralScale": 0.60,
+        "pelvisLateralScale": 0.38,
         "pelvisRollScale": 0.55,
-        "preserved": "original stride, knee and foot-contact timing",
-        "upperArms": "bind-pose-relative swing tuning"
+        "preserved": "source clip name, original ankle/foot tracks and running cadence; less hip bounce, lateral skipping, thigh splay",
+        "upperArms": "bind-pose-relative swing tuning",
+        "pelvisVerticalScale": 0.66,
+        "thighAbductionRollScale": 0.64,
+        "thighPitchScale": 0.9,
+        "shinPitchScale": 0.94
       }
     },
     "kidscade_male_hair_short": {
@@ -210,8 +218,8 @@
       "type": "hair",
       "generatedFrom": "hairone",
       "rigging": "source hairone topology, UVs, materials and skin weights",
-      "shaping": "lower source-bob silhouette compressed with smoothstep taper to avoid cutoff creases; eye-level frontal/temple triangles culled below source eyes upper bound +0.02, rear hair kept",
-      "revision": "v5-smooth-short-hair",
+      "shaping": "retain original top/fringe; selectively shorten lower bob sections and pull ear-side temple panels toward the scalp using smooth height and side taper, while retaining eye clearance",
+      "revision": "v6-temple-ear-shortcut",
       "geometryPolicy": "source rig/UV/weights retained, filtered index faces only"
     },
     "kidscade_male_brows": {

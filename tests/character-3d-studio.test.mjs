@@ -311,7 +311,7 @@ test('male short hair reuses hairone topology, materials and original skin weigh
   assert.match(maleHair,/geometry\.computeBoundingBox\(\)/);
   assert.match(maleHair,/positions\.setXYZ\(i,x,y,z\)/);
   assert.match(maleHair,/const taper=lower\*lower\*\(3-2\*lower\)/);
-  assert.match(maleHair,/const y=oy\+\(cutoff-oy\)\*\.58\*taper/);
+  assert.match(maleHair,/const y=oy\+\(cutoff-oy\)\*\.58\*taper\+size\.y\*\.045\*temple/);
   assert.match(maleHair,/const eyeClearanceY=eyes\.geometry\.boundingBox\.max\.y\+\.02/);
   assert.match(maleHair,/const backOfFaceZ=centerZ-\.045/);
   assert.match(maleHair,/if\(lowest>=eyeClearanceY \|\| foremost<=backOfFaceZ\)/);
@@ -357,7 +357,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261008-balanced-male2/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-grounded-boy3/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
@@ -404,15 +404,15 @@ test('male Chibi proportional rework widens upper torso and slims individual leg
   assert.match(male,/x\*=1\.135\+\.065\*shoulder\*sleeve/);
   assert.doesNotMatch(male,/new THREE\.(?:CylinderGeometry|SphereGeometry|BoxGeometry)/);
   const manifest=JSON.parse(read('chibi/asset-manifest.json'));
-  assert.equal(manifest.customParts.kidscade_male_body.revision,'balanced-boy-proportions-v4');
-  assert.equal(manifest.customParts.kidscade_male_shorts.revision,'slim-leg-openings-v4');
+  assert.equal(manifest.customParts.kidscade_male_body.revision,'balanced-boy-pelvis-v5');
+  assert.equal(manifest.customParts.kidscade_male_shorts.revision,'slim-pelvis-shorts-v5');
 });
 
 
 test('male WALK and RUN use bind-pose-relative movement rather than bending resting bones',()=>{
   const js=read('teacher/character-3d-studio.js');
-  assert.match(js,/const MALE_WALK_POSITION_X=\.43/);
-  assert.match(js,/const MALE_RUN_POSITION_X=\.60/);
+  assert.match(js,/const MALE_WALK_POSITION_X=\.30/);
+  assert.match(js,/const MALE_RUN_POSITION_X=\.38/);
   assert.match(js,/const MALE_WALK_SPINE_FACTORS=/);
   assert.match(js,/const MALE_RUN_SPINE_FACTORS=/);
   assert.match(js,/function sourceBone\(name\)/);
@@ -431,8 +431,8 @@ test('male WALK and RUN use bind-pose-relative movement rather than bending rest
 
   const manifest=JSON.parse(read('chibi/asset-manifest.json'));
   assert.equal(manifest.animations.length,11);
-  assert.equal(manifest.customParts.kidscade_male_set_policy.walkStyle,'balanced-locomotion-v2');
-  assert.equal(manifest.customParts.kidscade_male_set_policy.runAnimation.pelvisLateralScale,.60);
+  assert.equal(manifest.customParts.kidscade_male_set_policy.walkStyle,'grounded-boy-locomotion-v3');
+  assert.equal(manifest.customParts.kidscade_male_set_policy.runAnimation.pelvisLateralScale,.38);
 });
 
 test('male base opens first and provides brows visibility, face zoom and gait status',()=>{
@@ -447,7 +447,7 @@ test('male base opens first and provides brows visibility, face zoom and gait st
   assert.match(html,/id="gaitBadge"/);
   assert.match(html,/data-view="face"/);
   assert.match(html,/data-chibi-preset="male">남자 기본/);
-  assert.match(html,/character-3d-studio\.js\?v=20261008-balanced-male2/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-grounded-boy3/);
 });
 
 test('mobile studio shows the live avatar preview before the long wardrobe',()=>{
@@ -456,4 +456,50 @@ test('mobile studio shows the live avatar preview before the long wardrobe',()=>
   assert.match(html,/\.view\{height:min\(64svh,540px\);min-height:340px\}/);
   assert.match(html,/\.left-rail\{overflow:visible!important\}/);
   assert.match(html,/\.view-grid\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)\}/);
+});
+
+test('male pelvis and shorts reduce rear volume together without modifying the original female base',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const body=js.slice(js.indexOf('function createKidscadeMaleSet(){'),js.indexOf('function makeUnlitMaterial(source){'));
+  assert.match(body,/const bodyGeometry=bodySource\.geometry\.clone\(\)/);
+  assert.match(body,/const pelvis=smooth\(\.43,\.55,y\)\*\(1-smooth\(\.74,\.91,y\)\)/);
+  assert.match(body,/x\*=1-\.085\*pelvis/);
+  assert.match(body,/if\(z<0\)z\*=1-\.105\*pelvis/);
+  assert.match(body,/x\*=1-\.065\*pelvis/);
+  assert.match(body,/if\(z<0\)z\*=1-\.080\*pelvis/);
+  const manifest=JSON.parse(read('chibi/asset-manifest.json'));
+  assert.equal(manifest.customParts.kidscade_male_body.revision,'balanced-boy-pelvis-v5');
+  assert.equal(manifest.customParts.kidscade_male_shorts.revision,'slim-pelvis-shorts-v5');
+});
+
+test('male ear-side bob flap is drawn toward the head with a continuous weighted taper',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const hair=js.slice(js.indexOf('function createKidscadeMaleHairShort(){'),js.indexOf('function createKidscadeMaleSet(){'));
+  assert.match(hair,/const temple=smooth\(\.43,\.83,side\)\*smooth\(\.08,\.60,lower\)/);
+  assert.match(hair,/const x=centerX\+\(ox-centerX\)\*\(1-\.18\*taper-\.16\*temple\)/);
+  assert.match(hair,/const z=centerZ\+\(oz-centerZ\)\*\(1-\.10\*taper-\.16\*temple\)/);
+  assert.match(hair,/sideHairPolicy:/);
+  assert.match(hair,/geometry\.setIndex\(kept\)/);
+  assert.doesNotMatch(hair,/new THREE\.(?:SphereGeometry|ConeGeometry|CylinderGeometry)/);
+  const manifest=JSON.parse(read('chibi/asset-manifest.json'));
+  assert.equal(manifest.customParts.kidscade_male_hair_short.revision,'v6-temple-ear-shortcut');
+});
+
+test('grounded male gait damps vertical hip hop and splayed thigh swing in WALK and RUN',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const gait=js.slice(js.indexOf('function buildMaleLocomotionClip('),js.indexOf('function resolvePlaybackClip('));
+  assert.match(gait,/values\[i\+1\]=centerY\+\(values\[i\+1\]-centerY\)\*settings\.verticalScale/);
+  assert.match(gait,/const thigh=\/\(\?:thigh\|upper\[_-\]\?leg\)\/i\.test\(bone\)/);
+  assert.match(gait,/const shin=\/\(\?:shin\|calf\|lower\[_-\]\?leg\)\/i\.test\(bone\)/);
+  assert.match(gait,/euler\.z\*=settings\.thighRoll/);
+  assert.match(gait,/euler\.x\*=settings\.shinPitch/);
+  assert.match(gait,/verticalScale:\.72/);
+  assert.match(gait,/verticalScale:\.66/);
+  assert.match(gait,/thighRoll:\.62/);
+  assert.match(gait,/thighRoll:\.64/);
+  assert.match(js,/walkStyle:isMaleBodyVisible\(\)\?'grounded-boy-locomotion-v3':'source'/);
+  assert.match(js,/if\(!isMaleBodyVisible\(\)\)return sourceClip/);
+  const manifest=JSON.parse(read('chibi/asset-manifest.json'));
+  assert.equal(manifest.animations.length,11);
+  assert.equal(manifest.customParts.kidscade_male_set_policy.runAnimation.pelvisVerticalScale,.66);
 });
