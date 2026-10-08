@@ -208,12 +208,39 @@ function showLesson(title,text,seconds=9){
   ui.lessonTitle.textContent=title;ui.lessonText.textContent=text;
   ui.lesson.classList.remove('hidden');lessonTimer=seconds;
 }
+// Relative horizontal dimensions were measured from the shared Kenney GLB
+// POSITION accessors. Use them immediately (before async load completes) so
+// characters cannot walk inside apparently solid school furniture.
+const KIT_SIZE_RATIOS={
+  'desk.glb':[1.91,1.45],
+  'table.glb':[2.57,1.37],
+  'bookcase-open.glb':[.455,.284],
+  'chair-desk.glb':[1.15,1.06],
+  'bench.glb':[.85,.43],
+};
 function placeFurniture(file,x,z,height,rot=0,boxSize=null){
-  if(boxSize)furniture.push({x,z,hx:boxSize[0]/2,hz:boxSize[1]/2});
+  const ratio=KIT_SIZE_RATIOS[file];
+  const renderW=ratio?ratio[0]*height:boxSize?.[0]||.5;
+  const renderD=ratio?ratio[1]*height:boxSize?.[1]||.5;
+  const c=Math.abs(Math.cos(rot)),sn=Math.abs(Math.sin(rot));
+  const visualWorldW=c*renderW+sn*renderD,visualWorldD=sn*renderW+c*renderD;
+  const hasCollision=!!boxSize||file==='chair-desk.glb';
+  const obstacle=hasCollision?{
+    x,z,hx:Math.max(boxSize?.[0]||0,visualWorldW)/2,
+    hz:Math.max(boxSize?.[1]||0,visualWorldD)/2
+  }:null;
+  if(obstacle)furniture.push(obstacle);
   const host=new THREE.Group();host.position.set(x,0,z);host.rotation.y=rot;scene.add(host);
-  cube(host,0,.35,0,boxSize?boxSize[0]*.85:.5,.68,boxSize?boxSize[1]*.85:.5,materials.desk);
+  cube(host,0,.35,0,renderW*.86,.68,renderD*.86,materials.desk);
   loadTemplate(FURN+file).then(g=>{
     host.clear();const mesh=g.clone(true);normalize(mesh,height);host.add(mesh);
+    if(obstacle){
+      // Refine to actual transformed mesh bounds, including child nodes.
+      host.updateMatrixWorld(true);
+      const bounds=new THREE.Box3().setFromObject(host);
+      obstacle.hx=Math.max(obstacle.hx,(bounds.max.x-bounds.min.x)/2);
+      obstacle.hz=Math.max(obstacle.hz,(bounds.max.z-bounds.min.z)/2);
+    }
   }).catch(()=>{});return host;
 }
 function normalize(root,height){
