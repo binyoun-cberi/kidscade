@@ -282,7 +282,7 @@ let chrome,ws;
   console.log('WORD_SIEGE_VOCABULARY_ABILITIES '+JSON.stringify(vocabulary));
 
   assert.equal(pageErrors.length,0,'Browser JavaScript errors: '+JSON.stringify(pageErrors));
-  console.log('WORD_SIEGE_BROWSER_AUDIT_PASSED 4 sizes, 10 stage selectors, 2 advanced stage renders and pointer gameplay');
+  console.log('WORD_SIEGE_BROWSER_AUDIT_PASSED 4 sizes, 20 stage selectors, 4 advanced stage renders and pointer gameplay');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1}).finally(async()=>{
   try{ws?.close()}catch{}
   try{chrome?.kill()}catch{}
