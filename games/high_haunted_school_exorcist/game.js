@@ -1017,15 +1017,29 @@ function cameraWallHit(x,z,r=.17){
   return walls.some(w=>collides(x,z,w,r));
 }
 function cameraFollowTarget(eye,desired){
-  const steps=40;
-  for(let i=1;i<=steps;i++){
-    const t=i/steps,p=eye.clone().lerp(desired,t);
-    if(cameraWallHit(p.x,p.z)){
-      // Stop before the blocking wall; don't move beyond it above wall height.
-      return eye.clone().lerp(desired,Math.max(0,(i-2)/steps));
+  // Exact 2D ray-vs-rectangle entry rather than point samples: thin door corners
+  // must not flash in front of the camera between sample locations.
+  const dx=desired.x-eye.x,dz=desired.z-eye.z,length=Math.hypot(dx,dz);
+  if(length<.001)return desired;
+  let closest=1;
+  for(const rect of walls){
+    let enter=0,exit=1,hit=true;
+    for(const [start,dir,lo,hi] of [
+      [eye.x,dx,rect.x-rect.hx-.17,rect.x+rect.hx+.17],
+      [eye.z,dz,rect.z-rect.hz-.17,rect.z+rect.hz+.17]
+    ]){
+      if(Math.abs(dir)<1e-8){
+        if(start<lo||start>hi){hit=false;break;}
+      }else{
+        let near=(lo-start)/dir,far=(hi-start)/dir;
+        if(near>far){const tmp=near;near=far;far=tmp;}
+        enter=Math.max(enter,near);exit=Math.min(exit,far);
+        if(enter>exit){hit=false;break;}
+      }
     }
+    if(hit&&exit>=0&&enter<=1)closest=Math.min(closest,Math.max(0,enter));
   }
-  return desired;
+  return eye.clone().lerp(desired,Math.max(0,closest-.08/length));
 }
 function updateCamera(dt){
   const fx=-Math.sin(viewYaw),fz=-Math.cos(viewYaw);
