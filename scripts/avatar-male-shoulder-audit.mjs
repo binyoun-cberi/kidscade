@@ -56,4 +56,29 @@ const sheet=await sharp({create:{width:780,height:690,channels:4,background:'#1b
 console.log('AUDIT_IMAGE_START');
 const b64=sheet.toString('base64');for(let i=0;i<b64.length;i+=12000)console.log(b64.slice(i,i+12000));
 console.log('AUDIT_IMAGE_END');
+// Re-enable the revised tee (outfit comparison finishes on archer outfit).
+await page.evaluate(()=>window.__showOutfit('kidscade_male_tshirt'));
+const motions=[];
+for(const [clip,label] of [
+ ['anim_iddle','IDLE'],['anim_walk','WALK'],['anim_run','RUN'],
+ ['anim_jump','JUMP'],['anim_crouch','CROUCH'],['anim_flip','FLIP']
+]){
+ await page.click('[data-view="threeQuarter"]');
+ await page.click('[data-clip="'+clip+'"]');
+ await page.waitForTimeout(380);
+ const png=await page.locator('#view').screenshot({type:'png'});
+ const meta=await sharp(png).metadata();
+ const crop=await sharp(png).extract({left:Math.round(meta.width*.2),top:Math.round(meta.height*.14),width:Math.round(meta.width*.62),height:Math.round(meta.height*.73)})
+    .resize(245,290,{fit:'cover'}).webp({quality:45}).toBuffer();
+ const i=motions.length/2;
+ motions.push({input:crop,left:(i%3)*245,top:Math.floor(i/3)*315+25});
+ const svg=Buffer.from('<svg width="245" height="25" xmlns="http://www.w3.org/2000/svg"><rect width="245" height="25" fill="#fff"/><text x="8" y="18" font-size="15">'+label+'</text></svg>');
+ motions.push({input:svg,left:(i%3)*245,top:Math.floor(i/3)*315});
+}
+const motion=await sharp({create:{width:735,height:630,channels:4,background:'#1b2732'}}).composite(motions).webp({quality:48}).toBuffer();
+const mb64=motion.toString('base64');
+console.log('MOTION_IMAGE_START');
+for(let i=0;i<mb64.length;i+=12000)console.log(mb64.slice(i,i+12000));
+console.log('MOTION_IMAGE_END');
+
 await browser.close();
