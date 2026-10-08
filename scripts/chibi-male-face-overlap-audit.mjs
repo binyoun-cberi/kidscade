@@ -59,11 +59,7 @@ const cases=[
  ['MALE DEFAULT',['kidscade_male_eyes','kidscade_male_brows','kidscade_male_hair_short']],
  ['NO BROWS',['kidscade_male_eyes','kidscade_male_hair_short']],
  ['BROWS ONLY',['kidscade_male_brows','kidscade_male_hair_short']],
- ['ORIGINAL EYES',['eyes','kidscade_male_hair_short']],
- ['ORIGINAL LASHES',['eyelashes','kidscade_male_hair_short']],
- ['EYES + LASHES',['eyes','eyelashes','kidscade_male_hair_short']],
- ['MALE + ORIG LASH',['kidscade_male_eyes','eyelashes','kidscade_male_hair_short']],
- ['MALE NO HAIR',['kidscade_male_eyes','kidscade_male_brows']]
+ ['BODY ONLY',['kidscade_male_hair_short']]
 ];
 const composites=[];
 for(let i=0;i<cases.length;i++){
@@ -71,15 +67,15 @@ for(let i=0;i<cases.length;i++){
  await page.waitForTimeout(350);
  const png=await page.locator('#view').screenshot({type:'png'});
  const m=await sharp(png).metadata();
- const crop=await sharp(png).extract({left:Math.round(m.width*.27),top:Math.round(m.height*.13),width:Math.round(m.width*.46),height:Math.round(m.height*.48)})
- .resize(310,310,{fit:'contain'}).webp({quality:58}).toBuffer();
- const x=(i%4)*310,y=Math.floor(i/4)*337;
- composites.push({input:crop,left:x,top:y+27});
- const svg=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="310" height="27"><rect fill="#fff" width="310" height="27"/><text font-family="Arial" font-size="17" x="7" y="20">'+label+'</text></svg>');
+ const crop=await sharp(png).extract({left:Math.round(m.width*.25),top:Math.round(m.height*.12),width:Math.round(m.width*.5),height:Math.round(m.height*.43)})
+ .resize(470,450,{fit:'contain'}).webp({quality:58}).toBuffer();
+ const x=(i%2)*470,y=Math.floor(i/2)*480;
+ composites.push({input:crop,left:x,top:y+30});
+ const svg=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="470" height="30"><rect fill="#fff" width="470" height="30"/><text font-family="Arial" font-size="17" x="7" y="20">'+label+'</text></svg>');
  composites.push({input:svg,left:x,top:y});
  console.log('AUDIT_CASE '+label+' '+JSON.stringify(await page.evaluate(()=>window.__auditFace())));
 }
-const buf=await sharp({create:{width:1240,height:674,channels:4,background:'#17212b'}}).composite(composites).webp({quality:54}).toBuffer();
+const buf=await sharp({create:{width:940,height:960,channels:4,background:'#17212b'}}).composite(composites).webp({quality:54}).toBuffer();
 console.log('AUDIT_IMAGE_BEGIN');
 let b64=buf.toString('base64');for(let i=0;i<b64.length;i+=12000)console.log(b64.slice(i,i+12000));
 console.log('AUDIT_IMAGE_END');
