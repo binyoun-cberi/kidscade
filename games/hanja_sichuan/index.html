@@ -6,63 +6,239 @@
 <meta name="theme-color" content="#131f33">
 <title>한자 사천성 | KIDSCADE</title>
 <style>
-:root{--bg:#101b2d;--panel:#19283e;--panel2:#213451;--ink:#f7f4e9;--muted:#b4c2d2;--gold:#f5c76d;--jade:#82e5c7;--red:#fd7d91;--tile:72px}
-*{box-sizing:border-box}html{background:var(--bg)}body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:var(--ink);background:radial-gradient(ellipse 65% 40% at 50% -10%,#28456a 0%,transparent 90%),var(--bg)}
-button,select{font:inherit}button{cursor:pointer}button:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
-[hidden]{display:none!important}.app{max-width:1260px;padding:22px clamp(12px,2.5vw,28px) 85px;margin:0 auto}
-header{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:20px}
-.brand{display:flex;align-items:center;gap:13px}.brand-icon{width:56px;height:56px;display:grid;place-items:center;flex:none;background:linear-gradient(145deg,#ffdfa1,#dca750);border:2px solid #ffefc7;box-shadow:0 7px 24px #dca75033;border-radius:16px;color:#3d2c1b;font:900 36px/1 serif}
-h1{font-size:clamp(26px,4vw,38px);margin:0;letter-spacing:-.05em}.tagline{color:var(--muted);margin:3px 0 0;font-size:13px;font-weight:650}
-.audio-btn,.secondary{border:1px solid #52657f;color:#e6edf5;background:#273a53;padding:11px 15px;border-radius:12px;font-weight:800;min-height:44px}
-.config{display:flex;align-items:end;gap:12px;flex-wrap:wrap;border:1px solid #3e526d;background:#192b43df;border-radius:20px;padding:15px;box-shadow:0 15px 35px #0002}
-.config label{display:grid;gap:6px;color:#c8d4e4;font-size:12px;font-weight:800}.config select{min-height:44px;min-width:120px;color:#fff;background:#243a56;border:1px solid #5b708c;border-radius:11px;padding:0 11px;font-weight:750}.primary{background:linear-gradient(160deg,#ffdc8b,#f0b95a);color:#2b261e;border:0;padding:11px 25px;border-radius:12px;font-weight:950;min-height:44px;box-shadow:0 5px 0 #8a6632}.primary:active{transform:translateY(2px);box-shadow:0 3px 0 #8a6632}
-.guide{font-size:13px;line-height:1.6;color:#d0deee;margin:12px 0 15px}.guide strong{color:var(--gold)}
-.hud{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:0 0 14px}.stat{background:#1a2e47;border:1px solid #344b68;border-radius:14px;padding:11px 13px;text-align:center}.stat span{display:block;font-size:11px;color:var(--muted);font-weight:800}.stat strong{display:block;font-size:clamp(17px,3vw,27px);color:#fff;font-variant-numeric:tabular-nums}.stat.timing strong{color:var(--gold)}.stat.timing.urgent strong{color:var(--red);animation:blink .7s infinite alternate}@keyframes blink{to{opacity:.42}}
-.game{border:1px solid #344b64;border-radius:22px;padding:8px;box-shadow:0 20px 55px #0005;background:radial-gradient(circle at 50% 0%,#274461 0%,#14253c 75%);position:relative;overflow:hidden}
-.board-scroller{overflow:auto;overscroll-behavior:contain;text-align:center;min-height:300px;border-radius:16px;scrollbar-color:#62758a transparent}
-.board-wrap{display:inline-block;position:relative;margin:calc(var(--tile) * .52);vertical-align:top}
-.board{display:grid;grid-template-columns:repeat(var(--cols),var(--tile));grid-auto-rows:var(--tile);width:max-content}
-.tile{width:calc(var(--tile) - 5px);height:calc(var(--tile) - 5px);margin:2.5px;border-radius:11px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:2px solid #ceb888;background:linear-gradient(147deg,#fff9e7,#eddfc0);box-shadow:0 4px 0 #887b68,0 6px 12px #0004;color:#243c46;transition:transform .13s,filter .13s;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-.tile::after{content:"";position:absolute;inset:5px;border:1px solid #ccb992;border-radius:6px;pointer-events:none}
-.tile.hanja .glyph{font-family:"Noto Serif CJK KR","Batang","Songti SC",serif;font-size:calc(var(--tile) * .49);font-weight:900;line-height:1.08}
-.tile.reading{background:linear-gradient(148deg,#e5fff5,#bce7dd);border-color:#76b5a5;color:#143f3d}
-.tile.reading .meaning{font-size:calc(var(--tile) * .19);font-weight:900;line-height:1.2;letter-spacing:-.04em;max-width:95%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tile.reading .reading-text{font-size:calc(var(--tile) * .19);font-weight:900;color:#247c73}
-.tile:hover{filter:brightness(1.07)}.tile.selected{transform:translateY(-3px);border-color:#ffb338;box-shadow:0 0 0 3px #fdd58f,0 5px 0 #91713f,0 0 25px #ffb33866}
-.tile.hinted{outline:4px solid #ffe783;outline-offset:-4px;animation:hintGlow .55s ease-in-out infinite alternate}.tile.clearing{animation:vanish .34s ease-in forwards}
-.tile.empty{opacity:0;pointer-events:none}.link-layer{position:absolute;inset:0;overflow:visible;pointer-events:none;z-index:10;filter:drop-shadow(0 0 7px #f5e29c)}
-@keyframes vanish{to{transform:scale(.45) rotate(7deg);opacity:0}}@keyframes hintGlow{to{filter:brightness(1.28)}}@keyframes blinkToast{50%{transform:translateY(-4px)}}
-.toast{min-height:28px;text-align:center;color:#cbd9e6;font-weight:800;padding:7px 12px;font-size:14px}
-.actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:15px}.actions button{min-height:46px;border:1px solid #536985;background:#263c56;color:#fff;border-radius:13px;padding:10px 19px;font-weight:850}.actions button:hover{background:#314b68}.actions button:disabled{opacity:.45;cursor:not-allowed}
- .review-list{max-height:45vh;overflow-y:auto;text-align:left;display:grid;gap:7px;margin:14px 0}.review-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 13px;border-radius:10px;background:#314966}.review-row strong{font-family:serif;font-size:25px;color:#ffe3a7}.review-row span{font-size:14px;color:#e7f4fa;font-weight:800}.bottom-note{font-size:12px;color:#9bb0c5;margin:16px 2px;line-height:1.6}
-dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #c0a875;border-radius:22px;padding:29px;background:#20354f;color:white;box-shadow:0 25px 75px #0009;z-index:30;text-align:center}dialog::backdrop{background:#0b1529d9;backdrop-filter:blur(5px)}dialog h2{font-size:30px;margin:0 0 10px}dialog p{line-height:1.7;color:#d4e1ed}.result-score{font-size:41px;color:var(--gold);font-weight:950;margin:5px 0}.dialog-buttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.dialog-buttons button{min-height:44px}
-@media(max-width:600px){:root{--tile:62px}.app{padding:12px 8px 82px}header{margin:6px 5px 14px}h1{font-size:25px}.brand-icon{width:45px;height:45px;font-size:29px}.tagline{font-size:11px}.config{gap:8px;padding:11px;border-radius:15px}.config label{flex:1 1 85px}.config select{min-width:0;width:100%;font-size:13px}.config .primary{flex:1 1 100%;font-size:15px}.hud{gap:5px}.stat{padding:8px 3px;border-radius:10px}.stat span{font-size:10px}.stat strong{font-size:17px}.board-wrap{margin:calc(var(--tile)*.52)}.game{padding:3px;border-radius:14px}.actions{gap:6px}.actions button{flex:1 1 auto;padding:8px 11px;font-size:12px}.guide{font-size:12px;margin:10px 4px}.tile{border-radius:9px}.tile.reading .meaning,.tile.reading .reading-text{font-size:12px}}
-@media(prefers-reduced-motion:reduce){.tile,.stat{transition:none}.tile.clearing,.tile.hinted{animation:none}}
-
-/* Readability and small-screen navigation */
-.score-note{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#b8cfe2;font-weight:800;font-size:12px;padding:0 5px 8px;flex-wrap:wrap}
-#penalty{color:#ffd09b}
-.board-toolbar{display:flex;justify-content:space-between;align-items:center;min-height:41px;gap:8px;padding:4px 9px 7px;color:#d7e8ef;font-size:12px;font-weight:750}
-.board-viewport-controls{display:flex;gap:6px;align-items:center}
-.board-viewport-controls button{border:1px solid #8095ad;background:#314a67;color:white;min-height:38px;min-width:38px;border-radius:10px;font-size:12px;font-weight:900;padding:6px 9px}
-.board-scroller{min-height:unset;max-width:100%;-webkit-overflow-scrolling:touch}
-.board-wrap{margin:calc(var(--tile)*.52)}
-.tile.reading .meaning{max-width:94%;max-height:67%;overflow:hidden;white-space:normal;text-overflow:clip;overflow-wrap:anywhere;word-break:keep-all;line-height:1.06;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;text-align:center}
-.tile.reading.long-meaning .meaning{font-size:clamp(9px,calc(var(--tile)*.155),12px);-webkit-line-clamp:4}
-.tile.reading .reading-text{flex:none}
-.tile.clearing{animation-duration:.19s;pointer-events:none}
-.selected-info{border-top:1px solid #49647a;margin:0 9px;padding:10px 5px;color:#fff0bf;font-size:clamp(14px,2.3vw,18px);font-weight:900;text-align:center;min-height:41px;overflow-wrap:anywhere}
-.pause-overlay{position:absolute;inset:42px 0 0;display:grid;place-items:center;z-index:15;background:#0a1924e8;backdrop-filter:blur(8px);font-weight:900;text-align:center;padding:12px}
-@media(max-width:640px){
- .tile.reading .meaning{font-size:clamp(10px,calc(var(--tile)*.2),13px)}
- .tile.reading .reading-text{font-size:clamp(10px,calc(var(--tile)*.2),13px)}
- .tile.reading.long-meaning .meaning{font-size:clamp(9px,calc(var(--tile)*.16),12px)}
- .board-toolbar{flex-wrap:wrap}
- .board-viewport-controls{margin-left:auto}
- .game{padding:4px}
- .board-scroller{touch-action:pan-x pan-y}
+:root{
+  --paper:#f5f0e3;--paper-2:#ebe2cf;--ink:#23342f;--muted:#66716b;--line:#d4c8b1;
+  --jade:#216e60;--jade-deep:#144c43;--gold:#e3a84d;--red:#ab4d3c;
+  --tile:72px;--cols:4;
 }
-@media(prefers-reduced-motion:reduce){.tile.clearing{opacity:.35}}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#f1eadc;color:var(--ink)}
+body{
+  font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  background:radial-gradient(ellipse at 15% 8%,#fffcf4 0%,transparent 42%),
+    repeating-linear-gradient(90deg,transparent 0 119px,#b59c6d0b 120px 121px),
+    #f1eadc;
+}
+button,select{font:inherit}
+button{cursor:pointer}
+button:focus-visible,select:focus-visible{outline:3px solid #e1a64d;outline-offset:3px}
+[hidden]{display:none!important}
+.app{width:min(1320px,100%);margin:0 auto;padding:22px clamp(14px,3vw,36px) 76px}
+header{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:0 0 15px;border-bottom:2px solid #cab99c;margin-bottom:22px
+}
+.brand{display:flex;align-items:center;gap:15px}
+.brand-icon{
+  width:57px;height:57px;display:grid;place-items:center;border-radius:14px;
+  color:#f9edcf;background:#215d52;box-shadow:inset 0 0 0 2px #f8e5b988,0 5px 0 #123f38;
+  font:900 38px/1 "Batang",serif
+}
+h1{font-size:clamp(25px,3vw,34px);line-height:1.12;letter-spacing:-.065em;margin:0;font-weight:950}
+.tagline{margin:4px 0 0;color:#666f65;font-size:12px;font-weight:750}
+.audio-btn{
+  border:1px solid #b8b6a7;border-radius:30px;background:#fcf9f0;color:#284c43;
+  padding:10px 15px;min-height:42px;font-size:12px;font-weight:850
+}
+.play-layout{display:flex;justify-content:center;align-items:flex-start;gap:clamp(20px,2.6vw,38px)}
+.setup-panel{
+  flex:0 0 258px;min-width:0;padding:22px 20px 21px;
+  background:linear-gradient(160deg,#fffbf1,#eee4d1);border:1px solid #d6c6a9;
+  border-radius:8px 24px 24px 8px;box-shadow:0 9px 22px #4f3d2418,4px 0 0 #bfa47b
+}
+.setup-heading{padding:0 0 15px;margin-bottom:17px;border-bottom:1px solid #d7c9b2}
+.setup-heading small{font-size:10px;color:#986b39;font-weight:950;letter-spacing:.13em}
+.setup-heading strong{display:block;font-size:24px;font-weight:950;letter-spacing:-.045em;margin:4px 0}
+.setup-heading p{font-size:12px;color:#686f65;line-height:1.6;margin:0}
+.config{display:flex;flex-direction:column;align-items:stretch;gap:15px}
+.config label{display:grid;gap:7px;color:#47574e;font-size:12px;font-weight:900}
+.config select{
+  width:100%;min-width:0;min-height:44px;outline-offset:2px;padding:0 12px;
+  color:#193b33;background:#fffdf6;border:1px solid #c6b9a3;border-radius:9px;
+  font-size:14px;font-weight:820;box-shadow:0 2px 0 #b8a48344
+}
+.primary{
+  min-height:46px;border:0;border-radius:9px;padding:10px 16px;
+  background:linear-gradient(180deg,#237968,#155246);color:#fff9e4;
+  font-weight:950;box-shadow:0 4px 0 #0e3e36;letter-spacing:-.025em
+}
+.primary:active{transform:translateY(2px);box-shadow:0 2px 0 #0e3e36}
+.config .primary{width:100%;margin-top:2px}
+.guide{
+  margin:22px 0 0;padding:17px 0 0;border-top:1px solid #d7c9b2;
+  color:#667069;font-size:12px;line-height:1.8;font-weight:650
+}
+.guide strong{color:#97632d;font-weight:950}
+.mini-guide{display:flex;gap:8px;align-items:center;margin:16px 0 5px}
+.mini-guide span:not(.mini-arrow){
+  padding:7px 11px;min-width:54px;border-radius:7px;background:#fffef8;border:1px solid #d7c19c;
+  box-shadow:0 3px 0 #c8b694;text-align:center;font-size:15px;font-weight:900
+}
+.mini-guide span.mini-reading{background:#d9eee1;border-color:#99baa8;color:#235e4b;font-size:13px}
+.mini-guide .mini-arrow{color:#9b805c;font-size:19px;font-weight:900}
+.play-main{flex:0 1 auto;min-width:0;width:max-content;max-width:100%}
+.hud{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin:0 0 7px;padding:0 8px 12px;border-bottom:1px solid #d1c3ac;min-width:0
+}
+.stat{padding:0 12px 0 0;min-width:0;border:0;background:none;box-shadow:none;text-align:left}
+.stat:not(:last-child){border-right:1px solid #d3c6b3}
+.stat span{display:block;color:#788079;font-size:10px;font-weight:900;letter-spacing:.015em;white-space:nowrap}
+.stat strong{
+  display:block;color:#193f37;font-size:clamp(20px,2vw,28px);
+  font-weight:950;font-variant-numeric:tabular-nums;letter-spacing:-.045em;white-space:nowrap
+}
+.stat.timing strong{color:#a56c32}.stat.timing.urgent strong{color:#bb403e;animation:blink .7s infinite alternate}
+@keyframes blink{to{opacity:.5}}
+.score-note{
+  display:flex;justify-content:space-between;gap:10px;
+  padding:0 8px 10px;color:#6e736b;font-size:11px;font-weight:850;flex-wrap:wrap
+}
+#penalty{color:#a56447}
+.game{
+  position:relative;width:max-content;max-width:100%;margin:0 auto;
+  padding:5px;border:9px solid #986744;border-radius:21px;
+  background:
+    radial-gradient(ellipse at 50% 20%,#377f69 0%,#216658 53%,#144b42 100%);
+  box-shadow:0 6px 0 #6b422b,0 17px 35px #3d30292d,inset 0 0 0 2px #c69869
+}
+.game:before{content:"";position:absolute;inset:3px;border-radius:8px;border:1px solid #b9d8a02a;pointer-events:none}
+.board-toolbar{
+  min-height:33px;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:2px 9px;color:#ecf5da;font-size:11px;font-weight:800
+}
+.board-viewport-controls{display:flex;gap:6px;align-items:center}
+.board-viewport-controls button{
+  border:1px solid #c7deb2a3;background:#f1eed6;color:#225747;
+  border-radius:8px;min-height:36px;min-width:36px;padding:5px 8px;font-size:11px;font-weight:950
+}
+.board-scroller{overflow:auto;max-width:100%;min-height:unset;text-align:center;border-radius:12px;overscroll-behavior:contain;scrollbar-color:#abd1b4 #14473f;-webkit-overflow-scrolling:touch}
+.board-wrap{display:inline-block;vertical-align:top;position:relative;margin:calc(var(--tile)*.52)}
+.board{display:grid;grid-template-columns:repeat(var(--cols),var(--tile));grid-auto-rows:var(--tile);width:max-content}
+.tile{
+  width:calc(var(--tile) - 6px);height:calc(var(--tile) - 6px);margin:3px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  position:relative;border-radius:9px;border:1.5px solid #dacbb0;
+  background:linear-gradient(145deg,#fffdf5 0%,#f9f1df 64%,#ede1c8 100%);
+  box-shadow:0 5px 0 #b1a084,0 7px 8px #082e2652,inset 0 0 0 3px #fff9ed;
+  color:#233c35;transition:transform .12s,filter .12s;user-select:none;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation
+}
+.tile::after{content:"";position:absolute;inset:5px;border:1px solid #dacbb2;border-radius:4px;pointer-events:none}
+.tile:hover{filter:brightness(1.045);transform:translateY(-1px)}
+.tile.hanja .glyph{
+  font-family:"Noto Serif CJK KR","Batang","Songti SC",serif;
+  font-size:calc(var(--tile)*.52);font-weight:900;line-height:1.04
+}
+.tile.reading{background:linear-gradient(142deg,#edfbf2,#cfe7d9);border-color:#b5d0b8;box-shadow:0 5px 0 #87b4a1,0 7px 8px #082e2652,inset 0 0 0 3px #ecfbef;color:#204e3d}
+.tile.reading .meaning{
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;
+  max-width:90%;max-height:67%;overflow:hidden;white-space:normal;text-overflow:clip;
+  overflow-wrap:anywhere;word-break:keep-all;text-align:center;line-height:1.08;
+  font-size:clamp(10px,calc(var(--tile)*.18),20px);font-weight:950;letter-spacing:-.05em
+}
+.tile.reading.long-meaning .meaning{font-size:clamp(9px,calc(var(--tile)*.14),15px);-webkit-line-clamp:4}
+.tile.reading .reading-text{flex:none;font-size:clamp(11px,calc(var(--tile)*.16),18px);font-weight:950;color:#277261}
+.tile.selected{
+  border-color:#e4ac4e;transform:translateY(-3px);
+  box-shadow:0 0 0 3px #f6d28a,0 5px 0 #ba8439,0 0 24px #f5ca7188
+}
+.tile.hinted{outline:4px solid #ffde82;outline-offset:-4px;animation:hintGlow .6s infinite alternate}
+.tile.clearing{animation:vanish .19s ease-in forwards;pointer-events:none}
+.tile.empty{opacity:0;pointer-events:none}
+.link-layer{position:absolute;inset:0;z-index:10;overflow:visible;pointer-events:none;filter:drop-shadow(0 0 6px #ffe99c)}
+@keyframes vanish{to{transform:scale(.48) rotate(-6deg);opacity:0}}
+@keyframes hintGlow{to{filter:brightness(1.3)}}
+.selected-info{
+  padding:12px 16px 5px;margin:0 8px;min-height:40px;max-width:100%;
+  border-top:1px solid #c7e5c358;text-align:center;color:#fff3c8;font-weight:900;
+  font-size:clamp(13px,1.4vw,17px);overflow-wrap:anywhere
+}
+.toast{min-height:30px;padding:4px 9px 10px;color:#cae7d3;text-align:center;font-size:12px;font-weight:750}
+.pause-overlay{
+  position:absolute;inset:33px 0 0;display:grid;place-items:center;
+  padding:16px;z-index:15;background:#163d35ed;backdrop-filter:blur(7px);
+  color:#fff4d9;text-align:center;font-size:19px;font-weight:950
+}
+.actions{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin:15px 0 0}
+.actions button,.secondary{
+  min-height:42px;padding:8px 13px;background:#fffaf0;border:1px solid #cdbfa8;
+  color:#355447;border-radius:9px;font-size:12px;font-weight:900;box-shadow:0 2px 0 #d0bea2
+}
+.actions button:hover,.secondary:hover{background:#efe7d5}
+.actions button:disabled{opacity:.45;cursor:not-allowed}
+.bottom-note{padding:10px 4px 0;margin:0;color:#69766e;font-size:11px;line-height:1.65}
+.review-list{max-height:45vh;overflow:auto;text-align:left;display:grid;gap:7px;margin:14px 0}
+.review-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 13px;border-radius:8px;background:#eef2e3}
+.review-row strong{font:900 25px "Batang",serif;color:#35533e}.review-row span{font-weight:850;color:#24483e}
+dialog{
+  position:fixed;max-width:min(460px,calc(100vw - 28px));padding:26px;
+  border:2px solid #bca47b;border-radius:18px;background:#fffaef;color:#28483f;
+  box-shadow:0 20px 70px #25241ca3;text-align:center;z-index:30
+}
+dialog::backdrop{background:#182a23bd;backdrop-filter:blur(5px)}
+dialog h2{margin:0 0 10px;font-size:28px}
+dialog p{color:#657369;line-height:1.6}
+.result-score{font-size:42px;color:#b47931;font-weight:950}
+.dialog-buttons{display:flex;justify-content:center;flex-wrap:wrap;gap:10px}
+.dialog-buttons button{min-height:44px}
+@media(max-width:980px){
+ .app{padding:12px 10px 76px}
+ header{margin-bottom:14px}
+ .play-layout{flex-direction:column;gap:12px;align-items:stretch}
+ .setup-panel{flex:0 0 auto;width:100%;padding:12px 14px;border-radius:14px}
+ .setup-heading{display:none}
+ .config{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:end}
+ .config label{font-size:11px;gap:3px}
+ .config select{font-size:12px;padding:0 7px}
+ .config .primary{grid-column:1/-1;min-height:41px}
+ .guide{margin:7px 0 0;padding:8px 0 0;font-size:11px;line-height:1.45}
+ .mini-guide{display:none}
+ .play-main{width:100%;max-width:100%}
+ .hud{max-width:100%;padding:0 2px 8px;gap:5px}
+ .stat{padding:0 6px 0 0;flex:1}
+ .stat span{font-size:9px}.stat strong{font-size:clamp(17px,3.4vw,25px)}
+ .game{width:max-content;max-width:100%}
+ .bottom-note{font-size:10px;padding:8px}
+}
+@media(max-width:540px){
+ .app{padding:9px 6px 70px}
+ header{padding:0 5px 9px}
+ .brand{gap:9px}.brand-icon{width:44px;height:44px;font-size:29px}
+ h1{font-size:25px}.tagline{font-size:10px}
+ .audio-btn{font-size:10px;min-height:35px;padding:7px 9px}
+ .setup-panel{padding:9px}
+ .config{gap:6px}
+ .config select{min-height:40px;font-size:11px}
+ .guide{font-size:11px}
+ .stat{padding-right:3px}.stat strong{font-size:clamp(16px,4vw,21px)}
+ .stat span{white-space:normal}
+ .game{padding:3px;border-width:6px;border-radius:14px}
+ .board-toolbar{padding:2px 6px;min-height:35px;flex-wrap:wrap}
+ .board-viewport-controls{margin-left:auto}
+ .board-scroller{touch-action:pan-x pan-y}
+ .tile{border-radius:6px;margin:2px;width:calc(var(--tile) - 4px);height:calc(var(--tile) - 4px)}
+ .tile.reading .meaning{font-size:clamp(10px,calc(var(--tile)*.2),14px)}
+ .tile.reading.long-meaning .meaning{font-size:clamp(9px,calc(var(--tile)*.16),12px)}
+ .tile.reading .reading-text{font-size:clamp(10px,calc(var(--tile)*.18),13px)}
+ .board-wrap{margin:calc(var(--tile)*.52)}
+ .actions{margin-top:10px;gap:6px}
+ .actions button{padding:7px 9px;font-size:11px;min-height:42px}
+ .score-note{font-size:10px}
+ .selected-info{font-size:13px;padding-top:8px}
+ .toast{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+ .tile{transition:none}.tile.clearing,.tile.hinted{animation:none}
+ .tile.clearing{opacity:.35}
+}
+/* On desktop, game messages share one small footer strip under the tabletop. */
+@media(min-width:981px){
+ .feedback-strip{display:flex;align-items:stretch;min-width:0}
+ .selected-info,.toast{flex:1;min-width:0;border-top:1px solid #c7e5c358}
+ .selected-info{margin:0;padding:9px 6px;text-align:left}
+ .toast{display:flex;align-items:center;justify-content:flex-end;text-align:right;padding:7px 8px}
+}
 </style>
 <script src="../../kidscade-game-sdk.js" data-game-id="hanja_sichuan" data-title="한자 사천성" data-shell="true" data-orientation="any"></script>
 <script src="../hanja_test/data/hanja-grade-data.js"></script>
@@ -75,7 +251,10 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
     <div class="brand"><div class="brand-icon" aria-hidden="true">漢</div><div><h1>한자 사천성</h1><p class="tagline">한자와 뜻·음을 찾아 이어 보세요</p></div></div>
     <button type="button" id="soundBtn" class="audio-btn" aria-pressed="true">소리 켜짐</button>
   </header>
-  <section class="config" aria-label="게임 설정">
+  <div class="play-layout">
+    <aside class="setup-panel" aria-label="게임 설정 및 규칙">
+      <div class="setup-heading"><small>MAHJONG CONNECT · 漢字</small><strong>오늘의 한 판</strong><p>같은 글자의 뜻과 음을 찾아<br>차분하게 패를 연결해 보세요.</p></div>
+      <section class="config" aria-label="게임 설정">
     <label>한자 급수<select id="grade">
       <option value="8">8급 · 50자</option><option value="7">7급 · 150자</option>
       <option value="6">6급 · 300자</option><option value="5">5급 · 500자</option>
@@ -90,7 +269,10 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
     <label>방식<select id="mode"><option value="relaxed" selected>천천히 · 연습</option><option value="timed">시간 도전</option></select></label>
     <button class="primary" type="button" id="startBtn">새 판 시작</button>
   </section>
-  <p class="guide"><strong>규칙</strong> 같은 한자와 뜻·음 패를 골라 연결하세요. 다른 패를 통과할 수 없고, 선은 최대 <strong>두 번만</strong> 꺾을 수 있어요. 판 바깥을 돌아가는 길도 가능해요.</p>
+      <p class="guide"><strong>연결하는 방법</strong> · 한자와 뜻·음을 골라 보세요. 다른 패를 지나갈 수 없고 선은 <strong>두 번까지</strong> 꺾을 수 있어요. 판 바깥쪽으로 우회해도 돼요.</p>
+      <div class="mini-guide" aria-hidden="true"><span>山</span><span class="mini-arrow">↔</span><span class="mini-reading">산 산</span></div>
+    </aside>
+    <div class="play-main">
   <section class="hud" aria-label="게임 점수">
     <div class="stat"><span>남은 쌍</span><strong id="remaining">-</strong></div>
     <div class="stat"><span>점수</span><strong id="score">0</strong></div>
@@ -111,8 +293,10 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
       </div>
     </div>
     <div id="pauseOverlay" class="pause-overlay" hidden>일시 정지 · 계속하기를 눌러주세요</div>
-    <div id="selectedInfo" class="selected-info" role="status" aria-live="polite">패를 고르면 여기에 글자를 크게 보여줘요.</div>
-    <div id="toast" class="toast" role="status" aria-live="polite">새 판 시작을 누르면 게임이 시작돼요.</div>
+    <div class="feedback-strip">
+      <div id="selectedInfo" class="selected-info" role="status" aria-live="polite">패를 고르면 여기에 글자를 크게 보여줘요.</div>
+      <div id="toast" class="toast" role="status" aria-live="polite">새 판 시작을 누르면 게임이 시작돼요.</div>
+    </div>
   </main>
   <nav class="actions" aria-label="게임 기능">
     <button type="button" id="hintBtn">힌트 보기 (−80점)</button>
@@ -120,7 +304,9 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
     <button type="button" id="pauseBtn">잠시 멈춤</button>
     <button type="button" id="reviewBtn">오답 복습</button>
   </nav>
-  <p class="bottom-note">뜻과 음 패는 연한 초록색, 한자는 아이보리색입니다. 틀린 한자는 이 기기의 복습 목록에 저장됩니다. 제한 시간 모드에서 시간이 끝나면 도전이 종료됩니다.</p>
+      <p class="bottom-note">흰 패는 한자, 연녹색 패는 뜻과 음이에요. 틀린 한자는 이 기기의 오답 복습에 저장됩니다.</p>
+    </div>
+  </div>
 </div>
 <dialog id="reviewDialog" aria-labelledby="reviewTitle"><h2 id="reviewTitle">오답 복습</h2><p>선택한 급수에서 틀렸던 한자를 다시 확인해 보세요.</p><div id="reviewList" class="review-list"></div><div class="dialog-buttons"><button type="button" class="secondary" id="clearReviewBtn">복습 목록 비우기</button><button type="button" class="primary" id="closeReviewBtn">닫기</button></div></dialog>
 <dialog id="finishDialog" aria-labelledby="finishTitle">
@@ -179,7 +365,9 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
     st.score=Rules.score(st.points,st.penaltyPoints);
   }
   function currentCell(){
-    return Rules.tileSize({viewportWidth:window.innerWidth||1024,boardWidth:$('boardScroll').clientWidth||Math.max(280,(window.innerWidth||1024)-30),cols:st.cols,zoomed:st.zoomed});
+    const vw=window.innerWidth||1024;
+    const boardRoom=vw>980?Math.min(900,vw-345):Math.max(280,vw-26);
+    return Rules.tileSize({viewportWidth:vw,viewportHeight:window.innerHeight||1080,boardWidth:boardRoom,cols:st.cols,zoomed:st.zoomed});
   }
   function updateViewControls(){
     const mobile=(window.innerWidth||1024)<=640;
@@ -221,6 +409,8 @@ dialog{position:fixed;max-width:min(460px,calc(100vw - 28px));border:1px solid #
   }
   function drawBoard(){
     const cell=currentCell();
+    // The tabletop follows the board size, never a full-width empty game panel.
+    $('gamePanel').style.width=Math.ceil((st.cols+1.04)*cell+28)+'px';
     const b=$('board');
     $('boardWrap').style.setProperty('--tile',cell+'px');
     $('boardWrap').style.setProperty('--cols',st.cols);

@@ -17,15 +17,20 @@
     const independent=hints===0?100:0;
     return Object.freeze({time,accuracy,independent,total:time+accuracy+independent,perfect});
   }
-  function tileSize({viewportWidth,boardWidth,cols,zoomed=false}){
+  function tileSize({viewportWidth,viewportHeight=1080,boardWidth,cols,zoomed=false}){
     const view=Math.max(240,Math.min(
       Number(boardWidth)||Math.max(240,(Number(viewportWidth)||375)-30),
       Math.max(240,(Number(viewportWidth)||375)-16)
     ));
     const mobile=(Number(viewportWidth)||375)<=640;
-    if(!mobile)return 72;
+    if(!mobile){
+      const desired={4:114,6:100,8:84,10:72}[cols]||72;
+      const height=Number(viewportHeight)||1080;
+      const heightLimit=height<=880?88:height<=1024?103:desired;
+      return Math.max(52,Math.min(desired,heightLimit,Math.floor((view-10)/(cols+1.08))));
+    }
     if(zoomed)return 68;
-    return Math.max(28,Math.min(72,Math.floor((view-5)/(cols+1.08))));
+    return Math.max(24,Math.min(72,Math.floor((view-5)/(cols+1.08))));
   }
   return Object.freeze({COSTS,score,rewards,tileSize});
 });
