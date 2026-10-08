@@ -36,14 +36,21 @@ const SCHOOL={west:-28,east:30,north:-20,south:20,spineEnd:-15,courtyardWest:-15
 const LIMITS={x1:-28,x2:30,z1:-20,z2:20},walls=[],furniture=[],glowThings=[],mixers=[];
 const keys=new Set(),joy={x:0,y:0},player={x:SCHOOL.guard.x,z:SCHOOL.guard.z,yaw:Math.PI/2,root:new THREE.Group(),model:null};
 const maiden={x:SCHOOL.maidenSpawn.x,z:SCHOOL.maidenSpawn.z,root:new THREE.Group(),speed:1.2,charge:0,attacks:0};
-const disturbed=[],stageNames=['','3개의 장난 찾기','처녀귀신 관찰','과학실 봉인진 가동','관리실로 귀환'];
+const disturbed=[];
+const stageNames=['','도깨비 장난 조사','처녀귀신 관찰','처녀귀신 봉인','유키온나 난방 복구','유키온나 봉인','달걀귀신 시선 회피','달걀귀신 봉인','저승사자 종소리','저승사자 봉인','늑대인간 소리 유인','늑대인간 봉인','관리실 보고'];
 let started=false,ended=false,paused=false,stage=1,fixes=0,hp=3,power=100,flashOn=true,elapsed=0;
 let viewYaw=0,turnPointer=null,prevX=0,last=performance.now(),hudClock=0,miniClock=0,toastSeconds=0;
 let invulnerable=0,ghostWaiting=0,maidenPhase='approach',tutorialCount=0,lessonTimer=0,lastMistake='';
 const guidance={key:'',points:[],mesh:null,clock:0,fromX:0,fromZ:0,goalX:0,goalZ:0};
 let gazeLocked=false,ghostNav=null;
+const encounter={
+ cold:0,heatNodes:[],frost:0,eggCharge:0,eggFear:0,
+ bellCount:0,bellClock:0,bellWindow:0,doorClosed:false,doorVisual:null,
+ wolf:{x:-1.5,z:16.8,root:new THREE.Group(),nav:null,speed:2.25,grace:5,lureTime:0,ready:false,active:false}
+};
+const encounterModels={};
 const forward=new THREE.Vector3(),modelTime=new THREE.Clock();
-scene.add(player.root,maiden.root);
+scene.add(player.root,maiden.root,encounter.wolf.root);
 
 function mat(color,roughness=.94){return new THREE.MeshStandardMaterial({color,roughness});}
 const materials={floor:mat(0x415568),corridor:mat(0x394657),wall:mat(0x7c8995),skirt:mat(0x273646),
@@ -446,6 +453,84 @@ for(let i=0;i<3;i++){
 const trickCircle=createMark(SCHOOL.dokkaebi.x,SCHOOL.dokkaebi.z,0xf5bd72);trickCircle.visible=false;
 const maidenCircle=createMark(SCHOOL.science.x,-13.1,0xc5a1f8);maidenCircle.visible=false;
 const exitCircle=createMark(SCHOOL.guard.x,SCHOOL.guard.z,0x82dabe);exitCircle.visible=false;
+
+// Additional anomalies from 괴담 야간경비, each with a distinct physical counter-rule.
+function ghostShape(x,z,color,size=1.7){
+  const root=new THREE.Group();root.position.set(x,0,z);scene.add(root);
+  const body=new THREE.Mesh(new THREE.ConeGeometry(.48,size,14,1),new THREE.MeshStandardMaterial({
+    color,transparent:true,opacity:.82,emissive:color,emissiveIntensity:.18,
+    side:THREE.DoubleSide
+  }));
+  body.position.y=size*.55;root.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.30,18,12),new THREE.MeshStandardMaterial({
+    color:0xdce5df,roughness:.8
+  }));head.position.y=size+.16;root.add(head);
+  return {root,body,head};
+}
+function dressGhost(url,root,height,tint){
+  loader.loadAsync(url).then(gltf=>{
+    const model=cloneSkeleton(gltf.scene);normalize(model,height);
+    model.traverse(node=>{
+      if(!node.isMesh)return;
+      const tintMat=m=>{
+        const copy=m.clone();
+        if(copy.color)copy.color.lerp(new THREE.Color(tint),.26);
+        if(copy.emissive)copy.emissive=new THREE.Color(tint);
+        if(copy.emissiveIntensity!==undefined)copy.emissiveIntensity=.24;
+        return copy;
+      };
+      node.material=Array.isArray(node.material)?node.material.map(tintMat):tintMat(node.material);
+    });
+    root.clear();root.add(model);
+    const clip=(gltf.animations||[]).find(c=>/idle|walk|float/i.test(c.name))||gltf.animations?.[0];
+    if(clip){const mixer=new THREE.AnimationMixer(model);mixer.clipAction(clip).play();mixers.push(mixer);}
+  }).catch(()=>{}); // Visible fallback remains if asset isn't reachable.
+}
+const yuki=ghostShape(25.5,16.95,0xb6edff,1.75);
+const egg=ghostShape(7.5,-17.35,0x8e9292,1.7);
+const reaper=ghostShape(-25.0,8.0,0x75658d,1.9);
+const wolfFallback=new THREE.Group();encounter.wolf.root.add(wolfFallback);
+cube(wolfFallback,0,.75,0,.62,.73,1.05,mat(0x61535a));
+for(const x of [-.22,.22])for(const z of [-.35,.35])cube(wolfFallback,x,.26,z,.20,.50,.19,mat(0x443c46));
+cube(wolfFallback,0,1.04,-.59,.50,.44,.45,mat(0x75666c));
+dressGhost('../../assets/game/3d/characters/monsters/ultimate-monsters-bundle/yeti.glb',yuki.root,2.0,0x98e1f4);
+dressGhost('../../assets/game/3d/characters/monsters/ultimate-monsters-bundle/demon.glb',reaper.root,2.18,0x7e6d9f);
+loader.loadAsync('../../assets/game/cube world/Animals/glTF/Wolf.gltf').then(gltf=>{
+  const model=cloneSkeleton(gltf.scene);normalize(model,1.08);
+  encounter.wolf.root.clear();encounter.wolf.root.add(model);
+  const clip=(gltf.animations||[]).find(c=>/walk|run/i.test(c.name))||gltf.animations?.[0];
+  if(clip){const mixer=new THREE.AnimationMixer(model);mixer.clipAction(clip).play();mixers.push(mixer);}
+}).catch(()=>{});
+for(const [x,z,label] of [
+  [23.1,13.0,'난방 배관'],[27.7,15.15,'창가 히터'],[23.7,18.0,'온도 조절기']
+]){
+  const m=createMark(x,z,0x7bd9f5);
+  encounter.heatNodes.push({x,z,label,marker:m,done:false});
+}
+const coldCircle=createMark(25.5,13.1,0x79e7ee);
+const eggCircle=createMark(7.5,-13.1,0xd2d8dd);
+const reaperCircle=createMark(-25.3,8,0xaa8ef2);
+const wolfSpeaker=createMark(-7.5,8.55,0xf0c27b);
+const wolfCircle=createMark(-10.5,14.0,0xf58e69);
+// The door occupies the existing open doorway without becoming a permanent collision wall.
+const doorHinge=new THREE.Group();doorHinge.position.set(-20.49,0,6.75);scene.add(doorHinge);
+cube(doorHinge,0,1.24,1.16,.11,2.48,2.3,mat(0x586377));
+doorHinge.rotation.y=-1.30;
+encounter.doorVisual=doorHinge;
+const eggLocation={x:7.5,z:-17.35},bellDoor={x:-20.35,z:8},wolfTrap={x:-10.5,z:14};
+function presentEncounterModels(){
+  yuki.root.visible=stage===4||stage===5;
+  egg.root.visible=stage===6||stage===7;
+  reaper.root.visible=stage===8||stage===9;
+  encounter.wolf.root.visible=stage===10||stage===11;
+  coldCircle.visible=stage===5;
+  eggCircle.visible=stage===7;
+  reaperCircle.visible=stage===9;
+  wolfSpeaker.visible=stage===10;
+  wolfCircle.visible=stage===11;
+  encounter.heatNodes.forEach(h=>h.marker.visible=stage===4&&!h.done);
+  doorHinge.rotation.y=encounter.doorClosed?0:-1.30;
+}
 
 function dist(a,b){return Math.hypot(a.x-b.x,a.z-b.z);}
 function showToast(message){ui.toast.textContent=message;ui.toast.classList.add('show');toastSeconds=3.5;}
