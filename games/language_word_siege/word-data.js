@@ -1321,6 +1321,8 @@ function behaviorFor(word){
   const def=words[word];
   if(!def)return null;
   if(def.role!=='rapid'){
+    // Support structures work through their original auras, not projectile attacks.
+    if(['barrier','resource','repair','modifier'].includes(def.role))return null;
     const mode=CURATED_STYLES[word];
     if(!mode||!STYLE_FAMILIES[mode])return null;
     return behaviorCache[word]={mode,description:STYLE_FAMILIES[mode].description,source:'meaning'};
