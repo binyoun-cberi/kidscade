@@ -1083,8 +1083,7 @@ const COMBOS=[
       "slow": 0.68,
       "range": 1.15
     }
-  }
-  ,
+  },
   // Playful pair discoveries reward experimentation, not just raw attack stacking.
   {a:'BUBBLE',b:'BOUNCE',name:'거품 트램펄린',bonus:{damage:1.12,range:1.06}},
   {a:'MUSIC',b:'RAINBOW',name:'무지개 디스코',bonus:{damage:1.08,rate:1.12}},
