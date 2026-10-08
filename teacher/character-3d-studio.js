@@ -10,7 +10,7 @@ const TARGET_HEIGHT=1.22;
 const $=id=>document.getElementById(id);
 
 const FEMALE_BASE_NODES=['character_low','eyelashes','eyes','tooth'];
-const MALE_BASE_NODES=['kidscade_male_body','kidscade_male_eyes','tooth'];
+const MALE_BASE_NODES=['kidscade_male_body','kidscade_male_eyes','kidscade_male_brows','tooth'];
 const BASE_VARIANT_NODES=[...new Set([...FEMALE_BASE_NODES,...MALE_BASE_NODES])];
 const BASE_NODES=FEMALE_BASE_NODES;
 const HAIR_NODES=['hairone','hairT','hairtail','hairtailknight','hairvariant','hairvariant.001','kidscade_male_hair_short'];
@@ -806,15 +806,17 @@ function createKidscadeMaleSet(){
 
   const bodySource=getNode('character_low');
   const eyesSource=getNode('eyes');
+  const lashesSource=getNode('eyelashes');
   const shirtSource=getNode('shirt');
   const shortsSource=getNode('ninjasuitshort');
   if(
     !bodySource?.isSkinnedMesh||
     !eyesSource?.isSkinnedMesh||
+    !lashesSource?.isSkinnedMesh||
     !shirtSource?.isSkinnedMesh||
     !shortsSource?.isSkinnedMesh
   ){
-    throw new Error('남자 베이스 제작에 필요한 character_low / eyes / shirt / ninjasuitshort SkinnedMesh를 찾지 못했습니다.');
+    throw new Error('남자 베이스 제작에 필요한 character_low / eyes / eyelashes / shirt / ninjasuitshort SkinnedMesh를 찾지 못했습니다.');
   }
 
   const root=bodySource.parent;
@@ -887,6 +889,42 @@ function createKidscadeMaleSet(){
   };
   group.add(maleEyes);
 
+  // 3) 눈썹은 원본 eyelashes의 독립된 좌/우 눈썹 2개 섬만 가져온다.
+  //    이 얼굴은 본체에 눈가의 선이 이미 있으므로 다른 속눈썹은 절대 복제하지 않는다.
+  const browGeometry=lashesSource.geometry.clone();
+  const browPositions=browGeometry.getAttribute('position');
+  const originalIndex=browGeometry.getIndex();
+  if(!originalIndex)throw new Error('Original Chibi eyebrows require indexed triangles.');
+  const eyebrowRegionFloor=1.76; // brows >=1.772, eyelashes <=1.726
+  const kept=[];
+  for(let j=0;j<originalIndex.count;j+=3){
+    const a=originalIndex.getX(j),b=originalIndex.getX(j+1),c=originalIndex.getX(j+2);
+    if(Math.min(browPositions.getY(a),browPositions.getY(b),browPositions.getY(c))>=eyebrowRegionFloor){
+      kept.push(a,b,c);
+    }
+  }
+  if(kept.length!==72){
+    browGeometry.dispose();
+    throw new Error('Chibi eyebrow source changed: expected 24 triangles but got '+kept.length/3);
+  }
+  browGeometry.setIndex(kept);
+  const browCenterY=1.792;
+  for(let i=0;i<browPositions.count;i++){
+    const x=browPositions.getX(i),y=browPositions.getY(i),z=browPositions.getZ(i);
+    browPositions.setXYZ(i,x*1.022,browCenterY+(y-browCenterY)*.70-.024,z+.010);
+  }
+  browPositions.needsUpdate=true;
+  browGeometry.computeVertexNormals();
+  browGeometry.computeBoundingBox();
+  browGeometry.computeBoundingSphere();
+  const maleBrows=cloneSkinnedMeshWithGeometry(
+    lashesSource,browGeometry,makeSolidMaterial('#332723','Kidscade Male Brows'),
+    'kidscade_male_brows'
+  );
+  maleBrows.userData={...lashesSource.userData,generatedFrom:'eyelashes',
+    extractedBrowTriangles:kept.length/3,region:'two original eyebrow mesh islands only'};
+  group.add(maleBrows);
+
   // 4) 기존 shirt의 topology/skinWeight를 그대로 쓰되, 소매 외곽만 확장한다.
   //    목선은 유지해 구멍이 커지지 않게 하고 어깨 앞쪽 여유를 둬 피부 관통을 방지한다.
   const tshirtMaterial=makeSolidMaterial('#4d78d6','Kidscade Male T-shirt');
@@ -932,7 +970,7 @@ function createKidscadeMaleSet(){
 
   root.add(group);
   group.visible=true;
-  ['kidscade_male_body','kidscade_male_eyes','kidscade_male_tshirt','kidscade_male_shorts']
+  ['kidscade_male_body','kidscade_male_eyes','kidscade_male_brows','kidscade_male_tshirt','kidscade_male_shorts']
     .forEach(name=>setNodeVisible(name,false));
   return group;
 }
