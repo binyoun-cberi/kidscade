@@ -527,7 +527,7 @@ async function makeActor(kind,profile,index,pos){
     root,model,mixer,clips,action:null,anim:'',target:pos.clone(),
     speed:kind==='teacher'?3.2:1.15,kind,navGoal:'',navPath:[],
     visualId:kind==='teacher'?'teacher':profile?.id,usingFallback,seatIndex:kind==='student'?index:-1,
-    restY:model.position.y,restRotation:model.rotation.clone(),seated:false,seatBones:collectSeatedBones(model),gestureBones:collectGestureBones(model),poseBlend:0,hipBone:null,seatHipY:null
+    restX:model.position.x,restY:model.position.y,restZ:model.position.z,restRotation:model.rotation.clone(),seated:false,seatBones:collectSeatedBones(model),gestureBones:collectGestureBones(model),poseBlend:0,hipBone:null,seatHipY:null
   };
   root.updateMatrixWorld(true);
   let hips=null;
@@ -554,6 +554,10 @@ function playAnim(actor,name){
   next.fadeIn(.14).play();
   actor.action=next;actor.anim=name;
 }
+const pelvisWorld=new THREE.Vector3();
+const pelvisShiftWorld=new THREE.Vector3();
+const pelvisCorrection=new THREE.Vector3();
+const pelvisRootRotation=new THREE.Quaternion();
 function setSeatedPose(actor,shouldSit,dt){
   if(actor.kind!=='student')return;
   actor.poseBlend=THREE.MathUtils.damp(actor.poseBlend,shouldSit?1:0,11,dt);
@@ -576,6 +580,26 @@ function setSeatedPose(actor,shouldSit,dt){
   const unshiftedHip=Number.isFinite(actualHip)?actualHip-previousShift:actor.seatHipY;
   const offset=seatHeightAdjustment(surface,unshiftedHip);
   actor.model.position.y=actor.restY+offset*actor.poseBlend;
+  // SitDown animation also moves pelvis forward: centering only the root gives
+  // floating pupils whose hips miss their chairs, especially at group tables.
+  const chair=seatFurnitureRects[actor.seatIndex];
+  if(shouldSit&&chair&&actor.hipBone){
+    actor.hipBone.getWorldPosition(pelvisWorld);
+    const priorX=actor.model.position.x-actor.restX;
+    const priorZ=actor.model.position.z-actor.restZ;
+    actor.root.getWorldQuaternion(pelvisRootRotation);
+    pelvisShiftWorld.set(priorX,0,priorZ).applyQuaternion(pelvisRootRotation);
+    pelvisCorrection.set(
+      chair.x-(pelvisWorld.x-pelvisShiftWorld.x),
+      0,
+      chair.z-(pelvisWorld.z-pelvisShiftWorld.z)
+    ).applyQuaternion(pelvisRootRotation.clone().invert());
+    actor.model.position.x=actor.restX+clamp(pelvisCorrection.x,-.58,.58)*actor.poseBlend;
+    actor.model.position.z=actor.restZ+clamp(pelvisCorrection.z,-.58,.58)*actor.poseBlend;
+  }else{
+    actor.model.position.x=THREE.MathUtils.damp(actor.model.position.x,actor.restX,12,dt);
+    actor.model.position.z=THREE.MathUtils.damp(actor.model.position.z,actor.restZ,12,dt);
+  }
 }
 const gestureAxisX=new THREE.Vector3(1,0,0),gestureAxisZ=new THREE.Vector3(0,0,1);
 const gestureQuaternion=new THREE.Quaternion();
@@ -585,7 +609,16 @@ function updateStudentPose(s,dt){
     distance2D(s.actor.root.position,s.seat)<.17&&
     s.offTaskKind!=='wander'&&!s.wander;
   const chatting=canSit&&!!chatForStudent(s);
-  if(canSit&&!chatting)faceDirection(s.actor,0,-1);
+  if(canSit&&!chatting){
+    if(['science','art','cafeteria'].includes(activeSpace.id)){
+      const tables=activeSpace.obstacles.slice(0,activeSpace.id==='cafeteria'?3:4);
+      const closest=tables.reduce((best,t)=>{
+        const d=Math.hypot(t.x-s.seat.x,t.z-s.seat.z);
+        return !best||d<best.d?{d,t}:best;
+      },null);
+      if(closest)faceDirection(s.actor,closest.t.x-s.seat.x,closest.t.z-s.seat.z);
+    }else faceDirection(s.actor,0,-1);
+  }
   setSeatedPose(s.actor,canSit,dt);
   const restless=canSit&&s.runtime.mode==='offtask';
   const writing=canSit&&currentStep.kind==='lesson'&&lessonFlow?.phase==='practice'&&
