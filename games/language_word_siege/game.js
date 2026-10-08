@@ -74,7 +74,7 @@ function prepareStage(index){
 function freshState(){
   return {
     core:100,wave:0,ink:20,score:0,inWave:false,waveTimer:0,spawnQueue:[],
-    enemies:[],towers:[],shots:[],effects:[],rack:D.startRack.slice(0,D.maxRack),
+    enemies:[],towers:[],shots:[],traps:[],fields:[],effects:[],rack:D.startRack.slice(0,D.maxRack),
     selected:[],placing:null,hover:null,uid:1,unique:new Set(),builtWords:[],elapsed:0,
     resources:resourceSpots.map((s,i)=>({...s,r:.045,amount:s.amount??(70+i*20)})),
     discovered:new Set(loadDiscovered()), discoveredCombos:new Set(), ended:false,towerRevision:0,totalSpawns:0
@@ -280,7 +280,7 @@ function makeTowerStats(word,def){
   const scale=1+(def.difficulty-1)*.085;
   stats.damage=(stats.damage||0)*scale;stats.range=(stats.range||.16)*(1+Math.min(.18,(def.difficulty-1)*.02));
   if(stats.area)stats.area*=1+Math.min(.22,(def.difficulty-1)*.022);
-  if(word==='NUKE'){stats.damage*=2.6;stats.area=.22;stats.rate=.12}
+  if(word==='NUKE'){stats.area=.22;stats.rate=.12}
   if(word==='BLACKHOLE'){stats.range=.24;stats.pull=.075;stats.damage=11}
   if(word==='TORNADO'){stats.push=.095;stats.area=.18}
   if(word==='VOLCANO'){stats.damage*=1.55;stats.area=.14;stats.burn=12}
@@ -298,11 +298,13 @@ function makeTowerStats(word,def){
     if(signature.shieldBreak)stats.shieldBreak=signature.shieldBreak;
     if(signature.element)stats.element=signature.element;
   }
+  stats.mode=D.behaviors?.[word]?.mode||'';
+  if(word==='NUKE'){stats.damage=Math.max(240,stats.damage);stats.area=Math.max(.24,stats.area);stats.rate=.105}
   return stats;
 }
 function rolePlacementValid(p,def,word){
   const s=makeTowerStats(word||def.word,def);
-  if(def.role==='resource')return state.resources.some(r=>r.amount>0&&dist(p,r)<=s.range);
+  if(def.role==='resource')return s.mode==='interest'||state.resources.some(r=>r.amount>0&&dist(p,r)<=s.range);
   if((s.damage||0)>0||def.role==='barrier')return minPathDistance(p)<=s.range;
   return true;
 }
@@ -431,14 +433,15 @@ function spawnEnemy(type){
     r:a.r,damage:Math.round(a.damage*(1+stage*.065)),color:a.color,
     shield:Math.round((a.shield||0)*hpScale),armor:a.armor||0,regen:a.regen||0,
     split:a.split||false,boss:a.boss||false,pathIndex:0,pathT:0,x:pathPts[0][0],y:pathPts[0][1],
-    burn:0,burnDps:0,poison:0,poisonDps:0,slow:1,pushBack:0,dead:false};
+    burn:0,burnDps:0,poison:0,poisonDps:0,slow:1,pushBack:0,dead:false,
+    corrosion:0,corrosionTime:0,chillStacks:0,freezeTime:0,stunTime:0,infected:false};
   state.enemies.push(e);
 }
 function enemyProgress(e){return e.pathIndex+e.pathT}
 function moveEnemy(e,dt){
   if(e.dead)return;
   e.slow+=(1-e.slow)*Math.min(1,dt*1.7);
-  let step=e.speed*e.slow*dt;
+  let step=e.speed*(e.freezeTime>0||e.stunTime>0?0:e.slow)*dt;
   if(e.pushBack>0){step-=e.pushBack;e.pushBack=0}
   while(Math.abs(step)>.00001){
     if(step>=0){
@@ -467,18 +470,48 @@ function damageEnemy(e,amount,kind,tower){
     const used=Math.min(e.shield,amount*multiplier);
     e.shield-=used;amount-=used/multiplier;
   }
-  const effectiveArmor=e.armor*(tower?.def.role==='pierce'?.28:1);
+  const effectiveArmor=Math.max(0,e.armor-(e.corrosion||0))*(tower?.def.role==='pierce'?.28:1);
   e.hp-=Math.max(0,amount)*(1-effectiveArmor);
-  if(kind==='burn'){e.burn=2.8;e.burnDps=Math.max(e.burnDps,(tower?.stats.burn||7)+(tower?.def.difficulty||1))}
-  if(kind==='poison'){e.poison=4.5;e.poisonDps=Math.max(e.poisonDps,(tower?.stats.poison||6)+(tower?.def.difficulty||1))}
-  if(kind==='slow')e.slow=Math.min(e.slow,tower?.stats.slow||.52);
-  if(kind==='push')e.pushBack=Math.max(e.pushBack,(tower?.stats.push||.045)*.75);
+  if(kind==='burn'){e.burn=2.8;e.burnDps=Math.max(e.burnDps,(tower?effectiveStats(tower).burn:0)||7)}
+  if(kind==='poison'){e.poison=4.5;e.poisonDps=Math.max(e.poisonDps,(tower?effectiveStats(tower).poison:0)||6)}
+  if(kind==='slow')e.slow=Math.min(e.slow,(tower?effectiveStats(tower).slow:0)||.52);
+  if(kind==='push')e.pushBack=Math.max(e.pushBack,((tower?effectiveStats(tower).push:0)||.045)*.75);
   if(e.hp<=0)killEnemy(e);
+}
+// Primary and linked elemental effects are additive, not mutually exclusive.
+// In particular FIRE + ICE retains burn and slow, and SPIDER applies both effects.
+function attackEnemy(t,e,damage,extra=''){
+  if(!e||e.dead)return;
+  damageEnemy(e,damage,'',t);
+  if(e.dead)return;
+  const s=effectiveStats(t);
+  const kinds=new Set();
+  if(['burn','slow','poison','push'].includes(t.def.role))kinds.add(t.def.role);
+  if(['burn','slow','poison','push'].includes(s.element))kinds.add(s.element);
+  if(['burn','slow','poison'].includes(extra))kinds.add(extra);
+  for(const m of t.links||[])if(['burn','slow','poison'].includes(m.def.role))kinds.add(m.def.role);
+  for(const kind of kinds)damageEnemy(e,0,kind,t);
+  if(s.mode==='webpoison'){damageEnemy(e,0,'slow',t);e.slow=Math.min(e.slow,.60)}
+  if(s.mode==='corrosion'){e.corrosion=Math.min(.30,(e.corrosion||0)+.075);e.corrosionTime=4}
+  if(s.mode==='infection')e.infected=true;
+  if(s.mode==='freeze'){
+    e.chillStacks=(e.chillStacks||0)+1;
+    if(e.chillStacks>=3){e.chillStacks=0;e.freezeTime=Math.max(e.freezeTime||0,.85);ringEffect(e.x,e.y,.025,'#a8efff',.25)}
+  }
+  if(s.mode==='stun')e.stunTime=Math.max(e.stunTime||0,.42);
 }
 function killEnemy(e){
   if(e.dead)return;e.dead=true;state.score+=e.boss?800:18+state.wave*2;state.ink+=e.boss?20:((e.armor||e.regen||e.shield)?2:1);
   flashEffect(e.x,e.y,e.color,e.boss ? .09 : .045);
   particleEffect(e.x,e.y,e.color,e.boss?14:4,e.boss?.10:.032);
+  if(e.infected){
+    for(const other of state.enemies){
+      if(other.dead||other===e||dist(e,other)>.12)continue;
+      other.poison=Math.max(other.poison,3);other.poisonDps=Math.max(other.poisonDps,e.poisonDps*.75||5);
+      other.infected=true;
+    }
+    ringEffect(e.x,e.y,.12,'#86c959',.30);
+  }
   if(e.split&&!e.boss){for(let i=0;i<2;i++){const c={...e,id:state.uid++,type:'normal',hp:20,maxHp:20,speed:.095,r:.008,damage:3,color:'#2f3035',split:false,dead:false,pathT:Math.max(0,e.pathT-i*.025)};state.enemies.push(c)}}
 }
 
@@ -544,6 +577,10 @@ function barrierEffects(){
   for(const e of state.enemies){if(e.dead)continue;for(const {t,s} of barriers){if(dist(e,t)<s.range*.84){e.slow=Math.min(e.slow,s.barrierSlow||.62);break}}}
 }
 function statusEffects(e,dt){
+  e.freezeTime=Math.max(0,(e.freezeTime||0)-dt);
+  e.stunTime=Math.max(0,(e.stunTime||0)-dt);
+  e.corrosionTime=Math.max(0,(e.corrosionTime||0)-dt);
+  if(!e.corrosionTime)e.corrosion=0;
   if(e.burn>0){e.burn-=dt;e.hp-=e.burnDps*dt}
   if(e.poison>0){e.poison-=dt;e.hp-=e.poisonDps*dt}
   if(e.regen&&!e.dead&&e.poison<=0&&e.hp>0)e.hp=Math.min(e.maxHp,e.hp+e.regen*dt);
@@ -570,7 +607,10 @@ function waveUpdate(dt){
   state.waveTimer+=dt;
   while(state.spawnQueue.length&&state.spawnQueue[0].delay<=state.waveTimer){spawnEnemy(state.spawnQueue.shift().type)}
   if(!state.spawnQueue.length&&!state.enemies.some(e=>!e.dead)){
-    state.inWave=false;state.ink+=8+state.wave*2;state.score+=100*state.wave;waveBtn.disabled=false;
+    state.inWave=false;state.ink+=8+state.wave*2;state.score+=100*state.wave;
+    const banks=state.towers.filter(t=>t.stats.mode==='interest').length;
+    if(banks){const interest=Math.min(24,Math.floor(state.ink*.06*Math.min(3,banks)));state.ink+=interest;if(interest)floatEffect(.5,.14,'BANK +'+interest+' INK','#83c962')}
+    waveBtn.disabled=false;
     $('waveProgress').style.width='100%';
     if(state.wave>=8){endGame(true)}else{
       const bonusWord=giveNextWaveWord();
@@ -589,6 +629,7 @@ function update(dt){
   state.elapsed+=dt;
   waveUpdate(dt);barrierEffects();
   for(const e of state.enemies){if(!e.dead){statusEffects(e,dt);moveEnemy(e,dt)}}
+  updateTraps(dt);updateFields(dt);
   for(const t of state.towers)towerUpdate(t,dt);
   for(const s of state.shots)shotUpdate(s,dt);
   state.enemies=state.enemies.filter(e=>!e.dead);
@@ -650,7 +691,7 @@ function particleEffect(x,y,color,count=6,radius=.04){
 
 function draw(){
   ctx.clearRect(0,0,W,H);
-  drawGrid();drawPath();drawResources();drawLinks();drawTowers();
+  drawGrid();drawPath();drawResources();drawFields();drawLinks();drawTowers();drawTraps();
   drawEnemies();drawShots();drawEffects();drawPlacement();
 }
 function px(x){return x*W}function py(y){return y*H}
