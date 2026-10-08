@@ -15,7 +15,7 @@ test('3D school gameplay is a parseable local Three.js module',()=>{
   const result=spawnSync(process.execPath,['--input-type=module','--check'],{input:js,encoding:'utf8'});
   assert.equal(result.status,0,result.stderr||result.stdout);
   assert.match(html,/assets\/vendor\/three-r160\/three\.module\.js/);
-  assert.match(html,/src="\.\/game\.js\?v=4"/);
+  assert.match(html,/src="\.\/game\.js\?v=5"/);
   assert.match(js,/new THREE\.WebGLRenderer/);
   assert.match(js,/new THREE\.PerspectiveCamera/);
   assert.match(js,/GLTFLoader/);
@@ -293,4 +293,72 @@ test('the navigation trail is visible only until the first tutorial anomaly is f
   assert.equal(result.second.hidden,true);
   assert.equal(result.second.trail,0);
   assert.equal(result.lastHidden,true);
+});
+
+
+test('six anomalies use different rituals without an ever-present navigation trail',()=>{
+  assert.match(js,/const stageNames=\[/);
+  assert.match(js,/stage===12&&dist\(player,SCHOOL\.guard\)/);
+  assert.match(js,/encounter\.cold>=3\)setStage\(5\)/);
+  assert.match(js,/encounter\.eggCharge>=4/);
+  assert.match(js,/encounter\.bellCount>=3&&encounter\.bellWindow>0/);
+  assert.match(js,/encounter\.wolf\.ready&&dist\(player,wolfTrap\)/);
+  assert.match(js,/stage===1&&fixes===0/);
+  assert.match(js,/Animals\/glTF\/Wolf\.gltf/);
+  assert.match(js,/ultimate-monsters-bundle\/yeti\.glb/);
+  assert.match(js,/ultimate-monsters-bundle\/demon\.glb/);
+  for(const ghost of ['도깨비','처녀귀신','유키온나','달걀귀신','저승사자','늑대인간']){
+    assert.ok(html.includes(ghost),ghost+' should have clear directions');
+  }
+});
+
+function simulateExtraAnomaly(mode){
+  const start=js.indexOf('function takeAnomalyHit('),end=js.indexOf('function updatePlayer(dt){',start);
+  assert.ok(start>=0&&end>start);
+  const definitions=[
+    "let stage=mode==='eggAway'||mode==='eggStare'?6:mode==='bell'?8:mode==='wolf'?11:4;",
+    "let started=true,ended=false,paused=false,hp=3,invulnerable=0,elapsed=0,viewYaw=mode==='eggAway'?Math.PI:0,lastMistake='';",
+    "const player={x:mode.startsWith('egg')?7.5:mode==='bell'?-20.35:mode==='wolf'?-7.5:25.5,z:mode.startsWith('egg')?-14:mode==='bell'?8:mode==='wolf'?8.55:15.5,yaw:0};",
+    "const eggLocation={x:7.5,z:-17.35},bellDoor={x:-20.35,z:8},wolfTrap={x:-10.5,z:14};",
+    "const encounter={frost:0,eggCharge:0,eggFear:0,cold:0,bellCount:0,bellClock:1,bellWindow:0,wolf:{x:-1.5,z:16.8,speed:2.25,root:{position:{set(){}},rotation:{y:0}},nav:null,grace:7,lureTime:26,ready:false,active:true}};",
+    "const yuki={root:{position:{y:0},rotation:{y:0}}};",
+    "const ui={reticle:{classList:{toggle(){}},style:{}}},SCHOOL={guard:{x:-24.2,z:0}};",
+    "const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z),clearGhostSight=()=>true,canWalk=()=>true,routePlan=(a,b)=>[{x:a.x,z:a.z},{x:b.x,z:b.z}];",
+    "const alerts=[];function sfx(){}function showLesson(){}function showToast(t){alerts.push(t)}function finish(ok){ended=true;}",
+    "function setStage(n){stage=n;}"
+  ];
+  const execution=[
+    "const budget=mode==='wolf'?300:mode==='bell'?120:mode==='eggAway'||mode==='eggStare'?100:760;",
+    "for(let i=0;i<budget;i++){elapsed+=.05;invulnerable=Math.max(0,invulnerable-.05);updateNewEncounters(.05);if((stage!==6&&mode.startsWith('egg'))||(mode==='wolf'&&encounter.wolf.ready)||(mode==='yuki'&&hp<3))break;}",
+    "return {stage,hp,eggCharge:encounter.eggCharge,bellCount:encounter.bellCount,bellWindow:encounter.bellWindow,wolfReady:encounter.wolf.ready,wolfTime:encounter.wolf.lureTime,alerts};"
+  ];
+  return new Function('mode',[...definitions,js.slice(start,end),...execution].join('\n'))(mode);
+}
+
+test('egg rewards looking away and punishes looking at its featureless face',()=>{
+  const away=simulateExtraAnomaly('eggAway'),stare=simulateExtraAnomaly('eggStare');
+  assert.equal(away.stage,7);
+  assert.equal(away.hp,3);
+  assert.equal(stare.stage,6);
+  assert.equal(stare.hp,2);
+});
+
+test('Yuki-onna freezes stationary players unless they restore the heaters',()=>{
+  const result=simulateExtraAnomaly('yuki');
+  assert.equal(result.hp,2);
+  assert.equal(result.stage,4);
+});
+
+test('reaper provides three audible bells and a timely door-closing window',()=>{
+  const result=simulateExtraAnomaly('bell');
+  assert.equal(result.bellCount,3);
+  assert.ok(result.bellWindow>0);
+  assert.ok(result.alerts.some(x=>x.includes('세 번째 종')));
+});
+
+test('wolf chases the decoy sound into the sealable trap before the timer ends',()=>{
+  const result=simulateExtraAnomaly('wolf');
+  assert.equal(result.stage,11);
+  assert.equal(result.wolfReady,true);
+  assert.ok(result.wolfTime>0);
 });
