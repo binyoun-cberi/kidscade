@@ -65,10 +65,10 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
 .card button.primary{width:100%;margin-top:13px;padding:14px 18px;border-radius:10px;border:1px solid #ffe6b6ad;background:linear-gradient(120deg,#c5a06b,#8b633e);font-weight:850;font-size:15px;color:#101a23}
 .note{display:block;color:#9db3bc;font-size:11px;line-height:1.5;margin-top:12px}
 @media(max-width:720px){
- #navigation{top:auto;bottom:194px;left:50%;width:min(250px,64vw);padding:8px 10px}
+ #navigation{top:auto;bottom:210px;left:50%;width:min(250px,64vw);padding:8px 10px}
  #navArrow{font-size:17px;margin-right:3px}#navTitle{font-size:10px}#navRange{font-size:9px}
- #lesson{bottom:101px;width:min(310px,55vw);padding:7px 9px}
- #lesson.encounter{bottom:180px}
+ #lesson{bottom:135px;width:min(310px,55vw);padding:7px 9px}
+ #lesson.encounter{bottom:205px}
  #lesson strong{font-size:11px}#lesson p{font-size:10px}
  #reticle{width:24px;height:24px}
 
@@ -77,7 +77,7 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
   .logo strong{font-size:13px}.logo small{font-size:8px}
   .stats{gap:7px;font-size:10px;justify-content:flex-end;max-width:60vw}
   .stats b{font-size:12px}.stats button{padding:5px}
-  #missionPanel{left:7px;top:73px;width:min(285px,57vw);padding:9px}
+  #missionPanel{left:7px;top:73px;width:min(285px,57vw,calc(100vw - 160px));padding:9px}
   #mission{font-size:13px}#detail{font-size:10px;margin:5px 0}
   #minimapWrap{right:7px;top:73px;padding:5px}
   #minimap{width:128px;height:92px}#minimapWrap small{font-size:8px}
@@ -86,15 +86,16 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
   .controls{right:12px;bottom:16px;gap:7px;flex-direction:column}
   #action{width:113px;min-height:59px;font-size:11px}
   #flash{min-height:39px;min-width:112px;font-size:10px;padding:8px}
-  #gaze{bottom:115px}
+  #gaze{bottom:129px}
   .card{padding:18px}.card h1{font-size:22px}
 }
 @media(max-height:480px){
-  #navigation{top:auto;bottom:147px;left:50%;width:190px;padding:5px}
-  #lesson{bottom:75px;max-width:275px;padding:5px 7px}
-  #lesson.encounter{bottom:171px}
+  #navigation{top:auto;bottom:190px;left:50%;width:190px;padding:5px}
+  #lesson{bottom:125px;max-width:275px;padding:5px 7px}
+  #lesson.encounter{bottom:194px}
 
   #missionPanel{top:63px;max-height:105px;overflow:auto}
+  #gaze{bottom:125px}
   #minimapWrap{top:63px}
   #joystick{width:86px;height:86px;bottom:8px}
   #action{min-height:50px}
