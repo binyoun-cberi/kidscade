@@ -15,7 +15,7 @@ test('3D school gameplay is a parseable local Three.js module',()=>{
   const result=spawnSync(process.execPath,['--input-type=module','--check'],{input:js,encoding:'utf8'});
   assert.equal(result.status,0,result.stderr||result.stdout);
   assert.match(html,/assets\/vendor\/three-r160\/three\.module\.js/);
-  assert.match(html,/src="\.\/game\.js\?v=2"/);
+  assert.match(html,/src="\.\/game\.js\?v=3"/);
   assert.match(js,/new THREE\.WebGLRenderer/);
   assert.match(js,/new THREE\.PerspectiveCamera/);
   assert.match(js,/GLTFLoader/);
