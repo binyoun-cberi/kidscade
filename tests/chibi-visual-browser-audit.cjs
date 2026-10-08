@@ -262,6 +262,11 @@ const errors=[];
       'Exported upper garment lost its skin rig: '+top);
     assert.ok(exported.skins.some(x=>x.name===bottom+'_shell'&&x.bones===78),
       'Exported lower garment lost its skin rig: '+bottom);
+    if(bottom.includes('joggers')||bottom.includes('widepants')){
+      for(const side of ['left','right'])assert.ok(
+        exported.skins.some(x=>x.name===bottom+'_leg_'+side&&x.bones===78),
+        'Articulated GLB trouser '+side+' leg missing: '+bottom);
+    }
     report.outfitPack.roundtrip.push({fit,top,bottom,bytes:exported.bytes,
       clips:exported.clips,riggedPieces:exported.skins.length});
   }
