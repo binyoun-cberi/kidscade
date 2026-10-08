@@ -35,19 +35,19 @@ export const OUTFIT_STYLES=[
   {id:'chibi_female_jacket',label:'데님 재킷',fit:'female',category:'top',base:'shirt',color:'#5485a8',
     shape:{chest:.17,shoulder:.23,hem:.055,sleeve:.23,depth:.18,drop:.043},details:['collar','zip','pocket']},
 
-  {id:'chibi_male_jeans',label:'스트레이트 청바지',fit:'male',category:'bottom',base:'pants',color:'#365d8a',
+  {id:'chibi_male_jeans',label:'스트레이트 청바지',fit:'male',category:'bottom',base:'kidscade_male_shorts',color:'#365d8a',
     shape:{hip:.13,thigh:.085,calf:.11,flare:.025,length:0},details:['waist']},
-  {id:'chibi_male_joggers',label:'조거 팬츠',fit:'male',category:'bottom',base:'pants',color:'#4c596c',
+  {id:'chibi_male_joggers',label:'조거 팬츠',fit:'male',category:'bottom',base:'kidscade_male_shorts',color:'#4c596c',
     shape:{hip:.20,thigh:.20,calf:.16,flare:-.14,length:-.012},details:['waist','cuff']},
-  {id:'chibi_male_chinos',label:'테이퍼드 치노',fit:'male',category:'bottom',base:'pants',color:'#bba987',
+  {id:'chibi_male_chinos',label:'테이퍼드 치노',fit:'male',category:'bottom',base:'kidscade_male_shorts',color:'#bba987',
     shape:{hip:.11,thigh:.13,calf:.025,flare:-.08,length:0},details:['waist']},
-  {id:'chibi_female_jeans',label:'슬림 청바지',fit:'female',category:'bottom',base:'pants',color:'#52739a',
+  {id:'chibi_female_jeans',label:'슬림 청바지',fit:'female',category:'bottom',base:'ninjasuitshort',color:'#52739a',
     shape:{hip:.09,thigh:.075,calf:.065,flare:-.035,length:0},details:['waist']},
   {id:'chibi_female_shorts',label:'플레어 반바지',fit:'female',category:'bottom',base:'ninjasuitshort',color:'#bd8d65',
     shape:{hip:.125,thigh:.17,calf:0,flare:.19,length:0},details:['waist']},
-  {id:'chibi_female_widepants',label:'와이드 팬츠',fit:'female',category:'bottom',base:'pants',color:'#8b807b',
+  {id:'chibi_female_widepants',label:'와이드 팬츠',fit:'female',category:'bottom',base:'ninjasuitshort',color:'#8b807b',
     shape:{hip:.18,thigh:.22,calf:.27,flare:.23,length:0},details:['waist']}
-].filter(style=>style.id!=='chibi_male_tshirt'); // 9 tops + 6 bottoms? existing 2 tops => 9 new tops; existing 2 bottoms => 6 new bottoms.
+]; // 9 new tops and 6 new bottoms; 20 total with the five existing styles.
 
 const smooth=(a,b,v)=>{
   const t=THREE.MathUtils.clamp((v-a)/(b-a),0,1);
@@ -159,6 +159,53 @@ function add3dDetails({THREE: _THREE, source,style,group,makeSolidMaterial,makeR
   }
 }
 
+/** A real pair of articulated trouser legs, not an elongated skirt tube.
+ * Each cylinder vertex blends source thigh and shin bones around the knee.
+ * Both legs inherit the original Chibi 78-bone skeleton/bind matrix.
+ */
+const TWO_LEG_STYLES=new Set([
+  'chibi_male_jeans','chibi_male_joggers','chibi_male_chinos',
+  'chibi_female_jeans','chibi_female_widepants'
+]);
+function makeTrouserLegs({source,style,group,material,cloneSkinnedMeshWithGeometry}){
+  const skeleton=source.skeleton;
+  for(const side of ['left','right']){
+    const sign=side==='left'?-1:1;
+    // These indices resolve actual GLTFLoader-sanitized Chibi bones.
+    const thigh=skeleton.bones.findIndex(bone=>bone.name==='DEF-thigh'+(side==='left'?'L':'R'));
+    const shin=skeleton.bones.findIndex(bone=>bone.name==='DEF-shin'+(side==='left'?'L':'R'));
+    if(thigh<0||shin<0)throw new Error('Missing articulated '+side+' leg bones for '+style.id);
+    const wide=style.id==='chibi_female_widepants';
+    const jogger=style.id==='chibi_male_joggers';
+    const chino=style.id==='chibi_male_chinos';
+    const upperRadius=wide?.145:jogger?.134:chino?.120:.118;
+    const lowerRadius=wide?.137:jogger?.075:chino?.076:.088;
+    const top=.59,bottom=.082;
+    const geometry=new THREE.CylinderGeometry(upperRadius,lowerRadius,top-bottom,16,9,false);
+    geometry.translate(sign*.153,(top+bottom)*.5,0);
+    const positions=geometry.getAttribute('position');
+    const indices=new Uint16Array(positions.count*4);
+    const weights=new Float32Array(positions.count*4);
+    for(let i=0;i<positions.count;i++){
+      const y=positions.getY(i);
+      const topWeight=smooth(.17,.47,y);
+      const offset=i*4;
+      indices[offset]=thigh;
+      indices[offset+1]=shin;
+      weights[offset]=topWeight;
+      weights[offset+1]=1-topWeight;
+    }
+    geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(indices,4));
+    geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    const leg=cloneSkinnedMeshWithGeometry(source,geometry,material,style.id+'_leg_'+side);
+    leg.userData={part:'trouser-leg',side,fit:style.fit,articulation:'thigh-to-shin-blend'};
+    group.add(leg);
+  }
+}
+
 export function createOutfitPack({
   getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial,
   makeRigidSkinnedPiece,resolveFirstBoneName
@@ -179,6 +226,7 @@ export function createOutfitPack({
     };
     const shell=cloneSkinnedMeshWithGeometry(source,geometry,material,style.id+'_shell');
     group.add(shell);
+    if(TWO_LEG_STYLES.has(style.id))makeTrouserLegs({source,style,group,material,cloneSkinnedMeshWithGeometry});
     add3dDetails({THREE,source,style,group,makeSolidMaterial,makeRigidSkinnedPiece,resolveFirstBoneName});
     source.parent.add(group);
     group.visible=false;
