@@ -1188,6 +1188,7 @@ function updateSafety(dt){
 function chatForStudent(s){return lessonChats.find(chat=>chat.a===s||chat.b===s)||null}
 function refreshStudentBubbleState(s){
   if(!s||!isStudentPresent(s))return hideBubble(s);
+  if(s.questionActive)return showBubble(s,'?','question');
   if(s.accident)return showBubble(s,'⚠️','health');
   if(s.health?.revealed&&s.health.state!=='healthy')return showBubble(s,'🤒','health');
   const conflict=pairs.find(p=>p.state==='conflict'&&(p.a===s||p.b===s));
@@ -1532,6 +1533,10 @@ function scanAction(){
   }
 
   if(currentStep.kind==='lesson'){
+    const question=students.filter(s=>s.questionActive&&studentCanParticipate(s)&&
+      distance2D(player.root.position,s.actor.root.position)<2.35)
+      .sort((a,b)=>distance2D(player.root.position,a.actor.root.position)-distance2D(player.root.position,b.actor.root.position))[0];
+    if(question){currentAction={type:'answerQuestion',student:question};setAction('✋',question.runtime.name+' 질문 답하기',true);return}
     const flowAction=lessonFlowAction(lessonFlow);
     if(flowAction&&isTeacherAtBoard()){
       currentAction={type:flowAction.type};setAction(flowAction.icon,flowAction.label,true);return;
@@ -1562,7 +1567,8 @@ function scanAction(){
   currentAction={type:'none'};setAction('✋','살펴보기',false);
 }
 function updateGuideByAction(){
-  if(currentAction.type==='focus')setGuide(currentStep.subject+' 수업',currentAction.student.runtime.name+'의 집중이 떨어졌어요','가까이 왔어요. 행동 버튼으로 관심을 주세요.');
+  if(currentAction.type==='answerQuestion')setGuide('학생 질문',currentAction.student.runtime.name+'가 질문하고 있어요','가까이에서 답해주면 학습과 집중에 도움이 됩니다.');
+  else if(currentAction.type==='focus')setGuide(currentStep.subject+' 수업',currentAction.student.runtime.name+'의 집중이 떨어졌어요','가까이 왔어요. 행동 버튼으로 관심을 주세요.');
   else if(currentAction.type==='mediate')setGuide(currentAction.pair?.source==='team'?'모둠 활동':'갈등 상황','두 학생이 부딪히고 있어요','가까이에서 중재하면 갈등 관계가 풀립니다.');
   else if(currentAction.type==='separate')setGuide('갈등 상황','싸움이 났어요!','둘을 먼저 떼어놓으세요.');
   else if(currentAction.type==='healthCheck')setGuide('건강 확인',currentAction.student.runtime.name+'의 상태가 이상해 보여요','가까이에서 상태를 확인하세요.');
@@ -1655,6 +1661,16 @@ function useAction(){
       playerGestureTimer=.45;playAnim(player,'push');
     }
     return;
+  }
+  if(currentAction.type==='answerQuestion'){
+    const s=currentAction.student;
+    if(!s.questionActive)return;
+    s.questionActive=false;s.answeredWindow=Math.floor(lessonElapsed/24);
+    s.runtime.focus=Math.min(s.runtime.focusMax,s.runtime.focus+s.runtime.focusMax*.12);
+    addLearning(campaign,s.runtime.id,.14);refreshStudentBubbleState(s);
+    actionFeedback(s.actor.root.position,'질문 해결 +','attention');
+    playerGestureTimer=.55;playAnim(player,'push');
+    showToast(s.runtime.name+'의 질문에 답했어요.');return;
   }
   if(currentAction.type==='groupFocus'){
     if(groupSignalCooldown>0||groupSignalsThisLesson>=2)return;
