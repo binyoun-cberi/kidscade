@@ -29,7 +29,8 @@ const ui={
   app:$('app'),canvas:$('game'),phase:$('phaseLabel'),clock:$('clock'),timer:$('phaseTimer'),
   classState:$('classState'),studentStrip:$('studentStrip'),dayStrip:$('dayStrip'),campaignStatus:$('campaignStatus'),
   instructionPanel:$('instructionPanel'),instructionPhase:$('instructionPhase'),
-  instructionBar:$('instructionBar'),instructionHint:$('instructionHint'),
+  instructionBar:$('instructionBar'),instructionPercent:$('instructionPercent'),instructionHint:$('instructionHint'),
+  explainBar:$('explainBar'),practiceBar:$('practiceBar'),recapBar:$('recapBar'),
   rosterToggle:$('rosterToggle'),
   guideKicker:$('guideKicker'),guideTitle:$('guideTitle'),guideText:$('guideText'),
   toast:$('toast'),action:$('actionButton'),actionIcon:$('actionIcon'),actionLabel:$('actionLabel'),
@@ -779,9 +780,27 @@ function updateInstructionPanel(){
   ui.instructionPanel.classList.toggle('hidden',!active);
   if(!active)return;
   const phase=LESSON_PHASES[lessonFlow.phase];
-  const progress=Math.round(lessonFlowProgress(lessonFlow)*100);
-  ui.instructionPhase.textContent=(phase?.label||'수업')+' · '+progress+'%';
-  ui.instructionBar.style.width=progress+'%';
+  const current=lessonFlow.phase;
+  const segment=Math.round(lessonFlowProgress(lessonFlow)*100);
+  const explain=current==='explain'?segment:100;
+  const practice=current==='explain'||current==='assign'?0:current==='practice'?segment:100;
+  const recap=current==='complete'?100:current==='recap'?segment:0;
+  const completed=Math.round((explain+practice+recap)/3);
+  ui.instructionPhase.textContent=(phase?.label||'수업');
+  ui.instructionPercent.textContent=completed+'%';
+  ui.instructionBar.style.width=completed+'%';
+  ui.instructionBar.parentElement?.setAttribute('aria-valuenow',String(completed));
+  for(const [id,value,activeStage] of [
+    ['explain',explain,current==='explain'||current==='assign'],
+    ['practice',practice,current==='practice'||current==='recapReady'],
+    ['recap',recap,current==='recap']
+  ]){
+    const bar=ui[id+'Bar'];
+    if(!bar)continue;
+    bar.style.width=value+'%';
+    bar.closest('.instructionStage')?.classList.toggle('active',activeStage);
+    bar.closest('.instructionStage')?.classList.toggle('done',value===100);
+  }
   const atBoard=isTeacherAtBoard();
   const hints={
     explain:atBoard?'설명 중 · 칠판에 머물러 주세요':'설명이 중단됐어요 · 칠판으로 돌아가세요',
