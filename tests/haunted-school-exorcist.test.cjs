@@ -500,3 +500,31 @@ test('first-person has no chase rig, and looking changes the torch direction',()
   assert.doesNotMatch(js,/CAMERA_FOLLOW|cameraFollowState|cameraFollowTarget/);
 });
 
+
+
+test('eyes detect the maiden only when the actual first-person view looks at her',()=>{
+  const start=js.indexOf('function segmentHitsRect('),end=js.indexOf('function advanceGhostToward(',start);
+  assert.ok(start>=0&&end>start);
+  const player={x:0,z:0},maiden={x:0,z:-5};
+  const walls=[],view={yaw:0,pitch:0};
+  const source=js.slice(start,end).replaceAll('viewYaw','view.yaw').replaceAll('viewPitch','view.pitch');
+  const gaze=new Function('player','maiden','walls','view','FIRST_PERSON_EYE_HEIGHT',
+    source+'return gazingAtGhost;')(player,maiden,walls,view,1.62);
+  assert.equal(gaze(),true,'ghost straight ahead and at eye level should be seen');
+  view.yaw=Math.PI/2;
+  assert.equal(gaze(),false,'turning head sideways breaks eye contact');
+  view.yaw=Math.PI;
+  assert.equal(gaze(),false,'turning around breaks eye contact');
+  view.yaw=0;view.pitch=.72;
+  assert.equal(gaze(),false,'looking at ceiling is not looking at the ghost');
+  view.pitch=0;
+  walls.push({x:0,z:-2.5,hx:2,hz:.2});
+  assert.equal(gaze(),false,'school wall interrupts first-person sight');
+});
+
+test('first-person control instructions agree with the fixed eye camera',()=>{
+  assert.match(html,/1인칭 시점/);
+  assert.match(html,/카메라는 캐릭터의 눈과 같습니다/);
+  assert.match(html,/화면을 돌려 진짜로 등을 돌린 채 4초/);
+  assert.match(js,/ui\.reticle\.classList\.toggle\('hidden',!started\|\|ended\)/);
+});
