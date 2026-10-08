@@ -127,6 +127,20 @@ function createRoom(){
 }
 createRoom();
 
+function repairCharacterSkin(root){
+  // Several shared NPCs have near-black Skin material defaults; correct the material,
+  // not just the scene lighting, to prevent the familiar "black face" defect.
+  root.traverse(node=>{
+    if(!node.isMesh)return;
+    const fix=m=>{
+      if(!m||!(/skin/i.test(m.name||''))||!m.color)return m;
+      const copy=m.clone(),c=copy.color;
+      if(Math.max(c.r,c.g,c.b)<.28)copy.color.set(0xe8b99a);
+      return copy;
+    };
+    node.material=Array.isArray(node.material)?node.material.map(fix):fix(node.material);
+  });
+}
 function humanoidFallback(){
   const group=new THREE.Group();cube(group,0,.94,0,.48,.9,.28,mat(0x6b8295));
   const head=new THREE.Mesh(new THREE.SphereGeometry(.25,12,10),mat(0xc7ad9b));head.position.y=1.64;group.add(head);
@@ -135,7 +149,7 @@ function humanoidFallback(){
 }
 player.model=humanoidFallback();player.root.add(player.model);
 loader.loadAsync(MAN).then(gltf=>{
-  const model=cloneSkeleton(gltf.scene);normalize(model,1.7);player.root.remove(player.model);player.model=model;player.root.add(model);
+  const model=cloneSkeleton(gltf.scene);repairCharacterSkin(model);normalize(model,1.7);player.root.remove(player.model);player.model=model;player.root.add(model);
   const clips=gltf.animations||[],idle=clips.find(c=>/idle|stand/i.test(c.name))||clips[0],walk=clips.find(c=>/walk/i.test(c.name));
   if(idle||walk){
     const mixer=new THREE.AnimationMixer(model);
