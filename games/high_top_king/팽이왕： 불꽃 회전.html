@@ -44,7 +44,7 @@ button{font:inherit}
 #combo.show{opacity:1;transform:translateX(-50%) scale(1)}
 #combo strong{display:block;font-size:clamp(38px,8vw,72px);line-height:.9;font-style:italic}
 #combo span{font-size:15px;font-weight:900;letter-spacing:.12em}
-#guide{position:absolute;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translateX(-50%);padding:11px 17px;border-radius:999px;background:rgba(8,17,34,.7);border:1px solid rgba(255,255,255,.18);color:white;font-weight:800;font-size:14px;white-space:nowrap;opacity:1;transition:opacity .35s}
+#guide{position:absolute;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translateX(-50%);padding:11px 17px;border-radius:999px;background:rgba(8,17,34,.7);border:1px solid rgba(255,255,255,.18);color:white;font-weight:800;font-size:13px;max-width:calc(100vw - 24px);width:max-content;white-space:normal;text-align:center;line-height:1.45;opacity:1;transition:opacity .35s}
 #guide.hide{opacity:0}
 .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(rgba(6,14,30,.2),rgba(6,14,30,.52));backdrop-filter:blur(4px)}
 .panel{width:min(560px,100%);max-height:calc(100vh - 36px);overflow:auto;padding:clamp(22px,5vw,42px);border-radius:32px;background:linear-gradient(160deg,#fffefb,#fff7e7);box-shadow:var(--shadow);border:3px solid rgba(255,255,255,.85);text-align:center}
@@ -122,14 +122,14 @@ button{font:inherit}
       </div>
     </div>
     <div id="combo"><strong id="comboNum">2</strong><span>연속 타격</span></div>
-    <div id="guide">빛나는 방향에서 쳐서 회복하고, 선회하다 돌진하는 CPU 팽이를 피하며 오래 버티세요</div>
+    <div id="guide">노란 표시에서 중심으로 쓸어 회복하세요. CPU 돌진 전에 정확히 치면 방어!</div>
   </div>
 
   <div class="overlay" id="startOverlay">
     <div class="panel">
       <div class="eyebrow">3D 손끝 액션</div>
       <h1 class="logo">팽이왕<em>불꽃 회전</em></h1>
-      <p class="subtitle">내 팽이를 살려내며 강력한 CPU 팽이와 대결하세요. CPU는 경기장을 돌다가 틈을 노려 돌진하고, 충돌할수록 내 팽이의 균형이 무너집니다. CPU는 탈락하지 않으므로 얼마나 오래 버티는지가 최고 기록입니다.</p>
+      <p class="subtitle">팽이를 정확히 쳐서 회전력과 균형을 유지하세요! CPU가 돌진할 때 정확하게 쓸면 잠깐 방어할 수 있어요. CPU는 탈락하지 않으며 오래 버틴 기록에 도전하는 게임이에요.</p>
       <div class="top-preview">
         <div class="cap"></div><div class="body"></div><div class="tip"></div>
       </div>
@@ -141,7 +141,7 @@ button{font:inherit}
       </div>
       <button class="primary" id="startBtn">회전 시작</button>
       <div class="mini-row"><span>터치·마우스 지원</span><span>최고 기록 자동 저장</span></div>
-      <div class="how">팽이 주변의 빛나는 방향에서 중심을 향해 드래그하면 회전력과 균형을 함께 회복합니다. CPU가 붉게 빛나면 곧 돌진한다는 뜻이니 옆으로 밀어 피하거나, 충돌 직후 빠르게 복구하세요. CPU는 가장자리에서 스스로 복귀하며 탈락하지 않습니다. 시간이 갈수록 돌진이 빨라지고 경기장도 줄어듭니다.</div>
+      <div class="how">① 노란 표시에서 팽이 중심으로 짧게 쓸어 회전력과 균형을 회복하세요. ② 정확하게 쓸면 푸른 방어막이 잠시 생겨 CPU 충돌 피해를 줄여 줍니다. ③ 가장자리에서는 중앙으로 쓸어 복귀하세요. ④ 처음 한 번은 가장자리에서 튕겨 돌아올 수 있지만, 연속으로 밀리면 탈락합니다. 마구 연타하면 균형이 무너집니다.</div>
     </div>
   </div>
 
@@ -220,6 +220,8 @@ let shake = 0;
 let pausedAt = 0;
 let collisionCount = 0;
 let lastCollisionAt = -99;
+let guardBlocks = 0;
+let edgeRescues = 0;
 
 const TOP_KING_RECORD_KEY='kidscade_top_king_record_v1';
 const TOP_KING_RECORD_OLD='topKing3D'+'ShrinkArenaRecord';
@@ -238,6 +240,7 @@ const top = {
   targetAngle:0,
   targetSpeed:1.05,
   lastStrikeMs:-9999,
+  guardUntil:-1, guardLevel:0, lastEdgeSave:-99,
   falling:false, fallTime:0, fallTilt:0
 };
 
@@ -257,10 +260,10 @@ const cpu = {
 const arena = {
   baseEdge:2.38,
   currentEdge:2.38,
-  minEdge:1.94,
+  minEdge:2.02,
   scale:1,
-  shrinkStart:10,
-  shrinkDuration:82
+  shrinkStart:18,
+  shrinkDuration:112
 };
 
 const particles = [];
@@ -527,12 +530,13 @@ resize();
 
 function resetGame(){
   elapsed=0;score=0;combo=0;bestCombo=0;lastHitAt=-99;fallTimer=0;guideTimer=0;shake=0;
-  collisionCount=0;lastCollisionAt=-99;
+  collisionCount=0;lastCollisionAt=-99;guardBlocks=0;edgeRescues=0;
   top.x=.48;top.y=0;top.z=.15;top.vx=0;top.vz=0;top.angle=0;top.spin=19;top.wobble=0.03;top.wobblePhase=0;
   top.balance=1;top.targetAngle=Math.random()*Math.PI*2;top.targetSpeed=.9+Math.random()*.4;top.lastStrikeMs=-9999;
+  top.guardUntil=-1;top.guardLevel=0;top.lastEdgeSave=-99;
   top.falling=false;top.fallTime=0;top.fallTilt=0;
-  cpu.x=-1.28;cpu.z=-.18;cpu.vx=.1;cpu.vz=.32;cpu.angle=0;cpu.spin=31;cpu.wobble=.025;cpu.wobblePhase=0;
-  cpu.orbitDir=Math.random()<.5?-1:1;cpu.charging=false;cpu.phaseTimer=2.7+Math.random()*.8;cpu.recoilTimer=0;cpu.collisionCooldown=0;cpu.chargeGlow=0;
+  cpu.x=-1.4;cpu.z=-.22;cpu.vx=.1;cpu.vz=.24;cpu.angle=0;cpu.spin=31;cpu.wobble=.025;cpu.wobblePhase=0;
+  cpu.orbitDir=Math.random()<.5?-1:1;cpu.charging=false;cpu.phaseTimer=3.5+Math.random()*.8;cpu.recoilTimer=0;cpu.collisionCooldown=0;cpu.chargeGlow=0;
   arena.currentEdge=arena.baseEdge;arena.scale=1;
   particles.length=0;streaks.length=0;shockwaves.length=0;
   deleteMesh(topMesh);topMesh=createTopMesh(palettes[chosenPalette]);
@@ -573,7 +577,7 @@ function endGame(reason='stop'){
   bestTime=Math.max(bestTime,elapsed);bestScore=Math.max(bestScore,Math.round(score));
   localStorage.setItem(TOP_KING_RECORD_KEY,JSON.stringify({time:bestTime,score:bestScore}));
   UI.resultTime.textContent=elapsed.toFixed(1)+'초';
-  UI.resultScore.textContent=`CPU와 ${collisionCount}회 충돌 · 점수 ${Math.round(score).toLocaleString()}점 · 최고 콤보 ${bestCombo}`;
+  UI.resultScore.textContent=`CPU 충돌 ${collisionCount}회 · 방어 ${guardBlocks}회 · 점수 ${Math.round(score).toLocaleString()}점 · 최고 콤보 ${bestCombo}`;
   UI.bestTimeResult.textContent=bestTime.toFixed(1)+'초';
   UI.bestScoreResult.textContent=Math.round(bestScore).toLocaleString();
   UI.resultTitle.textContent=reason==='fall'
@@ -596,7 +600,7 @@ function updateHud(){
   UI.balanceFill.style.width=balancePct+'%';
   UI.balanceText.textContent=Math.round(balancePct)+'%';
   UI.balanceFill.style.filter=top.balance<.32?'saturate(1.7) brightness(1.08)':'none';
-  if(UI.cpuMini) UI.cpuMini.textContent=`CPU 충돌 ${collisionCount}회 · ${cpu.charging?'돌진 경고':'선회 중'}`;
+  if(UI.cpuMini) UI.cpuMini.textContent=elapsed<top.guardUntil?'푸른 방어막 활성!':`CPU 충돌 ${collisionCount}회 · ${cpu.charging?'돌진 경고':'선회 중'}`;
 }
 
 function worldToScreen(x,y,z){
@@ -671,16 +675,31 @@ function tryStrike(x1,y1,x2,y2,dtMs){
   top.spin=Math.min(38,top.spin+add);
 
   const nx=dx/len,ny=dy/len;
-  const pushScale=.7+force*.2;
-  top.vx+=nx*force*.70*pushScale;
-  top.vz+=ny*force*.54*pushScale;
-  top.vx=Math.max(-2.4,Math.min(2.4,top.vx));
-  top.vz=Math.max(-2.4,Math.min(2.4,top.vz));
+  // A swipe is a steering input, not a full-strength launch toward the rim.
+  const pushScale=.85+force*.12;
+  top.vx+=nx*force*.22*pushScale;
+  top.vz+=ny*force*.17*pushScale;
+  const rimDistance=Math.hypot(top.x,top.z);
+  const rimProximity=Math.max(0,Math.min(1,(rimDistance-1.05)/.95));
+  // Accurate hits softly restore a safe orbit, rather than teleporting the top.
+  const control=accuracy*timingScore;
+  if(rimDistance>.01 && control>.22){
+    const recenter=.14*control*rimProximity;
+    top.vx-=top.x/rimDistance*recenter;
+    top.vz-=top.z/rimDistance*recenter;
+  }
+  top.vx=Math.max(-1.7,Math.min(1.7,top.vx));
+  top.vz=Math.max(-1.7,Math.min(1.7,top.vz));
 
-  const balanceGain=timingScore*.12*accuracy;
-  const balanceLoss=(1-timingScore)*(.075+force*.085)+rapid*.055+Math.max(0,force-1)*.05;
+  const balanceGain=timingScore*.16*accuracy;
+  const balanceLoss=(1-timingScore)*(.06+force*.07)+rapid*.05+Math.max(0,force-1)*.04;
   top.balance=Math.max(0,Math.min(1,top.balance+balanceGain-balanceLoss));
-  top.wobble=Math.max(.025,top.wobble-.025*timingScore+.035*(1-timingScore));
+  top.wobble=Math.max(.025,top.wobble-.032*timingScore+.035*(1-timingScore));
+  // Reward precision, not swipe spam: a temporary guard can block one CPU hit.
+  if(accuracy>.38 && timingScore>.57 && rapid<.48){
+    top.guardUntil=elapsed+.45+.38*accuracy*timingScore;
+    top.guardLevel=accuracy*timingScore;
+  }
 
   shake=Math.min(1,shake+.22*force+.16*(1-timingScore));
   const now=nowMs/1000;
@@ -1003,6 +1022,13 @@ function drawFx(){
     const ty=p.y+Math.sin(a)*ringR;
     fx.fillStyle=`rgba(255,244,170,${.8+.2*pulse})`;
     fx.beginPath();fx.arc(tx,ty,7+3*pulse,0,Math.PI*2);fx.fill();
+  }
+  if(state==='playing'&&!top.falling&&elapsed<top.guardUntil){
+    const p=worldToScreen(top.x,.76,top.z);
+    const pulse=.5+.5*Math.sin(performance.now()*.014);
+    fx.strokeStyle=`rgba(98,234,253,${.58+.36*pulse})`;
+    fx.lineWidth=5+3*pulse;
+    fx.beginPath();fx.arc(p.x,p.y,70+5*pulse,0,Math.PI*2);fx.stroke();
   }
   if(state==='playing'&&!top.falling&&top.spin<8){
     const p=worldToScreen(top.x,.78,top.z);
