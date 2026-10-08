@@ -261,7 +261,7 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
     for(let i=0;i<positions.count;i++){
       const y=positions.getY(i),z=positions.getZ(i);
       const thighFront=smooth(.22,.36,y)*(1-smooth(.58,.75,y));
-      if(z>0)positions.setZ(i,z*(1+.40*thighFront));
+      if(z>0)positions.setZ(i,z*(1+.68*thighFront));
     }
     positions.needsUpdate=true;
     const indices=new Uint16Array(positions.count*4);
