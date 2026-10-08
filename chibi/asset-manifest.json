@@ -18,8 +18,8 @@
     "hairtailknight",
     "hairvariant",
     "hairvariant.001",
-    "kidscade_female_hair_bob",
-    "kidscade_female_hair_layered",
+    "chibi_female_hair_bob",
+    "chibi_female_hair_layered",
     "kidscade_male_hair_short",
     "kidscade_male_hair_crop",
     "kidscade_male_hair_sidepart",
@@ -310,7 +310,7 @@
       "revision": "v5-wardrobe-hair-pack-1",
       "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
     },
-    "kidscade_female_hair_bob": {
+    "chibi_female_hair_bob": {
       "label": "bob",
       "type": "hair",
       "fit": "female",
@@ -320,7 +320,7 @@
       "revision": "v5-wardrobe-hair-pack-1",
       "note": "Geometrically distinct vertex shape from existing source hair, not independent sculpt"
     },
-    "kidscade_female_hair_layered": {
+    "chibi_female_hair_layered": {
       "label": "layered",
       "type": "hair",
       "fit": "female",
@@ -370,8 +370,8 @@
         "hairtailknight",
         "hairvariant",
         "hairvariant.001",
-        "kidscade_female_hair_bob",
-        "kidscade_female_hair_layered"
+        "chibi_female_hair_bob",
+        "chibi_female_hair_layered"
       ]
     },
     "counts": {
