@@ -117,6 +117,7 @@ function drawShot(c,s,W,H,clock){
   const x=s.x*W,y=s.y*H;
   const role=s.kind;
   const radius=role==='explosive'||role==='burst'||role==='special'?6:3.5;
+  c.save();c.translate(x,y);
   if(s.source?.word==='COW'){
     disc(c,0,0,5,'#ffffff');disc(c,-1,-2,1.6,'#bfdbe9');
     c.restore();return;
@@ -125,7 +126,6 @@ function drawShot(c,s,W,H,clock){
     disc(c,0,0,7,'#ffd747');disc(c,0,0,4,'#fa6b2b');
     c.restore();return;
   }
-  c.save();c.translate(x,y);
   c.shadowColor=s.color;c.shadowBlur=8;
   if(role==='slow'){
     c.rotate(clock*4);stroke(c,'#d9f6ff',2);poly(c,[[0,-7],[5,0],[0,7],[-5,0]],'#c8f3ff');c.stroke();
