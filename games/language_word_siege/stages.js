@@ -757,7 +757,7 @@ window.WordSiegeStages=[
       "accent": "#66677a",
       "paper": "#faf4ff"
     },
-    "multiplier": 1.6,
+    "multiplier": 1.54,
     "path": [
       [
         0.02,
