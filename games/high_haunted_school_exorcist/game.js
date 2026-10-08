@@ -1008,21 +1008,46 @@ function updatePlayer(dt){
   const anim=player.animation;
   if(anim){if(anim.walk)anim.walk.setEffectiveWeight(Math.min(1,mag));if(anim.idle)anim.idle.setEffectiveWeight(1-Math.min(1,mag));}
 }
+// The previous 8.5m/6.1m overhead chase camera made a 1.7m avatar tiny.
+// Use a close over-the-shoulder height while aiming past the avatar's head.
+// Sweep both the target and the smoothed movement to avoid crossing solid walls.
+const CAMERA_FOLLOW={distance:4.7,height:3.45,lookAhead:4.8,lookHeight:1.55};
+function cameraWallHit(x,z,r=.17){
+  return walls.some(w=>collides(x,z,w,r));
+}
+function cameraFollowTarget(eye,desired){
+  const steps=40;
+  for(let i=1;i<=steps;i++){
+    const t=i/steps,p=eye.clone().lerp(desired,t);
+    if(cameraWallHit(p.x,p.z)){
+      // Stop before the blocking wall; don't move beyond it above wall height.
+      return eye.clone().lerp(desired,Math.max(0,(i-2)/steps));
+    }
+  }
+  return desired;
+}
 function updateCamera(dt){
   const fx=-Math.sin(viewYaw),fz=-Math.cos(viewYaw);
   const origin=new THREE.Vector3(player.x,1.76,player.z);
-  const far=new THREE.Vector3(player.x-fx*8.5,6.1,player.z-fz*8.5);
-  let safe=far;
-  // Sweep between player and trailing camera; do not let solid walls obscure the view.
-  for(let t=.03;t<=1.001;t+=.025){
-    const p=origin.clone().lerp(far,Math.min(1,t));
-    if(p.y<3.23&&walls.some(w=>collides(p.x,p.z,w,.16))){
-      safe=origin.clone().lerp(far,Math.max(.05,t-.065));break;
-    }
-  }
-  camera.position.lerp(safe,Math.min(1,dt*11));
-  camera.lookAt(player.x+fx*10,1.6,player.z+fz*10);
-  torch.position.set(player.x,1.85,player.z);torchTarget.position.set(player.x+fx*4,1.30,player.z+fz*4);
+  const desired=new THREE.Vector3(
+    player.x-fx*CAMERA_FOLLOW.distance,
+    CAMERA_FOLLOW.height,
+    player.z-fz*CAMERA_FOLLOW.distance
+  );
+  const safe=cameraFollowTarget(origin,desired);
+  const next=camera.position.clone().lerp(safe,Math.min(1,dt*12));
+  // Even if both endpoints are safe, interpolation across a school corner
+  // can put the camera through a wall on rapid turns.
+  const crossed=walls.some(w=>segmentHitsRect(camera.position.x,camera.position.z,next.x,next.z,w,.17));
+  if(crossed||cameraWallHit(next.x,next.z))camera.position.copy(safe);
+  else camera.position.copy(next);
+  camera.lookAt(
+    player.x+fx*CAMERA_FOLLOW.lookAhead,
+    CAMERA_FOLLOW.lookHeight,
+    player.z+fz*CAMERA_FOLLOW.lookAhead
+  );
+  torch.position.set(player.x,1.85,player.z);
+  torchTarget.position.set(player.x+fx*4,1.30,player.z+fz*4);
   torch.intensity=flashOn&&power>0?23:0;
 }
 function updateProps(dt){
