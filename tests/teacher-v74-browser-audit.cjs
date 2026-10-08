@@ -23,8 +23,8 @@ let chrome,ws;
 (async()=>{
  server.listen(0,'127.0.0.1');await once(server,'listening');
  const port=server.address().port,dir=fs.mkdtempSync(path.join(os.tmpdir(),'teacher-qa-'));
- chrome=cp.spawn(chromePath,['--headless=new','--no-sandbox','--disable-dev-shm-usage',
-   '--enable-webgl','--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader',
+ chrome=cp.spawn(chromePath,['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage',
+   '--enable-webgl','--enable-unsafe-swiftshader',
    '--no-first-run','--no-default-browser-check','--remote-debugging-port=0','--user-data-dir='+dir,'about:blank'],
    {stdio:['ignore','ignore','pipe']});
  let browserErrors='',target=null;
@@ -40,7 +40,7 @@ let chrome,ws;
      target=j.find(x=>x.type==='page');if(target)break;
    }catch{}
  }
- if(!target)throw Error('Chrome unavailable '+browserErrors.slice(-500));
+ if(!target)throw Error('Chrome unavailable at '+chromePath+', process='+chrome.pid+', diagnostic='+browserErrors.slice(-4500));
  ws=new WebSocket(target.webSocketDebuggerUrl);
  await new Promise((yes,no)=>{ws.onopen=yes;ws.onerror=no});
  const pending=new Map(),runtimeErrors=[];let seq=0;
