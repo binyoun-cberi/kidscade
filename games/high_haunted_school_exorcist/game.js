@@ -464,7 +464,7 @@ loader.loadAsync(MONSTER).then(gltf=>{
   if(clip){const mix=new THREE.AnimationMixer(root);mix.clipAction(clip).play();mixers.push(mix);}
 }).catch(()=>{});
 maiden.root.visible=false;
-const fixPositions=[[-12.7,-12.85],[-8.3,-14.2],[-11.3,-18.1]];
+const fixPositions=[[-12.7,-12.85],[-8.2,-12.55],[-11.3,-18.1]];
 const fixLabels=['거꾸로 놓인 화분','공중에 뜬 책','움직이는 시계'];
 for(let i=0;i<3;i++){
   const [x,z]=fixPositions[i],marker=createMark(x,z,0xf3b96f);
@@ -533,7 +533,7 @@ loader.loadAsync('../../assets/game/cube world/Animals/glTF/Wolf.gltf').then(glt
   if(clip){const mixer=new THREE.AnimationMixer(model);mixer.clipAction(clip).play();mixers.push(mixer);}
 }).catch(()=>{});
 for(const [x,z,label] of [
-  [23.1,13.0,'난방 배관'],[27.7,15.15,'창가 히터'],[23.7,18.0,'온도 조절기']
+  [24.0,11.8,'난방 배관'],[27.7,15.15,'창가 히터'],[23.7,18.0,'온도 조절기']
 ]){
   const m=createMark(x,z,0x7bd9f5);
   encounter.heatNodes.push({x,z,label,marker:m,done:false});
