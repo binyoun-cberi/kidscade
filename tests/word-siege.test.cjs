@@ -513,6 +513,8 @@ test('Word Siege playful signatures cover 19 familiar words and are valid for ev
   }
   assert.equal(modes.size,18,'most towers should actually use a different mechanism');
   assert.match(visualsSource,/playfulSymbol/);
+  assert.match(visualsSource,/function playfulTowerBody\(/);
+  assert.match(visualsSource,/if\(playfulTowerBody\(c,t,r,animate\)\)/);
   assert.match(visualsSource,/s\.mode==='snowball'/);
 });
 
