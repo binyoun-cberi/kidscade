@@ -709,7 +709,9 @@ function tryStrike(x1,y1,x2,y2,dtMs){
   lastHitAt=now;
   bestCombo=Math.max(bestCombo,combo);
   // Score rewards precision rather than rapid, low-quality swiping.
-  score+=Math.round((6+Math.pow(timingScore,2)*110+accuracy*24)*(1+Math.min(combo,12)*.06));
+  const quality=Math.max(0,(timingScore-.3)/.7);
+  const focusBonus=Math.max(.08,1-rapid*5);
+  score+=Math.round((4+Math.pow(quality,2)*130)*(.3+accuracy*.7)*(1+Math.min(combo,12)*.06)*focusBonus);
 
   UI.comboNum.textContent=combo;
   UI.combo.classList.add('show');
