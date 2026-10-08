@@ -159,17 +159,8 @@
       "type": "face",
       "generatedFrom": "eyes",
       "rigging": "source eyes topology + skin weights",
-      "shaping": "original eye mesh/UV and 78-bone skin weights; 0.64x height, 1.01x width",
-      "revision": "boyish-eyes-v3"
-    },
-    "kidscade_male_brows": {
-      "label": "남자 기본 눈썹",
-      "type": "face-detail",
-      "generatedFrom": "eyelashes",
-      "rigging": "source eyelashes topology + skin weights",
-      "shaping": "only upper eyebrow triangles from original eyelashes indexed SkinnedMesh; original UVs/weights; pointed lower eyelashes removed",
-      "color": "#332723",
-      "revision": "upper-brow-faces-v3"
+      "shaping": "Uses the unmodified source eyes geometry, UVs and skin weights to align with the native painted face outlines, lashes and eyebrows on character_low",
+      "revision": "native-aligned-eyes-v5"
     },
     "kidscade_male_tshirt": {
       "label": "남자 기본 티셔츠",
@@ -192,7 +183,8 @@
       "label": "남자 기본 세트 메시 정책",
       "type": "policy",
       "rule": "reuse existing Chibi mesh topology and source skin weights; no procedural hair, sleeves, or compressed long-pants shortcuts",
-      "defaultHair": "kidscade_male_hair_short"
+      "defaultHair": "kidscade_male_hair_short",
+      "faceRule": "The body already paints eye whites and eyelid lines. Use unmodified source eyes alignment and only the 24 original eyebrow triangles; never draw a second set of lashes."
     },
     "kidscade_male_hair_short": {
       "label": "남자 짧은 머리",
@@ -201,6 +193,15 @@
       "rigging": "source hairone topology, UVs, materials and skin weights",
       "shaping": "lower bob silhouette shortened using original geometry bounds; narrower sides and nape",
       "revision": "v3-existing-mesh-short-hair"
+    },
+    "kidscade_male_brows": {
+      "label": "남자 기본 눈썹",
+      "type": "face-detail",
+      "generatedFrom": "eyelashes",
+      "rigging": "original 78-bone skin weights and UVs; only the two connected source eyebrow islands (24 triangles)",
+      "shaping": "source left and right eyebrows only; all 180 lash/eye-corner triangles excluded",
+      "color": "#332723",
+      "revision": "two-native-brow-islands-v6"
     }
   }
 }
