@@ -338,7 +338,8 @@
       "generatedFrom": "kidscade_male_tshirt",
       "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
       "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
-      "revision": "v5.2"
+      "revision": "v5.2",
+      "sleeves": "Two piece skinned upper-arm and forearm sleeve for both arms"
     },
     "chibi_male_bomber": {
       "label": "봄버 재킷",
@@ -348,7 +349,8 @@
       "generatedFrom": "kidscade_male_tshirt",
       "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
       "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
-      "revision": "v5.2"
+      "revision": "v5.2",
+      "sleeves": "Two piece skinned upper-arm and forearm sleeve for both arms"
     },
     "chibi_male_varsity": {
       "label": "바시티 재킷",
@@ -358,7 +360,8 @@
       "generatedFrom": "kidscade_male_tshirt",
       "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
       "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
-      "revision": "v5.2"
+      "revision": "v5.2",
+      "sleeves": "Two piece skinned upper-arm and forearm sleeve for both arms"
     },
     "chibi_male_oxford": {
       "label": "옥스퍼드 셔츠",
@@ -368,7 +371,8 @@
       "generatedFrom": "kidscade_male_tshirt",
       "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
       "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
-      "revision": "v5.2"
+      "revision": "v5.2",
+      "sleeves": "Two piece skinned upper-arm and forearm sleeve for both arms"
     },
     "chibi_male_sweater": {
       "label": "니트 스웨터",
@@ -378,7 +382,8 @@
       "generatedFrom": "kidscade_male_tshirt",
       "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
       "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
-      "revision": "v5.2"
+      "revision": "v5.2",
+      "sleeves": "Two piece skinned upper-arm and forearm sleeve for both arms"
     },
     "chibi_female_cardigan": {
       "label": "롱 가디건",
@@ -388,7 +393,8 @@
       "generatedFrom": "shirt",
       "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
       "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
-      "revision": "v5.2"
+      "revision": "v5.2",
+      "sleeves": "Two piece skinned upper-arm and forearm sleeve for both arms"
     },
     "chibi_female_blouse": {
       "label": "프릴 블라우스",
@@ -398,7 +404,8 @@
       "generatedFrom": "shirt",
       "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
       "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
-      "revision": "v5.2"
+      "revision": "v5.2",
+      "sleeves": "Puffed upper-arm geometry for both shoulders"
     },
     "chibi_female_knit": {
       "label": "루즈 니트",
@@ -408,7 +415,8 @@
       "generatedFrom": "shirt",
       "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
       "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
-      "revision": "v5.2"
+      "revision": "v5.2",
+      "sleeves": "Two piece skinned upper-arm and forearm sleeve for both arms"
     },
     "chibi_female_jacket": {
       "label": "데님 재킷",
@@ -418,7 +426,8 @@
       "generatedFrom": "shirt",
       "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
       "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
-      "revision": "v5.2"
+      "revision": "v5.2",
+      "sleeves": "Two piece skinned upper-arm and forearm sleeve for both arms"
     },
     "chibi_male_jeans": {
       "label": "스트레이트 청바지",
@@ -573,7 +582,7 @@
         "chibi_female_widepants"
       ]
     },
-    "geometryPolicy": "15 new rigged garments clone original source SkinnedMesh geometry and preserve bind matrix, source skin weights, UVs and source 78-bone skeleton; morph torso, sleeve, hem, waist and legs independently. Selected styles add physically volumetric 3D details rigged to source spine. Five existing garments retained. Trouser styles use separate left/right tube meshes with knee-graded thigh/shin skin weights, rather than a tube-like source pants skirt.",
+    "geometryPolicy": "15 new rigged garments clone original source SkinnedMesh geometry and preserve bind matrix, source skin weights, UVs and source 78-bone skeleton; morph torso, sleeve, hem, waist and legs independently. Selected styles add physically volumetric 3D details rigged to source spine. Five existing garments retained. Trouser styles use separate left/right tube meshes with knee-graded thigh/shin skin weights, rather than a tube-like source pants skirt. Eight tops have modeled articulated upper/forearm sleeve tubes and one blouse has puffed short sleeves; colors alone do not define styles.",
     "collisionPolicy": "Garment shell has additional torso/leg clearance. Sampled animated-pose penetration survey and screenshot review required for each style; do not treat numeric clearance estimates as proof of zero intersections.",
     "exportPolicy": "Visible outfit group plus shared source skeleton and original 11 named animations, male WALK/RUN variants if male body visible.",
     "trouserLegPolicy": "Five full-length trousers have two independently skinned left/right leg meshes, blended from DEF-thighL/R to DEF-shinL/R source Chibi bones."
