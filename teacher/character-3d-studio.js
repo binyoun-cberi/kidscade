@@ -13,7 +13,16 @@ const FEMALE_BASE_NODES=['character_low','eyelashes','eyes','tooth'];
 const MALE_BASE_NODES=['kidscade_male_body','kidscade_male_eyes','kidscade_male_brows','tooth'];
 const BASE_VARIANT_NODES=[...new Set([...FEMALE_BASE_NODES,...MALE_BASE_NODES])];
 const BASE_NODES=FEMALE_BASE_NODES;
-const HAIR_NODES=['hairone','hairT','hairtail','hairtailknight','hairvariant','hairvariant.001','kidscade_male_hair_short'];
+const MALE_HAIR_STYLES=[
+  'kidscade_male_hair_short','kidscade_male_hair_crop','kidscade_male_hair_sidepart',
+  'kidscade_male_hair_textured','kidscade_male_hair_fringe','kidscade_male_hair_undercut',
+  'kidscade_male_hair_round','kidscade_male_hair_swept'
+];
+const FEMALE_HAIR_STYLES=[
+  'hairone','hairT','hairtail','hairtailknight','hairvariant','hairvariant.001',
+  'kidscade_female_hair_bob','kidscade_female_hair_layered'
+];
+const HAIR_NODES=[...FEMALE_HAIR_STYLES,...MALE_HAIR_STYLES];
 
 const PRESETS={
   base:[...FEMALE_BASE_NODES],
@@ -39,9 +48,27 @@ const PART_LABELS={
   kidscade_hoodie_blue:'파란 후드티',
   kidscade_male_hair_short:'남자 짧은 머리',
   kidscade_male_tshirt:'남자 기본 티셔츠',
-  kidscade_male_shorts:'남자 기본 반바지'
+  kidscade_male_shorts:'남자 기본 반바지',
+  kidscade_male_hair_crop:'크롭컷',kidscade_male_hair_sidepart:'가르마',
+  kidscade_male_hair_textured:'텍스처 숏컷',kidscade_male_hair_fringe:'덮은 머리',
+  kidscade_male_hair_undercut:'언더컷',kidscade_male_hair_round:'라운드컷',
+  kidscade_male_hair_swept:'스윕 헤어',
+  kidscade_female_hair_bob:'둥근 단발',kidscade_female_hair_layered:'레이어드'
 };
 
+// Fit means compatible with the current body geometry, never a restriction on identity.
+const PART_CATEGORY={};
+for(const name of HAIR_NODES)PART_CATEGORY[name]='hair';
+for(const name of ['shirt','chemise','greenoutfit','ninjassuit','amorplastron','kidscade_hoodie_blue','kidscade_male_tshirt'])PART_CATEGORY[name]='top';
+for(const name of ['skirt','pants','ninjasuitshort','armorlegs','armorskirt','kidscade_male_shorts'])PART_CATEGORY[name]='bottom';
+for(const name of ['shoe','bottes','bottesgreen','ninjassuitshoe','armorshoe'])PART_CATEGORY[name]='shoes';
+for(const name of ['bag','hat','ninjassuitmask','armorhelmet','greenoutfitbelt','greenoutfitneckless','ceinture'])PART_CATEGORY[name]='accessory';
+const MALE_FIT_PARTS=new Set([...MALE_HAIR_STYLES,'kidscade_male_tshirt','kidscade_male_shorts']);
+const SHARED_FIT_PARTS=new Set(['shoe','bottes','bottesgreen','ninjassuitshoe','armorshoe','bag','hat','armorhelmet','ninjassuitmask']);
+const PART_FIT=name=>MALE_FIT_PARTS.has(name)?'male':SHARED_FIT_PARTS.has(name)?'shared':'female';
+const PART_GROUP=name=>PART_CATEGORY[name]||'costume';
+const WARDROBE_CATEGORIES=['hair','top','bottom','shoes','accessory','costume'];
+const WARDROBE_CATEGORY_LABELS={hair:'헤어',top:'상의',bottom:'하의',shoes:'신발',accessory:'액세서리',costume:'기타'};
 const TOGGLE_NODES=Object.keys(PART_LABELS);
 const TRACKED_PART_NODES=[...new Set([...BASE_VARIANT_NODES,...TOGGLE_NODES])];
 
@@ -57,6 +84,7 @@ const CLIP_LABELS={
 let scene,camera,renderer,controls;
 let avatarRoot=null,sourceScene=null,primarySkinnedMesh=null,skeletonHelper=null,mixer=null;
 let animations=[],activeAction=null,activeClip='',currentPreset='male',activeView='threeQuarter';
+let activeBodyFit='male',activeWardrobeCategory='hair';
 let maleWalkClips=new Map(),maleRunClips=new Map();
 let originalMaterials=new Map();
 let loaded=false;
@@ -339,12 +367,46 @@ function selectedParts(){
   return TRACKED_PART_NODES.filter(name=>getNode(name)?.visible);
 }
 
+function updateWardrobeNavigation(){
+  document.querySelectorAll('[data-body-fit]').forEach(button=>{
+    button.classList.toggle('active',button.dataset.bodyFit===activeBodyFit);
+    button.setAttribute('aria-pressed',String(button.dataset.bodyFit===activeBodyFit));
+  });
+  document.querySelectorAll('[data-wardrobe-category]').forEach(button=>{
+    const selected=button.dataset.wardrobeCategory===activeWardrobeCategory;
+    button.classList.toggle('active',selected);
+    button.setAttribute('aria-pressed',String(selected));
+  });
+  const title=$('wardrobeCurrentGroup');
+  if(title)title.textContent=(activeBodyFit==='male'?'남자형':'여자형')+' · '+WARDROBE_CATEGORY_LABELS[activeWardrobeCategory];
+}
+
+function compatiblePart(name){
+  return PART_FIT(name)==='shared'||PART_FIT(name)===activeBodyFit;
+}
+
+function syncHairOptions(){
+  const select=$('chibiHair');
+  const selected=HAIR_NODES.find(name=>getNode(name)?.visible&&compatiblePart(name))||'';
+  const names=activeBodyFit==='male'?MALE_HAIR_STYLES:FEMALE_HAIR_STYLES;
+  select.innerHTML='<option value="">없음</option>'+names.map(name=>
+    '<option value="'+name+'">'+PART_LABELS[name]+'</option>'
+  ).join('');
+  select.value=selected;
+}
+
 function renderPartChecks(){
   const host=$('wardrobeParts');
-  host.innerHTML=TOGGLE_NODES.map(name=>{
+  const names=TOGGLE_NODES.filter(name=>
+    compatiblePart(name)&&PART_GROUP(name)===activeWardrobeCategory
+  );
+  host.innerHTML=names.map(name=>{
     const exists=!!getNode(name);
-    return '<label class="part-check"><input type="checkbox" data-chibi-part="'+name+'" '+(exists?'':'disabled')+'> '+(PART_LABELS[name]||name)+'</label>';
+    const fit=PART_FIT(name)==='shared'?' · 공용':'';
+    return '<label class="part-check"><input type="checkbox" data-chibi-part="'+name+'" '+(exists?'':'disabled')+'> '+(PART_LABELS[name]||name)+fit+'</label>';
   }).join('');
+  updateWardrobeNavigation();
+  syncHairOptions();
   refreshPartChecks();
 }
 
@@ -352,11 +414,12 @@ function refreshPartChecks(){
   document.querySelectorAll('[data-chibi-part]').forEach(input=>{
     const object=getNode(input.dataset.chibiPart);
     input.checked=!!object?.visible;
-    input.disabled=!object||!loaded;
+    input.disabled=!object||!loaded||!compatiblePart(input.dataset.chibiPart);
   });
 }
 
 function applyHair(name){
+  if(name&&(!HAIR_NODES.includes(name)||!compatiblePart(name)))return;
   HAIR_NODES.forEach(hair=>setNodeVisible(hair,false));
   if(name)setNodeVisible(name,true);
   $('chibiHair').value=name||'';
@@ -364,9 +427,17 @@ function applyHair(name){
   refreshMetrics();
 }
 
+function selectBodyFit(fit){
+  if(fit!=='male'&&fit!=='female')return;
+  applyPreset(fit==='male'?'male':'base');
+  activeWardrobeCategory='hair';
+  renderPartChecks();
+}
+
 function applyPreset(name){
   if(!sourceScene||!PRESETS[name])return;
   currentPreset=name;
+  activeBodyFit=name==='male'?'male':'female';
   const wanted=new Set(PRESETS[name]);
   if(name==='male'&&!$('maleBrowPreview').checked)wanted.delete('kidscade_male_brows');
   $('maleBrowPreview').disabled=name!=='male';
@@ -389,7 +460,7 @@ function applyPreset(name){
   document.querySelectorAll('[data-chibi-preset]').forEach(button=>{
     button.classList.toggle('active',button.dataset.chibiPreset===name);
   });
-  refreshPartChecks();
+  renderPartChecks();
   refreshMetrics();
   // 프리셋 전환 중 WALK를 재생하고 있었다면 현재 몸체에 맞는 클립으로 전환한다.
   syncActiveWalkStyle();
@@ -849,6 +920,78 @@ function createKidscadeMaleHairShort(){
   source.parent.add(hair);
   hair.visible=false;
   return hair;
+}
+
+
+/** Eight selectable hairstyles per body fit: original art plus rig-compatible
+ * silhouette variants. Variations are derived from the source meshes, not
+ * independently modeled assets; every variant preserves UV and skin weights.
+ */
+const HAIR_STYLE_PARAMETERS={
+  kidscade_male_hair_crop:{crown:-.045,side:-.14,front:.07,part:0,wave:0},
+  kidscade_male_hair_sidepart:{crown:.04,side:-.03,front:.02,part:.12,wave:0},
+  kidscade_male_hair_textured:{crown:.075,side:-.03,front:.035,part:0,wave:.055},
+  kidscade_male_hair_fringe:{crown:.01,side:-.06,front:-.08,part:0,wave:0},
+  kidscade_male_hair_undercut:{crown:.06,side:-.28,front:.10,part:.03,wave:0},
+  kidscade_male_hair_round:{crown:.06,side:.075,front:0,part:0,wave:.01},
+  kidscade_male_hair_swept:{crown:.035,side:-.01,front:.05,part:.20,wave:0},
+  kidscade_female_hair_bob:{crown:.03,side:.035,front:-.015,part:0,wave:.015},
+  kidscade_female_hair_layered:{crown:.06,side:-.08,front:.03,part:-.055,wave:.03}
+};
+function createKidscadeHairCollection(){
+  const maleBase=getNode('kidscade_male_hair_short');
+  const femaleBase=getNode('hairone');
+  if(!maleBase?.isSkinnedMesh||!femaleBase?.isSkinnedMesh){
+    throw new Error('Hair pack requires the source short and hairone SkinnedMesh');
+  }
+  for(const [name,style] of Object.entries(HAIR_STYLE_PARAMETERS)){
+    if(getNode(name))continue;
+    const template=name.startsWith('kidscade_male_')?maleBase:femaleBase;
+    const geometry=template.geometry.clone();
+    geometry.computeBoundingBox();
+    const bb=geometry.boundingBox;
+    const size=bb.getSize(new THREE.Vector3());
+    const center=bb.getCenter(new THREE.Vector3());
+    const points=geometry.getAttribute('position');
+    const smooth=(a,b,v)=>{
+      const t=THREE.MathUtils.clamp((v-a)/(b-a),0,1);
+      return t*t*(3-2*t);
+    };
+    for(let i=0;i<points.count;i++){
+      const x=points.getX(i),y=points.getY(i),z=points.getZ(i);
+      const nx=THREE.MathUtils.clamp((x-center.x)/(size.x*.5),-1,1);
+      const ny=THREE.MathUtils.clamp((y-bb.min.y)/size.y,0,1);
+      const nz=THREE.MathUtils.clamp((z-center.z)/(size.z*.5),-1,1);
+      const crown=smooth(.56,.91,ny);
+      const side=Math.abs(nx)*smooth(.08,.55,1-ny);
+      const front=smooth(.12,.68,nz)*(1-smooth(.88,1,ny));
+      const part=style.part*size.x*crown*(.25+.75*front);
+      const wave=style.wave*size.y*Math.sin(nx*10+nz*6)*crown*crown;
+      const px=x+part+nx*size.x*style.side*side*.35;
+      const py=y+size.y*(style.crown*crown*.4+style.front*front*.26)+wave;
+      const pz=z+size.z*(style.front*front*.12+style.crown*crown*.025);
+      points.setXYZ(i,px,py,pz);
+    }
+    points.needsUpdate=true;
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    const hair=cloneSkinnedMeshWithGeometry(
+      template,geometry,
+      Array.isArray(template.material)?template.material.slice():template.material,
+      name
+    );
+    hair.userData={
+      ...template.userData,
+      type:'kidscade-hair-style',
+      generatedFrom:template.name,
+      fit:name.startsWith('kidscade_male_')?'male':'female',
+      geometryPolicy:'source-skinned-hair-silhouette-variant',
+      styleParameters:{...style}
+    };
+    template.parent.add(hair);
+    hair.visible=false;
+  }
 }
 
 function createKidscadeMaleSet(){
@@ -1506,6 +1649,7 @@ async function loadChibi(){
     createKidscadeBlueHoodie();
     createKidscadeMaleSet();
     createKidscadeMaleHairShort();
+    createKidscadeHairCollection();
   }catch(error){
     console.error(error);
     showAssetError('Chibi 본체는 열렸지만 커스텀 파츠 생성에 실패했습니다: '+(error?.message||error));
@@ -1563,6 +1707,8 @@ function exportSpec(){
     license:CHIBI_LICENSE,
     asset:CHIBI_ASSET_URL,
     preset:currentPreset,
+    bodyFit:activeBodyFit,
+    partLibraryVersion:'chibi-v5.0',
     materialMode:$('chibiUnlit').checked?'unlit-npr':'original-pbr',
     visibleParts:selectedParts(),
     triangles:countVisibleTriangles(avatarRoot),
@@ -1688,6 +1834,15 @@ function wireUi(){
   document.querySelectorAll('[data-chibi-preset]').forEach(button=>{
     button.addEventListener('click',()=>applyPreset(button.dataset.chibiPreset));
   });
+  document.querySelectorAll('[data-body-fit]').forEach(button=>{
+    button.addEventListener('click',()=>selectBodyFit(button.dataset.bodyFit));
+  });
+  document.querySelectorAll('[data-wardrobe-category]').forEach(button=>{
+    button.addEventListener('click',()=>{
+      activeWardrobeCategory=button.dataset.wardrobeCategory;
+      renderPartChecks();
+    });
+  });
 
   $('chibiHair').addEventListener('change',event=>{
     applyHair(event.target.value);
@@ -1707,11 +1862,17 @@ function wireUi(){
     if(!input)return;
 
     const part=input.dataset.chibiPart;
+    if(!compatiblePart(part)){refreshPartChecks();return;}
+    const exclusive=PART_GROUP(part);
+    if(input.checked&&['top','bottom','shoes'].includes(exclusive)){
+      TOGGLE_NODES.filter(name=>name!==part&&PART_GROUP(name)===exclusive)
+        .forEach(name=>setNodeVisible(name,false));
+    }
     if(HAIR_NODES.includes(part)){
       applyHair(input.checked?part:'');
     }else{
       setNodeVisible(part,input.checked);
-      refreshPartChecks();
+      renderPartChecks();
       refreshMetrics();
     }
 
