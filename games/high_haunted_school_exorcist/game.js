@@ -45,7 +45,7 @@ const guidance={key:'',points:[],mesh:null,clock:0,fromX:0,fromZ:0,goalX:0,goalZ
 let gazeLocked=false,ghostNav=null;
 const encounter={
  cold:0,heatNodes:[],frost:0,eggCharge:0,eggFear:0,
- bellCount:0,bellClock:0,bellWindow:0,doorClosed:false,doorVisual:null,
+ bellCount:0,bellClock:0,bellWindow:0,doorClosed:false,doorRelease:0,doorVisual:null,
  wolf:{x:-1.5,z:16.8,root:new THREE.Group(),nav:null,speed:2.25,grace:5,lureTime:0,ready:false,active:false}
 };
 const encounterModels={};
@@ -78,7 +78,11 @@ function onFloor(x,z){
     (x>-15.15&&x<29.75&&z>-19.75&&z< -7.1)||
     (x>-15.15&&x<29.75&&z>7.1&&z<19.75);
 }
-function canWalk(x,z){return onFloor(x,z)&&!walls.some(w=>collides(x,z,w))&&!furniture.some(o=>collides(x,z,o));}
+function canWalk(x,z){
+  const shutDoor=typeof encounter!=='undefined'&&encounter.doorClosed&&
+    collides(x,z,{x:-20.49,z:7.91,hx:.10,hz:1.18});
+  return onFloor(x,z)&&!shutDoor&&!walls.some(w=>collides(x,z,w))&&!furniture.some(o=>collides(x,z,o));
+}
 // Shared grid navigation prevents the guide line from crossing walls and desks.
 function routePlan(start,goal,reach=1.05){
   // A* instead of an expanding breadth-first search: the larger ㄷ school remains
@@ -571,7 +575,7 @@ function setStage(next){
     encounter.bellCount=0;encounter.bellClock=1;encounter.bellWindow=0;encounter.doorClosed=false;
     showLesson('다섯 번째 괴이 · 저승사자','서쪽 연결동 전기실 문에 다가가세요. 종이 세 번 울린 직후 문을 닫아야 해요.',15);
   }
-  if(stage===9)showLesson('저승사자 퇴각','전기실 안쪽의 보랏빛 봉인진을 확인하세요.',9);
+  if(stage===9)showLesson('저승사자 퇴각','문이 잠시 닫혔다가 다시 열립니다. 열린 뒤 전기실 안쪽의 보랏빛 봉인진을 확인하세요.',9);
   if(stage===10){
     const w=encounter.wolf;w.x=-1.5;w.z=16.8;w.nav=null;w.grace=7;w.lureTime=0;w.soundClock=0;w.ready=false;w.active=false;
     showLesson('마지막 괴이 · 늑대인간','남쪽 복도 스피커를 찾아 소리를 내세요. 늑대가 함정으로 뛰어들면 봉인할 수 있어요.',15);
@@ -627,7 +631,10 @@ function act(){
   }else if(item.type==='yuki'){sfx('sfx_school_alarm_bell.mp3',.16);setStage(6);}
   else if(item.type==='eggSeal'){sfx('sfx_school_alarm_bell.mp3',.16);setStage(8);}
   else if(item.type==='closeDoor'){
-    encounter.doorClosed=true;encounter.bellWindow=0;encounter.doorVisual.rotation.y=0;
+    encounter.doorClosed=true;encounter.doorRelease=1.6;encounter.bellWindow=0;encounter.doorVisual.rotation.y=0;
+    // Do not leave the player intersecting the newly closed physical door.
+    if(collides(player.x,player.z,{x:-20.49,z:7.91,hx:.10,hz:1.18}))
+      player.x=player.x<-20.49?-21.15:-19.75;
     sfx('sfx_school_alarm_bell.mp3',.23);showToast('세 번째 종에 맞춰 문을 닫았어요!');
     setStage(9);
   }else if(item.type==='reaperSeal'){sfx('sfx_school_alarm_bell.mp3',.16);setStage(10);}
@@ -655,7 +662,7 @@ function reset(){
   disturbed.forEach(o=>{o.done=false;o.object.visible=true;o.marker.visible=true;});
   encounter.heatNodes.forEach(o=>{o.done=false;o.marker.visible=false;});
   encounter.cold=0;encounter.frost=0;encounter.eggCharge=0;encounter.eggFear=0;
-  encounter.bellCount=0;encounter.bellClock=0;encounter.bellWindow=0;encounter.doorClosed=false;
+  encounter.bellCount=0;encounter.bellClock=0;encounter.bellWindow=0;encounter.doorClosed=false;encounter.doorRelease=0;
   encounter.wolf.x=-1.5;encounter.wolf.z=16.8;encounter.wolf.nav=null;
   encounter.wolf.ready=false;encounter.wolf.active=false;encounter.wolf.lureTime=0;encounter.wolf.grace=5;encounter.wolf.soundClock=0;
   trickCircle.visible=false;maidenCircle.visible=false;exitCircle.visible=false;maiden.root.visible=false;
@@ -911,6 +918,14 @@ function updateNewEncounters(dt){
     }else{
       // A full new sequence starts when the player returns to the electrical room.
       if(encounter.bellCount<3)encounter.bellClock=Math.max(encounter.bellClock,1);
+    }
+  }
+  if(stage===9&&encounter.doorClosed){
+    encounter.doorRelease=Math.max(0,encounter.doorRelease-dt);
+    if(encounter.doorRelease<=0){
+      encounter.doorClosed=false;
+      encounter.doorVisual.rotation.y=-1.30;
+      showToast('전기실 문이 다시 열렸어요. 안쪽 봉인진으로 이동하세요.');
     }
   }
   const w=encounter.wolf;
