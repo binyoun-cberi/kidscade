@@ -157,7 +157,7 @@ button{font:inherit}
 
   <div class="overlay hidden" id="resultOverlay">
     <div class="panel">
-      <div class="eyebrow">회전 종료</div>
+      <div class="eyebrow" id="resultEyebrow">회전 종료</div>
       <h2 id="resultTitle">잘 버텼어요</h2>
       <div class="result-time" id="resultTime">0.0초</div>
       <div class="result-label">최종 기록</div>
@@ -194,7 +194,7 @@ const UI = {
   time: $('#timeText'), bestMini: $('#bestMini'), spinFill: $('#spinFill'), spinText: $('#spinText'),
   balanceFill: $('#balanceFill'), balanceText: $('#balanceText'),
   combo: $('#combo'), comboNum: $('#comboNum'), guide: $('#guide'),
-  resultTime: $('#resultTime'), resultScore: $('#resultScore'), resultTitle: $('#resultTitle'),
+  resultTime: $('#resultTime'), resultScore: $('#resultScore'), resultTitle: $('#resultTitle'), resultEyebrow: $('#resultEyebrow'),
   newRecord: $('#newRecord'), bestTimeResult: $('#bestTimeResult'), bestScoreResult: $('#bestScoreResult'),
   soundBtn: $('#soundBtn'), cpuMini: $('#cpuMini')
 };
@@ -223,6 +223,7 @@ let lastCollisionAt = -99;
 let guardBlocks = 0;
 let edgeRescues = 0;
 
+const MATCH_GOAL_SECONDS=150;
 const TOP_KING_RECORD_KEY='kidscade_top_king_record_v1';
 const TOP_KING_RECORD_OLD='topKing3D'+'ShrinkArenaRecord';
 let saved={time:0,score:0};
@@ -260,7 +261,7 @@ const cpu = {
 const arena = {
   baseEdge:2.38,
   currentEdge:2.38,
-  minEdge:2.02,
+  minEdge:1.76,
   scale:1,
   shrinkStart:18,
   shrinkDuration:112
@@ -572,15 +573,16 @@ function resumeGame(){
 function endGame(reason='stop'){
   if(state!=='playing')return;
   state='result';
-  sfxGameOver();
+  if(reason==='champion')sfxVictory();else sfxGameOver();
+  UI.resultEyebrow.textContent=reason==='champion'?'150초 생존 성공':'회전 종료';
   const isRecord=elapsed>bestTime+.05;
   bestTime=Math.max(bestTime,elapsed);bestScore=Math.max(bestScore,Math.round(score));
   localStorage.setItem(TOP_KING_RECORD_KEY,JSON.stringify({time:bestTime,score:bestScore}));
   UI.resultTime.textContent=elapsed.toFixed(1)+'초';
-  UI.resultScore.textContent=`CPU 충돌 ${collisionCount}회 · 방어 ${guardBlocks}회 · 점수 ${Math.round(score).toLocaleString()}점 · 최고 콤보 ${bestCombo}`;
+  UI.resultScore.textContent=`CPU 충돌 ${collisionCount}회 · 방어 ${guardBlocks}회 · 링 복귀 ${edgeRescues}회 · 점수 ${Math.round(score).toLocaleString()}점 · 최고 콤보 ${bestCombo}`;
   UI.bestTimeResult.textContent=bestTime.toFixed(1)+'초';
   UI.bestScoreResult.textContent=Math.round(bestScore).toLocaleString();
-  UI.resultTitle.textContent=reason==='fall'
+  UI.resultTitle.textContent=reason==='champion'?'불꽃 팽이왕 등극!':reason==='fall'
     ? (elapsed>=35?'아슬아슬하게 오래 버텼어요':'경기장 밖으로 떨어졌어요')
     : reason==='balance'
       ? (elapsed>=35?'균형을 오래 지켜냈어요':'균형이 완전히 무너졌어요')
@@ -697,7 +699,7 @@ function tryStrike(x1,y1,x2,y2,dtMs){
   top.wobble=Math.max(.025,top.wobble-.032*timingScore+.035*(1-timingScore));
   // Reward precision, not swipe spam: a temporary guard can block one CPU hit.
   if(accuracy>.38 && timingScore>.57 && rapid<.48){
-    top.guardUntil=elapsed+.45+.38*accuracy*timingScore;
+    top.guardUntil=elapsed+.29+.23*accuracy*timingScore;
     top.guardLevel=accuracy*timingScore;
   }
 
@@ -706,7 +708,8 @@ function tryStrike(x1,y1,x2,y2,dtMs){
   combo=(now-lastHitAt<1.05&&timingScore>.42)?combo+1:1;
   lastHitAt=now;
   bestCombo=Math.max(bestCombo,combo);
-  score+=Math.round((24+accuracy*48+timingScore*82+speed*12)*(1+Math.min(combo,12)*.05));
+  // Score rewards precision rather than rapid, low-quality swiping.
+  score+=Math.round((6+Math.pow(timingScore,2)*110+accuracy*24)*(1+Math.min(combo,12)*.06));
 
   UI.comboNum.textContent=combo;
   UI.combo.classList.add('show');
@@ -870,6 +873,7 @@ function update(dt){
   }
 
   elapsed+=dt;
+  if(elapsed>=MATCH_GOAL_SECONDS){elapsed=MATCH_GOAL_SECONDS;endGame('champion');return;}
   guideTimer+=dt;
   if(guideTimer>4)UI.guide.classList.add('hide');
   score+=dt*(8+top.spin*.28);
@@ -1143,6 +1147,13 @@ function sfxHit(force,accuracy,c){
 }
 function sfxWall(){ensureAudio();tone(120,.11,'sawtooth',.06);noiseBurst(.06,.05)}
 function sfxCollision(power){ensureAudio();tone(105+power*35,.11,'square',.085);tone(260+power*75,.15,'sawtooth',.055,.018);noiseBurst(.085,.09)}
+function sfxVictory(){
+  ensureAudio();
+  tone(392,.18,'triangle',.07);
+  tone(523,.22,'triangle',.08,.14);
+  tone(659,.27,'triangle',.085,.29);
+  tone(784,.45,'sine',.09,.46);
+}
 function sfxGameOver(){
   ensureAudio();
   tone(260,.22,'triangle',.07);tone(195,.26,'triangle',.065,.16);tone(130,.34,'triangle',.06,.34);
