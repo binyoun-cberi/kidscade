@@ -203,6 +203,12 @@ const errors=[];
   assert.equal(newStyles.length,15,'Must have 15 new generated styles');
   assert.equal(new Set(newStyles.map(x=>x.fingerprint)).size,15,
     'New garments do not all have distinct skinned-shell geometry');
+  for(const name of ['chibi_male_hoodie','chibi_male_bomber','chibi_male_varsity','chibi_male_oxford','chibi_male_sweater','chibi_female_cardigan','chibi_female_knit','chibi_female_jacket']){
+    const style=catalog3d.find(x=>x.name===name);
+    assert.ok(style?.extras>=4,'Long sleeves missing from outerwear style: '+name);
+  }
+  assert.ok(catalog3d.find(x=>x.name==='chibi_female_blouse')?.extras>=6,
+    'Blouse missing modeled puff sleeves');
   for(const name of ['chibi_male_jeans','chibi_male_joggers','chibi_male_chinos','chibi_female_jeans','chibi_female_widepants']){
     const style=catalog3d.find(x=>x.name===name);
     assert.ok(style?.extras>=3,'Trousers must have separate left and right skinned leg meshes: '+name);
