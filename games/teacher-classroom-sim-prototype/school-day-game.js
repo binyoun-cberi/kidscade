@@ -38,7 +38,7 @@ const ui={
   closeHelp:$('closeHelpButton'),end:$('endPanel'),summary:$('summary'),restart:$('restartButton'),
   endEyebrow:$('endEyebrow'),endTitle:$('endTitle'),examResults:$('examResults'),
   assetError:$('assetError'),joy:$('joystick'),joyKnob:$('joyKnob'),
-  bell:$('bellAudio'),talk:$('talkAudio'),fight:$('fightAudio')
+  bell:$('bellAudio'),talk:$('talkAudio'),fight:$('fightAudio'),ambience:$('ambienceAudio')
 };
 
 const renderer=new THREE.WebGLRenderer({canvas:ui.canvas,antialias:true,powerPreference:'high-performance'});
@@ -709,7 +709,14 @@ function updateActionFlashes(dt){
 }
 function showToast(text){ui.toast.textContent=text;ui.toast.classList.add('show');toastTimer=2.0}
 function playAudio(el,volume=.7){try{el.volume=volume;el.currentTime=0;el.play().catch(()=>{})}catch(_){}}
-function setTalk(on){try{ui.talk.volume=.14;if(on)ui.talk.play().catch(()=>{});else ui.talk.pause()}catch(_){}}
+function setTalk(on){
+  try{
+    ui.talk.volume=.12;
+    if(ui.ambience)ui.ambience.volume=on?.045:.09;
+    if(on)ui.talk.play().catch(()=>{});
+    else ui.talk.pause();
+  }catch(_){}
+}
 function setGuide(kicker,title,text){ui.guideKicker.textContent=kicker;ui.guideTitle.textContent=title;ui.guideText.textContent=text}
 function fmt(sec){sec=Math.max(0,Math.ceil(sec));return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0')}
 function updateClock(){
@@ -1658,7 +1665,7 @@ function renderExamResults(exam){
 function finishDay(){
   if(dayFinished)return;
   dayFinished=true;
-  setTalk(false);pairs=[];playAudio(ui.bell,.55);
+  setTalk(false);ui.ambience?.pause();pairs=[];playAudio(ui.bell,.55);
   if(teachingMarker)teachingMarker.visible=false;if(doorMarker)doorMarker.visible=false;
 
   const exam=examNumberForDay(campaign.day)?conductExam(campaign,STUDENT_PROFILES):null;
@@ -1677,6 +1684,7 @@ function finishDay(){
     '<div><strong>'+stats.lessonsRecapped+'/6</strong><span>완료한 수업 정리</span></div>';
 
   if(exam){
+    playCue(exam.examNumber===4&&exam.success?'grade':'recap');
     renderExamResults(exam);
     ui.endEyebrow.textContent=campaign.day+'일차 · '+exam.examNumber+'차 시험';
     if(exam.examNumber===4){
@@ -1729,8 +1737,16 @@ ui.restart.addEventListener('click',()=>{
   if(campaign.day>=CAMPAIGN_DAYS&&campaign.dayComplete)resetCampaign();
   location.reload();
 });
-ui.helpButton.addEventListener('click',()=>{paused=true;ui.help.classList.remove('hidden')});
-ui.closeHelp.addEventListener('click',()=>{ui.help.classList.add('hidden');paused=false;clock3d.getDelta()});
+ui.helpButton.addEventListener('click',()=>{
+  paused=true;ui.help.classList.remove('hidden');
+  ui.ambience?.pause();ui.talk?.pause();
+});
+ui.closeHelp.addEventListener('click',()=>{
+  ui.help.classList.add('hidden');paused=false;
+  ui.ambience?.play().catch(()=>{});
+  if(currentStep.kind==='social')ui.talk?.play().catch(()=>{});
+  clock3d.getDelta();
+});
 
 async function boot(){
   buildSpace('classroom');setupInput();updateDayStrip();
@@ -1739,7 +1755,11 @@ async function boot(){
     console.error('[TeacherSim] character load failed',err);ui.intro.classList.add('hidden');ui.assetError.classList.remove('hidden');return;
   }
   enterStep(0);ui.start.disabled=false;ui.start.textContent=campaign.day+'일차 등교하기';updateCampaignStatus();
-  ui.start.addEventListener('click',()=>{started=true;ui.intro.classList.add('hidden');clock3d.getDelta()});
+  ui.start.addEventListener('click',()=>{
+    started=true;ui.intro.classList.add('hidden');
+    if(ui.ambience){ui.ambience.volume=.09;ui.ambience.play().catch(()=>{});}
+    playCue('write');clock3d.getDelta();
+  });
   camera.position.set(0,7.7,11.6);camera.lookAt(0,.7,-.5);requestAnimationFrame(loop);
 }
 function loop(now){
