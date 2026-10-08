@@ -531,6 +531,7 @@ function presentEncounterModels(){
   encounter.heatNodes.forEach(h=>h.marker.visible=stage===4&&!h.done);
   doorHinge.rotation.y=encounter.doorClosed?0:-1.30;
 }
+presentEncounterModels();
 
 function dist(a,b){return Math.hypot(a.x-b.x,a.z-b.z);}
 function showToast(message){ui.toast.textContent=message;ui.toast.classList.add('show');toastSeconds=3.5;}
@@ -1033,7 +1034,14 @@ function drawMap(){
   }
   if(stage===2)marker(SCHOOL.science.x,SCHOOL.science.z,'#c4b1ff',4);
   if(stage===3)marker(SCHOOL.science.x,-13.1,'#ca99ff',4);
-  if(stage===4)marker(SCHOOL.guard.x,SCHOOL.guard.z,'#79e0bd',4);
+  if(stage===4)for(const o of encounter.heatNodes)if(!o.done)marker(o.x,o.z,'#7bd9f5',3);
+  if(stage===5)marker(25.5,13.1,'#79e7ee',4);
+  if(stage===6||stage===7)marker(7.5,-13.1,'#d2d8dd',4);
+  if(stage===8)marker(bellDoor.x,bellDoor.z,'#aa8ef2',4);
+  if(stage===9)marker(-25.3,8,'#aa8ef2',4);
+  if(stage===10)marker(-7.5,8.55,'#f0c27b',4);
+  if(stage===11)marker(wolfTrap.x,wolfTrap.z,'#f58e69',4);
+  if(stage===12)marker(SCHOOL.guard.x,SCHOOL.guard.z,'#79e0bd',4);
   marker(player.x,player.z,'#7ddaf4',4);
   ctx.strokeStyle='#7ddaf4';ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(tx(player.x),tz(player.z));
