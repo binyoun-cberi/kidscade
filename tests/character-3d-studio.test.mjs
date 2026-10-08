@@ -355,7 +355,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261008-malewalk9/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-balanced-male2/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
@@ -407,26 +407,51 @@ test('male Chibi proportional rework widens upper torso and slims individual leg
 });
 
 
-test('male WALK preserves 11 source clips and limb keyframes while reducing hip sway',()=>{
+test('male WALK and RUN use bind-pose-relative movement rather than bending resting bones',()=>{
   const js=read('teacher/character-3d-studio.js');
   assert.match(js,/const MALE_WALK_POSITION_X=\.43/);
+  assert.match(js,/const MALE_RUN_POSITION_X=\.60/);
   assert.match(js,/const MALE_WALK_SPINE_FACTORS=/);
-  assert.match(js,/'DEF-spine':\{roll:\.38,yaw:\.70\}/);
-  assert.match(js,/'DEF-spine001':\{roll:\.55,yaw:\.85\}/);
+  assert.match(js,/const MALE_RUN_SPINE_FACTORS=/);
+  assert.match(js,/function sourceBone\(name\)/);
+  assert.match(js,/invertedBase\.copy\(base\)\.invert\(\)/);
+  assert.match(js,/delta\.copy\(invertedBase\)\.multiply\(animated\)/);
+  assert.match(js,/function buildMaleLocomotionClip\(sourceClip,settings\)/);
   assert.match(js,/function buildMaleWalkClip\(sourceClip\)/);
-  assert.match(js,/const result=sourceClip\.clone\(\)/);
-  assert.match(js,/if\(track\.name==='DEF-spine\.position'\)/);
-  assert.match(js,/if\(track\.name\.slice\(dot\+1\)!=='quaternion'\|\|!MALE_WALK_SPINE_FACTORS\[bone\]\)continue/);
-  assert.match(js,/function resolvePlaybackClip\(sourceClip\)/);
-  assert.match(js,/isMaleBodyVisible\(\)&&isWalkClipName\(sourceClip\.name\)/);
+  assert.match(js,/function buildMaleRunClip\(sourceClip\)/);
+  assert.match(js,/const upperArm=\/upper\[_-\]\?arm\/i\.test\(bone\)/);
   assert.match(js,/animations\.filter\(clip=>isWalkClipName\(clip\.name\)\)/);
+  assert.match(js,/animations\.filter\(clip=>isRunClipName\(clip\.name\)\)/);
+  assert.match(js,/if\(isWalkClipName\(sourceClip\.name\)\)/);
+  assert.match(js,/if\(isRunClipName\(sourceClip\.name\)\)/);
   assert.match(js,/animations:animations\.map\(clip=>resolvePlaybackClip\(clip\)\)/);
-  assert.match(js,/if\(activeClip&&isWalkClipName\(activeClip\)\)playClip\(activeClip\)/);
-  assert.match(js,/if\(part==='kidscade_male_body'\|\|BASE_VARIANT_NODES\.includes\(part\)\)syncActiveWalkStyle\(\)/);
-  assert.doesNotMatch(js,/animations\.push\(.*maleWalk/);
+  assert.doesNotMatch(js,/animations\.push\(.*male(?:Walk|Run)/);
+
   const manifest=JSON.parse(read('chibi/asset-manifest.json'));
   assert.equal(manifest.animations.length,11);
-  assert.equal(manifest.customParts.kidscade_male_set_policy.walkStyle,'reduced-hip-sway-v1');
+  assert.equal(manifest.customParts.kidscade_male_set_policy.walkStyle,'balanced-locomotion-v2');
+  assert.equal(manifest.customParts.kidscade_male_set_policy.runAnimation.pelvisLateralScale,.60);
+});
+
+test('male base opens first and provides brows visibility, face zoom and gait status',()=>{
+  const js=read('teacher/character-3d-studio.js');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261008-malewalk9/);
+  assert.match(js,/applyPreset\('male'\)/);
+  assert.match(js,/if\(name==='male'&&!\$\('maleBrowPreview'\)\.checked\)/);
+  assert.match(js,/\$\('maleBrowPreview'\)\.addEventListener\('change'/);
+  assert.match(js,/if\(name==='face'\)/);
+  assert.match(js,/gaitBadge\.textContent=derived/);
+  assert.match(html,/id="maleBrowPreview"/);
+  assert.match(html,/id="gaitBadge"/);
+  assert.match(html,/data-view="face"/);
+  assert.match(html,/data-chibi-preset="male">남자 기본/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-balanced-male2/);
+});
+
+test('mobile studio shows the live avatar preview before the long wardrobe',()=>{
+  const html=read('teacher/character-3d-studio.html');
+  assert.match(html,/@media\(max-width:820px\)\{\s*\.canvas-card\{order:-1;min-height:0\}/);
+  assert.match(html,/\.view\{height:min\(64svh,540px\);min-height:340px\}/);
+  assert.match(html,/\.left-rail\{overflow:visible!important\}/);
+  assert.match(html,/\.view-grid\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)\}/);
 });
