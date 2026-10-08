@@ -1902,6 +1902,20 @@ function installLocalVisualAudit(){
   window.__kc3dAudit={
     ready:true,
     clips:animations.map(clip=>({name:clip.name,label:clipLabel(clip.name),duration:clip.duration})),
+    hairCatalog(){
+      return HAIR_NODES.map(name=>{
+        const mesh=getNode(name);
+        const positions=mesh?.geometry?.getAttribute('position');
+        let fingerprint=2166136261;
+        if(positions)for(let i=0;i<positions.array.length;i+=2){
+          fingerprint=Math.imul(fingerprint ^ Math.round(positions.array[i]*100000),16777619);
+        }
+        return {name,available:!!mesh?.isSkinnedMesh,fit:PART_FIT(name),
+          visible:!!mesh?.visible,
+          vertices:positions?.count||0,
+          fingerprint:fingerprint>>>0};
+      });
+    },
     sample(label,view,fraction){
       const source=animations.find(clip=>clip.name===label||clipLabel(clip.name)===label);
       if(!source)throw new Error('Unknown Chibi animation: '+label);
