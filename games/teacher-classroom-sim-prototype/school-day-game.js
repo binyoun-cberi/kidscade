@@ -5,7 +5,7 @@ import {
   AI_RULES,STUDENT_PROFILES,createStudentRuntime,resetFocusForLesson,updateLessonFocus,helpFocus,
   resetSocialForRecess,recoverSocial,drainSocial,conflictProbability,chooseOffTaskBehavior,clamp
 } from './student-ai.mjs?v=73';
-import {CLASS_SIZE,SCHOOL_SPACES,DAY_STEPS,PERIODS,ROW_DESK_FORWARD,ROW_CHAIR_OFFSET,SEAT_SURFACE_HEIGHT} from './school-day.mjs?v=74';
+import {CLASS_SIZE,SCHOOL_SPACES,DAY_STEPS,PERIODS,ROW_DESK_FORWARD,ROW_CHAIR_OFFSET,SEAT_SURFACE_HEIGHT,seatHeightAdjustment} from './school-day.mjs?v=75';
 import {
   preferenceFor,preferenceMultiplier,preferenceIcon,
   createDailyEnvironment,createDailyHealth,healthRecoveryMultiplier,tickHealth,nextHealthAction,
@@ -45,7 +45,7 @@ const renderer=new THREE.WebGLRenderer({canvas:ui.canvas,antialias:true,powerPre
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.65));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.22;
+renderer.toneMappingExposure=.99;
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 
@@ -60,13 +60,13 @@ const roomRoot=new THREE.Group();world.add(roomRoot);
 const actorRoot=new THREE.Group();world.add(actorRoot);
 const fxRoot=new THREE.Group();world.add(fxRoot);
 
-scene.add(new THREE.HemisphereLight(0xffffff,0xa89983,2.5));
-const sun=new THREE.DirectionalLight(0xffffff,2.35);
+scene.add(new THREE.HemisphereLight(0xffffff,0xa89983,1.68));
+const sun=new THREE.DirectionalLight(0xffffff,1.75);
 sun.position.set(-6,12,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
 sun.shadow.radius=2.7;sun.shadow.normalBias=.025;
 sun.shadow.camera.left=-12;sun.shadow.camera.right=12;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-12;
 scene.add(sun);
-const fill=new THREE.DirectionalLight(0xcde8ff,.8);fill.position.set(7,6,-8);scene.add(fill);
+const fill=new THREE.DirectionalLight(0xcde8ff,.52);fill.position.set(7,6,-8);scene.add(fill);
 
 const ROOM={minX:-7.2,maxX:7.2,minZ:-5,maxZ:5};
 const DOOR_POINT=new THREE.Vector3(6.55,0,-3.55);
@@ -91,7 +91,7 @@ function seatFurnitureForSpace(space){
   if(space.id==='gym')return [];
   const lab=space.id==='science'||space.id==='art',meal=space.id==='cafeteria';
   const depth=meal?-.30:lab?.02:ROW_CHAIR_OFFSET;
-  const half=meal?.30:lab?.19:.23;
+  const half=meal?.30:space.id==='art'?.24:space.id==='science'?.21:.23;
   return space.seats.map((p,i)=>({id:i,x:p.x,z:p.z+depth,hx:half,hz:half}));
 }
 let seatFurnitureRects=seatFurnitureForSpace(activeSpace);
@@ -239,7 +239,7 @@ function normalizeStatic(root,targetSize){
   const center=b.getCenter(new THREE.Vector3());
   root.position.x-=center.x;root.position.z-=center.z;root.position.y-=b.min.y;
 }
-function placeAsset(url,{x=0,y=0,z=0,size=1,rot=0,fallback=[.8,.5,.8,0x8c9aa5],parent=null}={}){
+function placeAsset(url,{x=0,y=0,z=0,size=1,rot=0,spread=1,fallback=[.8,.5,.8,0x8c9aa5],parent=null}={}){
   const host=parent||furnitureRoot;
   const placeholder=box(fallback[0],fallback[1],fallback[2],fallback[3]);
   placeholder.position.set(x,y+fallback[1]/2,z);placeholder.rotation.y=rot;host.add(placeholder);
@@ -247,6 +247,8 @@ function placeAsset(url,{x=0,y=0,z=0,size=1,rot=0,fallback=[.8,.5,.8,0x8c9aa5],p
   loadAssetTemplate(url).then(template=>{
     if(serial!==spaceBuildSerial||!placeholder.parent)return;
     const model=template.clone(true);normalizeStatic(model,size);
+    // Keep stool height at 0.62m while widening its tiny imported footprint.
+    model.scale.x*=spread;model.scale.z*=spread;
     model.position.set(x,y,z);model.rotation.y=rot;
     model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
     host.add(model);host.remove(placeholder);
@@ -324,7 +326,7 @@ function addScience(space){
   const stoolUrl='../../assets/game/3d/interiors/kenney-furniture-kit/stool-bar-square.glb';
   const sinkUrl='../../assets/game/3d/interiors/kenney-furniture-kit/kitchen-sink.glb';
   for(const o of space.obstacles.slice(0,4))placeAsset(tableUrl,{x:o.x,z:o.z,size:2.25,fallback:[o.hx*1.8,.7,o.hz*1.55,0x6b837d]});
-  for(const s of space.seats)placeAsset(stoolUrl,{x:s.x,z:s.z+.02,size:.62,fallback:[.42,.55,.42,0x4f6f69]});
+  for(const s of space.seats)placeAsset(stoolUrl,{x:s.x,z:s.z+.02,size:.62,spread:1.65,fallback:[.42,.62,.42,0x4f6f69]});
   placeAsset(sinkUrl,{x:5.8,z:-3.9,size:1.45,rot:-Math.PI/2,fallback:[1.55,.9,.68,0x879b96]});
   for(const [x,z,c] of [[-2.8,-2.1,0x64b5f6],[-2.3,-2.1,0xf6c85f],[2.3,-2.1,0xd77ac8],[2.8,-2.1,0x63c59c]]){
     const tube=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.5,12),new THREE.MeshStandardMaterial({color:c,roughness:.35,transparent:true,opacity:.82}));
@@ -348,7 +350,7 @@ function addArt(space){
   const stoolUrl='../../assets/game/3d/interiors/kenney-furniture-kit/stool-bar.glb';
   const bookUrl='../../assets/game/3d/interiors/kenney-furniture-kit/bookcase-open-low.glb';
   for(const o of space.obstacles.slice(0,4))placeAsset(tableUrl,{x:o.x,z:o.z,size:2.2,fallback:[o.hx*1.85,.7,o.hz*1.55,0xc18e68]});
-  for(const s of space.seats)placeAsset(stoolUrl,{x:s.x,z:s.z+.02,size:.62,fallback:[.45,.55,.45,0x7290a0]});
+  for(const s of space.seats)placeAsset(stoolUrl,{x:s.x,z:s.z+.02,size:.62,spread:1.25,fallback:[.46,.62,.46,0x7290a0]});
   placeAsset(bookUrl,{x:-6.1,z:-3.9,size:1.55,rot:Math.PI/2,fallback:[1.25,1.0,.5,0x916f59]});
   const colors=[0xee6b6e,0xf5c65c,0x63b38b,0x5b91d8,0xa276c8,0xf08aa8];
   colors.forEach((c,i)=>{
@@ -525,12 +527,12 @@ async function makeActor(kind,profile,index,pos){
     root,model,mixer,clips,action:null,anim:'',target:pos.clone(),
     speed:kind==='teacher'?3.2:1.15,kind,navGoal:'',navPath:[],
     visualId:kind==='teacher'?'teacher':profile?.id,usingFallback,seatIndex:kind==='student'?index:-1,
-    restY:model.position.y,restRotation:model.rotation.clone(),seated:false,seatBones:collectSeatedBones(model),gestureBones:collectGestureBones(model),poseBlend:0,seatHipY:null
+    restY:model.position.y,restRotation:model.rotation.clone(),seated:false,seatBones:collectSeatedBones(model),gestureBones:collectGestureBones(model),poseBlend:0,hipBone:null,seatHipY:null
   };
   root.updateMatrixWorld(true);
   let hips=null;
   model.traverse(node=>{if(node.isBone&&!hips&&/hips|pelvis/i.test(node.name||''))hips=node});
-  if(hips)actor.seatHipY=hips.getWorldPosition(new THREE.Vector3()).y;
+  if(hips){actor.hipBone=hips;actor.seatHipY=hips.getWorldPosition(new THREE.Vector3()).y;}
   playAnim(actor,'idle');
   return actor;
 }
@@ -567,8 +569,13 @@ function setSeatedPose(actor,shouldSit,dt){
       entry.bone.quaternion.copy(entry.base).slerp(entry.base.clone().multiply(SIT_LOWER),actor.poseBlend);
   }
   const surface=SEAT_SURFACE_HEIGHT[activeSpace.id]??.3;
-  const offset=Number.isFinite(actor.seatHipY)?clamp(surface-actor.seatHipY,-.55,-.12):-.3;
-  actor.model.position.y=actor.restY+(nativeSit?0:offset)*actor.poseBlend;
+  // SitDown clips move pelvis bones; bind-pose height and a fixed negative offset
+  // cannot align them with 0.62m science/art stools. Sample the animated pelvis.
+  const actualHip=actor.hipBone?.getWorldPosition(new THREE.Vector3()).y;
+  const previousShift=actor.model.position.y-actor.restY;
+  const unshiftedHip=Number.isFinite(actualHip)?actualHip-previousShift:actor.seatHipY;
+  const offset=seatHeightAdjustment(surface,unshiftedHip);
+  actor.model.position.y=actor.restY+offset*actor.poseBlend;
 }
 const gestureAxisX=new THREE.Vector3(1,0,0),gestureAxisZ=new THREE.Vector3(0,0,1);
 const gestureQuaternion=new THREE.Quaternion();
