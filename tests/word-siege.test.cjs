@@ -144,7 +144,7 @@ function headlessGame(){
     KidscadeStorage:{getJson(){return []},setJson(){return true},getInt(key){return key==='kidscade_word_siege_stage_v1'?10:0},setRaw(){return true}},
     addEventListener(){},devicePixelRatio:1
   };
-  const hooks=`window.__headless={restart,startWave,update,beginPlacement,buildTower,makeTowerStats,towerCost,availableWords,validPlacement,rolePlacementValid,applyLinks,effectiveStats,showHint,swapOne,selectStage,currentStage,createWave,tileWord,typedWord,attackEnemy,towerUpdate,shotUpdate,statusEffects,updateTraps,updateFields,spawnEnemy,updateComposer,inspectAt,upgradeInspectedTower,upgradeCost,getInput:()=>freeWord, get state(){return state}};resize();`;
+  const hooks=`window.__headless={restart,startWave,update,beginPlacement,buildTower,makeTowerStats,towerCost,availableWords,validPlacement,rolePlacementValid,applyLinks,effectiveStats,showHint,swapOne,selectStage,currentStage,createWave,tileWord,typedWord,attackEnemy,towerUpdate,shotUpdate,statusEffects,updateTraps,updateFields,spawnEnemy,updateComposer,inspectAt,upgradeInspectedTower,upgradeCost,moveEnemy,useWordRush,rushCost,getInput:()=>freeWord, get state(){return state}};resize();`;
   const patched=runtime.replace('resize();requestAnimationFrame(loop);',hooks);
   assert.notEqual(patched,runtime,'headless hooks are missing');
   const ctx={window,document,performance:{now:()=>0},setTimeout(){return 0},clearTimeout(){},requestAnimationFrame(){}};
@@ -749,4 +749,91 @@ test('Word Siege visible word and dictionary labels match the real generated pow
   assert.match(runtime,/D\.displayRole\(w,def\)/);
   assert.match(runtime,/D\.behaviorFor\(w\)/);
   assert.match(runtime,/D\.displayRole\(w,d\)/);
+});
+
+test('Word Siege boss resolves repeated crowd control into a counterattack and vulnerability',()=>{
+  const {h,d}=headlessGame(),s=h.state;
+  s.wave=8;h.spawnEnemy('boss');
+  const boss=s.enemies.at(-1);
+  assert.ok(boss.boss);
+  let brokeFree=false;
+  let furthest=0;
+  for(let i=0;i<250;i++){
+    // Simulate a stall-heavy lineup attempting permanent knockback and freeze.
+    boss.slow=.44;boss.freezeTime=.3;boss.stunTime=.25;boss.pushBack=.028;
+    h.moveEnemy(boss,.04);
+    brokeFree ||= boss.unstoppableTime>0;
+    furthest=Math.max(furthest,boss.pathIndex+boss.pathT);
+  }
+  assert.ok(brokeFree,'boss must break out of repeated snares');
+  assert.ok(furthest>.1,'boss must advance instead of endlessly walking backwards');
+  assert.ok(boss.pathIndex+boss.pathT>=0);
+  const arrow={id:s.uid++,word:'ARROW',def:d.words.ARROW,stats:h.makeTowerStats('ARROW',d.words.ARROW),
+    x:.3,y:.3,level:1,links:[],combos:[]};
+  s.towers.push(arrow);
+  boss.shield=0;boss.armor=0;boss.exposedTime=2;boss.hp=5000;
+  h.attackEnemy(arrow,boss,100);
+  assert.ok(boss.hp<=4862,'boss break window should reward damage rather than permanent immobilization');
+});
+
+test('Word Siege foundation towers scale through wave mastery and invested levels',()=>{
+  const {h,d}=headlessGame(),s=h.state;
+  const make=word=>({id:s.uid++,word,def:d.words[word],stats:h.makeTowerStats(word,d.words[word]),
+    x:.3,y:.4,level:1,cool:0,links:[],combos:[],harvestClock:0});
+  const arrow=make('ARROW'),book=make('BOOK'),rail=make('RAILGUN');
+  s.towers.push(arrow,book,rail);
+  s.wave=1;const early=h.effectiveStats(arrow);
+  const bookEarly=h.effectiveStats(book);
+  const railEarly=h.effectiveStats(rail);
+  s.wave=7;
+  const matured=h.effectiveStats(arrow),bookMatured=h.effectiveStats(book);
+  const railMatured=h.effectiveStats(rail);
+  assert.ok(matured.damage>early.damage*1.30);
+  assert.ok(matured.rate>early.rate*1.12);
+  assert.ok(bookMatured.damage>bookEarly.damage*1.30);
+  assert.ok(Math.abs(railMatured.damage-railEarly.damage)<.001,
+    'legendary piercing tower should not inherit free starter growth');
+  arrow.level=3;s.towerRevision++;
+  const upgraded=h.effectiveStats(arrow);
+  assert.ok(upgraded.damage>matured.damage*1.70);
+  assert.ok(upgraded.rate>matured.rate*1.30);
+});
+
+test('Word Siege WORD RUSH costs INK, powers basic towers and respects cooldown/limits',()=>{
+  const {h,d}=headlessGame(),s=h.state;
+  const make=word=>({id:s.uid++,word,def:d.words[word],stats:h.makeTowerStats(word,d.words[word]),
+    x:.4,y:.4,level:1,links:[],combos:[],cool:0,harvestClock:0});
+  const arrow=make('ARROW'),rail=make('RAILGUN');
+  s.towers.push(arrow,rail);s.wave=5;s.inWave=true;s.ink=180;
+  s.spawnQueue=[{delay:1000,type:'normal'}];s.totalSpawns=1;
+  const price=h.rushCost(),baseline=h.effectiveStats(arrow);
+  h.useWordRush();
+  assert.equal(s.ink,180-price);
+  assert.equal(s.rushUses,1);
+  assert.ok(s.rushTime>8);
+  const boosted=h.effectiveStats(arrow);
+  assert.ok(boosted.damage>baseline.damage*1.38);
+  assert.ok(boosted.rate>baseline.rate*1.29);
+  const railStats=h.effectiveStats(rail);
+  assert.ok(railStats.damage>rail.stats.damage);
+  h.useWordRush();assert.equal(s.rushUses,1,'cannot stack a second rush while active');
+  for(let i=0;i<245;i++)h.update(.04);
+  assert.equal(s.rushTime,0);
+  assert.ok(h.effectiveStats(arrow).damage<boosted.damage);
+  h.useWordRush();assert.equal(s.rushUses,1,'must wait through cooldown');
+  for(let i=0;i<390;i++)h.update(.04);
+  assert.equal(s.rushCooldown,0);
+  h.useWordRush();assert.equal(s.rushUses,2);
+  for(let i=0;i<800;i++)h.update(.04);
+  h.useWordRush();
+  assert.equal(s.rushUses,2,'at most two WORD RUSH actions each wave');
+  assert.match(html,/id="rushBtn"/);
+  assert.match(html,/\.rush-btn\.active/);
+});
+
+test('Word Siege exposes boss resolve and timing choices to players',()=>{
+  assert.match(runtime,/RESOLVE /);
+  assert.match(runtime,/BREAK! \+38%/);
+  assert.match(runtime,/function useWordRush/);
+  assert.match(runtime,/FOUNDATION_WORDS/);
 });
