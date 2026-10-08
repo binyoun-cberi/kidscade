@@ -133,7 +133,7 @@ test('beginner experience includes wayfinding, actionable hints, and camera obst
 test('first encounter remains harmless until the player learns the stare mechanic',()=>{
   const start=js.indexOf('function segmentHitsRect('),end=js.indexOf('function updatePlayer(dt){',start);
   assert.ok(start>=0&&end>start);
-  const simulation=new Function('aim',\`
+  const simulation=new Function('aim',`
     const walls=[],furniture=[];
     const player={x:-10.3,z:-6};
     const maiden={x:12,z:-10,speed:1.2,charge:0,attacks:0,root:{visible:false,position:{set(){}},rotation:{y:0}}};
@@ -144,7 +144,7 @@ test('first encounter remains harmless until the player learns the stare mechani
     function showLesson(){}function showToast(){}function sfx(){}function updateNavigation(){}
     function finish(){throw Error('unexpected beginner failure');}
     function setStage(next){stage=next;}
-    \${js.slice(start,end)}
+    ${js.slice(start,end)}
     function tick(seconds){
       for(let i=0;i<seconds*20&&stage===2;i++){elapsed+=.05;invulnerable=Math.max(0,invulnerable-.05);updateGhost(.05);}
     }
@@ -156,7 +156,7 @@ test('first encounter remains harmless until the player learns the stare mechani
     const protectedPractice=aim?maidenPhase==='hunt'&&hp===3:maidenPhase==='practice'&&hp===3;
     tick(15);
     return {safeBeforeEncounter,protectedPractice,hp,stage,maidenPhase};
-  \`);
+  `);
   const guided=simulation(true),unaware=simulation(false);
   assert.equal(guided.safeBeforeEncounter,true);
   assert.equal(guided.protectedPractice,true);
