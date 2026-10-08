@@ -2,7 +2,7 @@
 'use strict';
 
 const ROLE_LABELS={
-  rapid:'빠른 공격', pierce:'관통 공격', burst:'포격', explosive:'폭발', beam:'광선',
+  rapid:'철자 전술', pierce:'관통 공격', burst:'포격', explosive:'폭발', beam:'광선',
   burn:'화염', slow:'냉기', poison:'독', push:'밀치기', gravity:'중력',
   barrier:'방어', resource:'채굴', repair:'회복', modifier:'강화', special:'특수'
 };
