@@ -182,6 +182,77 @@ const errors=[];
   await sample('IDLE','side',0,'desktop');
   await sample('JUMP','side',.5,'desktop');
 
+
+  // Outfit pack: exercise every body-fit/category garment, collect animated
+  // bone-deformed clearance samples, and capture a real WebGL preview.
+  const outfits=JSON.parse(fs.readFileSync(path.join(ROOT,'chibi/asset-manifest.json'),'utf8'))
+    .outfitLibrary;
+  report.outfitPack={styles:[],roundtrip:[],notes:[]};
+  const setFit=fit=>evalPage("document.querySelector('[data-body-fit="+JSON.stringify(fit)+"]').click()");
+  const selectGarment=(category,name)=>evalPage("(()=>{"+
+    "document.querySelector('[data-wardrobe-category="+JSON.stringify(category)+"]').click();"+
+    "const input=document.querySelector('[data-chibi-part="+JSON.stringify(name)+"]');"+
+    "if(!input)return {error:'Missing garment input'};"+
+    "input.checked=true;input.dispatchEvent(new Event('change',{bubbles:true}));"+
+    "return {name:input.dataset.chibiPart,checked:input.checked,"+
+      "visible:window.__kc3dAudit.outfitCatalog().filter(x=>x.visible&&x.category==="+JSON.stringify(category)+").map(x=>x.name)};"+
+    "})()");
+  const catalog3d=await evalPage('window.__kc3dAudit.outfitCatalog()');
+  assert.equal(catalog3d.length,20,'Must have exactly 20 catalogued top/bottom styles');
+  const newStyles=catalog3d.filter(x=>x.name.startsWith('chibi_'));
+  assert.equal(newStyles.length,15,'Must have 15 new generated styles');
+  assert.equal(new Set(newStyles.map(x=>x.fingerprint)).size,15,
+    'New garments do not all have distinct skinned-shell geometry');
+
+  for(const fit of ['male','female']){
+    await setFit(fit);
+    for(const category of ['top','bottom']){
+      const names=outfits[fit][category];
+      assert.equal(names.length,category==='top'?6:4,'Wrong style count for '+fit+'/'+category);
+      for(const name of names){
+        const expected=catalog3d.find(x=>x.name===name);
+        assert.ok(expected?.available&&expected.vertices>100,'Missing rigged shell '+name);
+        assert.equal(expected.rigBones,78,'Bad skeleton on '+name);
+        const choice=await selectGarment(category,name);
+        assert.equal(choice.name,name,'Garment checkbox missing: '+name);
+        assert.equal(choice.checked,true);
+        assert.deepEqual(choice.visible,[name],'Multiple '+category+' pieces visible: '+name);
+        const motion=[];
+        for(const clip of ['WALK','RUN']){
+          await evalPage("window.__kc3dAudit.sample("+JSON.stringify(clip)+",'side',0.25)");
+          const proximity=await evalPage('window.__kc3dAudit.garmentSurvey()');
+          const row=proximity.find(x=>x.name===name);
+          assert.ok(row&&row.tested>0,'No animated garment surface samples for '+name+'/'+clip);
+          motion.push({clip,...row});
+        }
+        await sample('IDLE','threeQuarter',0,'outfit-'+name);
+        report.outfitPack.styles.push({name,fit,category,vertices:expected.vertices,
+          fingerprint:expected.fingerprint,extraMeshes:expected.extras,motion});
+      }
+    }
+  }
+  // Re-import the generated binary GLB. Checking the file header alone is not
+  // enough: verify named garments, rigged meshes, and 11 animation clips.
+  for(const [fit,top,bottom] of [
+    ['male','chibi_male_bomber','chibi_male_joggers'],
+    ['female','chibi_female_jacket','chibi_female_widepants']
+  ]){
+    await setFit(fit);
+    await selectGarment('top',top);
+    await selectGarment('bottom',bottom);
+    const exported=await evalPage('window.__kc3dAudit.roundtripExport()');
+    assert.ok(exported.bytes>30000,'Empty GLB '+fit);
+    assert.equal(exported.clips.length,11,'Animation clips missing in GLB '+fit);
+    assert.ok(exported.skins.some(x=>x.name===top+'_shell'&&x.bones===78),
+      'Exported upper garment lost its skin rig: '+top);
+    assert.ok(exported.skins.some(x=>x.name===bottom+'_shell'&&x.bones===78),
+      'Exported lower garment lost its skin rig: '+bottom);
+    report.outfitPack.roundtrip.push({fit,top,bottom,bytes:exported.bytes,
+      clips:exported.clips,riggedPieces:exported.skins.length});
+  }
+  await setFit('male');
+  report.outfitPack.notes.push('Animated-pose proximity is a diagnostic, not definitive triangle-mesh penetration certification.');
+
   // Collect joint trajectories as evidence, but do not claim automatic
   // foot-ground/contact correctness based on bone-pivot height alone.
   for(const clip of ['WALK','RUN']){
