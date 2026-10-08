@@ -95,14 +95,8 @@ function createRoom(){
   ground(0,.8,36,7.4,0x344455);
   ground(-10.5,-9,13,12,0x51515c);ground(10.5,-9,13,12,0x44555b);
   ground(0,8.75,10,8.5,0x5c4d45);
-  wall(0,-15,13*0+13,.29); // west back wall; next right back wall
-  // Replace the single west back wall center with proper locations.
-  walls.pop();const misplaced=scene.children[scene.children.length-2]; // no wall deletion: handled below by positioning
-  // Rooms, all opening into the shared central corridor.
-  // Keep the previous west back wall aligned to the western classroom.
-  const backMeshes=scene.children.filter(o=>o.isMesh&&Math.abs(o.position.z+15)<.01&&Math.abs(o.position.x)<.01);
-  for(const m of backMeshes)m.position.x=-10.5;
-  walls.push({x:-10.5,z:-15,hx:6.5,hz:.145});
+  // Three rooms connect through deliberate gaps in the corridor walls.
+  wall(-10.5,-15,13,.29);
   wall(10.5,-15,13,.29);
   wall(-17,-9,.29,12);wall(-4,-9,.29,12);
   wall(4,-9,.29,12);wall(17,-9,.29,12);
@@ -119,8 +113,9 @@ function createRoom(){
   }
   placeFurniture('bookcase-open.glb',-16.1,-5.1,1.95,Math.PI/2,[.6,.5]);
   placeFurniture('bookcase-open.glb',16,-5.1,1.95,-Math.PI/2,[.6,.5]);
-  placeFurniture('computer-screen.glb',-2.7,10.9,.69,Math.PI);
   placeFurniture('table.glb',-2.7,10.9,.85,Math.PI,[1.2,.6]);
+  const officeMonitor=placeFurniture('computer-screen.glb',-2.7,10.9,.58,Math.PI);
+  officeMonitor.position.y=.75;
   placeFurniture('chair-desk.glb',-2.7,11.85,.77,Math.PI);
   const chalk=mat(0x253c38),board=cube(scene,-10.5,1.85,-14.79,5.7,1.3,.08,chalk);
   cube(scene,10.5,1.9,-14.79,5.5,1.3,.06,mat(0x394e5d));
@@ -139,8 +134,7 @@ function humanoidFallback(){
   cube(group,.15,.37,0,.14,.72,.16,mat(0x263544));return group;
 }
 player.model=humanoidFallback();player.root.add(player.model);
-loadTemplate(MAN).then(async()=>{
-  const gltf=await loader.loadAsync(MAN);
+loader.loadAsync(MAN).then(gltf=>{
   const model=cloneSkeleton(gltf.scene);normalize(model,1.7);player.root.remove(player.model);player.model=model;player.root.add(model);
   const clips=gltf.animations||[],idle=clips.find(c=>/idle|stand/i.test(c.name))||clips[0],walk=clips.find(c=>/walk/i.test(c.name));
   if(idle||walk){
@@ -226,7 +220,7 @@ function act(){
   else if(item.type==='report')finish(true);
 }
 function finish(ok){
-  ended=true;started=false;bgm.pause();const score=ok?Math.max(200,1000-Math.round(elapsed)*2-hp*0+maiden.attacks*90):0;
+  ended=true;started=false;bgm.pause();const score=ok?Math.max(200,1000-Math.round(elapsed)*2-maiden.attacks*90):0;
   ui.endTitle.textContent=ok?'퇴마 성공 · 학교의 평화를 되찾았어요!':'퇴마 실패 · 학교에서 쫓겨났어요';
   ui.endText.textContent=ok?'도깨비의 장난 3개 복구와 처녀귀신 봉인을 완료했어요. 소요 시간 '+Math.floor(elapsed/60)+'분 '+Math.floor(elapsed%60)+'초.':'괴이에게 너무 가까이 접근했어요. 시선을 유지하며 거리를 확보해 보세요.';
   ui.end.classList.remove('hidden');
@@ -274,12 +268,12 @@ function updateGhost(dt){
     const gEast=maiden.z< -3.15&&maiden.x>4.05,pEast=player.z< -3.15&&player.x>4.05;
     const gWest=maiden.z< -3.15&&maiden.x< -4.05,pWest=player.z< -3.15&&player.x< -4.05;
     const gOffice=maiden.z>4.55&&Math.abs(maiden.x)<5,pOffice=player.z>4.55&&Math.abs(player.x)<5;
-    if(gEast&&!pEast)target={x:10.25,z:-1.55};
-    else if(gWest&&!pWest)target={x:-10.25,z:-1.55};
-    else if(gOffice&&!pOffice)target={x:0,z:3.3};
-    else if(!gEast&&!gWest&&!gOffice&&pEast)target={x:10.25,z:-4.45};
-    else if(!gEast&&!gWest&&!gOffice&&pWest)target={x:-10.25,z:-4.45};
-    else if(!gEast&&!gWest&&!gOffice&&pOffice)target={x:0,z:6.25};
+    if(gEast&&!pEast)target={x:10.25,z:.45};
+    else if(gWest&&!pWest)target={x:-10.25,z:.45};
+    else if(gOffice&&!pOffice)target={x:0,z:2.65};
+    else if(!gEast&&!gWest&&!gOffice&&pEast)target=Math.abs(maiden.x-10.25)>1.1||maiden.z>1.2?{x:10.25,z:.45}:{x:10.25,z:-4.45};
+    else if(!gEast&&!gWest&&!gOffice&&pWest)target=Math.abs(maiden.x+10.25)>1.1||maiden.z>1.2?{x:-10.25,z:.45}:{x:-10.25,z:-4.45};
+    else if(!gEast&&!gWest&&!gOffice&&pOffice)target=Math.abs(maiden.x)>1.1?{x:0,z:2.65}:{x:0,z:6.25};
     const dx=target.x-maiden.x,dz=target.z-maiden.z,len=Math.hypot(dx,dz);
     if(len>.12){const step=Math.min(len,maiden.speed*dt);maiden.x+=dx/len*step;maiden.z+=dz/len*step;}
   }
