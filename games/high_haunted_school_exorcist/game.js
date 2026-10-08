@@ -826,6 +826,123 @@ function updateGhost(dt){
     updateNavigation(0,true);
   }
 }
+function takeAnomalyHit(reason,resetToStage=null){
+  if(invulnerable>0||!started||ended)return;
+  hp--;invulnerable=3;
+  player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;
+  viewYaw=-Math.PI/2;player.yaw=Math.PI/2;
+  lastMistake=reason;
+  sfx('sfx_horror_sting_01.mp3',.19);
+  if(hp<=0){finish(false);return;}
+  if(resetToStage!==null)setStage(resetToStage);
+  showLesson('다시 도전할 기회가 있어요',reason+' · 관리실에서 다시 시작합니다.',12);
+  showToast('생명 '+hp+'개 남았어요. 괴이마다 규칙이 달라요.');
+}
+function moveWolfToward(target,dt){
+  const w=encounter.wolf;
+  if(!w.nav||w.nav.path.length===0||w.nav.age>3.8||
+     Math.hypot(w.nav.target.x-target.x,w.nav.target.z-target.z)>1.5){
+    w.nav={path:routePlan(w,target,.9),age:0,target:{x:target.x,z:target.z}};
+  }
+  w.nav.age+=dt;
+  while(w.nav.path.length>1&&dist(w,w.nav.path[0])<.65)w.nav.path.shift();
+  const point=w.nav.path[0]||target,dx=point.x-w.x,dz=point.z-w.z,length=Math.hypot(dx,dz);
+  if(length<.08)return;
+  const step=Math.min(length,w.speed*dt),newX=w.x+dx/length*step,newZ=w.z+dz/length*step;
+  if(canWalk(newX,newZ)){
+    w.x=newX;w.z=newZ;
+    w.root.rotation.y=Math.atan2(-dx,-dz);
+  }else w.nav=null;
+}
+function updateNewEncounters(dt){
+  if(stage===4){
+    const inCold=player.x>20&&player.z>10.4;
+    encounter.frost=Math.min(12,Math.max(0,encounter.frost+dt*(inCold?.33:-1)));
+    // A few repairs restore warmth, even before the entire room is fixed.
+    if(encounter.frost>=12){
+      encounter.frost=0;takeAnomalyHit('가사실 냉기는 난방장치 세 곳을 복구하면 가라앉아요.');
+    }
+    yuki.root.position.y=Math.sin(elapsed*2)*.12;
+    yuki.root.rotation.y+=dt*.25;
+  }
+  if(stage===6){
+    const d=dist(player,eggLocation);
+    const dx=eggLocation.x-player.x,dz=eggLocation.z-player.z;
+    const dot=d>0.001?(-Math.sin(viewYaw)*dx-Math.cos(viewYaw)*dz)/d:1;
+    const sameRoom=player.x>3.1&&player.x<11.8&&player.z< -10.5;
+    const unobstructed=clearGhostSight(player.x,player.z,eggLocation.x,eggLocation.z);
+    const away=sameRoom&&d<8.3&&d>1.5&&unobstructed&&dot<-.28;
+    const staring=sameRoom&&d<8.3&&unobstructed&&dot>.72;
+    encounter.eggCharge=Math.max(0,Math.min(4,encounter.eggCharge+dt*(away?1:-.15)));
+    encounter.eggFear=Math.max(0,encounter.eggFear+dt*(staring?1:-1.2));
+    ui.reticle.classList.toggle('locked',false);
+    ui.reticle.style.borderColor=staring?'#ff777d':'';
+    if(encounter.eggCharge>=4){
+      encounter.eggCharge=4;encounter.eggFear=0;setStage(7);
+    }else if(encounter.eggFear>2.3){
+      encounter.eggCharge=0;encounter.eggFear=0;
+      takeAnomalyHit('달걀귀신은 바라보면 위험해요. 음악실에 들어가 등을 돌리고 버텨야 합니다.');
+    }
+  }else ui.reticle.style.borderColor='';
+  if(stage===8){
+    if(dist(player,bellDoor)<7.2){
+      if(encounter.bellCount<3){
+        encounter.bellClock-=dt;
+        if(encounter.bellClock<=0){
+          encounter.bellCount++;encounter.bellClock=2.4;
+          sfx('sfx_school_alarm_bell.mp3',.22);
+          if(encounter.bellCount===1)showToast('첫 번째 종… 아직 문을 닫지 마세요.');
+          else if(encounter.bellCount===2)showToast('두 번째 종… 마지막 종을 기다리세요!');
+          else{
+            encounter.bellWindow=5.5;
+            showToast('세 번째 종! 지금 전기실 문을 닫으세요!');
+          }
+        }
+      }else if(encounter.bellWindow>0){
+        encounter.bellWindow-=dt;
+        if(encounter.bellWindow<=0){
+          encounter.bellWindow=0;encounter.bellCount=0;encounter.bellClock=2.1;
+          showToast('종소리 타이밍을 놓쳤어요. 세 번을 다시 세어보세요.');
+          sfx('sfx_horror_sting_01.mp3',.12);
+        }
+      }
+    }else{
+      // A full new sequence starts when the player returns to the electrical room.
+      if(encounter.bellCount<3)encounter.bellClock=Math.max(encounter.bellClock,1);
+    }
+  }
+  const w=encounter.wolf;
+  if(stage===10||stage===11){
+    w.root.position.set(w.x,.04,w.z);
+    if(stage===10){
+      if(player.z>6.9&&player.x>-15.1){
+        w.active=true;w.grace=Math.max(0,w.grace-dt);
+        if(w.grace<=0){
+          moveWolfToward(player,dt);
+          if(dist(w,player)<1.22&&clearGhostSight(w.x,w.z,player.x,player.z)){
+            w.x=-1.5;w.z=16.8;w.nav=null;w.grace=9;
+            sfx('sfx_wolf_howl.mp3',.26);
+            takeAnomalyHit('늑대인간은 소리를 따라 달려와요. 남쪽 복도의 노란 스피커를 먼저 켜세요.');
+          }
+        }
+      }
+    }else{
+      w.lureTime=Math.max(0,w.lureTime-dt);
+      if(!w.ready)moveWolfToward(wolfTrap,dt);
+      if(dist(w,wolfTrap)<1.8&&!w.ready){
+        w.ready=true;w.nav=null;
+        showToast('늑대가 붉은 함정에 들어왔어요! 지금 봉인하세요!');
+        sfx('sfx_wolf_howl.mp3',.12);
+      }
+      if(w.lureTime<=0){
+        sfx('sfx_wolf_howl.mp3',.2);
+        showToast('소리가 멈춰 늑대가 빠져나갔어요. 다시 스피커를 켜세요.');
+        setStage(10);
+      }
+    }
+  }
+}
+
 function updatePlayer(dt){
   let f=(keys.has('w')||keys.has('arrowup')?1:0)-(keys.has('s')||keys.has('arrowdown')?1:0)-joy.y;
   let r=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0)+joy.x;
@@ -928,7 +1045,7 @@ function loop(now){
     elapsed+=dt;invulnerable=Math.max(0,invulnerable-dt);
     if(flashOn)power=Math.max(0,power-dt*.28);else power=Math.min(100,power+dt*2.8);
     if(power===0)flashOn=false;
-    updatePlayer(dt);updateGhost(dt);updateProps(dt);
+    updatePlayer(dt);updateGhost(dt);updateNewEncounters(dt);updateProps(dt);
     updateNavigation(dt);
     if(lessonTimer>0){lessonTimer-=dt;if(lessonTimer<=0)ui.lesson.classList.add('hidden');}
     for(const mixer of mixers)mixer.update(dt);
