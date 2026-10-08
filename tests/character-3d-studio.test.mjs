@@ -405,3 +405,28 @@ test('male Chibi proportional rework widens upper torso and slims individual leg
   assert.equal(manifest.customParts.kidscade_male_body.revision,'balanced-boy-proportions-v4');
   assert.equal(manifest.customParts.kidscade_male_shorts.revision,'slim-leg-openings-v4');
 });
+
+
+test('male WALK preserves 11 source clips and limb keyframes while reducing hip sway',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  assert.match(js,/const MALE_WALK_POSITION_X=\.43/);
+  assert.match(js,/const MALE_WALK_SPINE_FACTORS=/);
+  assert.match(js,/'DEF-spine':\{roll:\.38,yaw:\.70\}/);
+  assert.match(js,/'DEF-spine001':\{roll:\.55,yaw:\.85\}/);
+  assert.match(js,/function buildMaleWalkClip\(sourceClip\)/);
+  assert.match(js,/const result=sourceClip\.clone\(\)/);
+  assert.match(js,/if\(track\.name==='DEF-spine\.position'\)/);
+  assert.match(js,/if\(track\.name\.slice\(dot\+1\)!=='quaternion'\|\|!MALE_WALK_SPINE_FACTORS\[bone\]\)continue/);
+  assert.match(js,/function resolvePlaybackClip\(sourceClip\)/);
+  assert.match(js,/isMaleBodyVisible\(\)&&isWalkClipName\(sourceClip\.name\)/);
+  assert.match(js,/animations\.filter\(clip=>isWalkClipName\(clip\.name\)\)/);
+  assert.match(js,/animations:animations\.map\(clip=>resolvePlaybackClip\(clip\)\)/);
+  assert.match(js,/if\(activeClip&&isWalkClipName\(activeClip\)\)playClip\(activeClip\)/);
+  assert.match(js,/if\(part==='kidscade_male_body'\|\|BASE_VARIANT_NODES\.includes\(part\)\)syncActiveWalkStyle\(\)/);
+  assert.doesNotMatch(js,/animations\.push\(.*maleWalk/);
+  const manifest=JSON.parse(read('chibi/asset-manifest.json'));
+  assert.equal(manifest.animations.length,11);
+  assert.equal(manifest.customParts.kidscade_male_set_policy.walkStyle,'reduced-hip-sway-v1');
+  const html=read('teacher/character-3d-studio.html');
+  assert.match(html,/character-3d-studio\.js\?v=20261008-malewalk9/);
+});
