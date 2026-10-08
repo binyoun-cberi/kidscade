@@ -1173,10 +1173,10 @@ const BEHAVIORS=Object.freeze({
   RUBBER:{mode:'pinball',description:'고무공이 적 사이를 연속으로 통통 튐'},
   BOUNCE:{mode:'spring',description:'적을 뿅! 뒤로 튕기는 스프링'},
   BUBBLE:{mode:'bubble',description:'적을 거품에 가뒀다가 팡! 터뜨림'},
-  MIRROR:{mode:'mirror',description:'가까운 공격 타워의 기술을 복사'},
+  MIRROR:{mode:'mirror',description:'가까운 타워의 화력과 속성을 거울로 반사'},
   GHOST:{mode:'boo',description:'깜짝 등장! 적들이 겁먹고 되돌아감'},
   MAGIC:{mode:'spellbook',description:'불·얼음·독·바람 마법을 돌아가며 사용'},
-  WIZARD:{mode:'spellbook',description:'두 명에게 무작위 순환 마법 발사'},
+  WIZARD:{mode:'spellbook',description:'두 명에게 불·얼음·독·바람을 번갈아 시전'},
   RAINBOW:{mode:'rainbow',description:'무지개 광선이 적들에게 다른 상태이상을 남김'},
   BOOMERANG:{mode:'boomerang',description:'부메랑이 지나가며 왕복 2번 타격'},
   MUSHROOM:{mode:'spores',description:'버섯이 톡! 독 포자를 넓게 퍼뜨림'},
@@ -1187,7 +1187,7 @@ const BEHAVIORS=Object.freeze({
   STAR:{mode:'shootingstars',description:'별똥별이 여러 적에게 연달아 떨어짐'},
   SNOW:{mode:'snowball',description:'굴러갈수록 커지는 눈덩이를 던짐'},
   RAIN:{mode:'raincloud',description:'빗구름을 만들어 넓은 구역을 축축하게 둔화'},
-  SUN:{mode:'sunray',description:'햇살로 적을 태우고 주변 화염 강화'},
+  SUN:{mode:'sunray',description:'태양광을 쏘아 주변 적들에게 화상'},
   CLOCK:{mode:'freeze',description:'시간 감속이 누적되면 정지'},
   TIME:{mode:'freeze',description:'시간 정지 효과를 누적'}
 });
