@@ -124,7 +124,7 @@ test('beginner experience includes wayfinding, actionable hints, and camera obst
   assert.match(js,/showLesson\('첫 임무/);
   assert.match(js,/showLesson\('첫 만남/);
   assert.match(js,/showLesson\('관찰 성공/);
-  assert.match(js,/camera\.position\.copy\(safe\)/);
+  assert.match(js,/camera\.position\.set\(player\.x,FIRST_PERSON_EYE_HEIGHT,player\.z\)/);
   assert.match(js,/ui\.reticle\.classList\.toggle\('locked'/);
   assert.match(html,/id="navRange"/);
   assert.match(html,/id="lessonText"/);
@@ -138,7 +138,8 @@ test('first encounter remains harmless until the player learns the stare mechani
     const player={x:-10.5,z:-14.8};
     const maiden={x:25.5,z:-16.8,speed:1.2,charge:0,attacks:0,root:{visible:false,position:{set(){}},rotation:{y:0}}};
     const forward={x:0,z:0,set(x,y,z){this.x=x;this.z=z}};
-    let stage=2,hp=3,elapsed=0,invulnerable=0,ghostWaiting=0,ghostNav=null,gazeLocked=false,maidenPhase='approach',viewYaw=0;
+    let stage=2,hp=3,elapsed=0,invulnerable=0,ghostWaiting=0,ghostNav=null,gazeLocked=false,maidenPhase='approach',viewYaw=0,viewPitch=0;
+    const FIRST_PERSON_EYE_HEIGHT=1.62;
     const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
     const canWalk=()=>true,routePlan=(a,b)=>[{x:a.x,z:a.z},{x:b.x,z:b.z}];
     function showLesson(){}function showToast(){}function sfx(){}function updateNavigation(){}
@@ -183,35 +184,28 @@ test('walls and baseboards have no coplanar overlapping outer faces',()=>{
   assert.equal(walls.length,1,'collision wall remains unchanged');
 });
 
-test('player body faces the actual movement direction on W A S D and turned camera',()=>{
+test('WASD movement never changes where the first-person character faces',()=>{
   const start=js.indexOf('function updatePlayer(dt){'),end=js.indexOf('function updateCamera(dt){',start);
   assert.ok(start>=0&&end>start);
-  for(const [keysInput,yaw,wantX,wantZ] of [
-    [['w'],0,0,-1],
-    [['s'],0,0,1],
-    [['a'],0,-1,0],
-    [['d'],0,1,0],
-    [['w'],Math.PI/2,-1,0],
-    [['w'],Math.PI,0,1],
-    [['w','d'],0,Math.SQRT1_2,-Math.SQRT1_2],
+  for(const [ks,yaw,x,z] of [
+    [['w'],0,0,-1],[['s'],0,0,1],[['a'],0,-1,0],[['d'],0,1,0],
+    [['w'],Math.PI/2,-1,0],[['w'],Math.PI,0,1],
+    [['w','d'],0,Math.SQRT1_2,-Math.SQRT1_2]
   ]){
-    const keys=new Set(keysInput),joy={x:0,y:0};
-    const root={position:{set(){}},rotation:{y:Math.PI}};
-    const player={x:0,z:0,yaw:Math.PI,root,animation:null};
+    const keys=new Set(ks),joy={x:0,y:0};
+    const player={x:0,z:0,yaw:0,root:{position:{set(){}},rotation:{y:0}},animation:null};
     const update=new Function('keys','joy','player','viewYaw','canWalk','invulnerable','elapsed',
-      js.slice(start,end)+';return updatePlayer;')(keys,joy,player,yaw,()=>true,0,0);
+      js.slice(start,end)+'return updatePlayer;')(keys,joy,player,yaw,()=>true,0,0);
     update(1);
-    const moveX=player.x/Math.hypot(player.x,player.z),moveZ=player.z/Math.hypot(player.x,player.z);
-    assert.ok(Math.abs(moveX-wantX)<.001,'expected movement X '+keysInput+' yaw '+yaw);
-    assert.ok(Math.abs(moveZ-wantZ)<.001,'expected movement Z '+keysInput+' yaw '+yaw);
-    // The shared Casual_Male.gltf has its visual forward in LOCAL +Z, like teacher simulator.
-    const faceX=Math.sin(root.rotation.y),faceZ=Math.cos(root.rotation.y);
-    assert.ok(Math.abs(faceX-moveX)<.001,'body faces walk X '+keysInput+' yaw '+yaw);
-    assert.ok(Math.abs(faceZ-moveZ)<.001,'body faces walk Z '+keysInput+' yaw '+yaw);
+    const len=Math.hypot(player.x,player.z);
+    assert.ok(Math.abs(player.x/len-x)<.001,'move X '+ks);
+    assert.ok(Math.abs(player.z/len-z)<.001,'move Z '+ks);
+    assert.ok(Math.abs(Math.sin(player.root.rotation.y)+Math.sin(yaw))<.001,'face X '+ks);
+    assert.ok(Math.abs(Math.cos(player.root.rotation.y)+Math.cos(yaw))<.001,'face Z '+ks);
   }
-  assert.match(js,/player\.yaw=Math\.PI\/2;player\.root\.rotation\.y=player\.yaw/,'retry direction resets too');
+  assert.match(js,/player\.root\.visible=false/);
+  assert.match(js,/player\.yaw=viewYaw\+Math\.PI/);
 });
-
 
 test('ㄷ-shaped campus keeps west guard office connected to all fifteen rooms',()=>{
   assert.match(js,/const SCHOOL=\{/);
@@ -353,6 +347,7 @@ function simulateExtraAnomaly(mode){
   const start=js.indexOf('function takeAnomalyHit('),end=js.indexOf('function updatePlayer(dt){',start);
   assert.ok(start>=0&&end>start);
   const definitions=[
+    "const FIRST_PERSON_EYE_HEIGHT=1.62;let viewPitch=0;",
     "let stage=mode==='eggAway'||mode==='eggStare'?6:mode==='bell'?8:mode==='wolf'?11:4;",
     "let started=true,ended=false,paused=false,hp=3,invulnerable=0,elapsed=0,viewYaw=mode==='eggAway'?Math.PI:0,lastMistake='';",
     "const player={x:mode.startsWith('egg')?7.5:mode==='bell'?-20.35:mode==='wolf'?-7.5:25.5,z:mode.startsWith('egg')?-14:mode==='bell'?8:mode==='wolf'?8.55:15.5,yaw:0};",
@@ -369,7 +364,7 @@ function simulateExtraAnomaly(mode){
     "for(let i=0;i<budget;i++){elapsed+=.05;invulnerable=Math.max(0,invulnerable-.05);updateNewEncounters(.05);if((stage!==6&&mode.startsWith('egg'))||(mode==='wolf'&&encounter.wolf.ready)||(mode==='yuki'&&hp<3))break;}",
     "return {stage,hp,eggCharge:encounter.eggCharge,bellCount:encounter.bellCount,bellWindow:encounter.bellWindow,wolfReady:encounter.wolf.ready,wolfTime:encounter.wolf.lureTime,alerts};"
   ];
-  return new Function('mode',[...definitions,js.slice(start,end),...execution].join('\n'))(mode);
+  return new Function('mode',[...definitions,js.slice(js.indexOf('function playerLookDirection(){'),js.indexOf('function gazingAtGhost(){')),js.slice(start,end),...execution].join('\n'))(mode);
 }
 
 test('egg rewards looking away and punishes looking at its featureless face',()=>{
@@ -443,121 +438,65 @@ test('real Kenney furniture proportions are applied to collision footprint befor
 });
 
 
-test('closer shoulder camera stays clear of walls on slow walks and rapid turns',()=>{
-  const start=js.indexOf('const CAMERA_FOLLOW='),end=js.indexOf('function updateProps(dt){',start);
-  const rayStart=js.indexOf('function segmentHitsRect(');
-  const rayEnd=js.indexOf('function clearGhostSight(',rayStart);
-  assert.ok(start>=0&&end>start&&rayStart>=0&&rayEnd>rayStart);
-  const segmentHitsRect=new Function(js.slice(rayStart,rayEnd)+'return segmentHitsRect;')();
-  class Vec3{
-    constructor(x=0,y=0,z=0){this.x=x;this.y=y;this.z=z;}
-    clone(){return new Vec3(this.x,this.y,this.z);}
-    lerp(p,t){this.x+=(p.x-this.x)*t;this.y+=(p.y-this.y)*t;this.z+=(p.z-this.z)*t;return this;}
-    copy(p){this.x=p.x;this.y=p.y;this.z=p.z;return this;}
-  }
-  function makeRig(walls){
-    const controls={yaw:0},player={x:0,z:0},camera={position:new Vec3(),lookAt(...a){this.aim=a;}};
-    const torch={position:{set(){}},intensity:0},torchTarget={position:{set(){}}};
-    const context={THREE:{Vector3:Vec3},walls,player,camera,torch,torchTarget,power:100,
-      flashOn:true,controls,segmentHitsRect,
-      collides:(x,z,w,r)=>Math.abs(x-w.x)<w.hx+r&&Math.abs(z-w.z)<w.hz+r};
-    const src=js.slice(start,end).replaceAll('viewYaw','controls.yaw');
-    const rig=new Function(...Object.keys(context),src+
-      'return {updateCamera,cameraWallHit,CAMERA_FOLLOW};')(...Object.values(context));
-    return {...rig,controls,player,camera};
-  }
-  const normal=makeRig([]);
-  for(let i=0;i<100;i++)normal.updateCamera(.0167);
-  assert.equal(normal.CAMERA_FOLLOW.distance,4.7);
-  assert.equal(normal.CAMERA_FOLLOW.height,3.45);
-  assert.ok(Math.abs(normal.camera.position.z-4.7)<.002);
-  assert.ok(Math.abs(normal.camera.position.y-3.45)<.002);
-  assert.equal(normal.camera.aim[2],-4.8,'aim past the player, not at the ground');
-  const behind=makeRig([{x:0,z:2,hx:2,hz:.2}]);
-  for(let i=0;i<100;i++)behind.updateCamera(.0167);
-  assert.ok(behind.camera.position.z<1.65,'move camera in before the wall');
-  assert.ok(!behind.cameraWallHit(behind.camera.position.x,behind.camera.position.z));
-  const wall={x:0,z:3.3,hx:.55,hz:.25};
-  const quickTurn=makeRig([wall]);
-  quickTurn.controls.yaw=-Math.PI/4;
-  for(let i=0;i<70;i++)quickTurn.updateCamera(.0167);
-  quickTurn.controls.yaw=Math.PI/4;
-  for(let i=0;i<70;i++){
-    quickTurn.updateCamera(.0167);
-    const p=quickTurn.camera.position;
-    assert.ok(!quickTurn.cameraWallHit(p.x,p.z),'must not put camera inside a wall');
-    assert.ok(!segmentHitsRect(0,0,p.x,p.z,wall,.17),'must not put wall between player and camera');
-  }
-  assert.ok(quickTurn.camera.position.x>3,'should finish new turn facing the correct way');
-});
-
-
-test('keyboard movement cannot steer or lag the camera independently',()=>{
-  const playerStart=js.indexOf('function updatePlayer(dt){');
-  const camStart=js.indexOf('const CAMERA_FOLLOW=');
-  const camEnd=js.indexOf('function updateProps(dt){',camStart);
-  const rayStart=js.indexOf('function segmentHitsRect(');
-  const rayEnd=js.indexOf('function clearGhostSight(',rayStart);
-  assert.ok(playerStart>=0&&camStart>playerStart&&camEnd>camStart&&rayEnd>rayStart);
-  const playerCode=js.slice(playerStart,camStart).replaceAll('viewYaw','view.yaw');
-  const camCode=js.slice(camStart,camEnd).replaceAll('viewYaw','view.yaw');
-  const rayCode=js.slice(rayStart,rayEnd);
-  class Vec{
-    constructor(x=0,y=0,z=0){this.x=x;this.y=y;this.z=z;}
-    clone(){return new Vec(this.x,this.y,this.z);}
-    copy(v){this.x=v.x;this.y=v.y;this.z=v.z;return this;}
-    lerp(v,t){this.x+=(v.x-this.x)*t;this.y+=(v.y-this.y)*t;this.z+=(v.z-this.z)*t;return this;}
-  }
-  const scenarios=['w','a','s','d','w+d','idle'];
-  for(const yaw of [0,Math.PI/2,-Math.PI/2,Math.PI,.85]){
-    const keys=new Set(),joy={x:0,y:0},view={yaw};
-    const player={x:0,z:0,yaw:Math.PI,root:{position:{set(){}},rotation:{y:0}},animation:null};
-    const camera={position:new Vec(),lookAt(x,y,z){this.aim={x,y,z};}};
-    const torch={position:{set(){}},intensity:0},torchTarget={position:{set(){}}};
-    const vars={THREE:{Vector3:Vec},player,keys,joy,view,elapsed:0,invulnerable:0,
-      camera,torch,torchTarget,power:100,flashOn:true,walls:[],canWalk:()=>true,collides:()=>false};
-    const funcs=new Function(...Object.keys(vars),rayCode+playerCode+camCode+
-      'return {updatePlayer,updateCamera,cameraFollowState,CAMERA_FOLLOW};')(...Object.values(vars));
-    const step=()=>{funcs.updatePlayer(.0167);funcs.updateCamera(.0167);};
-    const heading=()=>Math.atan2(camera.aim.x-camera.position.x,-(camera.aim.z-camera.position.z));
-    for(let i=0;i<100;i++)step();
-    const base=heading();
-    const relative={x:camera.position.x-player.x,z:camera.position.z-player.z};
-    assert.equal(funcs.CAMERA_FOLLOW.distance,4.7,'keep camera zoom');
-    assert.equal(funcs.CAMERA_FOLLOW.height,3.45,'keep camera height');
-    for(const keysHeld of scenarios){
-      keys.clear();
-      for(const k of keysHeld.split('+'))if(k!=='idle')keys.add(k);
-      let moved=0;
-      for(let i=0;i<100;i++){
-        const oldX=player.x,oldZ=player.z;
-        step();
-        moved+=Math.hypot(player.x-oldX,player.z-oldZ);
-        const angularDelta=Math.atan2(Math.sin(heading()-base),Math.cos(heading()-base));
-        assert.ok(Math.abs(angularDelta)<1e-9,'WASD must never rotate the camera: '+keysHeld+' yaw '+yaw);
-        assert.ok(Math.abs(camera.position.x-player.x-relative.x)<1e-8,
-          'camera horizontal X must track player directly without lag');
-        assert.ok(Math.abs(camera.position.z-player.z-relative.z)<1e-8,
-          'camera horizontal Z must track player directly without lag');
-      }
-      assert.equal(moved>0,keysHeld!=='idle','expected movement for '+keysHeld);
+test('first-person camera sits precisely at the character eye and respects pitch',()=>{
+  const start=js.indexOf('function updateCamera(dt){'),end=js.indexOf('function updateProps(dt){',start);
+  const src=js.slice(js.indexOf('function playerLookDirection(){'),js.indexOf('function gazingAtGhost(){'))+
+    js.slice(start,end);
+  assert.ok(start>=0&&end>start);
+  const player={x:2,z:-4},view={yaw:0,pitch:0};
+  const camera={position:{set(x,y,z){this.x=x;this.y=y;this.z=z;}},lookAt(x,y,z){this.aim={x,y,z};}};
+  const torch={position:{set(){}},intensity:0},torchTarget={position:{set(){}}};
+  const code=src.replaceAll('viewYaw','view.yaw').replaceAll('viewPitch','view.pitch');
+  const update=new Function('player','view','camera','torch','torchTarget','flashOn','power',
+    'FIRST_PERSON_EYE_HEIGHT',code+'return updateCamera;')(
+    player,view,camera,torch,torchTarget,true,100,1.62);
+  for(const yaw of [0,Math.PI/2,-Math.PI/2,Math.PI,.72])
+    for(const pitch of [-.65,0,.65]){
+      view.yaw=yaw;view.pitch=pitch;player.x+=.3;player.z-=.2;update(.0167);
+      assert.equal(camera.position.x,player.x);
+      assert.equal(camera.position.y,1.62);
+      assert.equal(camera.position.z,player.z);
+      const dx=(camera.aim.x-camera.position.x)/6,
+        dy=(camera.aim.y-camera.position.y)/6,
+        dz=(camera.aim.z-camera.position.z)/6;
+      assert.ok(Math.abs(dx+Math.sin(yaw)*Math.cos(pitch))<1e-10);
+      assert.ok(Math.abs(dy-Math.sin(pitch))<1e-10);
+      assert.ok(Math.abs(dz+Math.cos(yaw)*Math.cos(pitch))<1e-10);
     }
-    // An actual touch/mouse drag is allowed to change the heading.
-    view.yaw=yaw+.35;
-    for(let i=0;i<80;i++)step();
-    const delta=Math.atan2(Math.sin(heading()-base),Math.cos(heading()-base));
-    assert.ok(Math.abs(delta)>.3,'drag must remain able to rotate camera');
-  }
-  assert.match(js,/cameraFollowState\.ready=false;player\.x=SCHOOL\.guard\.x/,
-    'reset should snap camera to the new character location');
 });
 
-test('camera wall occlusion uses exact ray entry, not sparse samples',()=>{
-  assert.match(js,/function cameraFollowTarget\(eye,desired\)/);
-  assert.match(js,/const dx=desired\.x-eye\.x,dz=desired\.z-eye\.z,length=Math\.hypot\(dx,dz\)/);
-  assert.match(js,/camera\.position\.x\+=playerDx/);
-  assert.match(js,/camera\.position\.z\+=playerDz/);
-  assert.match(js,/const obscured=walls\.some\(w=>segmentHitsRect\(player\.x,player\.z,next\.x,next\.z,w/);
-  assert.match(js,/const lookLength=arm\+CAMERA_FOLLOW\.lookAhead/);
-  assert.match(js,/camera\.position\.x\+fx\*lookLength/);
+test('camera stays eye-locked while moving, and the avatar turns when the view turns',()=>{
+  const begin=js.indexOf('function updatePlayer(dt){'),cam=js.indexOf('function updateCamera(dt){',begin),
+    end=js.indexOf('function updateProps(dt){',cam);
+  const look=js.slice(js.indexOf('function playerLookDirection(){'),js.indexOf('function gazingAtGhost(){'));
+  const keys=new Set(),joy={x:0,y:0},player={x:0,z:0,root:{position:{set(){}},rotation:{y:0}},animation:null};
+  const view={yaw:-Math.PI/2,pitch:0};
+  const camera={position:{set(x,y,z){this.x=x;this.y=y;this.z=z;}},lookAt(x,y,z){this.aim={x,y,z};}};
+  const torch={position:{set(){}},intensity:0},torchTarget={position:{set(){}}};
+  const source=(js.slice(begin,cam)+look+js.slice(cam,end)).replaceAll('viewYaw','view.yaw').replaceAll('viewPitch','view.pitch');
+  const impl=new Function('keys','joy','player','view','canWalk','invulnerable','elapsed','camera',
+    'torch','torchTarget','flashOn','power','FIRST_PERSON_EYE_HEIGHT',source+
+    'return {updatePlayer,updateCamera};')(keys,joy,player,view,()=>true,0,0,camera,
+    torch,torchTarget,true,100,1.62);
+  for(const command of ['w','a','s','d','w+d','idle']){
+    keys.clear();for(const k of command.split('+'))if(k!=='idle')keys.add(k);
+    for(let k=0;k<50;k++){
+      impl.updatePlayer(.0167);impl.updateCamera(.0167);
+      assert.equal(camera.position.x,player.x);
+      assert.equal(camera.position.z,player.z);
+      assert.ok(Math.abs(Math.sin(player.root.rotation.y-(view.yaw+Math.PI)))<1e-10);
+    }
+  }
+  view.yaw+=.4;view.pitch=.3;impl.updatePlayer(.0167);impl.updateCamera(.0167);
+  assert.ok(Math.abs(Math.sin(player.root.rotation.y-(view.yaw+Math.PI)))<1e-10);
+  assert.ok(camera.aim.y>1.62);
 });
+
+test('first-person has no chase rig, and looking changes the torch direction',()=>{
+  assert.match(js,/const FIRST_PERSON_EYE_HEIGHT=1\.62/);
+  assert.match(js,/camera\.position\.set\(player\.x,FIRST_PERSON_EYE_HEIGHT,player\.z\)/);
+  assert.match(js,/torchTarget\.position\.set\(/);
+  assert.match(js,/viewPitch=Math\.max\(-\.72,Math\.min\(\.72/);
+  assert.doesNotMatch(js,/CAMERA_FOLLOW|cameraFollowState|cameraFollowTarget/);
+});
+
