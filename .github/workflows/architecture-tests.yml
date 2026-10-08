@@ -118,3 +118,15 @@ jobs:
         run: npm run build
       - name: Run all regression tests and audits
         run: npm run test:ci
+      - name: Visual audit of 3D Chibi WALK/RUN and mobile controls
+        run: npm run test:chibi:visual
+        env:
+          KIDSCADE_CHIBI_AUDIT_OUT: ${{ runner.temp }}/chibi-visual-audit
+      - name: Upload Chibi visual audit frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chibi-visual-audit
+          path: ${{ runner.temp }}/chibi-visual-audit/
+          if-no-files-found: ignore
+          retention-days: 7
