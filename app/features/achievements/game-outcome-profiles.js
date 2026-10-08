@@ -132,7 +132,7 @@
       'tod_hidden_emoji','low_big_puzzle_time','tod_chick_shell','tod_antarctic_exploration',
       'tod_emoji_minesweeper','triangle_compare','lab_water_sort','low_rubiks_cube','geo_exorcist',
       'high_history_match','magic_scale','korea_puzzle','laser_angle','code_breaker','sudoku',
-      'high_fraction_smith','polygon_area','high_haunted_school_exorcist','tod_puzzle_time','tod_puzzle_bobble','toddler_monkey_vines',
+      'high_fraction_smith','polygon_area','tod_puzzle_time','tod_puzzle_bobble','toddler_monkey_vines',
       'toddler_penguin_ice_pop','toddler_color_stack','toddler_three_friends_set','high_bridge_builder',
       'low_pattern_lock','school_tower','hero_english'
     ]),
