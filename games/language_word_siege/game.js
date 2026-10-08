@@ -116,7 +116,10 @@ function toast(msg){
   toastEl.textContent=msg;toastEl.classList.add('show');clearTimeout(toast._t);
   toast._t=setTimeout(()=>toastEl.classList.remove('show'),1100);
 }
-function setStatus(title,text){statusBox.innerHTML='<b>'+title+'</b><div>'+text+'</div>'}
+function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function setStatus(title,text){
+  statusBox.innerHTML='<b>'+escapeHtml(title)+'</b><div>'+escapeHtml(text)+'</div>';
+}
 
 function typedWord(){return String(freeWord?.value||'').toUpperCase().trim()}
 function tileWord(){
@@ -821,7 +824,7 @@ function roundRect(c,x,y,w,h,r,fill,stroke){c.beginPath();c.roundRect?c.roundRec
 function inspectAt(p){
   const t=state.towers.map(t=>({t,d:dist(p,t)})).sort((a,b)=>a.d-b.d)[0];
   if(!t||t.d>.06){inspectBox.classList.remove('show');return}
-  const s=effectiveStats(t.t),signature=D.signatures?.[t.t.word];inspectBox.innerHTML='<strong>'+t.t.word+'</strong><small>'+t.t.def.meaning+' · '+t.t.def.roleLabel+(signature?.flavor?' · '+signature.flavor:'')+'</small><div class="meter">난도 '+('★'.repeat(t.t.def.difficulty))+' · INK '+towerCost(t.t.def)+(s.damage?' · DMG '+Math.round(s.damage):'')+(s.range?' · RANGE '+Math.round(s.range*100):'')+(t.t.links.length?' · LINK '+t.t.links.map(x=>x.word).join(', '):'')+(t.t.combos?.length?' · COMBO '+t.t.combos.map(x=>x.name).join(', '):'')+'</div>';inspectBox.classList.add('show');
+  const s=effectiveStats(t.t),signature=D.signatures?.[t.t.word];inspectBox.innerHTML='<strong>'+escapeHtml(t.t.word)+'</strong><small>'+escapeHtml(t.t.def.meaning)+' · '+escapeHtml(t.t.def.roleLabel)+(signature?.flavor?' · '+escapeHtml(signature.flavor):'')+'</small><div class="meter">난도 '+('★'.repeat(t.t.def.difficulty))+' · INK '+towerCost(t.t.def)+(s.damage?' · DMG '+Math.round(s.damage):'')+(s.range?' · RANGE '+Math.round(s.range*100):'')+(t.t.links.length?' · LINK '+t.t.links.map(x=>x.word).join(', '):'')+(t.t.combos?.length?' · COMBO '+t.t.combos.map(x=>x.name).join(', '):'')+'</div>';inspectBox.classList.add('show');
 }
 canvas.addEventListener('pointermove',e=>{if(!state)return;state.hover=boardPos(e)});
 canvas.addEventListener('pointerleave',()=>{if(state)state.hover=null});
@@ -830,7 +833,7 @@ canvas.addEventListener('pointerdown',e=>{if(!state||state.ended)return;const p=
 function openDictionary(){
   const list=[...state.discovered].filter(w=>D.words[w]).sort();
   $('dictStats').textContent=list.length.toLocaleString()+' / '+(D.totalWords||D.wordList.length).toLocaleString()+' 단어 발견';
-  $('dictList').innerHTML=list.length?list.map(w=>{const d=D.words[w],sig=D.signatures?.[w];return '<div class="dict-item" style="--c:'+d.color+'"><b>'+w+'</b><span>'+d.meaning+' · '+d.roleLabel+' · INK '+towerCost(d)+(sig?.flavor?' · '+sig.flavor:'')+'</span></div>'}).join(''):'<div class="empty">아직 발견한 단어가 없습니다.</div>';
+  $('dictList').innerHTML=list.length?list.map(w=>{const d=D.words[w],sig=D.signatures?.[w];return '<div class="dict-item" style="--c:'+d.color+'"><b>'+escapeHtml(w)+'</b><span>'+escapeHtml(d.meaning)+' · '+escapeHtml(d.roleLabel)+' · INK '+towerCost(d)+(sig?.flavor?' · '+escapeHtml(sig.flavor):'')+'</span></div>'}).join(''):'<div class="empty">아직 발견한 단어가 없습니다.</div>';
   dictOverlay.classList.remove('hidden');
 }
 function restart(){
