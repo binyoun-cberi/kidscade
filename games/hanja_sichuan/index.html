@@ -409,6 +409,8 @@ dialog p{color:#657369;line-height:1.6}
   }
   function drawBoard(){
     const cell=currentCell();
+    // The tabletop follows the board size, never a full-width empty game panel.
+    $('gamePanel').style.width=Math.ceil((st.cols+1.04)*cell+28)+'px';
     const b=$('board');
     $('boardWrap').style.setProperty('--tile',cell+'px');
     $('boardWrap').style.setProperty('--cols',st.cols);
