@@ -1092,12 +1092,51 @@ const WAVE_BALANCE={
   speedGrowth:.035
 };
 
+// The compact hand-curated set wins whenever a meaning or role conflicts with
+// the large licensed lexical database. The broader dictionary makes free typing
+// worthwhile; the tile-rack hint pool stays compact to keep tablet UX responsive.
+const BUILTIN_WORDS=Object.keys(words);
+const OPEN_LEXICON=window.WordSiegeOpenLexicon?.entries||[];
+let expandedWords=0;
+const firstRankWords=[];
+for(const [word,meaning,role] of OPEN_LEXICON){
+  if(!/^[A-Z]{3,12}$/.test(word)||!ROLE_STATS[role])continue;
+  if(words[word])continue;
+  words[word]={
+    word,role,roleLabel:ROLE_LABELS[role],color:ROLE_COLORS[role],
+    meaning,difficulty:difficulty(word),openDictionary:true
+  };
+  if(expandedWords<3600)firstRankWords.push(word);
+  if(role==='modifier'){
+    // Without a procedural buff, a newly recognised adjective tower would do
+    // nothing. Modest generic bonuses preserve balance beside curated FAST.
+    MODIFIERS[word]={damage:1.08,rate:1.06};
+  }
+  expandedWords++;
+}
+// FIGHT and COW are intentionally not generic dictionary defaults.
+if(words.FIGHT){words.FIGHT.role='pierce';words.FIGHT.roleLabel=ROLE_LABELS.pierce;words.FIGHT.color=ROLE_COLORS.pierce;words.FIGHT.meaning='싸우다'}
+if(words.COW){words.COW.role='rapid';words.COW.roleLabel=ROLE_LABELS.rapid;words.COW.color=ROLE_COLORS.rapid;words.COW.meaning='소'}
+Object.assign(SIGNATURES,{
+  FIGHT:{damage:1.36,rate:1.24,flavor:'연속 충격권 공격'},
+  COW:{rate:1.05,area:1.20,flavor:'우유 구슬 연사'},
+  DOG:{rate:1.34,flavor:'날렵한 소리탄'},
+  HORSE:{rate:1.25,range:1.15,flavor:'빠른 질주탄'},
+  ELEPHANT:{push:1.55,damage:1.18,flavor:'무거운 충격파'},
+  PUNCH:{damage:1.28,rate:1.20,flavor:'연타 공격'},
+  BATTLE:{damage:1.15,area:1.18,flavor:'전투 파동'},
+  NUKE:{damage:2.6,area:1.15,rate:.55,flavor:'초대형 핵폭발'}
+});
+
 const START_RACK='MINERARROWIC'.split('');
 const FILLER_FREQUENCY='EEEEEEEEEEEEAAAAAAAAAIIIIIIIIOOOOOOOONNNNNNRRRRRRTTTTTTLLLLSSSSUUUUDDDDGGGBBCCMMPPFFHHVVWWYYKJXQZ'.split('');
 
 window.WordSiegeData={
   words,
-  wordList:Object.keys(words),
+  wordList:[...new Set([...BUILTIN_WORDS,...firstRankWords])],
+  allWordList:Object.keys(words),
+  totalWords:Object.keys(words).length,
+  importedWords:expandedWords,
   roleStats:ROLE_STATS,
   roleLabels:ROLE_LABELS,
   modifiers:MODIFIERS,
