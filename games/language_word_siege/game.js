@@ -653,7 +653,8 @@ function playfulTowerAttack(t,s,targets,target){
       .sort((a,b)=>dist(t,a)-dist(t,b))[0];
     const source=peer||t;
     const borrowed=peer?effectiveStats(peer):s;
-    const damage=Math.min(74,borrowed.damage*.62);
+    // The mirror borrows elemental utility without being punished for a low-DPS neighbor.
+    const damage=Math.min(74,Math.max(s.damage*.38,borrowed.damage*.62));
     const count=peer&&(borrowed.area||borrowed.beam)?3:1;
     const victims=nearby(target.x,target.y,peer?Math.max(.065,borrowed.area||.09):.02,count);
     for(const e of victims){
