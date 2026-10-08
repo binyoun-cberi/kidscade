@@ -129,3 +129,41 @@ test('beginner experience includes wayfinding, actionable hints, and camera obst
   assert.match(html,/id="navRange"/);
   assert.match(html,/id="lessonText"/);
 });
+
+test('first encounter remains harmless until the player learns the stare mechanic',()=>{
+  const start=js.indexOf('function segmentHitsRect('),end=js.indexOf('function updatePlayer(dt){',start);
+  assert.ok(start>=0&&end>start);
+  const simulation=new Function('aim',\`
+    const walls=[],furniture=[];
+    const player={x:-10.3,z:-6};
+    const maiden={x:12,z:-10,speed:1.2,charge:0,attacks:0,root:{visible:false,position:{set(){}},rotation:{y:0}}};
+    const forward={x:0,z:0,set(x,y,z){this.x=x;this.z=z}};
+    let stage=2,hp=3,elapsed=0,invulnerable=0,ghostWaiting=0,ghostNav=null,gazeLocked=false,maidenPhase='approach',viewYaw=0;
+    const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
+    const canWalk=()=>true,routePlan=(a,b)=>[{x:a.x,z:a.z},{x:b.x,z:b.z}];
+    function showLesson(){}function showToast(){}function sfx(){}function updateNavigation(){}
+    function finish(){throw Error('unexpected beginner failure');}
+    function setStage(next){stage=next;}
+    \${js.slice(start,end)}
+    function tick(seconds){
+      for(let i=0;i<seconds*20&&stage===2;i++){elapsed+=.05;invulnerable=Math.max(0,invulnerable-.05);updateGhost(.05);}
+    }
+    tick(80);
+    const safeBeforeEncounter=maidenPhase==='approach'&&hp===3&&maiden.root.visible===false;
+    player.x=10.25;player.z=-4.5;
+    viewYaw=aim?-Math.atan2(1.75,5.5):Math.PI;
+    tick(2.1);
+    const protectedPractice=aim?maidenPhase==='hunt'&&hp===3:maidenPhase==='practice'&&hp===3;
+    tick(15);
+    return {safeBeforeEncounter,protectedPractice,hp,stage,maidenPhase};
+  \`);
+  const guided=simulation(true),unaware=simulation(false);
+  assert.equal(guided.safeBeforeEncounter,true);
+  assert.equal(guided.protectedPractice,true);
+  assert.equal(guided.stage,3,'guided player should complete the gaze encounter');
+  assert.equal(guided.hp,3);
+  assert.equal(unaware.safeBeforeEncounter,true);
+  assert.equal(unaware.protectedPractice,true);
+  assert.equal(unaware.stage,2,'a player who has not practiced should not enter the lethal phase');
+  assert.equal(unaware.hp,3);
+});
