@@ -191,8 +191,9 @@
       "type": "hair",
       "generatedFrom": "hairone",
       "rigging": "source hairone topology, UVs, materials and skin weights",
-      "shaping": "lower bob silhouette shortened using original geometry bounds; narrower sides and nape",
-      "revision": "v3-existing-mesh-short-hair"
+      "shaping": "lower source-bob silhouette compressed; eye-level frontal/temple triangles culled below source eyes upper bound +0.02, rear hair kept",
+      "revision": "v4-eye-clearance-hairone",
+      "geometryPolicy": "source rig/UV/weights retained, filtered index faces only"
     },
     "kidscade_male_brows": {
       "label": "남자 기본 눈썹",
