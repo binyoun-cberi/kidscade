@@ -991,7 +991,7 @@ function enterStep(index,{spaceChanged=false}={}){
   teamActive=false;teamCheckTimer=0;lessonElapsed=0;lessonAccidents=0;
   lessonFlow=currentStep.kind==='lesson'?createLessonFlow(currentStep.duration,{teamActivity:!!currentStep.teamActivity}):null;
   boardNear=false;teachingMultiplier=0;
-  hideAllBubbles();setTalk(false);fightsThisSocial=0;
+  hideAllBubbles();students.forEach(s=>{s.questionActive=false});setTalk(false);fightsThisSocial=0;
   if(currentStep.location!==activeSpace.id){
     transitionToSpace(currentStep.location);spaceChanged=true;
   }
@@ -1011,6 +1011,7 @@ function enterStep(index,{spaceChanged=false}={}){
   }else if(currentStep.kind==='lesson'){
     setStudentsToStations();
     students.forEach(s=>{
+      s.questionActive=false;s.answeredWindow=-1;
       if(!studentCanParticipate(s))return;
       resetFocusForLesson(s.runtime);s.actor.target=s.seat.clone();
       s.safetyRecord=currentStep.safetyRequired?beginSafetyRecord(s,currentStep.period):null;
@@ -1343,6 +1344,20 @@ function updateLesson(dt){
   updateLessonChatter(dt);
   updateTeamActivity(dt);
   updateSafety(dt);
+  const questionWindow=Math.floor(lessonElapsed/24);
+  const inQuestionWindow=lessonFlow?.phase==='practice'&&!teamActive&&
+    lessonElapsed%24>=8&&lessonElapsed%24<16;
+  const questionIndex=(questionWindow+(currentStep.period||0)*3+campaign.day*2)%students.length;
+  students.forEach((s,i)=>{
+    const next=inQuestionWindow&&i===questionIndex&&studentCanParticipate(s)&&
+      !s.accident&&!(s.health?.revealed&&s.health.state!=='healthy')&&
+      s.answeredWindow!==questionWindow;
+    if(next!==s.questionActive){
+      s.questionActive=next;
+      if(!next&&s.bubble?.textContent==='?')refreshStudentBubbleState(s);
+      else if(next)showBubble(s,'?','question');
+    }
+  });
   if(stepTime<=0){
     if(!lessonFlow.completed)stats.lessonsWithoutRecap++;
     stats.periodsCompleted++;advanceStep();
@@ -1715,6 +1730,9 @@ function updatePlayer(dt){
     const nx=player.root.position.x+x*player.speed*dt,nz=player.root.position.z+z*player.speed*dt;
     if(!isBlocked(nx,player.root.position.z))player.root.position.x=nx;if(!isBlocked(player.root.position.x,nz))player.root.position.z=nz;
     faceDirection(player,x,z);playAnim(player,'walk');
+  }else if(currentStep.kind==='lesson'&&isTeacherAtBoard()&&
+    ['explain','recap'].includes(lessonFlow?.phase)){
+    faceDirection(player,0,1);playAnim(player,'push');
   }else playAnim(player,'idle');
 }
 function updateStudentsIdle(dt){students.forEach(s=>moveActorToward(s.actor,s.actor.target,dt,.72))}
