@@ -322,7 +322,7 @@ test('male short hair reuses hairone topology, materials and original skin weigh
   assert.match(maleHair,/source\.parent\.add\(hair\)/);
   assert.doesNotMatch(maleHair,/SphereGeometry|ConeGeometry|CylinderGeometry|TubeGeometry/);
   assert.match(js,/createKidscadeMaleSet\(\);\s*createKidscadeMaleHairShort\(\);/);
-  assert.match(js,/const HAIR_NODES=\[[^\n]*kidscade_male_hair_short/);
+  assert.match(js,/const HAIR_NODES=\[\.\.\.FEMALE_HAIR_STYLES,\.\.\.MALE_HAIR_STYLES\]/);
   assert.match(js,/kidscade_male_hair_short:'남자 짧은 머리'/);
 });
 
@@ -357,7 +357,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261008-chibi-audit41/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-chibi-wardrobe50/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
@@ -447,7 +447,7 @@ test('male base opens first and provides brows visibility, face zoom and gait st
   assert.match(html,/id="gaitBadge"/);
   assert.match(html,/data-view="face"/);
   assert.match(html,/data-chibi-preset="male">남자 기본/);
-  assert.match(html,/character-3d-studio\.js\?v=20261008-chibi-audit41/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-chibi-wardrobe50/);
 });
 
 test('mobile studio shows the live avatar preview before the long wardrobe',()=>{
@@ -531,5 +531,48 @@ test('one-touch mobile Chibi controls are wired to the same real animation, view
   assert.match(js,/setCameraView\(button\.dataset\.quickView\)/);
   assert.match(js,/\[data-chibi-preset\],\[data-view\],\[data-quick-clip\],\[data-quick-view\],\[data-quick-speed\]/);
   assert.match(js,/\$\('speed'\)\.value=button\.dataset\.quickSpeed/);
-  assert.match(html,/character-3d-studio\.js\?v=20261008-chibi-audit41/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-chibi-wardrobe50/);
+});
+
+test('Chibi v5 wardrobe exposes gender-fit filter and category tabs without restricting shared accessories',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const html=read('teacher/character-3d-studio.html');
+  const m=JSON.parse(read('chibi/asset-manifest.json'));
+  assert.match(js,/const PART_FIT=name=>MALE_FIT_PARTS\.has\(name\)\?'male':SHARED_FIT_PARTS\.has\(name\)\?'shared':'female'/);
+  assert.match(js,/function selectBodyFit\(fit\)/);
+  assert.match(js,/compatiblePart\(name\)&&PART_GROUP\(name\)===activeWardrobeCategory/);
+  assert.match(js,/function updateWardrobeNavigation\(\)/);
+  assert.match(js,/if\(!compatiblePart\(part\)\)/);
+  assert.match(js,/if\(input\.checked&&\['top','bottom','shoes'\]\.includes\(exclusive\)\)/);
+  assert.match(js,/bodyFit:activeBodyFit/);
+  assert.match(html,/data-body-fit="male"/);
+  assert.match(html,/data-body-fit="female"/);
+  for(const c of ['hair','top','bottom','shoes','accessory','costume']){
+    assert.ok(html.includes('data-wardrobe-category="'+c+'"'));
+    assert.ok(m.wardrobeLibrary.categories.includes(c));
+  }
+  assert.equal(m.wardrobeLibrary.bodyFits.male.baseNode,'kidscade_male_body');
+  assert.equal(m.wardrobeLibrary.bodyFits.female.baseNode,'character_low');
+});
+
+test('Chibi v5 provides eight distinct skinned hair entries per body fit, with unique mesh metadata',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const m=JSON.parse(read('chibi/asset-manifest.json'));
+  const male=m.wardrobeLibrary.hairStyles.male;
+  const female=m.wardrobeLibrary.hairStyles.female;
+  assert.equal(male.length,8);
+  assert.equal(female.length,8);
+  assert.equal(new Set([...male,...female]).size,16);
+  assert.equal(m.wardrobeLibrary.counts.newVariants,9);
+  assert.match(js,/function createKidscadeHairCollection\(\)/);
+  assert.match(js,/geometry\.computeVertexNormals\(\)/);
+  assert.match(js,/template\.parent\.add\(hair\)/);
+  assert.match(js,/createKidscadeMaleHairShort\(\);\s*createKidscadeHairCollection\(\);/);
+  assert.match(js,/const part=style\.part\*size\.x\*crown/);
+  assert.match(js,/const wave=style\.wave\*size\.y\*Math\.sin/);
+  assert.match(js,/styleParameters:\{\.\.\.style\}/);
+  for(const name of [...male.slice(1),...female.slice(-2)]){
+    assert.ok(js.includes(name),'Style not declared in client: '+name);
+    assert.equal(m.customParts[name].revision,'v5-wardrobe-hair-pack-1');
+  }
 });
