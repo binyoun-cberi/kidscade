@@ -26,6 +26,8 @@ test('desktop beginner tiles are scaled for readability while master still fits'
   assert.equal(rules.tileSize({viewportWidth:1600,boardWidth:900,cols:6}),100);
   assert.equal(rules.tileSize({viewportWidth:1600,boardWidth:900,cols:8}),84);
   assert.equal(rules.tileSize({viewportWidth:1600,boardWidth:900,cols:10}),72);
+  assert.equal(rules.tileSize({viewportWidth:1754,viewportHeight:832,boardWidth:900,cols:4}),88);
+  assert.equal(rules.tileSize({viewportWidth:1754,viewportHeight:1080,boardWidth:900,cols:4}),114);
   for(const cols of [4,6,8,10]){
     const tile=rules.tileSize({viewportWidth:1120,boardWidth:760,cols});
     assert.ok(tile*(cols+1.08)<=760,'does not fit desktop board '+cols);
