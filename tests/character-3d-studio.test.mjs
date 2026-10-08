@@ -242,7 +242,7 @@ test('male Chibi preset reuses source meshes for body face hair and clothes',()=
   const js=read('teacher/character-3d-studio.js');
   const html=read('teacher/character-3d-studio.html');
   for(const name of [
-    'kidscade_male_body','kidscade_male_eyes',
+    'kidscade_male_body','kidscade_male_eyes','kidscade_male_brows',
     'kidscade_male_tshirt','kidscade_male_shorts'
   ]) assert.match(js,new RegExp(name));
   assert.match(js,/function createKidscadeMaleSet/);
@@ -269,7 +269,7 @@ test('male Chibi manifest records source-mesh reuse',()=>{
   assert.ok(manifest.presets.male.includes('kidscade_male_body'));
   assert.ok(manifest.presets.male.includes('kidscade_male_hair_short'));
   assert.equal(manifest.customParts.kidscade_male_body.type,'body');
-  assert.equal(manifest.customParts.kidscade_male_brows,undefined);
+  assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   assert.equal(manifest.customParts.kidscade_male_hair_short.generatedFrom,'hairone');
   assert.ok(manifest.hairNodes.includes('kidscade_male_hair_short'));
   assert.equal(manifest.customParts.kidscade_male_tshirt.generatedFrom,'shirt');
@@ -332,19 +332,22 @@ test('deployed Chibi studio uses commit-scoped HTML and JS assets',()=>{
 });
 
 
-test('male Chibi eyes align with original baked face makeup without second brows',()=>{
+test('male Chibi eyes align with native face markings and eyebrows only use two source islands',()=>{
   const js=read('teacher/character-3d-studio.js');
   const manifest=JSON.parse(read('chibi/asset-manifest.json'));
   const male=js.slice(js.indexOf('function createKidscadeMaleSet(){'),js.indexOf('function makeUnlitMaterial(source){'));
   assert.match(male,/const eyeGeometry=eyesSource\.geometry\.clone\(\)/);
   assert.match(male,/eyeHeightScale:1/);
   assert.match(male,/alignsWith:'character_low native face markings'/);
-  assert.doesNotMatch(male,/browGeometry|createKidscadeMaleBrows|kidscade_male_brows/);
+  assert.match(male,/const browGeometry=lashesSource\.geometry\.clone\(\)/);
+  assert.match(male,/const eyebrowRegionFloor=1\.76/);
+  assert.match(male,/if\(kept\.length!==72\)/);
+  assert.match(male,/browGeometry\.setIndex\(kept\)/);
   assert.doesNotMatch(male,/new THREE\.(?:SphereGeometry|TubeGeometry|ConeGeometry)/);
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
-  assert.equal(manifest.customParts.kidscade_male_brows,undefined);
+  assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261008-nativeface5/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-alignedface6/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
@@ -360,12 +363,12 @@ test('male shoulders and sleeves use smooth weighting without extra procedural m
   assert.equal(manifest.customParts.kidscade_male_tshirt.revision,'shoulder-clearance-v3');
 });
 
-test('male face preset shows exactly one skinned eye overlay on the baked head',()=>{
+test('male face preset uses one native-aligned pair of eyes and only original eyebrow islands',()=>{
   const js=read('teacher/character-3d-studio.js');
   const manifest=JSON.parse(read('chibi/asset-manifest.json'));
   assert.match(js,/const FEMALE_BASE_NODES=\['character_low','eyelashes','eyes','tooth'\]/);
-  assert.match(js,/const MALE_BASE_NODES=\['kidscade_male_body','kidscade_male_eyes','tooth'\]/);
+  assert.match(js,/const MALE_BASE_NODES=\['kidscade_male_body','kidscade_male_eyes','kidscade_male_brows','tooth'\]/);
   assert.match(js,/BASE_VARIANT_NODES\.forEach\(node=>setNodeVisible\(node,false\)\)/);
-  assert.deepEqual(manifest.presets.male.filter(name=>/eyes|eyelashes|brows/.test(name)),['kidscade_male_eyes']);
-  assert.doesNotMatch(js,/const lashesSource=getNode\('eyelashes'\)/);
+  assert.deepEqual(manifest.presets.male.filter(name=>/eyes|eyelashes|brows/.test(name)),['kidscade_male_eyes','kidscade_male_brows']);
+  assert.match(js,/const lashesSource=getNode\('eyelashes'\)/);
 });
