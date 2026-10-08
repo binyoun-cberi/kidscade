@@ -250,6 +250,11 @@ const errors=[];
     await setFit(fit);
     await selectGarment('top',top);
     await selectGarment('bottom',bottom);
+    for(const clip of ['WALK','RUN']){
+      for(const view of ['front','side']){
+        await sample(clip,view,.25,'motion-'+fit+'-'+top+'-'+bottom);
+      }
+    }
     const exported=await evalPage('window.__kc3dAudit.roundtripExport()');
     assert.ok(exported.bytes>30000,'Empty GLB '+fit);
     assert.equal(exported.clips.length,11,'Animation clips missing in GLB '+fit);
