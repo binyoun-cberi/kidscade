@@ -167,3 +167,47 @@ test('first encounter remains harmless until the player learns the stare mechani
   assert.equal(unaware.stage,2,'a player who has not practiced should not enter the lethal phase');
   assert.equal(unaware.hp,3);
 });
+
+test('walls and baseboards have no coplanar overlapping outer faces',()=>{
+  const start=js.indexOf('const WALL_HEIGHT='),end=js.indexOf('function wallSplit(',start);
+  assert.ok(start>=0&&end>start,'wall builder declarations exist');
+  const boxes=[],walls=[],materials={wall:{name:'wall'},skirt:{name:'skirt'}};
+  const cube=(scene,x,y,z,w,h,d,material)=>{boxes.push({x,y,z,w,h,d,material});};
+  const wallFn=new Function('cube','scene','materials','walls',js.slice(start,end)+';return wall;')(cube,{},materials,walls);
+  wallFn(3,2,5,.29);
+  assert.equal(boxes.length,2,'wall consists of top and separate baseboard');
+  const upper=boxes.find(x=>x.material===materials.wall),base=boxes.find(x=>x.material===materials.skirt);
+  assert.ok(upper&&base);
+  assert.ok(Math.abs(upper.y-upper.h/2-(base.y+base.h/2))<1e-10,'walls share only a zero-area boundary');
+  assert.ok(upper.y-upper.h/2>=base.y+base.h/2-1e-10);
+  assert.equal(walls.length,1,'collision wall remains unchanged');
+});
+
+test('player body faces the actual movement direction on W A S D and turned camera',()=>{
+  const start=js.indexOf('function updatePlayer(dt){'),end=js.indexOf('function updateCamera(dt){',start);
+  assert.ok(start>=0&&end>start);
+  for(const [keysInput,yaw,wantX,wantZ] of [
+    [['w'],0,0,-1],
+    [['s'],0,0,1],
+    [['a'],0,-1,0],
+    [['d'],0,1,0],
+    [['w'],Math.PI/2,-1,0],
+    [['w'],Math.PI,0,1],
+    [['w','d'],0,Math.SQRT1_2,-Math.SQRT1_2],
+  ]){
+    const keys=new Set(keysInput),joy={x:0,y:0};
+    const root={position:{set(){}},rotation:{y:Math.PI}};
+    const player={x:0,z:0,yaw:Math.PI,root,animation:null};
+    const update=new Function('keys','joy','player','viewYaw','canWalk','invulnerable','elapsed',
+      js.slice(start,end)+';return updatePlayer;')(keys,joy,player,yaw,()=>true,0,0);
+    update(1);
+    const moveX=player.x/Math.hypot(player.x,player.z),moveZ=player.z/Math.hypot(player.x,player.z);
+    assert.ok(Math.abs(moveX-wantX)<.001,'expected movement X '+keysInput+' yaw '+yaw);
+    assert.ok(Math.abs(moveZ-wantZ)<.001,'expected movement Z '+keysInput+' yaw '+yaw);
+    // The shared Casual_Male.gltf has its visual forward in LOCAL +Z, like teacher simulator.
+    const faceX=Math.sin(root.rotation.y),faceZ=Math.cos(root.rotation.y);
+    assert.ok(Math.abs(faceX-moveX)<.001,'body faces walk X '+keysInput+' yaw '+yaw);
+    assert.ok(Math.abs(faceZ-moveZ)<.001,'body faces walk Z '+keysInput+' yaw '+yaw);
+  }
+  assert.match(js,/player\.yaw=Math\.PI;player\.root\.rotation\.y=player\.yaw/,'retry direction resets too');
+});
