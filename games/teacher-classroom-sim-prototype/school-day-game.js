@@ -561,18 +561,42 @@ function setSeatedPose(actor,shouldSit,dt){
   const offset=Number.isFinite(actor.seatHipY)?clamp(surface-actor.seatHipY,-.55,-.12):-.3;
   actor.model.position.y=actor.restY+(nativeSit?0:offset)*actor.poseBlend;
 }
+const gestureAxisX=new THREE.Vector3(1,0,0),gestureAxisZ=new THREE.Vector3(0,0,1);
+const gestureQuaternion=new THREE.Quaternion();
 function updateStudentPose(s,dt){
   const classTime=currentStep.kind==='lesson'||currentStep.kind==='prep';
   const canSit=activeSpace.id!=='gym'&&classTime&&studentCanParticipate(s)&&
     distance2D(s.actor.root.position,s.seat)<.17&&
     s.offTaskKind!=='wander'&&!s.wander;
-  if(canSit)faceDirection(s.actor,0,-1);
+  const chatting=canSit&&!!chatForStudent(s);
+  if(canSit&&!chatting)faceDirection(s.actor,0,-1);
   setSeatedPose(s.actor,canSit,dt);
-  // Seated distracted pupils subtly glance around rather than roaming.
   const restless=canSit&&s.runtime.mode==='offtask';
+  const writing=canSit&&currentStep.kind==='lesson'&&lessonFlow?.phase==='practice'&&
+    !restless&&!chatting&&!s.questionActive;
+  const asking=canSit&&s.questionActive;
   const sway=restless?Math.sin(sceneSeconds*2.1+s.fidgetOffset):0;
-  s.actor.model.rotation.y=s.actor.restRotation.y+sway*.16;
-  s.actor.model.rotation.z=s.actor.restRotation.z+(restless?Math.sin(sceneSeconds*3+s.fidgetOffset)*.027:0);
+  s.actor.model.rotation.y=s.actor.restRotation.y+
+    (chatting?Math.sin(sceneSeconds*1.5+s.fidgetOffset)*.10:sway*.16);
+  s.actor.model.rotation.z=s.actor.restRotation.z+
+    (restless?Math.sin(sceneSeconds*3+s.fidgetOffset)*.027:writing?Math.sin(sceneSeconds*2.2+s.fidgetOffset)*.009:0);
+  if(!canSit&&!s.wasGesturing){s.wasGesturing=false;return}
+  const bones=s.actor.gestureBones;
+  if(bones){
+    // Restore the bind pose between procedural gestures; avoid accumulating rotation.
+    for(const part of [...bones.upper,...bones.lower])part.bone.quaternion.copy(part.base);
+    if(writing){
+      for(const part of bones.lower){
+        const angle=-.20+Math.sin(sceneSeconds*6+s.fidgetOffset)*.11;
+        part.bone.quaternion.multiply(gestureQuaternion.setFromAxisAngle(gestureAxisX,angle));
+      }
+    }else if(asking&&bones.upper.length){
+      const arm=bones.upper.find(a=>/right/i.test(a.bone.name))||bones.upper[0];
+      const direction=/left/i.test(arm.bone.name)?-1:1;
+      arm.bone.quaternion.multiply(gestureQuaternion.setFromAxisAngle(gestureAxisZ,direction*1.18));
+    }
+  }
+  s.wasGesturing=writing||asking;
 }
 function faceDirection(actor,dx,dz){
   if(Math.abs(dx)+Math.abs(dz)>.001)actor.root.rotation.y=Math.atan2(dx,dz);
