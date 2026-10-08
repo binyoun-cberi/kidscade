@@ -764,6 +764,10 @@ function createKidscadeMaleHairShort(){
   const cutoff=bounds.min.y+size.y*.60;
   const lowerRange=cutoff-bounds.min.y;
   const positions=geometry.getAttribute('position');
+  const smooth=(a,b,v)=>{
+    const t=THREE.MathUtils.clamp((v-a)/(b-a),0,1);
+    return t*t*(3-2*t);
+  };
 
   for(let i=0;i<positions.count;i++){
     const ox=positions.getX(i);
@@ -771,14 +775,17 @@ function createKidscadeMaleHairShort(){
     const oz=positions.getZ(i);
     const lower=THREE.MathUtils.clamp((cutoff-oy)/lowerRange,0,1);
     const taper=lower*lower*(3-2*lower);
+    const side=THREE.MathUtils.clamp(Math.abs(ox-centerX)/(size.x*.5),0,1);
+    const temple=smooth(.43,.83,side)*smooth(.08,.60,lower);
 
-    // 보브컷 절단선에서 기울기가 갑자기 변하지 않게, 아래쪽으로 갈수록
-    // 압축 강도를 늘린다. 윗머리는 원본을 보존하고 짧은 머리 끝은 매끈하게 잇는다.
-    const y=oy+(cutoff-oy)*.58*taper;
+    // 윗머리/앞머리는 그대로 두고 귀 아래의 긴 단발 자락만 짧게 올린다.
+    // 형태를 급하게 자르지 않고 매끄럽게 당겨 얼굴 옆 '접힌 패널'을 줄인다.
+    const y=oy+(cutoff-oy)*.58*taper+size.y*.045*temple;
 
-    // 옆머리와 뒷머리도 같은 부드러운 가중치로 줄여 갑작스러운 단차를 막는다.
-    const x=centerX+(ox-centerX)*(1-.17*taper);
-    const z=centerZ+(oz-centerZ)*(1-.11*taper);
+    // 관자놀이 양옆의 자락을 두상 안쪽과 뒤쪽으로 모아 보브컷 날개를 없앤다.
+    // 원본 UV/skinWeight와 머리 윗부분의 결은 유지한다.
+    const x=centerX+(ox-centerX)*(1-.18*taper-.16*temple);
+    const z=centerZ+(oz-centerZ)*(1-.10*taper-.16*temple);
     positions.setXYZ(i,x,y,z);
   }
   // 원본 긴 머리의 끝 정점 일부가 위쪽으로 압축되면서 눈높이까지 올라온다.
@@ -832,6 +839,7 @@ function createKidscadeMaleHairShort(){
     shapedHeight:geometry.boundingBox.max.y-geometry.boundingBox.min.y,
     eyeClearanceY,
     removedEyeLevelTriangles:(originalIndex.count-kept.length)/3,
+    sideHairPolicy:'smooth temple-to-ear taper with raised side ends; retain source UV and weights',
     eyeClearancePolicy:'trim front/side hair faces below upper-eye clearance; keep rear nape'
   };
 
@@ -893,6 +901,12 @@ function createKidscadeMaleSet(){
     // 허리~골반은 갑자기 잘록해지지 않도록 연결부만 아주 약하게 보완한다.
     const waist=smooth(.48,.66,y)*(1-smooth(.82,.98,y));
     x*=1+.012*waist*(1-smooth(.18,.36,ax));
+
+    // 이전 버전은 다리만 가늘게 만들어 반바지 위 엉덩이가 더 넓게 보였다.
+    // 허리와 허벅지 연결은 유지하면서 골반의 좌우/후방 돌출부만 줄인다.
+    const pelvis=smooth(.43,.55,y)*(1-smooth(.74,.91,y));
+    x*=1-.085*pelvis;
+    if(z<0)z*=1-.105*pelvis;
 
     // 다리를 중앙으로 옮기지 않고 각 다리의 중심축을 기준으로만 가늘게 만든다.
     // 발, 손, 무릎/골반 접합부와 머리에는 영향을 주지 않는다.
@@ -1013,7 +1027,12 @@ function createKidscadeMaleSet(){
   for(let i=0;i<sp.count;i++){
     let x=sp.getX(i),y=sp.getY(i),z=sp.getZ(i);
     const ax=Math.abs(x);
-    // 반바지 밑단도 조금 슬림하게. 허리/골반은 그대로 두어 몸체와 관통하지 않는다.
+    // 반바지 골반부도 몸체와 같은 구간에서 완만하게 좁혀 비율을 맞춘다.
+    const pelvis=smooth(.43,.55,y)*(1-smooth(.74,.91,y));
+    x*=1-.065*pelvis;
+    if(z<0)z*=1-.080*pelvis;
+
+    // 반바지 밑단도 조금 슬림하게. 허리/골반과 연결부에는 여유를 남긴다.
     const legOpening=smooth(.24,.37,y)*(1-smooth(.59,.75,y));
     const legBand=smooth(.055,.14,ax)*(1-smooth(.39,.52,ax));
     const openingTrim=.072*legOpening*legBand;
@@ -1152,8 +1171,8 @@ function idleClipName(){
  * bind quaternion. Scaling the absolute Euler angles used to tilt the resting
  * pose as well as the movement, which caused unnatural shoulder posture.
  */
-const MALE_WALK_POSITION_X=.43;
-const MALE_RUN_POSITION_X=.60;
+const MALE_WALK_POSITION_X=.30;
+const MALE_RUN_POSITION_X=.38;
 const MALE_WALK_SPINE_FACTORS={
   'DEF-spine':{roll:.38,yaw:.70},
   'DEF-spine001':{roll:.55,yaw:.85},
@@ -1213,8 +1232,16 @@ function buildMaleLocomotionClip(sourceClip,settings){
         max=Math.max(max,values[i]);
       }
       const center=(min+max)*.5;
+      let lowY=Infinity,highY=-Infinity;
+      for(let i=1;i<values.length;i+=3){
+        lowY=Math.min(lowY,values[i]);
+        highY=Math.max(highY,values[i]);
+      }
+      const centerY=(lowY+highY)*.5;
       for(let i=0;i<values.length;i+=3){
         values[i]=center+(values[i]-center)*settings.lateralScale;
+        // RUN's vertical bounce is also a hip-position keyframe, not just torso roll.
+        values[i+1]=centerY+(values[i+1]-centerY)*settings.verticalScale;
       }
       continue;
     }
@@ -1224,7 +1251,10 @@ function buildMaleLocomotionClip(sourceClip,settings){
       .find(([name])=>normalizeRuntimeBoneName(name)===bone);
     const factors=factorEntry?.[1];
     const upperArm=/upper[_-]?arm/i.test(bone);
-    if(!factors&&!upperArm)continue;
+    const thigh=/(?:thigh|upper[_-]?leg)/i.test(bone);
+    const shin=/(?:shin|calf|lower[_-]?leg)/i.test(bone);
+    // Foot tracks are intentionally untouched: the original contact timing stays intact.
+    if(!factors&&!upperArm&&!thigh&&!shin)continue;
 
     const bindBone=sourceBone(rawBone);
     if(!bindBone)continue; // Unknown rig: use untouched source animation.
@@ -1244,6 +1274,17 @@ function buildMaleLocomotionClip(sourceClip,settings){
         euler.x*=settings.armPitch;
         euler.z*=settings.armRoll;
       }
+      if(thigh){
+        // Hip abduction (side-swing) caused the skating/skipping silhouette.
+        // Keep knee/foot timing but damp wide lateral leg arcs around the bind pose.
+        euler.x*=settings.thighPitch;
+        euler.y*=settings.thighYaw;
+        euler.z*=settings.thighRoll;
+      }
+      if(shin){
+        // Small knee correction avoids a sharp kick when the thigh swing narrows.
+        euler.x*=settings.shinPitch;
+      }
       animated.copy(base).multiply(delta.setFromEuler(euler)).normalize();
       values[i]=animated.x;
       values[i+1]=animated.y;
@@ -1255,7 +1296,9 @@ function buildMaleLocomotionClip(sourceClip,settings){
     ...sourceClip.userData,
     kidscadeMaleBalancedLocomotion:true,
     sourceClip:sourceClip.name,
-    lateralScale:settings.lateralScale
+    lateralScale:settings.lateralScale,
+    verticalScale:settings.verticalScale,
+    thighRollScale:settings.thighRoll
   };
   return result;
 }
@@ -1263,8 +1306,13 @@ function buildMaleLocomotionClip(sourceClip,settings){
 function buildMaleWalkClip(sourceClip){
   return buildMaleLocomotionClip(sourceClip,{
     lateralScale:MALE_WALK_POSITION_X,
+    verticalScale:.72,
     spineFactors:MALE_WALK_SPINE_FACTORS,
-    armPitch:1.10,
+    thighPitch:.92,
+    thighYaw:.86,
+    thighRoll:.62,
+    shinPitch:.96,
+    armPitch:1.06,
     armRoll:.88
   });
 }
@@ -1272,9 +1320,14 @@ function buildMaleWalkClip(sourceClip){
 function buildMaleRunClip(sourceClip){
   return buildMaleLocomotionClip(sourceClip,{
     lateralScale:MALE_RUN_POSITION_X,
+    verticalScale:.66,
     spineFactors:MALE_RUN_SPINE_FACTORS,
+    thighPitch:.90,
+    thighYaw:.83,
+    thighRoll:.64,
+    shinPitch:.94,
     armPitch:1.08,
-    armRoll:.94
+    armRoll:.93
   });
 }
 
