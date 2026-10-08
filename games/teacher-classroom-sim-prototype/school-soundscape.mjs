@@ -156,6 +156,7 @@ export function createSchoolSoundscape({contextFactory=null,random=Math.random}=
     unlock,play,cue,tick,setEnabled,setPaused,
     get enabled(){return enabled},
     get hasContext(){return !!ctx},
+    get contextState(){return ctx?.state||'missing'},
     stats(){return Object.fromEntries(counts)}
   };
 }
