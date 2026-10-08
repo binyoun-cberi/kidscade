@@ -121,6 +121,31 @@ const errors=[];
   for(const name of ['IDLE','WALK','RUN','JUMP'])assert.ok(clipNames.includes(name),'Missing '+name+' clip');
 
   const report={version:'chibi-v4.1',source:'Styloo Chibi real GLB in local Chrome',cases:[],warnings:[]};
+  // Test actual GLB mesh availability, geometry variation and one-visible-hair
+  // invariant for each gender-fit tab rather than just counting HTML options.
+  const catalog=JSON.parse(fs.readFileSync(path.join(ROOT,'chibi/asset-manifest.json'),'utf8'))
+    .wardrobeLibrary.hairStyles;
+  report.hairPack={counts:{male:catalog.male.length,female:catalog.female.length},variants:[]};
+  for(const [fit,names] of Object.entries(catalog)){
+    const changed=await evalPage("(()=>{document.querySelector('[data-body-fit=\\\""+fit+"\\\"]').click();return {fit:document.querySelector('[data-body-fit=\\\""+fit+"\\\"]').classList.contains('active'),choices:[...document.querySelector('#chibiHair').options].map(x=>x.value)}})()");
+    assert.ok(changed.fit,'Body tab inactive: '+fit);
+    assert.deepEqual(changed.choices.slice(1),names,'Wrong hairstyle order: '+fit);
+    const geometry=await evalPage('window.__kc3dAudit.hairCatalog()');
+    for(const name of names){
+      const mesh=geometry.find(entry=>entry.name===name);
+      assert.ok(mesh?.available&&mesh?.vertices>100,'Hair mesh absent: '+name);
+      assert.equal(mesh.fit,fit,'Hair fit mismatch: '+name);
+      const expr="(()=>{const select=document.querySelector('#chibiHair');select.value="+JSON.stringify(name)+";select.dispatchEvent(new Event('change',{bubbles:true}));return {choice:select.value,visible:window.__kc3dAudit.hairCatalog().filter(x=>x.visible).map(x=>x.name)}})()";
+      const state=await evalPage(expr);
+      assert.equal(state.choice,name,'Hair selector did not change');
+      assert.deepEqual(state.visible,[name],'Overlapping hair meshes: '+fit+'/'+name);
+      report.hairPack.variants.push({name,fit,vertices:mesh.vertices,fingerprint:mesh.fingerprint});
+    }
+  }
+  assert.equal(new Set(report.hairPack.variants.map(x=>x.fingerprint)).size,16,
+    'Not all hairstyle choices have distinct 3D geometry');
+  await evalPage("document.querySelector('[data-body-fit=\\\"male\\\"]').click()");
+
   const sample=async(clip,view,phase,prefix)=>{
     const pose=await evalPage('window.__kc3dAudit.sample('+JSON.stringify(clip)+','+
       JSON.stringify(view)+','+phase+')');
@@ -146,6 +171,13 @@ const errors=[];
       for(const phase of [0,.25,.5,.75])await sample(clip,view,phase,'desktop');
     }
   }
+
+  await sample('IDLE','side',0,'male-hair');
+  await evalPage("(()=>{const select=document.querySelector('#chibiHair');select.value='kidscade_male_hair_swept';select.dispatchEvent(new Event('change',{bubbles:true}))})()");
+  await sample('IDLE','side',0,'male-hair-swept');
+  await evalPage("(()=>{document.querySelector('[data-body-fit=\\\"female\\\"]').click();const select=document.querySelector('#chibiHair');select.value='kidscade_female_hair_layered';select.dispatchEvent(new Event('change',{bubbles:true}))})()");
+  await sample('IDLE','side',0,'female-hair-layered');
+  await evalPage("document.querySelector('[data-body-fit=\\\"male\\\"]').click()");
   await sample('IDLE','threeQuarter',0,'desktop');
   await sample('IDLE','side',0,'desktop');
   await sample('JUMP','side',.5,'desktop');
