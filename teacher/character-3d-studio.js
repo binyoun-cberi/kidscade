@@ -865,10 +865,14 @@ function createKidscadeMaleHairShort(){
     const templeBridge=smooth(.43,.72,side)*smooth(.12,.52,lower)*
       (1-smooth(.84,1,lower));
     const sideburn=smooth(.52,.82,side)*smooth(.46,.88,lower);
+    // The remaining temple bridge must climb towards the fringe at the
+    // front; a flat lower edge looked like a rectangular sideburn plate.
+    const templeFringeBlend=templeBridge*
+      smooth(.05,.36,(oz-centerZ)/size.z);
 
-    // Raise the long nape, but drop and spread the actual temple mesh back
-    // over the exposed scalp (no floating cap or duplicated eyes).
-    const y=oy+(cutoff-oy)*.58*taper+size.y*(.045*temple-.035*templeBridge-.010*sideburn);
+    // Raise the long nape while forming a sloped, cropped side-hair line.
+    const y=oy+(cutoff-oy)*.58*taper+size.y*(.045*temple-.035*templeBridge-.010*sideburn+
+      .135*templeFringeBlend);
     const x=centerX+(ox-centerX)*
       (1-.18*taper-.075*temple+.095*templeBridge);
     const z=centerZ+(oz-centerZ)*
@@ -943,7 +947,7 @@ function createKidscadeMaleHairShort(){
     eyeClearanceY,
     removedEyeLevelTriangles:removedFaceTriangles,
     preservedTempleTriangles,
-    sideHairPolicy:'v7 rear-temple bridge: protect hair behind ear, reject front dangling bob panels',
+    sideHairPolicy:'v7 rear temple with fringe-sloped edge: retain short rear polygon strip without a squared-off front plate',
     eyeClearancePolicy:'trim central/front eye-level faces only; retain original outer temple and rear nape'
   };
 
