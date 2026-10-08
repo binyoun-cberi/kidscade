@@ -3,8 +3,8 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {
   AI_RULES,STUDENT_PROFILES,createStudentRuntime,resetFocusForLesson,updateLessonFocus,helpFocus,
-  resetSocialForRecess,recoverSocial,drainSocial,conflictProbability,clamp
-} from './student-ai.mjs?v=71';
+  resetSocialForRecess,recoverSocial,drainSocial,conflictProbability,chooseOffTaskBehavior,clamp
+} from './student-ai.mjs?v=73';
 import {CLASS_SIZE,SCHOOL_SPACES,DAY_STEPS,PERIODS} from './school-day.mjs?v=71';
 import {
   preferenceFor,preferenceMultiplier,preferenceIcon,
@@ -21,15 +21,15 @@ import {
 } from './school-campaign.mjs?v=71';
 import {
   TEACHING_RULES,LESSON_PHASES,createLessonFlow,lessonFlowAction,
-  performLessonAction,tickLessonFlow,lessonTeachingEfficiency,lessonFlowProgress
-} from './lesson-instruction.mjs?v=71';
+  performLessonAction,tickLessonFlow,lessonTeachingEfficiency,lessonFlowProgress,lessonTimePressure
+} from './lesson-instruction.mjs?v=73';
 
 const $=id=>document.getElementById(id);
 const ui={
   app:$('app'),canvas:$('game'),phase:$('phaseLabel'),clock:$('clock'),timer:$('phaseTimer'),
   classState:$('classState'),studentStrip:$('studentStrip'),dayStrip:$('dayStrip'),campaignStatus:$('campaignStatus'),
   instructionPanel:$('instructionPanel'),instructionPhase:$('instructionPhase'),
-  instructionBar:$('instructionBar'),instructionPercent:$('instructionPercent'),instructionHint:$('instructionHint'),
+  instructionBar:$('instructionBar'),instructionPercent:$('instructionPercent'),instructionHint:$('instructionHint'),instructionBudget:$('instructionBudget'),
   explainBar:$('explainBar'),practiceBar:$('practiceBar'),recapBar:$('recapBar'),
   rosterToggle:$('rosterToggle'),
   guideKicker:$('guideKicker'),guideTitle:$('guideTitle'),guideText:$('guideText'),
@@ -92,7 +92,7 @@ let started=false,paused=false;
 let stepIndex=0,currentStep=DAY_STEPS[0],stepTime=0;
 let schoolMinute=9*60;
 let interactionScan=0,pairScan=0,hudTimer=0,groupSignalCooldown=0,groupSignalsThisLesson=0,currentAction={type:'none'};
-let toastTimer=0,playerGestureTimer=0;
+let toastTimer=0,playerGestureTimer=0,sceneSeconds=0;
 const CHARACTER_ROOT='../../assets/game/npcs/glTF/';
 const CHARACTER_VISUALS=Object.freeze({
   teacher:{file:'Suit_Female.gltf',height:1.68},
@@ -502,7 +502,7 @@ async function makeActor(kind,profile,index,pos){
     root,model,mixer,clips,action:null,anim:'',target:pos.clone(),
     speed:kind==='teacher'?3.2:1.15,kind,navGoal:'',navPath:[],
     visualId:kind==='teacher'?'teacher':profile?.id,usingFallback,
-    restY:model.position.y,seated:false,seatBones:collectSeatedBones(model),poseBlend:0
+    restY:model.position.y,restRotation:model.rotation.clone(),seated:false,seatBones:collectSeatedBones(model),poseBlend:0
   };
   playAnim(actor,'idle');
   return actor;
@@ -545,9 +545,14 @@ function updateStudentPose(s,dt){
   const classTime=currentStep.kind==='lesson'||currentStep.kind==='prep';
   const canSit=activeSpace.id!=='gym'&&classTime&&studentCanParticipate(s)&&
     distance2D(s.actor.root.position,s.seat)<.17&&
-    s.runtime.mode!=='offtask'&&!s.wander;
+    s.offTaskKind!=='wander'&&!s.wander;
   if(canSit)faceDirection(s.actor,0,-1);
   setSeatedPose(s.actor,canSit,dt);
+  // Seated distracted pupils subtly glance around rather than roaming.
+  const restless=canSit&&s.runtime.mode==='offtask';
+  const sway=restless?Math.sin(sceneSeconds*2.1+s.fidgetOffset):0;
+  s.actor.model.rotation.y=s.actor.restRotation.y+sway*.16;
+  s.actor.model.rotation.z=s.actor.restRotation.z+(restless?Math.sin(sceneSeconds*3+s.fidgetOffset)*.027:0);
 }
 function faceDirection(actor,dx,dz){
   if(Math.abs(dx)+Math.abs(dz)>.001)actor.root.rotation.y=Math.atan2(dx,dz);
@@ -559,7 +564,7 @@ async function createActors(){
     const runtime=createStudentRuntime(profile),seat=activeSeats[i]||new THREE.Vector3();
     const actor=await makeActor('student',profile,i,seat.clone());
     return {
-      runtime,actor,seat:seat.clone(),wander:null,bubble:null,
+      runtime,actor,seat:seat.clone(),wander:null,offTaskKind:'',wanderTimer:0,fidgetOffset:i*.91,bubble:null,
       health:healthToday[i],healthAction:null,
       safetyRecord:null,accident:null,teamId:-1
     };
@@ -804,11 +809,18 @@ function updateInstructionPanel(){
   const explain=current==='explain'?segment:100;
   const practice=current==='explain'||current==='assign'?0:current==='practice'?segment:100;
   const recap=current==='complete'?100:current==='recap'?segment:0;
-  const completed=Math.round((explain+practice+recap)/3);
+  const totalTeaching=lessonFlow.explanationSeconds+lessonFlow.practiceSeconds+lessonFlow.recapSeconds;
+  const completed=Math.round((explain*lessonFlow.explanationSeconds+
+    practice*lessonFlow.practiceSeconds+recap*lessonFlow.recapSeconds)/Math.max(1,totalTeaching));
   ui.instructionPhase.textContent=(phase?.label||'수업');
   ui.instructionPercent.textContent=completed+'%';
   ui.instructionBar.style.width=completed+'%';
   ui.instructionBar.parentElement?.setAttribute('aria-valuenow',String(completed));
+  const pressure=lessonTimePressure(lessonFlow,stepTime);
+  ui.instructionBudget.textContent=pressure.required===0
+    ? '수업 필수 단계 완료 · 남은 시간 '+Math.ceil(Math.max(0,stepTime))+'초'
+    : '남은 시간 '+Math.ceil(Math.max(0,stepTime))+'초 · 완료까지 약 '+Math.ceil(pressure.required)+'초';
+  ui.instructionBudget.classList.toggle('urgent',pressure.urgent);
   for(const [id,value,activeStage] of [
     ['explain',explain,current==='explain'||current==='assign'],
     ['practice',practice,current==='practice'||current==='recapReady'],
@@ -869,7 +881,7 @@ function updateHud(){
   if(ui.studentStrip.classList.contains('open'))ui.studentStrip.innerHTML=students.map(s=>{
     let cls='',icon='🙂';
     const pair=pairs.find(p=>p.a===s||p.b===s);
-    if(s.runtime.mode==='offtask'){cls='offtask';icon='😶‍🌫️'}
+    if(s.runtime.mode==='offtask'){cls='offtask';icon=s.offTaskKind==='wander'?'🚶':'💭'}
     if(pair?.state==='conflict'){cls='conflict';icon='💬'}
     if(pair?.state==='fight'){cls='fight';icon='💥'}
     const hIcon=healthIcon(s);if(hIcon){icon=hIcon;cls+=' health'}
@@ -890,7 +902,7 @@ function updateHud(){
 
 function hideAllBubbles(){students.forEach(hideBubble)}
 function setStudentsToStations(){
-  students.forEach((s,i)=>{s.seat=(activeSeats[i]||randomOpenPoint()).clone();s.actor.target=s.seat.clone();s.actor.navGoal='';s.actor.navPath=[];s.wander=null});
+  students.forEach((s,i)=>{s.seat=(activeSeats[i]||randomOpenPoint()).clone();s.actor.target=s.seat.clone();s.actor.navGoal='';s.actor.navPath=[];s.wander=null;s.offTaskKind='';s.wanderTimer=0});
 }
 function placeActorsAtEntry(){
   if(!player)return;
@@ -1254,19 +1266,29 @@ function updateLesson(dt){
     const evt=updateLessonFocus(s.runtime,dt,{teacherNear:teacherNearStudent(s),drainMultiplier,recoveryMultiplier});
     recordLessonLearning(s,dt,chat);
     if(evt==='offtask-start'){
-      stats.offTaskStarts++;offTaskWander(s);
-      if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy'))showBubble(s,'…','');
+      stats.offTaskStarts++;
+      s.offTaskKind=chooseOffTaskBehavior({location:activeSpace.id,teamActivity:!!currentStep.teamActivity});
+      s.wanderTimer=s.offTaskKind==='wander'?4+Math.random()*3:0;
+      if(s.offTaskKind==='wander')offTaskWander(s);
+      else s.wander=null;
+      if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy'))
+        showBubble(s,s.offTaskKind==='wander'?'🚶':'딴짓','');
     }
     if(evt==='focused-return'){
-      s.wander=null;
+      s.wander=null;s.offTaskKind='';s.wanderTimer=0;
       if(!s.accident&&!(s.health?.revealed&&s.health.state!=='healthy')&&!(s.safetyRecord?.finished&&!s.safetyRecord.heard))hideBubble(s);
     }
     if(s.runtime.mode==='offtask'){
       if(chat){
         s.wander=null;moveActorToward(s.actor,s.seat,dt,.6);
-      }else{
+      }else if(s.offTaskKind==='wander'&&s.wanderTimer>0){
+        s.wanderTimer-=dt;
         if(!s.wander||distance2D(s.actor.root.position,s.wander)<.08)offTaskWander(s);
         moveActorToward(s.actor,s.wander,dt,activeSpace.id==='gym'?.58:.42);
+      }else{
+        if(s.offTaskKind==='wander'&&!s.accident)showBubble(s,'딴짓','');
+        s.offTaskKind='fidget';s.wander=null;
+        moveActorToward(s.actor,s.seat,dt,.72);
       }
     }else{
       moveActorToward(s.actor,s.seat,dt,.72);
@@ -1765,7 +1787,7 @@ async function boot(){
   camera.position.set(0,7.7,11.6);camera.lookAt(0,.7,-.5);requestAnimationFrame(loop);
 }
 function loop(now){
-  requestAnimationFrame(loop);const dt=Math.min(.05,clock3d.getDelta());
+  requestAnimationFrame(loop);const dt=Math.min(.05,clock3d.getDelta());sceneSeconds+=dt;
   if(player){
     player.mixer.update(dt);students.forEach(s=>s.actor.mixer.update(dt));
     if(started&&!paused&&currentStep.kind!=='done'){
