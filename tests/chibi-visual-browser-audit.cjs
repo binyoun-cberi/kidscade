@@ -175,7 +175,7 @@ const errors=[];
   await sample('IDLE','side',0,'male-hair');
   await evalPage("(()=>{const select=document.querySelector('#chibiHair');select.value='kidscade_male_hair_swept';select.dispatchEvent(new Event('change',{bubbles:true}))})()");
   await sample('IDLE','side',0,'male-hair-swept');
-  await evalPage("(()=>{document.querySelector('[data-body-fit=\\\"female\\\"]').click();const select=document.querySelector('#chibiHair');select.value='kidscade_female_hair_layered';select.dispatchEvent(new Event('change',{bubbles:true}))})()");
+  await evalPage("(()=>{document.querySelector('[data-body-fit=\\\"female\\\"]').click();const select=document.querySelector('#chibiHair');select.value='chibi_female_hair_layered';select.dispatchEvent(new Event('change',{bubbles:true}))})()");
   await sample('IDLE','side',0,'female-hair-layered');
   await evalPage("document.querySelector('[data-body-fit=\\\"male\\\"]').click()");
   await sample('IDLE','threeQuarter',0,'desktop');
