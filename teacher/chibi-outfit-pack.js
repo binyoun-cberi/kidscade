@@ -17,23 +17,23 @@ export const OUTFIT_LIBRARY={
 // Every identifier owns a different profile; fabric dye alone is not a style.
 export const OUTFIT_STYLES=[
   {id:'chibi_male_hoodie',label:'박시 후드티',fit:'male',category:'top',base:'kidscade_male_tshirt',color:'#4879ce',
-    shape:{chest:.09,shoulder:.12,hem:.16,sleeve:.16,depth:.12,drop:.035},details:['hood','pocket','rib']},
+    shape:{chest:.09,shoulder:.12,hem:.16,sleeve:.16,depth:.12,drop:.035},details:['hood','pocket','rib','longSleeve']},
   {id:'chibi_male_bomber',label:'봄버 재킷',fit:'male',category:'top',base:'kidscade_male_tshirt',color:'#38614c',
-    shape:{chest:.15,shoulder:.18,hem:-.035,sleeve:.21,depth:.16,drop:.015},details:['collar','zip','rib']},
+    shape:{chest:.15,shoulder:.18,hem:-.035,sleeve:.21,depth:.16,drop:.015},details:['collar','zip','rib','longSleeve']},
   {id:'chibi_male_varsity',label:'바시티 재킷',fit:'male',category:'top',base:'kidscade_male_tshirt',color:'#a94450',
-    shape:{chest:.16,shoulder:.22,hem:.015,sleeve:.24,depth:.14,drop:.020},details:['collar','buttons','stripes']},
+    shape:{chest:.16,shoulder:.22,hem:.015,sleeve:.24,depth:.14,drop:.020},details:['collar','buttons','stripes','longSleeve']},
   {id:'chibi_male_oxford',label:'옥스퍼드 셔츠',fit:'male',category:'top',base:'kidscade_male_tshirt',color:'#d2e9ef',
-    shape:{chest:.055,shoulder:.04,hem:.055,sleeve:.025,depth:.05,drop:.046},details:['collar','buttons']},
+    shape:{chest:.055,shoulder:.04,hem:.055,sleeve:.025,depth:.05,drop:.046},details:['collar','buttons','longSleeve']},
   {id:'chibi_male_sweater',label:'니트 스웨터',fit:'male',category:'top',base:'kidscade_male_tshirt',color:'#c7a56d',
-    shape:{chest:.13,shoulder:.10,hem:.115,sleeve:.12,depth:.135,drop:.015},details:['rib','collar']},
+    shape:{chest:.13,shoulder:.10,hem:.115,sleeve:.12,depth:.135,drop:.015},details:['rib','collar','longSleeve']},
   {id:'chibi_female_cardigan',label:'롱 가디건',fit:'female',category:'top',base:'shirt',color:'#d29aab',
-    shape:{chest:.09,shoulder:.07,hem:.21,sleeve:.12,depth:.12,drop:.083},details:['buttons','pocket']},
+    shape:{chest:.09,shoulder:.07,hem:.21,sleeve:.12,depth:.12,drop:.083},details:['buttons','pocket','longSleeve']},
   {id:'chibi_female_blouse',label:'프릴 블라우스',fit:'female',category:'top',base:'shirt',color:'#f0e2d5',
-    shape:{chest:.035,shoulder:.13,hem:.18,sleeve:.20,depth:.085,drop:.024},details:['collar','buttons']},
+    shape:{chest:.035,shoulder:.13,hem:.18,sleeve:.20,depth:.085,drop:.024},details:['collar','buttons','puffSleeve']},
   {id:'chibi_female_knit',label:'루즈 니트',fit:'female',category:'top',base:'shirt',color:'#d2bbde',
-    shape:{chest:.15,shoulder:.105,hem:.15,sleeve:.18,depth:.15,drop:.020},details:['rib','collar']},
+    shape:{chest:.15,shoulder:.105,hem:.15,sleeve:.18,depth:.15,drop:.020},details:['rib','collar','longSleeve']},
   {id:'chibi_female_jacket',label:'데님 재킷',fit:'female',category:'top',base:'shirt',color:'#5485a8',
-    shape:{chest:.17,shoulder:.23,hem:.055,sleeve:.23,depth:.18,drop:.043},details:['collar','zip','pocket']},
+    shape:{chest:.17,shoulder:.23,hem:.055,sleeve:.23,depth:.18,drop:.043},details:['collar','zip','pocket','longSleeve']},
 
   {id:'chibi_male_jeans',label:'스트레이트 청바지',fit:'male',category:'bottom',base:'kidscade_male_shorts',color:'#365d8a',
     shape:{hip:.13,thigh:.085,calf:.11,flare:.025,length:0},details:['waist']},
@@ -102,6 +102,39 @@ function add3dDetails({THREE: _THREE, source,style,group,makeSolidMaterial,makeR
     geometry.computeBoundingSphere();
     group.add(makeRigidSkinnedPiece(source,geometry,bone,material,style.id+'_'+id));
   };
+  if(style.details.includes('longSleeve')||style.details.includes('puffSleeve')){
+    const puff=style.details.includes('puffSleeve');
+    for(const sign of [-1,1]){
+      const bone=resolveFirstBoneName(source.skeleton,[
+        sign<0?'DEF-upper_arm.L':'DEF-upper_arm.R',
+        sign<0?'DEF-upper_armL':'DEF-upper_armR'
+      ]);
+      const forearm=source.skeleton.bones.find(candidate=>
+        /forearm/i.test(candidate.name)&&candidate.name.endsWith(sign<0?'L':'R')
+      )?.name||bone;
+      const start=new THREE.Vector3(sign*.20,1.08,-.026);
+      const elbow=new THREE.Vector3(sign*.30,.91,-.039);
+      const cuff=new THREE.Vector3(sign*.345,.775,-.044);
+      const makeTube=(from,to,rStart,rEnd)=>{
+        const d=to.clone().sub(from);
+        const geometry=new THREE.CylinderGeometry(rEnd,rStart,d.length(),12,3,false);
+        geometry.applyMatrix4(new THREE.Matrix4().compose(
+          from.clone().add(to).multiplyScalar(.5),
+          new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize()),
+          new THREE.Vector3(1,1,1)
+        ));
+        return geometry;
+      };
+      const upper=makeTube(start,elbow,puff?.100:.077,puff?.078:.067);
+      add(upper,makeSolidMaterial(style.color,style.label+' 소매'),
+        sign<0?'upperSleeve_left':'upperSleeve_right',bone);
+      if(!puff){
+        const lower=makeTube(elbow,cuff,.069,.050);
+        add(lower,makeSolidMaterial(style.color,style.label+' 긴소매'),
+          sign<0?'forearmSleeve_left':'forearmSleeve_right',forearm);
+      }
+    }
+  }
   if(style.details.includes('hood')){
     const hood=new THREE.SphereGeometry(.185,16,10,0,Math.PI*2,0,Math.PI*.68);
     hood.scale(1.07,.70,.67);
