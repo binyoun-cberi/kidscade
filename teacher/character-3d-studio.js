@@ -868,7 +868,7 @@ function createKidscadeMaleHairShort(){
 
     // Raise the long nape, but drop and spread the actual temple mesh back
     // over the exposed scalp (no floating cap or duplicated eyes).
-    const y=oy+(cutoff-oy)*.58*taper+size.y*(.045*temple-.075*templeBridge-.018*sideburn);
+    const y=oy+(cutoff-oy)*.58*taper+size.y*(.045*temple-.035*templeBridge-.010*sideburn);
     const x=centerX+(ox-centerX)*
       (1-.18*taper-.075*temple+.095*templeBridge);
     const z=centerZ+(oz-centerZ)*
@@ -905,7 +905,9 @@ function createKidscadeMaleHairShort(){
     // frontal eye-covering pieces after squashing the bob.
     const center=(originalPositions.getX(a)+originalPositions.getX(b)+originalPositions.getX(c))/3;
     const lateral=Math.abs(center-centerX)/(size.x*.5);
-    const outerTemple=lateral>=.49;
+    // Do not restore the entire old bob side curtain. Keep only the thin
+    // eye-height strip needed to connect the fringe to the crown above the ear.
+    const outerTemple=lateral>=.49&&lowest>=eyeClearanceY-.105;
     const faceOverhang=lowest<eyeClearanceY&&foremost>backOfFaceZ;
     if(!faceOverhang||outerTemple){
       kept.push(a,b,c);
@@ -939,7 +941,7 @@ function createKidscadeMaleHairShort(){
     eyeClearanceY,
     removedEyeLevelTriangles:removedFaceTriangles,
     preservedTempleTriangles,
-    sideHairPolicy:'v7 connected temple bridge with lowered sideburn and outer-side triangles preserved',
+    sideHairPolicy:'v7 narrow temple bridge: retain only outer eye-height side polygons, suppress long bob curtain',
     eyeClearancePolicy:'trim central/front eye-level faces only; retain original outer temple and rear nape'
   };
 
