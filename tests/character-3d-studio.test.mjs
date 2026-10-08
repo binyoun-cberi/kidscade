@@ -357,7 +357,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261008-chibi-wardrobe50/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-chibi-outfit52/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
@@ -447,7 +447,7 @@ test('male base opens first and provides brows visibility, face zoom and gait st
   assert.match(html,/id="gaitBadge"/);
   assert.match(html,/data-view="face"/);
   assert.match(html,/data-chibi-preset="male">남자 기본/);
-  assert.match(html,/character-3d-studio\.js\?v=20261008-chibi-wardrobe50/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-chibi-outfit52/);
 });
 
 test('mobile studio shows the live avatar preview before the long wardrobe',()=>{
@@ -531,7 +531,7 @@ test('one-touch mobile Chibi controls are wired to the same real animation, view
   assert.match(js,/setCameraView\(button\.dataset\.quickView\)/);
   assert.match(js,/\[data-chibi-preset\],\[data-view\],\[data-quick-clip\],\[data-quick-view\],\[data-quick-speed\]/);
   assert.match(js,/\$\('speed'\)\.value=button\.dataset\.quickSpeed/);
-  assert.match(html,/character-3d-studio\.js\?v=20261008-chibi-wardrobe50/);
+  assert.match(html,/character-3d-studio\.js\?v=20261008-chibi-outfit52/);
 });
 
 test('Chibi v5 wardrobe exposes gender-fit filter and category tabs without restricting shared accessories',()=>{
@@ -575,4 +575,70 @@ test('Chibi v5 provides eight distinct skinned hair entries per body fit, with u
     assert.ok(js.includes(name),'Style not declared in client: '+name);
     assert.equal(m.customParts[name].revision,'v5-wardrobe-hair-pack-1');
   }
+});
+
+test('v5.2 outfit library registers exactly 6 tops and 4 bottoms for each body fit',()=>{
+  const m=JSON.parse(read('chibi/asset-manifest.json'));
+  const pack=read('teacher/chibi-outfit-pack.js');
+  const studio=read('teacher/character-3d-studio.js');
+  assert.deepEqual(m.outfitLibrary.counts,{maleTops:6,femaleTops:6,maleBottoms:4,femaleBottoms:4,newSkinnedStyles:15});
+  for(const fit of ['male','female']){
+    assert.equal(m.outfitLibrary[fit].top.length,6);
+    assert.equal(m.outfitLibrary[fit].bottom.length,4);
+    for(const id of [...m.outfitLibrary[fit].top,...m.outfitLibrary[fit].bottom])
+      assert.ok(studio.includes(id)||pack.includes(id),'Missing wardrobe item '+id);
+  }
+  assert.match(studio,/import \{OUTFIT_LIBRARY,OUTFIT_STYLES,createOutfitPack\} from '\.\/chibi-outfit-pack\.js'/);
+  assert.match(studio,/createOutfitPack\(\{getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial,makeRigidSkinnedPiece,resolveFirstBoneName\}\)/);
+  assert.match(studio,/for\(const style of OUTFIT_STYLES\)PART_CATEGORY\[style\.id\]=style\.category/);
+  assert.match(studio,/partLibraryVersion:'chibi-v5\.2'/);
+  assert.match(studio,/outfitLibrary:OUTFIT_LIBRARY/);
+});
+
+test('v5.2 outfits reshape actual skinned geometry and add three-dimensional sleeve/hood/waist detail',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  const m=JSON.parse(read('chibi/asset-manifest.json'));
+  const styles=[...m.outfitLibrary.male.top,...m.outfitLibrary.male.bottom,...m.outfitLibrary.female.top,...m.outfitLibrary.female.bottom];
+  const newIds=styles.filter(name=>name.startsWith('chibi_'));
+  assert.equal(newIds.length,15);
+  assert.equal(new Set(newIds).size,15);
+  assert.match(pack,/function remeshSource\(source,style\)/);
+  assert.match(pack,/const geometry=source\.geometry\.clone\(\)/);
+  assert.match(pack,/shape\.chest\*torso\+shape\.shoulder\*shoulder\+shape\.hem\*hem\+shape\.sleeve\*sleeves/);
+  assert.match(pack,/shape\.hip\*waist\+shape\.thigh\*thigh\*legBand/);
+  assert.match(pack,/new THREE\.SphereGeometry\(\.185/);
+  assert.match(pack,/new THREE\.TorusGeometry/);
+  assert.match(pack,/new THREE\.BoxGeometry/);
+  assert.match(pack,/const shell=cloneSkinnedMeshWithGeometry\(source,geometry,material,style\.id\+'_shell'\)/);
+  assert.match(pack,/group\.add\(makeRigidSkinnedPiece\(source,geometry,bone,material,style\.id\+'_'\+id\)\)/);
+  assert.match(pack,/source\.parent\.add\(group\)/);
+  assert.match(pack,/function makeTrouserLegs\(/);
+  assert.match(pack,/const geometry=new THREE\.CylinderGeometry\(upperRadius,lowerRadius,top-bottom,16,9,false\)/);
+  assert.match(pack,/indices\[offset\+k\]=refIndices\.getComponent\(nearest,k\)/);
+  assert.match(pack,/weights\[offset\+k\]=refWeights\.getComponent\(nearest,k\)/);
+  assert.match(pack,/articulation:'nearest-body-surface-skin-weights'/);
+  assert.match(pack,/sourceWeights:'nearest-fit-body-arm'/);
+  assert.match(pack,/refIndex\.getComponent\(nearest,k\)/);
+  assert.match(pack,/refWeight\.getComponent\(nearest,k\)/);
+  assert.match(pack,/style\.id\+'_leg_'\+side/);
+  for(const id of newIds){
+    assert.ok(pack.includes('id:\''+id+'\''),'Style definition missing '+id);
+    assert.equal(m.customParts[id].rigging.includes('78-bone'),true);
+  }
+});
+
+test('v5.2 local browser audit surveys animated garments and reimports rigged GLB exports',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(js,/outfitCatalog\(\)/);
+  assert.match(js,/garmentSurvey\(\)/);
+  assert.match(js,/async roundtripExport\(\)/);
+  assert.match(js,/new GLTFExporter\(\)\.parseAsync\(avatarRoot/);
+  assert.match(js,/new GLTFLoader\(\)\.parseAsync\(binary,''\)/);
+  assert.match(audit,/const catalog3d=await evalPage\('window\.__kc3dAudit\.outfitCatalog\(\)'\)/);
+  assert.match(audit,/assert\.equal\(catalog3d\.length,20/);
+  assert.match(audit,/window\.__kc3dAudit\.garmentSurvey\(\)/);
+  assert.match(audit,/window\.__kc3dAudit\.roundtripExport\(\)/);
+  assert.match(audit,/assert\.equal\(exported\.clips\.length,11/);
+  assert.match(audit,/outfit-'\+name/);
 });

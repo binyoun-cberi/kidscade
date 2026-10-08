@@ -1,4 +1,5 @@
 import * as THREE from '../assets/vendor/three-r160/three.module.js';
+import {OUTFIT_LIBRARY,OUTFIT_STYLES,createOutfitPack} from './chibi-outfit-pack.js';
 
 window.__kc3dStudioModuleReady=true;
 
@@ -23,6 +24,7 @@ const FEMALE_HAIR_STYLES=[
   'chibi_female_hair_bob','chibi_female_hair_layered'
 ];
 const HAIR_NODES=[...FEMALE_HAIR_STYLES,...MALE_HAIR_STYLES];
+const OUTFIT_NODES=OUTFIT_STYLES.map(style=>style.id);
 
 const PRESETS={
   base:[...FEMALE_BASE_NODES],
@@ -53,17 +55,23 @@ const PART_LABELS={
   kidscade_male_hair_textured:'텍스처 숏컷',kidscade_male_hair_fringe:'덮은 머리',
   kidscade_male_hair_undercut:'언더컷',kidscade_male_hair_round:'라운드컷',
   kidscade_male_hair_swept:'스윕 헤어',
-  chibi_female_hair_bob:'둥근 단발',chibi_female_hair_layered:'레이어드'
+  chibi_female_hair_bob:'둥근 단발',chibi_female_hair_layered:'레이어드',
+  ...Object.fromEntries(OUTFIT_STYLES.map(style=>[style.id,style.label]))
 };
 
 // Fit means compatible with the current body geometry, never a restriction on identity.
 const PART_CATEGORY={};
 for(const name of HAIR_NODES)PART_CATEGORY[name]='hair';
+for(const style of OUTFIT_STYLES)PART_CATEGORY[style.id]=style.category;
 for(const name of ['shirt','chemise','greenoutfit','ninjassuit','amorplastron','kidscade_hoodie_blue','kidscade_male_tshirt'])PART_CATEGORY[name]='top';
 for(const name of ['skirt','pants','ninjasuitshort','armorlegs','armorskirt','kidscade_male_shorts'])PART_CATEGORY[name]='bottom';
 for(const name of ['shoe','bottes','bottesgreen','ninjassuitshoe','armorshoe'])PART_CATEGORY[name]='shoes';
 for(const name of ['bag','hat','ninjassuitmask','armorhelmet','greenoutfitbelt','greenoutfitneckless','ceinture'])PART_CATEGORY[name]='accessory';
-const MALE_FIT_PARTS=new Set([...MALE_HAIR_STYLES,'kidscade_male_tshirt','kidscade_male_shorts']);
+// Preserve legacy costume parts under 기타 without swelling the curated v5.2
+// 6-top/4-bottom lists. They remain available to old preset users.
+for(const name of ['chemise','greenoutfit','ninjassuit','amorplastron','pants','ninjasuitshort','armorlegs','armorskirt'])PART_CATEGORY[name]='costume';
+const LEGACY_OUTFIT_SLOTS={chemise:'top',greenoutfit:'top',ninjassuit:'top',amorplastron:'top',pants:'bottom',ninjasuitshort:'bottom',armorlegs:'bottom',armorskirt:'bottom'};
+const MALE_FIT_PARTS=new Set([...MALE_HAIR_STYLES,'kidscade_male_tshirt','kidscade_male_shorts',...OUTFIT_STYLES.filter(style=>style.fit==='male').map(style=>style.id)]);
 const SHARED_FIT_PARTS=new Set(['shoe','bottes','bottesgreen','ninjassuitshoe','armorshoe','bag','hat','armorhelmet','ninjassuitmask']);
 const PART_FIT=name=>MALE_FIT_PARTS.has(name)?'male':SHARED_FIT_PARTS.has(name)?'shared':'female';
 const PART_GROUP=name=>PART_CATEGORY[name]||'costume';
@@ -1650,6 +1658,7 @@ async function loadChibi(){
     createKidscadeMaleSet();
     createKidscadeMaleHairShort();
     createKidscadeHairCollection();
+    createOutfitPack({getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial,makeRigidSkinnedPiece,resolveFirstBoneName});
   }catch(error){
     console.error(error);
     showAssetError('Chibi 본체는 열렸지만 커스텀 파츠 생성에 실패했습니다: '+(error?.message||error));
@@ -1708,7 +1717,8 @@ function exportSpec(){
     asset:CHIBI_ASSET_URL,
     preset:currentPreset,
     bodyFit:activeBodyFit,
-    partLibraryVersion:'chibi-v5.0',
+    partLibraryVersion:'chibi-v5.2',
+    outfitLibrary:OUTFIT_LIBRARY,
     materialMode:$('chibiUnlit').checked?'unlit-npr':'original-pbr',
     visibleParts:selectedParts(),
     triangles:countVisibleTriangles(avatarRoot),
@@ -1782,7 +1792,7 @@ async function exportGlb(){
       binary:true,
       trs:true,
       onlyVisible:true,
-      // Keep 11 clip names while exporting the tuned WALK only for a visible male base.
+      // Preserve 11 public clips, resolving tuned WALK/RUN for the male body.
       animations:animations.map(clip=>resolvePlaybackClip(clip)),
       includeCustomExtensions:false
     }
@@ -1863,9 +1873,9 @@ function wireUi(){
 
     const part=input.dataset.chibiPart;
     if(!compatiblePart(part)){refreshPartChecks();return;}
-    const exclusive=PART_GROUP(part);
+    const exclusive=LEGACY_OUTFIT_SLOTS[part]||PART_GROUP(part);
     if(input.checked&&['top','bottom','shoes'].includes(exclusive)){
-      TOGGLE_NODES.filter(name=>name!==part&&PART_GROUP(name)===exclusive)
+      TOGGLE_NODES.filter(name=>name!==part&&(LEGACY_OUTFIT_SLOTS[name]||PART_GROUP(name))===exclusive)
         .forEach(name=>setNodeVisible(name,false));
     }
     if(HAIR_NODES.includes(part)){
@@ -1915,6 +1925,112 @@ function installLocalVisualAudit(){
           vertices:positions?.count||0,
           fingerprint:fingerprint>>>0};
       });
+    },
+    outfitCatalog(){
+      return Object.entries(OUTFIT_LIBRARY).flatMap(([fit,categories])=>
+        Object.entries(categories).flatMap(([category,names])=>names.map(name=>{
+          const group=getNode(name);
+          let shell=group?.isSkinnedMesh?group:group?.getObjectByName(name+'_shell');
+          if(!shell)group?.traverse?.(object=>{if(!shell&&object.isSkinnedMesh)shell=object});
+          const pos=shell?.geometry?.getAttribute('position');
+          let hash=2166136261;
+          if(pos)for(let i=0;i<pos.array.length;i+=3){
+            hash=Math.imul(hash^Math.round(pos.array[i]*100000),16777619);
+          }
+          return {name,fit,category,available:!!shell?.isSkinnedMesh,
+            visible:!!group?.visible,vertices:pos?.count||0,
+            fingerprint:hash>>>0,
+            extras:group?.isGroup?group.children.length-1:0,
+            rigBones:shell?.skeleton?.bones.length||0};
+        }))
+      );
+    },
+    garmentSurvey(){
+      // Conservative animated-pose proximity diagnostic. Sampled 3D
+      // vertex profiles can flag likely cloth/body overlaps, not certify zero
+      // intersections; produce evidence for manual screenshot review.
+      const body=getNode(activeBodyFit==='male'?'kidscade_male_body':'character_low');
+      const garments=selectedParts().filter(name=>
+        ['top','bottom'].includes(PART_GROUP(name)));
+      const sampleMesh=(mesh,max)=>{
+        if(!mesh?.isSkinnedMesh)return [];
+        const count=mesh.geometry.getAttribute('position')?.count||0;
+        const points=[];
+        const stride=Math.max(1,Math.ceil(count/max));
+        mesh.updateMatrixWorld(true);
+        for(let i=0;i<count;i+=stride){
+          const p=mesh.geometry.getAttribute('position');
+          const vertex=new THREE.Vector3(p.getX(i),p.getY(i),p.getZ(i));
+          mesh.applyBoneTransform(i,vertex);
+          vertex.applyMatrix4(mesh.matrixWorld);
+          points.push(vertex);
+        }
+        return points;
+      };
+      const bodyPoints=sampleMesh(body,750);
+      const out=[];
+      for(const name of garments){
+        const node=getNode(name);
+        if(!node)continue;
+        const shells=[];
+        if(node.isSkinnedMesh)shells.push(node);
+        node.traverse?.(object=>{if(object.isSkinnedMesh&&(object.name.endsWith('_shell')||object.name.endsWith('_body')))shells.push(object)});
+        let tested=0,close=0,minimum=Infinity;
+        for(const shell of shells){
+          for(const g of sampleMesh(shell,200)){
+            let nearest=Infinity;
+            for(const b of bodyPoints){
+              if(Math.abs(b.y-g.y)>.055)continue;
+              nearest=Math.min(nearest,b.distanceToSquared(g));
+            }
+            if(nearest===Infinity)continue;
+            const dist=Math.sqrt(nearest);
+            minimum=Math.min(minimum,dist);tested++;
+            if(dist<.008)close++;
+          }
+        }
+        out.push({name,tested,closeSurfaceSamples:close,
+          minimumVertexDistance:Number.isFinite(minimum)?Number(minimum.toFixed(5)):null,
+          warning:'proximity only; cannot certify absence of triangle intersections'});
+      }
+      return out;
+    },
+    async roundtripExport(){
+      const wasHelper=skeletonHelper?.visible;
+      const previousClip=activeClip,previousRotation=avatarRoot.rotation.y;
+      if(skeletonHelper)skeletonHelper.visible=false;
+      activeAction?.stop();
+      mixer?.stopAllAction();
+      sourceScene.traverse(object=>{
+        if(object.isSkinnedMesh)object.skeleton?.pose?.();
+      });
+      avatarRoot.rotation.set(0,0,0);
+      avatarRoot.updateMatrixWorld(true);
+      try{
+        const [{GLTFExporter},{GLTFLoader}]=await Promise.all([
+          import('../assets/vendor/three-r160/addons/exporters/GLTFExporter.js'),
+          import('../assets/vendor/three-r160/addons/loaders/GLTFLoader.js')
+        ]);
+        const binary=await new GLTFExporter().parseAsync(avatarRoot,{
+          binary:true,trs:true,onlyVisible:true,
+          animations:animations.map(clip=>resolvePlaybackClip(clip)),
+          includeCustomExtensions:false
+        });
+        if(!(binary instanceof ArrayBuffer))throw new Error('GLB exporter returned non-binary payload');
+        const gltf=await new GLTFLoader().parseAsync(binary,'');
+        const names=[],skins=[];
+        gltf.scene.traverse(object=>{
+          names.push(object.name);
+          if(object.isSkinnedMesh)skins.push({name:object.name,bones:object.skeleton.bones.length});
+        });
+        return {bytes:binary.byteLength,clips:gltf.animations.map(clip=>clip.name),
+          skins,partNames:selectedParts(),nodeNames:names,
+          fit:activeBodyFit};
+      }finally{
+        avatarRoot.rotation.y=previousRotation;
+        if(skeletonHelper)skeletonHelper.visible=wasHelper;
+        if(previousClip)playClip(previousClip);
+      }
     },
     sample(label,view,fraction){
       const source=animations.find(clip=>clip.name===label||clipLabel(clip.name)===label);
