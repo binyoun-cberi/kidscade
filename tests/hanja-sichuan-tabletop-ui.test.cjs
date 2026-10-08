@@ -12,6 +12,8 @@ test('desktop play scene uses a felt mahjong table instead of a dashboard',()=>{
   assert.match(html,/class="play-layout"/);
   assert.match(html,/class="setup-panel"/);
   assert.match(html,/class="play-main"/);
+  assert.match(html,/class="feedback-strip"/);
+  assert.match(html,/\.game\{[\s\S]*?width:max-content/);
   assert.match(html,/class="mini-guide"/);
   assert.match(html,/repeating-linear-gradient/);
   assert.match(html,/\.game\{[^}]*border:9px solid #986744/);
