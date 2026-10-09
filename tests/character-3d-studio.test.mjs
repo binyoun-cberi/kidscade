@@ -741,6 +741,10 @@ test('v5.3.1 accessory fit rules clamp positioning and clear jacket/scarf clippi
   assert.match(pack,/export const ACCESSORY_STYLE_FIT=\{/);
   assert.match(pack,/export const ACCESSORY_CONFLICTS=\{/);
   assert.match(pack,/export function applyAccessoryFit\(/);
+  assert.match(pack,/new THREE\.Box3\(\)\.setFromObject\(group,true\)/);
+  assert.match(pack,/new THREE\.Box3\(\)\.setFromObject\(reference,true\)/);
+  assert.match(pack,/const parentScale=group\.parent\?\.getWorldScale/);
+  assert.match(pack,/group\.position\.y=THREE\.MathUtils\.clamp/);
   assert.match(pack,/if\(style\.slot==='bag'&&puffy\)z-=\.042/);
   assert.match(pack,/if\(style\.slot==='neck'&&elevatedCollar\)/);
   assert.match(pack,/group\.scale\.setScalar\(THREE\.MathUtils\.clamp\(scale,\.84,1\.10\)\)/);
@@ -761,6 +765,7 @@ test('v5.3.1 prevents legacy/new accessory stacking and restores original hair o
   assert.match(js,/const hatSafeHair=new WeakMap\(\)/);
   assert.match(js,/const conflicts=resolveAccessoryConflicts\(preferred\)/);
   assert.match(js,/applyRiggedAccessoryFit\(\{/);
+  assert.match(js,/hairName:HAIR_NODES\.find\(name=>getNode\(name\)\?\.visible\)\|\|''/);
   assert.match(js,/equipmentAudit\(\)/);
   assert.match(audit,/HAT-SAFE hair geometry/);
   assert.match(audit,/Legacy shoes show through selected boots/);
