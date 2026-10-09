@@ -1739,15 +1739,26 @@ function finishDive(ok,reason){
  if(ok&&complete){reportAchievement('first_mission',{contract:world.contract.id});if(world.contract.id==='hadal')reportAchievement('hadal_mission',{contract:world.contract.id,maxDepth:Math.round(world.maxDepth)})}
  if(hasMission){try{window.KidscadeGame?.result?.({scope:'mission',status:ok&&complete?'completed':'failed',outcome:ok&&complete?'clear':'fail',score:Math.round(world.maxDepth),contract:world.contract.id,maxDepth:Math.round(world.maxDepth),complete})}catch(_){}}
  const previousBest=Math.max(0,meta.bestDepth||0),recordDepth=ok?Math.max(0,world.maxDepth-previousBest):0,depthBonus=ok?Math.round(recordDepth*2.4):0,survival=ok?250:0,dailyComplete=ok&&dailyTaskComplete(world.daily),dailyBonus=dailyComplete?world.daily.reward:0;
- const gain=ok?Math.max(0,world.income+base+depthBonus+dailyBonus+survival):0,score=ok?Math.round(gain+world.maxDepth*2+400):Math.round(world.maxDepth*.35);
+ const gain=ok?Math.max(0,world.income+world.cleanupIncome+base+depthBonus+dailyBonus+survival):0,score=ok?Math.round(gain+world.maxDepth*2+400):Math.round(world.maxDepth*.35);
  let stocked=0;const stockedNames=[];
  if(ok){meta.stockQuality=meta.stockQuality||{};for(const [key,count] of Object.entries(world.catchPortions||world.catchCounts||{})){if(count<=0)continue;const lots=(world.catchLots?.[key]||[]).slice(0,count);while(lots.length<count)lots.push(1);meta.stock[key]=(meta.stock[key]||0)+count;meta.stockQuality[key]=(meta.stockQuality[key]||[]).concat(lots).sort((a,b)=>b-a);stocked+=count;const best=Math.max(...lots,1);stockedNames.push(ingredientInfo(key).name+' ×'+count+(best>1.001?' · 최고 '+ingredientQualityLabel(best):''))}syncStockQuality()}
+ if(ok){
+  meta.cleanup=meta.cleanup||{total:0,zones:{},types:{}};
+  meta.cleanup.total=(meta.cleanup.total||0)+world.cleanupBag.length;
+  for(const item of world.cleanupBag){
+   meta.cleanup.zones[item.zone]=(meta.cleanup.zones[item.zone]||0)+1;
+   meta.cleanup.types[item.kind]=(meta.cleanup.types[item.kind]||0)+1;
+  }
+ }
  meta.money+=gain;meta.bestDepth=Math.max(previousBest,world.maxDepth);if(ok)meta.bestScore=Math.max(meta.bestScore,score);if(ok&&complete)meta.unlocked=Math.max(meta.unlocked,Math.min(5,(world.contract.unlock||0)+1));save();
  $('resultTitle').textContent=ok?'탐사선 귀환 · 낮 탐사 종료':'긴급 구조 · 잠수 보고서';
  const loss=ok?'':'<div class="notice">구조 시 인양 보상과 오늘 잡은 식재료는 회수되지 않습니다. 사진 도감 기록만 남습니다.</div>';
  const kitchen=ok?'<div class="notice kitchenNotice"><b>오늘 어획 '+world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg · 식재료 '+stocked+'개를 냉장고에 옮겼습니다.</b><br>원재료 가치 약 '+money(world.catchRawValue)+' · 대형/특대 프리미엄 '+world.premiumPortions+'회분'+(stockedNames.length?'<br>'+stockedNames.join(' · '):'<br>오늘은 요리할 새 식재료가 없습니다.')+'</div>':'';
+ const cleanupHtml='<div class="notice cleanupNotice"><b>해양 정화 · '+world.cleanupBag.length+'/'+CLEANUP_BAG_CAP+'개 회수 · '+(ok?'보상 '+money(world.cleanupIncome):'구조 중 유실')+'</b><br>'+
+   (world.cleanupBag.length?Object.entries(cleanupBagSummary(world.cleanupBag)).map(([kind,n])=>CLEANUP_TYPES[kind].name+' ×'+n).join(' · '):'이번 잠수에서 수거한 쓰레기가 없습니다.')+
+   '<br>누적 수거 '+(meta.cleanup?.total||0)+'개 · 정화된 구역은 다음 잠수부터 쓰레기가 줄고, 8개 이상 정화한 구역은 사진 연구 보상 +5%가 적용됩니다.</div>';
  const evening='<div class="eveningNote"><b>낮 탐사가 끝났습니다.</b><span>'+(ok?'밤 장사를 하거나 바로 휴식할 수 있습니다. 어느 쪽을 골라도 다음 잠수는 DAY '+(meta.day+1)+'입니다.':'구조 후에는 휴식하고 다음 날 다시 준비합니다.')+'</span></div>';
- $('resultBody').innerHTML='<div class="notice">'+reason+'</div>'+loss+kitchen+'<div class="report"><div class="card"><span>선택 의뢰</span><b>'+(hasMission?(complete?'완료':'미완료'):'없음')+'</b></div><div class="card"><span>최대 수심</span><b>'+Math.round(world.maxDepth)+'m</b></div><div class="card"><span>신규 수심 기록</span><b>'+(recordDepth>0?('+'+Math.round(recordDepth)+'m'):'없음')+'</b></div><div class="card"><span>오늘 어획</span><b>'+world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg</b></div><div class="card"><span>원재료 가치</span><b>'+money(world.catchRawValue)+'</b></div><div class="card"><span>고급 식재료</span><b>'+world.premiumPortions+'회분</b></div><div class="card"><span>사진 연구</span><b>'+money(world.photoIncome)+'</b></div><div class="card"><span>연구·인양 수익</span><b>'+money(world.income)+'</b></div><div class="card"><span>신규 수심 보상</span><b>'+money(depthBonus)+'</b></div><div class="card"><span>주요 의뢰 보상</span><b>'+money(base)+'</b></div><div class="card"><span>오늘의 보너스</span><b>'+(dailyComplete?money(dailyBonus):'미완료')+'</b></div><div class="card"><span>낮 수익</span><b>'+money(gain)+'</b></div></div>'+evening;
+ $('resultBody').innerHTML='<div class="notice">'+reason+'</div>'+loss+kitchen+cleanupHtml+'<div class="report"><div class="card"><span>선택 의뢰</span><b>'+(hasMission?(complete?'완료':'미완료'):'없음')+'</b></div><div class="card"><span>최대 수심</span><b>'+Math.round(world.maxDepth)+'m</b></div><div class="card"><span>신규 수심 기록</span><b>'+(recordDepth>0?('+'+Math.round(recordDepth)+'m'):'없음')+'</b></div><div class="card"><span>오늘 어획</span><b>'+world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg</b></div><div class="card"><span>원재료 가치</span><b>'+money(world.catchRawValue)+'</b></div><div class="card"><span>고급 식재료</span><b>'+world.premiumPortions+'회분</b></div><div class="card"><span>사진 연구</span><b>'+money(world.photoIncome)+'</b></div><div class="card"><span>연구·인양 수익</span><b>'+money(world.income)+'</b></div><div class="card"><span>신규 수심 보상</span><b>'+money(depthBonus)+'</b></div><div class="card"><span>주요 의뢰 보상</span><b>'+money(base)+'</b></div><div class="card"><span>오늘의 보너스</span><b>'+(dailyComplete?money(dailyBonus):'미완료')+'</b></div><div class="card"><span>낮 수익</span><b>'+money(gain)+'</b></div></div>'+evening;
  const canNight=ok&&availableRecipes().length>0;
  $('nextBtn').textContent=canNight?'밤 장사 시작':'밤 장사 · 만들 메뉴 없음';$('nextBtn').disabled=!canNight;$('nextBtn').onclick=canNight?startRestaurant:null;
  const rest=$('restBtn');rest.disabled=false;rest.textContent=ok?'휴식하고 다음 날':'치료받고 다음 날';rest.onclick=()=>restToNextMorning(false);
@@ -1993,7 +2004,7 @@ function openContracts(tab=dockTab){
  dockTab=tab||'none';state='menu';syncAmbience();document.body.classList.remove('playing','cameraMode','sonarActive');['startScreen','shopScreen','codexScreen','resultScreen','restaurantScreen'].forEach(id=>$(id)?.classList.add('hidden'));
  const st=stats(),selected=CONTRACTS.find(c=>c.id===dockMissionId),stock=stockCount(),plan=selected?selected.title:'자유 잠수',daily=dailyTaskForDay(meta.day);
  $('contractBody').innerHTML=
- '<div class="dockStatus"><span class="dockDay">DAY '+meta.day+'</span><b>'+money(meta.money)+'</b><span>어획 '+st.catchCap+'kg</span><span>장비 '+st.toolSlots+'칸</span><span>안전 '+Math.round(ratedDepth())+'m</span><span class="dailyStatus">오늘 +'+money(daily.reward)+'</span><em>'+plan+'</em></div>'+
+ '<div class="dockStatus"><span class="dockDay">DAY '+meta.day+'</span><b>'+money(meta.money)+'</b><span>해양 정화 '+(meta.cleanup?.total||0)+'개</span><span>어획 '+st.catchCap+'kg</span><span>장비 '+st.toolSlots+'칸</span><span>안전 '+Math.round(ratedDepth())+'m</span><span class="dailyStatus">오늘 +'+money(daily.reward)+'</span><em>'+plan+'</em></div>'+
  '<div class="dockScene">'+
    '<div class="dockSky"><i></i><i></i><i></i></div><div class="dockHills"></div>'+
    dockBuildingHtml('Office','의뢰 사무소','탐사 의뢰 선택','house-beige.png','roof-red-mid.png','window-checkered.png',dockTab==='missions')+
