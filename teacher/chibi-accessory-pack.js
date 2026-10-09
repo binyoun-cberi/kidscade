@@ -98,7 +98,7 @@ export function applyAccessoryFit({getNode,fit='male',topName='',headwearName=''
     // This is recomputed from the baseline offsets (never accumulated).
     if(group.visible&&(style.slot==='hat'||style.slot==='shoes')){
       const reference=style.slot==='hat'
-        ?getNode(hairName)
+        ?getNode(hairName||'hairone')
         :getNode('shoe');
       if(reference){
         group.updateWorldMatrix(true,true);
@@ -185,7 +185,7 @@ function buildGeometry(style,source,sourceHair,eyes){
   const faceZ=eb.max.z+.020;
   const eyeY=(eb.min.y+eb.max.y)*.50;
   switch(kind){
-    case 'baseball':return sphere(hc.x,scalpY,hc.z,headR*1.12,.102,headR*.95);
+    case 'baseball':return sphere(hc.x,scalpY+.022,hc.z,headR*1.12,.160,headR*.95);
     case 'bucket':return cyl(headR*.98,headR*1.14,.18,hc.x,scalpY-.050,hc.z);
     case 'beanie':return sphere(hc.x,scalpY+.014,hc.z,headR*1.08,.163,headR*1.03);
     case 'beret':return sphere(hc.x-.030,scalpY+.080,hc.z,headR*1.30,.110,headR*1.02);
@@ -198,7 +198,7 @@ function buildGeometry(style,source,sourceHair,eyes){
     case 'schoolbag':return box(.335,.360,.172,0,.966,-.240);
     case 'crossbody':return box(.265,.210,.115,.224,.832,.150);
     case 'minibag':return sphere(0,.968,-.236,.145,.187,.110);
-    case 'headphones':return ring(headR*1.10,.029,0,scalpY-.09,hc.z,'z');
+    case 'headphones':return ring(headR*1.01,.029,0,scalpY-.105,hc.z,'z');
     case 'watch':return box(.065,.035,.054,.366,.792,.015);
     case 'scarf':return ring(.157,.037,0,1.141,0,'y');
     default:throw Error('Unknown accessory geometry '+kind);
@@ -236,7 +236,7 @@ function createDetails(style,context){
   } else if(style.slot==='hat'){
     if(kind==='baseball'){
       add(sphere(0,scalpY-.072,hc.z+headR*.92,.183,.018,.097),style.color,'brim');
-      add(box(.035,.048,.012,0,scalpY+.067,hc.z+headR*.96),white,'badge');
+      // Omit the raised badge: it became a vertical spike above the cap in WALK/RUN.
     }else if(kind==='bucket'){
       add(cyl(headR*1.25,headR*1.25,.025,0,scalpY-.155,hc.z),style.color,'brim');
       add(ring(headR*.98,.013,0,scalpY-.035,hc.z,'y'),black,'stitch');
