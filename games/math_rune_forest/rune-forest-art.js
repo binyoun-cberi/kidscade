@@ -88,6 +88,33 @@
     block(g, x - 3, y + 1 + bob, 6, 3, '#e2c681');
     return true;
   }
+  function tell(g, e, x, y, t) {
+    const PI2 = Math.PI * 2;
+    g.save();
+    if (e.kind === 'warden') {
+      g.strokeStyle = '#92e3b655';g.lineWidth = 2;
+      g.beginPath();g.arc(x,y,99+Math.sin(t*2)*3,0,PI2);g.stroke();
+      ellipse(g,x,y+20,28,10,'#8fefb122');
+    } else if (e.kind === 'blast') {
+      g.strokeStyle = e.mode === 'windup' ? '#ffd48fcc' : '#b9956f4e';
+      g.lineWidth = e.mode === 'windup' ? 3 : 1;
+      g.beginPath();g.arc(x,y,85,0,PI2);g.stroke();
+      if(e.mode==='windup'){
+        g.beginPath();g.arc(x,y,85,-Math.PI/2,-Math.PI/2+PI2*(1-e.aiT/1.15));g.stroke();
+      }
+    } else if (e.kind === 'charger' && e.mode === 'windup') {
+      const endX=x+Math.cos(e.aim)*135,endY=y+Math.sin(e.aim)*135;
+      g.strokeStyle = '#ffb4a8bb';g.lineWidth=3;g.setLineDash([7,4]);
+      g.beginPath();g.moveTo(x,y);g.lineTo(endX,endY);g.stroke();g.setLineDash([]);
+      ellipse(g,endX,endY,7,7,'#ffb4a888');
+    } else if (e.kind === 'thief') {
+      g.strokeStyle='#d4a1f36e';g.lineWidth=1;
+      g.beginPath();g.arc(x,y,55,0,PI2);g.stroke();
+    } else if(e.kind==='splitter'){
+      ellipse(g,x-11,y-12,4,4,'#ffe79d99');ellipse(g,x+11,y-12,4,4,'#ffe79d99');
+    }
+    g.restore();
+  }
   function enemy(g, e, x, y, numberText, active, phaseTime) {
     if (e.factor) {
       // Massive rocky body, with a Kenney moss-rock crest and blocker core.
@@ -114,11 +141,13 @@
       block(g, x - 19, y - 6, 38, 25, '#202c3c');
       block(g, x - 17, y - 4, 34, 21, '#384357');
       numberText(e.n, x, y + 6, '#fff1c2', e.n > 999 ? 11 : 15);
+      if (e.kind === 'warden') numberText('증폭',x,y-49,'#b4f9c5',10);
+      if (e.kind === 'blast') numberText(e.mode==='windup'?'충격파!':'범위',x,y-49,'#ffe0a4',10);
       if (e.hit) numberText('÷' + active, x, y - 42, '#adf7da', 12);
       if (e.blocked) numberText('×', x, y - 47, '#ff8c9f', 15);
       return true;
     }
-    const key = e.n % 3 === 0 ? 'slimeBlue' : 'slimeGreen';
+    const key = e.kind==='thief'||e.kind==='charger' ? 'slimeBlue' : e.n%3===0 ? 'slimeBlue' : 'slimeGreen';
     if (!sprites[key].ready) return false;
     ellipse(g, x, y + 10, 12, 3, '#102928aa');
     const bob = Math.round(Math.sin(e.wiggle) * 2);
@@ -126,12 +155,14 @@
     g.save();
     g.translate(Math.round(x), Math.round(y + bob + 10));
     g.scale(squash, 1 / squash);
-    sprite(g, key, 0, 0, 30, 25);
+    sprite(g, key, 0, 0, e.kind==='mini'?22:30, e.kind==='mini'?19:25);
     if (e.hit) sprite(g, key === 'slimeBlue' ? 'slimeBlueHit' : 'slimeGreenHit', 0, 0, 30, 25, .45);
     g.restore();
-    block(g, x - 12, y - 4 + bob, 24, 16, '#263b46');
-    block(g, x - 10, y - 2 + bob, 20, 12, '#354655');
-    numberText(e.n, x, y + 4 + bob, '#fff1c0', 13);
+    block(g, x - (e.kind==='mini'?9:12), y - 4 + bob, e.kind==='mini'?18:24, 16, '#263b46');
+    block(g, x - (e.kind==='mini'?8:10), y - 2 + bob, e.kind==='mini'?16:20, 12, '#354655');
+    numberText(e.n, x, y + 4 + bob, '#fff1c0', e.kind==='mini'?11:13);
+    const label={charger:'돌진',splitter:'분열',thief:'룬 도둑'}[e.kind];
+    if(label)numberText(label,x,y-24+bob,e.kind==='thief'?'#dcb6ff':'#ffe1b0',9);
     if (e.blocked) numberText('×', x, y - 26, '#ff95ae', 14);
     return true;
   }
@@ -155,5 +186,5 @@
       fn(value, px, py, '#fff4d0', value > 99 ? 9 : 12);
     }
   }
-  window.RuneForestArt = { sprite, flora, hero, enemy, gem, rune };
+  window.RuneForestArt = { sprite, flora, hero, enemy, gem, rune, tell };
 })();
