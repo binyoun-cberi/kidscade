@@ -260,7 +260,10 @@ function buildSkinConformingSleeve(body,sign,puff){
     throw Error('Cannot extract the '+side+' source skinned arm');
   const allow=i=>{
     const x=positions.getX(i),y=positions.getY(i);
-    if(x*sign<.115||y<.50||y>1.18)return false;
+    // Puffy blouse sleeves stop above the elbow; jackets keep their
+    // full forearm-length sleeves. These two cuts must not look identical.
+    const sleeveHem=puff?.945:.50;
+    if(x*sign<.115||y<sleeveHem||y>1.18)return false;
     let armWeight=0;
     for(let k=0;k<4;k++){
       if(armBones.has(skinIndex.getComponent(i,k)))
@@ -309,7 +312,7 @@ function buildSkinConformingSleeve(body,sign,puff){
     // Offset along the body's own outward normal, not the guessed world X/Z
     // directions. The original 0.011 allowance z-fought with the visible skin.
     const coverage=smooth(.50,.61,y)*(1-smooth(1.105,1.18,y));
-    const allowance=(puff?.038:.026)*coverage;
+    const allowance=(puff?.058:.026)*coverage;
     verts.push(x+normals.getX(i)*allowance,
       y+normals.getY(i)*allowance,
       z+normals.getZ(i)*allowance);
