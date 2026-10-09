@@ -167,6 +167,46 @@ const errors=[];
     report.cases.push({...pose,image:file,imageBytes:bytes.length});
     return pose;
   };
+
+  // Hard geometry ownership: verify body tabs are separate workspaces in a
+  // real Chrome session and incompatible parts never enter UI or output.
+  const hardFit=JSON.parse(fs.readFileSync(path.join(ROOT,'chibi/asset-manifest.json'),'utf8'))
+    .wardrobeLibrary.fitIsolation;
+  assert.equal(hardFit.version,'v5.6-hard-fit');
+  report.fitIsolation={cases:[],outfitSwaps:[]};
+  for(const fit of ['male','female']){
+    await evalPage("document.querySelector('[data-body-fit="+JSON.stringify(fit)+"]').click()");
+    const audit=await evalPage('window.__kc3dAudit.bodyFitAudit()');
+    assert.equal(audit.fit,fit,'Wrong active fitted body after explicit switch');
+    assert.deepEqual(audit.incompatible,[],'Wrong-fit base, hair or garments visible: '+fit);
+    const allowed=new Set([...hardFit.parts[fit],...hardFit.parts.shared]);
+    assert.deepEqual([...new Set(audit.availableParts)].sort(),[...allowed].sort(),
+      'UI model includes forbidden or missing fit parts: '+fit);
+    for(const button of audit.presetButtons){
+      const allowedPreset=hardFit.presets[fit].includes(button.name);
+      assert.equal(button.hidden,!allowedPreset,'Preset leaked across workspaces: '+fit+'/'+button.name);
+      assert.equal(button.disabled,!allowedPreset,'Opposite-fit preset remained clickable: '+fit+'/'+button.name);
+    }
+    const dom=await evalPage("(()=>{const list=['hair','top','bottom','shoes','accessory','costume'];return list.map(category=>{document.querySelector('[data-wardrobe-category='+JSON.stringify(category)+']').click();return {category,names:[...document.querySelectorAll('[data-chibi-part]')].map(x=>x.dataset.chibiPart),headings:[...document.querySelectorAll('[data-part-fit]')].map(x=>x.dataset.partFit)}})})()");
+    for(const group of dom){
+      assert.ok(group.names.every(name=>allowed.has(name)),
+        'Incompatible clothes visible in '+fit+'/'+group.category);
+      assert.ok(group.headings.every(value=>value===fit||value==='shared'),
+        'Wrong fit section in '+fit+'/'+group.category);
+    }
+    const blockedPreset=fit==='male'?'student':'male';
+    const ignored=await evalPage("(()=>{const before=window.__kc3dAudit.bodyFitAudit().fit;const btn=document.querySelector('[data-chibi-preset="+JSON.stringify(blockedPreset)+"]');btn.click();return {before,after:window.__kc3dAudit.bodyFitAudit().fit,hidden:btn.hidden,disabled:btn.disabled}})()");
+    assert.ok(ignored.hidden&&ignored.disabled&&ignored.after===fit,
+      'Incompatible preset changed body without using fit switch: '+fit);
+    for(const clip of ['IDLE','WALK']){
+      await sample(clip,'threeQuarter',.25,'fit-isolation-'+fit);
+    }
+    report.fitIsolation.cases.push({fit,available:audit.availableParts.length,
+      presets:audit.presetButtons.filter(x=>!x.hidden).map(x=>x.name),
+      categories:dom.map(x=>({name:x.category,count:x.names.length}))});
+  }
+  await evalPage("document.querySelector('[data-body-fit=\"male\"]').click()");
+
   for(const clip of ['WALK','RUN']){
     for(const view of ['front','side']){
       for(const phase of [0,.25,.5,.75])await sample(clip,view,phase,'desktop');
