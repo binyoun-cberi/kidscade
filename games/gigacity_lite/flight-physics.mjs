@@ -1,8 +1,8 @@
 import { CHUNK_SIZE, LOT_SIZE, chunkOf, createChunkData } from './city-core.mjs';
 
 // Lightweight collision model shared by the browser and Node simulations.
-export const CRAFT_RADIUS = 2.75;
-export const CRAFT_HALF_HEIGHT = 1.35;
+export const CRAFT_RADIUS = 3.75;
+export const CRAFT_HALF_HEIGHT = 2.5;
 export const MAX_STEP = 1.35;
 
 export function buildingTop(b) {
@@ -40,9 +40,9 @@ export function makeCollisionWorld(seed) {
 export function intersectsWorld(p, world, radius = CRAFT_RADIUS) {
   return world.nearby(p, radius + 23).some(b => intersectsBuilding(p, b, radius));
 }
-function hitsTraffic(p, traffic, radius = 4.25) {
+function hitsTraffic(p, traffic, radius = 5.4) {
   for (const other of traffic) {
-    if (Math.abs(p.y - other.y) > 3.0) continue;
+    if (Math.abs(p.y - other.y) > 3.5) continue;
     if (Math.hypot(p.x - other.x, p.z - other.z) < radius) return true;
   }
   return false;
@@ -91,8 +91,8 @@ export function trafficPosition(index, elapsed, seed, centre) {
   const axis = index % 2;
   const row = Math.floor(index / 2) % 11 - 5;
   const group = Math.floor(index / 22);
-  const lane = group % 2 === 0 ? -2.65 : 2.65;
-  const direction = group % 2 === 0 ? -1 : 1;
+  const lane = Math.floor(index / 2) % 2 === 0 ? -2.65 : 2.65;
+  const direction = Math.floor(index / 2) % 2 === 0 ? -1 : 1;
   const speed = 22 + ((index * 13 + (seed & 15)) % 27);
   const length = CHUNK_SIZE * 5;
   const phase = (index * 211 + (seed % 1999)) % length;
