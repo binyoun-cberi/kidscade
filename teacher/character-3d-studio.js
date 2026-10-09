@@ -466,11 +466,14 @@ function applyAccessoryFit(preferred=''){
   const conflicts=resolveAccessoryConflicts(preferred);
   const currentTop=TOGGLE_NODES.find(name=>PART_GROUP(name)==='top'&&getNode(name)?.visible)||'';
   const headwear=ACCESSORY_STYLES.find(style=>style.slot==='hat'&&getNode(style.id)?.visible)?.id||'';
+  // Hair crown must be compressed BEFORE measuring the brim seat.
+  // Fitting against the uncompressed crown is what left a gap after hats
+  // were selected. Both the mask and fit are idempotent.
+  const mask=applyHideMasks();
   const fitted=applyRiggedAccessoryFit({
     getNode,fit:activeBodyFit,topName:currentTop,headwearName:headwear,
     hairName:HAIR_NODES.find(name=>getNode(name)?.visible)||''
   });
-  const mask=applyHideMasks();
   if(lastAccessoryFit!==activeBodyFit){
     // A different body silhouette needs different thumbnail framing/fit.
     thumbnailCache.clear();
@@ -2204,6 +2207,30 @@ function installLocalVisualAudit(){
           templeBridgeVersion:mesh?.userData?.templeBridgeVersion||null,
           fingerprint:fingerprint>>>0};
       });
+    },
+    hatSeatingAudit(){
+      const hairName=HAIR_NODES.find(name=>getNode(name)?.visible)||'';
+      const hair=getNode(hairName);
+      const active=ACCESSORY_STYLES.find(style=>
+        style.slot==='hat'&&style.kind!=='headphones'&&getNode(style.id)?.visible);
+      const hat=active&&getNode(active.id);
+      if(!hair||!hat)return {hairName,hat:null};
+      scene.updateMatrixWorld(true);
+      const hb=new THREE.Box3().setFromObject(hair,true);
+      const cap=new THREE.Box3().setFromObject(hat,true);
+      const hh=Math.max(.001,hb.max.y-hb.min.y);
+      const overlap=hb.max.y-cap.min.y;
+      const width=hb.max.x-hb.min.x;
+      return {
+        fit:activeBodyFit,hairName,hat:active.id,
+        hairMax:hb.max.y,hatMin:cap.min.y,hatMax:cap.max.y,
+        hairHeight:hh,hairWidth:width,
+        crownOverlap:overlap,
+        overlapRatio:overlap/hh,
+        capRisesAboveCrown:cap.max.y>hb.max.y,
+        fitState:hat.userData.fitState,
+        hairSafe:hatSafeHair.get(hair)===hair.geometry
+      };
     },
     equipmentAudit(){
       return {
