@@ -528,3 +528,81 @@ test('first-person control instructions agree with the fixed eye camera',()=>{
   assert.match(html,/화면을 돌려 진짜로 등을 돌린 채 4초/);
   assert.match(js,/ui\.reticle\.classList\.toggle\('hidden',!started\|\|ended\)/);
 });
+
+
+test('five user-supplied Sketchfab horror GLBs are wired into their proper encounters',()=>{
+  const mapping={
+    maiden:'ghost_girl_animated.glb',
+    yuki:'ghost_woman_a-pose.glb',
+    egg:'black_horror_alien_humanoid.glb',
+    reaper:'hooded_figure_with_scythe.glb',
+    wolf:'werewolf.glb'
+  };
+  assert.match(js,/const HORROR_MODELS=Object\.freeze\(\{/);
+  assert.match(js,/function loadHorrorAsset\(kind\)/);
+  assert.match(js,/function installHorrorAsset\(kind,gltf,url\)/);
+  const start=js.indexOf('const HORROR_MODELS=Object.freeze(');
+  const end=js.indexOf('const AUDIO=',start);
+  const MONSTER='../../assets/game/3d/characters/monsters/ultimate-monsters-bundle/ghost.glb';
+  const specs=new Function('MONSTER',js.slice(start,end)+'return HORROR_MODELS;')(MONSTER);
+  assert.deepEqual(Object.keys(specs).sort(),Object.keys(mapping).sort());
+  for(const [kind,file] of Object.entries(mapping)){
+    const expected='../../assets/more%20assets/'+file;
+    assert.equal(specs[kind].url,expected,kind+' must use the uploaded file');
+    const full=path.join(root,'assets','more assets',file);
+    assert.ok(fs.existsSync(full),'missing uploaded GLB '+file);
+    const stat=fs.statSync(full);
+    assert.ok(stat.size>128,'GLB is unexpectedly empty '+file);
+    const header=Buffer.alloc(12),fd=fs.openSync(full,'r');
+    try{assert.equal(fs.readSync(fd,header,0,12,0),12);}finally{fs.closeSync(fd);}
+    assert.equal(header.toString('ascii',0,4),'glTF','GLB header signature '+file);
+    assert.equal(header.readUInt32LE(4),2,'GLB version 2 '+file);
+    assert.equal(header.readUInt32LE(8),stat.size,'GLB header length '+file);
+  }
+  assert.ok(specs.maiden.backup&&specs.yuki.backup&&specs.reaper.backup&&specs.wolf.backup,
+    'existing proven game assets stay as network fallbacks');
+  assert.match(js,/horrorLoadState\.has\(kind\)/,'stage transitions should not redownload models');
+  assert.match(js,/for\(const url of \[spec\.url,spec\.backup\]\.filter\(Boolean\)\)/);
+  assert.match(js,/maiden\.root\.remove\(ghostModel\)/,'the old maiden body is replaced');
+  assert.match(js,/ghostModel=visual;maiden\.root\.add\(visual\)/,
+    'the maiden point light is preserved with a new animated model');
+  assert.match(js,/actor\.root\.clear\(\);actor\.root\.add\(visual\)/,
+    'the other four primitive/old bodies should be replaced, not layered');
+  assert.match(js,/chosen\.tracks\.filter\(track=>!\/\(\?:hips\|root\|armature\)\\?\.position/);
+  assert.doesNotMatch(js,/dressGhost\(/,'no eager model loading at startup');
+});
+
+test('horror models are only loaded for the encounters that need them',()=>{
+  const start=js.indexOf('function presentEncounterModels(){');
+  const end=js.indexOf('presentEncounterModels();',start);
+  assert.ok(start>=0&&end>start);
+  const hits=[],stageTracker={stage:1};
+  const root=()=>({visible:false});
+  const yuki={root:root()},egg={root:root()},reaper={root:root()};
+  const encounter={wolf:{root:root()},heatNodes:[],doorClosed:false};
+  const m=()=>({visible:false});
+  const coldCircle=m(),eggCircle=m(),reaperCircle=m(),wolfSpeaker=m(),wolfCircle=m();
+  const doorHinge={rotation:{y:0}};
+  const exec=new Function('yuki','egg','reaper','encounter','coldCircle',
+    'eggCircle','reaperCircle','wolfSpeaker','wolfCircle','doorHinge',
+    'loadHorrorAsset','stageTracker',
+    'let stage=1;'+js.slice(start,end)+
+    'return function(i){stage=i;presentEncounterModels();};')(
+      yuki,egg,reaper,encounter,coldCircle,eggCircle,reaperCircle,wolfSpeaker,
+      wolfCircle,doorHinge,kind=>hits.push(kind),stageTracker);
+  exec(1);assert.deepEqual(hits,[],'initial game should not load all five high-detail GLBs');
+  for(const [stage,kind] of [[2,'maiden'],[4,'yuki'],[6,'egg'],[8,'reaper'],[10,'wolf']]){
+    exec(stage);
+    assert.equal(hits.at(-1),kind,'stage '+stage+' should initiate '+kind);
+  }
+  assert.equal(hits.length,5);
+});
+
+test('creature model credits are published for all five CC-BY sources',()=>{
+  const md=read('CREDITS.md'),page=read('credits.html');
+  for(const author of ['butteroil','Shaban Hafizsalim','FLUXIUM3D','SkellyCooks','milakpro']){
+    assert.ok(md.includes(author),'markdown credit '+author);
+    assert.ok(page.includes(author),'public page credit '+author);
+  }
+  assert.ok(md.includes('CC BY')&&page.includes('CC BY'));
+});
