@@ -9,8 +9,15 @@ const TYPES=Object.freeze({
  thief:'룬 도둑',mini:'작은 슬라임'
 });
 function chooseKind(phase,random=Math.random){
- const list=phase%2===0?(phase<2?['stone','stone','warden']:['stone','stone','warden','blast']):
-  (phase<3?['slime','slime','charger','splitter']:['slime','slime','charger','splitter','thief']);
+ const waves={
+  0:['stone','stone','stone'],
+  1:['slime','slime','slime','slime','charger'],
+  2:['stone','stone','stone','warden'],
+  3:['slime','slime','slime','charger','splitter'],
+  4:['stone','stone','warden','stone','blast'],
+  5:['slime','slime','charger','splitter','thief']
+ };
+ const list=waves[phase]||waves[5];
  return list[Math.min(list.length-1,Math.floor(random()*list.length))];
 }
 function decorate(enemy,kind,random=Math.random){
@@ -21,7 +28,7 @@ function decorate(enemy,kind,random=Math.random){
  return enemy;
 }
 function child(parent,scene,choices,random=Math.random){
- const cap=scene.easy?32:52,created=[];
+ const cap=scene.enemyCap??(scene.easy?22:34),created=[];
  const live=scene.enemies.filter(e=>!e.dead).length;
  for(let i=0;i<Math.min(2,Math.max(0,cap-live));i++){
   const n=choices[Math.floor(random()*choices.length)];
@@ -34,19 +41,32 @@ function child(parent,scene,choices,random=Math.random){
  return created;
 }
 function streak(scene,{fx=()=>{},tone=()=>{}}={}){
- scene.combo=scene.comboT>0?scene.combo+1:1;
- scene.comboT=6.5;scene.bestCombo=Math.max(scene.bestCombo,scene.combo);
- if(scene.combo===3){scene.comboHaste=3.5;fx(scene.x,scene.y-37,'3연속 · 룬 가속!','#eaf09a');tone(760,.09);}
- if(scene.combo%5===0){
+ const prior=scene.combo;
+ scene.combo=scene.comboT>0?Math.min(20,scene.combo+1):1;
+ scene.comboT=4.8;
+ scene.bestCombo=Math.max(scene.bestCombo,scene.combo);
+ if(scene.combo===prior)return; // Level 20 is a cap, not a reward every hit.
+ if(scene.combo===3){
+  scene.comboHaste=3.5;fx(scene.x,scene.y-37,'3연속 · 룬 가속!','#eaf09a');tone(760,.09);
+ }
+ if([5,10,20].includes(scene.combo)){
   scene.burst=.5;
   for(const e of scene.enemies){
    if(e.dead)continue;
    const dx=e.x-scene.x,dy=e.y-scene.y,d=Math.hypot(dx,dy)||1;
-   if(d<105){e.stun=Math.max(e.stun,.65);e.x=clamp(e.x+dx/d*26,-900,900);e.y=clamp(e.y+dy/d*26,-900,900);}
+   if(d<105){
+    e.stun=Math.max(e.stun,.65);
+    e.x=clamp(e.x+dx/d*26,-900,900);
+    e.y=clamp(e.y+dy/d*26,-900,900);
+   }
   }
   fx(scene.x,scene.y-44,scene.combo+'연속 · 충격파!','#a5f6db');tone(930,.16);
  }
- if(scene.combo%10===0){scene.chainShots=Math.min(2,scene.chainShots+1);fx(scene.x,scene.y-61,'연쇄 번개 준비!','#f1dc8e');}
+ if(scene.combo===10||scene.combo===20){
+  scene.chainShots=Math.min(2,scene.chainShots+1);
+  fx(scene.x,scene.y-61,scene.combo===20?'연쇄 달인!':'연쇄 번개 준비!','#f1dc8e');
+ }
+ if(scene.combo===20)scene.comboHaste=Math.max(scene.comboHaste,4);
 }
 function dash(scene,dx,dy,{fx=()=>{},tone=()=>{}}={}){
  if(scene.dashCD>0||scene.dashT>0)return false;
