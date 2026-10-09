@@ -481,8 +481,8 @@ function decorateSchoolCorridors(){
     cube(scene,x,1.76,z+(z<0?.052:-.052),.80,.048,.03,trim);
     cube(scene,x,.22,z,1.7,.18,.05,mat(0x576b77));
   }
-  for(const z of [-8.75,8.75])for(let x=-13;x<28;x+=2.45){
-    const panel=cube(scene,x,.018,z,2.22,.025,1.05,mat(0x56636d));
+  for(const z of [-9.55,9.55])for(let x=-13;x<28;x+=2.45){
+    const panel=cube(scene,x,.018,z,2.22,.025,.72,mat(0x56636d));
     panel.userData.decorative=true;
   }
   // This uploaded full hallway prefab is used as an end-wall architectural
