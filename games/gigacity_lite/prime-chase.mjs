@@ -1,4 +1,5 @@
 // Prime Chase's pure state machine. No DOM or graphics dependency.
+import { fighterType, fighterSpec } from './prime-tactics.mjs';
 export const PRIME_WEAPONS = Object.freeze([2, 3, 5, 7]);
 export const WAVE_NUMBERS = Object.freeze([[6], [10, 15], [8, 12], [21, 35], [30, 49], [84, 105]]);
 export const PRACTICE_WAVES = Object.freeze([[6], [10,15], [8,12]]);
@@ -29,7 +30,8 @@ export function makePrimeChase() {
 function enterWave(state, index) {
   state.waveIndex = index;
   const newcomers = state.waves[index].map((number, slot) => ({
-    id: state.nextId++, number, original: number, attackIn: 10.5 + index * 0.65 + slot * 2,
+    id: state.nextId++, number, original: number, type: fighterType(number),
+    attackIn: 10.5 + index * 0.65 + slot * 2,
     lockedAt: null, preparing: false, alive: true, divisionCount: 0, wave: index
   }));
   state.enemies.push(...newcomers);
@@ -128,6 +130,7 @@ export function tickPrimeChase(state, dt, enemyDistances = {}, playerPosition = 
     : { x: 0, y: 0, z: -34 };
   if (playerPosition) state.previousPilot = { ...playerPosition };
   for (const enemy of activeEnemies(state)) {
+    const spec = fighterSpec(enemy.original);
     const observation = enemyDistances[enemy.id];
     const distance = typeof observation === 'number' ? observation : observation?.distance ?? Infinity;
     const covered = typeof observation === 'object' && observation !== null && observation.covered === true;
@@ -139,14 +142,14 @@ export function tickPrimeChase(state, dt, enemyDistances = {}, playerPosition = 
       continue;
     }
     enemy.attackIn -= frame;
-    if (enemy.attackIn <= 2 && !enemy.preparing) {
+    if (enemy.attackIn <= spec.warning && !enemy.preparing) {
       enemy.preparing = true;
       enemy.lockedAt = playerPosition ? {
         x: playerPosition.x + velocity.x * Math.max(0, enemy.attackIn),
         y: playerPosition.y + velocity.y * Math.max(0, enemy.attackIn),
         z: playerPosition.z + velocity.z * Math.max(0, enemy.attackIn)
       } : null;
-      warnings.push({ id: enemy.id, seconds: 2 });
+      warnings.push({ id: enemy.id, seconds: spec.warning, lockedAt: enemy.lockedAt ? { ...enemy.lockedAt } : null });
     }
     if (enemy.attackIn <= 0) {
       const moved = playerPosition && enemy.lockedAt
@@ -156,10 +159,11 @@ export function tickPrimeChase(state, dt, enemyDistances = {}, playerPosition = 
         : 0;
       const dodged = covered || moved >= 17;
       if (dodged) state.dodges++;
-      else damageShield(state, 7);
-      attacks.push({ id: enemy.id, damage: dodged ? 0 : 7, hit: !dodged,
+      else damageShield(state, state.mode === 'practice' ? Math.max(3, spec.damage - 2) : spec.damage);
+      attacks.push({ id: enemy.id, damage: dodged ? 0 : (state.mode === 'practice' ? Math.max(3, spec.damage - 2) : spec.damage),
+        hit: !dodged, aim: enemy.lockedAt ? { ...enemy.lockedAt } : (playerPosition ? { ...playerPosition } : null),
         dodgeReason: covered ? 'cover' : moved >= 17 ? 'move' : null });
-      enemy.attackIn += 11.0 + enemy.wave * 0.35;
+      enemy.attackIn += spec.attackCycle + enemy.wave * 0.25;
       enemy.lockedAt = null;
       enemy.preparing = false;
       if (state.status !== 'playing') break;
