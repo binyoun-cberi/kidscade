@@ -165,12 +165,12 @@ const errors=[],responses=[];
     let numbers=await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).map(x=>x.textContent)');
     assert.deepEqual(numbers,['10','15'],'Two enemy jets in pursuit wave 2');
 
-    const shoot=async prime=>{await click('[data-prime="'+prime+'"]');await sleep(265);};
+    const shoot=async prime=>{await click('[data-prime="'+prime+'"]');await sleep(460);};
     await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).find(x=>x.textContent==="10").click()');
     await shoot(2); await shoot(5);
     await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).find(x=>x.textContent==="15").click()');
     await shoot(3); await shoot(5);
-    await sleep(1570);
+    await sleep(1800);
     numbers=await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).map(x=>x.textContent)');
     assert.deepEqual(numbers,['21','35'],'Two enemy jets in final pursuit wave');
 
