@@ -8,7 +8,7 @@ const KS=window.KidscadeStorage||null;
 const $=id=>document.getElementById(id);
 const canvas=$('game'), ctx=canvas.getContext('2d');
 const boardWrap=$('boardWrap'), rackEl=$('rack'), currentWordEl=$('currentWord'), wordMetaEl=$('wordMeta');
-const waveBtn=$('waveBtn'), rushBtn=$('rushBtn'), buildBtn=$('buildBtn'), clearBtn=$('clearBtn'), hintBtn=$('hintBtn'), swapBtn=$('swapBtn');
+const waveBtn=$('waveBtn'), rushBtn=$('rushBtn'), buildBtn=$('buildBtn'), clearBtn=$('clearBtn'), hintBtn=$('hintBtn'), swapBtn=$('swapBtn'), rerollBtn=$('rerollBtn');
 const coreText=$('coreText'), waveText=$('waveText'), inkText=$('inkText'), scoreText=$('scoreText');
 const statusBox=$('statusBox'), inspectBox=$('inspectBox'), toastEl=$('toast'), freeWord=$('freeWord');
 const startOverlay=$('startOverlay'), dictOverlay=$('dictOverlay'), resultOverlay=$('resultOverlay');
@@ -25,6 +25,8 @@ const WORD_STYLE_COLORS={
 // Familiar starter words remain useful when players invest in them.
 const FOUNDATION_WORDS=new Set(['ARROW','BOOK','FIRE','ICE','APPLE','BOMB','BALL','COW']);
 const RUSH_DURATION=9,RUSH_COOLDOWN=24,RUSH_LIMIT=2;
+const RACK_REROLL_BASE=6,RACK_REROLL_MAX=12;
+function rackRerollCost(){return Math.min(RACK_REROLL_MAX,RACK_REROLL_BASE+2*(state.rackRerolls||0))}
 function rushCost(){return 24+Math.min(24,state.wave*3)}
 const FOCUS_TIPS={
   normal:'ARROW로 시작하고 ICE나 FIRE를 더해 보세요.',
@@ -115,7 +117,7 @@ function freshState(){
     // Part II opens with a few more placement choices; later waves, not the
     // first minute, are where the advanced campaign increases the pressure.
     core:100,wave:0,ink:activeStage>=10?28+Math.floor((activeStage-10)/3)*3:20,score:0,inWave:false,waveTimer:0,spawnQueue:[],
-    rushTime:0,rushCooldown:0,rushUses:0,
+    rushTime:0,rushCooldown:0,rushUses:0,rackRerolls:0,
     enemies:[],towers:[],shots:[],traps:[],fields:[],effects:[],rack:D.startRack.slice(0,D.maxRack),
     selected:[],placing:null,hover:null,inspectedTowerId:null,uid:1,unique:new Set(),builtWords:[],elapsed:0,
     resources:resourceSpots.map((s,i)=>({...s,r:.045,amount:s.amount??(70+i*20)})),
@@ -257,7 +259,7 @@ function consumeSelected(fromTyping=false){
   state.selected=[];refillRack();renderRack();updateComposer();
 }
 function swapOne(){
-  if(state.placing)return;
+  if(!state||state.ended||state.placing)return;
   if(state.ink<2){toast('INK가 2 필요해요');return}
   state.ink-=2;
   const indices=Array.from({length:state.rack.length},(_,i)=>i)
@@ -266,6 +268,45 @@ function swapOne(){
   state.selected=[];ensurePlayableRack();renderRack();updateComposer();updateHud();toast('글자 3개 교환!');beep(320,.06,'triangle');
 }
 
+// Trade-off: three letters for 2 INK, or the entire rack for 6/8/10/12 INK.
+// Every full reroll guarantees a useful, affordable short word when possible.
+const REROLL_SEED_WORDS=['ARROW','FIRE','BOOK','ICE','COW','BALL','APPLE','BOMB','WALL','MUSIC'];
+function rollWholeRack(){
+  if(!state||state.ended||state.placing)return false;
+  const cost=rackRerollCost();
+  if(state.ink<cost){toast('전체 새로고침에는 INK '+cost+'가 필요해요');return false}
+  const oldRack=state.rack.join(''),remaining=state.ink-cost;
+  const playable=REROLL_SEED_WORDS.filter(word=>
+    D.words[word]&&towerCost(D.words[word],word,false)<=remaining);
+  const seed=playable.length?playable[(Math.random()*playable.length)|0]:'ICE';
+  let next=[];
+  for(let attempt=0;attempt<15;attempt++){
+    next=Array.from({length:D.maxRack},randomLetter);
+    for(let i=0;i<seed.length;i++)next[i]=seed[i];
+    // Fisher–Yates shuffle keeps rare letters genuinely random.
+    for(let i=next.length-1;i>0;i--){
+      const j=(Math.random()*(i+1))|0;
+      [next[i],next[j]]=[next[j],next[i]];
+    }
+    const vowels=next.filter(ch=>'AEIOU'.includes(ch)).length;
+    if(next.join('')!==oldRack&&new Set(next).size>=5&&vowels>=2)break;
+  }
+  if(next.join('')===oldRack)next.reverse();
+  state.ink-=cost;
+  state.rackRerolls=(state.rackRerolls||0)+1;
+  state.rack=next;
+  state.selected=[];
+  // Free typing is independent of the rack; don't erase unfinished input.
+  renderRack();
+  rackEl.classList.remove('rerolled');
+  void rackEl.offsetWidth;
+  rackEl.classList.add('rerolled');
+  updateComposer();updateHud();
+  setStatus('알파벳 12개 새로고침','INK '+cost+' 사용 · 새 글자에서 단어를 찾아보세요.');
+  toast('전체 알파벳 새로고침! · INK -'+cost);
+  beep(580,.10,'triangle',.032);
+  return true;
+}
 function beginPlacement(){
   const w=tileWord(),def=D.words[w],fromTyping=!!typedWord();if(!def)return;
   const cost=towerCost(def,w,fromTyping);
@@ -509,7 +550,8 @@ function startWave(){
     toast('첫 웨이브 전에 공격 타워가 필요해요');return;
   }
   state.wave++;state.inWave=true;state.waveTimer=0;state.spawnQueue=createWave(state.wave);state.totalSpawns=state.spawnQueue.length;
-  state.rushUses=0;state.rushTime=0;state.rushCooldown=0;state.towerRevision++;
+  state.rushUses=0;state.rushTime=0;state.rushCooldown=0;
+  state.rackRerolls=0;state.towerRevision++;
   state.effects.push({type:'banner',text:'WAVE '+state.wave,x:.5,y:.38,color:currentStage().colors.accent,life:1.1,max:1.1});
   waveBtn.disabled=true;waveBtn.textContent='WAVE '+state.wave+' 진행 중';setStatus('WAVE '+state.wave,'전투 중에도 타워를 지을 수 있어요. '+(FOCUS_TIPS[currentStage().focus]||FOCUS_TIPS.normal));
   beep(250,.12,'sawtooth',.05);updateHud();
@@ -1213,6 +1255,14 @@ function update(dt){
   if(previousInk!==Math.floor(state.ink)){previousInk=Math.floor(state.ink);if(!state.placing)updateComposer()}
 }
 function updateHud(){
+  if(rerollBtn){
+    const price=rackRerollCost();
+    const label='전체 새로고침 -'+price;
+    if(rerollBtn.textContent!==label)rerollBtn.textContent=label;
+    rerollBtn.disabled=state.ended||!!state.placing||state.ink<price;
+    rerollBtn.title='알파벳 12개 전체 교체 · INK '+price+' 사용 · 다음 웨이브에 가격 초기화';
+  }
+  if(swapBtn)swapBtn.disabled=state.ended||!!state.placing||state.ink<2;
   if(rushBtn){
     const active=state.inWave&&!state.ended;
     const label=state.rushTime>0?'WORD RUSH '+Math.ceil(state.rushTime)+'초':
@@ -1607,7 +1657,7 @@ $('nextBtn').addEventListener('click',()=>{
   selectedStage=activeStage+1;renderStages();restart();
 });
 $('retryBtn').addEventListener('click',restart);
-waveBtn.addEventListener('click',startWave);buildBtn.addEventListener('click',beginPlacement);clearBtn.addEventListener('click',()=>{if(state.placing)cancelPlacement();clearSelection()});hintBtn.addEventListener('click',showHint);swapBtn.addEventListener('click',swapOne);
+waveBtn.addEventListener('click',startWave);buildBtn.addEventListener('click',beginPlacement);clearBtn.addEventListener('click',()=>{if(state.placing)cancelPlacement();clearSelection()});hintBtn.addEventListener('click',showHint);swapBtn.addEventListener('click',swapOne);rerollBtn.addEventListener('click',rollWholeRack);
 $('dictBtn').addEventListener('click',openDictionary);$('dictClose').addEventListener('click',()=>dictOverlay.classList.add('hidden'));
 $('soundBtn').addEventListener('click',()=>{muted=!muted;$('soundBtn').textContent=muted?'🔇':'🔊';if(!muted)beep(520)});
 window.addEventListener('keydown',e=>{
