@@ -1,6 +1,7 @@
 // Prime Chase's pure state machine. No DOM or graphics dependency.
 export const PRIME_WEAPONS = Object.freeze([2, 3, 5, 7]);
 export const WAVE_NUMBERS = Object.freeze([[6], [10, 15], [8, 12], [21, 35], [30, 49], [84, 105]]);
+export const PRACTICE_WAVES = Object.freeze([[6], [10,15], [8,12]]);
 export const ROUND_SECONDS = 180;
 
 export function isPrime(value) {
@@ -19,7 +20,7 @@ export function primeFactors(number) {
 }
 export function makePrimeChase() {
   return {
-    status: 'ready', elapsed: 0, remaining: ROUND_SECONDS, shield: 100,
+    status: 'ready', mode: 'standard', waves: WAVE_NUMBERS, elapsed: 0, remaining: ROUND_SECONDS, shield: 100,
     score: 0, mistakes: 0, combo: 0, destroyed: 0, shots: 0,
     enemies: [], selectedId: null, nextId: 1, waveIndex: -1,
     waveDelay: 0, cooldown: 0, consecutiveWrong: 0, dodges: 0, previousPilot: null, lastShot: null, reason: ''
@@ -27,7 +28,7 @@ export function makePrimeChase() {
 }
 function enterWave(state, index) {
   state.waveIndex = index;
-  const newcomers = WAVE_NUMBERS[index].map((number, slot) => ({
+  const newcomers = state.waves[index].map((number, slot) => ({
     id: state.nextId++, number, original: number, attackIn: 10.5 + index * 0.65 + slot * 2,
     lockedAt: null, preparing: false, alive: true, divisionCount: 0, wave: index
   }));
@@ -36,8 +37,10 @@ function enterWave(state, index) {
   state.waveDelay = 0;
   return newcomers;
 }
-export function startPrimeChase(state = makePrimeChase()) {
+export function startPrimeChase(state = makePrimeChase(), mode = 'standard') {
   Object.assign(state, makePrimeChase());
+  state.mode = mode === 'practice' ? 'practice' : 'standard';
+  state.waves = state.mode === 'practice' ? PRACTICE_WAVES : WAVE_NUMBERS;
   state.status = 'playing';
   enterWave(state, 0);
   return state;
@@ -85,7 +88,7 @@ export function firePrime(state, prime) {
     state.destroyed++;
     state.score += 250;
     state.selectedId = activeEnemies(state)[0]?.id ?? null;
-    if (state.destroyed === WAVE_NUMBERS.flat().length) {
+    if (state.destroyed === state.waves.flat().length) {
       state.status = 'won';
       state.reason = '적을 모두 1로 만들었어! 1은 소수도 합성수도 아니야.';
       state.score += Math.ceil(state.remaining) * 10 + Math.round(state.shield) * 5;
@@ -163,7 +166,7 @@ export function tickPrimeChase(state, dt, enemyDistances = {}, playerPosition = 
     }
   }
   let newEnemies = [];
-  if (state.status === 'playing' && !activeEnemies(state).length && state.waveIndex < WAVE_NUMBERS.length - 1) {
+  if (state.status === 'playing' && !activeEnemies(state).length && state.waveIndex < state.waves.length - 1) {
     state.waveDelay += frame;
     if (state.waveDelay >= 1.8) newEnemies = enterWave(state, state.waveIndex + 1);
   } else if (activeEnemies(state).length) state.waveDelay = 0;
@@ -174,7 +177,7 @@ export function roundStats(state) {
   return {
     accuracy: state.shots ? Math.round((state.shots - state.mistakes) / state.shots * 100) : 0,
     destroyed: state.destroyed,
-    total: WAVE_NUMBERS.flat().length,
+    total: state.waves.flat().length,
     score: state.score,
     dodges: state.dodges,
     timeLeft: Math.ceil(state.remaining)
