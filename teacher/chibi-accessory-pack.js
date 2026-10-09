@@ -194,17 +194,17 @@ function createDetails(style,context){
   }
 }
 export function createAccessoryPack({
-  getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial,makeRigidSkinnedPiece
+  getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial
 }){
   const body=getNode('character_low'),shoes=getNode('shoe');
   const hair=getNode('hairone'),eyes=getNode('eyes');
   if(!body?.isSkinnedMesh||!shoes?.isSkinnedMesh||!hair?.isSkinnedMesh||!eyes?.isSkinnedMesh)
     throw Error('Chibi v5.3 needs the original body, shoe, hair and eye skinned meshes');
   const made=[];
-  const reference=body;
-  const headBone=reference.skeleton.bones.find(b=>/head/i.test(b.name))?.name;
-  const spineBone=reference.skeleton.bones.find(b=>/spine/i.test(b.name))?.name;
-  if(!headBone||!spineBone)throw Error('Chibi v5.3 cannot find head/spine bones');
+  // Some Chibi versions sanitize or rename anatomical bones. Reuse the
+  // original skinned body's closest bind-pose weights for every new piece;
+  // this anchors hats to the head, bags to the torso and watches to the arm
+  // without relying on developer-assumed bone names.
   const p=body.geometry.getAttribute('position'),
     indices=body.geometry.getAttribute('skinIndex'),
     weights=body.geometry.getAttribute('skinWeight');
@@ -238,18 +238,11 @@ export function createAccessoryPack({
     group.userData={type:'chibi-v5.3-accessory',slot:style.slot,kind:style.kind,
       fit:'shared',category:style.category,assetVersion:'v5.3'};
     const template=style.slot==='shoes'?shoes:body;
-    const rigid=style.slot==='hat'||style.slot==='face'||style.slot==='bag'||style.slot==='neck';
-    const bone=style.slot==='hat'||style.slot==='face'?headBone:spineBone;
     const add=(geometry,color,id,region)=>{
       const material=makeSolidMaterial(color,style.label+' '+id);
       geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
-      let mesh;
-      if(rigid){
-        mesh=makeRigidSkinnedPiece(template,geometry,bone,material,style.id+'_'+id);
-      }else{
-        nearestWeight(geometry,region==='shoe');
-        mesh=cloneSkinnedMeshWithGeometry(template,geometry,material,style.id+'_'+id);
-      }
+      nearestWeight(geometry,region==='shoe');
+      const mesh=cloneSkinnedMeshWithGeometry(template,geometry,material,style.id+'_'+id);
       mesh.userData={type:'chibi-v5.3-geometry',piece:id,slot:style.slot};
       group.add(mesh);
     };
