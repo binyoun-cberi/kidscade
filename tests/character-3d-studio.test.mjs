@@ -771,3 +771,30 @@ test('v5.3.1 prevents legacy/new accessory stacking and restores original hair o
   assert.match(audit,/Legacy shoes show through selected boots/);
   assert.match(audit,/Backpack did not release jacket clearance/);
 });
+
+
+test('Chibi v5.5 guards against inverted cloth triangles and outsized vertex drifts',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(pack,/function stabilizeGarmentMesh\(source,geometry\)/);
+  assert.match(pack,/const maxDrift=\.062/);
+  assert.match(pack,/const invalid=dot<=0\|\|changedArea<originalArea\*\.42\|\|/);
+  assert.match(pack,/changedArea>originalArea\*2\.4/);
+  assert.match(pack,/stabilizeGarmentMesh\(source,geometry\)/);
+  assert.match(pack,/safetyReport:\{\.\.\.geometry\.userData\}/);
+  assert.match(pack,/meshSafety:'bounded-deformation-with-local-triangle-winding-and-area-v5\.5'/);
+  assert.match(audit,/report\.outfitPack\.safetyReports=/);
+});
+
+test('Chibi v5.5 prevents mismatched and doubled shirt/pants from rendering together',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(js,/const GARMENT_SLOT=name=>LEGACY_OUTFIT_SLOTS\[name\]/);
+  assert.match(js,/function sanitizeGarmentLayers\(preferred=''\)/);
+  assert.match(js,/!compatiblePart\(name\)/);
+  assert.match(js,/const garmentConflicts=sanitizeGarmentLayers\(preferred\)/);
+  assert.match(js,/garmentIntegrityAudit\(\)/);
+  assert.match(audit,/mesh-repro-original-shirt/);
+  assert.match(audit,/Original shirt remained under newer top/);
+  assert.match(audit,/Body switch retained gender-incompatible clothing/);
+});
