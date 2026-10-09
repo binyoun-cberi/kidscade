@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>싹싹! 정리왕 | KIDSCADE</title>
+<style>
+:root{color-scheme:light;font-family:Pretendard,"Noto Sans KR",system-ui,sans-serif;color:#25362f;background:#e6f4ed}
+*{box-sizing:border-box}body{margin:0;overflow:hidden;touch-action:none}button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid #009c86;outline-offset:2px}
+#world{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;background:#bdd9ca}
+#top{position:fixed;inset:0 0 auto;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left));z-index:5;pointer-events:none}
+#topRow{display:flex;gap:9px;align-items:flex-start;justify-content:space-between}
+.panel{background:rgba(255,253,246,.94);box-shadow:0 7px 26px #234b4730;border:1px solid #fff8;border-radius:18px;pointer-events:auto}
+.brand{padding:10px 15px;line-height:1.1}.brand b{font-size:clamp(16px,3vw,21px)}.brand small{display:block;color:#667c73;font-size:11px;margin-top:5px}
+#stats{padding:9px 13px;display:flex;gap:16px;align-items:center;white-space:nowrap;font-weight:800;font-size:13px}
+#stats span{color:#697d74;font-size:11px}#stats strong{display:block;font-size:17px;font-variant-numeric:tabular-nums;color:#197f69}
+#progressWrap{max-width:430px;margin:8px 0 0 auto;padding:8px 11px}.progressTitle{display:flex;justify-content:space-between;font-size:12px;font-weight:900;margin-bottom:6px;color:#335a4d}
+#bar{height:11px;background:#d7e5da;border-radius:50px;overflow:hidden}#barFill{height:100%;width:0%;background:linear-gradient(90deg,#67cbb0,#168f77);border-radius:50px;transition:width .28s}
+#mission{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(570px,calc(100% - 24px));z-index:7;display:flex;align-items:center;gap:10px;padding:10px 12px;min-height:58px}
+#missionIcon{font-size:24px;flex:none}#missionText{font-size:13px;font-weight:850;line-height:1.4;flex:1}#missionText small{display:block;font-size:11px;color:#677d73;font-weight:650}
+#mission button{background:#218c76;border:0;border-radius:11px;color:white;font-weight:800;padding:10px 11px;flex:none}
+#actions{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:calc(90px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px;z-index:6}
+.action{pointer-events:auto;border:1px solid #fff8;border-radius:13px;min-height:43px;min-width:43px;padding:8px 11px;background:#fffdf5ef;color:#2b6857;font-weight:900;box-shadow:0 5px 15px #234b4727}
+#hint{position:fixed;left:50%;top:48%;transform:translate(-50%,-50%);color:white;background:#143c36ed;border:1px solid #a4f6d8;padding:12px 17px;border-radius:15px;font-weight:900;font-size:15px;z-index:8;max-width:min(410px,90%);pointer-events:none;opacity:0;transition:opacity .18s;text-align:center}
+#hint.show{opacity:1}#label{position:fixed;transform:translate(-50%,-50%);pointer-events:none;background:#fffef1e9;border:1px solid #fff;border-radius:11px;padding:6px 9px;white-space:nowrap;font-weight:850;font-size:12px;color:#2d5749;box-shadow:0 5px 16px #143e3522;z-index:4;display:none}
+.overlay{position:fixed;inset:0;z-index:12;background:linear-gradient(160deg,#1c4947d6,#0d2624c9);display:grid;place-items:center;padding:18px;overflow:auto;touch-action:pan-y}
+.hidden{display:none!important}
+.dialog{background:#fffdf5;width:min(520px,100%);border-radius:27px;box-shadow:0 20px 70px #081b1c7e;border:5px solid #fff;padding:clamp(20px,5vw,30px);text-align:center;max-height:94dvh;overflow:auto}
+.dialog .emblem{font-size:50px;margin-bottom:8px}.dialog h1{font-size:clamp(29px,7vw,40px);margin:0 0 10px;letter-spacing:-.06em;color:#216d55}
+.dialog p{color:#526e62;line-height:1.65;margin:8px 0 15px;font-size:14px}
+.steps{text-align:left;background:#ebf6eb;border-radius:15px;padding:11px 15px;margin:12px 0 20px;font-weight:750;color:#375a4e;font-size:13px;line-height:1.9}
+.primary{border:0;background:#229978;color:white;padding:13px 17px;border-radius:14px;font-weight:950;box-shadow:0 5px 0 #166b55;font-size:16px;min-height:48px}
+.secondary{border:1px solid #aacbbc;background:white;padding:12px 15px;border-radius:14px;font-weight:900;color:#326b56}
+.dialogBtns{display:flex;gap:9px;flex-wrap:wrap;justify-content:center}.dialogBtns button{flex:1;min-width:130px}
+#beforeAfter{margin:15px auto 11px;border-radius:14px;overflow:hidden;display:flex;justify-content:center;gap:10px}#beforeAfter div{background:#d9eee0;padding:12px;flex:1;border-radius:12px;font-size:12px;font-weight:800}#beforeAfter b{display:block;font-size:22px;color:#14795f;margin:7px 0}
+#summary{padding:9px;background:#edf6ed;border-radius:12px;font-weight:800;color:#2e735e;margin-bottom:12px}
+#roomIndicator{position:fixed;top:104px;left:max(12px,env(safe-area-inset-left));pointer-events:none;z-index:4;background:#fffdf4dd;padding:9px 12px;border-radius:12px;font-weight:850;font-size:12px;box-shadow:0 5px 15px #234b4722}
+@media(max-width:650px){#topRow{align-items:stretch}.brand{padding:8px 11px}.brand b{font-size:15px}.brand small{font-size:10px}#stats{gap:9px;padding:7px 9px;font-size:11px}#stats strong{font-size:15px}#stats span{font-size:10px}#progressWrap{max-width:none;margin-top:7px}#roomIndicator{top:110px;font-size:11px}#mission{bottom:calc(9px + env(safe-area-inset-bottom));padding:8px 10px}#missionIcon{font-size:21px}#missionText{font-size:12px}#actions{bottom:calc(84px + env(safe-area-inset-bottom))}.action{min-width:40px;min-height:40px}}
+@media(max-height:560px){#roomIndicator{display:none}#progressWrap{margin-top:4px}#actions{bottom:76px}}
+</style>
+</head>
+<body>
+<canvas id="world" aria-label="3D 정리 시뮬레이터: 물건을 선택하고 알맞은 정리 장소를 터치하세요"></canvas>
+<header id="top">
+<div id="topRow"><div class="brand panel"><b>🧺 싹싹! 정리왕</b><small id="stageName">우리 집 대청소</small></div>
+<div id="stats" class="panel"><div><span>정리 완료</span><strong id="count">0 / 0</strong></div><div><span>모은 코인</span><strong id="coins">0</strong></div><div><span>경과</span><strong id="clock">00:00</strong></div></div></div>
+<div id="progressWrap" class="panel"><div class="progressTitle"><span>반짝반짝 청소 진행도</span><span id="percent">0%</span></div><div id="bar"><div id="barFill"></div></div></div>
+</header>
+<div id="roomIndicator">물건을 선택 → 알맞은 정리 장소 선택</div>
+<div id="label" aria-hidden="true"></div><div id="hint" role="status" aria-live="polite"></div>
+<div id="actions"><button class="action" id="rotateLeft" title="시점 왼쪽 회전">↶</button><button class="action" id="rotateRight" title="시점 오른쪽 회전">↷</button><button class="action" id="zoomIn" title="확대">＋</button><button class="action" id="zoomOut" title="축소">－</button><button class="action" id="sound" title="소리 켜기/끄기">♪</button></div>
+<div id="mission" class="panel"><span id="missionIcon">🧤</span><div id="missionText">바닥의 물건을 터치해 보세요<small>대상을 고르면 정리할 장소가 빛나요</small></div><button id="help">도움말</button></div>
+<div id="intro" class="overlay"><section class="dialog" aria-labelledby="introTitle"><div class="emblem">🏠✨</div><h1 id="introTitle">싹싹! 정리왕</h1><p>온 집안이 엉망이야! 물건을 제자리에 놓고 얼룩을 닦아, 지저분한 공간을 반짝반짝 바꿔 보자.</p><div class="steps">① 바닥의 물건을 터치해서 집기<br>② 빛나는 정리 장소를 터치해서 놓기<br>③ 더러운 바닥은 손가락으로 문질러 청소하기<br>④ 진행도 100%가 되면 의뢰 성공!</div><div class="dialogBtns"><button class="primary" id="start">원룸 청소 시작</button></div><p style="font-size:11px">제한 시간 없음 · 휴대폰 터치 및 PC 마우스 지원 · 기록은 이 기기에 저장</p></section></div>
+<div id="end" class="overlay hidden"><section class="dialog" aria-labelledby="endTitle"><div class="emblem">🌟</div><h1 id="endTitle">청소 완료!</h1><p id="endCaption">엉망이던 방이 반짝반짝 깨끗해졌어요!</p><div id="beforeAfter"><div>청소 전<b id="dirtyBefore">0개</b>어질러진 물건과 얼룩</div><div>청소 후<b>0개</b>남은 오염</div></div><div id="summary">코인 +0</div><div class="dialogBtns"><button class="primary" id="next">다음 의뢰</button><button class="secondary" id="replay">다시 청소</button></div></section></div>
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+<script type="module" src="./game.js"></script>
+</body>
+</html>
