@@ -19,12 +19,13 @@ function simulateShots(values) {
         const shot = firePrime(game, prime);
         assert.ok(['divided', 'destroyed'].includes(shot.kind), original + ': ' + JSON.stringify(shot));
         tickPrimeChase(game, 0.20);
+        tickPrimeChase(game, 0.20);
       }
       assert.equal(enemy.number, 1);
       assert.equal(enemy.alive, false);
     }
     // Allow the next pursuit wave to arrive; no timers/network used.
-    for (let i = 0; i < 16; i++) tickPrimeChase(game, 0.1);
+    for (let i = 0; i < 20; i++) tickPrimeChase(game, 0.1);
   }
   return game;
 }
@@ -34,7 +35,7 @@ test('available ammunition contains only the actual primes for every enemy', () 
   assert.equal(isPrime(1), false);
   assert.equal(isPrime(2), true);
   assert.equal(isPrime(9), false);
-  assert.deepEqual(WAVE_NUMBERS, [[6], [10,15], [21,35]]);
+  assert.deepEqual(WAVE_NUMBERS, [[6],[10,15],[8,12],[21,35],[30,49],[84,105]]);
   for (const number of WAVE_NUMBERS.flat()) {
     const factors = primeFactors(number);
     assert.ok(factors.length >= 2);
@@ -48,7 +49,7 @@ test('different correct factor orders both reduce every composite enemy to one',
   const b = simulateShots(n => primeFactors(n).reverse());
   for (const game of [a,b]) {
     assert.equal(game.status, 'won');
-    assert.equal(game.destroyed, 5);
+    assert.equal(game.destroyed, WAVE_NUMBERS.flat().length);
     assert.equal(roundStats(game).accuracy, 100);
     assert.equal(game.shield, 100);
     assert.ok(game.remaining > 150);
@@ -61,6 +62,7 @@ test('6 / 2 / 3 leads to one and an enemy explosion, not a fake health bar', () 
   assert.deepEqual(firePrime(game, 2).newValue, 3);
   assert.equal(firePrime(game, 3).kind, 'cooldown');
   tickPrimeChase(game, 0.25);
+  tickPrimeChase(game, 0.10);
   const shot = firePrime(game, 3);
   assert.equal(shot.kind, 'destroyed');
   assert.equal(shot.newValue, 1);
@@ -76,12 +78,7 @@ test('wrong prime shots show a deflection without changing the target number', (
   assert.equal(game.mistakes, 1);
   assert.equal(game.combo, 0);
   assert.equal(firePrime(game, 2).kind, 'cooldown');
-  tickPrimeChase(game, 0.1);
-  tickPrimeChase(game, 0.1);
-  tickPrimeChase(game, 0.1);
-  tickPrimeChase(game, 0.1);
-  tickPrimeChase(game, 0.1);
-  tickPrimeChase(game, 0.1);
+  for (let i=0; i<16; i++) tickPrimeChase(game,0.1);
   assert.equal(firePrime(game, 2).kind, 'divided');
 });
 
@@ -94,15 +91,15 @@ test('wave 2 appears only after first enemy is destroyed and a small pause', () 
   firePrime(game, 3);
   tickPrimeChase(game, 0.5);
   assert.equal(activeEnemies(game).length, 0);
-  for (let i=0;i<10;i++) tickPrimeChase(game,0.1);
+  for (let i=0;i<14;i++) tickPrimeChase(game,0.1);
   assert.equal(game.waveIndex, 1);
   assert.deepEqual(activeEnemies(game).map(e=>e.number), [10, 15]);
 });
 
 test('a selected enemy can change, but destroyed target cannot be selected again', () => {
   const game = startPrimeChase();
-  firePrime(game, 2);tickPrimeChase(game,0.2);firePrime(game,3);
-  for(let i=0;i<15;i++)tickPrimeChase(game,0.1);
+  firePrime(game, 2);tickPrimeChase(game,0.20);tickPrimeChase(game,0.20);firePrime(game,3);
+  for(let i=0;i<21;i++)tickPrimeChase(game,0.1);
   assert.equal(game.waveIndex,1);
   const [first,second]=activeEnemies(game);
   assert.equal(selectEnemy(game,second.id), true);
@@ -141,4 +138,60 @@ test('combat modules are wired into the main flight and mobile HUD', () => {
   assert.match(view,/labelTexture\(enemy\.number\)/);
   for (const prime of PRIME_WEAPONS) assert.match(html,new RegExp('data-prime="'+prime+'"'));
   for (const id of ['chaseHUD','chaseTargetNumber','chaseShield','chaseTimer','chaseResult','exploreStart']) assert.match(html,new RegExp('id="'+id+'"'));
+});
+
+
+test('advanced waves have repeated and three/four factor targets', () => {
+  const lengths = WAVE_NUMBERS.flat().map(n => primeFactors(n).length);
+  assert.ok(lengths.some(n => n >= 4));
+  assert.ok(WAVE_NUMBERS.flat().includes(49));
+  assert.deepEqual(primeFactors(84), [2,2,3,7]);
+  assert.deepEqual(primeFactors(105), [3,5,7]);
+});
+
+test('guess-spamming consumes shield and takes longer to reload', () => {
+  const game = startPrimeChase();
+  assert.equal(firePrime(game, 5).kind, 'blocked');
+  assert.equal(game.shield, 99);
+  assert.equal(firePrime(game, 2).kind, 'cooldown');
+  for (let i=0; i<15; i++) tickPrimeChase(game, .1);
+  assert.equal(firePrime(game, 7).kind, 'blocked');
+  assert.ok(game.shield < 99);
+  assert.equal(game.consecutiveWrong, 2);
+  for (let i=0; i<15; i++) tickPrimeChase(game, .1);
+  assert.equal(firePrime(game, 3).kind, 'divided');
+  assert.equal(game.consecutiveWrong, 0);
+});
+
+test('steady automatic flight cannot dodge, but steering during lock-on can', () => {
+  const straight = startPrimeChase(), id = selectedEnemy(straight).id;
+  let p = { x: 0, y: 200, z: 365 };
+  let hits=[];
+  for (let k=0;k<120;k++) {
+    p = { ...p, z:p.z-3.4 };
+    hits.push(...tickPrimeChase(straight,.1,{[id]:{distance:70,covered:false}},p).attacks);
+  }
+  assert.ok(hits.some(x=>x.hit));
+  const game=startPrimeChase(), enemyId=selectedEnemy(game).id;
+  let dodge={x:0,y:200,z:365}, attacks=[];
+  for(let k=0;k<120;k++){
+    dodge={...dodge,z:dodge.z-3.4};
+    if(k>87)dodge.x+=2;
+    attacks.push(...tickPrimeChase(game,.1,{[enemyId]:{distance:70,covered:false}},dodge).attacks);
+  }
+  assert.ok(attacks.some(x=>!x.hit),'player steering should evade the laser');
+});
+
+test('cover stops damage after a visible 2-second warning', () => {
+  const game=startPrimeChase(), id=selectedEnemy(game).id;
+  let warnings=[],attacks=[];
+  for(let k=0;k<115;k++) {
+    const result=tickPrimeChase(game,.1,{[id]:{distance:65,covered:true}},{x:0,y:200,z:365});
+    warnings.push(...result.warnings);attacks.push(...result.attacks);
+  }
+  assert.equal(warnings.length,1);
+  assert.equal(attacks.length,1);
+  assert.equal(attacks[0].hit,false);
+  assert.equal(game.shield,100);
+  assert.equal(game.dodges,1);
 });
