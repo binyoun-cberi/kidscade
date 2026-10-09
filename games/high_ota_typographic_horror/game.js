@@ -25,7 +25,7 @@ renderer.setClearColor(0x050608);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x050608);
-scene.fog = new THREE.FogExp2(0x050608, .029);
+scene.fog = new THREE.FogExp2(0x050608, .020);
 const camera = new THREE.PerspectiveCamera(75, 1, .08, 65);
 camera.rotation.order = 'YXZ';
 
@@ -103,22 +103,22 @@ function scenery() {
   label('기록 종료','#8c9dab',0,1.6,-37.37,0,0,2.5,.65);
   for (let z=5.8;z>-36.8;z-=1.5) {
     for (let y=.52;y<3.04;y+=.79) {
-      stamp('벽','#6f7885',-3.245,y,z,0,Math.PI/2,.68,.44);
-      stamp('벽','#697481',3.245,y,z,0,-Math.PI/2,.68,.44);
+      stamp('벽','#a3adb9',-3.245,y,z,0,Math.PI/2,.68,.44);
+      stamp('벽','#929ca9',3.245,y,z,0,-Math.PI/2,.68,.44);
     }
   }
   for (let z=5.5;z>-36.6;z-=1.65) {
     for (let x=-2.55;x<2.9;x+=1.35) {
-      stamp('바닥','#646f7b',x,.014,z,-Math.PI/2,0,1.03,.50);
+      stamp('바닥','#87929f',x,.014,z,-Math.PI/2,0,1.03,.50);
     }
   }
   for (let z=5.5;z>-36.4;z-=2.1) {
-    for (let x=-2.25;x<2.7;x+=1.48) stamp('천장','#4e5663',x,3.19,z,Math.PI/2,0,1.05,.48);
+    for (let x=-2.25;x<2.7;x+=1.48) stamp('천장','#757e8d',x,3.19,z,Math.PI/2,0,1.05,.48);
   }
   for (let x=-2.6;x<=2.7;x+=1.38) {
     for (let y=.65;y<3;y+=.78) {
-      stamp('벽','#626a76',x,y,6.91,0,0,.65,.48);
-      stamp('벽','#67707c',x,y,-37.40,0,0,.65,.48);
+      stamp('벽','#8995a2',x,y,6.91,0,0,.65,.48);
+      stamp('벽','#8e99a7',x,y,-37.40,0,0,.65,.48);
     }
   }
   // Just enough invisible architecture to communicate a space without normal 3D assets.
