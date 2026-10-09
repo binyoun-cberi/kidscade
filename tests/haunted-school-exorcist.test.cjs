@@ -15,7 +15,7 @@ test('3D school gameplay is a parseable local Three.js module',()=>{
   const result=spawnSync(process.execPath,['--input-type=module','--check'],{input:js,encoding:'utf8'});
   assert.equal(result.status,0,result.stderr||result.stdout);
   assert.match(html,/assets\/vendor\/three-r160\/three\.module\.js/);
-  assert.match(html,/src="\.\/game\.js\?v=12"/);
+  assert.match(html,/src="\.\/game\.js\?v=14"/);
   assert.match(js,/new THREE\.WebGLRenderer/);
   assert.match(js,/new THREE\.PerspectiveCamera/);
   assert.match(js,/GLTFLoader/);
@@ -120,7 +120,7 @@ test('beginner experience includes wayfinding, actionable hints, and camera obst
   assert.match(js,/function updateNavigation\(dt,force=false\)/);
   assert.match(js,/function setGuidePath\(path\)/);
   assert.match(js,/routePlan\(player,target,1\.15\)/);
-  assert.match(js,/첫 조사까지 노란 길 안내/);
+  assert.match(js,/노란 선을 따라 이동/);
   assert.match(js,/showLesson\('첫 임무/);
   assert.match(js,/showLesson\('첫 만남/);
   assert.match(js,/showLesson\('관찰 성공/);
@@ -311,12 +311,13 @@ test('the navigation trail is visible only until the first tutorial anomaly is f
   const state=new Function('ui','player','guidance','navigationTarget','routePlan','setGuidePath','viewYaw',
     'startedRef',js.slice(start,end)+'return updateNavigation;');
   const run=new Function('ui','player','guidance','navigationTarget','routePlan','viewYaw',
-    'let fixes=0,stage=1,started=true;'+
+    'let fixes=0,stage=1,started=true,guideAssistance=false;'+
     'const setGuidePath=(points)=>{guidance.points=points;guidance.mesh=points.length?{}:null;};'+
     js.slice(start,end)+
     'updateNavigation(0,true);const first={hidden:ui.navigation.classList.hidden,trail:guidance.points.length};'+
     'fixes=1;updateNavigation(0,true);const second={hidden:ui.navigation.classList.hidden,trail:guidance.points.length};'+
-    'stage=4;updateNavigation(0,true);return {first,second,lastHidden:ui.navigation.classList.hidden};'
+    'stage=4;updateNavigation(0,true);const lastHidden=ui.navigation.classList.hidden;'+
+    'guideAssistance=true;updateNavigation(0,true);return {first,second,lastHidden,optional:{hidden:ui.navigation.classList.hidden,trail:guidance.points.length}};'
   );
   const result=run(ui,player,guide,()=>fakeTarget,()=>[{x:0,z:0},{x:5,z:0}],0);
   assert.equal(result.first.hidden,false);
@@ -324,6 +325,8 @@ test('the navigation trail is visible only until the first tutorial anomaly is f
   assert.equal(result.second.hidden,true);
   assert.equal(result.second.trail,0);
   assert.equal(result.lastHidden,true);
+  assert.equal(result.optional.hidden,false,'H key restores guidance for later missions');
+  assert.equal(result.optional.trail,2);
 });
 
 
@@ -353,7 +356,7 @@ function simulateExtraAnomaly(mode){
     "const player={x:mode.startsWith('egg')?7.5:mode==='bell'?-20.35:mode==='wolf'?-7.5:25.5,z:mode.startsWith('egg')?-14:mode==='bell'?8:mode==='wolf'?8.55:15.5,yaw:0};",
     "const eggLocation={x:7.5,z:-17.35},bellDoor={x:-20.35,z:8},wolfTrap={x:-10.5,z:14};",
     "const encounter={frost:0,eggCharge:0,eggFear:0,cold:0,bellCount:0,bellClock:1,bellWindow:0,wolf:{x:-1.5,z:16.8,speed:2.25,root:{position:{set(){}},rotation:{y:0}},nav:null,grace:7,lureTime:26,ready:false,active:true}};",
-    "const yuki={root:{position:{y:0},rotation:{y:0}}};",
+    "const yuki={root:{position:{y:0},rotation:{y:0,z:0}}},egg={root:{position:{y:0},rotation:{y:0,z:0},scale:{set(){}}}},reaper={root:{rotation:{y:0,z:0}}};",
     "const ui={reticle:{classList:{toggle(){}},style:{}}},SCHOOL={guard:{x:-24.2,z:0}};",
     "const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z),clearGhostSight=()=>true,canWalk=()=>true,routePlan=(a,b)=>[{x:a.x,z:a.z},{x:b.x,z:b.z}];",
     "const alerts=[];function sfx(){}function showLesson(){}function showToast(t){alerts.push(t)}function finish(ok){ended=true;}",
@@ -695,9 +698,114 @@ test('locker hiding pauses movement and exposes a deterministic leave action',()
 
 test('staying hidden beside a nearby ghost eventually gets discovered',()=>{
   assert.match(js,/lockerDanger>=3\.2/);
-  assert.match(js,/const goal=lockerTime<2\.5\?\(lockerLastSeen\|\|hidingLocker\.interact\):SCHOOL\.maidenSpawn/);
-  assert.match(js,/const goal=lockerTime<2\.4\?\(lockerLastSeen\|\|hidingLocker\.interact\):\{x:-1\.5,z:16\.8\}/);
+  assert.match(js,/const goal=lockerTime<13\?\(lockerLastSeen\|\|hidingLocker\.interact\):SCHOOL\.maidenSpawn/);
+  assert.match(js,/const goal=lockerTime<13\?\(lockerLastSeen\|\|hidingLocker\.interact\):\{x:-1\.5,z:16\.8\}/);
   assert.match(js,/const exposed=typeof hidingLocker==='undefined'\|\|!hidingLocker/);
   assert.match(js,/const away=exposed&&/,'hide cannot complete egg gaze trial for free');
   assert.match(js,/const staring=exposed&&/,'hide cannot also punish accidental glance');
+});
+
+
+
+test('school classroom doors open for students and ghosts, then close behind them',()=>{
+  const start=js.indexOf('const schoolDoors=[]'),stop=js.indexOf('// Compact, collision-aware hide spots',start);
+  const physStart=js.indexOf('function collides('),physEnd=js.indexOf('function navigationTarget(',physStart);
+  assert.ok(start>=0&&stop>start&&physStart>=0&&physEnd>physStart);
+  const player={x:-24.2,z:0},maiden={x:25.5,z:-16.8},encounter={wolf:{x:-1.5,z:16.8},doorClosed:false};
+  const state={stage:1,maidenPhase:'approach'};
+  const SCHOOL={roomCenters:[-10.5,-1.5,7.5,16.5,25.5]};
+  class Group{constructor(){this.position={set(){}};this.rotation={y:0};}}
+  const env={SCHOOL,scene:{add(){}},THREE:{Group},cube:()=>({}),mat:()=>({}),
+    NORTH_ROOMS:['6-1','6-2','음악','미술','과학'],
+    SOUTH_ROOMS:['5-1','5-2','컴퓨터','방송','가사'],
+    SPINE_ROOMS:['자료','보건','관리','전기','교무'],
+    walls:[],furniture:[],encounter,player,maiden,state};
+  const code=js.slice(physStart,physEnd)+js.slice(start,stop)
+    .replaceAll('stage===2','state.stage===2')
+    .replaceAll('stage===10','state.stage===10')
+    .replaceAll('stage===11','state.stage===11')
+    .replaceAll("maidenPhase!=='approach'","state.maidenPhase!=='approach'");
+  const {schoolDoors,canWalk,updateSchoolDoors,routePlan}=new Function(...Object.keys(env),code+
+    'return {schoolDoors,canWalk,updateSchoolDoors,routePlan};')(...Object.values(env));
+  assert.equal(schoolDoors.length,14,'ten wing doors and four regular west-wing doors');
+  assert.equal(schoolDoors.filter(d=>d.axis==='wing').length,10);
+  assert.equal(schoolDoors.filter(d=>d.axis==='spine').length,4);
+  for(const d of schoolDoors){
+    assert.equal(canWalk(d.x,d.z),false,'closed door blocks movement: '+d.name);
+    player.x=d.x+(d.axis==='spine'?-2:0);
+    player.z=d.z+(d.axis==='wing'?(d.z<0?2:-2):0);
+    for(let i=0;i<30;i++)updateSchoolDoors(1/60);
+    assert.equal(canWalk(d.x,d.z),true,'player approaches and door swings open: '+d.name);
+    player.x=-24.2;player.z=0;
+    for(let i=0;i<215;i++)updateSchoolDoors(1/60);
+    assert.equal(canWalk(d.x,d.z),false,'door swings shut after players leave: '+d.name);
+  }
+  assert.ok(routePlan({x:-24.2,z:0},{x:25.5,z:-15.2},1.5).length,
+    'openable school doors must not cut the north wing off in the AI route planner');
+  state.stage=10;
+  encounter.wolf.x=7.5;encounter.wolf.z=-9.0;
+  for(let i=0;i<32;i++)updateSchoolDoors(1/60);
+  const wolfDoor=schoolDoors.find(d=>d.x===7.5&&d.z===-10.2);
+  assert.ok(wolfDoor.openAmount>.82,'hunting wolf opens a classroom door');
+});
+
+test('school doors stop vision until they open, without preventing sight through an empty doorway',()=>{
+  const start=js.indexOf('function segmentHitsRect('),end=js.indexOf('function playerLookDirection(',start);
+  assert.ok(start>=0&&end>start);
+  const wall={x:0,z:-10.2,hx:1.28,hz:.105};
+  const schoolDoors=[{openAmount:0,barrier:wall}];
+  const clear=new Function('walls','schoolDoors',js.slice(start,end)+
+    'return clearGhostSight;')([],schoolDoors);
+  assert.equal(clear(0,-8.6,0,-12),false,'solid classroom door masks the ghost');
+  schoolDoors[0].openAmount=1;
+  assert.equal(clear(0,-8.6,0,-12),true,'swinging door makes eye contact possible again');
+});
+
+test('voluntary guidance reaches each stage without permanently replacing exploration',()=>{
+  const first=js.indexOf('function navigationTarget(){'),last=js.indexOf('function setGuidePath(',first);
+  assert.ok(first>=0&&last>first);
+  const SCHOOL={guard:{x:-24.2,z:0},dokkaebi:{x:-10.5,z:-14.8},science:{x:25.5,z:-15.2}};
+  const disturbed=[{x:-10.5,z:-15,done:false,name:'화분'}];
+  const encounter={heatNodes:[{x:24,z:11.8,done:false,label:'배관'}]};
+  const maiden={x:25.5,z:-16.5},bellDoor={x:-20.35,z:8},wolfTrap={x:-10.5,z:14};
+  for(let stage=1;stage<=12;stage++){
+    const fn=new Function('SCHOOL','disturbed','encounter','maiden','bellDoor','wolfTrap',
+      'stage','maidenPhase',js.slice(first,last)+'return navigationTarget;')(
+      SCHOOL,disturbed,encounter,maiden,bellDoor,wolfTrap,stage,'approach');
+    const goal=fn();
+    assert.ok(goal&&Number.isFinite(goal.x)&&Number.isFinite(goal.z),'stage '+stage+' has a useful target');
+  }
+  assert.match(js,/guideAssistance=!guideAssistance;updateNavigation\(0,true\);updateHud\(\)/);
+  assert.match(html,/id="guide"/);
+  assert.match(html,/H 키나 길찾기 버튼/);
+});
+
+test('unrigged horrors have scene motion and a finite wolf-lure window',()=>{
+  assert.match(js,/egg\.root\.rotation\.z=Math\.sin\(elapsed\*9\.3\)/);
+  assert.match(js,/egg\.root\.position\.y=Math\.sin\(elapsed\*2\.3\)/);
+  assert.match(js,/reaper\.root\.rotation\.z=Math\.sin\(elapsed\*1\.1\)/);
+  assert.match(js,/yuki\.root\.rotation\.z=Math\.sin\(elapsed\*2\.9\)/);
+  assert.match(js,/w\.lureTime=22;/);
+  assert.match(js,/lockerTime<13\?/);
+  assert.match(js,/const speed=run\?5\.25:3\.6/);
+});
+
+
+test('wolf lure speaker cannot be triggered through the 5-1 classroom wall',()=>{
+  const rayStart=js.indexOf('function segmentHitsRect('),rayEnd=js.indexOf('function playerLookDirection(',rayStart);
+  const actionStart=js.indexOf('function nearAction(){'),actionEnd=js.indexOf('function act(){',actionStart);
+  assert.ok(rayStart>=0&&rayEnd>rayStart&&actionStart>=0&&actionEnd>actionStart);
+  const source=js.slice(rayStart,rayEnd)+js.slice(actionStart,actionEnd);
+  const wall={x:-7.5,z:10.2,hx:1.50,hz:.145};
+  const player={x:-7.5,z:10.78};
+  const nearAction=new Function('player','walls','schoolDoors','dist','nearestLocker',
+    'stage','hidingLocker','encounter','disturbed','SCHOOL','bellDoor','wolfTrap',
+    source+'return nearAction;')(player,[wall],[],(a,b)=>Math.hypot(a.x-b.x,a.z-b.z),
+    ()=>null,10,null,{wolf:{ready:false},heatNodes:[]},[],{guard:{x:-24.2,z:0}},
+    {x:-20.35,z:8},{x:-10.5,z:14});
+  assert.equal(nearAction(),null,'E cannot activate the hall speaker from behind a solid classroom wall');
+  player.z=9.0;
+  assert.equal(nearAction()?.type,'speaker','E can activate the hall speaker while standing in its corridor');
+  assert.match(js,/stage===10&&dist\(player,\{x:-7\.5,z:8\.55\}\)<2\.25&&/);
+  assert.match(js,/clearGhostSight\(player\.x,player\.z,-7\.5,8\.55\)/);
 });

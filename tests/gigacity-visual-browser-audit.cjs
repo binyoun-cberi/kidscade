@@ -62,7 +62,14 @@ const errors=[],responses=[];
     const pending=new Map();
     ws.onmessage=e=>{
       const m=JSON.parse(String(e.data));
-      if(m.method==='Runtime.exceptionThrown')errors.push(m.params?.exceptionDetails?.text||'Browser exception');
+      if(m.method==='Runtime.exceptionThrown'){
+        const detail=m.params?.exceptionDetails;
+        const explanation=detail?.exception?.description||detail?.exception?.value||detail?.text||'Browser exception';
+        const frame=detail?.stackTrace?.callFrames?.slice(0,2).map(x=>x.url+':'+x.lineNumber).join(' | ');
+        const description=String(explanation).slice(0,1000)+' '+(frame||'');
+        errors.push(description);
+        console.log('GIGACITY_BROWSER_EXCEPTION',description);
+      }
       if(m.method==='Log.entryAdded'&&m.params?.entry?.level==='error')errors.push(m.params.entry.text||'Browser error');
       if(m.method==='Network.responseReceived')responses.push({url:m.params?.response?.url,status:m.params?.response?.status});
       if(!m.id||!pending.has(m.id))return;
@@ -115,11 +122,32 @@ const errors=[],responses=[];
     await click('#start');await sleep(1200);
     const combatEnabled=await evaluate('!document.querySelector("#chaseHUD").classList.contains("hidden") && document.querySelector("#chaseTargetNumber").textContent === "6"');
     assert.ok(combatEnabled, 'Prime Chase should begin with composite 6 and visible 2/3/5/7 cannons');
+    const radarReady=await evaluate(`(()=>{
+      const canvas=document.querySelector('#primeRadar');
+      const ctx=canvas.getContext('2d');
+      const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+      let painted=0;
+      for(let i=3;i<pixels.length;i+=4)if(pixels[i]>0)painted++;
+      return {painted,readout:document.querySelector('#radarReadout').textContent,
+        radarVisible:canvas.getBoundingClientRect().width>40};
+    })()`);
+    console.log('TACTICAL RADAR:',JSON.stringify(radarReady));
+    assert.ok(radarReady.painted>100 && radarReady.radarVisible,'Combat radar did not render');
+    assert.notEqual(radarReady.readout,'적 탐색 중',
+      'Enemy fighter 3D model did not spawn and appear on tactical radar');
     const combatOpening=await snap('00-prime-chase-start');
     console.log('PRIME CHASE opening frame brightness:',combatOpening.mean);
     const chase=await snap('01-chase-landscape');
     console.log('CHASE brightness:',chase.mean);
     assert.ok(chase.mean>12,'Chase scene is nearly black');
+    await click('#rearViewButton'); await sleep(500);
+    assert.equal(await evaluate('document.querySelector("#rearViewButton").getAttribute("aria-pressed")'),'true');
+    const rear=await snap('01-rear-dogfight-landscape');
+    const rearDelta=change(chase,rear);
+    console.log('REAR LOOK 3D vs chase changed pixels:',rearDelta+'%');
+    assert.ok(rearDelta>2,'Rear view did not show a different 3D camera');
+    await click('#rearViewButton');await sleep(190);
+    assert.equal(await evaluate('document.querySelector("#rearViewButton").getAttribute("aria-pressed")'),'false');
     await click('[data-view-mode="cockpit"]');await sleep(600);
     const cockpit=await snap('02-cockpit-landscape');
     const cockpitDelta=change(chase,cockpit);
@@ -154,43 +182,86 @@ const errors=[],responses=[];
     const portraitWeaponOverlap=await evaluate('(()=>{const a=document.querySelector("#primeWeapons").getBoundingClientRect(),b=document.querySelector("#stickSurface").getBoundingClientRect(),c=document.querySelector("#elevation").getBoundingClientRect();const overlap=(x,y)=>Math.max(0,Math.min(x.right,y.right)-Math.max(x.left,y.left))*Math.max(0,Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top));return {stick:overlap(a,b),elevation:overlap(a,c)};})()');
     console.log('Prime buttons vs portrait mobile controls:',JSON.stringify(portraitWeaponOverlap));
     assert.ok(portraitWeaponOverlap.stick<1&&portraitWeaponOverlap.elevation<1,'Prime weapons overlap flying controls on a phone');
+    const radarOverlap=await evaluate(`(()=>{
+      const rect=id=>document.querySelector(id).getBoundingClientRect();
+      const radar=rect('#radarPanel'),camera=rect('#chaseCameraButton');
+      return Math.max(0,Math.min(radar.right,camera.right)-Math.max(radar.left,camera.left)) *
+        Math.max(0,Math.min(radar.bottom,camera.bottom)-Math.max(radar.top,camera.top));
+    })()`);
+    console.log('Radar vs camera controls overlap:',radarOverlap);
+    assert.ok(radarOverlap<1,'Radar overlaps portrait camera toggle');
+    const rearOverlap=await evaluate(`(()=>{
+      const radar=document.querySelector('#radarPanel').getBoundingClientRect();
+      const rear=document.querySelector('#rearViewButton').getBoundingClientRect();
+      return Math.max(0,Math.min(radar.right,rear.right)-Math.max(radar.left,rear.left)) *
+        Math.max(0,Math.min(radar.bottom,rear.bottom)-Math.max(radar.top,rear.top));
+    })()`);
+    console.log('Radar vs rear-view button overlap:',rearOverlap);
+    assert.ok(rearOverlap<1,'Radar overlaps rear look button');
 
-    await click('[data-prime="5"]'); await sleep(620);
-    assert.equal(await evaluate('document.querySelector("#chaseTargetNumber").textContent'),'6','Incorrect 5 must not divide 6');
-    await click('[data-prime="2"]'); await sleep(270);
-    assert.equal(await evaluate('document.querySelector("#chaseTargetNumber").textContent'),'3','6 divided by 2 must become 3');
-    await click('[data-prime="3"]'); await sleep(400);
-    assert.match(await evaluate('document.querySelector("#chaseKills").textContent'),/1\s*\/\s*5/,'6 ÷ 2 ÷ 3 must shoot down the first drone');
-    await sleep(1550);
-    let numbers=await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).map(x=>x.textContent)');
-    assert.deepEqual(numbers,['10','15'],'Two enemy jets in pursuit wave 2');
-
-    const shoot=async prime=>{await click('[data-prime="'+prime+'"]');await sleep(460);};
-    await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).find(x=>x.textContent==="10").click()');
-    await shoot(2); await shoot(5);
-    await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).find(x=>x.textContent==="15").click()');
-    await shoot(3); await shoot(5);
-    await sleep(1800);
-    numbers=await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).map(x=>x.textContent)');
-    assert.deepEqual(numbers,['21','35'],'Two enemy jets in final pursuit wave');
-
-    const finishingFrame=await snap('06-prime-chase-final-wave');
-    await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).find(x=>x.textContent==="21").click()');
-    await shoot(3);await shoot(7);
-    await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).find(x=>x.textContent==="35").click()');
-    await shoot(5);await shoot(7);
-    await sleep(260);
+    // Play the full expanded 6-wave encounter using actual UI buttons.
+    await click('[data-prime="5"]'); await sleep(1620);
+    assert.equal(await evaluate('document.querySelector("#chaseTargetNumber").textContent'),'6',
+      'Wrong prime must not divide an enemy');
+    const firstShield=await evaluate('parseInt(document.querySelector("#chaseShield").textContent)');
+    assert.ok(firstShield<100,'Wrong shot must have a small cost');
+    const factorize=n=>{let arr=[];for(let d=2;d<=n;d++)while(n%d===0){arr.push(d);n/=d;}return arr;};
+    const waitFor=async(expression,description,timeout=7000)=>{
+      const before=Date.now();
+      while(Date.now()-before<timeout){
+        const success=await evaluate(expression).catch(()=>false);
+        if(success)return;
+        await sleep(130);
+      }
+      throw Error('Timed out waiting for '+description);
+    };
+    const shot=async(prime,valueAfter)=>{
+      await click('[data-prime="'+prime+'"]');
+      await waitFor('document.querySelector("#chaseTargetNumber").textContent === "'+valueAfter+'"','prime '+prime+' produces '+valueAfter,3000);
+      await sleep(355);
+    };
+    await shot(2,3);
+    await click('[data-prime="3"]');await sleep(480);
+    await waitFor('document.querySelector("#chaseKills").textContent.includes("1 / 11")','first composite defeated');
+    const allWaves=[[10,15],[8,12],[21,35],[30,49],[84,105]];
+    let destroyed=1;
+    for(let wave=0;wave<allWaves.length;wave++){
+      const numbers=allWaves[wave];
+      await waitFor('JSON.stringify(Array.from(document.querySelectorAll("#chaseEnemyChoices button")).map(x=>x.textContent)) === '+JSON.stringify(JSON.stringify(numbers.map(String))),
+        'pursuit wave '+(wave+2));
+      for(const original of numbers){
+        await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).find(x=>x.textContent==="'+original+'").click()');
+        let remaining=original;
+        const factors=factorize(original);
+        for(const prime of factors){
+          remaining/=prime;
+          await click('[data-prime="'+prime+'"]');
+          if(remaining>1){
+            await waitFor('document.querySelector("#chaseTargetNumber").textContent === "'+remaining+'"',
+              'enemy '+original+' divided to '+remaining,3600);
+          }else{
+            destroyed++;
+            await waitFor('document.querySelector("#chaseKills").textContent.includes("'+destroyed+' / 11")',
+              'destroy '+destroyed+' composite fighters',3600);
+          }
+          await sleep(355);
+        }
+      }
+      if(wave===allWaves.length-2) await snap('06-prime-chase-final-wave');
+    }
+    await waitFor('!document.querySelector("#chaseResult").classList.contains("hidden")',
+      'victory after last fighter',4000);
     const result=await evaluate('({resultVisible:!document.querySelector("#chaseResult").classList.contains("hidden"),title:document.querySelector("#chaseResultTitle").textContent,stats:document.querySelector("#chaseResultStats").textContent})');
     console.log('PRIME CHASE VICTORY:',JSON.stringify(result));
-    assert.ok(result.resultVisible,'Victory overlay should appear after all five enemies reach 1');
-    assert.ok(result.stats.includes('5/5'),'All 5 enemies must be counted');
-    const victoryFrame=await snap('07-prime-chase-victory');
+    assert.ok(result.resultVisible,'Victory overlay should appear');
+    assert.ok(result.stats.includes('11/11'),'All 11 composite fighters must be counted');
+    await snap('07-prime-chase-victory');
     const badResponses=responses.filter(x=>x.status>=400);
     console.log('HTTP errors:',JSON.stringify(badResponses.slice(0,8)));
     assert.ok(responses.some(x=>x.url?.endsWith('/race-future.glb')&&x.status===200),'Kenney player GLB was not loaded');
     assert.equal(errors.length,0,'JavaScript errors: '+errors.join(' | ').slice(0,850));
     assert.equal(badResponses.length,0,'Asset request failed');
-    const report={ok:true,viewport:'844x390 and 390x844',chaseVsCockpit:cockpitDelta,freeVsCockpit:freeDelta,nightVsDay:nightDelta,ascend:[altitudeBefore,altitudeAfter],portraitOverlap:overlap,portraitWeaponOverlap,primeChaseVictory:result,chromeErrors:errors,screenshots:8};
+    const report={ok:true,viewport:'844x390 and 390x844',chaseVsCockpit:cockpitDelta,freeVsCockpit:freeDelta,nightVsDay:nightDelta,ascend:[altitudeBefore,altitudeAfter],portraitOverlap:overlap,portraitWeaponOverlap,primeChaseVictory:result,rearViewChangedPixels:rearDelta,chromeErrors:errors,screenshots:9};
     fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));
     console.log('GIGACITY_SIMULATION_PASSED',JSON.stringify(report));
   }catch(err){

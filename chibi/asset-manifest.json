@@ -886,6 +886,18 @@
         ]
       },
       "policy": "Source-mesh geometry fit, not a restriction on identity. Legacy Styloo costume footwear/accessories fit the original female rigged body, while v5.3 accessories and neutral basic shoes fit both."
+    },
+    "rigIsolation": {
+      "version": "v5.7-independent-runtime-rigs",
+      "strategy": "SkeletonUtils.clone(sourceScene) after all fitted skinned parts exist",
+      "sourceBoneNamesRetained": true,
+      "runtimeBoneInstancesPerFit": 78,
+      "distinctBoneObjectReferences": true,
+      "oneMountedRigAtATime": true,
+      "mixerReboundOnBodySwitch": true,
+      "exportActiveRigOnly": true,
+      "unsharedMutablePoseState": true,
+      "geometryStorage": "shared source buffer geometries; independent skinned meshes and bone transforms"
     }
   },
   "outfitLibrary": {

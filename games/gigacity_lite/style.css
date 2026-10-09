@@ -95,3 +95,57 @@ body.chase-mode #district,body.chase-mode #count{display:none}
   #primeWeapons{grid-template-columns:repeat(4,48px);gap:4px}
   #primeWeapons button{min-height:47px}
 }
+
+/* Prime Chase v6: compact threat radar and clear pre-fire warning. */
+#chaseTop{grid-template-columns:minmax(145px,190px) minmax(170px,240px) minmax(78px,105px) auto;justify-content:space-between}
+#radarPanel{pointer-events:none;align-self:start;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 5px;border:1px solid rgba(120,223,255,.42);border-radius:13px;background:rgba(5,16,33,.86);box-shadow:0 4px 20px rgba(0,0,0,.22)}
+#primeRadar{display:block;width:min(100%,100px);height:auto;aspect-ratio:1}
+#radarReadout{max-width:106px;color:#d9edff;font-size:9px;line-height:1.2;white-space:nowrap;text-align:center;overflow:hidden;text-overflow:ellipsis}
+#primeLockMessage{position:absolute;left:50%;top:27%;transform:translate(-50%,-6px);opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap;padding:7px 15px;border:1px solid #ff6b72;border-radius:9px;background:rgba(73,11,30,.91);font-size:13px;font-weight:900;color:#fff0ed;box-shadow:0 0 20px rgba(255,65,83,.25)}
+#primeLockMessage.visible{opacity:1;transform:translate(-50%,0);animation:prime-lock-pulse .7s ease-in-out infinite alternate}
+#combatHitFlash{position:fixed;inset:0;pointer-events:none;z-index:12;opacity:0;background:radial-gradient(ellipse,transparent 50%,rgba(255,62,70,.46));}
+body.prime-impact #combatHitFlash{animation:prime-screen-flash .36s ease-out both}
+body.prime-impact #city{animation:prime-camera-hit .28s ease-out both}
+@keyframes prime-screen-flash{0%{opacity:.95}100%{opacity:0}}
+@keyframes prime-camera-hit{0%{transform:translate(-5px,2px)}30%{transform:translate(6px,-4px)}65%{transform:translate(-3px,2px)}100%{transform:none}}
+@keyframes prime-lock-pulse{from{box-shadow:0 0 8px rgba(255,65,83,.15)}to{box-shadow:0 0 24px rgba(255,65,83,.56)}}
+@media(max-height:520px){
+  #chaseTop{grid-template-columns:152px 180px 84px auto;gap:5px}
+  #radarPanel{padding:2px 3px;gap:0}
+  #primeRadar{width:76px}
+  #radarReadout{font-size:8px;max-width:84px}
+  #primeLockMessage{top:35%;padding:6px 10px;font-size:11px}
+}
+@media(max-width:680px) and (max-height:520px){
+  #chaseTop{grid-template-columns:125px 150px 64px auto;gap:4px}
+  #primeRadar{width:56px}
+  #radarReadout{font-size:7px;max-width:58px}
+}
+@media(max-width:500px) and (min-height:521px){
+  #chaseTop{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  #radarPanel{position:absolute;right:0;top:156px;padding:3px}
+  #primeRadar{width:79px}
+  #radarReadout{font-size:8px;max-width:80px}
+  #primeLockMessage{top:32%;max-width:96vw;font-size:11px;padding:7px}
+}
+
+/* v6.1: selectable true 3D rear camera and rewards for accurate division. */
+#chaseTimeBonus{font-size:10px;color:#9af3d6;font-weight:800;line-height:1.15;min-height:11px;white-space:nowrap}
+.chaseViewButtons{display:flex;flex-direction:column;justify-self:end;align-items:stretch;gap:5px;pointer-events:auto;min-width:90px;max-width:120px}
+.chaseViewButtons button{position:static!important;pointer-events:auto;font-size:10px;white-space:nowrap;padding:7px 8px;border:1px solid rgba(147,222,255,.55);border-radius:9px;background:rgba(8,32,58,.88);color:#e5f5ff;min-height:29px}
+.chaseViewButtons #rearViewButton[aria-pressed="true"]{color:#092c40;background:#8be7ff;border-color:#d6fbff}
+#chaseCameraButton{justify-self:auto}
+@media(max-height:520px){
+  #chaseTimeBonus{font-size:9px}
+  .chaseViewButtons{min-width:82px;gap:3px}
+  .chaseViewButtons button{font-size:9px;min-height:25px;padding:4px 5px}
+}
+@media(max-width:680px) and (max-height:520px){
+  .chaseViewButtons{min-width:69px;max-width:78px}
+  .chaseViewButtons button{font-size:8px;min-height:23px;padding:4px 2px}
+}
+@media(max-width:500px) and (min-height:521px){
+  .chaseViewButtons{position:absolute;right:0;top:113px;display:flex;flex-direction:row;gap:5px;max-width:none}
+  .chaseViewButtons button{font-size:10px;min-height:34px;padding:7px 8px}
+  #chaseTimeBonus{font-size:10px}
+}

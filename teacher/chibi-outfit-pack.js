@@ -97,7 +97,8 @@ function stabilizeGarmentMesh(source,geometry){
       origin.getZ(index)+(target.getZ(index)-origin.getZ(index))*t);
     return out;
   };
-  for(let pass=0;pass<3;pass++){
+  let recoveryPasses=0;
+  for(let pass=0;pass<12;pass++){
     let changed=false;
     for(let t=0;t<trianglesCount;t++){
       const a=getIndex(t,0),b=getIndex(t,1),c=getIndex(t,2);
@@ -118,12 +119,35 @@ function stabilizeGarmentMesh(source,geometry){
       if(!invalid)continue;
       unsafeTriangles++;
       for(const i of [a,b,c]){
-        const next=blend[i]*.60;
+        // Back off invalid triangle deformation; eventually restore source
+        // vertices if they cannot maintain a stable surface.
+        const next=pass<8?blend[i]*.60:0;
         if(next<blend[i]){blend[i]=next;changed=true;}
       }
     }
     if(!changed)break;
+    recoveryPasses++;
   }
+  // Final audit is on the *resulting* mesh, not the number of issues seen
+  // mid-iteration. Fail closed rather than exporting inverted or collapsed
+  // fabric triangles that can look like exploded polygons in WebGL.
+  let residualUnsafeTriangles=0;
+  for(let t=0;t<trianglesCount;t++){
+    const a=getIndex(t,0),b=getIndex(t,1),c=getIndex(t,2);
+    ax.fromBufferAttribute(origin,a);bx.fromBufferAttribute(origin,b);
+    cx.fromBufferAttribute(origin,c);
+    normalOrig.copy(edge1.subVectors(bx,ax)).cross(edge2.subVectors(cx,ax));
+    const originalArea=normalOrig.length();
+    if(originalArea<1e-10)continue;
+    getBlended(a,ap);getBlended(b,bp);getBlended(c,cp);
+    normalChanged.copy(edge1.subVectors(bp,ap)).cross(edge2.subVectors(cp,ap));
+    const area=normalChanged.length();
+    if(normalOrig.dot(normalChanged)<=0||area<originalArea*.42||area>originalArea*2.4)
+      residualUnsafeTriangles++;
+  }
+  if(residualUnsafeTriangles)throw Error(
+    'Unsafe garment mesh after recovery: '+residualUnsafeTriangles+' triangles'
+  );
   let changedVertices=0;
   for(let i=0;i<target.count;i++){
     if(blend[i]>=.99999)continue;
@@ -134,9 +158,76 @@ function stabilizeGarmentMesh(source,geometry){
   geometry.userData={
     ...geometry.userData,
     meshSafety:'bounded-deformation-with-local-triangle-winding-and-area-v5.5',
-    driftLimited,unsafeTriangles,changedVertices,maxDrift
+    driftLimited,unsafeTriangles,changedVertices,maxDrift,
+    recoveryPasses,residualUnsafeTriangles
   };
   return geometry.userData;
+}
+
+
+// Smooth each procedural sleeve/trouser surface against multiple nearby body
+// vertices instead of copying one skin-weight tuple. Abrupt nearest-neighbor
+// jumps at elbows and knees previously left visible cracks while walking.
+function transferSmoothSkinWeights(geometry,reference,{sign,region}){
+  const refPos=reference?.geometry?.getAttribute('position');
+  const refIndex=reference?.geometry?.getAttribute('skinIndex');
+  const refWeight=reference?.geometry?.getAttribute('skinWeight');
+  const pos=geometry.getAttribute('position');
+  if(!refPos||!refIndex||!refWeight||!pos)throw Error('Missing body skin reference for '+region);
+  const candidates=[];
+  for(let j=0;j<refPos.count;j++){
+    const x=refPos.getX(j),y=refPos.getY(j),z=refPos.getZ(j);
+    if(region==='arm'){
+      if(Math.sign(x)!==sign||Math.abs(x)<.135||y<.67||y>1.20)continue;
+    }else if(Math.sign(x)!==sign&&Math.abs(x)>.03)continue;
+    candidates.push({j,x,y,z});
+  }
+  if(candidates.length<4)throw Error('Insufficient '+region+' skin reference vertices');
+  const indices=new Uint16Array(pos.count*4);
+  const weights=new Float32Array(pos.count*4);
+  let fallbackCount=0;
+  for(let i=0;i<pos.count;i++){
+    const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
+    const nearest=[];
+    for(const item of candidates){
+      const d=(x-item.x)**2+(y-item.y)**2*1.4+(z-item.z)**2;
+      if(nearest.length===4&&d>=nearest[3].d)continue;
+      let k=0;
+      while(k<nearest.length&&nearest[k].d<d)k++;
+      nearest.splice(k,0,{j:item.j,d});
+      if(nearest.length>4)nearest.pop();
+    }
+    const influence=new Map();
+    let total=0;
+    for(const {j,d} of nearest){
+      // A small epsilon prevents a single coincident vertex from completely
+      // overriding its neighbors and helps interpolation across UV seams.
+      const strength=1/(d+.0004);
+      for(let k=0;k<4;k++){
+        const w=refWeight.getComponent(j,k)*strength;
+        if(!(w>0))continue;
+        const bone=refIndex.getComponent(j,k);
+        influence.set(bone,(influence.get(bone)||0)+w);
+        total+=w;
+      }
+    }
+    if(!(total>0))throw Error('Unweighted '+region+' garment vertex '+i);
+    const sorted=[...influence].sort((a,b)=>b[1]-a[1]).slice(0,4);
+    const sum=sorted.reduce((acc,p)=>acc+p[1],0);
+    if(!(sum>0))throw Error('Invalid '+region+' garment skin distribution');
+    if(nearest[0].d>.09)fallbackCount++;
+    for(let k=0;k<sorted.length;k++){
+      indices[i*4+k]=sorted[k][0];
+      weights[i*4+k]=sorted[k][1]/sum;
+    }
+  }
+  geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(indices,4));
+  geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
+  geometry.userData={...geometry.userData,skinTransfer:{
+    method:'four-neighbor-smooth-body-weights-v5.8',region,neighbors:4,
+    vertices:pos.count,distantSamples:fallbackCount
+  }};
+  return geometry.userData.skinTransfer;
 }
 
 function remeshSource(source,style){
@@ -192,65 +283,56 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
   const fitBody=getNode(style.fit==='male'?'kidscade_male_body':'character_low');
   const addMatchedSleeve=(geometry,id,sign)=>{
     if(!fitBody?.isSkinnedMesh)throw new Error('Sleeve skin reference body unavailable');
-    const reference=fitBody.geometry;
-    const refPos=reference.getAttribute('position');
-    const refIndex=reference.getAttribute('skinIndex');
-    const refWeight=reference.getAttribute('skinWeight');
-    const p=geometry.getAttribute('position');
-    const indices=new Uint16Array(p.count*4);
-    const weights=new Float32Array(p.count*4);
-    for(let i=0;i<p.count;i++){
-      const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
-      let nearest=-1,score=Infinity;
-      for(let j=0;j<refPos.count;j++){
-        const bx=refPos.getX(j),by=refPos.getY(j),bz=refPos.getZ(j);
-        if(Math.sign(bx)!==sign||Math.abs(bx)<.135||by<.67||by>1.20)continue;
-        const distance=(x-bx)**2+(y-by)**2*1.4+(z-bz)**2;
-        if(distance<score){score=distance;nearest=j;}
-      }
-      if(nearest<0)throw new Error('No suitable original Chibi arm weights');
-      for(let k=0;k<4;k++){
-        indices[i*4+k]=refIndex.getComponent(nearest,k);
-        weights[i*4+k]=refWeight.getComponent(nearest,k);
-      }
-    }
-    geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(indices,4));
-    geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
+    transferSmoothSkinWeights(geometry,fitBody,{sign,region:'arm'});
     geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     const mesh=cloneSkinnedMeshWithGeometry(
       source,geometry,makeSolidMaterial(style.color,style.label+' 연결 소매'),style.id+'_'+id
     );
-    mesh.userData={type:'skinned-sleeve',sourceWeights:'nearest-fit-body-arm'};
+    mesh.userData={type:'skinned-sleeve',sourceWeights:'four-neighbor-smooth-body-arm',skinTransfer:geometry.userData.skinTransfer};
     group.add(mesh);
   };
   if(style.details.includes('longSleeve')||style.details.includes('puffSleeve')){
     const puff=style.details.includes('puffSleeve');
+    // A single curved skinned surface from shoulder to cuff avoids the
+    // interpenetrating sphere/cylinder joins that look like torn triangles.
     for(const sign of [-1,1]){
       const start=new THREE.Vector3(sign*.20,1.08,-.026);
       const elbow=new THREE.Vector3(sign*.30,.91,-.039);
       const cuff=new THREE.Vector3(sign*.345,.775,-.044);
-      const makeTube=(from,to,rStart,rEnd)=>{
-        const d=to.clone().sub(from);
-        const geometry=new THREE.CylinderGeometry(rEnd,rStart,d.length(),12,3,false);
-        geometry.applyMatrix4(new THREE.Matrix4().compose(
-          from.clone().add(to).multiplyScalar(.5),
-          new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize()),
-          new THREE.Vector3(1,1,1)
-        ));
-        return geometry;
-      };
-      // Rounded shoulder insert closes the seam between the modified shirt
-      // shoulder and the separately articulated extension in WALK/RUN.
-      const shoulderCap=new THREE.SphereGeometry(puff?.110:.096,14,10);
-      shoulderCap.scale(1.02,.90,.83);
-      shoulderCap.translate(sign*.20,1.044,-.018);
-      addMatchedSleeve(shoulderCap,sign<0?'shoulderCap_left':'shoulderCap_right',sign);
-      const upper=makeTube(start,elbow,puff?.105:.086,puff?.086:.076);
-      addMatchedSleeve(upper,sign<0?'upperSleeve_left':'upperSleeve_right',sign);
-      if(!puff){
-        const lower=makeTube(elbow,cuff,.081,.065);
-        addMatchedSleeve(lower,sign<0?'forearmSleeve_left':'forearmSleeve_right',sign);
+      const curve=new THREE.CatmullRomCurve3(puff?[start,elbow]:[start,elbow,cuff]);
+      const sections=14,around=16,vertices=[],uvs=[],faces=[];
+      const axis=new THREE.Vector3(0,0,1);
+      const tangent=new THREE.Vector3(),across=new THREE.Vector3();
+      const center=new THREE.Vector3();
+      for(let ring=0;ring<=sections;ring++){
+        const t=ring/sections;
+        curve.getPoint(t,center);
+        curve.getTangent(t,tangent).normalize();
+        across.crossVectors(tangent,axis).normalize();
+        const radius=puff
+          ?(.105+.025*Math.sin(Math.PI*t))*(1-.23*smooth(.65,1,t))
+          :(.102-.037*smooth(0,1,t)+.012*Math.sin(Math.PI*t));
+        for(let slice=0;slice<=around;slice++){
+          const theta=Math.PI*2*slice/around;
+          const c=Math.cos(theta)*radius,ss=Math.sin(theta)*radius;
+          vertices.push(center.x+axis.x*c+across.x*ss,
+            center.y+axis.y*c+across.y*ss,
+            center.z+axis.z*c+across.z*ss);
+          uvs.push(slice/around,t);
+        }
       }
+      for(let ring=0;ring<sections;ring++){
+        for(let slice=0;slice<around;slice++){
+          const a=ring*(around+1)+slice,b=(ring+1)*(around+1)+slice;
+          const c=a+1,d=b+1;
+          faces.push(a,c,b,c,d,b);
+        }
+      }
+      const sleeve=new THREE.BufferGeometry();
+      sleeve.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+      sleeve.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+      sleeve.setIndex(faces);
+      addMatchedSleeve(sleeve,sign<0?'continuousSleeve_left':'continuousSleeve_right',sign);
     }
   }
   if(style.details.includes('hood')){
@@ -305,7 +387,12 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
     for(const sign of [-1,1]){
       const ring=new THREE.TorusGeometry(.074,.012,6,18);
       ring.rotateX(Math.PI/2);ring.translate(sign*.15,.13,0);
-      add(ring,dark,sign<0?'cuff_left':'cuff_right',pelvis);
+      // Cuffs must follow the lower leg, not the pelvis during WALK/RUN.
+      const shin=resolveFirstBoneName(source.skeleton,[
+        sign<0?'DEF-shinL':'DEF-shinR',
+        sign<0?'DEF-shin.L':'DEF-shin.R'
+      ]);
+      add(ring,dark,sign<0?'cuff_left':'cuff_right',shin);
     }
   }
 }
@@ -322,10 +409,6 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
   const skeleton=source.skeleton;
   const reference=getNode(style.fit==='male'?'kidscade_male_body':'character_low');
   if(!reference?.isSkinnedMesh)throw new Error('Missing fit body for trouser skin transfer');
-  const refPositions=reference.geometry.getAttribute('position');
-  const refIndices=reference.geometry.getAttribute('skinIndex');
-  const refWeights=reference.geometry.getAttribute('skinWeight');
-  if(!refPositions||!refIndices||!refWeights)throw new Error('Chibi body missing reference skin weights');
   for(const side of ['left','right']){
     const sign=side==='left'?-1:1;
     // These indices resolve actual GLTFLoader-sanitized Chibi bones.
@@ -337,48 +420,38 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
     const chino=style.id==='chibi_male_chinos';
     // Overlap the original shorts cuff at the upper thigh to prevent skin
     // wedges between the pelvis shell and the independent leg cylinders.
-    const upperRadius=wide?.151:jogger?.154:chino?.145:.143;
-    const lowerRadius=wide?.116:jogger?.075:chino?.076:.088;
+    const upperRadius=wide?.140:jogger?.154:chino?.145:.143;
+    const lowerRadius=wide?.104:jogger?.075:chino?.076:.088;
     const top=.755,bottom=.082;
     const geometry=new THREE.CylinderGeometry(upperRadius,lowerRadius,top-bottom,16,9,false);
-    geometry.translate(sign*(wide?.166:.153),(top+bottom)*.5,0);
+    geometry.translate(sign*(wide?.178:.153),(top+bottom)*.5,0);
     const positions=geometry.getAttribute('position');
     // Body knees and upper thighs protrude more toward +Z than a round tube.
     // Give the front thigh an anatomically shaped clearance allowance.
     for(let i=0;i<positions.count;i++){
       const y=positions.getY(i),z=positions.getZ(i);
       const thighFront=smooth(.22,.36,y)*(1-smooth(.58,.75,y));
-      if(z>0)positions.setZ(i,z*(1+.68*thighFront));
+      if(z>0)positions.setZ(i,z*(1+(wide?.42:.68)*thighFront));
+      if(wide){
+        // Define two visible trouser legs instead of a skirt-like broad tube;
+        // a tapered knee with a relaxed hem keeps the garment recognizable.
+        const x=positions.getX(i),center=sign*.178;
+        const knee=smooth(.23,.35,y)*(1-smooth(.42,.57,y));
+        const hem=1-smooth(.10,.25,y);
+        const fullness=1-.11*knee+.025*hem;
+        positions.setX(i,center+(x-center)*fullness);
+        positions.setZ(i,positions.getZ(i)*fullness);
+      }
     }
     positions.needsUpdate=true;
-    const indices=new Uint16Array(positions.count*4);
-    const weights=new Float32Array(positions.count*4);
-    // Match the nearest bind-pose body surface vertex. The original body
-    // has blended pelvis, thigh, knee and shin weights which keep trouser
-    // openings aligned with the shorts and eliminate exposed wedge seams.
-    for(let i=0;i<positions.count;i++){
-      const x=positions.getX(i),y=positions.getY(i),z=positions.getZ(i);
-      let nearest=-1,best=Infinity;
-      for(let j=0;j<refPositions.count;j++){
-        const rx=refPositions.getX(j),ry=refPositions.getY(j),rz=refPositions.getZ(j);
-        if(Math.sign(rx)!==sign&&Math.abs(rx)>.03)continue;
-        const d=(x-rx)**2+(y-ry)**2*1.35+(z-rz)**2;
-        if(d<best){best=d;nearest=j;}
-      }
-      if(nearest<0)throw new Error('Unable to resolve trouser skin reference');
-      const offset=i*4;
-      for(let k=0;k<4;k++){
-        indices[offset+k]=refIndices.getComponent(nearest,k);
-        weights[offset+k]=refWeights.getComponent(nearest,k);
-      }
-    }
-    geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(indices,4));
-    geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
+    // Smooth 4-neighbor skin transfer follows the knee and pelvis blends
+    // without stitching a thigh vertex to a single unrelated body triangle.
+    transferSmoothSkinWeights(geometry,reference,{sign,region:'leg'});
     geometry.computeVertexNormals();
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
     const leg=cloneSkinnedMeshWithGeometry(source,geometry,material,style.id+'_leg_'+side);
-    leg.userData={part:'trouser-leg',side,fit:style.fit,articulation:'nearest-body-surface-skin-weights',thighBone:thigh,shinBone:shin};
+    leg.userData={part:'trouser-leg',side,fit:style.fit,articulation:'four-neighbor-smooth-body-weights',skinTransfer:geometry.userData.skinTransfer,thighBone:thigh,shinBone:shin};
     group.add(leg);
   }
 }

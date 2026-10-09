@@ -360,7 +360,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261009-hardfit56/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-dualrig57/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
@@ -450,7 +450,7 @@ test('male base opens first and provides brows visibility, face zoom and gait st
   assert.match(html,/id="gaitBadge"/);
   assert.match(html,/data-view="face"/);
   assert.match(html,/data-chibi-preset="male" data-preset-fit="male">남성형 기본/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-hardfit56/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-dualrig57/);
 });
 
 test('mobile studio shows the live avatar preview before the long wardrobe',()=>{
@@ -536,7 +536,7 @@ test('one-touch mobile Chibi controls are wired to the same real animation, view
   assert.match(js,/setCameraView\(button\.dataset\.quickView\)/);
   assert.match(js,/\[data-chibi-preset\],\[data-view\],\[data-quick-clip\],\[data-quick-view\],\[data-quick-speed\]/);
   assert.match(js,/\$\('speed'\)\.value=button\.dataset\.quickSpeed/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-hardfit56/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-dualrig57/);
 });
 
 test('Chibi v5 wardrobe exposes gender-fit filter and category tabs without restricting shared accessories',()=>{
@@ -619,12 +619,12 @@ test('v5.2 outfits reshape actual skinned geometry and add three-dimensional sle
   assert.match(pack,/source\.parent\.add\(group\)/);
   assert.match(pack,/function makeTrouserLegs\(/);
   assert.match(pack,/const geometry=new THREE\.CylinderGeometry\(upperRadius,lowerRadius,top-bottom,16,9,false\)/);
-  assert.match(pack,/indices\[offset\+k\]=refIndices\.getComponent\(nearest,k\)/);
-  assert.match(pack,/weights\[offset\+k\]=refWeights\.getComponent\(nearest,k\)/);
-  assert.match(pack,/articulation:'nearest-body-surface-skin-weights'/);
-  assert.match(pack,/sourceWeights:'nearest-fit-body-arm'/);
-  assert.match(pack,/refIndex\.getComponent\(nearest,k\)/);
-  assert.match(pack,/refWeight\.getComponent\(nearest,k\)/);
+  assert.match(pack,/transferSmoothSkinWeights\(geometry,reference,\{sign,region:'leg'\}\)/);
+  assert.match(pack,/skinTransfer:geometry\.userData\.skinTransfer/);
+  assert.match(pack,/articulation:'four-neighbor-smooth-body-weights'/);
+  assert.match(pack,/sourceWeights:'four-neighbor-smooth-body-arm'/);
+  assert.match(pack,/const bone=refIndex\.getComponent\(j,k\)/);
+  assert.match(pack,/const w=refWeight\.getComponent\(j,k\)\*strength/);
   assert.match(pack,/style\.id\+'_leg_'\+side/);
   for(const id of newIds){
     assert.ok(pack.includes('id:\''+id+'\''),'Style definition missing '+id);
@@ -816,7 +816,7 @@ test('v5.6 male and female geometry ownership is explicit with no accidental sha
   assert.match(js,/function sanitizeFitVisibility\(\)/);
   assert.match(js,/const incompatible=sanitizeFitVisibility\(\)/);
   assert.match(js,/if\(PRESET_FIT\[name\]!==activeBodyFit\)return/);
-  assert.match(js,/activeBodyFit=fit;\s*applyPreset\(fit==='male'\?'male':'base'\)/);
+  assert.match(js,/activeBodyFit=fit;\s*activateRigScene\(fit\);\s*applyPreset\(fit==='male'\?'male':'base'\)/);
   assert.match(js,/function fitIntegrityIssues\(\)/);
   assert.match(js,/missing-body:/);
   assert.match(js,/bodyFitAudit\(\)/);
@@ -863,4 +863,64 @@ test('v5.6 Chrome audit covers strict fitted tab switching without wrong-fit equ
   assert.match(audit,/assert\.deepEqual\(audit\.incompatible,\[\]/);
   assert.match(audit,/Incompatible preset changed body without using fit switch/);
   assert.match(audit,/fit-isolation-/);
+});
+
+
+test('v5.7 separates male and female bone ownership, animation roots and GLB rig state',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const html=read('teacher/character-3d-studio.html');
+  const manifest=JSON.parse(read('chibi/asset-manifest.json'));
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  const rig=manifest.wardrobeLibrary.rigIsolation;
+  assert.equal(rig.version,'v5.7-independent-runtime-rigs');
+  assert.equal(rig.runtimeBoneInstancesPerFit,78);
+  assert.equal(rig.oneMountedRigAtATime,true);
+  assert.equal(rig.mixerReboundOnBodySwitch,true);
+  assert.match(js,/import \{clone as cloneRiggedScene\} from '\.\.\/assets\/vendor\/three-r160\/addons\/utils\/SkeletonUtils\.js'/);
+  assert.match(js,/rigScenes=\{female:sourceScene,male:cloneRiggedScene\(sourceScene\)\}/);
+  assert.match(js,/function inspectRig\(root\)/);
+  assert.match(js,/function rigIntegrityIssues\(\)/);
+  assert.match(js,/function activateRigScene\(fit\)/);
+  assert.match(js,/mixer=new THREE\.AnimationMixer\(sourceScene\)/);
+  assert.match(js,/rigIsolationAudit\(\)\{/);
+  assert.match(js,/rigIsolationVersion:'chibi-v5\.7-independent-78-bone-rigs'/);
+  assert.match(audit,/window\.__kc3dAudit\.rigIsolationAudit\(\)/);
+  assert.match(audit,/sharedBones,0/);
+  assert.match(audit,/roundtripExport\(\)/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-dualrig57/);
+});
+
+test('v5.8 smooth garment skin weights have four-neighbor blending and reject invalid meshes',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  const studio=read('teacher/character-3d-studio.js');
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(pack,/function transferSmoothSkinWeights\(geometry,reference,\{sign,region\}\)/);
+  assert.match(pack,/const nearest=\[\]/);
+  assert.match(pack,/if\(nearest\.length>4\)nearest\.pop\(\)/);
+  assert.match(pack,/const sorted=\[\.\.\.influence\]\.sort/);
+  assert.match(pack,/weights\[i\*4\+k\]=sorted\[k\]\[1\]\/sum/);
+  assert.match(pack,/skinTransfer:\{/);
+  assert.match(pack,/distantSamples:fallbackCount/);
+  assert.match(pack,/add\(ring,dark,sign<0\?'cuff_left':'cuff_right',shin\)/);
+  assert.doesNotMatch(pack,/add\(ring,dark,sign<0\?'cuff_left':'cuff_right',pelvis\)/);
+  assert.match(pack,/for\(let pass=0;pass<12;pass\+\+\)/);
+  assert.match(pack,/if\(residualUnsafeTriangles\)throw Error/);
+  assert.match(pack,/recoveryPasses,residualUnsafeTriangles/);
+  assert.match(studio,/garmentSkinAudit\(\)\{/);
+  assert.match(audit,/window\.__kc3dAudit\.garmentSkinAudit\(\)/);
+  assert.match(audit,/unweighted,0/);
+  assert.match(audit,/invalidBones,0/);
+  assert.match(audit,/residualUnsafeTriangles,0/);
+});
+
+test('v5.8 visual cleanup uses continuous skinned sleeves and visibly separate wide pant legs',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  assert.match(pack,/new THREE\.CatmullRomCurve3\(puff\?\[start,elbow\]:\[start,elbow,cuff\]\)/);
+  assert.match(pack,/addMatchedSleeve\(sleeve,sign<0\?'continuousSleeve_left':'continuousSleeve_right',sign\)/);
+  assert.match(pack,/sleeve\.setIndex\(faces\)/);
+  assert.doesNotMatch(pack,/shoulderCap=new THREE\.SphereGeometry/);
+  assert.match(pack,/const upperRadius=wide\?\.140/);
+  assert.match(pack,/const lowerRadius=wide\?\.104/);
+  assert.match(pack,/geometry\.translate\(sign\*\(wide\?\.178:\.153\)/);
+  assert.match(pack,/const fullness=1-\.11\*knee\+\.025\*hem/);
 });
