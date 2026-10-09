@@ -40,6 +40,7 @@ const pursuitScene = makePursuerScene(scene);
 let gameMode = 'explore';
 let primeState = makePrimeChase();
 const enemyRemovalQueue = [];
+let bufferedShot = null;
 let primeHudElapsed = 0, lastEnemyButtons = '', feedbackSeconds = 0;
 let resultVisible = false;
 let audioContext = null;
@@ -591,6 +592,7 @@ function enterExplore() {
   primeState.status = 'ready';
   pursuitScene.clear();
   enemyRemovalQueue.length = 0;
+  bufferedShot = null;
   document.body.classList.remove('chase-mode');
   $('chaseHUD').classList.add('hidden');
   $('chaseResult').classList.add('hidden');
@@ -606,6 +608,7 @@ function enterPrimeChase() {
   gameMode = 'chase';
   primeState = startPrimeChase(makePrimeChase());
   enemyRemovalQueue.length = 0;
+  bufferedShot = null;
   pursuitScene.clear();
   pilotPosition.set(0, 200, 365);
   yaw = 0; pitch = -0.28;
@@ -629,6 +632,7 @@ function enterPrimeChase() {
 function showPrimeResult() {
   if (resultVisible) return;
   resultVisible = true;
+  bufferedShot = null;
   const success = primeState.status === 'won';
   if (success) discover('prime_chase_victory');
   active = false;
@@ -642,7 +646,12 @@ function showPrimeResult() {
 function shootPrime(prime) {
   if (gameMode !== 'chase' || !active) return;
   const result = firePrime(primeState, prime);
+  if (result.kind === 'cooldown') {
+    bufferedShot = { prime, targetId: selectedEnemy(primeState)?.id, ttl: .9 };
+    return;
+  }
   if (!['blocked','divided','destroyed'].includes(result.kind)) return;
+  bufferedShot = null;
   pursuitScene.shootEffect(result, pilotPosition, yaw);
   playPrimeSound(result.kind, prime);
   if (result.kind === 'blocked') {
@@ -665,6 +674,17 @@ function updatePrimeCombat(dt) {
   if (gameMode !== 'chase' || primeState.status !== 'playing') return;
   const distances = pursuitScene.update(dt, pilotPosition, yaw, collisionWorld, selectedEnemy(primeState)?.id);
   const events = tickPrimeChase(primeState, dt, distances);
+  if (bufferedShot) {
+    bufferedShot.ttl -= dt;
+    const current = selectedEnemy(primeState);
+    if (bufferedShot.ttl <= 0 || !current || current.id !== bufferedShot.targetId) {
+      bufferedShot = null;
+    } else if (primeState.cooldown <= 0) {
+      const queued = bufferedShot.prime;
+      bufferedShot = null;
+      shootPrime(queued);
+    }
+  }
   for (let i = enemyRemovalQueue.length - 1; i >= 0; i--) {
     const entry = enemyRemovalQueue[i];
     entry.time -= dt;
