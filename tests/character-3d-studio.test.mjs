@@ -771,3 +771,21 @@ test('v5.3.1 prevents legacy/new accessory stacking and restores original hair o
   assert.match(audit,/Legacy shoes show through selected boots/);
   assert.match(audit,/Backpack did not release jacket clearance/);
 });
+
+
+test('v5.4 hats use head-fitting open shell profiles rather than floating solid disks',()=>{
+  const pack=read('teacher/chibi-accessory-pack.js');
+  const js=read('teacher/character-3d-studio.js');
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(pack,/function sculptHat\(kind,center,radius,scalpY\)/);
+  assert.match(pack,/new THREE\.LatheGeometry\(rows\.map/);
+  assert.match(pack,/const rim=scalpY-\.118/);
+  for(const hat of ['baseball','bucket','beanie','beret','straw'])
+    assert.match(pack,new RegExp("(?<!case ')"+hat+":\\\\[\\\\["));
+  assert.match(pack,/referenceBox\.max\.y-Math\.min\(hairHeight\*\.32,width\*\.37\)/);
+  assert.match(js,/const mask=applyHideMasks\(\);\s*const fitted=applyRiggedAccessoryFit/);
+  assert.match(js,/hatSeatingAudit\(\)/);
+  assert.match(audit,/report\.hatSeating=\{cases:\[\],hats:fiveHats,version:'v5\.4-hat-shell'\}/);
+  assert.match(audit,/assert\.ok\(diagnostic\.overlapRatio>\.12/);
+  assert.match(audit,/assert\.ok\(diagnostic\.capRisesAboveCrown/);
+});
