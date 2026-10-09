@@ -438,6 +438,46 @@ const errors=[];
     cached:previews.tiles.filter(x=>x.hasCache).length,
     wholeImageHashes:thumbValues.map(({name,hash,contrasting})=>({name,hash,contrasting}))};
 
+
+  // Hat seating audit v5.4: check all five hats with both body-fit rigs.
+  // Compare their open rims to the *already compressed* hairstyle, not to
+  // the unmodified source bob. Screenshot the problem at WALK/RUN + side/45.
+  const fiveHats=[
+    'chibi_hat_baseball','chibi_hat_bucket','chibi_hat_beanie',
+    'chibi_hat_beret','chibi_hat_straw'
+  ];
+  report.hatSeating={cases:[],hats:fiveHats,version:'v5.4-hat-shell'};
+  for(const fit of ['male','female']){
+    await setFit(fit);
+    for(const hatName of fiveHats){
+      const equipped=await chooseAccessory('accessory',hatName);
+      assert.equal(equipped.name,hatName);
+      for(const [clip,view,phase] of [
+        ['IDLE','side',0],['WALK','side',.25],
+        ['RUN','threeQuarter',.75]
+      ]){
+        const pose=await sample(clip,view,phase,'hat-fit-'+fit+'-'+hatName);
+        const diagnostic=await evalPage('window.__kc3dAudit.hatSeatingAudit()');
+        assert.equal(diagnostic.hat,hatName,'Hat is not the visible item');
+        assert.equal(diagnostic.fit,fit,'Wrong body fit while testing hat');
+        assert.ok(diagnostic.hairSafe,'HAT-SAFE is not active');
+        assert.ok(diagnostic.crownOverlap>0,'Cap opening floats ABOVE the hairline: '+hatName+'/'+fit);
+        assert.ok(diagnostic.overlapRatio>.12,
+          'Cap is too high above current hairstyle: '+hatName+'/'+fit+'/'+clip);
+        assert.ok(diagnostic.overlapRatio<.85,
+          'Cap was forced down past the hairline: '+hatName+'/'+fit+'/'+clip);
+        assert.ok(diagnostic.capRisesAboveCrown,
+          'Hat shell does not wrap over top of crown: '+hatName+'/'+fit);
+        report.hatSeating.cases.push({
+          fit,hat:hatName,clip,view,fraction:phase,
+          overlapRatio:+diagnostic.overlapRatio.toFixed(4),
+          hairSafe:diagnostic.hairSafe,
+          selected:pose.selectedParts.filter(name=>name.startsWith('chibi_hat_'))
+        });
+      }
+    }
+  }
+  await setFit('male');
   // Collect joint trajectories as evidence, but do not claim automatic
   // foot-ground/contact correctness based on bone-pivot height alone.
   for(const clip of ['WALK','RUN']){
