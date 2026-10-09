@@ -360,7 +360,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261009-accessory53/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-meshsafe55/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
@@ -450,7 +450,7 @@ test('male base opens first and provides brows visibility, face zoom and gait st
   assert.match(html,/id="gaitBadge"/);
   assert.match(html,/data-view="face"/);
   assert.match(html,/data-chibi-preset="male">남자 기본/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-accessory53/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-meshsafe55/);
 });
 
 test('mobile studio shows the live avatar preview before the long wardrobe',()=>{
@@ -536,7 +536,7 @@ test('one-touch mobile Chibi controls are wired to the same real animation, view
   assert.match(js,/setCameraView\(button\.dataset\.quickView\)/);
   assert.match(js,/\[data-chibi-preset\],\[data-view\],\[data-quick-clip\],\[data-quick-view\],\[data-quick-speed\]/);
   assert.match(js,/\$\('speed'\)\.value=button\.dataset\.quickSpeed/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-accessory53/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-meshsafe55/);
 });
 
 test('Chibi v5 wardrobe exposes gender-fit filter and category tabs without restricting shared accessories',()=>{
@@ -770,4 +770,31 @@ test('v5.3.1 prevents legacy/new accessory stacking and restores original hair o
   assert.match(audit,/HAT-SAFE hair geometry/);
   assert.match(audit,/Legacy shoes show through selected boots/);
   assert.match(audit,/Backpack did not release jacket clearance/);
+});
+
+
+test('Chibi v5.5 guards against inverted cloth triangles and outsized vertex drifts',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(pack,/function stabilizeGarmentMesh\(source,geometry\)/);
+  assert.match(pack,/const maxDrift=\.062/);
+  assert.match(pack,/const invalid=dot<=0\|\|changedArea<originalArea\*\.42\|\|/);
+  assert.match(pack,/changedArea>originalArea\*2\.4/);
+  assert.match(pack,/stabilizeGarmentMesh\(source,geometry\)/);
+  assert.match(pack,/safetyReport:\{\.\.\.geometry\.userData\}/);
+  assert.match(pack,/meshSafety:'bounded-deformation-with-local-triangle-winding-and-area-v5\.5'/);
+  assert.match(audit,/report\.outfitPack\.safetyReports=/);
+});
+
+test('Chibi v5.5 prevents mismatched and doubled shirt/pants from rendering together',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(js,/const GARMENT_SLOT=name=>LEGACY_OUTFIT_SLOTS\[name\]/);
+  assert.match(js,/function sanitizeGarmentLayers\(preferred=''\)/);
+  assert.match(js,/!compatiblePart\(name\)/);
+  assert.match(js,/const garmentConflicts=sanitizeGarmentLayers\(preferred\)/);
+  assert.match(js,/garmentIntegrityAudit\(\)/);
+  assert.match(audit,/mesh-repro-original-shirt/);
+  assert.match(audit,/Original shirt remained under newer top/);
+  assert.match(audit,/Body switch retained gender-incompatible clothing/);
 });

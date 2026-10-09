@@ -385,6 +385,42 @@ function setNodeVisible(name,visible){
 }
 
 
+// A character with male-fit shorts and a female body (or two separate
+// shirts) may technically export, but produces ripped or doubled cloth.
+const GARMENT_SLOT=name=>LEGACY_OUTFIT_SLOTS[name]||(
+  ['top','bottom'].includes(PART_GROUP(name))?PART_GROUP(name):null
+);
+function sanitizeGarmentLayers(preferred=''){
+  const removed=[];
+  const visible=TOGGLE_NODES.filter(name=>getNode(name)?.visible);
+  // Do not silently choose the incompatible shirt just because it appears
+  // last in the catalog. Always remove clothes for the *other body fit*.
+  for(const name of visible){
+    if((GARMENT_SLOT(name)||HAIR_NODES.includes(name))&&!compatiblePart(name)){
+      setNodeVisible(name,false);
+      removed.push(name);
+    }
+  }
+  const winners=new Map();
+  for(const name of TOGGLE_NODES){
+    const node=getNode(name),slot=GARMENT_SLOT(name);
+    if(!slot||!node?.visible||!compatiblePart(name))continue;
+    // The armor skirt is a decorative part of the original knight ensemble.
+    // It may accompany armor legs, unlike two independent full pants.
+    if(currentPreset==='knight'&&['armorlegs','armorskirt'].includes(name))
+      continue;
+    if(!winners.has(slot)||name===preferred)winners.set(slot,name);
+  }
+  for(const name of TOGGLE_NODES){
+    const node=getNode(name),slot=GARMENT_SLOT(name);
+    if(!slot||!node?.visible)continue;
+    if(currentPreset==='knight'&&['armorlegs','armorskirt'].includes(name))
+      continue;
+    if(winners.get(slot)!==name){setNodeVisible(name,false);removed.push(name);}
+  }
+  return removed;
+}
+
 function equipmentSlot(name){
   return ACCESSORY_SLOT(name)||(LEGACY_SHOE_IDS.includes(name)?'shoes':null);
 }
@@ -463,6 +499,7 @@ function applyHideMasks(){
   return {hatOn,patched};
 }
 function applyAccessoryFit(preferred=''){
+  const garmentConflicts=sanitizeGarmentLayers(preferred);
   const conflicts=resolveAccessoryConflicts(preferred);
   const currentTop=TOGGLE_NODES.find(name=>PART_GROUP(name)==='top'&&getNode(name)?.visible)||'';
   const headwear=ACCESSORY_STYLES.find(style=>style.slot==='hat'&&getNode(style.id)?.visible)?.id||'';
@@ -477,7 +514,7 @@ function applyAccessoryFit(preferred=''){
     thumbnailToken++;
     lastAccessoryFit=activeBodyFit;
   }
-  return {conflicts,mask,fitted};
+  return {garmentConflicts,conflicts,mask,fitted};
 }
 
 function selectedParts(){
@@ -2205,6 +2242,11 @@ function installLocalVisualAudit(){
           fingerprint:fingerprint>>>0};
       });
     },
+    garmentIntegrityAudit(){
+      return {fit:activeBodyFit,garments:TOGGLE_NODES.filter(name=>GARMENT_SLOT(name)&&getNode(name)?.visible)
+        .map(name=>({name,slot:GARMENT_SLOT(name),fit:PART_FIT(name)})),
+        incompatible:TOGGLE_NODES.filter(name=>GARMENT_SLOT(name)&&getNode(name)?.visible&&!compatiblePart(name))};
+    },
     equipmentAudit(){
       return {
         fit:activeBodyFit,
@@ -2263,6 +2305,7 @@ function installLocalVisualAudit(){
           }
           return {name,fit,category,available:!!shell?.isSkinnedMesh,
             visible:!!group?.visible,vertices:pos?.count||0,
+            meshSafety:group?.userData?.safetyReport||null,
             fingerprint:hash>>>0,
             extras:group?.isGroup?group.children.length-1:0,
             rigBones:shell?.skeleton?.bones.length||0};

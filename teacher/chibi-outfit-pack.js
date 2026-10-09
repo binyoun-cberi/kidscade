@@ -53,6 +53,92 @@ const smooth=(a,b,v)=>{
   const t=THREE.MathUtils.clamp((v-a)/(b-a),0,1);
   return t*t*(3-2*t);
 };
+/**
+ * Chibi v5.5: prevent source-skinned fabric transforms from collapsing,
+ * inverting or stretching individual source triangles.
+ * Vertices are blended back towards their untouched bind-pose coordinates
+ * when the authored silhouette would create unsafe local deformation.
+ * Original skinIndex, skinWeight, UV and triangle indices are preserved.
+ */
+function stabilizeGarmentMesh(source,geometry){
+  const origin=source.geometry.getAttribute('position');
+  const target=geometry.getAttribute('position');
+  const triangles=geometry.getIndex();
+  if(!origin||!target||origin.count!==target.count)
+    throw Error('Garment source and deformed mesh vertex counts mismatch');
+  const maxDrift=.062;
+  let driftLimited=0,unsafeTriangles=0;
+  const original=new Float32Array(origin.array.length);
+  original.set(origin.array);
+  const blend=new Float32Array(target.count);
+  blend.fill(1);
+  // Distance clamp prevents lone protruding hem or shoulder vertices.
+  for(let i=0;i<target.count;i++){
+    const dx=target.getX(i)-origin.getX(i);
+    const dy=target.getY(i)-origin.getY(i);
+    const dz=target.getZ(i)-origin.getZ(i);
+    const dist=Math.hypot(dx,dy,dz);
+    if(dist>maxDrift){
+      blend[i]=maxDrift/dist;
+      driftLimited++;
+    }
+  }
+  const ax=new THREE.Vector3(),bx=new THREE.Vector3(),cx=new THREE.Vector3();
+  const ap=new THREE.Vector3(),bp=new THREE.Vector3(),cp=new THREE.Vector3();
+  const edge1=new THREE.Vector3(),edge2=new THREE.Vector3();
+  const normalOrig=new THREE.Vector3(),normalChanged=new THREE.Vector3();
+  const trianglesCount=triangles?Math.floor(triangles.count/3):Math.floor(target.count/3);
+  const getIndex=(t,k)=>triangles?triangles.getX(t*3+k):t*3+k;
+  const getBlended=(index,out)=>{
+    const t=blend[index];
+    out.set(
+      origin.getX(index)+(target.getX(index)-origin.getX(index))*t,
+      origin.getY(index)+(target.getY(index)-origin.getY(index))*t,
+      origin.getZ(index)+(target.getZ(index)-origin.getZ(index))*t);
+    return out;
+  };
+  for(let pass=0;pass<3;pass++){
+    let changed=false;
+    for(let t=0;t<trianglesCount;t++){
+      const a=getIndex(t,0),b=getIndex(t,1),c=getIndex(t,2);
+      ax.fromBufferAttribute(origin,a);bx.fromBufferAttribute(origin,b);
+      cx.fromBufferAttribute(origin,c);
+      normalOrig.copy(edge1.subVectors(bx,ax))
+        .cross(edge2.subVectors(cx,ax));
+      const originalArea=normalOrig.length();
+      if(originalArea<1e-10)continue;
+      getBlended(a,ap);getBlended(b,bp);getBlended(c,cp);
+      normalChanged.copy(edge1.subVectors(bp,ap))
+        .cross(edge2.subVectors(cp,ap));
+      const changedArea=normalChanged.length();
+      const dot=normalOrig.dot(normalChanged);
+      // Preserve winding and avoid highly narrowed or overstretched faces.
+      const invalid=dot<=0||changedArea<originalArea*.42||
+        changedArea>originalArea*2.4;
+      if(!invalid)continue;
+      unsafeTriangles++;
+      for(const i of [a,b,c]){
+        const next=blend[i]*.60;
+        if(next<blend[i]){blend[i]=next;changed=true;}
+      }
+    }
+    if(!changed)break;
+  }
+  let changedVertices=0;
+  for(let i=0;i<target.count;i++){
+    if(blend[i]>=.99999)continue;
+    const p=getBlended(i,ap);
+    target.setXYZ(i,p.x,p.y,p.z);changedVertices++;
+  }
+  target.needsUpdate=true;
+  geometry.userData={
+    ...geometry.userData,
+    meshSafety:'bounded-deformation-with-local-triangle-winding-and-area-v5.5',
+    driftLimited,unsafeTriangles,changedVertices,maxDrift
+  };
+  return geometry.userData;
+}
+
 function remeshSource(source,style){
   const geometry=source.geometry.clone();
   const positions=geometry.getAttribute('position');
@@ -86,6 +172,7 @@ function remeshSource(source,style){
     positions.setXYZ(i,x,y,z);
   }
   positions.needsUpdate=true;
+  stabilizeGarmentMesh(source,geometry);
   geometry.computeVertexNormals();
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
@@ -311,7 +398,8 @@ export function createOutfitPack({
     group.name=style.id;
     group.userData={
       type:'kidscade-rigged-garment',fit:style.fit,category:style.category,
-      sourceMesh:style.base,geometryPolicy:'source-skinned-silhouette-v5.2',
+      sourceMesh:style.base,geometryPolicy:'source-skinned-silhouette-v5.5-safe',
+      safetyReport:{...geometry.userData},
       shapeProfile:{...style.shape},detailMeshes:[...style.details]
     };
     const shell=cloneSkinnedMeshWithGeometry(source,geometry,material,style.id+'_shell');
