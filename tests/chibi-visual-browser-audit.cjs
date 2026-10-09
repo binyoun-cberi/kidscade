@@ -301,6 +301,22 @@ const errors=[];
   assert.ok(newStyles.every(x=>x.meshSafety?.meshSafety==='bounded-deformation-with-local-triangle-winding-and-area-v5.5'),
     'Generated garment missed triangle stability guard');
   report.outfitPack.safetyReports=newStyles.map(({name,meshSafety})=>({name,...meshSafety}));
+  for(const {name,meshSafety} of newStyles){
+    assert.equal(meshSafety.residualUnsafeTriangles,0,'Unsafe triangles remained in '+name);
+    assert.ok(meshSafety.recoveryPasses<=12,'Unbounded garment stabilization '+name);
+  }
+  const skinAudit=await evalPage('window.__kc3dAudit.garmentSkinAudit()');
+  assert.ok(skinAudit.length>=30,'Missing smooth-skinned animated sleeve/trouser meshes');
+  for(const piece of skinAudit){
+    assert.equal(piece.bones,78,'Wrong skinned garment skeleton '+piece.piece);
+    assert.equal(piece.unweighted,0,'Unweighted garment vertices: '+piece.piece);
+    assert.equal(piece.invalidBones,0,'Out-of-range skin bone index '+piece.piece);
+    assert.ok(piece.maximumDeviation<.0001,'Garment weight sum is not normalized: '+piece.piece);
+    assert.equal(piece.transfer.method,'four-neighbor-smooth-body-weights-v5.8',
+      'Old nearest-vertex skin transfer remains on '+piece.piece);
+    assert.equal(piece.transfer.neighbors,4,'Wrong interpolation degree for '+piece.piece);
+  }
+  report.outfitPack.skinTransfer={pieces:skinAudit.length,details:skinAudit};
 
   for(const name of ['chibi_male_hoodie','chibi_male_bomber','chibi_male_varsity','chibi_male_oxford','chibi_male_sweater','chibi_female_cardigan','chibi_female_knit','chibi_female_jacket']){
     const style=catalog3d.find(x=>x.name===name);
