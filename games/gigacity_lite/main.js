@@ -271,6 +271,15 @@ let frameCount = 0;
 let fpsTime = 0;
 let lowFpsCount = 0;
 let cityReady = false;
+let travelledMeters = 0;
+let boostSeconds = 0;
+const discoveries = new Set();
+function discover(id) {
+  if (!active || discoveries.has(id)) return;
+  discoveries.add(id);
+  window.KidscadeGame?.milestone?.(id, { uniqueKey: id });
+}
+
 
 function desiredQuality() {
   return qualitySetting === 'auto' ? (mobile ? 'low' : 'medium') : qualitySetting;
@@ -306,10 +315,10 @@ function loadNearby(force = false) {
   }
   for (const key of loaded.keys()) if (!keep.has(key)) unloadChunk(key);
   rebuildSkyline(cx, cz, radius);
-  $('district').textContent = 'DISTRICT ' + cx + ' · ' + cz;
+  $('district').textContent = '동네 ' + cx + ' · ' + cz;
   let count = 0;
   for (const chunk of loaded.values()) count += chunk.count;
-  $('count').textContent = count + ' buildings';
+  $('count').textContent = '빌딩 ' + count + '채';
   cityReady = true;
 }
 function applyQuality() {
@@ -331,7 +340,7 @@ function applySeed(value) {
 function setAutoFlight(enabled) {
   autoFlight = enabled;
   $('autoButton').setAttribute('aria-pressed', String(enabled));
-  $('autoButton').textContent = enabled ? '자동 비행 켜짐' : '자동 비행 꺼짐';
+  $('autoButton').textContent = enabled ? '자동 구경 중' : '직접 비행 중';
 }
 function setTime(nightMode) {
   night = nightMode;
@@ -344,6 +353,7 @@ function setTime(nightMode) {
   sun.intensity = night ? 0.14 : 2.1;
   laneMaterial.color.setHex(night ? 0x28b8ca : 0x2f778c);
   ground.material.color.setHex(night ? 0x081426 : 0x112135);
+  if (night && active) discover('night_flight');
 }
 function bindPress(id, key) {
   const target = $(id);
@@ -452,6 +462,7 @@ $('generate').addEventListener('click', () => {
   }
   selectedSeed = newSeed || 'NEON-01';
   applySeed(selectedSeed);
+  discover('different_city');
 });
 $('seed').addEventListener('keydown', event => {
   if (event.key === 'Enter') {
@@ -460,12 +471,14 @@ $('seed').addEventListener('keydown', event => {
     // Enter applies the current seed exactly; the button produces a fresh one when unchanged.
     selectedSeed = $('seed').value.trim() || 'NEON-01';
     applySeed(selectedSeed);
+    discover('different_city');
   }
 });
 $('start').addEventListener('click', () => {
   active = true;
   $('intro').classList.add('hidden');
   lastTimestamp = performance.now();
+  window.KidscadeGame?.start?.();
 });
 $('retry').addEventListener('click', () => location.reload());
 window.addEventListener('resize', resize);
@@ -488,6 +501,7 @@ function updateMovement(dt) {
     pitch = -0.28 + Math.sin(seconds * 0.13) * 0.045;
     camera.position.y = 270 + Math.sin(seconds * 0.24) * 12;
   } else {
+    const oldX = camera.position.x, oldZ = camera.position.z;
     const length = Math.max(1, Math.hypot(forward, side));
     forward /= length;
     side /= length;
@@ -496,6 +510,13 @@ function updateMovement(dt) {
     camera.position.z += (-Math.cos(yaw) * forward - Math.sin(yaw) * side) * speed;
     camera.position.y += altitude * speed * 0.8;
     camera.position.y = clamp(camera.position.y, 18, 880);
+    travelledMeters += Math.hypot(camera.position.x - oldX, camera.position.z - oldZ);
+    if (travelledMeters > 1800) discover('far_explorer');
+    if (camera.position.y > 500) discover('sky_explorer');
+    if (held.has('boost') || held.has('ShiftLeft') || held.has('ShiftRight')) {
+      boostSeconds += dt;
+      if (boostSeconds > 8) discover('speed_flight');
+    }
   }
   camera.rotation.set(pitch, yaw, 0, 'YXZ');
   $('altitude').textContent = Math.round(camera.position.y) + 'm';
@@ -514,7 +535,7 @@ function frame(now) {
     fpsTime += dt;
     if (fpsTime >= 1.25) {
       const fps = Math.round(frameCount / fpsTime);
-      $('fps').textContent = fps + ' FPS';
+      $('fps').textContent = '화면 ' + fps + 'fps';
       frameCount = 0;
       fpsTime = 0;
       // In AUTO mode, prefer a steady image to full-resolution overheating.
@@ -533,6 +554,11 @@ function frame(now) {
   ground.position.z = camera.position.z;
   renderer.render(scene, camera);
 }
+window.KidscadeGame?.registerPauseHandlers?.({
+  pause() { active = false; },
+  resume() { if ($('intro').classList.contains('hidden')) active = true; lastTimestamp = performance.now(); }
+});
+window.KidscadeGame?.registerCleanup?.(() => { active = false; });
 applySeed(selectedSeed);
 setTime(false);
 resize();
