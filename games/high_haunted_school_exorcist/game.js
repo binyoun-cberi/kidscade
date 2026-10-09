@@ -546,7 +546,7 @@ function installHorrorAsset(kind,gltf,url){
   if(chosen){
     // Root translation tracks can displace a model outside its room.
     const stationary=new THREE.AnimationClip(chosen.name,chosen.duration,
-      chosen.tracks.filter(track=>!/(?:hips|root|armature)\\.position/i.test(track.name)));
+      chosen.tracks.filter(track=>!/(?:hips|root|armature)\.position/i.test(track.name)));
     if(stationary.tracks.length){
       const mixer=new THREE.AnimationMixer(visual);
       const action=mixer.clipAction(stationary);action.play();
