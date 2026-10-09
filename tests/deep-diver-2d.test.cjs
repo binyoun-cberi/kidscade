@@ -384,7 +384,7 @@ test('Deep Diver v15 sonar guides off-screen targets',()=>{
 test('Deep Diver v15 requires safe return for all economic rewards',()=>{
   assert.match(js,/base=ok&&complete\?world\.contract\.reward:0/);
   assert.match(js,/recordDepth=ok\?Math\.max\(0,world\.maxDepth-previousBest\):0/);
-  assert.match(js,/gain=ok\?Math\.max\(0,world\.income\+base\+depthBonus\+dailyBonus\+survival\):0/);
+  assert.match(js,/gain=ok\?Math\.max\(0,world\.income\+world\.cleanupIncome\+base\+depthBonus\+dailyBonus\+survival\):0/);
   assert.match(js,/depthBonus=ok\?Math\.round\(recordDepth\*2\.4\):0/);
   assert.match(js,/구조 시 인양 보상과 오늘 잡은 식재료는 회수되지 않습니다/);
 });
@@ -835,7 +835,7 @@ test('Deep Diver v28 separates campaign contracts from rotating daily requests',
 test('Deep Diver v28 pays daily requests only after a safe successful return',()=>{
   assert.match(js,/dailyComplete=ok&&dailyTaskComplete\(world\.daily\)/);
   assert.match(js,/dailyBonus=dailyComplete\?world\.daily\.reward:0/);
-  assert.match(js,/world\.income\+base\+depthBonus\+dailyBonus\+survival/);
+  assert.match(js,/world\.income\+world\.cleanupIncome\+base\+depthBonus\+dailyBonus\+survival/);
   assert.match(js,/오늘의 보너스/);
   assert.match(js,/주요 의뢰 보상/);
 });
