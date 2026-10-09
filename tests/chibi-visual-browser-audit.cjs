@@ -174,11 +174,21 @@ const errors=[];
     .wardrobeLibrary.fitIsolation;
   assert.equal(hardFit.version,'v5.6-hard-fit');
   report.fitIsolation={cases:[],outfitSwaps:[]};
+  report.rigIsolation={cases:[]};
   for(const fit of ['male','female']){
     await evalPage("document.querySelector('[data-body-fit="+JSON.stringify(fit)+"]').click()");
     const audit=await evalPage('window.__kc3dAudit.bodyFitAudit()');
     assert.equal(audit.fit,fit,'Wrong active fitted body after explicit switch');
     assert.deepEqual(audit.incompatible,[],'Wrong-fit base, hair or garments visible: '+fit);
+    const rig=await evalPage('window.__kc3dAudit.rigIsolationAudit()');
+    assert.equal(rig.activeFit,fit,'Active rig mismatch');
+    assert.equal(rig.maleBoneCount,78,'Male independent rig lost source bone count');
+    assert.equal(rig.femaleBoneCount,78,'Female independent rig lost source bone count');
+    assert.equal(rig.sharedBones,0,'Male and female rigs unexpectedly share live Bones');
+    assert.equal(rig.activeAttached,true,'Selected gender rig not mounted for rendering');
+    assert.equal(rig.inactiveAttached,false,'Other gender rig mounted into render/export scene');
+    assert.equal(rig.mixerBound,true,'Animation mixer targets the wrong gender rig');
+    assert.deepEqual(rig.issues,[],'Invalid skeleton reference or shared transform');
     const allowed=new Set([...hardFit.parts[fit],...hardFit.parts.shared]);
     assert.deepEqual([...new Set(audit.availableParts)].sort(),[...allowed].sort(),
       'UI model includes forbidden or missing fit parts: '+fit);
@@ -201,6 +211,14 @@ const errors=[];
     for(const clip of ['IDLE','WALK']){
       await sample(clip,'threeQuarter',.25,'fit-isolation-'+fit);
     }
+    const exported=await evalPage('window.__kc3dAudit.roundtripExport()');
+    assert.equal(exported.fit,fit,'GLB exported the wrong body fit');
+    assert.ok(exported.bytes>10000,'Independent rig exported an empty GLB');
+    assert.equal(exported.clips.length,11,'Animated GLB lost source clips');
+    assert.ok(exported.skins.length>0,'Animated GLB lost skin bindings');
+    assert.ok(exported.skins.every(skin=>skin.bones===78),'GLB skin has incorrect bone count');
+    report.rigIsolation.cases.push({fit,...rig,exportBytes:exported.bytes,
+      exportedSkinnedMeshes:exported.skins.length,exportedClips:exported.clips.length});
     report.fitIsolation.cases.push({fit,available:audit.availableParts.length,
       presets:audit.presetButtons.filter(x=>!x.hidden).map(x=>x.name),
       categories:dom.map(x=>({name:x.category,count:x.names.length}))});
