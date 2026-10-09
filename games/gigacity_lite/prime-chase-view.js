@@ -84,8 +84,9 @@ function createEnemyScene(enemy) {
     depthTest: false, depthWrite: false, toneMapped: false
   });
   const sign = new THREE.Sprite(signMaterial);
-  sign.position.y = 8;
-  sign.scale.set(23, 11.5, 1);
+  // Enlarge only the hull, never the math label; 84/105 must remain legible.
+  sign.position.y = 8 / spec.hull;
+  sign.scale.set(23 / spec.hull, 11.5 / spec.hull, 1);
   root.add(sign);
   root.userData.enemyId = enemy.id;
   return { root, body, reticle, sign, number: enemy.number, hitPulse: 0,
@@ -134,7 +135,11 @@ export function makePursuerScene(scene) {
     v.sign.material.needsUpdate = true;
     v.number = enemy.number;
     v.hitPulse = 0.58;
-    const fraction = damageStage(enemy.divisionCount, enemy.original === 1 ? 1 : 5);
+    let remaining = enemy.original, totalFactors = 0;
+    for (let i = 2; i <= remaining; i++) {
+      while (remaining % i === 0) { totalFactors++; remaining /= i; }
+    }
+    const fraction = damageStage(enemy.divisionCount, totalFactors);
     v.body.scale.setScalar(Math.max(.82, 1 - fraction * .16));
     const piece = v.armorPieces.shift();
     if (piece && piece.parent) {
@@ -187,7 +192,7 @@ export function makePursuerScene(scene) {
     const v = visuals.get(id);
     if (!v) return;
     v.sign.material.color.setHex(0xff7258);
-    v.sign.scale.set(25, 12.5, 1);
+    v.sign.scale.set(25 / v.originalScale, 12.5 / v.originalScale, 1);
     v.warningTime = seconds;
     if (!aim) return;
     if (v.warningLine) {
@@ -249,7 +254,7 @@ export function makePursuerScene(scene) {
         v.warningTime -= dt;
         if (v.warningTime <= 0) {
           v.sign.material.color.setHex(0xffffff);
-          v.sign.scale.set(23, 11.5, 1);
+          v.sign.scale.set(23 / v.originalScale, 11.5 / v.originalScale, 1);
         }
       }
       if (v.hitPulse > 0) {
