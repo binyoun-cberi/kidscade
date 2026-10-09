@@ -467,7 +467,8 @@ function applyAccessoryFit(preferred=''){
   const currentTop=TOGGLE_NODES.find(name=>PART_GROUP(name)==='top'&&getNode(name)?.visible)||'';
   const headwear=ACCESSORY_STYLES.find(style=>style.slot==='hat'&&getNode(style.id)?.visible)?.id||'';
   const fitted=applyRiggedAccessoryFit({
-    getNode,fit:activeBodyFit,topName:currentTop,headwearName:headwear
+    getNode,fit:activeBodyFit,topName:currentTop,headwearName:headwear,
+    hairName:HAIR_NODES.find(name=>getNode(name)?.visible)||''
   });
   const mask=applyHideMasks();
   if(lastAccessoryFit!==activeBodyFit){
