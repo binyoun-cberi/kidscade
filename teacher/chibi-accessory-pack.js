@@ -106,17 +106,21 @@ export function applyAccessoryFit({getNode,fit='male',topName='',headwearName=''
         const accessoryBox=new THREE.Box3().setFromObject(group,true);
         const referenceBox=new THREE.Box3().setFromObject(reference,true);
         if(!accessoryBox.isEmpty()&&!referenceBox.isEmpty()){
+          const width=referenceBox.max.x-referenceBox.min.x;
+          const hairHeight=referenceBox.max.y-referenceBox.min.y;
+          // The hat's opening should sit *around* the head, roughly one
+          // crown-radius below its top; aligning brim with hair top is why
+          // the former hat floated like a plate above the character.
           const target=style.slot==='hat'
-            // The brim should slightly overlap the hair crown.
-            ?referenceBox.max.y-(referenceBox.max.y-referenceBox.min.y)*.125
+            ?referenceBox.max.y-Math.min(hairHeight*.32,width*.37)
             :referenceBox.min.y;
-          const current=style.slot==='hat'?accessoryBox.min.y:accessoryBox.min.y;
+          const current=accessoryBox.min.y;
           const worldDelta=THREE.MathUtils.clamp(target-current,
-            style.slot==='hat'?-.19:-.035,
-            style.slot==='hat'?.035:.035);
+            style.slot==='hat'?-.42:-.035,
+            style.slot==='hat'?.14:.035);
           const parentScale=group.parent?.getWorldScale(new THREE.Vector3()).y||1;
           group.position.y=THREE.MathUtils.clamp(
-            group.position.y+worldDelta/parentScale,-.31,.13);
+            group.position.y+worldDelta/parentScale,-.50,.20);
           group.updateWorldMatrix(true,true);
         }
       }
@@ -149,6 +153,27 @@ function cyl(top,bottom,h,x,y,z){
   const g=new THREE.CylinderGeometry(top,bottom,h,20,4);
   g.translate(x,y,z);return g;
 }
+/**
+ * Open-bottom head-fitting hat shells. The old spheres/cylinders had flat
+ * undersides that looked like UFOs resting on top of the hairstyle.
+ * Profiles are in source rig coordinates and follow actual crown curvature.
+ */
+function sculptHat(kind,center,radius,scalpY){
+  const rim=scalpY-.118;
+  const rows={
+    baseball:[[1.055,0],[1.075,.032],[1.08,.075],[.995,.145],[.84,.205],[.53,.251],[.18,.274],[0,.281]],
+    bucket:[[1.08,0],[1.085,.037],[1.04,.105],[.97,.171],[.80,.217],[.44,.240],[0,.246]],
+    beanie:[[1.015,0],[1.07,.031],[1.085,.095],[1.025,.171],[.82,.235],[.47,.280],[0,.300]],
+    beret:[[.85,0],[.98,.034],[1.23,.092],[1.31,.148],[1.24,.197],[.98,.256],[.52,.285],[0,.294]],
+    straw:[[.93,0],[.965,.038],[.953,.139],[.875,.219],[.60,.246],[0,.253]]
+  }[kind];
+  if(!rows)throw Error('Unknown hat shell profile '+kind);
+  const g=new THREE.LatheGeometry(rows.map(([r,h])=>
+    new THREE.Vector2(radius*r,rim+h)),28,0,Math.PI*2);
+  g.translate(center.x,0,center.z);
+  return g;
+}
+
 function buildGeometry(style,source,sourceHair,eyes){
   const kind=style.kind;
   if(style.slot==='shoes'){
@@ -185,11 +210,11 @@ function buildGeometry(style,source,sourceHair,eyes){
   const faceZ=eb.max.z+.020;
   const eyeY=(eb.min.y+eb.max.y)*.50;
   switch(kind){
-    case 'baseball':return sphere(hc.x,scalpY+.022,hc.z,headR*1.12,.160,headR*.95);
-    case 'bucket':return cyl(headR*.98,headR*1.14,.18,hc.x,scalpY-.050,hc.z);
-    case 'beanie':return sphere(hc.x,scalpY+.014,hc.z,headR*1.08,.163,headR*1.03);
-    case 'beret':return sphere(hc.x-.030,scalpY+.080,hc.z,headR*1.30,.110,headR*1.02);
-    case 'straw':return cyl(headR*.88,headR*.98,.145,hc.x,scalpY+.016,hc.z);
+    case 'baseball':
+    case 'bucket':
+    case 'beanie':
+    case 'beret':
+    case 'straw':return sculptHat(kind,hc,headR,scalpY);
     case 'round':return ring(.071,.009,-.110,eyeY,faceZ);
     case 'square':return box(.150,.119,.012,-.110,eyeY,faceZ);
     case 'sunglasses':return sphere(-.110,eyeY,faceZ,.078,.055,.010);
@@ -234,24 +259,33 @@ function createDetails(style,context){
         add(sphere(x,b.min.y+.056,toe-.107,.092,.044,.129),style.color,'softUpper_'+sign,'shoe');
     }
   } else if(style.slot==='hat'){
+    const rimY=scalpY-.118;
     if(kind==='baseball'){
-      add(sphere(0,scalpY-.072,hc.z+headR*.92,.183,.018,.097),style.color,'brim');
-      // Omit the raised badge: it became a vertical spike above the cap in WALK/RUN.
+      // A front-projecting visor below the cap's curved opening.
+      add(sphere(0,rimY+.004,hc.z+headR*.92,headR*.68,.017,headR*.52),
+        style.color,'visor');
+      add(ring(headR*1.055,.009,hc.x,rimY+.015,hc.z,'y'),black,'seam');
     }else if(kind==='bucket'){
-      add(cyl(headR*1.25,headR*1.25,.025,0,scalpY-.155,hc.z),style.color,'brim');
-      add(ring(headR*.98,.013,0,scalpY-.035,hc.z,'y'),black,'stitch');
+      add(cyl(headR*1.27,headR*1.27,.024,hc.x,rimY-.012,hc.z),style.color,'brim');
+      add(ring(headR*1.04,.012,hc.x,rimY+.074,hc.z,'y'),black,'stitch');
     }else if(kind==='beanie'){
-      add(ring(headR*.96,.030,0,scalpY-.089,hc.z,'y'),white,'cuff');
-      add(sphere(0,scalpY+.174,hc.z,.052,.046,.052),style.color,'pom');
+      add(ring(headR*1.045,.026,hc.x,rimY+.027,hc.z,'y'),
+        '#eee6de','knitBand');
+      // A modest fabric seam replaces the old protruding spike/pom.
+      add(ring(headR*.44,.006,hc.x,rimY+.266,hc.z,'y'),
+        style.color,'crownStitch');
     }else if(kind==='beret'){
-      add(ring(headR*.93,.014,0,scalpY-.014,hc.z,'y'),black,'edge');
-      add(cyl(.018,.020,.048,-.03,scalpY+.171,hc.z),black,'stem');
+      // Narrow fitted band under a raised, rounded beret crown.
+      add(ring(headR*.865,.020,hc.x,rimY+.012,hc.z,'y'),black,'headBand');
     }else if(kind==='straw'){
-      add(cyl(headR*1.55,headR*1.55,.022,0,scalpY-.052,hc.z),style.color,'brim');
-      add(ring(headR*.95,.019,0,scalpY+.038,hc.z,'y'),'#9b7250','ribbon');
+      add(cyl(headR*1.52,headR*1.52,.023,hc.x,rimY-.010,hc.z),
+        style.color,'wideBrim');
+      add(ring(headR*.945,.020,hc.x,rimY+.102,hc.z,'y'),
+        '#9b7250','ribbon');
     }else if(kind==='headphones'){
       for(const sign of [-1,1])
-        add(box(.057,.144,.108,sign*(headR*1.11),eyeY+.065,hc.z),'#2e344b','earCup_'+sign);
+        add(box(.057,.144,.108,sign*(headR*1.11),eyeY+.065,hc.z),
+          '#2e344b','earCup_'+sign);
     }
   }else if(style.slot==='face'){
     if(['round','square','sunglasses','goggles'].includes(kind)){
