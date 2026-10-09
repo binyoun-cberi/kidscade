@@ -51,7 +51,8 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
 #action{width:132px;min-height:68px;max-height:85px;padding:13px 10px;border:2px solid #ffe3ad79;background:#624f37e0;border-radius:14px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;line-height:1.4;box-shadow:0 9px 30px #0008}
 #action:not(:disabled){background:#bb7b38e7;color:#fff6e3}
 #action:disabled{opacity:.74}
-#flash{padding:13px 11px;min-height:47px;min-width:121px;border:1px solid #a1b5ba77;border-radius:11px;background:#263f4ce8;font-size:12px}
+#flash,#guide{padding:13px 11px;min-height:47px;min-width:121px;border:1px solid #a1b5ba77;border-radius:11px;background:#263f4ce8;font-size:12px}
+#guide{background:#30495aee;border-color:#a9c5d78a}
 #gaze{position:absolute;bottom:127px;left:50%;transform:translateX(-50%);width:min(300px,76vw);border-radius:10px;border:1px solid #c8c1f08c;background:#08101cde;padding:9px 13px;text-align:center;font-size:12px;color:#e4d7fa;box-shadow:0 8px 20px #0008}
 #gaze .track{margin-top:7px}
 #gaze .track i{background:#bd9ff9}
@@ -101,7 +102,7 @@ body.in-locker #joystick{opacity:.2;pointer-events:none}
   #joystick{left:20px;bottom:18px;width:99px;height:99px}
   .controls{right:12px;bottom:16px;gap:7px;flex-direction:column}
   #action{width:113px;min-height:59px;font-size:11px}
-  #flash{min-height:39px;min-width:112px;font-size:10px;padding:8px}
+  #flash,#guide{min-height:35px;min-width:112px;font-size:10px;padding:7px}
   #gaze{bottom:129px}
   .card{padding:18px}.card h1{font-size:22px}
 }
@@ -149,10 +150,11 @@ body.in-locker #joystick{opacity:.2;pointer-events:none}
 <div id="gaze" class="hidden"><span id="gazeLabel">처녀귀신 관찰 진행</span><div class="track"><i id="gazeValue"></i></div></div>
 <div id="joystick" aria-label="가상 이동 스틱"><div id="knob"></div></div>
 <div class="controls">
+  <button id="guide" type="button" aria-label="선택형 목적지 길찾기">길찾기 [H]</button>
   <button id="flash" type="button">손전등 켜짐 [F]</button>
   <button id="action" type="button" disabled><strong id="actionText">가까이에서 조사 [E]</strong></button>
 </div>
-<div id="controlHint">WASD 이동 · 드래그로 시선 돌리기 · E 조사/사물함 숨기 · F 손전등</div>
+<div id="controlHint">WASD 이동 · 드래그 시점 · E 조사/숨기 · H 길찾기 · F 손전등</div>
 <section id="intro" class="overlay">
   <div class="card">
     <span class="eyebrow">CASE 001 · 자정의 학교 · SIX ANOMALIES</span>
@@ -173,6 +175,8 @@ body.in-locker #joystick{opacity:.2;pointer-events:none}
   <div class="card">
     <h2>조작과 괴이 대응법</h2>
     <div class="rule"><b>1인칭 이동</b> · 카메라는 캐릭터의 눈과 같습니다. WASD 또는 왼쪽 스틱으로 이동하고, 화면을 드래그하면 캐릭터도 고개를 돌립니다. 위아래로도 볼 수 있습니다.</div>
+    <div class="rule"><b>교실 문</b> · 닫힌 교실 문은 가까이 가면 자동으로 열리고, 지나간 뒤 다시 닫힙니다.</div>
+    <div class="rule"><b>길찾기</b> · 첫 물건까지 노란 안내선이 표시됩니다. 이후 길을 잃으면 H 키나 길찾기 버튼으로 현재 임무의 안내선을 켜고 끌 수 있습니다.</div>
     <div class="rule"><b>조사하기</b> · 물건 바로 옆에 다가가면 오른쪽 행동 버튼이 활성화됩니다. E 키로도 행동할 수 있습니다.</div>
 <div class="rule"><b>사물함 숨기</b> · 복도의 낡은 사물함에 가까이 가서 E나 행동 버튼을 누르세요. 숨으면 움직이거나 조사할 수 없고, 안에서 손전등도 꺼집니다. 귀신이 문 앞을 오래 수색하면 발견돼요. 다시 E로 나올 수 있습니다.</div>
     <div class="rule"><b>처녀귀신과 달걀귀신</b> · 처녀귀신을 눈으로 똑바로 보면 멈추고, 달걀귀신을 똑바로 보면 위험합니다. 화면이 바라보는 방향이 실제 판정 방향이므로 마우스·손가락으로 시선을 바꿔 대응하세요.</div>
