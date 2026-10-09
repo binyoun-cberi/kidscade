@@ -267,6 +267,35 @@ function buildSkinConformingSleeve(body,sign,puff){
     // vertices with >42% arm influence cut the sleeve off at the elbow.
     return armWeight>.16;
   };
+  // Inspect source arm skinning by vertical slice. Lower arms in the CC0
+  // GLB may have different bone ownership from the visible upper-arm shell.
+  const sourceBands=[
+    {min:.40,max:.60,count:0,arm:0,hand:0,top:new Map()},
+    {min:.60,max:.75,count:0,arm:0,hand:0,top:new Map()},
+    {min:.75,max:.90,count:0,arm:0,hand:0,top:new Map()},
+    {min:.90,max:1.05,count:0,arm:0,hand:0,top:new Map()},
+    {min:1.05,max:1.20,count:0,arm:0,hand:0,top:new Map()}
+  ];
+  for(let i=0;i<positions.count;i++){
+    const x=positions.getX(i),y=positions.getY(i);
+    if(x*sign<.115)continue;
+    const band=sourceBands.find(row=>y>=row.min&&y<row.max);
+    if(!band)continue;
+    band.count++;
+    for(let k=0;k<4;k++){
+      const w=skinWeight.getComponent(i,k),bi=skinIndex.getComponent(i,k);
+      if(!w)continue;
+      const bone=body.skeleton.bones[bi]?.name||'unknown';
+      band.top.set(bone,(band.top.get(bone)||0)+w);
+      if(armBones.has(bi))band.arm+=w;
+      if(/hand/i.test(bone))band.hand+=w;
+    }
+  }
+  const sourceBandReport=sourceBands.map(({min,max,count,arm,hand,top})=>({
+    range:[min,max],count,arm:Number(arm.toFixed(2)),hand:Number(hand.toFixed(2)),
+    dominant:[...top].sort((a,b)=>b[1]-a[1]).slice(0,5)
+      .map(([name,weight])=>[name,Number(weight.toFixed(2))])
+  }));
   const verts=[],uvs=[],bones=[],weights=[];
   let triangles=0,minY=Infinity,maxY=-Infinity;
   const verticalBands=[0,0,0,0];
@@ -303,7 +332,7 @@ function buildSkinConformingSleeve(body,sign,puff){
   geometry.computeBoundingBox();geometry.computeBoundingSphere();
   geometry.userData={skinTransfer:{
     method:'source-body-arm-skin-v5.9',region:'arm',neighbors:4,
-    vertices:verts.length/3,triangles,minY,maxY,verticalBands
+    vertices:verts.length/3,triangles,minY,maxY,verticalBands,sourceBandReport
   }};
   return geometry;
 }
