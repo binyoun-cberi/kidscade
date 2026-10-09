@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>심해 다이버 시뮬레이터</title>
-<link rel="stylesheet" href="./deep-diver-2d.css?v=37">
+<link rel="stylesheet" href="./deep-diver-2d.css?v=38">
 </head>
 <body>
 <canvas id="game" aria-label="2D 심해 잠수 탐사 게임"></canvas>
@@ -17,7 +17,7 @@
       <div class="row"><span id="depthText">0m</span><b id="zoneText">산호 정원</b></div>
     </div>
     <div class="hudBox" id="missionHud"><div class="missionTitle" id="missionName">생태 조사</div><div class="missionText" id="missionText"></div><div class="rookieTip hidden" id="rookieTip"></div><div class="objectiveCompass hidden" id="objectiveCompass" data-kind="objective"><span id="compassArrow">→</span><div><b id="compassLabel">다음 목표</b><small id="compassDistance"></small></div></div></div>
-    <div class="hudBox" id="rightHud"><div>오늘 어획 <b id="bagText">0 / 4kg</b></div><div>수익 <b id="moneyText">0원</b></div><div>귀환 <b id="reserveText" class="reserve-safe">여유</b></div><div id="sonarText">SONAR READY</div><button class="btn dark" id="lightBtn">LIGHT ON · L</button><button class="btn dark" id="soundBtn">SOUND OFF</button></div>
+    <div class="hudBox" id="rightHud"><div>오늘 어획 <b id="bagText">0 / 4kg</b></div><div class="cleanupHud">해양 정화 <b id="cleanupText">0 / 8개</b></div><div>수익 <b id="moneyText">0원</b></div><div>귀환 <b id="reserveText" class="reserve-safe">여유</b></div><div id="sonarText">SONAR READY</div><button class="btn dark" id="lightBtn">LIGHT ON · L</button><button class="btn dark" id="soundBtn">SOUND OFF</button></div>
   </div>
   <div class="hudBox hidden" id="observeHud" aria-live="polite">
     <div class="observeHead"><span id="observeMode">미분석</span><b id="observeTitle">관찰 대상</b></div>
@@ -86,6 +86,7 @@
 <section class="overlay hidden" id="restaurantScreen"><div class="panel restaurantPanel"><h2>밤 장사 · BLUE KITCHEN</h2><div id="restaurantBody"></div></div></section>
 <section class="overlay hidden" id="resultScreen"><div class="panel"><h2 id="resultTitle">잠수 보고서</h2><div id="resultBody"></div><div class="toolbar eveningActions"><button class="btn gold" id="nextBtn">밤 장사 시작</button><button class="btn" id="restBtn">휴식하고 다음 날</button><button class="btn dark" id="homeBtn">하루 마치고 시작 화면</button></div></div></section>
 
-<script src="./diver-v7.js?v=37"></script>
+<script src="../../assets/game/2d/shared/openmon-item-icons.js?v=1"></script>
+<script src="./diver-v7.js?v=38"></script>
 </body>
 </html>
