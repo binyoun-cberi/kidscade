@@ -405,9 +405,11 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
     add(pocket,makeSolidMaterial(style.color,style.label+' 포켓'),'pocket');
   }
   if(style.details.includes('zip')){
-    const zip=new THREE.BoxGeometry(.009,.27,.009);
-    zip.translate(0,.96,.154);
-    add(zip,accent,'zip');
+    // The old rigid, bright .27m zipper floated in front of the moving
+    // jacket in profile view. A very shallow dark seam stays visually sewn in.
+    const zip=new THREE.BoxGeometry(.005,.20,.002);
+    zip.translate(0,.985,.105);
+    add(zip,dark,'zip');
   }
   if(style.details.includes('buttons')){
     for(let j=0;j<3;j++){
