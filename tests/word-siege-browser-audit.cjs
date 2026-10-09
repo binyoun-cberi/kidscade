@@ -281,6 +281,53 @@ let chrome,ws;
   assert.match(vocabulary.FIREWORK,/불꽃/);
   console.log('WORD_SIEGE_VOCABULARY_ABILITIES '+JSON.stringify(vocabulary));
 
+
+  // Check the full-alphabet INK refresh with real touch-sized mobile controls.
+  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+  await send('Page.navigate',{url:'http://127.0.0.1:'+port+'/games/language_word_siege/index.html?rerollAudit=1'});
+  await pause(650);
+  const reroll=await evaluate(`(()=>{
+    document.getElementById('startBtn').click();
+    const btn=document.getElementById('rerollBtn');
+    const letters=()=>[...document.querySelectorAll('#rack .tile')].map(e=>e.textContent).join('');
+    const initial=letters(),startInk=Number(document.getElementById('inkText').textContent);
+    document.querySelector('#rack .tile').click();
+    const picked=document.querySelectorAll('#rack .tile.sel').length;
+    document.getElementById('freeWord').value='COW';
+    const before=btn.textContent;
+    btn.click();
+    const first=letters(),firstInk=Number(document.getElementById('inkText').textContent);
+    const after=btn.textContent,selected=document.querySelectorAll('#rack .tile.sel').length;
+    btn.click();
+    const second=letters(),secondInk=Number(document.getElementById('inkText').textContent);
+    const controls=[...document.querySelectorAll('.actions button')].map(e=>{
+      const r=e.getBoundingClientRect();
+      return {id:e.id,left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width};
+    });
+    return {initial,first,second,picked,selected,startInk,firstInk,secondInk,before,after,
+      finalLabel:btn.textContent,disabled:btn.disabled,typed:document.getElementById('freeWord').value,
+      controls,screen:innerWidth,animation:document.getElementById('rack').classList.contains('rerolled')};
+  })()`);
+  assert.equal(reroll.initial.length,12);
+  assert.equal(reroll.picked,1);
+  assert.notEqual(reroll.initial,reroll.first);
+  assert.notEqual(reroll.first,reroll.second);
+  assert.equal(reroll.first.length,12);
+  assert.equal(reroll.second.length,12);
+  assert.equal(reroll.selected,0);
+  assert.equal(reroll.startInk,20);
+  assert.equal(reroll.firstInk,14);
+  assert.equal(reroll.secondInk,6);
+  assert.match(reroll.before,/6/);assert.match(reroll.after,/8/);
+  assert.match(reroll.finalLabel,/10/);
+  assert.equal(reroll.disabled,true);
+  assert.equal(reroll.typed,'COW');
+  assert.equal(reroll.animation,true);
+  assert.ok(reroll.controls.every(c=>c.width>25&&c.left>=-2&&c.right<=reroll.screen+2),
+    'mobile action buttons must not overflow screen: '+JSON.stringify(reroll.controls));
+  console.log('WORD_SIEGE_RACK_REROLL '+JSON.stringify(reroll));
+  const rerollShot=await send('Page.captureScreenshot',{format:'jpeg',quality:45,captureBeyondViewport:false});
+  console.log('WORD_SIEGE_IMAGE_rack-reroll='+rerollShot.data);
   assert.equal(pageErrors.length,0,'Browser JavaScript errors: '+JSON.stringify(pageErrors));
   console.log('WORD_SIEGE_BROWSER_AUDIT_PASSED 4 sizes, 20 stage selectors, 4 advanced stage renders and pointer gameplay');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1}).finally(async()=>{
