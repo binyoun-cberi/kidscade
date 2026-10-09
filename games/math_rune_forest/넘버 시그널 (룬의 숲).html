@@ -3,28 +3,30 @@
 <style>
 :root{--ink:#191b2d;--panel:#24283e;--border:#535b78;--gold:#ffd783;--mint:#93e5b7;--text:#f1efdc}*{box-sizing:border-box}body{margin:0;overflow:hidden;background:var(--ink);color:var(--text);font-family:system-ui,'Malgun Gothic',sans-serif}canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;touch-action:none}button,select{font:inherit;color:inherit;background:#30374d;border:2px solid #6b7690;box-shadow:0 4px #111522;cursor:pointer;padding:10px 16px;border-radius:3px}button:hover{border-color:var(--gold);background:#3b445d}button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}button:active{transform:translateY(2px);box-shadow:0 2px #111522}button.selected{border-color:#ffe6a2;background:#54492f;box-shadow:0 4px #a87d3e}button:disabled{opacity:.5;cursor:default}.hidden{display:none!important}.overlay{position:absolute;inset:0;z-index:5;background:#111527dc;display:grid;place-items:center;padding:20px;backdrop-filter:blur(3px)}.panel{width:min(850px,100%);padding:32px;background:linear-gradient(#30364e,#23283d);border:3px solid #7a8297;box-shadow:0 0 0 5px #131b29,0 18px 60px #0009;max-height:92dvh;overflow:auto}.eyebrow{color:var(--mint);font-size:12px;font-weight:800;letter-spacing:3px}h1{font-size:clamp(36px,7vw,68px);line-height:1.12;margin:15px 0;color:var(--gold);text-shadow:3px 4px #121b2e}h1 small{display:block;font-size:20px;color:var(--text);margin-top:14px;letter-spacing:8px}p{line-height:1.7;color:#c4c9d7}.intro{display:grid;grid-template-columns:1fr 1fr;gap:14px}.box{background:#151c2c88;border:1px solid #535c77;padding:16px;line-height:1.7}.box b{color:var(--gold)}.box .chain{font-size:20px;color:var(--mint);font-weight:800;line-height:1.5}.small{font-size:12px;color:#b1bbce}.row{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:20px}.primary{background:#47664c;border-color:#b3e49b;color:#f4ffe0;font-weight:800}.hud{position:absolute;top:max(12px,env(safe-area-inset-top));left:16px;right:16px;pointer-events:none;display:flex;align-items:flex-start;justify-content:space-between;gap:8px}.hud>*{background:#171e30df;border:2px solid #505d76;padding:10px 14px;box-shadow:0 4px #121624}.hud button{pointer-events:auto;padding:4px 10px;box-shadow:none}.middle{text-align:center;min-width:180px}.middle b{color:var(--gold)}.bar{height:7px;background:#101525;margin-top:7px}.bar i{display:block;height:100%;background:#ea867c}.bottom{position:absolute;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(690px,95vw);text-align:center;background:#171e30eb;border:2px solid #53617b;padding:10px;box-shadow:0 5px #101622}.bottom-title{font-size:14px;font-weight:800;color:var(--gold);margin-bottom:4px}#weapons{display:flex;justify-content:center;gap:9px;margin:9px 0}#weapons button{min-width:84px;padding:8px 14px;position:relative}#weapons strong{font-size:27px;display:block;line-height:1.05}#weapons small{font-size:10px;display:block;color:#ccd5e4;margin-top:4px}.xp{height:4px;background:#0d1522;margin-top:9px}.xp i{display:block;background:var(--mint);height:100%}#toast{position:absolute;top:115px;left:50%;transform:translateX(-50%);background:#26394be8;border:2px solid #7b9a9b;max-width:92vw;padding:10px 18px;text-align:center;pointer-events:none;font-size:14px;z-index:3}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.cards button{padding:20px;text-align:left}.cards strong{color:var(--gold);display:block;font-size:20px;margin-bottom:14px}.cards p{font-size:13px;margin:0}.stat{display:flex;gap:20px;flex-wrap:wrap;padding:16px 0}.stat b{font-size:26px;color:var(--gold)}#review{font-size:14px;line-height:1.8}.tag{color:var(--mint)}@media(max-width:600px){.panel{padding:22px}.intro{grid-template-columns:1fr;gap:8px}.box{padding:10px}.hud{left:8px;right:8px;font-size:11px}.hud>*{padding:7px}.middle{min-width:120px}.hud button{padding:3px 6px}.bottom{padding:8px}#weapons button{min-width:60px;padding:7px 10px}#weapons strong{font-size:23px}.cards{grid-template-columns:1fr}.cards button{padding:12px}.cards strong{margin-bottom:5px}.small{font-size:11px}#toast{top:98px;font-size:12px}}@media(max-height:560px){.bottom{width:480px;padding:6px}#weapons{margin:5px}.hud>*{padding:5px 10px}.box{font-size:13px}.panel{padding:18px}.bottom .small{font-size:10px}#toast{top:70px}}
 .combo-hud{position:absolute;top:calc(env(safe-area-inset-top) + 79px);left:50%;transform:translateX(-50%);z-index:3;text-align:center;background:#1c2841ed;border:2px solid #83c6a6;padding:5px 14px;min-width:124px;pointer-events:none;color:#fff3ae;font-size:13px;font-weight:800;box-shadow:0 3px #11202c}.combo-hud i{height:4px;display:block;background:#334453;margin-top:5px}.combo-hud i b{height:100%;display:block;background:#e7d17b}.combo-hud .bonus{color:#adf4d4;font-size:11px}.dash-btn{position:absolute;right:18px;bottom:calc(env(safe-area-inset-bottom) + 193px);width:78px;height:70px;padding:8px 5px;z-index:4;touch-action:manipulation;border-radius:17px;background:#314b64ed;border:3px solid #9bdddc;color:#f5f5d9;font-weight:900;box-shadow:0 5px #13293b;text-align:center;user-select:none}.dash-btn:disabled{opacity:.68;border-color:#74828a;color:#c0c5c9}.dash-btn span{font-size:23px;display:block;line-height:1.1}.dash-btn small{font-size:11px;display:block}.dash-btn:not(:disabled):active{transform:translateY(2px)}@media(max-width:600px){.combo-hud{top:calc(env(safe-area-inset-top) + 79px);padding:4px 10px}.dash-btn{right:10px;bottom:calc(env(safe-area-inset-bottom) + 191px);height:63px;width:66px;padding:5px 2px}}@media(max-height:560px){.dash-btn{bottom:calc(env(safe-area-inset-bottom) + 146px)}.combo-hud{top:calc(env(safe-area-inset-top) + 57px)}}
+.seal-bar{height:5px;background:#273546;margin-top:6px;overflow:hidden;min-width:110px}.seal-bar i{display:block;height:100%;background:#baf2c4;width:100%;transition:width .12s linear}.middle.final{border-color:#c3dba2;background:#2c3e35ed}.middle.final b{color:#d6efc2}
 </style></head><body>
 <canvas id="c" aria-label="룬의 숲 전장"></canvas>
-<div id="hud" class="hud hidden"><div>♥ <span id="hp">100 / 100</span><div class="bar"><i id="hpbar"></i></div><div id="lv" class="small"></div></div><div class="middle"><b id="phase"></b><div id="time" class="small"></div></div><div><button id="pause" aria-label="일시정지">Ⅱ</button> <button id="sound">♪ 켜짐</button><div id="kills" class="small"></div></div></div>
+<div id="hud" class="hud hidden"><div>♥ <span id="hp">100 / 100</span><div class="bar"><i id="hpbar"></i></div><div id="lv" class="small"></div></div><div class="middle"><b id="phase"></b><div id="time" class="small"></div><div id="sealBar" class="seal-bar hidden"><i id="sealFill"></i></div></div><div><button id="pause" aria-label="일시정지">Ⅱ</button> <button id="sound">♪ 켜짐</button><div id="kills" class="small"></div></div></div>
 <div id="bottom" class="bottom hidden"><div id="weaponTitle" class="bottom-title"></div><div id="rule" class="small"></div><div id="weapons"></div><button id="discard" class="hidden" style="padding:4px 10px;font-size:12px">무기 교환 · R</button><div id="help" class="small"></div><div class="xp"><i id="xpbar"></i></div></div>
 <div id="comboHud" class="combo-hud hidden" aria-live="off"><div id="comboText">COMBO ×0</div><div id="comboBonus" class="bonus"></div><i><b id="comboBar"></b></i></div>
 <button id="dash" class="dash-btn hidden" type="button" aria-label="빠르게 회피 대시"><span>➜</span><small id="dashLabel">대시 · Shift</small></button>
 <div id="toast" class="hidden"></div>
-<div id="menu" class="overlay"><div class="panel"><div class="eyebrow">NUMBER SIGNAL</div><h1>룬의 숲<small>약수와 배수의 마법</small></h1><p>숫자로 깨어난 골렘과 슬라임들.<br>회전하는 룬을 바꿔 들고, 나눗셈으로 숲의 저주를 풀어라.</p><div class="intro"><div class="box"><b>Ⅰ · 약수의 밤</b><p>2 · 3 · 5 · 7 룬이 주위를 회전합니다.<br>룬이 골렘에 닿을 때마다 수를 나눕니다.</p><div class="chain">48 → 24 → 12 → 6 → 3 → 1</div><div class="small">÷2 네 번, ÷3 한 번 · 1이 되면 처치!</div></div><div class="box"><b>Ⅱ · 배수의 물결</b><p>배낭의 큰 수 무기로 슬라임을 처치하세요.<br>처치할 때마다 무기의 수가 나누어집니다.</p><div class="chain">무기 48 → 24 → 8 → 1</div><div class="small">적 2, 3, 8 순서로 소모 · 1이 되면 새 무기 충원!</div></div></div><div class="row"><label>전투 <select id="difficulty"><option value="easy">여유롭게</option><option value="normal">일반</option></select></label><button id="start" class="primary">숲으로 들어가기 →</button></div><p class="small">이동: 방향키 / WASD / 화면 드래그 · 무기: 1~4 / 버튼<br>75초마다 페이즈 전환 · 6페이즈 후 남은 적을 처치하면 승리<br>Shift / Space / 대시 버튼: 순간 회피 · 연속 나눗셈 콤보<br>돌진·분열·룬 도둑 슬라임과 증폭·충격파 골렘 등장<br>Esc: 일시정지 · 강화 선택 중에는 시간이 멈춥니다.</p><div id="best" class="small"></div></div></div>
+<div id="menu" class="overlay"><div class="panel"><div class="eyebrow">NUMBER SIGNAL</div><h1>룬의 숲<small>약수와 배수의 마법</small></h1><p>숫자로 깨어난 골렘과 슬라임들.<br>회전하는 룬을 바꿔 들고, 나눗셈으로 숲의 저주를 풀어라.</p><div class="intro"><div class="box"><b>Ⅰ · 약수의 밤</b><p>2 · 3 · 5 · 7 룬이 주위를 회전합니다.<br>룬이 골렘에 닿을 때마다 수를 나눕니다.</p><div class="chain">48 → 24 → 12 → 6 → 3 → 1</div><div class="small">÷2 네 번, ÷3 한 번 · 1이 되면 처치!</div></div><div class="box"><b>Ⅱ · 배수의 물결</b><p>배낭의 큰 수 무기로 슬라임을 처치하세요.<br>처치할 때마다 무기의 수가 나누어집니다.</p><div class="chain">무기 48 → 24 → 8 → 1</div><div class="small">적 2, 3, 8 순서로 소모 · 1이 되면 새 무기 충원!</div></div></div><div class="row"><label>전투 <select id="difficulty"><option value="easy">여유롭게</option><option value="normal">일반</option></select></label><label>탐험 <select id="runLength"><option value="quick" selected>빠른 탐험 · 약 5분</option><option value="long">긴 탐험 · 약 8분</option></select></label><button id="start" class="primary">숲으로 들어가기 →</button></div><p class="small">이동: 방향키 / WASD / 화면 드래그 · 무기: 1~4 / 버튼<br>빠른 탐험: 45초마다 페이즈 전환 · 긴 탐험: 75초마다 페이즈 전환<br>6페이즈 후 최종 정화 25초를 버티면 승리 · 나눗셈 성공 시 정화 가속<br>Shift / Space / 대시 버튼: 순간 회피 · 연속 나눗셈 콤보<br>돌진·분열·룬 도둑 슬라임과 증폭·충격파 골렘 등장<br>Esc: 일시정지 · 강화 선택 중에는 시간이 멈춥니다.</p><div id="best" class="small"></div></div></div>
 <div id="modal" class="overlay hidden"><div class="panel"><div class="eyebrow" id="modalTag"></div><h2 id="title"></h2><p id="desc"></p><div id="choices" class="cards"></div><div id="review"></div><div id="actions" class="row"></div></div></div>
 <script src="rune-forest-art.js"></script>
 <script src="rune-forest-combat.js"></script>
+<script src="rune-forest-balance.js"></script>
 <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),c=$('c'),ctx=c.getContext('2d'),buffer=document.createElement('canvas'),g=buffer.getContext('2d');
-const ART=window.RuneForestArt || null,COMBAT=window.RuneForestCombat;
+const ART=window.RuneForestArt || null,COMBAT=window.RuneForestCombat,BALANCE=window.RuneForestBalance;
 const TAU=Math.PI*2,PRIMES=[2,3,5,7],COLORS=['#94e0e9','#c8a3ed','#e6b875','#a3db9c'];let W,H,BW,BH,zoom,last=0,state='menu',s=null,keys={},stick=null,sound=true,audio=null,toastLeft=0,uiClock=0;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),pick=a=>a[Math.floor(Math.random()*a.length)],fmt=t=>String(Math.floor(t/60)).padStart(2,'0')+':'+String(Math.floor(t%60)).padStart(2,'0');
 function resize(){W=innerWidth;H=innerHeight;zoom=W<600?1.7:2;BW=Math.ceil(W/zoom);BH=Math.ceil(H/zoom);buffer.width=BW;buffer.height=BH;c.width=W;c.height=H;ctx.imageSmoothingEnabled=false;g.imageSmoothingEnabled=false}resize();addEventListener('resize',resize);
 function tone(f=400,d=.12){if(!sound)return;try{audio ||= new(window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),v=audio.createGain();o.type='triangle';o.frequency.value=f;v.gain.setValueAtTime(.025,audio.currentTime);v.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+d);o.connect(v).connect(audio.destination);o.start();o.stop(audio.currentTime+d)}catch{}}
 function toast(text){$('toast').textContent=text;$('toast').classList.remove('hidden');toastLeft=4.5}function best(){try{const b=JSON.parse(localStorage.getItem('runeForestBest')||'{}');$('best').textContent='최고 기록 · '+(b.kills||0)+' 처치 / '+(b.divisions||0)+' 나눗셈'}catch{}}best();
 function makeSlot(value){return{value,original:value,uses:0}}function newValue(){return pick(s.phase<3?[48,60,72,84,90,96,120]:[120,144,168,180,210,240,252,300])}
-function start(){tone();keys={};stick=null;s={t:0,phase:0,phaseT:0,nextSpawn:2,hp:100,maxHp:100,x:0,y:0,angle:-Math.PI/2,orbit:0,speed:83,orbitSpeed:2.5,radius:45,hitGap:.65,armor:1,pickup:46,regen:0,healClock:0,level:1,xp:0,need:5,kills:0,divisions:0,refills:0,swapCD:0,enemies:[],gems:[],fx:[],history:[],bag:[],factor:0,selected:0,inv:0,shake:0,ending:false,cleared:0,easy:$('difficulty').value==='easy',id:0,combo:0,comboT:0,bestCombo:0,comboHaste:0,chainShots:0,burst:0,dashCD:0,dashMax:5.5,dashT:0,dashVX:0,dashVY:0,orbitSlow:0};s.bag=[48,60,84,120].map(makeSlot);state='play';$('menu').classList.add('hidden');$('modal').classList.add('hidden');$('hud').classList.remove('hidden');$('bottom').classList.remove('hidden');$('dash').classList.remove('hidden');$('comboHud').classList.add('hidden');enterPhase();refresh();}
+function start(){tone();keys={};stick=null;s={t:0,phase:0,phaseT:0,nextSpawn:2,hp:100,maxHp:100,x:0,y:0,angle:-Math.PI/2,orbit:0,speed:83,orbitSpeed:2.5,radius:45,hitGap:.65,armor:1,pickup:46,regen:0,healClock:0,level:1,xp:0,need:5,kills:0,divisions:0,refills:0,swapCD:0,enemies:[],gems:[],fx:[],history:[],bag:[],factor:0,selected:0,inv:0,shake:0,ending:false,cleared:0,easy:$('difficulty').value==='easy',phaseLength:BALANCE.duration($('runLength').value),enemyCap:0,sealLeft:0,sealElapsed:0,sealPulses:0,sealBonus:0,sealCleared:0,id:0,combo:0,comboT:0,bestCombo:0,comboHaste:0,chainShots:0,burst:0,dashCD:0,dashMax:5.5,dashT:0,dashVX:0,dashVY:0,orbitSlow:0};s.bag=[48,60,84,120].map(makeSlot);state='play';$('menu').classList.add('hidden');$('modal').classList.add('hidden');$('hud').classList.remove('hidden');$('bottom').classList.remove('hidden');$('dash').classList.remove('hidden');$('comboHud').classList.add('hidden');enterPhase();refresh();}
 function dash(){
  if(state!=='play')return false;
  let dx=(keys.d||keys.ArrowRight?1:0)-(keys.a||keys.ArrowLeft?1:0),dy=(keys.s||keys.ArrowDown?1:0)-(keys.w||keys.ArrowUp?1:0);
@@ -34,7 +36,16 @@ function dash(){
 function activeNumber(){return s.phase%2===0?PRIMES[s.factor]:s.bag[s.selected].value}function choose(i){if(state!=='play')return;if(s.phase%2===0)s.factor=i;else s.selected=i;weaponUI();tone(250+i*70)}
 function weaponUI(){const factor=s.phase%2===0;$('discard').classList[factor?'add':'remove']('hidden');$('weaponTitle').textContent=factor?'약수 룬 · 골렘의 수를 1로':'배수 배낭 · 무기의 수를 나누어 소모';$('rule').textContent=factor?'나누어떨어지는 룬을 골라 골렘 가까이 접근하세요.':'적의 수로 나누어떨어지는 무기를 골라 접근하세요.';$('weapons').innerHTML='';for(let i=0;i<4;i++){const b=document.createElement('button'),v=factor?PRIMES[i]:s.bag[i].value;b.className=(factor?s.factor:s.selected)===i?'selected':'';b.innerHTML='<strong>'+(factor?'÷':'')+v+'</strong><small>'+(factor?'룬 '+(i+1):s.bag[i].original+'에서 시작')+'</small>';b.setAttribute('aria-label',(factor?'약수 룬 ':'배수 무기 ')+v);b.onclick=()=>choose(i);$('weapons').append(b)}$('help').textContent=factor?'2 · 3 · 5 · 7 중 선택 / 룬이 실제로 닿아야 나누어집니다.':'1이 된 무기만 새로 충원됩니다 · 나머지가 생기면 소모되지 않습니다.'}
 function swapWeapon(){if(state!=='play'||s.phase%2===0||s.swapCD>0)return;const needed=s.enemies.find(e=>!s.bag.some(b=>b.value%e.n===0));let n=newValue();if(needed){const options=[48,60,72,84,90,96,120,144,168,180,210,240,252,300].filter(v=>v%needed.n===0);n=options.length?pick(options):needed.n*12}s.bag[s.selected]=makeSlot(n);s.swapCD=12;weaponUI();toast('선택한 무기를 버리고 '+n+' 무기로 교환했습니다')}
-function enterPhase(){s.enemies=[];s.nextSpawn=1;s.phaseT=0;s.bag=s.bag.map(b=>b.value>1?b:makeSlot(newValue()));weaponUI();toast(s.phase%2===0?'약수의 밤 · 거대 골렘을 차례로 나누세요':'배수의 물결 · 배낭 무기를 소모해 슬라임을 막으세요');if(s.phase%2===0)spawn(48);else for(let i=0;i<4;i++)spawn();}
+function enterPhase(){
+ s.enemies=[];s.nextSpawn=1;s.phaseT=0;
+ s.enemyCap=BALANCE.enemyCap(s.phase,s.easy);
+ s.combo=0;s.comboT=0;s.chainShots=0;s.comboHaste=0;s.orbitSlow=0;
+ s.bag=s.bag.map(b=>b.value>1?b:makeSlot(newValue()));
+ weaponUI();
+ toast(s.phase%2===0?'약수의 밤 · 거대 골렘을 나누세요':'배수의 물결 · 배낭 무기로 슬라임을 막으세요');
+ if(s.phase%2===0)spawn(48);
+ else for(let i=0;i<(s.easy?2:3);i++)spawn();
+}
 function divisorChoices(){const values=s.bag.map(b=>b.value),out=[];for(let n=2;n<=12;n++)if(values.some(v=>v%n===0))out.push(n);return out.length?out:PRIMES.filter(n=>values.some(v=>v%n===0))}
 function spawn(forced){
  const factor=s.phase%2===0,angle=Math.random()*TAU,rad=Math.min(BW,BH)*.5+55;
@@ -63,7 +74,7 @@ function applyStrike(e,chain){
    toast('무기 소진 · 새 '+next+' 무기가 충원되었습니다');tone(820)}
   weaponUI();
  }
- COMBAT.streak(s,{fx,tone});
+ COMBAT.streak(s,{fx,tone});BALANCE.divisionDuringSeal(s);
  if(!chain&&s.chainShots>0){
   const target=s.enemies.find(q=>!q.dead&&q!==e&&q.cd<=0&&Math.hypot(q.x-s.x,q.y-s.y)<140&&
    (q.factor?q.n%activeNumber()===0:activeNumber()%q.n===0));
@@ -85,15 +96,18 @@ const cards=[['날쌘 장화','이동 속도 12% 증가',()=>s.speed*=1.12],['�
 function modal(tag,title,desc){keys={};stick=null;$('modalTag').textContent=tag;$('title').textContent=title;$('desc').textContent=desc;for(const id of ['choices','review','actions'])$(id).innerHTML='';$('modal').classList.remove('hidden')}
 function action(text,fn){const b=document.createElement('button');b.textContent=text;b.onclick=fn;$('actions').append(b)}function level(){state='level';s.xp-=s.need;s.need+=3;s.level++;modal('LEVEL UP','숲의 선물 · '+s.level+'레벨','하나를 선택하세요. 수학 규칙은 그대로, 전투 능력이 성장합니다.');const pool=[...cards];for(let i=0;i<3;i++){const card=pool.splice(Math.floor(Math.random()*pool.length),1)[0],b=document.createElement('button');b.innerHTML='<strong>'+card[0]+'</strong><p>'+card[1]+'</p>';b.onclick=()=>{if(state!=='level')return;card[2]();state='play';$('modal').classList.add('hidden');tone(680)};$('choices').append(b)}}
 function pause(){if(state==='play'){state='pause';modal('PAUSED','숲이 잠들었습니다','잠시 쉬어 가세요.');action('계속하기',resume);action('처음으로',home)}else if(state==='pause')resume()}function resume(){state='play';keys={};$('modal').classList.add('hidden')}function home(){state='menu';s=null;keys={};stick=null;$('menu').classList.remove('hidden');for(const id of ['hud','bottom','modal','toast','dash','comboHud'])$(id).classList.add('hidden');best()}
-function end(win){state='end';modal(win?'FOREST RESTORED':'TRY AGAIN',win?'숲의 저주를 풀었습니다!':'다음에는 더 멀리',fmt(s.t)+' · '+s.kills+' 처치 · '+s.divisions+'번 나눗셈 · 무기 '+s.refills+'회 충원 · 최고 '+s.bestCombo+'콤보');const title=document.createElement('b');title.textContent='이번 모험의 나눗셈';$('review').append(title);for(const line of s.history){const p=document.createElement('div');p.textContent=line;$('review').append(p)}action('다시 도전',start);action('처음으로',home);try{const b=JSON.parse(localStorage.getItem('runeForestBest')||'{}');localStorage.setItem('runeForestBest',JSON.stringify({kills:Math.max(b.kills||0,s.kills),divisions:Math.max(b.divisions||0,s.divisions)}))}catch{}tone(win?850:150)}
-function refresh(){if(!s)return;$('hp').textContent=Math.ceil(s.hp)+' / '+s.maxHp;$('hpbar').style.width=s.hp/s.maxHp*100+'%';$('lv').textContent='Lv.'+s.level+' · '+s.xp+'/'+s.need+' XP';$('xpbar').style.width=clamp(s.xp/s.need*100,0,100)+'%';$('phase').textContent=(s.phase%2===0?'약수의 밤':'배수의 물결')+' · '+(s.phase+1)+'/6';$('time').textContent=s.ending?'마지막 무리를 정리하세요':fmt(s.t)+' · 전환까지 '+Math.ceil(75-s.phaseT)+'초';$('discard').textContent=s.swapCD>0?'교환까지 '+Math.ceil(s.swapCD)+'초':'무기 교환 · R';$('discard').disabled=s.swapCD>0;$('kills').textContent=s.kills+' 처치 · '+s.divisions+' 나눗셈';
+function end(win){state='end';modal(win?'FOREST RESTORED':'TRY AGAIN',win?'숲의 저주를 풀었습니다!':'다음에는 더 멀리',fmt(s.t)+' · '+s.kills+' 처치 · '+s.divisions+'번 나눗셈 · 무기 '+s.refills+'회 충원 · 최고 '+s.bestCombo+'콤보'+(win?' · 마지막 정화 성공'+(s.sealCleared?' · '+s.sealCleared+'마리 봉인':''):'') );const title=document.createElement('b');title.textContent='이번 모험의 나눗셈';$('review').append(title);for(const line of s.history){const p=document.createElement('div');p.textContent=line;$('review').append(p)}action('다시 도전',start);action('처음으로',home);try{const b=JSON.parse(localStorage.getItem('runeForestBest')||'{}');localStorage.setItem('runeForestBest',JSON.stringify({kills:Math.max(b.kills||0,s.kills),divisions:Math.max(b.divisions||0,s.divisions)}))}catch{}tone(win?850:150)}
+function refresh(){if(!s)return;$('hp').textContent=Math.ceil(s.hp)+' / '+s.maxHp;$('hpbar').style.width=s.hp/s.maxHp*100+'%';$('lv').textContent='Lv.'+s.level+' · '+s.xp+'/'+s.need+' XP';$('xpbar').style.width=clamp(s.xp/s.need*100,0,100)+'%';$('phase').textContent=s.ending?'최종 정화 · 숲의 봉인':(s.phase%2===0?'약수의 밤':'배수의 물결')+' · '+(s.phase+1)+'/6';
+ $('phase').parentElement?.classList[s.ending?'add':'remove']('final');
+ $('sealBar').classList[s.ending?'remove':'add']('hidden');
+ $('sealFill').style.width=clamp(s.sealLeft/25*100,0,100)+'%';$('time').textContent=s.ending?'봉인까지 '+Math.ceil(s.sealLeft)+'초 · 정확한 나눗셈으로 가속':fmt(s.t)+' · 전환까지 '+Math.ceil(s.phaseLength-s.phaseT)+'초';$('discard').textContent=s.swapCD>0?'교환까지 '+Math.ceil(s.swapCD)+'초':'무기 교환 · R';$('discard').disabled=s.swapCD>0;$('kills').textContent=s.kills+' 처치 · '+s.divisions+' 나눗셈';
  $('dash').disabled=s.dashCD>0||state!=='play';
  $('dashLabel').textContent=s.dashCD>0?(Math.ceil(s.dashCD*10)/10)+'초':'대시 · Shift';
  $('dash').setAttribute('aria-label',s.dashCD>0?'대시 대기 '+Math.ceil(s.dashCD)+'초':'대시 사용 가능');
  $('comboHud').classList[s.combo>1&&s.comboT>0?'remove':'add']('hidden');
  $('comboText').textContent='COMBO ×'+s.combo;
  $('comboBonus').textContent=s.chainShots?'연쇄 번개 준비':s.comboHaste>0?'룬 가속 중':s.combo>=5?'충격파 발동!':'연속 나눗셈';
- $('comboBar').style.width=clamp(s.comboT/6.5*100,0,100)+'%';
+ $('comboBar').style.width=clamp(s.comboT/4.8*100,0,100)+'%';
 }
 function update(dt){
  if(state!=='play')return;
@@ -102,9 +116,12 @@ function update(dt){
  s.orbitSlow=Math.max(0,s.orbitSlow-dt);s.burst=Math.max(0,s.burst-dt);
  if(s.comboT>0){s.comboT=Math.max(0,s.comboT-dt);if(s.comboT<=0){s.combo=0;s.chainShots=0}}
  s.healClock+=dt;if(s.healClock>=8){s.healClock=0;s.hp=Math.min(s.maxHp,s.hp+s.regen)}
- if(s.phaseT>=75&&!s.ending){
-  if(s.phase===5){s.ending=true;toast('마지막 물결 · 남은 적을 모두 처치하세요')}
-  else{s.phase++;s.hp=Math.min(s.maxHp,s.hp+12);enterPhase()}
+ if(s.phaseT>=s.phaseLength&&!s.ending){
+  if(s.phase===5){
+   BALANCE.beginSeal(s);
+   toast('최종 정화 · 25초만 버티세요! 정확한 나눗셈으로 봉인이 빨라집니다');
+   tone(850,.17);
+  }else{s.phase++;s.hp=Math.min(s.maxHp,s.hp+12);enterPhase()}
  }
  let dx=(keys.d||keys.ArrowRight?1:0)-(keys.a||keys.ArrowLeft?1:0),dy=(keys.s||keys.ArrowDown?1:0)-(keys.w||keys.ArrowUp?1:0);
  if(stick){dx=stick.dx;dy=stick.dy}const len=Math.hypot(dx,dy);
@@ -122,9 +139,9 @@ function update(dt){
  s.orbit+=s.orbitSpeed*(s.comboHaste>0?1.3:1)*(s.orbitSlow>0?.58:1)*dt;
  s.nextSpawn-=dt;const factor=s.phase%2===0;
  if(!s.ending&&s.nextSpawn<=0){
-  const cap=factor?(s.easy?4:6):(s.easy?32:52);
+  const cap=s.enemyCap;
   if(s.enemies.filter(e=>!e.dead).length<cap)spawn();
-  s.nextSpawn=factor?(s.easy?9:7):(s.easy?.85:.5);
+  s.nextSpawn=BALANCE.spawnDelay(s.phase,s.easy);
  }
  for(const e of s.enemies){
   if(e.dead)continue;
@@ -151,7 +168,12 @@ function update(dt){
  for(const f of s.fx){f.life-=dt;if(f.pixel){f.x+=f.vx*dt;f.y+=f.vy*dt}}
  s.fx=s.fx.filter(f=>f.life>0);
  if(s.hp<=0){end(false);return}
- if(s.ending&&s.enemies.length===0){end(true);return}
+ if(s.ending){
+  if(s.enemies.length===0){end(true);return}
+  const previous=s.sealPulses,complete=BALANCE.stepSeal(s,dt);
+  if(s.sealPulses>previous){fx(s.x,s.y-48,'정화의 파동!','#c5ffd4');tone(870,.14)}
+  if(complete){s.sealCleared=s.enemies.length;s.enemies=[];end(true);return}
+ }
  if(s.xp>=s.need)level();
  uiClock-=dt;if(uiClock<=0){refresh();uiClock=.1}
  if(toastLeft>0){toastLeft-=dt;if(toastLeft<=0)$('toast').classList.add('hidden')}
