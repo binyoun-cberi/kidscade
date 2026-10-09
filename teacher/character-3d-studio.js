@@ -481,9 +481,20 @@ function paintAccessoryThumbnail(name,canvas){
       bottom:[0,.46,0,.78,'front']
     }[slot]||[0,1.0,0,.86,'front'];
     const [x,y,z,dist,view]=focus;
+    // The original GLB is scaled and ground-centered by normalizeAvatar().
+    // Thumbnail coordinates are in source bind-pose space, so convert both
+    // the focal point and camera distance to current WORLD units.
+    sourceScene.updateWorldMatrix(true,false);
+    const focusWorld=sourceScene.localToWorld(new THREE.Vector3(x,y,z));
+    const sourceScale=sourceScene.getWorldScale(new THREE.Vector3());
+    const radius=dist*Math.max(Math.abs(sourceScale.x),.01);
     const previewCam=new THREE.PerspectiveCamera(39,1,.01,30);
-    previewCam.position.set(x+dist*.24,y+dist*.19,z+(view==='back'?-dist:dist));
-    previewCam.lookAt(x,y,z);
+    previewCam.position.set(
+      focusWorld.x+radius*.24,
+      focusWorld.y+radius*.19,
+      focusWorld.z+(view==='back'?-radius:radius)
+    );
+    previewCam.lookAt(focusWorld);
     scene.background=new THREE.Color('#edf2f8');
     renderer.setRenderTarget(thumbnailTarget);
     renderer.clear();
