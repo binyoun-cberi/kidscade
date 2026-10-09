@@ -372,12 +372,21 @@ const errors=[];
   const previews=await evalPage('window.__kc3dAudit.accessoryThumbStatus()');
   assert.ok(previews.tiles.length>=16,'Accessory thumb picker not rendered');
   assert.ok(previews.tiles.filter(x=>x.hasCache).length>=16,'Accessory thumbnails did not render');
-  const thumbExpr="(()=>{const canvases=[...document.querySelectorAll('[data-part-thumb]')];return canvases.slice(0,8).map(c=>({name:c.dataset.partThumb,rgba:[...c.getContext('2d').getImageData(50,50,1,1).data]}))})()";
+  // Hash the whole image rather than comparing one center pixel, which can
+  // be the same pale background across otherwise distinct 3D assets.
+  const thumbExpr="(()=>{const canvases=[...document.querySelectorAll('[data-part-thumb]')];return canvases.map(c=>{const pixels=c.getContext('2d').getImageData(0,0,112,112).data;let hash=2166136261,contrasting=0;for(let i=0;i<pixels.length;i+=16){hash=Math.imul(hash^pixels[i],16777619);hash=Math.imul(hash^pixels[i+1],16777619);hash=Math.imul(hash^pixels[i+2],16777619);if(pixels[i]<160||pixels[i+1]<160||pixels[i+2]<160)contrasting++}return {name:c.dataset.partThumb,hash:hash>>>0,contrasting,png:c.toDataURL('image/png')}})})()";
   const thumbValues=await evalPage(thumbExpr);
-  assert.ok(new Set(thumbValues.map(x=>x.rgba.join(','))).size>=3,
-    '3D preview tile pixels do not vary between different assets');
+  for(const thumb of thumbValues){
+    fs.writeFileSync(path.join(OUT,'v53-thumb-'+thumb.name+'.png'),
+      Buffer.from(thumb.png.split(',')[1],'base64'));
+  }
+  assert.ok(new Set(thumbValues.map(x=>x.hash)).size>=8,
+    '3D preview tile whole-image hashes do not vary between different assets');
+  assert.ok(thumbValues.filter(x=>x.contrasting>15).length>=8,
+    '3D thumbnails appear empty, not just uniform background');
   report.accessoryPack.thumbnailReady={count:previews.tiles.length,
-    cached:previews.tiles.filter(x=>x.hasCache).length,samplePixels:thumbValues};
+    cached:previews.tiles.filter(x=>x.hasCache).length,
+    wholeImageHashes:thumbValues.map(({name,hash,contrasting})=>({name,hash,contrasting}))};
 
   // Collect joint trajectories as evidence, but do not claim automatic
   // foot-ground/contact correctness based on bone-pivot height alone.
