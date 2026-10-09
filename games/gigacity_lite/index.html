@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#080f25">
-  <title>기가시티 라이트 · 도시 비행 실험실</title>
+  <title>기가시티 · 미래도시 여행</title>
   <link rel="stylesheet" href="./style.css?v=1">
   <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js"}}</script>
 </head>
@@ -12,46 +12,47 @@
   <canvas id="city" aria-label="절차적으로 생성되는 미래 도시의 3D 비행 화면"></canvas>
   <div id="shade"></div>
   <header id="topBar">
-    <div class="brand"><b>GIGA<span>CITY</span></b><small>LITE / MOBILE EXPERIMENT</small></div>
-    <div class="stats"><span id="district">DISTRICT 00 · 00</span><span id="fps">-- FPS</span><span id="count">도시 준비 중</span></div>
+    <div class="brand"><b>기가<span>시티</span></b><small>끝없이 이어지는 미래도시</small></div>
+    <div class="stats"><span id="district">동네 0 · 0</span><span id="fps">화면 확인 중</span><span id="count">도시 만드는 중</span></div>
     <div class="actions">
       <button id="timeButton" type="button" aria-label="낮과 밤 전환">밤</button>
       <label class="qualityLabel" for="quality">화질 <select id="quality" aria-label="도시 화질 선택"><option value="auto">자동</option><option value="low">낮음</option><option value="medium">보통</option><option value="high">높음</option></select></label>
     </div>
   </header>
   <section id="seedPanel">
-    <label for="seed">WORLD SEED</label><div class="seedRow"><input id="seed" type="text" maxlength="22" value="NEON-01" spellcheck="false" autocomplete="off"><button id="generate" type="button">새 도시</button></div>
-    <small>같은 시드 = 같은 건물 배치</small>
+    <label for="seed">도시 이름</label><div class="seedRow"><input id="seed" type="text" maxlength="22" value="NEON-01" spellcheck="false" autocomplete="off"><button id="generate" type="button">다른 도시</button></div>
+    <small>같은 이름이면 같은 도시를 만나요.</small>
   </section>
-  <div id="controlsHint" aria-live="polite">드래그: 시야 · 왼쪽 패드: 이동 · ↑↓: 고도</div>
+  <div id="controlsHint" aria-live="polite">화면 드래그: 둘러보기 · 왼쪽 버튼: 이동 · ↑↓: 위아래</div>
   <section id="flightPanel">
-    <button id="autoButton" type="button" aria-pressed="true">자동 비행 켜짐</button>
-    <div class="altitude">ALT <b id="altitude">260m</b></div>
+    <button id="autoButton" type="button" aria-pressed="true">자동 구경 중</button>
+    <div class="altitude">높이 <b id="altitude">260m</b></div>
   </section>
   <section id="touchControls" aria-label="모바일 비행 조작">
-    <div id="stickSurface" aria-label="이동 조이스틱" role="group"><div id="stickRing"><div id="stickKnob"></div></div><span>MOVE</span></div>
+    <div id="stickSurface" aria-label="이동 조이스틱" role="group"><div id="stickRing"><div id="stickKnob"></div></div><span>이동</span></div>
     <div id="elevation">
       <button id="ascend" type="button" aria-label="상승">↑ <small>상승</small></button>
       <button id="descend" type="button" aria-label="하강">↓ <small>하강</small></button>
-      <button id="boost" type="button" aria-label="빠른 이동">BOOST</button>
+      <button id="boost" type="button" aria-label="빠른 이동">빠르게</button>
     </div>
   </section>
   <div id="intro" class="overlay">
     <div class="introCard">
-      <p class="eyebrow">KIDSCADE · PROCEDURAL CITY PROTOTYPE</p>
-      <h1>GIGA<span>CITY</span><em> LITE</em></h1>
-      <p>수많은 빌딩 사이를 자유롭게 날아다니는 도시 생성 기술 실험.</p>
+      <p class="eyebrow">KIDSCADE · 미래도시 여행</p>
+      <h1>기가<span>시티</span></h1>
+      <p>높은 빌딩 사이를 날아다니며 나만의 미래도시를 구경해 보세요.</p>
       <div class="introFeatures">
-        <div><strong>01</strong><span>시드 기반 고유 도시</span></div>
-        <div><strong>02</strong><span>가까운 구역만 생성</span></div>
-        <div><strong>03</strong><span>iPhone · 태블릿 우선</span></div>
+        <div><strong>01</strong><span>이름마다 다른 도시</span></div>
+        <div><strong>02</strong><span>끝없이 이어지는 풍경</span></div>
+        <div><strong>03</strong><span>휴대폰에서도 비행</span></div>
       </div>
-      <p class="helpText">화면 오른쪽을 드래그하면 시야가 돌아가고, 왼쪽 조이스틱으로 움직입니다. 컴퓨터에서는 WASD · 마우스 드래그 · Q/E로 조작합니다.</p>
-      <button id="start" type="button">도시 비행 시작 →</button>
-      <small>이 버전은 게임이 아닌 그래픽·성능 검증용 데모입니다.</small>
+      <p class="helpText">오른쪽 화면을 손가락으로 움직여 둘러보세요. 왼쪽 조이스틱으로 날고 ↑↓로 높이를 바꿀 수 있어요.</p>
+      <button id="start" type="button">도시 구경 시작 →</button>
+      <small>마음에 드는 도시를 찾으면 이름을 기억해 두세요.</small>
     </div>
   </div>
-  <div id="errorPanel" class="overlay hidden" role="alert"><div class="introCard"><h2>3D 도시를 표시할 수 없어요</h2><p id="errorMessage">브라우저에서 WebGL 지원 여부를 확인해 주세요.</p><button id="retry" type="button">다시 시도</button></div></div>
-  <script type="module" src="./main.js?v=1"></script>
+  <div id="errorPanel" class="overlay hidden" role="alert"><div class="introCard"><h2>도시를 불러오지 못했어요</h2><p id="errorMessage">브라우저에서 WebGL 지원 여부를 확인해 주세요.</p><button id="retry" type="button">다시 시도</button></div></div>
+  <script src="../../kidscade-game-sdk.js" data-game-id="gigacity_lite" data-title="기가시티" data-shell="true" data-mute="false" data-orientation="landscape"></script>
+  <script type="module" src="./main.js?v=2"></script>
 </body>
 </html>
