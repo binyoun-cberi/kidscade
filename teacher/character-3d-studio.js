@@ -2535,6 +2535,38 @@ function installLocalVisualAudit(){
         }))
       );
     },
+    garmentSkinAudit(){
+      const reports=[];
+      for(const style of OUTFIT_STYLES){
+        const group=getNode(style.id);
+        if(!group)continue;
+        group.traverse(object=>{
+          if(!object.isSkinnedMesh||!object.userData?.skinTransfer)return;
+          const geometry=object.geometry;
+          const indices=geometry.getAttribute('skinIndex');
+          const weights=geometry.getAttribute('skinWeight');
+          let unweighted=0,invalidBones=0,maximumDeviation=0;
+          for(let i=0;i<weights.count;i++){
+            let total=0;
+            for(let k=0;k<4;k++){
+              const weight=weights.getComponent(i,k);
+              const index=indices.getComponent(i,k);
+              total+=weight;
+              if(!Number.isFinite(weight)||weight<0||
+                  (weight>0&&(index<0||index>=object.skeleton.bones.length)))
+                invalidBones++;
+            }
+            maximumDeviation=Math.max(maximumDeviation,Math.abs(total-1));
+            if(total<.999)unweighted++;
+          }
+          reports.push({fit:style.fit,style:style.id,piece:object.name,
+            transfer:object.userData.skinTransfer,
+            bones:object.skeleton.bones.length,vertices:weights.count,
+            unweighted,invalidBones,maximumDeviation});
+        });
+      }
+      return reports;
+    },
     garmentSurvey(){
       // Conservative animated-pose proximity diagnostic. Sampled 3D
       // vertex profiles can flag likely cloth/body overlaps, not certify zero
