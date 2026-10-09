@@ -288,7 +288,7 @@ function capture(){
  if(Math.random()<prob){
   const destination=E.addCaptured(save,f);
   if(f.id==="shibu_r00_c00")save.flags.shibuCaught=true;
-  announce("monster_caught",{id:f.id});
+  announce("monster_caught",{id:f.id,uniqueKey:"caught:"+f.id,value:1});
   endFight(species(f.id).name+" 포획 성공!\n"+(destination==="party"?"동료로 합류했어.":"동료 6마리가 꽉 차 보관함으로 이동했어.")+" · 확률 "+Math.round(prob*100)+"%","capture");
   return;
  }
