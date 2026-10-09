@@ -663,6 +663,10 @@ function applyHair(name){
 function selectBodyFit(fit){
   if(fit!=='male'&&fit!=='female')return;
   applyPreset(fit==='male'?'male':'base');
+  // The stock female "base" preset has no hair. Switching body type should
+  // show a complete character, not an accidentally bald head under a hat.
+  if(fit==='female'&&!HAIR_NODES.some(name=>getNode(name)?.visible))
+    applyHair('hairone');
   activeWardrobeCategory='hair';
   renderPartChecks();
 }
