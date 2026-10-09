@@ -973,5 +973,5 @@ test('v5.9 lower forearm recovery reports sleeve surface coverage by vertical ba
   assert.match(pack,/verticalBands=\[0,0,0,0\]/);
   assert.match(pack,/verticalBands\[y<\.6\?0:y<\.75\?1:y<\.95\?2:3\]\+\+/);
   assert.match(pack,/vertices:verts\.length\/3,triangles,minY,maxY,verticalBands/);
-  assert.match(audit,/Forearm uncovered/);
+  assert.match(audit,/CHIBI_ARM_COVERAGE/);
 });
