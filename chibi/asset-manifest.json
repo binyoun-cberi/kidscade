@@ -860,6 +860,10 @@
     "rigPolicy": "original 78 bone Chibi skeleton, skinned attachment parts weighted rigidly to head/spine or by closest bind-pose source vertex for shoes/watch",
     "thumbnailPolicy": "112x112 per-item real WebGL render target with cached preview, lazily drawn in accessory and shoes tabs",
     "slotPolicy": "one equipped per slot (shoes, hat/headphones, face, bag, wrist, neck), other outfit/hairstyle selections unaffected",
-    "verification": "Chrome browser full scene render and GLB exported binary roundtrip tests"
+    "verification": "Chrome browser full scene render and GLB exported binary roundtrip tests",
+    "fitRevision": "v5.3.1-collision-fit",
+    "collisionPolicy": "Slot exclusivity across legacy and v5.3 shoes/headgear/face/bags; fit offsets depend on body variant and bulky upper garment; hats use reversible crown-compressed copy of active hair mesh; source GLB is never modified.",
+    "fitOffsets": "Bounded [x,y,z,scale] for male/female on six slots, plus selected style and hoodie/bomber/cardigan clearance; idempotent on each equipment change.",
+    "exportPolicy": "Equipment geometry, hat-safe visible hair, and 78-bone skinned attachments are included in binary GLB. Restore old hair geometry on headwear removal."
   }
 }
