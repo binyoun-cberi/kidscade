@@ -8,6 +8,8 @@ const html=fs.readFileSync(path.join(dir,'index.html'),'utf8');
 const js=fs.readFileSync(path.join(dir,'game.js'),'utf8');
 
 test('Tidy King has a locally hosted Three.js stage, touch controls and clear loop',()=>{
+ assert.match(html,/kidscade-game-sdk\.js/);
+ assert.match(js,/KidscadeGame\?\.result\?/);
  assert.match(html,/three-r160\/three\.module\.js/);
  assert.match(html,/src="\.\/game\.js"/);
  for(const id of ['world','intro','start','end','next','replay','count','coins','percent','barFill','missionText','help']){
