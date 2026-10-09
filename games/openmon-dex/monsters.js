@@ -58,8 +58,8 @@
   // Format per entry: name|type|lore-key; a dash denotes an intentionally empty tile.
   const ATLASES = [
     {id:"set1",file:"OpenmonSprites1.png",width:448,height:320,rows:[
-      "-|뉴튼돌|earth|newton,관성룡|earth|inertia,다윈벌|leaf|darwin,프랙탈론|dark|fractal,테슬뱀|electric|tesla,-",
-      "-|멘델콩|leaf|mendel,멘델팟|leaf|mendel,아보가씨|leaf|avogadro,아보가룡|leaf|avogadro,-,-",
+      "-,뉴튼돌|earth|newton,관성룡|earth|inertia,다윈벌|leaf|darwin,프랙탈론|dark|fractal,테슬뱀|electric|tesla,-",
+      "-,멘델콩|leaf|mendel,멘델팟|leaf|mendel,아보가씨|leaf|avogadro,아보가룡|leaf|avogadro,-,-",
       "-,-,클로로|leaf|photosynthesis,클로리움|leaf|photosynthesis,광합거목|leaf|photosynthesis,-,-",
       "-,-,파스칼집게|water|pascal,베르누게|water|bernoulli,압력킹|water|pascal,-,-",
       "-,-,피보새|air|fibonacci,피보날개|air|fibonacci,피보닉스|air|fibonacci,-,-"
