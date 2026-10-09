@@ -232,6 +232,45 @@ function transferSmoothSkinWeights(geometry,reference,{sign,region}){
   return geometry.userData.skinTransfer;
 }
 
+
+// Skin long sleeves to their actual upper-arm and forearm bones. Sampling
+// nearby torso vertices bent the cuffs into large detached fabric spikes.
+function bindSleeveToArmBones(geometry,skeleton,sign){
+  const side=sign>0?'L':'R';
+  const getBone=pattern=>skeleton.bones.findIndex(bone=>
+    pattern.test(bone.name)&&bone.name.replace(/[._]/g,'').toUpperCase().endsWith(side));
+  const upper=getBone(/upper.?arm/i),forearm=getBone(/forearm|lower.?arm/i);
+  if(upper<0||forearm<0)throw Error('Cannot resolve '+side+' arm and forearm rig bones');
+  const uv=geometry.getAttribute('uv'),n=geometry.getAttribute('position').count;
+  const indices=new Uint16Array(n*4),weights=new Float32Array(n*4);
+  for(let i=0;i<n;i++){
+    const lower=smooth(.30,.75,uv.getY(i));
+    indices[i*4]=upper;indices[i*4+1]=forearm;
+    weights[i*4]=1-lower;weights[i*4+1]=lower;
+  }
+  geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(indices,4));
+  geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
+  geometry.userData={...geometry.userData,skinTransfer:{
+    method:'upper-forearm-blended-v5.9',region:'arm',neighbors:2,vertices:n,
+    upperBone:skeleton.bones[upper].name,forearmBone:skeleton.bones[forearm].name
+  }};
+  return geometry.userData.skinTransfer;
+}
+function bindYokeToPelvis(geometry,skeleton){
+  const pelvis=skeleton.bones.findIndex(bone=>bone.name==='DEF-spine');
+  if(pelvis<0)throw Error('Missing pelvis spine bone for trouser yoke');
+  const n=geometry.getAttribute('position').count;
+  const indices=new Uint16Array(n*4),weights=new Float32Array(n*4);
+  for(let i=0;i<n;i++){indices[i*4]=pelvis;weights[i*4]=1;}
+  geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(indices,4));
+  geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
+  geometry.userData={...geometry.userData,skinTransfer:{
+    method:'pelvis-anchored-yoke-v5.9',region:'pelvis',neighbors:1,vertices:n,
+    bone:skeleton.bones[pelvis].name
+  }};
+  return geometry.userData.skinTransfer;
+}
+
 function remeshSource(source,style){
   const geometry=source.geometry.clone();
   const positions=geometry.getAttribute('position');
@@ -285,12 +324,12 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
   const fitBody=getNode(style.fit==='male'?'kidscade_male_body':'character_low');
   const addMatchedSleeve=(geometry,id,sign)=>{
     if(!fitBody?.isSkinnedMesh)throw new Error('Sleeve skin reference body unavailable');
-    transferSmoothSkinWeights(geometry,fitBody,{sign,region:'arm'});
+    bindSleeveToArmBones(geometry,source.skeleton,sign);
     geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     const mesh=cloneSkinnedMeshWithGeometry(
       source,geometry,makeSolidMaterial(style.color,style.label+' 연결 소매'),style.id+'_'+id
     );
-    mesh.userData={type:'skinned-sleeve',sourceWeights:'four-neighbor-smooth-body-arm',skinTransfer:geometry.userData.skinTransfer};
+    mesh.userData={type:'skinned-sleeve',sourceWeights:'articulated-upper-and-forearm',skinTransfer:geometry.userData.skinTransfer};
     group.add(mesh);
   };
   if(style.details.includes('longSleeve')||style.details.includes('puffSleeve')){
@@ -405,18 +444,18 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
 // of skin at the pelvis. This short, weighted waist-to-crotch yoke covers it
 // without joining the trouser legs all the way down like a skirt.
 function addTrouserHipYoke({source,style,group,material,reference,cloneSkinnedMeshWithGeometry}){
-  const top=.79,bottom=.47;
-  const geometry=new THREE.CylinderGeometry(.219,.207,top-bottom,24,5,true);
+  const top=.79,bottom=.365;
+  const geometry=new THREE.CylinderGeometry(.227,.201,top-bottom,24,7,true);
   geometry.scale(1,1,.82);
   geometry.translate(0,(top+bottom)*.5,.003);
   const p=geometry.getAttribute('position');
   for(let i=0;i<p.count;i++){
     const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
-    const lower=smooth(.47,.59,y);
+    const lower=smooth(.365,.59,y);
     p.setXYZ(i,x*(1-.03*(1-lower)),y,z*(z>0?1.06:1.03));
   }
   p.needsUpdate=true;
-  transferSmoothSkinWeights(geometry,reference,{sign:0,region:'pelvis'});
+  bindYokeToPelvis(geometry,source.skeleton);
   geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
   const yoke=cloneSkinnedMeshWithGeometry(source,geometry,material,style.id+'_hip_yoke');
   yoke.userData={part:'trouser-hip-yoke',fit:style.fit,
