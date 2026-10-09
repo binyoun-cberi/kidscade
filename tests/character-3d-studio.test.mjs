@@ -731,3 +731,38 @@ test('v5.3 shared accessory equipment is mutually exclusive only within matching
   assert.match(js,/ACCESSORY_STYLES\.map\(style=>style\.id\)/);
   assert.match(js,/accessoryLibrary:\{count:ACCESSORY_COUNT,slots:ACCESSORY_SLOTS\}/);
 });
+
+
+test('v5.3.1 accessory fit rules clamp positioning and clear jacket/scarf clipping',()=>{
+  const pack=read('teacher/chibi-accessory-pack.js');
+  const m=JSON.parse(read('chibi/asset-manifest.json'));
+  assert.equal(m.accessoryLibrary.fitRevision,'v5.3.1-collision-fit');
+  assert.match(pack,/export const ACCESSORY_FIT_RULES=\{/);
+  assert.match(pack,/export const ACCESSORY_STYLE_FIT=\{/);
+  assert.match(pack,/export const ACCESSORY_CONFLICTS=\{/);
+  assert.match(pack,/export function applyAccessoryFit\(/);
+  assert.match(pack,/if\(style\.slot==='bag'&&puffy\)z-=\.042/);
+  assert.match(pack,/if\(style\.slot==='neck'&&elevatedCollar\)/);
+  assert.match(pack,/group\.scale\.setScalar\(THREE\.MathUtils\.clamp\(scale,\.84,1\.10\)\)/);
+  assert.match(pack,/Math\.max\(/);
+});
+
+test('v5.3.1 prevents legacy/new accessory stacking and restores original hair on cap removal',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(js,/const LEGACY_SHOE_IDS=\['shoe','bottes'/);
+  assert.match(js,/function equipmentSlot\(name\)/);
+  assert.match(js,/function resolveAccessoryConflicts\(preferred=''\)/);
+  assert.match(js,/function hatSafeGeometry\(mesh\)/);
+  assert.match(js,/function applyHideMasks\(\)/);
+  assert.match(js,/function applyAccessoryFit\(preferred=''\)/);
+  assert.match(js,/const candidate=hatOn&&mesh\.visible\?hatSafeGeometry\(mesh\):original/);
+  assert.match(js,/const originalHatHair=new WeakMap\(\)/);
+  assert.match(js,/const hatSafeHair=new WeakMap\(\)/);
+  assert.match(js,/const conflicts=resolveAccessoryConflicts\(preferred\)/);
+  assert.match(js,/applyRiggedAccessoryFit\(\{/);
+  assert.match(js,/equipmentAudit\(\)/);
+  assert.match(audit,/HAT-SAFE hair geometry/);
+  assert.match(audit,/Legacy shoes show through selected boots/);
+  assert.match(audit,/Backpack did not release jacket clearance/);
+});
