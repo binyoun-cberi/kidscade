@@ -449,7 +449,7 @@ canvas.addEventListener('pointermove', event => {
   const dy = event.clientY - dragging.y;
   dragging.x = event.clientX;
   dragging.y = event.clientY;
-  if (Math.abs(dx) + Math.abs(dy) > 0) setAutoFlight(false);
+  if (Math.abs(dx) + Math.abs(dy) > 0 && viewMode !== 'cockpit') setAutoFlight(false);
   if (viewMode === 'cockpit') {
     lookYaw = clamp(lookYaw - dx * 0.0032, -1.15, 1.15);
     lookPitch = clamp(lookPitch - dy * 0.0029, -0.54, 0.72);
