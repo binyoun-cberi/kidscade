@@ -122,3 +122,21 @@ test('curator browser loads both gameplay data and stat preview',()=>{
  for(const id of ['levelPreview','battleStats','battleNote','familyValue'])assert.ok(html.includes('id="'+id+'"'));
  assert.match(html,/db\.combat\.statsAtLevel/);
 });
+
+test('first route encounter distribution is fair to all three starter types',()=>{
+ const starters=['set1_r02_c02','set1_r03_c02','set1_r04_c02'];
+ const previews={meadow:[5,3,4.0,1.0],forest:[7,6,5.5,1.8],cave:[10,9,6.0,2.0]};
+ for(const [area,[playerLevel,enemyLevel,maxAverage,maxGap]] of Object.entries(previews)){
+  const zone=db.encounters[area];
+  const averages=starters.map(starter=>{
+   const turns=zone.pool.map(target=>{
+    const hp=db.combat.statsAtLevel(target,enemyLevel).hp;
+    const dmg=db.combat.damage({attacker:starter,defender:target,attackerLevel:playerLevel,defenderLevel:enemyLevel,power:9});
+    return Math.ceil(hp/dmg);
+   });
+   return turns.reduce((a,b)=>a+b,0)/turns.length;
+  });
+  assert.ok(Math.max(...averages)<=maxAverage,area+': too slow '+averages);
+  assert.ok(Math.max(...averages)-Math.min(...averages)<=maxGap,area+': starter disadvantage '+averages);
+ }
+});
