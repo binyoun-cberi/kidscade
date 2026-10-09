@@ -383,6 +383,8 @@ const errors=[];
   await setFit('female');
   await chooseAccessory('accessory','chibi_bag_school');
   const femaleFit=await evalPage('window.__kc3dAudit.equipmentAudit()');
+  assert.ok(femaleFit.hair.length===1&&femaleFit.hair[0].name==='hairone',
+    'Female body-fit default lost its base hairstyle');
   const femaleBag=femaleFit.accessories.find(x=>x.id==='chibi_bag_school');
   assert.ok(femaleBag&&femaleBag.scale!==bomberBag.scale,
     'Female body has no separate accessory fit');
