@@ -27,6 +27,17 @@
 @media(max-width:430px){.part-tile{min-height:150px}.part-name{font-size:.73rem}}
 
 /* Body-fit filtering and large touch targets for the wardrobe library. */
+.fit-workspace-status{display:grid;gap:5px;border-radius:11px;padding:12px 13px;margin:10px 0;
+  background:#eef2ff;border:1px solid #c7d2fe;color:#343b79;font-size:.72rem;line-height:1.35}
+.fit-workspace-status strong{font-size:.85rem}
+.fit-workspace-status span{font-weight:600}
+.studio[data-body-fit="female"] .fit-workspace-status{background:#fdf2f8;border-color:#fbcfe8;color:#831843}
+.studio[data-body-fit="female"] .body-fit-switch button.active{background:#fce7f3;color:#9d174d;border-color:#f9a8d4}
+.preset-grid button[hidden]{display:none!important}
+.part-fit-heading{grid-column:1/-1;border-bottom:1px solid #dfe6f1;font-size:.74rem;
+  margin:8px 0 2px;padding:5px 2px;color:#344256;font-weight:950}
+.part-fit-heading[data-part-fit="shared"]{color:#59677b;border-bottom-color:#c9d4e3}
+.part-empty{grid-column:1/-1;margin:5px 0;padding:12px;background:#f8fafc;border-radius:9px;font-size:.74rem}
 .body-fit-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0 4px}
 .body-fit-switch button{min-height:44px;font-size:.8rem}
 .body-fit-switch button.active,.wardrobe-categories button.active{
@@ -105,23 +116,26 @@
       </section>
 
       <section class="card">
-        <h2>체형 선택</h2>
-        <div class="body-fit-switch" role="group" aria-label="아바타 체형 호환성">
-          <button type="button" class="secondary active" data-body-fit="male" aria-pressed="true">남자형</button>
-          <button type="button" class="secondary" data-body-fit="female" aria-pressed="false">여자형</button>
+        <h2>체형별 제작실</h2>
+        <div class="body-fit-switch" role="group" aria-label="남성형·여성형 독립 제작실">
+          <button type="button" class="secondary active" data-body-fit="male" aria-pressed="true">남성형 제작실</button>
+          <button type="button" class="secondary" data-body-fit="female" aria-pressed="false">여성형 제작실</button>
         </div>
-        <div class="muted">성별 제한이 아니라 선택한 몸체에 맞게 제작된 파츠를 구분합니다. 신발과 일부 액세서리는 공용입니다.</div>
+        <div class="fit-workspace-status" role="status" aria-live="polite">
+          <strong id="fitWorkspaceLabel">남성형 전용 제작실</strong>
+          <span id="fitWorkspaceHelp">남성형 전용 헤어·의상만 표시합니다. 공용 신발·액세서리는 별도로 표시합니다.</span>
+        </div>
         <div class="divider"></div>
         <h2>옷장 프리셋</h2>
         <div class="preset-grid">
-          <button class="secondary" data-chibi-preset="base">여자 기본</button>
-          <button class="secondary active" data-chibi-preset="male">남자 기본</button>
-          <button class="secondary" data-chibi-preset="hoodie">후드티</button>
-          <button class="secondary" data-chibi-preset="student">학생</button>
-          <button class="secondary" data-chibi-preset="merchant">상인</button>
-          <button class="secondary" data-chibi-preset="archer">궁수</button>
-          <button class="secondary" data-chibi-preset="ninja">닌자</button>
-          <button class="secondary" data-chibi-preset="knight">기사</button>
+          <button class="secondary" data-chibi-preset="base" data-preset-fit="female" hidden>여성형 기본</button>
+          <button class="secondary active" data-chibi-preset="male" data-preset-fit="male">남성형 기본</button>
+          <button class="secondary" data-chibi-preset="hoodie" data-preset-fit="female" hidden>여성형 후드티</button>
+          <button class="secondary" data-chibi-preset="student" data-preset-fit="female" hidden>여성형 학생</button>
+          <button class="secondary" data-chibi-preset="merchant" data-preset-fit="female" hidden>여성형 상인</button>
+          <button class="secondary" data-chibi-preset="archer" data-preset-fit="female" hidden>여성형 궁수</button>
+          <button class="secondary" data-chibi-preset="ninja" data-preset-fit="female" hidden>여성형 닌자</button>
+          <button class="secondary" data-chibi-preset="knight" data-preset-fit="female" hidden>여성형 기사</button>
         </div>
         <div class="divider"></div>
         <label>헤어
@@ -255,6 +269,6 @@ setTimeout(()=>{
   }
 },7000);
 </script>
-<script type="module" src="/teacher/character-3d-studio.js?v=20261009-meshsafe55"></script>
+<script type="module" src="/teacher/character-3d-studio.js?v=20261009-hardfit56"></script>
 </body>
 </html>
