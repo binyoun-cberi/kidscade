@@ -652,6 +652,7 @@ function shootPrime(prime) {
     if (target) pursuitScene.markValue(target);
     if (result.kind === 'destroyed') {
       announcePrime(result.oldValue + ' ÷ ' + prime + ' = 1 · 격추!');
+      pursuitScene.explosion(result.id);
       enemyRemovalQueue.push({ id: result.id, time: 0.65 });
     } else {
       announcePrime(result.oldValue + ' ÷ ' + prime + ' = ' + result.newValue + '!');
@@ -673,7 +674,10 @@ function updatePrimeCombat(dt) {
     pursuitScene.addEnemy(events.newEnemies[i], pilotPosition, yaw, collisionWorld, i);
   }
   if (events.newEnemies.length) announcePrime('새로운 합성수 추격대가 나타났어!');
-  if (events.attacks.length) announcePrime('적의 공격! 방어막 -' + (events.attacks.length * 8) + '%', true);
+  if (events.attacks.length) {
+    for (const hit of events.attacks) pursuitScene.enemyAttack(hit.id, pilotPosition);
+    announcePrime('적의 공격! 방어막 -' + (events.attacks.length * 8) + '%', true);
+  }
   primeHudElapsed += dt;
   if (primeHudElapsed >= 0.19 || events.newEnemies.length || events.attacks.length) {
     primeHudElapsed = 0;
