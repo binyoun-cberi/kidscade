@@ -115,6 +115,17 @@ const errors=[],responses=[];
     await click('#start');await sleep(1200);
     const combatEnabled=await evaluate('!document.querySelector("#chaseHUD").classList.contains("hidden") && document.querySelector("#chaseTargetNumber").textContent === "6"');
     assert.ok(combatEnabled, 'Prime Chase should begin with composite 6 and visible 2/3/5/7 cannons');
+    const radarReady=await evaluate(`(()=>{
+      const canvas=document.querySelector('#primeRadar');
+      const ctx=canvas.getContext('2d');
+      const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+      let painted=0;
+      for(let i=3;i<pixels.length;i+=4)if(pixels[i]>0)painted++;
+      return {painted,readout:document.querySelector('#radarReadout').textContent,
+        radarVisible:canvas.getBoundingClientRect().width>40};
+    })()`);
+    console.log('TACTICAL RADAR:',JSON.stringify(radarReady));
+    assert.ok(radarReady.painted>100 && radarReady.radarVisible,'Combat radar did not render');
     const combatOpening=await snap('00-prime-chase-start');
     console.log('PRIME CHASE opening frame brightness:',combatOpening.mean);
     const chase=await snap('01-chase-landscape');
@@ -154,6 +165,14 @@ const errors=[],responses=[];
     const portraitWeaponOverlap=await evaluate('(()=>{const a=document.querySelector("#primeWeapons").getBoundingClientRect(),b=document.querySelector("#stickSurface").getBoundingClientRect(),c=document.querySelector("#elevation").getBoundingClientRect();const overlap=(x,y)=>Math.max(0,Math.min(x.right,y.right)-Math.max(x.left,y.left))*Math.max(0,Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top));return {stick:overlap(a,b),elevation:overlap(a,c)};})()');
     console.log('Prime buttons vs portrait mobile controls:',JSON.stringify(portraitWeaponOverlap));
     assert.ok(portraitWeaponOverlap.stick<1&&portraitWeaponOverlap.elevation<1,'Prime weapons overlap flying controls on a phone');
+    const radarOverlap=await evaluate(`(()=>{
+      const rect=id=>document.querySelector(id).getBoundingClientRect();
+      const radar=rect('#radarPanel'),camera=rect('#chaseCameraButton');
+      return Math.max(0,Math.min(radar.right,camera.right)-Math.max(radar.left,camera.left)) *
+        Math.max(0,Math.min(radar.bottom,camera.bottom)-Math.max(radar.top,camera.top));
+    })()`);
+    console.log('Radar vs camera controls overlap:',radarOverlap);
+    assert.ok(radarOverlap<1,'Radar overlaps portrait camera toggle');
 
     // Play the full expanded 6-wave encounter using actual UI buttons.
     await click('[data-prime="5"]'); await sleep(1620);
