@@ -77,6 +77,7 @@
                     </div>
                     <div id="slot-item" class="flex flex-col items-center animate-bounce hidden">
                         <span id="slot-badge">수거 완료</span>
+                         <span id="slot-icon" class="mt-1 min-h-[40px] inline-flex items-center justify-center" aria-hidden="true"></span>
                         <span id="slot-name" class="text-xs md:text-sm font-black text-white bg-slate-800/90 px-3 py-1 rounded-md mt-2 shadow-sm whitespace-nowrap"></span>
                     </div>
                 </div>
@@ -125,6 +126,7 @@
 
     </div>
 
+<script src="../../assets/game/2d/shared/openmon-item-icons.js?v=1"></script>
 <script>
     // ==========================================
     // 1. 오디오 엔진 (Web Audio API)
@@ -234,6 +236,14 @@
         { id: 'g10', name: '파뿌리', emoji: '🌿', type: 'general', level: 4, reason: "파뿌리는 매운 향이 강해 사료로 부적합해요!" }
     ];
 
+    // 3D world objects stay unchanged: these are visual HUD icons only.
+    const ITEM_ICON_BY_TRASH={
+      g6:'eggGold',g7:'shell',g8:'moonStone',g9:'plant',g10:'plant',
+      p1:'waterBottle',p2:'jar',p3:'plasticBottle',p4:'canOrange',
+      c1:'canBlue',c2:'canGreen',c3:'jar',c4:'glassBottle',
+      pa2:'paper',pa3:'canOrange',pa4:'paper',
+      f1:'fruitOrange',f2:'banana',f4:'fruitOrange'
+    };
     const BIN_ICON='../../assets/game/ui/icons/kenney-game-icons/white/2x/trashcan-open.png';
     const BINS = [
         { id: 'general', name: '일반쓰레기', sub:'GENERAL' },
@@ -272,6 +282,7 @@
     const elSlotEmpty = document.getElementById('slot-empty');
     const elSlotItem = document.getElementById('slot-item');
     const elSlotBadge = document.getElementById('slot-badge');
+    const elSlotIcon = document.getElementById('slot-icon');
     const elSlotName = document.getElementById('slot-name');
     const elStartBtn = document.getElementById('btn-start');
     const elAssetStatus = document.getElementById('asset-status');
@@ -346,6 +357,8 @@
             elSlotItem.classList.remove('hidden');
             elSlotBadge.innerText = BINS.find(b => b.id === heldTrash.type)?.sub || 'ITEM';
             elSlotName.innerText = heldTrash.name;
+            const iconId=ITEM_ICON_BY_TRASH[heldTrash.id];
+            elSlotIcon.innerHTML=(iconId&&window.KidscadeItemIcons?.html(iconId,40))||'<span class="text-3xl">'+heldTrash.emoji+'</span>';
             
             elSlotBox.className = "w-36 h-36 md:w-44 md:h-44 border-[6px] md:border-8 border-dashed rounded-3xl flex flex-col items-center justify-center bg-green-50 backdrop-blur-md transition-all duration-300 shadow-xl border-green-400 scale-110 shadow-green-400/40";
             
@@ -358,6 +371,7 @@
         } else {
             elSlotEmpty.classList.remove('hidden');
             elSlotItem.classList.add('hidden');
+            elSlotIcon.innerHTML='';
             
             elSlotBox.className = "w-36 h-36 md:w-44 md:h-44 border-[6px] md:border-8 border-dashed rounded-3xl flex flex-col items-center justify-center bg-white/50 backdrop-blur-md transition-all duration-300 shadow-xl border-gray-400";
             
