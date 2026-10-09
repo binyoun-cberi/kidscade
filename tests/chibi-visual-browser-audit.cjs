@@ -318,9 +318,15 @@ const errors=[];
     assert.equal(piece.unweighted,0,'Unweighted garment vertices: '+piece.piece);
     assert.equal(piece.invalidBones,0,'Out-of-range skin bone index '+piece.piece);
     assert.ok(piece.maximumDeviation<.0001,'Garment weight sum is not normalized: '+piece.piece);
-    assert.equal(piece.transfer.method,'four-neighbor-smooth-body-weights-v5.8',
-      'Old nearest-vertex skin transfer remains on '+piece.piece);
-    assert.equal(piece.transfer.neighbors,4,'Wrong interpolation degree for '+piece.piece);
+    const expected=piece.piece.endsWith('_hip_yoke')
+      ? ['pelvis-anchored-yoke-v5.9',1]
+      : piece.piece.includes('_continuousSleeve_')
+        ? ['upper-forearm-blended-v5.9',2]
+        : ['four-neighbor-smooth-body-weights-v5.8',4];
+    assert.equal(piece.transfer.method,expected[0],
+      'Garment is not bound to its intended articulated bones: '+piece.piece);
+    assert.equal(piece.transfer.neighbors,expected[1],
+      'Wrong bone interpolation for '+piece.piece);
   }
   report.outfitPack.skinTransfer={pieces:skinAudit.length,details:skinAudit};
 
