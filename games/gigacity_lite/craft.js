@@ -11,7 +11,7 @@ const glow = (color, intensity = 1.4) =>
   new THREE.MeshBasicMaterial({ color, toneMapped: false });
 const MAT = {
   shell: paint(0x142741, 0.68, 0.31),
-  dash: paint(0x111b2a, 0.27, 0.72),
+  dash: paint(0x192d43, 0.27, 0.72),
   graphite: paint(0x0a1322, 0.2, 0.78),
   carbon: paint(0x202c3d, 0.4, 0.46),
   trim: paint(0x567388, 0.58, 0.34),
@@ -62,21 +62,21 @@ function makeFallbackCar(group) {
 function makeInterior(group) {
   // No opaque front wall or windshield: the panorama must remain visible.
   piece(group, MAT.graphite, 2.86, 0.17, 3.7, 0, -0.82, 0.05);
-  piece(group, MAT.dash, 2.83, 0.54, 0.69, 0, -0.10, -1.36, 0.08);
-  piece(group, MAT.carbon, 2.78, 0.10, 0.64, 0, 0.31, -1.34, -0.05);
-  piece(group, MAT.cyan, 2.54, 0.018, 0.025, 0, 0.35, -1.63);
-  piece(group, MAT.trim, 2.84, 0.17, 0.22, 0, 0.45, -1.72, -0.05);
+  piece(group, MAT.dash, 2.83, 0.40, 0.69, 0, -0.25, -1.36, 0.08);
+  piece(group, MAT.carbon, 2.78, 0.07, 0.64, 0, 0.07, -1.34, -0.05);
+  piece(group, MAT.cyan, 2.54, 0.018, 0.025, 0, 0.14, -1.63);
+  piece(group, MAT.trim, 2.84, 0.09, 0.22, 0, 0.28, -1.72, -0.05);
   // Side doors and lower window ledges.
   for (const side of [-1, 1]) {
     piece(group, MAT.shell, 0.13, 0.5, 3.24, side * 1.38, -0.35, 0.12);
     piece(group, MAT.trim, 0.10, 0.09, 3.05, side * 1.37, -0.06, 0.13);
-    strut(group, MAT.trim, [side * 1.36, 0.39, -1.69], [side * 1.15, 1.56, -1.78], 0.072);
-    strut(group, MAT.shell, [side * 1.37, 0.38, 1.38], [side * 1.13, 1.57, 1.25], 0.078);
+    strut(group, MAT.trim, [side * 1.36, 0.39, -1.69], [side * 1.15, 2.38, -1.78], 0.072);
+    strut(group, MAT.shell, [side * 1.37, 0.38, 1.38], [side * 1.13, 2.37, 1.25], 0.078);
   }
   // Broad panoramic windshield; only the top crossbar is visible.
-  strut(group, MAT.shell, [-1.15, 1.56, -1.78], [1.15, 1.56, -1.78], 0.094);
-  strut(group, MAT.trim, [-1.15, 1.56, -1.77], [1.15, 1.56, -1.77], 0.023);
-  piece(group, MAT.shell, 2.47, 0.14, 1.06, 0, 1.63, 0.68);
+  strut(group, MAT.shell, [-1.15, 2.38, -1.78], [1.15, 2.38, -1.78], 0.094);
+  strut(group, MAT.trim, [-1.15, 2.38, -1.77], [1.15, 2.38, -1.77], 0.023);
+  piece(group, MAT.shell, 2.47, 0.14, 1.06, 0, 2.43, 0.68);
   // Two sculpted sports seats including visible passenger headrest.
   for (const sx of [-0.59, 0.71]) {
     piece(group, MAT.chair, 0.76, 0.20, 0.95, sx, -0.42, 0.84);
