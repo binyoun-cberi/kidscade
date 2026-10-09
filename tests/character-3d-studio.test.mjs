@@ -360,7 +360,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261009-dualrig57/);
+  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
@@ -450,7 +450,7 @@ test('male base opens first and provides brows visibility, face zoom and gait st
   assert.match(html,/id="gaitBadge"/);
   assert.match(html,/data-view="face"/);
   assert.match(html,/data-chibi-preset="male" data-preset-fit="male">남성형 기본/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-dualrig57/);
+  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
 });
 
 test('mobile studio shows the live avatar preview before the long wardrobe',()=>{
@@ -536,7 +536,7 @@ test('one-touch mobile Chibi controls are wired to the same real animation, view
   assert.match(js,/setCameraView\(button\.dataset\.quickView\)/);
   assert.match(js,/\[data-chibi-preset\],\[data-view\],\[data-quick-clip\],\[data-quick-view\],\[data-quick-speed\]/);
   assert.match(js,/\$\('speed'\)\.value=button\.dataset\.quickSpeed/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-dualrig57/);
+  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
 });
 
 test('Chibi v5 wardrobe exposes gender-fit filter and category tabs without restricting shared accessories',()=>{
@@ -887,7 +887,7 @@ test('v5.7 separates male and female bone ownership, animation roots and GLB rig
   assert.match(audit,/window\.__kc3dAudit\.rigIsolationAudit\(\)/);
   assert.match(audit,/sharedBones,0/);
   assert.match(audit,/roundtripExport\(\)/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-dualrig57/);
+  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
 });
 
 test('v5.8 smooth garment skin weights have four-neighbor blending and reject invalid meshes',()=>{
@@ -915,7 +915,7 @@ test('v5.8 smooth garment skin weights have four-neighbor blending and reject in
 
 test('v5.8 visual cleanup uses continuous skinned sleeves and visibly separate wide pant legs',()=>{
   const pack=read('teacher/chibi-outfit-pack.js');
-  assert.match(pack,/new THREE\.CatmullRomCurve3\(puff\?\[start,elbow\]:\[start,elbow,cuff\]\)/);
+  assert.match(pack,/new THREE\.CatmullRomCurve3\(puff\?\[start,elbow\]:\[start,elbow,cuff\],false,'centripetal'\)/);
   assert.match(pack,/addMatchedSleeve\(sleeve,sign<0\?'continuousSleeve_left':'continuousSleeve_right',sign\)/);
   assert.match(pack,/sleeve\.setIndex\(faces\)/);
   assert.doesNotMatch(pack,/shoulderCap=new THREE\.SphereGeometry/);
@@ -923,4 +923,18 @@ test('v5.8 visual cleanup uses continuous skinned sleeves and visibly separate w
   assert.match(pack,/const lowerRadius=wide\?\.104/);
   assert.match(pack,/geometry\.translate\(sign\*\(wide\?\.178:\.153\)/);
   assert.match(pack,/const fullness=1-\.11\*knee\+\.025\*hem/);
+});
+
+test('v5.9 repairs exposed long-sleeve wrists and trouser crotch wedge without joining the legs',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(pack,/const cuff=new THREE\.Vector3\(sign\*\.365,\.645,-\.042\)/);
+  assert.match(pack,/function addTrouserHipYoke\(/);
+  assert.match(pack,/new THREE\.CylinderGeometry\(\.219,\.207,top-bottom,24,5,true\)/);
+  assert.match(pack,/addTrouserHipYoke\(\{source,style,group,material,reference,cloneSkinnedMeshWithGeometry\}\)/);
+  assert.match(pack,/transferSmoothSkinWeights\(geometry,reference,\{sign:0,region:'pelvis'\}\)/);
+  assert.match(pack,/style\.id\+'_hip_yoke'/);
+  assert.match(audit,/skinAudit\.length,33/);
+  assert.match(audit,/crotch-wrist-repro-/);
+  assert.match(audit,/bottom\+'_hip_yoke'/);
 });
