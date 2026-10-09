@@ -118,6 +118,18 @@ jobs:
         run: npm run build
       - name: Run all regression tests and audits
         run: npm run test:ci
+      - name: Openmon expedition real-browser mobile and desktop audit
+        run: node tests/openmon-expedition-browser-audit.cjs
+        env:
+          KIDSCADE_OPENMON_AUDIT_OUT: ${{ runner.temp }}/openmon-expedition-audit
+      - name: Upload Openmon expedition screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openmon-expedition-audit
+          path: ${{ runner.temp }}/openmon-expedition-audit/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Gigacity cockpit and iPhone viewport browser simulation
         run: node tests/gigacity-visual-browser-audit.cjs
         env:

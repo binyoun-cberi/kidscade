@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f2e9">
+<meta name="description" content="Openmon 118개 스프라이트를 과학·수학에서 이름을 따온 몬스터로 분류하는 키즈케이드 도감 제작실">
+<title>개념도감 제작실 | KIDSCADE</title>
+<style>
+:root{--paper:#f6f2e9;--white:#fffcf6;--ink:#243c3a;--muted:#70817c;--border:#d8dfd3;--forest:#215c53;--mint:#e4f1e4;--gold:#eabd67;--coral:#ef9976;--shadow:0 14px 35px rgba(37,65,55,.08)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:radial-gradient(circle at 0 0,#eff7e8 0,transparent 34%),radial-gradient(circle at 100% 25%,#f9e9d8 0,transparent 37%),var(--paper)}
+button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #e8a94c;outline-offset:2px}
+[hidden]{display:none!important}.wrap{max-width:1460px;padding:20px clamp(14px,3vw,42px) 70px;margin:auto}.top{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:22px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;border:0;background:transparent;padding:0;text-align:left;color:inherit;cursor:pointer}.logo{display:grid;place-items:center;width:48px;height:48px;border-radius:14px;background:#205d53;color:white;box-shadow:inset 0 -4px #133b35;font-weight:900;font-size:27px}.brand small{font-weight:900;letter-spacing:.13em;color:#758882;font-size:10px}.brand strong{display:block;font-size:21px;letter-spacing:-.07em}.actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid #cfdbcf;border-radius:11px;background:var(--white);padding:10px 14px;font-size:12px;font-weight:850;min-height:40px;color:var(--forest);transition:transform .15s,background .15s}.btn:hover{background:#eaf4e8;transform:translateY(-1px)}.btn.primary{color:#fff;border-color:var(--forest);background:var(--forest)}.btn.primary:hover{background:#154c43}.btn.danger{color:#a65343}
+.hero{background:#20574f;border-radius:23px;padding:25px 28px;position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1.3fr) auto;align-items:center;min-height:205px;color:white;box-shadow:0 13px 25px #204a3920}
+.hero:before,.hero:after{content:"";position:absolute;border:2px solid #ffffff15;width:430px;height:430px;border-radius:50%;right:-100px;top:-130px;pointer-events:none}.hero:after{width:300px;height:300px;right:-35px;top:-65px}.eyebrow{color:#d5df9d;font-size:11px;font-weight:950;letter-spacing:.15em;margin:0 0 12px}.hero h1{font-size:clamp(27px,3.4vw,45px);letter-spacing:-.07em;line-height:1.22;margin:0 0 11px}.hero p:last-child{max-width:650px;line-height:1.65;font-size:13px;color:#dfebe6;margin:0}.hero-dex{height:160px;width:180px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1}.hero-dex:before{content:"";position:absolute;width:138px;height:138px;border-radius:50%;background:#f4d99721;border:1px solid #ffffff35}.hero-dex .sprite{filter:drop-shadow(0 8px 2px #153e3770)}
+.overview{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:16px 0 19px}.stat-card{background:#fffcf6;border:1px solid var(--border);border-radius:15px;padding:15px 18px;box-shadow:0 4px 10px #1d4d3610}.stat-card small{display:block;color:#72857d;font-size:11px;font-weight:850}.stat-card strong{font-size:25px;font-weight:950;letter-spacing:-.05em}.stat-card span{color:#75867d;font-size:10px}
+.workspace{display:grid;grid-template-columns:minmax(0,1.48fr) minmax(340px,1fr);gap:18px;align-items:start}.panel{background:var(--white);border:1px solid var(--border);border-radius:19px;box-shadow:var(--shadow);overflow:hidden}.panel-head{padding:19px 20px 13px;display:flex;gap:8px;justify-content:space-between;align-items:center}.panel-head h2{margin:0;font-size:19px;letter-spacing:-.04em}.panel-head small{font-size:11px;font-weight:800;color:var(--muted)}.tools{display:grid;grid-template-columns:minmax(145px,1.5fr) repeat(3,minmax(100px,1fr));gap:8px;padding:0 19px 13px}.control{width:100%;min-width:0;border:1px solid #d4dfd4;background:#fff;border-radius:10px;padding:11px 11px;min-height:42px;font-size:12px;color:#344e47}.control::placeholder{color:#8a9a94}.tool-caption{margin:0;padding:0 19px 14px;color:#71857c;font-size:11px;line-height:1.5}.sprite-list{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding:14px 18px 22px;border-top:1px solid #e9eee7;max-height:830px;overflow-y:auto;align-content:start;scrollbar-color:#b4c8bf transparent}
+.mon-card{border:1.5px solid #e5eae3;background:#fff;border-radius:14px;padding:8px 4px 10px;text-align:center;min-height:145px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:3px;transition:.14s transform,.14s border-color,.14s background;position:relative;color:var(--ink)}
+.mon-card:hover{transform:translateY(-2px);border-color:#90ba9a}.mon-card[aria-pressed="true"]{border:2px solid #397e66;background:#e7f4e8;box-shadow:inset 0 0 0 1px #bad7b8}.mon-card .num{align-self:flex-start;margin-left:5px;color:#8a9a90;font-weight:900;font-size:9px}.mon-card .avatar{width:74px;height:72px;display:grid;place-items:center;background:radial-gradient(circle,#f1f4dc 0,#f1f4dc 45%,transparent 65%)}.sprite{display:block;width:64px;height:64px;flex-shrink:0;background-repeat:no-repeat;image-rendering:pixelated}
+.mon-card strong{max-width:100%;font-size:12px;font-weight:950;letter-spacing:-.06em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mon-card .small-type{font-size:10px;font-weight:850;padding:3px 8px;border-radius:30px;background:#edf1eb}
+.role-tag{display:inline-block;color:#736049;background:#fff0d4;font-size:9px;padding:3px 6px;border-radius:6px;font-weight:850}.mon-card[aria-disabled="true"]{opacity:.8}.empty{text-align:center;padding:30px 20px;color:var(--muted);grid-column:1/-1}
+.details{position:sticky;top:16px}.detail-top{padding:19px 22px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e6eae2}.detail-top h2{margin:0;font-size:19px;letter-spacing:-.06em}.draft-label{border-radius:18px;padding:6px 9px;background:#f7ead2;color:#9a6d2d;font-size:10px;font-weight:900}.portrait{height:255px;background:radial-gradient(circle at 50% 45%,#e9efd6 0,#e9efd6 17%,transparent 18%),radial-gradient(circle at 50% 45%,#f2f5e6 0,#f2f5e6 34%,transparent 35%),linear-gradient(#f9f9ed,#e8f1e6);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}.portrait .sprite{filter:drop-shadow(0 9px 1px #193d2533);position:relative;z-index:1}.portrait .ground{position:absolute;bottom:43px;width:180px;height:24px;filter:blur(5px);background:#648a6844;border-radius:50%}.portrait .atlas{position:absolute;left:17px;bottom:13px;font-size:10px;color:#688577;font-weight:800}.detail-content{padding:17px 22px 25px}.number{font-size:11px;font-weight:950;color:#93a49a;letter-spacing:.1em}.monster-name{margin:3px 0 8px;font-size:29px;letter-spacing:-.075em;line-height:1.2}.pill{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:50px;background:#e7eee7;color:#335b4d;font-size:11px;font-weight:850}.pill:before{content:"";width:7px;height:7px;background:var(--dot,#709b7e);border-radius:50%}.pills{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 13px}.science{padding:14px 15px;background:#f1f6eb;border-radius:12px;border-left:4px solid #93b985;margin:10px 0 17px}.science strong{font-size:13px;color:#2b6248}.science p{margin:7px 0 0;font-size:12px;line-height:1.7;color:#426454}.section-title{margin:20px 0 10px;display:flex;justify-content:space-between;align-items:center;font-size:13px;letter-spacing:-.02em}.section-title small{font-size:10px;color:var(--muted);font-weight:500}.edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.field{display:flex;flex-direction:column;gap:5px;min-width:0}.field.wide{grid-column:1/-1}.field label{font-weight:850;color:#63766d;font-size:11px}.field input,.field select{border-radius:9px;border:1px solid #d8e2d8;background:#fff;padding:10px;font-size:12px;min-height:40px;min-width:0;width:100%;color:#24463c}
+.preview-head{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px;font-weight:850;color:#5d776b}.preview-head .control{max-width:112px;min-height:34px;padding:6px 9px}
+.battle-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0}
+.stat-meter{background:#f4f7ef;border:1px solid #e1e9dc;border-radius:10px;padding:9px 11px}
+.stat-meter label{font-size:10px;color:#698478;font-weight:850;display:flex;justify-content:space-between}
+.stat-meter b{color:#24483b;font-size:13px}.stat-meter .rail{margin-top:7px;height:6px;background:#dce6d9;border-radius:30px;overflow:hidden}
+.stat-meter .fill{display:block;height:100%;border-radius:30px;background:#609f84}
+.evolution{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0}.evolution button{font-size:11px;padding:7px 9px;border:1px solid #cbdccf;background:#f3f9f0;color:#285c4d;border-radius:10px;font-weight:800}.evolution button:hover{background:#dfedde}.muted{font-size:11px;color:var(--muted);line-height:1.55}.src{margin:17px 0 0;padding:13px 0 0;border-top:1px dashed #d3ded2;font-size:10px;line-height:1.7;color:#788980;word-break:break-word}.src code{color:#40675b;font-weight:800}.save{margin:14px 1px 0;font-size:11px;color:#587b67;font-weight:750}.footer{text-align:center;margin:23px auto;color:#788780;font-size:12px;line-height:1.8}
+@media(max-width:1080px){.workspace{grid-template-columns:minmax(0,1fr) minmax(330px,.85fr)}.sprite-list{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:760px){.wrap{padding:14px 12px 60px}.top{gap:12px}.hero{padding:23px 19px;min-height:190px;grid-template-columns:minmax(0,1fr) 102px}.hero-dex{width:108px;height:125px}.hero-dex .sprite{transform:scale(.83)}.hero p:last-child{font-size:11px}.overview{grid-template-columns:repeat(2,1fr);gap:8px}.stat-card{padding:12px 14px}.workspace{display:flex;flex-direction:column}.panel{width:100%}.sprite-list{max-height:455px;grid-template-columns:repeat(4,minmax(0,1fr));padding:12px;gap:6px}.details{position:static;order:-1}.portrait{height:215px}.tools{grid-template-columns:1fr 1fr;padding:0 12px 12px}.tools input{grid-column:1/-1}.mon-card{min-height:137px}.panel-head{padding:16px 14px 12px}.detail-content{padding:16px}.detail-top{padding:14px 16px}}
+@media(max-width:380px){.sprite-list{grid-template-columns:repeat(3,minmax(0,1fr))}.actions .btn{font-size:10px;padding:8px}.hero h1{font-size:25px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<header class="top">
+  <button class="brand" id="backBtn" type="button" aria-label="키즈케이드로 돌아가기">
+    <div class="logo" aria-hidden="true">∑</div><div><small>KIDSCADE · FIELD RESEARCH</small><strong>개념도감 제작실</strong></div>
+  </button>
+  <div class="actions">
+    <button class="btn" id="importBtn">JSON 불러오기</button>
+    <button class="btn" id="resetBtn">초기화</button>
+    <button class="btn primary" id="exportBtn">도감 JSON 내보내기 ↗</button>
+  </div>
+</header>
+<section class="hero">
+  <div><p class="eyebrow">THE SCIENCE OF MONSTERS · V2</p>
+    <h1>발견하는 재미,<br>이해하는 수학과 과학.</h1>
+    <p>도감 102개 형태와 47개 진화 계열을 만나보세요. 118개 이미지 중 재해석 시안·오브젝트를 구별하고, 체력과 공격력도 함께 살펴볼 수 있어요.</p>
+  </div><div class="hero-dex" id="heroSprite"></div>
+</section>
+<section class="overview" aria-label="도감 요약">
+  <div class="stat-card"><small>등록된 스프라이트</small><strong id="totalValue">118</strong><span> 개 프레임</span></div>
+  <div class="stat-card"><small>수집 가능한 형태</small><strong id="candidateValue">102</strong><span>개 · 게임 설정</span></div>
+  <div class="stat-card"><small>늑대 재해석</small><strong id="conceptValue">15</strong><span>개 시안</span></div>
+  <div class="stat-card"><small>진화 계열</small><strong id="familyValue">47</strong><span>개 · 일부 검토 중</span></div>
+  <div class="stat-card"><small>사용자 수정</small><strong id="editValue">0</strong><span>개 기록</span></div>
+</section>
+<div class="workspace">
+  <section class="panel" aria-label="몬스터 이미지 목록">
+    <div class="panel-head"><h2>몬스터 찾아보기</h2><small id="resultCount">118개 표시</small></div>
+    <div class="tools">
+      <input class="control" id="search" aria-label="이름 및 과학 개념 검색" placeholder="이름 · 멘델 · 프랙털 · 유전 검색" autocomplete="off">
+      <select class="control" id="typeFilter" aria-label="속성 필터"><option value="">모든 속성</option></select>
+      <select class="control" id="atlasFilter" aria-label="시트 필터"><option value="">전체 시트</option></select>
+      <select class="control" id="roleFilter" aria-label="이미지 종류 필터"><option value="">모든 종류</option><option value="monster">도감 후보</option><option value="alternate-concept">늑대 재해석</option><option value="object">오브젝트</option></select>
+    </div>
+    <p class="tool-caption">번호는 <b>게임 도감 번호</b>이며, 재해석 시안과 배에는 도감 번호를 주지 않았어요. Set 2에서 서로 닮은 두 그림은 검토 중이라 자동 진화를 막아두었어요.</p>
+    <div class="sprite-list" id="spriteList" aria-live="polite"></div>
+  </section>
+  <section class="panel details" aria-label="선택한 몬스터 정보">
+    <div class="detail-top"><h2>몬스터 연구 카드</h2><span class="draft-label">전투 능력치 설계안</span></div>
+    <div class="portrait"><div class="ground"></div><div id="portraitSprite"></div><span class="atlas" id="atlasId"></span></div>
+    <div class="detail-content">
+      <div class="number" id="number">NO. 001</div><h3 class="monster-name" id="monsterName">—</h3>
+      <div class="pills" id="typePills"></div>
+      <p class="muted" id="classificationNote"></p>
+      <div class="science"><strong id="scienceHeading">오늘의 과학 개념</strong><p id="scienceFact"></p></div>
+      <h4 class="section-title">능력치 · 육성 시뮬레이션 <small>레벨별 기본 수치</small></h4>
+      <div class="preview-head"><label for="levelPreview">미리보기 레벨</label><select id="levelPreview" class="control"><option value="3">Lv.3</option><option value="5" selected>Lv.5</option><option value="10">Lv.10</option><option value="14">Lv.14</option><option value="20">Lv.20</option><option value="26">Lv.26</option><option value="40">Lv.40</option></select></div>
+      <div class="battle-stats" id="battleStats" aria-live="polite"></div>
+      <p class="muted" id="battleNote">개체 능력치·상성·포획 가능 여부는 진화 형태에 따라 달라져요.</p>
+      <h4 class="section-title">도감 정보 수정 <small>이 기기에 자동 저장 · 게임 수치는 고정된 기준안</small></h4>
+      <div class="edit-grid">
+        <div class="field wide"><label for="nameField">몬스터 이름</label><input id="nameField" maxlength="20" autocomplete="off"></div>
+        <div class="field"><label for="typeField">속성</label><select id="typeField"></select></div>
+        <div class="field"><label for="topicField">연결되는 과학·수학 개념</label><select id="topicField"></select></div>
+        <div class="field"><label for="habitatField">서식지</label><input id="habitatField" maxlength="30"></div>
+        <div class="field"><label for="rarityField">출현 등급</label><select id="rarityField"><option value="common">일반</option><option value="uncommon">드묾</option><option value="rare">희귀</option><option value="starter">스타팅</option></select></div>
+        <div class="field"><label for="stageField">설정 메모용 진화 단계</label><select id="stageField"><option value="0">미확정</option><option value="1">1단계</option><option value="2">2단계</option><option value="3">3단계</option></select></div>
+        <div class="field"><label for="memoField">설정 메모</label><input id="memoField" maxlength="120" placeholder="예: 콩깍지 기술 보유"></div>
+      </div>
+      <h4 class="section-title">계열·관련 이미지 <small>진화 확정과 검토 후보를 구별</small></h4>
+      <div class="evolution" id="evolution"></div>
+      <p class="muted" id="evolutionNote">나머지 진화 관계는 아직 검증 전이에요.</p>
+      <p class="src" id="sourceInfo"></p>
+      <p class="save" id="saveStatus" role="status">임시 이름과 데이터가 준비됐어요.</p>
+    </div>
+  </section>
+</div>
+<p class="footer">Openmon 원본 스프라이트는 각각 원제작자에게 속합니다. 도감 이름·속성·설정은 KIDSCADE의 창작 초안입니다.<br>교실에서 활용할 때는 저장된 JSON을 별도로 보관해 주세요.</p>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+</main>
+<script src="monsters.js"></script>
+<script src="roster.js"></script>
+<script src="combat.js"></script>
+<script>
+(function(){
+"use strict";
+const db=window.OPENMON_DEX;if(!db||!Array.isArray(db.sprites)){document.getElementById("spriteList").textContent="몬스터 데이터를 불러오지 못했어요.";return}
+const key="kidscade.openmon.science-dex.edits.v1",fields=["name","type","topic","habitat","rarity","stage","memo"];
+const original=new Map(db.sprites.map(s=>[s.id,s])),typeIds=Object.keys(db.types),topics=Object.keys(db.lore);
+let edits={};let selected="set1_r01_c01";let previewLevel=5;let filters={search:"",type:"",atlas:"",role:""};
+try{const stored=JSON.parse(localStorage.getItem(key)||"{}");if(stored&&typeof stored==="object"&&!Array.isArray(stored))edits=stored}catch(e){}
+function one(id){const src=original.get(id);if(!src)return null;const change=edits[id]||{};const v={...src,...change};v.topicName=db.lore[v.topic]?.[0]||src.topicName;v.fact=db.lore[v.topic]?.[1]||src.fact;return v}
+function safe(t){return String(t??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function urlFor(s){return "../../assets/more%20assets/"+encodeURIComponent(s.source)}
+function sprite(s,zoom){const a=db.atlas.find(a=>a.id===s.atlas);return '<span class="sprite" role="img" aria-label="'+safe(s.name)+' 그림" style="width:'+64*zoom+'px;height:'+64*zoom+'px;background-image:url(&quot;'+urlFor(s)+'&quot;);background-size:'+(a.width*zoom)+'px '+(a.height*zoom)+'px;background-position:-'+s.x*zoom+'px -'+s.y*zoom+'px"></span>'}
+function typePill(t){const type=db.types[t]||db.types.neutral;return '<span class="pill" style="--dot:'+type.color+'">'+safe(type.name)+'</span>'}
+function renderList(){
+ const q=filters.search.trim().toLocaleLowerCase("ko");
+ const matched=db.sprites.map(s=>one(s.id)).filter(s=>(!filters.type||s.type===filters.type)&&(!filters.atlas||s.atlas===filters.atlas)&&(!filters.role||s.role===filters.role)&&(!q||[s.name,s.topicName,s.fact,s.habitat,s.memo||"",s.id].some(v=>String(v).toLocaleLowerCase("ko").includes(q))));
+ document.getElementById("resultCount").textContent=matched.length+"개 표시";
+ document.getElementById("spriteList").innerHTML=matched.length?matched.map(s=>'<button class="mon-card" type="button" data-id="'+s.id+'" aria-pressed="'+(s.id===selected)+'"><span class="num">'+(s.dexNo?"NO. "+String(s.dexNo).padStart(3,"0"):"자료 #"+String(s.index).padStart(3,"0"))+'</span><span class="avatar">'+sprite(s,1)+'</span><strong>'+safe(s.name)+'</strong><span class="small-type">'+safe(db.types[s.type].name)+' · '+safe(s.topicName)+'</span><span class="role-tag">'+(s.role==="monster"?"도감 후보":s.role==="object"?"몬스터 아님":"재해석 시안")+'</span></button>').join(""):'<p class="empty">찾는 몬스터가 없어요. 필터를 바꿔보세요.</p>';
+ document.getElementById("editValue").textContent=Object.keys(edits).filter(id=>original.has(id)).length;
+}
+function evolution(id){
+ const s=one(id);if(!s)return;
+ const box=document.getElementById("evolution");box.innerHTML="";
+ // Group by explicitly authored lineage, not by adjacent image position.
+ const related=s.playable?
+   db.species.filter(item=>item.familyKey===s.familyKey).map(item=>one(item.id)):
+   db.sprites.filter(item=>item.familyId&&item.familyId===s.familyId).map(item=>one(item.id));
+ related.forEach(rel=>{
+   const b=document.createElement("button");b.type="button";
+   const status=rel.evolvesFrom&&!rel.evolutionCondition?.enabled?" (미확정)":rel.evolvesFrom&&!rel.verifiedEvolution?" (기획 진화)":"";
+   b.textContent=(rel.id===selected?"● ":"")+rel.name+status;
+   b.addEventListener("click",()=>choose(rel.id));box.appendChild(b);
+ });
+ const note=s.role==="alternate-concept"?"Shibu를 다시 그린 늑대 시안입니다. 원본 진화형과 1:1 대응은 미확정이에요.":
+  s.role==="object"?"몬스터가 아니므로 진화하지 않아요.":
+  s.familyOrigin==="source-confirmed"?"원본 진화 구성이 확인된 계열입니다.":
+  s.familyOrigin==="provisional"?"인접한 그림의 관계가 미확정이라 자동 진화를 막았어요.":
+  s.familyOrigin==="kidscade-design"?"외형을 참고해 키즈케이드 게임에서 새로 설계한 진화 계열이에요.":
+  "독립형 개체로 설계한 몬스터예요.";
+ document.getElementById("evolutionNote").textContent=note;
+}
+function renderBattle(s){
+ const view=document.getElementById("battleStats");
+ if(!s.playable){view.innerHTML='<p class="muted">도감 외 자료라 전투 능력치가 없습니다.</p>';document.getElementById("battleNote").textContent="이 이미지는 전투 개체로 사용할 수 없어요.";return}
+ const a=db.combat.statsAtLevel(s,previewLevel);
+ view.innerHTML=[["HP","hp",72],["공격","attack",45],["방어","defense",45],["속도","speed",45]].map(([label,key,max])=>
+ '<div class="stat-meter"><label>'+label+' <b>'+a[key]+'</b></label><div class="rail"><span class="fill" style="width:'+Math.min(100,a[key]/max*100)+'%"></span></div></div>').join("");
+ const next=db.combat.evolutionAvailable(s,previewLevel);
+ const future=db.species.filter(other=>other.evolvesFrom===s.id);
+ const enabled=future.filter(other=>other.evolutionCondition?.enabled);
+ const evo=enabled.length?
+    "Lv."+Math.min(...enabled.map(x=>x.evolutionCondition.level))+"에 다음 형태로 진화 가능":
+    future.length?"다음 형태 후보가 있으나 자동 진화는 잠금":
+    s.evolutionRank>=3?"최종 진화 단계":"현재 연결된 진화 대상 없음";
+ const hp=db.combat.statsAtLevel(s,previewLevel).hp;
+ const cap=s.rarity==="starter"?"스타팅 전용":s.evolutionRank>=3?"야생 포획 제한":(()=>{
+ const full=db.combat.captureChance({target:s,level:previewLevel,hp,maxHp:hp});
+ const low=db.combat.captureChance({target:s,level:previewLevel,hp:Math.max(1,Math.floor(hp*.25)),maxHp:hp});
+ return "일반 포획구 "+Math.round(full*100)+"% (HP 100%) → "+Math.round(low*100)+"% (HP 약 25%)";
+ })();
+ const line=s.familyOrigin==="source-confirmed"?"원본 구성 확인":s.familyOrigin==="provisional"?"그림 관계 검토 중":"키즈케이드 게임 기획안";
+ document.getElementById("battleNote").textContent="계열: "+s.familyName+" ("+line+"). "+evo+" · "+cap+
+ (next.length?" · 진화 가능: "+next.map(x=>x.name).slice(0,4).join(", ")+(next.length>4?" 외 "+(next.length-4)+"종":""):"");
+}
+function renderDetail(){
+ const s=one(selected);if(!s)return;const atlas=db.atlas.find(a=>a.id===s.atlas);
+ document.getElementById("portraitSprite").innerHTML=sprite(s,2);
+ document.getElementById("heroSprite").innerHTML=sprite(s,2);
+ document.getElementById("monsterName").textContent=s.name;
+ document.getElementById("number").textContent=(s.dexNo?"도감 NO. "+String(s.dexNo).padStart(3,"0"):"자료 #"+String(s.index).padStart(3,"0"))+" · "+s.id;
+ document.getElementById("typePills").innerHTML=typePill(s.type)+'<span class="pill">'+safe(s.habitat)+'</span><span class="pill">'+(s.role==="monster"?"도감 후보":s.role==="object"?"오브젝트 · 도감 제외":"Shibu 재해석 시안")+'</span>';
+ document.getElementById("classificationNote").textContent=s.atlas==="set2"?db.notes.set2:s.atlas==="wolf"?db.notes.wolf:s.role==="object"?db.notes.set1:"이름·속성은 실제 그림을 참고한 임시 제안입니다. 외형을 보고 검토해주세요.";
+ document.getElementById("scienceHeading").textContent=s.topicName+"에서 태어난 이름";
+ document.getElementById("scienceFact").textContent=s.fact;
+ document.getElementById("atlasId").textContent=atlas.id.toUpperCase()+" · "+atlas.width+"×"+atlas.height+" / 64×64";
+ document.getElementById("nameField").value=s.name;
+ document.getElementById("typeField").value=s.type;
+ document.getElementById("topicField").value=s.topic;
+ document.getElementById("habitatField").value=s.habitat;
+ document.getElementById("rarityField").value=s.rarity;
+ document.getElementById("stageField").value=String(s.stage||0);
+ document.getElementById("memoField").value=s.memo||"";
+ renderBattle(s);
+ document.getElementById("sourceInfo").innerHTML="<b>원본 이미지</b> "+safe(s.source)+"<br><b>절단 좌표</b> x="+s.x+" y="+s.y+" / 64×64<br><b>진화 단계</b> "+(s.stage||"검증 중")+" · <b>데이터 상태</b> 편집용 초안<br><code>"+safe(s.id)+"</code>";
+ evolution(selected);
+}
+function choose(id){if(!original.has(id))return;selected=id;renderDetail();renderList()}
+function write(field,value){
+ const base=original.get(selected);if(!base||!fields.includes(field))return;
+ if(field==="type"&&!typeIds.includes(value))return;
+ if(field==="topic"&&!topics.includes(value))return;
+ if(field==="rarity"&&!["common","uncommon","rare","starter"].includes(value))return;
+ if(field==="stage"&&![0,1,2,3].includes(Number(value)))return;
+ value=field==="stage"?Number(value):String(value).slice(0,field==="memo"?120:field==="habitat"?30:field==="name"?20:80);
+ if(field==="name"&&!value.trim())return;
+ let change={...(edits[selected]||{})};
+ if(value===(base[field]??(field==="memo"?"":undefined)))delete change[field];else change[field]=value;
+ if(Object.keys(change).length)edits[selected]=change;else delete edits[selected];
+ try{localStorage.setItem(key,JSON.stringify(edits));document.getElementById("saveStatus").textContent="이 기기에 저장했어요. 다른 기기에서 쓰려면 JSON을 내보내세요."}
+ catch(e){document.getElementById("saveStatus").textContent="자동 저장을 못 했어요. JSON 파일로 내보내 주세요."}
+ renderDetail();renderList();
+}
+document.getElementById("spriteList").addEventListener("click",e=>{const b=e.target.closest("button[data-id]");if(!b)return;choose(b.dataset.id);if(window.innerWidth<=760){document.querySelector(".details").scrollIntoView({behavior:"smooth",block:"start"})}});
+document.getElementById("search").addEventListener("input",e=>{filters.search=e.target.value;renderList()});
+document.getElementById("typeFilter").addEventListener("change",e=>{filters.type=e.target.value;renderList()});
+document.getElementById("atlasFilter").addEventListener("change",e=>{filters.atlas=e.target.value;renderList()});
+document.getElementById("roleFilter").addEventListener("change",e=>{filters.role=e.target.value;renderList()});
+document.getElementById("levelPreview").addEventListener("change",e=>{previewLevel=Number(e.target.value);renderDetail()});
+[["nameField","name"],["typeField","type"],["topicField","topic"],["habitatField","habitat"],["rarityField","rarity"],["stageField","stage"],["memoField","memo"]].forEach(([id,field])=>document.getElementById(id).addEventListener(id==="nameField"||id==="habitatField"||id==="memoField"?"change":"change",e=>write(field,e.target.value)));
+function importClean(raw){
+ const from=Array.isArray(raw)?raw:raw&&Array.isArray(raw.species)?raw.species:null;
+ if(!from)throw Error("species 배열이 없는 도감 파일이에요.");
+ if(from.length!==db.sprites.length)throw Error("118개 이미지 슬롯이 모두 들어 있는 도감 JSON을 선택해주세요.");
+ const next={};const seen=new Set();
+ for(const row of from){
+  if(!row||!original.has(row.id)||seen.has(row.id))throw Error("알 수 없는 ID 또는 중복 ID가 있어요.");
+  seen.add(row.id);const base=original.get(row.id),change={};
+  for(const field of fields){
+   if(row[field]===undefined)continue;let v=row[field];
+   if(field==="stage"){v=Number(v);if(![0,1,2,3].includes(v))throw Error("진화 단계 값이 잘못됐어요.")}
+   else{if(typeof v!=="string")throw Error("항목 형식이 맞지 않아요.");v=v.slice(0,field==="memo"?120:field==="habitat"?30:field==="name"?20:80)}
+   if(field==="name"&&!v.trim())throw Error("이름이 비어 있어요.");
+   if(field==="type"&&!typeIds.includes(v))throw Error("지원하지 않는 속성이에요.");
+   if(field==="topic"&&!topics.includes(v))throw Error("등록되지 않은 개념이에요.");
+   if(field==="rarity"&&!["common","uncommon","rare","starter"].includes(v))throw Error("출현 등급이 잘못됐어요.");
+   if(v!==(base[field]??(field==="memo"?"":undefined)))change[field]=v;
+  }
+  if(Object.keys(change).length)next[row.id]=change;
+ }
+ return next
+}
+document.getElementById("exportBtn").addEventListener("click",()=>{
+ const payload={format:"kidscade-openmon-science-dex-v1",version:db.version,exportedAt:new Date().toISOString(),sourceCount:db.sprites.length,species:db.sprites.map(s=>{const v=one(s.id);return {id:v.id,index:v.index,name:v.name,type:v.type,topic:v.topic,habitat:v.habitat,rarity:v.rarity,stage:v.stage,evolutionFrom:v.evolutionFrom,verifiedEvolution:v.verifiedEvolution,dexNo:v.dexNo,playable:v.playable,familyKey:v.familyKey,evolvesFrom:v.evolvesFrom,evolutionCondition:v.evolutionCondition,battle:v.battle,role:v.role,familyId:v.familyId,pairCandidate:v.pairCandidate,alternateOfFamily:v.alternateOfFamily,source:v.source,row:v.row,col:v.col,x:v.x,y:v.y,memo:v.memo||""}})};
+ const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json;charset=utf-8"});const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download="openmon-science-dex.json";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),500);
+ document.getElementById("saveStatus").textContent="118개 이미지의 분류와 임시 이름을 JSON으로 내보냈어요."
+});
+document.getElementById("importBtn").addEventListener("click",()=>document.getElementById("importFile").click());
+document.getElementById("importFile").addEventListener("change",async e=>{
+ const f=e.target.files?.[0];if(!f)return;
+ try{if(f.size>1024*1024)throw Error("1MB 이하 JSON 파일을 사용해주세요.");const data=JSON.parse(await f.text());const next=importClean(data);localStorage.setItem(key,JSON.stringify(next));edits=next;renderDetail();renderList();document.getElementById("saveStatus").textContent="파일에서 "+Object.keys(edits).length+"개의 변경 사항을 불러왔어요."}catch(err){alert("불러오지 못했어요: "+err.message)}e.target.value=""
+});
+document.getElementById("resetBtn").addEventListener("click",()=>{if(!confirm("이 기기의 도감 이름·설정을 모두 초기화할까요? 먼저 JSON을 내보내 보관할 수 있어요."))return;edits={};try{localStorage.removeItem(key)}catch(e){}renderList();renderDetail();document.getElementById("saveStatus").textContent="원본 임시 데이터로 돌아왔어요."});
+document.getElementById("typeFilter").insertAdjacentHTML("beforeend",typeIds.map(t=>'<option value="'+safe(t)+'">'+safe(db.types[t].name)+'</option>').join(""));
+document.getElementById("atlasFilter").insertAdjacentHTML("beforeend",db.atlas.map(a=>'<option value="'+safe(a.id)+'">'+safe(a.id.toUpperCase())+' ('+db.sprites.filter(s=>s.atlas===a.id).length+')</option>').join(""));
+document.getElementById("typeField").innerHTML=typeIds.map(t=>'<option value="'+safe(t)+'">'+safe(db.types[t].name)+'</option>').join("");
+document.getElementById("topicField").innerHTML=topics.map(t=>'<option value="'+safe(t)+'">'+safe(db.lore[t][0])+'</option>').join("");
+document.getElementById("backBtn").addEventListener("click",()=>{
+ if(window.parent!==window){window.parent.postMessage({type:"kidscade:close-game"},location.origin);return;}
+ if(history.length>1){history.back();return;}
+ location.href="../../";
+});
+document.getElementById("totalValue").textContent=db.sprites.length;
+document.getElementById("candidateValue").textContent=db.dexEntries.length;
+document.getElementById("conceptValue").textContent=db.concepts.length;
+document.getElementById("familyValue").textContent=db.families.length;
+renderList();renderDetail();
+})();
+</script>
+</body>
+</html>

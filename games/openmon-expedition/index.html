@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#eff5e8">
+<title>개념몬 탐험대 | KIDSCADE</title>
+<style>
+:root{--ink:#1c3834;--forest:#245b4d;--sage:#8cb4a2;--leaf:#408c69;--cream:#f7f3e9;--card:#fffdf7;--edge:#d5dfd0;--text:#698179;--gold:#dbac5b;--danger:#d76f64}
+*{box-sizing:border-box}html{min-height:100%}body{margin:0;background:radial-gradient(circle at 14% 2%,#e4f3db 0,transparent 34%),radial-gradient(circle at 99% 80%,#f5e5c7 0,transparent 38%),#f3f2e9;color:var(--ink);font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;overscroll-behavior:none}
+[hidden]{display:none!important}button{font:inherit;cursor:pointer;color:inherit}button:focus-visible{outline:3px solid #e7a442;outline-offset:3px}button:disabled{opacity:.45;cursor:not-allowed}.hidden{display:none!important}
+.app{max-width:1250px;margin:auto;padding:15px clamp(12px,3vw,28px) 28px}.top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:0 0 14px}.brand{display:flex;align-items:center;gap:11px}.mark{width:47px;height:47px;border-radius:14px;background:var(--forest);display:grid;place-items:center;color:#e9f6da;font-weight:1000;font-size:27px;box-shadow:inset 0 -4px #133f35}.brand strong{font-size:22px;letter-spacing:-.07em}.brand small{display:block;color:#748a7f;font-size:10px;font-weight:900;letter-spacing:.12em}.top-right{display:flex;align-items:center;flex-wrap:wrap;gap:7px}.chip{border:1px solid #d3dfd2;background:#fffdf9;border-radius:20px;padding:9px 11px;font-size:12px;font-weight:900;white-space:nowrap}.chip.accent{background:#e6f0df;color:#357055}.chip-button:hover{background:#e6f3e7}.flex{display:flex;gap:9px;align-items:center}.cols{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(264px,.9fr);gap:15px;align-items:start}
+.panel{border:1px solid var(--edge);border-radius:18px;background:var(--card);overflow:hidden;box-shadow:0 8px 27px #2a59470e}.bar{display:flex;align-items:center;justify-content:space-between;padding:12px 15px;gap:9px}.bar strong{font-size:15px;letter-spacing:-.03em}.bar small{color:var(--text);font-size:11px;font-weight:800}.world-wrap{position:relative;overflow:hidden;background:#80b07d;touch-action:manipulation}
+#worldCanvas{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;background:#81ac74;aspect-ratio:512/320}
+.world-hud{position:absolute;top:9px;left:10px;display:flex;flex-wrap:wrap;gap:6px;pointer-events:none}.hud-tag{border-radius:8px;background:#173b32d9;border:1px solid #cce0c030;color:#f9f7e7;padding:6px 9px;font-size:11px;font-weight:850;text-shadow:0 1px #173a32}
+#mapToast{position:absolute;bottom:9px;left:10px;right:10px;background:#193d36e8;color:white;padding:10px 12px;border-radius:9px;font-size:12px;line-height:1.5;min-height:36px;font-weight:700;pointer-events:none}
+.controls{background:#edf2e6;border-top:1px solid #d6e4d3;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.dpad{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,39px);gap:3px}.dpad button{background:#fffef9;border:1px solid #c7d8c5;box-shadow:0 2px 0 #b9cdb7;border-radius:10px;font-weight:1000;font-size:22px;touch-action:none;user-select:none;-webkit-user-select:none}.dpad button:active{background:#cce5ca;transform:translateY(2px);box-shadow:none}.dpad .up{grid-column:2;grid-row:1}.dpad .left{grid-column:1;grid-row:2}.dpad .right{grid-column:3;grid-row:2}.dpad .down{grid-column:2;grid-row:3}.dpad .mid{grid-column:2;grid-row:2;background:#dcebd8;pointer-events:none;display:grid;place-items:center;color:#7da58b;font-size:12px}
+.control-side{flex:1;display:flex;flex-direction:column;align-items:flex-end;gap:8px;text-align:right}.interact{border:0;border-radius:14px;padding:12px 17px;background:var(--forest);color:white;font-size:13px;font-weight:950;min-width:122px;box-shadow:0 3px #144638}.interact:active{transform:translateY(2px)}.hint{color:#778f80;font-size:11px;line-height:1.55;max-width:280px}
+.side{display:grid;gap:13px}.side .panel{padding:14px}.side h2{font-size:16px;margin:0 0 12px;letter-spacing:-.04em}.team{display:grid;gap:8px}.member{display:flex;align-items:center;gap:11px;background:#f2f6eb;border:1px solid #d6e3cf;border-radius:11px;text-align:left;width:100%;padding:7px 10px}.member.selected{border:2px solid #489172;background:#e1f4e7}.member-art{flex:0 0 48px;width:48px;height:48px;display:grid;place-items:center}.pixel-art{width:64px;height:64px;image-rendering:pixelated;background-repeat:no-repeat;display:inline-block;flex-shrink:0}.member-info{flex:1;min-width:0}.member-info b{display:block;font-size:12px}.member-info small{color:#60786c;font-size:10px}.hp-bar{height:7px;background:#dbe4d5;border-radius:10px;overflow:hidden;margin-top:6px}.hp-fill{background:#58ae68;height:100%;border-radius:10px;display:block}.help-copy{font-size:12px;color:#667d72;line-height:1.7;margin:0}.action-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.act{border:1px solid #cbdacc;background:#fffdf7;padding:9px 11px;border-radius:10px;font-size:12px;font-weight:850}.act:hover{background:#e6f3e6}.act.primary{background:#2a6a56;color:white;border-color:#2a6a56}.equipment{font-size:12px;display:flex;justify-content:space-between;gap:8px;color:#5a7468;border-bottom:1px solid #e5ebe2;padding:7px 0}.equipment strong{color:var(--ink)}.footer{text-align:center;color:#819084;font-size:10px;line-height:1.7;margin-top:12px}
+.overlay{position:fixed;inset:0;z-index:20;background:#142d27b6;display:flex;align-items:center;justify-content:center;padding:max(15px,env(safe-area-inset-top)) 12px max(15px,env(safe-area-inset-bottom));overflow-y:auto;backdrop-filter:blur(5px)}.modal{width:min(630px,100%);max-height:min(94dvh,850px);overflow:auto;border:1px solid #cbd9c9;background:#fffcf4;border-radius:19px;box-shadow:0 22px 65px #071c1780}.modal-head{padding:15px 18px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid #e0e8da}.modal-head h2{font-size:20px;letter-spacing:-.05em;margin:0}.modal-head small{font-size:11px;line-height:1.6;color:#6d8075}.modal-close{border:1px solid #c7d9ca;background:#f8faf3;border-radius:8px;padding:8px 10px;font-weight:900}.modal-body{padding:17px}.modal-body p{font-size:13px;color:#527064;line-height:1.8}.starter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0}.starter{background:#f5f7e9;border:2px solid #d3e3cd;padding:14px 5px;border-radius:14px;display:grid;justify-items:center;gap:7px;min-height:167px}.starter:hover{border-color:#58a27a;background:#e7f5e8}.starter .pixel-art{margin:5px}.starter strong{font-size:14px}.starter small{font-size:11px;color:#59786d}.starter .badge-type{padding:4px 9px;border-radius:20px;background:#e0ece2;font-size:10px;font-weight:950}
+.battle-top{background-position:center;background-size:cover;image-rendering:pixelated;padding:18px 20px 8px;background:linear-gradient(#eef5df,#dcefdc 65%,#accd9c 66%,#b7d39e 79%,#e7ebcb 80%);min-height:205px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px}.battle-foe,.battle-own{width:48%;display:grid;justify-items:center;gap:6px}.battle-own{align-self:end}.b-mon-art{height:121px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 7px 1px #3e654b60)}.b-mon-art .pixel-art{transform:scale(1.75)}.b-mon-name{font-size:12px;font-weight:950}.hp-row{padding:4px 7px;background:#fffaedda;border-radius:8px;width:100%;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#3d624e;font-weight:800}.battle-actions{padding:13px 15px 17px}.battle-actions p{margin:0 0 10px;font-size:13px;font-weight:800;color:#426152}.battle-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.battle-buttons button{border:1px solid #c8dbca;background:#fcfff7;border-radius:12px;padding:11px 10px;text-align:left;display:grid;gap:4px;min-height:64px}.battle-buttons button:hover{background:#e8f6e9}.battle-buttons button b{font-size:13px}.battle-buttons button small{font-size:11px;color:#72877a}.battle-buttons button.strong{border-color:#74a88c;background:#e3f2e4}.battle-log{padding:13px 16px;background:#244e42;color:#fff;font-size:13px;line-height:1.7;min-height:60px;white-space:pre-line}.battle-after{display:flex;justify-content:flex-end;margin:12px 15px 17px}.battle-after button,.modal-action{border:0;border-radius:11px;padding:11px 18px;background:var(--forest);color:#fff;font-size:12px;font-weight:900}
+.dex-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.dex-card{border:1px solid #d8e6d7;background:#f8faf2;padding:5px 3px;border-radius:11px;min-height:109px;display:grid;place-items:center;gap:2px}.dex-card.unseen{opacity:.65}.dex-card b{font-size:10px;white-space:nowrap;overflow:hidden;max-width:100%}.dex-card small{font-size:9px;color:#688176}.dex-detail{border-top:1px solid #dfe9db;margin-top:15px;padding-top:10px;font-size:12px;color:#416858;line-height:1.6;min-height:40px}.shop-list{display:grid;gap:9px}.shop-item{display:flex;align-items:center;justify-content:space-between;border:1px solid #dde5d4;background:#f5f8ef;padding:11px 12px;border-radius:11px;gap:10px}.shop-item strong{font-size:13px}.shop-item small{display:block;font-size:11px;color:#688071}.shop-item button{border:0;background:var(--forest);color:#fff;border-radius:9px;font-size:12px;font-weight:850;padding:9px 13px}.evo-options{display:flex;flex-wrap:wrap;gap:8px}.evo-options button{display:grid;justify-items:center;gap:5px;border:1px solid #d0ddc7;border-radius:12px;background:#eef6e9;padding:10px;font-weight:850}
+@media(max-width:800px){.cols{grid-template-columns:1fr}.side{grid-template-columns:repeat(2,minmax(0,1fr))}.side>.panel:first-child{grid-column:1/-1}.team{grid-template-columns:repeat(3,minmax(0,1fr))}.member{padding:5px;gap:2px}.member-art{flex:0 0 43px;width:43px}.member-info b{font-size:10px}.member-info small{font-size:9px}}
+@media(max-width:530px){.app{padding:9px 8px 24px}.top{gap:6px}.mark{width:39px;height:39px;font-size:24px}.brand strong{font-size:19px}.top-right{gap:5px}.chip{padding:6px 8px;font-size:10px}.cols{gap:9px}.bar{padding:9px 11px}.controls{padding:8px 11px}.dpad{grid-template-columns:repeat(3,45px);grid-template-rows:repeat(3,37px)}.side{grid-template-columns:1fr}.side>.panel:first-child{grid-column:auto}.team{grid-template-columns:1fr 1fr}.modal-head h2{font-size:17px}.modal-body{padding:12px}.starter-grid{gap:6px}.starter{padding:9px 3px;min-height:146px}.starter .pixel-art{transform:scale(.84)}.starter strong{font-size:12px}.starter small{font-size:10px}.battle-top{min-height:189px;padding:12px}.b-mon-art{height:113px}.battle-buttons button{min-height:60px;padding:9px 8px}.dex-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.world-hud{top:5px;left:6px}.hud-tag{padding:5px 7px;font-size:9px}.hint{font-size:10px}.interact{min-width:101px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><div class="mark">∑</div><div><small>KIDSCADE · OPENMON</small><strong>개념몬 탐험대</strong></div></div>
+    <div class="top-right">
+      <span class="chip accent" id="areaName">여울마을</span>
+      <span class="chip" id="coinCount">120 연구코인</span>
+      <button class="chip chip-button" id="audioButton" type="button">소리 켬</button>
+      <button class="chip chip-button" id="exitButton" type="button">나가기</button>
+    </div>
+  </header>
+  <main class="cols">
+    <section class="panel">
+      <div class="bar"><strong id="objective">연구소에서 스타팅 몬스터를 골라요</strong><small id="saveInfo">자동 저장</small></div>
+      <div class="world-wrap"><canvas id="worldCanvas" width="512" height="320" aria-label="화살표, WASD 또는 화면 방향키로 탐험하는 몬스터 월드"></canvas>
+        <div class="world-hud"><span class="hud-tag" id="worldHint">연구소 옆에서 탐험 시작</span></div>
+        <div id="mapToast" aria-live="polite">방향키로 이동하고 풀숲에서 야생 몬스터를 만나보세요.</div>
+      </div>
+      <div class="controls">
+        <div class="dpad" aria-label="이동 방향">
+          <button type="button" class="up" data-dir="up" aria-label="위">▲</button>
+          <button type="button" class="left" data-dir="left" aria-label="왼쪽">◀</button>
+          <span class="mid" aria-hidden="true">+</span>
+          <button type="button" class="right" data-dir="right" aria-label="오른쪽">▶</button>
+          <button type="button" class="down" data-dir="down" aria-label="아래">▼</button>
+        </div>
+        <div class="control-side">
+          <button type="button" class="interact" id="interactBtn">A · 살펴보기</button>
+          <span class="hint">PC: 방향키/WASD 이동 · Z/Enter 상호작용<br>모바일: 방향키를 누르고 있으면 연속 이동</span>
+        </div>
+      </div>
+    </section>
+    <aside class="side">
+      <section class="panel"><h2>우리 몬스터</h2><div id="teamList" class="team"></div>
+        <div class="action-row"><button type="button" class="act" id="openDex">도감 보기</button><button type="button" class="act" id="healField">회복약 사용</button><button type="button" class="act" id="newGame">처음부터</button></div>
+      </section>
+      <section class="panel"><h2>탐험 가방</h2>
+        <div class="equipment"><span>포획구</span><strong id="balls">7개</strong></div>
+        <div class="equipment"><span>회복약</span><strong id="potions">3개</strong></div>
+        <div class="equipment"><span>도감 발견</span><strong id="seenCount">1 / 102</strong></div>
+        <div class="equipment"><span>포획 완료</span><strong id="caughtCount">1 / 102</strong></div>
+      </section>
+      <section class="panel"><h2>탐험 안내</h2>
+        <p class="help-copy">마을 오른쪽 이슬초원에 들어가면 풀이 우거진 곳에서 몬스터를 만날 수 있어요. 상대의 체력을 살펴 적절히 공격한 다음 포획구를 던져 보세요. 마을에서는 연구원에게 회복과 물품 구매를 부탁할 수 있어요.</p>
+        <div class="action-row"><button class="act primary" type="button" id="goClinic">연구원 위치 보기</button></div>
+      </section>
+    </aside>
+  </main>
+  <p class="footer">Openmon 원작 그래픽과 Kenney CC0 타일을 사용한 KIDSCADE 학습 RPG 시제품. 전투·진화·이름과 규칙은 키즈케이드 게임 기획안이며 원작자의 공식 설정이 아니에요.</p>
+</div>
+<div class="overlay" id="starterOverlay" hidden>
+ <div class="modal">
+  <div class="modal-head"><div><h2>첫 탐험 파트너 선택</h2><small>한 마리를 골라 연구원과 함께 수학의 세계를 탐험해요.</small></div></div>
+  <div class="modal-body"><p>풀·물·바람은 서로 물고 물리는 상성이 있어요. 어느 몬스터를 골라도 초반 난이도는 비슷하게 만들었어.</p>
+    <div class="starter-grid" id="starterChoices"></div>
+    <p>몬스터는 레벨이 오르면 성장하고, Lv.14부터 첫 진화를 할 수 있어요. 선택 후 자동 저장돼요.</p>
+  </div>
+ </div>
+</div>
+<div class="overlay hidden" id="battleOverlay" role="dialog" aria-modal="true" aria-label="야생 몬스터와 전투">
+ <div class="modal">
+  <div class="modal-head"><div><h2>야생 몬스터 등장!</h2><small id="battleZone">이슬초원</small></div><span class="chip accent" id="battleTurn">1턴</span></div>
+  <div class="battle-top" id="battleBackdrop">
+    <div class="battle-own"><div class="hp-row"><span id="ownName">아군</span><span id="ownHpLabel">HP</span></div><div class="hp-bar" style="width:100%"><span class="hp-fill" id="ownHpBar"></span></div><div class="b-mon-art" id="ownArt"></div></div>
+    <div class="battle-foe"><div class="hp-row"><span id="foeName">야생</span><span id="foeHpLabel">HP</span></div><div class="hp-bar" style="width:100%"><span class="hp-fill" id="foeHpBar"></span></div><div class="b-mon-art" id="foeArt"></div></div>
+  </div>
+  <div class="battle-log" id="battleLog" aria-live="polite">무슨 행동을 할까요?</div>
+  <div class="battle-actions" id="battleActionPanel">
+    <p>어떤 행동을 할까?</p>
+    <div class="battle-buttons" id="battleButtons"></div>
+  </div>
+  <div class="battle-after hidden" id="battleAfter"><button type="button" id="battleContinue">탐험 계속하기</button></div>
+ </div>
+</div>
+<div class="overlay hidden" id="genericOverlay" role="dialog" aria-modal="true"><div class="modal">
+ <div class="modal-head"><div><h2 id="genericTitle">안내</h2><small id="genericSubtitle"></small></div><button class="modal-close" id="genericClose" type="button">닫기</button></div>
+ <div class="modal-body" id="genericBody"></div>
+</div></div>
+<script src="../openmon-dex/monsters.js"></script>
+<script src="../openmon-dex/roster.js"></script>
+<script src="../openmon-dex/combat.js"></script>
+<script src="engine.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
