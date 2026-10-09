@@ -457,7 +457,7 @@ function applyHideMasks(){
     if(!mesh?.isSkinnedMesh)continue;
     const original=originalHatHair.get(mesh)||mesh.geometry;
     if(!originalHatHair.has(mesh))originalHatHair.set(mesh,original);
-    const candidate=hatOn?hatSafeGeometry(mesh):original;
+    const candidate=hatOn&&mesh.visible?hatSafeGeometry(mesh):original;
     if(mesh.geometry!==candidate){mesh.geometry=candidate;patched++;}
   }
   return {hatOn,patched};
@@ -2199,6 +2199,22 @@ function installLocalVisualAudit(){
           templeBridgeVersion:mesh?.userData?.templeBridgeVersion||null,
           fingerprint:fingerprint>>>0};
       });
+    },
+    equipmentAudit(){
+      return {
+        fit:activeBodyFit,
+        selected:selectedParts(),
+        visibleSlots:Object.fromEntries([...new Set(TOGGLE_NODES.map(equipmentSlot).filter(Boolean))]
+          .map(slot=>[slot,TOGGLE_NODES.filter(name=>equipmentSlot(name)===slot&&getNode(name)?.visible)])),
+        hair:HAIR_NODES.filter(name=>getNode(name)?.visible).map(name=>{
+          const node=getNode(name);
+          return {name,hatSafe:hatSafeHair.get(node)===node.geometry,
+            baseUnmodified:originalHatHair.get(node)!==node.geometry};
+        }),
+        accessories:ACCESSORY_STYLES.filter(style=>getNode(style.id)?.visible).map(style=>({
+          id:style.id,...getNode(style.id).userData.fitState
+        }))
+      };
     },
     accessoryCatalog(){
       return ACCESSORY_STYLES.map(style=>{
