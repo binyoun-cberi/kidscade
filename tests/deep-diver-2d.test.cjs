@@ -11,8 +11,8 @@ const css=fs.readFileSync(path.join(dir,'deep-diver-2d.css'),'utf8');
 const js=fs.readFileSync(path.join(dir,'diver-v7.js'),'utf8');
 
 test('Deep Diver v15 uses the 2D runtime',()=>{
-  assert.match(html,/deep-diver-2d\.css\?v=37/);
-  assert.match(html,/diver-v7\.js\?v=37/);
+  assert.match(html,/deep-diver-2d\.css\?v=38/);
+  assert.match(html,/diver-v7\.js\?v=38/);
   assert.doesNotMatch(html,/diver-v4\.js/);
   assert.ok(css.length>6000);
   assert.ok(js.length>25000);
@@ -237,7 +237,7 @@ test('Deep Diver v15 guarantees mission-critical fish through safe spawning',()=
 test('catalog points to Deep Diver v15',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='job_scuba_diver');
-  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=37');
+  assert.equal(game.href,'games/job_scuba_diver/심해 다이버 시뮬레이터.html?v=38');
   assert.equal(game.scoreKey,'deep_diver_2d_v7');
 });
 
@@ -1131,4 +1131,45 @@ test('Deep Diver v37 simplifies the rookie HUD and adapts creature clutter to sc
   assert.match(js,/view\.w<760\)return 18/);
   assert.match(js,/view\.w<1180\)return 24/);
   assert.match(js,/function fishRenderList\(limit=fishRenderLimit\(\)\)/);
+});
+
+test('Deep Diver v38 loads OpenMon atlas and keeps marine litter separate from food',()=>{
+  const atlas=path.join(root,'assets','game','2d','shared','openmon-item-icons.js');
+  const png=path.join(root,'assets','more assets','OpenmonItemIcons.png');
+  assert.ok(fs.existsSync(atlas),'shared item icon API missing');
+  assert.ok(fs.existsSync(png),'OpenMon spritesheet missing');
+  const raw=fs.readFileSync(png);
+  assert.equal(raw.readUInt32BE(16),320,'expected 320px original atlas width');
+  assert.equal(raw.readUInt32BE(20),272,'expected 272px original atlas height');
+  assert.match(html,/openmon-item-icons\.js\?v=1/);
+  assert.match(html,/id="cleanupText"/);
+  assert.match(js,/function buildCleanupDebris/);
+  assert.match(js,/function drawCleanupDebris/);
+  assert.match(js,/function collectCleanup/);
+  assert.match(js,/debris:\[\],cleanupBag:\[\],cleanupIncome:0/);
+  assert.match(js,/world\.debris\.push/);
+  assert.match(js,/drawCleanupDebris\(\);for\(const f of fishRenderList/);
+  assert.match(js,/world\.cleanupBag\.length>=CLEANUP_BAG_CAP/);
+  assert.match(js,/def\.gloves&&!world\.loadout\.includes\('gloves'\)/);
+  assert.match(js,/world\.income\+world\.cleanupIncome\+base/);
+  assert.match(js,/meta\.cleanup\.zones\[item\.zone\]/);
+  assert.match(js,/type:'cleanup',goal:3/);
+  assert.match(js,/CLEANUP_ZONE_COUNTS/);
+  const iconSource=fs.readFileSync(atlas,'utf8');
+  const compile=spawnSync(process.execPath,['--check',atlas],{encoding:'utf8'});
+  assert.equal(compile.status,0,compile.stderr||compile.stdout);
+  assert.match(iconSource,/const CELL_W=29, CELL_H=31, WIDTH=320, HEIGHT=272/);
+  assert.match(iconSource,/canBlue:\[0,2\]/);
+  assert.match(iconSource,/battery:\[7,3\]/);
+  assert.match(iconSource,/function draw\(ctx,name,x,y,size=32\)/);
+  assert.match(iconSource,/function html\(name,size=28\)/);
+});
+
+test('Deep Diver v38 reports independent cleanup rewards and migration-safe saves',()=>{
+  assert.match(js,/cleanup:\{total:0,zones:\{\},types:\{\}\}/);
+  assert.match(js,/meta\.cleanup=\{total:Math\.max\(0,Number\(r\.cleanup\?\.total\)/);
+  assert.match(js,/meta\.cleanup\.total=\(meta\.cleanup\.total\|\|0\)\+world\.cleanupBag\.length/);
+  assert.match(js,/cleanupHtml/);
+  assert.match(js,/world\.cleanupBag\.length\+'\/'\+CLEANUP_BAG_CAP/);
+  assert.match(js,/사진 연구 보상 \+5%/);
 });
