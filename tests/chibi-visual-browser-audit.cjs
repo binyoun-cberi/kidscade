@@ -321,7 +321,7 @@ const errors=[];
     const expected=piece.piece.endsWith('_hip_yoke')
       ? ['pelvis-anchored-yoke-v5.9',1]
       : piece.piece.includes('_continuousSleeve_')
-        ? ['upper-forearm-blended-v5.9',2]
+        ? ['source-body-arm-skin-v5.9',4]
         : ['four-neighbor-smooth-body-weights-v5.8',4];
     assert.equal(piece.transfer.method,expected[0],
       'Garment is not bound to its intended articulated bones: '+piece.piece);
