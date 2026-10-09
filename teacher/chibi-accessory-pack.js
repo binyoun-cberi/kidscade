@@ -31,6 +31,76 @@ export const ACCESSORY_STYLES=[
 export const ACCESSORY_SLOTS={shoes:6,hat:6,face:5,bag:3,wrist:1,neck:1};
 export const ACCESSORY_COUNT=22;
 
+// In source Chibi bind-pose units. Rules are additive, reversible and distinct
+// for the two body silhouettes; none mutate base GLB geometry.
+export const ACCESSORY_FIT_RULES={
+  shoes:{male:[0,-.007,0,1.035],female:[0,-.007,0,1.00]},
+  hat:{male:[0,-.030,-.003,.975],female:[0,-.040,0,.985]},
+  face:{male:[0,-.012,-.018,.985],female:[0,-.009,-.014,.980]},
+  bag:{male:[0,-.014,.020,.940],female:[0,-.009,.025,.925]},
+  neck:{male:[0,.025,-.015,1.015],female:[0,.020,-.008,.960]},
+  wrist:{male:[-.018,-.019,0,.935],female:[-.014,-.014,0,.895]}
+};
+export const ACCESSORY_STYLE_FIT={
+  chibi_shoe_boots:[0,-.011,0,1.045],
+  chibi_shoe_hightop:[0,-.005,0,1.015],
+  chibi_hat_straw:[0,-.019,0,.97],
+  chibi_hat_bucket:[0,-.012,0,.98],
+  chibi_hat_beret:[0,-.018,.012,.97],
+  chibi_gear_headphones:[0,.034,.007,1.03],
+  chibi_face_goggles:[0,.009,-.008,.99],
+  chibi_face_mask:[0,-.023,-.012,.98],
+  chibi_bag_school:[0,.006,-.026,.99],
+  chibi_bag_mini:[0,.012,-.016,1.00],
+  chibi_bag_crossbody:[-.016,.010,-.008,1.00],
+  chibi_gear_scarf:[0,.007,-.013,.95]
+};
+export const ACCESSORY_CONFLICTS={
+  headTop:['hat','headphones'],
+  face:['round','square','sunglasses','goggles','mask'],
+  bag:['schoolbag','crossbody','minibag'],
+  shoes:['sneakers','hightop','loafers','boots','sandals','slippers']
+};
+const fitComponent=(value,component)=>value?.[component]??(component===3?1:0);
+
+/** Applies bounded offsets to the accessory *group*, retaining bind matrices.
+ *  The silhouette-specific table and optional clothing clearance are re-run
+ *  after outfit, body or accessory changes (never cumulatively).
+ */
+export function applyAccessoryFit({getNode,fit='male',topName='',headwearName=''}){
+  const used=[];
+  const puffy=/(hoodie|sweater|knit|bomber|varsity|jacket|cardigan)/i.test(topName);
+  const elevatedCollar=/(hoodie|bomber|varsity|jacket|cardigan)/i.test(topName);
+  for(const style of ACCESSORY_STYLES){
+    const group=getNode(style.id);
+    if(!group?.isGroup)continue;
+    const baseline=ACCESSORY_FIT_RULES[style.slot]?.[fit]||[0,0,0,1];
+    const local=ACCESSORY_STYLE_FIT[style.id]||[0,0,0,1];
+    const x=fitComponent(baseline,0)+fitComponent(local,0);
+    let y=fitComponent(baseline,1)+fitComponent(local,1);
+    let z=fitComponent(baseline,2)+fitComponent(local,2);
+    let scale=fitComponent(baseline,3)*fitComponent(local,3);
+    if(style.slot==='bag'&&puffy)z-=.042;
+    if(style.slot==='neck'&&elevatedCollar){y+=.026;scale*=1.07;}
+    // Headphones are worn *over* the hair. They do not use hat flattening.
+    if(style.kind==='headphones')y+=.016;
+    // Keep the supplied dimensions bounded: procedural shapes should not
+    // leap away from the body even when a bulky coat is selected.
+    group.position.set(
+      THREE.MathUtils.clamp(x,-.09,.09),
+      THREE.MathUtils.clamp(y,-.11,.11),
+      THREE.MathUtils.clamp(z,-.10,.10)
+    );
+    group.scale.setScalar(THREE.MathUtils.clamp(scale,.84,1.10));
+    group.userData.fitState={bodyFit:fit,topName,headwearName,
+      offset:[group.position.x,group.position.y,group.position.z],
+      scale:group.scale.x};
+    if(group.visible)used.push({id:style.id,slot:style.slot,...group.userData.fitState});
+  }
+  return used;
+}
+
+
 function box(w,h,d,x,y,z){
   const g=new THREE.BoxGeometry(w,h,d,6,4,4);
   g.translate(x,y,z);
