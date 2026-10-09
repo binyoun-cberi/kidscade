@@ -1,6 +1,6 @@
 import * as THREE from '../assets/vendor/three-r160/three.module.js';
 import {OUTFIT_LIBRARY,OUTFIT_STYLES,createOutfitPack} from './chibi-outfit-pack.js';
-import {ACCESSORY_STYLES,ACCESSORY_COUNT,ACCESSORY_SLOTS,createAccessoryPack} from './chibi-accessory-pack.js';
+import {ACCESSORY_STYLES,ACCESSORY_COUNT,ACCESSORY_SLOTS,ACCESSORY_CONFLICTS,createAccessoryPack,applyAccessoryFit as applyRiggedAccessoryFit} from './chibi-accessory-pack.js';
 
 window.__kc3dStudioModuleReady=true;
 
@@ -75,6 +75,7 @@ for(const name of ['bag','hat','ninjassuitmask','armorhelmet','greenoutfitbelt',
 for(const name of ['chemise','greenoutfit','ninjassuit','amorplastron','pants','ninjasuitshort','armorlegs','armorskirt'])PART_CATEGORY[name]='costume';
 const LEGACY_OUTFIT_SLOTS={chemise:'top',greenoutfit:'top',ninjassuit:'top',amorplastron:'top',pants:'bottom',ninjasuitshort:'bottom',armorlegs:'bottom',armorskirt:'bottom'};
 const LEGACY_ACCESSORY_SLOTS={hat:'hat',armorhelmet:'hat',ninjassuitmask:'face',bag:'bag'};
+const LEGACY_SHOE_IDS=['shoe','bottes','bottesgreen','ninjassuitshoe','armorshoe'];
 const ACCESSORY_STYLE_MAP=new Map(ACCESSORY_STYLES.map(style=>[style.id,style]));
 const ACCESSORY_SLOT=name=>ACCESSORY_STYLE_MAP.get(name)?.slot||LEGACY_ACCESSORY_SLOTS[name]||null;
 const MALE_FIT_PARTS=new Set([...MALE_HAIR_STYLES,'kidscade_male_tshirt','kidscade_male_shorts',...OUTFIT_STYLES.filter(style=>style.fit==='male').map(style=>style.id)]);
@@ -105,6 +106,9 @@ let loaded=false;
 const thumbnailCache=new Map();
 let thumbnailToken=0;
 let thumbnailTarget=null;
+const originalHatHair=new WeakMap();
+const hatSafeHair=new WeakMap();
+let lastAccessoryFit='';
 let lastTime=performance.now();
 // Instrumentation is only reachable from a local browser audit; production auth remains unchanged.
 const localVisualAudit=/^(?:localhost|127\.0\.0\.1)$/.test(location.hostname)
@@ -380,6 +384,101 @@ function setNodeVisible(name,visible){
   if(object)object.visible=!!visible;
 }
 
+
+function equipmentSlot(name){
+  return ACCESSORY_SLOT(name)||(LEGACY_SHOE_IDS.includes(name)?'shoes':null);
+}
+
+/** Reject unsupported combinations even when an old preset or import makes
+ * two pieces visible without going through the new selection checkboxes.
+ */
+function resolveAccessoryConflicts(preferred=''){
+  const visible=TOGGLE_NODES.filter(name=>equipmentSlot(name)&&getNode(name)?.visible);
+  const winners=new Map();
+  // A just-tapped item beats the previously equipped item in that slot.
+  for(const name of visible){
+    const slot=equipmentSlot(name);
+    if(!winners.has(slot)||name===preferred)winners.set(slot,name);
+  }
+  const removed=[];
+  for(const name of visible){
+    if(winners.get(equipmentSlot(name))!==name){
+      setNodeVisible(name,false);
+      removed.push(name);
+    }
+  }
+  return removed;
+}
+function hatSafeGeometry(mesh){
+  const original=originalHatHair.get(mesh)||mesh.geometry;
+  if(!originalHatHair.has(mesh))originalHatHair.set(mesh,original);
+  if(hatSafeHair.has(mesh))return hatSafeHair.get(mesh);
+  // Keep fringe and sideburns; taper only the topmost crown and back bulk
+  // into the hollow portion of the selected cap. No source mesh is mutated.
+  const geometry=original.clone();
+  geometry.computeBoundingBox();
+  const bounds=geometry.boundingBox;
+  const p=geometry.getAttribute('position');
+  const center=bounds.getCenter(new THREE.Vector3());
+  const height=Math.max(.001,bounds.max.y-bounds.min.y);
+  const smooth=(a,b,v)=>{
+    const t=THREE.MathUtils.clamp((v-a)/(b-a),0,1);
+    return t*t*(3-2*t);
+  };
+  for(let i=0;i<p.count;i++){
+    const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
+    const crown=smooth(.55,.93,(y-bounds.min.y)/height);
+    const front=Math.max(0,(z-center.z)/(Math.max(.001,bounds.max.z-center.z)));
+    const keepFringe=1-smooth(.32,.84,front);
+    const amount=crown*(.36+.64*keepFringe);
+    p.setXYZ(i,
+      center.x+(x-center.x)*(1-.105*amount),
+      y-height*.075*amount,
+      center.z+(z-center.z)*(1-.085*amount)
+    );
+  }
+  p.needsUpdate=true;
+  geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+  hatSafeHair.set(mesh,geometry);
+  return geometry;
+}
+
+/** Skin is never deleted. For hats, replace the active *render geometry* with
+ * a reversible crown-reduced clone; shoes and legacy shoe overlays are handled
+ * by the equipment-slot conflict resolver. Mouth remains beneath a mask.
+ */
+function applyHideMasks(){
+  const headpiece=ACCESSORY_STYLES.find(style=>
+    style.slot==='hat'&&style.kind!=='headphones'&&getNode(style.id)?.visible);
+  const hatOn=!!headpiece||!!getNode('hat')?.visible||!!getNode('armorhelmet')?.visible;
+  let patched=0;
+  for(const name of HAIR_NODES){
+    const mesh=getNode(name);
+    if(!mesh?.isSkinnedMesh)continue;
+    const original=originalHatHair.get(mesh)||mesh.geometry;
+    if(!originalHatHair.has(mesh))originalHatHair.set(mesh,original);
+    const candidate=hatOn?hatSafeGeometry(mesh):original;
+    if(mesh.geometry!==candidate){mesh.geometry=candidate;patched++;}
+  }
+  return {hatOn,patched};
+}
+function applyAccessoryFit(preferred=''){
+  const conflicts=resolveAccessoryConflicts(preferred);
+  const currentTop=TOGGLE_NODES.find(name=>PART_GROUP(name)==='top'&&getNode(name)?.visible)||'';
+  const headwear=ACCESSORY_STYLES.find(style=>style.slot==='hat'&&getNode(style.id)?.visible)?.id||'';
+  const fitted=applyRiggedAccessoryFit({
+    getNode,fit:activeBodyFit,topName:currentTop,headwearName:headwear
+  });
+  const mask=applyHideMasks();
+  if(lastAccessoryFit!==activeBodyFit){
+    // A different body silhouette needs different thumbnail framing/fit.
+    thumbnailCache.clear();
+    thumbnailToken++;
+    lastAccessoryFit=activeBodyFit;
+  }
+  return {conflicts,mask,fitted};
+}
+
 function selectedParts(){
   return TRACKED_PART_NODES.filter(name=>getNode(name)?.visible);
 }
@@ -555,6 +654,7 @@ function applyHair(name){
   HAIR_NODES.forEach(hair=>setNodeVisible(hair,false));
   if(name)setNodeVisible(name,true);
   $('chibiHair').value=name||'';
+  applyAccessoryFit();
   refreshPartChecks();
   refreshMetrics();
 }
@@ -592,6 +692,7 @@ function applyPreset(name){
   document.querySelectorAll('[data-chibi-preset]').forEach(button=>{
     button.classList.toggle('active',button.dataset.chibiPreset===name);
   });
+  applyAccessoryFit();
   renderPartChecks();
   refreshMetrics();
   // 프리셋 전환 중 WALK를 재생하고 있었다면 현재 몸체에 맞는 클립으로 전환한다.
@@ -2051,6 +2152,7 @@ function wireUi(){
       applyHair(input.checked?part:'');
     }else{
       setNodeVisible(part,input.checked);
+      applyAccessoryFit(input.checked?part:'');
       renderPartChecks();
       refreshMetrics();
     }
