@@ -14,6 +14,13 @@ try {
   $('errorMessage').textContent = 'WebGL을 시작하지 못했어요. Safari 또는 Chrome을 최신 버전으로 업데이트해 주세요.';
   throw error;
 }
+canvas.addEventListener('webglcontextlost', event => {
+  event.preventDefault();
+  $('intro').classList.add('hidden');
+  $('errorMessage').textContent = '그래픽 메모리가 부족해 3D 화면이 중단되었어요. 화질을 낮추고 다시 실행해 주세요.';
+  $('errorPanel').classList.remove('hidden');
+});
+canvas.addEventListener('webglcontextrestored', () => window.location.reload());
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.08;
@@ -45,7 +52,7 @@ const bodyMaterial = new THREE.ShaderMaterial({
     uFogDensity: { value: 0.00155 }
   },
   vertexShader: [
-    'attribute vec3 instanceColor;',
+    // Three.js supplies instanceColor under USE_INSTANCING_COLOR.
     'varying vec3 vColour;',
     'varying vec3 vWorld;',
     'varying vec3 vNormal;',
