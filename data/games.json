@@ -3496,16 +3496,16 @@
     {
       "id": "gigacity_lite",
       "addedAt": "2026-10-09T13:20:00+09:00",
-      "title": "기가시티",
+      "title": "기가시티: 소수 추격전",
       "href": "games/gigacity_lite/index.html",
       "category": "trivia",
       "age": "high",
       "icon": "🏙️",
-      "description": "하늘을 날며 끝없이 이어지는 미래도시를 구경해요. 도시 이름을 바꿔 새로운 풍경을 만나고, 낮과 밤도 자유롭게 바꿀 수 있어요.",
-      "subject": "thinking",
-      "genre": "sandbox",
-      "difficulty": "easy",
-      "sessionMinutes": 10,
+      "description": "합성수 전투기들이 쫓아와요! 2·3·5·7 소수 탄환으로 적을 나누어 1로 만들어 격추하세요. 3분 추격전과 자유 비행을 즐겨요.",
+      "subject": "math",
+      "genre": "action",
+      "difficulty": "medium",
+      "sessionMinutes": 3,
       "players": [
         "solo"
       ],

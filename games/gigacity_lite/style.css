@@ -32,3 +32,66 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #flightWarning{position:fixed;top:27%;left:50%;z-index:8;transform:translate(-50%,8px);opacity:0;transition:opacity .15s ease,transform .15s ease;pointer-events:none;white-space:nowrap;max-width:min(90vw,420px);overflow:hidden;text-overflow:ellipsis;background:rgba(37,25,29,.86);border:1px solid rgba(255,182,132,.68);border-radius:999px;padding:9px 17px;color:#ffe1c6;font-size:12px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.65);box-shadow:0 5px 22px rgba(0,0,0,.16)}
 #flightWarning.visible{transform:translate(-50%,0);opacity:1}
 @media(max-height:520px){#flightWarning{top:40%;padding:6px 12px;font-size:11px}}
+
+/* Prime Chase keeps the flying city visible. The combat HUD is nonblocking. */
+body.chase-mode #seedPanel,body.chase-mode #flightPanel,body.chase-mode #controlsHint{display:none!important}
+body.chase-mode #district,body.chase-mode #count{display:none}
+#chaseHUD{position:fixed;inset:0;z-index:9;pointer-events:none}
+#chaseTop{position:absolute;top:max(53px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));display:grid;grid-template-columns:minmax(154px,190px) minmax(190px,240px) auto;align-items:start;gap:9px}
+.chaseMetrics,.chaseEnemyPanel{padding:9px 12px;border-radius:13px;border:1px solid rgba(128,207,245,.35);background:rgba(5,17,36,.84);backdrop-filter:blur(8px);box-shadow:0 4px 19px rgba(0,0,0,.18)}
+.chaseLabel{font-size:10px;color:#aee0f3;font-weight:800;letter-spacing:.03em;display:flex;gap:8px;align-items:center;justify-content:space-between}
+.chaseLabel b{font-size:10px;color:#ffd7a0}
+.chaseNumbers{display:flex;justify-content:space-between;align-items:baseline;gap:7px;margin:5px 0}
+#chaseTimer{font-variant-numeric:tabular-nums;font-size:24px;color:#fff;line-height:1}
+#chaseKills{font-size:11px;color:#e4efff;white-space:nowrap}
+.chaseHealth{height:7px;border-radius:100px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:4px}
+#chaseShieldFill{display:block;width:100%;height:100%;background:linear-gradient(90deg,#48bff0,#83f5de);border-radius:inherit;transition:width .18s}
+.chaseShieldText{display:flex;justify-content:space-between;margin-top:4px;color:#bbd4ec;font-size:10px}
+.chaseShieldText b{color:#91f6ff}
+.chaseEnemyPanel{display:flex;flex-direction:column;align-items:center;gap:3px;min-height:93px}
+.chaseEnemyPanel .chaseLabel{width:100%}
+#chaseTargetNumber{font-size:32px;line-height:1;font-weight:1000;color:#ffe7d5;text-shadow:0 0 18px rgba(255,113,78,.35);font-variant-numeric:tabular-nums}
+#chaseEnemyChoices{display:flex;justify-content:center;gap:5px;min-height:25px}
+#chaseEnemyChoices button{pointer-events:auto;border-radius:7px;background:rgba(30,51,81,.86);padding:3px 10px;font-size:12px;color:#d3e9ff;border:1px solid rgba(128,213,255,.36);min-width:37px}
+#chaseEnemyChoices button[aria-pressed="true"]{background:#84e9ff;color:#09283c}
+#chaseCameraButton{pointer-events:auto;justify-self:end;white-space:nowrap;font-size:11px;background:rgba(8,32,58,.85);border-color:rgba(147,222,255,.55)}
+#primeWeapons{position:absolute;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translateX(-50%);display:grid;grid-template-columns:repeat(4,64px);gap:8px;pointer-events:auto;background:rgba(3,12,28,.74);border:1px solid rgba(150,217,255,.25);border-radius:18px;padding:7px;box-shadow:0 8px 27px rgba(0,0,0,.3)}
+#primeWeapons button{min-height:58px;padding:5px 8px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:linear-gradient(155deg,#153755,#0e2445);border:1px solid rgba(146,221,255,.42);color:#a7f0ff}
+#primeWeapons button:nth-child(2){color:#c4bcff}#primeWeapons button:nth-child(3){color:#ffe394}#primeWeapons button:nth-child(4){color:#ffb6d8}
+#primeWeapons button b{font-size:27px;line-height:1;font-weight:1000}
+#primeWeapons button small{font-size:9px;font-weight:750;letter-spacing:.02em}
+#primeWeapons button:disabled{opacity:.58}
+#primeFeedback{position:absolute;top:43%;left:50%;transform:translate(-50%,-50%);font-weight:1000;font-size:clamp(16px,3vw,27px);color:#d5faff;text-shadow:0 2px 3px #00102f,0 0 14px #004a6b;opacity:0;transition:opacity .2s;white-space:nowrap;max-width:94vw;text-overflow:ellipsis;overflow:hidden}
+#primeFeedback.visible{opacity:1}
+#primeFeedback.error{color:#ffbbaa}
+.introCard .introSecondary{display:block;margin:0 auto 12px;background:transparent;border:1px solid rgba(166,210,243,.48);color:#cce7f9;font-size:13px;min-height:38px;padding:8px 15px}
+.chaseResultCard h2{font-size:clamp(24px,6vw,36px);margin:7px 0;color:#91f1ff}
+#chaseResultStats{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;padding:12px;border:1px solid rgba(140,196,241,.21);border-radius:12px;margin:16px 0;color:#e8f5ff;font-size:14px}
+@media(max-height:520px){
+  #chaseTop{top:40px;grid-template-columns:166px 194px auto;gap:7px}
+  .chaseMetrics,.chaseEnemyPanel{padding:6px 9px;min-height:80px}
+  #chaseTimer{font-size:21px}
+  #chaseTargetNumber{font-size:28px}
+  #primeWeapons{bottom:max(7px,env(safe-area-inset-bottom));grid-template-columns:repeat(4,57px);gap:6px;padding:5px}
+  #primeWeapons button{min-height:52px}
+  #primeWeapons button b{font-size:25px}
+  #chaseCameraButton{font-size:10px;padding:6px}
+}
+@media(max-width:500px) and (min-height:521px){
+  #chaseTop{top:58px;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px}
+  .chaseMetrics,.chaseEnemyPanel{padding:8px;min-height:100px}
+  #chaseTimer{font-size:22px}
+  #chaseTargetNumber{font-size:27px}
+  #chaseCameraButton{position:absolute;right:0;top:113px;font-size:10px}
+  #primeWeapons{bottom:max(205px,calc(env(safe-area-inset-bottom) + 177px));grid-template-columns:repeat(4,54px);gap:6px;padding:5px}
+  #primeWeapons button{min-height:56px;padding:5px}
+  #primeWeapons button b{font-size:24px}
+  #primeFeedback{top:43%;font-size:19px}
+}
+@media(max-width:680px) and (max-height:520px){
+  #chaseTop{grid-template-columns:125px 150px auto;gap:4px}
+  .chaseLabel,#chaseKills,.chaseShieldText{font-size:9px}
+  #chaseTimer{font-size:19px}
+  #primeWeapons{grid-template-columns:repeat(4,48px);gap:4px}
+  #primeWeapons button{min-height:47px}
+}

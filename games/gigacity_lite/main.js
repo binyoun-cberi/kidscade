@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { createPlayerCraft } from './craft.js';
+import { makePrimeChase, startPrimeChase, activeEnemies, selectedEnemy, selectEnemy,
+  firePrime, tickPrimeChase, roundStats, ROUND_SECONDS, WAVE_NUMBERS } from './prime-chase.mjs';
+import { makePursuerScene } from './prime-chase-view.js';
 import { safeMode, cameraPose } from './flight-view.mjs';
 import { makeCollisionWorld, moveWithCollisions, guideAlongRoad, trafficPosition, intersectsWorld, safeChaseCamera } from './flight-physics.mjs';
 import { CHUNK_SIZE, LOT_SIZE, ROAD_WIDTH, seedNumber, randomAt, createChunkData, chunkOf } from './city-core.mjs';
@@ -33,6 +36,14 @@ camera.position.set(0, 200, 365);
 camera.rotation.order = 'YXZ';
 const pilotPosition = camera.position.clone();
 const playerCraft = createPlayerCraft(scene);
+const pursuitScene = makePursuerScene(scene);
+let gameMode = 'explore';
+let primeState = makePrimeChase();
+const enemyRemovalQueue = [];
+let bufferedShot = null;
+let primeHudElapsed = 0, lastEnemyButtons = '', feedbackSeconds = 0;
+let resultVisible = false;
+let audioContext = null;
 playerCraft.loadExterior();
 let viewMode = 'chase';
 let lookYaw = 0, lookPitch = 0, flightSpeed = 0, steeringVisual = 0;
@@ -360,6 +371,7 @@ function setViewMode(nextMode) {
     button.setAttribute('aria-pressed', String(chosen));
   });
   $('viewLabel').textContent = viewMode === 'cockpit' ? '운전석 안' : viewMode === 'chase' ? '자동차 뒤' : '자유 비행';
+  $('chaseCameraButton').textContent = viewMode === 'cockpit' ? '자동차 뒤 보기' : '운전석 보기';
   updateCamera();
 }
 function updateCamera() {
@@ -475,6 +487,8 @@ canvas.addEventListener('pointercancel', endLook);
 canvas.addEventListener('lostpointercapture', endLook);
 document.addEventListener('keydown', event => {
   if (document.activeElement === $('seed') || document.activeElement === $('quality')) return;
+  const prime = { Digit2: 2, Digit3: 3, Digit5: 5, Digit7: 7, Numpad2: 2, Numpad3: 3, Numpad5: 5, Numpad7: 7 }[event.code];
+  if (prime && !event.repeat && gameMode === 'chase') { event.preventDefault(); shootPrime(prime); return; }
   if (/^(Key[WASDQE]|Arrow(Up|Down|Left|Right)|ShiftLeft|ShiftRight)$/.test(event.code)) {
     event.preventDefault();
     held.add(event.code);
@@ -516,12 +530,195 @@ $('seed').addEventListener('keydown', event => {
     discover('different_city');
   }
 });
-$('start').addEventListener('click', () => {
-  active = true;
+
+function playPrimeSound(kind, prime = 2) {
+  try {
+    const AudioConstructor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioConstructor) return;
+    if (!audioContext) audioContext = new AudioConstructor();
+    if (audioContext.state === 'suspended') audioContext.resume();
+    const now = audioContext.currentTime, osc = audioContext.createOscillator(), gain = audioContext.createGain();
+    const pitch = kind === 'blocked' ? 130 : kind === 'destroyed' ? 470 : 310 + prime * 55;
+    osc.type = kind === 'blocked' ? 'triangle' : 'sine';
+    osc.frequency.setValueAtTime(pitch, now);
+    osc.frequency.exponentialRampToValueAtTime(kind === 'destroyed' ? 95 : Math.max(75, pitch * .59), now + .18);
+    gain.gain.setValueAtTime(.0001, now);
+    gain.gain.exponentialRampToValueAtTime(.065, now + .016);
+    gain.gain.exponentialRampToValueAtTime(.0001, now + .23);
+    osc.connect(gain).connect(audioContext.destination);
+    osc.start(now); osc.stop(now + .24);
+  } catch { /* Sound should never prevent a shot or a math result. */ }
+}
+function announcePrime(message, error = false) {
+  $('primeFeedback').textContent = message;
+  $('primeFeedback').classList.toggle('error', error);
+  $('primeFeedback').classList.add('visible');
+  feedbackSeconds = 1.65;
+}
+function renderPrimeHUD() {
+  if (gameMode !== 'chase') return;
+  const state = primeState;
+  const enemy = selectedEnemy(state);
+  const time = Math.ceil(state.remaining);
+  $('chaseTimer').textContent = Math.floor(time / 60) + ':' + String(time % 60).padStart(2, '0');
+  $('chaseWave').textContent = (state.waveIndex + 1) + ' / ' + WAVE_NUMBERS.length + '파';
+  $('chaseKills').textContent = state.destroyed + ' / 5 격추';
+  $('chaseShield').textContent = Math.round(state.shield) + '%';
+  $('chaseShieldFill').style.width = state.shield + '%';
+  $('chaseScore').textContent = state.score.toLocaleString('ko-KR') + '점';
+  $('chaseTargetNumber').textContent = enemy ? String(enemy.number) : '···';
+  $('chaseTargetText').textContent = enemy ? '표적 ' + (activeEnemies(state).indexOf(enemy) + 1) + ' / ' + activeEnemies(state).length : '다음 추격대 접근 중';
+  const signature = activeEnemies(state).map(e => e.id + ':' + e.number).join('|') + '/' + state.selectedId;
+  if (lastEnemyButtons !== signature) {
+    lastEnemyButtons = signature;
+    const row = $('chaseEnemyChoices');
+    row.replaceChildren();
+    for (const e of activeEnemies(state)) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = e.number;
+      button.setAttribute('aria-label', e.number + '번 전투기 선택');
+      button.setAttribute('aria-pressed', String(e.id === enemy?.id));
+      button.addEventListener('click', () => { selectEnemy(primeState, e.id); renderPrimeHUD(); });
+      row.appendChild(button);
+    }
+  }
+  for (const button of document.querySelectorAll('[data-prime]')) {
+    button.disabled = state.status !== 'playing' || !enemy;
+  }
+}
+function enterExplore() {
+  gameMode = 'explore';
+  primeState.status = 'ready';
+  pursuitScene.clear();
+  enemyRemovalQueue.length = 0;
+  bufferedShot = null;
+  document.body.classList.remove('chase-mode');
+  $('chaseHUD').classList.add('hidden');
+  $('chaseResult').classList.add('hidden');
   $('intro').classList.add('hidden');
+  resultVisible = false;
+  active = true;
+  setViewMode('chase');
+  setAutoFlight(true);
   lastTimestamp = performance.now();
   window.KidscadeGame?.start?.();
+}
+function enterPrimeChase() {
+  gameMode = 'chase';
+  primeState = startPrimeChase(makePrimeChase());
+  enemyRemovalQueue.length = 0;
+  bufferedShot = null;
+  pursuitScene.clear();
+  pilotPosition.set(0, 200, 365);
+  yaw = 0; pitch = -0.28;
+  primeHudElapsed = 0; lastEnemyButtons = ''; feedbackSeconds = 0;
+  resultVisible = false;
+  $('chaseResult').classList.add('hidden');
+  $('intro').classList.add('hidden');
+  document.body.classList.add('chase-mode');
+  $('chaseHUD').classList.remove('hidden');
+  $('primeFeedback').classList.remove('visible');
+  active = true;
+  setViewMode('chase');
+  setAutoFlight(true);
+  loadNearby(true);
+  for (const e of activeEnemies(primeState)) pursuitScene.addEnemy(e, pilotPosition, yaw, collisionWorld);
+  renderPrimeHUD();
+  announcePrime('6을 소수 2와 3으로 나누어 봐!');
+  lastTimestamp = performance.now();
+  window.KidscadeGame?.start?.();
+}
+function showPrimeResult() {
+  if (resultVisible) return;
+  resultVisible = true;
+  bufferedShot = null;
+  const success = primeState.status === 'won';
+  if (success) discover('prime_chase_victory');
+  active = false;
+  $('chaseHUD').classList.add('hidden');
+  $('chaseResultTitle').textContent = success ? '추격대를 모두 격추했어!' : '다시 도전해 봐!';
+  $('chaseResultReason').textContent = primeState.reason;
+  const stats = roundStats(primeState);
+  $('chaseResultStats').textContent = '격추 ' + stats.destroyed + '/5 · 정확도 ' + stats.accuracy + '% · 점수 ' + stats.score.toLocaleString('ko-KR') + '점';
+  $('chaseResult').classList.remove('hidden');
+}
+function shootPrime(prime) {
+  if (gameMode !== 'chase' || !active) return;
+  const result = firePrime(primeState, prime);
+  if (result.kind === 'cooldown') {
+    bufferedShot = { prime, targetId: selectedEnemy(primeState)?.id, ttl: .9 };
+    return;
+  }
+  if (!['blocked','divided','destroyed'].includes(result.kind)) return;
+  bufferedShot = null;
+  pursuitScene.shootEffect(result, pilotPosition, yaw);
+  playPrimeSound(result.kind, prime);
+  if (result.kind === 'blocked') {
+    announcePrime('나누어떨어지지 않아! ' + result.oldValue + ' ÷ ' + prime, true);
+  } else {
+    const target = primeState.enemies.find(e => e.id === result.id);
+    if (target) pursuitScene.markValue(target);
+    if (result.kind === 'destroyed') {
+      announcePrime(result.oldValue + ' ÷ ' + prime + ' = 1 · 격추!');
+      pursuitScene.explosion(result.id);
+      enemyRemovalQueue.push({ id: result.id, time: 0.65 });
+    } else {
+      announcePrime(result.oldValue + ' ÷ ' + prime + ' = ' + result.newValue + '!');
+    }
+  }
+  renderPrimeHUD();
+  if (primeState.status !== 'playing') showPrimeResult();
+}
+function updatePrimeCombat(dt, gameDt = dt) {
+  if (gameMode !== 'chase' || primeState.status !== 'playing') return;
+  const distances = pursuitScene.update(dt, pilotPosition, yaw, collisionWorld, selectedEnemy(primeState)?.id);
+  const events = tickPrimeChase(primeState, gameDt, distances);
+  if (bufferedShot) {
+    bufferedShot.ttl -= gameDt;
+    const current = selectedEnemy(primeState);
+    if (bufferedShot.ttl <= 0 || !current || current.id !== bufferedShot.targetId) {
+      bufferedShot = null;
+    } else if (primeState.cooldown <= 0) {
+      const queued = bufferedShot.prime;
+      bufferedShot = null;
+      shootPrime(queued);
+    }
+  }
+  for (let i = enemyRemovalQueue.length - 1; i >= 0; i--) {
+    const entry = enemyRemovalQueue[i];
+    entry.time -= dt;
+    if (entry.time <= 0) { pursuitScene.removeEnemy(entry.id); enemyRemovalQueue.splice(i, 1); }
+  }
+  for (let i = 0; i < events.newEnemies.length; i++) {
+    pursuitScene.addEnemy(events.newEnemies[i], pilotPosition, yaw, collisionWorld, i);
+  }
+  if (events.newEnemies.length) announcePrime('새로운 합성수 추격대가 나타났어!');
+  if (events.attacks.length) {
+    for (const hit of events.attacks) pursuitScene.enemyAttack(hit.id, pilotPosition);
+    announcePrime('적의 공격! 방어막 -' + (events.attacks.length * 8) + '%', true);
+  }
+  primeHudElapsed += gameDt;
+  if (primeHudElapsed >= 0.19 || events.newEnemies.length || events.attacks.length) {
+    primeHudElapsed = 0;
+    renderPrimeHUD();
+  }
+  if (feedbackSeconds > 0) {
+    feedbackSeconds -= gameDt;
+    if (feedbackSeconds <= 0) $('primeFeedback').classList.remove('visible');
+  }
+  if (primeState.status !== 'playing') showPrimeResult();
+}
+document.querySelectorAll('[data-prime]').forEach(button => {
+  button.addEventListener('click', () => shootPrime(Number(button.dataset.prime)));
 });
+$('chaseCameraButton').addEventListener('click', () =>
+  setViewMode(viewMode === 'cockpit' ? 'chase' : 'cockpit'));
+$('start').addEventListener('click', enterPrimeChase);
+$('exploreStart').addEventListener('click', enterExplore);
+$('chaseRetry').addEventListener('click', enterPrimeChase);
+$('chaseExplore').addEventListener('click', enterExplore);
+
 $('retry').addEventListener('click', () => location.reload());
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', resize);
@@ -605,12 +802,14 @@ function updateMovement(dt) {
 function frame(now) {
   requestAnimationFrame(frame);
   if (document.hidden) { lastTimestamp = now; return; }
-  const dt = Math.min(0.05, Math.max(0, (now - (lastTimestamp || now)) / 1000));
+  const gameDt = Math.min(0.18, Math.max(0, (now - (lastTimestamp || now)) / 1000));
+  const dt = Math.min(0.05, gameDt);
   lastTimestamp = now;
   seconds += active ? dt : 0;
   if (active) {
     moveVehicles(seconds);
     updateMovement(dt);
+    if (gameMode === 'chase') updatePrimeCombat(dt, gameDt);
     loadNearby();
     frameCount++;
     fpsTime += dt;
