@@ -222,7 +222,7 @@ export function makePursuerScene(scene) {
       v.warningLine = null;
     }
   }
-  function update(dt, craft, heading, world, selectedId) {
+  function update(dt, craft, heading, world, selectedId, pilotSpeed = 34) {
     worldSeconds += dt;
     const distances = {};
     let order = 0;
@@ -230,7 +230,7 @@ export function makePursuerScene(scene) {
     const side = new THREE.Vector3(Math.cos(heading), 0, -Math.sin(heading));
     for (const [id, v] of visuals) {
       const slot = order++;
-      const plan = pursuitSlot(craft, heading, worldSeconds, id, slot, v.type);
+      const plan = pursuitSlot(craft, heading, worldSeconds, id, slot, v.type, pilotSpeed);
       const target = new THREE.Vector3(plan.x, plan.y, plan.z);
       const delta = target.sub(v.root.position);
       const distance = delta.length();
