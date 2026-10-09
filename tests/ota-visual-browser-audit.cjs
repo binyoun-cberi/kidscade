@@ -16,7 +16,7 @@ const server=http.createServer((req,res)=>{
   const file=path.resolve(ROOT,'.'+decodeURIComponent(url.pathname));
   if(file!==ROOT&&!file.startsWith(ROOT+path.sep)){res.writeHead(403);res.end();return;}
   fs.readFile(file,(err,data)=>{
-    if(err){res.writeHead(404);res.end();return;}
+    if(err){res.writeHead(url.pathname==='/favicon.ico'?204:404);res.end();return;}
     res.writeHead(200,{'content-type':types[path.extname(file)]||'application/octet-stream'});res.end(data);
   });
 });
@@ -64,7 +64,7 @@ async function ensureStage(stage,context){
 }
 async function moveUntil(axis,target,stage,seconds=9) {
   const isX=axis==='x';let count=0;
-  while(count++<Math.ceil(seconds*4)){
+  while(count++<Math.ceil(seconds*8)){
     const s=await snap();
     if(s.stage==='lost')throw Error('Monster caught the player while walking to '+axis+'='+target+' / '+JSON.stringify(s));
     const current=s.player[axis],remaining=target-current;
@@ -72,7 +72,9 @@ async function moveUntil(axis,target,stage,seconds=9) {
     const code=isX?(remaining>0?'KeyD':'KeyA'):(remaining>0?'KeyS':'KeyW');
     await move(code,Math.max(75,Math.min(210,Math.round(Math.abs(remaining)/4.85*850))),true);
   }
-  throw Error('Could not reach '+axis+' '+target+': '+JSON.stringify(await snap()));
+  const last=await snap();
+  if(Math.abs(last.player[axis]-target)<.43)return last;
+  throw Error('Could not reach '+axis+' '+target+': '+JSON.stringify(last));
 }
 (async()=>{
   server.listen(0,'127.0.0.1');await once(server,'listening');
@@ -123,7 +125,7 @@ async function moveUntil(axis,target,stage,seconds=9) {
   await interact();await ensureStage('anomaly','read management report');
   await screenshot('03-anomaly.png','desktop');
   await moveUntil('x',0,'anomaly');
-  await moveUntil('z',-15.6,'anomaly');
+  await moveUntil('z',-15.45,'anomaly',15);
   await ensureStage('chase','monster trigger');
   await screenshot('04-pursuit.png','desktop');
   // Stay ahead by sprinting and veer toward the right-hand hiding locker.
