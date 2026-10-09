@@ -28,7 +28,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.08;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(68, 1, 0.5, 2050);
-camera.position.set(0, 145, 365);
+camera.position.set(0, 200, 365);
 camera.rotation.order = 'YXZ';
 const pilotPosition = camera.position.clone();
 const playerCraft = createPlayerCraft(scene);
@@ -37,7 +37,7 @@ let viewMode = 'chase';
 let lookYaw = 0, lookPitch = 0, flightSpeed = 0, steeringVisual = 0;
 
 const skyDay = new THREE.Color(0x87a9d0);
-const skyNight = new THREE.Color(0x071023);
+const skyNight = new THREE.Color(0x0b1832);
 scene.background = skyDay.clone();
 scene.fog = new THREE.FogExp2(skyDay, 0.00155);
 const ambient = new THREE.HemisphereLight(0xb4d9ff, 0x1c2d45, 2.0);
@@ -82,7 +82,7 @@ const bodyMaterial = new THREE.ShaderMaterial({
     'float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453123); }',
     'void main(){',
     '  float sunlight = 0.44 + 0.28 * max(dot(vNormal, normalize(vec3(-0.5,0.85,0.5))),0.0);',
-    '  vec3 base = vColour * sunlight * mix(1.7, 0.52, uNight);',
+    '  vec3 base = vColour * sunlight * mix(1.7, 0.83, uNight);',
     '  float horizontal = vNormal.x * vNormal.x + vNormal.z * vNormal.z;',
     '  float u = abs(vNormal.x) > 0.5 ? vWorld.z : vWorld.x;',
     '  vec2 tile = vec2(u / 5.0, vWorld.y / 5.6);',
@@ -545,7 +545,7 @@ function updateMovement(dt) {
     pilotPosition.z -= flightSpeed * dt;
     yaw = Math.sin(seconds * 0.09) * 0.13;
     pitch = -0.28 + Math.sin(seconds * 0.13) * 0.045;
-    pilotPosition.y = 145 + Math.sin(seconds * 0.24) * 8;
+    pilotPosition.y = 200 + Math.sin(seconds * 0.24) * 8;
   } else {
     const oldX = pilotPosition.x, oldZ = pilotPosition.z;
     steeringVisual = side;
