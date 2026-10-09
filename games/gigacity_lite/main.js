@@ -28,7 +28,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.08;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(68, 1, 0.5, 2050);
-camera.position.set(0, 270, 365);
+camera.position.set(0, 145, 365);
 camera.rotation.order = 'YXZ';
 const pilotPosition = camera.position.clone();
 const playerCraft = createPlayerCraft(scene);
@@ -545,7 +545,7 @@ function updateMovement(dt) {
     pilotPosition.z -= flightSpeed * dt;
     yaw = Math.sin(seconds * 0.09) * 0.13;
     pitch = -0.28 + Math.sin(seconds * 0.13) * 0.045;
-    pilotPosition.y = 270 + Math.sin(seconds * 0.24) * 12;
+    pilotPosition.y = 145 + Math.sin(seconds * 0.24) * 8;
   } else {
     const oldX = pilotPosition.x, oldZ = pilotPosition.z;
     steeringVisual = side;
