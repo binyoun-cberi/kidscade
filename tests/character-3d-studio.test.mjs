@@ -360,7 +360,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261009-accessory53/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-hatfit54/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
@@ -450,7 +450,7 @@ test('male base opens first and provides brows visibility, face zoom and gait st
   assert.match(html,/id="gaitBadge"/);
   assert.match(html,/data-view="face"/);
   assert.match(html,/data-chibi-preset="male">남자 기본/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-accessory53/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-hatfit54/);
 });
 
 test('mobile studio shows the live avatar preview before the long wardrobe',()=>{
@@ -536,7 +536,7 @@ test('one-touch mobile Chibi controls are wired to the same real animation, view
   assert.match(js,/setCameraView\(button\.dataset\.quickView\)/);
   assert.match(js,/\[data-chibi-preset\],\[data-view\],\[data-quick-clip\],\[data-quick-view\],\[data-quick-speed\]/);
   assert.match(js,/\$\('speed'\)\.value=button\.dataset\.quickSpeed/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-accessory53/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-hatfit54/);
 });
 
 test('Chibi v5 wardrobe exposes gender-fit filter and category tabs without restricting shared accessories',()=>{
@@ -770,4 +770,22 @@ test('v5.3.1 prevents legacy/new accessory stacking and restores original hair o
   assert.match(audit,/HAT-SAFE hair geometry/);
   assert.match(audit,/Legacy shoes show through selected boots/);
   assert.match(audit,/Backpack did not release jacket clearance/);
+});
+
+
+test('v5.4 hats use head-fitting open shell profiles rather than floating solid disks',()=>{
+  const pack=read('teacher/chibi-accessory-pack.js');
+  const js=read('teacher/character-3d-studio.js');
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(pack,/function sculptHat\(kind,center,radius,scalpY\)/);
+  assert.match(pack,/new THREE\.LatheGeometry\(rows\.map/);
+  assert.match(pack,/const rim=scalpY-\.118/);
+  for(const hat of ['baseball','bucket','beanie','beret','straw'])
+    assert.ok(pack.includes(hat+':[['),'Missing curved crown profile: '+hat);
+  assert.match(pack,/referenceBox\.max\.y-Math\.min\(hairHeight\*\.48,width\*\.63\)/);
+  assert.match(js,/const mask=applyHideMasks\(\);\s*const fitted=applyRiggedAccessoryFit/);
+  assert.match(js,/hatSeatingAudit\(\)/);
+  assert.match(audit,/report\.hatSeating=\{cases:\[\],hats:fiveHats,version:'v5\.4-hat-shell'\}/);
+  assert.match(audit,/assert\.ok\(diagnostic\.overlapRatio>\.20/);
+  assert.match(audit,/assert\.ok\(diagnostic\.capRisesAboveCrown/);
 });
