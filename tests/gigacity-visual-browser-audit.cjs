@@ -140,6 +140,14 @@ const errors=[],responses=[];
     const chase=await snap('01-chase-landscape');
     console.log('CHASE brightness:',chase.mean);
     assert.ok(chase.mean>12,'Chase scene is nearly black');
+    await click('#rearViewButton'); await sleep(500);
+    assert.equal(await evaluate('document.querySelector("#rearViewButton").getAttribute("aria-pressed")'),'true');
+    const rear=await snap('01-rear-dogfight-landscape');
+    const rearDelta=change(chase,rear);
+    console.log('REAR LOOK 3D vs chase changed pixels:',rearDelta+'%');
+    assert.ok(rearDelta>2,'Rear view did not show a different 3D camera');
+    await click('#rearViewButton');await sleep(190);
+    assert.equal(await evaluate('document.querySelector("#rearViewButton").getAttribute("aria-pressed")'),'false');
     await click('[data-view-mode="cockpit"]');await sleep(600);
     const cockpit=await snap('02-cockpit-landscape');
     const cockpitDelta=change(chase,cockpit);
@@ -182,6 +190,14 @@ const errors=[],responses=[];
     })()`);
     console.log('Radar vs camera controls overlap:',radarOverlap);
     assert.ok(radarOverlap<1,'Radar overlaps portrait camera toggle');
+    const rearOverlap=await evaluate(`(()=>{
+      const radar=document.querySelector('#radarPanel').getBoundingClientRect();
+      const rear=document.querySelector('#rearViewButton').getBoundingClientRect();
+      return Math.max(0,Math.min(radar.right,rear.right)-Math.max(radar.left,rear.left)) *
+        Math.max(0,Math.min(radar.bottom,rear.bottom)-Math.max(radar.top,rear.top));
+    })()`);
+    console.log('Radar vs rear-view button overlap:',rearOverlap);
+    assert.ok(rearOverlap<1,'Radar overlaps rear look button');
 
     // Play the full expanded 6-wave encounter using actual UI buttons.
     await click('[data-prime="5"]'); await sleep(1620);
@@ -245,7 +261,7 @@ const errors=[],responses=[];
     assert.ok(responses.some(x=>x.url?.endsWith('/race-future.glb')&&x.status===200),'Kenney player GLB was not loaded');
     assert.equal(errors.length,0,'JavaScript errors: '+errors.join(' | ').slice(0,850));
     assert.equal(badResponses.length,0,'Asset request failed');
-    const report={ok:true,viewport:'844x390 and 390x844',chaseVsCockpit:cockpitDelta,freeVsCockpit:freeDelta,nightVsDay:nightDelta,ascend:[altitudeBefore,altitudeAfter],portraitOverlap:overlap,portraitWeaponOverlap,primeChaseVictory:result,chromeErrors:errors,screenshots:8};
+    const report={ok:true,viewport:'844x390 and 390x844',chaseVsCockpit:cockpitDelta,freeVsCockpit:freeDelta,nightVsDay:nightDelta,ascend:[altitudeBefore,altitudeAfter],portraitOverlap:overlap,portraitWeaponOverlap,primeChaseVictory:result,rearViewChangedPixels:rearDelta,chromeErrors:errors,screenshots:9};
     fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));
     console.log('GIGACITY_SIMULATION_PASSED',JSON.stringify(report));
   }catch(err){
