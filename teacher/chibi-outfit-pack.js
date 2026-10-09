@@ -257,22 +257,27 @@ function buildSkinConformingSleeve(body,sign,puff){
     throw Error('Cannot extract the '+side+' source skinned arm');
   const allow=i=>{
     const x=positions.getX(i),y=positions.getY(i);
-    if(x*sign<.115||y<.60||y>1.18)return false;
+    if(x*sign<.115||y<.50||y>1.18)return false;
     let armWeight=0;
     for(let k=0;k<4;k++){
       if(armBones.has(skinIndex.getComponent(i,k)))
         armWeight+=skinWeight.getComponent(i,k);
     }
-    return armWeight>.42;
+    // Forearm vertices near the wrist blend into the hand. Keeping only
+    // vertices with >42% arm influence cut the sleeve off at the elbow.
+    return armWeight>.16;
   };
   const verts=[],uvs=[],bones=[],weights=[];
-  let triangles=0;
+  let triangles=0,minY=Infinity,maxY=-Infinity;
+  const verticalBands=[0,0,0,0];
   const add=i=>{
     const x=positions.getX(i),y=positions.getY(i),z=positions.getZ(i);
+    minY=Math.min(minY,y);maxY=Math.max(maxY,y);
+    verticalBands[y<.6?0:y<.75?1:y<.95?2:3]++;
     // Offset along the body's own outward normal, not the guessed world X/Z
     // directions. The original 0.011 allowance z-fought with the visible skin.
-    const coverage=smooth(.60,.76,y)*(1-smooth(1.105,1.18,y));
-    const allowance=(puff?.042:.030)*coverage;
+    const coverage=smooth(.50,.61,y)*(1-smooth(1.105,1.18,y));
+    const allowance=(puff?.038:.026)*coverage;
     verts.push(x+normals.getX(i)*allowance,
       y+normals.getY(i)*allowance,
       z+normals.getZ(i)*allowance);
@@ -298,7 +303,7 @@ function buildSkinConformingSleeve(body,sign,puff){
   geometry.computeBoundingBox();geometry.computeBoundingSphere();
   geometry.userData={skinTransfer:{
     method:'source-body-arm-skin-v5.9',region:'arm',neighbors:4,
-    vertices:verts.length/3,triangles
+    vertices:verts.length/3,triangles,minY,maxY,verticalBands
   }};
   return geometry;
 }
