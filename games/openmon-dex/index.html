@@ -130,13 +130,24 @@ function renderList(){
 }
 function evolution(id){
  const s=one(id);if(!s)return;
- const ancestor=s.evolutionFrom?one(s.evolutionFrom):null;
- const children=db.sprites.filter(item=>one(item.id).evolutionFrom===id).slice(0,30);
  const box=document.getElementById("evolution");box.innerHTML="";
- const family=db.sprites.filter(item=>item.familyId && item.familyId===s.familyId && item.id!==id && item.id!==s.evolutionFrom && !children.some(c=>c.id===item.id)).slice(0,18).map(item=>one(item.id));
- const related=[...(ancestor?[ancestor]:[]),s,...children,...family];
- related.forEach(rel=>{const b=document.createElement("button");b.type="button";b.textContent=(rel.id===selected?"● ":"")+rel.name;b.addEventListener("click",()=>choose(rel.id));box.appendChild(b)});
- document.getElementById("evolutionNote").textContent=s.atlas==="set2"?"가까운 그림 2개를 관계 검토 후보로 묶었어요. 원본의 앞·뒷모습 또는 진화 관계라고 확정한 것은 아니에요.":s.role==="alternate-concept"?"Shibu 원본을 늑대로 재해석한 별도 시안이에요. 원본과 1:1 대응은 아직 확인되지 않았어요.":s.verifiedEvolution||children.length?"일부 진화 관계만 제작자의 시트 구성을 근거로 연결했어요. 나머지 연관 이미지는 후보예요.":"같은 계열 후보의 그림을 모았어요. 진화 관계는 검증 전이에요.";
+ // Group by explicitly authored lineage, not by adjacent image position.
+ const related=s.playable?
+   db.species.filter(item=>item.familyKey===s.familyKey).map(item=>one(item.id)):
+   db.sprites.filter(item=>item.familyId&&item.familyId===s.familyId).map(item=>one(item.id));
+ related.forEach(rel=>{
+   const b=document.createElement("button");b.type="button";
+   const status=rel.evolvesFrom&&!rel.evolutionCondition?.enabled?" (미확정)":rel.evolvesFrom&&!rel.verifiedEvolution?" (기획 진화)":"";
+   b.textContent=(rel.id===selected?"● ":"")+rel.name+status;
+   b.addEventListener("click",()=>choose(rel.id));box.appendChild(b);
+ });
+ const note=s.role==="alternate-concept"?"Shibu를 다시 그린 늑대 시안입니다. 원본 진화형과 1:1 대응은 미확정이에요.":
+  s.role==="object"?"몬스터가 아니므로 진화하지 않아요.":
+  s.familyOrigin==="source-confirmed"?"원본 진화 구성이 확인된 계열입니다.":
+  s.familyOrigin==="provisional"?"인접한 그림의 관계가 미확정이라 자동 진화를 막았어요.":
+  s.familyOrigin==="kidscade-design"?"외형을 참고해 키즈케이드 게임에서 새로 설계한 진화 계열이에요.":
+  "독립형 개체로 설계한 몬스터예요.";
+ document.getElementById("evolutionNote").textContent=note;
 }
 function renderBattle(s){
  const view=document.getElementById("battleStats");
