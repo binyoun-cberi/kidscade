@@ -207,9 +207,11 @@ function renderBattle(){
  $("foeHpBar").style.width=barPct(foe.hp,maxFoe);
  $("ownHpBar").style.background=own.hp/maxOwn<.3?"#d86b5d":"#58ae68";
  $("foeHpBar").style.background=foe.hp/maxFoe<.3?"#d86b5d":"#58ae68";
- $("ownArt").innerHTML=miniArt(own.id);
- $("foeArt").innerHTML=miniArt(foe.id);
- $("battleZone").textContent=E.encounterAt?E.encounterAt(battle.zone):E.ZONES.find(z=>z.key===battle.zone)?.name||"비밀숲";
+ $("ownArt").innerHTML=artHtml(own.id);
+ $("foeArt").innerHTML=artHtml(foe.id);
+ $("battleZone").textContent=E.ZONES.find(z=>z.key===battle.zone)?.name||"비밀숲";
+ const bg=battle.zone==="cave"?"Cave_Back.png":battle.zone==="forest"||battle.special?"Forest_Background.png":"Forest_Background.png";
+ $("battleBackdrop").style.backgroundImage="linear-gradient(#ffffff15,#bdd2a725),url('"+ASSET+"more%20assets/"+bg+"')";
  $("battleTurn").textContent=battle.turn+"턴";
  $("battleLog").textContent=battle.message;
  if(battle.done){$("battleActionPanel").classList.add("hidden");$("battleAfter").classList.remove("hidden");return}
