@@ -327,6 +327,11 @@ const errors=[];
       'Garment is not bound to its intended articulated bones: '+piece.piece);
     assert.equal(piece.transfer.neighbors,expected[1],
       'Wrong bone interpolation for '+piece.piece);
+    if(piece.piece.includes('_continuousSleeve_')){
+      assert.ok(piece.transfer.minY<.61,'Forearm uncovered below elbow: '+piece.piece);
+      assert.ok(piece.transfer.verticalBands[0]>0,'Forearm uncovered in lower-arm band: '+piece.piece);
+      assert.ok(piece.transfer.triangles>120,'Sleeve still uses cropped upper-arm-only triangles: '+piece.piece);
+    }
   }
   report.outfitPack.skinTransfer={pieces:skinAudit.length,details:skinAudit};
 
