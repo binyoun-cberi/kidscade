@@ -254,7 +254,7 @@ test('male Chibi preset reuses source meshes for body face hair and clothes',()=
   assert.match(js,/const browCenterY=1\.792/);
   assert.match(js,/extractedBrowTriangles:kept\.length\/3/);
   assert.match(html,/data-chibi-preset="male"/);
-  assert.match(html,/남자 기본/);
+  assert.match(html,/남성형 기본/);
   assert.match(html,/value="kidscade_male_hair_short"(?: selected)?>남자 짧은 머리/);
 });
 
@@ -360,7 +360,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261009-meshsafe55/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-hardfit56/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
@@ -449,8 +449,8 @@ test('male base opens first and provides brows visibility, face zoom and gait st
   assert.match(html,/id="maleBrowPreview"/);
   assert.match(html,/id="gaitBadge"/);
   assert.match(html,/data-view="face"/);
-  assert.match(html,/data-chibi-preset="male">남자 기본/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-meshsafe55/);
+  assert.match(html,/data-chibi-preset="male" data-preset-fit="male">남성형 기본/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-hardfit56/);
 });
 
 test('mobile studio shows the live avatar preview before the long wardrobe',()=>{
@@ -536,14 +536,14 @@ test('one-touch mobile Chibi controls are wired to the same real animation, view
   assert.match(js,/setCameraView\(button\.dataset\.quickView\)/);
   assert.match(js,/\[data-chibi-preset\],\[data-view\],\[data-quick-clip\],\[data-quick-view\],\[data-quick-speed\]/);
   assert.match(js,/\$\('speed'\)\.value=button\.dataset\.quickSpeed/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-meshsafe55/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-hardfit56/);
 });
 
 test('Chibi v5 wardrobe exposes gender-fit filter and category tabs without restricting shared accessories',()=>{
   const js=read('teacher/character-3d-studio.js');
   const html=read('teacher/character-3d-studio.html');
   const m=JSON.parse(read('chibi/asset-manifest.json'));
-  assert.match(js,/const PART_FIT=name=>MALE_FIT_PARTS\.has\(name\)\?'male':SHARED_FIT_PARTS\.has\(name\)\?'shared':'female'/);
+  assert.match(js,/const FIT_PARTS=\{male:MALE_FIT_PARTS,female:FEMALE_FIT_PARTS,shared:SHARED_FIT_PARTS\}/);
   assert.match(js,/function selectBodyFit\(fit\)/);
   assert.match(js,/compatiblePart\(name\)&&PART_GROUP\(name\)===activeWardrobeCategory/);
   assert.match(js,/function updateWardrobeNavigation\(\)/);
@@ -596,7 +596,7 @@ test('v5.2 outfit library registers exactly 6 tops and 4 bottoms for each body f
   assert.match(studio,/import \{OUTFIT_LIBRARY,OUTFIT_STYLES,createOutfitPack\} from '\.\/chibi-outfit-pack\.js'/);
   assert.match(studio,/createOutfitPack\(\{getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial,makeRigidSkinnedPiece,resolveFirstBoneName\}\)/);
   assert.match(studio,/for\(const style of OUTFIT_STYLES\)PART_CATEGORY\[style\.id\]=style\.category/);
-  assert.match(studio,/partLibraryVersion:'chibi-v5\.3'/);
+  assert.match(studio,/partLibraryVersion:'chibi-v5\.6-strict-fit'/);
   assert.match(studio,/outfitLibrary:OUTFIT_LIBRARY/);
 });
 
@@ -719,7 +719,7 @@ test('v5.3 3D preview picker uses real render-target pixels, no flat/stock place
   assert.match(js,/data-part-thumb="/);
   assert.match(html,/\.part-tile\.selected/);
   assert.match(html,/\.part-preview canvas/);
-  assert.match(js,/partLibraryVersion:'chibi-v5\.3'/);
+  assert.match(js,/partLibraryVersion:'chibi-v5\.6-strict-fit'/);
 });
 
 test('v5.3 shared accessory equipment is mutually exclusive only within matching slots',()=>{
@@ -797,4 +797,70 @@ test('Chibi v5.5 prevents mismatched and doubled shirt/pants from rendering toge
   assert.match(audit,/mesh-repro-original-shirt/);
   assert.match(audit,/Original shirt remained under newer top/);
   assert.match(audit,/Body switch retained gender-incompatible clothing/);
+});
+
+
+test('v5.6 male and female geometry ownership is explicit with no accidental shared legacy costumes',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const html=read('teacher/character-3d-studio.html');
+  assert.match(js,/const MALE_FIT_PARTS=new Set\(\[/);
+  assert.match(js,/const FEMALE_FIT_PARTS=new Set\(\[/);
+  assert.match(js,/const SHARED_FIT_PARTS=new Set\(\['shoe',\.\.\.ACCESSORY_STYLES\.map\(style=>style\.id\)\]\)/);
+  assert.match(js,/if\(owners\.length!==1\)throw Error\('Unclassified or duplicated Chibi fit part: '\+name\)/);
+  assert.match(js,/const PRESET_FIT=Object\.fromEntries/);
+  assert.match(html,/data-chibi-preset="base" data-preset-fit="female" hidden/);
+  assert.match(html,/data-chibi-preset="male" data-preset-fit="male"/);
+  assert.match(html,/id="fitWorkspaceLabel"/);
+  assert.match(html,/id="fitWorkspaceHelp"/);
+  assert.match(html,/\.preset-grid button\[hidden\]\{display:none!important\}/);
+  assert.match(js,/function sanitizeFitVisibility\(\)/);
+  assert.match(js,/const incompatible=sanitizeFitVisibility\(\)/);
+  assert.match(js,/if\(PRESET_FIT\[name\]!==activeBodyFit\)return/);
+  assert.match(js,/activeBodyFit=fit;\s*applyPreset\(fit==='male'\?'male':'base'\)/);
+  assert.match(js,/function fitIntegrityIssues\(\)/);
+  assert.match(js,/missing-body:/);
+  assert.match(js,/bodyFitAudit\(\)/);
+  assert.match(js,/enforcedFit:activeBodyFit/);
+});
+
+test('v5.6 independently switches male/female presets and divides the visible equipment list',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  assert.match(js,/const owned=names\.filter\(name=>PART_FIT\(name\)===activeBodyFit\)/);
+  assert.match(js,/const shared=names\.filter\(name=>PART_FIT\(name\)==='shared'\)/);
+  assert.match(js,/data-part-fit="/);
+  assert.match(js,/function selectBodyFit\(fit\)/);
+  assert.match(js,/const valid=PRESET_FIT\[button\.dataset\.chibiPreset\]===activeBodyFit/);
+  assert.match(js,/button\.hidden=!valid/);
+  assert.match(js,/button\.disabled=!ready\|\|!allowed/);
+  assert.match(js,/if\(fitIntegrityIssues\(\)\.length\)/);
+  assert.match(js,/partLibraryVersion:'chibi-v5\.6-strict-fit'/);
+});
+
+
+test('v5.6 asset manifest owns every fitting part in exactly one body scope',()=>{
+  const m=JSON.parse(read('chibi/asset-manifest.json'));
+  const f=m.wardrobeLibrary.fitIsolation;
+  assert.equal(f.version,'v5.6-hard-fit');
+  assert.equal(f.mode,'deny-by-default');
+  assert.equal(f.blockInvalidGlbExport,true);
+  assert.deepEqual(Object.keys(f.parts),['male','female','shared']);
+  const parts=[...f.parts.male,...f.parts.female,...f.parts.shared];
+  assert.equal(new Set(parts).size,parts.length);
+  for(const item of ['bottes','bottesgreen','armorshoe','ninjassuitshoe','hat','bag','armorhelmet'])
+    assert.ok(f.parts.female.includes(item),item+' legacy female-fit resource leaked into shared');
+  for(const name of m.wardrobeLibrary.hairStyles.male)
+    assert.ok(f.parts.male.includes(name));
+  for(const name of m.wardrobeLibrary.hairStyles.female)
+    assert.ok(f.parts.female.includes(name));
+  assert.ok(f.parts.shared.includes('chibi_hat_baseball'));
+  assert.ok(!f.parts.shared.includes('skirt'));
+});
+
+test('v5.6 Chrome audit covers strict fitted tab switching without wrong-fit equipment leaks',()=>{
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(audit,/report\.fitIsolation=\{cases:\[\],outfitSwaps:\[\]\}/);
+  assert.match(audit,/window\.__kc3dAudit\.bodyFitAudit\(\)/);
+  assert.match(audit,/assert\.deepEqual\(audit\.incompatible,\[\]/);
+  assert.match(audit,/Incompatible preset changed body without using fit switch/);
+  assert.match(audit,/fit-isolation-/);
 });
