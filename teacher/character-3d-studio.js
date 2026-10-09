@@ -2087,6 +2087,35 @@ function installLocalVisualAudit(){
           fingerprint:fingerprint>>>0};
       });
     },
+    accessoryCatalog(){
+      return ACCESSORY_STYLES.map(style=>{
+        const node=getNode(style.id);
+        const skins=[];
+        let vertices=0,hash=2166136261;
+        node?.traverse(object=>{
+          if(!object.isSkinnedMesh)return;
+          skins.push({name:object.name,bones:object.skeleton?.bones.length||0});
+          const p=object.geometry?.getAttribute('position');
+          if(!p)return;
+          vertices+=p.count;
+          for(let i=0;i<p.array.length;i+=5)
+            hash=Math.imul(hash^Math.round(p.array[i]*100000),16777619);
+        });
+        return {id:style.id,slot:style.slot,category:style.category,
+          visible:!!node?.visible,meshCount:skins.length,skins,vertices,
+          fingerprint:hash>>>0};
+      });
+    },
+    accessoryThumbStatus(){
+      return {
+        cached:[...thumbnailCache.keys()],
+        tiles:[...document.querySelectorAll('[data-part-thumb]')].map(el=>({
+          name:el.dataset.partThumb,
+          width:el.width,height:el.height,
+          hasCache:thumbnailCache.has(el.dataset.partThumb)
+        }))
+      };
+    },
     outfitCatalog(){
       return Object.entries(OUTFIT_LIBRARY).flatMap(([fit,categories])=>
         Object.entries(categories).flatMap(([category,names])=>names.map(name=>{
