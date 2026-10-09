@@ -855,8 +855,9 @@ function finish(ok){
   window.KidscadeGame?.result?.({scope:'mission',status:ok?'completed':'failed',outcome:ok?'clear':'fail',score,cleared:ok,timeSeconds:Math.round(elapsed)});
 }
 function reset(){
+  leaveLocker();
   fixes=0;hp=3;power=100;flashOn=true;elapsed=0;stage=1;ended=false;paused=false;started=true;
-  leaveLocker();viewYaw=-Math.PI/2;viewPitch=0;player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;
+  viewYaw=-Math.PI/2;viewPitch=0;player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;
   player.yaw=viewYaw+Math.PI;player.root.rotation.y=player.yaw;
   maiden.attacks=0;maiden.charge=0;invulnerable=0;ghostWaiting=0;
   maidenPhase='approach';ghostNav=null;gazeLocked=false;
@@ -1013,6 +1014,17 @@ function updateGhost(dt){
   maiden.root.position.set(maiden.x,.12+Math.sin(elapsed*2.8)*.12,maiden.z);
   maiden.root.rotation.y=Math.atan2(player.x-maiden.x,player.z-maiden.z);
   gazeLocked=gazingAtGhost();
+  if(typeof hidingLocker!=='undefined'&&hidingLocker){
+    // A locker breaks visual tracking but not all danger: she checks the last
+    // place she saw the player before drifting back towards the science room.
+    gazeLocked=false;maiden.charge=Math.max(0,maiden.charge-dt*.14);
+    ghostWaiting=Math.max(0,ghostWaiting-dt);
+    if(maidenPhase==='hunt'&&ghostWaiting===0){
+      const goal=lockerTime<2.5?(lockerLastSeen||hidingLocker.interact):SCHOOL.maidenSpawn;
+      advanceGhostToward(goal,dt*.64);
+    }
+    return;
+  }
   if(maidenPhase==='practice'){
     // She slowly approaches when ignored, then freezes when watched; this is always nonlethal.
     if(!gazeLocked&&dist(maiden,player)>3.3)advanceGhostToward(player,dt*.55);
@@ -1046,7 +1058,7 @@ function updateGhost(dt){
 }
 function takeAnomalyHit(reason,resetToStage=null){
   if(invulnerable>0||!started||ended)return;
-  hp--;invulnerable=3;
+  leaveLocker();hp--;invulnerable=3;
   player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;
   viewYaw=-Math.PI/2;viewPitch=0;player.yaw=viewYaw+Math.PI;
   lastMistake=reason;
@@ -1093,8 +1105,9 @@ function updateNewEncounters(dt){
     const dot=d3>0.001?(look.x*dx+look.y*dy+look.z*dz)/d3:1;
     const sameRoom=player.x>3.1&&player.x<11.8&&player.z< -10.5;
     const unobstructed=clearGhostSight(player.x,player.z,eggLocation.x,eggLocation.z);
-    const away=sameRoom&&d<8.3&&d>1.5&&unobstructed&&dot<-.28;
-    const staring=sameRoom&&d<8.3&&unobstructed&&dot>.72;
+    const exposed=typeof hidingLocker==='undefined'||!hidingLocker;
+    const away=exposed&&sameRoom&&d<8.3&&d>1.5&&unobstructed&&dot<-.28;
+    const staring=exposed&&sameRoom&&d<8.3&&unobstructed&&dot>.72;
     encounter.eggCharge=Math.max(0,Math.min(4,encounter.eggCharge+dt*(away?1:-.15)));
     encounter.eggFear=Math.max(0,encounter.eggFear+dt*(staring?1:-1.2));
     ui.reticle.classList.toggle('locked',false);
@@ -1145,7 +1158,15 @@ function updateNewEncounters(dt){
   if(stage===10||stage===11){
     w.root.position.set(w.x,.04,w.z);
     if(stage===10){
-      if(player.z>6.9&&player.x>-15.1){
+      if(typeof hidingLocker!=='undefined'&&hidingLocker){
+        // Searching the last seen position, then walking back instead of
+        // continuously homing in on someone inside the closed metal locker.
+        w.grace=Math.max(0,w.grace-dt);
+        if(w.grace===0){
+          const goal=lockerTime<2.4?(lockerLastSeen||hidingLocker.interact):{x:-1.5,z:16.8};
+          moveWolfToward(goal,dt);
+        }
+      }else if(player.z>6.9&&player.x>-15.1){
         w.active=true;w.grace=Math.max(0,w.grace-dt);
         if(w.grace<=0){
           moveWolfToward(player,dt);
