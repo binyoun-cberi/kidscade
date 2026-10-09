@@ -85,10 +85,12 @@ export function makePursuerScene(scene) {
   const beamColours = { 2: 0x79e8ff, 3: 0xab95ff, 5: 0xffe17e, 7: 0xff9ac3 };
   function addEnemy(enemy, craft, heading, world, order = 0) {
     const v = createEnemyScene(enemy);
-    // Spawn along the nearest safe avenue in front of the player.
-    const aheadX = craft.x - Math.sin(heading) * (72 + order * 10);
-    const aheadZ = craft.z - Math.cos(heading) * (72 + order * 10);
-    v.root.position.set(Math.round(aheadX / LOT_SIZE) * LOT_SIZE, craft.y + 4, aheadZ);
+    // Enemy squadrons enter from BEHIND the player, then flank and swoop.
+    const aheadX = craft.x + Math.sin(heading) * (86 + order * 10);
+    const aheadZ = craft.z + Math.cos(heading) * (86 + order * 10);
+    v.root.position.set(Math.round(aheadX / LOT_SIZE) * LOT_SIZE, craft.y + 5, aheadZ);
+    v.coverCacheTime = 0;
+    v.covered = false;
     if (intersectsWorld(v.root.position, world, 5.5)) {
       v.root.position.z = Math.round(v.root.position.z / LOT_SIZE) * LOT_SIZE;
     }
@@ -137,6 +139,13 @@ export function makePursuerScene(scene) {
     v.body.visible = false;
     v.reticle.visible = false;
   }
+  function warnAttack(id) {
+    const v = visuals.get(id);
+    if (!v) return;
+    v.sign.material.color.setHex(0xff7258);
+    v.sign.scale.set(25, 12.5, 1);
+    v.warningTime = 2;
+  }
   function enemyAttack(id, craft) {
     const v = visuals.get(id);
     if (!v) return;
@@ -150,15 +159,18 @@ export function makePursuerScene(scene) {
     const side = new THREE.Vector3(Math.cos(heading), 0, -Math.sin(heading));
     for (const [id, v] of visuals) {
       const slot = order++;
-      const flank = slot === 0 ? 0 : (slot % 2 ? 1 : -1) * (15 + slot * 4);
+      // A pursuer stays predominantly behind the craft, periodically
+      // sweeping alongside it. Steering now meaningfully changes its approach.
+      const flank = (slot % 2 ? -1 : 1) * (31 + slot * 8);
+      const sweep = -24 + 47 * Math.sin(worldSeconds * 0.48 + id * 0.83);
       const target = new THREE.Vector3(craft.x, craft.y, craft.z)
-        .addScaledVector(forward, 65 + Math.min(slot, 2) * 15)
+        .addScaledVector(forward, sweep)
         .addScaledVector(side, flank);
       target.y = craft.y + 5 + 2 * Math.sin(worldSeconds + id);
       const delta = target.sub(v.root.position);
       const distance = delta.length();
       if (distance > 1.5) {
-        const step = delta.multiplyScalar(Math.min(1, (33 + slot * 3) * dt / distance));
+        const step = delta.multiplyScalar(Math.min(1, (48 + slot * 3) * dt / distance));
         const result = moveWithCollisions(v.root.position, step, world, [], 4.2);
         v.root.position.set(result.position.x, result.position.y, result.position.z);
         if (result.hitBuilding) v.root.position.y += Math.min(6 * dt, 0.5);
@@ -173,11 +185,32 @@ export function makePursuerScene(scene) {
         const size = 1 + Math.sin(worldSeconds * 4) * 0.08;
         v.reticle.scale.set(size, size, size);
       }
+      if (v.warningTime > 0) {
+        v.warningTime -= dt;
+        if (v.warningTime <= 0) {
+          v.sign.material.color.setHex(0xffffff);
+          v.sign.scale.set(23, 11.5, 1);
+        }
+      }
       if (v.hitPulse > 0) {
         v.hitPulse = Math.max(0, v.hitPulse - dt);
         v.body.scale.multiplyScalar(1 + dt * 0.4 * Math.sin(worldSeconds * 27));
       }
-      distances[id] = Math.hypot(dx, craft.y - v.root.position.y, dz);
+      v.coverCacheTime -= dt;
+      if (v.coverCacheTime <= 0) {
+        // Six samples along the laser line: towers offer meaningful cover.
+        v.covered = false;
+        for (let step = 1; step <= 6; step++) {
+          const t = step / 7;
+          if (intersectsWorld({
+            x: v.root.position.x + dx * t,
+            y: v.root.position.y + (craft.y - v.root.position.y) * t,
+            z: v.root.position.z + dz * t
+          }, world, 0.2)) { v.covered = true; break; }
+        }
+        v.coverCacheTime = 0.32;
+      }
+      distances[id] = { distance: Math.hypot(dx, craft.y - v.root.position.y, dz), covered: v.covered };
     }
     for (let i = effects.length - 1; i >= 0; i--) {
       const effect = effects[i];
@@ -215,5 +248,5 @@ export function makePursuerScene(scene) {
     }
     effects.length = 0;
   }
-  return { visuals, addEnemy, removeEnemy, markValue, update, shootEffect, explosion, enemyAttack, clear };
+  return { visuals, addEnemy, removeEnemy, markValue, update, shootEffect, explosion, enemyAttack, warnAttack, clear };
 }
