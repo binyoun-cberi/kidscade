@@ -619,12 +619,12 @@ test('v5.2 outfits reshape actual skinned geometry and add three-dimensional sle
   assert.match(pack,/source\.parent\.add\(group\)/);
   assert.match(pack,/function makeTrouserLegs\(/);
   assert.match(pack,/const geometry=new THREE\.CylinderGeometry\(upperRadius,lowerRadius,top-bottom,16,9,false\)/);
-  assert.match(pack,/indices\[offset\+k\]=refIndices\.getComponent\(nearest,k\)/);
-  assert.match(pack,/weights\[offset\+k\]=refWeights\.getComponent\(nearest,k\)/);
-  assert.match(pack,/articulation:'nearest-body-surface-skin-weights'/);
-  assert.match(pack,/sourceWeights:'nearest-fit-body-arm'/);
-  assert.match(pack,/refIndex\.getComponent\(nearest,k\)/);
-  assert.match(pack,/refWeight\.getComponent\(nearest,k\)/);
+  assert.match(pack,/transferSmoothSkinWeights\(geometry,reference,\{sign,region:'leg'\}\)/);
+  assert.match(pack,/skinTransfer:geometry\.userData\.skinTransfer/);
+  assert.match(pack,/articulation:'four-neighbor-smooth-body-weights'/);
+  assert.match(pack,/sourceWeights:'four-neighbor-smooth-body-arm'/);
+  assert.match(pack,/const bone=refIndex\.getComponent\(j,k\)/);
+  assert.match(pack,/const w=refWeight\.getComponent\(j,k\)\*strength/);
   assert.match(pack,/style\.id\+'_leg_'\+side/);
   for(const id of newIds){
     assert.ok(pack.includes('id:\''+id+'\''),'Style definition missing '+id);
@@ -882,10 +882,31 @@ test('v5.7 separates male and female bone ownership, animation roots and GLB rig
   assert.match(js,/function rigIntegrityIssues\(\)/);
   assert.match(js,/function activateRigScene\(fit\)/);
   assert.match(js,/mixer=new THREE\.AnimationMixer\(sourceScene\)/);
-  assert.match(js,/function rigIsolationAudit\(\)/);
+  assert.match(js,/rigIsolationAudit\(\)\{/);
   assert.match(js,/rigIsolationVersion:'chibi-v5\.7-independent-78-bone-rigs'/);
   assert.match(audit,/window\.__kc3dAudit\.rigIsolationAudit\(\)/);
   assert.match(audit,/sharedBones,0/);
   assert.match(audit,/roundtripExport\(\)/);
   assert.match(html,/character-3d-studio\.js\?v=20261009-dualrig57/);
+});
+
+test('v5.8 smooth garment skin weights have four-neighbor blending and reject invalid meshes',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  const studio=read('teacher/character-3d-studio.js');
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(pack,/function transferSmoothSkinWeights\(geometry,reference,\{sign,region\}\)/);
+  assert.match(pack,/const nearest=\[\]/);
+  assert.match(pack,/if\(nearest\.length>4\)nearest\.pop\(\)/);
+  assert.match(pack,/const sorted=\[\.\.\.influence\]\.sort/);
+  assert.match(pack,/weights\[i\*4\+k\]=sorted\[k\]\[1\]\/sum/);
+  assert.match(pack,/skinTransfer:\{/);
+  assert.match(pack,/distantSamples:fallbackCount/);
+  assert.match(pack,/for\(let pass=0;pass<12;pass\+\+\)/);
+  assert.match(pack,/if\(residualUnsafeTriangles\)throw Error/);
+  assert.match(pack,/recoveryPasses,residualUnsafeTriangles/);
+  assert.match(studio,/garmentSkinAudit\(\)\{/);
+  assert.match(audit,/window\.__kc3dAudit\.garmentSkinAudit\(\)/);
+  assert.match(audit,/unweighted,0/);
+  assert.match(audit,/invalidBones,0/);
+  assert.match(audit,/residualUnsafeTriangles,0/);
 });
