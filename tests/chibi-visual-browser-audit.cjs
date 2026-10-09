@@ -306,7 +306,7 @@ const errors=[];
     assert.ok(meshSafety.recoveryPasses<=12,'Unbounded garment stabilization '+name);
   }
   const skinAudit=await evalPage('window.__kc3dAudit.garmentSkinAudit()');
-  assert.ok(skinAudit.length>=30,'Missing smooth-skinned animated sleeve/trouser meshes');
+  // Nine jacket/top variants have two continuous sleeves each; five trouser\n  // styles have two independently skinned leg meshes each: 18 + 10 = 28.\n  assert.equal(skinAudit.length,28,'Missing continuous sleeves or smooth-skinned trouser legs');
   for(const piece of skinAudit){
     assert.equal(piece.bones,78,'Wrong skinned garment skeleton '+piece.piece);
     assert.equal(piece.unweighted,0,'Unweighted garment vertices: '+piece.piece);
