@@ -116,8 +116,8 @@ async function moveUntil(axis,target,stage,seconds=9) {
   await sleep(300);
   await screenshot('02-management-room.png','desktop');
   // Approach the desk without moving inside the collision volume.
-  await moveUntil('x',-1.0,'console');
-  await moveUntil('z',3.55,'console');
+  await moveUntil('x',-1.4,'console');
+  await moveUntil('z',3.45,'console');
   const near=await snap();
   report.consoleApproach=near;
   await interact();await ensureStage('anomaly','read management report');
