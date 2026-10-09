@@ -789,3 +789,23 @@ test('unrigged horrors have scene motion and a finite wolf-lure window',()=>{
   assert.match(js,/lockerTime<13\?/);
   assert.match(js,/const speed=run\?5\.25:3\.6/);
 });
+
+
+test('wolf lure speaker cannot be triggered through the 5-1 classroom wall',()=>{
+  const rayStart=js.indexOf('function segmentHitsRect('),rayEnd=js.indexOf('function playerLookDirection(',rayStart);
+  const actionStart=js.indexOf('function nearAction(){'),actionEnd=js.indexOf('function act(){',actionStart);
+  assert.ok(rayStart>=0&&rayEnd>rayStart&&actionStart>=0&&actionEnd>actionStart);
+  const source=js.slice(rayStart,rayEnd)+js.slice(actionStart,actionEnd);
+  const wall={x:-7.5,z:10.2,hx:1.50,hz:.145};
+  const player={x:-7.5,z:10.78};
+  const nearAction=new Function('player','walls','schoolDoors','dist','nearestLocker',
+    'stage','hidingLocker','encounter','disturbed','SCHOOL','bellDoor','wolfTrap',
+    source+'return nearAction;')(player,[wall],[],(a,b)=>Math.hypot(a.x-b.x,a.z-b.z),
+    ()=>null,10,null,{wolf:{ready:false},heatNodes:[]},[],{guard:{x:-24.2,z:0}},
+    {x:-20.35,z:8},{x:-10.5,z:14});
+  assert.equal(nearAction(),null,'E cannot activate the hall speaker from behind a solid classroom wall');
+  player.z=9.0;
+  assert.equal(nearAction()?.type,'speaker','E can activate the hall speaker while standing in its corridor');
+  assert.match(js,/stage===10&&dist\(player,\{x:-7\.5,z:8\.55\}\)<2\.25&&/);
+  assert.match(js,/clearGhostSight\(player\.x,player\.z,-7\.5,8\.55\)/);
+});
