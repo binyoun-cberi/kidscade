@@ -59,7 +59,10 @@ for(const s of db.sprites){
  s.familyKind=f.kind;s.familyOrigin=f.origin;s.evolutionRank=stage;
  s.evolvesFrom=prev;s.evolutionStatus=f.origin;
  s.evolutionCondition=prev?{kind:"level",level:stage===2?14:26,enabled:allowed}:null;
- s.stage=stage;s.evolutionFrom=prev&&allowed?prev:null;
+ s.stage=stage;
+ // Legacy evolutionFrom continues to mean ORIGINAL SOURCE-confirmed linkage only.
+ // Kidscade's proposed playable evolution uses evolvesFrom/evolutionCondition instead.
+ s.evolutionFrom=f.origin==="source-confirmed"?prev:null;
  s.verifiedEvolution=f.origin==="source-confirmed"&&!!prev;
  s.battle={base,statBudget,growth:{hp:2.5,attack:1.15,defense:1.05,speed:1.08},
  captureBase:f.kind==="branch"&&stage===1?.18:s.rarity==="rare"?.17:stage===3?.19:stage===2?.30:.48,
