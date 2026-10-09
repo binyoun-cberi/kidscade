@@ -596,7 +596,7 @@ test('v5.2 outfit library registers exactly 6 tops and 4 bottoms for each body f
   assert.match(studio,/import \{OUTFIT_LIBRARY,OUTFIT_STYLES,createOutfitPack\} from '\.\/chibi-outfit-pack\.js'/);
   assert.match(studio,/createOutfitPack\(\{getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial,makeRigidSkinnedPiece,resolveFirstBoneName\}\)/);
   assert.match(studio,/for\(const style of OUTFIT_STYLES\)PART_CATEGORY\[style\.id\]=style\.category/);
-  assert.match(studio,/partLibraryVersion:'chibi-v5\.2'/);
+  assert.match(studio,/partLibraryVersion:'chibi-v5\.3'/);
   assert.match(studio,/outfitLibrary:OUTFIT_LIBRARY/);
 });
 
