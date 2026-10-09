@@ -629,15 +629,15 @@ function enterPrimeChase() {
 function showPrimeResult() {
   if (resultVisible) return;
   resultVisible = true;
+  const success = primeState.status === 'won';
+  if (success) discover('prime_chase_victory');
   active = false;
   $('chaseHUD').classList.add('hidden');
-  const success = primeState.status === 'won';
   $('chaseResultTitle').textContent = success ? '추격대를 모두 격추했어!' : '다시 도전해 봐!';
   $('chaseResultReason').textContent = primeState.reason;
   const stats = roundStats(primeState);
   $('chaseResultStats').textContent = '격추 ' + stats.destroyed + '/5 · 정확도 ' + stats.accuracy + '% · 점수 ' + stats.score.toLocaleString('ko-KR') + '점';
   $('chaseResult').classList.remove('hidden');
-  if (success) discover('prime_chase_victory');
 }
 function shootPrime(prime) {
   if (gameMode !== 'chase' || !active) return;
