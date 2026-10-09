@@ -155,3 +155,95 @@ test('all six phase transitions remain reachable without math-rule rewrites',()=
  }
  assert.equal(s.phase,5);assert.equal(s.ending,true);
 });
+
+
+test('quick and long exploration keep six phases but have different pacing',()=>{
+ const quick=makeBrowser(),gq=quick.game;gq.start();
+ const s=gq.getScene();
+ assert.equal(s.phaseLength,45);assert.equal(s.enemyCap,4);
+ s.phase=1;gq.enterPhase();assert.equal(s.enemyCap,12);
+ s.phase=3;gq.enterPhase();assert.equal(s.enemyCap,18);
+ s.phase=5;gq.enterPhase();assert.equal(s.enemyCap,22);
+ const normal=makeBrowser(),gn=normal.game;
+ normal.el('difficulty').value='normal';normal.el('runLength').value='long';
+ gn.start();const sn=gn.getScene();
+ assert.equal(sn.phaseLength,75);assert.equal(sn.enemyCap,5);
+ sn.phase=1;gn.enterPhase();assert.equal(sn.enemyCap,18);
+ sn.phase=3;gn.enterPhase();assert.equal(sn.enemyCap,27);
+ sn.phase=5;gn.enterPhase();assert.equal(sn.enemyCap,34);
+});
+
+test('final seal completes in 25 seconds even if monsters remain and win is explicit',()=>{
+ const {game,el}=makeBrowser();game.start();
+ const s=game.getScene();s.phase=5;game.enterPhase();s.xp=-999;
+ s.enemies=[];const monster=game.spawn(undefined,'slime');
+ monster.x=s.x+500;monster.y=s.y+500;monster.speed=0;s.enemies=[monster];
+ s.phaseT=s.phaseLength-.01;game.update(.035);
+ assert.equal(s.ending,true);assert.ok(s.sealLeft>24);
+ assert.equal(s.nextSpawn,Infinity);assert.match(el('phase').textContent,/정화/);
+ assert.ok(!el('sealBar').classList.contains('hidden'));
+ let n=0;
+ while(game.getState()==='play'&&n++<1000){game.update(.035);}
+ assert.equal(game.getState(),'end');assert.equal(s.sealCleared,1);
+ assert.equal(s.sealLeft,0);assert.equal(s.enemies.length,0);
+});
+
+test('correct divisions speed up sealing but illegal hits cannot',()=>{
+ const {game}=makeBrowser();game.start();
+ const s=game.getScene();s.phase=5;game.enterPhase();s.ending=true;
+ s.sealLeft=25;s.sealBonus=0;
+ const target=game.spawn(undefined,'slime');s.enemies=[target];
+ const n=target.n;
+ const valid=s.bag.findIndex(b=>b.value%n===0);
+ assert.ok(valid>=0);
+ game.choose(valid);
+ assert.equal(game.strike(target),true);
+ assert.ok(s.sealLeft<25&&s.sealBonus>0);
+ assert.ok(s.sealBonus<=10);
+ s.phase=4;game.enterPhase();s.ending=true;s.sealLeft=25;s.sealBonus=0;
+ const stone=game.spawn(48,'stone');s.enemies=[stone];stone.cd=0;
+ s.factor=3;
+ assert.equal(game.strike(stone),false);
+ assert.equal(s.sealLeft,25);
+});
+
+test('sealing shockwaves buy breathing room without changing monster numbers',()=>{
+ const {combat:AI}=makeBrowser();
+ const scene={x:0,y:0,maxHp:100,hp:50,enemies:[],burst:0};
+ const e=AI.decorate({x:50,y:0,n:48,original:48,stun:0,dead:false},'stone');
+ scene.enemies=[e];
+ const seal=makeBrowser().context.window.RuneForestBalance;
+ seal.beginSeal(scene);
+ assert.equal(scene.hp,68);assert.equal(scene.sealLeft,25);
+ seal.stepSeal(scene,5.05);
+ assert.equal(scene.sealPulses,1);
+ assert.ok(e.stun>=1.25);
+ assert.equal(e.n,48,'visual protection cannot bypass mathematics');
+ seal.stepSeal(scene,7.05);
+ assert.equal(scene.sealPulses,2);
+ seal.stepSeal(scene,7.05);
+ assert.equal(scene.sealPulses,3);
+ assert.equal(scene.enemies.length,1);
+});
+
+test('combo is capped at level 20 with one-time milestone rewards',()=>{
+ const {combat:AI}=makeBrowser();
+ const scene={x:0,y:0,combo:0,comboT:0,bestCombo:0,comboHaste:0,
+  chainShots:0,burst:0,enemies:[]};
+ const tags=[];
+ for(let i=0;i<45;i++)AI.streak(scene,{fx:(x,y,label)=>tags.push(label)});
+ assert.equal(scene.combo,20);assert.equal(scene.bestCombo,20);
+ assert.equal(tags.filter(v=>v.startsWith('20연속')).length,1);
+ assert.equal(scene.chainShots,2);
+ assert.equal(scene.comboT,4.8);
+});
+
+test('new encounter rates slow the opening and limit later crowding',()=>{
+ const {context}=makeBrowser();
+ const p=context.window.RuneForestBalance;
+ assert.ok(p.spawnDelay(1,true)>p.spawnDelay(5,true));
+ assert.ok(p.spawnDelay(1,false)>p.spawnDelay(5,false));
+ assert.ok(p.enemyCap(1,false)<p.enemyCap(5,false));
+ assert.equal(p.duration('quick')*6+25,295);
+ assert.equal(p.duration('long')*6+25,475);
+});
