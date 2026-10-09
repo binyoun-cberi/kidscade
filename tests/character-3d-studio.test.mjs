@@ -975,3 +975,12 @@ test('v5.9 lower forearm recovery reports sleeve surface coverage by vertical ba
   assert.match(pack,/vertices:verts\.length\/3,triangles,minY,maxY,verticalBands/);
   assert.match(audit,/CHIBI_ARM_COVERAGE/);
 });
+
+test('v5.9 Blender numbered forearm bones contribute to lower sleeve surface',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  const visual=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(pack,/sideVariant=new RegExp\(side\+'\[0-9\]\*\$'\)/);
+  assert.match(pack,/sideVariant\.test\(item\.name\)/);
+  assert.match(visual,/Numbered Blender forearm bone missing/);
+  assert.match(visual,/Lower-arm surface still missing/);
+});
