@@ -496,6 +496,226 @@
       "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
       "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
       "revision": "v5.2"
+    },
+    "chibi_shoe_sneakers": {
+      "label": "운동화",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "shoes",
+      "slot": "shoes",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_shoe_hightop": {
+      "label": "하이탑",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "shoes",
+      "slot": "shoes",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_shoe_loafers": {
+      "label": "로퍼",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "shoes",
+      "slot": "shoes",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_shoe_boots": {
+      "label": "발목 부츠",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "shoes",
+      "slot": "shoes",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_shoe_sandals": {
+      "label": "샌들",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "shoes",
+      "slot": "shoes",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_shoe_slippers": {
+      "label": "슬리퍼",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "shoes",
+      "slot": "shoes",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_hat_baseball": {
+      "label": "야구모자",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "accessory",
+      "slot": "hat",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_hat_bucket": {
+      "label": "버킷햇",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "accessory",
+      "slot": "hat",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_hat_beanie": {
+      "label": "비니",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "accessory",
+      "slot": "hat",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_hat_beret": {
+      "label": "베레모",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "accessory",
+      "slot": "hat",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_hat_straw": {
+      "label": "밀짚모자",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "accessory",
+      "slot": "hat",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_face_round": {
+      "label": "둥근 안경",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "accessory",
+      "slot": "face",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_face_square": {
+      "label": "사각 안경",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "accessory",
+      "slot": "face",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_face_sunglasses": {
+      "label": "선글라스",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "accessory",
+      "slot": "face",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_face_goggles": {
+      "label": "고글",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "accessory",
+      "slot": "face",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_face_mask": {
+      "label": "마스크",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "accessory",
+      "slot": "face",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_bag_school": {
+      "label": "책가방",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "accessory",
+      "slot": "bag",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_bag_crossbody": {
+      "label": "크로스백",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "accessory",
+      "slot": "bag",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_bag_mini": {
+      "label": "미니 백팩",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "accessory",
+      "slot": "bag",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_gear_headphones": {
+      "label": "헤드폰",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "accessory",
+      "slot": "hat",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_gear_watch": {
+      "label": "손목시계",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "accessory",
+      "slot": "wrist",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "chibi_gear_scarf": {
+      "label": "목도리",
+      "type": "procedural-accessory",
+      "fit": "shared",
+      "category": "accessory",
+      "slot": "neck",
+      "revision": "v5.3",
+      "rigging": "original Chibi 78 bone skeleton via skinned geometry",
+      "geometryPolicy": "unique 3D volume, profile and detail meshes"
     }
   },
   "wardrobeLibrary": {
@@ -595,5 +815,55 @@
     "collisionPolicy": "Garment shell has additional torso/leg clearance. Sampled animated-pose penetration survey and screenshot review required for each style; do not treat numeric clearance estimates as proof of zero intersections. Close-surface samples are reported as possible collision areas, not automatically declared fixed.",
     "exportPolicy": "Visible outfit group plus shared source skeleton and original 11 named animations, male WALK/RUN variants if male body visible.",
     "trouserLegPolicy": "Five full-length trousers have two independent leg meshes. Each vertex receives the closest original fitted body surface vertex's four source bone indices and weights; keeps original pelvis/thigh/knee/shin blends."
+  },
+  "accessoryLibrary": {
+    "version": "chibi-v5.3",
+    "count": 22,
+    "fit": "shared",
+    "slots": {
+      "shoes": 6,
+      "hat": 6,
+      "face": 5,
+      "bag": 3,
+      "wrist": 1,
+      "neck": 1
+    },
+    "categories": {
+      "shoes": [
+        "chibi_shoe_sneakers",
+        "chibi_shoe_hightop",
+        "chibi_shoe_loafers",
+        "chibi_shoe_boots",
+        "chibi_shoe_sandals",
+        "chibi_shoe_slippers"
+      ],
+      "accessory": [
+        "chibi_hat_baseball",
+        "chibi_hat_bucket",
+        "chibi_hat_beanie",
+        "chibi_hat_beret",
+        "chibi_hat_straw",
+        "chibi_face_round",
+        "chibi_face_square",
+        "chibi_face_sunglasses",
+        "chibi_face_goggles",
+        "chibi_face_mask",
+        "chibi_bag_school",
+        "chibi_bag_crossbody",
+        "chibi_bag_mini",
+        "chibi_gear_headphones",
+        "chibi_gear_watch",
+        "chibi_gear_scarf"
+      ]
+    },
+    "geometryPolicy": "procedural 3D geometry with distinct dimensions, topology and volumetric details; originals are not mere color swaps",
+    "rigPolicy": "original 78 bone Chibi skeleton, skinned attachment parts weighted rigidly to head/spine or by closest bind-pose source vertex for shoes/watch",
+    "thumbnailPolicy": "112x112 per-item real WebGL render target with cached preview, lazily drawn in accessory and shoes tabs",
+    "slotPolicy": "one equipped per slot (shoes, hat/headphones, face, bag, wrist, neck), other outfit/hairstyle selections unaffected",
+    "verification": "Chrome browser full scene render and GLB exported binary roundtrip tests",
+    "fitRevision": "v5.3.1-collision-fit",
+    "collisionPolicy": "Slot exclusivity across legacy and v5.3 shoes/headgear/face/bags; fit offsets depend on body variant and bulky upper garment; hats use reversible crown-compressed copy of active hair mesh; source GLB is never modified.",
+    "fitOffsets": "Bounded [x,y,z,scale] for male/female on six slots, plus selected style and hoodie/bomber/cardigan clearance; idempotent on each equipment change.",
+    "exportPolicy": "Equipment geometry, hat-safe visible hair, and 78-bone skinned attachments are included in binary GLB. Restore old hair geometry on headwear removal."
   }
 }

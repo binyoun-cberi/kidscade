@@ -108,10 +108,11 @@ const errors=[];
     const status=await evalPage(`(()=>({
       ready:!!window.__kc3dAudit?.ready,
       status:document.getElementById('chibiAssetStatus')?.textContent||'',
+      assetError:document.getElementById('assetMissing')?.textContent||'',
       gate:document.getElementById('gateText')?.textContent||''
     }))()`);
     ready=status.ready;
-    detail=status.status+' / '+status.gate;
+    detail=status.status+' / '+status.assetError+' / '+status.gate;
     if(ready)break;
     if(/로드 실패|생성에 실패|열 수 없|찾지 못|WebGL/.test(detail))break;
     await sleep(100);
@@ -315,6 +316,127 @@ const errors=[];
     exportedGlbs:report.outfitPack.roundtrip.length,nearSamples:nearCount,
     testedSamples:testedCount,nearRatio:Number((nearCount/Math.max(testedCount,1)).toFixed(4)),
     caveat:'proximity is not proof of zero intersection'}));
+
+
+  // Chibi v5.3 — test actual 3D accessories, not just UI labels.
+  const accessoryManifest=JSON.parse(fs.readFileSync(path.join(ROOT,'chibi/asset-manifest.json'),'utf8')).accessoryLibrary;
+  assert.equal(accessoryManifest.count,22);
+  const accessories=await evalPage('window.__kc3dAudit.accessoryCatalog()');
+  assert.equal(accessories.length,22,'Missing Chibi v5.3 accessory entries');
+  assert.equal(new Set(accessories.map(x=>x.fingerprint)).size,22,'Accessories share duplicate geometry');
+  report.accessoryPack={styles:[],roundtrip:[],thumbnailReady:{}};
+  await setFit('male');
+  const chooseAccessory=(category,name)=>evalPage("(()=>{"+
+    "document.querySelector('[data-wardrobe-category="+JSON.stringify(category)+"]').click();"+
+    "const input=document.querySelector('[data-chibi-part="+JSON.stringify(name)+"]');"+
+    "if(!input)return {missing:true};"+
+    "input.checked=true;input.dispatchEvent(new Event('change',{bubbles:true}));"+
+    "const catalog=window.__kc3dAudit.accessoryCatalog();"+
+    "return {checked:input.checked,name:input.dataset.chibiPart,"+
+    "active:catalog.filter(x=>x.visible).map(x=>({name:x.id,slot:x.slot}))};"+
+    "})()");
+  for(const item of accessories){
+    assert.ok(item.meshCount>=1&&item.vertices>60,'Accessory geometry absent: '+item.id);
+    assert.ok(item.skins.every(skin=>skin.bones===78),'Accessory rig mismatch: '+item.id);
+    const selected=await chooseAccessory(item.category,item.id);
+    assert.equal(selected.name,item.id,'Accessory picker missing '+item.id);
+    assert.ok(selected.checked,'Accessory checkbox not selected '+item.id);
+    assert.deepEqual(selected.active.filter(x=>x.slot===item.slot).map(x=>x.name),[item.id],
+      'Accessory slot overlap: '+item.id);
+    const shot=await sample('WALK','threeQuarter',.25,'v53-'+item.id);
+    assert.ok(shot.selectedParts.includes(item.id),'Accessory not in rendered pose: '+item.id);
+    report.accessoryPack.styles.push({id:item.id,slot:item.slot,skins:item.skins.length,
+      vertices:item.vertices,fingerprint:item.fingerprint});
+  }
+
+  // Chibi v5.3.1: ensure touching shoes/hat/bag does not stack old geometry,
+  // and that crown reduction is reversible (original hair remains intact).
+  report.accessoryPack.fitAndCollision={};
+  await setFit('male');
+  await chooseAccessory('accessory','chibi_hat_baseball');
+  const withCap=await evalPage('window.__kc3dAudit.equipmentAudit()');
+  assert.ok(withCap.hair.length===1&&withCap.hair[0].hatSafe,
+    'Cap did not activate reversible HAT-SAFE hair geometry');
+  assert.ok(Object.values(withCap.visibleSlots).every(names=>names.length<=1),
+    'Slots overlap after wearing cap');
+  await sample('WALK','side',.5,'v53-fit-hat-safe');
+  await chooseAccessory('accessory','chibi_gear_headphones');
+  const withHeadphones=await evalPage('window.__kc3dAudit.equipmentAudit()');
+  assert.ok(!withHeadphones.hair[0].hatSafe,
+    'HAT-SAFE geometry remained after removing hat for headphones');
+  assert.deepEqual(withHeadphones.visibleSlots.hat,['chibi_gear_headphones']);
+  await chooseAccessory('shoes','chibi_shoe_boots');
+  const bootFit=await evalPage('window.__kc3dAudit.equipmentAudit()');
+  assert.deepEqual(bootFit.visibleSlots.shoes,['chibi_shoe_boots'],
+    'Legacy shoes show through selected boots');
+  await selectGarment('top','chibi_male_bomber');
+  await chooseAccessory('accessory','chibi_bag_school');
+  const bomberFit=await evalPage('window.__kc3dAudit.equipmentAudit()');
+  const bomberBag=bomberFit.accessories.find(x=>x.id==='chibi_bag_school');
+  assert.ok(bomberBag&&bomberBag.topName==='chibi_male_bomber',
+    'Backpack did not adjust to bulky jacket');
+  await selectGarment('top','kidscade_male_tshirt');
+  const shirtFit=await evalPage('window.__kc3dAudit.equipmentAudit()');
+  const shirtBag=shirtFit.accessories.find(x=>x.id==='chibi_bag_school');
+  assert.ok(shirtBag&&bomberBag.offset[2]<shirtBag.offset[2],
+    'Backpack did not release jacket clearance');
+  await setFit('female');
+  await chooseAccessory('accessory','chibi_bag_school');
+  const femaleFit=await evalPage('window.__kc3dAudit.equipmentAudit()');
+  assert.ok(femaleFit.hair.length===1&&femaleFit.hair[0].name==='hairone',
+    'Female body-fit default lost its base hairstyle');
+  const femaleBag=femaleFit.accessories.find(x=>x.id==='chibi_bag_school');
+  assert.ok(femaleBag&&femaleBag.scale!==bomberBag.scale,
+    'Female body has no separate accessory fit');
+  assert.ok(Object.values(femaleFit.visibleSlots).every(names=>names.length<=1),
+    'Female body has clashing legacy/accessory slots');
+  report.accessoryPack.fitAndCollision={
+    maleWithHat:withCap.hair,maleWithHeadphones:withHeadphones.hair,
+    boots:bootFit.visibleSlots.shoes,
+    jacketBag:bomberBag.offset,shirtBag:shirtBag.offset,
+    femaleBag:femaleBag.offset
+  };
+  await setFit('male');
+
+  for(const [fit,accessoryIds] of [
+    ['male',['chibi_shoe_hightop','chibi_hat_baseball','chibi_face_round','chibi_bag_school','chibi_gear_watch','chibi_gear_scarf']],
+    ['female',['chibi_shoe_boots','chibi_hat_beret','chibi_face_sunglasses','chibi_bag_mini','chibi_gear_watch','chibi_gear_scarf']]
+  ]){
+    await setFit(fit);
+    for(const id of accessoryIds){
+      const item=accessories.find(x=>x.id===id);
+      await chooseAccessory(item.category,id);
+    }
+    for(const clip of ['WALK','RUN'])await sample(clip,'side',.25,'v53-equipped-'+fit);
+    const glb=await evalPage('window.__kc3dAudit.roundtripExport()');
+    assert.equal(glb.clips.length,11,'v5.3 GLB lost animation clips: '+fit);
+    for(const id of accessoryIds){
+      assert.ok(glb.partNames.includes(id),'GLB selection missing '+id);
+      assert.ok(glb.skins.some(x=>x.name===id+'_shell'&&x.bones===78),
+        'GLB missing rigged accessory shell: '+id);
+    }
+    report.accessoryPack.roundtrip.push({fit,bytes:glb.bytes,accessoryIds,skins:glb.skins.length,clips:glb.clips.length});
+  }
+  await evalPage("document.querySelector('[data-wardrobe-category=\"accessory\"]').click()");
+  await sleep(1000);
+  const previews=await evalPage('window.__kc3dAudit.accessoryThumbStatus()');
+  assert.ok(previews.tiles.length>=16,'Accessory thumb picker not rendered');
+  assert.ok(previews.tiles.filter(x=>x.hasCache).length>=16,'Accessory thumbnails did not render');
+  // Hash the whole image rather than comparing one center pixel, which can
+  // be the same pale background across otherwise distinct 3D assets.
+  const thumbExpr="(()=>{const canvases=[...document.querySelectorAll('[data-part-thumb]')];return canvases.map(c=>{const pixels=c.getContext('2d').getImageData(0,0,112,112).data;let hash=2166136261,contrasting=0;for(let i=0;i<pixels.length;i+=16){hash=Math.imul(hash^pixels[i],16777619);hash=Math.imul(hash^pixels[i+1],16777619);hash=Math.imul(hash^pixels[i+2],16777619);if(pixels[i]<160||pixels[i+1]<160||pixels[i+2]<160)contrasting++}return {name:c.dataset.partThumb,hash:hash>>>0,contrasting,png:c.toDataURL('image/png')}})})()";
+  const thumbValues=await evalPage(thumbExpr);
+  for(const thumb of thumbValues){
+    fs.writeFileSync(path.join(OUT,'v53-thumb-'+thumb.name+'.png'),
+      Buffer.from(thumb.png.split(',')[1],'base64'));
+  }
+  assert.ok(new Set(thumbValues.map(x=>x.hash)).size>=8,
+    '3D preview tile whole-image hashes do not vary between different assets');
+  assert.ok(thumbValues.filter(x=>x.contrasting>15).length>=8,
+    '3D thumbnails appear empty, not just uniform background');
+  report.accessoryPack.thumbnailReady={count:previews.tiles.length,
+    cached:previews.tiles.filter(x=>x.hasCache).length,
+    wholeImageHashes:thumbValues.map(({name,hash,contrasting})=>({name,hash,contrasting}))};
 
   // Collect joint trajectories as evidence, but do not claim automatic
   // foot-ground/contact correctness based on bone-pivot height alone.
