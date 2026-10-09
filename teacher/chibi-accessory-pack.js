@@ -112,7 +112,7 @@ export function applyAccessoryFit({getNode,fit='male',topName='',headwearName=''
           // crown-radius below its top; aligning brim with hair top is why
           // the former hat floated like a plate above the character.
           const target=style.slot==='hat'
-            ?referenceBox.max.y-Math.min(hairHeight*.32,width*.37)
+            ?referenceBox.max.y-Math.min(hairHeight*.48,width*.63)
             :referenceBox.min.y;
           const current=accessoryBox.min.y;
           const worldDelta=THREE.MathUtils.clamp(target-current,
