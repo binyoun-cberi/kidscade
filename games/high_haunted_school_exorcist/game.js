@@ -440,7 +440,7 @@ createRoom();
 const LOCKER_SPOTS=[
   {x:-5.7,z:-7.67,front:-1,yaw:0},
   {x:21.5,z:-7.67,front:-1,yaw:0},
-  {x:-11.65,z:7.67,front:1,yaw:Math.PI},
+  {x:-5.7,z:7.67,front:1,yaw:Math.PI},
   {x:12.45,z:7.67,front:1,yaw:Math.PI}
 ];
 const lockers=[];
