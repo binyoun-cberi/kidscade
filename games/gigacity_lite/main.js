@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { createPlayerCraft } from './craft.js';
 import { safeMode, cameraPose } from './flight-view.mjs';
-import { makeCollisionWorld, moveWithCollisions, guideAlongRoad, trafficPosition, intersectsWorld } from './flight-physics.mjs';
+import { makeCollisionWorld, moveWithCollisions, guideAlongRoad, trafficPosition, intersectsWorld, safeChaseCamera } from './flight-physics.mjs';
 import { CHUNK_SIZE, LOT_SIZE, ROAD_WIDTH, seedNumber, randomAt, createChunkData, chunkOf } from './city-core.mjs';
 
 const $ = (id) => document.getElementById(id);
@@ -364,7 +364,10 @@ function setViewMode(nextMode) {
 }
 function updateCamera() {
   const pose = cameraPose(viewMode, pilotPosition, yaw, pitch, lookYaw, lookPitch);
-  camera.position.set(pose.position.x, pose.position.y, pose.position.z);
+  const position = pose.target
+    ? safeChaseCamera(pose.position, pilotPosition, collisionWorld)
+    : pose.position;
+  camera.position.set(position.x, position.y, position.z);
   if (pose.target) camera.lookAt(pose.target.x, pose.target.y, pose.target.z);
   else camera.rotation.set(pose.pitch, pose.yaw, 0, 'YXZ');
 }
