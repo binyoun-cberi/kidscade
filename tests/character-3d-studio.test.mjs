@@ -835,3 +835,32 @@ test('v5.6 independently switches male/female presets and divides the visible eq
   assert.match(js,/if\(fitIntegrityIssues\(\)\.length\)/);
   assert.match(js,/partLibraryVersion:'chibi-v5\.6-strict-fit'/);
 });
+
+
+test('v5.6 asset manifest owns every fitting part in exactly one body scope',()=>{
+  const m=JSON.parse(read('chibi/asset-manifest.json'));
+  const f=m.wardrobeLibrary.fitIsolation;
+  assert.equal(f.version,'v5.6-hard-fit');
+  assert.equal(f.mode,'deny-by-default');
+  assert.equal(f.blockInvalidGlbExport,true);
+  assert.deepEqual(Object.keys(f.parts),['male','female','shared']);
+  const parts=[...f.parts.male,...f.parts.female,...f.parts.shared];
+  assert.equal(new Set(parts).size,parts.length);
+  for(const item of ['bottes','bottesgreen','armorshoe','ninjassuitshoe','hat','bag','armorhelmet'])
+    assert.ok(f.parts.female.includes(item),item+' legacy female-fit resource leaked into shared');
+  for(const name of m.wardrobeLibrary.hairStyles.male)
+    assert.ok(f.parts.male.includes(name));
+  for(const name of m.wardrobeLibrary.hairStyles.female)
+    assert.ok(f.parts.female.includes(name));
+  assert.ok(f.parts.shared.includes('chibi_hat_baseball'));
+  assert.ok(!f.parts.shared.includes('skirt'));
+});
+
+test('v5.6 Chrome audit covers strict fitted tab switching without wrong-fit equipment leaks',()=>{
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(audit,/report\.fitIsolation=\{cases:\[\],outfitSwaps:\[\]\}/);
+  assert.match(audit,/window\.__kc3dAudit\.bodyFitAudit\(\)/);
+  assert.match(audit,/assert\.deepEqual\(audit\.incompatible,\[\]/);
+  assert.match(audit,/Incompatible preset changed body without using fit switch/);
+  assert.match(audit,/fit-isolation-/);
+});
