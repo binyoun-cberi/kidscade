@@ -606,3 +606,93 @@ test('creature model credits are published for all five CC-BY sources',()=>{
   }
   assert.ok(md.includes('CC BY')&&page.includes('CC BY'));
 });
+
+
+test('new school hallway and locker GLBs are actually present and referenced',()=>{
+  const names=['school_hallway.glb','low_poly_old_locker.glb'];
+  for(const name of names){
+    const filename=path.join(root,'assets','more assets',name);
+    assert.ok(fs.existsSync(filename),'missing uploaded scene asset '+name);
+    const file=fs.openSync(filename,'r'),header=Buffer.alloc(12);
+    try{assert.equal(fs.readSync(file,header,0,12,0),12);}finally{fs.closeSync(file);}
+    assert.equal(header.toString('ascii',0,4),'glTF',name+' must be a binary glTF');
+    assert.equal(header.readUInt32LE(4),2,'GLB v2 expected');
+    assert.equal(header.readUInt32LE(8),fs.statSync(filename).size,'GLB length mismatch');
+  }
+  assert.match(js,/const SCHOOL_HALLWAY='\.\.\/\.\.\/assets\/more%20assets\/school_hallway\.glb'/);
+  assert.match(js,/const OLD_LOCKER='\.\.\/\.\.\/assets\/more%20assets\/low_poly_old_locker\.glb'/);
+  assert.match(js,/loadTemplate\(SCHOOL_HALLWAY\)/);
+  assert.match(js,/loadTemplate\(OLD_LOCKER\)/);
+  assert.match(js,/fitSceneryToBox\(template\.clone\(true\)/,'both meshes must be normalized');
+  assert.match(js,/catch\(err=>console\.warn\('복도 에셋/,'missing GLB must retain procedural school scenery');
+});
+
+test('all four lockers have walkable interaction fronts away from room entrances',()=>{
+  const first=js.indexOf('const LOCKER_SPOTS='),last=js.indexOf('const lockers=[]',first);
+  assert.ok(first>0&&last>first);
+  const spots=new Function(js.slice(first,last)+'return LOCKER_SPOTS;')();
+  assert.equal(spots.length,4);
+  const unique=new Set();
+  for(const spot of spots){
+    assert.ok(spot.x>-14&&spot.x<29,'lockers stay within the wing corridors');
+    assert.ok(Math.abs(spot.z)>7.4&&Math.abs(spot.z)<8.0,'lockers hug the courtyard wall');
+    assert.equal(spot.front,Math.sign(spot.z),'locker door should face towards the walking lane');
+    const frontZ=spot.z+spot.front*.97;
+    assert.ok(Math.abs(frontZ)>8.35&&Math.abs(frontZ)<9.1,'enter interaction stays in the hall');
+    assert.ok(![-10.5,-1.5,7.5,16.5,25.5].some(door=>Math.abs(spot.x-door)<1.7),
+      'do not block doors at room centers');
+    unique.add(spot.x+','+spot.z);
+  }
+  assert.equal(unique.size,4);
+  assert.match(js,/furniture\.push\(obstacle\)/,'lockers have collision shapes');
+  assert.match(js,/const obstacle=\{x:spot\.x,z:spot\.z,hx:\.49,hz:\.27\}/);
+  assert.match(html,/id="lockerView"/);
+  assert.match(html,/id="lockerWarning"/);
+  assert.match(html,/\.controls\{z-index:5\}/,'mobile exit button is above peeking mask');
+});
+
+test('locker hiding pauses movement and exposes a deterministic leave action',()=>{
+  const begin=js.indexOf('function nearestLocker(){'),end=js.indexOf('function showToast(',begin);
+  const state=js.slice(js.indexOf('let hidingLocker=null,'),js.indexOf('const encounter=',js.indexOf('let hidingLocker=null,')));
+  assert.ok(begin>0&&end>begin&&state.includes('lockerDanger'));
+  const locker={id:0,x:21.5,z:-7.67,yaw:0,interact:{x:21.5,z:-8.64}};
+  const player={x:21.5,z:-8.64},maiden={x:25,z:-15},keys=new Set(['w']);
+  const css=new Set(),view={classList:{add(k){css.add(k)},remove(k){css.delete(k)}}};
+  const bodySet=new Set(),document={body:{classList:{add(x){bodySet.add(x)},remove(x){bodySet.delete(x)}}}};
+  const ui={lockerView:view,lockerWarning:{textContent:''},knob:{style:{transform:''}}};
+  const joy={x:0,y:0},encounter={wolf:{x:-1,z:15,grace:0}};
+  let flashOn=true,viewYaw=0,viewPitch=0,stage=2;
+  const template=new Function('lockers','player','maiden','keys','document','ui','joy','encounter',
+    'showToast','dist','takeAnomalyHit','started','paused','ended',
+    state+'let flashOn=true,viewYaw=0,viewPitch=0,stage=2;'+js.slice(begin,end)+
+    'return {nearestLocker,enterLocker,leaveLocker,updateLockerHiding,'+
+    'get:()=>({hidingLocker,lockerTime,lockerDanger,flashOn,viewYaw,viewPitch}),'+
+    'setStage:n=>{stage=n;},setMaiden:(x,z)=>{maiden.x=x;maiden.z=z;}};')(
+      [locker],player,maiden,keys,document,ui,joy,encounter,()=>{},
+      (a,b)=>Math.hypot(a.x-b.x,a.z-b.z),()=>{},true,false,false);
+  assert.equal(template.nearestLocker().id,0);
+  assert.equal(template.enterLocker(0),true);
+  assert.equal(template.get().flashOn,false,'flashlight turns off while hiding');
+  assert.equal(template.get().hidingLocker.id,0);
+  assert.ok(css.has('hidden')===false,'peeking slot must appear');
+  assert.ok(bodySet.has('in-locker'));
+  assert.equal(keys.size,0,'movement key latch must clear on hide');
+  template.updateLockerHiding(2);
+  assert.equal(template.get().hidingLocker.id,0,'faraway ghost cannot automatically reveal player');
+  assert.equal(template.leaveLocker(),true);
+  assert.equal(template.get().flashOn,true,'flashlight restores on exit');
+  assert.ok(css.has('hidden')&& !bodySet.has('in-locker'));
+  assert.equal(template.leaveLocker(),false,'double exit is harmless');
+  assert.match(js,/if\(hidingLocker\)return\{type:'leaveLocker'/);
+  assert.match(js,/if\(item\.type==='hideLocker'\)\{enterLocker\(item\.i\)/);
+  assert.match(js,/if\(typeof hidingLocker!=='undefined'&&hidingLocker\)\{/,'WASD is locked');
+});
+
+test('staying hidden beside a nearby ghost eventually gets discovered',()=>{
+  assert.match(js,/lockerDanger>=3\.2/);
+  assert.match(js,/const goal=lockerTime<2\.5\?\(lockerLastSeen\|\|hidingLocker\.interact\):SCHOOL\.maidenSpawn/);
+  assert.match(js,/const goal=lockerTime<2\.4\?\(lockerLastSeen\|\|hidingLocker\.interact\):\{x:-1\.5,z:16\.8\}/);
+  assert.match(js,/const exposed=typeof hidingLocker==='undefined'\|\|!hidingLocker/);
+  assert.match(js,/const away=exposed&&/,'hide cannot complete egg gaze trial for free');
+  assert.match(js,/const staring=exposed&&/,'hide cannot also punish accidental glance');
+});
