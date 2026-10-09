@@ -696,7 +696,7 @@ test('v5.3 catalog contains 22 separate real 3D accessory styles and complete at
   assert.match(pack,/new THREE\.TorusGeometry/);
   assert.match(pack,/new THREE\.CylinderGeometry/);
   assert.match(pack,/new THREE\.BoxGeometry/);
-  assert.match(pack,/mesh=makeRigidSkinnedPiece\(template,geometry,bone,material,style\.id\+'_'\+id\)/);
+  assert.match(pack,/const mesh=cloneSkinnedMeshWithGeometry\(template,geometry,material,style\.id\+'_\'\+id\)/);
   assert.match(pack,/nearestWeight\(geometry,region==='shoe'\)/);
   assert.match(pack,/group\.visible=false/);
 });
@@ -705,7 +705,7 @@ test('v5.3 3D preview picker uses real render-target pixels, no flat/stock place
   const js=read('teacher/character-3d-studio.js');
   const html=read('teacher/character-3d-studio.html');
   assert.match(js,/from '\.\/chibi-accessory-pack\.js'/);
-  assert.match(js,/createAccessoryPack\(\{getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial,makeRigidSkinnedPiece\}\)/);
+  assert.match(js,/createAccessoryPack\(\{getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial\}\)/);
   assert.match(js,/for\(const style of ACCESSORY_STYLES\)PART_CATEGORY\[style\.id\]=style\.category/);
   assert.match(js,/const SHARED_FIT_PARTS=new Set\(/);
   assert.match(js,/function paintAccessoryThumbnail\(name,canvas\)/);
