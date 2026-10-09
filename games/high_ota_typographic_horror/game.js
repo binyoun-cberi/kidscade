@@ -316,7 +316,7 @@ function look(dx,dy) {
 }
 function animate(now) {
   requestAnimationFrame(animate);
-  const dt=Math.min(.05,Math.max(0,(now-lastFrame)/1000||0));lastFrame=now;
+  const dt=Math.min(.1,Math.max(0,(now-lastFrame)/1000||0));lastFrame=now;
   if(started && !failed && document.visibilityState!=='hidden' && overlays.fix.classList.contains('closed'))update(dt);
   else setCamera();
   renderer.render(scene,camera);
