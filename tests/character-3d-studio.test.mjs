@@ -711,6 +711,8 @@ test('v5.3 3D preview picker uses real render-target pixels, no flat/stock place
   assert.match(js,/function paintAccessoryThumbnail\(name,canvas\)/);
   assert.match(js,/new THREE\.WebGLRenderTarget\(112,112/);
   assert.match(js,/renderer\.readRenderTargetPixels\(thumbnailTarget,0,0,112,112,pixels\)/);
+  assert.match(js,/const focusWorld=sourceScene\.localToWorld\(new THREE\.Vector3\(x,y,z\)\)/);
+  assert.match(js,/const radius=dist\*Math\.max\(Math\.abs\(sourceScale\.x\),\.01\)/);
   assert.match(js,/new ImageData\(flipped,112,112\)/);
   assert.match(js,/thumbnailCache\.set\(name/);
   assert.match(js,/function queueAccessoryThumbnails\(\)/);
