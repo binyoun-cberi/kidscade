@@ -2,6 +2,33 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "high_midnight_diner",
+      "addedAt": "2026-10-10T08:40:00+09:00",
+      "title": "수상한 심야식당",
+      "href": "games/high_midnight_diner/index.html",
+      "category": "trivia",
+      "age": "high",
+      "ages": [
+        "high"
+      ],
+      "icon": "🍽️",
+      "description": "수상한 요리사가 내놓은 세 접시에서 금지 재료를 관찰하고 추론해 안전한 부분을 먹으세요. 조사와 질문은 의심을 높이고, 거절하면 허기가 깊어지는 심리 공포 추리 게임.",
+      "scoreKey": "midnightDinerBestV1",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 8,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
+    },
+    {
       "id": "openmon_expedition",
       "addedAt": "2026-10-10T00:16:00+09:00",
       "title": "키즈몬",
