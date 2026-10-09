@@ -953,7 +953,7 @@ test('v5.9 source-surface sleeves preserve original arm skin weights and pelvis 
 test('v5.9 body-normal sleeve offset and localized crotch yoke coverage',()=>{
   const pack=read('teacher/chibi-outfit-pack.js');
   assert.match(pack,/const normals=original\.getAttribute\('normal'\)/);
-  assert.match(pack,/const allowance=\(puff\?\.042:\.030\)\*coverage/);
+  assert.match(pack,/const allowance=\(puff\?\.038:\.026\)\*coverage/);
   assert.match(pack,/z\+normals\.getZ\(i\)\*allowance/);
   assert.match(pack,/const frontCenter=z>0\?/);
   assert.match(pack,/\.035\*frontCenter/);
