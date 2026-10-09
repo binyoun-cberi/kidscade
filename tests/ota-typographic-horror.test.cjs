@@ -36,7 +36,7 @@ test('chase has a losing path, but locker prevents capture', () => {
   assert.equal(s.hidden, true);
   assert.equal(R.leaveLocker(s), false);
   for (let i=0;i<95;i++) R.stepEnemy(s,.05,R.LOCKERS[0]);
-  assert.equal(s.stage, 'door');
+  assert.equal(s.stage, 'distortion');
   assert.equal(s.monster.active, false);
   assert.equal(R.leaveLocker(s), true);
   assert.equal(s.hidden, false);
@@ -48,7 +48,13 @@ test('wrong words cannot open the door, but correct word changes collision and a
   R.triggerMonster(s, { x:0,z:-16 });
   R.enterLocker(s, R.LOCKERS[0]);
   for(let i=0;i<100;i++)R.stepEnemy(s,.05,R.LOCKERS[0]);
-  R.leaveLocker(s);
+  assert.equal(R.leaveLocker(s),true);
+  assert.equal(R.canMove(s,0,-25.85),false);
+  assert.equal(R.repairCorridor(s,'문',{x:2.9,z:-10}),false);
+  assert.equal(R.repairCorridor(s,'통로',R.CORRIDOR),true);
+  assert.equal(s.stage,'door');
+  assert.equal(s.corridorFixed,true);
+  assert.equal(R.canMove(s,0,-25.85),true);
   assert.equal(R.canMove(s,0,-30.15),false);
   assert.equal(R.repairDoor(s,'문',{x:2,z:-20}),false);
   assert.equal(R.repairDoor(s,'벽',R.DOOR),false);
@@ -72,9 +78,44 @@ test('interaction prompts match the reachable objective', () => {
   for(let i=0;i<100;i++)R.stepEnemy(s,.05,R.LOCKERS[0]);
   assert.equal(R.getInteraction(s,R.LOCKERS[0]).type,'leave');
   R.leaveLocker(s);
+  assert.equal(R.getInteraction(s,R.CORRIDOR).type,'corridor');
+  assert.equal(R.getInteraction(s,R.DOOR),null);
+  R.repairCorridor(s,'통로',R.CORRIDOR);
   assert.equal(R.getInteraction(s,R.DOOR).type,'repair');
 });
 
+test('shifting wall cannot be bypassed at the edges and errors never advance the state',()=>{
+  const s=R.initialState();
+  R.inspectConsole(s,R.CONSOLE);
+  R.triggerMonster(s,{x:0,z:-16});
+  R.enterLocker(s,R.LOCKERS[0]);
+  for(let i=0;i<100;i++)R.stepEnemy(s,.05,R.LOCKERS[0]);
+  R.leaveLocker(s);
+  for(const x of [-2.8,-1,0,1,2.8])assert.equal(R.canMove(s,x,-25.85),false);
+  assert.equal(R.repairCorridor(s,'벽',R.CORRIDOR),false);
+  assert.equal(s.stage,'distortion');
+  assert.equal(s.mistakes,1);
+  assert.equal(R.repairCorridor(s,'통로',R.CORRIDOR),true);
+  assert.equal(R.canMove(s,0,-25.85),true);
+  for(const x of [-2.8,2.8])assert.equal(R.canMove(s,x,-25.85),false);
+});
+test('the Echo hears sprinting but not walking or standing still',()=>{
+  const make=()=>{const s=R.initialState();s.stage='distortion';R.repairCorridor(s,'통로',R.CORRIDOR);return s;};
+  const walking=make();
+  for(let i=0;i<220;i++)R.stepEcho(walking,.05,{moving:true,running:false});
+  assert.equal(walking.stage,'door');
+  assert.equal(walking.echo.alert,0);
+  const caught=make();
+  for(let i=0;i<180&&caught.stage!=='lost';i++)R.stepEcho(caught,.05,{moving:true,running:true});
+  assert.equal(caught.stage,'lost');
+  assert.equal(caught.losses,1);
+  const stopped=make();
+  for(let i=0;i<35;i++)R.stepEcho(stopped,.05,{moving:true,running:true});
+  assert.ok(stopped.echo.alert>0,'sprinting raises alert');
+  for(let i=0;i<100;i++)R.stepEcho(stopped,.05,{moving:false,running:false});
+  assert.equal(stopped.echo.alert,0,'stopping clears alert');
+  assert.equal(stopped.stage,'door');
+});
 test('render code remains parseable, local-only and catalogued for older players', () => {
   const source=fs.readFileSync(path.join(dir,'game.js'),'utf8');
   new vm.Script(source.replace(/^import \* as THREE from 'three';/,''));
