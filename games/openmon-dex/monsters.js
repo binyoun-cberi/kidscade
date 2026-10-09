@@ -15,6 +15,7 @@
     tesla:["전기","테슬라는 교류 전력 기술의 발전에 중요한 공헌을 했어."],
     volta:["전지","볼타는 초기 전지를 개발한 과학자로, 전압의 단위 볼트에 이름이 남아 있어."],
     ohm:["저항","옴의 법칙은 전압, 전류, 저항의 관계를 V = IR로 나타내."],
+    neuron:["신경세포","뉴런은 신호를 받아 다른 신경세포나 근육으로 전달하는 신경계의 세포야."],
     ampere:["전류","암페어(A)는 전류의 크기를 나타내는 SI 단위야."],
     coulomb:["전하","쿨롱(C)은 전하량을 나타내는 단위야."],
     pythagoras:["직각삼각형","피타고라스 정리는 직각삼각형의 두 짧은 변의 제곱을 더하면 빗변의 제곱과 같다고 말해."],
@@ -124,8 +125,191 @@
       });
     });
   });
+  // Checked against the actual 64×64 drawings, not assigned by sequential name templates.
+  const VISUAL_FIXES={
+  "set1_r00_c01": {
+    "name": "관성쥐",
+    "topic": "inertia"
+  },
+  "set1_r00_c02": {
+    "name": "뉴턴수",
+    "topic": "newton"
+  },
+  "set1_r00_c05": {
+    "name": "탐사선",
+    "type": "water",
+    "topic": "buoyancy"
+  },
+  "set1_r01_c03": {
+    "name": "아보가갑"
+  },
+  "set1_r01_c04": {
+    "name": "아보가비틀"
+  },
+  "set1_r02_c04": {
+    "name": "클로라곤"
+  },
+  "set2_r00_c03": {
+    "name": "리프깃"
+  },
+  "set2_r01_c00": {
+    "name": "베르누치",
+    "topic": "bernoulli"
+  },
+  "set2_r01_c01": {
+    "name": "베르누샤크",
+    "topic": "bernoulli"
+  },
+  "set2_r01_c05": {
+    "name": "지층룡"
+  },
+  "set4_r00_c03": {
+    "name": "엔트로익"
+  },
+  "set4_r01_c03": {
+    "name": "자성괴",
+    "type": "earth",
+    "topic": "magnet"
+  },
+  "set4_r02_c01": {
+    "name": "자성검"
+  },
+  "set4_r02_c02": {
+    "name": "쿨롱핵",
+    "type": "electric"
+  },
+  "set4_r02_c03": {
+    "topic": "bernoulli"
+  },
+  "set5_r00_c02": {
+    "topic": "neuron"
+  },
+  "set5_r00_c03": {
+    "topic": "neuron"
+  },
+  "set5_r00_c04": {
+    "name": "갈릴펭"
+  },
+  "set5_r01_c02": {
+    "name": "프랙잠",
+    "type": "air"
+  },
+  "set5_r01_c04": {
+    "name": "켈빈털",
+    "topic": "kelvin"
+  },
+  "set5_r01_c05": {
+    "name": "켈빈발톱",
+    "topic": "kelvin"
+  },
+  "set5_r02_c04": {
+    "name": "켈빈맘"
+  },
+  "set5_r02_c05": {
+    "name": "빙하맘"
+  },
+  "set5_r03_c02": {
+    "name": "피타록"
+  },
+  "set5_r03_c03": {
+    "name": "피타순록"
+  },
+  "set5_r03_c04": {
+    "name": "빙점랑"
+  },
+  "set5_r03_c05": {
+    "name": "절대랑"
+  },
+  "set5_r04_c00": {
+    "name": "암페각"
+  },
+  "set5_r04_c01": {
+    "name": "암페갑"
+  },
+  "set5_r04_c03": {
+    "name": "카르노염",
+    "type": "fire",
+    "topic": "carnot"
+  },
+  "set5_r04_c04": {
+    "name": "켈빈구",
+    "type": "ice",
+    "topic": "kelvin"
+  },
+  "set5_r04_c05": {
+    "name": "프랙령",
+    "type": "leaf",
+    "topic": "fractal"
+  },
+  "set5_r05_c00": {
+    "name": "열역박",
+    "type": "fire",
+    "topic": "carnot"
+  },
+  "set5_r05_c01": {
+    "name": "열역익",
+    "type": "fire",
+    "topic": "carnot"
+  },
+  "set5_r05_c02": {
+    "name": "열역룡",
+    "type": "fire",
+    "topic": "carnot"
+  },
+  "set5_r05_c03": {
+    "name": "피보참새",
+    "type": "air",
+    "topic": "fibonacci"
+  },
+  "set5_r05_c04": {
+    "name": "피보깃",
+    "type": "air",
+    "topic": "fibonacci"
+  },
+  "set5_r05_c05": {
+    "name": "피보르크",
+    "type": "air",
+    "topic": "fibonacci"
+  }
+};
+  const NOTES={
+    set2:"원본 배포 설명은 9개 배틀 스프라이트지만, 저장소의 시트에는 실루엣이 다른 18칸이 있어요. 앞·뒷모습이라고 확정하지 않고 인접한 두 이미지를 관계 검토 후보로 표시합니다.",
+    wolf:"제작자가 Shibu를 늑대 모습으로 다시 해석한 시트입니다. 1:1 대응과 진화 조건은 검증 전이므로 게임의 독립 종족으로 세지 않습니다.",
+    set1:"Set 1의 배 이미지는 몬스터가 아닌 오브젝트입니다."
+  };
+  for(const s of SLOTS){
+    const fix=VISUAL_FIXES[s.id];
+    if(fix) Object.assign(s,fix);
+    s.topicName=LORE[s.topic][0];
+    s.fact=LORE[s.topic][1];
+    s.role=s.atlas==="wolf"?"alternate-concept":s.id==="set1_r00_c05"?"object":"monster";
+    s.reviewStatus=s.atlas==="set2"?"needs-pair-review":s.atlas==="wolf"?"needs-variant-mapping":s.role==="object"?"excluded":"provisional";
+    s.familyId=null; s.pairCandidate=null; s.alternateOfFamily=null;
+    if(s.atlas==="shibu"){s.familyId="shibu-original";}
+    else if(s.atlas==="wolf"){s.familyId="shibu-wolf-redesign";s.alternateOfFamily="shibu-original";}
+    else if(s.atlas==="set2"){
+      s.familyId="set2-r"+s.row+"-p"+Math.floor(s.col/2);
+      const peerCol=s.col%2===0?s.col+1:s.col-1;
+      s.pairCandidate="set2_r"+String(s.row).padStart(2,"0")+"_c"+String(peerCol).padStart(2,"0");
+    }else if(s.atlas==="set1"){
+      if(s.row===0&&s.col<=2)s.familyId="set1-rodent";
+      if(s.row===0&&s.col>=3&&s.col<=4)s.familyId="set1-insect";
+      if(s.row===1)s.familyId=s.col<=2?"set1-seed":"set1-beetle";
+      if(s.row>=2)s.familyId="set1-starter-"+s.row;
+    }else if(s.atlas==="set5"){
+      if(s.row<=3||s.row===4&&s.col<=1)s.familyId="set5-r"+s.row+"-p"+Math.floor(s.col/2);
+      if(s.row===5)s.familyId="set5-lastrow-"+(s.col<3?"fire":"air");
+    }
+    // The source pack explicitly documents Set 1 starter triplets and Shibu's 18-way branch.
+    // Similar-looking neighbors in other sheets are NOT automatically evolutions.
+  }
+  const SPRITES=SLOTS;
+  const MONSTERS=SPRITES.filter(s=>s.role==="monster");
+  const CONCEPTS=SPRITES.filter(s=>s.role==="alternate-concept");
+  const OBJECTS=SPRITES.filter(s=>s.role==="object");
+
   if(SLOTS.length!==118 || new Set(SLOTS.map(x=>x.id)).size!==118 || new Set(SLOTS.map(x=>x.name)).size!==118) {
     throw Error("Openmon dex integrity failure: expected 118 unique slot IDs and names.");
   }
-  global.OPENMON_DEX={version:"1.0.0-draft",licenseNotice:"Source art is separately licensed; science-inspired naming and statistics are Kidscade proposals.",atlas:ATLASES.map(({rows,...fields})=>fields),types:TYPES,lore:LORE,species:SLOTS};
+  global.OPENMON_DEX={version:"1.1.0-reviewed-draft",licenseNotice:"Source art is separately licensed; science-inspired naming and statistics are Kidscade proposals.",atlas:ATLASES.map(({rows,...fields})=>fields),types:TYPES,lore:LORE,notes:NOTES,sprites:SPRITES,species:MONSTERS,concepts:CONCEPTS,objects:OBJECTS};
 })(window);
