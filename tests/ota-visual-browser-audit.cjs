@@ -66,6 +66,7 @@ async function moveUntil(axis,target,stage,seconds=9) {
   const isX=axis==='x';let count=0;
   while(count++<Math.ceil(seconds*8)){
     const s=await snap();
+    if(s.stage==='won')return s;
     if(s.stage==='lost')throw Error('Monster caught the player while walking to '+axis+'='+target+' / '+JSON.stringify(s));
     const current=s.player[axis],remaining=target-current;
     if(Math.abs(remaining)<.40) return s;
@@ -125,7 +126,7 @@ async function moveUntil(axis,target,stage,seconds=9) {
   await interact();await ensureStage('anomaly','read management report');
   await screenshot('03-anomaly.png','desktop');
   await moveUntil('x',0,'anomaly');
-  await moveUntil('z',-15.45,'anomaly',15);
+  await moveUntil('z',-16.15,'anomaly',15);
   await ensureStage('chase','monster trigger');
   await screenshot('04-pursuit.png','desktop');
   // Stay ahead by sprinting and veer toward the right-hand hiding locker.
@@ -152,7 +153,7 @@ async function moveUntil(axis,target,stage,seconds=9) {
   await evalPage("document.querySelector('[data-word=\\\"문\\\"]').click()");
   await ensureStage('exit','door repaired');
   await screenshot('08-open-door.png','desktop');
-  await moveUntil('z',-35.5,'exit');
+  await moveUntil('z',-36.0,'exit');
   await ensureStage('won','final escape');
   await screenshot('09-victory.png','desktop');
 
