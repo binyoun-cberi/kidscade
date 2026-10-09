@@ -462,7 +462,7 @@ const errors=[];
         assert.equal(diagnostic.fit,fit,'Wrong body fit while testing hat');
         assert.ok(diagnostic.hairSafe,'HAT-SAFE is not active');
         assert.ok(diagnostic.crownOverlap>0,'Cap opening floats ABOVE the hairline: '+hatName+'/'+fit);
-        assert.ok(diagnostic.overlapRatio>.12,
+        assert.ok(diagnostic.overlapRatio>.20,
           'Cap is too high above current hairstyle: '+hatName+'/'+fit+'/'+clip);
         assert.ok(diagnostic.overlapRatio<.85,
           'Cap was forced down past the hairline: '+hatName+'/'+fit+'/'+clip);
