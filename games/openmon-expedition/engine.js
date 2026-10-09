@@ -40,7 +40,7 @@ function createNew(starter){
  return {version:1,pos:{...START},facing:"down",party:[makeCreature(starter,5)],box:[],active:0,
   items:{ball:7,potion:3},coins:120,flags:{shibuSeen:false,shibuCaught:false},
   collection:{[starter]:true},seen:{[starter]:true},steps:0,grassSteps:0,wins:0,catches:0,
-  encounters:0,log:["연구소에서 첫 몬스터를 받았어!"],createdAt:Date.now()};
+  encounters:0,log:["연구소에서 첫 키즈몬을 받았어!"],createdAt:Date.now()};
 }
 function validateSave(raw){
  if(!raw||raw.version!==1||!Array.isArray(raw.party)||!raw.party.length||!raw.pos)return null;
