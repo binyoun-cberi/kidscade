@@ -2305,6 +2305,7 @@ function installLocalVisualAudit(){
           }
           return {name,fit,category,available:!!shell?.isSkinnedMesh,
             visible:!!group?.visible,vertices:pos?.count||0,
+            meshSafety:group?.userData?.safetyReport||null,
             fingerprint:hash>>>0,
             extras:group?.isGroup?group.children.length-1:0,
             rigBones:shell?.skeleton?.bones.length||0};
