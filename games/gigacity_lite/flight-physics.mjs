@@ -90,7 +90,6 @@ export function guideAlongRoad(p, dt, speed = 34) {
 export function trafficPosition(index, elapsed, seed, centre) {
   const axis = index % 2;
   const row = Math.floor(index / 2) % 11 - 5;
-  const group = Math.floor(index / 22);
   const lane = Math.floor(index / 2) % 2 === 0 ? -2.65 : 2.65;
   const direction = Math.floor(index / 2) % 2 === 0 ? -1 : 1;
   const speed = 22 + ((index * 13 + (seed & 15)) % 27);
