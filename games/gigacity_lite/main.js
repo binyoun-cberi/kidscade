@@ -3,6 +3,8 @@ import { createPlayerCraft } from './craft.js';
 import { makePrimeChase, startPrimeChase, activeEnemies, selectedEnemy, selectEnemy,
   firePrime, tickPrimeChase, roundStats, ROUND_SECONDS, WAVE_NUMBERS } from './prime-chase.mjs';
 import { makePursuerScene } from './prime-chase-view.js';
+import { drawPrimeRadar } from './prime-radar.js';
+import { fighterSpec } from './prime-tactics.mjs';
 import { safeMode, cameraPose } from './flight-view.mjs';
 import { makeCollisionWorld, moveWithCollisions, guideAlongRoad, trafficPosition, intersectsWorld, safeChaseCamera } from './flight-physics.mjs';
 import { CHUNK_SIZE, LOT_SIZE, ROAD_WIDTH, seedNumber, randomAt, createChunkData, chunkOf } from './city-core.mjs';
@@ -46,6 +48,9 @@ let resultVisible = false;
 let endCinematic = -1;
 const enemyTotal = () => primeState.waves.flat().length;
 let audioContext = null;
+let engineAmbience = null;
+let radarElapsed = 0;
+let hitFlashSeconds = 0;
 playerCraft.loadExterior();
 let viewMode = 'chase';
 let lookYaw = 0, lookPitch = 0, flightSpeed = 0, steeringVisual = 0;
@@ -382,7 +387,19 @@ function updateCamera() {
     ? safeChaseCamera(pose.position, pilotPosition, collisionWorld)
     : pose.position;
   camera.position.set(position.x, position.y, position.z);
-  if (pose.target) camera.lookAt(pose.target.x, pose.target.y, pose.target.z);
+  if (pose.target) {
+    if (gameMode === 'chase' && viewMode === 'chase') {
+      const threat = pursuitScene.visuals.get(selectedEnemy(primeState)?.id);
+      if (threat?.root && threat.body.visible) {
+        // Subtle framing assist while the actual danger bearing stays on radar.
+        const dx = threat.root.position.x - pilotPosition.x;
+        const dz = threat.root.position.z - pilotPosition.z;
+        pose.target.x += clamp(dx * .17, -15, 15);
+        pose.target.z += clamp(dz * .17, -15, 15);
+      }
+    }
+    camera.lookAt(pose.target.x, pose.target.y, pose.target.z);
+  }
   else camera.rotation.set(pose.pitch, pose.yaw, 0, 'YXZ');
 }
 function setAutoFlight(enabled) {
@@ -533,6 +550,37 @@ $('seed').addEventListener('keydown', event => {
   }
 });
 
+
+function startPrimeEngine() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    if (!audioContext) audioContext = new Ctx();
+    if (audioContext.state === 'suspended') audioContext.resume();
+    if (engineAmbience) return;
+    const oscillator = audioContext.createOscillator();
+    const filter = audioContext.createBiquadFilter();
+    const gain = audioContext.createGain();
+    oscillator.type = 'sawtooth';
+    oscillator.frequency.value = 73;
+    filter.type = 'lowpass';
+    filter.frequency.value = 240;
+    gain.gain.value = .008;
+    oscillator.connect(filter).connect(gain).connect(audioContext.destination);
+    oscillator.start();
+    engineAmbience = { oscillator, gain, filter };
+  } catch { /* Audio is optional on Safari and muted school tablets. */ }
+}
+function stopPrimeEngine() {
+  if (!engineAmbience) return;
+  try {
+    engineAmbience.oscillator.stop();
+    engineAmbience.oscillator.disconnect();
+    engineAmbience.filter.disconnect();
+    engineAmbience.gain.disconnect();
+  } catch {}
+  engineAmbience = null;
+}
 function playPrimeSound(kind, prime = 2) {
   try {
     const AudioConstructor = window.AudioContext || window.webkitAudioContext;
@@ -540,8 +588,8 @@ function playPrimeSound(kind, prime = 2) {
     if (!audioContext) audioContext = new AudioConstructor();
     if (audioContext.state === 'suspended') audioContext.resume();
     const now = audioContext.currentTime, osc = audioContext.createOscillator(), gain = audioContext.createGain();
-    const pitch = kind === 'blocked' ? 130 : kind === 'destroyed' ? 470 : 310 + prime * 55;
-    osc.type = kind === 'blocked' ? 'triangle' : 'sine';
+    const pitch = kind === 'warning' ? 750 : kind === 'hit' ? 92 : kind === 'dodge' ? 570 : kind === 'blocked' ? 130 : kind === 'destroyed' ? 470 : 310 + prime * 55;
+    osc.type = kind === 'hit' ? 'sawtooth' : kind === 'warning' || kind === 'blocked' ? 'triangle' : 'sine';
     osc.frequency.setValueAtTime(pitch, now);
     osc.frequency.exponentialRampToValueAtTime(kind === 'destroyed' ? 95 : Math.max(75, pitch * .59), now + .18);
     gain.gain.setValueAtTime(.0001, now);
@@ -569,7 +617,7 @@ function renderPrimeHUD() {
   $('chaseShieldFill').style.width = state.shield + '%';
   $('chaseScore').textContent = state.score.toLocaleString('ko-KR') + '점';
   $('chaseTargetNumber').textContent = enemy ? String(enemy.number) : '···';
-  $('chaseTargetText').textContent = enemy ? '표적 ' + (activeEnemies(state).indexOf(enemy) + 1) + ' / ' + activeEnemies(state).length : '다음 추격대 접근 중';
+  $('chaseTargetText').textContent = enemy ? fighterSpec(enemy.original).name + ' ' + (activeEnemies(state).indexOf(enemy) + 1) + '/' + activeEnemies(state).length : '다음 추격대 접근 중';
   const signature = activeEnemies(state).map(e => e.id + ':' + e.number).join('|') + '/' + state.selectedId;
   if (lastEnemyButtons !== signature) {
     lastEnemyButtons = signature;
@@ -579,7 +627,7 @@ function renderPrimeHUD() {
       const button = document.createElement('button');
       button.type = 'button';
       button.textContent = e.number;
-      button.setAttribute('aria-label', e.number + '번 전투기 선택');
+      button.setAttribute('aria-label', fighterSpec(e.original).name + ' ' + e.number + '번 전투기 선택');
       button.setAttribute('aria-pressed', String(e.id === enemy?.id));
       button.addEventListener('click', () => { selectEnemy(primeState, e.id); renderPrimeHUD(); });
       row.appendChild(button);
@@ -593,6 +641,7 @@ function enterExplore() {
   gameMode = 'explore';
   primeState.status = 'ready';
   pursuitScene.clear();
+  stopPrimeEngine();
   enemyRemovalQueue.length = 0;
   bufferedShot = null;
   document.body.classList.remove('chase-mode');
@@ -621,6 +670,10 @@ function enterPrimeChase(mode = 'standard') {
   $('intro').classList.add('hidden');
   document.body.classList.add('chase-mode');
   $('chaseHUD').classList.remove('hidden');
+  $('primeLockMessage').classList.remove('visible');
+  hitFlashSeconds = 0;
+  radarElapsed = 0;
+  startPrimeEngine();
   $('primeFeedback').classList.remove('visible');
   active = true;
   setViewMode('chase');
@@ -639,6 +692,7 @@ function showPrimeResult() {
   const success = primeState.status === 'won';
   if (success) discover('prime_chase_victory');
   active = false;
+  stopPrimeEngine();
   $('chaseHUD').classList.add('hidden');
   $('chaseResultTitle').textContent = success ? '추격대를 모두 격추했어!' : '다시 도전해 봐!';
   $('chaseResultReason').textContent = primeState.reason;
@@ -699,13 +753,41 @@ function updatePrimeCombat(dt, gameDt = dt) {
     pursuitScene.addEnemy(events.newEnemies[i], pilotPosition, yaw, collisionWorld, i);
   }
   if (events.newEnemies.length) announcePrime('새로운 합성수 추격대가 나타났어!');
-  for (const warning of events.warnings) pursuitScene.warnAttack(warning.id);
+  for (const warning of events.warnings) {
+    pursuitScene.warnAttack(warning.id, warning.lockedAt, warning.seconds);
+    playPrimeSound('warning');
+  }
   if (events.warnings.length) announcePrime('적이 조준 중! 방향을 바꾸거나 건물 뒤로 피하세요!', true);
   if (events.attacks.length) {
     const hits = events.attacks.filter(event => event.hit);
-    for (const hit of hits) pursuitScene.enemyAttack(hit.id, pilotPosition);
-    if (hits.length) announcePrime('피격! 방어막 -' + hits.reduce((n,x)=>n+x.damage,0) + '%', true);
-    else announcePrime('공격 회피 성공! + 보너스', false);
+    for (const event of events.attacks) pursuitScene.enemyAttack(event.id, event.aim);
+    if (hits.length) {
+      announcePrime('피격! 방어막 -' + hits.reduce((n,x)=>n+x.damage,0) + '%', true);
+      playPrimeSound('hit');
+      hitFlashSeconds = .37;
+      document.body.classList.remove('prime-impact');
+      void $('city').offsetWidth;
+      document.body.classList.add('prime-impact');
+    } else {
+      announcePrime('회피 성공! 레이저가 빗나갔어!', false);
+      playPrimeSound('dodge');
+    }
+  }
+  const locked = activeEnemies(primeState).some(enemy => enemy.preparing);
+  $('primeLockMessage').classList.toggle('visible', locked);
+  radarElapsed += gameDt;
+  if (radarElapsed >= .10) {
+    radarElapsed = 0;
+    const threat = drawPrimeRadar($('primeRadar'), pilotPosition, yaw,
+      pursuitScene.visuals, selectedEnemy(primeState)?.id);
+    const closest = threat?.closest;
+    $('radarReadout').textContent = closest
+      ? (closest.behind ? '후방 ' : '전방 ') + Math.round(closest.distance) + 'm'
+      : '적 탐색 중';
+  }
+  if (hitFlashSeconds > 0) {
+    hitFlashSeconds -= gameDt;
+    if (hitFlashSeconds <= 0) document.body.classList.remove('prime-impact');
   }
   primeHudElapsed += gameDt;
   if (primeHudElapsed >= 0.19 || events.newEnemies.length || events.attacks.length || events.warnings.length) {
@@ -757,6 +839,8 @@ function updateMovement(dt) {
     else pitch = clamp(pitch - dt * 0.85, -1.3, 1.25);
   }
   let forward = (held.has('KeyW') ? 1 : 0) - (held.has('KeyS') ? 1 : 0) - touchAxis.y;
+  // Manual steering in combat keeps the craft cruising even with a lateral-only joystick.
+  if (gameMode === 'chase' && !autoFlight && forward === 0) forward = 1;
   let side = (held.has('KeyD') ? 1 : 0) - (held.has('KeyA') ? 1 : 0) + touchAxis.x;
   const altitude = (held.has('KeyE') || held.has('rise') ? 1 : 0) - (held.has('KeyQ') || held.has('sink') ? 1 : 0);
   const origin = { x: pilotPosition.x, y: pilotPosition.y, z: pilotPosition.z };
@@ -855,7 +939,7 @@ window.KidscadeGame?.registerPauseHandlers?.({
   pause() { active = false; },
   resume() { if ($('intro').classList.contains('hidden')) active = true; lastTimestamp = performance.now(); }
 });
-window.KidscadeGame?.registerCleanup?.(() => { active = false; });
+window.KidscadeGame?.registerCleanup?.(() => { active = false; stopPrimeEngine(); });
 applySeed(selectedSeed);
 setViewMode('chase');
 setTime(false);
