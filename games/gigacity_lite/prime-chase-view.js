@@ -122,7 +122,25 @@ export function makePursuerScene(scene) {
     const line = new THREE.Line(geometry, material);
     line.renderOrder = 8;
     scene.add(line);
-    effects.push({ line, ttl: 0.26 });
+    effects.push({ kind: 'beam', line, ttl: 0.26 });
+  }
+  function explosion(id) {
+    const v = visuals.get(id);
+    if (!v) return;
+    const flash = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(1, 1),
+      new THREE.MeshBasicMaterial({ color: 0xffcf84, transparent: true, opacity: .91, depthWrite: false })
+    );
+    flash.position.copy(v.root.position);
+    scene.add(flash);
+    effects.push({ kind: 'explosion', flash, ttl: .58 });
+    v.body.visible = false;
+    v.reticle.visible = false;
+  }
+  function enemyAttack(id, craft) {
+    const v = visuals.get(id);
+    if (!v) return;
+    beam(v.root.position, new THREE.Vector3(craft.x, craft.y, craft.z), 0, true);
   }
   function update(dt, craft, heading, world, selectedId) {
     worldSeconds += dt;
@@ -164,11 +182,18 @@ export function makePursuerScene(scene) {
     for (let i = effects.length - 1; i >= 0; i--) {
       const effect = effects[i];
       effect.ttl -= dt;
-      effect.line.material.opacity = Math.max(0, effect.ttl / 0.26);
+      if (effect.kind === 'beam') {
+        effect.line.material.opacity = Math.max(0, effect.ttl / 0.26);
+      } else {
+        const progress = 1 - Math.max(0, effect.ttl) / .58;
+        effect.flash.scale.setScalar(1 + 10 * progress);
+        effect.flash.material.opacity = Math.max(0, .9 * (1 - progress));
+      }
       if (effect.ttl <= 0) {
-        scene.remove(effect.line);
-        effect.line.geometry.dispose();
-        effect.line.material.dispose();
+        const mesh = effect.kind === 'beam' ? effect.line : effect.flash;
+        scene.remove(mesh);
+        mesh.geometry.dispose();
+        mesh.material.dispose();
         effects.splice(i, 1);
       }
     }
@@ -183,11 +208,12 @@ export function makePursuerScene(scene) {
   function clear() {
     for (const id of Array.from(visuals.keys())) removeEnemy(id);
     for (const effect of effects) {
-      scene.remove(effect.line);
-      effect.line.geometry.dispose();
-      effect.line.material.dispose();
+      const mesh = effect.kind === 'beam' ? effect.line : effect.flash;
+      scene.remove(mesh);
+      mesh.geometry.dispose();
+      mesh.material.dispose();
     }
     effects.length = 0;
   }
-  return { visuals, addEnemy, removeEnemy, markValue, update, shootEffect, clear };
+  return { visuals, addEnemy, removeEnemy, markValue, update, shootEffect, explosion, enemyAttack, clear };
 }
