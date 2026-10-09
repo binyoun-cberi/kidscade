@@ -683,6 +683,11 @@ test('locker hiding pauses movement and exposes a deterministic leave action',()
   assert.equal(template.get().flashOn,true,'flashlight restores on exit');
   assert.ok(css.has('hidden')&& !bodySet.has('in-locker'));
   assert.equal(template.leaveLocker(),false,'double exit is harmless');
+  // A stationary pursuer checking the same locker for 3.2s can expose the player.
+  assert.equal(template.enterLocker(0),true);
+  template.setMaiden(locker.interact.x+.25,locker.interact.z);
+  for(let i=0;i<70&&template.get().hidingLocker;i++)template.updateLockerHiding(.05);
+  assert.equal(template.get().hidingLocker,null,'a long nearby search reveals the hidden player');
   assert.match(js,/if\(hidingLocker\)return\{type:'leaveLocker'/);
   assert.match(js,/if\(item\.type==='hideLocker'\)\{enterLocker\(item\.i\)/);
   assert.match(js,/if\(typeof hidingLocker!=='undefined'&&hidingLocker\)\{/,'WASD is locked');
