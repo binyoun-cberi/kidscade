@@ -76,6 +76,10 @@ let chrome,ws,profile;
   errors.length=0;
   await send('Emulation.setDeviceMetricsOverride',{width:config.w,height:config.h,deviceScaleFactor:1,mobile:config.w<500});
   await send('Page.navigate',{url:local+'/games/openmon-expedition/index.html'});
+  await sleep(250);
+  // The two viewport cases share a Chrome profile; start each with a clean game save.
+  await evaluate("localStorage.removeItem('kidscade.openmon.expedition.save.v1')");
+  await send('Page.reload',{ignoreCache:true});
   await sleep(600);
   const initial=await evalFn(()=>{
    const $=id=>document.getElementById(id);
