@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { LOTS_PER_CHUNK, LOT_SIZE, ROAD_WIDTH, CHUNK_SIZE, chunkOf, createChunkData, randomAt, seedNumber } from '../games/gigacity_lite/city-core.mjs';
 import { VIEW_MODES, safeMode, cameraPose, forwardOf, rotateXZ, CAMERA_EYE } from '../games/gigacity_lite/flight-view.mjs';
 import { readFileSync } from 'node:fs';
+import { makeCollisionWorld, intersectsBuilding, intersectsWorld, moveWithCollisions, guideAlongRoad, trafficPosition, CRAFT_RADIUS, CRAFT_HALF_HEIGHT, buildingTop } from '../games/gigacity_lite/flight-physics.mjs';
 
 test('gigacity seed generates stable, reproducible chunks', () => {
   const seed = seedNumber('NEON-01');
@@ -100,4 +101,89 @@ test('Gigacity references the original Kenney future car and a separate 3D cockp
   assert.match(main, /playerCraft\.update\(/);
   for (const mode of VIEW_MODES) assert.match(html, new RegExp('data-view-mode="' + mode + '"'));
   assert.match(html, /three\/addons/);
+});
+
+
+test('building collision rejects high-speed boosted tunnelling, even on negative chunks', () => {
+  for (const [cx, cz] of [[0, 0], [-3, -7], [8, 2]]) {
+    const world = makeCollisionWorld(seedNumber('NEON-01'));
+    const b = createChunkData(cx, cz, seedNumber('NEON-01')).buildings[0];
+    const start = { x: b.x - b.width / 2 - CRAFT_RADIUS - 4, y: 20, z: b.z };
+    const response = moveWithCollisions(start, { x: b.width + 70, y: 0, z: 0 }, world);
+    assert.equal(response.hitBuilding, true);
+    assert.equal(intersectsWorld(response.position, world), false);
+    assert.ok(response.position.x <= b.x - b.width / 2 - CRAFT_RADIUS + 0.05);
+  }
+});
+
+test('diagonal approaches slide beside the tower without penetrating the facade', () => {
+  const world = makeCollisionWorld(seedNumber('NEON-01'));
+  const b = createChunkData(0, 0, seedNumber('NEON-01')).buildings[0];
+  const start = { x: b.x - b.width / 2 - CRAFT_RADIUS - 2, y: 20, z: b.z };
+  const response = moveWithCollisions(start, { x: 22, y: 0, z: 13 }, world);
+  assert.ok(response.hitBuilding);
+  assert.ok(response.position.z > start.z + 6, 'wall slide should preserve tangential motion');
+  assert.equal(intersectsWorld(response.position, world), false);
+});
+
+test('roofs are solid below, clear above and resist descending through their top', () => {
+  const seed = seedNumber('ROOFTOP');
+  const world = makeCollisionWorld(seed);
+  const b = createChunkData(0, 0, seed).buildings[0];
+  const top = buildingTop(b);
+  assert.ok(intersectsBuilding({ x: b.x, y: top - 2, z: b.z }, b));
+  assert.equal(intersectsBuilding({ x: b.x, y: top + CRAFT_HALF_HEIGHT + 0.1, z: b.z }, b), false);
+  const above = { x: b.x, y: top + CRAFT_HALF_HEIGHT + 6, z: b.z };
+  const moved = moveWithCollisions(above, { x: 0, y: -50, z: 0 }, world);
+  assert.ok(moved.hitBuilding);
+  assert.ok(moved.position.y >= top + CRAFT_HALF_HEIGHT - 0.02);
+  const fly = moveWithCollisions({ ...above, y: top + CRAFT_HALF_HEIGHT + 8 }, { x: 70, y: 0, z: 0 }, world);
+  assert.equal(intersectsWorld(fly.position, world), false);
+});
+
+test('traffic planes stop the player before overlap instead of clipping through', () => {
+  const emptyWorld = { nearby() { return []; } };
+  const start = { x: 0, y: 100, z: 0 };
+  const traffic = [{ x: 0, y: 100, z: -8 }];
+  const result = moveWithCollisions(start, { x: 0, y: 0, z: -25 }, emptyWorld, traffic);
+  assert.equal(result.hitTraffic, true);
+  assert.ok(result.position.z >= -8 + 4.25);
+});
+
+test('autopilot travels avenues for two minutes without hitting buildings', () => {
+  for (const seed of ['NEON-01', 'CITY-425900', 'AUTOPILOT-TEST']) {
+    const world = makeCollisionWorld(seedNumber(seed));
+    let p = { x: 0, y: 200, z: 365 };
+    for (let frame = 0; frame < 120 * 20; frame++) {
+      const motion = guideAlongRoad(p, 0.05);
+      const step = moveWithCollisions(p, motion, world);
+      assert.equal(step.hitBuilding, false, seed + ' hit tower at frame ' + frame);
+      p = step.position;
+    }
+    assert.ok(p.z < -3600);
+    assert.ok(world.cacheSize <= 48);
+  }
+});
+
+test('traffic lanes remain clear of generated skyscrapers at several hours of simulation', () => {
+  const seed = seedNumber('TRAFFIC-TEST');
+  const world = makeCollisionWorld(seed);
+  for (const t of [0, 19, 139, 480, 2600, 7200]) {
+    for (const centre of [{ x: 0, z: 0 }, { x: -375, z: 210 }, { x: 831, z: -693 }]) {
+      for (let i = 0; i < 76; i++) {
+        const p = trafficPosition(i, t, seed, centre);
+        assert.ok(Number.isFinite(p.x) && Number.isFinite(p.z));
+        assert.equal(intersectsWorld(p, world, 1.6), false, 'traffic clipped tower at car ' + i);
+      }
+    }
+  }
+});
+
+test('collision warning and avenue traffic are wired into live flight controls', () => {
+  const main = readFileSync(new URL('../games/gigacity_lite/main.js', import.meta.url), 'utf8');
+  const html = readFileSync(new URL('../games/gigacity_lite/index.html', import.meta.url), 'utf8');
+  assert.match(main, /moveWithCollisions\(origin, desired/);
+  assert.match(main, /guideAlongRoad\(origin/);
+  assert.match(main, /trafficPosition\(i/);
+  assert.match(html, /id="flightWarning"/);
 });
