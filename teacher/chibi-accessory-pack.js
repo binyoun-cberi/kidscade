@@ -67,7 +67,7 @@ const fitComponent=(value,component)=>value?.[component]??(component===3?1:0);
  *  The silhouette-specific table and optional clothing clearance are re-run
  *  after outfit, body or accessory changes (never cumulatively).
  */
-export function applyAccessoryFit({getNode,fit='male',topName='',headwearName=''}){
+export function applyAccessoryFit({getNode,fit='male',topName='',headwearName='',hairName=''}){
   const used=[];
   const puffy=/(hoodie|sweater|knit|bomber|varsity|jacket|cardigan)/i.test(topName);
   const elevatedCollar=/(hoodie|bomber|varsity|jacket|cardigan)/i.test(topName);
@@ -92,6 +92,35 @@ export function applyAccessoryFit({getNode,fit='male',topName='',headwearName=''
       THREE.MathUtils.clamp(z,-.10,.10)
     );
     group.scale.setScalar(THREE.MathUtils.clamp(scale,.84,1.10));
+
+    // A final bind-pose/world-bounds fit keeps hats from hovering above the
+    // CURRENT hairstyle and shoes from dropping below the original sole.
+    // This is recomputed from the baseline offsets (never accumulated).
+    if(group.visible&&(style.slot==='hat'||style.slot==='shoes')){
+      const reference=style.slot==='hat'
+        ?getNode(hairName)
+        :getNode('shoe');
+      if(reference){
+        group.updateWorldMatrix(true,true);
+        reference.updateWorldMatrix(true,true);
+        const accessoryBox=new THREE.Box3().setFromObject(group,true);
+        const referenceBox=new THREE.Box3().setFromObject(reference,true);
+        if(!accessoryBox.isEmpty()&&!referenceBox.isEmpty()){
+          const target=style.slot==='hat'
+            // The brim should slightly overlap the hair crown.
+            ?referenceBox.max.y-(referenceBox.max.y-referenceBox.min.y)*.125
+            :referenceBox.min.y;
+          const current=style.slot==='hat'?accessoryBox.min.y:accessoryBox.min.y;
+          const worldDelta=THREE.MathUtils.clamp(target-current,
+            style.slot==='hat'?-.19:-.035,
+            style.slot==='hat'?.035:.035);
+          const parentScale=group.parent?.getWorldScale(new THREE.Vector3()).y||1;
+          group.position.y=THREE.MathUtils.clamp(
+            group.position.y+worldDelta/parentScale,-.31,.13);
+          group.updateWorldMatrix(true,true);
+        }
+      }
+    }
     group.userData.fitState={bodyFit:fit,topName,headwearName,
       offset:[group.position.x,group.position.y,group.position.z],
       scale:group.scale.x};
