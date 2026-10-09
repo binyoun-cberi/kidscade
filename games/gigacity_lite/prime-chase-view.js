@@ -109,7 +109,7 @@ export function makePursuerScene(scene) {
     v.root.position.set(Math.round(aheadX / LOT_SIZE) * LOT_SIZE, craft.y + 5, aheadZ);
     v.coverCacheTime = 0;
     v.covered = false;
-    if (intersectsWorld(v.root.position, world, 5.5 * spec.hull)) {
+    if (intersectsWorld(v.root.position, world, 5.5 * v.originalScale)) {
       v.root.position.z = Math.round(v.root.position.z / LOT_SIZE) * LOT_SIZE;
     }
     scene.add(v.root);
