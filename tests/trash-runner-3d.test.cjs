@@ -88,5 +88,17 @@ test('Trash Runner catalog points to v3',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
   const game=catalog.games.find(g=>g.id==='trash_runner');
   assert.ok(game);
-  assert.equal(game.href,'games/trash_runner/달려라! 분리수거 트럭.html?v=3');
+  assert.equal(game.href,'games/trash_runner/달려라! 분리수거 트럭.html?v=4');
+});
+test('Trash Runner v4 shows shared atlas icons for collected objects without changing 3D pickups',()=>{
+  assert.match(html,/openmon-item-icons\.js\?v=1/);
+  assert.match(html,/id="slot-icon"/);
+  assert.match(html,/const ITEM_ICON_BY_TRASH=/);
+  assert.match(html,/p1:'waterBottle'/);
+  assert.match(html,/c1:'canBlue'/);
+  assert.match(html,/c3:'jar'/);
+  assert.match(html,/elSlotIcon\.innerHTML=\(iconId&&window\.KidscadeItemIcons\?\.html\(iconId,40\)\)/);
+  assert.match(html,/elSlotIcon\.innerHTML=''/);
+  assert.match(html,/heldTrash\.emoji/);
+  assert.match(runtime,/new THREE\.Raycaster/);
 });
