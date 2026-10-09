@@ -365,7 +365,7 @@ $('sound').onclick=()=>{activeSound=!activeSound;$('sound').textContent=activeSo
 function startLevel(n){
  level=n;turn=0;zoom=1;running=true;
  $('intro').classList.add('hidden');$('end').classList.add('hidden');
- buildRoom();show(level===0?'어서 와! 먼저 바닥의 책을 골라 봐':'새 의뢰가 도착했어! 주방을 청소하자',1750);
+ buildRoom();window.KidscadeGame?.start?.({stage:level+1});show(level===0?'어서 와! 먼저 바닥의 책을 골라 봐':'새 의뢰가 도착했어! 주방을 청소하자',1750);
 }
 $('start').onclick=async()=>{
  if(running){$('intro').classList.add('hidden');return}
@@ -382,6 +382,7 @@ function finish(){
  saved.coins=coins;saved.unlocked=Math.max(saved.unlocked,Math.min(1,level+1));
  if(!saved.best[level]||seconds<saved.best[level])saved.best[level]=seconds;
  save();updateHud();
+ window.KidscadeGame?.result?.({scope:'mission',status:'completed',outcome:'clear',score:totalCount,level:level+1,cleaned:cleanCount,durationSeconds:seconds});
  const more=level===0;
  $('endTitle').textContent=more?'원룸 청소 성공!':'주방 청소 성공!';
  $('endCaption').textContent=more?'완벽해! 이제 주방 청소 의뢰도 열렸어.':'모든 공간이 반짝반짝해졌어!';
