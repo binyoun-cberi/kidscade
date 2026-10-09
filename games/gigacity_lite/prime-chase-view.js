@@ -68,7 +68,7 @@ function createEnemyScene(enemy) {
     depthTest: false, depthWrite: false, toneMapped: false
   });
   const sign = new THREE.Sprite(signMaterial);
-  sign.position.y = 10.5;
+  sign.position.y = 8;
   sign.scale.set(23, 11.5, 1);
   root.add(sign);
   root.userData.enemyId = enemy.id;
@@ -88,7 +88,7 @@ export function makePursuerScene(scene) {
     // Spawn along the nearest safe avenue in front of the player.
     const aheadX = craft.x - Math.sin(heading) * (72 + order * 10);
     const aheadZ = craft.z - Math.cos(heading) * (72 + order * 10);
-    v.root.position.set(Math.round(aheadX / LOT_SIZE) * LOT_SIZE, craft.y + 14, aheadZ);
+    v.root.position.set(Math.round(aheadX / LOT_SIZE) * LOT_SIZE, craft.y + 4, aheadZ);
     if (intersectsWorld(v.root.position, world, 5.5)) {
       v.root.position.z = Math.round(v.root.position.z / LOT_SIZE) * LOT_SIZE;
     }
@@ -154,7 +154,7 @@ export function makePursuerScene(scene) {
       const target = new THREE.Vector3(craft.x, craft.y, craft.z)
         .addScaledVector(forward, 65 + Math.min(slot, 2) * 15)
         .addScaledVector(side, flank);
-      target.y = craft.y + 13 + 3 * Math.sin(worldSeconds + id);
+      target.y = craft.y + 5 + 2 * Math.sin(worldSeconds + id);
       const delta = target.sub(v.root.position);
       const distance = delta.length();
       if (distance > 1.5) {
