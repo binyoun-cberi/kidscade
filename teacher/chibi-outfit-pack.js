@@ -242,6 +242,8 @@ function transferSmoothSkinWeights(geometry,reference,{sign,region}){
 function buildSkinConformingSleeve(body,sign,puff){
   const original=body.geometry;
   const positions=original.getAttribute('position');
+  if(!original.getAttribute('normal'))original.computeVertexNormals();
+  const normals=original.getAttribute('normal');
   const uv=original.getAttribute('uv');
   const skinIndex=original.getAttribute('skinIndex');
   const skinWeight=original.getAttribute('skinWeight');
@@ -255,24 +257,25 @@ function buildSkinConformingSleeve(body,sign,puff){
     throw Error('Cannot extract the '+side+' source skinned arm');
   const allow=i=>{
     const x=positions.getX(i),y=positions.getY(i);
-    if(x*sign<.12||y<.615||y>1.18)return false;
+    if(x*sign<.115||y<.53||y>1.18)return false;
     let armWeight=0;
     for(let k=0;k<4;k++){
       if(armBones.has(skinIndex.getComponent(i,k)))
         armWeight+=skinWeight.getComponent(i,k);
     }
-    return armWeight>.32;
+    return armWeight>.12;
   };
   const verts=[],uvs=[],bones=[],weights=[];
   let triangles=0;
   const add=i=>{
     const x=positions.getX(i),y=positions.getY(i),z=positions.getZ(i);
-    // A small smooth fabric allowance, reducing at the wrist so the mesh
-    // does not show jagged vertices beyond the exposed hands.
-    const coverage=smooth(.615,.69,y)*(1-smooth(1.105,1.18,y));
-    const allowance=(puff?.020:.011)*coverage;
-    const sideX=Math.sign(x)||sign;
-    verts.push(x+sideX*allowance*.65,y,z+Math.sign(z||1)*allowance*.75);
+    // Offset along the body's own outward normal, not the guessed world X/Z
+    // directions. The original 0.011 allowance z-fought with the visible skin.
+    const coverage=smooth(.575,.68,y)*(1-smooth(1.105,1.18,y));
+    const allowance=(puff?.042:.030)*coverage;
+    verts.push(x+normals.getX(i)*allowance,
+      y+normals.getY(i)*allowance,
+      z+normals.getZ(i)*allowance);
     uvs.push(uv?.getX(i)||0,uv?.getY(i)||0);
     for(let k=0;k<4;k++){
       bones.push(skinIndex.getComponent(i,k));
