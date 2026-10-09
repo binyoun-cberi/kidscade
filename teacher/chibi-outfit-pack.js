@@ -235,26 +235,69 @@ function transferSmoothSkinWeights(geometry,reference,{sign,region}){
 
 // Skin long sleeves to their actual upper-arm and forearm bones. Sampling
 // nearby torso vertices bent the cuffs into large detached fabric spikes.
-function bindSleeveToArmBones(geometry,skeleton,sign){
+// Extract *real* skinned arm triangles from the fitted Chibi body. Arbitrary
+// procedural cylinders split from the shoulder in WALK, even with plausible
+// arm-bone weights, because their assumed bind coordinates were not the
+// source GLB's own arm surface.
+function buildSkinConformingSleeve(body,sign,puff){
+  const original=body.geometry;
+  const positions=original.getAttribute('position');
+  const uv=original.getAttribute('uv');
+  const skinIndex=original.getAttribute('skinIndex');
+  const skinWeight=original.getAttribute('skinWeight');
+  const index=original.getIndex();
   const side=sign>0?'L':'R';
-  const getBone=pattern=>skeleton.bones.findIndex(bone=>
-    pattern.test(bone.name)&&bone.name.replace(/[._]/g,'').toUpperCase().endsWith(side));
-  const upper=getBone(/upper.?arm/i),forearm=getBone(/forearm|lower.?arm/i);
-  if(upper<0||forearm<0)throw Error('Cannot resolve '+side+' arm and forearm rig bones');
-  const uv=geometry.getAttribute('uv'),n=geometry.getAttribute('position').count;
-  const indices=new Uint16Array(n*4),weights=new Float32Array(n*4);
-  for(let i=0;i<n;i++){
-    const lower=smooth(.30,.75,uv.getY(i));
-    indices[i*4]=upper;indices[i*4+1]=forearm;
-    weights[i*4]=1-lower;weights[i*4+1]=lower;
+  const armBones=new Set(body.skeleton.bones.map((bone,i)=>({
+    name:bone.name.replace(/[._]/g,'').toUpperCase(),i
+  })).filter(item=>item.name.endsWith(side)&&
+    /UPPERARM|FOREARM|LOWERARM|HAND/.test(item.name)).map(item=>item.i));
+  if(!positions||!skinIndex||!skinWeight||!index||armBones.size<2)
+    throw Error('Cannot extract the '+side+' source skinned arm');
+  const allow=i=>{
+    const x=positions.getX(i),y=positions.getY(i);
+    if(x*sign<.12||y<.615||y>1.18)return false;
+    let armWeight=0;
+    for(let k=0;k<4;k++){
+      if(armBones.has(skinIndex.getComponent(i,k)))
+        armWeight+=skinWeight.getComponent(i,k);
+    }
+    return armWeight>.32;
+  };
+  const verts=[],uvs=[],bones=[],weights=[];
+  let triangles=0;
+  const add=i=>{
+    const x=positions.getX(i),y=positions.getY(i),z=positions.getZ(i);
+    // A small smooth fabric allowance, reducing at the wrist so the mesh
+    // does not show jagged vertices beyond the exposed hands.
+    const coverage=smooth(.615,.69,y)*(1-smooth(1.105,1.18,y));
+    const allowance=(puff?.020:.011)*coverage;
+    const sideX=Math.sign(x)||sign;
+    verts.push(x+sideX*allowance*.65,y,z+Math.sign(z||1)*allowance*.75);
+    uvs.push(uv?.getX(i)||0,uv?.getY(i)||0);
+    for(let k=0;k<4;k++){
+      bones.push(skinIndex.getComponent(i,k));
+      weights.push(skinWeight.getComponent(i,k));
+    }
+  };
+  for(let n=0;n<index.count;n+=3){
+    const i=index.getX(n),j=index.getX(n+1),k=index.getX(n+2);
+    if(!allow(i)||!allow(j)||!allow(k))continue;
+    add(i);add(j);add(k);
+    triangles++;
   }
-  geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(indices,4));
+  if(triangles<12)throw Error('No sufficiently connected '+side+' arm skin triangles: '+triangles);
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+  geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(bones,4));
   geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
-  geometry.userData={...geometry.userData,skinTransfer:{
-    method:'upper-forearm-blended-v5.9',region:'arm',neighbors:2,vertices:n,
-    upperBone:skeleton.bones[upper].name,forearmBone:skeleton.bones[forearm].name
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();geometry.computeBoundingSphere();
+  geometry.userData={skinTransfer:{
+    method:'source-body-arm-skin-v5.9',region:'arm',neighbors:4,
+    vertices:verts.length/3,triangles
   }};
-  return geometry.userData.skinTransfer;
+  return geometry;
 }
 function bindYokeToPelvis(geometry,skeleton){
   const pelvis=skeleton.bones.findIndex(bone=>bone.name==='DEF-spine');
@@ -322,59 +365,17 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
     group.add(makeRigidSkinnedPiece(source,geometry,bone,material,style.id+'_'+id));
   };
   const fitBody=getNode(style.fit==='male'?'kidscade_male_body':'character_low');
-  const addMatchedSleeve=(geometry,id,sign)=>{
-    if(!fitBody?.isSkinnedMesh)throw new Error('Sleeve skin reference body unavailable');
-    bindSleeveToArmBones(geometry,source.skeleton,sign);
-    geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
-    const mesh=cloneSkinnedMeshWithGeometry(
-      source,geometry,makeSolidMaterial(style.color,style.label+' 연결 소매'),style.id+'_'+id
-    );
-    mesh.userData={type:'skinned-sleeve',sourceWeights:'articulated-upper-and-forearm',skinTransfer:geometry.userData.skinTransfer};
-    group.add(mesh);
-  };
   if(style.details.includes('longSleeve')||style.details.includes('puffSleeve')){
+    if(!fitBody?.isSkinnedMesh)throw Error('Missing fitted Chibi body for sleeves');
     const puff=style.details.includes('puffSleeve');
-    // A single curved skinned surface from shoulder to cuff avoids the
-    // interpenetrating sphere/cylinder joins that look like torn triangles.
     for(const sign of [-1,1]){
-      const start=new THREE.Vector3(sign*.190,1.095,-.026);
-      const elbow=new THREE.Vector3(sign*.305,.90,-.039);
-      // The prior cuff ended above the wrist: forearms visibly protruded.
-      const cuff=new THREE.Vector3(sign*.365,.645,-.042);
-      const curve=new THREE.CatmullRomCurve3(puff?[start,elbow]:[start,elbow,cuff],false,'centripetal');
-      const sections=14,around=16,vertices=[],uvs=[],faces=[];
-      const axis=new THREE.Vector3(0,0,1);
-      const tangent=new THREE.Vector3(),across=new THREE.Vector3();
-      const center=new THREE.Vector3();
-      for(let ring=0;ring<=sections;ring++){
-        const t=ring/sections;
-        curve.getPoint(t,center);
-        curve.getTangent(t,tangent).normalize();
-        across.crossVectors(tangent,axis).normalize();
-        const radius=puff
-          ?(.105+.025*Math.sin(Math.PI*t))*(1-.23*smooth(.65,1,t))
-          :(.105-.047*smooth(.10,1,t)+.010*Math.sin(Math.PI*t));
-        for(let slice=0;slice<=around;slice++){
-          const theta=Math.PI*2*slice/around;
-          const c=Math.cos(theta)*radius,ss=Math.sin(theta)*radius;
-          vertices.push(center.x+axis.x*c+across.x*ss,
-            center.y+axis.y*c+across.y*ss,
-            center.z+axis.z*c+across.z*ss);
-          uvs.push(slice/around,t);
-        }
-      }
-      for(let ring=0;ring<sections;ring++){
-        for(let slice=0;slice<around;slice++){
-          const a=ring*(around+1)+slice,b=(ring+1)*(around+1)+slice;
-          const c=a+1,d=b+1;
-          faces.push(a,c,b,c,d,b);
-        }
-      }
-      const sleeve=new THREE.BufferGeometry();
-      sleeve.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
-      sleeve.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
-      sleeve.setIndex(faces);
-      addMatchedSleeve(sleeve,sign<0?'continuousSleeve_left':'continuousSleeve_right',sign);
+      const sleeve=buildSkinConformingSleeve(fitBody,sign,puff);
+      const name=style.id+'_continuousSleeve_'+(sign<0?'left':'right');
+      const mesh=cloneSkinnedMeshWithGeometry(source,sleeve,
+        makeSolidMaterial(style.color,style.label+' 바디밀착 소매'),name);
+      mesh.userData={part:'source-arm-sleeve',sourceWeights:'native-fitted-body-skin',
+        skinTransfer:sleeve.userData.skinTransfer};
+      group.add(mesh);
     }
   }
   if(style.details.includes('hood')){
