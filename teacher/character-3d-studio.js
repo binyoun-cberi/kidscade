@@ -1,4 +1,5 @@
 import * as THREE from '../assets/vendor/three-r160/three.module.js';
+import {clone as cloneRiggedScene} from '../assets/vendor/three-r160/addons/utils/SkeletonUtils.js';
 import {OUTFIT_LIBRARY,OUTFIT_STYLES,createOutfitPack} from './chibi-outfit-pack.js';
 import {ACCESSORY_STYLES,ACCESSORY_COUNT,ACCESSORY_SLOTS,ACCESSORY_CONFLICTS,createAccessoryPack,applyAccessoryFit as applyRiggedAccessoryFit} from './chibi-accessory-pack.js';
 
@@ -124,6 +125,8 @@ const CLIP_LABELS={
 
 let scene,camera,renderer,controls;
 let avatarRoot=null,sourceScene=null,primarySkinnedMesh=null,skeletonHelper=null,mixer=null;
+// Both scenes share immutable garment geometries but never a Bone or Skeleton instance.
+let rigScenes={male:null,female:null};
 let animations=[],activeAction=null,activeClip='',currentPreset='male',activeView='threeQuarter';
 let activeBodyFit='male',activeWardrobeCategory='hair';
 let maleWalkClips=new Map(),maleRunClips=new Map();
@@ -418,6 +421,82 @@ function setNodeVisible(name,visible){
 }
 
 
+// A source GLB is normalized and fitted once. SkeletonUtils then creates a
+// *separate hierarchy* for the male workspace; both retain the same 78 source
+// bone names / animations, but they never share live pose state.
+function inspectRig(root){
+  const ownedBones=new Set();
+  const referencedBones=new Set();
+  const invalidBindings=[];
+  if(!root)return {ownedBones,referencedBones,invalidBindings:['missing-scene']};
+  root.traverse(node=>{if(node.isBone)ownedBones.add(node);});
+  root.traverse(node=>{
+    if(!node.isSkinnedMesh)return;
+    if(!node.skeleton?.bones?.length){
+      invalidBindings.push('missing-skeleton:'+node.name);
+      return;
+    }
+    for(const bone of node.skeleton.bones){
+      referencedBones.add(bone);
+      if(!ownedBones.has(bone)){
+        invalidBindings.push('foreign-bone:'+node.name+':'+(bone?.name||'undefined'));
+        break;
+      }
+    }
+  });
+  return {ownedBones,referencedBones,invalidBindings};
+}
+
+function rigIntegrityIssues(){
+  if(!rigScenes.male||!rigScenes.female)return ['rig-scenes-not-initialized'];
+  const active=rigScenes[activeBodyFit];
+  const inactive=rigScenes[activeBodyFit==='male'?'female':'male'];
+  const male=inspectRig(rigScenes.male),female=inspectRig(rigScenes.female);
+  const issues=[
+    ...male.invalidBindings.map(error=>'male:'+error),
+    ...female.invalidBindings.map(error=>'female:'+error)
+  ];
+  if(sourceScene!==active||active?.parent!==avatarRoot||inactive?.parent===avatarRoot)
+    issues.push('active-rig-scene-mismatch');
+  if(mixer?.getRoot()!==active)issues.push('animation-mixer-target-mismatch');
+  if(male.referencedBones.size!==78||female.referencedBones.size!==78)
+    issues.push('unexpected-rig-bone-count');
+  for(const bone of male.referencedBones){
+    if(female.referencedBones.has(bone)){
+      issues.push('male-female-shared-bone:'+bone.name);
+      break;
+    }
+  }
+  return issues;
+}
+
+function activateRigScene(fit){
+  const next=rigScenes[fit];
+  if(!next||!avatarRoot)throw Error('No independent Chibi rig for '+fit);
+  if(sourceScene===next)return;
+  mixer?.stopAllAction();
+  if(mixer&&sourceScene)mixer.uncacheRoot(sourceScene);
+  activeAction=null;
+  activeClip='';
+  if(sourceScene?.parent===avatarRoot)avatarRoot.remove(sourceScene);
+  sourceScene=next;
+  avatarRoot.add(next);
+  sourceScene.updateMatrixWorld(true);
+  mixer=new THREE.AnimationMixer(sourceScene);
+  if(skeletonHelper){
+    scene.remove(skeletonHelper);
+    skeletonHelper.geometry.dispose();
+    skeletonHelper.material.dispose();
+  }
+  skeletonHelper=new THREE.SkeletonHelper(sourceScene);
+  skeletonHelper.visible=$('showBones').checked;
+  skeletonHelper.material.depthTest=false;
+  skeletonHelper.material.transparent=true;
+  skeletonHelper.material.opacity=.88;
+  scene.add(skeletonHelper);
+  primarySkinnedMesh=choosePrimarySkinnedMesh();
+}
+
 // A character with male-fit shorts and a female body (or two separate
 // shirts) may technically export, but produces ripped or doubled cloth.
 const GARMENT_SLOT=name=>LEGACY_OUTFIT_SLOTS[name]||(
@@ -448,7 +527,8 @@ function fitIntegrityIssues(){
   return [
     ...(!getNode(requiredBody)?.visible?['missing-body:'+requiredBody]:[]),
     ...BASE_VARIANT_NODES.filter(name=>getNode(name)?.visible&&!expected.has(name)),
-    ...TOGGLE_NODES.filter(name=>getNode(name)?.visible&&!compatiblePart(name))
+    ...TOGGLE_NODES.filter(name=>getNode(name)?.visible&&!compatiblePart(name)),
+    ...rigIntegrityIssues()
   ];
 }
 
@@ -787,8 +867,14 @@ function selectBodyFit(fit){
   if(fit!=='male'&&fit!=='female')return;
   // Explicit switch: only this operation changes the active body-fit.
   // Switching clears the old fit's outfit/face/hair before the new preset.
+  const previousClip=activeClip;
   activeBodyFit=fit;
+  activateRigScene(fit);
   applyPreset(fit==='male'?'male':'base');
+  // Materials belong to mesh instances; reapply the chosen mode after changing rigs.
+  applyMaterialMode($('chibiUnlit').checked);
+  populateBoneList();
+  if(previousClip)playClip(previousClip);
   if(fit==='female'&&!HAIR_NODES.some(name=>getNode(name)?.visible))
     applyHair('hairone');
   activeWardrobeCategory='hair';
@@ -1965,8 +2051,8 @@ function refreshMetrics(){
   $('animationCount').textContent=String(animations.length);
   $('rigBadge').textContent='✓ Chibi Rig · '+bones+' bones';
   $('clipBadge').textContent=animations.length+' clips';
-  $('rigVersionLabel').textContent='원본 '+bones+'-bone SkinnedMesh';
-  $('modelInfoTip').textContent='현재 '+selectedParts().length+'개 교체 파츠가 표시 중이며, export 시 보이는 메시만 포함합니다.';
+  $('rigVersionLabel').textContent=(activeBodyFit==='male'?'남성형':'여성형')+' 독립 '+bones+'본 리그';
+  $('modelInfoTip').textContent='남녀 개별 본 인스턴스 · 현재 '+selectedParts().length+'개 착용 파츠 · 내보내기 시 선택한 체형의 리그만 포함';
 }
 
 async function loadChibi(){
@@ -2053,6 +2139,17 @@ async function loadChibi(){
     createKidscadeHairCollection();
     createOutfitPack({getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial,makeRigidSkinnedPiece,resolveFirstBoneName});
     createAccessoryPack({getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial});
+    rigScenes={female:sourceScene,male:cloneRiggedScene(sourceScene)};
+    rigScenes.male.name='KidscadeMaleIndependentRig';
+    const female=inspectRig(rigScenes.female),male=inspectRig(rigScenes.male);
+    const shared=[...male.referencedBones].filter(bone=>female.referencedBones.has(bone));
+    if(female.invalidBindings.length||male.invalidBindings.length||shared.length||
+       female.referencedBones.size!==78||male.referencedBones.size!==78)
+      throw Error('남녀 독립 리그 생성 실패: '+
+        JSON.stringify({femaleBones:female.referencedBones.size,maleBones:male.referencedBones.size,
+          sharedBones:shared.length,femaleErrors:female.invalidBindings.slice(0,3),
+          maleErrors:male.invalidBindings.slice(0,3)}));
+    activateRigScene('male');
   }catch(error){
     console.error(error);
     showAssetError('Chibi 본체는 열렸지만 커스텀 파츠 생성에 실패했습니다: '+(error?.message||error));
@@ -2061,14 +2158,7 @@ async function loadChibi(){
     return false;
   }
 
-  mixer=new THREE.AnimationMixer(sourceScene);
-  skeletonHelper=new THREE.SkeletonHelper(sourceScene);
-  skeletonHelper.visible=$('showBones').checked;
-  skeletonHelper.material.depthTest=false;
-  skeletonHelper.material.transparent=true;
-  skeletonHelper.material.opacity=.88;
-  scene.add(skeletonHelper);
-
+  // activateRigScene() already bound a mixer and helper to the male-only bones.
   populateBoneList();
   populateAnimationButtons();
   renderPartChecks();
@@ -2120,6 +2210,7 @@ function exportSpec(){
     enforcedFit:activeBodyFit,
     sharedPartIds:[...SHARED_FIT_PARTS],
     partLibraryVersion:'chibi-v5.6-strict-fit',
+    rigIsolationVersion:'chibi-v5.7-independent-78-bone-rigs',
     accessoryLibrary:{count:ACCESSORY_COUNT,slots:ACCESSORY_SLOTS},
     outfitLibrary:OUTFIT_LIBRARY,
     materialMode:$('chibiUnlit').checked?'unlit-npr':'original-pbr',
@@ -2357,6 +2448,21 @@ function installLocalVisualAudit(){
           female:[...FEMALE_FIT_PARTS],
           shared:[...SHARED_FIT_PARTS]
         }
+      };
+    },
+    rigIsolationAudit(){
+      const male=inspectRig(rigScenes.male),female=inspectRig(rigScenes.female);
+      const shared=[...male.referencedBones].filter(bone=>female.referencedBones.has(bone));
+      const active=rigScenes[activeBodyFit];
+      return {
+        activeFit:activeBodyFit,
+        maleBoneCount:male.referencedBones.size,
+        femaleBoneCount:female.referencedBones.size,
+        sharedBones:shared.length,
+        activeAttached:active?.parent===avatarRoot,
+        inactiveAttached:rigScenes[activeBodyFit==='male'?'female':'male']?.parent===avatarRoot,
+        mixerBound:mixer?.getRoot()===active,
+        issues:rigIntegrityIssues()
       };
     },
     garmentIntegrityAudit(){
