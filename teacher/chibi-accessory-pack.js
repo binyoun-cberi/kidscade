@@ -80,7 +80,7 @@ function buildGeometry(style,source,sourceHair,eyes){
   sourceHair.geometry.computeBoundingBox();
   eyes.geometry.computeBoundingBox();
   const hb=sourceHair.geometry.boundingBox,eb=eyes.geometry.boundingBox;
-  const scalpY=hb.max.y-.035;
+  const scalpY=hb.max.y-.145;
   const hc=hb.getCenter(new THREE.Vector3());
   const headR=Math.max(.20,(hb.max.x-hb.min.x)*.48);
   const faceZ=eb.max.z+.020;
@@ -111,7 +111,7 @@ function createDetails(style,context){
   const black='#304052',white='#f4f2eb',accent='#f5c96e';
   sourceHair.geometry.computeBoundingBox();eyes.geometry.computeBoundingBox();
   const hb=sourceHair.geometry.boundingBox,eb=eyes.geometry.boundingBox;
-  const scalpY=hb.max.y-.035,hc=hb.getCenter(new THREE.Vector3());
+  const scalpY=hb.max.y-.145,hc=hb.getCenter(new THREE.Vector3());
   const headR=Math.max(.20,(hb.max.x-hb.min.x)*.48);
   const faceZ=eb.max.z+.020,eyeY=(eb.min.y+eb.max.y)*.50;
   if(style.slot==='shoes'){
