@@ -2,6 +2,29 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "high_ota_typographic_horror",
+      "addedAt": "2026-10-10T00:28:00+09:00",
+      "title": "오타 — 이름을 잃어버린 밤",
+      "href": "games/high_ota_typographic_horror/index.html",
+      "category": "korean",
+      "age": "high",
+      "icon": "🕯️",
+      "description": "[공포] 벽과 바닥까지 글자로 이루어진 3D 기록보관소에서 잘못된 이름을 조사하고, 정체 모를 존재를 피해 사물함에 숨은 뒤 문을 복구해 탈출하는 1인칭 심리 공포 체험판.",
+      "subject": "korean",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
+    },
+    {
       "id": "hanja_sichuan",
       "addedAt": "2026-10-08T08:06:00+09:00",
       "title": "한자 사천성",
