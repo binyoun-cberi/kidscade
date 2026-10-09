@@ -360,7 +360,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261009-temple-bridge7/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-accessory53/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
@@ -450,7 +450,7 @@ test('male base opens first and provides brows visibility, face zoom and gait st
   assert.match(html,/id="gaitBadge"/);
   assert.match(html,/data-view="face"/);
   assert.match(html,/data-chibi-preset="male">남자 기본/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-temple-bridge7/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-accessory53/);
 });
 
 test('mobile studio shows the live avatar preview before the long wardrobe',()=>{
@@ -536,7 +536,7 @@ test('one-touch mobile Chibi controls are wired to the same real animation, view
   assert.match(js,/setCameraView\(button\.dataset\.quickView\)/);
   assert.match(js,/\[data-chibi-preset\],\[data-view\],\[data-quick-clip\],\[data-quick-view\],\[data-quick-speed\]/);
   assert.match(js,/\$\('speed'\)\.value=button\.dataset\.quickSpeed/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-temple-bridge7/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-accessory53/);
 });
 
 test('Chibi v5 wardrobe exposes gender-fit filter and category tabs without restricting shared accessories',()=>{
@@ -675,4 +675,57 @@ test('seven derived male hairstyles keep the temple cover without affecting fema
   assert.match(js,/const safeSide=style\.templeFill===undefined\?style\.side:Math\.max\(style\.side,-\.12\)/);
   assert.match(js,/templeBridgeVersion:style\.templeFill===undefined\?null:'v7'/);
   assert.match(js,/preservedTempleTriangles:mesh\?\.userData\?\.preservedTempleTriangles\|\|0/);
+});
+
+
+test('v5.3 catalog contains 22 separate real 3D accessory styles and complete attachment slots',()=>{
+  const pack=read('teacher/chibi-accessory-pack.js');
+  const m=JSON.parse(read('chibi/asset-manifest.json'));
+  assert.equal(m.accessoryLibrary.count,22);
+  assert.deepEqual(m.accessoryLibrary.slots,{shoes:6,hat:6,face:5,bag:3,wrist:1,neck:1});
+  const ids=[...m.accessoryLibrary.categories.shoes,...m.accessoryLibrary.categories.accessory];
+  assert.equal(ids.length,22);
+  assert.equal(new Set(ids).size,22);
+  for(const id of ids){
+    assert.ok(pack.includes("id:'"+id+"'"),'Missing procedural 3D entry '+id);
+    assert.equal(m.customParts[id].revision,'v5.3');
+    assert.equal(m.customParts[id].fit,'shared');
+  }
+  assert.match(pack,/const geometry=source\.geometry\.clone\(\)/);
+  assert.match(pack,/new THREE\.SphereGeometry/);
+  assert.match(pack,/new THREE\.TorusGeometry/);
+  assert.match(pack,/new THREE\.CylinderGeometry/);
+  assert.match(pack,/new THREE\.BoxGeometry/);
+  assert.match(pack,/mesh=makeRigidSkinnedPiece\(template,geometry,bone,material,style\.id\+'_'\+id\)/);
+  assert.match(pack,/nearestWeight\(geometry,region==='shoe'\)/);
+  assert.match(pack,/group\.visible=false/);
+});
+
+test('v5.3 3D preview picker uses real render-target pixels, no flat/stock placeholder sprites',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const html=read('teacher/character-3d-studio.html');
+  assert.match(js,/from '\.\/chibi-accessory-pack\.js'/);
+  assert.match(js,/createAccessoryPack\(\{getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial,makeRigidSkinnedPiece\}\)/);
+  assert.match(js,/for\(const style of ACCESSORY_STYLES\)PART_CATEGORY\[style\.id\]=style\.category/);
+  assert.match(js,/const SHARED_FIT_PARTS=new Set\(/);
+  assert.match(js,/function paintAccessoryThumbnail\(name,canvas\)/);
+  assert.match(js,/new THREE\.WebGLRenderTarget\(112,112/);
+  assert.match(js,/renderer\.readRenderTargetPixels\(thumbnailTarget,0,0,112,112,pixels\)/);
+  assert.match(js,/new ImageData\(flipped,112,112\)/);
+  assert.match(js,/thumbnailCache\.set\(name/);
+  assert.match(js,/function queueAccessoryThumbnails\(\)/);
+  assert.match(js,/data-part-thumb="/);
+  assert.match(html,/\.part-tile\.selected/);
+  assert.match(html,/\.part-preview canvas/);
+  assert.match(js,/partLibraryVersion:'chibi-v5\.3'/);
+});
+
+test('v5.3 shared accessory equipment is mutually exclusive only within matching slots',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  assert.match(js,/const ACCESSORY_SLOT=name=>ACCESSORY_STYLE_MAP\.get\(name\)\?\.slot\|\|LEGACY_ACCESSORY_SLOTS\[name\]\|\|null/);
+  assert.match(js,/if\(input\.checked&&accessorySlot\)/);
+  assert.match(js,/TOGGLE_NODES\.filter\(name=>name!==part&&ACCESSORY_SLOT\(name\)===accessorySlot\)/);
+  assert.match(js,/for\(const style of ACCESSORY_STYLES\)PART_CATEGORY\[style\.id\]=style\.category/);
+  assert.match(js,/ACCESSORY_STYLES\.map\(style=>style\.id\)/);
+  assert.match(js,/accessoryLibrary:\{count:ACCESSORY_COUNT,slots:ACCESSORY_SLOTS\}/);
 });
