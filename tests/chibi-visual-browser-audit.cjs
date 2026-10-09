@@ -348,6 +348,54 @@ const errors=[];
     report.accessoryPack.styles.push({id:item.id,slot:item.slot,skins:item.skins.length,
       vertices:item.vertices,fingerprint:item.fingerprint});
   }
+
+  // Chibi v5.3.1: ensure touching shoes/hat/bag does not stack old geometry,
+  // and that crown reduction is reversible (original hair remains intact).
+  report.accessoryPack.fitAndCollision={};
+  await setFit('male');
+  await chooseAccessory('accessory','chibi_hat_baseball');
+  const withCap=await evalPage('window.__kc3dAudit.equipmentAudit()');
+  assert.ok(withCap.hair.length===1&&withCap.hair[0].hatSafe,
+    'Cap did not activate reversible HAT-SAFE hair geometry');
+  assert.ok(Object.values(withCap.visibleSlots).every(names=>names.length<=1),
+    'Slots overlap after wearing cap');
+  await sample('WALK','side',.5,'v53-fit-hat-safe');
+  await chooseAccessory('accessory','chibi_gear_headphones');
+  const withHeadphones=await evalPage('window.__kc3dAudit.equipmentAudit()');
+  assert.ok(!withHeadphones.hair[0].hatSafe,
+    'HAT-SAFE geometry remained after removing hat for headphones');
+  assert.deepEqual(withHeadphones.visibleSlots.hat,['chibi_gear_headphones']);
+  await chooseAccessory('shoes','chibi_shoe_boots');
+  const bootFit=await evalPage('window.__kc3dAudit.equipmentAudit()');
+  assert.deepEqual(bootFit.visibleSlots.shoes,['chibi_shoe_boots'],
+    'Legacy shoes show through selected boots');
+  await selectGarment('top','chibi_male_bomber');
+  await chooseAccessory('accessory','chibi_bag_school');
+  const bomberFit=await evalPage('window.__kc3dAudit.equipmentAudit()');
+  const bomberBag=bomberFit.accessories.find(x=>x.id==='chibi_bag_school');
+  assert.ok(bomberBag&&bomberBag.topName==='chibi_male_bomber',
+    'Backpack did not adjust to bulky jacket');
+  await selectGarment('top','kidscade_male_tshirt');
+  const shirtFit=await evalPage('window.__kc3dAudit.equipmentAudit()');
+  const shirtBag=shirtFit.accessories.find(x=>x.id==='chibi_bag_school');
+  assert.ok(shirtBag&&bomberBag.offset[2]<shirtBag.offset[2],
+    'Backpack did not release jacket clearance');
+  await setFit('female');
+  await chooseAccessory('accessory','chibi_bag_school');
+  const femaleFit=await evalPage('window.__kc3dAudit.equipmentAudit()');
+  const femaleBag=femaleFit.accessories.find(x=>x.id==='chibi_bag_school');
+  assert.ok(femaleBag&&femaleBag.scale!==bomberBag.scale,
+    'Female body has no separate accessory fit');
+  assert.ok(Object.values(femaleFit.visibleSlots).every(names=>names.length<=1),
+    'Female body has clashing legacy/accessory slots');
+  report.accessoryPack.fitAndCollision={
+    maleWithHat:withCap.hair,maleWithHeadphones:withHeadphones.hair,
+    boots:bootFit.visibleSlots.shoes,
+    jacketBag:bomberBag.offset,shirtBag:shirtBag.offset,
+    femaleBag:femaleBag.offset
+  };
+  await setFit('male');
+
   for(const [fit,accessoryIds] of [
     ['male',['chibi_shoe_hightop','chibi_hat_baseball','chibi_face_round','chibi_bag_school','chibi_gear_watch','chibi_gear_scarf']],
     ['female',['chibi_shoe_boots','chibi_hat_beret','chibi_face_sunglasses','chibi_bag_mini','chibi_gear_watch','chibi_gear_scarf']]
