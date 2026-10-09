@@ -105,3 +105,21 @@ export function trafficPosition(index, elapsed, seed, centre) {
     ? { x: anchorX + move, y: level, z: Math.round(centre.z / LOT_SIZE) * LOT_SIZE + line, angle: 0 }
     : { x: Math.round(centre.x / LOT_SIZE) * LOT_SIZE + line, y: level, z: anchorZ + move, angle: Math.PI / 2 };
 }
+
+
+// Trace between craft and chase camera so the camera cannot sit in or look
+// through a building when banking close to a skyscraper.
+export function safeChaseCamera(requested, craft, world) {
+  let safe = { ...craft };
+  for (let i = 1; i <= 16; i++) {
+    const t = i / 16;
+    const test = {
+      x: craft.x + (requested.x - craft.x) * t,
+      y: craft.y + (requested.y - craft.y) * t,
+      z: craft.z + (requested.z - craft.z) * t
+    };
+    if (intersectsWorld(test, world, 0.58)) return safe;
+    safe = test;
+  }
+  return requested;
+}
