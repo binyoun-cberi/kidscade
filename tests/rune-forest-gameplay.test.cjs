@@ -8,6 +8,7 @@ const dir=path.join(__dirname,'..','games','math_rune_forest');
 const html=fs.readFileSync(path.join(dir,'넘버 시그널 (룬의 숲).html'),'utf8');
 const combat=fs.readFileSync(path.join(dir,'rune-forest-combat.js'),'utf8');
 const art=fs.readFileSync(path.join(dir,'rune-forest-art.js'),'utf8');
+const balance=fs.readFileSync(path.join(dir,'rune-forest-balance.js'),'utf8');
 const inline=html.match(/<script>\s*([\s\S]*?)<\/script>/)?.[1];
 const script=inline?.replace(/\}\)\(\);\s*$/, "window.__test={getScene:()=>s,getState:()=>state,start,spawn,strike,enterPhase,update,dash,kill,choose,refresh};})();");
 function makeBrowser(width=390,height=844){
@@ -17,7 +18,7 @@ function makeBrowser(width=390,height=844){
   'lineTo','fill','strokeText','fillText','setLineDash','translate','rotate','scale'])g[method]=()=>{};
  function el(id){
   if(elements.has(id))return elements.get(id);
-  const list=new Set(['menu']),e={id,style:{},children:[],disabled:false,value:id==='difficulty'?'easy':'',
+  const list=new Set(['menu']),e={id,style:{},children:[],disabled:false,value:id==='difficulty'?'easy':id==='runLength'?'quick':'',
    classList:{add(n){list.add(n)},remove(n){list.delete(n)},contains(n){return list.has(n)}},
    getContext(){return g},append(n){this.children.push(n)},setAttribute(){},setPointerCapture(){}};
   elements.set(id,e);return e;
@@ -32,14 +33,14 @@ function makeBrowser(width=390,height=844){
  const context=vm.createContext({window,document,location,URL,Image,Math,innerWidth:width,innerHeight:height,
   addEventListener(){},requestAnimationFrame(fn){frame=fn},
   localStorage:{getItem(k){return store.get(k)||null},setItem(k,v){store.set(k,v)}}});
- vm.runInContext(art,context);vm.runInContext(combat,context);
+ vm.runInContext(art,context);vm.runInContext(combat,context);vm.runInContext(balance,context);
  vm.runInContext(script,context);
  return {game:window.__test,combat:window.RuneForestCombat,el,frame:()=>frame,
   visuals:()=>({drawCalls,srcCount}),context};
 }
 test('combat, art and inline scripts are valid and appear in correct order',()=>{
  assert.ok(inline&&script);
- for(const [name,js] of [['art',art],['combat',combat],['inline',inline]])assert.doesNotThrow(()=>new vm.Script(js,{filename:name}));
+ for(const [name,js] of [['art',art],['combat',combat],['balance',balance],['inline',inline]])assert.doesNotThrow(()=>new vm.Script(js,{filename:name}));
  assert.ok(html.indexOf('src="rune-forest-art.js"')<html.indexOf('src="rune-forest-combat.js"'));
  assert.ok(html.indexOf('src="rune-forest-combat.js"')<html.indexOf('const COMBAT='));
  for(const type of ['charger','splitter','thief','warden','blast','slime'])
@@ -59,7 +60,7 @@ test('six specialized enemy families are available in appropriate phases',()=>{
  const p0=AI.chooseKind(0,()=>.99);
  const p1=AI.chooseKind(1,()=>.99);
  const p5=AI.chooseKind(5,()=>.99);
- assert.equal(p0,'warden');assert.equal(p1,'splitter');assert.equal(p5,'thief');
+ assert.equal(p0,'stone');assert.equal(p1,'charger');assert.equal(p5,'thief');
 });
 test('legal strikes preserve exact division; illegal strikes do not raise combo',()=>{
  const {game}=makeBrowser();game.start();
@@ -84,11 +85,11 @@ test('split slime creates at most two children with compatible positive divisors
   assert.ok(s.bag.some(b=>b.value%baby.n===0));
  }
  // Live cap prevents uncontrolled splitting in crowded waves.
- s.enemies=[];for(let i=0;i<31;i++)s.enemies.push({dead:false,kind:'slime'});
+ s.enemies=[];for(let i=0;i<11;i++)s.enemies.push({dead:false,kind:'slime'});
  const p=game.spawn(undefined,'splitter');s.enemies=s.enemies.filter(x=>x!==p);s.enemies.push(p);
  const current=s.enemies.length;s.phase=1;game.kill(p);
- assert.ok(s.enemies.filter(x=>!x.dead).length<=32);
- assert.ok(current>=32);
+ assert.ok(s.enemies.filter(x=>!x.dead).length<=12);
+ assert.ok(current>=12);
 });
 test('charger warns before rushing; blast warns before applying damage; thief slows runes',()=>{
  const {combat:AI}=makeBrowser();
@@ -148,7 +149,7 @@ test('all six phase transitions remain reachable without math-rule rewrites',()=
  const s=game.getScene();s.hp=100000;s.xp=-999;
  // Reduced trial duration is simulated without manually changing the phase.
  for(let i=0;i<6;i++){
-  s.phaseT=74.98;
+  s.phaseT=s.phaseLength-.02;
   game.update(.035);
   if(i<5)assert.equal(s.phase,i+1);
  }
