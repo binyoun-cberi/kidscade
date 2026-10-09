@@ -306,7 +306,13 @@ const errors=[];
     assert.ok(meshSafety.recoveryPasses<=12,'Unbounded garment stabilization '+name);
   }
   const skinAudit=await evalPage('window.__kc3dAudit.garmentSkinAudit()');
-  // Nine jacket/top variants have two continuous sleeves each; five trouser\n  // styles have two independently skinned leg meshes each: 18 + 10 = 28.\n  assert.equal(skinAudit.length,28,'Missing continuous sleeves or smooth-skinned trouser legs');
+  // Nine top variants have two continuous sleeves each (18).
+  // Five long trouser styles have two legs and one hip yoke each (15).
+  assert.equal(skinAudit.length,33,'Missing sleeves, trouser legs or crotch-covering hip yokes');
+  assert.equal(skinAudit.filter(x=>x.piece.endsWith('_hip_yoke')).length,5,
+    'Some trouser styles still expose an unconnected crotch gap');
+  assert.ok(skinAudit.filter(x=>x.piece.endsWith('_hip_yoke'))
+    .every(x=>x.transfer.region==='pelvis'),'Hip yokes must use pelvis-weight blending');
   for(const piece of skinAudit){
     assert.equal(piece.bones,78,'Wrong skinned garment skeleton '+piece.piece);
     assert.equal(piece.unweighted,0,'Unweighted garment vertices: '+piece.piece);
@@ -356,6 +362,23 @@ const errors=[];
       }
     }
   }
+  // Revisit the exact angles that showed white skin triangles at the crotch
+  // and jagged wrist edges in the user's before/after collage.
+  for(const [fit,top,bottom] of [
+    ['female','chibi_female_jacket','chibi_female_widepants'],
+    ['male','chibi_male_bomber','chibi_male_joggers']
+  ]){
+    await setFit(fit);
+    await selectGarment('top',top);
+    await selectGarment('bottom',bottom);
+    for(const clip of ['WALK','RUN']){
+      for(const view of ['front','side']){
+        for(const phase of [0,.25,.5,.75]){
+          await sample(clip,view,phase,'crotch-wrist-repro-'+fit);
+        }
+      }
+    }
+  }
   // Re-import the generated binary GLB. Checking the file header alone is not
   // enough: verify named garments, rigged meshes, and 11 animation clips.
   for(const [fit,top,bottom] of [
@@ -377,6 +400,8 @@ const errors=[];
       'Exported upper garment lost its skin rig: '+top);
     assert.ok(exported.skins.some(x=>x.name===bottom+'_shell'&&x.bones===78),
       'Exported lower garment lost its skin rig: '+bottom);
+    assert.ok(exported.skins.some(x=>x.name===bottom+'_hip_yoke'&&x.bones===78),
+      'Exported trousers lost the crotch-covering hip yoke: '+bottom);
     if(bottom.includes('joggers')||bottom.includes('widepants')){
       for(const side of ['left','right'])assert.ok(
         exported.skins.some(x=>x.name===bottom+'_leg_'+side&&x.bones===78),
