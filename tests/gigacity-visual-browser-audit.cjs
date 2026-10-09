@@ -155,36 +155,63 @@ const errors=[],responses=[];
     console.log('Prime buttons vs portrait mobile controls:',JSON.stringify(portraitWeaponOverlap));
     assert.ok(portraitWeaponOverlap.stick<1&&portraitWeaponOverlap.elevation<1,'Prime weapons overlap flying controls on a phone');
 
-    await click('[data-prime="5"]'); await sleep(620);
-    assert.equal(await evaluate('document.querySelector("#chaseTargetNumber").textContent'),'6','Incorrect 5 must not divide 6');
-    await click('[data-prime="2"]'); await sleep(270);
-    assert.equal(await evaluate('document.querySelector("#chaseTargetNumber").textContent'),'3','6 divided by 2 must become 3');
-    await click('[data-prime="3"]'); await sleep(400);
-    assert.match(await evaluate('document.querySelector("#chaseKills").textContent'),/1\s*\/\s*5/,'6 ÷ 2 ÷ 3 must shoot down the first drone');
-    await sleep(1550);
-    let numbers=await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).map(x=>x.textContent)');
-    assert.deepEqual(numbers,['10','15'],'Two enemy jets in pursuit wave 2');
-
-    const shoot=async prime=>{await click('[data-prime="'+prime+'"]');await sleep(460);};
-    await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).find(x=>x.textContent==="10").click()');
-    await shoot(2); await shoot(5);
-    await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).find(x=>x.textContent==="15").click()');
-    await shoot(3); await shoot(5);
-    await sleep(1800);
-    numbers=await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).map(x=>x.textContent)');
-    assert.deepEqual(numbers,['21','35'],'Two enemy jets in final pursuit wave');
-
-    const finishingFrame=await snap('06-prime-chase-final-wave');
-    await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).find(x=>x.textContent==="21").click()');
-    await shoot(3);await shoot(7);
-    await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).find(x=>x.textContent==="35").click()');
-    await shoot(5);await shoot(7);
-    await sleep(260);
+    // Play the full expanded 6-wave encounter using actual UI buttons.
+    await click('[data-prime="5"]'); await sleep(1620);
+    assert.equal(await evaluate('document.querySelector("#chaseTargetNumber").textContent'),'6',
+      'Wrong prime must not divide an enemy');
+    const firstShield=await evaluate('parseInt(document.querySelector("#chaseShield").textContent)');
+    assert.ok(firstShield<100,'Wrong shot must have a small cost');
+    const factorize=n=>{let arr=[];for(let d=2;d<=n;d++)while(n%d===0){arr.push(d);n/=d;}return arr;};
+    const waitFor=async(expression,description,timeout=7000)=>{
+      const before=Date.now();
+      while(Date.now()-before<timeout){
+        const success=await evaluate(expression).catch(()=>false);
+        if(success)return;
+        await sleep(130);
+      }
+      throw Error('Timed out waiting for '+description);
+    };
+    const shot=async(prime,valueAfter)=>{
+      await click('[data-prime="'+prime+'"]');
+      await waitFor('document.querySelector("#chaseTargetNumber").textContent === "'+valueAfter+'"','prime '+prime+' produces '+valueAfter,3000);
+      await sleep(355);
+    };
+    await shot(2,3);
+    await click('[data-prime="3"]');await sleep(480);
+    await waitFor('document.querySelector("#chaseKills").textContent.includes("1 / 11")','first composite defeated');
+    const allWaves=[[10,15],[8,12],[21,35],[30,49],[84,105]];
+    let destroyed=1;
+    for(let wave=0;wave<allWaves.length;wave++){
+      const numbers=allWaves[wave];
+      await waitFor('JSON.stringify(Array.from(document.querySelectorAll("#chaseEnemyChoices button")).map(x=>x.textContent)) === '+JSON.stringify(JSON.stringify(numbers.map(String))),
+        'pursuit wave '+(wave+2));
+      for(const original of numbers){
+        await evaluate('Array.from(document.querySelectorAll("#chaseEnemyChoices button")).find(x=>x.textContent==="'+original+'").click()');
+        let remaining=original;
+        const factors=factorize(original);
+        for(const prime of factors){
+          remaining/=prime;
+          await click('[data-prime="'+prime+'"]');
+          if(remaining>1){
+            await waitFor('document.querySelector("#chaseTargetNumber").textContent === "'+remaining+'"',
+              'enemy '+original+' divided to '+remaining,3600);
+          }else{
+            destroyed++;
+            await waitFor('document.querySelector("#chaseKills").textContent.includes("'+destroyed+' / 11")',
+              'destroy '+destroyed+' composite fighters',3600);
+          }
+          await sleep(355);
+        }
+      }
+      if(wave===allWaves.length-2) await snap('06-prime-chase-final-wave');
+    }
+    await waitFor('!document.querySelector("#chaseResult").classList.contains("hidden")',
+      'victory after last fighter',4000);
     const result=await evaluate('({resultVisible:!document.querySelector("#chaseResult").classList.contains("hidden"),title:document.querySelector("#chaseResultTitle").textContent,stats:document.querySelector("#chaseResultStats").textContent})');
     console.log('PRIME CHASE VICTORY:',JSON.stringify(result));
-    assert.ok(result.resultVisible,'Victory overlay should appear after all five enemies reach 1');
-    assert.ok(result.stats.includes('5/5'),'All 5 enemies must be counted');
-    const victoryFrame=await snap('07-prime-chase-victory');
+    assert.ok(result.resultVisible,'Victory overlay should appear');
+    assert.ok(result.stats.includes('11/11'),'All 11 composite fighters must be counted');
+    await snap('07-prime-chase-victory');
     const badResponses=responses.filter(x=>x.status>=400);
     console.log('HTTP errors:',JSON.stringify(badResponses.slice(0,8)));
     assert.ok(responses.some(x=>x.url?.endsWith('/race-future.glb')&&x.status===200),'Kenney player GLB was not loaded');
