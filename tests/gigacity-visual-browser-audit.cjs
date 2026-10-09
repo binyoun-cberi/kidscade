@@ -133,6 +133,8 @@ const errors=[],responses=[];
     })()`);
     console.log('TACTICAL RADAR:',JSON.stringify(radarReady));
     assert.ok(radarReady.painted>100 && radarReady.radarVisible,'Combat radar did not render');
+    assert.notEqual(radarReady.readout,'적 탐색 중',
+      'Enemy fighter 3D model did not spawn and appear on tactical radar');
     const combatOpening=await snap('00-prime-chase-start');
     console.log('PRIME CHASE opening frame brightness:',combatOpening.mean);
     const chase=await snap('01-chase-landscape');
