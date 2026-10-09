@@ -43,6 +43,8 @@ const enemyRemovalQueue = [];
 let bufferedShot = null;
 let primeHudElapsed = 0, lastEnemyButtons = '', feedbackSeconds = 0;
 let resultVisible = false;
+let endCinematic = -1;
+const enemyTotal = WAVE_NUMBERS.flat().length;
 let audioContext = null;
 playerCraft.loadExterior();
 let viewMode = 'chase';
@@ -562,7 +564,7 @@ function renderPrimeHUD() {
   const time = Math.ceil(state.remaining);
   $('chaseTimer').textContent = Math.floor(time / 60) + ':' + String(time % 60).padStart(2, '0');
   $('chaseWave').textContent = (state.waveIndex + 1) + ' / ' + WAVE_NUMBERS.length + '파';
-  $('chaseKills').textContent = state.destroyed + ' / 5 격추';
+  $('chaseKills').textContent = state.destroyed + ' / ' + enemyTotal + ' 격추';
   $('chaseShield').textContent = Math.round(state.shield) + '%';
   $('chaseShieldFill').style.width = state.shield + '%';
   $('chaseScore').textContent = state.score.toLocaleString('ko-KR') + '점';
@@ -609,6 +611,7 @@ function enterPrimeChase() {
   primeState = startPrimeChase(makePrimeChase());
   enemyRemovalQueue.length = 0;
   bufferedShot = null;
+  endCinematic = -1;
   pursuitScene.clear();
   pilotPosition.set(0, 200, 365);
   yaw = 0; pitch = -0.28;
@@ -640,14 +643,14 @@ function showPrimeResult() {
   $('chaseResultTitle').textContent = success ? '추격대를 모두 격추했어!' : '다시 도전해 봐!';
   $('chaseResultReason').textContent = primeState.reason;
   const stats = roundStats(primeState);
-  $('chaseResultStats').textContent = '격추 ' + stats.destroyed + '/5 · 정확도 ' + stats.accuracy + '% · 점수 ' + stats.score.toLocaleString('ko-KR') + '점';
+  $('chaseResultStats').textContent = '격추 ' + stats.destroyed + '/' + enemyTotal + ' · 회피 ' + stats.dodges + '회 · 정확도 ' + stats.accuracy + '% · 점수 ' + stats.score.toLocaleString('ko-KR') + '점';
   $('chaseResult').classList.remove('hidden');
 }
 function shootPrime(prime) {
   if (gameMode !== 'chase' || !active) return;
   const result = firePrime(primeState, prime);
   if (result.kind === 'cooldown') {
-    bufferedShot = { prime, targetId: selectedEnemy(primeState)?.id, ttl: .9 };
+    bufferedShot = { prime, targetId: selectedEnemy(primeState)?.id, ttl: 1.7 };
     return;
   }
   if (!['blocked','divided','destroyed'].includes(result.kind)) return;
@@ -668,13 +671,15 @@ function shootPrime(prime) {
     }
   }
   renderPrimeHUD();
-  if (primeState.status !== 'playing') showPrimeResult();
+  if (primeState.status !== 'playing') endCinematic = 1.15;
 }
 function updatePrimeCombat(dt, gameDt = dt) {
-  if (gameMode !== 'chase' || primeState.status !== 'playing') return;
+  if (gameMode !== 'chase') return;
   const distances = pursuitScene.update(dt, pilotPosition, yaw, collisionWorld, selectedEnemy(primeState)?.id);
-  const events = tickPrimeChase(primeState, gameDt, distances);
-  if (bufferedShot) {
+  const events = primeState.status === 'playing'
+    ? tickPrimeChase(primeState, gameDt, distances, pilotPosition)
+    : { newEnemies: [], attacks: [], warnings: [] };
+  if (bufferedShot && primeState.status === 'playing') {
     bufferedShot.ttl -= gameDt;
     const current = selectedEnemy(primeState);
     if (bufferedShot.ttl <= 0 || !current || current.id !== bufferedShot.targetId) {
@@ -687,19 +692,23 @@ function updatePrimeCombat(dt, gameDt = dt) {
   }
   for (let i = enemyRemovalQueue.length - 1; i >= 0; i--) {
     const entry = enemyRemovalQueue[i];
-    entry.time -= dt;
+    entry.time -= gameDt;
     if (entry.time <= 0) { pursuitScene.removeEnemy(entry.id); enemyRemovalQueue.splice(i, 1); }
   }
   for (let i = 0; i < events.newEnemies.length; i++) {
     pursuitScene.addEnemy(events.newEnemies[i], pilotPosition, yaw, collisionWorld, i);
   }
   if (events.newEnemies.length) announcePrime('새로운 합성수 추격대가 나타났어!');
+  for (const warning of events.warnings) pursuitScene.warnAttack(warning.id);
+  if (events.warnings.length) announcePrime('적이 조준 중! 방향을 바꾸거나 건물 뒤로 피하세요!', true);
   if (events.attacks.length) {
-    for (const hit of events.attacks) pursuitScene.enemyAttack(hit.id, pilotPosition);
-    announcePrime('적의 공격! 방어막 -' + (events.attacks.length * 8) + '%', true);
+    const hits = events.attacks.filter(event => event.hit);
+    for (const hit of hits) pursuitScene.enemyAttack(hit.id, pilotPosition);
+    if (hits.length) announcePrime('피격! 방어막 -' + hits.reduce((n,x)=>n+x.damage,0) + '%', true);
+    else announcePrime('공격 회피 성공! + 보너스', false);
   }
   primeHudElapsed += gameDt;
-  if (primeHudElapsed >= 0.19 || events.newEnemies.length || events.attacks.length) {
+  if (primeHudElapsed >= 0.19 || events.newEnemies.length || events.attacks.length || events.warnings.length) {
     primeHudElapsed = 0;
     renderPrimeHUD();
   }
@@ -707,8 +716,13 @@ function updatePrimeCombat(dt, gameDt = dt) {
     feedbackSeconds -= gameDt;
     if (feedbackSeconds <= 0) $('primeFeedback').classList.remove('visible');
   }
-  if (primeState.status !== 'playing') showPrimeResult();
+  if (primeState.status !== 'playing') {
+    if (endCinematic < 0) endCinematic = .85;
+    endCinematic -= gameDt;
+    if (endCinematic <= 0) showPrimeResult();
+  }
 }
+
 document.querySelectorAll('[data-prime]').forEach(button => {
   button.addEventListener('click', () => shootPrime(Number(button.dataset.prime)));
 });
@@ -802,17 +816,19 @@ function updateMovement(dt) {
 function frame(now) {
   requestAnimationFrame(frame);
   if (document.hidden) { lastTimestamp = now; return; }
-  const gameDt = Math.min(0.18, Math.max(0, (now - (lastTimestamp || now)) / 1000));
-  const dt = Math.min(0.05, gameDt);
+  const gameDt = Math.min(0.25, Math.max(0, (now - (lastTimestamp || now)) / 1000));
   lastTimestamp = now;
-  seconds += active ? dt : 0;
+  seconds += active ? gameDt : 0;
   if (active) {
     moveVehicles(seconds);
-    updateMovement(dt);
-    if (gameMode === 'chase') updatePrimeCombat(dt, gameDt);
+    // Keep travel distance and combat time identical even at 10–15 FPS.
+    const movementSteps = Math.max(1, Math.ceil(gameDt / .05));
+    const movementDt = gameDt / movementSteps;
+    for (let i = 0; i < movementSteps; i++) updateMovement(movementDt);
+    if (gameMode === 'chase') updatePrimeCombat(gameDt, gameDt);
     loadNearby();
     frameCount++;
-    fpsTime += dt;
+    fpsTime += gameDt;
     if (fpsTime >= 1.25) {
       const fps = Math.round(frameCount / fpsTime);
       $('fps').textContent = '화면 ' + fps + 'fps';
