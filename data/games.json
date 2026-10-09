@@ -4,7 +4,7 @@
     {
       "id": "openmon_expedition",
       "addedAt": "2026-10-10T00:16:00+09:00",
-      "title": "개념몬 탐험대",
+      "title": "키즈몬",
       "href": "games/openmon-expedition/index.html",
       "category": "math",
       "age": "high",
@@ -13,7 +13,7 @@
         "high"
       ],
       "icon": "🧬",
-      "description": "Openmon 몬스터와 함께 마을·초원·숲·동굴을 탐험하는 수학 RPG. 3가지 스타팅, 속성 상성·체력 계산·포획 확률, 전투·레벨업·진화·도감·가방과 자동 저장을 지원합니다.",
+      "description": "키즈케이드의 몬스터 RPG, 키즈몬! 마을·초원·숲·동굴을 탐험하며 키즈몬을 포획하고 성장시켜요. 속성 상성·체력 계산·포획 확률·진화·도감·자동 저장을 즐길 수 있어요.",
       "subject": "math",
       "genre": "rpg",
       "difficulty": "medium",
