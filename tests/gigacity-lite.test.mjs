@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { LOTS_PER_CHUNK, LOT_SIZE, ROAD_WIDTH, CHUNK_SIZE, chunkOf, createChunkData, randomAt, seedNumber } from '../games/gigacity_lite/city-core.mjs';
 import { VIEW_MODES, safeMode, cameraPose, forwardOf, rotateXZ, CAMERA_EYE } from '../games/gigacity_lite/flight-view.mjs';
 import { readFileSync } from 'node:fs';
-import { makeCollisionWorld, intersectsBuilding, intersectsWorld, moveWithCollisions, guideAlongRoad, trafficPosition, CRAFT_RADIUS, CRAFT_HALF_HEIGHT, buildingTop } from '../games/gigacity_lite/flight-physics.mjs';
+import { makeCollisionWorld, intersectsBuilding, intersectsWorld, moveWithCollisions, guideAlongRoad, trafficPosition, CRAFT_RADIUS, CRAFT_HALF_HEIGHT, buildingTop, safeChaseCamera } from '../games/gigacity_lite/flight-physics.mjs';
 
 test('gigacity seed generates stable, reproducible chunks', () => {
   const seed = seedNumber('NEON-01');
@@ -186,4 +186,19 @@ test('collision warning and avenue traffic are wired into live flight controls',
   assert.match(main, /guideAlongRoad\(origin/);
   assert.match(main, /trafficPosition\(i/);
   assert.match(html, /id="flightWarning"/);
+});
+
+
+test('third-person camera slides forward before a blocking tower, staying outside', () => {
+  const seed = seedNumber('CAMERA-TEST');
+  const world = makeCollisionWorld(seed);
+  const b = createChunkData(0, 0, seed).buildings[0];
+  const craft = { x: b.x - b.width / 2 - 5, y: 40, z: b.z };
+  const eye = { x: b.x + 5, y: 46, z: b.z };
+  const safe = safeChaseCamera(eye, craft, world);
+  assert.ok(safe.x < eye.x - 1);
+  assert.ok(safe.x >= craft.x);
+  assert.equal(intersectsWorld(safe, world, 0.58), false);
+  const sky = { x: eye.x, y: b.height + 70, z: eye.z };
+  assert.deepEqual(safeChaseCamera(sky, { ...craft, y: sky.y }, world), sky);
 });
