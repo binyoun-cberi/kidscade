@@ -912,3 +912,15 @@ test('v5.8 smooth garment skin weights have four-neighbor blending and reject in
   assert.match(audit,/invalidBones,0/);
   assert.match(audit,/residualUnsafeTriangles,0/);
 });
+
+test('v5.8 visual cleanup uses continuous skinned sleeves and visibly separate wide pant legs',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  assert.match(pack,/new THREE\.CatmullRomCurve3\(puff\?\[start,elbow\]:\[start,elbow,cuff\]\)/);
+  assert.match(pack,/addMatchedSleeve\(sleeve,sign<0\?'continuousSleeve_left':'continuousSleeve_right',sign\)/);
+  assert.match(pack,/sleeve\.setIndex\(faces\)/);
+  assert.doesNotMatch(pack,/shoulderCap=new THREE\.SphereGeometry/);
+  assert.match(pack,/const upperRadius=wide\?\.140/);
+  assert.match(pack,/const lowerRadius=wide\?\.104/);
+  assert.match(pack,/geometry\.translate\(sign\*\(wide\?\.178:\.153\)/);
+  assert.match(pack,/const fullness=1-\.11\*knee\+\.025\*hem/);
+});
