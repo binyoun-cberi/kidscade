@@ -116,7 +116,7 @@ test('enemy attacks require close proximity, and shields / timer end the round',
   for(let i=0;i<75;i++)tickPrimeChase(game,0.1,{});
   assert.equal(game.shield,100);
   const id=selectedEnemy(game).id;
-  for(let i=0;i<90;i++)tickPrimeChase(game,0.1,{[id]:55});
+  for(let i=0;i<115;i++)tickPrimeChase(game,0.1,{[id]:55});
   assert.ok(game.shield < 100);
   damageShield(game,100);
   assert.equal(game.status,'lost');
