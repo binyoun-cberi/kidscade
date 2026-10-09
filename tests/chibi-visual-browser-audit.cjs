@@ -331,14 +331,20 @@ const errors=[];
       if(piece.piece==='chibi_male_hoodie_continuousSleeve_left'
           ||piece.piece==='chibi_female_jacket_continuousSleeve_left')
         console.log('CHIBI_ARM_COVERAGE '+JSON.stringify({piece:piece.piece,...piece.transfer}));
-      assert.ok(piece.transfer.triangles>180,'Lower-arm surface still missing: '+piece.piece+
-        ' / triangles='+piece.transfer.triangles);
-      assert.ok(Number.isFinite(piece.transfer.minY)&&piece.transfer.minY<.90,
-        'Lower-arm coverage ends above elbow: '+piece.piece+' / y='+piece.transfer.minY);
-      assert.ok(piece.transfer.verticalBands[2]>0,
-        'Sleeve has no lower-forearm vertices: '+piece.piece);
-      assert.ok(piece.transfer.sourceBandReport[2].arm>15,
-        'Numbered Blender forearm bone missing from lower-arm source weights: '+piece.piece);
+      const isPuff=piece.piece.startsWith('chibi_female_blouse_');
+      if(isPuff){
+        assert.ok(piece.transfer.triangles>12,'Puff blouse lost its upper-arm triangles: '+piece.piece);
+        assert.ok(piece.transfer.minY>.91,'Puff blouse sleeve extends past elbow: '+piece.piece);
+      }else{
+        assert.ok(piece.transfer.triangles>180,'Lower-arm surface still missing: '+piece.piece+
+          ' / triangles='+piece.transfer.triangles);
+        assert.ok(Number.isFinite(piece.transfer.minY)&&piece.transfer.minY<.90,
+          'Lower-arm coverage ends above elbow: '+piece.piece+' / y='+piece.transfer.minY);
+        assert.ok(piece.transfer.verticalBands[2]>0,
+          'Sleeve has no lower-forearm vertices: '+piece.piece);
+        assert.ok(piece.transfer.sourceBandReport[2].arm>15,
+          'Numbered Blender forearm bone missing from lower-arm source weights: '+piece.piece);
+      }
     }
   }
   report.outfitPack.skinTransfer={pieces:skinAudit.length,details:skinAudit};
