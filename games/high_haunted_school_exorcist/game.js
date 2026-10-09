@@ -920,7 +920,7 @@ function act(){
     setStage(9);
   }else if(item.type==='reaperSeal'){sfx('sfx_school_alarm_bell.mp3',.16);setStage(10);}
   else if(item.type==='speaker'){
-    const w=encounter.wolf;w.lureTime=26;w.soundClock=0;w.nav=null;w.ready=false;w.active=true;
+    const w=encounter.wolf;w.lureTime=22;w.soundClock=0;w.nav=null;w.ready=false;w.active=true;
     sfx('sfx_school_alarm_bell.mp3',.28);sfx('sfx_wolf_howl.mp3',.18);setStage(11);
   }else if(item.type==='wolfSeal'){sfx('sfx_school_alarm_bell.mp3',.20);setStage(12);}
   else if(item.type==='report')finish(true);
@@ -953,7 +953,7 @@ function reset(){
   ui.intro.classList.add('hidden');ui.end.classList.add('hidden');ui.help.classList.add('hidden');
   bgm.currentTime=0;bgm.play().catch(()=>{});sfx('sfx_school_alarm_bell.mp3',.12);
   window.KidscadeGame?.start?.({mode:'prototype',ghosts:['dokkaebi','maiden','yuki','egg','reaper','wolf']});
-  showLesson('첫 임무 · 6-1 교실','ㄷ자 학교 북쪽 날개로 이동하세요. 첫 번째 조사까지만 노란 길이 나오고 이후에는 직접 탐험합니다.',16);
+  showLesson('첫 임무 · 6-1 교실','북쪽 날개의 6-1 교실로 가세요. 교실 문은 가까이 가면 열립니다. 첫 조사 후 길이 어려우면 H 또는 길찾기 버튼을 누르세요.',16);
   showToast('연결동 관리실에서 출발합니다. 북쪽 6-1 교실을 조사하세요.');
   updateHud();updateNavigation(0,true);
 }
@@ -1042,7 +1042,10 @@ function segmentHitsRect(ax,az,bx,bz,rect,margin=.012){
   return exit>.015&&enter<.985;
 }
 function clearGhostSight(ax,az,bx,bz){
-  return !walls.some(rect=>!rect.transparent&&segmentHitsRect(ax,az,bx,bz,rect));
+  const concrete=walls.some(rect=>!rect.transparent&&segmentHitsRect(ax,az,bx,bz,rect));
+  const closed=typeof schoolDoors!=='undefined'&&schoolDoors.some(d=>
+    d.openAmount<.82&&segmentHitsRect(ax,az,bx,bz,d.barrier));
+  return !concrete&&!closed;
 }
 function playerLookDirection(){
   const cp=Math.cos(viewPitch);
