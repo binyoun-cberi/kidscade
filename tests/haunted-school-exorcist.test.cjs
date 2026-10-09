@@ -526,7 +526,7 @@ test('first-person control instructions agree with the fixed eye camera',()=>{
   assert.match(html,/1인칭 시점/);
   assert.match(html,/카메라는 캐릭터의 눈과 같습니다/);
   assert.match(html,/화면을 돌려 진짜로 등을 돌린 채 4초/);
-  assert.match(js,/ui\.reticle\.classList\.toggle\('hidden',!started\|\|ended\)/);
+  assert.match(js,/ui\.reticle\.classList\.toggle\('hidden',!started\|\|ended\|\|!!hidingLocker\)/);
 });
 
 
