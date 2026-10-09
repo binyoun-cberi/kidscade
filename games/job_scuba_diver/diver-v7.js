@@ -75,6 +75,7 @@ const CONTRACTS=[
 ];
 const DAILY_TASKS=[
  {id:'reefPhotos',title:'오늘의 사진 기록',desc:'서로 다른 생물 2종을 B등급 이상 촬영하세요.',reward:650,unlock:0,type:'photos',goal:2,grade:'B'},
+ {id:'cleanup',title:'오늘의 해양 정화',desc:'바닷속 쓰레기를 3개 수거하고 안전하게 귀환하세요.',reward:600,unlock:0,type:'cleanup',goal:3},
  {id:'catchWeight',title:'오늘의 식재료 조달',desc:'먹을 수 있는 생물을 합계 1.5kg 이상 확보하세요.',reward:720,unlock:0,type:'weight',goal:1.5},
  {id:'seaGreens',title:'오늘의 해조 채집',desc:'미역·다시마·붉은 해조·바다상추 중 2개를 채집하세요.',reward:820,unlock:1,type:'groupCount',keys:['seaweed','kelp','redAlgae','seaLettuce'],goal:2},
  {id:'mackerelRun',title:'고등어 납품',desc:'고등어 2마리를 가져오세요.',reward:980,unlock:1,type:'count',key:'mackerel',goal:2},
@@ -86,6 +87,7 @@ function dailyTaskForDay(day=1){
 }
 function dailyTaskProgress(task,worldRef=world){
  if(!task||!worldRef)return 0;
+ if(task.type==='cleanup')return worldRef.cleanupBag?.length||0;
  if(task.type==='weight')return worldRef.catchWeight||0;
  if(task.type==='count')return worldRef.catchCounts?.[task.key]||0;
  if(task.type==='groupCount')return (task.keys||[]).reduce((n,k)=>n+(worldRef.catchCounts?.[k]||0),0);
@@ -131,6 +133,19 @@ const GEAR_DEFS={
 };
 const GEAR_TIER_NAMES=['','초록','파랑','보라','주황'];
 const GEAR_TIER_COLORS=['','#68d391','#63b3ed','#b794f4','#f6ad55'];
+// OpenMon icons are shared UI assets. Marine litter does not enter the kitchen.
+const CLEANUP_TYPES={
+ can:{name:'녹슨 음료 캔',icon:'canBlue',reward:70,zones:['reef','kelp','ruins','wreck']},
+ canGreen:{name:'버려진 통조림',icon:'canGreen',reward:80,zones:['reef','kelp','wreck']},
+ bottle:{name:'유리 음료병',icon:'glassBottle',reward:100,zones:['reef','kelp','ruins','wreck']},
+ plastic:{name:'떠내려온 플라스틱병',icon:'waterBottle',reward:65,zones:['reef','kelp','ruins']},
+ paper:{name:'방수 포장지',icon:'paper',reward:55,zones:['reef','kelp','wreck']},
+ metal:{name:'폐금속 부품',icon:'metalBar',reward:135,zones:['ruins','wreck','abyss','hadal']},
+ cable:{name:'폐전선',icon:'cable',reward:165,zones:['wreck','abyss','hadal'],gloves:true},
+ battery:{name:'폐배터리',icon:'battery',reward:210,zones:['wreck','abyss','hadal'],gloves:true}
+};
+const CLEANUP_ZONE_COUNTS={reef:14,kelp:11,ruins:9,wreck:12,abyss:6,hadal:6};
+const CLEANUP_BAG_CAP=8;
 const CATCH_CAP_LEVELS=[4,7,11,16,22,30];
 const HARVEST_DEFS={
  seaweed:{name:'미역',img:'seaweedGreenC',weight:.30,value:140,method:'knife',difficulty:1,draw:[30,54],zones:['reef','kelp']},
@@ -573,7 +588,7 @@ const keys={},touch={x:0,y:0,dash:false},meta={
  gear:{harpoon:1,net:1,gloves:1,knife:1,trap:1},
  loadout:['harpoon','net'],
  shopUp:{seats:0,stove:0,prep:0,fridge:0,tray:0,menu:0,helper:0},
- codex:{},records:{},bestDepth:0,bestScore:0,stock:{},stockQuality:{},day:1,shop:{reputation:0,bestNight:0,totalServed:0}
+ codex:{},records:{},bestDepth:0,bestScore:0,stock:{},stockQuality:{},day:1,shop:{reputation:0,bestNight:0,totalServed:0},cleanup:{total:0,zones:{},types:{}}
 };
 let restaurant=null,dockMissionId=null,dockTab='none';
 
@@ -595,7 +610,7 @@ function load(){
   let r=null;try{r=JSON.parse(localStorage.getItem(SAVE)||'null')}catch(e){}
   if(!r){try{r=JSON.parse(localStorage.getItem(OLD)||'null')}catch(e){}}
   if(!r){try{const o=JSON.parse(localStorage.getItem(LEGACY)||'null');if(o)r={money:o.money||0,unlocked:Math.min(4,o.unlocked||0),up:o.up||{},codex:o.codex||{},bestDepth:o.bestDepth||0,bestScore:o.bestScore||0}}catch(e){}}
-  if(r){meta.money=r.money||0;meta.unlocked=r.unlocked||0;Object.assign(meta.up,r.up||{});Object.assign(meta.gear,r.gear||{});Object.assign(meta.shopUp,r.shopUp||{});meta.loadout=Array.isArray(r.loadout)?r.loadout.filter(k=>GEAR_DEFS[k]).slice(0,2+(meta.up.slots||0)):meta.loadout;meta.codex=r.codex||{};meta.records=r.records&&typeof r.records==='object'?r.records:{};meta.bestDepth=r.bestDepth||0;meta.bestScore=r.bestScore||0;meta.stock=r.stock&&typeof r.stock==='object'?r.stock:{};meta.stockQuality=r.stockQuality&&typeof r.stockQuality==='object'?r.stockQuality:{};syncStockQuality();meta.day=Math.max(1,r.day||1);Object.assign(meta.shop,r.shop||{});save()}
+  if(r){meta.money=r.money||0;meta.unlocked=r.unlocked||0;Object.assign(meta.up,r.up||{});Object.assign(meta.gear,r.gear||{});Object.assign(meta.shopUp,r.shopUp||{});meta.loadout=Array.isArray(r.loadout)?r.loadout.filter(k=>GEAR_DEFS[k]).slice(0,2+(meta.up.slots||0)):meta.loadout;meta.codex=r.codex||{};meta.records=r.records&&typeof r.records==='object'?r.records:{};meta.bestDepth=r.bestDepth||0;meta.bestScore=r.bestScore||0;meta.stock=r.stock&&typeof r.stock==='object'?r.stock:{};meta.stockQuality=r.stockQuality&&typeof r.stockQuality==='object'?r.stockQuality:{};syncStockQuality();meta.day=Math.max(1,r.day||1);Object.assign(meta.shop,r.shop||{});meta.cleanup={total:Math.max(0,Number(r.cleanup?.total)||0),zones:r.cleanup?.zones&&typeof r.cleanup.zones==='object'?r.cleanup.zones:{},types:r.cleanup?.types&&typeof r.cleanup.types==='object'?r.cleanup.types:{}};save()}
 }
 function beep(f=500,d=.08,type='triangle'){if(!sound)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;o.frequency.value=f;o.type=type;g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.05,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(t+d+.02)}catch(e){}}
 function ensureAmbience(){
@@ -764,6 +779,33 @@ function buildHarvestables(r){
  const plan={seaweed:16,kelp:11,redAlgae:8,seaLettuce:13,mussel:10};
  for(const [key,count] of Object.entries(plan)){const d=HARVEST_DEFS[key];for(let i=0;i<count;i++){const zid=d.zones[Math.floor(r()*d.zones.length)],z=ZONES.find(q=>q.id===zid),x=120+r()*(WORLD.w-240),y=z.y0+70+r()*Math.max(60,z.y1-z.y0-140);addHarvestNode(key,x,y,key+'-'+i)}}
 }
+function buildCleanupDebris(r){
+ const historical=meta.cleanup?.zones||{};
+ for(const z of ZONES){
+  const count=Math.max(2,CLEANUP_ZONE_COUNTS[z.id]-Math.floor((historical[z.id]||0)/8));
+  const pool=Object.entries(CLEANUP_TYPES).filter(([,def])=>def.zones.includes(z.id));
+  for(let i=0;i<count;i++){
+   const [kind]=pool[Math.floor(r()*pool.length)];let x=0,y=0,valid=false;
+   for(let tries=0;tries<32;tries++){
+    x=120+r()*(WORLD.w-240);y=z.y0+70+r()*Math.max(1,z.y1-z.y0-140);
+    if(!world.terrain.some(t=>pointInSolid(x,y,t,33))){valid=true;break}
+   }
+   if(valid)world.debris.push({id:z.id+'-trash-'+i,kind,x,y,zone:z.id,taken:false,phase:r()*6.283});
+  }
+ }
+ if(meta.day===1){
+  const tutorial={id:'tutorial-trash',kind:'can',x:world.boat.x+110,y:WORLD.surface+135,zone:'reef',taken:false,phase:0};
+  if(!world.terrain.some(t=>pointInSolid(tutorial.x,tutorial.y,t,32)))world.debris.push(tutorial);
+ }
+}
+function cleanupBagSummary(items){return items.reduce((map,item)=>{map[item.kind]=(map[item.kind]||0)+1;return map},{})}
+function collectCleanup(item){
+ if(world.cleanupBag.length>=CLEANUP_BAG_CAP){showHint('정화 가방이 가득 찼습니다. 탐사선으로 돌아가 정산하세요.',1300);beep(145,.06);return}
+ const def=CLEANUP_TYPES[item.kind];
+ if(def.gloves&&!world.loadout.includes('gloves')){showHint(def.name+'은 위험 폐기물입니다. 장비 창고에서 철제 장갑을 빌려 오세요.',1500);beep(150,.06);return}
+ item.taken=true;world.cleanupBag.push({kind:item.kind,zone:item.zone});world.cleanupIncome+=def.reward;
+ beep(820,.07);showHint(def.name+' 수거 · '+world.cleanupBag.length+'/'+CLEANUP_BAG_CAP+'개 · 정화 보상 +'+money(def.reward),1250);
+}
 function configureToolbars(){
  if(!world)return;const allowed=new Set(['camera','sonar',...world.loadout]);document.querySelectorAll('[data-tool]').forEach(b=>{const on=allowed.has(b.dataset.tool);b.classList.toggle('loadoutHidden',!on);b.disabled=!on});if(!allowed.has(world.tool))world.tool='camera'
 }
@@ -772,7 +814,7 @@ function buildWorld(contract=FREE_DIVE){
  const loadout=(meta.loadout||[]).filter(k=>GEAR_DEFS[k]).slice(0,st.toolSlots);
  world={
    contract,daily:dailyTaskForDay(meta.day),st,time:0,boat:{x:WORLD.w*.5,y:WORLD.surface+18},camera:{x:WORLD.w*.5,y:220},player:{x:WORLD.w*.5,y:130,vx:0,vy:0,face:1,aimX:1,aimY:0,oxygen:st.oxygen,hp:100,dashCd:0,dashTime:0,dashHeld:false,inv:0},
-   fish:[],fishGrid:new Map(),decor:[],harvestables:[],traps:[],trapSeq:0,foreground:buildForeground(seed),terrain:buildTerrain(),props:[],mines:[],pickups:[],shots:[],effects:[],bubbles:[],bossSeen:{mantis:false,kraken:false},
+   fish:[],fishGrid:new Map(),decor:[],harvestables:[],debris:[],cleanupBag:[],cleanupIncome:0,traps:[],trapSeq:0,foreground:buildForeground(seed),terrain:buildTerrain(),props:[],mines:[],pickups:[],shots:[],effects:[],bubbles:[],bossSeen:{mantis:false,kraken:false},
    bag:[],bagWeight:0,catchWeight:0,catchCounts:{},catchPortions:{},catchLots:{},catchRawValue:0,premiumPortions:0,income:0,photoIncome:0,maxDepth:0,loadout,tool:'camera',sonar:0,sonarCd:0,lightOn:true,lastZone:'',lastSubzone:'',zoneFlash:0,envPulse:0,lightJam:0,currentBurst:0,silt:0,scrapeCd:0,thermalLift:0,pressureOver:0,pressureTick:0,pressureState:'safe',reserveState:'safe',tether:null,complete:false,returned:false,
    mission:{photos:{},photoGrades:{},photoValues:{},samples:0,statue:false,arch:false,relic:false,recorder:false,deep:false,hadal:false,giantGrade:null,visited:{}}
  };
@@ -840,7 +882,7 @@ function buildWorld(contract=FREE_DIVE){
    {x:4120,y:1180,type:'grassClump',scale:1.32,flip:true,zone:'kelp'},{x:1480,y:1690,type:'grassClump',scale:.96,flip:false,zone:'ruins'},
    {x:3310,y:2210,type:'grassClump',scale:1.08,flip:true,zone:'ruins'},{x:970,y:2520,type:'grassClump',scale:.90,flip:false,zone:'wreck'}
  );
- buildHarvestables(r);
+ buildHarvestables(r);buildCleanupDebris(r);
  world.props.push({id:'statue',x:WORLD.w*.34,y:1810,type:'statue',done:false},{id:'arch',x:WORLD.w*.67,y:2050,type:'arch',done:false});
  world.pickups.push({id:'relic',name:'고대 유적 열쇠',x:3950,y:2250,value:850,taken:false,weight:.2,icon:'pickupKey',iconSize:48});
  world.pickups.push({id:'recorder',name:'항해기록 장치',x:WORLD.w*.72,y:3030,value:1600,taken:false,weight:3.5,icon:'pickupTelescope',iconSize:62});
@@ -1974,7 +2016,7 @@ function openCodex(){
 }
 
 function bind(){
- $('startBtn').onclick=()=>{if(!ready)return;meta.money=0;meta.unlocked=0;meta.up={oxygen:0,fins:0,bag:0,catchCap:0,slots:0,camera:0,harpoon:0,sonar:0,suit:0,buoyancy:0};meta.gear={harpoon:1,net:1,gloves:1,knife:1,trap:1};meta.loadout=['harpoon','net'];meta.shopUp={seats:0,stove:0,prep:0,fridge:0,tray:0,menu:0,helper:0};meta.codex={};meta.records={};meta.bestDepth=0;meta.bestScore=0;meta.stock={};meta.stockQuality={};meta.day=1;meta.shop={reputation:0,bestNight:0,totalServed:0};dockMissionId=null;dockTab='none';save();openContracts('none')};
+ $('startBtn').onclick=()=>{if(!ready)return;meta.money=0;meta.unlocked=0;meta.up={oxygen:0,fins:0,bag:0,catchCap:0,slots:0,camera:0,harpoon:0,sonar:0,suit:0,buoyancy:0};meta.gear={harpoon:1,net:1,gloves:1,knife:1,trap:1};meta.loadout=['harpoon','net'];meta.shopUp={seats:0,stove:0,prep:0,fridge:0,tray:0,menu:0,helper:0};meta.codex={};meta.records={};meta.bestDepth=0;meta.bestScore=0;meta.stock={};meta.stockQuality={};meta.day=1;meta.shop={reputation:0,bestNight:0,totalServed:0};meta.cleanup={total:0,zones:{},types:{}};dockMissionId=null;dockTab='none';save();openContracts('none')};
  $('continueBtn').onclick=()=>{if(!ready)return;load();dockTab='none';openContracts('none')};
  $('nextBtn').onclick=()=>{};$('restBtn').onclick=()=>{};$('homeBtn').onclick=()=>{};
  $('soundBtn').onclick=()=>{sound=!sound;$('soundBtn').textContent=sound?'SOUND ON':'SOUND OFF';if(sound)beep(700,.07);syncAmbience()};$('lightBtn').onclick=toggleDiveLight;$('lightMobile').onclick=toggleDiveLight;
