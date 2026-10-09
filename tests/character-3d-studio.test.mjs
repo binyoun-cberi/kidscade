@@ -254,7 +254,7 @@ test('male Chibi preset reuses source meshes for body face hair and clothes',()=
   assert.match(js,/const browCenterY=1\.792/);
   assert.match(js,/extractedBrowTriangles:kept\.length\/3/);
   assert.match(html,/data-chibi-preset="male"/);
-  assert.match(html,/남자 기본/);
+  assert.match(html,/남성형 기본/);
   assert.match(html,/value="kidscade_male_hair_short"(?: selected)?>남자 짧은 머리/);
 });
 
