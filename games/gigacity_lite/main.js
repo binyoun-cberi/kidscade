@@ -670,12 +670,12 @@ function shootPrime(prime) {
   renderPrimeHUD();
   if (primeState.status !== 'playing') showPrimeResult();
 }
-function updatePrimeCombat(dt) {
+function updatePrimeCombat(dt, gameDt = dt) {
   if (gameMode !== 'chase' || primeState.status !== 'playing') return;
   const distances = pursuitScene.update(dt, pilotPosition, yaw, collisionWorld, selectedEnemy(primeState)?.id);
-  const events = tickPrimeChase(primeState, dt, distances);
+  const events = tickPrimeChase(primeState, gameDt, distances);
   if (bufferedShot) {
-    bufferedShot.ttl -= dt;
+    bufferedShot.ttl -= gameDt;
     const current = selectedEnemy(primeState);
     if (bufferedShot.ttl <= 0 || !current || current.id !== bufferedShot.targetId) {
       bufferedShot = null;
@@ -698,13 +698,13 @@ function updatePrimeCombat(dt) {
     for (const hit of events.attacks) pursuitScene.enemyAttack(hit.id, pilotPosition);
     announcePrime('적의 공격! 방어막 -' + (events.attacks.length * 8) + '%', true);
   }
-  primeHudElapsed += dt;
+  primeHudElapsed += gameDt;
   if (primeHudElapsed >= 0.19 || events.newEnemies.length || events.attacks.length) {
     primeHudElapsed = 0;
     renderPrimeHUD();
   }
   if (feedbackSeconds > 0) {
-    feedbackSeconds -= dt;
+    feedbackSeconds -= gameDt;
     if (feedbackSeconds <= 0) $('primeFeedback').classList.remove('visible');
   }
   if (primeState.status !== 'playing') showPrimeResult();
@@ -802,13 +802,14 @@ function updateMovement(dt) {
 function frame(now) {
   requestAnimationFrame(frame);
   if (document.hidden) { lastTimestamp = now; return; }
-  const dt = Math.min(0.05, Math.max(0, (now - (lastTimestamp || now)) / 1000));
+  const gameDt = Math.min(0.18, Math.max(0, (now - (lastTimestamp || now)) / 1000));
+  const dt = Math.min(0.05, gameDt);
   lastTimestamp = now;
   seconds += active ? dt : 0;
   if (active) {
     moveVehicles(seconds);
     updateMovement(dt);
-    if (gameMode === 'chase') updatePrimeCombat(dt);
+    if (gameMode === 'chase') updatePrimeCombat(dt, gameDt);
     loadNearby();
     frameCount++;
     fpsTime += dt;
