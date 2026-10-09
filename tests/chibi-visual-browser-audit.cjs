@@ -108,10 +108,11 @@ const errors=[];
     const status=await evalPage(`(()=>({
       ready:!!window.__kc3dAudit?.ready,
       status:document.getElementById('chibiAssetStatus')?.textContent||'',
+      assetError:document.getElementById('assetMissing')?.textContent||'',
       gate:document.getElementById('gateText')?.textContent||''
     }))()`);
     ready=status.ready;
-    detail=status.status+' / '+status.gate;
+    detail=status.status+' / '+status.assetError+' / '+status.gate;
     if(ready)break;
     if(/로드 실패|생성에 실패|열 수 없|찾지 못|WebGL/.test(detail))break;
     await sleep(100);
