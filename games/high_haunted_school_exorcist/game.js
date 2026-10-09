@@ -882,7 +882,8 @@ function nearAction(){
   if(stage===8&&dist(player,bellDoor)<2.7&&encounter.bellCount>=3&&encounter.bellWindow>0)
     return{type:'closeDoor',text:'세 번째 종! 문 닫기 [E]'};
   if(stage===9&&dist(player,{x:-25.3,z:8})<2.2)return{type:'reaperSeal',text:'저승사자 봉인하기'};
-  if(stage===10&&dist(player,{x:-7.5,z:8.55})<2.25)return{type:'speaker',text:'유인 스피커 켜기'};
+  if(stage===10&&dist(player,{x:-7.5,z:8.55})<2.25&&
+    clearGhostSight(player.x,player.z,-7.5,8.55))return{type:'speaker',text:'유인 스피커 켜기'};
   if(stage===11&&encounter.wolf.ready&&dist(player,wolfTrap)<2.7)return{type:'wolfSeal',text:'늑대 함정 봉인하기'};
   if(stage===12&&dist(player,SCHOOL.guard)<2.3)return{type:'report',text:'퇴마 보고서 제출'};
   const nearby=nearestLocker();
