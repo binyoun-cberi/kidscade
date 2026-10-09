@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   PRIME_WEAPONS, WAVE_NUMBERS, ROUND_SECONDS, isPrime, primeFactors,
-  makePrimeChase, startPrimeChase, firePrime, selectEnemy, selectedEnemy,
+  makePrimeChase, startPrimeChase, PRACTICE_WAVES, firePrime, selectEnemy, selectedEnemy,
   activeEnemies, tickPrimeChase, damageShield, roundStats
 } from '../games/gigacity_lite/prime-chase.mjs';
 
@@ -87,11 +87,12 @@ test('wave 2 appears only after first enemy is destroyed and a small pause', () 
   tickPrimeChase(game, 4);
   assert.equal(game.waveIndex, 0);
   firePrime(game, 2);
-  tickPrimeChase(game, 0.3);
+  tickPrimeChase(game, 0.25);
+  tickPrimeChase(game, 0.10);
   firePrime(game, 3);
-  tickPrimeChase(game, 0.5);
+  tickPrimeChase(game, 0.25);
   assert.equal(activeEnemies(game).length, 0);
-  for (let i=0;i<14;i++) tickPrimeChase(game,0.1);
+  for (let i=0;i<16;i++) tickPrimeChase(game,0.1);
   assert.equal(game.waveIndex, 1);
   assert.deepEqual(activeEnemies(game).map(e=>e.number), [10, 15]);
 });
@@ -194,4 +195,26 @@ test('cover stops damage after a visible 2-second warning', () => {
   assert.equal(attacks[0].hit,false);
   assert.equal(game.shield,100);
   assert.equal(game.dodges,1);
+});
+
+
+test('practice session has three approachable waves and wins after five aircraft', () => {
+  assert.deepEqual(PRACTICE_WAVES, [[6],[10,15],[8,12]]);
+  const game=startPrimeChase(makePrimeChase(),'practice');
+  assert.equal(game.mode,'practice');
+  assert.equal(roundStats(game).total,5);
+  for(const wave of PRACTICE_WAVES){
+    assert.deepEqual(activeEnemies(game).map(e=>e.original),wave);
+    for(const enemy of activeEnemies(game)){
+      selectEnemy(game,enemy.id);
+      for(const prime of primeFactors(enemy.original)){
+        const outcome=firePrime(game,prime);
+        assert.ok(outcome.kind==='divided'||outcome.kind==='destroyed');
+        tickPrimeChase(game,.20);tickPrimeChase(game,.20);
+      }
+    }
+    for(let i=0;i<20;i++)tickPrimeChase(game,.1);
+  }
+  assert.equal(game.status,'won');
+  assert.equal(game.destroyed,5);
 });
