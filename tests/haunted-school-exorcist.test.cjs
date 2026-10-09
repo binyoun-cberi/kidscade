@@ -664,7 +664,7 @@ test('locker hiding pauses movement and exposes a deterministic leave action',()
   let flashOn=true,viewYaw=0,viewPitch=0,stage=2;
   const template=new Function('lockers','player','maiden','keys','document','ui','joy','encounter',
     'showToast','dist','takeAnomalyHit','started','paused','ended',
-    state+'let flashOn=true,viewYaw=0,viewPitch=0,stage=2,maidenPhase="hunt";'+js.slice(begin,end)+
+    state+'let flashOn=true,viewYaw=0,viewPitch=0,stage=2,maidenPhase="hunt",power=100;'+js.slice(begin,end)+
     'return {nearestLocker,enterLocker,leaveLocker,updateLockerHiding,'+
     'get:()=>({hidingLocker,lockerTime,lockerDanger,flashOn,viewYaw,viewPitch}),'+
     'setStage:n=>{stage=n;},setMaiden:(x,z)=>{maiden.x=x;maiden.z=z;}};')(
