@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#080f25">
   <title>기가시티 · 소수 추격전</title>
-  <link rel="stylesheet" href="./style.css?v=7">
+  <link rel="stylesheet" href="./style.css?v=8">
   <style>@media(hover:none),(pointer:coarse){#elevation{bottom:max(70px,env(safe-area-inset-bottom))}}@media(max-height:520px) and (pointer:coarse){#elevation{bottom:66px}}</style>
   <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
@@ -30,7 +30,7 @@
       <div class="chaseMetrics">
         <div class="chaseLabel">소수 11 · 생존 중 <b id="chaseWave">1 / 3파</b></div>
         <div class="chaseNumbers"><strong id="chaseTimer">3:00</strong><span id="chaseKills">0 / 5 격추</span></div>
-        <div class="chaseHealth"><span id="chaseShieldFill"></span></div>
+        <div id="chaseTimeBonus">정확히 쏘면 시간 추가</div><div class="chaseHealth"><span id="chaseShieldFill"></span></div>
         <div class="chaseShieldText">방어막 <b id="chaseShield">100%</b> <span id="chaseScore">0점</span></div>
       </div>
       <div class="chaseEnemyPanel">
@@ -42,7 +42,10 @@
         <canvas id="primeRadar" width="180" height="180" aria-label="전방 후방 레이더"></canvas>
         <div id="radarReadout">적 탐색 중</div>
       </div>
-      <button id="chaseCameraButton" type="button" aria-label="운전석과 자동차 뒤 시점 전환">운전석 보기</button>
+      <div class="chaseViewButtons">
+        <button id="chaseCameraButton" type="button" aria-label="운전석과 자동차 뒤 시점 전환">운전석 보기</button>
+        <button id="rearViewButton" type="button" aria-label="뒤에서 추격하는 군용 비행체 실제 화면 보기" aria-pressed="false">후방 보기</button>
+      </div>
     </div>
     <div id="primeFeedback" role="status" aria-live="polite"></div>
     <div id="primeLockMessage" role="status" aria-live="polite">적의 조준을 피하세요!</div>
@@ -86,7 +89,7 @@
         <div><strong>02</strong><span>적 숫자를 1로 만들면 격추</span></div>
         <div><strong>03</strong><span>연습 5대 · 일반 11대</span></div>
       </div>
-      <p class="helpText">적의 사격 경고가 뜨면 방향을 바꾸거나 건물 뒤로 피하세요. 나누어떨어지는 소수탄을 누르면 공격할 수 있어요. 예: 6 → 2로 쏘면 3 → 3으로 쏘면 1! 조준은 자동이야. 적의 붉은 조준선이 나타나면 조이스틱으로 방향을 바꿔 레이저를 피하세요.</p>
+      <p class="helpText">적의 사격 경고가 뜨면 방향을 바꾸거나 건물 뒤로 피하세요. 나누어떨어지는 소수탄을 누르면 공격할 수 있어요. 예: 6 → 2로 쏘면 3 → 3으로 쏘면 1! 조준은 자동이야. 적의 붉은 조준선이 나타나면 조이스틱으로 피하고, 후방 보기 버튼으로 추격기를 직접 보세요. 정확한 소수탄은 시간 보너스를 줘요.</p>
       <button id="start" type="button">소수 추격전 시작 →</button><button id="practiceStart" class="introSecondary" type="button">소수 연습전 · 5대</button><button id="exploreStart" class="introSecondary" type="button">도시 자유 비행</button>
       <small>전투와 자유 비행은 언제든 다시 선택할 수 있어요.</small>
     </div>
@@ -103,6 +106,6 @@
   </div>
   <div id="errorPanel" class="overlay hidden" role="alert"><div class="introCard"><h2>도시를 불러오지 못했어요</h2><p id="errorMessage">브라우저에서 WebGL 지원 여부를 확인해 주세요.</p><button id="retry" type="button">다시 시도</button></div></div>
   <script src="../../kidscade-game-sdk.js" data-game-id="gigacity_lite" data-title="기가시티" data-shell="true" data-mute="false" data-orientation="landscape"></script>
-  <script type="module" src="./main.js?v=7"></script>
+  <script type="module" src="./main.js?v=8"></script>
 </body>
 </html>
