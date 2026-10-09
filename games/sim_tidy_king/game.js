@@ -84,7 +84,7 @@ function resize(){
  const w=innerWidth,h=innerHeight;
  renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
 }
-addEventListener('resize',resize);resize();
+addEventListener('resize',()=>{resize();cameraMove()});resize();
 function colorMat(color,more={}){return new THREE.MeshStandardMaterial({color,roughness:.78,...more})}
 function mesh(geometry,color){const m=new THREE.Mesh(geometry,colorMat(color));m.castShadow=true;m.receiveShadow=true;return m}
 function cuboid(w,h,d,color,x=0,y=0,z=0){const m=mesh(new THREE.BoxGeometry(w,h,d),color);m.position.set(x,y,z);return m}
@@ -164,7 +164,7 @@ function buildRoom(){
  for(let i=list.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));[list[i],list[j]]=[list[j],list[i]]}
  for(let i=0;i<list.length;i++){
   const col=i%8,row=Math.floor(i/8);
-  const x=-2.95+col*.86+(rand()-.5)*.14,z=-1.49+row*.77+(rand()-.5)*.13;
+  const x=-2.95+col*.86+(rand()-.5)*.40,z=-1.49+row*.77+(rand()-.5)*.38;
   const key=list[i],def=props[key],g=itemModel(key,def.size,def.color);
   g.position.set(x,.02,z);g.rotation.y=rand()*Math.PI*2;
   g.userData={kind:'item',key,zone:def.kind,name:def.name};
@@ -393,7 +393,7 @@ function finish(){
 }
 function formatTime(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
 function tick(dt,now){
- if(running){elapsed+=dt;const sec=Math.floor(elapsed);if(sec!==lastClockSecond){lastClockSecond=sec;$('clock').textContent=formatTime(sec)}}
+ if(running&&$('intro').classList.contains('hidden')){elapsed+=dt;const sec=Math.floor(elapsed);if(sec!==lastClockSecond){lastClockSecond=sec;$('clock').textContent=formatTime(sec)}}
  animations=animations.filter(a=>{
   a.time+=dt;const p=Math.min(1,a.time/a.length);
   if(a.kind==='move'){
