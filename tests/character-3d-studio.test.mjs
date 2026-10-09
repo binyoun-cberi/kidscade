@@ -963,6 +963,6 @@ test('v5.9 sleeve excludes independent hand triangles and apparel details stay o
   const pack=read('teacher/chibi-outfit-pack.js');
   assert.match(pack,/return armWeight>\.42/);
   assert.match(pack,/if\(x\*sign<\.115\|\|y<\.60\|\|y>1\.18\)return false/);
-  assert.match(pack,/zip\.translate\(0,\.96,\.154\)/);
+  assert.match(pack,/zip\.translate\(0,\.985,\.105\)/);
   assert.match(pack,/pocket\.translate\(0,\.835,\.151\)/);
 });
