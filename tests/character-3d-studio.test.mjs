@@ -953,7 +953,7 @@ test('v5.9 source-surface sleeves preserve original arm skin weights and pelvis 
 test('v5.9 body-normal sleeve offset and localized crotch yoke coverage',()=>{
   const pack=read('teacher/chibi-outfit-pack.js');
   assert.match(pack,/const normals=original\.getAttribute\('normal'\)/);
-  assert.match(pack,/const allowance=\(puff\?\.038:\.026\)\*coverage/);
+  assert.match(pack,/const allowance=\(puff\?\.058:\.026\)\*coverage/);
   assert.match(pack,/z\+normals\.getZ\(i\)\*allowance/);
   assert.match(pack,/const frontCenter=z>0\?/);
   assert.match(pack,/\.035\*frontCenter/);
@@ -962,7 +962,7 @@ test('v5.9 body-normal sleeve offset and localized crotch yoke coverage',()=>{
 test('v5.9 sleeve excludes independent hand triangles and apparel details stay on chest',()=>{
   const pack=read('teacher/chibi-outfit-pack.js');
   assert.match(pack,/return armWeight>\.16/);
-  assert.match(pack,/if\(x\*sign<\.115\|\|y<\.50\|\|y>1\.18\)return false/);
+  assert.match(pack,/const sleeveHem=puff\?\.945:\.50/);
   assert.match(pack,/zip\.translate\(0,\.985,\.105\)/);
   assert.match(pack,/pocket\.translate\(0,\.835,\.151\)/);
 });
@@ -983,4 +983,12 @@ test('v5.9 Blender numbered forearm bones contribute to lower sleeve surface',()
   assert.match(pack,/sideVariant\.test\(item\.name\)/);
   assert.match(visual,/Numbered Blender forearm bone missing/);
   assert.match(visual,/Lower-arm surface still missing/);
+});
+
+test('v5.9 preserves short puff sleeves instead of extending all tops to wrist',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  const visual=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(pack,/const sleeveHem=puff\?\.945:\.50/);
+  assert.match(pack,/const allowance=\(puff\?\.058:\.026\)\*coverage/);
+  assert.match(visual,/Puff blouse sleeve extends past elbow/);
 });
