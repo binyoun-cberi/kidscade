@@ -69,6 +69,10 @@
   }
   function canMove(s, x, z) {
     if (x < -3.03 || x > 3.03 || z > 6.45 || z < -37.4) return false;
+    // Preserve a player-sized clearance: walking through the computer or lockers is not possible.
+    if (Math.abs(x + 2.15) < 1.12 && Math.abs(z - 2.04) < .94) return false;
+    if (LOCKERS.some(loc => Math.abs(z - loc.z) < .72 &&
+        (loc.x > 0 ? x > 2.67 : x < -2.67))) return false;
     if (Math.abs(z + 30.15) < .36 && (!s.doorFixed || Math.abs(x) > 1.18)) return false;
     return true;
   }
