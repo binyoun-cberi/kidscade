@@ -162,7 +162,12 @@ function renderBattle(s){
     "Lv."+Math.min(...enabled.map(x=>x.evolutionCondition.level))+"에 다음 형태로 진화 가능":
     future.length?"다음 형태 후보가 있으나 자동 진화는 잠금":
     s.evolutionRank>=3?"최종 진화 단계":"현재 연결된 진화 대상 없음";
- const cap=s.rarity==="starter"?"스타팅 전용":s.evolutionRank>=3?"야생 포획 제한":"기본 포획 확률 "+Math.round(s.battle.captureBase*100)+"% 기준";
+ const hp=db.combat.statsAtLevel(s,previewLevel).hp;
+ const cap=s.rarity==="starter"?"스타팅 전용":s.evolutionRank>=3?"야생 포획 제한":(()=>{
+ const full=db.combat.captureChance({target:s,level:previewLevel,hp,maxHp:hp});
+ const low=db.combat.captureChance({target:s,level:previewLevel,hp:Math.max(1,Math.floor(hp*.25)),maxHp:hp});
+ return "일반 포획구 "+Math.round(full*100)+"% (HP 100%) → "+Math.round(low*100)+"% (HP 약 25%)";
+ })();
  const line=s.familyOrigin==="source-confirmed"?"원본 구성 확인":s.familyOrigin==="provisional"?"그림 관계 검토 중":"키즈케이드 게임 기획안";
  document.getElementById("battleNote").textContent="계열: "+s.familyName+" ("+line+"). "+evo+" · "+cap+
  (next.length?" · 진화 가능: "+next.map(x=>x.name).slice(0,4).join(", ")+(next.length>4?" 외 "+(next.length-4)+"종":""):"");
