@@ -44,7 +44,7 @@ let bufferedShot = null;
 let primeHudElapsed = 0, lastEnemyButtons = '', feedbackSeconds = 0;
 let resultVisible = false;
 let endCinematic = -1;
-const enemyTotal = WAVE_NUMBERS.flat().length;
+const enemyTotal = () => primeState.waves.flat().length;
 let audioContext = null;
 playerCraft.loadExterior();
 let viewMode = 'chase';
@@ -563,8 +563,8 @@ function renderPrimeHUD() {
   const enemy = selectedEnemy(state);
   const time = Math.ceil(state.remaining);
   $('chaseTimer').textContent = Math.floor(time / 60) + ':' + String(time % 60).padStart(2, '0');
-  $('chaseWave').textContent = (state.waveIndex + 1) + ' / ' + WAVE_NUMBERS.length + '파';
-  $('chaseKills').textContent = state.destroyed + ' / ' + enemyTotal + ' 격추';
+  $('chaseWave').textContent = (state.waveIndex + 1) + ' / ' + state.waves.length + '파';
+  $('chaseKills').textContent = state.destroyed + ' / ' + enemyTotal() + ' 격추';
   $('chaseShield').textContent = Math.round(state.shield) + '%';
   $('chaseShieldFill').style.width = state.shield + '%';
   $('chaseScore').textContent = state.score.toLocaleString('ko-KR') + '점';
@@ -606,9 +606,9 @@ function enterExplore() {
   lastTimestamp = performance.now();
   window.KidscadeGame?.start?.();
 }
-function enterPrimeChase() {
+function enterPrimeChase(mode = 'standard') {
   gameMode = 'chase';
-  primeState = startPrimeChase(makePrimeChase());
+  primeState = startPrimeChase(makePrimeChase(), mode);
   enemyRemovalQueue.length = 0;
   bufferedShot = null;
   endCinematic = -1;
@@ -628,7 +628,7 @@ function enterPrimeChase() {
   loadNearby(true);
   for (const e of activeEnemies(primeState)) pursuitScene.addEnemy(e, pilotPosition, yaw, collisionWorld);
   renderPrimeHUD();
-  announcePrime('6을 소수 2와 3으로 나누어 봐!');
+  announcePrime(primeState.mode === 'practice' ? '연습전! 6을 2와 3으로 나누어 봐!' : '6을 소수 2와 3으로 나누어 봐!');
   lastTimestamp = performance.now();
   window.KidscadeGame?.start?.();
 }
@@ -643,7 +643,7 @@ function showPrimeResult() {
   $('chaseResultTitle').textContent = success ? '추격대를 모두 격추했어!' : '다시 도전해 봐!';
   $('chaseResultReason').textContent = primeState.reason;
   const stats = roundStats(primeState);
-  $('chaseResultStats').textContent = '격추 ' + stats.destroyed + '/' + enemyTotal + ' · 회피 ' + stats.dodges + '회 · 정확도 ' + stats.accuracy + '% · 점수 ' + stats.score.toLocaleString('ko-KR') + '점';
+  $('chaseResultStats').textContent = '격추 ' + stats.destroyed + '/' + enemyTotal() + ' · 회피 ' + stats.dodges + '회 · 정확도 ' + stats.accuracy + '% · 점수 ' + stats.score.toLocaleString('ko-KR') + '점';
   $('chaseResult').classList.remove('hidden');
 }
 function shootPrime(prime) {
@@ -728,9 +728,10 @@ document.querySelectorAll('[data-prime]').forEach(button => {
 });
 $('chaseCameraButton').addEventListener('click', () =>
   setViewMode(viewMode === 'cockpit' ? 'chase' : 'cockpit'));
-$('start').addEventListener('click', enterPrimeChase);
+$('start').addEventListener('click', () => enterPrimeChase('standard'));
+$('practiceStart').addEventListener('click', () => enterPrimeChase('practice'));
 $('exploreStart').addEventListener('click', enterExplore);
-$('chaseRetry').addEventListener('click', enterPrimeChase);
+$('chaseRetry').addEventListener('click', () => enterPrimeChase(primeState.mode));
 $('chaseExplore').addEventListener('click', enterExplore);
 
 $('retry').addEventListener('click', () => location.reload());
