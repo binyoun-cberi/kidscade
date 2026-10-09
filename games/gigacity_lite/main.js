@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { createPlayerCraft } from './craft.js';
+import { safeMode, cameraPose } from './flight-view.mjs';
 import { CHUNK_SIZE, LOT_SIZE, ROAD_WIDTH, seedNumber, randomAt, createChunkData, chunkOf } from './city-core.mjs';
 
 const $ = (id) => document.getElementById(id);
@@ -26,8 +28,13 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.08;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(68, 1, 0.5, 2050);
-camera.position.set(0, 270, 365);
+camera.position.set(0, 145, 365);
 camera.rotation.order = 'YXZ';
+const pilotPosition = camera.position.clone();
+const playerCraft = createPlayerCraft(scene);
+playerCraft.loadExterior();
+let viewMode = 'chase';
+let lookYaw = 0, lookPitch = 0, flightSpeed = 0, steeringVisual = 0;
 
 const skyDay = new THREE.Color(0x87a9d0);
 const skyNight = new THREE.Color(0x071023);
@@ -232,8 +239,8 @@ function rebuildTraffic() {
 function moveVehicles(seconds) {
   if (!vehicles) return;
   const span = CHUNK_SIZE * 5;
-  const roadX = Math.round(camera.position.x / LOT_SIZE) * LOT_SIZE;
-  const roadZ = Math.round(camera.position.z / LOT_SIZE) * LOT_SIZE;
+  const roadX = Math.round(pilotPosition.x / LOT_SIZE) * LOT_SIZE;
+  const roadZ = Math.round(pilotPosition.z / LOT_SIZE) * LOT_SIZE;
   for (let i = 0; i < vehicleCount; i++) {
     const horizontal = i % 2 === 0;
     const line = Math.floor(randomAt(trafficSeed, i, 0, 1) * 13) - 6;
@@ -298,8 +305,8 @@ function resize() {
   renderer.setSize(width, height, false);
 }
 function loadNearby(force = false) {
-  const cx = chunkOf(camera.position.x);
-  const cz = chunkOf(camera.position.z);
+  const cx = chunkOf(pilotPosition.x);
+  const cz = chunkOf(pilotPosition.z);
   const radius = quality === 'high' ? 2 : 1;
   if (!force && cx === lastChunkX && cz === lastChunkZ && radius === lastRadius) return;
   lastChunkX = cx;
@@ -336,6 +343,24 @@ function applySeed(value) {
   worldSeed = seedNumber(chosen);
   trafficSeed = worldSeed;
   applyQuality();
+}
+function setViewMode(nextMode) {
+  viewMode = safeMode(nextMode);
+  lookYaw = 0;
+  lookPitch = 0;
+  playerCraft.setView(viewMode);
+  document.querySelectorAll('[data-view-mode]').forEach(button => {
+    const chosen = button.dataset.viewMode === viewMode;
+    button.setAttribute('aria-pressed', String(chosen));
+  });
+  $('viewLabel').textContent = viewMode === 'cockpit' ? '운전석 안' : viewMode === 'chase' ? '자동차 뒤' : '자유 비행';
+  updateCamera();
+}
+function updateCamera() {
+  const pose = cameraPose(viewMode, pilotPosition, yaw, pitch, lookYaw, lookPitch);
+  camera.position.set(pose.position.x, pose.position.y, pose.position.z);
+  if (pose.target) camera.lookAt(pose.target.x, pose.target.y, pose.target.z);
+  else camera.rotation.set(pose.pitch, pose.yaw, 0, 'YXZ');
 }
 function setAutoFlight(enabled) {
   autoFlight = enabled;
@@ -424,9 +449,14 @@ canvas.addEventListener('pointermove', event => {
   const dy = event.clientY - dragging.y;
   dragging.x = event.clientX;
   dragging.y = event.clientY;
-  if (Math.abs(dx) + Math.abs(dy) > 0) setAutoFlight(false);
-  yaw -= dx * 0.0032;
-  pitch = clamp(pitch - dy * 0.0029, -1.3, 1.25);
+  if (Math.abs(dx) + Math.abs(dy) > 0 && viewMode !== 'cockpit') setAutoFlight(false);
+  if (viewMode === 'cockpit') {
+    lookYaw = clamp(lookYaw - dx * 0.0032, -1.15, 1.15);
+    lookPitch = clamp(lookPitch - dy * 0.0029, -0.54, 0.72);
+  } else {
+    yaw -= dx * 0.0032;
+    pitch = clamp(pitch - dy * 0.0029, -1.3, 1.25);
+  }
 });
 function endLook(event) {
   if (dragging?.pointerId === event.pointerId) dragging = null;
@@ -449,6 +479,9 @@ window.addEventListener('blur', () => {
   dragging = null;
 });
 $('autoButton').addEventListener('click', () => setAutoFlight(!autoFlight));
+document.querySelectorAll('[data-view-mode]').forEach(button => {
+  button.addEventListener('click', () => setViewMode(button.dataset.viewMode));
+});
 $('timeButton').addEventListener('click', () => setTime(!night));
 $('quality').addEventListener('change', event => {
   qualitySetting = event.target.value;
@@ -486,40 +519,62 @@ window.addEventListener('orientationchange', resize);
 
 function updateMovement(dt) {
   if (!active) return;
-  if (held.has('ArrowLeft')) yaw += dt * 1.4;
-  if (held.has('ArrowRight')) yaw -= dt * 1.4;
-  if (held.has('ArrowUp')) pitch = clamp(pitch + dt * 0.85, -1.3, 1.25);
-  if (held.has('ArrowDown')) pitch = clamp(pitch - dt * 0.85, -1.3, 1.25);
+  if (held.has('ArrowLeft')) {
+    if (viewMode === 'cockpit') lookYaw = clamp(lookYaw + dt * 1.4, -1.15, 1.15);
+    else yaw += dt * 1.4;
+  }
+  if (held.has('ArrowRight')) {
+    if (viewMode === 'cockpit') lookYaw = clamp(lookYaw - dt * 1.4, -1.15, 1.15);
+    else yaw -= dt * 1.4;
+  }
+  if (held.has('ArrowUp')) {
+    if (viewMode === 'cockpit') lookPitch = clamp(lookPitch + dt * 0.85, -0.54, 0.72);
+    else pitch = clamp(pitch + dt * 0.85, -1.3, 1.25);
+  }
+  if (held.has('ArrowDown')) {
+    if (viewMode === 'cockpit') lookPitch = clamp(lookPitch - dt * 0.85, -0.54, 0.72);
+    else pitch = clamp(pitch - dt * 0.85, -1.3, 1.25);
+  }
   let forward = (held.has('KeyW') ? 1 : 0) - (held.has('KeyS') ? 1 : 0) - touchAxis.y;
   let side = (held.has('KeyD') ? 1 : 0) - (held.has('KeyA') ? 1 : 0) + touchAxis.x;
   const altitude = (held.has('KeyE') || held.has('rise') ? 1 : 0) - (held.has('KeyQ') || held.has('sink') ? 1 : 0);
   if (autoFlight) {
-    const speed = 34;
-    camera.position.x += (Math.round(camera.position.x / LOT_SIZE) * LOT_SIZE - camera.position.x) * Math.min(1, dt * 0.9);
-    camera.position.z -= speed * dt;
+    flightSpeed = 34;
+    steeringVisual = 0;
+    pilotPosition.x += (Math.round(pilotPosition.x / LOT_SIZE) * LOT_SIZE - pilotPosition.x) * Math.min(1, dt * 0.9);
+    pilotPosition.z -= flightSpeed * dt;
     yaw = Math.sin(seconds * 0.09) * 0.13;
     pitch = -0.28 + Math.sin(seconds * 0.13) * 0.045;
-    camera.position.y = 270 + Math.sin(seconds * 0.24) * 12;
+    pilotPosition.y = 145 + Math.sin(seconds * 0.24) * 8;
   } else {
-    const oldX = camera.position.x, oldZ = camera.position.z;
+    const oldX = pilotPosition.x, oldZ = pilotPosition.z;
+    steeringVisual = side;
+    if (viewMode !== 'free') {
+      // In a vehicle the left/right stick steers, rather than sliding the body sideways.
+      yaw -= side * dt * 1.18;
+      side = 0;
+    }
     const length = Math.max(1, Math.hypot(forward, side));
     forward /= length;
     side /= length;
     const speed = (held.has('ShiftLeft') || held.has('ShiftRight') || held.has('boost') ? 145 : 70) * dt;
-    camera.position.x += (-Math.sin(yaw) * forward + Math.cos(yaw) * side) * speed;
-    camera.position.z += (-Math.cos(yaw) * forward - Math.sin(yaw) * side) * speed;
-    camera.position.y += altitude * speed * 0.8;
-    camera.position.y = clamp(camera.position.y, 18, 880);
-    travelledMeters += Math.hypot(camera.position.x - oldX, camera.position.z - oldZ);
+    pilotPosition.x += (-Math.sin(yaw) * forward + Math.cos(yaw) * side) * speed;
+    pilotPosition.z += (-Math.cos(yaw) * forward - Math.sin(yaw) * side) * speed;
+    pilotPosition.y += altitude * speed * 0.8;
+    pilotPosition.y = clamp(pilotPosition.y, 18, 880);
+    flightSpeed = Math.hypot(pilotPosition.x - oldX, pilotPosition.z - oldZ) / Math.max(dt, 0.001);
+    travelledMeters += Math.hypot(pilotPosition.x - oldX, pilotPosition.z - oldZ);
     if (travelledMeters > 1800) discover('far_explorer');
-    if (camera.position.y > 500) discover('sky_explorer');
+    if (pilotPosition.y > 500) discover('sky_explorer');
     if (held.has('boost') || held.has('ShiftLeft') || held.has('ShiftRight')) {
       boostSeconds += dt;
       if (boostSeconds > 8) discover('speed_flight');
     }
   }
-  camera.rotation.set(pitch, yaw, 0, 'YXZ');
-  $('altitude').textContent = Math.round(camera.position.y) + 'm';
+  playerCraft.update(dt, pilotPosition, yaw, pilotPosition.y, flightSpeed * 3.6, steeringVisual);
+  updateCamera();
+  $('altitude').textContent = Math.round(pilotPosition.y) + 'm';
+  $('speedReadout').textContent = Math.round(flightSpeed * 3.6) + 'km/h';
 }
 function frame(now) {
   requestAnimationFrame(frame);
@@ -550,8 +605,8 @@ function frame(now) {
       }
     }
   }
-  ground.position.x = camera.position.x;
-  ground.position.z = camera.position.z;
+  ground.position.x = pilotPosition.x;
+  ground.position.z = pilotPosition.z;
   renderer.render(scene, camera);
 }
 window.KidscadeGame?.registerPauseHandlers?.({
@@ -560,6 +615,7 @@ window.KidscadeGame?.registerPauseHandlers?.({
 });
 window.KidscadeGame?.registerCleanup?.(() => { active = false; });
 applySeed(selectedSeed);
+setViewMode('chase');
 setTime(false);
 resize();
 requestAnimationFrame(frame);

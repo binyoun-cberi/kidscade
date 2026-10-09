@@ -1,37 +1,21 @@
-# Gigacity Lite — iPhone-first city flight experiment
+# 기가시티 — 미래형 비행차 v2
 
-This is an isolated graphics prototype, not a new playable Kidscade game and not included in the main game catalog yet.
+키즈케이드 게임 목록 또는 /games/gigacity_lite/index.html 에서 실행합니다.
 
-## Entry point
+## 이번 업데이트
 
-Local path: /games/gigacity_lite/index.html
+- **기존 외관 활용:** Kenney CC0 race-future.glb 한 대만 플레이어 전용으로 불러옵니다.
+- **방향 일치:** 모델의 앞바퀴가 로컬 +Z에 있는 것을 실제 GLB 데이터로 확인했습니다. 게임의 진행 방향 -Z에 맞춰 모델을 180° 돌리고 크기와 중심을 맞춥니다.
+- **운전석:** 원래 차량에는 좌석이나 계기판이 없습니다. 운전석에서는 닫힌 차량 외관을 숨기고, 새로 제작한 3D 실내(2개 좌석, 핸들, 대시보드, 넓은 앞유리 테두리, 측면 창틀, 입체 속도/고도 화면)를 보여줍니다.
+- **시점:** 자유 비행, 자동차 뒤, 운전석 3가지.
+- **조작:** 모바일 조이스틱·고도 조절·빠른 이동. 자동차 모드에서는 좌우 조이스틱이 차의 방향을 돌립니다. 운전석에서 손가락 드래그로 좌우 창밖을 둘러볼 수 있습니다.
+- **성능:** 차량 모델 한 대만 추가하고 주변 자동차와 도시 배경은 기존의 가벼운 구조를 유지합니다.
+- **안전장치:** 외관 모델 불러오기가 실패하면 간소화한 차체로 대체하며, 운전석 시점은 계속 사용할 수 있습니다.
 
-This page uses the vendored Three.js r160 module. There are no external runtime libraries, external models, game data, leaderboards, or new network calls.
+## 확인할 사항
 
-## Features
+Node 테스트: node --test tests/gigacity-lite.test.mjs
 
-- Deterministic seed-derived city chunks, 4 × 4 building lots per chunk.
-- Circular streaming around the camera; unloads obsolete detailed chunks and builds new ones on demand.
-- Instanced skyscraper meshes and a lightweight window lighting shader.
-- Distant simplified skyline in one batch, fog, day/night switch.
-- Animated instanced flying traffic, camera-only free-flight and automatic guided flyover.
-- Touch joystick, touch camera swipe, ascent/descent and boost buttons.
-- Keyboard WASD, Q/E for altitude, arrow keys to look, Shift to boost.
-- Adjustable low / medium / high preset and AUTO pixel-ratio reduction at sustained low frame rates.
-- Safe-area HUD for iPhone and iPad.
-- Scene pauses simulation progress while browser tab is hidden.
+실제 iPhone/iPad에서 10~15분간 프레임, 발열, 화면 방향 전환, 운전석에서 차체가 시야를 막는지, 주변 건물과 충돌하는지 반드시 확인해야 합니다. 실기기 테스트 전에는 성능이나 시각적 완성도를 확정하지 않습니다.
 
-## Real-world performance validation still required
-
-On actual iPhones and iPads, test sustained frame pacing for at least 10–15 minutes, thermal throttling, browser tab restore, WebGL context loss, portrait/landscape transitions, touch capture after system gestures, and behavior on entry-level tablets. The FPS readout is a diagnostic, not a benchmark certification.
-
-## Intentionally not included
-
-- Game progression, NPCs, missions, interiors, ground vehicle collisions.
-- Physically correct reflections or room-interior raymarching.
-- Collision avoidance for manually piloted camera.
-- Claim of visual/technical parity with sael.net/gigacity.
-
-Tests: node --test tests/gigacity-lite.test.mjs
-
-Public catalog integration and Cloudflare release should follow device verification.
+현재 버전에는 임무, 충돌 물리, 실내 문 개폐, 승객과 거울 반사 효과는 포함되어 있지 않습니다.

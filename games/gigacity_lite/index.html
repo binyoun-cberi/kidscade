@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#080f25">
   <title>기가시티 · 미래도시 여행</title>
-  <link rel="stylesheet" href="./style.css?v=1">
+  <link rel="stylesheet" href="./style.css?v=3">
   <style>@media(hover:none),(pointer:coarse){#elevation{bottom:max(70px,env(safe-area-inset-bottom))}}@media(max-height:520px) and (pointer:coarse){#elevation{bottom:66px}}</style>
-  <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js"}}</script>
+  <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
   <canvas id="city" aria-label="절차적으로 생성되는 미래 도시의 3D 비행 화면"></canvas>
@@ -26,8 +26,17 @@
   </section>
   <div id="controlsHint" aria-live="polite">화면 드래그: 둘러보기 · 왼쪽 버튼: 이동 · ↑↓: 위아래</div>
   <section id="flightPanel">
+    <div id="cameraViews" role="group" aria-label="시점 선택">
+      <button type="button" data-view-mode="free" aria-pressed="false">자유 비행</button>
+      <button type="button" data-view-mode="chase" aria-pressed="true">자동차 뒤</button>
+      <button type="button" data-view-mode="cockpit" aria-pressed="false">운전석</button>
+    </div>
+    <div id="flightStatus">
+      <span id="viewLabel">자동차 뒤</span>
+      <span class="altitude">높이 <b id="altitude">270m</b></span>
+      <span class="speed"><b id="speedReadout">0km/h</b></span>
+    </div>
     <button id="autoButton" type="button" aria-pressed="true">자동 구경 중</button>
-    <div class="altitude">높이 <b id="altitude">260m</b></div>
   </section>
   <section id="touchControls" aria-label="모바일 비행 조작">
     <div id="stickSurface" aria-label="이동 조이스틱" role="group"><div id="stickRing"><div id="stickKnob"></div></div><span>이동</span></div>
@@ -41,19 +50,19 @@
     <div class="introCard">
       <p class="eyebrow">KIDSCADE · 미래도시 여행</p>
       <h1>기가<span>시티</span></h1>
-      <p>높은 빌딩 사이를 날아다니며 나만의 미래도시를 구경해 보세요.</p>
+      <p>미래형 자동차에 올라타 높은 빌딩 사이를 날아보세요. 운전석에서 바깥 풍경도 감상할 수 있어요.</p>
       <div class="introFeatures">
         <div><strong>01</strong><span>이름마다 다른 도시</span></div>
-        <div><strong>02</strong><span>끝없이 이어지는 풍경</span></div>
+        <div><strong>02</strong><span>자동차 밖과 운전석 전환</span></div>
         <div><strong>03</strong><span>휴대폰에서도 비행</span></div>
       </div>
-      <p class="helpText">오른쪽 화면을 손가락으로 움직여 둘러보세요. 왼쪽 조이스틱으로 날고 ↑↓로 높이를 바꿀 수 있어요.</p>
+      <p class="helpText">상단의 운전석 버튼으로 차 안에 앉아보세요. 왼쪽 조이스틱은 비행과 방향 조작, ↑↓는 고도 조절이에요. 손가락으로 화면을 끌면 주변을 둘러볼 수 있어요.</p>
       <button id="start" type="button">도시 구경 시작 →</button>
       <small>마음에 드는 도시를 찾으면 이름을 기억해 두세요.</small>
     </div>
   </div>
   <div id="errorPanel" class="overlay hidden" role="alert"><div class="introCard"><h2>도시를 불러오지 못했어요</h2><p id="errorMessage">브라우저에서 WebGL 지원 여부를 확인해 주세요.</p><button id="retry" type="button">다시 시도</button></div></div>
   <script src="../../kidscade-game-sdk.js" data-game-id="gigacity_lite" data-title="기가시티" data-shell="true" data-mute="false" data-orientation="landscape"></script>
-  <script type="module" src="./main.js?v=2"></script>
+  <script type="module" src="./main.js?v=3"></script>
 </body>
 </html>
