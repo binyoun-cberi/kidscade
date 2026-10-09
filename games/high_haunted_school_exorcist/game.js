@@ -95,10 +95,14 @@ function onFloor(x,z){
     (x>-15.15&&x<29.75&&z>-19.75&&z< -7.1)||
     (x>-15.15&&x<29.75&&z>7.1&&z<19.75);
 }
-function canWalk(x,z){
+function canWalk(x,z,planning=false){
+  // An openable door is solid while closed. A* plans through doors because
+  // actors open them on approach; otherwise the school would appear disconnected.
+  const schoolDoorBlocked=!planning&&typeof schoolDoors!=='undefined'&&
+    schoolDoors.some(d=>d.openAmount<.82&&collides(x,z,d.barrier));
   const shutDoor=typeof encounter!=='undefined'&&encounter.doorClosed&&
     collides(x,z,{x:-20.49,z:7.91,hx:.10,hz:1.18});
-  return onFloor(x,z)&&!shutDoor&&!walls.some(w=>collides(x,z,w))&&!furniture.some(o=>collides(x,z,o));
+  return onFloor(x,z)&&!shutDoor&&!schoolDoorBlocked&&!walls.some(w=>collides(x,z,w))&&!furniture.some(o=>collides(x,z,o));
 }
 // Shared grid navigation prevents the guide line from crossing walls and desks.
 function routePlan(start,goal,reach=1.05){
@@ -106,11 +110,11 @@ function routePlan(start,goal,reach=1.05){
   // inexpensive to navigate even on tablets, and ghosts share the same safe floor.
   const step=.5,round=v=>Math.round(v/step)*step,key=(x,z)=>Math.round(x/step)+','+Math.round(z/step);
   let sx=round(start.x),sz=round(start.z);
-  if(!canWalk(sx,sz)){
+  if(!canWalk(sx,sz,true)){
     let best=Infinity;
     for(let dx=-1.5;dx<=1.5;dx+=step)for(let dz=-1.5;dz<=1.5;dz+=step){
       const x=sx+dx,z=sz+dz,d=dx*dx+dz*dz;
-      if(d<best&&canWalk(x,z)){sx=x;sz=z;best=d;}
+      if(d<best&&canWalk(x,z,true)){sx=x;sz=z;best=d;}
     }
     if(!isFinite(best))return [];
   }
@@ -148,7 +152,7 @@ function routePlan(start,goal,reach=1.05){
     if(heuristic(node.x,node.z)<reach){last=node;break;}
     for(const [dx,dz] of [[step,0],[-step,0],[0,step],[0,-step]]){
       const x=node.x+dx,z=node.z+dz,k=key(x,z);
-      if(closed.has(k)||!canWalk(x,z))continue;
+      if(closed.has(k)||!canWalk(x,z,true))continue;
       const g=node.g+step,prior=nodes.get(k);
       if(prior&&g>=prior.g)continue;
       const next={x,z,g,f:g+heuristic(x,z),parent:node};
@@ -433,6 +437,67 @@ function createRoom(){
 
 
 createRoom();
+
+// Functional doors for the 10 wing classrooms and the 5 west-connector rooms.
+// Stage 8's electrical-room door retains its own puzzle animation and collider.
+const schoolDoors=[];
+function schoolDoorFrame(x,z,northSouth=true){
+  const sideMat=mat(0x748694),frameWood=mat(0x8598a2);
+  if(northSouth){
+    for(const sign of [-1,1])cube(scene,x+sign*1.35,1.32,z,.14,2.64,.22,sideMat);
+    cube(scene,x,2.65,z,2.80,.15,.22,frameWood);
+  }else{
+    for(const sign of [-1,1])cube(scene,x,1.32,z+sign*1.35,.22,2.64,.14,sideMat);
+    cube(scene,x,2.65,z,.22,.15,2.80,frameWood);
+  }
+}
+function addSchoolDoor(x,z,axis,entryName){
+  const wing=axis==='wing';
+  schoolDoorFrame(x,z,wing);
+  const panels=[],panelMat=mat(0x778a98),handleMat=mat(0xcbb890);
+  for(const sign of [-1,1]){
+    const hinge=new THREE.Group();
+    if(wing)hinge.position.set(x+sign*1.24,0,z);
+    else hinge.position.set(x,0,z+sign*1.24);
+    scene.add(hinge);
+    const local=sign<0?1:-1;
+    if(wing){
+      cube(hinge,local*.61,1.3,0,1.20,2.55,.10,panelMat);
+      cube(hinge,local*1.04,1.29,.066,.045,.18,.035,handleMat);
+      cube(hinge,local*.61,1.73,.06,.40,.35,.018,mat(0x344b5b));
+    }else{
+      cube(hinge,0,1.3,local*.61,.10,2.55,1.20,panelMat);
+      cube(hinge,.068,1.29,local*1.04,.035,.18,.045,handleMat);
+      cube(hinge,.068,1.73,local*.61,.018,.35,.40,mat(0x344b5b));
+    }
+    panels.push({hinge,sign});
+  }
+  schoolDoors.push({x,z,axis,name:entryName,panels,openAmount:0,openTimer:0,
+    barrier:wing?{x,z,hx:1.28,hz:.105}:{x,z,hx:.105,hz:1.28}});
+}
+for(let i=0;i<5;i++){
+  addSchoolDoor(SCHOOL.roomCenters[i],-10.2,'wing',NORTH_ROOMS[i]);
+  addSchoolDoor(SCHOOL.roomCenters[i],10.2,'wing',SOUTH_ROOMS[i]);
+  const cz=-16+8*i;
+  if(i===3)schoolDoorFrame(-20.5,cz,false); // Ritual door already scripted.
+  else addSchoolDoor(-20.5,cz,'spine',SPINE_ROOMS[i]);
+}
+function updateSchoolDoors(dt){
+  const actors=[player];
+  if(stage===2&&maidenPhase!=='approach')actors.push(maiden);
+  if(stage===10||stage===11)actors.push(encounter.wolf);
+  for(const d of schoolDoors){
+    const nearby=actors.some(a=>Math.hypot(a.x-d.x,a.z-d.z)<3.05);
+    // Once reached, the door stays open long enough for slow students/NPCs.
+    d.openTimer=nearby?2.5:Math.max(0,d.openTimer-dt);
+    const target=d.openTimer>0?1:0;
+    d.openAmount+=Math.max(-dt*3.4,Math.min(dt*3.4,target-d.openAmount));
+    for(const p of d.panels){
+      const sign=p.sign;
+      p.hinge.rotation.y=d.axis==='wing'?sign*d.openAmount*1.38:-sign*d.openAmount*1.38;
+    }
+  }
+}
 
 // Compact, collision-aware hide spots against the courtyard-facing walls.
 // Doorways and the 3m-wide travel lanes remain clear; lockers are placed in
@@ -859,6 +924,7 @@ function finish(ok){
 function reset(){
   leaveLocker();
   fixes=0;hp=3;power=100;flashOn=true;elapsed=0;stage=1;ended=false;paused=false;started=true;
+  schoolDoors.forEach(d=>{d.openAmount=0;d.openTimer=0;d.panels.forEach(p=>{p.hinge.rotation.y=0;});});
   viewYaw=-Math.PI/2;viewPitch=0;player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;
   player.yaw=viewYaw+Math.PI;player.root.rotation.y=player.yaw;
   maiden.attacks=0;maiden.charge=0;invulnerable=0;ghostWaiting=0;
@@ -1315,7 +1381,7 @@ function loop(now){
     elapsed+=dt;invulnerable=Math.max(0,invulnerable-dt);
     if(flashOn)power=Math.max(0,power-dt*.28);else power=Math.min(100,power+dt*2.8);
     if(power===0)flashOn=false;
-    updatePlayer(dt);updateGhost(dt);updateNewEncounters(dt);updateLockerHiding(dt);updateProps(dt);
+    updateSchoolDoors(dt);updatePlayer(dt);updateGhost(dt);updateNewEncounters(dt);updateLockerHiding(dt);updateProps(dt);
     updateNavigation(dt);
     if(lessonTimer>0){lessonTimer-=dt;if(lessonTimer<=0)ui.lesson.classList.add('hidden');}
     for(const mixer of mixers)mixer.update(dt);
