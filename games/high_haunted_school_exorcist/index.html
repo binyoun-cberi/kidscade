@@ -64,6 +64,8 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
   background:linear-gradient(90deg,#07090b33,transparent 20%,transparent 80%,#07090b40)}
 #lockerView .lockerSlit:before,#lockerView .lockerSlit:after{content:'';position:absolute;top:-10px;bottom:-10px;width:10px;background:#45505b}
 #lockerView .lockerSlit:before{left:34%}#lockerView .lockerSlit:after{right:34%}
+body.in-locker #joystick{opacity:.2;pointer-events:none}
+.controls{z-index:5}#joystick{z-index:4}
 #lockerWarning{position:absolute;bottom:24%;left:50%;transform:translateX(-50%);
  width:min(330px,83vw);text-align:center;font-size:12px;letter-spacing:.02em;
  color:#efe5d0;background:#101924ee;border:1px solid #6a7074;border-radius:9px;
