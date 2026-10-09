@@ -16,6 +16,8 @@ assert.ok(CHROME,'Chromium is needed for Gigacity visual test');
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css','.glb':'model/gltf-binary','.png':'image/png','.json':'application/json'};
 const server=http.createServer((req,res)=>{
   const uri=new URL(req.url,'http://localhost');
+  // Browsers request this automatically; it is not part of the game under test.
+  if(uri.pathname==='/favicon.ico'){res.writeHead(204);res.end();return;}
   const file=path.resolve(ROOT,'.'+decodeURIComponent(uri.pathname));
   if(file!==ROOT&&!file.startsWith(ROOT+path.sep)){res.writeHead(403);res.end();return;}
   fs.readFile(file,(err,b)=>{
@@ -82,6 +84,10 @@ const errors=[],responses=[];
       const r=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false,fromSurface:true});
       const bytes=Buffer.from(r.data,'base64');
       fs.writeFileSync(path.join(OUT,name+'.png'),bytes);
+      if(name==='01-chase-landscape'||name==='02-cockpit-landscape'||name==='05-cockpit-portrait'){
+        const preview=await sharp(bytes).resize({width:480,withoutEnlargement:true}).jpeg({quality:55}).toBuffer();
+        console.log('GIGACITY_VIEW_JPEG '+name+' '+preview.toString('base64'));
+      }
       const pixels=await sharp(bytes).removeAlpha().raw().toBuffer({resolveWithObject:true});
       let luminance=0;for(let i=0;i<pixels.data.length;i+=3)luminance+=pixels.data[i]*0.21+pixels.data[i+1]*0.72+pixels.data[i+2]*0.07;
       return {pixels:pixels.data,mean:Math.round(luminance/(pixels.data.length/3)),w:pixels.info.width,h:pixels.info.height};
