@@ -118,6 +118,18 @@ jobs:
         run: npm run build
       - name: Run all regression tests and audits
         run: npm run test:ci
+      - name: Gigacity cockpit and iPhone viewport browser simulation
+        run: node tests/gigacity-visual-browser-audit.cjs
+        env:
+          KIDSCADE_GIGACITY_AUDIT_OUT: ${{ runner.temp }}/gigacity-visual-audit
+      - name: Upload Gigacity screenshots and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gigacity-visual-audit
+          path: ${{ runner.temp }}/gigacity-visual-audit/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Visual audit of 3D Chibi WALK/RUN and mobile controls
         run: npm run test:chibi:visual
         env:
