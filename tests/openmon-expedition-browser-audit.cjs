@@ -76,11 +76,16 @@ let chrome,ws,profile;
   errors.length=0;
   await send('Emulation.setDeviceMetricsOverride',{width:config.w,height:config.h,deviceScaleFactor:1,mobile:config.w<500});
   await send('Page.navigate',{url:local+'/games/openmon-expedition/index.html'});
-  await sleep(250);
-  // The two viewport cases share a Chrome profile; start each with a clean game save.
-  await evaluate("localStorage.removeItem('kidscade.openmon.expedition.save.v1')");
-  await send('Page.reload',{ignoreCache:true});
   await sleep(600);
+  // Reloading a running page resaves on visibilitychange. Use the game's own
+  // "new game" control to reset the second viewport without that race.
+  await evalFn(()=>{
+    if(document.getElementById('starterOverlay').hidden){
+      window.confirm=()=>true;
+      document.getElementById('newGame').click();
+    }
+    return true;
+  });
   const initial=await evalFn(()=>{
    const $=id=>document.getElementById(id);
    const rect=$('starterOverlay').getBoundingClientRect();
