@@ -24,7 +24,7 @@
       ],
       "input": [
         "touch",
-        "mouse"
+        "keyboard"
       ],
       "qualityStatus": "standard",
       "classroom": true
