@@ -704,6 +704,7 @@ function enterLocker(index){
   viewYaw=locker.yaw;viewPitch=0;
   keys.clear();joy.x=joy.y=0;ui.knob.style.transform='translate(0,0)';
   ui.lockerView.classList.remove('hidden');
+  document.body.classList.add('in-locker');
   ui.lockerWarning.textContent='쉿… 괴이가 가까이 오면 오래 숨을 수 없어요';
   showToast('낡은 사물함 안에 숨었어요. E 또는 행동 버튼으로 나올 수 있어요.');
   return true;
@@ -713,6 +714,7 @@ function leaveLocker(){
   hidingLocker=null;lockerTime=0;lockerDanger=0;lockerLastSeen=null;
   flashOn=lockerPreviousFlash&&power>0;
   ui.lockerView.classList.add('hidden');
+  document.body.classList.remove('in-locker');
   ui.lockerWarning.textContent='';
   if(stage===10)encounter.wolf.grace=Math.max(encounter.wolf.grace,2.0);
   return true;
