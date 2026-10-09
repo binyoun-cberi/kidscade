@@ -62,7 +62,14 @@ const errors=[],responses=[];
     const pending=new Map();
     ws.onmessage=e=>{
       const m=JSON.parse(String(e.data));
-      if(m.method==='Runtime.exceptionThrown')errors.push(m.params?.exceptionDetails?.text||'Browser exception');
+      if(m.method==='Runtime.exceptionThrown'){
+        const detail=m.params?.exceptionDetails;
+        const explanation=detail?.exception?.description||detail?.exception?.value||detail?.text||'Browser exception';
+        const frame=detail?.stackTrace?.callFrames?.slice(0,2).map(x=>x.url+':'+x.lineNumber).join(' | ');
+        const description=String(explanation).slice(0,1000)+' '+(frame||'');
+        errors.push(description);
+        console.log('GIGACITY_BROWSER_EXCEPTION',description);
+      }
       if(m.method==='Log.entryAdded'&&m.params?.entry?.level==='error')errors.push(m.params.entry.text||'Browser error');
       if(m.method==='Network.responseReceived')responses.push({url:m.params?.response?.url,status:m.params?.response?.status});
       if(!m.id||!pending.has(m.id))return;
