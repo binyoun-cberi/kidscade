@@ -104,6 +104,7 @@ export function tickPrimeChase(state, dt, enemyDistances = {}) {
   const frame = Math.max(0, Math.min(dt, 0.1));
   state.elapsed += frame;
   state.remaining = Math.max(0, ROUND_SECONDS - state.elapsed);
+  if (state.remaining < 0.0001) state.remaining = 0;
   state.cooldown = Math.max(0, state.cooldown - frame);
   if (state.remaining <= 0) {
     state.status = 'lost';
