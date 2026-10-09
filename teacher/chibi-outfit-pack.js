@@ -139,6 +139,72 @@ function stabilizeGarmentMesh(source,geometry){
   return geometry.userData;
 }
 
+
+// Smooth each procedural sleeve/trouser surface against multiple nearby body
+// vertices instead of copying one skin-weight tuple. Abrupt nearest-neighbor
+// jumps at elbows and knees previously left visible cracks while walking.
+function transferSmoothSkinWeights(geometry,reference,{sign,region}){
+  const refPos=reference?.geometry?.getAttribute('position');
+  const refIndex=reference?.geometry?.getAttribute('skinIndex');
+  const refWeight=reference?.geometry?.getAttribute('skinWeight');
+  const pos=geometry.getAttribute('position');
+  if(!refPos||!refIndex||!refWeight||!pos)throw Error('Missing body skin reference for '+region);
+  const candidates=[];
+  for(let j=0;j<refPos.count;j++){
+    const x=refPos.getX(j),y=refPos.getY(j),z=refPos.getZ(j);
+    if(region==='arm'){
+      if(Math.sign(x)!==sign||Math.abs(x)<.135||y<.67||y>1.20)continue;
+    }else if(Math.sign(x)!==sign&&Math.abs(x)>.03)continue;
+    candidates.push({j,x,y,z});
+  }
+  if(candidates.length<4)throw Error('Insufficient '+region+' skin reference vertices');
+  const indices=new Uint16Array(pos.count*4);
+  const weights=new Float32Array(pos.count*4);
+  let fallbackCount=0;
+  for(let i=0;i<pos.count;i++){
+    const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
+    const nearest=[];
+    for(const item of candidates){
+      const d=(x-item.x)**2+(y-item.y)**2*1.4+(z-item.z)**2;
+      if(nearest.length===4&&d>=nearest[3].d)continue;
+      let k=0;
+      while(k<nearest.length&&nearest[k].d<d)k++;
+      nearest.splice(k,0,{j:item.j,d});
+      if(nearest.length>4)nearest.pop();
+    }
+    const influence=new Map();
+    let total=0;
+    for(const {j,d} of nearest){
+      // A small epsilon prevents a single coincident vertex from completely
+      // overriding its neighbors and helps interpolation across UV seams.
+      const strength=1/(d+.0004);
+      for(let k=0;k<4;k++){
+        const w=refWeight.getComponent(j,k)*strength;
+        if(!(w>0))continue;
+        const bone=refIndex.getComponent(j,k);
+        influence.set(bone,(influence.get(bone)||0)+w);
+        total+=w;
+      }
+    }
+    if(!(total>0))throw Error('Unweighted '+region+' garment vertex '+i);
+    const sorted=[...influence].sort((a,b)=>b[1]-a[1]).slice(0,4);
+    const sum=sorted.reduce((acc,p)=>acc+p[1],0);
+    if(!(sum>0))throw Error('Invalid '+region+' garment skin distribution');
+    if(nearest[0].d>.09)fallbackCount++;
+    for(let k=0;k<sorted.length;k++){
+      indices[i*4+k]=sorted[k][0];
+      weights[i*4+k]=sorted[k][1]/sum;
+    }
+  }
+  geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(indices,4));
+  geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
+  geometry.userData={...geometry.userData,skinTransfer:{
+    method:'four-neighbor-smooth-body-weights-v5.8',region,neighbors:4,
+    vertices:pos.count,distantSamples:fallbackCount
+  }};
+  return geometry.userData.skinTransfer;
+}
+
 function remeshSource(source,style){
   const geometry=source.geometry.clone();
   const positions=geometry.getAttribute('position');
@@ -192,35 +258,12 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
   const fitBody=getNode(style.fit==='male'?'kidscade_male_body':'character_low');
   const addMatchedSleeve=(geometry,id,sign)=>{
     if(!fitBody?.isSkinnedMesh)throw new Error('Sleeve skin reference body unavailable');
-    const reference=fitBody.geometry;
-    const refPos=reference.getAttribute('position');
-    const refIndex=reference.getAttribute('skinIndex');
-    const refWeight=reference.getAttribute('skinWeight');
-    const p=geometry.getAttribute('position');
-    const indices=new Uint16Array(p.count*4);
-    const weights=new Float32Array(p.count*4);
-    for(let i=0;i<p.count;i++){
-      const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
-      let nearest=-1,score=Infinity;
-      for(let j=0;j<refPos.count;j++){
-        const bx=refPos.getX(j),by=refPos.getY(j),bz=refPos.getZ(j);
-        if(Math.sign(bx)!==sign||Math.abs(bx)<.135||by<.67||by>1.20)continue;
-        const distance=(x-bx)**2+(y-by)**2*1.4+(z-bz)**2;
-        if(distance<score){score=distance;nearest=j;}
-      }
-      if(nearest<0)throw new Error('No suitable original Chibi arm weights');
-      for(let k=0;k<4;k++){
-        indices[i*4+k]=refIndex.getComponent(nearest,k);
-        weights[i*4+k]=refWeight.getComponent(nearest,k);
-      }
-    }
-    geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(indices,4));
-    geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
+    transferSmoothSkinWeights(geometry,fitBody,{sign,region:'arm'});
     geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     const mesh=cloneSkinnedMeshWithGeometry(
       source,geometry,makeSolidMaterial(style.color,style.label+' 연결 소매'),style.id+'_'+id
     );
-    mesh.userData={type:'skinned-sleeve',sourceWeights:'nearest-fit-body-arm'};
+    mesh.userData={type:'skinned-sleeve',sourceWeights:'four-neighbor-smooth-body-arm',skinTransfer:geometry.userData.skinTransfer};
     group.add(mesh);
   };
   if(style.details.includes('longSleeve')||style.details.includes('puffSleeve')){
@@ -322,10 +365,6 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
   const skeleton=source.skeleton;
   const reference=getNode(style.fit==='male'?'kidscade_male_body':'character_low');
   if(!reference?.isSkinnedMesh)throw new Error('Missing fit body for trouser skin transfer');
-  const refPositions=reference.geometry.getAttribute('position');
-  const refIndices=reference.geometry.getAttribute('skinIndex');
-  const refWeights=reference.geometry.getAttribute('skinWeight');
-  if(!refPositions||!refIndices||!refWeights)throw new Error('Chibi body missing reference skin weights');
   for(const side of ['left','right']){
     const sign=side==='left'?-1:1;
     // These indices resolve actual GLTFLoader-sanitized Chibi bones.
@@ -351,34 +390,14 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
       if(z>0)positions.setZ(i,z*(1+.68*thighFront));
     }
     positions.needsUpdate=true;
-    const indices=new Uint16Array(positions.count*4);
-    const weights=new Float32Array(positions.count*4);
-    // Match the nearest bind-pose body surface vertex. The original body
-    // has blended pelvis, thigh, knee and shin weights which keep trouser
-    // openings aligned with the shorts and eliminate exposed wedge seams.
-    for(let i=0;i<positions.count;i++){
-      const x=positions.getX(i),y=positions.getY(i),z=positions.getZ(i);
-      let nearest=-1,best=Infinity;
-      for(let j=0;j<refPositions.count;j++){
-        const rx=refPositions.getX(j),ry=refPositions.getY(j),rz=refPositions.getZ(j);
-        if(Math.sign(rx)!==sign&&Math.abs(rx)>.03)continue;
-        const d=(x-rx)**2+(y-ry)**2*1.35+(z-rz)**2;
-        if(d<best){best=d;nearest=j;}
-      }
-      if(nearest<0)throw new Error('Unable to resolve trouser skin reference');
-      const offset=i*4;
-      for(let k=0;k<4;k++){
-        indices[offset+k]=refIndices.getComponent(nearest,k);
-        weights[offset+k]=refWeights.getComponent(nearest,k);
-      }
-    }
-    geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(indices,4));
-    geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
+    // Smooth 4-neighbor skin transfer follows the knee and pelvis blends
+    // without stitching a thigh vertex to a single unrelated body triangle.
+    transferSmoothSkinWeights(geometry,reference,{sign,region:'leg'});
     geometry.computeVertexNormals();
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
     const leg=cloneSkinnedMeshWithGeometry(source,geometry,material,style.id+'_leg_'+side);
-    leg.userData={part:'trouser-leg',side,fit:style.fit,articulation:'nearest-body-surface-skin-weights',thighBone:thigh,shinBone:shin};
+    leg.userData={part:'trouser-leg',side,fit:style.fit,articulation:'four-neighbor-smooth-body-weights',skinTransfer:geometry.userData.skinTransfer,thighBone:thigh,shinBone:shin};
     group.add(leg);
   }
 }
