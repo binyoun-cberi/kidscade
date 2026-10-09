@@ -1,5 +1,6 @@
 import * as THREE from '../assets/vendor/three-r160/three.module.js';
 import {OUTFIT_LIBRARY,OUTFIT_STYLES,createOutfitPack} from './chibi-outfit-pack.js';
+import {ACCESSORY_STYLES,ACCESSORY_COUNT,ACCESSORY_SLOTS,createAccessoryPack} from './chibi-accessory-pack.js';
 
 window.__kc3dStudioModuleReady=true;
 
@@ -56,13 +57,15 @@ const PART_LABELS={
   kidscade_male_hair_undercut:'언더컷',kidscade_male_hair_round:'라운드컷',
   kidscade_male_hair_swept:'스윕 헤어',
   chibi_female_hair_bob:'둥근 단발',chibi_female_hair_layered:'레이어드',
-  ...Object.fromEntries(OUTFIT_STYLES.map(style=>[style.id,style.label]))
+  ...Object.fromEntries(OUTFIT_STYLES.map(style=>[style.id,style.label])),
+  ...Object.fromEntries(ACCESSORY_STYLES.map(style=>[style.id,style.label]))
 };
 
 // Fit means compatible with the current body geometry, never a restriction on identity.
 const PART_CATEGORY={};
 for(const name of HAIR_NODES)PART_CATEGORY[name]='hair';
 for(const style of OUTFIT_STYLES)PART_CATEGORY[style.id]=style.category;
+for(const style of ACCESSORY_STYLES)PART_CATEGORY[style.id]=style.category;
 for(const name of ['shirt','chemise','greenoutfit','ninjassuit','amorplastron','kidscade_hoodie_blue','kidscade_male_tshirt'])PART_CATEGORY[name]='top';
 for(const name of ['skirt','pants','ninjasuitshort','armorlegs','armorskirt','kidscade_male_shorts'])PART_CATEGORY[name]='bottom';
 for(const name of ['shoe','bottes','bottesgreen','ninjassuitshoe','armorshoe'])PART_CATEGORY[name]='shoes';
@@ -71,8 +74,11 @@ for(const name of ['bag','hat','ninjassuitmask','armorhelmet','greenoutfitbelt',
 // 6-top/4-bottom lists. They remain available to old preset users.
 for(const name of ['chemise','greenoutfit','ninjassuit','amorplastron','pants','ninjasuitshort','armorlegs','armorskirt'])PART_CATEGORY[name]='costume';
 const LEGACY_OUTFIT_SLOTS={chemise:'top',greenoutfit:'top',ninjassuit:'top',amorplastron:'top',pants:'bottom',ninjasuitshort:'bottom',armorlegs:'bottom',armorskirt:'bottom'};
+const LEGACY_ACCESSORY_SLOTS={hat:'hat',armorhelmet:'hat',ninjassuitmask:'face',bag:'bag'};
+const ACCESSORY_STYLE_MAP=new Map(ACCESSORY_STYLES.map(style=>[style.id,style]));
+const ACCESSORY_SLOT=name=>ACCESSORY_STYLE_MAP.get(name)?.slot||LEGACY_ACCESSORY_SLOTS[name]||null;
 const MALE_FIT_PARTS=new Set([...MALE_HAIR_STYLES,'kidscade_male_tshirt','kidscade_male_shorts',...OUTFIT_STYLES.filter(style=>style.fit==='male').map(style=>style.id)]);
-const SHARED_FIT_PARTS=new Set(['shoe','bottes','bottesgreen','ninjassuitshoe','armorshoe','bag','hat','armorhelmet','ninjassuitmask']);
+const SHARED_FIT_PARTS=new Set(['shoe','bottes','bottesgreen','ninjassuitshoe','armorshoe','bag','hat','armorhelmet','ninjassuitmask',...ACCESSORY_STYLES.map(style=>style.id)]);
 const PART_FIT=name=>MALE_FIT_PARTS.has(name)?'male':SHARED_FIT_PARTS.has(name)?'shared':'female';
 const PART_GROUP=name=>PART_CATEGORY[name]||'costume';
 const WARDROBE_CATEGORIES=['hair','top','bottom','shoes','accessory','costume'];
@@ -96,6 +102,9 @@ let activeBodyFit='male',activeWardrobeCategory='hair';
 let maleWalkClips=new Map(),maleRunClips=new Map();
 let originalMaterials=new Map();
 let loaded=false;
+const thumbnailCache=new Map();
+let thumbnailToken=0;
+let thumbnailTarget=null;
 let lastTime=performance.now();
 // Instrumentation is only reachable from a local browser audit; production auth remains unchanged.
 const localVisualAudit=/^(?:localhost|127\.0\.0\.1)$/.test(location.hostname)
@@ -408,14 +417,117 @@ function renderPartChecks(){
   const names=TOGGLE_NODES.filter(name=>
     compatiblePart(name)&&PART_GROUP(name)===activeWardrobeCategory
   );
+  const showTiles=activeWardrobeCategory==='shoes'||activeWardrobeCategory==='accessory';
+  const descriptions={hat:'모자·헤드폰',face:'안경·마스크',bag:'가방',neck:'목도리',wrist:'시계'};
+  let currentSlot='';
+  host.classList.toggle('with-thumbnails',showTiles);
   host.innerHTML=names.map(name=>{
     const exists=!!getNode(name);
     const fit=PART_FIT(name)==='shared'?' · 공용':'';
+    const slot=ACCESSORY_SLOT(name);
+    const heading=showTiles&&slot&&slot!==currentSlot&&activeWardrobeCategory==='accessory'
+      ?'<h4 class="part-slot-heading">'+(descriptions[slot]||'기타 액세서리')+'</h4>':'';
+    if(slot)currentSlot=slot;
+    if(showTiles){
+      return heading+'<label class="part-tile"><input type="checkbox" data-chibi-part="'+name+'" '+(exists?'':'disabled')+'>'+
+        '<span class="part-preview"><canvas width="112" height="112" data-part-thumb="'+name+'" aria-hidden="true"></canvas></span>'+
+        '<span class="part-name">'+(PART_LABELS[name]||name)+fit+'</span></label>';
+    }
     return '<label class="part-check"><input type="checkbox" data-chibi-part="'+name+'" '+(exists?'':'disabled')+'> '+(PART_LABELS[name]||name)+fit+'</label>';
   }).join('');
   updateWardrobeNavigation();
   syncHairOptions();
   refreshPartChecks();
+  if(showTiles)queueAccessoryThumbnails();
+}
+
+
+// The same Three.js renderer creates tiny real 3D previews. A render target,
+// rather than a second WebGL context, keeps iPad memory use bounded.
+function paintAccessoryThumbnail(name,canvas){
+  const node=getNode(name);
+  if(!node||!renderer||!scene||!sourceScene)return;
+  const meta=ACCESSORY_STYLE_MAP.get(name);
+  const slot=meta?.slot||ACCESSORY_SLOT(name)||PART_GROUP(name);
+  if(!thumbnailTarget)thumbnailTarget=new THREE.WebGLRenderTarget(112,112,{
+    minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:true
+  });
+  const items=[],ancestors=[],priorTarget=renderer.getRenderTarget();
+  const previousBackground=scene.background;
+  scene.traverse(object=>{
+    if(object.isMesh){items.push([object,object.visible]);object.visible=false;}
+  });
+  let ancestor=node;
+  while(ancestor&&ancestor!==scene){
+    ancestors.push([ancestor,ancestor.visible]);
+    ancestor.visible=true;ancestor=ancestor.parent;
+  }
+  node.traverse(object=>{if(object.isMesh)object.visible=true});
+  const oldGrid=[];
+  scene.children.forEach(object=>{
+    if(object===avatarRoot||object.isLight)return;
+    oldGrid.push([object,object.visible]);object.visible=false;
+  });
+  try{
+    const focus={
+      shoes:[0,.105,.06,.71,'front'],
+      hat:[0,1.91,0,.86,'front'],
+      face:[0,1.72,.19,.57,'front'],
+      bag:[0,.99,-.22,.84,'back'],
+      wrist:[.365,.785,.015,.35,'front'],
+      neck:[0,1.13,0,.40,'front'],
+      hair:[0,1.81,0,.86,'front'],
+      top:[0,.96,0,.85,'front'],
+      bottom:[0,.46,0,.78,'front']
+    }[slot]||[0,1.0,0,.86,'front'];
+    const [x,y,z,dist,view]=focus;
+    const previewCam=new THREE.PerspectiveCamera(39,1,.01,30);
+    previewCam.position.set(x+dist*.24,y+dist*.19,z+(view==='back'?-dist:dist));
+    previewCam.lookAt(x,y,z);
+    scene.background=new THREE.Color('#edf2f8');
+    renderer.setRenderTarget(thumbnailTarget);
+    renderer.clear();
+    renderer.render(scene,previewCam);
+    const pixels=new Uint8Array(112*112*4);
+    renderer.readRenderTargetPixels(thumbnailTarget,0,0,112,112,pixels);
+    const flipped=new Uint8ClampedArray(pixels.length);
+    for(let y=0;y<112;y++){
+      flipped.set(pixels.subarray(y*112*4,(y+1)*112*4),(111-y)*112*4);
+    }
+    const ctx=canvas.getContext('2d');
+    if(ctx)ctx.putImageData(new ImageData(flipped,112,112),0,0);
+    thumbnailCache.set(name,ctx?canvas.toDataURL('image/webp',.79):null);
+  }finally{
+    items.forEach(([object,visible])=>{object.visible=visible});
+    ancestors.forEach(([object,visible])=>{object.visible=visible});
+    oldGrid.forEach(([object,visible])=>{object.visible=visible});
+    scene.background=previousBackground;
+    renderer.setRenderTarget(priorTarget);
+  }
+}
+function queueAccessoryThumbnails(){
+  const generation=++thumbnailToken;
+  const targets=[...document.querySelectorAll('[data-part-thumb]')];
+  let index=0;
+  const next=()=>{
+    if(generation!==thumbnailToken)return;
+    // Draw only two previews per frame; cache them for category switches.
+    for(let n=0;n<2&&index<targets.length;n++){
+      const canvas=targets[index++],name=canvas.dataset.partThumb;
+      const cached=thumbnailCache.get(name);
+      if(cached){
+        const img=new Image();
+        img.onload=()=>{
+          if(generation!==thumbnailToken||!canvas.isConnected)return;
+          canvas.getContext('2d')?.drawImage(img,0,0,112,112);
+        };
+        img.src=cached;
+      }else try{paintAccessoryThumbnail(name,canvas)}
+      catch(error){console.warn('Chibi part thumbnail unavailable',name,error);}
+    }
+    if(index<targets.length)requestAnimationFrame(next);
+  };
+  requestAnimationFrame(next);
 }
 
 function refreshPartChecks(){
@@ -423,6 +535,7 @@ function refreshPartChecks(){
     const object=getNode(input.dataset.chibiPart);
     input.checked=!!object?.visible;
     input.disabled=!object||!loaded||!compatiblePart(input.dataset.chibiPart);
+    input.closest('.part-tile')?.classList.toggle('selected',input.checked);
   });
 }
 
@@ -1696,6 +1809,7 @@ async function loadChibi(){
     createKidscadeMaleHairShort();
     createKidscadeHairCollection();
     createOutfitPack({getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial,makeRigidSkinnedPiece,resolveFirstBoneName});
+    createAccessoryPack({getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial,makeRigidSkinnedPiece});
   }catch(error){
     console.error(error);
     showAssetError('Chibi 본체는 열렸지만 커스텀 파츠 생성에 실패했습니다: '+(error?.message||error));
@@ -1716,6 +1830,7 @@ async function loadChibi(){
   populateAnimationButtons();
   renderPartChecks();
   applyPreset('male');
+  // The outfit/accessory thumbnails are lazy-rendered only when those tabs open.
   applyMaterialMode($('chibiUnlit').checked);
   setCameraView(activeView);
 
@@ -1754,7 +1869,8 @@ function exportSpec(){
     asset:CHIBI_ASSET_URL,
     preset:currentPreset,
     bodyFit:activeBodyFit,
-    partLibraryVersion:'chibi-v5.2',
+    partLibraryVersion:'chibi-v5.3',
+    accessoryLibrary:{count:ACCESSORY_COUNT,slots:ACCESSORY_SLOTS},
     outfitLibrary:OUTFIT_LIBRARY,
     materialMode:$('chibiUnlit').checked?'unlit-npr':'original-pbr',
     visibleParts:selectedParts(),
@@ -1911,6 +2027,11 @@ function wireUi(){
     const part=input.dataset.chibiPart;
     if(!compatiblePart(part)){refreshPartChecks();return;}
     const exclusive=LEGACY_OUTFIT_SLOTS[part]||PART_GROUP(part);
+    const accessorySlot=ACCESSORY_SLOT(part);
+    if(input.checked&&accessorySlot){
+      TOGGLE_NODES.filter(name=>name!==part&&ACCESSORY_SLOT(name)===accessorySlot)
+        .forEach(name=>setNodeVisible(name,false));
+    }
     if(input.checked&&['top','bottom','shoes'].includes(exclusive)){
       TOGGLE_NODES.filter(name=>name!==part&&(LEGACY_OUTFIT_SLOTS[name]||PART_GROUP(name))===exclusive)
         .forEach(name=>setNodeVisible(name,false));
