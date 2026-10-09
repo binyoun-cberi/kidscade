@@ -4,6 +4,7 @@ export const PRIME_WEAPONS = Object.freeze([2, 3, 5, 7]);
 export const WAVE_NUMBERS = Object.freeze([[6], [10, 15], [8, 12], [21, 35], [30, 49], [84, 105]]);
 export const PRACTICE_WAVES = Object.freeze([[6], [10,15], [8,12]]);
 export const ROUND_SECONDS = 180;
+export const MAX_BONUS_SECONDS = Object.freeze({ standard: 85, practice: 32 });
 
 export function isPrime(value) {
   if (!Number.isInteger(value) || value < 2) return false;
@@ -21,7 +22,7 @@ export function primeFactors(number) {
 }
 export function makePrimeChase() {
   return {
-    status: 'ready', mode: 'standard', waves: WAVE_NUMBERS, elapsed: 0, remaining: ROUND_SECONDS, shield: 100,
+    status: 'ready', mode: 'standard', waves: WAVE_NUMBERS, elapsed: 0, remaining: ROUND_SECONDS, bonusSeconds: 0, shield: 100,
     score: 0, mistakes: 0, combo: 0, destroyed: 0, shots: 0,
     enemies: [], selectedId: null, nextId: 1, waveIndex: -1,
     waveDelay: 0, cooldown: 0, consecutiveWrong: 0, dodges: 0, previousPilot: null, lastShot: null, reason: ''
@@ -82,12 +83,19 @@ export function firePrime(state, prime) {
   enemy.number = oldValue / prime;
   enemy.divisionCount++;
   state.combo++;
+  const bonusMax = MAX_BONUS_SECONDS[state.mode];
+  const bonusRequested = 2 + (enemy.number === 1 ? 4 : 0);
+  const timeBonus = Math.min(bonusRequested, Math.max(0, bonusMax - state.bonusSeconds));
+  state.bonusSeconds += timeBonus;
+  state.remaining = Math.max(0, ROUND_SECONDS + state.bonusSeconds - state.elapsed);
   state.score += 100 + Math.min(100, (state.combo - 1) * 20);
   state.cooldown = 0.30;
   const destroyed = enemy.number === 1;
   if (destroyed) {
     enemy.alive = false;
     state.destroyed++;
+    // A good factorization chain repairs a little shield, not an unlimited refill.
+    state.shield = Math.min(100, state.shield + (state.combo >= 2 ? 3 : 1));
     state.score += 250;
     state.selectedId = activeEnemies(state)[0]?.id ?? null;
     if (state.destroyed === state.waves.flat().length) {
@@ -97,7 +105,7 @@ export function firePrime(state, prime) {
     }
   }
   state.lastShot = { kind: destroyed ? 'destroyed' : 'divided', prime, oldValue,
-    newValue: enemy.number, id: enemy.id, combo: state.combo };
+    newValue: enemy.number, id: enemy.id, combo: state.combo, timeBonus };
   return state.lastShot;
 }
 export function damageShield(state, amount) {
@@ -112,7 +120,7 @@ export function tickPrimeChase(state, dt, enemyDistances = {}, playerPosition = 
   if (state.status !== 'playing') return { newEnemies: [], attacks: [], warnings: [] };
   const frame = Math.max(0, Math.min(dt, 0.25));
   state.elapsed += frame;
-  state.remaining = Math.max(0, ROUND_SECONDS - state.elapsed);
+  state.remaining = Math.max(0, ROUND_SECONDS + state.bonusSeconds - state.elapsed);
   if (state.remaining < 0.0001) state.remaining = 0;
   state.cooldown = Math.max(0, state.cooldown - frame);
   if (state.remaining <= 0) {
@@ -184,6 +192,7 @@ export function roundStats(state) {
     total: state.waves.flat().length,
     score: state.score,
     dodges: state.dodges,
-    timeLeft: Math.ceil(state.remaining)
+    timeLeft: Math.ceil(state.remaining),
+    bonusSeconds: state.bonusSeconds
   };
 }

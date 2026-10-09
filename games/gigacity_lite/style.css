@@ -128,3 +128,24 @@ body.prime-impact #city{animation:prime-camera-hit .28s ease-out both}
   #radarReadout{font-size:8px;max-width:80px}
   #primeLockMessage{top:32%;max-width:96vw;font-size:11px;padding:7px}
 }
+
+/* v6.1: selectable true 3D rear camera and rewards for accurate division. */
+#chaseTimeBonus{font-size:10px;color:#9af3d6;font-weight:800;line-height:1.15;min-height:11px;white-space:nowrap}
+.chaseViewButtons{display:flex;flex-direction:column;justify-self:end;align-items:stretch;gap:5px;pointer-events:auto;min-width:90px;max-width:120px}
+.chaseViewButtons button{position:static!important;pointer-events:auto;font-size:10px;white-space:nowrap;padding:7px 8px;border:1px solid rgba(147,222,255,.55);border-radius:9px;background:rgba(8,32,58,.88);color:#e5f5ff;min-height:29px}
+.chaseViewButtons #rearViewButton[aria-pressed="true"]{color:#092c40;background:#8be7ff;border-color:#d6fbff}
+#chaseCameraButton{justify-self:auto}
+@media(max-height:520px){
+  #chaseTimeBonus{font-size:9px}
+  .chaseViewButtons{min-width:82px;gap:3px}
+  .chaseViewButtons button{font-size:9px;min-height:25px;padding:4px 5px}
+}
+@media(max-width:680px) and (max-height:520px){
+  .chaseViewButtons{min-width:69px;max-width:78px}
+  .chaseViewButtons button{font-size:8px;min-height:23px;padding:4px 2px}
+}
+@media(max-width:500px) and (min-height:521px){
+  .chaseViewButtons{position:absolute;right:0;top:113px;display:flex;flex-direction:row;gap:5px;max-width:none}
+  .chaseViewButtons button{font-size:10px;min-height:34px;padding:7px 8px}
+  #chaseTimeBonus{font-size:10px}
+}

@@ -31,7 +31,7 @@ export function relativeContact(player, heading, enemy, range = 180) {
 }
 // Keep an enemy behind or on a flanking route. This is not a hardcoded
 // obstacle-ignoring teleport: Three.js moves the ship via collisions.
-export function pursuitSlot(player, heading, elapsed, id, order, type) {
+export function pursuitSlot(player, heading, elapsed, id, order, type, pilotSpeed = 34) {
   const spec = FIGHTER_TYPES[type] || FIGHTER_TYPES.scout;
   const sine = Math.sin(elapsed * spec.sweepHz + id * 1.37);
   const right = (order % 2 ? -1 : 1) * (spec.flank + order * 7);
@@ -40,7 +40,8 @@ export function pursuitSlot(player, heading, elapsed, id, order, type) {
     x: player.x + Math.cos(heading) * right - Math.sin(heading) * behind,
     z: player.z - Math.sin(heading) * right - Math.cos(heading) * behind,
     y: player.y + 5 + Math.sin(elapsed * 1.2 + id) * 3,
-    speed: spec.speed
+    // Even a heavy gunship can close the gap at cruising speed. Boost may outrun it.
+    speed: Math.max(spec.speed, Math.min(88, Math.max(0, pilotSpeed) + 12))
   };
 }
 export function damageStage(divisions, total) {
