@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f6f2e9">
-<meta name="description" content="Openmon 118개 스프라이트를 과학·수학에서 이름을 따온 몬스터로 분류하는 키즈케이드 도감 제작실">
-<title>개념도감 제작실 | KIDSCADE</title>
+<meta name="description" content="키즈몬에 사용된 Openmon 118개 스프라이트를 과학·수학에서 이름을 따온 키즈몬으로 분류하는 키즈케이드 도감 제작실">
+<title>키즈몬 도감 제작실 | KIDSCADE</title>
 <style>
 :root{--paper:#f6f2e9;--white:#fffcf6;--ink:#243c3a;--muted:#70817c;--border:#d8dfd3;--forest:#215c53;--mint:#e4f1e4;--gold:#eabd67;--coral:#ef9976;--shadow:0 14px 35px rgba(37,65,55,.08)}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:radial-gradient(circle at 0 0,#eff7e8 0,transparent 34%),radial-gradient(circle at 100% 25%,#f9e9d8 0,transparent 37%),var(--paper)}
@@ -39,7 +39,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}button:fo
 <main class="wrap">
 <header class="top">
   <button class="brand" id="backBtn" type="button" aria-label="키즈케이드로 돌아가기">
-    <div class="logo" aria-hidden="true">∑</div><div><small>KIDSCADE · FIELD RESEARCH</small><strong>개념도감 제작실</strong></div>
+    <div class="logo" aria-hidden="true">∑</div><div><small>KIDSCADE · KIDSMON RESEARCH</small><strong>키즈몬 도감 제작실</strong></div>
   </button>
   <div class="actions">
     <button class="btn" id="importBtn">JSON 불러오기</button>
@@ -48,7 +48,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}button:fo
   </div>
 </header>
 <section class="hero">
-  <div><p class="eyebrow">THE SCIENCE OF MONSTERS · V2</p>
+  <div><p class="eyebrow">KIDSMON RESEARCH DEX · V2</p>
     <h1>발견하는 재미,<br>이해하는 수학과 과학.</h1>
     <p>도감 102개 형태와 47개 진화 계열을 만나보세요. 118개 이미지 중 재해석 시안·오브젝트를 구별하고, 체력과 공격력도 함께 살펴볼 수 있어요.</p>
   </div><div class="hero-dex" id="heroSprite"></div>
@@ -61,8 +61,8 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}button:fo
   <div class="stat-card"><small>사용자 수정</small><strong id="editValue">0</strong><span>개 기록</span></div>
 </section>
 <div class="workspace">
-  <section class="panel" aria-label="몬스터 이미지 목록">
-    <div class="panel-head"><h2>몬스터 찾아보기</h2><small id="resultCount">118개 표시</small></div>
+  <section class="panel" aria-label="키즈몬 이미지 목록">
+    <div class="panel-head"><h2>키즈몬 찾아보기</h2><small id="resultCount">118개 표시</small></div>
     <div class="tools">
       <input class="control" id="search" aria-label="이름 및 과학 개념 검색" placeholder="이름 · 멘델 · 프랙털 · 유전 검색" autocomplete="off">
       <select class="control" id="typeFilter" aria-label="속성 필터"><option value="">모든 속성</option></select>
@@ -72,8 +72,8 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}button:fo
     <p class="tool-caption">번호는 <b>게임 도감 번호</b>이며, 재해석 시안과 배에는 도감 번호를 주지 않았어요. Set 2에서 서로 닮은 두 그림은 검토 중이라 자동 진화를 막아두었어요.</p>
     <div class="sprite-list" id="spriteList" aria-live="polite"></div>
   </section>
-  <section class="panel details" aria-label="선택한 몬스터 정보">
-    <div class="detail-top"><h2>몬스터 연구 카드</h2><span class="draft-label">전투 능력치 설계안</span></div>
+  <section class="panel details" aria-label="선택한 키즈몬 정보">
+    <div class="detail-top"><h2>키즈몬 연구 카드</h2><span class="draft-label">전투 능력치 설계안</span></div>
     <div class="portrait"><div class="ground"></div><div id="portraitSprite"></div><span class="atlas" id="atlasId"></span></div>
     <div class="detail-content">
       <div class="number" id="number">NO. 001</div><h3 class="monster-name" id="monsterName">—</h3>
@@ -86,7 +86,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}button:fo
       <p class="muted" id="battleNote">개체 능력치·상성·포획 가능 여부는 진화 형태에 따라 달라져요.</p>
       <h4 class="section-title">도감 정보 수정 <small>이 기기에 자동 저장 · 게임 수치는 고정된 기준안</small></h4>
       <div class="edit-grid">
-        <div class="field wide"><label for="nameField">몬스터 이름</label><input id="nameField" maxlength="20" autocomplete="off"></div>
+        <div class="field wide"><label for="nameField">키즈몬 이름</label><input id="nameField" maxlength="20" autocomplete="off"></div>
         <div class="field"><label for="typeField">속성</label><select id="typeField"></select></div>
         <div class="field"><label for="topicField">연결되는 과학·수학 개념</label><select id="topicField"></select></div>
         <div class="field"><label for="habitatField">서식지</label><input id="habitatField" maxlength="30"></div>
@@ -111,7 +111,7 @@ button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}button:fo
 <script>
 (function(){
 "use strict";
-const db=window.OPENMON_DEX;if(!db||!Array.isArray(db.sprites)){document.getElementById("spriteList").textContent="몬스터 데이터를 불러오지 못했어요.";return}
+const db=window.OPENMON_DEX;if(!db||!Array.isArray(db.sprites)){document.getElementById("spriteList").textContent="키즈몬 데이터를 불러오지 못했어요.";return}
 const key="kidscade.openmon.science-dex.edits.v1",fields=["name","type","topic","habitat","rarity","stage","memo"];
 const original=new Map(db.sprites.map(s=>[s.id,s])),typeIds=Object.keys(db.types),topics=Object.keys(db.lore);
 let edits={};let selected="set1_r01_c01";let previewLevel=5;let filters={search:"",type:"",atlas:"",role:""};
@@ -125,7 +125,7 @@ function renderList(){
  const q=filters.search.trim().toLocaleLowerCase("ko");
  const matched=db.sprites.map(s=>one(s.id)).filter(s=>(!filters.type||s.type===filters.type)&&(!filters.atlas||s.atlas===filters.atlas)&&(!filters.role||s.role===filters.role)&&(!q||[s.name,s.topicName,s.fact,s.habitat,s.memo||"",s.id].some(v=>String(v).toLocaleLowerCase("ko").includes(q))));
  document.getElementById("resultCount").textContent=matched.length+"개 표시";
- document.getElementById("spriteList").innerHTML=matched.length?matched.map(s=>'<button class="mon-card" type="button" data-id="'+s.id+'" aria-pressed="'+(s.id===selected)+'"><span class="num">'+(s.dexNo?"NO. "+String(s.dexNo).padStart(3,"0"):"자료 #"+String(s.index).padStart(3,"0"))+'</span><span class="avatar">'+sprite(s,1)+'</span><strong>'+safe(s.name)+'</strong><span class="small-type">'+safe(db.types[s.type].name)+' · '+safe(s.topicName)+'</span><span class="role-tag">'+(s.role==="monster"?"도감 후보":s.role==="object"?"몬스터 아님":"재해석 시안")+'</span></button>').join(""):'<p class="empty">찾는 몬스터가 없어요. 필터를 바꿔보세요.</p>';
+ document.getElementById("spriteList").innerHTML=matched.length?matched.map(s=>'<button class="mon-card" type="button" data-id="'+s.id+'" aria-pressed="'+(s.id===selected)+'"><span class="num">'+(s.dexNo?"NO. "+String(s.dexNo).padStart(3,"0"):"자료 #"+String(s.index).padStart(3,"0"))+'</span><span class="avatar">'+sprite(s,1)+'</span><strong>'+safe(s.name)+'</strong><span class="small-type">'+safe(db.types[s.type].name)+' · '+safe(s.topicName)+'</span><span class="role-tag">'+(s.role==="monster"?"도감 후보":s.role==="object"?"키즈몬 아님":"재해석 시안")+'</span></button>').join(""):'<p class="empty">찾는 키즈몬이 없어요. 필터를 바꿔보세요.</p>';
  document.getElementById("editValue").textContent=Object.keys(edits).filter(id=>original.has(id)).length;
 }
 function evolution(id){
@@ -142,11 +142,11 @@ function evolution(id){
    b.addEventListener("click",()=>choose(rel.id));box.appendChild(b);
  });
  const note=s.role==="alternate-concept"?"Shibu를 다시 그린 늑대 시안입니다. 원본 진화형과 1:1 대응은 미확정이에요.":
-  s.role==="object"?"몬스터가 아니므로 진화하지 않아요.":
+  s.role==="object"?"키즈몬이 아니므로 진화하지 않아요.":
   s.familyOrigin==="source-confirmed"?"원본 진화 구성이 확인된 계열입니다.":
   s.familyOrigin==="provisional"?"인접한 그림의 관계가 미확정이라 자동 진화를 막았어요.":
   s.familyOrigin==="kidscade-design"?"외형을 참고해 키즈케이드 게임에서 새로 설계한 진화 계열이에요.":
-  "독립형 개체로 설계한 몬스터예요.";
+  "독립형 개체로 설계한 키즈몬예요.";
  document.getElementById("evolutionNote").textContent=note;
 }
 function renderBattle(s){
@@ -166,7 +166,7 @@ function renderBattle(s){
  const cap=s.rarity==="starter"?"스타팅 전용":s.evolutionRank>=3?"야생 포획 제한":(()=>{
  const full=db.combat.captureChance({target:s,level:previewLevel,hp,maxHp:hp});
  const low=db.combat.captureChance({target:s,level:previewLevel,hp:Math.max(1,Math.floor(hp*.25)),maxHp:hp});
- return "일반 포획구 "+Math.round(full*100)+"% (HP 100%) → "+Math.round(low*100)+"% (HP 약 25%)";
+ return "일반 키즈볼 "+Math.round(full*100)+"% (HP 100%) → "+Math.round(low*100)+"% (HP 약 25%)";
  })();
  const line=s.familyOrigin==="source-confirmed"?"원본 구성 확인":s.familyOrigin==="provisional"?"그림 관계 검토 중":"키즈케이드 게임 기획안";
  document.getElementById("battleNote").textContent="계열: "+s.familyName+" ("+line+"). "+evo+" · "+cap+
