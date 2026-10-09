@@ -144,7 +144,7 @@ function headlessGame(){
     KidscadeStorage:{getJson(){return []},setJson(){return true},getInt(key){return key==='kidscade_word_siege_stage_v1'?20:0},setRaw(){return true}},
     addEventListener(){},devicePixelRatio:1
   };
-  const hooks=`window.__headless={restart,startWave,update,beginPlacement,buildTower,makeTowerStats,towerCost,availableWords,validPlacement,rolePlacementValid,applyLinks,effectiveStats,showHint,swapOne,selectStage,currentStage,createWave,tileWord,typedWord,attackEnemy,towerUpdate,shotUpdate,statusEffects,updateTraps,updateFields,spawnEnemy,updateComposer,inspectAt,upgradeInspectedTower,upgradeCost,moveEnemy,useWordRush,rushCost,getInput:()=>freeWord, get state(){return state}};resize();`;
+  const hooks=`window.__headless={restart,startWave,update,beginPlacement,buildTower,makeTowerStats,towerCost,availableWords,validPlacement,rolePlacementValid,applyLinks,effectiveStats,showHint,swapOne,rollWholeRack,rackRerollCost,selectStage,currentStage,createWave,tileWord,typedWord,attackEnemy,towerUpdate,shotUpdate,statusEffects,updateTraps,updateFields,spawnEnemy,updateComposer,inspectAt,upgradeInspectedTower,upgradeCost,moveEnemy,useWordRush,rushCost,getInput:()=>freeWord, get state(){return state}};resize();`;
   const patched=runtime.replace('resize();requestAnimationFrame(loop);',hooks);
   assert.notEqual(patched,runtime,'headless hooks are missing');
   const ctx={window,document,performance:{now:()=>0},setTimeout(){return 0},clearTimeout(){},requestAnimationFrame(){}};
@@ -879,4 +879,65 @@ test('Word Siege campaign selector shows two parts, can access stage 20 and reta
   assert.match(html,/\.stage-chapter/);
   assert.match(html,/1 \/ 20 해금/);
   assert.match(runtime,/STORAGE_STAGE='kidscade_word_siege_stage_v1'/);
+});
+
+test('Word Siege full rack reroll costs INK and renews all twelve tiles',()=>{
+  const {h,d}=headlessGame(),state=h.state;
+  assert.equal(state.ink,20);
+  assert.equal(h.rackRerollCost(),6);
+  const original=state.rack.join('');
+  state.selected=[0,1,2];
+  h.getInput().value='FIRE';
+  assert.equal(h.rollWholeRack(),true);
+  assert.equal(state.ink,14);
+  assert.equal(state.rack.length,d.maxRack);
+  assert.notEqual(state.rack.join(''),original);
+  assert.equal(state.selected.length,0);
+  assert.equal(h.getInput().value,'FIRE','free typing should not be destroyed by rack reroll');
+  assert.equal(state.rackRerolls,1);
+  assert.equal(h.rackRerollCost(),8);
+  assert.ok(['ARROW','FIRE','BOOK','ICE','COW','BALL','APPLE','BOMB','WALL','MUSIC']
+    .some(word=>d.words[word]&&canSpell(state.rack,word)&&h.towerCost(d.words[word],word,false)<=state.ink),
+    'when affordable, the rack should contain at least one usable English tower');
+});
+
+test('Word Siege full rack reroll prevents free rerolls and resets cost each wave',()=>{
+  const {h}=headlessGame(),state=h.state;
+  state.ink=100;
+  const costs=[];
+  for(let i=0;i<5;i++){
+    const cost=h.rackRerollCost(),before=state.ink,old=state.rack.join('');
+    assert.equal(h.rollWholeRack(),true);
+    costs.push(cost);
+    assert.equal(state.ink,before-cost);
+    assert.notEqual(state.rack.join(''),old);
+    assert.equal(state.rack.length,12);
+  }
+  assert.deepEqual(costs,[6,8,10,12,12]);
+  const previous=state.rack.join('');
+  state.ink=4;
+  assert.equal(h.rollWholeRack(),false,'cannot reroll without enough INK');
+  assert.equal(state.rack.join(''),previous);
+  assert.equal(state.ink,4);
+  state.ink=60;
+  state.placing={word:'ARROW'};
+  assert.equal(h.rollWholeRack(),false,'cannot reroll during placement');
+  assert.equal(state.ink,60);
+  state.placing=null;
+  state.towers.push({stats:{damage:4}});
+  h.startWave();
+  assert.equal(state.wave,1);
+  assert.equal(state.rackRerolls,0);
+  assert.equal(h.rackRerollCost(),6);
+  state.ended=true;
+  assert.equal(h.rollWholeRack(),false,'result state should not spend INK');
+});
+
+test('Word Siege rack refresh is exposed on responsive controls, with clear price and animation',()=>{
+  assert.match(html,/id="rerollBtn"/);
+  assert.match(html,/전체 새로고침 -6/);
+  assert.match(html,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(html,/@keyframes rack-reroll-reveal/);
+  assert.match(runtime,/rerollBtn\.addEventListener\('click',rollWholeRack\)/);
+  assert.match(runtime,/function rackRerollCost\(/);
 });
