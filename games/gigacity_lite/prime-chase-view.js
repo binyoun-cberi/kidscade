@@ -109,7 +109,7 @@ export function makePursuerScene(scene) {
     v.root.position.set(Math.round(aheadX / LOT_SIZE) * LOT_SIZE, craft.y + 5, aheadZ);
     v.coverCacheTime = 0;
     v.covered = false;
-    if (intersectsWorld(v.root.position, world, 5.5)) {
+    if (intersectsWorld(v.root.position, world, 5.5 * spec.hull)) {
       v.root.position.z = Math.round(v.root.position.z / LOT_SIZE) * LOT_SIZE;
     }
     scene.add(v.root);
@@ -236,7 +236,7 @@ export function makePursuerScene(scene) {
       const distance = delta.length();
       if (distance > 1.5) {
         const step = delta.multiplyScalar(Math.min(1, plan.speed * dt / distance));
-        const result = moveWithCollisions(v.root.position, step, world, [], 4.2);
+        const result = moveWithCollisions(v.root.position, step, world, [], 4.2 * v.originalScale);
         v.root.position.set(result.position.x, result.position.y, result.position.z);
         if (result.hitBuilding) v.root.position.y += Math.min(6 * dt, 0.5);
       }
