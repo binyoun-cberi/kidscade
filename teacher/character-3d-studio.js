@@ -78,14 +78,40 @@ const LEGACY_ACCESSORY_SLOTS={hat:'hat',armorhelmet:'hat',ninjassuitmask:'face',
 const LEGACY_SHOE_IDS=['shoe','bottes','bottesgreen','ninjassuitshoe','armorshoe'];
 const ACCESSORY_STYLE_MAP=new Map(ACCESSORY_STYLES.map(style=>[style.id,style]));
 const ACCESSORY_SLOT=name=>ACCESSORY_STYLE_MAP.get(name)?.slot||LEGACY_ACCESSORY_SLOTS[name]||null;
-const MALE_FIT_PARTS=new Set([...MALE_HAIR_STYLES,'kidscade_male_tshirt','kidscade_male_shorts',...OUTFIT_STYLES.filter(style=>style.fit==='male').map(style=>style.id)]);
-const SHARED_FIT_PARTS=new Set(['shoe','bottes','bottesgreen','ninjassuitshoe','armorshoe','bag','hat','armorhelmet','ninjassuitmask',...ACCESSORY_STYLES.map(style=>style.id)]);
-const PART_FIT=name=>MALE_FIT_PARTS.has(name)?'male':SHARED_FIT_PARTS.has(name)?'shared':'female';
+// Strict geometry-fit ownership, not a visual suggestion. Source outfit pieces
+// (merchant/archer/ninja/knight) fit the original female Chibi body ONLY.
+// New v5.3 wearables and basic shoes are the sole explicitly shared items.
+const MALE_FIT_PARTS=new Set([
+  ...MALE_HAIR_STYLES,'kidscade_male_tshirt','kidscade_male_shorts',
+  ...OUTFIT_STYLES.filter(style=>style.fit==='male').map(style=>style.id)
+]);
+const SHARED_FIT_PARTS=new Set(['shoe',...ACCESSORY_STYLES.map(style=>style.id)]);
+const FEMALE_FIT_PARTS=new Set([
+  ...FEMALE_HAIR_STYLES,'kidscade_hoodie_blue',
+  ...OUTFIT_STYLES.filter(style=>style.fit==='female').map(style=>style.id),
+  'amorarm','amorplastron','armorceinturethighs','armorhelmet',
+  'armorknees','armorlegs','armorshoe','armorskirt','armorthigh',
+  'bag','bottes','bottesgreen','ceinture','chemise','greenoutfit',
+  'greenoutfitbelt','greenoutfitneckless','hat','ninjassuit',
+  'ninjassuitmask','ninjassuitshoe','ninjassuitthigh','ninjasuitshort',
+  'pants','shirt','skirt'
+]);
+const FIT_PARTS={male:MALE_FIT_PARTS,female:FEMALE_FIT_PARTS,shared:SHARED_FIT_PARTS};
+const PART_FIT=name=>MALE_FIT_PARTS.has(name)?'male':
+  FEMALE_FIT_PARTS.has(name)?'female':SHARED_FIT_PARTS.has(name)?'shared':null;
+for(const name of Object.keys(PART_LABELS)){
+  const owners=Object.entries(FIT_PARTS).filter(([,names])=>names.has(name));
+  if(owners.length!==1)throw Error('Unclassified or duplicated Chibi fit part: '+name);
+}
+const PRESET_FIT=Object.fromEntries(Object.keys(PRESETS).map(name=>[
+  name,name==='male'?'male':'female'
+]));
 const PART_GROUP=name=>PART_CATEGORY[name]||'costume';
 const WARDROBE_CATEGORIES=['hair','top','bottom','shoes','accessory','costume'];
 const WARDROBE_CATEGORY_LABELS={hair:'헤어',top:'상의',bottom:'하의',shoes:'신발',accessory:'액세서리',costume:'기타'};
 const TOGGLE_NODES=Object.keys(PART_LABELS);
 const TRACKED_PART_NODES=[...new Set([...BASE_VARIANT_NODES,...TOGGLE_NODES])];
+const BODY_FIT_BASE_NODES={male:MALE_BASE_NODES,female:FEMALE_BASE_NODES};
 
 const CLIP_LABELS={
   anim_iddle:'IDLE','anim_iddle.001':'IDLE ALT',anim_walk:'WALK',anim_run:'RUN',
@@ -390,6 +416,33 @@ function setNodeVisible(name,visible){
 const GARMENT_SLOT=name=>LEGACY_OUTFIT_SLOTS[name]||(
   ['top','bottom'].includes(PART_GROUP(name))?PART_GROUP(name):null
 );
+function sanitizeFitVisibility(){
+  const removed=[];
+  const expected=new Set(BODY_FIT_BASE_NODES[activeBodyFit]);
+  for(const name of BASE_VARIANT_NODES){
+    const node=getNode(name);
+    if(node&&!expected.has(name)&&node.visible){
+      node.visible=false;removed.push(name);
+    }
+  }
+  // Every item must be explicitly owned by the selected body or be shared.
+  // Includes hair, costumes, legacy boots/hats, and parts not shown in UI.
+  for(const name of TOGGLE_NODES){
+    const node=getNode(name);
+    if(node?.visible&&!compatiblePart(name)){
+      node.visible=false;removed.push(name);
+    }
+  }
+  return removed;
+}
+function fitIntegrityIssues(){
+  const expected=new Set(BODY_FIT_BASE_NODES[activeBodyFit]);
+  return [
+    ...BASE_VARIANT_NODES.filter(name=>getNode(name)?.visible&&!expected.has(name)),
+    ...TOGGLE_NODES.filter(name=>getNode(name)?.visible&&!compatiblePart(name))
+  ];
+}
+
 function sanitizeGarmentLayers(preferred=''){
   const removed=[];
   const visible=TOGGLE_NODES.filter(name=>getNode(name)?.visible);
@@ -499,6 +552,7 @@ function applyHideMasks(){
   return {hatOn,patched};
 }
 function applyAccessoryFit(preferred=''){
+  const incompatible=sanitizeFitVisibility();
   const garmentConflicts=sanitizeGarmentLayers(preferred);
   const conflicts=resolveAccessoryConflicts(preferred);
   const currentTop=TOGGLE_NODES.find(name=>PART_GROUP(name)==='top'&&getNode(name)?.visible)||'';
@@ -514,7 +568,7 @@ function applyAccessoryFit(preferred=''){
     thumbnailToken++;
     lastAccessoryFit=activeBodyFit;
   }
-  return {garmentConflicts,conflicts,mask,fitted};
+  return {incompatible,garmentConflicts,conflicts,mask,fitted};
 }
 
 function selectedParts(){
@@ -522,6 +576,19 @@ function selectedParts(){
 }
 
 function updateWardrobeNavigation(){
+  const stage=$('studio');
+  if(stage)stage.dataset.bodyFit=activeBodyFit;
+  const activeLabel=activeBodyFit==='male'?'남성형':'여성형';
+  const workspace=$('fitWorkspaceLabel');
+  if(workspace)workspace.textContent=activeLabel+' 전용 제작실';
+  const hint=$('fitWorkspaceHelp');
+  if(hint)hint.textContent=activeLabel+' 전용 헤어·의상만 표시합니다. 공용 신발·액세서리는 별도로 표시하며 다른 체형의 메시를 착용하거나 내보낼 수 없습니다.';
+  document.querySelectorAll('[data-chibi-preset]').forEach(button=>{
+    const valid=PRESET_FIT[button.dataset.chibiPreset]===activeBodyFit;
+    button.hidden=!valid;
+    button.disabled=!valid||!loaded;
+    button.setAttribute('aria-hidden',String(!valid));
+  });
   document.querySelectorAll('[data-body-fit]').forEach(button=>{
     button.classList.toggle('active',button.dataset.bodyFit===activeBodyFit);
     button.setAttribute('aria-pressed',String(button.dataset.bodyFit===activeBodyFit));
@@ -558,7 +625,12 @@ function renderPartChecks(){
   const descriptions={hat:'모자·헤드폰',face:'안경·마스크',bag:'가방',neck:'목도리',wrist:'시계'};
   let currentSlot='';
   host.classList.toggle('with-thumbnails',showTiles);
-  host.innerHTML=names.map(name=>{
+  const owned=names.filter(name=>PART_FIT(name)===activeBodyFit);
+  const shared=names.filter(name=>PART_FIT(name)==='shared');
+  const renderSection=(parts,fit)=>{
+    currentSlot='';
+    const title=fit==='shared'?'공용 파츠':(activeBodyFit==='male'?'남성형':'여성형')+' 전용 파츠';
+    return '<h4 class="part-fit-heading" data-part-fit="'+fit+'">'+title+'</h4>'+parts.map(name=>{
     const exists=!!getNode(name);
     const fit=PART_FIT(name)==='shared'?' · 공용':'';
     const slot=ACCESSORY_SLOT(name);
@@ -571,7 +643,12 @@ function renderPartChecks(){
         '<span class="part-name">'+(PART_LABELS[name]||name)+fit+'</span></label>';
     }
     return '<label class="part-check"><input type="checkbox" data-chibi-part="'+name+'" '+(exists?'':'disabled')+'> '+(PART_LABELS[name]||name)+fit+'</label>';
-  }).join('');
+    }).join('');
+  };
+  host.innerHTML=[
+    ...(owned.length?[renderSection(owned,activeBodyFit)]:[]),
+    ...(shared.length?[renderSection(shared,'shared')]:[])
+  ].join('')||'<p class="part-empty">이 체형에 맞는 파츠가 아직 없습니다.</p>';
   updateWardrobeNavigation();
   syncHairOptions();
   refreshPartChecks();
@@ -699,9 +776,10 @@ function applyHair(name){
 
 function selectBodyFit(fit){
   if(fit!=='male'&&fit!=='female')return;
+  // Explicit switch: only this operation changes the active body-fit.
+  // Switching clears the old fit's outfit/face/hair before the new preset.
+  activeBodyFit=fit;
   applyPreset(fit==='male'?'male':'base');
-  // The stock female "base" preset has no hair. Switching body type should
-  // show a complete character, not an accidentally bald head under a hat.
   if(fit==='female'&&!HAIR_NODES.some(name=>getNode(name)?.visible))
     applyHair('hairone');
   activeWardrobeCategory='hair';
@@ -710,8 +788,10 @@ function selectBodyFit(fit){
 
 function applyPreset(name){
   if(!sourceScene||!PRESETS[name])return;
+  // A female preset must never silently switch a male character (or vice
+  // versa). The body selector is the only supported workspace transition.
+  if(PRESET_FIT[name]!==activeBodyFit)return;
   currentPreset=name;
-  activeBodyFit=name==='male'?'male':'female';
   const wanted=new Set(PRESETS[name]);
   if(name==='male'&&!$('maleBrowPreview').checked)wanted.delete('kidscade_male_brows');
   $('maleBrowPreview').disabled=name!=='male';
@@ -2014,6 +2094,11 @@ function download(name,blob){
 
 function exportSpec(){
   if(!loaded)return;
+  applyAccessoryFit();
+  if(fitIntegrityIssues().length){
+    setStatus('현재 체형과 맞지 않는 파츠를 내보낼 수 없습니다.',true);
+    return;
+  }
   const spec={
     version:1,
     type:'kidscade-chibi-avatar-spec',
@@ -2023,7 +2108,9 @@ function exportSpec(){
     asset:CHIBI_ASSET_URL,
     preset:currentPreset,
     bodyFit:activeBodyFit,
-    partLibraryVersion:'chibi-v5.3',
+    enforcedFit:activeBodyFit,
+    sharedPartIds:[...SHARED_FIT_PARTS],
+    partLibraryVersion:'chibi-v5.6-strict-fit',
     accessoryLibrary:{count:ACCESSORY_COUNT,slots:ACCESSORY_SLOTS},
     outfitLibrary:OUTFIT_LIBRARY,
     materialMode:$('chibiUnlit').checked?'unlit-npr':'original-pbr',
@@ -2049,6 +2136,11 @@ function exportSpec(){
 
 async function exportGlb(){
   if(!loaded||!avatarRoot)return;
+  applyAccessoryFit();
+  if(fitIntegrityIssues().length){
+    setStatus('잘못된 체형 파츠가 남아 있어 GLB 내보내기를 중단했습니다.',true);
+    return;
+  }
   setStatus('GLB를 만드는 중…');
 
   const wasHelper=skeletonHelper?.visible;
@@ -2241,6 +2333,22 @@ function installLocalVisualAudit(){
           templeBridgeVersion:mesh?.userData?.templeBridgeVersion||null,
           fingerprint:fingerprint>>>0};
       });
+    },
+    bodyFitAudit(){
+      return {
+        fit:activeBodyFit,
+        incompatible:fitIntegrityIssues(),
+        visibleParts:selectedParts(),
+        availableParts:TOGGLE_NODES.filter(name=>compatiblePart(name)),
+        presetButtons:[...document.querySelectorAll('[data-chibi-preset]')].map(el=>({
+          name:el.dataset.chibiPreset,hidden:el.hidden,disabled:el.disabled
+        })),
+        fitRegistry:{
+          male:[...MALE_FIT_PARTS],
+          female:[...FEMALE_FIT_PARTS],
+          shared:[...SHARED_FIT_PARTS]
+        }
+      };
     },
     garmentIntegrityAudit(){
       return {fit:activeBodyFit,garments:TOGGLE_NODES.filter(name=>GARMENT_SLOT(name)&&getNode(name)?.visible)
