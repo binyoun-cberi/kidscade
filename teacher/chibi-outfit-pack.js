@@ -178,7 +178,9 @@ function transferSmoothSkinWeights(geometry,reference,{sign,region}){
   for(let j=0;j<refPos.count;j++){
     const x=refPos.getX(j),y=refPos.getY(j),z=refPos.getZ(j);
     if(region==='arm'){
-      if(Math.sign(x)!==sign||Math.abs(x)<.135||y<.67||y>1.20)continue;
+      if(Math.sign(x)!==sign||Math.abs(x)<.135||y<.55||y>1.24)continue;
+    }else if(region==='pelvis'){
+      if(y<.38||y>.95)continue;
     }else if(Math.sign(x)!==sign&&Math.abs(x)>.03)continue;
     candidates.push({j,x,y,z});
   }
@@ -226,6 +228,131 @@ function transferSmoothSkinWeights(geometry,reference,{sign,region}){
   geometry.userData={...geometry.userData,skinTransfer:{
     method:'four-neighbor-smooth-body-weights-v5.8',region,neighbors:4,
     vertices:pos.count,distantSamples:fallbackCount
+  }};
+  return geometry.userData.skinTransfer;
+}
+
+
+// Skin long sleeves to their actual upper-arm and forearm bones. Sampling
+// nearby torso vertices bent the cuffs into large detached fabric spikes.
+// Extract *real* skinned arm triangles from the fitted Chibi body. Arbitrary
+// procedural cylinders split from the shoulder in WALK, even with plausible
+// arm-bone weights, because their assumed bind coordinates were not the
+// source GLB's own arm surface.
+function buildSkinConformingSleeve(body,sign,puff){
+  const original=body.geometry;
+  const positions=original.getAttribute('position');
+  if(!original.getAttribute('normal'))original.computeVertexNormals();
+  const normals=original.getAttribute('normal');
+  const uv=original.getAttribute('uv');
+  const skinIndex=original.getAttribute('skinIndex');
+  const skinWeight=original.getAttribute('skinWeight');
+  const index=original.getIndex();
+  const side=sign>0?'L':'R';
+  // Numbered twist bones (DEF-forearmR001 etc.) control the source forearm.
+  // A strict endsWith(side) test selected only the shoulder/upper arm.
+  const sideVariant=new RegExp(side+'[0-9]*$');
+  const armBones=new Set(body.skeleton.bones.map((bone,i)=>({
+    name:bone.name.replace(/[._]/g,'').toUpperCase(),i
+  })).filter(item=>sideVariant.test(item.name)&&
+    /UPPERARM|FOREARM|LOWERARM/.test(item.name)).map(item=>item.i));
+  if(!positions||!skinIndex||!skinWeight||!index||armBones.size<2)
+    throw Error('Cannot extract the '+side+' source skinned arm');
+  const allow=i=>{
+    const x=positions.getX(i),y=positions.getY(i);
+    // Puffy blouse sleeves stop above the elbow; jackets keep their
+    // full forearm-length sleeves. These two cuts must not look identical.
+    const sleeveHem=puff?.945:.50;
+    if(x*sign<.115||y<sleeveHem||y>1.18)return false;
+    let armWeight=0;
+    for(let k=0;k<4;k++){
+      if(armBones.has(skinIndex.getComponent(i,k)))
+        armWeight+=skinWeight.getComponent(i,k);
+    }
+    // Forearm vertices near the wrist blend into the hand. Keeping only
+    // vertices with >42% arm influence cut the sleeve off at the elbow.
+    return armWeight>.16;
+  };
+  // Inspect source arm skinning by vertical slice. Lower arms in the CC0
+  // GLB may have different bone ownership from the visible upper-arm shell.
+  const sourceBands=[
+    {min:.40,max:.60,count:0,arm:0,hand:0,top:new Map()},
+    {min:.60,max:.75,count:0,arm:0,hand:0,top:new Map()},
+    {min:.75,max:.90,count:0,arm:0,hand:0,top:new Map()},
+    {min:.90,max:1.05,count:0,arm:0,hand:0,top:new Map()},
+    {min:1.05,max:1.20,count:0,arm:0,hand:0,top:new Map()}
+  ];
+  for(let i=0;i<positions.count;i++){
+    const x=positions.getX(i),y=positions.getY(i);
+    if(x*sign<.115)continue;
+    const band=sourceBands.find(row=>y>=row.min&&y<row.max);
+    if(!band)continue;
+    band.count++;
+    for(let k=0;k<4;k++){
+      const w=skinWeight.getComponent(i,k),bi=skinIndex.getComponent(i,k);
+      if(!w)continue;
+      const bone=body.skeleton.bones[bi]?.name||'unknown';
+      band.top.set(bone,(band.top.get(bone)||0)+w);
+      if(armBones.has(bi))band.arm+=w;
+      if(/hand/i.test(bone))band.hand+=w;
+    }
+  }
+  const sourceBandReport=sourceBands.map(({min,max,count,arm,hand,top})=>({
+    range:[min,max],count,arm:Number(arm.toFixed(2)),hand:Number(hand.toFixed(2)),
+    dominant:[...top].sort((a,b)=>b[1]-a[1]).slice(0,5)
+      .map(([name,weight])=>[name,Number(weight.toFixed(2))])
+  }));
+  const verts=[],uvs=[],bones=[],weights=[];
+  let triangles=0,minY=Infinity,maxY=-Infinity;
+  const verticalBands=[0,0,0,0];
+  const add=i=>{
+    const x=positions.getX(i),y=positions.getY(i),z=positions.getZ(i);
+    minY=Math.min(minY,y);maxY=Math.max(maxY,y);
+    verticalBands[y<.6?0:y<.75?1:y<.95?2:3]++;
+    // Offset along the body's own outward normal, not the guessed world X/Z
+    // directions. The original 0.011 allowance z-fought with the visible skin.
+    const coverage=smooth(.50,.61,y)*(1-smooth(1.105,1.18,y));
+    const allowance=(puff?.058:.026)*coverage;
+    verts.push(x+normals.getX(i)*allowance,
+      y+normals.getY(i)*allowance,
+      z+normals.getZ(i)*allowance);
+    uvs.push(uv?.getX(i)||0,uv?.getY(i)||0);
+    for(let k=0;k<4;k++){
+      bones.push(skinIndex.getComponent(i,k));
+      weights.push(skinWeight.getComponent(i,k));
+    }
+  };
+  for(let n=0;n<index.count;n+=3){
+    const i=index.getX(n),j=index.getX(n+1),k=index.getX(n+2);
+    if(!allow(i)||!allow(j)||!allow(k))continue;
+    add(i);add(j);add(k);
+    triangles++;
+  }
+  if(triangles<12)throw Error('No sufficiently connected '+side+' arm skin triangles: '+triangles);
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+  geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(bones,4));
+  geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();geometry.computeBoundingSphere();
+  geometry.userData={skinTransfer:{
+    method:'source-body-arm-skin-v5.9',region:'arm',neighbors:4,
+    vertices:verts.length/3,triangles,minY,maxY,verticalBands,sourceBandReport
+  }};
+  return geometry;
+}
+function bindYokeToPelvis(geometry,skeleton){
+  const pelvis=skeleton.bones.findIndex(bone=>bone.name==='DEF-spine');
+  if(pelvis<0)throw Error('Missing pelvis spine bone for trouser yoke');
+  const n=geometry.getAttribute('position').count;
+  const indices=new Uint16Array(n*4),weights=new Float32Array(n*4);
+  for(let i=0;i<n;i++){indices[i*4]=pelvis;weights[i*4]=1;}
+  geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(indices,4));
+  geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
+  geometry.userData={...geometry.userData,skinTransfer:{
+    method:'pelvis-anchored-yoke-v5.9',region:'pelvis',neighbors:1,vertices:n,
+    bone:skeleton.bones[pelvis].name
   }};
   return geometry.userData.skinTransfer;
 }
@@ -281,58 +408,17 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
     group.add(makeRigidSkinnedPiece(source,geometry,bone,material,style.id+'_'+id));
   };
   const fitBody=getNode(style.fit==='male'?'kidscade_male_body':'character_low');
-  const addMatchedSleeve=(geometry,id,sign)=>{
-    if(!fitBody?.isSkinnedMesh)throw new Error('Sleeve skin reference body unavailable');
-    transferSmoothSkinWeights(geometry,fitBody,{sign,region:'arm'});
-    geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
-    const mesh=cloneSkinnedMeshWithGeometry(
-      source,geometry,makeSolidMaterial(style.color,style.label+' 연결 소매'),style.id+'_'+id
-    );
-    mesh.userData={type:'skinned-sleeve',sourceWeights:'four-neighbor-smooth-body-arm',skinTransfer:geometry.userData.skinTransfer};
-    group.add(mesh);
-  };
   if(style.details.includes('longSleeve')||style.details.includes('puffSleeve')){
+    if(!fitBody?.isSkinnedMesh)throw Error('Missing fitted Chibi body for sleeves');
     const puff=style.details.includes('puffSleeve');
-    // A single curved skinned surface from shoulder to cuff avoids the
-    // interpenetrating sphere/cylinder joins that look like torn triangles.
     for(const sign of [-1,1]){
-      const start=new THREE.Vector3(sign*.20,1.08,-.026);
-      const elbow=new THREE.Vector3(sign*.30,.91,-.039);
-      const cuff=new THREE.Vector3(sign*.345,.775,-.044);
-      const curve=new THREE.CatmullRomCurve3(puff?[start,elbow]:[start,elbow,cuff]);
-      const sections=14,around=16,vertices=[],uvs=[],faces=[];
-      const axis=new THREE.Vector3(0,0,1);
-      const tangent=new THREE.Vector3(),across=new THREE.Vector3();
-      const center=new THREE.Vector3();
-      for(let ring=0;ring<=sections;ring++){
-        const t=ring/sections;
-        curve.getPoint(t,center);
-        curve.getTangent(t,tangent).normalize();
-        across.crossVectors(tangent,axis).normalize();
-        const radius=puff
-          ?(.105+.025*Math.sin(Math.PI*t))*(1-.23*smooth(.65,1,t))
-          :(.102-.037*smooth(0,1,t)+.012*Math.sin(Math.PI*t));
-        for(let slice=0;slice<=around;slice++){
-          const theta=Math.PI*2*slice/around;
-          const c=Math.cos(theta)*radius,ss=Math.sin(theta)*radius;
-          vertices.push(center.x+axis.x*c+across.x*ss,
-            center.y+axis.y*c+across.y*ss,
-            center.z+axis.z*c+across.z*ss);
-          uvs.push(slice/around,t);
-        }
-      }
-      for(let ring=0;ring<sections;ring++){
-        for(let slice=0;slice<around;slice++){
-          const a=ring*(around+1)+slice,b=(ring+1)*(around+1)+slice;
-          const c=a+1,d=b+1;
-          faces.push(a,c,b,c,d,b);
-        }
-      }
-      const sleeve=new THREE.BufferGeometry();
-      sleeve.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
-      sleeve.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
-      sleeve.setIndex(faces);
-      addMatchedSleeve(sleeve,sign<0?'continuousSleeve_left':'continuousSleeve_right',sign);
+      const sleeve=buildSkinConformingSleeve(fitBody,sign,puff);
+      const name=style.id+'_continuousSleeve_'+(sign<0?'left':'right');
+      const mesh=cloneSkinnedMeshWithGeometry(source,sleeve,
+        makeSolidMaterial(style.color,style.label+' 바디밀착 소매'),name);
+      mesh.userData={part:'source-arm-sleeve',sourceWeights:'native-fitted-body-skin',
+        skinTransfer:sleeve.userData.skinTransfer};
+      group.add(mesh);
     }
   }
   if(style.details.includes('hood')){
@@ -355,18 +441,20 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
   }
   if(style.details.includes('pocket')){
     const pocket=new THREE.BoxGeometry(.20,.105,.015,4,2,1);
-    pocket.translate(0,.835,.177);
+    pocket.translate(0,.835,.151);
     add(pocket,makeSolidMaterial(style.color,style.label+' 포켓'),'pocket');
   }
   if(style.details.includes('zip')){
-    const zip=new THREE.BoxGeometry(.009,.27,.009);
-    zip.translate(0,.96,.19);
-    add(zip,accent,'zip');
+    // The old rigid, bright .27m zipper floated in front of the moving
+    // jacket in profile view. A very shallow dark seam stays visually sewn in.
+    const zip=new THREE.BoxGeometry(.005,.20,.002);
+    zip.translate(0,.985,.105);
+    add(zip,dark,'zip');
   }
   if(style.details.includes('buttons')){
     for(let j=0;j<3;j++){
       const button=new THREE.SphereGeometry(.008,8,6);
-      button.translate(0,1.04-j*.080,.181);
+      button.translate(0,1.04-j*.080,.151);
       add(button,accent,'button_'+j);
     }
   }
@@ -397,6 +485,35 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
   }
 }
 
+
+// The original shorts shell and separate trouser legs left an open triangle
+// of skin at the pelvis. This short, weighted waist-to-crotch yoke covers it
+// without joining the trouser legs all the way down like a skirt.
+function addTrouserHipYoke({source,style,group,material,reference,cloneSkinnedMeshWithGeometry}){
+  const top=.79,bottom=.365;
+  const geometry=new THREE.CylinderGeometry(.227,.201,top-bottom,24,7,true);
+  geometry.scale(1,1,.82);
+  geometry.translate(0,(top+bottom)*.5,.003);
+  const p=geometry.getAttribute('position');
+  for(let i=0;i<p.count;i++){
+    const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
+    const lower=smooth(.365,.59,y);
+    // Push just the front-center crotch panel outward enough to cover the
+    // remaining narrow exposed skin wedge; keep the side silhouette slender.
+    const frontCenter=z>0?
+      (1-smooth(.035,.16,Math.abs(x)))*(1-smooth(.54,.72,y)):0;
+    p.setXYZ(i,x*(1-.03*(1-lower)),y,
+      z*(z>0?1.06:1.03)+.035*frontCenter);
+  }
+  p.needsUpdate=true;
+  bindYokeToPelvis(geometry,source.skeleton);
+  geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+  const yoke=cloneSkinnedMeshWithGeometry(source,geometry,material,style.id+'_hip_yoke');
+  yoke.userData={part:'trouser-hip-yoke',fit:style.fit,
+    coverage:'waist-to-crotch-only',skinTransfer:geometry.userData.skinTransfer};
+  group.add(yoke);
+}
+
 /** A real pair of articulated trouser legs, not an elongated skirt tube.
  * Each cylinder vertex blends source thigh and shin bones around the knee.
  * Both legs inherit the original Chibi 78-bone skeleton/bind matrix.
@@ -409,6 +526,7 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
   const skeleton=source.skeleton;
   const reference=getNode(style.fit==='male'?'kidscade_male_body':'character_low');
   if(!reference?.isSkinnedMesh)throw new Error('Missing fit body for trouser skin transfer');
+  addTrouserHipYoke({source,style,group,material,reference,cloneSkinnedMeshWithGeometry});
   for(const side of ['left','right']){
     const sign=side==='left'?-1:1;
     // These indices resolve actual GLTFLoader-sanitized Chibi bones.

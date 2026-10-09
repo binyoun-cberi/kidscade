@@ -360,7 +360,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261009-dualrig57/);
+  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
@@ -450,7 +450,7 @@ test('male base opens first and provides brows visibility, face zoom and gait st
   assert.match(html,/id="gaitBadge"/);
   assert.match(html,/data-view="face"/);
   assert.match(html,/data-chibi-preset="male" data-preset-fit="male">남성형 기본/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-dualrig57/);
+  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
 });
 
 test('mobile studio shows the live avatar preview before the long wardrobe',()=>{
@@ -536,7 +536,7 @@ test('one-touch mobile Chibi controls are wired to the same real animation, view
   assert.match(js,/setCameraView\(button\.dataset\.quickView\)/);
   assert.match(js,/\[data-chibi-preset\],\[data-view\],\[data-quick-clip\],\[data-quick-view\],\[data-quick-speed\]/);
   assert.match(js,/\$\('speed'\)\.value=button\.dataset\.quickSpeed/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-dualrig57/);
+  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
 });
 
 test('Chibi v5 wardrobe exposes gender-fit filter and category tabs without restricting shared accessories',()=>{
@@ -622,7 +622,7 @@ test('v5.2 outfits reshape actual skinned geometry and add three-dimensional sle
   assert.match(pack,/transferSmoothSkinWeights\(geometry,reference,\{sign,region:'leg'\}\)/);
   assert.match(pack,/skinTransfer:geometry\.userData\.skinTransfer/);
   assert.match(pack,/articulation:'four-neighbor-smooth-body-weights'/);
-  assert.match(pack,/sourceWeights:'four-neighbor-smooth-body-arm'/);
+  assert.match(pack,/sourceWeights:'native-fitted-body-skin'/);
   assert.match(pack,/const bone=refIndex\.getComponent\(j,k\)/);
   assert.match(pack,/const w=refWeight\.getComponent\(j,k\)\*strength/);
   assert.match(pack,/style\.id\+'_leg_'\+side/);
@@ -887,7 +887,7 @@ test('v5.7 separates male and female bone ownership, animation roots and GLB rig
   assert.match(audit,/window\.__kc3dAudit\.rigIsolationAudit\(\)/);
   assert.match(audit,/sharedBones,0/);
   assert.match(audit,/roundtripExport\(\)/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-dualrig57/);
+  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
 });
 
 test('v5.8 smooth garment skin weights have four-neighbor blending and reject invalid meshes',()=>{
@@ -915,12 +915,80 @@ test('v5.8 smooth garment skin weights have four-neighbor blending and reject in
 
 test('v5.8 visual cleanup uses continuous skinned sleeves and visibly separate wide pant legs',()=>{
   const pack=read('teacher/chibi-outfit-pack.js');
-  assert.match(pack,/new THREE\.CatmullRomCurve3\(puff\?\[start,elbow\]:\[start,elbow,cuff\]\)/);
-  assert.match(pack,/addMatchedSleeve\(sleeve,sign<0\?'continuousSleeve_left':'continuousSleeve_right',sign\)/);
-  assert.match(pack,/sleeve\.setIndex\(faces\)/);
+  assert.match(pack,/function buildSkinConformingSleeve\(body,sign,puff\)/);
+  assert.match(pack,/const sleeve=buildSkinConformingSleeve\(fitBody,sign,puff\)/);
+  assert.match(pack,/geometry\.setAttribute\('skinWeight',new THREE\.Float32BufferAttribute\(weights,4\)\)/);
   assert.doesNotMatch(pack,/shoulderCap=new THREE\.SphereGeometry/);
   assert.match(pack,/const upperRadius=wide\?\.140/);
   assert.match(pack,/const lowerRadius=wide\?\.104/);
   assert.match(pack,/geometry\.translate\(sign\*\(wide\?\.178:\.153\)/);
   assert.match(pack,/const fullness=1-\.11\*knee\+\.025\*hem/);
+});
+
+test('v5.9 repairs exposed long-sleeve wrists and trouser crotch wedge without joining the legs',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(pack,/const coverage=smooth\(\.50,\.61,y\)/);
+  assert.match(pack,/function addTrouserHipYoke\(/);
+  assert.match(pack,/new THREE\.CylinderGeometry\(\.227,\.201,top-bottom,24,7,true\)/);
+  assert.match(pack,/addTrouserHipYoke\(\{source,style,group,material,reference,cloneSkinnedMeshWithGeometry\}\)/);
+  assert.match(pack,/bindYokeToPelvis\(geometry,source\.skeleton\)/);
+  assert.match(pack,/style\.id\+'_hip_yoke'/);
+  assert.match(audit,/skinAudit\.length,33/);
+  assert.match(audit,/crotch-wrist-repro-/);
+  assert.match(audit,/bottom\+'_hip_yoke'/);
+});
+
+test('v5.9 source-surface sleeves preserve original arm skin weights and pelvis bridge',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  assert.match(pack,/function buildSkinConformingSleeve\(body,sign,puff\)/);
+  assert.match(pack,/armBones=new Set/);
+  assert.match(pack,/\/UPPERARM\|FOREARM\|LOWERARM\//);
+  assert.match(pack,/method:'source-body-arm-skin-v5\.9'/);
+  assert.match(pack,/const sleeve=buildSkinConformingSleeve\(fitBody,sign,puff\)/);
+  assert.match(pack,/function bindYokeToPelvis\(geometry,skeleton\)/);
+  assert.match(pack,/method:'pelvis-anchored-yoke-v5\.9'/);
+});
+
+test('v5.9 body-normal sleeve offset and localized crotch yoke coverage',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  assert.match(pack,/const normals=original\.getAttribute\('normal'\)/);
+  assert.match(pack,/const allowance=\(puff\?\.058:\.026\)\*coverage/);
+  assert.match(pack,/z\+normals\.getZ\(i\)\*allowance/);
+  assert.match(pack,/const frontCenter=z>0\?/);
+  assert.match(pack,/\.035\*frontCenter/);
+});
+
+test('v5.9 sleeve excludes independent hand triangles and apparel details stay on chest',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  assert.match(pack,/return armWeight>\.16/);
+  assert.match(pack,/const sleeveHem=puff\?\.945:\.50/);
+  assert.match(pack,/zip\.translate\(0,\.985,\.105\)/);
+  assert.match(pack,/pocket\.translate\(0,\.835,\.151\)/);
+});
+
+test('v5.9 lower forearm recovery reports sleeve surface coverage by vertical bands',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(pack,/verticalBands=\[0,0,0,0\]/);
+  assert.match(pack,/verticalBands\[y<\.6\?0:y<\.75\?1:y<\.95\?2:3\]\+\+/);
+  assert.match(pack,/vertices:verts\.length\/3,triangles,minY,maxY,verticalBands/);
+  assert.match(audit,/CHIBI_ARM_COVERAGE/);
+});
+
+test('v5.9 Blender numbered forearm bones contribute to lower sleeve surface',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  const visual=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(pack,/sideVariant=new RegExp\(side\+'\[0-9\]\*\$'\)/);
+  assert.match(pack,/sideVariant\.test\(item\.name\)/);
+  assert.match(visual,/Numbered Blender forearm bone missing/);
+  assert.match(visual,/Lower-arm surface still missing/);
+});
+
+test('v5.9 preserves short puff sleeves instead of extending all tops to wrist',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  const visual=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(pack,/const sleeveHem=puff\?\.945:\.50/);
+  assert.match(pack,/const allowance=\(puff\?\.058:\.026\)\*coverage/);
+  assert.match(visual,/Puff blouse sleeve extends past elbow/);
 });
