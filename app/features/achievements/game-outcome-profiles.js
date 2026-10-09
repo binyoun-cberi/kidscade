@@ -162,7 +162,7 @@
       'high_3d_block_painter','high_little_sculptor','piano_studio','pixel_editor'
     ]),
     collection:Object.freeze([
-      'low_nyam_universe','toddler_traditional_play_yard','world_boardgames'
+      'low_nyam_universe','toddler_traditional_play_yard','world_boardgames','openmon_expedition'
     ])
   });
 
