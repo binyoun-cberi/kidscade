@@ -47,6 +47,19 @@ Credit text when a CC-BY model is used:
 
 When a CC-BY City Pack model is used, retain the author shown in the per-file list.
 
+### 괴담 학교 퇴마 — Sketchfab 괴이 3D 모델 (CC BY)
+
+All five assets below were uploaded under `assets/more assets/` for the 3D first-person haunted school game.
+License: **Creative Commons Attribution (CC BY)**; credit the original creator and retain the model source URL.
+
+- **Black horror alien humanoid** — butteroil — [original Sketchfab model](https://sketchfab.com/3d-models/black-horror-alien-humanoid-775ae3add0eb45998efa81f763188013) — CC BY — `black_horror_alien_humanoid.glb` (game: 달걀귀신)
+- **Ghost Girl Animated** — Shaban Hafizsalim — [original Sketchfab model](https://sketchfab.com/3d-models/ghost-girl-animated-1091b3ee172f4951aaeafa2581f9de1d) — CC BY — `ghost_girl_animated.glb` (game: 처녀귀신)
+- **Ghost Woman A-Pose** — FLUXIUM3D — [original Sketchfab model](https://sketchfab.com/3d-models/ghost-woman-a-pose-f4f4f2f59f124f54a787438bb3ed9ab0) — CC BY — `ghost_woman_a-pose.glb` (game: 유키온나)
+- **Hooded Figure With Scythe** — SkellyCooks — [original Sketchfab model](https://sketchfab.com/3d-models/hooded-figure-with-scythe-e713317859574b3583202eff64fa4ac4) — CC BY — `hooded_figure_with_scythe.glb` (game: 저승사자)
+- **Werewolf** — milakpro — [original Sketchfab model](https://sketchfab.com/3d-models/werewolf-f1b9907ffca24766aed09d09e86ce0ec) — CC BY — `werewolf.glb` (game: 늑대인간)
+
+These are used as transformed, normalized game characters rather than redistributed as standalone downloads.
+
 ## 2. CC0 / attribution not required
 
 These packs are tracked as CC0 in the repository license records. Credit is welcome but not required.
