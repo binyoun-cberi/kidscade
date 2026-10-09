@@ -51,6 +51,7 @@ let audioContext = null;
 let engineAmbience = null;
 let radarElapsed = 0;
 let hitFlashSeconds = 0;
+let rearView = false;
 playerCraft.loadExterior();
 let viewMode = 'chase';
 let lookYaw = 0, lookPitch = 0, flightSpeed = 0, steeringVisual = 0;
@@ -369,6 +370,9 @@ function applySeed(value) {
   applyQuality();
 }
 function setViewMode(nextMode) {
+  rearView = false;
+  $('rearViewButton').setAttribute('aria-pressed', 'false');
+  $('rearViewButton').textContent = '후방 보기';
   viewMode = safeMode(nextMode);
   lookYaw = 0;
   lookPitch = 0;
@@ -381,7 +385,31 @@ function setViewMode(nextMode) {
   $('chaseCameraButton').textContent = viewMode === 'cockpit' ? '자동차 뒤 보기' : '운전석 보기';
   updateCamera();
 }
+function setRearView(enabled) {
+  rearView = !!enabled && gameMode === 'chase';
+  $('rearViewButton').setAttribute('aria-pressed', String(rearView));
+  $('rearViewButton').textContent = rearView ? '전방 복귀' : '후방 보기';
+  playerCraft.setView(rearView ? 'chase' : viewMode);
+  updateCamera();
+}
 function updateCamera() {
+  if (rearView && gameMode === 'chase') {
+    // A true 3D camera in front of the car looking back at the pursuing aircraft.
+    // Unlike a minimap, this actually reveals enemy silhouettes and incoming lasers.
+    const eye = {
+      x: pilotPosition.x - Math.sin(yaw) * 20,
+      y: pilotPosition.y + 8,
+      z: pilotPosition.z - Math.cos(yaw) * 20
+    };
+    const safe = safeChaseCamera(eye, pilotPosition, collisionWorld);
+    camera.position.set(safe.x, safe.y, safe.z);
+    camera.lookAt(
+      pilotPosition.x + Math.sin(yaw) * 48,
+      pilotPosition.y + 4,
+      pilotPosition.z + Math.cos(yaw) * 48
+    );
+    return;
+  }
   const pose = cameraPose(viewMode, pilotPosition, yaw, pitch, lookYaw, lookPitch);
   const position = pose.target
     ? safeChaseCamera(pose.position, pilotPosition, collisionWorld)
@@ -506,6 +534,9 @@ canvas.addEventListener('pointercancel', endLook);
 canvas.addEventListener('lostpointercapture', endLook);
 document.addEventListener('keydown', event => {
   if (document.activeElement === $('seed') || document.activeElement === $('quality')) return;
+  if (event.code === 'KeyR' && !event.repeat && active && gameMode === 'chase') {
+    event.preventDefault(); setRearView(!rearView); return;
+  }
   const prime = { Digit2: 2, Digit3: 3, Digit5: 5, Digit7: 7, Numpad2: 2, Numpad3: 3, Numpad5: 5, Numpad7: 7 }[event.code];
   if (prime && !event.repeat && gameMode === 'chase') { event.preventDefault(); shootPrime(prime); return; }
   if (/^(Key[WASDQE]|Arrow(Up|Down|Left|Right)|ShiftLeft|ShiftRight)$/.test(event.code)) {
@@ -611,6 +642,7 @@ function renderPrimeHUD() {
   const enemy = selectedEnemy(state);
   const time = Math.ceil(state.remaining);
   $('chaseTimer').textContent = Math.floor(time / 60) + ':' + String(time % 60).padStart(2, '0');
+  $('chaseTimeBonus').textContent = state.bonusSeconds ? '+' + state.bonusSeconds + '초 보상' : '정확히 쏘면 시간 추가';
   $('chaseWave').textContent = (state.waveIndex + 1) + ' / ' + state.waves.length + '파';
   $('chaseKills').textContent = state.destroyed + ' / ' + enemyTotal() + ' 격추';
   $('chaseShield').textContent = Math.round(state.shield) + '%';
@@ -649,6 +681,7 @@ function enterExplore() {
   $('chaseResult').classList.add('hidden');
   $('intro').classList.add('hidden');
   resultVisible = false;
+  rearView = false;
   active = true;
   setViewMode('chase');
   setAutoFlight(true);
@@ -666,6 +699,7 @@ function enterPrimeChase(mode = 'standard') {
   yaw = 0; pitch = -0.28;
   primeHudElapsed = 0; lastEnemyButtons = ''; feedbackSeconds = 0;
   resultVisible = false;
+  rearView = false;
   $('chaseResult').classList.add('hidden');
   $('intro').classList.add('hidden');
   document.body.classList.add('chase-mode');
@@ -697,7 +731,7 @@ function showPrimeResult() {
   $('chaseResultTitle').textContent = success ? '추격대를 모두 격추했어!' : '다시 도전해 봐!';
   $('chaseResultReason').textContent = primeState.reason;
   const stats = roundStats(primeState);
-  $('chaseResultStats').textContent = '격추 ' + stats.destroyed + '/' + enemyTotal() + ' · 회피 ' + stats.dodges + '회 · 정확도 ' + stats.accuracy + '% · 점수 ' + stats.score.toLocaleString('ko-KR') + '점';
+  $('chaseResultStats').textContent = '격추 ' + stats.destroyed + '/' + enemyTotal() + ' · 회피 ' + stats.dodges + '회 · 시간 보상 +' + stats.bonusSeconds + '초 · 정확도 ' + stats.accuracy + '% · 점수 ' + stats.score.toLocaleString('ko-KR') + '점';
   $('chaseResult').classList.remove('hidden');
 }
 function shootPrime(prime) {
@@ -717,11 +751,11 @@ function shootPrime(prime) {
     const target = primeState.enemies.find(e => e.id === result.id);
     if (target) pursuitScene.markValue(target);
     if (result.kind === 'destroyed') {
-      announcePrime(result.oldValue + ' ÷ ' + prime + ' = 1 · 격추!');
+      announcePrime(result.oldValue + ' ÷ ' + prime + ' = 1 · 격추! 시간 +' + result.timeBonus + '초');
       pursuitScene.explosion(result.id);
       enemyRemovalQueue.push({ id: result.id, time: 0.65 });
     } else {
-      announcePrime(result.oldValue + ' ÷ ' + prime + ' = ' + result.newValue + '!');
+      announcePrime(result.oldValue + ' ÷ ' + prime + ' = ' + result.newValue + '! 시간 +' + result.timeBonus + '초');
     }
   }
   renderPrimeHUD();
@@ -729,7 +763,7 @@ function shootPrime(prime) {
 }
 function updatePrimeCombat(dt, gameDt = dt) {
   if (gameMode !== 'chase') return;
-  const distances = pursuitScene.update(dt, pilotPosition, yaw, collisionWorld, selectedEnemy(primeState)?.id);
+  const distances = pursuitScene.update(dt, pilotPosition, yaw, collisionWorld, selectedEnemy(primeState)?.id, flightSpeed || 34);
   const events = primeState.status === 'playing'
     ? tickPrimeChase(primeState, gameDt, distances, pilotPosition)
     : { newEnemies: [], attacks: [], warnings: [] };
@@ -810,6 +844,7 @@ document.querySelectorAll('[data-prime]').forEach(button => {
 });
 $('chaseCameraButton').addEventListener('click', () =>
   setViewMode(viewMode === 'cockpit' ? 'chase' : 'cockpit'));
+$('rearViewButton').addEventListener('click', () => setRearView(!rearView));
 $('start').addEventListener('click', () => enterPrimeChase('standard'));
 $('practiceStart').addEventListener('click', () => enterPrimeChase('practice'));
 $('exploreStart').addEventListener('click', enterExplore);
