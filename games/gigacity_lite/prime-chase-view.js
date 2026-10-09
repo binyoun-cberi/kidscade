@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { moveWithCollisions, intersectsWorld } from './flight-physics.mjs';
 import { LOT_SIZE } from './city-core.mjs';
+import { fighterType, fighterSpec, pursuitSlot, damageStage } from './prime-tactics.mjs';
 
 const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x2a3657, metalness: 0.55, roughness: 0.42 });
 const wingMaterial = new THREE.MeshStandardMaterial({ color: 0x553448, metalness: 0.45, roughness: 0.44 });
@@ -45,20 +46,35 @@ function labelTexture(number) {
   return texture;
 }
 function createEnemyScene(enemy) {
+  const type = fighterType(enemy.original);
+  const spec = fighterSpec(enemy.original);
   const root = new THREE.Group();
   const body = new THREE.Group();
   root.add(body);
-  addPart(body, bodyMaterial, 4.3, 1.5, 6.9, 0, 0, 0);
-  addPart(body, wingMaterial, 12.5, 0.3, 2.0, 0, 0, 0.4);
+  addPart(body, bodyMaterial, type === 'command' ? 5.7 : 4.3, 1.5, type === 'command' ? 8.9 : 6.9, 0, 0, 0);
+  const armorPieces = [];
+  addPart(body, wingMaterial, type === 'interceptor' ? 15.8 : type === 'armor' ? 10.9 : 12.5, .3, 2.0, 0, 0, .4);
   addPart(body, darkMaterial, 2.8, 0.7, 3.1, 0, 0.99, 0.7);
   addPart(body, wingMaterial, 3.7, 1.4, 0.4, 0, 0.84, 2.4);
   const nose = new THREE.Mesh(cone, wingMaterial);
   nose.position.set(0, 0, -5.7);
   body.add(nose);
   for (const side of [-1, 1]) {
-    addPart(body, thrusterMaterial, 0.55, 0.38, 0.15, side * 1.25, -0.28, 3.6);
-    addPart(body, darkMaterial, 0.35, 1.10, 1.3, side * 5.0, 0.53, 0.5);
+    const engine = addPart(body, thrusterMaterial, .65, .42, .16, side * 1.25, -.28, 3.6);
+    armorPieces.push(engine);
+    const fin = addPart(body, darkMaterial, .36, 1.12, 1.3, side * (type === 'interceptor' ? 6.8 : 5.0), .53, .5);
+    armorPieces.push(fin);
+    if (type === 'armor' || type === 'command') {
+      armorPieces.push(addPart(body, wingMaterial, 1.8, .45, 2.45, side * 2.85, .98, -.1));
+      armorPieces.push(addPart(body, darkMaterial, .9, .7, 1.6, side * 1.65, 1.05, -1.25));
+    }
+    if (type === 'interceptor' || type === 'command') {
+      armorPieces.push(addPart(body, thrusterMaterial, .33, .28, 1.2, side * 4.2, -.08, -.9));
+    }
   }
+  // Every correct prime shot physically removes a discrete model component.
+  armorPieces.reverse();
+  root.scale.setScalar(spec.hull);
   const reticle = new THREE.Mesh(ringGeometry, aimingMaterial);
   reticle.rotation.x = -Math.PI / 2;
   root.add(reticle);
@@ -72,7 +88,8 @@ function createEnemyScene(enemy) {
   sign.scale.set(23, 11.5, 1);
   root.add(sign);
   root.userData.enemyId = enemy.id;
-  return { root, body, reticle, sign, number: enemy.number, hitPulse: 0 };
+  return { root, body, reticle, sign, number: enemy.number, hitPulse: 0,
+    type, armorPieces, originalScale: spec.hull, damageCount: 0, warningLine: null };
 }
 function disposeEnemy(entry) {
   entry.sign.material.map.dispose();
@@ -101,6 +118,11 @@ export function makePursuerScene(scene) {
     const v = visuals.get(id);
     if (!v) return;
     scene.remove(v.root);
+    if (v.warningLine) {
+      scene.remove(v.warningLine);
+      v.warningLine.geometry.dispose();
+      v.warningLine.material.dispose();
+    }
     disposeEnemy(v);
     visuals.delete(id);
   }
@@ -111,9 +133,22 @@ export function makePursuerScene(scene) {
     v.sign.material.map = labelTexture(enemy.number);
     v.sign.material.needsUpdate = true;
     v.number = enemy.number;
-    v.hitPulse = 0.65;
-    // Layers peel away as prime factors are removed, but the large number stays legible.
-    v.body.scale.setScalar(Math.max(0.68, 1 - 0.10 * enemy.divisionCount));
+    v.hitPulse = 0.58;
+    const fraction = damageStage(enemy.divisionCount, enemy.original === 1 ? 1 : 5);
+    v.body.scale.setScalar(Math.max(.82, 1 - fraction * .16));
+    const piece = v.armorPieces.shift();
+    if (piece && piece.parent) {
+      const start = new THREE.Vector3();
+      piece.getWorldPosition(start);
+      piece.parent.remove(piece);
+      const falling = new THREE.Mesh(box, wingMaterial);
+      falling.position.copy(start);
+      falling.scale.set(.9, .28, 1.25);
+      scene.add(falling);
+      effects.push({ kind: 'debris', mesh: falling, ttl: 1.25,
+        vx: Math.sin(worldSeconds * 6 + enemy.id) * 8,
+        vy: 5, vz: Math.cos(worldSeconds * 5 + enemy.id) * 8 });
+    }
   }
   function beam(from, to, prime, blocked) {
     const colour = blocked ? 0xff875f : beamColours[prime] ?? 0x89ebff;
@@ -136,20 +171,51 @@ export function makePursuerScene(scene) {
     flash.position.copy(v.root.position);
     scene.add(flash);
     effects.push({ kind: 'explosion', flash, ttl: .58 });
+    // A few recognizable wing / engine fragments fall before the flash fades.
+    for (let n = 0; n < 4; n++) {
+      const fragment = new THREE.Mesh(box, n % 2 ? darkMaterial : wingMaterial);
+      fragment.position.copy(v.root.position).add(new THREE.Vector3((n - 1.5) * 2, 0, n % 2 ? 2 : -2));
+      fragment.scale.set(1.2, .22, 1.8);
+      scene.add(fragment);
+      effects.push({ kind: 'debris', mesh: fragment, ttl: 1.7,
+        vx: (n - 1.5) * 8, vy: 9, vz: (n % 2 ? 8 : -8) });
+    }
     v.body.visible = false;
     v.reticle.visible = false;
   }
-  function warnAttack(id) {
+  function warnAttack(id, aim, seconds = 2) {
     const v = visuals.get(id);
     if (!v) return;
     v.sign.material.color.setHex(0xff7258);
     v.sign.scale.set(25, 12.5, 1);
-    v.warningTime = 2;
+    v.warningTime = seconds;
+    if (!aim) return;
+    if (v.warningLine) {
+      scene.remove(v.warningLine);
+      v.warningLine.geometry.dispose();
+      v.warningLine.material.dispose();
+    }
+    const geo = new THREE.BufferGeometry().setFromPoints([
+      v.root.position.clone(), new THREE.Vector3(aim.x, aim.y, aim.z)
+    ]);
+    const mat = new THREE.LineBasicMaterial({
+      color: 0xff4c65, transparent: true, opacity: .92, depthTest: false
+    });
+    v.warningLine = new THREE.Line(geo, mat);
+    v.warningLine.renderOrder = 7;
+    v.lockTarget = { ...aim };
+    scene.add(v.warningLine);
   }
-  function enemyAttack(id, craft) {
+  function enemyAttack(id, aim) {
     const v = visuals.get(id);
-    if (!v) return;
-    beam(v.root.position, new THREE.Vector3(craft.x, craft.y, craft.z), 0, true);
+    if (!v || !aim) return;
+    beam(v.root.position, new THREE.Vector3(aim.x, aim.y, aim.z), 0, true);
+    if (v.warningLine) {
+      scene.remove(v.warningLine);
+      v.warningLine.geometry.dispose();
+      v.warningLine.material.dispose();
+      v.warningLine = null;
+    }
   }
   function update(dt, craft, heading, world, selectedId) {
     worldSeconds += dt;
@@ -159,18 +225,12 @@ export function makePursuerScene(scene) {
     const side = new THREE.Vector3(Math.cos(heading), 0, -Math.sin(heading));
     for (const [id, v] of visuals) {
       const slot = order++;
-      // A pursuer stays predominantly behind the craft, periodically
-      // sweeping alongside it. Steering now meaningfully changes its approach.
-      const flank = (slot % 2 ? -1 : 1) * (31 + slot * 8);
-      const sweep = -24 + 47 * Math.sin(worldSeconds * 0.48 + id * 0.83);
-      const target = new THREE.Vector3(craft.x, craft.y, craft.z)
-        .addScaledVector(forward, sweep)
-        .addScaledVector(side, flank);
-      target.y = craft.y + 5 + 2 * Math.sin(worldSeconds + id);
+      const plan = pursuitSlot(craft, heading, worldSeconds, id, slot, v.type);
+      const target = new THREE.Vector3(plan.x, plan.y, plan.z);
       const delta = target.sub(v.root.position);
       const distance = delta.length();
       if (distance > 1.5) {
-        const step = delta.multiplyScalar(Math.min(1, (48 + slot * 3) * dt / distance));
+        const step = delta.multiplyScalar(Math.min(1, plan.speed * dt / distance));
         const result = moveWithCollisions(v.root.position, step, world, [], 4.2);
         v.root.position.set(result.position.x, result.position.y, result.position.z);
         if (result.hitBuilding) v.root.position.y += Math.min(6 * dt, 0.5);
@@ -194,7 +254,19 @@ export function makePursuerScene(scene) {
       }
       if (v.hitPulse > 0) {
         v.hitPulse = Math.max(0, v.hitPulse - dt);
-        v.body.scale.multiplyScalar(1 + dt * 0.4 * Math.sin(worldSeconds * 27));
+        v.body.rotation.z = Math.sin(worldSeconds * 36) * .16 * (v.hitPulse / .58);
+      } else v.body.rotation.z *= Math.max(0, 1 - dt * 8);
+      if (v.warningLine) {
+        const data = v.warningLine.geometry.attributes.position;
+        data.setXYZ(0, v.root.position.x, v.root.position.y, v.root.position.z);
+        data.needsUpdate = true;
+        v.warningLine.material.opacity = .55 + .4 * Math.sin(worldSeconds * 16);
+        if (v.warningTime <= 0) {
+          scene.remove(v.warningLine);
+          v.warningLine.geometry.dispose();
+          v.warningLine.material.dispose();
+          v.warningLine = null;
+        }
       }
       v.coverCacheTime -= dt;
       if (v.coverCacheTime <= 0) {
@@ -216,17 +288,26 @@ export function makePursuerScene(scene) {
       const effect = effects[i];
       effect.ttl -= dt;
       if (effect.kind === 'beam') {
-        effect.line.material.opacity = Math.max(0, effect.ttl / 0.26);
-      } else {
+        effect.line.material.opacity = Math.max(0, effect.ttl / .26);
+      } else if (effect.kind === 'explosion') {
         const progress = 1 - Math.max(0, effect.ttl) / .58;
         effect.flash.scale.setScalar(1 + 10 * progress);
         effect.flash.material.opacity = Math.max(0, .9 * (1 - progress));
+      } else {
+        effect.mesh.position.x += effect.vx * dt;
+        effect.mesh.position.y += effect.vy * dt;
+        effect.mesh.position.z += effect.vz * dt;
+        effect.vy -= 30 * dt;
+        effect.mesh.rotation.x += 3.2 * dt;
+        effect.mesh.rotation.z += 2.1 * dt;
       }
       if (effect.ttl <= 0) {
-        const mesh = effect.kind === 'beam' ? effect.line : effect.flash;
+        const mesh = effect.kind === 'beam' ? effect.line : effect.kind === 'explosion' ? effect.flash : effect.mesh;
         scene.remove(mesh);
-        mesh.geometry.dispose();
-        mesh.material.dispose();
+        if (effect.kind !== 'debris') {
+          mesh.geometry.dispose();
+          mesh.material.dispose();
+        }
         effects.splice(i, 1);
       }
     }
@@ -241,10 +322,9 @@ export function makePursuerScene(scene) {
   function clear() {
     for (const id of Array.from(visuals.keys())) removeEnemy(id);
     for (const effect of effects) {
-      const mesh = effect.kind === 'beam' ? effect.line : effect.flash;
+      const mesh = effect.kind === 'beam' ? effect.line : effect.kind === 'explosion' ? effect.flash : effect.mesh;
       scene.remove(mesh);
-      mesh.geometry.dispose();
-      mesh.material.dispose();
+      if (effect.kind !== 'debris') { mesh.geometry.dispose(); mesh.material.dispose(); }
     }
     effects.length = 0;
   }
