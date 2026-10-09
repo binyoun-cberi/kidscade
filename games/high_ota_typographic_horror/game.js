@@ -260,7 +260,7 @@ function updatePrompt() {
   hud.action.textContent=currentInteraction?currentInteraction.label:'조사';
 }
 function setCamera() {
-  camera.position.set(player.x,player.hidden?1.5:1.65+(player.moving?.018*Math.sin(elapsed*11):0),player.z);
+  camera.position.set(player.x,state.hidden?1.5:1.65+(player.moving?.018*Math.sin(elapsed*11):0),player.z);
   camera.rotation.set(player.pitch,player.yaw,0);
 }
 function tryMove(dx,dz) {
@@ -271,7 +271,7 @@ function tryMove(dx,dz) {
 function update(dt) {
   elapsed+=dt;
   const before=state.stage;
-  if(!player.hidden && state.stage!=='won' && state.stage!=='lost') {
+  if(!state.hidden && state.stage!=='won' && state.stage!=='lost') {
     const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)
       -(keys.has('KeyS')||keys.has('ArrowDown')?1:0)-joystick.y;
     const side=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)
@@ -310,7 +310,7 @@ function update(dt) {
   setCamera();updatePrompt();
 }
 function look(dx,dy) {
-  if(player.hidden || !overlays.fix.classList.contains('closed'))return;
+  if(state.hidden || !overlays.fix.classList.contains('closed'))return;
   player.yaw-=dx*.0036;
   player.pitch=Math.max(-.76,Math.min(.76,player.pitch-dy*.0031));
 }
