@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#15140f">
+<title>수상한 심야식당 | 키즈케이드</title>
+<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="layout.css"><link rel="stylesheet" href="overlay.css">
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+<link rel="stylesheet" href="layout.css">
+<link rel="stylesheet" href="overlay.css">
+<script src="../../kidscade-game-sdk.js" data-game-id="high_midnight_diner" data-title="수상한 심야식당" data-shell="true" data-orientation="portrait"></script>
+<script src="../../kidscade-storage.js"></script>
+</head>
+<body>
+<main id="game">
+  <header class="topbar">
+    <div><span class="micro">THE LAST SUPPER · 02:13 AM</span><h1>수상한 심야식당</h1></div>
+    <div class="topright"><button id="notebookBtn" type="button" aria-label="식당 수첩 열기">수첩 <span aria-hidden="true">▤</span></button><button id="soundBtn" type="button" aria-label="소리 끄기">소리 켬</button></div>
+  </header>
+  <div class="game-layout">
+    <section class="kitchen" aria-label="수상한 요리사가 있는 주방">
+      <div class="room-fallback" aria-hidden="true">
+        <div class="clock">02:13</div><div class="knives">╱ │ ╲</div>
+        <div class="fallback-chef"><div class="hair"></div><div class="face"></div><div class="body"></div></div>
+        <div class="counter"></div>
+      </div>
+      <canvas id="scene" aria-label="기존 키즈케이드 3D 에셋으로 구성된 주방" role="img"></canvas>
+      <div class="kitchen-vignette" aria-hidden="true"></div>
+      <div class="scene-legend"><span class="live-dot"></span><span id="chefMood">요리사는 당신을 기다린다</span></div>
+      <div class="dialogue" role="status" aria-live="polite"><span class="dialogue-name">요리사</span><span id="chefLine">“자, 앉아. 그릇을 비워야 나갈 수 있어.”</span></div>
+    </section>
+    <section class="dining" aria-label="식사 행동">
+      <div class="status">
+        <div class="meter"><div class="meterlabel"><span>체력</span><b id="healthText">100</b></div><div class="track"><i id="healthBar" style="width:100%"></i></div></div>
+        <div class="meter"><div class="meterlabel"><span>허기</span><b id="hungerText">70</b></div><div class="track hunger"><i id="hungerBar" style="width:70%"></i></div></div>
+        <div class="meter"><div class="meterlabel"><span>의심</span><b id="suspicionText">8</b></div><div class="track suspicion"><i id="suspicionBar" style="width:8%"></i></div></div>
+      </div>
+      <div class="course-line"><div><small id="courseNum">COURSE 01 / 03</small><h2 id="courseTitle">의문의 부침개</h2><p id="courseDetail">초록빛 부침개 · 8조각</p></div><div class="danger-card"><span>먹으면 안 되는 재료</span><strong id="banned">붉은 씨앗</strong></div></div>
+      <div class="plate-wrap">
+        <div class="plate-eyebrow"><span>접시를 눌러 한입을 선택하세요</span><span id="bites">0 / 3 한입</span></div>
+        <canvas id="plate" width="600" height="420" aria-label="먹을 음식의 한 부분을 선택하는 그림" role="img"></canvas>
+        <div id="plateGlow" aria-hidden="true"></div>
+        <div class="plate-instruction" id="selectionText" aria-live="polite">어느 부분을 먹을까요?</div>
+      </div>
+      <div class="action-bar">
+        <button id="eatBtn" class="eat" type="button" disabled>선택한 부분 먹기</button>
+        <button id="inspectBtn" type="button" disabled>자세히 조사 <small id="inspections">2회</small></button>
+        <button id="questionBtn" type="button">요리사에게 묻기</button>
+        <button id="rejectBtn" class="reject" type="button">접시 거절</button>
+      </div>
+      <div class="feedback" id="feedback" role="status" aria-live="polite">금지 재료에는 반복되는 특징이 있어요. 잘 살펴보세요.</div>
+      <div class="footnote"><span id="score">점수 0</span><span id="record">최고 기록 —</span><span>선택은 되돌릴 수 없습니다.</span></div>
+    </section>
+  </div>
+</main>
+<div id="veil" class="veil">
+  <div class="modal intro" id="introModal">
+    <div class="modal-kicker">MIDNIGHT · LAST ORDER</div>
+    <div class="dish-stamp" aria-hidden="true">✳</div>
+    <h2>수상한<br>심야식당</h2>
+    <p class="intro-lead">새벽 두 시. 요리사는 당신이 떠나는 걸 바라지 않는다.</p>
+    <p>접시의 일부분을 눌러 고른 다음 <b>먹기</b> 또는 <b>조사하기</b>를 선택하세요. 각 접시에서 세 입을 먹으면 다음 음식이 나옵니다. 세 접시를 통과하고 안전한 음식을 여섯 입 이상 먹어야 탈출합니다.</p>
+    <div class="hintlist"><span>위험한 재료에는 일정한 색과 모양의 단서가 있습니다.</span><span>조사할수록 요리사의 의심이 커집니다.</span><span>거절만 해서는 탈출할 수 없습니다.</span></div>
+    <p class="disclaimer">게임 속 금지 재료는 가상 설정입니다. 현실의 식품 알레르기는 음식의 일부를 골라 먹는 것으로 안전해지지 않습니다.</p>
+    <button id="startBtn" class="primary" type="button">자리에 앉기</button>
+  </div>
+  <div class="modal hidden" id="resultModal" role="dialog" aria-modal="true" aria-labelledby="endTitle">
+    <div class="modal-kicker">END OF SERVICE</div>
+    <h2 id="endTitle"></h2><p id="endMessage"></p>
+    <div id="endStats" class="end-stats"></div>
+    <button id="retryBtn" class="primary" type="button">다시 도전</button>
+  </div>
+</div>
+<div id="notebookPanel" class="notebook hidden" role="dialog" aria-modal="true" aria-labelledby="notebookTitle">
+  <div class="notebook-inner"><div class="notebook-head"><h2 id="notebookTitle">식당 수첩</h2><button id="closeNotebook" type="button">닫기 ×</button></div>
+    <p>지금까지 찾아낸 단서를 기록합니다. 음식의 표시를 관찰하고 조사 결과와 비교하세요.</p>
+    <div id="notebookEntries"></div>
+    <p class="tiny">기록은 현재 게임에 한정됩니다.</p>
+  </div>
+</div>
+<script src="rules.js"></script>
+<script type="module" src="kitchen.js"></script><script src="plate.js"></script><script src="plate-extra.js"></script><script src="game.js"></script>
+</body>
+</html>
