@@ -158,7 +158,7 @@ function write(field,value){
  catch(e){document.getElementById("saveStatus").textContent="자동 저장을 못 했어요. JSON 파일로 내보내 주세요."}
  renderDetail();renderList();
 }
-document.getElementById("spriteList").addEventListener("click",e=>{const b=e.target.closest("button[data-id]");if(b)choose(b.dataset.id)});
+document.getElementById("spriteList").addEventListener("click",e=>{const b=e.target.closest("button[data-id]");if(!b)return;choose(b.dataset.id);if(window.innerWidth<=760){document.querySelector(".details").scrollIntoView({behavior:"smooth",block:"start"})}});
 document.getElementById("search").addEventListener("input",e=>{filters.search=e.target.value;renderList()});
 document.getElementById("typeFilter").addEventListener("change",e=>{filters.type=e.target.value;renderList()});
 document.getElementById("atlasFilter").addEventListener("change",e=>{filters.atlas=e.target.value;renderList()});
