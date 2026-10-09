@@ -463,11 +463,11 @@ const errors=[];
         assert.ok(diagnostic.hairSafe,'HAT-SAFE is not active');
         assert.ok(diagnostic.crownOverlap>0,'Cap opening floats ABOVE the hairline: '+hatName+'/'+fit);
         assert.ok(diagnostic.overlapRatio>.20,
-          'Cap is too high above current hairstyle: '+hatName+'/'+fit+'/'+clip);
+          'Cap is too high: '+hatName+'/'+fit+'/'+clip+' '+JSON.stringify(diagnostic));
         assert.ok(diagnostic.overlapRatio<.85,
           'Cap was forced down past the hairline: '+hatName+'/'+fit+'/'+clip);
         assert.ok(diagnostic.capRisesAboveCrown,
-          'Hat shell does not wrap over top of crown: '+hatName+'/'+fit);
+          'Hat shell below crown: '+hatName+'/'+fit+' '+JSON.stringify(diagnostic));
         report.hatSeating.cases.push({
           fit,hat:hatName,clip,view,fraction:phase,
           overlapRatio:+diagnostic.overlapRatio.toFixed(4),
