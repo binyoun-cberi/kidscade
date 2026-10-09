@@ -97,7 +97,8 @@ function stabilizeGarmentMesh(source,geometry){
       origin.getZ(index)+(target.getZ(index)-origin.getZ(index))*t);
     return out;
   };
-  for(let pass=0;pass<3;pass++){
+  let recoveryPasses=0;
+  for(let pass=0;pass<12;pass++){
     let changed=false;
     for(let t=0;t<trianglesCount;t++){
       const a=getIndex(t,0),b=getIndex(t,1),c=getIndex(t,2);
@@ -118,12 +119,35 @@ function stabilizeGarmentMesh(source,geometry){
       if(!invalid)continue;
       unsafeTriangles++;
       for(const i of [a,b,c]){
-        const next=blend[i]*.60;
+        // Back off invalid triangle deformation; eventually restore source
+        // vertices if they cannot maintain a stable surface.
+        const next=pass<8?blend[i]*.60:0;
         if(next<blend[i]){blend[i]=next;changed=true;}
       }
     }
     if(!changed)break;
+    recoveryPasses++;
   }
+  // Final audit is on the *resulting* mesh, not the number of issues seen
+  // mid-iteration. Fail closed rather than exporting inverted or collapsed
+  // fabric triangles that can look like exploded polygons in WebGL.
+  let residualUnsafeTriangles=0;
+  for(let t=0;t<trianglesCount;t++){
+    const a=getIndex(t,0),b=getIndex(t,1),c=getIndex(t,2);
+    ax.fromBufferAttribute(origin,a);bx.fromBufferAttribute(origin,b);
+    cx.fromBufferAttribute(origin,c);
+    normalOrig.copy(edge1.subVectors(bx,ax)).cross(edge2.subVectors(cx,ax));
+    const originalArea=normalOrig.length();
+    if(originalArea<1e-10)continue;
+    getBlended(a,ap);getBlended(b,bp);getBlended(c,cp);
+    normalChanged.copy(edge1.subVectors(bp,ap)).cross(edge2.subVectors(cp,ap));
+    const area=normalChanged.length();
+    if(normalOrig.dot(normalChanged)<=0||area<originalArea*.42||area>originalArea*2.4)
+      residualUnsafeTriangles++;
+  }
+  if(residualUnsafeTriangles)throw Error(
+    'Unsafe garment mesh after recovery: '+residualUnsafeTriangles+' triangles'
+  );
   let changedVertices=0;
   for(let i=0;i<target.count;i++){
     if(blend[i]>=.99999)continue;
@@ -134,7 +158,8 @@ function stabilizeGarmentMesh(source,geometry){
   geometry.userData={
     ...geometry.userData,
     meshSafety:'bounded-deformation-with-local-triangle-winding-and-area-v5.5',
-    driftLimited,unsafeTriangles,changedVertices,maxDrift
+    driftLimited,unsafeTriangles,changedVertices,maxDrift,
+    recoveryPasses,residualUnsafeTriangles
   };
   return geometry.userData;
 }
