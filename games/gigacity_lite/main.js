@@ -646,7 +646,7 @@ function shootPrime(prime) {
   pursuitScene.shootEffect(result, pilotPosition, yaw);
   playPrimeSound(result.kind, prime);
   if (result.kind === 'blocked') {
-    announcePrime(result.oldValue + '은 ' + prime + '(으)로 나누어떨어지지 않아!', true);
+    announcePrime('나누어떨어지지 않아! ' + result.oldValue + ' ÷ ' + prime, true);
   } else {
     const target = primeState.enemies.find(e => e.id === result.id);
     if (target) pursuitScene.markValue(target);
