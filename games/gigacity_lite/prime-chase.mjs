@@ -22,7 +22,7 @@ export function makePrimeChase() {
     status: 'ready', elapsed: 0, remaining: ROUND_SECONDS, shield: 100,
     score: 0, mistakes: 0, combo: 0, destroyed: 0, shots: 0,
     enemies: [], selectedId: null, nextId: 1, waveIndex: -1,
-    waveDelay: 0, cooldown: 0, consecutiveWrong: 0, dodges: 0, lastShot: null, reason: ''
+    waveDelay: 0, cooldown: 0, consecutiveWrong: 0, dodges: 0, previousPilot: null, lastShot: null, reason: ''
   };
 }
 function enterWave(state, index) {
@@ -116,6 +116,14 @@ export function tickPrimeChase(state, dt, enemyDistances = {}, playerPosition = 
     return { newEnemies: [], attacks: [], warnings: [] };
   }
   const attacks = [], warnings = [];
+  // Predict the pilot's normal forward flight. Otherwise just staying on
+  // autopilot would trivially dodge every shot without touching the controls.
+  const velocity = playerPosition && state.previousPilot && frame > 0
+    ? { x: (playerPosition.x - state.previousPilot.x) / frame,
+        y: (playerPosition.y - state.previousPilot.y) / frame,
+        z: (playerPosition.z - state.previousPilot.z) / frame }
+    : { x: 0, y: 0, z: -34 };
+  if (playerPosition) state.previousPilot = { ...playerPosition };
   for (const enemy of activeEnemies(state)) {
     const observation = enemyDistances[enemy.id];
     const distance = typeof observation === 'number' ? observation : observation?.distance ?? Infinity;
@@ -130,7 +138,11 @@ export function tickPrimeChase(state, dt, enemyDistances = {}, playerPosition = 
     enemy.attackIn -= frame;
     if (enemy.attackIn <= 2 && !enemy.preparing) {
       enemy.preparing = true;
-      enemy.lockedAt = playerPosition ? { ...playerPosition } : null;
+      enemy.lockedAt = playerPosition ? {
+        x: playerPosition.x + velocity.x * Math.max(0, enemy.attackIn),
+        y: playerPosition.y + velocity.y * Math.max(0, enemy.attackIn),
+        z: playerPosition.z + velocity.z * Math.max(0, enemy.attackIn)
+      } : null;
       warnings.push({ id: enemy.id, seconds: 2 });
     }
     if (enemy.attackIn <= 0) {
