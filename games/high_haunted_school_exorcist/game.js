@@ -29,6 +29,15 @@ const loader=new GLTFLoader(),assetCache=new Map();
 const FURN='../../assets/game/3d/interiors/kenney-furniture-kit/';
 const MAN='../../assets/game/npcs/glTF/Casual_Male.gltf';
 const MONSTER='../../assets/game/3d/characters/monsters/ultimate-monsters-bundle/ghost.glb';
+// User-supplied CC-BY Sketchfab models, uploaded in assets/more assets/.
+// Resolve by stage instead of loading five high-detail creatures on startup.
+const HORROR_MODELS=Object.freeze({
+  maiden:{url:'../../assets/more%20assets/ghost_girl_animated.glb',backup:MONSTER,height:2.18,tint:0xb6cce8,blend:.08},
+  yuki:{url:'../../assets/more%20assets/ghost_woman_a-pose.glb',backup:'../../assets/game/npcs/glTF/Casual_Female.gltf',height:1.88,tint:0xc5e8f4,blend:.18},
+  egg:{url:'../../assets/more%20assets/black_horror_alien_humanoid.glb',height:2.05,tint:0xd2d2cf,blend:.14},
+  reaper:{url:'../../assets/more%20assets/hooded_figure_with_scythe.glb',backup:'../../assets/game/3d/characters/monsters/ultimate-monsters-bundle/ghost-skull.glb',height:2.26,tint:0xb5a3c7,blend:.06},
+  wolf:{url:'../../assets/more%20assets/werewolf.glb',backup:'../../assets/game/cube world/Animals/glTF/Wolf.gltf',height:2.36,tint:0xffffff,blend:0}
+});
 const AUDIO='../../assets/kidscade_folklore_night_guard_renamed_assets/';
 const SCHOOL={west:-28,east:30,north:-20,south:20,spineEnd:-15,courtyardWest:-15,
   roomCenters:[-10.5,-1.5,7.5,16.5,25.5],guard:{x:-24.2,z:0},
@@ -460,13 +469,7 @@ function makeGhostFallback(){
 }
 const ghostAura=new THREE.PointLight(0xd6e4ff,8,7,2);maiden.root.add(ghostAura);ghostAura.position.y=1.7;
 let ghostModel=makeGhostFallback();maiden.root.add(ghostModel);
-loader.loadAsync(MONSTER).then(gltf=>{
-  maiden.root.remove(ghostModel);const root=cloneSkeleton(gltf.scene);normalize(root,2.3);
-  root.traverse(node=>{if(node.isMesh){node.material=Array.isArray(node.material)?node.material.map(m=>m.clone()):node.material.clone();const ms=Array.isArray(node.material)?node.material:[node.material];for(const m of ms){m.transparent=true;m.opacity=.88;m.emissive=new THREE.Color(0x284a73);m.emissiveIntensity=.8;}}});
-  ghostModel=root;maiden.root.add(root);
-  const clip=(gltf.animations||[]).find(c=>/idle|float/i.test(c.name))||(gltf.animations||[])[0];
-  if(clip){const mix=new THREE.AnimationMixer(root);mix.clipAction(clip).play();mixers.push(mix);}
-}).catch(()=>{});
+// A dedicated animated human ghost will replace this fallback at stage 2.
 maiden.root.visible=false;
 const fixPositions=[[-12.7,-12.85],[-8.2,-12.55],[-11.3,-18.1]];
 const fixLabels=['거꾸로 놓인 화분','공중에 뜬 책','움직이는 시계'];
@@ -502,25 +505,6 @@ function ghostShape(x,z,color,size=1.7){
   }));head.position.y=size+.16;root.add(head);
   return {root,body,head};
 }
-function dressGhost(url,root,height,tint,blend=.26){
-  loader.loadAsync(url).then(gltf=>{
-    const model=cloneSkeleton(gltf.scene);normalize(model,height);
-    model.traverse(node=>{
-      if(!node.isMesh)return;
-      const tintMat=m=>{
-        const copy=m.clone();
-        if(copy.color)copy.color.lerp(new THREE.Color(tint),blend);
-        if(copy.emissive)copy.emissive=new THREE.Color(tint);
-        if(copy.emissiveIntensity!==undefined)copy.emissiveIntensity=.24;
-        return copy;
-      };
-      node.material=Array.isArray(node.material)?node.material.map(tintMat):tintMat(node.material);
-    });
-    root.clear();root.add(model);
-    const clip=(gltf.animations||[]).find(c=>/idle|walk|float/i.test(c.name))||gltf.animations?.[0];
-    if(clip){const mixer=new THREE.AnimationMixer(model);mixer.clipAction(clip).play();mixers.push(mixer);}
-  }).catch(()=>{}); // Visible fallback remains if asset isn't reachable.
-}
 const yuki=ghostShape(25.5,16.95,0xb6edff,1.75);
 const egg=ghostShape(7.5,-17.35,0x8e9292,1.7);
 const reaper=ghostShape(-25.0,8.0,0x75658d,1.9);
@@ -528,14 +512,69 @@ const wolfFallback=new THREE.Group();encounter.wolf.root.add(wolfFallback);
 cube(wolfFallback,0,.75,0,.62,.73,1.05,mat(0x61535a));
 for(const x of [-.22,.22])for(const z of [-.35,.35])cube(wolfFallback,x,.26,z,.20,.50,.19,mat(0x443c46));
 cube(wolfFallback,0,1.04,-.59,.50,.44,.45,mat(0x75666c));
-dressGhost('../../assets/game/npcs/glTF/Casual_Female.gltf',yuki.root,1.85,0xa9efff,.70);
-dressGhost('../../assets/game/3d/characters/monsters/ultimate-monsters-bundle/ghost-skull.glb',reaper.root,2.18,0x75648e,.45);
-loader.loadAsync('../../assets/game/cube world/Animals/glTF/Wolf.gltf').then(gltf=>{
-  const model=cloneSkeleton(gltf.scene);normalize(model,1.08);
-  encounter.wolf.root.clear();encounter.wolf.root.add(model);
-  const clip=(gltf.animations||[]).find(c=>/walk|run/i.test(c.name))||gltf.animations?.[0];
-  if(clip){const mixer=new THREE.AnimationMixer(model);mixer.clipAction(clip).play();mixers.push(mixer);}
-}).catch(()=>{});
+
+// Keep the original primitive / older GLTF visible until a new asset is ready.
+// Repeated stage changes share the same promise, not concurrent duplicate loads.
+const horrorLoadState=new Map();
+const horrorVisuals={maiden,yuki,egg,reaper,wolf:encounter.wolf};
+function installHorrorAsset(kind,gltf,url){
+  const spec=HORROR_MODELS[kind],actor=horrorVisuals[kind];
+  const visual=cloneSkeleton(gltf.scene);
+  normalize(visual,spec.height);
+  visual.traverse(node=>{
+    if(!node.isMesh)return;
+    node.frustumCulled=false; // Animated/oddly posed SkinnedMesh bounds may be stale.
+    const tintMaterial=material=>{
+      if(!material)return material;
+      const copy=material.clone();
+      // Respect source PBR texture maps; light environmental tint only.
+      if(spec.blend&&copy.color)copy.color.lerp(new THREE.Color(spec.tint),spec.blend);
+      return copy;
+    };
+    node.material=Array.isArray(node.material)?node.material.map(tintMaterial):tintMaterial(node.material);
+  });
+  if(kind==='maiden'){
+    maiden.root.remove(ghostModel); // Do NOT erase the point-light aura.
+    ghostModel=visual;maiden.root.add(visual);
+  }else{
+    actor.root.clear();actor.root.add(visual);
+  }
+  const clips=gltf.animations||[];
+  const chosen=(kind==='wolf'?clips.find(c=>/run|walk|move/i.test(c.name)):
+    clips.find(c=>/idle|stand|breath|float/i.test(c.name)))||
+    clips.find(c=>!/pose|t-pose|a-pose/i.test(c.name));
+  if(chosen){
+    // Root translation tracks can displace a model outside its room.
+    const stationary=new THREE.AnimationClip(chosen.name,chosen.duration,
+      chosen.tracks.filter(track=>!/(?:hips|root|armature)\\.position/i.test(track.name)));
+    if(stationary.tracks.length){
+      const mixer=new THREE.AnimationMixer(visual);
+      const action=mixer.clipAction(stationary);action.play();
+      mixers.push(mixer);
+    }
+  }
+  actor.loadedSource=url;
+}
+function loadHorrorAsset(kind){
+  if(horrorLoadState.has(kind))return horrorLoadState.get(kind);
+  const spec=HORROR_MODELS[kind];
+  if(!spec)return Promise.resolve(false);
+  const job=(async()=>{
+    for(const url of [spec.url,spec.backup].filter(Boolean)){
+      try{
+        const gltf=await loader.loadAsync(url);
+        installHorrorAsset(kind,gltf,url);
+        return true;
+      }catch(error){
+        console.warn('괴담 학교 '+kind+' 모델 로딩 실패 ('+url+')',error);
+      }
+    }
+    // The geometrical fallback remains intact when both files fail.
+    return false;
+  })();
+  horrorLoadState.set(kind,job);
+  return job;
+}
 for(const [x,z,label] of [
   [24.0,11.8,'난방 배관'],[27.7,15.15,'창가 히터'],[23.7,18.0,'온도 조절기']
 ]){
@@ -554,6 +593,11 @@ doorHinge.rotation.y=-1.30;
 encounter.doorVisual=doorHinge;
 const eggLocation={x:7.5,z:-17.35},bellDoor={x:-20.35,z:8},wolfTrap={x:-10.5,z:14};
 function presentEncounterModels(){
+  if(stage===2)loadHorrorAsset('maiden');
+  if(stage===4||stage===5)loadHorrorAsset('yuki');
+  if(stage===6||stage===7)loadHorrorAsset('egg');
+  if(stage===8||stage===9)loadHorrorAsset('reaper');
+  if(stage===10||stage===11)loadHorrorAsset('wolf');
   yuki.root.visible=stage===4||stage===5;
   egg.root.visible=stage===6||stage===7;
   reaper.root.visible=stage===8||stage===9;
