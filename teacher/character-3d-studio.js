@@ -1809,7 +1809,7 @@ async function loadChibi(){
     createKidscadeMaleHairShort();
     createKidscadeHairCollection();
     createOutfitPack({getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial,makeRigidSkinnedPiece,resolveFirstBoneName});
-    createAccessoryPack({getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial,makeRigidSkinnedPiece});
+    createAccessoryPack({getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial});
   }catch(error){
     console.error(error);
     showAssetError('Chibi 본체는 열렸지만 커스텀 파츠 생성에 실패했습니다: '+(error?.message||error));
