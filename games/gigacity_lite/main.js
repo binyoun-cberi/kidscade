@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createPlayerCraft } from './craft.js';
 import { safeMode, cameraPose } from './flight-view.mjs';
+import { makeCollisionWorld, moveWithCollisions, guideAlongRoad, trafficPosition, intersectsWorld } from './flight-physics.mjs';
 import { CHUNK_SIZE, LOT_SIZE, ROAD_WIDTH, seedNumber, randomAt, createChunkData, chunkOf } from './city-core.mjs';
 
 const $ = (id) => document.getElementById(id);
@@ -223,38 +224,34 @@ const vehicleGeometry = new THREE.BoxGeometry(1, 1, 1);
 let vehicles = null;
 let vehicleCount = 0;
 let trafficSeed = 0;
+let trafficPositions = [];
+let vehicleGlows = null;
 function rebuildTraffic() {
-  if (vehicles) {
-    scene.remove(vehicles);
-    vehicles.dispose();
-  }
+  if (vehicles) { scene.remove(vehicles); vehicles.dispose(); }
+  if (vehicleGlows) { scene.remove(vehicleGlows); vehicleGlows.dispose(); }
+  trafficPositions = [];
   vehicleCount = quality === 'high' ? 76 : quality === 'medium' ? 42 : 22;
   vehicles = instance(vehicleGeometry, vehicleMaterial, vehicleCount, scene);
+  vehicleGlows = instance(vehicleGeometry, new THREE.MeshBasicMaterial({color:0x31cdef}), vehicleCount, scene);
   for (let i = 0; i < vehicleCount; i++) {
     const t = randomAt(trafficSeed, i, 0, 40);
     vehicles.setColorAt(i, new THREE.Color().setHSL(0.5 + t * 0.12, 0.9, 0.52));
   }
   finish(vehicles);
+  finish(vehicleGlows);
 }
 function moveVehicles(seconds) {
   if (!vehicles) return;
-  const span = CHUNK_SIZE * 5;
-  const roadX = Math.round(pilotPosition.x / LOT_SIZE) * LOT_SIZE;
-  const roadZ = Math.round(pilotPosition.z / LOT_SIZE) * LOT_SIZE;
+  trafficPositions.length = 0;
   for (let i = 0; i < vehicleCount; i++) {
-    const horizontal = i % 2 === 0;
-    const line = Math.floor(randomAt(trafficSeed, i, 0, 1) * 13) - 6;
-    const speed = 19 + randomAt(trafficSeed, i, 0, 2) * 39;
-    const direction = randomAt(trafficSeed, i, 0, 3) > 0.5 ? 1 : -1;
-    const phase = randomAt(trafficSeed, i, 0, 4) * span;
-    const progress = ((((seconds * speed * direction + phase) % span) + span) % span) - span * 0.5;
-    const level = 54 + Math.floor(randomAt(trafficSeed, i, 0, 5) * 5) * 30;
-    const x = horizontal ? roadX + progress : roadX + line * LOT_SIZE + 4;
-    const z = horizontal ? roadZ + line * LOT_SIZE + 4 : roadZ + progress;
-    const angle = horizontal ? 0 : Math.PI * 0.5;
-    matrixAt(vehicles, i, x, level, z, 7, 1.9, 3.2, angle);
+    const car = trafficPosition(i, seconds, trafficSeed, pilotPosition);
+    trafficPositions.push(car);
+    matrixAt(vehicles, i, car.x, car.y, car.z, 7, 1.9, 3.2, car.angle);
+    // A slim glowing underbody makes passing flying traffic legible after dark.
+    matrixAt(vehicleGlows, i, car.x, car.y - 1.02, car.z, 5.8, 0.11, 0.66, car.angle);
   }
   finish(vehicles);
+  finish(vehicleGlows);
 }
 
 const touchAxis = { x: 0, y: 0 };
@@ -269,6 +266,9 @@ let qualitySetting = 'auto';
 let quality = mobile ? 'low' : 'medium';
 let pixelRatio = 1;
 let worldSeed = seedNumber('NEON-01');
+let collisionWorld = makeCollisionWorld(worldSeed);
+let lastCollisionAt = -100;
+let collidedRecently = false;
 let lastChunkX = null;
 let lastChunkZ = null;
 let lastRadius = -1;
@@ -341,7 +341,13 @@ function applySeed(value) {
   if (!chosen) chosen = 'NEON-01';
   $('seed').value = chosen;
   worldSeed = seedNumber(chosen);
+  collisionWorld = makeCollisionWorld(worldSeed);
   trafficSeed = worldSeed;
+  if (intersectsWorld(pilotPosition, collisionWorld)) {
+    // Switching city seeds mid-flight can place a new tower around the player.
+    // Return to the nearest safe avenue without interrupting the flight.
+    pilotPosition.x = Math.round(pilotPosition.x / LOT_SIZE) * LOT_SIZE;
+  }
   applyQuality();
 }
 function setViewMode(nextMode) {
@@ -538,19 +544,19 @@ function updateMovement(dt) {
   let forward = (held.has('KeyW') ? 1 : 0) - (held.has('KeyS') ? 1 : 0) - touchAxis.y;
   let side = (held.has('KeyD') ? 1 : 0) - (held.has('KeyA') ? 1 : 0) + touchAxis.x;
   const altitude = (held.has('KeyE') || held.has('rise') ? 1 : 0) - (held.has('KeyQ') || held.has('sink') ? 1 : 0);
+  const origin = { x: pilotPosition.x, y: pilotPosition.y, z: pilotPosition.z };
+  let desired;
   if (autoFlight) {
-    flightSpeed = 34;
     steeringVisual = 0;
-    pilotPosition.x += (Math.round(pilotPosition.x / LOT_SIZE) * LOT_SIZE - pilotPosition.x) * Math.min(1, dt * 0.9);
-    pilotPosition.z -= flightSpeed * dt;
     yaw = Math.sin(seconds * 0.09) * 0.13;
     pitch = -0.28 + Math.sin(seconds * 0.13) * 0.045;
-    pilotPosition.y = 200 + Math.sin(seconds * 0.24) * 8;
+    const guided = guideAlongRoad(origin, dt, 34);
+    const targetY = 200 + Math.sin(seconds * 0.24) * 8;
+    desired = { x: guided.x, z: guided.z,
+      y: clamp(targetY - pilotPosition.y, -19 * dt, 32 * dt) };
   } else {
-    const oldX = pilotPosition.x, oldZ = pilotPosition.z;
     steeringVisual = side;
     if (viewMode !== 'free') {
-      // In a vehicle the left/right stick steers, rather than sliding the body sideways.
       yaw -= side * dt * 1.18;
       side = 0;
     }
@@ -558,18 +564,35 @@ function updateMovement(dt) {
     forward /= length;
     side /= length;
     const speed = (held.has('ShiftLeft') || held.has('ShiftRight') || held.has('boost') ? 145 : 70) * dt;
-    pilotPosition.x += (-Math.sin(yaw) * forward + Math.cos(yaw) * side) * speed;
-    pilotPosition.z += (-Math.cos(yaw) * forward - Math.sin(yaw) * side) * speed;
-    pilotPosition.y += altitude * speed * 0.8;
-    pilotPosition.y = clamp(pilotPosition.y, 18, 880);
-    flightSpeed = Math.hypot(pilotPosition.x - oldX, pilotPosition.z - oldZ) / Math.max(dt, 0.001);
-    travelledMeters += Math.hypot(pilotPosition.x - oldX, pilotPosition.z - oldZ);
-    if (travelledMeters > 1800) discover('far_explorer');
-    if (pilotPosition.y > 500) discover('sky_explorer');
+    desired = {
+      x: (-Math.sin(yaw) * forward + Math.cos(yaw) * side) * speed,
+      z: (-Math.cos(yaw) * forward - Math.sin(yaw) * side) * speed,
+      y: altitude * speed * 0.8
+    };
     if (held.has('boost') || held.has('ShiftLeft') || held.has('ShiftRight')) {
       boostSeconds += dt;
       if (boostSeconds > 8) discover('speed_flight');
     }
+  }
+  // Buildings and passing aircraft share one collision response. No teleporting through walls.
+  desired.y = clamp(origin.y + desired.y, 18, 880) - origin.y;
+  const moved = moveWithCollisions(origin, desired, collisionWorld,
+    viewMode === 'free' ? [] : trafficPositions);
+  pilotPosition.set(moved.position.x, moved.position.y, moved.position.z);
+  flightSpeed = moved.travelled / Math.max(dt, 0.001);
+  travelledMeters += moved.travelled;
+  if (travelledMeters > 1800) discover('far_explorer');
+  if (pilotPosition.y > 500) discover('sky_explorer');
+  const hit = moved.hitBuilding || moved.hitTraffic;
+  if (hit && seconds - lastCollisionAt > 0.75) {
+    lastCollisionAt = seconds;
+    collidedRecently = true;
+    $('flightWarning').textContent = moved.hitTraffic ? '앞에 비행차가 있어요' : '건물이 가까워요 · 방향을 바꿔보세요';
+    $('flightWarning').classList.add('visible');
+  }
+  if (collidedRecently && seconds - lastCollisionAt > 1.6) {
+    collidedRecently = false;
+    $('flightWarning').classList.remove('visible');
   }
   playerCraft.update(dt, pilotPosition, yaw, pilotPosition.y, flightSpeed * 3.6, steeringVisual);
   updateCamera();
@@ -583,9 +606,9 @@ function frame(now) {
   lastTimestamp = now;
   seconds += active ? dt : 0;
   if (active) {
+    moveVehicles(seconds);
     updateMovement(dt);
     loadNearby();
-    moveVehicles(seconds);
     frameCount++;
     fpsTime += dt;
     if (fpsTime >= 1.25) {
