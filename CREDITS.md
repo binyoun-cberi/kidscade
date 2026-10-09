@@ -93,6 +93,8 @@ Repository provenance status for these files is **user-confirmed Pixabay**, not 
 
 The following files were supplied without enough source/license evidence:
 
+- `assets/more assets/low_poly_old_locker.glb` — newly uploaded, original Sketchfab listing and CC license must be matched with the file before publication. Possible same-name source: https://sketchfab.com/3d-models/low-poly-old-locker-e674c0b140c9489db3e128bd99aa5db1 (not independently matched).
+- `assets/more assets/school_hallway.glb` — newly uploaded; original model author/source/license still unverified (multiple models share the title).
 - `assets/game/2d/underwater/tiles/seafloor/seafloor-tiles.png`
 - `assets/game/2d/underwater/tiles/seafloor/seafloor-tiles-blue.png`
 
