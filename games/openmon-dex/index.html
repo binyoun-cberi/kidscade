@@ -156,8 +156,12 @@ function renderBattle(s){
  view.innerHTML=[["HP","hp",72],["공격","attack",45],["방어","defense",45],["속도","speed",45]].map(([label,key,max])=>
  '<div class="stat-meter"><label>'+label+' <b>'+a[key]+'</b></label><div class="rail"><span class="fill" style="width:'+Math.min(100,a[key]/max*100)+'%"></span></div></div>').join("");
  const next=db.combat.evolutionAvailable(s,previewLevel);
- const evo=s.evolutionCondition?.enabled?"Lv."+s.evolutionCondition.level+" 진화 가능":
-  s.evolutionCondition?"진화 관계 미확정 · 자동 진화 잠금":"이 형태로 진화하는 조건 없음";
+ const future=db.species.filter(other=>other.evolvesFrom===s.id);
+ const enabled=future.filter(other=>other.evolutionCondition?.enabled);
+ const evo=enabled.length?
+    "Lv."+Math.min(...enabled.map(x=>x.evolutionCondition.level))+"에 다음 형태로 진화 가능":
+    future.length?"다음 형태 후보가 있으나 자동 진화는 잠금":
+    s.evolutionRank>=3?"최종 진화 단계":"현재 연결된 진화 대상 없음";
  const cap=s.rarity==="starter"?"스타팅 전용":s.evolutionRank>=3?"야생 포획 제한":"기본 포획 확률 "+Math.round(s.battle.captureBase*100)+"% 기준";
  const line=s.familyOrigin==="source-confirmed"?"원본 구성 확인":s.familyOrigin==="provisional"?"그림 관계 검토 중":"키즈케이드 게임 기획안";
  document.getElementById("battleNote").textContent="계열: "+s.familyName+" ("+line+"). "+evo+" · "+cap+
