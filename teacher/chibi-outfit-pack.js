@@ -293,32 +293,46 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
   };
   if(style.details.includes('longSleeve')||style.details.includes('puffSleeve')){
     const puff=style.details.includes('puffSleeve');
+    // A single curved skinned surface from shoulder to cuff avoids the
+    // interpenetrating sphere/cylinder joins that look like torn triangles.
     for(const sign of [-1,1]){
       const start=new THREE.Vector3(sign*.20,1.08,-.026);
       const elbow=new THREE.Vector3(sign*.30,.91,-.039);
       const cuff=new THREE.Vector3(sign*.345,.775,-.044);
-      const makeTube=(from,to,rStart,rEnd)=>{
-        const d=to.clone().sub(from);
-        const geometry=new THREE.CylinderGeometry(rEnd,rStart,d.length(),12,3,false);
-        geometry.applyMatrix4(new THREE.Matrix4().compose(
-          from.clone().add(to).multiplyScalar(.5),
-          new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize()),
-          new THREE.Vector3(1,1,1)
-        ));
-        return geometry;
-      };
-      // Rounded shoulder insert closes the seam between the modified shirt
-      // shoulder and the separately articulated extension in WALK/RUN.
-      const shoulderCap=new THREE.SphereGeometry(puff?.110:.096,14,10);
-      shoulderCap.scale(1.02,.90,.83);
-      shoulderCap.translate(sign*.20,1.044,-.018);
-      addMatchedSleeve(shoulderCap,sign<0?'shoulderCap_left':'shoulderCap_right',sign);
-      const upper=makeTube(start,elbow,puff?.105:.086,puff?.086:.076);
-      addMatchedSleeve(upper,sign<0?'upperSleeve_left':'upperSleeve_right',sign);
-      if(!puff){
-        const lower=makeTube(elbow,cuff,.081,.065);
-        addMatchedSleeve(lower,sign<0?'forearmSleeve_left':'forearmSleeve_right',sign);
+      const curve=new THREE.CatmullRomCurve3(puff?[start,elbow]:[start,elbow,cuff]);
+      const sections=14,around=16,vertices=[],uvs=[],faces=[];
+      const axis=new THREE.Vector3(0,0,1);
+      const tangent=new THREE.Vector3(),across=new THREE.Vector3();
+      const center=new THREE.Vector3();
+      for(let ring=0;ring<=sections;ring++){
+        const t=ring/sections;
+        curve.getPoint(t,center);
+        curve.getTangent(t,tangent).normalize();
+        across.crossVectors(tangent,axis).normalize();
+        const radius=puff
+          ?(.105+.025*Math.sin(Math.PI*t))*(1-.23*smooth(.65,1,t))
+          :(.102-.037*smooth(0,1,t)+.012*Math.sin(Math.PI*t));
+        for(let slice=0;slice<=around;slice++){
+          const theta=Math.PI*2*slice/around;
+          const c=Math.cos(theta)*radius,ss=Math.sin(theta)*radius;
+          vertices.push(center.x+axis.x*c+across.x*ss,
+            center.y+axis.y*c+across.y*ss,
+            center.z+axis.z*c+across.z*ss);
+          uvs.push(slice/around,t);
+        }
       }
+      for(let ring=0;ring<sections;ring++){
+        for(let slice=0;slice<around;slice++){
+          const a=ring*(around+1)+slice,b=(ring+1)*(around+1)+slice;
+          const c=a+1,d=b+1;
+          faces.push(a,c,b,c,d,b);
+        }
+      }
+      const sleeve=new THREE.BufferGeometry();
+      sleeve.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+      sleeve.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+      sleeve.setIndex(faces);
+      addMatchedSleeve(sleeve,sign<0?'continuousSleeve_left':'continuousSleeve_right',sign);
     }
   }
   if(style.details.includes('hood')){
@@ -406,18 +420,28 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
     const chino=style.id==='chibi_male_chinos';
     // Overlap the original shorts cuff at the upper thigh to prevent skin
     // wedges between the pelvis shell and the independent leg cylinders.
-    const upperRadius=wide?.151:jogger?.154:chino?.145:.143;
-    const lowerRadius=wide?.116:jogger?.075:chino?.076:.088;
+    const upperRadius=wide?.140:jogger?.154:chino?.145:.143;
+    const lowerRadius=wide?.104:jogger?.075:chino?.076:.088;
     const top=.755,bottom=.082;
     const geometry=new THREE.CylinderGeometry(upperRadius,lowerRadius,top-bottom,16,9,false);
-    geometry.translate(sign*(wide?.166:.153),(top+bottom)*.5,0);
+    geometry.translate(sign*(wide?.178:.153),(top+bottom)*.5,0);
     const positions=geometry.getAttribute('position');
     // Body knees and upper thighs protrude more toward +Z than a round tube.
     // Give the front thigh an anatomically shaped clearance allowance.
     for(let i=0;i<positions.count;i++){
       const y=positions.getY(i),z=positions.getZ(i);
       const thighFront=smooth(.22,.36,y)*(1-smooth(.58,.75,y));
-      if(z>0)positions.setZ(i,z*(1+.68*thighFront));
+      if(z>0)positions.setZ(i,z*(1+(wide?.42:.68)*thighFront));
+      if(wide){
+        // Define two visible trouser legs instead of a skirt-like broad tube;
+        // a tapered knee with a relaxed hem keeps the garment recognizable.
+        const x=positions.getX(i),center=sign*.178;
+        const knee=smooth(.23,.35,y)*(1-smooth(.42,.57,y));
+        const hem=1-smooth(.10,.25,y);
+        const fullness=1-.11*knee+.025*hem;
+        positions.setX(i,center+(x-center)*fullness);
+        positions.setZ(i,positions.getZ(i)*fullness);
+      }
     }
     positions.needsUpdate=true;
     // Smooth 4-neighbor skin transfer follows the knee and pelvis blends
