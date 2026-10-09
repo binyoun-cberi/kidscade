@@ -8,7 +8,8 @@ const ui={canvas:$('game'),intro:$('intro'),end:$('end'),endTitle:$('endTitle'),
   time:$('time'),toast:$('toast'),action:$('action'),actionText:$('actionText'),joy:$('joystick'),knob:$('knob'),
   map:$('minimap'),help:$('help'),flash:$('flash'),gaze:$('gaze'),gazeValue:$('gazeValue'),
   navigation:$('navigation'),navArrow:$('navArrow'),navTitle:$('navTitle'),navRange:$('navRange'),
-  lesson:$('lesson'),lessonTitle:$('lessonTitle'),lessonText:$('lessonText'),reticle:$('reticle'),gazeLabel:$('gazeLabel')};
+  lesson:$('lesson'),lessonTitle:$('lessonTitle'),lessonText:$('lessonText'),reticle:$('reticle'),gazeLabel:$('gazeLabel'),
+  lockerView:$('lockerView'),lockerWarning:$('lockerWarning')};
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090f19);scene.fog=new THREE.FogExp2(0x090f19,.019);
 const renderer=new THREE.WebGLRenderer({canvas:ui.canvas,antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);
@@ -38,6 +39,8 @@ const HORROR_MODELS=Object.freeze({
   reaper:{url:'../../assets/more%20assets/hooded_figure_with_scythe.glb',backup:'../../assets/game/3d/characters/monsters/ultimate-monsters-bundle/ghost-skull.glb',height:2.26,tint:0xb5a3c7,blend:.06},
   wolf:{url:'../../assets/more%20assets/werewolf.glb',backup:'../../assets/game/cube world/Animals/glTF/Wolf.gltf',height:2.36,tint:0xffffff,blend:0}
 });
+const SCHOOL_HALLWAY='../../assets/more%20assets/school_hallway.glb';
+const OLD_LOCKER='../../assets/more%20assets/low_poly_old_locker.glb';
 const AUDIO='../../assets/kidscade_folklore_night_guard_renamed_assets/';
 const SCHOOL={west:-28,east:30,north:-20,south:20,spineEnd:-15,courtyardWest:-15,
   roomCenters:[-10.5,-1.5,7.5,16.5,25.5],guard:{x:-24.2,z:0},
@@ -52,6 +55,7 @@ let viewYaw=0,viewPitch=0,turnPointer=null,prevX=0,prevY=0,last=performance.now(
 let invulnerable=0,ghostWaiting=0,maidenPhase='approach',tutorialCount=0,lessonTimer=0,lastMistake='';
 const guidance={key:'',points:[],mesh:null,clock:0,fromX:0,fromZ:0,goalX:0,goalZ:0};
 let gazeLocked=false,ghostNav=null;
+let hidingLocker=null,lockerTime=0,lockerDanger=0,lockerPreviousFlash=true;
 const encounter={
  cold:0,heatNodes:[],frost:0,eggCharge:0,eggFear:0,
  bellCount:0,bellClock:0,bellWindow:0,doorClosed:false,doorRelease:0,doorVisual:null,
@@ -427,7 +431,75 @@ function createRoom(){
   }
 }
 
+
 createRoom();
+
+// Compact, collision-aware hide spots against the courtyard-facing walls.
+// Doorways and the 3m-wide travel lanes remain clear; lockers are placed in
+// the opaque gaps between the courtyard windows, not across room entrances.
+const LOCKER_SPOTS=[
+  {x:-5.7,z:-7.67,front:-1,yaw:0},
+  {x:21.5,z:-7.67,front:-1,yaw:0},
+  {x:-11.65,z:7.67,front:1,yaw:Math.PI},
+  {x:12.45,z:7.67,front:1,yaw:Math.PI}
+];
+const lockers=[];
+function fitSceneryToBox(model,width,height,depth){
+  normalize(model,height);
+  model.updateMatrixWorld(true);
+  const size=new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
+  model.scale.x*=width/Math.max(.001,size.x);
+  model.scale.z*=depth/Math.max(.001,size.z);
+  // Rendered silhouette stays inside the reserved collision / decoration box.
+  model.updateMatrixWorld(true);
+  return model;
+}
+function buildOldLockers(){
+  for(const [i,spot] of LOCKER_SPOTS.entries()){
+    const holder=new THREE.Group();holder.position.set(spot.x,0,spot.z);
+    holder.rotation.y=spot.front<0?Math.PI:0;
+    scene.add(holder);
+    const fallback=cube(holder,0,1.1,0,.9,2.2,.50,mat(0x59616a));
+    cube(holder,.24,1.12,(spot.front<0?1:-1)*.26,.035,.24,.025,mat(0xd1c7ad));
+    // Only the physical cabinet is solid. The standing point in front is free.
+    const obstacle={x:spot.x,z:spot.z,hx:.49,hz:.27};
+    furniture.push(obstacle);
+    lockers.push({...spot,id:i,holder,obstacle,interact:{x:spot.x,z:spot.z+spot.front*.97}});
+    loadTemplate(OLD_LOCKER).then(template=>{
+      const visual=fitSceneryToBox(template.clone(true),.91,2.18,.52);
+      holder.clear();holder.add(visual);
+    }).catch(err=>console.warn('사물함 에셋을 불러오지 못해 기본 모델 사용',err));
+  }
+}
+function decorateSchoolCorridors(){
+  // Noticeboards, baseboards and classroom numbers bring out the school
+  // atmosphere without introducing any new walking or line-of-sight walls.
+  const notice=mat(0x4e6474),trim=mat(0xc4b69c),paper=mat(0xd4cfc1);
+  for(const z of [-10.01,10.01])for(const x of [-6,3,12,21]){
+    cube(scene,x,1.76,z,.95,.74,.055,notice);
+    cube(scene,x,1.76,z+(z<0?.038:-.038),.73,.48,.018,paper);
+    cube(scene,x,1.76,z+(z<0?.052:-.052),.80,.048,.03,trim);
+    cube(scene,x,.22,z,1.7,.18,.05,mat(0x576b77));
+  }
+  for(const z of [-8.75,8.75])for(let x=-13;x<28;x+=2.45){
+    const panel=cube(scene,x,.018,z,2.22,.025,1.05,mat(0x56636d));
+    panel.userData.decorative=true;
+  }
+  // This uploaded full hallway prefab is used as an end-wall architectural
+  // vignette, NOT a replacement solid corridor (which could hide classroom
+  // entrances). The 0.85m endcap stays within the existing east boundary.
+  loadTemplate(SCHOOL_HALLWAY).then(template=>{
+    for(const z of [-8.55,8.55]){
+      const host=new THREE.Group();host.position.set(29.19,0,z);
+      scene.add(host);
+      const visual=fitSceneryToBox(template.clone(true),.82,2.92,2.72);
+      host.add(visual);
+    }
+  }).catch(err=>console.warn('복도 에셋을 불러오지 못해 기존 학교 장식 유지',err));
+}
+buildOldLockers();
+decorateSchoolCorridors();
+
 
 function repairCharacterSkin(root){
   // Several shared NPCs have near-black Skin material defaults; correct the material,
