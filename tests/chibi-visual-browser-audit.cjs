@@ -316,6 +316,68 @@ const errors=[];
     testedSamples:testedCount,nearRatio:Number((nearCount/Math.max(testedCount,1)).toFixed(4)),
     caveat:'proximity is not proof of zero intersection'}));
 
+
+  // Chibi v5.3 — test actual 3D accessories, not just UI labels.
+  const accessoryManifest=JSON.parse(fs.readFileSync(path.join(ROOT,'chibi/asset-manifest.json'),'utf8')).accessoryLibrary;
+  assert.equal(accessoryManifest.count,22);
+  const accessories=await evalPage('window.__kc3dAudit.accessoryCatalog()');
+  assert.equal(accessories.length,22,'Missing Chibi v5.3 accessory entries');
+  assert.equal(new Set(accessories.map(x=>x.fingerprint)).size,22,'Accessories share duplicate geometry');
+  report.accessoryPack={styles:[],roundtrip:[],thumbnailReady:{}};
+  await setFit('male');
+  const chooseAccessory=(category,name)=>evalPage("(()=>{"+
+    "document.querySelector('[data-wardrobe-category="+JSON.stringify(category)+"]').click();"+
+    "const input=document.querySelector('[data-chibi-part="+JSON.stringify(name)+"]');"+
+    "if(!input)return {missing:true};"+
+    "input.checked=true;input.dispatchEvent(new Event('change',{bubbles:true}));"+
+    "const catalog=window.__kc3dAudit.accessoryCatalog();"+
+    "return {checked:input.checked,name:input.dataset.chibiPart,"+
+    "active:catalog.filter(x=>x.visible).map(x=>({name:x.id,slot:x.slot}))};"+
+    "})()");
+  for(const item of accessories){
+    assert.ok(item.meshCount>=1&&item.vertices>60,'Accessory geometry absent: '+item.id);
+    assert.ok(item.skins.every(skin=>skin.bones===78),'Accessory rig mismatch: '+item.id);
+    const selected=await chooseAccessory(item.category,item.id);
+    assert.equal(selected.name,item.id,'Accessory picker missing '+item.id);
+    assert.ok(selected.checked,'Accessory checkbox not selected '+item.id);
+    assert.deepEqual(selected.active.filter(x=>x.slot===item.slot).map(x=>x.name),[item.id],
+      'Accessory slot overlap: '+item.id);
+    const shot=await sample('WALK','threeQuarter',.25,'v53-'+item.id);
+    assert.ok(shot.selectedParts.includes(item.id),'Accessory not in rendered pose: '+item.id);
+    report.accessoryPack.styles.push({id:item.id,slot:item.slot,skins:item.skins.length,
+      vertices:item.vertices,fingerprint:item.fingerprint});
+  }
+  for(const [fit,accessoryIds] of [
+    ['male',['chibi_shoe_hightop','chibi_hat_baseball','chibi_face_round','chibi_bag_school','chibi_gear_watch','chibi_gear_scarf']],
+    ['female',['chibi_shoe_boots','chibi_hat_beret','chibi_face_sunglasses','chibi_bag_mini','chibi_gear_watch','chibi_gear_scarf']]
+  ]){
+    await setFit(fit);
+    for(const id of accessoryIds){
+      const item=accessories.find(x=>x.id===id);
+      await chooseAccessory(item.category,id);
+    }
+    for(const clip of ['WALK','RUN'])await sample(clip,'side',.25,'v53-equipped-'+fit);
+    const glb=await evalPage('window.__kc3dAudit.roundtripExport()');
+    assert.equal(glb.clips.length,11,'v5.3 GLB lost animation clips: '+fit);
+    for(const id of accessoryIds){
+      assert.ok(glb.partNames.includes(id),'GLB selection missing '+id);
+      assert.ok(glb.skins.some(x=>x.name===id+'_shell'&&x.bones===78),
+        'GLB missing rigged accessory shell: '+id);
+    }
+    report.accessoryPack.roundtrip.push({fit,bytes:glb.bytes,accessoryIds,skins:glb.skins.length,clips:glb.clips.length});
+  }
+  await evalPage("document.querySelector('[data-wardrobe-category=\"accessory\"]').click()");
+  await sleep(1000);
+  const previews=await evalPage('window.__kc3dAudit.accessoryThumbStatus()');
+  assert.ok(previews.tiles.length>=16,'Accessory thumb picker not rendered');
+  assert.ok(previews.tiles.filter(x=>x.hasCache).length>=16,'Accessory thumbnails did not render');
+  const thumbExpr="(()=>{const canvases=[...document.querySelectorAll('[data-part-thumb]')];return canvases.slice(0,8).map(c=>({name:c.dataset.partThumb,rgba:[...c.getContext('2d').getImageData(50,50,1,1).data]}))})()";
+  const thumbValues=await evalPage(thumbExpr);
+  assert.ok(new Set(thumbValues.map(x=>x.rgba.join(','))).size>=3,
+    '3D preview tile pixels do not vary between different assets');
+  report.accessoryPack.thumbnailReady={count:previews.tiles.length,
+    cached:previews.tiles.filter(x=>x.hasCache).length,samplePixels:thumbValues};
+
   // Collect joint trajectories as evidence, but do not claim automatic
   // foot-ground/contact correctness based on bone-pivot height alone.
   for(const clip of ['WALK','RUN']){
