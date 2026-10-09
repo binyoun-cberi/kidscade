@@ -1170,6 +1170,6 @@ test('Deep Diver v38 reports independent cleanup rewards and migration-safe save
   assert.match(js,/meta\.cleanup=\{total:Math\.max\(0,Number\(r\.cleanup\?\.total\)/);
   assert.match(js,/meta\.cleanup\.total=\(meta\.cleanup\.total\|\|0\)\+world\.cleanupBag\.length/);
   assert.match(js,/cleanupHtml/);
-  assert.match(js,/world\.cleanupBag\.length\+'\/'\+CLEANUP_BAG_CAP/);
+  assert.ok(js.includes("world.cleanupBag.length+' / '+CLEANUP_BAG_CAP"));
   assert.match(js,/사진 연구 보상 \+5%/);
 });
