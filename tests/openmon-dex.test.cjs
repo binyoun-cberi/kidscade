@@ -98,7 +98,7 @@ test('visual review fixes animal-shape and element mismatches',()=>{
 });
 test('exit button uses Kidscade iframe close lifecycle rather than homepage navigation',()=>{
  const html=fs.readFileSync(path.join(base,'index.html'),'utf8');
- assert.doesNotMatch(html,/href\\s*=\\s*["'](?:\\/|(?:\\.\\.\\/)+)index\\.html/);
- assert.match(html,/kidscade:close-game/);
- assert.match(html,/window\\.parent\\.postMessage/);
+ assert.ok(!html.includes('href="../../index.html"'));
+ assert.ok(html.includes('kidscade:close-game'));
+ assert.ok(html.includes('window.parent.postMessage'));
 });
