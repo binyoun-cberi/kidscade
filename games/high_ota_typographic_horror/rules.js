@@ -45,6 +45,14 @@
     dt = Math.min(.1, Math.max(0, dt));
     if (s.stage === 'hiding') {
       s.hidingSeconds += dt;
+      // The pursuer walks past the locker instead of freezing or teleporting.
+      const target = { x: p.x, z: p.z - 5.2 };
+      const dx = target.x - s.monster.x, dz = target.z - s.monster.z;
+      const d = Math.hypot(dx, dz);
+      if (d > .01) {
+        const step = Math.min(d, 4.0 * dt);
+        s.monster.x += dx / d * step; s.monster.z += dz / d * step;
+      }
       if (s.hidingSeconds >= 4.5) {
         s.stage = 'door'; s.monster.active = false;
       }
