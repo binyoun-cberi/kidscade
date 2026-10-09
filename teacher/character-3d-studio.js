@@ -161,6 +161,13 @@ function setReady(ready){
   $('chibiHair').disabled=!ready;
   $('chibiUnlit').disabled=!ready;
   document.querySelectorAll('[data-chibi-preset],[data-view],[data-quick-clip],[data-quick-view],[data-quick-speed]').forEach(el=>el.disabled=!ready);
+  // Disabled buttons must stay disabled across load/reset when they belong
+  // to the OTHER workspace. setReady(true) may not revive hidden presets.
+  document.querySelectorAll('[data-chibi-preset]').forEach(button=>{
+    const allowed=PRESET_FIT[button.dataset.chibiPreset]===activeBodyFit;
+    button.hidden=!allowed;
+    button.disabled=!ready||!allowed;
+  });
 }
 
 function showAssetError(message){
@@ -437,7 +444,9 @@ function sanitizeFitVisibility(){
 }
 function fitIntegrityIssues(){
   const expected=new Set(BODY_FIT_BASE_NODES[activeBodyFit]);
+  const requiredBody=activeBodyFit==='male'?'kidscade_male_body':'character_low';
   return [
+    ...(!getNode(requiredBody)?.visible?['missing-body:'+requiredBody]:[]),
     ...BASE_VARIANT_NODES.filter(name=>getNode(name)?.visible&&!expected.has(name)),
     ...TOGGLE_NODES.filter(name=>getNode(name)?.visible&&!compatiblePart(name))
   ];
@@ -555,7 +564,7 @@ function applyAccessoryFit(preferred=''){
   const incompatible=sanitizeFitVisibility();
   const garmentConflicts=sanitizeGarmentLayers(preferred);
   const conflicts=resolveAccessoryConflicts(preferred);
-  const currentTop=TOGGLE_NODES.find(name=>PART_GROUP(name)==='top'&&getNode(name)?.visible)||'';
+  const currentTop=TOGGLE_NODES.find(name=>GARMENT_SLOT(name)==='top'&&getNode(name)?.visible)||'';
   const headwear=ACCESSORY_STYLES.find(style=>style.slot==='hat'&&getNode(style.id)?.visible)?.id||'';
   const fitted=applyRiggedAccessoryFit({
     getNode,fit:activeBodyFit,topName:currentTop,headwearName:headwear,
