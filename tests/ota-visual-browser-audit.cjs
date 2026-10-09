@@ -21,7 +21,7 @@ const server=http.createServer((req,res)=>{
   });
 });
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const report={version:'ota-prologue-browser-v1',desktop:[],mobile:[],errors:[]};
+const report={version:'ota-prologue-browser-v2',desktop:[],mobile:[],errors:[]};
 let chrome,ws,userDir,pending=new Map(),id=0;
 function send(method,params={}) {
   return new Promise((resolve,reject)=>{const next=++id;pending.set(next,{resolve,reject});ws.send(JSON.stringify({id:next,method,params}));});
@@ -62,7 +62,7 @@ async function ensureStage(stage,context){
   assert.equal(got.stage,stage,context+': '+JSON.stringify(got));
   return got;
 }
-async function moveUntil(axis,target,stage,seconds=9) {
+async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   const isX=axis==='x';let count=0;
   while(count++<Math.ceil(seconds*8)){
     const s=await snap();
@@ -71,7 +71,7 @@ async function moveUntil(axis,target,stage,seconds=9) {
     const current=s.player[axis],remaining=target-current;
     if(Math.abs(remaining)<.40) return s;
     const code=isX?(remaining>0?'KeyD':'KeyA'):(remaining>0?'KeyS':'KeyW');
-    await move(code,Math.max(75,Math.min(210,Math.round(Math.abs(remaining)/4.85*850))),true);
+    await move(code,Math.max(75,Math.min(210,Math.round(Math.abs(remaining)/4.85*850))),sprint);
   }
   const last=await snap();
   if(Math.abs(last.player[axis]-target)<.43)return last;
@@ -137,30 +137,44 @@ async function moveUntil(axis,target,stage,seconds=9) {
   await screenshot('05-hidden-in-locker.png','desktop');
   let hidingDone=false;
   for(let wait=0;wait<20;wait++){
-    if((await snap()).stage==='door'){hidingDone=true;break;}
+    if((await snap()).stage==='distortion'){hidingDone=true;break;}
     await sleep(400);
   }
   assert.ok(hidingDone,'Player stayed hidden too long: '+JSON.stringify(await snap()));
-  await ensureStage('door','enemy loses player in locker');
+  await ensureStage('distortion','enemy loses player in locker');
   await interact();
   const left=await snap();assert.equal(left.hidden,false,'Exited locker after danger passes');
-  await moveUntil('x',0,'door');
-  await moveUntil('z',-28.55,'door');
-  const blocked=await evalPage('window.OtaRules.canMove({doorFixed:false},0,-30.15)');
+  await moveUntil('x',0,'distortion');
+  await moveUntil('z',-23.65,'distortion');
+  const gateBlocked=await evalPage('window.OtaRules.canMove({corridorFixed:false},0,-25.85)');
+  assert.equal(gateBlocked,false,'Distorted hallway cannot be crossed before correction');
+  await screenshot('06-distorted-corridor.png','desktop');
+  await interact();
+  assert.equal(await evalPage("document.getElementById('fixPanel').classList.contains('closed')"),false);
+  assert.equal(await evalPage("document.getElementById('fixPanel').dataset.puzzle"),'corridor');
+  await screenshot('07-corridor-name-puzzle.png','desktop');
+  await evalPage("document.querySelector('[data-word=\"벽\"]').click()");
+  assert.equal((await snap()).mistakes,1,'Incorrect corridor word leaves the player blocked');
+  await evalPage("document.querySelector('[data-word=\"통로\"]').click()");
+  await ensureStage('door','correct corridor word unlocks shifting wall');
+  await screenshot('08-echo-appears.png','desktop');
+  await moveUntil('z',-28.55,'door',12,false);
+  assert.ok((await snap()).echo.alert<100,'Walking past Echo remains safe');
+  const blocked=await evalPage('window.OtaRules.canMove({corridorFixed:true,doorFixed:false},0,-30.15)');
   assert.equal(blocked,false,'Unrepaired wall is solid');
-  await screenshot('06-wall-before-repair.png','desktop');
+  await screenshot('09-wall-before-repair.png','desktop');
   await interact();
   assert.equal(await evalPage("document.getElementById('fixPanel').classList.contains('closed')"),false,
     'Repair UI opens within range');
-  await screenshot('07-repair-dialog.png','desktop');
+  await screenshot('10-repair-dialog.png','desktop');
   await evalPage("document.querySelector('[data-word=\\\"벽\\\"]').click()");
-  assert.equal((await snap()).mistakes,1,'Wrong label increments error');
+  assert.equal((await snap()).mistakes,2,'Wrong door and corridor labels increment errors');
   await evalPage("document.querySelector('[data-word=\\\"문\\\"]').click()");
   await ensureStage('exit','door repaired');
-  await screenshot('08-open-door.png','desktop');
-  await moveUntil('z',-36.0,'exit');
+  await screenshot('11-open-door.png','desktop');
+  await moveUntil('z',-36.0,'exit',15,false);
   await ensureStage('won','final escape');
-  await screenshot('09-victory.png','desktop');
+  await screenshot('12-victory.png','desktop');
 
   await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:5});
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:2,mobile:true});
@@ -170,10 +184,10 @@ async function moveUntil(axis,target,stage,seconds=9) {
   report.mobileUI=mobileUI;
   assert.equal(mobileUI.stickDisplay,'block','Mobile joystick is visible');
   assert.ok(mobileUI.stick.right<mobileUI.buttons.left,'Touch controls do not collide');
-  await screenshot('10-intro-mobile.png','mobile');
+  await screenshot('13-intro-mobile.png','mobile');
   await evalPage("document.getElementById('start').click()");
   await sleep(250);
-  await screenshot('11-gameplay-mobile.png','mobile');
+  await screenshot('14-gameplay-mobile.png','mobile');
   await evalPage("document.getElementById('action').click()");
   const before=await snap();
   assert.equal(before.stage,'console','Far action cannot accidentally skip objective');
@@ -187,7 +201,7 @@ async function moveUntil(axis,target,stage,seconds=9) {
   const after=await snap();
   report.mobileMove={before:before.player,after:after.player,deltaZ:after.player.z-before.player.z};
   assert.ok(after.player.z<before.player.z-.3,'Mobile joystick must move forward');
-  await screenshot('12-mobile-after-joystick.png','mobile');
+  await screenshot('15-mobile-after-joystick.png','mobile');
   assert.deepEqual(report.errors,[],'Browser errors must be empty');
   console.log('OTA BROWSER AUDIT '+JSON.stringify(report,null,2));
   fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');
