@@ -252,18 +252,18 @@ function buildSkinConformingSleeve(body,sign,puff){
   const armBones=new Set(body.skeleton.bones.map((bone,i)=>({
     name:bone.name.replace(/[._]/g,'').toUpperCase(),i
   })).filter(item=>item.name.endsWith(side)&&
-    /UPPERARM|FOREARM|LOWERARM|HAND/.test(item.name)).map(item=>item.i));
+    /UPPERARM|FOREARM|LOWERARM/.test(item.name)).map(item=>item.i));
   if(!positions||!skinIndex||!skinWeight||!index||armBones.size<2)
     throw Error('Cannot extract the '+side+' source skinned arm');
   const allow=i=>{
     const x=positions.getX(i),y=positions.getY(i);
-    if(x*sign<.115||y<.53||y>1.18)return false;
+    if(x*sign<.115||y<.60||y>1.18)return false;
     let armWeight=0;
     for(let k=0;k<4;k++){
       if(armBones.has(skinIndex.getComponent(i,k)))
         armWeight+=skinWeight.getComponent(i,k);
     }
-    return armWeight>.12;
+    return armWeight>.42;
   };
   const verts=[],uvs=[],bones=[],weights=[];
   let triangles=0;
@@ -271,7 +271,7 @@ function buildSkinConformingSleeve(body,sign,puff){
     const x=positions.getX(i),y=positions.getY(i),z=positions.getZ(i);
     // Offset along the body's own outward normal, not the guessed world X/Z
     // directions. The original 0.011 allowance z-fought with the visible skin.
-    const coverage=smooth(.575,.68,y)*(1-smooth(1.105,1.18,y));
+    const coverage=smooth(.60,.76,y)*(1-smooth(1.105,1.18,y));
     const allowance=(puff?.042:.030)*coverage;
     verts.push(x+normals.getX(i)*allowance,
       y+normals.getY(i)*allowance,
@@ -401,18 +401,18 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
   }
   if(style.details.includes('pocket')){
     const pocket=new THREE.BoxGeometry(.20,.105,.015,4,2,1);
-    pocket.translate(0,.835,.177);
+    pocket.translate(0,.835,.151);
     add(pocket,makeSolidMaterial(style.color,style.label+' 포켓'),'pocket');
   }
   if(style.details.includes('zip')){
     const zip=new THREE.BoxGeometry(.009,.27,.009);
-    zip.translate(0,.96,.19);
+    zip.translate(0,.96,.154);
     add(zip,accent,'zip');
   }
   if(style.details.includes('buttons')){
     for(let j=0;j<3;j++){
       const button=new THREE.SphereGeometry(.008,8,6);
-      button.translate(0,1.04-j*.080,.181);
+      button.translate(0,1.04-j*.080,.151);
       add(button,accent,'button_'+j);
     }
   }
