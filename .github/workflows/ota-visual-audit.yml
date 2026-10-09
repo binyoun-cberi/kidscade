@@ -1,0 +1,38 @@
+name: Ota 3D browser simulation
+
+on:
+  pull_request:
+    paths:
+      - 'games/high_ota_typographic_horror/**'
+      - 'tests/ota-visual-browser-audit.cjs'
+      - '.github/workflows/ota-visual-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-playthrough:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install image test dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify game state machine
+        run: node --test tests/ota-typographic-horror.test.cjs
+      - name: Simulate full 3D desktop chase and touch input in Chrome
+        run: node tests/ota-visual-browser-audit.cjs
+        env:
+          KIDSCADE_OTA_AUDIT_OUT: ${{ runner.temp }}/ota-visual-audit
+      - name: Upload screenshots and playthrough report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ota-visual-audit
+          path: ${{ runner.temp }}/ota-visual-audit/
+          retention-days: 14
+          if-no-files-found: ignore
