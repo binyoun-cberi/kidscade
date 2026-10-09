@@ -622,7 +622,7 @@ test('v5.2 outfits reshape actual skinned geometry and add three-dimensional sle
   assert.match(pack,/transferSmoothSkinWeights\(geometry,reference,\{sign,region:'leg'\}\)/);
   assert.match(pack,/skinTransfer:geometry\.userData\.skinTransfer/);
   assert.match(pack,/articulation:'four-neighbor-smooth-body-weights'/);
-  assert.match(pack,/sourceWeights:'four-neighbor-smooth-body-arm'/);
+  assert.match(pack,/sourceWeights:'articulated-upper-and-forearm'/);
   assert.match(pack,/const bone=refIndex\.getComponent\(j,k\)/);
   assert.match(pack,/const w=refWeight\.getComponent\(j,k\)\*strength/);
   assert.match(pack,/style\.id\+'_leg_'\+side/);
@@ -930,11 +930,22 @@ test('v5.9 repairs exposed long-sleeve wrists and trouser crotch wedge without j
   const audit=read('tests/chibi-visual-browser-audit.cjs');
   assert.match(pack,/const cuff=new THREE\.Vector3\(sign\*\.365,\.645,-\.042\)/);
   assert.match(pack,/function addTrouserHipYoke\(/);
-  assert.match(pack,/new THREE\.CylinderGeometry\(\.219,\.207,top-bottom,24,5,true\)/);
+  assert.match(pack,/new THREE\.CylinderGeometry\(\.227,\.201,top-bottom,24,7,true\)/);
   assert.match(pack,/addTrouserHipYoke\(\{source,style,group,material,reference,cloneSkinnedMeshWithGeometry\}\)/);
-  assert.match(pack,/transferSmoothSkinWeights\(geometry,reference,\{sign:0,region:'pelvis'\}\)/);
+  assert.match(pack,/bindYokeToPelvis\(geometry,source\.skeleton\)/);
   assert.match(pack,/style\.id\+'_hip_yoke'/);
   assert.match(audit,/skinAudit\.length,33/);
   assert.match(audit,/crotch-wrist-repro-/);
   assert.match(audit,/bottom\+'_hip_yoke'/);
+});
+
+test('v5.9 bone-driven sleeves and pelvis bridge prevent detached surface flares',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  assert.match(pack,/function bindSleeveToArmBones\(geometry,skeleton,sign\)/);
+  assert.match(pack,/getBone\(\/upper\.\?arm\/i\)/);
+  assert.match(pack,/getBone\(\/forearm\|lower\.\?arm\/i\)/);
+  assert.match(pack,/const lower=smooth\(\.30,\.75,uv\.getY\(i\)\)/);
+  assert.match(pack,/method:'upper-forearm-blended-v5\.9'/);
+  assert.match(pack,/function bindYokeToPelvis\(geometry,skeleton\)/);
+  assert.match(pack,/method:'pelvis-anchored-yoke-v5\.9'/);
 });
