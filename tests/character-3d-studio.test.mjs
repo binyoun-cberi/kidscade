@@ -928,7 +928,7 @@ test('v5.8 visual cleanup uses continuous skinned sleeves and visibly separate w
 test('v5.9 repairs exposed long-sleeve wrists and trouser crotch wedge without joining the legs',()=>{
   const pack=read('teacher/chibi-outfit-pack.js');
   const audit=read('tests/chibi-visual-browser-audit.cjs');
-  assert.match(pack,/const coverage=smooth\(\.615,\.69,y\)/);
+  assert.match(pack,/const coverage=smooth\(\.575,\.68,y\)/);
   assert.match(pack,/function addTrouserHipYoke\(/);
   assert.match(pack,/new THREE\.CylinderGeometry\(\.227,\.201,top-bottom,24,7,true\)/);
   assert.match(pack,/addTrouserHipYoke\(\{source,style,group,material,reference,cloneSkinnedMeshWithGeometry\}\)/);
@@ -948,4 +948,13 @@ test('v5.9 source-surface sleeves preserve original arm skin weights and pelvis 
   assert.match(pack,/const sleeve=buildSkinConformingSleeve\(fitBody,sign,puff\)/);
   assert.match(pack,/function bindYokeToPelvis\(geometry,skeleton\)/);
   assert.match(pack,/method:'pelvis-anchored-yoke-v5\.9'/);
+});
+
+test('v5.9 body-normal sleeve offset and localized crotch yoke coverage',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  assert.match(pack,/const normals=original\.getAttribute\('normal'\)/);
+  assert.match(pack,/const allowance=\(puff\?\.042:\.030\)\*coverage/);
+  assert.match(pack,/z\+normals\.getZ\(i\)\*allowance/);
+  assert.match(pack,/const frontCenter=z>0\?/);
+  assert.match(pack,/\.035\*frontCenter/);
 });
