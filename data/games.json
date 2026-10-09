@@ -3492,6 +3492,29 @@
       ],
       "qualityStatus": "standard",
       "classroom": true
+    },
+    {
+      "id": "gigacity_lite",
+      "addedAt": "2026-10-09T13:20:00+09:00",
+      "title": "기가시티",
+      "href": "games/gigacity_lite/index.html?v=2",
+      "category": "trivia",
+      "age": "all",
+      "icon": "🏙️",
+      "description": "하늘을 날며 끝없이 이어지는 미래도시를 구경해요. 도시 이름을 바꿔 새로운 풍경을 만나고, 낮과 밤도 자유롭게 바꿀 수 있어요.",
+      "subject": "thinking",
+      "genre": "sandbox",
+      "difficulty": "easy",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     }
   ],
   "taxonomy": {

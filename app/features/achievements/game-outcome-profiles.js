@@ -155,7 +155,7 @@
       'high_ecopolis','high_micro_evolution','science_cosmic_growth'
     ]),
     sandbox:Object.freeze([
-      'high_little_world','high_factory_tycoon','cube3d'
+      'high_little_world','high_factory_tycoon','gigacity_lite','cube3d'
     ]),
     creation:Object.freeze([
       'high_story_builder','low_sand_art_studio','high_melody_workshop','toddler_photo_coloring',
