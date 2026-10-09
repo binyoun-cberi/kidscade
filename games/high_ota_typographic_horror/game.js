@@ -5,7 +5,8 @@ if (!R) throw new Error('OtaRules is missing');
 const el = id => document.getElementById(id);
 const canvas = el('scene');
 const hud = { objective:el('objective'), stage:el('stage'), prompt:el('prompt'),
-  message:el('message'), danger:el('danger'), noise:el('static'), action:el('action') };
+  message:el('message'), danger:el('danger'), noise:el('static'), action:el('action'),
+  echo:el('echoWarning'), echoFill:el('echoFill'), echoText:el('echoText') };
 const overlays = { intro:el('intro'), fix:el('fixPanel'), ending:el('ending') };
 const state = R.initialState();
 const player = { x:0, z:4.8, yaw:0, pitch:0, moving:false };
@@ -13,7 +14,8 @@ const keys = new Set();
 let started = false, muted = false, failed = false, elapsed = 0, lastFrame = 0;
 let messageEnd = 0, stepsUntil = 0, monsterReveal = false, lookPointer = null;
 let joystickPointer = null, joystick = { x:0, y:0 }, mobileRun = false;
-let doorMesh, doorWord, personWord, monsterWord, enemyGroup;
+let corridorMesh, corridorWord, doorMesh, doorWord, personWord, monsterWord, enemyGroup;
+let echoMark, echoWasActive=false; const shiftingWords=[];
 let currentInteraction = null;
 const touchDevice = matchMedia('(pointer:coarse)').matches;
 let audioCtx = null;
@@ -93,6 +95,23 @@ function scenery() {
   box(6.9,.12,45,0,3.27,-15.15,wallMat);
   box(6.9,3.26,.2,0,1.61,7.05,wallMat);
   box(6.9,3.26,.2,0,1.61,-37.55,wallMat);
+  // This corridor only opens when its meaning is restored.
+  box(2.18,3.26,.22,-2.36,1.61,-25.85,wallMat);
+  box(2.18,3.26,.22,2.36,1.61,-25.85,wallMat);
+  box(2.50,.54,.20,0,2.99,-25.85,wallMat);
+  corridorMesh = box(2.50,2.69,.17,0,1.37,-25.85,warnMat);
+  corridorWord = label('막힘','#e86d7f',0,1.68,-25.72,0,0,2.1,.82);
+  label('기록 02','#deb987',-3.22,2.65,-23.6,0,Math.PI/2,1.45,.52);
+  label('이어진 곳','#bec6d1',-3.22,1.95,-23.9,0,Math.PI/2,1.6,.58);
+  label('달리지 마세요','#c98290',3.22,1.98,-26.8,0,-Math.PI/2,1.78,.56);
+  for(let i=0;i<9;i++){
+    const x=-1.95+(i%3)*1.95,y=.62+Math.floor(i/3)*.9;
+    const mesh=label(i%3===0?'끊김':i%3===1?'이름':'????',
+      i%3===0?'#a94d65':'#8c8093',x,y,-25.57,0,0,1.25,.42);
+    shiftingWords.push({mesh,x,y});
+  }
+  echoMark=label('뒤','#ef5365',0,1.72,-28.3,0,0,2.5,1.6);
+  echoMark.visible=false;
   // The final barrier remains solid in the world rules until its name is repaired.
   box(2.25,3.26,.24,-2.32,1.61,-30.15,wallMat);
   box(2.25,3.26,.24,2.32,1.61,-30.15,wallMat);
@@ -194,14 +213,22 @@ function updateStage(stage,old) {
     document.body.classList.add('hidden-in-locker');
     tone(120,.22,'triangle',.05);announce('쉿. 가만히 기다리세요.',false,2.3);
     hud.stage.textContent='사물함 내부 · 숨소리를 죽이세요';
+  } else if(stage==='distortion') {
+    announce('발소리가 멀어졌습니다. 그런데 길이 사라졌습니다.',false,3.8);
+    hud.stage.textContent='기록 02 · 복도의 명칭 오류';
   } else if(stage==='door') {
-    announce('발소리가 멀어졌습니다.',false,2.9);
-    hud.stage.textContent='복구해야 할 이름: 벽';
+    scene.remove(corridorMesh); corridorMesh.geometry.dispose();
+    scene.remove(corridorWord);
+    corridorWord=label('통로','#b9d7cd',0,2.54,-25.715,0,0,1.68,.56);
+    shiftingWords.forEach(entry=>{entry.mesh.visible=false;});
+    shock(); announce('뒤. 뒤. 뒤. 빨간 글자가 보이면 뛰지 마세요.',true,4.5);
+    hud.stage.textContent='기록 03 · 뒤에 있는 것은 뛰는 소리를 듣습니다';
+    try{window.KidscadeGame?.milestone?.('ota_corridor_fixed',{uniqueKey:'ota-corridor'});}catch(_){};
   } else if(stage==='exit') {
     scene.remove(doorMesh);doorMesh.geometry.dispose();
     scene.remove(doorWord);
     doorWord=label('문','#d6cfbc',0,2.55,-30.028,0,0,1.6,.55);
-    announce('현실이 다시 열렸습니다.',false,3.0);tone(523,.25,'sine',.07);
+    announce('현실이 다시 열렸습니다. 마지막까지 조용히 이동하세요.',false,4.0);tone(523,.25,'sine',.07);
     hud.stage.textContent='기록보관소 · 탈출 통로 열림';
     try{window.KidscadeGame?.milestone?.('ota_door_fixed',{uniqueKey:'ota-prologue'});}catch(_){}
   } else if(stage==='lost') {
@@ -232,11 +259,26 @@ function interact() {
       document.body.classList.remove('hidden-in-locker');
       announce('이제 문을 찾으세요.',false,2.2);
     }
-  } else if(action.type==='repair') {
+  } else if(action.type==='repair' || action.type==='corridor') {
+    openPuzzle(action.type);
     overlays.fix.classList.remove('closed');
     if(document.pointerLockElement===canvas)document.exitPointerLock?.();
   }
   syncStage(before);
+}
+function openPuzzle(type) {
+  const corridor=type==='corridor';
+  el('fixTitle').textContent=corridor?'이 복도는 이름을 잃었습니다.':'출구의 이름이 틀렸습니다.';
+  el('redWord').textContent=corridor?'막힘':'벽';
+  el('fixQuestion').textContent=corridor
+    ? '이곳은 두 구역을 이어 주는 곳입니다. 올바른 이름을 선택하세요.'
+    : '열고 닫아서 지나갈 수 있는 것은 무엇인가요?';
+  const words=corridor?['벽','통로','창문']:['벽','문','창문'];
+  el('choices').querySelectorAll('button').forEach((button,i)=>{
+    button.dataset.word=words[i];button.textContent=words[i];
+  });
+  el('fixFeedback').textContent=corridor?'기록 02: 길은 막힌 것이 아니라 잊힌 것입니다.':'주변의 기록을 기억하세요.';
+  overlays.fix.dataset.puzzle=type;
 }
 function finish(won) {
   if(failed) return;
@@ -247,7 +289,8 @@ function finish(won) {
   el('endingTitle').textContent=won?'당신의 이름이 남았습니다':'당신의 이름이 지워졌습니다';
   el('endingText').textContent=won
     ? '첫 번째 기록을 복구하고 탈출했습니다. 경과 시간 '+Math.round(state.time)+'초 · 잘못된 수정 '+state.mistakes+'회'
-    : '복도의 존재에게 붙잡혔습니다. 사물함에 몸을 숨긴 뒤 발소리가 사라질 때까지 기다리세요.';
+    : state.echo.alert>=100 ? '빨간 「뒤」가 나타났을 때 달려서 들켰습니다. 서 있거나 걸으면 안전합니다.'
+      : '복도의 존재에게 붙잡혔습니다. 사물함에 몸을 숨긴 뒤 발소리가 사라질 때까지 기다리세요.';
   try {window.KidscadeGame?.result?.({scope:'stage',status:won?'completed':'failed',
     outcome:won?'clear':'fail',id:'ota-prologue',score:won?Math.max(100,1000-Math.floor(state.time)*3-state.mistakes*80):0,
     seconds:Math.round(state.time),mistakes:state.mistakes});}catch(_){}
@@ -271,13 +314,14 @@ function tryMove(dx,dz) {
 function update(dt) {
   elapsed+=dt;
   const before=state.stage;
+  let running=false;
   if(!state.hidden && state.stage!=='won' && state.stage!=='lost') {
     const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)
       -(keys.has('KeyS')||keys.has('ArrowDown')?1:0)-joystick.y;
     const side=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)
       -(keys.has('KeyA')||keys.has('ArrowLeft')?1:0)+joystick.x;
     const len=Math.hypot(f,side),isRun=keys.has('ShiftLeft')||keys.has('ShiftRight')||mobileRun;
-    player.moving=len>.06;
+    player.moving=len>.06; running=player.moving&&isRun;
     if(player.moving) {
       const speed=isRun?4.85:2.67;
       const ff=f/Math.max(1,len),ss=side/Math.max(1,len);
@@ -289,9 +333,32 @@ function update(dt) {
   }
   R.triggerMonster(state,player);
   R.stepEnemy(state,dt,player);
+  R.stepEcho(state,dt,{moving:player.moving,running});
   if(state.stage==='exit')R.tryFinish(state,player);
   syncStage(before);
   if(messageEnd<elapsed)hud.message.classList.remove('show');
+  shiftingWords.forEach((entry,i)=>{
+    if(entry.mesh.visible){
+      entry.mesh.position.x=entry.x+Math.sin(elapsed*(2.8+i*.13)+i)*.13;
+      entry.mesh.position.y=entry.y+Math.sin(elapsed*4.1+i*3)*.045;
+    }
+  });
+  const echoActive=state.echo.active && !failed;
+  if(echoActive!==echoWasActive){
+    echoWasActive=echoActive;
+    if(echoActive){tone(62,.45,'sawtooth',.045);tone(89,.25,'triangle',.03);}
+  }
+  hud.echo.classList.toggle('show',state.stage==='door'||state.stage==='exit');
+  hud.echo.classList.toggle('active',echoActive);
+  hud.echoText.textContent=echoActive?'뒤에 있다 — 달리지 마세요':'조용히 이동하세요';
+  hud.echoFill.style.width=Math.round(state.echo.alert)+'%';
+  echoMark.visible=echoActive;
+  if(echoActive){
+    echoMark.position.set(Math.max(-1.6,Math.min(1.6,player.x)),1.85,player.z+3.3);
+    echoMark.lookAt(camera.position);
+    echoMark.scale.x=2.5+Math.sin(elapsed*9)*.25;
+    if(Math.floor(elapsed*2.2)!==Math.floor((elapsed-dt)*2.2))tone(71,.075,'sawtooth',.025+state.echo.alert*.0003);
+  }
   if(state.monster.active) {
     enemyGroup.visible=true;
     enemyGroup.position.set(state.monster.x,0,state.monster.z);
@@ -304,8 +371,9 @@ function update(dt) {
     hud.noise.style.opacity=String(Math.min(.45,Math.max(0,1-d/8)*.33));
     if(d<5 && Math.floor(elapsed*2.1)!==Math.floor((elapsed-dt)*2.1))tone(57,.12,'sine',.065);
   } else {
-    enemyGroup.visible=false;hud.danger.style.opacity='0';
-    hud.noise.style.opacity=state.stage==='hiding'?'0.07':'0';
+    enemyGroup.visible=false;
+    hud.danger.style.opacity=echoActive?String(.18+state.echo.alert/155):'0';
+    hud.noise.style.opacity=echoActive?String(.18+state.echo.alert/270):state.stage==='hiding'?'0.07':'0';
   }
   setCamera();updatePrompt();
 }
@@ -384,17 +452,19 @@ run.addEventListener('pointercancel',()=>{mobileRun=false;});
 for(const choice of el('choices').querySelectorAll('button')) {
   choice.addEventListener('click',()=>{
     const before=state.stage;
-    if(R.repairDoor(state,choice.dataset.word,player)) {
+    const isCorridor=overlays.fix.dataset.puzzle==='corridor';
+    const correct=isCorridor?R.repairCorridor(state,choice.dataset.word,player):R.repairDoor(state,choice.dataset.word,player);
+    if(correct) {
       overlays.fix.classList.add('closed');syncStage(before);
       el('fixFeedback').textContent='주변의 기록을 기억하세요.';
     } else {
-      el('fixFeedback').textContent='틀렸습니다. 벽이 가로막고 있습니다.';
+      el('fixFeedback').textContent='틀렸습니다. 이름이 흔들리며 소리가 납니다.';
       tone(150,.21,'sawtooth',.042);
     }
   });
 }
 window.OtaDebug = Object.freeze({
-  snapshot:()=>({stage:state.stage,doorFixed:state.doorFixed,hidden:state.hidden,
-    monster:{...state.monster},player:{x:player.x,z:player.z},mistakes:state.mistakes})
+  snapshot:()=>({stage:state.stage,corridorFixed:state.corridorFixed,doorFixed:state.doorFixed,hidden:state.hidden,
+    echo:{...state.echo},monster:{...state.monster},player:{x:player.x,z:player.z},mistakes:state.mistakes})
 });
 resize();setCamera();requestAnimationFrame(animate);
