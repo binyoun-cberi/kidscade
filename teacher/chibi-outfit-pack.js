@@ -178,7 +178,9 @@ function transferSmoothSkinWeights(geometry,reference,{sign,region}){
   for(let j=0;j<refPos.count;j++){
     const x=refPos.getX(j),y=refPos.getY(j),z=refPos.getZ(j);
     if(region==='arm'){
-      if(Math.sign(x)!==sign||Math.abs(x)<.135||y<.67||y>1.20)continue;
+      if(Math.sign(x)!==sign||Math.abs(x)<.135||y<.55||y>1.24)continue;
+    }else if(region==='pelvis'){
+      if(y<.38||y>.95)continue;
     }else if(Math.sign(x)!==sign&&Math.abs(x)>.03)continue;
     candidates.push({j,x,y,z});
   }
@@ -296,10 +298,11 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
     // A single curved skinned surface from shoulder to cuff avoids the
     // interpenetrating sphere/cylinder joins that look like torn triangles.
     for(const sign of [-1,1]){
-      const start=new THREE.Vector3(sign*.20,1.08,-.026);
-      const elbow=new THREE.Vector3(sign*.30,.91,-.039);
-      const cuff=new THREE.Vector3(sign*.345,.775,-.044);
-      const curve=new THREE.CatmullRomCurve3(puff?[start,elbow]:[start,elbow,cuff]);
+      const start=new THREE.Vector3(sign*.190,1.095,-.026);
+      const elbow=new THREE.Vector3(sign*.305,.90,-.039);
+      // The prior cuff ended above the wrist: forearms visibly protruded.
+      const cuff=new THREE.Vector3(sign*.365,.645,-.042);
+      const curve=new THREE.CatmullRomCurve3(puff?[start,elbow]:[start,elbow,cuff],false,'centripetal');
       const sections=14,around=16,vertices=[],uvs=[],faces=[];
       const axis=new THREE.Vector3(0,0,1);
       const tangent=new THREE.Vector3(),across=new THREE.Vector3();
@@ -311,7 +314,7 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
         across.crossVectors(tangent,axis).normalize();
         const radius=puff
           ?(.105+.025*Math.sin(Math.PI*t))*(1-.23*smooth(.65,1,t))
-          :(.102-.037*smooth(0,1,t)+.012*Math.sin(Math.PI*t));
+          :(.105-.047*smooth(.10,1,t)+.010*Math.sin(Math.PI*t));
         for(let slice=0;slice<=around;slice++){
           const theta=Math.PI*2*slice/around;
           const c=Math.cos(theta)*radius,ss=Math.sin(theta)*radius;
@@ -397,6 +400,30 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
   }
 }
 
+
+// The original shorts shell and separate trouser legs left an open triangle
+// of skin at the pelvis. This short, weighted waist-to-crotch yoke covers it
+// without joining the trouser legs all the way down like a skirt.
+function addTrouserHipYoke({source,style,group,material,reference,cloneSkinnedMeshWithGeometry}){
+  const top=.79,bottom=.47;
+  const geometry=new THREE.CylinderGeometry(.219,.207,top-bottom,24,5,true);
+  geometry.scale(1,1,.82);
+  geometry.translate(0,(top+bottom)*.5,.003);
+  const p=geometry.getAttribute('position');
+  for(let i=0;i<p.count;i++){
+    const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
+    const lower=smooth(.47,.59,y);
+    p.setXYZ(i,x*(1-.03*(1-lower)),y,z*(z>0?1.06:1.03));
+  }
+  p.needsUpdate=true;
+  transferSmoothSkinWeights(geometry,reference,{sign:0,region:'pelvis'});
+  geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+  const yoke=cloneSkinnedMeshWithGeometry(source,geometry,material,style.id+'_hip_yoke');
+  yoke.userData={part:'trouser-hip-yoke',fit:style.fit,
+    coverage:'waist-to-crotch-only',skinTransfer:geometry.userData.skinTransfer};
+  group.add(yoke);
+}
+
 /** A real pair of articulated trouser legs, not an elongated skirt tube.
  * Each cylinder vertex blends source thigh and shin bones around the knee.
  * Both legs inherit the original Chibi 78-bone skeleton/bind matrix.
@@ -409,6 +436,7 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
   const skeleton=source.skeleton;
   const reference=getNode(style.fit==='male'?'kidscade_male_body':'character_low');
   if(!reference?.isSkinnedMesh)throw new Error('Missing fit body for trouser skin transfer');
+  addTrouserHipYoke({source,style,group,material,reference,cloneSkinnedMeshWithGeometry});
   for(const side of ['left','right']){
     const sign=side==='left'?-1:1;
     // These indices resolve actual GLTFLoader-sanitized Chibi bones.
