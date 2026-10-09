@@ -422,3 +422,9 @@ h2{margin:0 0 10px;font-size:clamp(24px,4vw,34px)}
 .dishReady.autoServe{animation:autoServePulse .58s ease-in-out infinite alternate}
 @keyframes autoServePulse{from{transform:scale(.995);box-shadow:0 0 0 rgba(101,219,154,0)}to{transform:scale(1.005);box-shadow:0 0 18px rgba(101,219,154,.12)}}
 @media(max-width:700px){#missionHud{max-width:min(500px,58vw)}.rookieTip{font-size:8px}.objectiveCompass{gap:5px;padding:5px 6px}.objectiveCompass>span{flex-basis:26px;height:26px;font-size:17px}.objectiveCompass b{font-size:9px}.objectiveCompass small{font-size:7px}}
+
+/* Marine cleanup uses the shared OpenMon inventory-item atlas. */
+#rightHud .cleanupHud{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-top:1px solid rgba(120,226,203,.28);color:#b5f7dc}
+#rightHud .cleanupHud b{font-variant-numeric:tabular-nums;color:#f2ffe8}
+.cleanupNotice{border:1px solid rgba(89,211,171,.37);background:linear-gradient(135deg,rgba(13,74,68,.6),rgba(10,39,57,.56));line-height:1.65}
+.kidscade-item-icon{image-rendering:pixelated}
