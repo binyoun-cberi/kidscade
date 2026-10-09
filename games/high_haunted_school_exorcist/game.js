@@ -460,7 +460,7 @@ function buildOldLockers(){
     holder.rotation.y=spot.front<0?Math.PI:0;
     scene.add(holder);
     const fallback=cube(holder,0,1.1,0,.9,2.2,.50,mat(0x59616a));
-    cube(holder,.24,1.12,(spot.front<0?1:-1)*.26,.035,.24,.025,mat(0xd1c7ad));
+    cube(holder,.24,1.12,.26,.035,.24,.025,mat(0xd1c7ad));
     // Only the physical cabinet is solid. The standing point in front is free.
     const obstacle={x:spot.x,z:spot.z,hx:.49,hz:.27};
     furniture.push(obstacle);
@@ -1058,7 +1058,8 @@ function updateGhost(dt){
 }
 function takeAnomalyHit(reason,resetToStage=null){
   if(invulnerable>0||!started||ended)return;
-  leaveLocker();hp--;invulnerable=3;
+  if(typeof hidingLocker!=='undefined'&&hidingLocker)leaveLocker();
+  hp--;invulnerable=3;
   player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;
   viewYaw=-Math.PI/2;viewPitch=0;player.yaw=viewYaw+Math.PI;
   lastMistake=reason;
