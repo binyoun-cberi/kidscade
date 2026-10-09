@@ -19,7 +19,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.08;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(68, 1, 0.5, 2050);
-camera.position.set(24, 270, 365);
+camera.position.set(0, 270, 365);
 camera.rotation.order = 'YXZ';
 
 const skyDay = new THREE.Color(0x87a9d0);
@@ -95,6 +95,8 @@ const laneMaterial = new THREE.MeshBasicMaterial({ color: 0x2f778c });
 const antennaMaterial = new THREE.MeshBasicMaterial({ color: 0x8ad8e2 });
 const dummy = new THREE.Object3D();
 const loaded = new Map();
+const distantMaterial = new THREE.MeshLambertMaterial({ color: 0x3c5772, fog: true });
+let distantMesh = null;
 
 function instance(geometry, material, count, parent) {
   if (!count) return null;
@@ -173,6 +175,26 @@ function createChunk(cx, cz) {
   [body, roof, antennas, parks, roads, lines].forEach(finish);
   scene.add(group);
   return { group, count: data.buildings.length };
+}
+// One distant LOD batch hides the edge of the nine nearby detailed chunks.
+function rebuildSkyline(cx, cz, radius) {
+  if (distantMesh) {
+    scene.remove(distantMesh);
+    distantMesh.dispose();
+    distantMesh = null;
+  }
+  const shapes = [];
+  const farRadius = quality === 'high' ? 6 : 5;
+  for (let x = cx - farRadius; x <= cx + farRadius; x++) {
+    for (let z = cz - farRadius; z <= cz + farRadius; z++) {
+      if (Math.max(Math.abs(x - cx), Math.abs(z - cz)) <= radius) continue;
+      const data = createChunkData(x, z, worldSeed);
+      for (let i = 0; i < data.buildings.length; i += 3) shapes.push(data.buildings[i]);
+    }
+  }
+  distantMesh = instance(cube, distantMaterial, shapes.length, scene);
+  shapes.forEach((b, i) => matrixAt(distantMesh, i, b.x, b.height / 2, b.z, b.width, b.height, b.depth));
+  finish(distantMesh);
 }
 function unloadChunk(key) {
   const old = loaded.get(key);
@@ -276,6 +298,7 @@ function loadNearby(force = false) {
     }
   }
   for (const key of loaded.keys()) if (!keep.has(key)) unloadChunk(key);
+  rebuildSkyline(cx, cz, radius);
   $('district').textContent = 'DISTRICT ' + cx + ' · ' + cz;
   let count = 0;
   for (const chunk of loaded.values()) count += chunk.count;
@@ -338,9 +361,9 @@ bindPress('boost', 'boost');
 const stickSurface = $('stickSurface');
 let stickPointer = null;
 function updateStick(event) {
-  const r = stickSurface.getBoundingClientRect();
-  const dx = event.clientX - (r.left + 76);
-  const dy = event.clientY - (r.top + 74);
+  const r = $('stickRing').getBoundingClientRect();
+  const dx = event.clientX - (r.left + r.width / 2);
+  const dy = event.clientY - (r.top + r.height / 2);
   const magnitude = Math.max(1, Math.hypot(dx, dy));
   const limit = Math.min(1, magnitude / 46);
   touchAxis.x = dx / magnitude * limit;
@@ -452,9 +475,9 @@ function updateMovement(dt) {
   const altitude = (held.has('KeyE') || held.has('rise') ? 1 : 0) - (held.has('KeyQ') || held.has('sink') ? 1 : 0);
   if (autoFlight) {
     const speed = 34;
-    camera.position.x -= Math.sin(yaw) * speed * dt;
-    camera.position.z -= Math.cos(yaw) * speed * dt;
-    yaw = Math.sin(seconds * 0.09) * 0.18;
+    camera.position.x += (Math.round(camera.position.x / LOT_SIZE) * LOT_SIZE - camera.position.x) * Math.min(1, dt * 0.9);
+    camera.position.z -= speed * dt;
+    yaw = Math.sin(seconds * 0.09) * 0.13;
     pitch = -0.28 + Math.sin(seconds * 0.13) * 0.045;
     camera.position.y = 270 + Math.sin(seconds * 0.24) * 12;
   } else {
