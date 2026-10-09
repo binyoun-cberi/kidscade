@@ -55,7 +55,7 @@ let viewYaw=0,viewPitch=0,turnPointer=null,prevX=0,prevY=0,last=performance.now(
 let invulnerable=0,ghostWaiting=0,maidenPhase='approach',tutorialCount=0,lessonTimer=0,lastMistake='';
 const guidance={key:'',points:[],mesh:null,clock:0,fromX:0,fromZ:0,goalX:0,goalZ:0};
 let gazeLocked=false,ghostNav=null;
-let hidingLocker=null,lockerTime=0,lockerDanger=0,lockerPreviousFlash=true;
+let hidingLocker=null,lockerTime=0,lockerDanger=0,lockerPreviousFlash=true,lockerLastSeen=null;
 const encounter={
  cold:0,heatNodes:[],frost:0,eggCharge:0,eggFear:0,
  bellCount:0,bellClock:0,bellWindow:0,doorClosed:false,doorRelease:0,doorVisual:null,
@@ -685,6 +685,56 @@ function presentEncounterModels(){
 presentEncounterModels();
 
 function dist(a,b){return Math.hypot(a.x-b.x,a.z-b.z);}
+
+function nearestLocker(){
+  let near=null,best=1.48;
+  for(const locker of lockers){
+    const distance=dist(locker.interact,player);
+    if(distance<best){best=distance;near=locker;}
+  }
+  return near;
+}
+function enterLocker(index){
+  if(hidingLocker||!started||paused||ended)return false;
+  const locker=lockers[index];
+  if(!locker||dist(player,locker.interact)>1.48)return false;
+  hidingLocker=locker;lockerTime=0;lockerDanger=0;
+  lockerLastSeen={x:player.x,z:player.z};
+  lockerPreviousFlash=flashOn;flashOn=false;
+  viewYaw=locker.yaw;viewPitch=0;
+  keys.clear();joy.x=joy.y=0;ui.knob.style.transform='translate(0,0)';
+  ui.lockerView.classList.remove('hidden');
+  ui.lockerWarning.textContent='쉿… 괴이가 가까이 오면 오래 숨을 수 없어요';
+  showToast('낡은 사물함 안에 숨었어요. E 또는 행동 버튼으로 나올 수 있어요.');
+  return true;
+}
+function leaveLocker(){
+  if(!hidingLocker)return false;
+  hidingLocker=null;lockerTime=0;lockerDanger=0;lockerLastSeen=null;
+  flashOn=lockerPreviousFlash&&power>0;
+  ui.lockerView.classList.add('hidden');
+  ui.lockerWarning.textContent='';
+  if(stage===10)encounter.wolf.grace=Math.max(encounter.wolf.grace,2.0);
+  return true;
+}
+function updateLockerHiding(dt){
+  if(!hidingLocker)return;
+  lockerTime+=dt;flashOn=false;
+  let proximity=Infinity;
+  if(stage===2&&maidenPhase==='hunt')
+    proximity=dist(maiden,hidingLocker.interact);
+  if(stage===10)
+    proximity=dist(encounter.wolf,hidingLocker.interact);
+  lockerDanger=Math.max(0,lockerDanger+dt*(proximity<1.45?1:-1.5));
+  ui.lockerWarning.textContent=lockerDanger>1.2?
+    '발소리가 바로 앞에서 멈췄어요… '+Math.ceil(Math.max(0,3.2-lockerDanger))+'초':
+    '사물함 안 · E 또는 행동 버튼으로 나오기';
+  if(lockerDanger>=3.2){
+    leaveLocker();
+    takeAnomalyHit('괴이가 사물함 문 앞에서 너무 오래 머물러 숨어 있던 것을 발견했어요.');
+  }
+}
+
 function showToast(message){ui.toast.textContent=message;ui.toast.classList.add('show');toastSeconds=3.5;}
 function sfx(file,volume=.27){
   try{const a=new Audio(AUDIO+file);a.volume=volume;a.play().catch(()=>{});}catch(_){}
@@ -736,6 +786,7 @@ function setStage(next){
   presentEncounterModels();updateNavigation(0,true);updateHud();
 }
 function nearAction(){
+  if(hidingLocker)return{type:'leaveLocker',text:'사물함에서 나오기 [E]'};
   if(stage===1){
     for(let i=0;i<disturbed.length;i++){const o=disturbed[i];if(!o.done&&dist(o,player)<1.95)return{type:'fix',i,text:o.name+' 바로잡기'};}
     if(fixes===3&&dist(player,SCHOOL.dokkaebi)<2.15)return{type:'trick',text:'도깨비 봉인하기'};
@@ -755,11 +806,15 @@ function nearAction(){
   if(stage===10&&dist(player,{x:-7.5,z:8.55})<2.25)return{type:'speaker',text:'유인 스피커 켜기'};
   if(stage===11&&encounter.wolf.ready&&dist(player,wolfTrap)<2.7)return{type:'wolfSeal',text:'늑대 함정 봉인하기'};
   if(stage===12&&dist(player,SCHOOL.guard)<2.3)return{type:'report',text:'퇴마 보고서 제출'};
+  const nearby=nearestLocker();
+  if(nearby)return{type:'hideLocker',i:nearby.id,text:'낡은 사물함에 숨기 [E]'};
   return null;
 }
 function act(){
   if(!started||paused||ended)return;
   const item=nearAction();if(!item){showToast('주변에 지금 조작할 수 있는 물건이 없어요.');return;}
+  if(item.type==='leaveLocker'){leaveLocker();updateHud();return;}
+  if(item.type==='hideLocker'){enterLocker(item.i);updateHud();return;}
   if(item.type==='fix'){
     const obj=disturbed[item.i];obj.done=true;obj.object.visible=false;obj.marker.visible=false;fixes++;sfx('sfx_child_giggle.mp3',.13);
     showToast('이상현상을 바로잡았어요 · '+fixes+'/3');
@@ -792,7 +847,7 @@ function act(){
   else if(item.type==='report')finish(true);
 }
 function finish(ok){
-  ended=true;started=false;bgm.pause();const score=ok?Math.max(350,2400-Math.round(elapsed)*1.3-(3-hp)*125):0;
+  leaveLocker();ended=true;started=false;bgm.pause();const score=ok?Math.max(350,2400-Math.round(elapsed)*1.3-(3-hp)*125):0;
   if(ok)ui.progress.style.width='100%';
   ui.endTitle.textContent=ok?'퇴마 성공 · 학교의 평화를 되찾았어요!':'퇴마 실패 · 학교에서 쫓겨났어요';
   ui.endText.textContent=ok?'학교의 여섯 괴이를 모두 봉인했습니다. 소요 시간 '+Math.floor(elapsed/60)+'분 '+Math.floor(elapsed%60)+'초.':'생명이 모두 소진됐어요. '+(lastMistake||'각 괴이는 대응 방법이 달라요.')+' 다시 시작하면 괴이별 규칙을 활용해 보세요.';
@@ -801,7 +856,7 @@ function finish(ok){
 }
 function reset(){
   fixes=0;hp=3;power=100;flashOn=true;elapsed=0;stage=1;ended=false;paused=false;started=true;
-  viewYaw=-Math.PI/2;viewPitch=0;player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;
+  leaveLocker();viewYaw=-Math.PI/2;viewPitch=0;player.x=SCHOOL.guard.x;player.z=SCHOOL.guard.z;
   player.yaw=viewYaw+Math.PI;player.root.rotation.y=player.yaw;
   maiden.attacks=0;maiden.charge=0;invulnerable=0;ghostWaiting=0;
   maidenPhase='approach';ghostNav=null;gazeLocked=false;
@@ -848,7 +903,7 @@ function updateHud(){
     12:'여섯 괴이를 봉인했어요! 서쪽 연결동 중앙 관리실에서 보고서를 제출하세요.'
   };
   ui.mission.textContent=titles[stage]||stageNames[stage];
-  ui.detail.textContent=details[stage]||'';
+  ui.detail.textContent=hidingLocker?'사물함 안에 숨어 있어요. 밖을 살피고 E로 나오세요.':(details[stage]||'');
   let partial=0;
   if(stage===1)partial=fixes/3;
   else if(stage===2)partial=maiden.charge/(maidenPhase==='practice'?1.8:4.2);
@@ -865,7 +920,7 @@ function updateHud(){
   const threat=[4,6,8,11].includes(stage);
   ui.lesson.classList.toggle('encounter',ghostLesson||threat);
   ui.gaze.classList.toggle('hidden',!ghostLesson&&!threat);
-  ui.reticle.classList.toggle('hidden',!started||ended);
+  ui.reticle.classList.toggle('hidden',!started||ended||!!hidingLocker);
   ui.reticle.classList.toggle('active',ghostLesson||stage===6);
   ui.reticle.classList.toggle('locked',ghostLesson&&gazeLocked);
   let gauge=0,label='';
@@ -887,6 +942,7 @@ function updateHud(){
   }
   ui.gazeLabel.textContent=label;
   ui.gazeValue.style.width=(Math.max(0,Math.min(1,gauge))*100)+'%';
+  ui.flash.disabled=!!hidingLocker;
   const action=nearAction();ui.action.disabled=!action;
   ui.actionText.textContent=action?action.text:'가까이에서 조사 [E]';
 }
@@ -1120,6 +1176,12 @@ function updateNewEncounters(dt){
 }
 
 function updatePlayer(dt){
+  if(typeof hidingLocker!=='undefined'&&hidingLocker){
+    if(player.animation){player.animation.walk?.setEffectiveWeight(0);player.animation.idle?.setEffectiveWeight(1);}
+    player.yaw=viewYaw+Math.PI;
+    player.root.rotation.y=player.yaw;
+    return;
+  }
   let f=(keys.has('w')||keys.has('arrowup')?1:0)-(keys.has('s')||keys.has('arrowdown')?1:0)-joy.y;
   let r=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0)+joy.x;
   const mag=Math.hypot(f,r);if(mag>1){f/=mag;r/=mag;}
@@ -1229,7 +1291,7 @@ function loop(now){
     elapsed+=dt;invulnerable=Math.max(0,invulnerable-dt);
     if(flashOn)power=Math.max(0,power-dt*.28);else power=Math.min(100,power+dt*2.8);
     if(power===0)flashOn=false;
-    updatePlayer(dt);updateGhost(dt);updateNewEncounters(dt);updateProps(dt);
+    updatePlayer(dt);updateGhost(dt);updateNewEncounters(dt);updateLockerHiding(dt);updateProps(dt);
     updateNavigation(dt);
     if(lessonTimer>0){lessonTimer-=dt;if(lessonTimer<=0)ui.lesson.classList.add('hidden');}
     for(const mixer of mixers)mixer.update(dt);
@@ -1248,7 +1310,7 @@ document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright',' ','shift'].includes(k))e.preventDefault();
   keys.add(k);if(e.repeat)return;
   if(k==='e'||k===' ')act();
-  if(k==='f'&&started){flashOn=!flashOn;updateHud();}
+  if(k==='f'&&started&&!hidingLocker){flashOn=!flashOn;updateHud();}
   if(k==='escape'&&started){paused=!paused;ui.help.classList.toggle('hidden',!paused);}
 });
 document.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
@@ -1258,6 +1320,11 @@ ui.canvas.addEventListener('pointermove',e=>{
   if(turnPointer!==e.pointerId||!started||paused)return;
   viewYaw+=Math.max(-55,Math.min(55,e.clientX-prevX))*.0064;
   viewPitch=Math.max(-.72,Math.min(.72,viewPitch-Math.max(-45,Math.min(45,e.clientY-prevY))*.0054));
+  if(hidingLocker){
+    const delta=Math.atan2(Math.sin(viewYaw-hidingLocker.yaw),Math.cos(viewYaw-hidingLocker.yaw));
+    viewYaw=hidingLocker.yaw+Math.max(-.32,Math.min(.32,delta));
+    viewPitch=Math.max(-.17,Math.min(.17,viewPitch));
+  }
   prevX=e.clientX;prevY=e.clientY;
 });
 for(const evt of ['pointerup','pointercancel'])ui.canvas.addEventListener(evt,e=>{if(turnPointer===e.pointerId)turnPointer=null;});
@@ -1274,6 +1341,6 @@ $('start').addEventListener('click',reset);
 $('retry').addEventListener('click',reset);
 $('helpButton').addEventListener('click',()=>{paused=true;ui.help.classList.remove('hidden');});
 $('closeHelp').addEventListener('click',()=>{paused=false;ui.help.classList.add('hidden');});
-ui.flash.addEventListener('click',()=>{if(started){flashOn=!flashOn;updateHud();}});
+ui.flash.addEventListener('click',()=>{if(started&&!hidingLocker){flashOn=!flashOn;updateHud();}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&started){paused=true;ui.help.classList.remove('hidden');bgm.pause();}else if(started&&!paused){bgm.play().catch(()=>{});}});
 updateHud();drawMap();
