@@ -904,7 +904,7 @@ function buildWorld(contract=FREE_DIVE){
  for(let i=0;i<52;i++)world.bubbles.push({x:rnd(0,WORLD.w),y:rnd(80,WORLD.h),s:rnd(1,3),speed:rnd(10,25)});
  state='playing';document.body.classList.add('playing');document.body.classList.toggle('cameraMode',true);syncAmbience();
  ['startScreen','contractScreen','shopScreen','codexScreen','resultScreen','restaurantScreen'].forEach(id=>$(id)?.classList.add('hidden'));
- configureToolbars();resetInputs();setTool('camera');showZone(zoneForY(world.player.y));showHint((contract.id==='free'?'자유 잠수':'선택 의뢰 · '+contract.title)+' · 오늘 어획 '+world.st.catchCap+'kg · 수면 중앙 배에서 E를 누르면 낮 탐사가 끝납니다.',4200);
+ configureToolbars();resetInputs();setTool('camera');showZone(zoneForY(world.player.y));showHint((contract.id==='free'?'자유 잠수':'선택 의뢰 · '+contract.title)+' · 어획과 별도로 해양 쓰레기 '+CLEANUP_BAG_CAP+'개까지 E로 수거 · 수면 중앙 배에서 E를 누르면 귀환합니다.',4200);
 }
 
 function screenPos(x,y){return{x:x-world.camera.x+view.w/2,y:y-world.camera.y+view.h/2}}
@@ -1113,6 +1113,20 @@ function drawProps(){
 }
 function drawWreck(){
  const p=screenPos(WORLD.w*.72,2980);if(p.x<-300||p.x>view.w+300||p.y<-240||p.y>view.h+240)return;drawImg(imgs.wreck,p.x,p.y,260,150,false,.17,.42,'brightness(.52) saturate(.65)');drawImg(imgs.wood1,p.x-115,p.y+48,42,34,false,.3,.65,'brightness(.55)');drawImg(imgs.wood2,p.x+126,p.y+56,38,30,true,-.2,.65,'brightness(.55)')}
+function drawCleanupDebris(){
+ for(const q of world.debris){
+  if(q.taken)continue;
+  const p=screenPos(q.x,q.y),bob=Math.sin(world.time*1.65+q.phase)*3;
+  if(p.x<-60||p.x>view.w+60||p.y<-60||p.y>view.h+60)continue;
+  const def=CLEANUP_TYPES[q.kind],near=Math.hypot(q.x-world.player.x,q.y-world.player.y)<105;
+  ctx.save();ctx.fillStyle='rgba(5,20,30,.52)';ctx.beginPath();ctx.arc(p.x,p.y+bob,21,0,Math.PI*2);ctx.fill();
+  const drew=window.KidscadeItemIcons?.draw(ctx,def.icon,p.x,p.y+bob,35);
+  if(!drew)drawImg(imgs.pickupTincan,p.x,p.y+bob,30,30);
+  if(world.sonar>0||near){ctx.strokeStyle=near?'#a6ffbd':'#74edff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y+bob,24,0,Math.PI*2);ctx.stroke()}
+  if(near){ctx.fillStyle='#f4fff7';ctx.textAlign='center';ctx.font='800 11px system-ui';ctx.fillText('E · '+def.name,p.x,p.y+bob-31)}
+  ctx.restore();
+ }
+}
 function drawPickups(){
  for(const q of world.pickups){
    if(q.taken)continue;const p=screenPos(q.x,q.y),bob=Math.sin(world.time*2.15+q.x*.009)*3;if(p.x<-80||p.x>view.w+80||p.y<-80||p.y>view.h+80)continue;
@@ -1259,7 +1273,7 @@ function fishRenderList(limit=fishRenderLimit()){
  return must.concat(rest).slice(0,Math.max(limit,must.length)).map(o=>o.f)
 }
 function render(){
- if(!world)return;ctx.clearRect(0,0,view.w,view.h);renderBackground();drawSurface();drawBoat();drawBiomeBoundaries();drawZoneLandmarks();drawTerrain();drawDeepLandmarks();drawDecor();drawHarvestables();drawProps();drawWreck();drawPickups();for(const f of fishRenderList())drawFish(f);drawTraps();for(const m of world.mines)drawMine(m);drawSonarGuides();drawTether();drawShots();drawEffects();drawBubbles();drawPlayer();drawForeground();drawSubzoneFX();drawDangerFX();updateHud();updateObservationHud();updatePhotoLabel()
+ if(!world)return;ctx.clearRect(0,0,view.w,view.h);renderBackground();drawSurface();drawBoat();drawBiomeBoundaries();drawZoneLandmarks();drawTerrain();drawDeepLandmarks();drawDecor();drawHarvestables();drawProps();drawWreck();drawPickups();drawCleanupDebris();for(const f of fishRenderList())drawFish(f);drawTraps();for(const m of world.mines)drawMine(m);drawSonarGuides();drawTether();drawShots();drawEffects();drawBubbles();drawPlayer();drawForeground();drawSubzoneFX();drawDangerFX();updateHud();updateObservationHud();updatePhotoLabel()
 }
 function updateObservationHud(){
  const box=$('observeHud');if(!box||!world)return;
@@ -1366,7 +1380,7 @@ function updateHud(){
  const p=world.player,ox=clamp(p.oxygen/world.st.oxygen*100,0,100),hp=clamp(p.hp,0,100),dep=depthOf(p.y),reserve=oxygenReserveStatus();
  $('o2Text').textContent=Math.round(ox)+'%';$('o2Fill').style.width=ox+'%';$('hpText').textContent=Math.round(hp);$('hpFill').style.width=hp+'%';$('depthText').textContent=Math.round(dep)+'m';const z=zoneForY(p.y),sub=subzoneForY(p.y),sr=SUBZONE_RULES[sub.id]||{},pressure=world.pressureOver>0?' · 압력+'+Math.round(world.pressureOver)+'m':'';
  $('zoneText').textContent=sub.name+' · '+(sr.short||ZONE_RULES[z.id]?.danger||'')+pressure;
- $('missionName').textContent=world.contract.id==='free'?'자유 잠수':('선택 의뢰 · '+world.contract.title);$('missionText').textContent=missionHudText();$('bagText').textContent=world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg';$('moneyText').textContent=money(world.income);$('sonarText').textContent=world.sonarCd>0?'SONAR '+world.sonarCd.toFixed(1)+'s':'SONAR READY';
+ $('missionName').textContent=world.contract.id==='free'?'자유 잠수':('선택 의뢰 · '+world.contract.title);$('missionText').textContent=missionHudText();$('bagText').textContent=world.catchWeight.toFixed(1)+' / '+world.st.catchCap+'kg';$('cleanupText').textContent=world.cleanupBag.length+' / '+CLEANUP_BAG_CAP+'개';$('moneyText').textContent=money(world.income+world.cleanupIncome);$('sonarText').textContent=world.sonarCd>0?'SONAR '+world.sonarCd.toFixed(1)+'s':'SONAR READY';
  const rr=$('reserveText');if(rr){rr.textContent=reserve.label;rr.className='reserve-'+reserve.code}const rookie=$('rookieTip'),rookieText=firstDayGuideText();if(rookie){rookie.textContent=rookieText;rookie.classList.toggle('hidden',!rookieText)}updateObjectiveCompass();updateLightUI()
 }
 function updateLightUI(){
@@ -1417,7 +1431,7 @@ function useCamera(){
  observeCreature(f,2);const grade=photoGrade(f),oldDive=world.mission.photoGrades[f.key]||null,newBest=betterGrade(oldDive,grade),band=creatureSizeBand(f),state=creatureCaptureState(f),weightRange=observationWeightRange(f,'camera');if(grade==='S')reportAchievement('s_photo',{species:f.key,depth:Math.round(depthOf(f.y))});
  f.photo=betterGrade(f.photo,grade);world.mission.photos[f.key]=true;world.mission.photoGrades[f.key]=newBest;
  meta.codex[f.key]=meta.codex[f.key]||{best:grade,count:0,largest:0};meta.codex[f.key].count++;meta.codex[f.key].best=betterGrade(meta.codex[f.key].best,grade);meta.codex[f.key].largest=Math.max(meta.codex[f.key].largest||0,f.sizeFactor||1);
- world.mission.photoValues=world.mission.photoValues||{};const oldValue=world.mission.photoValues[f.key]||0,newValue=photoValue(f,grade),bonus=Math.max(0,newValue-oldValue);world.mission.photoValues[f.key]=Math.max(oldValue,newValue);
+ world.mission.photoValues=world.mission.photoValues||{};const oldValue=world.mission.photoValues[f.key]||0,newValue=Math.round(photoValue(f,grade)*((meta.cleanup.zones?.[zoneForY(f.y).id]||0)>=8?1.05:1)),bonus=Math.max(0,newValue-oldValue);world.mission.photoValues[f.key]=Math.max(oldValue,newValue);
  if(bonus>0){world.income+=bonus;world.photoIncome+=bonus}
  if(f.key==='giant')world.mission.giantGrade=betterGrade(world.mission.giantGrade,grade);
  save();beep(1050,.06);setTimeout(()=>beep(1500,.07),65);world.effects.push({type:'flash',x:f.x,y:f.y,t:0});const flashReact=depthOf(f.y)>560&&LIGHT_SENSITIVE_SPECIES.has(f.key)&&disturbCreature(f,.66,'flash');
@@ -1474,7 +1488,9 @@ function updateTraps(dt){
 function fireHarpoon(){const p=world.player;if(world.tether){reelHarpoon();return}if(world.shots.length>2)return;emitDisturbance(p.x,p.y,235,.72,'harpoon');const speed=520+meta.up.harpoon*55+gearTier('harpoon')*18,ax=p.aimX||p.face||1,ay=p.aimY||0,mag=Math.hypot(ax,ay)||1,ux=ax/mag,uy=ay/mag;world.shots.push({x:p.x+ux*24,y:p.y+uy*24,vx:ux*speed,vy:uy*speed,life:world.st.harpoon/speed});beep(330,.04)}
 function useTool(){if(!world)return;if(world.tool==='camera')useCamera();else if(world.tool==='harpoon')fireHarpoon();else if(world.tool==='net')useNet();else if(world.tool==='gloves')useGloves();else if(world.tool==='knife')useKnife();else if(world.tool==='trap')useTrap();else useSonar()}
 function interact(){
+ if(!world||state!=='playing')return;
  const p=world.player;if(world.boat&&Math.hypot(world.boat.x-p.x,world.boat.y-p.y)<125&&world.time>2){finishDive(true,'탐사선으로 돌아와 오늘의 낮 탐사를 마쳤습니다.');return}
+ for(const debris of world.debris){if(!debris.taken&&Math.hypot(debris.x-p.x,debris.y-p.y)<83){collectCleanup(debris);return}}
  for(const q of world.pickups){if(q.taken)continue;if(Math.hypot(q.x-p.x,q.y-p.y)<72){if(world.bagWeight+q.weight>world.st.bag){showHint('인양 케이스 무게가 부족합니다.',1000);return}q.taken=true;world.bagWeight+=q.weight;world.bag.push(q.id);world.income+=q.value;if(q.id==='relic')world.mission.relic=true;if(q.id==='recorder')world.mission.recorder=true;beep(760,.08);showHint(q.name+' 회수 · +'+money(q.value)+' · '+q.weight+'kg',1250);return}}
  for(const o of world.props){if(o.done)continue;if(Math.hypot(o.x-p.x,o.y-p.y)<95){o.done=true;world.mission[o.id]=true;beep(880,.08);showHint((o.id==='statue'?'침수 석상':'거대 석조 아치')+' 기록 완료',1000);return}}showHint('가까운 조사 대상이나 탐사선이 없습니다.',800)
 }
