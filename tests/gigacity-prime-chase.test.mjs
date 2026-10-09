@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { FIGHTER_TYPES, fighterType, fighterSpec, relativeContact, pursuitSlot, damageStage } from '../games/gigacity_lite/prime-tactics.mjs';
 import {
   PRIME_WEAPONS, WAVE_NUMBERS, ROUND_SECONDS, isPrime, primeFactors,
-  makePrimeChase, startPrimeChase, PRACTICE_WAVES, firePrime, selectEnemy, selectedEnemy,
+  makePrimeChase, startPrimeChase, PRACTICE_WAVES, MAX_BONUS_SECONDS, firePrime, selectEnemy, selectedEnemy,
   activeEnemies, tickPrimeChase, damageShield, roundStats
 } from '../games/gigacity_lite/prime-chase.mjs';
 
@@ -294,4 +294,68 @@ test('3D breakaway parts and HUD radar are wired to actual fighter damage', () =
   assert.match(radar,/relativeContact\(pilot,heading/);
   for(const id of ['primeRadar','radarReadout','primeLockMessage','combatHitFlash'])
     assert.match(html,new RegExp('id="'+id+'"'));
+});
+
+
+test('correct prime shots earn bounded time, wrong guesses never earn time', () => {
+  const game = startPrimeChase();
+  assert.equal(firePrime(game,5).kind,'blocked');
+  assert.equal(game.bonusSeconds,0);
+  for(let i=0;i<15;i++)tickPrimeChase(game,.1);
+  const correct=firePrime(game,2);
+  assert.equal(correct.kind,'divided');
+  assert.equal(correct.timeBonus,2);
+  assert.equal(game.bonusSeconds,2);
+  assert.ok(game.remaining > 180 - game.elapsed);
+  for(let i=0;i<4;i++)tickPrimeChase(game,.1);
+  const last=firePrime(game,3);
+  assert.equal(last.kind,'destroyed');
+  assert.equal(last.timeBonus,6);
+  assert.equal(game.bonusSeconds,8);
+  assert.equal(game.shield,100);
+  assert.equal(roundStats(game).bonusSeconds,8);
+});
+
+test('earned time is capped and cannot be farmed through wrong shots', () => {
+  for(const mode of ['standard','practice']){
+    const state=startPrimeChase(undefined,mode);
+    state.bonusSeconds=MAX_BONUS_SECONDS[mode]-1;
+    assert.equal(firePrime(state,2).timeBonus,1);
+    for(let j=0;j<4;j++)tickPrimeChase(state,.1);
+    assert.equal(firePrime(state,3).timeBonus,0);
+    assert.equal(state.bonusSeconds,MAX_BONUS_SECONDS[mode]);
+  }
+  assert.equal(MAX_BONUS_SECONDS.standard,85);
+  assert.equal(MAX_BONUS_SECONDS.practice,32);
+});
+
+test('heavy enemy keeps up at 34m/s but boosted pilot escapes', () => {
+  for(const type of ['armor','command']){
+    const p={x:0,y:200,z:365};
+    let enemy={x:0,y:205,z:451};
+    for(let i=0;i<600;i++){
+      p.z-=3.4;
+      const route=pursuitSlot(p,0,i*.1,1,0,type,34);
+      const delta={x:route.x-enemy.x,y:route.y-enemy.y,z:route.z-enemy.z};
+      const len=Math.hypot(delta.x,delta.y,delta.z);
+      const step=Math.min(1,route.speed*.1/Math.max(.001,len));
+      enemy={x:enemy.x+delta.x*step,y:enemy.y+delta.y*step,z:enemy.z+delta.z*step};
+    }
+    assert.ok(Math.hypot(enemy.x-p.x,enemy.z-p.z)<120,type+' failed to catch up');
+  }
+  const boosted=pursuitSlot({x:0,y:200,z:365},0,3,1,0,'command',145);
+  assert.ok(boosted.speed<145);
+  assert.ok(boosted.speed>=46);
+});
+
+test('3D rear view, earned-time HUD and keyboard shortcut are available', () => {
+  const root=new URL('../games/gigacity_lite/',import.meta.url);
+  const main=readFileSync(new URL('main.js',root),'utf8');
+  const html=readFileSync(new URL('index.html',root),'utf8');
+  assert.match(main,/function setRearView\(enabled\)/);
+  assert.match(main,/rearView && gameMode === 'chase'/);
+  assert.match(main,/event\.code === 'KeyR'/);
+  assert.match(html,/id="rearViewButton"/);
+  assert.match(html,/id="chaseTimeBonus"/);
+  assert.match(main,/pursuitScene\.update\(dt, pilotPosition, yaw, collisionWorld, selectedEnemy\(primeState\)\?\.id, flightSpeed \|\| 34\)/);
 });
