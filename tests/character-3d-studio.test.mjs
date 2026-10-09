@@ -360,7 +360,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261009-hardfit56/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-dualrig57/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
@@ -450,7 +450,7 @@ test('male base opens first and provides brows visibility, face zoom and gait st
   assert.match(html,/id="gaitBadge"/);
   assert.match(html,/data-view="face"/);
   assert.match(html,/data-chibi-preset="male" data-preset-fit="male">남성형 기본/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-hardfit56/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-dualrig57/);
 });
 
 test('mobile studio shows the live avatar preview before the long wardrobe',()=>{
@@ -536,7 +536,7 @@ test('one-touch mobile Chibi controls are wired to the same real animation, view
   assert.match(js,/setCameraView\(button\.dataset\.quickView\)/);
   assert.match(js,/\[data-chibi-preset\],\[data-view\],\[data-quick-clip\],\[data-quick-view\],\[data-quick-speed\]/);
   assert.match(js,/\$\('speed'\)\.value=button\.dataset\.quickSpeed/);
-  assert.match(html,/character-3d-studio\.js\?v=20261009-hardfit56/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-dualrig57/);
 });
 
 test('Chibi v5 wardrobe exposes gender-fit filter and category tabs without restricting shared accessories',()=>{
@@ -816,7 +816,7 @@ test('v5.6 male and female geometry ownership is explicit with no accidental sha
   assert.match(js,/function sanitizeFitVisibility\(\)/);
   assert.match(js,/const incompatible=sanitizeFitVisibility\(\)/);
   assert.match(js,/if\(PRESET_FIT\[name\]!==activeBodyFit\)return/);
-  assert.match(js,/activeBodyFit=fit;\s*applyPreset\(fit==='male'\?'male':'base'\)/);
+  assert.match(js,/activeBodyFit=fit;\s*activateRigScene\(fit\);\s*applyPreset\(fit==='male'\?'male':'base'\)/);
   assert.match(js,/function fitIntegrityIssues\(\)/);
   assert.match(js,/missing-body:/);
   assert.match(js,/bodyFitAudit\(\)/);
@@ -863,4 +863,29 @@ test('v5.6 Chrome audit covers strict fitted tab switching without wrong-fit equ
   assert.match(audit,/assert\.deepEqual\(audit\.incompatible,\[\]/);
   assert.match(audit,/Incompatible preset changed body without using fit switch/);
   assert.match(audit,/fit-isolation-/);
+});
+
+
+test('v5.7 separates male and female bone ownership, animation roots and GLB rig state',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const html=read('teacher/character-3d-studio.html');
+  const manifest=JSON.parse(read('chibi/asset-manifest.json'));
+  const audit=read('tests/chibi-visual-browser-audit.cjs');
+  const rig=manifest.wardrobeLibrary.rigIsolation;
+  assert.equal(rig.version,'v5.7-independent-runtime-rigs');
+  assert.equal(rig.runtimeBoneInstancesPerFit,78);
+  assert.equal(rig.oneMountedRigAtATime,true);
+  assert.equal(rig.mixerReboundOnBodySwitch,true);
+  assert.match(js,/import \{clone as cloneRiggedScene\} from '\.\.\/assets\/vendor\/three-r160\/addons\/utils\/SkeletonUtils\.js'/);
+  assert.match(js,/rigScenes=\{female:sourceScene,male:cloneRiggedScene\(sourceScene\)\}/);
+  assert.match(js,/function inspectRig\(root\)/);
+  assert.match(js,/function rigIntegrityIssues\(\)/);
+  assert.match(js,/function activateRigScene\(fit\)/);
+  assert.match(js,/mixer=new THREE\.AnimationMixer\(sourceScene\)/);
+  assert.match(js,/function rigIsolationAudit\(\)/);
+  assert.match(js,/rigIsolationVersion:'chibi-v5\.7-independent-78-bone-rigs'/);
+  assert.match(audit,/window\.__kc3dAudit\.rigIsolationAudit\(\)/);
+  assert.match(audit,/sharedBones,0/);
+  assert.match(audit,/roundtripExport\(\)/);
+  assert.match(html,/character-3d-studio\.js\?v=20261009-dualrig57/);
 });
