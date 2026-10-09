@@ -2,6 +2,33 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "openmon_expedition",
+      "addedAt": "2026-10-10T00:16:00+09:00",
+      "title": "개념몬 탐험대",
+      "href": "games/openmon-expedition/index.html",
+      "category": "math",
+      "age": "high",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🧬",
+      "description": "Openmon 몬스터와 함께 마을·초원·숲·동굴을 탐험하는 수학 RPG. 3가지 스타팅, 속성 상성·체력 계산·포획 확률, 전투·레벨업·진화·도감·가방과 자동 저장을 지원합니다.",
+      "subject": "math",
+      "genre": "rpg",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "hanja_sichuan",
       "addedAt": "2026-10-08T08:06:00+09:00",
       "title": "한자 사천성",
