@@ -8,7 +8,7 @@ const ui={canvas:$('game'),intro:$('intro'),end:$('end'),endTitle:$('endTitle'),
   time:$('time'),toast:$('toast'),action:$('action'),actionText:$('actionText'),joy:$('joystick'),knob:$('knob'),
   map:$('minimap'),help:$('help'),flash:$('flash'),gaze:$('gaze'),gazeValue:$('gazeValue'),
   navigation:$('navigation'),navArrow:$('navArrow'),navTitle:$('navTitle'),navRange:$('navRange'),
-  lesson:$('lesson'),lessonTitle:$('lessonTitle'),lessonText:$('lessonText'),reticle:$('reticle'),gazeLabel:$('gazeLabel'),
+  lesson:$('lesson'),lessonTitle:$('lessonTitle'),lessonText:$('lessonText'),reticle:$('reticle'),gazeLabel:$('gazeLabel'),guide:$('guide'),
   lockerView:$('lockerView'),lockerWarning:$('lockerWarning')};
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090f19);scene.fog=new THREE.FogExp2(0x090f19,.019);
 const renderer=new THREE.WebGLRenderer({canvas:ui.canvas,antialias:true,powerPreference:'high-performance'});
@@ -54,6 +54,7 @@ let started=false,ended=false,paused=false,stage=1,fixes=0,hp=3,power=100,flashO
 let viewYaw=0,viewPitch=0,turnPointer=null,prevX=0,prevY=0,last=performance.now(),hudClock=0,miniClock=0,toastSeconds=0;
 let invulnerable=0,ghostWaiting=0,maidenPhase='approach',tutorialCount=0,lessonTimer=0,lastMistake='';
 const guidance={key:'',points:[],mesh:null,clock:0,fromX:0,fromZ:0,goalX:0,goalZ:0};
+let guideAssistance=false;
 let gazeLocked=false,ghostNav=null;
 let hidingLocker=null,lockerTime=0,lockerDanger=0,lockerPreviousFlash=true,lockerLastSeen=null;
 const encounter={
@@ -164,17 +165,28 @@ function routePlan(start,goal,reach=1.05){
   return result.reverse();
 }
 function navigationTarget(){
+  const target=(key,x,z,name)=>({key,x,z,name});
   if(stage===1){
     const i=disturbed.findIndex(d=>!d.done);
-    if(i>=0)return {key:'fix'+i,x:disturbed[i].x,z:disturbed[i].z,name:'6-1 교실 · '+disturbed[i].name};
-    return {key:'dokkaebi',x:SCHOOL.dokkaebi.x,z:SCHOOL.dokkaebi.z,name:'6-1 교실 · 도깨비 봉인진'};
+    if(i>=0)return target('fix'+i,disturbed[i].x,disturbed[i].z,'6-1 교실 · '+disturbed[i].name);
+    return target('dokkaebi',SCHOOL.dokkaebi.x,SCHOOL.dokkaebi.z,'6-1 교실 · 도깨비 봉인');
   }
-  if(stage===2){
-    if(maidenPhase==='approach')return {key:'science',x:SCHOOL.science.x,z:SCHOOL.science.z,name:'북쪽 날개 끝 · 과학실'};
-    return {key:'maiden',x:maiden.x,z:maiden.z,name:'처녀귀신을 바라보기'};
+  if(stage===2)return maidenPhase==='approach'?
+    target('science',SCHOOL.science.x,SCHOOL.science.z,'북쪽 과학실'):
+    target('maiden',maiden.x,maiden.z,'처녀귀신 · 바라보며 멈추기');
+  if(stage===3)return target('maidenSeal',25.5,-13.1,'과학실 · 보라색 봉인');
+  if(stage===4){
+    const i=encounter.heatNodes.findIndex(o=>!o.done);
+    if(i>=0){const o=encounter.heatNodes[i];return target('heater'+i,o.x,o.z,'가사실 · '+o.label);}
   }
-  if(stage===3)return {key:'maidenSeal',x:SCHOOL.science.x,z:-13.1,name:'과학실 · 보라색 봉인진'};
-  if(stage===4)return {key:'report',x:SCHOOL.guard.x,z:SCHOOL.guard.z,name:'서쪽 연결동 · 관리실 귀환'};
+  if(stage===5)return target('yukiSeal',25.5,13.1,'가사실 · 유키온나 봉인');
+  if(stage===6)return target('eggLesson',7.5,-14,'북쪽 음악실 · 뒤돌아 4초');
+  if(stage===7)return target('eggSeal',7.5,-13.1,'음악실 · 달걀귀신 봉인');
+  if(stage===8)return target('reaperDoor',bellDoor.x,bellDoor.z,'전기실 문 · 종 세 번 듣기');
+  if(stage===9)return target('reaperSeal',-25.3,8,'전기실 · 저승사자 봉인');
+  if(stage===10)return target('wolfSpeaker',-7.5,8.55,'남쪽 복도 · 유인 스피커');
+  if(stage===11)return target('wolfTrap',wolfTrap.x,wolfTrap.z,'5-1 교실 · 늑대 함정');
+  if(stage===12)return target('returnOffice',SCHOOL.guard.x,SCHOOL.guard.z,'관리실 · 보고서 제출');
   return null;
 }
 function setGuidePath(path){
@@ -189,9 +201,9 @@ function setGuidePath(path){
 }
 function updateNavigation(dt,force=false){
   if(!started)return;
-  // An explicit beginner tutorial only. After the first repaired anomaly,
-  // the school must be explored using room names, missions and the minimap.
-  const showTutorialTrail=stage===1&&fixes===0;
+  // The first clue always shows. After that students may request optional
+  // assistance (H/guide button) without making exploration fully automatic.
+  const showTutorialTrail=(stage===1&&fixes===0)||guideAssistance;
   ui.navigation.classList.toggle('hidden',!showTutorialTrail);
   if(!showTutorialTrail){
     if(guidance.mesh)setGuidePath([]);
@@ -223,7 +235,7 @@ function updateNavigation(dt,force=false){
   ui.navArrow.style.transform='rotate('+angle.toFixed(0)+'deg)';
   ui.navTitle.textContent=target.name;
   const destinationDist=Math.round(Math.hypot(target.x-player.x,target.z-player.z));
-  ui.navRange.textContent=destinationDist<2?'첫 번째 물건 · 행동 버튼으로 조사':destinationDist+'m · 첫 조사까지 노란 길 안내';
+  ui.navRange.textContent=destinationDist<2?'목표 주변 · E / 행동 버튼 사용':destinationDist+'m · 노란 선을 따라 이동';
 }
 function showLesson(title,text,seconds=9){
   ui.lessonTitle.textContent=title;ui.lessonText.textContent=text;
@@ -781,7 +793,7 @@ function leaveLocker(){
   ui.lockerView.classList.add('hidden');
   document.body.classList.remove('in-locker');
   ui.lockerWarning.textContent='';
-  if(stage===10)encounter.wolf.grace=Math.max(encounter.wolf.grace,2.0);
+  if(stage===10)encounter.wolf.grace=Math.max(encounter.wolf.grace,1.3);
   return true;
 }
 function updateLockerHiding(dt){
@@ -886,7 +898,7 @@ function act(){
     const obj=disturbed[item.i];obj.done=true;obj.object.visible=false;obj.marker.visible=false;fixes++;sfx('sfx_child_giggle.mp3',.13);
     showToast('이상현상을 바로잡았어요 · '+fixes+'/3');
     if(fixes===1){
-      showLesson('첫 조사 성공 · 튜토리얼 완료','이제 안내선 없이 미니맵의 점과 교실 이름으로 탐색하세요.',12);
+      showLesson('첫 조사 성공 · 튜토리얼 완료','노란 선은 잠시 사라집니다. 길을 잃으면 H키나 길찾기 버튼으로 다시 표시할 수 있어요.',12);
       updateNavigation(0,true);
     }
     if(fixes===3){trickCircle.visible=true;showToast('세 장난을 해결했어요. 교실 중앙의 봉인진을 이용하세요.');}
@@ -929,7 +941,7 @@ function reset(){
   player.yaw=viewYaw+Math.PI;player.root.rotation.y=player.yaw;
   maiden.attacks=0;maiden.charge=0;invulnerable=0;ghostWaiting=0;
   maidenPhase='approach';ghostNav=null;gazeLocked=false;
-  guidance.key='';guidance.points=[];lastMistake='';tutorialCount=0;
+  guidance.key='';guidance.points=[];guideAssistance=false;lastMistake='';tutorialCount=0;
   disturbed.forEach(o=>{o.done=false;o.object.visible=true;o.marker.visible=true;});
   encounter.heatNodes.forEach(o=>{o.done=false;o.marker.visible=false;});
   encounter.cold=0;encounter.frost=0;encounter.eggCharge=0;encounter.eggFear=0;
@@ -985,6 +997,7 @@ function updateHud(){
   ui.health.textContent='♥'.repeat(Math.max(0,hp))+'♡'.repeat(3-Math.max(0,hp));
   ui.battery.textContent=Math.floor(power)+'%';
   ui.flash.textContent=flashOn?'손전등 켜짐 [F]':'손전등 꺼짐 [F]';
+  ui.guide.textContent=guideAssistance?'길찾기 켜짐 [H]':'길찾기 [H]';
   const ghostLesson=stage===2&&maidenPhase!=='approach';
   const threat=[4,6,8,11].includes(stage);
   ui.lesson.classList.toggle('encounter',ghostLesson||threat);
@@ -1088,8 +1101,8 @@ function updateGhost(dt){
     gazeLocked=false;maiden.charge=Math.max(0,maiden.charge-dt*.14);
     ghostWaiting=Math.max(0,ghostWaiting-dt);
     if(maidenPhase==='hunt'&&ghostWaiting===0){
-      const goal=lockerTime<2.5?(lockerLastSeen||hidingLocker.interact):SCHOOL.maidenSpawn;
-      advanceGhostToward(goal,dt*.64);
+      const goal=lockerTime<13?(lockerLastSeen||hidingLocker.interact):SCHOOL.maidenSpawn;
+      if(dist(maiden,goal)>1.05)advanceGhostToward(goal,dt*.86);
     }
     return;
   }
@@ -1156,13 +1169,25 @@ function moveWolfToward(target,dt){
 function updateNewEncounters(dt){
   if(stage===4){
     const inCold=player.x>20&&player.z>10.4;
-    encounter.frost=Math.min(12,Math.max(0,encounter.frost+dt*(inCold?.33:-1)));
+    encounter.frost=Math.min(12,Math.max(0,encounter.frost+dt*(inCold?.48:-1)));
     // A few repairs restore warmth, even before the entire room is fixed.
     if(encounter.frost>=12){
       encounter.frost=0;takeAnomalyHit('가사실 냉기는 난방장치 세 곳을 복구하면 가라앉아요.');
     }
     yuki.root.position.y=Math.sin(elapsed*2)*.12;
     yuki.root.rotation.y+=dt*.25;
+    yuki.root.rotation.z=Math.sin(elapsed*2.9)*.055;
+  }
+  if(stage===6||stage===7){
+    // The unrigged faceless GLB still needs uncanny in-world motion.
+    egg.root.position.y=Math.sin(elapsed*2.3)*.09;
+    egg.root.rotation.z=Math.sin(elapsed*9.3)*.037;
+    egg.root.rotation.y=Math.sin(elapsed*.69)*.20;
+    egg.root.scale.set(1+Math.sin(elapsed*1.7)*.015,1,1+Math.sin(elapsed*1.7)*.015);
+  }
+  if(stage===8||stage===9){
+    // The reaper tilts slightly as the bell tolls, even without a clip.
+    reaper.root.rotation.z=Math.sin(elapsed*1.1)*.045;
   }
   if(stage===6){
     const d=dist(player,eggLocation);
@@ -1225,15 +1250,16 @@ function updateNewEncounters(dt){
   }
   const w=encounter.wolf;
   if(stage===10||stage===11){
-    w.root.position.set(w.x,.04,w.z);
+    w.root.position.set(w.x,.04+Math.abs(Math.sin(elapsed*5))*.028,w.z);
+    w.root.rotation.z=Math.sin(elapsed*8.5)*.028;
     if(stage===10){
       if(typeof hidingLocker!=='undefined'&&hidingLocker){
         // Searching the last seen position, then walking back instead of
         // continuously homing in on someone inside the closed metal locker.
         w.grace=Math.max(0,w.grace-dt);
         if(w.grace===0){
-          const goal=lockerTime<2.4?(lockerLastSeen||hidingLocker.interact):{x:-1.5,z:16.8};
-          moveWolfToward(goal,dt);
+          const goal=lockerTime<13?(lockerLastSeen||hidingLocker.interact):{x:-1.5,z:16.8};
+          if(dist(w,goal)>1.02)moveWolfToward(goal,dt);
         }
       }else if(player.z>6.9&&player.x>-15.1){
         w.active=true;w.grace=Math.max(0,w.grace-dt);
@@ -1276,7 +1302,7 @@ function updatePlayer(dt){
   let r=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0)+joy.x;
   const mag=Math.hypot(f,r);if(mag>1){f/=mag;r/=mag;}
   const run=keys.has('shift')&&mag>.1;
-  const speed=run?5.0:3.25;
+  const speed=run?5.25:3.6;
   const fx=-Math.sin(viewYaw),fz=-Math.cos(viewYaw),rx=Math.cos(viewYaw),rz=-Math.sin(viewYaw);
   const vx=(fx*f+rx*r)*speed*dt,vz=(fz*f+rz*r)*speed*dt;
   if(canWalk(player.x+vx,player.z))player.x+=vx;
@@ -1401,6 +1427,7 @@ document.addEventListener('keydown',e=>{
   keys.add(k);if(e.repeat)return;
   if(k==='e'||k===' ')act();
   if(k==='f'&&started&&!hidingLocker){flashOn=!flashOn;updateHud();}
+  if(k==='h'&&started&&!paused){guideAssistance=!guideAssistance;updateNavigation(0,true);updateHud();}
   if(k==='escape'&&started){paused=!paused;ui.help.classList.toggle('hidden',!paused);}
 });
 document.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
@@ -1432,5 +1459,6 @@ $('retry').addEventListener('click',reset);
 $('helpButton').addEventListener('click',()=>{paused=true;ui.help.classList.remove('hidden');});
 $('closeHelp').addEventListener('click',()=>{paused=false;ui.help.classList.add('hidden');});
 ui.flash.addEventListener('click',()=>{if(started&&!hidingLocker){flashOn=!flashOn;updateHud();}});
+ui.guide.addEventListener('click',()=>{if(started&&!paused){guideAssistance=!guideAssistance;updateNavigation(0,true);updateHud();}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&started){paused=true;ui.help.classList.remove('hidden');bgm.pause();}else if(started&&!paused){bgm.play().catch(()=>{});}});
 updateHud();drawMap();
