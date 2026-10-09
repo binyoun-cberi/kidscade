@@ -120,7 +120,7 @@ test('beginner experience includes wayfinding, actionable hints, and camera obst
   assert.match(js,/function updateNavigation\(dt,force=false\)/);
   assert.match(js,/function setGuidePath\(path\)/);
   assert.match(js,/routePlan\(player,target,1\.15\)/);
-  assert.match(js,/첫 조사까지 노란 길 안내/);
+  assert.match(js,/노란 선을 따라 이동/);
   assert.match(js,/showLesson\('첫 임무/);
   assert.match(js,/showLesson\('첫 만남/);
   assert.match(js,/showLesson\('관찰 성공/);
@@ -311,12 +311,13 @@ test('the navigation trail is visible only until the first tutorial anomaly is f
   const state=new Function('ui','player','guidance','navigationTarget','routePlan','setGuidePath','viewYaw',
     'startedRef',js.slice(start,end)+'return updateNavigation;');
   const run=new Function('ui','player','guidance','navigationTarget','routePlan','viewYaw',
-    'let fixes=0,stage=1,started=true;'+
+    'let fixes=0,stage=1,started=true,guideAssistance=false;'+
     'const setGuidePath=(points)=>{guidance.points=points;guidance.mesh=points.length?{}:null;};'+
     js.slice(start,end)+
     'updateNavigation(0,true);const first={hidden:ui.navigation.classList.hidden,trail:guidance.points.length};'+
     'fixes=1;updateNavigation(0,true);const second={hidden:ui.navigation.classList.hidden,trail:guidance.points.length};'+
-    'stage=4;updateNavigation(0,true);return {first,second,lastHidden:ui.navigation.classList.hidden};'
+    'stage=4;updateNavigation(0,true);const lastHidden=ui.navigation.classList.hidden;'+
+    'guideAssistance=true;updateNavigation(0,true);return {first,second,lastHidden,optional:{hidden:ui.navigation.classList.hidden,trail:guidance.points.length}};'
   );
   const result=run(ui,player,guide,()=>fakeTarget,()=>[{x:0,z:0},{x:5,z:0}],0);
   assert.equal(result.first.hidden,false);
@@ -324,6 +325,8 @@ test('the navigation trail is visible only until the first tutorial anomaly is f
   assert.equal(result.second.hidden,true);
   assert.equal(result.second.trail,0);
   assert.equal(result.lastHidden,true);
+  assert.equal(result.optional.hidden,false,'H key restores guidance for later missions');
+  assert.equal(result.optional.trail,2);
 });
 
 
@@ -353,7 +356,7 @@ function simulateExtraAnomaly(mode){
     "const player={x:mode.startsWith('egg')?7.5:mode==='bell'?-20.35:mode==='wolf'?-7.5:25.5,z:mode.startsWith('egg')?-14:mode==='bell'?8:mode==='wolf'?8.55:15.5,yaw:0};",
     "const eggLocation={x:7.5,z:-17.35},bellDoor={x:-20.35,z:8},wolfTrap={x:-10.5,z:14};",
     "const encounter={frost:0,eggCharge:0,eggFear:0,cold:0,bellCount:0,bellClock:1,bellWindow:0,wolf:{x:-1.5,z:16.8,speed:2.25,root:{position:{set(){}},rotation:{y:0}},nav:null,grace:7,lureTime:26,ready:false,active:true}};",
-    "const yuki={root:{position:{y:0},rotation:{y:0}}};",
+    "const yuki={root:{position:{y:0},rotation:{y:0,z:0}}},egg={root:{position:{y:0},rotation:{y:0,z:0},scale:{set(){}}}},reaper={root:{rotation:{y:0,z:0}}};",
     "const ui={reticle:{classList:{toggle(){}},style:{}}},SCHOOL={guard:{x:-24.2,z:0}};",
     "const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z),clearGhostSight=()=>true,canWalk=()=>true,routePlan=(a,b)=>[{x:a.x,z:a.z},{x:b.x,z:b.z}];",
     "const alerts=[];function sfx(){}function showLesson(){}function showToast(t){alerts.push(t)}function finish(ok){ended=true;}",
@@ -695,8 +698,8 @@ test('locker hiding pauses movement and exposes a deterministic leave action',()
 
 test('staying hidden beside a nearby ghost eventually gets discovered',()=>{
   assert.match(js,/lockerDanger>=3\.2/);
-  assert.match(js,/const goal=lockerTime<2\.5\?\(lockerLastSeen\|\|hidingLocker\.interact\):SCHOOL\.maidenSpawn/);
-  assert.match(js,/const goal=lockerTime<2\.4\?\(lockerLastSeen\|\|hidingLocker\.interact\):\{x:-1\.5,z:16\.8\}/);
+  assert.match(js,/const goal=lockerTime<13\?\(lockerLastSeen\|\|hidingLocker\.interact\):SCHOOL\.maidenSpawn/);
+  assert.match(js,/const goal=lockerTime<13\?\(lockerLastSeen\|\|hidingLocker\.interact\):\{x:-1\.5,z:16\.8\}/);
   assert.match(js,/const exposed=typeof hidingLocker==='undefined'\|\|!hidingLocker/);
   assert.match(js,/const away=exposed&&/,'hide cannot complete egg gaze trial for free');
   assert.match(js,/const staring=exposed&&/,'hide cannot also punish accidental glance');
