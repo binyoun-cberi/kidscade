@@ -786,6 +786,6 @@ test('v5.4 hats use head-fitting open shell profiles rather than floating solid 
   assert.match(js,/const mask=applyHideMasks\(\);\s*const fitted=applyRiggedAccessoryFit/);
   assert.match(js,/hatSeatingAudit\(\)/);
   assert.match(audit,/report\.hatSeating=\{cases:\[\],hats:fiveHats,version:'v5\.4-hat-shell'\}/);
-  assert.match(audit,/assert\.ok\(diagnostic\.overlapRatio>\.12/);
+  assert.match(audit,/assert\.ok\(diagnostic\.overlapRatio>\.20/);
   assert.match(audit,/assert\.ok\(diagnostic\.capRisesAboveCrown/);
 });
