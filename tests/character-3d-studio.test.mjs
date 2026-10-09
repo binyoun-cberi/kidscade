@@ -782,7 +782,7 @@ test('v5.4 hats use head-fitting open shell profiles rather than floating solid 
   assert.match(pack,/const rim=scalpY-\.118/);
   for(const hat of ['baseball','bucket','beanie','beret','straw'])
     assert.ok(pack.includes(hat+':[['),'Missing curved crown profile: '+hat);
-  assert.match(pack,/referenceBox\.max\.y-Math\.min\(hairHeight\*\.32,width\*\.37\)/);
+  assert.match(pack,/referenceBox\.max\.y-Math\.min\(hairHeight\*\.48,width\*\.63\)/);
   assert.match(js,/const mask=applyHideMasks\(\);\s*const fitted=applyRiggedAccessoryFit/);
   assert.match(js,/hatSeatingAudit\(\)/);
   assert.match(audit,/report\.hatSeating=\{cases:\[\],hats:fiveHats,version:'v5\.4-hat-shell'\}/);
