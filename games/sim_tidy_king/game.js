@@ -167,7 +167,10 @@ function buildRoom(){
   const x=-2.95+col*.86+(rand()-.5)*.14,z=-1.49+row*.77+(rand()-.5)*.13;
   const key=list[i],def=props[key],g=itemModel(key,def.size,def.color);
   g.position.set(x,.02,z);g.rotation.y=rand()*Math.PI*2;
-  g.userData={kind:'item',key,zone:def.kind,name:def.name};root.add(g);pickables.push(g);
+  g.userData={kind:'item',key,zone:def.kind,name:def.name};
+  // Larger invisible grab area makes small stationery usable on phones.
+  const grab=new THREE.Mesh(new THREE.SphereGeometry(.30,8,6),new THREE.MeshBasicMaterial({visible:false}));
+  grab.position.y=.25;g.add(grab);root.add(g);pickables.push(g);
   things.push({group:g,key,zone:def.kind,done:false,home:g.position.clone(),rot:g.rotation.y});
  }
  const dspots=[[-3.5,2.8],[-1.7,3.55],[.35,3.3],[2.3,3.6],[-3.65,-1.4],[3.55,-1.05],[.8,-2.1]];
@@ -191,7 +194,7 @@ function makeStation(key,x,z){
  token.position.set(0,.55,0);group.add(token);
  const hit=new THREE.Mesh(new THREE.CylinderGeometry(.94,.94,.17,24),new THREE.MeshBasicMaterial({visible:false}));
  hit.position.y=.10;hit.userData={kind:'station',key};group.add(hit);
- group.userData={kind:'station',key};root.add(group);pickables.push(hit);
+ group.userData={kind:'station',key};root.add(group);pickables.push(group);
  const record={group,key,plate,rim,token,hit,x,z,stored:0};
  stations.push(record);
 }
@@ -350,8 +353,8 @@ canvas.addEventListener('pointerup',pointerUp);
 canvas.addEventListener('pointercancel',()=>{mouseDown=null;scrubbing=null});
 canvas.addEventListener('wheel',e=>{if(!running)return;zoom=THREE.MathUtils.clamp(zoom+Math.sign(e.deltaY)*.07,.79,1.5);cameraMove();e.preventDefault()},{passive:false});
 function cameraMove(){
- const angle=.56+turn;const radius=17.8*zoom;
- camera.position.set(Math.sin(angle)*radius,12.9*zoom,Math.cos(angle)*radius);
+ const angle=.56+turn;const portraitFit=Math.max(1,Math.min(1.65,.78/camera.aspect));const radius=17.8*zoom*portraitFit;
+ camera.position.set(Math.sin(angle)*radius,12.9*zoom*portraitFit,Math.cos(angle)*radius);
  camera.lookAt(0,.10,-.2);
 }
 $('rotateLeft').onclick=()=>{turn=THREE.MathUtils.clamp(turn-.22,-.42,.6);cameraMove()};
