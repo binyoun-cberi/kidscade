@@ -7,7 +7,7 @@ const C=$("worldCanvas"),cx=C.getContext("2d",{alpha:false});
 cx.imageSmoothingEnabled=false;
 const SAVE_KEY="kidscade.openmon.expedition.save.v1";
 let save=null,battle=null,lastDraw=0,lastMove=0,held=null,moveTimer=0,soundOn=true,audio=null;
-let latestToast="풀숲이나 동굴의 거친 땅으로 이동하면 몬스터를 만날 수 있어요.";
+let latestToast="풀숲이나 동굴의 거친 땅으로 이동하면 키즈몬을 만날 수 있어요.";
 const imgs={};
 const ASSET="../../assets/";
 function load(name,url){const im=new Image();im.decoding="async";im.src=url;im.onload=()=>{imgs[name]=im};im.onerror=()=>{imgs[name]=null}}
@@ -78,14 +78,14 @@ function updateAll(){
  $("seenCount").textContent=Object.keys(save.seen).filter(id=>species(id)?.playable).length+" / "+DB.species.length;
  $("caughtCount").textContent=Object.keys(save.collection).filter(id=>species(id)?.playable).length+" / "+DB.species.length;
  $("worldHint").textContent="현재 위치 "+(data?.name||"")+" ("+save.pos.x+","+save.pos.y+")";
- $("objective").textContent=save.catches===0?"첫 야생 몬스터를 포획해 보자":save.catches<3?"서로 다른 몬스터를 세 마리 모아 보자":"도감과 진화 조건을 연구하며 탐험하자";
+ $("objective").textContent=save.catches===0?"첫 야생 키즈몬을 포획해 보자":save.catches<3?"서로 다른 키즈몬을 세 마리 모아 보자":"도감과 진화 조건을 연구하며 탐험하자";
  renderTeam();
 }
 function renderTeam(){
  if(!save)return;
  $("teamList").innerHTML=save.party.map((p,i)=>{
  const s=species(p.id),pct=barPct(p.hp,maxHp(p));
- return '<button type="button" class="member '+(i===save.active?"selected":"")+'" data-team="'+i+'" title="이 몬스터로 바꾸기">'+
+ return '<button type="button" class="member '+(i===save.active?"selected":"")+'" data-team="'+i+'" title="이 키즈몬으로 바꾸기">'+
  '<span class="member-art">'+miniArt(p.id)+'</span><span class="member-info"><b>'+esc(s.name)+' <small>Lv.'+p.level+'</small></b>'+
  '<small>HP '+hpText(p)+'</small><span class="hp-bar"><span class="hp-fill" style="width:'+pct+';background:'+(p.hp/maxHp(p)<.3?"#d97869":"#58ae68")+'"></span></span></span></button>'
  }).join("");
@@ -93,11 +93,11 @@ function renderTeam(){
 function selectTeam(index,fromBattle=false){
  if(!save||index<0||index>=save.party.length)return false;
  const p=save.party[index];
- if(p.hp<=0){setToast("HP가 0인 몬스터는 먼저 회복해야 해.");return false}
+ if(p.hp<=0){setToast("HP가 0인 키즈몬은 먼저 회복해야 해.");return false}
  if(index===save.active)return false;
  save.active=index;beep("click");updateAll();persist();
  if(fromBattle&&battle&&!battle.done){
-  appendBattle("몬스터를 교체했어! "+species(p.id).name+" 출전!");
+  appendBattle("키즈몬을 교체했어! "+species(p.id).name+" 출전!");
   enemyTurn();
   if(battle&&!battle.done){battle.turn++;renderBattle()}
  }else setToast(species(p.id).name+"이(가) 선두에 섰어.");
@@ -115,20 +115,20 @@ function talk(){
  const x=save.pos.x,y=save.pos.y;
  if(Math.abs(x-9)+Math.abs(y-10)<=2){openClinic();return}
  if(Math.abs(x-13)+Math.abs(y-10)<=2){
-  openGeneric("수학 연구원",'<p>야생 몬스터의 남은 체력과 기술의 피해량을 비교해 봐. 강한 공격만 쓰면 포획에 실패할 수도 있어!</p><button class="modal-action" id="researchDex">도감 열기</button>');
+  openGeneric("수학 연구원",'<p>야생 키즈몬의 남은 체력과 기술의 피해량을 비교해 봐. 강한 공격만 쓰면 포획에 실패할 수도 있어!</p><button class="modal-action" id="researchDex">도감 열기</button>');
   $("researchDex").onclick=()=>{closeGeneric();openDex()};return
  }
  if(E.terrain(x,y)==="clearing"||Math.abs(x-56)+Math.abs(y-7)<=1){
   setToast("이 숲에서는 분기견이 발견되었다고 해. 풀숲을 살펴봐!");return
  }
  if(E.zoneAt(x)==="town")setToast("오른쪽으로 걸어가 이슬초원을 찾아봐. 위쪽 연구소의 연구원에게도 이야기할 수 있어.");
- else setToast("초록색 긴 풀이나 동굴의 거친 땅을 밟아야 야생 몬스터와 만날 수 있어!");
+ else setToast("초록색 긴 풀이나 동굴의 거친 땅을 밟아야 야생 키즈몬과 만날 수 있어!");
  beep("click");
 }
 function openClinic(){
- openGeneric("여울마을 연구소","<p>몬스터를 전부 무료로 치료해 줄게. 모험에 필요한 포획구와 회복약도 살 수 있어.</p>"+
- '<div class="shop-list"><div class="shop-item"><div><strong>전체 무료 회복</strong><small>전투 불능인 몬스터도 회복</small></div><button data-buy="heal">치료</button></div>'+
- '<div class="shop-item"><div><strong>포획구 +1</strong><small>연구코인 35</small></div><button data-buy="ball">35코인</button></div>'+
+ openGeneric("키즈몬 연구소","<p>키즈몬을 전부 무료로 치료해 줄게. 모험에 필요한 키즈볼와 회복약도 살 수 있어.</p>"+
+ '<div class="shop-list"><div class="shop-item"><div><strong>전체 무료 회복</strong><small>전투 불능인 키즈몬도 회복</small></div><button data-buy="heal">치료</button></div>'+
+ '<div class="shop-item"><div><strong>키즈볼 +1</strong><small>연구코인 35</small></div><button data-buy="ball">35코인</button></div>'+
  '<div class="shop-item"><div><strong>회복약 +1</strong><small>연구코인 25</small></div><button data-buy="potion">25코인</button></div></div>');
 }
 function buy(item){
@@ -145,14 +145,14 @@ function openDex(){
  const seenCount=Object.keys(save.seen).filter(id=>species(id)?.playable).length;
  const got=Object.keys(save.collection).filter(id=>species(id)?.playable).length;
  openGeneric("탐험 도감 · "+got+"/"+DB.species.length,
-  '<p>야생에서 발견한 몬스터는 모습이 보이고, 직접 잡은 몬스터는 과학 개념을 알아볼 수 있어. 발견 '+seenCount+'종 / 포획 '+got+'종</p>'+
+  '<p>야생에서 발견한 키즈몬은 모습이 보이고, 직접 잡은 키즈몬은 과학 개념을 알아볼 수 있어. 발견 '+seenCount+'종 / 포획 '+got+'종</p>'+
   '<div class="dex-grid">'+DB.species.map(s=>{
     const caught=!!save.collection[s.id],seen=!!save.seen[s.id];
     return '<button class="dex-card '+(!seen?"unseen":"")+'" type="button" data-dex="'+s.id+'">'+
       (seen?miniArt(s.id):'<span style="font-size:32px">?</span>')+
       '<small>#'+String(s.dexNo).padStart(3,"0")+'</small><b>'+(seen?esc(s.name):"미발견")+'</b>'+
       '<small>'+(caught?"포획 완료":seen?"발견":"미발견")+'</small></button>';
-   }).join("")+'</div><div class="dex-detail" id="dexDetail">도감 속 몬스터를 눌러 연구 내용을 살펴보세요.</div>');
+   }).join("")+'</div><div class="dex-detail" id="dexDetail">도감 속 키즈몬을 눌러 연구 내용을 살펴보세요.</div>');
 }
 function openDexDetail(id){
  if(!save?.seen[id])return;
@@ -219,9 +219,9 @@ function renderBattle(){
   {act:"typed",title:DB.types[a.type].name+" 기술",description:hitEstimate("typed",9)},
   {act:"normal",title:"기본 공격",description:hitEstimate("normal",7)},
   {act:"soft",title:"살살 공격",description:hitEstimate("soft",4)+" · HP 1 남김"},
-  {act:"ball",title:"포획구 던지기",description:catchEstimate()+" · 남은 "+save.items.ball+"개",disabled:save.items.ball<=0},
+  {act:"ball",title:"키즈볼 던지기",description:catchEstimate()+" · 남은 "+save.items.ball+"개",disabled:save.items.ball<=0},
   {act:"potion",title:"회복약",description:"HP +20 · 남은 "+save.items.potion+"개",disabled:save.items.potion<=0},
-  {act:"switch",title:"몬스터 교체",description:"교체하면 상대가 반격"},
+  {act:"switch",title:"키즈몬 교체",description:"교체하면 상대가 반격"},
   {act:"run",title:"도망가기",description:"언제든지 전투에서 탈출 가능"}
  ];
  $("battleButtons").innerHTML=actions.map(o=>'<button type="button" data-action="'+o.act+'" '+(o.disabled?"disabled":"")+' class="'+(o.act==="typed"?"strong":"")+'"><b>'+esc(o.title)+'</b><small>'+esc(o.description)+'</small></button>').join("");
@@ -244,12 +244,12 @@ function enemyTurn(){
  if(!active)return;
  const raw=DB.combat.damage({attacker:foe.id,defender:active.id,attackerLevel:foe.level,defenderLevel:active.level,power:5});
  const hit=Math.max(2,Math.floor(raw*.58));active.hp=Math.max(0,active.hp-hit);
- appendBattle(battle.message+"\n"+species(foe.id).name+"의 반격! 우리 몬스터 HP -"+hit);
+ appendBattle(battle.message+"\n"+species(foe.id).name+"의 반격! 우리 키즈몬 HP -"+hit);
  if(active.hp<=0){
   const alive=save.party.findIndex(p=>p.hp>0);
-  if(alive>=0){save.active=alive;appendBattle(battle.message+"\n다음 몬스터가 전투를 이어가!")}
+  if(alive>=0){save.active=alive;appendBattle(battle.message+"\n다음 키즈몬이 전투를 이어가!")}
   else{
-   appendBattle(battle.message+"\n모든 몬스터가 쓰러졌어. 마을 연구소에서 회복했어.");
+   appendBattle(battle.message+"\n모든 키즈몬이 쓰러졌어. 마을 연구소에서 회복했어.");
    E.healAll(save);save.active=0;save.pos={...E.START};battle.done=true;
    beep("fail");
   }
@@ -316,7 +316,7 @@ function evolveIfReady(){
 }
 function showSwap(){
  if(!save||!battle)return;
- openGeneric("교체할 몬스터",'<p>다른 몬스터로 바꾸면 상대가 한 번 공격할 수 있어.</p><div class="shop-list">'+save.party.map((p,i)=>
+ openGeneric("교체할 키즈몬",'<p>다른 키즈몬으로 바꾸면 상대가 한 번 공격할 수 있어.</p><div class="shop-list">'+save.party.map((p,i)=>
  '<div class="shop-item">'+miniArt(p.id)+'<div><strong>'+esc(species(p.id).name)+'</strong><small>Lv.'+p.level+' / HP '+hpText(p)+'</small></div><button type="button" data-swap="'+i+'" '+(i===save.active||p.hp<=0?"disabled":"")+'>선택</button></div>').join("")+'</div>');
 }
 function battleAction(action){
@@ -366,7 +366,7 @@ function drawBuilding(camX,camY){
  cx.fillStyle="#36765e";cx.fillRect(sx+58,sy+41,24,38);
  cx.fillStyle="#ffffff66";cx.fillRect(sx+21,sy+44,5,18);cx.fillRect(sx+94,sy+44,5,18);
  cx.fillStyle="#eed7a6";cx.fillRect(sx+51,sy+19,38,17);
- cx.fillStyle="#315648";cx.font="bold 9px monospace";cx.fillText("연구소",sx+52,sy+31);
+ cx.fillStyle="#315648";cx.font="bold 9px monospace";cx.fillText("키즈몬",sx+52,sy+31);
 }
 function drawNpc(name,img,x,y,camX,camY,frame=0){
  const sx=(x-camX)*16,sy=(y-camY)*16;
