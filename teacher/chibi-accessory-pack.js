@@ -96,6 +96,7 @@ export function applyAccessoryFit({getNode,fit='male',topName='',headwearName=''
     // A final bind-pose/world-bounds fit keeps hats from hovering above the
     // CURRENT hairstyle and shoes from dropping below the original sole.
     // This is recomputed from the baseline offsets (never accumulated).
+    let seatDiagnostic=null;
     if(group.visible&&(style.slot==='hat'||style.slot==='shoes')){
       const reference=style.slot==='hat'
         ?getNode(hairName||'hairone')
@@ -122,12 +123,23 @@ export function applyAccessoryFit({getNode,fit='male',topName='',headwearName=''
           group.position.y=THREE.MathUtils.clamp(
             group.position.y+worldDelta/parentScale,-.50,.20);
           group.updateWorldMatrix(true,true);
+          const fittedBox=new THREE.Box3().setFromObject(group,true);
+          seatDiagnostic={
+            targetWorldY:target,
+            beforeWorldY:current,
+            afterWorldY:fittedBox.min.y,
+            requestedWorldDelta:target-current,
+            clampedWorldDelta:worldDelta,
+            parentScale,
+            hairWidth:width,hairHeight,
+            remainingGap:target-fittedBox.min.y
+          };
         }
       }
     }
     group.userData.fitState={bodyFit:fit,topName,headwearName,
       offset:[group.position.x,group.position.y,group.position.z],
-      scale:group.scale.x};
+      scale:group.scale.x,seatDiagnostic};
     if(group.visible)used.push({id:style.id,slot:style.slot,...group.userData.fitState});
   }
   return used;
