@@ -181,9 +181,10 @@ export function createPlayerCraft(scene) {
       const bounds = new THREE.Box3().setFromObject(visual);
       const size = bounds.getSize(new THREE.Vector3());
       if (!(size.x > 0 && size.y > 0 && size.z > 0)) throw new Error('Invalid car mesh bounds');
-      // Kenney models commonly use a Z-forward vehicle. Normalize both scale and pivot.
+      // Inspected Kenney race-future GLB: front wheel nodes are at +Z,
+      // whereas our flight/camera convention is -Z forward.
       const longAxis = size.z >= size.x ? size.z : size.x;
-      if (size.x > size.z) visual.rotation.y = Math.PI / 2;
+      visual.rotation.y = size.z >= size.x ? Math.PI : -Math.PI / 2;
       visual.scale.multiplyScalar(7.2 / longAxis);
       visual.updateMatrixWorld(true);
       bounds.setFromObject(visual);
