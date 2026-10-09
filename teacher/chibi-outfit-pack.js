@@ -456,7 +456,12 @@ function addTrouserHipYoke({source,style,group,material,reference,cloneSkinnedMe
   for(let i=0;i<p.count;i++){
     const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
     const lower=smooth(.365,.59,y);
-    p.setXYZ(i,x*(1-.03*(1-lower)),y,z*(z>0?1.06:1.03));
+    // Push just the front-center crotch panel outward enough to cover the
+    // remaining narrow exposed skin wedge; keep the side silhouette slender.
+    const frontCenter=z>0?
+      (1-smooth(.035,.16,Math.abs(x)))*(1-smooth(.54,.72,y)):0;
+    p.setXYZ(i,x*(1-.03*(1-lower)),y,
+      z*(z>0?1.06:1.03)+.035*frontCenter);
   }
   p.needsUpdate=true;
   bindYokeToPelvis(geometry,source.skeleton);
