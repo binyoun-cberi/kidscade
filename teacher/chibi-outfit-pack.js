@@ -373,7 +373,12 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
     for(const sign of [-1,1]){
       const ring=new THREE.TorusGeometry(.074,.012,6,18);
       ring.rotateX(Math.PI/2);ring.translate(sign*.15,.13,0);
-      add(ring,dark,sign<0?'cuff_left':'cuff_right',pelvis);
+      // Cuffs must follow the lower leg, not the pelvis during WALK/RUN.
+      const shin=resolveFirstBoneName(source.skeleton,[
+        sign<0?'DEF-shinL':'DEF-shinR',
+        sign<0?'DEF-shin.L':'DEF-shin.R'
+      ]);
+      add(ring,dark,sign<0?'cuff_left':'cuff_right',shin);
     }
   }
 }
