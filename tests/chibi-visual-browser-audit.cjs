@@ -240,6 +240,10 @@ const errors=[];
   assert.equal(newStyles.length,15,'Must have 15 new generated styles');
   assert.equal(new Set(newStyles.map(x=>x.fingerprint)).size,15,
     'New garments do not all have distinct skinned-shell geometry');
+  assert.ok(newStyles.every(x=>x.meshSafety?.meshSafety==='bounded-deformation-with-local-triangle-winding-and-area-v5.5'),
+    'Generated garment missed triangle stability guard');
+  report.outfitPack.safetyReports=newStyles.map(({name,meshSafety})=>({name,...meshSafety}));
+
   for(const name of ['chibi_male_hoodie','chibi_male_bomber','chibi_male_varsity','chibi_male_oxford','chibi_male_sweater','chibi_female_cardigan','chibi_female_knit','chibi_female_jacket']){
     const style=catalog3d.find(x=>x.name===name);
     assert.ok(style?.extras>=4,'Long sleeves missing from outerwear style: '+name);
@@ -317,6 +321,40 @@ const errors=[];
     testedSamples:testedCount,nearRatio:Number((nearCount/Math.max(testedCount,1)).toFixed(4)),
     caveat:'proximity is not proof of zero intersection'}));
 
+
+
+  // Reproduce visually suspicious outfits and verify cross-body and duplicate
+  // tops are cleared before they reach the viewer or a GLB export.
+  report.meshIntegrity={repro:[],layerSwitches:[]};
+  await setFit('female');
+  await selectGarment('top','shirt');
+  await selectGarment('bottom','skirt');
+  const femaleBase=await evalPage('window.__kc3dAudit.garmentIntegrityAudit()');
+  assert.equal(femaleBase.incompatible.length,0,'Female outfit contains male-only pieces');
+  assert.deepEqual(femaleBase.garments.filter(x=>x.slot==='top').map(x=>x.name),['shirt']);
+  assert.deepEqual(femaleBase.garments.filter(x=>x.slot==='bottom').map(x=>x.name),['skirt']);
+  for(const clip of ['IDLE','WALK']){
+    await sample(clip,'threeQuarter',.25,'mesh-repro-original-shirt');
+    report.meshIntegrity.repro.push({fit:'female',top:'shirt',bottom:'skirt',clip});
+  }
+  await selectGarment('top','chibi_female_knit');
+  const femaleSwitch=await evalPage('window.__kc3dAudit.garmentIntegrityAudit()');
+  assert.deepEqual(femaleSwitch.garments.filter(x=>x.slot==='top').map(x=>x.name),
+    ['chibi_female_knit'],'Original shirt remained under newer top');
+  report.meshIntegrity.layerSwitches.push(femaleSwitch);
+  await setFit('male');
+  await selectGarment('top','chibi_male_sweater');
+  await selectGarment('bottom','chibi_male_joggers');
+  const maleSwitch=await evalPage('window.__kc3dAudit.garmentIntegrityAudit()');
+  assert.equal(maleSwitch.incompatible.length,0,'Male body retained incompatible garments');
+  assert.deepEqual(maleSwitch.garments.filter(x=>x.slot==='top').map(x=>x.name),
+    ['chibi_male_sweater']);
+  report.meshIntegrity.layerSwitches.push(maleSwitch);
+  await setFit('female');
+  const swapBack=await evalPage('window.__kc3dAudit.garmentIntegrityAudit()');
+  assert.equal(swapBack.incompatible.length,0,'Body switch retained gender-incompatible clothing');
+  report.meshIntegrity.layerSwitches.push(swapBack);
+  await setFit('male');
 
   // Chibi v5.3 — test actual 3D accessories, not just UI labels.
   const accessoryManifest=JSON.parse(fs.readFileSync(path.join(ROOT,'chibi/asset-manifest.json'),'utf8')).accessoryLibrary;
