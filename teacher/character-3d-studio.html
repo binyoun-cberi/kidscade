@@ -11,6 +11,21 @@
 @media(max-width:1250px){.studio{grid-template-columns:350px minmax(0,1fr)}.left-rail{width:350px;max-width:350px}.right{position:static;grid-column:1/-1;max-height:none;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible}}
 @media(max-width:820px){.wrap{width:calc(100% - 8px)}.top{display:grid}.top-actions{justify-content:flex-start}.studio{grid-template-columns:minmax(0,1fr)}.side,.left-rail,.right{position:static!important;width:auto;max-width:none;max-height:none!important;grid-template-columns:1fr}.left-rail{overflow:clip!important}.right{overflow:visible!important}.canvas-card{min-height:560px}.view{height:66vh}.clip-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wardrobe-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
+/* The actual selected meshes are rendered into these thumbnails by Three.js. */
+.wardrobe-grid.with-thumbnails{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.part-tile{position:relative;display:grid;justify-items:center;gap:5px;border:2px solid #e2e8f0;
+  border-radius:13px;background:#f9fbff;padding:7px 5px;min-width:0;min-height:148px;
+  cursor:pointer;color:#334155;text-align:center}
+.part-tile.selected{border-color:#65a9ed;background:#e6f2ff;box-shadow:0 0 0 2px rgba(101,169,237,.13)}
+.part-tile:focus-within{outline:2px solid #6b4bc9;outline-offset:2px}
+.part-tile input{position:absolute;left:9px;top:8px;width:17px;height:17px;margin:0;z-index:1}
+.part-preview{display:flex;align-items:center;justify-content:center;width:100%;min-height:112px;
+  border-radius:9px;background:linear-gradient(145deg,#e8edf6,#f5f8fc);overflow:hidden}
+.part-preview canvas{width:112px;height:112px;max-width:100%;display:block}
+.part-name{font-size:.71rem;line-height:1.2;font-weight:900;overflow-wrap:anywhere}
+.part-slot-heading{grid-column:1/-1;margin:9px 0 0;font-size:.78rem;color:#475569}
+@media(max-width:430px){.part-tile{min-height:150px}.part-name{font-size:.73rem}}
+
 /* Body-fit filtering and large touch targets for the wardrobe library. */
 .body-fit-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0 4px}
 .body-fit-switch button{min-height:44px;font-size:.8rem}
@@ -137,7 +152,7 @@
           <button type="button" data-wardrobe-category="costume" aria-pressed="false">기타</button>
         </div>
         <div id="wardrobeCurrentGroup" class="wardrobe-current">남자형 · 헤어</div>
-        <div class="wardrobe-help muted">상의 남녀 각 6종 · 하의 남녀 각 4종. 동시에 착용할 의상은 부위별로 하나씩 선택합니다. 후드·깃·주머니 등 3D 디테일이 있는 의상도 포함됩니다.</div>
+        <div class="wardrobe-help muted">신발 6종·모자/헤드폰 6종·얼굴 5종·가방 3종·시계/목도리 2종 추가. 신발과 액세서리는 실제 3D 모델을 썸네일로 보여줍니다. 같은 착용 부위에는 한 종류만 장착됩니다.</div>
         <div id="wardrobeParts" class="wardrobe-grid"></div>
       </section>
 
@@ -240,6 +255,6 @@ setTimeout(()=>{
   }
 },7000);
 </script>
-<script type="module" src="/teacher/character-3d-studio.js?v=20261009-temple-bridge7"></script>
+<script type="module" src="/teacher/character-3d-studio.js?v=20261009-accessory53"></script>
 </body>
 </html>
