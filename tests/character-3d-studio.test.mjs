@@ -901,6 +901,8 @@ test('v5.8 smooth garment skin weights have four-neighbor blending and reject in
   assert.match(pack,/weights\[i\*4\+k\]=sorted\[k\]\[1\]\/sum/);
   assert.match(pack,/skinTransfer:\{/);
   assert.match(pack,/distantSamples:fallbackCount/);
+  assert.match(pack,/add\(ring,dark,sign<0\?'cuff_left':'cuff_right',shin\)/);
+  assert.doesNotMatch(pack,/add\(ring,dark,sign<0\?'cuff_left':'cuff_right',pelvis\)/);
   assert.match(pack,/for\(let pass=0;pass<12;pass\+\+\)/);
   assert.match(pack,/if\(residualUnsafeTriangles\)throw Error/);
   assert.match(pack,/recoveryPasses,residualUnsafeTriangles/);
