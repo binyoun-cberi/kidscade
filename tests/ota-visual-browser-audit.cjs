@@ -135,7 +135,12 @@ async function moveUntil(axis,target,stage,seconds=9) {
   const preHide=await snap();report.preHide=preHide;
   await interact();await ensureStage('hiding','enter locker');
   await screenshot('05-hidden-in-locker.png','desktop');
-  await sleep(5050);
+  let hidingDone=false;
+  for(let wait=0;wait<20;wait++){
+    if((await snap()).stage==='door'){hidingDone=true;break;}
+    await sleep(400);
+  }
+  assert.ok(hidingDone,'Player stayed hidden too long: '+JSON.stringify(await snap()));
   await ensureStage('door','enemy loses player in locker');
   await interact();
   const left=await snap();assert.equal(left.hidden,false,'Exited locker after danger passes');
