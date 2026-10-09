@@ -83,7 +83,7 @@ export function firePrime(state, prime) {
     state.selectedId = activeEnemies(state)[0]?.id ?? null;
     if (state.destroyed === WAVE_NUMBERS.flat().length) {
       state.status = 'won';
-      state.reason = '모든 합성수 전투기를 격추했어!';
+      state.reason = '적을 모두 1로 만들었어! 1은 소수도 합성수도 아니야.';
       state.score += Math.ceil(state.remaining) * 10 + Math.round(state.shield) * 5;
     }
   }
