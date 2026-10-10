@@ -12,13 +12,20 @@ start:$('start'),restart:$('restart'),help:$('help'),status:$('status'),top:$('m
 const canvas=ui.canvas,ctx=canvas.getContext('2d');
 const label=rules.MODES[mode];
 let model=null,held=false,previousFrame=0,finished=false,canvasWidth=0,canvasHeight=0,choiceKey='';
-const key='kidscade_squid_mini_'+mode+'_v1';
+const keys=Object.freeze({
+  redlight:'kidscade_squid_mini_redlight_v1',
+  tug:'kidscade_squid_mini_tug_v1',
+  marbles:'kidscade_squid_mini_marbles_v1',
+  final:'kidscade_squid_mini_final_v1'
+});
+const key=keys[mode];
 let best=0;try{best=Math.max(0,Number(JSON.parse(localStorage.getItem(key)||'{}').best)||0);}catch(_){}
 const sprites={};
-function image(name,url){if(typeof Image==='undefined')return;sprites[name]=new Image();sprites[name].src=url;}
-image('player','../../assets/game/characters/kidscade-avatar-v3/school-starter/school-starter-sheet.png');
-image('coin','../../assets/game/2d/platformer-art/base/items/coin-gold.png');
-image('flag','../../assets/game/2d/platformer-art/base/items/flag-green.png');
+const ASSET_ROOT=new URL('../../assets/',script.src);
+function image(name,url){if(typeof Image==='undefined')return;sprites[name]=new Image();sprites[name].src=new URL(url,ASSET_ROOT).href;}
+image('player','game/characters/kidscade-avatar-v3/school-starter/school-starter-sheet.png');
+image('coin','game/2d/platformer-art/base/items/coin-gold.png');
+image('flag','game/2d/platformer-art/base/items/flag-green.png');
 const alive=name=>sprites[name]?.complete&&sprites[name].naturalWidth>0;
 function statusLabel(){
  if(!model)return label.hint;
