@@ -94,10 +94,10 @@ function advance(state,wasRejected){
 // Looking at the chef at the wrong time is still penalized separately.
 function peekCost(previouslySeen){
  if(previouslySeen<2)return 0;
- if(previouslySeen===2)return 11;
- if(previouslySeen===3)return 20;
- if(previouslySeen===4)return 30;
- return 40;
+ if(previouslySeen===2)return 6;
+ if(previouslySeen===3)return 10;
+ if(previouslySeen===4)return 17;
+ return 24;
 }
 // v5: gaze timing is part of the game rules, not CSS decoration.
 // Timings vary by course and by portion but WARN always lasts >= 460ms.
