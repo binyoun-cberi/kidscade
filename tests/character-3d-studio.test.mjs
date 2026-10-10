@@ -282,7 +282,7 @@ test('male Chibi manifest records source-mesh reuse',()=>{
 
 test('male Chibi generator does not create procedural hair sleeves or compressed pants',()=>{
   const js=read('teacher/character-3d-studio.js');
-  const start=js.indexOf('const HAIR_STYLE_PARAMETERS=');
+  const start=js.indexOf('function createKidscadeMaleSet(){');
   const end=js.indexOf('function makeUnlitMaterial(source){',start);
   assert.ok(start>=0&&end>start);
   const male=js.slice(start,end);
@@ -348,7 +348,7 @@ test('deployed Chibi studio uses commit-scoped HTML and JS assets',()=>{
 test('male Chibi eyes align with native face markings and eyebrows only use two source islands',()=>{
   const js=read('teacher/character-3d-studio.js');
   const manifest=JSON.parse(read('chibi/asset-manifest.json'));
-  const male=js.slice(js.indexOf('const HAIR_STYLE_PARAMETERS='),js.indexOf('function makeUnlitMaterial(source){'));
+  const male=js.slice(js.indexOf('function createKidscadeMaleSet(){'),js.indexOf('function makeUnlitMaterial(source){'));
   assert.match(male,/const eyeGeometry=eyesSource\.geometry\.clone\(\)/);
   assert.match(male,/eyeHeightScale:1/);
   assert.match(male,/alignsWith:'character_low native face markings'/);
@@ -365,7 +365,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
   const js=read('teacher/character-3d-studio.js');
-  const male=js.slice(js.indexOf('const HAIR_STYLE_PARAMETERS='),js.indexOf('function makeUnlitMaterial(source){'));
+  const male=js.slice(js.indexOf('function createKidscadeMaleSet(){'),js.indexOf('function makeUnlitMaterial(source){'));
   assert.match(male,/const upperTorso=smooth\(\.76,1\.02,y\)/);
   assert.match(male,/const torsoCore=1-smooth\(\.21,\.48,ax\)/);
   assert.match(male,/const sleeve=smooth\(\.10,\.23,Math\.abs\(x\)\)/);
@@ -396,7 +396,7 @@ test('male haircut never disables depth testing or mutates source hair materials
 
 test('male Chibi proportional rework widens upper torso and slims individual legs and shorts',()=>{
   const js=read('teacher/character-3d-studio.js');
-  const male=js.slice(js.indexOf('const HAIR_STYLE_PARAMETERS='),js.indexOf('function makeUnlitMaterial(source){'));
+  const male=js.slice(js.indexOf('function createKidscadeMaleSet(){'),js.indexOf('function makeUnlitMaterial(source){'));
   assert.match(male,/upperTorso\*\(\.145\*torsoCore\+\.018\*\(1-torsoCore\)\)/);
   assert.match(male,/const thigh=smooth\(\.18,\.36,y\)/);
   assert.match(male,/const calf=smooth\(\.025,\.12,y\)/);
@@ -463,7 +463,7 @@ test('mobile studio shows the live avatar preview before the long wardrobe',()=>
 
 test('male pelvis and shorts reduce rear volume together without modifying the original female base',()=>{
   const js=read('teacher/character-3d-studio.js');
-  const body=js.slice(js.indexOf('const HAIR_STYLE_PARAMETERS='),js.indexOf('function makeUnlitMaterial(source){'));
+  const body=js.slice(js.indexOf('function createKidscadeMaleSet(){'),js.indexOf('function makeUnlitMaterial(source){'));
   assert.match(body,/const bodyGeometry=bodySource\.geometry\.clone\(\)/);
   assert.match(body,/const pelvis=smooth\(\.43,\.55,y\)\*\(1-smooth\(\.74,\.91,y\)\)/);
   assert.match(body,/x\*=1-\.085\*pelvis/);
