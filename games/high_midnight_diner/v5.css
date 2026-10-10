@@ -1,0 +1,32 @@
+/* v5 — the chef's turn is a timed gameplay warning, not a decorative status. */
+.gaze-indicator{min-width:58px;padding:5px 10px;border:1px solid;text-align:center;font-weight:1000;letter-spacing:.05em;border-radius:3px;transition:background-color .12s}
+.gaze-safe{background:#254635;border-color:#76aa7a;color:#e3fbdc}
+.gaze-warn{background:#714b21;border-color:#efb45d;color:#fff1c9;animation:warningPulse .48s infinite alternate}
+.gaze-look{background:#6d2927;border-color:#ed7669;color:#ffe5dc}
+.cook-flash.gaze-warn{background:#4a3321;border-color:#d3a25c;color:#ffe6b5}
+.cook-flash.gaze-look{background:#522521;border-color:#d76150;color:#ffe6d9}
+.cook-flash.revealed{border-color:#9fbf7b}
+.peek-btn.warning{border-color:#edac66;background:linear-gradient(#e7ba79,#b88138)}
+.peek-btn:disabled{opacity:.65;background:#5f3430;color:#f7d4c7;border-color:#bc685a}
+.kitchen.gaze-warn .scene-legend{border-color:#c89e5c;color:#ffdb98}
+.kitchen.gaze-look .scene-legend{border-color:#de665e;background:#3b1c1ce8;color:#fff3dd}
+.kitchen.gaze-look .kitchen-vignette{background:radial-gradient(ellipse at 50% 48%,transparent 22%,#360b0bad 100%)}
+.kitchen.caught{animation:caughtShake .34s linear 1}
+.kitchen.caught .scene-legend{background:#6b2220;color:#fff}
+.kitchen.gaze-warn .fallback-chef .face{transform:translateX(5px) rotate(13deg);transition:transform .18s}
+.kitchen.gaze-look .fallback-chef .face{transform:translateX(-2px) rotate(0deg)}
+/* v4 fix: flex children must not shrink below the canvas intrinsic aspect-ratio. */
+.plate-wrap{flex-shrink:0!important;min-height:0}
+#plate{aspect-ratio:10/7!important;width:min(100%,540px)!important;height:auto!important;max-height:none!important}
+@keyframes warningPulse{from{box-shadow:0 0 0 0 #dd9f3844}to{box-shadow:0 0 0 4px #e7a63d33}}
+@keyframes caughtShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+@media(max-width:930px){
+ .gaze-indicator{font-size:12px;min-width:54px;padding:4px 7px}
+ .peek-btn{min-height:50px!important}
+ .cook-caption{gap:9px}
+ .plate-wrap{margin:0}
+}
+@media(prefers-reduced-motion:reduce){
+ .gaze-warn,.kitchen.caught{animation:none!important}
+ .gaze-indicator{transition:none}
+}

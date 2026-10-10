@@ -3,14 +3,14 @@
 const R=window.MidnightDinerRules,P=window.MidnightDinerPlate;
 const $=id=>document.getElementById(id);
 const saveKey='midnightDinerBestV1';
-let game=null,chosen=null,audio=null,muted=false,record=0,started=false,reviewPending=false,runReported=false,cookTimer=null,peekHeld=false;
+let game=null,chosen=null,audio=null,muted=false,record=0,started=false,reviewPending=false,runReported=false,cookTimer=null,peekHeld=false,lastCookTick=0,lastGazePhase='',caughtFlashIndex=-1;
 try{record=Number(localStorage.getItem(saveKey))||0;}catch(_){}
 function sound(type){
  if(muted)return;
  try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();
  const osc=audio.createOscillator(),gain=audio.createGain(),now=audio.currentTime;
- osc.type=type==='danger'?'sawtooth':'sine';osc.frequency.setValueAtTime(type==='danger'?125:type==='safe'?570:280,now);
- osc.frequency.exponentialRampToValueAtTime(type==='danger'?54:type==='safe'?790:160,now+.19);
+ osc.type=type==='danger'?'sawtooth':type==='warn'?'triangle':'sine';osc.frequency.setValueAtTime(type==='danger'?125:type==='warn'?940:type==='safe'?570:280,now);
+ osc.frequency.exponentialRampToValueAtTime(type==='danger'?54:type==='warn'?520:type==='safe'?790:160,now+.19);
  gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.08,now+.012);gain.gain.exponentialRampToValueAtTime(.0001,now+.24);
  osc.connect(gain).connect(audio.destination);osc.start(now);osc.stop(now+.26);
  }catch(_){}
@@ -58,7 +58,7 @@ function start(){
  $('reviewVeil').classList.add('hidden');
  $('veil').classList.add('hidden');$('notebookPanel').classList.add('hidden');
  $('chefLine').textContent='“'+game.dish.spec.line+'”';
- note('왼쪽 요리사의 조리 과정을 살펴보세요. 흘끔 보기로 재료를 기억하세요.');
+ note('등을 돌릴 때 꾹 누르고, 어깨가 움직이면 즉시 놓으세요! 들키면 의심이 크게 올라갑니다.');
  try{window.KidscadeGame?.start?.();}catch(_){}
  repaint();reportMood(false);startCooking();
 }
@@ -74,10 +74,10 @@ function finish(){
  reportMood(true);
 }
 
-const COOK_INTERVAL_MS=1850;
+const COOK_TICK_MS=50;
 function stopCooking(){
  if(cookTimer!==null){clearInterval(cookTimer);cookTimer=null;}
- peekHeld=false;
+ peekHeld=false;lastGazePhase='';
  $('peekBtn').classList.remove('looking');
 }
 function renderMemory(){
@@ -92,6 +92,34 @@ function renderMemory(){
   entries.append(chip);
  }
 }
+function updateGaze(){
+ if(!game||game.phase!=='cooking')return;
+ const ev=R.cookingEvent(game);if(!ev)return;
+ const labels={SAFE:'등을 돌리고 있다 · 지금 관찰 가능',WARN:'어깨가 움직인다 · 눈을 떼!',LOOK:'요리사가 돌아봤다 · 보지 마!'};
+ const names={SAFE:'안전',WARN:'경고',LOOK:'응시'};
+ const phase=ev.phase;
+ const clock=$('cookClock');
+ clock.textContent=names[phase];
+ clock.className='gaze-indicator gaze-'+phase.toLowerCase();
+ const stage=$('cookFlash'),peek=game.dish.currentPeek;
+ stage.classList.toggle('revealed',!!peek&&peekHeld&&!peek.concealed&&phase==='SAFE');
+ stage.classList.toggle('gaze-warn',phase==='WARN');
+ stage.classList.toggle('gaze-look',phase==='LOOK');
+ stage.textContent=phase==='SAFE'&&peekHeld&&peek?
+   peek.concealed?'손에 가려 재료를 보지 못했다.':peek.zone+'번: '+peek.ingredient:
+   labels[phase];
+ $('peekBtn').disabled=phase==='LOOK';
+ $('peekBtn').classList.toggle('warning',phase==='WARN');
+ $('peekBtn').classList.toggle('looking',peekHeld);
+ const timeFraction=(ev.index+ev.elapsedMs/ev.totalMs)/ev.total;
+ $('cookBar').style.width=(100*timeFraction).toFixed(1)+'%';
+ if(phase!==lastGazePhase){
+  lastGazePhase=phase;
+  window.dispatchEvent(new CustomEvent('midnight-diner:gaze',{detail:{phase,course:game.course,zone:ev.zone}}));
+  if(phase==='WARN')sound('warn');
+  dispatchCookVisual();
+ }
+}
 function updateCookScene(){
  if(!game||game.phase!=='cooking')return;
  const ev=R.cookingEvent(game),dish=game.dish;
@@ -102,60 +130,72 @@ function updateCookScene(){
   const item=document.createElement('span');
   item.className='cook-slot'+(i===ev.zone-1?' current':'')+
    (dish.observed.some(x=>x.zone===i+1)?' seen':'');
-  item.textContent=String(i+1);
-  slots.append(item);
+  item.textContent=String(i+1);slots.append(item);
  }
  $('cookStage').textContent='조리 '+(ev.index+1)+' / '+ev.total+' · '+dish.spec.title;
- $('cookBar').style.width=(100*ev.index/ev.total).toFixed(1)+'%';
- const peek=dish.currentPeek;
- const stage=$('cookFlash');stage.classList.toggle('revealed',!!peek&&!peek.concealed);
- stage.textContent=peek?peek.message:ev.zone+'번 위치로 요리사의 손이 움직인다. 흘끔 보지 않으면 무엇인지 알 수 없다.';
+ updateGaze();
+}
+function dispatchCookVisual(){
+ if(game?.phase!=='cooking')return;
+ const ev=R.cookingEvent(game),peek=game.dish.currentPeek;
  window.dispatchEvent(new CustomEvent('midnight-diner:cooking',{
   detail:{course:game.course,zone:ev.zone,step:ev.index,total:ev.total,
-   looking:peekHeld&&!!peek,concealed:!!peek?.concealed,ingredient:peekHeld?peek?.ingredient||null:null}
+   looking:peekHeld&&ev.phase==='SAFE'&&!!peek,concealed:!!peek?.concealed,
+   ingredient:peekHeld&&ev.phase==='SAFE'?peek?.ingredient||null:null}
  }));
-}
-function revealCooking(){
- if(!game||game.phase!=='cooking'||reviewPending)return;
- const result=R.peekCooking(game);
- if(!result.ok)return;
- if(!result.free)sound('tap');note(result.message);
- if(game.phase==='finished'){finish();return;}
- updateCookScene();repaint();
 }
 function startCooking(){
  stopCooking();
  if(!game||game.phase!=='cooking')return;
- chosen=null;
+ chosen=null;lastCookTick=performance.now();
  $('chefLine').textContent='“'+game.dish.spec.line+'”';
- updateCookScene();repaint();
+ updateCookScene();repaint();dispatchCookVisual();
  cookTimer=setInterval(()=>{
-  if(document.hidden)return;
   if(!game||game.phase!=='cooking'||reviewPending){stopCooking();return;}
-  const outcome=R.observeCooking(game,false);
-  if(!outcome.ok){stopCooking();if(game.phase==='finished')finish();return;}
-  if(game.phase==='playing'){
+  const now=performance.now(),dt=Math.max(0,Math.min(100,now-lastCookTick));
+  lastCookTick=now;
+  if(document.hidden)return;
+  const outcome=R.tickCooking(game,dt,peekHeld);
+  if(!outcome.ok){stopCooking();return;}
+  if(outcome.revealed){
+   const peek=game.dish.currentPeek;
+   if(peek)note(peek.concealed?'재료가 팔에 가려졌다.':peek.zone+'번 조각: '+peek.ingredient,'good');
+   sound('safe');renderMemory();
+  }
+  if(outcome.warned){note('어깨가 움직였다! 지금 눈을 떼야 해.','danger');reportMood(false);}
+  if(outcome.caught){
+   onPeekUp();sound('danger');
+   $('chefLine').textContent='“'+outcome.message+'”';
+   note('발각! 의심도가 크게 올랐다. ('+game.catches+'회 적발)','danger');
+   reportMood(true);
+   window.dispatchEvent(new CustomEvent('midnight-diner:caught',{detail:{catches:game.catches,suspicion:game.suspicion}}));
+  }
+  if(game.phase==='finished'){stopCooking();finish();return;}
+  if(outcome.finishedCooking){
    stopCooking();$('cookBar').style.width='100%';
    $('chefLine').textContent='“자, 다 됐어. 이번에는 어디를 먹겠니?”';
-   note('조리가 끝났습니다. 기억한 재료와 번호를 비교해 세 입을 선택하세요.');
-   repaint();reportMood(false);
+   note('조리 완료. 몰래 본 재료 위치를 기억해 안전한 부분을 선택하세요.');
+   repaint();
    if(window.innerWidth<=930)window.scrollTo?.({top:0,behavior:'instant'});
    return;
   }
-  updateCookScene();
-  if(peekHeld)revealCooking();
- },COOK_INTERVAL_MS);
+  if(outcome.finishedStep){lastGazePhase='';updateCookScene();dispatchCookVisual();}
+  else{updateGaze();if(outcome.revealed||outcome.caught)dispatchCookVisual();}
+  $('suspicionText').textContent=game.suspicion;
+  $('suspicionBar').style.width=game.suspicion+'%';
+ },COOK_TICK_MS);
 }
 function onPeekDown(ev){
  if(ev?.cancelable)ev.preventDefault();
  if(!game||game.phase!=='cooking'||reviewPending)return;
+ if(R.gazePhase(game)==='LOOK')return;
  peekHeld=true;$('peekBtn').classList.add('looking');
- revealCooking();
+ updateGaze();
 }
 function onPeekUp(){
  const previouslyHeld=peekHeld;
  peekHeld=false;$('peekBtn').classList.remove('looking');
- if(previouslyHeld&&game?.phase==='cooking')updateCookScene();
+ if(previouslyHeld&&game?.phase==='cooking'){updateGaze();dispatchCookVisual();}
 }
 $('peekBtn').addEventListener('pointerdown',onPeekDown);
 for(const kind of ['pointerup','pointercancel','pointerleave'])$('peekBtn').addEventListener(kind,onPeekUp);
@@ -240,7 +280,7 @@ $('notebookBtn').addEventListener('click',notebook);$('closeNotebook').addEventL
 $('notebookPanel').addEventListener('click',e=>{if(e.target===$('notebookPanel'))$('notebookPanel').classList.add('hidden');});
 window.addEventListener('keyup',e=>{if(e.code==='Space')onPeekUp();});
 window.addEventListener('blur',onPeekUp);
-document.addEventListener('visibilitychange',()=>{if(document.hidden)onPeekUp();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){onPeekUp();lastCookTick=performance.now();}});
 window.addEventListener('keydown',e=>{
  if(e.key==='Escape'){$('notebookPanel').classList.add('hidden');return;}
  if(e.code==='Space'&&game?.phase==='cooking'){if(!e.repeat)onPeekDown(e);e.preventDefault();return;}

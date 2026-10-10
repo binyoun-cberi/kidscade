@@ -92,7 +92,7 @@ spoonBowl.position.set(-.41,-.2,0);spoonBowl.scale.set(1,.32,.65);spoon.add(spoo
 spoon.position.set(.4,1.76,-.2);scene.add(spoon);
 const addedIngredient=new THREE.Mesh(new THREE.DodecahedronGeometry(.12),new THREE.MeshStandardMaterial({color:0x8e764c,roughness:1}));
 addedIngredient.visible=false;scene.add(addedIngredient);
-let currentZone=1,currentTotal=5,lookingAtFood=false,foodIngredient=null,stirUntil=0,cookingPhase=false;
+let currentZone=1,currentTotal=5,lookingAtFood=false,foodIngredient=null,stirUntil=0,cookingPhase=false,gazePhase='SAFE';
 const ingredientModels=new Map();
 const ingredientFiles={
  seed:'tomato-slice.glb',mushroom:'mushroom-half.glb',bean:'cherries.glb',
@@ -117,6 +117,18 @@ window.addEventListener('midnight-diner:cooking',ev=>{
  const visual=key&&ingredientModels.get(key);
  if(visual)visual.visible=true;
 });
+window.addEventListener('midnight-diner:gaze',ev=>{
+ const next=ev.detail?.phase||'SAFE';
+ gazePhase=next;
+ kitchen.classList.remove('gaze-safe','gaze-warn','gaze-look');
+ kitchen.classList.add('gaze-'+next.toLowerCase());
+ if(next==='LOOK'){lookingAtFood=false;ingredientModels.forEach(obj=>obj.visible=false);}
+});
+window.addEventListener('midnight-diner:caught',ev=>{
+ shock=1.4;lookingAtFood=false;ingredientModels.forEach(obj=>obj.visible=false);
+ kitchen.classList.add('caught');
+ window.setTimeout(()=>kitchen.classList.remove('caught'),450);
+});
 window.addEventListener('midnight-diner:action',ev=>{
  const action=ev.detail||{};
  reactionName=action.name||'';
@@ -139,13 +151,18 @@ for(let i=0;i<6;i++){
 function tick(){
  if(disposed)return;requestAnimationFrame(tick);if(document.hidden)return;const t=clock.getElapsedTime();frame++;
  if(frame%20===0)resize();
- lamp.intensity=38+Math.sin(t*17)*.7+(mood>.6?Math.sin(t*8)*2:0);
+ lamp.intensity=(gazePhase==='LOOK'&&cookingPhase?29:38)+Math.sin(t*17)*.7+(mood>.6?Math.sin(t*8)*2:0);
  if(chef){
  const reacting=t<reactionUntil;
- chef.rotation.y=Math.sin(t*1.1)*(.07+mood*.21)+(reacting&&reactionName==='question'?.15:0);
+ // The cook looks away during SAFE, begins turning on WARN,
+ // and faces the player while LOOK. Never snap the entire model in one frame.
+ const target=cookingPhase?
+  (gazePhase==='SAFE'?Math.PI*.72:gazePhase==='WARN'?Math.PI*.37:0):
+  Math.sin(t*.7)*.05;
+ chef.rotation.y+=(target-chef.rotation.y)*.16;
  chef.position.x=Math.sin(t*.4)*.03;
  chef.position.z=.43+(reacting&&reactionName==='reject'?.17:0);
- chef.rotation.z=shock*.08+(reacting&&reactionName==='inspect'?.07:0);
+ chef.rotation.z=shock*.055+(reacting&&reactionName==='inspect'?.07:0);
 }
  if(food)food.rotation.y+=.002;
  const stirring=t<stirUntil;

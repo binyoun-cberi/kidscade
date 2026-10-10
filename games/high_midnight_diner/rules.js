@@ -35,12 +35,13 @@ function dishFor(index,rand){
  const dangerEvents=sequence.filter(id=>dangerous.has(id));
  if(dangerEvents.every(id=>zones[id].shade<.18))zones[dangerEvents[0]].shade=.7;
  return {spec,zones,eaten:0,successful:0,inspectionsLeft:2,asked:false,
-  cookOrder:sequence,cookIndex:0,observed:[],peekCount:0};
+  cookOrder:sequence,cookIndex:0,observed:[],peekCount:0,
+  elapsedMs:0,holdMs:0,currentPeek:null,warnedIndex:-1,caughtIndex:-1};
 }
 function begin(seed){
  const value=seed===undefined?Math.floor(Math.random()*2147483647):seed;
  return {seed:value,course:0,health:100,hunger:75,suspicion:8,score:0,safeBites:0,
- dangers:0,rejections:0,discovered:[],turns:0,phase:'cooking',ending:null,history:[],lastReview:null,
+ dangers:0,rejections:0,catches:0,discovered:[],turns:0,phase:'cooking',ending:null,history:[],lastReview:null,
  dish:dishFor(0,rng(value))};
 }
 function limit(n){return Math.max(0,Math.min(100,n));}
@@ -89,38 +90,85 @@ function advance(state,wasRejected){
  state.phase='cooking';
  return last;
 }
+// v5: gaze timing is part of the game rules, not CSS decoration.
+// Timings vary by course and by portion but WARN always lasts >= 460ms.
+function timingFor(state){
+ const d=state.dish,id=d.cookOrder[d.cookIndex],z=d.zones[id];
+ const safeEnd=Math.max(1120,1620-state.course*95+Math.round((z.shade-.5)*210));
+ const warnLength=Math.max(460,630-state.course*35);
+ const lookLength=350;
+ return {safeEnd,warnEnd:safeEnd+warnLength,totalMs:safeEnd+warnLength+lookLength,
+  revealAt:230+z.garnish*50,holdNeeded:310};
+}
+function gazePhase(state){
+ if(state.phase!=='cooking')return 'DONE';
+ const t=timingFor(state),ms=state.dish.elapsedMs;
+ return ms<t.safeEnd?'SAFE':ms<t.warnEnd?'WARN':'LOOK';
+}
 function cookingEvent(state){
  if(state.phase!=='cooking')return null;
  const dish=state.dish,id=dish.cookOrder[dish.cookIndex];
  if(id===undefined)return null;
- return {index:dish.cookIndex,total:dish.cookOrder.length,zone:id+1,course:state.course};
+ return {index:dish.cookIndex,total:dish.cookOrder.length,zone:id+1,course:state.course,
+   phase:gazePhase(state),elapsedMs:dish.elapsedMs,...timingFor(state)};
 }
-function peekCooking(state){
- if(state.phase!=='cooking')return {ok:false,message:'지금은 볼 수 없습니다.'};
- const dish=state.dish,id=dish.cookOrder[dish.cookIndex],z=dish.zones[id];
- if(dish.currentPeek)return {...dish.currentPeek,free:true};
- dish.peekCount++;state.turns++;
- state.suspicion+=dish.peekCount<=3?2:5;
- const concealed=z.shade<.18,ingredient=concealed?'가려진 재료':z.dangerous?dish.spec.word:'일반 양념';
- const result={ok:true,zone:id+1,concealed,ingredient,
-  message:concealed?(id+1)+'번을 살폈지만 손에 가려졌다.':
-  (id+1)+'번에 '+ingredient+'을(를) 넣는 모습을 봤다.'};
- dish.currentPeek=result;
- if(!concealed)dish.observed.push({zone:id+1,ingredient,dangerous:z.dangerous});
+function tickCooking(state,deltaMs,looking){
+ if(state.phase!=='cooking')return {ok:false,message:'현재 조리 중이 아닙니다.'};
+ const d=state.dish,timing=timingFor(state);
+ // Pause/lag cannot skip a warning and count it as a surprise catch.
+ const dt=Math.max(0,Math.min(100,Number.isFinite(deltaMs)?deltaMs:0));
+ const before=d.elapsedMs,after=Math.min(timing.totalMs,before+dt);
+ const zoneId=d.cookOrder[d.cookIndex],z=d.zones[zoneId],step=d.cookIndex;
+ let message='',caught=false,revealed=false,warned=false,concealed=false;
+ const phaseAt=ms=>ms<timing.safeEnd?'SAFE':ms<timing.warnEnd?'WARN':'LOOK';
+ const phase=phaseAt(Math.min(after,timing.totalMs-.001));
+ if(looking){
+   if(before<timing.safeEnd){
+    const eligible=Math.max(0,Math.min(after,timing.safeEnd)-Math.max(before,timing.revealAt));
+    d.holdMs+=eligible;
+    if(d.holdMs>=timing.holdNeeded&&!d.currentPeek){
+     concealed=z.shade<.18;
+     const ingredient=concealed?'가려진 재료':z.dangerous?d.spec.word:'일반 양념';
+     d.currentPeek={ok:true,zone:zoneId+1,concealed,ingredient};
+     if(!concealed)d.observed.push({zone:zoneId+1,ingredient,dangerous:z.dangerous});
+     d.peekCount++;revealed=true;
+     message=concealed?'요리사의 손에 가려졌다.':(zoneId+1)+'번에 '+ingredient+'을(를) 넣었다.';
+    }
+   }
+   if(before>=timing.safeEnd+150&&phase==='WARN'&&d.warnedIndex!==step){
+    d.warnedIndex=step;warned=true;
+    state.suspicion+=4;
+    message='어깨가 움직였다! 얼른 시선을 돌려!';
+   }
+   if(before>=timing.warnEnd&&phase==='LOOK'&&d.caughtIndex!==step){
+    d.caughtIndex=step;state.catches++;caught=true;
+    state.suspicion+=state.catches===1?18:state.catches===2?28:40;
+    message=state.catches===1?'뭘 그렇게 보고 있지?':state.catches===2?'두 번이나 들켰군.':'네가 날 지켜보는 걸 다 알고 있었어.';
+   }
+ }else d.holdMs=0;
+ d.elapsedMs=after;
+ state.suspicion=limit(state.suspicion);
  evaluate(state);
- return result;
+ if(state.phase==='finished')
+  return {ok:true,finished:true,caught,warned,revealed,message,phase:'DONE',suspicion:state.suspicion};
+ let finishedStep=false,finishedCooking=false;
+ if(d.elapsedMs>=timing.totalMs){
+  finishedStep=true;d.cookIndex++;state.turns++;
+  d.elapsedMs=0;d.holdMs=0;d.currentPeek=null;
+  if(d.cookIndex>=d.cookOrder.length){state.phase='playing';finishedCooking=true;}
+ }
+ return {ok:true,caught,warned,revealed,message,finishedStep,finishedCooking,
+   phase:gazePhase(state),suspicion:state.suspicion};
 }
+// Compatibility for older deterministic tests; explicit one-step advancement
+// does not award a glimpse or bypass the timed observation.
 function observeCooking(state,looking){
  if(state.phase!=='cooking')return {ok:false,message:'현재 조리 중이 아닙니다.'};
- const dish=state.dish,id=dish.cookOrder[dish.cookIndex],z=dish.zones[id];
- if(looking&&!dish.currentPeek)peekCooking(state);
- if(state.phase==='finished')return {ok:false,message:'요리사가 당신을 돌려보냈습니다.'};
- const observation=dish.currentPeek;
- dish.cookIndex++;dish.currentPeek=null;
- if(dish.cookIndex>=dish.cookOrder.length)state.phase='playing';
- return {ok:true,zone:id+1,looking:!!observation,concealed:!!observation?.concealed,
-  message:observation?.message||((id+1)+'번에 재료가 들어갔지만 무엇인지는 보지 못했다.'),
-  finishedCooking:state.phase==='playing'};
+ const info=cookingEvent(state);
+ const d=state.dish;d.cookIndex++;d.elapsedMs=0;d.holdMs=0;d.currentPeek=null;state.turns++;
+ if(d.cookIndex>=d.cookOrder.length)state.phase='playing';
+ return {ok:true,zone:info.zone,looking:false,concealed:false,
+  message:info.zone+'번 조리 과정을 지나쳤다.',finishedCooking:state.phase==='playing'};
 }
 
 function inspect(state,index){
@@ -172,5 +220,5 @@ function question(state){
  const inFirst=dish.zones.filter(z=>z.id<half&&z.dangerous).length;
  return {ok:true,half,count:inFirst,message:'요리사: “처음 '+half+'조각에는 위험한 것이 '+inFirst+'개 있지. 세어 봐.”'};
 }
-return {FOODS,INGREDIENTS,begin,inspect,eat,reject,question,advance,rng,dishFor,cookingEvent,peekCooking,observeCooking};
+return {FOODS,INGREDIENTS,begin,inspect,eat,reject,question,advance,rng,dishFor,cookingEvent,gazePhase,timingFor,tickCooking,observeCooking};
 });
