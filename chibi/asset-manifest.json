@@ -997,7 +997,16 @@
           "chibi_male_sweater",
           "chibi_male_jeans",
           "chibi_male_joggers",
-          "chibi_male_chinos"
+          "chibi_male_chinos",
+          "kidscade_male_hair_spiky",
+          "kidscade_male_hair_wave",
+          "kidscade_male_hair_mullet",
+          "kidscade_male_hair_comma",
+          "chibi_male_trackjacket",
+          "chibi_male_rugby",
+          "chibi_male_utilityvest",
+          "chibi_male_cargo",
+          "chibi_male_trackpants"
         ],
         "female": [
           "hairone",
@@ -1041,7 +1050,16 @@
           "chibi_female_jacket",
           "chibi_female_jeans",
           "chibi_female_shorts",
-          "chibi_female_widepants"
+          "chibi_female_widepants",
+          "chibi_female_hair_curl",
+          "chibi_female_hair_hime",
+          "chibi_female_hair_pixie",
+          "chibi_female_hair_twintail",
+          "chibi_female_blazer",
+          "chibi_female_sailor",
+          "chibi_female_tunic",
+          "chibi_female_pleated",
+          "chibi_female_culottes"
         ],
         "shared": [
           "shoe",
