@@ -1054,3 +1054,12 @@ test('v6.1 visual identity details include layered school collar, rugby stripes,
   assert.match(hair,/source GLB hair atlas has alpha-cutout/);
   assert.match(hair,/side:THREE.DoubleSide/);
 });
+
+test('v6.2 sunglasses cover eye sockets and face mask follows the lower face',()=>{
+  const src=read('teacher/chibi-accessory-pack.js');
+  assert.match(src,/case 'sunglasses':return box\(\.207,\.136,\.020,-\.108,eyeY-\.006,faceZ\+\.102\)/);
+  assert.match(src,/case 'mask':return sphere\(0,eyeY-\.344,faceZ\+\.137,\.202,\.144,\.043\)/);
+  assert.match(src,/add\(box\(\.207,\.136,\.020,\.108,eyeY-\.006,faceZ\+\.102\)/);
+  assert.match(src,/eyeY-\.246,faceZ\+\.181/);
+  assert.match(src,/eyeY-\.347,faceZ\+\.073/);
+});
