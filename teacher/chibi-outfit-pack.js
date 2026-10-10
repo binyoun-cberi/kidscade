@@ -5,12 +5,12 @@ import * as THREE from '../assets/vendor/three-r160/three.module.js';
 
 export const OUTFIT_LIBRARY={
   male:{
-    top:['kidscade_male_tshirt','chibi_male_hoodie','chibi_male_bomber','chibi_male_varsity','chibi_male_oxford','chibi_male_sweater'],
-    bottom:['kidscade_male_shorts','chibi_male_jeans','chibi_male_joggers','chibi_male_chinos']
+    top:['kidscade_male_tshirt','chibi_male_hoodie','chibi_male_bomber','chibi_male_varsity','chibi_male_oxford','chibi_male_sweater','chibi_male_raincoat','chibi_male_polo','chibi_male_workvest'],
+    bottom:['kidscade_male_shorts','chibi_male_jeans','chibi_male_joggers','chibi_male_chinos','chibi_male_cargo','chibi_male_bermuda']
   },
   female:{
-    top:['shirt','kidscade_hoodie_blue','chibi_female_cardigan','chibi_female_blouse','chibi_female_knit','chibi_female_jacket'],
-    bottom:['skirt','chibi_female_jeans','chibi_female_shorts','chibi_female_widepants']
+    top:['shirt','kidscade_hoodie_blue','chibi_female_cardigan','chibi_female_blouse','chibi_female_knit','chibi_female_jacket','chibi_female_sailor','chibi_female_windbreaker','chibi_female_tunic'],
+    bottom:['skirt','chibi_female_jeans','chibi_female_shorts','chibi_female_widepants','chibi_female_pleated','chibi_female_flarepants']
   }
 };
 
@@ -46,8 +46,29 @@ export const OUTFIT_STYLES=[
   {id:'chibi_female_shorts',label:'플레어 반바지',fit:'female',category:'bottom',base:'ninjasuitshort',color:'#bd8d65',
     shape:{hip:.125,thigh:.17,calf:0,flare:.19,length:0},details:['waist']},
   {id:'chibi_female_widepants',label:'와이드 팬츠',fit:'female',category:'bottom',base:'ninjasuitshort',color:'#8b807b',
-    shape:{hip:.18,thigh:.22,calf:.27,flare:.23,length:0},details:['waist']}
-]; // 9 new tops and 6 new bottoms; 20 total with the five existing styles.
+    shape:{hip:.18,thigh:.22,calf:.27,flare:.23,length:0},details:['waist']},
+  // v6.0: ten additional garments, authored as fitted geometry rather than dye swaps.
+  {id:'chibi_male_raincoat',label:'후드 레인코트',fit:'male',category:'top',base:'kidscade_male_tshirt',color:'#e1ab40',
+    shape:{chest:.17,shoulder:.17,hem:.20,sleeve:.16,depth:.16,drop:.055},details:['hood','longSleeve','coatTail','zip']},
+  {id:'chibi_male_polo',label:'스포츠 폴로',fit:'male',category:'top',base:'kidscade_male_tshirt',color:'#5ba19b',
+    shape:{chest:.065,shoulder:.10,hem:.035,sleeve:.07,depth:.07,drop:.008},details:['collar','buttons','sleeveBands']},
+  {id:'chibi_male_workvest',label:'유틸리티 조끼',fit:'male',category:'top',base:'kidscade_male_tshirt',color:'#8f754b',
+    shape:{chest:.16,shoulder:.08,hem:.12,sleeve:-.04,depth:.16,drop:.027},details:['utilityPockets','shoulderTabs','zip']},
+  {id:'chibi_male_cargo',label:'카고 바지',fit:'male',category:'bottom',base:'kidscade_male_shorts',color:'#78825a',
+    shape:{hip:.15,thigh:.20,calf:.13,flare:.04,length:0},details:['waist','cargoPockets']},
+  {id:'chibi_male_bermuda',label:'버뮤다 쇼츠',fit:'male',category:'bottom',base:'kidscade_male_shorts',color:'#9c8e74',
+    shape:{hip:.10,thigh:.17,calf:0,flare:.16,length:-.006},details:['waist','shortCuff']},
+  {id:'chibi_female_sailor',label:'세일러 블라우스',fit:'female',category:'top',base:'shirt',color:'#f3e8db',
+    shape:{chest:.09,shoulder:.08,hem:.08,sleeve:.085,depth:.11,drop:.026},details:['sailorCollar','ribbon','puffSleeve']},
+  {id:'chibi_female_windbreaker',label:'윈드브레이커',fit:'female',category:'top',base:'shirt',color:'#84b1c8',
+    shape:{chest:.17,shoulder:.20,hem:.10,sleeve:.22,depth:.16,drop:.035},details:['hood','longSleeve','stripes','zip']},
+  {id:'chibi_female_tunic',label:'롱 튜닉',fit:'female',category:'top',base:'shirt',color:'#c5a0c1',
+    shape:{chest:.14,shoulder:.09,hem:.22,sleeve:.09,depth:.15,drop:.055},details:['tunicFlare','collar','longSleeve']},
+  {id:'chibi_female_pleated',label:'플리츠 스커트',fit:'female',category:'bottom',base:'skirt',color:'#677fac',
+    shape:{hip:.12,thigh:.07,calf:0,flare:.12,length:0},details:['waist','pleats']},
+  {id:'chibi_female_flarepants',label:'부츠컷 팬츠',fit:'female',category:'bottom',base:'ninjasuitshort',color:'#695d86',
+    shape:{hip:.13,thigh:.09,calf:.17,flare:.17,length:0},details:['waist','flareHem']}
+]; // 15 original + 10 new rigged styles; 30 total including five source styles.
 
 const smooth=(a,b,v)=>{
   const t=THREE.MathUtils.clamp((v-a)/(b-a),0,1);
@@ -471,6 +492,115 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
     band.translate(0,.74,0);
     add(band,dark,'waist',pelvis);
   }
+
+  // v6.0 silhouette features follow the original Chibi bind-space coordinates.
+  // They remain separate fitted meshes so front views show real depth.
+  if(style.details.includes('coatTail')||style.details.includes('tunicFlare')){
+    const tunic=style.details.includes('tunicFlare');
+    const tail=new THREE.CylinderGeometry(tunic?.216:.220,tunic?.278:.252,tunic?.205:.16,24,3,true);
+    tail.scale(1,1,.83);
+    tail.translate(0,tunic?.685:.705,0);
+    add(tail,makeSolidMaterial(style.color,style.label+' 확장 밑단'),'flared_hem',pelvis);
+    for(const sign of [-1,1]){
+      const slit=new THREE.BoxGeometry(.012,.078,.009);
+      slit.translate(sign*.225,.635,.045);
+      add(slit,dark,'hem_split_'+(sign<0?'left':'right'),pelvis);
+    }
+  }
+  if(style.details.includes('utilityPockets')){
+    for(const sign of [-1,1]){
+      for(let j=0;j<2;j++){
+        const box=new THREE.BoxGeometry(.082,.073,.032,2,2,1);
+        box.translate(sign*.099,.92-j*.135,.159);
+        add(box,makeSolidMaterial('#77603c',style.label+' 수납 포켓'),
+          'utility_pocket_'+(sign<0?'left':'right')+'_'+j);
+        const flap=new THREE.BoxGeometry(.088,.018,.036);
+        flap.translate(sign*.099,.963-j*.135,.162);
+        add(flap,dark,'utility_flap_'+sign+'_'+j);
+      }
+    }
+  }
+  if(style.details.includes('shoulderTabs')){
+    for(const sign of [-1,1]){
+      const tab=new THREE.BoxGeometry(.094,.024,.11);
+      tab.translate(sign*.172,1.077,.009);
+      add(tab,dark,'shoulder_tab_'+sign);
+    }
+  }
+  if(style.details.includes('sleeveBands')){
+    for(const sign of [-1,1]){
+      const band=new THREE.TorusGeometry(.065,.008,6,18);
+      band.rotateZ(Math.PI/2);
+      band.translate(sign*.285,1.00,-.028);
+      add(band,accent,'sleeve_band_'+sign);
+    }
+  }
+  if(style.details.includes('sailorCollar')){
+    const bib=new THREE.BoxGeometry(.30,.09,.016,4,2,1);
+    bib.translate(0,1.083,.134);
+    add(bib,makeSolidMaterial('#56779a','세일러 카라'),'sailor_bib');
+    for(const sign of [-1,1]){
+      const lapel=new THREE.BoxGeometry(.085,.085,.018);
+      lapel.rotateZ(sign*.29);lapel.translate(sign*.096,1.091,.145);
+      add(lapel,accent,'sailor_lapel_'+sign);
+    }
+  }
+  if(style.details.includes('ribbon')){
+    for(const sign of [-1,1]){
+      const wing=new THREE.ConeGeometry(.039,.102,6,1);
+      wing.rotateZ(sign*Math.PI*.44);
+      wing.translate(sign*.042,1.005,.164);
+      add(wing,makeSolidMaterial('#5577a3','세일러 리본'),'ribbon_'+sign);
+    }
+  }
+  if(style.details.includes('cargoPockets')){
+    for(const sign of [-1,1]){
+      const thighBone=resolveFirstBoneName(source.skeleton,[
+        sign<0?'DEF-thighL':'DEF-thighR',
+        sign<0?'DEF-thigh.L':'DEF-thigh.R'
+      ]);
+      const pocket=new THREE.BoxGeometry(.055,.11,.035,2,2,1);
+      pocket.translate(sign*.203,.415,.076);
+      add(pocket,dark,'cargo_pocket_'+sign,thighBone);
+      const flap=new THREE.BoxGeometry(.062,.021,.037);
+      flap.translate(sign*.203,.475,.076);
+      add(flap,accent,'cargo_flap_'+sign,thighBone);
+    }
+  }
+  if(style.details.includes('shortCuff')){
+    for(const sign of [-1,1]){
+      const thighBone=resolveFirstBoneName(source.skeleton,[
+        sign<0?'DEF-thighL':'DEF-thighR',
+        sign<0?'DEF-thigh.L':'DEF-thigh.R'
+      ]);
+      const ring=new THREE.TorusGeometry(.124,.009,5,20);
+      ring.rotateX(Math.PI/2);ring.translate(sign*.145,.345,0);
+      add(ring,accent,'bermuda_hem_'+sign,thighBone);
+    }
+  }
+  if(style.details.includes('pleats')){
+    for(let i=0;i<12;i++){
+      // Separate tapered vertical ridges create a pleated *3D* profile.
+      const angle=Math.PI*(.12+.76*(i/11));
+      const x=Math.cos(angle)*.205,z=Math.sin(angle)*.153;
+      const ridge=new THREE.ConeGeometry(.018,.215,4,1);
+      ridge.rotateX(Math.PI/2);
+      ridge.rotateY(angle-Math.PI/2);
+      ridge.translate(x,.566,z);
+      add(ridge,accent,'pleat_'+i,pelvis);
+    }
+  }
+  if(style.details.includes('flareHem')){
+    for(const sign of [-1,1]){
+      const shin=resolveFirstBoneName(source.skeleton,[
+        sign<0?'DEF-shinL':'DEF-shinR',
+        sign<0?'DEF-shin.L':'DEF-shin.R'
+      ]);
+      const seam=new THREE.TorusGeometry(.112,.007,6,22);
+      seam.rotateX(Math.PI/2);seam.translate(sign*.158,.105,0);
+      add(seam,accent,'bootcut_hem_'+sign,shin);
+    }
+  }
   if(style.details.includes('cuff')){
     for(const sign of [-1,1]){
       const ring=new THREE.TorusGeometry(.074,.012,6,18);
@@ -519,8 +649,8 @@ function addTrouserHipYoke({source,style,group,material,reference,cloneSkinnedMe
  * Both legs inherit the original Chibi 78-bone skeleton/bind matrix.
  */
 const TWO_LEG_STYLES=new Set([
-  'chibi_male_jeans','chibi_male_joggers','chibi_male_chinos',
-  'chibi_female_jeans','chibi_female_widepants'
+  'chibi_male_jeans','chibi_male_joggers','chibi_male_chinos','chibi_male_cargo',
+  'chibi_female_jeans','chibi_female_widepants','chibi_female_flarepants'
 ]);
 function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWithGeometry}){
   const skeleton=source.skeleton;
@@ -536,13 +666,15 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
     const wide=style.id==='chibi_female_widepants';
     const jogger=style.id==='chibi_male_joggers';
     const chino=style.id==='chibi_male_chinos';
+    const flare=style.id==='chibi_female_flarepants';
+    const cargo=style.id==='chibi_male_cargo';
     // Overlap the original shorts cuff at the upper thigh to prevent skin
     // wedges between the pelvis shell and the independent leg cylinders.
-    const upperRadius=wide?.140:jogger?.154:chino?.145:.143;
-    const lowerRadius=wide?.104:jogger?.075:chino?.076:.088;
+    const upperRadius=wide?.140:jogger?.154:cargo?.161:chino?.145:flare?.139:.143;
+    const lowerRadius=flare?.120:wide?.104:jogger?.075:cargo?.096:chino?.076:.088;
     const top=.755,bottom=.082;
     const geometry=new THREE.CylinderGeometry(upperRadius,lowerRadius,top-bottom,16,9,false);
-    geometry.translate(sign*(wide?.178:.153),(top+bottom)*.5,0);
+    geometry.translate(sign*(wide?.178:flare?.160:.153),(top+bottom)*.5,0);
     const positions=geometry.getAttribute('position');
     // Body knees and upper thighs protrude more toward +Z than a round tube.
     // Give the front thigh an anatomically shaped clearance allowance.
@@ -550,13 +682,13 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
       const y=positions.getY(i),z=positions.getZ(i);
       const thighFront=smooth(.22,.36,y)*(1-smooth(.58,.75,y));
       if(z>0)positions.setZ(i,z*(1+(wide?.42:.68)*thighFront));
-      if(wide){
+      if(wide||flare){
         // Define two visible trouser legs instead of a skirt-like broad tube;
         // a tapered knee with a relaxed hem keeps the garment recognizable.
-        const x=positions.getX(i),center=sign*.178;
+        const x=positions.getX(i),center=sign*(wide?.178:.160);
         const knee=smooth(.23,.35,y)*(1-smooth(.42,.57,y));
         const hem=1-smooth(.10,.25,y);
-        const fullness=1-.11*knee+.025*hem;
+        const fullness=flare?1-.16*knee+.26*hem:1-.11*knee+.025*hem;
         positions.setX(i,center+(x-center)*fullness);
         positions.setZ(i,positions.getZ(i)*fullness);
       }
