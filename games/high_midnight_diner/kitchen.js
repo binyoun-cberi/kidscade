@@ -66,6 +66,7 @@ load(PEOPLE+'Chef_Male.gltf',2.22,-.1,0,.43,0).then(async obj=>{
    chefPick=chefMixer.clipAction(pick);
    chefPick.setLoop(THREE.LoopOnce,1);
    chefPick.clampWhenFinished=true;
+   chefMixer.addEventListener('finished',event=>{if(event.action===chefPick)chefPick.fadeOut(.22);});
   }
   chefNeck=chef.getObjectByName('Neck');
   chefHand=chef.getObjectByName('Fist.R')||chef.getObjectByName('Fist.L');
