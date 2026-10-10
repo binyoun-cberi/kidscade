@@ -50,8 +50,8 @@ function complete(){
  ui.action.classList.remove('held');
  const win=model.status==='cleared';
  if(win&&standalone){best=Math.max(best,model.score);try{localStorage.setItem(key,JSON.stringify({best}));}catch(_){}}
- sdk('result',{scope:'stage',status:win?'completed':'failed',outcome:win?'clear':'loss',score:win?model.score:0,
-   reason:model.reason,mode,round:mode});
+ sdk('result',{scope:'stage',status:win?'completed':'failed',outcome:win?'clear':'loss',
+   ...(standalone?{score:win?model.score:0}:{}),reason:model.reason,mode,round:mode});
  if(standalone){
    ui.resultTitle.textContent=win?'도전 성공!':'이번엔 탈락!';
    ui.resultText.textContent=win?'최종 점수 '+model.score+'점. 다음 서바이벌 라운드도 도전해 보세요.':model.reason;
