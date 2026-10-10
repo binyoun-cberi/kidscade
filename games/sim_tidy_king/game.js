@@ -40,9 +40,11 @@ const catalog={
 const levelDefs=[
  {name:'의뢰 1 · 엉망진창 원룸',title:'우리 집 대청소',description:'지저분해진 원룸을 새집처럼 바꾸자!',seed:12345,
   items:{book:14,pen:8,pillow:10,bag:10,bottle:14,can:12,carton:8,cup:8,toy:12},stains:7,
+  littleItems:{book:5,toy:5,bottle:5,cup:3},littleStains:2,
   floor:0xc9ae8c,wall:0xe5cfac},
  {name:'의뢰 2 · 난장판 주방',title:'반짝반짝 주방',description:'바닥에 널린 물건을 치우고 얼룩까지 닦자!',seed:67891,
   items:{cup:18,plate:16,pan:5,bottle:16,can:14,carton:10,bag:8,book:4,pillow:3,toy:4},stains:9,
+  littleItems:{cup:5,plate:4,bottle:5,can:3,bag:3},littleStains:2,
   floor:0xb9c9ba,wall:0xd0dfc9}
 ];
 const props={
@@ -72,7 +74,7 @@ const furniture={
  trashcan:FURN+'trashcan.glb',
  plant:FURN+'plant-small1.glb'
 };
-let running=false, level=0, elapsed=0, coins=0, sessionCoins=0, cleanCount=0, totalCount=0;
+let running=false, level=0, challengeMode=false, elapsed=0, coins=0, sessionCoins=0, cleanCount=0, totalCount=0;
 let selected=null, dragging=null, scrubbing=null, mouseDown=null, scrubDistance=0, turn=0, zoom=1, hintTimer=0, activeSound=true;
 let pickables=[],things=[],stains=[],stations=[],animations=[],effects=[],decorations=[],decorationsHidden=0,clutterPiles=[],pileFillerMeshes=[],generation=0, ready=false;
 let lastFrame=performance.now(),lastClockSecond=-1,previousStage=0,beforeImage='',captureTimeout=0;
@@ -273,7 +275,7 @@ function buildRoom(){
  // Scenery never enters the raycast pick list, so foreground props remain draggable.
  createClutterMountains(rand);
  const list=[];
- for(const [key,num] of Object.entries(def.items))for(let i=0;i<num;i++)list.push(key);
+ for(const [key,num] of Object.entries(challengeMode?def.items:def.littleItems))for(let i=0;i<num;i++)list.push(key);
  // Fisher-Yates: each replay changes the mess, while keeping safe pickable grid spacing.
  for(let i=list.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));[list[i],list[j]]=[list[j],list[i]]}
  const scatter=scatterClutter(list,rand);
@@ -289,7 +291,7 @@ function buildRoom(){
   things.push({group:g,key,zone:def.kind,done:false,home:g.position.clone(),rot:g.rotation.y,tilt:g.rotation.clone()});
  }
  const spillables=things.filter(t=>['cup','bottle','can','carton','plate'].includes(t.key));
- for(let i=0;i<def.stains;i++){
+ for(let i=0;i<(challengeMode?def.stains:def.littleStains);i++){
   const source=spillables[(i*7+3)%spillables.length];
   const theta=rand()*Math.PI*2,radius=.34+rand()*.55;
   const x=THREE.MathUtils.clamp(source.home.x+Math.cos(theta)*radius,-3.75,3.75);
@@ -297,10 +299,10 @@ function buildRoom(){
   makeStain(x,z,rand);
  }
  totalCount=things.length+stains.length;
- $('stageName').textContent=def.name;
- $('roomIndicator').textContent='물건을 끌어 수납함에 놓기 · 얼룩은 문지르기';
+ $('stageName').textContent=(challengeMode?'🏔️ ':'🌼 ')+def.name;
+ $('roomIndicator').textContent=challengeMode?'물건을 끌어 수납함에 놓기 · 얼룩은 문지르기':'🧸 끌어서 쏙! 얼룩은 문질문질!';
  $('missionIcon').textContent='🧤';
- $('missionText').innerHTML='물건을 눌러 끌어 보세요<small>손가락을 떼면 수납 · 얼룩은 문질러 닦아요</small>';
+ $('missionText').innerHTML=challengeMode?'물건을 눌러 끌어 보세요<small>손가락을 떼면 수납 · 얼룩은 문질러 닦아요</small>':'🧸 물건을 끌어서 집에 보내요!<small>초록빛이 나는 곳에 쏙 넣어요</small>';
  updateHud();
  cameraMove();
  beforeImage=captureScene();
@@ -378,6 +380,7 @@ function progress(){
  retreatClutterMountains();
  if(cleanCount===totalCount){finish();return}
  updateHud();
+ if(!challengeMode&&cleanCount%5===0){show('우와! 반짝반짝! '+(totalCount-cleanCount)+'개 남았어!',1350);chirp(900)}
 }
 function updateHud(){
  $('count').textContent=cleanCount+' / '+totalCount;
@@ -417,7 +420,7 @@ function selectItem(item){
  things.forEach(t=>t.group.scale.setScalar(t===item?1.23:1));
  const s=stations.find(st=>st.key===item.zone);
  if(s){$('missionIcon').textContent=catalog[item.zone].icon;
-  $('missionText').innerHTML=itemLabel(item)+'을(를) 끌고 있어요<small>'+catalog[item.zone].hint+' · 손을 떼면 수납!</small>';}
+  $('missionText').innerHTML=challengeMode?itemLabel(item)+'을(를) 끌고 있어요<small>'+catalog[item.zone].hint+' · 손을 떼면 수납!</small>':catalog[item.zone].icon+' '+itemLabel(item)+'의 집을 찾아요!<small>반짝반짝 빛나는 '+catalog[item.zone].label+'에 쏙!</small>'; }
  chirp(490);
 }
 function itemLabel(item){return props[item.key].name}
@@ -425,7 +428,7 @@ function placeItem(item,station){
  if(!item||item.done)return;
  if(station.key!==item.zone){
   bounce(item);show('여기는 '+catalog[station.key].label+'이에요. '+catalog[item.zone].label+'에 놓아 보세요!');
-  chirp(230);return;
+  chirp(challengeMode?230:480);return;
  }
  item.done=true;selected=null;dragging=null;canvas.style.cursor='grab';$('dropGuide').hidden=true;
  things.forEach(t=>t.group.scale.setScalar(1));
@@ -433,8 +436,8 @@ function placeItem(item,station){
  animations.push({kind:'move',item,time:0,length:.53,start:item.group.position.clone(),end,rot:item.group.rotation.y,finalScale:station.key==='shelf'?.55:.36});
  station.stored++;
  $('missionIcon').textContent='✨';
- $('missionText').innerHTML='좋았어! '+itemLabel(item)+' 정리 성공<small>다음 물건을 골라 주세요</small>';
- show('정리 성공! +5 코인',760);chirp(790);progress();
+ $('missionText').innerHTML=challengeMode?'좋았어! '+itemLabel(item)+' 정리 성공<small>다음 물건을 골라 주세요</small>':'🌟 잘했어! '+itemLabel(item)+' 쏙!<small>다음 물건도 찾아볼까?</small>';
+ show(challengeMode?'정리 성공! +5 코인':'참 잘했어요! 🌟',760);chirp(790);progress();
 }
 function cleanStain(stain,effort){
  if(stain.done)return;
@@ -448,7 +451,7 @@ function cleanStain(stain,effort){
   makeSparkles(stain.position,0xc8f9e6);root.remove(stain.mesh,stain.border);
   $('missionIcon').textContent='🧽';
   $('missionText').innerHTML='얼룩이 사라졌어요!<small>다음 물건을 정리해 보세요</small>';
-  chirp(920);show('반짝반짝! +5 코인',850);progress();
+  chirp(920);show(challengeMode?'반짝반짝! +5 코인':'깨끗해졌어요! ✨',850);progress();
  }else{
   $('missionIcon').textContent='🧽';$('missionText').innerHTML='얼룩을 문질러 닦는 중!<small>손가락이나 마우스로 여러 번 문질러 주세요</small>';
  }
@@ -469,7 +472,7 @@ function getHit(e){
    const d=Math.hypot(e.clientX-sx,e.clientY-sy);
    if(d<distance){distance=d;closest=item}
   }
-  if(closest&&distance<(e.pointerType==='touch'?22:18)){
+  if(closest&&distance<(challengeMode?(e.pointerType==='touch'?22:18):(e.pointerType==='touch'?34:26))){
    return{kind:'item',value:closest,point:closest.group.position};
   }
  }
@@ -523,7 +526,7 @@ function candidateAt(e){
   const distance=Math.hypot(e.clientX-x,e.clientY-yScreen);
   if(distance<best){best=distance;nearest=s}
  }
- return best<(e.pointerType==='touch'?64:56)?nearest:null;
+ return best<(challengeMode?(e.pointerType==='touch'?64:56):(e.pointerType==='touch'?90:76))?nearest:null;
 }
 function resetDrag(restore=true){
  if(dragging&&restore&&!dragging.item.done){
@@ -562,7 +565,7 @@ function moveDrag(e){
  guide.hidden=false;
  guide.style.left=THREE.MathUtils.clamp(e.clientX,65,innerWidth-65)+'px';
  guide.style.top=THREE.MathUtils.clamp(e.clientY-42,140,innerHeight-82)+'px';
- guide.textContent=hover?(hover.key===state.item.zone?'여기에 놓기!':'다른 수납함이에요'):'끌어서 제자리에 놓아요';
+ guide.textContent=hover?(hover.key===state.item.zone?'✨ 여기에 쏙!':'다른 친구의 집이에요'):'🏠 빛나는 집으로!';
  guide.dataset.valid=hover?.key===state.item.zone?'yes':hover?'no':'none';
  for(const station of stations)station.group.userData.dropHover=station===hover;
  e.preventDefault();
@@ -610,9 +613,9 @@ function pointerUp(e){
   }else{
    resetDrag(true);
    if(station){
-    show('여기는 '+catalog[station.key].label+'이에요. 올바른 수납함으로 끌어 주세요',1400);
+    show(challengeMode?'여기는 '+catalog[station.key].label+'이에요. 올바른 수납함으로 끌어 주세요':'여긴 아니에요! '+catalog[state.item.zone].icon+' 빛나는 집으로 가요!',1400);
     chirp(230);
-   }else if(state.moved){show('수납함 위에서 손을 떼어 보세요!',1000)}
+   }else if(state.moved){show(challengeMode?'수납함 위에서 손을 떼어 보세요!':'빛나는 집까지 데려가 주세요!',1000)}
    else show('물건을 누른 채 수납함까지 끌어 주세요!',1400);
   }
   mouseDown=null;return;
@@ -642,10 +645,20 @@ $('rotateRight').onclick=()=>{turn=THREE.MathUtils.clamp(turn+.22,-.42,.6);camer
 $('zoomIn').onclick=()=>{zoom=Math.max(.79,zoom-.1);cameraMove()};
 $('zoomOut').onclick=()=>{zoom=Math.min(1.5,zoom+.1);cameraMove()};
 $('sound').onclick=()=>{activeSound=!activeSound;$('sound').textContent=activeSound?'♪':'♪̸';show(activeSound?'효과음 켜짐':'효과음 꺼짐',700)};
+function setMode(big){
+ if(running)return;
+ challengeMode=!!big;
+ document.body.classList.toggle('preschool',!challengeMode);
+ $('modeEasy').setAttribute('aria-pressed',String(!challengeMode));
+ $('modeBig').setAttribute('aria-pressed',String(challengeMode));
+ $('modeHint').textContent=challengeMode?'쓰레기 산을 끝까지 정리해요!':'약 20개만 정리하면 성공해요!';
+}
+$('modeEasy').onclick=()=>setMode(false);
+$('modeBig').onclick=()=>setMode(true);
 function showStageButtons(){
  const kitchen=$('startKitchen');
  kitchen.disabled=!saved.unlocked;
- kitchen.textContent=saved.unlocked?'주방 청소하기':'주방 잠김 · 원룸을 완료하세요';
+ kitchen.textContent=saved.unlocked?'🍽️ 주방 정리!':'🍽️ 주방 잠김';
  kitchen.hidden=running;
 }
 function startLevel(n){
@@ -656,9 +669,9 @@ function startLevel(n){
 async function launchStage(n){
  if(running){$('intro').classList.add('hidden');return}
  const a=$('start'),b=$('startKitchen');a.disabled=true;b.disabled=true;
- a.textContent='방과 가구를 준비하고 있어요...';
+ a.textContent='🏠 방을 준비해요...';
  try{await preload();startLevel(n)}catch(e){show('방을 준비할 수 없어요. 다시 시도해 주세요.',2000);console.error(e)}
- finally{a.textContent='원룸 청소하기';a.disabled=false;showStageButtons()}
+ finally{a.textContent='🏠 우리 집 정리!';a.disabled=false;showStageButtons()}
 }
 $('start').onclick=()=>launchStage(0);
 $('startKitchen').onclick=()=>{if(saved.unlocked)launchStage(1)};
@@ -712,7 +725,7 @@ function tick(dt,now){
  stations.forEach((s,i)=>{
   const highlighted=selected&&selected.zone===s.key,hover=s.group.userData.dropHover;
   s.rim.material.color.setHex(hover?(highlighted?0x12d98f:0xe76b5e):(highlighted?0x24cf8d:0xfff9d8));
-  s.rim.scale.setScalar(hover?1.22:highlighted?1.07+Math.sin(now*4+i)*.07:1);
+  s.rim.scale.setScalar(hover?1.22:highlighted?(challengeMode?1.07:1.15)+Math.sin(now*4+i)*.08:1);
   s.plate.material.emissiveIntensity=hover?.56:highlighted?.36:.16;
  });
 }
@@ -724,4 +737,5 @@ cameraMove();requestAnimationFrame(frame);
 // An unlocked room is playable without relying on cloud account permissions.
 $('coins').textContent=coins+' 🪙';
 if(saved.unlocked>0){$('introTitle').textContent='다시 찾아온 정리왕!';}
+setMode(false);
 showStageButtons();
