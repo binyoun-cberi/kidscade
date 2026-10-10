@@ -401,30 +401,85 @@ function battleAction(action){
  }
 }
 function renderTerrain(x,y,sx,sy){
- const t=E.terrain(x,y),area=E.zoneAt(x),seed=(x*43+y*71)%17;
- const colors={town:"#8ab58a",meadow:"#8bbd7d",forest:"#639b74",cave:"#777f82"};
- cx.fillStyle=colors[area];cx.fillRect(sx,sy,16,16);
- if(t==="path"){cx.fillStyle=area==="cave"?"#a49d89":"#c9b18b";cx.fillRect(sx,sy,16,16);
-   cx.fillStyle="#ffffff22";cx.fillRect(sx+2,sy+3,5,2);cx.fillRect(sx+10,sy+12,4,1);return}
+ const t=E.terrain(x,y),area=E.zoneAt(x),seed=(x*73+y*91)%41;
+ const base={town:"#94b889",meadow:"#9cc987",forest:"#72aa76",cave:"#818792"};
+ cx.fillStyle=base[area];cx.fillRect(sx,sy,16,16);
+ if(t==="path"){
+  cx.fillStyle=area==="cave"?"#c0b49b":area==="town"?"#d1c0a0":"#d5bc93";cx.fillRect(sx,sy,16,16);
+  cx.fillStyle="#fff7d62b";cx.fillRect(sx,sy,16,2);
+  cx.fillStyle="#746e5740";cx.fillRect(sx+(seed%7),sy+6,4,1);cx.fillRect(sx+((seed+8)%9),sy+12,4,1);
+  if(area==="town"){cx.fillStyle="#f8edce3a";cx.fillRect(sx+1,sy+1,6,4)}
+  return;
+ }
  if(t==="building"){cx.fillStyle="#d5bc8c";cx.fillRect(sx,sy,16,16);return}
- if(t==="wall"){cx.fillStyle="#4d7762";cx.fillRect(sx,sy,16,16);return}
- if(t==="rock"){cx.fillStyle="#646d73";cx.fillRect(sx,sy,16,16);cx.fillStyle="#aab1a4";cx.fillRect(sx+3,sy+3,9,5);cx.fillStyle="#414e58";cx.fillRect(sx+5,sy+11,9,3);return}
- if(t==="grass"){cx.fillStyle=area==="forest"?"#397c55":"#4fa06a";cx.fillRect(sx,sy,16,16);cx.fillStyle="#8ed378";for(let i=0;i<3;i++){let px=(i*5+seed)%13;cx.fillRect(sx+px,sy+4+i*3,2,5)}return}
- if(t==="rough"){cx.fillStyle="#4d5761";cx.fillRect(sx,sy,16,16);cx.fillStyle="#9d8c95";for(let i=0;i<3;i++)cx.fillRect(sx+((seed+i*7)%13),sy+2+i*5,3,2);return}
- if(t==="cave"){cx.fillStyle="#858991";cx.fillRect(sx,sy,16,16);cx.fillStyle="#b5afa4";cx.fillRect(sx+seed%10,sy+4,3,2);return}
- if(t==="crystal"){cx.fillStyle="#46515b";cx.fillRect(sx,sy,16,16);cx.fillStyle="#99dfe5";cx.beginPath();cx.moveTo(sx+8,sy+1);cx.lineTo(sx+14,sy+9);cx.lineTo(sx+8,sy+15);cx.lineTo(sx+2,sy+9);cx.fill();return}
+ if(t==="wall"){
+  cx.fillStyle=area==="cave"?"#4c5662":"#477252";cx.fillRect(sx,sy,16,16);
+  cx.fillStyle="#ffffff16";cx.fillRect(sx+2,sy+2,12,2);return
+ }
+ if(t==="rock"){
+  cx.fillStyle="#7b8188";cx.fillRect(sx,sy,16,16);
+  cx.fillStyle="#535d67";cx.fillRect(sx+2,sy+5,12,9);
+  cx.fillStyle="#a7aab0";cx.fillRect(sx+4,sy+3,7,5);return
+ }
+ if(t==="grass"){
+  const entrance=x>=20&&x<=22&&y>=11&&y<=13;
+  cx.fillStyle=entrance?"#4d9b64":area==="forest"?"#39794c":"#508d52";cx.fillRect(sx,sy,16,16);
+  cx.fillStyle=entrance?"#b0ea79":"#8edc73";
+  for(let i=0;i<3;i++){const px=(i*5+seed)%13;cx.fillRect(sx+px,sy+3+i*4,2,5);cx.fillRect(sx+px+2,sy+5+i*4,1,2)}
+  if(entrance){cx.fillStyle="#f5db73";cx.fillRect(sx+6,sy+5,3,3);cx.fillRect(sx+11,sy+9,2,2)}
+  return;
+ }
+ if(t==="rough"){
+  cx.fillStyle="#646d75";cx.fillRect(sx,sy,16,16);
+  cx.fillStyle="#a5a19b";for(let i=0;i<3;i++)cx.fillRect(sx+((seed+i*7)%13),sy+2+i*5,3,2);return
+ }
+ if(t==="cave"){
+  cx.fillStyle="#8b9199";cx.fillRect(sx,sy,16,16);
+  cx.fillStyle="#aeb3b3";cx.fillRect(sx+seed%10,sy+4,4,2);return
+ }
+ if(t==="crystal"){
+  cx.fillStyle="#485b67";cx.fillRect(sx,sy,16,16);cx.fillStyle="#a6eff1";cx.beginPath();
+  cx.moveTo(sx+8,sy+1);cx.lineTo(sx+14,sy+9);cx.lineTo(sx+8,sy+15);cx.lineTo(sx+2,sy+9);cx.fill();return
+ }
  if(t==="tree"){
-  cx.fillStyle="#38694a";cx.fillRect(sx+6,sy+8,4,8);
-  cx.fillStyle="#215e43";cx.fillRect(sx+3,sy+3,10,10);
-  cx.fillStyle="#4e9b59";cx.fillRect(sx+4,sy+1,8,8);return
+  cx.fillStyle="#3b744b";cx.fillRect(sx+6,sy+7,4,9);
+  cx.fillStyle=area==="forest"?"#27543b":"#3f7046";cx.fillRect(sx+2,sy+5,12,8);
+  cx.fillStyle=area==="forest"?"#4a8c58":"#5f9e5a";cx.fillRect(sx+4,sy+1,8,8);
+  cx.fillStyle="#87c47a";cx.fillRect(sx+5,sy+3,3,2);return
  }
- if(t==="clearing"){cx.fillStyle="#d7c58a";cx.fillRect(sx,sy,16,16);cx.fillStyle="#7e79b5";cx.fillRect(sx+5,sy+3,6,10);return}
- if(seed===2||seed===4){
-  const img=imgs.farm;if(img&&img.complete){
-   const idx=area==="town"?16:area==="forest"?27:20;
-   cx.drawImage(img,(idx%12)*16,Math.floor(idx/12)*16,16,16,sx,sy,16,16);
-  }else{cx.fillStyle="#5a9757";cx.fillRect(sx+7,sy+8,2,5)}
+ if(t==="clearing"){
+  cx.fillStyle="#ead494";cx.fillRect(sx,sy,16,16);cx.fillStyle="#796abb";cx.fillRect(sx+5,sy+3,6,10);
+  cx.fillStyle="#d8ecfe";cx.fillRect(sx+7,sy+5,2,4);return
  }
+ if(t==="town"){
+  // Sparse planted flowers instead of repeating a random atlas decoration every few tiles.
+  if(seed===5||seed===24){cx.fillStyle="#478e61";cx.fillRect(sx+7,sy+9,2,4);
+    cx.fillStyle=seed===5?"#f4e8a1":"#f4aeb2";cx.fillRect(sx+5,sy+6,6,4)}
+  return;
+ }
+ if(t==="field"){
+  if(seed<3){cx.fillStyle="#73b576";cx.fillRect(sx+4,sy+8,2,4);cx.fillRect(sx+9,sy+6,2,5)}
+  if(seed===18){cx.fillStyle="#fff0ad";cx.fillRect(sx+8,sy+8,4,3)}
+ }
+}
+function drawLandmarks(camX,camY){
+ function tile(x,y){return {x:(x-camX)*16,y:(y-camY)*16}}
+ function sign(x,y,title){
+  const p=tile(x,y);if(p.x<-95||p.x>C.width+40||p.y<-38||p.y>C.height+25)return;
+  cx.fillStyle="#514c33";cx.fillRect(p.x+7,p.y+10,3,10);
+  cx.fillStyle="#edd6a1";cx.fillRect(p.x-8,p.y-7,62,17);
+  cx.fillStyle="#8b6544";cx.fillRect(p.x-8,p.y-7,62,2);
+  cx.fillStyle="#3c513c";cx.font="bold 9px sans-serif";cx.fillText(title,p.x-5,p.y+4);
+ }
+ function flowerbed(x,y){
+  const p=tile(x,y);if(p.x<0||p.x>C.width||p.y<0||p.y>C.height)return;
+  cx.fillStyle="#447b4d";cx.fillRect(p.x,p.y+7,16,9);
+  for(let i=0;i<3;i++){cx.fillStyle=i===1?"#ffe6a4":"#f2aabb";cx.fillRect(p.x+2+i*5,p.y+6+(i%2)*3,3,3)}
+ }
+ sign(16,10,"→ 첫 만남");
+ sign(39,9,"→ 가지숲");
+ sign(61,9,"→ 동굴");
+ flowerbed(3,17);flowerbed(4,17);flowerbed(5,17);
 }
 function drawBuilding(camX,camY){
  const sx=(6-camX)*16,sy=(5-camY)*16;if(sx>C.width+8||sx+128<0||sy>C.height+8||sy+80<0)return;
@@ -464,6 +519,7 @@ function render(now){
  cx.fillStyle="#80af72";cx.fillRect(0,0,C.width,C.height);
  for(let dy=0;dy<rows;dy++)for(let dx=0;dx<columns;dx++){const x=camX+dx,y=camY+dy;renderTerrain(x,y,dx*16,dy*16)}
  drawBuilding(camX,camY);
+ drawLandmarks(camX,camY);
  if(camX<=13&&camY<=10){drawNpc("회복·상점",imgs.staff,9,10,camX,camY);drawNpc("연구원",imgs.npc,13,10,camX,camY)}
  const px=(player.x-camX)*16,py=(player.y-camY)*16;
  cx.fillStyle="#254c3950";cx.fillRect(px+2,py+11,13,4);
