@@ -156,7 +156,7 @@ function facePatch(cx,cy,frontZ,width,height,curve=.028,rows=10,columns=20){
   }
   for(let j=0;j<rows;j++)for(let i=0;i<columns;i++){
     const a=j*(columns+1)+i,b=a+columns+1;
-    indices.push(a,b,a+1,b,b+1,a+1);
+    indices.push(a,a+1,b,b,a+1,b+1);
   }
   const g=new THREE.BufferGeometry();
   g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
