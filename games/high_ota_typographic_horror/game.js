@@ -259,7 +259,7 @@ function buildChapterThreeRooms(){
     box(.22,2.35,2.4,x,1.2,z,propMat);
     // Word-spines form recognizable shelves even when normal textures are absent.
     for(let j=0;j<4;j++){
-      label(['서가','자료','기록','삭제'][j],j===3?'#d68c9d':'#a7c7de',x, .48+j*.49,z+1.23,0,0,1.24,.52);
+      label(['서가','자료','기록','삭제'][j],j===3?'#d68c9d':'#a7c7de',x, .48+j*.49,z+1.23,0,0,.79,.37);
     }
   }
   for(let i=0;i<4;i++){
