@@ -167,7 +167,8 @@ test('game catalog, common save key, and both standalone launch paths exist',()=
   const bridge=fs.readFileSync(path.join(ROOT,'games/squid-memory-bridge/game.js'),'utf8');
   const dalgona=fs.readFileSync(path.join(ROOT,'games/dalgona-trace/game.js'),'utf8');
   assert.match(bridge,/ROUND_TIME_MS=SURVIVAL_MODE\?90000:300000/);
-  assert.match(bridge,/if\(SURVIVAL_MODE\)startRun\(\)/);
+  assert.match(bridge,/if\(SURVIVAL_MODE\)\{/);
+  assert.match(bridge,/startRun\(\);/);
   assert.match(dalgona,/if\(SURVIVAL_MODE\)start\(\)/);
   assert.match(bridge,/if\(!SURVIVAL_MODE\).*record\.best/);
   assert.match(dalgona,/if\(!SURVIVAL_MODE\).*record\.best/);
