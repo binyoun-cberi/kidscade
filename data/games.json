@@ -9,11 +9,11 @@
       "category": "korean",
       "age": "high",
       "icon": "🕯️",
-      "description": "[공포] 글자로 이루어진 3D 기록보관소에서 괴물에게 쫓겨 사물함에 숨고, 뒤틀린 복도를 복구한 다음 달리면 소리를 듣는 붉은 글자를 피해 출구를 찾아 탈출하는 심리 공포 게임.",
+      "description": "[공포] 글자로 이루어진 기록보관소에서 추격과 소리 감지 괴물을 피하고, 사무실·서고의 단서를 모아 시선을 감지하는 존재로부터 자신의 이름을 지키는 3D 심리 공포 게임.",
       "subject": "korean",
       "genre": "puzzle",
       "difficulty": "medium",
-      "sessionMinutes": 12,
+      "sessionMinutes": 20,
       "players": [
         "solo"
       ],
