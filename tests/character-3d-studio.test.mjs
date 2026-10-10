@@ -1073,3 +1073,16 @@ test('Chibi v6.3 facial accessories use curved, outward-facing geometry',()=>{
   assert.doesNotMatch(pack,/case 'mask':return sphere\(/);
   assert.doesNotMatch(pack,/case 'sunglasses':return sphere\(/);
 });
+
+test('v6.4 mask and sunglasses sample the active face surface for each body fit',()=>{
+  const pack=read('teacher/chibi-accessory-pack.js');
+  assert.match(pack,/function faceDepthAtGeometry\(geometry\)/);
+  assert.match(pack,/function fitCurvedFaceParts\(group,body,eyes,fit\)/);
+  assert.match(pack,/getNode\(fit==='male'\?'kidscade_male_body':'character_low'\)/);
+  assert.match(pack,/getNode\(fit==='male'\?'kidscade_male_eyes':'eyes'\)/);
+  assert.match(pack,/group\.scale\.setScalar\(1\)/);
+  assert.match(pack,/kidscadeFaceProjection='strap'/);
+  assert.match(pack,/kidscadeFaceProjection=style\.kind==='sunglasses'\?'lens':'skin'/);
+  assert.match(pack,/const actual=faceZ\(x,y,spec==='lens'\)/);
+  assert.doesNotMatch(pack,/add\(ring\(\.065,\.008,sign\*\.186/);
+});
