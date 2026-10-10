@@ -40,7 +40,7 @@ const IV_KEYS=DB.combat.STAT_KEYS,NATURES=["균형","용감","신중","쾌속","
 function genesFromUid(uid){
  let h=2166136261;for(const c of String(uid))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;
  const next=()=>{h=(Math.imul(h,1664525)+1013904223)>>>0;return h};
- const iv={};for(const k of IV_KEYS)iv[k]=next()%16;
+ const iv={};for(const k of IV_KEYS)iv[k]=(next()>>>24)&15;
  return {iv,nature:NATURES[next()%NATURES.length]};
 }
 function normalizeGenes(m){
