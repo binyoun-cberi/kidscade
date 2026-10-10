@@ -308,7 +308,7 @@ const errors=[];
   const skinAudit=await evalPage('window.__kc3dAudit.garmentSkinAudit()');
   // Fourteen long/puff sleeve styles contribute two sleeves each (28).
   // Seven long trouser styles have two legs and one hip yoke each (21).
-  assert.equal(skinAudit.length,49,'Missing sleeves, trouser legs or crotch-covering hip yokes');
+  assert.equal(skinAudit.length,51,'Missing sleeves, weighted trouser side piping,, trouser legs or crotch-covering hip yokes');
   assert.equal(skinAudit.filter(x=>x.piece.endsWith('_hip_yoke')).length,7,
     'Some trouser styles still expose an unconnected crotch gap');
   assert.ok(skinAudit.filter(x=>x.piece.endsWith('_hip_yoke'))
