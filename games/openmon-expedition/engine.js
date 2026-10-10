@@ -147,6 +147,18 @@ function claimResearchStarter(save,id){
  save.flags.researchStarters.push(id);
  return true;
 }
+function withdrawFromBox(save,index){
+ if(!Number.isInteger(index)||index<0||index>=save.box.length)return false;
+ const [member]=save.box.splice(index,1);
+ if(save.party.length<6)save.party.push(member);
+ else{
+  const swapIndex=save.active;
+  const old=save.party[swapIndex];
+  save.party[swapIndex]=member;
+  save.box.push(old);
+ }
+ return true;
+}
 function retaliationDamage(save,foe,active){
  const raw=DB.combat.damage({attacker:foe.id,defender:active.id,
   attackerLevel:foe.level,defenderLevel:active.level,power:5});
@@ -204,5 +216,5 @@ function maybeEvolve(save,chosenId){
  save.collection[p.id]=true;save.seen[p.id]=true;
  return true;
 }
-global.OPENMON_EXPEDITION_ENGINE={WIDTH,HEIGHT,START,ZONES,zoneAt,terrain,canMove,makeCreature,createNew,validateSave,pickEncounter,unlockedPool,shouldMeet,move,healAll,activeCreature,xpGain,addCaptured,levelRewards,maybeEvolve,researchStarterOptions,claimResearchStarter,retaliationDamage};
+global.OPENMON_EXPEDITION_ENGINE={WIDTH,HEIGHT,START,ZONES,zoneAt,terrain,canMove,makeCreature,createNew,validateSave,pickEncounter,unlockedPool,shouldMeet,move,healAll,activeCreature,xpGain,addCaptured,levelRewards,maybeEvolve,researchStarterOptions,claimResearchStarter,withdrawFromBox,retaliationDamage};
 })(window);
