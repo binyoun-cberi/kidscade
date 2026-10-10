@@ -90,6 +90,15 @@ function advance(state,wasRejected){
  state.phase='cooking';
  return last;
 }
+// v6: repeated successful peeks within one dish have an escalating exposure cost.
+// Looking at the chef at the wrong time is still penalized separately.
+function peekCost(previouslySeen){
+ if(previouslySeen<2)return 0;
+ if(previouslySeen===2)return 6;
+ if(previouslySeen===3)return 10;
+ if(previouslySeen===4)return 17;
+ return 24;
+}
 // v5: gaze timing is part of the game rules, not CSS decoration.
 // Timings vary by course and by portion but WARN always lasts >= 460ms.
 function timingFor(state){
@@ -131,8 +140,10 @@ function tickCooking(state,deltaMs,looking){
      const ingredient=concealed?'가려진 재료':z.dangerous?d.spec.word:'일반 양념';
      d.currentPeek={ok:true,zone:zoneId+1,concealed,ingredient};
      if(!concealed)d.observed.push({zone:zoneId+1,ingredient,dangerous:z.dangerous});
-     d.peekCount++;revealed=true;
-     message=concealed?'요리사의 손에 가려졌다.':(zoneId+1)+'번에 '+ingredient+'을(를) 넣었다.';
+     const attention=peekCost(d.peekCount);
+     d.peekCount++;state.suspicion+=attention;revealed=true;
+     message=(concealed?'요리사의 손에 가려졌다.':(zoneId+1)+'번에 '+ingredient+'을(를) 넣었다.')+
+       (attention?' 반복해서 훔쳐보니 의심 +'+attention:'');
     }
    }
    if(before>=timing.safeEnd+150&&phase==='WARN'&&d.warnedIndex!==step){
@@ -220,5 +231,5 @@ function question(state){
  const inFirst=dish.zones.filter(z=>z.id<half&&z.dangerous).length;
  return {ok:true,half,count:inFirst,message:'요리사: “처음 '+half+'조각에는 위험한 것이 '+inFirst+'개 있지. 세어 봐.”'};
 }
-return {FOODS,INGREDIENTS,begin,inspect,eat,reject,question,advance,rng,dishFor,cookingEvent,gazePhase,timingFor,tickCooking,observeCooking};
+return {FOODS,INGREDIENTS,begin,inspect,eat,reject,question,advance,rng,dishFor,cookingEvent,gazePhase,peekCost,timingFor,tickCooking,observeCooking};
 });

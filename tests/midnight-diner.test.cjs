@@ -98,7 +98,7 @@ test('200 randomized full five-course routes remain solvable with timely peeks',
    assert.equal(g.phase,'cooking');
    assert.equal(dish.zones.filter(z=>z.dangerous).length,dish.spec.hazards);
    assert.ok(dish.zones.some(z=>z.dangerous&&z.shade>=.18));
-   progressCooking(g,ev=>ev.phase==='SAFE');
+   progressCooking(g,ev=>ev.phase==='SAFE'&&ev.index<3);
    assert.equal(g.phase,'playing');
    assert.equal(g.catches,0);
    const safe=dish.zones.filter(z=>!z.dangerous).slice(0,3);
@@ -136,4 +136,42 @@ test('existing GLB chef and food models plus catalog registration remain intact'
  ])assert.ok(fs.existsSync(path.join(root,file)),file);
  const catalog=JSON.parse(read('data/games.json'));
  assert.equal(catalog.games.find(x=>x.id==='high_midnight_diner').href,'games/high_midnight_diner/index.html');
+});
+
+
+test('v6 escalating attention costs are deterministic and do not punish first two glimpses',()=>{
+ assert.deepEqual([0,1,2,3,4,5,6].map(R.peekCost),[0,0,6,10,17,24,24]);
+ const g=R.begin(42);
+ const increments=[];
+ while(g.phase==='cooking'){
+  const e=R.cookingEvent(g);
+  const before=g.suspicion;
+  let observed=false;
+  while(g.phase==='cooking'&&R.cookingEvent(g)?.index===e.index){
+   const x=R.cookingEvent(g);
+   const result=R.tickCooking(g,50,x.phase==='SAFE');
+   observed ||=!!result.revealed;
+  }
+  increments.push(g.suspicion-before);
+  assert.ok(observed,'safe glimpse must be possible');
+ }
+ assert.deepEqual(increments.slice(0,5),[0,0,6,10,17]);
+});
+test('v6 gaze and animation metadata are connected, and fixed mobile peek remains onscreen',()=>{
+ const html=read('games/high_midnight_diner/index.html');
+ const css=read('games/high_midnight_diner/v6.css');
+ const js=read('games/high_midnight_diner/game.js');
+ const scene=read('games/high_midnight_diner/kitchen.js');
+ assert.match(html,/v6\.css/);
+ assert.match(html,/id="peekBudget"/);
+ assert.match(html,/id="peekCaption"/);
+ assert.match(css,/position:fixed!important/);
+ assert.match(css,/safe-area-inset-bottom/);
+ assert.match(css,/\.fallback-chef/);
+ assert.match(js,/R\.peekCost\(game\.dish\.peekCount\)/);
+ assert.match(scene,/group\.userData\.clips=g\.animations/);
+ assert.match(scene,/new THREE\.AnimationMixer/);
+ assert.match(scene,/getObjectByName\('Fist\.R'\)/);
+ assert.match(scene,/getWorldPosition\(handPosition\)/);
+ assert.match(scene,/chefPick\.fadeOut/);
 });

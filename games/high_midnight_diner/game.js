@@ -98,6 +98,10 @@ function updateGaze(){
  const labels={SAFE:'등을 돌리고 있다 · 지금 관찰 가능',WARN:'어깨가 움직인다 · 눈을 떼!',LOOK:'요리사가 돌아봤다 · 보지 마!'};
  const names={SAFE:'안전',WARN:'경고',LOOK:'응시'};
  const phase=ev.phase;
+ const nextCost=R.peekCost(game.dish.peekCount);
+ $('peekBudget').textContent=nextCost?'이미 '+game.dish.peekCount+'회 확인 · 다음 관찰 의심 +'+nextCost:'이미 '+game.dish.peekCount+'회 확인 · 다음 관찰 부담 없음';
+ $('peekBudget').classList.toggle('costly',nextCost>0);
+ $('peekCaption').textContent=phase==='SAFE'?'꾹 눌러 훔쳐보기':phase==='WARN'?'지금 손 떼기!':'요리사가 보고 있다!';
  const clock=$('cookClock');
  clock.textContent=names[phase];
  clock.className='gaze-indicator gaze-'+phase.toLowerCase();
@@ -159,8 +163,8 @@ function startCooking(){
   if(!outcome.ok){stopCooking();return;}
   if(outcome.revealed){
    const peek=game.dish.currentPeek;
-   if(peek)note(peek.concealed?'재료가 팔에 가려졌다.':peek.zone+'번 조각: '+peek.ingredient,'good');
-   sound('safe');renderMemory();
+   if(peek)note(outcome.message, R.peekCost(game.dish.peekCount-1)>0?'danger':'good');
+   sound(R.peekCost(game.dish.peekCount-1)>0?'warn':'safe');renderMemory();
   }
   if(outcome.warned){note('어깨가 움직였다! 지금 눈을 떼야 해.','danger');reportMood(false);}
   if(outcome.caught){

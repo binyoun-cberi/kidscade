@@ -38,11 +38,11 @@ async function load(url,height,x,y,z,rotation=0){
   const group=new THREE.Group();group.position.set(x,y,z);group.rotation.y=rotation;
   obj.position.x-=center.x;obj.position.y-=bounds.min.y;obj.position.z-=center.z;
   obj.traverse(n=>{if(n.isMesh){n.castShadow=false;n.receiveShadow=true;}});
-  group.add(obj);scene.add(group);resolve(group);
+  group.add(obj);group.userData.clips=g.animations||[];scene.add(group);resolve(group);
  },undefined,()=>resolve(null));
  });
 }
-let chef=null,food=null,mood=0,shock=0,course=0,frame=0,disposed=false,reactionName='',reactionUntil=0;
+let chef=null,chefMixer=null,chefPick=null,chefNeck=null,chefHand=null,chefIdle=null,food=null,mood=0,shock=0,course=0,frame=0,disposed=false,reactionName='',reactionUntil=0,previousPrepStep=-1;
 const decor=[
  [K+'fridge.glb',2.7,-2.15,0,-1.72,0],
  [K+'stove.glb',1.12,-1.38,0,-1.04,0],
@@ -55,7 +55,23 @@ const decor=[
 for(const d of decor)load(d[0],...d.slice(1));
 load(PEOPLE+'Chef_Male.gltf',2.22,-.1,0,.43,0).then(async obj=>{
  chef=obj||await load(PEOPLE+'OldClassy_Male.gltf',2.15,-.1,0,.43,0);
- if(chef)canvas.classList.add('ready');
+ if(chef){
+  // Reuse the model's authored skeletal clips rather than spinning a rigid mannequin.
+  const clips=chef.userData.clips||[];
+  chefMixer=new THREE.AnimationMixer(chef.children[0]);
+  const idle=clips.find(x=>x.name==='Idle');
+  const pick=clips.find(x=>x.name==='PickUp');
+  if(idle){chefIdle=chefMixer.clipAction(idle);chefIdle.play();}
+  if(pick){
+   chefPick=chefMixer.clipAction(pick);
+   chefPick.setLoop(THREE.LoopOnce,1);
+   chefPick.clampWhenFinished=true;
+   chefMixer.addEventListener('finished',event=>{if(event.action===chefPick)chefPick.fadeOut(.22);});
+  }
+  chefNeck=chef.getObjectByName('Neck');
+  chefHand=chef.getObjectByName('Fist.R')||chef.getObjectByName('Fist.L');
+  canvas.classList.add('ready');
+ }
  else console.warn('Midnight diner: chef asset missing, illustrated fallback remains visible');
 });
 const foods=[F+'pancakes-stack.glb',S+'ramen.glb',S+'dango.glb',S+'gyoza.glb',F+'cupcake.glb'];
@@ -82,6 +98,7 @@ function resize(){
 }
 window.addEventListener('resize',resize);resize();
 const clock=new THREE.Clock();
+const handPosition=new THREE.Vector3();
 // Reusable spoon and ingredient proxy: animation follows the exact serving number
 // shared with cooking rules, never inventing a different dangerous position.
 const spoon=new THREE.Group();
@@ -109,6 +126,9 @@ window.addEventListener('midnight-diner:cooking',ev=>{
  currentZone=d.zone||1;currentTotal=d.total||5;lookingAtFood=!!d.looking&&!d.concealed;
  foodIngredient=d.ingredient;
  stirUntil=clock.getElapsedTime()+1.4;
+ if(d.step!==previousPrepStep){previousPrepStep=d.step;
+  if(chefPick){chefPick.reset();chefPick.fadeIn(.13);chefPick.play();}
+ }
  const prohibited=lookingAtFood&&foodIngredient&&foodIngredient!=='일반 양념';
  addedIngredient.material.color.setHex(prohibited?0x874638:0x8e9464);
  addedIngredient.visible=lookingAtFood;
@@ -149,7 +169,9 @@ for(let i=0;i<6;i++){
  sprite.visible=false;scene.add(sprite);steam.push(sprite);
 }
 function tick(){
- if(disposed)return;requestAnimationFrame(tick);if(document.hidden)return;const t=clock.getElapsedTime();frame++;
+ if(disposed)return;requestAnimationFrame(tick);if(document.hidden)return;
+ const delta=clock.getDelta(),t=clock.elapsedTime;frame++;
+ if(chefMixer)chefMixer.update(delta);
  if(frame%20===0)resize();
  lamp.intensity=(gazePhase==='LOOK'&&cookingPhase?29:38)+Math.sin(t*17)*.7+(mood>.6?Math.sin(t*8)*2:0);
  if(chef){
@@ -163,18 +185,28 @@ function tick(){
  chef.position.x=Math.sin(t*.4)*.03;
  chef.position.z=.43+(reacting&&reactionName==='reject'?.17:0);
  chef.rotation.z=shock*.055+(reacting&&reactionName==='inspect'?.07:0);
+ if(chefNeck){
+  const targetTurn=cookingPhase?(gazePhase==='WARN'?.22:gazePhase==='LOOK'?-.12:0):0;
+  chefNeck.rotation.y+=(targetTurn-chefNeck.rotation.y)*.18;
+ }
 }
  if(food)food.rotation.y+=.002;
  const stirring=t<stirUntil;
  const x=-1.1+(Math.max(1,currentZone)-1)/Math.max(1,currentTotal-1)*2.15;
  spoon.visible=cookingPhase;
  spoon.position.set(x,1.66+Math.sin(t*11)*.06,-.16);
+ if(chefHand&&cookingPhase){
+  chef.updateMatrixWorld(true);
+  chefHand.getWorldPosition(handPosition);
+  spoon.position.lerp(handPosition,0.87);
+  spoon.position.y+=.05;
+ }
  spoon.rotation.set(0,0,stirring?Math.sin(t*10)*.35:.08);
  const currentModel=[...ingredientModels.values()].find(obj=>obj.visible);
  addedIngredient.visible=cookingPhase&&stirring&&lookingAtFood&&!currentModel;
  const y=1.6-Math.min(1,Math.max(0,1-(stirUntil-t)/1.4))*.3;
- if(addedIngredient.visible)addedIngredient.position.set(x,y,-.2);
- if(currentModel){currentModel.visible=cookingPhase&&lookingAtFood;if(currentModel.visible)currentModel.position.set(x,y,-.23);}
+ if(addedIngredient.visible)addedIngredient.position.set(spoon.position.x,Math.max(1.15,spoon.position.y-.13),spoon.position.z-.08);
+ if(currentModel){currentModel.visible=cookingPhase&&lookingAtFood;if(currentModel.visible)currentModel.position.set(spoon.position.x,Math.max(1.15,spoon.position.y-.13),spoon.position.z-.09);}
  steam.forEach((sprite,i)=>{
   const show=course===1&&!!food;
   sprite.visible=show;
