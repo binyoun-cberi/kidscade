@@ -29,7 +29,7 @@ test('later stages strictly grow and require backtracking horizontally', () => {
   for(let stage=2;stage<=28;stage++){
     const previous=paths.specs(stage-1),next=paths.specs(stage);
     assert.ok(next.width>previous.width);
-    assert.ok(next.minCells>previous.minCells);
+    assert.ok(next.minCells>previous.maxCells,'every next maze must have strictly more tiles');
     assert.ok(next.minTurns>previous.minTurns);
     if(stage>=3){
       const map=paths.generate(stage,stage*7407);
