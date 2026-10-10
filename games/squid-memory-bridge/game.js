@@ -336,5 +336,9 @@
   window.addEventListener('resize',resize,{passive:true});
   if(window.ResizeObserver)new ResizeObserver(resize).observe(ui.frame);
   updateUI();resize();requestAnimationFrame(tick);
-  if(SURVIVAL_MODE)startRun();
+  if(SURVIVAL_MODE){
+    const rule=$('timeRule');
+    if(rule)rule.textContent='이번 서바이벌에서는 90초 안에 기억의 다리를 통과해야 해요. 최초 정답 경로 공개는 무료이고, 정답 확인 중에도 남은 시간은 계속 줄어듭니다.';
+    startRun();
+  }
 })();
