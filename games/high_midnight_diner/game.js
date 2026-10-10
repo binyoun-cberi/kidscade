@@ -101,7 +101,12 @@ function act(name){
  if(name==='eat'||name==='inspect'){if(chosen===null)return;outcome=R[name](game,chosen);}
  else outcome=R[name](game);
  if(!outcome.ok){note(outcome.message);repaint();return;}
- if(name==='eat'){sound(outcome.dangerous?'danger':'safe');chosen=null;if(outcome.dangerous)$('plateGlow').classList.add('danger');}
+ window.dispatchEvent(new CustomEvent('midnight-diner:action',{detail:{name,dangerous:!!outcome.dangerous,course:before}}));
+ if(name==='eat'){
+  sound(outcome.dangerous?'danger':'safe');chosen=null;
+  const glow=$('plateGlow');glow.classList.remove('danger','safe-bite');void glow.offsetWidth;
+  glow.classList.add(outcome.dangerous?'danger':'safe-bite');
+ }
  else sound('tap');
  if(name==='reject'||name==='question')chosen=null;
  note(outcome.message,outcome.dangerous?'danger':name==='eat'?'good':'');
@@ -152,6 +157,6 @@ window.addEventListener('keydown',e=>{
  if(key==='q')act('question');
  if(key==='r')act('reject');
 });
-$('plateGlow').addEventListener('animationend',()=>$('plateGlow').classList.remove('danger'));
+$('plateGlow').addEventListener('animationend',()=>$('plateGlow').classList.remove('danger','safe-bite'));
 intro();
 })();
