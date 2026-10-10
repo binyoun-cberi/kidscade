@@ -55,3 +55,26 @@ test('Tidy King catalog classification and entrypoint are valid',()=>{
  assert.equal(game.href,'games/sim_tidy_king/index.html');
  assert.equal(game.genre,'simulation');
 });
+
+test('Tidy King handles final stain cleanup without null access',()=>{
+ assert.match(js,/if\(scrubbing&&!\s*scrubbing\.done\)/);
+ assert.match(js,/const active=scrubbing;cleanStain\(active,/);
+ assert.match(js,/if\(active\.done\)scrubbing=null/);
+});
+test('Tidy King has real receptacles, persistent deposited props and finish photos',()=>{
+ assert.match(js,/function stationModel\(/);
+ assert.match(js,/trashcan/);
+ assert.match(js,/function depositPosition\(/);
+ assert.match(js,/finalScale:station\.key/);
+ assert.doesNotMatch(js,/root\.remove\(a\.item\.group\);makeSparkles\(a\.end\)/);
+ assert.match(js,/function captureScene\(/);
+ assert.match(js,/beforeImage=captureScene\(\)/);
+ assert.match(js,/after\.src=clean/);
+ for(const id of ['beforePhoto','afterPhoto','startKitchen'])assert.match(html,new RegExp('id="'+id+'"'));
+});
+test('Tidy King unlocks kitchen independently of the apartment and refreshes stage controls',()=>{
+ assert.match(js,/saved\.unlocked\?'주방 청소하기'/);
+ assert.match(js,/if\(saved\.unlocked\)launchStage\(1\)/);
+ assert.match(js,/saved\.unlocked=Math\.max/);
+ assert.match(js,/showStageButtons\(\)/);
+});
