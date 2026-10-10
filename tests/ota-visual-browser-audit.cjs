@@ -210,17 +210,32 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await moveUntil('x',12.8,'explore',32);
   await moveUntil('z',-50.9,'explore',11);
   await screenshot('15-archive-before-record.png','desktop');
-  // The figure is north of the player: look deliberately for less than a second.
-  assert.equal(await evalPage('window.OtaDebug.aimForVisualAudit(2.80,0)'),true);
-  await sleep(1100);
-  report.watcherGaze=(await snap()).chapter3.watcher;
-  assert.ok(report.watcherGaze.focus>3,'Staring must raise the gaze meter');
+  // Record B is deliberately inaccessible until the watcher is read in three short glances.
+  await interact();
+  assert.equal((await snap()).chapter3.records.archive,false,'the archive cannot be skipped');
+  const yaw=await evalPage("(()=>{const s=window.OtaDebug.snapshot();const w=window.OtaChapter3.WATCHER;return Math.atan2(-(w.x-s.player.x),-(w.z-s.player.z))})()");
+  assert.equal(await evalPage('window.OtaDebug.aimForVisualAudit('+yaw+',0)'),true);
+  await sleep(1350);
+  let c=(await snap()).chapter3;
+  assert.equal(c.cipher.fragments,1,'first watcher glance reveals exactly one fragment');
+  report.watcherGaze=c.watcher;
+  assert.ok(c.watcher.focus>3,'looking at watcher raises danger');
   await screenshot('15b-watcher-gaze-active.png','desktop');
   await evalPage('window.OtaDebug.aimForVisualAudit(0,0)');
-  await sleep(1550);
-  assert.ok((await snap()).chapter3.watcher.focus<report.watcherGaze.focus,'Looking away must lower danger');
+  await sleep(1150);
+  for(let part=2;part<=3;part++){
+    await evalPage('window.OtaDebug.aimForVisualAudit('+yaw+',0)');
+    await sleep(1350);
+    c=(await snap()).chapter3;
+    assert.equal(c.cipher.fragments,part,'separated glance '+part+' reveals next fragment');
+    if(part===3)await screenshot('15c-all-glyphs-deciphered.png','desktop');
+    await evalPage('window.OtaDebug.aimForVisualAudit(0,0)');
+    await sleep(1150);
+  }
+  assert.equal(await evalPage("document.getElementById('gazeText').textContent.includes('해독 완료')"),true);
+  assert.ok((await snap()).chapter3.watcher.focus<report.watcherGaze.focus+2,'looking away reduces focus');
   await interact();
-  assert.equal((await snap()).chapter3.records.archive,true,'second record collected');
+  assert.equal((await snap()).chapter3.records.archive,true,'second record only after three glimpses');
   await screenshot('16-archive-record.png','desktop');
   await moveUntil('z',-47.8,'explore',11);
   await moveUntil('x',0,'explore',18);
@@ -244,6 +259,11 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   report.mobileUI=mobileUI;
   assert.equal(mobileUI.stickDisplay,'block','Mobile joystick is visible');
   assert.ok(mobileUI.stick.right<mobileUI.buttons.left,'Touch controls do not collide');
+  report.mobileHazardLayout=await evalPage("(()=>{const rect=id=>{const r=document.getElementById(id).getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right}};return {mission:rect('mission'),gaze:rect('gazeWarning'),echo:rect('echoWarning'),message:rect('message')}})()");
+  assert.ok(report.mobileHazardLayout.gaze.top>=report.mobileHazardLayout.mission.bottom+4,'Gaze warning must stay below the mission header');
+  assert.ok(report.mobileHazardLayout.echo.top>=report.mobileHazardLayout.mission.bottom+4,'Echo warning must stay below the mission header');
+  assert.ok(report.mobileHazardLayout.gaze.bottom<report.mobileHazardLayout.message.top,'Gaze warning must not overlap the center event message');
+  assert.ok(report.mobileHazardLayout.echo.bottom<report.mobileHazardLayout.message.top,'Echo warning must not overlap the center event message');
   await screenshot('13-intro-mobile.png','mobile');
   await evalPage("document.getElementById('start').click()");
   await sleep(250);
