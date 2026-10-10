@@ -135,7 +135,7 @@ test('turn engine can use every newly registered signature with PP, legal effect
   assert.ok(result.ok,family.key);
   assert.equal(mon.moveSlots.find(x=>x.id===sig)?.pp,pp-1,family.key);
   assert.ok(mon.hp>=0&&mon.hp<=DB.combat.statsAtLevel(mon.id,mon.level,mon).hp);
-  assert.ok(foe.hp>=0&&foe.hp<=DB.combat.statsAtLevel(foe.id,foe.level).hp);
+  assert.ok(foe.hp>=0&&foe.hp<=DB.combat.statsAtLevel(foe.id,foe.level,foe).hp);
   assert.ok(result.events.length>0);
  }
 });
