@@ -1034,8 +1034,8 @@ test('v6.1 hats and face items use corrected crown/mouth registration',()=>{
   assert.match(pack,/accessoryBox\.max\.y:accessoryBox\.min\.y/);
   assert.match(pack,/scalpY-\.012,hc\.z/);
   assert.match(pack,/crownWall/);
-  assert.match(pack,/eyeY-\.344/);
-  assert.match(pack,/faceZ\+\.102/);
+  assert.match(pack,/eyeY-\.305/);
+  assert.match(pack,/faceZ\+\.025/);
 });
 test('v6.1 tracksuit piping bends with weighted knees rather than floating rigid boxes',()=>{
   const pack=read('teacher/chibi-outfit-pack.js');
@@ -1055,11 +1055,11 @@ test('v6.1 visual identity details include layered school collar, rugby stripes,
   assert.match(hair,/side:THREE.DoubleSide/);
 });
 
-test('v6.2 sunglasses cover eye sockets and face mask follows the lower face',()=>{
+test('v6.2 facial accessories hug skin without forward floating discs',()=>{
   const src=read('teacher/chibi-accessory-pack.js');
-  assert.match(src,/case 'sunglasses':return box\(\.207,\.136,\.020,-\.108,eyeY-\.006,faceZ\+\.102\)/);
-  assert.match(src,/case 'mask':return sphere\(0,eyeY-\.344,faceZ\+\.137,\.202,\.144,\.043\)/);
-  assert.match(src,/add\(box\(\.207,\.136,\.020,\.108,eyeY-\.006,faceZ\+\.102\)/);
-  assert.match(src,/eyeY-\.246,faceZ\+\.181/);
-  assert.match(src,/eyeY-\.347,faceZ\+\.073/);
+  assert.match(src,/case 'sunglasses':return sphere\(-\.110,eyeY,faceZ\+\.025,\.112,\.083,\.012\)/);
+  assert.match(src,/case 'mask':return sphere\(0,eyeY-\.305,faceZ\+\.030,\.179,\.113,\.035\)/);
+  assert.match(src,/add\(sphere\(\.110,eyeY,faceZ\+\.025,\.112,\.083,\.012\)/);
+  assert.match(src,/eyeY-\.235,faceZ\+\.066/);
+  assert.match(src,/eyeY-\.307,faceZ-\.018/);
 });
