@@ -8,7 +8,8 @@ const canvas = el('scene');
 const hud = { objective:el('objective'), stage:el('stage'), prompt:el('prompt'),
   message:el('message'), danger:el('danger'), noise:el('static'), action:el('action'),
   echo:el('echoWarning'), echoFill:el('echoFill'), echoText:el('echoText'),
-  gaze:el('gazeWarning'), gazeFill:el('gazeFill'), records:el('recordStatus') };
+  gaze:el('gazeWarning'), gazeFill:el('gazeFill'), gazeText:el('gazeText'),
+  clue:el('clueStatus'), records:el('recordStatus') };
 const overlays = { intro:el('intro'), fix:el('fixPanel'), ending:el('ending') };
 const state = R.initialState();
 const player = { x:0, z:4.8, yaw:0, pitch:0, moving:false };
@@ -20,9 +21,10 @@ let corridorMesh, corridorWord, doorMesh, doorWord, personWord, monsterWord, ene
 let echoMark, echoWasActive=false; const shiftingWords=[];
 let currentInteraction = null;
 const chapterVisual = {officeSeal:null,officeWord:null,finalSeal:null,finalWord:null,
-  watcher:null,watcherText:null,officeRecord:null,archiveRecord:null,anomaly:null,anomalyChanged:false};
+  watcher:null,watcherText:null,officeRecord:null,archiveRecord:null,glimpseLetters:[],
+  anomaly:null,anomalyChanged:false};
 const CHECKPOINT_KEY='kidscade-ota-v3-checkpoint';
-let lastGazeAwake=false;
+let lastGazeAwake=false,lastGlimpses=0;
 const touchDevice = matchMedia('(pointer:coarse)').matches;
 let audioCtx = null;
 
@@ -238,8 +240,11 @@ function buildChapterThreeRooms(){
   // The office is organized into a few islands of word-furniture rather than blank surfaces.
   for(const [x,z,name] of [[-5.8,-42.2,'서류'],[-8.4,-52.7,'책상'],[-13.4,-43.4,'의자']]){
     box(1.15,.68,.70,x,.36,z,propMat);
+    // Labelled faces on three axes make the desk a volume of words, not a textureless block.
     label(name,'#f2d9b8',x,1.05,z+.43,0,0,1.46,.65);
+    label(name,'#ddc5a8',x+.54,.66,z,0,Math.PI/2,.70,.49);
     label('정리되지 않음','#b5a28f',x,1.71,z+.45,0,0,1.8,.50);
+    label('사물','#b4a48c',x,.76,z,-Math.PI/2,0,1.0,.50);
   }
   for(let i=0;i<4;i++){
     label(i%2?'이름을 고치세요':'책상은 어디에', '#d2bca2',-8.8,.65+i*.52,-55.44,0,0,3.3,.51);
@@ -260,13 +265,20 @@ function buildChapterThreeRooms(){
     // Word-spines form recognizable shelves even when normal textures are absent.
     for(let j=0;j<4;j++){
       label(['서가','자료','기록','삭제'][j],j===3?'#d68c9d':'#a7c7de',x, .48+j*.49,z+1.23,0,0,.79,.37);
+      label(['서','자','기','삭'][j],'#b9cddd',x+.14,.48+j*.49,z,0,Math.PI/2,.75,.37);
     }
   }
   for(let i=0;i<4;i++){
     label(i%2===0?'읽지 마세요':'눈을 돌려요','#8cb3cd',9.3,.64+i*.56,-55.45,0,0,2.1,.44);
   }
   label('쳐다보지 마십시오','#d48e97',8.6,2.55,-40,0,0,3.2,.58);
-  chapterVisual.archiveRecord=label('기록 B','#eac58c',12.8,1.32,-51,0,0,1.75,.58);
+  chapterVisual.archiveRecord=label('봉인 B','#ed8fa8',12.8,1.32,-51,0,0,1.75,.58);
+  label('잠깐 보고 고개를 돌리세요','#b7cce1',12.4,2.65,-54.98,0,0,3.5,.62);
+  // Cipher letters materialize above the watcher, one for each controlled glance.
+  ['나','를','봐'].forEach((word,i)=>{
+    const mesh=label('□','#927981',9.4+i*1.10,2.88,-44.53,0,0,1.04,.70);
+    chapterVisual.glimpseLetters.push({mesh,word});
+  });
   // The watcher is layered text so it is distinguishable from the static wall glyphs.
   chapterVisual.watcher=label('사람','#e4dae1',10.5,1.7,-44.5,0,0,1.8,1.0);
   label('보지 마', '#b8808e', 12.8, 2.15, -42.6, 0, 0, 2.0, .65);
@@ -297,6 +309,11 @@ function syncChapterVisuals(){
   }
   chapterVisual.officeRecord.visible=!c.records.office;
   chapterVisual.archiveRecord.visible=!c.records.archive;
+  chapterVisual.archiveRecord.material=material(c.cipher.fragments>=3?'기록 B':'봉인 B',c.cipher.fragments>=3?'#f3d39b':'#ed8fa8');
+  chapterVisual.glimpseLetters.forEach(({mesh,word},i)=>{
+    mesh.material=material(c.cipher.fragments>i?word:'□',c.cipher.fragments>i?'#f4d7cc':'#927981');
+    mesh.visible=!c.records.archive;
+  });
   if(state.doorFixed){
     doorMesh.visible=false;doorWord.visible=false;
   }
@@ -323,6 +340,7 @@ function respawnAtCheckpoint(){
   hud.stage.textContent='기록이 저장된 마지막 지점';
   hud.echo.classList.remove('show');hud.danger.style.opacity='0';
   chapterVisual.watcher.visible=true;chapterVisual.watcherText.visible=false;
+  lastGlimpses=0;lastGazeAwake=false;hud.gaze.classList.remove('show');
   syncChapterVisuals();announce('기록이 복원되었습니다. 다시 시작합니다.',false,3);
   return true;
 }
@@ -417,6 +435,9 @@ function interact() {
       document.body.classList.remove('hidden-in-locker');
       announce('이제 문을 찾으세요.',false,2.2);
     }
+  } else if(action.type==='archiveCipher'){
+    announce('기록이 봉인되어 있습니다. 「사람」을 잠깐 읽고, 반드시 시선을 돌리세요.',false,4.2);
+    tone(190,.20,'triangle',.035);
   } else if(action.type==='officeRecord'||action.type==='archiveRecord'){
     const which=action.type==='officeRecord'?'office':'archive';
     if(C3.collect(state,which,player)){
@@ -516,6 +537,13 @@ function update(dt) {
     const gaze=C3.stepWatcher(state,dt,player,player.yaw,player.pitch);
     if(gaze.awake && !lastGazeAwake){shock();announce('읽지 마. 뛰어!',true,3);}
     lastGazeAwake=gaze.awake;
+    const c=C3.ensure(state);
+    if(c.cipher.fragments>lastGlimpses){
+      tone(422+c.cipher.fragments*90,.17,'sine',.060);
+      announce('글자 조각 '+c.cipher.fragments+'/3 — 이제 시선을 돌리세요.',false,2.4);
+      syncChapterVisuals();
+    }
+    lastGlimpses=c.cipher.fragments;
     const watcher=C3.ensure(state).watcher;
     chapterVisual.watcher.position.set(watcher.x,1.7,watcher.z);
     chapterVisual.watcher.lookAt(camera.position);
@@ -523,11 +551,19 @@ function update(dt) {
     chapterVisual.watcherText.lookAt(camera.position);
     chapterVisual.watcherText.visible=gaze.awake||gaze.focus>35;
     chapterVisual.watcher.material=material(gaze.awake?'나나나':'사람',gaze.awake?'#f47485':'#e4dae1');
-    hud.gaze.classList.toggle('show',gaze.focus>1||gaze.awake);
+    const inArchive=C3.inArchive(player)&&!c.records.archive;
+    hud.gaze.classList.toggle('show',inArchive || gaze.awake);
+    hud.gaze.classList.toggle('active',gaze.awake || gaze.focus>75);
     hud.gazeFill.style.width=Math.round(gaze.focus)+'%';
+    hud.gazeText.textContent=gaze.awake?'발각! 달려서 서고를 벗어나세요'
+      :c.cipher.fragments>=3?'해독 완료 · 기록 B를 확보하세요'
+      :c.cipher.mustLookAway?'시선을 돌려야 다음 글자를 읽을 수 있어요'
+      :gaze.looking?'글자를 읽는 중… 오래 보면 위험해요'
+      :'「사람」을 잠깐 보고 시선을 돌리세요';
+    hud.clue.textContent='해독 '+c.cipher.fragments+'/3';
     hud.records.textContent='기록 '+(+C3.ensure(state).records.office+ +C3.ensure(state).records.archive)+'/2';
   }else{
-    hud.gaze.classList.remove('show');lastGazeAwake=false;
+    hud.gaze.classList.remove('show');hud.gaze.classList.remove('active');lastGazeAwake=false;
   }
   syncStage(before);
   if(messageEnd<elapsed)hud.message.classList.remove('show');
