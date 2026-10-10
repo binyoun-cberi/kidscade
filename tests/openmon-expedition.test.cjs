@@ -31,7 +31,7 @@ test('new expedition uses the three original starter families and supplies',()=>
  for(const key of ['set1_r02_c02','set1_r03_c02','set1_r04_c02']){
   const game=E.createNew(key),lead=game.party[0];
   assert.equal(lead.id,key);assert.equal(lead.level,5);assert.equal(game.items.ball,7);
-  assert.equal(lead.hp,DB.combat.statsAtLevel(key,5).hp);
+  assert.equal(lead.hp,DB.combat.statsAtLevel(key,5,lead).hp);
   assert.deepEqual(snapshot(game.pos),{x:8,y:13});
   assert.equal(E.validateSave(snapshot(game)).party.length,1);
  }
@@ -104,7 +104,7 @@ test('battle damage, weakening, reward and evolution form a complete determinist
 test('fainted party is healed at clinic and invalid saves are rejected',()=>{
  const game=E.createNew('set1_r03_c02');
  game.party[0].hp=0;E.healAll(game);
- assert.equal(game.party[0].hp,DB.combat.statsAtLevel(game.party[0].id,5).hp);
+ assert.equal(game.party[0].hp,DB.combat.statsAtLevel(game.party[0].id,5,game.party[0]).hp);
  assert.equal(E.validateSave({...snapshot(game),pos:{x:-5,y:0}}),null);
  assert.equal(E.validateSave({...snapshot(game),party:[{id:'missing',level:4,hp:22,xp:0}]}),null);
  assert.equal(E.validateSave({...snapshot(game),version:99}),null);
