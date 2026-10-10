@@ -9,7 +9,7 @@ const PEOPLE='../../assets/game/npcs/glTF/';
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x25241d);
 const camera=new THREE.PerspectiveCamera(38,1,.05,80);camera.position.set(0,2.2,7.8);camera.lookAt(0,1.7,0);
 let renderer;
-try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'low-power'});renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;canvas.classList.add('ready');}
+try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'low-power'});renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;/* Show illustrated fallback until a chef model is confirmed. */}
 catch(error){console.warn('Midnight diner WebGL unavailable; using illustrated kitchen fallback',error);}
 if(renderer){
 const ambient=new THREE.HemisphereLight(0xb2a384,0x14120c,1.5);scene.add(ambient);
@@ -41,7 +41,7 @@ async function load(url,height,x,y,z,rotation=0){
  },undefined,()=>resolve(null));
  });
 }
-let chef=null,food=null,mood=0,shock=0,course=0,frame=0,disposed=false;
+let chef=null,food=null,mood=0,shock=0,course=0,frame=0,disposed=false,chefMixer=null;
 const decor=[
  [K+'fridge.glb',2.9,-3.95,1.15,-1.8,0],
  [K+'stove.glb',1.4,-2.7,1.12,-1.13,0],
@@ -52,12 +52,16 @@ const decor=[
  [S+'plate.glb',.1,1.35,1.22,-.55,0]
 ];
 for(const d of decor)load(d[0],...d.slice(1));
-load(PEOPLE+'OldClassy_Male.gltf',1.7,0,1.18,-.85,Math.PI).then(obj=>{chef=obj;});
-const foods=[F+'pancakes-stack.glb',S+'ramen.glb',S+'gyoza.glb'];
+load(PEOPLE+'OldClassy_Male.gltf',1.7,0,1.18,-.85,Math.PI).then(obj=>{
+ chef=obj;
+ if(obj){canvas.classList.add('ready');}
+ else console.warn('Midnight diner: chef asset missing, illustrated fallback remains visible');
+});
+const foods=[F+'pancakes-stack.glb',S+'ramen.glb',S+'dango.glb',S+'gyoza.glb',F+'cupcake.glb'];
 async function setCourse(index){
  const old=food;food=null;if(old)scene.remove(old);
  const next=await load(foods[index]||foods[0],.36,1.35,1.21,-.45,-.25);
- if(course===index)food=next;else if(next)scene.remove(next);
+ if(course===index){food=next;}else if(next)scene.remove(next);
 }
 setCourse(0);
 window.addEventListener('midnight-diner:state',ev=>{
@@ -72,12 +76,31 @@ function resize(){
 }
 window.addEventListener('resize',resize);resize();
 const clock=new THREE.Clock();
+// A few small steam motes reuse basic geometry and materials rather than downloading another asset.
+const steam=[];
+for(let i=0;i<6;i++){
+ const sprite=new THREE.Mesh(
+  new THREE.SphereGeometry(.027+i*.004,6,5),
+  new THREE.MeshBasicMaterial({color:0xbfc3a6,transparent:true,opacity:.12,depthWrite:false})
+ );
+ sprite.visible=false;scene.add(sprite);steam.push(sprite);
+}
 function tick(){
- if(disposed)return;requestAnimationFrame(tick);const t=clock.getElapsedTime();frame++;
+ if(disposed)return;requestAnimationFrame(tick);if(document.hidden)return;const t=clock.getElapsedTime();frame++;
  if(frame%20===0)resize();
  lamp.intensity=38+Math.sin(t*17)*.7+(mood>.6?Math.sin(t*8)*2:0);
  if(chef){chef.rotation.y=Math.PI+Math.sin(t*1.1)*(.07+mood*.24);chef.position.x=Math.sin(t*.4)*.03;chef.rotation.z=shock*.08;}
  if(food)food.rotation.y+=.002;
+ steam.forEach((sprite,i)=>{
+  const show=course===1&&!!food;
+  sprite.visible=show;
+  if(show){
+   const rise=(t*.24+i*.19)%1;
+   sprite.position.set(1.35+Math.sin(t*.8+i*3)*.055,1.47+rise*.45,-.4);
+   sprite.material.opacity=.15*(1-rise);
+   sprite.scale.setScalar(.6+rise*1.8);
+  }
+ });
  if(shock>0)shock=Math.max(0,shock-.016);
  renderer.render(scene,camera);
 }
