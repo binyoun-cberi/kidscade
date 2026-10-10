@@ -20,7 +20,7 @@
     </header>
     <main class="play">
       <div class="board-head">
-        <div class="zone"><span class="dot green"></span><strong>START</strong><span class="dash"></span><strong>GOAL</strong><span class="dot orange"></span></div>
+        <div class="zone"><img class="flag-icon" src="../../assets/game/2d/platformer-art/base/items/flag-green.png" alt=""><strong>START</strong><span class="dash"></span><strong>GOAL</strong><img class="flag-icon" src="../../assets/game/2d/platformer-art/base/items/flag-yellow.png" alt=""></div>
         <span class="mission" id="missionText">초록색 발판을 기억하세요</span>
         <span class="counter" id="pathText">0 / 0칸</span>
       </div>
@@ -51,7 +51,7 @@
 
   <div class="overlay" id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle">
     <section class="dialog intro">
-      <div class="symbol" aria-hidden="true">🦑</div>
+      <div class="symbol" aria-hidden="true"><img src="../../assets/game/characters/kidscade-avatar-v3/school-starter/guest-default.png" alt=""></div>
       <p class="eyebrow">5 MINUTES · ONE CHANCE</p>
       <h1 id="introTitle">꼴뚜기 게임</h1>
       <p class="lead">초록색 발판을 기억하고<br><strong>왼쪽에서 오른쪽까지 살아남으세요!</strong></p>
@@ -70,6 +70,7 @@
     <section class="dialog result">
       <p class="eyebrow" id="resultLabel">STAGE CLEAR</p>
       <h2 id="resultTitle">성공!</h2>
+      <div class="result-trophy" aria-hidden="true"><img src="../../assets/game/2d/platformer-art/base/items/gem-green.png" alt=""></div>
       <p id="resultMessage"></p>
       <div class="result-stats">
         <div><small>도달 단계</small><b id="resultStage">1</b></div>
@@ -99,6 +100,7 @@
   </div>
   <script src="../../kidscade-game-sdk.js" data-game-id="squid_memory_bridge" data-title="꼴뚜기 게임" data-shell="true" data-orientation="landscape" data-mute="false"></script>
   <script src="./path.js?v=1"></script>
-  <script src="./game.js?v=1"></script>
+  <script src="./assets.js?v=1"></script>
+  <script src="./game.js?v=2"></script>
 </body>
 </html>
