@@ -40,11 +40,11 @@ const catalog={
 const levelDefs=[
  {name:'의뢰 1 · 엉망진창 원룸',title:'우리 집 대청소',description:'지저분해진 원룸을 새집처럼 바꾸자!',seed:12345,
   items:{book:14,pen:8,pillow:10,bag:10,bottle:14,can:12,carton:8,cup:8,toy:12},stains:7,
-  littleItems:{book:5,toy:5,bottle:5,cup:3},littleStains:2,
+  littleItems:{book:14,toy:14,bottle:14,cup:8},littleStains:2,
   floor:0xc9ae8c,wall:0xe5cfac},
  {name:'의뢰 2 · 난장판 주방',title:'반짝반짝 주방',description:'바닥에 널린 물건을 치우고 얼룩까지 닦자!',seed:67891,
   items:{cup:18,plate:16,pan:5,bottle:16,can:14,carton:10,bag:8,book:4,pillow:3,toy:4},stains:9,
-  littleItems:{cup:5,plate:4,bottle:5,can:3,bag:3},littleStains:2,
+  littleItems:{cup:14,plate:11,bottle:14,can:7,bag:4},littleStains:2,
   floor:0xb9c9ba,wall:0xd0dfc9}
 ];
 const props={
@@ -651,7 +651,7 @@ function setMode(big){
  document.body.classList.toggle('preschool',!challengeMode);
  $('modeEasy').setAttribute('aria-pressed',String(!challengeMode));
  $('modeBig').setAttribute('aria-pressed',String(challengeMode));
- $('modeHint').textContent=challengeMode?'쓰레기 산을 끝까지 정리해요!':'약 20개만 정리하면 성공해요!';
+ $('modeHint').textContent=challengeMode?'쓰레기 산을 끝까지 정리해요!':'물건 50개를 정리하고 얼룩 2개를 닦아요!';
 }
 $('modeEasy').onclick=()=>setMode(false);
 $('modeBig').onclick=()=>setMode(true);
