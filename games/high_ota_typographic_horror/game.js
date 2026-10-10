@@ -676,6 +676,11 @@ for(const choice of el('choices').querySelectorAll('button')) {
 }
 window.OtaDebug = Object.freeze({
   snapshot:()=>({stage:state.stage,corridorFixed:state.corridorFixed,doorFixed:state.doorFixed,hidden:state.hidden,
-    chapter3:JSON.parse(JSON.stringify(C3.ensure(state))),echo:{...state.echo},monster:{...state.monster},player:{x:player.x,z:player.z,yaw:player.yaw,pitch:player.pitch},mistakes:state.mistakes})
+    chapter3:JSON.parse(JSON.stringify(C3.ensure(state))),echo:{...state.echo},monster:{...state.monster},player:{x:player.x,z:player.z,yaw:player.yaw,pitch:player.pitch},mistakes:state.mistakes}),
+  // Browser QA may aim the camera to verify gaze rules, but cannot edit game progress.
+  aimForVisualAudit:(yaw,pitch)=>{
+    if(!new URLSearchParams(location.search).has('visual-audit'))return false;
+    player.yaw=Number(yaw)||0;player.pitch=Number(pitch)||0;return true;
+  }
 });
 resize();setCamera();requestAnimationFrame(animate);
