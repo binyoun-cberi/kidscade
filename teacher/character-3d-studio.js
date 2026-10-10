@@ -59,7 +59,15 @@ const PART_LABELS={
   kidscade_male_hair_textured:'텍스처 숏컷',kidscade_male_hair_fringe:'덮은 머리',
   kidscade_male_hair_undercut:'언더컷',kidscade_male_hair_round:'라운드컷',
   kidscade_male_hair_swept:'스윕 헤어',
+  kidscade_male_hair_spiky:'스파이키 숏컷',
+  kidscade_male_hair_wave:'웨이브 헤어',
+  kidscade_male_hair_mullet:'울프컷',
+  kidscade_male_hair_comma:'쉼표 가르마',
   chibi_female_hair_bob:'둥근 단발',chibi_female_hair_layered:'레이어드',
+  chibi_female_hair_curl:'컬리 헤어',
+  chibi_female_hair_hime:'히메컷',
+  chibi_female_hair_pixie:'픽시컷',
+  chibi_female_hair_twintail:'트윈테일',
   ...Object.fromEntries(OUTFIT_STYLES.map(style=>[style.id,style.label])),
   ...Object.fromEntries(ACCESSORY_STYLES.map(style=>[style.id,style.label]))
 };
