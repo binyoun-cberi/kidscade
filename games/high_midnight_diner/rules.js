@@ -123,8 +123,8 @@ function tickCooking(state,deltaMs,looking){
  const phaseAt=ms=>ms<timing.safeEnd?'SAFE':ms<timing.warnEnd?'WARN':'LOOK';
  const phase=phaseAt(Math.min(after,timing.totalMs-.001));
  if(looking){
-   if(phase==='SAFE'){
-    const eligible=Math.max(0,after-Math.max(before,timing.revealAt));
+   if(before<timing.safeEnd){
+    const eligible=Math.max(0,Math.min(after,timing.safeEnd)-Math.max(before,timing.revealAt));
     d.holdMs+=eligible;
     if(d.holdMs>=timing.holdNeeded&&!d.currentPeek){
      concealed=z.shade<.18;
@@ -135,12 +135,12 @@ function tickCooking(state,deltaMs,looking){
      message=concealed?'요리사의 손에 가려졌다.':(zoneId+1)+'번에 '+ingredient+'을(를) 넣었다.';
     }
    }
-   if(phase==='WARN'&&d.warnedIndex!==step){
+   if(before>=timing.safeEnd+150&&phase==='WARN'&&d.warnedIndex!==step){
     d.warnedIndex=step;warned=true;
     state.suspicion+=4;
     message='어깨가 움직였다! 얼른 시선을 돌려!';
    }
-   if(phase==='LOOK'&&d.caughtIndex!==step){
+   if(before>=timing.warnEnd&&phase==='LOOK'&&d.caughtIndex!==step){
     d.caughtIndex=step;state.catches++;caught=true;
     state.suspicion+=state.catches===1?18:state.catches===2?28:40;
     message=state.catches===1?'뭘 그렇게 보고 있지?':state.catches===2?'두 번이나 들켰군.':'네가 날 지켜보는 걸 다 알고 있었어.';
