@@ -122,7 +122,8 @@ function move(save,dx,dy,rand=Math.random){
  }else if(firstRoad){
   save.flags.firstRoadEncounter=true;
   // First encounter is a safe, familiar scientific concept character.
-  encounter=makeCreature("set1_r01_c01",2);
+  const firstByStarter={"set1_r02_c02":"set1_r01_c01","set1_r03_c02":"set2_r02_c00","set1_r04_c02":"set5_r02_c00"};
+  encounter=makeCreature(firstByStarter[save.party[0]?.id]||"set1_r01_c01",2);
  }else if(zone!=="town"&&shouldMeet(save,tile,rand)){
   encounter=pickEncounter(zone,rand,save);
  }
