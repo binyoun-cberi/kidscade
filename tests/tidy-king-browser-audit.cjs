@@ -1,4 +1,4 @@
-const fs=require('fs'),path=require('path'),os=require('os'),http=require('http'),cp=require('child_process'),sharp=require('sharp');
+const fs=require('fs'),path=require('path'),os=require('os'),http=require('http'),cp=require('child_process'),sharp=require('sharp'),assert=require('node:assert/strict');
 const {once}=require('events');
 const ROOT=path.resolve(__dirname,'..'),OUT=process.env.TIDY_AUDIT_OUT||path.join(os.tmpdir(),'tidy-audit');
 fs.mkdirSync(OUT,{recursive:true});
@@ -90,13 +90,27 @@ if(after!==before+1)failed.push({i,kind:'place',before,after});
 const stains=[];
 for(let i=0;i<s.stains;i++){const p=await ev('window.__AUDIT.point("stain",'+i+')');if(p?.blocked){stains.push(p);continue}for(let j=0;j<7;j++)await click(p.x,p.y,c.touch);}
 const half=await ev('window.__AUDIT.s()');await snap(c.name+'-after');
-const forced=await ev('window.__AUDIT.forceFinish()');await sleep(750);await snap(c.name+'-success');
+const forced=await ev('window.__AUDIT.forceFinish()');await sleep(850);await snap(c.name+'-success');
+const photo=await ev('({before:document.querySelector("#beforePhoto").src.length,after:document.querySelector("#afterPhoto").src.length,beforeLoaded:document.querySelector("#beforePhoto").naturalWidth,afterLoaded:document.querySelector("#afterPhoto").naturalWidth})');
 await ev('document.querySelector("#next").click()');await sleep(750);
 const kitchen=await ev('window.__AUDIT.s()');await snap(c.name+'-kitchen');
 const unpickable=[];for(let i=0;i<kitchen.items;i++){const p=await ev('window.__AUDIT.point("item",'+i+')');if(p?.blocked)unpickable.push(p)}
 const finish2=await ev('window.__AUDIT.forceFinish()');
 const last=await ev('({visible:!document.querySelector("#end").classList.contains("hidden"),name:document.querySelector("#endTitle").textContent,save:localStorage.getItem("kidscade-tidy-king-v1")})');
-const result={name:c.name,initial:s,overlap,half,blocked,failed,stains,forced,kitchen,unpickable,finish2,last,errors:[...errors],httpErrors:[...httpErrors]};
+await send('Page.reload',{ignoreCache:true});await sleep(850);
+const revisited=await ev('({kitchenEnabled:!document.querySelector("#startKitchen").disabled,kitchenVisible:!document.querySelector("#startKitchen").hidden})');
+if(revisited.kitchenEnabled)await ev('document.querySelector("#startKitchen").click()');
+let direct=null;for(let i=0;i<100;i++){direct=await ev('window.__AUDIT?.s()').catch(()=>null);if(direct?.total>0)break;await sleep(100)}
+const result={name:c.name,initial:s,overlap,half,blocked,failed,stains,forced,photo,kitchen,unpickable,finish2,last,revisited,direct,errors:[...errors],httpErrors:[...httpErrors]};
+assert.equal(errors.length,0,c.name+' browser errors: '+JSON.stringify(errors.slice(0,3)));
+assert.equal(blocked.length,0,c.name+' unclickable props: '+JSON.stringify(blocked.slice(0,3)));
+assert.equal(failed.length,0,c.name+' input failures: '+JSON.stringify(failed.slice(0,3)));
+assert.equal(stains.length,0,c.name+' unfinished stains: '+JSON.stringify(stains.slice(0,3)));
+assert.equal(unpickable.length,0,c.name+' unclickable kitchen props: '+JSON.stringify(unpickable.slice(0,3)));
+assert.equal(overlap.actionsMission,0,c.name+' controls overlap');
+assert.ok(photo.before>5000&&photo.after>5000&&photo.beforeLoaded>10&&photo.afterLoaded>10,c.name+' before-after photos missing');
+assert.equal(kitchen.total,61,c.name+' kitchen stage missing');
+assert.ok(revisited.kitchenEnabled&&revisited.kitchenVisible&&direct?.level===1,c.name+' cannot open unlocked kitchen directly');
 report.push(result);console.log('TIDY_AUDIT_RESULT '+JSON.stringify(result));
 }
 fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));console.log('TIDY_AUDIT_DONE');
