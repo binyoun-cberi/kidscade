@@ -122,7 +122,7 @@ test('confirmation resets to START on the same map while clock continues', () =>
   assert.equal(game.get('checkBtn').disabled,true);
   game.advance(12000);
   assert.ok(!game.get('checkBtn').disabled);
-  assert.equal(game.get('timeText').textContent,'04:37');
+  assert.equal(game.get('timeText').textContent,'04:48');
   assert.equal(game.get('attemptText').textContent,'정답 확인 1회');
   assert.equal(game.get('result').classList.contains('hidden'),true);
 });
@@ -151,8 +151,12 @@ test('wrong adjacent tile immediately ends the run, correct path clears and next
   assert.equal(game.get('stageText').textContent,'02');
   assert.equal(game.get('timeText').textContent,'05:00');
 });
-test('time expiry ends the current stage even during preview',()=>{
-  const game=simulatedGame();game.click('startBtn');game.advance(301000);
+test('time begins after initial reveal and expires during paid confirmation preview',()=>{
+  const game=simulatedGame();game.click('startBtn');
+  assert.equal(game.get('timeText').textContent,'05:00');
+  game.advance(11000);
+  assert.equal(game.get('timeText').textContent,'05:00');
+  game.click('checkBtn');game.advance(301000);
   assert.equal(game.get('resultTitle').textContent,'여기서 탈락!');
   assert.match(game.get('resultMessage').textContent,/시간 초과/);
 });
