@@ -22,7 +22,18 @@ button:focus-visible{outline:3px solid #eab475;outline-offset:3px}
 #mission small{display:block;color:#d1b58e;font-size:10px;letter-spacing:.16em;font-weight:800}
 #objective{font-size:clamp(12px,2vw,17px);font-weight:800;line-height:1.4;margin-top:3px}
 #stage{margin-top:6px;font-size:11px;color:#949da8}
-#mute{pointer-events:auto;background:#0b111aca;border:1px solid #59636f88;border-radius:8px;font-size:13px;padding:9px 12px}
+#topControls{display:flex;flex-direction:column;align-items:flex-end;gap:7px;pointer-events:auto;flex-shrink:0}
+#mute,#help{pointer-events:auto;background:#0b111aca;border:1px solid #59636f88;border-radius:8px;font-size:13px;padding:8px 11px;min-height:36px}
+#help{border-color:#caa5789e;color:#f4d9b4;font-weight:850;transition:border-color .2s,background .2s}
+#help.suggested{background:#433020eb;border-color:#e9b873}
+#help[hidden]{display:none}
+#hintBox{position:fixed;z-index:7;top:55%;left:50%;transform:translate(-50%,-50%);width:min(460px,85vw);
+padding:15px 19px;border:1px solid #cba375ab;border-radius:12px;background:#111924f2;
+box-shadow:0 14px 38px #000e;pointer-events:none;display:none;text-align:left}
+#hintBox.show{display:block}
+#hintBox strong{color:#ffd199;font-size:12px;letter-spacing:.08em;display:block;margin-bottom:7px}
+#hintBody{font-size:15px;line-height:1.65;font-weight:650;color:#eff0f3}
+#hintBox small{color:#aeb5c0;font-size:11px;display:block;margin-top:8px}
 #crosshair{position:fixed;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);pointer-events:none}
 #crosshair:before,#crosshair:after{content:"";position:absolute;background:#ddd9d0cc}
 #crosshair:before{height:1px;width:18px;top:8px}
@@ -85,7 +96,7 @@ body.hidden-in-locker #lockerMask{display:block}
 #ending{z-index:14}#ending .panel{border-color:#d78c8e66}
 #replay{margin-top:12px}
 @media (pointer:coarse){#mobile{display:block}#hint{display:none}#mission{max-width:64vw}#prompt{bottom:150px}#top{top:max(8px,env(safe-area-inset-top))}#brand b{font-size:22px}#brand{font-size:9px}}
-@media(max-width:520px){#echoWarning,#gazeWarning{top:max(166px,calc(env(safe-area-inset-top) + 140px));width:min(290px,78vw);padding:8px 11px}#top{left:12px;right:12px}#objective{font-size:12px}#mission{max-width:70vw}#stage{font-size:10px}#stick{width:96px;height:96px}#buttons button{padding:11px 9px;font-size:12px;min-height:49px}#buttons #action{min-width:76px}#prompt{bottom:135px;font-size:12px}}
+@media(max-width:520px){#hintBox{top:50%;width:87vw;padding:12px 15px}#hintBody{font-size:13px}#mute,#help{font-size:11px;padding:7px 9px;min-height:33px}#echoWarning,#gazeWarning{top:max(166px,calc(env(safe-area-inset-top) + 140px));width:min(290px,78vw);padding:8px 11px}#top{left:12px;right:12px}#objective{font-size:12px}#mission{max-width:70vw}#stage{font-size:10px}#stick{width:96px;height:96px}#buttons button{padding:11px 9px;font-size:12px;min-height:49px}#buttons #action{min-width:76px}#prompt{bottom:135px;font-size:12px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important}}
 </style>
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js"}}</script>
@@ -95,14 +106,16 @@ body.hidden-in-locker #lockerMask{display:block}
 <div id="vignette"></div><div id="danger"></div><div id="static"></div>
 <header id="top">
  <div><div id="brand">KIDSCADE / TYPE HORROR<b>오 타</b></div><div id="mission"><small>현재 기록</small><div id="objective">관리실 컴퓨터의 기록을 확인하세요</div><div id="recordStatus">기록 0/2</div><div id="stage">제0기록보관소 · 02:17</div></div></div>
- <button id="mute" type="button" aria-label="음소거 전환">소리 켜짐</button>
+ <div id="topControls"><button id="mute" type="button" aria-label="음소거 전환">소리 켜짐</button>
+ <button id="help" type="button" aria-label="현재 구간 힌트 보기" hidden>힌트 <span aria-hidden="true">H</span></button></div>
 </header>
 <div id="crosshair" aria-hidden="true"></div><div id="message" aria-live="polite"></div>
+<div id="hintBox" role="status" aria-live="polite"><strong id="hintLevel">도움말</strong><div id="hintBody"></div><small>한 번 더 누르면 다음 힌트 · 잠시 후 사라짐</small></div>
 <div id="prompt" aria-live="polite"></div>
 <div id="gazeWarning" role="status" aria-live="off"><b id="gazeText">「사람」을 잠깐 보고 시선을 돌리세요</b><div id="clueStatus">해독 0/3</div><div id="gazeTrack"><i id="gazeFill"></i></div></div>
 <div id="echoWarning" role="status" aria-live="off"><div id="echoText">조용히 이동하세요</div>
   <div id="echoTrack" aria-label="들킬 위험도"><i id="echoFill"></i></div></div>
-<div id="hint">WASD 이동 · SHIFT 달리기 · 마우스 시점 · E 상호작용</div>
+<div id="hint">WASD 이동 · SHIFT 달리기 · 마우스 시점 · E 조사 · H 힌트</div>
 <div id="lockerMask" aria-hidden="true"></div>
 <div id="mobile">
  <div id="stick" aria-label="이동 조이스틱"><div id="knob"></div></div>
@@ -111,9 +124,9 @@ body.hidden-in-locker #lockerMask{display:block}
 <section class="overlay" id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle">
  <div class="panel">
   <small>제0기록보관소 / 02:17</small><h1 id="introTitle">오 타</h1>
-  <p>이곳의 모든 것은 이름으로 존재합니다.<br>잘못된 이름을 고치고, 3시가 되기 전에 탈출하세요.</p>
+  <p>이곳의 모든 것은 이름으로 존재합니다.<br>잘못된 이름을 고쳐 자신의 이름을 지키세요.</p>
   <div class="note">사람이 아닌 것을 사람이라고 부르지 마십시오.<br>이름이 바뀌면, 존재도 바뀝니다.</div>
-  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면을 밀어 시점 조절 · 조사/달리기 버튼<br>첫 괴물은 달려 피하고, 빨간 「뒤」가 나타나면 걷거나 멈추세요.<br>사무실과 서고에서 기록 2개를 찾으세요. 서고에서는 「사람」을 짧게 바라보고 시선을 돌리는 행동을 세 번 반복해 기록을 해독하세요.</div>
+  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사 · H 힌트<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면으로 시점 조절 · 조사/달리기/힌트 버튼<br>위험한 상황에서는 그때 필요한 행동을 알려줍니다. 막히면 힌트 버튼을 사용하세요.</div>
   <button class="primary" id="start" type="button">기록 시작</button><button class="primary" id="resume" type="button" hidden>마지막 기록부터</button>
  </div>
 </section>
@@ -136,6 +149,7 @@ body.hidden-in-locker #lockerMask{display:block}
 <script src="../../kidscade-game-sdk.js" data-game-id="high_ota_typographic_horror" data-title="오타 — 이름을 잃어버린 밤" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 <script src="rules.js"></script>
 <script src="chapter3.js"></script>
+<script src="guidance.js"></script>
 <script type="module" src="game.js"></script>
 </body>
 </html>
