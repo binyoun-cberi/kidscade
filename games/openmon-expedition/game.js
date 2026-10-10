@@ -267,7 +267,7 @@ function enterBattle(enemy,zone,special=false,firstRoad=false){
  const lead=E.activeCreature(save);
  if(!lead||lead.hp<=0){E.healAll(save);save.active=0;setToast("연구소로 돌아와 HP를 회복했어.");return}
  battle={foe:enemy,zone,special,firstRoad,turn:1,done:false,
- message:firstRoad?"첫 번째 키즈몬, 멘델콩을 만났어! '살살 공격'으로 HP를 낮춘 뒤 키즈볼을 던져 보자!":
+ message:firstRoad?"첫 번째 키즈몬, "+species(enemy.id).name+"을(를) 만났어! '살살 공격'으로 HP를 낮춘 뒤 키즈볼을 던져 보자!":
   "야생 "+species(enemy.id).name+" 등장! 남은 체력을 예상하며 싸워보자."};
  save.seen[enemy.id]=true;save.grassSteps=0;
  $("battleOverlay").classList.remove("hidden");
