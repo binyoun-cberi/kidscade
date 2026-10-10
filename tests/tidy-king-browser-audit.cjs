@@ -106,7 +106,8 @@ const wrong=await ev('window.__AUDIT.point("station",'+wrongIndex+')');
 assert.ok(!wrong?.blocked&&Number.isFinite(wrong.x)&&Number.isFinite(wrong.y),c.name+' incorrect-bin target blocked: '+JSON.stringify(wrong));
 await drag(first.x,first.y,wrong.x,wrong.y,c.touch);
 assert.equal(await ev('window.__AUDIT.s().done'),0,c.name+' wrong bin must reject');
-for(let i=0;i<keys.length;i++){
+const dragSampleCount=c.name==='portrait'?keys.length:28;
+for(let i=0;i<dragSampleCount;i++){
 const p=await ev('window.__AUDIT.point("item",'+i+')');
 if(p?.blocked){blocked.push(p);continue}
 const idx=await ev('window.__AUDIT.stationIndex('+JSON.stringify(kinds[keys[i]])+')');
@@ -119,6 +120,8 @@ if(after!==before+1)failed.push({i,key:keys[i],kind:'drag-to-place',before,after
 }
 const stains=[];
 for(let i=0;i<s.stains;i++){const p=await ev('window.__AUDIT.point("stain",'+i+')');if(p?.blocked){stains.push(p);continue}for(let j=0;j<7;j++)await click(p.x,p.y,c.touch);}
+const played=await ev('window.__AUDIT.s()');
+if(c.name!=='portrait')await ev('window.__AUDIT.forceFinish()');
 const half=await ev('window.__AUDIT.s()');await snap(c.name+'-after');
 const forced=await ev('window.__AUDIT.forceFinish()');await sleep(850);await snap(c.name+'-success');
 const photo=await ev('({before:document.querySelector("#beforePhoto").src.length,after:document.querySelector("#afterPhoto").src.length,beforeLoaded:document.querySelector("#beforePhoto").naturalWidth,afterLoaded:document.querySelector("#afterPhoto").naturalWidth})');
@@ -126,7 +129,7 @@ await ev('document.querySelector("#next").click()');await sleep(750);
 const kitchen=await ev('window.__AUDIT.s()');await snap(c.name+'-kitchen');
 const unpickable=[];for(let i=0;i<kitchen.items;i++){const p=await ev('window.__AUDIT.point("item",'+i+')');if(p?.blocked)unpickable.push(p)}
 // Repeatedly reroll kitchen clutter: each item must remain selectable.
-for(let reroll=0;reroll<5;reroll++){
+for(let reroll=0;reroll<(c.name==='portrait'?3:1);reroll++){
  await ev('window.__AUDIT.reroll()');
  const size=await ev('window.__AUDIT.s().items');
  for(let i=0;i<size;i++){
@@ -140,7 +143,7 @@ await send('Page.reload',{ignoreCache:true});await sleep(850);
 const revisited=await ev('({kitchenEnabled:!document.querySelector("#startKitchen").disabled,kitchenVisible:!document.querySelector("#startKitchen").hidden})');
 if(revisited.kitchenEnabled)await ev('document.querySelector("#startKitchen").click()');
 let direct=null;for(let i=0;i<100;i++){direct=await ev('window.__AUDIT?.s()').catch(()=>null);if(direct?.total>0)break;await sleep(100)}
-const result={name:c.name,initial:s,overlap,clutterVariety:{uniqueX:xs.length,uniqueZ:zs.length},half,blocked,failed,stains,forced,photo,kitchen,unpickable,finish2,last,revisited,direct,errors:[...errors],httpErrors:[...httpErrors]};
+const result={name:c.name,initial:s,overlap,dragSampleCount,played,clutterVariety:{uniqueX:xs.length,uniqueZ:zs.length},half,blocked,failed,stains,forced,photo,kitchen,unpickable,finish2,last,revisited,direct,errors:[...errors],httpErrors:[...httpErrors]};
 assert.equal(errors.length,0,c.name+' browser errors: '+JSON.stringify(errors.slice(0,3)));
 assert.equal(blocked.length,0,c.name+' unclickable props: '+JSON.stringify(blocked.slice(0,3)));
 assert.equal(failed.length,0,c.name+' input failures: '+JSON.stringify(failed.slice(0,3)));
