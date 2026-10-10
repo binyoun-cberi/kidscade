@@ -684,13 +684,12 @@ const errors=[];
         assert.ok(pose.selectedParts.includes(id),
           'Face item disappeared while animating '+fit+'/'+id+'/'+clip);
         report.v63FaceFit.cases.push({fit,id,clip,view,phase,offset:item.offset});
-        const publish=(fit==='male'&&id==='chibi_face_mask'&&['front','side'].includes(view))
-          ||(fit==='female'&&id==='chibi_face_sunglasses'&&['front','threeQuarter'].includes(view));
+        const publish=['front','side','threeQuarter'].includes(view);
         if(clip==='IDLE'&&publish){
           const file=prefix+'-'+clip.toLowerCase()+'-'+view+'-0.png';
           const tiny=await sharp(path.join(OUT,file)).resize({width:420}).jpeg({quality:78}).toBuffer();
           const key=fit+'-'+id+'-'+view;
-          console.log('CHIBI_V63_PREVIEW '+key+' '+tiny.toString('base64'));
+          console.log('CHIBI_V64_PREVIEW '+key+' '+tiny.toString('base64'));
           report.v63FaceFit.previews.push(key);
         }
       }
