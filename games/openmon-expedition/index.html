@@ -125,6 +125,64 @@ body{background:#203a31;overscroll-behavior:none}
  .modal-head{padding:10px 13px}
  .modal-head h2{font-size:17px}
 }
+
+/* KIDSMON technique encyclopedia: compact two-column cards and a pinned reading panel. */
+.dex-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 14px;border-radius:12px;background:#e7eee4;padding:5px}
+.dex-tabs button{border:0;border-radius:9px;padding:12px 8px;font-size:13px;font-weight:900;background:transparent;color:#61796d;min-height:44px}
+.dex-tabs button.active,.dex-tabs button[aria-selected="true"]{background:#fffdf3;color:#1e513e;box-shadow:0 2px 7px #23452c14}
+.move-dex-intro{margin:0 0 12px;font-size:12px;color:#567263;line-height:1.55}
+.move-dex-stats{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 14px}
+.move-dex-stats span{display:inline-flex;gap:6px;align-items:center;border:1px solid #d9e7d5;background:#f0f7e9;color:#456b55;border-radius:100px;padding:6px 10px;font-size:11px}
+.move-dex-stats strong{font-size:13px;color:#1b5745}
+.move-dex-filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px}
+.move-dex-filters label{display:grid;gap:5px;font-size:10px;font-weight:850;color:#537265;min-width:0}
+.move-dex-filters .move-search{grid-column:1/-1}
+.move-dex-filters input,.move-dex-filters select{width:100%;min-width:0;padding:11px 10px;background:#fff;border:1px solid #bfcfbd;border-radius:10px;color:#1c4d3b;font-size:13px;min-height:44px;outline-offset:2px}
+.move-dex-filters input:focus-visible,.move-dex-filters select:focus-visible{outline:2px solid #518b72}
+.move-result-count{display:flex;align-items:center;justify-content:space-between;color:#547363;font-size:11px;font-weight:800;margin:0 0 8px}
+.move-dex-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.move-card{display:flex;align-items:flex-start;gap:9px;min-width:0;min-height:99px;text-align:left;padding:10px;border:1px solid #d5e3d1;background:#fffefa;border-radius:12px;color:#24483a;box-shadow:0 2px 0 #abc2aa55}
+.move-card.is-selected{border:2px solid #368465;background:#f1f8ee;padding:9px}
+.move-card .move-type-symbol{flex:0 0 28px;width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:20px;font-weight:900;color:var(--move-accent,#346b58);background:var(--move-tint,#e4eee7)}
+.move-card-content{display:grid;gap:5px;min-width:0;flex:1}
+.move-card-title{font-size:13px;line-height:1.2;font-weight:950;word-break:keep-all}
+.move-card-metrics{font-size:10px;color:#537366;line-height:1.5}
+.move-card-desc{font-size:10px;color:#698373;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all}
+.move-detail{background:#f3f7ee;border:1px solid #cddfca;border-radius:14px;padding:15px;min-width:0;margin:0 0 15px}
+.move-detail-hint{padding:10px 12px;margin-bottom:12px;background:#eef5e9}
+.move-detail-hint p{margin:0;color:#527263;font-size:11px;line-height:1.5}
+.move-detail-close{font-size:11px;font-weight:850;color:#547263;background:#fffdf6;border:1px solid #ccdcca;border-radius:8px;min-height:36px;padding:7px 9px}
+.move-detail-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px}
+.move-detail-heading h3{font-size:19px;letter-spacing:-.04em;color:#214e3b;margin:0}
+.move-detail-kind{font-size:11px;border:1px solid #cce0c9;background:#fffefa;border-radius:100px;padding:6px 10px;color:#496b59;font-weight:850}
+.move-detail-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:13px 0}
+.move-detail-metrics span{display:grid;gap:3px;align-content:center;text-align:center;padding:8px 3px;border-radius:9px;border:1px solid #dde7d7;background:#fffefa;color:#657d6b;font-size:10px}
+.move-detail-metrics b{font-size:13px;color:#244b3b;white-space:nowrap}
+.move-detail-explanation{font-size:12px;line-height:1.75;color:#42604e;margin:0 0 13px;word-break:keep-all}
+.move-detail-learners{border-top:1px solid #d6e4d1;padding-top:12px}
+.move-detail-learners>strong{font-size:12px;color:#325746}
+.move-detail-learners>small{display:block;margin:5px 0 9px;color:#6f8174;font-size:10px}
+.move-learner-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.move-learner{border-radius:9px;background:#fffefa;border:1px solid #d6e3d0;padding:7px 9px;display:grid;gap:2px;color:#244b39}
+.move-learner b{font-size:11px}
+.move-learner small{font-size:10px;color:#6b836e}
+.move-learner.owned{border-color:#6ca388;background:#e9f6e8}
+.move-expand{margin-top:10px;border:1px solid #91b5a0;border-radius:9px;background:#e4f2e4;color:#21533d;padding:9px 12px;font-size:11px;font-weight:900;min-height:42px}
+.move-empty{border:1px dashed #c5d6c0;border-radius:13px;padding:24px 12px;text-align:center;color:#617866;font-size:12px;grid-column:1/-1}
+.move-card.type-neutral,.move-detail.type-neutral{--move-accent:#52655f;--move-tint:#e1e9e4}
+.move-card.type-leaf,.move-detail.type-leaf{--move-accent:#3b8751;--move-tint:#dcf3dd}
+.move-card.type-water,.move-detail.type-water{--move-accent:#2378a9;--move-tint:#e0eff9}
+.move-card.type-fire,.move-detail.type-fire{--move-accent:#af542f;--move-tint:#faeadc}
+.move-card.type-electric,.move-detail.type-electric{--move-accent:#937016;--move-tint:#fcf2ce}
+.move-card.type-earth,.move-detail.type-earth{--move-accent:#8c603c;--move-tint:#efe5da}
+.move-card.type-air,.move-detail.type-air{--move-accent:#39848f;--move-tint:#e0f4f1}
+.move-card.type-ice,.move-detail.type-ice{--move-accent:#3685a2;--move-tint:#e1f6fa}
+.move-card.type-mind,.move-detail.type-mind{--move-accent:#86559d;--move-tint:#efe5f8}
+.move-card.type-dark,.move-detail.type-dark{--move-accent:#66537f;--move-tint:#eae5f3}
+.move-detail .move-type-symbol{display:inline-grid;place-items:center;margin-right:7px;width:26px;height:26px;font-size:20px;color:var(--move-accent);background:var(--move-tint);border-radius:8px}
+.move-detail-heading .move-detail-title{display:flex;align-items:center;gap:3px;min-width:0}
+.move-detail-heading .move-detail-title h3{word-break:keep-all}
+@media(max-width:550px){.move-dex-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.move-card{padding:9px 7px;gap:6px;min-height:104px}.move-card.is-selected{padding:8px 6px}.move-card .move-type-symbol{width:22px;height:22px;flex-basis:22px;font-size:15px}.move-card-title{font-size:12px}.move-card-metrics,.move-card-desc{font-size:9px}.move-detail{padding:12px}.move-detail-metrics span{font-size:9px}.move-detail-metrics b{font-size:12px}}
 </style>
 </head>
 <body>
@@ -209,6 +267,7 @@ body{background:#203a31;overscroll-behavior:none}
 <script src="../openmon-dex/combat.js"></script>
 <script src="engine.js"></script>
 <script src="turn-battle.js"></script>
+<script src="move-dex.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

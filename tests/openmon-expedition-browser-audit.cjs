@@ -149,6 +149,46 @@ let chrome,ws,profile;
   assert.ok(hudAudit.navVisible&&hudAudit.controlVisible,'HUD or A button clipped '+config.name+JSON.stringify(hudAudit));
   assert.equal(hudAudit.errors.length,0,'HUD modal route failed '+config.name+JSON.stringify(hudAudit));
   await screenshot(config.name+'-hud');
+  const moveDexAudit=await evalFn(()=>{
+   const $=id=>document.getElementById(id);
+   $('hudDex').click();
+   const mons=document.querySelectorAll('.dex-card').length;
+   document.querySelector('[data-dex-tab="moves"]').click();
+   const total=document.querySelectorAll('[data-move]').length;
+   const initialCard=document.querySelector('[data-move]')?.getBoundingClientRect();
+   const initialVisible=!!initialCard&&initialCard.top<innerHeight-20&&initialCard.bottom>0;
+   const heading=$('genericTitle').textContent;
+   const descriptor=$('moveDexDetail').textContent;
+   const filter=$('moveDexType');
+   filter.value='leaf';filter.dispatchEvent(new Event('change',{bubbles:true}));
+   const leaves=Array.from(document.querySelectorAll('[data-move]')).map(x=>x.dataset.move);
+   const switchOwner=$('moveDexOwner');
+   switchOwner.value='party:0';switchOwner.dispatchEvent(new Event('change',{bubbles:true}));
+   const own=Array.from(document.querySelectorAll('[data-move]')).map(x=>x.dataset.move);
+   filter.value='all';filter.dispatchEvent(new Event('change',{bubbles:true}));
+   switchOwner.value='all';switchOwner.dispatchEvent(new Event('change',{bubbles:true}));
+   const input=$('moveDexSearch');input.value='피보새';
+   input.dispatchEvent(new Event('input',{bubbles:true}));
+   const byName=Array.from(document.querySelectorAll('[data-move]')).map(x=>x.dataset.move);
+   const sig=document.querySelector('[data-move="fiboStrikes"]');
+   if(sig)sig.click();
+   const signature=$('moveDexDetail').textContent;
+   input.value='없는-기술-zxwv999';input.dispatchEvent(new Event('input',{bubbles:true}));
+   const empty=document.querySelectorAll('[data-move]').length===0;
+   input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));
+   return {mons,total,initialVisible,heading,descriptor:descriptor.slice(0,140),leaves,own,byName,
+    signature:signature.slice(0,250),empty,restored:document.querySelectorAll('[data-move]').length};
+  });
+  assert.ok(moveDexAudit.mons===102&&moveDexAudit.total===41&&moveDexAudit.initialVisible&&
+    moveDexAudit.heading.includes('기술 도감')&&
+    moveDexAudit.leaves.length>0&&moveDexAudit.leaves.length<41&&
+    moveDexAudit.own.length>0&&moveDexAudit.own.length<=moveDexAudit.leaves.length&&
+    moveDexAudit.byName.includes('fiboStrikes')&&
+    moveDexAudit.signature.includes('2번 연속')&&
+    moveDexAudit.empty&&moveDexAudit.restored===41,
+    'Skill encyclopedia search/filter/detail broke '+config.name+JSON.stringify(moveDexAudit));
+  await screenshot(config.name+'-move-dex');
+  await evalFn(()=>document.getElementById('genericClose').click());
 
   const battleStart=await evalFn(()=>{
    const E=window.OPENMON_EXPEDITION_ENGINE,debug=window.OPENMON_EXPEDITION_DEBUG,s=debug.getState();
@@ -211,7 +251,7 @@ let chrome,ws,profile;
   });
   assert.ok(resumed.loaded&&resumed.caught===1&&resumed.party===2&&resumed.starterHidden,'Reload lost progress '+config.name+JSON.stringify(resumed));
   assert.equal(errors.length,0,'Browser errors '+config.name+': '+JSON.stringify(errors.slice(0,3)));
-  console.log('OPENMON_BROWSER_AUDIT '+config.name+' '+JSON.stringify({initial,field,hudAudit,battleStart,turnMenu,result,resumed,errors:errors.length}));
+  console.log('OPENMON_BROWSER_AUDIT '+config.name+' '+JSON.stringify({initial,field,hudAudit,moveDexAudit,battleStart,turnMenu,result,resumed,errors:errors.length}));
  }
  console.log('OPENMON_BROWSER_AUDIT_PASSED 2 viewports, atlas, starter, encounter, capture, autosave, reload');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1}).finally(()=>{
