@@ -33,9 +33,13 @@ function detail(id){
  }
  if(m.priority)lines.push("기술 우선도 +"+m.priority+" (속도보다 먼저 적용)");
  const how=lines.length?lines.join(" · "):"특별한 추가 효과 없이 피해를 줌";
+ const family=D.families.find(f=>f.key===m.familyKey);
+ const tier=m.signatureTier||0;
+ const tierLabel=family?(tier===0?"계열 고유기":tier===1?"진화 기술":"최종 진화 기술"):null;
  return {id,name:m.name,type:m.type,typeName:D.types[m.type].name,
   symbol:TYPE_SYMBOLS[m.type],category:category(m),categoryName:CATEGORY_NAMES[category(m)],
   power:m.power||0,accuracy:m.accuracy,pp:m.pp,priority:m.priority||0,
+  familyKey:m.familyKey||null,familyName:family?.label||null,tierLabel,
   description:how,
   summary:lines.filter(x=>!/타입의 기술로/.test(x)).join(" · ")||"기본 공격"};
 }
@@ -56,13 +60,14 @@ function learners(moveId){
 }
 const all=Object.keys(B.moves).map(detail).sort((a,b)=>TYPE_ORDER.indexOf(a.type)-TYPE_ORDER.indexOf(b.type)||
   a.name.localeCompare(b.name,"ko"));
-function search({query="",type="all",category:kind="all",owner=null}={}){
+function search({query="",type="all",category:kind="all",family="all",owner=null}={}){
  const text=String(query).trim().toLocaleLowerCase("ko");
  const allowed=owner?.id?new Set(B.learnable(owner)):null;
  return all.filter(m=>(type==="all"||m.type===type)&&
   (kind==="all"||m.category===kind)&&
+  (family==="all"||family==="signature"&&!!m.familyKey||family==="common"&&!m.familyKey)&&
   (!allowed||allowed.has(m.id))&&
-  (!text||[m.name,m.typeName,m.description,...learners(m.id).map(x=>x.name)]
+  (!text||[m.name,m.typeName,m.description,m.familyName||"",...learners(m.id).map(x=>x.name)]
    .some(x=>x.toLocaleLowerCase("ko").includes(text))));
 }
 w.KIDSMON_MOVE_DEX={all,detail,learners,earliestLevel,search,TYPE_ORDER,TYPE_SYMBOLS,CATEGORY_NAMES};
