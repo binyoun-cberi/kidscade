@@ -101,7 +101,7 @@ test('wrong final memory, three missed rhythms, wrong math, timeout all fail',()
   assert.equal(memory.status,'failed');
   const timing=R.create('final',1);R.start(timing,0);R.advance(timing,3900);
   for(let i=0;i<4;i++)R.act(timing,'symbol',timing.sequence[i],4000+i*90);
-  for(let i=0;i<3;i++)R.act(timing,'hit',null,725+4350+i*1450);
+  for(let i=0;i<3;i++)R.act(timing,'hit',null,4400+i*1450);
   assert.equal(timing.status,'failed');
   const arithmetic=R.create('final',3);R.start(arithmetic,0);R.advance(arithmetic,3900);
   for(let i=0;i<4;i++)R.act(arithmetic,'symbol',arithmetic.sequence[i],4000+i*90);
