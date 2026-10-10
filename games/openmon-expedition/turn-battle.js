@@ -14,10 +14,12 @@ const M={
  vine:{name:"덩굴 포박",type:"leaf",power:6,accuracy:95,pp:20,afflict:{kind:"slow",chance:.6}},
  synthesis:{name:"광합성",type:"leaf",power:0,accuracy:100,pp:8,kind:"heal",heal:.33},
  bloom:{name:"꽃잎 폭풍",type:"leaf",power:13,accuracy:90,pp:10},
+ photoPulse:{name:"광합성 파동",type:"leaf",power:7,accuracy:100,pp:16,drain:.25},
  water:{name:"물대포",type:"water",power:9,accuracy:100,pp:25},
  pressure:{name:"압력 분사",type:"water",power:10,accuracy:95,pp:15,afflict:{kind:"weaken",chance:.35}},
  raincoat:{name:"물의 장막",type:"water",power:0,accuracy:100,pp:12,kind:"shield",shield:.38},
  torrent:{name:"급류",type:"water",power:13,accuracy:90,pp:10},
+ pascalPress:{name:"파스칼 압력파",type:"water",power:8,accuracy:100,pp:16,afflict:{kind:"weaken",chance:.5}},
  fire:{name:"불꽃탄",type:"fire",power:9,accuracy:100,pp:25},
  ember:{name:"작은 불씨",type:"fire",power:6,accuracy:100,pp:20,afflict:{kind:"burn",chance:.4}},
  heat:{name:"열기 모으기",type:"fire",power:0,accuracy:100,pp:15,kind:"buff",buff:{stat:"attack",amount:1}},
@@ -33,6 +35,7 @@ const M={
  gust:{name:"순풍베기",type:"air",power:7,accuracy:100,pp:20,priority:1},
  tailwind:{name:"순풍",type:"air",power:0,accuracy:100,pp:12,kind:"buff",buff:{stat:"speed",amount:1}},
  cyclone:{name:"회오리",type:"air",power:13,accuracy:90,pp:10},
+ fiboStrikes:{name:"피보 연격",type:"air",power:5,accuracy:95,pp:16,hits:2},
  ice:{name:"얼음조각",type:"ice",power:8,accuracy:100,pp:25},
  frost:{name:"서리 숨결",type:"ice",power:7,accuracy:95,pp:20,afflict:{kind:"slow",chance:.65}},
  glacier:{name:"빙하방패",type:"ice",power:0,accuracy:100,pp:12,kind:"shield",shield:.38},
@@ -65,7 +68,14 @@ function learnable(mon){
  const s=getSpecies(mon.id);if(!s)return [];
  const cfg=MOVESET[s.type]||MOVESET.neutral;
  // Four starting techniques. Stronger finishers unlock after leveling.
- const list=["tackle",...cfg.slice(0,3)];
+ let list=["tackle",...cfg.slice(0,3)];
+ const signatures={"starter-2":"photoPulse","starter-3":"pascalPress","starter-4":"fiboStrikes"};
+ if(signatures[s.familyKey]){
+  const preferred=s.familyKey==="starter-2"?["tackle","leaf","synthesis","photoPulse","vine"]:
+   s.familyKey==="starter-3"?["tackle","water","raincoat","pascalPress","pressure"]:
+   ["tackle","wind","gust","fiboStrikes","tailwind"];
+  list=preferred;
+ }
  if(mon.level>=14)list.push(cfg[3]);
  if(mon.level>=26)list.push("quick");
  // Species from different families can favour different moves when managing techniques.
@@ -170,10 +180,20 @@ function resolve({save,foe,battle,action,random=Math.random,rookieCap=0}){
   }
   if(move.kind==="shield"){from.shield=move.shield;say(name+"의 "+move.name+"! 다음 피해를 줄여.");return}
   if(move.kind==="buff"){from[move.buff.stat]=clamp(from[move.buff.stat]+move.buff.amount,-3,3);say(name+"의 "+move.name+"! "+({attack:"공격",defense:"방어",speed:"속도"}[move.buff.stat])+" 상승.");return}
-  const amount=moveDamage(user,opponent,move,from,to,enemy?rookieCap:0);
-  opponent.hp=Math.max(0,opponent.hp-amount);
+  let dealt=0;
+  for(let hit=0;hit<(move.hits||1)&&opponent.hp>0;hit++){
+   const amount=moveDamage(user,opponent,move,from,to,enemy?rookieCap:0);
+   const actual=Math.min(opponent.hp,amount);opponent.hp-=actual;dealt+=actual;
+  }
   const eff=D.combat.effectiveness(move.type,getSpecies(opponent.id).type);
-  say(name+"의 "+move.name+"! "+amount+" 피해."+(eff===2?" 효과가 굉장해!":eff===.5?" 효과가 약해.":""));
+  say(name+"의 "+move.name+"! "+dealt+" 피해."+
+   (move.hits?" "+move.hits+"회 연속 공격!":"")+
+   (eff===2?" 효과가 굉장해!":eff===.5?" 효과가 약해.":""));
+  if(move.drain){
+   const cap=D.combat.statsAtLevel(user.id,user.level).hp;
+   const gain=Math.max(0,Math.min(cap-user.hp,Math.max(1,Math.floor(dealt*move.drain))));
+   user.hp+=gain;if(gain)say(name+"이(가) HP "+gain+" 회복!");
+  }
   if(move.afflict&&opponent.hp>0&&!to.condition&&random()<move.afflict.chance){
    to.condition=move.afflict.kind;to.conditionTurns=move.afflict.kind==="burn"?3:2;
    if(to.condition==="weaken")to.attack=clamp(to.attack-1,-3,3);
