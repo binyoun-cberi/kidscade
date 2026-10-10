@@ -2,6 +2,7 @@
   'use strict';
   const $=id=>document.getElementById(id);
   const engine=window.DalgonaTrace;
+  const SURVIVAL_MODE=new URLSearchParams(window.location.search).get('survival')==='1'&&window.parent!==window;
   const el={
     board:$('board'),wrap:$('boardWrap'),intro:$('intro'),result:$('result'),help:$('help'),
     shape:$('shapeName'),hint:$('hintText'),desc:$('stageDescription'),stage:$('stageText'),
@@ -83,10 +84,9 @@
     game.phase=success?'cleared':'failed';game.pointerId=null;
     const trace=game.trace,s=game.state,score=engine.grade(trace,s);
     if(success){
-      record.best=Math.max(record.best,game.stage);record.clears++;save();
-      sdk('score',score.score);
+      if(!SURVIVAL_MODE){record.best=Math.max(record.best,game.stage);record.clears++;save();sdk('score',score.score);}
       sdk('result',{scope:'stage',status:'completed',outcome:'clear',stage:game.stage,score:score.score,accuracy:score.accuracy,checks:0});
-      if(game.stage===1)sdk('milestone','first_dalgona_clear');
+      if(!SURVIVAL_MODE&&game.stage===1)sdk('milestone','first_dalgona_clear');
       play('win');
       game.confetti=Array.from({length:32},(_,i)=>({x:(i*93)%400,y:-(i*41)%220,vy:30+(i*19)%70,phase:i*.8}));
     }else{
@@ -105,7 +105,7 @@
     el.resultScore.textContent=success?score.score+'점':'0점';
     el.resultTime.textContent=fmt(score.timeLeft);
     el.continue.textContent=success?'다음 달고나 →':'이 모양 다시 도전 ↻';
-    el.result.classList.remove('hidden');
+    if(!SURVIVAL_MODE)el.result.classList.remove('hidden');
     ui();
   }
   function ui(){
@@ -248,18 +248,20 @@
   canvas.addEventListener('lostpointercapture',event=>{if(game.pointerId===event.pointerId)pointerUp(event);});
   canvas.addEventListener('contextmenu',event=>event.preventDefault());
   $('startBtn').addEventListener('click',start);
-  el.continue.addEventListener('click',()=>{play('start');stageStart(game.phase==='cleared'?game.stage+1:game.stage);});
-  el.retry.addEventListener('click',()=>{if(!game.trace)return;play('retry');stageStart(game.stage);});
+  el.continue.addEventListener('click',()=>{if(SURVIVAL_MODE)return;play('start');stageStart(game.phase==='cleared'?game.stage+1:game.stage);});
+  el.retry.addEventListener('click',()=>{if(SURVIVAL_MODE||!game.trace)return;play('retry');stageStart(game.stage);});
+  if(SURVIVAL_MODE)el.retry.hidden=true;
   $('helpBtn').addEventListener('click',()=>{el.help.classList.remove('hidden');});
   $('closeHelpBtn').addEventListener('click',()=>{el.help.classList.add('hidden');});
   el.sound.addEventListener('click',()=>{game.soundOn=!game.soundOn;el.sound.textContent=game.soundOn?'♪':'×';el.sound.setAttribute('aria-label',game.soundOn?'소리 끄기':'소리 켜기');});
   document.addEventListener('keydown',event=>{
     if(event.key==='Escape'&&!el.help.classList.contains('hidden')){el.help.classList.add('hidden');return;}
-    if(event.key==='r'&&game.phase!=='intro')stageStart(game.stage);
+    if(!SURVIVAL_MODE&&event.key==='r'&&game.phase!=='intro')stageStart(game.stage);
   });
   window.addEventListener('resize',resize,{passive:true});
   if(window.ResizeObserver)new ResizeObserver(resize).observe(el.wrap);
   game.trace=engine.buildTrace(1);game.state=engine.createState(game.trace);
   el.best.textContent=String(record.best).padStart(2,'0');
   resize();ui();requestAnimationFrame(frame);
+  if(SURVIVAL_MODE)start();
 })();
