@@ -64,7 +64,7 @@ function announce(event,payload){
 }
 function startNew(id){
  save=E.createNew(id);battle=null;$("starterOverlay").hidden=true;
- setToast("오른쪽으로 이동해 이슬초원을 찾아가 봐. 연구원 옆에서는 A로 대화할 수 있어.");
+ setToast("오른쪽 길을 따라가면 첫 키즈몬을 만나! 키즈몬 연구소에서는 A로 대화할 수 있어.");
  updateAll();persist();beep("win");
 }
 function showStarter(){
@@ -86,7 +86,8 @@ function updateAll(){
  $("seenCount").textContent=Object.keys(save.seen).filter(id=>species(id)?.playable).length+" / "+DB.species.length;
  $("caughtCount").textContent=Object.keys(save.collection).filter(id=>species(id)?.playable).length+" / "+DB.species.length;
  $("worldHint").textContent="현재 위치 "+(data?.name||"")+" ("+save.pos.x+","+save.pos.y+")";
- $("objective").textContent=save.catches===0?"첫 야생 키즈몬을 포획해 보자":save.catches<3?"서로 다른 키즈몬을 세 마리 모아 보자":"도감과 진화 조건을 연구하며 탐험하자";
+ const progress=save.wins+save.catches;
+ $("objective").textContent=save.encounters===0?"→ 초원 입구에서 첫 키즈몬 만나기":save.catches===0?"첫 야생 키즈몬 포획하기":progress<3?"키즈몬을 더 만나고 연구하기":progress<12?"연구 도감 확장 · 새 종류 찾기":"새로운 키즈몬을 모아 도감 완성하기";
  renderTeam();
 }
 function renderTeam(){
@@ -137,8 +138,8 @@ function openGoals(){
  if(!save)return;
  const goal=$("objective").textContent;
  const zone=E.zoneAt(save.pos.x);
- const hint=zone==="town"?"오른쪽 이슬초원의 풀숲으로 가 보자. 마을 위쪽 연구소 앞에서는 A 버튼으로 이야기를 나눌 수 있어.":
-  zone==="meadow"?"풀숲에서 야생 키즈몬을 만나면 HP를 줄여 키즈볼을 던져 봐. 계속 오른쪽으로 가면 가지숲이 나와.":
+ const hint=zone==="town"?"오른쪽 흙길을 따라가면 풀숲이 나타나고 첫 키즈몬을 만날 수 있어. 연구소 근처에서는 A 버튼으로 이야기하자.":
+  zone==="meadow"?"첫 만남 후에는 풀숲에서 HP를 줄여 키즈볼을 던져 봐. 승리·포획을 3, 7, 12번 쌓으면 새 야생 키즈몬이 등장해.":
   zone==="forest"?"다양한 속성의 키즈몬을 잡아 보자. 숲 속 숨겨진 장소에서는 특별한 키즈몬을 만날 수도 있어.":
   "동굴에서 타입 상성을 비교해 봐. 다치면 마을 연구소로 돌아와 무료로 치료받을 수 있어.";
  openGeneric("탐험 목표","<div class='mission-sheet'><strong>현재 목표</strong><p>"+esc(goal)+"</p>"+
@@ -146,7 +147,7 @@ function openGoals(){
  '<div class="equipment"><span>발견한 키즈몬</span><b>'+$("seenCount").textContent+'</b></div>'+
  '<div class="equipment"><span>수집한 키즈몬</span><b>'+$("caughtCount").textContent+'</b></div>'+
  '<div class="equipment"><span>진행 걸음 수</span><b>'+save.steps+'걸음</b></div></div>',
- "수학은 전투와 포획을 하며 자연스럽게 배워요");
+ "연구 진행 "+(save.wins+save.catches)+" · 새 야생 종 해금: 3·7·12 기록");
 }
 function openMenu(){
  if(!save)return;
@@ -182,10 +183,17 @@ function talk(){
  beep("click");
 }
 function openClinic(){
- openGeneric("키즈몬 연구소","<p>키즈몬을 전부 무료로 치료해 줄게. 모험에 필요한 키즈볼와 회복약도 살 수 있어.</p>"+
+ const available=E.researchStarterOptions(save);
+ const stillMissing=["set1_r02_c02","set1_r03_c02","set1_r04_c02"].some(id=>!save.collection[id]);
+ const gift=available.available.length?
+  '<div class="shop-item"><div><strong>연구 스타팅 선물</strong><small>발견·포획 활동 보상! 다른 스타팅을 한 마리 받을 수 있어.</small></div></div>'+
+  available.available.map(id=>'<div class="shop-item">'+miniArt(id)+'<div><strong>'+esc(species(id).name)+'</strong><small>Lv.5 · 포획할 필요 없는 보상</small></div><button data-gift="'+id+'">받기</button></div>').join(""):
+  stillMissing?'<div class="shop-item"><div><strong>연구 스타팅 선물</strong><small>도감에 서로 다른 키즈몬 '+available.required+'종을 모으면 다른 스타팅을 받을 수 있어. 현재 '+available.count+'종</small></div></div>':
+  '<div class="shop-item"><strong>스타팅 세 친구 연구 완료!</strong></div>';
+ openGeneric("키즈몬 연구소",'<p>키즈몬을 무료로 치료하거나 키즈볼·회복약을 살 수 있어. 서로 다른 키즈몬을 연구하면 새로운 파트너도 선물할게!</p>'+
  '<div class="shop-list"><div class="shop-item"><div><strong>전체 무료 회복</strong><small>전투 불능인 키즈몬도 회복</small></div><button data-buy="heal">치료</button></div>'+
  '<div class="shop-item"><div><strong>키즈볼 +1</strong><small>연구코인 35</small></div><button data-buy="ball">35코인</button></div>'+
- '<div class="shop-item"><div><strong>회복약 +1</strong><small>연구코인 25</small></div><button data-buy="potion">25코인</button></div></div>');
+ '<div class="shop-item"><div><strong>회복약 +1</strong><small>연구코인 25</small></div><button data-buy="potion">25코인</button></div>'+gift+'</div>');
 }
 function buy(item){
  if(!save)return;
@@ -233,18 +241,22 @@ function movePlayer(dx,dy,now=performance.now()){
  const old=E.zoneAt(save.pos.x),result=E.move(save,dx,dy);
  if(!result.moved)return;
  if(result.zone!==old)setToast((E.ZONES.find(z=>z.key===result.zone)?.name||"새 지역")+"에 도착했어!");
- if(result.encounter){beep("click");enterBattle(result.encounter,result.zone,!!(result.encounter.id==="shibu_r00_c00"))}
+ if(result.encounter){
+   beep("click");
+   enterBattle(result.encounter,result.zone,!!(result.encounter.id==="shibu_r00_c00"),!!result.firstRoad);
+ }
  if(save.steps%5===0)persist();
  updateAll();
 }
 function leaveBattle(){
- if(battle?.special&&!save.flags.shibuCaught)save.flags.shibuSeen=false;
  battle=null;$("battleOverlay").classList.add("hidden");persist();updateAll();
 }
-function enterBattle(enemy,zone,special=false){
+function enterBattle(enemy,zone,special=false,firstRoad=false){
  const lead=E.activeCreature(save);
  if(!lead||lead.hp<=0){E.healAll(save);save.active=0;setToast("연구소로 돌아와 HP를 회복했어.");return}
- battle={foe:enemy,zone,special,turn:1,done:false,message:"야생 "+species(enemy.id).name+" 등장! 남은 체력을 예상하며 싸워보자."};
+ battle={foe:enemy,zone,special,firstRoad,turn:1,done:false,
+ message:firstRoad?"첫 번째 키즈몬, 멘델콩을 만났어! '살살 공격'으로 HP를 낮춘 뒤 키즈볼을 던져 보자!":
+  "야생 "+species(enemy.id).name+" 등장! 남은 체력을 예상하며 싸워보자."};
  save.seen[enemy.id]=true;save.grassSteps=0;
  $("battleOverlay").classList.remove("hidden");
  $("battleActionPanel").classList.remove("hidden");$("battleAfter").classList.add("hidden");
@@ -298,8 +310,7 @@ function enemyTurn(){
  if(!battle||battle.done)return;
  const foe=battle.foe,active=E.activeCreature(save);
  if(!active)return;
- const raw=DB.combat.damage({attacker:foe.id,defender:active.id,attackerLevel:foe.level,defenderLevel:active.level,power:5});
- const hit=Math.max(2,Math.floor(raw*.58));active.hp=Math.max(0,active.hp-hit);
+ const hit=E.retaliationDamage(save,foe,active);active.hp=Math.max(0,active.hp-hit);
  appendBattle(battle.message+"\n"+species(foe.id).name+"의 반격! 우리 키즈몬 HP -"+hit);
  if(active.hp<=0){
   const alive=save.party.findIndex(p=>p.hp>0);
@@ -329,6 +340,7 @@ function attack(action){
  if(foe.hp<=0){
   const gain=E.levelRewards(save,foe);
   let message=b.name+"을(를) 이겼어! 경험치 +"+gain.earned+" / 코인 +"+gain.coins;
+  if(gain.mentorHeal)message+="\n연구원의 응원! HP +"+gain.mentorHeal+" 자동 회복";
   if(gain.events.length)message+="\n레벨 업! "+a.name+" Lv."+own.level;
   endFight(message,"win");
   if(gain.events.length)pendingEvolution=true;
@@ -345,7 +357,9 @@ function capture(){
   const destination=E.addCaptured(save,f);
   if(f.id==="shibu_r00_c00")save.flags.shibuCaught=true;
   announce("monster_caught",{id:f.id,uniqueKey:"caught:"+f.id,value:1});
-  endFight(species(f.id).name+" 포획 성공!\n"+(destination==="party"?"동료로 합류했어.":"동료 6마리가 꽉 차 보관함으로 이동했어.")+" · 확률 "+Math.round(prob*100)+"%","capture");
+  const progress=save.wins+save.catches;
+  endFight(species(f.id).name+" 포획 성공!\n"+(destination==="party"?"동료로 합류했어.":"동료 6마리가 꽉 차 보관함으로 이동했어.")+" · 확률 "+Math.round(prob*100)+"%"+
+    ([3,7,12].includes(progress)?"\n연구 기록이 늘어 새 야생 키즈몬이 등장하기 시작했어!":""),"capture");
   return;
  }
  appendBattle("포획 실패! 이번 확률은 "+Math.round(prob*100)+"%였어. 확률이 높아도 실패할 수 있어!");
@@ -480,6 +494,14 @@ function attach(){
   }
   b=e.target.closest("button[data-team]");
   if(b){const changed=selectTeam(Number(b.dataset.team));if(changed){closeGeneric()}return}
+  b=e.target.closest("button[data-gift]");
+  if(b){
+   if(E.claimResearchStarter(save,b.dataset.gift)){
+    beep("win");updateAll();persist();
+    setToast(species(b.dataset.gift).name+"이(가) 연구소에서 합류했어! 가방과 파티를 확인해 보자.");
+   }
+   openClinic();return;
+  }
   b=e.target.closest("button[data-buy]");if(b){buy(b.dataset.buy);return}
   b=e.target.closest("button[data-swap]");if(b){const choice=Number(b.dataset.swap);closeGeneric();selectTeam(choice,true);return}
   b=e.target.closest("button[data-dex]");if(b){openDexDetail(b.dataset.dex);return}
