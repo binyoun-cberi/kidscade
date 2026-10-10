@@ -2,22 +2,22 @@
 
 ## 범위와 재현
 
-**검사 기준:** \`games/openmon-expedition/turn-battle.js\`와 실제 102종 종족/기술 정의를 로드하고 \`resolve\`를 호출함. AI 정책만 별도 구성하며 전투 규칙은 프로덕션 엔진 그대로 사용함.
+**검사 기준:** `games/openmon-expedition/turn-battle.js`와 실제 102종 종족/기술 정의를 로드하고 `resolve`를 호출함. AI 정책만 별도 구성하며 전투 규칙은 프로덕션 엔진 그대로 사용함.
 
-\`\`\`sh
+```sh
 node scripts/kidsmon-balance-sim.cjs
 node scripts/kidsmon-balance-sim.cjs --json > kidsmon-balance.json
 node scripts/kidsmon-balance-sim.cjs --repeats=3
 node --test tests/kidsmon-turn-battle.test.cjs tests/kidsmon-weaken-expiry.test.cjs
-\`\`\`
+```
 
 - 키즈몬 **102종**, 기술 **140개**, 진화 계열 **47개**
 - 레벨 **5 / 14 / 26 / 40** 전부 평가
 - AI 네 개 × 종족 102종 × 레벨 4개 × 상대 12회 = **19,584회**
-- 상대는 동일 \`evolutionRank\`에서 결정론적으로 선택하여 종족 단계 격차를 일부 통제
+- 상대는 동일 `evolutionRank`에서 결정론적으로 선택하여 종족 단계 격차를 일부 통제
 - 한 전투당 최대 **20턴**, 무승부/20턴 제한은 승리로 계산하지 않음
 - 난수 시드와 상대 인덱스는 스크립트에 명시되어 동일 소스/옵션에서 재현 가능
-- \`--repeats=12\`가 기본값임
+- `--repeats=12`가 기본값임
 
 ### 실험 AI
 
@@ -45,13 +45,13 @@ node --test tests/kidsmon-turn-battle.test.cjs tests/kidsmon-weaken-expiry.test.
 
 ## 버그 수정
 
-실제 게임 코드에서 \`weaken\`(공격 약화)이 발동할 때 상대의 \`attack\` 단계가 1 감소했으나, 상태이상 지속시간이 끝나도 감소값이 복구되지 않는 문제 확인.
+실제 게임 코드에서 `weaken`(공격 약화)이 발동할 때 상대의 `attack` 단계가 1 감소했으나, 상태이상 지속시간이 끝나도 감소값이 복구되지 않는 문제 확인.
 
 해결:
-1. 적용 시 실제로 감소한 단계량(\`weakenPenalty\`)을 기록
+1. 적용 시 실제로 감소한 단계량(`weakenPenalty`)을 기록
 2. 약화 상태 종료 시 그 단계량만 되돌림
 3. 공격 단계 최저치(-3)에서 적용된 약화가 만료될 때 공짜 공격력 상승이 발생하지 않도록 함
-4. 회귀 테스트 \`tests/kidsmon-weaken-expiry.test.cjs\` 추가 및 CI 테스트 파일 목록 등록
+4. 회귀 테스트 `tests/kidsmon-weaken-expiry.test.cjs` 추가 및 CI 테스트 파일 목록 등록
 
 ## 수정 후 동일 조건 재실행
 
@@ -90,7 +90,7 @@ node --test tests/kidsmon-turn-battle.test.cjs tests/kidsmon-weaken-expiry.test.
 
 ### 기본 장착에는 나타나지 않는 15개 기술
 
-\`quick\`, \`focus\`, \`bloom\`, \`torrent\`, \`heat\`, \`inferno\`, \`charge\`, \`thunder\`, \`quake\`, \`tailwind\`, \`cyclone\`, \`glacier\`, \`blizzard\`, \`mindwave\`, \`night\`.
+`quick`, `focus`, `bloom`, `torrent`, `heat`, `inferno`, `charge`, `thunder`, `quake`, `tailwind`, `cyclone`, `glacier`, `blizzard`, `mindwave`, `night`.
 
 **전부 학습 불가능한 기술은 아님.** 기술 관리에서 배워 기존 슬롯과 교체할 수 있음. 이번 기본 장착 구성 대회에서는 이 15개의 전투 효용을 직접 측정하지 않았음.
 
