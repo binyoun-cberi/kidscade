@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0d2830">
+<title>멈춰! 움직여! | KIDSCADE</title>
+<link rel="stylesheet" href="../mini.css?v=1">
+</head>
+<body>
+<div class="shell">
+<header>
+<div class="logo"><div class="mark" aria-hidden="true">●</div><div><strong id="title">멈춰! 움직여!</strong><small>꼴뚜기 게임 · SURVIVAL CUP</small></div></div>
+<div class="head-stats"><div><small>현재 상태</small><b id="status">준비</b></div><div class="timer"><small>남은 시간</small><b id="time">00:50</b></div><div><small>최고 점수</small><b id="best">0점</b></div></div>
+</header>
+<main>
+<section class="stage">
+<div class="stage-title"><span id="modeTag">ROUND CHALLENGE</span><span id="hint">신호에 맞춰 달리고 멈추는 50초 도전</span></div>
+<div class="canvas-wrap"><canvas id="scene" aria-label="초록불일 때 화면이나 버튼을 누르고 달리세요. 노란불이 되면 바로 손을 떼세요. 빨간불에 움직이면 탈락합니다." tabindex="0"></canvas></div>
+<div class="progress-track" aria-label="진행률"><span id="progress"></span></div>
+</section>
+<aside class="side">
+<h2>멈춰! 움직여!</h2>
+<p class="hint" id="help">초록불일 때 화면이나 버튼을 누르고 달리세요. 노란불이 되면 바로 손을 떼세요. 빨간불에 움직이면 탈락합니다.</p>
+<div class="info"><small>진행 안내</small><span id="sub">시작 버튼을 눌러 주세요.</span></div>
+<div id="choices" aria-label="선택지"></div>
+<button type="button" class="action" id="action">도전하기</button>
+<div class="controls-hint">마우스 · 터치 · 스페이스 · 숫자키 지원</div>
+</aside>
+</main>
+</div>
+<div class="overlay" id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+<section class="dialog">
+<p class="eyebrow">SURVIVAL MINI GAME</p>
+<div class="demo-symbol" aria-hidden="true">●</div>
+<h1 id="introTitle">멈춰! 움직여!</h1>
+<p>초록불일 때 화면이나 버튼을 누르고 달리세요. 노란불이 되면 바로 손을 떼세요. 빨간불에 움직이면 탈락합니다.</p>
+<button id="start" class="primary" type="button">도전 시작 →</button>
+<p class="tiny">서바이벌에서는 라운드 안내 후 자동으로 시작됩니다.</p>
+</section>
+</div>
+<div class="overlay" id="result" role="dialog" aria-modal="true" aria-labelledby="resultTitle" hidden>
+<section class="dialog">
+<p class="eyebrow">ROUND RESULT</p><h1 id="resultTitle">도전 결과</h1><p id="resultText">결과 확인</p>
+<button id="restart" type="button" class="primary">다시 도전 ↻</button>
+</section>
+</div>
+<script src="../../../kidscade-game-sdk.js" data-game-id="squid_redlight" data-title="멈춰! 움직여!" data-shell="true" data-orientation="any"></script>
+<script src="../mini-rules.js?v=1"></script>
+<script src="../mini.js?v=2" data-mode="redlight"></script>
+</body>
+</html>

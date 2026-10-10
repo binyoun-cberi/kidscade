@@ -127,7 +127,8 @@
   function clear() {
     s.phase='cleared';ui.preview.hidden=true;ui.check.disabled=true;
     if(!SURVIVAL_MODE){record.best=Math.max(record.best,s.stage);record.clears++;save();sdk('score',s.stage);}
-    sdk('result',{scope:'stage',status:'completed',outcome:'clear',score:s.stage,stage:s.stage,checks:s.checks});
+    sdk('result',{scope:'stage',status:'completed',outcome:'clear',
+      ...(!SURVIVAL_MODE?{score:s.stage}:{}),stage:s.stage,checks:s.checks});
     if (!SURVIVAL_MODE&&s.stage===1) sdk('milestone','first_bridge_clear');
     sound('win');showResult(true,'');
   }

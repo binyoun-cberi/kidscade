@@ -2,13 +2,14 @@
   'use strict';
   const R=window.SquidSurvivalRules,$=id=>document.getElementById(id);
   const el={
-    shell:$('shell'),frame:$('gameFrame'),steps:$('steps'),pills:[$('pill0'),$('pill1')],
+    shell:$('shell'),frame:$('gameFrame'),steps:$('steps'),pills:R.ROUNDS.map((_,i)=>$('pill'+i)),
     best:$('bestCount'),lobby:$('lobby'),pregame:$('pregame'),rotate:$('rotate'),end:$('end'),
     preLabel:$('pregameLabel'),preTitle:$('pregameTitle'),preRule:$('pregameRule'),
     preWarning:$('pregameWarning'),demo:$('demo'),count:$('countdownNumber'),countFill:$('countdownFill'),
     endLabel:$('endLabel'),endIcon:$('endIcon'),endTitle:$('endTitle'),endDetail:$('endDetail'),
     endClears:$('endClears'),endBest:$('endBest'),endWins:$('endWins'),
-    endRounds:[$('endRound0'),$('endRound1')],endButton:$('endButton'),quit:$('quitButton')
+    endRounds:R.ROUNDS.map((_,i)=>$('endRound'+i)),endButton:$('endButton'),quit:$('quitButton'),
+    demoIcon:$('demoExtraIcon'),demoDesc:$('demoExtraDesc')
   };
   let state=R.initial(),ticker=null,deadline=0,runStartedAt=0,loadId=0;
   const record=(()=>{
@@ -48,7 +49,9 @@
       el.preTitle.textContent=round.title;
       el.preRule.textContent=round.rule;
       el.preWarning.textContent=round.warning;
-      el.demo.classList.toggle('bridge',round.id==='bridge');
+      el.demo.className='demo '+round.id;
+      el.demoIcon.textContent=round.icon;
+      el.demoDesc.textContent=round.skill+' · '+round.duration;
     }else if(state.phase==='running')show('');
     else if(['intermission','failed','champion'].includes(state.phase)){
       show('end');renderEnd();
@@ -62,7 +65,7 @@
     el.endLabel.textContent=champion?'CHAMPION · ALL CLEAR':failed?'ELIMINATED':'ROUND CLEAR';
     el.endIcon.textContent=champion?'★':failed?'×':'✓';
     el.endTitle.textContent=champion?'최종 생존 성공!':failed?'대회 탈락!':round.title+' 통과!';
-    el.endDetail.textContent=champion?'두 게임을 모두 통과했어요. 꼴뚜기 서바이벌의 우승자입니다.':
+    el.endDetail.textContent=champion?'여섯 개의 게임을 모두 돌파했어요. 꼴뚜기 서바이벌 최종 생존자입니다.':
       failed?round.title+'에서 탈락했어요. 다시 참가하면 첫 라운드부터 시작해요.':
       '좋아요! 이제 다음 게임의 규칙을 살펴보고 도전해요.';
     el.endClears.textContent=state.clearCount+' / '+R.ROUNDS.length;
