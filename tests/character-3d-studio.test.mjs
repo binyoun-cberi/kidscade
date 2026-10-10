@@ -282,7 +282,7 @@ test('male Chibi manifest records source-mesh reuse',()=>{
 
 test('male Chibi generator does not create procedural hair sleeves or compressed pants',()=>{
   const js=read('teacher/character-3d-studio.js');
-  const start=js.indexOf('function createKidscadeMaleSet(){');
+  const start=js.indexOf('const HAIR_STYLE_PARAMETERS=');
   const end=js.indexOf('function makeUnlitMaterial(source){',start);
   assert.ok(start>=0&&end>start);
   const male=js.slice(start,end);
@@ -304,7 +304,7 @@ test('male short hair reuses hairone topology, materials and original skin weigh
   const js=read('teacher/character-3d-studio.js');
   const maleHair=js.slice(
     js.indexOf('function createKidscadeMaleHairShort(){'),
-    js.indexOf('function createKidscadeMaleSet(){')
+    js.indexOf('const HAIR_STYLE_PARAMETERS=')
   );
   assert.match(maleHair,/const source=getNode\('hairone'\)/);
   assert.match(maleHair,/const geometry=source\.geometry\.clone\(\)/);
@@ -348,7 +348,7 @@ test('deployed Chibi studio uses commit-scoped HTML and JS assets',()=>{
 test('male Chibi eyes align with native face markings and eyebrows only use two source islands',()=>{
   const js=read('teacher/character-3d-studio.js');
   const manifest=JSON.parse(read('chibi/asset-manifest.json'));
-  const male=js.slice(js.indexOf('function createKidscadeMaleSet(){'),js.indexOf('function makeUnlitMaterial(source){'));
+  const male=js.slice(js.indexOf('const HAIR_STYLE_PARAMETERS='),js.indexOf('function makeUnlitMaterial(source){'));
   assert.match(male,/const eyeGeometry=eyesSource\.geometry\.clone\(\)/);
   assert.match(male,/eyeHeightScale:1/);
   assert.match(male,/alignsWith:'character_low native face markings'/);
@@ -365,7 +365,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
   const js=read('teacher/character-3d-studio.js');
-  const male=js.slice(js.indexOf('function createKidscadeMaleSet(){'),js.indexOf('function makeUnlitMaterial(source){'));
+  const male=js.slice(js.indexOf('const HAIR_STYLE_PARAMETERS='),js.indexOf('function makeUnlitMaterial(source){'));
   assert.match(male,/const upperTorso=smooth\(\.76,1\.02,y\)/);
   assert.match(male,/const torsoCore=1-smooth\(\.21,\.48,ax\)/);
   assert.match(male,/const sleeve=smooth\(\.10,\.23,Math\.abs\(x\)\)/);
@@ -388,7 +388,7 @@ test('male face preset uses one native-aligned pair of eyes and only original ey
 
 test('male haircut never disables depth testing or mutates source hair materials',()=>{
   const js=read('teacher/character-3d-studio.js');
-  const male=js.slice(js.indexOf('function createKidscadeMaleHairShort(){'),js.indexOf('function createKidscadeMaleSet(){'));
+  const male=js.slice(js.indexOf('function createKidscadeMaleHairShort(){'),js.indexOf('const HAIR_STYLE_PARAMETERS='));
   assert.doesNotMatch(male,/transparent\s*=|renderOrder\s*=|depthTest\s*=|depthWrite\s*=/);
   assert.match(male,/const geometry=source\.geometry\.clone\(\)/);
   assert.match(male,/source\.parent\.add\(hair\)/);
@@ -396,7 +396,7 @@ test('male haircut never disables depth testing or mutates source hair materials
 
 test('male Chibi proportional rework widens upper torso and slims individual legs and shorts',()=>{
   const js=read('teacher/character-3d-studio.js');
-  const male=js.slice(js.indexOf('function createKidscadeMaleSet(){'),js.indexOf('function makeUnlitMaterial(source){'));
+  const male=js.slice(js.indexOf('const HAIR_STYLE_PARAMETERS='),js.indexOf('function makeUnlitMaterial(source){'));
   assert.match(male,/upperTorso\*\(\.145\*torsoCore\+\.018\*\(1-torsoCore\)\)/);
   assert.match(male,/const thigh=smooth\(\.18,\.36,y\)/);
   assert.match(male,/const calf=smooth\(\.025,\.12,y\)/);
@@ -450,7 +450,7 @@ test('male base opens first and provides brows visibility, face zoom and gait st
   assert.match(html,/id="gaitBadge"/);
   assert.match(html,/data-view="face"/);
   assert.match(html,/data-chibi-preset="male" data-preset-fit="male">남성형 기본/);
-  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
+  assert.match(html,/character-3d-studio\.js\?v=20261010-wardrobe60/);
 });
 
 test('mobile studio shows the live avatar preview before the long wardrobe',()=>{
@@ -463,7 +463,7 @@ test('mobile studio shows the live avatar preview before the long wardrobe',()=>
 
 test('male pelvis and shorts reduce rear volume together without modifying the original female base',()=>{
   const js=read('teacher/character-3d-studio.js');
-  const body=js.slice(js.indexOf('function createKidscadeMaleSet(){'),js.indexOf('function makeUnlitMaterial(source){'));
+  const body=js.slice(js.indexOf('const HAIR_STYLE_PARAMETERS='),js.indexOf('function makeUnlitMaterial(source){'));
   assert.match(body,/const bodyGeometry=bodySource\.geometry\.clone\(\)/);
   assert.match(body,/const pelvis=smooth\(\.43,\.55,y\)\*\(1-smooth\(\.74,\.91,y\)\)/);
   assert.match(body,/x\*=1-\.085\*pelvis/);
@@ -477,7 +477,7 @@ test('male pelvis and shorts reduce rear volume together without modifying the o
 
 test('male ear-side bob flap is drawn toward the head with a continuous weighted taper',()=>{
   const js=read('teacher/character-3d-studio.js');
-  const hair=js.slice(js.indexOf('function createKidscadeMaleHairShort(){'),js.indexOf('function createKidscadeMaleSet(){'));
+  const hair=js.slice(js.indexOf('function createKidscadeMaleHairShort(){'),js.indexOf('const HAIR_STYLE_PARAMETERS='));
   assert.match(hair,/const temple=smooth\(\.43,\.83,side\)\*smooth\(\.08,\.60,lower\)/);
   assert.match(hair,/const x=centerX\+\(ox-centerX\)\*/);
   assert.match(hair,/\.095\*templeBridge/);
@@ -536,7 +536,7 @@ test('one-touch mobile Chibi controls are wired to the same real animation, view
   assert.match(js,/setCameraView\(button\.dataset\.quickView\)/);
   assert.match(js,/\[data-chibi-preset\],\[data-view\],\[data-quick-clip\],\[data-quick-view\],\[data-quick-speed\]/);
   assert.match(js,/\$\('speed'\)\.value=button\.dataset\.quickSpeed/);
-  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
+  assert.match(html,/character-3d-studio\.js\?v=20261010-wardrobe60/);
 });
 
 test('Chibi v5 wardrobe exposes gender-fit filter and category tabs without restricting shared accessories',()=>{
@@ -670,7 +670,7 @@ test('seven derived male hairstyles keep the temple cover without affecting fema
   const js=read('teacher/character-3d-studio.js');
   const styles=js.slice(js.indexOf('const HAIR_STYLE_PARAMETERS='),js.indexOf('function createKidscadeHairCollection(){'));
   const maleLines=styles.split('\n').filter(line=>line.trim().startsWith('kidscade_male_hair_'));
-  assert.equal(maleLines.length,7);
+  assert.equal(maleLines.length,11);
   assert.ok(maleLines.every(line=>/templeFill:\.\d+/.test(line)));
   assert.match(js,/const safeSide=style\.templeFill===undefined\?style\.side:Math\.max\(style\.side,-\.12\)/);
   assert.match(js,/templeBridgeVersion:style\.templeFill===undefined\?null:'v7'/);
@@ -887,7 +887,7 @@ test('v5.7 separates male and female bone ownership, animation roots and GLB rig
   assert.match(audit,/window\.__kc3dAudit\.rigIsolationAudit\(\)/);
   assert.match(audit,/sharedBones,0/);
   assert.match(audit,/roundtripExport\(\)/);
-  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
+  assert.match(html,/character-3d-studio\.js\?v=20261010-wardrobe60/);
 });
 
 test('v5.8 smooth garment skin weights have four-neighbor blending and reject invalid meshes',()=>{
@@ -920,9 +920,9 @@ test('v5.8 visual cleanup uses continuous skinned sleeves and visibly separate w
   assert.match(pack,/geometry\.setAttribute\('skinWeight',new THREE\.Float32BufferAttribute\(weights,4\)\)/);
   assert.doesNotMatch(pack,/shoulderCap=new THREE\.SphereGeometry/);
   assert.match(pack,/const upperRadius=wide\?\.140/);
-  assert.match(pack,/const lowerRadius=wide\?\.104/);
-  assert.match(pack,/geometry\.translate\(sign\*\(wide\?\.178:\.153\)/);
-  assert.match(pack,/const fullness=1-\.11\*knee\+\.025\*hem/);
+  assert.match(pack,/const lowerRadius=flare\?\.120:wide\?\.104/);
+  assert.match(pack,/geometry\.translate\(sign\*\(wide\?\.178:flare\?\.160:\.153\)/);
+  assert.match(pack,/const fullness=flare\?1-\.16\*knee\+\.26\*hem:1-\.11\*knee\+\.025\*hem/);
 });
 
 test('v5.9 repairs exposed long-sleeve wrists and trouser crotch wedge without joining the legs',()=>{
@@ -934,7 +934,7 @@ test('v5.9 repairs exposed long-sleeve wrists and trouser crotch wedge without j
   assert.match(pack,/addTrouserHipYoke\(\{source,style,group,material,reference,cloneSkinnedMeshWithGeometry\}\)/);
   assert.match(pack,/bindYokeToPelvis\(geometry,source\.skeleton\)/);
   assert.match(pack,/style\.id\+'_hip_yoke'/);
-  assert.match(audit,/skinAudit\.length,33/);
+  assert.match(audit,/skinAudit\.length,47/);
   assert.match(audit,/crotch-wrist-repro-/);
   assert.match(audit,/bottom\+'_hip_yoke'/);
 });
