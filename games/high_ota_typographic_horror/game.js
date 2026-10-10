@@ -456,7 +456,7 @@ function setCamera() {
 }
 function tryMove(dx,dz) {
   const nx=player.x+dx,nz=player.z+dz;
-  if((player.z< -37.4||nx>3.03||nx< -3.03)?C3.canMove(state,nx,player.z):R.canMove(state,nx,player.z))player.x=nx;
+  if(player.z< -37.4?C3.canMove(state,nx,player.z):R.canMove(state,nx,player.z))player.x=nx;
   if(nz< -37.4?C3.canMove(state,player.x,nz):R.canMove(state,player.x,nz))player.z=nz;
 }
 function update(dt) {
@@ -574,7 +574,12 @@ function begin() {
   announce('컴퓨터 기록부터 확인하세요.',false,3.2);
   if(!touchDevice)canvas.requestPointerLock?.().catch?.(()=>{});
 }
-el('start').addEventListener('click',begin);
+el('start').addEventListener('click',()=>{
+  try{sessionStorage.removeItem(CHECKPOINT_KEY);}catch(_){}
+  begin();
+});
+el('resume').hidden=!loadChapterCheckpoint();
+el('resume').addEventListener('click',()=>{begin();respawnAtCheckpoint();});
 el('replay').addEventListener('click',()=>{try{sessionStorage.removeItem(CHECKPOINT_KEY);}catch(_){}location.reload();});
 el('respawn').addEventListener('click',()=>{if(!respawnAtCheckpoint())location.reload();});
 el('mute').addEventListener('click',()=>{
