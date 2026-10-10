@@ -353,6 +353,7 @@ function attack(action){
   const gain=E.levelRewards(save,foe);
   let message=b.name+"을(를) 이겼어! 경험치 +"+gain.earned+" / 코인 +"+gain.coins;
   if(gain.mentorHeal)message+="\n연구원의 응원! HP +"+gain.mentorHeal+" 자동 회복";
+  if([3,7,12].includes(save.wins+save.catches))message+="\n새로운 종류의 야생 키즈몬이 지역에 나타나기 시작했어!";
   if(gain.events.length)message+="\n레벨 업! "+a.name+" Lv."+own.level;
   endFight(message,"win");
   if(gain.events.length)pendingEvolution=true;
