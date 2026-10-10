@@ -86,6 +86,9 @@ await send('Emulation.setTouchEmulationEnabled',{enabled:c.touch,maxTouchPoints:
 await send('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/games/sim_tidy_king/index.html'});
 for(let i=0;i<90;i++){if(await ev('!!document.querySelector("#start")').catch(()=>false))break;await sleep(100)}
 await sleep(500);await snap(c.name+'-intro');
+const quickDefault=await ev('({easy:document.querySelector("#modeEasy").getAttribute("aria-pressed"),big:document.querySelector("#modeBig").getAttribute("aria-pressed")})');
+assert.deepEqual(quickDefault,{easy:'true',big:'false'},c.name+' must start in preschool mode');
+await ev('document.querySelector("#modeBig").click()'); // Preserve full mountain stress test
 await ev('document.querySelector("#start").click()');
 let s;for(let i=0;i<350;i++){s=await ev('window.__AUDIT?.s()').catch(()=>null);if(s?.total>0)break;await sleep(100)}
 if(!s?.total)throw Error('loading timeout '+c.name+' errors='+JSON.stringify(errors));
@@ -143,7 +146,7 @@ await send('Page.reload',{ignoreCache:true});await sleep(850);
 const revisited=await ev('({kitchenEnabled:!document.querySelector("#startKitchen").disabled,kitchenVisible:!document.querySelector("#startKitchen").hidden})');
 if(revisited.kitchenEnabled)await ev('document.querySelector("#startKitchen").click()');
 let direct=null;for(let i=0;i<100;i++){direct=await ev('window.__AUDIT?.s()').catch(()=>null);if(direct?.total>0)break;await sleep(100)}
-const result={name:c.name,initial:s,overlap,dragSampleCount,played,clutterVariety:{uniqueX:xs.length,uniqueZ:zs.length},half,blocked,failed,stains,forced,photo,kitchen,unpickable,finish2,last,revisited,direct,errors:[...errors],httpErrors:[...httpErrors]};
+const result={name:c.name,initial:s,quickDefault,overlap,dragSampleCount,played,clutterVariety:{uniqueX:xs.length,uniqueZ:zs.length},half,blocked,failed,stains,forced,photo,kitchen,unpickable,finish2,last,revisited,direct,errors:[...errors],httpErrors:[...httpErrors]};
 assert.equal(errors.length,0,c.name+' browser errors: '+JSON.stringify(errors.slice(0,3)));
 assert.equal(blocked.length,0,c.name+' unclickable props: '+JSON.stringify(blocked.slice(0,3)));
 assert.equal(failed.length,0,c.name+' input failures: '+JSON.stringify(failed.slice(0,3)));
@@ -157,6 +160,38 @@ assert.equal(s.piles,4,c.name+' trash mountains missing');
 assert.ok(s.decor>=220&&s.decorHeight>1.6,c.name+' no elevated trash piles');
 assert.equal(half.decorHidden,half.decor,c.name+' trash mountains should disappear at 100%');
 assert.ok(revisited.kitchenEnabled&&revisited.kitchenVisible&&direct?.level===1,c.name+' cannot open unlocked kitchen directly');
+if(c.name==='portrait'){
+  // Fresh page must return to preschool mode with short, achievable sessions.
+  await send('Page.reload',{ignoreCache:true});await sleep(850);
+  await ev('document.querySelector("#start").click()');
+  let shortRoom=null;
+  for(let i=0;i<100;i++){shortRoom=await ev('window.__AUDIT?.s()').catch(()=>null);if(shortRoom?.total>0)break;await sleep(100)}
+  assert.equal(shortRoom.total,20,'preschool apartment should require 18 items and 2 stains');
+  assert.equal(shortRoom.items,18);
+  const shortKeys=await ev('window.__AUDIT.keys()');
+  for(let i=0;i<shortKeys.length;i++){
+    const a=await ev('window.__AUDIT.point("item",'+i+')');
+    const idx=await ev('window.__AUDIT.stationIndex('+JSON.stringify(kinds[shortKeys[i]])+')');
+    const b=await ev('window.__AUDIT.point("station",'+idx+')');
+    assert.ok(!a?.blocked&&!b?.blocked,'preschool drag target hidden '+i);
+    await drag(a.x,a.y,b.x,b.y,c.touch);
+  }
+  const stainN=await ev('window.__AUDIT.s().stains');
+  for(let i=0;i<stainN;i++){
+    const a=await ev('window.__AUDIT.point("stain",'+i+')');
+    assert.ok(!a.blocked,'preschool stain obstructed '+i);
+    for(let n=0;n<7;n++)await click(a.x,a.y,c.touch);
+  }
+  const shortEnd=await ev('window.__AUDIT.s()');
+  assert.equal(shortEnd.done,20,'preschool apartment must complete');
+  assert.equal(shortEnd.decorHidden,240,'all rubbish scenery must clear in easy mode');
+  await snap('preschool-quick-complete');
+  await ev('document.querySelector("#next").click()');
+  await sleep(700);
+  const quickKitchen=await ev('window.__AUDIT.s()');
+  assert.equal(quickKitchen.total,22,'preschool kitchen should require 20 items and 2 stains');
+  console.log('TIDY_PRESCHOOL_RESULT '+JSON.stringify({shortRoom,shortEnd,quickKitchen}));
+}
 report.push(result);console.log('TIDY_AUDIT_RESULT '+JSON.stringify(result));
 }
 fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));console.log('TIDY_AUDIT_DONE');

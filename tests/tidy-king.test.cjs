@@ -51,7 +51,9 @@ test('Tidy King catalog classification and entrypoint are valid',()=>{
  assert.ok(game);
  assert.equal(game.title,'싹싹! 정리왕');
  assert.equal(game.category,'job');
- assert.equal(game.age,'low');
+ assert.equal(game.age,'toddler');
+ assert.deepEqual(game.ages,['toddler']);
+ assert.equal(game.sessionMinutes,5);
  assert.equal(game.href,'games/sim_tidy_king/index.html');
  assert.equal(game.genre,'simulation');
 });
@@ -73,7 +75,7 @@ test('Tidy King has real receptacles, persistent deposited props and finish phot
  for(const id of ['beforePhoto','afterPhoto','startKitchen'])assert.match(html,new RegExp('id="'+id+'"'));
 });
 test('Tidy King unlocks kitchen independently of the apartment and refreshes stage controls',()=>{
- assert.match(js,/saved\.unlocked\?'주방 청소하기'/);
+ assert.match(js,/saved\.unlocked\?'🍽️ 주방 정리!'/);
  assert.match(js,/if\(saved\.unlocked\)launchStage\(1\)/);
  assert.match(js,/saved\.unlocked=Math\.max/);
  assert.match(js,/showStageButtons\(\)/);
@@ -89,7 +91,7 @@ test('Tidy King places items through physical pointer drag, not tap-then-tap',()
  assert.match(js,/function groundAt\(/);
  assert.match(js,/canvas\.setPointerCapture\(e\.pointerId\)/);
  assert.match(html,/id="dropGuide"/);
- assert.match(html,/누른 채 끌기/);
+ assert.match(html,/물건을 손가락으로 끌어요/);
 });
 test('Tidy King scatters props into natural clusters, not an 8-column grid',()=>{
  assert.match(js,/function scatterClutter\(/);
@@ -109,4 +111,18 @@ test('Tidy King has large clearable three-dimensional trash mountains',()=>{
  assert.match(js,/retreatClutterMountains\(\)/);
  assert.match(js,/ratio>=1\?decorations\.length/);
  assert.match(js,/m\.geometry\.dispose\(\)/);
+});
+
+test('Tidy King offers preschool default and optional full pile cleanup',()=>{
+ assert.match(html,/id="modeEasy"/);
+ assert.match(html,/id="modeBig"/);
+ assert.match(html,/약 20개만 정리하면 성공해요!/);
+ assert.match(js,/let running=false, level=0, challengeMode=false/);
+ assert.match(js,/littleItems:\{book:5,toy:5,bottle:5,cup:3\},littleStains:2/);
+ assert.match(js,/littleItems:\{cup:5,plate:4,bottle:5,can:3,bag:3\},littleStains:2/);
+ assert.match(js,/challengeMode\?def\.items:def\.littleItems/);
+ assert.match(js,/challengeMode\?def\.stains:def\.littleStains/);
+ assert.match(js,/setMode\(false\)/);
+ assert.match(js,/34:26/);
+ assert.match(js,/90:76/);
 });

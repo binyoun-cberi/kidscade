@@ -57,17 +57,16 @@
       "title": "싹싹! 정리왕",
       "href": "games/sim_tidy_king/index.html",
       "category": "job",
-      "age": "low",
+      "age": "toddler",
       "ages": [
-        "low",
-        "high"
+        "toddler"
       ],
       "icon": "🧺",
-      "description": "어질러진 원룸과 주방에서 물건을 집어 책장·빨래통·분리수거함·싱크대에 직접 정리하고, 얼룩은 문질러 닦는 3D 생활 시뮬레이터. 제한시간 없이 반짝반짝 100%에 도전해요!",
+      "description": "유아를 위한 3D 정리 놀이! 산처럼 쌓인 물건을 끌어 제자리에 쏙 넣고, 얼룩을 문질문질 닦아요. 기본 20개 안팎의 짧은 놀이와 선택형 대청소 도전을 즐겨요.",
       "subject": "career",
       "genre": "simulation",
       "difficulty": "easy",
-      "sessionMinutes": 15,
+      "sessionMinutes": 5,
       "players": [
         "solo"
       ],
