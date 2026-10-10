@@ -11,7 +11,7 @@ action:$('action'),choice:$('choices'),intro:$('intro'),result:$('result'),resul
 start:$('start'),restart:$('restart'),help:$('help'),status:$('status'),top:$('modeTag'),best:$('best')};
 const canvas=ui.canvas,ctx=canvas.getContext('2d');
 const label=rules.MODES[mode];
-let model=null,held=false,previousFrame=0,finished=false,canvasWidth=0,canvasHeight=0;
+let model=null,held=false,previousFrame=0,finished=false,canvasWidth=0,canvasHeight=0,choiceKey='';
 const key='kidscade_squid_mini_'+mode+'_v1';
 let best=0;try{best=Math.max(0,Number(JSON.parse(localStorage.getItem(key)||'{}').best)||0);}catch(_){}
 const sprites={};
@@ -38,7 +38,7 @@ function setHidden(el,hidden){el.hidden=hidden;}
 function launch(){
  model=rules.create(mode,Math.floor(Math.random()*4294967295));
  rules.start(model,Date.now());
- finished=false;held=false;previousFrame=0;
+ finished=false;held=false;previousFrame=0;choiceKey='';
  setHidden(ui.intro,true);setHidden(ui.result,true);
  ui.title.textContent=label.name;ui.hint.textContent=label.hint;ui.best.textContent=best+'점';
  sdk('start',{mode});
@@ -79,16 +79,19 @@ function fire(){
 }
 function controls(){
  const s=model;
- ui.choice.innerHTML='';
  let options=[];
  if(mode==='marbles'&&s.status==='playing'){
    options=[{value:'left',label:'왼쪽 주머니'},{value:'right',label:'오른쪽 주머니'}];
  }else if(mode==='final'&&s.part==='memory')options=rules.SYMBOLS.map(x=>({value:x,label:x}));
  else if(mode==='final'&&s.part==='math')options=s.math.options.map(x=>({value:x,label:String(x)}));
- if(options.length){
+ const nextKey=s.status+'|'+s.part+'|'+s.questionIndex+'|'+options.map(o=>o.value).join(',');
+ if(choiceKey!==nextKey){
+   choiceKey=nextKey;
+   ui.choice.innerHTML='';
    for(const option of options){
      const b=document.createElement('button');b.type='button';b.className='choice';b.textContent=option.label;
-     b.addEventListener('click',()=>choose(mode==='marbles'?'choose':s.part==='memory'?'symbol':'answer',option.value));
+     const action=mode==='marbles'?'choose':s.part==='memory'?'symbol':'answer';
+     b.addEventListener('click',()=>choose(action,option.value));
      ui.choice.appendChild(b);
    }
  }
@@ -231,6 +234,8 @@ canvas.addEventListener('pointerdown',event=>{
 canvas.addEventListener('pointerup',()=>hold(false));
 canvas.addEventListener('pointercancel',()=>hold(false));
 canvas.addEventListener('lostpointercapture',()=>hold(false));
+window.addEventListener('pointerup',()=>hold(false));
+window.addEventListener('pointercancel',()=>hold(false));
 window.addEventListener('blur',()=>hold(false));
 document.addEventListener('keydown',event=>{
  if(event.code==='Space'){event.preventDefault?.();if(event.repeat)return;
