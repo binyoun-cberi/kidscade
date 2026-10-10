@@ -46,6 +46,7 @@ const M={
  counter:{name:"받아치기",type:"neutral",power:0,accuracy:100,pp:12,kind:"shield",shield:.5},
  neutral:{name:"정면돌파",type:"neutral",power:11,accuracy:95,pp:15}
 };
+for(const [id,move] of Object.entries(M))move.id=id;
 const MOVESET={
  neutral:["neutral","counter","quick","focus"],
  leaf:["leaf","vine","synthesis","bloom"],
@@ -169,12 +170,13 @@ function resolve({save,foe,battle,action,random=Math.random,rookieCap=0}){
   }
   if(move.kind==="shield"){from.shield=move.shield;say(name+"의 "+move.name+"! 다음 피해를 줄여.");return}
   if(move.kind==="buff"){from[move.buff.stat]=clamp(from[move.buff.stat]+move.buff.amount,-3,3);say(name+"의 "+move.name+"! "+({attack:"공격",defense:"방어",speed:"속도"}[move.buff.stat])+" 상승.");return}
-  const amount=moveDamage(user,opponent,move,from,to,enemy?0:rookieCap);
+  const amount=moveDamage(user,opponent,move,from,to,enemy?rookieCap:0);
   opponent.hp=Math.max(0,opponent.hp-amount);
   const eff=D.combat.effectiveness(move.type,getSpecies(opponent.id).type);
   say(name+"의 "+move.name+"! "+amount+" 피해."+(eff===2?" 효과가 굉장해!":eff===.5?" 효과가 약해.":""));
   if(move.afflict&&opponent.hp>0&&!to.condition&&random()<move.afflict.chance){
    to.condition=move.afflict.kind;to.conditionTurns=move.afflict.kind==="burn"?3:2;
+   if(to.condition==="weaken")to.attack=clamp(to.attack-1,-3,3);
    say(getSpecies(opponent.id).name+"에게 "+({burn:"화상",slow:"둔화",weaken:"공격 약화"}[to.condition])+" 효과!");
   }
  }
@@ -219,7 +221,7 @@ function resolve({save,foe,battle,action,random=Math.random,rookieCap=0}){
     mon.hp=Math.max(0,mon.hp-hit);say(who+" 화상 피해 -"+hit);
    }
    if(s.conditionTurns>0){s.conditionTurns--;if(!s.conditionTurns){s.condition=null;say(who+" 상태 효과가 끝났어.")}}
-   if(s.condition==="weaken")s.attack=Math.max(-2,s.attack-1);
+   // Weaken applies once on infliction, not repeatedly every turn.
   }
   if(!foe.hp)outcome="won";
   else if(!player().hp){const next=save.party.findIndex(p=>p.hp>0);if(next>=0){save.active=next;side.player=makeSide();say("다음 키즈몬 출전!")}else outcome="lost"}
