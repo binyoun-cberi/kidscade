@@ -110,10 +110,10 @@ export function applyAccessoryFit({getNode,fit='male',topName='',headwearName=''
           // entire hat into the air. Anchor the cap TOP instead, keeping its
           // crown intersecting the hair while the brim sits over the forehead.
           const target=style.slot==='hat'
-            ?referenceBox.max.y-.060
+            ?referenceBox.max.y-.158
             :referenceBox.min.y;
           const current=style.slot==='hat'?accessoryBox.max.y:accessoryBox.min.y;
-          const worldDelta=THREE.MathUtils.clamp(target-current,-.10,.10);
+          const worldDelta=THREE.MathUtils.clamp(target-current,style.slot==='hat'?-.21:-.035,.10);
           const parentScale=group.parent?.getWorldScale(new THREE.Vector3()).y||1;
           group.position.y=THREE.MathUtils.clamp(
             group.position.y+worldDelta/parentScale,-.31,.13);
@@ -241,7 +241,12 @@ function createDetails(style,context){
     }
   } else if(style.slot==='hat'){
     if(kind==='baseball'){
-      add(sphere(0,scalpY-.091,hc.z+headR*1.23,.207,.025,.135),style.color,'brim');
+      // The spherical cap alone read as a floating blue plate. Add a
+      // forehead-hugging fabric crown wall and a distinct forward bill.
+      const capBand=new THREE.CylinderGeometry(headR*1.045,headR*1.07,.145,24,3,true);
+      capBand.translate(0,scalpY-.088,hc.z);
+      add(capBand,style.color,'crownWall');
+      add(sphere(0,scalpY-.119,hc.z+headR*1.31,.202,.023,.139),style.color,'brim');
       // Omit the raised badge: it became a vertical spike above the cap in WALK/RUN.
     }else if(kind==='bucket'){
       add(cyl(headR*1.25,headR*1.25,.025,0,scalpY-.155,hc.z),style.color,'brim');
