@@ -13,40 +13,36 @@ const html=fs.readFileSync(path.join(DIR,'index.html'),'utf8');
 const event=(round,status='completed',outcome='clear')=>({
   type:'kidscade:game-event',version:1,gameId:round.gameId,
   detail:{event:'result',gameId:round.gameId,scope:round.id==='bridge'?'stage':'stage',
-    status,outcome,score:87}
+    status,outcome,score:87,mode:round.id}
 });
-test('tournament has only two playable rounds with existing original game URLs',()=>{
-  assert.equal(rules.ROUNDS.length,2);
-  assert.deepEqual(rules.ROUNDS.map(x=>x.gameId),['dalgona_trace','squid_memory_bridge']);
-  assert.deepEqual(rules.ROUNDS.map(x=>rules.gameUrl(x)),
-    ['../dalgona-trace/index.html?survival=1','../squid-memory-bridge/index.html?survival=1']);
-  for(const r of rules.ROUNDS){
-    assert.ok(fs.existsSync(path.join(DIR,r.src)));
-  }
+test('tournament has six real rounds and playable known sources',()=>{
+  assert.equal(rules.ROUNDS.length,6);
+  assert.deepEqual(rules.ROUNDS.map(x=>x.gameId),
+    ['dalgona_trace','squid_memory_bridge','squid_redlight','squid_tug','squid_marbles','squid_final']);
+  for(const r of rules.ROUNDS)assert.ok(fs.existsSync(path.join(DIR,r.src)),'missing '+r.src);
+  assert.ok(rules.gameUrl(rules.ROUNDS[5]).includes('final.html?survival=1'));
 });
-test('progression requires two real wins and cannot advance twice on a duplicate result',()=>{
+test('only six sequential clears become champion; one result never counts twice',()=>{
   let s=rules.reduce(rules.initial(),{type:'START'});
   assert.equal(s.phase,'intro');
-  s=rules.reduce(s,{type:'READY'});
-  assert.equal(s.phase,'running');
-  const a=rules.validateEvent(s,event(rules.ROUNDS[0]),true,true);
-  assert.ok(a);
-  s=rules.reduce(s,a);
-  assert.equal(s.phase,'intermission');
-  assert.equal(s.clearCount,1);
-  assert.equal(rules.validateEvent(s,event(rules.ROUNDS[0]),true,true),null);
-  assert.equal(rules.reduce(s,a),s);
-  s=rules.reduce(s,{type:'NEXT'});
-  assert.equal(s.roundIndex,1);
-  s=rules.reduce(s,{type:'ROTATE'});
-  assert.equal(s.phase,'rotate');
-  s=rules.reduce(s,{type:'ORIENTED'});
-  assert.equal(s.phase,'intro');
-  s=rules.reduce(s,{type:'READY'});
-  s=rules.reduce(s,rules.validateEvent(s,event(rules.ROUNDS[1]),true,true));
+  for(let i=0;i<rules.ROUNDS.length;i++){
+    assert.equal(s.roundIndex,i);
+    if(i===1){
+      s=rules.reduce(s,{type:'ROTATE'});
+      assert.equal(s.phase,'rotate');
+      s=rules.reduce(s,{type:'ORIENTED'});
+    }
+    s=rules.reduce(s,{type:'READY'});
+    const round=rules.ROUNDS[i],a=rules.validateEvent(s,event(round),true,true);
+    assert.ok(a,'missing result for '+round.id);
+    s=rules.reduce(s,a);
+    assert.equal(s.clearCount,i+1);
+    assert.equal(rules.validateEvent(s,event(round),true,true),null);
+    assert.equal(rules.reduce(s,a),s);
+    if(i+1<rules.ROUNDS.length){assert.equal(s.phase,'intermission');s=rules.reduce(s,{type:'NEXT'});}
+  }
   assert.equal(s.phase,'champion');
-  assert.equal(s.clearCount,2);
-  assert.deepEqual(s.results.map(x=>x.id),['dalgona','bridge']);
+  assert.deepEqual(s.results.map(x=>x.id),rules.ROUNDS.map(x=>x.id));
   s=rules.reduce(s,{type:'START'});
   assert.equal(s.clearCount,0);
   assert.equal(s.roundIndex,0);
@@ -123,9 +119,9 @@ test('end-to-end frame orchestration: intro, guarded signals, rotate, crown and 
   assert.equal(s.get('end').classList.contains('hidden'),true);
   s.send(event(rules.ROUNDS[0]));
   assert.equal(s.get('end').classList.contains('hidden'),false);
-  assert.equal(s.get('endClears').textContent,'1 / 2');
+  assert.equal(s.get('endClears').textContent,'1 / 6');
   s.send(event(rules.ROUNDS[0]));
-  assert.equal(s.get('endClears').textContent,'1 / 2');
+  assert.equal(s.get('endClears').textContent,'1 / 6');
   s.portrait(true);
   s.click('endButton');
   assert.equal(s.get('rotate').classList.contains('hidden'),false);
@@ -135,10 +131,18 @@ test('end-to-end frame orchestration: intro, guarded signals, rotate, crown and 
   s.advance(3001);
   assert.match(s.get('gameFrame').src,/squid-memory-bridge.*survival=1/);
   s.send(event(rules.ROUNDS[1]));
+  assert.equal(s.get('endTitle').textContent,'기억의 다리 통과!');
+  for(let i=2;i<rules.ROUNDS.length;i++){
+    s.click('endButton');
+    assert.equal(s.get('pregame').classList.contains('hidden'),false);
+    s.advance(3001);
+    assert.ok(s.get('gameFrame').src.includes(rules.ROUNDS[i].src.split('/').at(-1)));
+    s.send(event(rules.ROUNDS[i]));
+  }
   assert.equal(s.get('endTitle').textContent,'최종 생존 성공!');
   assert.equal(s.get('endWins').textContent,'1');
   assert.equal(s.sdk.filter(([n,v])=>n==='result'&&v.status==='completed').length,1);
-  assert.equal(JSON.parse(s.saved.get(rules.SAVE_KEY)).best,2);
+  assert.equal(JSON.parse(s.saved.get(rules.SAVE_KEY)).best,6);
   s.click('endButton');
   assert.equal(s.get('pregame').classList.contains('hidden'),false);
   assert.equal(s.get('endWins').textContent,'1');
@@ -148,13 +152,13 @@ test('quit is elimination and repeats cannot award extra championships',()=>{
   s.click('startButton');s.advance(3100);
   s.click('quitButton');
   assert.equal(s.get('endTitle').textContent,'대회 탈락!');
-  assert.equal(s.get('endClears').textContent,'0 / 2');
+  assert.equal(s.get('endClears').textContent,'0 / 6');
   s.send(event(rules.ROUNDS[0]));
-  assert.equal(s.get('endClears').textContent,'0 / 2');
+  assert.equal(s.get('endClears').textContent,'0 / 6');
   s.click('endButton');
   assert.equal(s.get('pregame').classList.contains('hidden'),false);
 });
-test('game catalog, common save key, and both standalone launch paths exist',()=>{
+test('game catalog, common save key, and all six standalone launch paths exist',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(ROOT,'data/games.json'),'utf8'));
   const game=catalog.games.find(x=>x.id==='squid_survival');
   assert.ok(game);
