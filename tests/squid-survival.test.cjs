@@ -20,7 +20,7 @@ test('tournament has six real rounds and playable known sources',()=>{
   assert.deepEqual(rules.ROUNDS.map(x=>x.gameId),
     ['dalgona_trace','squid_memory_bridge','squid_redlight','squid_tug','squid_marbles','squid_final']);
   for(const r of rules.ROUNDS)assert.ok(fs.existsSync(path.join(DIR,r.src)),'missing '+r.src);
-  assert.ok(rules.gameUrl(rules.ROUNDS[5]).includes('final.html?survival=1'));
+  assert.ok(rules.gameUrl(rules.ROUNDS[5]).includes('final/index.html?survival=1'));
 });
 test('only six sequential clears become champion; one result never counts twice',()=>{
   let s=rules.reduce(rules.initial(),{type:'START'});
@@ -136,7 +136,7 @@ test('end-to-end frame orchestration: intro, guarded signals, rotate, crown and 
     s.click('endButton');
     assert.equal(s.get('pregame').classList.contains('hidden'),false);
     s.advance(3001);
-    assert.ok(s.get('gameFrame').src.includes(rules.ROUNDS[i].src.split('/').at(-1)));
+    assert.ok(s.get('gameFrame').src.includes(rules.ROUNDS[i].src));
     s.send(event(rules.ROUNDS[i]));
   }
   assert.equal(s.get('endTitle').textContent,'최종 생존 성공!');
