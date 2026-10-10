@@ -93,7 +93,7 @@ test('old save schema automatically gains PP, and clinic replenishes HP and PP',
  assert.ok(old?.party[0].moveSlots?.length===4);
  const p=old.party[0];p.moveSlots[0].pp=0;p.hp=1;
  E.healAll(old);
- assert.equal(p.hp,D.combat.statsAtLevel(p.id,p.level).hp);
+ assert.equal(p.hp,D.combat.statsAtLevel(p.id,p.level,p).hp);
  assert.equal(p.moveSlots[0].pp,B.moves[p.moveSlots[0].id].pp);
  const again=E.validateSave(clone(old));
  assert.equal(again.party[0].moveSlots.length,4);
