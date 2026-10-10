@@ -304,7 +304,7 @@ test('male short hair reuses hairone topology, materials and original skin weigh
   const js=read('teacher/character-3d-studio.js');
   const maleHair=js.slice(
     js.indexOf('function createKidscadeMaleHairShort(){'),
-    js.indexOf('function createKidscadeMaleSet(){')
+    js.indexOf('const HAIR_STYLE_PARAMETERS=')
   );
   assert.match(maleHair,/const source=getNode\('hairone'\)/);
   assert.match(maleHair,/const geometry=source\.geometry\.clone\(\)/);
@@ -477,7 +477,7 @@ test('male pelvis and shorts reduce rear volume together without modifying the o
 
 test('male ear-side bob flap is drawn toward the head with a continuous weighted taper',()=>{
   const js=read('teacher/character-3d-studio.js');
-  const hair=js.slice(js.indexOf('function createKidscadeMaleHairShort(){'),js.indexOf('function createKidscadeMaleSet(){'));
+  const hair=js.slice(js.indexOf('function createKidscadeMaleHairShort(){'),js.indexOf('const HAIR_STYLE_PARAMETERS='));
   assert.match(hair,/const temple=smooth\(\.43,\.83,side\)\*smooth\(\.08,\.60,lower\)/);
   assert.match(hair,/const x=centerX\+\(ox-centerX\)\*/);
   assert.match(hair,/\.095\*templeBridge/);
@@ -934,7 +934,7 @@ test('v5.9 repairs exposed long-sleeve wrists and trouser crotch wedge without j
   assert.match(pack,/addTrouserHipYoke\(\{source,style,group,material,reference,cloneSkinnedMeshWithGeometry\}\)/);
   assert.match(pack,/bindYokeToPelvis\(geometry,source\.skeleton\)/);
   assert.match(pack,/style\.id\+'_hip_yoke'/);
-  assert.match(audit,/skinAudit\.length,49/);
+  assert.match(audit,/skinAudit\.length,51/);
   assert.match(audit,/crotch-wrist-repro-/);
   assert.match(audit,/bottom\+'_hip_yoke'/);
 });
@@ -1014,7 +1014,43 @@ test('v6.0 cargo pockets and tracksuit stripes attach to animated legs',()=>{
   assert.match(pack,/if\(style\.category==='bottom'\)/);
   assert.match(pack,/cargo_flap_left/);
   assert.match(pack,/cargo_flap_right/);
-  assert.match(pack,/segment of \['thigh','shin'\]/);
+  assert.match(pack,/transferSmoothSkinWeights\(piping,reference/);
   assert.match(pack,/stripe_left_/);
   assert.match(pack,/stripe_right_/);
+});
+
+test('v6.1 hair silhouettes use head-bone rigged volumes and pixie avoids pinched side gaps',()=>{
+  const studio=read('teacher/character-3d-studio.js');
+  assert.match(studio,/function attachChibiHairDetailMeshes\(/);
+  assert.match(studio,/chibi_female_hair_twintail/);
+  assert.match(studio,/rigged-hair-volume/);
+  assert.match(studio,/kidscade_male_hair_spiky/);
+  assert.match(studio,/const pixieLift=/);
+  assert.match(studio,/chibi_female_hair_pixie:\{crown:-\.025,side:-\.015/);
+});
+test('v6.1 hats and face items use corrected crown/mouth registration',()=>{
+  const pack=read('teacher/chibi-accessory-pack.js');
+  assert.match(pack,/referenceBox\.max\.y-\.158/);
+  assert.match(pack,/accessoryBox\.max\.y:accessoryBox\.min\.y/);
+  assert.match(pack,/scalpY-\.012,hc\.z/);
+  assert.match(pack,/crownWall/);
+  assert.match(pack,/eyeY-\.241/);
+  assert.match(pack,/faceZ\+\.052/);
+});
+test('v6.1 tracksuit piping bends with weighted knees rather than floating rigid boxes',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  assert.match(pack,/part:'weighted-trouser-side-piping'/);
+  assert.match(pack,/transferSmoothSkinWeights\(piping,reference,\{sign,region:'leg'\}\)/);
+  assert.match(pack,/stripe_left_weighted/);
+});
+
+test('v6.1 visual identity details include layered school collar, rugby stripes, pleats, and tunic length',()=>{
+  const outfits=read('teacher/chibi-outfit-pack.js');
+  for(const signature of [
+    'rugby_band_','utility_pocket_','blazer_lapel_','sailor_v_collar_',
+    'sailor_smooth_hem','tunic_long_hem','skirt_pleat_','culottes_leg_split'
+  ])assert.ok(outfits.includes(signature),'Missing distinguishable garment shape '+signature);
+  const hair=read('teacher/character-3d-studio.js');
+  assert.match(hair,/source GLB hair atlas has alpha-cutout/);
+  assert.match(hair,/side:THREE.DoubleSide/);
 });

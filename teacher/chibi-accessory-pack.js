@@ -35,8 +35,8 @@ export const ACCESSORY_COUNT=22;
 // for the two body silhouettes; none mutate base GLB geometry.
 export const ACCESSORY_FIT_RULES={
   shoes:{male:[0,-.007,0,1.035],female:[0,-.007,0,1.00]},
-  hat:{male:[0,-.030,-.003,.975],female:[0,-.040,0,.985]},
-  face:{male:[0,-.012,-.018,.985],female:[0,-.009,-.014,.980]},
+  hat:{male:[0,-.025,-.003,.995],female:[0,-.027,0,.995]},
+  face:{male:[0,-.014,.018,1.02],female:[0,-.012,.026,1.02]},
   bag:{male:[0,-.014,.020,.940],female:[0,-.009,.025,.925]},
   neck:{male:[0,.025,-.015,1.015],female:[0,.020,-.008,.960]},
   wrist:{male:[-.018,-.019,0,.935],female:[-.014,-.014,0,.895]}
@@ -49,7 +49,7 @@ export const ACCESSORY_STYLE_FIT={
   chibi_hat_beret:[0,-.018,.012,.97],
   chibi_gear_headphones:[0,.034,.007,1.03],
   chibi_face_goggles:[0,.009,-.008,.99],
-  chibi_face_mask:[0,-.023,-.012,.98],
+  chibi_face_mask:[0,-.012,-.007,1.00],
   chibi_bag_school:[0,.006,-.026,.99],
   chibi_bag_mini:[0,.012,-.016,1.00],
   chibi_bag_crossbody:[-.016,.010,-.008,1.00],
@@ -106,14 +106,14 @@ export function applyAccessoryFit({getNode,fit='male',topName='',headwearName=''
         const accessoryBox=new THREE.Box3().setFromObject(group,true);
         const referenceBox=new THREE.Box3().setFromObject(reference,true);
         if(!accessoryBox.isEmpty()&&!referenceBox.isEmpty()){
+          // The v5 cap anchored its BOTTOM to the hair crown: it pushed the
+          // entire hat into the air. Anchor the cap TOP instead, keeping its
+          // crown intersecting the hair while the brim sits over the forehead.
           const target=style.slot==='hat'
-            // The brim should slightly overlap the hair crown.
-            ?referenceBox.max.y-(referenceBox.max.y-referenceBox.min.y)*.125
+            ?referenceBox.max.y-.158
             :referenceBox.min.y;
-          const current=style.slot==='hat'?accessoryBox.min.y:accessoryBox.min.y;
-          const worldDelta=THREE.MathUtils.clamp(target-current,
-            style.slot==='hat'?-.19:-.035,
-            style.slot==='hat'?.035:.035);
+          const current=style.slot==='hat'?accessoryBox.max.y:accessoryBox.min.y;
+          const worldDelta=THREE.MathUtils.clamp(target-current,style.slot==='hat'?-.21:-.035,.10);
           const parentScale=group.parent?.getWorldScale(new THREE.Vector3()).y||1;
           group.position.y=THREE.MathUtils.clamp(
             group.position.y+worldDelta/parentScale,-.31,.13);
@@ -185,16 +185,22 @@ function buildGeometry(style,source,sourceHair,eyes){
   const faceZ=eb.max.z+.020;
   const eyeY=(eb.min.y+eb.max.y)*.50;
   switch(kind){
-    case 'baseball':return sphere(hc.x,scalpY+.022,hc.z,headR*1.12,.160,headR*.95);
+    case 'baseball':{
+      // A real open-bottom cap dome, not the v5 flattened full ellipsoid.
+      const crown=new THREE.SphereGeometry(1,24,14,0,Math.PI*2,0,Math.PI*.54);
+      crown.scale(headR*1.04,.205,headR*1.02);
+      crown.translate(hc.x,scalpY-.012,hc.z);
+      return crown;
+    }
     case 'bucket':return cyl(headR*.98,headR*1.14,.18,hc.x,scalpY-.050,hc.z);
     case 'beanie':return sphere(hc.x,scalpY+.014,hc.z,headR*1.08,.163,headR*1.03);
     case 'beret':return sphere(hc.x-.030,scalpY+.080,hc.z,headR*1.30,.110,headR*1.02);
     case 'straw':return cyl(headR*.88,headR*.98,.145,hc.x,scalpY+.016,hc.z);
     case 'round':return ring(.071,.009,-.110,eyeY,faceZ);
     case 'square':return box(.150,.119,.012,-.110,eyeY,faceZ);
-    case 'sunglasses':return sphere(-.110,eyeY,faceZ,.078,.055,.010);
+    case 'sunglasses':return sphere(-.110,eyeY,faceZ+.052,.094,.071,.015);
     case 'goggles':return box(.365,.133,.055,0,eyeY,faceZ+.015);
-    case 'mask':return sphere(0,eyeY-.131,faceZ-.014,.161,.113,.060);
+    case 'mask':return sphere(0,eyeY-.241,faceZ+.013,.172,.103,.050);
     case 'schoolbag':return box(.335,.360,.172,0,.966,-.240);
     case 'crossbody':return box(.265,.210,.115,.224,.832,.150);
     case 'minibag':return sphere(0,.968,-.236,.145,.187,.110);
@@ -235,7 +241,12 @@ function createDetails(style,context){
     }
   } else if(style.slot==='hat'){
     if(kind==='baseball'){
-      add(sphere(0,scalpY-.072,hc.z+headR*.92,.183,.018,.097),style.color,'brim');
+      // The spherical cap alone read as a floating blue plate. Add a
+      // forehead-hugging fabric crown wall and a distinct forward bill.
+      const capBand=new THREE.CylinderGeometry(headR*1.045,headR*1.07,.145,24,3,true);
+      capBand.translate(0,scalpY-.088,hc.z);
+      add(capBand,style.color,'crownWall');
+      add(sphere(0,scalpY-.119,hc.z+headR*1.31,.202,.023,.139),style.color,'brim');
       // Omit the raised badge: it became a vertical spike above the cap in WALK/RUN.
     }else if(kind==='bucket'){
       add(cyl(headR*1.25,headR*1.25,.025,0,scalpY-.155,hc.z),style.color,'brim');
@@ -262,16 +273,16 @@ function createDetails(style,context){
         for(const sign of [-1,1])
           add(box(.144,.012,.021,sign*.110,eyeY+.061,faceZ),black,'topFrame_'+sign);
       }else if(kind==='sunglasses')
-        add(sphere(.110,eyeY,faceZ,.078,.055,.010),style.color,'rightLens');
+        add(sphere(.110,eyeY,faceZ+.052,.094,.071,.015),style.color,'rightLens');
       else if(kind==='goggles')
         add(box(.327,.091,.017,0,eyeY,faceZ+.046),'#8bcdd7','glass');
-      add(box(.076,.012,.019,0,eyeY+.008,faceZ),style.color,'bridge');
+      add(box(.073,.012,.020,0,eyeY+.008,faceZ+.054),style.color,'bridge');
       for(const sign of [-1,1])
-        add(box(.113,.014,.012,sign*.238,eyeY+.02,faceZ-.053),black,'temple_'+sign);
+        add(box(.113,.014,.012,sign*.238,eyeY+.02,faceZ+.005),black,'temple_'+sign);
     }else if(kind==='mask'){
-      add(box(.30,.010,.013,0,eyeY-.049,faceZ+.021),white,'noseBridge');
+      add(box(.29,.011,.013,0,eyeY-.172,faceZ+.068),white,'noseBridge');
       for(const sign of [-1,1])
-        add(ring(.058,.008,sign*.177,eyeY-.125,faceZ-.052,'x'),white,'earLoop_'+sign);
+        add(ring(.064,.008,sign*.186,eyeY-.235,faceZ-.024,'x'),white,'earLoop_'+sign);
     }
   }else if(style.slot==='bag'){
     if(kind==='schoolbag'||kind==='minibag'){

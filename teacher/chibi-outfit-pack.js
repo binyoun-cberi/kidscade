@@ -489,16 +489,9 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
   if(style.details.includes('stripes')){
     for(const sign of [-1,1]){
       if(style.category==='bottom'){
-        // Two-piece athletic side piping bends separately at the knee.
-        for(const segment of ['thigh','shin']){
-          const bone=resolveFirstBoneName(source.skeleton,[
-            sign<0?'DEF-'+segment+'L':'DEF-'+segment+'R',
-            sign<0?'DEF-'+segment+'.L':'DEF-'+segment+'.R'
-          ]);
-          const stripe=new THREE.BoxGeometry(.014,segment==='thigh'?.245:.21,.015);
-          stripe.translate(sign*.295,segment==='thigh'?.535:.22,.018);
-          add(stripe,accent,(sign<0?'stripe_left_':'stripe_right_')+segment,bone);
-        }
+        // Body-space straight stripe boxes floated beside animated legs.
+        // makeTrouserLegs now generates a strip following each weighted leg.
+        continue;
       }else{
         const stripe=new THREE.BoxGeometry(.012,.13,.009);
         stripe.translate(sign*.16,1.01,.143);
@@ -523,6 +516,72 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
       ]);
       add(ring,dark,sign<0?'cuff_left':'cuff_right',shin);
     }
+  }
+  // v6.1 identity details. Each model needs a readable silhouette,
+  // not another label on exactly the same monochrome jersey.
+  if(style.id==='chibi_male_rugby'){
+    const navy=makeSolidMaterial('#354962','럭비 셔츠 가로줄');
+    for(const y of [.965,1.052]){
+      const band=new THREE.BoxGeometry(.320,.047,.009,2,1,1);
+      band.translate(0,y,.153);
+      add(band,navy,'rugby_band_'+Math.round(y*1000));
+    }
+  }
+  if(style.id==='chibi_male_utilityvest'){
+    const seam=makeSolidMaterial('#404b37','탐험 조끼 포켓');
+    for(const sign of [-1,1]){
+      const pocket=new THREE.BoxGeometry(.112,.103,.023,2,2,1);
+      pocket.translate(sign*.113,.922,.167);
+      add(pocket,seam,'utility_pocket_'+sign);
+      const flap=new THREE.BoxGeometry(.116,.025,.025);
+      flap.translate(sign*.113,.976,.182);
+      add(flap,accent,'utility_flap_'+sign);
+    }
+  }
+  if(style.id==='chibi_female_blazer'){
+    const lapelMat=makeSolidMaterial('#a6b4d0','블레이저 라펠');
+    for(const sign of [-1,1]){
+      const lapel=new THREE.BoxGeometry(.048,.151,.010);
+      lapel.rotateZ(sign*.27);
+      lapel.translate(sign*.079,1.038,.167);
+      add(lapel,lapelMat,'blazer_lapel_'+sign);
+    }
+  }
+  if(style.id==='chibi_female_sailor'){
+    const blue=makeSolidMaterial('#324b79','세일러 칼라');
+    const red=makeSolidMaterial('#cb5266','세일러 리본');
+    for(const sign of [-1,1]){
+      const panel=new THREE.BoxGeometry(.069,.135,.016);
+      panel.rotateZ(sign*.53);
+      panel.translate(sign*.057,1.077,.156);
+      add(panel,blue,'sailor_v_collar_'+sign);
+    }
+    const ribbon=new THREE.BoxGeometry(.025,.095,.012);
+    ribbon.translate(0,.990,.177);
+    add(ribbon,red,'sailor_necktie');
+    // Smooth lower shirt edge: the original source hem deformed into
+    // long sawtooth-shaped triangles in front-view screenshots.
+    const hem=new THREE.CylinderGeometry(.168,.198,.076,24,2,true);
+    hem.scale(1,1,.77);hem.translate(0,.812,0);
+    add(hem,makeSolidMaterial(style.color,'세일러 셔츠 부드러운 밑단'),'sailor_smooth_hem',pelvis);
+  }
+  if(style.id==='chibi_female_tunic'){
+    const hem=new THREE.CylinderGeometry(.169,.246,.20,26,5,true);
+    hem.scale(1,1,.80);hem.translate(0,.753,0);
+    add(hem,makeSolidMaterial(style.color,'롱 튜닉 하단'),'tunic_long_hem',pelvis);
+  }
+  if(style.id==='chibi_female_pleated'){
+    const fold=makeSolidMaterial('#715480','플리츠 주름');
+    for(let i=-3;i<=3;i++){
+      const pleat=new THREE.BoxGeometry(.012,.177,.009);
+      pleat.translate(i*.060,.583,.166+Math.abs(i)*-.003);
+      add(pleat,fold,'skirt_pleat_'+i,pelvis);
+    }
+  }
+  if(style.id==='chibi_female_culottes'){
+    const seam=new THREE.BoxGeometry(.012,.095,.012);
+    seam.translate(0,.619,.179);
+    add(seam,dark,'culottes_leg_split',pelvis);
   }
 }
 
@@ -612,6 +671,37 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
     const leg=cloneSkinnedMeshWithGeometry(source,geometry,material,style.id+'_leg_'+side);
     leg.userData={part:'trouser-leg',side,fit:style.fit,articulation:'four-neighbor-smooth-body-weights',skinTransfer:geometry.userData.skinTransfer,thighBone:thigh,shinBone:shin};
     group.add(leg);
+    if(style.id==='chibi_male_trackpants'){
+      // Fabric-colored piping samples the ACTUAL tapered cylinder surface
+      // with its own smooth four-neighbor leg weights. No rigid unattached
+      // thigh/shin boxes; no gap at the knee during WALK/RUN.
+      const verts=[],triangles=[],steps=16,width=.016;
+      const center=sign*(wide?.178:.153);
+      for(let j=0;j<=steps;j++){
+        const y=top-(top-bottom)*j/steps;
+        const fraction=(y-bottom)/(top-bottom);
+        const radius=lowerRadius+(upperRadius-lowerRadius)*fraction;
+        for(const z of [-width,width]){
+          const surfaceX=center+sign*(Math.sqrt(Math.max(0,radius*radius-z*z))+.005);
+          verts.push(surfaceX,y,z);
+        }
+        if(j<steps){
+          const row=j*2;
+          triangles.push(row,row+1,row+2,row+1,row+3,row+2);
+        }
+      }
+      const piping=new THREE.BufferGeometry();
+      piping.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+      piping.setIndex(triangles);
+      transferSmoothSkinWeights(piping,reference,{sign,region:'leg'});
+      piping.computeVertexNormals();piping.computeBoundingBox();piping.computeBoundingSphere();
+      const stripeMat=new THREE.MeshStandardMaterial({color:'#ece9dd',roughness:.88,side:THREE.DoubleSide});
+      const stripe=cloneSkinnedMeshWithGeometry(source,piping,stripeMat,
+        style.id+(sign<0?'_stripe_left_weighted':'_stripe_right_weighted'));
+      stripe.userData={part:'weighted-trouser-side-piping',side,
+        skinTransfer:piping.userData.skinTransfer};
+      group.add(stripe);
+    }
   }
 }
 

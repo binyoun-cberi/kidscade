@@ -1429,9 +1429,77 @@ const HAIR_STYLE_PARAMETERS={
   kidscade_male_hair_comma:{crown:.05,side:-.11,front:-.085,part:.25,wave:.04,templeFill:.12},
   chibi_female_hair_curl:{crown:.10,side:.14,front:-.06,part:0,wave:.11},
   chibi_female_hair_hime:{crown:.04,side:.12,front:-.115,part:0,wave:0},
-  chibi_female_hair_pixie:{crown:-.09,side:-.20,front:.065,part:.07,wave:.022},
-  chibi_female_hair_twintail:{crown:.035,side:.27,front:.025,part:0,wave:.085}
+  chibi_female_hair_pixie:{crown:-.025,side:-.015,front:.040,part:.025,wave:.012},
+  chibi_female_hair_twintail:{crown:.035,side:-.035,front:.025,part:0,wave:.035}
 };
+// v6.1: visibly distinct, head-bound geometry; source hair mesh/UV/weights remain intact.
+function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
+  // The source GLB hair atlas has alpha-cutout strand silhouettes. Reusing
+  // it on spheres/cones punched circular holes through ponytails and spikes.
+  // Hair volumes need an opaque solid material independent of those UVs.
+  const material=new THREE.MeshStandardMaterial({
+    color:'#9f604c',roughness:.83,metalness:0,side:THREE.DoubleSide
+  });
+  // Some GLB exports rename the head bone. Fall back to the original
+  // crown vertex's dominant skin influence instead of failing to load hair.
+  let head=template.skeleton.bones.find(bone=>/head/i.test(bone.name));
+  if(!head){
+    const pos=template.geometry.getAttribute('position');
+    const indices=template.geometry.getAttribute('skinIndex');
+    const weights=template.geometry.getAttribute('skinWeight');
+    let crown=0;
+    for(let i=1;i<pos.count;i++)if(pos.getY(i)>pos.getY(crown))crown=i;
+    let major=0;
+    for(let k=1;k<4;k++)if(weights.getComponent(crown,k)>weights.getComponent(crown,major))major=k;
+    head=template.skeleton.bones[indices.getComponent(crown,major)];
+  }
+  if(!head)throw new Error('No head skin binding available for hair detail');
+  const cx=(bounds.min.x+bounds.max.x)*.5;
+  const cz=(bounds.min.z+bounds.max.z)*.5;
+  const at=(u,v,w)=>[cx+u*size.x,bounds.min.y+v*size.y,cz+w*size.z];
+  const ball=(id,[x,y,z],sx,sy,sz)=>{
+    const g=new THREE.SphereGeometry(1,14,10);
+    g.scale(sx*size.x,sy*size.y,sz*size.z);
+    g.translate(x,y,z);
+    const piece=makeRigidSkinnedPiece(template,g,head.name,material,name+'_'+id);
+    // Both hair and details share the same skeleton. Children follow their
+    // parent visibility, so hidden hairstyles cannot leak orphan ornaments.
+    piece.position.set(0,0,0);
+    piece.quaternion.identity();
+    piece.scale.set(1,1,1);
+    piece.userData={part:'rigged-hair-volume',hairStyle:name,headBone:head.name};
+    hair.add(piece);
+  };
+  if(name==='chibi_female_hair_twintail'){
+    for(const sign of [-1,1]){
+      ball('tie_'+sign,at(sign*.415,.57,-.06),.052,.057,.055);
+      ball('tail_'+sign,at(sign*.535,.35,-.105),.092,.185,.097);
+      ball('tailTip_'+sign,at(sign*.55,.205,-.115),.068,.099,.076);
+    }
+  }else if(name==='chibi_female_hair_curl'){
+    for(const sign of [-1,1]){
+      for(let row=0;row<3;row++){
+        const v=.34+row*.16;
+        ball('curl_'+sign+'_'+row,at(sign*(.45+(.025*(row%2))),v,.095),
+          .076,.073,.093);
+      }
+    }
+  }else if(name==='chibi_female_hair_hime'){
+    for(const sign of [-1,1]){
+      ball('himeSide_'+sign,at(sign*.385,.35,.285),.073,.24,.075);
+    }
+  }else if(name==='kidscade_male_hair_spiky'){
+    for(const [j,u] of [-.34,-.16,.04,.21,.35].entries()){
+      const [x,y,z]=at(u,.80,.03);
+      const cone=new THREE.ConeGeometry(size.x*.113,size.y*(.23+(j%2)*.065),9);
+      cone.rotateZ(u*.32);cone.translate(x,y+size.y*.092,z);
+      const piece=makeRigidSkinnedPiece(template,cone,head.name,material,name+'_spike_'+j);
+      piece.position.set(0,0,0);piece.quaternion.identity();piece.scale.set(1,1,1);
+      piece.userData={part:'rigged-hair-spike',hairStyle:name,headBone:head.name};
+      hair.add(piece);
+    }
+  }
+}
 function createKidscadeHairCollection(){
   const maleBase=getNode('kidscade_male_hair_short');
   const femaleBase=getNode('hairone');
@@ -1470,8 +1538,14 @@ function createKidscadeHairCollection(){
       const safeSide=style.templeFill===undefined?style.side:Math.max(style.side,-.12);
       const px=x+part+nx*size.x*safeSide*side*.35+
         Math.sign(nx)*size.x*templeFill*temple*.18;
+      const pixieLift=name==='chibi_female_hair_pixie'
+        ?size.y*.18*(1-smooth(.24,.62,ny)):0;
+      // Unlike an attached ball, the mullet nape extends the original
+      // source strands continuously at the BACK of the skull.
+      const mulletDrop=name==='kidscade_male_hair_mullet'
+        ?size.y*.22*(1-smooth(.24,.68,ny))*smooth(.22,.80,-nz):0;
       const py=y+size.y*(style.crown*crown*.4+style.front*front*.26-
-        templeFill*temple*.11)+wave;
+        templeFill*temple*.11)+wave+pixieLift-mulletDrop;
       const pz=z+size.z*(style.front*front*.12+style.crown*crown*.025+
         templeFill*temple*.055);
       points.setXYZ(i,px,py,pz);
@@ -1494,6 +1568,7 @@ function createKidscadeHairCollection(){
       styleParameters:{...style},
       templeBridgeVersion:style.templeFill===undefined?null:'v7'
     };
+    attachChibiHairDetailMeshes(hair,template,name,bb,size);
     template.parent.add(hair);
     hair.visible=false;
   }
