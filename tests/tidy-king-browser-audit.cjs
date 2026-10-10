@@ -20,7 +20,7 @@ const injection=[
 'const k=(h?.kind||"none")+"/"+(cover?.id||cover?.tagName);seen[k]=(seen[k]||0)+1;',
 '}return{blocked:true,index:i,kind,center:[Math.round(ox),Math.round(oy)],seen};',
 '},',
-'keys:()=>things.map(t=>t.key),stationIndex:key=>stations.findIndex(s=>s.key===key),reroll:()=>buildRoom(),',
+'keys:()=>things.map(t=>t.key),stationIndex:key=>stations.findIndex(s=>s.key===key),reroll:()=>buildRoom(),positions:()=>things.map(t=>[Number(t.home.x.toFixed(2)),Number(t.home.z.toFixed(2))]),dragActive:()=>!!dragging,',
 'forceFinish:()=>{for(const t of [...things])if(!t.done)placeItem(t,stations.find(s=>s.key===t.zone));for(const s of [...stains])if(!s.done)cleanStain(s,1);return{level,done:cleanCount,total:totalCount,overlay:!$("end").classList.contains("hidden")}}',
 '};'
 ].join('\n');
@@ -56,6 +56,25 @@ const click=async(x,y,touch)=>{
 if(touch){await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y,id:2}]});await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]})}
 else{await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',x,y,clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',x,y,clickCount:1})}
 };
+const drag=async(x,y,tx,ty,touch)=>{
+ const steps=8;
+ if(touch){
+  await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y,id:2}]});
+  for(let i=1;i<=steps;i++){
+   const t=i/steps;
+   await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+(tx-x)*t,y:y+(ty-y)*t,id:2}]});
+  }
+  await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ }else{
+  await send('Input.dispatchMouseEvent',{type:'mouseMoved',x,y});
+  await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',x,y,clickCount:1});
+  for(let i=1;i<=steps;i++){
+   const t=i/steps;
+   await send('Input.dispatchMouseEvent',{type:'mouseMoved',x:x+(tx-x)*t,y:y+(ty-y)*t,button:'left',buttons:1});
+  }
+  await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',x:tx,y:ty,clickCount:1});
+ }
+};
 const snap=async n=>{const s=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});const b=Buffer.from(s.data,'base64');fs.writeFileSync(path.join(OUT,n+'.png'),b);const p=await sharp(b).resize({width:420,withoutEnlargement:true}).jpeg({quality:52}).toBuffer();console.log('TIDY_PREVIEW '+n+' '+p.toString('base64'))};
 await send('Page.enable');await send('Runtime.enable');await send('Network.enable');
 const defs=[{name:'portrait',w:390,h:844,touch:true},{name:'landscape',w:844,h:390,touch:true},{name:'desktop',w:1280,h:800,touch:false}];
@@ -73,19 +92,29 @@ if(!s?.total)throw Error('loading timeout '+c.name+' errors='+JSON.stringify(err
 await sleep(700);await snap(c.name+'-room');
 const overlap=await ev('(()=>{const a=document.querySelector("#actions").getBoundingClientRect(),b=document.querySelector("#mission").getBoundingClientRect();return{actionsMission:Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)),scrollWidth:document.documentElement.scrollWidth,viewport:innerWidth}})()');
 const keys=await ev('window.__AUDIT.keys()'),blocked=[],failed=[];
+const positions=await ev('window.__AUDIT.positions()');
+const xs=[...new Set(positions.map(p=>p[0]))],zs=[...new Set(positions.map(p=>p[1]))];
+assert.ok(xs.length>=30&&zs.length>=30,'clutter should not form neat 8xN rows: '+JSON.stringify({xs:xs.length,zs:zs.length}));
+// A tap followed by another tap must NOT complete an item: physical dragging is required.
+const first=await ev('window.__AUDIT.point("item",0)');
+const firstTarget=await ev('window.__AUDIT.point("station",'+await ev('window.__AUDIT.stationIndex('+JSON.stringify(kinds[keys[0]])+')')+')');
+assert.ok(!first.blocked&&!firstTarget.blocked,c.name+' first item cannot be selected');
+await click(first.x,first.y,c.touch);await click(firstTarget.x,firstTarget.y,c.touch);
+assert.equal(await ev('window.__AUDIT.s().done'),0,c.name+' tapping twice should not sort');
+const wrongIndex=await ev('window.__AUDIT.stationIndex("'+(kinds[keys[0]]==='shelf'?'trash':'shelf')+'")');
+const wrong=await ev('window.__AUDIT.point("station",'+wrongIndex+')');
+await drag(first.x,first.y,wrong.x,wrong.y,c.touch);
+assert.equal(await ev('window.__AUDIT.s().done'),0,c.name+' wrong bin must reject');
 for(let i=0;i<keys.length;i++){
 const p=await ev('window.__AUDIT.point("item",'+i+')');
 if(p?.blocked){blocked.push(p);continue}
-await click(p.x,p.y,c.touch);
-const selected=await ev('window.__AUDIT.s().selected');
-if(selected!==i){failed.push({i,kind:'select',selected});continue}
 const idx=await ev('window.__AUDIT.stationIndex('+JSON.stringify(kinds[keys[i]])+')');
 const to=await ev('window.__AUDIT.point("station",'+idx+')');
 if(to?.blocked){failed.push({i,kind:'station',to});continue}
 const before=await ev('window.__AUDIT.s().done');
-await click(to.x,to.y,c.touch);
+await drag(p.x,p.y,to.x,to.y,c.touch);
 const after=await ev('window.__AUDIT.s().done');
-if(after!==before+1)failed.push({i,kind:'place',before,after});
+if(after!==before+1)failed.push({i,key:keys[i],kind:'drag-to-place',before,after,to});
 }
 const stains=[];
 for(let i=0;i<s.stains;i++){const p=await ev('window.__AUDIT.point("stain",'+i+')');if(p?.blocked){stains.push(p);continue}for(let j=0;j<7;j++)await click(p.x,p.y,c.touch);}
@@ -110,7 +139,7 @@ await send('Page.reload',{ignoreCache:true});await sleep(850);
 const revisited=await ev('({kitchenEnabled:!document.querySelector("#startKitchen").disabled,kitchenVisible:!document.querySelector("#startKitchen").hidden})');
 if(revisited.kitchenEnabled)await ev('document.querySelector("#startKitchen").click()');
 let direct=null;for(let i=0;i<100;i++){direct=await ev('window.__AUDIT?.s()').catch(()=>null);if(direct?.total>0)break;await sleep(100)}
-const result={name:c.name,initial:s,overlap,half,blocked,failed,stains,forced,photo,kitchen,unpickable,finish2,last,revisited,direct,errors:[...errors],httpErrors:[...httpErrors]};
+const result={name:c.name,initial:s,overlap,clutterVariety:{uniqueX:xs.length,uniqueZ:zs.length},half,blocked,failed,stains,forced,photo,kitchen,unpickable,finish2,last,revisited,direct,errors:[...errors],httpErrors:[...httpErrors]};
 assert.equal(errors.length,0,c.name+' browser errors: '+JSON.stringify(errors.slice(0,3)));
 assert.equal(blocked.length,0,c.name+' unclickable props: '+JSON.stringify(blocked.slice(0,3)));
 assert.equal(failed.length,0,c.name+' input failures: '+JSON.stringify(failed.slice(0,3)));
