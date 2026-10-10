@@ -304,7 +304,7 @@ test('male short hair reuses hairone topology, materials and original skin weigh
   const js=read('teacher/character-3d-studio.js');
   const maleHair=js.slice(
     js.indexOf('function createKidscadeMaleHairShort(){'),
-    js.indexOf('function createKidscadeMaleSet(){')
+    js.indexOf('const HAIR_STYLE_PARAMETERS=')
   );
   assert.match(maleHair,/const source=getNode\('hairone'\)/);
   assert.match(maleHair,/const geometry=source\.geometry\.clone\(\)/);
@@ -477,7 +477,7 @@ test('male pelvis and shorts reduce rear volume together without modifying the o
 
 test('male ear-side bob flap is drawn toward the head with a continuous weighted taper',()=>{
   const js=read('teacher/character-3d-studio.js');
-  const hair=js.slice(js.indexOf('function createKidscadeMaleHairShort(){'),js.indexOf('function createKidscadeMaleSet(){'));
+  const hair=js.slice(js.indexOf('function createKidscadeMaleHairShort(){'),js.indexOf('const HAIR_STYLE_PARAMETERS='));
   assert.match(hair,/const temple=smooth\(\.43,\.83,side\)\*smooth\(\.08,\.60,lower\)/);
   assert.match(hair,/const x=centerX\+\(ox-centerX\)\*/);
   assert.match(hair,/\.095\*templeBridge/);
