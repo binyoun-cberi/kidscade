@@ -49,7 +49,7 @@ test('research encounters grow at 3, 7, 12 progress records and remain legitimat
   sizes.push(all.size);
  }
  assert.ok(sizes[0]<sizes[1]&&sizes[1]<sizes[2]&&sizes[2]<sizes[3],sizes.join(','));
- assert.equal(sizes[sizes.length-1],53);
+ assert.equal(sizes[sizes.length-1],52); // current distinct wild forms after the balanced meadow roster
 });
 test('all 102 forms have an acquisition route through research wilds, evolutions and starter gifts',()=>{
  const research=new Set();
@@ -143,7 +143,7 @@ test('first-route battle survival remains comparable for all three starters',()=
 test('existing save keys, draw loop, and optional box/research panels remain usable',()=>{
  const js=fs.readFileSync(path.join(root,'openmon-expedition','game.js'),'utf8');
  assert.ok(js.includes('kidscade.openmon.expedition.save.v1'));
- for(const snippet of ['result.firstRoad','retaliationDamage','researchStarterOptions','data-gift','data-withdraw','drawLandmarks','openBox','data-hud-action="evolve"'])
+ for(const snippet of ['result.firstRoad','B.resolve','researchStarterOptions','data-gift','data-withdraw','drawLandmarks','openBox','data-hud-action="evolve"'])
   assert.ok(js.includes(snippet),snippet);
  assert.doesNotThrow(()=>new Function(js));
 });

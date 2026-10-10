@@ -39,7 +39,9 @@ function activeCreature(save){return save.party[save.active]||save.party.find(p=
 function makeCreature(spriteId,level){
  const s=byId.get(spriteId);if(!s?.playable)throw Error("unknown monster "+spriteId);
  const st=DB.combat.statsAtLevel(s,level);
- return {id:spriteId,uid:"m"+Math.random().toString(36).slice(2,11),level,xp:0,hp:st.hp,seen:true};
+ const creature={id:spriteId,uid:"m"+Math.random().toString(36).slice(2,11),level,xp:0,hp:st.hp,seen:true};
+ global.OPENMON_TURN_BATTLE?.normalize(creature);
+ return creature;
 }
 function createNew(starter){
  if(!["set1_r02_c02","set1_r03_c02","set1_r04_c02"].includes(starter))throw Error("invalid starter");
@@ -57,6 +59,7 @@ function validateSave(raw){
      !Number.isFinite(p.hp)||!Number.isFinite(p.xp))return null;
   p.level=Math.min(60,p.level);p.hp=Math.max(0,Math.min(DB.combat.statsAtLevel(p.id,p.level).hp,Math.floor(p.hp)));
   p.xp=Math.max(0,Math.floor(p.xp));
+  global.OPENMON_TURN_BATTLE?.normalize(p);
  }
  if(!Number.isInteger(raw.pos.x)||!Number.isInteger(raw.pos.y)||!canMove(raw.pos.x,raw.pos.y))return null;
  raw.active=Math.max(0,Math.min(raw.party.length-1,Math.floor(raw.active)||0));
@@ -169,7 +172,7 @@ function retaliationDamage(save,foe,active){
   hit=Math.min(hit,Math.max(3,Math.floor(DB.combat.statsAtLevel(active.id,active.level).hp*.15)));
  return hit;
 }
-function healAll(save){for(const p of save.party)p.hp=DB.combat.statsAtLevel(p.id,p.level).hp}
+function healAll(save){for(const p of save.party){p.hp=DB.combat.statsAtLevel(p.id,p.level).hp;global.OPENMON_TURN_BATTLE?.restorePP(p)}}
 function xpGain(save,amount){
  const p=activeCreature(save);if(!p)return [];
  let events=[];p.xp+=amount;
@@ -185,6 +188,7 @@ function xpGain(save,amount){
 function addCaptured(save,target){
  const p={...target,hp:Math.max(1,target.hp),xp:0,uid:"m"+Math.random().toString(36).slice(2,11)};
  const inParty=save.party.length<6;
+ global.OPENMON_TURN_BATTLE?.normalize(p);
  (inParty?save.party:save.box).push(p);
  save.collection[p.id]=true;save.seen[p.id]=true;save.catches++;
  return inParty?"party":"box";

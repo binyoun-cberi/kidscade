@@ -170,8 +170,29 @@ let chrome,ws,profile;
      foeSprite:!!document.querySelector('#foeArt .pixel-art'),
      foeHp:document.getElementById('foeHpLabel').textContent};
   });
-  assert.ok(battleStart.hasBattle&&battleStart.displayed&&battleStart.foeSprite&&battleStart.buttonCount>=6,'Encounter failed '+config.name+JSON.stringify(battleStart));
+  assert.ok(battleStart.hasBattle&&battleStart.displayed&&battleStart.foeSprite&&battleStart.buttonCount===4,'Encounter failed '+config.name+JSON.stringify(battleStart));
   await screenshot(config.name+'-battle');
+  const rootButtons=await evalFn(()=>document.querySelectorAll('[data-action]').length);
+  await evalFn(()=>document.querySelector('[data-action="fight"]').click());
+  await screenshot(config.name+'-battle-skill-selection');
+  const turnMenu=await evalFn(()=>{
+   const battle=window.OPENMON_EXPEDITION_DEBUG.getBattle();
+   const own=window.OPENMON_EXPEDITION_DEBUG.getState().party[0];
+   const skills=Array.from(document.querySelectorAll('[data-action^="move:"]'));
+   const signatures=skills.map(b=>b.textContent);
+   const pre=own.moveSlots.map(x=>x.pp);
+   const display=skills.every(b=>b.textContent.includes('PP'));
+   const moveBtn=skills.find(x=>x.dataset.action==='move:'+own.moveSlots[1].id);
+   moveBtn.click();
+   const post=own.moveSlots.map(x=>x.pp);
+   const foeUsedPP=battle.foe.moveSlots.some(slot=>slot.pp<window.OPENMON_TURN_BATTLE.moves[slot.id].pp);
+   return {skills:skills.length,signatures,display,
+    consumed:pre[1]-post[1],foeUsedPP,turn:battle.turn,overlay:!document.getElementById('battleOverlay').classList.contains('hidden')};
+  });
+  assert.ok(rootButtons===4&&turnMenu.skills===4&&turnMenu.display&&turnMenu.consumed===1&&
+    turnMenu.foeUsedPP&&turnMenu.overlay,
+    'New turn-based move menu and PP broke '+config.name+JSON.stringify(turnMenu));
+  await screenshot(config.name+'-battle-moves');
   const result=await evalFn(()=>{
    const debug=window.OPENMON_EXPEDITION_DEBUG,b=debug.getBattle();
    b.foe.hp=1;
@@ -190,7 +211,7 @@ let chrome,ws,profile;
   });
   assert.ok(resumed.loaded&&resumed.caught===1&&resumed.party===2&&resumed.starterHidden,'Reload lost progress '+config.name+JSON.stringify(resumed));
   assert.equal(errors.length,0,'Browser errors '+config.name+': '+JSON.stringify(errors.slice(0,3)));
-  console.log('OPENMON_BROWSER_AUDIT '+config.name+' '+JSON.stringify({initial,field,hudAudit,battleStart,result,resumed,errors:errors.length}));
+  console.log('OPENMON_BROWSER_AUDIT '+config.name+' '+JSON.stringify({initial,field,hudAudit,battleStart,turnMenu,result,resumed,errors:errors.length}));
  }
  console.log('OPENMON_BROWSER_AUDIT_PASSED 2 viewports, atlas, starter, encounter, capture, autosave, reload');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1}).finally(()=>{

@@ -4,6 +4,12 @@
 const { spawnSync } = require('node:child_process');
 
 const TEST_FILES = [
+  "tests/openmon-dex.test.cjs",
+  "tests/openmon-roster.test.cjs",
+  "tests/openmon-expedition.test.cjs",
+  "tests/kidsmon-brand.test.cjs",
+  "tests/kidsmon-onboarding.test.cjs",
+  "tests/kidsmon-turn-battle.test.cjs",
   "tests/cosmic-growth.test.cjs",
   "tests/number-tower-avatar.test.cjs",
   "tests/four-games-avatar-integration.test.cjs",
