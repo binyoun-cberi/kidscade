@@ -5,12 +5,12 @@ const root=path.resolve(__dirname,'../games');
 const ctx={window:{},Math,Date};
 for(const p of ['monsters.js','roster.js','combat.js'])
  vm.runInNewContext(fs.readFileSync(path.join(root,'openmon-dex',p),'utf8'),ctx,{filename:p});
-for(const p of ['engine.js','turn-battle.js','move-dex.js'])
+for(const p of ['engine.js','turn-battle.js','family-signatures.js','move-dex.js'])
  vm.runInNewContext(fs.readFileSync(path.join(root,'openmon-expedition',p),'utf8'),ctx,{filename:p});
 const D=ctx.window.OPENMON_DEX,B=ctx.window.OPENMON_TURN_BATTLE,MD=ctx.window.KIDSMON_MOVE_DEX;
-test('technology encyclopedia indexes exactly all implemented combat moves, 10 types and real PP',()=>{
+test('encyclopedia indexes all 140 battle skills, 10 types and real PP',()=>{
  assert.equal(MD.all.length,Object.keys(B.moves).length);
- assert.equal(MD.all.length,41);
+ assert.equal(MD.all.length,140);
  assert.equal(MD.TYPE_ORDER.length,10);
  assert.equal(new Set(MD.all.map(x=>x.id)).size,MD.all.length);
  for(const m of MD.all){
@@ -67,7 +67,8 @@ test('original monster encyclopedia and save key remain unchanged and move dex m
  const html=fs.readFileSync(path.join(root,'openmon-expedition','index.html'),'utf8');
  const game=fs.readFileSync(path.join(root,'openmon-expedition','game.js'),'utf8');
  assert.match(html,/src="move-dex\.js"/);
- assert.ok(html.indexOf('src="turn-battle.js"')<html.indexOf('src="move-dex.js"'));
+ assert.ok(html.indexOf('src="turn-battle.js"')<html.indexOf('src="family-signatures.js"'));
+ assert.ok(html.indexOf('src="family-signatures.js"')<html.indexOf('src="move-dex.js"'));
  assert.ok(html.indexOf('src="move-dex.js"')<html.indexOf('src="game.js"'));
  assert.match(game,/function openMoveDex/);
  assert.match(game,/data-dex-tab="moves"/);
