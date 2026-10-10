@@ -54,7 +54,7 @@ test('fast attack resolves before slow defender and move priority overrides spee
  assert.equal(quick.ok,false,'unlearned quick must not be used');
  const q=one('set1_r04_c02');
  assert.ok(B.changeMove(q.save.party[0],'quick',2)===false,'quick not yet unlocked');
- q.save.party[0].level=14;B.normalize(q.save.party[0]);
+ q.save.party[0].level=26;B.normalize(q.save.party[0]);
  assert.ok(B.changeMove(q.save.party[0],'quick',2));
  const pr=B.resolve({save:q.save,foe:q.foe,battle:q.battle,action:{type:'move',id:'quick'},random:()=>.7});
  assert.ok(pr.ok&&pr.playerFirst,'priority +1 should act before normal');
