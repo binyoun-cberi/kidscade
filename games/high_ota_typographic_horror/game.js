@@ -326,7 +326,7 @@ function audioStart() {
 function shock() {tone(86,.46,'sawtooth',.095);tone(43,.72,'sine',.080);}
 function updateStage(stage,old) {
   if (stage === old) return;
-  hud.objective.textContent=R.objective(state);
+  hud.objective.textContent=state.stage==='explore'||state.stage==='final'?C3.objective(state):R.objective(state);
   if(stage==='chase') {
     monsterReveal=true;personWord.visible=false;monsterWord.visible=true;
     shock();announce('뒤를 돌아보지 마세요. 달리세요.',true,4.4);
@@ -353,6 +353,18 @@ function updateStage(stage,old) {
     announce('현실이 다시 열렸습니다. 마지막까지 조용히 이동하세요.',false,4.0);tone(523,.25,'sine',.07);
     hud.stage.textContent='기록보관소 · 탈출 통로 열림';
     try{window.KidscadeGame?.milestone?.('ota_door_fixed',{uniqueKey:'ota-prologue'});}catch(_){}
+  } else if(stage==='explore'){
+    C3.ensure(state).checkpoint=true;
+    saveChapterCheckpoint();
+    announce('기록보관소는 여기서 끝나지 않습니다. 사무실과 서고를 조사하세요.',false,5.0);
+    hud.stage.textContent='제2구역 · 이름을 잃어버린 방들';
+    syncChapterVisuals();
+  } else if(stage==='final'){
+    chapterVisual.finalSeal.visible=false;
+    chapterVisual.finalWord.visible=false;
+    saveChapterCheckpoint();
+    announce('중앙 기록실이 열렸습니다. 안쪽의 「나」를 찾으세요.',false,4.5);
+    hud.stage.textContent='기록 0 · 당신의 이름';
   } else if(stage==='lost') {
     finish(false);
   } else if(stage==='won') {
@@ -362,7 +374,7 @@ function updateStage(stage,old) {
 function syncStage(before) {updateStage(state.stage,before);}
 function interact() {
   if(!started || failed || !overlays.fix.classList.contains('closed')) return;
-  const action=R.getInteraction(state,player);
+  const action=R.getInteraction(state,player)||C3.interaction(state,player);
   if(!action) return;
   const before=state.stage;
   if(action.type==='console') {
@@ -381,7 +393,17 @@ function interact() {
       document.body.classList.remove('hidden-in-locker');
       announce('이제 문을 찾으세요.',false,2.2);
     }
-  } else if(action.type==='repair' || action.type==='corridor') {
+  } else if(action.type==='officeRecord'||action.type==='archiveRecord'){
+    const which=action.type==='officeRecord'?'office':'archive';
+    if(C3.collect(state,which,player)){
+      syncChapterVisuals();saveChapterCheckpoint();
+      announce(which==='office'?'기록 A: 벽이라고 적힌 것은 책상이었다.':'기록 B: 사람이라고 적힌 것은 따라 읽는 자였다.',false,4.8);
+      tone(530,.26,'triangle',.055);
+      hud.objective.textContent=C3.objective(state);
+      hud.records.textContent='기록 '+(+C3.ensure(state).records.office+ +C3.ensure(state).records.archive)+'/2';
+      hud.stage.textContent=C3.both(state)?'두 기록을 모았습니다. 중앙 기록실로 가세요':'다른 방에서도 기록을 찾으세요';
+    }
+  } else if(['repair','corridor','office','final'].includes(action.type)) {
     openPuzzle(action.type);
     overlays.fix.classList.remove('closed');
     if(document.pointerLockElement===canvas)document.exitPointerLock?.();
@@ -390,16 +412,18 @@ function interact() {
 }
 function openPuzzle(type) {
   const corridor=type==='corridor';
-  el('fixTitle').textContent=corridor?'이 복도는 이름을 잃었습니다.':'출구의 이름이 틀렸습니다.';
-  el('redWord').textContent=corridor?'막힘':'벽';
-  el('fixQuestion').textContent=corridor
-    ? '이곳은 두 구역을 이어 주는 곳입니다. 올바른 이름을 선택하세요.'
-    : '열고 닫아서 지나갈 수 있는 것은 무엇인가요?';
-  const words=corridor?['벽','통로','창문']:['벽','문','창문'];
+  el('fixTitle').textContent=type==='office'?'벽이 된 책상':type==='final'?'잊혀진 이름':corridor?'이 복도는 이름을 잃었습니다.':'출구의 이름이 틀렸습니다.';
+  el('redWord').textContent=type==='final'?'□□□':type==='office'?'벽':corridor?'막힘':'벽';
+  el('fixQuestion').textContent=type==='office'?'기록을 보세요. 사람이 책상 옆에 앉았다는 문장이 남아 있습니다. 원래 사물은 무엇일까요?'
+    :type==='final'?'두 기록을 모두 모았습니다. 당신을 존재하게 만드는 것은 무엇일까요?'
+    :corridor?'이곳은 두 구역을 이어 주는 곳입니다. 올바른 이름을 선택하세요.'
+    :'열고 닫아서 지나갈 수 있는 것은 무엇인가요?';
+  const words=type==='office'?['의자','책상','벽']:type==='final'?['기억','거짓','공백']
+    :corridor?['벽','통로','창문']:['벽','문','창문'];
   el('choices').querySelectorAll('button').forEach((button,i)=>{
     button.dataset.word=words[i];button.textContent=words[i];
   });
-  el('fixFeedback').textContent=corridor?'기록 02: 길은 막힌 것이 아니라 잊힌 것입니다.':'주변의 기록을 기억하세요.';
+  el('fixFeedback').textContent='주변의 단어를 읽고, 잘못된 이름을 바로잡으세요.';
   overlays.fix.dataset.puzzle=type;
 }
 function finish(won) {
@@ -410,15 +434,17 @@ function finish(won) {
   el('endingSub').textContent=won?'제0기록보관소 / 생존':'기록 파손 / 이름 없음';
   el('endingTitle').textContent=won?'당신의 이름이 남았습니다':'당신의 이름이 지워졌습니다';
   el('endingText').textContent=won
-    ? '첫 번째 기록을 복구하고 탈출했습니다. 경과 시간 '+Math.round(state.time)+'초 · 잘못된 수정 '+state.mistakes+'회'
+    ? '기록 A·B를 복구하고 이름을 되찾았습니다. 경과 시간 '+Math.round(state.time)+'초 · 잘못된 수정 '+state.mistakes+'회'
+    : state.lossReason==='watcher'?'「따라 읽는 자」를 너무 오래 바라보았습니다. 짧게 확인하고 시선을 돌리세요.'
     : state.echo.alert>=100 ? '빨간 「뒤」가 나타났을 때 달려서 들켰습니다. 서 있거나 걸으면 안전합니다.'
       : '복도의 존재에게 붙잡혔습니다. 사물함에 몸을 숨긴 뒤 발소리가 사라질 때까지 기다리세요.';
+  el('respawn').hidden=!(!won&&Boolean(loadChapterCheckpoint()));
   try {window.KidscadeGame?.result?.({scope:'stage',status:won?'completed':'failed',
     outcome:won?'clear':'fail',id:'ota-prologue',score:won?Math.max(100,1000-Math.floor(state.time)*3-state.mistakes*80):0,
     seconds:Math.round(state.time),mistakes:state.mistakes});}catch(_){}
 }
 function updatePrompt() {
-  currentInteraction=R.getInteraction(state,player);
+  currentInteraction=R.getInteraction(state,player)||C3.interaction(state,player);
   hud.prompt.classList.toggle('show',!!currentInteraction&&!failed);
   hud.prompt.innerHTML=currentInteraction
     ? '<strong>E</strong> / 조사 — '+currentInteraction.label : '';
@@ -430,8 +456,8 @@ function setCamera() {
 }
 function tryMove(dx,dz) {
   const nx=player.x+dx,nz=player.z+dz;
-  if(R.canMove(state,nx,player.z))player.x=nx;
-  if(R.canMove(state,player.x,nz))player.z=nz;
+  if((player.z< -37.4||nx>3.03||nx< -3.03)?C3.canMove(state,nx,player.z):R.canMove(state,nx,player.z))player.x=nx;
+  if(nz< -37.4?C3.canMove(state,player.x,nz):R.canMove(state,player.x,nz))player.z=nz;
 }
 function update(dt) {
   elapsed+=dt;
@@ -456,9 +482,34 @@ function update(dt) {
   R.triggerMonster(state,player);
   R.stepEnemy(state,dt,player);
   R.stepEcho(state,dt,{moving:player.moving,running});
-  if(state.stage==='exit')R.tryFinish(state,player);
+  if(state.stage==='exit')C3.startChapter(state,player);
+  if(state.stage==='final')C3.finish(state,player);
+  if(state.stage==='explore'){
+    const gaze=C3.stepWatcher(state,dt,player,player.yaw,player.pitch);
+    if(gaze.awake && !lastGazeAwake){shock();announce('읽지 마. 뛰어!',true,3);}
+    lastGazeAwake=gaze.awake;
+    const watcher=C3.ensure(state).watcher;
+    chapterVisual.watcher.position.set(watcher.x,1.7,watcher.z);
+    chapterVisual.watcher.lookAt(camera.position);
+    chapterVisual.watcherText.position.set(watcher.x,2.43,watcher.z);
+    chapterVisual.watcherText.lookAt(camera.position);
+    chapterVisual.watcherText.visible=gaze.awake||gaze.focus>35;
+    chapterVisual.watcher.material=material(gaze.awake?'나나나':'사람',gaze.awake?'#f47485':'#e4dae1');
+    hud.gaze.classList.toggle('show',gaze.focus>1||gaze.awake);
+    hud.gazeFill.style.width=Math.round(gaze.focus)+'%';
+    hud.records.textContent='기록 '+(+C3.ensure(state).records.office+ +C3.ensure(state).records.archive)+'/2';
+  }else{
+    hud.gaze.classList.remove('show');lastGazeAwake=false;
+  }
   syncStage(before);
   if(messageEnd<elapsed)hud.message.classList.remove('show');
+  if(state.stage==='explore'){
+    const odd=elapsed>0 && Math.floor(elapsed/8)%2===1;
+    if(odd!==chapterVisual.anomalyChanged && !C3.ensure(state).records.office){
+      chapterVisual.anomalyChanged=odd;
+      chapterVisual.anomaly.material=material(odd?'사람':'의자',odd?'#dc8191':'#a3b1be');
+    }
+  }
   shiftingWords.forEach((entry,i)=>{
     if(entry.mesh.visible){
       entry.mesh.position.x=entry.x+Math.sin(elapsed*(2.8+i*.13)+i)*.13;
@@ -524,7 +575,8 @@ function begin() {
   if(!touchDevice)canvas.requestPointerLock?.().catch?.(()=>{});
 }
 el('start').addEventListener('click',begin);
-el('replay').addEventListener('click',()=>location.reload());
+el('replay').addEventListener('click',()=>{try{sessionStorage.removeItem(CHECKPOINT_KEY);}catch(_){}location.reload();});
+el('respawn').addEventListener('click',()=>{if(!respawnAtCheckpoint())location.reload();});
 el('mute').addEventListener('click',()=>{
   muted=!muted;el('mute').textContent=muted?'소리 꺼짐':'소리 켜짐';
 });
@@ -574,10 +626,14 @@ run.addEventListener('pointercancel',()=>{mobileRun=false;});
 for(const choice of el('choices').querySelectorAll('button')) {
   choice.addEventListener('click',()=>{
     const before=state.stage;
-    const isCorridor=overlays.fix.dataset.puzzle==='corridor';
-    const correct=isCorridor?R.repairCorridor(state,choice.dataset.word,player):R.repairDoor(state,choice.dataset.word,player);
+    const type=overlays.fix.dataset.puzzle;
+    const correct=type==='corridor'?R.repairCorridor(state,choice.dataset.word,player)
+      :type==='office'?C3.repairOffice(state,choice.dataset.word,player)
+      :type==='final'?C3.repairFinal(state,choice.dataset.word,player)
+      :R.repairDoor(state,choice.dataset.word,player);
     if(correct) {
-      overlays.fix.classList.add('closed');syncStage(before);
+      overlays.fix.classList.add('closed');syncStage(before);syncChapterVisuals();saveChapterCheckpoint();
+      if(type==='office'){announce('벽이 책상으로 돌아왔습니다. 안쪽에서 기록을 찾으세요.',false,3.5);hud.stage.textContent='사무실 · 기록 A 탐색';}
       el('fixFeedback').textContent='주변의 기록을 기억하세요.';
     } else {
       el('fixFeedback').textContent='틀렸습니다. 이름이 흔들리며 소리가 납니다.';
@@ -587,6 +643,6 @@ for(const choice of el('choices').querySelectorAll('button')) {
 }
 window.OtaDebug = Object.freeze({
   snapshot:()=>({stage:state.stage,corridorFixed:state.corridorFixed,doorFixed:state.doorFixed,hidden:state.hidden,
-    echo:{...state.echo},monster:{...state.monster},player:{x:player.x,z:player.z},mistakes:state.mistakes})
+    chapter3:JSON.parse(JSON.stringify(C3.ensure(state))),echo:{...state.echo},monster:{...state.monster},player:{x:player.x,z:player.z,yaw:player.yaw,pitch:player.pitch},mistakes:state.mistakes})
 });
 resize();setCamera();requestAnimationFrame(animate);
