@@ -271,7 +271,7 @@ function maybeEvolve(save,chosenId){
  return true;
 }
 function stoneEvolutionOptions(save){
- const p=activeCreature(save);if(!p||p.level<10)return [];
+ const p=activeCreature(save);if(!p||p.level<10||byId.get(p.id)?.evolutionRank!==1)return [];
  return DB.species.filter(s=>s.evolvesFrom===p.id&&s.evolutionCondition?.enabled)
  .map(s=>({id:s.id,name:s.name,stone:Object.keys(STONES).find(k=>STONES[k].types.includes(s.type))}))
  .filter(x=>x.stone);
