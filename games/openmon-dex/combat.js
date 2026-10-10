@@ -40,7 +40,10 @@ function statsAtLevel(key,level,mon=null){
   // 0-15 individual potential contributes at most ~5% at higher levels.
   const iv=mon?.genetics?.iv?.[k];
   const bonus=Number.isInteger(iv)&&iv>=0&&iv<=15?Math.floor(raw*.05*iv/15):0;
-  result[k]=Math.max(1,raw+bonus);
+  const nature=mon?.genetics?.nature;
+  const natures={용감:{attack:1.04,speed:.96},신중:{spDefense:1.04,spAttack:.96},
+   쾌속:{speed:1.04,defense:.96},집중:{spAttack:1.04,attack:.96}};
+  result[k]=Math.max(1,Math.floor((raw+bonus)*(natures[nature]?.[k]||1)));
  }
  return result;
 }
