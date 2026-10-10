@@ -140,14 +140,14 @@
       'job_nail_artist','job_takoyaki_simulator','job_steak_master','job_bogle_bunsik',
       'math_icecream_division','math_stationery_boss','job_maratang_simulator','math_base10_blocks',
       'alien_pizza','alien_sandwich','burger_master','job_teacher_classroom',
-      'high_folklore_night_guard','low_juice_maker'
+      'high_folklore_night_guard','low_juice_maker','high_midnight_diner'
     ]),
     mission:Object.freeze([
       'high_weathercaster_simulator','job_police_car','job_drone_pilot','job_driver_license',
       'job_scuba_diver','job_internal_medicine','low_cleanup_squad','sim_tidy_king','high_disaster_city','high_haunted_school_exorcist'
     ]),
     campaign:Object.freeze([
-      'high_twelve_island','high_byeokrando_voyage','high_quarantine_17','trivia_school_survival','high_midnight_diner',
+      'high_twelve_island','high_byeokrando_voyage','high_quarantine_17','trivia_school_survival',
       'trivia_drift_survival','high_outbreak_korea','korea_marble','high_history_map'
     ]),
     progression:Object.freeze([
