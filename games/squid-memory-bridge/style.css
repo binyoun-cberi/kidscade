@@ -24,3 +24,13 @@ canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-acti
 @media(max-width:740px){.hud{gap:5px;padding-left:10px;padding-right:10px}.brand{gap:6px}.brand span{display:none}.squid-mark{display:none}.hud-middle{gap:6px}.stat{min-width:44px}.stat small{font-size:9px}.stat b{font-size:17px}.stat.timer b{font-size:22px}.stat.timer{padding:5px 9px}.icon-btn{width:30px;height:30px;font-size:16px}.control-info{max-width:180px}.control-info span{display:none}.dpad{gap:3px}.dpad button{width:38px;height:42px;font-size:20px}.sound-btn{display:none}.check-btn{font-size:12px;min-height:42px;padding:0 10px}.check-btn span{display:none}.zone .dash,.zone strong{display:none}.progress-row>span{min-width:auto}}
 @media(orientation:portrait) and (max-width:900px) and (pointer:coarse){.orientation{display:flex}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+
+/* Reused Kidscade art: small readable markers, not a full-board image overlay. */
+.flag-icon{width:22px;height:22px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 2px 2px #0008);flex-shrink:0}
+.symbol{display:flex;align-items:center;justify-content:center;height:104px}
+.symbol img{display:block;width:108px;height:108px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 8px 12px #48e8b333)}
+.result-trophy{display:flex;justify-content:center;margin:0 auto 3px}
+.result-trophy img{width:34px;height:34px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 0 9px #43ed9d66)}
+.result.failed .result-trophy{display:none}
+@media(max-height:520px){.symbol{height:64px}.symbol img{width:68px;height:68px}.flag-icon{width:19px;height:19px}}
+@media(max-width:740px){.zone .flag-icon{width:19px;height:19px}.zone .flag-icon:last-child{margin-left:5px}}
