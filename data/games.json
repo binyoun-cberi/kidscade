@@ -117,12 +117,12 @@
         "high"
       ],
       "icon": "🍽️",
-      "description": "수상한 요리사가 내놓은 세 접시에서 금지 재료를 관찰하고 추론해 안전한 부분을 먹으세요. 조사와 질문은 의심을 높이고, 거절하면 허기가 깊어지는 심리 공포 추리 게임.",
+      "description": "수상한 요리사가 내놓는 다섯 접시에서 음식의 시각적 단서를 비교해 안전한 한입을 선택하세요. 위치별 조사와 요리사의 진짜 단서, 체력·허기·의심도 심리전, 식사 후 증거 검토가 이어지는 추리 공포 게임.",
       "scoreKey": "midnightDinerBestV1",
       "subject": "thinking",
       "genre": "puzzle",
       "difficulty": "medium",
-      "sessionMinutes": 8,
+      "sessionMinutes": 12,
       "players": [
         "solo"
       ],
