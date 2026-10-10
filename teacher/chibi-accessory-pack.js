@@ -113,13 +113,14 @@ function fitCurvedFaceParts(group,body,eyes,fit){
     if(spec==='strap'){
       const sign=node.name.endsWith('_-1')?-1:1;
       const pts=[
-        [sign*.155,-.238],[sign*.203,-.255],[sign*.251,-.312],
-        [sign*.214,-.361],[sign*.155,-.387]
+        [sign*.155,-.245],[sign*.218,-.210],[sign*.273,-.214],
+        [sign*.257,-.295],[sign*.129,-.388]
       ].map(([x,dy],i)=>{
         const y=group.userData.faceEyeY+dy;
-        const actual=faceZ(x,y);
+        const sampleX=Math.sign(x)*Math.min(Math.abs(x),.22);
+        const actual=faceZ(sampleX,y);
         const baseline=Number.isFinite(actual)?actual:group.userData.faceFallbackZ;
-        return new THREE.Vector3(x,y,baseline+(i===2?-.012:.016));
+        return new THREE.Vector3(x,y,baseline+((i===0||i===4)?.012:-.022));
       });
       const loop=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),24,.006,6,false);
       loop.userData.kidscadeFaceProjection='strap';
@@ -131,7 +132,7 @@ function fitCurvedFaceParts(group,body,eyes,fit){
       const x=attr.getX(i),y=attr.getY(i);
       const actual=faceZ(x,y,spec==='lens');
       const fallback=group.userData.faceFallbackZ;
-      attr.setZ(i,(Number.isFinite(actual)?actual:fallback)+(spec==='lens'?.027:.018));
+      attr.setZ(i,(Number.isFinite(actual)?actual:fallback)+(spec==='lens'?.045:.018));
     }
     attr.needsUpdate=true;
     projected.userData.kidscadeFaceProjection=spec;
@@ -229,13 +230,13 @@ function sphere(x,y,z,sx,sy,sz,segments=16){
 }
 // Curved, single-sided face patch. The outer edges turn back toward the
 // cheeks instead of projecting a whole ellipsoid out from the face.
-function facePatch(cx,cy,frontZ,width,height,curve=.028,rows=10,columns=20){
+function facePatch(cx,cy,frontZ,width,height,curve=.028,rows=10,columns=20,shape='lens'){
   const positions=[],uvs=[],indices=[];
   for(let j=0;j<=rows;j++){
     const v=j/rows,ny=v*2-1;
     for(let i=0;i<=columns;i++){
       const u=i/columns,nx=u*2-1;
-      const x=cx+nx*width*.5;
+      const x=cx+nx*width*.5*(shape==='mask'?1-.22*(1-v)*(1-v):1);
       const y=cy+ny*height*.5;
       // The nose/central lens edge projects slightly more than the cheeks.
       const z=frontZ-curve*nx*nx-.004*ny*ny;
@@ -311,9 +312,9 @@ function buildGeometry(style,source,sourceHair,eyes){
     case 'straw':return cyl(headR*.88,headR*.98,.145,hc.x,scalpY+.016,hc.z);
     case 'round':return ring(.071,.009,-.110,eyeY,faceZ);
     case 'square':return box(.150,.119,.012,-.110,eyeY,faceZ);
-    case 'sunglasses':return facePatch(-.110,eyeY,faceZ+.016,.205,.140,.027);
+    case 'sunglasses':return facePatch(-.110,eyeY-.020,faceZ+.016,.224,.188,.027);
     case 'goggles':return box(.365,.133,.055,0,eyeY,faceZ+.015);
-    case 'mask':return facePatch(0,eyeY-.305,faceZ+.009,.335,.205,.055,14,28);
+    case 'mask':return facePatch(0,eyeY-.305,faceZ+.009,.335,.205,.055,14,28,'mask');
     case 'schoolbag':return box(.335,.360,.172,0,.966,-.240);
     case 'crossbody':return box(.265,.210,.115,.224,.832,.150);
     case 'minibag':return sphere(0,.968,-.236,.145,.187,.110);
@@ -386,7 +387,7 @@ function createDetails(style,context){
         for(const sign of [-1,1])
           add(box(.144,.012,.021,sign*.110,eyeY+.061,faceZ),black,'topFrame_'+sign);
       }else if(kind==='sunglasses')
-        add(facePatch(.110,eyeY,faceZ+.016,.205,.140,.027),style.color,'rightLens');
+        add(facePatch(.110,eyeY-.020,faceZ+.016,.224,.188,.027),style.color,'rightLens');
       else if(kind==='goggles')
         add(box(.327,.091,.017,0,eyeY,faceZ+.046),'#8bcdd7','glass');
       add(facePatch(0,eyeY+.008,faceZ+.022,.055,.014,.006,2,8),style.color,'bridge');
