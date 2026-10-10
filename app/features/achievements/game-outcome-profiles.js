@@ -147,7 +147,7 @@
       'job_scuba_diver','job_internal_medicine','low_cleanup_squad','sim_tidy_king','high_disaster_city','high_haunted_school_exorcist'
     ]),
     campaign:Object.freeze([
-      'high_twelve_island','high_byeokrando_voyage','high_quarantine_17','trivia_school_survival',
+      'high_twelve_island','high_byeokrando_voyage','high_quarantine_17','trivia_school_survival','high_midnight_diner',
       'trivia_drift_survival','high_outbreak_korea','korea_marble','high_history_map'
     ]),
     progression:Object.freeze([
