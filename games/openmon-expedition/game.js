@@ -64,7 +64,7 @@ function announce(event,payload){
 }
 function startNew(id){
  save=E.createNew(id);battle=null;$("starterOverlay").hidden=true;
- setToast("오른쪽으로 이동해 이슬초원을 찾아가 봐. 연구원 옆에서는 A로 대화할 수 있어.");
+ setToast("오른쪽 길을 따라가면 첫 키즈몬을 만나! 키즈몬 연구소에서는 A로 대화할 수 있어.");
  updateAll();persist();beep("win");
 }
 function showStarter(){
@@ -86,7 +86,8 @@ function updateAll(){
  $("seenCount").textContent=Object.keys(save.seen).filter(id=>species(id)?.playable).length+" / "+DB.species.length;
  $("caughtCount").textContent=Object.keys(save.collection).filter(id=>species(id)?.playable).length+" / "+DB.species.length;
  $("worldHint").textContent="현재 위치 "+(data?.name||"")+" ("+save.pos.x+","+save.pos.y+")";
- $("objective").textContent=save.catches===0?"첫 야생 키즈몬을 포획해 보자":save.catches<3?"서로 다른 키즈몬을 세 마리 모아 보자":"도감과 진화 조건을 연구하며 탐험하자";
+ const progress=save.wins+save.catches;
+ $("objective").textContent=save.encounters===0?"→ 초원 입구에서 첫 키즈몬 만나기":save.catches===0?"첫 야생 키즈몬 포획하기":progress<3?"키즈몬을 더 만나고 연구하기":progress<12?"연구 도감 확장 · 새 종류 찾기":"새로운 키즈몬을 모아 도감 완성하기";
  renderTeam();
 }
 function renderTeam(){
@@ -121,7 +122,8 @@ function openParty(){
  if(!save)return;
  openGeneric("우리 키즈몬","<p>선두 키즈몬을 바꾸거나 회복약을 사용할 수 있어. 전투 중에는 교체에 한 턴이 필요해.</p>"+
  '<div class="team hud-party-list">'+$("teamList").innerHTML+'</div>'+
- '<div class="action-row"><button type="button" class="act primary" data-hud-action="potion">회복약 사용 ('+save.items.potion+'개)</button></div>',
+ '<div class="action-row"><button type="button" class="act primary" data-hud-action="potion">회복약 사용 ('+save.items.potion+'개)</button>'+
+ '<button type="button" class="act" data-hud-action="evolve">진화 확인</button></div>',
  save.party.length+"/6마리 · 선택하면 선두 변경");
 }
 function openBag(){
@@ -137,8 +139,8 @@ function openGoals(){
  if(!save)return;
  const goal=$("objective").textContent;
  const zone=E.zoneAt(save.pos.x);
- const hint=zone==="town"?"오른쪽 이슬초원의 풀숲으로 가 보자. 마을 위쪽 연구소 앞에서는 A 버튼으로 이야기를 나눌 수 있어.":
-  zone==="meadow"?"풀숲에서 야생 키즈몬을 만나면 HP를 줄여 키즈볼을 던져 봐. 계속 오른쪽으로 가면 가지숲이 나와.":
+ const hint=zone==="town"?"오른쪽 흙길을 따라가면 풀숲이 나타나고 첫 키즈몬을 만날 수 있어. 연구소 근처에서는 A 버튼으로 이야기하자.":
+  zone==="meadow"?"첫 만남 후에는 풀숲에서 HP를 줄여 키즈볼을 던져 봐. 승리·포획을 3, 7, 12번 쌓으면 새 야생 키즈몬이 등장해.":
   zone==="forest"?"다양한 속성의 키즈몬을 잡아 보자. 숲 속 숨겨진 장소에서는 특별한 키즈몬을 만날 수도 있어.":
   "동굴에서 타입 상성을 비교해 봐. 다치면 마을 연구소로 돌아와 무료로 치료받을 수 있어.";
  openGeneric("탐험 목표","<div class='mission-sheet'><strong>현재 목표</strong><p>"+esc(goal)+"</p>"+
@@ -146,7 +148,7 @@ function openGoals(){
  '<div class="equipment"><span>발견한 키즈몬</span><b>'+$("seenCount").textContent+'</b></div>'+
  '<div class="equipment"><span>수집한 키즈몬</span><b>'+$("caughtCount").textContent+'</b></div>'+
  '<div class="equipment"><span>진행 걸음 수</span><b>'+save.steps+'걸음</b></div></div>',
- "수학은 전투와 포획을 하며 자연스럽게 배워요");
+ "연구 진행 "+(save.wins+save.catches)+" · 새 야생 종 해금: 3·7·12 기록");
 }
 function openMenu(){
  if(!save)return;
@@ -182,10 +184,28 @@ function talk(){
  beep("click");
 }
 function openClinic(){
- openGeneric("키즈몬 연구소","<p>키즈몬을 전부 무료로 치료해 줄게. 모험에 필요한 키즈볼와 회복약도 살 수 있어.</p>"+
+ const available=E.researchStarterOptions(save);
+ const stillMissing=["set1_r02_c02","set1_r03_c02","set1_r04_c02"].some(id=>!save.collection[id]);
+ const gift=available.available.length?
+  '<div class="shop-item"><div><strong>연구 스타팅 선물</strong><small>발견·포획 활동 보상! 다른 스타팅을 한 마리 받을 수 있어.</small></div></div>'+
+  available.available.map(id=>'<div class="shop-item">'+miniArt(id)+'<div><strong>'+esc(species(id).name)+'</strong><small>Lv.5 · 포획할 필요 없는 보상</small></div><button data-gift="'+id+'">받기</button></div>').join(""):
+  stillMissing?'<div class="shop-item"><div><strong>연구 스타팅 선물</strong><small>도감에 서로 다른 키즈몬 '+available.required+'종을 모으면 다른 스타팅을 받을 수 있어. 현재 '+available.count+'종</small></div></div>':
+  '<div class="shop-item"><strong>스타팅 세 친구 연구 완료!</strong></div>';
+ openGeneric("키즈몬 연구소",'<p>키즈몬을 무료로 치료하거나 키즈볼·회복약을 살 수 있어. 서로 다른 키즈몬을 연구하면 새로운 파트너도 선물할게!</p>'+
  '<div class="shop-list"><div class="shop-item"><div><strong>전체 무료 회복</strong><small>전투 불능인 키즈몬도 회복</small></div><button data-buy="heal">치료</button></div>'+
  '<div class="shop-item"><div><strong>키즈볼 +1</strong><small>연구코인 35</small></div><button data-buy="ball">35코인</button></div>'+
- '<div class="shop-item"><div><strong>회복약 +1</strong><small>연구코인 25</small></div><button data-buy="potion">25코인</button></div></div>');
+ '<div class="shop-item"><div><strong>회복약 +1</strong><small>연구코인 25</small></div><button data-buy="potion">25코인</button></div>'+
+ '<div class="shop-item"><div><strong>키즈몬 보관함</strong><small>보관 중 '+save.box.length+'마리 · 선두 키즈몬과 교체 가능</small></div><button data-hud-action="box">열기</button></div>'+gift+'</div>');
+}
+function openBox(){
+ if(!save)return;
+ const list=save.box.length?save.box.map((p,i)=>
+ '<div class="shop-item">'+miniArt(p.id)+'<div><strong>'+esc(species(p.id).name)+'</strong>'+
+ '<small>Lv.'+p.level+' · HP '+hpText(p)+'</small></div>'+
+ '<button type="button" data-withdraw="'+i+'">'+(save.party.length<6?"파티로":"선두와 교체")+'</button></div>').join(""):
+ '<p>보관한 키즈몬이 없어. 파티는 최대 6마리까지 데려갈 수 있어.</p>';
+ openGeneric("키즈몬 보관함",'<p>여울마을 연구소에서 언제든 꺼낼 수 있어. 파티가 가득 찼다면 현재 선두와 교체해.</p>'+
+ '<div class="shop-list">'+list+'</div>');
 }
 function buy(item){
  if(!save)return;
@@ -233,18 +253,22 @@ function movePlayer(dx,dy,now=performance.now()){
  const old=E.zoneAt(save.pos.x),result=E.move(save,dx,dy);
  if(!result.moved)return;
  if(result.zone!==old)setToast((E.ZONES.find(z=>z.key===result.zone)?.name||"새 지역")+"에 도착했어!");
- if(result.encounter){beep("click");enterBattle(result.encounter,result.zone,!!(result.encounter.id==="shibu_r00_c00"))}
+ if(result.encounter){
+   beep("click");
+   enterBattle(result.encounter,result.zone,!!(result.encounter.id==="shibu_r00_c00"),!!result.firstRoad);
+ }
  if(save.steps%5===0)persist();
  updateAll();
 }
 function leaveBattle(){
- if(battle?.special&&!save.flags.shibuCaught)save.flags.shibuSeen=false;
  battle=null;$("battleOverlay").classList.add("hidden");persist();updateAll();
 }
-function enterBattle(enemy,zone,special=false){
+function enterBattle(enemy,zone,special=false,firstRoad=false){
  const lead=E.activeCreature(save);
  if(!lead||lead.hp<=0){E.healAll(save);save.active=0;setToast("연구소로 돌아와 HP를 회복했어.");return}
- battle={foe:enemy,zone,special,turn:1,done:false,message:"야생 "+species(enemy.id).name+" 등장! 남은 체력을 예상하며 싸워보자."};
+ battle={foe:enemy,zone,special,firstRoad,turn:1,done:false,
+ message:firstRoad?"첫 번째 키즈몬, "+species(enemy.id).name+"을(를) 만났어! '살살 공격'으로 HP를 낮춘 뒤 키즈볼을 던져 보자!":
+  "야생 "+species(enemy.id).name+" 등장! 남은 체력을 예상하며 싸워보자."};
  save.seen[enemy.id]=true;save.grassSteps=0;
  $("battleOverlay").classList.remove("hidden");
  $("battleActionPanel").classList.remove("hidden");$("battleAfter").classList.add("hidden");
@@ -298,8 +322,7 @@ function enemyTurn(){
  if(!battle||battle.done)return;
  const foe=battle.foe,active=E.activeCreature(save);
  if(!active)return;
- const raw=DB.combat.damage({attacker:foe.id,defender:active.id,attackerLevel:foe.level,defenderLevel:active.level,power:5});
- const hit=Math.max(2,Math.floor(raw*.58));active.hp=Math.max(0,active.hp-hit);
+ const hit=E.retaliationDamage(save,foe,active);active.hp=Math.max(0,active.hp-hit);
  appendBattle(battle.message+"\n"+species(foe.id).name+"의 반격! 우리 키즈몬 HP -"+hit);
  if(active.hp<=0){
   const alive=save.party.findIndex(p=>p.hp>0);
@@ -329,6 +352,8 @@ function attack(action){
  if(foe.hp<=0){
   const gain=E.levelRewards(save,foe);
   let message=b.name+"을(를) 이겼어! 경험치 +"+gain.earned+" / 코인 +"+gain.coins;
+  if(gain.mentorHeal)message+="\n연구원의 응원! HP +"+gain.mentorHeal+" 자동 회복";
+  if([3,7,12].includes(save.wins+save.catches))message+="\n새로운 종류의 야생 키즈몬이 지역에 나타나기 시작했어!";
   if(gain.events.length)message+="\n레벨 업! "+a.name+" Lv."+own.level;
   endFight(message,"win");
   if(gain.events.length)pendingEvolution=true;
@@ -345,7 +370,9 @@ function capture(){
   const destination=E.addCaptured(save,f);
   if(f.id==="shibu_r00_c00")save.flags.shibuCaught=true;
   announce("monster_caught",{id:f.id,uniqueKey:"caught:"+f.id,value:1});
-  endFight(species(f.id).name+" 포획 성공!\n"+(destination==="party"?"동료로 합류했어.":"동료 6마리가 꽉 차 보관함으로 이동했어.")+" · 확률 "+Math.round(prob*100)+"%","capture");
+  const progress=save.wins+save.catches;
+  endFight(species(f.id).name+" 포획 성공!\n"+(destination==="party"?"동료로 합류했어.":"동료 6마리가 꽉 차 보관함으로 이동했어.")+" · 확률 "+Math.round(prob*100)+"%"+
+    ([3,7,12].includes(progress)?"\n연구 기록이 늘어 새 야생 키즈몬이 등장하기 시작했어!":""),"capture");
   return;
  }
  appendBattle("포획 실패! 이번 확률은 "+Math.round(prob*100)+"%였어. 확률이 높아도 실패할 수 있어!");
@@ -387,30 +414,85 @@ function battleAction(action){
  }
 }
 function renderTerrain(x,y,sx,sy){
- const t=E.terrain(x,y),area=E.zoneAt(x),seed=(x*43+y*71)%17;
- const colors={town:"#8ab58a",meadow:"#8bbd7d",forest:"#639b74",cave:"#777f82"};
- cx.fillStyle=colors[area];cx.fillRect(sx,sy,16,16);
- if(t==="path"){cx.fillStyle=area==="cave"?"#a49d89":"#c9b18b";cx.fillRect(sx,sy,16,16);
-   cx.fillStyle="#ffffff22";cx.fillRect(sx+2,sy+3,5,2);cx.fillRect(sx+10,sy+12,4,1);return}
+ const t=E.terrain(x,y),area=E.zoneAt(x),seed=(x*73+y*91)%41;
+ const base={town:"#94b889",meadow:"#9cc987",forest:"#72aa76",cave:"#818792"};
+ cx.fillStyle=base[area];cx.fillRect(sx,sy,16,16);
+ if(t==="path"){
+  cx.fillStyle=area==="cave"?"#c0b49b":area==="town"?"#d1c0a0":"#d5bc93";cx.fillRect(sx,sy,16,16);
+  cx.fillStyle="#fff7d62b";cx.fillRect(sx,sy,16,2);
+  cx.fillStyle="#746e5740";cx.fillRect(sx+(seed%7),sy+6,4,1);cx.fillRect(sx+((seed+8)%9),sy+12,4,1);
+  if(area==="town"){cx.fillStyle="#f8edce3a";cx.fillRect(sx+1,sy+1,6,4)}
+  return;
+ }
  if(t==="building"){cx.fillStyle="#d5bc8c";cx.fillRect(sx,sy,16,16);return}
- if(t==="wall"){cx.fillStyle="#4d7762";cx.fillRect(sx,sy,16,16);return}
- if(t==="rock"){cx.fillStyle="#646d73";cx.fillRect(sx,sy,16,16);cx.fillStyle="#aab1a4";cx.fillRect(sx+3,sy+3,9,5);cx.fillStyle="#414e58";cx.fillRect(sx+5,sy+11,9,3);return}
- if(t==="grass"){cx.fillStyle=area==="forest"?"#397c55":"#4fa06a";cx.fillRect(sx,sy,16,16);cx.fillStyle="#8ed378";for(let i=0;i<3;i++){let px=(i*5+seed)%13;cx.fillRect(sx+px,sy+4+i*3,2,5)}return}
- if(t==="rough"){cx.fillStyle="#4d5761";cx.fillRect(sx,sy,16,16);cx.fillStyle="#9d8c95";for(let i=0;i<3;i++)cx.fillRect(sx+((seed+i*7)%13),sy+2+i*5,3,2);return}
- if(t==="cave"){cx.fillStyle="#858991";cx.fillRect(sx,sy,16,16);cx.fillStyle="#b5afa4";cx.fillRect(sx+seed%10,sy+4,3,2);return}
- if(t==="crystal"){cx.fillStyle="#46515b";cx.fillRect(sx,sy,16,16);cx.fillStyle="#99dfe5";cx.beginPath();cx.moveTo(sx+8,sy+1);cx.lineTo(sx+14,sy+9);cx.lineTo(sx+8,sy+15);cx.lineTo(sx+2,sy+9);cx.fill();return}
+ if(t==="wall"){
+  cx.fillStyle=area==="cave"?"#4c5662":"#477252";cx.fillRect(sx,sy,16,16);
+  cx.fillStyle="#ffffff16";cx.fillRect(sx+2,sy+2,12,2);return
+ }
+ if(t==="rock"){
+  cx.fillStyle="#7b8188";cx.fillRect(sx,sy,16,16);
+  cx.fillStyle="#535d67";cx.fillRect(sx+2,sy+5,12,9);
+  cx.fillStyle="#a7aab0";cx.fillRect(sx+4,sy+3,7,5);return
+ }
+ if(t==="grass"){
+  const entrance=x>=20&&x<=22&&y>=11&&y<=13;
+  cx.fillStyle=entrance?"#4d9b64":area==="forest"?"#39794c":"#508d52";cx.fillRect(sx,sy,16,16);
+  cx.fillStyle=entrance?"#b0ea79":"#8edc73";
+  for(let i=0;i<3;i++){const px=(i*5+seed)%13;cx.fillRect(sx+px,sy+3+i*4,2,5);cx.fillRect(sx+px+2,sy+5+i*4,1,2)}
+  if(entrance){cx.fillStyle="#f5db73";cx.fillRect(sx+6,sy+5,3,3);cx.fillRect(sx+11,sy+9,2,2)}
+  return;
+ }
+ if(t==="rough"){
+  cx.fillStyle="#646d75";cx.fillRect(sx,sy,16,16);
+  cx.fillStyle="#a5a19b";for(let i=0;i<3;i++)cx.fillRect(sx+((seed+i*7)%13),sy+2+i*5,3,2);return
+ }
+ if(t==="cave"){
+  cx.fillStyle="#8b9199";cx.fillRect(sx,sy,16,16);
+  cx.fillStyle="#aeb3b3";cx.fillRect(sx+seed%10,sy+4,4,2);return
+ }
+ if(t==="crystal"){
+  cx.fillStyle="#485b67";cx.fillRect(sx,sy,16,16);cx.fillStyle="#a6eff1";cx.beginPath();
+  cx.moveTo(sx+8,sy+1);cx.lineTo(sx+14,sy+9);cx.lineTo(sx+8,sy+15);cx.lineTo(sx+2,sy+9);cx.fill();return
+ }
  if(t==="tree"){
-  cx.fillStyle="#38694a";cx.fillRect(sx+6,sy+8,4,8);
-  cx.fillStyle="#215e43";cx.fillRect(sx+3,sy+3,10,10);
-  cx.fillStyle="#4e9b59";cx.fillRect(sx+4,sy+1,8,8);return
+  cx.fillStyle="#3b744b";cx.fillRect(sx+6,sy+7,4,9);
+  cx.fillStyle=area==="forest"?"#27543b":"#3f7046";cx.fillRect(sx+2,sy+5,12,8);
+  cx.fillStyle=area==="forest"?"#4a8c58":"#5f9e5a";cx.fillRect(sx+4,sy+1,8,8);
+  cx.fillStyle="#87c47a";cx.fillRect(sx+5,sy+3,3,2);return
  }
- if(t==="clearing"){cx.fillStyle="#d7c58a";cx.fillRect(sx,sy,16,16);cx.fillStyle="#7e79b5";cx.fillRect(sx+5,sy+3,6,10);return}
- if(seed===2||seed===4){
-  const img=imgs.farm;if(img&&img.complete){
-   const idx=area==="town"?16:area==="forest"?27:20;
-   cx.drawImage(img,(idx%12)*16,Math.floor(idx/12)*16,16,16,sx,sy,16,16);
-  }else{cx.fillStyle="#5a9757";cx.fillRect(sx+7,sy+8,2,5)}
+ if(t==="clearing"){
+  cx.fillStyle="#ead494";cx.fillRect(sx,sy,16,16);cx.fillStyle="#796abb";cx.fillRect(sx+5,sy+3,6,10);
+  cx.fillStyle="#d8ecfe";cx.fillRect(sx+7,sy+5,2,4);return
  }
+ if(t==="town"){
+  // Sparse planted flowers instead of repeating a random atlas decoration every few tiles.
+  if(seed===5||seed===24){cx.fillStyle="#478e61";cx.fillRect(sx+7,sy+9,2,4);
+    cx.fillStyle=seed===5?"#f4e8a1":"#f4aeb2";cx.fillRect(sx+5,sy+6,6,4)}
+  return;
+ }
+ if(t==="field"){
+  if(seed<3){cx.fillStyle="#73b576";cx.fillRect(sx+4,sy+8,2,4);cx.fillRect(sx+9,sy+6,2,5)}
+  if(seed===18){cx.fillStyle="#fff0ad";cx.fillRect(sx+8,sy+8,4,3)}
+ }
+}
+function drawLandmarks(camX,camY){
+ function tile(x,y){return {x:(x-camX)*16,y:(y-camY)*16}}
+ function sign(x,y,title){
+  const p=tile(x,y);if(p.x<-95||p.x>C.width+40||p.y<-38||p.y>C.height+25)return;
+  cx.fillStyle="#514c33";cx.fillRect(p.x+7,p.y+10,3,10);
+  cx.fillStyle="#edd6a1";cx.fillRect(p.x-8,p.y-7,62,17);
+  cx.fillStyle="#8b6544";cx.fillRect(p.x-8,p.y-7,62,2);
+  cx.fillStyle="#3c513c";cx.font="bold 9px sans-serif";cx.fillText(title,p.x-5,p.y+4);
+ }
+ function flowerbed(x,y){
+  const p=tile(x,y);if(p.x<0||p.x>C.width||p.y<0||p.y>C.height)return;
+  cx.fillStyle="#447b4d";cx.fillRect(p.x,p.y+7,16,9);
+  for(let i=0;i<3;i++){cx.fillStyle=i===1?"#ffe6a4":"#f2aabb";cx.fillRect(p.x+2+i*5,p.y+6+(i%2)*3,3,3)}
+ }
+ sign(16,10,"→ 첫 만남");
+ sign(39,9,"→ 가지숲");
+ sign(61,9,"→ 동굴");
+ flowerbed(3,17);flowerbed(4,17);flowerbed(5,17);
 }
 function drawBuilding(camX,camY){
  const sx=(6-camX)*16,sy=(5-camY)*16;if(sx>C.width+8||sx+128<0||sy>C.height+8||sy+80<0)return;
@@ -450,6 +532,7 @@ function render(now){
  cx.fillStyle="#80af72";cx.fillRect(0,0,C.width,C.height);
  for(let dy=0;dy<rows;dy++)for(let dx=0;dx<columns;dx++){const x=camX+dx,y=camY+dy;renderTerrain(x,y,dx*16,dy*16)}
  drawBuilding(camX,camY);
+ drawLandmarks(camX,camY);
  if(camX<=13&&camY<=10){drawNpc("회복·상점",imgs.staff,9,10,camX,camY);drawNpc("연구원",imgs.npc,13,10,camX,camY)}
  const px=(player.x-camX)*16,py=(player.y-camY)*16;
  cx.fillStyle="#254c3950";cx.fillRect(px+2,py+11,13,4);
@@ -473,6 +556,8 @@ function attach(){
    const act=b.dataset.hudAction;
    if(act==="potion"){useFieldPotion();if(!battle){if($("genericTitle").textContent==="탐험 가방")openBag();else openParty()}}
    else if(act==="clinic"){closeGeneric();$("goClinic").click()}
+   else if(act==="box")openBox();
+   else if(act==="evolve"){closeGeneric();evolveIfReady();}
    else if(act==="audio"){$("audioButton").click();openMenu()}
    else if(act==="restart"){closeGeneric();$("newGame").click()}
    else if(act==="exit"){$("exitButton").click()}
@@ -480,6 +565,22 @@ function attach(){
   }
   b=e.target.closest("button[data-team]");
   if(b){const changed=selectTeam(Number(b.dataset.team));if(changed){closeGeneric()}return}
+  b=e.target.closest("button[data-withdraw]");
+  if(b){
+   const member=save.box[Number(b.dataset.withdraw)];
+   if(member&&E.withdrawFromBox(save,Number(b.dataset.withdraw))){
+    updateAll();persist();setToast(species(member.id).name+"을(를) 파티로 데려왔어!");
+   }
+   openBox();return;
+  }
+  b=e.target.closest("button[data-gift]");
+  if(b){
+   if(E.claimResearchStarter(save,b.dataset.gift)){
+    beep("win");updateAll();persist();
+    setToast(species(b.dataset.gift).name+"이(가) 연구소에서 합류했어! 가방과 파티를 확인해 보자.");
+   }
+   openClinic();return;
+  }
   b=e.target.closest("button[data-buy]");if(b){buy(b.dataset.buy);return}
   b=e.target.closest("button[data-swap]");if(b){const choice=Number(b.dataset.swap);closeGeneric();selectTeam(choice,true);return}
   b=e.target.closest("button[data-dex]");if(b){openDexDetail(b.dataset.dex);return}

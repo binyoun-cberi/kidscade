@@ -52,6 +52,8 @@ for(const s of db.sprites){
  const allowed=f.origin!=="provisional";
  const base=stats(s,stage);
  if(s.rarity==="starter"&&stage===1){base.hp+=3;base.speed+=2}
+ // Early-route balance: modest water-starter endurance increase.
+ if(s.id==="set1_r03_c02")base.hp+=5;
  if(f.kind==="branch"&&stage===2){base.hp=Math.min(base.hp,40);base.attack=Math.min(base.attack,18)}
  const statBudget=Object.values(base).reduce((a,b)=>a+b,0);
  if(statBudget<52||statBudget>113)throw Error("stat budget "+s.id+" "+statBudget);
@@ -70,11 +72,32 @@ for(const s of db.sprites){
  role:base.speed>=base.defense+4?"swift":base.defense>=base.speed+4?"guard":"balanced"};
 }
 const zones={
- meadow:{label:"이슬초원",level:[2,4],pool:[id("set1",0,1),id("set1",1,1),id("set2",0,0),id("set2",0,4),id("set2",2,0),id("set5",2,0)]},
+ meadow:{label:"이슬초원",level:[2,4],pool:[id("set1",0,1),id("set1",1,1),id("set5",5,3),id("set2",0,4),id("set2",2,0),id("set5",2,0)]},
  forest:{label:"가지숲",level:[4,7],pool:[id("set1",0,3),id("set2",0,0),id("set5",2,2),id("set5",5,0),id("set2",0,4),id("set5",2,0)]},
  cave:{label:"잔돌동굴",level:[7,10],pool:[id("set1",0,1),id("set2",1,4),id("set5",4,0),id("set5",3,4),id("set5",5,0),id("set5",0,2)]},
  clearing:{label:"비밀숲",level:[6,8],pool:[shibu]}
 };
+// Research routes unlock new wild populations as the player wins battles.
+// Provisional Set 2 second drawings cannot auto-evolve, so those forms appear wild.
+// Every other non-starter family is reachable from its earliest form.
+const launchPool=new Set(Object.values(zones).flatMap(z=>z.pool));
+const researchEncounters={meadow:[[],[],[]],forest:[[],[],[]],cave:[[],[],[]]};
+const wildCandidates=db.sprites.filter(s=>s.playable&&s.id!==shibu&&s.rarity!=="starter"&&
+ (s.evolutionRank===1||(s.familyOrigin==="provisional"&&s.evolutionRank===2))&&
+ !launchPool.has(s.id));
+for(const s of wildCandidates){
+ const area=s.type==="water"||s.type==="neutral"?"meadow":
+  ["earth","electric","ice","mind","dark"].includes(s.type)?"cave":"forest";
+ // The earlier waves are not exclusively determined by image atlas order.
+ const wave=s.familyOrigin==="provisional"&&s.evolutionRank===2?2:s.dexNo%3;
+ researchEncounters[area][wave].push(s.id);
+}
+const unlockWins=[3,7,12];
+const possibleWild=new Set([...launchPool,...wildCandidates.map(s=>s.id)]);
+for(const s of db.sprites.filter(s=>s.playable&&s.evolutionRank===1&&s.rarity!=="starter"))
+ if(!possibleWild.has(s.id))throw Error("Unobtainable wild family "+s.id);
+for(const s of db.sprites.filter(s=>s.playable&&s.familyOrigin==="provisional"&&s.evolutionRank===2))
+ if(!possibleWild.has(s.id))throw Error("Unobtainable provisional second image "+s.id);
 for(const z of Object.values(zones))for(const key of z.pool){
  const s=src.get(key);if(!s?.playable||s.evolutionRank!==1||s.rarity==="starter")throw Error("bad encounter "+key);
 }
@@ -82,10 +105,12 @@ db.version="2.0.0-roster";
 db.species=db.sprites.filter(s=>s.playable);
 db.dexEntries=db.species;db.totalDexEntries=db.species.length;
 db.families=families;db.shibuBranches=branches;db.encounters=zones;
+db.researchEncounters=researchEncounters;db.researchUnlockWins=unlockWins;
 db.designNotes={
  numbers:"001–102 are collectible visual forms, not 102 unrelated evolution families.",
  family:"Set 2's nine pairs are provisional art groups: level evolution is disabled.",
  alternate:"Wolf artwork is unnumbered, alternate-only. The ship is excluded.",
- progress:"Source-confirmed and Kidscade-designed evolution conditions are distinct."
+ progress:"Source-confirmed and Kidscade-designed evolution conditions are distinct.",
+ acquisition:"Research encounter waves at 3/7/12 wins, laboratory grants of two other starters, repeat Shibu clearing encounters. Provisional second sprites are wild-only."
 };
 })(window);
