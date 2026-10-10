@@ -1063,3 +1063,15 @@ test('v6.2 facial accessories hug skin without forward floating discs',()=>{
   assert.match(src,/eyeY-\.235,faceZ\+\.066/);
   assert.match(src,/eyeY-\.307,faceZ-\.018/);
 });
+
+
+test('Chibi v6.3 facial accessories use curved, outward-facing geometry',()=>{
+  const pack=read('teacher/chibi-accessory-pack.js');
+  assert.match(pack,/function facePatch\(/);
+  assert.match(pack,/indices\.push\(a,a\+1,b,b,a\+1,b\+1\)/);
+  assert.match(pack,/case 'mask':return facePatch\(/);
+  assert.match(pack,/case 'sunglasses':return facePatch\(/);
+  assert.match(pack,/add\(facePatch\(\.110,eyeY/);
+  assert.doesNotMatch(pack,/case 'mask':return sphere\(/);
+  assert.doesNotMatch(pack,/case 'sunglasses':return sphere\(/);
+});
