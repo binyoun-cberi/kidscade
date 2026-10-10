@@ -207,7 +207,7 @@ function changeMove(mon,newId,at){
  return true;
 }
 function restorePP(mon){normalize(mon);mon.moveSlots.forEach(m=>{m.pp=M[m.id].pp})}
-function makeSide(){return {attack:0,defense:0,speed:0,shield:0,condition:null,conditionTurns:0}}
+function makeSide(){return {attack:0,defense:0,speed:0,shield:0,condition:null,conditionTurns:0,weakenPenalty:0}}
 function state(){return {player:makeSide(),foe:makeSide()}}
 function stageValue(stat,n){return stat*(n>=0?(2+n)/2:2/(2-n))}
 function score(mon,side){return stageValue(D.combat.statsAtLevel(mon.id,mon.level).speed,side.speed)*(side.condition==="slow"?.7:1)}
@@ -303,7 +303,7 @@ function resolve({save,foe,battle,action,random=Math.random,rookieCap=0}){
   }
   if(move.afflict&&opponent.hp>0&&!to.condition&&random()<move.afflict.chance){
    to.condition=move.afflict.kind;to.conditionTurns=move.afflict.kind==="burn"?3:2;
-   if(to.condition==="weaken")to.attack=clamp(to.attack-1,-3,3);
+   if(to.condition==="weaken"){to.weakenPenalty=to.attack>-3?1:0;to.attack=clamp(to.attack-1,-3,3)}
    say(getSpecies(opponent.id).name+"에게 "+({burn:"화상",slow:"둔화",weaken:"공격 약화"}[to.condition])+" 효과!");
   }
  }
@@ -347,8 +347,10 @@ function resolve({save,foe,battle,action,random=Math.random,rookieCap=0}){
     const hit=Math.max(1,Math.floor(D.combat.statsAtLevel(mon.id,mon.level).hp/14));
     mon.hp=Math.max(0,mon.hp-hit);say(who+" 화상 피해 -"+hit);
    }
-   if(s.conditionTurns>0){s.conditionTurns--;if(!s.conditionTurns){s.condition=null;say(who+" 상태 효과가 끝났어.")}}
-   // Weaken applies once on infliction, not repeatedly every turn.
+   if(s.conditionTurns>0){s.conditionTurns--;if(!s.conditionTurns){
+     if(s.condition==="weaken"&&s.weakenPenalty){s.attack=clamp(s.attack+s.weakenPenalty,-3,3);s.weakenPenalty=0}
+     s.condition=null;say(who+" 상태 효과가 끝났어.")}}
+   // Weaken changes attack stage once and now restores exactly that temporary penalty on expiry.
   }
   if(!foe.hp)outcome="won";
   else if(!player().hp){const next=save.party.findIndex(p=>p.hp>0);if(next>=0){save.active=next;side.player=makeSide();say("다음 키즈몬 출전!")}else outcome="lost"}
