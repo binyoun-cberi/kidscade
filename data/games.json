@@ -3,10 +3,10 @@
   "games": [
     {
       "id": "squid_memory_bridge",
-      "addedAt": "2026-10-10T10:26:54.234Z",
+      "addedAt": "2026-10-10T19:27:42.684+09:00",
       "title": "꼴뚜기 게임",
       "href": "games/squid-memory-bridge/index.html",
-      "category": "brain",
+      "category": "trivia",
       "age": "low",
       "ages": [
         "low",
