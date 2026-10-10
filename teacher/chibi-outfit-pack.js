@@ -451,9 +451,26 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
     add(rib,dark,'rib');
   }
   if(style.details.includes('pocket')){
-    const pocket=new THREE.BoxGeometry(.20,.105,.015,4,2,1);
-    pocket.translate(0,.835,.151);
-    add(pocket,makeSolidMaterial(style.color,style.label+' 포켓'),'pocket');
+    if(style.category==='bottom'){
+      // Cargo flapped pockets belong on moving thighs, never on the chest.
+      for(const sign of [-1,1]){
+        const thigh=resolveFirstBoneName(source.skeleton,[
+          sign<0?'DEF-thighL':'DEF-thighR',
+          sign<0?'DEF-thigh.L':'DEF-thigh.R'
+        ]);
+        const cargo=new THREE.BoxGeometry(.088,.094,.023,3,2,1);
+        cargo.translate(sign*.173,.495,.139);
+        add(cargo,makeSolidMaterial(style.color,style.label+' 카고 포켓'),
+          sign<0?'cargo_left':'cargo_right',thigh);
+        const flap=new THREE.BoxGeometry(.092,.021,.027);
+        flap.translate(sign*.173,.55,.147);
+        add(flap,dark,sign<0?'cargo_flap_left':'cargo_flap_right',thigh);
+      }
+    }else{
+      const pocket=new THREE.BoxGeometry(.20,.105,.015,4,2,1);
+      pocket.translate(0,.835,.151);
+      add(pocket,makeSolidMaterial(style.color,style.label+' 포켓'),'pocket');
+    }
   }
   if(style.details.includes('zip')){
     // The old rigid, bright .27m zipper floated in front of the moving
@@ -471,9 +488,22 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
   }
   if(style.details.includes('stripes')){
     for(const sign of [-1,1]){
-      const stripe=new THREE.BoxGeometry(.012,.13,.009);
-      stripe.translate(sign*.16,1.01,.143);
-      add(stripe,accent,sign<0?'stripe_left':'stripe_right');
+      if(style.category==='bottom'){
+        // Two-piece athletic side piping bends separately at the knee.
+        for(const segment of ['thigh','shin']){
+          const bone=resolveFirstBoneName(source.skeleton,[
+            sign<0?'DEF-'+segment+'L':'DEF-'+segment+'R',
+            sign<0?'DEF-'+segment+'.L':'DEF-'+segment+'.R'
+          ]);
+          const stripe=new THREE.BoxGeometry(.014,segment==='thigh'?.245:.21,.015);
+          stripe.translate(sign*.295,segment==='thigh'?.535:.22,.018);
+          add(stripe,accent,(sign<0?'stripe_left_':'stripe_right_')+segment,bone);
+        }
+      }else{
+        const stripe=new THREE.BoxGeometry(.012,.13,.009);
+        stripe.translate(sign*.16,1.01,.143);
+        add(stripe,accent,sign<0?'stripe_left':'stripe_right');
+      }
     }
   }
   if(style.details.includes('waist')){
