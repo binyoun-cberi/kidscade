@@ -1,0 +1,89 @@
+/* v4 — keep the chef's whole prep area visible, separate cooking/eating layouts. */
+/* Desktop stage: video stays on the left; all text and interaction lives on the right. */
+.game-layout{align-items:stretch}
+.kitchen{isolation:isolate;min-width:0}
+.cook-panel{
+ position:relative!important;inset:auto!important;z-index:auto;
+ width:100%;margin:0;padding:12px 14px;gap:9px;
+ background:linear-gradient(120deg,#363022,#211f19);
+ box-shadow:none;border:1px solid #917950;border-radius:4px;
+}
+.cook-caption{font-size:12px}
+.cook-slots{gap:6px}
+.cook-slot{min-height:36px}
+.cook-flash{min-height:46px;font-size:13px}
+.peek-btn{min-height:54px}
+.cook-progress{height:6px}
+.game-layout.cooking .plate-wrap,
+.game-layout.cooking .action-bar,
+.game-layout.cooking .footnote{display:none!important}
+.game-layout.cooking .memory-panel{opacity:1}
+.game-layout.cooking .dining{justify-content:flex-start}
+.game-layout.cooking .kitchen-vignette{background:radial-gradient(ellipse at 50% 48%,transparent 27%,#110f0b8e 100%)}
+.game-layout.eating .dining{justify-content:flex-start}
+/* The canvas backing buffer is 600 x 420. CSS always keeps the same 10:7 ratio. */
+.plate-wrap{min-width:0}
+#plate{
+ display:block;width:min(100%,540px)!important;height:auto!important;
+ aspect-ratio:10/7;max-height:none!important;
+ margin:0 auto;object-fit:contain;touch-action:manipulation
+}
+.plate-eyebrow{gap:9px;line-height:1.3;pointer-events:none}
+.plate-instruction{pointer-events:none}
+#peekBtn{touch-action:none;-webkit-tap-highlight-color:transparent}
+/* Distinguish the current action from background props, without covering the scene. */
+.scene-legend{z-index:5;max-width:calc(100% - 32px);padding:7px 11px;background:#15130dc9;border:1px solid #8c744a99}
+.dialogue-right{flex:0 0 auto}
+.memory-panel{flex:0 0 auto}
+@media(min-width:931px){
+ .game-layout{grid-template-columns:minmax(0,1.02fr) minmax(400px,.98fr)}
+ .kitchen{min-height:calc(100dvh - 70px)}
+ .dining{overflow-y:auto;max-height:calc(100dvh - 70px);scrollbar-color:#715e3b #262118}
+ .game-layout.cooking .dining{gap:13px}
+ .game-layout.cooking .cook-panel{padding:16px}
+ .game-layout.cooking .cook-slot{min-height:45px}
+ .game-layout.cooking .cook-flash{min-height:60px;font-size:15px}
+ .game-layout.cooking .peek-btn{min-height:64px}
+}
+@media(max-width:930px){
+ .game-layout{display:block;min-height:0}
+ .kitchen{min-height:0!important;border-right:0;border-bottom:2px solid #52442c}
+ .game-layout.cooking .kitchen{height:clamp(215px,32dvh,275px)!important}
+ .game-layout.eating .kitchen{display:none!important}
+ .dining{padding:10px 12px;gap:8px}
+ .status{gap:9px}
+ .course-timeline{gap:5px;padding:0}
+ .course-step{height:21px;min-width:0;flex:1}
+ .dialogue-right{padding:8px 11px;min-height:0}
+ .dialogue-right #chefLine{font-size:13px}
+ .course-line{min-height:60px;padding-bottom:8px}
+ .course-line h2{font-size:22px}
+ .course-line p{font-size:11px}
+ .danger-card{padding:7px 9px}
+ .cook-panel{padding:10px 11px;gap:7px}
+ .cook-slot{min-height:29px}
+ .cook-flash{min-height:40px;font-size:12px;padding:7px}
+ .peek-btn{min-height:46px;font-size:14px}
+ .memory-panel{padding:7px 10px}
+ .memory-entries{max-height:54px;overflow-y:auto}
+ .memory-chip{padding:3px 7px;font-size:11px}
+ #plate{width:100%!important;height:auto!important;aspect-ratio:10/7}
+ .plate-eyebrow{top:7px;font-size:10px;padding:0 10px}
+ .plate-instruction{font-size:11px;bottom:6px;padding:5px 8px}
+ .action-bar{gap:7px}
+ .action-bar button{min-height:44px;font-size:12px}
+ .feedback{padding:8px 10px}
+ .footnote{font-size:10px}
+ .game-layout.cooking .footnote,.game-layout.cooking .feedback{display:none!important}
+}
+@media(max-width:390px){
+ .game-layout.cooking .kitchen{height:clamp(210px,30dvh,250px)!important}
+ .topbar{padding:7px 10px}
+ .topbar h1{font-size:20px}
+ .course-line{gap:7px}
+ .course-line h2{font-size:20px}
+ .danger-card{min-width:116px;max-width:46%}
+ .cook-slot{min-height:27px}
+ .game-layout.eating .plate-wrap{margin:0}
+}
+@media(prefers-reduced-motion:reduce){.cook-progress i{transition:none!important}}
