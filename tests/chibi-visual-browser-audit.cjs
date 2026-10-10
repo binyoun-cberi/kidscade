@@ -654,6 +654,50 @@ const errors=[];
     }
   }
 
+  // v6.3 focused real-WebGL face-fit regression. Both body silhouettes, three
+  // viewpoints and moving poses are photographed; selected thumbnails are
+  // compressed into the CI log for reviewer visual inspection.
+  report.v63FaceFit={cases:[],previews:[]};
+  for(const fit of ['male','female']){
+    await setFit(fit);
+    for(const id of ['chibi_face_mask','chibi_face_sunglasses']){
+      const current=await evalPage('window.__kc3dAudit.accessoryCatalog()');
+      for(const previous of current.filter(x=>x.visible&&x.slot==='face')){
+        await evalPage("(()=>{const el=document.querySelector('[data-chibi-part="+
+          JSON.stringify(previous.id)+"]');if(el){el.checked=false;"+
+          "el.dispatchEvent(new Event('change',{bubbles:true}))}})()");
+      }
+      const selected=await chooseAccessory('accessory',id);
+      assert.ok(selected.checked&&selected.active.some(x=>x.name===id),
+        'v6.3 face item is not mounted '+fit+'/'+id);
+      const equipment=await evalPage('window.__kc3dAudit.equipmentAudit()');
+      const item=equipment.accessories.find(x=>x.id===id);
+      assert.equal(item.bodyFit,fit,'Face item was fitted to opposite body silhouette');
+      assert.deepEqual(equipment.visibleSlots.face,[id],
+        'Two face accessories overlap in '+fit);
+      for(const [clip,view,phase] of [
+        ['IDLE','front',0],['IDLE','threeQuarter',0],['IDLE','side',0],
+        ['WALK','front',.25],['RUN','threeQuarter',.75]
+      ]){
+        const prefix='v63-face-'+fit+'-'+id;
+        const pose=await sample(clip,view,phase,prefix);
+        assert.ok(pose.selectedParts.includes(id),
+          'Face item disappeared while animating '+fit+'/'+id+'/'+clip);
+        report.v63FaceFit.cases.push({fit,id,clip,view,phase,offset:item.offset});
+        const publish=(fit==='male'&&id==='chibi_face_mask'&&['front','side'].includes(view))
+          ||(fit==='female'&&id==='chibi_face_sunglasses'&&['front','threeQuarter'].includes(view));
+        if(clip==='IDLE'&&publish){
+          const file=prefix+'-'+clip.toLowerCase()+'-'+view+'-0.png';
+          const tiny=await sharp(path.join(OUT,file)).resize({width:420}).jpeg({quality:78}).toBuffer();
+          const key=fit+'-'+id+'-'+view;
+          console.log('CHIBI_V63_PREVIEW '+key+' '+tiny.toString('base64'));
+          report.v63FaceFit.previews.push(key);
+        }
+      }
+    }
+  }
+  await setFit('male');
+
   // Collect joint trajectories as evidence, but do not claim automatic
   // foot-ground/contact correctness based on bone-pivot height alone.
   for(const clip of ['WALK','RUN']){
