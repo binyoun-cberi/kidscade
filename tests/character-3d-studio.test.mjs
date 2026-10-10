@@ -1014,7 +1014,7 @@ test('v6.0 cargo pockets and tracksuit stripes attach to animated legs',()=>{
   assert.match(pack,/if\(style\.category==='bottom'\)/);
   assert.match(pack,/cargo_flap_left/);
   assert.match(pack,/cargo_flap_right/);
-  assert.match(pack,/segment of \['thigh','shin'\]/);
+  assert.match(pack,/transferSmoothSkinWeights\(piping,reference/);
   assert.match(pack,/stripe_left_/);
   assert.match(pack,/stripe_right_/);
 });
