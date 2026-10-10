@@ -158,7 +158,10 @@ function resolve({save,foe,battle,action,random=Math.random,rookieCap=0}){
  if(action.type==="ball"&&save.items.ball<=0)return {ok:false,reason:"ball"};
  if(action.type==="potion"&&(save.items.potion<=0||player().hp>=D.combat.statsAtLevel(player().id,player().level).hp))return {ok:false,reason:"potion"};
  if(action.type==="switch"&&(!Number.isInteger(action.index)||!save.party[action.index]||save.party[action.index].hp<=0||save.active===action.index))return {ok:false,reason:"switch"};
- const enemyId=chooseEnemyMove(foe,player(),side.foe,side.player,random);
+ const introMoves=foe.moveSlots.filter(x=>x.pp>0&&M[x.id]?.power&&!M[x.id]?.afflict);
+ const enemyId=battle.firstRoad&&introMoves.length?
+  introMoves[Math.floor(random()*introMoves.length)].id:
+  chooseEnemyMove(foe,player(),side.foe,side.player,random);
  const enemyAction=getMove(enemyId)||M.tackle;
  const pPriority=action.type==="run"?8:action.type==="switch"?7:action.type==="ball"||action.type==="potion"?6:
   action.type==="soft"?0:playerAction.priority||0;
