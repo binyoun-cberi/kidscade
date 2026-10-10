@@ -366,6 +366,24 @@ function cleanStain(stain,effort){
 }
 function inViewport(e){const r=canvas.getBoundingClientRect();mouse.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1)}
 function getHit(e){
+ // Project each clutter center onto the viewport. A small screen-space
+ // grab radius prevents tiny props from becoming inaccessible on phones.
+ // Nearest-center wins when projected meshes overlap.
+ if(!selected&&!dragging){
+  let closest=null,distance=Infinity;
+  const anchor=new THREE.Vector3();
+  for(const item of things){
+   if(item.done)continue;
+   anchor.set(item.group.position.x,.25,item.group.position.z).project(camera);
+   if(anchor.z>1||anchor.z< -1)continue;
+   const sx=(anchor.x+1)*innerWidth/2,sy=(1-anchor.y)*innerHeight/2;
+   const d=Math.hypot(e.clientX-sx,e.clientY-sy);
+   if(d<distance){distance=d;closest=item}
+  }
+  if(closest&&distance<(e.pointerType==='touch'?22:18)){
+   return{kind:'item',value:closest,point:closest.group.position};
+  }
+ }
  inViewport(e);picker.setFromCamera(mouse,camera);
  const hits=picker.intersectObjects(pickables,true),candidates=[];
  for(const h of hits){
