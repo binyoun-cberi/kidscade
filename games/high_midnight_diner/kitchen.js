@@ -41,7 +41,7 @@ async function load(url,height,x,y,z,rotation=0){
  },undefined,()=>resolve(null));
  });
 }
-let chef=null,food=null,mood=0,shock=0,course=0,frame=0,disposed=false,chefMixer=null;
+let chef=null,food=null,mood=0,shock=0,course=0,frame=0,disposed=false,reactionName='',reactionUntil=0;
 const decor=[
  [K+'fridge.glb',2.9,-3.95,1.15,-1.8,0],
  [K+'stove.glb',1.4,-2.7,1.12,-1.13,0],
@@ -76,6 +76,16 @@ function resize(){
 }
 window.addEventListener('resize',resize);resize();
 const clock=new THREE.Clock();
+window.addEventListener('midnight-diner:action',ev=>{
+ const action=ev.detail||{};
+ reactionName=action.name||'';
+ reactionUntil=clock.getElapsedTime()+1.6;
+ kitchen.classList.remove('threat','glance','pleased');
+ void kitchen.offsetWidth;
+ const next=reactionName==='reject'?'threat':reactionName==='inspect'||reactionName==='question'?'glance':'pleased';
+ kitchen.classList.add(next);
+ window.setTimeout(()=>kitchen.classList.remove(next),1100);
+});
 // A few small steam motes reuse basic geometry and materials rather than downloading another asset.
 const steam=[];
 for(let i=0;i<6;i++){
@@ -89,7 +99,13 @@ function tick(){
  if(disposed)return;requestAnimationFrame(tick);if(document.hidden)return;const t=clock.getElapsedTime();frame++;
  if(frame%20===0)resize();
  lamp.intensity=38+Math.sin(t*17)*.7+(mood>.6?Math.sin(t*8)*2:0);
- if(chef){chef.rotation.y=Math.PI+Math.sin(t*1.1)*(.07+mood*.24);chef.position.x=Math.sin(t*.4)*.03;chef.rotation.z=shock*.08;}
+ if(chef){
+ const reacting=t<reactionUntil;
+ chef.rotation.y=Math.PI+Math.sin(t*1.1)*(.07+mood*.24)+(reacting&&reactionName==='question'?.15:0);
+ chef.position.x=Math.sin(t*.4)*.03;
+ chef.position.z=-.85+(reacting&&reactionName==='reject'?.28:0);
+ chef.rotation.z=shock*.08+(reacting&&reactionName==='inspect'?.07:0);
+}
  if(food)food.rotation.y+=.002;
  steam.forEach((sprite,i)=>{
   const show=course===1&&!!food;
