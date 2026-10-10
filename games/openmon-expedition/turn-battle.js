@@ -46,7 +46,7 @@ const M={
  shadow:{name:"그림자베기",type:"dark",power:9,accuracy:100,pp:25},
  mark:{name:"그림자 표식",type:"dark",power:6,accuracy:95,pp:20,afflict:{kind:"weaken",chance:.55}},
  night:{name:"밤의 일격",type:"dark",power:12,accuracy:90,pp:12},
- counter:{name:"받아치기",type:"neutral",power:0,accuracy:100,pp:12,kind:"counter",shield:.50,reflect:1.3},
+ counter:{name:"받아치기",type:"neutral",power:0,accuracy:100,pp:12,kind:"counter",shield:.50,reflect:1.3,priority:2},
  neutral:{name:"정면돌파",type:"neutral",power:11,accuracy:95,pp:15}
 };
 for(const [id,move] of Object.entries(M))move.id=id;
