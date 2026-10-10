@@ -13,7 +13,7 @@ test('horror prologue requires discovery before monster chase', () => {
   assert.equal(R.triggerMonster(s, { x: 0, z: -16 }), false);
   assert.equal(R.inspectConsole(s, { x: 0, z: 5 }), false);
   assert.equal(R.inspectConsole(s, { x: -2.1, z: 2 }), true);
-  assert.equal(R.objective(s), '복도에서 이상한 글자를 조사하세요');
+  assert.equal(R.objective(s), '복도 안쪽으로 이동해 이상한 「사람」을 확인하세요');
   assert.equal(R.triggerMonster(s, { x: 0, z: -15 }), false);
   assert.equal(R.triggerMonster(s, { x: 0, z: -16 }), true);
   assert.equal(s.monster.active, true);
