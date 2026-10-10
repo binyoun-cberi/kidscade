@@ -670,7 +670,7 @@ test('seven derived male hairstyles keep the temple cover without affecting fema
   const js=read('teacher/character-3d-studio.js');
   const styles=js.slice(js.indexOf('const HAIR_STYLE_PARAMETERS='),js.indexOf('function createKidscadeHairCollection(){'));
   const maleLines=styles.split('\n').filter(line=>line.trim().startsWith('kidscade_male_hair_'));
-  assert.equal(maleLines.length,7);
+  assert.equal(maleLines.length,11);
   assert.ok(maleLines.every(line=>/templeFill:\.\d+/.test(line)));
   assert.match(js,/const safeSide=style\.templeFill===undefined\?style\.side:Math\.max\(style\.side,-\.12\)/);
   assert.match(js,/templeBridgeVersion:style\.templeFill===undefined\?null:'v7'/);
