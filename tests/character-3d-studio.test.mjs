@@ -565,10 +565,10 @@ test('Chibi v5 provides eight distinct skinned hair entries per body fit, with u
   const m=JSON.parse(read('chibi/asset-manifest.json'));
   const male=m.wardrobeLibrary.hairStyles.male;
   const female=m.wardrobeLibrary.hairStyles.female;
-  assert.equal(male.length,8);
-  assert.equal(female.length,8);
-  assert.equal(new Set([...male,...female]).size,16);
-  assert.equal(m.wardrobeLibrary.counts.newVariants,9);
+  assert.equal(male.length,12);
+  assert.equal(female.length,12);
+  assert.equal(new Set([...male,...female]).size,24);
+  assert.equal(m.wardrobeLibrary.counts.newVariants,17);
   assert.match(js,/function createKidscadeHairCollection\(\)/);
   assert.match(js,/geometry\.computeVertexNormals\(\)/);
   assert.match(js,/template\.parent\.add\(hair\)/);
@@ -576,7 +576,7 @@ test('Chibi v5 provides eight distinct skinned hair entries per body fit, with u
   assert.match(js,/const part=style\.part\*size\.x\*crown/);
   assert.match(js,/const wave=style\.wave\*size\.y\*Math\.sin/);
   assert.match(js,/styleParameters:\{\.\.\.style\}/);
-  for(const name of [...male.slice(1),...female.slice(-2)]){
+  for(const name of [...male.slice(1,8),...female.slice(6,8)]){
     assert.ok(js.includes(name),'Style not declared in client: '+name);
     assert.equal(m.customParts[name].revision,name.startsWith('kidscade_male_')?'v7-male-temple-fill':'v5-wardrobe-hair-pack-1');
   }
@@ -586,10 +586,10 @@ test('v5.2 outfit library registers exactly 6 tops and 4 bottoms for each body f
   const m=JSON.parse(read('chibi/asset-manifest.json'));
   const pack=read('teacher/chibi-outfit-pack.js');
   const studio=read('teacher/character-3d-studio.js');
-  assert.deepEqual(m.outfitLibrary.counts,{maleTops:6,femaleTops:6,maleBottoms:4,femaleBottoms:4,newSkinnedStyles:15});
+  assert.deepEqual(m.outfitLibrary.counts,{maleTops:9,femaleTops:9,maleBottoms:6,femaleBottoms:6,newSkinnedStyles:25});
   for(const fit of ['male','female']){
-    assert.equal(m.outfitLibrary[fit].top.length,6);
-    assert.equal(m.outfitLibrary[fit].bottom.length,4);
+    assert.equal(m.outfitLibrary[fit].top.length,9);
+    assert.equal(m.outfitLibrary[fit].bottom.length,6);
     for(const id of [...m.outfitLibrary[fit].top,...m.outfitLibrary[fit].bottom])
       assert.ok(studio.includes(id)||pack.includes(id),'Missing wardrobe item '+id);
   }
@@ -605,8 +605,8 @@ test('v5.2 outfits reshape actual skinned geometry and add three-dimensional sle
   const m=JSON.parse(read('chibi/asset-manifest.json'));
   const styles=[...m.outfitLibrary.male.top,...m.outfitLibrary.male.bottom,...m.outfitLibrary.female.top,...m.outfitLibrary.female.bottom];
   const newIds=styles.filter(name=>name.startsWith('chibi_'));
-  assert.equal(newIds.length,15);
-  assert.equal(new Set(newIds).size,15);
+  assert.equal(newIds.length,25);
+  assert.equal(new Set(newIds).size,25);
   assert.match(pack,/function remeshSource\(source,style\)/);
   assert.match(pack,/const geometry=source\.geometry\.clone\(\)/);
   assert.match(pack,/shape\.chest\*torso\+shape\.shoulder\*shoulder\+shape\.hem\*hem\+shape\.sleeve\*sleeves/);
@@ -641,7 +641,7 @@ test('v5.2 local browser audit surveys animated garments and reimports rigged GL
   assert.match(js,/new GLTFExporter\(\)\.parseAsync\(avatarRoot/);
   assert.match(js,/new GLTFLoader\(\)\.parseAsync\(binary,''\)/);
   assert.match(audit,/const catalog3d=await evalPage\('window\.__kc3dAudit\.outfitCatalog\(\)'\)/);
-  assert.match(audit,/assert\.equal\(catalog3d\.length,20/);
+  assert.match(audit,/assert\.equal\(catalog3d\.length,30/);
   assert.match(audit,/window\.__kc3dAudit\.garmentSurvey\(\)/);
   assert.match(audit,/window\.__kc3dAudit\.roundtripExport\(\)/);
   assert.match(audit,/assert\.equal\(exported\.clips\.length,11/);
@@ -991,4 +991,49 @@ test('v5.9 preserves short puff sleeves instead of extending all tops to wrist',
   assert.match(pack,/const sleeveHem=puff\?\.945:\.50/);
   assert.match(pack,/const allowance=\(puff\?\.058:\.026\)\*coverage/);
   assert.match(visual,/Puff blouse sleeve extends past elbow/);
+});
+
+test('v6.0 registers eight sculptural hairstyles, ten silhouette-different outfits and hard-fit ownership',()=>{
+  const js=read('teacher/character-3d-studio.js');
+  const outfit=read('teacher/chibi-outfit-pack.js');
+  const m=JSON.parse(read('chibi/asset-manifest.json'));
+  const extra=m.outfitLibrary.expansionV60;
+  assert.equal(m.wardrobeLibrary.hairStyles.male.length,12);
+  assert.equal(m.wardrobeLibrary.hairStyles.female.length,12);
+  assert.equal(m.outfitLibrary.counts.newSkinnedStyles,25);
+  assert.equal(extra.totalNewHair,8);
+  assert.equal(extra.totalNewGarments,10);
+  for(const fit of ['male','female']){
+    assert.equal(extra[fit].hair.length,4);
+    assert.equal(extra[fit].top.length,3);
+    assert.equal(extra[fit].bottom.length,2);
+    const owned=m.wardrobeLibrary.fitIsolation.parts[fit];
+    for(const name of [...extra[fit].hair,...extra[fit].top,...extra[fit].bottom]){
+      assert.ok(owned.includes(name),name+' missing in fit registry');
+      assert.ok(m.customParts[name]?.rigging?.includes('78-bone'),name+' lacks source rig metadata');
+      assert.ok((name.includes('hair')?js:outfit).includes(name),name+' not instantiated');
+      assert.equal(m.customParts[name].revision,'v6.0');
+    }
+  }
+  const all=[...m.wardrobeLibrary.fitIsolation.parts.male,
+    ...m.wardrobeLibrary.fitIsolation.parts.female,
+    ...m.wardrobeLibrary.fitIsolation.parts.shared];
+  assert.equal(new Set(all).size,all.length,'A part belongs to two body fits');
+  assert.match(outfit,/const sideVariant=new RegExp\(side\+'\[0-9\]\*\
+  assert.match(js,/hair\.userData\.volumeFeature=style\.feature/);
+  assert.match(js,/piece\.userData=\{chibiHairFeature:true/);
+  assert.match(js,/part\.visible=!hatOn/);
+  for(const detail of ['coatTail','tunicFlare','utilityPockets','sailorCollar',
+    'ribbon','cargoPockets','shortCuff','pleats','flareHem']){
+    assert.ok(outfit.includes("style.details.includes('"+detail+"')"),detail+' is not modeled');
+  }
+});
+\)/);
+  assert.match(js,/hair\.userData\.volumeFeature=style\.feature/);
+  assert.match(js,/piece\.userData=\{chibiHairFeature:true/);
+  assert.match(js,/part\.visible=!hatOn/);
+  for(const detail of ['coatTail','tunicFlare','utilityPockets','sailorCollar',
+    'ribbon','cargoPockets','shortCuff','pleats','flareHem']){
+    assert.ok(outfit.includes("style.details.includes('"+detail+"')"),detail+' is not modeled');
+  }
 });
