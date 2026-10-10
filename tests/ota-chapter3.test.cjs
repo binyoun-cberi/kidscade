@@ -31,6 +31,15 @@ test('the left office and right archive are distinct walkable rooms with physica
  assert.equal(C.canMove(s,0,-65),true);
  assert.equal(C.canMove(s,0,-67),false);
 });
+test('every rendered word-furniture piece blocks walking through it',()=>{
+ const s=start();
+ for(const [x,z] of [[-5.8,-42.2],[-8.4,-52.7],[-13.4,-43.4],[-13.5,-52],
+                      [6,-42],[6,-53],[14,-42],[14,-53]]){
+   assert.equal(C.canMove(s,x,z),false,'solid word-furniture at '+x+','+z);
+ }
+ assert.equal(C.canMove(s,-8,-47.8),true,'main office aisle remains open');
+ assert.equal(C.canMove(s,12.8,-50.9),true,'archive record is still accessible');
+});
 test('office word changes a real solid divider and guards its record',()=>{
  const s=start();
  assert.equal(C.canMove(s,-11,-48.5),false);

@@ -33,6 +33,12 @@
       if(!c.officeFixed || z<-50.15 || z>-47.0) return false;
     }
     // The last door must remain a real physical obstacle, even with both records.
+    // Room props must be tangible; geometry and collision use the same footprints.
+    if(x<-3.6 && [[-5.8,-42.2],[-8.4,-52.7],[-13.4,-43.4]].some(([px,pz])=>
+      Math.abs(x-px)<.68 && Math.abs(z-pz)<.48))return false;
+    if(x<-12.45 && x>-14.55 && Math.abs(z+52)<.57)return false;
+    if(x>3.6 && [[6,-42],[6,-53],[14,-42],[14,-53]].some(([px,pz])=>
+      Math.abs(x-px)<.29 && Math.abs(z-pz)<1.34))return false;
     if(Math.abs(z+58.65)<.42 && (!c.finalFixed || Math.abs(x)>1.21))return false;
     return true;
   }

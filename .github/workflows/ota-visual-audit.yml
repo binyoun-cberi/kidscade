@@ -21,6 +21,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install Korean glyph fonts for visual verification
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-noto-cjk
+          fc-cache -f
+          fc-match 'Noto Sans CJK KR'
       - name: Install image test dependencies
         run: npm install --no-audit --no-fund
       - name: Verify game state machine

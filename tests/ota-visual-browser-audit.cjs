@@ -114,6 +114,21 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   for(let i=0;i<95;i++){if(await snap())break;await sleep(80);}
   assert.ok(await snap(),'Game never initialized: '+report.errors.join('; '));
   report.renderer=await evalPage("(()=>({webgl:!!document.querySelector('#scene').getContext('webgl2'),canvas:{w:document.querySelector('#scene').width,h:document.querySelector('#scene').height},title:document.title}))()");
+  report.hangul = await evalPage(`(()=>{
+    const c=document.createElement('canvas');c.width=100;c.height=100;
+    const x=c.getContext('2d');
+    const family='"Noto Sans CJK KR","Noto Sans KR","NanumGothic","Malgun Gothic",sans-serif';
+    const hashes=['가','나','다'].map(letter=>{
+      x.clearRect(0,0,100,100);x.font='900 72px '+family;
+      x.fillStyle='white';x.fillText(letter,8,77);
+      const pixels=x.getImageData(0,0,100,100).data;
+      let hash=0;
+      for(let i=0;i<pixels.length;i++) hash=(Math.imul(hash,31)+pixels[i])|0;
+      return hash;
+    });
+    return {font:family,hashes,distinct:new Set(hashes).size};
+  })()`);
+  assert.equal(report.hangul.distinct,3,'Missing Korean glyphs: letters render as the same empty square');
   await screenshot('01-intro-desktop.png','desktop');
   await evalPage("document.getElementById('start').click()");
   await sleep(300);
@@ -195,6 +210,15 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await moveUntil('x',12.8,'explore',32);
   await moveUntil('z',-50.9,'explore',11);
   await screenshot('15-archive-before-record.png','desktop');
+  // The figure is north of the player: look deliberately for less than a second.
+  assert.equal(await evalPage('window.OtaDebug.aimForVisualAudit(2.80,0)'),true);
+  await sleep(1100);
+  report.watcherGaze=(await snap()).chapter3.watcher;
+  assert.ok(report.watcherGaze.focus>3,'Staring must raise the gaze meter');
+  await screenshot('15b-watcher-gaze-active.png','desktop');
+  await evalPage('window.OtaDebug.aimForVisualAudit(0,0)');
+  await sleep(1550);
+  assert.ok((await snap()).chapter3.watcher.focus<report.watcherGaze.focus,'Looking away must lower danger');
   await interact();
   assert.equal((await snap()).chapter3.records.archive,true,'second record collected');
   await screenshot('16-archive-record.png','desktop');
