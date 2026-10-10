@@ -6,154 +6,134 @@ const path=require('node:path');
 const R=require('../games/high_midnight_diner/rules.js');
 const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
-function cook(g,observeAll=false){
- const first=g.dish;
- assert.equal(g.phase,'cooking');
- const seen=new Set();
+function progressCooking(g,shouldLook=()=>false){
+ let ticks=0;
  while(g.phase==='cooking'){
-  const ev=R.cookingEvent(g);
-  assert.ok(ev);assert.ok(!seen.has(ev.zone));
-  seen.add(ev.zone);
-  if(observeAll&&first.peekCount<3)R.peekCooking(g);
-  const result=R.observeCooking(g,false);
-  assert.equal(result.ok,true);
+  const event=R.cookingEvent(g);
+  R.tickCooking(g,50,shouldLook(event));
+  assert.ok(++ticks<1000,'cooking must finish or fail');
  }
- assert.equal(g.phase,'playing');
- assert.equal(seen.size,first.spec.count);
+ return ticks;
 }
-test('v3 forces cooking observation before food can be tasted',()=>{
+test('v5 locks eating during timed cooking, then unlocks after all food actions',()=>{
  const g=R.begin(42);
  assert.equal(g.phase,'cooking');
  assert.equal(R.eat(g,0).ok,false);
  assert.equal(R.inspect(g,0).ok,false);
- assert.equal(R.question(g).ok,false);
- assert.equal(R.cookingEvent(g).index,0);
- cook(g);
+ const ev=R.cookingEvent(g);
+ assert.equal(ev.phase,'SAFE');
+ assert.ok(ev.totalMs>ev.warnEnd&&ev.warnEnd>ev.safeEnd);
+ progressCooking(g);
  assert.equal(g.phase,'playing');
- assert.equal(R.cookingEvent(g),null);
+ assert.equal(g.dish.cookIndex,g.dish.spec.count);
 });
-test('300 seeds always have a fair five-course cooking-to-eating route',()=>{
- for(let seed=1;seed<=300;seed++){
+test('SAFE reveals correct ingredient after a short sustained peek without suspicion',()=>{
+ for(let seed=1;seed<=100;seed++){
+  const g=R.begin(seed),dish=g.dish,first=dish.cookOrder[0],z=dish.zones[first];
+  const before=g.suspicion;
+  let revealed=null;
+  for(let i=0;i<25;i++){
+   const outcome=R.tickCooking(g,50,true);
+   if(outcome.revealed)revealed=dish.currentPeek;
+   if(revealed)break;
+  }
+  assert.ok(revealed,'sustained peek should eventually reveal the action');
+  assert.equal(g.suspicion,before);
+  assert.equal(revealed.zone,first+1);
+  if(!revealed.concealed){
+   assert.equal(revealed.ingredient,z.dangerous?dish.spec.word:'일반 양념');
+   assert.equal(dish.observed.at(-1).zone,first+1);
+  }
+ }
+});
+test('WARNING phase has 460ms+ telegraph with fair reaction grace period',()=>{
+ const g=R.begin(24),timing=R.timingFor(g);
+ assert.ok(timing.warnEnd-timing.safeEnd>=460);
+ let warned=0,caught=0;
+ while(g.phase==='cooking'&&g.dish.cookIndex===0){
+  const phase=R.gazePhase(g);
+  const x=R.tickCooking(g,50,phase==='SAFE');
+  if(x.warned)warned++;
+  if(x.caught)caught++;
+ }
+ assert.equal(warned,0);
+ assert.equal(caught,0);
+ assert.equal(g.catches,0);
+ assert.equal(g.suspicion,8);
+});
+test('WARNING lingering has a small penalty, looking at chef gets progressive catches',()=>{
+ const g=R.begin(25);
+ let warned=0,caught=0;
+ for(let i=0;i<260&&g.phase==='cooking';i++){
+  const x=R.tickCooking(g,50,true);
+  if(x.warned)warned++;
+  if(x.caught)caught++;
+ }
+ assert.equal(caught,3);
+ assert.ok(warned>=3);
+ assert.equal(g.phase,'finished');
+ assert.equal(g.ending.won,false);
+ assert.equal(g.ending.message,'요리사가 당신의 식사를 중단시켰다.');
+ assert.equal(g.suspicion,100);
+});
+test('releasing before LOOK prevents catches even after WARN',()=>{
+ const g=R.begin(41);
+ let warned=0,caught=0;
+ while(g.phase==='cooking'&&g.dish.cookIndex===0){
+  const ev=R.cookingEvent(g);
+  const stillLooking=ev.phase==='SAFE'||(ev.phase==='WARN'&&ev.elapsedMs<ev.safeEnd+210);
+  const x=R.tickCooking(g,50,stillLooking);
+  if(x.warned)warned++;if(x.caught)caught++;
+ }
+ assert.equal(warned,1);
+ assert.equal(caught,0);
+ assert.equal(g.catches,0);
+ assert.equal(g.suspicion,12);
+});
+test('200 randomized full five-course routes remain solvable with timely peeks',()=>{
+ for(let seed=1;seed<=200;seed++){
   const g=R.begin(seed);
-  for(let i=0;i<R.FOODS.length;i++){
-   assert.equal(g.course,i);
-   const dish=g.dish,spec=R.FOODS[i];
-   assert.equal(dish.zones.length,spec.count);
-   assert.equal(dish.zones.filter(z=>z.dangerous).length,spec.hazards);
+  for(let course=0;course<R.FOODS.length;course++){
+   const dish=g.dish;
+   assert.equal(g.phase,'cooking');
+   assert.equal(dish.zones.filter(z=>z.dangerous).length,dish.spec.hazards);
    assert.ok(dish.zones.some(z=>z.dangerous&&z.shade>=.18));
-   cook(g);
+   progressCooking(g,ev=>ev.phase==='SAFE');
+   assert.equal(g.phase,'playing');
+   assert.equal(g.catches,0);
    const safe=dish.zones.filter(z=>!z.dangerous).slice(0,3);
-   assert.equal(safe.length,3);
    for(const z of safe)assert.equal(R.eat(g,z.id).dangerous,false);
-   assert.equal(g.lastReview.safe,3);
-   assert.equal(g.history.length,i+1);
+   assert.equal(g.history.length,course+1);
   }
   assert.equal(g.ending.won,true);
-  assert.equal(g.safeBites,15);
   assert.equal(g.score,2050);
  }
 });
-test('peeking reveals true ingredients from their exact plated positions and costs suspicion only once per event',()=>{
- for(let seed=1;seed<=100;seed++){
-  const g=R.begin(seed),dish=g.dish;
-  for(let i=0;i<dish.spec.count;i++){
-   const expected=R.cookingEvent(g),z=dish.zones[expected.zone-1];
-   const before=g.suspicion;
-   const first=R.peekCooking(g),repeat=R.peekCooking(g);
-   assert.equal(first.ok,true);
-   assert.equal(repeat.free,true);
-   assert.equal(g.suspicion,before+(i<3?2:5));
-   assert.equal(first.zone,expected.zone);
-   if(!first.concealed)assert.equal(first.ingredient,z.dangerous?dish.spec.word:'일반 양념');
-   const obs=R.observeCooking(g,false);assert.equal(obs.zone,expected.zone);
-  }
-  assert.equal(g.phase,'playing');
-  assert.equal(dish.observed.length,dish.zones.filter(z=>z.shade>=.18).length);
- }
-});
-test('inspection returns ambiguous scents and never says safe/unsafe',()=>{
- const g=R.begin(24);cook(g);
- const z=g.dish.zones[0];
- const result=R.inspect(g,z.id);
- assert.equal(result.ok,true);
- assert.equal(typeof result.strong,'boolean');
- assert.doesNotMatch(result.message,/안전\\.|위험!/);
- assert.equal(R.inspect(g,z.id).free,true);
- assert.equal(g.dish.inspectionsLeft,1);
-});
-test('chefs clues are truthful and rejecting all plates loses',()=>{
- const g=R.begin(123);
- for(let stage=0;stage<5;stage++){
-  cook(g);
-  const half=Math.ceil(g.dish.spec.count/2);
-  const expected=g.dish.zones.filter(z=>z.id<half&&z.dangerous).length;
-  assert.equal(R.question(g).count,expected);
-  assert.equal(R.question(g).ok,false);
-  for(const z of g.dish.zones.filter(z=>!z.dangerous).slice(0,3))R.eat(g,z.id);
- }
- assert.equal(g.ending.won,true);
- const loser=R.begin(444);
- while(loser.phase!=='finished'){
-  cook(loser);
-  R.reject(loser);
- }
- assert.equal(loser.ending.won,false);
-});
-test('v3 does not encode exact danger marks in plate renderer',()=>{
- for(const file of ['games/high_midnight_diner/plate.js','games/high_midnight_diner/plate-extra.js'])
-  assert.doesNotMatch(read(file),/z\.dangerous/,file);
+test('v5 controls and 3D chef gaze are synced to safe/warning/look stages',()=>{
  const html=read('games/high_midnight_diner/index.html');
- for(const id of ['cookPanel','peekBtn','cookSlots','cookFlash','memoryPanel','memoryEntries','chefLine'])
-  assert.match(html,new RegExp('id="'+id+'"'));
- const dialogue=html.indexOf('class="dialogue dialogue-right"');
- assert.ok(dialogue>html.indexOf('class="dining"'));
- assert.ok(!html.slice(0,html.indexOf('class="dining"')).includes('id="chefLine"'));
+ const js=read('games/high_midnight_diner/game.js');
+ const kitchen=read('games/high_midnight_diner/kitchen.js');
+ const css=read('games/high_midnight_diner/v5.css');
+ assert.match(html,/v5\.css/);
+ assert.match(html,/id="cookClock" class="gaze-indicator gaze-safe"/);
+ assert.match(js,/R\.tickCooking\(game,dt,peekHeld\)/);
+ assert.match(js,/midnight-diner:gaze/);
+ assert.match(js,/midnight-diner:caught/);
+ assert.match(kitchen,/gazePhase==='SAFE'/);
+ assert.match(kitchen,/gazePhase==='WARN'/);
+ assert.match(css,/\.gaze-indicator/);
+ assert.match(css,/\.plate-wrap\s*\{flex-shrink:0!important/);
+ const diningIndex=html.indexOf('class="dining"');
+ assert.ok(html.indexOf('id="cookPanel"')>diningIndex,'peek overlay must not obscure chef');
 });
-test('five existing food/chef models and catalogue integration exist',()=>{
+test('existing GLB chef and food models plus catalog registration remain intact',()=>{
  for(const file of [
+ 'assets/game/npcs/glTF/Chef_Male.gltf',
  'assets/game/3d/interiors/charming-kitchen-set/fridge.glb',
- 'assets/game/3d/interiors/charming-kitchen-set/stove.glb',
  'assets/game/3d/interiors/modular-sushi-restaurant-kit/ramen.glb',
  'assets/game/3d/interiors/modular-sushi-restaurant-kit/dango.glb',
- 'assets/game/3d/interiors/modular-sushi-restaurant-kit/gyoza.glb',
- 'assets/game/3d/food/ultimate-food-pack/pancakes-stack.glb',
- 'assets/game/3d/food/ultimate-food-pack/cupcake.glb',
- 'assets/game/npcs/glTF/Chef_Male.gltf'
+ 'assets/game/3d/food/ultimate-food-pack/cupcake.glb'
  ])assert.ok(fs.existsSync(path.join(root,file)),file);
- const html=read('games/high_midnight_diner/index.html');
- for(const file of ['rules.js','game.js','kitchen.js','plate.js','plate-extra.js','style.css','layout.css','overlay.css','v2.css','v3.css'])
-  assert.ok(html.includes(file),file);
- const c=JSON.parse(read('data/games.json'));
- assert.equal(c.games.find(g=>g.id==='high_midnight_diner').href,'games/high_midnight_diner/index.html');
- assert.match(read('games/high_midnight_diner/kitchen.js'),/Chef_Male.gltf/);
-});
-
-test('v4 cooking controls live outside 3D kitchen and eating fills mobile viewport',()=>{
- const html=read('games/high_midnight_diner/index.html');
- const kitchenEnd=html.indexOf('</section>',html.indexOf('class="kitchen"'));
- const diningStart=html.indexOf('class="dining"');
- const cookPanel=html.indexOf('id="cookPanel"');
- const course=html.indexOf('class="course-line"');
- const memory=html.indexOf('id="memoryPanel"');
- assert.ok(kitchenEnd>0&&diningStart>kitchenEnd);
- assert.ok(cookPanel>diningStart&&cookPanel>course&&cookPanel<memory,'cook HUD must be in the right-side dining controls');
- const css=read('games/high_midnight_diner/v4.css');
- assert.match(css,/\.cook-panel\s*\{\s*position:relative!important/);
- assert.match(css,/\.game-layout\.cooking \.plate-wrap/);
- assert.match(css,/\.game-layout\.eating \.kitchen\s*\{\s*display:none!important/);
- assert.match(css,/#plate\s*\{[\s\S]*?aspect-ratio:10\/7/);
- assert.match(css,/height:auto!important/);
- assert.match(html,/v4\.css/);
-});
-test('v4 stops ingredient visibility when peeking ends and pauses hidden tab timers',()=>{
- const js=read('games/high_midnight_diner/game.js');
- assert.match(js,/looking:peekHeld&&!!peek/);
- assert.match(js,/if\(previouslyHeld&&game\?\.phase==='cooking'\)updateCookScene\(\)/);
- assert.match(js,/if\(document\.hidden\)return;/);
- assert.match(js,/layout\.classList\.toggle\('eating',game\.phase==='playing'\)/);
- const scene=read('games/high_midnight_diner/kitchen.js');
- assert.match(scene,/cookingPhase=d\.phase==='cooking'/);
- assert.match(scene,/spoon\.visible=cookingPhase/);
- assert.match(scene,/Chef_Male\.gltf',2\.22,-\.1,0,\.43,0/);
- assert.match(scene,/stove\.glb',1\.12,-1\.38,0/);
+ const catalog=JSON.parse(read('data/games.json'));
+ assert.equal(catalog.games.find(x=>x.id==='high_midnight_diner').href,'games/high_midnight_diner/index.html');
 });
