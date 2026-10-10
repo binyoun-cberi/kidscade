@@ -74,7 +74,7 @@ const furniture={
 };
 let running=false, level=0, elapsed=0, coins=0, sessionCoins=0, cleanCount=0, totalCount=0;
 let selected=null, dragging=null, scrubbing=null, mouseDown=null, scrubDistance=0, turn=0, zoom=1, hintTimer=0, activeSound=true;
-let pickables=[],things=[],stains=[],stations=[],animations=[],effects=[],decorations=[],decorationsHidden=0,clutterPiles=[],generation=0, ready=false;
+let pickables=[],things=[],stains=[],stations=[],animations=[],effects=[],decorations=[],decorationsHidden=0,clutterPiles=[],pileFillerMeshes=[],generation=0, ready=false;
 let lastFrame=performance.now(),lastClockSecond=-1,previousStage=0,beforeImage='',captureTimeout=0;
 let saved={coins:0,unlocked:0,best:{}};
 try{const v=JSON.parse(localStorage.getItem(DIRTY_KEY)||'null');if(v&&typeof v==='object')saved={coins:Math.max(0,Number(v.coins)||0),unlocked:Math.min(1,Math.max(0,Number(v.unlocked)||0)),best:v.best||{}}}catch(_){}
@@ -175,6 +175,7 @@ function createClutterMountains(rand){
   instanced.count=0;instanced.frustumCulled=false;instanced.castShadow=false;instanced.receiveShadow=false;
   root.add(instanced);return instanced;
  });
+ pileFillerMeshes=filler;
  const colors=[0x947e65,0xafa08a,0x9caeb0,0xe4b88e,0x8bada0,0xa7806c,0xb5a091,0x789d99,0xc5ad81,0x778da3];
  const temp=new THREE.Object3D();
  const layers=[
@@ -237,6 +238,8 @@ function retreatClutterMountains(){
 
 function buildRoom(){
  generation++;
+ for(const m of pileFillerMeshes){m.geometry.dispose();m.material.dispose()}
+ pileFillerMeshes=[];
  root.clear();clearTimeout(captureTimeout);beforeImage='';pickables=[];things=[];stains=[];stations=[];animations=[];effects=[];decorations=[];decorationsHidden=0;clutterPiles=[];selected=null;dragging=null;scrubbing=null;canvas.style.cursor='grab';$('dropGuide').hidden=true;elapsed=0;lastClockSecond=-1;cleanCount=0;sessionCoins=0;
  const def=levelDefs[level],rand=seedRandom(def.seed+Math.floor(Math.random()*20000));
  scene.background.set(level===0?0xb4d1c0:0xaec6b7);scene.fog.color.copy(scene.background);
