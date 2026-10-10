@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#15140f">
 <title>수상한 심야식당 | 키즈케이드</title>
-<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="layout.css"><link rel="stylesheet" href="overlay.css"><link rel="stylesheet" href="v2.css"><link rel="stylesheet" href="v3.css"><link rel="stylesheet" href="v4.css"><link rel="stylesheet" href="v5.css">
+<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="layout.css"><link rel="stylesheet" href="overlay.css"><link rel="stylesheet" href="v2.css"><link rel="stylesheet" href="v3.css"><link rel="stylesheet" href="v4.css"><link rel="stylesheet" href="v5.css"><link rel="stylesheet" href="v6.css">
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_midnight_diner" data-title="수상한 심야식당" data-shell="true" data-orientation="portrait"></script>
 <script src="../../kidscade-storage.js"></script>
@@ -13,7 +13,7 @@
 <body>
 <main id="game">
   <header class="topbar">
-    <div><span class="micro">LAST ORDER · VERSION 5</span><h1>수상한 심야식당</h1></div>
+    <div><span class="micro">LAST ORDER · VERSION 6</span><h1>수상한 심야식당</h1></div>
     <div class="topright"><button id="notebookBtn" type="button" aria-label="식당 수첩 열기">수첩 <span aria-hidden="true">▤</span></button><button id="soundBtn" type="button" aria-label="소리 끄기">소리 켬</button></div>
   </header>
   <div class="game-layout">
@@ -41,7 +41,8 @@
         <div class="cook-caption"><span id="cookStage">조리 중 · 1 / 8</span><span id="cookClock" class="gaze-indicator gaze-safe">안전</span></div>
         <div id="cookSlots" class="cook-slots" aria-label="재료가 투입되는 위치"></div>
         <div id="cookFlash" class="cook-flash" role="status" aria-live="polite">요리사의 손을 관찰하세요.</div>
-        <button id="peekBtn" type="button" class="peek-btn">누르고 흘끔 보기 <small>등을 돌리면 관찰, 경고가 보이면 손 떼기</small></button>
+        <div id="peekBudget" class="peek-budget" aria-live="off">추가 관찰 부담 없음 · 0회 확인</div>
+        <button id="peekBtn" type="button" class="peek-btn"><span id="peekCaption">누르고 흘끔 보기</span><small>등을 돌리면 관찰 · 경고 시 손 떼기</small></button>
         <div class="cook-progress"><i id="cookBar"></i></div>
       </div>
       <div id="memoryPanel" class="memory-panel hidden"><strong>조리 관찰 기록</strong><div id="memoryEntries" class="memory-entries" aria-live="polite">본 재료는 이곳에 기록됩니다.</div></div>
@@ -69,7 +70,7 @@
     <h2>수상한<br>심야식당</h2>
     <p class="intro-lead">새벽 두 시. 요리사는 당신이 떠나는 걸 바라지 않는다.</p>
     <p><b>먼저 조리를 흘끔 보며</b> 위험한 재료가 어느 부분에 들어갔는지 기억하세요. 완성 후 음식의 한 부분을 선택해 <b>먹기</b> 또는 <b>조사하기</b>를 누르세요. 접시마다 세 입을 먹으면 다음 음식으로 넘어갑니다. <b>다섯 접시에서 안전한 음식 열 입 이상</b> 먹어야 탈출합니다.</p>
-    <div class="hintlist"><span>요리사가 등을 돌리면 흘끔 보기 버튼을 누르세요. 어깨를 돌리는 경고가 나타나면 즉시 손을 떼고, 쳐다볼 때는 절대 보지 마세요.</span><span>다 넣고 나면 오른쪽 접시에서 먹을 위치를 고르세요. 완성된 음식에는 정답 표시가 없습니다.</span><span>PC: Space 꾹 눌러 관찰하고 경고 시 떼기 / 숫자 1~8 선택 / E 먹기 / I 조사 / Q 질문 / R 거절.</span></div>
+    <div class="hintlist"><span>요리사가 등을 돌렸을 때 꾹 누르고, 경고가 시작되면 떼세요. 접시마다 첫 두 번은 안전하게 확인할 수 있지만 세 번째부터는 자꾸 훔쳐보는 걸 의심합니다.</span><span>다 넣고 나면 오른쪽 접시에서 먹을 위치를 고르세요. 완성된 음식에는 정답 표시가 없습니다.</span><span>PC: Space 꾹 눌러 관찰하고 경고 시 떼기 / 숫자 1~8 선택 / E 먹기 / I 조사 / Q 질문 / R 거절.</span></div>
     <p class="disclaimer">게임 속 금지 재료는 가상 설정입니다. 현실의 식품 알레르기는 음식의 일부를 골라 먹는 것으로 안전해지지 않습니다.</p>
     <button id="startBtn" class="primary" type="button">자리에 앉기</button>
   </div>
