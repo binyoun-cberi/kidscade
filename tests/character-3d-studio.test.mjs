@@ -1055,13 +1055,11 @@ test('v6.1 visual identity details include layered school collar, rugby stripes,
   assert.match(hair,/side:THREE.DoubleSide/);
 });
 
-test('v6.2 facial accessories hug skin without forward floating discs',()=>{
+test('v6.3 retains face accessories and mask ear loops',()=>{
   const src=read('teacher/chibi-accessory-pack.js');
-  assert.match(src,/case 'sunglasses':return sphere\(-\.110,eyeY,faceZ\+\.025,\.112,\.083,\.012\)/);
-  assert.match(src,/case 'mask':return sphere\(0,eyeY-\.305,faceZ\+\.030,\.179,\.113,\.035\)/);
-  assert.match(src,/add\(sphere\(\.110,eyeY,faceZ\+\.025,\.112,\.083,\.012\)/);
-  assert.match(src,/eyeY-\.235,faceZ\+\.066/);
-  assert.match(src,/eyeY-\.307,faceZ-\.018/);
+  assert.match(src,/case 'sunglasses':return facePatch/);
+  assert.match(src,/case 'mask':return facePatch/);
+  assert.ok(src.includes('earLoop_'));
 });
 
 
