@@ -129,6 +129,10 @@
       'tod_emoji_pang','high_emergency_escape','tod_heaven_stairs'
     ]),
     stage:Object.freeze([
+      'squid_redlight',
+      'squid_tug',
+      'squid_marbles',
+      'squid_final',
       'dalgona_trace',
       'squid_memory_bridge',
       'high_ota_typographic_horror','hanja_sichuan','high_code_quest','low_math_number_tower','high_classroom_war_3d','high_rule_lab','low_one_stroke',
