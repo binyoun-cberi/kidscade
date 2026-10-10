@@ -60,11 +60,14 @@ test('inspection repeat is free; new check is limited to two per course',()=>{
 });
 test('danger removes 33 health; systematic rejection never escapes',()=>{
  const danger=R.begin(99);
- for(let i=0;i<3;i++){
+ for(let i=0;i<2;i++){
   const id=danger.dish.zones.findIndex(z=>z.dangerous&&!z.removed);
-  const hit=R.eat(danger,id);
-  assert.equal(hit.dangerous,true);
+  assert.equal(R.eat(danger,id).dangerous,true);
  }
+ assert.equal(danger.health,34);
+ assert.equal(R.eat(danger,danger.dish.zones.findIndex(z=>!z.dangerous)).dangerous,false);
+ assert.equal(danger.course,1);
+ assert.equal(R.eat(danger,danger.dish.zones.findIndex(z=>z.dangerous)).dangerous,true);
  assert.equal(danger.health,1);
  const loser=R.begin(55);
  for(let i=0;i<5&&loser.phase==='playing';i++)R.reject(loser);
