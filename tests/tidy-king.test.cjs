@@ -78,3 +78,23 @@ test('Tidy King unlocks kitchen independently of the apartment and refreshes sta
  assert.match(js,/saved\.unlocked=Math\.max/);
  assert.match(js,/showStageButtons\(\)/);
 });
+
+test('Tidy King places items through physical pointer drag, not tap-then-tap',()=>{
+ assert.match(js,/function beginDrag\(/);
+ assert.match(js,/function moveDrag\(/);
+ assert.match(js,/function candidateAt\(/);
+ assert.match(js,/function resetDrag\(/);
+ assert.match(js,/const state=dragging,station=state\.moved\?candidateAt\(e\):null/);
+ assert.match(js,/if\(station&&station\.key===state\.item\.zone\)/);
+ assert.match(js,/function groundAt\(/);
+ assert.match(js,/canvas\.setPointerCapture\(e\.pointerId\)/);
+ assert.match(html,/id="dropGuide"/);
+ assert.match(html,/누른 채 끌기/);
+});
+test('Tidy King scatters props into natural clusters, not an 8-column grid',()=>{
+ assert.match(js,/function scatterClutter\(/);
+ assert.match(js,/const anchors=\{/);
+ assert.match(js,/const scatter=scatterClutter\(list,rand\)/);
+ assert.doesNotMatch(js,/const col=i%8,row=Math\.floor\(i\/8\)/);
+ assert.match(js,/source\.home\.x\+Math\.cos\(theta\)/);
+});
