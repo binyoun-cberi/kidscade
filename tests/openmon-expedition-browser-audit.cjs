@@ -155,10 +155,19 @@ let chrome,ws,profile;
    const mons=document.querySelectorAll('.dex-card').length;
    document.querySelector('[data-dex-tab="moves"]').click();
    const total=document.querySelectorAll('[data-move]').length;
+   const actualCatalog=window.KIDSMON_MOVE_DEX.all.length;
+   document.querySelector('[data-move-next]')?.click();
+   const paged=document.querySelectorAll('[data-move]').length;
    const initialCard=document.querySelector('[data-move]')?.getBoundingClientRect();
    const initialVisible=!!initialCard&&initialCard.top<innerHeight-20&&initialCard.bottom>0;
    const heading=$('genericTitle').textContent;
    const descriptor=$('moveDexDetail').textContent;
+   const families=$('moveDexFamily');
+   families.value='signature';families.dispatchEvent(new Event('change',{bubbles:true}));
+   const familyResult=Array.from(document.querySelectorAll('[data-move]')).every(card=>
+    !!window.KIDSMON_MOVE_DEX.detail(card.dataset.move).familyKey);
+   const signatureCount=document.querySelectorAll('[data-move]').length;
+   families.value='all';families.dispatchEvent(new Event('change',{bubbles:true}));
    const filter=$('moveDexType');
    filter.value='leaf';filter.dispatchEvent(new Event('change',{bubbles:true}));
    const leaves=Array.from(document.querySelectorAll('[data-move]')).map(x=>x.dataset.move);
@@ -176,16 +185,18 @@ let chrome,ws,profile;
    input.value='없는-기술-zxwv999';input.dispatchEvent(new Event('input',{bubbles:true}));
    const empty=document.querySelectorAll('[data-move]').length===0;
    input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));
-   return {mons,total,initialVisible,heading,descriptor:descriptor.slice(0,140),leaves,own,byName,
+   return {mons,total,actualCatalog,paged,familyResult,signatureCount,initialVisible,heading,descriptor:descriptor.slice(0,140),leaves,own,byName,
     signature:signature.slice(0,250),empty,restored:document.querySelectorAll('[data-move]').length};
   });
-  assert.ok(moveDexAudit.mons===102&&moveDexAudit.total===41&&moveDexAudit.initialVisible&&
+  assert.ok(moveDexAudit.mons===102&&moveDexAudit.total===36&&moveDexAudit.actualCatalog===140&&
+    moveDexAudit.paged===72&&moveDexAudit.familyResult&&moveDexAudit.signatureCount>0&&
+    moveDexAudit.initialVisible&&
     moveDexAudit.heading.includes('기술 도감')&&
-    moveDexAudit.leaves.length>0&&moveDexAudit.leaves.length<41&&
+    moveDexAudit.leaves.length>0&&moveDexAudit.leaves.length<=36&&
     moveDexAudit.own.length>0&&moveDexAudit.own.length<=moveDexAudit.leaves.length&&
     moveDexAudit.byName.includes('fiboStrikes')&&
     moveDexAudit.signature.includes('2번 연속')&&
-    moveDexAudit.empty&&moveDexAudit.restored===41,
+    moveDexAudit.empty&&moveDexAudit.restored===36,
     'Skill encyclopedia search/filter/detail broke '+config.name+JSON.stringify(moveDexAudit));
   await screenshot(config.name+'-move-dex');
   await evalFn(()=>document.getElementById('genericClose').click());
