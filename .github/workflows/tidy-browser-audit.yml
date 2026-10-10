@@ -1,0 +1,32 @@
+name: Tidy King real-browser audit
+on:
+  pull_request:
+    paths:
+      - 'tests/tidy-king-browser-audit.cjs'
+      - 'games/sim_tidy_king/**'
+      - '.github/workflows/tidy-browser-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tidy-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - name: Simulate all scenes with real Chrome
+        run: node tests/tidy-king-browser-audit.cjs
+        env:
+          TIDY_AUDIT_OUT: ${{ runner.temp }}/tidy-king-audit
+      - name: Upload screenshots and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tidy-king-browser-audit
+          path: ${{ runner.temp }}/tidy-king-audit/
+          if-no-files-found: ignore
+          retention-days: 7

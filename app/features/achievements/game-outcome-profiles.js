@@ -140,7 +140,7 @@
       'job_nail_artist','job_takoyaki_simulator','job_steak_master','job_bogle_bunsik',
       'math_icecream_division','math_stationery_boss','job_maratang_simulator','math_base10_blocks',
       'alien_pizza','alien_sandwich','burger_master','job_teacher_classroom',
-      'high_folklore_night_guard','low_juice_maker'
+      'high_folklore_night_guard','low_juice_maker','high_midnight_diner'
     ]),
     mission:Object.freeze([
       'high_weathercaster_simulator','job_police_car','job_drone_pilot','job_driver_license',

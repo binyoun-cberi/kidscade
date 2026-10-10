@@ -6,16 +6,16 @@ const canvas=$('world');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.12;
+renderer.toneMappingExposure=.86;
 renderer.setPixelRatio(Math.min(devicePixelRatio||1.0,1.5));
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0xc5e2d5);
-scene.fog=new THREE.Fog(0xc5e2d5,25,46);
+scene.background=new THREE.Color(0xb4d1c0);
+scene.fog=new THREE.Fog(0xb4d1c0,26,47);
 const camera=new THREE.PerspectiveCamera(48,1,.1,80);
-const hemi=new THREE.HemisphereLight(0xfff8e8,0x819e91,2.4);scene.add(hemi);
-const sunlight=new THREE.DirectionalLight(0xffe6c4,2.2);
+const hemi=new THREE.HemisphereLight(0xfff8e8,0x8c998e,1.35);scene.add(hemi);
+const sunlight=new THREE.DirectionalLight(0xffedd1,1.75);
 sunlight.position.set(-5,13,10);sunlight.castShadow=true;
 sunlight.shadow.mapSize.set(1024,1024);sunlight.shadow.camera.left=-11;sunlight.shadow.camera.right=11;sunlight.shadow.camera.top=11;sunlight.shadow.camera.bottom=-11;
 sunlight.shadow.bias=-.00045;scene.add(sunlight);
@@ -40,10 +40,10 @@ const catalog={
 const levelDefs=[
  {name:'의뢰 1 · 엉망진창 원룸',title:'우리 집 대청소',description:'지저분해진 원룸을 새집처럼 바꾸자!',seed:12345,
   items:{book:8,pen:4,pillow:5,bag:5,bottle:7,can:5,carton:4,cup:4,toy:4},stains:5,
-  floor:0xf5e4ca,wall:0xfff7df},
+  floor:0xc9ae8c,wall:0xe5cfac},
  {name:'의뢰 2 · 난장판 주방',title:'반짝반짝 주방',description:'바닥에 널린 물건을 치우고 얼룩까지 닦자!',seed:67891,
   items:{cup:11,plate:8,pan:3,bottle:8,can:7,carton:5,bag:5,book:3,pillow:2,toy:2},stains:7,
-  floor:0xe5ede5,wall:0xf3f7ed}
+  floor:0xb9c9ba,wall:0xd0dfc9}
 ];
 const props={
  book:{model:'books',path:FURN+'books.glb',kind:'shelf',size:.52,color:0xf0b755,name:'책'},
@@ -75,7 +75,7 @@ const furniture={
 let running=false, level=0, elapsed=0, coins=0, sessionCoins=0, cleanCount=0, totalCount=0;
 let selected=null, scrubbing=null, mouseDown=null, scrubDistance=0, turn=0, zoom=1, hintTimer=0, activeSound=true;
 let pickables=[],things=[],stains=[],stations=[],animations=[],effects=[],generation=0, ready=false;
-let lastFrame=performance.now(),lastClockSecond=-1,previousStage=0;
+let lastFrame=performance.now(),lastClockSecond=-1,previousStage=0,beforeImage='',captureTimeout=0;
 let saved={coins:0,unlocked:0,best:{}};
 try{const v=JSON.parse(localStorage.getItem(DIRTY_KEY)||'null');if(v&&typeof v==='object')saved={coins:Math.max(0,Number(v.coins)||0),unlocked:Math.min(1,Math.max(0,Number(v.unlocked)||0)),best:v.best||{}}}catch(_){}
 coins=saved.coins;
@@ -126,9 +126,9 @@ function smooth(a,b,t){return a+(b-a)*Math.min(1,Math.max(0,t))}
 function seedRandom(seed){let s=seed>>>0;return()=>((s=(1664525*s+1013904223)>>>0)/4294967296)}
 function buildRoom(){
  generation++;
- root.clear();pickables=[];things=[];stains=[];stations=[];animations=[];effects=[];selected=null;scrubbing=null;elapsed=0;lastClockSecond=-1;cleanCount=0;sessionCoins=0;
+ root.clear();clearTimeout(captureTimeout);beforeImage='';pickables=[];things=[];stains=[];stations=[];animations=[];effects=[];selected=null;scrubbing=null;elapsed=0;lastClockSecond=-1;cleanCount=0;sessionCoins=0;
  const def=levelDefs[level],rand=seedRandom(def.seed+Math.floor(Math.random()*20000));
- scene.background.set(level===0?0xc5e2d5:0xd3e6de);scene.fog.color.copy(scene.background);
+ scene.background.set(level===0?0xb4d1c0:0xaec6b7);scene.fog.color.copy(scene.background);
  const floor=cuboid(11.75,.23,11.3,def.floor,0,-.14,0);floor.receiveShadow=true;root.add(floor);
  // Dollhouse: only the back and left walls, keeping every prop visible and selectable.
  const back=cuboid(11.75,3.8,.2,def.wall,0,1.86,-5.62);root.add(back);
@@ -141,12 +141,10 @@ function buildRoom(){
  const rug=itemModel('rug',3.9,0x9ad5b7);rug.position.set(0,.012,.26);root.add(rug);
  const furn=level===0?[
   ['bed',2.7,-3.58,-3.6,Math.PI/2],['sofa',2.6,1.65,-3.74,0],
-  ['bookcase',2.6,-4.83,-1.7,Math.PI/2],['washer',1.27,-4.48,.43,Math.PI/2],
-  ['sink',1.45,4.54,-3.25,-Math.PI/2],['table',1.35,.0,-2.78,0],
+  ['table',1.35,.0,-2.78,0],
   ['plant',1.1,3.78,-4.4,0]]:
   [['counter',2.0,-2.94,-3.93,0],['fridge',2.3,3.18,-4.36,0],
-  ['bookcase',2.25,-4.75,-2.55,Math.PI/2],['washer',1.18,-4.43,.35,Math.PI/2],
-  ['sink',1.5,4.52,-3.15,-Math.PI/2],['table',1.6,.4,-3.72,0],
+  ['table',1.6,.4,-3.72,0],
   ['plant',1,3.95,-4.66,0]];
  furn.forEach(([key,size,x,z,rot])=>{
   const m=itemModel(key,size,0xe1ba8b);m.position.set(x,.035,z);m.rotation.y=rot;root.add(m);
@@ -182,21 +180,65 @@ function buildRoom(){
  $('missionText').innerHTML='바닥의 물건을 터치해 보세요<small>정리할 장소가 빛나면 그곳을 누르세요</small>';
  updateHud();
  cameraMove();
+ beforeImage=captureScene();
+}
+function stationModel(key){
+ const propsByStation={
+  shelf:['bookcase',2.0,0xa27a52],
+  laundry:['box',1.12,0xac8c66],
+  toys:['box',1.22,0xc39b69],
+  sink:['sink',1.42,0xe0e4e1],
+  recycle:['trashcan',1.12,0x709a8d],
+  trash:['trashcan',1.12,0x9a7c69]
+ };
+ const [asset,size,fallback]=propsByStation[key];
+ const model=itemModel(asset,size,fallback);
+ // Touchable physical receptacles replace the previous flat sorting discs.
+ if(key==='laundry'||key==='toys'){
+  const rim=mesh(new THREE.TorusGeometry(.43,.048,7,24),key==='laundry'?0x936bbf:0xe5a240);
+  rim.rotation.x=-Math.PI/2;rim.position.y=.68;model.add(rim);
+ }
+ if(key==='recycle'||key==='trash'){
+  const edge=mesh(new THREE.TorusGeometry(.35,.06,8,24),key==='recycle'?0x299a72:0xc86d5c);
+  edge.rotation.x=-Math.PI/2;edge.position.y=.82;model.add(edge);
+ }
+ return model;
 }
 function makeStation(key,x,z){
- const d=catalog[key];
- const group=new THREE.Group();group.position.set(x,.01,z);
- const plate=new THREE.Mesh(new THREE.CylinderGeometry(.76,.76,.06,24),colorMat(d.color,{emissive:d.color,emissiveIntensity:.16}));
- plate.position.y=.028;plate.receiveShadow=true;group.add(plate);
- const rim=new THREE.Mesh(new THREE.TorusGeometry(.76,.055,8,34),new THREE.MeshBasicMaterial({color:0xfff9d8}));
- rim.rotation.x=-Math.PI/2;rim.position.y=.075;group.add(rim);
- const token=makeLabel(d.icon+' '+d.label,1.9,.44,'#fffdf2','#315d50');
- token.position.set(0,.55,0);group.add(token);
- const hit=new THREE.Mesh(new THREE.CylinderGeometry(.94,.94,.17,24),new THREE.MeshBasicMaterial({visible:false}));
- hit.position.y=.10;hit.userData={kind:'station',key};group.add(hit);
+ const d=catalog[key],group=new THREE.Group();group.position.set(x,.01,z);
+ const physical=stationModel(key);group.add(physical);
+ const plate=new THREE.Mesh(new THREE.CylinderGeometry(.72,.72,.055,24),colorMat(d.color,{emissive:d.color,emissiveIntensity:.09,transparent:true,opacity:.45}));
+ plate.position.y=.02;plate.receiveShadow=true;group.add(plate);
+ const rim=new THREE.Mesh(new THREE.TorusGeometry(.72,.038,8,34),new THREE.MeshBasicMaterial({color:0xfff4d8,transparent:true,opacity:.52}));
+ rim.rotation.x=-Math.PI/2;rim.position.y=.06;group.add(rim);
+ const token=makeLabel(d.icon+' '+d.label,1.88,.46,'#fffaf0','#264f41');
+ token.position.set(0,key==='shelf'?2.24:1.53,.05);group.add(token);
+ const hit=new THREE.Mesh(new THREE.CylinderGeometry(.8,.8,key==='shelf'?2.05:1.35,24),new THREE.MeshBasicMaterial({visible:false}));
+ hit.position.y=key==='shelf'?1.02:.65;hit.userData={kind:'station',key};group.add(hit);
  group.userData={kind:'station',key};root.add(group);pickables.push(group);
  const record={group,key,plate,rim,token,hit,x,z,stored:0};
  stations.push(record);
+}
+function depositPosition(station){
+ const n=station.stored;
+ // A few miniature props visibly accumulate on the shelf or inside each bin.
+ const shelf=station.key==='shelf';
+ const cols=shelf?3:4,row=Math.floor(n/cols),col=n%cols;
+ const x=station.x+(col-(cols-1)/2)*(shelf?.31:.21);
+ const z=station.z+(shelf?(.1+(row%2)*.16):((row%2)-.5)*.19);
+ const y=shelf?.35+(row%4)*.28:(station.key==='sink'?.58:.39)+Math.floor(row/2)*.055;
+ return new THREE.Vector3(x,y,z);
+}
+function captureScene(){
+ try{
+  // Render and read back synchronously: no permanent preserveDrawingBuffer cost.
+  renderer.render(scene,camera);
+  const preview=document.createElement('canvas');
+  const sourceW=Math.min(canvas.width,canvas.height*1.1),sourceH=Math.min(canvas.height,canvas.width/1.1);
+  preview.width=480;preview.height=Math.max(1,Math.round(480*sourceH/sourceW));
+  preview.getContext('2d').drawImage(canvas,(canvas.width-sourceW)/2,(canvas.height-sourceH)/2,sourceW,sourceH,0,0,preview.width,preview.height);
+  return preview.toDataURL('image/jpeg',.78);
+ }catch(e){console.warn('[정리왕] 화면 비교 저장 실패:',e);return''}
 }
 function makeStain(x,z,rand){
  const size=.46+rand()*.16;
@@ -263,8 +305,8 @@ function placeItem(item,station){
  }
  item.done=true;selected=null;
  things.forEach(t=>t.group.scale.setScalar(1));
- const end=new THREE.Vector3(station.x,.25,station.z);
- animations.push({kind:'move',item,time:0,length:.43,start:item.group.position.clone(),end,rot:item.group.rotation.y});
+ const end=depositPosition(station);
+ animations.push({kind:'move',item,time:0,length:.53,start:item.group.position.clone(),end,rot:item.group.rotation.y,finalScale:station.key==='shelf'?.55:.36});
  station.stored++;
  $('missionIcon').textContent='✨';
  $('missionText').innerHTML='좋았어! '+itemLabel(item)+' 정리 성공<small>다음 물건을 골라 주세요</small>';
@@ -290,15 +332,28 @@ function cleanStain(stain,effort){
 function inViewport(e){const r=canvas.getBoundingClientRect();mouse.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1)}
 function getHit(e){
  inViewport(e);picker.setFromCamera(mouse,camera);
- const hits=picker.intersectObjects(pickables,true);
+ const hits=picker.intersectObjects(pickables,true),candidates=[];
  for(const h of hits){
   let p=h.object;
   while(p&&!p.userData?.kind)p=p.parent;
-  if(p&&p.userData?.kind){
-   if(p.userData.kind==='stain'){const s=stains.find(x=>x.mesh===p);if(s&&!s.done)return{kind:'stain',value:s,point:h.point}}
-   if(p.userData.kind==='item'){const t=things.find(x=>x.group===p);if(t&&!t.done)return{kind:'item',value:t,point:h.point}}
-   if(p.userData.kind==='station'){const s=stations.find(x=>x.key===p.userData.key);if(s)return{kind:'station',value:s,point:h.point}}
+  if(!p?.userData?.kind)continue;
+  if(p.userData.kind==='stain'){
+   const stain=stains.find(x=>x.mesh===p);
+   if(stain&&!stain.done)candidates.push({kind:'stain',value:stain,point:h.point});
+  }else if(p.userData.kind==='item'){
+   const item=things.find(x=>x.group===p);
+   if(item&&!item.done)candidates.push({kind:'item',value:item,point:h.point});
+  }else if(p.userData.kind==='station'){
+   const station=stations.find(x=>x.key===p.userData.key);
+   if(station)candidates.push({kind:'station',value:station,point:h.point});
   }
+ }
+ // Selecting clutter has priority over a nearby large receptacle's hit proxy.
+ // Once holding an item, the receptacle takes priority for reliable placement.
+ const priority=selected?['station','item','stain']:['item','stain','station'];
+ for(const kind of priority){
+  const found=candidates.find(hit=>hit.kind===kind);
+  if(found)return found;
  }
  return null;
 }
@@ -309,7 +364,7 @@ function pointerDown(e){
  if(hit?.kind==='stain'){
   scrubbing=hit.value;selected=null;things.forEach(t=>t.group.scale.setScalar(1));scrubDistance=0;
   cleanStain(scrubbing,.17);
-  if(!scrubbing.done){try{canvas.setPointerCapture(e.pointerId)}catch(_){}}
+  if(scrubbing&&!scrubbing.done){try{canvas.setPointerCapture(e.pointerId)}catch(_){}}
   e.preventDefault();
  }
 }
@@ -319,7 +374,7 @@ function pointerMove(e){
   const dx=e.clientX-mouseDown.x,dy=e.clientY-mouseDown.y;
   const dist=Math.hypot(dx,dy);
   scrubDistance+=dist;mouseDown.x=e.clientX;mouseDown.y=e.clientY;
-  if(scrubDistance>=12){const chunks=Math.floor(scrubDistance/12);scrubDistance%=12;cleanStain(scrubbing,Math.min(.25,chunks*.07));if(scrubbing.done)scrubbing=null}
+  if(scrubDistance>=12){const chunks=Math.floor(scrubDistance/12);scrubDistance%=12;const active=scrubbing;cleanStain(active,Math.min(.25,chunks*.07));if(active.done)scrubbing=null}
   e.preventDefault();return;
  }
  if(e.pointerType==='mouse'){
@@ -353,27 +408,39 @@ canvas.addEventListener('pointerup',pointerUp);
 canvas.addEventListener('pointercancel',()=>{mouseDown=null;scrubbing=null});
 canvas.addEventListener('wheel',e=>{if(!running)return;zoom=THREE.MathUtils.clamp(zoom+Math.sign(e.deltaY)*.07,.79,1.5);cameraMove();e.preventDefault()},{passive:false});
 function cameraMove(){
- const angle=.56+turn;const portraitFit=Math.max(1,Math.min(1.65,.78/camera.aspect));const radius=17.8*zoom*portraitFit;
- camera.position.set(Math.sin(angle)*radius,12.9*zoom*portraitFit,Math.cos(angle)*radius);
- camera.lookAt(0,.10,-.2);
+ const angle=.56+turn;
+ const portraitFit=Math.max(1,Math.min(1.90,.87/camera.aspect));
+ const landscapeFit=camera.aspect>1.80?.86:1;
+ const radius=14.9*zoom*portraitFit*landscapeFit;
+ camera.position.set(Math.sin(angle)*radius,10.8*zoom*portraitFit*landscapeFit,Math.cos(angle)*radius);
+ camera.lookAt(0,.10,camera.aspect>1.80?1.05:-.2);
 }
 $('rotateLeft').onclick=()=>{turn=THREE.MathUtils.clamp(turn-.22,-.42,.6);cameraMove()};
 $('rotateRight').onclick=()=>{turn=THREE.MathUtils.clamp(turn+.22,-.42,.6);cameraMove()};
 $('zoomIn').onclick=()=>{zoom=Math.max(.79,zoom-.1);cameraMove()};
 $('zoomOut').onclick=()=>{zoom=Math.min(1.5,zoom+.1);cameraMove()};
 $('sound').onclick=()=>{activeSound=!activeSound;$('sound').textContent=activeSound?'♪':'♪̸';show(activeSound?'효과음 켜짐':'효과음 꺼짐',700)};
+function showStageButtons(){
+ const kitchen=$('startKitchen');
+ kitchen.disabled=!saved.unlocked;
+ kitchen.textContent=saved.unlocked?'주방 청소하기':'주방 잠김 · 원룸을 완료하세요';
+ kitchen.hidden=running;
+}
 function startLevel(n){
  level=n;turn=0;zoom=1;running=true;
  $('intro').classList.add('hidden');$('end').classList.add('hidden');
- buildRoom();window.KidscadeGame?.start?.({stage:level+1});show(level===0?'어서 와! 먼저 바닥의 책을 골라 봐':'새 의뢰가 도착했어! 주방을 청소하자',1750);
+ showStageButtons();buildRoom();window.KidscadeGame?.start?.({stage:level+1});show(level===0?'어서 와! 먼저 바닥의 책을 골라 봐':'새 의뢰가 도착했어! 주방을 청소하자',1750);
 }
-$('start').onclick=async()=>{
+async function launchStage(n){
  if(running){$('intro').classList.add('hidden');return}
- const b=$('start');b.disabled=true;b.textContent='방과 가구를 준비하고 있어요...';
- await preload();startLevel(previousStage);
- b.textContent='계속 청소하기';b.disabled=false;
-};
-$('help').onclick=()=>{$('intro').classList.remove('hidden');$('start').textContent='계속 청소하기'};
+ const a=$('start'),b=$('startKitchen');a.disabled=true;b.disabled=true;
+ a.textContent='방과 가구를 준비하고 있어요...';
+ try{await preload();startLevel(n)}catch(e){show('방을 준비할 수 없어요. 다시 시도해 주세요.',2000);console.error(e)}
+ finally{a.textContent='원룸 청소하기';a.disabled=false;showStageButtons()}
+}
+$('start').onclick=()=>launchStage(0);
+$('startKitchen').onclick=()=>{if(saved.unlocked)launchStage(1)};
+$('help').onclick=()=>{$('intro').classList.remove('hidden');$('start').textContent='계속 청소하기';showStageButtons()};
 $('replay').onclick=()=>startLevel(level);
 $('next').onclick=()=>startLevel(Math.min(1,level+1));
 function finish(){
@@ -382,6 +449,15 @@ function finish(){
  saved.coins=coins;saved.unlocked=Math.max(saved.unlocked,Math.min(1,level+1));
  if(!saved.best[level]||seconds<saved.best[level])saved.best[level]=seconds;
  save();updateHud();
+ // Wait for the final object to land before photographing the clean room.
+ const completedGeneration=generation;
+ captureTimeout=setTimeout(()=>{
+  if(generation!==completedGeneration)return;
+  const before=$('beforePhoto'),after=$('afterPhoto');
+  if(beforeImage){before.src=beforeImage;before.alt='청소 전 어질러진 공간';}
+  const clean=captureScene();if(clean){after.src=clean;after.alt='청소 후 정리된 공간';}
+ },700);
+ showStageButtons();
  window.KidscadeGame?.result?.({scope:'mission',status:'completed',outcome:'clear',score:totalCount,level:level+1,cleaned:cleanCount,durationSeconds:seconds});
  const more=level===0;
  $('endTitle').textContent=more?'원룸 청소 성공!':'주방 청소 성공!';
@@ -399,9 +475,9 @@ function tick(dt,now){
   a.time+=dt;const p=Math.min(1,a.time/a.length);
   if(a.kind==='move'){
    a.item.group.position.lerpVectors(a.start,a.end,p*p*(3-2*p));
-   a.item.group.position.y+=Math.sin(p*Math.PI)*.9;
-   a.item.group.scale.setScalar(Math.max(.01,1-p));
-   if(p>=1){root.remove(a.item.group);makeSparkles(a.end)}
+   a.item.group.position.y+=Math.sin(p*Math.PI)*1.15;
+   a.item.group.scale.setScalar(1+(a.finalScale-1)*p);
+   if(p>=1){a.item.group.position.copy(a.end);a.item.group.scale.setScalar(a.finalScale);makeSparkles(a.end)}
   }else if(a.kind==='wiggle'){a.item.group.rotation.y=a.start+Math.sin(p*Math.PI*4)*.16*(1-p);if(p>=1)a.item.group.rotation.y=a.start}
   return p<1;
  });
@@ -425,5 +501,5 @@ function frame(now){
 cameraMove();requestAnimationFrame(frame);
 // An unlocked room is playable without relying on cloud account permissions.
 $('coins').textContent=coins+' 🪙';
-if(saved.unlocked>0){$('introTitle').textContent='다시 찾아온 정리왕!';
- $('start').textContent='원룸 청소 시작';}
+if(saved.unlocked>0){$('introTitle').textContent='다시 찾아온 정리왕!';}
+showStageButtons();
