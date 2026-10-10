@@ -24,7 +24,8 @@
     phase:'intro',stage:1,map:null,index:0,checks:0,deadline:0,
     previewStarted:0,previewDuration:0,failedCell:-1,soundOn:true,
     width:0,height:0,tile:48,offsetX:0,offsetY:0,camera:0,
-    drag:null,toastUntil:0,audio:null,lastFrame:0,lastUI:0,hasStarted:false
+    drag:null,toastUntil:0,audio:null,lastFrame:0,lastUI:0,hasStarted:false,
+    facing:1,lastStepAt:0
   };
   function save() {try {localStorage.setItem(SAVE_KEY,JSON.stringify(record));} catch (_) {}}
   function sdk(name,payload) {try {window.KidscadeGame?.[name]?.(payload);} catch (_) {}}
@@ -47,6 +48,7 @@
   }
   function sound(kind) {
     if (!s.soundOn) return;
+    if (window.SquidBridgeArt?.play?.(kind)) return;
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return;
@@ -77,7 +79,7 @@
       toast('미로 생성 오류. 다시 시작해 주세요.',4000);
       ui.intro.classList.remove('hidden');ui.result.classList.add('hidden');s.phase='intro';return;
     }
-    s.index=0;s.checks=0;s.failedCell=-1;s.camera=0;
+    s.index=0;s.checks=0;s.failedCell=-1;s.camera=0;s.facing=1;s.lastStepAt=0;
     s.deadline=0; // Initial route preview is free; the five-minute clock starts afterward.
     ui.result.classList.add('hidden');ui.intro.classList.add('hidden');ui.help.classList.add('hidden');
     beginPreview(false);
@@ -88,6 +90,7 @@
     if (isCheck) {
       s.checks++;
       s.index=0; // Same path and the same deadline: only the cursor and visible trail reset.
+      s.lastStepAt=0;
       sound('check');
       toast('같은 맵! 남은 시간은 그대로 줄어들어요.',1900);
     }
@@ -103,6 +106,8 @@
     const x=current%map.width+dx,y=Math.floor(current/map.width)+dy;
     if (x<0||x>=map.width||y<0||y>=map.height) return;
     const next=y*map.width+x;
+    if (dx) s.facing=dx;
+    s.lastStepAt=Date.now();
     if (next!==map.path[s.index+1]) {
       s.failedCell=next;sound('wrong');fail('틀린 발판을 밟았어요');return;
     }
@@ -211,6 +216,8 @@
     ctx2.clearRect(0,0,W,H);
     const bg=ctx2.createLinearGradient(0,0,0,H);
     bg.addColorStop(0,'#274047');bg.addColorStop(1,'#10262e');ctx2.fillStyle=bg;ctx2.fillRect(0,0,W,H);
+    // Decorative world art stays below the crisp memory tiles.
+    window.SquidBridgeArt?.drawBackdrop?.(ctx2,W,H);
     if(!s.map) return;
     const map=s.map,t=s.tile;
     const x0=Math.max(0,Math.floor(s.camera/t)-2),x1=Math.min(map.width,Math.ceil((s.camera+W)/t)+2);
@@ -230,6 +237,8 @@
       if(at===map.path[map.path.length-1])fill='#f9a765';
       if(at===s.failedCell)fill='#fe536d';
       roundRect(sx+2,sy+2,t-4,t-4,Math.max(2,t*.065),fill,null);
+      ctx2.fillStyle='rgba(10,50,55,.20)';
+      ctx2.fillRect(sx+3,sy+t-5,t-6,Math.max(1,t*.045));
       ctx2.strokeStyle='#112930';ctx2.lineWidth=Math.max(1,t*.027);
       ctx2.strokeRect(sx+1.5,sy+1.5,t-3,t-3);
     }
@@ -255,11 +264,17 @@
         ctx2.fillStyle='#236580';ctx2.fill();
       }
     }
+    const first=map.path[0],last=map.path[map.path.length-1];
+    const sx=left+(first%map.width)*t,sy=top+Math.floor(first/map.width)*t;
+    const gx=left+(last%map.width)*t,gy=top+Math.floor(last/map.width)*t;
+    window.SquidBridgeArt?.drawFlag?.(ctx2,'start',sx,sy,t);
+    window.SquidBridgeArt?.drawFlag?.(ctx2,'goal',gx,gy,t);
+    if (s.phase==='cleared') window.SquidBridgeArt?.drawGem?.(ctx2,gx,gy,t,now);
     const current=map.path[s.index],px=left+(current%map.width)*t,py=top+Math.floor(current/map.width)*t;
-    drawPlayer(px,py,t);
+    const drewAsset=window.SquidBridgeArt?.drawAvatar?.(ctx2,px,py,t,{now:Date.now(),phase:s.phase,lastStepAt:s.lastStepAt,facing:s.facing});
+    if (!drewAsset) drawPlayer(px,py,t);
     ctx2.font='900 '+Math.max(8,Math.round(t*.2))+'px system-ui';
     ctx2.textAlign='center';ctx2.textBaseline='middle';
-    const first=map.path[0],last=map.path[map.path.length-1];
     if(first!==current){ctx2.fillStyle='#064c32';ctx2.fillText('S',left+(first%map.width+.5)*t,top+(Math.floor(first/map.width)+.5)*t);}
     if(last!==current){ctx2.fillStyle='#6a3315';ctx2.fillText('G',left+(last%map.width+.5)*t,top+(Math.floor(last/map.width)+.5)*t);}
   }
