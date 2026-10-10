@@ -19,11 +19,13 @@ const BASE_NODES=FEMALE_BASE_NODES;
 const MALE_HAIR_STYLES=[
   'kidscade_male_hair_short','kidscade_male_hair_crop','kidscade_male_hair_sidepart',
   'kidscade_male_hair_textured','kidscade_male_hair_fringe','kidscade_male_hair_undercut',
-  'kidscade_male_hair_round','kidscade_male_hair_swept'
+  'kidscade_male_hair_round','kidscade_male_hair_swept',
+  'kidscade_male_hair_mohawk','kidscade_male_hair_curls','kidscade_male_hair_flattop','kidscade_male_hair_shag'
 ];
 const FEMALE_HAIR_STYLES=[
   'hairone','hairT','hairtail','hairtailknight','hairvariant','hairvariant.001',
-  'chibi_female_hair_bob','chibi_female_hair_layered'
+  'chibi_female_hair_bob','chibi_female_hair_layered',
+  'chibi_female_hair_twinbuns','chibi_female_hair_braidcrown','chibi_female_hair_pixie','chibi_female_hair_waves'
 ];
 const HAIR_NODES=[...FEMALE_HAIR_STYLES,...MALE_HAIR_STYLES];
 const OUTFIT_NODES=OUTFIT_STYLES.map(style=>style.id);
@@ -58,6 +60,10 @@ const PART_LABELS={
   kidscade_male_hair_undercut:'언더컷',kidscade_male_hair_round:'라운드컷',
   kidscade_male_hair_swept:'스윕 헤어',
   chibi_female_hair_bob:'둥근 단발',chibi_female_hair_layered:'레이어드',
+  kidscade_male_hair_mohawk:'모호크',kidscade_male_hair_curls:'곱슬 숏컷',
+  kidscade_male_hair_flattop:'플랫탑',kidscade_male_hair_shag:'샤기컷',
+  chibi_female_hair_twinbuns:'트윈 번',chibi_female_hair_braidcrown:'땋은 머리띠',
+  chibi_female_hair_pixie:'픽시컷',chibi_female_hair_waves:'웨이브 롱',
   ...Object.fromEntries(OUTFIT_STYLES.map(style=>[style.id,style.label])),
   ...Object.fromEntries(ACCESSORY_STYLES.map(style=>[style.id,style.label]))
 };
@@ -637,6 +643,11 @@ function applyHideMasks(){
     if(!originalHatHair.has(mesh))originalHatHair.set(mesh,original);
     const candidate=hatOn&&mesh.visible?hatSafeGeometry(mesh):original;
     if(mesh.geometry!==candidate){mesh.geometry=candidate;patched++;}
+    // Buns/spikes sit above a fitted hat. Suppress these *only while*
+    // headgear is active and restore the authored hairstyle afterward.
+    mesh.children.forEach(part=>{
+      if(part.userData?.chibiHairFeature)part.visible=!hatOn;
+    });
   }
   return {hatOn,patched};
 }
@@ -1412,7 +1423,15 @@ const HAIR_STYLE_PARAMETERS={
   kidscade_male_hair_round:{crown:.06,side:.075,front:0,part:0,wave:.01,templeFill:.12},
   kidscade_male_hair_swept:{crown:.035,side:-.01,front:.05,part:.20,wave:0,templeFill:.09},
   chibi_female_hair_bob:{crown:.03,side:.035,front:-.015,part:0,wave:.015},
-  chibi_female_hair_layered:{crown:.06,side:-.08,front:.03,part:-.055,wave:.03}
+  chibi_female_hair_layered:{crown:.06,side:-.08,front:.03,part:-.055,wave:.03},
+  kidscade_male_hair_mohawk:{crown:.10,side:-.15,front:.06,part:0,wave:.01,templeFill:.08,feature:'mohawk'},
+  kidscade_male_hair_curls:{crown:.06,side:.02,front:-.01,part:0,wave:.065,templeFill:.09,feature:'curls'},
+  kidscade_male_hair_flattop:{crown:-.02,side:-.13,front:.08,part:0,wave:0,templeFill:.08,feature:'flattop'},
+  kidscade_male_hair_shag:{crown:.035,side:.05,front:-.07,part:-.06,wave:.045,templeFill:.13,feature:'shag'},
+  chibi_female_hair_twinbuns:{crown:.045,side:-.03,front:0,part:.02,wave:0,feature:'twinbuns'},
+  chibi_female_hair_braidcrown:{crown:.075,side:.04,front:.025,part:-.025,wave:.015,feature:'braidcrown'},
+  chibi_female_hair_pixie:{crown:-.045,side:-.20,front:.075,part:.04,wave:0,feature:'pixie'},
+  chibi_female_hair_waves:{crown:.06,side:.12,front:.035,part:.02,wave:.09,feature:'waves'}
 };
 function createKidscadeHairCollection(){
   const maleBase=getNode('kidscade_male_hair_short');
@@ -1422,7 +1441,8 @@ function createKidscadeHairCollection(){
   }
   for(const [name,style] of Object.entries(HAIR_STYLE_PARAMETERS)){
     if(getNode(name))continue;
-    const template=name.startsWith('kidscade_male_')?maleBase:femaleBase;
+    const template=name.startsWith('kidscade_male_')||name==='chibi_female_hair_pixie'
+      ?maleBase:femaleBase;
     const geometry=template.geometry.clone();
     geometry.computeBoundingBox();
     const bb=geometry.boundingBox;
@@ -1476,6 +1496,79 @@ function createKidscadeHairCollection(){
       styleParameters:{...style},
       templeBridgeVersion:style.templeFill===undefined?null:'v7'
     };
+
+    if(style.feature){
+      // Each of the eight v6.0 cuts receives actual independent 3D volumes,
+      // rigid-skinned to the source head. Unlike palette swaps, their
+      // silhouettes differ on the rotating character and survive GLB export.
+      const head=template.skeleton.bones.find(bone=>/head/i.test(bone.name));
+      if(!head)throw Error('v6.0 hairstyle needs the source head bone: '+name);
+      const hairColor=name.startsWith('kidscade_male_')?'#46352c':'#553e38';
+      const featureMaterial=makeSolidMaterial(hairColor,name+' 입체 헤어 볼륨');
+      const mx=center.x,my=bb.max.y-size.y*.065,mz=center.z;
+      const sx=size.x*.5,sz=size.z*.5;
+      const attach=(geo,id)=>{
+        geo.computeVertexNormals();geo.computeBoundingBox();geo.computeBoundingSphere();
+        const piece=makeRigidSkinnedPiece(template,geo,head.name,featureMaterial,name+'_volume_'+id);
+        piece.userData={chibiHairFeature:true,feature:style.feature,fit:name.startsWith('kidscade_male_')?'male':'female'};
+        hair.add(piece);
+      };
+      const sphere=(x,y,z,rx,ry,rz,id)=>{
+        const geo=new THREE.SphereGeometry(1,12,9);
+        geo.scale(rx,ry,rz);geo.translate(x,y,z);attach(geo,id);
+      };
+      const spike=(x,y,z,rx,ry,rz,id)=>{
+        const geo=new THREE.ConeGeometry(rx,ry,7,2);
+        geo.scale(1,1,rz);geo.translate(x,y,z);attach(geo,id);
+      };
+      if(style.feature==='mohawk'){
+        for(let i=0;i<5;i++)
+          spike(mx,my+.026,mz-sz*.75+i*sz*.375,.053,.126-i*.006,1.0,'spike_'+i);
+      }else if(style.feature==='curls'){
+        for(let i=0;i<12;i++){
+          const theta=i*Math.PI*2/12;
+          sphere(mx+Math.cos(theta)*sx*.66,my+.005+Math.sin(i*2.6)*.016,
+            mz+Math.sin(theta)*sz*.60,.062,.053,.057,'curl_'+i);
+        }
+      }else if(style.feature==='flattop'){
+        const cap=new THREE.BoxGeometry(sx*1.55,.08,sz*1.52,3,2,3);
+        cap.translate(mx,my+.013,mz);attach(cap,'square_crown');
+      }else if(style.feature==='shag'){
+        for(const sign of [-1,1])for(let i=0;i<3;i++){
+          const geo=new THREE.CylinderGeometry(.033,.012,.18+i*.038,8,3);
+          geo.rotateZ(sign*.17);
+          geo.translate(mx+sign*(sx*.82+i*.009),my-.14-i*.027,mz+(i-1)*.075);
+          attach(geo,'side_lock_'+sign+'_'+i);
+        }
+      }else if(style.feature==='twinbuns'){
+        for(const sign of [-1,1])
+          sphere(mx+sign*sx*.95,my+.058,mz-.015,.095,.089,.090,'bun_'+sign);
+      }else if(style.feature==='braidcrown'){
+        const braid=new THREE.TorusGeometry(sx*.79,.033,8,30);
+        braid.scale(1,1,sz/Math.max(.001,sx));
+        braid.rotateX(Math.PI/2);braid.translate(mx,my+.018,mz);
+        attach(braid,'braided_crown');
+        for(let i=0;i<9;i++){
+          const a=Math.PI*2*i/9;
+          sphere(mx+Math.cos(a)*sx*.79,my+.018,mz+Math.sin(a)*sz*.79,
+            .037,.033,.035,'braid_link_'+i);
+        }
+      }else if(style.feature==='pixie'){
+        for(let i=0;i<6;i++){
+          const x=mx+(i-2.5)*sx*.29;
+          spike(x,my+.003,mz+sz*.43,.031,.075,.8,'pixie_tip_'+i);
+        }
+      }else if(style.feature==='waves'){
+        for(const sign of [-1,1])for(let i=0;i<3;i++){
+          const geo=new THREE.TorusGeometry(.070+i*.014,.028,7,20,Math.PI*1.35);
+          geo.rotateY(Math.PI/2);
+          geo.translate(mx+sign*(sx*.94+i*.008),my-.16-i*.096,mz-sz*.28);
+          attach(geo,'wave_'+sign+'_'+i);
+        }
+      }
+      hair.userData.volumeFeature=style.feature;
+      hair.userData.volumeMeshes=hair.children.length;
+    }
     template.parent.add(hair);
     hair.visible=false;
   }
@@ -2431,7 +2524,9 @@ function installLocalVisualAudit(){
           preservedTempleTriangles:mesh?.userData?.preservedTempleTriangles||0,
           removedEyeLevelTriangles:mesh?.userData?.removedEyeLevelTriangles||0,
           templeBridgeVersion:mesh?.userData?.templeBridgeVersion||null,
-          fingerprint:fingerprint>>>0};
+          fingerprint:fingerprint>>>0,
+          volumeFeature:mesh?.userData?.volumeFeature||null,
+          volumeMeshes:mesh?.userData?.volumeMeshes||0};
       });
     },
     bodyFitAudit(){
