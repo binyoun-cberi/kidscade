@@ -110,7 +110,7 @@ export function applyAccessoryFit({getNode,fit='male',topName='',headwearName=''
           // entire hat into the air. Anchor the cap TOP instead, keeping its
           // crown intersecting the hair while the brim sits over the forehead.
           const target=style.slot==='hat'
-            ?referenceBox.max.y+.033
+            ?referenceBox.max.y-.060
             :referenceBox.min.y;
           const current=style.slot==='hat'?accessoryBox.max.y:accessoryBox.min.y;
           const worldDelta=THREE.MathUtils.clamp(target-current,-.10,.10);
@@ -241,7 +241,7 @@ function createDetails(style,context){
     }
   } else if(style.slot==='hat'){
     if(kind==='baseball'){
-      add(sphere(0,scalpY-.042,hc.z+headR*.88,.205,.022,.116),style.color,'brim');
+      add(sphere(0,scalpY-.091,hc.z+headR*1.23,.207,.025,.135),style.color,'brim');
       // Omit the raised badge: it became a vertical spike above the cap in WALK/RUN.
     }else if(kind==='bucket'){
       add(cyl(headR*1.25,headR*1.25,.025,0,scalpY-.155,hc.z),style.color,'brim');
