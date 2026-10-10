@@ -455,9 +455,13 @@ function setCamera() {
   camera.rotation.set(player.pitch,player.yaw,0);
 }
 function tryMove(dx,dz) {
-  const nx=player.x+dx,nz=player.z+dz;
-  if(player.z< -37.4?C3.canMove(state,nx,player.z):R.canMove(state,nx,player.z))player.x=nx;
-  if(nz< -37.4?C3.canMove(state,player.x,nz):R.canMove(state,player.x,nz))player.z=nz;
+  // Resolve in short increments so a low-frame-rate sprint cannot tunnel through word walls.
+  const steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dz))/.12));
+  for(let i=0;i<steps;i++){
+    const nx=player.x+dx/steps,nz=player.z+dz/steps;
+    if(player.z< -37.4?C3.canMove(state,nx,player.z):R.canMove(state,nx,player.z))player.x=nx;
+    if(nz< -37.4?C3.canMove(state,player.x,nz):R.canMove(state,player.x,nz))player.z=nz;
+  }
 }
 function update(dt) {
   elapsed+=dt;
