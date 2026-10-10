@@ -43,12 +43,16 @@ function earliestLevel(speciesId,moveId){
  for(const lv of MILESTONES)if(B.learnable({id:speciesId,level:lv}).includes(moveId))return lv;
  return null;
 }
+const LEARNER_CACHE=new Map();
 function learners(moveId){
  if(!B.moves[moveId])return [];
- return D.species.map(s=>{
+ if(LEARNER_CACHE.has(moveId))return LEARNER_CACHE.get(moveId);
+ const result=D.species.map(s=>{
   const at=earliestLevel(s.id,moveId);
   return at===null?null:{id:s.id,name:s.name,type:s.type,level:at,dexNo:s.dexNo};
  }).filter(Boolean).sort((a,b)=>a.level-b.level||a.dexNo-b.dexNo);
+ LEARNER_CACHE.set(moveId,result);
+ return result;
 }
 const all=Object.keys(B.moves).map(detail).sort((a,b)=>TYPE_ORDER.indexOf(a.type)-TYPE_ORDER.indexOf(b.type)||
   a.name.localeCompare(b.name,"ko"));
