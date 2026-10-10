@@ -1084,5 +1084,7 @@ test('v6.4 mask and sunglasses sample the active face surface for each body fit'
   assert.match(pack,/kidscadeFaceProjection='strap'/);
   assert.match(pack,/kidscadeFaceProjection=style\.kind==='sunglasses'\?'lens':'skin'/);
   assert.match(pack,/const actual=faceZ\(x,y,spec==='lens'\)/);
+  assert.match(pack,/const clothClearance=\.010\+\.030/);
+  assert.match(pack,/shape==='mask'\?\.042\*\(1-v\)\*nx\*nx/);
   assert.doesNotMatch(pack,/add\(ring\(\.065,\.008,sign\*\.186/);
 });
