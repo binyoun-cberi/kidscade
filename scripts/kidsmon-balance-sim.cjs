@@ -17,12 +17,13 @@ const flag=process.argv.find(x=>x.startsWith('--repeats='));
 const repeats=flag?Number(flag.split('=')[1]):12;
 if(!Number.isInteger(repeats)||repeats<1||repeats>100)throw Error('repeats must be an integer from 1 to 100');
 const randomFor=seed=>{let x=seed>>>0;return()=>{x=(Math.imul(x,1664525)+1013904223)>>>0;return x/4294967296}};
-const maxHP=mon=>D.combat.statsAtLevel(mon.id,mon.level).hp;
+const maxHP=mon=>D.combat.statsAtLevel(mon.id,mon.level,mon).hp;
 function estimate(mon,foe,move,side,opp){
  if(!move.power)return 0;
  const raw=D.combat.damage({attacker:mon.id,defender:foe.id,
-  attackerLevel:mon.level,defenderLevel:foe.level,power:move.power,moveType:move.type});
- let amount=Math.max(1,Math.floor(raw*.62*(2+side.attack)/(2+opp.defense)));
+  attackerLevel:mon.level,defenderLevel:foe.level,power:move.power,moveType:move.type,damageClass:move.damageClass,attackerMon:mon,defenderMon:foe});
+ const special=(move.damageClass||(D.combat.SPECIAL_TYPES.has(move.type)?"special":"physical"))==="special";
+ let amount=Math.max(1,Math.floor(raw*.62*(2+(special?side.spAttack:side.attack))/(2+(special?opp.spDefense:opp.defense))));
  if(opp.shield)amount=Math.max(1,Math.round(amount*(1-opp.shield)));
  return Math.min(foe.hp,amount*(move.hits||1))*move.accuracy/100;
 }
@@ -36,7 +37,7 @@ function select(role,mon,foe,side,opp,rng){
  if(role==='attack')return best.id;
  const hp=mon.hp/maxHP(mon),missing=1-hp,bestHit=estimate(mon,foe,best,side,opp);
  const healing=choices.find(m=>m.kind==='heal');
- const shields=choices.filter(m=>m.kind==='shield').sort((a,b)=>b.shield-a.shield);
+ const shields=choices.filter(m=>m.kind==='shield'||m.kind==='counter').sort((a,b)=>b.shield-a.shield);
  const buffs=choices.filter(m=>m.kind==='buff');
  const foeDamage=Math.max(0,...foe.moveSlots.filter(x=>x.pp>0).map(x=>estimate(foe,mon,M[x.id],opp,side)));
  const canFinish=bestHit>=foe.hp;
@@ -69,7 +70,7 @@ for(let i=0;i<species.length;i++){
   const offset=(i*17+repeat*7+level*3+41)%group.length;
   const rival=group[offset===self?(offset+1)%group.length:offset];
   const rng=randomFor(0xabc0134+i*100017+level*1319+repeat*23+strategies.indexOf(ai)*7307);
-  const me=E.makeCreature(s.id,level),foe=E.makeCreature(rival.id,level);
+  const me=E.makeCreature(s.id,level,rng),foe=E.makeCreature(rival.id,level,rng);
   const save={party:[me],active:0,items:{ball:0,potion:0}};
   const battle={turnState:B.state()};
   let result='draw',turn=0;
@@ -77,7 +78,7 @@ for(let i=0;i<species.length;i++){
    const own=select(ai,me,foe,battle.turnState.player,battle.turnState.foe,rng);
    const opposing=select(enemyAI,foe,me,battle.turnState.foe,battle.turnState.player,rng);
    if(own){
-    const move=M[own],category=['heal','shield','buff'].includes(move.kind)?move.kind:'damage';
+    const move=M[own],category=['heal','shield','buff'].includes(move.kind)?move.kind:move.kind==='counter'?'shield':'damage';
     perAI[ai].actions[category]++;
     usedMoves.set(own,(usedMoves.get(own)||0)+1);
    }else softActions++;

@@ -32,7 +32,7 @@ test('all capture equipment is displayed as 키즈볼, original game balances re
  assert.match(runtime,/키즈볼 던지기/);
  assert.match(runtime,/포획 성공/);
  assert.match(runtime,/data-buy="ball"/);
- assert.match(engine,/items:\{ball:7,potion:3\}/);
+ assert.match(engine,/items:\{ball:7,potion:3(?:,|\})/);
  assert.match(runtime,/item==="ball"\?35/);
 });
 test('legacy saves, achievement IDs, filenames, sprite credits remain unchanged',()=>{
