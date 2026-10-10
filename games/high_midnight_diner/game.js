@@ -3,7 +3,7 @@
 const R=window.MidnightDinerRules,P=window.MidnightDinerPlate;
 const $=id=>document.getElementById(id);
 const saveKey='midnightDinerBestV1';
-let game=null,chosen=null,audio=null,muted=false,record=0,started=false,reviewPending=false,runReported=false;
+let game=null,chosen=null,audio=null,muted=false,record=0,started=false,reviewPending=false,runReported=false,cookTimer=null,peekHeld=false;
 try{record=Number(localStorage.getItem(saveKey))||0;}catch(_){}
 function sound(type){
  if(muted)return;
@@ -37,6 +37,10 @@ function repaint(){
  $('banned').textContent=dish.spec.word;$('bites').textContent=dish.eaten+' / 3 한입';
  $('inspections').textContent=dish.inspectionsLeft+'회';
  $('selectionText').textContent=chosen===null?'어느 부분을 먹을까요?':String(chosen+1)+'번 부분 선택';
+ document.querySelector('.game-layout').classList.toggle('cooking',game.phase==='cooking');
+ $('cookPanel').classList.toggle('hidden',game.phase!=='cooking');
+ $('memoryPanel').classList.toggle('hidden',!dish.observed.length);
+ renderMemory();
  const selectable=!reviewPending&&chosen!==null&&!dish.zones[chosen]?.removed&&game.phase==='playing';
  $('eatBtn').disabled=!selectable;$('inspectBtn').disabled=!selectable||(!dish.inspectionsLeft&&!dish.zones[chosen]?.inspected);
  $('questionBtn').disabled=reviewPending||game.phase!=='playing'||dish.asked;
@@ -48,16 +52,16 @@ function repaint(){
 }
 function intro(){ $('veil').classList.remove('hidden');$('introModal').classList.remove('hidden');$('resultModal').classList.add('hidden');}
 function start(){
- game=R.begin();chosen=null;started=true;reviewPending=false;runReported=false;
+ stopCooking();game=R.begin();chosen=null;started=true;reviewPending=false;runReported=false;
  $('reviewVeil').classList.add('hidden');
  $('veil').classList.add('hidden');$('notebookPanel').classList.add('hidden');
  $('chefLine').textContent='“'+game.dish.spec.line+'”';
- note('각 접시에서 세 입을 먹으세요. 위험한 재료에는 눈에 보이는 특징이 있어요.');
+ note('왼쪽 요리사의 조리 과정을 살펴보세요. 흘끔 보기로 재료를 기억하세요.');
  try{window.KidscadeGame?.start?.();}catch(_){}
- repaint();reportMood(false);
+ repaint();reportMood(false);startCooking();
 }
 function finish(){
- if(game.phase!=='finished'||runReported)return;runReported=true;
+ if(game.phase!=='finished'||runReported)return;runReported=true;stopCooking();
  reviewPending=false;$('reviewVeil').classList.add('hidden');
  $('veil').classList.remove('hidden');$('introModal').classList.add('hidden');$('resultModal').classList.remove('hidden');
  $('endTitle').textContent=game.ending.title;$('endMessage').textContent=game.ending.message;
@@ -67,6 +71,87 @@ function finish(){
  try{window.KidscadeGame?.score?.(game.score);window.KidscadeGame?.result?.({scope:'run',status:game.ending.won?'completed':'failed',outcome:game.ending.won?'win':'loss',score:game.score,safeBites:game.safeBites});}catch(_){}
  reportMood(true);
 }
+
+const COOK_INTERVAL_MS=1850;
+function stopCooking(){
+ if(cookTimer!==null){clearInterval(cookTimer);cookTimer=null;}
+ peekHeld=false;
+ $('peekBtn').classList.remove('looking');
+}
+function renderMemory(){
+ if(!game)return;
+ const entries=$('memoryEntries');entries.replaceChildren();
+ const list=game.dish.observed||[];
+ if(!list.length){entries.textContent='아직 알아낸 재료가 없습니다. 흘끔 보기로 확인하세요.';return;}
+ for(const info of list){
+  const chip=document.createElement('span');
+  chip.className='memory-chip '+(info.dangerous?'hazard':'safe');
+  chip.textContent=info.zone+'번 · '+info.ingredient;
+  entries.append(chip);
+ }
+}
+function updateCookScene(){
+ if(!game||game.phase!=='cooking')return;
+ const ev=R.cookingEvent(game),dish=game.dish;
+ if(!ev)return;
+ const slots=$('cookSlots');slots.replaceChildren();
+ slots.style.setProperty('--slots',String(dish.spec.count));
+ for(let i=0;i<dish.spec.count;i++){
+  const item=document.createElement('span');
+  item.className='cook-slot'+(i===ev.zone-1?' current':'')+
+   (dish.observed.some(x=>x.zone===i+1)?' seen':'');
+  item.textContent=String(i+1);
+  slots.append(item);
+ }
+ $('cookStage').textContent='조리 '+(ev.index+1)+' / '+ev.total+' · '+dish.spec.title;
+ $('cookBar').style.width=(100*ev.index/ev.total).toFixed(1)+'%';
+ const peek=dish.currentPeek;
+ const stage=$('cookFlash');stage.classList.toggle('revealed',!!peek&&!peek.concealed);
+ stage.textContent=peek?peek.message:ev.zone+'번 위치로 요리사의 손이 움직인다. 흘끔 보지 않으면 무엇인지 알 수 없다.';
+ window.dispatchEvent(new CustomEvent('midnight-diner:cooking',{
+  detail:{course:game.course,zone:ev.zone,step:ev.index,total:ev.total,
+   looking:!!peek,concealed:!!peek?.concealed,ingredient:peek?.ingredient||null}
+ }));
+}
+function revealCooking(){
+ if(!game||game.phase!=='cooking'||reviewPending)return;
+ const result=R.peekCooking(game);
+ if(!result.ok)return;
+ sound('tap');note(result.message);
+ if(game.phase==='finished'){finish();return;}
+ updateCookScene();repaint();
+}
+function startCooking(){
+ stopCooking();
+ if(!game||game.phase!=='cooking')return;
+ chosen=null;
+ $('chefLine').textContent='“'+game.dish.spec.line+'”';
+ updateCookScene();repaint();
+ cookTimer=setInterval(()=>{
+  if(!game||game.phase!=='cooking'||reviewPending){stopCooking();return;}
+  const outcome=R.observeCooking(game,false);
+  if(!outcome.ok){stopCooking();if(game.phase==='finished')finish();return;}
+  if(game.phase==='playing'){
+   stopCooking();$('cookBar').style.width='100%';
+   $('chefLine').textContent='“자, 다 됐어. 이번에는 어디를 먹겠니?”';
+   note('조리가 끝났습니다. 기억한 재료와 번호를 비교해 세 입을 선택하세요.');
+   repaint();reportMood(false);return;
+  }
+  updateCookScene();
+  if(peekHeld)revealCooking();
+ },COOK_INTERVAL_MS);
+}
+function onPeekDown(ev){
+ if(ev?.cancelable)ev.preventDefault();
+ if(!game||game.phase!=='cooking'||reviewPending)return;
+ peekHeld=true;$('peekBtn').classList.add('looking');
+ revealCooking();
+}
+function onPeekUp(){peekHeld=false;$('peekBtn').classList.remove('looking');}
+$('peekBtn').addEventListener('pointerdown',onPeekDown);
+for(const kind of ['pointerup','pointercancel','pointerleave'])$('peekBtn').addEventListener(kind,onPeekUp);
+window.addEventListener('pointerup',onPeekUp);
+
 function showReview(review){
  reviewPending=true;
  $('reviewTitle').textContent=review.rejected?'접시를 돌려보냈다':'접시를 비웠다';
@@ -88,8 +173,9 @@ function showReview(review){
 function dismissReview(){
  if(!reviewPending)return;
  reviewPending=false;$('reviewVeil').classList.add('hidden');
- if(game.phase==='playing')$('chefLine').textContent='“'+game.dish.spec.line+'”';
- note('새 접시입니다. 음식을 관찰해 위험한 재료를 골라내세요.');
+ if(game.phase==='cooking'){$('chefLine').textContent='“좋아, 다음 음식도 직접 보겠다고?”';startCooking();}
+ else if(game.phase==='playing')$('chefLine').textContent='“'+game.dish.spec.line+'”';
+ note('조리 기록을 기억하고 위험해 보이는 부분을 피하세요.');
  repaint();
 }
 $('nextCourseBtn').addEventListener('click',dismissReview);
@@ -143,8 +229,11 @@ function notebook(){
 }
 $('notebookBtn').addEventListener('click',notebook);$('closeNotebook').addEventListener('click',()=>$('notebookPanel').classList.add('hidden'));
 $('notebookPanel').addEventListener('click',e=>{if(e.target===$('notebookPanel'))$('notebookPanel').classList.add('hidden');});
+window.addEventListener('keyup',e=>{if(e.code==='Space')onPeekUp();});
+window.addEventListener('blur',onPeekUp);
 window.addEventListener('keydown',e=>{
  if(e.key==='Escape'){$('notebookPanel').classList.add('hidden');return;}
+ if(e.code==='Space'&&game?.phase==='cooking'){if(!e.repeat)onPeekDown(e);e.preventDefault();return;}
  if(reviewPending){if(e.key==='Enter')dismissReview();return;}
  if(!game||game.phase!=='playing'||!$('notebookPanel').classList.contains('hidden'))return;
  const n=Number(e.key);
