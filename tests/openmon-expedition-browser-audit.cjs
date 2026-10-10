@@ -155,6 +155,8 @@ let chrome,ws,profile;
    const mons=document.querySelectorAll('.dex-card').length;
    document.querySelector('[data-dex-tab="moves"]').click();
    const total=document.querySelectorAll('[data-move]').length;
+   const initialCard=document.querySelector('[data-move]')?.getBoundingClientRect();
+   const initialVisible=!!initialCard&&initialCard.top<innerHeight-20&&initialCard.bottom>0;
    const heading=$('genericTitle').textContent;
    const descriptor=$('moveDexDetail').textContent;
    const filter=$('moveDexType');
@@ -174,10 +176,10 @@ let chrome,ws,profile;
    input.value='없는-기술-zxwv999';input.dispatchEvent(new Event('input',{bubbles:true}));
    const empty=document.querySelectorAll('[data-move]').length===0;
    input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));
-   return {mons,total,heading,descriptor:descriptor.slice(0,140),leaves,own,byName,
+   return {mons,total,initialVisible,heading,descriptor:descriptor.slice(0,140),leaves,own,byName,
     signature:signature.slice(0,250),empty,restored:document.querySelectorAll('[data-move]').length};
   });
-  assert.ok(moveDexAudit.mons===102&&moveDexAudit.total===41&&
+  assert.ok(moveDexAudit.mons===102&&moveDexAudit.total===41&&moveDexAudit.initialVisible&&
     moveDexAudit.heading.includes('기술 도감')&&
     moveDexAudit.leaves.length>0&&moveDexAudit.leaves.length<41&&
     moveDexAudit.own.length>0&&moveDexAudit.own.length<=moveDexAudit.leaves.length&&
