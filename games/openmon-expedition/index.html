@@ -23,57 +23,130 @@
 @media(max-width:800px){.cols{grid-template-columns:1fr}.side{grid-template-columns:repeat(2,minmax(0,1fr))}.side>.panel:first-child{grid-column:1/-1}.team{grid-template-columns:repeat(3,minmax(0,1fr))}.member{padding:5px;gap:2px}.member-art{flex:0 0 43px;width:43px}.member-info b{font-size:10px}.member-info small{font-size:9px}}
 @media(max-width:530px){.app{padding:9px 8px 24px}.top{gap:6px}.mark{width:39px;height:39px;font-size:24px}.brand strong{font-size:19px}.top-right{gap:5px}.chip{padding:6px 8px;font-size:10px}.cols{gap:9px}.bar{padding:9px 11px}.controls{padding:8px 11px}.dpad{grid-template-columns:repeat(3,45px);grid-template-rows:repeat(3,37px)}.side{grid-template-columns:1fr}.side>.panel:first-child{grid-column:auto}.team{grid-template-columns:1fr 1fr}.modal-head h2{font-size:17px}.modal-body{padding:12px}.starter-grid{gap:6px}.starter{padding:9px 3px;min-height:146px}.starter .pixel-art{transform:scale(.84)}.starter strong{font-size:12px}.starter small{font-size:10px}.battle-top{min-height:189px;padding:12px}.b-mon-art{height:113px}.battle-buttons button{min-height:60px;padding:9px 8px}.dex-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.world-hud{top:5px;left:6px}.hud-tag{padding:5px 7px;font-size:9px}.hint{font-size:10px}.interact{min-width:101px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+/* KIDSMON - immersive in-world HUD, no dashboard outside the map */
+html,body{height:100%;width:100%;overflow:hidden}
+body{background:#203a31;overscroll-behavior:none}
+.app{max-width:none;width:100%;height:100%;height:100dvh;padding:0;overflow:hidden;position:relative}
+.game-shell{width:100%;height:100%;overflow:hidden}
+.world-wrap{position:relative;width:100%;height:100%;border:0;border-radius:0;overflow:hidden;background:#6f9e72;isolation:isolate;touch-action:none}
+#worldCanvas{width:100%;height:100%;aspect-ratio:auto;object-fit:cover;object-position:center;display:block;image-rendering:pixelated}
+.hud-top{position:absolute;top:0;left:0;right:0;z-index:3;padding:calc(env(safe-area-inset-top,0px) + 12px) max(12px,env(safe-area-inset-right,0px)) 10px max(12px,env(safe-area-inset-left,0px));color:#fff;background:linear-gradient(180deg,#0c332ce8,#144838ca 69%,transparent);pointer-events:none}
+.hud-headline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:11px}
+.hud-brand{display:flex;align-items:center;gap:9px;min-width:0;text-shadow:0 1px 2px #06332766}
+.hud-logo{width:38px;height:38px;border-radius:11px;background:#f1d58c;color:#2b5446;display:grid;place-items:center;font-size:22px;font-weight:1000;box-shadow:0 3px #c19c5a;flex-shrink:0}
+.hud-brand strong{font-size:21px;font-weight:950;line-height:1;letter-spacing:-.065em;display:block}
+.hud-brand small{font-size:11px;color:#d6f0d2;display:block;margin-top:3px;font-weight:800}
+.hud-resources{display:flex;align-items:center;gap:8px}
+.hud-coins{display:flex;align-items:center;gap:5px;border:1px solid #dce9cc50;border-radius:100px;padding:7px 10px;background:#15382dbb;font-size:13px;font-weight:950;white-space:nowrap}
+.hud-coins:before{content:"◆";font-size:11px;color:#f9cf65}
+.hud-coins small{font-size:10px;color:#c0d5bc}
+.hud-save{width:20px;font-size:15px;color:#9ee6ac;text-align:center;text-shadow:0 0 7px #a6f7ba}
+.hud-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;pointer-events:auto}
+.hud-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:54px;padding:6px 2px;background:#f2f6e8ee;border:1px solid #f8ffe6aa;border-radius:13px;color:#224b3d;box-shadow:0 3px 0 #0e392a80;backdrop-filter:blur(7px);font-size:11px;font-weight:900;line-height:1}
+.hud-btn:hover,.hud-btn:focus-visible{background:#fff6d8}
+.hud-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #0e392a80}
+.hud-ico{font-size:20px;line-height:20px;display:block;color:#285846}
+.hud-objective{display:flex;gap:8px;align-items:center;max-width:min(540px,100%);height:27px;padding:0 10px;margin:9px auto 0;background:#123c33b3;border:1px solid #d7e7d133;border-radius:9px;color:#e7f6e6;font-size:11px;white-space:nowrap;overflow:hidden}
+.hud-objective strong{text-overflow:ellipsis;white-space:nowrap;overflow:hidden;font-weight:800}
+.hud-objective-icon{color:#f9d68f;font-weight:900}
+.map-toast{position:absolute;z-index:3;left:50%;bottom:calc(162px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);min-height:0;max-width:min(92%,520px);width:max-content;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid #ffffff47;border-radius:10px;padding:8px 12px;background:#153c32df;color:#f9fff4;text-align:center;box-shadow:0 4px 13px #102b2580;font-size:11px;line-height:1.4;font-weight:800;pointer-events:none;transition:opacity .2s ease}
+.map-toast.toast-faded{opacity:0;visibility:hidden}
+.controls{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 13px);left:0;right:0;z-index:3;display:flex;justify-content:space-between;align-items:end;gap:15px;padding:0 clamp(14px,3.5vw,34px);border:0;background:transparent;pointer-events:none}
+.controls .dpad{grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,43px);gap:2px;pointer-events:auto}
+.dpad button{border:1px solid #fafffbd1;border-radius:13px;background:#f7fff4da;color:#215947;box-shadow:0 3px #275541a0;backdrop-filter:blur(6px);font-size:22px;font-weight:950}
+.dpad .mid{background:#1953408c;color:#d9e6d5;border-radius:9px;backdrop-filter:blur(4px)}
+.interact{pointer-events:auto;min-width:93px;min-height:94px;width:94px;height:94px;border:3px solid #d3f1dcbd;background:#205944e8;color:#fff;border-radius:50%;font-size:30px;display:flex;flex-direction:column;gap:0;align-items:center;justify-content:center;box-shadow:0 5px 0 #0a3629d1,0 0 0 5px #18483955;touch-action:manipulation;user-select:none}
+.interact span{display:block;font-size:11px;font-weight:850}
+.hud-attribution{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);margin:0;font-size:8px;color:#e2f2e39e;white-space:nowrap;pointer-events:none;z-index:2}
+.hud-hooks{display:none}
+.overlay{z-index:20}
+.modal{box-shadow:0 22px 65px #071c1791}
+.modal-head{position:sticky;top:0;z-index:2;background:#fffcf4}
+@media(max-width:760px){
+ .hud-top{padding-top:calc(env(safe-area-inset-top,0px) + 8px)}
+ .hud-headline{margin-bottom:8px}
+ .hud-logo{width:34px;height:34px;font-size:20px}
+ .hud-brand strong{font-size:19px}
+ .hud-btn{min-height:50px;font-size:10px;border-radius:11px}
+ .hud-ico{font-size:19px}
+ .hud-objective{margin-top:7px}
+ .controls{padding:0 17px;bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+ .controls .dpad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,39px)}
+ .interact{width:89px;height:89px;min-width:89px;min-height:89px}
+ .map-toast{bottom:calc(145px + env(safe-area-inset-bottom,0px));font-size:10px}
+ .overlay{align-items:flex-end;padding:0}
+ .overlay .modal{width:100%;border-radius:20px 20px 0 0;max-height:83dvh;padding-bottom:env(safe-area-inset-bottom,0px)}
+ #battleOverlay{align-items:center;padding:10px}
+ #battleOverlay .modal{border-radius:20px;max-height:calc(100dvh - 20px)}
+ #starterOverlay{align-items:center;padding:10px}
+ #starterOverlay .modal{border-radius:20px;max-height:calc(100dvh - 20px)}
+}
+@media(min-width:761px){
+ .hud-top{padding:16px clamp(18px,3vw,42px);max-width:100%}
+ .hud-headline{max-width:900px;margin:0 auto 10px}
+ .hud-actions{max-width:540px;margin:0 auto;gap:10px}
+ .controls{max-width:1100px;margin:0 auto}
+ .controls .dpad{grid-template-columns:repeat(3,56px);grid-template-rows:repeat(3,50px)}
+ .interact{width:110px;height:110px}
+ .map-toast{bottom:195px}
+}
+@media(max-height:570px) and (orientation:landscape){
+ .hud-headline{margin-bottom:4px}.hud-btn{min-height:36px;flex-direction:row;gap:4px}.hud-ico{font-size:15px}
+ .hud-objective{margin-top:5px;height:23px}
+ .controls .dpad{grid-template-columns:repeat(3,35px);grid-template-rows:repeat(3,32px)}
+ .interact{min-width:75px;min-height:75px;width:75px;height:75px}
+ .map-toast{bottom:116px}
+}
 </style>
 </head>
 <body>
 <div class="app">
-  <header class="top">
-    <div class="brand"><div class="mark">∑</div><div><small>KIDSCADE · MONSTER ADVENTURE</small><strong>키즈몬 <span style="font-size:12px;color:#779189;letter-spacing:.02em">KIDSMON</span></strong></div></div>
-    <div class="top-right">
-      <span class="chip accent" id="areaName">여울마을</span>
-      <span class="chip" id="coinCount">120 연구코인</span>
-      <button class="chip chip-button" id="audioButton" type="button">소리 켬</button>
-      <button class="chip chip-button" id="exitButton" type="button">나가기</button>
-    </div>
-  </header>
-  <main class="cols">
-    <section class="panel">
-      <div class="bar"><strong id="objective">키즈몬 연구소에서 스타팅 키즈몬을 골라요</strong><small id="saveInfo">자동 저장</small></div>
-      <div class="world-wrap"><canvas id="worldCanvas" width="512" height="320" aria-label="화살표, WASD 또는 화면 방향키로 탐험하는 키즈몬 월드"></canvas>
-        <div class="world-hud"><span class="hud-tag" id="worldHint">키즈몬 연구소 옆에서 탐험 시작</span></div>
-        <div id="mapToast" aria-live="polite">방향키로 이동하고 풀숲에서 야생 키즈몬을 만나보세요.</div>
+  <main class="game-shell" aria-label="키즈몬 탐험">
+    <section class="world-wrap" aria-label="키즈몬 월드">
+      <canvas id="worldCanvas" width="512" height="320" aria-label="방향키나 화면 조작 버튼으로 탐험하는 키즈몬 지도"></canvas>
+      <div class="hud-top">
+        <div class="hud-headline">
+          <div class="hud-brand"><span class="hud-logo" aria-hidden="true">Σ</span><span><strong>키즈몬</strong><small id="areaName">여울마을</small></span></div>
+          <div class="hud-resources">
+            <span class="hud-coins" id="coinCount" aria-label="연구코인">120 <small>코인</small></span>
+            <span class="hud-save" id="saveInfo" title="진행 자동 저장" aria-label="진행 자동 저장">●</span>
+          </div>
+        </div>
+        <nav class="hud-actions" aria-label="게임 정보 메뉴">
+          <button type="button" class="hud-btn" id="hudParty" data-hud="party"><span class="hud-ico" aria-hidden="true">♟</span><span>파티</span></button>
+          <button type="button" class="hud-btn" id="hudBag" data-hud="bag"><span class="hud-ico" aria-hidden="true">▣</span><span>가방</span></button>
+          <button type="button" class="hud-btn" id="hudDex" data-hud="dex"><span class="hud-ico" aria-hidden="true">▤</span><span>도감</span></button>
+          <button type="button" class="hud-btn" id="hudGoals" data-hud="goals"><span class="hud-ico" aria-hidden="true">✦</span><span>목표</span></button>
+          <button type="button" class="hud-btn" id="hudMenu" data-hud="menu"><span class="hud-ico" aria-hidden="true">☰</span><span>메뉴</span></button>
+        </nav>
+        <div class="hud-objective"><span class="hud-objective-icon" aria-hidden="true">→</span><strong id="objective">첫 야생 키즈몬을 포획해 보자</strong></div>
       </div>
-      <div class="controls">
+      <div id="mapToast" class="map-toast" aria-live="polite">오른쪽 초원에서 키즈몬을 찾아보자!</div>
+      <div class="controls" aria-label="탐험 조작">
         <div class="dpad" aria-label="이동 방향">
           <button type="button" class="up" data-dir="up" aria-label="위">▲</button>
           <button type="button" class="left" data-dir="left" aria-label="왼쪽">◀</button>
-          <span class="mid" aria-hidden="true">+</span>
+          <span class="mid" aria-hidden="true">✥</span>
           <button type="button" class="right" data-dir="right" aria-label="오른쪽">▶</button>
           <button type="button" class="down" data-dir="down" aria-label="아래">▼</button>
         </div>
-        <div class="control-side">
-          <button type="button" class="interact" id="interactBtn">A · 살펴보기</button>
-          <span class="hint">PC: 방향키/WASD 이동 · Z/Enter 상호작용<br>모바일: 방향키를 누르고 있으면 연속 이동</span>
-        </div>
+        <button type="button" class="interact" id="interactBtn" aria-label="A 살펴보기">A<span>살펴보기</span></button>
       </div>
     </section>
-    <aside class="side">
-      <section class="panel"><h2>우리 키즈몬</h2><div id="teamList" class="team"></div>
-        <div class="action-row"><button type="button" class="act" id="openDex">도감 보기</button><button type="button" class="act" id="healField">회복약 사용</button><button type="button" class="act" id="newGame">처음부터</button></div>
-      </section>
-      <section class="panel"><h2>탐험 가방</h2>
-        <div class="equipment"><span>키즈볼</span><strong id="balls">7개</strong></div>
-        <div class="equipment"><span>회복약</span><strong id="potions">3개</strong></div>
-        <div class="equipment"><span>도감 발견</span><strong id="seenCount">1 / 102</strong></div>
-        <div class="equipment"><span>포획 완료</span><strong id="caughtCount">1 / 102</strong></div>
-      </section>
-      <section class="panel"><h2>탐험 안내</h2>
-        <p class="help-copy">마을 오른쪽 이슬초원에 들어가면 풀이 우거진 곳에서 키즈몬을 만날 수 있어요. 상대의 체력을 살펴 적절히 공격한 다음 키즈볼을 던져 보세요. 마을의 키즈몬 연구소에서 치료와 물품 구매도 가능해요.</p>
-        <div class="action-row"><button class="act primary" type="button" id="goClinic">연구원 위치 보기</button></div>
-      </section>
-    </aside>
   </main>
-  <p class="footer">Openmon 원작 그래픽과 Kenney CC0 타일을 사용한 KIDSCADE 학습 RPG 시제품. 전투·진화·이름과 규칙은 키즈케이드 게임 기획안이며 원작자의 공식 설정이 아니에요.</p>
+  <div class="hud-hooks" hidden aria-hidden="true">
+    <div id="teamList"></div>
+    <span id="balls">7개</span><span id="potions">3개</span>
+    <span id="seenCount">1 / 102</span><span id="caughtCount">1 / 102</span>
+    <span id="worldHint"></span>
+    <button type="button" id="openDex">도감 보기</button>
+    <button type="button" id="healField">회복약 사용</button>
+    <button type="button" id="goClinic">연구원 위치 보기</button>
+    <button type="button" id="newGame">처음부터</button>
+    <button type="button" id="audioButton">소리 켬</button>
+    <button type="button" id="exitButton">나가기</button>
+  </div>
+  <p class="hud-attribution">Openmon 원작 그래픽 · Kenney CC0 타일 · KIDSCADE</p>
 </div>
 <div class="overlay" id="starterOverlay" hidden>
  <div class="modal">
