@@ -172,11 +172,12 @@ let chrome,ws,profile;
   });
   assert.ok(battleStart.hasBattle&&battleStart.displayed&&battleStart.foeSprite&&battleStart.buttonCount===4,'Encounter failed '+config.name+JSON.stringify(battleStart));
   await screenshot(config.name+'-battle');
+  const rootButtons=await evalFn(()=>document.querySelectorAll('[data-action]').length);
+  await evalFn(()=>document.querySelector('[data-action="fight"]').click());
+  await screenshot(config.name+'-battle-skill-selection');
   const turnMenu=await evalFn(()=>{
    const battle=window.OPENMON_EXPEDITION_DEBUG.getBattle();
    const own=window.OPENMON_EXPEDITION_DEBUG.getState().party[0];
-   const root=document.querySelectorAll('[data-action]').length;
-   document.querySelector('[data-action="fight"]').click();
    const skills=Array.from(document.querySelectorAll('[data-action^="move:"]'));
    const signatures=skills.map(b=>b.textContent);
    const pre=own.moveSlots.map(x=>x.pp);
@@ -188,7 +189,7 @@ let chrome,ws,profile;
    return {root,skills:skills.length,signatures,display,
     consumed:pre[1]-post[1],foeUsedPP,turn:battle.turn,overlay:!document.getElementById('battleOverlay').classList.contains('hidden')};
   });
-  assert.ok(turnMenu.root===4&&turnMenu.skills===4&&turnMenu.display&&turnMenu.consumed===1&&
+  assert.ok(rootButtons===4&&turnMenu.skills===4&&turnMenu.display&&turnMenu.consumed===1&&
     turnMenu.foeUsedPP&&turnMenu.overlay,
     'New turn-based move menu and PP broke '+config.name+JSON.stringify(turnMenu));
   await screenshot(config.name+'-battle-moves');
