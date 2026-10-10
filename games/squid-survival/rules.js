@@ -47,6 +47,9 @@
       case 'ROTATE':
         if(state.phase!=='intro')return state;
         return{...state,phase:'rotate'};
+      case 'ORIENTED':
+        if(state.phase!=='rotate')return state;
+        return{...state,phase:'intro'};
       case 'RESULT':{
         if(state.phase!=='running'||state.locked)return state;
         const round=ROUNDS[state.roundIndex];
