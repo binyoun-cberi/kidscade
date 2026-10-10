@@ -218,7 +218,8 @@ function stageValue(stat,n){return stat*(n>=0?(2+n)/2:2/(2-n))}
 function score(mon,side){return stageValue(D.combat.statsAtLevel(mon.id,mon.level,mon).speed,side.speed)*(side.condition==="slow"?.7:1)*(D.combat.abilityFor(mon)==="agility"?1.12:1)}
 function moveDamage(attacker,target,move,aSide,dSide,protect){
  const raw=D.combat.damage({attacker:attacker.id,defender:target.id,attackerLevel:attacker.level,
-  defenderLevel:target.level,power:move.power,moveType:move.type});
+  defenderLevel:target.level,power:move.power,moveType:move.type,damageClass:move.damageClass,
+  attackerMon:attacker,defenderMon:target});
  const special=(move.damageClass|| (D.combat.SPECIAL_TYPES.has(move.type)?"special":"physical"))==="special";
  const a=(2+Math.max(-3,Math.min(3,special?aSide.spAttack:aSide.attack)))/2;
  const d=(2+Math.max(-3,Math.min(3,special?dSide.spDefense:dSide.defense)))/2;
@@ -337,6 +338,7 @@ function resolve({save,foe,battle,action,random=Math.random,rookieCap=0}){
   const user=isPlayer?player():foe,other=isPlayer?foe:player();
   const a=isPlayer?side.player:side.foe,b=isPlayer?side.foe:side.player;
   if(!user||!user.hp||!other.hp)return;
+  if(a.stunPending){a.stunPending=false;say(getSpecies(user.id).name+"이(가) 감전되어 행동하지 못했어.");return}
   if(isPlayer){
    if(action.type==="run"){ran=true;outcome="run";say("무사히 도망쳤어!");return}
    if(action.type==="switch"){save.active=action.index;normalize(player());switched=true;side.player=makeSide();say(getSpecies(player().id).name+" 출전!");return}
