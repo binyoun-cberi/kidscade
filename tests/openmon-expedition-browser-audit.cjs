@@ -186,7 +186,7 @@ let chrome,ws,profile;
    moveBtn.click();
    const post=own.moveSlots.map(x=>x.pp);
    const foeUsedPP=battle.foe.moveSlots.some(slot=>slot.pp<window.OPENMON_TURN_BATTLE.moves[slot.id].pp);
-   return {root,skills:skills.length,signatures,display,
+   return {skills:skills.length,signatures,display,
     consumed:pre[1]-post[1],foeUsedPP,turn:battle.turn,overlay:!document.getElementById('battleOverlay').classList.contains('hidden')};
   });
   assert.ok(rootButtons===4&&turnMenu.skills===4&&turnMenu.display&&turnMenu.consumed===1&&
