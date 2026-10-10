@@ -489,16 +489,9 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
   if(style.details.includes('stripes')){
     for(const sign of [-1,1]){
       if(style.category==='bottom'){
-        // Two-piece athletic side piping bends separately at the knee.
-        for(const segment of ['thigh','shin']){
-          const bone=resolveFirstBoneName(source.skeleton,[
-            sign<0?'DEF-'+segment+'L':'DEF-'+segment+'R',
-            sign<0?'DEF-'+segment+'.L':'DEF-'+segment+'.R'
-          ]);
-          const stripe=new THREE.BoxGeometry(.014,segment==='thigh'?.245:.21,.015);
-          stripe.translate(sign*.295,segment==='thigh'?.535:.22,.018);
-          add(stripe,accent,(sign<0?'stripe_left_':'stripe_right_')+segment,bone);
-        }
+        // Body-space straight stripe boxes floated beside animated legs.
+        // makeTrouserLegs now generates a strip following each weighted leg.
+        continue;
       }else{
         const stripe=new THREE.BoxGeometry(.012,.13,.009);
         stripe.translate(sign*.16,1.01,.143);
@@ -612,6 +605,37 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
     const leg=cloneSkinnedMeshWithGeometry(source,geometry,material,style.id+'_leg_'+side);
     leg.userData={part:'trouser-leg',side,fit:style.fit,articulation:'four-neighbor-smooth-body-weights',skinTransfer:geometry.userData.skinTransfer,thighBone:thigh,shinBone:shin};
     group.add(leg);
+    if(style.id==='chibi_male_trackpants'){
+      // Fabric-colored piping samples the ACTUAL tapered cylinder surface
+      // with its own smooth four-neighbor leg weights. No rigid unattached
+      // thigh/shin boxes; no gap at the knee during WALK/RUN.
+      const verts=[],triangles=[],steps=16,width=.016;
+      const center=sign*(wide?.178:.153);
+      for(let j=0;j<=steps;j++){
+        const y=top-(top-bottom)*j/steps;
+        const fraction=(y-bottom)/(top-bottom);
+        const radius=lowerRadius+(upperRadius-lowerRadius)*fraction;
+        for(const z of [-width,width]){
+          const surfaceX=center+sign*(Math.sqrt(Math.max(0,radius*radius-z*z))+.005);
+          verts.push(surfaceX,y,z);
+        }
+        if(j<steps){
+          const row=j*2;
+          triangles.push(row,row+1,row+2,row+1,row+3,row+2);
+        }
+      }
+      const piping=new THREE.BufferGeometry();
+      piping.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+      piping.setIndex(triangles);
+      transferSmoothSkinWeights(piping,reference,{sign,region:'leg'});
+      piping.computeVertexNormals();piping.computeBoundingBox();piping.computeBoundingSphere();
+      const stripeMat=new THREE.MeshStandardMaterial({color:'#ece9dd',roughness:.88,side:THREE.DoubleSide});
+      const stripe=cloneSkinnedMeshWithGeometry(source,piping,stripeMat,
+        style.id+(sign<0?'_stripe_left_weighted':'_stripe_right_weighted'));
+      stripe.userData={part:'weighted-trouser-side-piping',side,
+        skinTransfer:piping.userData.skinTransfer};
+      group.add(stripe);
+    }
   }
 }
 
