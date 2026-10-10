@@ -218,6 +218,8 @@ function maybeEvolve(save,chosenId){
  p.id=chosenId;
  const newMax=DB.combat.statsAtLevel(p.id,p.level).hp;
  p.hp=Math.max(1,newMax-delta);
+ const newTechnique=global.OPENMON_TURN_BATTLE?.equipEvolutionTechnique(p);
+ if(newTechnique)p.lastEvolutionTechnique=newTechnique;
  save.collection[p.id]=true;save.seen[p.id]=true;
  return true;
 }

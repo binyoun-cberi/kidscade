@@ -63,31 +63,135 @@ const MOVESET={
  dark:["shadow","mark","night","quick"]
 };
 const getSpecies=id=>D.species.find(s=>s.id===id);
+const familyMoves=new Map();
+const branchMoves=new Map();
+const SIGNATURE_PROFILES={
+ swift:(tier)=>({power:7+tier*2,accuracy:100,pp:18-tier*2,priority:1}),
+ twin:(tier)=>({power:5+tier,accuracy:95,pp:18-tier*2,hits:2}),
+ drain:(tier)=>({power:7+tier*2,accuracy:100,pp:17-tier*2,drain:.2+tier*.06}),
+ weaken:(tier)=>({power:8+tier*2,accuracy:95,pp:17-tier*2,
+  afflict:{kind:"weaken",chance:.25+tier*.1}}),
+ slow:(tier)=>({power:7+tier*2,accuracy:95,pp:17-tier*2,
+  afflict:{kind:"slow",chance:.3+tier*.1}}),
+ burn:(tier)=>({power:7+tier*2,accuracy:95,pp:17-tier*2,
+  afflict:{kind:"burn",chance:.22+tier*.1}}),
+ burst:(tier)=>({power:11+tier*2,accuracy:90,pp:13-tier*2}),
+ heal:(tier)=>({power:0,accuracy:100,pp:10-tier,kind:"heal",heal:.27+tier*.08}),
+ shield:(tier)=>({power:0,accuracy:100,pp:12-tier,kind:"shield",shield:.30+tier*.08}),
+ buff:(tier)=>({power:0,accuracy:100,pp:12-tier,kind:"buff",
+  buff:{stat:tier===2?"speed":"attack",amount:1}})
+};
+function signatureId(key,suffix="base"){
+ return "family_"+key.replace(/[^a-z0-9]/g,"_")+"_"+suffix;
+}
+function createSignature(id,name,style,type,tier,key){
+ if(M[id]||!D.types[type]||!SIGNATURE_PROFILES[style])throw Error("Invalid family skill "+id);
+ const data=SIGNATURE_PROFILES[style](tier);
+ // Slightly different power and PP within each combat role: same-type family
+ // signatures should not merely be different labels for identical attacks.
+ const index=D.families.findIndex(f=>f.key===key);
+ if(data.power>0)data.power=clamp(data.power+(index%3)-1,4,16);
+ data.pp=clamp(data.pp+(index%3)-1,7,35);
+ M[id]={id,name,type,...data,familyKey:key,signatureTier:tier};
+ return id;
+}
+function registerFamilyMoves({key,name,style,advancedName,ultimateName,branches}){
+ const family=D.families.find(f=>f.key===key);
+ if(!family||familyMoves.has(key)||!SIGNATURE_PROFILES[style])throw Error("Invalid or repeated family "+key);
+ const forms=family.parts.map(id=>getSpecies(id)),primary=forms[0];
+ const starters={"starter-2":"photoPulse","starter-3":"pascalPress","starter-4":"fiboStrikes"};
+ const base=starters[key]||createSignature(signatureId(key),name,style,primary.type,0,key);
+ const config={key,base,advanced:null,ultimate:null};
+ if(family.parts.length>1&&!branches){
+  if(!advancedName)throw Error("Missing evolution move "+key);
+  config.advanced=createSignature(signatureId(key,"e2"),advancedName,style,forms[1].type,1,key);
+ }
+ if(family.parts.length>=3&&family.kind!=="branch"){
+  if(!ultimateName)throw Error("Missing ultimate move "+key);
+  config.ultimate=createSignature(signatureId(key,"e3"),ultimateName,style,forms[2].type,2,key);
+ }
+ if(branches){
+  if(family.kind!=="branch"||branches.length!==family.parts.length-1)
+   throw Error("Wrong branch species "+key);
+  for(const [index,entry] of branches.entries()){
+   if(entry.id!==family.parts[index+1]||!entry.name||entry.type!==forms[index+1].type)
+    throw Error("Wrong branch mapping "+entry.id);
+   const id=createSignature(signatureId(key,"branch_"+(index+1)),entry.name,entry.style,entry.type,1,key);
+   branchMoves.set(entry.id,id);
+  }
+ }
+ familyMoves.set(key,config);
+ return config;
+}
+function growthMoves(mon){
+ const sp=getSpecies(mon.id),f=sp&&familyMoves.get(sp.familyKey);
+ if(!f)return {base:null,advanced:null,ultimate:null};
+ const advanced=sp.evolutionRank>=2&&mon.level>=14?
+  branchMoves.get(sp.id)||f.advanced:null;
+ const ultimate=sp.evolutionRank>=3&&mon.level>=26?f.ultimate:null;
+ return {base:f.base,advanced,ultimate};
+}
+function equipEvolutionTechnique(mon){
+ const growth=growthMoves(mon);
+ const desired=growth.ultimate||growth.advanced;
+ if(!desired)return null;
+ normalize(mon);
+ if(mon.moveSlots.some(slot=>slot.id===desired))return desired;
+ const sp=getSpecies(mon.id),cfg=MOVESET[sp.type]||MOVESET.neutral;
+ // Replace a generic starter move first; preserve custom skills and PP otherwise.
+ const replaceIndex=mon.moveSlots.findIndex(slot=>
+   slot.id==="tackle"||cfg.includes(slot.id));
+ if(replaceIndex<0)return null;
+ mon.moveSlots[replaceIndex]={id:desired,pp:M[desired].pp};
+ return desired;
+}
+
 const getMove=id=>M[id]||null;
 function learnable(mon){
- const s=getSpecies(mon.id);if(!s)return [];
- const cfg=MOVESET[s.type]||MOVESET.neutral;
- // Four starting techniques. Stronger finishers unlock after leveling.
- let list=["tackle",...cfg.slice(0,3)];
- const signatures={"starter-2":"photoPulse","starter-3":"pascalPress","starter-4":"fiboStrikes"};
- if(signatures[s.familyKey]){
-  const preferred=s.familyKey==="starter-2"?["tackle","leaf","synthesis","photoPulse","vine"]:
-   s.familyKey==="starter-3"?["tackle","water","raincoat","pascalPress","pressure"]:
+ const sp=getSpecies(mon.id);if(!sp)return [];
+ const cfg=MOVESET[sp.type]||MOVESET.neutral,growth=growthMoves(mon);
+ const starters={"starter-2":"photoPulse","starter-3":"pascalPress","starter-4":"fiboStrikes"};
+ let list;
+ if(starters[sp.familyKey]){
+  list=sp.familyKey==="starter-2"?["tackle","leaf","synthesis","photoPulse","vine"]:
+   sp.familyKey==="starter-3"?["tackle","water","raincoat","pascalPress","pressure"]:
    ["tackle","wind","gust","fiboStrikes","tailwind"];
-  list=preferred;
- }
+ }else if(growth.base){
+  list=["tackle",cfg[0],cfg[1],growth.base,cfg[2]];
+ }else list=["tackle",...cfg.slice(0,3)];
+ if(growth.advanced)list.push(growth.advanced);
+ if(growth.ultimate)list.push(growth.ultimate);
  if(mon.level>=14)list.push(cfg[3]);
  if(mon.level>=26)list.push("quick");
- // Species from different families can favour different moves when managing techniques.
- if(s.battle?.role==="swift"&&mon.level>=10)list.push("quick");
- if(s.battle?.role==="guard"&&mon.level>=10)list.push("counter");
+ if(sp.battle?.role==="swift"&&mon.level>=10)list.push("quick");
+ if(sp.battle?.role==="guard"&&mon.level>=10)list.push("counter");
  return [...new Set(list)];
+}
+function startingMoves(mon){
+ const s=getSpecies(mon.id),cfg=MOVESET[s.type]||MOVESET.neutral;
+ const known=learnable(mon),growth=growthMoves(mon);
+ if(!growth.base)return known.slice(0,4);
+ if(s.evolutionRank>=3&&growth.ultimate)return [...new Set(["tackle",growth.base,growth.advanced,growth.ultimate])].slice(0,4);
+ if(s.evolutionRank>=2&&growth.advanced)return [...new Set(["tackle",cfg[0],growth.base,growth.advanced])].slice(0,4);
+ return known.slice(0,4);
 }
 function normalize(mon){
  if(!mon||!getSpecies(mon.id))return [];
  const all=learnable(mon);
- const fallback=all.slice(0,4);
+ const fallback=startingMoves(mon);
  if(!Array.isArray(mon.moveSlots)||!mon.moveSlots.length)mon.moveSlots=fallback.map(id=>({id,pp:M[id].pp}));
+ // Only untouched legacy type-default layouts receive the new signature automatically.
+ // User-customized move sets and their remaining PP are never overwritten.
+ else if(familyMoves.has(getSpecies(mon.id).familyKey)){
+  const sp=getSpecies(mon.id),cfg=MOVESET[sp.type]||MOVESET.neutral;
+  const vanilla=["tackle",...cfg.slice(0,3)];
+  const actual=mon.moveSlots.map(x=>x?.id);
+  const growth=growthMoves(mon);
+  if(growth.base&&!actual.includes(growth.base)&&actual.length===4&&
+     vanilla.every((id,i)=>actual[i]===id)){
+   mon.moveSlots[3]={id:growth.base,pp:M[growth.base].pp};
+  }
+ }
  const unique=new Set();
  mon.moveSlots=mon.moveSlots.filter(slot=>{
   if(!slot||!M[slot.id]||unique.has(slot.id))return false;
@@ -251,5 +355,5 @@ function resolve({save,foe,battle,action,random=Math.random,rookieCap=0}){
  }
  return {ok:true,outcome,events,enemyMove:enemyId,playerFirst,captured,ran,potionUsed,switched};
 }
-w.OPENMON_TURN_BATTLE={moves:M,moveSets:MOVESET,normalize,restorePP,learnable,changeMove,chooseEnemyMove,resolve,state,score};
+w.OPENMON_TURN_BATTLE={moves:M,moveSets:MOVESET,normalize,restorePP,learnable,changeMove,chooseEnemyMove,resolve,state,score,registerFamilyMoves,growthMoves,equipEvolutionTechnique,familyMoves,branchMoves};
 })(window);

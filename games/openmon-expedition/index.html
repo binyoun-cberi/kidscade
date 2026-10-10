@@ -183,6 +183,13 @@ body{background:#203a31;overscroll-behavior:none}
 .move-detail-heading .move-detail-title{display:flex;align-items:center;gap:3px;min-width:0}
 .move-detail-heading .move-detail-title h3{word-break:keep-all}
 @media(max-width:550px){.move-dex-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.move-card{padding:9px 7px;gap:6px;min-height:104px}.move-card.is-selected{padding:8px 6px}.move-card .move-type-symbol{width:22px;height:22px;flex-basis:22px;font-size:15px}.move-card-title{font-size:12px}.move-card-metrics,.move-card-desc{font-size:9px}.move-detail{padding:12px}.move-detail-metrics span{font-size:9px}.move-detail-metrics b{font-size:12px}}
+
+/* Family move visual cues in the 47-family learnset expansion. */
+.move-signature{display:inline-block;vertical-align:middle;margin-left:3px;padding:2px 5px;border-radius:5px;font-size:9px;line-height:1.3;font-weight:900;background:#dff0dd;color:#347653}
+.move-card-special{border-left:3px solid #68ab7b}
+.move-stage-label{font-size:10px;font-weight:750;color:#5a8271;margin-top:2px}
+.signature-caption{margin:5px 0 10px;padding:8px 10px;border-radius:9px;background:#eaf3e6;color:#416955;font-size:11px;line-height:1.6}
+.move-dex-list.is-collapsed{max-height:none}
 </style>
 </head>
 <body>
@@ -267,6 +274,7 @@ body{background:#203a31;overscroll-behavior:none}
 <script src="../openmon-dex/combat.js"></script>
 <script src="engine.js"></script>
 <script src="turn-battle.js"></script>
+<script src="family-signatures.js"></script>
 <script src="move-dex.js"></script>
 <script src="game.js"></script>
 </body>
