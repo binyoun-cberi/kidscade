@@ -1030,7 +1030,7 @@ test('v6.1 hair silhouettes use head-bone rigged volumes and pixie avoids pinche
 });
 test('v6.1 hats and face items use corrected crown/mouth registration',()=>{
   const pack=read('teacher/chibi-accessory-pack.js');
-  assert.match(pack,/referenceBox\.max\.y\+\.033/);
+  assert.match(pack,/referenceBox\.max\.y-\.060/);
   assert.match(pack,/accessoryBox\.max\.y:accessoryBox\.min\.y/);
   assert.match(pack,/scalpY-\.012,hc\.z/);
   assert.match(pack,/eyeY-\.241/);
@@ -1041,4 +1041,15 @@ test('v6.1 tracksuit piping bends with weighted knees rather than floating rigid
   assert.match(pack,/part:'weighted-trouser-side-piping'/);
   assert.match(pack,/transferSmoothSkinWeights\(piping,reference,\{sign,region:'leg'\}\)/);
   assert.match(pack,/stripe_left_weighted/);
+});
+
+test('v6.1 visual identity details include layered school collar, rugby stripes, pleats, and tunic length',()=>{
+  const outfits=read('teacher/chibi-outfit-pack.js');
+  for(const signature of [
+    'rugby_band_','utility_pocket_','blazer_lapel_','sailor_v_collar_',
+    'sailor_smooth_hem','tunic_long_hem','skirt_pleat_','culottes_leg_split'
+  ])assert.ok(outfits.includes(signature),'Missing distinguishable garment shape '+signature);
+  const hair=read('teacher/character-3d-studio.js');
+  assert.match(hair,/source GLB hair atlas has alpha-cutout/);
+  assert.match(hair,/side:THREE.DoubleSide/);
 });
