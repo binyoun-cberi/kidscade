@@ -288,3 +288,49 @@ test('Home V2 keeps the classic lobby visible until the recommended home is full
   assert.match(mount,/required-runtime-timeout/);
   assert.match(mount,/activateShell\(shell\)/);
 });
+
+test('Halloween horror rail follows season and respects catalog readiness and age', () => {
+  const fs=require('node:fs');
+  const path=require('node:path');
+  const catalog=JSON.parse(fs.readFileSync(path.resolve(__dirname,'..','data/games.json'),'utf8')).games;
+  const eligible=catalog.filter(game => !game.disabled && game.qualityStatus !== 'rework');
+  const railAt=(dateKey,age='high') => home.railDefinitions(eligible, {
+    age,dateKey,recentGames:[],newGames:[],popularGames:[],recommendedGames:[],hiddenGames:[]
+  }).find(rail => rail.key === 'halloween-horror');
+  assert.equal(home.isHalloweenSeason('2026-10-09'),false);
+  assert.equal(home.isHalloweenSeason('2026-10-10'),true);
+  assert.equal(home.isHalloweenSeason('2026-10-31'),true);
+  assert.equal(home.isHalloweenSeason('2026-11-01'),true);
+  assert.equal(home.isHalloweenSeason('2026-11-02'),false);
+  const horror=railAt('2026-10-10');
+  assert.ok(horror);
+  assert.equal(horror.title,'🎃 공포');
+  assert.deepEqual(horror.games.map(game => game.id),[
+    'high_folklore_night_guard',
+    'high_ota_typographic_horror',
+    'high_midnight_diner',
+    'high_quarantine_17',
+    'math_tower_defense'
+  ]);
+  assert.equal(horror.games.some(game => game.qualityStatus === 'rework'),false);
+  assert.equal(railAt('2026-10-09'),undefined);
+  assert.equal(railAt('2026-11-02'),undefined);
+  assert.equal(railAt('2026-10-31','toddler'),undefined);
+  assert.equal(railAt('2026-10-31','low'),undefined);
+});
+
+test('Halloween horror rail excludes disabled and rework games and has readable cover fallbacks', () => {
+  const fs=require('node:fs');
+  const path=require('node:path');
+  const source=fs.readFileSync(path.resolve(__dirname,'..','home-v2.js'),'utf8');
+  const css=fs.readFileSync(path.resolve(__dirname,'..','home-v2.css'),'utf8');
+  assert.deepEqual(home.halloweenHorrorGames([
+    {id:'high_folklore_night_guard',age:'high'},
+    {id:'high_midnight_diner',age:'high',disabled:true},
+    {id:'high_ota_typographic_horror',age:'high',qualityStatus:'rework'},
+    {id:'math_tower_defense',age:'high'}
+  ],'high').map(game=>game.id),['high_folklore_night_guard','math_tower_defense']);
+  assert.match(source,/kc-home-horror-fallback/);
+  assert.match(css,/kc-home-horror-fallback/);
+  assert.match(css,/data-home-rail="halloween-horror"/);
+});

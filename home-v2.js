@@ -22,6 +22,15 @@
   const DAY_MS = 24 * HOUR_MS;
   const KST_OFFSET_MS = 9 * HOUR_MS;
   const NEW_RELEASE_WINDOW_DAYS = 30;
+  // Curated scary games; avoid non-ready games and honor each age group.
+  const HALLOWEEN_HORROR_IDS = Object.freeze([
+    'high_folklore_night_guard',
+    'high_ota_typographic_horror',
+    'high_midnight_diner',
+    'high_haunted_school_exorcist',
+    'high_quarantine_17',
+    'math_tower_defense'
+  ]);
   const MOUNT_RETRY_MS = 80;
   const MOUNT_TIMEOUT_MS = 3000;
   const HOME_LAYOUTS = Object.freeze({ recommend: 'recommend', classic: 'classic' });
@@ -168,6 +177,23 @@
   function addedAtMs(game) {
     const value = Date.parse(String(game?.addedAt || ''));
     return Number.isFinite(value) ? value : 0;
+  }
+
+  function isHalloweenSeason(dateKey = kstDateKey()) {
+    // Advance promotion from October 10 through November 1, Korean time.
+    const match = /^\d{4}-(\d{2})-(\d{2})$/.exec(String(dateKey));
+    if (!match) return false;
+    const month = Number(match[1]);
+    const day = Number(match[2]);
+    return (month === 10 && day >= 10 && day <= 31) || (month === 11 && day === 1);
+  }
+
+  function halloweenHorrorGames(gameList, age) {
+    const byId = new Map(gameList.map(game => [String(game?.id || ''), game]));
+    return HALLOWEEN_HORROR_IDS
+      .map(id => byId.get(id))
+      .filter(game => game && !game.disabled && game.qualityStatus !== 'rework' && supportsAge(game, age))
+      .slice(0, MAX_RAIL_GAMES);
   }
 
   function newReleaseGames(gameList, age, options = {}) {
@@ -442,6 +468,15 @@
       note:'KIDSCADE에 최근 새로 들어온 게임이에요.',
       games:newest
     }, { leadCount:3 });
+
+    if (isHalloweenSeason(dateKey)) {
+      addRail({
+        key:'halloween-horror',
+        title:'🎃 공포',
+        note:'할로윈 특별 추천 · 추리부터 생존까지! 놀라는 장면에 주의하세요.',
+        games:halloweenHorrorGames(gameList, age)
+      }, { minGames:2, preserveOrder:true, leadCount:3 });
+    }
 
     if (popular.length) addRail({
       key:'popular',
@@ -777,12 +812,15 @@
 
   function railCardMarkup(game, rail) {
     const cover = game.cover || 'kidscade placeholder.png';
+    const art = !game.cover && rail.key === 'halloween-horror'
+      ? `<span class="kc-home-horror-fallback" aria-hidden="true"><span>${escapeHtml(game.icon || '👻')}</span></span>`
+      : `<img src="${escapeAttr(cover)}" alt="" loading="lazy" decoding="async">`;
     const count = rail.showPlayCount ? playCount(game.id) : 0;
     const countMarkup = count > 0 ? `<span class="kc-home-card-count">🔥 ${count.toLocaleString('ko-KR')}회</span>` : '';
     return `
       <button type="button" class="kc-home-card" data-home-play="${escapeAttr(game.id)}" data-home-card tabindex="-1">
         <span class="kc-home-card-art">
-          <img src="${escapeAttr(cover)}" alt="" loading="lazy" decoding="async">
+          ${art}
           ${countMarkup}
         </span>
         <span class="kc-home-card-title">${escapeHtml(game.title)}</span>
@@ -1272,6 +1310,8 @@
     dailyHash,
     kstHourSlot,
     newReleaseGames,
+    isHalloweenSeason,
+    halloweenHorrorGames,
     hiddenGemGames,
     heroCandidates,
     rankPopular,

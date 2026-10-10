@@ -337,6 +337,27 @@ body.kc-home-v2-ready[data-kc-home-layout="classic"] .kc-quick-zone {
   display:block;
   object-fit:cover;
 }
+.kc-home-rail[data-home-rail="halloween-horror"] .kc-home-rail-head {
+  align-items:center;
+  padding:12px 15px;
+  border-radius:16px;
+  background:linear-gradient(115deg,#20182e,#4b2850 70%,#63304c);
+  box-shadow:0 7px 21px rgba(42,20,51,.13);
+}
+.kc-home-rail[data-home-rail="halloween-horror"] .kc-home-rail-head h2 { color:#fff; }
+.kc-home-rail[data-home-rail="halloween-horror"] .kc-home-rail-head p { color:rgba(255,255,255,.84); }
+.kc-home-horror-fallback {
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  background:radial-gradient(circle at 72% 28%,#7e426a 0%,#35213d 40%,#171427 100%);
+  color:#fff;
+}
+.kc-home-horror-fallback span {
+  font-size:clamp(2.5rem,5vw,4.1rem);
+  filter:drop-shadow(0 10px 15px rgba(0,0,0,.4));
+}
 .kc-home-card-count {
   position:absolute;
   left:7px;
