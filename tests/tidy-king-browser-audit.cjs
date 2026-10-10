@@ -20,7 +20,7 @@ const injection=[
 'const k=(h?.kind||"none")+"/"+(cover?.id||cover?.tagName);seen[k]=(seen[k]||0)+1;',
 '}return{blocked:true,index:i,kind,center:[Math.round(ox),Math.round(oy)],seen};',
 '},',
-'keys:()=>things.map(t=>t.key),stationIndex:key=>stations.findIndex(s=>s.key===key),',
+'keys:()=>things.map(t=>t.key),stationIndex:key=>stations.findIndex(s=>s.key===key),reroll:()=>buildRoom(),',
 'forceFinish:()=>{for(const t of [...things])if(!t.done)placeItem(t,stations.find(s=>s.key===t.zone));for(const s of [...stains])if(!s.done)cleanStain(s,1);return{level,done:cleanCount,total:totalCount,overlay:!$("end").classList.contains("hidden")}}',
 '};'
 ].join('\n');
@@ -95,6 +95,15 @@ const photo=await ev('({before:document.querySelector("#beforePhoto").src.length
 await ev('document.querySelector("#next").click()');await sleep(750);
 const kitchen=await ev('window.__AUDIT.s()');await snap(c.name+'-kitchen');
 const unpickable=[];for(let i=0;i<kitchen.items;i++){const p=await ev('window.__AUDIT.point("item",'+i+')');if(p?.blocked)unpickable.push(p)}
+// Repeatedly reroll kitchen clutter: each item must remain selectable.
+for(let reroll=0;reroll<5;reroll++){
+ await ev('window.__AUDIT.reroll()');
+ const size=await ev('window.__AUDIT.s().items');
+ for(let i=0;i<size;i++){
+  const hit=await ev('window.__AUDIT.point("item",'+i+')');
+  if(hit?.blocked)unpickable.push({reroll,...hit});
+ }
+}
 const finish2=await ev('window.__AUDIT.forceFinish()');
 const last=await ev('({visible:!document.querySelector("#end").classList.contains("hidden"),name:document.querySelector("#endTitle").textContent,save:localStorage.getItem("kidscade-tidy-king-v1")})');
 await send('Page.reload',{ignoreCache:true});await sleep(850);
