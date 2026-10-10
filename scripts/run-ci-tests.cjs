@@ -10,6 +10,7 @@ const TEST_FILES = [
   "tests/kidsmon-brand.test.cjs",
   "tests/kidsmon-onboarding.test.cjs",
   "tests/kidsmon-turn-battle.test.cjs",
+  "tests/kidsmon-weaken-expiry.test.cjs",
   "tests/kidsmon-move-dex.test.cjs",
   "tests/kidsmon-family-signatures.test.cjs",
   "tests/cosmic-growth.test.cjs",
