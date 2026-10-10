@@ -9,8 +9,8 @@ function sound(type){
  if(muted)return;
  try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();
  const osc=audio.createOscillator(),gain=audio.createGain(),now=audio.currentTime;
- osc.type=type==='danger'?'sawtooth':'sine';osc.frequency.setValueAtTime(type==='danger'?125:type==='safe'?570:280,now);
- osc.frequency.exponentialRampToValueAtTime(type==='danger'?54:type==='safe'?790:160,now+.19);
+ osc.type=type==='danger'?'sawtooth':type==='warn'?'triangle':'sine';osc.frequency.setValueAtTime(type==='danger'?125:type==='warn'?940:type==='safe'?570:280,now);
+ osc.frequency.exponentialRampToValueAtTime(type==='danger'?54:type==='warn'?520:type==='safe'?790:160,now+.19);
  gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.08,now+.012);gain.gain.exponentialRampToValueAtTime(.0001,now+.24);
  osc.connect(gain).connect(audio.destination);osc.start(now);osc.stop(now+.26);
  }catch(_){}
