@@ -11,7 +11,7 @@ test('four real challenge modes have visible standalone pages and separate SDK i
   assert.deepEqual(Object.keys(R.MODES),MODES);
   const map={redlight:'squid_redlight',tug:'squid_tug',marbles:'squid_marbles',final:'squid_final'};
   for(const mode of MODES){
-    const html=fs.readFileSync(path.join(DIR,mode+'.html'),'utf8');
+    const html=fs.readFileSync(path.join(DIR,mode,'index.html'),'utf8');
     assert.match(html,new RegExp('data-game-id="'+map[mode]+'"'));
     assert.match(html,new RegExp('data-mode="'+mode+'"'));
     assert.match(html,/mini-rules\.js\?v=1/);
