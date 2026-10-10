@@ -161,7 +161,8 @@ function openBag(){
  openGeneric("탐험 가방","<div class='shop-list'>"+
  '<div class="shop-item"><div><strong>키즈볼</strong><small>야생 키즈몬을 포획할 때 사용 · 전투 중에 던질 수 있어</small></div><strong>'+save.items.ball+'개</strong></div>'+
  '<div class="shop-item"><div><strong>회복약</strong><small>선두 키즈몬 HP 20 회복</small></div><button type="button" data-hud-action="potion" '+(save.items.potion===0?"disabled":"")+'>사용 · '+save.items.potion+'개</button></div>'+
- '<div class="shop-item"><div><strong>연구코인</strong><small>연구소에서 키즈볼·회복약 구매</small></div><strong>'+save.coins+'</strong></div>'+
+ Object.entries(E.STONES).map(([k,stone])=>'<div class="shop-item"><div><strong>'+stone.name+'</strong><small>연구 진화 결정</small></div><strong>'+(save.items[k]||0)+'개</strong></div>').join("")+
+  '<div class="shop-item"><div><strong>연구코인</strong><small>연구소에서 키즈볼·회복약 구매</small></div><strong>'+save.coins+'</strong></div>'+
  '</div><div class="action-row"><button type="button" class="act" data-hud-action="clinic">연구소 위치 확인</button></div>',
  "가방을 열어도 모험 진행은 멈춰 있어");
 }
@@ -225,7 +226,8 @@ function openClinic(){
  '<div class="shop-list"><div class="shop-item"><div><strong>전체 무료 회복</strong><small>전투 불능인 키즈몬도 회복</small></div><button data-buy="heal">치료</button></div>'+
  '<div class="shop-item"><div><strong>키즈볼 +1</strong><small>연구코인 35</small></div><button data-buy="ball">35코인</button></div>'+
  '<div class="shop-item"><div><strong>회복약 +1</strong><small>연구코인 25</small></div><button data-buy="potion">25코인</button></div>'+
- '<div class="shop-item"><div><strong>키즈몬 보관함</strong><small>보관 중 '+save.box.length+'마리 · 선두 키즈몬과 교체 가능</small></div><button data-hud-action="box">열기</button></div>'+gift+'</div>');
+ Object.entries(E.STONES).map(([k,stone])=>'<div class="shop-item"><div><strong>'+stone.name+' +1</strong><small>연구코인 120 · 진화 재료</small></div><button data-buy="'+k+'">120코인</button></div>').join("")+
+  '<div class="shop-item"><div><strong>키즈몬 보관함</strong><small>보관 중 '+save.box.length+'마리 · 선두 키즈몬과 교체 가능</small></div><button data-hud-action="box">열기</button></div>'+gift+'</div>');
 }
 function openBox(){
  if(!save)return;
@@ -240,7 +242,7 @@ function openBox(){
 function buy(item){
  if(!save)return;
  if(item==="heal"){E.healAll(save);for(const mon of save.party)B.restorePP(mon);setToast("HP와 기술 PP를 모두 회복했어!");beep("win")}
- else {const cost=item==="ball"?35:item==="potion"?25:Infinity;
+ else {const cost=item==="ball"?35:item==="potion"?25:E.STONES[item]?120:Infinity;
   if(save.coins<cost){setToast("연구코인이 부족해! 야생 전투로 모아 보자.");beep("fail");return}
   save.coins-=cost;save.items[item]++;setToast("물품을 구매했어!");beep("capture");
  }
@@ -452,7 +454,7 @@ function renderBattle(){
   const moves=B.normalize(own);
   html=moves.map(slot=>{
    const m=B.moves[slot.id];
-   const detail=DB.types[m.type].name+" · "+(m.power?hitEstimate(slot.id):"보조 효과")+
+   const detail=DB.types[m.type].name+" · "+(m.power?(DB.combat.SPECIAL_TYPES.has(m.type)?"특수 ":"물리 ")+hitEstimate(slot.id):m.kind==="counter"?"반격 자세":"보조 효과")+
     " · PP "+slot.pp+"/"+m.pp;
    return button("move:"+slot.id,m.name,detail,"strong",slot.pp<=0);
   }).join("")+button("soft","살살 공격","포획용 · HP 1 남김","utility")+
@@ -546,6 +548,17 @@ function evolveIfReady(){
  '<div class="evo-options">'+options.map(o=>'<button type="button" data-evolve="'+o.id+'">'+miniArt(o.id)+'<span>'+esc(o.name)+'</span></button>').join("")+'</div>'+
  '<div class="action-row"><button class="act" type="button" id="evoLater">지금은 그대로 둘래</button></div>');
  $("evoLater").onclick=closeGeneric;
+}
+function openStoneEvolution(){
+ if(!save)return;
+ const options=E.stoneEvolutionOptions(save);
+ const html=options.length?options.map(o=>{
+  const stone=E.STONES[o.stone],count=save.items[o.stone]||0;
+  return '<div class="shop-item">'+miniArt(o.id)+'<div><strong>'+esc(o.name)+'</strong><small>'+esc(stone.name)+' '+count+'개 · 레벨 10부터</small></div>'+
+   '<button type="button" data-stone-evolve="'+o.id+'" data-stone="'+o.stone+'" '+(count<=0?'disabled':'')+'>진화</button></div>';
+ }).join(""):'<p>지금은 결정으로 진화할 수 없어. 레벨 10 이상의 진화 가능한 키즈몬을 선택해 봐.</p>';
+ openGeneric("연구 진화 결정",'<p>진화 결정으로 레벨 10부터 미리 진화할 수 있어. 진화 기술은 원래 해금 레벨에 배울 수 있어.</p>'+
+ '<div class="shop-list">'+html+'</div><p>결정은 연구소에서 구매하거나 연구 승리 보상으로 얻어.</p>');
 }
 function showSwap(){
  if(!save||!battle)return;
@@ -698,6 +711,7 @@ function attach(){
    else if(act==="clinic"){closeGeneric();$("goClinic").click()}
    else if(act==="box")openBox();
    else if(act==="evolve"){closeGeneric();evolveIfReady();}
+   else if(act==="stones")openStoneEvolution();
    else if(act==="skills")openSkills();
    else if(act==="moveDex")openMoveDex();
    else if(act==="audio"){$("audioButton").click();openMenu()}
@@ -731,6 +745,12 @@ function attach(){
     setToast(species(b.dataset.gift).name+"이(가) 연구소에서 합류했어! 가방과 파티를 확인해 보자.");
    }
    openClinic();return;
+  }
+  b=e.target.closest("button[data-stone-evolve]");if(b){
+   if(E.useEvolutionStone(save,b.dataset.stoneEvolve,b.dataset.stone)){
+    persist();updateAll();beep("win");setToast("결정 진화에 성공했어!");
+   }else setToast("진화 조건과 결정 수량을 확인해 봐.");
+   openParty();return;
   }
   b=e.target.closest("button[data-buy]");if(b){buy(b.dataset.buy);return}
   b=e.target.closest("button[data-swap]");if(b){const choice=Number(b.dataset.swap);closeGeneric();resolveBattleTurn({type:"switch",index:choice});return}
