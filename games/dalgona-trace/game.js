@@ -85,7 +85,8 @@
     const trace=game.trace,s=game.state,score=engine.grade(trace,s);
     if(success){
       if(!SURVIVAL_MODE){record.best=Math.max(record.best,game.stage);record.clears++;save();sdk('score',score.score);}
-      sdk('result',{scope:'stage',status:'completed',outcome:'clear',stage:game.stage,score:score.score,accuracy:score.accuracy,checks:0});
+      sdk('result',{scope:'stage',status:'completed',outcome:'clear',stage:game.stage,
+        ...(!SURVIVAL_MODE?{score:score.score}:{}),accuracy:score.accuracy,checks:0});
       if(!SURVIVAL_MODE&&game.stage===1)sdk('milestone','first_dalgona_clear');
       play('win');
       game.confetti=Array.from({length:32},(_,i)=>({x:(i*93)%400,y:-(i*41)%220,vy:30+(i*19)%70,phase:i*.8}));
