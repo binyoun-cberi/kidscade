@@ -5,7 +5,7 @@ fs.mkdirSync(OUT,{recursive:true});
 const CHROME=['/usr/bin/google-chrome','/usr/bin/chromium'].find(fs.existsSync);
 const injection=[
 'window.__AUDIT={',
-'s:()=>({level,done:cleanCount,total:totalCount,models:models.size,items:things.length,stains:stains.length,selected:things.indexOf(selected),coins,stainsLeft:stains.filter(s=>!s.done).length}),',
+'s:()=>({level,done:cleanCount,total:totalCount,models:models.size,items:things.length,stains:stains.length,selected:things.indexOf(selected),coins,stainsLeft:stains.filter(s=>!s.done).length,piles:clutterPiles.length,decor:decorations.length,decorHidden:decorationsHidden,decorHeight:Math.max(0,...decorations.map(d=>d.height))}),',
 'point:(kind,i)=>{',
 'const o=kind==="item"?things[i]:kind==="station"?stations[i]:stains[i];',
 'if(!o||o.done)return{missing:true};',
@@ -147,7 +147,11 @@ assert.equal(stains.length,0,c.name+' unfinished stains: '+JSON.stringify(stains
 assert.equal(unpickable.length,0,c.name+' unclickable kitchen props: '+JSON.stringify(unpickable.slice(0,3)));
 assert.equal(overlap.actionsMission,0,c.name+' controls overlap');
 assert.ok(photo.before>5000&&photo.after>5000&&photo.beforeLoaded>10&&photo.afterLoaded>10,c.name+' before-after photos missing');
-assert.equal(kitchen.total,61,c.name+' kitchen stage missing');
+assert.equal(s.total,103,c.name+' apartment mission count missing');
+assert.equal(kitchen.total,107,c.name+' kitchen mission count missing');
+assert.equal(s.piles,4,c.name+' trash mountains missing');
+assert.ok(s.decor>=220&&s.decorHeight>1.6,c.name+' no elevated trash piles');
+assert.equal(half.decorHidden,half.decor,c.name+' trash mountains should disappear at 100%');
 assert.ok(revisited.kitchenEnabled&&revisited.kitchenVisible&&direct?.level===1,c.name+' cannot open unlocked kitchen directly');
 report.push(result);console.log('TIDY_AUDIT_RESULT '+JSON.stringify(result));
 }
