@@ -934,7 +934,7 @@ test('v5.9 repairs exposed long-sleeve wrists and trouser crotch wedge without j
   assert.match(pack,/addTrouserHipYoke\(\{source,style,group,material,reference,cloneSkinnedMeshWithGeometry\}\)/);
   assert.match(pack,/bindYokeToPelvis\(geometry,source\.skeleton\)/);
   assert.match(pack,/style\.id\+'_hip_yoke'/);
-  assert.match(audit,/skinAudit\.length,49/);
+  assert.match(audit,/skinAudit\.length,51/);
   assert.match(audit,/crotch-wrist-repro-/);
   assert.match(audit,/bottom\+'_hip_yoke'/);
 });
@@ -1017,4 +1017,28 @@ test('v6.0 cargo pockets and tracksuit stripes attach to animated legs',()=>{
   assert.match(pack,/segment of \['thigh','shin'\]/);
   assert.match(pack,/stripe_left_/);
   assert.match(pack,/stripe_right_/);
+});
+
+test('v6.1 hair silhouettes use head-bone rigged volumes and pixie avoids pinched side gaps',()=>{
+  const studio=read('teacher/character-3d-studio.js');
+  assert.match(studio,/function attachChibiHairDetailMeshes\(/);
+  assert.match(studio,/chibi_female_hair_twintail/);
+  assert.match(studio,/rigged-hair-volume/);
+  assert.match(studio,/kidscade_male_hair_spiky/);
+  assert.match(studio,/const pixieLift=/);
+  assert.match(studio,/chibi_female_hair_pixie:\{crown:-\.025,side:-\.015/);
+});
+test('v6.1 hats and face items use corrected crown/mouth registration',()=>{
+  const pack=read('teacher/chibi-accessory-pack.js');
+  assert.match(pack,/referenceBox\.max\.y\+\.033/);
+  assert.match(pack,/accessoryBox\.max\.y:accessoryBox\.min\.y/);
+  assert.match(pack,/scalpY-\.012,hc\.z/);
+  assert.match(pack,/eyeY-\.241/);
+  assert.match(pack,/faceZ\+\.052/);
+});
+test('v6.1 tracksuit piping bends with weighted knees rather than floating rigid boxes',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  assert.match(pack,/part:'weighted-trouser-side-piping'/);
+  assert.match(pack,/transferSmoothSkinWeights\(piping,reference,\{sign,region:'leg'\}\)/);
+  assert.match(pack,/stripe_left_weighted/);
 });
