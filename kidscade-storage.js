@@ -103,6 +103,10 @@
     squidBridgeRecord: 'kidscade_squid_bridge_v1',
     dalgonaTraceRecord: 'kidscade_dalgona_trace_v1',
     squidSurvivalRecord: 'kidscade_squid_survival_v1',
+    squidRedlightRecord: 'kidscade_squid_mini_redlight_v1',
+    squidTugRecord: 'kidscade_squid_mini_tug_v1',
+    squidMarblesRecord: 'kidscade_squid_mini_marbles_v1',
+    squidFinalRecord: 'kidscade_squid_mini_final_v1',
   });
 
   // Dynamic namespaces are prefixes, not concrete localStorage records.
