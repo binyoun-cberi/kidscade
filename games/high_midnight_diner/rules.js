@@ -95,24 +95,32 @@ function cookingEvent(state){
  if(id===undefined)return null;
  return {index:dish.cookIndex,total:dish.cookOrder.length,zone:id+1,course:state.course};
 }
+function peekCooking(state){
+ if(state.phase!=='cooking')return {ok:false,message:'지금은 볼 수 없습니다.'};
+ const dish=state.dish,id=dish.cookOrder[dish.cookIndex],z=dish.zones[id];
+ if(dish.currentPeek)return {...dish.currentPeek,free:true};
+ dish.peekCount++;state.turns++;
+ state.suspicion+=dish.peekCount<=3?2:5;
+ const concealed=z.shade<.18,ingredient=concealed?'가려진 재료':z.dangerous?dish.spec.word:'일반 양념';
+ const result={ok:true,zone:id+1,concealed,ingredient,
+  message:concealed?(id+1)+'번을 살폈지만 손에 가려졌다.':
+  (id+1)+'번에 '+ingredient+'을(를) 넣는 모습을 봤다.'};
+ dish.currentPeek=result;
+ if(!concealed)dish.observed.push({zone:id+1,ingredient,dangerous:z.dangerous});
+ evaluate(state);
+ return result;
+}
 function observeCooking(state,looking){
  if(state.phase!=='cooking')return {ok:false,message:'현재 조리 중이 아닙니다.'};
- const dish=state.dish,id=dish.cookOrder[dish.cookIndex],z=dish.zones[id],number=id+1;
- const concealed=looking&&z.shade<.18;
- let message=number+'번 위치에 재료를 넣었다. 하지만 재료는 제대로 보이지 않았다.';
- if(looking){
-  dish.peekCount++;state.suspicion+=dish.peekCount<=3?2:5;
-  if(concealed)message=number+'번 위치에 손이 움직였다. 요리사의 팔이 재료를 가렸다.';
-  else{
-   const ingredient=z.dangerous?dish.spec.word:'일반 양념';
-   message=number+'번 위치: '+ingredient+'을(를) 넣는 것을 봤다.';
-   dish.observed.push({zone:number,ingredient,dangerous:z.dangerous});
-  }
- }
- dish.cookIndex++;state.turns++;
- evaluate(state);
- if(dish.cookIndex>=dish.cookOrder.length&&state.phase==='cooking')state.phase='playing';
- return {ok:true,zone:number,concealed,looking:!!looking,message,finishedCooking:state.phase==='playing'};
+ const dish=state.dish,id=dish.cookOrder[dish.cookIndex],z=dish.zones[id];
+ if(looking&&!dish.currentPeek)peekCooking(state);
+ if(state.phase==='finished')return {ok:false,message:'요리사가 당신을 돌려보냈습니다.'};
+ const observation=dish.currentPeek;
+ dish.cookIndex++;dish.currentPeek=null;
+ if(dish.cookIndex>=dish.cookOrder.length)state.phase='playing';
+ return {ok:true,zone:id+1,looking:!!observation,concealed:!!observation?.concealed,
+  message:observation?.message||((id+1)+'번에 재료가 들어갔지만 무엇인지는 보지 못했다.'),
+  finishedCooking:state.phase==='playing'};
 }
 
 function inspect(state,index){
@@ -164,5 +172,5 @@ function question(state){
  const inFirst=dish.zones.filter(z=>z.id<half&&z.dangerous).length;
  return {ok:true,half,count:inFirst,message:'요리사: “처음 '+half+'조각에는 위험한 것이 '+inFirst+'개 있지. 세어 봐.”'};
 }
-return {FOODS,INGREDIENTS,begin,inspect,eat,reject,question,advance,rng,dishFor,cookingEvent,observeCooking};
+return {FOODS,INGREDIENTS,begin,inspect,eat,reject,question,advance,rng,dishFor,cookingEvent,peekCooking,observeCooking};
 });
