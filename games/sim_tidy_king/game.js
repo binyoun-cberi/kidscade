@@ -39,10 +39,10 @@ const catalog={
 };
 const levelDefs=[
  {name:'의뢰 1 · 엉망진창 원룸',title:'우리 집 대청소',description:'지저분해진 원룸을 새집처럼 바꾸자!',seed:12345,
-  items:{book:8,pen:4,pillow:5,bag:5,bottle:7,can:5,carton:4,cup:4,toy:4},stains:5,
+  items:{book:14,pen:8,pillow:10,bag:10,bottle:14,can:12,carton:8,cup:8,toy:12},stains:7,
   floor:0xc9ae8c,wall:0xe5cfac},
  {name:'의뢰 2 · 난장판 주방',title:'반짝반짝 주방',description:'바닥에 널린 물건을 치우고 얼룩까지 닦자!',seed:67891,
-  items:{cup:11,plate:8,pan:3,bottle:8,can:7,carton:5,bag:5,book:3,pillow:2,toy:2},stains:7,
+  items:{cup:18,plate:16,pan:5,bottle:16,can:14,carton:10,bag:8,book:4,pillow:3,toy:4},stains:9,
   floor:0xb9c9ba,wall:0xd0dfc9}
 ];
 const props={
@@ -74,7 +74,7 @@ const furniture={
 };
 let running=false, level=0, elapsed=0, coins=0, sessionCoins=0, cleanCount=0, totalCount=0;
 let selected=null, dragging=null, scrubbing=null, mouseDown=null, scrubDistance=0, turn=0, zoom=1, hintTimer=0, activeSound=true;
-let pickables=[],things=[],stains=[],stations=[],animations=[],effects=[],generation=0, ready=false;
+let pickables=[],things=[],stains=[],stations=[],animations=[],effects=[],decorations=[],decorationsHidden=0,clutterPiles=[],pileFillerMeshes=[],generation=0, ready=false;
 let lastFrame=performance.now(),lastClockSecond=-1,previousStage=0,beforeImage='',captureTimeout=0;
 let saved={coins:0,unlocked:0,best:{}};
 try{const v=JSON.parse(localStorage.getItem(DIRTY_KEY)||'null');if(v&&typeof v==='object')saved={coins:Math.max(0,Number(v.coins)||0),unlocked:Math.min(1,Math.max(0,Number(v.unlocked)||0)),best:v.best||{}}}catch(_){}
@@ -152,9 +152,95 @@ function scatterClutter(list,rand){
  }
  return placements;
 }
+
+const PILE_LAYOUTS=[
+ {x:-2.05,z:-1.18,r:1.26,theme:['book','pillow','toy','carton']},
+ {x:1.75,z:-1.20,r:1.33,theme:['bottle','can','cup','carton']},
+ {x:-2.10,z:2.20,r:1.28,theme:['toy','bag','book','pillow']},
+ {x:1.75,z:2.05,r:1.27,theme:['can','bottle','bag','carton']}
+];
+function createClutterMountains(rand){
+ // Four actual three-dimensional mountains. Shared instancing keeps the mobile
+ // GPU draw-call budget predictable; real Kidscade GLBs give the upper layers
+ // recognizable bottles, books, cups, toys and boxes.
+ clutterPiles=PILE_LAYOUTS.map(p=>({...p}));
+ const fillerKinds=[
+  {geometry:new THREE.DodecahedronGeometry(.30,0),name:'crumpled paper'},
+  {geometry:new THREE.BoxGeometry(.48,.15,.33),name:'books and boxes'},
+  {geometry:new THREE.CylinderGeometry(.12,.12,.42,6),name:'cans and bottles'}
+ ];
+ const filler=fillerKinds.map(({geometry})=>{
+  const mat=new THREE.MeshStandardMaterial({color:0xffffff,flatShading:true,roughness:.95});
+  const instanced=new THREE.InstancedMesh(geometry,mat,120);
+  instanced.count=0;instanced.frustumCulled=false;instanced.castShadow=false;instanced.receiveShadow=false;
+  root.add(instanced);return instanced;
+ });
+ pileFillerMeshes=filler;
+ const colors=[0x947e65,0xafa08a,0x9caeb0,0xe4b88e,0x8bada0,0xa7806c,0xb5a091,0x789d99,0xc5ad81,0x778da3];
+ const temp=new THREE.Object3D();
+ const layers=[
+  {n:18,r:1.16,y:.21,spread:.25},
+  {n:15,r:.92,y:.64,spread:.22},
+  {n:12,r:.69,y:1.04,spread:.17},
+  {n:9,r:.46,y:1.45,spread:.13},
+  {n:6,r:.25,y:1.84,spread:.08}
+ ];
+ let numActual=0;
+ for(let pi=0;pi<clutterPiles.length;pi++){
+  const pile=clutterPiles[pi];
+  for(const [li,tier] of layers.entries()){
+   for(let j=0;j<tier.n;j++){
+    const phase=rand()*Math.PI*2;
+    const radius=tier.r*(.15+Math.sqrt(rand())*.86);
+    const x=pile.x+Math.cos(phase)*radius;
+    const z=pile.z+Math.sin(phase)*radius;
+    const y=tier.y+(rand()-.5)*tier.spread;
+    const size=.50+rand()*.40;
+    const kind=pile.theme[Math.floor(rand()*pile.theme.length)];
+    // Real GLB meshes are used at the visible crest and on exposed ledges.
+    if((li>=2&&j%3===0)||(li<2&&j===0)){
+     const obj=itemModel(kind,size,props[kind].color);
+     obj.position.set(x,y-.18,z);
+     obj.rotation.set((rand()-.5)*.9,rand()*Math.PI*2,(rand()-.5)*.9);
+     obj.traverse(m=>{if(m.isMesh){m.castShadow=false;m.receiveShadow=false}});
+     root.add(obj);decorations.push({model:obj,height:y,pile:pi,hidden:false});numActual++;
+    }else{
+     const shape=li<2?(j%2===0?0:1):j%3;
+     const instanced=filler[shape],index=instanced.count++;
+     temp.position.set(x,y,z);
+     temp.rotation.set((rand()-.5)*.9,rand()*Math.PI*2,(rand()-.5)*.9);
+     temp.scale.setScalar(size*(shape===1?1.05:1));
+     temp.updateMatrix();
+     instanced.setMatrixAt(index,temp.matrix);
+     instanced.setColorAt(index,new THREE.Color(colors[Math.floor(rand()*colors.length)]));
+     decorations.push({mesh:instanced,index,height:y,pile:pi,hidden:false});
+    }
+   }
+  }
+ }
+ for(const instance of filler){instance.instanceMatrix.needsUpdate=true;if(instance.instanceColor)instance.instanceColor.needsUpdate=true}
+ decorations.sort((a,b)=>b.height-a.height);
+}
+const hiddenMatrix=new THREE.Matrix4().makeScale(0,0,0);
+function retreatClutterMountains(){
+ // Only draggable objects award coins. The scenery progressively recedes
+ // as real tidying advances, and vanishes entirely at 100% completion.
+ const ratio=totalCount?cleanCount/totalCount:0;
+ const target=ratio>=1?decorations.length:Math.floor(ratio*decorations.length);
+ while(decorationsHidden<target){
+  const d=decorations[decorationsHidden++];
+  if(d.hidden)continue;
+  d.hidden=true;
+  if(d.model)d.model.visible=false;
+  else{d.mesh.setMatrixAt(d.index,hiddenMatrix);d.mesh.instanceMatrix.needsUpdate=true}
+ }
+}
+
 function buildRoom(){
  generation++;
- root.clear();clearTimeout(captureTimeout);beforeImage='';pickables=[];things=[];stains=[];stations=[];animations=[];effects=[];selected=null;dragging=null;scrubbing=null;canvas.style.cursor='grab';$('dropGuide').hidden=true;elapsed=0;lastClockSecond=-1;cleanCount=0;sessionCoins=0;
+ for(const m of pileFillerMeshes){m.geometry.dispose();m.material.dispose()}
+ pileFillerMeshes=[];
+ root.clear();clearTimeout(captureTimeout);beforeImage='';pickables=[];things=[];stains=[];stations=[];animations=[];effects=[];decorations=[];decorationsHidden=0;clutterPiles=[];selected=null;dragging=null;scrubbing=null;canvas.style.cursor='grab';$('dropGuide').hidden=true;elapsed=0;lastClockSecond=-1;cleanCount=0;sessionCoins=0;
  const def=levelDefs[level],rand=seedRandom(def.seed+Math.floor(Math.random()*20000));
  scene.background.set(level===0?0xb4d1c0:0xaec6b7);scene.fog.color.copy(scene.background);
  const floor=cuboid(11.75,.23,11.3,def.floor,0,-.14,0);floor.receiveShadow=true;root.add(floor);
@@ -184,6 +270,8 @@ function buildRoom(){
  makeStation('sink',4.55,-2.2);
  makeStation('recycle',4.55,.55);
  makeStation('trash',4.55,3.24);
+ // Scenery never enters the raycast pick list, so foreground props remain draggable.
+ createClutterMountains(rand);
  const list=[];
  for(const [key,num] of Object.entries(def.items))for(let i=0;i<num;i++)list.push(key);
  // Fisher-Yates: each replay changes the mess, while keeping safe pickable grid spacing.
@@ -287,6 +375,7 @@ function makeStain(x,z,rand){
 }
 function progress(){
  cleanCount++;sessionCoins+=5;coins+=5;
+ retreatClutterMountains();
  if(cleanCount===totalCount){finish();return}
  updateHud();
 }
