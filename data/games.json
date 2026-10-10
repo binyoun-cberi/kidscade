@@ -32,7 +32,7 @@
       "id": "squid_redlight",
       "addedAt": "2026-10-10T22:45:00+09:00",
       "title": "멈춰! 움직여!",
-      "href": "games/squid-survival/redlight.html",
+      "href": "games/squid-survival/redlight/index.html",
       "category": "trivia",
       "age": "low",
       "ages": [
@@ -59,7 +59,7 @@
       "id": "squid_tug",
       "addedAt": "2026-10-10T22:45:00+09:00",
       "title": "줄다리기",
-      "href": "games/squid-survival/tug.html",
+      "href": "games/squid-survival/tug/index.html",
       "category": "trivia",
       "age": "low",
       "ages": [
@@ -86,7 +86,7 @@
       "id": "squid_marbles",
       "addedAt": "2026-10-10T22:45:00+09:00",
       "title": "구슬 승부",
-      "href": "games/squid-survival/marbles.html",
+      "href": "games/squid-survival/marbles/index.html",
       "category": "math",
       "age": "low",
       "ages": [
@@ -113,7 +113,7 @@
       "id": "squid_final",
       "addedAt": "2026-10-10T22:45:00+09:00",
       "title": "꼴뚜기 결승전",
-      "href": "games/squid-survival/final.html",
+      "href": "games/squid-survival/final/index.html",
       "category": "trivia",
       "age": "low",
       "ages": [
