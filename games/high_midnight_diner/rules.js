@@ -59,6 +59,7 @@ function review(state,dish,wasRejected){
   clue:INGREDIENTS[dish.spec.banned].clue
  };
  state.lastReview=detail;state.history.push(detail);
+ if(!state.discovered.includes(dish.spec.banned))state.discovered.push(dish.spec.banned);
  return detail;
 }
 function advance(state,wasRejected){
