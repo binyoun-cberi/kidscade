@@ -716,6 +716,186 @@
       "revision": "v5.3",
       "rigging": "original Chibi 78 bone skeleton via skinned geometry",
       "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "kidscade_male_hair_mohawk": {
+      "label": "모호크",
+      "type": "hair",
+      "fit": "male",
+      "generatedFrom": "kidscade_male_hair_short",
+      "geometryPolicy": "source-skinned hair shell with additional independent head-bound 3D silhouette parts",
+      "rigging": "source 78-bone skeleton, original skinning on shell, rigid head-bound volume parts",
+      "revision": "v6.0",
+      "feature": "mohawk"
+    },
+    "kidscade_male_hair_curls": {
+      "label": "곱슬 숏컷",
+      "type": "hair",
+      "fit": "male",
+      "generatedFrom": "kidscade_male_hair_short",
+      "geometryPolicy": "source-skinned hair shell with additional independent head-bound 3D silhouette parts",
+      "rigging": "source 78-bone skeleton, original skinning on shell, rigid head-bound volume parts",
+      "revision": "v6.0",
+      "feature": "curls"
+    },
+    "kidscade_male_hair_flattop": {
+      "label": "플랫탑",
+      "type": "hair",
+      "fit": "male",
+      "generatedFrom": "kidscade_male_hair_short",
+      "geometryPolicy": "source-skinned hair shell with additional independent head-bound 3D silhouette parts",
+      "rigging": "source 78-bone skeleton, original skinning on shell, rigid head-bound volume parts",
+      "revision": "v6.0",
+      "feature": "flattop"
+    },
+    "kidscade_male_hair_shag": {
+      "label": "샤기컷",
+      "type": "hair",
+      "fit": "male",
+      "generatedFrom": "kidscade_male_hair_short",
+      "geometryPolicy": "source-skinned hair shell with additional independent head-bound 3D silhouette parts",
+      "rigging": "source 78-bone skeleton, original skinning on shell, rigid head-bound volume parts",
+      "revision": "v6.0",
+      "feature": "shag"
+    },
+    "chibi_male_raincoat": {
+      "label": "후드 레인코트",
+      "type": "rigged-garment",
+      "fit": "male",
+      "category": "top",
+      "generatedFrom": "kidscade_male_tshirt",
+      "geometryPolicy": "fitted source skin shell with volumetric silhouette details, head/body clearance and triangle safety checks",
+      "rigging": "source 78-bone skeleton, retained bone indexing and pose, attached details bound to matching source bones",
+      "revision": "v6.0"
+    },
+    "chibi_male_polo": {
+      "label": "스포츠 폴로",
+      "type": "rigged-garment",
+      "fit": "male",
+      "category": "top",
+      "generatedFrom": "kidscade_male_tshirt",
+      "geometryPolicy": "fitted source skin shell with volumetric silhouette details, head/body clearance and triangle safety checks",
+      "rigging": "source 78-bone skeleton, retained bone indexing and pose, attached details bound to matching source bones",
+      "revision": "v6.0"
+    },
+    "chibi_male_workvest": {
+      "label": "유틸리티 조끼",
+      "type": "rigged-garment",
+      "fit": "male",
+      "category": "top",
+      "generatedFrom": "kidscade_male_tshirt",
+      "geometryPolicy": "fitted source skin shell with volumetric silhouette details, head/body clearance and triangle safety checks",
+      "rigging": "source 78-bone skeleton, retained bone indexing and pose, attached details bound to matching source bones",
+      "revision": "v6.0"
+    },
+    "chibi_male_cargo": {
+      "label": "카고 바지",
+      "type": "rigged-garment",
+      "fit": "male",
+      "category": "bottom",
+      "generatedFrom": "kidscade_male_shorts",
+      "geometryPolicy": "fitted source skin shell with volumetric silhouette details, head/body clearance and triangle safety checks",
+      "rigging": "source 78-bone skeleton, retained bone indexing and pose, attached details bound to matching source bones",
+      "revision": "v6.0"
+    },
+    "chibi_male_bermuda": {
+      "label": "버뮤다 쇼츠",
+      "type": "rigged-garment",
+      "fit": "male",
+      "category": "bottom",
+      "generatedFrom": "kidscade_male_shorts",
+      "geometryPolicy": "fitted source skin shell with volumetric silhouette details, head/body clearance and triangle safety checks",
+      "rigging": "source 78-bone skeleton, retained bone indexing and pose, attached details bound to matching source bones",
+      "revision": "v6.0"
+    },
+    "chibi_female_hair_twinbuns": {
+      "label": "트윈 번",
+      "type": "hair",
+      "fit": "female",
+      "generatedFrom": "hairone",
+      "geometryPolicy": "source-skinned hair shell with additional independent head-bound 3D silhouette parts",
+      "rigging": "source 78-bone skeleton, original skinning on shell, rigid head-bound volume parts",
+      "revision": "v6.0",
+      "feature": "twinbuns"
+    },
+    "chibi_female_hair_braidcrown": {
+      "label": "땋은 머리띠",
+      "type": "hair",
+      "fit": "female",
+      "generatedFrom": "hairone",
+      "geometryPolicy": "source-skinned hair shell with additional independent head-bound 3D silhouette parts",
+      "rigging": "source 78-bone skeleton, original skinning on shell, rigid head-bound volume parts",
+      "revision": "v6.0",
+      "feature": "braidcrown"
+    },
+    "chibi_female_hair_pixie": {
+      "label": "픽시컷",
+      "type": "hair",
+      "fit": "female",
+      "generatedFrom": "kidscade_male_hair_short",
+      "geometryPolicy": "source-skinned hair shell with additional independent head-bound 3D silhouette parts",
+      "rigging": "source 78-bone skeleton, original skinning on shell, rigid head-bound volume parts",
+      "revision": "v6.0",
+      "feature": "pixie"
+    },
+    "chibi_female_hair_waves": {
+      "label": "웨이브 롱",
+      "type": "hair",
+      "fit": "female",
+      "generatedFrom": "hairone",
+      "geometryPolicy": "source-skinned hair shell with additional independent head-bound 3D silhouette parts",
+      "rigging": "source 78-bone skeleton, original skinning on shell, rigid head-bound volume parts",
+      "revision": "v6.0",
+      "feature": "waves"
+    },
+    "chibi_female_sailor": {
+      "label": "세일러 블라우스",
+      "type": "rigged-garment",
+      "fit": "female",
+      "category": "top",
+      "generatedFrom": "shirt",
+      "geometryPolicy": "fitted source skin shell with volumetric silhouette details, head/body clearance and triangle safety checks",
+      "rigging": "source 78-bone skeleton, retained bone indexing and pose, attached details bound to matching source bones",
+      "revision": "v6.0"
+    },
+    "chibi_female_windbreaker": {
+      "label": "윈드브레이커",
+      "type": "rigged-garment",
+      "fit": "female",
+      "category": "top",
+      "generatedFrom": "shirt",
+      "geometryPolicy": "fitted source skin shell with volumetric silhouette details, head/body clearance and triangle safety checks",
+      "rigging": "source 78-bone skeleton, retained bone indexing and pose, attached details bound to matching source bones",
+      "revision": "v6.0"
+    },
+    "chibi_female_tunic": {
+      "label": "롱 튜닉",
+      "type": "rigged-garment",
+      "fit": "female",
+      "category": "top",
+      "generatedFrom": "shirt",
+      "geometryPolicy": "fitted source skin shell with volumetric silhouette details, head/body clearance and triangle safety checks",
+      "rigging": "source 78-bone skeleton, retained bone indexing and pose, attached details bound to matching source bones",
+      "revision": "v6.0"
+    },
+    "chibi_female_pleated": {
+      "label": "플리츠 스커트",
+      "type": "rigged-garment",
+      "fit": "female",
+      "category": "bottom",
+      "generatedFrom": "skirt",
+      "geometryPolicy": "fitted source skin shell with volumetric silhouette details, head/body clearance and triangle safety checks",
+      "rigging": "source 78-bone skeleton, retained bone indexing and pose, attached details bound to matching source bones",
+      "revision": "v6.0"
+    },
+    "chibi_female_flarepants": {
+      "label": "부츠컷 팬츠",
+      "type": "rigged-garment",
+      "fit": "female",
+      "category": "bottom",
+      "generatedFrom": "ninjasuitshort",
+      "geometryPolicy": "fitted source skin shell with volumetric silhouette details, head/body clearance and triangle safety checks",
+      "rigging": "source 78-bone skeleton, retained bone indexing and pose, attached details bound to matching source bones",
+      "revision": "v6.0"
     }
   },
   "wardrobeLibrary": {
@@ -807,7 +987,16 @@
           "chibi_male_sweater",
           "chibi_male_jeans",
           "chibi_male_joggers",
-          "chibi_male_chinos"
+          "chibi_male_chinos",
+          "kidscade_male_hair_mohawk",
+          "kidscade_male_hair_curls",
+          "kidscade_male_hair_flattop",
+          "kidscade_male_hair_shag",
+          "chibi_male_raincoat",
+          "chibi_male_polo",
+          "chibi_male_workvest",
+          "chibi_male_cargo",
+          "chibi_male_bermuda"
         ],
         "female": [
           "hairone",
@@ -851,7 +1040,16 @@
           "chibi_female_jacket",
           "chibi_female_jeans",
           "chibi_female_shorts",
-          "chibi_female_widepants"
+          "chibi_female_widepants",
+          "chibi_female_hair_twinbuns",
+          "chibi_female_hair_braidcrown",
+          "chibi_female_hair_pixie",
+          "chibi_female_hair_waves",
+          "chibi_female_sailor",
+          "chibi_female_windbreaker",
+          "chibi_female_tunic",
+          "chibi_female_pleated",
+          "chibi_female_flarepants"
         ],
         "shared": [
           "shoe",
