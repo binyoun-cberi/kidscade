@@ -123,7 +123,7 @@ test('turn engine can use every newly registered signature with PP, legal effect
  const rng=()=>{seed=(Math.imul(seed,1664525)+1013904223)|0;return(seed>>>0)/4294967296};
  for(const family of DB.families){
   const mon=E.makeCreature(family.parts[0],20),foe=E.makeCreature('set1_r01_c01',19);
-  const save=E.createNew(mon.id);save.party[0]=mon;save.active=0;
+  const save=E.createNew('set1_r02_c02');save.party[0]=mon;save.active=0;
   const battle={turnState:TB.state(),firstRoad:false};
   const sig=TB.familyMoves.get(family.key).base;
   const skill=mon.moveSlots.find(x=>x.id===sig);
