@@ -6,7 +6,7 @@
 <style>
 :root{color-scheme:light;font-family:Pretendard,"Noto Sans KR",system-ui,sans-serif;color:#25362f;background:#e6f4ed}
 *{box-sizing:border-box}body{margin:0;overflow:hidden;touch-action:none}button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid #009c86;outline-offset:2px}
-#world{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;background:#bdd9ca}
+#world{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;background:#bdd9ca;cursor:grab}
 #top{position:fixed;inset:0 0 auto;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left));z-index:5;pointer-events:none}
 #topRow{display:flex;gap:9px;align-items:flex-start;justify-content:space-between}
 .panel{background:rgba(255,253,246,.94);box-shadow:0 7px 26px #234b4730;border:1px solid #fff8;border-radius:18px;pointer-events:auto}
@@ -20,6 +20,7 @@
 #mission button{background:#218c76;border:0;border-radius:11px;color:white;font-weight:800;padding:10px 11px;flex:none}
 #actions{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:calc(90px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px;z-index:6}
 .action{pointer-events:auto;border:1px solid #fff8;border-radius:13px;min-height:43px;min-width:43px;padding:8px 11px;background:#fffdf5ef;color:#2b6857;font-weight:900;box-shadow:0 5px 15px #234b4727}
+#dropGuide{position:fixed;transform:translate(-50%,-50%);z-index:7;padding:6px 12px;border:2px solid #fae7ba;border-radius:13px;background:#254c42;color:#fffefa;font-size:12px;font-weight:950;white-space:nowrap;pointer-events:none;box-shadow:0 6px 19px #19382e38}#dropGuide[hidden]{display:none}#dropGuide[data-valid='yes']{background:#087d5b;border-color:#8fffe0}#dropGuide[data-valid='no']{background:#ad5e43;border-color:#ffe3c0}
 #hint{position:fixed;left:50%;top:48%;transform:translate(-50%,-50%);color:white;background:#143c36ed;border:1px solid #a4f6d8;padding:12px 17px;border-radius:15px;font-weight:900;font-size:15px;z-index:8;max-width:min(410px,90%);pointer-events:none;opacity:0;transition:opacity .18s;text-align:center}
 #hint.show{opacity:1}#label{position:fixed;transform:translate(-50%,-50%);pointer-events:none;background:#fffef1e9;border:1px solid #fff;border-radius:11px;padding:6px 9px;white-space:nowrap;font-weight:850;font-size:12px;color:#2d5749;box-shadow:0 5px 16px #143e3522;z-index:4;display:none}
 .overlay{position:fixed;inset:0;z-index:12;background:linear-gradient(160deg,#1c4947d6,#0d2624c9);display:grid;place-items:center;padding:18px;overflow:auto;touch-action:pan-y}
@@ -39,17 +40,18 @@
 </style>
 </head>
 <body>
-<canvas id="world" aria-label="3D 정리 시뮬레이터: 물건을 선택하고 알맞은 정리 장소를 터치하세요"></canvas>
+<canvas id="world" aria-label="3D 정리 시뮬레이터: 물건을 누른 채 끌어 수납 장소 위에서 손을 떼세요"></canvas>
+<div id="dropGuide" hidden data-valid="none" aria-hidden="true"></div>
 <header id="top">
 <div id="topRow"><div class="brand panel"><b>🧺 싹싹! 정리왕</b><small id="stageName">우리 집 대청소</small></div>
 <div id="stats" class="panel"><div><span>정리 완료</span><strong id="count">0 / 0</strong></div><div><span>모은 코인</span><strong id="coins">0</strong></div><div><span>경과</span><strong id="clock">00:00</strong></div></div></div>
 <div id="progressWrap" class="panel"><div class="progressTitle"><span>반짝반짝 청소 진행도</span><span id="percent">0%</span></div><div id="bar"><div id="barFill"></div></div></div>
 </header>
-<div id="roomIndicator">물건을 선택 → 알맞은 정리 장소 선택</div>
+<div id="roomIndicator">물건을 끌어다 놓기 · 얼룩은 문지르기</div>
 <div id="label" aria-hidden="true"></div><div id="hint" role="status" aria-live="polite"></div>
 <div id="actions"><button class="action" id="rotateLeft" title="시점 왼쪽 회전">↶</button><button class="action" id="rotateRight" title="시점 오른쪽 회전">↷</button><button class="action" id="zoomIn" title="확대">＋</button><button class="action" id="zoomOut" title="축소">－</button><button class="action" id="sound" title="소리 켜기/끄기">♪</button></div>
-<div id="mission" class="panel"><span id="missionIcon">🧤</span><div id="missionText">바닥의 물건을 터치해 보세요<small>대상을 고르면 정리할 장소가 빛나요</small></div><button id="help">도움말</button></div>
-<div id="intro" class="overlay"><section class="dialog" aria-labelledby="introTitle"><div class="emblem">🏠✨</div><h1 id="introTitle">싹싹! 정리왕</h1><p>온 집안이 엉망이야! 물건을 제자리에 놓고 얼룩을 닦아, 지저분한 공간을 반짝반짝 바꿔 보자.</p><div class="steps">① 바닥의 물건을 터치해서 집기<br>② 빛나는 책장·수거함·싱크대를 터치해서 정리하기<br>③ 더러운 바닥은 손가락으로 문질러 청소하기<br>④ 진행도 100%가 되면 의뢰 성공!</div><div class="dialogBtns"><button class="primary" id="start">원룸 청소 시작</button><button class="secondary" id="startKitchen" disabled>주방 잠김 · 원룸을 완료하세요</button></div><p style="font-size:11px">제한 시간 없음 · 휴대폰 터치 및 PC 마우스 지원 · 기록은 이 기기에 저장</p></section></div>
+<div id="mission" class="panel"><span id="missionIcon">🧤</span><div id="missionText">물건을 누른 채 끌어 보세요<small>빛나는 장소 위에서 손을 떼면 정리돼요</small></div><button id="help">도움말</button></div>
+<div id="intro" class="overlay"><section class="dialog" aria-labelledby="introTitle"><div class="emblem">🏠✨</div><h1 id="introTitle">싹싹! 정리왕</h1><p>온 집안이 엉망이야! 물건을 제자리에 놓고 얼룩을 닦아, 지저분한 공간을 반짝반짝 바꿔 보자.</p><div class="steps">① 물건을 손가락이나 마우스로 누른 채 끌기<br>② 빛나는 책장·수거함·싱크대 위에서 손을 떼기<br>③ 잘못 놓으면 돌아오니 다시 도전하기<br>④ 바닥 얼룩은 손가락으로 문질러 닦기<br>⑤ 진행도 100%가 되면 의뢰 성공!</div><div class="dialogBtns"><button class="primary" id="start">원룸 청소 시작</button><button class="secondary" id="startKitchen" disabled>주방 잠김 · 원룸을 완료하세요</button></div><p style="font-size:11px">제한 시간 없음 · 휴대폰 터치 및 PC 마우스 지원 · 기록은 이 기기에 저장</p></section></div>
 <div id="end" class="overlay hidden"><section class="dialog" aria-labelledby="endTitle"><div class="emblem">🌟</div><h1 id="endTitle">청소 완료!</h1><p id="endCaption">엉망이던 방이 반짝반짝 깨끗해졌어요!</p><div id="beforeAfter"><figure><img id="beforePhoto" alt="청소 전 모습" loading="eager"><figcaption>청소 전 <b id="dirtyBefore">0개</b></figcaption></figure><figure><img id="afterPhoto" alt="청소 후 모습" loading="eager"><figcaption>청소 후 <b>0개</b></figcaption></figure></div><div id="summary">코인 +0</div><div class="dialogBtns"><button class="primary" id="next">다음 의뢰</button><button class="secondary" id="replay">다시 청소</button></div></section></div>
 <script src="../../kidscade-game-sdk.js" data-game-id="sim_tidy_king" data-title="싹싹! 정리왕" data-shell="false"></script>
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>

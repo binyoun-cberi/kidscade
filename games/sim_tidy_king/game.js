@@ -73,7 +73,7 @@ const furniture={
  plant:FURN+'plant-small1.glb'
 };
 let running=false, level=0, elapsed=0, coins=0, sessionCoins=0, cleanCount=0, totalCount=0;
-let selected=null, scrubbing=null, mouseDown=null, scrubDistance=0, turn=0, zoom=1, hintTimer=0, activeSound=true;
+let selected=null, dragging=null, scrubbing=null, mouseDown=null, scrubDistance=0, turn=0, zoom=1, hintTimer=0, activeSound=true;
 let pickables=[],things=[],stains=[],stations=[],animations=[],effects=[],generation=0, ready=false;
 let lastFrame=performance.now(),lastClockSecond=-1,previousStage=0,beforeImage='',captureTimeout=0;
 let saved={coins:0,unlocked:0,best:{}};
@@ -124,9 +124,37 @@ function itemModel(key,size=.6,color=0xc9ab80){
 }
 function smooth(a,b,t){return a+(b-a)*Math.min(1,Math.max(0,t))}
 function seedRandom(seed){let s=seed>>>0;return()=>((s=(1664525*s+1013904223)>>>0)/4294967296)}
+function scatterClutter(list,rand){
+ // Clusters reflect where belongings would have fallen, not a numbered grid.
+ const anchors={
+  book:[[-2.8,-1.5],[-.7,-2.35]],pen:[[-2.7,-1.0],[-.65,-2.0]],
+  pillow:[[-2.9,-2.25],[1.5,-2.1]],bag:[[-1.4,1.9],[2.4,2.35]],
+  bottle:[[2.15,1.2],[1.4,-1.45]],can:[[1.85,1.9],[2.4,-.8]],
+  carton:[[1.2,1.35],[2.4,2.15]],cup:[[1.95,-1.55],[-.5,-2.0]],
+  plate:[[1.9,-1.5],[-.55,-1.8]],pan:[[1.45,-1.85],[-1.2,-1.25]],
+  toy:[[-2.35,2.2],[-1.1,.8]]
+ };
+ const placements=[];
+ for(const key of list){
+  let best=null,bestDistance=-1;
+  for(let n=0;n<280;n++){
+   // Reserve space for fingers without visually reverting to regular rows.
+   // Widen the search progressively if the local pile gets dense.
+   const independent=n>=140||rand()<.16,centers=anchors[key]||[[-1,0]],a=centers[Math.floor(rand()*centers.length)];
+   const radius=.16+Math.sqrt(rand())*1.7,theta=rand()*Math.PI*2;
+   const x=THREE.MathUtils.clamp(independent?(rand()-.5)*7.2:a[0]+Math.cos(theta)*radius,-3.65,3.65);
+   const z=THREE.MathUtils.clamp(independent?-2.8+rand()*7.25:a[1]+Math.sin(theta)*radius,-2.75,4.35);
+   const dist=placements.reduce((min,p)=>Math.min(min,Math.hypot(x-p.x,z-p.z)),100);
+   if(dist>bestDistance){best={x,z};bestDistance=dist}
+   if(dist>.78)break;
+  }
+  placements.push(best);
+ }
+ return placements;
+}
 function buildRoom(){
  generation++;
- root.clear();clearTimeout(captureTimeout);beforeImage='';pickables=[];things=[];stains=[];stations=[];animations=[];effects=[];selected=null;scrubbing=null;elapsed=0;lastClockSecond=-1;cleanCount=0;sessionCoins=0;
+ root.clear();clearTimeout(captureTimeout);beforeImage='';pickables=[];things=[];stains=[];stations=[];animations=[];effects=[];selected=null;dragging=null;scrubbing=null;canvas.style.cursor='grab';$('dropGuide').hidden=true;elapsed=0;lastClockSecond=-1;cleanCount=0;sessionCoins=0;
  const def=levelDefs[level],rand=seedRandom(def.seed+Math.floor(Math.random()*20000));
  scene.background.set(level===0?0xb4d1c0:0xaec6b7);scene.fog.color.copy(scene.background);
  const floor=cuboid(11.75,.23,11.3,def.floor,0,-.14,0);floor.receiveShadow=true;root.add(floor);
@@ -160,24 +188,31 @@ function buildRoom(){
  for(const [key,num] of Object.entries(def.items))for(let i=0;i<num;i++)list.push(key);
  // Fisher-Yates: each replay changes the mess, while keeping safe pickable grid spacing.
  for(let i=list.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));[list[i],list[j]]=[list[j],list[i]]}
+ const scatter=scatterClutter(list,rand);
  for(let i=0;i<list.length;i++){
-  const col=i%8,row=Math.floor(i/8);
-  const x=-2.95+col*.86+(rand()-.5)*.40,z=-1.49+row*.77+(rand()-.5)*.38;
+  const {x,z}=scatter[i];
   const key=list[i],def=props[key],g=itemModel(key,def.size,def.color);
-  g.position.set(x,.02,z);g.rotation.y=rand()*Math.PI*2;
+  g.position.set(x,.055,z);
+  g.rotation.set((rand()-.5)*.18,rand()*Math.PI*2,(rand()-.5)*.22);
   g.userData={kind:'item',key,zone:def.kind,name:def.name};
   // Larger invisible grab area makes small stationery usable on phones.
   const grab=new THREE.Mesh(new THREE.SphereGeometry(.30,8,6),new THREE.MeshBasicMaterial({visible:false}));
   grab.position.y=.25;g.add(grab);root.add(g);pickables.push(g);
-  things.push({group:g,key,zone:def.kind,done:false,home:g.position.clone(),rot:g.rotation.y});
+  things.push({group:g,key,zone:def.kind,done:false,home:g.position.clone(),rot:g.rotation.y,tilt:g.rotation.clone()});
  }
- const dspots=[[-3.5,2.8],[-1.7,3.55],[.35,3.3],[2.3,3.6],[-3.65,-1.4],[3.55,-1.05],[.8,-2.1]];
- for(let i=0;i<def.stains;i++)makeStain(dspots[i][0],dspots[i][1],rand);
+ const spillables=things.filter(t=>['cup','bottle','can','carton','plate'].includes(t.key));
+ for(let i=0;i<def.stains;i++){
+  const source=spillables[(i*7+3)%spillables.length];
+  const theta=rand()*Math.PI*2,radius=.34+rand()*.55;
+  const x=THREE.MathUtils.clamp(source.home.x+Math.cos(theta)*radius,-3.75,3.75);
+  const z=THREE.MathUtils.clamp(source.home.z+Math.sin(theta)*radius,-2.8,4.35);
+  makeStain(x,z,rand);
+ }
  totalCount=things.length+stains.length;
  $('stageName').textContent=def.name;
- $('roomIndicator').textContent='물건 터치 → 제자리 터치 · 얼룩은 문질러 닦기';
+ $('roomIndicator').textContent='물건을 끌어 수납함에 놓기 · 얼룩은 문지르기';
  $('missionIcon').textContent='🧤';
- $('missionText').innerHTML='바닥의 물건을 터치해 보세요<small>정리할 장소가 빛나면 그곳을 누르세요</small>';
+ $('missionText').innerHTML='물건을 눌러 끌어 보세요<small>손가락을 떼면 수납 · 얼룩은 문질러 닦아요</small>';
  updateHud();
  cameraMove();
  beforeImage=captureScene();
@@ -293,7 +328,7 @@ function selectItem(item){
  things.forEach(t=>t.group.scale.setScalar(t===item?1.23:1));
  const s=stations.find(st=>st.key===item.zone);
  if(s){$('missionIcon').textContent=catalog[item.zone].icon;
-  $('missionText').innerHTML=itemLabel(item)+'을(를) 집었어요<small>'+catalog[item.zone].hint+'</small>';}
+  $('missionText').innerHTML=itemLabel(item)+'을(를) 끌고 있어요<small>'+catalog[item.zone].hint+' · 손을 떼면 수납!</small>';}
  chirp(490);
 }
 function itemLabel(item){return props[item.key].name}
@@ -303,7 +338,7 @@ function placeItem(item,station){
   bounce(item);show('여기는 '+catalog[station.key].label+'이에요. '+catalog[item.zone].label+'에 놓아 보세요!');
   chirp(230);return;
  }
- item.done=true;selected=null;
+ item.done=true;selected=null;dragging=null;canvas.style.cursor='grab';$('dropGuide').hidden=true;
  things.forEach(t=>t.group.scale.setScalar(1));
  const end=depositPosition(station);
  animations.push({kind:'move',item,time:0,length:.53,start:item.group.position.clone(),end,rot:item.group.rotation.y,finalScale:station.key==='shelf'?.55:.36});
@@ -331,6 +366,24 @@ function cleanStain(stain,effort){
 }
 function inViewport(e){const r=canvas.getBoundingClientRect();mouse.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1)}
 function getHit(e){
+ // Project each clutter center onto the viewport. A small screen-space
+ // grab radius prevents tiny props from becoming inaccessible on phones.
+ // Nearest-center wins when projected meshes overlap.
+ if(!selected&&!dragging){
+  let closest=null,distance=Infinity;
+  const anchor=new THREE.Vector3();
+  for(const item of things){
+   if(item.done)continue;
+   anchor.set(item.group.position.x,.25,item.group.position.z).project(camera);
+   if(anchor.z>1||anchor.z< -1)continue;
+   const sx=(anchor.x+1)*innerWidth/2,sy=(1-anchor.y)*innerHeight/2;
+   const d=Math.hypot(e.clientX-sx,e.clientY-sy);
+   if(d<distance){distance=d;closest=item}
+  }
+  if(closest&&distance<(e.pointerType==='touch'?22:18)){
+   return{kind:'item',value:closest,point:closest.group.position};
+  }
+ }
  inViewport(e);picker.setFromCamera(mouse,camera);
  const hits=picker.intersectObjects(pickables,true),candidates=[];
  for(const h of hits){
@@ -357,12 +410,81 @@ function getHit(e){
  }
  return null;
 }
+const groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+const dragWorld=new THREE.Vector3(),dropProject=new THREE.Vector3();
+function groundAt(e,out=dragWorld){
+ inViewport(e);
+ picker.setFromCamera(mouse,camera);
+ return picker.ray.intersectPlane(groundPlane,out);
+}
+function candidateAt(e){
+ const stationsOnly=stations.map(s=>s.hit);
+ inViewport(e);picker.setFromCamera(mouse,camera);
+ const intersections=picker.intersectObjects(stationsOnly,false);
+ if(intersections.length){
+  const key=intersections[0].object.userData.key;
+  const target=stations.find(s=>s.key===key);
+  if(target)return target;
+ }
+ let nearest=null,best=Infinity;
+ for(const s of stations){
+  const y=s.key==='shelf'?1.08:.62;
+  dropProject.set(s.x,y,s.z).project(camera);
+  const x=(dropProject.x+1)*innerWidth/2,yScreen=(1-dropProject.y)*innerHeight/2;
+  const distance=Math.hypot(e.clientX-x,e.clientY-yScreen);
+  if(distance<best){best=distance;nearest=s}
+ }
+ return best<(e.pointerType==='touch'?64:56)?nearest:null;
+}
+function resetDrag(restore=true){
+ if(dragging&&restore&&!dragging.item.done){
+  dragging.item.group.position.copy(dragging.home);
+  dragging.item.group.rotation.copy(dragging.item.tilt);
+ }
+ dragging=null;selected=null;canvas.style.cursor='grab';$('dropGuide').hidden=true;
+ things.forEach(t=>{if(!t.done)t.group.scale.setScalar(1)});
+ stations.forEach(st=>st.group.userData.dropHover=false);
+}
+function beginDrag(item,e){
+ selectItem(item);
+ const point=groundAt(e,new THREE.Vector3());
+ dragging={item,id:e.pointerId,home:item.group.position.clone(),
+  startX:e.clientX,startY:e.clientY,moved:false,hover:null,
+  offset:point?item.group.position.clone().sub(point):new THREE.Vector3()};
+ canvas.style.cursor='grabbing';
+ try{canvas.setPointerCapture(e.pointerId)}catch(_){}
+ e.preventDefault();
+}
+function moveDrag(e){
+ if(!dragging||e.pointerId!==dragging.id)return;
+ const state=dragging;
+ const distance=Math.hypot(e.clientX-state.startX,e.clientY-state.startY);
+ if(distance>7)state.moved=true;
+ if(!state.moved)return;
+ const pos=groundAt(e,new THREE.Vector3());
+ if(pos){
+  const v=pos.add(state.offset);
+  state.item.group.position.set(THREE.MathUtils.clamp(v.x,-5.3,5.3),.54,
+   THREE.MathUtils.clamp(v.z,-4.6,4.85));
+ }
+ const hover=candidateAt(e);
+ state.hover=hover;
+ const guide=$('dropGuide');
+ guide.hidden=false;
+ guide.style.left=THREE.MathUtils.clamp(e.clientX,65,innerWidth-65)+'px';
+ guide.style.top=THREE.MathUtils.clamp(e.clientY-42,140,innerHeight-82)+'px';
+ guide.textContent=hover?(hover.key===state.item.zone?'여기에 놓기!':'다른 수납함이에요'):'끌어서 제자리에 놓아요';
+ guide.dataset.valid=hover?.key===state.item.zone?'yes':hover?'no':'none';
+ for(const station of stations)station.group.userData.dropHover=station===hover;
+ e.preventDefault();
+}
 function pointerDown(e){
- if(!running||e.button>0)return;
+ if(!running||!$('intro').classList.contains('hidden')||e.button>0)return;
  mouseDown={x:e.clientX,y:e.clientY,t:performance.now(),id:e.pointerId};
  const hit=getHit(e);
+ if(hit?.kind==='item'){beginDrag(hit.value,e);return}
  if(hit?.kind==='stain'){
-  scrubbing=hit.value;selected=null;things.forEach(t=>t.group.scale.setScalar(1));scrubDistance=0;
+  scrubbing=hit.value;selected=null;scrubDistance=0;
   cleanStain(scrubbing,.17);
   if(scrubbing&&!scrubbing.done){try{canvas.setPointerCapture(e.pointerId)}catch(_){}}
   e.preventDefault();
@@ -370,42 +492,53 @@ function pointerDown(e){
 }
 function pointerMove(e){
  if(!running)return;
+ if(dragging&&dragging.id===e.pointerId){moveDrag(e);return}
  if(scrubbing&&mouseDown&&mouseDown.id===e.pointerId){
   const dx=e.clientX-mouseDown.x,dy=e.clientY-mouseDown.y;
   const dist=Math.hypot(dx,dy);
   scrubDistance+=dist;mouseDown.x=e.clientX;mouseDown.y=e.clientY;
-  if(scrubDistance>=12){const chunks=Math.floor(scrubDistance/12);scrubDistance%=12;const active=scrubbing;cleanStain(active,Math.min(.25,chunks*.07));if(active.done)scrubbing=null}
+  if(scrubDistance>=12){
+   const chunks=Math.floor(scrubDistance/12);scrubDistance%=12;
+   const active=scrubbing;cleanStain(active,Math.min(.25,chunks*.07));
+   if(active.done)scrubbing=null;
+  }
   e.preventDefault();return;
  }
  if(e.pointerType==='mouse'){
   const hit=getHit(e),el=$('label');
-  if(hit?.kind==='item'){el.textContent=itemLabel(hit.value);el.style.display='block';el.style.left=e.clientX+'px';el.style.top=(e.clientY-28)+'px'}
-  else if(hit?.kind==='station'){el.textContent=catalog[hit.value.key].label;el.style.display='block';el.style.left=e.clientX+'px';el.style.top=(e.clientY-28)+'px'}
+  if(hit?.kind==='item'){el.textContent=itemLabel(hit.value)+' · 끌어서 정리';el.style.display='block';el.style.left=e.clientX+'px';el.style.top=(e.clientY-28)+'px'}
   else el.style.display='none';
  }
 }
 function pointerUp(e){
  if(!running)return;
- const wasScrubbing=Boolean(scrubbing);scrubbing=null;
- try{canvas.releasePointerCapture(e.pointerId)}catch(_){}
- if(wasScrubbing){mouseDown=null;return}
- const hit=getHit(e);
- if(hit?.kind==='item'){selectItem(hit.value)}
- else if(hit?.kind==='station'){
-  if(selected)placeItem(selected,hit.value);
-  else {show(catalog[hit.value.key].label+'이에요. 먼저 바닥의 물건을 터치해 주세요',1100)}
- }else if(hit?.kind==='stain'){
-  if(selected){selected=null;things.forEach(t=>t.group.scale.setScalar(1))}
-  cleanStain(hit.value,.22);
- }else if(selected){
-  show('빛나는 '+catalog[selected.zone].label+'에 물건을 놓아 주세요',1100);
+ try{if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId)}catch(_){}
+ if(dragging&&dragging.id===e.pointerId){
+  const state=dragging,station=state.moved?candidateAt(e):null;
+  if(station&&station.key===state.item.zone){
+   state.item.group.position.y=.54;
+   placeItem(state.item,station);
+  }else{
+   resetDrag(true);
+   if(station){
+    show('여기는 '+catalog[station.key].label+'이에요. 올바른 수납함으로 끌어 주세요',1400);
+    chirp(230);
+   }else if(state.moved){show('수납함 위에서 손을 떼어 보세요!',1000)}
+   else show('물건을 누른 채 수납함까지 끌어 주세요!',1400);
+  }
+  mouseDown=null;return;
  }
- mouseDown=null;
+ if(scrubbing&&mouseDown?.id===e.pointerId){scrubbing=null;mouseDown=null;return}
+ scrubbing=null;mouseDown=null;
+}
+function pointerCancel(e){
+ if(dragging&&dragging.id===e.pointerId)resetDrag();
+ scrubbing=null;mouseDown=null;
 }
 canvas.addEventListener('pointerdown',pointerDown);
 canvas.addEventListener('pointermove',pointerMove);
 canvas.addEventListener('pointerup',pointerUp);
-canvas.addEventListener('pointercancel',()=>{mouseDown=null;scrubbing=null});
+canvas.addEventListener('pointercancel',pointerCancel);
 canvas.addEventListener('wheel',e=>{if(!running)return;zoom=THREE.MathUtils.clamp(zoom+Math.sign(e.deltaY)*.07,.79,1.5);cameraMove();e.preventDefault()},{passive:false});
 function cameraMove(){
  const angle=.56+turn;
@@ -488,10 +621,10 @@ function tick(dt,now){
   return true;
  });
  stations.forEach((s,i)=>{
-  const highlighted=selected&&selected.zone===s.key;
-  s.rim.material.color.setHex(highlighted?0x24cf8d:0xfff9d8);
-  s.rim.scale.setScalar(highlighted?1.07+Math.sin(now*4+i)*.07:1);
-  s.plate.material.emissiveIntensity=highlighted?.36:.16;
+  const highlighted=selected&&selected.zone===s.key,hover=s.group.userData.dropHover;
+  s.rim.material.color.setHex(hover?(highlighted?0x12d98f:0xe76b5e):(highlighted?0x24cf8d:0xfff9d8));
+  s.rim.scale.setScalar(hover?1.22:highlighted?1.07+Math.sin(now*4+i)*.07:1);
+  s.plate.material.emissiveIntensity=hover?.56:highlighted?.36:.16;
  });
 }
 function frame(now){
