@@ -8,6 +8,7 @@ cx.imageSmoothingEnabled=false;
 const SAVE_KEY="kidscade.openmon.expedition.save.v1";
 let save=null,battle=null,lastDraw=0,lastMove=0,held=null,moveTimer=0,soundOn=true,audio=null;
 let latestToast="풀숲이나 동굴의 거친 땅으로 이동하면 키즈몬을 만날 수 있어요.";
+let toastTimer=null;
 const imgs={};
 const ASSET="../../assets/";
 function load(name,url){const im=new Image();im.decoding="async";im.src=url;im.onload=()=>{imgs[name]=im};im.onerror=()=>{imgs[name]=null}}
@@ -35,9 +36,16 @@ function stored(){
 }
 function persist(){
  if(!save)return;
- try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));$("saveInfo").textContent="진행 자동 저장"}catch(e){$("saveInfo").textContent="저장 실패 · 저장공간 확인"}
+ try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));$("saveInfo").textContent="●";$("saveInfo").title="자동 저장됨";$("saveInfo").setAttribute("aria-label","진행 자동 저장됨")}
+ catch(e){$("saveInfo").textContent="!";$("saveInfo").title="저장 실패 · 저장공간 확인";$("saveInfo").setAttribute("aria-label","저장 실패")}
 }
-function setToast(message){latestToast=message;$("mapToast").textContent=message}
+function setToast(message){
+ latestToast=message;
+ const toast=$("mapToast");
+ toast.textContent=message;toast.classList.remove("toast-faded");
+ if(toastTimer)clearTimeout(toastTimer);
+ toastTimer=setTimeout(()=>toast.classList.add("toast-faded"),4300);
+}
 function species(key){return sprites.get(key)}
 function maxHp(p){return DB.combat.statsAtLevel(p.id,p.level).hp}
 function artHtml(key,scale=1){
@@ -108,6 +116,54 @@ function openGeneric(title,body,subtitle=""){
  $("genericSubtitle").textContent=subtitle;
  $("genericBody").innerHTML=body;
  $("genericOverlay").classList.remove("hidden");
+}
+function openParty(){
+ if(!save)return;
+ openGeneric("우리 키즈몬","<p>선두 키즈몬을 바꾸거나 회복약을 사용할 수 있어. 전투 중에는 교체에 한 턴이 필요해.</p>"+
+ '<div class="team hud-party-list">'+$("teamList").innerHTML+'</div>'+
+ '<div class="action-row"><button type="button" class="act primary" data-hud-action="potion">회복약 사용 ('+save.items.potion+'개)</button></div>',
+ save.party.length+"/6마리 · 선택하면 선두 변경");
+}
+function openBag(){
+ if(!save)return;
+ openGeneric("탐험 가방","<div class='shop-list'>"+
+ '<div class="shop-item"><div><strong>키즈볼</strong><small>야생 키즈몬을 포획할 때 사용 · 전투 중에 던질 수 있어</small></div><strong>'+save.items.ball+'개</strong></div>'+
+ '<div class="shop-item"><div><strong>회복약</strong><small>선두 키즈몬 HP 20 회복</small></div><button type="button" data-hud-action="potion" '+(save.items.potion===0?"disabled":"")+'>사용 · '+save.items.potion+'개</button></div>'+
+ '<div class="shop-item"><div><strong>연구코인</strong><small>연구소에서 키즈볼·회복약 구매</small></div><strong>'+save.coins+'</strong></div>'+
+ '</div><div class="action-row"><button type="button" class="act" data-hud-action="clinic">연구소 위치 확인</button></div>',
+ "가방을 열어도 모험 진행은 멈춰 있어");
+}
+function openGoals(){
+ if(!save)return;
+ const goal=$("objective").textContent;
+ const zone=E.zoneAt(save.pos.x);
+ const hint=zone==="town"?"오른쪽 이슬초원의 풀숲으로 가 보자. 마을 위쪽 연구소 앞에서는 A 버튼으로 이야기를 나눌 수 있어.":
+  zone==="meadow"?"풀숲에서 야생 키즈몬을 만나면 HP를 줄여 키즈볼을 던져 봐. 계속 오른쪽으로 가면 가지숲이 나와.":
+  zone==="forest"?"다양한 속성의 키즈몬을 잡아 보자. 숲 속 숨겨진 장소에서는 특별한 키즈몬을 만날 수도 있어.":
+  "동굴에서 타입 상성을 비교해 봐. 다치면 마을 연구소로 돌아와 무료로 치료받을 수 있어.";
+ openGeneric("탐험 목표","<div class='mission-sheet'><strong>현재 목표</strong><p>"+esc(goal)+"</p>"+
+ "<strong>다음 행동 힌트</strong><p>"+esc(hint)+"</p>"+
+ '<div class="equipment"><span>발견한 키즈몬</span><b>'+$("seenCount").textContent+'</b></div>'+
+ '<div class="equipment"><span>수집한 키즈몬</span><b>'+$("caughtCount").textContent+'</b></div>'+
+ '<div class="equipment"><span>진행 걸음 수</span><b>'+save.steps+'걸음</b></div></div>',
+ "수학은 전투와 포획을 하며 자연스럽게 배워요");
+}
+function openMenu(){
+ if(!save)return;
+ openGeneric("키즈몬 메뉴",'<div class="shop-list">'+
+ '<div class="shop-item"><div><strong>소리</strong><small>효과음 켜기·끄기</small></div><button type="button" data-hud-action="audio">'+(soundOn?"끄기":"켜기")+'</button></div>'+
+ '<div class="shop-item"><div><strong>자동 저장</strong><small>이 기기에서 진행 기록을 이어할 수 있어</small></div><strong>'+($("saveInfo").textContent==="!"?"저장 실패":"저장됨")+'</strong></div>'+
+ '<div class="shop-item"><div><strong>처음부터</strong><small>현재 탐험 기록 초기화 · 확인 후 실행</small></div><button type="button" data-hud-action="restart">초기화</button></div>'+
+ '<div class="shop-item"><div><strong>키즈케이드로</strong><small>진행을 저장하고 게임에서 나가기</small></div><button type="button" data-hud-action="exit">나가기</button></div>'+
+ '</div>');
+}
+function openHud(tab){
+ if(!save)return;
+ if(tab==="party")openParty();
+ else if(tab==="bag")openBag();
+ else if(tab==="dex")openDex();
+ else if(tab==="goals")openGoals();
+ else if(tab==="menu")openMenu();
 }
 function closeGeneric(){$("genericOverlay").classList.add("hidden")}
 function talk(){
@@ -357,7 +413,7 @@ function renderTerrain(x,y,sx,sy){
  }
 }
 function drawBuilding(camX,camY){
- const sx=(6-camX)*16,sy=(5-camY)*16;if(sx>520||sx+128<0||sy>328||sy+80<0)return;
+ const sx=(6-camX)*16,sy=(5-camY)*16;if(sx>C.width+8||sx+128<0||sy>C.height+8||sy+80<0)return;
  cx.fillStyle="#375d5c";cx.fillRect(sx-2,sy+6,132,74);
  cx.fillStyle="#f7e1b0";cx.fillRect(sx+3,sy+27,122,52);
  cx.fillStyle="#bc694e";cx.fillRect(sx-6,sy+16,140,13);cx.fillRect(sx+1,sy+6,126,12);
@@ -370,7 +426,7 @@ function drawBuilding(camX,camY){
 }
 function drawNpc(name,img,x,y,camX,camY,frame=0){
  const sx=(x-camX)*16,sy=(y-camY)*16;
- if(sx<-24||sx>530||sy<-24||sy>345)return;
+ if(sx<-24||sx>C.width+18||sy<-24||sy>C.height+25)return;
  cx.fillStyle="#32583e55";cx.fillRect(sx+1,sy+11,15,4);
  if(img&&img.complete&&img.naturalWidth>=54){
   cx.drawImage(img,(frame%3)*18,0,18,26,sx-1,sy-12,18,26);
@@ -388,9 +444,11 @@ function render(now){
   if(d)movePlayer(...d,now);
  }
  const player=save?.pos||E.START;
- const camX=Math.max(0,Math.min(E.WIDTH-32,player.x-16)),camY=Math.max(0,Math.min(E.HEIGHT-20,player.y-10));
+ const columns=C.width/16,rows=C.height/16;
+ const camX=Math.max(0,Math.min(E.WIDTH-columns,player.x-Math.floor(columns/2)));
+ const camY=Math.max(0,Math.min(E.HEIGHT-rows,player.y-Math.floor(rows/2)));
  cx.fillStyle="#80af72";cx.fillRect(0,0,C.width,C.height);
- for(let dy=0;dy<20;dy++)for(let dx=0;dx<32;dx++){const x=camX+dx,y=camY+dy;renderTerrain(x,y,dx*16,dy*16)}
+ for(let dy=0;dy<rows;dy++)for(let dx=0;dx<columns;dx++){const x=camX+dx,y=camY+dy;renderTerrain(x,y,dx*16,dy*16)}
  drawBuilding(camX,camY);
  if(camX<=13&&camY<=10){drawNpc("회복·상점",imgs.staff,9,10,camX,camY);drawNpc("연구원",imgs.npc,13,10,camX,camY)}
  const px=(player.x-camX)*16,py=(player.y-camY)*16;
@@ -402,7 +460,7 @@ function render(now){
   const sy=Math.min(facing*26,Math.max(0,npc.naturalHeight-26));
   cx.drawImage(npc,frame*18,sy,18,26,px-1,py-12,18,26);
  }else{cx.fillStyle="#f0c490";cx.fillRect(px+4,py-6,9,10);cx.fillStyle="#396e93";cx.fillRect(px+4,py+4,9,10)}
- if(!save){cx.fillStyle="#0d3e33c9";cx.fillRect(155,137,205,42);cx.fillStyle="#fff";cx.font="bold 13px sans-serif";cx.fillText("파트너를 골라 탐험을 시작해!",164,162)}
+ if(!save){cx.fillStyle="#0d3e33c9";cx.fillRect(C.width/2-106,C.height/2-22,212,44);cx.fillStyle="#fff";cx.font="bold 12px sans-serif";cx.fillText("파트너를 골라 탐험을 시작해!",C.width/2-98,C.height/2+5)}
 }
 function attach(){
  $("starterChoices").addEventListener("click",e=>{const b=e.target.closest("button[data-starter]");if(b)startNew(b.dataset.starter)});
@@ -410,7 +468,19 @@ function attach(){
  $("battleContinue").addEventListener("click",()=>{leaveBattle();if(pendingEvolution){pendingEvolution=false;evolveIfReady()}});
  $("teamList").addEventListener("click",e=>{const b=e.target.closest("button[data-team]");if(b)selectTeam(Number(b.dataset.team))});
  $("genericBody").addEventListener("click",e=>{
-  let b=e.target.closest("button[data-buy]");if(b){buy(b.dataset.buy);return}
+  let b=e.target.closest("button[data-hud-action]");
+  if(b){
+   const act=b.dataset.hudAction;
+   if(act==="potion"){useFieldPotion();if(!battle){if($("genericTitle").textContent==="탐험 가방")openBag();else openParty()}}
+   else if(act==="clinic"){closeGeneric();$("goClinic").click()}
+   else if(act==="audio"){$("audioButton").click();openMenu()}
+   else if(act==="restart"){closeGeneric();$("newGame").click()}
+   else if(act==="exit"){$("exitButton").click()}
+   return;
+  }
+  b=e.target.closest("button[data-team]");
+  if(b){const changed=selectTeam(Number(b.dataset.team));if(changed){closeGeneric()}return}
+  b=e.target.closest("button[data-buy]");if(b){buy(b.dataset.buy);return}
   b=e.target.closest("button[data-swap]");if(b){const choice=Number(b.dataset.swap);closeGeneric();selectTeam(choice,true);return}
   b=e.target.closest("button[data-dex]");if(b){openDexDetail(b.dataset.dex);return}
   b=e.target.closest("button[data-evolve]");if(b){
@@ -418,11 +488,12 @@ function attach(){
     closeGeneric();return}
  });
  $("genericClose").addEventListener("click",closeGeneric);
+ document.querySelectorAll("[data-hud]").forEach(button=>button.addEventListener("click",()=>{beep("click");openHud(button.dataset.hud)}));
  $("interactBtn").addEventListener("click",talk);
  $("openDex").addEventListener("click",openDex);
  $("goClinic").addEventListener("click",()=>{if(!save)return;setToast("연구소 직원은 마을 왼쪽 연구소 바로 아래 있어. 걸어 돌아가 A를 눌러 봐.")});
  $("healField").addEventListener("click",useFieldPotion);
- $("newGame").addEventListener("click",()=>{if(!confirm("지금 탐험 기록을 지우고 처음부터 시작할까?"))return;try{localStorage.removeItem(SAVE_KEY)}catch(e){}save=null;showStarter();setToast("새로운 모험을 시작해 보자.")});
+ $("newGame").addEventListener("click",()=>{if(!confirm("지금 탐험 기록을 지우고 처음부터 시작할까?"))return;try{localStorage.removeItem(SAVE_KEY)}catch(e){}save=null;closeGeneric();showStarter();setToast("새로운 모험을 시작해 보자.")});
  $("exitButton").addEventListener("click",()=>{persist();if(window.KidscadeGame?.exit){window.KidscadeGame.exit();return}if(window.parent!==window){window.parent.postMessage({type:"kidscade:close-game"},location.origin);return}if(history.length>1){history.back();return}location.href="../../"});
  $("audioButton").addEventListener("click",()=>{soundOn=!soundOn;$("audioButton").textContent=soundOn?"소리 켬":"소리 끔";if(soundOn)beep("click")});
  document.querySelectorAll("[data-dir]").forEach(b=>{
@@ -442,14 +513,28 @@ function attach(){
  window.addEventListener("blur",()=>{held=null});
  C.addEventListener("click",e=>{
   if(!save||battle)return;
-  const rect=C.getBoundingClientRect(),mx=Math.floor((e.clientX-rect.left)*C.width/rect.width/16),my=Math.floor((e.clientY-rect.top)*C.height/rect.height/16);
-  const camX=Math.max(0,Math.min(E.WIDTH-32,save.pos.x-16)),camY=Math.max(0,Math.min(E.HEIGHT-20,save.pos.y-10));
+  const rect=C.getBoundingClientRect();
+  const scale=Math.max(rect.width/C.width,rect.height/C.height);
+  const visibleW=C.width*scale,visibleH=C.height*scale;
+  const pixelX=(e.clientX-rect.left+(visibleW-rect.width)/2)/scale;
+  const pixelY=(e.clientY-rect.top+(visibleH-rect.height)/2)/scale;
+  const mx=Math.floor(pixelX/16),my=Math.floor(pixelY/16);
+  const columns=C.width/16,rows=C.height/16;
+  const camX=Math.max(0,Math.min(E.WIDTH-columns,save.pos.x-Math.floor(columns/2)));
+  const camY=Math.max(0,Math.min(E.HEIGHT-rows,save.pos.y-Math.floor(rows/2)));
   const tx=mx+camX,ty=my+camY,dx=tx-save.pos.x,dy=ty-save.pos.y;
   if(Math.abs(dx)+Math.abs(dy)===1)movePlayer(Math.sign(dx),Math.sign(dy),performance.now());
-  else setToast("화면 아래 방향키로 이동할 수 있어. 인접한 칸을 눌러도 움직여.");
+  else setToast("왼쪽 이동키로 이동하고 오른쪽 A 버튼으로 살펴볼 수 있어.");
  });
  document.addEventListener("visibilitychange",()=>{if(document.hidden){held=null;persist()}});
 }
+function configureViewport(){
+ const mobile=window.innerWidth<=760;
+ const w=mobile?320:512,h=mobile?416:320;
+ if(C.width!==w||C.height!==h){C.width=w;C.height=h;cx.imageSmoothingEnabled=false}
+}
+configureViewport();
+window.addEventListener("resize",configureViewport);
 attach();
 save=stored();
 if(save){if(!save.party.some(p=>p.hp>0)){E.healAll(save);save.active=0}updateAll();setToast("저장된 탐험을 불러왔어. 계속 이동해 보자.")}
