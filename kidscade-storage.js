@@ -102,6 +102,7 @@
     teacherCampaign: 'kidscade_teacher_campaign_v1',
     squidBridgeRecord: 'kidscade_squid_bridge_v1',
     dalgonaTraceRecord: 'kidscade_dalgona_trace_v1',
+    squidSurvivalRecord: 'kidscade_squid_survival_v1',
   });
 
   // Dynamic namespaces are prefixes, not concrete localStorage records.
