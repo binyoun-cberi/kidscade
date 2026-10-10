@@ -1,0 +1,15 @@
+/* Midnight Diner v2: course progress, debrief, readable mobile targets */
+.course-timeline{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:4px 0 8px}
+.course-step{display:grid;place-items:center;width:34px;height:26px;border:1px solid #70614c;background:#25251c;color:#84795f;font-size:11px;font-weight:900;letter-spacing:.07em}
+.course-step.done{color:#d8e5c9;border-color:#7a9d72;background:#28352a}.course-step.active{color:#261f13;background:#d7b985;border-color:#fbe0a7;box-shadow:0 0 0 2px #c69b5533}
+.course-step:before{content:'';position:absolute}
+.review-modal{max-width:540px}
+.review-modal h2{font-size:clamp(26px,5vw,44px)}
+.review-summary{text-align:center!important;font-weight:850;color:#f0ddaf!important}
+.review-zones{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:16px auto;padding:15px 5px;background:#171810;border:1px solid #514631}
+.review-zone{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;border:2px solid #798f70;color:#e9f8df;background:#304431;font-size:16px;font-weight:900}
+.review-zone.hazard{background:#5b2d2d;border-color:#b97062;color:#ffe2db}
+.review-clue{padding:13px;background:#423a26;border-left:4px solid #c7a76e;color:#f5dfb5!important;line-height:1.6}
+.review-warning{text-align:center!important;font-size:11px!important;color:#aaa087!important}
+#selectionText{pointer-events:none}
+@media(max-width:930px){.course-step{height:23px;min-width:25px;flex:1}.course-timeline{gap:6px;padding:1px 0 3px}.review-zone{width:36px;height:36px;font-size:14px}}
