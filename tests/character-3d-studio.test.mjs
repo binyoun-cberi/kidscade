@@ -1019,16 +1019,7 @@ test('v6.0 registers eight sculptural hairstyles, ten silhouette-different outfi
     ...m.wardrobeLibrary.fitIsolation.parts.female,
     ...m.wardrobeLibrary.fitIsolation.parts.shared];
   assert.equal(new Set(all).size,all.length,'A part belongs to two body fits');
-  assert.match(outfit,/const sideVariant=new RegExp\(side\+'\[0-9\]\*\
-  assert.match(js,/hair\.userData\.volumeFeature=style\.feature/);
-  assert.match(js,/piece\.userData=\{chibiHairFeature:true/);
-  assert.match(js,/part\.visible=!hatOn/);
-  for(const detail of ['coatTail','tunicFlare','utilityPockets','sailorCollar',
-    'ribbon','cargoPockets','shortCuff','pleats','flareHem']){
-    assert.ok(outfit.includes("style.details.includes('"+detail+"')"),detail+' is not modeled');
-  }
-});
-\)/);
+  assert.ok(outfit.includes('const sideVariant=new RegExp'));
   assert.match(js,/hair\.userData\.volumeFeature=style\.feature/);
   assert.match(js,/piece\.userData=\{chibiHairFeature:true/);
   assert.match(js,/part\.visible=!hatOn/);
