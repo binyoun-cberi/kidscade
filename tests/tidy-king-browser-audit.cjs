@@ -20,7 +20,7 @@ const injection=[
 'const k=(kind==="station"?(h?.key||"none"):(h?.kind||"none"))+"/"+(cover?.id||cover?.tagName);seen[k]=(seen[k]||0)+1;',
 '}return{blocked:true,index:i,kind,center:[Math.round(ox),Math.round(oy)],seen};',
 '},',
-'keys:()=>things.map(t=>t.key),stationIndex:key=>stations.findIndex(s=>s.key===key),reroll:()=>buildRoom(),positions:()=>things.map(t=>[Number(t.home.x.toFixed(2)),Number(t.home.z.toFixed(2))]),dragActive:()=>!!dragging,',
+'keys:()=>things.map(t=>t.key),stationIndex:key=>stations.findIndex(s=>s.key===key),reroll:()=>buildRoom(),positions:()=>things.map(t=>[Number(t.home.x.toFixed(2)),Number(t.home.z.toFixed(2))]),dragActive:()=>!!dragging,clearItems:()=>{for(const t of [...things])if(!t.done)placeItem(t,stations.find(s=>s.key===t.zone));return cleanCount},',
 'forceFinish:()=>{for(const t of [...things])if(!t.done)placeItem(t,stations.find(s=>s.key===t.zone));for(const s of [...stains])if(!s.done)cleanStain(s,1);return{level,done:cleanCount,total:totalCount,overlay:!$("end").classList.contains("hidden")}}',
 '};'
 ].join('\n');
@@ -118,10 +118,10 @@ await drag(p.x,p.y,to.x,to.y,c.touch);
 const after=await ev('window.__AUDIT.s().done');
 if(after!==before+1)failed.push({i,key:keys[i],kind:'drag-to-place',before,after,to});
 }
+if(c.name!=='portrait')await ev('window.__AUDIT.clearItems()');
 const stains=[];
 for(let i=0;i<s.stains;i++){const p=await ev('window.__AUDIT.point("stain",'+i+')');if(p?.blocked){stains.push(p);continue}for(let j=0;j<7;j++)await click(p.x,p.y,c.touch);}
 const played=await ev('window.__AUDIT.s()');
-if(c.name!=='portrait')await ev('window.__AUDIT.forceFinish()');
 const half=await ev('window.__AUDIT.s()');await snap(c.name+'-after');
 const forced=await ev('window.__AUDIT.forceFinish()');await sleep(850);await snap(c.name+'-success');
 const photo=await ev('({before:document.querySelector("#beforePhoto").src.length,after:document.querySelector("#afterPhoto").src.length,beforeLoaded:document.querySelector("#beforePhoto").naturalWidth,afterLoaded:document.querySelector("#afterPhoto").naturalWidth})');
