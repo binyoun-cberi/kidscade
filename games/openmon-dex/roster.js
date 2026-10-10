@@ -53,7 +53,7 @@ for(const s of db.sprites){
  const base=stats(s,stage);
  if(s.rarity==="starter"&&stage===1){base.hp+=3;base.speed+=2}
  // Early-route balance: modest water-starter endurance increase.
- if(s.id==="set1_r03_c02")base.hp+=3;
+ if(s.id==="set1_r03_c02")base.hp+=5;
  if(f.kind==="branch"&&stage===2){base.hp=Math.min(base.hp,40);base.attack=Math.min(base.attack,18)}
  const statBudget=Object.values(base).reduce((a,b)=>a+b,0);
  if(statBudget<52||statBudget>113)throw Error("stat budget "+s.id+" "+statBudget);
