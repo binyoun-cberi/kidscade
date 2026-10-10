@@ -2,6 +2,33 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "squid_survival",
+      "addedAt": "2026-10-10T22:30:00+09:00",
+      "title": "꼴뚜기 게임: 서바이벌",
+      "href": "games/squid-survival/index.html",
+      "category": "trivia",
+      "age": "low",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🏆",
+      "description": "달고나 게임과 기억의 다리를 연속으로 돌파하는 꼴뚜기 미니게임 서바이벌! 3초 시범을 보고 시작하며 한 번 실패하면 즉시 대회 탈락. 첫 라운드를 통과해야 두 번째 게임이 열리고, 두 게임을 모두 성공하면 최종 생존! 기존 두 게임은 별도로 계속 연습할 수 있어요.",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 4,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "squid_memory_bridge",
       "addedAt": "2026-10-10T19:27:42+09:00",
       "title": "꼴뚜기 게임",

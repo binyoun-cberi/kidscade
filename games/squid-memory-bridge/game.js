@@ -12,6 +12,8 @@
     resultChecks:$('resultChecks'),continue:$('continueBtn'),sound:$('soundBtn')
   };
   const ctx = ui.canvas.getContext('2d');
+  const SURVIVAL_MODE=typeof window.location?.search==='string'&&new URLSearchParams(window.location.search).get('survival')==='1'&&window.parent!==window;
+  const ROUND_TIME_MS=SURVIVAL_MODE?90000:300000;
   const SAVE_KEY = 'kidscade_squid_bridge_v1';
   const DIRECTION = {left:[-1,0],right:[1,0],up:[0,-1],down:[0,1]};
   const record = (() => {
@@ -33,7 +35,7 @@
     const secs = Math.max(0,Math.ceil(seconds));
     return String(Math.floor(secs/60)).padStart(2,'0') + ':' + String(secs%60).padStart(2,'0');
   }
-  function remaining() {return s.deadline ? Math.max(0,(s.deadline - Date.now()) / 1000) : 300;}
+  function remaining() {return s.deadline ? Math.max(0,(s.deadline - Date.now()) / 1000) : ROUND_TIME_MS/1000;}
   function seed() {
     if (globalThis.crypto?.getRandomValues) {
       const value = new Uint32Array(1);crypto.getRandomValues(value);return value[0];
@@ -95,7 +97,7 @@
       toast('같은 맵! 남은 시간은 그대로 줄어들어요.',1900);
     }
     s.phase='preview';s.previewStarted=Date.now();
-    s.previewDuration=Math.min(32000,Math.round(8000+s.stage*1800));
+    s.previewDuration=SURVIVAL_MODE?10500:Math.min(32000,Math.round(8000+s.stage*1800));
     ui.preview.hidden=false;ui.check.disabled=true;
     updateUI();
   }
@@ -124,11 +126,9 @@
   }
   function clear() {
     s.phase='cleared';ui.preview.hidden=true;ui.check.disabled=true;
-    record.best=Math.max(record.best,s.stage);
-    record.clears++;save();
-    sdk('score',s.stage);
+    if(!SURVIVAL_MODE){record.best=Math.max(record.best,s.stage);record.clears++;save();sdk('score',s.stage);}
     sdk('result',{scope:'stage',status:'completed',outcome:'clear',score:s.stage,stage:s.stage,checks:s.checks});
-    if (s.stage===1) sdk('milestone','first_bridge_clear');
+    if (!SURVIVAL_MODE&&s.stage===1) sdk('milestone','first_bridge_clear');
     sound('win');showResult(true,'');
   }
   function showResult(won,reason) {
@@ -142,14 +142,14 @@
     ui.resultTime.textContent=format(remaining());
     ui.resultChecks.textContent=s.checks+'회';
     ui.continue.textContent=won?'다음 스테이지 →':'새 맵으로 다시 시작 ↻';
-    ui.result.classList.remove('hidden');
+    if(!SURVIVAL_MODE)ui.result.classList.remove('hidden');
     updateUI();
   }
   function updateUI() {
     const map=s.map,conf=map?SquidPath.specs(s.stage):SquidPath.specs(1);
     ui.stage.textContent=String(s.stage).padStart(2,'0');
     ui.best.textContent=String(record.best);
-    ui.time.textContent=s.deadline?format(remaining()):'05:00';
+    ui.time.textContent=s.deadline?format(remaining()):format(ROUND_TIME_MS/1000);
     ui.timerBox.classList.toggle('urgent',s.deadline>0 && remaining()<=30 && (s.phase==='preview'||s.phase==='playing'));
     ui.turn.textContent='최소 '+conf.minTurns+'회 꺾임 · '+conf.width+'×'+conf.height;
     ui.checks.textContent='정답 확인 '+s.checks+'회';
@@ -285,7 +285,7 @@
     if(s.map&&(s.phase==='playing'||s.phase==='preview')){
       if(s.deadline && Date.now()>=s.deadline){fail('시간 초과');}
       else if(s.phase==='preview'&&Date.now()-s.previewStarted>=s.previewDuration){
-        if (!s.deadline) s.deadline=Date.now()+300000;
+        if (!s.deadline) s.deadline=Date.now()+ROUND_TIME_MS;
         s.phase='playing';ui.preview.hidden=true;ui.check.disabled=false;
         toast('시작! 기억한 발판을 밟으세요.');
       }
@@ -329,11 +329,16 @@
   });
   $('startBtn').addEventListener('click',startRun);
   ui.check.addEventListener('click',()=>{if(s.phase==='playing'&&remaining()>0)beginPreview(true);});
-  ui.continue.addEventListener('click',()=>{if(s.phase==='cleared'){s.stage++;startStage();}else if(s.phase==='failed')startRun();});
+  ui.continue.addEventListener('click',()=>{if(SURVIVAL_MODE)return;if(s.phase==='cleared'){s.stage++;startStage();}else if(s.phase==='failed')startRun();});
   $('helpBtn').addEventListener('click',()=>ui.help.classList.remove('hidden'));
   $('helpCloseBtn').addEventListener('click',()=>{ui.help.classList.add('hidden');ui.canvas.focus({preventScroll:true});});
   ui.sound.addEventListener('click',()=>{s.soundOn=!s.soundOn;ui.sound.textContent=s.soundOn?'♪':'×';ui.sound.setAttribute('aria-label',s.soundOn?'소리 끄기':'소리 켜기');if(s.soundOn)sound('step');});
   window.addEventListener('resize',resize,{passive:true});
   if(window.ResizeObserver)new ResizeObserver(resize).observe(ui.frame);
   updateUI();resize();requestAnimationFrame(tick);
+  if(SURVIVAL_MODE){
+    const rule=$('timeRule');
+    if(rule)rule.textContent='이번 서바이벌에서는 90초 안에 기억의 다리를 통과해야 해요. 최초 정답 경로 공개는 무료이고, 정답 확인 중에도 남은 시간은 계속 줄어듭니다.';
+    startRun();
+  }
 })();
