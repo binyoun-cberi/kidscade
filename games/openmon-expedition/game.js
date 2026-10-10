@@ -122,7 +122,7 @@ function openParty(){
  const ability=DB.combat.ABILITIES[DB.combat.abilityFor(mon)];
  const profile='<section class="kid-profile"><strong>'+esc(species(mon.id).name)+(mon.shiny?' ✨ 희귀색':'')+' · '+esc(mon.genetics.nature)+' 성격</strong>'+
  '<p>특성: <b>'+esc(ability.name)+'</b> · '+esc(ability.description)+'</p>'+
- '<div class="kid-stat-grid">'+Object.entries(label).map(([k,n])=>'<span>'+n+' <b>'+st[k]+'</b> <small>잠재력 '+mon.genetics.iv[k]+'/15</small></span>').join("")+'</div></section>';
+ '<div class="kid-stat-grid">'+Object.entries(label).map(([k,n])=>'<span>'+n+' <b>'+st[k]+'</b> <small>잠재력 '+mon.genetics.iv[k]+'/15 · 훈련 '+(mon.training?.[k]||0)+'/24</small></span>').join("")+'</div></section>';
  openGeneric("우리 키즈몬",profile+"<p>선두 키즈몬을 바꾸거나 회복약을 사용할 수 있어. 전투 중에는 교체에 한 턴이 필요해.</p>"+
  '<div class="team hud-party-list">'+$("teamList").innerHTML+'</div>'+
  '<div class="action-row"><button type="button" class="act primary" data-hud-action="potion">회복약 사용 ('+save.items.potion+'개)</button>'+
@@ -409,7 +409,8 @@ function hitEstimate(moveId){
  if(!move.power)return "변화 기술";
  const foe=battle.foe;
  const damage=DB.combat.damage({attacker:own.id,defender:foe.id,attackerLevel:own.level,
-  defenderLevel:foe.level,power:move.power,moveType:move.type});
+  defenderLevel:foe.level,power:move.power,moveType:move.type,damageClass:move.damageClass,
+   attackerMon:own,defenderMon:foe});
  return "예상 "+Math.max(1,Math.floor(damage*.62))+" 피해";
 }
 function catchEstimate(){
@@ -519,6 +520,7 @@ function resolveBattleTurn(choice){
   const gain=E.levelRewards(save,foe);
   let message=res.events.join("\n")+"\n"+foeName+" 승리! 경험치 +"+gain.earned+" · 코인 +"+gain.coins;
   if(gain.mentorHeal)message+="\n연구원의 응원! HP +"+gain.mentorHeal;
+   if(gain.training)message+="\n훈련 성장! "+({hp:"HP",attack:"공격",defense:"방어",spAttack:"특수공격",spDefense:"특수방어",speed:"속도"}[gain.training.stat]||gain.training.stat)+" +"+gain.training.amount;
   if([3,7,12].includes(save.wins+save.catches))message+="\n새로운 야생 키즈몬이 지역에 출현해!";
   if(gain.events.length){
    const own=E.activeCreature(save),newMoves=B.learnable(own).filter(id=>
