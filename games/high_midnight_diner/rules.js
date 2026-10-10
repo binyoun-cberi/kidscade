@@ -13,11 +13,11 @@ const FOODS=Object.freeze([
  {id:'cake',title:'마지막 조각 케이크',detail:'은빛 가루를 뿌린 케이크 · 7조각',banned:'dust',count:7,hazards:3,word:'은빛 가루',line:'자정이 지나면 은빛이 더 잘 보인단다.',glb:'cupcake.glb'}
 ]);
 const INGREDIENTS=Object.freeze({
- seed:{name:'붉은 씨앗',clue:'붉은 점이 세 개 모여 있으면 위험. 한 점은 안전한 장식.',safety:'붉은 점이 세 개인가요?'},
- mushroom:{name:'달빛 버섯',clue:'보라색 반달 갓과 평행한 두 줄 무늬. 일반 버섯은 갈색.',safety:'보라색 반달과 두 줄을 찾으세요.'},
- bean:{name:'그림자 콩',clue:'파란 점 두 개가 붙어 있으면 위험. 초록 점 한 개는 안전.',safety:'파란 점 두 개인가요?'},
- thread:{name:'검은 실뿌리',clue:'만두 주름 위에 검은 실선 세 줄. 일반 만두는 갈색 접힘.',safety:'주름 위 검은 실선이 세 개인지 확인하세요.'},
- dust:{name:'은빛 가루',clue:'케이크 위에 은색 마름모 네 개. 갈색 부스러기 하나는 안전.',safety:'은색 마름모가 네 개인가요?'}
+ seed:{name:'붉은 씨앗',clue:'조리 과정에서 1개씩 올린 붉은 씨앗은 뒤집힌 부침개에 섞여 겉에서 확실히 드러나지 않는다.',safety:'조리 중 어느 번호에 붉은 씨앗이 들어갔나요?'},
+ mushroom:{name:'달빛 버섯',clue:'조리 중 달빛 버섯을 집어 넣은 위치를 기억해야 한다. 국물을 저으면 색과 질감만으로는 알기 어렵다.',safety:'조리 중 버섯을 넣은 순서와 위치를 기억하세요.'},
+ bean:{name:'그림자 콩',clue:'푸른 그림자 콩과 일반 양념은 굽고 나면 색이 비슷하다. 손에 든 재료를 먼저 확인해야 한다.',safety:'어느 꼬치에 파란 콩을 묻혔는지 기억하세요.'},
+ thread:{name:'검은 실뿌리',clue:'특정 만두 속에만 검은 실뿌리가 들어간다. 쪄내면 겉모습으로는 알 수 없다.',safety:'만두를 만들 때 재료를 넣은 번호를 관찰하세요.'},
+ dust:{name:'은빛 가루',clue:'은빛 가루는 굽고 나면 설탕가루처럼 보인다. 요리사가 뿌린 위치가 더 확실한 단서다.',safety:'가루를 뿌린 위치와 순서를 기억하세요.'}
 });
 function rng(seed){let s=(Number(seed)>>>0)||0x1234abcd;return()=>((s^=s<<13,s^=s>>>17,s^=s<<5)>>>0)/4294967296;}
 function dishFor(index,rand){
@@ -29,12 +29,18 @@ function dishFor(index,rand){
    id,dangerous:dangerous.has(id),removed:false,inspected:false,
    garnish:Math.floor(rand()*4),rotation:rand()*6.28,shade:rand()
  }));
- return {spec,zones,eaten:0,successful:0,inspectionsLeft:2,asked:false};
+ // Every plated zone has exactly one corresponding, observable cooking action.
+ // Occlusion is infrequent, and never hides every dangerous addition.
+ const sequence=ids.slice().reverse();
+ const dangerEvents=sequence.filter(id=>dangerous.has(id));
+ if(dangerEvents.every(id=>zones[id].shade<.18))zones[dangerEvents[0]].shade=.7;
+ return {spec,zones,eaten:0,successful:0,inspectionsLeft:2,asked:false,
+  cookOrder:sequence,cookIndex:0,observed:[],peekCount:0};
 }
 function begin(seed){
  const value=seed===undefined?Math.floor(Math.random()*2147483647):seed;
  return {seed:value,course:0,health:100,hunger:75,suspicion:8,score:0,safeBites:0,
- dangers:0,rejections:0,discovered:[],turns:0,phase:'playing',ending:null,history:[],lastReview:null,
+ dangers:0,rejections:0,discovered:[],turns:0,phase:'cooking',ending:null,history:[],lastReview:null,
  dish:dishFor(0,rng(value))};
 }
 function limit(n){return Math.max(0,Math.min(100,n));}
@@ -80,19 +86,56 @@ function advance(state,wasRejected){
  state.hunger=limit(state.hunger-5);state.suspicion=limit(state.suspicion+5);
  if(evaluate(state))return last;
  state.dish=dishFor(state.course,rng((state.seed+state.course*7919)>>>0));
+ state.phase='cooking';
  return last;
 }
+function cookingEvent(state){
+ if(state.phase!=='cooking')return null;
+ const dish=state.dish,id=dish.cookOrder[dish.cookIndex];
+ if(id===undefined)return null;
+ return {index:dish.cookIndex,total:dish.cookOrder.length,zone:id+1,course:state.course};
+}
+function peekCooking(state){
+ if(state.phase!=='cooking')return {ok:false,message:'지금은 볼 수 없습니다.'};
+ const dish=state.dish,id=dish.cookOrder[dish.cookIndex],z=dish.zones[id];
+ if(dish.currentPeek)return {...dish.currentPeek,free:true};
+ dish.peekCount++;state.turns++;
+ state.suspicion+=dish.peekCount<=3?2:5;
+ const concealed=z.shade<.18,ingredient=concealed?'가려진 재료':z.dangerous?dish.spec.word:'일반 양념';
+ const result={ok:true,zone:id+1,concealed,ingredient,
+  message:concealed?(id+1)+'번을 살폈지만 손에 가려졌다.':
+  (id+1)+'번에 '+ingredient+'을(를) 넣는 모습을 봤다.'};
+ dish.currentPeek=result;
+ if(!concealed)dish.observed.push({zone:id+1,ingredient,dangerous:z.dangerous});
+ evaluate(state);
+ return result;
+}
+function observeCooking(state,looking){
+ if(state.phase!=='cooking')return {ok:false,message:'현재 조리 중이 아닙니다.'};
+ const dish=state.dish,id=dish.cookOrder[dish.cookIndex],z=dish.zones[id];
+ if(looking&&!dish.currentPeek)peekCooking(state);
+ if(state.phase==='finished')return {ok:false,message:'요리사가 당신을 돌려보냈습니다.'};
+ const observation=dish.currentPeek;
+ dish.cookIndex++;dish.currentPeek=null;
+ if(dish.cookIndex>=dish.cookOrder.length)state.phase='playing';
+ return {ok:true,zone:id+1,looking:!!observation,concealed:!!observation?.concealed,
+  message:observation?.message||((id+1)+'번에 재료가 들어갔지만 무엇인지는 보지 못했다.'),
+  finishedCooking:state.phase==='playing'};
+}
+
 function inspect(state,index){
  if(state.phase!=='playing')return {ok:false,message:'식사가 끝났습니다.'};
  const z=state.dish.zones[index];
  if(!z||z.removed)return {ok:false,message:'먹을 수 없는 부분입니다.'};
- if(z.inspected)return {ok:true,message:z.dangerous?'이전에 확인한 위험 재료입니다.':'이전에 확인한 안전한 부분입니다.',free:true,dangerous:z.dangerous};
+ if(z.inspected)return {ok:true,message:'전에 조사한 부분입니다. 기록한 냄새를 다시 확인하세요.',free:true};
  if(state.dish.inspectionsLeft<=0)return {ok:false,message:'이 접시의 조사 기회가 없습니다.'};
  state.dish.inspectionsLeft--;state.suspicion+=6;state.turns++;z.inspected=true;
- if(z.dangerous&&!state.discovered.includes(state.dish.spec.banned))state.discovered.push(state.dish.spec.banned);
  evaluate(state);
- return {ok:true,dangerous:z.dangerous,message:z.dangerous?
- '위험! '+state.dish.spec.word+'의 결정적인 특징이 보입니다.':'안전. 이 부분에서는 금지 재료가 발견되지 않았습니다.'};
+ // No exact answer on inspection; a noisy but useful secondary clue.
+ const strong=z.dangerous?z.garnish!==0:z.garnish===0;
+ return {ok:true,strong,message:strong?
+ '향이 진하고 평소와 다른 질감이 느껴진다. 하지만 확실하지 않다.':
+ '냄새가 약하고 다른 조각과 비슷하다. 단정할 수는 없다.'};
 }
 function eat(state,index){
  if(state.phase!=='playing')return {ok:false,message:'식사가 끝났습니다.'};
@@ -129,5 +172,5 @@ function question(state){
  const inFirst=dish.zones.filter(z=>z.id<half&&z.dangerous).length;
  return {ok:true,half,count:inFirst,message:'요리사: “처음 '+half+'조각에는 위험한 것이 '+inFirst+'개 있지. 세어 봐.”'};
 }
-return {FOODS,INGREDIENTS,begin,inspect,eat,reject,question,advance,rng,dishFor};
+return {FOODS,INGREDIENTS,begin,inspect,eat,reject,question,advance,rng,dishFor,cookingEvent,peekCooking,observeCooking};
 });
