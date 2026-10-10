@@ -1030,9 +1030,10 @@ test('v6.1 hair silhouettes use head-bone rigged volumes and pixie avoids pinche
 });
 test('v6.1 hats and face items use corrected crown/mouth registration',()=>{
   const pack=read('teacher/chibi-accessory-pack.js');
-  assert.match(pack,/referenceBox\.max\.y-\.060/);
+  assert.match(pack,/referenceBox\.max\.y-\.158/);
   assert.match(pack,/accessoryBox\.max\.y:accessoryBox\.min\.y/);
   assert.match(pack,/scalpY-\.012,hc\.z/);
+  assert.match(pack,/crownWall/);
   assert.match(pack,/eyeY-\.241/);
   assert.match(pack,/faceZ\+\.052/);
 });
