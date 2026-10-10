@@ -24,7 +24,7 @@ test('the left office and right archive are distinct walkable rooms with physica
  assert.equal(C.canMove(s,0,-46),true);
  assert.equal(C.canMove(s,-6,-46),true);
  assert.equal(C.canMove(s,6,-46),true);
- assert.equal(C.canMove(s,6,-39.1),false); // around the entrance is a solid side wall
+ assert.equal(C.canMove(s,3.5,-39.1),false); // around the entrance is a solid side wall
  assert.equal(C.canMove(s,-6,-53),true);
  assert.equal(C.canMove(s,-16,-46),false);
  assert.equal(C.canMove(s,16,-46),false);
