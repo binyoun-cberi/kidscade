@@ -37,7 +37,9 @@ function repaint(){
  $('banned').textContent=dish.spec.word;$('bites').textContent=dish.eaten+' / 3 한입';
  $('inspections').textContent=dish.inspectionsLeft+'회';
  $('selectionText').textContent=chosen===null?'어느 부분을 먹을까요?':String(chosen+1)+'번 부분 선택';
- document.querySelector('.game-layout').classList.toggle('cooking',game.phase==='cooking');
+ const layout=document.querySelector('.game-layout');
+ layout.classList.toggle('cooking',game.phase==='cooking');
+ layout.classList.toggle('eating',game.phase==='playing');
  $('cookPanel').classList.toggle('hidden',game.phase!=='cooking');
  $('memoryPanel').classList.toggle('hidden',!dish.observed.length);
  renderMemory();
@@ -110,14 +112,14 @@ function updateCookScene(){
  stage.textContent=peek?peek.message:ev.zone+'번 위치로 요리사의 손이 움직인다. 흘끔 보지 않으면 무엇인지 알 수 없다.';
  window.dispatchEvent(new CustomEvent('midnight-diner:cooking',{
   detail:{course:game.course,zone:ev.zone,step:ev.index,total:ev.total,
-   looking:!!peek,concealed:!!peek?.concealed,ingredient:peek?.ingredient||null}
+   looking:peekHeld&&!!peek,concealed:!!peek?.concealed,ingredient:peekHeld?peek?.ingredient||null:null}
  }));
 }
 function revealCooking(){
  if(!game||game.phase!=='cooking'||reviewPending)return;
  const result=R.peekCooking(game);
  if(!result.ok)return;
- sound('tap');note(result.message);
+ if(!result.free)sound('tap');note(result.message);
  if(game.phase==='finished'){finish();return;}
  updateCookScene();repaint();
 }
@@ -128,6 +130,7 @@ function startCooking(){
  $('chefLine').textContent='“'+game.dish.spec.line+'”';
  updateCookScene();repaint();
  cookTimer=setInterval(()=>{
+  if(document.hidden)return;
   if(!game||game.phase!=='cooking'||reviewPending){stopCooking();return;}
   const outcome=R.observeCooking(game,false);
   if(!outcome.ok){stopCooking();if(game.phase==='finished')finish();return;}
@@ -135,7 +138,9 @@ function startCooking(){
    stopCooking();$('cookBar').style.width='100%';
    $('chefLine').textContent='“자, 다 됐어. 이번에는 어디를 먹겠니?”';
    note('조리가 끝났습니다. 기억한 재료와 번호를 비교해 세 입을 선택하세요.');
-   repaint();reportMood(false);return;
+   repaint();reportMood(false);
+   if(window.innerWidth<=930)window.scrollTo?.({top:0,behavior:'instant'});
+   return;
   }
   updateCookScene();
   if(peekHeld)revealCooking();
@@ -147,7 +152,11 @@ function onPeekDown(ev){
  peekHeld=true;$('peekBtn').classList.add('looking');
  revealCooking();
 }
-function onPeekUp(){peekHeld=false;$('peekBtn').classList.remove('looking');}
+function onPeekUp(){
+ const previouslyHeld=peekHeld;
+ peekHeld=false;$('peekBtn').classList.remove('looking');
+ if(previouslyHeld&&game?.phase==='cooking')updateCookScene();
+}
 $('peekBtn').addEventListener('pointerdown',onPeekDown);
 for(const kind of ['pointerup','pointercancel','pointerleave'])$('peekBtn').addEventListener(kind,onPeekUp);
 window.addEventListener('pointerup',onPeekUp);
@@ -231,6 +240,7 @@ $('notebookBtn').addEventListener('click',notebook);$('closeNotebook').addEventL
 $('notebookPanel').addEventListener('click',e=>{if(e.target===$('notebookPanel'))$('notebookPanel').classList.add('hidden');});
 window.addEventListener('keyup',e=>{if(e.code==='Space')onPeekUp();});
 window.addEventListener('blur',onPeekUp);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)onPeekUp();});
 window.addEventListener('keydown',e=>{
  if(e.key==='Escape'){$('notebookPanel').classList.add('hidden');return;}
  if(e.code==='Space'&&game?.phase==='cooking'){if(!e.repeat)onPeekDown(e);e.preventDefault();return;}
