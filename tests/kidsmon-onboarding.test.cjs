@@ -19,7 +19,7 @@ test('the main road delivers the first catch tutorial for all starters, without 
    if(result.encounter){first=result;break}
   }
   assert.ok(first&&first.firstRoad,'missing fixed first road encounter');
-  assert.equal(first.encounter.id,'set1_r01_c01');
+  assert.equal(first.encounter.id,({'set1_r02_c02':'set1_r01_c01','set1_r03_c02':'set2_r02_c00','set1_r04_c02':'set5_r02_c00'})[starter]);
   assert.equal(first.encounter.level,2);
   assert.ok(s.steps<=14,'intro encounter too late');
   assert.equal(E.terrain(20,13),'grass');
@@ -121,7 +121,8 @@ test('first-route battle survival remains comparable for all three starters',()=
    let wins=0;
    for(let i=0;i<4;i++){
     const p=E.activeCreature(s);
-    const foe=i===0?E.makeCreature('set1_r01_c01',2):E.pickEncounter('meadow',rand,s);
+    const firstIds={'set1_r02_c02':'set1_r01_c01','set1_r03_c02':'set2_r02_c00','set1_r04_c02':'set5_r02_c00'};
+    const foe=i===0?E.makeCreature(firstIds[starter],2):E.pickEncounter('meadow',rand,s);
     for(let turn=0;turn<16;turn++){
      foe.hp-=D.combat.damage({attacker:p.id,defender:foe.id,attackerLevel:p.level,defenderLevel:foe.level,power:9});
      if(foe.hp<=0){E.levelRewards(s,foe);wins++;break;}
