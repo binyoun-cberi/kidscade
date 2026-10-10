@@ -259,8 +259,8 @@ function ownedSkillSet(){
 function renderMoveDexList(){
  const target=$("moveDexList");if(!target)return;
  const results=moveDexEntries(),owned=ownedSkillSet();
- if(!results.some(m=>m.id===moveDexUi.selectedId)){
-  moveDexUi.selectedId=results[0]?.id||null;moveDexUi.expanded=false;
+ if(moveDexUi.selectedId&&!results.some(m=>m.id===moveDexUi.selectedId)){
+  moveDexUi.selectedId=null;moveDexUi.expanded=false;
  }
  $("moveResultCount").textContent="검색 결과 "+results.length+"개 · 전체 "+MD.all.length+"개";
  target.innerHTML=results.length?results.map(m=>{
@@ -277,13 +277,14 @@ function renderMoveDexList(){
 function renderMoveDexDetail(){
  const panel=$("moveDexDetail");if(!panel)return;
  const entry=MD.detail(moveDexUi.selectedId);
- if(!entry){panel.className="move-detail";panel.innerHTML='<p class="move-empty">기술을 검색하거나 타입을 선택해 줘.</p>';return}
+ if(!entry){panel.className="move-detail move-detail-hint";panel.innerHTML='<p>기술 카드를 누르면 효과와 배우는 키즈몬을 볼 수 있어.</p>';return}
  const learners=MD.learners(entry.id),visible=moveDexUi.expanded?learners:learners.slice(0,12);
  const owned=new Set([...save.party,...save.box].map(x=>x.id));
  panel.className="move-detail type-"+entry.type;
  panel.innerHTML='<div class="move-detail-heading"><div class="move-detail-title">'+
   '<span class="move-type-symbol" aria-hidden="true">'+esc(entry.symbol)+'</span><h3>'+esc(entry.name)+'</h3></div>'+
-  '<span class="move-detail-kind">'+esc(entry.typeName)+' · '+esc(entry.categoryName)+'</span></div>'+
+  '<span class="move-detail-kind">'+esc(entry.typeName)+' · '+esc(entry.categoryName)+'</span>'+
+  '<button type="button" data-move-close aria-label="기술 상세 닫기" class="move-detail-close">닫기 ×</button></div>'+
   '<div class="move-detail-metrics">'+[
    ["위력",entry.power||"—"],["명중률",entry.accuracy+"%"],["PP",entry.pp],["선공",entry.priority?"+"+entry.priority:"보통"]
   ].map(([label,val])=>'<span>'+esc(label)+'<b>'+esc(String(val))+'</b></span>').join("")+'</div>'+
@@ -720,6 +721,8 @@ function attach(){
    });
    renderMoveDexDetail();$("moveDexDetail")?.scrollIntoView({behavior:"smooth",block:"nearest"});return;
   }
+  b=e.target.closest("button[data-move-close]");
+  if(b){moveDexUi.selectedId=null;moveDexUi.expanded=false;renderMoveDexList();return}
   b=e.target.closest("button[data-move-more]");
   if(b&&b.dataset.moveMore===moveDexUi.selectedId){moveDexUi.expanded=!moveDexUi.expanded;renderMoveDexDetail();return}
   b=e.target.closest("button[data-dex]");if(b){openDexDetail(b.dataset.dex);return}
