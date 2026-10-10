@@ -47,7 +47,7 @@ function setToast(message){
  toastTimer=setTimeout(()=>toast.classList.add("toast-faded"),4300);
 }
 function species(key){return sprites.get(key)}
-function maxHp(p){return DB.combat.statsAtLevel(p.id,p.level).hp}
+function maxHp(p){return DB.combat.statsAtLevel(p.id,p.level,p).hp}
 function artHtml(key,scale=1){
  const s=species(key);if(!s)return "";
  const at=DB.atlas.find(a=>a.id===s.atlas);
@@ -96,7 +96,7 @@ function renderTeam(){
  $("teamList").innerHTML=save.party.map((p,i)=>{
  const s=species(p.id),pct=barPct(p.hp,maxHp(p));
  return '<button type="button" class="member '+(i===save.active?"selected":"")+'" data-team="'+i+'" title="이 키즈몬으로 바꾸기">'+
- '<span class="member-art">'+miniArt(p.id)+'</span><span class="member-info"><b>'+esc(s.name)+' <small>Lv.'+p.level+'</small></b>'+
+ '<span class="member-art" style="filter:'+(p.shiny?'hue-rotate(95deg) saturate(1.7)':'none')+'">'+miniArt(p.id)+'</span><span class="member-info"><b>'+esc(s.name)+(p.shiny?' ✨':'')+' <small>Lv.'+p.level+'</small></b>'+
  '<small>HP '+hpText(p)+'</small><span class="hp-bar"><span class="hp-fill" style="width:'+pct+';background:'+(p.hp/maxHp(p)<.3?"#d97869":"#58ae68")+'"></span></span></span></button>'
  }).join("");
 }
@@ -117,11 +117,17 @@ function openGeneric(title,body,subtitle=""){
 }
 function openParty(){
  if(!save)return;
- openGeneric("우리 키즈몬","<p>선두 키즈몬을 바꾸거나 회복약을 사용할 수 있어. 전투 중에는 교체에 한 턴이 필요해.</p>"+
+ const mon=E.activeCreature(save),st=DB.combat.statsAtLevel(mon.id,mon.level,mon);
+ const label={hp:"HP",attack:"공격",defense:"방어",spAttack:"특수공격",spDefense:"특수방어",speed:"속도"};
+ const ability=DB.combat.ABILITIES[DB.combat.abilityFor(mon)];
+ const profile='<section class="kid-profile"><strong>'+esc(species(mon.id).name)+(mon.shiny?' ✨ 희귀색':'')+' · '+esc(mon.genetics.nature)+' 성격</strong>'+
+ '<p>특성: <b>'+esc(ability.name)+'</b> · '+esc(ability.description)+'</p>'+
+ '<div class="kid-stat-grid">'+Object.entries(label).map(([k,n])=>'<span>'+n+' <b>'+st[k]+'</b> <small>잠재력 '+mon.genetics.iv[k]+'/15</small></span>').join("")+'</div></section>';
+ openGeneric("우리 키즈몬",profile+"<p>선두 키즈몬을 바꾸거나 회복약을 사용할 수 있어. 전투 중에는 교체에 한 턴이 필요해.</p>"+
  '<div class="team hud-party-list">'+$("teamList").innerHTML+'</div>'+
  '<div class="action-row"><button type="button" class="act primary" data-hud-action="potion">회복약 사용 ('+save.items.potion+'개)</button>'+
  '<button type="button" class="act" data-hud-action="evolve">진화 확인</button>'+
- '<button type="button" class="act" data-hud-action="skills">기술 관리</button></div>',
+ '<button type="button" class="act" data-hud-action="skills">기술 관리</button><button type="button" class="act" data-hud-action="stones">진화 결정</button></div>',
  save.party.length+"/6마리 · 선택하면 선두 변경");
 }
 function openSkills(){
@@ -413,20 +419,22 @@ function renderBattle(){
  if(!battle)return;
  const foe=battle.foe,own=E.activeCreature(save),a=species(own.id),b=species(foe.id);
  const maxOwn=maxHp(own),maxFoe=maxHp(foe),side=battle.turnState;
- $("ownName").textContent=a.name+" Lv."+own.level;
- $("foeName").textContent=b.name+" Lv."+foe.level;
+ $("ownName").textContent=a.name+(own.shiny?" ✨":"")+" Lv."+own.level;
+ $("foeName").textContent=b.name+(foe.shiny?" ✨":"")+" Lv."+foe.level;
  $("ownHpLabel").textContent=own.hp+"/"+maxOwn;
  $("foeHpLabel").textContent=foe.hp+"/"+maxFoe;
  $("ownHpBar").style.width=barPct(own.hp,maxOwn);
  $("foeHpBar").style.width=barPct(foe.hp,maxFoe);
  $("ownHpBar").style.background=own.hp/maxOwn<.3?"#d86b5d":"#58ae68";
  $("foeHpBar").style.background=foe.hp/maxFoe<.3?"#d86b5d":"#58ae68";
- const stateText=(v)=>!v?"":v.condition?({burn:"화상",slow:"둔화",weaken:"약화"}[v.condition]||v.condition):
+ const stateText=(v)=>!v?"":v.stunPending?"감전 · 행동 불가":v.trapTurns>0?"속박":v.counter?"반격 대기":v.condition?({burn:"화상",slow:"둔화",weaken:"약화"}[v.condition]||v.condition):
   v.shield?"방어막":v.attack>0?"공격↑":v.speed>0?"속도↑":"";
  $("ownStatus").textContent=stateText(side.player);
  $("foeStatus").textContent=stateText(side.foe);
  $("ownArt").innerHTML=artHtml(own.id);
+  $("ownArt").style.filter=own.shiny?"hue-rotate(95deg) saturate(1.7)":"none";
  $("foeArt").innerHTML=artHtml(foe.id);
+  $("foeArt").style.filter=foe.shiny?"hue-rotate(95deg) saturate(1.7)":"none";
  $("battleZone").textContent=E.ZONES.find(z=>z.key===battle.zone)?.name||"비밀숲";
  const bg=battle.zone==="cave"?"Cave_Back.png":"Forest_Background.png";
  $("battleBackdrop").style.backgroundImage="linear-gradient(#ffffff15,#bdd2a725),url('"+ASSET+"more%20assets/"+bg+"')";
@@ -491,7 +499,7 @@ function resolveBattleTurn(choice){
  const res=B.resolve({save,foe,battle,action:choice,random:Math.random,
   rookieCap});
  if(!res.ok){
-  appendBattle(res.reason==="pp"?"이 기술은 PP가 부족해! 다른 기술을 선택해.":"지금은 사용할 수 없어.");
+  appendBattle(res.reason==="pp"?"이 기술은 PP가 부족해! 다른 기술을 선택해.":res.reason==="trapped"?"속박 상태에서는 교체할 수 없어.":"지금은 사용할 수 없어.");
   renderBattle();return;
  }
  appendBattle(res.events.join("\n"));
@@ -541,6 +549,7 @@ function evolveIfReady(){
 }
 function showSwap(){
  if(!save||!battle)return;
+ if(battle.turnState?.player?.trapTurns>0){setToast("속박 상태에서는 교체할 수 없어.");return}
  openGeneric("교체할 키즈몬",'<p>교체 행동은 우선 처리되며 상대가 기술을 사용할 수 있어.</p><div class="shop-list">'+save.party.map((p,i)=>
  '<div class="shop-item">'+miniArt(p.id)+'<div><strong>'+esc(species(p.id).name)+'</strong><small>Lv.'+p.level+' / HP '+hpText(p)+'</small></div><button type="button" data-swap="'+i+'" '+(i===save.active||p.hp<=0?"disabled":"")+'>선택</button></div>').join("")+'</div>');
 }
