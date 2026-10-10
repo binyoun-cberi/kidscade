@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 
 const R = window.OtaRules;
-if (!R) throw new Error('OtaRules is missing');
+const C3 = window.OtaChapter3;
+if (!R || !C3) throw new Error('Ota chapter rules are missing');
 const el = id => document.getElementById(id);
 const canvas = el('scene');
 const hud = { objective:el('objective'), stage:el('stage'), prompt:el('prompt'),
   message:el('message'), danger:el('danger'), noise:el('static'), action:el('action'),
-  echo:el('echoWarning'), echoFill:el('echoFill'), echoText:el('echoText') };
+  echo:el('echoWarning'), echoFill:el('echoFill'), echoText:el('echoText'),
+  gaze:el('gazeWarning'), gazeFill:el('gazeFill'), records:el('recordStatus') };
 const overlays = { intro:el('intro'), fix:el('fixPanel'), ending:el('ending') };
 const state = R.initialState();
 const player = { x:0, z:4.8, yaw:0, pitch:0, moving:false };
@@ -17,6 +19,10 @@ let joystickPointer = null, joystick = { x:0, y:0 }, mobileRun = false;
 let corridorMesh, corridorWord, doorMesh, doorWord, personWord, monsterWord, enemyGroup;
 let echoMark, echoWasActive=false; const shiftingWords=[];
 let currentInteraction = null;
+const chapterVisual = {officeSeal:null,officeWord:null,finalSeal:null,finalWord:null,
+  watcher:null,watcherText:null,officeRecord:null,archiveRecord:null,anomaly:null,anomalyChanged:false};
+const CHECKPOINT_KEY='kidscade-ota-v3-checkpoint';
+let lastGazeAwake=false;
 const touchDevice = matchMedia('(pointer:coarse)').matches;
 let audioCtx = null;
 
@@ -94,7 +100,14 @@ function scenery() {
   box(.22,3.26,45,3.38,1.61,-15.15,wallMat);
   box(6.9,.12,45,0,3.27,-15.15,wallMat);
   box(6.9,3.26,.2,0,1.61,7.05,wallMat);
-  box(6.9,3.26,.2,0,1.61,-37.55,wallMat);
+  // The old dead-end becomes the hub; two side doorways connect real rooms.
+  box(6.9,.12,30,0,-.12,-52.6,floorMat);
+  box(6.9,.12,30,0,3.27,-52.6,wallMat);
+  box(6.9,3.26,.2,0,1.61,-67.55,wallMat);
+  for(const x of [-3.38,3.38]){
+    box(.22,3.26,6.8,x,1.61,-40.9,wallMat);
+    box(.22,3.26,18.1,x,1.61,-58.5,wallMat);
+  }
   // This corridor only opens when its meaning is restored.
   box(2.18,3.26,.22,-2.36,1.61,-25.85,wallMat);
   box(2.18,3.26,.22,2.36,1.61,-25.85,wallMat);
@@ -118,8 +131,8 @@ function scenery() {
   box(2.4,.54,.2,0,2.99,-30.15,wallMat);
   doorMesh = box(2.38,2.69,.17,0,1.37,-30.15,warnMat);
   doorWord = label('벽','#e66a77',0,1.65,-30.037,0,0,1.32,.89);
-  label('출구','#e8d7ad',0,2.4,-35.5,0,0,1.7,.78);
-  label('기록 종료','#8c9dab',0,1.6,-37.37,0,0,2.5,.65);
+  label('제2구역','#e8d7ad',0,2.4,-35.5,0,0,1.7,.78);
+  label('좌: 사무실     우: 서고','#afc9c9',0,1.55,-38.6,0,0,3.6,.55);
   for (let z=5.8;z>-36.8;z-=1.5) {
     for (let y=.52;y<3.04;y+=.79) {
       stamp('벽','#a3adb9',-3.245,y,z,0,Math.PI/2,.68,.44);
@@ -170,6 +183,7 @@ function scenery() {
   monsterWord.visible = false;
   label('문이었던 것','#a9a0a2',-2.70,1.82,-29.2,0,Math.PI/2,1.5,.55);
   label('벽이 아니다','#b5a5a9',2.70,1.82,-29.2,0,-Math.PI/2,1.65,.55);
+  buildChapterThreeRooms();
   buildStamps();
   enemyGroup = new THREE.Group(); scene.add(enemyGroup);
   [['사람','#9499a4',0,2.15,1.0,.43],['무언가','#f16b7c',0,1.58,1.85,.75],
@@ -181,6 +195,114 @@ function scenery() {
   });
   enemyGroup.visible = false;
 }
+
+function buildChapterThreeRooms(){
+  for(const [side,title] of [[-1,'뒤틀린 사무실'],[1,'이름 없는 서고']]){
+    const cx=side*9.35;
+    box(12.3,.12,16.7,cx,-.12,-47.2,floorMat);
+    box(12.3,.12,16.7,cx,3.27,-47.2,wallMat);
+    box(.2,3.24,16.7,side*15.52,1.6,-47.2,wallMat);
+    for(const z of [-55.6,-38.85])box(12.3,3.2,.2,cx,1.6,z,wallMat);
+    for(let x=side*4.4;Math.abs(x)<15.1;x+=side*1.55){
+      for(let z=-40;z>-54.9;z-=2.05){
+        stamp('바닥','#7e91a0',x,.018,z,-Math.PI/2,0,1.1,.5);
+        stamp('천장','#687988',x,3.19,z,Math.PI/2,0,1.1,.49);
+      }
+    }
+    for(let z=-40.3;z>-54.9;z-=1.5){
+      for(let y=.58;y<3.0;y+=.88)stamp('벽','#93a1b0',side*15.36,y,z,0,side<0?Math.PI/2:-Math.PI/2,.66,.48);
+    }
+    label(title,'#d6d0ba',cx,2.52,-55.47,0,0,3.5,.6);
+    label(side<0?'사물은 거짓 이름을 가진다':'너무 오래 읽지 마라',
+      '#b8c2cc',cx,1.68,-55.44,0,0,3.7,.50);
+  }
+  for(let z=-38.3;z>-65.5;z-=1.65){
+    for(let x=-2.55;x<2.7;x+=1.45){
+      stamp('바닥','#80909b',x,.018,z,-Math.PI/2,0,1.05,.5);
+      stamp('천장','#70808d',x,3.19,z,Math.PI/2,0,1.07,.5);
+    }
+    if(z> -44.0 || z< -49.1){
+      for(let y=.52;y<3.0;y+=.79){
+        stamp('벽','#8e9eaa',-3.24,y,z,0,Math.PI/2,.67,.45);
+        stamp('벽','#8a9ca9',3.24,y,z,0,-Math.PI/2,.67,.45);
+      }
+    }
+  }
+  label('사무실','#ddcaaf',-3.25,2.5,-45.8,0,Math.PI/2,1.35,.6);
+  label('서고','#ddcaaf',3.25,2.5,-45.8,0,-Math.PI/2,1.3,.6);
+  label('사무실 · 책상을 다시 부르세요','#c7bda9',-7.6,2.63,-39.05,0,0,4.2,.58);
+  // The left room is separated by a name-driven wall, with a physically openable passage.
+  box(.18,3.25,7.5,-11,1.62,-43.25,wallMat);
+  box(.18,3.25,5.45,-11,1.62,-52.85,wallMat);
+  box(.18,.56,3.3,-11,3.00,-48.65,wallMat);
+  chapterVisual.officeSeal=box(.18,2.70,3.3,-11,1.36,-48.65,warnMat);
+  chapterVisual.officeWord=label('벽','#e47682',-10.83,1.62,-48.65,0,Math.PI/2,1.55,.77);
+  label('여기에 있었던 것은 책상','#d8b58e',-8.6,1.8,-40.0,0,0,3.0,.53);
+  box(1.8,.72,.9,-13.5,.40,-52.0,propMat);
+  chapterVisual.officeRecord=label('기록 A','#eac58c',-13.0,1.38,-51,0,Math.PI/2,1.65,.58);
+  label('누군가는 벽이라고 적었다','#b0a0a4',-14.8,2.02,-49,0,Math.PI/2,2.2,.6);
+  // Archive shelves are present as words, not impassable invisible props.
+  for(const [x,z] of [[6,-42],[6,-53],[14,-42],[14,-53]]){
+    box(.22,2.35,2.4,x,1.2,z,propMat);
+    label('서가','#b0b9cb',x,1.7,z+.93,0,0,1.2,.53);
+  }
+  label('쳐다보지 마십시오','#d48e97',8.6,2.55,-40,0,0,3.2,.58);
+  chapterVisual.archiveRecord=label('기록 B','#eac58c',12.8,1.32,-51,0,0,1.75,.58);
+  chapterVisual.watcher=label('사람','#e4dae1',10.5,1.7,-44.5,0,0,1.35,.88);
+  chapterVisual.watcherText=label('나를 봐','#f07181',10.5,2.43,-44.5,0,0,2.0,.57);
+  chapterVisual.watcherText.visible=false;
+  // Central archive opens only after both records are found.
+  box(2.2,3.26,.23,-2.35,1.63,-58.65,wallMat);
+  box(2.2,3.26,.23,2.35,1.63,-58.65,wallMat);
+  box(2.55,.54,.2,0,3,-58.65,wallMat);
+  chapterVisual.finalSeal=box(2.52,2.72,.19,0,1.36,-58.65,warnMat);
+  chapterVisual.finalWord=label('봉인','#d66c7a',0,1.73,-58.52,0,0,2,.91);
+  label('기록 0 / 모든 이름의 시작','#aab8c7',0,2.32,-63.1,0,0,4,.58);
+  label('나','#eee5e3',0,1.45,-65.5,0,0,1.2,1);
+  chapterVisual.anomaly=label('의자','#a3b1be',-7.2,1.38,-41,0,0,1.43,.66);
+}
+function syncChapterVisuals(){
+  const c=C3.ensure(state);
+  if(c.officeFixed){
+    chapterVisual.officeSeal.visible=false;
+    chapterVisual.officeWord.visible=false;
+  }
+  if(c.finalFixed){
+    chapterVisual.finalSeal.visible=false;
+    chapterVisual.finalWord.visible=false;
+  }
+  chapterVisual.officeRecord.visible=!c.records.office;
+  chapterVisual.archiveRecord.visible=!c.records.archive;
+  if(state.doorFixed){
+    doorMesh.visible=false;doorWord.visible=false;
+  }
+  if(state.corridorFixed){
+    corridorMesh.visible=false;corridorWord.visible=false;
+    shiftingWords.forEach(v=>{v.mesh.visible=false;});
+  }
+}
+function saveChapterCheckpoint(){
+  const data=C3.makeCheckpoint(state);
+  if(!data)return;
+  try{sessionStorage.setItem(CHECKPOINT_KEY,JSON.stringify(data));}catch(_){}
+}
+function loadChapterCheckpoint(){
+  try{const raw=sessionStorage.getItem(CHECKPOINT_KEY);return raw?JSON.parse(raw):null;}catch(_){return null;}
+}
+function respawnAtCheckpoint(){
+  const data=loadChapterCheckpoint();
+  if(!C3.restore(state,data))return false;
+  Object.assign(player,{x:C3.START.x,z:C3.START.z,yaw:0,pitch:0,moving:false});
+  failed=false;overlays.ending.classList.add('closed');overlays.fix.classList.add('closed');
+  document.body.classList.remove('hidden-in-locker');
+  hud.objective.textContent=C3.objective(state);
+  hud.stage.textContent='기록이 저장된 마지막 지점';
+  hud.echo.classList.remove('show');hud.danger.style.opacity='0';
+  chapterVisual.watcher.visible=true;chapterVisual.watcherText.visible=false;
+  syncChapterVisuals();announce('기록이 복원되었습니다. 다시 시작합니다.',false,3);
+  return true;
+}
+
 scenery();
 
 function announce(text, red=false, seconds=3.6) {
