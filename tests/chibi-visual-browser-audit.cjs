@@ -600,6 +600,60 @@ const errors=[];
     cached:previews.tiles.filter(x=>x.hasCache).length,
     wholeImageHashes:thumbValues.map(({name,hash,contrasting})=>({name,hash,contrasting}))};
 
+  // v6.1 focused repair evidence — capture actual browser screenshots, not
+  // just scene graph assertions. The same avatar/view permits before/after.
+  report.v61Repairs={cases:[]};
+  for(const fit of ['male','female']){
+    await setFit(fit);
+    const hairStyles=fit==='male'
+      ?['kidscade_male_hair_spiky','kidscade_male_hair_mullet']
+      :['chibi_female_hair_pixie','chibi_female_hair_twintail',
+        'chibi_female_hair_curl','chibi_female_hair_hime'];
+    for(const name of hairStyles){
+      const selected=await evalPage("(()=>{const e=document.getElementById('chibiHair');"+
+        "e.value="+JSON.stringify(name)+";e.dispatchEvent(new Event('change',{bubbles:true}));return e.value})()");
+      assert.equal(selected,name,'v6.1 focused hair picker rejected '+name);
+      for(const [clip,view,phase] of [['IDLE','front',0],['IDLE','side',0],
+        ['WALK','threeQuarter',.5]]){
+        const pose=await sample(clip,view,phase,'v61-hair-'+name);
+        assert.ok(pose.selectedParts.includes(name),'Missing focused hairstyle '+name);
+        report.v61Repairs.cases.push({name,clip,view,phase});
+      }
+    }
+  }
+  for(const [fit,category,name,other] of [
+    ['male','bottom','chibi_male_trackpants','kidscade_male_tshirt'],
+    ['male','bottom','chibi_male_cargo','kidscade_male_tshirt'],
+    ['female','top','chibi_female_sailor','skirt'],
+    ['female','top','chibi_female_blazer','skirt']
+  ]){
+    await setFit(fit);
+    await selectGarment(category==='top'?'bottom':'top',other);
+    await selectGarment(category,name);
+    for(const [clip,view,phase] of [['IDLE','front',0],['RUN','side',.75]]){
+      const pose=await sample(clip,view,phase,'v61-outfit-'+name);
+      assert.ok(pose.selectedParts.includes(name),'Missing focused outfit '+name);
+      report.v61Repairs.cases.push({name,clip,view,phase});
+    }
+  }
+  await setFit('male');
+  for(const name of ['chibi_hat_baseball','chibi_face_mask','chibi_face_sunglasses']){
+    const current=await evalPage('window.__kc3dAudit.accessoryCatalog()');
+    for(const previous of current.filter(x=>x.visible&&(x.slot==='hat'||x.slot==='face'))){
+      await evalPage("(()=>{const e=document.querySelector('[data-chibi-part="+
+        JSON.stringify(previous.id)+"]');if(e){e.checked=false;"+
+        "e.dispatchEvent(new Event('change',{bubbles:true}))}})()");
+    }
+    const style=accessories.find(a=>a.id===name);
+    const selected=await chooseAccessory(style.category,name);
+    assert.equal(selected.name,name,'Missing focused accessory '+name);
+    for(const view of ['front','side']){
+      const pose=await sample('IDLE',view,0,'v61-accessory-'+name);
+      assert.ok(pose.selectedParts.includes(name),'Missing focused accessory image '+name);
+      report.v61Repairs.cases.push({name,clip:'IDLE',view,phase:0});
+    }
+  }
+
   // Collect joint trajectories as evidence, but do not claim automatic
   // foot-ground/contact correctness based on bone-pivot height alone.
   for(const clip of ['WALK','RUN']){
