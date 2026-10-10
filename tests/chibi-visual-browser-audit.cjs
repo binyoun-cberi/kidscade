@@ -136,6 +136,12 @@ const errors=[];
       const mesh=geometry.find(entry=>entry.name===name);
       assert.ok(mesh?.available&&mesh?.vertices>100,'Hair mesh absent: '+name);
       assert.equal(mesh.fit,fit,'Hair fit mismatch: '+name);
+      const feature=JSON.parse(fs.readFileSync(path.join(ROOT,'chibi/asset-manifest.json'),'utf8'))
+        .outfitLibrary.expansionV60[fit].hair.includes(name);
+      if(feature){
+        assert.ok(mesh.volumeFeature,'v6.0 hair lacks independent silhouette volume: '+name);
+        assert.ok(mesh.volumeMeshes>=1,'v6.0 hair has no 3D mesh pieces: '+name);
+      }
       const expr="(()=>{const select=document.querySelector('#chibiHair');select.value="+JSON.stringify(name)+";select.dispatchEvent(new Event('change',{bubbles:true}));return {choice:select.value,visible:window.__kc3dAudit.hairCatalog().filter(x=>x.visible).map(x=>x.name)}})()";
       const state=await evalPage(expr);
       assert.equal(state.choice,name,'Hair selector did not change');
@@ -143,7 +149,7 @@ const errors=[];
       report.hairPack.variants.push({name,fit,vertices:mesh.vertices,fingerprint:mesh.fingerprint});
     }
   }
-  assert.equal(new Set(report.hairPack.variants.map(x=>x.fingerprint)).size,16,
+  assert.equal(new Set(report.hairPack.variants.map(x=>x.fingerprint)).size,24,
     'Not all hairstyle choices have distinct 3D geometry');
   await evalPage("document.querySelector('[data-body-fit=\\\"male\\\"]').click()");
 
@@ -167,6 +173,22 @@ const errors=[];
     report.cases.push({...pose,image:file,imageBytes:bytes.length});
     return pose;
   };
+
+  // Additional rotating WebGL close-ups for each new physically volumetric hair.
+  const expansion=JSON.parse(fs.readFileSync(path.join(ROOT,'chibi/asset-manifest.json'),'utf8'))
+    .outfitLibrary.expansionV60;
+  for(const fit of ['male','female']){
+    await evalPage("document.querySelector('[data-body-fit="+JSON.stringify(fit)+"]').click()");
+    for(const name of expansion[fit].hair){
+      const chosen=await evalPage("(()=>{const el=document.getElementById('chibiHair');el.value="+
+        JSON.stringify(name)+";el.dispatchEvent(new Event('change',{bubbles:true}));"+
+        "return window.__kc3dAudit.hairCatalog().find(x=>x.name==="+JSON.stringify(name)+")})()");
+      assert.ok(chosen?.visible&&chosen.volumeMeshes>=1,'New sculptural hairstyle invisible: '+name);
+      await sample('IDLE','threeQuarter',0,'v60-hair-'+name);
+      await sample('WALK','side',.25,'v60-hair-'+name);
+    }
+  }
+  await evalPage("document.querySelector('[data-body-fit=\"male\"]').click()");
 
   // Hard geometry ownership: verify body tabs are separate workspaces in a
   // real Chrome session and incompatible parts never enter UI or output.
@@ -293,10 +315,10 @@ const errors=[];
       "visible:window.__kc3dAudit.outfitCatalog().filter(x=>x.visible&&x.category==="+JSON.stringify(category)+").map(x=>x.name)};"+
     "})()");
   const catalog3d=await evalPage('window.__kc3dAudit.outfitCatalog()');
-  assert.equal(catalog3d.length,20,'Must have exactly 20 catalogued top/bottom styles');
+  assert.equal(catalog3d.length,30,'Must have exactly 30 catalogued top/bottom styles');
   const newStyles=catalog3d.filter(x=>x.name.startsWith('chibi_'));
-  assert.equal(newStyles.length,15,'Must have 15 new generated styles');
-  assert.equal(new Set(newStyles.map(x=>x.fingerprint)).size,15,
+  assert.equal(newStyles.length,25,'Must have 25 generated distinct styles');
+  assert.equal(new Set(newStyles.map(x=>x.fingerprint)).size,25,
     'New garments do not all have distinct skinned-shell geometry');
   assert.ok(newStyles.every(x=>x.meshSafety?.meshSafety==='bounded-deformation-with-local-triangle-winding-and-area-v5.5'),
     'Generated garment missed triangle stability guard');
@@ -306,10 +328,10 @@ const errors=[];
     assert.ok(meshSafety.recoveryPasses<=12,'Unbounded garment stabilization '+name);
   }
   const skinAudit=await evalPage('window.__kc3dAudit.garmentSkinAudit()');
-  // Nine top variants have two continuous sleeves each (18).
-  // Five long trouser styles have two legs and one hip yoke each (15).
-  assert.equal(skinAudit.length,33,'Missing sleeves, trouser legs or crotch-covering hip yokes');
-  assert.equal(skinAudit.filter(x=>x.piece.endsWith('_hip_yoke')).length,5,
+  // Thirteen tops with sleeves = 26 arm meshes, seven full trousers = 21
+  // leg/yoke meshes. Old 9 tops + v6 four new sleeved tops.
+  assert.equal(skinAudit.length,47,'Missing sleeves, trouser legs or crotch-covering hip yokes');
+  assert.equal(skinAudit.filter(x=>x.piece.endsWith('_hip_yoke')).length,7,
     'Some trouser styles still expose an unconnected crotch gap');
   assert.ok(skinAudit.filter(x=>x.piece.endsWith('_hip_yoke'))
     .every(x=>x.transfer.region==='pelvis'),'Hip yokes must use pelvis-weight blending');
@@ -331,7 +353,7 @@ const errors=[];
       if(piece.piece==='chibi_male_hoodie_continuousSleeve_left'
           ||piece.piece==='chibi_female_jacket_continuousSleeve_left')
         console.log('CHIBI_ARM_COVERAGE '+JSON.stringify({piece:piece.piece,...piece.transfer}));
-      const isPuff=piece.piece.startsWith('chibi_female_blouse_');
+      const isPuff=piece.piece.startsWith('chibi_female_blouse_')||piece.piece.startsWith('chibi_female_sailor_');
       if(isPuff){
         assert.ok(piece.transfer.triangles>12,'Puff blouse lost its upper-arm triangles: '+piece.piece);
         assert.ok(piece.transfer.minY>.91,'Puff blouse sleeve extends past elbow: '+piece.piece);
@@ -349,13 +371,28 @@ const errors=[];
   }
   report.outfitPack.skinTransfer={pieces:skinAudit.length,details:skinAudit};
 
-  for(const name of ['chibi_male_hoodie','chibi_male_bomber','chibi_male_varsity','chibi_male_oxford','chibi_male_sweater','chibi_female_cardigan','chibi_female_knit','chibi_female_jacket']){
+  for(const name of ['chibi_male_hoodie','chibi_male_bomber','chibi_male_varsity','chibi_male_oxford','chibi_male_sweater',
+    'chibi_female_cardigan','chibi_female_knit','chibi_female_jacket',
+    'chibi_male_raincoat','chibi_female_windbreaker','chibi_female_tunic']){
     const style=catalog3d.find(x=>x.name===name);
     assert.ok(style?.extras>=4,'Long sleeves missing from outerwear style: '+name);
   }
   assert.ok(catalog3d.find(x=>x.name==='chibi_female_blouse')?.extras>=6,
     'Blouse missing modeled puff sleeves');
-  for(const name of ['chibi_male_jeans','chibi_male_joggers','chibi_male_chinos','chibi_female_jeans','chibi_female_widepants']){
+  for(const fit of ['male','female']){
+    for(const name of [...expansion[fit].top,...expansion[fit].bottom]){
+      const style=catalog3d.find(x=>x.name===name);
+      if(name==='chibi_female_pleated'){
+        assert.ok(style?.extras>=1,'Pleated skirt lost waist seam: '+name);
+        // Shape is sculpted into the skinned skirt; avoiding detached cones
+        // is more important than satisfying a decorative mesh count.
+        assert.ok(style?.meshSafety?.residualUnsafeTriangles===0,
+          'sculpted pleats distorted the original skirt triangulation');
+      }else assert.ok(style?.extras>=2,'v6.0 outfit lacks genuine 3D silhouette details: '+name);
+    }
+  }
+  for(const name of ['chibi_male_jeans','chibi_male_joggers','chibi_male_chinos',
+    'chibi_female_jeans','chibi_female_widepants','chibi_male_cargo','chibi_female_flarepants']){
     const style=catalog3d.find(x=>x.name===name);
     assert.ok(style?.extras>=3,'Trousers must have separate left and right skinned leg meshes: '+name);
   }
@@ -364,7 +401,7 @@ const errors=[];
     await setFit(fit);
     for(const category of ['top','bottom']){
       const names=outfits[fit][category];
-      assert.equal(names.length,category==='top'?6:4,'Wrong style count for '+fit+'/'+category);
+      assert.equal(names.length,category==='top'?9:6,'Wrong style count for '+fit+'/'+category);
       for(const name of names){
         const expected=catalog3d.find(x=>x.name===name);
         assert.ok(expected?.available&&expected.vertices>100,'Missing rigged shell '+name);
