@@ -32,7 +32,7 @@
     const secs = Math.max(0,Math.ceil(seconds));
     return String(Math.floor(secs/60)).padStart(2,'0') + ':' + String(secs%60).padStart(2,'0');
   }
-  function remaining() {return Math.max(0,(s.deadline - Date.now()) / 1000);}
+  function remaining() {return s.deadline ? Math.max(0,(s.deadline - Date.now()) / 1000) : 300;}
   function seed() {
     if (globalThis.crypto?.getRandomValues) {
       const value = new Uint32Array(1);crypto.getRandomValues(value);return value[0];
@@ -78,7 +78,7 @@
       ui.intro.classList.remove('hidden');ui.result.classList.add('hidden');s.phase='intro';return;
     }
     s.index=0;s.checks=0;s.failedCell=-1;s.camera=0;
-    s.deadline=Date.now()+300000;
+    s.deadline=0; // Initial route preview is free; the five-minute clock starts afterward.
     ui.result.classList.add('hidden');ui.intro.classList.add('hidden');ui.help.classList.add('hidden');
     beginPreview(false);
     resize();updateUI();
@@ -268,8 +268,9 @@
     if(time-s.lastFrame<25) return;
     const delta=Math.min(100,time-(s.lastFrame||time));s.lastFrame=time;
     if(s.map&&(s.phase==='playing'||s.phase==='preview')){
-      if(Date.now()>=s.deadline){fail('시간 초과');}
+      if(s.deadline && Date.now()>=s.deadline){fail('시간 초과');}
       else if(s.phase==='preview'&&Date.now()-s.previewStarted>=s.previewDuration){
+        if (!s.deadline) s.deadline=Date.now()+300000;
         s.phase='playing';ui.preview.hidden=true;ui.check.disabled=false;
         toast('시작! 기억한 발판을 밟으세요.');
       }
