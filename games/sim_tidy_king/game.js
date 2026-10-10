@@ -395,8 +395,11 @@ canvas.addEventListener('pointerup',pointerUp);
 canvas.addEventListener('pointercancel',()=>{mouseDown=null;scrubbing=null});
 canvas.addEventListener('wheel',e=>{if(!running)return;zoom=THREE.MathUtils.clamp(zoom+Math.sign(e.deltaY)*.07,.79,1.5);cameraMove();e.preventDefault()},{passive:false});
 function cameraMove(){
- const angle=.56+turn;const portraitFit=Math.max(1,Math.min(1.68,.78/camera.aspect));const radius=14.9*zoom*portraitFit;
- camera.position.set(Math.sin(angle)*radius,10.8*zoom*portraitFit,Math.cos(angle)*radius);
+ const angle=.56+turn;
+ const portraitFit=Math.max(1,Math.min(1.90,.87/camera.aspect));
+ const landscapeFit=camera.aspect>1.80?.86:1;
+ const radius=14.9*zoom*portraitFit*landscapeFit;
+ camera.position.set(Math.sin(angle)*radius,10.8*zoom*portraitFit*landscapeFit,Math.cos(angle)*radius);
  camera.lookAt(0,.10,-.2);
 }
 $('rotateLeft').onclick=()=>{turn=THREE.MathUtils.clamp(turn-.22,-.42,.6);cameraMove()};
