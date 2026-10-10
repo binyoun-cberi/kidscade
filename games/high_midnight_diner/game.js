@@ -164,7 +164,7 @@ function startCooking(){
   if(outcome.revealed){
    const peek=game.dish.currentPeek;
    if(peek)note(outcome.message, R.peekCost(game.dish.peekCount-1)>0?'danger':'good');
-   sound('safe');renderMemory();
+   sound(R.peekCost(game.dish.peekCount-1)>0?'warn':'safe');renderMemory();
   }
   if(outcome.warned){note('어깨가 움직였다! 지금 눈을 떼야 해.','danger');reportMood(false);}
   if(outcome.caught){
