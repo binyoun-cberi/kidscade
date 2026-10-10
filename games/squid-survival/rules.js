@@ -28,25 +28,25 @@
     }),
     Object.freeze({
       id:'redlight',gameId:'squid_redlight',title:'멈춰! 움직여!',subtitle:'초록불에는 달리고 빨간불에는 정지',
-      src:'./redlight.html',rule:'초록불에는 꾹 누르고, 노란불에 손을 떼세요.',
+      src:'./redlight/index.html',rule:'초록불에는 꾹 누르고, 노란불에 손을 떼세요.',
       warning:'빨간불에 움직이면 즉시 탈락!',duration:'50초',skill:'반응속도 · 행동 억제',icon:'●',
       tip:'멈추는 신호에 미리 반응하세요.',detail:'50초 안에 초록불에만 움직여 도착하면 통과'
     }),
     Object.freeze({
       id:'tug',gameId:'squid_tug',title:'줄다리기',subtitle:'타이밍에 맞춰 줄을 당기세요',
-      src:'./tug.html',rule:'움직이는 표시가 초록색 중앙을 지날 때 당기세요.',
+      src:'./tug/index.html',rule:'움직이는 표시가 초록색 중앙을 지날 때 당기세요.',
       warning:'연타하면 피로가 쌓여 오히려 밀려요!',duration:'38초',skill:'리듬 · 충동 억제',icon:'↔',
       tip:'연타보다 정확한 한 번이 더 강합니다.',detail:'줄의 힘을 100%까지 끌어오면 통과'
     }),
     Object.freeze({
       id:'marbles',gameId:'squid_marbles',title:'구슬 승부',subtitle:'구슬 수를 세어 올바른 주머니 선택',
-      src:'./marbles.html',rule:'두 주머니를 비교해 홀짝·수량 조건에 맞게 고르세요.',
+      src:'./marbles/index.html',rule:'두 주머니를 비교해 홀짝·수량 조건에 맞게 고르세요.',
       warning:'다섯 문제 중 두 번 틀리면 탈락!',duration:'57초',skill:'수 감각 · 논리',icon:'◉',
       tip:'서두르기보다 구슬 수를 정확히 세세요.',detail:'5문제 중 적어도 4문제를 맞히면 통과'
     }),
     Object.freeze({
       id:'final',gameId:'squid_final',title:'꼴뚜기 결승전',subtitle:'기억·타이밍·계산의 마지막 관문',
-      src:'./final.html',rule:'모양 네 개를 기억하고, 두 번 타이밍을 맞춘 뒤 계산하세요.',
+      src:'./final/index.html',rule:'모양 네 개를 기억하고, 두 번 타이밍을 맞춘 뒤 계산하세요.',
       warning:'하나라도 틀리면 최종 라운드 탈락!',duration:'65초',skill:'기억 · 반응 · 계산',icon:'★',
       tip:'규칙을 한 번에 세 개 활용해야 합니다.',detail:'세 과제를 모두 끝내면 서바이벌 최종 생존!'
     })
