@@ -113,6 +113,43 @@ let chrome,ws,profile;
   assert.ok(field.visible&&field.player==='set1_r02_c02'&&field.partyCards===1,'Cannot start expedition '+config.name+JSON.stringify(field));
   assert.ok(field.tilesColored>=8&&field.townAtlas,'World must render Kenney-powered pixel tiles '+config.name+JSON.stringify(field));
   await screenshot(config.name+'-field');
+  const hudAudit=await evalFn(()=>{
+    const $=id=>document.getElementById(id),buttons=document.querySelectorAll('[data-hud]');
+    const field=$('worldCanvas').getBoundingClientRect();
+    const hud=$('hudParty').getBoundingClientRect();
+    const control=$('interactBtn').getBoundingClientRect();
+    const viewHeight=document.documentElement.clientHeight;
+    const sections={},errors=[];
+    for(const [key,id,word] of [
+      ['party','hudParty','우리 키즈몬'],['bag','hudBag','탐험 가방'],
+      ['dex','hudDex','탐험 도감'],['goals','hudGoals','탐험 목표'],['menu','hudMenu','키즈몬 메뉴']
+    ]){
+      $(id).click();
+      sections[key]={
+        open:!$('genericOverlay').classList.contains('hidden'),
+        title:$('genericTitle').textContent,
+        content:$('genericBody').textContent.includes(word.replace('우리 키즈몬','HP')),
+      };
+      if(!$('genericTitle').textContent.includes(word))errors.push('Missing '+key+' title');
+      if(key==='party'&&$('genericBody').querySelectorAll('.member').length!==1)errors.push('Party entries hidden');
+      if(key==='bag'&&!$('genericBody').textContent.includes('키즈볼'))errors.push('Missing 키즈볼');
+      if(key==='dex'&&$('genericBody').querySelectorAll('.dex-card').length!==102)errors.push('Missing dex entries');
+      if(key==='menu'&&!$('genericBody').querySelector('[data-hud-action="restart"]'))errors.push('Missing restart');
+      $('genericClose').click();
+    }
+    return {buttons:buttons.length,fieldHeight:field.height,visibleHeight:viewHeight,
+      pageScrollHeight:document.documentElement.scrollHeight,
+      navVisible:hud.top>=0&&hud.bottom<=viewHeight,
+      controlVisible:control.top>0&&control.bottom<=viewHeight+2,
+      modalStates:sections,errors};
+  });
+  assert.equal(hudAudit.buttons,5,'Exactly five in-world HUD action buttons must be visible');
+  assert.ok(hudAudit.fieldHeight>=config.h*.92,'Immersive map too short '+config.name+JSON.stringify(hudAudit));
+  assert.ok(hudAudit.pageScrollHeight<=config.h+5,'Dashboard still forces vertical scroll '+config.name+JSON.stringify(hudAudit));
+  assert.ok(hudAudit.navVisible&&hudAudit.controlVisible,'HUD or A button clipped '+config.name+JSON.stringify(hudAudit));
+  assert.equal(hudAudit.errors.length,0,'HUD modal route failed '+config.name+JSON.stringify(hudAudit));
+  await screenshot(config.name+'-hud');
+
   const battleStart=await evalFn(()=>{
    const E=window.OPENMON_EXPEDITION_ENGINE,debug=window.OPENMON_EXPEDITION_DEBUG,s=debug.getState();
    let entry=null;
@@ -153,7 +190,7 @@ let chrome,ws,profile;
   });
   assert.ok(resumed.loaded&&resumed.caught===1&&resumed.party===2&&resumed.starterHidden,'Reload lost progress '+config.name+JSON.stringify(resumed));
   assert.equal(errors.length,0,'Browser errors '+config.name+': '+JSON.stringify(errors.slice(0,3)));
-  console.log('OPENMON_BROWSER_AUDIT '+config.name+' '+JSON.stringify({initial,field,battleStart,result,resumed,errors:errors.length}));
+  console.log('OPENMON_BROWSER_AUDIT '+config.name+' '+JSON.stringify({initial,field,hudAudit,battleStart,result,resumed,errors:errors.length}));
  }
  console.log('OPENMON_BROWSER_AUDIT_PASSED 2 viewports, atlas, starter, encounter, capture, autosave, reload');
 })().catch(e=>{console.error(e.stack||e);process.exitCode=1}).finally(()=>{
