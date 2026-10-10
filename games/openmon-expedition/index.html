@@ -97,6 +97,34 @@ body{background:#203a31;overscroll-behavior:none}
  .interact{min-width:75px;min-height:75px;width:75px;height:75px}
  #mapToast.map-toast{bottom:116px}
 }
+
+/* Classic 1v1 turn menu: four clear categories, four named moves + PP */
+.battle-actions{padding:11px 14px 15px}
+.battle-actions p{font-size:12px;display:flex;align-items:center;justify-content:space-between}
+.battle-buttons button{min-height:58px;padding:10px;border-radius:12px;box-shadow:0 2px 0 #8fae94}
+.battle-buttons button b{font-size:13px}
+.battle-buttons button small{font-size:10px}
+.battle-buttons button.strong{background:#e3f2e4;border-color:#63a47e}
+.battle-buttons button.utility{background:#edf3fa;border-color:#b5d1db}
+.battle-buttons button.menu-back{background:#eaeae3}
+.battle-buttons button[disabled]{opacity:.42}
+.battle-status{font-size:10px;color:#fff;background:#245b4ddd;border-radius:7px;padding:3px 5px;line-height:1.3}
+.battle-status:empty{display:none}
+.battle-log{font-size:12px;line-height:1.5;max-height:82px;overflow:auto;min-height:48px}
+@media(max-width:500px){
+ #battleOverlay .modal{max-height:calc(100dvh - 12px);border-radius:15px;width:100%}
+ #battleOverlay{padding:5px}
+ .battle-top{min-height:175px;padding:10px 10px 4px}
+ .b-mon-art{height:94px}
+ .b-mon-art .pixel-art{transform:scale(1.35)}
+ .battle-actions{padding:8px 11px 13px}
+ .battle-actions p{margin-bottom:6px}
+ .battle-buttons{gap:6px}
+ .battle-buttons button{min-height:53px;padding:9px 8px}
+ .battle-log{padding:9px 12px;max-height:75px;font-size:11px}
+ .modal-head{padding:10px 13px}
+ .modal-head h2{font-size:17px}
+}
 </style>
 </head>
 <body>
@@ -161,12 +189,12 @@ body{background:#203a31;overscroll-behavior:none}
  <div class="modal">
   <div class="modal-head"><div><h2>야생 키즈몬 등장!</h2><small id="battleZone">이슬초원</small></div><span class="chip accent" id="battleTurn">1턴</span></div>
   <div class="battle-top" id="battleBackdrop">
-    <div class="battle-own"><div class="hp-row"><span id="ownName">아군</span><span id="ownHpLabel">HP</span></div><div class="hp-bar" style="width:100%"><span class="hp-fill" id="ownHpBar"></span></div><div class="b-mon-art" id="ownArt"></div></div>
-    <div class="battle-foe"><div class="hp-row"><span id="foeName">야생</span><span id="foeHpLabel">HP</span></div><div class="hp-bar" style="width:100%"><span class="hp-fill" id="foeHpBar"></span></div><div class="b-mon-art" id="foeArt"></div></div>
+    <div class="battle-own"><div class="hp-row"><span id="ownName">아군</span><span id="ownHpLabel">HP</span></div><span class="battle-status" id="ownStatus"></span><div class="hp-bar" style="width:100%"><span class="hp-fill" id="ownHpBar"></span></div><div class="b-mon-art" id="ownArt"></div></div>
+    <div class="battle-foe"><div class="hp-row"><span id="foeName">야생</span><span id="foeHpLabel">HP</span></div><span class="battle-status" id="foeStatus"></span><div class="hp-bar" style="width:100%"><span class="hp-fill" id="foeHpBar"></span></div><div class="b-mon-art" id="foeArt"></div></div>
   </div>
   <div class="battle-log" id="battleLog" aria-live="polite">무슨 행동을 할까요?</div>
   <div class="battle-actions" id="battleActionPanel">
-    <p>어떤 행동을 할까?</p>
+    <p><span id="battlePrompt">무엇을 할까?</span><span id="battleHint">싸우기 · 키즈볼 · 가방 · 교체</span></p>
     <div class="battle-buttons" id="battleButtons"></div>
   </div>
   <div class="battle-after hidden" id="battleAfter"><button type="button" id="battleContinue">탐험 계속하기</button></div>
@@ -180,6 +208,7 @@ body{background:#203a31;overscroll-behavior:none}
 <script src="../openmon-dex/roster.js"></script>
 <script src="../openmon-dex/combat.js"></script>
 <script src="engine.js"></script>
+<script src="turn-battle.js"></script>
 <script src="game.js"></script>
 </body>
 </html>
