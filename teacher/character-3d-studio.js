@@ -1520,8 +1520,11 @@ function createKidscadeHairCollection(){
       const headId=[...headWeights].sort((a,b)=>b[1]-a[1])[0]?.[0];
       const head=template.skeleton.bones[headId];
       if(!head)throw Error('No source skin bone for Chibi hair crown: '+name);
-      const hairColor=name.startsWith('kidscade_male_')?'#46352c':'#553e38';
-      const featureMaterial=makeSolidMaterial(hairColor,name+' 입체 헤어 볼륨');
+      // Additional sculpture must share the native scalp PBR palette.
+      // The previous dark generated material looked like floating black blobs
+      // against the CC0 model's copper hair in real Chrome captures.
+      const featureMaterial=Array.isArray(template.material)
+        ?template.material[0]:template.material;
       const mx=center.x,my=bb.max.y-size.y*.065,mz=center.z;
       const sx=size.x*.5,sz=size.z*.5;
       const attach=(geo,id)=>{
@@ -1540,47 +1543,56 @@ function createKidscadeHairCollection(){
       };
       if(style.feature==='mohawk'){
         for(let i=0;i<5;i++)
-          spike(mx,my+.026,mz-sz*.75+i*sz*.375,.053,.126-i*.006,1.0,'spike_'+i);
+          spike(mx,my-.030,mz-sz*.75+i*sz*.375,.046,.112-i*.005,1.0,'spike_'+i);
       }else if(style.feature==='curls'){
         for(let i=0;i<12;i++){
           const theta=i*Math.PI*2/12;
-          sphere(mx+Math.cos(theta)*sx*.66,my+.005+Math.sin(i*2.6)*.016,
-            mz+Math.sin(theta)*sz*.60,.062,.053,.057,'curl_'+i);
+          sphere(mx+Math.cos(theta)*sx*.60,my-.047+Math.sin(i*2.6)*.010,
+            mz+Math.sin(theta)*sz*.53,.061,.060,.057,'curl_'+i);
         }
       }else if(style.feature==='flattop'){
-        const cap=new THREE.BoxGeometry(sx*1.55,.08,sz*1.52,3,2,3);
-        cap.translate(mx,my+.013,mz);attach(cap,'square_crown');
+        const cap=new THREE.BoxGeometry(sx*1.28,.060,sz*1.24,3,2,3);
+        cap.translate(mx,my-.050,mz);attach(cap,'square_crown');
       }else if(style.feature==='shag'){
         for(const sign of [-1,1])for(let i=0;i<3;i++){
-          const geo=new THREE.CylinderGeometry(.033,.012,.18+i*.038,8,3);
-          geo.rotateZ(sign*.17);
-          geo.translate(mx+sign*(sx*.82+i*.009),my-.14-i*.027,mz+(i-1)*.075);
+          const geo=new THREE.CylinderGeometry(.029,.012,.116+i*.013,8,3);
+          geo.rotateZ(sign*.16);
+          geo.translate(mx+sign*(sx*.78+i*.009),my-.215-i*.032,mz+(i-1)*.065);
           attach(geo,'side_lock_'+sign+'_'+i);
         }
       }else if(style.feature==='twinbuns'){
         for(const sign of [-1,1])
-          sphere(mx+sign*sx*.95,my+.058,mz-.015,.095,.089,.090,'bun_'+sign);
+          sphere(mx+sign*sx*.70,my-.042,mz-.015,.099,.094,.091,'bun_'+sign);
       }else if(style.feature==='braidcrown'){
-        const braid=new THREE.TorusGeometry(sx*.79,.033,8,30);
-        braid.scale(1,1,sz/Math.max(.001,sx));
-        braid.rotateX(Math.PI/2);braid.translate(mx,my+.018,mz);
-        attach(braid,'braided_crown');
-        for(let i=0;i<9;i++){
-          const a=Math.PI*2*i/9;
-          sphere(mx+Math.cos(a)*sx*.79,my+.018,mz+Math.sin(a)*sz*.79,
-            .037,.033,.035,'braid_link_'+i);
+        // A curved braid rests on the *front hairline*. The old flat torus
+        // hovered horizontally above the crown like a wide flying disc.
+        const braidCurve=new THREE.CatmullRomCurve3([
+          new THREE.Vector3(mx-sx*.83,my-.142,mz+sz*.25),
+          new THREE.Vector3(mx-sx*.47,my-.085,mz+sz*.71),
+          new THREE.Vector3(mx,my-.058,mz+sz*.87),
+          new THREE.Vector3(mx+sx*.47,my-.085,mz+sz*.71),
+          new THREE.Vector3(mx+sx*.83,my-.142,mz+sz*.25)
+        ],false,'centripetal');
+        attach(new THREE.TubeGeometry(braidCurve,24,.024,7,false),'braided_crown');
+        for(let i=1;i<=7;i++){
+          const p=braidCurve.getPoint(i/8);
+          sphere(p.x,p.y,p.z,.026,.026,.026,'braid_link_'+i);
         }
       }else if(style.feature==='pixie'){
         for(let i=0;i<6;i++){
           const x=mx+(i-2.5)*sx*.29;
-          spike(x,my+.003,mz+sz*.43,.031,.075,.8,'pixie_tip_'+i);
+          spike(x,my-.039,mz+sz*.43,.030,.058,.8,'pixie_tip_'+i);
         }
       }else if(style.feature==='waves'){
         for(const sign of [-1,1])for(let i=0;i<3;i++){
-          const geo=new THREE.TorusGeometry(.070+i*.014,.028,7,20,Math.PI*1.35);
-          geo.rotateY(Math.PI/2);
-          geo.translate(mx+sign*(sx*.94+i*.008),my-.16-i*.096,mz-sz*.28);
-          attach(geo,'wave_'+sign+'_'+i);
+          const depth=mz+(i-1)*sz*.31;
+          const curve=new THREE.CatmullRomCurve3([
+            new THREE.Vector3(mx+sign*sx*.70,my-.110,depth),
+            new THREE.Vector3(mx+sign*sx*.86,my-.225,depth+.014),
+            new THREE.Vector3(mx+sign*sx*.80,my-.305,depth-.020),
+            new THREE.Vector3(mx+sign*sx*.88,my-.395,depth-.015)
+          ],false,'centripetal');
+          attach(new THREE.TubeGeometry(curve,20,.024,7,false),'wave_'+sign+'_'+i);
         }
       }
       hair.userData.volumeFeature=style.feature;
