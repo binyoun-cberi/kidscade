@@ -24,8 +24,11 @@ jobs:
           node-version: '22'
       - name: Install Korean glyph fonts for visual verification
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq fonts-noto-cjk
+          # Prefer the runner's package index; mirror refreshes can stall for minutes.
+          if ! sudo timeout 120s apt-get install -y -qq fonts-noto-cjk; then
+            sudo timeout 60s apt-get update -qq
+            sudo timeout 120s apt-get install -y -qq fonts-noto-cjk
+          fi
           fc-cache -f
           fc-match 'Noto Sans CJK KR'
       - name: Install image test dependencies
