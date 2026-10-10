@@ -99,7 +99,8 @@
     wordSiegeDictionary: 'kidscade_word_siege_discovered_v1',
     wordSiegeBest: 'kidscade_word_siege_best_v1',
     wordSiegeStages: 'kidscade_word_siege_stage_v1',
-    teacherCampaign: 'kidscade_teacher_campaign_v1'
+    teacherCampaign: 'kidscade_teacher_campaign_v1',
+    squidBridgeRecord: 'kidscade_squid_bridge_v1',
   });
 
   // Dynamic namespaces are prefixes, not concrete localStorage records.

@@ -2,6 +2,33 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "squid_memory_bridge",
+      "addedAt": "2026-10-10T19:27:42+09:00",
+      "title": "꼴뚜기 게임",
+      "href": "games/squid-memory-bridge/index.html",
+      "category": "trivia",
+      "age": "low",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🦑",
+      "description": "초록색 정답 발판을 기억해 왼쪽에서 오른쪽으로 건너세요! 틀린 발판은 즉시 탈락, 정답 확인은 같은 맵의 출발점으로 돌아가지만 5분 제한시간은 계속 흐릅니다. 스테이지마다 길이와 최소 꺾임 횟수가 늘어나는 가로형 기억력 미로.",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "high_ota_typographic_horror",
       "addedAt": "2026-10-10T00:28:00+09:00",
       "title": "오타 — 이름을 잃어버린 밤",
