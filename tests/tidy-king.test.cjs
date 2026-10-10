@@ -53,7 +53,7 @@ test('Tidy King catalog classification and entrypoint are valid',()=>{
  assert.equal(game.category,'job');
  assert.equal(game.age,'toddler');
  assert.deepEqual(game.ages,['toddler']);
- assert.equal(game.sessionMinutes,5);
+ assert.equal(game.sessionMinutes,12);
  assert.equal(game.href,'games/sim_tidy_king/index.html');
  assert.equal(game.genre,'simulation');
 });
@@ -116,10 +116,10 @@ test('Tidy King has large clearable three-dimensional trash mountains',()=>{
 test('Tidy King offers preschool default and optional full pile cleanup',()=>{
  assert.match(html,/id="modeEasy"/);
  assert.match(html,/id="modeBig"/);
- assert.match(html,/약 20개만 정리하면 성공해요!/);
+ assert.match(html,/물건 50개를 정리하고 얼룩 2개를 닦아요!/);
  assert.match(js,/let running=false, level=0, challengeMode=false/);
- assert.match(js,/littleItems:\{book:5,toy:5,bottle:5,cup:3\},littleStains:2/);
- assert.match(js,/littleItems:\{cup:5,plate:4,bottle:5,can:3,bag:3\},littleStains:2/);
+ assert.match(js,/littleItems:\{book:14,toy:14,bottle:14,cup:8\},littleStains:2/);
+ assert.match(js,/littleItems:\{cup:14,plate:11,bottle:14,can:7,bag:4\},littleStains:2/);
  assert.match(js,/challengeMode\?def\.items:def\.littleItems/);
  assert.match(js,/challengeMode\?def\.stains:def\.littleStains/);
  assert.match(js,/setMode\(false\)/);
