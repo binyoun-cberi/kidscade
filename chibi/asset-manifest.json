@@ -716,6 +716,196 @@
       "revision": "v5.3",
       "rigging": "original Chibi 78 bone skeleton via skinned geometry",
       "geometryPolicy": "unique 3D volume, profile and detail meshes"
+    },
+    "kidscade_male_hair_spiky": {
+      "label": "spiky",
+      "type": "hair",
+      "fit": "male",
+      "generatedFrom": "kidscade_male_hair_short",
+      "geometryPolicy": "source-skinned-hair-silhouette-variant",
+      "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
+      "revision": "v7-male-temple-fill",
+      "note": "v6.0 source-skinned hair silhouette variation, not independent sculpt",
+      "styleGuarantee": "temple fill and safe side-shrink floor -0.12, preserving original skeleton/UV/weights"
+    },
+    "kidscade_male_hair_wave": {
+      "label": "wave",
+      "type": "hair",
+      "fit": "male",
+      "generatedFrom": "kidscade_male_hair_short",
+      "geometryPolicy": "source-skinned-hair-silhouette-variant",
+      "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
+      "revision": "v7-male-temple-fill",
+      "note": "v6.0 source-skinned hair silhouette variation, not independent sculpt",
+      "styleGuarantee": "temple fill and safe side-shrink floor -0.12, preserving original skeleton/UV/weights"
+    },
+    "kidscade_male_hair_mullet": {
+      "label": "mullet",
+      "type": "hair",
+      "fit": "male",
+      "generatedFrom": "kidscade_male_hair_short",
+      "geometryPolicy": "source-skinned-hair-silhouette-variant",
+      "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
+      "revision": "v7-male-temple-fill",
+      "note": "v6.0 source-skinned hair silhouette variation, not independent sculpt",
+      "styleGuarantee": "temple fill and safe side-shrink floor -0.12, preserving original skeleton/UV/weights"
+    },
+    "kidscade_male_hair_comma": {
+      "label": "comma",
+      "type": "hair",
+      "fit": "male",
+      "generatedFrom": "kidscade_male_hair_short",
+      "geometryPolicy": "source-skinned-hair-silhouette-variant",
+      "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
+      "revision": "v7-male-temple-fill",
+      "note": "v6.0 source-skinned hair silhouette variation, not independent sculpt",
+      "styleGuarantee": "temple fill and safe side-shrink floor -0.12, preserving original skeleton/UV/weights"
+    },
+    "chibi_male_trackjacket": {
+      "label": "chibi_male_trackjacket",
+      "type": "rigged-garment",
+      "fit": "male",
+      "category": "top",
+      "generatedFrom": "kidscade_male_tshirt",
+      "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
+      "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
+      "revision": "v6.0",
+      "sleeves": "Two articulated upper-arm and forearm sections per arm, weights copied from nearest bind-pose body arm surface vertices"
+    },
+    "chibi_male_rugby": {
+      "label": "chibi_male_rugby",
+      "type": "rigged-garment",
+      "fit": "male",
+      "category": "top",
+      "generatedFrom": "kidscade_male_tshirt",
+      "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
+      "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
+      "revision": "v6.0",
+      "sleeves": "Two articulated upper-arm and forearm sections per arm, weights copied from nearest bind-pose body arm surface vertices"
+    },
+    "chibi_male_utilityvest": {
+      "label": "chibi_male_utilityvest",
+      "type": "rigged-garment",
+      "fit": "male",
+      "category": "top",
+      "generatedFrom": "kidscade_male_tshirt",
+      "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
+      "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
+      "revision": "v6.0",
+      "sleeves": "Two articulated upper-arm and forearm sections per arm, weights copied from nearest bind-pose body arm surface vertices"
+    },
+    "chibi_male_cargo": {
+      "label": "chibi_male_cargo",
+      "type": "rigged-garment",
+      "fit": "male",
+      "category": "bottom",
+      "generatedFrom": "kidscade_male_shorts",
+      "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
+      "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
+      "revision": "v6.0"
+    },
+    "chibi_male_trackpants": {
+      "label": "chibi_male_trackpants",
+      "type": "rigged-garment",
+      "fit": "male",
+      "category": "bottom",
+      "generatedFrom": "kidscade_male_shorts",
+      "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
+      "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
+      "revision": "v6.0"
+    },
+    "chibi_female_hair_curl": {
+      "label": "curl",
+      "type": "hair",
+      "fit": "female",
+      "generatedFrom": "hairone",
+      "geometryPolicy": "source-skinned-hair-silhouette-variant",
+      "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
+      "revision": "v5-wardrobe-hair-pack-1",
+      "note": "v6.0 source-skinned hair silhouette variation, not independent sculpt"
+    },
+    "chibi_female_hair_hime": {
+      "label": "hime",
+      "type": "hair",
+      "fit": "female",
+      "generatedFrom": "hairone",
+      "geometryPolicy": "source-skinned-hair-silhouette-variant",
+      "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
+      "revision": "v5-wardrobe-hair-pack-1",
+      "note": "v6.0 source-skinned hair silhouette variation, not independent sculpt"
+    },
+    "chibi_female_hair_pixie": {
+      "label": "pixie",
+      "type": "hair",
+      "fit": "female",
+      "generatedFrom": "hairone",
+      "geometryPolicy": "source-skinned-hair-silhouette-variant",
+      "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
+      "revision": "v5-wardrobe-hair-pack-1",
+      "note": "v6.0 source-skinned hair silhouette variation, not independent sculpt"
+    },
+    "chibi_female_hair_twintail": {
+      "label": "twintail",
+      "type": "hair",
+      "fit": "female",
+      "generatedFrom": "hairone",
+      "geometryPolicy": "source-skinned-hair-silhouette-variant",
+      "rigging": "Source skinned mesh topology, UV, materials and shared 78-bone skeleton/weights",
+      "revision": "v5-wardrobe-hair-pack-1",
+      "note": "v6.0 source-skinned hair silhouette variation, not independent sculpt"
+    },
+    "chibi_female_blazer": {
+      "label": "chibi_female_blazer",
+      "type": "rigged-garment",
+      "fit": "female",
+      "category": "top",
+      "generatedFrom": "shirt",
+      "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
+      "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
+      "revision": "v6.0",
+      "sleeves": "Two articulated upper-arm and forearm sections per arm, weights copied from nearest bind-pose body arm surface vertices"
+    },
+    "chibi_female_sailor": {
+      "label": "chibi_female_sailor",
+      "type": "rigged-garment",
+      "fit": "female",
+      "category": "top",
+      "generatedFrom": "shirt",
+      "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
+      "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
+      "revision": "v6.0",
+      "sleeves": "Two articulated upper-arm and forearm sections per arm, weights copied from nearest bind-pose body arm surface vertices"
+    },
+    "chibi_female_tunic": {
+      "label": "chibi_female_tunic",
+      "type": "rigged-garment",
+      "fit": "female",
+      "category": "top",
+      "generatedFrom": "shirt",
+      "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
+      "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
+      "revision": "v6.0",
+      "sleeves": "Two articulated upper-arm and forearm sections per arm, weights copied from nearest bind-pose body arm surface vertices"
+    },
+    "chibi_female_pleated": {
+      "label": "chibi_female_pleated",
+      "type": "rigged-garment",
+      "fit": "female",
+      "category": "bottom",
+      "generatedFrom": "ninjasuitshort",
+      "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
+      "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
+      "revision": "v6.0"
+    },
+    "chibi_female_culottes": {
+      "label": "chibi_female_culottes",
+      "type": "rigged-garment",
+      "fit": "female",
+      "category": "bottom",
+      "generatedFrom": "ninjasuitshort",
+      "geometryPolicy": "distinct source-skinned torso/hem/sleeve or hip/leg profile plus style-specific volumetric 3D details",
+      "rigging": "source 78-bone skeleton, unchanged source skin indices and weights, bound accessories using source bones",
+      "revision": "v6.0"
     }
   },
   "wardrobeLibrary": {
