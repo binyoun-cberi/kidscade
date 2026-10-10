@@ -13,19 +13,29 @@
  .game-layout.cooking .dining{padding-bottom:calc(100px + env(safe-area-inset-bottom))!important}
  .game-layout.cooking .kitchen{height:clamp(196px,30dvh,250px)!important}
  .game-layout.cooking .topbar{min-height:0}
- .kitchen .fallback-chef{bottom:14%;transform:translateX(-50%) scale(.77);transform-origin:50% 100%}
+ .kitchen .fallback-chef{bottom:14%;transform:translateX(-50%) scale(.70);transform-origin:50% 100%}
  .cook-caption{gap:7px}
  .peek-budget{font-size:11px;padding:4px 7px}
  .game-layout.cooking .course-line{min-height:0}
 }
 @media(max-width:390px){
  .game-layout.cooking .kitchen{height:clamp(180px,29dvh,224px)!important}
- .kitchen .fallback-chef{bottom:14%;transform:translateX(-50%) scale(.68)}
+ .kitchen .fallback-chef{bottom:14%;transform:translateX(-50%) scale(.55)}
  .game-layout.cooking .dining{padding:8px 10px calc(96px + env(safe-area-inset-bottom))!important}
  .game-layout.cooking .course-line{padding-bottom:5px}
  .game-layout.cooking .dialogue-right{padding:6px 9px}
  .game-layout.cooking .cook-panel{padding:7px 8px;gap:5px}
  .game-layout.cooking .cook-flash{min-height:35px}
  .game-layout.cooking .cook-slot{min-height:25px}
+ .game-layout.cooking .dialogue-right .dialogue-name{display:none}
+ .game-layout.cooking .dialogue-right{padding:4px 8px}
+ .game-layout.cooking .course-line{min-height:0;max-height:53px}
+ .game-layout.cooking .course-line h2{font-size:18px;margin:0}
+ .game-layout.cooking .course-line p{display:none}
+ .game-layout.cooking .cook-caption{font-size:10px}
+ .game-layout.cooking .cook-panel{gap:3px;padding:5px 7px}
+ .game-layout.cooking .cook-flash{min-height:28px;font-size:11px;padding:4px}
+ .game-layout.cooking .cook-slot{min-height:22px}
+ .game-layout.cooking .peek-budget{font-size:10px;padding:3px 6px}
 }
 @media(prefers-reduced-motion:reduce){#peekBtn{transition:none!important}}
