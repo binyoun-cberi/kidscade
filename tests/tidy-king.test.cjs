@@ -75,7 +75,7 @@ test('Tidy King has real receptacles, persistent deposited props and finish phot
  for(const id of ['beforePhoto','afterPhoto','startKitchen'])assert.match(html,new RegExp('id="'+id+'"'));
 });
 test('Tidy King unlocks kitchen independently of the apartment and refreshes stage controls',()=>{
- assert.match(js,/saved\.unlocked\?'주방 청소하기'/);
+ assert.match(js,/saved\.unlocked\?'🍽️ 주방 정리!'/);
  assert.match(js,/if\(saved\.unlocked\)launchStage\(1\)/);
  assert.match(js,/saved\.unlocked=Math\.max/);
  assert.match(js,/showStageButtons\(\)/);
@@ -91,7 +91,7 @@ test('Tidy King places items through physical pointer drag, not tap-then-tap',()
  assert.match(js,/function groundAt\(/);
  assert.match(js,/canvas\.setPointerCapture\(e\.pointerId\)/);
  assert.match(html,/id="dropGuide"/);
- assert.match(html,/누른 채 끌기/);
+ assert.match(html,/물건을 손가락으로 끌어요/);
 });
 test('Tidy King scatters props into natural clusters, not an 8-column grid',()=>{
  assert.match(js,/function scatterClutter\(/);
