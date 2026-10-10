@@ -1,0 +1,44 @@
+/* Midnight Diner v3 — observation stage is the main game, not a decorative background. */
+.dining{gap:12px}
+.kitchen{isolation:isolate}
+.kitchen:after{content:"";position:absolute;inset:0;pointer-events:none;border:1px solid #9e80502b}
+.dialogue-right{position:relative;bottom:auto;left:auto;width:100%;transform:none;min-height:0;padding:13px 15px;background:linear-gradient(100deg,#343022,#24231c);border:1px solid #8b744e;box-shadow:inset 4px 0 #bca171}
+.dialogue-right .dialogue-name{font-size:11px;letter-spacing:.08em;margin-bottom:5px}
+.dialogue-right #chefLine{display:block;font-size:clamp(13px,1.4vw,17px);line-height:1.5;color:#f3e0bd;min-height:1.5em}
+.cook-panel{position:absolute;z-index:6;inset:auto 14px 20px;display:flex;flex-direction:column;gap:10px;padding:14px 15px;background:linear-gradient(160deg,#18170feF,#282416f3);border:1px solid #ac8c55;box-shadow:0 12px 55px #000c,0 0 50px #b58b4b20}
+.cook-caption{display:flex;align-items:center;justify-content:space-between;color:#e2c99f;font-size:12px;font-weight:900}
+#cookClock{color:#d6ac64;font-size:10px}
+.cook-slots{display:grid;grid-template-columns:repeat(var(--slots,5),minmax(0,1fr));gap:5px}
+.cook-slot{display:grid;place-items:center;position:relative;min-height:39px;background:#3a3628;border:1px solid #635b47;color:#9b917b;font-size:12px;font-weight:900}
+.cook-slot.current{border-color:#ebc17f;background:#856039;color:#fff3d8;box-shadow:0 0 0 2px #e5b97329,inset 0 0 15px #f7c77e35}
+.cook-slot.seen{border-color:#7c8b69;background:#303c2b;color:#d5e1c7}
+.cook-flash{padding:10px 12px;min-height:55px;display:flex;align-items:center;justify-content:center;text-align:center;background:#0e100d;border:1px solid #5f553a;color:#c6b69b;font-weight:850;font-size:14px;line-height:1.35}
+.cook-flash.revealed{background:#35291b;border-color:#d7ad66;color:#ffe6b1}
+.peek-btn{min-height:53px;padding:11px;border:1px solid #e3c78f;border-radius:4px;background:linear-gradient(#b59660,#866840);color:#1c170d;font-weight:1000;touch-action:none;user-select:none;-webkit-user-select:none}
+.peek-btn small{display:block;font-weight:700;font-size:10px;margin-top:3px}
+.peek-btn:active,.peek-btn.looking{background:linear-gradient(#efcf91,#c5a170);box-shadow:inset 0 3px 6px #533c2266}
+.cook-progress{height:5px;background:#393526;overflow:hidden;border:1px solid #544832}
+.cook-progress i{display:block;height:100%;width:0;background:#dabb83;transition:width .15s linear}
+.memory-panel{border:1px solid #746344;background:#2e2b21;padding:9px 12px}
+.memory-panel strong{display:block;font-size:11px;color:#dbc394;letter-spacing:.04em;margin-bottom:6px}
+.memory-entries{display:flex;flex-wrap:wrap;gap:6px;color:#bfb299;font-size:12px;min-height:22px}
+.memory-chip{font-size:12px;padding:5px 8px;border:1px solid #746041;background:#26241b;color:#edd7ad;font-weight:800}
+.memory-chip.safe{border-color:#688461;color:#cfe2c7}.memory-chip.hazard{border-color:#9e675d;color:#f5c4b6}
+.game-layout.cooking .plate-wrap{filter:blur(5px);opacity:.17;pointer-events:none}
+.game-layout.cooking .action-bar{pointer-events:none;opacity:.35}
+.game-layout.cooking .memory-panel{opacity:.55}
+.game-layout.cooking .kitchen-vignette{background:radial-gradient(ellipse at 52% 40%,transparent 10%,#100d07a8 100%)}
+.game-layout.cooking .scene-legend{color:#f5deb3}
+#plateGlow.safe-bite{background:#badca72c}
+@media(max-width:930px){
+ .kitchen{height:clamp(310px,44dvh,440px)}
+ .dining{gap:9px}
+ .cook-panel{left:10px;right:10px;bottom:10px;padding:10px;gap:6px}
+ .cook-slot{min-height:31px}
+ .cook-flash{min-height:43px;font-size:12px;padding:7px}
+ .peek-btn{min-height:46px;font-size:13px;padding:8px}
+ .dialogue-right{font-size:12px;padding:9px 12px}
+ .dialogue-right #chefLine{font-size:13px}
+}
+@media(max-width:390px){.kitchen{height:320px}.cook-panel{inset:auto 8px 8px}.cook-slot{font-size:10px;min-height:28px}.course-line{gap:5px}.memory-chip{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.cook-progress i{transition:none}}
