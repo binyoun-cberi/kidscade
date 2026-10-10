@@ -97,7 +97,7 @@ function timingFor(state){
  const safeEnd=Math.max(1120,1620-state.course*95+Math.round((z.shade-.5)*210));
  const warnLength=Math.max(460,630-state.course*35);
  const lookLength=350;
- return {safeEnd,warnEnd:safeEnd+warnLength,total:safeEnd+warnLength+lookLength,
+ return {safeEnd,warnEnd:safeEnd+warnLength,totalMs:safeEnd+warnLength+lookLength,
   revealAt:230+z.garnish*50,holdNeeded:310};
 }
 function gazePhase(state){
@@ -117,11 +117,11 @@ function tickCooking(state,deltaMs,looking){
  const d=state.dish,timing=timingFor(state);
  // Pause/lag cannot skip a warning and count it as a surprise catch.
  const dt=Math.max(0,Math.min(100,Number.isFinite(deltaMs)?deltaMs:0));
- const before=d.elapsedMs,after=Math.min(timing.total,before+dt);
+ const before=d.elapsedMs,after=Math.min(timing.totalMs,before+dt);
  const zoneId=d.cookOrder[d.cookIndex],z=d.zones[zoneId],step=d.cookIndex;
  let message='',caught=false,revealed=false,warned=false,concealed=false;
  const phaseAt=ms=>ms<timing.safeEnd?'SAFE':ms<timing.warnEnd?'WARN':'LOOK';
- const phase=phaseAt(Math.min(after,timing.total-.001));
+ const phase=phaseAt(Math.min(after,timing.totalMs-.001));
  if(looking){
    if(phase==='SAFE'){
     const eligible=Math.max(0,after-Math.max(before,timing.revealAt));
@@ -152,7 +152,7 @@ function tickCooking(state,deltaMs,looking){
  if(state.phase==='finished')
   return {ok:true,finished:true,caught,warned,revealed,message,phase:'DONE',suspicion:state.suspicion};
  let finishedStep=false,finishedCooking=false;
- if(d.elapsedMs>=timing.total){
+ if(d.elapsedMs>=timing.totalMs){
   finishedStep=true;d.cookIndex++;state.turns++;
   d.elapsedMs=0;d.holdMs=0;d.currentPeek=null;
   if(d.cookIndex>=d.cookOrder.length){state.phase='playing';finishedCooking=true;}
