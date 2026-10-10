@@ -19,11 +19,13 @@ const BASE_NODES=FEMALE_BASE_NODES;
 const MALE_HAIR_STYLES=[
   'kidscade_male_hair_short','kidscade_male_hair_crop','kidscade_male_hair_sidepart',
   'kidscade_male_hair_textured','kidscade_male_hair_fringe','kidscade_male_hair_undercut',
-  'kidscade_male_hair_round','kidscade_male_hair_swept'
+  'kidscade_male_hair_round','kidscade_male_hair_swept',
+  'kidscade_male_hair_spiky','kidscade_male_hair_wave','kidscade_male_hair_mullet','kidscade_male_hair_comma'
 ];
 const FEMALE_HAIR_STYLES=[
   'hairone','hairT','hairtail','hairtailknight','hairvariant','hairvariant.001',
-  'chibi_female_hair_bob','chibi_female_hair_layered'
+  'chibi_female_hair_bob','chibi_female_hair_layered',
+  'chibi_female_hair_curl','chibi_female_hair_hime','chibi_female_hair_pixie','chibi_female_hair_twintail'
 ];
 const HAIR_NODES=[...FEMALE_HAIR_STYLES,...MALE_HAIR_STYLES];
 const OUTFIT_NODES=OUTFIT_STYLES.map(style=>style.id);
@@ -57,7 +59,15 @@ const PART_LABELS={
   kidscade_male_hair_textured:'텍스처 숏컷',kidscade_male_hair_fringe:'덮은 머리',
   kidscade_male_hair_undercut:'언더컷',kidscade_male_hair_round:'라운드컷',
   kidscade_male_hair_swept:'스윕 헤어',
+  kidscade_male_hair_spiky:'스파이키 숏컷',
+  kidscade_male_hair_wave:'웨이브 헤어',
+  kidscade_male_hair_mullet:'울프컷',
+  kidscade_male_hair_comma:'쉼표 가르마',
   chibi_female_hair_bob:'둥근 단발',chibi_female_hair_layered:'레이어드',
+  chibi_female_hair_curl:'컬리 헤어',
+  chibi_female_hair_hime:'히메컷',
+  chibi_female_hair_pixie:'픽시컷',
+  chibi_female_hair_twintail:'트윈테일',
   ...Object.fromEntries(OUTFIT_STYLES.map(style=>[style.id,style.label])),
   ...Object.fromEntries(ACCESSORY_STYLES.map(style=>[style.id,style.label]))
 };
@@ -1412,7 +1422,15 @@ const HAIR_STYLE_PARAMETERS={
   kidscade_male_hair_round:{crown:.06,side:.075,front:0,part:0,wave:.01,templeFill:.12},
   kidscade_male_hair_swept:{crown:.035,side:-.01,front:.05,part:.20,wave:0,templeFill:.09},
   chibi_female_hair_bob:{crown:.03,side:.035,front:-.015,part:0,wave:.015},
-  chibi_female_hair_layered:{crown:.06,side:-.08,front:.03,part:-.055,wave:.03}
+  chibi_female_hair_layered:{crown:.06,side:-.08,front:.03,part:-.055,wave:.03},
+  kidscade_male_hair_spiky:{crown:.16,side:-.13,front:.08,part:.03,wave:.14,templeFill:.08},
+  kidscade_male_hair_wave:{crown:.07,side:.02,front:-.055,part:-.04,wave:.095,templeFill:.11},
+  kidscade_male_hair_mullet:{crown:.07,side:.16,front:-.012,part:.01,wave:.035,templeFill:.10},
+  kidscade_male_hair_comma:{crown:.05,side:-.11,front:-.085,part:.25,wave:.04,templeFill:.12},
+  chibi_female_hair_curl:{crown:.10,side:.14,front:-.06,part:0,wave:.11},
+  chibi_female_hair_hime:{crown:.04,side:.12,front:-.115,part:0,wave:0},
+  chibi_female_hair_pixie:{crown:-.09,side:-.20,front:.065,part:.07,wave:.022},
+  chibi_female_hair_twintail:{crown:.035,side:.27,front:.025,part:0,wave:.085}
 };
 function createKidscadeHairCollection(){
   const maleBase=getNode('kidscade_male_hair_short');
