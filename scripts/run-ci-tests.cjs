@@ -98,6 +98,7 @@ const TEST_FILES = [
   "tests/word-siege.test.cjs",
   "tests/cleanup-squad.test.cjs",
   "tests/tidy-king.test.cjs",
+  "tests/squid-memory-bridge.test.cjs",
   "tests/ecopolis.test.cjs",
   "tests/high-twelve-island.test.cjs",
   "tests/traditional-play-yard.test.cjs",
