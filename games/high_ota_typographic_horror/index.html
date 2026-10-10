@@ -43,6 +43,18 @@ opacity:0;visibility:hidden;transition:opacity .25s,background .25s,border-color
 #echoWarning.active #echoText{color:#ff8b9b}
 #echoTrack{width:100%;height:5px;border-radius:999px;background:#34404a;margin-top:8px;overflow:hidden}
 #echoFill{display:block;width:0;height:100%;background:#d95b70;transition:width .1s}
+#gazeWarning{position:fixed;z-index:2;top:clamp(123px,24vh,198px);left:50%;
+transform:translateX(-50%);visibility:hidden;opacity:0;pointer-events:none;
+width:min(300px,78vw);background:#1d111de8;border:1px solid #bf7183;
+border-radius:9px;padding:9px 13px;text-align:center;transition:opacity .2s}
+#gazeWarning.show{visibility:visible;opacity:1}
+#gazeWarning b{font-size:13px;color:#f5a2b3;letter-spacing:.02em}
+#gazeTrack{height:5px;background:#3c303f;border-radius:4px;margin-top:7px;overflow:hidden}
+#gazeFill{display:block;width:0;height:100%;background:#eb748c}
+#recordStatus{color:#c6b18d;font-size:11px;letter-spacing:.06em;padding-top:6px;font-weight:800}
+#intro .rules{white-space:normal}
+#resume{margin-left:10px;background:#293444;color:#eff2f7}
+#respawn{margin-left:10px;background:#293444;color:#eff2f7}
 #lockerMask{position:fixed;inset:0;z-index:4;pointer-events:none;display:none;background:linear-gradient(90deg,#06070b 0 31%,transparent 31% 69%,#06070b 69% 100%),linear-gradient(#050609 0 22%,transparent 22% 72%,#050609 72% 100%);box-shadow:inset 0 0 120px #000}
 #lockerMask:after{content:"";position:absolute;top:22%;left:31%;width:38%;height:50%;border:11px solid #1a212b;box-shadow:inset 0 0 30px #000}
 body.hidden-in-locker #lockerMask{display:block}
@@ -80,11 +92,12 @@ body.hidden-in-locker #lockerMask{display:block}
 <canvas id="scene" aria-label="글자로 이루어진 3D 기록보관소"></canvas>
 <div id="vignette"></div><div id="danger"></div><div id="static"></div>
 <header id="top">
- <div><div id="brand">KIDSCADE / TYPE HORROR<b>오 타</b></div><div id="mission"><small>현재 기록</small><div id="objective">관리실 컴퓨터의 기록을 확인하세요</div><div id="stage">제0기록보관소 · 02:17</div></div></div>
+ <div><div id="brand">KIDSCADE / TYPE HORROR<b>오 타</b></div><div id="mission"><small>현재 기록</small><div id="objective">관리실 컴퓨터의 기록을 확인하세요</div><div id="recordStatus">기록 0/2</div><div id="stage">제0기록보관소 · 02:17</div></div></div>
  <button id="mute" type="button" aria-label="음소거 전환">소리 켜짐</button>
 </header>
 <div id="crosshair" aria-hidden="true"></div><div id="message" aria-live="polite"></div>
 <div id="prompt" aria-live="polite"></div>
+<div id="gazeWarning" role="status" aria-live="off"><b>오래 쳐다보지 마세요</b><div id="gazeTrack"><i id="gazeFill"></i></div></div>
 <div id="echoWarning" role="status" aria-live="off"><div id="echoText">조용히 이동하세요</div>
   <div id="echoTrack" aria-label="들킬 위험도"><i id="echoFill"></i></div></div>
 <div id="hint">WASD 이동 · SHIFT 달리기 · 마우스 시점 · E 상호작용</div>
@@ -98,8 +111,8 @@ body.hidden-in-locker #lockerMask{display:block}
   <small>제0기록보관소 / 02:17</small><h1 id="introTitle">오 타</h1>
   <p>이곳의 모든 것은 이름으로 존재합니다.<br>잘못된 이름을 고치고, 3시가 되기 전에 탈출하세요.</p>
   <div class="note">사람이 아닌 것을 사람이라고 부르지 마십시오.<br>이름이 바뀌면, 존재도 바뀝니다.</div>
-  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면을 밀어 시점 조절 · 조사/달리기 버튼<br>첫 괴물은 달려서 피하고 사물함에 숨으세요. 그다음 사라진 복도를 복구하세요.<br>붉은 「뒤」가 나타나면 달리지 말고 걸어가세요.</div>
-  <button class="primary" id="start" type="button">기록 시작</button>
+  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면을 밀어 시점 조절 · 조사/달리기 버튼<br>첫 괴물은 달려 피하고, 빨간 「뒤」가 나타나면 걷거나 멈추세요.<br>사무실과 서고에서 기록 2개를 찾으세요. 오래 바라보는 것도 위험합니다.</div>
+  <button class="primary" id="start" type="button">기록 시작</button><button class="primary" id="resume" type="button" hidden>마지막 기록부터</button>
  </div>
 </section>
 <section class="overlay closed" id="fixPanel" role="dialog" aria-modal="true" aria-labelledby="fixTitle">
@@ -115,11 +128,12 @@ body.hidden-in-locker #lockerMask{display:block}
  <div class="panel">
   <small id="endingSub">기록 종료</small><h2 id="endingTitle">당신은 살아남았습니다</h2>
   <p id="endingText"></p>
-  <button class="primary" id="replay" type="button">처음부터 다시</button>
+  <button class="primary" id="replay" type="button">처음부터 다시</button><button class="primary" id="respawn" type="button" hidden>마지막 기록에서 재도전</button>
  </div>
 </section>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_ota_typographic_horror" data-title="오타 — 이름을 잃어버린 밤" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 <script src="rules.js"></script>
+<script src="chapter3.js"></script>
 <script type="module" src="game.js"></script>
 </body>
 </html>
