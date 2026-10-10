@@ -174,13 +174,13 @@ function buildRoom(){
  const dspots=[[-3.5,2.8],[-1.7,3.55],[.35,3.3],[2.3,3.6],[-3.65,-1.4],[3.55,-1.05],[.8,-2.1]];
  for(let i=0;i<def.stains;i++)makeStain(dspots[i][0],dspots[i][1],rand);
  totalCount=things.length+stains.length;
- beforeImage=captureScene();
  $('stageName').textContent=def.name;
  $('roomIndicator').textContent='물건 터치 → 제자리 터치 · 얼룩은 문질러 닦기';
  $('missionIcon').textContent='🧤';
  $('missionText').innerHTML='바닥의 물건을 터치해 보세요<small>정리할 장소가 빛나면 그곳을 누르세요</small>';
  updateHud();
  cameraMove();
+ beforeImage=captureScene();
 }
 function stationModel(key){
  const propsByStation={
@@ -234,10 +234,9 @@ function captureScene(){
   // Render and read back synchronously: no permanent preserveDrawingBuffer cost.
   renderer.render(scene,camera);
   const preview=document.createElement('canvas');
-  const scale=Math.min(1,560/Math.max(1,canvas.width));
-  preview.width=Math.max(1,Math.round(canvas.width*scale));
-  preview.height=Math.max(1,Math.round(canvas.height*scale));
-  preview.getContext('2d').drawImage(canvas,0,0,preview.width,preview.height);
+  const sourceW=Math.min(canvas.width,canvas.height*1.1),sourceH=Math.min(canvas.height,canvas.width/1.1);
+  preview.width=480;preview.height=Math.max(1,Math.round(480*sourceH/sourceW));
+  preview.getContext('2d').drawImage(canvas,(canvas.width-sourceW)/2,(canvas.height-sourceH)/2,sourceW,sourceH,0,0,preview.width,preview.height);
   return preview.toDataURL('image/jpeg',.78);
  }catch(e){console.warn('[정리왕] 화면 비교 저장 실패:',e);return''}
 }
@@ -405,18 +404,27 @@ $('rotateRight').onclick=()=>{turn=THREE.MathUtils.clamp(turn+.22,-.42,.6);camer
 $('zoomIn').onclick=()=>{zoom=Math.max(.79,zoom-.1);cameraMove()};
 $('zoomOut').onclick=()=>{zoom=Math.min(1.5,zoom+.1);cameraMove()};
 $('sound').onclick=()=>{activeSound=!activeSound;$('sound').textContent=activeSound?'♪':'♪̸';show(activeSound?'효과음 켜짐':'효과음 꺼짐',700)};
+function showStageButtons(){
+ const kitchen=$('startKitchen');
+ kitchen.disabled=!saved.unlocked;
+ kitchen.textContent=saved.unlocked?'주방 청소하기':'주방 잠김 · 원룸을 완료하세요';
+ kitchen.hidden=running;
+}
 function startLevel(n){
  level=n;turn=0;zoom=1;running=true;
  $('intro').classList.add('hidden');$('end').classList.add('hidden');
- buildRoom();window.KidscadeGame?.start?.({stage:level+1});show(level===0?'어서 와! 먼저 바닥의 책을 골라 봐':'새 의뢰가 도착했어! 주방을 청소하자',1750);
+ showStageButtons();buildRoom();window.KidscadeGame?.start?.({stage:level+1});show(level===0?'어서 와! 먼저 바닥의 책을 골라 봐':'새 의뢰가 도착했어! 주방을 청소하자',1750);
 }
-$('start').onclick=async()=>{
+async function launchStage(n){
  if(running){$('intro').classList.add('hidden');return}
- const b=$('start');b.disabled=true;b.textContent='방과 가구를 준비하고 있어요...';
- await preload();startLevel(previousStage);
- b.textContent='계속 청소하기';b.disabled=false;
-};
-$('help').onclick=()=>{$('intro').classList.remove('hidden');$('start').textContent='계속 청소하기'};
+ const a=$('start'),b=$('startKitchen');a.disabled=true;b.disabled=true;
+ a.textContent='방과 가구를 준비하고 있어요...';
+ try{await preload();startLevel(n)}catch(e){show('방을 준비할 수 없어요. 다시 시도해 주세요.',2000);console.error(e)}
+ finally{a.textContent='원룸 청소하기';a.disabled=false;showStageButtons()}
+}
+$('start').onclick=()=>launchStage(0);
+$('startKitchen').onclick=()=>{if(saved.unlocked)launchStage(1)};
+$('help').onclick=()=>{$('intro').classList.remove('hidden');$('start').textContent='계속 청소하기';showStageButtons()};
 $('replay').onclick=()=>startLevel(level);
 $('next').onclick=()=>startLevel(Math.min(1,level+1));
 function finish(){
@@ -425,6 +433,15 @@ function finish(){
  saved.coins=coins;saved.unlocked=Math.max(saved.unlocked,Math.min(1,level+1));
  if(!saved.best[level]||seconds<saved.best[level])saved.best[level]=seconds;
  save();updateHud();
+ // Wait for the final object to land before photographing the clean room.
+ const completedGeneration=generation;
+ captureTimeout=setTimeout(()=>{
+  if(generation!==completedGeneration)return;
+  const before=$('beforePhoto'),after=$('afterPhoto');
+  if(beforeImage){before.src=beforeImage;before.alt='청소 전 어질러진 공간';}
+  const clean=captureScene();if(clean){after.src=clean;after.alt='청소 후 정리된 공간';}
+ },700);
+ showStageButtons();
  window.KidscadeGame?.result?.({scope:'mission',status:'completed',outcome:'clear',score:totalCount,level:level+1,cleaned:cleanCount,durationSeconds:seconds});
  const more=level===0;
  $('endTitle').textContent=more?'원룸 청소 성공!':'주방 청소 성공!';
@@ -468,5 +485,5 @@ function frame(now){
 cameraMove();requestAnimationFrame(frame);
 // An unlocked room is playable without relying on cloud account permissions.
 $('coins').textContent=coins+' 🪙';
-if(saved.unlocked>0){$('introTitle').textContent='다시 찾아온 정리왕!';
- $('start').textContent='원룸 청소 시작';}
+if(saved.unlocked>0){$('introTitle').textContent='다시 찾아온 정리왕!';}
+showStageButtons();
