@@ -992,3 +992,19 @@ test('v5.9 preserves short puff sleeves instead of extending all tops to wrist',
   assert.match(pack,/const allowance=\(puff\?\.058:\.026\)\*coverage/);
   assert.match(visual,/Puff blouse sleeve extends past elbow/);
 });
+
+test('v6.0 expanded Chibi catalogs contain 8 new hairstyles and 10 new garments',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  const studio=read('teacher/character-3d-studio.js');
+  const m=JSON.parse(read('chibi/asset-manifest.json'));
+  assert.equal(m.wardrobeLibrary.hairStyles.male.length,12);
+  assert.equal(m.wardrobeLibrary.hairStyles.female.length,12);
+  assert.equal(m.outfitLibrary.male.top.length,9);
+  assert.equal(m.outfitLibrary.male.bottom.length,6);
+  assert.equal(m.outfitLibrary.female.top.length,9);
+  assert.equal(m.outfitLibrary.female.bottom.length,6);
+  assert.match(pack,/chibi_male_cargo/);
+  assert.match(pack,/chibi_female_pleated/);
+  assert.match(studio,/kidscade_male_hair_spiky/);
+  assert.match(studio,/chibi_female_hair_twintail/);
+});
