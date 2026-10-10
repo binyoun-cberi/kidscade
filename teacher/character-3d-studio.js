@@ -1434,7 +1434,12 @@ const HAIR_STYLE_PARAMETERS={
 };
 // v6.1: visibly distinct, head-bound geometry; source hair mesh/UV/weights remain intact.
 function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
-  const material=Array.isArray(template.material)?template.material[0]:template.material;
+  // The source GLB hair atlas has alpha-cutout strand silhouettes. Reusing
+  // it on spheres/cones punched circular holes through ponytails and spikes.
+  // Hair volumes need an opaque solid material independent of those UVs.
+  const material=new THREE.MeshStandardMaterial({
+    color:'#ad715e',roughness:.86,metalness:0,side:THREE.DoubleSide
+  });
   // Some GLB exports rename the head bone. Fall back to the original
   // crown vertex's dominant skin influence instead of failing to load hair.
   let head=template.skeleton.bones.find(bone=>/head/i.test(bone.name));
@@ -1484,10 +1489,10 @@ function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
       ball('himeSide_'+sign,at(sign*.44,.35,.31),.104,.285,.095);
     }
   }else if(name==='kidscade_male_hair_spiky'){
-    for(const [j,u] of [-.53,-.25,.06,.35,.57].entries()){
-      const [x,y,z]=at(u,.88,.045);
-      const cone=new THREE.ConeGeometry(size.x*.095,size.y*(.18+(j%2)*.065),9);
-      cone.rotateZ(u*.50);cone.translate(x,y+size.y*.11,z);
+    for(const [j,u] of [-.34,-.16,.04,.21,.35].entries()){
+      const [x,y,z]=at(u,.80,.03);
+      const cone=new THREE.ConeGeometry(size.x*.113,size.y*(.23+(j%2)*.065),9);
+      cone.rotateZ(u*.32);cone.translate(x,y+size.y*.092,z);
       const piece=makeRigidSkinnedPiece(template,cone,head.name,material,name+'_spike_'+j);
       piece.position.set(0,0,0);piece.quaternion.identity();piece.scale.set(1,1,1);
       piece.userData={part:'rigged-hair-spike',hairStyle:name,headBone:head.name};
@@ -1495,7 +1500,7 @@ function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
     }
   }else if(name==='kidscade_male_hair_mullet'){
     for(const sign of [-1,1]){
-      ball('nape_'+sign,at(sign*.31,.20,-.39),.16,.26,.12);
+      ball('nape_'+sign,at(sign*.31,.16,-.39),.105,.215,.11);
     }
   }
 }
