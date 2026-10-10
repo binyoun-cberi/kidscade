@@ -332,15 +332,28 @@ function cleanStain(stain,effort){
 function inViewport(e){const r=canvas.getBoundingClientRect();mouse.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1)}
 function getHit(e){
  inViewport(e);picker.setFromCamera(mouse,camera);
- const hits=picker.intersectObjects(pickables,true);
+ const hits=picker.intersectObjects(pickables,true),candidates=[];
  for(const h of hits){
   let p=h.object;
   while(p&&!p.userData?.kind)p=p.parent;
-  if(p&&p.userData?.kind){
-   if(p.userData.kind==='stain'){const s=stains.find(x=>x.mesh===p);if(s&&!s.done)return{kind:'stain',value:s,point:h.point}}
-   if(p.userData.kind==='item'){const t=things.find(x=>x.group===p);if(t&&!t.done)return{kind:'item',value:t,point:h.point}}
-   if(p.userData.kind==='station'){const s=stations.find(x=>x.key===p.userData.key);if(s)return{kind:'station',value:s,point:h.point}}
+  if(!p?.userData?.kind)continue;
+  if(p.userData.kind==='stain'){
+   const stain=stains.find(x=>x.mesh===p);
+   if(stain&&!stain.done)candidates.push({kind:'stain',value:stain,point:h.point});
+  }else if(p.userData.kind==='item'){
+   const item=things.find(x=>x.group===p);
+   if(item&&!item.done)candidates.push({kind:'item',value:item,point:h.point});
+  }else if(p.userData.kind==='station'){
+   const station=stations.find(x=>x.key===p.userData.key);
+   if(station)candidates.push({kind:'station',value:station,point:h.point});
   }
+ }
+ // Selecting clutter has priority over a nearby large receptacle's hit proxy.
+ // Once holding an item, the receptacle takes priority for reliable placement.
+ const priority=selected?['station','item','stain']:['item','stain','station'];
+ for(const kind of priority){
+  const found=candidates.find(hit=>hit.kind===kind);
+  if(found)return found;
  }
  return null;
 }
