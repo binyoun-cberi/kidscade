@@ -920,9 +920,9 @@ test('v5.8 visual cleanup uses continuous skinned sleeves and visibly separate w
   assert.match(pack,/geometry\.setAttribute\('skinWeight',new THREE\.Float32BufferAttribute\(weights,4\)\)/);
   assert.doesNotMatch(pack,/shoulderCap=new THREE\.SphereGeometry/);
   assert.match(pack,/const upperRadius=wide\?\.140/);
-  assert.match(pack,/const lowerRadius=flare\?\.120:wide\?\.104/);
-  assert.match(pack,/geometry\.translate\(sign\*\(wide\?\.178:flare\?\.160:\.153\)/);
-  assert.match(pack,/const fullness=flare\?1-\.16\*knee\+\.26\*hem:1-\.11\*knee\+\.025\*hem/);
+  assert.match(pack,/const lowerRadius=flare\?\.105:wide\?\.104/);
+  assert.match(pack,/geometry\.translate\(sign\*\(wide\?\.178:flare\?\.178:\.153\)/);
+  assert.match(pack,/const fullness=flare\?1-\.13\*knee\+\.20\*hem:1-\.11\*knee\+\.025\*hem/);
 });
 
 test('v5.9 repairs exposed long-sleeve wrists and trouser crotch wedge without joining the legs',()=>{
@@ -1039,4 +1039,14 @@ test('v6.0 hairstyle details use the original scalp material and avoid hovering 
   assert.match(studio,/new THREE\.TubeGeometry\(braidCurve,24,\.024,7,false\)/);
   assert.doesNotMatch(studio,/new THREE\.TorusGeometry\(sx\*\.79,\.033,8,30\)/);
   assert.match(studio,/sphere\(mx\+sign\*sx\*\.70,my-\.042/);
+});
+
+test('v6.0 skirt folds use the animated source cloth rather than detached primitive triangles',()=>{
+  const outfit=read('teacher/chibi-outfit-pack.js');
+  const chrome=read('tests/chibi-visual-browser-audit.cjs');
+  assert.match(outfit,/const ripple=1\+\.045\*hemInfluence\*Math\.cos\(folds\*angle\)/);
+  assert.match(outfit,/group\.userData\.sculptedPleats=12/);
+  assert.doesNotMatch(outfit,/add\(ridge,accent,'pleat_'/);
+  assert.match(outfit,/const lowerRadius=flare\?\.105/);
+  assert.match(chrome,/sculpted pleats/);
 });
