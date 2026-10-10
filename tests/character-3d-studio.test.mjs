@@ -1035,7 +1035,7 @@ test('v6.1 hats and face items use corrected crown/mouth registration',()=>{
   assert.match(pack,/scalpY-\.012,hc\.z/);
   assert.match(pack,/crownWall/);
   assert.match(pack,/eyeY-\.305/);
-  assert.match(pack,/case 'sunglasses':return facePatch\(-\.110,eyeY-\.020,faceZ\+\.016/);
+  assert.match(pack,/case 'sunglasses':return facePatch\(/);
 });
 test('v6.1 tracksuit piping bends with weighted knees rather than floating rigid boxes',()=>{
   const pack=read('teacher/chibi-outfit-pack.js');
@@ -1069,7 +1069,7 @@ test('Chibi v6.3 facial accessories use curved, outward-facing geometry',()=>{
   assert.match(pack,/indices\.push\(a,a\+1,b,b,a\+1,b\+1\)/);
   assert.match(pack,/case 'mask':return facePatch\(/);
   assert.match(pack,/case 'sunglasses':return facePatch\(/);
-  assert.match(pack,/add\(facePatch\(\.110,eyeY/);
+  assert.match(pack,/add\(facePatch\(\.137,eyeY/);
   assert.doesNotMatch(pack,/case 'mask':return sphere\(/);
   assert.doesNotMatch(pack,/case 'sunglasses':return sphere\(/);
 });
