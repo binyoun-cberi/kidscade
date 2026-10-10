@@ -16,9 +16,13 @@
     </div>
     <div class="steps" id="steps" aria-label="라운드 진행 현황">
       <span class="round-pill" id="pill0">01 달고나</span><span class="line" aria-hidden="true"></span>
-      <span class="round-pill" id="pill1">02 기억의 다리</span>
+      <span class="round-pill" id="pill1">02 기억의 다리</span><span class="line" aria-hidden="true"></span>
+      <span class="round-pill" id="pill2">03 신호등</span><span class="line" aria-hidden="true"></span>
+      <span class="round-pill" id="pill3">04 줄다리기</span><span class="line" aria-hidden="true"></span>
+      <span class="round-pill" id="pill4">05 구슬</span><span class="line" aria-hidden="true"></span>
+      <span class="round-pill" id="pill5">06 결승전</span>
     </div>
-    <div class="best"><small>최고 통과</small><b id="bestCount">0 / 2</b></div>
+    <div class="best"><small>최고 통과</small><b id="bestCount">0 / 6</b></div>
   </header>
   <main class="arena" id="arena">
     <iframe id="gameFrame" class="game-frame" title="서바이벌 라운드" allow="fullscreen" referrerpolicy="same-origin" hidden></iframe>
@@ -28,14 +32,18 @@
       <div class="lobby-content">
         <p class="kicker"><span class="live-dot"></span> KIDSCADE SURVIVAL · SEASON 01</p>
         <h1>꼴뚜기 게임<span>서바이벌</span></h1>
-        <p class="description">두 개의 미니게임, 단 한 번의 도전.<br>살아남아 마지막 결승선을 통과하세요.</p>
+        <p class="description">여섯 개의 미니게임, 단 한 번의 도전.<br>모든 관문을 통과해야 최종 생존!</p>
         <div class="game-cards">
           <article class="game-card"><div class="card-icon dalgona"><img src="../../assets/game/2d/platformer-art/base/items/coin-gold.png" alt=""></div><div><small>ROUND 01</small><strong>달고나 게임</strong><span>선을 따라 정확한 속도로</span></div><span class="card-check" aria-hidden="true">01</span></article>
           <article class="game-card"><div class="card-icon bridge">▦</div><div><small>ROUND 02</small><strong>기억의 다리</strong><span>정답 길을 기억하고 통과</span></div><span class="card-check" aria-hidden="true">02</span></article>
+          <article class="game-card"><div class="card-icon redlight">●</div><div><small>ROUND 03</small><strong>멈춰! 움직여!</strong><span>초록불에 달리고 빨간불에 정지</span></div><span class="card-check" aria-hidden="true">03</span></article>
+          <article class="game-card"><div class="card-icon tug">↔</div><div><small>ROUND 04</small><strong>줄다리기</strong><span>연타 대신 정확한 타이밍</span></div><span class="card-check" aria-hidden="true">04</span></article>
+          <article class="game-card"><div class="card-icon marbles">◉</div><div><small>ROUND 05</small><strong>구슬 승부</strong><span>홀짝·수량 비교 문제</span></div><span class="card-check" aria-hidden="true">05</span></article>
+          <article class="game-card"><div class="card-icon final">★</div><div><small>ROUND 06</small><strong>꼴뚜기 결승전</strong><span>기억력·타이밍·계산 종합</span></div><span class="card-check" aria-hidden="true">06</span></article>
         </div>
         <button type="button" id="startButton" class="primary">서바이벌 참가하기 <span aria-hidden="true">→</span></button>
         <p class="fine-print">한 라운드라도 실패하면 대회 탈락 · 성공해야 다음 게임 개방</p>
-        <div class="practice">연습하고 싶다면 <a href="../dalgona-trace/index.html">달고나 게임</a><span aria-hidden="true">·</span><a href="../squid-memory-bridge/index.html">기억의 다리</a></div>
+        <div class="practice">개별 연습: <a href="../dalgona-trace/index.html">달고나</a> · <a href="../squid-memory-bridge/index.html">기억의 다리</a> · <a href="./redlight.html">신호등</a> · <a href="./tug.html">줄다리기</a> · <a href="./marbles.html">구슬</a> · <a href="./final.html">결승전</a></div>
       </div>
     </section>
     <section class="scene pregame hidden" id="pregame" aria-labelledby="pregameTitle">
@@ -51,6 +59,7 @@
           <div class="demo-bridge" aria-hidden="true">
             <span></span><span class="correct"></span><span></span><span></span><span></span><span></span><span class="correct"></span><span class="correct"></span><span></span><span></span><span class="correct"></span><span></span><span></span><span></span><span class="correct"></span><span></span><span></span><span></span><span class="correct"></span><span></span><span></span><span></span><span class="correct"></span><span class="correct"></span><span></span>
           </div>
+          <div class="demo-extra" aria-hidden="true"><span id="demoExtraIcon">●</span><small id="demoExtraDesc">조작 시범</small></div>
         </div>
         <h2 id="pregameTitle">달고나 게임</h2>
         <p id="pregameRule">선을 따라 알맞은 속도로 그리세요.</p>
@@ -73,15 +82,15 @@
           <div><small>최고 기록</small><strong id="endBest">1 / 2</strong></div>
           <div><small>완주 횟수</small><strong id="endWins">0</strong></div>
         </div>
-        <div class="result-path" id="resultPath" aria-label="라운드 결과"><span id="endRound0">01 달고나</span><span id="endRound1">02 기억의 다리</span></div>
+        <div class="result-path" id="resultPath" aria-label="라운드 결과"><span id="endRound0">01 달고나</span><span id="endRound1">02 기억의 다리</span><span id="endRound2">03 신호등</span><span id="endRound3">04 줄다리기</span><span id="endRound4">05 구슬</span><span id="endRound5">06 결승전</span></div>
         <button type="button" id="endButton" class="primary">다음 라운드로 <span aria-hidden="true">→</span></button>
-        <div class="practice" id="endPractice">각 게임은 언제든 <a href="../dalgona-trace/index.html">달고나 연습</a> · <a href="../squid-memory-bridge/index.html">기억의 다리 연습</a>으로 플레이할 수 있어요.</div>
+        <div class="practice" id="endPractice">연습 모드: <a href="../dalgona-trace/index.html">달고나</a> · <a href="../squid-memory-bridge/index.html">기억의 다리</a> · <a href="./redlight.html">신호등</a> · <a href="./tug.html">줄다리기</a> · <a href="./marbles.html">구슬</a> · <a href="./final.html">결승전</a></div>
       </div>
     </section>
   </main>
 </div>
 <script src="../../kidscade-game-sdk.js" data-game-id="squid_survival" data-title="꼴뚜기 게임: 서바이벌" data-shell="true" data-orientation="any"></script>
-<script src="./rules.js?v=1"></script>
-<script src="./game.js?v=1"></script>
+<script src="./rules.js?v=2"></script>
+<script src="./game.js?v=2"></script>
 </body>
 </html>
