@@ -143,7 +143,7 @@ const errors=[];
       report.hairPack.variants.push({name,fit,vertices:mesh.vertices,fingerprint:mesh.fingerprint});
     }
   }
-  assert.equal(new Set(report.hairPack.variants.map(x=>x.fingerprint)).size,16,
+  assert.equal(new Set(report.hairPack.variants.map(x=>x.fingerprint)).size,24,
     'Not all hairstyle choices have distinct 3D geometry');
   await evalPage("document.querySelector('[data-body-fit=\\\"male\\\"]').click()");
 
@@ -293,10 +293,10 @@ const errors=[];
       "visible:window.__kc3dAudit.outfitCatalog().filter(x=>x.visible&&x.category==="+JSON.stringify(category)+").map(x=>x.name)};"+
     "})()");
   const catalog3d=await evalPage('window.__kc3dAudit.outfitCatalog()');
-  assert.equal(catalog3d.length,20,'Must have exactly 20 catalogued top/bottom styles');
+  assert.equal(catalog3d.length,30,'Must have exactly 30 catalogued top/bottom styles');
   const newStyles=catalog3d.filter(x=>x.name.startsWith('chibi_'));
-  assert.equal(newStyles.length,15,'Must have 15 new generated styles');
-  assert.equal(new Set(newStyles.map(x=>x.fingerprint)).size,15,
+  assert.equal(newStyles.length,25,'Must have 25 new generated styles');
+  assert.equal(new Set(newStyles.map(x=>x.fingerprint)).size,25,
     'New garments do not all have distinct skinned-shell geometry');
   assert.ok(newStyles.every(x=>x.meshSafety?.meshSafety==='bounded-deformation-with-local-triangle-winding-and-area-v5.5'),
     'Generated garment missed triangle stability guard');
@@ -306,10 +306,10 @@ const errors=[];
     assert.ok(meshSafety.recoveryPasses<=12,'Unbounded garment stabilization '+name);
   }
   const skinAudit=await evalPage('window.__kc3dAudit.garmentSkinAudit()');
-  // Nine top variants have two continuous sleeves each (18).
-  // Five long trouser styles have two legs and one hip yoke each (15).
-  assert.equal(skinAudit.length,33,'Missing sleeves, trouser legs or crotch-covering hip yokes');
-  assert.equal(skinAudit.filter(x=>x.piece.endsWith('_hip_yoke')).length,5,
+  // Fifteen top variants have two continuous sleeves each (30).
+  // Seven long trouser styles have two legs and one hip yoke each (21).
+  assert.equal(skinAudit.length,51,'Missing sleeves, trouser legs or crotch-covering hip yokes');
+  assert.equal(skinAudit.filter(x=>x.piece.endsWith('_hip_yoke')).length,7,
     'Some trouser styles still expose an unconnected crotch gap');
   assert.ok(skinAudit.filter(x=>x.piece.endsWith('_hip_yoke'))
     .every(x=>x.transfer.region==='pelvis'),'Hip yokes must use pelvis-weight blending');
@@ -349,13 +349,13 @@ const errors=[];
   }
   report.outfitPack.skinTransfer={pieces:skinAudit.length,details:skinAudit};
 
-  for(const name of ['chibi_male_hoodie','chibi_male_bomber','chibi_male_varsity','chibi_male_oxford','chibi_male_sweater','chibi_female_cardigan','chibi_female_knit','chibi_female_jacket']){
+  for(const name of ['chibi_male_hoodie','chibi_male_bomber','chibi_male_varsity','chibi_male_oxford','chibi_male_sweater','chibi_male_trackjacket','chibi_male_rugby','chibi_female_cardigan','chibi_female_knit','chibi_female_jacket','chibi_female_blazer','chibi_female_sailor','chibi_female_tunic']){
     const style=catalog3d.find(x=>x.name===name);
     assert.ok(style?.extras>=4,'Long sleeves missing from outerwear style: '+name);
   }
   assert.ok(catalog3d.find(x=>x.name==='chibi_female_blouse')?.extras>=6,
     'Blouse missing modeled puff sleeves');
-  for(const name of ['chibi_male_jeans','chibi_male_joggers','chibi_male_chinos','chibi_female_jeans','chibi_female_widepants']){
+  for(const name of ['chibi_male_jeans','chibi_male_joggers','chibi_male_chinos','chibi_male_cargo','chibi_male_trackpants','chibi_female_jeans','chibi_female_widepants']){
     const style=catalog3d.find(x=>x.name===name);
     assert.ok(style?.extras>=3,'Trousers must have separate left and right skinned leg meshes: '+name);
   }
@@ -364,7 +364,7 @@ const errors=[];
     await setFit(fit);
     for(const category of ['top','bottom']){
       const names=outfits[fit][category];
-      assert.equal(names.length,category==='top'?6:4,'Wrong style count for '+fit+'/'+category);
+      assert.equal(names.length,category==='top'?9:6,'Wrong style count for '+fit+'/'+category);
       for(const name of names){
         const expected=catalog3d.find(x=>x.name===name);
         assert.ok(expected?.available&&expected.vertices>100,'Missing rigged shell '+name);
