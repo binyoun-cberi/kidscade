@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#503328">
+<title>달고나 게임 | KIDSCADE</title>
+<link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <img src="../../assets/game/2d/platformer-art/base/items/coin-gold.png" alt="" class="brand-coin">
+      <div><strong>달고나 게임</strong><small>DALGONA TRACE</small></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span>도전 단계</span><b id="stageText">01</b></div>
+      <div class="stat time"><span>남은 시간</span><b id="timeText">00:55</b></div>
+      <div class="stat"><span>최고 단계</span><b id="bestText">00</b></div>
+    </div>
+    <div class="tools">
+      <button id="soundBtn" type="button" aria-label="소리 끄기">♪</button>
+      <button id="helpBtn" type="button" aria-label="게임 방법">?</button>
+    </div>
+  </header>
+  <main class="main">
+    <section class="board-column">
+      <div class="board-label"><span class="label-tag" id="shapeName">동그라미</span><span id="hintText">노란 출발점을 누르고 선을 따라 그려요</span><span class="small-tip">손가락 · 마우스 · 펜</span></div>
+      <div id="boardWrap" class="board-wrap">
+        <canvas id="board" aria-label="달고나 윤곽선을 따라 긁는 게임. 노란 출발점에서 손가락 또는 마우스로 선을 따라 이동하세요." tabindex="0"></canvas>
+        <div class="floating-toast" id="toast" aria-live="polite"></div>
+      </div>
+      <div class="board-footer">
+        <span id="stageDescription">부드럽게 한 바퀴</span>
+        <div class="progress-track"><div id="progressFill"></div></div>
+        <b id="progressText">0%</b>
+      </div>
+    </section>
+    <aside class="dashboard" aria-label="달고나 상태">
+      <div class="dashboard-heading"><span class="eyebrow">SUGAR CHALLENGE</span><h2>서두르지 말고<br>멈추지도 마!</h2><p>정확한 선과 알맞은 속도를 모두 지켜야 달고나가 완성돼요.</p></div>
+      <div class="meter-panel">
+        <div class="meter-title"><span>긁는 속도</span><b id="speedText">시작 대기</b></div>
+        <div class="speed-track"><span class="speed-ok"></span><span class="speed-needle" id="speedNeedle"></span></div>
+        <div class="speed-labels"><span>너무 느림</span><strong>딱 좋아!</strong><span>너무 빠름</span></div>
+      </div>
+      <div class="meter-panel"><div class="meter-title"><span>달고나의 금</span><b id="crackText">0%</b></div><div class="meter-track crack"><span id="crackFill"></span></div><small>선을 벗어나거나 너무 빨리 긁으면 금이 가요.</small></div>
+      <div class="meter-panel"><div class="meter-title"><span>굳어가는 정도</span><b id="stuckText">0%</b></div><div class="meter-track stuck"><span id="stuckFill"></span></div><small>너무 천천히 긁거나 오래 멈추면 굳어요.</small></div>
+      <div class="instruction" id="instruction"><span class="instruction-dot"></span><span id="instructionText">밝게 표시된 출발점부터 시작하세요.</span></div>
+      <button type="button" id="retryBtn" class="retry">↻ 현재 모양 다시 도전</button>
+    </aside>
+  </main>
+  <footer class="bottom">정확도 + 속도 + 완주 시간으로 점수를 계산해요. 도전 중 손을 떼면 작은 금이 생깁니다.</footer>
+</div>
+<div class="overlay" id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+  <section class="dialog">
+    <img class="dialog-coin" src="../../assets/game/2d/platformer-art/base/items/coin-gold.png" alt="">
+    <p class="eyebrow">ONE LINE. ONE COOKIE.</p>
+    <h1 id="introTitle">달고나 게임</h1>
+    <p class="lead">모양을 따라 조심조심 긁어내세요.<br>삐져나가거나 너무 빠르면 <strong>달고나에 금이 가요.</strong><br>너무 느리면 <strong>설탕이 굳어버려요!</strong></p>
+    <div class="rules">
+      <div><b>01</b><span>출발점에서 눌러 선을 따라 이동해요.</span></div>
+      <div><b>02</b><span>선 안에서 일정한 속도로 그려요.</span></div>
+      <div><b>03</b><span>끝까지 돌아오면 성공! 다음 모양은 더 어려워요.</span></div>
+    </div>
+    <button id="startBtn" class="primary" type="button">달고나 만들기 →</button>
+    <small>모바일에서는 세로 화면으로도 즐길 수 있어요.</small>
+  </section>
+</div>
+<div class="overlay hidden" id="result" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+  <section class="dialog result-dialog">
+    <p class="eyebrow" id="resultCaption">SUCCESS</p>
+    <h2 id="resultTitle">깨끗하게 완성!</h2>
+    <div class="stars" id="stars">★★★</div>
+    <p id="resultMessage">달고나를 무사히 완성했어요.</p>
+    <div class="result-stats"><div><span>정확도</span><b id="resultAccuracy">100%</b></div><div><span>완성 점수</span><b id="resultScore">100점</b></div><div><span>남은 시간</span><b id="resultTime">00:00</b></div></div>
+    <button id="continueBtn" class="primary" type="button">다음 달고나 →</button>
+  </section>
+</div>
+<div class="overlay hidden" id="help" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <section class="dialog help-dialog">
+    <p class="eyebrow">HOW TO PLAY</p><h2 id="helpTitle">달고나 게임 규칙</h2>
+    <p>노란 출발점을 누르고 손가락이나 마우스를 뗄 필요 없이 <strong>표시된 선을 따라 한 바퀴</strong> 그려요. 선을 멀리 벗어나면 금이 가고, 순서를 건너뛰면 진행되지 않아요.</p>
+    <p>속도 표시가 가운데 <strong>‘딱 좋아!’</strong>에 있도록 일정하게 움직여요. 너무 빠르면 금이 가고, 너무 느리거나 오래 멈추면 굳어가는 정도가 올라가요.</p>
+    <p>잠깐 손을 뗄 수 있지만 작은 금이 생겨요. 다시 현재 표시된 점에서 이어 그리면 돼요. 금·굳기 100% 또는 제한시간 초과 시 실패해요.</p>
+    <button id="closeHelpBtn" class="primary" type="button">돌아가기</button>
+  </section>
+</div>
+<script src="../../kidscade-game-sdk.js" data-game-id="dalgona_trace" data-title="달고나 게임" data-shell="true" data-orientation="any"></script>
+<script src="./trace.js?v=1"></script>
+<script src="./game.js?v=1"></script>
+</body>
+</html>

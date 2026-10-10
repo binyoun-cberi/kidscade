@@ -29,6 +29,33 @@
       "classroom": true
     },
     {
+      "id": "dalgona_trace",
+      "addedAt": "2026-10-10T22:15:00+09:00",
+      "title": "달고나 게임",
+      "href": "games/dalgona-trace/index.html",
+      "category": "trivia",
+      "age": "low",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🍯",
+      "description": "동그라미·세모·별·하트·꽃·우산 모양을 따라 손가락이나 마우스로 달고나를 조심스럽게 긁어요! 선을 벗어나거나 너무 빠르면 금이 가고, 너무 느리거나 오래 멈추면 굳어버려요. 정확도와 속도로 점수를 얻는 실시간 선 따라 그리기 게임.",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "high_ota_typographic_horror",
       "addedAt": "2026-10-10T00:28:00+09:00",
       "title": "오타 — 이름을 잃어버린 밤",
