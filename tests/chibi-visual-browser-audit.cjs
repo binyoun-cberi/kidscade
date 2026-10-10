@@ -387,6 +387,60 @@ const errors=[];
       }
     }
   }
+  // v6.0 focused visual inspection: screenshot every newly introduced hair
+  // from front, side and animated angle; the prior audit only captured male hair.
+  const focusedHair={
+    male:['kidscade_male_hair_spiky','kidscade_male_hair_wave',
+      'kidscade_male_hair_mullet','kidscade_male_hair_comma'],
+    female:['chibi_female_hair_curl','chibi_female_hair_hime',
+      'chibi_female_hair_pixie','chibi_female_hair_twintail']
+  };
+  report.v60VisualInspection={hairShots:[],outfitShots:[]};
+  for(const fit of ['male','female']){
+    await setFit(fit);
+    for(const name of focusedHair[fit]){
+      const selected=await evalPage("(()=>{const el=document.getElementById('chibiHair');"+
+        "el.value="+JSON.stringify(name)+";el.dispatchEvent(new Event('change',{bubbles:true}));"+
+        "return {value:el.value,selected:window.__kc3dAudit.bodyFitAudit().visibleParts}})()");
+      assert.equal(selected.value,name,'v6 hair picker rejected '+name);
+      assert.ok(selected.selected.includes(name),'v6 hair not visible '+name);
+      for(const [clip,view,phase] of [['IDLE','front',0],['IDLE','side',0],['WALK','threeQuarter',.5]]){
+        await sample(clip,view,phase,'v60-hair-'+name);
+        report.v60VisualInspection.hairShots.push({fit,name,clip,view,phase});
+      }
+    }
+  }
+  // Every new outfit captured isolated from other new garments in front and
+  // side poses, including RUN, so silhouette overlap cannot hide defects.
+  const focusedOutfits={
+    male:{
+      top:['chibi_male_trackjacket','chibi_male_rugby','chibi_male_utilityvest'],
+      bottom:['chibi_male_cargo','chibi_male_trackpants']
+    },
+    female:{
+      top:['chibi_female_blazer','chibi_female_sailor','chibi_female_tunic'],
+      bottom:['chibi_female_pleated','chibi_female_culottes']
+    }
+  };
+  for(const fit of ['male','female']){
+    await setFit(fit);
+    for(const category of ['top','bottom']){
+      for(const name of focusedOutfits[fit][category]){
+        const baselineOther=category==='top'
+          ? (fit==='male'?'kidscade_male_shorts':'skirt')
+          : (fit==='male'?'kidscade_male_tshirt':'shirt');
+        await selectGarment(category==='top'?'bottom':'top',baselineOther);
+        await selectGarment(category,name);
+        for(const [clip,view,phase] of [
+          ['IDLE','front',0],['IDLE','side',0],
+          ['RUN','front',.25],['RUN','side',.75]]){
+          const pose=await sample(clip,view,phase,'v60-outfit-'+name);
+          assert.ok(pose.selectedParts.includes(name),'Outfit invisible during focused audit '+name);
+          report.v60VisualInspection.outfitShots.push({fit,name,clip,view,phase});
+        }
+      }
+    }
+  }
   // Revisit the exact angles that showed white skin triangles at the crotch
   // and jagged wrist edges in the user's before/after collage.
   for(const [fit,top,bottom] of [
