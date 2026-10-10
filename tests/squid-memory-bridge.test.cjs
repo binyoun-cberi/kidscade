@@ -48,7 +48,7 @@ test('game assets reference landscape orientation and SDK', () => {
   assert.match(html,/data-orientation="landscape"/);
   assert.match(html,/\.\/path\.js/);
   assert.match(css,/orientation:portrait/);
-  assert.match(source,/s\.deadline=Date\.now\(\)\+300000/);
+  assert.match(source,/ROUND_TIME_MS=SURVIVAL_MODE\?90000:300000/);
 });
 
 function simulatedGame() {
