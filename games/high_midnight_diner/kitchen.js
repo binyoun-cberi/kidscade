@@ -6,6 +6,7 @@ const K='../../assets/game/3d/interiors/charming-kitchen-set/';
 const S='../../assets/game/3d/interiors/modular-sushi-restaurant-kit/';
 const F='../../assets/game/3d/food/ultimate-food-pack/';
 const PEOPLE='../../assets/game/npcs/glTF/';
+const FOOD_ITEMS='../../assets/game/food/';
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x25241d);
 const camera=new THREE.PerspectiveCamera(38,1,.05,80);camera.position.set(0,2.2,5.2);camera.lookAt(0,1.9,-.6);
 let renderer;
@@ -66,6 +67,10 @@ async function setCourse(index){
 setCourse(0);
 window.addEventListener('midnight-diner:state',ev=>{
  const d=ev.detail||{};mood=(d.suspicion||0)/100;if(d.shock)shock=1;
+ if(d.phase!=='cooking'){
+  lookingAtFood=false;
+  ingredientModels.forEach(obj=>obj.visible=false);
+ }
  if(Number.isInteger(d.course)&&d.course!==course){course=d.course;setCourse(Math.min(4,course));}
 });
 function resize(){
@@ -87,6 +92,17 @@ spoon.position.set(.4,1.76,-.2);scene.add(spoon);
 const addedIngredient=new THREE.Mesh(new THREE.DodecahedronGeometry(.12),new THREE.MeshStandardMaterial({color:0x8e764c,roughness:1}));
 addedIngredient.visible=false;scene.add(addedIngredient);
 let currentZone=1,currentTotal=5,lookingAtFood=false,foodIngredient=null,stirUntil=0;
+const ingredientModels=new Map();
+const ingredientFiles={
+ seed:'tomato-slice.glb',mushroom:'mushroom-half.glb',bean:'cherries.glb',
+ thread:'celery-stick.glb',dust:'cheese-cut.glb',safe:'carrot.glb'
+};
+for(const [key,file] of Object.entries(ingredientFiles)){
+ load(FOOD_ITEMS+file,.29,0,-9,0).then(obj=>{
+  if(!obj)return;
+  obj.visible=false;ingredientModels.set(key,obj);
+ });
+}
 window.addEventListener('midnight-diner:cooking',ev=>{
  const d=ev.detail||{};
  currentZone=d.zone||1;currentTotal=d.total||5;lookingAtFood=!!d.looking&&!d.concealed;
@@ -95,6 +111,10 @@ window.addEventListener('midnight-diner:cooking',ev=>{
  const prohibited=lookingAtFood&&foodIngredient&&foodIngredient!=='일반 양념';
  addedIngredient.material.color.setHex(prohibited?0x874638:0x8e9464);
  addedIngredient.visible=lookingAtFood;
+ ingredientModels.forEach(obj=>obj.visible=false);
+ const key=lookingAtFood?(foodIngredient==='일반 양념'?'safe':['seed','mushroom','bean','thread','dust'][course]):null;
+ const visual=key&&ingredientModels.get(key);
+ if(visual)visual.visible=true;
 });
 window.addEventListener('midnight-diner:action',ev=>{
  const action=ev.detail||{};
@@ -131,8 +151,11 @@ function tick(){
  const x=-1.1+(Math.max(1,currentZone)-1)/Math.max(1,currentTotal-1)*2.15;
  spoon.position.set(x,1.79+Math.sin(t*11)*.07,-.22);
  spoon.rotation.set(0,0,stirring?Math.sin(t*10)*.35:.08);
- addedIngredient.visible=stirring&&lookingAtFood;
- if(addedIngredient.visible)addedIngredient.position.set(x,1.47+(1-(stirUntil-t)/1.4)*-.24,-.2);
+ const currentModel=[...ingredientModels.values()].find(obj=>obj.visible);
+ addedIngredient.visible=stirring&&lookingAtFood&&!currentModel;
+ const y=1.6-Math.min(1,Math.max(0,1-(stirUntil-t)/1.4))*.3;
+ if(addedIngredient.visible)addedIngredient.position.set(x,y,-.2);
+ if(currentModel)currentModel.position.set(x,y,-.23);
  steam.forEach((sprite,i)=>{
   const show=course===1&&!!food;
   sprite.visible=show;
