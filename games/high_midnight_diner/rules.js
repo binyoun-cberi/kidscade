@@ -13,11 +13,11 @@ const FOODS=Object.freeze([
  {id:'cake',title:'마지막 조각 케이크',detail:'은빛 가루를 뿌린 케이크 · 7조각',banned:'dust',count:7,hazards:3,word:'은빛 가루',line:'자정이 지나면 은빛이 더 잘 보인단다.',glb:'cupcake.glb'}
 ]);
 const INGREDIENTS=Object.freeze({
- seed:{name:'붉은 씨앗',clue:'붉은 점이 세 개 모여 있으면 위험. 한 점은 안전한 장식.',safety:'붉은 점이 세 개인가요?'},
- mushroom:{name:'달빛 버섯',clue:'보라색 반달 갓과 평행한 두 줄 무늬. 일반 버섯은 갈색.',safety:'보라색 반달과 두 줄을 찾으세요.'},
- bean:{name:'그림자 콩',clue:'파란 점 두 개가 붙어 있으면 위험. 초록 점 한 개는 안전.',safety:'파란 점 두 개인가요?'},
- thread:{name:'검은 실뿌리',clue:'만두 주름 위에 검은 실선 세 줄. 일반 만두는 갈색 접힘.',safety:'주름 위 검은 실선이 세 개인지 확인하세요.'},
- dust:{name:'은빛 가루',clue:'케이크 위에 은색 마름모 네 개. 갈색 부스러기 하나는 안전.',safety:'은색 마름모가 네 개인가요?'}
+ seed:{name:'붉은 씨앗',clue:'조리 과정에서 1개씩 올린 붉은 씨앗은 뒤집힌 부침개에 섞여 겉에서 확실히 드러나지 않는다.',safety:'조리 중 어느 번호에 붉은 씨앗이 들어갔나요?'},
+ mushroom:{name:'달빛 버섯',clue:'조리 중 달빛 버섯을 집어 넣은 위치를 기억해야 한다. 국물을 저으면 색과 질감만으로는 알기 어렵다.',safety:'조리 중 버섯을 넣은 순서와 위치를 기억하세요.'},
+ bean:{name:'그림자 콩',clue:'푸른 그림자 콩과 일반 양념은 굽고 나면 색이 비슷하다. 손에 든 재료를 먼저 확인해야 한다.',safety:'어느 꼬치에 파란 콩을 묻혔는지 기억하세요.'},
+ thread:{name:'검은 실뿌리',clue:'특정 만두 속에만 검은 실뿌리가 들어간다. 쪄내면 겉모습으로는 알 수 없다.',safety:'만두를 만들 때 재료를 넣은 번호를 관찰하세요.'},
+ dust:{name:'은빛 가루',clue:'은빛 가루는 굽고 나면 설탕가루처럼 보인다. 요리사가 뿌린 위치가 더 확실한 단서다.',safety:'가루를 뿌린 위치와 순서를 기억하세요.'}
 });
 function rng(seed){let s=(Number(seed)>>>0)||0x1234abcd;return()=>((s^=s<<13,s^=s>>>17,s^=s<<5)>>>0)/4294967296;}
 function dishFor(index,rand){
