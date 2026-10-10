@@ -98,3 +98,15 @@ test('Tidy King scatters props into natural clusters, not an 8-column grid',()=>
  assert.doesNotMatch(js,/const col=i%8,row=Math\.floor\(i\/8\)/);
  assert.match(js,/source\.home\.x\+Math\.cos\(theta\)/);
 });
+
+test('Tidy King has large clearable three-dimensional trash mountains',()=>{
+ assert.match(js,/book:14,pen:8,pillow:10/);
+ assert.match(js,/cup:18,plate:16,pan:5/);
+ assert.match(js,/function createClutterMountains\(/);
+ assert.match(js,/new THREE\.InstancedMesh\(/);
+ assert.match(js,/itemModel\(kind,size,props\[kind\]\.color\)/);
+ assert.match(js,/function retreatClutterMountains\(/);
+ assert.match(js,/retreatClutterMountains\(\)/);
+ assert.match(js,/ratio>=1\?decorations\.length/);
+ assert.match(js,/m\.geometry\.dispose\(\)/);
+});
