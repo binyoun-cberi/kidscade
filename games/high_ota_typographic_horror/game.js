@@ -40,11 +40,11 @@ camera.rotation.order = 'YXZ';
 const textMaterials = new Map();
 const unitPlane = new THREE.PlaneGeometry(1, 1);
 const stamps = new Map();
-const wallMat = new THREE.MeshBasicMaterial({color:0x0a0f16});
-const floorMat = new THREE.MeshBasicMaterial({color:0x0b1018});
-const propMat = new THREE.MeshBasicMaterial({color:0x111924});
-const trimMat = new THREE.MeshBasicMaterial({color:0x1b2632});
-const warnMat = new THREE.MeshBasicMaterial({color:0x28171d});
+const wallMat = new THREE.MeshBasicMaterial({color:0x172331});
+const floorMat = new THREE.MeshBasicMaterial({color:0x101b28});
+const propMat = new THREE.MeshBasicMaterial({color:0x263544});
+const trimMat = new THREE.MeshBasicMaterial({color:0x354556});
+const warnMat = new THREE.MeshBasicMaterial({color:0x3b1a2b});
 
 function material(word, color) {
   const key = word + '|' + color;
@@ -54,10 +54,10 @@ function material(word, color) {
   cx.clearRect(0,0,c.width,c.height);
   cx.textAlign = 'center'; cx.textBaseline = 'middle';
   let fontSize = 126;
-  cx.font = '900 ' + fontSize + 'px "Noto Sans KR","Malgun Gothic",system-ui,sans-serif';
+  cx.font = '900 ' + fontSize + 'px "Noto Sans CJK KR","Noto Sans KR","NanumGothic","Malgun Gothic",sans-serif';
   const measured = cx.measureText(word).width;
   if (measured > 478) fontSize *= 478 / measured;
-  cx.font = '900 ' + fontSize + 'px "Noto Sans KR","Malgun Gothic",system-ui,sans-serif';
+  cx.font = '900 ' + fontSize + 'px "Noto Sans CJK KR","Noto Sans KR","NanumGothic","Malgun Gothic",sans-serif';
   cx.fillStyle = color; cx.fillText(word, 256, 102);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -216,6 +216,10 @@ function buildChapterThreeRooms(){
     label(side<0?'사물은 거짓 이름을 가진다':'너무 오래 읽지 마라',
       '#b8c2cc',cx,1.68,-55.44,0,0,3.7,.50);
   }
+  // Distinct light-toned typography identifies the two sides of the hub.
+  label('← 사무실', '#f3c895', -1.55, 2.55, -42.0, 0, 0, 2.55, .7);
+  label('서고 →', '#a8d5f0', 1.55, 2.55, -42.0, 0, 0, 2.55, .7);
+  label('기록 두 개를 찾으세요', '#bed1db', 0, 1.76, -56.3, 0, 0, 3.2, .62);
   for(let z=-38.3;z>-65.5;z-=1.65){
     for(let x=-2.55;x<2.7;x+=1.45){
       stamp('바닥','#80909b',x,.018,z,-Math.PI/2,0,1.05,.5);
@@ -230,7 +234,16 @@ function buildChapterThreeRooms(){
   }
   label('사무실','#ddcaaf',-3.25,2.5,-45.8,0,Math.PI/2,1.35,.6);
   label('서고','#ddcaaf',3.25,2.5,-45.8,0,-Math.PI/2,1.3,.6);
-  label('사무실 · 책상을 다시 부르세요','#c7bda9',-7.6,2.63,-39.05,0,0,4.2,.58);
+  label('사무실 · 책상을 다시 부르세요','#f1c991',-7.6,2.63,-39.05,0,0,4.2,.7);
+  // The office is organized into a few islands of word-furniture rather than blank surfaces.
+  for(const [x,z,name] of [[-5.8,-42.2,'서류'],[-8.4,-52.7,'책상'],[-13.4,-43.4,'의자']]){
+    box(1.15,.68,.70,x,.36,z,propMat);
+    label(name,'#f2d9b8',x,1.05,z+.43,0,0,1.46,.65);
+    label('정리되지 않음','#b5a28f',x,1.71,z+.45,0,0,1.8,.50);
+  }
+  for(let i=0;i<4;i++){
+    label(i%2?'이름을 고치세요':'책상은 어디에', '#d2bca2',-8.8,.65+i*.52,-55.44,0,0,3.3,.51);
+  }
   // The left room is separated by a name-driven wall, with a physically openable passage.
   box(.18,3.25,7.5,-11,1.62,-43.25,wallMat);
   box(.18,3.25,5.45,-11,1.62,-52.85,wallMat);
@@ -244,11 +257,19 @@ function buildChapterThreeRooms(){
   // Archive shelves are present as words, not impassable invisible props.
   for(const [x,z] of [[6,-42],[6,-53],[14,-42],[14,-53]]){
     box(.22,2.35,2.4,x,1.2,z,propMat);
-    label('서가','#b0b9cb',x,1.7,z+.93,0,0,1.2,.53);
+    // Word-spines form recognizable shelves even when normal textures are absent.
+    for(let j=0;j<4;j++){
+      label(['서가','자료','기록','삭제'][j],j===3?'#d68c9d':'#a7c7de',x, .48+j*.49,z+1.23,0,0,1.24,.52);
+    }
+  }
+  for(let i=0;i<4;i++){
+    label(i%2===0?'읽지 마세요':'눈을 돌려요','#8cb3cd',9.3,.64+i*.56,-55.45,0,0,2.1,.44);
   }
   label('쳐다보지 마십시오','#d48e97',8.6,2.55,-40,0,0,3.2,.58);
   chapterVisual.archiveRecord=label('기록 B','#eac58c',12.8,1.32,-51,0,0,1.75,.58);
-  chapterVisual.watcher=label('사람','#e4dae1',10.5,1.7,-44.5,0,0,1.35,.88);
+  // The watcher is layered text so it is distinguishable from the static wall glyphs.
+  chapterVisual.watcher=label('사람','#e4dae1',10.5,1.7,-44.5,0,0,1.8,1.0);
+  label('보지 마', '#b8808e', 12.8, 2.15, -42.6, 0, 0, 2.0, .65);
   chapterVisual.watcherText=label('나를 봐','#f07181',10.5,2.43,-44.5,0,0,2.0,.57);
   chapterVisual.watcherText.visible=false;
   // Central archive opens only after both records are found.
@@ -257,7 +278,10 @@ function buildChapterThreeRooms(){
   box(2.55,.54,.2,0,3,-58.65,wallMat);
   chapterVisual.finalSeal=box(2.52,2.72,.19,0,1.36,-58.65,warnMat);
   chapterVisual.finalWord=label('봉인','#d66c7a',0,1.73,-58.52,0,0,2,.91);
-  label('기록 0 / 모든 이름의 시작','#aab8c7',0,2.32,-63.1,0,0,4,.58);
+  label('기록 0 / 모든 이름의 시작','#c7d9e9',0,2.32,-63.1,0,0,4,.66);
+  for(let j=0;j<6;j++){
+    label(j%2?'이름':'기억','#b6a8be',-2.0+j*.78,.88,-65.35,0,0,.74,.5);
+  }
   label('나','#eee5e3',0,1.45,-65.5,0,0,1.2,1);
   chapterVisual.anomaly=label('의자','#a3b1be',-7.2,1.38,-41,0,0,1.43,.66);
 }
