@@ -166,8 +166,8 @@ if(c.name==='portrait'){
   await ev('document.querySelector("#start").click()');
   let shortRoom=null;
   for(let i=0;i<100;i++){shortRoom=await ev('window.__AUDIT?.s()').catch(()=>null);if(shortRoom?.total>0)break;await sleep(100)}
-  assert.equal(shortRoom.total,20,'preschool apartment should require 18 items and 2 stains');
-  assert.equal(shortRoom.items,18);
+  assert.equal(shortRoom.total,52,'preschool apartment should require 50 items and 2 stains');
+  assert.equal(shortRoom.items,50);
   const shortKeys=await ev('window.__AUDIT.keys()');
   for(let i=0;i<shortKeys.length;i++){
     const a=await ev('window.__AUDIT.point("item",'+i+')');
@@ -183,13 +183,13 @@ if(c.name==='portrait'){
     for(let n=0;n<7;n++)await click(a.x,a.y,c.touch);
   }
   const shortEnd=await ev('window.__AUDIT.s()');
-  assert.equal(shortEnd.done,20,'preschool apartment must complete');
+  assert.equal(shortEnd.done,52,'preschool apartment must complete');
   assert.equal(shortEnd.decorHidden,240,'all rubbish scenery must clear in easy mode');
   await snap('preschool-quick-complete');
   await ev('document.querySelector("#next").click()');
   await sleep(700);
   const quickKitchen=await ev('window.__AUDIT.s()');
-  assert.equal(quickKitchen.total,22,'preschool kitchen should require 20 items and 2 stains');
+  assert.equal(quickKitchen.total,52,'preschool kitchen should require 50 items and 2 stains');
   console.log('TIDY_PRESCHOOL_RESULT '+JSON.stringify({shortRoom,shortEnd,quickKitchen}));
 }
 report.push(result);console.log('TIDY_AUDIT_RESULT '+JSON.stringify(result));
