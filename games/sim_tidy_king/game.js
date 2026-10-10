@@ -137,14 +137,16 @@ function scatterClutter(list,rand){
  const placements=[];
  for(const key of list){
   let best=null,bestDistance=-1;
-  for(let n=0;n<140;n++){
-   const independent=rand()<.14,centers=anchors[key]||[[-1,0]],a=centers[Math.floor(rand()*centers.length)];
-   const radius=(.16+Math.sqrt(rand())*1.48),theta=rand()*Math.PI*2;
+  for(let n=0;n<280;n++){
+   // Reserve space for fingers without visually reverting to regular rows.
+   // Widen the search progressively if the local pile gets dense.
+   const independent=n>=140||rand()<.16,centers=anchors[key]||[[-1,0]],a=centers[Math.floor(rand()*centers.length)];
+   const radius=.16+Math.sqrt(rand())*1.7,theta=rand()*Math.PI*2;
    const x=THREE.MathUtils.clamp(independent?(rand()-.5)*7.2:a[0]+Math.cos(theta)*radius,-3.65,3.65);
    const z=THREE.MathUtils.clamp(independent?-2.8+rand()*7.25:a[1]+Math.sin(theta)*radius,-2.75,4.35);
    const dist=placements.reduce((min,p)=>Math.min(min,Math.hypot(x-p.x,z-p.z)),100);
    if(dist>bestDistance){best={x,z};bestDistance=dist}
-   if(dist>.52+(key==='pen'?.0:.10)*rand())break;
+   if(dist>.78)break;
   }
   placements.push(best);
  }
