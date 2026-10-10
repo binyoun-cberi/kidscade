@@ -137,6 +137,8 @@ function equipEvolutionTechnique(mon){
  if(!desired)return null;
  normalize(mon);
  if(mon.moveSlots.some(slot=>slot.id===desired))return desired;
+ // User-selected loadouts take priority over automatic evolution teaching.
+ if(mon.moveLoadoutCustomized)return null;
  const sp=getSpecies(mon.id),cfg=MOVESET[sp.type]||MOVESET.neutral;
  // Replace a generic starter move first; preserve custom skills and PP otherwise.
  const replaceIndex=mon.moveSlots.findIndex(slot=>
@@ -182,7 +184,7 @@ function normalize(mon){
  if(!Array.isArray(mon.moveSlots)||!mon.moveSlots.length)mon.moveSlots=fallback.map(id=>({id,pp:M[id].pp}));
  // Only untouched legacy type-default layouts receive the new signature automatically.
  // User-customized move sets and their remaining PP are never overwritten.
- else if(familyMoves.has(getSpecies(mon.id).familyKey)){
+ else if(!mon.moveLoadoutCustomized&&familyMoves.has(getSpecies(mon.id).familyKey)){
   const sp=getSpecies(mon.id),cfg=MOVESET[sp.type]||MOVESET.neutral;
   const vanilla=["tackle",...cfg.slice(0,3)];
   const actual=mon.moveSlots.map(x=>x?.id);
@@ -204,6 +206,7 @@ function changeMove(mon,newId,at){
  normalize(mon);
  if(!learnable(mon).includes(newId)||!Number.isInteger(at)||at<0||at>=4||mon.moveSlots.some((x,i)=>i!==at&&x.id===newId))return false;
  mon.moveSlots[at]={id:newId,pp:M[newId].pp};
+ mon.moveLoadoutCustomized=true;
  return true;
 }
 function restorePP(mon){normalize(mon);mon.moveSlots.forEach(m=>{m.pp=M[m.id].pp})}
