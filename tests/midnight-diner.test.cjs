@@ -127,3 +127,33 @@ test('five existing food/chef models and catalogue integration exist',()=>{
  assert.equal(c.games.find(g=>g.id==='high_midnight_diner').href,'games/high_midnight_diner/index.html');
  assert.match(read('games/high_midnight_diner/kitchen.js'),/Chef_Male.gltf/);
 });
+
+test('v4 cooking controls live outside 3D kitchen and eating fills mobile viewport',()=>{
+ const html=read('games/high_midnight_diner/index.html');
+ const kitchenEnd=html.indexOf('</section>',html.indexOf('class="kitchen"'));
+ const diningStart=html.indexOf('class="dining"');
+ const cookPanel=html.indexOf('id="cookPanel"');
+ const course=html.indexOf('class="course-line"');
+ const memory=html.indexOf('id="memoryPanel"');
+ assert.ok(kitchenEnd>0&&diningStart>kitchenEnd);
+ assert.ok(cookPanel>diningStart&&cookPanel>course&&cookPanel<memory,'cook HUD must be in the right-side dining controls');
+ const css=read('games/high_midnight_diner/v4.css');
+ assert.match(css,/\.cook-panel\s*\{\s*position:relative!important/);
+ assert.match(css,/\.game-layout\.cooking \.plate-wrap/);
+ assert.match(css,/\.game-layout\.eating \.kitchen\s*\{\s*display:none!important/);
+ assert.match(css,/#plate\s*\{[\s\S]*?aspect-ratio:10\/7/);
+ assert.match(css,/height:auto!important/);
+ assert.match(html,/v4\.css/);
+});
+test('v4 stops ingredient visibility when peeking ends and pauses hidden tab timers',()=>{
+ const js=read('games/high_midnight_diner/game.js');
+ assert.match(js,/looking:peekHeld&&!!peek/);
+ assert.match(js,/if\(previouslyHeld&&game\?\.phase==='cooking'\)updateCookScene\(\)/);
+ assert.match(js,/if\(document\.hidden\)return;/);
+ assert.match(js,/layout\.classList\.toggle\('eating',game\.phase==='playing'\)/);
+ const scene=read('games/high_midnight_diner/kitchen.js');
+ assert.match(scene,/cookingPhase=d\.phase==='cooking'/);
+ assert.match(scene,/spoon\.visible=cookingPhase/);
+ assert.match(scene,/Chef_Male\.gltf',2\.22,-\.1,0,\.43,0/);
+ assert.match(scene,/stove\.glb',1\.12,-1\.38,0/);
+});
