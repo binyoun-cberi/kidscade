@@ -87,12 +87,14 @@ test('automatic evolution teaching preserves old PP, adds stage technique and ex
  assert.ok(p.moveSlots.every(x=>x.pp>=0&&x.pp<=TB.moves[x.id].pp));
  const saved=E.validateSave(clone(starter));
  assert.ok(saved?.party?.[0].moveSlots.some(x=>x.id===newMove));
- const old=E.createNew('set1_r01_c01'),oldMon=old.party[0];
+ const old=E.createNew('set1_r02_c02');old.party[0]=E.makeCreature('set1_r01_c01',5);
+ const oldMon=old.party[0];
  oldMon.moveSlots=[{id:'tackle',pp:3},{id:'leaf',pp:2},{id:'vine',pp:1},{id:'synthesis',pp:0}];
  const migrated=E.validateSave(clone(old)).party[0];
  assert.ok(migrated.moveSlots.some(x=>x.id===TB.familyMoves.get('set1-seed').base));
  assert.equal(migrated.moveSlots[0].pp,3);
- const changed=E.createNew('set1_r01_c01');changed.party[0].moveSlots=[
+ const changed=E.createNew('set1_r02_c02');changed.party[0]=E.makeCreature('set1_r01_c01',5);
+ changed.party[0].moveSlots=[
  {id:'leaf',pp:1},{id:'vine',pp:2},{id:'tackle',pp:3},{id:'synthesis',pp:4}];
  const kept=E.validateSave(clone(changed)).party[0].moveSlots;
  assert.equal(kept[0].id,'leaf');assert.equal(kept[0].pp,1);
@@ -131,7 +133,7 @@ test('turn engine can use every newly registered signature with PP, legal effect
   const pp=skill.pp;
   const result=TB.resolve({save,foe,battle,action:{type:'move',id:sig},random:rng,rookieCap:0});
   assert.ok(result.ok,family.key);
-  assert.equal(skill.pp,pp-1,family.key);
+  assert.equal(mon.moveSlots.find(x=>x.id===sig)?.pp,pp-1,family.key);
   assert.ok(mon.hp>=0&&mon.hp<=DB.combat.statsAtLevel(mon.id,mon.level).hp);
   assert.ok(foe.hp>=0&&foe.hp<=DB.combat.statsAtLevel(foe.id,foe.level).hp);
   assert.ok(result.events.length>0);
