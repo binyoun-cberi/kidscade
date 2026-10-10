@@ -360,7 +360,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
+  assert.match(html,/character-3d-studio\.js\?v=20261010-wardrobe60/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
