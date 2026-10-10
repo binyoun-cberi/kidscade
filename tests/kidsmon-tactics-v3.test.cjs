@@ -74,6 +74,28 @@ test('counter protects first and reflects real damage before attacker finishes t
  assert.ok(foe.hp<hp);
 });
 
+test('stun skips one action and cannot lock the target every turn',()=>{
+ const p=E.makeCreature('set1_r01_c01',40,()=>.5),foe=E.makeCreature('set1_r00_c01',40,()=>.4);
+ force(p,'tackle');force(foe,'static');
+ const save={party:[p],active:0,items:{ball:0,potion:0}},battle={turnState:B.state()};
+ battle.turnState.player.speed=-3;
+ const first=B.resolve({save,foe,battle,action:{type:'move',id:'tackle'},random:()=>.01});
+ assert.equal(first.ok,true);
+ assert.ok(first.events.some(x=>x.includes('행동하지 못했어')),first.events.join(' '));
+ assert.equal(battle.turnState.player.stunPending,false);
+ assert.ok(battle.turnState.player.stunImmunity>0);
+ const second=B.resolve({save,foe,battle,action:{type:'move',id:'tackle'},random:()=>.01});
+ assert.equal(second.ok,true);
+ assert.ok(!second.events.some(x=>x.includes('행동하지 못했어')),second.events.join(' '));
+});
+test('counter can be baited by a utility move instead of reflecting damage',()=>{
+ const p=E.makeCreature('set1_r00_c01',16,()=>.5),foe=E.makeCreature('set1_r02_c02',16,()=>.4);
+ force(p,'counter');force(foe,'focus');
+ const save={party:[p],active:0,items:{ball:0,potion:0}},battle={turnState:B.state()},hp=foe.hp;
+ const result=B.resolve({save,foe,battle,action:{type:'move',id:'counter'},random:()=>.5});
+ assert.equal(result.ok,true);assert.equal(foe.hp,hp);
+ assert.ok(result.events.some(x=>x.includes('반격 준비가 끝났어')));
+});
 test('vine trap prevents switching while active',()=>{
  const p=E.makeCreature('set1_r01_c01',10,()=>.5),enemy=E.makeCreature('set1_r00_c01',10,()=>.6);
  force(enemy,'vine');force(p,'tackle');
