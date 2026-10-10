@@ -1501,8 +1501,25 @@ function createKidscadeHairCollection(){
       // Each of the eight v6.0 cuts receives actual independent 3D volumes,
       // rigid-skinned to the source head. Unlike palette swaps, their
       // silhouettes differ on the rotating character and survive GLB export.
-      const head=template.skeleton.bones.find(bone=>/head/i.test(bone.name));
-      if(!head)throw Error('v6.0 hairstyle needs the source head bone: '+name);
+      // Styloo's actual Chibi head can be driven by a DEF-spine continuation,
+      // not a bone literally named "head". Derive the attachment bone from
+      // the *existing hair skin weights*, never from a guessed name.
+      const indices=template.geometry.getAttribute('skinIndex');
+      const influences=template.geometry.getAttribute('skinWeight');
+      const headWeights=new Map();
+      const scalpThreshold=bb.max.y-size.y*.32;
+      for(let i=0;i<points.count;i++){
+        if(points.getY(i)<scalpThreshold)continue;
+        for(let k=0;k<4;k++){
+          const w=influences.getComponent(i,k);
+          if(w<=0)continue;
+          const boneId=indices.getComponent(i,k);
+          headWeights.set(boneId,(headWeights.get(boneId)||0)+w);
+        }
+      }
+      const headId=[...headWeights].sort((a,b)=>b[1]-a[1])[0]?.[0];
+      const head=template.skeleton.bones[headId];
+      if(!head)throw Error('No source skin bone for Chibi hair crown: '+name);
       const hairColor=name.startsWith('kidscade_male_')?'#46352c':'#553e38';
       const featureMaterial=makeSolidMaterial(hairColor,name+' 입체 헤어 볼륨');
       const mx=center.x,my=bb.max.y-size.y*.065,mz=center.z;
