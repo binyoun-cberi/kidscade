@@ -122,7 +122,8 @@ function openParty(){
  if(!save)return;
  openGeneric("우리 키즈몬","<p>선두 키즈몬을 바꾸거나 회복약을 사용할 수 있어. 전투 중에는 교체에 한 턴이 필요해.</p>"+
  '<div class="team hud-party-list">'+$("teamList").innerHTML+'</div>'+
- '<div class="action-row"><button type="button" class="act primary" data-hud-action="potion">회복약 사용 ('+save.items.potion+'개)</button></div>',
+ '<div class="action-row"><button type="button" class="act primary" data-hud-action="potion">회복약 사용 ('+save.items.potion+'개)</button>'+
+ '<button type="button" class="act" data-hud-action="evolve">진화 확인</button></div>',
  save.party.length+"/6마리 · 선택하면 선두 변경");
 }
 function openBag(){
@@ -193,7 +194,18 @@ function openClinic(){
  openGeneric("키즈몬 연구소",'<p>키즈몬을 무료로 치료하거나 키즈볼·회복약을 살 수 있어. 서로 다른 키즈몬을 연구하면 새로운 파트너도 선물할게!</p>'+
  '<div class="shop-list"><div class="shop-item"><div><strong>전체 무료 회복</strong><small>전투 불능인 키즈몬도 회복</small></div><button data-buy="heal">치료</button></div>'+
  '<div class="shop-item"><div><strong>키즈볼 +1</strong><small>연구코인 35</small></div><button data-buy="ball">35코인</button></div>'+
- '<div class="shop-item"><div><strong>회복약 +1</strong><small>연구코인 25</small></div><button data-buy="potion">25코인</button></div>'+gift+'</div>');
+ '<div class="shop-item"><div><strong>회복약 +1</strong><small>연구코인 25</small></div><button data-buy="potion">25코인</button></div>'+
+ '<div class="shop-item"><div><strong>키즈몬 보관함</strong><small>보관 중 '+save.box.length+'마리 · 선두 키즈몬과 교체 가능</small></div><button data-hud-action="box">열기</button></div>'+gift+'</div>');
+}
+function openBox(){
+ if(!save)return;
+ const list=save.box.length?save.box.map((p,i)=>
+ '<div class="shop-item">'+miniArt(p.id)+'<div><strong>'+esc(species(p.id).name)+'</strong>'+
+ '<small>Lv.'+p.level+' · HP '+hpText(p)+'</small></div>'+
+ '<button type="button" data-withdraw="'+i+'">'+(save.party.length<6?"파티로":"선두와 교체")+'</button></div>').join(""):
+ '<p>보관한 키즈몬이 없어. 파티는 최대 6마리까지 데려갈 수 있어.</p>';
+ openGeneric("키즈몬 보관함",'<p>여울마을 연구소에서 언제든 꺼낼 수 있어. 파티가 가득 찼다면 현재 선두와 교체해.</p>'+
+ '<div class="shop-list">'+list+'</div>');
 }
 function buy(item){
  if(!save)return;
@@ -543,6 +555,8 @@ function attach(){
    const act=b.dataset.hudAction;
    if(act==="potion"){useFieldPotion();if(!battle){if($("genericTitle").textContent==="탐험 가방")openBag();else openParty()}}
    else if(act==="clinic"){closeGeneric();$("goClinic").click()}
+   else if(act==="box")openBox();
+   else if(act==="evolve"){closeGeneric();evolveIfReady();}
    else if(act==="audio"){$("audioButton").click();openMenu()}
    else if(act==="restart"){closeGeneric();$("newGame").click()}
    else if(act==="exit"){$("exitButton").click()}
@@ -550,6 +564,14 @@ function attach(){
   }
   b=e.target.closest("button[data-team]");
   if(b){const changed=selectTeam(Number(b.dataset.team));if(changed){closeGeneric()}return}
+  b=e.target.closest("button[data-withdraw]");
+  if(b){
+   const member=save.box[Number(b.dataset.withdraw)];
+   if(member&&E.withdrawFromBox(save,Number(b.dataset.withdraw))){
+    updateAll();persist();setToast(species(member.id).name+"을(를) 파티로 데려왔어!");
+   }
+   openBox();return;
+  }
   b=e.target.closest("button[data-gift]");
   if(b){
    if(E.claimResearchStarter(save,b.dataset.gift)){
