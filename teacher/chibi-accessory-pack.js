@@ -198,9 +198,9 @@ function buildGeometry(style,source,sourceHair,eyes){
     case 'straw':return cyl(headR*.88,headR*.98,.145,hc.x,scalpY+.016,hc.z);
     case 'round':return ring(.071,.009,-.110,eyeY,faceZ);
     case 'square':return box(.150,.119,.012,-.110,eyeY,faceZ);
-    case 'sunglasses':return sphere(-.110,eyeY,faceZ+.052,.094,.071,.015);
+    case 'sunglasses':return sphere(-.110,eyeY,faceZ+.025,.112,.083,.012);
     case 'goggles':return box(.365,.133,.055,0,eyeY,faceZ+.015);
-    case 'mask':return sphere(0,eyeY-.241,faceZ+.013,.172,.103,.050);
+    case 'mask':return sphere(0,eyeY-.305,faceZ+.030,.179,.113,.035);
     case 'schoolbag':return box(.335,.360,.172,0,.966,-.240);
     case 'crossbody':return box(.265,.210,.115,.224,.832,.150);
     case 'minibag':return sphere(0,.968,-.236,.145,.187,.110);
@@ -273,16 +273,16 @@ function createDetails(style,context){
         for(const sign of [-1,1])
           add(box(.144,.012,.021,sign*.110,eyeY+.061,faceZ),black,'topFrame_'+sign);
       }else if(kind==='sunglasses')
-        add(sphere(.110,eyeY,faceZ+.052,.094,.071,.015),style.color,'rightLens');
+        add(sphere(.110,eyeY,faceZ+.025,.112,.083,.012),style.color,'rightLens');
       else if(kind==='goggles')
         add(box(.327,.091,.017,0,eyeY,faceZ+.046),'#8bcdd7','glass');
-      add(box(.073,.012,.020,0,eyeY+.008,faceZ+.054),style.color,'bridge');
+      add(box(.073,.013,.020,0,eyeY+.008,faceZ+.035),style.color,'bridge');
       for(const sign of [-1,1])
-        add(box(.113,.014,.012,sign*.238,eyeY+.02,faceZ+.005),black,'temple_'+sign);
+        add(box(.113,.014,.012,sign*.238,eyeY+.02,faceZ-.004),black,'temple_'+sign);
     }else if(kind==='mask'){
-      add(box(.29,.011,.013,0,eyeY-.172,faceZ+.068),white,'noseBridge');
+      add(box(.30,.011,.013,0,eyeY-.235,faceZ+.066),white,'noseBridge');
       for(const sign of [-1,1])
-        add(ring(.064,.008,sign*.186,eyeY-.235,faceZ-.024,'x'),white,'earLoop_'+sign);
+        add(ring(.065,.008,sign*.186,eyeY-.307,faceZ-.018,'x'),white,'earLoop_'+sign);
     }
   }else if(style.slot==='bag'){
     if(kind==='schoolbag'||kind==='minibag'){
