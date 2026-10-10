@@ -2,7 +2,7 @@
   'use strict';
   const $=id=>document.getElementById(id);
   const engine=window.DalgonaTrace;
-  const SURVIVAL_MODE=new URLSearchParams(window.location.search).get('survival')==='1'&&window.parent!==window;
+  const SURVIVAL_MODE=typeof window.location?.search==='string'&&new URLSearchParams(window.location.search).get('survival')==='1'&&window.parent!==window;
   const el={
     board:$('board'),wrap:$('boardWrap'),intro:$('intro'),result:$('result'),help:$('help'),
     shape:$('shapeName'),hint:$('hintText'),desc:$('stageDescription'),stage:$('stageText'),
