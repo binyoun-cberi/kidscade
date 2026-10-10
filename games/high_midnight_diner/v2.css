@@ -13,3 +13,12 @@
 .review-warning{text-align:center!important;font-size:11px!important;color:#aaa087!important}
 #selectionText{pointer-events:none}
 @media(max-width:930px){.course-step{height:23px;min-width:25px;flex:1}.course-timeline{gap:6px;padding:1px 0 3px}.review-zone{width:36px;height:36px;font-size:14px}}
+
+#plateGlow.safe-bite{background:#b5d9a530;animation:softBite .5s ease-out}
+@keyframes softBite{0%{opacity:.7}100%{opacity:0}}
+.kitchen.threat .fallback-chef{animation:chefLunge .9s ease-out}
+.kitchen.glance .fallback-chef .face{animation:chefGlance 1s ease-in-out}
+.kitchen.pleased .fallback-chef{animation:chefNod .5s ease-in-out}
+@keyframes chefLunge{0%,100%{transform:translateX(-50%) scale(1)}40%{transform:translateX(-50%) scale(1.1) translateY(-8px)}}
+@keyframes chefGlance{0%,100%{transform:translateX(0)}55%{transform:translateX(10px)}}
+@keyframes chefNod{0%,100%{transform:translateX(-50%)}50%{transform:translateX(-50%) translateY(4px)}}
