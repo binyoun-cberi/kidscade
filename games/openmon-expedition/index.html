@@ -35,7 +35,7 @@ body{background:#203a31;overscroll-behavior:none}
 .hud-brand{display:flex;align-items:center;gap:9px;min-width:0;text-shadow:0 1px 2px #06332766}
 .hud-logo{width:38px;height:38px;border-radius:11px;background:#f1d58c;color:#2b5446;display:grid;place-items:center;font-size:22px;font-weight:1000;box-shadow:0 3px #c19c5a;flex-shrink:0}
 .hud-brand strong{font-size:21px;font-weight:950;line-height:1;letter-spacing:-.065em;display:block}
-.hud-brand small{font-size:11px;color:#d6f0d2;display:block;margin-top:3px;font-weight:800}
+.hud-brand-en{font-size:10px;letter-spacing:.03em;color:#c2dccb;white-space:nowrap;vertical-align:middle}.hud-brand small{font-size:11px;color:#d6f0d2;display:block;margin-top:3px;font-weight:800}
 .hud-resources{display:flex;align-items:center;gap:8px}
 .hud-coins{display:flex;align-items:center;gap:5px;border:1px solid #dce9cc50;border-radius:100px;padding:7px 10px;background:#15382dbb;font-size:13px;font-weight:950;white-space:nowrap}
 .hud-coins:before{content:"◆";font-size:11px;color:#f9cf65}
@@ -106,7 +106,7 @@ body{background:#203a31;overscroll-behavior:none}
       <canvas id="worldCanvas" width="512" height="320" aria-label="방향키나 화면 조작 버튼으로 탐험하는 키즈몬 지도"></canvas>
       <div class="hud-top">
         <div class="hud-headline">
-          <div class="hud-brand"><span class="hud-logo" aria-hidden="true">Σ</span><span><strong>키즈몬</strong><small id="areaName">여울마을</small></span></div>
+          <div class="hud-brand"><span class="hud-logo" aria-hidden="true">Σ</span><span><strong>키즈몬 <span class="hud-brand-en">KIDSMON</span></strong><small id="areaName">여울마을</small></span></div>
           <div class="hud-resources">
             <span class="hud-coins" id="coinCount" aria-label="연구코인">120 <small>코인</small></span>
             <span class="hud-save" id="saveInfo" title="진행 자동 저장" aria-label="진행 자동 저장">●</span>
