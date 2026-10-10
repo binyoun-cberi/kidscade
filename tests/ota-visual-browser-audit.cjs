@@ -130,8 +130,17 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   })()`);
   assert.equal(report.hangul.distinct,3,'Missing Korean glyphs: letters render as the same empty square');
   await screenshot('01-intro-desktop.png','desktop');
+  report.intro=await evalPage("(()=>{const a=document.getElementById('intro').innerText;return {brief:!a.includes('빨간 「뒤」')&&!a.includes('세 번 반복'),hasHintKey:a.includes('H 힌트'),noFakeDeadline:!a.includes('3시가 되기 전에')}})()");
+  assert.ok(report.intro.brief&&report.intro.hasHintKey&&report.intro.noFakeDeadline,'Intro must teach controls without spoiling or inventing a deadline');
   await evalPage("document.getElementById('start').click()");
   await sleep(300);
+  assert.equal(await evalPage("document.getElementById('help').hidden"),false,'Hint control visible while playing');
+  await key('KeyH',true);await key('KeyH',false);await sleep(60);
+  assert.equal((await snap()).guidance.level,1);
+  assert.match(await evalPage("document.getElementById('hintBody').textContent"),/컴퓨터/);
+  await screenshot('02a-on-demand-hint.png','desktop');
+  await key('KeyH',true);await key('KeyH',false);await sleep(60);
+  assert.equal((await snap()).guidance.level,2);
   await screenshot('02-management-room.png','desktop');
   // Approach the desk without moving inside the collision volume.
   await moveUntil('x',-1.4,'console');
@@ -139,6 +148,9 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   const near=await snap();
   report.consoleApproach=near;
   await interact();await ensureStage('anomaly','read management report');
+  await sleep(60);
+  assert.equal((await snap()).guidance.level,0,'Stage change resets old room hint');
+  assert.equal(await evalPage("document.getElementById('hintBox').classList.contains('show')"),false);
   await screenshot('03-anomaly.png','desktop');
   await moveUntil('x',0,'anomaly');
   await moveUntil('z',-16.15,'anomaly',15);
@@ -267,6 +279,12 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await screenshot('13-intro-mobile.png','mobile');
   await evalPage("document.getElementById('start').click()");
   await sleep(250);
+  assert.equal(await evalPage("document.getElementById('help').hidden"),false,'Mobile hint button visible');
+  report.mobileGuide=await evalPage("(()=>{const left=document.getElementById('mission').getBoundingClientRect(),right=document.getElementById('topControls').getBoundingClientRect();return {missionRight:left.right,controlsLeft:right.left,controlsBottom:right.bottom}})()");
+  assert.ok(report.mobileGuide.controlsLeft>report.mobileGuide.missionRight,'Mobile hint button must not overlap mission');
+  assert.ok(report.mobileGuide.controlsBottom<report.mobileHazardLayout.gaze.top,'Top buttons must not overlap danger HUD');
+  await evalPage("document.getElementById('help').click()");
+  assert.equal((await snap()).guidance.level,1,'Touch hint advances the same beginner help');
   await screenshot('14-gameplay-mobile.png','mobile');
   await evalPage("document.getElementById('action').click()");
   const before=await snap();
