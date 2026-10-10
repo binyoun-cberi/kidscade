@@ -1031,3 +1031,12 @@ test('v6.0 registers eight sculptural hairstyles, ten silhouette-different outfi
     assert.ok(outfit.includes("style.details.includes('"+detail+"')"),detail+' is not modeled');
   }
 });
+
+test('v6.0 hairstyle details use the original scalp material and avoid hovering torus crowns',()=>{
+  const studio=read('teacher/character-3d-studio.js');
+  assert.match(studio,/const featureMaterial=Array\.isArray\(template\.material\)/);
+  assert.match(studio,/const braidCurve=new THREE\.CatmullRomCurve3/);
+  assert.match(studio,/new THREE\.TubeGeometry\(braidCurve,24,\.024,7,false\)/);
+  assert.doesNotMatch(studio,/new THREE\.TorusGeometry\(sx\*\.79,\.033,8,30\)/);
+  assert.match(studio,/sphere\(mx\+sign\*sx\*\.70,my-\.042/);
+});
