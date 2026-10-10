@@ -94,6 +94,7 @@
     s.phase='preview';s.previewStarted=Date.now();
     s.previewDuration=Math.min(32000,Math.round(8000+s.stage*1800));
     ui.preview.hidden=false;ui.check.disabled=true;
+    updateUI();
   }
   function step(dx,dy) {
     if (s.phase!=='playing') return;
