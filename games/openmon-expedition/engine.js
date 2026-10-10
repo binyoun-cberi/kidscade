@@ -48,7 +48,13 @@ function normalizeGenes(m){
  const fallback=genesFromUid(m.uid);
  const iv={};for(const k of IV_KEYS){const n=m.genetics?.iv?.[k];iv[k]=Number.isInteger(n)&&n>=0&&n<=15?n:fallback.iv[k]}
  m.genetics={iv,nature:NATURES.includes(m.genetics?.nature)?m.genetics.nature:fallback.nature};
- m.shiny=m.shiny===true;return m;
+ m.shiny=m.shiny===true;
+  const training={},saved=m.training||{};let room=72;
+  for(const key of IV_KEYS){
+   const n=Number.isFinite(saved[key])?Math.floor(saved[key]):0;
+   training[key]=Math.max(0,Math.min(24,room,n));room-=training[key];
+  }
+  m.training=training;return m;
 }
 const STONES=Object.freeze({
  life:{name:"생명의 결정",types:["leaf","water","neutral"]},
@@ -215,9 +221,26 @@ function addCaptured(save,target){
  save.collection[p.id]=true;save.seen[p.id]=true;save.catches++;
  return inParty?"party":"box";
 }
+function grantTraining(save,foe){
+ const m=activeCreature(save),sp=byId.get(foe.id);
+ if(!m||!sp)return null;
+ normalizeGenes(m);
+ const role=sp.battle.role,type=sp.type;
+ const stat=role==="swift"?"speed":role==="guard"?(["water","ice","mind"].includes(type)?"spDefense":"defense"):
+  type==="neutral"?"hp":DB.combat.SPECIAL_TYPES.has(type)?"spAttack":"attack";
+ const used=IV_KEYS.reduce((sum,k)=>sum+m.training[k],0);
+ const inc=Math.min(2,72-used,24-m.training[stat]);
+ if(inc<=0)return null;
+ const old=DB.combat.statsAtLevel(m.id,m.level,m).hp;
+ m.training[stat]+=inc;
+ const current=DB.combat.statsAtLevel(m.id,m.level,m).hp;
+ if(current>old&&m.hp>0)m.hp+=current-old;
+ return {stat,amount:inc};
+}
 function levelRewards(save,foe){
  const earned=DB.combat.xpReward(foe.id,foe.level);
  const events=xpGain(save,earned);
+  const training=grantTraining(save,foe);
  const coins=6+foe.level*2;
  save.coins+=coins;save.wins++;
  const milestones={5:"life",10:"energy",15:"climate",20:"thought"};
@@ -231,7 +254,7 @@ function levelRewards(save,foe){
    mentorHeal=lead.hp-before;
   }
  }
- return {earned,coins,events,mentorHeal};
+ return {earned,coins,events,mentorHeal,training};
 }
 function maybeEvolve(save,chosenId){
  const p=activeCreature(save);if(!p)return false;
@@ -263,5 +286,5 @@ function useEvolutionStone(save,id,stone){
  if(move)p.lastEvolutionTechnique=move;
  save.collection[p.id]=true;save.seen[p.id]=true;return true;
 }
-global.OPENMON_EXPEDITION_ENGINE={STONES,genesFromUid,normalizeGenes,stoneEvolutionOptions,useEvolutionStone,WIDTH,HEIGHT,START,ZONES,zoneAt,terrain,canMove,makeCreature,createNew,validateSave,pickEncounter,unlockedPool,shouldMeet,move,healAll,activeCreature,xpGain,addCaptured,levelRewards,maybeEvolve,researchStarterOptions,claimResearchStarter,withdrawFromBox,retaliationDamage};
+global.OPENMON_EXPEDITION_ENGINE={STONES,genesFromUid,normalizeGenes,stoneEvolutionOptions,useEvolutionStone,WIDTH,HEIGHT,START,ZONES,zoneAt,terrain,canMove,makeCreature,createNew,validateSave,grantTraining,pickEncounter,unlockedPool,shouldMeet,move,healAll,activeCreature,xpGain,addCaptured,levelRewards,maybeEvolve,researchStarterOptions,claimResearchStarter,withdrawFromBox,retaliationDamage};
 })(window);
