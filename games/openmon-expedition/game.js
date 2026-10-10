@@ -106,11 +106,7 @@ function selectTeam(index,fromBattle=false){
  if(p.hp<=0){setToast("HP가 0인 키즈몬은 먼저 회복해야 해.");return false}
  if(index===save.active)return false;
  save.active=index;beep("click");updateAll();persist();
- if(fromBattle&&battle&&!battle.done){
-  appendBattle("키즈몬을 교체했어! "+species(p.id).name+" 출전!");
-  enemyTurn();
-  if(battle&&!battle.done){battle.turn++;renderBattle()}
- }else setToast(species(p.id).name+"이(가) 선두에 섰어.");
+ setToast(species(p.id).name+"이(가) 선두에 섰어.");
  return true;
 }
 function openGeneric(title,body,subtitle=""){
@@ -290,20 +286,36 @@ function leaveBattle(){
 }
 function enterBattle(enemy,zone,special=false,firstRoad=false){
  const lead=E.activeCreature(save);
- if(!lead||lead.hp<=0){E.healAll(save);save.active=0;setToast("연구소로 돌아와 HP를 회복했어.");return}
- battle={foe:enemy,zone,special,firstRoad,turn:1,done:false,
- message:firstRoad?"첫 번째 키즈몬, "+species(enemy.id).name+"을(를) 만났어! '살살 공격'으로 HP를 낮춘 뒤 키즈볼을 던져 보자!":
-  "야생 "+species(enemy.id).name+" 등장! 남은 체력을 예상하며 싸워보자."};
+ if(!lead||lead.hp<=0){E.healAll(save);save.active=0;for(const p of save.party)B.restorePP(p);setToast("연구소로 돌아와 HP를 회복했어.");return}
+ B.normalize(lead);B.normalize(enemy);
+ battle={foe:enemy,zone,special,firstRoad,turn:1,done:false,menu:"root",turnState:B.state(),
+  message:firstRoad?"첫 번째 키즈몬, "+species(enemy.id).name+"을(를) 만났어! 싸우기에서 기술을 골라 HP를 낮추고 키즈볼을 던져 보자!":
+   "야생 "+species(enemy.id).name+" 등장! 기술의 PP·상성·행동 순서를 생각하며 싸워보자."};
  save.seen[enemy.id]=true;save.grassSteps=0;
  $("battleOverlay").classList.remove("hidden");
  $("battleActionPanel").classList.remove("hidden");$("battleAfter").classList.add("hidden");
  renderBattle();persist();
 }
 function appendBattle(message){if(battle)battle.message=message}
+function hitEstimate(moveId){
+ if(!battle)return "";
+ const own=E.activeCreature(save),move=B.moves[moveId];
+ if(!own||!move)return "";
+ if(!move.power)return "변화 기술";
+ const foe=battle.foe;
+ const damage=DB.combat.damage({attacker:own.id,defender:foe.id,attackerLevel:own.level,
+  defenderLevel:foe.level,power:move.power,moveType:move.type});
+ return "예상 "+Math.max(1,Math.floor(damage*.62))+" 피해";
+}
+function catchEstimate(){
+ const f=battle.foe;
+ return Math.round(DB.combat.captureChance({target:f.id,level:f.level,hp:f.hp,maxHp:maxHp(f),
+  status:!!battle.turnState?.foe?.condition})*100)+"% 확률";
+}
 function renderBattle(){
  if(!battle)return;
  const foe=battle.foe,own=E.activeCreature(save),a=species(own.id),b=species(foe.id);
- const maxOwn=maxHp(own),maxFoe=maxHp(foe);
+ const maxOwn=maxHp(own),maxFoe=maxHp(foe),side=battle.turnState;
  $("ownName").textContent=a.name+" Lv."+own.level;
  $("foeName").textContent=b.name+" Lv."+foe.level;
  $("ownHpLabel").textContent=own.hp+"/"+maxOwn;
@@ -312,104 +324,106 @@ function renderBattle(){
  $("foeHpBar").style.width=barPct(foe.hp,maxFoe);
  $("ownHpBar").style.background=own.hp/maxOwn<.3?"#d86b5d":"#58ae68";
  $("foeHpBar").style.background=foe.hp/maxFoe<.3?"#d86b5d":"#58ae68";
+ const stateText=(v)=>!v?"":v.condition?({burn:"화상",slow:"둔화",weaken:"약화"}[v.condition]||v.condition):
+  v.shield?"방어막":v.attack>0?"공격↑":v.speed>0?"속도↑":"";
+ $("ownStatus").textContent=stateText(side.player);
+ $("foeStatus").textContent=stateText(side.foe);
  $("ownArt").innerHTML=artHtml(own.id);
  $("foeArt").innerHTML=artHtml(foe.id);
  $("battleZone").textContent=E.ZONES.find(z=>z.key===battle.zone)?.name||"비밀숲";
- const bg=battle.zone==="cave"?"Cave_Back.png":battle.zone==="forest"||battle.special?"Forest_Background.png":"Forest_Background.png";
+ const bg=battle.zone==="cave"?"Cave_Back.png":"Forest_Background.png";
  $("battleBackdrop").style.backgroundImage="linear-gradient(#ffffff15,#bdd2a725),url('"+ASSET+"more%20assets/"+bg+"')";
  $("battleTurn").textContent=battle.turn+"턴";
  $("battleLog").textContent=battle.message;
  if(battle.done){$("battleActionPanel").classList.add("hidden");$("battleAfter").classList.remove("hidden");return}
- const actions=[
-  {act:"typed",title:DB.types[a.type].name+" 기술",description:hitEstimate("typed",9)},
-  {act:"normal",title:"기본 공격",description:hitEstimate("normal",7)},
-  {act:"soft",title:"살살 공격",description:hitEstimate("soft",4)+" · HP 1 남김"},
-  {act:"ball",title:"키즈볼 던지기",description:catchEstimate()+" · 남은 "+save.items.ball+"개",disabled:save.items.ball<=0},
-  {act:"potion",title:"회복약",description:"HP +20 · 남은 "+save.items.potion+"개",disabled:save.items.potion<=0},
-  {act:"switch",title:"키즈몬 교체",description:"교체하면 상대가 반격"},
-  {act:"run",title:"도망가기",description:"언제든지 전투에서 탈출 가능"}
- ];
- $("battleButtons").innerHTML=actions.map(o=>'<button type="button" data-action="'+o.act+'" '+(o.disabled?"disabled":"")+' class="'+(o.act==="typed"?"strong":"")+'"><b>'+esc(o.title)+'</b><small>'+esc(o.description)+'</small></button>').join("");
-}
-function hitEstimate(action,power){
- const own=E.activeCreature(save),a=species(own.id),foe=battle.foe;
- const type=action==="typed"?a.type:"neutral";
- let value=DB.combat.damage({attacker:own.id,defender:foe.id,attackerLevel:own.level,defenderLevel:foe.level,power,moveType:type});
- if(action==="soft")value=Math.min(value,Math.max(0,foe.hp-1));
- const eff=DB.combat.effectiveness(type,species(foe.id).type);
- return "예상 "+value+" 피해"+(eff===2?" · 2배 상성":eff===.5?" · 절반 상성":"");
-}
-function catchEstimate(){
- const f=battle.foe;
- return Math.round(DB.combat.captureChance({target:f.id,level:f.level,hp:f.hp,maxHp:maxHp(f)})*100)+"% 확률";
-}
-function enemyTurn(){
- if(!battle||battle.done)return;
- const foe=battle.foe,active=E.activeCreature(save);
- if(!active)return;
- const hit=E.retaliationDamage(save,foe,active);active.hp=Math.max(0,active.hp-hit);
- appendBattle(battle.message+"\n"+species(foe.id).name+"의 반격! 우리 키즈몬 HP -"+hit);
- if(active.hp<=0){
-  const alive=save.party.findIndex(p=>p.hp>0);
-  if(alive>=0){save.active=alive;appendBattle(battle.message+"\n다음 키즈몬이 전투를 이어가!")}
-  else{
-   appendBattle(battle.message+"\n모든 키즈몬이 쓰러졌어. 마을 연구소에서 회복했어.");
-   E.healAll(save);save.active=0;save.pos={...E.START};battle.done=true;
-   beep("fail");
-  }
+ $("battleAfter").classList.add("hidden");
+ $("battleActionPanel").classList.remove("hidden");
+ const button=(act,title,detail,cls="",disabled=false)=>
+  '<button type="button" data-action="'+act+'" class="'+cls+'" '+(disabled?'disabled':'')+'><b>'+esc(title)+'</b><small>'+esc(detail)+'</small></button>';
+ let html="";
+ if(battle.menu==="fight"){
+  $("battlePrompt").textContent="어떤 기술을 쓸까?";
+  $("battleHint").textContent="PP는 연구소에서 회복";
+  const moves=B.normalize(own);
+  html=moves.map(slot=>{
+   const m=B.moves[slot.id];
+   const detail=DB.types[m.type].name+" · "+(m.power?hitEstimate(slot.id):"보조 효과")+
+    " · PP "+slot.pp+"/"+m.pp;
+   return button("move:"+slot.id,m.name,detail,"strong",slot.pp<=0);
+  }).join("")+button("soft","살살 공격","포획용 · HP 1 남김","utility")+
+   button("back","← 돌아가기","행동 선택으로","menu-back");
+ }else if(battle.menu==="bag"){
+  $("battlePrompt").textContent="가방과 다른 행동";
+  $("battleHint").textContent="아이템은 내 턴 사용";
+  html=button("potion","회복약","HP +20 · "+save.items.potion+"개","utility",
+       save.items.potion<=0||own.hp>=maxOwn)+
+   button("run","도망가기","전투를 빠져나가기")+
+   button("back","← 돌아가기","행동 선택으로","menu-back");
+ }else{
+  $("battlePrompt").textContent="무엇을 할까?";
+  $("battleHint").textContent="속도 순서에 따라 행동";
+  html=button("fight","싸우기","기술 네 가지와 PP","strong")+
+   button("ball","키즈볼 던지기",catchEstimate()+" · "+save.items.ball+"개","utility",save.items.ball<=0)+
+   button("bag","가방","회복약 · 도망가기")+
+   button("switch","키즈몬 교체","다른 동료 출전", "",save.party.filter(x=>x.hp>0).length<2);
  }
+ $("battleButtons").innerHTML=html;
 }
 function endFight(message,kind="win"){
  if(!battle)return;
  battle.done=true;appendBattle(message);beep(kind);renderBattle();updateAll();persist();
 }
-function attack(action){
- if(!battle||battle.done)return;
- const own=E.activeCreature(save),a=species(own.id),foe=battle.foe,b=species(foe.id);
- const power=action==="typed"?9:action==="normal"?7:4;
- const type=action==="typed"?a.type:"neutral";
- let damage=DB.combat.damage({attacker:own.id,defender:foe.id,attackerLevel:own.level,defenderLevel:foe.level,power,moveType:type});
- if(action==="soft")damage=Math.min(damage,Math.max(0,foe.hp-1));
- foe.hp=Math.max(0,foe.hp-damage);
- const multiplier=DB.combat.effectiveness(type,b.type);
- appendBattle(a.name+"의 "+(action==="typed"?DB.types[a.type].name+" 공격":action==="soft"?"살살 공격":"기본 공격")+"! "+damage+" 피해."+(multiplier===2?" 효과가 굉장해!":multiplier===.5?" 효과가 약해.":""));
- beep("hit");
- if(foe.hp<=0){
-  const gain=E.levelRewards(save,foe);
-  let message=b.name+"을(를) 이겼어! 경험치 +"+gain.earned+" / 코인 +"+gain.coins;
-  if(gain.mentorHeal)message+="\n연구원의 응원! HP +"+gain.mentorHeal+" 자동 회복";
-  if([3,7,12].includes(save.wins+save.catches))message+="\n새로운 종류의 야생 키즈몬이 지역에 나타나기 시작했어!";
-  if(gain.events.length)message+="\n레벨 업! "+a.name+" Lv."+own.level;
-  endFight(message,"win");
-  if(gain.events.length)pendingEvolution=true;
-  return;
- }
- enemyTurn();battle.turn++;renderBattle();updateAll();persist();
-}
 let pendingEvolution=false;
-function capture(){
- if(!battle||battle.done||save.items.ball<=0)return;
- const f=battle.foe,prob=DB.combat.captureChance({target:f.id,level:f.level,hp:f.hp,maxHp:maxHp(f)});
- save.items.ball--;
- if(Math.random()<prob){
-  const destination=E.addCaptured(save,f);
-  if(f.id==="shibu_r00_c00")save.flags.shibuCaught=true;
-  announce("monster_caught",{id:f.id,uniqueKey:"caught:"+f.id,value:1});
+function battleAction(action){
+ if(!battle||battle.done)return;
+ if(action==="fight"||action==="bag"){battle.menu=action;renderBattle();return}
+ if(action==="back"){battle.menu="root";renderBattle();return}
+ if(action==="switch"){showSwap();return}
+ const choice=action.startsWith("move:")?{type:"move",id:action.slice(5)}:
+  action==="soft"?{type:"soft"}:
+  action==="ball"?{type:"ball"}:
+  action==="potion"?{type:"potion"}:
+  action==="run"?{type:"run"}:null;
+ if(choice)resolveBattleTurn(choice);
+}
+function resolveBattleTurn(choice){
+ if(!battle||battle.done)return;
+ const foe=battle.foe,own=E.activeCreature(save),foeName=species(foe.id).name;
+ const rookieCap=battle.zone==="meadow"&&save.encounters<=4?
+  Math.max(3,Math.floor(maxHp(own)*.15)):0;
+ const res=B.resolve({save,foe,battle,action:choice,random:Math.random,
+  rookieCap});
+ if(!res.ok){
+  appendBattle(res.reason==="pp"?"이 기술은 PP가 부족해! 다른 기술을 선택해.":"지금은 사용할 수 없어.");
+  renderBattle();return;
+ }
+ appendBattle(res.events.join("\n"));
+ battle.menu="root";
+ if(res.captured){
+  const destination=E.addCaptured(save,foe);
+  if(foe.id==="shibu_r00_c00")save.flags.shibuCaught=true;
+  announce("monster_caught",{id:foe.id,uniqueKey:"caught:"+foe.id,value:1});
   const progress=save.wins+save.catches;
-  endFight(species(f.id).name+" 포획 성공!\n"+(destination==="party"?"동료로 합류했어.":"동료 6마리가 꽉 차 보관함으로 이동했어.")+" · 확률 "+Math.round(prob*100)+"%"+
-    ([3,7,12].includes(progress)?"\n연구 기록이 늘어 새 야생 키즈몬이 등장하기 시작했어!":""),"capture");
+  endFight(foeName+" 포획 성공!\n"+(destination==="party"?"동료로 합류했어.":"보관함으로 이동했어.")+
+   ([3,7,12].includes(progress)?"\n연구 기록으로 새로운 야생 키즈몬이 나타나기 시작했어!":""),"capture");
   return;
  }
- appendBattle("포획 실패! 이번 확률은 "+Math.round(prob*100)+"%였어. 확률이 높아도 실패할 수 있어!");
- beep("fail");enemyTurn();battle.turn++;renderBattle();updateAll();persist();
-}
-function potionInBattle(){
- if(!battle||battle.done||save.items.potion<=0)return;
- const p=E.activeCreature(save),before=p.hp;
- if(before>=maxHp(p)){appendBattle("체력이 가득 찼어. 공격하거나 포획해 보자.");renderBattle();return}
- save.items.potion--;p.hp=Math.min(maxHp(p),p.hp+20);
- appendBattle(species(p.id).name+" HP +"+(p.hp-before)+" 회복!");beep("capture");
- enemyTurn();battle.turn++;renderBattle();updateAll();persist();
+ if(res.outcome==="won"){
+  const gain=E.levelRewards(save,foe);
+  let message=res.events.join("\n")+"\n"+foeName+" 승리! 경험치 +"+gain.earned+" · 코인 +"+gain.coins;
+  if(gain.mentorHeal)message+="\n연구원의 응원! HP +"+gain.mentorHeal;
+  if([3,7,12].includes(save.wins+save.catches))message+="\n새로운 야생 키즈몬이 지역에 출현해!";
+  if(gain.events.length){message+="\n레벨 업! Lv."+E.activeCreature(save).level;pendingEvolution=true}
+  endFight(message);return;
+ }
+ if(res.outcome==="lost"){
+  E.healAll(save);for(const p of save.party)B.restorePP(p);
+  save.active=0;save.pos={...E.START};
+  endFight(res.events.join("\n")+"\n모두 쓰러져 연구소로 돌아와 HP·PP를 회복했어.","fail");return;
+ }
+ if(res.outcome==="run"){endFight(res.events.join("\n"),"click");return}
+ beep(res.captured?"capture":"hit");
+ battle.turn++;renderBattle();updateAll();persist();
 }
 function evolveIfReady(){
  if(!save)return;
@@ -424,19 +438,8 @@ function evolveIfReady(){
 }
 function showSwap(){
  if(!save||!battle)return;
- openGeneric("교체할 키즈몬",'<p>다른 키즈몬으로 바꾸면 상대가 한 번 공격할 수 있어.</p><div class="shop-list">'+save.party.map((p,i)=>
+ openGeneric("교체할 키즈몬",'<p>교체 행동은 우선 처리되며 상대가 기술을 사용할 수 있어.</p><div class="shop-list">'+save.party.map((p,i)=>
  '<div class="shop-item">'+miniArt(p.id)+'<div><strong>'+esc(species(p.id).name)+'</strong><small>Lv.'+p.level+' / HP '+hpText(p)+'</small></div><button type="button" data-swap="'+i+'" '+(i===save.active||p.hp<=0?"disabled":"")+'>선택</button></div>').join("")+'</div>');
-}
-function battleAction(action){
- if(!battle||battle.done)return;
- if(["typed","normal","soft"].includes(action))attack(action);
- else if(action==="ball")capture();
- else if(action==="potion")potionInBattle();
- else if(action==="switch")showSwap();
- else if(action==="run"){
-  appendBattle("무사히 달아났어. 다음에는 다른 기술을 써 보자!");
-  endFight(battle.message,"click");
- }
 }
 function renderTerrain(x,y,sx,sy){
  const t=E.terrain(x,y),area=E.zoneAt(x),seed=(x*73+y*91)%41;
@@ -617,7 +620,7 @@ function attach(){
    openClinic();return;
   }
   b=e.target.closest("button[data-buy]");if(b){buy(b.dataset.buy);return}
-  b=e.target.closest("button[data-swap]");if(b){const choice=Number(b.dataset.swap);closeGeneric();selectTeam(choice,true);return}
+  b=e.target.closest("button[data-swap]");if(b){const choice=Number(b.dataset.swap);closeGeneric();resolveBattleTurn({type:"switch",index:choice});return}
   b=e.target.closest("button[data-dex]");if(b){openDexDetail(b.dataset.dex);return}
   b=e.target.closest("button[data-evolve]");if(b){
     if(E.maybeEvolve(save,b.dataset.evolve)){beep("win");setToast("새로운 형태로 진화했어!");persist();updateAll()}
