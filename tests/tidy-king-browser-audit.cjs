@@ -10,14 +10,14 @@ const injection=[
 'const o=kind==="item"?things[i]:kind==="station"?stations[i]:stains[i];',
 'if(!o||o.done)return{missing:true};',
 'const v=kind==="item"?o.group.position:kind==="station"?o.group.position:o.mesh.position;',
-'const q=new THREE.Vector3(v.x,kind==="item"?.25:kind==="station"?.12:.05,v.z).project(camera);',
+'const q=new THREE.Vector3(v.x,kind==="item"?.25:kind==="station"?(o.key==="shelf"?1.05:.62):.05,v.z).project(camera);',
 'const ox=(q.x+1)*innerWidth/2,oy=(1-q.y)*innerHeight/2;',
 'const seen={};',
 'for(const radius of [0,3,6,10,17,24])for(const [dx,dy] of radius===0?[[0,0]]:[[radius,0],[-radius,0],[0,radius],[0,-radius],[radius,radius],[radius,-radius],[-radius,radius],[-radius,-radius]]){',
 'const x=Math.round(ox+dx),y=Math.round(oy+dy);if(x<0||y<0||x>=innerWidth||y>=innerHeight)continue;',
-'const h=getHit({clientX:x,clientY:y}),cover=document.elementFromPoint(x,y);',
-'if(h?.kind===kind&&h.value===o&&cover===canvas)return{x,y};',
-'const k=(h?.kind||"none")+"/"+(cover?.id||cover?.tagName);seen[k]=(seen[k]||0)+1;',
+'const h=kind==="station"?candidateAt({clientX:x,clientY:y,pointerType:"touch"}):getHit({clientX:x,clientY:y}),cover=document.elementFromPoint(x,y);',
+'if((kind==="station"?h===o:h?.kind===kind&&h.value===o)&&cover===canvas)return{x,y};',
+'const k=(kind==="station"?(h?.key||"none"):(h?.kind||"none"))+"/"+(cover?.id||cover?.tagName);seen[k]=(seen[k]||0)+1;',
 '}return{blocked:true,index:i,kind,center:[Math.round(ox),Math.round(oy)],seen};',
 '},',
 'keys:()=>things.map(t=>t.key),stationIndex:key=>stations.findIndex(s=>s.key===key),reroll:()=>buildRoom(),positions:()=>things.map(t=>[Number(t.home.x.toFixed(2)),Number(t.home.z.toFixed(2))]),dragActive:()=>!!dragging,',
@@ -49,8 +49,8 @@ let seq=0;const pending=new Map(),errors=[],httpErrors=[];
 ws.onmessage=e=>{const m=JSON.parse(String(e.data));
 if(m.method==='Runtime.exceptionThrown')errors.push(m.params?.exceptionDetails?.exception?.description||m.params?.exceptionDetails?.text);
 if(m.method==='Network.responseReceived'&&m.params?.response?.status>=400)httpErrors.push({status:m.params.response.status,url:m.params.response.url});
-if(m.id&&pending.has(m.id)){const p=pending.get(m.id);pending.delete(m.id);m.error?p.no(Error(m.error.message)):p.ok(m.result||{})}};
-const send=(method,params={})=>new Promise((ok,no)=>{const id=++seq;pending.set(id,{ok,no});ws.send(JSON.stringify({id,method,params}))});
+if(m.id&&pending.has(m.id)){const p=pending.get(m.id);pending.delete(m.id);m.error?p.no(Error(m.error.message+' ('+p.method+' '+JSON.stringify(p.params).slice(0,350)+')')):p.ok(m.result||{})}};
+const send=(method,params={})=>new Promise((ok,no)=>{const id=++seq;pending.set(id,{ok,no,method,params});ws.send(JSON.stringify({id,method,params}))});
 const ev=async e=>{const r=await send('Runtime.evaluate',{expression:e,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result?.value};
 const click=async(x,y,touch)=>{
 if(touch){await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y,id:2}]});await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]})}
@@ -103,6 +103,7 @@ await click(first.x,first.y,c.touch);await click(firstTarget.x,firstTarget.y,c.t
 assert.equal(await ev('window.__AUDIT.s().done'),0,c.name+' tapping twice should not sort');
 const wrongIndex=await ev('window.__AUDIT.stationIndex("'+(kinds[keys[0]]==='shelf'?'trash':'shelf')+'")');
 const wrong=await ev('window.__AUDIT.point("station",'+wrongIndex+')');
+assert.ok(!wrong?.blocked&&Number.isFinite(wrong.x)&&Number.isFinite(wrong.y),c.name+' incorrect-bin target blocked: '+JSON.stringify(wrong));
 await drag(first.x,first.y,wrong.x,wrong.y,c.touch);
 assert.equal(await ev('window.__AUDIT.s().done'),0,c.name+' wrong bin must reject');
 for(let i=0;i<keys.length;i++){
