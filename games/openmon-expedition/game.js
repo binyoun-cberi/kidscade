@@ -1,7 +1,7 @@
 (function(){
 "use strict";
-const DB=window.OPENMON_DEX,E=window.OPENMON_EXPEDITION_ENGINE;
-if(!DB?.combat||!E)throw Error("Openmon Expedition engine missing");
+const DB=window.OPENMON_DEX,E=window.OPENMON_EXPEDITION_ENGINE,B=window.OPENMON_TURN_BATTLE;
+if(!DB?.combat||!E||!B)throw Error("KIDSMON turn-based battle engine missing");
 const $=id=>document.getElementById(id);
 const C=$("worldCanvas"),cx=C.getContext("2d",{alpha:false});
 cx.imageSmoothingEnabled=false;
@@ -63,7 +63,7 @@ function announce(event,payload){
  try{if(window.KidscadeGame?.milestone)window.KidscadeGame.milestone(event,payload)}catch(e){}
 }
 function startNew(id){
- save=E.createNew(id);battle=null;$("starterOverlay").hidden=true;
+ save=E.createNew(id);B.normalize(save.party[0]);battle=null;$("starterOverlay").hidden=true;
  setToast("오른쪽 길을 따라가면 첫 키즈몬을 만나! 키즈몬 연구소에서는 A로 대화할 수 있어.");
  updateAll();persist();beep("win");
 }
@@ -78,6 +78,7 @@ function showStarter(){
 }
 function updateAll(){
  if(!save)return;
+ for(const mon of [...save.party,...save.box])B.normalize(mon);
  const area=E.zoneAt(save.pos.x),data=E.ZONES.find(z=>z.key===area);
  $("areaName").textContent=data?.name||"탐험";
  $("coinCount").textContent=save.coins+" 연구코인";
@@ -123,8 +124,32 @@ function openParty(){
  openGeneric("우리 키즈몬","<p>선두 키즈몬을 바꾸거나 회복약을 사용할 수 있어. 전투 중에는 교체에 한 턴이 필요해.</p>"+
  '<div class="team hud-party-list">'+$("teamList").innerHTML+'</div>'+
  '<div class="action-row"><button type="button" class="act primary" data-hud-action="potion">회복약 사용 ('+save.items.potion+'개)</button>'+
- '<button type="button" class="act" data-hud-action="evolve">진화 확인</button></div>',
+ '<button type="button" class="act" data-hud-action="evolve">진화 확인</button>'+
+ '<button type="button" class="act" data-hud-action="skills">기술 관리</button></div>',
  save.party.length+"/6마리 · 선택하면 선두 변경");
+}
+function openSkills(){
+ if(!save)return;
+ const own=E.activeCreature(save),known=B.normalize(own),moves=B.moves;
+ const options=B.learnable(own);
+ const row=known.map((slot,i)=>{
+  const m=moves[slot.id];
+  const can=options.filter(id=>id!==slot.id&&!known.some((p,k)=>k!==i&&p.id===id));
+  return '<div class="shop-item"><div><strong>'+esc(m.name)+'</strong><small>'+esc(DB.types[m.type].name)+' · PP '+slot.pp+'/'+m.pp+
+   (m.power?' · 위력 '+m.power:' · 보조 기술')+'</small></div><button type="button" data-skill-slot="'+i+'">교체</button></div>'
+ }).join("");
+ openGeneric("기술 관리",'<p>한 번에 네 기술을 사용해. 레벨이 오르면 배울 수 있는 기술이 늘어나고, 기술의 PP는 연구소에서 회복할 수 있어.</p>'+
+ '<div class="shop-list">'+row+'</div><p>현재 배울 수 있는 기술: '+options.map(id=>esc(moves[id].name)).join(" · ")+'</p>');
+}
+function showLearnSkills(slotIndex){
+ const p=E.activeCreature(save),options=B.learnable(p);
+ const known=B.normalize(p);
+ openGeneric("기술 교체",'<p>새 기술을 배우면 선택한 기술과 교체돼. 이미 사용한 PP는 새 기술의 최대치로 시작해.</p>'+
+ '<div class="shop-list">'+options.filter(id=>!known.some((p,i)=>i!==slotIndex&&p.id===id)).map(id=>{
+  const m=B.moves[id],chosen=known[slotIndex].id===id;
+  return '<div class="shop-item"><div><strong>'+esc(m.name)+'</strong><small>'+esc(DB.types[m.type].name)+' · 위력 '+m.power+
+   ' · PP '+m.pp+'</small></div><button type="button" data-learn="'+id+'" data-slot="'+slotIndex+'" '+(chosen?'disabled':'')+'>'+(chosen?'배운 기술':'배우기')+'</button></div>'
+ }).join("")+'</div>');
 }
 function openBag(){
  if(!save)return;
@@ -209,7 +234,7 @@ function openBox(){
 }
 function buy(item){
  if(!save)return;
- if(item==="heal"){E.healAll(save);setToast("모두 건강해졌어! 다시 모험을 떠나자.");beep("win")}
+ if(item==="heal"){E.healAll(save);for(const mon of save.party)B.restorePP(mon);setToast("HP와 기술 PP를 모두 회복했어!");beep("win")}
  else {const cost=item==="ball"?35:item==="potion"?25:Infinity;
   if(save.coins<cost){setToast("연구코인이 부족해! 야생 전투로 모아 보자.");beep("fail");return}
   save.coins-=cost;save.items[item]++;setToast("물품을 구매했어!");beep("capture");
@@ -558,6 +583,7 @@ function attach(){
    else if(act==="clinic"){closeGeneric();$("goClinic").click()}
    else if(act==="box")openBox();
    else if(act==="evolve"){closeGeneric();evolveIfReady();}
+   else if(act==="skills")openSkills();
    else if(act==="audio"){$("audioButton").click();openMenu()}
    else if(act==="restart"){closeGeneric();$("newGame").click()}
    else if(act==="exit"){$("exitButton").click()}
@@ -565,6 +591,15 @@ function attach(){
   }
   b=e.target.closest("button[data-team]");
   if(b){const changed=selectTeam(Number(b.dataset.team));if(changed){closeGeneric()}return}
+  b=e.target.closest("button[data-skill-slot]");
+  if(b){showLearnSkills(Number(b.dataset.skillSlot));return}
+  b=e.target.closest("button[data-learn]");
+  if(b){
+   if(B.changeMove(E.activeCreature(save),b.dataset.learn,Number(b.dataset.slot))){
+    persist();setToast("새 기술을 배웠어!");
+   }
+   openSkills();return;
+  }
   b=e.target.closest("button[data-withdraw]");
   if(b){
    const member=save.box[Number(b.dataset.withdraw)];
@@ -638,7 +673,7 @@ configureViewport();
 window.addEventListener("resize",configureViewport);
 attach();
 save=stored();
-if(save){if(!save.party.some(p=>p.hp>0)){E.healAll(save);save.active=0}updateAll();setToast("저장된 탐험을 불러왔어. 계속 이동해 보자.")}
+if(save){for(const mon of [...save.party,...save.box])B.normalize(mon);if(!save.party.some(p=>p.hp>0)){E.healAll(save);save.active=0}updateAll();setToast("저장된 탐험을 불러왔어. 계속 이동해 보자.")}
 else showStarter();
 requestAnimationFrame(render);
 window.OPENMON_EXPEDITION_DEBUG={getState:()=>save,getBattle:()=>battle,engine:E,begin:id=>startNew(id),move:(dx,dy)=>E.move(save,dx,dy,()=>.5)};
