@@ -11,7 +11,7 @@ const M={
  quick:{name:"재빠른 일격",type:"neutral",power:5,accuracy:100,pp:20,priority:1},
  focus:{name:"집중",type:"neutral",power:0,accuracy:100,pp:15,kind:"buff",buff:{stat:"attack",amount:1}},
  leaf:{name:"씨앗탄",type:"leaf",power:9,accuracy:100,pp:25},
- vine:{name:"덩굴 포박",type:"leaf",power:6,accuracy:95,pp:20,afflict:{kind:"slow",chance:.6}},
+ vine:{name:"덩굴 포박",type:"leaf",power:6,accuracy:95,pp:20,afflict:{kind:"slow",chance:.6},trap:2},
  synthesis:{name:"광합성",type:"leaf",power:0,accuracy:100,pp:8,kind:"heal",heal:.33},
  bloom:{name:"꽃잎 폭풍",type:"leaf",power:13,accuracy:90,pp:10},
  photoPulse:{name:"광합성 파동",type:"leaf",power:7,accuracy:100,pp:16,drain:.25},
@@ -25,7 +25,7 @@ const M={
  heat:{name:"열기 모으기",type:"fire",power:0,accuracy:100,pp:15,kind:"buff",buff:{stat:"attack",amount:1}},
  inferno:{name:"용암 포효",type:"fire",power:14,accuracy:85,pp:8},
  spark:{name:"전격",type:"electric",power:9,accuracy:100,pp:25},
- static:{name:"정전기",type:"electric",power:6,accuracy:95,pp:20,afflict:{kind:"slow",chance:.65}},
+ static:{name:"정전기",type:"electric",power:6,accuracy:95,pp:20,afflict:{kind:"slow",chance:.65},stunChance:.18},
  charge:{name:"충전",type:"electric",power:0,accuracy:100,pp:12,kind:"buff",buff:{stat:"attack",amount:1}},
  thunder:{name:"번개 폭발",type:"electric",power:14,accuracy:85,pp:8},
  stone:{name:"낙석",type:"earth",power:9,accuracy:100,pp:25},
@@ -46,7 +46,7 @@ const M={
  shadow:{name:"그림자베기",type:"dark",power:9,accuracy:100,pp:25},
  mark:{name:"그림자 표식",type:"dark",power:6,accuracy:95,pp:20,afflict:{kind:"weaken",chance:.55}},
  night:{name:"밤의 일격",type:"dark",power:12,accuracy:90,pp:12},
- counter:{name:"받아치기",type:"neutral",power:0,accuracy:100,pp:12,kind:"shield",shield:.5},
+ counter:{name:"받아치기",type:"neutral",power:0,accuracy:100,pp:12,kind:"counter",shield:.50,reflect:1.3},
  neutral:{name:"정면돌파",type:"neutral",power:11,accuracy:95,pp:15}
 };
 for(const [id,move] of Object.entries(M))move.id=id;
@@ -210,18 +210,22 @@ function changeMove(mon,newId,at){
  return true;
 }
 function restorePP(mon){normalize(mon);mon.moveSlots.forEach(m=>{m.pp=M[m.id].pp})}
-function makeSide(){return {attack:0,defense:0,speed:0,shield:0,condition:null,conditionTurns:0,weakenPenalty:0}}
+function makeSide(){return {attack:0,defense:0,spAttack:0,spDefense:0,speed:0,shield:0,
+ counter:0,trapTurns:0,stunPending:false,stunImmunity:0,armorUsed:false,abilityUsed:false,
+ condition:null,conditionTurns:0,weakenPenalty:0}}
 function state(){return {player:makeSide(),foe:makeSide()}}
 function stageValue(stat,n){return stat*(n>=0?(2+n)/2:2/(2-n))}
-function score(mon,side){return stageValue(D.combat.statsAtLevel(mon.id,mon.level).speed,side.speed)*(side.condition==="slow"?.7:1)}
+function score(mon,side){return stageValue(D.combat.statsAtLevel(mon.id,mon.level,mon).speed,side.speed)*(side.condition==="slow"?.7:1)*(D.combat.abilityFor(mon)==="agility"?1.12:1)}
 function moveDamage(attacker,target,move,aSide,dSide,protect){
  const raw=D.combat.damage({attacker:attacker.id,defender:target.id,attackerLevel:attacker.level,
   defenderLevel:target.level,power:move.power,moveType:move.type});
- const a=(2+Math.max(-3,Math.min(3,aSide.attack)))/2;
- const d=(2+Math.max(-3,Math.min(3,dSide.defense)))/2;
+ const special=(move.damageClass|| (D.combat.SPECIAL_TYPES.has(move.type)?"special":"physical"))==="special";
+ const a=(2+Math.max(-3,Math.min(3,special?aSide.spAttack:aSide.attack)))/2;
+ const d=(2+Math.max(-3,Math.min(3,special?dSide.spDefense:dSide.defense)))/2;
  // Shorter damage steps leave room to make choices instead of deciding the fight in one turn.
  let dmg=Math.max(1,Math.floor(raw*.62*a/d));
  if(dSide.shield){dmg=Math.max(1,Math.round(dmg*(1-dSide.shield)));dSide.shield=0}
+ if(D.combat.abilityFor(target)==="fortify"&&!dSide.armorUsed){dmg=Math.max(1,Math.ceil(dmg*.8));dSide.armorUsed=true}
  if(protect) dmg=Math.min(dmg,protect);
  return dmg;
 }
@@ -229,11 +233,12 @@ function chooseEnemyMove(foe,own,foeSide,ownSide,rng=Math.random){
  normalize(foe);
  let choices=foe.moveSlots.filter(slot=>slot.pp>0);
  if(!choices.length)return "tackle";
- const hp=foe.hp/D.combat.statsAtLevel(foe.id,foe.level).hp;
+ const hp=foe.hp/D.combat.statsAtLevel(foe.id,foe.level,foe).hp;
  let weighted=choices.map(slot=>{
   let m=M[slot.id],w=1;
   if(m.kind==="heal")w=hp<.45?5:.1;
-  else if(m.kind==="shield")w=foeSide.shield?0.15:own.hp/D.combat.statsAtLevel(own.id,own.level).hp<.6?1.8:.8;
+   else if(m.kind==="counter")w=foeSide.counter?.1:hp<.65?2.6:1.1;
+  else if(m.kind==="shield")w=foeSide.shield?0.15:own.hp/D.combat.statsAtLevel(own.id,own.level,own).hp<.6?1.8:.8;
   else if(m.kind==="buff")w=foeSide[m.buff.stat]>=2?.2:foeSide[m.buff.stat]>=1?.8:1.6;
   else {
    let effect=D.combat.effectiveness(m.type,getSpecies(own.id).type);
@@ -263,7 +268,8 @@ function resolve({save,foe,battle,action,random=Math.random,rookieCap=0}){
  }
  if(!["move","soft","ball","potion","switch","run"].includes(action.type))return {ok:false,reason:"action"};
  if(action.type==="ball"&&save.items.ball<=0)return {ok:false,reason:"ball"};
- if(action.type==="potion"&&(save.items.potion<=0||player().hp>=D.combat.statsAtLevel(player().id,player().level).hp))return {ok:false,reason:"potion"};
+ if(action.type==="potion"&&(save.items.potion<=0||player().hp>=D.combat.statsAtLevel(player().id,player().level,player()).hp))return {ok:false,reason:"potion"};
+ if(action.type==="switch"&&side.player.trapTurns>0)return {ok:false,reason:"trapped"};
  if(action.type==="switch"&&(!Number.isInteger(action.index)||!save.party[action.index]||save.party[action.index].hp<=0||save.active===action.index))return {ok:false,reason:"switch"};
  const introMoves=foe.moveSlots.filter(x=>x.pp>0&&M[x.id]?.power&&!M[x.id]?.afflict);
  const enemyId=battle.firstRoad&&introMoves.length?
@@ -284,27 +290,44 @@ function resolve({save,foe,battle,action,random=Math.random,rookieCap=0}){
   const name=getSpecies(user.id).name;
   if(random()*100>=move.accuracy){say(name+"의 "+move.name+"! 빗나갔어.");return}
   if(move.kind==="heal"){
-   const cap=D.combat.statsAtLevel(user.id,user.level).hp;
+   const cap=D.combat.statsAtLevel(user.id,user.level,user).hp;
    const healed=Math.min(cap-user.hp,Math.max(1,Math.ceil(cap*move.heal)));
    user.hp+=healed;say(name+"의 "+move.name+"! HP "+healed+" 회복.");return;
   }
   if(move.kind==="shield"){from.shield=move.shield;say(name+"의 "+move.name+"! 다음 피해를 줄여.");return}
+   if(move.kind==="counter"){from.shield=move.shield;from.counter=move.reflect;say(name+"의 "+move.name+"! 공격을 기다리며 반격 자세!");return}
   if(move.kind==="buff"){from[move.buff.stat]=clamp(from[move.buff.stat]+move.buff.amount,-3,3);say(name+"의 "+move.name+"! "+({attack:"공격",defense:"방어",speed:"속도"}[move.buff.stat])+" 상승.");return}
   let dealt=0;
   for(let hit=0;hit<(move.hits||1)&&opponent.hp>0;hit++){
    const amount=moveDamage(user,opponent,move,from,to,enemy?rookieCap:0);
    const actual=Math.min(opponent.hp,amount);opponent.hp-=actual;dealt+=actual;
   }
-  const eff=D.combat.effectiveness(move.type,getSpecies(opponent.id).type);
+  // A counter reverses one direct damaging attack; utility moves safely bait it.
+   if(to.counter&&dealt>0&&opponent.hp>0&&user.hp>0){
+    const returned=Math.min(user.hp,Math.max(1,Math.floor(dealt*to.counter)));
+    user.hp-=returned;to.counter=0;
+    say(getSpecies(opponent.id).name+"의 반격! "+returned+" 피해를 되돌렸어.");
+   }
+   if(opponent.hp>0&&!to.abilityUsed&&D.combat.abilityFor(opponent)==="recovery"&&
+     opponent.hp<=Math.floor(D.combat.statsAtLevel(opponent.id,opponent.level,opponent).hp*.35)){
+    to.abilityUsed=true;const cap=D.combat.statsAtLevel(opponent.id,opponent.level,opponent).hp;
+    const gain=Math.min(cap-opponent.hp,Math.max(1,Math.ceil(cap*.12)));
+    opponent.hp+=gain;say(getSpecies(opponent.id).name+"의 회복 본능! HP "+gain+" 회복.");
+   }
+   const eff=D.combat.effectiveness(move.type,getSpecies(opponent.id).type);
   say(name+"의 "+move.name+"! "+dealt+" 피해."+
    (move.hits?" "+move.hits+"회 연속 공격!":"")+
    (eff===2?" 효과가 굉장해!":eff===.5?" 효과가 약해.":""));
   if(move.drain){
-   const cap=D.combat.statsAtLevel(user.id,user.level).hp;
+   const cap=D.combat.statsAtLevel(user.id,user.level,user).hp;
    const gain=Math.max(0,Math.min(cap-user.hp,Math.max(1,Math.floor(dealt*move.drain))));
    user.hp+=gain;if(gain)say(name+"이(가) HP "+gain+" 회복!");
   }
-  if(move.afflict&&opponent.hp>0&&!to.condition&&random()<move.afflict.chance){
+  if(move.trap&&opponent.hp>0){to.trapTurns=Math.max(to.trapTurns,move.trap);say(getSpecies(opponent.id).name+"의 교체가 봉쇄되었어!")}
+   if(move.stunChance&&opponent.hp>0&&!to.stunImmunity&&!to.stunPending&&random()<move.stunChance){
+    to.stunPending=true;to.stunImmunity=3;say(getSpecies(opponent.id).name+"이(가) 감전되어 다음 행동을 쉬어!");
+   }
+   if(move.afflict&&opponent.hp>0&&!to.condition&&random()<move.afflict.chance){
    to.condition=move.afflict.kind;to.conditionTurns=move.afflict.kind==="burn"?3:2;
    if(to.condition==="weaken"){to.weakenPenalty=to.attack>-3?1:0;to.attack=clamp(to.attack-1,-3,3)}
    say(getSpecies(opponent.id).name+"에게 "+({burn:"화상",slow:"둔화",weaken:"공격 약화"}[to.condition])+" 효과!");
@@ -317,10 +340,10 @@ function resolve({save,foe,battle,action,random=Math.random,rookieCap=0}){
   if(isPlayer){
    if(action.type==="run"){ran=true;outcome="run";say("무사히 도망쳤어!");return}
    if(action.type==="switch"){save.active=action.index;normalize(player());switched=true;side.player=makeSide();say(getSpecies(player().id).name+" 출전!");return}
-   if(action.type==="potion"){save.items.potion--;const cap=D.combat.statsAtLevel(user.id,user.level).hp,healed=Math.min(20,cap-user.hp);user.hp+=healed;potionUsed=true;say(getSpecies(user.id).name+" HP "+healed+" 회복!");return}
+   if(action.type==="potion"){save.items.potion--;const cap=D.combat.statsAtLevel(user.id,user.level,user).hp,healed=Math.min(20,cap-user.hp);user.hp+=healed;potionUsed=true;say(getSpecies(user.id).name+" HP "+healed+" 회복!");return}
    if(action.type==="ball"){
     save.items.ball--;
-    const chance=D.combat.captureChance({target:foe.id,level:foe.level,hp:foe.hp,maxHp:D.combat.statsAtLevel(foe.id,foe.level).hp,status:side.foe.condition==="burn"||side.foe.condition==="slow"});
+    const chance=D.combat.captureChance({target:foe.id,level:foe.level,hp:foe.hp,maxHp:D.combat.statsAtLevel(foe.id,foe.level,foe).hp,status:side.foe.condition==="burn"||side.foe.condition==="slow"});
     captured=random()<chance;
     say(captured?getSpecies(foe.id).name+" 포획 성공!":"키즈볼 포획 실패! ("+Math.round(chance*100)+"%)");
     if(captured)outcome="caught";
@@ -347,10 +370,13 @@ function resolve({save,foe,battle,action,random=Math.random,rookieCap=0}){
  if(outcome==="continue"){
   for(const [who,mon,s] of [["아군",player(),side.player],["상대",foe,side.foe]]){
    if(mon.hp>0&&s.condition==="burn"){
-    const hit=Math.max(1,Math.floor(D.combat.statsAtLevel(mon.id,mon.level).hp/14));
+    const hit=Math.max(1,Math.floor(D.combat.statsAtLevel(mon.id,mon.level,mon).hp/14));
     mon.hp=Math.max(0,mon.hp-hit);say(who+" 화상 피해 -"+hit);
    }
-   if(s.conditionTurns>0){s.conditionTurns--;if(!s.conditionTurns){
+   if(s.trapTurns>0)s.trapTurns--;
+    if(s.stunImmunity>0)s.stunImmunity--;
+    if(s.counter){s.counter=0;s.shield=0;say(who+"의 반격 준비가 끝났어.")}
+    if(s.conditionTurns>0){s.conditionTurns--;if(!s.conditionTurns){
      if(s.condition==="weaken"&&s.weakenPenalty){s.attack=clamp(s.attack+s.weakenPenalty,-3,3);s.weakenPenalty=0}
      s.condition=null;say(who+" 상태 효과가 끝났어.")}}
    // Weaken changes attack stage once and now restores exactly that temporary penalty on expiry.
