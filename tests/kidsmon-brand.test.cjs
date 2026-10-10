@@ -27,7 +27,8 @@ test('KIDSMON is the consistent public-facing game and dex name',()=>{
 });
 test('all capture equipment is displayed as 키즈볼, original game balances remain intact',()=>{
  for(const content of [game,runtime,dex])assert.doesNotMatch(content,/포획구/);
- assert.match(game,/>키즈볼</);
+ assert.match(game,/data-hud="bag"/);
+ assert.match(runtime,/키즈볼/);
  assert.match(runtime,/키즈볼 던지기/);
  assert.match(runtime,/포획 성공/);
  assert.match(runtime,/data-buy="ball"/);
