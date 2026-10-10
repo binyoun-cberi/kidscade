@@ -1020,6 +1020,9 @@ test('v6.0 registers eight sculptural hairstyles, ten silhouette-different outfi
     ...m.wardrobeLibrary.fitIsolation.parts.shared];
   assert.equal(new Set(all).size,all.length,'A part belongs to two body fits');
   assert.ok(outfit.includes('const sideVariant=new RegExp'));
+  assert.match(js,/const scalpThreshold=bb\.max\.y-size\.y\*\.32/);
+  assert.match(js,/const headId=\[\.\.\.headWeights\]/);
+  assert.doesNotMatch(js,/template\.skeleton\.bones\.find\(bone=>\/head\/i/);
   assert.match(js,/hair\.userData\.volumeFeature=style\.feature/);
   assert.match(js,/piece\.userData=\{chibiHairFeature:true/);
   assert.match(js,/part\.visible=!hatOn/);
