@@ -72,7 +72,7 @@
     };
   }
   function createState(trace){
-    return {active:false,startedAt:null,lastMs:null,lastTickMs:null,lastMotionMs:null,lastPoint:null,
+    return {active:false,startedAt:null,lastMs:null,lastTickMs:null,lastMotionMs:null,lastProgressMs:null,lastPoint:null,
       progress:0,crack:0,stuck:0,speed:0,good:0,readings:0,offPath:0,releases:0,
       complete:false,failed:false,reason:'',elapsedMs:0};
   }
@@ -105,7 +105,7 @@
     const s={...state},expected=sampleAt(trace,s.progress);
     if(s.complete||s.failed||length(expected,point)>trace.tolerance+12)return {accepted:false,state:s};
     if(s.startedAt===null) s.startedAt=now;
-    s.active=true;s.lastPoint={...point};s.lastMs=now;s.lastTickMs=now;s.lastMotionMs=now;
+    s.active=true;s.lastPoint={...point};s.lastMs=now;s.lastTickMs=now;s.lastMotionMs=now;s.lastProgressMs=now;
     return {accepted:true,state:s};
   }
   function tick(trace,state,now){
@@ -115,7 +115,8 @@
     s.elapsedMs=elapsed;
     if(elapsed>=trace.timeLimitMs){s.failed=true;s.active=false;s.reason='시간이 다 됐어요';return s;}
     const dt=clamp(now-(s.lastTickMs??now),0,1000)/1000;
-    if(now-(s.lastMotionMs??now)>850){
+    // Wiggling in place is still too slow: real *forward progress* is required.
+    if(now-(s.lastProgressMs??now)>850){
       s.stuck+=dt*(s.active?31:20);
     }
     s.lastTickMs=now;
@@ -146,7 +147,9 @@
       s.crack+=Math.min(32,2.2+excess*.75);
       s.offPath++;
     }else{
+      const before=s.progress;
       s.progress=Math.max(s.progress,next.progress);
+      if(s.progress>before+1.25) s.lastProgressMs=now;
       s.good+=Math.max(0,1-next.distance/Math.max(1,trace.tolerance));
       s.readings++;
     }
