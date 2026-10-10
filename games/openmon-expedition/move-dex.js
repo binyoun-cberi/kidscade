@@ -5,25 +5,29 @@ const D=w.OPENMON_DEX,B=w.OPENMON_TURN_BATTLE;
 if(!D?.species||!B?.moves)throw Error("Load KIDSMON dex and turn battle before move-dex.js");
 const TYPE_ORDER=["neutral","leaf","water","fire","electric","earth","air","ice","mind","dark"];
 const TYPE_SYMBOLS={neutral:"◇",leaf:"✿",water:"≈",fire:"✹",electric:"ϟ",earth:"◆",air:"➶",ice:"❄",mind:"◎",dark:"◈"};
-const CATEGORY_NAMES={attack:"공격",control:"견제",heal:"회복",shield:"방어",buff:"강화"};
+const CATEGORY_NAMES={attack:"공격",control:"견제",heal:"회복",shield:"방어",counter:"반격",buff:"강화"};
 const AILMENT_NAMES={burn:"화상",slow:"둔화",weaken:"공격 약화"};
 const STATS={attack:"공격",defense:"방어",speed:"속도"};
 const MILESTONES=[1,10,14,26];
 function category(move){
  if(move.kind==="heal")return "heal";
  if(move.kind==="shield")return "shield";
+ if(move.kind==="counter")return "counter";
  if(move.kind==="buff")return "buff";
- if(move.afflict)return "control";
+ if(move.afflict||move.trap||move.stunChance)return "control";
  return "attack";
 }
 function detail(id){
  const m=B.moves[id];if(!m)return null;
  const lines=[];
- if(m.power>0)lines.push(D.types[m.type].name+" 타입의 기술로 상대에게 피해를 줌");
+ if(m.power>0)lines.push((m.damageClass||(D.combat.SPECIAL_TYPES.has(m.type)?"special":"physical"))==="special"?"특수 공격 · 상대 특수방어에 영향":"물리 공격 · 상대 방어에 영향");
  if(m.hits)lines.push("한 턴에 최대 "+m.hits+"번 연속 공격");
  if(m.drain)lines.push("입힌 피해의 "+Math.round(m.drain*100)+"%만큼 사용자 HP 회복");
  if(m.kind==="heal")lines.push("최대 HP의 약 "+Math.round(m.heal*100)+"% 회복");
  if(m.kind==="shield")lines.push("다음에 받는 공격 피해를 "+Math.round(m.shield*100)+"% 감소");
+ if(m.kind==="counter")lines.push("받는 피해 "+Math.round(m.shield*100)+"% 감소 · 이번 턴 공격을 받으면 피해의 "+Math.round(m.reflect*100)+"% 반격");
+ if(m.trap)lines.push("맞은 키즈몬의 교체를 잠시 봉쇄");
+ if(m.stunChance)lines.push(Math.round(m.stunChance*100)+"% 확률로 감전 · 다음 행동을 1회 차단 (연속 발동 방지)");
  if(m.kind==="buff")lines.push("자신의 "+STATS[m.buff.stat]+"을 "+m.buff.amount+"단계 올림 (최대 3단계)");
  if(m.afflict){
   let duration=m.afflict.kind==="burn"?3:2;

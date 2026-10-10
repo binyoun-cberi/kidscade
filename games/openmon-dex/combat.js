@@ -15,12 +15,38 @@ function get(key){
  if(!obj?.playable||!obj.battle)throw Error("Unknown combat species");
  return obj;
 }
-function statsAtLevel(key,level){
+// Six battle statistics; existing four-stat species and saves remain valid.
+const STAT_KEYS=["hp","attack","defense","spAttack","spDefense","speed"];
+const SPECIAL_TYPES=new Set(["leaf","water","fire","electric","ice","mind"]);
+const ABILITIES=Object.freeze({
+ fortify:{name:"견고함",description:"전투에서 처음 받는 공격 피해가 20% 감소"},
+ agility:{name:"기민함",description:"기술 우선도가 같으면 행동 속도 12% 상승"},
+ recovery:{name:"회복 본능",description:"위기 시 전투마다 한 번 최대 HP의 12% 회복"}
+});
+function abilityFor(mon){
+ const s=get(mon?.id||mon);
+ return s.battle.role==="guard"?"fortify":s.battle.role==="swift"?"agility":"recovery";
+}
+function statsAtLevel(key,level,mon=null){
  const s=get(key);
  if(!Number.isInteger(level)||level<1||level>60)throw Error("Level must be 1–60");
- const stats=s.battle.base, growth=s.battle.growth, result={};
- for(const k of ["hp","attack","defense","speed"])
-  result[k]=Math.floor(stats[k]+(level-1)*growth[k]);
+ const base=s.battle.base,growth=s.battle.growth,role=s.battle.role||"balanced",result={};
+ const specialAttack=base.spAttack??Math.max(4,Math.round(base.attack*(SPECIAL_TYPES.has(s.type)?1.10:.88)));
+ const specialDefense=base.spDefense??Math.max(4,Math.round(base.defense*(role==="guard"?1.08:role==="swift"?.90:1)));
+ const values={...base,spAttack:specialAttack,spDefense:specialDefense};
+ const rates={...growth,spAttack:growth.spAttack??growth.attack,spDefense:growth.spDefense??growth.defense};
+ for(const k of STAT_KEYS){
+  const raw=Math.floor(values[k]+(level-1)*rates[k]);
+  // 0-15 individual potential contributes at most ~5% at higher levels.
+  const iv=mon?.genetics?.iv?.[k];
+  const bonus=Number.isInteger(iv)&&iv>=0&&iv<=15?Math.floor(raw*.05*iv/15):0;
+  const effort=mon?.training?.[k]||0;
+  const trainingBonus=Math.floor(raw*.07*Math.max(0,Math.min(24,effort))/24);
+  const nature=mon?.genetics?.nature;
+  const natures={용감:{attack:1.04,speed:.96},신중:{spDefense:1.04,spAttack:.96},
+   쾌속:{speed:1.04,defense:.96},집중:{spAttack:1.04,attack:.96}};
+  result[k]=Math.max(1,Math.floor((raw+bonus+trainingBonus)*(natures[nature]?.[k]||1)));
+ }
  return result;
 }
 function effectiveness(attackType,defenderType){
@@ -30,12 +56,14 @@ function effectiveness(attackType,defenderType){
  if(counters[defenderType].includes(attackType))return 0.5;
  return 1;
 }
-function damage({attacker,defender,attackerLevel,defenderLevel,power=9,moveType}){
+function damage({attacker,defender,attackerLevel,defenderLevel,power=9,moveType,damageClass,attackerMon=null,defenderMon=null}){
  const a=get(attacker),b=get(defender);
  if(!Number.isInteger(power)||power<1||power>40)throw Error("Move power out of bounds");
- const atk=statsAtLevel(a,attackerLevel).attack;
- const def=statsAtLevel(b,defenderLevel).defense;
  const element=moveType||a.type;
+ const category=damageClass|| (SPECIAL_TYPES.has(element)?"special":"physical");
+ const stat=category==="special"?"spAttack":"attack",guard=category==="special"?"spDefense":"defense";
+ const atk=statsAtLevel(a,attackerLevel,attackerMon)[stat];
+ const def=statsAtLevel(b,defenderLevel,defenderMon)[guard];
  const multiplier=effectiveness(element,b.type);
  const stab=element===a.type?1.1:1;
  const raw=Math.max(1,atk+power-Math.floor(def*.75));
@@ -63,5 +91,5 @@ function evolutionAvailable(key,level){
  const s=get(key),branches=d.species.filter(next=>next.evolvesFrom===s.id&&next.evolutionCondition?.enabled);
  return branches.filter(x=>level>=x.evolutionCondition.level).map(x=>({dexNo:x.dexNo,id:x.id,name:x.name,requiredLevel:x.evolutionCondition.level}));
 }
-d.combat={statsAtLevel,effectiveness,damage,captureChance,xpToNext,xpReward,evolutionAvailable,counters};
+d.combat={statsAtLevel,effectiveness,damage,captureChance,xpToNext,xpReward,evolutionAvailable,counters,STAT_KEYS,SPECIAL_TYPES,ABILITIES,abilityFor};
 })(window);
