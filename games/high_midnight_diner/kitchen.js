@@ -6,8 +6,9 @@ const K='../../assets/game/3d/interiors/charming-kitchen-set/';
 const S='../../assets/game/3d/interiors/modular-sushi-restaurant-kit/';
 const F='../../assets/game/3d/food/ultimate-food-pack/';
 const PEOPLE='../../assets/game/npcs/glTF/';
+const FOOD_ITEMS='../../assets/game/food/';
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x25241d);
-const camera=new THREE.PerspectiveCamera(38,1,.05,80);camera.position.set(0,2.2,7.8);camera.lookAt(0,1.7,0);
+const camera=new THREE.PerspectiveCamera(38,1,.05,80);camera.position.set(0,2.2,5.2);camera.lookAt(0,1.9,-.6);
 let renderer;
 try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'low-power'});renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;/* Show illustrated fallback until a chef model is confirmed. */}
 catch(error){console.warn('Midnight diner WebGL unavailable; using illustrated kitchen fallback',error);}
@@ -21,8 +22,8 @@ for(let i=0;i<12;i++)box('wall seam',.018,5,.03,0x534e37,-5.2+i*.94,2.2,-2.205);
 for(let i=0;i<7;i++)box('tile seam',11,.018,.03,0x514b37,0,.4+i*.65,-2.18);
 box('kitchen counter',10,1.05,1.3,0x3b392c,0,.56,-1.15);
 box('countertop',10,.15,1.7,0x827054,0,1.14,-1.02);
-box('front counter',12,.7,1.18,0x5b4631,0,.34,3.1);
-box('front lip',12,.1,1.4,0x9c7652,0,.75,3.1);
+box('front counter',5,.47,.8,0x483a2b,0,.24,1.15);
+box('front lip',5,.11,.9,0x9c7652,0,.52,1.15);
 box('under-counter shelf',9,.08,.82,0x282821,0,.45,-.62);
 const loader=new GLTFLoader();
 async function load(url,height,x,y,z,rotation=0){
@@ -52,9 +53,9 @@ const decor=[
  [S+'plate.glb',.1,1.35,1.22,-.55,0]
 ];
 for(const d of decor)load(d[0],...d.slice(1));
-load(PEOPLE+'OldClassy_Male.gltf',1.7,0,1.18,-.85,Math.PI).then(obj=>{
- chef=obj;
- if(obj){canvas.classList.add('ready');}
+load(PEOPLE+'Chef_Male.gltf',2.25,-.1,1.07,-.65,0).then(async obj=>{
+ chef=obj||await load(PEOPLE+'OldClassy_Male.gltf',2.15,-.1,1.07,-.65,0);
+ if(chef)canvas.classList.add('ready');
  else console.warn('Midnight diner: chef asset missing, illustrated fallback remains visible');
 });
 const foods=[F+'pancakes-stack.glb',S+'ramen.glb',S+'dango.glb',S+'gyoza.glb',F+'cupcake.glb'];
@@ -66,16 +67,55 @@ async function setCourse(index){
 setCourse(0);
 window.addEventListener('midnight-diner:state',ev=>{
  const d=ev.detail||{};mood=(d.suspicion||0)/100;if(d.shock)shock=1;
- if(Number.isInteger(d.course)&&d.course!==course){course=d.course;setCourse(Math.min(2,course));}
+ if(d.phase!=='cooking'){
+  lookingAtFood=false;
+  ingredientModels.forEach(obj=>obj.visible=false);
+ }
+ if(Number.isInteger(d.course)&&d.course!==course){course=d.course;setCourse(Math.min(4,course));}
 });
 function resize(){
  const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
  renderer.setSize(w,h,false);camera.aspect=w/h;
- camera.fov=h<320?55:38;camera.position.z=h<320?8.6:7.8;camera.updateProjectionMatrix();
+ camera.fov=h<320?49:38;camera.position.z=h<320?6.2:5.2;camera.lookAt(0,1.9,-.6);camera.updateProjectionMatrix();
 }
 window.addEventListener('resize',resize);resize();
 const clock=new THREE.Clock();
+// Reusable spoon and ingredient proxy: animation follows the exact serving number
+// shared with cooking rules, never inventing a different dangerous position.
+const spoon=new THREE.Group();
+const spoonHandle=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.92,9),new THREE.MeshStandardMaterial({color:0xa9a99c,metalness:.65,roughness:.35}));
+spoonHandle.rotation.z=Math.PI/3;spoon.add(spoonHandle);
+const spoonBowl=new THREE.Mesh(new THREE.SphereGeometry(.13,12,7),new THREE.MeshStandardMaterial({color:0xc2bca8,metalness:.62,roughness:.28}));
+spoonBowl.position.set(-.41,-.2,0);spoonBowl.scale.set(1,.32,.65);spoon.add(spoonBowl);
+spoon.position.set(.4,1.76,-.2);scene.add(spoon);
+const addedIngredient=new THREE.Mesh(new THREE.DodecahedronGeometry(.12),new THREE.MeshStandardMaterial({color:0x8e764c,roughness:1}));
+addedIngredient.visible=false;scene.add(addedIngredient);
+let currentZone=1,currentTotal=5,lookingAtFood=false,foodIngredient=null,stirUntil=0;
+const ingredientModels=new Map();
+const ingredientFiles={
+ seed:'tomato-slice.glb',mushroom:'mushroom-half.glb',bean:'cherries.glb',
+ thread:'celery-stick.glb',dust:'cheese-cut.glb',safe:'carrot.glb'
+};
+for(const [key,file] of Object.entries(ingredientFiles)){
+ load(FOOD_ITEMS+file,.29,0,-9,0).then(obj=>{
+  if(!obj)return;
+  obj.visible=false;ingredientModels.set(key,obj);
+ });
+}
+window.addEventListener('midnight-diner:cooking',ev=>{
+ const d=ev.detail||{};
+ currentZone=d.zone||1;currentTotal=d.total||5;lookingAtFood=!!d.looking&&!d.concealed;
+ foodIngredient=d.ingredient;
+ stirUntil=clock.getElapsedTime()+1.4;
+ const prohibited=lookingAtFood&&foodIngredient&&foodIngredient!=='일반 양념';
+ addedIngredient.material.color.setHex(prohibited?0x874638:0x8e9464);
+ addedIngredient.visible=lookingAtFood;
+ ingredientModels.forEach(obj=>obj.visible=false);
+ const key=lookingAtFood?(foodIngredient==='일반 양념'?'safe':['seed','mushroom','bean','thread','dust'][course]):null;
+ const visual=key&&ingredientModels.get(key);
+ if(visual)visual.visible=true;
+});
 window.addEventListener('midnight-diner:action',ev=>{
  const action=ev.detail||{};
  reactionName=action.name||'';
@@ -101,12 +141,21 @@ function tick(){
  lamp.intensity=38+Math.sin(t*17)*.7+(mood>.6?Math.sin(t*8)*2:0);
  if(chef){
  const reacting=t<reactionUntil;
- chef.rotation.y=Math.PI+Math.sin(t*1.1)*(.07+mood*.24)+(reacting&&reactionName==='question'?.15:0);
+ chef.rotation.y=Math.sin(t*1.1)*(.07+mood*.21)+(reacting&&reactionName==='question'?.15:0);
  chef.position.x=Math.sin(t*.4)*.03;
- chef.position.z=-.85+(reacting&&reactionName==='reject'?.28:0);
+ chef.position.z=-.65+(reacting&&reactionName==='reject'?.21:0);
  chef.rotation.z=shock*.08+(reacting&&reactionName==='inspect'?.07:0);
 }
  if(food)food.rotation.y+=.002;
+ const stirring=t<stirUntil;
+ const x=-1.1+(Math.max(1,currentZone)-1)/Math.max(1,currentTotal-1)*2.15;
+ spoon.position.set(x,1.79+Math.sin(t*11)*.07,-.22);
+ spoon.rotation.set(0,0,stirring?Math.sin(t*10)*.35:.08);
+ const currentModel=[...ingredientModels.values()].find(obj=>obj.visible);
+ addedIngredient.visible=stirring&&lookingAtFood&&!currentModel;
+ const y=1.6-Math.min(1,Math.max(0,1-(stirUntil-t)/1.4))*.3;
+ if(addedIngredient.visible)addedIngredient.position.set(x,y,-.2);
+ if(currentModel)currentModel.position.set(x,y,-.23);
  steam.forEach((sprite,i)=>{
   const show=course===1&&!!food;
   sprite.visible=show;
