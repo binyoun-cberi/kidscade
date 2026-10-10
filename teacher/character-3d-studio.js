@@ -1435,8 +1435,20 @@ const HAIR_STYLE_PARAMETERS={
 // v6.1: visibly distinct, head-bound geometry; source hair mesh/UV/weights remain intact.
 function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
   const material=Array.isArray(template.material)?template.material[0]:template.material;
-  const head=template.skeleton.bones.find(bone=>/head/i.test(bone.name));
-  if(!head)throw new Error('Chibi hair detail requires an actual head bone');
+  // Some GLB exports rename the head bone. Fall back to the original
+  // crown vertex's dominant skin influence instead of failing to load hair.
+  let head=template.skeleton.bones.find(bone=>/head/i.test(bone.name));
+  if(!head){
+    const pos=template.geometry.getAttribute('position');
+    const indices=template.geometry.getAttribute('skinIndex');
+    const weights=template.geometry.getAttribute('skinWeight');
+    let crown=0;
+    for(let i=1;i<pos.count;i++)if(pos.getY(i)>pos.getY(crown))crown=i;
+    let major=0;
+    for(let k=1;k<4;k++)if(weights.getComponent(crown,k)>weights.getComponent(crown,major))major=k;
+    head=template.skeleton.bones[indices.getComponent(crown,major)];
+  }
+  if(!head)throw new Error('No head skin binding available for hair detail');
   const cx=(bounds.min.x+bounds.max.x)*.5;
   const cz=(bounds.min.z+bounds.max.z)*.5;
   const at=(u,v,w)=>[cx+u*size.x,bounds.min.y+v*size.y,cz+w*size.z];
