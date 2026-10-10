@@ -103,6 +103,26 @@ test('evolution crystals spend exactly once and respect known evolution links',(
  assert.equal(E.useEvolutionStone(save,choice.id,choice.stone),false);
 });
 
+test('training points are capped, persist, and increase battle statistics',()=>{
+ const save=E.createNew('set1_r02_c02'),p=save.party[0];
+ const foe=E.makeCreature('set1_r00_c01',5,()=>.5);
+ const original=clone(p.training),old=D.combat.statsAtLevel(p.id,p.level,p);
+ for(let i=0;i<40;i++)E.grantTraining(save,foe);
+ assert.ok(p.training.defense>original.defense);
+ assert.ok(p.training.defense<=24);
+ assert.ok(Object.values(p.training).reduce((a,b)=>a+b,0)<=72);
+ p.level=40;const trained=D.combat.statsAtLevel(p.id,p.level,p);
+ assert.ok(trained.defense>=old.defense);
+ const again=E.validateSave(clone(save));
+ assert.deepEqual(clone(again.party[0].training),clone(p.training));
+});
+test('evolution crystal cannot skip repeatedly from intermediate stage to final form',()=>{
+ const save=E.createNew('set1_r02_c02'),p=save.party[0];
+ p.level=10;save.items.life=2;
+ const first=E.stoneEvolutionOptions(save)[0];
+ assert.ok(first&&E.useEvolutionStone(save,first.id,first.stone));
+ assert.equal(E.stoneEvolutionOptions(save).length,0);
+});
 test('new move descriptions cover counters and tactical CC',()=>{
  const dex=ctx.window.KIDSMON_MOVE_DEX;
  assert.equal(dex.all.length,140);
