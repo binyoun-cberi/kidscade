@@ -400,7 +400,7 @@ function cameraMove(){
  const landscapeFit=camera.aspect>1.80?.86:1;
  const radius=14.9*zoom*portraitFit*landscapeFit;
  camera.position.set(Math.sin(angle)*radius,10.8*zoom*portraitFit*landscapeFit,Math.cos(angle)*radius);
- camera.lookAt(0,.10,-.2);
+ camera.lookAt(0,.10,camera.aspect>1.80?1.05:-.2);
 }
 $('rotateLeft').onclick=()=>{turn=THREE.MathUtils.clamp(turn-.22,-.42,.6);cameraMove()};
 $('rotateRight').onclick=()=>{turn=THREE.MathUtils.clamp(turn+.22,-.42,.6);cameraMove()};
