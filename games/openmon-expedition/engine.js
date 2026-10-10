@@ -132,7 +132,7 @@ function move(save,dx,dy,rand=Math.random){
 function starterChoices(){return ["set1_r02_c02","set1_r03_c02","set1_r04_c02"]}
 function researchStarterOptions(save){
  const count=Object.keys(save.collection||{}).filter(k=>byId.has(k)).length;
- const gifted=starterChoices().filter(k=>save.collection[k]&&k!==save.party[0]?.id).length;
+ const gifted=save.flags?.researchStarters?.length||0;
  const required=gifted===0?4:7;
  if(count<required)return {available:[],required,count};
  return {available:starterChoices().filter(k=>!save.collection[k]),required,count};
@@ -153,7 +153,7 @@ function retaliationDamage(save,foe,active){
  let hit=Math.max(2,Math.floor(raw*.58));
  // Rookie protection for the first four meadow encounters, independently of starter type.
  if(zoneAt(save.pos.x)==="meadow"&&save.encounters<=4)
-  hit=Math.min(hit,Math.max(3,Math.floor(DB.combat.statsAtLevel(active.id,active.level).hp*.12)));
+  hit=Math.min(hit,Math.max(3,Math.floor(DB.combat.statsAtLevel(active.id,active.level).hp*.15)));
  return hit;
 }
 function healAll(save){for(const p of save.party)p.hp=DB.combat.statsAtLevel(p.id,p.level).hp}
@@ -186,7 +186,7 @@ function levelRewards(save,foe){
   const lead=activeCreature(save);
   if(lead&&lead.hp>0){
    const before=lead.hp,cap=DB.combat.statsAtLevel(lead.id,lead.level).hp;
-   lead.hp=Math.min(cap,lead.hp+Math.floor(cap*.25));
+   lead.hp=Math.min(cap,lead.hp+Math.floor(cap*.10));
    mentorHeal=lead.hp-before;
   }
  }
