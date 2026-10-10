@@ -183,7 +183,7 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await screenshot('13-office-before-repair.png','desktop');
   await interact();
   assert.equal(await evalPage("document.getElementById('fixPanel').dataset.puzzle"),'office');
-  await evalPage("document.querySelector('[data-word=\\\"책상\\\"]').click()");
+  await evalPage("document.querySelector('[data-word=책상]').click()");
   assert.equal((await snap()).chapter3.officeFixed,true,'office wall changes collision');
   await moveUntil('x',-13.0,'explore',12);
   await moveUntil('z',-50.9,'explore',10);
@@ -206,7 +206,7 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await interact();
   assert.equal(await evalPage("document.getElementById('fixPanel').dataset.puzzle"),'final');
   await screenshot('17-final-record-puzzle.png','desktop');
-  await evalPage("document.querySelector('[data-word=\\\"기억\\\"]').click()");
+  await evalPage("document.querySelector('[data-word=기억]').click()");
   await ensureStage('final','central room opened');
   await moveUntil('z',-64.1,'final',15);
   await ensureStage('won','complete two-room chapter and recover name');
