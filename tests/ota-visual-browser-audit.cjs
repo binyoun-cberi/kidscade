@@ -21,7 +21,7 @@ const server=http.createServer((req,res)=>{
   });
 });
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const report={version:'ota-prologue-browser-v2',desktop:[],mobile:[],errors:[]};
+const report={version:'ota-chapter3-browser-v3',desktop:[],mobile:[],errors:[]};
 let chrome,ws,userDir,pending=new Map(),id=0;
 function send(method,params={}) {
   return new Promise((resolve,reject)=>{const next=++id;pending.set(next,{resolve,reject});ws.send(JSON.stringify({id:next,method,params}));});
@@ -173,8 +173,44 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await ensureStage('exit','door repaired');
   await screenshot('11-open-door.png','desktop');
   await moveUntil('z',-36.0,'exit',15,false);
-  await ensureStage('won','final escape');
-  await screenshot('12-victory.png','desktop');
+  await ensureStage('explore','enter new multi-room records chapter');
+  assert.equal(await evalPage("!!sessionStorage.getItem('kidscade-ota-v3-checkpoint')"),true);
+  await screenshot('12-hub.png','desktop');
+
+  // Investigate the office first. Both rooms are real walkable spaces.
+  await moveUntil('z',-47.8,'explore',18);
+  await moveUntil('x',-8.75,'explore',16);
+  await screenshot('13-office-before-repair.png','desktop');
+  await interact();
+  assert.equal(await evalPage("document.getElementById('fixPanel').dataset.puzzle"),'office');
+  await evalPage("document.querySelector('[data-word=\\\"책상\\\"]').click()");
+  assert.equal((await snap()).chapter3.officeFixed,true,'office wall changes collision');
+  await moveUntil('x',-13.0,'explore',12);
+  await moveUntil('z',-50.9,'explore',10);
+  await interact();
+  assert.equal((await snap()).chapter3.records.office,true,'first record collected');
+  await screenshot('14-office-record.png','desktop');
+
+  await moveUntil('z',-47.8,'explore',11);
+  await moveUntil('x',12.8,'explore',32);
+  await moveUntil('z',-50.9,'explore',11);
+  await screenshot('15-archive-before-record.png','desktop');
+  await interact();
+  assert.equal((await snap()).chapter3.records.archive,true,'second record collected');
+  await screenshot('16-archive-record.png','desktop');
+  await moveUntil('z',-47.8,'explore',11);
+  await moveUntil('x',0,'explore',18);
+  await moveUntil('z',-57.2,'explore',18);
+  const finalBlock=await evalPage('window.OtaChapter3.canMove({stage:"explore"},0,-58.65)');
+  assert.equal(finalBlock,false,'unrepaired record room remains solid');
+  await interact();
+  assert.equal(await evalPage("document.getElementById('fixPanel').dataset.puzzle"),'final');
+  await screenshot('17-final-record-puzzle.png','desktop');
+  await evalPage("document.querySelector('[data-word=\\\"기억\\\"]').click()");
+  await ensureStage('final','central room opened');
+  await moveUntil('z',-64.1,'final',15);
+  await ensureStage('won','complete two-room chapter and recover name');
+  await screenshot('18-victory.png','desktop');
 
   await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:5});
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:2,mobile:true});
