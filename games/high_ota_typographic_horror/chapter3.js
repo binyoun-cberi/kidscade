@@ -11,11 +11,15 @@
   const FINAL_GATE = Object.freeze({ x:0, z:-57.2 });
   const WATCHER = Object.freeze({ x:10.5, z:-44.5 });
   const START = Object.freeze({ x:0, z:-40.0 });
+  const GLIMPSES_NEEDED = 3;
+  const GLIMPSE_SECONDS = .65;
+  const AWAY_SECONDS = .48;
   const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
   function ensure(s){
     if(s.chapter3)return s.chapter3;
     s.chapter3={officeFixed:false,records:{office:false,archive:false},finalFixed:false,
-      watcher:{focus:0,awake:false,awakeTime:0,cooldown:0,x:WATCHER.x,z:WATCHER.z}, checkpoint:false};
+      watcher:{focus:0,awake:false,awakeTime:0,cooldown:0,x:WATCHER.x,z:WATCHER.z},
+      cipher:{fragments:0,lookingSeconds:0,awaySeconds:0,mustLookAway:false}, checkpoint:false};
     return s.chapter3;
   }
   function both(s){const c=ensure(s);return c.records.office&&c.records.archive;}
@@ -56,7 +60,7 @@
     const c=ensure(s);
     if(s.stage!=='explore'||c.records[which]!==false)return false;
     if(which==='office' && (!c.officeFixed||dist(p,OFFICE_RECORD)>2.1))return false;
-    if(which==='archive' && (!inArchive(p)||dist(p,ARCHIVE_RECORD)>2.1))return false;
+    if(which==='archive' && (!inArchive(p)||dist(p,ARCHIVE_RECORD)>2.1 || c.cipher.fragments<GLIMPSES_NEEDED))return false;
     c.records[which]=true;c.checkpoint=true;
     if(which==='archive'){c.watcher.focus=0;c.watcher.awake=false;c.watcher.cooldown=1000;}
     return true;
@@ -77,7 +81,10 @@
     const c=ensure(s);
     if(!c.officeFixed&&dist(p,OFFICE_SEAL)<2.4)return {type:'office',label:'사물의 이름 바로잡기'};
     if(!c.records.office&&c.officeFixed&&dist(p,OFFICE_RECORD)<2.1)return {type:'officeRecord',label:'사무실 기록 확보'};
-    if(!c.records.archive&&inArchive(p)&&dist(p,ARCHIVE_RECORD)<2.1)return {type:'archiveRecord',label:'서고 기록 확보'};
+    if(!c.records.archive&&inArchive(p)&&dist(p,ARCHIVE_RECORD)<2.1){
+      if(c.cipher.fragments<GLIMPSES_NEEDED)return {type:'archiveCipher',label:'서고 봉인 ('+c.cipher.fragments+'/3) — 사람을 잠깐 바라보세요'};
+      return {type:'archiveRecord',label:'해독한 기록 B 확보'};
+    }
     if(both(s)&&!c.finalFixed&&dist(p,FINAL_GATE)<2.6)return {type:'final',label:'중앙 기록실 봉인 풀기'};
     return null;
   }
@@ -85,13 +92,13 @@
     const c=ensure(s);
     if(s.stage==='final')return '열린 기록실 안으로 들어가 자신의 이름을 지키세요';
     if(s.stage!=='explore')return '';
-    if(!both(s))return '사무실과 서고에서 기록을 찾으세요 ('+(+c.records.office+ +c.records.archive)+'/2)';
+    if(!both(s))return '기록을 찾으세요 ('+(+c.records.office+ +c.records.archive)+'/2) · 서고는 시선으로 해독합니다';
     return '두 기록을 모았습니다. 복도 끝 중앙 기록실로 가세요';
   }
   function stepWatcher(s,dt,p,yaw,pitch){
     const c=ensure(s), w=c.watcher;
     dt=Math.min(.1,Math.max(0,dt));
-    if(s.stage!=='explore'||c.records.archive)return {looking:false,awake:false,focus:w.focus};
+    if(s.stage!=='explore'||c.records.archive)return {looking:false,awake:false,focus:w.focus,fragments:c.cipher.fragments};
     w.cooldown=Math.max(0,w.cooldown-dt);
     const d=dist(p,{x:w.x,z:w.z});
     const vx=(w.x-p.x)/Math.max(.001,d),vz=(w.z-p.z)/Math.max(.001,d);
@@ -106,8 +113,30 @@
       else if(w.awakeTime<=0 || !inArchive(p)){w.awake=false;w.cooldown=7.5;w.focus=0;w.x=WATCHER.x;w.z=WATCHER.z;}
     } else if(looking){w.focus=Math.min(100,w.focus+27*dt);}
     else w.focus=Math.max(0,w.focus-38*dt);
+    const cipher=c.cipher;
+    // Read one inscription fragment per glance. Keeping eyes fixed on the watcher
+    // never grants the next fragment, and eventually awakens the monster.
+    if(looking && !w.awake && cipher.fragments<GLIMPSES_NEEDED){
+      if(!cipher.mustLookAway){
+        cipher.lookingSeconds+=dt;
+        if(cipher.lookingSeconds>=GLIMPSE_SECONDS){
+          cipher.fragments++;
+          cipher.lookingSeconds=0;
+          cipher.mustLookAway=true;
+          cipher.awaySeconds=0;
+        }
+      }else cipher.awaySeconds=0;
+    } else if(!looking && cipher.mustLookAway){
+      cipher.awaySeconds+=dt;
+      if(cipher.awaySeconds>=AWAY_SECONDS){
+        cipher.mustLookAway=false;
+        cipher.awaySeconds=0;
+      }
+    }else if(!looking){
+      cipher.lookingSeconds=0;
+    }
     if(w.focus>=100 && !w.awake){w.awake=true;w.awakeTime=7.5;w.x=WATCHER.x;w.z=WATCHER.z;}
-    return {looking,awake:w.awake,focus:w.focus};
+    return {looking,awake:w.awake,focus:w.focus,fragments:cipher.fragments,mustLookAway:cipher.mustLookAway};
   }
   function makeCheckpoint(s){
     const c=ensure(s);
@@ -123,12 +152,13 @@
     c.officeFixed=data.officeFixed===true;
     c.records.office=c.officeFixed && data.records?.office===true;
     c.records.archive=data.records?.archive===true;
+    c.cipher={fragments:c.records.archive?GLIMPSES_NEEDED:0,lookingSeconds:0,awaySeconds:0,mustLookAway:false};
     c.finalFixed=false; // The last puzzle must still be completed on retry.
     c.checkpoint=true;
     c.watcher={focus:0,awake:false,awakeTime:0,cooldown:0,x:WATCHER.x,z:WATCHER.z};
     s.lossReason=null;return true;
   }
-  return Object.freeze({OFFICE_SEAL,OFFICE_RECORD,ARCHIVE_RECORD,FINAL_GATE,WATCHER,START,
+  return Object.freeze({OFFICE_SEAL,OFFICE_RECORD,ARCHIVE_RECORD,FINAL_GATE,WATCHER,START,GLIMPSES_NEEDED,
     ensure,both,inArchive,canMove,startChapter,repairOffice,collect,repairFinal,finish,
     interaction,objective,stepWatcher,makeCheckpoint,restore});
 });

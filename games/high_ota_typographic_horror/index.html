@@ -30,10 +30,10 @@ button:focus-visible{outline:3px solid #eab475;outline-offset:3px}
 #prompt{position:fixed;bottom:clamp(86px,17vh,152px);left:50%;transform:translateX(-50%);pointer-events:none;background:#111922e8;border:1px solid #b19d7a96;border-radius:8px;padding:10px 17px;max-width:92vw;text-align:center;font-weight:750;font-size:14px;display:none;box-shadow:0 9px 30px #000b}
 #prompt.show{display:block}
 #prompt strong{color:#ffc987}
-#message{position:fixed;top:32%;left:50%;transform:translate(-50%,-50%);font-size:clamp(17px,4.5vw,35px);font-weight:900;text-align:center;color:#f0eff2;text-shadow:0 2px 18px #000;letter-spacing:.04em;opacity:0;transition:opacity .22s;pointer-events:none;width:min(90vw,600px)}
+#message{position:fixed;top:42%;left:50%;transform:translate(-50%,-50%);font-size:clamp(17px,4.5vw,35px);font-weight:900;text-align:center;color:#f0eff2;text-shadow:0 2px 18px #000;letter-spacing:.04em;opacity:0;transition:opacity .22s;pointer-events:none;width:min(90vw,600px)}
 #message.show{opacity:1}#message.red{color:#f76771}
 #hint{position:fixed;bottom:max(17px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);font-size:11px;color:#a3a9b4;letter-spacing:.02em;white-space:nowrap;pointer-events:none;text-shadow:0 2px 7px #000}
-#echoWarning{position:fixed;left:50%;top:clamp(125px,24vh,205px);transform:translateX(-50%);
+#echoWarning{position:fixed;left:50%;top:clamp(155px,21vh,185px);transform:translateX(-50%);
 z-index:2;width:min(340px,85vw);pointer-events:none;border:1px solid #576573;
 border-radius:10px;background:#111720da;text-align:center;padding:9px 14px;
 opacity:0;visibility:hidden;transition:opacity .25s,background .25s,border-color .25s}
@@ -43,12 +43,14 @@ opacity:0;visibility:hidden;transition:opacity .25s,background .25s,border-color
 #echoWarning.active #echoText{color:#ff8b9b}
 #echoTrack{width:100%;height:5px;border-radius:999px;background:#34404a;margin-top:8px;overflow:hidden}
 #echoFill{display:block;width:0;height:100%;background:#d95b70;transition:width .1s}
-#gazeWarning{position:fixed;z-index:2;top:clamp(123px,24vh,198px);left:50%;
+#gazeWarning{position:fixed;z-index:2;top:clamp(155px,21vh,185px);left:50%;
 transform:translateX(-50%);visibility:hidden;opacity:0;pointer-events:none;
 width:min(300px,78vw);background:#1d111de8;border:1px solid #bf7183;
 border-radius:9px;padding:9px 13px;text-align:center;transition:opacity .2s}
 #gazeWarning.show{visibility:visible;opacity:1}
-#gazeWarning b{font-size:13px;color:#f5a2b3;letter-spacing:.02em}
+#gazeWarning b{font-size:13px;color:#f5a2b3;letter-spacing:.02em;line-height:1.4;display:block}
+#gazeWarning.active{border-color:#fa728c;background:#32141de9}
+#clueStatus{font-size:12px;font-weight:800;color:#eac79c;padding-top:5px}
 #gazeTrack{height:5px;background:#3c303f;border-radius:4px;margin-top:7px;overflow:hidden}
 #gazeFill{display:block;width:0;height:100%;background:#eb748c}
 #recordStatus{color:#c6b18d;font-size:11px;letter-spacing:.06em;padding-top:6px;font-weight:800}
@@ -83,7 +85,7 @@ body.hidden-in-locker #lockerMask{display:block}
 #ending{z-index:14}#ending .panel{border-color:#d78c8e66}
 #replay{margin-top:12px}
 @media (pointer:coarse){#mobile{display:block}#hint{display:none}#mission{max-width:64vw}#prompt{bottom:150px}#top{top:max(8px,env(safe-area-inset-top))}#brand b{font-size:22px}#brand{font-size:9px}}
-@media(max-width:520px){#echoWarning{top:118px;width:min(270px,73vw);padding:7px 10px}#top{left:12px;right:12px}#objective{font-size:12px}#mission{max-width:70vw}#stage{font-size:10px}#stick{width:96px;height:96px}#buttons button{padding:11px 9px;font-size:12px;min-height:49px}#buttons #action{min-width:76px}#prompt{bottom:135px;font-size:12px}}
+@media(max-width:520px){#echoWarning,#gazeWarning{top:max(166px,calc(env(safe-area-inset-top) + 140px));width:min(290px,78vw);padding:8px 11px}#top{left:12px;right:12px}#objective{font-size:12px}#mission{max-width:70vw}#stage{font-size:10px}#stick{width:96px;height:96px}#buttons button{padding:11px 9px;font-size:12px;min-height:49px}#buttons #action{min-width:76px}#prompt{bottom:135px;font-size:12px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important}}
 </style>
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js"}}</script>
@@ -97,7 +99,7 @@ body.hidden-in-locker #lockerMask{display:block}
 </header>
 <div id="crosshair" aria-hidden="true"></div><div id="message" aria-live="polite"></div>
 <div id="prompt" aria-live="polite"></div>
-<div id="gazeWarning" role="status" aria-live="off"><b>오래 쳐다보지 마세요</b><div id="gazeTrack"><i id="gazeFill"></i></div></div>
+<div id="gazeWarning" role="status" aria-live="off"><b id="gazeText">「사람」을 잠깐 보고 시선을 돌리세요</b><div id="clueStatus">해독 0/3</div><div id="gazeTrack"><i id="gazeFill"></i></div></div>
 <div id="echoWarning" role="status" aria-live="off"><div id="echoText">조용히 이동하세요</div>
   <div id="echoTrack" aria-label="들킬 위험도"><i id="echoFill"></i></div></div>
 <div id="hint">WASD 이동 · SHIFT 달리기 · 마우스 시점 · E 상호작용</div>
@@ -111,7 +113,7 @@ body.hidden-in-locker #lockerMask{display:block}
   <small>제0기록보관소 / 02:17</small><h1 id="introTitle">오 타</h1>
   <p>이곳의 모든 것은 이름으로 존재합니다.<br>잘못된 이름을 고치고, 3시가 되기 전에 탈출하세요.</p>
   <div class="note">사람이 아닌 것을 사람이라고 부르지 마십시오.<br>이름이 바뀌면, 존재도 바뀝니다.</div>
-  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면을 밀어 시점 조절 · 조사/달리기 버튼<br>첫 괴물은 달려 피하고, 빨간 「뒤」가 나타나면 걷거나 멈추세요.<br>사무실과 서고에서 기록 2개를 찾으세요. 오래 바라보는 것도 위험합니다.</div>
+  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면을 밀어 시점 조절 · 조사/달리기 버튼<br>첫 괴물은 달려 피하고, 빨간 「뒤」가 나타나면 걷거나 멈추세요.<br>사무실과 서고에서 기록 2개를 찾으세요. 서고에서는 「사람」을 짧게 바라보고 시선을 돌리는 행동을 세 번 반복해 기록을 해독하세요.</div>
   <button class="primary" id="start" type="button">기록 시작</button><button class="primary" id="resume" type="button" hidden>마지막 기록부터</button>
  </div>
 </section>

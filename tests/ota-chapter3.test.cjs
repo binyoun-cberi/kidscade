@@ -13,9 +13,19 @@ function start(){
  assert.equal(s.stage,'explore');
  return s;
 }
+function decipher(s,p=C.ARCHIVE_RECORD){
+ // The player looks toward the word-creature in three short, separated glances.
+ const yaw=Math.atan2(-(C.WATCHER.x-p.x),-(C.WATCHER.z-p.z));
+ for(let part=1;part<=3;part++){
+   for(let i=0;i<19;i++)C.stepWatcher(s,.05,p,yaw,0);
+   assert.equal(C.ensure(s).cipher.fragments,part,'one clue from glance '+part);
+   for(let i=0;i<16;i++)C.stepWatcher(s,.05,p,0,0);
+ }
+ assert.equal(s.stage,'explore','controlled glances do not awaken the monster');
+}
 test('chapter opens after first escape and provides a checkpoint',()=>{
  const s=start();
- assert.equal(C.objective(s),'사무실과 서고에서 기록을 찾으세요 (0/2)');
+ assert.match(C.objective(s),/기록을 찾으세요 \(0\/2\)/);
  assert.equal(C.makeCheckpoint(s).version,3);
  assert.equal(C.startChapter(s,{x:0,z:-36}),false);
 });
@@ -52,17 +62,31 @@ test('office word changes a real solid divider and guards its record',()=>{
  assert.equal(C.canMove(s,-11,-51),false);
  assert.equal(C.collect(s,'office',C.OFFICE_RECORD),true);
  assert.equal(C.collect(s,'office',C.OFFICE_RECORD),false);
- assert.equal(C.objective(s),'사무실과 서고에서 기록을 찾으세요 (1/2)');
+ assert.match(C.objective(s),/기록을 찾으세요 \(1\/2\)/);
 });
 test('archive record is guarded by location rather than answer guessing, room order remains flexible',()=>{
  const s=start();
  assert.equal(C.collect(s,'archive',{x:0,z:-51}),false);
+ assert.equal(C.collect(s,'archive',C.ARCHIVE_RECORD),false,'record B is sealed until looked at');
+ assert.equal(C.interaction(s,C.ARCHIVE_RECORD).type,'archiveCipher');
+ decipher(s);
+ assert.equal(C.interaction(s,C.ARCHIVE_RECORD).type,'archiveRecord');
  assert.equal(C.collect(s,'archive',C.ARCHIVE_RECORD),true);
  assert.equal(C.interaction(s,C.ARCHIVE_RECORD),null);
  assert.equal(C.repairOffice(s,'책상',C.OFFICE_SEAL),true);
  assert.equal(C.collect(s,'office',C.OFFICE_RECORD),true);
  assert.equal(C.both(s),true);
  assert.equal(C.objective(s),'두 기록을 모았습니다. 복도 끝 중앙 기록실로 가세요');
+});
+test('deciphering needs three separated glances; staring continuously is dangerous',()=>{
+ const s=start(),p=C.ARCHIVE_RECORD;
+ const yaw=Math.atan2(-(C.WATCHER.x-p.x),-(C.WATCHER.z-p.z));
+ for(let i=0;i<28;i++)C.stepWatcher(s,.05,p,yaw,0);
+ assert.equal(C.ensure(s).cipher.fragments,1);
+ assert.equal(C.collect(s,'archive',p),false,'one long stare does not unlock the archive');
+ for(let i=0;i<95;i++)C.stepWatcher(s,.05,p,yaw,0);
+ assert.equal(C.ensure(s).watcher.awake,true,'monster wakes after unbroken staring');
+ assert.equal(C.ensure(s).cipher.fragments,1,'no free fragments during chase');
 });
 test('gaze increases only when watching the figure; looking away safely reduces it',()=>{
  const s=start();const p={x:10.5,z:-51};
@@ -89,6 +113,7 @@ test('watcher can catch a player who keeps looking, but not after archive record
  assert.equal(s.stage,'lost');
  assert.equal(s.lossReason,'watcher');
  const safe=start();
+ decipher(safe);
  assert.equal(C.collect(safe,'archive',C.ARCHIVE_RECORD),true);
  for(let i=0;i<250;i++)C.stepWatcher(safe,.05,p,Math.PI,0);
  assert.equal(safe.stage,'explore');
@@ -99,7 +124,7 @@ test('the final door is physical and requires both records plus the correct name
  assert.equal(C.repairFinal(s,'기억',C.FINAL_GATE),false);
  C.repairOffice(s,'책상',C.OFFICE_SEAL);C.collect(s,'office',C.OFFICE_RECORD);
  assert.equal(C.repairFinal(s,'기억',C.FINAL_GATE),false);
- C.collect(s,'archive',C.ARCHIVE_RECORD);
+ decipher(s);C.collect(s,'archive',C.ARCHIVE_RECORD);
  assert.equal(C.interaction(s,C.FINAL_GATE).type,'final');
  assert.equal(C.repairFinal(s,'공백',C.FINAL_GATE),false);
  assert.equal(C.repairFinal(s,'기억',C.FINAL_GATE),true);
@@ -121,6 +146,7 @@ test('checkpoint restores the actual geometry and records without skipping the f
  assert.equal(restart.doorFixed,true);
  assert.equal(C.ensure(restart).records.office,true);
  assert.equal(C.ensure(restart).records.archive,false);
+ assert.equal(C.ensure(restart).cipher.fragments,0,'partial glances reset on respawn');
  assert.equal(C.canMove(restart,-11,-48.5),true);
  assert.equal(C.canMove(restart,0,-58.65),false);
  const forged={version:3,officeFixed:false,records:{office:true,archive:false},finalFixed:true};
