@@ -353,7 +353,7 @@ const errors=[];
       if(piece.piece==='chibi_male_hoodie_continuousSleeve_left'
           ||piece.piece==='chibi_female_jacket_continuousSleeve_left')
         console.log('CHIBI_ARM_COVERAGE '+JSON.stringify({piece:piece.piece,...piece.transfer}));
-      const isPuff=piece.piece.startsWith('chibi_female_blouse_');
+      const isPuff=piece.piece.startsWith('chibi_female_blouse_')||piece.piece.startsWith('chibi_female_sailor_');
       if(isPuff){
         assert.ok(piece.transfer.triangles>12,'Puff blouse lost its upper-arm triangles: '+piece.piece);
         assert.ok(piece.transfer.minY>.91,'Puff blouse sleeve extends past elbow: '+piece.piece);
