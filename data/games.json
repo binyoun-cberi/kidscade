@@ -62,11 +62,11 @@
         "toddler"
       ],
       "icon": "🧺",
-      "description": "유아를 위한 3D 정리 놀이! 산처럼 쌓인 물건을 끌어 제자리에 쏙 넣고, 얼룩을 문질문질 닦아요. 기본 20개 안팎의 짧은 놀이와 선택형 대청소 도전을 즐겨요.",
+      "description": "유아를 위한 3D 정리 놀이! 산처럼 쌓인 물건 중 50개를 직접 끌어 제자리에 쏙 넣고 얼룩 2개를 닦아요. 기본 유아 놀이와 선택형 대청소 도전을 즐겨요.",
       "subject": "career",
       "genre": "simulation",
       "difficulty": "easy",
-      "sessionMinutes": 5,
+      "sessionMinutes": 12,
       "players": [
         "solo"
       ],
