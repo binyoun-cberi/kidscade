@@ -7,9 +7,9 @@
   'use strict';
   const FIRST_TEN = [
     [9,5,12,15,5],[11,5,16,20,7],[13,6,21,25,9],
-    [15,6,25,30,11],[18,7,30,36,14],[21,7,35,42,16],
-    [24,8,42,50,19],[28,8,50,60,23],[32,9,59,70,27],
-    [36,9,68,80,31]
+    [15,6,26,29,11],[18,7,30,36,14],[21,7,37,42,16],
+    [24,8,43,50,19],[28,8,51,60,23],[32,9,61,70,27],
+    [36,9,71,80,31]
   ];
   const DIRS = [[1,0],[0,-1],[0,1],[-1,0]];
   function specs(stage) {
@@ -21,7 +21,7 @@
     const beyond = stage - 10;
     return {
       stage,width:36 + beyond * 4,height:9 + Math.min(3,Math.floor(beyond / 5)),
-      minCells:68 + beyond * 8,maxCells:80 + beyond * 9,
+      minCells:72 + beyond * 9,maxCells:80 + beyond * 9,
       minTurns:31 + beyond * 4,maxStraight:5,requireLeft:true
     };
   }
