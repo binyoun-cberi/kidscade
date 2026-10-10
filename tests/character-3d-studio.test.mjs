@@ -1008,3 +1008,13 @@ test('v6.0 expanded Chibi catalogs contain 8 new hairstyles and 10 new garments'
   assert.match(studio,/kidscade_male_hair_spiky/);
   assert.match(studio,/chibi_female_hair_twintail/);
 });
+
+test('v6.0 cargo pockets and tracksuit stripes attach to animated legs',()=>{
+  const pack=read('teacher/chibi-outfit-pack.js');
+  assert.match(pack,/if\(style\.category==='bottom'\)/);
+  assert.match(pack,/cargo_flap_left/);
+  assert.match(pack,/cargo_flap_right/);
+  assert.match(pack,/segment of \['thigh','shin'\]/);
+  assert.match(pack,/stripe_left_/);
+  assert.match(pack,/stripe_right_/);
+});
