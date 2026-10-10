@@ -131,11 +131,13 @@ function openSkills(){
  const row=known.map((slot,i)=>{
   const m=moves[slot.id];
   const can=options.filter(id=>id!==slot.id&&!known.some((p,k)=>k!==i&&p.id===id));
-  return '<div class="shop-item"><div><strong>'+esc(m.name)+'</strong><small>'+esc(DB.types[m.type].name)+' · PP '+slot.pp+'/'+m.pp+
+  return '<div class="shop-item"><div><strong>'+esc(m.name)+(m.familyKey?' <span class="move-signature">전용</span>':'')+'</strong><small>'+esc(DB.types[m.type].name)+' · PP '+slot.pp+'/'+m.pp+
    (m.power?' · 위력 '+m.power:' · 보조 기술')+'</small></div><button type="button" data-skill-slot="'+i+'">교체</button></div>'
  }).join("");
  openGeneric("기술 관리",'<p>한 번에 네 기술을 사용해. 레벨이 오르면 배울 수 있는 기술이 늘어나고, 기술의 PP는 연구소에서 회복할 수 있어.</p>'+
- '<div class="shop-list">'+row+'</div><p>현재 배울 수 있는 기술: '+options.map(id=>esc(moves[id].name)).join(" · ")+'</p>'+
+ '<div class="shop-list">'+row+'</div>'+
+ '<p class="signature-caption">이 계열은 '+esc(species(own.id).familyName)+'에 속해. 진화하거나 레벨이 오르면 새로운 전용 기술이 열려.</p>'+
+ '<p>현재 배울 수 있는 기술: '+options.map(id=>esc(moves[id].name)).join(" · ")+'</p>'+
  '<div class="action-row"><button type="button" class="act" data-hud-action="moveDex">기술 도감 살펴보기</button></div>');
 }
 function showLearnSkills(slotIndex){
@@ -243,13 +245,13 @@ function dexTabs(selected){
   '<button type="button" data-dex-tab="monsters" role="tab" aria-selected="'+(selected==="monsters")+'" class="'+(selected==="monsters"?"active":"")+'">키즈몬 도감 · '+DB.species.length+'</button>'+
   '<button type="button" data-dex-tab="moves" role="tab" aria-selected="'+(selected==="moves")+'" class="'+(selected==="moves"?"active":"")+'">기술 도감 · '+MD.all.length+'</button></nav>';
 }
-const moveDexUi={query:"",type:"all",category:"all",owner:"all",selectedId:null,expanded:false};
+const moveDexUi={query:"",type:"all",category:"all",family:"all",owner:"all",selectedId:null,expanded:false,limit:36};
 function moveDexOwner(){
  if(!save||!moveDexUi.owner.startsWith("party:"))return null;
  return save.party[Number(moveDexUi.owner.slice(6))]||null;
 }
 function moveDexEntries(){
- return MD.search({query:moveDexUi.query,type:moveDexUi.type,category:moveDexUi.category,owner:moveDexOwner()});
+ return MD.search({query:moveDexUi.query,type:moveDexUi.type,category:moveDexUi.category,family:moveDexUi.family,owner:moveDexOwner()});
 }
 function ownedSkillSet(){
  const known=new Set();
@@ -263,15 +265,16 @@ function renderMoveDexList(){
   moveDexUi.selectedId=null;moveDexUi.expanded=false;
  }
  $("moveResultCount").textContent="검색 결과 "+results.length+"개 · 전체 "+MD.all.length+"개";
- target.innerHTML=results.length?results.map(m=>{
+ target.innerHTML=results.length?results.slice(0,moveDexUi.limit).map(m=>{
   const chosen=m.id===moveDexUi.selectedId;
-  return '<button type="button" class="move-card type-'+m.type+(chosen?' is-selected':'')+
+  return '<button type="button" class="move-card type-'+m.type+(m.familyKey?' move-card-special':'')+(chosen?' is-selected':'')+
    '" data-move="'+m.id+'" aria-pressed="'+chosen+'">'+
    '<span class="move-type-symbol" aria-hidden="true">'+esc(m.symbol)+'</span>'+
    '<span class="move-card-content"><span class="move-card-title">'+esc(m.name)+(owned.has(m.id)?' <span title="보유 기술">✓</span>':'')+'</span>'+
+   (m.familyKey?'<span class="move-stage-label">'+esc(m.tierLabel)+'</span>':'')+
    '<span class="move-card-metrics">'+esc(m.typeName)+' · '+esc(m.categoryName)+' · PP '+m.pp+'</span>'+
    '<span class="move-card-desc">'+esc(m.summary)+'</span></span></button>';
- }).join(""):'<p class="move-empty">조건에 맞는 기술이 없어. 검색어나 필터를 변경해 봐.</p>';
+ }).join("")+(results.length>moveDexUi.limit?'<button type="button" class="move-expand" data-move-next>다음 '+Math.min(36,results.length-moveDexUi.limit)+'개 기술 더 보기</button>':''):'<p class="move-empty">조건에 맞는 기술이 없어. 검색어나 필터를 변경해 봐.</p>';
  renderMoveDexDetail();
 }
 function renderMoveDexDetail(){
@@ -284,10 +287,12 @@ function renderMoveDexDetail(){
  panel.innerHTML='<div class="move-detail-heading"><div class="move-detail-title">'+
   '<span class="move-type-symbol" aria-hidden="true">'+esc(entry.symbol)+'</span><h3>'+esc(entry.name)+'</h3></div>'+
   '<span class="move-detail-kind">'+esc(entry.typeName)+' · '+esc(entry.categoryName)+'</span>'+
+  (entry.familyKey?'<span class="move-signature">'+esc(entry.tierLabel)+'</span>':'')+
   '<button type="button" data-move-close aria-label="기술 상세 닫기" class="move-detail-close">닫기 ×</button></div>'+
   '<div class="move-detail-metrics">'+[
    ["위력",entry.power||"—"],["명중률",entry.accuracy+"%"],["PP",entry.pp],["선공",entry.priority?"+"+entry.priority:"보통"]
   ].map(([label,val])=>'<span>'+esc(label)+'<b>'+esc(String(val))+'</b></span>').join("")+'</div>'+
+  (entry.familyName?'<p class="signature-caption">'+esc(entry.familyName)+' · '+esc(entry.tierLabel)+'</p>':'')+
   '<p class="move-detail-explanation">'+esc(entry.description)+'</p>'+
   '<div class="move-detail-learners"><strong>배울 수 있는 키즈몬 · '+learners.length+'개 형태</strong>'+
   '<small>기술을 배우는 최초 레벨 기준 · ✓는 현재 파티·보관함에 있는 키즈몬</small>'+
@@ -300,12 +305,15 @@ function renderMoveDexDetail(){
 function openMoveDex(selectedId=null){
  if(!save)return;
  if(selectedId&&MD.detail(selectedId)){moveDexUi.selectedId=selectedId;moveDexUi.expanded=false;
-  moveDexUi.query="";moveDexUi.type="all";moveDexUi.category="all";moveDexUi.owner="all"}
+  moveDexUi.query="";moveDexUi.type="all";moveDexUi.category="all";moveDexUi.family="all";moveDexUi.owner="all";moveDexUi.limit=36}
  const known=ownedSkillSet();
  const typeOptions='<option value="all">모든 타입</option>'+MD.TYPE_ORDER.map(t=>
    '<option value="'+t+'" '+(moveDexUi.type===t?'selected':'')+'>'+esc(DB.types[t].name)+'</option>').join("");
  const categoryOptions='<option value="all">모든 효과</option>'+Object.entries(MD.CATEGORY_NAMES).map(([id,name])=>
    '<option value="'+id+'" '+(moveDexUi.category===id?'selected':'')+'>'+esc(name)+'</option>').join("");
+ const familyOptions='<option value="all">전체 기술</option>'+
+  '<option value="signature" '+(moveDexUi.family==="signature"?'selected':'')+'>계열 전용·진화 기술</option>'+
+  '<option value="common" '+(moveDexUi.family==="common"?'selected':'')+'>공통 기술</option>';
  const partyOptions='<option value="all">전체 키즈몬</option>'+save.party.map((p,i)=>
    '<option value="party:'+i+'" '+(moveDexUi.owner==="party:"+i?'selected':'')+'>'+esc(species(p.id).name)+' Lv.'+p.level+'</option>').join("");
  openGeneric("기술 도감 · "+MD.all.length+"개",
@@ -317,6 +325,7 @@ function openMoveDex(selectedId=null){
   '<input id="moveDexSearch" type="search" autocomplete="off" placeholder="예: 광합성, 피보새, 둔화" value="'+esc(moveDexUi.query)+'"></label>'+
   '<label>타입<select id="moveDexType">'+typeOptions+'</select></label>'+
   '<label>효과<select id="moveDexCategory">'+categoryOptions+'</select></label>'+
+  '<label style="grid-column:1/-1">전용 기술<select id="moveDexFamily">'+familyOptions+'</select></label>'+
   '<label style="grid-column:1/-1">배우는 키즈몬<select id="moveDexOwner">'+partyOptions+'</select></label></div>'+
   '<div id="moveResultCount" class="move-result-count"></div>'+
   '<section id="moveDexDetail" class="move-detail" aria-label="선택한 기술 상세 정보"></section>'+
@@ -501,7 +510,13 @@ function resolveBattleTurn(choice){
   let message=res.events.join("\n")+"\n"+foeName+" 승리! 경험치 +"+gain.earned+" · 코인 +"+gain.coins;
   if(gain.mentorHeal)message+="\n연구원의 응원! HP +"+gain.mentorHeal;
   if([3,7,12].includes(save.wins+save.catches))message+="\n새로운 야생 키즈몬이 지역에 출현해!";
-  if(gain.events.length){message+="\n레벨 업! Lv."+E.activeCreature(save).level;pendingEvolution=true}
+  if(gain.events.length){
+   const own=E.activeCreature(save),newMoves=B.learnable(own).filter(id=>
+    !B.learnable({...own,level:Math.max(1,own.level-1)}).includes(id));
+   message+="\n레벨 업! Lv."+own.level;
+   if(newMoves.length)message+="\n새 기술 해금: "+newMoves.map(id=>B.moves[id].name).join(", ")+" · 파티에서 배우기";
+   pendingEvolution=true;
+  }
   endFight(message);return;
  }
  if(res.outcome==="lost"){
@@ -723,22 +738,30 @@ function attach(){
   }
   b=e.target.closest("button[data-move-close]");
   if(b){moveDexUi.selectedId=null;moveDexUi.expanded=false;renderMoveDexList();return}
+  b=e.target.closest("button[data-move-next]");
+  if(b){moveDexUi.limit+=36;renderMoveDexList();return}
   b=e.target.closest("button[data-move-more]");
   if(b&&b.dataset.moveMore===moveDexUi.selectedId){moveDexUi.expanded=!moveDexUi.expanded;renderMoveDexDetail();return}
   b=e.target.closest("button[data-dex]");if(b){openDexDetail(b.dataset.dex);return}
   b=e.target.closest("button[data-evolve]");if(b){
-    if(E.maybeEvolve(save,b.dataset.evolve)){beep("win");setToast("새로운 형태로 진화했어!");persist();updateAll()}
+    if(E.maybeEvolve(save,b.dataset.evolve)){
+      beep("win");
+      const newMove=E.activeCreature(save).lastEvolutionTechnique;
+      setToast(newMove?"진화 성공! "+B.moves[newMove].name+" 기술도 배웠어!":"진화 성공! 파티의 기술 관리에서 새 기술을 배워 보자.");
+      persist();updateAll();
+    }
     closeGeneric();return}
  });
  $("genericBody").addEventListener("input",e=>{
-  if(e.target.id==="moveDexSearch"){moveDexUi.query=e.target.value;renderMoveDexList()}
+  if(e.target.id==="moveDexSearch"){moveDexUi.query=e.target.value;moveDexUi.limit=36;renderMoveDexList()}
  });
  $("genericBody").addEventListener("change",e=>{
   if(e.target.id==="moveDexType")moveDexUi.type=e.target.value;
   else if(e.target.id==="moveDexCategory")moveDexUi.category=e.target.value;
   else if(e.target.id==="moveDexOwner")moveDexUi.owner=e.target.value;
+  else if(e.target.id==="moveDexFamily")moveDexUi.family=e.target.value;
   else return;
-  renderMoveDexList();
+  moveDexUi.limit=36;renderMoveDexList();
  });
  $("genericClose").addEventListener("click",closeGeneric);
  document.querySelectorAll("[data-hud]").forEach(button=>button.addEventListener("click",()=>{beep("click");openHud(button.dataset.hud)}));
