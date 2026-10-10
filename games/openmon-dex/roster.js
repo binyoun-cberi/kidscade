@@ -72,7 +72,7 @@ for(const s of db.sprites){
  role:base.speed>=base.defense+4?"swift":base.defense>=base.speed+4?"guard":"balanced"};
 }
 const zones={
- meadow:{label:"이슬초원",level:[2,4],pool:[id("set1",0,1),id("set1",1,1),id("set2",0,0),id("set2",0,4),id("set2",2,0),id("set5",2,0)]},
+ meadow:{label:"이슬초원",level:[2,4],pool:[id("set1",0,1),id("set1",1,1),id("set5",5,3),id("set2",0,4),id("set2",2,0),id("set5",2,0)]},
  forest:{label:"가지숲",level:[4,7],pool:[id("set1",0,3),id("set2",0,0),id("set5",2,2),id("set5",5,0),id("set2",0,4),id("set5",2,0)]},
  cave:{label:"잔돌동굴",level:[7,10],pool:[id("set1",0,1),id("set2",1,4),id("set5",4,0),id("set5",3,4),id("set5",5,0),id("set5",0,2)]},
  clearing:{label:"비밀숲",level:[6,8],pool:[shibu]}
