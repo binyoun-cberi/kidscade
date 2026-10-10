@@ -1034,8 +1034,8 @@ test('v6.1 hats and face items use corrected crown/mouth registration',()=>{
   assert.match(pack,/accessoryBox\.max\.y:accessoryBox\.min\.y/);
   assert.match(pack,/scalpY-\.012,hc\.z/);
   assert.match(pack,/crownWall/);
-  assert.match(pack,/eyeY-\.241/);
-  assert.match(pack,/faceZ\+\.052/);
+  assert.match(pack,/eyeY-\.344/);
+  assert.match(pack,/faceZ\+\.102/);
 });
 test('v6.1 tracksuit piping bends with weighted knees rather than floating rigid boxes',()=>{
   const pack=read('teacher/chibi-outfit-pack.js');
