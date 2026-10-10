@@ -408,6 +408,14 @@ function remeshSource(source,style){
         .52*shape.flare*hem;
       y+=shape.length*(1-smooth(.08,.30,y));
     }
+    if(style.id==='chibi_female_pleated'){
+      // Sculpt cloth folds into the *source skinned skirt* instead of attaching
+      // free-standing cones that rotate off the hips in WALK/RUN.
+      const folds=12,angle=Math.atan2(z,x);
+      const hemInfluence=1-smooth(.54,.74,y);
+      const ripple=1+.045*hemInfluence*Math.cos(folds*angle);
+      x*=ripple;z*=ripple;
+    }
     positions.setXYZ(i,x,y,z);
   }
   positions.needsUpdate=true;
@@ -579,16 +587,10 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
     }
   }
   if(style.details.includes('pleats')){
-    for(let i=0;i<12;i++){
-      // Separate tapered vertical ridges create a pleated *3D* profile.
-      const angle=Math.PI*(.12+.76*(i/11));
-      const x=Math.cos(angle)*.205,z=Math.sin(angle)*.153;
-      const ridge=new THREE.ConeGeometry(.018,.215,4,1);
-      ridge.rotateX(Math.PI/2);
-      ridge.rotateY(angle-Math.PI/2);
-      ridge.translate(x,.566,z);
-      add(ridge,accent,'pleat_'+i,pelvis);
-    }
+    // Pleat ridges are displaced on the shell above. Do not add cone
+    // ornaments: their rigid pelvis weighting detached from the animated
+    // skirt and produced visible shards in the front and side screenshots.
+    group.userData.sculptedPleats=12;
   }
   if(style.details.includes('flareHem')){
     for(const sign of [-1,1]){
@@ -670,11 +672,11 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
     const cargo=style.id==='chibi_male_cargo';
     // Overlap the original shorts cuff at the upper thigh to prevent skin
     // wedges between the pelvis shell and the independent leg cylinders.
-    const upperRadius=wide?.140:jogger?.154:cargo?.161:chino?.145:flare?.139:.143;
-    const lowerRadius=flare?.120:wide?.104:jogger?.075:cargo?.096:chino?.076:.088;
+    const upperRadius=wide?.140:jogger?.154:cargo?.161:chino?.145:flare?.133:.143;
+    const lowerRadius=flare?.105:wide?.104:jogger?.075:cargo?.096:chino?.076:.088;
     const top=.755,bottom=.082;
     const geometry=new THREE.CylinderGeometry(upperRadius,lowerRadius,top-bottom,16,9,false);
-    geometry.translate(sign*(wide?.178:flare?.160:.153),(top+bottom)*.5,0);
+    geometry.translate(sign*(wide?.178:flare?.178:.153),(top+bottom)*.5,0);
     const positions=geometry.getAttribute('position');
     // Body knees and upper thighs protrude more toward +Z than a round tube.
     // Give the front thigh an anatomically shaped clearance allowance.
@@ -685,10 +687,10 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
       if(wide||flare){
         // Define two visible trouser legs instead of a skirt-like broad tube;
         // a tapered knee with a relaxed hem keeps the garment recognizable.
-        const x=positions.getX(i),center=sign*(wide?.178:.160);
+        const x=positions.getX(i),center=sign*.178;
         const knee=smooth(.23,.35,y)*(1-smooth(.42,.57,y));
         const hem=1-smooth(.10,.25,y);
-        const fullness=flare?1-.16*knee+.26*hem:1-.11*knee+.025*hem;
+        const fullness=flare?1-.13*knee+.20*hem:1-.11*knee+.025*hem;
         positions.setX(i,center+(x-center)*fullness);
         positions.setZ(i,positions.getZ(i)*fullness);
       }
