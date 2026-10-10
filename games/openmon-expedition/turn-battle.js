@@ -87,6 +87,11 @@ function signatureId(key,suffix="base"){
 function createSignature(id,name,style,type,tier,key){
  if(M[id]||!D.types[type]||!SIGNATURE_PROFILES[style])throw Error("Invalid family skill "+id);
  const data=SIGNATURE_PROFILES[style](tier);
+ // Slightly different power and PP within each combat role: same-type family
+ // signatures should not merely be different labels for identical attacks.
+ const index=D.families.findIndex(f=>f.key===key);
+ if(data.power>0)data.power=clamp(data.power+(index%3)-1,4,16);
+ data.pp=clamp(data.pp+(index%3)-1,7,35);
  M[id]={id,name,type,...data,familyKey:key,signatureTier:tier};
  return id;
 }
