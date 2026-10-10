@@ -117,6 +117,7 @@ function updateGaze(){
   lastGazePhase=phase;
   window.dispatchEvent(new CustomEvent('midnight-diner:gaze',{detail:{phase,course:game.course,zone:ev.zone}}));
   if(phase==='WARN')sound('warn');
+  dispatchCookVisual();
  }
 }
 function updateCookScene(){
