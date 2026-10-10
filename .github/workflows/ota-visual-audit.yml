@@ -6,6 +6,7 @@ on:
       - 'games/high_ota_typographic_horror/**'
       - 'tests/ota-visual-browser-audit.cjs'
       - 'tests/ota-chapter3.test.cjs'
+      - 'tests/ota-guidance.test.cjs'
       - '.github/workflows/ota-visual-audit.yml'
   workflow_dispatch:
 
@@ -23,14 +24,17 @@ jobs:
           node-version: '22'
       - name: Install Korean glyph fonts for visual verification
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq fonts-noto-cjk
+          # Prefer the runner's package index; mirror refreshes can stall for minutes.
+          if ! sudo timeout 120s apt-get install -y -qq fonts-noto-cjk; then
+            sudo timeout 60s apt-get update -qq
+            sudo timeout 120s apt-get install -y -qq fonts-noto-cjk
+          fi
           fc-cache -f
           fc-match 'Noto Sans CJK KR'
       - name: Install image test dependencies
         run: npm install --no-audit --no-fund
       - name: Verify game state machine
-        run: node --test tests/ota-typographic-horror.test.cjs tests/ota-chapter3.test.cjs
+        run: node --test tests/ota-typographic-horror.test.cjs tests/ota-chapter3.test.cjs tests/ota-guidance.test.cjs
       - name: Simulate full 3D desktop chase and touch input in Chrome
         run: node tests/ota-visual-browser-audit.cjs
         env:
