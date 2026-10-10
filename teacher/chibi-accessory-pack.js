@@ -131,7 +131,13 @@ function fitCurvedFaceParts(group,body,eyes,fit){
       const x=attr.getX(i),y=attr.getY(i);
       const actual=faceZ(x,y,spec==='lens');
       const fallback=group.userData.faceFallbackZ;
-      attr.setZ(i,(Number.isFinite(actual)?actual:fallback)+(spec==='lens'?.045:.036));
+      // Cotton fabric arches over the mouth, but its side seams hug cheeks.
+      // A constant 0.036 clearance made the lower edge a floating shelf in
+      // side/profile views; the middle now keeps its volume without that rim.
+      const nx=Math.min(1,Math.abs(x)/.18);
+      const clothClearance=.010+.030*Math.max(0,1-nx*nx);
+      attr.setZ(i,(Number.isFinite(actual)?actual:fallback)+
+        (spec==='lens'?.045:clothClearance));
     }
     attr.needsUpdate=true;
     projected.userData.kidscadeFaceProjection=spec;
@@ -236,7 +242,7 @@ function facePatch(cx,cy,frontZ,width,height,curve=.028,rows=10,columns=20,shape
     for(let i=0;i<=columns;i++){
       const u=i/columns,nx=u*2-1;
       const x=cx+nx*width*.5*(shape==='mask'?1-.22*(1-v)*(1-v):1);
-      const y=cy+ny*height*.5;
+      const y=cy+ny*height*.5+(shape==='mask'?.042*(1-v)*nx*nx:0);
       // The nose/central lens edge projects slightly more than the cheeks.
       const z=frontZ-curve*nx*nx-.004*ny*ny;
       positions.push(x,y,z);uvs.push(u,v);
