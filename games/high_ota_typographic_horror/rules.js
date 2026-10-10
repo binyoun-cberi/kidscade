@@ -135,7 +135,7 @@
   function objective(s) {
     return ({
       console: '관리실 컴퓨터의 기록을 확인하세요',
-      anomaly: '복도에서 이상한 글자를 조사하세요',
+      anomaly: '복도 안쪽으로 이동해 이상한 「사람」을 확인하세요',
       chase: '달려서 사물함 안에 숨으세요',
       hiding: '소리가 사라질 때까지 기다리세요',
       distortion: s.hidden ? '밖이 조용해졌어요. 사물함에서 나오세요'
