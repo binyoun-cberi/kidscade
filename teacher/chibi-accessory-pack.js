@@ -139,6 +139,30 @@ function sphere(x,y,z,sx,sy,sz,segments=16){
   const g=new THREE.SphereGeometry(1,segments,12);
   g.scale(sx,sy,sz);g.translate(x,y,z);return g;
 }
+// Curved, single-sided face patch. The outer edges turn back toward the
+// cheeks instead of projecting a whole ellipsoid out from the face.
+function facePatch(cx,cy,frontZ,width,height,curve=.028,rows=10,columns=20){
+  const positions=[],uvs=[],indices=[];
+  for(let j=0;j<=rows;j++){
+    const v=j/rows,ny=v*2-1;
+    for(let i=0;i<=columns;i++){
+      const u=i/columns,nx=u*2-1;
+      const x=cx+nx*width*.5;
+      const y=cy+ny*height*.5;
+      // The nose/central lens edge projects slightly more than the cheeks.
+      const z=frontZ-curve*nx*nx-.004*ny*ny;
+      positions.push(x,y,z);uvs.push(u,v);
+    }
+  }
+  for(let j=0;j<rows;j++)for(let i=0;i<columns;i++){
+    const a=j*(columns+1)+i,b=a+columns+1;
+    indices.push(a,b,a+1,b,b+1,a+1);
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+  g.setIndex(indices);g.computeVertexNormals();return g;
+}
 function ring(radius,tube,x,y,z,axis='z'){
   const g=new THREE.TorusGeometry(radius,tube,8,28);
   if(axis==='y')g.rotateX(Math.PI/2);
@@ -198,9 +222,9 @@ function buildGeometry(style,source,sourceHair,eyes){
     case 'straw':return cyl(headR*.88,headR*.98,.145,hc.x,scalpY+.016,hc.z);
     case 'round':return ring(.071,.009,-.110,eyeY,faceZ);
     case 'square':return box(.150,.119,.012,-.110,eyeY,faceZ);
-    case 'sunglasses':return sphere(-.110,eyeY,faceZ+.025,.112,.083,.012);
+    case 'sunglasses':return facePatch(-.110,eyeY,faceZ+.016,.205,.140,.027);
     case 'goggles':return box(.365,.133,.055,0,eyeY,faceZ+.015);
-    case 'mask':return sphere(0,eyeY-.305,faceZ+.030,.179,.113,.035);
+    case 'mask':return facePatch(0,eyeY-.305,faceZ+.009,.335,.205,.055,14,28);
     case 'schoolbag':return box(.335,.360,.172,0,.966,-.240);
     case 'crossbody':return box(.265,.210,.115,.224,.832,.150);
     case 'minibag':return sphere(0,.968,-.236,.145,.187,.110);
@@ -273,14 +297,14 @@ function createDetails(style,context){
         for(const sign of [-1,1])
           add(box(.144,.012,.021,sign*.110,eyeY+.061,faceZ),black,'topFrame_'+sign);
       }else if(kind==='sunglasses')
-        add(sphere(.110,eyeY,faceZ+.025,.112,.083,.012),style.color,'rightLens');
+        add(facePatch(.110,eyeY,faceZ+.016,.205,.140,.027),style.color,'rightLens');
       else if(kind==='goggles')
         add(box(.327,.091,.017,0,eyeY,faceZ+.046),'#8bcdd7','glass');
-      add(box(.073,.013,.020,0,eyeY+.008,faceZ+.035),style.color,'bridge');
+      add(facePatch(0,eyeY+.008,faceZ+.022,.055,.014,.006,2,8),style.color,'bridge');
       for(const sign of [-1,1])
         add(box(.113,.014,.012,sign*.238,eyeY+.02,faceZ-.004),black,'temple_'+sign);
     }else if(kind==='mask'){
-      add(box(.30,.011,.013,0,eyeY-.235,faceZ+.066),white,'noseBridge');
+      add(facePatch(0,eyeY-.225,faceZ+.014,.265,.014,.030,2,20),white,'noseBridge');
       for(const sign of [-1,1])
         add(ring(.065,.008,sign*.186,eyeY-.307,faceZ-.018,'x'),white,'earLoop_'+sign);
     }
