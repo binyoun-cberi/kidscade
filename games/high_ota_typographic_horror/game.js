@@ -724,9 +724,10 @@ function update(dt) {
     soundPulse=Math.max(0,soundPulse-dt);
     // The archive is protected ONLY while its separate gaze puzzle is unresolved.
     const archiveClear=C3.ensure(state).records.archive;
+    const archiveOpen=archiveClear;
     const safe=state.stage==='explore'&&C3.inArchive(player)&&!archiveClear;
     const report=X.step(corrector,dt,player,{
-      stage:state.stage,safe,awakened:literacy.awakened,moving:player.moving,running,noise:soundPulse>0,
+      stage:state.stage,safe,archiveOpen,awakened:literacy.awakened,moving:player.moving,running,noise:soundPulse>0,
       passable:(x,z)=>(archiveClear||x<=3.03)&&C3.canMove(state,x,z)
     });
     if(report.caught){
