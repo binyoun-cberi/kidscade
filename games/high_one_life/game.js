@@ -98,7 +98,7 @@
     $('traitRegion').textContent=p.settlement+' · '+p.city;
     $('countryContextText').textContent=life.world?.schooling+' · 경제적 환경 '+(life.world?.economyScale>=1?'상대적으로 기회가 많은 편':'상대적으로 제약이 있는 편');
     $('countrySourceNote').textContent=life.world?.hasPublishedBaseline
-      ? '2024 세계은행 출생 시 기대수명 '+life.world.lifeBaseline.toFixed(1)+'세 · 개인의 수명 예측이 아님'
+      ? '2024 세계은행 출생 시 기대수명 '+life.world.lifeBaseline.toFixed(1)+'세 · 학교·직업 기회는 가상 모델, 개인 수명 예측이 아님'
       : '국가별 평균 수명은 게임 추정치 · 교육·일자리 조건도 게임용 모델';
     const sceneName=Pixel.paint($('lifeScene'),life);
     $('sceneLabel').textContent=life.year+'년 · '+life.country[0]+' '+p.city+' · '+sceneName+'을(를) 보내고 있습니다.';
