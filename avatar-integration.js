@@ -349,6 +349,14 @@
   function closeStudio() {
     if (activeStudioMode === '2d') snapshotFromStudio();
     if (!overlay) return;
+    if (activeStudioMode === '3d') {
+      // Reclaim the 3D WebGL context immediately on close (shared iPads).
+      frame?.setAttribute('src','about:blank');
+      activeStudioMode = '2d';
+      overlay.querySelectorAll('[data-kc-avatar-mode]').forEach(button=>
+        button.setAttribute('aria-pressed',String(button.dataset.kcAvatarMode==='2d'))
+      );
+    }
     overlay.classList.remove('open');
     overlay.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = overlay.dataset.prevOverflow || '';
@@ -418,8 +426,10 @@
       return false;
     }
     buildOverlay();
-    if (mode !== activeStudioMode) {
-      if (activeStudioMode === '2d') snapshotFromStudio();
+    const src=frame?.getAttribute('src')||'';
+    if (mode !== activeStudioMode ||
+        (!src||src.startsWith('about:blank'))) {
+      if (activeStudioMode === '2d' && src && !src.startsWith('about:blank')) snapshotFromStudio();
       activeStudioMode = mode;
       frameLoaded = false;
       frame.src = mode === '3d' ? CHIBI_STUDIO_URL : STUDIO_URL;
