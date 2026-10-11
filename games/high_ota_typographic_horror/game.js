@@ -94,6 +94,7 @@ const hauntedWords = [];
 function wayfindingLabel(word,color,x,y,z,rx=0,ry=0,w=1,h=.55){
   const mesh=label(word,color,x,y,z,rx,ry,w,h);
   mesh.material=mesh.material.clone();
+  mesh.userData.wayfindingWord=word;
   wayfindingSigns.push(mesh);
   return mesh;
 }
@@ -1002,7 +1003,8 @@ window.OtaDebug = Object.freeze({
     corrector:{phase:corrector.phase,x:corrector.x,z:corrector.z,hidden:corrector.hidden,grace:corrector.grace},
     literacy:{coreDone:literacy.coreDone,corrected:literacy.corrected,contamination:literacy.contamination,awakened:literacy.awakened,items:literacy.items.map(i=>({uid:i.uid,x:i.x,z:i.z,bankIndex:i.bankIndex,kind:i.kind}))},
     visuals:{nearbyWords:[...literacyMeshes.values()].filter(v=>v.word.visible).length,
-      nearbyHints:[...literacyMeshes.values()].filter(v=>v.hint.visible).length,repairs:repairEffects.length},
+      nearbyHints:[...literacyMeshes.values()].filter(v=>v.hint.visible).length,repairs:repairEffects.length,
+      wayfinding:wayfindingSigns.map(mesh=>({word:mesh.userData.wayfindingWord,visible:mesh.visible}))},
     player:{x:player.x,z:player.z,yaw:player.yaw,pitch:player.pitch},mistakes:state.mistakes}),
   // Browser QA may aim the camera to verify gaze rules, but cannot edit game progress.
   aimForVisualAudit:(yaw,pitch)=>{
