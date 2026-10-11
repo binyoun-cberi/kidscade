@@ -1472,9 +1472,9 @@ function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
   };
   if(name==='chibi_female_hair_twintail'){
     for(const sign of [-1,1]){
-      ball('tie_'+sign,at(sign*.49,.34,-.20),.038,.046,.045);
-      ball('tail_'+sign,at(sign*.61,.125,-.28),.087,.240,.077);
-      ball('tailTip_'+sign,at(sign*.63,-.055,-.31),.060,.145,.056);
+      ball('tie_'+sign,at(sign*.45,.47,-.17),.035,.042,.044);
+      ball('tail_'+sign,at(sign*.51,.31,-.23),.050,.140,.062);
+      ball('tailTip_'+sign,at(sign*.52,.21,-.26),.039,.075,.046);
     }
   }else if(name==='chibi_female_hair_curl'){
     for(const sign of [-1,1]){
