@@ -261,6 +261,51 @@ let chrome,ws,profile;
    return {loaded:!!s,caught:s?.catches,party:s?.party.length,starterHidden:document.getElementById('starterOverlay').hidden};
   });
   assert.ok(resumed.loaded&&resumed.caught===1&&resumed.party===2&&resumed.starterHidden,'Reload lost progress '+config.name+JSON.stringify(resumed));
+  // 3v3 trainer path is tested in the real iPhone and desktop viewports,
+  // not just against Node's headless combat rules.
+  const trainerPreview=await evalFn(()=>{
+   const debug=window.OPENMON_EXPEDITION_DEBUG,E=window.OPENMON_EXPEDITION_ENGINE,
+    state=debug.getState(),$=id=>document.getElementById(id);
+   E.healAll(state);
+   if(state.party.length<3)state.party.push(E.makeCreature('set1_r04_c02',5,()=>.4));
+   state.pos={x:13,y:10};
+   $('interactBtn').click();
+   const entry=document.querySelector('[data-hud-action="trainers"]');
+   if(!entry)return {error:'researcher did not offer trainer battle'};
+   entry.click();
+   const lobbyTitle=$('genericTitle').textContent;
+   const choices=document.querySelectorAll('[data-trainer]').length;
+   const start=document.querySelector('[data-trainer="meadow"]');
+   const enabled=start&&!start.disabled;
+   if(enabled)start.click();
+   const b=debug.getBattle();
+   const buttons=Array.from(document.querySelectorAll('[data-action]')).map(x=>x.dataset.action);
+   const markers=$('trainerRoster').querySelectorAll('.trainer-pip').length;
+   return {lobbyTitle,choices,enabled,ready:!!b?.trainer,roster:markers,
+    trainerName:b?.trainer?.name,buttons,overlay:!$('battleOverlay').classList.contains('hidden'),
+    visible:!$('trainerRoster').hidden,viewportWidth:document.documentElement.scrollWidth};
+  });
+  assert.ok(trainerPreview.enabled&&trainerPreview.ready&&trainerPreview.overlay&&
+   trainerPreview.choices===3&&trainerPreview.roster===6&&trainerPreview.visible&&
+   trainerPreview.buttons.includes('switch')&&!trainerPreview.buttons.includes('ball')&&
+   trainerPreview.viewportWidth<=config.w+3,
+   '3v3 research challenge menu or battle layout failed '+config.name+JSON.stringify(trainerPreview));
+  await screenshot(config.name+'-trainer-three-vs-three');
+  const trainerTurn=await evalFn(()=>{
+   const $=id=>document.getElementById(id),debug=window.OPENMON_EXPEDITION_DEBUG;
+   const battle=debug.getBattle(),before=battle.foe.hp;
+   document.querySelector('[data-action="fight"]').click();
+   const moves=document.querySelectorAll('[data-action^="move:"]').length;
+   const soft=!!document.querySelector('[data-action="soft"]');
+   document.querySelector('[data-action^="move:"]').click();
+   return {moves,soft,turn:battle.turn,trainerAlive:battle.trainer.party.filter(x=>x.hp>0).length,
+    hpBefore:before,hpAfter:battle.foe.hp,message:$('battleLog').textContent.slice(0,160),
+    remainingMarkers:$('trainerRoster').querySelectorAll('.trainer-pip').length};
+  });
+  assert.ok(trainerTurn.moves===4&&!trainerTurn.soft&&trainerTurn.turn>=2&&
+   trainerTurn.remainingMarkers===6&&trainerTurn.trainerAlive>=1,
+   '3v3 actual battle turn failed '+config.name+JSON.stringify(trainerTurn));
+  await screenshot(config.name+'-trainer-first-turn');
   assert.equal(errors.length,0,'Browser errors '+config.name+': '+JSON.stringify(errors.slice(0,3)));
   console.log('OPENMON_BROWSER_AUDIT '+config.name+' '+JSON.stringify({initial,field,hudAudit,moveDexAudit,battleStart,turnMenu,result,resumed,errors:errors.length}));
  }
