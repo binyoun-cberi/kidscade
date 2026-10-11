@@ -143,12 +143,19 @@
         life.logEvent('장학금·교육기관의 기회 또는 가족의 도움으로 공부를 이어 갔다.','milestone');
       }
     }
+    if(age===24 && w.educationLevel==='고등 교육·훈련 중'){
+      w.educationLevel='고등 교육·훈련 수료';
+      life.logEvent('교육·훈련 과정을 마치고 전문성을 살릴 일자리를 찾아보았다.','milestone');
+    }
     if(age===25 && life.career==='학생'){w.educationLevel='고등 교육·훈련 수료';life.career='전문 분야 종사자';life.logEvent('교육·훈련을 마치고 관련 일을 시작했다.','milestone');}
     if(age===20||age===24){
       if(age===20 && !w.startedWorking && life.career!=='학생')startWork(life);
       if(age===24 && !w.startedWorking)startWork(life);
     }
     if(age===29 && life.career==='진로 탐색 중')startWork(life);
+    // Stage-specific good and bad experiences occur across all countries.
+    if(age===12 && life.rand()<.30){life.logEvent('같은 동네의 사람들과 축제·모임에서 새로운 문화를 접했다.','event');life.change({bonds:5,happiness:3});}
+    if(age===23 && life.rand()<.25){life.logEvent('잘 풀리지 않던 구직과 생활을 다시 계획했다.','event');life.change({knowledge:2,happiness:-3});}
     if(age===31 || age===46 || age===60){
       const incomeGood=life.money?.lastBalance>0;
       const rollEvent=life.rand();
