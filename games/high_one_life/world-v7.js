@@ -116,10 +116,10 @@
  function admission(life){
   const s=ensure(life),w=life.world,a=life.arc;
   const knowledge=life.stats.knowledge/100;
-  return clamp(.035+.44*knowledge+.16*academicStrength(life)
-   +.20*(s.formalYears/10)+.08*s.resourceAccess
-   +.06*(w.schoolChance||.5)+.032*Math.min(4,s.effort)
-   +.012*Math.min(5,a.learning||0),.025,.96);
+  return clamp(-.08+.46*knowledge+.10*academicStrength(life)
+   +.15*(s.formalYears/10)+.06*s.resourceAccess
+   +.05*(w.schoolChance||.5)+.018*Math.min(4,s.effort)
+   +.005*Math.min(5,a.learning||0),.015,.93);
  }
  function handleChoice(life,age,index){
   const s=ensure(life),w=life.world;
