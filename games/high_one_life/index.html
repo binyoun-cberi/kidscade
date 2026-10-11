@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="./world-v5.css?v=1">
 <link rel="stylesheet" href="./world-v6.css?v=2">
 <link rel="stylesheet" href="./world-v7.css?v=1">
-<link rel="stylesheet" href="./world-v8.css?v=1">
+<link rel="stylesheet" href="./world-v8.css?v=2">
 </head>
 <body>
 <div class="app" id="app">
@@ -79,6 +79,11 @@
         <article class="chronicle">
           <div class="chapter-line"><span id="lifeStage" class="chapter">유년기</span><span id="playStatus">인생이 흘러가는 중</span></div>
           <div class="progress" aria-label="인생 시간의 흐름"><div id="lifeProgress"></div></div>
+          <div class="controls">
+            <div class="controls-label"><b>인생의 시간</b><span>빠른 자동 진행</span></div>
+            <button id="pauseBtn" class="pause" type="button">Ⅱ 일시정지</button>
+            <p class="hint">선택지가 나타나면 시간이 자동으로 멈춥니다. 화면을 닫거나 다른 앱으로 이동하면 일시정지됩니다.</p>
+          </div>
           <figure class="pixel-frame">
             <canvas id="lifeScene" width="600" height="258" role="img" aria-label="나이와 삶의 환경에 따라 달라지는 픽셀아트 장면"></canvas>
             <figcaption id="sceneLabel">당신의 생활 환경이 펼쳐집니다.</figcaption>
@@ -114,8 +119,8 @@
               <div id="ageMap" class="age-map" role="group" aria-label="108년 인생 지도"></div>
               <p id="yearDetail" class="v8-year-detail">칸을 선택하면 그 해에 일어난 이야기가 보입니다.</p>
             </div>
-            <div id="storyPeers" class="v8-tool-page hidden"><h3>같은 순간에 태어난 네 사람</h3>
-              <p class="v8-fine">나와 같은 나이까지 살아온 이야기를 비교해 보세요. 인생은 점수로 우열을 정하지 않습니다.</p>
+            <div id="storyPeers" class="v8-tool-page hidden"><h3>같은 해에 태어난 네 사람</h3>
+              <p class="v8-fine">나와 같은 2026년에 태어난 가상의 네 사람을 비교해 보세요. 각자의 생일과 출생 조건은 다르며, 인생은 점수로 우열을 정하지 않습니다.</p>
               <div class="v8-peer-ages" id="peerAgeChoices">
                 <button type="button" data-peer-age="0">현재</button>
                 <button type="button" data-peer-age="10">10세</button>
@@ -196,11 +201,6 @@
             <div class="stat-title">이어지는 인생의 선택 <span id="arcCount">0번</span></div>
             <p id="arcStatus">아직 미래는 정해지지 않았어요.</p>
             <div id="arcMilestones" class="arc-milestones"></div>
-          </div>
-          <div class="controls">
-            <div class="controls-label"><b>인생의 시간</b><span>빠른 자동 진행</span></div>
-            <button id="pauseBtn" class="pause" type="button">Ⅱ 일시정지</button>
-            <p class="hint">선택지가 나타나면 시간이 자동으로 멈춥니다. 화면을 닫거나 다른 앱으로 이동하면 일시정지됩니다.</p>
           </div>
         </aside>
       </div>
