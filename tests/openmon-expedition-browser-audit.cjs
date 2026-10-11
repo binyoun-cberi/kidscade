@@ -313,6 +313,35 @@ let chrome,ws,profile;
    trainerTurn.remainingMarkers===6&&trainerTurn.trainerAlive>=1,
    '3v3 actual battle turn failed '+config.name+JSON.stringify(trainerTurn));
   await screenshot(config.name+'-trainer-first-turn');
+  const regionAudit=await evalFn(()=>{
+   const E=window.OPENMON_EXPEDITION_ENGINE,debug=window.OPENMON_EXPEDITION_DEBUG,s=debug.getState(),$=id=>document.getElementById(id);
+   s.pos={x:83,y:12};const entry=E.move(s,1,0,()=>.999);
+   $('hudGoals').click();document.querySelector('[data-hud-action="regions"]')?.click();
+   const cards=document.querySelectorAll('.region-card').length;
+   const travel=document.querySelector('[data-travel="crystalTown"]');
+   const locked=document.querySelector('[data-travel="snowTown"]')?.disabled;
+   return {zone:entry.zone,welcome:entry.welcome,cards,unlocked:!!travel&&!travel.disabled,locked,
+    heading:$('genericTitle').textContent,scrollWidth:document.documentElement.scrollWidth};
+  });
+  assert.ok(regionAudit.zone==='crystalTown'&&regionAudit.welcome&&regionAudit.cards===10&&
+    regionAudit.unlocked&&regionAudit.locked&&regionAudit.heading.includes('세계 지도')&&
+    regionAudit.scrollWidth<=config.w+3,
+    '10-region ecology map or visited-town travel failed '+config.name+JSON.stringify(regionAudit));
+  await screenshot(config.name+'-ecology-map');
+  const townAudit=await evalFn(()=>{
+   const $=id=>document.getElementById(id),debug=window.OPENMON_EXPEDITION_DEBUG;
+   document.querySelector('[data-travel="crystalTown"]').click();
+   const position={...debug.getState().pos};
+   $('interactBtn').click();const title=$('genericTitle').textContent;
+   const hasHealer=!!document.querySelector('[data-village-heal]');
+   if(hasHealer)document.querySelector('[data-village-heal]').click();
+   return {position,title,hasHealer,closed:$('genericOverlay').classList.contains('hidden'),
+    width:document.documentElement.scrollWidth};
+  });
+  assert.ok(townAudit.position.x===96&&townAudit.title.includes('수정마을')&&
+    townAudit.hasHealer&&townAudit.closed&&townAudit.width<=config.w+3,
+    'Scientist, treatment or travel failed '+config.name+JSON.stringify(townAudit));
+  await screenshot(config.name+'-crystal-town');
   assert.equal(errors.length,0,'Browser errors '+config.name+': '+JSON.stringify(errors.slice(0,3)));
   console.log('OPENMON_BROWSER_AUDIT '+config.name+' '+JSON.stringify({initial,field,hudAudit,moveDexAudit,battleStart,turnMenu,result,resumed,errors:errors.length}));
  }
