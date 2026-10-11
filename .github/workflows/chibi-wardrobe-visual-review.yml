@@ -1,0 +1,31 @@
+name: Chibi wardrobe visual inspection
+on:
+  push:
+    branches:
+      - audit/chibi-wardrobe-visual-20261011
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  visual-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - name: Chibi real Chrome complete asset review
+        run: node tests/chibi-visual-browser-audit.cjs
+        env:
+          KIDSCADE_CHIBI_CONTACT_SHEETS: '1'
+          KIDSCADE_CHIBI_AUDIT_OUT: ${{ runner.temp }}/chibi-wardrobe-review
+      - name: Keep all captured frames and labeled contact sheets
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chibi-wardrobe-review
+          path: ${{ runner.temp }}/chibi-wardrobe-review/
+          retention-days: 10
+          if-no-files-found: ignore
