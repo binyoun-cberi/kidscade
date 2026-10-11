@@ -19,7 +19,7 @@
   const CORE_BANK_IDS=Object.freeze([0,3,12,24,36]);
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
   function create(){
-    const state={time:0,contamination:0,nextSpawn:15,serial:5,cursor:0,
+    const state={time:0,contamination:0,nextSpawn:15,serial:0,cursor:0,
       coreDone:0,corrected:0,mistakes:0,awakened:false,items:[]};
     for(let i=0;i<CORE_POINTS.length;i++)
       state.items.push({uid:'core-'+i,bankIndex:CORE_BANK_IDS[i],kind:'core',
