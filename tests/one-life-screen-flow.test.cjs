@@ -16,6 +16,15 @@ global.window.OneLifeWorld3=World3;
 const World4=require(path.join(root,'world-v4.js'));
 global.window.OneLifeWorld4=World4;
 const World5=require(path.join(root,'world-v5.js'));
+global.window.OneLifeWorld5=World5;
+const Careers6=require(path.join(root,'careers-v6.js'));
+global.window.OneLifeCareers6=Careers6;
+const Events6=require(path.join(root,'events-v6.js'));
+global.window.OneLifeEvents6=Events6;
+const World6=require(path.join(root,'world-v6.js'));
+global.window.OneLifeWorld6=World6;
+global.window.OneLifeScene=Scene;
+const Scenes6=require(path.join(root,'scenes-v6.js'));
 delete global.window;
 const makeElement=(tag='div')=>{
  const listeners={}; const classes=new Set();
@@ -45,7 +54,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
   createElement:makeElement,addEventListener:()=>{}};
  const localStorage={getItem:key=>saved.get(key)||null,setItem:(key,val)=>{saved.set(key,val);},removeItem:key=>saved.delete(key)};
  const sdk={start:()=>{},result:(payload)=>{document.result=payload;},registerPauseHandlers:()=>{},registerCleanup:()=>{}};
- const window={OneLifeSim:Sim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeScene:Scene,KidscadeGame:sdk,
+ const window={OneLifeSim:Sim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeWorld6:World6,OneLifeCareers6:Careers6,OneLifeEvents6:Events6,OneLifeScene:Scene,OneLifeScenes6:Scenes6,KidscadeGame:sdk,
   scrollTo(){},addEventListener(){}};
  new Function('window','document','localStorage','performance','setInterval','clearInterval',
   code)(window,document,localStorage,{now:()=>now},
@@ -89,6 +98,8 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.ok(get('endHighlights').children.length>0);
  assert.ok(get('endCountry').textContent.length>0);
  assert.ok(get('arcCount').textContent.includes('선택'));
+ assert.match(get('careerChangeCount').textContent,/직업 이력/);
+ assert.ok(get('careerJourney').children.length>=1);
  assert.ok(get('worldEventCount').textContent.includes('사건'));
  assert.ok(get('worldRegionLabel').textContent.length>0);
  assert.ok(get('arcMilestones').children.length>0);
