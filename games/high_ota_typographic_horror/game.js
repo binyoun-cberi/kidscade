@@ -282,7 +282,7 @@ function flashLockerAt(place){
     const d=R.distance(place,obj);
     if(d<best){winner=obj;best=d;}
   }
-  if(winner){winner.swingUntil=elapsed+.75;winner.swing=Math.max(winner.swing,.08);}
+  if(winner){winner.swingUntil=elapsed+.72;winner.swing=Math.max(winner.swing,.08);}
 }
 function updateCalligrams(dt,threat){
   for(const obj of calligramObjects){
@@ -294,7 +294,8 @@ function updateCalligrams(dt,threat){
     const hidden=obj.type==='locker'&&
       ((state.hidden||corrector.hidden)&&R.distance(player,obj)<2.4);
     if(obj.type==='locker'){
-      const target=(elapsed<obj.swingUntil||hidden&&obj.swing>.02)?.88:0;
+      // The hinged letters open for the entry/exit gesture, then fold closed while hidden.
+      const target=elapsed<obj.swingUntil?.88:0;
       obj.swing+=(target-obj.swing)*Math.min(1,dt*10);
     }
     obj.leafL.rotation.y=obj.type==='locker'?-obj.swing:obj.type==='door'&&obj.gate?-obj.progress*1.28:0;
