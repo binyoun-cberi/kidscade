@@ -106,6 +106,10 @@ function validateSave(raw){
  raw.wins=Math.max(0,Math.floor(raw.wins)||0);
  raw.catches=Math.max(0,Math.floor(raw.catches)||0);
  raw.encounters=Math.max(0,Math.floor(raw.encounters)||0);
+  const previousTrainerWins=raw.trainerWins||{};
+  raw.trainerWins={};
+  for(const id of ["meadow","forest","lab"])
+   raw.trainerWins[id]=Math.max(0,Math.min(999,Math.floor(previousTrainerWins[id])||0));
  raw.log=Array.isArray(raw.log)?raw.log.slice(-12).map(x=>String(x).slice(0,120)):[];
  return raw;
 }
