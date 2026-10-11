@@ -112,7 +112,9 @@ test('mobile story and pause controls precede the long sidebar',()=>{
  const story=html.indexOf('<article class="chronicle">');
  const aside=html.indexOf('<aside class="info">');
  const pause=html.indexOf('id="pauseBtn"');
+ const focus=html.indexOf('class="focus-block"');
  assert.ok(story>=0 && pause>story && aside>pause,'pause must be inside the visible main story');
+ assert.ok(focus>pause && focus<aside,'yearly focus buttons must be beside the playing scene');
  assert.equal((html.match(/id="pauseBtn"/g)||[]).length,1);
  assert.match(css,/\.play-layout>\.chronicle\s*\{order:0\}/);
  assert.match(css,/\.play-layout>\.info\s*\{order:1\}/);
