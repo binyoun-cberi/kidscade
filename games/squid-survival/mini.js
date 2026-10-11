@@ -26,7 +26,7 @@ function statusLabel(){
  if(!model)return label.hint;
  if(model.status==='failed')return model.reason;
  if(model.status==='cleared')return '통과! 다음 게임으로 넘어가요.';
- if(mode==='redlight')return model.signal==='green'?'초록불! 버튼을 누르고 달리세요.':model.signal==='warning'?'곧 빨간불! 지금 손을 떼세요.':'빨간불! 멈춰 있어야 해요.';
+ if(mode==='redlight')return model.signal==='green'?'초록불! 버튼을 누르고 달리세요.':model.signal==='warning'?(model.held?'노란불! 계속 달리는 중이에요. 손을 직접 떼세요!':'노란불! 손을 떼서 멈췄어요.'):(model.held?'빨간불에 아직 달리고 있어요!':'빨간불! 정지 성공.');
  if(mode==='tug')return model.combo>1?'연속 성공 '+model.combo+'번!':'중앙 초록 구간을 지나갈 때 당기세요.';
  if(mode==='marbles')return model.questions[model.questionIndex]?.prompt||'구슬 승부 완료';
  if(model.part==='preview')return '모양이 나타나는 순서를 기억하세요.';
