@@ -64,7 +64,7 @@ test('canonical game title stays 꼴뚜기 게임 across catalog, menu, page and
  assert.deepEqual(game.players,['solo','local2']);
  assert.equal(catalog.games.filter(g=>g.id==='squid_survival'||g.id==='squid_survival_versus').length,1);
  assert.equal(catalog.games.some(g=>g.id==='squid_survival_versus'),false);
- assert.equal(catalog.games.filter(g=>g.href.startsWith('games/squid-survival/')).length,1);
+ assert.equal(catalog.games.filter(g=>g.href==='games/squid-survival/index.html').length,1);
  assert.match(html,/<title>꼴뚜기 게임 \| KIDSCADE<\/title>/);
  assert.match(html,/data-title="꼴뚜기 게임"/);
  assert.match(html,/<h1 id="dialogTitle">꼴뚜기 게임<\/h1>/);

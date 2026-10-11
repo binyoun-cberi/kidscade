@@ -350,7 +350,7 @@ function simulateExtraAnomaly(mode){
   const start=js.indexOf('function takeAnomalyHit('),end=js.indexOf('function updatePlayer(dt){',start);
   assert.ok(start>=0&&end>start);
   const definitions=[
-    "const FIRST_PERSON_EYE_HEIGHT=1.62;let viewPitch=0;",
+    "const FIRST_PERSON_EYE_HEIGHT=1.62;let viewPitch=0;const tutorialMode=true;",
     "let stage=mode==='eggAway'||mode==='eggStare'?6:mode==='bell'?8:mode==='wolf'?11:4;",
     "let started=true,ended=false,paused=false,hp=3,invulnerable=0,elapsed=0,viewYaw=mode==='eggAway'?Math.PI:0,lastMistake='';",
     "const player={x:mode.startsWith('egg')?7.5:mode==='bell'?-20.35:mode==='wolf'?-7.5:25.5,z:mode.startsWith('egg')?-14:mode==='bell'?8:mode==='wolf'?8.55:15.5,yaw:0};",
@@ -667,7 +667,7 @@ test('locker hiding pauses movement and exposes a deterministic leave action',()
   let flashOn=true,viewYaw=0,viewPitch=0,stage=2;
   const template=new Function('lockers','player','maiden','keys','document','ui','joy','encounter',
     'showToast','dist','takeAnomalyHit','started','paused','ended',
-    state+'let flashOn=true,viewYaw=0,viewPitch=0,stage=2,maidenPhase="hunt",power=100;'+js.slice(begin,end)+
+    state+'const tutorialMode=true;let flashOn=true,viewYaw=0,viewPitch=0,stage=2,maidenPhase="hunt",power=100;'+js.slice(begin,end)+
     'return {nearestLocker,enterLocker,leaveLocker,updateLockerHiding,'+
     'get:()=>({hidingLocker,lockerTime,lockerDanger,flashOn,viewYaw,viewPitch}),'+
     'setStage:n=>{stage=n;},setMaiden:(x,z)=>{maiden.x=x;maiden.z=z;}};')(
@@ -715,7 +715,7 @@ test('school classroom doors open for students and ghosts, then close behind the
   const state={stage:1,maidenPhase:'approach'};
   const SCHOOL={roomCenters:[-10.5,-1.5,7.5,16.5,25.5]};
   class Group{constructor(){this.position={set(){}};this.rotation={y:0};}}
-  const env={SCHOOL,scene:{add(){}},THREE:{Group},cube:()=>({}),mat:()=>({}),
+  const env={tutorialMode:true,SCHOOL,scene:{add(){}},THREE:{Group},cube:()=>({}),mat:()=>({}),
     NORTH_ROOMS:['6-1','6-2','음악','미술','과학'],
     SOUTH_ROOMS:['5-1','5-2','컴퓨터','방송','가사'],
     SPINE_ROOMS:['자료','보건','관리','전기','교무'],
@@ -800,7 +800,7 @@ test('wolf lure speaker cannot be triggered through the 5-1 classroom wall',()=>
   const player={x:-7.5,z:10.78};
   const nearAction=new Function('player','walls','schoolDoors','dist','nearestLocker',
     'stage','hidingLocker','encounter','disturbed','SCHOOL','bellDoor','wolfTrap',
-    source+'return nearAction;')(player,[wall],[],(a,b)=>Math.hypot(a.x-b.x,a.z-b.z),
+    'const tutorialMode=true;'+source+'return nearAction;')(player,[wall],[],(a,b)=>Math.hypot(a.x-b.x,a.z-b.z),
     ()=>null,10,null,{wolf:{ready:false},heatNodes:[]},[],{guard:{x:-24.2,z:0}},
     {x:-20.35,z:8},{x:-10.5,z:14});
   assert.equal(nearAction(),null,'E cannot activate the hall speaker from behind a solid classroom wall');
