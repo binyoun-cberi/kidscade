@@ -83,5 +83,5 @@ function install(){
  Object.defineProperty(L.prototype,'__world8',{value:true});return true;
 }
 install();
-return Object.freeze({install,ensure,profile,mortality,survival,points,synopsis,GROUP,SPECIAL});
+return Object.freeze({install,ensure,profile,moment,mortality,survival,points,synopsis,GROUP,SPECIAL});
 });
