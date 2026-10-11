@@ -100,7 +100,7 @@
     $('employmentStatus').textContent=money.employment;
     $('traitEducation').textContent=life.world?.educationLevel||'배움의 기회를 기다리는 중';
     $('traitRegion').textContent=p.settlement+' · '+p.city;
-    $('countryContextText').textContent=life.world?.schooling+' · 경제적 환경 '+(life.world?.economyScale>=1?'상대적으로 기회가 많은 편':'상대적으로 제약이 있는 편');
+    $('countryContextText').textContent=life.world?.schooling+' · 지역 경제 기회 '+(life.world?.economyScale>=1?'상대적으로 넓은 편':'상대적으로 제한적인 편');
     $('countrySourceNote').textContent=life.world?.hasPublishedBaseline
       ? '2024 세계은행 출생 시 기대수명 '+life.world.lifeBaseline.toFixed(1)+'세 · 학교·직업 기회는 가상 모델, 개인 수명 예측이 아님'
       : '국가별 평균 수명은 게임 추정치 · 교육·일자리 조건도 게임용 모델';
@@ -135,13 +135,14 @@
     $('worldRegionLabel').textContent=category[region]+' · '+(world.faith==='없음'?'다양한 삶':world.faith);
     $('worldEventCount').textContent=world.eventCount+'개 사건';
     $('worldLatest').textContent=world.lastContext||'어떤 세계적 변화와 만남이 찾아올까요?';
-    $('arcCount').textContent=a.decisionCount+'번의 선택';
+    const choiceLog=life.log.filter(e=>e.kind==='decision');
+    $('arcCount').textContent=choiceLog.length+'번의 선택';
     $('arcStatus').textContent=a.lastEvent || '아직 미래는 정해지지 않았어요.';
     const box=$('arcMilestones');box.replaceChildren();
-    for(const d of a.decisions.slice(-3)){
+    for(const d of choiceLog.slice(-3)){
       const pill=document.createElement('div');pill.className='arc-milestone';
       const age=document.createElement('b');age.textContent=d.age+'세';
-      const label=document.createElement('span');label.textContent=d.label;
+      const label=document.createElement('span');label.textContent=d.text;
       pill.append(age,label);box.append(pill);
     }
   }
@@ -356,13 +357,21 @@
     completed=true;
     safeRemove(SAVE_KEY);
     const summary=life.summary();
+    const choiceLog=life.log.filter(e=>e.kind==='decision');
     const count=rememberLife();
     $('endYears').textContent='2026 — '+life.year;
     $('endCountry').textContent=life.country[1]+' '+summary.country+' · '+life.profile.name+' ('+life.profile.city+')';
     $('endNetWorth').textContent=formatCredits(life.money.netWorth);
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=life.career;
-    $('endStory').textContent=summary.story+' '+life.deathReason+' '+(life.world?.educationLevel||'')+' · '+life.career+'의 경로를 걸었다. '+(life.world6?.history?.length||0)+'개 직업 이력과 '+(life.world6?.eventCount||0)+'개 직업·생활 사건, '+(life.world5?.eventCount||0)+'개 지역 사건, 중요한 선택 '+(life.arc?.decisionCount||0)+'번이 삶을 바꾸었다.';
+    $('endStory').textContent=summary.story+' '+life.deathReason+' '+(life.world?.educationLevel||'')+' · '+life.career+'의 경로를 걸었다. '+(life.world6?.history?.length||0)+'개 직업 이력과 '+(life.world6?.eventCount||0)+'개 직업·생활 사건, '+(life.world5?.eventCount||0)+'개 지역 사건, 중요한 선택 '+choiceLog.length+'번이 삶을 바꾸었다.';
+    const endChoices=$('endChoices');endChoices.replaceChildren();
+    choiceLog.forEach(e=>{
+      const item=document.createElement('li');item.className='end-choice-item';
+      const age=document.createElement('b');age.textContent=e.age+'세';
+      const text=document.createElement('span');text.textContent=e.text;
+      item.append(age,text);endChoices.append(item);
+    });
     showComparison();
     const list=$('endHighlights'); list.replaceChildren();
     const highlights=[...life.log.filter(e=>['milestone','decision','chain','world','safety','profession'].includes(e.kind))]
