@@ -23,6 +23,43 @@ const VILLAGES=Object.freeze([
  {key:"snowTown",name:"설빛마을",x:190,y:12,npcX:190,npcY:10,npc:"기후 연구원",lesson:"빙점과 날씨"}
 ]);
 const byId=new Map(DB.species.map(s=>[s.id,s]));
+// Science missions reward real observations and captures rather than arbitrary dialogue.
+const REGIONAL_QUESTS=Object.freeze({
+ crystalTown:{zone:"powerPlant",name:"전기가 흐르는 까닭",capture:"set5_r04_c00",item:"energy",
+  study:"전기 키즈몬 3종 관찰 후 암페각 포획",badge:"gym_energy"},
+ harborTown:{zone:"tidal",name:"해류와 부력 조사",capture:"set2_r00_c06",item:"life",
+  study:"갯벌 키즈몬 3종 관찰 후 부력치 포획",badge:"gym_tide"},
+ snowTown:{zone:"snowfield",name:"빙점과 기후 기록",capture:"set5_r01_c04",item:"climate",
+  study:"설원 키즈몬 3종 관찰 후 켈빈털 포획",badge:"gym_frost"}
+});
+const RARE_EVENTS=Object.freeze({
+ powerPlant:{phase:1,label:"전력 폭주",species:"set5_r04_c01",gym:"gym_energy",village:"crystalTown"},
+ tidal:{phase:2,label:"만조",species:"set2_r01_c03",gym:"gym_tide",village:"harborTown"},
+ snowfield:{phase:3,label:"눈보라",species:"set5_r03_c05",gym:"gym_frost",village:"snowTown"}
+});
+const PHASES=["평온","전류·물결의 변화","수위·기압 변화","강한 기상 변화"];
+function regionalPhase(save){return Math.floor(Math.max(0,save?.steps||0)/18)%4}
+function eventStatus(zone,save){
+ const conf=RARE_EVENTS[zone];if(!conf)return null;
+ const phase=regionalPhase(save);
+ return {zone,name:conf.label,phase,active:phase===conf.phase,cycle:18-(Math.max(0,save?.steps||0)%18),
+  unlocked:!!save?.trainerWins?.[conf.gym],species:conf.species,probability:.12};
+}
+function questStatus(save,village){
+ const q=REGIONAL_QUESTS[village];if(!q)return null;
+ const observed=save?.regionResearch?.[q.zone]?.seen?.length||0;
+ const captured=!!save?.collection?.[q.capture],claimed=!!save?.regionQuests?.[village];
+ return {...q,village,observed,captured,claimed,ready:observed>=3&&captured&&!claimed};
+}
+function claimRegionalQuest(save,village){
+ const quest=questStatus(save,village);
+ if(!quest?.ready||!save?.flags?.visitedZones?.includes(village))return null;
+ save.regionQuests??={};save.regionQuests[village]=true;
+ save.items[quest.item]=Math.min(99,(save.items[quest.item]||0)+1);
+ save.coins=Math.min(999999,(save.coins||0)+70);
+ save.log??=[];save.log.push("연구 과제 완료: "+quest.name+" · 결정과 연구코인 획득");
+ return {quest:quest.name,item:quest.item,coins:70};
+}
 const HABITAT_REWARDS=Object.freeze({
  meadow:{item:"potion",name:"회복약"},
  forest:{item:"life",name:"생명의 결정"},
@@ -148,7 +185,7 @@ function createNew(starter){
  return {version:1,pos:{...START},facing:"down",party:[makeCreature(starter,5)],box:[],active:0,
   items:{ball:7,potion:3,life:1,energy:0,climate:0,thought:0},coins:120,flags:{shibuSeen:false,shibuCaught:false,shibuLastStep:-100,firstRoadEncounter:false,researchStarters:[],visitedZones:["town"]},
   collection:{[starter]:true},seen:{[starter]:true},steps:0,grassSteps:0,wins:0,catches:0,
-  encounters:0,regionResearch:normalizeRegionResearch(null),log:["연구소에서 첫 키즈몬을 받았어!"],createdAt:Date.now()};
+  encounters:0,regionQuests:{},regionResearch:normalizeRegionResearch(null),log:["연구소에서 첫 키즈몬을 받았어!"],createdAt:Date.now()};
 }
 function validateSave(raw){
  if(!raw||raw.version!==1||!Array.isArray(raw.party)||!raw.party.length||!raw.pos)return null;
@@ -182,9 +219,11 @@ function validateSave(raw){
  raw.catches=Math.max(0,Math.floor(raw.catches)||0);
  raw.encounters=Math.max(0,Math.floor(raw.encounters)||0);
  raw.regionResearch=normalizeRegionResearch(raw.regionResearch);
+ const oldQuests=raw.regionQuests&&typeof raw.regionQuests==="object"?raw.regionQuests:{};
+ raw.regionQuests={};for(const id of Object.keys(REGIONAL_QUESTS))raw.regionQuests[id]=oldQuests[id]===true;
   const previousTrainerWins=raw.trainerWins||{};
   raw.trainerWins={};
-  for(const id of ["meadow","forest","lab"])
+  for(const id of ["meadow","forest","lab","gym_energy","gym_tide","gym_frost"])
    raw.trainerWins[id]=Math.max(0,Math.min(999,Math.floor(previousTrainerWins[id])||0));
  raw.log=Array.isArray(raw.log)?raw.log.slice(-12).map(x=>String(x).slice(0,120)):[];
  return raw;
@@ -204,11 +243,15 @@ function unlockedPool(zone,save){
 function pickEncounter(zone,rand=Math.random,save=null){
  const cfg=DB.encounters[zone],pool=unlockedPool(zone,save);
  if(!cfg||!pool.length)return null;
- const index=Math.max(0,Math.min(pool.length-1,Math.floor(rand()*pool.length)));
+ const event=save?eventStatus(zone,save):null;
+ const rare=!!(event?.active&&event.unlocked&&rand()<event.probability);
+ const index=rare?-1:Math.max(0,Math.min(pool.length-1,Math.floor(rand()*pool.length)));
  const boost=save?Math.min(8,Math.floor(((save.wins||0)+(save.catches||0))/6)):0;
  const lo=cfg.level[0]+boost,hi=cfg.level[1]+boost;
  const level=lo+Math.max(0,Math.min(hi-lo,Math.floor(rand()*(hi-lo+1))));
- return makeCreature(pool[index],level,rand);
+ const mon=makeCreature(rare?event.species:pool[index],level,rand);
+ if(rare)mon.rareHabitat=zone;
+ return mon;
 }
 function shouldMeet(save,tile,rand=Math.random){
  if(!["grass","rough","cave","charged","wetland","snow"].includes(tile))return false;
@@ -375,5 +418,5 @@ function useEvolutionStone(save,id,stone){
  if(move)p.lastEvolutionTechnique=move;
  save.collection[p.id]=true;save.seen[p.id]=true;return true;
 }
-global.OPENMON_EXPEDITION_ENGINE={HABITAT_REWARDS,recordRegionEncounter,VILLAGES,villageFor,visitedVillages,fastTravel,STONES,genesFromUid,normalizeGenes,stoneEvolutionOptions,useEvolutionStone,WIDTH,HEIGHT,START,ZONES,zoneAt,terrain,canMove,makeCreature,createNew,validateSave,grantTraining,pickEncounter,unlockedPool,shouldMeet,move,healAll,activeCreature,xpGain,addCaptured,levelRewards,maybeEvolve,researchStarterOptions,claimResearchStarter,withdrawFromBox,retaliationDamage};
+global.OPENMON_EXPEDITION_ENGINE={REGIONAL_QUESTS,RARE_EVENTS,PHASES,regionalPhase,eventStatus,questStatus,claimRegionalQuest,HABITAT_REWARDS,recordRegionEncounter,VILLAGES,villageFor,visitedVillages,fastTravel,STONES,genesFromUid,normalizeGenes,stoneEvolutionOptions,useEvolutionStone,WIDTH,HEIGHT,START,ZONES,zoneAt,terrain,canMove,makeCreature,createNew,validateSave,grantTraining,pickEncounter,unlockedPool,shouldMeet,move,healAll,activeCreature,xpGain,addCaptured,levelRewards,maybeEvolve,researchStarterOptions,claimResearchStarter,withdrawFromBox,retaliationDamage};
 })(window);
