@@ -158,7 +158,8 @@ function startCooking(){
   if(!game||game.phase!=='cooking'||reviewPending){stopCooking();return;}
   const now=performance.now(),dt=Math.max(0,Math.min(100,now-lastCookTick));
   lastCookTick=now;
-  if(document.hidden)return;
+  // Opening the in-scene notebook pauses timed peeking fairly.
+  if(document.hidden||!$('notebookPanel').classList.contains('hidden'))return;
   const outcome=R.tickCooking(game,dt,peekHeld);
   if(!outcome.ok){stopCooking();return;}
   if(outcome.revealed){
@@ -180,7 +181,7 @@ function startCooking(){
    $('chefLine').textContent='“자, 다 됐어. 이번에는 어디를 먹겠니?”';
    note('조리 완료. 몰래 본 재료 위치를 기억해 안전한 부분을 선택하세요.');
    repaint();
-   if(window.innerWidth<=930)window.scrollTo?.({top:0,behavior:'instant'});
+   // The kitchen and plate now share one viewport; avoid jumping the page on mobile.
    return;
   }
   if(outcome.finishedStep){lastGazePhase='';updateCookScene();dispatchCookVisual();}
@@ -269,6 +270,7 @@ for(const [id,name] of [['eatBtn','eat'],['inspectBtn','inspect'],['questionBtn'
 $('startBtn').addEventListener('click',start);$('retryBtn').addEventListener('click',start);
 $('soundBtn').addEventListener('click',()=>{muted=!muted;$('soundBtn').textContent=muted?'소리 끔':'소리 켬';});
 function notebook(){
+ onPeekUp();
  $('notebookEntries').replaceChildren();
  const found=new Set(game?.discovered||[]);
  for(const [key,entry] of Object.entries(R.INGREDIENTS)){
@@ -280,14 +282,24 @@ function notebook(){
  }
  $('notebookPanel').classList.remove('hidden');
 }
-$('notebookBtn').addEventListener('click',notebook);$('closeNotebook').addEventListener('click',()=>$('notebookPanel').classList.add('hidden'));
-$('notebookPanel').addEventListener('click',e=>{if(e.target===$('notebookPanel'))$('notebookPanel').classList.add('hidden');});
+function closeNotebook(){
+ $('notebookPanel').classList.add('hidden');
+ lastCookTick=performance.now();
+}
+$('notebookBtn').addEventListener('click',notebook);
+$('closeNotebook').addEventListener('click',closeNotebook);
+$('notebookPanel').addEventListener('click',e=>{if(e.target===$('notebookPanel'))closeNotebook();});
 window.addEventListener('keyup',e=>{if(e.code==='Space')onPeekUp();});
 window.addEventListener('blur',onPeekUp);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){onPeekUp();lastCookTick=performance.now();}});
 window.addEventListener('keydown',e=>{
- if(e.key==='Escape'){$('notebookPanel').classList.add('hidden');return;}
- if(e.code==='Space'&&game?.phase==='cooking'){if(!e.repeat)onPeekDown(e);e.preventDefault();return;}
+ if(e.key==='Escape'){closeNotebook();return;}
+ if(e.code==='Space'&&game?.phase==='cooking'){
+  e.preventDefault();
+  if(!$('notebookPanel').classList.contains('hidden'))return;
+  if(!e.repeat)onPeekDown(e);
+  return;
+ }
  if(reviewPending){if(e.key==='Enter')dismissReview();return;}
  if(!game||game.phase!=='playing'||!$('notebookPanel').classList.contains('hidden'))return;
  const n=Number(e.key);
