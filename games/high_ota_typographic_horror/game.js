@@ -663,7 +663,8 @@ function syncChapterVisuals(){
     mesh.visible=!c.records.archive;
   });
   if(state.doorFixed){
-    doorMesh.visible=false;doorWord.visible=false;
+    if(doorMesh)doorMesh.visible=false;
+    if(doorWord)doorWord.visible=false;
   }
   if(state.corridorFixed){
     corridorMesh.visible=false;corridorWord.visible=false;
