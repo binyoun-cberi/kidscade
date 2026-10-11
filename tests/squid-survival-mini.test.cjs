@@ -14,8 +14,8 @@ test('four real challenge modes have visible standalone pages and separate SDK i
     const html=fs.readFileSync(path.join(DIR,mode,'index.html'),'utf8');
     assert.match(html,new RegExp('data-game-id="'+map[mode]+'"'));
     assert.match(html,new RegExp('data-mode="'+mode+'"'));
-    assert.match(html,/mini-rules\.js\?v=1/);
-    assert.match(html,/mini\.js\?v=3/);
+    assert.match(html,/mini-rules\.js\?v=2/);
+    assert.match(html,/mini\.js\?v=4/);
     assert.match(html,/id="choices"/);
     assert.match(html,/id="scene"/);
   }
