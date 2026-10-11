@@ -168,6 +168,57 @@ const errors=[];
     return pose;
   };
 
+  // A fast face-specific CI path: inspect the actual GLB in Chrome/WebGL,
+  // including movement and all viewpoints, without running 250 unrelated cases.
+  if(process.env.KIDSCADE_CHIBI_FACE_ONLY==='1'){
+    report.version='chibi-v6.5-face-fit';
+    report.faceCases=[];
+    for(const fit of ['male','female']){
+      await evalPage("document.querySelector('[data-body-fit="+JSON.stringify(fit)+"]').click()");
+      for(const id of ['chibi_face_mask','chibi_face_sunglasses']){
+        await evalPage("(()=>{"+
+          "document.querySelector('[data-wardrobe-category=\\\"accessory\\\"]').click();"+
+          "const e=document.querySelector('[data-chibi-part="+JSON.stringify(id)+"]');"+
+          "if(!e)throw Error('Missing accessory input');"+
+          "e.checked=true;e.dispatchEvent(new Event('change',{bubbles:true}));"+
+          "})()");
+        const e=await evalPage('window.__kc3dAudit.equipmentAudit()');
+        assert.equal(e.fit,fit,'Accessory mounted to opposite body fit');
+        assert.deepEqual(e.visibleSlots.face,[id],'Face slot overlap');
+        assert.deepEqual((await evalPage('window.__kc3dAudit.bodyFitAudit()')).incompatible,[]);
+        for(const [clip,view,phase] of [
+          ['IDLE','front',0],['IDLE','threeQuarter',0],['IDLE','side',0],
+          ['WALK','front',.25],['RUN','threeQuarter',.75]
+        ]){
+          const tag='v65-face-'+fit+'-'+id;
+          const pose=await sample(clip,view,phase,tag);
+          assert.ok(pose.selectedParts.includes(id),'Face accessory vanished '+fit+'/'+id+'/'+clip);
+          const filename=tag+'-'+clip.toLowerCase()+'-'+view+'-'+Math.round(phase*100)+'.png';
+          report.faceCases.push({fit,id,clip,view,phase,filename});
+          if(clip==='IDLE'&&(['front','threeQuarter','side'].includes(view))){
+            const source=path.join(OUT,filename);
+            const m=await sharp(source).metadata();
+            const crop={
+              left:Math.floor(m.width*.29),
+              top:Math.floor(m.height*.045),
+              width:Math.floor(m.width*.42),
+              height:Math.floor(m.height*.55)
+            };
+            const key=fit+'-'+id+'-'+view;
+            const preview=await sharp(source).extract(crop).resize({width:380})
+              .jpeg({quality:82}).toBuffer();
+            fs.writeFileSync(path.join(OUT,'closeup-'+key+'.jpg'),preview);
+            console.log('CHIBI_FACE_V65_PREVIEW '+key+' '+preview.toString('base64'));
+          }
+        }
+      }
+    }
+    fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');
+    assert.equal(errors.length,0,'Browser exceptions: '+errors.join('; '));
+    console.log('CHIBI_FACE_AUDIT_SUCCESS '+JSON.stringify({frames:report.faceCases.length,fits:['male','female']}));
+    return;
+  }
+
   // Hard geometry ownership: verify body tabs are separate workspaces in a
   // real Chrome session and incompatible parts never enter UI or output.
   const hardFit=JSON.parse(fs.readFileSync(path.join(ROOT,'chibi/asset-manifest.json'),'utf8'))
