@@ -74,6 +74,7 @@
     return Object.freeze([
       door('gate-door',0,-30.04,0,'doorFixed'),
       door('final-door',0,-58.54,0,'finalFixed'),
+      door('rewritten-wall-door',-3.38,-52.0,Math.PI/2,'rewriteDoor'),
       door('office-door',-3.235,-46.70,Math.PI/2),
       door('archive-door',3.235,-46.70,-Math.PI/2),
       locker('locker-chase',2.79,-22.4,-Math.PI/2),

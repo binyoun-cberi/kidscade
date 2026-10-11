@@ -156,7 +156,7 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   assert.equal((await snap()).guidance.level,2);
   await screenshot('02-management-room.png','desktop');
   const initialCalligrams=(await snap()).visuals.calligrams;
-  assert.equal(initialCalligrams.length,8,'all eight world calligrams are integrated');
+  assert.equal(initialCalligrams.length,9,'all nine world calligrams are integrated, including the rewritten door');
   assert.equal(initialCalligrams.find(o=>o.id==='management-computer').visible,true);
   assert.equal(initialCalligrams.find(o=>o.id==='management-computer').screen,'기록 대기');
   assert.equal(initialCalligrams.find(o=>o.id==='gate-door').visible,false,
@@ -165,7 +165,7 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await screenshot('02c-computer-calligram.png','desktop');
   const wordWorld=(await snap()).visuals.surfaces;
   assert.deepEqual({wall:wordWorld.wall,floor:wordWorld.floor,ceiling:wordWorld.ceiling,door:wordWorld.door},
-    {wall:16,floor:4,ceiling:4,door:12},
+    {wall:18,floor:4,ceiling:4,door:12},
     'collidable world geometry must be readable as wall, floor, ceiling and door words');
   assert.ok(wordWorld.visible>=4,'surface text must be visible without obscuring the starting console');
   report.wordArchitecture=wordWorld;
@@ -255,6 +255,19 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   assert.equal(await evalPage("document.getElementById('message').classList.contains('learning')"),true,
     'spelling explanation uses a compact success toast, not the horror alert title');
   await screenshot('12a-corrected-syllables.png','desktop');
+  // Write a real yellow light onto the ceiling. The light must illuminate the space.
+  await moveUntil('z',-43.7,'explore',8);
+  assert.equal(await evalPage('window.OtaDebug.aimForVisualAudit(0,.45)'),true);
+  await interact();
+  assert.equal(await evalPage("document.getElementById('rewritePanel').classList.contains('closed')"),false,
+    'looking up at the ceiling opens the word-writing panel');
+  await evalPage("(()=>{document.getElementById('rewriteInput').value='조명';document.getElementById('rewriteForm').requestSubmit()})()");
+  const lighting=await snap();
+  assert.equal(lighting.rewrite.lightOn,true,'조명 really activates the ceiling light');
+  assert.ok(lighting.rewrite.lightIntensity>1,'yellow PointLight emits light');
+  assert.equal(await evalPage("document.getElementById('rewritePanel').classList.contains('closed')"),true);
+  await screenshot('12ab-rewritten-yellow-light.png','desktop');
+  await evalPage('window.OtaDebug.aimForVisualAudit(0,0)');
   await moveUntil('z',-45.6,'explore',12);
   await moveUntil('x',-5.4,'explore',12);
   await solveCore('core-1');
@@ -320,6 +333,36 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await solveCore('core-4');
   assert.equal((await snap()).literacy.coreDone,5,'all five reviewed spellings are required');
   await screenshot('16b-all-core-corrected.png','desktop');
+  // Author a new door from solid wall, then cross the newly walkable geometry.
+  await moveUntil('x',-1.42,'explore',9);
+  await moveUntil('z',-52.0,'explore',8);
+  await evalPage('window.OtaDebug.aimForVisualAudit(Math.PI/2,0)');
+  await interact();
+  assert.equal(await evalPage("document.getElementById('rewritePanel').dataset.site"),'wall');
+  await evalPage("(()=>{document.getElementById('rewriteInput').value='문';document.getElementById('rewriteForm').requestSubmit()})()");
+  await sleep(240); // Wait for the next Three.js frame to materialize and unfold the hinged word door.
+  const openedWall=(await snap()).rewrite;
+  assert.equal(openedWall.doorMade,true,'writing 문 creates an actual doorway');
+  assert.equal(openedWall.doorOpen,true,'new doorway is traversable');
+  assert.equal(openedWall.wallPlug,false,'solid wall mesh disappears, not just the label');
+  assert.equal((await snap()).visuals.calligrams.find(o=>o.id==='rewritten-wall-door').visible,true,
+    'new 3D door calligram materializes');
+  await screenshot('16c-new-door-from-wall.png','desktop');
+  await evalPage('window.OtaDebug.aimForVisualAudit(0,0)');
+  await moveUntil('x',-4.90,'explore',10);
+  assert.ok((await snap()).player.x< -4.45,'player actually walks through the former solid wall');
+  await moveUntil('x',-1.42,'explore',10);
+  await evalPage('window.OtaDebug.aimForVisualAudit(Math.PI/2,0)');
+  await interact();
+  await evalPage("document.getElementById('rewriteToggle').click()");
+  assert.equal((await snap()).rewrite.doorOpen,false,'rewritten door can close and blocks walking');
+  const blockedPortal=await evalPage('window.OtaRewrite.canMove(window.OtaDebug.snapshot().rewrite,-3.38,-52,()=>true)');
+  assert.equal(blockedPortal,false);
+  await interact();
+  await evalPage("document.getElementById('rewriteToggle').click()");
+  assert.equal((await snap()).rewrite.doorOpen,true,'the same door can reopen');
+  await screenshot('16d-rewritten-door-toggle.png','desktop');
+  await evalPage('window.OtaDebug.aimForVisualAudit(0,0)');
   await moveUntil('x',0,'explore',9);
   await moveUntil('z',-57.2,'explore',18);
   const finalBlock=await evalPage('window.OtaChapter3.canMove({stage:"explore"},0,-58.65)');
@@ -329,7 +372,7 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await screenshot('17-final-record-puzzle.png','desktop');
   await evalPage("document.querySelector('[data-word=기억]').click()");
   await ensureStage('final','central room opened');
-  await sleep(130);
+  await sleep(420);
   assert.ok((await snap()).visuals.calligrams.find(o=>o.id==='final-door').visible,
     'final repaired name creates the second calligram gate');
   await moveUntil('z',-64.1,'final',15);

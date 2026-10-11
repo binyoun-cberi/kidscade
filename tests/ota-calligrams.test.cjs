@@ -10,9 +10,9 @@ const S=require('../games/high_ota_typographic_horror/surfaces.js');
 
 test('three distinct recognizable object shapes are constructed from Korean words',()=>{
   const models=CG.collection(),ids=models.map(o=>o.id);
-  assert.equal(models.length,8);
+  assert.equal(models.length,9);
   assert.equal(new Set(ids).size,8);
-  assert.equal(models.filter(o=>o.type==='door').length,4);
+  assert.equal(models.filter(o=>o.type==='door').length,5);
   assert.equal(models.filter(o=>o.type==='locker').length,3);
   assert.equal(models.filter(o=>o.type==='computer').length,1);
   for(const model of models){

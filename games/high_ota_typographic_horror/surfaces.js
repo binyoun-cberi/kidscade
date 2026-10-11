@@ -31,7 +31,12 @@
   for(const side of [-1,1]){
     const x=side*3.255;
     wallX((side<0?'left':'right')+'-entrance',x,-40.9,6.7);
-    wallX((side<0?'left':'right')+'-lower',x,-58.55,18.1);
+    if(side<0){
+      // Keep the wall readable on either side of a physically writable aperture.
+      wallX('left-lower-near',x,-50.0,1.1);
+      wallX('rewrite-wall-panel',x,-52.0,2.28);
+      wallX('left-lower-far',x,-60.36,14.38);
+    }else wallX('right-lower',x,-58.55,18.1);
     wallX((side<0?'office':'archive')+'-outside',side*15.385,-47.2,16.4);
     wallZ((side<0?'office':'archive')+'-front',side*9.38,-38.97,11.8);
     wallZ((side<0?'office':'archive')+'-back',side*9.38,-55.42,11.8);
