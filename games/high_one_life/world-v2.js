@@ -88,7 +88,7 @@
     const seed=life.seed,ct=life.country[0];
     const pair=NAMES[ct]||DEFAULT_NAMES;
     const row=life.gender==='여자'?pair[0]:pair[1];
-    const historic=life.country[0]==='대한민국'&&life.birthYear<1950;
+    const historic=life.country[0]==='대한민국'&&life.birthYear<1970;
     const namesHistoric=life.gender==='여자'
       ?['정숙','영희','순덕','옥순','명자','복순']
       :['영수','영길','춘식','덕수','기석','병철'];
