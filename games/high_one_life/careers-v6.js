@@ -16,7 +16,7 @@ civic:['지역 기관','공공 문제 해결','주민과 이웃',.91,'사회복�
 service:['서비스 일터','현장 서비스','이용객과 동료',.88,'버스 운전사,물류 관리사,호텔 안내원,요리사,카페 바리스타,여행 안내사,건물 관리사']
 };
 const tracks=Object.fromEntries(Object.entries(data).map(([id,v])=>[id,Object.freeze({id,place:v[0],craft:v[1],people:v[2],income:v[3],jobs:v[4].split(',')})]));
-const scenes=Object.freeze(['home','classroom','campus','library','laboratory','clinic','hospital','rehab','computers','workshop','factory','construction','farm','orchard','forest','harbor','stage','gallery','studio','stadium','gym','market','bakery','restaurant','cafe','townhall','street','airport','temple','community','retirement','shelter']);
+const scenes=Object.freeze(['home','classroom','campus','library','laboratory','clinic','hospital','rehab','computers','workshop','hotel','construction','farm','orchard','forest','harbor','stage','gallery','studio','stadium','gym','market','bakery','restaurant','cafe','townhall','street','airport','temple','community','retirement','shelter']);
 const mainScene={education:'classroom',science:'laboratory',health:'clinic',technology:'computers',trades:'workshop',agriculture:'farm',arts:'stage',media:'studio',sports:'stadium',business:'market',civic:'townhall',service:'cafe'};
 return Object.freeze({tracks,scenes,mainScene});
 });
