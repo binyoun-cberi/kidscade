@@ -1237,9 +1237,14 @@ function look(dx,dy) {
 }
 function animate(now) {
   requestAnimationFrame(animate);
-  const dt=Math.min(.1,Math.max(0,(now-lastFrame)/1000||0));lastFrame=now;
-  if(started && !failed && document.visibilityState!=='hidden' && overlays.fix.classList.contains('closed')&&overlays.correction.classList.contains('closed')&&overlays.rewrite.classList.contains('closed'))update(dt);
-  else setCamera();
+  const realDt=Math.min(.35,Math.max(0,(now-lastFrame)/1000||0));
+  const dt=Math.min(.1,realDt);lastFrame=now;
+  if(started && !failed && document.visibilityState!=='hidden' && overlays.fix.classList.contains('closed')&&overlays.correction.classList.contains('closed')&&overlays.rewrite.classList.contains('closed')){
+    // Hiding is a real-time wait; weak tablets must not require 20 seconds for 4.5 seconds of cover.
+    // Chase movement remains bounded to short delta steps to prevent collision tunnelling.
+    if(state.stage==='hiding')state.hidingSeconds+=Math.max(0,realDt-dt);
+    update(dt);
+  }else setCamera();
   renderer.render(scene,camera);
 }
 function resize() {
