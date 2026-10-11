@@ -407,7 +407,10 @@ function updateRewriteWorld(t){
   rewriteLightPool.material.opacity=rewrite.lightOn?.64+.05*Math.sin(t*2.5):0;
   rewriteGlow.material.opacity=rewrite.lightOn?.88+.05*Math.sin(t*3.4):0;
   scene.children.forEach(obj=>{
-    if(obj.userData?.rewriteRay)obj.visible=rewrite.lightOn;
+    if(!obj.userData?.rewriteRay)return;
+    // In first person even a small floating 빛 syllable fills the viewport up close.
+    const distance=R.distance(player,obj.position);
+    obj.visible=rewrite.lightOn&&distance>1.65&&distance<8;
   });
   // Text floors and walls actually respond to the yellow ceiling light.
   for(const {mesh,spec} of architectureMeshes){
