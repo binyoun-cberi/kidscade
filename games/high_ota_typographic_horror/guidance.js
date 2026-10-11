@@ -45,7 +45,7 @@
     hub:[
       '사무실과 서고에는 서로 다른 기록이 있습니다.',
       '왼쪽의 「사무실」에서 기록 A, 오른쪽의 「서고」에서 기록 B를 찾으세요.',
-      '두 기록은 순서와 관계없이 얻을 수 있습니다. 둘 다 찾으면 중앙 기록실이 열립니다.'
+      '교정자의 글자가 가까워지면 뛰지 말고 시야를 끊으세요. 사무실의 「숨기」에서 은신할 수 있습니다.'
     ],
     office:[
       '사무실에는 이름을 잘못 붙인 사물이 있습니다.',
@@ -83,8 +83,8 @@
     hiding:'잘했어요. 움직이지 말고 발소리가 멀어질 때까지 기다리세요.',
     distortion:'사라진 길을 되찾으세요. 붉은 글자의 이름이 틀렸습니다.',
     door:'빨간 「뒤」가 보이면 뛰지 마세요. 걷거나 멈추세요.',
-    explore:'새 구역입니다. 왼쪽 사무실·오른쪽 서고에서 기록 두 개를 찾으세요.',
-    final:'중앙 기록실이 열렸습니다. 안쪽의 「나」를 향해 이동하세요.'
+    explore:'두 기록을 찾아야 합니다. 거대한 교정자는 소리와 시선을 따라옵니다.',
+    final:'교정자가 뒤따라옵니다. 안쪽의 「나」로 달리세요.'
   });
   function scope(s,p){
     if(s.stage==='final')return 'final';
@@ -101,6 +101,10 @@
   function hint(s,p,level){const h=hints(s,p);return h[Math.min(Math.max(0,(level|0)-1),h.length-1)];}
   function cue(stage){return firstCues[stage]||null;}
   function failure(s){
+    if(s.lossReason==='corrector')return {
+      title:'교정자가 당신의 이름을 찾아냈습니다.',
+      detail:'붉은 단어가 가까워지면 시선을 끊고 은신처로 이동하세요. 마지막 기록실에서는 「나」까지 달려야 합니다.'
+    };
     if(s.lossReason==='watcher')return {
       title:'오래 바라보면 따라옵니다.',
       detail:'「사람」을 짧게 읽고 시선을 돌리세요. 세 번 반복하면 기록을 해독할 수 있습니다.'
