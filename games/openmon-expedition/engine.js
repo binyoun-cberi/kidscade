@@ -2,16 +2,36 @@
 "use strict";
 const DB=global.OPENMON_DEX;
 if(!DB?.combat||!DB.encounters)throw Error("Openmon: load monsters.js, roster.js, combat.js first");
-const WIDTH=84,HEIGHT=26,START={x:8,y:13};
+const WIDTH=225,HEIGHT=26,START={x:8,y:13};
+// Preserve all existing coordinates (0–83), so legacy saves remain valid.
 const ZONES=[
- {key:"town",name:"여울마을",left:0,right:17},
- {key:"meadow",name:"이슬초원",left:18,right:41},
- {key:"forest",name:"가지숲",left:42,right:63},
- {key:"cave",name:"잔돌동굴",left:64,right:83}
+ {key:"town",name:"여울마을",left:0,right:17,theme:"처음 만나는 연구 마을",hint:"연구소에서 키즈몬을 회복하고 첫 탐험을 준비해."},
+ {key:"meadow",name:"이슬초원",left:18,right:41,theme:"씨앗·관성·부력",hint:"연한 풀숲에서 작은 과학 키즈몬을 만나. 첫 만남은 안전하게 진행돼."},
+ {key:"forest",name:"가지숲",left:42,right:63,theme:"생태·진화·야행성",hint:"숲속 비밀 공터에서 특별한 분기견을 만나 보자."},
+ {key:"cave",name:"잔돌동굴",left:64,right:83,theme:"지층·자석·어둠",hint:"바위와 거친 땅에서 땅·어둠 타입을 연구해."},
+ {key:"crystalTown",name:"수정마을",left:84,right:103,theme:"광물·전류 연구 기지",hint:"전기 회로를 연구하는 마을. 휴식과 빠른 이동이 가능해."},
+ {key:"powerPlant",name:"번개발전소",left:104,right:129,theme:"전류·자력·열에너지",hint:"충전된 바닥에서 전기·불 키즈몬이 출현해."},
+ {key:"harborTown",name:"해류항",left:130,right:148,theme:"해양 탐사 항구",hint:"바다 연구원이 해류와 부력을 설명해 줘."},
+ {key:"tidal",name:"물결갯벌",left:149,right:173,theme:"물·부력·바람",hint:"얕은 물웅덩이를 피해 걸으며 물·바람 키즈몬을 만나."},
+ {key:"snowTown",name:"설빛마을",left:174,right:194,theme:"눈과 날씨 연구소",hint:"기후 연구원에게 눈과 온도에 대해 물어봐."},
+ {key:"snowfield",name:"서리고원",left:195,right:224,theme:"빙점·기후·정신",hint:"눈밭에서 얼음과 정신 타입을 연구해."}
 ];
+const VILLAGES=Object.freeze([
+ {key:"town",name:"여울마을",x:13,y:13,npcX:13,npcY:10,npc:"연구원",lesson:"키즈몬 첫 수집과 상성"},
+ {key:"crystalTown",name:"수정마을",x:96,y:12,npcX:96,npcY:10,npc:"전류 연구원",lesson:"전류와 자력, 반격"},
+ {key:"harborTown",name:"해류항",x:143,y:12,npcX:143,npcY:10,npc:"해양 연구원",lesson:"부력과 물의 흐름"},
+ {key:"snowTown",name:"설빛마을",x:190,y:12,npcX:190,npcY:10,npc:"기후 연구원",lesson:"빙점과 날씨"}
+]);
 const byId=new Map(DB.species.map(s=>[s.id,s]));
 const h=(x,y)=>{let n=Math.imul(x+13,374761393)+Math.imul(y+19,668265263);n=Math.imul(n^(n>>>13),1274126177);return (n^(n>>>16))>>>0;};
-function zoneAt(x){return x<18?"town":x<42?"meadow":x<64?"forest":"cave"}
+function zoneAt(x){return ZONES.find(z=>x<=z.right)?.key||"snowfield"}
+function villageFor(x){return VILLAGES.find(v=>zoneAt(x)===v.key)||null}
+function visitedVillages(save){return VILLAGES.filter(v=>v.key==="town"||save.flags?.visitedZones?.includes(v.key))}
+function fastTravel(save,key){
+ const target=visitedVillages(save).find(v=>v.key===key);
+ if(!target||!canMove(target.x,target.y))return false;
+ save.pos={x:target.x,y:target.y};save.facing="down";save.grassSteps=0;return true;
+}
 function terrain(x,y){
  if(x<0||x>=WIDTH||y<0||y>=HEIGHT)return "wall";
  if(y<2||y>=HEIGHT-2)return "wall";
@@ -23,7 +43,29 @@ function terrain(x,y){
  }
  // A natural grassy bottleneck guarantees the first encounter on the main road.
  if(x>=20&&x<=22&&y>=11&&y<=13)return "grass";
+ const zone=zoneAt(x);
+ if(["crystalTown","harborTown","snowTown"].includes(zone)){
+  const base=zone==="crystalTown"?89:zone==="harborTown"?135:180;
+  if(x>=base&&x<=base+7&&y>=5&&y<=9)return "building";
+  if(y>=11&&y<=13)return "path";
+  return "town";
+ }
  if(y>=11&&y<=13)return "path";
+ if(zone==="powerPlant"){
+  if(x===115&&y===6)return "conductor";
+  if(h(x,y)%18===3&&y!==10)return "tower";
+  return h(x,y)%10<7?"charged":"field";
+ }
+ if(zone==="tidal"){
+  if(x===160&&y===7)return "clearing";
+  if(h(x,y)%13===4&&y!==10)return "water";
+  return h(x,y)%10<7?"wetland":"field";
+ }
+ if(zone==="snowfield"){
+  if(x===209&&y===7)return "crystal";
+  if(h(x,y)%14===5&&y!==10)return "iceberg";
+  return h(x,y)%10<7?"snow":"field";
+ }
  if(zoneAt(x)==="cave"){
   if(x===76&&y===5)return "crystal";
   if(h(x,y)%13===1 && y!==10)return "rock";
@@ -34,7 +76,7 @@ function terrain(x,y){
  const chance=zoneAt(x)==="forest"?76:61;
  return h(x,y)%100<chance?"grass":"field";
 }
-function canMove(x,y){return !["wall","tree","building","rock"].includes(terrain(x,y))}
+function canMove(x,y){return !["wall","tree","building","rock","tower","water","iceberg"].includes(terrain(x,y))}
 function activeCreature(save){return save.party[save.active]||save.party.find(p=>p.hp>0)||null}
 const IV_KEYS=DB.combat.STAT_KEYS,NATURES=["균형","용감","신중","쾌속","집중"];
 function genesFromUid(uid){
@@ -72,7 +114,7 @@ function makeCreature(spriteId,level,rand=Math.random){
 function createNew(starter){
  if(!["set1_r02_c02","set1_r03_c02","set1_r04_c02"].includes(starter))throw Error("invalid starter");
  return {version:1,pos:{...START},facing:"down",party:[makeCreature(starter,5)],box:[],active:0,
-  items:{ball:7,potion:3,life:1,energy:0,climate:0,thought:0},coins:120,flags:{shibuSeen:false,shibuCaught:false,shibuLastStep:-100,firstRoadEncounter:false,researchStarters:[]},
+  items:{ball:7,potion:3,life:1,energy:0,climate:0,thought:0},coins:120,flags:{shibuSeen:false,shibuCaught:false,shibuLastStep:-100,firstRoadEncounter:false,researchStarters:[],visitedZones:["town"]},
   collection:{[starter]:true},seen:{[starter]:true},steps:0,grassSteps:0,wins:0,catches:0,
   encounters:0,log:["연구소에서 첫 키즈몬을 받았어!"],createdAt:Date.now()};
 }
@@ -97,7 +139,8 @@ function validateSave(raw){
   shibuSeen:!!raw.flags?.shibuSeen,shibuCaught:!!raw.flags?.shibuCaught,
   shibuLastStep:Number.isFinite(raw.flags?.shibuLastStep)?Math.floor(raw.flags.shibuLastStep):-100,
   firstRoadEncounter:!!raw.flags?.firstRoadEncounter,
-  researchStarters:Array.isArray(raw.flags?.researchStarters)?raw.flags.researchStarters.filter(id=>["set1_r02_c02","set1_r03_c02","set1_r04_c02"].includes(id)).slice(0,2):[]
+  researchStarters:Array.isArray(raw.flags?.researchStarters)?raw.flags.researchStarters.filter(id=>["set1_r02_c02","set1_r03_c02","set1_r04_c02"].includes(id)).slice(0,2):[],
+  visitedZones:[...new Set(["town",...(Array.isArray(raw.flags?.visitedZones)?raw.flags.visitedZones:[]),zoneAt(raw.pos.x)])].filter(k=>ZONES.some(z=>z.key===k))
  };
  raw.collection=raw.collection&&typeof raw.collection==="object"?raw.collection:{};
  raw.seen=raw.seen&&typeof raw.seen==="object"?raw.seen:{};
@@ -135,11 +178,11 @@ function pickEncounter(zone,rand=Math.random,save=null){
  return makeCreature(pool[index],level,rand);
 }
 function shouldMeet(save,tile,rand=Math.random){
- if(!["grass","rough","cave"].includes(tile))return false;
+ if(!["grass","rough","cave","charged","wetland","snow"].includes(tile))return false;
  save.grassSteps++;
  // The first encounter is assured by the fifth hazard tile: no aimless searching.
  const guaranteed=save.encounters===0&&save.grassSteps>=5;
- const chance=tile==="grass"?.23:.13;
+ const chance=tile==="grass"?.23:tile==="wetland"?.22:tile==="charged"?.18:tile==="snow"?.16:.13;
  return guaranteed||save.grassSteps>=11||rand()<chance;
 }
 function move(save,dx,dy,rand=Math.random){
@@ -149,6 +192,11 @@ function move(save,dx,dy,rand=Math.random){
  if(!canMove(x,y))return {moved:false,reason:terrain(x,y)};
  save.pos={x,y};save.steps++;
  const tile=terrain(x,y),zone=zoneAt(x);
+ save.flags.visitedZones??=["town"];
+ const firstVisit=!save.flags.visitedZones.includes(zone);
+ if(firstVisit)save.flags.visitedZones.push(zone);
+ const welcome=firstVisit&&VILLAGES.some(v=>v.key===zone);
+ if(welcome){save.items.ball=Math.min(999,save.items.ball+2);save.log.push(ZONES.find(z=>z.key===zone).name+" 발견! 키즈볼 2개 선물.");}
  let encounter=null;
  const firstRoad=zone==="meadow"&&x>=20&&save.encounters===0&&!save.flags.firstRoadEncounter;
  if(x===56&&y===7&&save.steps-save.flags.shibuLastStep>=24){
@@ -163,7 +211,7 @@ function move(save,dx,dy,rand=Math.random){
   encounter=pickEncounter(zone,rand,save);
  }
  if(encounter){save.encounters++;save.grassSteps=0;save.seen[encounter.id]=true}
- return {moved:true,zone,tile,encounter,firstRoad:!!(firstRoad&&encounter)};
+ return {moved:true,zone,tile,encounter,firstVisit,welcome,firstRoad:!!(firstRoad&&encounter)};
 }
 function starterChoices(){return ["set1_r02_c02","set1_r03_c02","set1_r04_c02"]}
 function researchStarterOptions(save){
@@ -290,5 +338,5 @@ function useEvolutionStone(save,id,stone){
  if(move)p.lastEvolutionTechnique=move;
  save.collection[p.id]=true;save.seen[p.id]=true;return true;
 }
-global.OPENMON_EXPEDITION_ENGINE={STONES,genesFromUid,normalizeGenes,stoneEvolutionOptions,useEvolutionStone,WIDTH,HEIGHT,START,ZONES,zoneAt,terrain,canMove,makeCreature,createNew,validateSave,grantTraining,pickEncounter,unlockedPool,shouldMeet,move,healAll,activeCreature,xpGain,addCaptured,levelRewards,maybeEvolve,researchStarterOptions,claimResearchStarter,withdrawFromBox,retaliationDamage};
+global.OPENMON_EXPEDITION_ENGINE={VILLAGES,villageFor,visitedVillages,fastTravel,STONES,genesFromUid,normalizeGenes,stoneEvolutionOptions,useEvolutionStone,WIDTH,HEIGHT,START,ZONES,zoneAt,terrain,canMove,makeCreature,createNew,validateSave,grantTraining,pickEncounter,unlockedPool,shouldMeet,move,healAll,activeCreature,xpGain,addCaptured,levelRewards,maybeEvolve,researchStarterOptions,claimResearchStarter,withdrawFromBox,retaliationDamage};
 })(window);
