@@ -76,6 +76,7 @@
       if(loops >= 19) {
         clearInterval(roulette); roulette = null;
         paint(life.country);
+        if(life.country[0]==='대한민국' && life.year<1945)$('birthFlag').textContent='📜';
         $('birthDetail').textContent = life.gender + ' · ' + life.familyLevel + ' · ' + life.year + '년 출생';
         paintCertificate();
         $('lifeStartBtn').classList.remove('hidden');
@@ -149,7 +150,7 @@
     ].join(' · ');
     const sceneName=Pixel.paint($('lifeScene'),life);
     const sceneTitle=Pixel.names?.[sceneName]||sceneName;
-    $('sceneLabel').textContent=life.year+'년 · '+life.country[0]+' '+p.city+' ('+p.settlement+') · '+sceneTitle+'에서 보내는 하루';
+    $('sceneLabel').textContent=life.year+'년 · '+History.place(life)+' '+p.city+' ('+p.settlement+') · '+(life.birthYear===2026?sceneTitle+'에서 보내는 하루':History.period(life)+'의 생활을 상상한 장면');
   }
   function paintArc() {
     if(!life)return;
@@ -452,7 +453,7 @@
     if (!life) return;
     paintLifeRecord();
     paintArc();
-    $('placeFlag').textContent=life.country[1];
+    $('placeFlag').textContent=life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1];
     $('placeName').textContent=History.place(life);
     $('currentYear').textContent=life.year+'년';
     $('historyContext').textContent=life.birthYear===2026
@@ -503,7 +504,7 @@
     const choiceLog=life.log.filter(e=>e.kind==='decision');
     const count=rememberLife();
     $('endYears').textContent=life.birthYear+' — '+life.year;
-    $('endCountry').textContent=life.country[1]+' '+History.place(life)+' · '+life.profile.name+' ('+life.profile.city+')';
+    $('endCountry').textContent=(life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1])+' '+History.place(life)+' · '+life.profile.name+' ('+life.profile.city+')';
     $('endNetWorth').textContent=formatCredits(life.money.netWorth);
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=life.career;
@@ -584,8 +585,8 @@
     storyTab='';peerAgeChoice=0;
     peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
     $('birthCertificate').classList.add('hidden');
-    $('birthFlag').textContent=life.country[1];
-    $('birthCountry').textContent=life.country[0];
+    $('birthFlag').textContent=life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1];
+    $('birthCountry').textContent=History.place(life);
     $('birthDetail').textContent=life.gender+' · '+life.familyLevel+' · '+life.birthYear+'년 출생';
     $('lifeStartBtn').classList.remove('hidden');
     paintCertificate();
