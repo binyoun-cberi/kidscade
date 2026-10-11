@@ -218,7 +218,14 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await screenshot('12-hub.png','desktop');
   await moveUntil('z',-40.8,'explore',9);
   await solveCore('core-0');
-  assert.ok((await snap()).visuals.repairs>0,'correct answer triggers visible 3D reassembly');
+  const correctedView=await snap();
+  assert.ok(correctedView.visuals.repairs>0,'correct answer triggers visible 3D reassembly');
+  for(const sign of correctedView.visuals.wayfinding){
+    if(['← 사무실','서고 →'].includes(sign.word))
+      assert.equal(sign.visible,false,'oversized nearby hub heading must not obscure the correction');
+  }
+  assert.equal(await evalPage("document.getElementById('message').classList.contains('learning')"),true,
+    'spelling explanation uses a compact success toast, not the horror alert title');
   await screenshot('12a-corrected-syllables.png','desktop');
   await moveUntil('z',-45.6,'explore',12);
   await moveUntil('x',-5.4,'explore',12);
