@@ -4,7 +4,7 @@
     {
       "id": "squid_survival",
       "addedAt": "2026-10-10T22:30:00+09:00",
-      "title": "꼴뚜기 게임: 서바이벌",
+      "title": "꼴뚜기 게임",
       "href": "games/squid-survival/index.html",
       "category": "trivia",
       "age": "low",
@@ -13,39 +13,13 @@
         "high"
       ],
       "icon": "🏆",
-      "description": "6개의 미니게임을 차례로 통과하는 서바이벌 대회! 달고나 → 기억의 다리 → 멈춰! 움직여! → 줄다리기 → 구슬 승부 → 결승전. 3초 시범 뒤 시작하며 한 라운드라도 실패하면 탈락, 여섯 게임을 모두 깨면 최종 생존! 모든 게임을 따로 연습할 수도 있어요.",
-      "subject": "thinking",
-      "genre": "puzzle",
-      "difficulty": "medium",
-      "sessionMinutes": 12,
-      "players": [
-        "solo"
-      ],
-      "input": [
-        "touch",
-        "keyboard"
-      ],
-      "qualityStatus": "standard",
-      "classroom": true
-    },
-    {
-      "id": "squid_survival_versus",
-      "addedAt": "2026-10-11T11:00:00+09:00",
-      "title": "꼴뚜기 게임",
-      "href": "games/squid-survival/versus/index.html",
-      "category": "trivia",
-      "age": "high",
-      "ages": [
-        "low",
-        "high"
-      ],
-      "icon": "⚔️",
-      "description": "아이폰·태블릿·PC 모두 한 명씩 화면 전체로 도전하는 패스 앤 플레이! 6라운드 달고나·기억의 다리·신호등·줄다리기·구슬·결승전. 1·3·5라운드 1P 선공, 2·4·6라운드 2P 선공. 두 사람 모두 끝나야 성적 공개. 같은 난이도지만 서로 다른 문제로 공정하게 비교하고, 승리 1점·무승부 0.5점·최종 동점 연장전으로 우승 결정.",
+      "description": "6개 관문을 통과하는 꼴뚜기 게임! 혼자 하기에서는 달고나·기억의 다리·신호등·줄다리기·구슬 승부·결승전을 연속으로 도전하고, 둘이서 하기에서는 아이폰·태블릿·PC 한 기기를 번갈아 사용하며 6라운드 점수로 승부를 겨뤄요. 하나의 게임 화면에서 모드를 선택하세요.",
       "subject": "thinking",
       "genre": "puzzle",
       "difficulty": "medium",
       "sessionMinutes": 15,
       "players": [
+        "solo",
         "local2"
       ],
       "input": [
