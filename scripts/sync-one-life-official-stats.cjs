@@ -41,7 +41,14 @@ async function collect(){
   const iso3To2=new Map(metadata.filter(x=>x.id&&x.iso2Code&&x.iso2Code.length===2).map(x=>[x.id,x.iso2Code]));
   const rows=await Promise.all(Object.entries(SERIES).map(async ([key,desc])=>{
     const url=ENDPOINT+'/country/all/indicator/'+desc.code+'?format=json&date=2019:2026&per_page=20000';
-    return [key,await download(url)];
+    try{return [key,await download(url)];}
+    catch(error){
+      if(key==='healthCoverage'){
+        console.warn('WHO UHC indicator temporarily unavailable; no values will be inferred:',error.message);
+        return [key,[]];
+      }
+      throw error;
+    }
   }));
   const indexes={};
   for(const [key,records] of rows){
