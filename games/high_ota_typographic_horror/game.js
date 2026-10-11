@@ -3,22 +3,27 @@ import * as THREE from 'three';
 const R = window.OtaRules;
 const C3 = window.OtaChapter3;
 const G = window.OtaGuide;
-if (!R || !C3 || !G) throw new Error('Ota chapter or guidance rules are missing');
+const X = window.OtaCorrector;
+if (!R || !C3 || !G || !X) throw new Error('Ota chapter or guidance rules are missing');
 const el = id => document.getElementById(id);
 const canvas = el('scene');
 const hud = { objective:el('objective'), stage:el('stage'), prompt:el('prompt'),
   message:el('message'), danger:el('danger'), noise:el('static'), action:el('action'),
   echo:el('echoWarning'), echoFill:el('echoFill'), echoText:el('echoText'),
   gaze:el('gazeWarning'), gazeFill:el('gazeFill'), gazeText:el('gazeText'),
-  clue:el('clueStatus'), records:el('recordStatus'),help:el('help'),hintBox:el('hintBox') };
+  clue:el('clueStatus'), records:el('recordStatus'),help:el('help'),hintBox:el('hintBox'),
+  corrector:el('correctorWarning'),correctorText:el('correctorText') };
 const overlays = { intro:el('intro'), fix:el('fixPanel'), ending:el('ending') };
 const state = R.initialState();
+const corrector=X.create();
+let soundPulse=0, lastCorrectorSound=0;
 const player = { x:0, z:4.8, yaw:0, pitch:0, moving:false };
 const keys = new Set();
 let started = false, muted = false, failed = false, elapsed = 0, lastFrame = 0;
 let messageEnd = 0, stepsUntil = 0, monsterReveal = false, lookPointer = null;
 let joystickPointer = null, joystick = { x:0, y:0 }, mobileRun = false;
 let corridorMesh, corridorWord, doorMesh, doorWord, personWord, monsterWord, enemyGroup;
+const correctorGlyphs=[];
 let echoMark, echoWasActive=false; const shiftingWords=[];
 let currentInteraction = null;
 const chapterVisual = {officeSeal:null,officeWord:null,finalSeal:null,finalWord:null,
@@ -177,15 +182,33 @@ function scenery() {
   hauntedLabel('문이었던 것','#bba8b0','벽이었던 것',-2.70,1.82,-29.2,0,Math.PI/2,1.5,.55);
   hauntedLabel('벽이 아니다','#b5a5a9','벽이다',2.70,1.82,-29.2,0,-Math.PI/2,1.65,.55);
   buildChapterThreeRooms();
-  enemyGroup = new THREE.Group(); scene.add(enemyGroup);
-  [['사람','#9499a4',0,2.15,1.0,.43],['무언가','#f16b7c',0,1.58,1.85,.75],
-    ['사람사람','#ae3a52',-.28,1.04,1.8,.50],['무언가','#ca4e62',.11,.58,1.55,.52],
-    ['발소리','#b2a5ac',0,.17,1.15,.42]].forEach(v=>{
-    const m = new THREE.Mesh(unitPlane,material(v[0],v[1]));
-    m.position.set(v[2],v[3],0);m.scale.set(v[4],v[5],1);
-    enemyGroup.add(m);
+  enemyGroup = new THREE.Group();scene.add(enemyGroup);
+  // No ordinary monster model: the five-metre silhouette is entirely text.
+  const body=[
+    ['사람','#bbafb8',0,4.68,0,1.26,.65],
+    ['없음','#854250',-.48,4.23,.05,1.20,.60],
+    ['누구','#6e5661',.52,4.22,.03,1.17,.54],
+    ['무언가','#f06478',0,3.65,.11,2.78,.91],
+    ['이름','#95838d',-.68,2.99,.1,1.42,.73],
+    ['삭제됨','#d34159',.63,2.88,.1,1.48,.69],
+    ['기억','#73636e',0,2.33,.11,2.04,.62],
+    ['사라져','#9d4659',-1.56,3.18,-.08,1.62,.57],
+    ['나를 봐','#8c5762',1.60,3.22,-.07,1.62,.57],
+    ['뒤','#a15c69',-1.93,2.48,0,.82,.52],
+    ['기록','#9b4452',1.91,2.43,0,1.20,.58],
+    ['이름 없음','#8f7781',-.59,1.77,.05,1.48,.59],
+    ['사람','#9d6476',.61,1.70,.05,1.33,.56],
+    ['ㄴㅏ','#7b4154',-.70,1.05,0,1.12,.52],
+    ['없음','#a04b61',.72,1.03,0,1.20,.56],
+    ['삭제','#783949',-.70,.48,0,.98,.46],
+    ['나','#cd4d62',.71,.47,0,.78,.43]
+  ];
+  body.forEach(([word,color,x,y,z,w,h])=>{
+    const m=new THREE.Mesh(unitPlane,material(word,color));
+    m.position.set(x,y,z);m.scale.set(w,h,1);m.renderOrder=2;
+    m.userData={word,color,x,y};enemyGroup.add(m);correctorGlyphs.push(m);
   });
-  enemyGroup.visible = false;
+  enemyGroup.visible=false;
 }
 
 function buildChapterThreeRooms(){
@@ -264,6 +287,10 @@ function buildChapterThreeRooms(){
     label(j%2?'이름':'기억','#b6a8be',-2.0+j*.78,.88,-65.35,0,0,.74,.5);
   }
   hauntedLabel('나','#eee5e3','없음',0,1.45,-65.5,0,0,1.2,1);
+  hauntedLabel('내 이름','#aaa0a8','이름 없음',-1.0,1.89,-60.7,0,0,1.48,.58);
+  hauntedLabel('기억','#ab979f','삭제',1.0,2.3,-62.1,0,0,1.2,.53);
+  const shelter=label('숨기','#c7b4a3',X.SHELTER.x,1.62,X.SHELTER.z,0,0,1.4,.65);
+  shelter.lookAt(0,1.6,-48);
   chapterVisual.anomaly=label('의자','#a3b1be',-7.2,1.38,-41,0,0,1.43,.66);
 }
 function syncChapterVisuals(){
@@ -303,7 +330,8 @@ function respawnAtCheckpoint(){
   const data=loadChapterCheckpoint();
   if(!C3.restore(state,data))return false;
   Object.assign(player,{x:C3.START.x,z:C3.START.z,yaw:0,pitch:0,moving:false});
-  failed=false;overlays.ending.classList.add('closed');overlays.fix.classList.add('closed');
+  failed=false;X.reset(corrector);soundPulse=0;
+  overlays.ending.classList.add('closed');overlays.fix.classList.add('closed');
   document.body.classList.remove('hidden-in-locker');
   hud.objective.textContent=C3.objective(state);
   hud.stage.textContent='기록이 저장된 마지막 지점';
@@ -389,16 +417,18 @@ function updateStage(stage,old) {
     hud.stage.textContent='기록보관소 · 탈출 통로 열림';
     try{window.KidscadeGame?.milestone?.('ota_door_fixed',{uniqueKey:'ota-prologue'});}catch(_){}
   } else if(stage==='explore'){
+    X.reset(corrector);
     C3.ensure(state).checkpoint=true;
     saveChapterCheckpoint();
     announce('기록보관소는 여기서 끝나지 않습니다. 사무실과 서고를 조사하세요.',false,5.0);
     hud.stage.textContent='제2구역 · 이름을 잃어버린 방들';
     syncChapterVisuals();
   } else if(stage==='final'){
+    X.beginFinal(corrector);
     chapterVisual.finalSeal.visible=false;
     chapterVisual.finalWord.visible=false;
     saveChapterCheckpoint();
-    announce('중앙 기록실이 열렸습니다. 안쪽의 「나」를 찾으세요.',false,4.5);
+    announce('뒤에서 이름을 지우고 있어요! 「나」를 향해 달리세요.',true,4.5);
     hud.stage.textContent='기록 0 · 당신의 이름';
   } else if(stage==='lost') {
     finish(false);
@@ -409,8 +439,24 @@ function updateStage(stage,old) {
 function syncStage(before) {updateStage(state.stage,before);}
 function interact() {
   if(!started || failed || !overlays.fix.classList.contains('closed')) return;
+  const nearShelter=state.stage==='explore'&&R.distance(player,X.SHELTER)<1.7;
+  if(corrector.hidden){
+    X.leave(corrector);document.body.classList.remove('hidden-in-locker');
+    announce('은신처에서 나왔습니다. 주변의 글자를 살피세요.',false,2.3);
+    return;
+  }
+  if(nearShelter){
+    if(X.enter(corrector,player)){
+      player.moving=false;
+      document.body.classList.add('hidden-in-locker');
+      if(document.pointerLockElement===canvas)document.exitPointerLock?.();
+      announce('쉿. 지직거리는 소리가 멀어질 때까지 기다리세요.',false,3);
+    }else announce('너무 가까워요. 교정자와 거리를 벌리세요.',true,2.1);
+    return;
+  }
   const action=R.getInteraction(state,player)||C3.interaction(state,player);
   if(!action) return;
+  if(state.stage==='explore')soundPulse=1.35;
   const before=state.stage;
   if(action.type==='console') {
     if(R.inspectConsole(state,player)) {
@@ -481,7 +527,10 @@ function finish(won) {
     seconds:Math.round(state.time),mistakes:state.mistakes});}catch(_){}
 }
 function updatePrompt() {
-  currentInteraction=R.getInteraction(state,player)||C3.interaction(state,player);
+  currentInteraction=corrector.hidden?{type:'leaveCorrector',label:'은신처에서 나오기'}
+    :state.stage==='explore'&&R.distance(player,X.SHELTER)<1.7
+      ?{type:'hideCorrector',label:'어둠 속에 숨기'}
+      :R.getInteraction(state,player)||C3.interaction(state,player);
   hud.prompt.classList.toggle('show',!!currentInteraction&&!failed);
   hud.prompt.innerHTML=currentInteraction
     ? '<strong>E</strong> / 조사 — '+currentInteraction.label : '';
@@ -504,7 +553,7 @@ function update(dt) {
   elapsed+=dt;
   const before=state.stage;
   let running=false;
-  if(!state.hidden && state.stage!=='won' && state.stage!=='lost') {
+  if(!state.hidden && !corrector.hidden && state.stage!=='won' && state.stage!=='lost') {
     const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)
       -(keys.has('KeyS')||keys.has('ArrowDown')?1:0)-joystick.y;
     const side=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)
@@ -520,6 +569,7 @@ function update(dt) {
       if(stepsUntil<=0){tone(isRun?105:73,.055,'triangle',isRun?.024:.013);stepsUntil=isRun?.23:.43;}
     } else stepsUntil=0;
   }
+  if(corrector.hidden)player.moving=false;
   R.triggerMonster(state,player);
   R.stepEnemy(state,dt,player);
   R.stepEcho(state,dt,{moving:player.moving,running});
@@ -557,6 +607,17 @@ function update(dt) {
   }else{
     hud.gaze.classList.remove('show');hud.gaze.classList.remove('active');lastGazeAwake=false;
   }
+  if(state.stage==='explore'||state.stage==='final'){
+    soundPulse=Math.max(0,soundPulse-dt);
+    const safe=state.stage==='explore'&&C3.inArchive(player);
+    const report=X.step(corrector,dt,player,{
+      stage:state.stage,safe,moving:player.moving,running,noise:soundPulse>0,
+      passable:(x,z)=>x<=3.03&&C3.canMove(state,x,z)
+    });
+    if(report.caught){
+      state.stage='lost';state.lossReason='corrector';state.losses++;
+    }
+  }
   syncStage(before);
   if(messageEnd<elapsed)hud.message.classList.remove('show');
   if(state.stage==='explore'){
@@ -589,22 +650,42 @@ function update(dt) {
     echoMark.scale.x=2.5+Math.sin(elapsed*9)*.25;
     if(Math.floor(elapsed*2.2)!==Math.floor((elapsed-dt)*2.2))tone(71,.075,'sawtooth',.025+state.echo.alert*.0003);
   }
-  if(state.monster.active) {
-    enemyGroup.visible=true;
-    enemyGroup.position.set(state.monster.x,0,state.monster.z);
-    enemyGroup.lookAt(camera.position.x,1.4,camera.position.z);
-    enemyGroup.position.y=Math.sin(elapsed*5)*.07;
-    enemyGroup.children[1].position.x=Math.sin(elapsed*14)*.07;
-    const d=R.distance(player,state.monster);
-    const pulse=(Math.sin(elapsed*7)+1)*.09;
-    hud.danger.style.opacity=String(Math.min(.82,Math.max(.08,1-d/11)+pulse));
-    hud.noise.style.opacity=String(Math.min(.45,Math.max(0,1-d/8)*.33));
-    if(d<5 && Math.floor(elapsed*2.1)!==Math.floor((elapsed-dt)*2.1))tone(57,.12,'sine',.065);
+  const prologue=state.monster.active;
+  const stalking=corrector.phase!=='dormant'&&!failed;
+  const threat=prologue?state.monster:stalking?corrector:null;
+  const distance=threat?R.distance(player,threat):Infinity;
+  enemyGroup.visible=Boolean(threat);
+  if(threat){
+    enemyGroup.position.set(threat.x,Math.sin(elapsed*1.8)*.035,threat.z);
+    enemyGroup.lookAt(camera.position.x,2.4,camera.position.z);
+    correctorGlyphs.forEach((m,i)=>{
+      const glitch=Math.sin(elapsed*(29+i*2.15)+i*5.3)>.91;
+      m.position.x=m.userData.x+(glitch?Math.sin(elapsed*121+i)*.12:Math.sin(elapsed*1.8+i)*.014);
+      m.position.y=m.userData.y+(glitch?Math.cos(elapsed*84+i)*.075:0);
+      m.material=material(glitch?(i%3===0?'없음':m.userData.word):m.userData.word,
+        glitch?'#ff3654':m.userData.color);
+    });
+    const near=Math.max(0,1-distance/11);
+    hud.danger.style.opacity=String(Math.min(.78,near*.48+(prologue?Math.sin(elapsed*7)*.09:.0)));
+    hud.noise.style.opacity=String(Math.min(.38,near*.22));
+    if(distance<10&&elapsed-lastCorrectorSound>Math.max(.60,2.0-distance*.12)){
+      lastCorrectorSound=elapsed;
+      tone(distance<4?64:95,.17,'sawtooth',distance<4?.026:.010);
+      tone(180+Math.round(distance*17),.045,'square',.006);
+    }
   } else {
-    enemyGroup.visible=false;
     hud.danger.style.opacity=echoActive?String(.18+state.echo.alert/155):'0';
     hud.noise.style.opacity=echoActive?String(.18+state.echo.alert/270):state.stage==='hiding'?'0.07':'0';
   }
+  const approaching=stalking&&!corrector.hidden&&distance<11;
+  hud.corrector.classList.toggle('show',approaching||corrector.hidden);
+  hud.corrector.classList.toggle('alert',approaching&&distance<4.1);
+  const signal=corrector.hidden?'숨은 상태 · 소리가 멀어질 때까지 기다리세요'
+    :corrector.phase==='final'?'뒤에서 이름을 지우고 있습니다 — 앞으로 이동!'
+    :corrector.phase==='chase'?'교정자가 찾았습니다 — 시야를 벗어나세요'
+    :corrector.phase==='search'?'주변에서 이름을 찾고 있습니다'
+    :distance<7?'지직… 단어가 바뀌고 있습니다':'멀리서 글자가 지워지고 있습니다';
+  if(hud.correctorText.textContent!==signal)hud.correctorText.textContent=signal;
   setCamera();updatePrompt();syncHintScope();
 }
 function look(dx,dy) {
@@ -710,7 +791,9 @@ for(const choice of el('choices').querySelectorAll('button')) {
 }
 window.OtaDebug = Object.freeze({
   snapshot:()=>({stage:state.stage,corridorFixed:state.corridorFixed,doorFixed:state.doorFixed,hidden:state.hidden,
-    guidance:{scope:hintScope,level:hintLevel},chapter3:JSON.parse(JSON.stringify(C3.ensure(state))),echo:{...state.echo},monster:{...state.monster},player:{x:player.x,z:player.z,yaw:player.yaw,pitch:player.pitch},mistakes:state.mistakes}),
+    guidance:{scope:hintScope,level:hintLevel},chapter3:JSON.parse(JSON.stringify(C3.ensure(state))),echo:{...state.echo},monster:{...state.monster},
+    corrector:{phase:corrector.phase,x:corrector.x,z:corrector.z,hidden:corrector.hidden,grace:corrector.grace},
+    player:{x:player.x,z:player.z,yaw:player.yaw,pitch:player.pitch},mistakes:state.mistakes}),
   // Browser QA may aim the camera to verify gaze rules, but cannot edit game progress.
   aimForVisualAudit:(yaw,pitch)=>{
     if(!new URLSearchParams(location.search).has('visual-audit'))return false;
