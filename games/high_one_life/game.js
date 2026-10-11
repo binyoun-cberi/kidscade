@@ -135,7 +135,8 @@
       metricLabel('urbanPercent','도시 인구 비중','%'),
       metricLabel('primaryCompletion','초등 최종 학년 진입 비율(총량 지표)','%'),
       metricLabel('unemployment','ILO 추정 실업률','%'),
-      metricLabel('healthCoverage','WHO 필수의료 보장 지수','점')
+      metricLabel('healthCoverage','WHO 필수의료 보장 지수','점'),
+      metricLabel('physiciansPerThousand','WHO 의료진 밀도(인구 천 명당 의사)','명')
     ].join(' · ');
     const sceneName=Pixel.paint($('lifeScene'),life);
     const sceneTitle=Pixel.names?.[sceneName]||sceneName;
