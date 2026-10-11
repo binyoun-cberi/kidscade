@@ -13,7 +13,7 @@ const modes=['redlight','tug','marbles','final'];
 function renderMock(mode,width,height){
  const nodes=new Map(),draw={count:0,texts:[],progress:null},listeners=new Map(),frames=[];
  const ctx={};
- for(const name of ['beginPath','roundRect','fill','stroke','fillRect','clearRect','ellipse','arc','strokeRect','moveTo','lineTo','setTransform','fillText','save','restore','translate','scale']){
+ for(const name of ['beginPath','roundRect','fill','stroke','fillRect','clearRect','ellipse','arc','strokeRect','moveTo','lineTo','setTransform','fillText','save','restore','translate','scale','closePath']){
    ctx[name]=(...args)=>{draw.count++;if(name==='fillText')draw.texts.push(String(args[0]));};
  }
  ctx.createLinearGradient=ctx.createRadialGradient=()=>({addColorStop(){}});
@@ -22,7 +22,7 @@ function renderMock(mode,width,height){
    const events=new Map();
    const el={
      id,hidden:false,disabled:false,textContent:'',innerHTML:'',style:{},dataset:{},parentElement:{setAttribute:(key,value)=>{if(key==='aria-valuenow')draw.progress=+value;}},
-     addEventListener:(name,fn)=>events.set(name,fn),setAttribute(){},
+     addEventListener:(name,fn)=>events.set(name,fn),setAttribute(){},appendChild(){},
      click(){events.get('click')?.({})},
      classList:{add(){},remove(){},toggle(){}},
      getBoundingClientRect:()=>({width,height,left:0,top:0}),
