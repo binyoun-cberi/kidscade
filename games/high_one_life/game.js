@@ -460,6 +460,9 @@
     $('historyContext').textContent=life.birthYear===2026
       ? '현대 출생 · 최근 통계 + 게임용 미래 시나리오'
       : History.period(life)+' · 역사적 사실과 가상 인물의 경험을 구분합니다.';
+    const archive=History.currentEvent(life),sourceLink=$('historySourceLink');
+    sourceLink.classList.toggle('hidden',!archive);
+    if(archive){sourceLink.href=archive.source;sourceLink.textContent=archive.year+'년 '+archive.title+' · 공식 사료 보기';}
     $('currentAge').textContent=String(life.age);
     $('lifeStage').textContent=Sim.stages(life.age);
     $('chapterNumber').textContent=String(Math.floor(life.age/10)+1).padStart(2,'0');
