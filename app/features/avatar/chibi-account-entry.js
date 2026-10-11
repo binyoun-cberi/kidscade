@@ -1,6 +1,6 @@
 // Account-specific Chibi profile, sharing the existing 2D avatar atelier.
 // The pixel avatar, save format and preview stay independent.
-import {sanitizeChibiAccountAvatar,isChibiAccountClothed} from './chibi/account-avatar-policy.mjs';
+import {sanitizeChibiAccountAvatar,isChibiAccountClothed} from '../../../chibi/account-avatar-policy.mjs';
 const PREVIEW='/teacher/character-3d-studio.html?mode=preview';
 let saving=false,previewRevision=0;
 const account=()=>window.KidscadeAccount?.account||null;

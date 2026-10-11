@@ -55,6 +55,28 @@ function perfect(s,g,clock){
  follow(g,clock,act);
  return current;
 }
+test('canonical game title stays 꼴뚜기 게임 across catalog, menu, page and shell',()=>{
+ const catalog=JSON.parse(fs.readFileSync(path.join(ROOT,'data/games.json'),'utf8'));
+ const game=catalog.games.find(g=>g.id==='squid_survival');
+ assert.ok(game,'one canonical game id');
+ assert.equal(game.title,'꼴뚜기 게임');
+ assert.equal(game.href,'games/squid-survival/index.html');
+ assert.deepEqual(game.players,['solo','local2']);
+ assert.equal(catalog.games.filter(g=>g.id==='squid_survival'||g.id==='squid_survival_versus').length,1);
+ assert.equal(catalog.games.some(g=>g.id==='squid_survival_versus'),false);
+ assert.equal(catalog.games.filter(g=>g.href.startsWith('games/squid-survival/')).length,1);
+ assert.match(html,/<title>꼴뚜기 게임 \| KIDSCADE<\/title>/);
+ assert.match(html,/data-title="꼴뚜기 게임"/);
+ assert.match(html,/<h1 id="dialogTitle">꼴뚜기 게임<\/h1>/);
+ assert.match(js,/el\.title\.textContent='꼴뚜기 게임'/);
+ const lobby=fs.readFileSync(path.join(BASE,'index.html'),'utf8');
+ assert.match(lobby,/<strong>둘이서 하기<\/strong>/);
+ assert.match(lobby,/<title>꼴뚜기 게임 \| KIDSCADE<\/title>/);
+ assert.match(lobby,/<h1>꼴뚜기 게임<\/h1>/);
+ assert.match(lobby,/id="startButton"[^>]*>혼자 하기/);
+ assert.match(lobby,/href="\.\/versus\/index\.html"/);
+ assert.match(lobby,/data-game-id="squid_survival" data-title="꼴뚜기 게임"/);
+});
 test('all platforms use one full-canvas playfield, pass-and-play overlay and no orientation lock',()=>{
  assert.match(html,/data-orientation="any"/);
  assert.match(html,/passplay-rules\.js/);assert.match(html,/passplay\.js/);
@@ -110,6 +132,40 @@ test('each of six rounds can be cleared by both players using full-screen inputs
    assert.equal(s.phase,'round-result','round '+round+' seed '+seed+' phase '+s.phase);
    assert.deepEqual(s.turns.map(x=>x.clear),[true,true]);
    assert.equal(s.history.length,1);
+ }
+});
+test('pass-and-play accepts opposite tracing directions from both players',()=>{
+ for(let seed=1;seed<=100;seed++){
+   let s=base(0,seed),clock=1000;
+   for(let turn=0;turn<2;turn++){
+     s=E.ready(s,clock);
+     const g=s.game,backwards=(seed+turn)%2===1;
+     const samples=(backwards?g.traceReverse:g.trace).path;
+     s=E.input(s,'trace-start',{x:samples[0].x,y:samples[0].y},clock);
+     for(let j=1;j<samples.length&&s.phase==='playing';j++)
+       s=E.input(s,'trace-move',{x:samples[j].x,y:samples[j].y},clock+j*18);
+     assert.equal(s.phase,turn===0?'handoff':'round-result','seed '+seed+' turn '+turn);
+     assert.equal(g.traceDirection,backwards?'reverse':'forward');
+     clock+=g.limit+4000;
+   }
+   assert.deepEqual(s.turns.map(p=>p.clear),[true,true]);
+   assert.ok(Math.abs(s.turns[0].metric-s.turns[1].metric)<=3,'opposite tracing direction was unfair');
+ }
+});
+test('pass-and-play warning light obeys held input until the actual release',()=>{
+ for(let seed=1;seed<=100;seed++){
+   let s=base(2,seed);s=E.ready(s,1000);const g=s.game;
+   s=E.input(s,'hold',true,1020);
+   let yellow=null,continued=null;
+   for(let now=1040;now<9500&&s.phase==='playing';now+=20){
+     s=E.tick(s,now);
+     if(s.phase!=='playing')break;
+     if(g.body.signal==='warning'&&yellow===null)yellow={when:now,progress:g.body.progress};
+     if(yellow&&now===yellow.when+200)continued=g.body.progress;
+   }
+   assert.ok(continued>yellow.progress+2,'player was automatically stopped on warning');
+   assert.equal(s.phase,'handoff','holding into red must fail and hand off');
+   assert.equal(s.turns[0].clear,false);
  }
 });
 test('only skilled player wins even when the first competitor changes sides',()=>{

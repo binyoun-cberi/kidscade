@@ -71,6 +71,27 @@
       timeLimitMs:Math.min(85000,55000+Math.max(0,stage-1)*4000)
     };
   }
+  // Reversed path starts at the very same yellow marker, allowing either tracing direction.
+  function reversed(trace){
+    const path=trace.path.slice().reverse().map(point=>({
+      x:point.x,y:point.y,distance:Math.max(0,trace.total-point.distance)
+    }));
+    path[0].distance=0;
+    path[path.length-1].distance=trace.total;
+    return {...trace,path};
+  }
+  // Detect the initial movement on the outline. Lock the direction once it becomes
+  // distinguishable, so retreating mid-trace never counts as forward progress.
+  function directionFor(trace,backward,point){
+    const origin=trace.path[0];
+    if(length(origin,point)<1.2)return null;
+    const forward=nearest(trace,point,0,65),reverse=nearest(backward,point,0,65);
+    if(forward.distance+0.6<reverse.distance)return 'forward';
+    if(reverse.distance+0.6<forward.distance)return 'reverse';
+    if(forward.progress>reverse.progress+1.2)return 'forward';
+    if(reverse.progress>forward.progress+1.2)return 'reverse';
+    return null;
+  }
   function createState(trace){
     return {active:false,startedAt:null,lastMs:null,lastTickMs:null,lastMotionMs:null,lastProgressMs:null,lastPoint:null,
       progress:0,crack:0,stuck:0,speed:0,good:0,readings:0,offPath:0,releases:0,
@@ -172,5 +193,5 @@
     return {score,stars:score>=85?3:score>=65?2:1,
       accuracy:Math.round(accuracy*100),timeLeft:Math.max(0,trace.timeLimitMs-state.elapsedMs)};
   }
-  return Object.freeze({SIZE,SHAPES,shapePath,buildTrace,createState,sampleAt,nearest,begin,tick,move,release,grade});
+  return Object.freeze({SIZE,SHAPES,shapePath,buildTrace,reversed,directionFor,createState,sampleAt,nearest,begin,tick,move,release,grade});
 });

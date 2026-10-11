@@ -62,7 +62,7 @@ test('UI uses same strict policy and does not replace the existing pixel avatar'
  const studio=read('teacher/character-3d-studio.js');
  const html=read('teacher/character-3d-studio.html');
  const account=read('account-client.js');
- const entry=read('chibi-account-entry.js');
+ const entry=read('app/features/avatar/chibi-account-entry.js');
  const index=read('index_base.html');
  assert.match(studio,/function enforceAccountOutfit\(\)/);
  assert.match(studio,/function saveAccountAvatar\(\)/);
@@ -83,7 +83,7 @@ test('2D and 3D account atelier modes coexist in one overlay without overwriting
   const integration=read('avatar-integration.js');
   const studio=read('teacher/character-3d-studio.html');
   const three=read('teacher/character-3d-studio.js');
-  const account=read('chibi-account-entry.js');
+  const account=read('app/features/avatar/chibi-account-entry.js');
   const css=read('chibi/account-studio.css');
   const lazyBoot=read('avatar-preview-boot-fix.js');
   assert.match(pixel,/id="switchToChibi"/);

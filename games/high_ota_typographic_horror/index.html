@@ -153,7 +153,7 @@ body.hidden-in-locker #lockerMask{display:block}
   <small>제0기록보관소 / 02:17</small><h1 id="introTitle">오 타</h1>
   <p>이곳의 모든 것은 이름으로 존재합니다.<br>잘못된 이름을 고쳐 자신의 이름을 지키세요.</p>
   <div class="note">사람이 아닌 것을 사람이라고 부르지 마십시오.<br>이름이 바뀌면, 존재도 바뀝니다.</div>
-  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사 · H 힌트<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면으로 시점 조절 · 조사/달리기/힌트 버튼<br>제2구역에서는 잘못된 단어를 조사해 맞춤법·받침을 고치세요. 오타를 방치하면 오염도가 올라가 교정자가 나타납니다.<br>교정자 등장 시 시야를 끊거나 숨으세요.<br>위험한 상황에서는 그때 필요한 행동을 알려줍니다. 막히면 힌트 버튼을 사용하세요.</div>
+  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사 · H 힌트<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면으로 시점 조절 · 조사/달리기/힌트 버튼<br>벽·바닥·천장·문은 반복되는 글자로 공간을 알려줍니다. 선명한 글자는 조사할 수 있는 물체입니다.<br>제2구역에서는 잘못된 단어를 조사해 맞춤법·받침을 고치세요. 오타를 방치하면 오염도가 올라가 교정자가 나타납니다.<br>교정자 등장 시 시야를 끊거나 숨으세요.<br>위험한 상황에서는 그때 필요한 행동을 알려줍니다. 막히면 힌트 버튼을 사용하세요.</div>
   <button class="primary" id="start" type="button">기록 시작</button><button class="primary" id="resume" type="button" hidden>마지막 기록부터</button>
  </div>
 </section>
@@ -191,6 +191,8 @@ body.hidden-in-locker #lockerMask{display:block}
 <script src="guidance.js"></script>
 <script src="corrector.js"></script>
 <script src="literacy.js"></script>
+<script src="surfaces.js"></script>
+<script src="calligrams.js"></script>
 <script type="module" src="game.js"></script>
 </body>
 </html>

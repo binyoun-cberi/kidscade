@@ -803,21 +803,20 @@ function paintAccessoryThumbnail(name,canvas){
   if(!thumbnailTarget)thumbnailTarget=new THREE.WebGLRenderTarget(112,112,{
     minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:true
   });
-  const items=[],ancestors=[],priorTarget=renderer.getRenderTarget();
+  const visibility=[],priorTarget=renderer.getRenderTarget();
+  scene.traverse(object=>visibility.push([object,object.visible]));
   const previousBackground=scene.background;
   scene.traverse(object=>{
-    if(object.isMesh){items.push([object,object.visible]);object.visible=false;}
+    if(object.isMesh)object.visible=false;
   });
   let ancestor=node;
   while(ancestor&&ancestor!==scene){
-    ancestors.push([ancestor,ancestor.visible]);
     ancestor.visible=true;ancestor=ancestor.parent;
   }
   node.traverse(object=>{if(object.isMesh)object.visible=true});
-  const oldGrid=[];
   scene.children.forEach(object=>{
     if(object===avatarRoot||object.isLight)return;
-    oldGrid.push([object,object.visible]);object.visible=false;
+    object.visible=false;
   });
   try{
     const focus={
@@ -860,9 +859,7 @@ function paintAccessoryThumbnail(name,canvas){
     if(ctx)ctx.putImageData(new ImageData(flipped,112,112),0,0);
     thumbnailCache.set(name,ctx?canvas.toDataURL('image/webp',.79):null);
   }finally{
-    items.forEach(([object,visible])=>{object.visible=visible});
-    ancestors.forEach(([object,visible])=>{object.visible=visible});
-    oldGrid.forEach(([object,visible])=>{object.visible=visible});
+    visibility.forEach(([object,visible])=>{object.visible=visible});
     scene.background=previousBackground;
     renderer.setRenderTarget(priorTarget);
   }

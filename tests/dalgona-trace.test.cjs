@@ -44,6 +44,34 @@ test('controlled continuous tracing clears all six outlines and later cycles',()
   }
 });
 
+test('each outline can be traced clockwise and counterclockwise from the same start point',()=>{
+ for(let stage=1;stage<=24;stage++){
+   const forward=E.buildTrace(stage),reverse=E.reversed(forward);
+   assert.ok(Math.hypot(forward.path[0].x-reverse.path[0].x,
+      forward.path[0].y-reverse.path[0].y)<.001,'yellow marker changed');
+   for(const [direction,trace] of [['forward',forward],['reverse',reverse]]){
+     let s=E.begin(trace,E.createState(trace),trace.path[0],1000).state;
+     assert.equal(E.directionFor(forward,reverse,trace.path[2]),direction,
+       stage+' '+direction+' swipe detected incorrectly');
+     for(let i=1;i<trace.path.length&&!s.failed&&!s.complete;i++)
+        s=E.move(trace,s,trace.path[i],1000+i*18);
+     assert.equal(s.complete,true,'stage '+stage+' '+direction+' should complete');
+     assert.equal(s.failed,false);
+     assert.ok(E.grade(trace,s).score>=85);
+   }
+ }
+});
+test('a reversal mid-trace is not treated as additional progress or a shortcut',()=>{
+ for(const direction of ['forward','reverse']){
+   const src=E.buildTrace(1),trace=direction==='forward'?src:E.reversed(src);
+   let s=E.begin(trace,E.createState(trace),trace.path[0],1000).state;
+   for(let i=1;i<=80;i++)s=E.move(trace,s,trace.path[i],1000+i*18);
+   const before=s.progress;
+   for(let i=79;i>=45;i--)s=E.move(trace,s,trace.path[i],2500+(79-i)*18);
+   assert.ok(s.progress<=before+2.6,direction+' backtracking added progress');
+   assert.equal(s.complete,false);
+ }
+});
 test('crossing the speed ceiling breaks a perfectly followed line',()=>{
   const {state}=simulate(1,1);
   assert.equal(state.failed,true);
@@ -95,8 +123,8 @@ test('release has a crack cost, regrab starts near the traced tip and time never
 
 test('layout and shared game SDK bind actual pointer handlers and HUD',()=>{
   assert.match(HTML,/data-game-id="dalgona_trace"/);
-  assert.match(HTML,/\.\/trace\.js\?v=1/);
-  assert.match(HTML,/\.\/game\.js\?v=1/);
+  assert.match(HTML,/\.\/trace\.js\?v=2/);
+  assert.match(HTML,/\.\/game\.js\?v=2/);
   assert.match(HTML,/coin-gold\.png/);
   assert.match(UI,/addEventListener\('pointerdown',pointerDown\)/);
   assert.match(UI,/addEventListener\('pointermove',pointerMove\)/);

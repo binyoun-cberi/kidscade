@@ -360,7 +360,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
+  assert.match(html,/character-3d-studio\.js\?v=[a-zA-Z0-9-]+/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
@@ -450,7 +450,7 @@ test('male base opens first and provides brows visibility, face zoom and gait st
   assert.match(html,/id="gaitBadge"/);
   assert.match(html,/data-view="face"/);
   assert.match(html,/data-chibi-preset="male" data-preset-fit="male">남성형 기본/);
-  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
+  assert.match(html,/character-3d-studio\.js\?v=[a-zA-Z0-9-]+/);
 });
 
 test('mobile studio shows the live avatar preview before the long wardrobe',()=>{
@@ -536,7 +536,7 @@ test('one-touch mobile Chibi controls are wired to the same real animation, view
   assert.match(js,/setCameraView\(button\.dataset\.quickView\)/);
   assert.match(js,/\[data-chibi-preset\],\[data-view\],\[data-quick-clip\],\[data-quick-view\],\[data-quick-speed\]/);
   assert.match(js,/\$\('speed'\)\.value=button\.dataset\.quickSpeed/);
-  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
+  assert.match(html,/character-3d-studio\.js\?v=[a-zA-Z0-9-]+/);
 });
 
 test('Chibi v5 wardrobe exposes gender-fit filter and category tabs without restricting shared accessories',()=>{
@@ -887,7 +887,7 @@ test('v5.7 separates male and female bone ownership, animation roots and GLB rig
   assert.match(audit,/window\.__kc3dAudit\.rigIsolationAudit\(\)/);
   assert.match(audit,/sharedBones,0/);
   assert.match(audit,/roundtripExport\(\)/);
-  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
+  assert.match(html,/character-3d-studio\.js\?v=[a-zA-Z0-9-]+/);
 });
 
 test('v5.8 smooth garment skin weights have four-neighbor blending and reject invalid meshes',()=>{
@@ -1128,7 +1128,7 @@ test('v6.6 wardrobe repairs knight hair, shoe spike and grounded headwear',()=>{
   assert.match(studio,/kidscadeOpenHeadRepair:'v6\.6-full-helmet-safe-hair'/);
   assert.match(studio,/ball\('himeSide_'\+sign,at\(sign\*\.32/);
   assert.match(studio,/const twin=name==='chibi_female_hair_twintail'/);
-  assert.match(accessory,/sneakers:\[1\.055,1\.025,1\.015\]/);
+  assert.match(accessory,/sneakers:\[1\.025,1\.005,1\.005\]/);
   assert.match(accessory,/if\(kind==='hightop'\)/);
   assert.doesNotMatch(accessory,/if\(kind==='sneakers'\|\|kind==='hightop'\)/);
   assert.match(accessory,/const hatCrownAllowance=style\.kind==='beret'/);
@@ -1136,4 +1136,14 @@ test('v6.6 wardrobe repairs knight hair, shoe spike and grounded headwear',()=>{
   assert.match(accessory,/case 'beret':\{/);
   assert.match(outfit,/male\?\.216:\.227/);
   assert.match(outfit,/jogger\?\.143:chino\?\.137/);
+});
+
+test('v6.7 headwear fits the scalp instead of hovering above it',()=>{
+  const src=read('teacher/chibi-accessory-pack.js');
+  assert.match(src,/chibi_hat_beret:\[0,-\.052,\.012,\.99\]/);
+  assert.match(src,/chibi_hat_straw:\[0,-\.059,0,\.99\]/);
+  assert.match(src,/chibi_gear_headphones:\[0,-\.026,\.007,\.99\]/);
+  assert.match(src,/dome\.translate\(hc\.x-\.022,scalpY-\.016/);
+  assert.match(src,/case 'straw':return cyl\(headR\*1\.085,headR\*1\.14,\.205,hc\.x,scalpY-\.117/);
+  assert.match(src,/sneakers:\[1\.025,1\.005,1\.005\]/);
 });

@@ -44,10 +44,10 @@ export const ACCESSORY_FIT_RULES={
 export const ACCESSORY_STYLE_FIT={
   chibi_shoe_boots:[0,-.011,0,1.045],
   chibi_shoe_hightop:[0,-.005,0,1.015],
-  chibi_hat_straw:[0,-.019,0,.97],
+  chibi_hat_straw:[0,-.059,0,.99],
   chibi_hat_bucket:[0,-.012,0,.98],
-  chibi_hat_beret:[0,-.018,.012,.97],
-  chibi_gear_headphones:[0,.034,.007,1.03],
+  chibi_hat_beret:[0,-.052,.012,.99],
+  chibi_gear_headphones:[0,-.026,.007,.99],
   chibi_face_goggles:[0,.009,-.008,.99],
   chibi_face_mask:[0,-.012,-.007,1.00],
   chibi_bag_school:[0,.006,-.026,.99],
@@ -338,7 +338,7 @@ function buildGeometry(style,source,sourceHair,eyes){
     const bottom=bb.min.y, height=bb.max.y-bottom;
     const attr=geometry.getAttribute('position');
     const adjustments={
-      sneakers:[1.055,1.025,1.015],hightop:[1.12,1.22,1.09],
+      sneakers:[1.025,1.005,1.005],hightop:[1.12,1.22,1.09],
       loafers:[1.02,.87,1.08],boots:[1.22,1.35,1.12],
       sandals:[1.07,.70,1.08],slippers:[1.18,.57,1.12]
     };
@@ -376,12 +376,12 @@ function buildGeometry(style,source,sourceHair,eyes){
     case 'beret':{
       // Upper hemisphere + deeper cloth band; unlike a squashed sphere the
       // lower edge wraps the crown rather than hovering as a flat plate.
-      const dome=new THREE.SphereGeometry(1,24,12,0,Math.PI*2,0,Math.PI*.60);
-      dome.scale(headR*1.22,.190,headR*1.15);
-      dome.translate(hc.x-.022,scalpY+.025,hc.z+.032);
+      const dome=new THREE.SphereGeometry(1,24,12,0,Math.PI*2,0,Math.PI*.68);
+      dome.scale(headR*1.16,.205,headR*1.13);
+      dome.translate(hc.x-.022,scalpY-.016,hc.z+.032);
       return dome;
     }
-    case 'straw':return cyl(headR*1.085,headR*1.14,.205,hc.x,scalpY-.080,hc.z+.045);
+    case 'straw':return cyl(headR*1.085,headR*1.14,.205,hc.x,scalpY-.117,hc.z+.045);
     case 'round':return ring(.071,.009,-.110,eyeY,faceZ);
     case 'square':return box(.150,.119,.012,-.110,eyeY,faceZ);
     case 'sunglasses':return facePatch(-.198,eyeY-.027,faceZ+.016,.372,.202,.032);
@@ -445,11 +445,11 @@ function createDetails(style,context){
       add(ring(headR*.96,.030,0,scalpY-.089,hc.z,'y'),white,'cuff');
       add(sphere(0,scalpY+.174,hc.z,.052,.046,.052),style.color,'pom');
     }else if(kind==='beret'){
-      add(ring(headR*1.05,.020,hc.x,scalpY-.035,hc.z+.032,'y'),black,'edge');
-      add(cyl(.018,.020,.030,-.03,scalpY+.217,hc.z),black,'stem');
+      add(ring(headR*1.05,.020,hc.x,scalpY-.094,hc.z+.032,'y'),black,'edge');
+      add(cyl(.018,.020,.030,-.03,scalpY+.171,hc.z),black,'stem');
     }else if(kind==='straw'){
-      add(cyl(headR*1.48,headR*1.48,.019,hc.x,scalpY-.173,hc.z+.030),style.color,'brim');
-      add(ring(headR*1.095,.021,hc.x,scalpY-.112,hc.z+.045,'y'),'#9b7250','ribbon');
+      add(cyl(headR*1.48,headR*1.48,.019,hc.x,scalpY-.207,hc.z+.030),style.color,'brim');
+      add(ring(headR*1.095,.021,hc.x,scalpY-.150,hc.z+.045,'y'),'#9b7250','ribbon');
     }else if(kind==='headphones'){
       for(const sign of [-1,1])
         add(box(.057,.144,.108,sign*(headR*1.11),eyeY+.065,hc.z),'#2e344b','earCup_'+sign);

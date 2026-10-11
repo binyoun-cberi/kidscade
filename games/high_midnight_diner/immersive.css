@@ -1,0 +1,252 @@
+/* Midnight Diner v7: one immersive stage instead of a separate dashboard. */
+html,body{height:100%;overflow:hidden}
+body{background:#100d09}
+#game{position:relative;width:100%;max-width:none;height:100dvh;min-height:0;overflow:hidden;isolation:isolate}
+.topbar{
+ position:absolute;z-index:25;left:0;right:0;top:0;min-height:70px;
+ border:0;padding:11px clamp(12px,2vw,28px);pointer-events:none;
+ background:linear-gradient(180deg,#090805e9 0%,#090805ae 72%,transparent 100%);
+}
+.topbar>*{pointer-events:auto}
+.topbar h1{font-size:clamp(18px,2.2vw,25px);text-shadow:0 3px 8px #000}
+.topright button{background:#1b170fcf;border-color:#8d7851aa;backdrop-filter:blur(4px)}
+.game-layout,.game-layout.cooking,.game-layout.eating{
+ position:relative;display:block!important;min-height:0!important;height:100dvh;width:100%;
+}
+.kitchen,.game-layout.cooking .kitchen,.game-layout.eating .kitchen{
+ display:block!important;position:absolute!important;inset:0!important;
+ min-height:0!important;height:100%!important;width:100%;
+ border:0!important;overflow:hidden;z-index:0;
+}
+.kitchen:after{z-index:3;border:0!important;box-shadow:inset 0 0 65px #070604a1;pointer-events:none}
+.kitchen-vignette{z-index:2;background:radial-gradient(ellipse at 53% 44%,transparent 18%,#0d0907a8 100%)!important}
+.kitchen .scene-legend{
+ z-index:5;left:auto;right:clamp(12px,2vw,28px);top:auto;bottom:14px;
+ background:#100e0aca;border:1px solid #8c765077;
+ padding:5px 10px;font-size:11px;max-width:45vw;
+}
+.dining,.game-layout.cooking .dining,.game-layout.eating .dining{
+ display:block!important;position:absolute!important;inset:0!important;z-index:8;
+ padding:0!important;background:transparent!important;
+ overflow:visible!important;max-height:none!important;
+ pointer-events:none;
+}
+.dining>*{pointer-events:auto}
+.status{
+ position:absolute;left:clamp(12px,2vw,28px);top:83px;
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ width:clamp(245px,27vw,330px);padding:10px 12px;gap:12px;
+ border:1px solid #a18b5a5e;background:#16140fc9;
+ box-shadow:0 6px 25px #05040255;backdrop-filter:blur(5px);
+}
+.meterlabel{font-size:11px;margin-bottom:5px}
+.track{height:5px}
+.course-timeline{
+ position:absolute;right:clamp(12px,2vw,28px);top:88px;
+ width:min(285px,32vw);gap:5px;padding:0;
+}
+.course-step{flex:1;width:auto;min-width:0;height:28px;background:#11100bc4;border-color:#95805991}
+.course-step.done{background:#273023d9}
+.course-step.active{background:#d7b985}
+.course-line{
+ position:absolute;left:clamp(12px,2vw,28px);top:160px;
+ display:flex;align-items:flex-start;gap:10px;
+ max-width:min(360px,40vw);width:max-content;
+ padding:10px 13px!important;background:#18150fbb;
+ border:1px solid #9c81564a!important;box-shadow:0 10px 30px #0005;
+ backdrop-filter:blur(4px);
+}
+.course-line h2{font-size:clamp(18px,2vw,25px);line-height:1.1}
+.course-line p{font-size:11px}
+.danger-card{
+ text-align:left;background:#45271fc9;border:1px solid #bd795980;
+ min-width:95px;max-width:130px;padding:7px 8px;
+}
+.danger-card span{font-size:9px}.danger-card strong{font-size:12px}
+.dialogue-right,.game-layout.cooking .dialogue-right,.game-layout.eating .dialogue-right{
+ position:absolute!important;top:auto;left:50%;bottom:205px;
+ transform:translateX(-50%);width:max-content;max-width:min(640px,calc(100% - 32px));
+ padding:8px 17px!important;min-height:0;
+ display:flex;align-items:center;justify-content:center;gap:9px;
+ border:1px solid #a789576c;border-radius:3px;background:#0c0b08df;
+ box-shadow:0 8px 30px #0009;pointer-events:none;text-align:center;
+}
+.dialogue-right .dialogue-name{font-size:11px;white-space:nowrap;margin:0}
+.dialogue-right #chefLine{font-size:clamp(12px,1.2vw,15px);min-height:0;line-height:1.45}
+.cook-panel,.game-layout.cooking .cook-panel{
+ position:absolute!important;inset:auto auto 19px 50%!important;
+ transform:translateX(-50%);
+ z-index:12;width:min(760px,calc(100% - 48px));
+ margin:0!important;padding:11px 14px!important;
+ display:grid!important;grid-template-columns:minmax(0,1fr) minmax(170px,240px);
+ gap:7px 13px;
+ background:linear-gradient(135deg,#18150feF,#18160ff5)!important;
+ border:1px solid #b89a66a8;box-shadow:0 12px 36px #000b;
+ backdrop-filter:blur(10px);
+}
+.cook-caption{grid-column:1;grid-row:1;min-height:24px;font-size:12px}
+.cook-slots{grid-column:1;grid-row:2;gap:4px}
+.cook-slot,.game-layout.cooking .cook-slot{min-height:30px!important;border-radius:2px}
+.cook-flash,.game-layout.cooking .cook-flash{
+ grid-column:1;grid-row:3;min-height:31px!important;padding:5px 9px;
+ font-size:12px!important;
+}
+.peek-budget{grid-column:2;grid-row:1;align-self:center;min-height:24px;text-align:center}
+#peekBtn,.game-layout.cooking #peekBtn{
+ grid-column:2;grid-row:2 / span 2;min-height:72px!important;
+ padding:7px 12px!important;font-size:15px;box-shadow:0 4px 15px #0006;
+}
+#peekBtn small{font-size:11px}
+.cook-progress{grid-column:1/-1;grid-row:4;height:4px}
+.memory-panel,.game-layout.cooking .memory-panel{
+ position:absolute;left:clamp(12px,2vw,28px);bottom:200px;
+ width:min(275px,27vw);max-height:126px;overflow-y:auto;
+ padding:9px!important;opacity:1!important;
+ border:1px solid #967a4e70;background:#17140dbd;
+ backdrop-filter:blur(5px);box-shadow:0 6px 20px #0004;
+}
+.memory-panel strong{margin-bottom:6px}
+.memory-entries{gap:4px}
+.memory-chip{font-size:11px;padding:4px 6px}
+.game-layout.cooking .plate-wrap,.game-layout.cooking .action-bar,
+.game-layout.cooking .footnote,.game-layout.cooking .feedback{display:none!important}
+.game-layout.eating .cook-panel{display:none!important}
+.game-layout.eating .dialogue-right{
+ top:156px;bottom:auto;left:50%;max-width:52vw;
+}
+.game-layout.eating .course-line{top:155px}
+.game-layout.eating .memory-panel{bottom:175px}
+.game-layout.eating .plate-wrap{
+ display:block!important;position:absolute;bottom:96px;left:50%;
+ transform:translateX(-50%);margin:0!important;
+ width:min(580px,62vw,66vh);min-height:0!important;
+ border:0!important;background:transparent!important;
+ box-shadow:none!important;filter:none!important;opacity:1!important;
+ pointer-events:auto!important;
+}
+.game-layout.eating #plate{
+ width:100%!important;max-width:none!important;
+ height:auto!important;aspect-ratio:10/7!important;
+ background:transparent;filter:drop-shadow(0 18px 20px #0009);
+}
+.plate-eyebrow{top:4px;left:6px;right:6px;font-size:11px;text-shadow:0 2px 5px #000}
+.plate-instruction{bottom:4px;border:1px solid #b49768aa;background:#100e0de0}
+.game-layout.eating .action-bar{
+ display:grid!important;position:absolute;bottom:18px;left:50%;
+ transform:translateX(-50%);width:min(660px,calc(100% - 36px));
+ grid-template-columns:1.55fr 1fr 1fr .8fr;gap:8px;
+}
+.game-layout.eating .action-bar button{min-height:54px;border-radius:3px;font-size:14px}
+.game-layout.eating .action-bar .eat{background:linear-gradient(#ebd09c,#b99360);font-size:16px}
+.game-layout.eating .action-bar .reject{background:#47251edc}
+.game-layout.eating .feedback{
+ position:absolute;left:50%;top:214px;transform:translateX(-50%);
+ width:max-content;max-width:min(500px,52vw);min-height:0;
+ padding:7px 12px;border:1px solid #a18a5b66;border-left:3px solid #c6a26f;
+ background:#15140ddd;text-align:center;font-size:12px;line-height:1.3;
+}
+.game-layout.eating .footnote{
+ display:flex!important;position:absolute;right:clamp(12px,2vw,28px);
+ bottom:28px;width:160px;gap:5px;justify-content:flex-end;text-align:right;
+ font-size:10px;line-height:1.45;pointer-events:none;color:#d0b88e;
+}
+.game-layout.eating .footnote span:last-child{display:none}
+.notebook{z-index:70;justify-content:flex-end;padding:0;background:#08070478;backdrop-filter:blur(2px)}
+.notebook-inner{
+ height:100dvh;max-height:none!important;max-width:min(420px,100%);
+ width:min(420px,100%);border:0;border-left:5px solid #655135;
+ box-shadow:-10px 0 50px #000c;overflow-y:auto;
+ background:linear-gradient(#e0cea4,#bb9f6e);padding:25px;
+}
+@media(max-width:930px){
+ .topbar{padding:7px 12px;min-height:60px}
+ .topbar h1{font-size:19px}
+ .micro{font-size:9px}
+ .topright button{padding:8px}
+ .status{top:66px;left:10px;width:min(245px,63vw);padding:7px 9px;gap:6px}
+ .meterlabel{font-size:10px}.track{height:4px}
+ .course-timeline{top:110px;right:10px;width:min(198px,51vw)}
+ .course-step{height:22px;font-size:10px}
+ .course-line{top:146px;left:10px;max-width:min(310px,78vw);padding:6px 9px!important}
+ .course-line h2{font-size:19px;margin:2px 0}
+ .course-line p{font-size:10px}
+ .danger-card{min-width:91px;padding:6px}
+ .kitchen .scene-legend{right:9px;bottom:8px;max-width:calc(100% - 20px);font-size:10px}
+ .game-layout.cooking .cook-panel{
+  grid-template-columns:1fr;grid-auto-rows:auto;
+  left:10px!important;right:10px!important;bottom:calc(82px + env(safe-area-inset-bottom))!important;
+  /* A backdrop filter creates a fixed-position containing block. Remove it so
+     the hold button stays at the actual viewport bottom on iOS/Android. */
+  transform:none!important;backdrop-filter:none!important;
+  width:auto;gap:5px;padding:8px 9px!important;
+ }
+ .game-layout.cooking .cook-caption{grid-column:1;grid-row:1}
+ .game-layout.cooking .cook-slots{grid-column:1;grid-row:2}
+ .game-layout.cooking .cook-flash{grid-column:1;grid-row:3}
+ .game-layout.cooking .peek-budget{grid-column:1;grid-row:4;font-size:10px;min-height:0}
+ .game-layout.cooking .cook-progress{grid-column:1;grid-row:5}
+ .game-layout.cooking #peekBtn{
+  position:fixed!important;grid-column:auto;grid-row:auto;
+  left:10px!important;right:10px!important;bottom:calc(9px + env(safe-area-inset-bottom))!important;
+  width:calc(100% - 20px)!important;max-width:none!important;
+  min-height:59px!important;margin:0;z-index:42;
+ }
+ .game-layout.cooking .dialogue-right{
+  bottom:calc(238px + env(safe-area-inset-bottom));
+  left:50%;width:max-content;max-width:calc(100% - 20px);
+  padding:5px 9px!important;
+ }
+ .game-layout.cooking .memory-panel{display:none!important}
+ .game-layout.eating .course-line{top:144px}
+ .game-layout.eating .dialogue-right{top:220px;max-width:calc(100% - 20px)}
+ .game-layout.eating .memory-panel{display:none!important}
+ .game-layout.eating .plate-wrap{width:min(510px,97vw,55vh);bottom:106px}
+ .game-layout.eating .feedback{top:255px;max-width:calc(100% - 28px);font-size:11px}
+ .game-layout.eating .action-bar{bottom:13px;grid-template-columns:1.3fr 1fr 1fr .8fr;width:calc(100% - 20px);gap:5px}
+ .game-layout.eating .action-bar button{min-height:50px;font-size:12px;padding:5px}
+ .game-layout.eating .action-bar .eat{font-size:14px}
+ .game-layout.eating .footnote{display:none!important}
+}
+@media(max-width:600px){
+ .topbar h1{font-size:17px}
+ .topright{gap:5px}.topright button{padding:6px 7px;font-size:11px}
+ .topbar .micro{font-size:8px}
+ .status{width:min(210px,60vw);gap:4px}
+ .course-timeline{top:114px;right:10px;width:145px}
+ .course-line{top:145px;max-width:95vw;min-height:0}
+ .course-line h2{font-size:17px}
+ .course-line p{display:none}
+ .game-layout.cooking .dialogue-right{bottom:calc(225px + env(safe-area-inset-bottom))}
+ .game-layout.cooking .cook-panel{bottom:calc(80px + env(safe-area-inset-bottom))!important;gap:4px}
+ .game-layout.cooking .cook-slot{min-height:25px!important}
+ .game-layout.cooking .cook-flash{min-height:26px!important;font-size:11px!important}
+ .game-layout.eating .plate-wrap{bottom:105px;width:min(96vw,49vh)}
+ .game-layout.eating .dialogue-right{top:203px}
+ .game-layout.eating .feedback{top:247px}
+ .game-layout.eating .action-bar{grid-template-columns:1.2fr 1fr;grid-template-rows:repeat(2,40px);gap:5px;bottom:9px}
+ .game-layout.eating .action-bar button{min-height:40px}
+ .game-layout.eating .action-bar .eat{grid-column:1;grid-row:1}
+ .game-layout.eating .action-bar #inspectBtn{grid-column:2;grid-row:1}
+ .game-layout.eating .action-bar #questionBtn{grid-column:1;grid-row:2}
+ .game-layout.eating .action-bar #rejectBtn{grid-column:2;grid-row:2}
+}
+@media(max-height:660px) and (min-width:931px){
+ .course-line{top:135px}
+ .game-layout.cooking .memory-panel{display:none!important}
+ .game-layout.cooking .dialogue-right{bottom:177px}
+ .game-layout.eating .plate-wrap{width:min(500px,53vw,62vh);bottom:78px}
+ .game-layout.eating .action-bar{bottom:8px}
+ .game-layout.eating .action-bar button{min-height:43px}
+ .game-layout.eating .dialogue-right{top:105px}
+ .game-layout.eating .feedback{top:164px}
+}
+@media(max-height:680px) and (max-width:930px){
+ .game-layout.cooking .course-line{top:135px}
+ .game-layout.cooking .dialogue-right{bottom:calc(202px + env(safe-area-inset-bottom))}
+ .game-layout.cooking .cook-panel{padding:5px 8px!important;gap:2px}
+ .game-layout.cooking .peek-budget{padding:2px}
+ .game-layout.eating .plate-wrap{width:min(89vw,43vh);bottom:92px}
+ .game-layout.eating .dialogue-right{top:178px}
+ .game-layout.eating .feedback{top:214px}
+}
+@media(prefers-reduced-motion:reduce){.kitchen:after{animation:none}}

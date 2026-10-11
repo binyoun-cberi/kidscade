@@ -9,6 +9,11 @@ on:
       - 'tests/character-3d-studio.test.mjs'
       - '.github/workflows/chibi-wardrobe-repair-qa.yml'
   workflow_dispatch:
+# Keep the latest QA revision per PR; independent PRs are not cancelled.
+concurrency:
+  group: kidscade-qa-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 jobs:

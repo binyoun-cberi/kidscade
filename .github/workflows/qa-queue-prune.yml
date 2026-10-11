@@ -1,0 +1,112 @@
+name: Prune superseded QA runs
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/qa-queue-prune.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: write
+
+concurrency:
+  group: kidscade-qa-queue-prune
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Cancel outdated QA only; preserve deploys and open PR latest checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+
+          repo = os.environ["GH_REPO"]
+          qa = {
+              "Kidscade architecture checks",
+              "Avatar rig checks",
+              "Chibi face-fit real browser QA",
+              "Chibi v6.6 wardrobe repair QA",
+              "Chibi account outfit safety",
+              "Ota 3D browser simulation",
+          }
+
+          def api(path, method="GET"):
+              result = subprocess.run(
+                  ["gh", "api", "--method", method, path],
+                  capture_output=True, text=True,
+              )
+              if result.returncode:
+                  raise RuntimeError(f"{method} {path}: {result.stderr.strip()[:350]}")
+              return json.loads(result.stdout) if result.stdout.strip() else {}
+
+          def list_all(path, field):
+              output = []
+              for page in range(1, 21):
+                  sep = "&" if "?" in path else "?"
+                  result = api(f"{path}{sep}per_page=100&page={page}")
+                  batch = result if isinstance(result, list) else result.get(field, [])
+                  output.extend(batch)
+                  if len(batch) < 100:
+                      break
+              return output
+
+          head_sha = api(f"/repos/{repo}/branches/main")["commit"]["sha"]
+          open_prs = list_all(f"/repos/{repo}/pulls?state=open", "")
+          open_branches = {p["head"]["ref"] for p in open_prs}
+          active = {}
+          for status in ("queued", "in_progress", "pending"):
+              runs = list_all(f"/repos/{repo}/actions/runs?status={status}", "workflow_runs")
+              for run in runs:
+                  if run.get("name") in qa:
+                      active[run["id"]] = run
+
+          def group(run):
+              branch = run.get("head_branch") or ""
+              source = (run.get("head_repository") or {}).get("full_name") or ""
+              return (run["workflow_id"], run.get("event"), source, branch)
+
+          newest = {}
+          for run in active.values():
+              if run.get("event") not in ("push", "pull_request"):
+                  continue
+              key = group(run)
+              if key not in newest or (run["created_at"], run["id"]) > (newest[key]["created_at"], newest[key]["id"]):
+                  newest[key] = run
+
+          cancelled = []
+          kept = []
+          errors = []
+          for run in sorted(active.values(), key=lambda r: (r["created_at"], r["id"])):
+              event = run.get("event")
+              branch = run.get("head_branch") or ""
+              obsolete = (
+                  (event == "pull_request" and bool(branch) and branch not in open_branches)
+                  or (event == "push" and branch == "main" and run.get("head_sha") != head_sha)
+                  or (event in ("push", "pull_request") and newest.get(group(run), {}).get("id") != run["id"])
+              )
+              if not obsolete:
+                  kept.append(run["id"])
+                  continue
+              try:
+                  api(f"/repos/{repo}/actions/runs/{run['id']}/cancel", method="POST")
+                  cancelled.append(run["id"])
+                  print(f"Cancel requested: {run['id']} ({run['name']})")
+              except Exception as exc:
+                  errors.append((run["id"], str(exc)))
+                  print(f"Cancel failed: {run['id']}: {exc}")
+
+          print(f"QA runs found: {len(active)}; cancelled requests: {len(cancelled)}; preserved: {len(kept)}; errors: {len(errors)}")
+          print("No Cloudflare deployment workflows, current PR heads or manual runs were cancelled.")
+          if errors:
+              raise SystemExit(1)
+          PY
