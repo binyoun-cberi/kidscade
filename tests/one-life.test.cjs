@@ -50,7 +50,9 @@ test('age landmarks offer three meaningful choices and vary by stage',()=>{
 });
 test('choice pauses the simulation; snapshot retains decision and future RNG',()=>{
   const person=new Life(984157);
-  while(person.alive && person.age<10)person.tick();
+  for(let steps=0; person.alive && person.age<10 && steps<20; steps++){
+    if(person.getReflection())person.reflect();else person.tick();
+  }
   assert.ok(person.alive);
   assert.equal(person.pending,10);
   const pausedAge=person.age;
@@ -65,8 +67,8 @@ test('choice pauses the simulation; snapshot retains decision and future RNG',()
   for(let i=0;i<10;i++) {
     assert.equal(restored.tick(),person.tick());
     if(restored.pending) {
-      restored.choose(0);
-      person.choose(0);
+      if(restored.getReflection()){restored.reflect();person.reflect();}
+      else {restored.choose(0);person.choose(0);}
     }
   }
   assert.deepEqual(restored.snapshot(),person.snapshot());
@@ -79,6 +81,7 @@ test('300 full simulated lives terminate with bounded stats, honest summaries an
     seen.add(person.country[0]);
     let steps=0;
     while(person.alive && steps<110) {
+      if(person.getReflection()){assert.ok(person.reflect());continue;}
       if(person.pending){ assert.ok(person.choose(i%3)); choices++; continue; }
       person.tick(); steps++;
       for(const value of Object.values(person.stats)){
@@ -107,7 +110,7 @@ test('save validation rejects malformed life data',()=>{
 test('five reflection pauses support an optional note and survive resumption',()=>{
   const person=new Life(7723);
   const expected=[5,15,30,50,70],visited=[];
-  while(person.alive && person.age<74){
+  for(let steps=0; person.alive && person.age<74 && steps<120; steps++){
     if(person.getReflection()){
       const age=person.getReflection();visited.push(age);
       const saved=Life.restore(JSON.parse(JSON.stringify(person.snapshot())));

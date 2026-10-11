@@ -30,6 +30,7 @@
     audioSettings: 'kidscade_audio_settings_v1',
     avatarInventory: 'kidscade_avatar_inventory',
     avatarEquipped: 'kidscade_avatar_equipped',
+    chibiAvatar: 'kidscade_chibi_avatar_v1',
     petCanvas: 'kidscade_sook_canvas_pet',
     gardenState: 'kidscade_garden_v1',
     languageSound: 'kidscade_language_sound',

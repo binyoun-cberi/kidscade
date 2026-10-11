@@ -1,0 +1,44 @@
+name: Chibi account outfit safety
+on:
+  pull_request:
+    paths:
+      - 'chibi/account-avatar-policy.mjs'
+      - 'chibi-account-entry.js'
+      - 'teacher/character-3d-studio.js'
+      - 'teacher/character-3d-studio.html'
+      - 'worker/accounts.mjs'
+      - 'worker/teacher-auth.mjs'
+      - 'account-client.js'
+      - 'kidscade-storage.js'
+      - 'index_base.html'
+      - 'tests/chibi-account.test.mjs'
+      - 'tests/chibi-visual-browser-audit.cjs'
+      - '.github/workflows/chibi-account-safety.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  account-chibi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - name: Shared server/browser account outfit policy
+        run: node --test tests/chibi-account.test.mjs
+      - name: Real Chrome male/female clothing cannot be removed
+        run: node tests/chibi-visual-browser-audit.cjs
+        env:
+          KIDSCADE_CHIBI_ACCOUNT_QA: '1'
+          KIDSCADE_CHIBI_AUDIT_OUT: ${{ runner.temp }}/chibi-account-qa
+      - name: Preserve screenshot evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chibi-account-safety
+          path: ${{ runner.temp }}/chibi-account-qa/
+          if-no-files-found: ignore
+          retention-days: 10

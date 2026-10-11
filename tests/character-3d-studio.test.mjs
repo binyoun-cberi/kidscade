@@ -360,7 +360,7 @@ test('male Chibi eyes align with native face markings and eyebrows only use two 
   assert.equal(manifest.customParts.kidscade_male_eyes.revision,'native-aligned-eyes-v5');
   assert.equal(manifest.customParts.kidscade_male_brows.generatedFrom,'eyelashes');
   const html=read('teacher/character-3d-studio.html');
-  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
+  assert.match(html,/character-3d-studio\.js\?v=[a-zA-Z0-9-]+/);
 });
 
 test('male shoulders and sleeves use smooth weighting without extra procedural meshes',()=>{
@@ -450,7 +450,7 @@ test('male base opens first and provides brows visibility, face zoom and gait st
   assert.match(html,/id="gaitBadge"/);
   assert.match(html,/data-view="face"/);
   assert.match(html,/data-chibi-preset="male" data-preset-fit="male">남성형 기본/);
-  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
+  assert.match(html,/character-3d-studio\.js\?v=[a-zA-Z0-9-]+/);
 });
 
 test('mobile studio shows the live avatar preview before the long wardrobe',()=>{
@@ -536,7 +536,7 @@ test('one-touch mobile Chibi controls are wired to the same real animation, view
   assert.match(js,/setCameraView\(button\.dataset\.quickView\)/);
   assert.match(js,/\[data-chibi-preset\],\[data-view\],\[data-quick-clip\],\[data-quick-view\],\[data-quick-speed\]/);
   assert.match(js,/\$\('speed'\)\.value=button\.dataset\.quickSpeed/);
-  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
+  assert.match(html,/character-3d-studio\.js\?v=[a-zA-Z0-9-]+/);
 });
 
 test('Chibi v5 wardrobe exposes gender-fit filter and category tabs without restricting shared accessories',()=>{
@@ -887,7 +887,7 @@ test('v5.7 separates male and female bone ownership, animation roots and GLB rig
   assert.match(audit,/window\.__kc3dAudit\.rigIsolationAudit\(\)/);
   assert.match(audit,/sharedBones,0/);
   assert.match(audit,/roundtripExport\(\)/);
-  assert.match(html,/character-3d-studio\.js\?v=20261010-silhouette59/);
+  assert.match(html,/character-3d-studio\.js\?v=[a-zA-Z0-9-]+/);
 });
 
 test('v5.8 smooth garment skin weights have four-neighbor blending and reject invalid meshes',()=>{

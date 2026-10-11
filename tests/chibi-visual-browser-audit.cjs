@@ -19,7 +19,7 @@ const CHROME=['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-br
   .find(p=>fs.existsSync(p));
 if(!CHROME)throw Error('Chrome/Chromium required for Chibi WebGL audit');
 fs.mkdirSync(OUT,{recursive:true});
-const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.glb':'model/gltf-binary',
+const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.glb':'model/gltf-binary',
   '.gltf':'model/gltf+json','.json':'application/json','.png':'image/png','.webp':'image/webp'};
 const server=http.createServer((req,res)=>{
   const uri=new URL(req.url,'http://localhost');
@@ -92,6 +92,14 @@ const errors=[];
     const realFetch=window.fetch.bind(window);
     window.fetch=(input,init)=>{
       const url=new URL(typeof input==='string'?input:input.url,location.href);
+      if(url.pathname==='/api/account/me'&&${process.env.KIDSCADE_CHIBI_ACCOUNT_QA==='1'}){
+        return Promise.resolve(new Response(JSON.stringify({
+          ok:true,account:{role:'student',loginId:'KC-QA-001',revision:1},
+          state:{chibiAvatar:{bodyFit:'male',parts:{
+            hair:'kidscade_male_hair_short',top:'',bottom:null,shoes:''
+          }}}
+        }),{status:200,headers:{'content-type':'application/json'}}));
+      }
       if(url.pathname==='/api/teacher/overview'){
         return Promise.resolve(new Response(JSON.stringify({ok:true,scope:'global'}),{
           status:200,headers:{'content-type':'application/json'}
@@ -102,7 +110,8 @@ const errors=[];
   })();`});
   const origin='http://127.0.0.1:'+server.address().port;
   await send('Emulation.setDeviceMetricsOverride',{width:1024,height:900,deviceScaleFactor:1,mobile:false});
-  await send('Page.navigate',{url:origin+'/teacher/character-3d-studio.html?audit=1'});
+  const accountQA=process.env.KIDSCADE_CHIBI_ACCOUNT_QA==='1';
+  await send('Page.navigate',{url:origin+'/teacher/character-3d-studio.html?audit=1'+(accountQA?'&mode=account':'')});
   let ready=false,detail='';
   for(let n=0;n<260;n++){
     const status=await evalPage(`(()=>({
@@ -118,6 +127,44 @@ const errors=[];
     await sleep(100);
   }
   assert.ok(ready,'Chibi WebGL never became ready: '+detail+' / '+errors.join('; '));
+
+  if(accountQA){
+    const accountState=()=>evalPage(`(()=>({
+      fit:window.__kc3dAudit.bodyFitAudit().fit,
+      visible:window.__kc3dAudit.bodyFitAudit().visibleParts,
+      save:!!document.getElementById('saveAccountChibi'),
+      exportHidden:getComputedStyle(document.querySelector('.export-actions')).display==='none'
+    }))()`);
+    const male=await accountState();
+    assert.equal(male.fit,'male');
+    assert.equal(male.save,true);
+    assert.equal(male.exportHidden,true);
+    assert.ok(male.visible.includes('kidscade_male_tshirt')&&
+      male.visible.includes('kidscade_male_shorts')&&
+      male.visible.includes('chibi_shoe_sneakers'),'Server partial outfit was not normalized');
+    await evalPage("(()=>{document.querySelector('[data-wardrobe-category=\\\"top\\\"]').click();"+
+      "const e=document.querySelector('[data-chibi-part=\\\"kidscade_male_tshirt\\\"]');"+
+      "e.checked=false;e.dispatchEvent(new Event('change',{bubbles:true}));})()");
+    const kept=await accountState();
+    assert.ok(kept.visible.includes('kidscade_male_tshirt'),'Account editor let last top be removed');
+    await evalPage("document.querySelector('[data-body-fit=\\\"female\\\"]').click()");
+    const female=await accountState();
+    assert.equal(female.fit,'female');
+    assert.ok(female.visible.includes('shirt')&&female.visible.includes('skirt')&&
+      female.visible.includes('chibi_shoe_sneakers'),'Female base preset left undressed');
+    await evalPage("(()=>{document.querySelector('[data-wardrobe-category=\\\"bottom\\\"]').click();"+
+      "const e=document.querySelector('[data-chibi-part=\\\"skirt\\\"]');"+
+      "e.checked=false;e.dispatchEvent(new Event('change',{bubbles:true}));})()");
+    const still=await accountState();
+    assert.ok(still.visible.includes('skirt'),'Account editor let last bottom be removed');
+    const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+    fs.writeFileSync(path.join(OUT,'account-required-clothes-female.png'),Buffer.from(shot.data,'base64'));
+    assert.equal(errors.length,0,'Account Chrome exceptions: '+errors.join('; '));
+    console.log('CHIBI_ACCOUNT_QA_SUCCESS '+JSON.stringify({male:male.visible,
+      female:still.visible,clothesProtected:true}));
+    return;
+  }
+
   const clipNames=await evalPage('window.__kc3dAudit.clips.map(x=>x.label)');
   for(const name of ['IDLE','WALK','RUN','JUMP'])assert.ok(clipNames.includes(name),'Missing '+name+' clip');
 

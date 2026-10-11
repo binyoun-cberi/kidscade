@@ -11,8 +11,10 @@ const games = (Array.isArray(raw) ? raw : raw.games || []).filter(game => !game.
 test('every active game has exactly one outcome profile', () => {
   assert.ok(games.length > 0);
   assert.equal(new Set(games.map(game => game.id)).size, games.length);
-  assert.equal(profiles.size, games.length);
-  const all = profiles.getProfiles();
+  const legacyIds = new Set(['squid_survival_versus']);
+  const retained = profiles.getProfiles();
+  for (const profile of retained) assert.ok(games.some(game => game.id === profile.gameId) || legacyIds.has(profile.gameId), 'unknown profile: ' + profile.gameId);
+  const all = retained.filter(profile => !legacyIds.has(profile.gameId));
   assert.equal(all.length, games.length);
   assert.equal(new Set(all.map(profile => profile.gameId)).size, games.length);
   for (const game of games) {

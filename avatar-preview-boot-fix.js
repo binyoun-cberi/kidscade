@@ -93,7 +93,9 @@
     if (!overlay || !frame || !overlay.classList.contains('open')) return;
     installRetiredHairGuard(frame);
 
-    const src = frame.dataset.kidscadeDeferredSrc || FALLBACK_SRC;
+    const current=frame.getAttribute('src')||'';
+    const src=frame.dataset.kidscadeDeferredSrc ||
+      (current && !current.startsWith('about:blank') ? current : FALLBACK_SRC);
     activated = true;
     deferred = false;
     delete frame.dataset.kidscadeDeferred;
