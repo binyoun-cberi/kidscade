@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="./light-theme.css?v=1">
 <link rel="stylesheet" href="./world-v3.css?v=1">
 <link rel="stylesheet" href="./world-v4.css?v=1">
+<link rel="stylesheet" href="./world-v5.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -126,6 +127,12 @@
           </div>
           <div class="stat-title">지금의 나 <span>0 ~ 100</span></div>
           <div id="statList" class="stats" aria-label="인생 상태 지표"></div>
+          <div class="world-stories" aria-label="국가와 시대의 인생 사건">
+            <div class="stat-title">세계 속 나의 이야기 <span id="worldEventCount">0개 사건</span></div>
+            <div class="world-stories-category" id="worldRegionLabel">다양한 문화와 삶</div>
+            <p id="worldLatest">지역의 문화와 세계의 변화가 인생에 영향을 줍니다.</p>
+            <small>2026년 이후 분쟁·경제위기는 가상의 미래 시나리오이며, 어떤 국가나 종교도 개인의 운명을 결정하지 않습니다.</small>
+          </div>
           <div class="arc-panel" aria-label="현재까지의 선택과 영향">
             <div class="stat-title">이어지는 인생의 선택 <span id="arcCount">0번</span></div>
             <p id="arcStatus">아직 미래는 정해지지 않았어요.</p>
@@ -177,11 +184,12 @@
 </div>
 <script src="../../kidscade-storage.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_one_life" data-title="단 하나의 인생" data-shell="false" data-pauseable="true" data-orientation="any"></script>
-<script src="./engine.js?v=3"></script>
-<script src="./world-v2.js?v=4"></script>
+<script src="./engine.js?v=4"></script>
+<script src="./world-v2.js?v=5"></script>
 <script src="./pixel-scene.js?v=3"></script>
 <script src="./world-v3.js?v=1"></script>
 <script src="./world-v4.js?v=1"></script>
-<script src="./game.js?v=6"></script>
+<script src="./world-v5.js?v=1"></script>
+<script src="./game.js?v=7"></script>
 </body>
 </html>

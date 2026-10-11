@@ -295,7 +295,7 @@
         const d=data.arc,a=life.arc;
         for(const k of ['path','lastEvent','firstJob'])if(typeof d[k]==='string')a[k]=d[k].slice(0,130);
         for(const k of ['skill','learning','network','security','wellness','ambition','community','careerRisk','unemployedUntil','decisionCount','eventCount'])
-          if(Number.isFinite(d[k]))a[k]=clamp(d[k],-8,50);
+          if(Number.isFinite(d[k]))a[k]=clamp(d[k],k==='unemployedUntil'?0:-8,k==='unemployedUntil'?110:50);
         a.business=d.business===true;
         for(const key of ['tags','seen'])if(Array.isArray(d[key]))a[key]=d[key].filter(x=>typeof x==='string').slice(0,90);
         for(const key of ['decisions','earnedEvents'])if(Array.isArray(d[key]))a[key]=d[key].filter(x=>x&&typeof x==='object').slice(-40).map(x=>({...x}));

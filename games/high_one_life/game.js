@@ -8,7 +8,8 @@
   const Pixel = window.OneLifeScene;
   const World3 = window.OneLifeWorld3;
   const World4 = window.OneLifeWorld4;
-  if (!World2 || !Pixel || !World3 || !World4) throw new Error('One Life world assets missing');
+  const World5 = window.OneLifeWorld5;
+  if (!World2 || !Pixel || !World3 || !World4 || !World5) throw new Error('One Life world assets missing');
   const SAVE_KEY = 'kidscade_one_life_save_v1';
   const RECORD_KEY = 'kidscade_one_life_history_v1';
   // Roughly 70-90 seconds of automatic years, excluding user decisions.
@@ -39,7 +40,7 @@
     clearInterval(roulette);
     roulette = null;
     life = new Sim.Life();
-    World4.ensure(life);
+    World5.ensure(life);
     replayBasis=null;
     peerCache = null;lastPeerRenderedAge = -1;lastMapRenderedAge = -1;
     $('birthCertificate').classList.add('hidden');
@@ -108,6 +109,18 @@
   function paintArc() {
     if(!life)return;
     const a=World4.ensure(life);
+    const world=World5.ensure(life);
+    const region=World5.groupFor(life.country[0]);
+    const category={
+      southAsia:'남아시아',eastAsia:'동아시아',southEastAsia:'동남아시아',
+      westernEurope:'서유럽',eastEurope:'동유럽',centralAsia:'중앙아시아',
+      northAfrica:'북아프리카',westAfrica:'서아프리카',eastAfrica:'동아프리카',
+      centralSouthAfrica:'중·남부 아프리카',middleEast:'서아시아·중동',
+      latinAmerica:'라틴아메리카',northAmerica:'북아메리카',pacific:'오세아니아',
+      other:'다른 지역'};
+    $('worldRegionLabel').textContent=category[region]+' · '+(world.faith==='없음'?'다양한 삶':world.faith);
+    $('worldEventCount').textContent=world.eventCount+'개 사건';
+    $('worldLatest').textContent=world.lastContext||'어떤 세계적 변화와 만남이 찾아올까요?';
     $('arcCount').textContent=a.decisionCount+'번의 선택';
     $('arcStatus').textContent=a.lastEvent || '아직 미래는 정해지지 않았어요.';
     const box=$('arcMilestones');box.replaceChildren();
@@ -333,11 +346,11 @@
     $('endNetWorth').textContent=formatCredits(life.money.netWorth);
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=life.career;
-    $('endStory').textContent=summary.story+' '+life.deathReason+' '+(life.world?.educationLevel||'')+' · '+life.career+'의 경로를 걸었다. 중요한 선택 '+(life.arc?.decisionCount||0)+'번과 여러 만남·기회가 이 삶을 바꾸었다.';
+    $('endStory').textContent=summary.story+' '+life.deathReason+' '+(life.world?.educationLevel||'')+' · '+life.career+'의 경로를 걸었다. 세계와 지역에서 겪은 사건 '+(life.world5?.eventCount||0)+'번, 중요한 선택 '+(life.arc?.decisionCount||0)+'번과 여러 만남·기회가 이 삶을 바꾸었다.';
     showComparison();
     const list=$('endHighlights'); list.replaceChildren();
-    const highlights=[...life.log.filter(e=>['milestone','decision','chain'].includes(e.kind))]
-      .filter(e=>e.kind==='decision'||e.kind==='chain'||e.age<21)
+    const highlights=[...life.log.filter(e=>['milestone','decision','chain','world','safety'].includes(e.kind))]
+      .filter(e=>e.kind==='decision'||e.kind==='chain'||e.kind==='world'||e.kind==='safety'||e.age<21)
       .slice(-16);
     if(!highlights.length) highlights.push(life.log[0]);
     highlights.forEach(e=>{
@@ -390,7 +403,7 @@
     const snapshot=captureEnding(life);
     replayBasis=snapshot;
     life=new Sim.Life(snapshot.seed);
-    World4.ensure(life);
+    World5.ensure(life);
     peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
     $('birthCertificate').classList.add('hidden');
     $('birthFlag').textContent=life.country[1];

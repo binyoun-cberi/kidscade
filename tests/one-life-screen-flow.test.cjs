@@ -14,6 +14,8 @@ global.window.OneLifeWorld2=World;
 const World3=require(path.join(root,'world-v3.js'));
 global.window.OneLifeWorld3=World3;
 const World4=require(path.join(root,'world-v4.js'));
+global.window.OneLifeWorld4=World4;
+const World5=require(path.join(root,'world-v5.js'));
 delete global.window;
 const makeElement=(tag='div')=>{
  const listeners={}; const classes=new Set();
@@ -43,7 +45,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
   createElement:makeElement,addEventListener:()=>{}};
  const localStorage={getItem:key=>saved.get(key)||null,setItem:(key,val)=>{saved.set(key,val);},removeItem:key=>saved.delete(key)};
  const sdk={start:()=>{},result:(payload)=>{document.result=payload;},registerPauseHandlers:()=>{},registerCleanup:()=>{}};
- const window={OneLifeSim:Sim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeScene:Scene,KidscadeGame:sdk,
+ const window={OneLifeSim:Sim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeScene:Scene,KidscadeGame:sdk,
   scrollTo(){},addEventListener(){}};
  new Function('window','document','localStorage','performance','setInterval','clearInterval',
   code)(window,document,localStorage,{now:()=>now},
@@ -87,6 +89,8 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.ok(get('endHighlights').children.length>0);
  assert.ok(get('endCountry').textContent.length>0);
  assert.ok(get('arcCount').textContent.includes('선택'));
+ assert.ok(get('worldEventCount').textContent.includes('사건'));
+ assert.ok(get('worldRegionLabel').textContent.length>0);
  assert.ok(get('arcMilestones').children.length>0);
  const firstName=get('birthName').textContent;
  document.result=null;
