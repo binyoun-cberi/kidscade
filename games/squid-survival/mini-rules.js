@@ -85,8 +85,11 @@ function advance(s,now){
       else{s.signal='green';s.signalEnds=when+s.nextGreen;}
       s.signalSince=when;
     }
+    // Movement is controlled ONLY by the player's actual held input.
+    // Yellow is a warning, NOT an automatic brake. A player who keeps holding
+    // still moves, risking disqualification when red arrives.
     if(s.signal==='red'&&s.held&&s.elapsed-s.signalSince>160)return finish(s,false,'빨간불에 움직였어요!');
-    if(s.signal==='green'&&s.held){
+    if((s.signal==='green'||s.signal==='warning')&&s.held){
       s.progress=Math.min(100,s.progress+dt*.019);
       if(s.progress>=100)return finish(s,true);
     }
