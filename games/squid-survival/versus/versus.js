@@ -333,7 +333,10 @@ function drawBoard(id,time){
  if(rect.width<2||rect.height<2)return;
  const px=Math.max(1,Math.round(rect.width*dpr)),py=Math.max(1,Math.round(rect.height*dpr));
  if(canvas.width!==px||canvas.height!==py){canvas.width=px;canvas.height=py;}
- c.setTransform(px/W,0,0,py/H,0,0);activeContext=c;
+ // Keep geometric shapes truly circular on tall tablets and narrow phones.
+ const scale=Math.min(px/W,py/H),ox=(px-W*scale)/2,oy=(py-H*scale)/2;
+ c.setTransform(1,0,0,1,0,0);c.fillStyle='#0c1d21';c.fillRect(0,0,px,py);
+ c.setTransform(scale,0,0,scale,ox,oy);activeContext=c;
  boardBackground(id);
  if(state.phase==='tiebreak'){drawTiebreak(id);return;}
  if(state.phase!=='playing'||!state.round){label('READY',W/2,H/2,42,id===0?'#a4ffd0':'#ffdfa8');return;}
@@ -346,7 +349,10 @@ function drawBoard(id,time){
  if(r.id==='final')drawFinal(r,p);
 }
 function pointerPosition(canvas,event){
- const box=canvas.getBoundingClientRect(),x=(event.clientX-box.left)/box.width*W,y=(event.clientY-box.top)/box.height*H;
+ const box=canvas.getBoundingClientRect();
+ const scale=Math.min(box.width/W,box.height/H);
+ const offX=(box.width-W*scale)/2,offY=(box.height-H*scale)/2;
+ const x=(event.clientX-box.left-offX)/scale,y=(event.clientY-box.top-offY)/scale;
  return {x:(x-OFFX)/SCALE,y:(y-OFFY)/SCALE,vx:x,vy:y};
 }
 for(let id=0;id<2;id++){
