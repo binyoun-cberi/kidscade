@@ -5,13 +5,14 @@
   const Sim = window.OneLifeSim;
   if (!Sim) throw new Error('OneLifeSim engine not loaded');
   const World2 = window.OneLifeWorld2;
-  const Pixel = window.OneLifeScenes6 || window.OneLifeScene;
+  const Pixel = window.OneLifeScenes8 || window.OneLifeScenes6 || window.OneLifeScene;
   const World3 = window.OneLifeWorld3;
   const World4 = window.OneLifeWorld4;
   const World5 = window.OneLifeWorld5;
   const World6 = window.OneLifeWorld6;
   const World7 = window.OneLifeWorld7;
-  if (!World2 || !Pixel || !World3 || !World4 || !World5 || !World6 || !World7) throw new Error('One Life world assets missing');
+  const World8 = window.OneLifeWorld8;
+  if (!World2 || !Pixel || !World3 || !World4 || !World5 || !World6 || !World7 || !World8) throw new Error('One Life world assets missing');
   const SAVE_KEY = 'kidscade_one_life_save_v1';
   const RECORD_KEY = 'kidscade_one_life_history_v1';
   // About 20–30 seconds of automatic years, excluding choices.
@@ -22,6 +23,7 @@
   let lastTick = performance.now(), elapsed = 0, roulette = null, screenTime = 0;
   let completed = false, ruleWasRunning = false, replayBasis = null;
   let peerCache = null, lastPeerRenderedAge = -1, lastMapRenderedAge = -1;
+  let storyTab='', peerAgeChoice=0;
   const sdk = window.KidscadeGame || null;
   const show = name => { stage = name; for (const id of views) $(id).classList.toggle('hidden',id!==name); window.scrollTo?.(0,0); };
   const safeGet = key => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) { return null; } };
@@ -42,7 +44,8 @@
     clearInterval(roulette);
     roulette = null;
     life = new Sim.Life();
-    World7.ensure(life);
+    World8.ensure(life);World8.moment(life);
+    storyTab='';peerAgeChoice=0;
     replayBasis=null;
     peerCache = null;lastPeerRenderedAge = -1;lastMapRenderedAge = -1;
     $('birthCertificate').classList.add('hidden');
@@ -83,12 +86,16 @@
     $('birthMother').textContent=p.motherAge+'세 · '+p.motherJob;
     $('birthFather').textContent=p.fatherAge+'세 · '+p.fatherJob;
     $('birthSiblings').textContent=p.siblings+'명';
+    const setting=World8.ensure(life);
+    $('birthHome').textContent=setting.housing+' · '+setting.familyNote;
+    $('birthContext').textContent=setting.regionName+' · '+setting.climate+' · '+setting.neighborhood;
     $('birthCertificate').classList.remove('hidden');
   }
   function paintLifeRecord() {
     const p=World2.enrich(life).profile;
     const money=life.money;
     const personal=World7.ensure(life);
+    const hometown=World8.ensure(life);
     $('nameHeadline').textContent=p.name+' · '+p.city;
     $('profileName').textContent=p.name;
     $('profileMeta').textContent=life.gender+' · '+p.city+' · '+life.age+'세';
@@ -109,14 +116,12 @@
         emergency:'응급 지원 자격',socialwork:'사회복지 자격',electrical:'전기 자격',
         vocational:'직업훈련 수료','continuing-education':'계속 학습'}[x]||x)).join(' · ')
       : (life.age<16?'학교와 경험으로 배우는 중':'학습·직업 경험을 쌓는 중');
-    $('traitRegion').textContent=p.settlement+' · '+p.city;
+    $('traitRegion').textContent=p.settlement+' · '+p.city+' · '+hometown.housing;
     $('countryContextText').textContent=life.world?.schooling+' · 지역 경제 기회 '+(life.world?.economyScale>=1?'상대적으로 넓은 편':'상대적으로 제한적인 편');
-    $('countrySourceNote').textContent=life.world?.hasPublishedBaseline
-      ? '2024 세계은행 출생 시 기대수명 '+life.world.lifeBaseline.toFixed(1)+'세 · 학교·직업 기회는 가상 모델, 개인 수명 예측이 아님'
-      : '국가별 평균 수명은 게임 추정치 · 교육·일자리 조건도 게임용 모델';
+    $('countrySourceNote').textContent='참고 수명 '+(life.world?.lifeBaseline||0).toFixed(1)+'세는 게임용 근사값 · 실제 자료와 다를 수 있음. 교육·직업·미래 사건은 모두 가상 모델';
     const sceneName=Pixel.paint($('lifeScene'),life);
     const sceneTitle=Pixel.names?.[sceneName]||sceneName;
-    $('sceneLabel').textContent=life.year+'년 · '+life.country[0]+' '+p.city+' · '+sceneTitle+'에서 보내는 하루';
+    $('sceneLabel').textContent=life.year+'년 · '+life.country[0]+' '+p.city+' ('+p.settlement+') · '+sceneTitle+'에서 보내는 하루';
   }
   function paintArc() {
     if(!life)return;
@@ -162,6 +167,7 @@
       qualification:life.world7?.qualification?.join(', ')||'없음',
       netWorth:life.money.netWorth,health:life.stats.health,
       child:!!life.profile.child,partner:!!life.profile.partner,
+      housing:life.world8?.housing||'',
       roles:life.world6?.history?.map(x=>x.job)||[],
       choices:life.log.filter(e=>e.kind==='decision').map(e=>({age:e.age,label:e.text}))};
   }
@@ -174,6 +180,7 @@
     const items=[
       ['출생 국가',replayBasis.country,now.country],
       ['가정환경',replayBasis.family,now.family],
+      ['출생 주거',replayBasis.housing||'미상',now.housing||'미상'],
       ['살아온 기간',replayBasis.age+'세',now.age+'세'],
       ['삶의 방향',replayBasis.career,now.career],
       ['거쳐 온 직업',replayBasis.roles?.join(' → ')||'없음',now.roles?.join(' → ')||'없음'],
@@ -292,46 +299,122 @@
     });
     $('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
   }
-  function paintPeers() {
-    const board=$('peers');
-    if(!life || !board)return;
-    if(life.age===lastPeerRenderedAge || (life.age%4!==0 && life.age!==0 && !life.pending))return;
+  function peerView(peer){
+    return {age:peer.age,alive:peer.alive,name:peer.profile?.name||'이름 없는 이웃',
+      country:peer.country[0],flag:peer.country[1],career:peer.world6?.profession||peer.career,
+      school:peer.world?.educationLevel||'배움을 시작하는 중',
+      history:peer.log?.filter(e=>['decision','world','profession','family'].includes(e.kind)).slice(-1)[0]?.text||'자신만의 하루를 살아가는 중'};
+  }
+  function paintPeers(force=false) {
+    if(!life)return;
+    if(!force && (life.age===lastPeerRenderedAge || (storyTab!=='peers' && life.age%4!==0 && life.age!==0 && !life.pending)))return;
     lastPeerRenderedAge=life.age;
-    if(!peerCache || peerCache.seed!==life.seed){
-      peerCache={seed:life.seed,people:Array.from({length:4},(_,i)=>new Sim.Life((life.seed+Math.imul(i+1,2654435761))>>>0))};
+    if(!peerCache||peerCache.seed!==life.seed){
+      peerCache={seed:life.seed,people:Array.from({length:4},(_,i)=>{
+        const peer=new Sim.Life((life.seed+Math.imul(i+1,2654435761))>>>0);
+        World8.ensure(peer);World8.moment(peer);
+        return {life:peer,samples:[peerView(peer)]};
+      })};
     }
-    board.replaceChildren();
-    for(const peer of peerCache.people){
-      let guard=0;
-      while(peer.alive && peer.age<life.age && guard++<140){
+    const board=$('peers');board.replaceChildren();
+    for(const record of peerCache.people){
+      const peer=record.life;let guard=0;
+      while(peer.alive && peer.age<life.age && guard++<150){
         if(peer.pending){
           const decision=peer.getChoice();
           if(decision)peer.choose(Math.floor(peer.rand()*decision.options.length));
           else if(peer.getReflection())peer.reflect();
           else break;
-        } else peer.tick();
+        }else{
+          peer.tick();
+          if(peer.age===10||peer.age===20||peer.age===40||peer.age===60||!peer.alive)record.samples.push(peerView(peer));
+        }
       }
+      const target=peerAgeChoice?Math.min(peerAgeChoice,life.age):life.age;
+      const sample=peerAgeChoice
+        ? (record.samples.filter(x=>x.age<=target).at(-1)||record.samples[0])
+        :peerView(peer);
       const card=document.createElement('div');card.className='peer';
-      const flag=document.createElement('span');flag.className='peer-flag';flag.textContent=peer.country[1];
-      const label=document.createElement('b');label.textContent=peer.country[0];
-      const age=document.createElement('small');
-      age.textContent=peer.alive?peer.age+'세 · 살아가는 중':peer.age+'세 · 삶을 마침';
-      card.append(flag,label,age);board.append(card);
+      const flag=document.createElement('span');flag.className='peer-flag';flag.textContent=sample.flag;
+      const name=document.createElement('b');name.textContent=sample.name;
+      const label=document.createElement('small');label.textContent=sample.country+' · '+sample.age+'세 · '+
+        (sample.alive?sample.career||'성장 중':'삶을 마침');
+      const detail=document.createElement('small');detail.textContent=sample.history;
+      card.append(flag,name,label,detail);board.append(card);
     }
+    document.querySelectorAll('[data-peer-age]').forEach(button=>{
+      const age=Number(button.dataset.peerAge);
+      button.disabled=age>life.age;
+      button.setAttribute('aria-pressed',String(age===peerAgeChoice));
+    });
   }
-  function paintAgeMap() {
-    const board=$('ageMap');if(!board||!life || (life.age===lastMapRenderedAge) || (life.age%4!==0 && !life.pending))return;
+  function paintAgeMap(force=false) {
+    const board=$('ageMap');
+    if(!board||!life || (!force && life.age===lastMapRenderedAge))return;
     lastMapRenderedAge=life.age;
     board.replaceChildren();
-    for(let year=0;year<108;year++) {
-      const box=document.createElement('span');box.className='age-cell';
-      if(year<=life.age) box.classList.add(year<7?'child':year<19?'teen':year<35?'young':year<65?'adult':'elder');
-      if(year===life.age) box.classList.add('now');
-      const entry=life.log.find(e=>e.age===year&&(e.kind==='decision'||e.kind==='reflection'));
-      if(entry)box.classList.add('landmark');
-      box.title=year+'세'+(entry?(' · '+entry.text):'');
-      board.append(box);
+    const notable=['decision','reflection','family','profession','world','safety','death'];
+    const entries=new Map();
+    for(const entry of life.log){
+      if(!notable.includes(entry.kind))continue;
+      const old=entries.get(entry.age);
+      if(!old||['decision','death'].includes(entry.kind))entries.set(entry.age,entry);
     }
+    for(let year=0;year<108;year++){
+      const cell=document.createElement('button');cell.type='button';cell.className='age-cell';
+      if(year<=life.age)cell.classList.add(year<7?'child':year<19?'teen':year<35?'young':year<65?'adult':'elder');
+      if(year===life.age)cell.classList.add('now');
+      const entry=entries.get(year);
+      if(entry)cell.classList.add(['decision','reflection'].includes(entry.kind)?'landmark':'important');
+      cell.title=year+'세'+(entry?' · '+entry.text:'');
+      cell.setAttribute('aria-label',cell.title);
+      cell.addEventListener('click',()=>{
+        $('yearDetail').textContent=year+'세 · '+(entry?.text||'특별한 기록이 없는 해. 평범한 하루들도 이 인생을 이루었어요.');
+      });
+      board.append(cell);
+    }
+  }
+  function paintSurvival() {
+    if(!life)return;
+    const world=['게임 세계 기준','',0,.55,.69];
+    const point=(country,gender,a)=>{
+      const x=38+3.1*a,y=12+131*(1-World8.survival(country,gender,a));
+      return [x.toFixed(1),y.toFixed(1)];
+    };
+    const draw=(country,gender)=>Array.from({length:51},(_,i)=>{
+      const p=point(country,gender,i*2);
+      return (i?'L':'M')+p.join(' ');
+    }).join(' ');
+    $('survivalActual').setAttribute('d',draw(life.country,life.gender));
+    $('survivalOther').setAttribute('d',draw(world,'남자'));
+    const m=point(life.country,life.gender,Math.min(life.age,100));
+    $('survivalDot').setAttribute('cx',m[0]);$('survivalDot').setAttribute('cy',m[1]);
+    const mod=World8.mortality(life.country,life.gender);
+    $('survivalSummary').textContent=life.country[0]+' · '+life.gender+
+      ' · 출생부터 5세까지 생존 '+Math.round(World8.survival(life.country,life.gender,5)*1000)/10+
+      '%(게임 모형), '+life.age+'세 기준 '+Math.round(World8.survival(life.country,life.gender,life.age)*1000)/10+
+      '%(동일 가상 집단). 개인의 실제 생존 확률이 아니에요.';
+    $('v8CountryStats').textContent='모델 기대수명 참고치 '+mod.baseline.toFixed(1)+
+      '세 · 학교 접근성 '+Math.round(life.world.schoolChance*100)+
+      '%(게임 가정) · 가족 생활: '+World8.ensure(life).housing+
+      ' · 실제 국가통계가 아닌 근사·가상값.';
+  }
+  function renderStoryPanel(){
+    const active=!!storyTab;
+    $('storyTools').classList.toggle('hidden',!active);
+    document.querySelectorAll('[data-story-tab]').forEach(button=>
+      button.setAttribute('aria-pressed',String(button.dataset.storyTab===storyTab)));
+    for(const [name,id] of [['birth','storyBirth'],['years','storyYears'],['stats','storyStats'],['peers','storyPeers']])
+      $(id).classList.toggle('hidden',name!==storyTab);
+    if(!life||!active)return;
+    if(storyTab==='birth'){
+      $('storyBirthText').textContent=World8.synopsis(life)+'. '+World8.ensure(life).familyNote+'.';
+      $('storyBirthNote').textContent=World8.ensure(life).climate+' · '+
+        World8.ensure(life).accent+' · 부모 직업·집·이름은 교육용 가상 설정.';
+    }
+    if(storyTab==='stats')paintSurvival();
+    if(storyTab==='years')paintAgeMap();
+    if(storyTab==='peers')paintPeers();
   }
   function render() {
     if (!life) return;
@@ -355,7 +438,8 @@
     paintTimeline();
     paintStats();
     paintPeers();
-    paintAgeMap();
+    if(storyTab==='years')paintAgeMap();
+    if(storyTab==='stats')paintSurvival();
     document.querySelectorAll('[data-focus]').forEach(btn=>btn.setAttribute('aria-pressed',String(btn.dataset.focus===life.focus)));
     showDecision();
     updatePause();
@@ -365,7 +449,7 @@
     if(!fromSave) safeRemove(SAVE_KEY);
     paused=false; elapsed=0; lastTick=performance.now();
     show('play');
-    render();
+    render();renderStoryPanel();
     sdk?.start?.({mode:'one-life',country:life.country[0]});
     save();
   }
@@ -388,7 +472,7 @@
     $('endNetWorth').textContent=formatCredits(life.money.netWorth);
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=life.career;
-    $('endStory').textContent=summary.story+' '+life.deathReason+' '+(life.world?.educationLevel||'')+' · '+life.career+'의 경로를 걸었다. '+(life.world6?.history?.length||0)+'개 직업 이력과 '+(life.world6?.eventCount||0)+'개 직업·생활 사건, '+(life.world5?.eventCount||0)+'개 지역 사건, 중요한 선택 '+choiceLog.length+'번이 삶을 바꾸었다.';
+    $('endStory').textContent=World8.synopsis(life)+'. '+summary.story+' '+life.deathReason+' '+(life.world?.educationLevel||'')+' · '+life.career+'의 경로를 걸었다. '+(life.world6?.history?.length||0)+'개 직업 이력과 '+(life.world6?.eventCount||0)+'개 직업·생활 사건, '+(life.world5?.eventCount||0)+'개 지역 사건, 중요한 선택 '+choiceLog.length+'번이 삶을 바꾸었다.';
     const endChoices=$('endChoices');endChoices.replaceChildren();
     choiceLog.forEach(e=>{
       const item=document.createElement('li');item.className='end-choice-item';
@@ -455,7 +539,8 @@
     const snapshot=captureEnding(life);
     replayBasis=snapshot;
     life=new Sim.Life(snapshot.seed);
-    World7.ensure(life);
+    World8.ensure(life);World8.moment(life);
+    storyTab='';peerAgeChoice=0;
     peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
     $('birthCertificate').classList.add('hidden');
     $('birthFlag').textContent=life.country[1];
@@ -469,9 +554,18 @@
   $('resumeBtn').addEventListener('click',()=>{
     const restored=currentSave();
     if(!restored || !restored.alive){refreshResume();return;}
-    life=restored;replayBasis=safeGet(SAVE_KEY)?.replayBasis||null;completed=false;peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;startLife(true);
+    life=restored;World8.ensure(life);replayBasis=safeGet(SAVE_KEY)?.replayBasis||null;completed=false;peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;startLife(true);
   });
   $('pauseBtn').addEventListener('click',togglePause);
+  document.querySelectorAll('[data-story-tab]').forEach(button=>button.addEventListener('click',()=>{
+    storyTab=storyTab===button.dataset.storyTab?'':button.dataset.storyTab;
+    lastMapRenderedAge=-1;lastPeerRenderedAge=-1;renderStoryPanel();
+  }));
+  document.querySelectorAll('[data-peer-age]').forEach(button=>button.addEventListener('click',()=>{
+    const age=Number(button.dataset.peerAge);
+    if(!life||age>life.age)return;
+    peerAgeChoice=age;lastPeerRenderedAge=-1;paintPeers(true);
+  }));
   document.querySelectorAll('[data-focus]').forEach(button=>button.addEventListener('click',()=>{
     if(stage!=='play'||!life?.setFocus(button.dataset.focus))return;
     save();render();
