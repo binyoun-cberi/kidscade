@@ -21,13 +21,6 @@ const keys=Object.freeze({
 });
 const key=keys[mode];
 let best=0;try{best=Math.max(0,Number(JSON.parse(localStorage.getItem(key)||'{}').best)||0);}catch(_){}
-const sprites={};
-const ASSET_ROOT=new URL('../../assets/',script.src);
-function image(name,url){if(typeof Image==='undefined')return;sprites[name]=new Image();sprites[name].src=new URL(url,ASSET_ROOT).href;}
-image('player','game/characters/kidscade-avatar-v3/school-starter/school-starter-sheet.png');
-image('coin','game/2d/platformer-art/base/items/coin-gold.png');
-image('flag','game/2d/platformer-art/base/items/flag-green.png');
-const alive=name=>sprites[name]?.complete&&sprites[name].naturalWidth>0;
 function statusLabel(){
  if(!model)return label.hint;
  if(model.status==='failed')return model.reason;
