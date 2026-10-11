@@ -129,7 +129,6 @@
  entry('future-transport','all',14,83,['새로운 교통수단 덕분에 통근 시간이 줄었다.','대중교통 확장으로 다른 지역의 일을 찾았다.','교통 환경이 달라져 생활권이 넓어졌다.'],{network:1,tag:'mobility'},{weight:1});
  entry('future-pandemic-care','all',8,83,['감염병이 유행해 가족과 이웃이 서로 도왔다.','공공보건 안내를 따라 생활 방법을 조정했다.','예상하지 못한 건강 위기에 지역 사회가 협력했다.'],{health:-3,community:2,tag:'public-health'},{weight:.16,rarity:'rare',serious:true});
  entry('future-pandemic-recovery','all',10,88,['지역 의료기관에서 필요한 치료와 안내를 받았다.','건강 위기 이후 학교와 직장 생활에 적응했다.','가족과 이웃이 서로를 돌보며 일상을 되찾았다.'],{health:5,bonds:3,tag:'health-recovery'},{needs:['public-health'],weight:6})
- ];
  // Simulated national crises are enabled for a small, explicitly authored
  // set of *possible story settings* and are never guaranteed or persistent.
  const storyCrisisCountries=new Set('콩고민주공화국,수단,소말리아,미얀마,예멘,시리아,말리,우크라이나,아프가니스탄,나이지리아'.split(','));
