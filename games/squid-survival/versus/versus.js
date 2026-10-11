@@ -2,6 +2,7 @@
 'use strict';
 const E=window.SquidVersusRules,T=window.DalgonaTrace,M=window.SquidMiniRules,$=id=>document.getElementById(id);
 const W=520,H=320,SCALE=.72,OFFX=(W-400*SCALE)/2,OFFY=(H-400*SCALE)/2;
+const clamp=(x,min,max)=>Math.min(max,Math.max(min,x));
 const el={dialog:$('dialog'),title:$('dialogTitle'),lead:$('dialogLead'),eyebrow:$('dialogEyebrow'),
  button:$('dialogButton'),rules:$('dialogRules'),chips:$('resultChips'),chip:[$('result0'),$('result1')],
  round:$('roundTitle'),timer:$('time'),track:$('roundTrack'),scores:[$('score0'),$('score1')],
@@ -35,6 +36,7 @@ function send(id,action,value){
  const previous=state.phase;
  state=E.input(state,id,action,value,now());
  if(previous!=='summary'&&state.phase==='summary')showDialog();
+ if(previous!=='finished'&&state.phase==='finished'){maybeFinish();showDialog();}
 }
 function releaseAll(id){
  if(state.phase==='playing'&&state.round){
@@ -191,7 +193,7 @@ function onDialog(){
    if(paused())return;
    countdownUntil=now()+2500;el.button.disabled=true;
  }else if(state.phase==='summary'){
-   state=E.next(state,now());showDialog();
+   state=E.next(state,now());if(state.phase==='finished')maybeFinish();showDialog();
  }else if(state.phase==='finished'){
    state=E.start(state);recorded=false;showDialog();
  }else if(state.phase==='tiebreak'){
