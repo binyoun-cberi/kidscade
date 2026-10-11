@@ -109,6 +109,7 @@ const TEST_FILES = [
   "tests/squid-survival-mini.test.cjs",
   "tests/squid-survival-design.test.cjs",
   "tests/squid-survival-versus.test.cjs",
+  "tests/squid-versus-browser-audit.test.cjs",
   "tests/dalgona-trace.test.cjs",
   "tests/squid-memory-bridge-assets.test.cjs",
   "tests/ecopolis.test.cjs",
