@@ -126,6 +126,14 @@ function renderHud(){
      el.laneOverlay[i].hidden=!p.done;
      if(p.done)el.laneOverlay[i].textContent=p.clear?'통과!':p.reason;
    }
+   el.keyHint.textContent=({
+     dalgona:'PC: 1P F + A(천천히)/D(빠르게) · 2P Enter + ←/→',
+     bridge:'PC: 1P WASD · 2P 방향키',
+     redlight:'PC: 1P Space · 2P Enter · 꾹 누르기',
+     tug:'PC: 1P Space · 2P Enter · 타이밍에 누르기',
+     marbles:'PC: 1P A/D · 2P ←/→',
+     final:'PC: 기억 QWER / UIOP · 타이밍 Space / Enter · 계산 1~3 / 7~9'
+   })[r.id];
    el.instruction.textContent=({
      dalgona:'각자 노란 출발점을 눌러 선을 따라 긁으세요. 너무 빠르거나 느리면 실패!',
      bridge:r.phase==='preview'?'같은 정답 길을 5초 동안 외우세요.':'발판을 기억해서 ↑↓←→로 순서대로 건너세요.',
