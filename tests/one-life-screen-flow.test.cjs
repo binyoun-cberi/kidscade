@@ -31,6 +31,7 @@ global.window.OneLifeScene=Scene;
 const Scenes6=require(path.join(root,'scenes-v6.js'));
 global.window.OneLifeScenes6=Scenes6;
 const Scenes8=require(path.join(root,'scenes-v8.js'));
+const History=require(path.join(root,'history.js'));
 delete global.window;
 const makeElement=(tag='div')=>{
  const listeners={}; const classes=new Set();
@@ -66,7 +67,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  const StableSim={...Sim,Life:class extends Sim.Life{
   constructor(seed){super(seed===undefined?911:seed);}
  }};
- const window={OneLifeSim:StableSim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeWorld6:World6,OneLifeWorld7:World7,OneLifeWorld8:World8,OneLifeCareers6:Careers6,OneLifeEvents6:Events6,OneLifeScene:Scene,OneLifeScenes6:Scenes6,OneLifeScenes8:Scenes8,KidscadeGame:sdk,
+ const window={OneLifeSim:StableSim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeWorld6:World6,OneLifeWorld7:World7,OneLifeWorld8:World8,OneLifeCareers6:Careers6,OneLifeEvents6:Events6,OneLifeScene:Scene,OneLifeScenes6:Scenes6,OneLifeScenes8:Scenes8,OneLifeHistory:History,KidscadeGame:sdk,
   scrollTo(){},addEventListener(){}};
  new Function('window','document','localStorage','performance','setInterval','clearInterval',
   code)(window,document,localStorage,{now:()=>now},
