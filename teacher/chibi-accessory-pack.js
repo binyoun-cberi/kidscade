@@ -137,6 +137,14 @@ function fitCurvedFaceParts(group,body,eyes,fit){
       });
       const arm=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),16,.007,6,false);
       arm.userData.kidscadeFaceProjection='temple';
+      // Rebuilding a SkinnedMesh geometry without skin indices crashes
+      // THREE.SkinnedMesh.computeBoundingSphere() in animated Chrome poses.
+      for(const attr of ['skinIndex','skinWeight']){
+        const source=projected.getAttribute(attr);
+        if(!source||source.count!==arm.getAttribute('position').count)
+          throw Error('Chibi temple skin transfer mismatch: '+attr);
+        arm.setAttribute(attr,source.clone());
+      }
       node.geometry=arm;
       projected.dispose();
       return;
@@ -154,6 +162,12 @@ function fitCurvedFaceParts(group,body,eyes,fit){
       });
       const loop=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),24,.006,6,false);
       loop.userData.kidscadeFaceProjection='strap';
+      for(const attr of ['skinIndex','skinWeight']){
+        const source=projected.getAttribute(attr);
+        if(!source||source.count!==loop.getAttribute('position').count)
+          throw Error('Chibi strap skin transfer mismatch: '+attr);
+        loop.setAttribute(attr,source.clone());
+      }
       node.geometry=loop;
       projected.dispose();
       return;
