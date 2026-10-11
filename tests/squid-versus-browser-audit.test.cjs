@@ -105,15 +105,37 @@ async function browserRun(){
    assert.equal(snapshot.controls[0],2);assert.equal(snapshot.controls[1],2);
    if(size.mobile){
      // Two real concurrent touch contacts, one per candy canvas.
-     const a=snapshot.elements.board0,b=snapshot.elements.board1;
-     const xy=(c)=>({x:Math.round(c.x+c.w*.5),y:Math.round(c.y+c.h*.24)});
-     const t0=xy(a),t1=xy(b);
-     await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...t0,id:10},{...t1,id:20}]});
-     await sleep(50);
+     const fingerPoints=await evaluate(`(()=>{
+       const trace=DalgonaTrace.buildTrace(1),samples=[trace.path[0],trace.path[20]];
+       const ids=['board0','board1'];
+       return ids.map(id=>{
+         const box=document.getElementById(id).getBoundingClientRect(),k=Math.min(box.width/520,box.height/320);
+         const offsetX=(box.width-520*k)/2,offsetY=(box.height-320*k)/2;
+         return samples.map(p=>({
+            x:Math.round(box.x+offsetX+(116+p.x*.72)*k),
+            y:Math.round(box.y+offsetY+(16+p.y*.72)*k)
+         }));
+       });
+     })()`);
+     await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[
+       {...fingerPoints[0][0],id:10},{...fingerPoints[1][0],id:20}]});
+     await sleep(100);
      await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[
-       {...t0,y:t0.y+3,id:10},{...t1,y:t1.y+3,id:20}]});
-     await sleep(50);
+       {...fingerPoints[0][1],id:10},{...fingerPoints[1][1],id:20}]});
+     await sleep(70);
      await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+     await sleep(100);
+     const motion=await evaluate(`({
+        progress:[document.getElementById('meter0').style.width,document.getElementById('meter1').style.width],
+        labels:[document.getElementById('detail0').textContent,document.getElementById('detail1').textContent],
+        transforms:['board0','board1'].map(id=>{
+          const t=document.getElementById(id).getContext('2d').getTransform();
+          return {x:t.a,y:t.d};
+        })
+      })`);
+     assert.ok(motion.progress.every(p=>parseFloat(p)>0),size.name+' simultaneous touches did not progress: '+JSON.stringify(motion));
+     assert.ok(motion.transforms.every(x=>Math.abs(x.x-x.y)<1e-5),size.name+' circle has anisotropic scaling: '+JSON.stringify(motion));
+     snapshot.multitouch=motion;
    }
    await sleep(100);
    assert.equal(errors.length,errorStart,size.name+' browser errors: '+errors.slice(errorStart).join('; '));
