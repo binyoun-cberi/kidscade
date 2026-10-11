@@ -104,6 +104,15 @@ async function main(){
     'if(typeof module!==\'undefined\'&&module.exports)module.exports=snapshot;'+
     'if(root)root.OneLifeOfficialStats=snapshot;})(typeof window!==\'undefined\'?window:null);\n';
   fs.writeFileSync(path.join(game,'official-data.js'),js);
+  // Bump only the official snapshot URL when the source snapshot changes.
+  // A retained browser tab should never silently keep last month's statistics.
+  const htmlPath=path.join(game,'index.html');
+  const html=fs.readFileSync(htmlPath,'utf8');
+  const stamp=snapshot.updatedAt.replace(/[-:TZ.]/g,'').slice(0,12);
+  const bumped=html.replace(/official-data\.js\?v=[0-9]+/,'official-data.js?v='+stamp);
+  if(bumped===html&& !html.includes('official-data.js?v='+stamp))
+    throw new Error('Official data script tag missing from index');
+  if(bumped!==html)fs.writeFileSync(htmlPath,bumped);
   console.log('Verified official data snapshot:',JSON.stringify({updatedAt:snapshot.updatedAt,coverage:snapshot.coverage,countries:Object.keys(snapshot.countries).length}));
 }
 if(require.main===module)main().catch(err=>{console.error(err.stack||err);process.exitCode=1;});
