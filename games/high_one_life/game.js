@@ -4,6 +4,9 @@
   const $ = id => document.getElementById(id);
   const Sim = window.OneLifeSim;
   if (!Sim) throw new Error('OneLifeSim engine not loaded');
+  const World2 = window.OneLifeWorld2;
+  const Pixel = window.OneLifeScene;
+  if (!World2 || !Pixel) throw new Error('One Life v2 assets missing');
   const SAVE_KEY = 'kidscade_one_life_save_v1';
   const RECORD_KEY = 'kidscade_one_life_history_v1';
   const MINUTES_PER_LIFE = [30,60,90];
@@ -32,6 +35,8 @@
     clearInterval(roulette);
     roulette = null;
     life = new Sim.Life();
+    World2.enrich(life);
+    $('birthCertificate').classList.add('hidden');
     completed = false; speed = 2; paused = false; elapsed = 0;
     $('lifeStartBtn').classList.add('hidden');
     $('birthCountry').textContent = '출생을 기다리는 중…';
@@ -48,10 +53,45 @@
         clearInterval(roulette); roulette = null;
         paint(life.country);
         $('birthDetail').textContent = life.gender + ' · ' + life.familyLevel + ' · ' + life.year + '년 출생';
+        paintCertificate();
         $('lifeStartBtn').classList.remove('hidden');
         $('lifeStartBtn').focus();
       }
     }, 76);
+  }
+  const formatCredits = value => {
+    const n=Math.round(Number(value)||0);
+    return (n<0?'−':'')+Math.abs(n).toLocaleString('ko-KR')+'점';
+  };
+  function paintCertificate() {
+    if(!life)return;
+    const p=World2.enrich(life).profile;
+    $('birthName').textContent=p.name;
+    $('birthPlace').textContent=life.country[0]+' · '+p.city+' ('+p.settlement+')';
+    $('birthGender').textContent=life.gender;
+    $('birthDate').textContent='2026년 '+p.birthMonth+'월 '+p.birthDay+'일';
+    $('birthFamily').textContent=life.familyLevel;
+    $('birthMother').textContent=p.motherAge+'세 · '+p.motherJob;
+    $('birthFather').textContent=p.fatherAge+'세 · '+p.fatherJob;
+    $('birthSiblings').textContent=p.siblings+'명';
+    $('birthCertificate').classList.remove('hidden');
+  }
+  function paintLifeRecord() {
+    const p=World2.enrich(life).profile;
+    const money=life.money;
+    $('nameHeadline').textContent=p.name+' · '+p.city;
+    $('profileName').textContent=p.name;
+    $('profileMeta').textContent=life.gender+' · '+p.city+' · '+life.age+'세';
+    $('profileFamily').textContent=p.child?'돌봄 중인 아이가 있어요':p.partner?'함께하는 동반자가 있어요':life.familyLevel;
+    $('netWorth').textContent=formatCredits(money.netWorth);
+    $('netWorth').classList.toggle('negative',money.netWorth<0);
+    $('annualIncome').textContent=formatCredits(money.income);
+    $('annualExpense').textContent=formatCredits(money.expense);
+    $('annualBalance').textContent=formatCredits(money.lastBalance);
+    $('annualBalance').classList.toggle('negative',money.lastBalance<0);
+    $('employmentStatus').textContent=money.employment;
+    const sceneName=Pixel.paint($('lifeScene'),life);
+    $('sceneLabel').textContent=life.year+'년 · '+life.country[0]+' '+p.city+' · '+sceneName+'을(를) 보내고 있습니다.';
   }
   function updatePause() {
     $('pauseBtn').textContent = paused ? '▶ 이어가기' : 'Ⅱ 일시정지';
@@ -159,6 +199,7 @@
   }
   function render() {
     if (!life) return;
+    paintLifeRecord();
     $('placeFlag').textContent=life.country[1];
     $('placeName').textContent=life.country[0];
     $('currentYear').textContent=life.year+'년';
@@ -205,7 +246,8 @@
     const summary=life.summary();
     const count=rememberLife();
     $('endYears').textContent='2026 — '+life.year;
-    $('endCountry').textContent=life.country[1]+' '+summary.country;
+    $('endCountry').textContent=life.country[1]+' '+summary.country+' · '+life.profile.name+' ('+life.profile.city+')';
+    $('endNetWorth').textContent=formatCredits(life.money.netWorth);
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=life.career;
     $('endStory').textContent=summary.story+' '+life.deathReason;
