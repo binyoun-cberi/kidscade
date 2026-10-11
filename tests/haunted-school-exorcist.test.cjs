@@ -15,7 +15,7 @@ test('3D school gameplay is a parseable local Three.js module',()=>{
   const result=spawnSync(process.execPath,['--input-type=module','--check'],{input:js,encoding:'utf8'});
   assert.equal(result.status,0,result.stderr||result.stdout);
   assert.match(html,/assets\/vendor\/three-r160\/three\.module\.js/);
-  assert.match(html,/src="\.\/game\.js\?v=14"/);
+  assert.match(html,/src="\.\/game\.js\?v=15-survival"/);
   assert.match(js,/new THREE\.WebGLRenderer/);
   assert.match(js,/new THREE\.PerspectiveCamera/);
   assert.match(js,/GLTFLoader/);
@@ -499,7 +499,7 @@ test('first-person has no chase rig, and looking changes the torch direction',()
   assert.match(js,/const FIRST_PERSON_EYE_HEIGHT=1\.62/);
   assert.match(js,/camera\.position\.set\(player\.x,FIRST_PERSON_EYE_HEIGHT,player\.z\)/);
   assert.match(js,/torchTarget\.position\.set\(/);
-  assert.match(js,/viewPitch=Math\.max\(-\.72,Math\.min\(\.72/);
+  assert.match(js,/viewPitch=Math\.max\(-1\.22,Math\.min\(1\.22/);
   assert.doesNotMatch(js,/CAMERA_FOLLOW|cameraFollowState|cameraFollowTarget/);
 });
 
@@ -526,9 +526,9 @@ test('eyes detect the maiden only when the actual first-person view looks at her
 });
 
 test('first-person control instructions agree with the fixed eye camera',()=>{
-  assert.match(html,/1인칭 시점/);
-  assert.match(html,/카메라는 캐릭터의 눈과 같습니다/);
-  assert.match(html,/화면을 돌려 진짜로 등을 돌린 채 4초/);
+  assert.match(html,/마우스 움직임으로 시점 전환/);
+  assert.match(html,/튜토리얼 · 여섯 괴이 연습하기/);
+  assert.match(js,/document\.pointerLockElement===ui\.canvas/);
   assert.match(js,/ui\.reticle\.classList\.toggle\('hidden',!started\|\|ended\|\|!!hidingLocker\)/);
 });
 
@@ -808,4 +808,70 @@ test('wolf lure speaker cannot be triggered through the 5-1 classroom wall',()=>
   assert.equal(nearAction()?.type,'speaker','E can activate the hall speaker while standing in its corridor');
   assert.match(js,/stage===10&&dist\(player,\{x:-7\.5,z:8\.55\}\)<2\.25&&/);
   assert.match(js,/clearGhostSight\(player\.x,player\.z,-7\.5,8\.55\)/);
+});
+
+
+test('normal survival starts apart from the teaching route and preserves a 5-minute objective',()=>{
+  for(const fragment of [
+    'const SURVIVAL_SECONDS=300,SURVIVAL_REQUIRED_SEALS=8',
+    "reset('survival')", "reset('tutorial')", "if(tutorialMode){updateGhost(dt);updateNewEncounters(dt);updateNavigation(dt);}",
+    'updateSurvival(dt)', "finish(survivalKills>=SURVIVAL_REQUIRED_SEALS)"
+  ])assert.ok(js.includes(fragment),fragment);
+  assert.match(js,/if\(!tutorialMode\)\{ui\.lesson\.classList\.add\('hidden'\);return;\}/);
+  assert.match(html,/id="tutorialStart"/);
+  assert.match(html,/id="start"/);
+  assert.match(html,/5분을 버티면서 최소 8회 퇴마/);
+});
+test('survival spawn queue never exceeds three concurrent distinct creatures',()=>{
+  const begin=js.indexOf('function spawnSurvivalGhost(){'),end=js.indexOf('function nearestSurvivalGhost(){',begin);
+  assert.ok(begin>0&&end>begin);
+  const actors=Object.fromEntries(['maiden','egg','yuki','reaper','wolf'].map(kind=>[
+    kind,{root:{position:{set(){}},visible:false}}
+  ]));
+  const ghosts=[],seen=[],player={x:0,z:0};
+  let elapsed=0;
+  const source=js.slice(begin,end);
+  const build=new Function('player','horrorVisuals','survivalGhosts','SURVIVAL_SPAWNS','HORROR_NAMES','dist',
+    'canWalk','loadHorrorAsset','showToast','sfx',
+    'let elapsed=0;'+source+'return {spawn:spawnSurvivalGhost,setTime(t){elapsed=t}};');
+  const engine=build(player,actors,ghosts,[[-20,-15],[18,-15],[-20,15],[18,15],[0,15]],
+    {maiden:'a',egg:'b',yuki:'c',reaper:'d',wolf:'e'},
+    (a,b)=>Math.hypot(a.x-b.x,a.z-b.z),()=>true,k=>seen.push(k),()=>{},()=>{});
+  engine.setTime(0);assert.equal(engine.spawn(),true);
+  assert.equal(engine.spawn(),false);
+  engine.setTime(90);assert.equal(engine.spawn(),true);
+  assert.equal(engine.spawn(),false);
+  engine.setTime(200);assert.equal(engine.spawn(),true);
+  assert.equal(engine.spawn(),false);
+  assert.equal(ghosts.length,3);
+  assert.equal(new Set(ghosts.map(g=>g.kind)).size,3);
+  ghosts.pop();assert.equal(engine.spawn(),true,'a successful exorcism opens a replacement slot');
+  assert.equal(ghosts.length,3);
+  assert.equal(seen.length,4);
+});
+test('all five survival enemies have distinct readable weakening conditions',()=>{
+  for(const key of ['maiden:','egg:','yuki:','reaper:','wolf:'])assert.ok(js.includes(key),key);
+  for(const token of ["look.score>.88","look.score<-.20","!flashOn&&d<6.4",
+    "flashOn&&look.clear&&look.score>.75","flashOn&&look.clear&&look.score>.80"]){
+    assert.ok(js.includes(token),token);
+  }
+  assert.match(js,/g\.ready=5/);
+  assert.match(js,/sealSurvivalGhost\(item\.ghost\)/);
+  assert.match(js,/survivalKills\+\+/);
+});
+test('FPS mouse-look does not require held pointer and touchscreen still drags',()=>{
+  assert.match(js,/requestPointerLock/);
+  assert.match(js,/document\.addEventListener\('mousemove'/);
+  assert.match(js,/e\.movementX,e\.movementY/);
+  assert.match(js,/ui\.canvas\.addEventListener\('pointermove'/);
+  assert.match(js,/document\.exitPointerLock/);
+  assert.match(html,/id="lookSensitivity"/);
+  assert.match(html,/id="mouseLockHint"/);
+});
+test('untextured ghosts are recolored but supplied PBR maps remain intact',()=>{
+  assert.match(js,/const HORROR_PALETTE=\{/);
+  assert.match(js,/function repaintHorrorMaterial\(/);
+  assert.match(js,/if\(copy\.map\|\|!copy\.color\)return copy/);
+  assert.match(js,/geo\.setAttribute\('color'/);
+  assert.match(js,/copy\.vertexColors=true/);
 });
