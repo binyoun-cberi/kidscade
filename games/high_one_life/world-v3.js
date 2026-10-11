@@ -50,9 +50,23 @@
   function baseline(country){
     return LIFE_2024[country[0]]??clamp(44+42*(country[4]||.6),56,85);
   }
+  function structuralContext(life){
+    const countryIndex=life.country[3],healthIndex=life.country[4];
+    const family=life.familyLevel,settlement=life.profile?.settlement;
+    const rural=settlement==='농촌'?.16:settlement==='소도시'?.06:0;
+    const household=family==='여유 있는 형편'?.13:family==='빠듯한 형편'?-.17:0;
+    // Fictional route weights informed by the game's existing national opportunity
+    // and health indices; they are not measured country rates or predictions.
+    return {
+      formalWorkAccess:clamp(.10+countryIndex*.68+household*.35-rural*.35,.08,.91),
+      safetyNetAccess:clamp(.08+countryIndex*.70+household*.28-rural*.22,.06,.90),
+      mobilityPressure:clamp(.07+(1-countryIndex)*.34+rural*.50+(family==='빠듯한 형편'?.12:0),.06,.68),
+      healthcareAccess:clamp(.22+healthIndex*.65+household*.20-rural*.30,.12,.91)
+    };
+  }
   function setup(life){
     World2.enrich(life);
-    if(life.world)return life.world;
+    if(life.world){Object.assign(life.world,structuralContext(life));return life.world;}
     const p=life.profile,seed=life.seed,schoolIndex=life.country[3],family=life.familyLevel;
     const bonus=family==='여유 있는 형편'?.18:family==='빠듯한 형편'?-.15:0;
     const rural=p.settlement==='농촌'?.13:p.settlement==='소도시'?.04:0;
@@ -61,7 +75,7 @@
     const secondaryChance=clamp(.19+schoolIndex*.67+bonus*.7-rural*.65,.13,.96);
     const ppp=countryEconomy(life.country);
     const individual=roll(seed,48)*2-1;
-    const healthResource=clamp(.33+life.country[4]*.66+bonus-rural*.4,.2,1);
+    const healthResource=structuralContext(life).healthcareAccess;
     const target=clamp(baseline(life.country)+(family==='여유 있는 형편'?3:family==='빠듯한 형편'?-4:0)
       -(rural*9)+individual*7+(life.gender==='여자'?1:-1),45,94);
     const w={
@@ -71,7 +85,7 @@
       startedWorking:false,eventCount:0,turningPoints:0,opportunityNarrative:'',
       schoolRoll:roll(seed,29),secondaryRoll:roll(seed,30),
       vocationalRoll:roll(seed,31),scholarshipRoll:roll(seed,32),
-      employmentBonus:roll(seed,33),healthExtra:roll(seed,34)
+      employmentBonus:roll(seed,33),healthExtra:roll(seed,34),...structuralContext(life)
     };
     life.world=w;
     p.familyIncome=Math.round(p.familyIncome*ppp);
@@ -122,9 +136,14 @@
   };
   function startWork(life){
     const w=setup(life),p=life.profile,choice=OCCUPATIONS[p.settlement]||OCCUPATIONS['도시'];
-    let n=Math.floor(roll(life.seed,37)*choice.length);
-    if(w.educationLevel==='중등 과정 이수' && w.employmentBonus>.78)n=3;
-    w.occupation=choice[n];
+    const workRoll=roll(life.seed,37),access=w.formalWorkAccess;
+    let n=Math.floor(workRoll*choice.length);
+    if(workRoll>.56+(access*.30)){
+      w.occupation=p.settlement==='농촌'?'가족 생업·계절 일자리':p.settlement==='소도시'?'지역 상점·임시 일자리':'단기·비공식 서비스 일자리';
+    }else if(workRoll<access*.28&&w.educationYears>=5){
+      w.occupation=['교육·행정 보조','보건·돌봄 서비스','기술·사무 업무'][Math.floor(roll(life.seed,38)*3)];
+    }else if(w.educationLevel==='중등 과정 이수' && w.employmentBonus>.78)n=3;
+    else w.occupation=choice[n];
     w.startedWorking=true;
     if(life.career==='학생')return;
     if(life.career==='진로 탐색 중')life.career='일자리 탐색 중';
@@ -175,7 +194,8 @@
       life.logEvent('배운 과정과 가정 사정에 맞는 진로를 찾기 시작했다.','milestone');
     }
     const rollMove=life.rand();
-    if((age===25||age===38||age===52) && rollMove<.20+.12*w.schoolChance){
+    const moveChance=clamp(.08+w.mobilityPressure*.42+w.formalWorkAccess*.10,.07,.48);
+    if((age===25||age===38||age===52) && rollMove<moveChance){
       const names=World2.METADATA[life.country[0]]||['도시 지역','작은 마을'];
       const where=names[Math.floor(life.rand()*names.length)];
       if(where!==p.city){p.city=where;life.logEvent('새로운 일과 기회를 찾아 '+where+'(으)로 이사했다.','milestone');}
@@ -252,5 +272,5 @@
     return true;
   }
   install();
-  return Object.freeze({install,setup,baseline,PAUSE_AGES,LIFE_2024,countryEconomy,childEvents,automaticDecision});
+  return Object.freeze({install,setup,baseline,structuralContext,PAUSE_AGES,LIFE_2024,countryEconomy,childEvents,automaticDecision});
 });

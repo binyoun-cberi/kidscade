@@ -18,6 +18,9 @@ function findCareer(life,age,reason){
  const a=life.arc,w=life.world,keys=Object.keys(C.tracks),weights=keys.map(key=>{
   let p=1;
   if(['education','science','health'].includes(key))p*=w.educationLevel.includes('고등')?3:w.educationYears<5?.45:1.3;
+  const formalAccess=w.formalWorkAccess??.5;
+  if(['education','science','health','technology','civic'].includes(key))p*=.58+formalAccess*.95;
+  if(['agriculture','trades','service','business'].includes(key))p*=1.42-formalAccess*.55;
   if(['technology','trades'].includes(key))p*=['trade','training'].includes(a.path)?4:1.2;
   if(['business','service'].includes(key))p*=a.path==='work'||a.business?3.5:1.2;
   if(key==='civic')p*=a.community>=2?4:1;

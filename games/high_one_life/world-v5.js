@@ -150,28 +150,6 @@
  };
  const r=(life,age,salt)=>W4.roll(life,age,salt);
  const amount=(life,n)=>Math.round(n*Math.max(.38,life.world?.economyScale||1));
- // Country-local vignettes: every supported birthplace receives several distinct
- // paths. These are authored possibilities, not claims about a country's typical
- // people or measured odds. The selected city/settlement comes from the fictional
- // birth profile; broad regional events above supply additional local context.
- for(const [countryIndex,countryRow] of Sim.COUNTRIES.entries()){
-  const country=countryRow[0],slug='birthplace-'+countryIndex;
-  entry(slug+'-learning','all',10,30,[
-   '{country}의 {city}에서 학교·도서관·지역 배움터를 오가며 관심 있는 것을 배웠다.',
-   '{settlement}에서 통학과 집안일을 조율하며 공부를 이어 갈 방법을 찾았다.',
-   '친구와 서로 아는 것을 나누며 {city}에서 배움의 폭을 넓혔다.'
-  ],{knowledge:4,learning:2,tag:'local-learning'},{country});
-  entry(slug+'-livelihood','all',18,73,[
-   '{city}에서 기술을 배우거나 일터를 옮기며 생활의 기반을 만들었다.',
-   '{country}의 다른 지역으로 이동해 새 일을 시작하고 낯선 생활에 적응했다.',
-   '일과 돌봄을 함께 이어 가도록 근무 방식과 가족의 역할을 조정했다.'
-  ],{skill:2,network:1,tag:'local-livelihood'},{country,needs:['working'],weight:1.2});
-  entry(slug+'-community','all',7,92,[
-   '{city}에서 이웃과 함께 작은 문제를 해결하며 오래가는 인연을 만들었다.',
-   '{settlement}의 가족·친구와 서로 가능한 도움을 나누었다.',
-   '새로운 사람들과 어울리며 {country}에서 나만의 생활 터전을 만들었다.'
-  ],{bonds:4,community:2,tag:'local-community'},{country,weight:1.1});
- }
  // Cross-country turning points add connected stories to lives with changing
  // circumstances, so hardship, work, care and migration can lead somewhere new.
  entry('life-study-interrupted','all',12,35,['가족의 사정으로 공부를 쉬었지만, 나중에 야간 과정과 직업 훈련을 알아보았다.','학비와 생활비를 함께 마련하며 공부를 이어 갈 현실적인 방법을 찾았다.','잠시 멈춘 배움을 다시 시작해 이전에 몰랐던 진로를 발견했다.'],{knowledge:4,learning:3,happiness:2,tag:'returned-to-study'},{needs:['hardship'],weight:1.2});
@@ -246,9 +224,21 @@
   const items=templates.filter(e=>eligible(life,e) &&
     !(['stocks-growth','stocks-loss','crypto-boom','crypto-crash'].includes(e.id)));
   if(!items.length)return;
-  let total=0;for(const e of items)total+=e.weight;
+  const routeWeight=(e)=>{
+   const world=life.world||{},family=life.familyLevel,settlement=life.profile?.settlement;
+   let weight=e.weight;
+   if(['science-work','europe-study','east-asia-learning','south-asia-education'].includes(e.id))weight*=.55+(world.schoolChance||.5)*.9;
+   if(['school-cost','public-aid'].includes(e.id)&&family==='빠듯한 형편')weight*=1.35;
+   if(['rural-transport','small-farm'].includes(e.id)&&settlement==='농촌')weight*=1.6;
+   if(e.id==='urban-rent'&&settlement==='도시')weight*=1.2+(world.economyScale||.5)*.25;
+   if(['urban-rent','school-cost','health-cost'].includes(e.id)&&family==='여유 있는 형편')weight*=.65;
+   if(['job-loss','market-crash','business-fail'].includes(e.id))weight*=1.25-(world.safetyNetAccess||.5)*.35;
+   if(['public-aid','health-visit'].includes(e.id))weight*=.55+(world.safetyNetAccess||.5)*.75;
+   return Math.max(.04,weight);
+  };
+  let total=0;for(const e of items)total+=routeWeight(e);
   let needle=r(life,age,321)*total,selected=items[items.length-1];
-  for(const e of items){needle-=e.weight;if(needle<=0){selected=e;break;}}
+  for(const e of items){needle-=routeWeight(e);if(needle<=0){selected=e;break;}}
   apply(life,selected);
   // A very rare non-graphic fatal outcome exists only inside a fictional future
   // conflict that already arose during this particular life, never from birth.
