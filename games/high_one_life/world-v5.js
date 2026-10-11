@@ -320,5 +320,5 @@
   return true;
  }
  install();
- return Object.freeze({install,ensure,GROUPS,templates,groupFor,eligible,specialGate,chooseSpecial,storyCrisisCountries});
+ return Object.freeze({install,ensure,GROUPS,templates,groupFor,eligible,apply,specialGate,chooseSpecial,storyCrisisCountries});
 });
