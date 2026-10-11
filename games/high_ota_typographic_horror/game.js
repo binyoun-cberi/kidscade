@@ -722,10 +722,12 @@ function update(dt) {
   }
   if(state.stage==='explore'||state.stage==='final'){
     soundPulse=Math.max(0,soundPulse-dt);
-    const safe=state.stage==='explore'&&C3.inArchive(player);
+    // The archive is protected ONLY while its separate gaze puzzle is unresolved.
+    const archiveClear=C3.ensure(state).records.archive;
+    const safe=state.stage==='explore'&&C3.inArchive(player)&&!archiveClear;
     const report=X.step(corrector,dt,player,{
       stage:state.stage,safe,awakened:literacy.awakened,moving:player.moving,running,noise:soundPulse>0,
-      passable:(x,z)=>x<=3.03&&C3.canMove(state,x,z)
+      passable:(x,z)=>(archiveClear||x<=3.03)&&C3.canMove(state,x,z)
     });
     if(report.caught){
       state.stage='lost';state.lossReason='corrector';state.losses++;
@@ -796,21 +798,39 @@ function update(dt) {
   const stalking=corrector.phase!=='dormant'&&!failed;
   const threat=prologue?state.monster:stalking?corrector:null;
   const distance=threat?R.distance(player,threat):Infinity;
-  enemyGroup.visible=Boolean(threat);
-  if(threat){
-    enemyGroup.position.set(threat.x,Math.sin(elapsed*1.8)*.035,threat.z);
+  // Non-lethal silhouette: careful students can still experience the horror.
+  // This is a scripted echo, not an omniscient second monster.
+  const chapterTime=literacy.time;
+  const apparitionWindow=state.stage==='explore'&&!threat&&
+    (chapterTime>=19&&chapterTime<23?0:
+      chapterTime>=77&&chapterTime<81&&literacy.contamination>=18?1:-1);
+  const mirage=apparitionWindow>=0;
+  if(mirage&&apparitionNumber!==apparitionWindow){
+    apparitionNumber=apparitionWindow;
+    apparitionAnchor={x:Math.max(-13,Math.min(14,player.x-Math.sin(player.yaw)*9)),
+      z:Math.max(-54,Math.min(-40,player.z-Math.cos(player.yaw)*9))};
+    tone(93,.29,'sawtooth',.018);
+    announce('멀리서 누군가 기록의 이름을 지우고 있습니다.',false,3);
+  }
+  if(!mirage)apparitionAnchor=null;
+  enemyGroup.visible=Boolean(threat||mirage);
+  if(threat||mirage){
+    const locus=threat||apparitionAnchor;
+    enemyGroup.position.set(locus.x,Math.sin(elapsed*1.8)*.035,locus.z);
+    enemyGroup.scale.setScalar(mirage?.76:1);
     enemyGroup.lookAt(camera.position.x,2.4,camera.position.z);
     correctorGlyphs.forEach((m,i)=>{
       const glitch=Math.sin(elapsed*(29+i*2.15)+i*5.3)>.91;
+      m.visible=!mirage||i%3!==1;
       m.position.x=m.userData.x+(glitch?Math.sin(elapsed*121+i)*.12:Math.sin(elapsed*1.8+i)*.014);
       m.position.y=m.userData.y+(glitch?Math.cos(elapsed*84+i)*.075:0);
       m.material=material(glitch?(i%3===0?'없음':m.userData.word):m.userData.word,
-        glitch?'#ff3654':m.userData.color);
+        mirage?'#756671':glitch?'#ff3654':m.userData.color);
     });
     const near=Math.max(0,1-distance/11);
-    hud.danger.style.opacity=String(Math.min(.78,near*.48+(prologue?Math.sin(elapsed*7)*.09:.0)));
-    hud.noise.style.opacity=String(Math.min(.38,near*.22));
-    if(distance<10&&elapsed-lastCorrectorSound>Math.max(.60,2.0-distance*.12)){
+    hud.danger.style.opacity=mirage?'.07':String(Math.min(.78,near*.48+(prologue?Math.sin(elapsed*7)*.09:0)));
+    hud.noise.style.opacity=mirage?'.06':String(Math.min(.38,near*.22));
+    if(threat&&distance<10&&elapsed-lastCorrectorSound>Math.max(.60,2.0-distance*.12)){
       lastCorrectorSound=elapsed;
       tone(distance<4?64:95,.17,'sawtooth',distance<4?.026:.010);
       tone(180+Math.round(distance*17),.045,'square',.006);
@@ -820,9 +840,10 @@ function update(dt) {
     hud.noise.style.opacity=echoActive?String(.18+state.echo.alert/270):state.stage==='hiding'?'0.07':'0';
   }
   const approaching=stalking&&!corrector.hidden&&distance<11;
-  hud.corrector.classList.toggle('show',approaching||corrector.hidden);
+  hud.corrector.classList.toggle('show',approaching||corrector.hidden||mirage);
   hud.corrector.classList.toggle('alert',approaching&&distance<4.1);
-  const signal=corrector.hidden?'숨은 상태 · 소리가 멀어질 때까지 기다리세요'
+  const signal=mirage?'교정자의 잔상입니다. 아직 추격하지 않습니다'
+    :corrector.hidden?'숨은 상태 · 소리가 멀어질 때까지 기다리세요'
     :corrector.phase==='final'?'뒤에서 이름을 지우고 있습니다 — 앞으로 이동!'
     :corrector.phase==='chase'?'교정자가 찾았습니다 — 시야를 벗어나세요'
     :corrector.phase==='search'?'주변에서 이름을 찾고 있습니다'
