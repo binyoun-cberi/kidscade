@@ -57,3 +57,9 @@
   .v8-tool-page .peers{grid-template-columns:1fr}
   .v8-tool-page .age-map{grid-template-columns:repeat(9,minmax(0,1fr))}
 }
+
+/* Keep the only interactive yearly priority selector beside the playing scene. */
+.chronicle>.focus-block{margin:10px 0 14px;padding:12px;border:1px solid #d8e8df;border-radius:9px;background:#f7fbf8}
+.chronicle>.focus-block .focus-grid button{min-height:44px;font-size:12px}
+.chronicle>.focus-block .focus-hint{margin:8px 0 0}
+@media(max-width:350px){.chronicle>.focus-block .focus-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
