@@ -838,68 +838,96 @@ test('normal survival starts apart from the teaching route and preserves a 5-min
   assert.match(html,/id="start"/);
   assert.match(html,/5분을 버티면서 최소 8회 퇴마/);
 });
-test('survival spawn queue never exceeds three concurrent distinct creatures',()=>{
-  const begin=js.indexOf('function spawnSurvivalGhost(){'),end=js.indexOf('function nearestSurvivalGhost(){',begin);
+test('survival manifests only after the visible warning and never exceeds three concurrent unique creatures',()=>{
+  const begin=js.indexOf('function spawnSurvivalGhost(){');
+  const end=js.indexOf('function nearestSurvivalGhost(){',begin);
   assert.ok(begin>0&&end>begin);
   const actors=Object.fromEntries(['maiden','egg','yuki','reaper','wolf'].map(kind=>[
     kind,{root:{position:{set(){}},visible:false}}
   ]));
-  const ghosts=[],seen=[],player={x:0,z:0};
-  const returnAt=Object.create(null),sealCounts=Object.create(null);
+  const ghosts=[],seen=[],omens=[],player={x:0,z:0};
+  const returnAt=Object.create(null),sealCounts=Object.create(null),lastSealAt=Object.create(null);
   const source=js.slice(begin,end);
   const build=new Function('player','horrorVisuals','survivalGhosts','SURVIVAL_SPAWNS','HORROR_NAMES','dist',
     'canWalk','loadHorrorAsset','showToast','sfx','survivalReturnAt','survivalSealCounts',
-    'let elapsed=0;'+source+'return {spawn:spawnSurvivalGhost,setTime(t){elapsed=t}};');
+    'survivalLastSealAt','beginSurvivalOmen','endSurvivalOmen',
+    'let elapsed=0,survivalManifest=null;const SURVIVAL_OMEN_SECONDS=2.4;'+source+
+    'return {spawn:spawnSurvivalGhost,complete:completeSurvivalManifest,pending:()=>survivalManifest,setTime(t){elapsed=t}};');
   const names={maiden:'a',egg:'b',yuki:'c',reaper:'d',wolf:'e'};
   const engine=build(player,actors,ghosts,[[-20,-15],[18,-15],[-20,15],[18,15],[0,15]],
-    names,(a,b)=>Math.hypot(a.x-b.x,a.z-b.z),()=>true,k=>seen.push(k),()=>{},()=>{},
-    returnAt,sealCounts);
+    names,(a,b)=>Math.hypot(a.x-b.x,a.z-b.z),()=>true,()=>{},msg=>seen.push(msg),()=>{},
+    returnAt,sealCounts,lastSealAt,m=>omens.push({kind:m.kind,x:m.pos.x,z:m.pos.z}),()=>{});
   engine.setTime(0);assert.equal(engine.spawn(),true);
-  assert.equal(engine.spawn(),false);
-  engine.setTime(90);assert.equal(engine.spawn(),true);
-  assert.equal(engine.spawn(),false);
-  engine.setTime(200);assert.equal(engine.spawn(),true);
-  assert.equal(engine.spawn(),false);
+  assert.equal(ghosts.length,0,'the spirit must not appear during its warning');
+  assert.equal(engine.pending().left,2.4);
+  assert.equal(engine.spawn(),false,'only one warning at a time');
+  assert.equal(engine.complete(),true);
+  assert.equal(ghosts.length,1);
+  engine.setTime(90);assert.equal(engine.spawn(),true);assert.equal(engine.complete(),true);
+  engine.setTime(200);assert.equal(engine.spawn(),true);assert.equal(engine.complete(),true);
   assert.equal(ghosts.length,3);
+  assert.equal(engine.spawn(),false);
   assert.equal(new Set(ghosts.map(g=>g.kind)).size,3);
   const sealed=ghosts.pop().kind;
-  returnAt[sealed]=230;sealCounts[sealed]=1;
-  assert.equal(engine.spawn(),true,'the vacant slot can be filled by a different ghost');
-  assert.notEqual(ghosts.at(-1).kind,sealed,'the sealed ghost stays away during cooldown');
+  returnAt[sealed]=230;sealCounts[sealed]=1;lastSealAt[sealed]={x:-20,z:-15};
+  assert.equal(engine.spawn(),true,'a different creature may fill a vacated slot');
+  assert.notEqual(engine.pending().kind,sealed);
+  assert.equal(engine.complete(),true);
   assert.equal(ghosts.length,3);
-  assert.equal(seen.length,4);
+  assert.equal(omens.length,4);
   ghosts.length=0;
   for(const kind of Object.keys(names))if(kind!==sealed)returnAt[kind]=1000;
-  engine.setTime(229);assert.equal(engine.spawn(),false,'no ghost returns before the seal expires');
-  engine.setTime(230);assert.equal(engine.spawn(),true,'the same ghost can return after its seal expires');
+  engine.setTime(229);assert.equal(engine.spawn(),false,'the same spirit stays sealed');
+  engine.setTime(230);assert.equal(engine.spawn(),true,'the spirit can be scheduled after seal expiry');
+  assert.equal(engine.pending().kind,sealed);
+  assert.ok(Math.hypot(engine.pending().pos.x-lastSealAt[sealed].x,
+    engine.pending().pos.z-lastSealAt[sealed].z)>9,'the apparition uses a new location');
+  assert.equal(engine.complete(),true);
   assert.equal(ghosts[0].kind,sealed);
-  assert.equal(seen.length,5);
+  assert.ok(seen.some(msg=>msg.includes('봉인이 풀렸습니다')));
 });
 
-test('each survival exorcism gives a temporary 20–32 second seal that resets between runs',()=>{
+test('each survival exorcism gives a temporary 20–32 second seal and a reusable particle burst',()=>{
   const start=js.indexOf('function sealSurvivalGhost(g){'),end=js.indexOf('function nearAction(){',start);
   const source=js.slice(start,end);
   assert.ok(start>0&&end>start);
   const ghost={kind:'maiden',ready:5,actor:{x:1,z:0,root:{visible:true}}};
-  const ghosts=[ghost],returnAt=Object.create(null),sealCounts=Object.create(null),messages=[];
-  const make=new Function('survivalGhosts','survivalReturnAt','survivalSealCounts','player',
-    'dist','showToast','sfx','updateHud','HORROR_NAMES',
+  const ghosts=[ghost],returnAt=Object.create(null),sealCounts=Object.create(null),lastSealAt=Object.create(null);
+  const bursts=[],messages=[];
+  const make=new Function('survivalGhosts','survivalReturnAt','survivalSealCounts','survivalLastSealAt',
+    'emitSurvivalSealBurst','player','dist','showToast','sfx','updateHud','HORROR_NAMES',
     'let power=75,invulnerable=0,survivalSpawnClock=0,survivalKills=0,elapsed=40;'+source+
     'return {seal:sealSurvivalGhost,state:()=>({power,invulnerable,survivalSpawnClock,survivalKills})};');
-  const engine=make(ghosts,returnAt,sealCounts,{x:0,z:0},
+  const engine=make(ghosts,returnAt,sealCounts,lastSealAt,
+    (x,z,kind)=>bursts.push({x,z,kind}),{x:0,z:0},
     (a,b)=>Math.hypot(a.x-b.x,a.z-b.z),msg=>messages.push(msg),()=>{},()=>{},
     {maiden:'처녀귀신'});
   engine.seal(ghost);
   assert.equal(ghosts.length,0);
   assert.equal(ghost.actor.root.visible,false);
+  assert.deepEqual(bursts,[{x:1,z:0,kind:'maiden'}]);
+  assert.deepEqual(lastSealAt.maiden,{x:1,z:0});
   assert.equal(sealCounts.maiden,1);
-  assert.ok(returnAt.maiden>=60&&returnAt.maiden<=72,'ghost comes back after 20–32 seconds');
-  assert.ok(engine.state().survivalSpawnClock>=7,'sealing gives the player breathing room');
+  assert.ok(returnAt.maiden>=60&&returnAt.maiden<=72,'the seal holds for 20–32 seconds');
+  assert.ok(engine.state().survivalSpawnClock>=7,'sealing creates breathing room');
   assert.equal(engine.state().survivalKills,1);
   assert.equal(engine.state().power,86);
   assert.ok(messages[0].includes('잠시 봉인'));
-  assert.match(js,/for\(const k of Object\.keys\(survivalReturnAt\)\)delete survivalReturnAt\[k\]/);
-  assert.match(js,/for\(const k of Object\.keys\(survivalSealCounts\)\)delete survivalSealCounts\[k\]/);
+  for(const key of ['survivalReturnAt','survivalSealCounts','survivalLastSealAt'])
+    assert.ok(js.includes('for(const k of Object.keys('+key+'))delete '+key+'[k]'));
+});
+
+test('omen warning is a capped, pause-safe 2.4 second world effect, with no tutorial leakage',()=>{
+  assert.match(js,/const SURVIVAL_OMEN_SECONDS=2\.4/);
+  assert.match(js,/if\(survivalManifest&&\(survivalManifest\.left-=dt\)<=0\)completeSurvivalManifest\(\)/);
+  assert.match(js,/if\(survivalManifest\|\|survivalGhosts\.length>=max\)return false/);
+  assert.match(js,/if\(sealBursts\.length>6\)disposeSurvivalBurst\(sealBursts\.shift\(\)\)/);
+  assert.match(js,/function clearSurvivalEffects\(\)/);
+  assert.match(js,/clearSurvivalEffects\(\);/);
+  assert.match(html,/id="hauntVeil"/);
+  assert.match(html,/id="hauntCaption"/);
+  assert.match(html,/prefers-reduced-motion:reduce/);
+  assert.match(html,/pointer-events:none;background:radial-gradient/);
 });
 test('all five survival enemies have distinct readable weakening conditions',()=>{
   for(const key of ['maiden:','egg:','yuki:','reaper:','wolf:'])assert.ok(js.includes(key),key);
