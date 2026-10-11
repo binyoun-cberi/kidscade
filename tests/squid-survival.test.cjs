@@ -198,8 +198,9 @@ test('catalog has only the unified Squid game while practice files remain access
   assert.match(html,/data-game-id="squid_survival"/);
   assert.match(html,/gameFrame/);
   assert.match(html,/quitButton/);
-  assert.match(html,/dalgona-trace\/index.html/);
-  assert.match(html,/squid-memory-bridge\/index.html/);
+  assert.equal(rules.ROUNDS[0].src,'../dalgona-trace/index.html');
+  assert.equal(rules.ROUNDS[1].src,'../squid-memory-bridge/index.html');
+  assert.match(source,/el\.frame\.src=round\.src/);
   const bridge=fs.readFileSync(path.join(ROOT,'games/squid-memory-bridge/game.js'),'utf8');
   const dalgona=fs.readFileSync(path.join(ROOT,'games/dalgona-trace/game.js'),'utf8');
   assert.match(bridge,/ROUND_TIME_MS=SURVIVAL_MODE\?90000:300000/);
