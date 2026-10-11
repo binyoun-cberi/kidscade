@@ -1,60 +1,60 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#0b181d"><title>꼴뚜기 게임: 로컬 2인 대전 | KIDSCADE</title>
-<link rel="stylesheet" href="./versus.css?v=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b171e"><title>꼴뚜기 게임: 번갈아 2인 대전 | KIDSCADE</title>
+<link rel="stylesheet" href="./versus.css?v=3">
 </head>
 <body>
-<div class="game" id="game">
-<header class="top">
- <a class="back" href="../" aria-label="서바이벌 시작 화면으로 돌아가기">‹ <span>대회 로비</span></a>
- <div class="center-head"><small>LOCAL 2P · 6 ROUND CUP</small><strong id="roundTitle">같은 화면, 둘이서 대결</strong></div>
- <div class="timebox" aria-live="off"><small>남은 시간</small><strong id="time">--:--</strong></div>
-</header>
-<div class="scoreline" aria-label="대전 점수">
- <div class="score-player one"><span>1P</span><b id="score0">0</b><small>초록 선수</small></div>
- <div class="round-track" id="roundTrack"><i class="lit">1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i></div>
- <div class="score-player two"><small>주황 선수</small><b id="score1">0</b><span>2P</span></div>
-</div>
-<main class="playfield">
- <section class="lane one" id="lane0" aria-label="1번 플레이어 게임 영역">
-  <div class="lane-title"><strong><span class="dot"></span> PLAYER 1</strong><span id="status0">준비</span></div>
-  <div class="board-wrap"><canvas id="board0" aria-label="1번 플레이어 게임 화면. 이 영역을 터치해 조작하세요." tabindex="0"></canvas><div id="laneOverlay0" class="lane-overlay" hidden>완료</div></div>
-  <div class="lane-meter"><div class="meter"><span id="meter0"></span></div><small id="detail0">왼쪽 화면에서 조작하세요</small></div>
-  <div class="controls" id="controls0"><button type="button" data-p="0" data-action="primary" class="primary-control">1P 조작</button></div>
- </section>
- <div class="separator" aria-hidden="true"><span>VS</span></div>
- <section class="lane two" id="lane1" aria-label="2번 플레이어 게임 영역">
-  <div class="lane-title"><strong><span class="dot"></span> PLAYER 2</strong><span id="status1">준비</span></div>
-  <div class="board-wrap"><canvas id="board1" aria-label="2번 플레이어 게임 화면. 이 영역을 터치해 조작하세요." tabindex="0"></canvas><div id="laneOverlay1" class="lane-overlay" hidden>완료</div></div>
-  <div class="lane-meter"><div class="meter"><span id="meter1"></span></div><small id="detail1">오른쪽 화면에서 조작하세요</small></div>
-  <div class="controls" id="controls1"><button type="button" data-p="1" data-action="primary" class="primary-control">2P 조작</button></div>
- </section>
-</main>
-<footer class="hintbar"><span id="instruction">같은 화면, 서로 다른 조작 영역. 6개 경기의 승점 합산으로 우승자를 결정해요.</span><span id="keyHint">PC: 1P WASD / F · 2P 방향키 / Enter</span></footer>
+<div class="game">
+ <header class="top">
+  <a class="back" href="../" aria-label="혼자서 서바이벌을 선택하는 로비">‹ 로비</a>
+  <div class="center-head"><small>PASS & PLAY · 2 PLAYERS</small><strong id="roundTitle">꼴뚜기 번갈아 대전</strong></div>
+  <div class="timebox"><small>남은 시간</small><strong id="time">--:--</strong></div>
+ </header>
+ <div class="scoreline" aria-label="현재 누적 점수">
+  <div class="score-player one"><span>1P</span><b id="score0">0</b></div>
+  <div class="round-track" id="roundTrack" aria-label="여섯 라운드"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i></div>
+  <div class="score-player two"><b id="score1">0</b><span>2P</span></div>
+ </div>
+ <main class="playfield">
+  <section class="arena" aria-label="현재 선수의 전체 화면 게임 영역">
+   <div class="arena-top">
+    <div class="turn-chip" id="turnChip">1P 차례</div>
+    <strong id="status">도전 준비</strong>
+    <div class="progress-track" role="progressbar" aria-label="현재 선수 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progress"></span></div>
+   </div>
+   <div class="board-wrap"><canvas id="board" tabindex="0" aria-label="현재 선수의 게임 화면"></canvas></div>
+   <div class="bottom-row"><span id="detail">시작 전입니다.</span><span id="hint">한 사람이 화면 전체를 사용합니다.</span></div>
+  </section>
+  <section class="control-panel" aria-label="현재 게임 조작">
+   <div class="instruction"><small>GAME RULE</small><p id="instruction">기기 한 대로 번갈아 겨루세요.</p></div>
+   <div class="controls" id="controls"></div>
+   <div id="keyHint" class="keyhint">화면을 터치하거나 키보드를 사용해요.</div>
+  </section>
+ </main>
 </div>
 <div class="scrim" id="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
  <div class="dialog">
-  <div class="eyebrow" id="dialogEyebrow">SIX GATES · TWO PLAYERS</div>
+  <p class="eyebrow" id="dialogEyebrow">6 ROUNDS · ONE SCREEN</p>
   <div class="versus-art" aria-hidden="true"><span>1P</span><b>VS</b><span>2P</span></div>
-  <h1 id="dialogTitle">꼴뚜기 2인 대전</h1>
-  <p class="lead" id="dialogLead">하나의 화면에서 나란히 여섯 경기를 치르고, 승점을 가장 많이 모은 사람이 우승해요.</p>
-  <div class="rules" id="dialogRules">
-   <span>승리 <b>1점</b></span><span>무승부 <b>각 0.5점</b></span><span>최종 동점 <b>연장 문제</b></span>
+  <h1 id="dialogTitle">번갈아 2인 대전</h1>
+  <p class="lead" id="dialogLead">한 사람씩 화면 전체로 도전하고 다음 사람에게 기기를 넘겨주세요.</p>
+  <div class="rules" id="dialogRules"><span>6라운드 점수제</span><span>매 라운드 선공 교대</span><span>동점 시 연장전</span></div>
+  <div class="result-chips" id="resultChips" hidden>
+   <div>1P <strong id="result0">0</strong></div><div>2P <strong id="result1">0</strong></div>
   </div>
-  <div class="result-chips" id="resultChips" hidden><div>1P <strong id="result0">0점</strong></div><div>2P <strong id="result1">0점</strong></div></div>
-  <button type="button" class="start" id="dialogButton">두 사람 모두 준비됐어요 →</button>
-  <a class="solo-link" href="../">기존 혼자서 생존하기</a>
+  <button class="start" type="button" id="dialogButton">두 명이서 시작하기 →</button>
+  <p class="handoff-tip" id="privacyTip">다음 선수의 도전 전까지 이전 문제와 기록은 숨겨집니다.</p>
+  <a class="solo-link" href="../">혼자서 서바이벌 플레이</a>
  </div>
 </div>
-<div class="rotate" id="rotate" role="status" hidden><div class="rotate-symbol">▯ ↻</div><strong>아이폰을 가로로 돌려주세요</strong><p>두 사람이 화면 양쪽에서 동시에 플레이합니다.<br>가로 화면이 될 때까지 경기 시간은 멈춰요.</p></div>
-<script src="../../../kidscade-game-sdk.js" data-game-id="squid_survival_versus" data-title="꼴뚜기 게임: 로컬 2인 대전" data-shell="true" data-orientation="landscape"></script>
+<script src="../../../kidscade-game-sdk.js" data-game-id="squid_survival_versus" data-title="꼴뚜기 게임: 번갈아 2인 대전" data-shell="true" data-orientation="any"></script>
 <script src="../rules.js?v=2"></script>
 <script src="../mini-rules.js?v=1"></script>
 <script src="../../dalgona-trace/trace.js?v=1"></script>
 <script src="../../squid-memory-bridge/path.js?v=1"></script>
-<script src="./versus-rules.js?v=1"></script>
-<script src="./versus.js?v=1"></script>
+<script src="./passplay-rules.js?v=1"></script>
+<script src="./passplay.js?v=1"></script>
 </body>
 </html>

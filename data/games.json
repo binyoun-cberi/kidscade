@@ -31,7 +31,7 @@
     {
       "id": "squid_survival_versus",
       "addedAt": "2026-10-11T11:00:00+09:00",
-      "title": "꼴뚜기 게임: 2인 대전",
+      "title": "꼴뚜기 게임: 번갈아 2인 대전",
       "href": "games/squid-survival/versus/index.html",
       "category": "trivia",
       "age": "high",
@@ -40,11 +40,11 @@
         "high"
       ],
       "icon": "⚔️",
-      "description": "하나의 PC·태블릿·아이폰 가로 화면에서 두 명이 동시에 겨루는 6라운드 로컬 대전! 달고나·기억의 다리·신호등·줄다리기·구슬·결승전. 각 라운드 승리 1점, 무승부 0.5점, 총점 동점 시 연장 퀴즈. 독립적인 양쪽 터치 영역과 서로 다른 PC 키보드 조작 지원.",
+      "description": "아이폰·태블릿·PC 모두 한 명씩 화면 전체로 도전하는 패스 앤 플레이! 6라운드 달고나·기억의 다리·신호등·줄다리기·구슬·결승전. 1·3·5라운드 1P 선공, 2·4·6라운드 2P 선공. 두 사람 모두 끝나야 성적 공개. 같은 난이도지만 서로 다른 문제로 공정하게 비교하고, 승리 1점·무승부 0.5점·최종 동점 연장전으로 우승 결정.",
       "subject": "thinking",
       "genre": "puzzle",
       "difficulty": "medium",
-      "sessionMinutes": 10,
+      "sessionMinutes": 15,
       "players": [
         "local2"
       ],

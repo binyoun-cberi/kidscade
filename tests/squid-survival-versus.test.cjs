@@ -1,216 +1,186 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const ROOT=path.resolve(__dirname,'..'),BASE=path.join(ROOT,'games/squid-survival');
-const V=require(path.join(BASE,'versus/versus-rules.js'));
+const E=require(path.join(BASE,'versus/passplay-rules.js'));
 const T=require(path.join(ROOT,'games/dalgona-trace/trace.js'));
 const M=require(path.join(BASE,'mini-rules.js'));
 const html=fs.readFileSync(path.join(BASE,'versus/index.html'),'utf8');
-const ui=fs.readFileSync(path.join(BASE,'versus/versus.js'),'utf8');
+const js=fs.readFileSync(path.join(BASE,'versus/passplay.js'),'utf8');
 const css=fs.readFileSync(path.join(BASE,'versus/versus.css'),'utf8');
-
-function runAt(index,seed=1234,start=1000){
- const match={...V.start(V.initial(seed)),index};
- return V.launch(match,start);
+const base=(round,seed=123)=>({...E.begin(E.start(seed)),roundIndex:round,
+ turnIndex:0,active:E.orderFor(round)[0],phase:'handoff'});
+function runRound(round,seed,play,how='same'){
+ let s=base(round,seed),clock=1000;
+ for(let turn=0;turn<2;turn++){
+   const player=s.active;s=E.ready(s,clock);const g=s.game;
+   if(play) s=play(s,g,clock,player,how);
+   if(s.phase==='playing')s=E.tick(s,clock+g.limit+5);
+   if(s.phase==='handoff')clock+=g.limit+4000;
+ }
+ return s;
 }
-test('six independent 2P rounds share identical challenges for 40 seeds',()=>{
- assert.deepEqual(V.ROUNDS.map(x=>x.id),['dalgona','bridge','redlight','tug','marbles','final']);
- for(let seed=1;seed<=40;seed++)for(let round=0;round<6;round++){
-  const r=V.makeRound(round,seed,500);
-  assert.equal(r.players.length,2);
-  assert.ok(r.limit>=38000);
-  if(r.id==='bridge'){assert.ok(r.map.path.length>=12);}
-  if(r.id==='dalgona'){assert.equal(r.players[0].traceState.progress,0);assert.equal(r.players[1].traceState.progress,0);}
-  if(r.id==='marbles')assert.deepEqual(r.players[0].body.questions,r.players[1].body.questions);
-  if(r.id==='final'){assert.deepEqual(r.players[0].body.sequence,r.players[1].body.sequence);
-   assert.deepEqual(r.players[0].body.math,r.players[1].body.math);}
-  if(r.id==='redlight')assert.equal(r.players[0].body.signalEnds,r.players[1].body.signalEnds);
- }
-});
-test('two pointer-like traces can finish in parallel without overwriting progress',()=>{
- let s=runAt(0,72),r=s.round,time=1000;
- for(let p=0;p<2;p++)s=V.input(s,p,'trace-start',T.sampleAt(r.trace,0),time);
- for(let j=1;j<r.trace.path.length;j++){
-   time+=18;
-   for(let p=0;p<2;p++)s=V.input(s,p,'trace-move',T.sampleAt(r.trace,r.trace.path[j].distance),time);
-   if(s.phase==='summary')break;
- }
- assert.equal(s.phase,'summary');
- assert.deepEqual(s.results[0].clear,[true,true]);
- assert.equal(s.results[0].winner,null);
- assert.deepEqual(s.totals,[.5,.5]);
-});
-test('keyboard tracing demands speed adjustment instead of winning by one held key',()=>{
- let s=runAt(0,912),r=s.round;
- s=V.input(s,0,'hold',true,1000);
- s=V.input(s,0,'assist',1,1000);
- s=V.input(s,1,'hold',true,1000);
- s=V.input(s,1,'assist',1,1000);
- for(let t=1032;t<22000&&s.phase==='playing';t+=32){
-    const wave=Math.sin((t-1000)/360);
-    s=V.input(s,0,'assist',wave>0?-1:1,t);
-    s=V.tick(s,t);
-    if(r.players[0].done&&r.players[1].done)break;
- }
- assert.equal(r.players[0].clear,true,'timed speed changes should complete');
- assert.equal(r.players[1].clear,false,'one held fast key should not automatically win');
-});
-test('bridge wrong step fails only 1P, other player can still clear the same map',()=>{
- let s=runAt(1,45),r=s.round,time=1000;
- s=V.tick(s,time+5200);time+=5200;
- assert.equal(r.phase,'playing');
- const first=r.map.path[0],second=r.map.path[1],dx=second%r.map.width-first%r.map.width;
- const dy=Math.floor(second/r.map.width)-Math.floor(first/r.map.width);
- const direction=dx===1?'right':dx===-1?'left':dy===1?'down':'up';
- s=V.input(s,0,'step',{up:'down',down:'up',left:'right',right:'left'}[direction],time+100);
- assert.equal(r.players[0].done,true);
- assert.equal(r.players[1].done,false);
- for(let i=1;i<r.map.path.length;i++){
-   const a=r.map.path[i-1],b=r.map.path[i],x=b%r.map.width-a%r.map.width;
-   const y=Math.floor(b/r.map.width)-Math.floor(a/r.map.width);
-   const dir=x===1?'right':x===-1?'left':y===1?'down':'up';
-   time+=120;s=V.input(s,1,'step',dir,time);
- }
- assert.equal(s.phase,'summary');assert.equal(s.results[0].winner,1);
-});
-test('red light uses one shared signal schedule, but each player controls own movement',()=>{
- let s=runAt(2,112),r=s.round;
- s=V.input(s,0,'hold',true,1000);s=V.input(s,1,'hold',false,1000);
- for(let now=1020;now<9000&&s.phase==='playing';now+=20){
-   s=V.tick(s,now);
-   if(s.phase!=='playing')break;
-   s=V.input(s,0,'hold',r.players[0].body.signal==='green',now);
- }
- assert.ok(r.players[0].progress>r.players[1].progress);
- assert.equal(r.players[1].body.progress,0);
-});
-test('tug rewards timing and punishes repeated tapping separately',()=>{
- let s=runAt(3,5),r=s.round;
- for(let now=1500;now<12000&&s.phase==='playing';now+=1000){
-   s=V.input(s,0,'tap',null,now);
-   for(let i=0;i<3&&s.phase==='playing';i++)s=V.input(s,1,'tap',null,now+i*60);
- }
- if(s.phase==='playing')s=V.tick(s,30000);
- assert.equal(s.phase,'summary');assert.equal(s.results[0].winner,0);
-});
-test('shared tug rope is genuinely opposed: 100 seeded symmetrical duels draw',()=>{
- for(let seed=1;seed<=100;seed++){
-   let s=runAt(3,seed),r=s.round;
-   assert.ok(r.tug,'one shared rope required');
-   for(let t=1500;t<16000&&s.phase==='playing';t+=1000){
-     s=V.input(s,0,'tap',null,t);
-     assert.ok(r.tug.offset>0,'1P must physically pull the common rope toward 1P');
-     s=V.input(s,1,'tap',null,t);
-     assert.ok(Math.abs(r.tug.offset)<1e-7,'same-time equally good 2P must pull it back');
+function follow(g,clock,act){
+ if(g.id==='dalgona'){
+   act('trace-start',T.sampleAt(g.trace,0),clock);
+   for(let j=1;j<g.trace.path.length;j++)act('trace-move',
+     T.sampleAt(g.trace,g.trace.path[j].distance),clock+j*18);
+ }else if(g.id==='bridge'){
+   for(let j=1;j<g.map.path.length;j++){
+     const a=g.map.path[j-1],b=g.map.path[j],dx=b%g.map.width-a%g.map.width,
+       dy=Math.floor(b/g.map.width)-Math.floor(a/g.map.width);
+     const dir=dx===1?'right':dx===-1?'left':dy===1?'down':'up';
+     act('step',dir,clock+g.previewUntil+100+j*95);
    }
-   s=V.tick(s,40000);
-   assert.equal(s.phase,'summary');
-   assert.equal(s.results[0].winner,null);
- }
-});
-test('shared tug rope: perfect 1P wins; mirror perfect 2P wins; poor spam hurts only spammer',()=>{
- for(let seed=1;seed<=100;seed++){
-   const strong=seed%2,weak=1-strong;
-   let s=runAt(3,seed),r=s.round;
-   for(let t=1500;t<15000&&s.phase==='playing';t+=1000){
-     s=V.input(s,strong,'tap',null,t);
-     if(seed%3===0)for(let n=0;n<3&&s.phase==='playing';n++)
-       s=V.input(s,weak,'tap',null,t+n*50);
+ }else if(g.id==='redlight'){
+   for(let t=clock+20;t<clock+g.limit;t+=20){
+     M.advance(g.body,t);
+     act('hold',g.body.signal==='green',t);
    }
-   assert.equal(s.phase,'summary');
-   assert.equal(s.results[0].winner,strong);
-   assert.equal(r.players[strong].clear,true);
-   assert.equal(r.players[weak].failed,true);
-   assert.equal(Math.sign(r.tug.offset),strong===0?1:-1);
- }
-});
-test('same marble questions, wrong answers affect only responding player',()=>{
- let s=runAt(4,66),r=s.round,time=1000;
- for(let i=0;i<5&&s.phase==='playing';i++){
-   const q=r.players[0].body.questions[i];
-   s=V.input(s,0,'choose',q.answer,time+=750);
-   if(i<2&&s.phase==='playing')s=V.input(s,1,'choose',q.answer==='left'?'right':'left',time+100);
- }
- assert.equal(s.phase,'summary');
- assert.equal(r.players[0].clear,true);
- assert.equal(r.players[1].failed,true);
-});
-test('final memory, independent 2P timing and math permit fair finish',()=>{
- let s=runAt(5,38),r=s.round,time=1000;
- s=V.tick(s,time+4000);time+=4000;
- for(let i=0;i<4;i++){
-   const shape=r.players[0].body.sequence[i];time+=110;
-   s=V.input(s,0,'symbol',shape,time);s=V.input(s,1,'symbol',shape,time);
- }
- assert.equal(r.players[0].body.part,'timing');
- while(r.players[0].body.part==='timing'||r.players[1].body.part==='timing'){
-   time+=35;
-   s=V.tick(s,time);
-   if(s.phase!=='playing')break;
-   for(let i=0;i<2;i++)if(r.players[i].body.part==='timing'&&M.timingPosition(r.players[i].body)>=.84)
-      s=V.input(s,i,'tap',null,time);
-   if(time>30000)throw Error('final timer stalled');
- }
- for(let id=0;id<2&&s.phase==='playing';id++){
-   const b=r.players[id].body;
-   s=V.input(s,id,'answer',b.math.answer,time+=110);
- }
- assert.equal(s.phase,'summary');assert.deepEqual(s.results[0].clear,[true,true]);
-});
-test('exactly six rounds award 1 point for a win, 0.5 each for a draw',()=>{
- let s=V.start(V.initial(887));
- for(let index=0;index<6;index++){
-   s=V.launch(s,10000*index);
-   const r=s.round;
-   r.players.forEach((p,id)=>{p.done=true;p.doneAt=r.startedAt+(index>=4?500:1000+id*500);
-      p.clear=index>=4?true:id===(index%2);p.failed=!p.clear;});
-   s=V.tick(s,r.startedAt+1200);
-   assert.equal(s.phase,'summary');
-   assert.equal(s.results.length,index+1);
-   s=V.next(s,r.startedAt+1500);
- }
- assert.equal(s.phase,'tiebreak');
- assert.deepEqual(s.totals,[3,3]);
- const start=s.tie.startsAt,answer=s.tie.question.answer;
- s=V.input(s,0,'answer',answer,start+100);
- s=V.input(s,1,'answer',answer,start+170);
- assert.equal(s.phase,'tiebreak');
- assert.equal(s.rematch,1);
- assert.ok(s.tie.startsAt<start+500);
- const good=s.tie.question.answer,bad=s.tie.question.options.find(x=>x!==good);
- s=V.input(s,0,'answer',good,start+260);
- s=V.input(s,1,'answer',bad,start+310);
- assert.equal(s.phase,'finished');
- assert.equal(s.champion,0);
- assert.equal(s.totals[0],4);
- assert.equal(V.start(s).phase,'intro');
-});
-test('rounds never double-credit even when stale inputs arrive',()=>{
- let s=runAt(4,12);
- for(let i=0;i<5;i++){let q=s.round.players[0].body.questions[i];s=V.input(s,0,'choose',q.answer,2000+i*400);}
- s=V.tick(s,20000);
- assert.equal(s.phase,'summary');
- const count=s.results.length,before=s.totals.join(',');
- s=V.input(s,0,'choose','left',25000);
- s=V.tick(s,28000);
- assert.equal(s.results.length,count);assert.equal(s.totals.join(','),before);
-});
-test('real DOM entry, independent touch captures, keyboard mapping and landscape pause present',()=>{
- assert.match(html,/data-game-id="squid_survival_versus"/);
- assert.match(html,/versus-rules\.js/);
- for(const id of ['board0','board1','controls0','controls1','score0','score1','rotate'])assert.ok(html.includes('id="'+id+'"'));
- for(const key of ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown','ArrowRight',
-   'KeyF','Space','Enter','KeyQ','KeyU','Digit1','Digit7'])assert.ok(ui.includes(key),key);
- assert.match(ui,/finger=\[null,null\]/);
- assert.match(ui,/setPointerCapture/);
- assert.match(ui,/visibilitychange/);
- assert.match(ui,/updatePause\(/);
- assert.match(css,/max-height:440px/);
+ }else if(g.id==='tug'){
+   for(let t=clock+500;t<clock+22000;t+=1000)act('tap',null,t);
+ }else if(g.id==='marbles'){
+   for(let j=0;j<5;j++)act('choose',g.body.questions[j].answer,clock+1000+j*800);
+ }else if(g.id==='final'){
+   for(let j=0;j<4;j++)act('symbol',g.body.sequence[j],clock+4000+j*100);
+   for(let t=clock+4700;t<clock+26000&&g.body.part==='timing';t+=45){
+     M.advance(g.body,t);
+     if(M.timingPosition(g.body)>=.84)act('tap',null,t);
+   }
+   act('answer',g.body.math.answer,clock+27000);
+ }else if(g.id==='overtime')act('answer',g.question.answer,clock+1900);
+}
+function perfect(s,g,clock){
+ let current=s;
+ const act=(action,value,when)=>{if(current.phase==='playing')current=E.input(current,action,value,when);};
+ follow(g,clock,act);
+ return current;
+}
+test('all platforms use one full-canvas playfield, pass-and-play overlay and no orientation lock',()=>{
+ assert.match(html,/data-orientation="any"/);
+ assert.match(html,/passplay-rules\.js/);assert.match(html,/passplay\.js/);
+ assert.match(html,/id="board"/);assert.doesNotMatch(html,/id="board0"/);
+ assert.doesNotMatch(html,/id="board1"/);
+ assert.match(html,/id="dialogButton"/);assert.match(html,/id="progress"/);
+ assert.match(html,/id="controls"/);
+ assert.match(css,/@media\(max-width:600px\)/);
+ assert.match(css,/@media\(max-height:470px\)/);
  assert.match(css,/touch-action:none/);
  assert.match(css,/prefers-reduced-motion/);
- assert.doesNotThrow(()=>new Function(ui));
- const catalog=JSON.parse(fs.readFileSync(path.join(ROOT,'data/games.json'),'utf8'));
- const game=catalog.games.find(x=>x.id==='squid_survival_versus');
- assert.equal(game.href,'games/squid-survival/versus/index.html');
- const lobby=fs.readFileSync(path.join(BASE,'index.html'),'utf8');
- assert.match(lobby,/\.\/versus\/index\.html/);
+ assert.doesNotThrow(()=>new Function(js));
+});
+test('rounds alternate first player exactly and turn privacy is enforced',()=>{
+ let s=E.begin(E.start(42));
+ assert.equal(s.phase,'handoff');assert.equal(s.active,0);
+ for(let round=0;round<6;round++){
+   assert.equal(s.active,round%2,'first player must alternate');
+   s=E.ready(s,1000+round*100000);
+   assert.equal(s.game.player,round%2);
+   const at=s.game.startedAt,limit=s.game.limit;
+   s=E.tick(s,at+limit+5);
+   assert.equal(s.phase,'handoff');
+   assert.equal(s.active,1-round%2);
+   assert.equal(s.game,null,'previous game must be discarded before handoff');
+   assert.ok(s.turns[round%2]);
+   assert.equal(s.turns[1-round%2],null);
+   s=E.ready(s,at+limit+1000);
+   s=E.tick(s,s.game.startedAt+s.game.limit+5);
+   assert.equal(s.phase,'round-result');
+   assert.equal(s.history.length,round+1,'scoring once after both players');
+   if(round<5)s=E.advanceRound(s);
+ }
+});
+test('separate equal-difficulty memory, marble, final, and overtime questions prevent copying',()=>{
+ let differences={bridge:0,marbles:0,final:0,overtime:0};
+ for(let seed=1;seed<=60;seed++)for(const round of [1,4,5,6]){
+   const a=E.createGame(round,0,seed,100),b=E.createGame(round,1,seed,100);
+   assert.equal(a.limit,b.limit);
+   if(round===1){assert.equal(a.map.path.length,b.map.path.length);
+     if(a.map.path.join(',')!==b.map.path.join(','))differences.bridge++;}
+   if(round===4){assert.equal(a.body.questions.length,b.body.questions.length);
+     if(JSON.stringify(a.body.questions)!==JSON.stringify(b.body.questions))differences.marbles++;}
+   if(round===5){assert.equal(a.body.sequence.length,b.body.sequence.length);
+     if(a.body.sequence.join(',')!==b.body.sequence.join(','))differences.final++;}
+   if(round===6&&a.question.prompt!==b.question.prompt)differences.overtime++;
+ }
+ for(const [kind,n] of Object.entries(differences))assert.ok(n>=54,kind+' produces too many repeated problems '+n);
+});
+test('each of six rounds can be cleared by both players using full-screen inputs',()=>{
+ for(let round=0;round<6;round++)for(let seed=1;seed<=25;seed++){
+   const s=runRound(round,seed,perfect);
+   assert.equal(s.phase,'round-result','round '+round+' seed '+seed+' phase '+s.phase);
+   assert.deepEqual(s.turns.map(x=>x.clear),[true,true]);
+   assert.equal(s.history.length,1);
+ }
+});
+test('only skilled player wins even when the first competitor changes sides',()=>{
+ for(let round=0;round<6;round++)for(let seed=1;seed<=20;seed++){
+   const champion=seed%2;
+   const s=runRound(round,seed,(s,g,clock,id)=>id===champion?perfect(s,g,clock):s);
+   assert.equal(s.phase,'round-result');
+   assert.equal(s.history[0].winner,champion,'round '+round+' seed '+seed);
+   assert.equal(s.totals[champion],1);
+ }
+});
+test('getting one answer wrong does not leak answers or change score before second turn',()=>{
+ let s=base(4,73);s=E.ready(s,1000);
+ const first=s.active;const expected=s.game.body.questions[0].answer;
+ s=E.input(s,'choose',expected==='left'?'right':'left',1200);
+ assert.equal(s.totals[0],0);assert.equal(s.totals[1],0);
+ assert.equal(s.turns[0],null);assert.equal(s.turns[1],null);
+ s=E.tick(s,1000+E.LIMITS.marbles+5);
+ assert.equal(s.phase,'handoff');assert.equal(s.game,null);
+ assert.equal(s.totals[0],0);assert.equal(s.totals[1],0);
+});
+test('same player quality and timing determines winner, ties award half a point',()=>{
+ assert.equal(E.winnerOf(
+  {clear:true,metric:90,elapsed:12000},{clear:true,metric:85,elapsed:10000}),0);
+ assert.equal(E.winnerOf(
+  {clear:true,metric:88,elapsed:10000},{clear:true,metric:88,elapsed:11000}),0);
+ assert.equal(E.winnerOf(
+  {clear:false,progress:.7},{clear:false,progress:.3}),0);
+ assert.equal(E.winnerOf(
+  {clear:false,progress:.3},{clear:false,progress:.3}),null);
+ let s=runRound(0,99,(s,g,clock)=>perfect(s,g,clock));
+ assert.equal(s.history[0].winner,null);
+ assert.deepEqual(s.totals,[.5,.5]);
+});
+test('match final resolves tie into private alternating overtime and best of speed/accuracy',()=>{
+ let s=E.begin(E.start(5));
+ for(let round=0;round<6;round++){
+   for(let i=0;i<2;i++){
+     s=E.ready(s,round*100000+i*50000+1000);
+     s=E.tick(s,s.game.startedAt+s.game.limit+1);
+   }
+   if(round<5)s=E.advanceRound(s);
+ }
+ assert.deepEqual(s.totals,[3,3]);
+ s=E.advanceRound(s);assert.equal(s.phase,'handoff');assert.equal(s.roundIndex,6);
+ assert.equal(s.active,0);
+ s=E.ready(s,610000);const q0=s.game.question;
+ s=E.input(s,'answer',q0.answer,611500);
+ assert.equal(s.phase,'handoff');assert.equal(s.game,null);
+ s=E.ready(s,620000);const q1=s.game.question;
+ s=E.input(s,'answer',q1.options.find(x=>x!==q1.answer),621000);
+ assert.equal(s.phase,'finished');assert.equal(s.winner,0);assert.equal(s.totals[0],4);
+ const again=E.begin(s);assert.equal(again.phase,'handoff');assert.equal(again.history.length,0);
+});
+test('overtime replays with reverse first player on exact ties',()=>{
+ let s=E.begin(E.start(8));
+ s={...s,roundIndex:6,active:0,phase:'handoff',totals:[3,3]};
+ s=E.ready(s,1000);const a=s.game.question.answer;
+ s=E.input(s,'answer',a,3000);
+ s=E.ready(s,9000);const b=s.game.question.answer;
+ s=E.input(s,'answer',b,11000);
+ assert.equal(s.phase,'handoff');
+ assert.equal(s.overtime,1);assert.equal(s.active,1);assert.deepEqual(s.totals,[3,3]);
+});
+test('idempotent after turns, illegal actions and early round skips are ignored',()=>{
+ let s=E.begin(E.start(11));
+ assert.equal(E.advanceRound(s),s);
+ s=E.ready(s,1000);
+ const a=E.input(s,'choose','left',1100);
+ assert.equal(a.phase,'playing');assert.equal(a.turns[0],null);
+ s=E.tick(s,47000);assert.equal(s.phase,'handoff');
+ assert.equal(E.input(s,'trace-start',{x:0,y:0},55000),s);
+ assert.equal(E.advanceRound(s),s);
 });
