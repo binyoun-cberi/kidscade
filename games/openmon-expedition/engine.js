@@ -23,6 +23,38 @@ const VILLAGES=Object.freeze([
  {key:"snowTown",name:"설빛마을",x:190,y:12,npcX:190,npcY:10,npc:"기후 연구원",lesson:"빙점과 날씨"}
 ]);
 const byId=new Map(DB.species.map(s=>[s.id,s]));
+const HABITAT_REWARDS=Object.freeze({
+ meadow:{item:"potion",name:"회복약"},
+ forest:{item:"life",name:"생명의 결정"},
+ cave:{item:"thought",name:"사고의 결정"},
+ powerPlant:{item:"energy",name:"에너지 결정"},
+ tidal:{item:"life",name:"생명의 결정"},
+ snowfield:{item:"climate",name:"기후 결정"}
+});
+function normalizeRegionResearch(raw){
+ const safe={};
+ for(const zone of Object.keys(HABITAT_REWARDS)){
+  const obj=raw?.[zone];
+  safe[zone]={seen:Array.isArray(obj?.seen)?
+   [...new Set(obj.seen.filter(id=>byId.has(id)))].slice(0,102):[],
+   rewarded:obj?.rewarded===true};
+ }
+ return safe;
+}
+function recordRegionEncounter(save,zone,id){
+ const prize=HABITAT_REWARDS[zone];
+ if(!prize||!byId.has(id))return null;
+ save.regionResearch??=normalizeRegionResearch(null);
+ const progress=save.regionResearch[zone]||(save.regionResearch[zone]={seen:[],rewarded:false});
+ if(!progress.seen.includes(id))progress.seen.push(id);
+ if(progress.rewarded||progress.seen.length<3)return null;
+ progress.rewarded=true;
+ save.items[prize.item]=Math.min(prize.item==="potion"?999:99,(save.items[prize.item]||0)+1);
+ save.log??=[];
+ save.log.push(ZONES.find(z=>z.key===zone).name+" 지역 연구 완료! "+prize.name+" 획득.");
+ return {zone,name:prize.name,item:prize.item};
+}
+
 const h=(x,y)=>{let n=Math.imul(x+13,374761393)+Math.imul(y+19,668265263);n=Math.imul(n^(n>>>13),1274126177);return (n^(n>>>16))>>>0;};
 function zoneAt(x){return ZONES.find(z=>x<=z.right)?.key||"snowfield"}
 function villageFor(x){return VILLAGES.find(v=>zoneAt(x)===v.key)||null}
@@ -116,7 +148,7 @@ function createNew(starter){
  return {version:1,pos:{...START},facing:"down",party:[makeCreature(starter,5)],box:[],active:0,
   items:{ball:7,potion:3,life:1,energy:0,climate:0,thought:0},coins:120,flags:{shibuSeen:false,shibuCaught:false,shibuLastStep:-100,firstRoadEncounter:false,researchStarters:[],visitedZones:["town"]},
   collection:{[starter]:true},seen:{[starter]:true},steps:0,grassSteps:0,wins:0,catches:0,
-  encounters:0,log:["연구소에서 첫 키즈몬을 받았어!"],createdAt:Date.now()};
+  encounters:0,regionResearch:normalizeRegionResearch(null),log:["연구소에서 첫 키즈몬을 받았어!"],createdAt:Date.now()};
 }
 function validateSave(raw){
  if(!raw||raw.version!==1||!Array.isArray(raw.party)||!raw.party.length||!raw.pos)return null;
@@ -149,6 +181,7 @@ function validateSave(raw){
  raw.wins=Math.max(0,Math.floor(raw.wins)||0);
  raw.catches=Math.max(0,Math.floor(raw.catches)||0);
  raw.encounters=Math.max(0,Math.floor(raw.encounters)||0);
+ raw.regionResearch=normalizeRegionResearch(raw.regionResearch);
   const previousTrainerWins=raw.trainerWins||{};
   raw.trainerWins={};
   for(const id of ["meadow","forest","lab"])
@@ -210,8 +243,12 @@ function move(save,dx,dy,rand=Math.random){
  }else if(zone!=="town"&&shouldMeet(save,tile,rand)){
   encounter=pickEncounter(zone,rand,save);
  }
- if(encounter){save.encounters++;save.grassSteps=0;save.seen[encounter.id]=true}
- return {moved:true,zone,tile,encounter,firstVisit,welcome,firstRoad:!!(firstRoad&&encounter)};
+ let regionalReward=null;
+ if(encounter){
+  save.encounters++;save.grassSteps=0;save.seen[encounter.id]=true;
+  regionalReward=recordRegionEncounter(save,zone,encounter.id);
+ }
+ return {moved:true,zone,tile,encounter,regionalReward,firstVisit,welcome,firstRoad:!!(firstRoad&&encounter)};
 }
 function starterChoices(){return ["set1_r02_c02","set1_r03_c02","set1_r04_c02"]}
 function researchStarterOptions(save){
@@ -338,5 +375,5 @@ function useEvolutionStone(save,id,stone){
  if(move)p.lastEvolutionTechnique=move;
  save.collection[p.id]=true;save.seen[p.id]=true;return true;
 }
-global.OPENMON_EXPEDITION_ENGINE={VILLAGES,villageFor,visitedVillages,fastTravel,STONES,genesFromUid,normalizeGenes,stoneEvolutionOptions,useEvolutionStone,WIDTH,HEIGHT,START,ZONES,zoneAt,terrain,canMove,makeCreature,createNew,validateSave,grantTraining,pickEncounter,unlockedPool,shouldMeet,move,healAll,activeCreature,xpGain,addCaptured,levelRewards,maybeEvolve,researchStarterOptions,claimResearchStarter,withdrawFromBox,retaliationDamage};
+global.OPENMON_EXPEDITION_ENGINE={HABITAT_REWARDS,recordRegionEncounter,VILLAGES,villageFor,visitedVillages,fastTravel,STONES,genesFromUid,normalizeGenes,stoneEvolutionOptions,useEvolutionStone,WIDTH,HEIGHT,START,ZONES,zoneAt,terrain,canMove,makeCreature,createNew,validateSave,grantTraining,pickEncounter,unlockedPool,shouldMeet,move,healAll,activeCreature,xpGain,addCaptured,levelRewards,maybeEvolve,researchStarterOptions,claimResearchStarter,withdrawFromBox,retaliationDamage};
 })(window);
