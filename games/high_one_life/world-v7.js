@@ -234,6 +234,9 @@
    const bonus=Math.round(money.income*(bump-1));
    money.income+=bonus;money.lastBalance+=bonus;money.netWorth=clamp(money.netWorth+bonus,-2e7,2e7);
   }
+  const scale=22000*(.15+(life.country[3]||.5)*1.52)*(life.world?.economyScale||1);
+  const relative=money.netWorth/Math.max(1,scale);
+  life.stats.wealth=clamp(Math.round(43+9*Math.sign(relative)*Math.log1p(Math.abs(relative))),0,97);
  }
  function install(){
   if(!Sim?.Life||!W6?.ensure||Sim.Life.prototype.__world7)return false;
@@ -246,6 +249,7 @@
    const oldSchool=this.world.schooling;
    const ok=tick.call(this);
    if(!ok)return false;
+   if(!this.alive)return ok;
    applyLearning(this,oldSchool);
    certification(this);
    supplementaryFinance(this);
