@@ -1137,3 +1137,13 @@ test('v6.6 wardrobe repairs knight hair, shoe spike and grounded headwear',()=>{
   assert.match(outfit,/male\?\.216:\.227/);
   assert.match(outfit,/jogger\?\.143:chino\?\.137/);
 });
+
+test('v6.7 headwear fits the scalp instead of hovering above it',()=>{
+  const src=read('teacher/chibi-accessory-pack.js');
+  assert.match(src,/chibi_hat_beret:\[0,-\.052,\.012,\.99\]/);
+  assert.match(src,/chibi_hat_straw:\[0,-\.059,0,\.99\]/);
+  assert.match(src,/chibi_gear_headphones:\[0,-\.026,\.007,\.99\]/);
+  assert.match(src,/dome\.translate\(hc\.x-\.022,scalpY-\.016/);
+  assert.match(src,/case 'straw':return cyl\(headR\*1\.085,headR\*1\.14,\.205,hc\.x,scalpY-\.117/);
+  assert.match(src,/sneakers:\[1\.025,1\.005,1\.005\]/);
+});
