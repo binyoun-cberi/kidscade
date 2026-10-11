@@ -82,7 +82,7 @@
   }
   function visibility(s,p){
     const d=nearestDistance(s,p);
-    const near=Math.min(1,Math.max(0,(d-.34)/.52));
+    const near=(s.kind==='floor'||s.kind==='ceiling')?1:Math.min(1,Math.max(0,(d-.34)/.52));
     const far=Math.min(1,Math.max(0,(13.5-d)/4.5));
     return near*far;
   }
