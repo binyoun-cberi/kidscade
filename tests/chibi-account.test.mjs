@@ -71,7 +71,7 @@ test('UI uses same strict policy and does not replace the existing pixel avatar'
  assert.match(html,/id="saveAccountChibi"/);
  assert.match(account,/chibiAvatar: s\?\.getJson/);
  assert.match(account,/s\.setJson\('chibiAvatar', state\.chibiAvatar\)/);
- assert.match(entry,/event\.source!==frame\.contentWindow/);
+ assert.match(entry,/event\.source!==studio\.frame\.contentWindow/);
  assert.match(entry,/KidscadeAccount\?\.sync/);
  assert.match(entry,/3D 캐릭터 만들기/);
  assert.match(index,/chibi-account-entry\.js/);
