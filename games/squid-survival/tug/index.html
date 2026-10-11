@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#0d2830">
 <title>줄다리기 | KIDSCADE</title>
-<link rel="stylesheet" href="../mini.css?v=1">
+<link rel="stylesheet" href="../mini.css?v=3">
 </head>
 <body>
 <div class="shell">
@@ -17,7 +17,7 @@
 <section class="stage">
 <div class="stage-title"><span id="modeTag">ROUND CHALLENGE</span><span id="hint">리듬에 맞춘 정확한 타이밍으로 줄을 당기기</span></div>
 <div class="canvas-wrap"><canvas id="scene" aria-label="움직이는 바늘이 중앙 초록색 범위를 지날 때 클릭하거나 스페이스를 누르세요. 연속으로 빠르게 누르면 피로가 쌓이고 오히려 밀립니다." tabindex="0"></canvas></div>
-<div class="progress-track" aria-label="진행률"><span id="progress"></span></div>
+<div class="progress-track" role="progressbar" aria-label="라운드 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressTrack"><span id="progress"></span></div>
 </section>
 <aside class="side">
 <h2>줄다리기</h2>
@@ -47,6 +47,6 @@
 </div>
 <script src="../../../kidscade-game-sdk.js" data-game-id="squid_tug" data-title="줄다리기" data-shell="true" data-orientation="any"></script>
 <script src="../mini-rules.js?v=1"></script>
-<script src="../mini.js?v=2" data-mode="tug"></script>
+<script src="../mini.js?v=3" data-mode="tug"></script>
 </body>
 </html>
