@@ -311,7 +311,8 @@ function updateCalligrams(dt,threat){
         screen.goodMap=material(mode,mode==='오류 감지'?'#ed7188':'#b9dac8').map;
       }
     }
-    const near=Math.min(1,Math.max(0,(dist-.45)/.75));
+    // Hiding places must remain visible at the same close range at which E is available.
+    const near=Math.min(1,Math.max(0,(dist-.14)/.65));
     const far=Math.min(1,Math.max(0,(15-dist)/5));
     const fade=near*far;
     const danger=threat?Math.max(0,1-R.distance(threat,obj)/8):0;
