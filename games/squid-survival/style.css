@@ -89,3 +89,10 @@ button{cursor:pointer}button:focus-visible,a:focus-visible{outline:3px solid #a8
 .versus-entry>span:last-child{font-size:21px}
 @media(max-width:860px){.versus-entry{margin:14px auto 0}.hero-panel>.primary{margin-inline:auto}}
 @media(max-height:510px) and (min-width:700px){.versus-entry{min-height:46px;padding:6px 10px;margin:10px 0 0}.versus-copy strong{font-size:13px}.versus-copy small{font-size:9px}}
+
+/* Six practices belong to the single Squid Survival entry. */
+.game-card{appearance:none;width:100%;text-align:left;color:inherit;font:inherit;cursor:pointer;border:0;border-bottom:1px solid #b6d3bf15}
+.game-card:hover,.game-card:focus-visible{background:#a8dfb521}
+.practice-tip{margin:12px 0 0;text-align:center;color:#a7c1b4;font-size:12px;line-height:1.6}
+.practice button{appearance:none;background:#213b32;border:1px solid #587967;border-radius:4px;color:#d7f4e0;padding:5px 9px;font-size:inherit;cursor:pointer}
+.practice button:hover,.practice button:focus-visible{background:#315c49;border-color:#9debc4}
