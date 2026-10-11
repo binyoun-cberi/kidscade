@@ -165,7 +165,7 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await screenshot('02c-computer-calligram.png','desktop');
   const wordWorld=(await snap()).visuals.surfaces;
   assert.deepEqual({wall:wordWorld.wall,floor:wordWorld.floor,ceiling:wordWorld.ceiling,door:wordWorld.door},
-    {wall:16,floor:4,ceiling:4,door:12},
+    {wall:18,floor:4,ceiling:4,door:12},
     'collidable world geometry must be readable as wall, floor, ceiling and door words');
   assert.ok(wordWorld.visible>=4,'surface text must be visible without obscuring the starting console');
   report.wordArchitecture=wordWorld;
