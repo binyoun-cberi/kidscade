@@ -13,7 +13,7 @@ const modes=['redlight','tug','marbles','final'];
 function renderMock(mode,width,height){
  const nodes=new Map(),draw={count:0,texts:[],progress:null},listeners=new Map(),frames=[];
  const ctx={};
- for(const name of ['beginPath','roundRect','fill','stroke','fillRect','clearRect','ellipse','arc','strokeRect','moveTo','lineTo','setTransform','fillText']){
+ for(const name of ['beginPath','roundRect','fill','stroke','fillRect','clearRect','ellipse','arc','strokeRect','moveTo','lineTo','setTransform','fillText','save','restore','translate','scale']){
    ctx[name]=(...args)=>{draw.count++;if(name==='fillText')draw.texts.push(String(args[0]));};
  }
  ctx.createLinearGradient=ctx.createRadialGradient=()=>({addColorStop(){}});
