@@ -51,6 +51,8 @@
   // Existing namespaced saves owned by one game. They are catalogued separately
   // from shared state so a future D1 sync can choose whether to upload them.
   const GAME_KEYS = Object.freeze({
+    oneLifeSaveV1: 'kidscade_one_life_save_v1',
+    oneLifeHistoryV1: 'kidscade_one_life_history_v1',
     aquariumSave: 'kidscade_aquarium_v1',
     byeokrandoSave: 'kidscade_byeokrando_v1',
     byeokrandoTutorialV2: 'kidscade_byeokrando_tutorial_v2',
