@@ -152,7 +152,7 @@
       netWorth:life.money.netWorth,health:life.stats.health,
       child:!!life.profile.child,partner:!!life.profile.partner,
       roles:life.world6?.history?.map(x=>x.job)||[],
-      choices:life.arc?.decisions?.map(d=>({age:d.age,label:d.label}))||[]};
+      choices:life.log.filter(e=>e.kind==='decision').map(e=>({age:e.age,label:e.text}))};
   }
   function showComparison(){
     const panel=$('endComparison'),rows=$('endComparisonRows');
@@ -208,6 +208,7 @@
     for (const entry of recent) {
       const li = document.createElement('li');
       if (entry.kind === 'decision') li.className = 'is-decision';
+      else if (entry.kind === 'decision-effect') li.className = 'is-choice-effect';
       const age = document.createElement('b');
       age.textContent = entry.age + '세';
       const text = document.createElement('span');
@@ -261,7 +262,18 @@
       const arrow=document.createElement('i'); arrow.textContent='↗'; arrow.setAttribute('aria-hidden','true');
       wrap.append(title,note); btn.append(wrap,arrow);
       btn.addEventListener('click',()=>{
+        const before={stats:{...life.stats},netWorth:life.money?.netWorth,career:life.career};
         if(!life?.choose(index)) return;
+        const labels={health:'건강',happiness:'행복',knowledge:'배움',bonds:'인연',wealth:'경제 지표'};
+        const changes=Object.entries(labels).flatMap(([key,label])=>{
+          const delta=(life.stats?.[key]||0)-(before.stats?.[key]||0);
+          return delta?[label+' '+(delta>0?'+':'')+delta]:[];
+        });
+        const moneyDelta=(life.money?.netWorth??before.netWorth)-(before.netWorth??life.money?.netWorth??0);
+        if(moneyDelta)changes.push('가상 순자산 '+(moneyDelta>0?'+':'')+formatCredits(moneyDelta));
+        if(life.career!==before.career)changes.push('진로 '+life.career);
+        const effectText=changes.length?'선택 직후 변화: '+changes.join(' · '):'선택 직후 지표 변화 없음 · 이후 선택지와 사건에 반영될 수 있음';
+        life.logEvent(effectText,'decision-effect');
         save(); elapsed=0; lastTick=performance.now(); render();
       });
       target.append(btn);
@@ -370,7 +382,10 @@
       const item=document.createElement('li');item.className='end-choice-item';
       const age=document.createElement('b');age.textContent=e.age+'세';
       const text=document.createElement('span');text.textContent=e.text;
-      item.append(age,text);endChoices.append(item);
+      const copy=document.createElement('div');copy.append(text);
+      const effect=life.log.find(x=>x.kind==='decision-effect'&&x.age===e.age);
+      const detail=document.createElement('small');detail.textContent=effect?.text||'선택 직후의 지표 변화 기록 없음';
+      copy.append(detail);item.append(age,copy);endChoices.append(item);
     });
     showComparison();
     const list=$('endHighlights'); list.replaceChildren();
