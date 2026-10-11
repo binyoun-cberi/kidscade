@@ -200,6 +200,16 @@ body{background:#203a31;overscroll-behavior:none}
 .kid-stat-grid b{color:#225540;font-size:16px}
 .kid-stat-grid small{font-size:9px;color:#728779}
 @media(max-width:430px){.kid-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Compact 3v3 tracker, readable without covering mobile battle art. */
+.trainer-roster{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 12px;background:#eaf3df;border-top:1px solid #bdd4bb;color:#234e3b}
+.trainer-roster[hidden]{display:none}
+.trainer-roster-group{display:grid;gap:4px;min-width:0}
+.trainer-roster-group>strong{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trainer-pips{display:flex;flex-wrap:wrap;gap:4px}
+.trainer-pip{display:inline-block;border-radius:100px;padding:4px 6px;border:1px solid #aec8af;background:#fff;font-size:9px;white-space:nowrap}
+.trainer-pip.active{font-weight:900;background:#d1efd7;border-color:#51a875}
+.trainer-pip.fainted{opacity:.45;text-decoration:line-through;background:#e6e4dd}
 </style>
 </head>
 <body>
@@ -260,13 +270,14 @@ body{background:#203a31;overscroll-behavior:none}
   </div>
  </div>
 </div>
-<div class="overlay hidden" id="battleOverlay" role="dialog" aria-modal="true" aria-label="야생 키즈몬과 전투">
+<div class="overlay hidden" id="battleOverlay" role="dialog" aria-modal="true" aria-label="키즈몬 전투">
  <div class="modal">
   <div class="modal-head"><div><h2>야생 키즈몬 등장!</h2><small id="battleZone">이슬초원</small></div><span class="chip accent" id="battleTurn">1턴</span></div>
   <div class="battle-top" id="battleBackdrop">
     <div class="battle-own"><div class="hp-row"><span id="ownName">아군</span><span id="ownHpLabel">HP</span></div><span class="battle-status" id="ownStatus"></span><div class="hp-bar" style="width:100%"><span class="hp-fill" id="ownHpBar"></span></div><div class="b-mon-art" id="ownArt"></div></div>
     <div class="battle-foe"><div class="hp-row"><span id="foeName">야생</span><span id="foeHpLabel">HP</span></div><span class="battle-status" id="foeStatus"></span><div class="hp-bar" style="width:100%"><span class="hp-fill" id="foeHpBar"></span></div><div class="b-mon-art" id="foeArt"></div></div>
   </div>
+  <div id="trainerRoster" class="trainer-roster" hidden aria-label="양 팀의 남은 키즈몬"></div>
   <div class="battle-log" id="battleLog" aria-live="polite">무슨 행동을 할까요?</div>
   <div class="battle-actions" id="battleActionPanel">
     <p><span id="battlePrompt">무엇을 할까?</span><span id="battleHint">싸우기 · 키즈볼 · 가방 · 교체</span></p>
@@ -286,6 +297,7 @@ body{background:#203a31;overscroll-behavior:none}
 <script src="turn-battle.js"></script>
 <script src="family-signatures.js"></script>
 <script src="move-dex.js"></script>
+<script src="trainer-battle.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

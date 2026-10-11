@@ -1,12 +1,12 @@
 (function(){
 "use strict";
-const DB=window.OPENMON_DEX,E=window.OPENMON_EXPEDITION_ENGINE,B=window.OPENMON_TURN_BATTLE,MD=window.KIDSMON_MOVE_DEX;
-if(!DB?.combat||!E||!B||!MD)throw Error("KIDSMON move encyclopedia or battle engine missing");
+const DB=window.OPENMON_DEX,E=window.OPENMON_EXPEDITION_ENGINE,B=window.OPENMON_TURN_BATTLE,MD=window.KIDSMON_MOVE_DEX,T=window.KIDSMON_TRAINERS;
+if(!DB?.combat||!E||!B||!MD||!T)throw Error("KIDSMON move encyclopedia, trainers or battle engine missing");
 const $=id=>document.getElementById(id);
 const C=$("worldCanvas"),cx=C.getContext("2d",{alpha:false});
 cx.imageSmoothingEnabled=false;
 const SAVE_KEY="kidscade.openmon.expedition.save.v1";
-let save=null,battle=null,lastDraw=0,lastMove=0,held=null,moveTimer=0,soundOn=true,audio=null;
+let save=null,battle=null,lastDraw=0,lastMove=0,held=null,moveTimer=0,soundOn=true,audio=null,trainerSelection=null;
 let latestToast="풀숲이나 동굴의 거친 땅으로 이동하면 키즈몬을 만날 수 있어요.";
 let toastTimer=null;
 const imgs={};
@@ -204,7 +204,9 @@ function talk(){
  const x=save.pos.x,y=save.pos.y;
  if(Math.abs(x-9)+Math.abs(y-10)<=2){openClinic();return}
  if(Math.abs(x-13)+Math.abs(y-10)<=2){
-  openGeneric("수학 연구원",'<p>야생 키즈몬의 남은 체력과 기술의 피해량을 비교해 봐. 강한 공격만 쓰면 포획에 실패할 수도 있어!</p><button class="modal-action" id="researchDex">도감 열기</button>');
+  openGeneric("수학 연구원",'<p>야생 키즈몬의 남은 체력과 기술의 피해량을 비교해 봐. 세 마리의 동료가 모였다면 트레이너 배틀에도 도전해 봐!</p>'+
+   '<div class="action-row"><button class="modal-action" id="researchDex">도감 열기</button>'+
+   '<button type="button" class="act" data-hud-action="trainers">3대3 도전</button></div>');
   $("researchDex").onclick=()=>{closeGeneric();openDex()};return
  }
  if(E.terrain(x,y)==="clearing"||Math.abs(x-56)+Math.abs(y-7)<=1){
@@ -227,7 +229,67 @@ function openClinic(){
  '<div class="shop-item"><div><strong>키즈볼 +1</strong><small>연구코인 35</small></div><button data-buy="ball">35코인</button></div>'+
  '<div class="shop-item"><div><strong>회복약 +1</strong><small>연구코인 25</small></div><button data-buy="potion">25코인</button></div>'+
  Object.entries(E.STONES).map(([k,stone])=>'<div class="shop-item"><div><strong>'+stone.name+' +1</strong><small>연구코인 120 · 진화 재료</small></div><button data-buy="'+k+'">120코인</button></div>').join("")+
+  '<div class="shop-item"><div><strong>트레이너 연구 대회</strong><small>세 마리의 키즈몬 · 상성에 따라 교체하는 전략 AI</small></div>'+
+  '<button type="button" data-hud-action="trainers">3대3 도전</button></div>'+
   '<div class="shop-item"><div><strong>키즈몬 보관함</strong><small>보관 중 '+save.box.length+'마리 · 선두 키즈몬과 교체 가능</small></div><button data-hud-action="box">열기</button></div>'+gift+'</div>');
+}
+function openTrainers(){
+ if(!save||battle)return;
+ const slots=T.eligibleSlots(save),ready=slots.length===3;
+ const cards=T.TRAINERS.map(config=>{
+  const t=T.preview(save,config.id),can=T.available(save,config.id);
+  const typeNames=t.party.map(m=>esc(species(m.id).name)+" ("+esc(DB.types[m.type].name)+")").join(" · ");
+  const record=save.trainerWins?.[t.id]||0;
+  return '<div class="shop-item"><div><strong>'+esc(t.name)+' · '+esc(t.title)+'</strong>'+
+   '<small>'+typeNames+'</small><small>'+esc(t.lesson)+'</small>'+
+   '<small>필요 야생 승리 '+t.requiredWins+'회 · 도전 성공 '+record+'회</small></div>'+
+   '<button type="button" data-trainer="'+t.id+'" '+(can?'':'disabled')+'>'+(can?'대결 시작':!ready?'3마리 필요':'잠김')+'</button></div>';
+ }).join("");
+ openGeneric("연구원 3대3 배틀",'<p>연구원을 선택한 다음, 파티에서 원하는 세 마리를 골라 출전해. 싸우기·교체·회복약을 사용할 수 있고 키즈볼과 도망은 사용할 수 없어.</p>'+
+  '<p>준비한 키즈몬 '+slots.length+'/3 · 상대 연구원은 불리한 상성이 되면 키즈몬을 교체할 수 있어.</p>'+
+  '<div class="shop-list">'+cards+'</div><p>승리하면 세 마리가 함께 경험치를 얻고 첫 클리어 보너스를 받아.</p>');
+}
+function openTrainerSelection(id){
+ if(!save||battle||!T.available(save,id))return;
+ trainerSelection={id,slots:T.eligibleSlots(save)};
+ renderTrainerSelection();
+}
+function renderTrainerSelection(){
+ if(!save||!trainerSelection)return;
+ const config=T.TRAINERS.find(x=>x.id===trainerSelection.id);
+ if(!config)return;
+ const chosen=trainerSelection.slots;
+ const cards=save.party.map((p,i)=>{
+  const selected=chosen.includes(i);
+  return '<div class="shop-item">'+miniArt(p.id)+'<div><strong>'+esc(species(p.id).name)+
+   ' · Lv.'+p.level+'</strong><small>'+esc(DB.types[species(p.id).type].name)+' 속성 · HP '+hpText(p)+'</small></div>'+
+   '<button type="button" data-trainer-slot="'+i+'" aria-pressed="'+selected+'" '+
+    (p.hp<=0?'disabled':'')+'>'+(selected?'✓ 출전':'선택')+'</button></div>';
+ }).join("");
+ openGeneric(config.name+" · 출전 팀 선발",
+  '<p>총 3마리를 선택해. 유리한 속성의 키즈몬을 섞으면 더 쉽게 싸울 수 있어.</p>'+
+  '<p><strong>선발 '+chosen.length+'/3</strong> · 상대: '+config.species.map(id=>esc(species(id).name)).join(' · ')+'</p>'+
+  '<div class="shop-list">'+cards+'</div>'+
+  '<div class="action-row"><button class="act primary" type="button" data-trainer-start="'+config.id+'" '+
+   (T.validateSelection(save,chosen)?'':'disabled')+'>이 팀으로 도전!</button>'+
+  '<button class="act" type="button" data-hud-action="trainers">연구원 다시 선택</button></div>');
+}
+function enterTrainer(id,selectedSlots=null){
+ if(!save||battle)return false;
+ const trainer=T.makeTrainer(save,id,Math.random,selectedSlots);
+ if(!trainer){setToast("세 마리의 건강한 키즈몬과 도전 조건을 확인해 줘.");return false}
+ if(!trainer.playerSlots.includes(save.active))save.active=trainer.playerSlots[0];
+ for(const p of trainer.party)B.normalize(p);
+ const foe=trainer.party[trainer.active];
+ battle={foe,trainer,zone:"town",special:false,firstRoad:false,turn:1,
+  done:false,menu:"root",turnState:B.state(),
+  message:trainer.name+"이(가) 대결을 신청했어! 세 마리를 모두 쓰러뜨리면 승리야.\n"+
+   trainer.lesson};
+ $("battleOverlay").classList.remove("hidden");
+ $("battleActionPanel").classList.remove("hidden");
+ $("battleAfter").classList.add("hidden");
+ trainerSelection=null;
+ closeGeneric();renderBattle();persist();return true;
 }
 function openBox(){
  if(!save)return;
@@ -438,10 +500,25 @@ function renderBattle(){
   $("ownArt").style.filter=own.shiny?"hue-rotate(95deg) saturate(1.7)":"none";
  $("foeArt").innerHTML=artHtml(foe.id);
   $("foeArt").style.filter=foe.shiny?"hue-rotate(95deg) saturate(1.7)":"none";
- $("battleZone").textContent=E.ZONES.find(z=>z.key===battle.zone)?.name||"비밀숲";
+ const trainer=battle.trainer;
+ $("battleOverlay").querySelector(".modal-head h2").textContent=trainer?"트레이너 3대3 대결":"야생 키즈몬 등장!";
+ $("battleZone").textContent=trainer?trainer.name:(E.ZONES.find(z=>z.key===battle.zone)?.name||"비밀숲");
+ const roster=$("trainerRoster");
+ roster.hidden=!trainer;
+ if(trainer){
+  const columns=[
+   {name:"내 팀",members:trainer.playerSlots.map(i=>save.party[i]),current:save.active,ids:trainer.playerSlots},
+   {name:trainer.name,members:trainer.party,current:trainer.active,ids:[0,1,2]}
+  ];
+  roster.innerHTML=columns.map(col=>
+   '<div class="trainer-roster-group"><strong>'+esc(col.name)+'</strong><div class="trainer-pips">'+
+   col.members.map((m,i)=>'<span class="trainer-pip '+(m.hp<=0?'fainted':col.ids[i]===col.current?'active':'')+'">'+
+    esc(species(m.id).name)+' '+(m.hp>0?'●':'×')+'</span>').join("")+
+   '</div></div>').join("");
+ }
  const bg=battle.zone==="cave"?"Cave_Back.png":"Forest_Background.png";
  $("battleBackdrop").style.backgroundImage="linear-gradient(#ffffff15,#bdd2a725),url('"+ASSET+"more%20assets/"+bg+"')";
- $("battleTurn").textContent=battle.turn+"턴";
+ $("battleTurn").textContent=battle.turn+"턴"+(battle.trainer?" · "+battle.trainer.party.filter(m=>m.hp>0).length+"/3 남음":"");
  $("battleLog").textContent=battle.message;
  if(battle.done){$("battleActionPanel").classList.add("hidden");$("battleAfter").classList.remove("hidden");return}
  $("battleAfter").classList.add("hidden");
@@ -458,22 +535,25 @@ function renderBattle(){
    const detail=DB.types[m.type].name+" · "+(m.power?(DB.combat.SPECIAL_TYPES.has(m.type)?"특수 ":"물리 ")+hitEstimate(slot.id):m.kind==="counter"?"반격 자세":"보조 효과")+
     " · PP "+slot.pp+"/"+m.pp;
    return button("move:"+slot.id,m.name,detail,"strong",slot.pp<=0);
-  }).join("")+button("soft","살살 공격","포획용 · HP 1 남김","utility")+
+  }).join("")+(battle.trainer?"":button("soft","살살 공격","포획용 · HP 1 남김","utility"))+
    button("back","← 돌아가기","행동 선택으로","menu-back");
  }else if(battle.menu==="bag"){
   $("battlePrompt").textContent="가방과 다른 행동";
   $("battleHint").textContent="아이템은 내 턴 사용";
   html=button("potion","회복약","HP +20 · "+save.items.potion+"개","utility",
        save.items.potion<=0||own.hp>=maxOwn)+
-   button("run","도망가기","전투를 빠져나가기")+
+   (battle.trainer?"":button("run","도망가기","전투를 빠져나가기"))+
    button("back","← 돌아가기","행동 선택으로","menu-back");
  }else{
   $("battlePrompt").textContent="무엇을 할까?";
   $("battleHint").textContent="속도 순서에 따라 행동";
   html=button("fight","싸우기","기술 네 가지와 PP","strong")+
-   button("ball","키즈볼 던지기",catchEstimate()+" · "+save.items.ball+"개","utility",save.items.ball<=0)+
-   button("bag","가방","회복약 · 도망가기")+
-   button("switch","키즈몬 교체","다른 동료 출전", "",save.party.filter(x=>x.hp>0).length<2);
+   (battle.trainer?button("switch","키즈몬 교체","세 명의 참가자 중 선택","utility",
+     battle.trainer.playerSlots.filter(i=>save.party[i].hp>0).length<2||side.player.trapTurns>0):
+    button("ball","키즈볼 던지기",catchEstimate()+" · "+save.items.ball+"개","utility",save.items.ball<=0))+
+   button("bag","가방",battle.trainer?"회복약":"회복약 · 도망가기")+
+   (battle.trainer?button("tips","전술 힌트","상성과 교체 규칙 확인"):
+    button("switch","키즈몬 교체","다른 동료 출전","",save.party.filter(x=>x.hp>0).length<2));
  }
  $("battleButtons").innerHTML=html;
 }
@@ -487,6 +567,7 @@ function battleAction(action){
  if(action==="fight"||action==="bag"){battle.menu=action;renderBattle();return}
  if(action==="back"){battle.menu="root";renderBattle();return}
  if(action==="switch"){showSwap();return}
+ if(action==="tips"&&battle.trainer){appendBattle(battle.trainer.lesson+"\n싸우기: 공격 · 교체: 다른 속성으로 대응 · 회복약: HP +20\n서로의 키즈몬 세 마리를 모두 쓰러뜨리면 승리!");renderBattle();return}
  const choice=action.startsWith("move:")?{type:"move",id:action.slice(5)}:
   action==="soft"?{type:"soft"}:
   action==="ball"?{type:"ball"}:
@@ -497,7 +578,7 @@ function battleAction(action){
 function resolveBattleTurn(choice){
  if(!battle||battle.done)return;
  const foe=battle.foe,own=E.activeCreature(save),foeName=species(foe.id).name;
- const rookieCap=battle.zone==="meadow"&&save.encounters<=4?
+ const rookieCap=!battle.trainer&&battle.zone==="meadow"&&save.encounters<=4?
   Math.max(3,Math.floor(maxHp(own)*.15)):0;
  const res=B.resolve({save,foe,battle,action:choice,random:Math.random,
   rookieCap});
@@ -514,6 +595,17 @@ function resolveBattleTurn(choice){
   const progress=save.wins+save.catches;
   endFight(foeName+" 포획 성공!\n"+(destination==="party"?"동료로 합류했어.":"보관함으로 이동했어.")+
    ([3,7,12].includes(progress)?"\n연구 기록으로 새로운 야생 키즈몬이 나타나기 시작했어!":""),"capture");
+  return;
+ }
+ if(res.outcome==="won"&&battle.trainer){
+  const trainer=battle.trainer;
+  const prize=T.reward(save,trainer);
+  const newLevels=prize.changes.flatMap(c=>c.events);
+  if(newLevels.length)pendingEvolution=true;
+  endFight(res.events.join("\n")+"\n"+trainer.name+"에게 승리! 세 마리 모두 쓰러뜨렸어!"+
+   "\n참가한 키즈몬 경험치 +"+prize.xpEach+" · 연구코인 +"+prize.coins+
+   (prize.first?"\n첫 승리 보너스 획득!":"")+
+   (newLevels.length?"\n키즈몬 레벨 업! 파티에서 진화도 확인해 봐.":""),"win");
   return;
  }
  if(res.outcome==="won"){
@@ -534,7 +626,7 @@ function resolveBattleTurn(choice){
  if(res.outcome==="lost"){
   E.healAll(save);for(const p of save.party)B.restorePP(p);
   save.active=0;save.pos={...E.START};
-  endFight(res.events.join("\n")+"\n모두 쓰러져 연구소로 돌아와 HP·PP를 회복했어.","fail");return;
+  endFight(res.events.join("\n")+(battle.trainer?"\n트레이너 대결에서 졌어.":"")+"\n모두 쓰러져 연구소로 돌아와 HP·PP를 회복했어.","fail");return;
  }
  if(res.outcome==="run"){endFight(res.events.join("\n"),"click");return}
  beep(res.captured?"capture":"hit");
@@ -565,8 +657,13 @@ function openStoneEvolution(){
 function showSwap(){
  if(!save||!battle)return;
  if(battle.turnState?.player?.trapTurns>0){setToast("속박 상태에서는 교체할 수 없어.");return}
- openGeneric("교체할 키즈몬",'<p>교체 행동은 우선 처리되며 상대가 기술을 사용할 수 있어.</p><div class="shop-list">'+save.party.map((p,i)=>
- '<div class="shop-item">'+miniArt(p.id)+'<div><strong>'+esc(species(p.id).name)+'</strong><small>Lv.'+p.level+' / HP '+hpText(p)+'</small></div><button type="button" data-swap="'+i+'" '+(i===save.active||p.hp<=0?"disabled":"")+'>선택</button></div>').join("")+'</div>');
+ const selected=battle.trainer?battle.trainer.playerSlots:save.party.map((p,i)=>i);
+ openGeneric("교체할 키즈몬",'<p>교체는 먼저 진행되지만 상대에게 공격 기회를 줘. 속박 상태에서는 교체할 수 없어.</p><div class="shop-list">'+
+ selected.map(i=>{
+  const p=save.party[i];
+  return '<div class="shop-item">'+miniArt(p.id)+'<div><strong>'+esc(species(p.id).name)+'</strong><small>Lv.'+p.level+' / HP '+hpText(p)+'</small></div>'+
+   '<button type="button" data-swap="'+i+'" '+(i===save.active||p.hp<=0?"disabled":"")+'>선택</button></div>';
+ }).join("")+'</div>');
 }
 function renderTerrain(x,y,sx,sy){
  const t=E.terrain(x,y),area=E.zoneAt(x),seed=(x*73+y*91)%41;
@@ -712,6 +809,7 @@ function attach(){
    if(act==="potion"){useFieldPotion();if(!battle){if($("genericTitle").textContent==="탐험 가방")openBag();else openParty()}}
    else if(act==="clinic"){closeGeneric();$("goClinic").click()}
    else if(act==="box")openBox();
+   else if(act==="trainers")openTrainers();
    else if(act==="evolve"){closeGeneric();evolveIfReady();}
    else if(act==="stones")openStoneEvolution();
    else if(act==="skills")openSkills();
@@ -753,6 +851,20 @@ function attach(){
     persist();updateAll();beep("win");setToast("결정 진화에 성공했어!");
    }else setToast("진화 조건과 결정 수량을 확인해 봐.");
    openParty();return;
+  }
+  b=e.target.closest("button[data-trainer]");
+  if(b){openTrainerSelection(b.dataset.trainer);return}
+  b=e.target.closest("button[data-trainer-slot]");
+  if(b&&trainerSelection){
+   const index=Number(b.dataset.trainerSlot),selected=trainerSelection.slots;
+   if(selected.includes(index))trainerSelection.slots=selected.filter(i=>i!==index);
+   else if(save.party[index]?.hp>0&&selected.length<3)trainerSelection.slots=[...selected,index];
+   else setToast("세 명이 모두 정해졌어. 다른 친구를 고르려면 먼저 한 명을 해제해.");
+   renderTrainerSelection();return;
+  }
+  b=e.target.closest("button[data-trainer-start]");
+  if(b&&trainerSelection&&T.validateSelection(save,trainerSelection.slots)){
+   enterTrainer(b.dataset.trainerStart,trainerSelection.slots);return;
   }
   b=e.target.closest("button[data-buy]");if(b){buy(b.dataset.buy);return}
   b=e.target.closest("button[data-swap]");if(b){const choice=Number(b.dataset.swap);closeGeneric();resolveBattleTurn({type:"switch",index:choice});return}

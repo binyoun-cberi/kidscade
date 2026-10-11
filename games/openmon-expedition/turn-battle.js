@@ -254,8 +254,15 @@ function chooseEnemyMove(foe,own,foeSide,ownSide,rng=Math.random){
  for(const item of weighted){value+=item.w;if(x<value)return item.id}
  return weighted[weighted.length-1].id;
 }
-function resolve({save,foe,battle,action,random=Math.random,rookieCap=0}){
- if(!save||!foe||!battle||!action)return {ok:false,reason:"invalid"};
+function resolve({save,foe:initialFoe,battle,action,random=Math.random,rookieCap=0}){
+ if(!save||!initialFoe||!battle||!action)return {ok:false,reason:"invalid"};
+ let foe=initialFoe;
+ const trainer=battle.trainer?.party?.length===3?battle.trainer:null;
+ if(trainer){
+  if(!trainer.party.includes(foe)||trainer.party[trainer.active]!==foe)
+   return {ok:false,reason:"trainer-state"};
+  if(["ball","soft","run"].includes(action.type))return {ok:false,reason:"trainer-action"};
+ }
  const side=battle.turnState||(battle.turnState=state());
  const player=()=>save.party[save.active];
  if(!player())return {ok:false,reason:"no active"};
@@ -271,18 +278,33 @@ function resolve({save,foe,battle,action,random=Math.random,rookieCap=0}){
  if(action.type==="ball"&&save.items.ball<=0)return {ok:false,reason:"ball"};
  if(action.type==="potion"&&(save.items.potion<=0||player().hp>=D.combat.statsAtLevel(player().id,player().level,player()).hp))return {ok:false,reason:"potion"};
  if(action.type==="switch"&&side.player.trapTurns>0)return {ok:false,reason:"trapped"};
- if(action.type==="switch"&&(!Number.isInteger(action.index)||!save.party[action.index]||save.party[action.index].hp<=0||save.active===action.index))return {ok:false,reason:"switch"};
+ if(action.type==="switch"&&(!Number.isInteger(action.index)||!save.party[action.index]||save.party[action.index].hp<=0||save.active===action.index||
+   (trainer&&!trainer.playerSlots.includes(action.index))))return {ok:false,reason:"switch"};
  const introMoves=foe.moveSlots.filter(x=>x.pp>0&&M[x.id]?.power&&!M[x.id]?.afflict);
  const enemyId=battle.firstRoad&&introMoves.length?
   introMoves[Math.floor(random()*introMoves.length)].id:
   chooseEnemyMove(foe,player(),side.foe,side.player,random);
  const enemyAction=getMove(enemyId)||M.tackle;
+ const trainers=w.KIDSMON_TRAINERS;
+ const enemySwitch=trainer&&trainers?.chooseSwitch?
+  trainers.chooseSwitch({trainer,player:player(),foe,side,random}):-1;
  const pPriority=action.type==="run"?8:action.type==="switch"?7:action.type==="ball"||action.type==="potion"?6:
   action.type==="soft"?0:playerAction.priority||0;
- const fPriority=enemyAction.priority||0;
+ const fPriority=enemySwitch>=0?7:enemyAction.priority||0;
  let playerFirst=pPriority!==fPriority?pPriority>fPriority:score(player(),side.player)!==score(foe,side.foe)?
   score(player(),side.player)>score(foe,side.foe):random()<.5;
- let outcome="continue",captured=false,ran=false,potionUsed=false,switched=false;
+ let outcome="continue",captured=false,ran=false,potionUsed=false,switched=false,enemySwitched=false;
+ function nextTrainerOpponent(){
+  if(foe.hp>0)return;
+  if(!trainer){outcome="won";return}
+  const nextIndex=trainers?.chooseReplacement?
+   trainers.chooseReplacement({trainer,player:player()}):
+   trainer.party.findIndex((m,i)=>i!==trainer.active&&m.hp>0);
+  if(nextIndex<0||!trainer.party[nextIndex]?.hp){outcome="won";return}
+  trainer.active=nextIndex;foe=trainer.party[nextIndex];battle.foe=foe;side.foe=makeSide();
+  say(trainer.name+"의 다음 키즈몬 "+getSpecies(foe.id).name+" 출전! ("+
+   trainer.party.filter(x=>x.hp>0).length+"/3)");
+ }
  function useMove(user,opponent,from,to,move,enemy=false){
   normalize(user);
   const slot=user.moveSlots.find(s=>s.id===move.id);
@@ -338,6 +360,14 @@ function resolve({save,foe,battle,action,random=Math.random,rookieCap=0}){
   const user=isPlayer?player():foe,other=isPlayer?foe:player();
   const a=isPlayer?side.player:side.foe,b=isPlayer?side.foe:side.player;
   if(!user||!user.hp||!other.hp)return;
+  if(!isPlayer&&enemySwitch>=0){
+   if(trainer.party[enemySwitch]?.hp>0&&side.foe.trapTurns<=0){
+    trainer.active=enemySwitch;foe=trainer.party[enemySwitch];battle.foe=foe;side.foe=makeSide();
+    trainer.switches++;trainer.lastSwitchTurn=trainer.turn;enemySwitched=true;
+    say(trainer.name+"이(가) 상성을 읽고 "+getSpecies(foe.id).name+"(으)로 교체!");
+   }
+   return;
+  }
   if(a.stunPending){a.stunPending=false;say(getSpecies(user.id).name+"이(가) 감전되어 행동하지 못했어.");return}
   if(isPlayer){
    if(action.type==="run"){ran=true;outcome="run";say("무사히 도망쳤어!");return}
@@ -362,9 +392,9 @@ function resolve({save,foe,battle,action,random=Math.random,rookieCap=0}){
  if(playerFirst){act(true);if(outcome==="continue"&&player().hp>0&&foe.hp>0)act(false)}
  else{act(false);if(outcome==="continue"&&player().hp>0&&foe.hp>0)act(true)}
  if(outcome==="continue"){
-  if(!foe.hp)outcome="won";
-  else if(!player().hp){
-   const next=save.party.findIndex(x=>x.hp>0);
+  if(!foe.hp)nextTrainerOpponent();
+  if(outcome==="continue"&&!player().hp){
+   const next=save.party.findIndex((x,i)=>x.hp>0&&(!trainer||trainer.playerSlots.includes(i)));
    if(next>=0){save.active=next;side.player=makeSide();say("다음 키즈몬 "+getSpecies(player().id).name+" 출전!")}
    else outcome="lost";
   }
@@ -383,10 +413,12 @@ function resolve({save,foe,battle,action,random=Math.random,rookieCap=0}){
      s.condition=null;say(who+" 상태 효과가 끝났어.")}}
    // Weaken changes attack stage once and now restores exactly that temporary penalty on expiry.
   }
-  if(!foe.hp)outcome="won";
-  else if(!player().hp){const next=save.party.findIndex(p=>p.hp>0);if(next>=0){save.active=next;side.player=makeSide();say("다음 키즈몬 출전!")}else outcome="lost"}
+  if(!foe.hp)nextTrainerOpponent();
+  if(outcome==="continue"&&!player().hp){const next=save.party.findIndex((p,i)=>p.hp>0&&(!trainer||trainer.playerSlots.includes(i)));if(next>=0){save.active=next;side.player=makeSide();say("다음 키즈몬 출전!")}else outcome="lost"}
  }
- return {ok:true,outcome,events,enemyMove:enemyId,playerFirst,captured,ran,potionUsed,switched};
+ if(trainer)trainer.turn++;
+ return {ok:true,outcome,events,enemyMove:enemySwitch>=0?null:enemyId,
+  enemySwitched,playerFirst,captured,ran,potionUsed,switched};
 }
 w.OPENMON_TURN_BATTLE={moves:M,moveSets:MOVESET,normalize,restorePP,learnable,changeMove,chooseEnemyMove,resolve,state,score,registerFamilyMoves,growthMoves,equipEvolutionTechnique,familyMoves,branchMoves};
 })(window);
