@@ -219,6 +219,75 @@ const errors=[];
     return;
   }
 
+  // Dedicated v6.6 visual regression: isolate each repaired wardrobe part
+  // so accessory leftovers and previous clothing cannot disguise a problem.
+  if(process.env.KIDSCADE_CHIBI_REPAIR_ONLY==='1'){
+    const plans=[
+      ['female','hair','hairtailknight'],
+      ['female','hair','chibi_female_hair_hime'],
+      ['female','hair','chibi_female_hair_twintail'],
+      ['male','bottom','chibi_male_jeans'],
+      ['male','bottom','chibi_male_joggers'],
+      ['male','bottom','chibi_male_chinos'],
+      ['male','bottom','chibi_male_cargo'],
+      ['male','shoes','chibi_shoe_sneakers'],
+      ['male','accessory','chibi_hat_beret'],
+      ['male','accessory','chibi_hat_straw'],
+      ['female','accessory','chibi_hat_beret'],
+      ['female','accessory','chibi_hat_straw']
+    ];
+    const records=[],screens=[];
+    for(const [fit,category,id] of plans){
+      await evalPage("document.querySelector('[data-body-fit="+JSON.stringify(fit)+"]').click()");
+      if(category==='hair'){
+        await evalPage("(()=>{const e=document.getElementById('chibiHair');e.value="+JSON.stringify(id)+";e.dispatchEvent(new Event('change',{bubbles:true}))})()");
+      }else{
+        await evalPage("(()=>{"+
+          "document.querySelector('[data-wardrobe-category="+JSON.stringify(category)+"]').click();"+
+          "const e=document.querySelector('[data-chibi-part="+JSON.stringify(id)+"]');"+
+          "if(!e)throw Error('Missing repaired part');"+
+          "e.checked=true;e.dispatchEvent(new Event('change',{bubbles:true}));"+
+          "})()");
+      }
+      const rig=await evalPage('window.__kc3dAudit.bodyFitAudit()');
+      assert.equal(rig.fit,fit,'Wrong active fit in v6.6');
+      assert.deepEqual(rig.incompatible,[],'Incompatible parts mounted');
+      for(const [clip,view,phase] of [
+        ['IDLE','threeQuarter',0],['IDLE','side',0],
+        ['WALK','side',.25],['RUN','threeQuarter',.75]
+      ]){
+        const prefix='v66-'+fit+'-'+id;
+        const pose=await sample(clip,view,phase,prefix);
+        assert.ok(pose.selectedParts.includes(id),'Invisible repaired part '+id+'/'+clip);
+        const file=prefix+'-'+clip.toLowerCase()+'-'+view+'-'+Math.round(phase*100)+'.png';
+        records.push({fit,id,clip,view,file});
+        if(clip==='IDLE'){
+          const png=path.join(OUT,file),meta=await sharp(png).metadata();
+          const crop=(category==='hair'||category==='accessory'&&id.includes('hat_'))
+            ?{left:Math.floor(meta.width*.25),top:Math.floor(meta.height*.025),
+              width:Math.floor(meta.width*.50),height:Math.floor(meta.height*.60)}
+            :category==='bottom'
+              ?{left:Math.floor(meta.width*.24),top:Math.floor(meta.height*.34),
+                width:Math.floor(meta.width*.52),height:Math.floor(meta.height*.59)}
+              :{left:Math.floor(meta.width*.22),top:Math.floor(meta.height*.52),
+                width:Math.floor(meta.width*.56),height:Math.floor(meta.height*.44)};
+          const small=await sharp(png).extract(crop).resize({
+            width:320,height:330,fit:'contain',background:'#1d2935'
+          }).jpeg({quality:78}).toBuffer();
+          const tag=fit+'-'+id+'-'+view;
+          fs.writeFileSync(path.join(OUT,'review-'+tag+'.jpg'),small);
+          console.log('CHIBI_V66_PREVIEW '+tag+' '+small.toString('base64'));
+          screens.push(tag);
+        }
+      }
+    }
+    report.v66Repair={cases:records.length,images:screens};
+    fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');
+    assert.equal(errors.length,0,'Browser exceptions: '+errors.join('; '));
+    console.log('CHIBI_V66_REPAIR_SUCCESS '+JSON.stringify(report.v66Repair));
+    return;
+  }
+
   // Hard geometry ownership: verify body tabs are separate workspaces in a
   // real Chrome session and incompatible parts never enter UI or output.
   const hardFit=JSON.parse(fs.readFileSync(path.join(ROOT,'chibi/asset-manifest.json'),'utf8'))
