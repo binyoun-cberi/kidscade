@@ -46,7 +46,7 @@ body.kc-account-editor .canvas-card{
 body.kc-account-editor .canvas-card .view{
  display:block;width:100%;height:min(54vh,460px);min-height:350px;max-height:460px;
  border-radius:21px;border:1px solid #eadbd2;background:#f4ebe5;
- touch-action:pan-y
+ touch-action:none
 }
 body.kc-account-editor .canvas-card .kc3d-preview-title{
  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
