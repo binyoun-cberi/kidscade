@@ -120,9 +120,11 @@ body.kc-account-preview #status{display:none}
 <div class="wrap">
   <header class="top">
     <div>
+      <div class="kc3d-eyebrow">KIDSCADE · 3D AVATAR</div>
       <h1>3D 아바타 제작실</h1>
       <div class="muted">원본 Chibi 리그를 활용해 남자·여자 모델을 편집하고, 정면·측면·얼굴과 동작을 검수할 수 있습니다.</div>
     </div>
+    <div class="kc3d-account-actions" id="kc3dAccountActions"></div>
     <div class="top-actions">
       <a href="/teacher/avatar-clothing-studio.html">2D 아바타 제작실</a>
       <a href="/teacher/">← 관리자 화면</a>
@@ -134,6 +136,10 @@ body.kc-account-preview #status{display:none}
     <div id="gateText" class="muted">전역 관리자 로그인 상태에서만 3D 제작실을 사용할 수 있습니다.</div>
   </section>
 
+  <nav class="kc3d-mode-nav" aria-label="캐릭터 형태 선택">
+    <button type="button" data-kc3d-switch-2d>2D 픽셀 캐릭터 <span>도트 스타일</span></button>
+    <button type="button" class="active" aria-current="page">3D Chibi 캐릭터 <span>입체 스타일</span></button>
+  </nav>
   <main id="studio" class="studio hidden" data-layout-version="left-rail-no-scroll-v4">
     <aside class="left-rail">
       <section class="card">
@@ -299,6 +305,7 @@ setTimeout(()=>{
   }
 },7000);
 </script>
+<link rel="stylesheet" href="/chibi/account-studio.css?v=20261011-ui2">
 <script type="module" src="/teacher/character-3d-studio.js?v=20261010-silhouette59"></script>
 </body>
 </html>
