@@ -156,7 +156,7 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   assert.equal((await snap()).guidance.level,2);
   await screenshot('02-management-room.png','desktop');
   const initialCalligrams=(await snap()).visuals.calligrams;
-  assert.equal(initialCalligrams.length,8,'all eight world calligrams are integrated');
+  assert.equal(initialCalligrams.length,9,'all nine world calligrams are integrated, including the rewritten door');
   assert.equal(initialCalligrams.find(o=>o.id==='management-computer').visible,true);
   assert.equal(initialCalligrams.find(o=>o.id==='management-computer').screen,'기록 대기');
   assert.equal(initialCalligrams.find(o=>o.id==='gate-door').visible,false,
