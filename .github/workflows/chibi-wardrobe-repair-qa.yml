@@ -1,0 +1,36 @@
+name: Chibi v6.6 wardrobe repair QA
+on:
+  pull_request:
+    paths:
+      - 'teacher/character-3d-studio.js'
+      - 'teacher/chibi-accessory-pack.js'
+      - 'teacher/chibi-outfit-pack.js'
+      - 'tests/chibi-visual-browser-audit.cjs'
+      - 'tests/character-3d-studio.test.mjs'
+      - '.github/workflows/chibi-wardrobe-repair-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  wardrobe-repair-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - name: Actual Chrome/WebGL repaired wardrobe clips and screenshots
+        run: node tests/chibi-visual-browser-audit.cjs
+        env:
+          KIDSCADE_CHIBI_REPAIR_ONLY: '1'
+          KIDSCADE_CHIBI_AUDIT_OUT: ${{ runner.temp }}/chibi-wardrobe-repair
+      - name: Preserve review images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chibi-wardrobe-repair-v66
+          path: ${{ runner.temp }}/chibi-wardrobe-repair/
+          if-no-files-found: ignore
+          retention-days: 10
