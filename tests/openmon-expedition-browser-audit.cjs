@@ -355,6 +355,43 @@ let chrome,ws,profile;
     townAudit.hasHealer&&townAudit.closed&&townAudit.width<=config.w+3,
     'Scientist, treatment or travel failed '+config.name+JSON.stringify(townAudit));
   await screenshot(config.name+'-crystal-town');
+  // Scenario preparation simulates the three actual sightings and the capture:
+  // the UI must still require visiting the researcher and claiming the reward.
+  const gymAudit=await evalFn(()=>{
+   const $=id=>document.getElementById(id),debug=window.OPENMON_EXPEDITION_DEBUG,
+    E=window.OPENMON_EXPEDITION_ENGINE,s=debug.getState();
+   $('interactBtn').click();
+   const initialGym=document.querySelector('[data-gym="gym_energy"]');
+   const initiallyLocked=!!initialGym?.disabled;
+   const q=E.REGIONAL_QUESTS.crystalTown;
+   for(const id of window.OPENMON_DEX.encounters[q.zone].pool.slice(0,3))
+    E.recordRegionEncounter(s,q.zone,id);
+   s.collection[q.capture]=true;
+   $('genericClose').click();$('interactBtn').click();
+   const claim=document.querySelector('[data-quest="crystalTown"]');
+   const canClaim=!!claim&&!claim.disabled;
+   if(canClaim)claim.click();
+   const claimed=!!s.regionQuests.crystalTown;
+   const gymButton=document.querySelector('[data-gym="gym_energy"]');
+   const gymEnabled=!!gymButton&&!gymButton.disabled;
+   if(gymEnabled)gymButton.click();
+   const rosterStart=document.querySelector('[data-trainer-start="gym_energy"]');
+   const canStart=!!rosterStart&&!rosterStart.disabled;
+   if(canStart)rosterStart.click();
+   const b=debug.getBattle();
+   return {initiallyLocked,canClaim,claimed,gymEnabled,canStart,
+    gym:b?.trainer?.id,zone:b?.zone,roster:$('trainerRoster').querySelectorAll('.trainer-pip').length,
+    width:document.documentElement.scrollWidth};
+  });
+  assert.ok(gymAudit.initiallyLocked&&gymAudit.canClaim&&gymAudit.claimed&&
+   gymAudit.gymEnabled&&gymAudit.canStart&&gymAudit.gym==='gym_energy'&&
+   gymAudit.zone==='crystalTown'&&gymAudit.roster===6&&gymAudit.width<=config.w+3,
+   'Regional science quest and real 3v3 gym flow failed '+config.name+JSON.stringify(gymAudit));
+  await screenshot(config.name+'-regional-gym');
+  await evalFn(()=>{
+   const b=window.OPENMON_EXPEDITION_DEBUG.getBattle();
+   if(b){b.done=true;document.getElementById('battleContinue').click()}
+  });
   assert.equal(errors.length,0,'Browser errors '+config.name+': '+JSON.stringify(errors.slice(0,3)));
   console.log('OPENMON_BROWSER_AUDIT '+config.name+' '+JSON.stringify({initial,field,hudAudit,moveDexAudit,battleStart,turnMenu,result,resumed,errors:errors.length}));
  }
