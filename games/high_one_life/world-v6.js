@@ -5,9 +5,12 @@ if(typeof module!=='undefined'&&module.exports)module.exports=api;if(root)root.O
 'use strict';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n)),r=(life,age,s)=>W4.roll(life,age,s);
 function ensure(life){W5.ensure(life);return life.world6||(life.world6={sector:'',profession:'',scene:'home',history:[],seen:[],eventCount:0,lastStory:'',incomeFactor:1,roleChanges:0,active:true});}
+const PERIOD_JOBS=Object.freeze({agriculture:'농업 노동자',trades:'수공업 기술자',education:'학교 교육자',science:'연구 보조',health:'의료 종사자',service:'상점 종업원',business:'시장 상인',civic:'지역 공동체 활동가',media:'신문·출판 종사자',technology:'철도·통신 기술자',arts:'화가·공연인',sports:'체육 지도자'});
 function career(life,sector,index,reason){
  const w=ensure(life),data=C.tracks[sector];if(!data)return false;
- const suggested=data.jobs[((index%7)+7)%7],title=typeof life.__v7resolveCareer==='function'?life.__v7resolveCareer(sector,suggested):suggested,changed=title!==w.profession;
+ const suggested=data.jobs[((index%7)+7)%7],resolved=typeof life.__v7resolveCareer==='function'?life.__v7resolveCareer(sector,suggested):suggested,
+ title=life.country[0]==='대한민국'&&life.year<1960?(PERIOD_JOBS[sector]||'지역 생활 노동자'):resolved,
+ changed=title!==w.profession;
  w.sector=sector;w.profession=title;w.incomeFactor=data.income;w.scene=C.mainScene[sector];
  life.career=title;life.world.occupation=title;
  if(changed){w.roleChanges++;w.history.push({age:life.age,sector,job:title});
@@ -85,6 +88,8 @@ function eligible(life,e){const w=ensure(life);
   &&(e.domain==='all'||e.domain===w.sector)&&e.needs.every(n=>hasTag(life,n));
 }
 function event(life){
+ // Career event catalogue is written for contemporary employment.
+ if(life.year<1990)return false;
  const w=ensure(life),age=life.age;if(age<9||r(life,age,300)>.36)return false;
  const choices=E.events.filter(e=>eligible(life,e));if(!choices.length)return false;
  let sum=choices.reduce((s,e)=>s+e.weight*(e.domain===w.sector?1.8:1),0);
