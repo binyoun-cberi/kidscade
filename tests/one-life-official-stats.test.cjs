@@ -26,7 +26,7 @@ test('world bank ingestion calculates births from matching population and birth-
       value:key==='population'?100000*(i+1):key==='crudeBirthRate'?20:
         key==='sexRatioBirth'?1.05:key==='primaryCompletion'?94:
         key==='under5Mortality'?35:key==='unemployment'?6:
-        key==='urbanPercent'?67:key==='healthCoverage'?73:76
+        key==='urbanPercent'?67:key==='healthCoverage'?73:key==='physiciansPerThousand'?2.4:76
     }));
     return response(rows);
   };
