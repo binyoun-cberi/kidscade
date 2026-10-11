@@ -572,7 +572,7 @@ test('Chibi v5 provides eight distinct skinned hair entries per body fit, with u
   assert.match(js,/function createKidscadeHairCollection\(\)/);
   assert.match(js,/geometry\.computeVertexNormals\(\)/);
   assert.match(js,/template\.parent\.add\(hair\)/);
-  assert.match(js,/createKidscadeMaleHairShort\(\);\s*createKidscadeHairCollection\(\);/);
+  assert.match(js,/createKidscadeMaleHairShort\(\);\s*repairKnightHairForOpenHead\(\);\s*createKidscadeHairCollection\(\);/);
   assert.match(js,/const part=style\.part\*size\.x\*crown/);
   assert.match(js,/const wave=style\.wave\*size\.y\*Math\.sin/);
   assert.match(js,/styleParameters:\{\.\.\.style\}/);
@@ -930,7 +930,7 @@ test('v5.9 repairs exposed long-sleeve wrists and trouser crotch wedge without j
   const audit=read('tests/chibi-visual-browser-audit.cjs');
   assert.match(pack,/const coverage=smooth\(\.50,\.61,y\)/);
   assert.match(pack,/function addTrouserHipYoke\(/);
-  assert.match(pack,/new THREE\.CylinderGeometry\(\.227,\.201,top-bottom,24,7,true\)/);
+  assert.match(pack,/new THREE\.CylinderGeometry\(\s*male\?\.216:\.227,male\?\.193:\.201,top-bottom,24,7,true\)/);
   assert.match(pack,/addTrouserHipYoke\(\{source,style,group,material,reference,cloneSkinnedMeshWithGeometry\}\)/);
   assert.match(pack,/bindYokeToPelvis\(geometry,source\.skeleton\)/);
   assert.match(pack,/style\.id\+'_hip_yoke'/);
