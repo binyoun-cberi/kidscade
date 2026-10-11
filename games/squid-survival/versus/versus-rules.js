@@ -47,7 +47,7 @@ function progressOf(round,p){
  if(round.id==='bridge')return p.bridgeStep/(round.map.path.length-1);
  if(round.id==='redlight')return p.body.progress/100;
  if(round.id==='tug')return clamp((p.body.rope-0)/100,0,1);
- if(round.id==='marbles')return (p.body.questionIndex-p.body.misses*.35)/5;
+ if(round.id==='marbles')return clamp((p.body.questionIndex-p.body.misses*.35)/5,0,1);
  const b=p.body;
  return b.part==='preview'?0:b.part==='memory'?b.entered*.08:b.part==='timing'?.36+b.timingHits*.20:.84;
 }
@@ -121,7 +121,7 @@ function tick(state,now){
  if(state.phase==='tiebreak'&&state.tie){
    if(now>=state.tie.endsAt||state.tie.answers.every(a=>a!==null)||
       (state.tie.firstCorrectAt!==null&&now-state.tie.firstCorrectAt>=1200)){
-      return settleTie(state);
+      return settleTie(state,now);
    }
  }
  return state;
@@ -157,7 +157,7 @@ function tieAnswer(state,id,answer,now){
  if(Number(answer)===tie.question.answer&&tie.firstCorrectAt===null)tie.firstCorrectAt=now;
  return tick(state,now);
 }
-function settleTie(state){
+function settleTie(state,now=state.tie.endsAt){
  const q=state.tie.question,answers=state.tie.answers,times=state.tie.times;
  const good=answers.map(a=>a===q.answer);
  let winner=null;
@@ -166,7 +166,7 @@ function settleTie(state){
  if(winner!==null){
    return {...state,phase:'finished',champion:winner,totals:state.totals.map((s,i)=>s+(i===winner?1:0)),tie:null};
  }
- return {...state,rematch:state.rematch+1,tie:makeTie(state.seed,state.rematch+1,state.tie.endsAt)};
+ return {...state,rematch:state.rematch+1,tie:makeTie(state.seed,state.rematch+1,now)};
 }
 const DIRECTIONS={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
 function input(state,id,action,value,now){
