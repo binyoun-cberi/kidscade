@@ -1091,7 +1091,7 @@ function finish(ok){
     window.KidscadeGame?.result?.({scope:'mission',status:ok?'completed':'failed',outcome:ok?'clear':'fail',score,cleared:ok,timeSeconds:Math.round(elapsed),seals:survivalKills});
     return;
   }
-  leaveLocker();ended=true;started=false;bgm.pause();const score=ok?Math.max(350,2400-Math.round(elapsed)*1.3-(3-hp)*125):0;
+  leaveLocker();ended=true;started=false;bgm.pause();document.exitPointerLock?.();const score=ok?Math.max(350,2400-Math.round(elapsed)*1.3-(3-hp)*125):0;
   if(ok)ui.progress.style.width='100%';
   ui.endTitle.textContent=ok?'퇴마 성공 · 학교의 평화를 되찾았어요!':'퇴마 실패 · 학교에서 쫓겨났어요';
   ui.endText.textContent=ok?'학교의 여섯 괴이를 모두 봉인했습니다. 소요 시간 '+Math.floor(elapsed/60)+'분 '+Math.floor(elapsed%60)+'초.':'생명이 모두 소진됐어요. '+(lastMistake||'각 괴이는 대응 방법이 달라요.')+' 다시 시작하면 괴이별 규칙을 활용해 보세요.';
@@ -1135,7 +1135,7 @@ function reset(mode='survival'){
     spawnSurvivalGhost();survivalSpawnClock=7;
     showToast('5분 동안 생존하고 괴이 8마리 이상 봉인하세요.');
   }
-  updateHud();requestLookLock();
+  updateHud();$('mouseLockHint')?.classList.toggle('hidden',!desktopPointer);requestLookLock();
 }
 function updateHud(){
   if(!tutorialMode){
@@ -1643,23 +1643,52 @@ document.addEventListener('keydown',e=>{
   if(k==='e'||k===' ')act();
   if(k==='f'&&started&&!hidingLocker){flashOn=!flashOn;updateHud();}
   if(k==='h'&&started&&!paused&&tutorialMode){guideAssistance=!guideAssistance;updateNavigation(0,true);updateHud();}
-  if(k==='escape'&&started){paused=!paused;ui.help.classList.toggle('hidden',!paused);}
+  if(k==='escape'&&started){paused=!paused;ui.help.classList.toggle('hidden',!paused);if(paused)document.exitPointerLock?.();else requestLookLock();}
 });
 document.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
 addEventListener('blur',()=>{keys.clear();joy.x=joy.y=0;ui.knob.style.transform='translate(0,0)';});
-ui.canvas.addEventListener('pointerdown',e=>{turnPointer=e.pointerId;prevX=e.clientX;prevY=e.clientY;ui.canvas.setPointerCapture(e.pointerId);});
-ui.canvas.addEventListener('pointermove',e=>{
-  if(turnPointer!==e.pointerId||!started||paused)return;
-  viewYaw+=Math.max(-55,Math.min(55,e.clientX-prevX))*.0064;
-  viewPitch=Math.max(-.72,Math.min(.72,viewPitch-Math.max(-45,Math.min(45,e.clientY-prevY))*.0054));
+// Standard FPS look: desktop Pointer Lock follows relative mouse motion without dragging.
+// Touchscreen keeps the previous drag gesture and a separate movement joystick.
+const desktopPointer=window.matchMedia?.('(hover: hover) and (pointer: fine)').matches||false;
+function adjustLook(dx,dy){
+  if(!started||paused||ended)return;
+  const sensitivity=Number($('lookSensitivity')?.value)||.0027;
+  viewYaw+=Math.max(-100,Math.min(100,dx))*sensitivity;
+  viewPitch=Math.max(-1.22,Math.min(1.22,viewPitch-Math.max(-90,Math.min(90,dy))*sensitivity));
   if(hidingLocker){
     const delta=Math.atan2(Math.sin(viewYaw-hidingLocker.yaw),Math.cos(viewYaw-hidingLocker.yaw));
     viewYaw=hidingLocker.yaw+Math.max(-.32,Math.min(.32,delta));
     viewPitch=Math.max(-.17,Math.min(.17,viewPitch));
   }
+}
+function requestLookLock(){
+  if(!desktopPointer||!started||paused||ended)return;
+  if(typeof ui.canvas.requestPointerLock==='function'&&document.pointerLockElement!==ui.canvas){
+    try{ui.canvas.requestPointerLock()?.catch?.(()=>{});}catch(_){}
+  }
+}
+document.addEventListener('pointerlockchange',()=>{
+  $('mouseLockHint')?.classList.toggle('hidden',!desktopPointer||!started||paused||ended||document.pointerLockElement===ui.canvas);
+});
+document.addEventListener('pointerlockerror',()=>{$('mouseLockHint')?.classList.remove('hidden');});
+document.addEventListener('mousemove',e=>{
+  if(document.pointerLockElement===ui.canvas)adjustLook(e.movementX,e.movementY);
+});
+ui.canvas.addEventListener('pointerdown',e=>{
+  if(!started||paused||ended)return;
+  if(desktopPointer&&e.pointerType==='mouse'&&typeof ui.canvas.requestPointerLock==='function'){
+    requestLookLock();return;
+  }
+  turnPointer=e.pointerId;prevX=e.clientX;prevY=e.clientY;
+  ui.canvas.setPointerCapture(e.pointerId);
+});
+ui.canvas.addEventListener('pointermove',e=>{
+  if(turnPointer!==e.pointerId||document.pointerLockElement===ui.canvas)return;
+  adjustLook(e.clientX-prevX,e.clientY-prevY);
   prevX=e.clientX;prevY=e.clientY;
 });
 for(const evt of ['pointerup','pointercancel'])ui.canvas.addEventListener(evt,e=>{if(turnPointer===e.pointerId)turnPointer=null;});
+$('mouseLockHint')?.addEventListener('click',requestLookLock);
 let joyPointer=null;
 function setJoy(e){const b=ui.joy.getBoundingClientRect(),x=e.clientX-(b.left+b.width/2),y=e.clientY-(b.top+b.height/2);
   const n=Math.hypot(x,y)||1,scale=Math.min(1,47/n);joy.x=x*scale/47;joy.y=y*scale/47;
@@ -1672,8 +1701,8 @@ ui.action.addEventListener('click',act);
 $('start').addEventListener('click',()=>reset('survival'));
 $('tutorialStart').addEventListener('click',()=>reset('tutorial'));
 $('retry').addEventListener('click',()=>reset(tutorialMode?'tutorial':'survival'));
-$('helpButton').addEventListener('click',()=>{paused=true;ui.help.classList.remove('hidden');});
-$('closeHelp').addEventListener('click',()=>{paused=false;ui.help.classList.add('hidden');});
+$('helpButton').addEventListener('click',()=>{paused=true;document.exitPointerLock?.();ui.help.classList.remove('hidden');});
+$('closeHelp').addEventListener('click',()=>{paused=false;ui.help.classList.add('hidden');requestLookLock();});
 ui.flash.addEventListener('click',()=>{if(started&&!hidingLocker){flashOn=!flashOn;updateHud();}});
 ui.guide.addEventListener('click',()=>{if(started&&!paused&&tutorialMode){guideAssistance=!guideAssistance;updateNavigation(0,true);updateHud();}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&started){paused=true;ui.help.classList.remove('hidden');bgm.pause();}else if(started&&!paused){bgm.play().catch(()=>{});}});
