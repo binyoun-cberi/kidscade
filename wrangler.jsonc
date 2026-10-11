@@ -85,5 +85,8 @@
       "database_id": "3c0aa71d-5a3a-417b-a0f8-afc8d9022544",
       "migrations_dir": "migrations"
     }
-  ]
+  ],
+  "build": {
+    "command": "node scripts/ensure-cloudflare-dist.cjs"
+  }
 }

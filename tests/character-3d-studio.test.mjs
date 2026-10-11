@@ -1035,7 +1035,7 @@ test('v6.1 hats and face items use corrected crown/mouth registration',()=>{
   assert.match(pack,/scalpY-\.012,hc\.z/);
   assert.match(pack,/crownWall/);
   assert.match(pack,/eyeY-\.305/);
-  assert.match(pack,/faceZ\+\.025/);
+  assert.match(pack,/case 'sunglasses':return facePatch\(/);
 });
 test('v6.1 tracksuit piping bends with weighted knees rather than floating rigid boxes',()=>{
   const pack=read('teacher/chibi-outfit-pack.js');
@@ -1055,11 +1055,66 @@ test('v6.1 visual identity details include layered school collar, rugby stripes,
   assert.match(hair,/side:THREE.DoubleSide/);
 });
 
-test('v6.2 facial accessories hug skin without forward floating discs',()=>{
+test('v6.3 retains face accessories and mask ear loops',()=>{
   const src=read('teacher/chibi-accessory-pack.js');
-  assert.match(src,/case 'sunglasses':return sphere\(-\.110,eyeY,faceZ\+\.025,\.112,\.083,\.012\)/);
-  assert.match(src,/case 'mask':return sphere\(0,eyeY-\.305,faceZ\+\.030,\.179,\.113,\.035\)/);
-  assert.match(src,/add\(sphere\(\.110,eyeY,faceZ\+\.025,\.112,\.083,\.012\)/);
-  assert.match(src,/eyeY-\.235,faceZ\+\.066/);
-  assert.match(src,/eyeY-\.307,faceZ-\.018/);
+  assert.match(src,/case 'sunglasses':return facePatch/);
+  assert.match(src,/case 'mask':return facePatch/);
+  assert.ok(src.includes('earLoop_'));
+});
+
+
+test('Chibi v6.3 facial accessories use curved, outward-facing geometry',()=>{
+  const pack=read('teacher/chibi-accessory-pack.js');
+  assert.match(pack,/function facePatch\(/);
+  assert.match(pack,/indices\.push\(a,a\+1,b,b,a\+1,b\+1\)/);
+  assert.match(pack,/case 'mask':return facePatch\(/);
+  assert.match(pack,/case 'sunglasses':return facePatch\(/);
+  assert.match(pack,/add\(facePatch\(\.198,eyeY/);
+  assert.doesNotMatch(pack,/case 'mask':return sphere\(/);
+  assert.doesNotMatch(pack,/case 'sunglasses':return sphere\(/);
+});
+
+test('v6.4 mask and sunglasses sample the active face surface for each body fit',()=>{
+  const pack=read('teacher/chibi-accessory-pack.js');
+  assert.match(pack,/function faceDepthAtGeometry\(geometry\)/);
+  assert.match(pack,/function fitCurvedFaceParts\(group,body,eyes,fit\)/);
+  assert.match(pack,/getNode\(fit==='male'\?'kidscade_male_body':'character_low'\)/);
+  assert.match(pack,/getNode\(fit==='male'\?'kidscade_male_eyes':'eyes'\)/);
+  assert.match(pack,/group\.scale\.setScalar\(1\)/);
+  assert.match(pack,/kidscadeFaceProjection='strap'/);
+  assert.match(pack,/kidscadeFaceProjection=style\.kind==='sunglasses'\?'lens':'skin'/);
+  assert.match(pack,/const actual=faceZ\(x,y,spec==='lens'\)/);
+  assert.match(pack,/const clothClearance=\.008\+\.022/);
+  assert.match(pack,/shape==='mask'\?\.042\*\(1-v\)\*nx\*nx/);
+  assert.doesNotMatch(pack,/add\(ring\(\.065,\.008,sign\*\.186/);
+});
+
+test('v6.5 facial contours track real jaw edges and round both eye lenses',()=>{
+  const pack=read('teacher/chibi-accessory-pack.js');
+  assert.match(pack,/const facialSurfaceCache=new WeakMap\(\)/);
+  assert.match(pack,/surfacePoints\.push\(\[x,y,z\]\)/);
+  assert.match(pack,/if\(Number\.isFinite\(front\)\)return front/);
+  assert.match(pack,/const lensClearance=\.062\+\.025\*side\*side/);
+  assert.match(pack,/case 'sunglasses':return facePatch\(-\.198,eyeY/);
+  assert.match(pack,/kind==='sunglasses'\)\{/);
+  assert.match(pack,/kidscadeFaceProjection='temple'/);
+  assert.match(pack,/Math\.pow\(Math\.abs\(ny\),6\)/);
+  assert.match(pack,/const hem=THREE\.MathUtils\.clamp/);
+});
+
+test('dynamic Chibi mask straps and sunglass temples retain rig skin attributes',()=>{
+  const pack=read('teacher/chibi-accessory-pack.js');
+  assert.match(pack,/arm\.setAttribute\(attr,source\.clone\(\)\)/);
+  assert.match(pack,/loop\.setAttribute\(attr,source\.clone\(\)\)/);
+  assert.match(pack,/source\.count!==arm\.getAttribute\('position'\)\.count/);
+  assert.match(pack,/source\.count!==loop\.getAttribute\('position'\)\.count/);
+});
+
+test('v6.5 mask pleats and rounded wider lenses follow the same projected rigged surface',()=>{
+  const pack=read('teacher/chibi-accessory-pack.js');
+  assert.match(pack,/kidscadeFaceProjection='pleat'/);
+  assert.match(pack,/\(spec==='pleat'\?\.006:0\)/);
+  assert.match(pack,/pleat_upper/);
+  assert.match(pack,/pleat_lower/);
+  assert.match(pack,/1-\.18\*Math\.pow\(Math\.abs\(ny\),6\)/);
 });

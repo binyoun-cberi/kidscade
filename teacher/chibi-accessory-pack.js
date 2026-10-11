@@ -61,6 +61,140 @@ export const ACCESSORY_CONFLICTS={
   bag:['schoolbag','crossbody','minibag'],
   shoes:['sneakers','hightop','loafers','boots','sandals','slippers']
 };
+// v6.4: project every accessory vertex onto the FRONT of the actual head.
+// An eyeball bounding-box Z is not a face surface: it caused the old mask to
+// disappear behind cheeks and the sunglass lenses to intersect the eyes.
+const facialSurfaceCache=new WeakMap();
+function faceDepthAtGeometry(geometry){
+  if(facialSurfaceCache.has(geometry))return facialSurfaceCache.get(geometry);
+  const p=geometry.getAttribute('position'),idx=geometry.getIndex(),triangles=[],surfacePoints=[];
+  for(let i=0;i<p.count;i++){
+    const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
+    if(y>=1.22&&y<=1.94&&Math.abs(x)<.43&&z>-.05)
+      surfacePoints.push([x,y,z]);
+  }
+  const count=idx?idx.count:p.count;
+  for(let i=0;i+2<count;i+=3){
+    const a=idx?idx.getX(i):i,b=idx?idx.getX(i+1):i+1,c=idx?idx.getX(i+2):i+2;
+    const x0=p.getX(a),y0=p.getY(a),z0=p.getZ(a);
+    const x1=p.getX(b),y1=p.getY(b),z1=p.getZ(b);
+    const x2=p.getX(c),y2=p.getY(c),z2=p.getZ(c);
+    const minx=Math.min(x0,x1,x2),maxx=Math.max(x0,x1,x2);
+    const miny=Math.min(y0,y1,y2),maxy=Math.max(y0,y1,y2);
+    if(maxy<1.22||miny>1.94||minx>.42||maxx<-.42)continue;
+    const det=(y1-y2)*(x0-x2)+(x2-x1)*(y0-y2);
+    if(Math.abs(det)<1e-10)continue;
+    triangles.push({x0,y0,z0,x1,y1,z1,x2,y2,z2,minx,maxx,miny,maxy,inv:1/det});
+  }
+  const sampler=(x,y)=>{
+    let front=-Infinity;
+    for(const t of triangles){
+      if(x<t.minx-1e-6||x>t.maxx+1e-6||y<t.miny-1e-6||y>t.maxy+1e-6)continue;
+      const u=((t.y1-t.y2)*(x-t.x2)+(t.x2-t.x1)*(y-t.y2))*t.inv;
+      const v=((t.y2-t.y0)*(x-t.x2)+(t.x0-t.x2)*(y-t.y2))*t.inv;
+      if(u<-.00001||v<-.00001||u+v>1.00001)continue;
+      front=Math.max(front,u*t.z0+v*t.z1+(1-u-v)*t.z2);
+    }
+    if(Number.isFinite(front))return front;
+    // The cheeks and jaw terminate before some mask/lens corners. Falling
+    // back to the eye's max Z put those corners in mid-air. At the silhouette,
+    // use the nearest REAL head vertex instead of a global eye-depth plane.
+    let nearest=Infinity,depth=-Infinity;
+    for(const [px,py,pz] of surfacePoints){
+      const d=(px-x)*(px-x)+(py-y)*(py-y);
+      if(d<nearest){nearest=d;depth=pz;}
+    }
+    return depth;
+  };
+  facialSurfaceCache.set(geometry,sampler);
+  return sampler;
+}
+function fitCurvedFaceParts(group,body,eyes,fit){
+  if(group.userData.curvedFaceFit===fit)return;
+  if(!body?.isSkinnedMesh||!eyes?.isSkinnedMesh)return;
+  const bodyDepth=faceDepthAtGeometry(body.geometry);
+  const eyeDepth=faceDepthAtGeometry(eyes.geometry);
+  const faceZ=(x,y,withEyes=false)=>{
+    const skin=bodyDepth(x,y),iris=withEyes?eyeDepth(x,y):-Infinity;
+    return Math.max(skin,iris);
+  };
+  group.traverse(node=>{
+    if(!node.isSkinnedMesh)return;
+    const spec=node.geometry.userData.kidscadeFaceProjection;
+    if(!spec)return;
+    const projected=node.geometry.clone();
+    const attr=projected.getAttribute('position');
+    if(spec==='temple'){
+      const sign=node.name.endsWith('_-1')?-1:1;
+      const ey=group.userData.faceEyeY;
+      const pts=[
+        [sign*.315,ey+.017,.065],
+        [sign*.344,ey+.019,.018],
+        [sign*.375,ey+.009,-.038]
+      ].map(([x,y,offset])=>{
+        const surface=faceZ(Math.sign(x)*Math.min(Math.abs(x),.29),y,true);
+        return new THREE.Vector3(x,y,(Number.isFinite(surface)?surface:group.userData.faceFallbackZ)+offset);
+      });
+      const arm=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),16,.007,6,false);
+      arm.userData.kidscadeFaceProjection='temple';
+      // Rebuilding a SkinnedMesh geometry without skin indices crashes
+      // THREE.SkinnedMesh.computeBoundingSphere() in animated Chrome poses.
+      for(const attr of ['skinIndex','skinWeight']){
+        const source=projected.getAttribute(attr);
+        if(!source||source.count!==arm.getAttribute('position').count)
+          throw Error('Chibi temple skin transfer mismatch: '+attr);
+        arm.setAttribute(attr,source.clone());
+      }
+      node.geometry=arm;
+      projected.dispose();
+      return;
+    }
+    if(spec==='strap'){
+      const sign=node.name.endsWith('_-1')?-1:1;
+      const pts=[
+        [sign*.152,-.250],[sign*.197,-.225],[sign*.247,-.213]
+      ].map(([x,dy],i)=>{
+        const y=group.userData.faceEyeY+dy;
+        const sampleX=Math.sign(x)*Math.min(Math.abs(x),.22);
+        const actual=faceZ(sampleX,y);
+        const baseline=Number.isFinite(actual)?actual:group.userData.faceFallbackZ;
+        return new THREE.Vector3(x,y,baseline+(i===0?.008:-.025));
+      });
+      const loop=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),24,.006,6,false);
+      loop.userData.kidscadeFaceProjection='strap';
+      for(const attr of ['skinIndex','skinWeight']){
+        const source=projected.getAttribute(attr);
+        if(!source||source.count!==loop.getAttribute('position').count)
+          throw Error('Chibi strap skin transfer mismatch: '+attr);
+        loop.setAttribute(attr,source.clone());
+      }
+      node.geometry=loop;
+      projected.dispose();
+      return;
+    }
+    for(let i=0;i<attr.count;i++){
+      const x=attr.getX(i),y=attr.getY(i);
+      const actual=faceZ(x,y,spec==='lens');
+      const fallback=group.userData.faceFallbackZ;
+      // Cotton fabric arches over the mouth, but its side seams hug cheeks.
+      // A constant 0.036 clearance made the lower edge a floating shelf in
+      // side/profile views; the middle now keeps its volume without that rim.
+      const nx=Math.min(1,Math.abs(x)/.18);
+      const hem=THREE.MathUtils.clamp((group.userData.faceEyeY-.20-y)/.19,0,1);
+      const clothClearance=.008+.022*(1-nx*nx)*(1-.70*hem*hem);
+      const side=Math.min(1,Math.abs(x)/.28);
+      const lensClearance=.062+.025*side*side;
+      attr.setZ(i,(Number.isFinite(actual)?actual:fallback)+
+        (spec==='lens'?lensClearance:clothClearance+(spec==='pleat'?.006:0)));
+    }
+    attr.needsUpdate=true;
+    projected.userData.kidscadeFaceProjection=spec;
+    projected.computeVertexNormals();projected.computeBoundingBox();projected.computeBoundingSphere();
+    node.geometry=projected;
+  });
+  group.userData.curvedFaceFit=fit;
+}
+
 const fitComponent=(value,component)=>value?.[component]??(component===3?1:0);
 
 /** Applies bounded offsets to the accessory *group*, retaining bind matrices.
@@ -92,6 +226,14 @@ export function applyAccessoryFit({getNode,fit='male',topName='',headwearName=''
       THREE.MathUtils.clamp(z,-.10,.10)
     );
     group.scale.setScalar(THREE.MathUtils.clamp(scale,.84,1.10));
+    if(style.kind==='mask'||style.kind==='sunglasses'){
+      // Source-mesh projected vertices already contain the correct local XYZ.
+      // The old generic 1.02 scale and Z/Y offsets broke exact registration.
+      group.position.set(0,0,0);
+      group.scale.setScalar(1);
+      fitCurvedFaceParts(group,getNode(fit==='male'?'kidscade_male_body':'character_low'),
+        getNode(fit==='male'?'kidscade_male_eyes':'eyes'),fit);
+    }
 
     // A final bind-pose/world-bounds fit keeps hats from hovering above the
     // CURRENT hairstyle and shoes from dropping below the original sole.
@@ -138,6 +280,34 @@ function box(w,h,d,x,y,z){
 function sphere(x,y,z,sx,sy,sz,segments=16){
   const g=new THREE.SphereGeometry(1,segments,12);
   g.scale(sx,sy,sz);g.translate(x,y,z);return g;
+}
+// Curved, single-sided face patch. The outer edges turn back toward the
+// cheeks instead of projecting a whole ellipsoid out from the face.
+function facePatch(cx,cy,frontZ,width,height,curve=.028,rows=10,columns=20,shape='lens'){
+  const positions=[],uvs=[],indices=[];
+  for(let j=0;j<=rows;j++){
+    const v=j/rows,ny=v*2-1;
+    for(let i=0;i<=columns;i++){
+      const u=i/columns,nx=u*2-1;
+      const lateralShape=shape==='mask'
+        ?1-.24*(1-v)*(1-v)
+        :1-.18*Math.pow(Math.abs(ny),6);
+      const x=cx+nx*width*.5*lateralShape;
+      const y=cy+ny*height*.5+(shape==='mask'?.042*(1-v)*nx*nx:0);
+      // The nose/central lens edge projects slightly more than the cheeks.
+      const z=frontZ-curve*nx*nx-.004*ny*ny;
+      positions.push(x,y,z);uvs.push(u,v);
+    }
+  }
+  for(let j=0;j<rows;j++)for(let i=0;i<columns;i++){
+    const a=j*(columns+1)+i,b=a+columns+1;
+    indices.push(a,a+1,b,b,a+1,b+1);
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+  g.setIndex(indices);g.userData.kidscadeFacePatch=true;
+  g.computeVertexNormals();return g;
 }
 function ring(radius,tube,x,y,z,axis='z'){
   const g=new THREE.TorusGeometry(radius,tube,8,28);
@@ -198,9 +368,9 @@ function buildGeometry(style,source,sourceHair,eyes){
     case 'straw':return cyl(headR*.88,headR*.98,.145,hc.x,scalpY+.016,hc.z);
     case 'round':return ring(.071,.009,-.110,eyeY,faceZ);
     case 'square':return box(.150,.119,.012,-.110,eyeY,faceZ);
-    case 'sunglasses':return sphere(-.110,eyeY,faceZ+.025,.112,.083,.012);
+    case 'sunglasses':return facePatch(-.198,eyeY-.027,faceZ+.016,.372,.202,.032);
     case 'goggles':return box(.365,.133,.055,0,eyeY,faceZ+.015);
-    case 'mask':return sphere(0,eyeY-.305,faceZ+.030,.179,.113,.035);
+    case 'mask':return facePatch(0,eyeY-.305,faceZ+.009,.335,.205,.055,14,28,'mask');
     case 'schoolbag':return box(.335,.360,.172,0,.966,-.240);
     case 'crossbody':return box(.265,.210,.115,.224,.832,.150);
     case 'minibag':return sphere(0,.968,-.236,.145,.187,.110);
@@ -273,16 +443,33 @@ function createDetails(style,context){
         for(const sign of [-1,1])
           add(box(.144,.012,.021,sign*.110,eyeY+.061,faceZ),black,'topFrame_'+sign);
       }else if(kind==='sunglasses')
-        add(sphere(.110,eyeY,faceZ+.025,.112,.083,.012),style.color,'rightLens');
+        add(facePatch(.198,eyeY-.027,faceZ+.016,.372,.202,.032),style.color,'rightLens');
       else if(kind==='goggles')
         add(box(.327,.091,.017,0,eyeY,faceZ+.046),'#8bcdd7','glass');
-      add(box(.073,.013,.020,0,eyeY+.008,faceZ+.035),style.color,'bridge');
-      for(const sign of [-1,1])
-        add(box(.113,.014,.012,sign*.238,eyeY+.02,faceZ-.004),black,'temple_'+sign);
+      add(facePatch(0,eyeY+.008,faceZ+.022,.055,.014,.006,2,8),style.color,'bridge');
+      for(const sign of [-1,1]){
+        if(kind==='sunglasses'){
+          add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+            new THREE.Vector3(sign*.315,eyeY+.017,faceZ+.045),
+            new THREE.Vector3(sign*.344,eyeY+.019,faceZ+.018),
+            new THREE.Vector3(sign*.375,eyeY+.009,faceZ-.038)
+          ]),16,.007,6,false),black,'temple_'+sign);
+        }else add(box(.113,.014,.012,sign*.238,eyeY+.02,faceZ-.004),black,'temple_'+sign);
+      }
     }else if(kind==='mask'){
-      add(box(.30,.011,.013,0,eyeY-.235,faceZ+.066),white,'noseBridge');
+      add(facePatch(0,eyeY-.225,faceZ+.014,.265,.014,.030,2,20),white,'noseBridge');
+      // Subtle cloth pleats share the exact curved cheek surface instead of
+      // floating as straight rigid decals.
+      add(facePatch(0,eyeY-.286,faceZ+.012,.246,.008,.022,2,24,'mask'),
+        '#b8cbd5','pleat_upper');
+      add(facePatch(0,eyeY-.333,faceZ+.012,.220,.007,.022,2,24,'mask'),
+        '#cedde4','pleat_lower');
       for(const sign of [-1,1])
-        add(ring(.065,.008,sign*.186,eyeY-.307,faceZ-.018,'x'),white,'earLoop_'+sign);
+        add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+          new THREE.Vector3(sign*.155,eyeY-.238,faceZ+.015),
+          new THREE.Vector3(sign*.23,eyeY-.30,faceZ-.025),
+          new THREE.Vector3(sign*.155,eyeY-.387,faceZ+.015)
+        ]),24,.006,6,false),white,'earLoop_'+sign);
     }
   }else if(style.slot==='bag'){
     if(kind==='schoolbag'||kind==='minibag'){
@@ -311,6 +498,9 @@ export function createAccessoryPack({
   if(!body?.isSkinnedMesh||!shoes?.isSkinnedMesh||!hair?.isSkinnedMesh||!eyes?.isSkinnedMesh)
     throw Error('Chibi v5.3 needs the original body, shoe, hair and eye skinned meshes');
   const made=[];
+  eyes.geometry.computeBoundingBox();
+  const faceEyeY=(eyes.geometry.boundingBox.min.y+eyes.geometry.boundingBox.max.y)*.5;
+  const faceFallbackZ=eyes.geometry.boundingBox.max.z+.04;
   // Some Chibi versions sanitize or rename anatomical bones. Reuse the
   // original skinned body's closest bind-pose weights for every new piece;
   // this anchors hats to the head, bags to the torso and watches to the arm
@@ -348,7 +538,18 @@ export function createAccessoryPack({
     group.userData={type:'chibi-v5.3-accessory',slot:style.slot,kind:style.kind,
       fit:'shared',category:style.category,assetVersion:'v5.3'};
     const template=style.slot==='shoes'?shoes:body;
+    if(style.kind==='mask'||style.kind==='sunglasses'){
+      group.userData.faceEyeY=faceEyeY;
+      group.userData.faceFallbackZ=faceFallbackZ;
+    }
     const add=(geometry,color,id,region)=>{
+      if(style.kind==='mask'||style.kind==='sunglasses'){
+        if(geometry.userData.kidscadeFacePatch)
+          geometry.userData.kidscadeFaceProjection=style.kind==='sunglasses'?'lens':'skin';
+        if(id.startsWith('earLoop_'))geometry.userData.kidscadeFaceProjection='strap';
+        if(id.startsWith('pleat_'))geometry.userData.kidscadeFaceProjection='pleat';
+        if(id.startsWith('temple_'))geometry.userData.kidscadeFaceProjection='temple';
+      }
       const material=makeSolidMaterial(color,style.label+' '+id);
       geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
       nearestWeight(geometry,region==='shoe');

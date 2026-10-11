@@ -1,0 +1,36 @@
+name: Chibi face-fit real browser QA
+on:
+  pull_request:
+    paths:
+      - 'teacher/chibi-accessory-pack.js'
+      - 'tests/chibi-visual-browser-audit.cjs'
+      - 'tests/character-3d-studio.test.mjs'
+      - '.github/workflows/chibi-face-fit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  face-fit-browser-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - name: Real Chrome face-fit check (male/female, 3 views, moving poses)
+        run: node tests/chibi-visual-browser-audit.cjs
+        env:
+          KIDSCADE_CHIBI_FACE_ONLY: '1'
+          KIDSCADE_CHIBI_AUDIT_OUT: ${{ runner.temp }}/chibi-face-audit
+      - name: Upload close-up evidence and all frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chibi-face-fit-screenshots
+          path: ${{ runner.temp }}/chibi-face-audit/
+          if-no-files-found: ignore
+          retention-days: 10
