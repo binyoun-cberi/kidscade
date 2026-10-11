@@ -92,3 +92,37 @@ test('browser loads vocabulary module, playable 4-way panel and world records',(
   assert.match(js,/saveChapterCheckpoint/);
   assert.match(js,/overlays\.correction\.classList\.contains\('closed'\)/);
 });
+
+test('fresh runs vary all five core prompts without losing any curriculum area',()=>{
+  const signatures=new Set();
+  for(let seed=0;seed<24;seed++){
+    const s=L.create(seed),ids=s.items.map(i=>i.bankIndex);
+    signatures.add(ids.join(','));
+    assert.equal(new Set(ids).size,5,'no duplicated core exercise');
+    const kinds=new Set(s.items.map(i=>L.question(i).kind));
+    for(const kind of L.KINDS)assert.ok(kinds.has(kind),'missing '+kind);
+    assert.deepEqual(ids,L.create(seed).items.map(i=>i.bankIndex),'same seed is replayable');
+  }
+  assert.ok(signatures.size>=12,'different runs should not repeat the same five answers');
+});
+test('checkpoint restores exact per-run questions after some repairs',()=>{
+  const first=L.create(391),prior=first.items.map(i=>i.bankIndex);
+  const item=first.items[2];
+  assert.equal(L.correct(first,item.uid,L.question(item).correct).ok,true);
+  const after=L.create(99);
+  assert.equal(L.restore(after,L.checkpoint(first)),true);
+  assert.equal(after.seed,391);
+  assert.deepEqual(after.items.filter(i=>i.kind==='core').map(i=>i.bankIndex),
+    prior.filter((_,i)=>i!==2));
+  assert.equal(after.coreDone,1);
+});
+test('new visual correction and safe foreshadowing run without false capture',()=>{
+  const script=fs.readFileSync(path.join(root,'game.js'),'utf8');
+  assert.match(script,/startRepairEffect\(result\.item,result\.question\)/);
+  assert.match(script,/updateRepairEffects\(dt\)/);
+  assert.match(script,/apparitionWindow=state\.stage==='explore'/);
+  assert.match(script,/const mirage=apparitionWindow>=0/);
+  assert.match(script,/const focused=nearest/);
+  assert.match(script,/const archiveClear=C3\.ensure\(state\)\.records\.archive/);
+  assert.match(script,/safe=state\.stage==='explore'&&C3\.inArchive\(player\)&&!archiveClear/);
+});
