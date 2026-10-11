@@ -5,6 +5,8 @@ on:
     paths:
       - '.github/workflows/qa-queue-prune.yml'
   workflow_dispatch:
+  schedule:
+    - cron: "*/30 * * * *"
 
 permissions:
   contents: read
@@ -62,7 +64,10 @@ jobs:
 
           head_sha = api(f"/repos/{repo}/branches/main")["commit"]["sha"]
           open_prs = list_all(f"/repos/{repo}/pulls?state=open", "")
-          open_branches = {p["head"]["ref"] for p in open_prs}
+          open_heads = {
+              ((p["head"].get("repo") or {}).get("full_name") or repo, p["head"]["ref"]): p["head"]["sha"]
+              for p in open_prs
+          }
           active = {}
           for status in ("queued", "in_progress", "pending"):
               runs = list_all(f"/repos/{repo}/actions/runs?status={status}", "workflow_runs")
@@ -89,8 +94,10 @@ jobs:
           for run in sorted(active.values(), key=lambda r: (r["created_at"], r["id"])):
               event = run.get("event")
               branch = run.get("head_branch") or ""
+              source = (run.get("head_repository") or {}).get("full_name") or repo
+              pr_head = open_heads.get((source, branch))
               obsolete = (
-                  (event == "pull_request" and bool(branch) and branch not in open_branches)
+                  (event == "pull_request" and bool(branch) and (pr_head is None or run.get("head_sha") != pr_head))
                   or (event == "push" and branch == "main" and run.get("head_sha") != head_sha)
                   or (event in ("push", "pull_request") and newest.get(group(run), {}).get("id") != run["id"])
               )
@@ -102,8 +109,17 @@ jobs:
                   cancelled.append(run["id"])
                   print(f"Cancel requested: {run['id']} ({run['name']})")
               except Exception as exc:
-                  errors.append((run["id"], str(exc)))
-                  print(f"Cancel failed: {run['id']}: {exc}")
+                  # The run may finish between listing and cancellation (HTTP 409).
+                  # Accept only a verified completed run; retain real API failures.
+                  try:
+                      finished = api(f"/repos/{repo}/actions/runs/{run['id']}").get("status") == "completed"
+                  except Exception:
+                      finished = False
+                  if finished:
+                      print(f"Already completed: {run['id']}")
+                  else:
+                      errors.append((run["id"], str(exc)))
+                      print(f"Cancel failed: {run['id']}: {exc}")
 
           print(f"QA runs found: {len(active)}; cancelled requests: {len(cancelled)}; preserved: {len(kept)}; errors: {len(errors)}")
           print("No Cloudflare deployment workflows, current PR heads or manual runs were cancelled.")

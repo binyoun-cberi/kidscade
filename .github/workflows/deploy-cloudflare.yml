@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "worker/**"
+      - "app/**"
+      - "chibi/**"
       - "migrations/**"
       - "scripts/**"
       - "games/**"
@@ -20,17 +22,16 @@ on:
       - ".github/workflows/deploy-cloudflare.yml"
   workflow_dispatch:
 
-concurrency:
-  group: kidscade-cloudflare-production
-  # Keep an active deployment running. New pushes replace only the queued run.
-  cancel-in-progress: false
-
 permissions:
   contents: read
 
 jobs:
   quality-gate:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: kidscade-cloudflare-quality-main
+      cancel-in-progress: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -55,6 +56,11 @@ jobs:
   deploy:
     needs: quality-gate
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      # Serialize publication, without reserving its slot during regression tests.
+      group: kidscade-cloudflare-publish
+      cancel-in-progress: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
