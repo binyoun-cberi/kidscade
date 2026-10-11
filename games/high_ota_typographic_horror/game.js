@@ -4,7 +4,8 @@ const R = window.OtaRules;
 const C3 = window.OtaChapter3;
 const G = window.OtaGuide;
 const X = window.OtaCorrector;
-if (!R || !C3 || !G || !X) throw new Error('Ota chapter or guidance rules are missing');
+const L = window.OtaLiteracy;
+if (!R || !C3 || !G || !X || !L) throw new Error('Ota chapter or guidance rules are missing');
 const el = id => document.getElementById(id);
 const canvas = el('scene');
 const hud = { objective:el('objective'), stage:el('stage'), prompt:el('prompt'),
@@ -12,9 +13,12 @@ const hud = { objective:el('objective'), stage:el('stage'), prompt:el('prompt'),
   echo:el('echoWarning'), echoFill:el('echoFill'), echoText:el('echoText'),
   gaze:el('gazeWarning'), gazeFill:el('gazeFill'), gazeText:el('gazeText'),
   clue:el('clueStatus'), records:el('recordStatus'),help:el('help'),hintBox:el('hintBox'),
-  corrector:el('correctorWarning'),correctorText:el('correctorText') };
-const overlays = { intro:el('intro'), fix:el('fixPanel'), ending:el('ending') };
+  corrector:el('correctorWarning'),correctorText:el('correctorText'),
+  literacy:el('literacyStatus'),pollution:el('pollutionFill') };
+const overlays = { intro:el('intro'), fix:el('fixPanel'), correction:el('correctionPanel'), ending:el('ending') };
 const state = R.initialState();
+const literacy=L.create();state.literacy=literacy;
+const literacyMeshes=new Map();let activeCorrection=null;
 const corrector=X.create();
 let soundPulse=0, lastCorrectorSound=0;
 const player = { x:0, z:4.8, yaw:0, pitch:0, moving:false };
@@ -324,7 +328,51 @@ function syncChapterVisuals(){
 function saveChapterCheckpoint(){
   const data=C3.makeCheckpoint(state);
   if(!data)return;
+  data.literacy=L.checkpoint(literacy);
   try{sessionStorage.setItem(CHECKPOINT_KEY,JSON.stringify(data));}catch(_){}
+}
+function syncLiteracyVisuals(){
+  const available=new Set(literacy.items.map(item=>item.uid));
+  for(const [uid,visual] of literacyMeshes){
+    if(available.has(uid))continue;
+    scene.remove(visual.word);scene.remove(visual.hint);literacyMeshes.delete(uid);
+  }
+  for(const item of literacy.items){
+    if(literacyMeshes.has(item.uid))continue;
+    const q=L.question(item);
+    const word=label(q.wrong,item.kind==='core'?'#e79ca8':'#d07183',
+      item.x,1.62,item.z,0,0,2.55,.77);
+    const hint=label(item.kind==='core'?'핵심 오타 · 조사':'새 오류 · 조사',
+      item.kind==='core'?'#cfc3b2':'#a296a0',item.x,2.21,item.z,0,0,1.65,.40);
+    literacyMeshes.set(item.uid,{word,hint,item});
+  }
+}
+function updateLiteracyHud(){
+  const visible=state.stage==='explore';
+  hud.literacy.classList.toggle('show',visible);
+  hud.literacy.classList.toggle('danger',literacy.contamination>=65);
+  hud.literacy.firstChild.textContent='핵심 교정 '+literacy.coreDone+'/5 · 오염 '+Math.round(literacy.contamination)+'%';
+  hud.pollution.style.width=Math.round(literacy.contamination)+'%';
+}
+function openCorrection(item){
+  activeCorrection=item.uid;
+  const q=L.question(item);
+  el('correctionType').textContent=(item.kind==='core'?'핵심 기록':'발견한 오류')+' · '+q.kind;
+  el('correctionTitle').textContent=q.wrong;
+  el('correctionContext').textContent=q.context+' — 올바르게 고치세요.';
+  el('correctionFeedback').textContent='틀려도 바로 위험해지지 않아요. 다시 생각해 보세요.';
+  const offset=(Number(item.uid.split('-').pop())||0)%4;
+  el('correctionChoices').querySelectorAll('button').forEach((button,i)=>{
+    button.textContent=q.choices[(i+offset)%4];
+    button.dataset.answer=q.choices[(i+offset)%4];
+    button.disabled=false;
+  });
+  overlays.correction.classList.remove('closed');
+  if(document.pointerLockElement===canvas)document.exitPointerLock?.();
+}
+function closeCorrection(){
+  overlays.correction.classList.add('closed');
+  activeCorrection=null;
 }
 function loadChapterCheckpoint(){
   try{const raw=sessionStorage.getItem(CHECKPOINT_KEY);return raw?JSON.parse(raw):null;}catch(_){return null;}
@@ -332,8 +380,9 @@ function loadChapterCheckpoint(){
 function respawnAtCheckpoint(){
   const data=loadChapterCheckpoint();
   if(!C3.restore(state,data))return false;
+  L.restore(literacy,data.literacy);
   Object.assign(player,{x:C3.START.x,z:C3.START.z,yaw:0,pitch:0,moving:false});
-  failed=false;X.reset(corrector);soundPulse=0;
+  failed=false;X.reset(corrector);soundPulse=0;closeCorrection();
   overlays.ending.classList.add('closed');overlays.fix.classList.add('closed');
   document.body.classList.remove('hidden-in-locker');
   hud.objective.textContent=C3.objective(state);
@@ -342,7 +391,8 @@ function respawnAtCheckpoint(){
   chapterVisual.watcher.visible=true;chapterVisual.watcherText.visible=false;
   lastGlimpses=0;lastGazeAwake=false;hud.gaze.classList.remove('show');
   hintScope='';hintLevel=0;hideHint();
-  syncChapterVisuals();announce('기록이 복원되었습니다. 다시 시작합니다.',false,3);
+  syncChapterVisuals();syncLiteracyVisuals();updateLiteracyHud();
+  announce('기록이 복원되었습니다. 핵심 교정 '+literacy.coreDone+'/5',false,3);
   return true;
 }
 
@@ -360,7 +410,7 @@ function syncHintScope(){
   if(hintVisibleUntil>0&&elapsed>hintVisibleUntil)hideHint();
 }
 function showHint(){
-  if(!started||failed||!overlays.fix.classList.contains('closed'))return;
+  if(!started||failed||!overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed'))return;
   syncHintScope();
   hintLevel=Math.min(3,hintLevel+1);
   el('hintLevel').textContent='도움말 '+hintLevel+'/3';
@@ -422,8 +472,8 @@ function updateStage(stage,old) {
   } else if(stage==='explore'){
     X.reset(corrector);
     C3.ensure(state).checkpoint=true;
-    saveChapterCheckpoint();
-    announce('기록보관소는 여기서 끝나지 않습니다. 사무실과 서고를 조사하세요.',false,5.0);
+    syncLiteracyVisuals();updateLiteracyHud();saveChapterCheckpoint();
+    announce('잘못된 기록을 발견하면 조사해 고치세요. 핵심 교정 5개가 필요합니다.',false,5.0);
     hud.stage.textContent='제2구역 · 이름을 잃어버린 방들';
     syncChapterVisuals();
   } else if(stage==='final'){
