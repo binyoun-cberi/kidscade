@@ -7,6 +7,9 @@ if(typeof module!=='undefined'&&module.exports)module.exports=x;if(root)root.One
 })(typeof window!=='undefined'?window:null,function(Sim,W2,W3,W5,W7){
 'use strict';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const Official=typeof module!=='undefined'&&module.exports
+  ? require('./official-data.js') : (typeof window!=='undefined'?window.OneLifeOfficialStats:null);
+const measured=(country,key)=>Official?.countries?.[country?.[0]]?.[key]?.value;
 function roll(seed,k){let x=(seed^Math.imul(k+1,0x9e3779b9))>>>0;x=Math.imul(x^(x>>>16),0x7feb352d);x=Math.imul(x^(x>>>15),0x846ca68b);return ((x^(x>>>16))>>>0)/4294967296;}
 const GROUP={
 eastAsia:['온대·계절성 기후','도심·마을·산','#91b8af'],southAsia:['몬순·고온 등 다양한 기후','도심 골목과 농촌','#d8ba91'],
@@ -56,10 +59,19 @@ function moment(life){
  d.stories.push({age:a,text:sentence});life.logEvent(sentence,'family');
 }
 function mortality(country,gender){
- const baseline=W3.baseline(country),ref=clamp(baseline+(gender==='여자'?1.7:-1.7),48,93);
- const under5=clamp(.003+(.95-(country[4]||.6))*.053,.003,.062);
+ const observedLife=measured(country,'lifeExpectancy');
+ const observedUnder5=measured(country,'under5Mortality');
+ const baseline=Number.isFinite(observedLife)?observedLife:W3.baseline(country);
+ const ref=clamp(baseline+(gender==='여자'?1.7:-1.7),48,93);
+ // This one number is a published under-five estimate; the detailed ages
+ // and the entire adult survival curve remain illustrative until sex/age life tables arrive.
+ const under5=Number.isFinite(observedUnder5)
+   ?clamp(observedUnder5/1000,0,.9)
+   :clamp(.003+(.95-(country[4]||.6))*.053,.003,.062);
  const scale=clamp((ref-4.6)/(.906*(1-under5)),48,110);
- return {baseline,reference:ref,under5,scale,shape:3.8};
+ return {baseline,reference:ref,under5,scale,shape:3.8,
+   sourceUnder5:Number.isFinite(observedUnder5)?'UN IGME':'game',
+   sourceLife:Number.isFinite(observedLife)?'World Bank':'game'};
 }
 function survival(country,gender,age){
  const m=mortality(country,gender),a=clamp(age,0,110);
