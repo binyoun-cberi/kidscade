@@ -88,15 +88,20 @@
     const seed=life.seed,ct=life.country[0];
     const pair=NAMES[ct]||DEFAULT_NAMES;
     const row=life.gender==='여자'?pair[0]:pair[1];
+    const historic=life.country[0]==='대한민국'&&life.birthYear<1950;
+    const namesHistoric=life.gender==='여자'
+      ?['정숙','영희','순덕','옥순','명자','복순']
+      :['영수','영길','춘식','덕수','기석','병철'];
+    const jobsHistoric=['농업 노동자','상인','수공업자','방직 노동자','목수','판매 노동자','학교 교육자','음식점 종사자'];
     const cities=METADATA[ct]||['도시 지역','작은 마을'];
     const community=between(seed,11,0,99);
     const place=cities[community % cities.length];
     const familyAsset=life.familyLevel==='여유 있는 형편'?1.8:life.familyLevel==='빠듯한 형편'?.37:1;
-    const p={name:row[between(seed,1,0,row.length-1)],city:place,
+    const p={name:historic?namesHistoric[between(seed,1,0,namesHistoric.length-1)]:row[between(seed,1,0,row.length-1)],city:place,
       birthMonth:between(seed,2,1,12),birthDay:between(seed,3,1,28),
       motherAge:between(seed,4,22,41),fatherAge:between(seed,5,23,48),
-      motherJob:FAMILY_JOBS[between(seed,6,0,FAMILY_JOBS.length-1)],
-      fatherJob:FAMILY_JOBS[between(seed,7,0,FAMILY_JOBS.length-1)],
+      motherJob:historic?jobsHistoric[between(seed,6,0,jobsHistoric.length-1)]:FAMILY_JOBS[between(seed,6,0,FAMILY_JOBS.length-1)],
+      fatherJob:historic?jobsHistoric[between(seed,7,0,jobsHistoric.length-1)]:FAMILY_JOBS[between(seed,7,0,FAMILY_JOBS.length-1)],
       familyIncome:round(BASE*COUNTRY_FACTOR(life.country)*familyAsset),
       siblings:between(seed,8,0,3),settlement:settlementFor(ct,seed,community,life.birthYear),
       partner:false,child:false};
