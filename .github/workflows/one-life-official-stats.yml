@@ -38,7 +38,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add games/high_one_life/official-data.js
+          git add games/high_one_life/official-data.js games/high_one_life/index.html
           if git diff --cached --quiet; then
             echo "No data change"
             exit 0
