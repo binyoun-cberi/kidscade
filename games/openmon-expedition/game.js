@@ -552,7 +552,7 @@ function battleAction(action){
 function resolveBattleTurn(choice){
  if(!battle||battle.done)return;
  const foe=battle.foe,own=E.activeCreature(save),foeName=species(foe.id).name;
- const rookieCap=battle.zone==="meadow"&&save.encounters<=4?
+ const rookieCap=!battle.trainer&&battle.zone==="meadow"&&save.encounters<=4?
   Math.max(3,Math.floor(maxHp(own)*.15)):0;
  const res=B.resolve({save,foe,battle,action:choice,random:Math.random,
   rookieCap});
@@ -569,6 +569,17 @@ function resolveBattleTurn(choice){
   const progress=save.wins+save.catches;
   endFight(foeName+" 포획 성공!\n"+(destination==="party"?"동료로 합류했어.":"보관함으로 이동했어.")+
    ([3,7,12].includes(progress)?"\n연구 기록으로 새로운 야생 키즈몬이 나타나기 시작했어!":""),"capture");
+  return;
+ }
+ if(res.outcome==="won"&&battle.trainer){
+  const trainer=battle.trainer;
+  const prize=T.reward(save,trainer);
+  const newLevels=prize.changes.flatMap(c=>c.events);
+  if(newLevels.length)pendingEvolution=true;
+  endFight(res.events.join("\n")+"\n"+trainer.name+"에게 승리! 세 마리 모두 쓰러뜨렸어!"+
+   "\n참가한 키즈몬 경험치 +"+prize.xpEach+" · 연구코인 +"+prize.coins+
+   (prize.first?"\n첫 승리 보너스 획득!":"")+
+   (newLevels.length?"\n키즈몬 레벨 업! 파티에서 진화도 확인해 봐.":""),"win");
   return;
  }
  if(res.outcome==="won"){
@@ -589,7 +600,7 @@ function resolveBattleTurn(choice){
  if(res.outcome==="lost"){
   E.healAll(save);for(const p of save.party)B.restorePP(p);
   save.active=0;save.pos={...E.START};
-  endFight(res.events.join("\n")+"\n모두 쓰러져 연구소로 돌아와 HP·PP를 회복했어.","fail");return;
+  endFight(res.events.join("\n")+(battle.trainer?"\n트레이너 대결에서 졌어.":"")+"\n모두 쓰러져 연구소로 돌아와 HP·PP를 회복했어.","fail");return;
  }
  if(res.outcome==="run"){endFight(res.events.join("\n"),"click");return}
  beep(res.captured?"capture":"hit");
