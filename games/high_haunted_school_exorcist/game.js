@@ -59,7 +59,7 @@ let tutorialMode=false,survivalKills=0,survivalSpawnClock=0;
 const SURVIVAL_SECONDS=300,SURVIVAL_REQUIRED_SEALS=8,survivalGhosts=[];
 const HORROR_NAMES={maiden:'처녀귀신',egg:'달걀귀신',yuki:'유키온나',reaper:'저승사자',wolf:'늑대인간'};
 const HORROR_RULES={maiden:'정면으로 바라보기',egg:'등 돌리기',yuki:'손전등 끄기',reaper:'빛 비추기',wolf:'빛으로 돌진 막기'};
-const SURVIVAL_SPAWNS=[[-10.5,-14],[7.5,-15],[25,-15],[24,14],[-10.5,15],[8,15],[-23,15],[-23,-16],[4,-8.5],[19,8.5]];
+const SURVIVAL_SPAWNS=[[-10.5,-14],[7.5,-15],[25,-15],[24,14],[-10.5,15],[8,15],[-23,15],[-23,-16],[-8,-8.5],[8,-8.5],[24,-8.5],[-8,8.5],[8,8.5],[24,8.5],[-17.5,-15],[-17.5,15]];
 
 let gazeLocked=false,ghostNav=null;
 let hidingLocker=null,lockerTime=0,lockerDanger=0,lockerPreviousFlash=true,lockerLastSeen=null;
