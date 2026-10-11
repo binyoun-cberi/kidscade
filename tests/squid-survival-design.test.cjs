@@ -75,7 +75,8 @@ test('four challenge scenes draw real visual content in phone portrait, landscap
    assert.ok(draw.texts.length>=2,mode+' '+w+'x'+h+' canvas text missing');
    assert.ok(draw.progress!==null,mode+' missing accessible progress');
    assert.equal(nodes.get('time').textContent.length,5);
-   assert.ok(nodes.get('action').textContent.length>0);
+   if(mode==='redlight'||mode==='tug')assert.ok(nodes.get('action').textContent.length>0);
+   else assert.equal(nodes.get('action').hidden,true,'choice-based stages do not show a duplicate action button');
  }
 });
 test('every practice page uses upgraded game design, accessible progress and correct entry mode',()=>{
