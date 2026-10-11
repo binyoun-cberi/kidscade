@@ -55,6 +55,16 @@ function perfect(s,g,clock){
  follow(g,clock,act);
  return current;
 }
+test('canonical game title stays 꼴뚜기 게임 across catalog, menu, page and shell',()=>{
+ const catalog=JSON.parse(fs.readFileSync(path.join(ROOT,'data/games.json'),'utf8'));
+ assert.equal(catalog.games.find(g=>g.id==='squid_survival_versus').title,'꼴뚜기 게임');
+ assert.match(html,/<title>꼴뚜기 게임 \| KIDSCADE<\/title>/);
+ assert.match(html,/data-title="꼴뚜기 게임"/);
+ assert.match(html,/<h1 id="dialogTitle">꼴뚜기 게임<\/h1>/);
+ assert.match(js,/el\.title\.textContent='꼴뚜기 게임'/);
+ const lobby=fs.readFileSync(path.join(BASE,'index.html'),'utf8');
+ assert.match(lobby,/<strong>둘이서 하기<\/strong>/);
+});
 test('all platforms use one full-canvas playfield, pass-and-play overlay and no orientation lock',()=>{
  assert.match(html,/data-orientation="any"/);
  assert.match(html,/passplay-rules\.js/);assert.match(html,/passplay\.js/);
