@@ -129,7 +129,9 @@
       const chance=life.rand();
       const jobLossChance=(.04+(1-(life.country[3]||.55))*.07)*(arc?
         Math.max(.40,Math.min(2.0,1-arc.security*.065+arc.careerRisk*.065)):1);
-      if(chance<jobLossChance && age<62){
+      if(arc?.unemployedUntil>=age){
+        yearly=0;m.employment='구직 중';
+      }else if(chance<jobLossChance && age<62){
         yearly=0;m.employment='구직 중';
         life.logEvent('예상치 못한 실직으로 잠시 일자리를 찾아야 했다.','money');
       }else if(chance<.15){
