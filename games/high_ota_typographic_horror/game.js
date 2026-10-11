@@ -20,6 +20,7 @@ const state = R.initialState();
 const literacy=L.create();state.literacy=literacy;
 const literacyMeshes=new Map();let activeCorrection=null;
 const repairEffects=[];
+const wayfindingSigns=[];
 let apparitionAnchor=null,apparitionNumber=-1;
 const corrector=X.create();
 let soundPulse=0, lastCorrectorSound=0;
@@ -90,6 +91,22 @@ function label(word, color, x,y,z, rx=0,ry=0, w=1,h=.55) {
 }
 // A few words are intermittently overwritten by something unseen.
 const hauntedWords = [];
+function wayfindingLabel(word,color,x,y,z,rx=0,ry=0,w=1,h=.55){
+  const mesh=label(word,color,x,y,z,rx,ry,w,h);
+  mesh.material=mesh.material.clone();
+  mesh.userData.wayfindingWord=word;
+  wayfindingSigns.push(mesh);
+  return mesh;
+}
+function updateWayfindingSigns(){
+  for(const sign of wayfindingSigns){
+    const distance=R.distance(player,sign.position);
+    const near=Math.min(1,Math.max(0,(distance-4.4)/1.4));
+    const far=Math.min(1,Math.max(0,(17-distance)/4));
+    sign.material.opacity=near*far;
+    sign.visible=sign.material.opacity>.06;
+  }
+}
 function hauntedLabel(word, color, altered, x,y,z, rx=0,ry=0,w=1,h=.55) {
   const mesh = label(word,color,x,y,z,rx,ry,w,h);
   const ghost = new THREE.Mesh(unitPlane,material(altered,'#ff3654'));
@@ -227,17 +244,17 @@ function buildChapterThreeRooms(){
     box(12.3,.12,16.7,cx,3.27,-47.2,wallMat);
     box(.2,3.24,16.7,side*15.52,1.6,-47.2,wallMat);
     for(const z of [-55.6,-38.85])box(12.3,3.2,.2,cx,1.6,z,wallMat);
-    label(title,'#d6d0ba',cx,2.52,-55.47,0,0,3.5,.6);
+    wayfindingLabel(title,'#d6d0ba',cx,2.52,-55.47,0,0,3.5,.6);
     label(side<0?'사물은 거짓 이름을 가진다':'너무 오래 읽지 마라',
       '#b8c2cc',cx,1.68,-55.44,0,0,3.7,.50);
   }
   // Distinct light-toned typography identifies the two sides of the hub.
-  label('← 사무실', '#f3c895', -1.55, 2.55, -42.0, 0, 0, 2.55, .7);
-  label('서고 →', '#a8d5f0', 1.55, 2.55, -42.0, 0, 0, 2.55, .7);
+  wayfindingLabel('← 사무실', '#f3c895', -1.55, 2.55, -42.0, 0, 0, 2.55, .7);
+  wayfindingLabel('서고 →', '#a8d5f0', 1.55, 2.55, -42.0, 0, 0, 2.55, .7);
   label('기록 두 개를 찾으세요', '#bed1db', 0, 1.76, -56.3, 0, 0, 3.2, .62);
-  label('사무실','#ddcaaf',-3.25,2.5,-45.8,0,Math.PI/2,1.35,.6);
-  label('서고','#ddcaaf',3.25,2.5,-45.8,0,-Math.PI/2,1.3,.6);
-  label('사무실 · 책상을 다시 부르세요','#f1c991',-7.6,2.63,-39.05,0,0,4.2,.7);
+  wayfindingLabel('사무실','#ddcaaf',-3.25,2.5,-45.8,0,Math.PI/2,1.35,.6);
+  wayfindingLabel('서고','#ddcaaf',3.25,2.5,-45.8,0,-Math.PI/2,1.3,.6);
+  wayfindingLabel('사무실 · 책상을 다시 부르세요','#f1c991',-7.6,2.63,-39.05,0,0,4.2,.7);
   label('기록 A ←','#f1c991',-8.9,1.65,-51.6,0,0,2.35,.53);
   // The office is organized into a few islands of word-furniture rather than blank surfaces.
   for(const [x,z,name] of [[-5.8,-42.2,'서류'],[-8.4,-52.7,'책상'],[-13.4,-43.4,'의자']]){
@@ -246,7 +263,7 @@ function buildChapterThreeRooms(){
     label(name,'#f2d9b8',x,1.05,z+.43,0,0,1.46,.65);
     hauntedLabel('정리되지 않음','#a7a0a6','삭제됨',x,1.71,z+.45,0,0,1.8,.50);
   }
-  for(let i=0;i<4;i++){
+  for(let i=0;i<4;i+=2){
     label(i%2?'이름을 고치세요':'책상은 어디에', '#d2bca2',-8.8,.65+i*.52,-55.44,0,0,3.3,.51);
   }
   // The left room is separated by a name-driven wall, with a physically openable passage.
@@ -263,12 +280,12 @@ function buildChapterThreeRooms(){
   for(const [x,z] of [[6,-42],[6,-53],[14,-42],[14,-53]]){
     box(.22,2.35,2.4,x,1.2,z,propMat);
     // Word-spines form recognizable shelves even when normal textures are absent.
-    for(let j=0;j<4;j++){
+    for(let j=0;j<4;j+=2){
       label(['서가','자료','기록','삭제'][j],j===3?'#d68c9d':'#a7c7de',x, .48+j*.49,z+1.23,0,0,.79,.37);
       label(['서','자','기','삭'][j],'#b9cddd',x+.14,.48+j*.49,z,0,Math.PI/2,.75,.37);
     }
   }
-  for(let i=0;i<4;i++){
+  for(let i=0;i<4;i+=2){
     label(i%2===0?'읽지 마세요':'눈을 돌려요','#8cb3cd',9.3,.64+i*.56,-55.45,0,0,2.1,.44);
   }
   label('쳐다보지 마십시오','#d48e97',8.6,2.55,-40,0,0,3.2,.58);
@@ -465,8 +482,9 @@ function showHint(){
 }
 hud.help.addEventListener('click',showHint);
 
-function announce(text, red=false, seconds=3.6) {
+function announce(text, red=false, seconds=3.6,kind='') {
   hud.message.textContent=text; hud.message.classList.toggle('red',red);
+  hud.message.classList.toggle('learning',kind==='learning');
   hud.message.classList.add('show'); messageEnd=elapsed+seconds;
 }
 function tone(freq, duration=.10, kind='sine', volume=.035) {
@@ -851,7 +869,7 @@ function update(dt) {
     :corrector.phase==='search'?'주변에서 이름을 찾고 있습니다'
     :distance<7?'지직… 단어가 바뀌고 있습니다':'멀리서 글자가 지워지고 있습니다';
   if(hud.correctorText.textContent!==signal)hud.correctorText.textContent=signal;
-  setCamera();updatePrompt();syncHintScope();
+  updateWayfindingSigns();setCamera();updatePrompt();syncHintScope();
 }
 function look(dx,dy) {
   if(state.hidden || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed'))return;
@@ -973,7 +991,7 @@ el('correctionChoices').querySelectorAll('button').forEach(button=>{
     saveChapterCheckpoint();
     tone(392,.12,'triangle',.047);
     tone(523,.22,'triangle',.048);tone(784,.28,'sine',.042);
-    announce((result.item.kind==='core'?'핵심 기록 '+literacy.coreDone+'/5 복구! ':'오타 교정 성공! ')+result.question.explain,false,3.9);
+    announce((result.item.kind==='core'?'핵심 기록 '+literacy.coreDone+'/5 복구! ':'오타 교정 성공! ')+result.question.explain,false,3.9,'learning');
     if(result.completed&&C3.both(state))
       announce('핵심 기록 5개 복구 완료! 중앙 기록실로 이동하세요.',false,4.0);
     try{window.KidscadeGame?.milestone?.('ota_literacy_'+literacy.coreDone,{uniqueKey:'ota-literacy-'+literacy.coreDone});}catch(_){}
@@ -985,7 +1003,8 @@ window.OtaDebug = Object.freeze({
     corrector:{phase:corrector.phase,x:corrector.x,z:corrector.z,hidden:corrector.hidden,grace:corrector.grace},
     literacy:{coreDone:literacy.coreDone,corrected:literacy.corrected,contamination:literacy.contamination,awakened:literacy.awakened,items:literacy.items.map(i=>({uid:i.uid,x:i.x,z:i.z,bankIndex:i.bankIndex,kind:i.kind}))},
     visuals:{nearbyWords:[...literacyMeshes.values()].filter(v=>v.word.visible).length,
-      nearbyHints:[...literacyMeshes.values()].filter(v=>v.hint.visible).length,repairs:repairEffects.length},
+      nearbyHints:[...literacyMeshes.values()].filter(v=>v.hint.visible).length,repairs:repairEffects.length,
+      wayfinding:wayfindingSigns.map(mesh=>({word:mesh.userData.wayfindingWord,visible:mesh.visible}))},
     player:{x:player.x,z:player.z,yaw:player.yaw,pitch:player.pitch},mistakes:state.mistakes}),
   // Browser QA may aim the camera to verify gaze rules, but cannot edit game progress.
   aimForVisualAudit:(yaw,pitch)=>{

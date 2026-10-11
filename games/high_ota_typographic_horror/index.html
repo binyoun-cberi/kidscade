@@ -43,6 +43,11 @@ box-shadow:0 14px 38px #000e;pointer-events:none;display:none;text-align:left}
 #prompt strong{color:#ffc987}
 #message{position:fixed;top:42%;left:50%;transform:translate(-50%,-50%);font-size:clamp(17px,4.5vw,35px);font-weight:900;text-align:center;color:#f0eff2;text-shadow:0 2px 18px #000;letter-spacing:.04em;opacity:0;transition:opacity .22s;pointer-events:none;width:min(90vw,600px)}
 #message.show{opacity:1}#message.red{color:#f76771}
+#message.learning{top:auto;bottom:clamp(158px,26vh,210px);transform:translateX(-50%);
+  width:min(470px,78vw);font-size:clamp(13px,1.6vw,17px);line-height:1.55;
+  padding:10px 15px;background:#0d1b17e8;color:#c6f2d2;border:1px solid #769f85a8;
+  border-radius:9px;letter-spacing:0;box-shadow:0 8px 25px #0009}
+@media(max-width:520px){#message.learning{bottom:clamp(142px,23vh,183px);width:74vw;padding:8px 10px}}
 #hint{position:fixed;bottom:max(17px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);font-size:11px;color:#a3a9b4;letter-spacing:.02em;white-space:nowrap;pointer-events:none;text-shadow:0 2px 7px #000}
 #echoWarning{position:fixed;left:50%;top:clamp(155px,21vh,185px);transform:translateX(-50%);
 z-index:2;width:min(340px,85vw);pointer-events:none;border:1px solid #576573;
