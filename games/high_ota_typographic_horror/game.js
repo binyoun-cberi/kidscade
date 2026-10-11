@@ -686,6 +686,7 @@ function update(dt) {
     if(report.caught){
       state.stage='lost';state.lossReason='corrector';state.losses++;
     }
+    if(!corrector.hidden&&!state.hidden)document.body.classList.remove('hidden-in-locker');
   }
   syncStage(before);
   if(messageEnd<elapsed)hud.message.classList.remove('show');
@@ -869,10 +870,33 @@ for(const choice of el('choices').querySelectorAll('button')) {
     }
   });
 }
+el('correctionClose').addEventListener('click',closeCorrection);
+el('correctionChoices').querySelectorAll('button').forEach(button=>{
+  button.addEventListener('click',()=>{
+    if(!activeCorrection)return;
+    const result=L.correct(literacy,activeCorrection,button.dataset.answer);
+    if(!result.ok){
+      if(result.reason==='wrong'){
+        el('correctionFeedback').textContent=result.hint;
+        tone(180,.13,'triangle',.021);
+      }else closeCorrection();
+      updateLiteracyHud();
+      return;
+    }
+    closeCorrection();syncLiteracyVisuals();updateLiteracyHud();
+    hud.objective.textContent=C3.objective(state);
+    saveChapterCheckpoint();tone(523,.18,'triangle',.057);
+    announce(result.item.kind==='core'?'핵심 기록 복구 '+literacy.coreDone+'/5':'오타 교정 성공! 오염도가 낮아졌어요.',false,2.8);
+    if(result.completed&&C3.both(state))
+      announce('핵심 기록 5개 복구 완료! 중앙 기록실로 이동하세요.',false,4.0);
+    try{window.KidscadeGame?.milestone?.('ota_literacy_'+literacy.coreDone,{uniqueKey:'ota-literacy-'+literacy.coreDone});}catch(_){}
+  });
+});
 window.OtaDebug = Object.freeze({
   snapshot:()=>({stage:state.stage,corridorFixed:state.corridorFixed,doorFixed:state.doorFixed,hidden:state.hidden,
     guidance:{scope:hintScope,level:hintLevel},chapter3:JSON.parse(JSON.stringify(C3.ensure(state))),echo:{...state.echo},monster:{...state.monster},
     corrector:{phase:corrector.phase,x:corrector.x,z:corrector.z,hidden:corrector.hidden,grace:corrector.grace},
+    literacy:{coreDone:literacy.coreDone,corrected:literacy.corrected,contamination:literacy.contamination,awakened:literacy.awakened,items:literacy.items.map(i=>({uid:i.uid,x:i.x,z:i.z,bankIndex:i.bankIndex,kind:i.kind}))},
     player:{x:player.x,z:player.z,yaw:player.yaw,pitch:player.pitch},mistakes:state.mistakes}),
   // Browser QA may aim the camera to verify gaze rules, but cannot edit game progress.
   aimForVisualAudit:(yaw,pitch)=>{
