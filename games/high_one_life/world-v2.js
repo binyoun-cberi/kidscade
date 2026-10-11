@@ -189,7 +189,7 @@
         for(const key of ['partner','child'])obj.profile[key]=Boolean(data.profile[key]);
         for(const key of ['name','city','settlement'])if(typeof data.profile[key]==='string')obj.profile[key]=data.profile[key].slice(0,48);
         for(const key of ['netWorth','income','expense','careerIncomeFactor','pension','lastBalance','educationCost']){
-          if(Number.isFinite(data.money[key]))obj.money[key]=clamp(Number(data.money[key]),key==='netWorth'?-20000000:0,20000000);
+          if(Number.isFinite(data.money[key]))obj.money[key]=clamp(Number(data.money[key]),(key==='netWorth'||key==='lastBalance')?-20000000:0,20000000);
         }
         if(['true','false','partial','new'].includes(String(data.money.retired)))obj.money.retired=data.money.retired;
         if(typeof data.money.employment==='string')obj.money.employment=data.money.employment.slice(0,40);
