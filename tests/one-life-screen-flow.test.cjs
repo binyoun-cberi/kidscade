@@ -10,6 +10,8 @@ const Sim=require(path.join(root,'engine.js'));
 global.window={OneLifeSim:Sim};
 const World=require(path.join(root,'world-v2.js'));
 const Scene=require(path.join(root,'pixel-scene.js'));
+global.window.OneLifeWorld2=World;
+const World3=require(path.join(root,'world-v3.js'));
 delete global.window;
 const makeElement=(tag='div')=>{
  const listeners={}; const classes=new Set();
@@ -39,7 +41,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
   createElement:makeElement,addEventListener:()=>{}};
  const localStorage={getItem:key=>saved.get(key)||null,setItem:(key,val)=>{saved.set(key,val);},removeItem:key=>saved.delete(key)};
  const sdk={start:()=>{},result:(payload)=>{document.result=payload;},registerPauseHandlers:()=>{},registerCleanup:()=>{}};
- const window={OneLifeSim:Sim,OneLifeWorld2:World,OneLifeScene:Scene,KidscadeGame:sdk,
+ const window={OneLifeSim:Sim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeScene:Scene,KidscadeGame:sdk,
   scrollTo(){},addEventListener(){}};
  new Function('window','document','localStorage','performance','setInterval','clearInterval',
   code)(window,document,localStorage,{now:()=>now},
@@ -60,7 +62,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.equal(get('lifeScene').width,600);
  assert.equal(get('peers').children.length,4);
  let sawMoney=false,sawDecision=false,sawChildhood=false,sawWork=false;
- for(let n=0;n<4000&&!document.result;n++){
+ for(let n=0;n<1600&&!document.result;n++){
   now+=100;
   beat();
   const age=Number(get('currentAge').textContent);

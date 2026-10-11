@@ -6,16 +6,18 @@
   if (!Sim) throw new Error('OneLifeSim engine not loaded');
   const World2 = window.OneLifeWorld2;
   const Pixel = window.OneLifeScene;
-  if (!World2 || !Pixel) throw new Error('One Life v2 assets missing');
+  const World3 = window.OneLifeWorld3;
+  if (!World2 || !Pixel || !World3) throw new Error('One Life country systems missing');
   const SAVE_KEY = 'kidscade_one_life_save_v1';
   const RECORD_KEY = 'kidscade_one_life_history_v1';
   // Roughly 70-90 seconds of automatic years, excluding user decisions.
-  const YEAR_MS = 850;
+  const YEAR_MS = 260;
   const STAT_NAMES = [['health','건강'],['happiness','행복'],['knowledge','배움'],['bonds','인연'],['wealth','경제']];
   const views = ['intro','birth','play','end'];
   let life = null, paused = false, stage = 'intro';
   let lastTick = performance.now(), elapsed = 0, roulette = null, screenTime = 0;
   let completed = false, ruleWasRunning = false;
+  let peerCache = null, lastPeerRenderedAge = -1, lastMapRenderedAge = -1;
   const sdk = window.KidscadeGame || null;
   const show = name => { stage = name; for (const id of views) $(id).classList.toggle('hidden',id!==name); window.scrollTo?.(0,0); };
   const safeGet = key => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) { return null; } };
@@ -36,7 +38,8 @@
     clearInterval(roulette);
     roulette = null;
     life = new Sim.Life();
-    World2.enrich(life);
+    World3.setup(life);
+    peerCache = null;lastPeerRenderedAge = -1;lastMapRenderedAge = -1;
     $('birthCertificate').classList.add('hidden');
     completed = false; paused = false; elapsed = 0;
     $('lifeStartBtn').classList.add('hidden');
@@ -91,6 +94,12 @@
     $('annualBalance').textContent=formatCredits(money.lastBalance);
     $('annualBalance').classList.toggle('negative',money.lastBalance<0);
     $('employmentStatus').textContent=money.employment;
+    $('traitEducation').textContent=life.world?.educationLevel||'배움의 기회를 기다리는 중';
+    $('traitRegion').textContent=p.settlement+' · '+p.city;
+    $('countryContextText').textContent=life.world?.schooling+' · 경제적 환경 '+(life.world?.economyScale>=1?'상대적으로 기회가 많은 편':'상대적으로 제약이 있는 편');
+    $('countrySourceNote').textContent=life.world?.hasPublishedBaseline
+      ? '2024 세계은행 출생 시 기대수명 '+life.world.lifeBaseline.toFixed(1)+'세 · 학교·직업 기회는 가상 모델, 개인 수명 예측이 아님'
+      : '국가별 평균 수명은 게임 추정치 · 교육·일자리 조건도 게임용 모델';
     const sceneName=Pixel.paint($('lifeScene'),life);
     $('sceneLabel').textContent=life.year+'년 · '+life.country[0]+' '+p.city+' · '+sceneName+'을(를) 보내고 있습니다.';
   }
@@ -170,23 +179,34 @@
   }
   function paintPeers() {
     const board=$('peers');
-    if(!life || !board) return;
+    if(!life || !board)return;
+    if(life.age===lastPeerRenderedAge || (life.age%4!==0 && life.age!==0 && !life.pending))return;
+    lastPeerRenderedAge=life.age;
+    if(!peerCache || peerCache.seed!==life.seed){
+      peerCache={seed:life.seed,people:Array.from({length:4},(_,i)=>new Sim.Life((life.seed+Math.imul(i+1,2654435761))>>>0))};
+    }
     board.replaceChildren();
-    for(let i=0;i<4;i++) {
-      const peer=new Sim.Life((life.seed + Math.imul(i+1,2654435761))>>>0);
-      while(peer.alive && peer.age<life.age) {
-        if(peer.pending){ const opts=peer.getChoice(); if(opts) peer.choose((i+peer.age)%3); else peer.reflect(); continue; }
-        peer.tick();
+    for(const peer of peerCache.people){
+      let guard=0;
+      while(peer.alive && peer.age<life.age && guard++<140){
+        if(peer.pending){
+          const decision=peer.getChoice();
+          if(decision)peer.choose(Math.floor(peer.rand()*decision.options.length));
+          else if(peer.getReflection())peer.reflect();
+          else break;
+        } else peer.tick();
       }
       const card=document.createElement('div');card.className='peer';
       const flag=document.createElement('span');flag.className='peer-flag';flag.textContent=peer.country[1];
       const label=document.createElement('b');label.textContent=peer.country[0];
-      const age=document.createElement('small');age.textContent=peer.alive?peer.age+'세 · 살아가는 중':peer.age+'세 · 삶을 마침';
+      const age=document.createElement('small');
+      age.textContent=peer.alive?peer.age+'세 · 살아가는 중':peer.age+'세 · 삶을 마침';
       card.append(flag,label,age);board.append(card);
     }
   }
   function paintAgeMap() {
-    const board=$('ageMap');if(!board||!life)return;
+    const board=$('ageMap');if(!board||!life || (life.age===lastMapRenderedAge) || (life.age%4!==0 && !life.pending))return;
+    lastMapRenderedAge=life.age;
     board.replaceChildren();
     for(let year=0;year<108;year++) {
       const box=document.createElement('span');box.className='age-cell';
@@ -251,9 +271,9 @@
     $('endNetWorth').textContent=formatCredits(life.money.netWorth);
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=life.career;
-    $('endStory').textContent=summary.story+' '+life.deathReason;
+    $('endStory').textContent=summary.story+' '+life.deathReason+' '+(life.world?.educationLevel||'')+' · '+(life.world?.occupation||life.career)+'을(를) 경험했다.';
     const list=$('endHighlights'); list.replaceChildren();
-    const highlights=summary.highlights.slice(-9);
+    const highlights=[...life.log.filter(e=>['milestone','decision','context'].includes(e.kind))].slice(-12);
     if(!highlights.length) highlights.push(life.log[0]);
     highlights.forEach(e=>{
       const item=document.createElement('li');
@@ -303,7 +323,7 @@
   $('resumeBtn').addEventListener('click',()=>{
     const restored=currentSave();
     if(!restored || !restored.alive){refreshResume();return;}
-    life=restored;completed=false;startLife(true);
+    life=restored;completed=false;peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;startLife(true);
   });
   $('pauseBtn').addEventListener('click',togglePause);
   document.querySelectorAll('[data-focus]').forEach(button=>button.addEventListener('click',()=>{

@@ -1,0 +1,6 @@
+.country-context{margin:0 0 20px;padding:16px 15px;border-radius:8px;background:#e9f6f0;border:1px solid #c9e5d9;color:#2a5950;display:grid;gap:8px}
+.country-context strong{font-size:13px;font-weight:850}
+.country-context>div{font-size:12px;line-height:1.7;word-break:keep-all}
+.country-context small{font-size:11px;line-height:1.65;color:#5a8278}
+.traits>div{margin-bottom:12px}
+@media(max-width:780px){.country-context{grid-column:1/-1;padding:12px 13px;margin:8px 0 18px}}
