@@ -29,6 +29,7 @@ const architectureMeshes=[],architectureErrors=[],architectureLights=[];
 const calligramObjects=[],calligramById=new Map();
 let rewriteWallPlug=null,rewriteDoorBlock=null,rewriteWallWord=null,rewriteCeilingWord=null;
 let rewriteLight=null,rewriteLightPool=null,rewriteGlow=null,rewriteBulb=null;
+const rewriteRays=[];
 let apparitionAnchor=null,apparitionNumber=-1;
 const corrector=X.create();
 let soundPulse=0, lastCorrectorSound=0;
@@ -360,7 +361,7 @@ function buildRewriteWorld(){
   rewriteCeilingWord.material=rewriteCeilingWord.material.clone();
   rewriteLight=new THREE.PointLight(0xffcd63,0,8.0,2);
   rewriteLight.position.set(l.x,2.88,l.z);
-  scene.add(rewriteLight);
+  rewriteLight.visible=false;scene.add(rewriteLight);
   const texture=rewriteGlowTexture();
   const poolMat=new THREE.MeshBasicMaterial({map:texture,transparent:true,
     opacity:.38,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending});
@@ -380,10 +381,12 @@ function buildRewriteWorld(){
   for(const [x,y,z] of [[-.38,2.36,-43.95],[.35,1.97,-43.40],[-.25,1.52,-43.95]]){
     const word=label('빛','#ffd46d',x,y,z,0,0,.54,.42);
     word.material=word.material.clone();word.userData.rewriteRay=true;
+    rewriteRays.push(word);
   }
   for(const [x,z] of [[-.8,-44.6],[.94,-43.25],[-.05,-42.15]]){
     const word=label('빛','#f9d16c',x,.064,z,-Math.PI/2,0,.46,.3);
     word.material=word.material.clone();word.userData.rewriteRay=true;
+    rewriteRays.push(word);
   }
   rewriteLightPool.visible=false;rewriteGlow.visible=false;
 }
@@ -400,18 +403,17 @@ function updateRewriteWorld(t){
   rewriteCeilingWord.material.map=material(rewrite.lightOn?'조명':'천장',
     rewrite.lightOn?'#ffe59b':'#a3a8b2').map;
   rewriteCeilingWord.material.needsUpdate=true;
+  rewriteLight.visible=rewrite.lightOn;
   rewriteLight.intensity=rewrite.lightOn?(2+.11*Math.sin(t*3.0)):0;
   rewriteLightPool.visible=rewrite.lightOn;
   rewriteGlow.visible=rewrite.lightOn;
   rewriteBulb.visible=rewrite.lightOn;
   rewriteLightPool.material.opacity=rewrite.lightOn?.64+.05*Math.sin(t*2.5):0;
   rewriteGlow.material.opacity=rewrite.lightOn?.88+.05*Math.sin(t*3.4):0;
-  scene.children.forEach(obj=>{
-    if(!obj.userData?.rewriteRay)return;
-    // In first person even a small floating 빛 syllable fills the viewport up close.
+  for(const obj of rewriteRays){
     const distance=R.distance(player,obj.position);
     obj.visible=rewrite.lightOn&&distance>1.65&&distance<8;
-  });
+  }
   // Text floors and walls actually respond to the yellow ceiling light.
   for(const {mesh,spec} of architectureMeshes){
     const d=R.distance(spec,RW.LIGHT);
