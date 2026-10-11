@@ -342,6 +342,128 @@ function updateCalligrams(dt,threat){
     }
   }
 }
+function rewriteGlowTexture(){
+  const c=document.createElement('canvas');c.width=c.height=128;
+  const x=c.getContext('2d'),g=x.createRadialGradient(64,64,3,64,64,63);
+  g.addColorStop(0,'rgba(255,229,139,.72)');
+  g.addColorStop(.35,'rgba(255,207,76,.24)');
+  g.addColorStop(1,'rgba(255,170,25,0)');
+  x.fillStyle=g;x.fillRect(0,0,128,128);
+  const texture=new THREE.CanvasTexture(c);texture.colorSpace=THREE.SRGBColorSpace;
+  return texture;
+}
+function buildRewriteWorld(){
+  const w=RW.WALL,l=RW.LIGHT;
+  rewriteWallWord=label('벽','#a5b2bd',w.x+.155,1.65,w.z,0,Math.PI/2,1.32,.62);
+  rewriteWallWord.material=rewriteWallWord.material.clone();
+  rewriteCeilingWord=label('천장','#a3a8b2',l.x,3.10,l.z,Math.PI/2,0,1.46,.62);
+  rewriteCeilingWord.material=rewriteCeilingWord.material.clone();
+  rewriteLight=new THREE.PointLight(0xffcd63,0,8.0,2);
+  rewriteLight.position.set(l.x,2.88,l.z);
+  scene.add(rewriteLight);
+  const texture=rewriteGlowTexture();
+  const poolMat=new THREE.MeshBasicMaterial({map:texture,transparent:true,
+    opacity:.38,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending});
+  rewriteLightPool=new THREE.Mesh(new THREE.PlaneGeometry(5.7,5.7),poolMat);
+  rewriteLightPool.rotation.x=-Math.PI/2;
+  rewriteLightPool.position.set(l.x,.047,l.z);
+  rewriteLightPool.renderOrder=3;scene.add(rewriteLightPool);
+  rewriteGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,
+    opacity:.66,depthWrite:false,blending:THREE.AdditiveBlending}));
+  rewriteGlow.position.set(l.x,2.94,l.z);
+  rewriteGlow.scale.set(2.20,2.20,1);
+  scene.add(rewriteGlow);
+  for(const [x,z] of [[-.8,-44.6],[.94,-43.25],[-.05,-42.15]]){
+    const word=label('빛','#f9d16c',x,.064,z,-Math.PI/2,0,.46,.3);
+    word.material=word.material.clone();word.userData.rewriteRay=true;
+  }
+  rewriteLightPool.visible=false;rewriteGlow.visible=false;
+}
+function updateRewriteWorld(t){
+  if(!rewriteWallPlug)return;
+  rewriteWallPlug.visible=!rewrite.doorMade;
+  rewriteDoorBlock.visible=rewrite.doorMade&&!rewrite.doorOpen;
+  rewriteWallWord.visible=state.stage==='explore'&&
+    R.distance(player,RW.WALL)<8.5;
+  rewriteWallWord.material.map=material(rewrite.doorMade?'문':'벽',
+    rewrite.doorMade?'#e9bd8d':'#a5b2bd').map;
+  rewriteWallWord.material.needsUpdate=true;
+  rewriteCeilingWord.visible=state.stage==='explore'&&R.distance(player,RW.LIGHT)<9;
+  rewriteCeilingWord.material.map=material(rewrite.lightOn?'조명':'천장',
+    rewrite.lightOn?'#ffe59b':'#a3a8b2').map;
+  rewriteCeilingWord.material.needsUpdate=true;
+  rewriteLight.intensity=rewrite.lightOn?(2+.11*Math.sin(t*3.0)):0;
+  rewriteLightPool.visible=rewrite.lightOn;
+  rewriteGlow.visible=rewrite.lightOn;
+  rewriteLightPool.material.opacity=rewrite.lightOn?.40+.04*Math.sin(t*2.5):0;
+  rewriteGlow.material.opacity=rewrite.lightOn?.55+.05*Math.sin(t*3.4):0;
+  scene.children.forEach(obj=>{
+    if(obj.userData?.rewriteRay)obj.visible=rewrite.lightOn;
+  });
+  // Text floors and walls actually respond to the yellow ceiling light.
+  for(const {mesh,spec} of architectureMeshes){
+    const d=R.distance(spec,RW.LIGHT);
+    const amount=rewrite.lightOn?Math.max(0,1-d/8):0;
+    mesh.material.color.setRGB(1,1-.13*amount,1-.32*amount);
+  }
+}
+function openRewrite(site){
+  if(state.stage!=='explore')return;
+  overlays.rewrite.dataset.site=site;
+  const wall=site==='wall',on=wall?rewrite.doorMade:rewrite.lightOn;
+  el('rewriteTitle').textContent=wall?'벽에 이름 쓰기':'천장에 이름 쓰기';
+  el('rewriteCurrent').textContent=wall?(rewrite.doorMade?'문':'벽'):(rewrite.lightOn?'조명':'천장');
+  el('rewriteDescription').textContent=wall?
+    '「문」이라고 쓰면 벽이 실제 문으로 바뀝니다. 「벽」이라고 쓰면 복원됩니다.':
+    '「조명」이라고 쓰면 노란빛이 켜지고, 「천장」이라고 쓰면 다시 어두워집니다.';
+  el('rewriteInput').value='';
+  el('rewriteInput').placeholder=wall?'문 또는 벽':'조명 또는 천장';
+  el('rewriteFeedback').textContent='글자가 바뀌면 물체의 기능도 바뀝니다.';
+  const toggle=el('rewriteToggle');
+  toggle.hidden=!on;
+  toggle.textContent=wall?(rewrite.doorOpen?'문 닫기':'문 열기'):'조명 끄기';
+  overlays.rewrite.classList.remove('closed');
+  if(document.pointerLockElement===canvas)document.exitPointerLock?.();
+  el('rewriteInput').focus();
+}
+function closeRewrite(){overlays.rewrite.classList.add('closed');overlays.rewrite.dataset.site='';}
+function submitRewrite(){
+  const site=overlays.rewrite.dataset.site;
+  const result=RW.write(rewrite,site,el('rewriteInput').value,player);
+  if(!result.ok){
+    el('rewriteFeedback').textContent=result.reason==='occupied'?
+      '문 사이에 서 있어요. 밖으로 나온 뒤 다시 벽으로 고치세요.':
+      '이 공간에 쓸 수 있는 이름이 아니에요. 주변에 있는 사물의 이름을 살펴보세요.';
+    tone(150,.12,'triangle',.028);return;
+  }
+  closeRewrite();updateRewriteWorld(elapsed);saveChapterCheckpoint();
+  if(site==='wall'){
+    const obj=calligramById.get('rewritten-wall-door');
+    if(obj)obj.progress=rewrite.doorOpen?0:1;
+    tone(294,.13,'triangle',.055);tone(440,.28,'sine',.05);
+    announce(rewrite.doorMade?'「벽」이 「문」으로! 이제 실제로 지나갈 수 있습니다.':
+      '「문」이 다시 「벽」이 되었습니다. 통행이 막혔습니다.',false,3.4);
+  }else{
+    tone(rewrite.lightOn?523:160,.28,rewrite.lightOn?'sine':'triangle',.056);
+    announce(rewrite.lightOn?'「조명」이 노랗게 빛나고 주변 글자가 드러납니다.':
+      '조명이 꺼졌습니다. 주변이 다시 어두워졌어요.',false,3.4);
+  }
+}
+function toggleRewrite(){
+  const site=overlays.rewrite.dataset.site;
+  if(site==='ceiling'){
+    el('rewriteInput').value='천장';submitRewrite();return;
+  }
+  const result=RW.toggleDoor(rewrite,player);
+  if(!result.ok){
+    el('rewriteFeedback').textContent='문 사이에 있을 때는 닫을 수 없어요.';
+    return;
+  }
+  closeRewrite();saveChapterCheckpoint();
+  tone(result.open?440:148,.23,'triangle',.04);
+  announce(result.open?'「문」을 열었습니다. 길이 이어집니다.':
+    '「문」을 닫았습니다. 이제 통과할 수 없습니다.',false,3);
+}
 function scenery() {
   box(6.9,.12,45,0,-.12,-15.15,floorMat);
   box(.22,3.26,45,-3.38,1.61,-15.15,wallMat);
@@ -1130,6 +1252,10 @@ el('mute').addEventListener('click',()=>{
   muted=!muted;el('mute').textContent=muted?'소리 꺼짐':'소리 켜짐';
 });
 document.addEventListener('keydown',e=>{
+  if(!overlays.rewrite.classList.contains('closed')){
+    if(e.code==='Escape'){e.preventDefault();closeRewrite();}
+    return;
+  }
   if(['KeyW','KeyA','KeyS','KeyD','ShiftLeft','ShiftRight','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
   keys.add(e.code);
   if(e.code==='KeyH'&&!e.repeat){e.preventDefault();showHint();}
@@ -1194,6 +1320,9 @@ for(const choice of el('choices').querySelectorAll('button')) {
     }
   });
 }
+el('rewriteForm').addEventListener('submit',e=>{e.preventDefault();submitRewrite();});
+el('rewriteCancel').addEventListener('click',closeRewrite);
+el('rewriteToggle').addEventListener('click',toggleRewrite);
 el('correctionClose').addEventListener('click',closeCorrection);
 el('correctionChoices').querySelectorAll('button').forEach(button=>{
   button.addEventListener('click',()=>{
