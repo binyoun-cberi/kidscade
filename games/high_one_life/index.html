@@ -111,7 +111,7 @@
             </div>
             <div id="storyStats" class="v8-tool-page hidden">
               <h3>이 출생 집단의 생존 곡선</h3>
-              <p class="v8-fine">출생 국가·성별 기준의 게임용 사망 모형입니다. 실제 연령별 생명표나 내 사망 날짜를 예측하는 그래프가 아닙니다.</p>
+              <p class="v8-fine">5세 미만 총 사망률은 UN IGME 추정치를 이용할 수 있지만, 연령별 분배와 이후 나이의 생존 곡선은 게임용 사망 모형입니다. 실제 연령별 생명표나 내 사망 날짜를 예측하는 그래프가 아닙니다.</p>
               <svg id="survivalChart" viewBox="0 0 360 170" role="img" aria-label="0세부터 100세까지 생존 비율을 보여주는 게임 모형 그래프">
                 <path d="M38 12 V143 H348" stroke="#8aa5a0" fill="none" stroke-width="1"/>
                 <path id="survivalOther" d="" fill="none" stroke="#9caeab" stroke-width="2" stroke-dasharray="4 4"/>
@@ -123,7 +123,7 @@
               <div class="v8-chart-key"><span>● 이 출생 국가·성별 모형</span><span>┄ 비교용 세계 모형</span></div>
               <p id="survivalSummary"></p>
               <p id="v8CountryStats" class="v8-country-stats"></p>
-              <p class="v8-fine">국가 수명 참고: <a href="https://data.worldbank.org/indicator/SP.DYN.LE00.IN" target="_blank" rel="noopener noreferrer">세계은행 기대수명 지표</a>. 현재 게임 속 숫자는 근사값 또는 추정값이며, 실측 통계가 아닙니다. 학교·직업·경제·미래 사건도 가상 모형입니다.</p>
+              <p class="v8-fine">국가 수명 참고: <a href="https://data.worldbank.org/indicator/SP.DYN.LE00.IN" target="_blank" rel="noopener noreferrer">세계은행 기대수명 지표</a>. 수집된 실제 국가 지표와 게임용 근사·추정을 구분해 표기합니다. 평균 지표가 개인의 확률은 아니며, 학교·직업·경제·미래 사건은 가상 모형입니다.</p>
             </div>
             <div id="storyYears" class="v8-tool-page hidden"><h3>한 칸은 인생의 1년</h3>
               <p class="v8-fine">선택·가족·이동·직업·위기가 일어난 해를 표시했어요. 칸을 누르면 기록을 읽을 수 있습니다.</p>
@@ -171,6 +171,8 @@
             <div id="countryContextText">학교·의료·지역 경제 기회가 반영됩니다.</div>
             <small>가족의 형편과 별개로, 태어난 나라·지역의 평균 조건을 보여줍니다.</small>
             <small id="countrySourceNote">모두가 같은 삶을 살지는 않습니다.</small>
+            <small id="officialContext" class="official-stats-source">공식 지표는 자료가 갱신되면 기준 연도와 함께 표시됩니다.</small>
+            <small>UN·UNESCO·ILO·WHO·UNICEF/UN IGME 통계는 <a href="https://data.worldbank.org/" target="_blank" rel="noopener noreferrer">세계은행 공개 지표</a>를 통해 수집합니다. 일부 국가는 공식 수치가 없어 게임 추정값으로 대체됩니다. 개인의 미래·선택 결과는 가상 모델입니다.</small>
           </div>
           <div class="finance-panel" aria-label="가상 경제 생활 기록">
             <div class="stat-title">경제 생활 <span>가상 금액 단위</span></div>
@@ -240,19 +242,20 @@
 </div>
 <script src="../../kidscade-storage.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_one_life" data-title="단 하나의 인생" data-shell="false" data-pauseable="true" data-orientation="any"></script>
-<script src="./engine.js?v=4"></script>
-<script src="./world-v2.js?v=6"></script>
+<script src="./official-data.js?v=1"></script>
+<script src="./engine.js?v=5"></script>
+<script src="./world-v2.js?v=7"></script>
 <script src="./pixel-scene.js?v=3"></script>
-<script src="./world-v3.js?v=1"></script>
+<script src="./world-v3.js?v=2"></script>
 <script src="./world-v4.js?v=1"></script>
 <script src="./world-v5.js?v=1"></script>
 <script src="./careers-v6.js?v=1"></script>
 <script src="./events-v6.js?v=1"></script>
 <script src="./world-v6.js?v=1"></script>
 <script src="./world-v7.js?v=1"></script>
-<script src="./world-v8.js?v=1"></script>
+<script src="./world-v8.js?v=2"></script>
 <script src="./scenes-v6.js?v=1"></script>
 <script src="./scenes-v8.js?v=1"></script>
-<script src="./game.js?v=12"></script>
+<script src="./game.js?v=13"></script>
 </body>
 </html>
