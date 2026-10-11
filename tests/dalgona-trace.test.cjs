@@ -158,7 +158,10 @@ test('layout and shared game SDK bind actual pointer handlers and HUD',()=>{
     assert.ok(fs.existsSync(path.join(ROOT,p)),p);
   }
   const catalog=JSON.parse(fs.readFileSync(path.join(ROOT,'data/games.json'),'utf8'));
-  const game=catalog.games.find(x=>x.id==='dalgona_trace');
-  assert.equal(game.href,'games/dalgona-trace/index.html');
+  const game=catalog.games.find(x=>x.id==='squid_survival');
+  assert.equal(game.href,'games/squid-survival/index.html');
   assert.equal(game.genre,'puzzle');
+  assert.equal(catalog.games.some(x=>x.id==='dalgona_trace'),false);
+  const survivalRules=require('../games/squid-survival/rules.js');
+  assert.equal(survivalRules.ROUNDS.find(x=>x.id==='dalgona').src,'../dalgona-trace/index.html');
 });
