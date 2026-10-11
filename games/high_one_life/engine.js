@@ -133,6 +133,8 @@
     [77,105,'다른 세대의 생각을 배우며 즐거운 시간을 보냈다.',{knowledge:6,bonds:5}],
     [80,105,'평범한 하루가 참 고맙다는 생각이 들었다.',{happiness:7}]
   ];
+  const REFLECTION_AGES = [5,15,30,50,70];
+  const FOCUS = Object.freeze(['balance','learning','people','health','work']);
   const stages = age => age < 7 ? '유년기' : age < 19 ? '성장기' : age < 31 ? '청년기' : age < 61 ? '성인기' : '노년기';
   class Life {
     constructor(seed) {
@@ -150,6 +152,8 @@
         happiness:clamp(48+this.rand()*28),knowledge:clamp(30+this.rand()*22),
         bonds:clamp(40+this.rand()*30),wealth:clamp(wealthBase+(this.country[3]-.55)*25)};
       this.career = '아직 정해지지 않음';
+      this.focus = 'balance';
+      this.reflections = [];
       this.log = [];
       this.seen = [];
       this.pending = null;
@@ -166,6 +170,13 @@
     tick() {
       if(!this.alive || this.pending) return false;
       this.age++; this.year++;
+      if(this.age>=7 && this.age<=85) {
+        if(this.focus==='learning') this.change({knowledge:2,happiness:-1});
+        if(this.focus==='people') this.change({bonds:2,happiness:1});
+        if(this.focus==='health') this.change({health:1,wealth:-1});
+        if(this.focus==='work' && this.age>=17) this.change({wealth:2,health:-1,bonds:-1});
+        if(this.focus==='balance' && this.age%3===0) this.change({happiness:1});
+      }
       if(this.age < 16) this.change({knowledge:1,health:this.rand()<.25?-1:0});
       if(this.age>=50) this.change({health:this.age>=78?-2:-1});
       if(this.age>=70 && this.rand()<.30) this.change({bonds:-1});
@@ -191,6 +202,7 @@
       }
       const moment = CHOICES.find(c=>c.age===this.age);
       if(moment) this.pending = moment.age;
+      else if(REFLECTION_AGES.includes(this.age)) this.pending='reflection:'+this.age;
       return true;
     }
     choose(optionIndex) {
@@ -213,6 +225,21 @@
       return true;
     }
     getChoice() { return CHOICES.find(c=>c.age===this.pending)||null; }
+    getReflection() { return typeof this.pending==='string' && /^reflection:(5|15|30|50|70)$/.test(this.pending) ? Number(this.pending.split(':')[1]) : null; }
+    reflect(message='') {
+      const age=this.getReflection();
+      if(!this.alive || !age) return false;
+      const text=String(message||'').trim().slice(0,140);
+      this.reflections.push({age,text});
+      this.logEvent(text ? '잠시 멈추어 생각했다. '+text : '잠시 멈추어 지금까지의 삶을 돌아보았다.','reflection');
+      this.pending=null;
+      return true;
+    }
+    setFocus(focus) {
+      if(!this.alive || !FOCUS.includes(focus)) return false;
+      this.focus=focus;
+      return true;
+    }
     finish(reason) {
       if(!this.alive) return;
       this.alive=false; this.pending=null; this.deathReason=reason;
@@ -222,12 +249,12 @@
       const s=this.stats;
       const top=Object.entries({건강:s.health,행복:s.happiness,배움:s.knowledge,인연:s.bonds}).sort((a,b)=>b[1]-a[1])[0][0];
       return {age:this.age,country:this.country[0],gender:this.gender,year:this.year,
-        highlights:this.log.filter(e=>e.kind==='decision'||e.kind==='milestone'),
+        highlights:this.log.filter(e=>e.kind==='decision'||e.kind==='milestone'||e.kind==='reflection'),
         story:'태어나서 '+this.age+'년을 살아온 당신의 삶에는 '+top+'의 순간들이 남았다. 정해진 정답은 없다. 그 모든 순간이 하나의 인생이다.'};
     }
     snapshot() {
       return {version:1,seed:this.seed,rng:this.rng,age:this.age,year:this.year,country:this.country[0],
-        gender:this.gender,familyLevel:this.familyLevel,stats:{...this.stats},career:this.career,
+        gender:this.gender,familyLevel:this.familyLevel,stats:{...this.stats},career:this.career,focus:this.focus,reflections:this.reflections.map(e=>({...e})),
         log:this.log.map(e=>({...e})),seen:[...this.seen],pending:this.pending,
         alive:this.alive,deathReason:this.deathReason};
     }
@@ -242,13 +269,15 @@
       life.familyLevel=String(data.familyLevel||'평범한 형편');
       life.stats=Object.fromEntries(['health','happiness','knowledge','bonds','wealth'].map(k=>[k,clamp(Number(data.stats[k])||0)]));
       life.career=String(data.career||'아직 정해지지 않음');
+      life.focus=FOCUS.includes(data.focus)?data.focus:'balance';
+      life.reflections=Array.isArray(data.reflections)?data.reflections.filter(e=>REFLECTION_AGES.includes(e.age)).slice(-5).map(e=>({age:e.age,text:String(e.text||'').slice(0,140)})):[];
       life.log=data.log.slice(-100).filter(e=>Number.isInteger(e.age)&&typeof e.text==='string')
         .map(e=>({age:e.age,year:2026+e.age,text:e.text.slice(0,160),kind:String(e.kind||'life')}));
       life.seen=data.seen.filter(i=>Number.isInteger(i)&&i>=0&&i<EVENTS.length);
-      life.pending=CHOICES.some(c=>c.age===data.pending)&&data.alive?data.pending:null;
+      life.pending=data.alive && (CHOICES.some(c=>c.age===data.pending) || (typeof data.pending==='string' && /^reflection:(5|15|30|50|70)$/.test(data.pending))) ? data.pending : null;
       life.alive=data.alive===true; life.deathReason=String(data.deathReason||'');
       return life;
     }
   }
-  return Object.freeze({Life,COUNTRIES,CHOICES,EVENTS,stages});
+  return Object.freeze({Life,COUNTRIES,CHOICES,EVENTS,REFLECTION_AGES,FOCUS,stages});
 });
