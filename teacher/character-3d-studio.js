@@ -621,7 +621,7 @@ function hatSafeGeometry(mesh){
     const amount=crown*(.36+.64*keepFringe);
     p.setXYZ(i,
       center.x+(x-center.x)*(1-.105*amount),
-      y-height*.075*amount,
+      y-height*.125*amount,
       center.z+(z-center.z)*(1-.085*amount)
     );
   }
