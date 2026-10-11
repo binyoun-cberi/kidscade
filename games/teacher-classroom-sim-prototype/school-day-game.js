@@ -1956,4 +1956,124 @@ function loop(now){
   students.forEach(s=>updateStudentPose(s,dt));
   updateMarkers((now||0)/1000);updateBubbles();updateActionFlashes(dt);renderer.render(scene,camera);
 }
+// TEST-BRANCH ONLY: local-browser instrumentation to render the real Three.js
+// classroom and step through the complete lesson using its production functions.
+if(location.hostname==='127.0.0.1'&&new URLSearchParams(location.search).has('teacherQa')){
+  let cameraLock=null;
+  const realUpdateCamera=updateCamera;
+  updateCamera=function(dt){
+    if(cameraLock){
+      camera.position.set(...cameraLock.pos);
+      camera.lookAt(...cameraLock.look);
+      return;
+    }
+    return realUpdateCamera(dt);
+  };
+  globalThis.__teacherQa={
+    count(){return students.length},
+    begin(){
+      soundscape.unlock();
+      started=true;ui.intro.classList.add('hidden');
+      player.root.position.set(0,0,3.3);
+      enterStep(1);updateHud();
+    },
+    simulate(seconds){
+      const dt=.05,steps=Math.round(seconds/dt);
+      for(let i=0;i<steps&&currentStep.kind==='lesson';i++){
+        sceneSeconds+=dt;player.mixer.update(dt);
+        students.forEach(s=>s.actor.mixer.update(dt));
+        updateLesson(dt);
+        students.forEach(s=>updateStudentPose(s,dt));
+        soundscape.tick(dt,{phase:lessonFlow?.phase,room:activeSpace.id,studentMotion:true});
+      }
+      scanAction();updateGuideByAction();updateHud();
+      renderer.render(scene,camera);
+    },
+    action(){scanAction();const before=currentAction.type;useAction();return {before,after:lessonFlow?.phase}},
+    moveToBoard(){player.root.position.set(0,0,-4.1);scanAction();updateCamera(1);return currentAction.type},
+    moveToStudent(index){
+      const s=students[index];player.root.position.copy(s.actor.root.position);
+      scanAction();updateCamera(1);return currentAction.type;
+    },
+    camera(pos,look){cameraLock={pos,look};updateCamera(1)},
+    unlock(){cameraLock=null;updateCamera(1)},
+    room(id){
+      buildSpace(id);placeActorsAtEntry();
+      currentStep={kind:'prep',location:id,subject:'과학'};
+      students.forEach(s=>updateStudentPose(s,.2));updateCamera(1);
+    },
+    audio(){return {enabled:soundscape.enabled,hasContext:soundscape.hasContext,contextState:soundscape.contextState,stats:soundscape.stats(),mediaMuted:[ui.bell,ui.talk,ui.fight,ui.ambience].map(el=>el.muted)}},
+    focusSummary(){
+      const m=students.filter(s=>isStudentPresent(s));
+      return {day:campaign.day,stepIndex,step:currentStep.kind,subject:currentStep.subject,
+        phase:lessonFlow?.phase,remaining:+stepTime.toFixed(2),lessonElapsed:+lessonElapsed.toFixed(2),
+        teacherAtBoard:isTeacherAtBoard(),currentAction:currentAction.type,
+        focused:m.filter(s=>s.runtime.mode==='focused').length,
+        distracted:m.filter(s=>s.runtime.mode==='offtask').length,
+        talking:lessonChats.length,conflicts:pairs.filter(p=>p.state==='conflict'||p.state==='fight').length,
+        health:m.filter(s=>s.health?.revealed&&s.health.state!=='healthy').length,
+        questions:m.filter(s=>s.questionActive).length,
+        mastery:Object.fromEntries(m.map(s=>[s.runtime.name,+(campaign.mastery[s.runtime.id]||0).toFixed(2)])),
+        stats:{...stats,spacesVisited:Array.from(stats.spacesVisited)}};
+    },
+    toSocial(){
+      const idx=DAY_STEPS.findIndex(s=>s.kind==='social');
+      if(idx<0)throw Error('Missing social step');
+      enterStep(idx);updateHud();renderer.render(scene,camera);
+      return this.focusSummary();
+    },
+    toTransition(){
+      const idx=DAY_STEPS.findIndex(s=>s.kind==='transition');
+      enterStep(idx);updateHud();return this.focusSummary();
+    },
+    toExam(){
+      const previous=campaign.day;
+      campaign.day=2;stats.periodsCompleted=6;
+      finishDay();
+      return {day:campaign.day,exam:campaign.exams[campaign.exams.length-1],title:ui.endTitle.textContent,
+        examShown:!ui.examResults.classList.contains('hidden'),prevDay:previous};
+    },
+    skip(seconds){
+      const dt=.05,steps=Math.round(seconds/dt);
+      for(let i=0;i<steps;i++){
+        if(currentStep.kind==='done')break;
+        sceneSeconds+=dt;
+        player.mixer.update(dt);
+        for(const s of students)s.actor.mixer.update(dt);
+        if(currentStep.kind==='lesson')updateLesson(dt);
+        else if(currentStep.kind==='social')updateSocial(dt);
+        else updateStudentsIdle(dt);
+        for(const s of students)updateStudentPose(s,dt);
+      }
+      updateHud();renderer.render(scene,camera);
+      return this.focusSummary();
+    },
+    info(){
+      const status=students.map(s=>{
+        const hips=s.actor.seatHipY;
+        const p=s.actor.root.position;
+        const bounds=new THREE.Box3().setFromObject(s.actor.model);
+        const v=s.actor.gestureBones;
+        return {name:s.runtime.name,seat:[s.seat.x,s.seat.z],p:[+p.x.toFixed(2),+p.z.toFixed(2)],
+          seated:s.actor.seated,hips,pose:+s.actor.poseBlend.toFixed(3),
+          arms:[v.upper.length,v.lower.length],legs:[s.actor.seatBones.upper.length,s.actor.seatBones.lower.length],
+          fallback:s.actor.usingFallback,modelBottom:+bounds.min.y.toFixed(3),
+          nativeSit:s.actor.clips.sit?.name||null,
+          currentHip:s.actor.hipBone?.getWorldPosition(new THREE.Vector3()).y,
+          hipXZ:(()=>{const h=s.actor.hipBone?.getWorldPosition(new THREE.Vector3());return h?[+h.x.toFixed(3),+h.z.toFixed(3)]:null})(),
+          modelY:+s.actor.model.position.y.toFixed(3),
+          modelTop:+bounds.max.y.toFixed(3),question:s.questionActive};
+      });
+      return {
+        room:activeSpace.id,phase:currentStep.kind,lessonPhase:lessonFlow?.phase,
+        elapsed:+lessonElapsed.toFixed(1),stepTime:+stepTime.toFixed(1),
+        roster:status,assetLoaded:furnitureRoot.children.length,
+        offTask:students.filter(s=>s.runtime.mode==='offtask').length,
+        questions:students.filter(s=>s.questionActive).length,
+        teacherAtBoard:isTeacherAtBoard(),canvas:{w:ui.canvas.width,h:ui.canvas.height},
+        gameErrors:ui.assetError.classList.contains('hidden')?0:1
+      };
+    }
+  };
+}
 boot();
