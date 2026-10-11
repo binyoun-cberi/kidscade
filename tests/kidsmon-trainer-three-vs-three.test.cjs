@@ -98,6 +98,7 @@ test('trap prevents opponent AI switching until its control effect expires',()=>
 });
 test('knockouts bring in the next live opponent, and win only on the third knockout',()=>{
  const save=party(),battle=start(save),trainer=battle.trainer;
+ trainer.maxSwitches=0; // Test forced KO replacements separately from optional tactical swaps.
  save.party[0].level=50;save.party[0].hp=D.combat.statsAtLevel(save.party[0].id,50,save.party[0]).hp;
  forceMoves(save.party[0],['tackle','quick','focus','leaf']);
  for(let i=0;i<3;i++){
