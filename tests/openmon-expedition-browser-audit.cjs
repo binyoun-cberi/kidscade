@@ -313,6 +313,13 @@ let chrome,ws,profile;
    trainerTurn.remainingMarkers===6&&trainerTurn.trainerAlive>=1,
    '3v3 actual battle turn failed '+config.name+JSON.stringify(trainerTurn));
   await screenshot(config.name+'-trainer-first-turn');
+  // The preceding 3v3 smoke test intentionally stops after one turn.
+  // Return to the field through the game's normal battle exit path before
+  // testing the world atlas; maps and travel must never open mid-combat.
+  await evalFn(()=>{
+   const b=window.OPENMON_EXPEDITION_DEBUG.getBattle();
+   if(b){b.done=true;document.getElementById('battleContinue').click()}
+  });
   const regionAudit=await evalFn(()=>{
    const E=window.OPENMON_EXPEDITION_ENGINE,debug=window.OPENMON_EXPEDITION_DEBUG,s=debug.getState(),$=id=>document.getElementById(id);
    s.pos={x:83,y:12};const entry=E.move(s,1,0,()=>.999);
