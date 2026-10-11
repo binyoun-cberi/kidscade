@@ -7,7 +7,8 @@
   const World2 = window.OneLifeWorld2;
   const Pixel = window.OneLifeScene;
   const World3 = window.OneLifeWorld3;
-  if (!World2 || !Pixel || !World3) throw new Error('One Life country systems missing');
+  const World4 = window.OneLifeWorld4;
+  if (!World2 || !Pixel || !World3 || !World4) throw new Error('One Life world assets missing');
   const SAVE_KEY = 'kidscade_one_life_save_v1';
   const RECORD_KEY = 'kidscade_one_life_history_v1';
   // Roughly 70-90 seconds of automatic years, excluding user decisions.
@@ -16,7 +17,7 @@
   const views = ['intro','birth','play','end'];
   let life = null, paused = false, stage = 'intro';
   let lastTick = performance.now(), elapsed = 0, roulette = null, screenTime = 0;
-  let completed = false, ruleWasRunning = false;
+  let completed = false, ruleWasRunning = false, replayBasis = null;
   let peerCache = null, lastPeerRenderedAge = -1, lastMapRenderedAge = -1;
   const sdk = window.KidscadeGame || null;
   const show = name => { stage = name; for (const id of views) $(id).classList.toggle('hidden',id!==name); window.scrollTo?.(0,0); };
@@ -32,13 +33,14 @@
     $('resumeBtn').classList.toggle('hidden', !resume || !resume.alive);
   }
   function save() {
-    if (stage === 'play' && life?.alive) safeSet(SAVE_KEY, {life:life.snapshot(),at:Date.now()});
+    if (stage === 'play' && life?.alive) safeSet(SAVE_KEY, {life:life.snapshot(),replayBasis,at:Date.now()});
   }
   function draw() {
     clearInterval(roulette);
     roulette = null;
     life = new Sim.Life();
-    World3.setup(life);
+    World4.ensure(life);
+    replayBasis=null;
     peerCache = null;lastPeerRenderedAge = -1;lastMapRenderedAge = -1;
     $('birthCertificate').classList.add('hidden');
     completed = false; paused = false; elapsed = 0;
@@ -102,6 +104,65 @@
       : '국가별 평균 수명은 게임 추정치 · 교육·일자리 조건도 게임용 모델';
     const sceneName=Pixel.paint($('lifeScene'),life);
     $('sceneLabel').textContent=life.year+'년 · '+life.country[0]+' '+p.city+' · '+sceneName+'을(를) 보내고 있습니다.';
+  }
+  function paintArc() {
+    if(!life)return;
+    const a=World4.ensure(life);
+    $('arcCount').textContent=a.decisionCount+'번의 선택';
+    $('arcStatus').textContent=a.lastEvent || '아직 미래는 정해지지 않았어요.';
+    const box=$('arcMilestones');box.replaceChildren();
+    for(const d of a.decisions.slice(-3)){
+      const pill=document.createElement('div');pill.className='arc-milestone';
+      const age=document.createElement('b');age.textContent=d.age+'세';
+      const label=document.createElement('span');label.textContent=d.label;
+      pill.append(age,label);box.append(pill);
+    }
+  }
+  function captureEnding(life){
+    return {seed:life.seed,country:life.country[0],family:life.familyLevel,
+      age:life.age,career:life.career,education:life.world?.educationLevel||'',
+      netWorth:life.money.netWorth,health:life.stats.health,
+      child:!!life.profile.child,partner:!!life.profile.partner,
+      choices:life.arc?.decisions?.map(d=>({age:d.age,label:d.label}))||[]};
+  }
+  function showComparison(){
+    const panel=$('endComparison'),rows=$('endComparisonRows');
+    const now=captureEnding(life);
+    panel.classList.toggle('hidden',!replayBasis || replayBasis.seed!==life.seed);
+    rows.replaceChildren();
+    if(!replayBasis || replayBasis.seed!==life.seed)return;
+    const items=[
+      ['출생 국가',replayBasis.country,now.country],
+      ['가정환경',replayBasis.family,now.family],
+      ['살아온 기간',replayBasis.age+'세',now.age+'세'],
+      ['삶의 방향',replayBasis.career,now.career],
+      ['교육 경험',replayBasis.education,now.education],
+      ['최종 순자산',formatCredits(replayBasis.netWorth),formatCredits(now.netWorth)],
+      ['가족·관계',replayBasis.child?'아이 돌봄':replayBasis.partner?'동반자':'다양한 관계',
+        now.child?'아이 돌봄':now.partner?'동반자':'다양한 관계']
+    ];
+    for(const [name,before,after] of items){
+      const line=document.createElement('div');line.className='counter-row';
+      const heading=document.createElement('strong');heading.textContent=name;
+      const left=document.createElement('span');left.textContent=String(before);
+      const icon=document.createElement('span');icon.textContent='→';icon.setAttribute('aria-hidden','true');
+      const right=document.createElement('b');right.textContent=String(after);
+      if(before!==after)line.classList.add('changed');
+      line.append(heading,left,icon,right);rows.append(line);
+    }
+    const previousChoices=new Map(replayBasis.choices.map(d=>[d.age,d.label]));
+    const nowChoices=new Map(now.choices.map(d=>[d.age,d.label]));
+    for(const age of World4.GATES){
+      const a=previousChoices.get(age),b=nowChoices.get(age);
+      if(!a&&!b)continue;
+      const line=document.createElement('div');line.className='counter-row';
+      if(a!==b)line.classList.add('changed');
+      const title=document.createElement('strong');title.textContent=age+'세 선택';
+      const before=document.createElement('span');before.textContent=a||'선택 이전에 삶을 마침';
+      const icon=document.createElement('span');icon.textContent='→';
+      const after=document.createElement('b');after.textContent=b||'선택 이전에 삶을 마침';
+      line.append(title,before,icon,after);rows.append(line);
+    }
   }
   function updatePause() {
     $('pauseBtn').textContent = paused ? '▶ 이어가기' : 'Ⅱ 일시정지';
@@ -221,6 +282,7 @@
   function render() {
     if (!life) return;
     paintLifeRecord();
+    paintArc();
     $('placeFlag').textContent=life.country[1];
     $('placeName').textContent=life.country[0];
     $('currentYear').textContent=life.year+'년';
@@ -271,9 +333,12 @@
     $('endNetWorth').textContent=formatCredits(life.money.netWorth);
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=life.career;
-    $('endStory').textContent=summary.story+' '+life.deathReason+' '+(life.world?.educationLevel||'')+' · '+(life.world?.occupation||life.career)+'을(를) 경험했다.';
+    $('endStory').textContent=summary.story+' '+life.deathReason+' '+(life.world?.educationLevel||'')+' · '+life.career+'의 경로를 걸었다. 중요한 선택 '+(life.arc?.decisionCount||0)+'번과 여러 만남·기회가 이 삶을 바꾸었다.';
+    showComparison();
     const list=$('endHighlights'); list.replaceChildren();
-    const highlights=[...life.log.filter(e=>['milestone','decision','context'].includes(e.kind))].slice(-12);
+    const highlights=[...life.log.filter(e=>['milestone','decision','chain'].includes(e.kind))]
+      .filter(e=>e.kind==='decision'||e.kind==='chain'||e.age<21)
+      .slice(-16);
     if(!highlights.length) highlights.push(life.log[0]);
     highlights.forEach(e=>{
       const item=document.createElement('li');
@@ -319,11 +384,27 @@
   document.querySelector('[data-close="rules"]').addEventListener('click',closeRules);
   $('drawBtn').addEventListener('click',draw);
   $('lifeStartBtn').addEventListener('click',()=>startLife());
-  $('againBtn').addEventListener('click',()=>{life=null;show('intro');refreshResume();draw();});
+  $('againBtn').addEventListener('click',()=>{replayBasis=null;life=null;show('intro');refreshResume();draw();});
+  $('sameBirthBtn').addEventListener('click',()=>{
+    if(!life||life.alive)return;
+    const snapshot=captureEnding(life);
+    replayBasis=snapshot;
+    life=new Sim.Life(snapshot.seed);
+    World4.ensure(life);
+    peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
+    $('birthCertificate').classList.add('hidden');
+    $('birthFlag').textContent=life.country[1];
+    $('birthCountry').textContent=life.country[0];
+    $('birthDetail').textContent=life.gender+' · '+life.familyLevel+' · 2026년 출생';
+    $('lifeStartBtn').classList.remove('hidden');
+    paintCertificate();
+    completed=false;paused=false;elapsed=0;
+    show('birth');
+  });
   $('resumeBtn').addEventListener('click',()=>{
     const restored=currentSave();
     if(!restored || !restored.alive){refreshResume();return;}
-    life=restored;completed=false;peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;startLife(true);
+    life=restored;replayBasis=safeGet(SAVE_KEY)?.replayBasis||null;completed=false;peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;startLife(true);
   });
   $('pauseBtn').addEventListener('click',togglePause);
   document.querySelectorAll('[data-focus]').forEach(button=>button.addEventListener('click',()=>{
