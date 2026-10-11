@@ -74,3 +74,16 @@ test('game loads the new predator and retains older encounter mechanics',()=>{
  assert.match(js,/X\.beginFinal\(corrector\)/);
  assert.match(js,/\['무언가','#f06478'/);
 });
+
+test('archive becomes physically reachable to the Corrector only after Record B',()=>{
+ const state=R.initialState();state.stage='explore';
+ const entrance={x:0,z:-47.8},inside={x:10.5,z:-47.8};
+ const before=(x,z)=>x<=3.03&&C3.canMove(state,x,z);
+ assert.equal(X.route(entrance,inside,before).length,0);
+ C3.ensure(state).records.archive=true;
+ const after=(x,z)=>C3.canMove(state,x,z);
+ const route=X.route(entrance,inside,after);
+ assert.ok(route.length>0,'the Corrector must be able to enter the cleared archive');
+ assert.ok(route.every(p=>after(p.x,p.z)));
+ assert.ok(X.lineClear(entrance,inside,after),'the central archive walkway is open');
+});
