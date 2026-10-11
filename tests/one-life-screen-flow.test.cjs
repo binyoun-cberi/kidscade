@@ -86,6 +86,13 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  get('lifeStartBtn').click();
  assert.ok(!get('play').classList.contains('hidden'));
  assert.ok(get('profileName').textContent.length>0);
+ const ageBeforePause=Number(get('currentAge').textContent);
+ get('pauseBtn').click();
+ now+=2000;beat();
+ assert.equal(Number(get('currentAge').textContent),ageBeforePause,'pause must freeze age progression');
+ assert.match(get('pauseBtn').textContent,/이어가기/);
+ get('pauseBtn').click();
+ assert.match(get('pauseBtn').textContent,/일시정지/);
  assert.equal(get('lifeScene').width,600);
  assert.equal(get('peers').children.length,4);
  storyButtons.find(b=>b.dataset.storyTab==='stats').click();
