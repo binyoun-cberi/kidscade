@@ -251,8 +251,10 @@ export function applyAccessoryFit({getNode,fit='male',topName='',headwearName=''
           // The v5 cap anchored its BOTTOM to the hair crown: it pushed the
           // entire hat into the air. Anchor the cap TOP instead, keeping its
           // crown intersecting the hair while the brim sits over the forehead.
+          const hatCrownAllowance=style.kind==='beret'?.040:
+            style.kind==='straw'?-.045:-.158;
           const target=style.slot==='hat'
-            ?referenceBox.max.y-.158
+            ?referenceBox.max.y+hatCrownAllowance
             :referenceBox.min.y;
           const current=style.slot==='hat'?accessoryBox.max.y:accessoryBox.min.y;
           const worldDelta=THREE.MathUtils.clamp(target-current,style.slot==='hat'?-.21:-.035,.10);
@@ -329,7 +331,7 @@ function buildGeometry(style,source,sourceHair,eyes){
     const bottom=bb.min.y, height=bb.max.y-bottom;
     const attr=geometry.getAttribute('position');
     const adjustments={
-      sneakers:[1.16,1.06,1.05],hightop:[1.12,1.22,1.09],
+      sneakers:[1.055,1.025,1.015],hightop:[1.12,1.22,1.09],
       loafers:[1.02,.87,1.08],boots:[1.22,1.35,1.12],
       sandals:[1.07,.70,1.08],slippers:[1.18,.57,1.12]
     };
@@ -364,8 +366,15 @@ function buildGeometry(style,source,sourceHair,eyes){
     }
     case 'bucket':return cyl(headR*.98,headR*1.14,.18,hc.x,scalpY-.050,hc.z);
     case 'beanie':return sphere(hc.x,scalpY+.014,hc.z,headR*1.08,.163,headR*1.03);
-    case 'beret':return sphere(hc.x-.030,scalpY+.080,hc.z,headR*1.30,.110,headR*1.02);
-    case 'straw':return cyl(headR*.88,headR*.98,.145,hc.x,scalpY+.016,hc.z);
+    case 'beret':{
+      // Upper hemisphere + deeper cloth band; unlike a squashed sphere the
+      // lower edge wraps the crown rather than hovering as a flat plate.
+      const dome=new THREE.SphereGeometry(1,24,12,0,Math.PI*2,0,Math.PI*.56);
+      dome.scale(headR*1.22,.160,headR*1.035);
+      dome.translate(hc.x-.022,scalpY-.059,hc.z);
+      return dome;
+    }
+    case 'straw':return cyl(headR*.92,headR*1.02,.205,hc.x,scalpY-.080,hc.z);
     case 'round':return ring(.071,.009,-.110,eyeY,faceZ);
     case 'square':return box(.150,.119,.012,-.110,eyeY,faceZ);
     case 'sunglasses':return facePatch(-.198,eyeY-.027,faceZ+.016,.372,.202,.032);
@@ -397,7 +406,11 @@ function createDetails(style,context){
       const x=sign*.145;
       if(kind!=='sandals'&&kind!=='slippers')
         add(box(.128,.028,.268,x,soleY,toe-.111),black,'sole_'+sign,'shoe');
-      if(kind==='sneakers'||kind==='hightop'){
+      // The old sneaker laces were rigid boxes weighted to different toe
+      // vertices; in SIDE/WALK they turned into detached white spikes.
+      // Reserve that decoration for the high-top; sneakers use their
+      // continuous source-skinned upper without loose floating strips.
+      if(kind==='hightop'){
         for(let i=0;i<3;i++)add(box(.091,.008,.009,x,b.min.y+.07+i*.018,toe-.050-i*.023),white,'lace_'+sign+'_'+i,'shoe');
       }else if(kind==='loafers')
         add(box(.14,.016,.013,x,b.min.y+.10,toe-.05),accent,'vamp_'+sign,'shoe');
@@ -425,11 +438,11 @@ function createDetails(style,context){
       add(ring(headR*.96,.030,0,scalpY-.089,hc.z,'y'),white,'cuff');
       add(sphere(0,scalpY+.174,hc.z,.052,.046,.052),style.color,'pom');
     }else if(kind==='beret'){
-      add(ring(headR*.93,.014,0,scalpY-.014,hc.z,'y'),black,'edge');
-      add(cyl(.018,.020,.048,-.03,scalpY+.171,hc.z),black,'stem');
+      add(ring(headR*1.025,.019,hc.x,scalpY-.073,hc.z,'y'),black,'edge');
+      add(cyl(.018,.020,.033,-.03,scalpY+.104,hc.z),black,'stem');
     }else if(kind==='straw'){
-      add(cyl(headR*1.55,headR*1.55,.022,0,scalpY-.052,hc.z),style.color,'brim');
-      add(ring(headR*.95,.019,0,scalpY+.038,hc.z,'y'),'#9b7250','ribbon');
+      add(cyl(headR*1.44,headR*1.44,.019,hc.x,scalpY-.173,hc.z),style.color,'brim');
+      add(ring(headR*.985,.021,hc.x,scalpY-.112,hc.z,'y'),'#9b7250','ribbon');
     }else if(kind==='headphones'){
       for(const sign of [-1,1])
         add(box(.057,.144,.108,sign*(headR*1.11),eyeY+.065,hc.z),'#2e344b','earCup_'+sign);
