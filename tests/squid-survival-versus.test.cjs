@@ -116,14 +116,14 @@ test('exactly six rounds award 1 point for a win, 0.5 each for a draw',()=>{
    s=V.launch(s,10000*index);
    const r=s.round;
    r.players.forEach((p,id)=>{p.done=true;p.doneAt=r.startedAt+(index===5?500:1000+id*500);
-      p.clear=index===5?true:id===(index%2);p.failed=!p.clear;});
+      p.clear=index>=4?true:id===(index%2);p.failed=!p.clear;});
    s=V.tick(s,r.startedAt+1200);
    assert.equal(s.phase,'summary');
    assert.equal(s.results.length,index+1);
    s=V.next(s,r.startedAt+1500);
  }
  assert.equal(s.phase,'tiebreak');
- assert.deepEqual(s.totals,[3.5,3.5]);
+ assert.deepEqual(s.totals,[3,3]);
  const start=s.tie.startsAt,answer=s.tie.question.answer;
  s=V.input(s,0,'answer',answer,start+100);
  s=V.input(s,1,'answer',answer,start+170);
@@ -135,7 +135,7 @@ test('exactly six rounds award 1 point for a win, 0.5 each for a draw',()=>{
  s=V.input(s,1,'answer',bad,start+310);
  assert.equal(s.phase,'finished');
  assert.equal(s.champion,0);
- assert.equal(s.totals[0],4.5);
+ assert.equal(s.totals[0],4);
  assert.equal(V.start(s).phase,'intro');
 });
 test('rounds never double-credit even when stale inputs arrive',()=>{
