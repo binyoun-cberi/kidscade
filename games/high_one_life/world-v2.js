@@ -100,6 +100,8 @@
     const factor=COUNTRY_FACTOR(life.country)*(life.world?.economyScale||1);
     const personalFactor=.58+between(life.seed,21,0,110)/100; // personal chances vary widely
     const schoolingBoost=life.world?.educationLevel==='고등 교육·훈련 수료'?1.30
+      : life.world?.educationLevel==='직업훈련 수료'?1.10
+      : life.world?.educationLevel==='직업훈련 중'?.95
       : life.world?.educationLevel==='중등 과정 이수'?1.08
       : life.world?.educationLevel==='기초 교육'?.96:.79;
     const householdCost=.58+between(life.seed,22,0,45)/100; // housing and living expenses
