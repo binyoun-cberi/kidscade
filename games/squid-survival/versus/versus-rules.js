@@ -111,6 +111,10 @@ function tick(state,now){
      syncPlayer(r,p,now);
      if(r.elapsed>=r.limit&&!p.done)done(r,p,now,false,'제한시간 종료');
    }
+   const firstDone=r.players.filter(p=>p.done).map(p=>p.doneAt);
+   if(firstDone.length&&r.players.some(p=>!p.done)&&now-Math.min(...firstDone)>=7500){
+     for(const p of r.players)if(!p.done)done(r,p,now,false,'상대 선수보다 늦었어요.');
+   }
    if(r.players.every(p=>p.done))return completeRound(state);
    return state;
  }
@@ -169,7 +173,7 @@ function input(state,id,action,value,now){
  if(![0,1].includes(id))return state;
  if(state.phase==='tiebreak')return action==='answer'?tieAnswer(state,id,value,now):state;
  if(state.phase!=='playing'||!state.round)return state;
- tick(state,now);
+ state=tick(state,now);
  if(state.phase!=='playing')return state;
  const r=state.round,p=r.players[id];if(p.done)return state;
  if(r.id==='dalgona'){
