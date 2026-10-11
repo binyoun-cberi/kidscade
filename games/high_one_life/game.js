@@ -366,9 +366,11 @@
       if(year===life.age)cell.classList.add('now');
       const entry=entries.get(year);
       if(entry)cell.classList.add(['decision','reflection'].includes(entry.kind)?'landmark':'important');
-      cell.title=year+'세'+(entry?' · '+entry.text:'');
+      const future=year>life.age;
+      cell.disabled=future;
+      cell.title=year+'세'+(future?' · 아직 살아보지 않은 시간':entry?' · '+entry.text:'');
       cell.setAttribute('aria-label',cell.title);
-      cell.addEventListener('click',()=>{
+      if(!future)cell.addEventListener('click',()=>{
         $('yearDetail').textContent=year+'세 · '+(entry?.text||'특별한 기록이 없는 해. 평범한 하루들도 이 인생을 이루었어요.');
       });
       board.append(cell);
