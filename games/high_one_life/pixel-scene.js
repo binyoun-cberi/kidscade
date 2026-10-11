@@ -18,21 +18,21 @@
     const line=(x,y,w,h,color)=>fill(x,y,w,h,color);
     const p=life.profile||{settlement:'도시',partner:false,child:false};
     const age=life.age,night=age%9===7,season=age%4;
-    const sky=night?'#203c58':season===3?'#e2d3cc':'#b5d9dc';
+    const sky=night?'#b5bfd8':season===3?'#e2d3cc':'#b5d9dc';
     const floor=season===3?'#d3cbb5':'#81b69b';
     const isRural=p.settlement==='농촌';
     const stage=age<7?'가정':age<19?'학교':age<25&&life.career==='학생'?'대학교':age<65?'직장과 일상':'노년의 일상';
     fill(0,0,W,H,sky);
     // Hand-placed pixel clouds; all drawing is aligned to the same 2px grid.
     for(const [x,y] of [[65,32],[360,24],[490,46]]){
-      fill(x+12,y,36,8,night?'#7c90a0':c.cloud);
-      fill(x,y+8,67,10,night?'#637988':c.cloud);
+      fill(x+12,y,36,8,night?'#e1e5ef':c.cloud);
+      fill(x,y+8,67,10,night?'#d3dced':c.cloud);
     }
-    fill(495,19,season===3?21:28,season===3?21:28,night?'#fff2d1':c.sun);
+    fill(495,19,season===3?21:28,season===3?21:28,night?'#fff6de':c.sun);
     for(let x=0;x<W;x+=30){
       const h=21+(x*7%22);
       fill(x,138-h,33,h,isRural?'#9cbaa8':'#91abb3');
-      fill(x+4,135-h,16,5,night?'#c8b8a1':'#c4d1d1');
+      fill(x+4,135-h,16,5,night?'#f4e8c9':'#c4d1d1');
     }
     const tree=(x,y)=>{
       fill(x-2,y-11,8,42,'#6e6a53');
@@ -43,7 +43,7 @@
     const windowGrid=(x,y,cols,rows,shade)=>{
       for(let i=0;i<cols;i++)for(let j=0;j<rows;j++){
         fill(x+i*17,y+j*19,11,12,shade);
-        fill(x+i*17+2,y+j*19+3,7,4,night?'#f5d497':'#bed5d4');
+        fill(x+i*17+2,y+j*19+3,7,4,night?'#f2ce9d':'#bed5d4');
       }
     };
     const building=(x,y,w,h,kind)=>{
