@@ -86,7 +86,8 @@ const zones={
 // Research routes unlock new wild populations as the player wins battles.
 // Provisional Set 2 second drawings cannot auto-evolve, so those forms appear wild.
 // Every other non-starter family is reachable from its earliest form.
-const launchPool=new Set(Object.values(zones).flatMap(z=>z.pool));
+// Original three-zone research availability must remain 102/102 accessible, even with new habitats.
+const launchPool=new Set(["meadow","forest","cave","clearing"].flatMap(key=>zones[key].pool));
 const researchEncounters={meadow:[[],[],[]],forest:[[],[],[]],cave:[[],[],[]],
  powerPlant:[[],[],[]],tidal:[[],[],[]],snowfield:[[],[],[]]};
 const wildCandidates=db.sprites.filter(s=>s.playable&&s.id!==shibu&&s.rarity!=="starter"&&
@@ -104,7 +105,7 @@ for(const s of wildCandidates){
   ["water","air"].includes(s.type)?"tidal":
   ["ice","mind"].includes(s.type)?"snowfield":
   s.type==="earth"?"powerPlant":"snowfield";
- if(!launchPool.has(s.id))researchEncounters[advanced][wave].push(s.id);
+ if(!zones[advanced].pool.includes(s.id))researchEncounters[advanced][wave].push(s.id);
 }
 const unlockWins=[3,7,12];
 const possibleWild=new Set([...launchPool,...wildCandidates.map(s=>s.id)]);
