@@ -105,3 +105,19 @@ test('1,236 lives cover every nation, preserve midlife saves and family mileston
  assert.ok(homes.size===4);assert.ok(regions.size>=12);
  assert.ok(jobs.size>=70);assert.ok(stories>2000);
 });
+
+test('mobile story and pause controls precede the long sidebar',()=>{
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ const css=fs.readFileSync(path.join(root,'world-v8.css'),'utf8');
+ const story=html.indexOf('<article class="chronicle">');
+ const aside=html.indexOf('<aside class="info">');
+ const pause=html.indexOf('id="pauseBtn"');
+ assert.ok(story>=0 && pause>story && aside>pause,'pause must be inside the visible main story');
+ assert.equal((html.match(/id="pauseBtn"/g)||[]).length,1);
+ assert.match(css,/\.play-layout>\.chronicle\s*\{order:0\}/);
+ assert.match(css,/\.play-layout>\.info\s*\{order:1\}/);
+ assert.match(css,/\.chronicle>\.controls \.pause\s*\{[^}]*min-height:44px/);
+ assert.match(html,/같은 해에 태어난 네 사람/);
+ assert.match(html,/각자의 생일과 출생 조건은 다르며/);
+ assert.doesNotMatch(html,/같은 순간에 태어난 네 사람/);
+});
