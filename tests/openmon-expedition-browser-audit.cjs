@@ -268,6 +268,7 @@ let chrome,ws,profile;
     state=debug.getState(),$=id=>document.getElementById(id);
    E.healAll(state);
    if(state.party.length<3)state.party.push(E.makeCreature('set1_r04_c02',5,()=>.4));
+   if(state.party.length<4)state.party.push(E.makeCreature('set1_r00_c01',5,()=>.4));
    state.pos={x:13,y:10};
    $('interactBtn').click();
    const entry=document.querySelector('[data-hud-action="trainers"]');
@@ -277,16 +278,22 @@ let chrome,ws,profile;
    const choices=document.querySelectorAll('[data-trainer]').length;
    const start=document.querySelector('[data-trainer="meadow"]');
    const enabled=start&&!start.disabled;
-   if(enabled)start.click();
+   if(enabled){
+    start.click();
+    document.querySelector('[data-trainer-slot="2"]')?.click();
+    document.querySelector('[data-trainer-slot="3"]')?.click();
+    document.querySelector('[data-trainer-start="meadow"]')?.click();
+   }
    const b=debug.getBattle();
    const buttons=Array.from(document.querySelectorAll('[data-action]')).map(x=>x.dataset.action);
    const markers=$('trainerRoster').querySelectorAll('.trainer-pip').length;
-   return {lobbyTitle,choices,enabled,ready:!!b?.trainer,roster:markers,
+   return {lobbyTitle,choices,enabled,ready:!!b?.trainer,selected:b?.trainer?.playerSlots,roster:markers,
     trainerName:b?.trainer?.name,buttons,overlay:!$('battleOverlay').classList.contains('hidden'),
     visible:!$('trainerRoster').hidden,viewportWidth:document.documentElement.scrollWidth};
   });
   assert.ok(trainerPreview.enabled&&trainerPreview.ready&&trainerPreview.overlay&&
    trainerPreview.choices===3&&trainerPreview.roster===6&&trainerPreview.visible&&
+   JSON.stringify(trainerPreview.selected)==='[0,1,3]'&&
    trainerPreview.buttons.includes('switch')&&!trainerPreview.buttons.includes('ball')&&
    trainerPreview.viewportWidth<=config.w+3,
    '3v3 research challenge menu or battle layout failed '+config.name+JSON.stringify(trainerPreview));
