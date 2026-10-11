@@ -173,7 +173,7 @@ function run(label, command, args) {
 run(
   'Kidscade regression tests',
   process.execPath,
-  ['--test', '--test-concurrency=4', ...TEST_FILES]
+  ['--test', '--test-timeout=120000', '--test-concurrency=4', ...TEST_FILES]
 );
 
 run(
