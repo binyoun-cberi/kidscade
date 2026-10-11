@@ -121,6 +121,7 @@
       'korean_vocab','swipe_spelling','language_arcade','hanja_test','high_body_muscle_lab','math_pi_memory','science_periodic_memory','kor_hand_twist_typing'
     ]),
     run:Object.freeze([
+      'squid_survival_versus',
       'squid_survival',
       'low_perfect_pitch','low_wordris','low_math_dog_runner','music_neon_rift','high_kite_wind_rider',
       'sim_mosquito','low_word_blaster','language_word_siege','hanja_survivors_8','high_rhythm_dash','snake_math','threes',
