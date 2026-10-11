@@ -505,11 +505,11 @@
     const choiceLog=life.log.filter(e=>e.kind==='decision');
     const count=rememberLife();
     $('endYears').textContent=life.birthYear+' — '+life.year;
-    $('endCountry').textContent=(life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1])+' '+History.place(life)+' · '+life.profile.name+' ('+life.profile.city+')';
+    $('endCountry').textContent=(life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1])+' '+History.place({...life,year:life.birthYear})+' · '+life.profile.name+' ('+life.profile.city+')';
     $('endNetWorth').textContent=formatCredits(life.money.netWorth);
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=life.career;
-    $('endStory').textContent=life.birthYear+'년 '+History.period(life)+'에서 시작된 삶. '+World8.synopsis(life)+'. '+summary.story+' '+life.deathReason+' '+(life.world?.educationLevel||'')+' · '+life.career+'의 경로를 걸었다. '+(life.world6?.history?.length||0)+'개 직업 이력과 '+(life.world6?.eventCount||0)+'개 직업·생활 사건, '+(life.world5?.eventCount||0)+'개 지역 사건, 중요한 선택 '+choiceLog.length+'번이 삶을 바꾸었다.';
+    $('endStory').textContent=life.birthYear+'년 '+History.period({...life,year:life.birthYear})+'에서 시작된 삶. '+World8.synopsis(life)+'. '+summary.story+' '+life.deathReason+' '+(life.world?.educationLevel||'')+' · '+life.career+'의 경로를 걸었다. '+(life.world6?.history?.length||0)+'개 직업 이력과 '+(life.world6?.eventCount||0)+'개 직업·생활 사건, '+(life.world5?.eventCount||0)+'개 지역 사건, 중요한 선택 '+choiceLog.length+'번이 삶을 바꾸었다.';
     const endChoices=$('endChoices');endChoices.replaceChildren();
     choiceLog.forEach(e=>{
       const item=document.createElement('li');item.className='end-choice-item';
