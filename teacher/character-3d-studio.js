@@ -1473,8 +1473,8 @@ function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
   if(name==='chibi_female_hair_twintail'){
     for(const sign of [-1,1]){
       ball('tie_'+sign,at(sign*.415,.57,-.06),.052,.057,.055);
-      ball('tail_'+sign,at(sign*.535,.35,-.105),.092,.185,.097);
-      ball('tailTip_'+sign,at(sign*.55,.205,-.115),.068,.099,.076);
+      ball('tail_'+sign,at(sign*.49,.34,-.30),.070,.170,.073);
+      ball('tailTip_'+sign,at(sign*.50,.21,-.31),.050,.085,.058);
     }
   }else if(name==='chibi_female_hair_curl'){
     for(const sign of [-1,1]){
@@ -1486,7 +1486,7 @@ function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
     }
   }else if(name==='chibi_female_hair_hime'){
     for(const sign of [-1,1]){
-      ball('himeSide_'+sign,at(sign*.385,.35,.285),.073,.24,.075);
+      ball('himeSide_'+sign,at(sign*.32,.385,.13),.047,.155,.058);
     }
   }else if(name==='kidscade_male_hair_spiky'){
     for(const [j,u] of [-.34,-.16,.04,.21,.35].entries()){
@@ -1499,6 +1499,33 @@ function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
       hair.add(piece);
     }
   }
+}
+// The original knight hair is only a narrow temple wisp designed to sit
+// below a closed helmet. It must not present as a nearly bald selectable hair.
+// Give its public slot a compact, full skinned cut from the original bob while
+// retaining the 78-bone binding and keeping the source GLB untouched.
+function repairKnightHairForOpenHead(){
+  const knight=getNode('hairtailknight'),bob=getNode('hairone');
+  if(!knight?.isSkinnedMesh||!bob?.isSkinnedMesh)return;
+  if(knight.userData.kidscadeOpenHeadRepair)return;
+  const geo=bob.geometry.clone();
+  geo.computeBoundingBox();
+  const bb=geo.boundingBox,center=bb.getCenter(new THREE.Vector3());
+  const h=Math.max(.001,bb.max.y-bb.min.y);
+  const pos=geo.getAttribute('position');
+  for(let i=0;i<pos.count;i++){
+    const y=pos.getY(i);
+    const lower=THREE.MathUtils.clamp((bb.max.y-y)/h,0,1);
+    pos.setXYZ(i,
+      center.x+(pos.getX(i)-center.x)*(1-.095*lower),
+      y+.075*h*lower,
+      center.z+(pos.getZ(i)-center.z)*(.955-.035*lower));
+  }
+  pos.needsUpdate=true;
+  geo.computeVertexNormals();geo.computeBoundingBox();geo.computeBoundingSphere();
+  knight.geometry=geo;
+  knight.material=Array.isArray(bob.material)?bob.material.slice():bob.material;
+  knight.userData={...knight.userData,kidscadeOpenHeadRepair:'v6.6-full-helmet-safe-hair'};
 }
 function createKidscadeHairCollection(){
   const maleBase=getNode('kidscade_male_hair_short');
@@ -2229,6 +2256,7 @@ async function loadChibi(){
     createKidscadeBlueHoodie();
     createKidscadeMaleSet();
     createKidscadeMaleHairShort();
+    repairKnightHairForOpenHead();
     createKidscadeHairCollection();
     createOutfitPack({getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial,makeRigidSkinnedPiece,resolveFirstBoneName});
     createAccessoryPack({getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial});
