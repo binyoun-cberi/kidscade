@@ -65,6 +65,22 @@ border-radius:9px;padding:9px 13px;text-align:center;transition:opacity .2s}
 #gazeTrack{height:5px;background:#3c303f;border-radius:4px;margin-top:7px;overflow:hidden}
 #gazeFill{display:block;width:0;height:100%;background:#eb748c}
 #recordStatus{color:#c6b18d;font-size:11px;letter-spacing:.06em;padding-top:6px;font-weight:800}
+#literacyStatus{display:none;margin-top:6px;font-size:11px;color:#dcc9b7;font-weight:750}
+#literacyStatus.show{display:block}
+#pollutionTrack{width:min(240px,41vw);height:5px;border-radius:4px;margin-top:4px;background:#33272d;overflow:hidden}
+#pollutionFill{display:block;background:#c94c60;height:100%;width:0;transition:width .2s}
+#literacyStatus.danger #pollutionFill{background:#f24a62}
+#literacyStatus.danger{color:#f3a5b1}
+#correctionPanel .panel{width:min(480px,93vw);padding:clamp(16px,3vw,27px);background:#0b0a0efa;border:1px solid #70515d}
+#correctionPanel h2{font-size:clamp(22px,4vw,32px);color:#ef8794;text-align:center}
+#correctionPanel .record-context{text-align:center;color:#c7c2c8;line-height:1.55}
+#correctionChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0}
+#correctionChoices button{background:#1c1820;border:1px solid #77636f;color:#f0e8ee;min-height:53px;border-radius:9px;padding:9px 6px;font-size:clamp(13px,2.4vw,17px);font-weight:850;overflow-wrap:anywhere}
+#correctionChoices button:focus-visible{outline:2px solid #efd29e}
+#correctionFeedback{min-height:24px;color:#dbabb5;font-size:13px;line-height:1.5}
+#correctionClose{width:100%;margin-top:8px;border:1px solid #5b505a;background:#19151c;border-radius:8px;padding:11px;font-weight:750}
+@media(max-height:560px){#correctionPanel .panel{max-height:94vh;overflow:auto}#correctionChoices button{min-height:42px;padding:7px}}
+
 #correctorWarning{position:fixed;z-index:3;left:50%;bottom:clamp(148px,25vh,202px);transform:translateX(-50%);pointer-events:none;opacity:0;visibility:hidden;transition:opacity .4s;max-width:min(420px,83vw);text-align:center}
 #correctorWarning.show{opacity:.85;visibility:visible}
 #correctorText{display:block;color:#bfb0b9;font-size:clamp(11px,1.4vw,13px);font-weight:850;letter-spacing:.035em;text-shadow:0 1px 14px #000,0 0 15px #000}
@@ -111,7 +127,7 @@ body.hidden-in-locker #lockerMask{display:block}
 <div id="vignette"></div><div id="danger"></div><div id="static"></div>
 <div id="correctorWarning" role="status" aria-live="off"><span id="correctorText"></span></div>
 <header id="top">
- <div><div id="brand">KIDSCADE / TYPE HORROR<b>오 타</b></div><div id="mission"><small>현재 기록</small><div id="objective">관리실 컴퓨터의 기록을 확인하세요</div><div id="recordStatus">기록 0/2</div><div id="stage">제0기록보관소 · 02:17</div></div></div>
+ <div><div id="brand">KIDSCADE / TYPE HORROR<b>오 타</b></div><div id="mission"><small>현재 기록</small><div id="objective">관리실 컴퓨터의 기록을 확인하세요</div><div id="recordStatus">기록 0/2</div><div id="literacyStatus" aria-live="off">핵심 교정 0/5 · 오염 0%<div id="pollutionTrack"><i id="pollutionFill"></i></div></div><div id="stage">제0기록보관소 · 02:17</div></div></div>
  <div id="topControls"><button id="mute" type="button" aria-label="음소거 전환">소리 켜짐</button>
  <button id="help" type="button" aria-label="현재 구간 힌트 보기" hidden>힌트 <span aria-hidden="true">H</span></button></div>
 </header>
@@ -132,7 +148,7 @@ body.hidden-in-locker #lockerMask{display:block}
   <small>제0기록보관소 / 02:17</small><h1 id="introTitle">오 타</h1>
   <p>이곳의 모든 것은 이름으로 존재합니다.<br>잘못된 이름을 고쳐 자신의 이름을 지키세요.</p>
   <div class="note">사람이 아닌 것을 사람이라고 부르지 마십시오.<br>이름이 바뀌면, 존재도 바뀝니다.</div>
-  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사 · H 힌트<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면으로 시점 조절 · 조사/달리기/힌트 버튼<br>거대한 교정자는 소리와 시선을 따라옵니다. 단어가 지직거리면 걷거나 은신처에 숨으세요.<br>위험한 상황에서는 그때 필요한 행동을 알려줍니다. 막히면 힌트 버튼을 사용하세요.</div>
+  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사 · H 힌트<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면으로 시점 조절 · 조사/달리기/힌트 버튼<br>제2구역에서는 잘못된 단어를 조사해 맞춤법·받침을 고치세요. 오타를 방치하면 오염도가 올라가 교정자가 나타납니다.<br>교정자 등장 시 시야를 끊거나 숨으세요.<br>위험한 상황에서는 그때 필요한 행동을 알려줍니다. 막히면 힌트 버튼을 사용하세요.</div>
   <button class="primary" id="start" type="button">기록 시작</button><button class="primary" id="resume" type="button" hidden>마지막 기록부터</button>
  </div>
 </section>
@@ -143,6 +159,18 @@ body.hidden-in-locker #lockerMask{display:block}
   <p id="fixQuestion">앞의 통로는 실제로 무엇이어야 할까요?</p>
   <div id="choices"><button class="choice" data-word="벽" type="button">벽</button><button class="choice" data-word="문" type="button">문</button><button class="choice" data-word="창문" type="button">창문</button></div>
   <p id="fixFeedback" aria-live="polite">주변의 기록을 기억하세요.</p>
+ </div>
+</section>
+<section class="overlay closed" id="correctionPanel" role="dialog" aria-modal="true" aria-labelledby="correctionTitle">
+ <div class="panel"><small id="correctionType">기록 오류 · 받침</small>
+  <h2 id="correctionTitle">잘못된 기록</h2>
+  <p class="record-context" id="correctionContext">문장을 읽고 올바른 글자를 고르세요.</p>
+  <div id="correctionChoices" role="group" aria-label="올바른 기록 선택">
+    <button type="button"></button><button type="button"></button>
+    <button type="button"></button><button type="button"></button>
+  </div>
+  <p id="correctionFeedback" aria-live="polite">틀려도 다시 시도할 수 있습니다.</p>
+  <button id="correctionClose" type="button">주변을 다시 살펴보기</button>
  </div>
 </section>
 <section class="overlay closed" id="ending" role="dialog" aria-modal="true" aria-labelledby="endingTitle">
@@ -157,6 +185,7 @@ body.hidden-in-locker #lockerMask{display:block}
 <script src="chapter3.js"></script>
 <script src="guidance.js"></script>
 <script src="corrector.js"></script>
+<script src="literacy.js"></script>
 <script type="module" src="game.js"></script>
 </body>
 </html>
