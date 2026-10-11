@@ -66,7 +66,7 @@
   }
   const Official=typeof module!=='undefined'&&module.exports
     ? require('./official-data.js') : (typeof window!=='undefined'?window.OneLifeOfficialStats:null);
-  const officialValue=(life,key)=>Official?.countries?.[life.country[0]]?.[key]?.value;
+  const officialValue=(life,key)=>life.birthYear===2026?Official?.countries?.[life.country[0]]?.[key]?.value:null;
   function setup(life){
     World2.enrich(life);
     if(life.world){Object.assign(life.world,structuralContext(life));return life.world;}
