@@ -756,7 +756,7 @@ function renderPartChecks(){
     (!accountStudio||Object.values(CHIBI_ACCOUNT_CATALOG[activeBodyFit])
       .some(ids=>ids.includes(name)))
   );
-  const showTiles=activeWardrobeCategory==='shoes'||activeWardrobeCategory==='accessory';
+  const showTiles=accountStudio||activeWardrobeCategory==='shoes'||activeWardrobeCategory==='accessory';
   const descriptions={hat:'모자·헤드폰',face:'안경·마스크',bag:'가방',neck:'목도리',wrist:'시계'};
   let currentSlot='';
   host.classList.toggle('with-thumbnails',showTiles);
@@ -2940,9 +2940,45 @@ function installLocalVisualAudit(){
   };
 }
 
+function prepareAccountStudioLayout(){
+  if(!accountStudio||accountPreview)return;
+  const head=document.querySelector('.top');
+  const title=head?.querySelector('h1');
+  if(title)title.textContent='내 3D 캐릭터 꾸미기';
+  const subtitle=head?.querySelector('.muted');
+  if(subtitle)subtitle.textContent='원하는 헤어와 옷을 고르고, 나만의 3D 캐릭터를 만들어 보세요.';
+  const toolbar=$('kc3dAccountActions');
+  if(toolbar){
+    const save=$('saveAccountChibi'),status=$('status');
+    if(save)toolbar.append(save);
+    if(status)toolbar.append(status);
+  }
+  const card=document.querySelector('.left-rail .body-fit-switch')?.closest('.card');
+  const heading=card?.querySelector('h2');
+  if(heading)heading.textContent='캐릭터 형태';
+  const stage=document.querySelector('.canvas-card');
+  if(stage&&!stage.querySelector('.kc3d-preview-title')){
+    const line=document.createElement('div');
+    line.className='kc3d-preview-title';
+    line.innerHTML='<strong>내 캐릭터</strong><small>드래그해서 돌려보기</small>';
+    stage.prepend(line);
+  }
+  document.querySelectorAll('[data-quick-clip]').forEach(button=>{
+    const labels={IDLE:'서기',WALK:'걷기',RUN:'달리기',JUMP:'점프'};
+    button.textContent=labels[button.dataset.quickClip]||button.textContent;
+  });
+  document.querySelector('[data-kc3d-switch-2d]')?.addEventListener('click',()=>{
+    if(window.parent!==window)window.parent.postMessage({
+      type:'kidscade:avatar-switch-mode',mode:'2d'
+    },location.origin);
+    else location.href='/avatar-studio.html';
+  });
+}
+
 async function boot(){
   const ok=await authorize();
   if(!ok)return;
+  prepareAccountStudioLayout();
   if(accountStudio){
     window.addEventListener('message',event=>{
       if(event.origin!==location.origin||event.source!==window.parent)return;
