@@ -372,7 +372,7 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await screenshot('17-final-record-puzzle.png','desktop');
   await evalPage("document.querySelector('[data-word=기억]').click()");
   await ensureStage('final','central room opened');
-  await sleep(130);
+  await sleep(420);
   assert.ok((await snap()).visuals.calligrams.find(o=>o.id==='final-door').visible,
     'final repaired name creates the second calligram gate');
   await moveUntil('z',-64.1,'final',15);
