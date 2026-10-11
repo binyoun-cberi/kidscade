@@ -109,6 +109,7 @@
       life.logEvent('성인이 되며 가족으로부터 시작 자금 '+Math.abs(help).toLocaleString('en-US')+'점을 지원받았다.','money');
     }
     const skill=clamp(.62+life.stats.knowledge/130,.6,1.50);
+    const arc=life.arc;
     const employed=age>=20 && !['학생','진로 탐색 중','아직 정해지지 않음'].includes(life.career);
     if(age===75 && m.retired!==true){
       m.pension=round(Math.max(m.pension,m.income*.28));
@@ -120,15 +121,27 @@
       m.employment='은퇴';
     }else if(employed){
       const jobBoost=/기술|전문/.test(life.career)?1.15:/자영업|도전/.test(life.career)?1.02:1;
-      yearly=round(BASE*factor*skill*schoolingBoost*jobBoost*personalFactor*m.careerIncomeFactor
+      const experienceBoost=arc?Math.max(.65,Math.min(1.95,1+
+        arc.skill*.052+arc.learning*.021+arc.network*.014+arc.ambition*.028+
+        arc.security*.018-arc.careerRisk*.014)):1;
+      yearly=round(BASE*factor*skill*schoolingBoost*jobBoost*personalFactor*m.careerIncomeFactor*experienceBoost
         *(.77+Math.min(25,age-19)*.012));
       const chance=life.rand();
-      if(chance<(.04+(1-(life.country[3]||.55))*.07) && age<62){
+      const jobLossChance=(.04+(1-(life.country[3]||.55))*.07)*(arc?
+        Math.max(.40,Math.min(2.0,1-arc.security*.065+arc.careerRisk*.065)):1);
+      if(arc?.unemployedUntil>=age){
+        yearly=0;m.employment='구직 중';
+      }else if(chance<jobLossChance && age<62){
         yearly=0;m.employment='구직 중';
         life.logEvent('예상치 못한 실직으로 잠시 일자리를 찾아야 했다.','money');
       }else if(chance<.15){
         yearly=round(yearly*.70);m.employment='근로 시간 감소';
       }else m.employment=life.career;
+      if(arc?.business) {
+        const trend=life.rand(); // one economic cycle per active business year
+        yearly=round(yearly*(trend<.18?.28:trend>.86?1.85:1.05));
+        m.employment='자영업·사업 운영';
+      }
       if(m.retired==='partial'||m.retired==='new') yearly=round(yearly*.46+m.pension*.4);
     }else if(age>=21){
       m.employment=life.career;
@@ -145,10 +158,15 @@
     const studying=life.career==='학생'&&age<=24;
     const costRate=age<=20?.12:studying?householdCost*.44:m.retired===true?.56:householdCost;
     const fixedCost=round(BASE*factor*costRate*housing);
-    const dependent=p.child&&age>=37&&age<=56?round(BASE*factor*.17):0;
+    const dependent=p.child&&age>=37&&age<=56?
+      round(BASE*factor*.17*(arc?.tags?.includes('care-support')?.68:1)):0;
     const tuition=studying?round(BASE*factor*.23):0;
-    const healthcare=age>=25 && life.stats.health<35?round(BASE*factor*.12):0;
-    const expense=fixedCost+dependent+tuition+healthcare;
+    const healthcare=age>=25&&life.stats.health<35?
+      round(BASE*factor*.12*(arc?.wellness>=4?.77:1)):0;
+    const familyCost=p.partner?round(BASE*factor*.10):0;
+    const extraCost=arc?.business?round(BASE*factor*.075):0;
+    const support=arc&&arc.network>=5?round(BASE*factor*.035):0;
+    const expense=Math.max(0,fixedCost+dependent+tuition+healthcare+familyCost+extraCost-support);
     m.income=yearly;
     m.expense=expense;
     m.educationCost=tuition;
