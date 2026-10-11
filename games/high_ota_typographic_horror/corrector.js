@@ -10,6 +10,10 @@
     {x:0,z:-42.2},{x:-5.2,z:-46.5},{x:-8.7,z:-43.8},
     {x:-6.2,z:-52.0},{x:0,z:-54.6},{x:-1.5,z:-45.2}
   ]);
+  const CLEARED_ARCHIVE_PATROL=Object.freeze([
+    {x:0,z:-47.8},{x:6.5,z:-47.8},{x:12.0,z:-49.8},
+    {x:6.5,z:-47.8},{x:0,z:-52.0},{x:-6.2,z:-52.0}
+  ]);
   const DIST=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
   const cell=.5,gridX=-15,gridZ=-65.5,NX=62,NZ=56; // include the archive after Record B is collected
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -145,7 +149,8 @@
       if(s.search<=0){s.phase='patrol';s.target=null;s.exposed=false;}
     }
     if(s.phase==='patrol'&&!s.target){
-      s.target=copy(PATROL[s.patrolIndex%PATROL.length]);s.patrolIndex++;
+      const stops=env.archiveOpen?CLEARED_ARCHIVE_PATROL:PATROL;
+      s.target=copy(stops[s.patrolIndex%stops.length]);s.patrolIndex++;
     }
     const target=s.phase==='chase'?copy(p):s.target;
     if(target){
@@ -172,5 +177,5 @@
     const caught=!safe&&!s.hidden&&s.grace<=0&&s.phase==='chase'&&DIST(s,p)<.92;
     return {caught,phase:s.phase,distance:DIST(s,p),heard,sight};
   }
-  return Object.freeze({SHELTER,PATROL,create,reset,route,lineClear,enter,leave,beginFinal,step});
+  return Object.freeze({SHELTER,PATROL,CLEARED_ARCHIVE_PATROL,create,reset,route,lineClear,enter,leave,beginFinal,step});
 });
