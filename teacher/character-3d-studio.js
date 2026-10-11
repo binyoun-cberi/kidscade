@@ -1438,7 +1438,7 @@ function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
   // it on spheres/cones punched circular holes through ponytails and spikes.
   // Hair volumes need an opaque solid material independent of those UVs.
   const material=new THREE.MeshStandardMaterial({
-    color:'#9f604c',roughness:.83,metalness:0,side:THREE.DoubleSide
+    color:'#b57b65',roughness:.83,metalness:0,side:THREE.DoubleSide
   });
   // Some GLB exports rename the head bone. Fall back to the original
   // crown vertex's dominant skin influence instead of failing to load hair.
@@ -1457,8 +1457,20 @@ function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
   const cx=(bounds.min.x+bounds.max.x)*.5;
   const cz=(bounds.min.z+bounds.max.z)*.5;
   const at=(u,v,w)=>[cx+u*size.x,bounds.min.y+v*size.y,cz+w*size.z];
-  const ball=(id,[x,y,z],sx,sy,sz)=>{
+  const ball=(id,[x,y,z],sx,sy,sz,tailTaper=false)=>{
     const g=new THREE.SphereGeometry(1,14,10);
+    if(tailTaper){
+      const p=g.getAttribute('position');
+      for(let i=0;i<p.count;i++){
+        // Lower hair tips should narrow like a real lock, not end as a
+        // detached oval patch at the side of the original bob.
+        const t=THREE.MathUtils.clamp((p.getY(i)+1)*.5,0,1);
+        const radius=.30+.70*t;
+        p.setX(i,p.getX(i)*radius);
+        p.setZ(i,p.getZ(i)*radius);
+      }
+      p.needsUpdate=true;
+    }
     g.scale(sx*size.x,sy*size.y,sz*size.z);
     g.translate(x,y,z);
     const piece=makeRigidSkinnedPiece(template,g,head.name,material,name+'_'+id);
@@ -1473,8 +1485,8 @@ function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
   if(name==='chibi_female_hair_twintail'){
     for(const sign of [-1,1]){
       ball('tie_'+sign,at(sign*.45,.47,-.17),.035,.042,.044);
-      ball('tail_'+sign,at(sign*.51,.31,-.23),.050,.140,.062);
-      ball('tailTip_'+sign,at(sign*.52,.21,-.26),.039,.075,.046);
+      ball('tail_'+sign,at(sign*.49,.30,-.21),.049,.140,.057,true);
+      ball('tailTip_'+sign,at(sign*.50,.21,-.23),.032,.076,.040,true);
     }
   }else if(name==='chibi_female_hair_curl'){
     for(const sign of [-1,1]){
