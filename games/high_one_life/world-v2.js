@@ -124,7 +124,7 @@
       const experienceBoost=arc?Math.max(.65,Math.min(1.95,1+
         arc.skill*.052+arc.learning*.021+arc.network*.014+arc.ambition*.028+
         arc.security*.018-arc.careerRisk*.014)):1;
-      yearly=round(BASE*factor*skill*schoolingBoost*jobBoost*personalFactor*m.careerIncomeFactor*experienceBoost
+      yearly=round(BASE*factor*skill*schoolingBoost*jobBoost*personalFactor*m.careerIncomeFactor*experienceBoost*(life.world6?.incomeFactor||1)
         *(.77+Math.min(25,age-19)*.012));
       const chance=life.rand();
       const jobLossChance=(.04+(1-(life.country[3]||.55))*.07)*(arc?
