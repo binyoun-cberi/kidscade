@@ -9,7 +9,7 @@
     endLabel:$('endLabel'),endIcon:$('endIcon'),endTitle:$('endTitle'),endDetail:$('endDetail'),
     endClears:$('endClears'),endBest:$('endBest'),endWins:$('endWins'),
     endRounds:R.ROUNDS.map((_,i)=>$('endRound'+i)),endButton:$('endButton'),quit:$('quitButton'),
-    demoIcon:$('demoExtraIcon'),demoDesc:$('demoExtraDesc')
+    demoIcon:$('demoExtraIcon'),demoDesc:$('demoExtraDesc'),watermark:$('roundWatermark')
   };
   let state=R.initial(),ticker=null,deadline=0,runStartedAt=0,loadId=0;
   const record=(()=>{
@@ -50,6 +50,7 @@
       el.preRule.textContent=round.rule;
       el.preWarning.textContent=round.warning;
       el.demo.className='demo '+round.id;
+      el.watermark.textContent=String(state.roundIndex+1).padStart(2,'0');
       el.demoIcon.textContent=round.icon;
       el.demoDesc.textContent=round.skill+' · '+round.duration;
     }else if(state.phase==='running')show('');
