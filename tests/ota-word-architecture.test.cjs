@@ -9,7 +9,7 @@ const root=path.join(__dirname,'../games/high_ota_typographic_horror');
 
 test('real scene areas receive distinct floor, wall and ceiling words',()=>{
   const kinds=S.surfaces.reduce((x,s)=>(x[s.kind]=(x[s.kind]||0)+1,x),{});
-  assert.deepEqual(kinds,{floor:4,ceiling:4,wall:16});
+  assert.deepEqual(kinds,{floor:4,ceiling:4,wall:18});
   assert.equal(S.portals.length,12);
   assert.ok(S.mistakes.length>=5);
   const ids=[...S.surfaces,...S.portals].map(s=>s.id);
