@@ -66,3 +66,16 @@
 /* The official-data card wraps sourced years and preserves readability on phones. */
 .official-stats-source{display:block;margin-top:8px;padding:10px;border-radius:7px;background:#e8f3ef;color:#315d55;line-height:1.8;overflow-wrap:anywhere}
 .country-context a{color:#176b65;text-decoration:underline}
+
+/* Optional historic starts; preserve the default 2026 no-cost route. */
+.historical-picker{margin:0 0 20px;text-align:left;border:1px solid #c9ddd5;border-radius:12px;background:#f9fcf9;padding:15px;color:#2a5350}
+.historical-picker>label{display:block;font-size:13px;font-weight:800;margin-bottom:9px}
+.historical-picker-fields{display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr);gap:9px}
+.historical-picker input,.historical-picker select{background:#fff;border:1px solid #9ebcb4;border-radius:8px;min-height:46px;width:100%;padding:8px 12px;font:inherit;font-size:14px;color:#234443}
+.era-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:9px}
+.era-presets button{min-height:45px;padding:8px;border:1px solid #c0d8d0;border-radius:8px;background:#fff;color:#37625a;font:inherit;font-size:12px;font-weight:700}
+.era-presets button[aria-pressed="true"]{background:#306e61;color:#fff;border-color:#306e61}
+.historical-picker #eraHelp{margin:10px 0 0;color:#587872;font-size:11px;line-height:1.6}
+.history-context{margin:12px 0 0;padding:9px 12px;border-left:3px solid #bd906b;background:#f9f5ec;color:#6b5a43;font-size:12px;line-height:1.6}
+#birthEraNote{font-size:11px;color:#77563e}
+@media(max-width:390px){.historical-picker{padding:11px}.historical-picker-fields{grid-template-columns:1fr}.era-presets button{font-size:11px}}
