@@ -232,7 +232,13 @@
     Life.restore=function(data){
       const life=priorRestore.call(this,data);
       if(!life)return null;
+      // Initial setup changes newborn statistics and inserts a birth-context log.
+      // Never reapply these one-time changes when loading an existing life.
+      const restoredStats={...life.stats};
+      const restoredLog=life.log.map(e=>({...e}));
       setup(life);
+      life.stats=restoredStats;
+      life.log=restoredLog;
       if(data.world && typeof data.world==='object'){
         for(const k of ['schooling','educationLevel','occupation','opportunityNarrative'])
           if(typeof data.world[k]==='string')life.world[k]=data.world[k].slice(0,100);
