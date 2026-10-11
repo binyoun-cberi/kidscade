@@ -73,8 +73,8 @@
     ? require('./official-data.js') : (typeof window!=='undefined'?window.OneLifeOfficialStats:null);
   // Urban share describes the overall population, not the share of births.
   // Applying it to newborn settlement is an explicitly approximate game rule.
-  function settlementFor(country,seed,community){
-    const urban=Official?.countries?.[country]?.urbanPercent?.value;
+  function settlementFor(country,seed,community,birthYear=2026){
+    const urban=birthYear===2026?Official?.countries?.[country]?.urbanPercent?.value:null;
     if(!Number.isFinite(urban)||urban<0||urban>100)
       return community%3===0?'농촌':community%3===1?'도시':'소도시';
     const share=urban/100,toss=hash(seed,1001)/4294967296;
@@ -98,7 +98,7 @@
       motherJob:FAMILY_JOBS[between(seed,6,0,FAMILY_JOBS.length-1)],
       fatherJob:FAMILY_JOBS[between(seed,7,0,FAMILY_JOBS.length-1)],
       familyIncome:round(BASE*COUNTRY_FACTOR(life.country)*familyAsset),
-      siblings:between(seed,8,0,3),settlement:settlementFor(ct,seed,community),
+      siblings:between(seed,8,0,3),settlement:settlementFor(ct,seed,community,life.birthYear),
       partner:false,child:false};
     life.profile=p;
     life.money={netWorth:0,income:0,expense:0,careerIncomeFactor:1,
