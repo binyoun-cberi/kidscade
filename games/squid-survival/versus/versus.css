@@ -33,3 +33,25 @@
 @media(max-width:680px) and (orientation:portrait){.score-player small{display:none}.round-track i{height:17px;width:17px}.playfield{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) 16px minmax(0,1fr)}.separator:before{inset:7px 0}.lane{padding:8px}.controls button{min-height:44px}.hintbar span:last-child{display:none}}
 @media(max-height:440px) and (orientation:landscape){.top{height:38px}.center-head strong{font-size:14px}.timebox{padding:4px 8px}.timebox strong{font-size:16px}.scoreline{height:32px}.score-player b{font-size:19px}.lane-title{height:16px}.controls{min-height:40px}.controls button{min-height:38px}.lane{gap:3px;padding:4px 6px}.lane-meter{min-height:10px}.meter{height:6px}.hintbar{min-height:18px;padding:2px 9px}.playfield{padding:3px 5px}.board-wrap{min-height:92px}.separator span{height:22px;width:22px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
+
+/* Kidscade's fixed shell menu must not cover the 2P touch keys on small landscape phones.
+   Use a more specific selector than the SDK's injected style. */
+body #kidscade-game-shell{
+  top:max(8px,env(safe-area-inset-top));bottom:auto;
+  left:max(112px,calc(env(safe-area-inset-left) + 95px));right:auto
+}
+body #kidscade-game-shell .kcgs-open{
+  height:34px;min-width:54px;padding:0 10px;border-radius:7px
+}
+body #kidscade-game-shell .kcgs-panel{
+  top:39px;bottom:auto;left:0;right:auto;
+  max-height:calc(100dvh - 54px);overflow-y:auto
+}
+@media(max-height:440px) and (orientation:landscape){
+  body #kidscade-game-shell{
+    top:max(3px,env(safe-area-inset-top));
+    left:max(100px,calc(env(safe-area-inset-left) + 92px))
+  }
+  body #kidscade-game-shell .kcgs-open{height:29px;border-radius:6px;font-size:10px;padding:0 8px}
+  body #kidscade-game-shell .kcgs-panel{top:32px;max-height:calc(100dvh - 37px)}
+}
