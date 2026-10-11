@@ -983,6 +983,8 @@ window.OtaDebug = Object.freeze({
     guidance:{scope:hintScope,level:hintLevel},chapter3:JSON.parse(JSON.stringify(C3.ensure(state))),echo:{...state.echo},monster:{...state.monster},
     corrector:{phase:corrector.phase,x:corrector.x,z:corrector.z,hidden:corrector.hidden,grace:corrector.grace},
     literacy:{coreDone:literacy.coreDone,corrected:literacy.corrected,contamination:literacy.contamination,awakened:literacy.awakened,items:literacy.items.map(i=>({uid:i.uid,x:i.x,z:i.z,bankIndex:i.bankIndex,kind:i.kind}))},
+    visuals:{nearbyWords:[...literacyMeshes.values()].filter(v=>v.word.visible).length,
+      nearbyHints:[...literacyMeshes.values()].filter(v=>v.hint.visible).length,repairs:repairEffects.length},
     player:{x:player.x,z:player.z,yaw:player.yaw,pitch:player.pitch},mistakes:state.mistakes}),
   // Browser QA may aim the camera to verify gaze rules, but cannot edit game progress.
   aimForVisualAudit:(yaw,pitch)=>{
