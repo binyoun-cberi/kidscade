@@ -1,0 +1,9 @@
+/* Bright career history: compact enough for PC, tablets and landscape phones. */
+.career-panel{border:1px solid #cce3d8;background:#f5faf6;border-radius:9px;padding:14px;margin:0 0 16px;color:#345a50}
+.career-panel .stat-title{margin:0 0 9px;color:#326655}
+.career-current{font-size:13px;font-weight:800;color:#245f50;line-height:1.5}
+.career-journey{display:flex;flex-wrap:wrap;gap:5px;margin:9px 0}
+.career-chapter{display:flex;align-items:center;gap:5px;font-size:11px;padding:6px 8px;background:#fff;border-radius:6px;border:1px solid #d6e9df}
+.career-chapter b{color:#af7249;white-space:nowrap}.career-chapter span{color:#41675a}
+.career-panel small{font-size:10px;line-height:1.55;color:#658678}
+@media(max-width:780px){.career-panel{grid-column:1/-1;padding:12px}.career-journey{gap:4px}}
