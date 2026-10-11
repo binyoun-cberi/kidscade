@@ -136,7 +136,7 @@ test('pass-and-play dalgona supports both tracing directions in 200 real-input a
    assert.equal(s.phase,'handoff','seed '+seed+' backward '+backward);
    assert.equal(s.turns[0].clear,true);
    assert.equal(g.traceDirection,backward?'reverse':'forward');
- });
+ }
 });
 test('each of six rounds can be cleared by both players using full-screen inputs',()=>{
  for(let round=0;round<6;round++)for(let seed=1;seed<=25;seed++){
