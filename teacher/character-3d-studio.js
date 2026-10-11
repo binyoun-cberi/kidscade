@@ -3,7 +3,19 @@ import {clone as cloneRiggedScene} from '../assets/vendor/three-r160/addons/util
 import {OUTFIT_LIBRARY,OUTFIT_STYLES,createOutfitPack} from './chibi-outfit-pack.js';
 import {ACCESSORY_STYLES,ACCESSORY_COUNT,ACCESSORY_SLOTS,ACCESSORY_CONFLICTS,createAccessoryPack,applyAccessoryFit as applyRiggedAccessoryFit} from './chibi-accessory-pack.js';
 
+import {
+  CHIBI_ACCOUNT_CATALOG,CHIBI_ACCOUNT_DEFAULTS,
+  sanitizeChibiAccountAvatar,isChibiAccountClothed
+} from '../chibi/account-avatar-policy.mjs';
+
 window.__kc3dStudioModuleReady=true;
+const accountMode=new URLSearchParams(location.search).get('mode');
+const accountStudio=accountMode==='account'||accountMode==='preview';
+const accountPreview=accountMode==='preview';
+let accountServerAvatar=null;
+const ACCOUNT_REQUIRED=['hair','top','bottom','shoes'];
+const ACCOUNT_OPTIONAL=['hat','face','bag','neck','wrist'];
+
 
 const ADMIN_KEY_NAME='kc_teacher_admin_key';
 const CHIBI_ASSET_URL='/assets/game/chibi/ChibiCharactersV1.2/ChibiCharacters/glb/allinonepr.glb';
@@ -205,6 +217,28 @@ function adminKey(){
 }
 
 async function authorize(){
+  if(accountStudio){
+    try{
+      let response=await fetch('/api/account/me',{credentials:'same-origin',cache:'no-store'});
+      let data=await response.json().catch(()=>({}));
+      if(!response.ok||!data.ok||!data.account){
+        response=await fetch('/api/teacher/auth/me',{credentials:'same-origin',cache:'no-store'});
+        data=await response.json().catch(()=>({}));
+      }
+      if(!response.ok||!data.ok||!data.account){
+        $('gateText').textContent='3D 아바타는 계정 로그인 후 이용할 수 있어요.';
+        return false;
+      }
+      accountServerAvatar=sanitizeChibiAccountAvatar(data.state?.chibiAvatar);
+      document.body.classList.add(accountPreview?'kc-account-preview':'kc-account-editor');
+      $('gate').classList.add('hidden');
+      $('studio').classList.remove('hidden');
+      return true;
+    }catch(_){
+      $('gateText').textContent='계정 상태를 확인하지 못했어요. 인터넷 연결을 확인해 주세요.';
+      return false;
+    }
+  }
   const key=adminKey();
   if(!key){
     $('gateText').innerHTML='전역 관리자 로그인이 필요합니다. <a href="/teacher/">관리자 화면에서 로그인</a>한 뒤 다시 열어 주세요.';
@@ -709,7 +743,7 @@ function syncHairOptions(){
   const select=$('chibiHair');
   const selected=HAIR_NODES.find(name=>getNode(name)?.visible&&compatiblePart(name))||'';
   const names=activeBodyFit==='male'?MALE_HAIR_STYLES:FEMALE_HAIR_STYLES;
-  select.innerHTML='<option value="">없음</option>'+names.map(name=>
+  select.innerHTML=(accountStudio?'':'<option value="">없음</option>')+names.map(name=>
     '<option value="'+name+'">'+PART_LABELS[name]+'</option>'
   ).join('');
   select.value=selected;
@@ -718,7 +752,9 @@ function syncHairOptions(){
 function renderPartChecks(){
   const host=$('wardrobeParts');
   const names=TOGGLE_NODES.filter(name=>
-    compatiblePart(name)&&PART_GROUP(name)===activeWardrobeCategory
+    compatiblePart(name)&&PART_GROUP(name)===activeWardrobeCategory&&
+    (!accountStudio||Object.values(CHIBI_ACCOUNT_CATALOG[activeBodyFit])
+      .some(ids=>ids.includes(name)))
   );
   const showTiles=activeWardrobeCategory==='shoes'||activeWardrobeCategory==='accessory';
   const descriptions={hat:'모자·헤드폰',face:'안경·마스크',bag:'가방',neck:'목도리',wrist:'시계'};
@@ -858,12 +894,70 @@ function refreshPartChecks(){
   document.querySelectorAll('[data-chibi-part]').forEach(input=>{
     const object=getNode(input.dataset.chibiPart);
     input.checked=!!object?.visible;
-    input.disabled=!object||!loaded||!compatiblePart(input.dataset.chibiPart);
+    input.disabled=!object||!loaded||!compatiblePart(input.dataset.chibiPart)||
+      (accountPreview&&!localVisualAudit);
     input.closest('.part-tile')?.classList.toggle('selected',input.checked);
   });
 }
 
+// Student/teacher account avatars always retain a complete school-safe outfit.
+// This is deliberately separate from the unrestricted administrator GLB studio.
+function enforceAccountOutfit(){
+  if(!accountStudio||!loaded)return;
+  const catalog=CHIBI_ACCOUNT_CATALOG[activeBodyFit];
+  const defaults=CHIBI_ACCOUNT_DEFAULTS[activeBodyFit];
+  for(const slot of ACCOUNT_REQUIRED){
+    const valid=catalog[slot];
+    if(!valid.some(id=>getNode(id)?.visible)){
+      setNodeVisible(defaults[slot],true);
+    }
+  }
+}
+function accountSnapshot(){
+  enforceAccountOutfit();
+  const catalog=CHIBI_ACCOUNT_CATALOG[activeBodyFit];
+  const parts={};
+  for(const slot of [...ACCOUNT_REQUIRED,...ACCOUNT_OPTIONAL]){
+    parts[slot]=catalog[slot].find(id=>getNode(id)?.visible)||'';
+  }
+  return sanitizeChibiAccountAvatar({bodyFit:activeBodyFit,parts});
+}
+function applyAccountAvatar(value){
+  if(!accountStudio||!loaded)return;
+  const avatar=sanitizeChibiAccountAvatar(value||{bodyFit:'male'});
+  if(avatar.bodyFit!==activeBodyFit)selectBodyFit(avatar.bodyFit);
+  applyPreset(avatar.bodyFit==='male'?'male':'base');
+  for(const [slot,id] of Object.entries(avatar.parts)){
+    const allowed=CHIBI_ACCOUNT_CATALOG[avatar.bodyFit][slot];
+    if(!allowed?.includes(id))continue;
+    // Only one mesh per wardrobe slot (never combine underwear-only costumes).
+    for(const option of allowed)setNodeVisible(option,option===id);
+  }
+  applyAccessoryFit();
+  enforceAccountOutfit();
+  renderPartChecks();
+  refreshMetrics();
+  setCameraView(accountPreview?'threeQuarter':'front');
+}
+function saveAccountAvatar(){
+  if(!accountStudio||accountPreview||!loaded)return;
+  applyAccessoryFit();
+  enforceAccountOutfit();
+  const avatar=accountSnapshot();
+  if(!isChibiAccountClothed(avatar)||fitIntegrityIssues().length){
+    setStatus('옷이나 체형이 올바르지 않아 저장할 수 없어요.',true);
+    return;
+  }
+  if(window.parent===window){
+    setStatus('키즈케이드 계정 화면에서 3D 꾸미기를 열어 저장해 주세요.',true);
+    return;
+  }
+  window.parent.postMessage({type:'kidscade:account-chibi-save',avatar},location.origin);
+  setStatus('계정에 저장하고 있어요…');
+}
+
 function applyHair(name){
+  if(accountStudio&&!name)name=CHIBI_ACCOUNT_DEFAULTS[activeBodyFit].hair;
   if(name&&(!HAIR_NODES.includes(name)||!compatiblePart(name)))return;
   HAIR_NODES.forEach(hair=>setNodeVisible(hair,false));
   if(name)setNodeVisible(name,true);
@@ -888,6 +982,7 @@ function selectBodyFit(fit){
   if(fit==='female'&&!HAIR_NODES.some(name=>getNode(name)?.visible))
     applyHair('hairone');
   activeWardrobeCategory='hair';
+  if(accountStudio)enforceAccountOutfit();
   renderPartChecks();
 }
 
@@ -920,6 +1015,7 @@ function applyPreset(name){
     button.classList.toggle('active',button.dataset.chibiPreset===name);
   });
   applyAccessoryFit();
+  if(accountStudio)enforceAccountOutfit();
   renderPartChecks();
   refreshMetrics();
   // 프리셋 전환 중 WALK를 재생하고 있었다면 현재 몸체에 맞는 클립으로 전환한다.
@@ -2308,6 +2404,7 @@ async function loadChibi(){
   setCameraView(activeView);
 
   setReady(true);
+  if(accountStudio)applyAccountAvatar(accountServerAvatar);
   refreshPartChecks();
   refreshMetrics();
   clearAssetError();
@@ -2470,6 +2567,7 @@ function wireUi(){
   $('resetPose').addEventListener('click',resetPose);
   $('exportGlb').addEventListener('click',exportGlb);
   $('exportSpec').addEventListener('click',exportSpec);
+  $('saveAccountChibi')?.addEventListener('click',saveAccountAvatar);
 
   $('clipGrid').addEventListener('click',event=>{
     const button=event.target.closest('[data-clip]');
@@ -2511,6 +2609,14 @@ function wireUi(){
     if(!input)return;
 
     const part=input.dataset.chibiPart;
+    if(accountStudio&&!input.checked&&ACCOUNT_REQUIRED.some(slot=>
+      CHIBI_ACCOUNT_CATALOG[activeBodyFit][slot].includes(part)&&
+      !CHIBI_ACCOUNT_CATALOG[activeBodyFit][slot].some(id=>id!==part&&getNode(id)?.visible))){
+      input.checked=true;
+      setStatus('계정 캐릭터는 머리·상의·하의·신발을 모두 착용해야 해요.');
+      refreshPartChecks();
+      return;
+    }
     if(!compatiblePart(part)){refreshPartChecks();return;}
     const exclusive=LEGACY_OUTFIT_SLOTS[part]||PART_GROUP(part);
     const accessorySlot=ACCESSORY_SLOT(part);
@@ -2527,6 +2633,7 @@ function wireUi(){
     }else{
       setNodeVisible(part,input.checked);
       applyAccessoryFit(input.checked?part:'');
+      if(accountStudio)enforceAccountOutfit();
       renderPartChecks();
       refreshMetrics();
     }
@@ -2831,6 +2938,16 @@ function installLocalVisualAudit(){
 async function boot(){
   const ok=await authorize();
   if(!ok)return;
+  if(accountStudio){
+    $('exportGlb').closest('.export-actions')?.classList.add('hidden');
+    $('exportSpec').closest('.export-actions')?.classList.add('hidden');
+    document.querySelector('[data-wardrobe-category="costume"]')?.setAttribute('hidden','');
+    if(accountPreview)$('saveAccountChibi')?.setAttribute('hidden','');
+    if(accountPreview){
+      document.querySelectorAll('button,input,select').forEach(el=>{el.tabIndex=-1;});
+      $('autoRotate').checked=false;
+    }
+  }
   initScene();
   wireUi();
   requestAnimationFrame(loop);
