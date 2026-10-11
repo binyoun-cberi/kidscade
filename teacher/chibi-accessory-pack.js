@@ -377,11 +377,11 @@ function buildGeometry(style,source,sourceHair,eyes){
       // Upper hemisphere + deeper cloth band; unlike a squashed sphere the
       // lower edge wraps the crown rather than hovering as a flat plate.
       const dome=new THREE.SphereGeometry(1,24,12,0,Math.PI*2,0,Math.PI*.60);
-      dome.scale(headR*1.22,.190,headR*1.08);
-      dome.translate(hc.x-.022,scalpY+.025,hc.z);
+      dome.scale(headR*1.22,.190,headR*1.15);
+      dome.translate(hc.x-.022,scalpY+.025,hc.z+.032);
       return dome;
     }
-    case 'straw':return cyl(headR*.92,headR*1.02,.205,hc.x,scalpY-.080,hc.z);
+    case 'straw':return cyl(headR*1.085,headR*1.14,.205,hc.x,scalpY-.080,hc.z+.045);
     case 'round':return ring(.071,.009,-.110,eyeY,faceZ);
     case 'square':return box(.150,.119,.012,-.110,eyeY,faceZ);
     case 'sunglasses':return facePatch(-.198,eyeY-.027,faceZ+.016,.372,.202,.032);
@@ -445,11 +445,11 @@ function createDetails(style,context){
       add(ring(headR*.96,.030,0,scalpY-.089,hc.z,'y'),white,'cuff');
       add(sphere(0,scalpY+.174,hc.z,.052,.046,.052),style.color,'pom');
     }else if(kind==='beret'){
-      add(ring(headR*1.035,.020,hc.x,scalpY-.035,hc.z,'y'),black,'edge');
+      add(ring(headR*1.05,.020,hc.x,scalpY-.035,hc.z+.032,'y'),black,'edge');
       add(cyl(.018,.020,.030,-.03,scalpY+.217,hc.z),black,'stem');
     }else if(kind==='straw'){
-      add(cyl(headR*1.44,headR*1.44,.019,hc.x,scalpY-.173,hc.z),style.color,'brim');
-      add(ring(headR*.985,.021,hc.x,scalpY-.112,hc.z,'y'),'#9b7250','ribbon');
+      add(cyl(headR*1.48,headR*1.48,.019,hc.x,scalpY-.173,hc.z+.030),style.color,'brim');
+      add(ring(headR*1.095,.021,hc.x,scalpY-.112,hc.z+.045,'y'),'#9b7250','ribbon');
     }else if(kind==='headphones'){
       for(const sign of [-1,1])
         add(box(.057,.144,.108,sign*(headR*1.11),eyeY+.065,hc.z),'#2e344b','earCup_'+sign);
