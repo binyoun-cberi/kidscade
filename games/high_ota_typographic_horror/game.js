@@ -480,7 +480,7 @@ function scenery() {
       box(.22,3.26,1.30,x,1.61,-50.10,wallMat);
       box(.22,3.26,14.30,x,1.61,-60.40,wallMat);
       rewriteWallPlug=box(.22,3.26,2.50,x,1.61,-52.0,wallMat);
-      rewriteDoorBlock=box(.18,2.65,2.04,x,1.33,-52.0,wallMat);
+      rewriteDoorBlock=box(.18,2.65,2.04,x-.18,1.33,-52.0,wallMat);
       rewriteDoorBlock.visible=false;
     }else box(.22,3.26,18.1,x,1.61,-58.5,wallMat);
   }
