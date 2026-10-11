@@ -48,7 +48,7 @@ test('103 named countries and regional coverage; 300+ narrative variations',()=>
    W4.EVENTS.reduce((s,e)=>s+e.lines.length,0);
  assert.ok(narratives>=340);
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
- assert.match(html,/world-v5\.js\?v=1/);
+ assert.match(html,/world-v5\.js\?v=\d+/);
  assert.match(html,/worldEventCount/);
  assert.match(html,/world-v5\.css/);
 });
