@@ -227,6 +227,8 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await solveCore('core-0');
   const correctedView=await snap();
   assert.ok(correctedView.visuals.repairs>0,'correct answer triggers visible 3D reassembly');
+  await sleep(180);
+  assert.equal((await snap()).visuals.oversizedRepair,false,'corrected letters cannot engulf the first-person view');
   for(const sign of correctedView.visuals.wayfinding){
     if(['← 사무실','서고 →'].includes(sign.word))
       assert.equal(sign.visible,false,'oversized nearby hub heading must not obscure the correction');
