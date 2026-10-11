@@ -215,8 +215,17 @@
         if(value>70)this.change({[key]:-Math.ceil((value-70)*.12)});
       }
       // 사망 가능성은 게임을 위한 추상적인 난수 모델이다.
-      const ageRisk = this.age < 4 ? .001 : this.age < 58 ? .0004 : this.age < 70 ? .003
-        : this.age < 80 ? .017 : this.age < 90 ? .048 : this.age < 100 ? .13 : .32;
+      const ageRisk = this.world && Number.isFinite(this.world.mortalityTarget)
+        ? (() => {
+            // A broad stochastic hazard curve centered near a 2024 country
+            // life-expectancy baseline. This is not an individual's forecast.
+            const target = Math.max(45, Math.min(94,this.world.mortalityTarget));
+            const scale = target / .926;
+            if(this.age<=5) return .0015 + Math.max(0,80-target)*.00025;
+            return Math.min(.84, 6.4/scale*Math.pow(this.age/scale,5.4));
+          })()
+        : (this.age < 4 ? .001 : this.age < 58 ? .0004 : this.age < 70 ? .003
+        : this.age < 80 ? .017 : this.age < 90 ? .048 : this.age < 100 ? .13 : .32);
       const healthRisk = this.stats.health<20?.035:this.stats.health<36?.009:0;
       if(this.age>=108 || this.stats.health===0 || this.rand()<ageRisk+healthRisk) {
         this.finish(this.age>=108?'긴 세월 끝에 삶을 마쳤다.':'한 사람의 삶이 조용히 끝났다.');
