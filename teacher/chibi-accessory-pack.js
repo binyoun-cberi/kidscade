@@ -258,7 +258,7 @@ export function applyAccessoryFit({getNode,fit='male',topName='',headwearName=''
           // The v5 cap anchored its BOTTOM to the hair crown: it pushed the
           // entire hat into the air. Anchor the cap TOP instead, keeping its
           // crown intersecting the hair while the brim sits over the forehead.
-          const hatCrownAllowance=style.kind==='beret'?.085:
+          const hatCrownAllowance=style.kind==='beret'?.045:
             style.kind==='straw'?.070:-.158;
           const target=style.slot==='hat'
             ?reference.userData.kidscadeHatRestCrownY+hatCrownAllowance
