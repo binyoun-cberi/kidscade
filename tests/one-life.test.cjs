@@ -28,7 +28,7 @@ test('screen includes drawing, choice, time and archive entry points for mobile'
   assert.match(html,/viewport-fit=cover/);
   assert.match(html,/kidscade-game-sdk.js/);
   assert.match(html,/data-game-id="high_one_life"/);
-  assert.match(html,/engine.js\?v=3/);
+  assert.match(html,/engine.js\?v=4/);
   assert.match(css,/@media\(max-width:780px\)/);
   assert.match(css,/@media\(max-width:440px\)/);
   assert.match(css,/prefers-reduced-motion/);
