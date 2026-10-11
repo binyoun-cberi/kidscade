@@ -238,11 +238,19 @@
       }
       // 사망 가능성은 게임을 위한 추상적인 난수 모델이다.
       const childMortality=measured(this.country,'under5Mortality',this.birthYear);
-      const observedChildHazard=this.age<=5 && childMortality!==null && childMortality>=0 && childMortality<1000
-        ? 1-Math.pow(1-childMortality/1000,1/5) : null;
+      // Historical births have no verified period-specific life table in this build.
+      // Their invented under-five risk matches the labelled game-only survival chart.
+      const fictionalUnder5=this.birthYear!==2026
+        ?Math.max(.015,Math.min(.09,.09-(this.birthYear-1900)*.00065))
+        :null;
+      const age0To5Hazard=this.age<=5 && childMortality!==null && childMortality>=0 && childMortality<1000
+        ?1-Math.pow(1-childMortality/1000,1/5)
+        :this.age<=5 && fictionalUnder5!==null
+          ?1-Math.pow(1-fictionalUnder5,1/5)
+          :null;
       // Under-five aggregate rate is distributed across five years for playability;
       // it is NOT an observed single-year infant hazard.
-      const ageRisk = observedChildHazard!==null?observedChildHazard:
+      const ageRisk = age0To5Hazard!==null?age0To5Hazard:
         this.world && Number.isFinite(this.world.mortalityTarget)
         ? (() => {
             // A broad stochastic hazard curve centered near a 2024 country
