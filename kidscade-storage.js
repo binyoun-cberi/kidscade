@@ -104,6 +104,7 @@
     dalgonaTraceRecord: 'kidscade_dalgona_trace_v1',
     squidSurvivalRecord: 'kidscade_squid_survival_v1',
     squidSurvivalVersus: 'kidscade_squid_survival_versus_v1',
+    squidPassPlay: 'kidscade_squid_passplay_v1',
     squidRedlightRecord: 'kidscade_squid_mini_redlight_v1',
     squidTugRecord: 'kidscade_squid_mini_tug_v1',
     squidMarblesRecord: 'kidscade_squid_mini_marbles_v1',
