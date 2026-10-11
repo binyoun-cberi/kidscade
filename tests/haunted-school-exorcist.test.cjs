@@ -883,11 +883,12 @@ test('each survival exorcism gives a temporary 20–32 second seal that resets b
   const ghost={kind:'maiden',ready:5,actor:{x:1,z:0,root:{visible:true}}};
   const ghosts=[ghost],returnAt=Object.create(null),sealCounts=Object.create(null),messages=[];
   const make=new Function('survivalGhosts','survivalReturnAt','survivalSealCounts','player',
-    'dist','showToast','sfx','updateHud',
+    'dist','showToast','sfx','updateHud','HORROR_NAMES',
     'let power=75,invulnerable=0,survivalSpawnClock=0,survivalKills=0,elapsed=40;'+source+
     'return {seal:sealSurvivalGhost,state:()=>({power,invulnerable,survivalSpawnClock,survivalKills})};');
   const engine=make(ghosts,returnAt,sealCounts,{x:0,z:0},
-    (a,b)=>Math.hypot(a.x-b.x,a.z-b.z),msg=>messages.push(msg),()=>{},()=>{});
+    (a,b)=>Math.hypot(a.x-b.x,a.z-b.z),msg=>messages.push(msg),()=>{},()=>{},
+    {maiden:'처녀귀신'});
   engine.seal(ghost);
   assert.equal(ghosts.length,0);
   assert.equal(ghost.actor.root.visible,false);
