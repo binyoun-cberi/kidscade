@@ -61,6 +61,21 @@ test('trainer forbids balls, running, soft captures, and switching outside selec
  const valid=B.resolve({save,foe,battle,action:{type:'switch',index:1},random:rng});
  assert.equal(valid.ok,true);assert.equal(save.active,1);
 });
+test('player may select any three healthy members from a party of six',()=>{
+ const save=party();save.party.push(E.makeCreature('set1_r00_c01',10,rng));
+ assert.equal(T.validateSelection(save,[0,1,3]),true);
+ assert.equal(T.validateSelection(save,[0,0,1]),false);
+ assert.equal(T.validateSelection(save,[0,1,4]),false);
+ const chosen=T.makeTrainer(save,'meadow',rng,[0,1,3]);
+ assert.ok(chosen);
+ assert.deepEqual(Array.from(chosen.playerSlots),[0,1,3]);
+ assert.equal(T.makeTrainer(save,'meadow',rng,[0,0,3]),null);
+ const battle={foe:chosen.party[0],trainer:chosen,turnState:B.state()};
+ const denied=B.resolve({save,foe:battle.foe,battle,action:{type:'switch',index:2},random:rng});
+ assert.equal(denied.reason,'switch');
+ const allowed=B.resolve({save,foe:battle.foe,battle,action:{type:'switch',index:3},random:rng});
+ assert.equal(allowed.ok,true);assert.equal(save.active,3);
+});
 test('type-aware trainer AI chooses a better live reserve, and a swap consumes its attack',()=>{
  const save=party();
  save.party[0]=E.makeCreature('set4_r01_c02',15,rng);
