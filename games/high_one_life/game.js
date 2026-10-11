@@ -77,6 +77,7 @@
         clearInterval(roulette); roulette = null;
         paint(life.country);
         if(life.country[0]==='대한민국' && life.year<1945)$('birthFlag').textContent='📜';
+        if(life.country[0]==='대한민국' && life.year<1945)$('birthCountry').textContent=History.place(life);
         $('birthDetail').textContent = life.gender + ' · ' + life.familyLevel + ' · ' + life.year + '년 출생';
         paintCertificate();
         $('lifeStartBtn').classList.remove('hidden');
@@ -148,7 +149,7 @@
       metricLabel('healthCoverage','WHO 필수의료 보장 지수','점'),
       metricLabel('physiciansPerThousand','WHO 의료진 밀도(인구 천 명당 의사)','명')
     ].join(' · ');
-    const sceneName=Pixel.paint($('lifeScene'),life);
+    const sceneName=History.paint($('lifeScene'),life)?'역사 속 생활':Pixel.paint($('lifeScene'),life);
     const sceneTitle=Pixel.names?.[sceneName]||sceneName;
     $('sceneLabel').textContent=life.year+'년 · '+History.place(life)+' '+p.city+' ('+p.settlement+') · '+(life.birthYear===2026?sceneTitle+'에서 보내는 하루':History.period(life)+'의 생활을 상상한 장면');
   }
