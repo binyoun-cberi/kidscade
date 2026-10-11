@@ -115,7 +115,7 @@ test('exactly six rounds award 1 point for a win, 0.5 each for a draw',()=>{
  for(let index=0;index<6;index++){
    s=V.launch(s,10000*index);
    const r=s.round;
-   r.players.forEach((p,id)=>{p.done=true;p.doneAt=r.startedAt+(index===5?500:1000+id*500);
+   r.players.forEach((p,id)=>{p.done=true;p.doneAt=r.startedAt+(index>=4?500:1000+id*500);
       p.clear=index>=4?true:id===(index%2);p.failed=!p.clear;});
    s=V.tick(s,r.startedAt+1200);
    assert.equal(s.phase,'summary');
