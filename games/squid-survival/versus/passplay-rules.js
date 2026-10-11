@@ -22,10 +22,11 @@ function createGame(round,player,seed,now,attempt=0){
  if(!id)throw Error('Invalid round '+round);
  const game={id,round,player,startedAt:now,at:now,elapsed:0,limit:LIMITS[id],
   status:'playing',clear:false,reason:'',step:0,phase:'playing',
-  seed:seedAt(seed,round,player,attempt),trace:null,traceState:null,map:null,body:null,
+  seed:seedAt(seed,round,player,attempt),trace:null,traceReverse:null,traceDirection:null,traceState:null,map:null,body:null,
   previewUntil:0,question:null,answer:null,events:0};
  if(id==='dalgona'){
    game.trace={...T.buildTrace(1),timeLimitMs:LIMITS[id]};
+   game.traceReverse=T.reversed(game.trace);
    game.traceState=T.createState(game.trace);
  }else if(id==='bridge'){
    let whole=null;
@@ -167,7 +168,16 @@ function input(state,action,value,now){
  const g=state.game;
  if(g.id==='dalgona'){
    if(action==='trace-start')g.traceState=T.begin(g.trace,g.traceState,value,now).state;
-   else if(action==='trace-move')g.traceState=T.move(g.trace,g.traceState,value,now);
+   else if(action==='trace-move'){
+     if(g.traceDirection===null&&g.traceState.active&&g.traceState.progress<2){
+       const direction=T.directionFor(g.trace,g.traceReverse,value);
+       if(direction){
+         g.traceDirection=direction;
+         if(direction==='reverse')g.trace=g.traceReverse;
+       }
+     }
+     g.traceState=T.move(g.trace,g.traceState,value,now);
+   }
    else if(action==='trace-end')g.traceState=T.release(g.trace,g.traceState,now);
    if(g.traceState.complete)complete(g,true,now);
    else if(g.traceState.failed)complete(g,false,now,g.traceState.reason);
