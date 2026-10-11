@@ -108,6 +108,7 @@ function render(){
  if(!model)return;
  ui.title.textContent=label.name;
  ui.sub.textContent=statusLabel();ui.time.textContent=timerText(model.limit-model.elapsed);
+ ui.time.parentElement?.classList?.toggle('urgent',model.limit-model.elapsed<=10000);
  ui.status.textContent=model.status==='playing'?'도전 중':model.status==='cleared'?'성공':model.status==='failed'?'탈락':'준비';
  if(mode==='redlight')document.body.dataset.signal=model.signal;
  let progress=0,metric='';
