@@ -97,11 +97,14 @@ function hauntedLabel(word, color, altered, x,y,z, rx=0,ry=0,w=1,h=.55) {
   hauntedWords.push({mesh,ghost,word,color,altered,x,y,z});
   return mesh;
 }
-function updateHauntedWords(time) {
+function updateHauntedWords(time,threat,finalEscape=false) {
   hauntedWords.forEach((entry,i) => {
     // Short asynchronous bursts, like damaged text being rewritten in place.
-    const burst = Math.sin(time*(1.24+(i%5)*.13)+i*2.37)>.954;
-    const flicker = burst && Math.sin(time*79+i*11.3)>-.26;
+    // Glitches propagate through nearby names when the unseen corrector passes.
+    const proximity=threat?Math.max(0,1-Math.hypot(threat.x-entry.x,threat.z-entry.z)/9):0;
+    const threshold=.954-proximity*.31-(finalEscape?.12:0);
+    const burst=Math.sin(time*(1.24+(i%5)*.13)+i*2.37)>threshold;
+    const flicker=burst&&Math.sin(time*79+i*11.3)>-.26;
     entry.mesh.material = material(flicker?entry.altered:entry.word,
       flicker?'#f34a60':entry.color);
     entry.mesh.position.set(entry.x+(flicker?Math.sin(time*137+i)*.072:0),
@@ -627,7 +630,9 @@ function update(dt) {
       chapterVisual.anomaly.material=material(odd?'사람':'의자',odd?'#dc8191':'#a3b1be');
     }
   }
-  updateHauntedWords(elapsed);
+  const corruptorSource=state.monster.active?state.monster
+    :corrector.phase!=='dormant'?corrector:null;
+  updateHauntedWords(elapsed,corruptorSource,state.stage==='final');
   shiftingWords.forEach((entry,i)=>{
     if(entry.mesh.visible){
       entry.mesh.position.x=entry.x+Math.sin(elapsed*(2.8+i*.13)+i)*.13;
