@@ -126,6 +126,18 @@ test('separate equal-difficulty memory, marble, final, and overtime questions pr
  }
  for(const [kind,n] of Object.entries(differences))assert.ok(n>=54,kind+' produces too many repeated problems '+n);
 });
+test('pass-and-play dalgona supports both tracing directions in 200 real-input attempts',()=>{
+ for(let seed=1;seed<=100;seed++)for(const backward of [false,true]){
+   let s=E.ready(E.begin(E.start(seed)),1000);
+   const g=s.game,path=(backward?g.traceReverse:g.trace).path;
+   s=E.input(s,'trace-start',path[0],1000);
+   for(let i=1;i<path.length&&s.phase==='playing';i++)
+     s=E.input(s,'trace-move',path[i],1000+i*18);
+   assert.equal(s.phase,'handoff','seed '+seed+' backward '+backward);
+   assert.equal(s.turns[0].clear,true);
+   assert.equal(g.traceDirection,backward?'reverse':'forward');
+ }
+});
 test('each of six rounds can be cleared by both players using full-screen inputs',()=>{
  for(let round=0;round<6;round++)for(let seed=1;seed<=25;seed++){
    const s=runRound(round,seed,perfect);
