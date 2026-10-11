@@ -112,7 +112,7 @@
     const arc=life.arc;
     const employed=age>=20 && !['학생','진로 탐색 중','아직 정해지지 않음'].includes(life.career);
     if(age===75 && m.retired!==true){
-      m.pension=round(Math.max(m.pension,m.income*.28));
+      m.pension=round(Math.max(m.pension,m.income*(.12+.32*(life.world?.formalWorkAccess||.5))));
       m.retired=true;life.logEvent('일을 정리하고 연금과 모은 돈으로 생활하기 시작했다.','money');
     }
     let yearly=0;
@@ -127,7 +127,7 @@
       yearly=round(BASE*factor*skill*schoolingBoost*jobBoost*personalFactor*m.careerIncomeFactor*experienceBoost*(life.world6?.incomeFactor||1)
         *(.77+Math.min(25,age-19)*.012));
       const chance=life.rand();
-      const jobLossChance=(.04+(1-(life.country[3]||.55))*.07)*(arc?
+      const jobLossChance=(.05+(1-(life.world?.formalWorkAccess||life.country[3]||.55))*.12-(life.world?.safetyNetAccess||.4)*.025)*(arc?
         Math.max(.40,Math.min(2.0,1-arc.security*.065+arc.careerRisk*.065)):1);
       if(arc?.unemployedUntil>=age){
         yearly=0;m.employment='구직 중';
@@ -162,10 +162,12 @@
       round(BASE*factor*.17*(arc?.tags?.includes('care-support')?.68:1)):0;
     const tuition=studying?round(BASE*factor*.23):0;
     const healthcare=age>=25&&life.stats.health<35?
-      round(BASE*factor*.12*(arc?.wellness>=4?.77:1)):0;
+      round(BASE*factor*.12*(arc?.wellness>=4?.77:1)*(1-(life.world?.healthcareAccess||.35)*.38)):0;
     const familyCost=p.partner?round(BASE*factor*.10):0;
     const extraCost=arc?.business?round(BASE*factor*.075):0;
-    const support=arc&&arc.network>=5?round(BASE*factor*.035):0;
+    const networkSupport=arc&&arc.network>=5?round(BASE*factor*.035):0;
+    const publicSupport=m.employment==='구직 중'?round(BASE*factor*(life.world?.safetyNetAccess||.25)*.055):0;
+    const support=networkSupport+publicSupport;
     const expense=Math.max(0,fixedCost+dependent+tuition+healthcare+familyCost+extraCost-support);
     m.income=yearly;
     m.expense=expense;
