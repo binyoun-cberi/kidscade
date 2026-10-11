@@ -9,7 +9,7 @@ if(typeof module!=='undefined'&&module.exports)module.exports=x;if(root)root.One
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const Official=typeof module!=='undefined'&&module.exports
   ? require('./official-data.js') : (typeof window!=='undefined'?window.OneLifeOfficialStats:null);
-const measured=(country,key)=>Official?.countries?.[country?.[0]]?.[key]?.value;
+const measured=(country,key,birthYear=2026)=>birthYear===2026?Official?.countries?.[country?.[0]]?.[key]?.value:null;
 function roll(seed,k){let x=(seed^Math.imul(k+1,0x9e3779b9))>>>0;x=Math.imul(x^(x>>>16),0x7feb352d);x=Math.imul(x^(x>>>15),0x846ca68b);return ((x^(x>>>16))>>>0)/4294967296;}
 const GROUP={
 eastAsia:['온대·계절성 기후','도심·마을·산','#91b8af'],southAsia:['몬순·고온 등 다양한 기후','도심 골목과 농촌','#d8ba91'],
@@ -58,9 +58,9 @@ function moment(life){
  :'삶의 시간이 흐르며 '+d.familyNote+'과 소중한 사람들의 기억이 남았다.';
  d.stories.push({age:a,text:sentence});life.logEvent(sentence,'family');
 }
-function mortality(country,gender){
- const observedLife=measured(country,'lifeExpectancy');
- const observedUnder5=measured(country,'under5Mortality');
+function mortality(country,gender,birthYear=2026){
+ const observedLife=measured(country,'lifeExpectancy',birthYear);
+ const observedUnder5=measured(country,'under5Mortality',birthYear);
  const baseline=Number.isFinite(observedLife)?observedLife:W3.baseline(country);
  const ref=clamp(baseline+(gender==='여자'?1.7:-1.7),48,93);
  // This one number is a published under-five estimate; the detailed ages
@@ -73,12 +73,12 @@ function mortality(country,gender){
    sourceUnder5:Number.isFinite(observedUnder5)?'UN IGME':'game',
    sourceLife:Number.isFinite(observedLife)?'World Bank':'game'};
 }
-function survival(country,gender,age){
- const m=mortality(country,gender),a=clamp(age,0,110);
+function survival(country,gender,age,birthYear=2026){
+ const m=mortality(country,gender,birthYear),a=clamp(age,0,110);
  return a===0?1:a<=5?clamp(1-m.under5*Math.pow(a/5,.7),0,1):
  clamp((1-m.under5)*Math.exp(-Math.pow((a-5)/m.scale,m.shape)),0,1);
 }
-function points(country,gender){return Array.from({length:111},(_,i)=>({age:i,value:survival(country,gender,i)}));}
+function points(country,gender,birthYear=2026){return Array.from({length:111},(_,i)=>({age:i,value:survival(country,gender,i,birthYear)}));}
 function synopsis(life){const x=ensure(life),p=life.profile;
  return life.country[0]+' · '+p.city+' '+p.settlement+' · '+x.housing+' · 어머니 '+p.motherJob+' · 아버지 '+p.fatherJob;}
 function install(){
