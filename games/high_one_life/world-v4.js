@@ -243,6 +243,11 @@
     const variation=hash(life.seed,life.age,101)%chosen.lines.length;
     const message=chosen.lines[variation];
     effects(life,chosen.effects);
+    if(chosen.id==='late-school' && life.world?.educationYears<5){
+      life.world.schooling='늦게 학교에 다니기 시작함';
+      life.world.educationYears=Math.max(life.world.educationYears,2);
+      life.world.educationLevel='기초 교육';
+    }
     if(chosen.id==='job-loss')a.unemployedUntil=life.age+2;
     if(chosen.id==='job-recovery')a.unemployedUntil=0;
     if(chosen.id==='business-crisis')a.careerRisk+=2;
