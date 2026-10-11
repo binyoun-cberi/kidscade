@@ -19,7 +19,7 @@ jobs:
       - name: Chibi real Chrome complete asset review
         run: node tests/chibi-visual-browser-audit.cjs
         env:
-          KIDSCADE_CHIBI_CONTACT_SHEETS: '1'
+          KIDSCADE_CHIBI_EQUIPMENT_ONLY: '1'
           KIDSCADE_CHIBI_AUDIT_OUT: ${{ runner.temp }}/chibi-wardrobe-review
       - name: Keep all captured frames and labeled contact sheets
         if: always()
