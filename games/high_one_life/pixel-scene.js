@@ -21,7 +21,11 @@
     const sky=night?'#b5bfd8':season===3?'#e2d3cc':'#b5d9dc';
     const floor=season===3?'#d3cbb5':'#81b69b';
     const isRural=p.settlement==='농촌';
-    const stage=age<7?'가정':age<19?'학교':age<25&&life.career==='학생'?'대학교':age<65?'직장과 일상':'노년의 일상';
+    const stage=age<7?'가정':age<19?(life.world?.educationYears===0&&age>=10?'지역과 생활':'학교')
+      :age<27&&(life.career==='학생'||life.world?.educationLevel==='고등 교육·훈련 중')?'대학교'
+      :age<65&&life.arc?.business?'가게와 사업장'
+      :age<65&&/기술|수리|제조|훈련/.test(life.career)?'기술 작업장'
+      :age<65?'일터와 일상':'노년의 일상';
     fill(0,0,W,H,sky);
     // Hand-placed pixel clouds; all drawing is aligned to the same 2px grid.
     for(const [x,y] of [[65,32],[360,24],[490,46]]){
@@ -65,6 +69,15 @@
     }else{
       building(55,84,104,95,age<19?'home':'work');
       building(202,55,169,126,stage==='학교'||stage==='대학교'?'school':age>=65?'clinic':'work');
+      if(stage==='가게와 사업장'){
+        fill(210,65,154,20,'#f4d3a3');fill(215,70,144,10,'#b87652');
+        fill(228,105,114,42,'#b8d9c9');
+        for(let q=0;q<6;q++)fill(230+q*19,151,11,16,'#9b7064');
+      }
+      if(stage==='기술 작업장'){
+        fill(230,138,110,14,'#bb916d');fill(243,153,6,15,'#7e776e');
+        fill(325,153,6,15,'#7e776e');
+      }
       building(434,93,120,91,'home');
       tree(179,166);tree(413,171);
     }
