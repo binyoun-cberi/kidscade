@@ -219,6 +219,82 @@ const errors=[];
     return;
   }
 
+  // Isolated equipment review: do not carry previous hat/shoes/headphones
+  // into the next comparison. Back view is essential for backpacks.
+  if(process.env.KIDSCADE_CHIBI_EQUIPMENT_ONLY==='1'){
+    const collection=[];
+    const items=[
+      ['male','chibi_bag_school','back'],
+      ['male','chibi_bag_crossbody','back'],
+      ['male','chibi_bag_mini','back'],
+      ['female','chibi_bag_school','back'],
+      ['female','chibi_bag_crossbody','back'],
+      ['female','chibi_bag_mini','back'],
+      ['male','chibi_hat_baseball','side'],
+      ['male','chibi_hat_bucket','side'],
+      ['male','chibi_hat_beanie','side'],
+      ['male','chibi_hat_beret','side'],
+      ['male','chibi_hat_straw','side'],
+      ['female','chibi_hat_beret','side'],
+      ['female','chibi_hat_straw','side'],
+      ['male','chibi_gear_headphones','side'],
+      ['male','chibi_gear_watch','threeQuarter'],
+      ['male','chibi_gear_scarf','threeQuarter'],
+      ['male','chibi_shoe_sneakers','side'],
+      ['male','chibi_shoe_boots','side']
+    ];
+    for(const [fit,id,view] of items){
+      await evalPage("document.querySelector('[data-body-fit="+JSON.stringify(fit)+"]').click()");
+      const leftover=await evalPage("(()=>{"+
+        "const list=window.__kc3dAudit.accessoryCatalog().filter(x=>x.visible);"+
+        "for(const item of list){"+
+        "const e=document.querySelector('[data-chibi-part="+JSON.stringify('')+"'+item.id+'"+JSON.stringify(']')+");"+
+        "if(e){e.checked=false;e.dispatchEvent(new Event('change',{bubbles:true}))}"+
+        "}return window.__kc3dAudit.accessoryCatalog().filter(x=>x.visible).map(x=>x.id);"+
+        "})()");
+      assert.deepEqual(leftover,[],'Accessory reset failed');
+      const category=id.startsWith('chibi_shoe_')?'shoes':'accessory';
+      await evalPage("(()=>{"+
+        "document.querySelector('[data-wardrobe-category="+JSON.stringify(category)+"]').click();"+
+        "const e=document.querySelector('[data-chibi-part="+JSON.stringify(id)+"]');"+
+        "if(!e)throw Error('Missing isolated accessory');"+
+        "e.checked=true;e.dispatchEvent(new Event('change',{bubbles:true}));"+
+        "})()");
+      const pose=await sample('IDLE',view,0,'isolated-'+fit+'-'+id);
+      assert.ok(pose.selectedParts.includes(id),'Missing isolated rendered accessory '+id);
+      const filename='isolated-'+fit+'-'+id+'-idle-'+view+'-0.png';
+      collection.push({fit,id,view,filename});
+    }
+    const tileW=310,tileH=335;
+    for(let start=0;start<collection.length;start+=9){
+      const subset=collection.slice(start,start+9),layers=[];
+      for(let i=0;i<subset.length;i++){
+        const x=i%3,row=Math.floor(i/3),item=subset[i];
+        const src=path.join(OUT,item.filename),m=await sharp(src).metadata();
+        const isHat=item.id.includes('_hat_')||item.id.includes('headphones');
+        const isShoe=item.id.includes('_shoe_');
+        const top=isHat?.05:isShoe?.56:.20, height=isHat?.54:isShoe?.35:.68;
+        const crop={left:Math.floor(m.width*.22),top:Math.floor(m.height*top),
+          width:Math.floor(m.width*.56),height:Math.floor(m.height*height)};
+        const pic=await sharp(src).extract(crop).resize(286,290,{fit:'contain'}).png().toBuffer();
+        layers.push({input:pic,left:x*tileW+12,top:row*tileH+3});
+        const name=item.fit+' '+item.id.replace('chibi_','');
+        const label=Buffer.from('<svg width="310" height="38"><text x="8" y="23" fill="white" font-family="sans-serif" font-size="15">'+name+'</text></svg>');
+        layers.push({input:label,left:x*tileW,top:row*tileH+293});
+      }
+      const rows=Math.ceil(subset.length/3);
+      const out=await sharp({create:{width:tileW*3,height:tileH*rows,channels:4,background:'#1e2d3b'}})
+        .composite(layers).webp({quality:82}).toBuffer();
+      const tag='isolated-'+(1+Math.floor(start/9));
+      fs.writeFileSync(path.join(OUT,tag+'.webp'),out);
+      console.log('CHIBI_ISOLATED_SHEET '+tag+' '+out.toString('base64'));
+    }
+    fs.writeFileSync(path.join(OUT,'isolated.json'),JSON.stringify(collection,null,2));
+    assert.equal(errors.length,0,'Browser exceptions: '+errors.join('; '));
+    console.log('CHIBI_EQUIPMENT_ISOLATED_SUCCESS '+collection.length);
+    return;
+  }
+
   // Hard geometry ownership: verify body tabs are separate workspaces in a
   // real Chrome session and incompatible parts never enter UI or output.
   const hardFit=JSON.parse(fs.readFileSync(path.join(ROOT,'chibi/asset-manifest.json'),'utf8'))
