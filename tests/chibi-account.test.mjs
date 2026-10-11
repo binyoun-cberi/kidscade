@@ -77,3 +77,34 @@ test('UI uses same strict policy and does not replace the existing pixel avatar'
  assert.match(index,/chibi-account-entry\.js/);
  assert.match(index,/id="avatar-plaza-preview"/);
 });
+
+test('2D and 3D account atelier modes coexist in one overlay without overwriting pixel state',()=>{
+  const pixel=read('avatar-studio.html');
+  const integration=read('avatar-integration.js');
+  const studio=read('teacher/character-3d-studio.html');
+  const three=read('teacher/character-3d-studio.js');
+  const account=read('chibi-account-entry.js');
+  const css=read('chibi/account-studio.css');
+  assert.match(pixel,/id="switchToChibi"/);
+  assert.match(pixel,/kidscade:avatar-switch-mode/);
+  assert.match(studio,/class="kc3d-mode-nav"/);
+  assert.match(studio,/data-kc3d-switch-2d/);
+  assert.match(integration,/function changeStudioMode\(mode\)/);
+  assert.match(integration,/data-kc-avatar-mode="2d"/);
+  assert.match(integration,/data-kc-avatar-mode="3d"/);
+  assert.match(integration,/window\.KidscadeAvatarStudio = Object\.freeze/);
+  assert.match(integration,/if \(mode === '3d' && !window\.KidscadeAccount\?\.account\)/);
+  assert.match(integration,/if \(activeStudioMode === '2d'\) snapshotFromStudio\(\)/);
+  assert.match(three,/function prepareAccountStudioLayout\(\)/);
+  assert.match(three,/const showTiles=accountStudio\|\|/);
+  assert.match(three,/window\.parent\.postMessage\(\{/);
+  assert.match(css,/grid-template-columns:minmax\(300px,400px\)/);
+  assert.match(css,/#wardrobeParts \.part-tile/);
+  assert.match(account,/KidscadeAvatarStudio\?\.open\?\.\('3d'\)/);
+  assert.match(account,/event\.source!==studio\.frame\.contentWindow/);
+  assert.match(account,/const previous=store\(\)\?\.getJson/);
+  // The pixel avatar is independently loaded in its original studio.
+  assert.match(pixel,/id="avatarCanvas"/);
+  assert.match(pixel,/avatar-pixel-studio\.js/);
+  assert.doesNotMatch(integration,/localStorage\.removeItem\(PIXEL_STATE_KEY\)/);
+});
