@@ -79,3 +79,4 @@
 .history-context{margin:12px 0 0;padding:9px 12px;border-left:3px solid #bd906b;background:#f9f5ec;color:#6b5a43;font-size:12px;line-height:1.6}
 #birthEraNote{font-size:11px;color:#77563e}
 @media(max-width:390px){.historical-picker{padding:11px}.historical-picker-fields{grid-template-columns:1fr}.era-presets button{font-size:11px}}
+.history-source-link{display:inline-block;font-size:12px;line-height:1.5;color:#176b65;margin-bottom:8px;text-decoration:underline;text-underline-offset:2px}
