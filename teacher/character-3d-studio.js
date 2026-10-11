@@ -3,7 +3,19 @@ import {clone as cloneRiggedScene} from '../assets/vendor/three-r160/addons/util
 import {OUTFIT_LIBRARY,OUTFIT_STYLES,createOutfitPack} from './chibi-outfit-pack.js';
 import {ACCESSORY_STYLES,ACCESSORY_COUNT,ACCESSORY_SLOTS,ACCESSORY_CONFLICTS,createAccessoryPack,applyAccessoryFit as applyRiggedAccessoryFit} from './chibi-accessory-pack.js';
 
+import {
+  CHIBI_ACCOUNT_CATALOG,CHIBI_ACCOUNT_DEFAULTS,
+  sanitizeChibiAccountAvatar,isChibiAccountClothed
+} from '../chibi/account-avatar-policy.mjs';
+
 window.__kc3dStudioModuleReady=true;
+const accountMode=new URLSearchParams(location.search).get('mode');
+const accountStudio=accountMode==='account'||accountMode==='preview';
+const accountPreview=accountMode==='preview';
+let accountServerAvatar=null;
+const ACCOUNT_REQUIRED=['hair','top','bottom','shoes'];
+const ACCOUNT_OPTIONAL=['hat','face','bag','neck','wrist'];
+
 
 const ADMIN_KEY_NAME='kc_teacher_admin_key';
 const CHIBI_ASSET_URL='/assets/game/chibi/ChibiCharactersV1.2/ChibiCharacters/glb/allinonepr.glb';
@@ -171,6 +183,7 @@ function setReady(ready){
   loaded=!!ready;
   $('exportGlb').disabled=!ready;
   $('exportSpec').disabled=!ready;
+  if($('saveAccountChibi'))$('saveAccountChibi').disabled=!ready;
   $('chibiHair').disabled=!ready;
   $('chibiUnlit').disabled=!ready;
   document.querySelectorAll('[data-chibi-preset],[data-view],[data-quick-clip],[data-quick-view],[data-quick-speed]').forEach(el=>el.disabled=!ready);
@@ -205,6 +218,28 @@ function adminKey(){
 }
 
 async function authorize(){
+  if(accountStudio){
+    try{
+      let response=await fetch('/api/account/me',{credentials:'same-origin',cache:'no-store'});
+      let data=await response.json().catch(()=>({}));
+      if(!response.ok||!data.ok||!data.account){
+        response=await fetch('/api/teacher/auth/me',{credentials:'same-origin',cache:'no-store'});
+        data=await response.json().catch(()=>({}));
+      }
+      if(!response.ok||!data.ok||!data.account){
+        $('gateText').textContent='3D 아바타는 계정 로그인 후 이용할 수 있어요.';
+        return false;
+      }
+      accountServerAvatar=sanitizeChibiAccountAvatar(data.state?.chibiAvatar);
+      document.body.classList.add(accountPreview?'kc-account-preview':'kc-account-editor');
+      $('gate').classList.add('hidden');
+      $('studio').classList.remove('hidden');
+      return true;
+    }catch(_){
+      $('gateText').textContent='계정 상태를 확인하지 못했어요. 인터넷 연결을 확인해 주세요.';
+      return false;
+    }
+  }
   const key=adminKey();
   if(!key){
     $('gateText').innerHTML='전역 관리자 로그인이 필요합니다. <a href="/teacher/">관리자 화면에서 로그인</a>한 뒤 다시 열어 주세요.';
@@ -315,8 +350,9 @@ function createOrbitControls(camera,domElement){
 function initScene(){
   const canvas=$('view');
   scene=new THREE.Scene();
-  scene.background=new THREE.Color(0x1d2935);
-  scene.fog=new THREE.Fog(0x1d2935,6,11);
+  const stageColor=accountStudio?0xf7efe8:0x1d2935;
+  scene.background=new THREE.Color(stageColor);
+  scene.fog=new THREE.Fog(stageColor,6,11);
 
   camera=new THREE.PerspectiveCamera(38,1,.01,40);
   camera.position.set(1.7,1.25,2.2);
@@ -337,7 +373,7 @@ function initScene(){
 
   const floor=new THREE.Mesh(
     new THREE.CircleGeometry(3.3,48),
-    new THREE.MeshStandardMaterial({color:0x52636d,roughness:.98,metalness:0})
+    new THREE.MeshStandardMaterial({color:accountStudio?0xe9ddd4:0x52636d,roughness:.98,metalness:0})
   );
   floor.rotation.x=-Math.PI/2;
   floor.position.y=-.006;
@@ -346,7 +382,7 @@ function initScene(){
 
   const grid=new THREE.GridHelper(6,30,0x81929f,0x465863);
   grid.position.y=.002;
-  scene.add(grid);
+  if(!accountStudio)scene.add(grid);
 
   controls=createOrbitControls(camera,canvas);
   controls.minDistance=.75;
@@ -709,7 +745,7 @@ function syncHairOptions(){
   const select=$('chibiHair');
   const selected=HAIR_NODES.find(name=>getNode(name)?.visible&&compatiblePart(name))||'';
   const names=activeBodyFit==='male'?MALE_HAIR_STYLES:FEMALE_HAIR_STYLES;
-  select.innerHTML='<option value="">없음</option>'+names.map(name=>
+  select.innerHTML=(accountStudio?'':'<option value="">없음</option>')+names.map(name=>
     '<option value="'+name+'">'+PART_LABELS[name]+'</option>'
   ).join('');
   select.value=selected;
@@ -718,9 +754,11 @@ function syncHairOptions(){
 function renderPartChecks(){
   const host=$('wardrobeParts');
   const names=TOGGLE_NODES.filter(name=>
-    compatiblePart(name)&&PART_GROUP(name)===activeWardrobeCategory
+    compatiblePart(name)&&PART_GROUP(name)===activeWardrobeCategory&&
+    (!accountStudio||Object.values(CHIBI_ACCOUNT_CATALOG[activeBodyFit])
+      .some(ids=>ids.includes(name)))
   );
-  const showTiles=activeWardrobeCategory==='shoes'||activeWardrobeCategory==='accessory';
+  const showTiles=(accountStudio&&!accountPreview)||activeWardrobeCategory==='shoes'||activeWardrobeCategory==='accessory';
   const descriptions={hat:'모자·헤드폰',face:'안경·마스크',bag:'가방',neck:'목도리',wrist:'시계'};
   let currentSlot='';
   host.classList.toggle('with-thumbnails',showTiles);
@@ -765,21 +803,20 @@ function paintAccessoryThumbnail(name,canvas){
   if(!thumbnailTarget)thumbnailTarget=new THREE.WebGLRenderTarget(112,112,{
     minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:true
   });
-  const items=[],ancestors=[],priorTarget=renderer.getRenderTarget();
+  const visibility=[],priorTarget=renderer.getRenderTarget();
+  scene.traverse(object=>visibility.push([object,object.visible]));
   const previousBackground=scene.background;
   scene.traverse(object=>{
-    if(object.isMesh){items.push([object,object.visible]);object.visible=false;}
+    if(object.isMesh)object.visible=false;
   });
   let ancestor=node;
   while(ancestor&&ancestor!==scene){
-    ancestors.push([ancestor,ancestor.visible]);
     ancestor.visible=true;ancestor=ancestor.parent;
   }
   node.traverse(object=>{if(object.isMesh)object.visible=true});
-  const oldGrid=[];
   scene.children.forEach(object=>{
     if(object===avatarRoot||object.isLight)return;
-    oldGrid.push([object,object.visible]);object.visible=false;
+    object.visible=false;
   });
   try{
     const focus={
@@ -822,9 +859,7 @@ function paintAccessoryThumbnail(name,canvas){
     if(ctx)ctx.putImageData(new ImageData(flipped,112,112),0,0);
     thumbnailCache.set(name,ctx?canvas.toDataURL('image/webp',.79):null);
   }finally{
-    items.forEach(([object,visible])=>{object.visible=visible});
-    ancestors.forEach(([object,visible])=>{object.visible=visible});
-    oldGrid.forEach(([object,visible])=>{object.visible=visible});
+    visibility.forEach(([object,visible])=>{object.visible=visible});
     scene.background=previousBackground;
     renderer.setRenderTarget(priorTarget);
   }
@@ -858,12 +893,75 @@ function refreshPartChecks(){
   document.querySelectorAll('[data-chibi-part]').forEach(input=>{
     const object=getNode(input.dataset.chibiPart);
     input.checked=!!object?.visible;
-    input.disabled=!object||!loaded||!compatiblePart(input.dataset.chibiPart);
+    input.disabled=!object||!loaded||!compatiblePart(input.dataset.chibiPart)||
+      (accountPreview&&!localVisualAudit);
     input.closest('.part-tile')?.classList.toggle('selected',input.checked);
   });
 }
 
+// Student/teacher account avatars always retain a complete school-safe outfit.
+// This is deliberately separate from the unrestricted administrator GLB studio.
+function enforceAccountOutfit(){
+  if(!accountStudio||!loaded)return;
+  // The original male base set carries a legacy 'shoe' mesh. Never stack it
+  // under the account footwear: a single complete pair must remain visible.
+  setNodeVisible('shoe',false);
+  const catalog=CHIBI_ACCOUNT_CATALOG[activeBodyFit];
+  const defaults=CHIBI_ACCOUNT_DEFAULTS[activeBodyFit];
+  for(const slot of ACCOUNT_REQUIRED){
+    const valid=catalog[slot];
+    if(!valid.some(id=>getNode(id)?.visible)){
+      setNodeVisible(defaults[slot],true);
+    }
+  }
+}
+function accountSnapshot(){
+  enforceAccountOutfit();
+  const catalog=CHIBI_ACCOUNT_CATALOG[activeBodyFit];
+  const parts={};
+  for(const slot of [...ACCOUNT_REQUIRED,...ACCOUNT_OPTIONAL]){
+    parts[slot]=catalog[slot].find(id=>getNode(id)?.visible)||'';
+  }
+  return sanitizeChibiAccountAvatar({bodyFit:activeBodyFit,parts});
+}
+function applyAccountAvatar(value){
+  if(!accountStudio||!loaded)return;
+  const avatar=sanitizeChibiAccountAvatar(value||{bodyFit:'male'});
+  if(avatar.bodyFit!==activeBodyFit)selectBodyFit(avatar.bodyFit);
+  applyPreset(avatar.bodyFit==='male'?'male':'base');
+  setNodeVisible('shoe',false);
+  for(const [slot,id] of Object.entries(avatar.parts)){
+    const allowed=CHIBI_ACCOUNT_CATALOG[avatar.bodyFit][slot];
+    if(!allowed?.includes(id))continue;
+    // Only one mesh per wardrobe slot (never combine underwear-only costumes).
+    for(const option of allowed)setNodeVisible(option,option===id);
+  }
+  applyAccessoryFit();
+  enforceAccountOutfit();
+  renderPartChecks();
+  refreshMetrics();
+  setCameraView(accountPreview?'threeQuarter':'front');
+}
+function saveAccountAvatar(){
+  if(!accountStudio||accountPreview||!loaded)return;
+  applyAccessoryFit();
+  enforceAccountOutfit();
+  const avatar=accountSnapshot();
+  if(!isChibiAccountClothed(avatar)||fitIntegrityIssues().length){
+    setStatus('옷이나 체형이 올바르지 않아 저장할 수 없어요.',true);
+    return;
+  }
+  if(window.parent===window){
+    setStatus('키즈케이드 계정 화면에서 3D 꾸미기를 열어 저장해 주세요.',true);
+    return;
+  }
+  window.parent.postMessage({type:'kidscade:account-chibi-save',avatar},location.origin);
+  setStatus('계정에 저장하고 있어요…');
+
+}
+
 function applyHair(name){
+  if(accountStudio&&!name)name=CHIBI_ACCOUNT_DEFAULTS[activeBodyFit].hair;
   if(name&&(!HAIR_NODES.includes(name)||!compatiblePart(name)))return;
   HAIR_NODES.forEach(hair=>setNodeVisible(hair,false));
   if(name)setNodeVisible(name,true);
@@ -888,6 +986,7 @@ function selectBodyFit(fit){
   if(fit==='female'&&!HAIR_NODES.some(name=>getNode(name)?.visible))
     applyHair('hairone');
   activeWardrobeCategory='hair';
+  if(accountStudio)enforceAccountOutfit();
   renderPartChecks();
 }
 
@@ -920,6 +1019,7 @@ function applyPreset(name){
     button.classList.toggle('active',button.dataset.chibiPreset===name);
   });
   applyAccessoryFit();
+  if(accountStudio)enforceAccountOutfit();
   renderPartChecks();
   refreshMetrics();
   // 프리셋 전환 중 WALK를 재생하고 있었다면 현재 몸체에 맞는 클립으로 전환한다.
@@ -2308,6 +2408,7 @@ async function loadChibi(){
   setCameraView(activeView);
 
   setReady(true);
+  if(accountStudio)applyAccountAvatar(accountServerAvatar);
   refreshPartChecks();
   refreshMetrics();
   clearAssetError();
@@ -2470,6 +2571,7 @@ function wireUi(){
   $('resetPose').addEventListener('click',resetPose);
   $('exportGlb').addEventListener('click',exportGlb);
   $('exportSpec').addEventListener('click',exportSpec);
+  $('saveAccountChibi')?.addEventListener('click',saveAccountAvatar);
 
   $('clipGrid').addEventListener('click',event=>{
     const button=event.target.closest('[data-clip]');
@@ -2511,6 +2613,14 @@ function wireUi(){
     if(!input)return;
 
     const part=input.dataset.chibiPart;
+    if(accountStudio&&!input.checked&&ACCOUNT_REQUIRED.some(slot=>
+      CHIBI_ACCOUNT_CATALOG[activeBodyFit][slot].includes(part)&&
+      !CHIBI_ACCOUNT_CATALOG[activeBodyFit][slot].some(id=>id!==part&&getNode(id)?.visible))){
+      input.checked=true;
+      setStatus('계정 캐릭터는 머리·상의·하의·신발을 모두 착용해야 해요.');
+      refreshPartChecks();
+      return;
+    }
     if(!compatiblePart(part)){refreshPartChecks();return;}
     const exclusive=LEGACY_OUTFIT_SLOTS[part]||PART_GROUP(part);
     const accessorySlot=ACCESSORY_SLOT(part);
@@ -2527,6 +2637,7 @@ function wireUi(){
     }else{
       setNodeVisible(part,input.checked);
       applyAccessoryFit(input.checked?part:'');
+      if(accountStudio)enforceAccountOutfit();
       renderPartChecks();
       refreshMetrics();
     }
@@ -2828,9 +2939,61 @@ function installLocalVisualAudit(){
   };
 }
 
+function prepareAccountStudioLayout(){
+  if(!accountStudio||accountPreview)return;
+  const head=document.querySelector('.top');
+  const title=head?.querySelector('h1');
+  if(title)title.textContent='내 3D 캐릭터 꾸미기';
+  const subtitle=head?.querySelector('.muted');
+  if(subtitle)subtitle.textContent='원하는 헤어와 옷을 고르고, 나만의 3D 캐릭터를 만들어 보세요.';
+  const toolbar=$('kc3dAccountActions');
+  if(toolbar){
+    const save=$('saveAccountChibi'),status=$('status');
+    if(save)toolbar.append(save);
+    if(status)toolbar.append(status);
+  }
+  const card=document.querySelector('.left-rail .body-fit-switch')?.closest('.card');
+  const heading=card?.querySelector('h2');
+  if(heading)heading.textContent='캐릭터 형태';
+  const stage=document.querySelector('.canvas-card');
+  if(stage&&!stage.querySelector('.kc3d-preview-title')){
+    const line=document.createElement('div');
+    line.className='kc3d-preview-title';
+    line.innerHTML='<strong>내 캐릭터</strong><small>드래그해서 돌려보기</small>';
+    stage.prepend(line);
+  }
+  document.querySelectorAll('[data-quick-clip]').forEach(button=>{
+    const labels={IDLE:'서기',WALK:'걷기',RUN:'달리기',JUMP:'점프'};
+    button.textContent=labels[button.dataset.quickClip]||button.textContent;
+  });
+  document.querySelector('[data-kc3d-switch-2d]')?.addEventListener('click',()=>{
+    if(window.parent!==window)window.parent.postMessage({
+      type:'kidscade:avatar-switch-mode',mode:'2d'
+    },location.origin);
+    else location.href='/avatar-studio.html';
+  });
+}
+
 async function boot(){
   const ok=await authorize();
   if(!ok)return;
+  prepareAccountStudioLayout();
+  if(accountStudio){
+    window.addEventListener('message',event=>{
+      if(event.origin!==location.origin||event.source!==window.parent)return;
+      if(event.data?.type==='kidscade:account-chibi-result'&&!event.data.ok){
+        setStatus('계정 동기화에 실패했어요. 네트워크를 확인하고 다시 저장해 주세요.',true);
+      }
+    });
+    $('exportGlb').closest('.export-actions')?.classList.add('hidden');
+    $('exportSpec').closest('.export-actions')?.classList.add('hidden');
+    document.querySelector('[data-wardrobe-category="costume"]')?.setAttribute('hidden','');
+    if(accountPreview)$('saveAccountChibi')?.setAttribute('hidden','');
+    if(accountPreview){
+      document.querySelectorAll('button,input,select').forEach(el=>{el.tabIndex=-1;});
+      $('autoRotate').checked=false;
+    }
+  }
   initScene();
   wireUi();
   requestAnimationFrame(loop);

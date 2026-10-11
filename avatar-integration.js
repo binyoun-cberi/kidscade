@@ -3,6 +3,8 @@
   'use strict';
 
   const STUDIO_URL = 'avatar-studio.html';
+  const CHIBI_STUDIO_URL = '/teacher/character-3d-studio.html?mode=account';
+  let activeStudioMode = '2d';
   const PREVIEW_KEY = 'kidscade-avatar-studio-preview';
   const PREVIEW_VERSION_KEY = 'kidscade-avatar-studio-preview-version';
   const PREVIEW_VERSION = 'pixel-v3-school-starter-29';
@@ -204,6 +206,11 @@
       #kidscade-avatar-studio-overlay{position:fixed;left:-10000px;top:0;width:16px;height:16px;z-index:30000;background:rgba(18,14,28,.82);backdrop-filter:blur(9px);opacity:0;pointer-events:none;overflow:hidden;padding:0;box-sizing:border-box}
       #kidscade-avatar-studio-overlay.open{left:0;top:0;width:100vw;height:100vh;opacity:1;pointer-events:auto;overflow:visible;padding:12px;display:grid;grid-template-rows:auto minmax(0,1fr)}
       #kidscade-avatar-studio-bar{max-width:1420px;width:100%;margin:0 auto;background:#2d2640;color:white;border-radius:18px 18px 0 0;padding:10px 12px 10px 16px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 12px 30px rgba(0,0,0,.22)}
+      #kidscade-avatar-studio-bar .kc-avatar-mode-nav{display:flex;align-items:center;gap:5px;padding:4px;border-radius:14px;background:rgba(255,255,255,.12)}
+      #kidscade-avatar-studio-bar .kc-avatar-mode-nav button{border:0;border-radius:11px;min-width:76px;min-height:37px;padding:7px 15px;background:transparent;color:#f2eaff;font-size:.84rem;font-weight:900;cursor:pointer}
+      #kidscade-avatar-studio-bar .kc-avatar-mode-nav button[aria-pressed=true]{background:#fffaf4;color:#4a2e76;box-shadow:0 4px 12px rgba(22,10,52,.15)}
+      #kidscade-avatar-studio-bar .kc-avatar-mode-nav button:disabled{opacity:.46;cursor:not-allowed}
+      @media(max-width:600px){#kidscade-avatar-studio-bar{flex-wrap:wrap!important;gap:8px!important}#kidscade-avatar-studio-bar .kc-avatar-mode-nav{order:3;width:100%;justify-content:center}#kidscade-avatar-studio-bar .kc-avatar-mode-nav button{flex:1}}
       #kidscade-avatar-studio-bar strong{font-size:1rem}#kidscade-avatar-studio-bar span{font-size:.76rem;opacity:.8;margin-left:8px}
       #kidscade-avatar-studio-close{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;border-radius:12px;padding:9px 14px;font-weight:900;cursor:pointer}
       #kidscade-avatar-studio-frame{display:block;max-width:1420px;width:100%;height:100%;margin:0 auto;border:0;border-radius:0 0 18px 18px;background:#f8f5fa;box-shadow:0 16px 40px rgba(0,0,0,.28)}
@@ -340,8 +347,16 @@
   }
 
   function closeStudio() {
-    snapshotFromStudio();
+    if (activeStudioMode === '2d') snapshotFromStudio();
     if (!overlay) return;
+    if (activeStudioMode === '3d') {
+      // Reclaim the 3D WebGL context immediately on close (shared iPads).
+      frame?.setAttribute('src','about:blank');
+      activeStudioMode = '2d';
+      overlay.querySelectorAll('[data-kc-avatar-mode]').forEach(button=>
+        button.setAttribute('aria-pressed',String(button.dataset.kcAvatarMode==='2d'))
+      );
+    }
     overlay.classList.remove('open');
     overlay.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = overlay.dataset.prevOverflow || '';
@@ -349,7 +364,7 @@
   }
 
   function syncFrameReady(attempt = 0) {
-    if (!frame) return;
+    if (!frame || activeStudioMode === '3d') return;
     const src = frame.getAttribute('src') || '';
     const deferred = frame.dataset.kidscadeDeferred === '1';
     if (deferred || !src || src === 'about:blank' || src.startsWith('about:blank#')) {
@@ -386,22 +401,63 @@
     overlay.setAttribute('aria-hidden', 'true');
     overlay.innerHTML = `
       <div id="kidscade-avatar-studio-bar">
-        <div><strong>👤 Kidscade 캐릭터 아틀리에</strong><span>새 v3 파츠로 나만의 캐릭터를 만들어요</span></div>
-        <button id="kidscade-avatar-studio-close" type="button">저장하고 닫기 ✕</button>
+        <div><strong>내 캐릭터 꾸미기</strong><span>2D와 3D 캐릭터를 나란히 꾸며요</span></div>
+        <div class="kc-avatar-mode-nav" role="group" aria-label="캐릭터 종류">
+          <button type="button" data-kc-avatar-mode="2d" aria-pressed="true">2D 픽셀</button>
+          <button type="button" data-kc-avatar-mode="3d" aria-pressed="false">3D Chibi</button>
+        </div>
+        <button id="kidscade-avatar-studio-close" type="button">닫기 ✕</button>
       </div>
       <iframe id="kidscade-avatar-studio-frame" title="Kidscade 캐릭터 꾸미기 상점" src="${STUDIO_URL}"></iframe>`;
     document.body.appendChild(overlay);
     frame = overlay.querySelector('#kidscade-avatar-studio-frame');
     overlay.querySelector('#kidscade-avatar-studio-close').addEventListener('click', closeStudio);
+    overlay.querySelectorAll('[data-kc-avatar-mode]').forEach(button=>
+      button.addEventListener('click',()=>changeStudioMode(button.dataset.kcAvatarMode))
+    );
     overlay.addEventListener('pointerdown', e => { if (e.target === overlay) closeStudio(); });
     frame.addEventListener('load', () => { mediaGuardDoc = null; syncFrameReady(0); });
   }
 
-  function openStudio() {
+  function changeStudioMode(mode) {
+    if (mode !== '2d' && mode !== '3d') return false;
+    if (mode === '3d' && !window.KidscadeAccount?.account) {
+      window.KidscadeAccount?.login?.();
+      return false;
+    }
     buildOverlay();
+    const src=frame?.getAttribute('src')||'';
+    if (mode !== activeStudioMode ||
+        (!src||src.startsWith('about:blank'))) {
+      if (activeStudioMode === '2d' && src && !src.startsWith('about:blank')) snapshotFromStudio();
+      activeStudioMode = mode;
+      frameLoaded = false;
+      const nextSrc=mode === '3d' ? CHIBI_STUDIO_URL : STUDIO_URL;
+      // The original pixel avatar lazy-loader may still own initial iframe
+      // activation. Point its deferred source at the requested mode too.
+      if(frame.dataset.kidscadeDeferred==='1')frame.dataset.kidscadeDeferredSrc=nextSrc;
+      frame.src = nextSrc;
+      if (mode === '2d') {
+        setTimeout(()=>syncFrameReady(0),100);
+      }
+    }
+    overlay.querySelectorAll('[data-kc-avatar-mode]').forEach(button=>{
+      const chosen=button.dataset.kcAvatarMode===mode;
+      button.setAttribute('aria-pressed',String(chosen));
+      button.classList.toggle('active',chosen);
+    });
+    frame.title=mode==='3d'?'3D Chibi 캐릭터 꾸미기':'2D 픽셀 캐릭터 꾸미기';
+    return true;
+  }
+
+  function openStudio(mode='2d') {
+    buildOverlay();
+    if (!changeStudioMode(mode)) return;
     setPreviewSuspended(false);
-    restoreStudioMedia();
-    try { frame.contentWindow.KidscadeAvatarShop?.setSeeds?.(readCoins()); } catch (_) {}
+    if (activeStudioMode === '2d') {
+      restoreStudioMedia();
+      try { frame.contentWindow.KidscadeAvatarShop?.setSeeds?.(readCoins()); } catch (_) {}
+    }
     overlay.dataset.prevOverflow = document.body.style.overflow || '';
     document.body.style.overflow = 'hidden';
     overlay.classList.add('open');
@@ -563,7 +619,12 @@
   }, true);
 
   window.addEventListener('message', event => {
-    if (event.source !== frame?.contentWindow) return;
+    if (event.origin !== location.origin || event.source !== frame?.contentWindow) return;
+    if (event.data?.type === 'kidscade:avatar-switch-mode') {
+      changeStudioMode(event.data.mode);
+      return;
+    }
+    if (activeStudioMode !== '2d') return;
     if (event.data?.type === 'kidscade-avatar-purchase-request') {
       const requestId = String(event.data.requestId || '');
       const amount = Math.max(0, Math.trunc(Number(event.data.amount) || 0));
@@ -585,6 +646,13 @@
     }
     if (event.data?.type === 'kidscade-avatar-change') setTimeout(snapshotFromStudio, 80);
     if (event.data?.type === 'kidscade-avatar-wallet') ensurePreviewLayer();
+  });
+
+  window.KidscadeAvatarStudio = Object.freeze({
+    open: openStudio,
+    close: closeStudio,
+    get mode(){return activeStudioMode;},
+    get frame(){return frame;}
   });
 
   window.addEventListener('storage', event => {

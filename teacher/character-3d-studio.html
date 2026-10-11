@@ -87,14 +87,45 @@
   }
 }
 </script>
+<style>
+body.kc-account-editor .top-actions,
+body.kc-account-editor .export-actions,
+body.kc-account-editor .asset-note,
+body.kc-account-editor #modelInfoTip,
+body.kc-account-editor [data-wardrobe-category="costume"]{display:none!important}
+body.kc-account-editor .account-chibi-save{display:block!important}
+body.kc-account-editor .account-chibi-note{display:block!important;margin-top:7px;font-size:.73rem;line-height:1.6;color:#475569}
+body.kc-account-editor .wrap{max-width:1400px}
+body.kc-account-editor .studio{grid-template-columns:minmax(255px,340px) minmax(400px,1fr) minmax(230px,280px)}
+body.kc-account-preview{margin:0;background:#17202a}
+body.kc-account-preview .wrap{width:100%;padding:0;margin:0;max-width:none}
+body.kc-account-preview .top,
+body.kc-account-preview .left-rail,
+body.kc-account-preview .right,
+body.kc-account-preview .side,
+body.kc-account-preview .hud,
+body.kc-account-preview .hint{display:none!important}
+body.kc-account-preview #studio{display:block!important}
+body.kc-account-preview .canvas-card{min-height:0;height:100svh;border:0;border-radius:0}
+body.kc-account-preview .view{height:100svh;min-height:0;width:100%}
+body.kc-account-preview #status{display:none}
+@media(max-width:800px){body.kc-account-editor .studio{display:flex;flex-direction:column}
+  body.kc-account-editor .left-rail{width:100%;max-width:none}
+  body.kc-account-editor .side{width:100%;position:static;max-height:none}
+  body.kc-account-editor .canvas-card{order:-1;min-height:350px;width:100%}
+  body.kc-account-editor .view{height:360px;min-height:340px}}
+</style>
+<link rel="stylesheet" href="/chibi/account-studio.css?v=20261011-ui3">
 </head>
 <body>
 <div class="wrap">
   <header class="top">
     <div>
+      <div class="kc3d-eyebrow">KIDSCADE · 3D AVATAR</div>
       <h1>3D 아바타 제작실</h1>
       <div class="muted">원본 Chibi 리그를 활용해 남자·여자 모델을 편집하고, 정면·측면·얼굴과 동작을 검수할 수 있습니다.</div>
     </div>
+    <div class="kc3d-account-actions" id="kc3dAccountActions"></div>
     <div class="top-actions">
       <a href="/teacher/avatar-clothing-studio.html">2D 아바타 제작실</a>
       <a href="/teacher/">← 관리자 화면</a>
@@ -106,6 +137,10 @@
     <div id="gateText" class="muted">전역 관리자 로그인 상태에서만 3D 제작실을 사용할 수 있습니다.</div>
   </section>
 
+  <nav class="kc3d-mode-nav" aria-label="캐릭터 형태 선택">
+    <button type="button" data-kc3d-switch-2d>2D 픽셀 캐릭터 <span>도트 스타일</span></button>
+    <button type="button" class="active" aria-current="page">3D Chibi 캐릭터 <span>입체 스타일</span></button>
+  </nav>
   <main id="studio" class="studio hidden" data-layout-version="left-rail-no-scroll-v4">
     <aside class="left-rail">
       <section class="card">
@@ -248,7 +283,9 @@
       </section>
 
       <section class="card">
-        <h2>내보내기</h2>
+        <h2>내보내기 / 계정 저장</h2>
+        <button id="saveAccountChibi" class="good account-chibi-save hidden" type="button">내 계정에 3D 캐릭터 저장</button>
+        <div class="account-chibi-note" hidden>계정 캐릭터는 상의·하의·신발을 반드시 착용해요. 삭제하면 기본 복장으로 돌아가요.</div>
         <div class="export-actions">
           <button id="exportGlb" class="good" disabled>애니메이션 포함 GLB</button>
           <button id="exportSpec" class="secondary" disabled>아바타 규격 JSON</button>
@@ -269,6 +306,6 @@ setTimeout(()=>{
   }
 },7000);
 </script>
-<script type="module" src="/teacher/character-3d-studio.js?v=20261010-silhouette59"></script>
+<script type="module" src="/teacher/character-3d-studio.js?v=20261011-account4"></script>
 </body>
 </html>

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#f4eadf">
   <title>Kidscade Pixel Avatar Studio</title>
-  <link rel="stylesheet" href="avatar-pixel-studio.css?v=7">
+  <link rel="stylesheet" href="avatar-pixel-studio.css?v=20261011-parallel2">
 </head>
 <body>
   <main class="studio-shell">
@@ -21,6 +21,10 @@
       </div>
     </header>
 
+    <nav class="avatar-kind-nav" aria-label="2D·3D 캐릭터 선택">
+      <button type="button" class="avatar-kind active" aria-current="page">2D 픽셀 캐릭터 <span>도트 스타일</span></button>
+      <button type="button" class="avatar-kind" id="switchToChibi">3D Chibi 캐릭터 <span>입체 스타일</span></button>
+    </nav>
     <section class="studio-grid">
       <aside class="preview-panel">
         <div class="preview-card">
@@ -89,6 +93,14 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite">저장했어요!</div>
   </main>
+  <script>
+  document.getElementById('switchToChibi')?.addEventListener('click',()=>{
+    if(window.parent!==window)window.parent.postMessage({
+      type:'kidscade:avatar-switch-mode',mode:'3d'
+    },location.origin);
+    else location.href='/teacher/character-3d-studio.html?mode=account';
+  });
+  </script>
   <script src="app/features/avatar/wardrobe-parts.js?v=1"></script>
   <script src="app/features/avatar/avatar-economy.js?v=1"></script>
   <script src="avatar-pixel-studio.js?v=74"></script>

@@ -1,3 +1,4 @@
+import { sanitizeChibiAccountAvatar } from '../chibi/account-avatar-policy.mjs';
 import { authorizeGlobalAdmin, authorizeTeacherForClass, ensureTeacherCredential } from './teacher-auth.mjs';
 import { createQrCredential, hashQrToken, isValidQrToken, ensureStudentQrColumns } from './qr-login.mjs';
 
@@ -269,6 +270,7 @@ export function sanitizeSyncState(input) {
     sproutPower: clampInt(state.sproutPower, 0, 1_000_000_000),
     avatarInventory: cleanStringArray(state.avatarInventory, 500),
     avatarEquipped: cleanStringMap(state.avatarEquipped, 40),
+    chibiAvatar: sanitizeChibiAccountAvatar(state.chibiAvatar),
     playHistory: boundedJsonObject(state.playHistory, 56 * 1024),
     inventory: boundedJsonObject(state.inventory, 16 * 1024),
     equipped: cleanStringMap(state.equipped, 80)

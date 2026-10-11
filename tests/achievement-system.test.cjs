@@ -64,7 +64,9 @@ test('all active catalog games have an achievement plan or an existing pilot set
   const planIds = new Set([...catalogSource.matchAll(/^\s{4}"([^"]+)":\[/gm)].map(match => match[1]));
   assert.ok(games.length > 0);
   assert.equal(new Set(games.map(game => game.id)).size, games.length);
-  assert.equal(planIds.size, games.length - pilotIds.size);
+  const legacyIds = new Set(['squid_survival_versus']);
+  assert.equal([...planIds].filter(id => !legacyIds.has(id)).length, games.length - pilotIds.size);
+  for (const id of planIds) assert.ok(games.some(game => game.id === id) || legacyIds.has(id), 'unknown achievement plan: ' + id);
   for (const game of games) {
     if (pilotIds.has(game.id)) continue;
     assert.equal(planIds.has(game.id), true, 'missing achievement plan: ' + game.id);

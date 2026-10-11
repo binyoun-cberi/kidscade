@@ -1,0 +1,166 @@
+/* Account-only Chibi atelier: reuse the visual language of the pixel studio.
+   Admin's three-column validation studio is unchanged. */
+.kc3d-mode-nav,.kc3d-account-actions,.kc3d-eyebrow{display:none}
+body.kc-account-editor{
+ --ink:#3b2b31;--muted:#7b6971;--panel:#fffaf4;--line:#ead9ce;
+ --accent:#7b5ac8;--violet:#9b61d3;
+ background:radial-gradient(circle at 20% 0,#fff8ec,#f7efe7 38%,#eee4df)!important;
+ color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+}
+body.kc-account-editor .wrap{max-width:1380px!important;margin:auto!important;padding:16px 20px 24px!important}
+body.kc-account-editor .top{
+ border:0!important;background:transparent!important;box-shadow:none!important;
+ padding:0!important;display:flex;justify-content:space-between;align-items:center;gap:16px;
+ margin:0 0 12px!important
+}
+body.kc-account-editor .top h1{font-size:clamp(1.45rem,3vw,2.15rem);letter-spacing:-.04em;color:#3b2b31;margin:3px 0}
+body.kc-account-editor .top .muted{color:#7b6971;font-size:.79rem;font-weight:750}
+body.kc-account-editor .kc3d-eyebrow{display:block;font-size:.71rem;color:#8a68cf;font-weight:950;letter-spacing:.12em}
+body.kc-account-editor .kc3d-account-actions{display:flex;align-items:center;gap:12px}
+body.kc-account-editor #saveAccountChibi{
+ display:block!important;margin:0!important;min-height:48px;padding:11px 22px;border:none;border-radius:14px;
+ background:linear-gradient(135deg,#7b5ac8,#9b61d3 60%,#d86c8d);color:#fff;font-weight:950;
+ box-shadow:0 9px 22px rgba(112,75,177,.25);cursor:pointer
+}
+body.kc-account-editor #status{display:block!important;color:#6d5179;font-size:.75rem;font-weight:800;max-width:240px;line-height:1.35}
+body.kc-account-editor #status.error{color:#a72b43}
+body.kc-account-editor .kc3d-mode-nav{
+ display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 16px;padding:6px;
+ border:1px solid #ead9ce;border-radius:19px;background:#fffaf4;box-shadow:0 5px 24px rgba(78,52,48,.07)
+}
+body.kc-account-editor .kc3d-mode-nav button{display:flex;align-items:center;justify-content:center;gap:10px;
+ min-height:52px;border:0;border-radius:14px;background:transparent;color:#786872;font-size:.94rem;
+ font-weight:950;cursor:pointer}
+body.kc-account-editor .kc3d-mode-nav button span{font-size:.69rem;font-weight:800;opacity:.76}
+body.kc-account-editor .kc3d-mode-nav button.active{color:#fff;background:linear-gradient(135deg,#6d4ea9,#9e6bd0);
+ box-shadow:0 6px 14px rgba(111,74,168,.19)}
+body.kc-account-editor .kc3d-mode-nav button:not(.active):hover{background:#f5ebfc;color:#5d4085}
+/* Two-column layout mirrors the pixel atelier: live model LEFT, wardrobe RIGHT. */
+body.kc-account-editor #studio.studio{display:grid!important;grid-template-columns:minmax(300px,400px) minmax(0,1fr)!important;
+ gap:16px!important;align-items:start;min-height:0}
+body.kc-account-editor .canvas-card{
+ order:0;position:sticky;top:16px;min-height:0!important;border:1px solid #ead9ce!important;
+ border-radius:26px!important;padding:16px!important;overflow:hidden!important;
+ background:#fffaf4!important;box-shadow:0 18px 50px rgba(78,52,48,.14)!important
+}
+body.kc-account-editor .canvas-card .view{
+ display:block;width:100%;height:min(54vh,460px);min-height:350px;max-height:460px;
+ border-radius:21px;border:1px solid #eadbd2;background:#f4ebe5;
+ touch-action:none
+}
+body.kc-account-editor .canvas-card .kc3d-preview-title{
+ display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+ margin-bottom:11px;font-weight:950;color:#3b2b31
+}
+body.kc-account-editor .canvas-card .kc3d-preview-title small{font-size:.7rem;color:#7b6971;font-weight:800}
+body.kc-account-editor .canvas-card .hud,body.kc-account-editor .canvas-card .hint{display:none!important}
+body.kc-account-editor .quick-controls{
+ position:static!important;width:100%;max-height:none;margin-top:12px;
+ padding:0!important;border:0!important;box-shadow:none!important;
+ background:transparent!important;display:grid;gap:9px
+}
+body.kc-account-editor .quick-controls h2{display:none!important}
+body.kc-account-editor .quick-controls .quick-line{display:flex;flex-wrap:wrap;gap:7px;margin:0!important}
+body.kc-account-editor .quick-controls .quick-label{flex:0 0 100%;font-weight:900;color:#75636b;font-size:.72rem}
+body.kc-account-editor .quick-controls button{
+ flex:1 1 0;min-width:54px;min-height:42px;padding:9px 7px!important;
+ background:#fff8f2!important;color:#705d65!important;border:1px solid #ead9ce!important;
+ border-radius:12px!important;font-size:.76rem!important;font-weight:900!important
+}
+body.kc-account-editor .quick-controls button.active{background:#3b2b31!important;color:#fff!important;border-color:#3b2b31!important}
+body.kc-account-editor .quick-controls .quick-line:nth-of-type(3),
+body.kc-account-editor .quick-controls .quick-note{display:none!important}
+body.kc-account-editor .left-rail{
+ order:1;display:block!important;width:auto!important;max-width:none!important;min-width:0!important;
+ max-height:none!important;overflow:visible!important;position:static!important
+}
+body.kc-account-editor .left-rail>.card{box-shadow:0 18px 50px rgba(78,52,48,.14)!important}
+body.kc-account-editor .left-rail>.card:first-child{display:none!important}
+body.kc-account-editor .left-rail>.card:has(#showBones){display:none!important}
+body.kc-account-editor .left-rail>.card:has(.body-fit-switch){
+ border:1px solid #ead9ce!important;background:#fffaf4!important;border-radius:26px!important;
+ padding:17px!important;min-height:630px;overflow:visible!important
+}
+body.kc-account-editor .left-rail>.card:has(.body-fit-switch)>h2:first-child{
+ font-size:1rem;color:#3b2b31;margin:0 0 10px
+}
+body.kc-account-editor .body-fit-switch{display:grid!important;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 14px}
+body.kc-account-editor .body-fit-switch button{
+ min-height:45px;border:1px solid #ead9ce;border-radius:12px;background:#f3eae4;color:#6c5961;font-weight:900
+}
+body.kc-account-editor .body-fit-switch button.active{background:#3b2b31!important;color:#fff!important;border-color:#3b2b31!important}
+body.kc-account-editor .fit-workspace-status{display:none!important}
+body.kc-account-editor .preset-grid,
+body.kc-account-editor .left-rail>.card:has(.body-fit-switch)>.divider,
+body.kc-account-editor .left-rail>.card:has(.body-fit-switch)>label,
+body.kc-account-editor .left-rail>.card:has(.body-fit-switch)>.muted,
+body.kc-account-editor .left-rail>.card:has(.body-fit-switch)>h3,
+body.kc-account-editor .left-rail>.card:has(.body-fit-switch)>.wardrobe-help{
+ display:none!important
+}
+body.kc-account-editor .wardrobe-categories{
+ display:flex!important;align-items:center;gap:6px;overflow-x:auto;scroll-snap-type:x proximity;
+ padding:2px 0 12px!important;margin:3px 0 2px;scrollbar-width:thin
+}
+body.kc-account-editor .wardrobe-categories button{
+ flex:0 0 auto!important;scroll-snap-align:start;min-height:42px;padding:10px 15px!important;
+ font-size:.82rem!important;background:#f3eae4!important;color:#6c5961!important;
+ border:0!important;border-radius:13px!important;white-space:nowrap;font-weight:950
+}
+body.kc-account-editor .wardrobe-categories button.active{background:#3b2b31!important;color:white!important}
+body.kc-account-editor #wardrobeCurrentGroup{font-size:1rem;font-weight:950;color:#3b2b31;margin:0;padding:9px 3px 12px}
+body.kc-account-editor #wardrobeParts.wardrobe-grid{
+ display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:10px!important;
+ max-height:min(65vh,670px);overflow:auto;padding:3px 4px 8px!important;align-content:start
+}
+body.kc-account-editor #wardrobeParts .part-fit-heading,
+body.kc-account-editor #wardrobeParts .part-slot-heading{grid-column:1/-1;font-size:.72rem;color:#806b77;margin:6px 0}
+body.kc-account-editor #wardrobeParts .part-tile{
+ position:relative;min-width:0!important;min-height:136px;margin:0;border:2px solid transparent;
+ border-radius:16px;background:#f6eee8;display:flex!important;align-items:center;justify-content:center;
+ flex-direction:column;gap:5px;cursor:pointer;padding:8px 4px!important;color:#6e5c63
+}
+body.kc-account-editor #wardrobeParts .part-tile.selected{
+ border-color:#8c69d1;background:#f1ebff;box-shadow:0 0 0 3px rgba(139,105,209,.09)
+}
+body.kc-account-editor #wardrobeParts .part-tile .part-preview{
+ width:100px!important;height:93px!important;border-radius:12px!important;
+ display:grid;place-items:center;background:radial-gradient(circle,#fff8f3,#efe2da 67%,#e7d8d0 100%)
+}
+body.kc-account-editor #wardrobeParts .part-tile canvas{width:92px;height:92px;object-fit:contain}
+body.kc-account-editor #wardrobeParts .part-tile .part-name{
+ text-align:center;font-size:.73rem;line-height:1.25;font-weight:900;overflow-wrap:anywhere
+}
+body.kc-account-editor #wardrobeParts .part-tile input{
+ position:absolute;top:7px;right:7px;z-index:2;accent-color:#7b5ac8;width:17px;height:17px;
+ pointer-events:none
+}
+body.kc-account-editor .side.right{display:none!important}
+@media(max-width:980px){
+ body.kc-account-editor .wrap{padding:12px!important}
+ body.kc-account-editor #studio.studio{grid-template-columns:300px minmax(0,1fr)!important}
+ body.kc-account-editor #wardrobeParts.wardrobe-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+@media(max-width:720px){
+ body.kc-account-editor .top{flex-wrap:wrap!important;gap:9px!important}
+ body.kc-account-editor .top .muted{display:none}
+ body.kc-account-editor #status{max-width:none}
+ body.kc-account-editor .kc3d-mode-nav{gap:4px;margin-bottom:10px;padding:4px;border-radius:15px}
+ body.kc-account-editor .kc3d-mode-nav button{flex-direction:column;gap:3px;min-height:45px;font-size:.8rem}
+ body.kc-account-editor .kc3d-mode-nav button span{font-size:.63rem}
+ body.kc-account-editor #studio.studio{display:flex!important;flex-direction:column;gap:10px!important}
+ body.kc-account-editor .canvas-card{position:static!important;order:0;width:100%!important;padding:11px!important;border-radius:20px!important}
+ body.kc-account-editor .canvas-card .view{height:260px;min-height:260px;max-height:260px}
+ body.kc-account-editor .quick-controls{gap:4px}
+ body.kc-account-editor .quick-controls .quick-line{gap:4px}
+ body.kc-account-editor .quick-controls button{min-height:38px;padding:6px 3px!important}
+ body.kc-account-editor .left-rail{order:1;width:100%!important}
+ body.kc-account-editor .left-rail>.card:has(.body-fit-switch){min-height:0;padding:11px!important;border-radius:20px!important}
+ body.kc-account-editor #wardrobeParts.wardrobe-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;max-height:none}
+ body.kc-account-editor #wardrobeParts .part-tile{min-height:120px}
+ body.kc-account-editor #wardrobeParts .part-tile .part-preview{width:80px!important;height:75px!important}
+ body.kc-account-editor #wardrobeParts .part-tile canvas{width:76px;height:76px}
+}
+@media(max-width:380px){body.kc-account-editor #wardrobeParts.wardrobe-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+/* The tiny signed-in profile preview contains only the WebGL canvas. */
+body.kc-account-preview{overflow:hidden!important}

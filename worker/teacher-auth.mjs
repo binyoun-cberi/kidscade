@@ -1,3 +1,4 @@
+import { sanitizeChibiAccountAvatar } from '../chibi/account-avatar-policy.mjs';
 const SESSION_COOKIE = 'kc_teacher_session';
 const SESSION_MAX_AGE_SEC = 12 * 60 * 60;
 const LOGIN_LOCK_THRESHOLD = 5;
@@ -162,6 +163,7 @@ function sanitizeTeacherState(input){
     sproutPower:clampInt(state.sproutPower,0,1_000_000_000),
     avatarInventory:cleanStringArray(state.avatarInventory,500),
     avatarEquipped:cleanStringMap(state.avatarEquipped,40),
+    chibiAvatar:sanitizeChibiAccountAvatar(state.chibiAvatar),
     playHistory:boundedJsonObject(state.playHistory,56*1024),
     inventory:boundedJsonObject(state.inventory,16*1024),
     equipped:cleanStringMap(state.equipped,80)

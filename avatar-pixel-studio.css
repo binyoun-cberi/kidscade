@@ -81,3 +81,11 @@ html,body{max-width:100%;overflow-x:hidden}
 }
 
 @media(max-width:430px){.category-nav{grid-template-columns:34px minmax(0,1fr) 34px;gap:4px}.tab-scroll-btn{width:34px;height:36px;border-radius:10px;font-size:1.35rem}.tab{padding:8px 11px}}
+
+/* The same avatar atelier hosts the parallel pixel / 3D choices. */
+.avatar-kind-nav{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 16px;padding:6px;border-radius:19px;border:1px solid var(--line);background:#fffaf4;box-shadow:0 5px 24px rgba(78,52,48,.07)}
+.avatar-kind{display:flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:10px 16px;border:0;border-radius:14px;background:transparent;color:#786872;font-size:.94rem;font-weight:950;cursor:pointer}
+.avatar-kind span{font-size:.69rem;font-weight:800;opacity:.76}
+.avatar-kind.active,.avatar-kind[aria-current=page]{color:white;background:linear-gradient(135deg,#6d4ea9,#9e6bd0);box-shadow:0 6px 14px rgba(111,74,168,.19)}
+.avatar-kind:not(.active):hover{background:#f5ebfc;color:#5d4085}
+@media(max-width:600px){.avatar-kind-nav{gap:4px;margin-bottom:10px;padding:4px;border-radius:15px}.avatar-kind{min-height:43px;padding:7px 5px;font-size:.79rem;gap:4px;flex-direction:column}.avatar-kind span{font-size:.63rem}}
