@@ -47,5 +47,59 @@ function contextualize(life){
 function currentEvent(life){
  return life?.country?.[0]==='대한민국'?events.find(e=>e.year===life.year)||null:null;
 }
-return Object.freeze({events,period,place,contextualize,currentEvent});
+/* Simplified historical street diorama. Intentionally illustrative rather than
+   a claim that every family lived in the same house or landscape. */
+function paint(canvas,life){
+ if(!canvas||life?.country?.[0]!=='대한민국'||life.year>=1960||life.birthYear===2026)return false;
+ const ctx=canvas.getContext?.('2d');if(!ctx)return false;
+ const w=600,h=258;canvas.width=w;canvas.height=h;
+ ctx.imageSmoothingEnabled=false;
+ const f=(x,y,b,c,color)=>{ctx.fillStyle=color;ctx.fillRect(x,y,b,c);};
+ const year=life.year,urban=life.profile?.settlement==='도시';
+ const late=year>=1945,school=life.age>=7&&life.age<19;
+ f(0,0,w,h,late?'#c7d8d0':'#d7dac6');
+ f(0,0,w,70,late?'#c2d5d9':'#dce6d9');
+ f(0,70,w,125,late?'#a6b7a7':'#b4c1a8');
+ // Low distant mountains, not a specific documented town.
+ for(let n=0;n<9;n++)f(n*78-20,82+(n%3)*8,98,55,late?'#9eafa3':'#9bb1a0');
+ f(0,161,w,97,urban?'#aa9c87':'#bca78a');
+ f(0,209,w,49,'#988d7a');
+ for(let n=0;n<21;n++)f(n*31+(n%2)*7,223+(n%3)*8,15,3,'#bca991');
+ function house(x,y,wide,red){
+   const wall=red?'#d6baaa':'#e2cead',roof=red?'#66545a':'#596664';
+   f(x,y+21,wide,63,wall);
+   f(x-8,y+15,wide+16,11,roof);
+   f(x+4,y+4,wide-8,11,roof);
+   f(x+14,y-3,wide-28,9,roof);
+   f(x+wide/2-13,y+39,26,45,'#8a725a');
+   f(x+wide/2-9,y+44,18,32,'#aa9471');
+   f(x+10,y+38,24,22,'#ede3cb');
+   f(x+13,y+40,18,17,'#9d9986');
+   f(x+wide-33,y+38,23,22,'#ede3cb');
+   f(x+wide-30,y+40,17,17,'#9d9986');
+ }
+ house(20,113,132,false);house(438,116,133,urban);
+ if(urban){
+   f(180,121,230,77,'#d0bc9c');
+   for(let x=191;x<400;x+=39){f(x,144,25,28,'#ece1c8');f(x+2,146,21,24,'#758787');}
+   f(184,116,224,10,'#625c57');f(203,106,184,12,'#756961');
+ }else{
+   f(174,150,230,50,'#a8ac7d');
+   for(let i=0;i<8;i++)f(180+i*29,173+(i%2)*6,13,18,'#7f9363');
+   f(202,130,9,65,'#716a55');f(184,122,44,13,'#718561');
+ }
+ // A small wandering figure (age changes stature); their life is fictional.
+ const size=life.age<13?17:23,x=293,y=167;
+ f(x,y-20,size,18,'#d3b18d');
+ f(x+3,y-16,5,3,'#473d38');
+ f(x-3,y-2,size+6,29,school?'#657a88':late?'#6b7a71':'#766e67');
+ f(x,y+27,6,26,'#5b524c');f(x+size-7,y+27,6,26,'#5b524c');
+ f(x-8,y+2,6,20,'#b89379');f(x+size+2,y+2,6,20,'#b89379');
+ if(school){f(x+size+7,y+17,14,15,'#987c52');f(x+size+9,y+16,10,3,'#5c5345');}
+ ctx.fillStyle='#29423d';ctx.font='bold 14px sans-serif';ctx.textAlign='left';
+ ctx.fillText(year+'년 · '+period(life),15,29);
+ ctx.font='11px sans-serif';ctx.fillText('시대 분위기를 참고한 상상화 · 실제 기록 사진이 아닙니다',15,250);
+ return true;
+}
+return Object.freeze({events,period,place,contextualize,currentEvent,paint});
 });
