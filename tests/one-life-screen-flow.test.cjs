@@ -25,8 +25,12 @@ const World6=require(path.join(root,'world-v6.js'));
 global.window.OneLifeWorld6=World6;
 const World7=require(path.join(root,'world-v7.js'));
 global.window.OneLifeWorld7=World7;
+const World8=require(path.join(root,'world-v8.js'));
+global.window.OneLifeWorld8=World8;
 global.window.OneLifeScene=Scene;
 const Scenes6=require(path.join(root,'scenes-v6.js'));
+global.window.OneLifeScenes6=Scenes6;
+const Scenes8=require(path.join(root,'scenes-v8.js'));
 delete global.window;
 const makeElement=(tag='div')=>{
  const listeners={}; const classes=new Set();
@@ -47,12 +51,14 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  const nodes=new Map(ids.map(id=>[id,makeElement()]));
  const get=id=>{assert.ok(nodes.has(id),'missing DOM node '+id);return nodes.get(id);};
  const focusButtons=[...html.matchAll(/\bdata-focus="([^"]+)"/g)].map(x=>{const e=makeElement('button');e.dataset.focus=x[1];return e;});
+ const storyButtons=[...html.matchAll(/\bdata-story-tab="([^"]+)"/g)].map(x=>{const e=makeElement('button');e.dataset.storyTab=x[1];return e;});
+ const peerButtons=[...html.matchAll(/\bdata-peer-age="([^"]+)"/g)].map(x=>{const e=makeElement('button');e.dataset.peerAge=x[1];return e;});
  const backdrop=makeElement();
  let now=0,intervalIndex=0;
  const intervals=new Map(),saved=new Map();
  const document={hidden:false,body:makeElement('body'),getElementById:get,
   querySelector:(q)=>q==='[data-close="rules"]'?backdrop:null,
-  querySelectorAll:q=>q==='[data-focus]'?focusButtons:[],
+  querySelectorAll:q=>q==='[data-focus]'?focusButtons:q==='[data-story-tab]'?storyButtons:q==='[data-peer-age]'?peerButtons:[],
   createElement:makeElement,addEventListener:()=>{}};
  const localStorage={getItem:key=>saved.get(key)||null,setItem:(key,val)=>{saved.set(key,val);},removeItem:key=>saved.delete(key)};
  const sdk={start:()=>{},result:(payload)=>{document.result=payload;},registerPauseHandlers:()=>{},registerCleanup:()=>{}};
@@ -60,7 +66,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  const StableSim={...Sim,Life:class extends Sim.Life{
   constructor(seed){super(seed===undefined?911:seed);}
  }};
- const window={OneLifeSim:StableSim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeWorld6:World6,OneLifeWorld7:World7,OneLifeCareers6:Careers6,OneLifeEvents6:Events6,OneLifeScene:Scene,OneLifeScenes6:Scenes6,KidscadeGame:sdk,
+ const window={OneLifeSim:StableSim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeWorld6:World6,OneLifeWorld7:World7,OneLifeWorld8:World8,OneLifeCareers6:Careers6,OneLifeEvents6:Events6,OneLifeScene:Scene,OneLifeScenes6:Scenes6,OneLifeScenes8:Scenes8,KidscadeGame:sdk,
   scrollTo(){},addEventListener(){}};
  new Function('window','document','localStorage','performance','setInterval','clearInterval',
   code)(window,document,localStorage,{now:()=>now},
@@ -75,11 +81,25 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.ok(get('birthName').textContent.length>0);
  assert.ok(get('birthMother').textContent.includes('세'));
  assert.ok(get('birthPlace').textContent.length>0);
+ assert.ok(get('birthHome').textContent.length>0);
+ assert.ok(get('birthContext').textContent.length>0);
  get('lifeStartBtn').click();
  assert.ok(!get('play').classList.contains('hidden'));
  assert.ok(get('profileName').textContent.length>0);
  assert.equal(get('lifeScene').width,600);
  assert.equal(get('peers').children.length,4);
+ storyButtons.find(b=>b.dataset.storyTab==='stats').click();
+ assert.ok(!get('storyStats').classList.contains('hidden'));
+ assert.match(get('survivalActual').attributes.d,/^M/);
+ assert.match(get('survivalSummary').textContent,/게임 모형/);
+ storyButtons.find(b=>b.dataset.storyTab==='years').click();
+ assert.equal(get('ageMap').children.length,108);
+ get('ageMap').children[0].click();
+ assert.match(get('yearDetail').textContent,/0세/);
+ storyButtons.find(b=>b.dataset.storyTab==='peers').click();
+ peerButtons.find(b=>b.dataset.peerAge==='0').click();
+ assert.equal(get('peers').children.length,4);
+ storyButtons.find(b=>b.dataset.storyTab==='peers').click();
  let sawMoney=false,sawDecision=false,sawChildhood=false,sawWork=false;
  for(let n=0;n<1600&&!document.result;n++){
   now+=100;
