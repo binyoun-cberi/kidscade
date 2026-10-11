@@ -15,7 +15,7 @@ test('One Life is a registered, playable upper-grade social simulation',()=>{
   assert.equal(item.age,'high');
   assert.equal(item.subject,'social');
   assert.equal(item.genre,'simulation');
-  assert.equal(item.href,'games/high_one_life/index.html?v=1');
+  assert.equal(item.href,'games/high_one_life/index.html');
   assert.ok(fs.existsSync(path.join(root,item.href.split('?')[0])));
 });
 test('screen includes drawing, choice, time and archive entry points for mobile',()=>{
