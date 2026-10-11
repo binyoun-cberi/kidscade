@@ -16,13 +16,34 @@
     {x:-8.7,z:-53.8},{x:5.1,z:-50.5},{x:11.8,z:-49.3},
     {x:-1.5,z:-55.5},{x:0.0,z:-46.4}
   ]);
-  const CORE_BANK_IDS=Object.freeze([0,3,12,24,36]);
+  const KINDS=Object.freeze(['받침','맞춤법','띄어쓰기','문맥']);
+  const CORE_COUNT=CORE_POINTS.length;
+  // A reproducible run seed avoids fixed answers while retaining checkpoint fidelity.
+  function seeded(seed){
+    let value=seed>>>0;
+    return ()=>{
+      value=(Math.imul(value,1664525)+1013904223)>>>0;
+      return value/4294967296;
+    };
+  }
+  function selectCoreIndices(seed){
+    const rand=seeded(seed),picked=[];
+    for(const kind of KINDS){
+      const pool=BANK.map((q,i)=>q.kind===kind?i:-1).filter(i=>i>=0);
+      picked.push(pool[Math.floor(rand()*pool.length)]);
+    }
+    const extra=BANK.map((q,i)=>i).filter(i=>!picked.includes(i));
+    picked.push(extra[Math.floor(rand()*extra.length)]);
+    return picked;
+  }
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-  function create(){
-    const state={time:0,contamination:0,nextSpawn:15,serial:0,cursor:0,
+  function create(seed=Math.floor(Math.random()*4294967296)){
+    seed=Number.isFinite(seed)?seed>>>0:0;
+    const selected=selectCoreIndices(seed);
+    const state={seed,time:0,contamination:0,nextSpawn:15,serial:0,cursor:0,
       coreDone:0,corrected:0,mistakes:0,awakened:false,items:[]};
-    for(let i=0;i<CORE_POINTS.length;i++)
-      state.items.push({uid:'core-'+i,bankIndex:CORE_BANK_IDS[i],kind:'core',
+    for(let i=0;i<CORE_COUNT;i++)
+      state.items.push({uid:'core-'+i,bankIndex:selected[i],kind:'core',
         x:CORE_POINTS[i].x,z:CORE_POINTS[i].z,age:0});
     return state;
   }
@@ -40,8 +61,8 @@
   function spawn(s){
     if(s.items.filter(i=>i.kind==='transient').length>=3)return null;
     let idx;
-    do{idx=(s.cursor++ * 7 + 2)%BANK.length;}
-    while(CORE_BANK_IDS.includes(idx)&&s.cursor<BANK.length*2);
+    do{idx=(s.cursor++ * 7 + 2 + (s.seed%23))%BANK.length;}
+    while(s.items.some(item=>item.kind==='core'&&item.bankIndex===idx)&&s.cursor<BANK.length*2);
     const p=SPAWN_POINTS[s.serial%SPAWN_POINTS.length];
     const item={uid:'error-'+s.serial++,kind:'transient',bankIndex:idx,x:p.x,z:p.z,age:0};
     s.items.push(item);
@@ -82,21 +103,21 @@
     return {ok:true,item,question:q,coreDone:s.coreDone,completed:s.coreDone>=5};
   }
   function checkpoint(s){
-    return {v:1,coreDone:s.coreDone,
+    return {v:2,seed:s.seed,coreDone:s.coreDone,
       remainingCore:s.items.filter(i=>i.kind==='core').map(i=>i.uid),
       corrected:s.corrected,mistakes:s.mistakes};
   }
   function restore(s,data){
-    const fresh=create();
+    if(!data||![1,2].includes(data.v)||!Array.isArray(data.remainingCore))return false;
+    const fresh=create(data.v===2&&Number.isFinite(data.seed)?data.seed:0);
     Object.assign(s,fresh);
-    if(!data||data.v!==1||!Array.isArray(data.remainingCore))return false;
     const remaining=new Set(data.remainingCore.filter(x=>/^core-[0-4]$/.test(x)));
     s.items=s.items.filter(i=>remaining.has(i.uid));
-    s.coreDone=5-s.items.length;
+    s.coreDone=CORE_COUNT-s.items.length;
     s.corrected=clamp(Number(data.corrected)||s.coreDone,s.coreDone,9999);
     s.mistakes=clamp(Number(data.mistakes)||0,0,9999);
     return true;
   }
-  return Object.freeze({BANK,CORE_POINTS,SPAWN_POINTS,create,question,level,
-    nearest,spawn,step,correct,checkpoint,restore});
+  return Object.freeze({BANK,CORE_POINTS,SPAWN_POINTS,KINDS,CORE_COUNT,create,selectCoreIndices,
+    question,level,nearest,spawn,step,correct,checkpoint,restore});
 });

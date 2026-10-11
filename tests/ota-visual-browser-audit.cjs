@@ -218,6 +218,8 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await screenshot('12-hub.png','desktop');
   await moveUntil('z',-40.8,'explore',9);
   await solveCore('core-0');
+  assert.ok((await snap()).visuals.repairs>0,'correct answer triggers visible 3D reassembly');
+  await screenshot('12a-corrected-syllables.png','desktop');
   await moveUntil('z',-45.6,'explore',12);
   await moveUntil('x',-5.4,'explore',12);
   await solveCore('core-1');
