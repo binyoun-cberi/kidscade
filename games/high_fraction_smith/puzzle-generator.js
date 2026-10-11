@@ -83,11 +83,26 @@
     const pool=[...EASY,...MID].filter(v=>!exclude.some(x=>E.eq(x,v)));return shuffle(pool,r).slice(0,count).map(clone)
   }
   function create(mode='practice',r=Math.random){
-    const depth=mode==='master'?3:mode==='rush'?(r()<.55?1:2):1;
-    let base=generateChain(depth,r);
-    let mats=[...base.materials,...decoys(mode==='master'?3:2,r,[...base.materials,base.target])];
-    mats=shuffle(mats,r);
-    const best=shortestStrikes(mats,base.target,Math.max(4,depth));
+    let depth=1,base,mats,best=null;
+    // A valid authored recipe is not enough: decoys can expand the bounded
+    // shortest-solution search beyond its limit. Reroll those puzzles instead
+    // of presenting a problem whose best-strike record cannot be verified.
+    for(let attempt=0;attempt<32;attempt++){
+      depth=mode==='master'?3:mode==='rush'?(r()<.55?1:2):1;
+      base=generateChain(depth,r);
+      mats=[...base.materials,...decoys(mode==='master'?3:2,r,[...base.materials,base.target])];
+      mats=shuffle(mats,r);
+      best=shortestStrikes(mats,base.target,Math.max(4,depth));
+      if(best!==null&&best>=1&&best<=4)break;
+      best=null;
+    }
+    if(best===null){
+      // Fully verified deterministic emergency recipe for pathological RNGs.
+      depth=1;best=1;
+      base={target:E.parse('3/4'),materials:[E.parse('1/2'),E.parse('1/4')],
+        recipe:[{a:E.parse('1/2'),b:E.parse('1/4'),op:'+',result:E.parse('3/4')}]};
+      mats=[...base.materials,E.parse('1'),E.parse('2')];
+    }
     const preferDecimal=E.isTerminating(base.target)&&r()<.45;
     return {
       id:'fs-'+Date.now().toString(36)+'-'+Math.floor(r()*1e6).toString(36),
@@ -97,7 +112,7 @@
       materials:mats.map((v,i)=>({id:'m'+i,value:clone(v),prefer:E.isTerminating(v)&&r()<.28?'decimal':'fraction'})),
       recipe:base.recipe,
       authoredStrikes:depth,
-      bestStrikes:best??depth
+      bestStrikes:best
     };
   }
   return {OPS,create,shortestStrikes,safeApply};
