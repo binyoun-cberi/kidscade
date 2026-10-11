@@ -64,7 +64,8 @@ async function browserRun(){
   };
   await send('Runtime.enable');await send('Page.enable');await send('Network.enable');
   const sizes=[{name:'PC',w:1280,h:720,mobile:false},{name:'태블릿',w:1024,h:768,mobile:true},
-    {name:'아이폰 가로',w:844,h:390,mobile:true}];
+    {name:'아이폰 가로',w:844,h:390,mobile:true},
+    {name:'아이폰 세로→가로',w:390,h:844,mobile:true}];
   const stats=[];
   for(const size of sizes){
    const errorStart=errors.length;
@@ -79,6 +80,23 @@ async function browserRun(){
    }
    const lobby=await evaluate('({title:document.title,dialog:!document.getElementById("dialog").hidden,buttons:document.querySelectorAll("button").length})');
    assert.ok(lobby.dialog,size.name+' missing intro');
+   if(size.w<size.h){
+     await evaluate('document.getElementById("dialogButton").click();document.getElementById("dialogButton").click();');
+     await sleep(250);
+     const before=await evaluate('({rotate:!document.getElementById("rotate").hidden,dialog:!document.getElementById("dialog").hidden,time:document.getElementById("time").textContent})');
+     assert.equal(before.rotate,true,'portrait phone must show landscape guidance');
+     assert.equal(before.dialog,true,'portrait phone must not start tournament behind overlay');
+     await send('Emulation.setDeviceMetricsOverride',{width:844,height:390,deviceScaleFactor:2,mobile:true});
+     await sleep(150);
+     await evaluate('document.getElementById("dialogButton").click()');
+     await sleep(2850);
+     const after=await evaluate('({rotate:!document.getElementById("rotate").hidden,dialog:!document.getElementById("dialog").hidden,time:document.getElementById("time").textContent})');
+     assert.equal(after.rotate,false,'rotation must hide guidance');
+     assert.equal(after.dialog,false,'landscape rotation must allow actual game start');
+     assert.equal(errors.length,errorStart,'rotation must not throw');
+     stats.push({device:size.name,before,after});
+     continue;
+   }
    await evaluate('document.getElementById("dialogButton").click();document.getElementById("dialogButton").click();');
    await sleep(2850);
    const snapshot=await evaluate(`(()=>{
@@ -150,7 +168,7 @@ async function browserRun(){
    await sleep(100);
    assert.equal(errors.length,errorStart,size.name+' browser errors: '+errors.slice(errorStart).join('; '));
    stats.push({device:size.name,...snapshot,exceptions:errors.slice(errorStart)});
-   if(size.name==='아이폰 가로'){
+   if(process.env.KIDSCADE_VERSUS_CAPTURE==='1'&&size.name==='아이폰 가로'){
       const shot=await send('Page.captureScreenshot',{format:'jpeg',quality:38,captureBeyondViewport:false});
       console.log('KIDSCADE_VERSUS_CAPTURE_START'+shot.data+'KIDSCADE_VERSUS_CAPTURE_END');
    }
