@@ -58,7 +58,7 @@ function drawDialog(){
  el.privacy.hidden=state.phase==='round-result'||state.phase==='finished';
  if(state.phase==='lobby'){
    el.eyebrow.textContent='PASS & PLAY · ALL DEVICES';
-   el.title.textContent='번갈아 2인 대전';
+   el.title.textContent='꼴뚜기 게임';
    el.lead.textContent='스마트폰·태블릿·PC 모두 한 사람이 화면 전체로 도전합니다. 1·3·5라운드는 1P가, 2·4·6라운드는 2P가 먼저 시작해요.';
    el.button.textContent='대회 시작하기 →';
  }else if(state.phase==='handoff'){
@@ -159,7 +159,7 @@ function nowDetails(){
 function renderHUD(){
  const playing=state.phase==='playing',g=state.game;
  el.round.textContent=playing?(state.roundIndex===6?'연장전 · '+(g.player+1)+'P':
-   (state.roundIndex+1)+'/6 · '+modeLabel()):'꼴뚜기 · 번갈아 2인 대전';
+   (state.roundIndex+1)+'/6 · '+modeLabel()):'꼴뚜기 게임';
  el.time.textContent=playing?countdownText(g.limit-g.elapsed):'--:--';
  el.time.parentElement.classList.toggle('urgent',playing&&g.limit-g.elapsed<=10000);
  for(let i=0;i<2;i++)el.scores[i].textContent=scoreText(state.totals[i]);
