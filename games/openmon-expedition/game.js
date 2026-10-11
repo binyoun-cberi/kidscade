@@ -173,12 +173,14 @@ function openGoals(){
  const hint=zone==="town"?"오른쪽 흙길을 따라가면 풀숲이 나타나고 첫 키즈몬을 만날 수 있어. 연구소 근처에서는 A 버튼으로 이야기하자.":
   zone==="meadow"?"첫 만남 후에는 풀숲에서 HP를 줄여 키즈볼을 던져 봐. 승리·포획을 3, 7, 12번 쌓으면 새 야생 키즈몬이 등장해.":
   zone==="forest"?"다양한 속성의 키즈몬을 잡아 보자. 숲 속 숨겨진 장소에서는 특별한 키즈몬을 만날 수도 있어.":
-  "동굴에서 타입 상성을 비교해 봐. 다치면 마을 연구소로 돌아와 무료로 치료받을 수 있어.";
+  zone==="cave"?"동굴에서 타입 상성을 비교해 봐. 다치면 마을 연구소로 돌아와 무료로 치료받을 수 있어.":
+  (E.ZONES.find(z=>z.key===zone)?.hint||"새로운 지역을 탐험하고 서식지 도감을 살펴보자.");
  openGeneric("탐험 목표","<div class='mission-sheet'><strong>현재 목표</strong><p>"+esc(goal)+"</p>"+
  "<strong>다음 행동 힌트</strong><p>"+esc(hint)+"</p>"+
  '<div class="equipment"><span>발견한 키즈몬</span><b>'+$("seenCount").textContent+'</b></div>'+
  '<div class="equipment"><span>수집한 키즈몬</span><b>'+$("caughtCount").textContent+'</b></div>'+
- '<div class="equipment"><span>진행 걸음 수</span><b>'+save.steps+'걸음</b></div></div>',
+ '<div class="equipment"><span>진행 걸음 수</span><b>'+save.steps+'걸음</b></div></div>'+
+ '<div class="action-row"><button type="button" class="act primary" data-hud-action="regions">지역 지도 · 서식지</button></div>',
  "연구 진행 "+(save.wins+save.catches)+" · 새 야생 종 해금: 3·7·12 기록");
 }
 function openMenu(){
@@ -186,6 +188,7 @@ function openMenu(){
  openGeneric("키즈몬 메뉴",'<div class="shop-list">'+
  '<div class="shop-item"><div><strong>소리</strong><small>효과음 켜기·끄기</small></div><button type="button" data-hud-action="audio">'+(soundOn?"끄기":"켜기")+'</button></div>'+
  '<div class="shop-item"><div><strong>자동 저장</strong><small>이 기기에서 진행 기록을 이어할 수 있어</small></div><strong>'+($("saveInfo").textContent==="!"?"저장 실패":"저장됨")+'</strong></div>'+
+ '<div class="shop-item"><div><strong>지역 지도·서식지</strong><small>발견한 마을 사이 빠른 이동과 출현 키즈몬 보기</small></div><button type="button" data-hud-action="regions">지도 열기</button></div>'+
  '<div class="shop-item"><div><strong>처음부터</strong><small>현재 탐험 기록 초기화 · 확인 후 실행</small></div><button type="button" data-hud-action="restart">초기화</button></div>'+
  '<div class="shop-item"><div><strong>키즈케이드로</strong><small>진행을 저장하고 게임에서 나가기</small></div><button type="button" data-hud-action="exit">나가기</button></div>'+
  '</div>');
@@ -196,12 +199,48 @@ function openHud(tab){
  else if(tab==="bag")openBag();
  else if(tab==="dex")openDex();
  else if(tab==="goals")openGoals();
+ else if(tab==="regions")openRegions();
  else if(tab==="menu")openMenu();
+}
+function openRegions(){
+ if(!save||battle)return;
+ const visited=new Set(save.flags?.visitedZones||["town"]),places=E.visitedVillages(save);
+ const rows=E.ZONES.map(zone=>{
+  const known=visited.has(zone.key),habitat=DB.habitats?.[zone.key],cfg=DB.encounters[zone.key];
+  const pool=cfg?E.unlockedPool(zone.key,save):[];
+  const found=known?pool.slice(0,12).map(id=>species(id)?.name).filter(Boolean).join(" · "):
+   "미발견 · 지역에 도착하면 목록을 확인할 수 있어";
+  const village=E.VILLAGES.find(v=>v.key===zone.key);
+  const reachable=village&&places.some(v=>v.key===zone.key);
+  return '<div class="shop-item region-card"><div><strong>'+(known?'● ':'○ ')+esc(zone.name)+'</strong>'+
+   '<small>'+esc(zone.theme||"")+(cfg?' · Lv.'+cfg.level.join("~"):' · 안전한 마을')+'</small>'+
+   '<small>'+esc(zone.hint||"")+'</small>'+
+   (cfg?'<small>야생: '+esc(found)+(known&&pool.length>12?' 외 '+(pool.length-12)+'종':'')+'</small>':'')+
+   (habitat?'<small>연구 주제: '+esc(habitat.subject)+'</small>':'')+
+   (cfg?'<small>지역 조사: '+(save.regionResearch?.[zone.key]?.seen?.length||0)+'/3종'+
+    (save.regionResearch?.[zone.key]?.rewarded?' · 연구 완료':
+     ' · 보상 '+(E.HABITAT_REWARDS[zone.key]?.name||"연구 보상"))+'</small>':'')+'</div>'+
+   (village?'<button type="button" data-travel="'+zone.key+'" '+(!reachable?'disabled':'')+
+   '>'+(reachable?'빠른 이동':'미발견')+'</button>':'')+'</div>';
+ }).join("");
+ openGeneric("키즈몬 세계 지도 · 지역 도감",
+ '<p>마을은 안전하고 초원·숲·동굴 등에서는 지역 특유의 키즈몬을 만날 수 있어. 연구가 진행되면 더 많은 종이 출현해.</p>'+
+ '<p>발견한 마을 사이에서는 빠르게 이동할 수 있어. 아직 방문하지 않은 마을은 걸어서 찾아가야 해.</p>'+
+ '<div class="shop-list">'+rows+'</div>');
+}
+function talkNewVillage(village){
+ openGeneric(village.name+" · "+village.npc,
+ '<p>'+esc(E.ZONES.find(z=>z.key===village.key)?.hint||"")+'</p>'+
+ '<p>오늘의 탐구: <strong>'+esc(village.lesson)+'</strong>. 주변의 관련 키즈몬을 찾아 기술과 특성을 비교해 보자.</p>'+
+ '<div class="action-row"><button type="button" class="act primary" data-village-heal="1">HP·PP 무료 회복</button>'+
+ '<button type="button" class="act" data-hud-action="regions">세계 지도·빠른 이동</button></div>');
 }
 function closeGeneric(){$("genericOverlay").classList.add("hidden")}
 function talk(){
  if(!save||battle||!$("genericOverlay").classList.contains("hidden"))return;
  const x=save.pos.x,y=save.pos.y;
+ const village=E.VILLAGES.find(v=>v.key!=="town"&&Math.abs(x-v.npcX)+Math.abs(y-v.npcY)<=2);
+ if(village){talkNewVillage(village);return}
  if(Math.abs(x-9)+Math.abs(y-10)<=2){openClinic();return}
  if(Math.abs(x-13)+Math.abs(y-10)<=2){
   openGeneric("수학 연구원",'<p>야생 키즈몬의 남은 체력과 기술의 피해량을 비교해 봐. 세 마리의 동료가 모였다면 트레이너 배틀에도 도전해 봐!</p>'+
@@ -212,8 +251,8 @@ function talk(){
  if(E.terrain(x,y)==="clearing"||Math.abs(x-56)+Math.abs(y-7)<=1){
   setToast("이 숲에서는 분기견이 발견되었다고 해. 풀숲을 살펴봐!");return
  }
- if(E.zoneAt(x)==="town")setToast("오른쪽으로 걸어가 이슬초원을 찾아봐. 위쪽 연구소의 연구원에게도 이야기할 수 있어.");
- else setToast("초록색 긴 풀이나 동굴의 거친 땅을 밟아야 야생 키즈몬과 만날 수 있어!");
+ const zone=E.ZONES.find(z=>z.key===E.zoneAt(x));
+ setToast(zone?.hint||"주변의 특별한 땅을 조사해 야생 키즈몬을 찾아봐!");
  beep("click");
 }
 function openClinic(){
@@ -440,10 +479,18 @@ function movePlayer(dx,dy,now=performance.now()){
  lastMove=now;
  const old=E.zoneAt(save.pos.x),result=E.move(save,dx,dy);
  if(!result.moved)return;
- if(result.zone!==old)setToast((E.ZONES.find(z=>z.key===result.zone)?.name||"새 지역")+"에 도착했어!");
+ if(result.zone!==old){
+  const place=E.ZONES.find(z=>z.key===result.zone);
+  setToast((place?.name||"새 지역")+"에 도착! "+(place?.theme||"")+
+    (result.welcome?" · 새 마을 발견 보상 키즈볼 2개!":""));
+ }
  if(result.encounter){
    beep("click");
    enterBattle(result.encounter,result.zone,!!(result.encounter.id==="shibu_r00_c00"),!!result.firstRoad);
+   if(result.regionalReward&&battle){
+    battle.message+="\n지역 조사 완료! 새로운 3종 발견 · "+result.regionalReward.name+" 획득!";
+    renderBattle();
+   }
  }
  if(save.steps%5===0)persist();
  updateAll();
@@ -516,8 +563,10 @@ function renderBattle(){
     esc(species(m.id).name)+' '+(m.hp>0?'●':'×')+'</span>').join("")+
    '</div></div>').join("");
  }
- const bg=battle.zone==="cave"?"Cave_Back.png":"Forest_Background.png";
- $("battleBackdrop").style.backgroundImage="linear-gradient(#ffffff15,#bdd2a725),url('"+ASSET+"more%20assets/"+bg+"')";
+ const bg=["cave","powerPlant"].includes(battle.zone)?"Cave_Back.png":"Forest_Background.png";
+ const tone=battle.zone==="snowfield"?"#d2eafa70":battle.zone==="tidal"?"#67b5d547":
+ battle.zone==="powerPlant"?"#e9c27340":"#bdd2a725";
+ $("battleBackdrop").style.backgroundImage="linear-gradient(#ffffff15,"+tone+"),url('"+ASSET+"more%20assets/"+bg+"')";
  $("battleTurn").textContent=battle.turn+"턴"+(battle.trainer?" · "+battle.trainer.party.filter(m=>m.hp>0).length+"/3 남음":"");
  $("battleLog").textContent=battle.message;
  if(battle.done){$("battleActionPanel").classList.add("hidden");$("battleAfter").classList.remove("hidden");return}
@@ -667,21 +716,53 @@ function showSwap(){
 }
 function renderTerrain(x,y,sx,sy){
  const t=E.terrain(x,y),area=E.zoneAt(x),seed=(x*73+y*91)%41;
- const base={town:"#94b889",meadow:"#9cc987",forest:"#72aa76",cave:"#818792"};
+ const base={town:"#94b889",meadow:"#9cc987",forest:"#72aa76",cave:"#818792",
+ crystalTown:"#81aaa8",powerPlant:"#a6a08c",harborTown:"#81aeb9",tidal:"#82b7bc",
+ snowTown:"#b8c7db",snowfield:"#d3e4ef"};
  cx.fillStyle=base[area];cx.fillRect(sx,sy,16,16);
  if(t==="path"){
-  cx.fillStyle=area==="cave"?"#c0b49b":area==="town"?"#d1c0a0":"#d5bc93";cx.fillRect(sx,sy,16,16);
+  cx.fillStyle=area==="cave"?"#c0b49b":area==="snowfield"||area==="snowTown"?"#d4e3e5":
+  area==="harborTown"||area==="tidal"?"#d0d5c3":area==="powerPlant"?"#bcaea1":
+  area==="town"?"#d1c0a0":"#d5bc93";cx.fillRect(sx,sy,16,16);
   cx.fillStyle="#fff7d62b";cx.fillRect(sx,sy,16,2);
   cx.fillStyle="#746e5740";cx.fillRect(sx+(seed%7),sy+6,4,1);cx.fillRect(sx+((seed+8)%9),sy+12,4,1);
   if(area==="town"){cx.fillStyle="#f8edce3a";cx.fillRect(sx+1,sy+1,6,4)}
   return;
  }
- if(t==="building"){cx.fillStyle="#d5bc8c";cx.fillRect(sx,sy,16,16);return}
+ if(t==="building"){cx.fillStyle=area==="snowTown"?"#91a6c6":area==="harborTown"?"#b59873":area==="crystalTown"?"#8dbeb9":"#d5bc8c";cx.fillRect(sx,sy,16,16);return}
  if(t==="wall"){
   cx.fillStyle=area==="cave"?"#4c5662":"#477252";cx.fillRect(sx,sy,16,16);
   cx.fillStyle="#ffffff16";cx.fillRect(sx+2,sy+2,12,2);return
  }
- if(t==="rock"){
+ if(t==="charged"){
+ cx.fillStyle="#626f70";cx.fillRect(sx,sy,16,16);
+ cx.fillStyle="#e9d674";cx.fillRect(sx+2,sy+((seed%3)+3),7,2);
+ cx.fillRect(sx+8,sy+7,3,2);cx.fillRect(sx+7,sy+9,7,2);return;
+}
+if(t==="wetland"){
+ cx.fillStyle="#4eaaa5";cx.fillRect(sx,sy,16,16);
+ cx.fillStyle="#c0e7c3";cx.fillRect(sx+2,sy+5,10,2);cx.fillRect(sx+6,sy+12,7,1);
+ cx.fillStyle="#467c64";cx.fillRect(sx+seed%7,sy+2,2,4);return;
+}
+if(t==="snow"){
+ cx.fillStyle="#d3e7ef";cx.fillRect(sx,sy,16,16);
+ cx.fillStyle="#ffffff";cx.fillRect(sx+seed%11,sy+3,4,2);
+ cx.fillRect(sx+((seed+6)%10),sy+11,5,2);return;
+}
+if(t==="water"){
+ cx.fillStyle="#438cae";cx.fillRect(sx,sy,16,16);
+ cx.fillStyle="#9cd6e3";cx.fillRect(sx+3,sy+4,8,2);cx.fillRect(sx+6,sy+11,7,2);return;
+}
+if(t==="tower"||t==="conductor"){
+ cx.fillStyle="#5a7779";cx.fillRect(sx,sy,16,16);
+ cx.fillStyle="#46505c";cx.fillRect(sx+5,sy+2,6,14);cx.fillRect(sx+1,sy+6,14,3);
+ cx.fillStyle="#e8d47a";cx.fillRect(sx+7,sy+1,2,3);return;
+}
+if(t==="iceberg"){
+ cx.fillStyle="#aacdda";cx.fillRect(sx,sy,16,16);cx.fillStyle="#eefcff";
+ cx.beginPath();cx.moveTo(sx+2,sy+14);cx.lineTo(sx+8,sy+1);cx.lineTo(sx+14,sy+14);cx.fill();return;
+}
+if(t==="rock"){
   cx.fillStyle="#7b8188";cx.fillRect(sx,sy,16,16);
   cx.fillStyle="#535d67";cx.fillRect(sx+2,sy+5,12,9);
   cx.fillStyle="#a7aab0";cx.fillRect(sx+4,sy+3,7,5);return
@@ -744,6 +825,12 @@ function drawLandmarks(camX,camY){
  sign(16,10,"→ 첫 만남");
  sign(39,9,"→ 가지숲");
  sign(61,9,"→ 동굴");
+sign(81,9,"→ 수정마을");
+sign(101,9,"→ 발전소");
+sign(127,9,"→ 해류항");
+sign(146,9,"→ 갯벌");
+sign(172,9,"→ 설빛");
+sign(193,9,"→ 서리고원");
  flowerbed(3,17);flowerbed(4,17);flowerbed(5,17);
 }
 function drawBuilding(camX,camY){
@@ -757,6 +844,32 @@ function drawBuilding(camX,camY){
  cx.fillStyle="#ffffff66";cx.fillRect(sx+21,sy+44,5,18);cx.fillRect(sx+94,sy+44,5,18);
  cx.fillStyle="#eed7a6";cx.fillRect(sx+51,sy+19,38,17);
  cx.fillStyle="#315648";cx.font="bold 9px monospace";cx.fillText("키즈몬",sx+52,sy+31);
+}
+function drawSettlements(camX,camY){
+ for(const [key,left,label,roof,walls] of [
+  ["crystalTown",89,"수정 연구소","#51797e","#b9dcd3"],
+  ["harborTown",135,"해류 탐사소","#387b91","#f2d6a4"],
+  ["snowTown",180,"기후 연구소","#667ab6","#e0e9f4"]
+ ]){
+  const x=(left-camX)*16,y=(5-camY)*16;
+  if(x>C.width+8||x+128<0||y>C.height+8||y+80<0)continue;
+  cx.fillStyle="#35545e";cx.fillRect(x+1,y+22,125,61);
+  cx.fillStyle=walls;cx.fillRect(x+3,y+27,120,54);
+  cx.fillStyle=roof;cx.fillRect(x-4,y+13,135,16);cx.fillRect(x+9,y+3,109,12);
+  cx.fillStyle="#679ab6";cx.fillRect(x+12,y+39,25,24);cx.fillRect(x+90,y+39,25,24);
+  cx.fillStyle="#ecf8f3";cx.fillRect(x+15,y+43,6,14);cx.fillRect(x+94,y+43,6,14);
+  cx.fillStyle="#405b65";cx.fillRect(x+54,y+46,23,36);
+  cx.fillStyle="#fff3d8";cx.fillRect(x+26,y+16,74,15);
+  cx.fillStyle="#294f54";cx.font="bold 9px sans-serif";cx.fillText(label,x+29,y+27);
+  if(key==="crystalTown"){
+   cx.fillStyle="#92f4e9";cx.fillRect(x+6,y+2,5,8);cx.fillRect(x+117,y+1,5,9);
+  }else if(key==="harborTown"){
+   cx.fillStyle="#f2ece1";cx.fillRect(x+117,y-6,2,23);
+   cx.beginPath();cx.moveTo(x+120,y-5);cx.lineTo(x+136,y+8);cx.lineTo(x+120,y+8);cx.fill();
+  }else{
+   cx.fillStyle="#fff";cx.fillRect(x+4,y+2,20,4);cx.fillRect(x+90,y+1,29,4);
+  }
+ }
 }
 function drawNpc(name,img,x,y,camX,camY,frame=0){
  const sx=(x-camX)*16,sy=(y-camY)*16;
@@ -784,8 +897,11 @@ function render(now){
  cx.fillStyle="#80af72";cx.fillRect(0,0,C.width,C.height);
  for(let dy=0;dy<rows;dy++)for(let dx=0;dx<columns;dx++){const x=camX+dx,y=camY+dy;renderTerrain(x,y,dx*16,dy*16)}
  drawBuilding(camX,camY);
+  drawSettlements(camX,camY);
  drawLandmarks(camX,camY);
  if(camX<=13&&camY<=10){drawNpc("회복·상점",imgs.staff,9,10,camX,camY);drawNpc("연구원",imgs.npc,13,10,camX,camY)}
+  for(const v of E.VILLAGES.filter(v=>v.key!=="town"))
+   drawNpc(v.npc,imgs.staff,v.npcX,v.npcY,camX,camY);
  const px=(player.x-camX)*16,py=(player.y-camY)*16;
  cx.fillStyle="#254c3950";cx.fillRect(px+2,py+11,13,4);
  const frame=Math.floor(now/210)%3;
@@ -810,6 +926,7 @@ function attach(){
    else if(act==="clinic"){closeGeneric();$("goClinic").click()}
    else if(act==="box")openBox();
    else if(act==="trainers")openTrainers();
+   else if(act==="regions")openRegions();
    else if(act==="evolve"){closeGeneric();evolveIfReady();}
    else if(act==="stones")openStoneEvolution();
    else if(act==="skills")openSkills();
@@ -865,6 +982,15 @@ function attach(){
   b=e.target.closest("button[data-trainer-start]");
   if(b&&trainerSelection&&T.validateSelection(save,trainerSelection.slots)){
    enterTrainer(b.dataset.trainerStart,trainerSelection.slots);return;
+  }
+  b=e.target.closest("button[data-village-heal]");if(b){
+   E.healAll(save);updateAll();persist();beep("win");
+   setToast("마을 연구원이 모든 키즈몬의 HP와 PP를 회복해 줬어!");closeGeneric();return;
+  }
+  b=e.target.closest("button[data-travel]");if(b){
+   if(E.fastTravel(save,b.dataset.travel)){
+    updateAll();persist();closeGeneric();setToast(E.ZONES.find(z=>z.key===b.dataset.travel).name+"에 도착!");
+   }else setToast("아직 발견하지 않은 마을이야. 직접 걸어서 방문해 봐.");return;
   }
   b=e.target.closest("button[data-buy]");if(b){buy(b.dataset.buy);return}
   b=e.target.closest("button[data-swap]");if(b){const choice=Number(b.dataset.swap);closeGeneric();resolveBattleTurn({type:"switch",index:choice});return}

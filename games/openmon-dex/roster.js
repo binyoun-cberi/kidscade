@@ -75,13 +75,21 @@ const zones={
  meadow:{label:"이슬초원",level:[2,4],pool:[id("set1",0,1),id("set1",1,1),id("set5",5,3),id("set2",0,4),id("set2",2,0),id("set5",2,0)]},
  forest:{label:"가지숲",level:[4,7],pool:[id("set1",0,3),id("set2",0,0),id("set5",2,2),id("set5",5,0),id("set2",0,4),id("set5",2,0)]},
  cave:{label:"잔돌동굴",level:[7,10],pool:[id("set1",0,1),id("set2",1,4),id("set5",4,0),id("set5",3,4),id("set5",5,0),id("set5",0,2)]},
+ powerPlant:{label:"번개발전소",level:[9,13],pool:[
+  id("set4",1,2),id("set4",2,0),id("set4",2,2),id("set4",1,3),id("set4",0,3),id("set5",4,0),id("set5",4,3)]},
+ tidal:{label:"물결갯벌",level:[12,16],pool:[
+  id("set2",0,6),id("set2",1,0),id("set2",1,2),id("set2",2,2),id("set5",0,0),id("set4",2,3),id("set5",0,4)]},
+ snowfield:{label:"서리고원",level:[15,20],pool:[
+  id("set5",1,4),id("set5",2,4),id("set5",3,4),id("set5",4,4),id("set5",0,2),id("set5",4,2),id("set5",2,0)]},
  clearing:{label:"비밀숲",level:[6,8],pool:[shibu]}
 };
 // Research routes unlock new wild populations as the player wins battles.
 // Provisional Set 2 second drawings cannot auto-evolve, so those forms appear wild.
 // Every other non-starter family is reachable from its earliest form.
-const launchPool=new Set(Object.values(zones).flatMap(z=>z.pool));
-const researchEncounters={meadow:[[],[],[]],forest:[[],[],[]],cave:[[],[],[]]};
+// Original three-zone research availability must remain 102/102 accessible, even with new habitats.
+const launchPool=new Set(["meadow","forest","cave","clearing"].flatMap(key=>zones[key].pool));
+const researchEncounters={meadow:[[],[],[]],forest:[[],[],[]],cave:[[],[],[]],
+ powerPlant:[[],[],[]],tidal:[[],[],[]],snowfield:[[],[],[]]};
 const wildCandidates=db.sprites.filter(s=>s.playable&&s.id!==shibu&&s.rarity!=="starter"&&
  (s.evolutionRank===1||(s.familyOrigin==="provisional"&&s.evolutionRank===2))&&
  !launchPool.has(s.id));
@@ -91,6 +99,13 @@ for(const s of wildCandidates){
  // The earlier waves are not exclusively determined by image atlas order.
  const wave=s.familyOrigin==="provisional"&&s.evolutionRank===2?2:s.dexNo%3;
  researchEncounters[area][wave].push(s.id);
+ // Later territories provide distinct habitats for families already discoverable
+ // on the original routes; this preserves 102/102 catchability in legacy saves.
+ const advanced=["electric","fire"].includes(s.type)?"powerPlant":
+  ["water","air"].includes(s.type)?"tidal":
+  ["ice","mind"].includes(s.type)?"snowfield":
+  s.type==="earth"?"powerPlant":"snowfield";
+ if(!zones[advanced].pool.includes(s.id))researchEncounters[advanced][wave].push(s.id);
 }
 const unlockWins=[3,7,12];
 const possibleWild=new Set([...launchPool,...wildCandidates.map(s=>s.id)]);
@@ -106,6 +121,14 @@ db.species=db.sprites.filter(s=>s.playable);
 db.dexEntries=db.species;db.totalDexEntries=db.species.length;
 db.families=families;db.shibuBranches=branches;db.encounters=zones;
 db.researchEncounters=researchEncounters;db.researchUnlockWins=unlockWins;
+db.habitats={
+ meadow:{subject:"기초 생태·부력",dominant:["leaf","water","air"],rare:"첫 만남을 지키는 연구 초원"},
+ forest:{subject:"진화·생태 다양성",dominant:["leaf","dark","air"],rare:"비밀 공터에서 분기견 등장"},
+ cave:{subject:"지층·자력·그림자",dominant:["earth","dark","mind"],rare:"동굴 깊숙한 곳의 미지 생명"},
+ powerPlant:{subject:"회로·전류·열",dominant:["electric","fire","earth"],rare:"전기의 흐름과 자기력"},
+ tidal:{subject:"부력·해류·바람",dominant:["water","air"],rare:"물높이와 수압"},
+ snowfield:{subject:"온도·빙점·기후",dominant:["ice","mind","air"],rare:"얼음과 빛의 굴절"}
+};
 db.designNotes={
  numbers:"001–102 are collectible visual forms, not 102 unrelated evolution families.",
  family:"Set 2's nine pairs are provisional art groups: level evolution is disabled.",
