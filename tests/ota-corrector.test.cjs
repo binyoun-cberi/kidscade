@@ -87,3 +87,14 @@ test('archive becomes physically reachable to the Corrector only after Record B'
  assert.ok(route.every(p=>after(p.x,p.z)));
  assert.ok(X.lineClear(entrance,inside,after),'the central archive walkway is open');
 });
+
+test('after Record B, roaming AI plans a real patrol route into the archive',()=>{
+ const state=R.initialState();state.stage='explore';C3.ensure(state).records.archive=true;
+ const s=X.create();Object.assign(s,{phase:'patrol',x:0,z:-47.8,patrolIndex:1,grace:0,target:null});
+ const env={stage:'explore',archiveOpen:true,awakened:true,safe:true,moving:false,running:false,
+   passable:(x,z)=>C3.canMove(state,x,z)};
+ X.step(s,.1,{x:9,z:-47.8},env);
+ assert.ok(s.target.x>3.5,'patrol visits the archive, not only the original corridor');
+ assert.ok(s.path.length>0,'navigation calculates a real route after the seal');
+ assert.ok(s.path.every(point=>env.passable(point.x,point.z)));
+});
