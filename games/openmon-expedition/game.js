@@ -173,7 +173,8 @@ function openGoals(){
  const hint=zone==="town"?"오른쪽 흙길을 따라가면 풀숲이 나타나고 첫 키즈몬을 만날 수 있어. 연구소 근처에서는 A 버튼으로 이야기하자.":
   zone==="meadow"?"첫 만남 후에는 풀숲에서 HP를 줄여 키즈볼을 던져 봐. 승리·포획을 3, 7, 12번 쌓으면 새 야생 키즈몬이 등장해.":
   zone==="forest"?"다양한 속성의 키즈몬을 잡아 보자. 숲 속 숨겨진 장소에서는 특별한 키즈몬을 만날 수도 있어.":
-  "동굴에서 타입 상성을 비교해 봐. 다치면 마을 연구소로 돌아와 무료로 치료받을 수 있어.";
+  zone==="cave"?"동굴에서 타입 상성을 비교해 봐. 다치면 마을 연구소로 돌아와 무료로 치료받을 수 있어.":
+  (E.ZONES.find(z=>z.key===zone)?.hint||"새로운 지역을 탐험하고 서식지 도감을 살펴보자.");
  openGeneric("탐험 목표","<div class='mission-sheet'><strong>현재 목표</strong><p>"+esc(goal)+"</p>"+
  "<strong>다음 행동 힌트</strong><p>"+esc(hint)+"</p>"+
  '<div class="equipment"><span>발견한 키즈몬</span><b>'+$("seenCount").textContent+'</b></div>'+
