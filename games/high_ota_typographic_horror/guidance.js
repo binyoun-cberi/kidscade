@@ -45,7 +45,7 @@
     hub:[
       '사무실과 서고에는 서로 다른 기록이 있습니다.',
       '왼쪽의 「사무실」에서 기록 A, 오른쪽의 「서고」에서 기록 B를 찾으세요.',
-      '교정자의 글자가 가까워지면 뛰지 말고 시야를 끊으세요. 사무실의 「숨기」에서 은신할 수 있습니다.'
+      '떠 있는 「핵심 오타」를 조사해 5개를 고치세요. 방치하면 교정자가 나타납니다.'
     ],
     office:[
       '사무실에는 이름을 잘못 붙인 사물이 있습니다.',
@@ -68,7 +68,7 @@
       '서고 오른쪽 뒤편에서 반짝이는 기록 B에 다가가 조사하세요.'
     ],
     finalGate:[
-      '기록 A와 B를 모두 모았습니다.',
+      '기록 A·B와 핵심 오타 5개를 모두 복구해야 합니다.',
       '사무실과 서고 사이의 중앙 복도 끝으로 가세요.',
       '붉은 「봉인」을 조사하세요. 사라진 이름의 답은 「기억」입니다.'
     ],
@@ -83,7 +83,7 @@
     hiding:'잘했어요. 움직이지 말고 발소리가 멀어질 때까지 기다리세요.',
     distortion:'사라진 길을 되찾으세요. 붉은 글자의 이름이 틀렸습니다.',
     door:'빨간 「뒤」가 보이면 뛰지 마세요. 걷거나 멈추세요.',
-    explore:'두 기록을 찾아야 합니다. 거대한 교정자는 소리와 시선을 따라옵니다.',
+    explore:'잘못된 기록을 조사해 맞춤법을 고치세요. 오타가 쌓이면 교정자가 나타납니다.',
     final:'교정자가 뒤따라옵니다. 안쪽의 「나」로 달리세요.'
   });
   function scope(s,p){
@@ -97,7 +97,14 @@
       return c.officeFixed?'officeRecord':'office';
     return 'hub';
   }
-  function hints(s,p){return defaultHints[scope(s,p)]||defaultHints.hub;}
+  function hints(s,p){
+    if(scope(s,p)==='finalGate'&&s.literacy&&s.literacy.coreDone<5)return [
+      '기록 A·B는 찾았지만 핵심 오타 '+(5-s.literacy.coreDone)+'개가 남았습니다.',
+      '복도·사무실·서고에서 「핵심 오타 · 조사」를 찾아 글자를 고치세요.',
+      '중앙 복도 2곳, 사무실 2곳, 서고 1곳의 잘못된 기록을 모두 고쳐야 봉인이 열립니다.'
+    ];
+    return defaultHints[scope(s,p)]||defaultHints.hub;
+  }
   function hint(s,p,level){const h=hints(s,p);return h[Math.min(Math.max(0,(level|0)-1),h.length-1)];}
   function cue(stage){return firstCues[stage]||null;}
   function failure(s){

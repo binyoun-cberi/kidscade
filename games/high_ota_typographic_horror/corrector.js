@@ -115,6 +115,12 @@
       s.phase='dormant';s.hidden=false;s.exposed=false;
       return {caught:false,phase:s.phase,distance:Infinity};
     }
+    // During exploration the Corrector materializes only when unread errors pile up.
+    // Absent flag preserves isolated legacy encounter simulations.
+    if(env.awakened===false){
+      if(s.phase!=='dormant')reset(s);
+      return {caught:false,phase:s.phase,distance:Infinity};
+    }
     if(s.phase==='dormant'){s.phase='patrol';s.grace=16;}
     const passable=env.passable;
     const safe=env.safe===true;
