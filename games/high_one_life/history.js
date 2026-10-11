@@ -34,10 +34,10 @@ function period(life){
 function place(life){
  const c=life?.country?.[0]||'';
  if(c!=='대한민국')return c;
- return life.year<1945?'한반도(당시 일본 식민 지배하의 조선)':life.year===1945?'광복을 맞은 한반도':life.year<1948?'광복 이후 한반도':'대한민국';
+ return life.year<1910?'대한제국 시기의 한반도':life.year<1945?'한반도(당시 일본 식민 지배하의 조선)':life.year===1945?'광복을 맞은 한반도':life.year<1948?'광복 이후 한반도':'대한민국';
 }
 function contextualize(life){
- if(!life||life.country[0]!=='대한민국')return false;
+ if(!life||!life.alive||life.country[0]!=='대한민국')return false;
  const hit=events.find(e=>e.year===life.year);
  if(!hit)return false;
  if(life.log.some(e=>e.kind==='history'&&e.year===hit.year))return false;
