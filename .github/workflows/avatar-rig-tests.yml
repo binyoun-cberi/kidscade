@@ -39,12 +39,18 @@ on:
       - 'tests/cube-architect-v21.test.cjs'
       - '.github/workflows/avatar-rig-tests.yml'
 
+# Keep the latest QA revision per PR; independent PRs are not cancelled.
+concurrency:
+  group: kidscade-qa-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   avatar-rig:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
