@@ -1089,7 +1089,7 @@ function update(dt) {
     const safe=state.stage==='explore'&&C3.inArchive(player)&&!archiveClear;
     const report=X.step(corrector,dt,player,{
       stage:state.stage,safe,archiveOpen,awakened:literacy.awakened,moving:player.moving,running,noise:soundPulse>0,
-      passable:(x,z)=>(archiveClear||x<=3.03)&&C3.canMove(state,x,z)
+      passable:(x,z)=>(archiveClear||x<=3.03)&&RW.canMove(rewrite,x,z,(a,b)=>C3.canMove(state,a,b))
     });
     if(report.caught){
       state.stage='lost';state.lossReason='corrector';state.losses++;
