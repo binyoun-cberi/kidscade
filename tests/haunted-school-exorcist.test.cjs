@@ -845,14 +845,15 @@ test('survival spawn queue never exceeds three concurrent distinct creatures',()
     kind,{root:{position:{set(){}},visible:false}}
   ]));
   const ghosts=[],seen=[],player={x:0,z:0};
-  let elapsed=0;
+  const returnAt=Object.create(null),sealCounts=Object.create(null);
   const source=js.slice(begin,end);
   const build=new Function('player','horrorVisuals','survivalGhosts','SURVIVAL_SPAWNS','HORROR_NAMES','dist',
-    'canWalk','loadHorrorAsset','showToast','sfx',
+    'canWalk','loadHorrorAsset','showToast','sfx','survivalReturnAt','survivalSealCounts',
     'let elapsed=0;'+source+'return {spawn:spawnSurvivalGhost,setTime(t){elapsed=t}};');
+  const names={maiden:'a',egg:'b',yuki:'c',reaper:'d',wolf:'e'};
   const engine=build(player,actors,ghosts,[[-20,-15],[18,-15],[-20,15],[18,15],[0,15]],
-    {maiden:'a',egg:'b',yuki:'c',reaper:'d',wolf:'e'},
-    (a,b)=>Math.hypot(a.x-b.x,a.z-b.z),()=>true,k=>seen.push(k),()=>{},()=>{});
+    names,(a,b)=>Math.hypot(a.x-b.x,a.z-b.z),()=>true,k=>seen.push(k),()=>{},()=>{},
+    returnAt,sealCounts);
   engine.setTime(0);assert.equal(engine.spawn(),true);
   assert.equal(engine.spawn(),false);
   engine.setTime(90);assert.equal(engine.spawn(),true);
@@ -861,9 +862,43 @@ test('survival spawn queue never exceeds three concurrent distinct creatures',()
   assert.equal(engine.spawn(),false);
   assert.equal(ghosts.length,3);
   assert.equal(new Set(ghosts.map(g=>g.kind)).size,3);
-  ghosts.pop();assert.equal(engine.spawn(),true,'a successful exorcism opens a replacement slot');
+  const sealed=ghosts.pop().kind;
+  returnAt[sealed]=230;sealCounts[sealed]=1;
+  assert.equal(engine.spawn(),true,'the vacant slot can be filled by a different ghost');
+  assert.notEqual(ghosts.at(-1).kind,sealed,'the sealed ghost stays away during cooldown');
   assert.equal(ghosts.length,3);
   assert.equal(seen.length,4);
+  ghosts.length=0;
+  for(const kind of Object.keys(names))if(kind!==sealed)returnAt[kind]=1000;
+  engine.setTime(229);assert.equal(engine.spawn(),false,'no ghost returns before the seal expires');
+  engine.setTime(230);assert.equal(engine.spawn(),true,'the same ghost can return after its seal expires');
+  assert.equal(ghosts[0].kind,sealed);
+  assert.equal(seen.length,5);
+});
+
+test('each survival exorcism gives a temporary 20–32 second seal that resets between runs',()=>{
+  const start=js.indexOf('function sealSurvivalGhost(g){'),end=js.indexOf('function nearAction(){',start);
+  const source=js.slice(start,end);
+  assert.ok(start>0&&end>start);
+  const ghost={kind:'maiden',ready:5,actor:{x:1,z:0,root:{visible:true}}};
+  const ghosts=[ghost],returnAt=Object.create(null),sealCounts=Object.create(null),messages=[];
+  const make=new Function('survivalGhosts','survivalReturnAt','survivalSealCounts','player',
+    'dist','showToast','sfx','updateHud',
+    'let power=75,invulnerable=0,survivalSpawnClock=0,survivalKills=0,elapsed=40;'+source+
+    'return {seal:sealSurvivalGhost,state:()=>({power,invulnerable,survivalSpawnClock,survivalKills})};');
+  const engine=make(ghosts,returnAt,sealCounts,{x:0,z:0},
+    (a,b)=>Math.hypot(a.x-b.x,a.z-b.z),msg=>messages.push(msg),()=>{},()=>{});
+  engine.seal(ghost);
+  assert.equal(ghosts.length,0);
+  assert.equal(ghost.actor.root.visible,false);
+  assert.equal(sealCounts.maiden,1);
+  assert.ok(returnAt.maiden>=60&&returnAt.maiden<=72,'ghost comes back after 20–32 seconds');
+  assert.ok(engine.state().survivalSpawnClock>=7,'sealing gives the player breathing room');
+  assert.equal(engine.state().survivalKills,1);
+  assert.equal(engine.state().power,86);
+  assert.ok(messages[0].includes('잠시 봉인'));
+  assert.match(js,/for\(const k of Object\.keys\(survivalReturnAt\)\)delete survivalReturnAt\[k\]/);
+  assert.match(js,/for\(const k of Object\.keys\(survivalSealCounts\)\)delete survivalSealCounts\[k\]/);
 });
 test('all five survival enemies have distinct readable weakening conditions',()=>{
   for(const key of ['maiden:','egg:','yuki:','reaper:','wolf:'])assert.ok(js.includes(key),key);
