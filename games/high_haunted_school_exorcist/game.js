@@ -244,6 +244,7 @@ function updateNavigation(dt,force=false){
   ui.navRange.textContent=destinationDist<2?'목표 주변 · E / 행동 버튼 사용':destinationDist+'m · 노란 선을 따라 이동';
 }
 function showLesson(title,text,seconds=9){
+  if(!tutorialMode){ui.lesson.classList.add('hidden');return;}
   ui.lessonTitle.textContent=title;ui.lessonText.textContent=text;
   ui.lesson.classList.remove('hidden');lessonTimer=seconds;
 }
@@ -504,6 +505,7 @@ function updateSchoolDoors(dt){
   const actors=[player];
   if(stage===2&&maidenPhase!=='approach')actors.push(maiden);
   if(stage===10||stage===11)actors.push(encounter.wolf);
+  if(!tutorialMode)for(const g of survivalGhosts)actors.push(g.actor);
   for(const d of schoolDoors){
     const nearby=actors.some(a=>Math.hypot(a.x-d.x,a.z-d.z)<3.05);
     // Once reached, the door stays open long enough for slow students/NPCs.
@@ -810,6 +812,7 @@ function updateLockerHiding(dt){
     proximity=dist(maiden,hidingLocker.interact);
   if(stage===10)
     proximity=dist(encounter.wolf,hidingLocker.interact);
+  if(!tutorialMode)for(const g of survivalGhosts)proximity=Math.min(proximity,dist(g.actor,hidingLocker.interact));
   lockerDanger=Math.max(0,lockerDanger+dt*(proximity<1.45?1:-1.5));
   ui.lockerWarning.textContent=lockerDanger>1.2?
     '발소리가 바로 앞에서 멈췄어요… '+Math.ceil(Math.max(0,3.2-lockerDanger))+'초':
@@ -1036,6 +1039,17 @@ function act(){
   else if(item.type==='report')finish(true);
 }
 function finish(ok){
+  if(!tutorialMode){
+    leaveLocker();ended=true;started=false;bgm.pause();document.exitPointerLock?.();
+    ui.progress.style.width='100%';
+    ui.endTitle.textContent=ok?'생존 성공 · 학교를 지켰어요!':'생존 실패 · 퇴마 작전 종료';
+    ui.endText.textContent=ok?('5분 동안 '+survivalKills+'마리 봉인 성공!'):
+      (hp<=0?'생명이 모두 소진됐어요.':'5분 생존 · 봉인 '+survivalKills+'/'+SURVIVAL_REQUIRED_SEALS+'회, 목표 미달');
+    ui.end.classList.remove('hidden');
+    const score=survivalKills*250+Math.max(0,hp)*125+(ok?800:0);
+    window.KidscadeGame?.result?.({scope:'mission',status:ok?'completed':'failed',outcome:ok?'clear':'fail',score,cleared:ok,timeSeconds:Math.round(elapsed),seals:survivalKills});
+    return;
+  }
   leaveLocker();ended=true;started=false;bgm.pause();const score=ok?Math.max(350,2400-Math.round(elapsed)*1.3-(3-hp)*125):0;
   if(ok)ui.progress.style.width='100%';
   ui.endTitle.textContent=ok?'퇴마 성공 · 학교의 평화를 되찾았어요!':'퇴마 실패 · 학교에서 쫓겨났어요';
@@ -1043,7 +1057,12 @@ function finish(ok){
   ui.end.classList.remove('hidden');
   window.KidscadeGame?.result?.({scope:'mission',status:ok?'completed':'failed',outcome:ok?'clear':'fail',score,cleared:ok,timeSeconds:Math.round(elapsed)});
 }
-function reset(){
+function reset(mode='survival'){
+  tutorialMode=mode==='tutorial';survivalKills=0;survivalSpawnClock=0;
+  for(const g of survivalGhosts)g.actor.root.visible=false;
+  survivalGhosts.length=0;
+  ui.lesson.classList.add('hidden');ui.navigation.classList.add('hidden');
+  if(guidance.mesh)setGuidePath([]);
   leaveLocker();
   fixes=0;hp=3;power=100;flashOn=true;elapsed=0;stage=1;ended=false;paused=false;started=true;
   schoolDoors.forEach(d=>{d.openAmount=0;d.openTimer=0;d.panels.forEach(p=>{p.hinge.rotation.y=0;});});
@@ -1062,12 +1081,44 @@ function reset(){
   presentEncounterModels();
   ui.intro.classList.add('hidden');ui.end.classList.add('hidden');ui.help.classList.add('hidden');
   bgm.currentTime=0;bgm.play().catch(()=>{});sfx('sfx_school_alarm_bell.mp3',.12);
-  window.KidscadeGame?.start?.({mode:'prototype',ghosts:['dokkaebi','maiden','yuki','egg','reaper','wolf']});
-  showLesson('첫 임무 · 6-1 교실','북쪽 날개의 6-1 교실로 가세요. 교실 문은 가까이 가면 열립니다. 첫 조사 후 길이 어려우면 H 또는 길찾기 버튼을 누르세요.',16);
-  showToast('연결동 관리실에서 출발합니다. 북쪽 6-1 교실을 조사하세요.');
-  updateHud();updateNavigation(0,true);
+  window.KidscadeGame?.start?.({mode:tutorialMode?'tutorial':'survival',ghosts:['maiden','yuki','egg','reaper','wolf']});
+  ui.guide.classList.toggle('hidden',!tutorialMode);
+  if(tutorialMode){
+    showLesson('첫 임무 · 6-1 교실','북쪽 날개의 6-1 교실로 가세요. 교실 문은 가까이 가면 열립니다. 첫 조사 후 길이 어려우면 H 또는 길찾기 버튼을 누르세요.',16);
+    showToast('연결동 관리실에서 출발합니다. 북쪽 6-1 교실을 조사하세요.');
+    updateNavigation(0,true);
+  }else{
+    disturbed.forEach(o=>{o.object.visible=false;o.marker.visible=false;});
+    trickCircle.visible=false;maidenCircle.visible=false;exitCircle.visible=false;
+    encounter.heatNodes.forEach(o=>o.marker.visible=false);
+    spawnSurvivalGhost();survivalSpawnClock=7;
+    showToast('5분 동안 생존하고 괴이 8마리 이상 봉인하세요.');
+  }
+  updateHud();requestLookLock();
 }
 function updateHud(){
+  if(!tutorialMode){
+    const near=nearestSurvivalGhost();
+    ui.mission.textContent='자정 생존 퇴마 · '+Math.ceil(Math.max(0,SURVIVAL_SECONDS-elapsed)/60)+'분';
+    ui.detail.textContent='봉인 '+survivalKills+'/'+SURVIVAL_REQUIRED_SEALS+' · 동시 출현 '+survivalGhosts.length+'/3'+
+      (near.ghost&&near.distance<10?' · '+HORROR_NAMES[near.ghost.kind]+': '+HORROR_RULES[near.ghost.kind]:' · 주변을 살피세요');
+    ui.progress.style.width=Math.min(100,elapsed/SURVIVAL_SECONDS*100)+'%';
+    ui.health.textContent='♥'.repeat(Math.max(0,hp))+'♡'.repeat(3-Math.max(0,hp));
+    ui.battery.textContent=Math.floor(power)+'%';
+    ui.flash.textContent=flashOn?'손전등 켜짐 [F]':'손전등 꺼짐 [F]';
+    ui.navigation.classList.add('hidden');ui.lesson.classList.add('hidden');
+    ui.gaze.classList.toggle('hidden',!near.ghost||near.distance>10||!!hidingLocker);
+    ui.gazeLabel.textContent=near.ghost?HORROR_NAMES[near.ghost.kind]+(near.ghost.ready>0?' · 지금 봉인!':' · '+HORROR_RULES[near.ghost.kind]):'';
+    const limits={maiden:2.3,egg:2.2,yuki:2.3,reaper:1.9,wolf:1.8};
+    ui.gazeValue.style.width=near.ghost?Math.min(100,near.ghost.charge/limits[near.ghost.kind]*100)+'%':'0%';
+    ui.reticle.classList.toggle('hidden',!started||ended||!!hidingLocker);
+    ui.reticle.classList.toggle('active',!!near.ghost&&near.distance<10);
+    ui.reticle.classList.toggle('locked',!!near.ghost&&near.ghost.ready>0);
+    ui.reticle.style.borderColor='';ui.flash.disabled=!!hidingLocker;
+    const action=nearAction();ui.action.disabled=!action;
+    ui.actionText.textContent=action?action.text:'가까이에서 조사 [E]';
+    return;
+  }
   const titles={
     1:'① 도깨비 · 6-1 교실',2:'② 처녀귀신 · 과학실',3:'② 처녀귀신 봉인',
     4:'③ 유키온나 · 남쪽 가사실',5:'③ 유키온나 봉인',
@@ -1495,9 +1546,16 @@ function drawMap(){
   }
   const marker=(x,z,c,r=3)=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(tx(x),tz(z),r,0,Math.PI*2);ctx.fill();};
   marker(SCHOOL.guard.x,SCHOOL.guard.z,'#e8c78f',3.8);
-  if(stage===1){
+  if(tutorialMode&&stage===1){
     for(const item of disturbed)if(!item.done)marker(item.x,item.z,'#f5b869',2.5);
     if(fixes===3)marker(SCHOOL.dokkaebi.x,SCHOOL.dokkaebi.z,'#ffc86f',4);
+  }
+  if(!tutorialMode){
+    marker(player.x,player.z,'#7ddaf4',4);
+    ctx.strokeStyle='#7ddaf4';ctx.lineWidth=2;ctx.beginPath();
+    ctx.moveTo(tx(player.x),tz(player.z));
+    ctx.lineTo(tx(player.x)-Math.sin(viewYaw)*7,tz(player.z)-Math.cos(viewYaw)*7);ctx.stroke();
+    return;
   }
   if(stage===2)marker(SCHOOL.science.x,SCHOOL.science.z,'#c4b1ff',4);
   if(stage===3)marker(SCHOOL.science.x,-13.1,'#ca99ff',4);
@@ -1520,8 +1578,10 @@ function loop(now){
     elapsed+=dt;invulnerable=Math.max(0,invulnerable-dt);
     if(flashOn)power=Math.max(0,power-dt*.28);else power=Math.min(100,power+dt*2.8);
     if(power===0)flashOn=false;
-    updateSchoolDoors(dt);updatePlayer(dt);updateGhost(dt);updateNewEncounters(dt);updateLockerHiding(dt);updateProps(dt);
-    updateNavigation(dt);
+    updateSchoolDoors(dt);updatePlayer(dt);
+    if(tutorialMode){updateGhost(dt);updateNewEncounters(dt);updateNavigation(dt);}
+    else updateSurvival(dt);
+    if(!ended){updateLockerHiding(dt);updateProps(dt);}
     if(lessonTimer>0){lessonTimer-=dt;if(lessonTimer<=0)ui.lesson.classList.add('hidden');}
     for(const mixer of mixers)mixer.update(dt);
     hudClock+=dt;miniClock+=dt;
@@ -1529,7 +1589,8 @@ function loop(now){
     if(miniClock>.25){drawMap();miniClock=0;}
     if(toastSeconds>0){toastSeconds-=dt;if(toastSeconds<=0)ui.toast.classList.remove('show');}
   }
-  updateCamera(dt);ui.time.textContent=String(Math.floor(elapsed/60)).padStart(2,'0')+':'+String(Math.floor(elapsed%60)).padStart(2,'0');
+  updateCamera(dt);const clock=tutorialMode?elapsed:Math.max(0,SURVIVAL_SECONDS-elapsed);
+  ui.time.textContent=String(Math.floor(clock/60)).padStart(2,'0')+':'+String(Math.floor(clock%60)).padStart(2,'0');
   renderer.render(scene,camera);
 }
 requestAnimationFrame(loop);
@@ -1540,7 +1601,7 @@ document.addEventListener('keydown',e=>{
   keys.add(k);if(e.repeat)return;
   if(k==='e'||k===' ')act();
   if(k==='f'&&started&&!hidingLocker){flashOn=!flashOn;updateHud();}
-  if(k==='h'&&started&&!paused){guideAssistance=!guideAssistance;updateNavigation(0,true);updateHud();}
+  if(k==='h'&&started&&!paused&&tutorialMode){guideAssistance=!guideAssistance;updateNavigation(0,true);updateHud();}
   if(k==='escape'&&started){paused=!paused;ui.help.classList.toggle('hidden',!paused);}
 });
 document.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
@@ -1567,11 +1628,12 @@ ui.joy.addEventListener('pointerdown',e=>{joyPointer=e.pointerId;ui.joy.setPoint
 ui.joy.addEventListener('pointermove',e=>{if(joyPointer===e.pointerId)setJoy(e);});
 for(const evt of ['pointerup','pointercancel'])ui.joy.addEventListener(evt,e=>{if(joyPointer===e.pointerId){joyPointer=null;joy.x=joy.y=0;ui.knob.style.transform='translate(0,0)';}});
 ui.action.addEventListener('click',act);
-$('start').addEventListener('click',reset);
-$('retry').addEventListener('click',reset);
+$('start').addEventListener('click',()=>reset('survival'));
+$('tutorialStart').addEventListener('click',()=>reset('tutorial'));
+$('retry').addEventListener('click',()=>reset(tutorialMode?'tutorial':'survival'));
 $('helpButton').addEventListener('click',()=>{paused=true;ui.help.classList.remove('hidden');});
 $('closeHelp').addEventListener('click',()=>{paused=false;ui.help.classList.add('hidden');});
 ui.flash.addEventListener('click',()=>{if(started&&!hidingLocker){flashOn=!flashOn;updateHud();}});
-ui.guide.addEventListener('click',()=>{if(started&&!paused){guideAssistance=!guideAssistance;updateNavigation(0,true);updateHud();}});
+ui.guide.addEventListener('click',()=>{if(started&&!paused&&tutorialMode){guideAssistance=!guideAssistance;updateNavigation(0,true);updateHud();}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&started){paused=true;ui.help.classList.remove('hidden');bgm.pause();}else if(started&&!paused){bgm.play().catch(()=>{});}});
 updateHud();drawMap();
