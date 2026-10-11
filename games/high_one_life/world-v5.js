@@ -150,6 +150,35 @@
  };
  const r=(life,age,salt)=>W4.roll(life,age,salt);
  const amount=(life,n)=>Math.round(n*Math.max(.38,life.world?.economyScale||1));
+ // Country-local vignettes: every supported birthplace receives several distinct
+ // paths. These are authored possibilities, not claims about a country's typical
+ // people or measured odds. The selected city/settlement comes from the fictional
+ // birth profile; broad regional events above supply additional local context.
+ for(const [countryIndex,countryRow] of Sim.COUNTRIES.entries()){
+  const country=countryRow[0],slug='birthplace-'+countryIndex;
+  entry(slug+'-learning','all',10,30,[
+   '{country}의 {city}에서 학교·도서관·지역 배움터를 오가며 관심 있는 것을 배웠다.',
+   '{settlement}에서 통학과 집안일을 조율하며 공부를 이어 갈 방법을 찾았다.',
+   '친구와 서로 아는 것을 나누며 {city}에서 배움의 폭을 넓혔다.'
+  ],{knowledge:4,learning:2,tag:'local-learning'},{country});
+  entry(slug+'-livelihood','all',18,73,[
+   '{city}에서 기술을 배우거나 일터를 옮기며 생활의 기반을 만들었다.',
+   '{country}의 다른 지역으로 이동해 새 일을 시작하고 낯선 생활에 적응했다.',
+   '일과 돌봄을 함께 이어 가도록 근무 방식과 가족의 역할을 조정했다.'
+  ],{skill:2,network:1,tag:'local-livelihood'},{country,needs:['working'],weight:1.2});
+  entry(slug+'-community','all',7,92,[
+   '{city}에서 이웃과 함께 작은 문제를 해결하며 오래가는 인연을 만들었다.',
+   '{settlement}의 가족·친구와 서로 가능한 도움을 나누었다.',
+   '새로운 사람들과 어울리며 {country}에서 나만의 생활 터전을 만들었다.'
+  ],{bonds:4,community:2,tag:'local-community'},{country,weight:1.1});
+ }
+ // Cross-country turning points add connected stories to lives with changing
+ // circumstances, so hardship, work, care and migration can lead somewhere new.
+ entry('life-study-interrupted','all',12,35,['가족의 사정으로 공부를 쉬었지만, 나중에 야간 과정과 직업 훈련을 알아보았다.','학비와 생활비를 함께 마련하며 공부를 이어 갈 현실적인 방법을 찾았다.','잠시 멈춘 배움을 다시 시작해 이전에 몰랐던 진로를 발견했다.'],{knowledge:4,learning:3,happiness:2,tag:'returned-to-study'},{needs:['hardship'],weight:1.2});
+ entry('life-seasonal-move','all',18,64,['일자리를 따라 다른 지역으로 옮겼다가 가족과 상의해 다음 거처를 정했다.','계절 일과 임시 거주를 거친 뒤 더 안정적인 일자리를 준비했다.','새 지역에서 생활 정보를 나누는 사람들을 만나 정착을 도왔다.'],{network:3,skill:2,bonds:-1,tag:'regional-move'},{needs:['working'],weight:.9});
+ entry('life-care-work-balance','all',25,83,['돌봄 책임이 커져 근무 시간을 바꾸고 주변의 지원을 알아보았다.','가족과 이웃이 돌봄을 나누면서 다시 일이나 공부를 이어 갔다.','돌봄과 생계를 함께 꾸리기 위해 지역 서비스를 이용했다.'],{bonds:4,network:2,money:-1200,tag:'care-balance'},{needs:['family'],weight:1.3});
+ entry('life-job-loss-rebuild','all',18,69,['일자리가 사라진 뒤 구직 지원과 재교육을 알아보며 다음 일을 준비했다.','수입이 줄어 지출을 조정하고 주변의 정보와 도움을 구했다.','새로운 분야의 작은 일부터 시작해 경력을 다시 쌓았다.'],{happiness:-3,learning:2,skill:2,tag:'job-transition'},{needs:['working'],weight:.85});
+ entry('life-return-home','all',22,78,['다른 지역이나 나라에서 익힌 기술을 고향의 일과 생활에 활용했다.','멀리 떠나 지내다 돌아온 뒤 가족과 친구 관계를 다시 이어 갔다.','이주 경험을 바탕으로 새로 온 이웃의 정착을 도왔다.'],{bonds:4,network:2,tag:'return-migration'},{needs:['migrant'],weight:2});
  function ensure(life){
   W4.ensure(life);
   if(life.world5)return life.world5;
@@ -181,7 +210,8 @@
   }
   if(!w.seen.includes(event.id))w.seen.push(event.id);
   w.eventCount++;
-  const line=event.lines[Math.floor(r(life,life.age,991+templates.indexOf(event))*event.lines.length)];
+  const rawLine=event.lines[Math.floor(r(life,life.age,991+templates.indexOf(event))*event.lines.length)];
+  const line=rawLine.replaceAll('{country}',life.country[0]).replaceAll('{city}',life.profile?.city||'지역사회').replaceAll('{settlement}',life.profile?.settlement||'지역사회');
   w.lastContext=line;
   life.logEvent(line,event.serious?'safety':'world');
  }
