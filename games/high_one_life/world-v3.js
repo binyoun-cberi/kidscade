@@ -90,8 +90,11 @@
     const healthResource=clamp(structuralContext(life).healthcareAccess+
       (Number.isFinite(uhc)?(uhc-65)/100*.09:0)+doctorShift,.08,.96);
     const observedLife=officialValue(life,'lifeExpectancy');
-    const populationBaseline=Number.isFinite(observedLife)&&observedLife>35&&observedLife<100
-      ?observedLife:baseline(life.country);
+    // No year-matched historical life table available: fictional baseline, not 2024 measurements.
+    const populationBaseline=life.birthYear!==2026
+      ?clamp(58+(life.birthYear-1900)*.14,56,76)
+      :Number.isFinite(observedLife)&&observedLife>35&&observedLife<100
+        ?observedLife:baseline(life.country);
     const target=clamp(populationBaseline+(family==='여유 있는 형편'?3:family==='빠듯한 형편'?-4:0)
       -(rural*9)+individual*7+(life.gender==='여자'?1:-1),45,94);
     const w={
