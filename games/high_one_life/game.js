@@ -11,7 +11,7 @@
   const views = ['intro','birth','play','end'];
   let life = null, speed = 2, paused = false, stage = 'intro';
   let lastTick = performance.now(), elapsed = 0, roulette = null, screenTime = 0;
-  let completed = false;
+  let completed = false, ruleWasRunning = false;
   const sdk = window.KidscadeGame || null;
   const show = name => { stage = name; for (const id of views) $(id).classList.toggle('hidden',id!==name); window.scrollTo?.(0,0); };
   const safeGet = key => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) { return null; } };
@@ -208,8 +208,8 @@
     paused=!paused; lastTick=performance.now(); updatePause();
     if(paused) save();
   }
-  function openRules() { $('rules').classList.remove('hidden'); $('rulesClose').focus(); }
-  function closeRules() { $('rules').classList.add('hidden'); $('rulesBtn').focus(); }
+  function openRules() { ruleWasRunning = stage==='play' && !paused && life?.alive && !life?.pending; if(ruleWasRunning){ paused=true; updatePause(); save(); } $('rules').classList.remove('hidden'); $('rulesClose').focus(); }
+  function closeRules() { $('rules').classList.add('hidden'); if(ruleWasRunning && !document.hidden){paused=false;lastTick=performance.now();updatePause();} ruleWasRunning=false; $('rulesBtn').focus(); }
   $('rulesBtn').addEventListener('click',openRules);
   $('rulesClose').addEventListener('click',closeRules);
   $('rulesOkay').addEventListener('click',closeRules);
@@ -226,7 +226,7 @@
   document.querySelectorAll('[data-speed]').forEach(btn=>btn.addEventListener('click',()=>updateSpeed(btn)));
   document.addEventListener('keydown',e=>{
     if(e.key==='Escape' && !$('rules').classList.contains('hidden')) closeRules();
-    else if(e.code==='Space' && stage==='play' && !$('rules').classList.contains('hidden')===false && !life?.pending){
+    else if(e.code==='Space' && stage==='play' && $('rules').classList.contains('hidden') && !life?.pending){
       if(e.target===document.body){e.preventDefault();togglePause();}
     }
   });
