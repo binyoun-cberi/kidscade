@@ -183,6 +183,7 @@ function setReady(ready){
   loaded=!!ready;
   $('exportGlb').disabled=!ready;
   $('exportSpec').disabled=!ready;
+  if($('saveAccountChibi'))$('saveAccountChibi').disabled=!ready;
   $('chibiHair').disabled=!ready;
   $('chibiUnlit').disabled=!ready;
   document.querySelectorAll('[data-chibi-preset],[data-view],[data-quick-clip],[data-quick-view],[data-quick-speed]').forEach(el=>el.disabled=!ready);
