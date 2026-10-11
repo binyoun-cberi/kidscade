@@ -129,7 +129,7 @@
         c('친구와 지역 활동을 한다','관계·지역 기회·사회적 지원')]};
     }
     if(age===20){
-      const eligible=w.educationYears>=5||a.path==='academic';
+      const eligible=(life.world7?.formalYears??w.educationYears)>=5||a.path==='academic';
       return {age,title:eligible?'성인으로서 첫 선택':'새로운 시작, 나의 진로',description:eligible?'공부를 계속할 수도, 돈을 벌기 시작할 수도 있습니다.':'학교 밖에서 배운 경험도 앞으로의 가능성을 만듭니다.',options:[
         c(eligible?'더 공부하거나 전문 교육을 받는다':'늦게 교육·직업훈련을 받는다','교육 비용·시간, 장기적인 진로 변화'),
         c('현장 기술을 익히고 취업한다','빠른 소득·숙련도·인맥'),
