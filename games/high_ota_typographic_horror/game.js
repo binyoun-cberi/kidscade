@@ -287,7 +287,7 @@ function flashLockerAt(place){
     const d=R.distance(place,obj);
     if(d<best){winner=obj;best=d;}
   }
-  if(winner){winner.swingUntil=elapsed+.72;winner.swing=Math.max(winner.swing,.08);}
+  if(winner){winner.swingUntil=elapsed+.72;winner.swing=Math.max(winner.swing,.30);}
 }
 function updateCalligrams(dt,threat){
   for(const obj of calligramObjects){
