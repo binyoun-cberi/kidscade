@@ -104,7 +104,8 @@ async function browserAudit(){
    const coords=await evaluate(`(()=>{
      const c=document.getElementById('board'),r=c.getBoundingClientRect();
      const k=Math.min(r.width/520,r.height/340),ox=(r.width-520*k)/2,oy=(r.height-340*k)/2;
-     const t=DalgonaTrace.buildTrace(1),start=DalgonaTrace.sampleAt(t,0),next=DalgonaTrace.sampleAt(t,8);
+     const t=DalgonaTrace.buildTrace(1),track=innerWidth<500||innerWidth>1100?DalgonaTrace.reversed(t):t,
+       start=DalgonaTrace.sampleAt(track,0),next=DalgonaTrace.sampleAt(track,8);
      const map=p=>({x:Math.round(r.x+ox+(102+p.x*.79)*k),y:Math.round(r.y+oy+(12+p.y*.79)*k)});
      return [map(start),map(next)];
    })()`);
@@ -126,7 +127,7 @@ async function browserAudit(){
    assert.ok(status.percent>0,device.name+' did not register a real pointer stroke '+JSON.stringify(status));
    assert.equal(status.visible,true,device.name+' stopped unexpectedly');
    assert.equal(errors.length,errorCount,device.name+' browser exception '+errors.slice(errorCount).join('; '));
-   stats.push({device:device.name,canvasWidth:Math.round(shot.w),canvasHeight:Math.round(shot.h),interaction:status.percent,visible:true});
+   stats.push({device:device.name,gesture:device.w<500||device.w>1100?'counterclockwise':'clockwise',canvasWidth:Math.round(shot.w),canvasHeight:Math.round(shot.h),interaction:status.percent,visible:true});
   }
   return stats;
  }finally{
