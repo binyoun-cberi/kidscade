@@ -103,3 +103,42 @@ test('save validation rejects malformed life data',()=>{
   assert.equal(Life.restore({version:1,age:999}),null);
   assert.equal(Life.restore({version:1,age:5,country:'없는 나라',stats:{},seen:[],log:[]}),null);
 });
+
+test('five reflection pauses support an optional note and survive resumption',()=>{
+  const person=new Life(7723);
+  const expected=[5,15,30,50,70],visited=[];
+  while(person.alive && person.age<74){
+    if(person.getReflection()){
+      const age=person.getReflection();visited.push(age);
+      const saved=Life.restore(JSON.parse(JSON.stringify(person.snapshot())));
+      assert.equal(saved.getReflection(),age);
+      assert.equal(saved.reflect('한 줄을 남깁니다'),true);
+      assert.equal(saved.getReflection(),null);
+      assert.equal(person.reflect('한 줄을 남깁니다'),true);
+      continue;
+    }
+    if(person.pending){assert.equal(person.choose(0),true);continue;}
+    person.tick();
+  }
+  assert.ok(visited.length>0);
+  assert.deepEqual(visited,expected.filter(age=>age<=person.age));
+});
+test('life focus is persisted and changes yearly trajectories',()=>{
+  const a=new Life(88125),b=new Life(88125);
+  a.setFocus('learning');b.setFocus('health');
+  for(let y=0;y<19;y++){
+    if(a.pending){a.getReflection()?a.reflect():a.choose(0);b.getReflection()?b.reflect():b.choose(0)}
+    a.tick();b.tick();
+  }
+  assert.ok(a.stats.knowledge>b.stats.knowledge);
+  assert.ok(b.stats.health>=a.stats.health);
+  assert.equal(Life.restore(a.snapshot()).focus,'learning');
+});
+test('life screen exposes duration, annual focus, four peers, timeline and age map',()=>{
+  const html=read('index.html'),js=read('game.js');
+  for(const n of [30,60,90]) assert.ok(html.includes('data-duration="'+n+'"'));
+  for(const id of ['peers','ageMap']) assert.ok(html.includes('id="'+id+'"'));
+  for(const focus of ['balance','learning','people','health','work'])assert.ok(html.includes('data-focus="'+focus+'"'));
+  for(const feature of ['paintPeers','paintAgeMap','getReflection','reflect(','durationMinutes','visibilitychange'])
+    assert.ok(js.includes(feature),feature);
+});
