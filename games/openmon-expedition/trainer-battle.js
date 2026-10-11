@@ -14,6 +14,22 @@ const TRAINERS=Object.freeze([
   species:["set5_r01_c04","set5_r02_c02","set1_r04_c02"],
   lesson:"속도·속박·반격을 이용해 세 마리의 전투 순서를 설계해 봐."}
 ]);
+const GYMS=Object.freeze([
+ {id:"gym_energy",name:"수정 체육관장 테슬라",title:"전류의 수수께끼",badge:"전류 배지",
+  village:"crystalTown",requiredWins:0,bonus:-3,prev:null,
+  species:["set4_r01_c02","set4_r02_c00","set5_r04_c00"],
+  lesson:"전기는 땅에 약해! 땅 속성으로 교체하고 상대의 반격도 살펴봐."},
+ {id:"gym_tide",name:"해류 체육관장 아르키",title:"부력의 비밀",badge:"해류 배지",
+  village:"harborTown",requiredWins:0,bonus:-2,prev:"gym_energy",
+  species:["set2_r00_c06","set2_r01_c00","set5_r00_c00"],
+  lesson:"물의 흐름에 맞는 상성으로 대응해. 앞 체육관의 전류 키즈몬도 도움이 될 수 있어."},
+ {id:"gym_frost",name:"설빛 체육관장 켈빈",title:"빙점의 기록",badge:"서리 배지",
+  village:"snowTown",requiredWins:0,bonus:-1,prev:"gym_tide",
+  species:["set5_r01_c04","set5_r03_c04","set5_r04_c02"],
+  lesson:"얼음·정신·속도 속성을 비교하며 방어와 교체로 대응해."}
+]);
+const allTrainers=[...TRAINERS,...GYMS];
+const configFor=id=>allTrainers.find(x=>x.id===id);
 const species=id=>D.species.find(s=>s.id===id);
 const maxHp=mon=>D.combat.statsAtLevel(mon.id,mon.level,mon).hp;
 function eligibleSlots(save){
@@ -24,12 +40,16 @@ function validateSelection(save,indices){
   indices.every(i=>Number.isInteger(i)&&i>=0&&i<save.party.length&&save.party[i].hp>0);
 }
 function available(save,id){
- const preset=TRAINERS.find(x=>x.id===id);
- return !!(preset&&save&&(save.wins||0)>=preset.requiredWins&&eligibleSlots(save).length===3);
+  const preset=configFor(id);
+ if(!preset||!save||(save.wins||0)<preset.requiredWins||eligibleSlots(save).length!==3)return false;
+ if(!preset.village)return true;
+ return !!(save.flags?.visitedZones?.includes(preset.village)&&
+  E.questStatus(save,preset.village)?.claimed&&
+  (!preset.prev||(save.trainerWins?.[preset.prev]||0)>0));
 }
 function makeTrainer(save,id,rand=Math.random,selected=null){
  if(!available(save,id))return null;
- const preset=TRAINERS.find(x=>x.id===id);
+ const preset=configFor(id);
  const playerSlots=selected===null?eligibleSlots(save):selected.slice();
  if(!validateSelection(save,playerSlots))return null;
  const level=Math.min(55,Math.max(2,Math.round(playerSlots.reduce((n,i)=>n+save.party[i].level,0)/3)+preset.bonus));
@@ -41,7 +61,7 @@ function makeTrainer(save,id,rand=Math.random,selected=null){
    playerSlots,turn:0,switches:0,lastSwitchTurn:-9,maxSwitches:3};
 }
 function preview(save,id){
- const preset=TRAINERS.find(t=>t.id===id);
+ const preset=configFor(id);
  if(!preset)return null;
  const slots=eligibleSlots(save);
  return {...preset,ready:slots.length===3,unlocked:(save.wins||0)>=preset.requiredWins,
@@ -82,10 +102,11 @@ function chooseReplacement({trainer,player}){
  return bestReserve(trainer,player);
 }
 function reward(save,trainer){
- if(!save||!TRAINERS.some(t=>t.id===trainer?.id))return null;
+ if(!save||!configFor(trainer?.id))return null;
  if(!save.trainerWins||typeof save.trainerWins!=="object")save.trainerWins={};
  const first=!save.trainerWins[trainer.id];
- const coins=first?120:35;
+ const config=configFor(trainer.id);
+ const coins=config.badge?(first?180:45):(first?120:35);
  const participantIndices=trainer.playerSlots.filter(i=>save.party[i]?.hp>0);
  const original=save.active,exp=8+trainer.party.reduce((sum,m)=>sum+m.level,0);
  const changes=[];
@@ -95,7 +116,8 @@ function reward(save,trainer){
   changes.push({index,level:save.party[index].level,events});
  }
  save.active=original;save.coins+=coins;save.trainerWins[trainer.id]=(save.trainerWins[trainer.id]||0)+1;
- return {coins,first,xpEach:participantIndices.length?Math.max(4,Math.floor(exp/participantIndices.length)):0,changes};
+ return {coins,first,badge:config.badge&&first?config.badge:null,
+  xpEach:participantIndices.length?Math.max(4,Math.floor(exp/participantIndices.length)):0,changes};
 }
-w.KIDSMON_TRAINERS={TRAINERS,available,eligibleSlots,validateSelection,makeTrainer,preview,estimate,matchup,chooseSwitch,chooseReplacement,reward};
+w.KIDSMON_TRAINERS={TRAINERS,GYMS,configFor,available,eligibleSlots,validateSelection,makeTrainer,preview,estimate,matchup,chooseSwitch,chooseReplacement,reward};
 })(window);
