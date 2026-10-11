@@ -112,6 +112,7 @@ async function browserRun(){
         controls:[document.getElementById('controls0').querySelectorAll('button').length,
                   document.getElementById('controls1').querySelectorAll('button').length],
         pickable:[first?.id,second?.id],
+        buttonHeight:[0,1].map(player=>document.getElementById('controls'+player).querySelector('button:last-of-type').getBoundingClientRect().height),
         buttonReachable:[0,1].map(player=>{
           const controls=document.getElementById('controls'+player);
           const button=controls.querySelector('button:last-of-type');
@@ -131,6 +132,7 @@ async function browserRun(){
    }
    assert.equal(snapshot.controls[0],2);assert.equal(snapshot.controls[1],2);
    assert.deepEqual(snapshot.buttonReachable,[true,true],size.name+' touch button is covered by a fixed overlay: '+JSON.stringify(snapshot));
+   if(size.name==='아이폰 가로')assert.ok(snapshot.buttonHeight.every(h=>h>=44),'phone touch targets must be >=44 CSS px');
    if(size.mobile){
      // Two real concurrent touch contacts, one per candy canvas.
      const fingerPoints=await evaluate(`(()=>{
