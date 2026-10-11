@@ -480,17 +480,24 @@ function updateRepairEffects(dt){
   for(let i=repairEffects.length-1;i>=0;i--){
     const fx=repairEffects[i];fx.t+=dt;
     const converge=Math.min(1,fx.t/.54);
+    const distance=Math.hypot(player.x-fx.x,player.z-fx.z);
+    // A corrected word must not fill the entire screen when repaired up close.
+    const legible=distance>.72;
+    const spread=Math.min(.65,distance*.26);
     for(const shard of fx.shards){
       const {offset,fromX,fromY}=shard.userData;
-      shard.position.set(fx.x+fromX*(1-converge)+offset*converge,
-        1.73+fromY*(1-converge)+Math.sin(converge*Math.PI)*.09,fx.z+.12);
-      shard.scale.setScalar(.42*(1-Math.max(0,(fx.t-.50)/.22)));
+      shard.position.set(fx.x+spread*(fromX*(1-converge)+offset*converge),
+        1.73+spread*fromY*(1-converge)+Math.sin(converge*Math.PI)*.06,fx.z+.12);
+      shard.scale.setScalar(Math.min(.17,distance*.09)*
+        (1-Math.max(0,(fx.t-.50)/.22)));
       shard.lookAt(camera.position);
-      shard.visible=fx.t<.69;
+      shard.visible=legible&&fx.t<.69;
     }
-    fx.result.visible=fx.t>=.48||fx.reduce;
-    fx.result.position.y=1.73+(fx.t>.65?(fx.t-.65)*.12:0);
-    fx.result.scale.set(2.45*Math.min(1,Math.max(.08,(fx.t-.44)/.22)),.73,1);
+    fx.result.visible=legible&&(fx.t>=.48||fx.reduce);
+    fx.result.position.y=1.73+(fx.t>.65?(fx.t-.65)*.08:0);
+    const width=Math.min(1.75,Math.max(.18,distance*.35))*
+      Math.min(1,Math.max(.08,(fx.t-.44)/.22));
+    fx.result.scale.set(width,width*.30,1);
     fx.result.lookAt(camera.position);
     if(fx.t>=1.45){
       for(const shard of fx.shards)scene.remove(shard);
@@ -1101,6 +1108,7 @@ window.OtaDebug = Object.freeze({
       anomalies:architectureErrors.filter(x=>x.mesh.visible).length},
       nearbyWords:[...literacyMeshes.values()].filter(v=>v.word.visible).length,
       nearbyHints:[...literacyMeshes.values()].filter(v=>v.hint.visible).length,repairs:repairEffects.length,
+      oversizedRepair:repairEffects.some(fx=>fx.result.visible&&fx.result.scale.x>Math.max(.2,R.distance(player,fx)*.38)),
       wayfinding:wayfindingSigns.map(mesh=>({word:mesh.userData.wayfindingWord,visible:mesh.visible}))},
     player:{x:player.x,z:player.z,yaw:player.yaw,pitch:player.pitch},mistakes:state.mistakes}),
   // Browser QA may aim the camera to verify gaze rules, but cannot edit game progress.
