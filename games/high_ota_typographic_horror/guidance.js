@@ -97,7 +97,14 @@
       return c.officeFixed?'officeRecord':'office';
     return 'hub';
   }
-  function hints(s,p){return defaultHints[scope(s,p)]||defaultHints.hub;}
+  function hints(s,p){
+    if(scope(s,p)==='finalGate'&&s.literacy&&s.literacy.coreDone<5)return [
+      '기록 A·B는 찾았지만 핵심 오타 '+(5-s.literacy.coreDone)+'개가 남았습니다.',
+      '복도·사무실·서고에서 「핵심 오타 · 조사」를 찾아 글자를 고치세요.',
+      '중앙 복도 2곳, 사무실 2곳, 서고 1곳의 잘못된 기록을 모두 고쳐야 봉인이 열립니다.'
+    ];
+    return defaultHints[scope(s,p)]||defaultHints.hub;
+  }
   function hint(s,p,level){const h=hints(s,p);return h[Math.min(Math.max(0,(level|0)-1),h.length-1)];}
   function cue(stage){return firstCues[stage]||null;}
   function failure(s){
