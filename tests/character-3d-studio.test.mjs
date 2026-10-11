@@ -1128,7 +1128,7 @@ test('v6.6 wardrobe repairs knight hair, shoe spike and grounded headwear',()=>{
   assert.match(studio,/kidscadeOpenHeadRepair:'v6\.6-full-helmet-safe-hair'/);
   assert.match(studio,/ball\('himeSide_'\+sign,at\(sign\*\.32/);
   assert.match(studio,/const twin=name==='chibi_female_hair_twintail'/);
-  assert.match(accessories,/sneakers:\\[1\\.025,1\\.005,1\\.005\\]/);
+  assert.match(accessory,/sneakers:\[1\.025,1\.005,1\.005\]/);
   assert.match(accessory,/if\(kind==='hightop'\)/);
   assert.doesNotMatch(accessory,/if\(kind==='sneakers'\|\|kind==='hightop'\)/);
   assert.match(accessory,/const hatCrownAllowance=style\.kind==='beret'/);
@@ -1145,5 +1145,5 @@ test('v6.7 headwear fits the scalp instead of hovering above it',()=>{
   assert.match(src,/chibi_gear_headphones:\[0,-\.026,\.007,\.99\]/);
   assert.match(src,/dome\.translate\(hc\.x-\.022,scalpY-\.016/);
   assert.match(src,/case 'straw':return cyl\(headR\*1\.085,headR\*1\.14,\.205,hc\.x,scalpY-\.117/);
-  assert.match(accessories,/sneakers:\\[1\\.025,1\\.005,1\\.005\\]/);
+  assert.match(src,/sneakers:\[1\.025,1\.005,1\.005\]/);
 });
