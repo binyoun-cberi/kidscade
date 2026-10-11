@@ -139,8 +139,8 @@ test('existing GLB chef and food models plus catalog registration remain intact'
 });
 
 
-test('v6 escalating attention costs are deterministic and do not punish first two glimpses',()=>{
- assert.deepEqual([0,1,2,3,4,5,6].map(R.peekCost),[0,0,6,10,17,24,24]);
+test('v7 repeat observations cost less while keeping an escalating risk',()=>{
+ assert.deepEqual([0,1,2,3,4,5,6,7].map(R.peekCost),[0,0,2,3,5,7,9,11]);
  const g=R.begin(42);
  const increments=[];
  while(g.phase==='cooking'){
@@ -155,7 +155,7 @@ test('v6 escalating attention costs are deterministic and do not punish first tw
   increments.push(g.suspicion-before);
   assert.ok(observed,'safe glimpse must be possible');
  }
- assert.deepEqual(increments.slice(0,5),[0,0,6,10,17]);
+ assert.deepEqual(increments.slice(0,5),[0,0,2,3,5]);
 });
 test('v6 gaze and animation metadata are connected, and fixed mobile peek remains onscreen',()=>{
  const html=read('games/high_midnight_diner/index.html');
@@ -174,4 +174,39 @@ test('v6 gaze and animation metadata are connected, and fixed mobile peek remain
  assert.match(scene,/getObjectByName\('Fist\.R'\)/);
  assert.match(scene,/getWorldPosition\(handPosition\)/);
  assert.match(scene,/chefPick\.fadeOut/);
+});
+
+test('v7 renders stage and interactions inside one immersive viewport',()=>{
+ const html=read('games/high_midnight_diner/index.html');
+ const css=read('games/high_midnight_diner/immersive.css');
+ assert.match(html,/immersive\.css/);
+ assert.match(html,/VERSION 7/);
+ assert.match(css,/#game\{position:relative;[^}]*height:100dvh/);
+ assert.match(css,/\.dining,\.game-layout\.cooking \.dining,\.game-layout\.eating \.dining\{/);
+ assert.match(css,/\.kitchen,\.game-layout\.cooking \.kitchen,\.game-layout\.eating \.kitchen\{/);
+ assert.match(css,/\.game-layout\.eating \.plate-wrap\{/);
+ assert.match(css,/\.game-layout\.cooking #peekBtn\{/);
+ assert.match(css,/backdrop-filter:none!important/);
+ assert.doesNotMatch(html,/오른쪽 접시/);
+});
+test('v7 allows 4-5 well-timed looks per plate without unavoidable suspicion defeat',()=>{
+ for(const count of [4,5]){
+  for(let seed=1;seed<=50;seed++){
+   const game=R.begin(seed);
+   for(let course=0;course<R.FOODS.length;course++){
+    const dish=game.dish;
+    progressCooking(game,ev=>ev.phase==='SAFE'&&ev.index<count);
+    assert.equal(game.phase,'playing');
+    const choices=dish.zones.filter(z=>!z.dangerous).slice(0,3);
+    for(const z of choices)R.eat(game,z.id);
+   }
+   assert.equal(game.ending?.won,true,'seed '+seed+' with '+count+' looks');
+  }
+ }
+});
+test('v7 notebook pauses observation and prevents invisible punishment',()=>{
+ const js=read('games/high_midnight_diner/game.js');
+ assert.match(js,/onPeekUp\(\);\s*\$\('notebookEntries'\)/);
+ assert.match(js,/document\.hidden\|\|!\$\('notebookPanel'\)\.classList\.contains\('hidden'\)/);
+ assert.match(js,/function closeNotebook\(\)/);
 });
