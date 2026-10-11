@@ -3834,6 +3834,29 @@
       ],
       "qualityStatus": "standard",
       "classroom": false
+    },
+    {
+      "id": "high_one_life",
+      "addedAt": "2026-10-11T12:00:00+09:00",
+      "title": "단 하나의 인생",
+      "href": "games/high_one_life/index.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🌍",
+      "description": "세계 여러 지역의 한 사람으로 태어나 30·60·90분 길이의 인생을 자동으로 체험해요. 가상 출생 신고서와 가족·학교·직업·소득·지출·순자산, 성장에 따른 픽셀아트 생활 장면, 중요한 선택과 생애 기록을 살펴보세요. 실제 국가별 출생률·임금·삶의 가치를 예측하는 자료가 아닌 교육용 가상 시뮬레이션입니다.",
+      "subject": "social",
+      "genre": "simulation",
+      "difficulty": "easy",
+      "sessionMinutes": 30,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     }
   ],
   "taxonomy": {
