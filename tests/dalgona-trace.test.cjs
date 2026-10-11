@@ -72,6 +72,24 @@ test('a reversal mid-trace is not treated as additional progress or a shortcut',
    assert.equal(s.complete,false);
  }
 });
+test('every outline accepts both clockwise and counterclockwise traces from the same yellow dot',()=>{
+ for(let stage=1;stage<=18;stage++){
+   const forward=E.buildTrace(stage),reverse=E.reversed(forward);
+   assert.ok(Math.hypot(forward.path[0].x-reverse.path[0].x,forward.path[0].y-reverse.path[0].y)<.001);
+   for(const [path,direction] of [[forward,'forward'],[reverse,'reverse']]){
+     let state=E.begin(path,E.createState(path),E.sampleAt(path,0),1000).state;
+     let detected=null;
+     for(let i=1;i<path.path.length&&!state.failed&&!state.complete;i++){
+       if(!detected)detected=E.directionFor(forward,reverse,path.path[i]);
+       state=E.move(path,state,path.path[i],1000+i*18);
+     }
+     assert.equal(detected,direction,'stage '+stage);
+     assert.equal(state.failed,false,'stage '+stage+' '+direction+' '+state.reason);
+     assert.equal(state.complete,true,'stage '+stage+' '+direction);
+     assert.ok(E.grade(path,state).score>=85);
+   }
+ }
+});
 test('crossing the speed ceiling breaks a perfectly followed line',()=>{
   const {state}=simulate(1,1);
   assert.equal(state.failed,true);
