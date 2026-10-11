@@ -1,0 +1,55 @@
+name: One Life official statistics refresh
+
+on:
+  push:
+    paths:
+      - "scripts/sync-one-life-official-stats.cjs"
+      - ".github/workflows/one-life-official-stats.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "21 3 1 * *"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: one-life-statistics-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Import official indicators and validate all country coverage
+        run: node scripts/sync-one-life-official-stats.cjs
+      - name: Simulate game flow against imported snapshot
+        run: node --test tests/one-life-official-stats.test.cjs tests/one-life-v8.test.cjs tests/one-life-screen-flow.test.cjs
+      - name: Commit verified static snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add games/high_one_life/official-data.js
+          if git diff --cached --quiet; then
+            echo "No data change"
+            exit 0
+          fi
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            SNAPSHOT_BRANCH="data/one-life-official-stats-$(date -u +%Y%m%d-%H%M%S)"
+            git switch -c "$SNAPSHOT_BRANCH"
+            git commit -m "data(one-life): refresh verified published indicators"
+            git push origin "$SNAPSHOT_BRANCH"
+            gh pr create --base main --head "$SNAPSHOT_BRANCH" --title "data(one-life): update official indicator snapshot" --body "Monthly UN/UNESCO/ILO/WHO/UNICEF metrics via the World Bank API. Includes source years and country coverage; not future individual predictions."
+          else
+            git commit -m "data(one-life): refresh source-verified indicators"
+            git push origin "HEAD:${GITHUB_REF#refs/heads/}"
+          fi
