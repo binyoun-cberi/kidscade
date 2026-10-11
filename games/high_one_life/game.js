@@ -307,7 +307,7 @@
   }
   function paintPeers(force=false) {
     if(!life)return;
-    if(!force && life.age===lastPeerRenderedAge)return;
+    if(!force && (life.age===lastPeerRenderedAge || (storyTab!=='peers' && life.age%4!==0 && life.age!==0 && !life.pending)))return;
     lastPeerRenderedAge=life.age;
     if(!peerCache||peerCache.seed!==life.seed){
       peerCache={seed:life.seed,people:Array.from({length:4},(_,i)=>{
