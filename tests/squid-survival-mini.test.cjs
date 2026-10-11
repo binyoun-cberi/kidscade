@@ -39,6 +39,28 @@ test('100 random traffic-light schedules can be cleared by reacting to the signa
     assert.ok(s.progress>=100);
   }
 });
+test('yellow signal is a warning, never an automatic stop: motion continues while held',()=>{
+ for(let seed=1;seed<=100;seed++){
+   const s=R.create('redlight',seed);R.start(s,0);
+   R.act(s,'hold',true,10);
+   let at=null,before=0;
+   for(let now=20;now<5000&&s.status==='playing';now+=20){
+     R.advance(s,now);
+     if(s.signal==='warning'&&at===null){at=now;before=s.progress;}
+     if(at!==null&&now>=at+180){
+       assert.equal(s.signal,'warning');
+       assert.equal(s.held,true);
+       assert.ok(s.progress>before,'seed '+seed+' auto-stopped at yellow');
+       R.act(s,'hold',false,now);
+       const parked=s.progress;
+       R.advance(s,now+100);
+       assert.equal(s.progress,parked,'release must actually stop player');
+       break;
+     }
+   }
+   assert.notEqual(at,null);
+ }
+});
 test('running on a red signal causes an immediate loss after the reaction window',()=>{
   const s=R.create('redlight',9);R.start(s,0);
   R.act(s,'hold',true,10);
