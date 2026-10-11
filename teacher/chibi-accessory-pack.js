@@ -67,7 +67,12 @@ export const ACCESSORY_CONFLICTS={
 const facialSurfaceCache=new WeakMap();
 function faceDepthAtGeometry(geometry){
   if(facialSurfaceCache.has(geometry))return facialSurfaceCache.get(geometry);
-  const p=geometry.getAttribute('position'),idx=geometry.getIndex(),triangles=[];
+  const p=geometry.getAttribute('position'),idx=geometry.getIndex(),triangles=[],surfacePoints=[];
+  for(let i=0;i<p.count;i++){
+    const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
+    if(y>=1.22&&y<=1.94&&Math.abs(x)<.43&&z>-.05)
+      surfacePoints.push([x,y,z]);
+  }
   const count=idx?idx.count:p.count;
   for(let i=0;i+2<count;i+=3){
     const a=idx?idx.getX(i):i,b=idx?idx.getX(i+1):i+1,c=idx?idx.getX(i+2):i+2;
@@ -90,7 +95,16 @@ function faceDepthAtGeometry(geometry){
       if(u<-.00001||v<-.00001||u+v>1.00001)continue;
       front=Math.max(front,u*t.z0+v*t.z1+(1-u-v)*t.z2);
     }
-    return front;
+    if(Number.isFinite(front))return front;
+    // The cheeks and jaw terminate before some mask/lens corners. Falling
+    // back to the eye's max Z put those corners in mid-air. At the silhouette,
+    // use the nearest REAL head vertex instead of a global eye-depth plane.
+    let nearest=Infinity,depth=-Infinity;
+    for(const [px,py,pz] of surfacePoints){
+      const d=(px-x)*(px-x)+(py-y)*(py-y);
+      if(d<nearest){nearest=d;depth=pz;}
+    }
+    return depth;
   };
   facialSurfaceCache.set(geometry,sampler);
   return sampler;
@@ -110,16 +124,33 @@ function fitCurvedFaceParts(group,body,eyes,fit){
     if(!spec)return;
     const projected=node.geometry.clone();
     const attr=projected.getAttribute('position');
+    if(spec==='temple'){
+      const sign=node.name.endsWith('_-1')?-1:1;
+      const ey=group.userData.faceEyeY;
+      const pts=[
+        [sign*.247,ey+.017,.065],
+        [sign*.276,ey+.019,.018],
+        [sign*.314,ey+.009,-.038]
+      ].map(([x,y,offset])=>{
+        const surface=faceZ(Math.sign(x)*Math.min(Math.abs(x),.29),y,true);
+        return new THREE.Vector3(x,y,(Number.isFinite(surface)?surface:group.userData.faceFallbackZ)+offset);
+      });
+      const arm=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),16,.007,6,false);
+      arm.userData.kidscadeFaceProjection='temple';
+      node.geometry=arm;
+      projected.dispose();
+      return;
+    }
     if(spec==='strap'){
       const sign=node.name.endsWith('_-1')?-1:1;
       const pts=[
-        [sign*.153,-.262],[sign*.188,-.243],[sign*.234,-.237]
+        [sign*.152,-.250],[sign*.197,-.225],[sign*.247,-.213]
       ].map(([x,dy],i)=>{
         const y=group.userData.faceEyeY+dy;
         const sampleX=Math.sign(x)*Math.min(Math.abs(x),.22);
         const actual=faceZ(sampleX,y);
         const baseline=Number.isFinite(actual)?actual:group.userData.faceFallbackZ;
-        return new THREE.Vector3(x,y,baseline+(i===0?.008:-.038));
+        return new THREE.Vector3(x,y,baseline+(i===0?.008:-.025));
       });
       const loop=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),24,.006,6,false);
       loop.userData.kidscadeFaceProjection='strap';
@@ -135,9 +166,12 @@ function fitCurvedFaceParts(group,body,eyes,fit){
       // A constant 0.036 clearance made the lower edge a floating shelf in
       // side/profile views; the middle now keeps its volume without that rim.
       const nx=Math.min(1,Math.abs(x)/.18);
-      const clothClearance=.010+.030*Math.max(0,1-nx*nx);
+      const hem=THREE.MathUtils.clamp((group.userData.faceEyeY-.20-y)/.19,0,1);
+      const clothClearance=.008+.022*(1-nx*nx)*(1-.70*hem*hem);
+      const side=Math.min(1,Math.abs(x)/.28);
+      const lensClearance=.052+.016*side*side;
       attr.setZ(i,(Number.isFinite(actual)?actual:fallback)+
-        (spec==='lens'?.045:clothClearance));
+        (spec==='lens'?lensClearance:clothClearance));
     }
     attr.needsUpdate=true;
     projected.userData.kidscadeFaceProjection=spec;
@@ -241,7 +275,10 @@ function facePatch(cx,cy,frontZ,width,height,curve=.028,rows=10,columns=20,shape
     const v=j/rows,ny=v*2-1;
     for(let i=0;i<=columns;i++){
       const u=i/columns,nx=u*2-1;
-      const x=cx+nx*width*.5*(shape==='mask'?1-.22*(1-v)*(1-v):1);
+      const lateralShape=shape==='mask'
+        ?1-.24*(1-v)*(1-v)
+        :1-.08*Math.pow(Math.abs(ny),6);
+      const x=cx+nx*width*.5*lateralShape;
       const y=cy+ny*height*.5+(shape==='mask'?.042*(1-v)*nx*nx:0);
       // The nose/central lens edge projects slightly more than the cheeks.
       const z=frontZ-curve*nx*nx-.004*ny*ny;
@@ -317,7 +354,7 @@ function buildGeometry(style,source,sourceHair,eyes){
     case 'straw':return cyl(headR*.88,headR*.98,.145,hc.x,scalpY+.016,hc.z);
     case 'round':return ring(.071,.009,-.110,eyeY,faceZ);
     case 'square':return box(.150,.119,.012,-.110,eyeY,faceZ);
-    case 'sunglasses':return facePatch(-.137,eyeY-.027,faceZ+.016,.238,.210,.032);
+    case 'sunglasses':return facePatch(-.145,eyeY-.027,faceZ+.016,.278,.206,.032);
     case 'goggles':return box(.365,.133,.055,0,eyeY,faceZ+.015);
     case 'mask':return facePatch(0,eyeY-.305,faceZ+.009,.335,.205,.055,14,28,'mask');
     case 'schoolbag':return box(.335,.360,.172,0,.966,-.240);
@@ -392,12 +429,19 @@ function createDetails(style,context){
         for(const sign of [-1,1])
           add(box(.144,.012,.021,sign*.110,eyeY+.061,faceZ),black,'topFrame_'+sign);
       }else if(kind==='sunglasses')
-        add(facePatch(.137,eyeY-.027,faceZ+.016,.238,.210,.032),style.color,'rightLens');
+        add(facePatch(.145,eyeY-.027,faceZ+.016,.278,.206,.032),style.color,'rightLens');
       else if(kind==='goggles')
         add(box(.327,.091,.017,0,eyeY,faceZ+.046),'#8bcdd7','glass');
       add(facePatch(0,eyeY+.008,faceZ+.022,.055,.014,.006,2,8),style.color,'bridge');
-      for(const sign of [-1,1])
-        add(box(.113,.014,.012,sign*.238,eyeY+.02,faceZ-.004),black,'temple_'+sign);
+      for(const sign of [-1,1]){
+        if(kind==='sunglasses'){
+          add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+            new THREE.Vector3(sign*.247,eyeY+.017,faceZ+.045),
+            new THREE.Vector3(sign*.276,eyeY+.019,faceZ+.018),
+            new THREE.Vector3(sign*.314,eyeY+.009,faceZ-.038)
+          ]),16,.007,6,false),black,'temple_'+sign);
+        }else add(box(.113,.014,.012,sign*.238,eyeY+.02,faceZ-.004),black,'temple_'+sign);
+      }
     }else if(kind==='mask'){
       add(facePatch(0,eyeY-.225,faceZ+.014,.265,.014,.030,2,20),white,'noseBridge');
       for(const sign of [-1,1])
@@ -479,10 +523,11 @@ export function createAccessoryPack({
       group.userData.faceFallbackZ=faceFallbackZ;
     }
     const add=(geometry,color,id,region)=>{
-      if((kind=>kind==='mask'||kind==='sunglasses')(style.kind)){
+      if(style.kind==='mask'||style.kind==='sunglasses'){
         if(geometry.userData.kidscadeFacePatch)
           geometry.userData.kidscadeFaceProjection=style.kind==='sunglasses'?'lens':'skin';
         if(id.startsWith('earLoop_'))geometry.userData.kidscadeFaceProjection='strap';
+        if(id.startsWith('temple_'))geometry.userData.kidscadeFaceProjection='temple';
       }
       const material=makeSolidMaterial(color,style.label+' '+id);
       geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
