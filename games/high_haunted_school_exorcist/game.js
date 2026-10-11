@@ -55,6 +55,12 @@ let viewYaw=0,viewPitch=0,turnPointer=null,prevX=0,prevY=0,last=performance.now(
 let invulnerable=0,ghostWaiting=0,maidenPhase='approach',tutorialCount=0,lessonTimer=0,lastMistake='';
 const guidance={key:'',points:[],mesh:null,clock:0,fromX:0,fromZ:0,goalX:0,goalZ:0};
 let guideAssistance=false;
+let tutorialMode=false,survivalKills=0,survivalSpawnClock=0;
+const SURVIVAL_SECONDS=300,SURVIVAL_REQUIRED_SEALS=8,survivalGhosts=[];
+const HORROR_NAMES={maiden:'처녀귀신',egg:'달걀귀신',yuki:'유키온나',reaper:'저승사자',wolf:'늑대인간'};
+const HORROR_RULES={maiden:'정면으로 바라보기',egg:'등 돌리기',yuki:'손전등 끄기',reaper:'빛 비추기',wolf:'빛으로 돌진 막기'};
+const SURVIVAL_SPAWNS=[[-10.5,-14],[7.5,-15],[25,-15],[24,14],[-10.5,15],[8,15],[-23,15],[-23,-16],[4,-8.5],[19,8.5]];
+
 let gazeLocked=false,ghostNav=null;
 let hidingLocker=null,lockerTime=0,lockerDanger=0,lockerPreviousFlash=true,lockerLastSeen=null;
 const encounter={
@@ -864,7 +870,109 @@ function setStage(next){
   }
   presentEncounterModels();updateNavigation(0,true);updateHud();
 }
+
+function spawnSurvivalGhost(){
+  const max=1+(elapsed>=55?1:0)+(elapsed>=140?1:0);
+  if(survivalGhosts.length>=max)return false;
+  const kinds=Object.keys(HORROR_NAMES).filter(k=>!survivalGhosts.some(g=>g.kind===k));
+  const spots=SURVIVAL_SPAWNS.map(([x,z])=>({x,z})).filter(p=>canWalk(p.x,p.z)&&
+    dist(p,player)>11&&survivalGhosts.every(g=>dist(g.actor,p)>6));
+  if(!kinds.length||!spots.length)return false;
+  const kind=kinds[Math.floor(Math.random()*kinds.length)];
+  const pos=spots[Math.floor(Math.random()*spots.length)],actor=horrorVisuals[kind];
+  actor.x=pos.x;actor.z=pos.z;actor.root.position.set(pos.x,0,pos.z);actor.root.visible=true;
+  const ghost={kind,actor,charge:0,ready:0,nav:null,hitCooldown:3};
+  survivalGhosts.push(ghost);loadHorrorAsset(kind);
+  sfx(kind==='wolf'?'sfx_wolf_howl.mp3':'sfx_horror_sting_01.mp3',.14);
+  showToast(HORROR_NAMES[kind]+'의 기척이 느껴집니다…');
+  return true;
+}
+function nearestSurvivalGhost(){
+  let ghost=null,distance=Infinity;
+  for(const g of survivalGhosts){const d=dist(g.actor,player);if(d<distance){ghost=g;distance=d;}}
+  return {ghost,distance};
+}
+function survivalLook(g){
+  const a=g.actor,dx=a.x-player.x,dz=a.z-player.z,dy=1.5-FIRST_PERSON_EYE_HEIGHT;
+  const d=Math.hypot(dx,dz),length=Math.hypot(dx,dy,dz)||1,look=playerLookDirection();
+  const clear=clearGhostSight(player.x,player.z,a.x,a.z);
+  return {d,clear,score:clear?(look.x*dx+look.y*dy+look.z*dz)/length:-1};
+}
+function chaseSurvivalGhost(g,dt,speed){
+  const a=g.actor;
+  if(!g.nav||!g.nav.path.length||g.nav.age>3||Math.hypot(g.nav.tx-player.x,g.nav.tz-player.z)>2)
+    g.nav={path:routePlan(a,player,.85),age:0,tx:player.x,tz:player.z};
+  g.nav.age+=dt;
+  while(g.nav.path.length>1&&dist(a,g.nav.path[0])<.17)g.nav.path.shift();
+  const target=g.nav.path[0]||player,dx=target.x-a.x,dz=target.z-a.z,len=Math.hypot(dx,dz);
+  if(len<.07)return;
+  const step=Math.min(len,dt*speed),x=a.x+dx/len*step,z=a.z+dz/len*step;
+  if(canWalk(x,z)){a.x=x;a.z=z;}else g.nav=null;
+  a.root.rotation.y=Math.atan2(player.x-a.x,player.z-a.z);
+}
+function updateSurvival(dt){
+  if(elapsed>=SURVIVAL_SECONDS){finish(survivalKills>=SURVIVAL_REQUIRED_SEALS);return;}
+  survivalSpawnClock-=dt;
+  if(survivalSpawnClock<=0)survivalSpawnClock=spawnSurvivalGhost()?Math.max(3.2,6-elapsed/140):1.5;
+  const ramp=1+Math.min(.5,elapsed/SURVIVAL_SECONDS*.5);
+  for(const g of [...survivalGhosts]){
+    const look=survivalLook(g),d=look.d,k=g.kind;
+    g.hitCooldown=Math.max(0,g.hitCooldown-dt);
+    const threshold={maiden:2.3,egg:2.2,yuki:2.3,reaper:1.9,wolf:1.8}[k];
+    const condition={
+      maiden:look.clear&&look.score>.88&&d<9,
+      egg:look.clear&&look.score<-.20&&d<7,
+      yuki:!flashOn&&d<6.4,
+      reaper:flashOn&&look.clear&&look.score>.75&&d<8,
+      wolf:flashOn&&look.clear&&look.score>.80&&d<7.3
+    }[k];
+    if(g.ready>0){g.ready=Math.max(0,g.ready-dt);if(!g.ready)g.charge=0;}
+    else{
+      g.charge=Math.max(0,Math.min(threshold,g.charge+dt*(condition?1:-.4)));
+      if(g.charge>=threshold){g.ready=5;showToast(HORROR_NAMES[k]+' 약화! 가까이 E로 봉인!');
+        sfx('sfx_school_alarm_bell.mp3',.13);}
+    }
+    const speed=(k==='wolf'?3.8:k==='maiden'?2.4:k==='egg'?1.95:2.1)*ramp;
+    if(!g.ready&&!hidingLocker&&!(condition&&(k==='maiden'||k==='wolf')))
+      chaseSurvivalGhost(g,dt,speed);
+    else if(hidingLocker&&!g.ready&&dist(g.actor,hidingLocker.interact)>1)
+      chaseSurvivalGhost(g,dt*.5,speed);
+    g.actor.root.position.set(g.actor.x,Math.sin(elapsed*2)*.07,g.actor.z);
+    if(!hidingLocker&&d<1.22&&!g.ready&&g.hitCooldown<=0&&invulnerable<=0&&
+       clearGhostSight(g.actor.x,g.actor.z,player.x,player.z)){
+      g.hitCooldown=4.3;
+      takeAnomalyHit(HORROR_NAMES[k]+'에게 붙잡혔어요. '+HORROR_RULES[k]+'!');
+      for(const other of survivalGhosts){
+        other.nav=null;other.hitCooldown=Math.max(other.hitCooldown,3.6);
+        if(dist(other.actor,player)<8){
+          const far=SURVIVAL_SPAWNS.map(([x,z])=>({x,z})).filter(p=>dist(p,player)>14&&canWalk(p.x,p.z));
+          if(far.length){const p=far[Math.floor(Math.random()*far.length)];
+            other.actor.x=p.x;other.actor.z=p.z;other.actor.root.position.set(p.x,0,p.z);}
+        }
+      }
+      if(ended)return;
+    }
+  }
+}
+function sealSurvivalGhost(g){
+  const i=survivalGhosts.indexOf(g);
+  if(i<0||g.ready<=0||dist(g.actor,player)>2.85)return;
+  survivalGhosts.splice(i,1);g.actor.root.visible=false;
+  survivalKills++;power=Math.min(100,power+11);invulnerable=Math.max(invulnerable,.85);
+  survivalSpawnClock=Math.max(survivalSpawnClock,3);
+  showToast(HORROR_NAMES[g.kind]+' 봉인 성공 · 누적 '+survivalKills+'회');
+  sfx('sfx_school_alarm_bell.mp3',.25);updateHud();
+}
 function nearAction(){
+  if(!tutorialMode){
+    if(hidingLocker)return{type:'leaveLocker',text:'사물함에서 나오기 [E]'};
+    let closest=null,best=2.85;
+    for(const g of survivalGhosts){const d=dist(g.actor,player);
+      if(g.ready>0&&d<best){closest=g;best=d;}}
+    if(closest)return{type:'survivalSeal',ghost:closest,text:HORROR_NAMES[closest.kind]+' 봉인 [E]'};
+    const near=nearestLocker();
+    return near?{type:'hideLocker',i:near.id,text:'사물함에 숨기 [E]'}:null;
+  }
   if(hidingLocker)return{type:'leaveLocker',text:'사물함에서 나오기 [E]'};
   if(stage===1){
     for(let i=0;i<disturbed.length;i++){const o=disturbed[i];if(!o.done&&dist(o,player)<1.95)return{type:'fix',i,text:o.name+' 바로잡기'};}
@@ -893,6 +1001,7 @@ function nearAction(){
 function act(){
   if(!started||paused||ended)return;
   const item=nearAction();if(!item){showToast('주변에 지금 조작할 수 있는 물건이 없어요.');return;}
+  if(item.type==='survivalSeal'){sealSurvivalGhost(item.ghost);return;}
   if(item.type==='leaveLocker'){leaveLocker();updateHud();return;}
   if(item.type==='hideLocker'){enterLocker(item.i);updateHud();return;}
   if(item.type==='fix'){
