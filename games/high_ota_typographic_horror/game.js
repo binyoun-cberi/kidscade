@@ -19,6 +19,8 @@ const overlays = { intro:el('intro'), fix:el('fixPanel'), correction:el('correct
 const state = R.initialState();
 const literacy=L.create();state.literacy=literacy;
 const literacyMeshes=new Map();let activeCorrection=null;
+const repairEffects=[];
+let apparitionAnchor=null,apparitionNumber=-1;
 const corrector=X.create();
 let soundPulse=0, lastCorrectorSound=0;
 const player = { x:0, z:4.8, yaw:0, pitch:0, moving:false };
@@ -335,7 +337,9 @@ function syncLiteracyVisuals(){
   const available=new Set(literacy.items.map(item=>item.uid));
   for(const [uid,visual] of literacyMeshes){
     if(available.has(uid))continue;
-    scene.remove(visual.word);scene.remove(visual.hint);literacyMeshes.delete(uid);
+    scene.remove(visual.word);scene.remove(visual.hint);
+    visual.base.dispose();visual.hot.dispose();visual.hintMaterial.dispose();
+    literacyMeshes.delete(uid);
   }
   for(const item of literacy.items){
     if(literacyMeshes.has(item.uid))continue;
@@ -344,7 +348,45 @@ function syncLiteracyVisuals(){
       item.x,1.62,item.z,0,0,2.55,.77);
     const hint=label(item.kind==='core'?'핵심 오타 · 조사':'새 오류 · 조사',
       item.kind==='core'?'#cfc3b2':'#a296a0',item.x,2.21,item.z,0,0,1.65,.40);
-    literacyMeshes.set(item.uid,{word,hint,item});
+    const base=word.material.clone(),hot=material(q.wrong,'#f15b76').clone();
+    const hintMaterial=hint.material.clone();
+    word.material=base;hint.material=hintMaterial;
+    literacyMeshes.set(item.uid,{word,hint,item,base,hot,hintMaterial});
+  }
+}
+function startRepairEffect(item,q){
+  // Broken syllables converge into a readable corrected word.
+  const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const chars=[...q.correct.replace(/\s/g,'')].slice(0,10);
+  const shards=reduce?[]:chars.map((char,i)=>{
+    const m=label(char,i%2?'#f2b78e':'#f57389',item.x,1.59,item.z+.12,0,0,.42,.46);
+    m.userData={offset:(i-(chars.length-1)/2)*.27,fromX:Math.sin(i*3.7)*.75,fromY:Math.cos(i*4.1)*.53};
+    return m;
+  });
+  const result=label(q.correct,'#aeecca',item.x,1.73,item.z+.1,0,0,2.45,.73);
+  result.visible=reduce;
+  repairEffects.push({t:0,x:item.x,z:item.z,result,shards,reduce});
+}
+function updateRepairEffects(dt){
+  for(let i=repairEffects.length-1;i>=0;i--){
+    const fx=repairEffects[i];fx.t+=dt;
+    const converge=Math.min(1,fx.t/.54);
+    for(const shard of fx.shards){
+      const {offset,fromX,fromY}=shard.userData;
+      shard.position.set(fx.x+fromX*(1-converge)+offset*converge,
+        1.73+fromY*(1-converge)+Math.sin(converge*Math.PI)*.09,fx.z+.12);
+      shard.scale.setScalar(.42*(1-Math.max(0,(fx.t-.50)/.22)));
+      shard.lookAt(camera.position);
+      shard.visible=fx.t<.69;
+    }
+    fx.result.visible=fx.t>=.48||fx.reduce;
+    fx.result.position.y=1.73+(fx.t>.65?(fx.t-.65)*.12:0);
+    fx.result.scale.set(2.45*Math.min(1,Math.max(.08,(fx.t-.44)/.22)),.73,1);
+    fx.result.lookAt(camera.position);
+    if(fx.t>=1.45){
+      for(const shard of fx.shards)scene.remove(shard);
+      scene.remove(fx.result);repairEffects.splice(i,1);
+    }
   }
 }
 function updateLiteracyHud(){
@@ -383,6 +425,8 @@ function respawnAtCheckpoint(){
   L.restore(literacy,data.literacy);
   Object.assign(player,{x:C3.START.x,z:C3.START.z,yaw:0,pitch:0,moving:false});
   failed=false;X.reset(corrector);soundPulse=0;closeCorrection();
+  for(const fx of repairEffects){fx.shards.forEach(m=>scene.remove(m));scene.remove(fx.result);}
+  repairEffects.length=0;apparitionAnchor=null;apparitionNumber=-1;
   overlays.ending.classList.add('closed');overlays.fix.classList.add('closed');
   document.body.classList.remove('hidden-in-locker');
   hud.objective.textContent=C3.objective(state);
@@ -470,7 +514,7 @@ function updateStage(stage,old) {
     hud.stage.textContent='기록보관소 · 탈출 통로 열림';
     try{window.KidscadeGame?.milestone?.('ota_door_fixed',{uniqueKey:'ota-prologue'});}catch(_){}
   } else if(stage==='explore'){
-    X.reset(corrector);
+    X.reset(corrector);apparitionAnchor=null;apparitionNumber=-1;
     C3.ensure(state).checkpoint=true;
     syncLiteracyVisuals();updateLiteracyHud();saveChapterCheckpoint();
     announce('잘못된 기록을 발견하면 조사해 고치세요. 핵심 교정 5개가 필요합니다.',false,5.0);
@@ -700,14 +744,31 @@ function update(dt) {
   const corruptorSource=state.monster.active?state.monster
     :corrector.phase!=='dormant'?corrector:null;
   updateHauntedWords(elapsed,corruptorSource,state.stage==='final');
+  updateRepairEffects(dt);
   if(state.stage==='explore'){
-    for(const {word,hint,item} of literacyMeshes.values()){
+    // Show one clear nearby learning target; distant record text fades away.
+    const nearest=L.nearest(literacy,player,9);
+    for(const {word,hint,item,base,hot,hintMaterial} of literacyMeshes.values()){
+      const dist=R.distance(player,item);
+      const fade=Math.max(0,Math.min(1,(10-dist)/4));
+      const emphasis=nearest&&nearest.uid!==item.uid&&dist<6?.32:1;
       const beat=Math.sin(elapsed*(1.6+literacy.contamination*.015)+item.age*.4);
-      word.position.y=1.62+beat*.038;
-      word.lookAt(camera.position);hint.lookAt(camera.position);
-      word.material=material(L.question(item).wrong,
-        literacy.contamination>=40&&beat>.65?'#ed4c65':item.kind==='core'?'#e79ca8':'#cb7b8a');
+      word.position.y=1.62+beat*.025;
+      word.material=literacy.contamination>=40&&beat>.75?hot:base;
+      word.material.opacity=fade*emphasis;
+      word.visible=fade*emphasis>.04;
+      word.lookAt(camera.position);
+      hint.visible=dist<4.7&&(!nearest||nearest.uid===item.uid);
+      hintMaterial.opacity=Math.min(1,(4.7-dist)/1.6);
+      hint.lookAt(camera.position);
     }
+    const focused=nearest&&R.distance(player,nearest)<4.2?nearest:null;
+    hauntedWords.forEach(entry=>{
+      if(entry.z< -38&&entry.z> -57&&focused&&
+        Math.hypot(entry.x-focused.x,entry.z-focused.z)<3.1){
+        entry.mesh.visible=false;entry.ghost.visible=false;
+      }else entry.mesh.visible=true;
+    });
   }
   shiftingWords.forEach((entry,i)=>{
     if(entry.mesh.visible){
@@ -883,10 +944,13 @@ el('correctionChoices').querySelectorAll('button').forEach(button=>{
       updateLiteracyHud();
       return;
     }
-    closeCorrection();syncLiteracyVisuals();updateLiteracyHud();
+    closeCorrection();startRepairEffect(result.item,result.question);
+    syncLiteracyVisuals();updateLiteracyHud();
     hud.objective.textContent=C3.objective(state);
-    saveChapterCheckpoint();tone(523,.18,'triangle',.057);
-    announce(result.item.kind==='core'?'핵심 기록 복구 '+literacy.coreDone+'/5':'오타 교정 성공! 오염도가 낮아졌어요.',false,2.8);
+    saveChapterCheckpoint();
+    tone(392,.12,'triangle',.047);
+    tone(523,.22,'triangle',.048);tone(784,.28,'sine',.042);
+    announce((result.item.kind==='core'?'핵심 기록 '+literacy.coreDone+'/5 복구! ':'오타 교정 성공! ')+result.question.explain,false,3.9);
     if(result.completed&&C3.both(state))
       announce('핵심 기록 5개 복구 완료! 중앙 기록실로 이동하세요.',false,4.0);
     try{window.KidscadeGame?.milestone?.('ota_literacy_'+literacy.coreDone,{uniqueKey:'ota-literacy-'+literacy.coreDone});}catch(_){}
