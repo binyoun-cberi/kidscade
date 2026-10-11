@@ -491,7 +491,7 @@ function updateStage(stage,old) {
 }
 function syncStage(before) {updateStage(state.stage,before);}
 function interact() {
-  if(!started || failed || !overlays.fix.classList.contains('closed')) return;
+  if(!started || failed || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed')) return;
   const nearShelter=state.stage==='explore'&&R.distance(player,X.SHELTER)<1.7;
   if(corrector.hidden){
     X.leave(corrector);document.body.classList.remove('hidden-in-locker');
@@ -507,7 +507,9 @@ function interact() {
     }else announce('너무 가까워요. 교정자와 거리를 벌리세요.',true,2.1);
     return;
   }
-  const action=R.getInteraction(state,player)||C3.interaction(state,player);
+  const nearbyError=state.stage==='explore'?L.nearest(literacy,player):null;
+  const action=R.getInteraction(state,player)||C3.interaction(state,player)
+    ||(nearbyError?{type:'literacy',label:'틀린 기록 교정',uid:nearbyError.uid}:null);
   if(!action) return;
   if(state.stage==='explore')soundPulse=1.35;
   const before=state.stage;
@@ -527,6 +529,11 @@ function interact() {
       document.body.classList.remove('hidden-in-locker');
       announce('복도가 막혔어요. 붉은 「막힘」의 이름을 바로잡으세요.',false,3.0);
     }
+  } else if(action.type==='literacy'){
+    const item=literacy.items.find(i=>i.uid===action.uid);
+    if(item)openCorrection(item);
+  } else if(action.type==='coreNeeded'){
+    announce('핵심 오타 기록을 '+(5-literacy.coreDone)+'개 더 고쳐야 합니다.',false,3.6);
   } else if(action.type==='archiveCipher'){
     announce('기록이 봉인되어 있습니다. 「사람」을 잠깐 읽고, 반드시 시선을 돌리세요.',false,4.2);
     tone(190,.20,'triangle',.035);
@@ -538,7 +545,7 @@ function interact() {
       tone(530,.26,'triangle',.055);
       hud.objective.textContent=C3.objective(state);
       hud.records.textContent='기록 '+(+C3.ensure(state).records.office+ +C3.ensure(state).records.archive)+'/2';
-      hud.stage.textContent=C3.both(state)?'두 기록을 모았습니다. 중앙 기록실로 가세요':'다른 방에서도 기록을 찾으세요';
+      hud.stage.textContent=C3.both(state)?'핵심 교정 '+literacy.coreDone+'/5 완료 후 중앙 기록실로':'다른 방에서도 기록을 찾으세요';
     }
   } else if(['repair','corridor','office','final'].includes(action.type)) {
     openPuzzle(action.type);
@@ -572,18 +579,20 @@ function finish(won) {
   el('endingTitle').textContent=won?'당신의 이름이 남았습니다':'당신의 이름이 지워졌습니다';
   const failure=won?null:G.failure(state);
   el('endingText').textContent=won
-    ? '기록 A·B를 복구하고 이름을 되찾았습니다. 경과 시간 '+Math.round(state.time)+'초 · 잘못된 수정 '+state.mistakes+'회'
+    ? '기록 A·B와 핵심 오타 '+literacy.coreDone+'/5개를 복구했습니다. 학습 교정 '+literacy.corrected+'회 · 경과 '+Math.round(state.time)+'초'
     : failure.title+' '+failure.detail;
   el('respawn').hidden=!(!won&&Boolean(loadChapterCheckpoint()));
   try {window.KidscadeGame?.result?.({scope:'stage',status:won?'completed':'failed',
     outcome:won?'clear':'fail',id:'ota-prologue',score:won?Math.max(100,1000-Math.floor(state.time)*3-state.mistakes*80):0,
-    seconds:Math.round(state.time),mistakes:state.mistakes});}catch(_){}
+    seconds:Math.round(state.time),mistakes:state.mistakes+literacy.mistakes,corrected:literacy.corrected});}catch(_){}
 }
 function updatePrompt() {
+  const nearbyError=state.stage==='explore'?L.nearest(literacy,player):null;
   currentInteraction=corrector.hidden?{type:'leaveCorrector',label:'은신처에서 나오기'}
     :state.stage==='explore'&&R.distance(player,X.SHELTER)<1.7
       ?{type:'hideCorrector',label:'어둠 속에 숨기'}
-      :R.getInteraction(state,player)||C3.interaction(state,player);
+      :R.getInteraction(state,player)||C3.interaction(state,player)
+        ||(nearbyError?{type:'literacy',label:'틀린 기록 교정',uid:nearbyError.uid}:null);
   hud.prompt.classList.toggle('show',!!currentInteraction&&!failed);
   hud.prompt.innerHTML=currentInteraction
     ? '<strong>E</strong> / 조사 — '+currentInteraction.label : '';
@@ -660,11 +669,18 @@ function update(dt) {
   }else{
     hud.gaze.classList.remove('show');hud.gaze.classList.remove('active');lastGazeAwake=false;
   }
+  if(state.stage==='explore'){
+    const events=L.step(literacy,dt);
+    if(events.spawned)tone(270,.055,'square',.017);
+    if(events.awakened){shock();announce('오류가 너무 많이 쌓였습니다. 교정자가 깨어납니다!',true,4.5);}
+    if(events.calmed)announce('기록이 안정되었습니다. 교정자가 사라집니다.',false,3.3);
+    syncLiteracyVisuals();updateLiteracyHud();
+  }
   if(state.stage==='explore'||state.stage==='final'){
     soundPulse=Math.max(0,soundPulse-dt);
     const safe=state.stage==='explore'&&C3.inArchive(player);
     const report=X.step(corrector,dt,player,{
-      stage:state.stage,safe,moving:player.moving,running,noise:soundPulse>0,
+      stage:state.stage,safe,awakened:literacy.awakened,moving:player.moving,running,noise:soundPulse>0,
       passable:(x,z)=>x<=3.03&&C3.canMove(state,x,z)
     });
     if(report.caught){
@@ -683,6 +699,15 @@ function update(dt) {
   const corruptorSource=state.monster.active?state.monster
     :corrector.phase!=='dormant'?corrector:null;
   updateHauntedWords(elapsed,corruptorSource,state.stage==='final');
+  if(state.stage==='explore'){
+    for(const {word,hint,item} of literacyMeshes.values()){
+      const beat=Math.sin(elapsed*(1.6+literacy.contamination*.015)+item.age*.4);
+      word.position.y=1.62+beat*.038;
+      word.lookAt(camera.position);hint.lookAt(camera.position);
+      word.material=material(L.question(item).wrong,
+        literacy.contamination>=40&&beat>.65?'#ed4c65':item.kind==='core'?'#e79ca8':'#cb7b8a');
+    }
+  }
   shiftingWords.forEach((entry,i)=>{
     if(entry.mesh.visible){
       entry.mesh.position.x=entry.x+Math.sin(elapsed*(2.8+i*.13)+i)*.13;
@@ -744,14 +769,14 @@ function update(dt) {
   setCamera();updatePrompt();syncHintScope();
 }
 function look(dx,dy) {
-  if(state.hidden || !overlays.fix.classList.contains('closed'))return;
+  if(state.hidden || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed'))return;
   player.yaw-=dx*.0036;
   player.pitch=Math.max(-.76,Math.min(.76,player.pitch-dy*.0031));
 }
 function animate(now) {
   requestAnimationFrame(animate);
   const dt=Math.min(.1,Math.max(0,(now-lastFrame)/1000||0));lastFrame=now;
-  if(started && !failed && document.visibilityState!=='hidden' && overlays.fix.classList.contains('closed'))update(dt);
+  if(started && !failed && document.visibilityState!=='hidden' && overlays.fix.classList.contains('closed')&&overlays.correction.classList.contains('closed'))update(dt);
   else setCamera();
   renderer.render(scene,camera);
 }
