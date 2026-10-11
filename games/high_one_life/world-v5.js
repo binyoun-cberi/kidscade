@@ -206,7 +206,7 @@
  }
  function tickEvents(life){
   // Modern hypothetical crises, cryptocurrency and contemporary services do not belong in early history.
-  if(life.year<1990)return;
+  if(life.year<2026)return;
   const w=ensure(life),age=life.age;
   if(age===9 && storyCrisisCountries.has(life.country[0]) && r(life,age,310)<.055){
    w.fictionalCrisis=true;
