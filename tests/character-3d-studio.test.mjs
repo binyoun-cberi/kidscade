@@ -1128,7 +1128,7 @@ test('v6.6 wardrobe repairs knight hair, shoe spike and grounded headwear',()=>{
   assert.match(studio,/kidscadeOpenHeadRepair:'v6\.6-full-helmet-safe-hair'/);
   assert.match(studio,/ball\('himeSide_'\+sign,at\(sign\*\.32/);
   assert.match(studio,/const twin=name==='chibi_female_hair_twintail'/);
-  assert.match(accessory,/sneakers:\[1\.055,1\.025,1\.015\]/);
+  assert.match(accessory,/sneakers:\[1\.025,1\.005,1\.005\]/);
   assert.match(accessory,/if\(kind==='hightop'\)/);
   assert.doesNotMatch(accessory,/if\(kind==='sneakers'\|\|kind==='hightop'\)/);
   assert.match(accessory,/const hatCrownAllowance=style\.kind==='beret'/);
@@ -1136,4 +1136,14 @@ test('v6.6 wardrobe repairs knight hair, shoe spike and grounded headwear',()=>{
   assert.match(accessory,/case 'beret':\{/);
   assert.match(outfit,/male\?\.216:\.227/);
   assert.match(outfit,/jogger\?\.143:chino\?\.137/);
+});
+
+test('v6.7 headwear fits the scalp instead of hovering above it',()=>{
+  const src=read('teacher/chibi-accessory-pack.js');
+  assert.match(src,/chibi_hat_beret:\[0,-\.052,\.012,\.99\]/);
+  assert.match(src,/chibi_hat_straw:\[0,-\.059,0,\.99\]/);
+  assert.match(src,/chibi_gear_headphones:\[0,-\.026,\.007,\.99\]/);
+  assert.match(src,/dome\.translate\(hc\.x-\.022,scalpY-\.016/);
+  assert.match(src,/case 'straw':return cyl\(headR\*1\.085,headR\*1\.14,\.205,hc\.x,scalpY-\.117/);
+  assert.match(src,/sneakers:\[1\.025,1\.005,1\.005\]/);
 });
