@@ -20,11 +20,11 @@ const GYMS=Object.freeze([
   species:["set4_r01_c02","set4_r02_c00","set5_r04_c00"],
   lesson:"전기는 땅에 약해! 땅 속성으로 교체하고 상대의 반격도 살펴봐."},
  {id:"gym_tide",name:"해류 체육관장 아르키",title:"부력의 비밀",badge:"해류 배지",
-  village:"harborTown",requiredWins:0,bonus:-2,prev:"gym_energy",
+  village:"harborTown",requiredWins:0,bonus:3,prev:"gym_energy",
   species:["set2_r00_c06","set2_r01_c00","set5_r00_c00"],
   lesson:"물의 흐름에 맞는 상성으로 대응해. 앞 체육관의 전류 키즈몬도 도움이 될 수 있어."},
  {id:"gym_frost",name:"설빛 체육관장 켈빈",title:"빙점의 기록",badge:"서리 배지",
-  village:"snowTown",requiredWins:0,bonus:-1,prev:"gym_tide",
+  village:"snowTown",requiredWins:0,bonus:0,prev:"gym_tide",
   species:["set5_r01_c04","set5_r03_c04","set5_r04_c02"],
   lesson:"얼음·정신·속도 속성을 비교하며 방어와 교체로 대응해."}
 ]);
