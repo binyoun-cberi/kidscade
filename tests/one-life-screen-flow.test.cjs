@@ -12,6 +12,8 @@ const World=require(path.join(root,'world-v2.js'));
 const Scene=require(path.join(root,'pixel-scene.js'));
 global.window.OneLifeWorld2=World;
 const World3=require(path.join(root,'world-v3.js'));
+global.window.OneLifeWorld3=World3;
+const World4=require(path.join(root,'world-v4.js'));
 delete global.window;
 const makeElement=(tag='div')=>{
  const listeners={}; const classes=new Set();
@@ -41,7 +43,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
   createElement:makeElement,addEventListener:()=>{}};
  const localStorage={getItem:key=>saved.get(key)||null,setItem:(key,val)=>{saved.set(key,val);},removeItem:key=>saved.delete(key)};
  const sdk={start:()=>{},result:(payload)=>{document.result=payload;},registerPauseHandlers:()=>{},registerCleanup:()=>{}};
- const window={OneLifeSim:Sim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeScene:Scene,KidscadeGame:sdk,
+ const window={OneLifeSim:Sim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeScene:Scene,KidscadeGame:sdk,
   scrollTo(){},addEventListener(){}};
  new Function('window','document','localStorage','performance','setInterval','clearInterval',
   code)(window,document,localStorage,{now:()=>now},
@@ -84,4 +86,28 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.match(get('endNetWorth').textContent,/점/);
  assert.ok(get('endHighlights').children.length>0);
  assert.ok(get('endCountry').textContent.length>0);
+ assert.ok(get('arcCount').textContent.includes('선택'));
+ assert.ok(get('arcMilestones').children.length>0);
+ const firstName=get('birthName').textContent;
+ document.result=null;
+ get('sameBirthBtn').click();
+ assert.equal(get('birthName').textContent,firstName,'same birth should use same generated identity');
+ assert.ok(!get('birth').classList.contains('hidden'));
+ assert.ok(!get('birthCertificate').classList.contains('hidden'));
+ get('lifeStartBtn').click();
+ let changedDecisions=0;
+ for(let n=0;n<1800&&!document.result;n++){
+   now+=100;beat();
+   if(!get('decision').classList.contains('hidden')){
+     const choices=get('choiceOptions').children.filter(x=>x.tagName==='BUTTON');
+     assert.ok(choices.length>0);
+     choices[choices.length-1].click();
+     changedDecisions++;
+   }
+ }
+ assert.ok(document.result,'same birth replay never reached ending');
+ assert.ok(changedDecisions>2,'replay choices did not display');
+ assert.ok(!get('endComparison').classList.contains('hidden'));
+ assert.ok(get('endComparisonRows').children.length>=7);
+ assert.ok(get('endComparisonRows').children.some(node=>node.classList.contains('changed')),'no changed outcome or choices');
 });
