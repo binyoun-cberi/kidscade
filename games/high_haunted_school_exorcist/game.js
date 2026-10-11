@@ -57,6 +57,8 @@ const guidance={key:'',points:[],mesh:null,clock:0,fromX:0,fromZ:0,goalX:0,goalZ
 let guideAssistance=false;
 let tutorialMode=false,survivalKills=0,survivalSpawnClock=0;
 const SURVIVAL_SECONDS=300,SURVIVAL_REQUIRED_SEALS=8,survivalGhosts=[];
+// Each seal suppresses a particular apparition temporarily, rather than deleting it.
+const survivalReturnAt=Object.create(null),survivalSealCounts=Object.create(null);
 const HORROR_NAMES={maiden:'처녀귀신',egg:'달걀귀신',yuki:'유키온나',reaper:'저승사자',wolf:'늑대인간'};
 const HORROR_RULES={maiden:'정면으로 바라보기',egg:'등 돌리기',yuki:'손전등 끄기',reaper:'빛 비추기',wolf:'빛으로 돌진 막기'};
 const HORROR_CLUES={maiden:'시선에 움직임이 반응한다',egg:'눈이 마주치면 불길하다',yuki:'찬 기운이 불빛에 맺힌다',reaper:'검은 두건 뒤로 빛이 새어 든다',wolf:'번쩍이는 빛에 움찔한다'};
@@ -937,7 +939,7 @@ function setStage(next){
 function spawnSurvivalGhost(){
   const max=1+(elapsed>=55?1:0)+(elapsed>=140?1:0);
   if(survivalGhosts.length>=max)return false;
-  const kinds=Object.keys(HORROR_NAMES).filter(k=>!survivalGhosts.some(g=>g.kind===k));
+  const kinds=Object.keys(HORROR_NAMES).filter(k=>!survivalGhosts.some(g=>g.kind===k)&&elapsed>=(survivalReturnAt[k]||0));
   const spots=SURVIVAL_SPAWNS.map(([x,z])=>({x,z})).filter(p=>canWalk(p.x,p.z)&&
     dist(p,player)>11&&survivalGhosts.every(g=>dist(g.actor,p)>6));
   if(!kinds.length||!spots.length)return false;
@@ -946,8 +948,9 @@ function spawnSurvivalGhost(){
   actor.x=pos.x;actor.z=pos.z;actor.root.position.set(pos.x,0,pos.z);actor.root.visible=true;
   const ghost={kind,actor,charge:0,ready:0,nav:null,hitCooldown:3};
   survivalGhosts.push(ghost);loadHorrorAsset(kind);
-  sfx(kind==='wolf'?'sfx_wolf_howl.mp3':'sfx_horror_sting_01.mp3',.14);
-  showToast(HORROR_NAMES[kind]+'의 기척이 느껴집니다…');
+  const returning=(survivalSealCounts[kind]||0)>0;
+  sfx(kind==='wolf'?'sfx_wolf_howl.mp3':'sfx_horror_sting_01.mp3',returning?.2:.14);
+  showToast(returning?HORROR_NAMES[kind]+'의 봉인이 풀렸습니다…':HORROR_NAMES[kind]+'의 기척이 느껴집니다…');
   return true;
 }
 function nearestSurvivalGhost(){
@@ -1027,8 +1030,11 @@ function sealSurvivalGhost(g){
   if(i<0||g.ready<=0||dist(g.actor,player)>2.85)return;
   survivalGhosts.splice(i,1);g.actor.root.visible=false;
   survivalKills++;power=Math.min(100,power+11);invulnerable=Math.max(invulnerable,.85);
-  survivalSpawnClock=Math.max(survivalSpawnClock,3);
-  showToast(HORROR_NAMES[g.kind]+' 봉인 성공 · 누적 '+survivalKills+'회');
+  survivalSealCounts[g.kind]=(survivalSealCounts[g.kind]||0)+1;
+  // The same monster cannot return for 20–32 seconds; other threats may appear sooner.
+  survivalReturnAt[g.kind]=elapsed+20+Math.random()*12;
+  survivalSpawnClock=Math.max(survivalSpawnClock,7);
+  showToast(HORROR_NAMES[g.kind]+' 잠시 봉인! · 누적 '+survivalKills+'회');
   sfx('sfx_school_alarm_bell.mp3',.25);updateHud();
 }
 function nearAction(){
@@ -1124,6 +1130,8 @@ function finish(ok){
 }
 function reset(mode='survival'){
   tutorialMode=mode==='tutorial';survivalKills=0;survivalSpawnClock=0;
+  for(const k of Object.keys(survivalReturnAt))delete survivalReturnAt[k];
+  for(const k of Object.keys(survivalSealCounts))delete survivalSealCounts[k];
   document.querySelectorAll('.tutorial-rules').forEach(el=>el.classList.toggle('hidden',!tutorialMode));
   for(const g of survivalGhosts)g.actor.root.visible=false;
   survivalGhosts.length=0;
@@ -1158,7 +1166,7 @@ function reset(mode='survival'){
     trickCircle.visible=false;maidenCircle.visible=false;exitCircle.visible=false;
     encounter.heatNodes.forEach(o=>o.marker.visible=false);
     spawnSurvivalGhost();survivalSpawnClock=7;
-    showToast('5분 동안 생존하고 괴이 8마리 이상 봉인하세요.');
+    showToast('5분간 생존하세요. 봉인된 괴이도 시간이 지나면 다시 나타납니다.');
   }
   updateHud();$('mouseLockHint')?.classList.toggle('hidden',!desktopPointer);requestLookLock();
 }
