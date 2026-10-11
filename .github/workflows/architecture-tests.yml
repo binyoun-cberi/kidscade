@@ -6,6 +6,12 @@ on:
   push:
     branches: [main]
 
+# Cancel superseded architecture checks per PR and per main branch.
+# This group is intentionally separate from production deployment concurrency.
+concurrency:
+  group: kidscade-architecture-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
