@@ -7,7 +7,8 @@ const X = window.OtaCorrector;
 const L = window.OtaLiteracy;
 const S = window.OtaSurfaces;
 const CG = window.OtaCalligrams;
-if (!R || !C3 || !G || !X || !L || !S || !CG) throw new Error('Ota chapter or guidance rules are missing');
+const RW = window.OtaRewrite;
+if (!R || !C3 || !G || !X || !L || !S || !CG || !RW) throw new Error('Ota chapter or guidance rules are missing');
 const el = id => document.getElementById(id);
 const canvas = el('scene');
 const hud = { objective:el('objective'), stage:el('stage'), prompt:el('prompt'),
@@ -17,14 +18,17 @@ const hud = { objective:el('objective'), stage:el('stage'), prompt:el('prompt'),
   clue:el('clueStatus'), records:el('recordStatus'),help:el('help'),hintBox:el('hintBox'),
   corrector:el('correctorWarning'),correctorText:el('correctorText'),
   literacy:el('literacyStatus'),pollution:el('pollutionFill') };
-const overlays = { intro:el('intro'), fix:el('fixPanel'), correction:el('correctionPanel'), ending:el('ending') };
+const overlays = { intro:el('intro'), fix:el('fixPanel'), correction:el('correctionPanel'), rewrite:el('rewritePanel'), ending:el('ending') };
 const state = R.initialState();
 const literacy=L.create();state.literacy=literacy;
+const rewrite=RW.create();state.rewrite=rewrite;
 const literacyMeshes=new Map();let activeCorrection=null;
 const repairEffects=[];
 const wayfindingSigns=[];
 const architectureMeshes=[],architectureErrors=[],architectureLights=[];
 const calligramObjects=[],calligramById=new Map();
+let rewriteWallPlug=null,rewriteDoorBlock=null,rewriteWallWord=null,rewriteCeilingWord=null;
+let rewriteLight=null,rewriteLightPool=null,rewriteGlow=null;
 let apparitionAnchor=null,apparitionNumber=-1;
 const corrector=X.create();
 let soundPulse=0, lastCorrectorSound=0;
@@ -213,6 +217,7 @@ function updateWordArchitecture(time,threat){
   const focus=state.stage==='explore'?L.nearest(literacy,player,4):null;
   const pollution=state.stage==='explore'?literacy.contamination:0;
   for(const {mesh,spec} of architectureMeshes){
+    if(spec.id==='rewrite-wall-panel'&&rewrite.doorMade){mesh.visible=false;continue;}
     if(spec.when&& !C3.ensure(state)[spec.when]&& !state[spec.when]){
       mesh.visible=false;continue;
     }
@@ -287,10 +292,14 @@ function flashLockerAt(place){
 function updateCalligrams(dt,threat){
   for(const obj of calligramObjects){
     const dist=R.distance(player,obj);
-    const unlocked=!obj.gate||(obj.gate==='doorFixed'?state.doorFixed:C3.ensure(state).finalFixed);
+    const unlocked=!obj.gate||(obj.gate==='doorFixed'?state.doorFixed:
+      obj.gate==='rewriteDoor'?rewrite.doorMade:C3.ensure(state).finalFixed);
     if(!unlocked){obj.root.visible=false;continue;}
     // Only one restored door visibly unfolds; already-open room passages stay empty.
-    if(obj.type==='door'&&obj.gate)obj.progress=Math.min(1,obj.progress+dt/1.1);
+    if(obj.type==='door'&&obj.gate){
+      const target=obj.gate==='rewriteDoor'?(rewrite.doorOpen?1:0):1;
+      obj.progress+=Math.sign(target-obj.progress)*Math.min(Math.abs(target-obj.progress),dt/1.1);
+    }
     const hidden=obj.type==='locker'&&
       ((state.hidden||corrector.hidden)&&R.distance(player,obj)<2.4);
     if(obj.type==='locker'){
@@ -345,7 +354,13 @@ function scenery() {
   box(6.9,3.26,.2,0,1.61,-67.55,wallMat);
   for(const x of [-3.38,3.38]){
     box(.22,3.26,6.8,x,1.61,-40.9,wallMat);
-    box(.22,3.26,18.1,x,1.61,-58.5,wallMat);
+    if(x<0){
+      box(.22,3.26,1.30,x,1.61,-50.10,wallMat);
+      box(.22,3.26,14.30,x,1.61,-60.40,wallMat);
+      rewriteWallPlug=box(.22,3.26,2.50,x,1.61,-52.0,wallMat);
+      rewriteDoorBlock=box(.18,2.65,2.04,x,1.33,-52.0,wallMat);
+      rewriteDoorBlock.visible=false;
+    }else box(.22,3.26,18.1,x,1.61,-58.5,wallMat);
   }
   // This corridor only opens when its meaning is restored.
   box(2.18,3.26,.22,-2.36,1.61,-25.85,wallMat);
@@ -423,7 +438,7 @@ function scenery() {
     m.userData={word,color,x,y};enemyGroup.add(m);correctorGlyphs.push(m);
   });
   enemyGroup.visible=false;
-  buildWordArchitecture();buildCalligrams();
+  buildWordArchitecture();buildCalligrams();buildRewriteWorld();
 }
 
 function buildChapterThreeRooms(){
@@ -537,6 +552,7 @@ function saveChapterCheckpoint(){
   const data=C3.makeCheckpoint(state);
   if(!data)return;
   data.literacy=L.checkpoint(literacy);
+  data.rewrite=RW.checkpoint(rewrite);
   try{sessionStorage.setItem(CHECKPOINT_KEY,JSON.stringify(data));}catch(_){}
 }
 function syncLiteracyVisuals(){
@@ -636,6 +652,7 @@ function respawnAtCheckpoint(){
   const data=loadChapterCheckpoint();
   if(!C3.restore(state,data))return false;
   L.restore(literacy,data.literacy);
+  RW.restore(rewrite,data.rewrite);
   Object.assign(player,{x:C3.START.x,z:C3.START.z,yaw:0,pitch:0,moving:false});
   failed=false;X.reset(corrector);soundPulse=0;closeCorrection();
   for(const fx of repairEffects){fx.shards.forEach(m=>scene.remove(m));scene.remove(fx.result);}
@@ -750,7 +767,7 @@ function updateStage(stage,old) {
 }
 function syncStage(before) {updateStage(state.stage,before);}
 function interact() {
-  if(!started || failed || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed')) return;
+  if(!started || failed || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed')||!overlays.rewrite.classList.contains('closed')) return;
   const nearShelter=state.stage==='explore'&&R.distance(player,X.SHELTER)<1.7;
   if(corrector.hidden){
     flashLockerAt(player);X.leave(corrector);document.body.classList.remove('hidden-in-locker');
@@ -766,6 +783,8 @@ function interact() {
     }else announce('너무 가까워요. 교정자와 거리를 벌리세요.',true,2.1);
     return;
   }
+  const target=state.stage==='explore'?RW.target(rewrite,player):null;
+  if(target){openRewrite(target.id);return;}
   const nearbyError=state.stage==='explore'?L.nearest(literacy,player):null;
   const action=R.getInteraction(state,player)||C3.interaction(state,player)
     ||(nearbyError?{type:'literacy',label:'틀린 기록 교정',uid:nearbyError.uid}:null);
@@ -847,10 +866,12 @@ function finish(won) {
 }
 function updatePrompt() {
   const nearbyError=state.stage==='explore'?L.nearest(literacy,player):null;
+  const namedSurface=state.stage==='explore'?RW.target(rewrite,player):null;
   currentInteraction=corrector.hidden?{type:'leaveCorrector',label:'은신처에서 나오기'}
     :state.stage==='explore'&&R.distance(player,X.SHELTER)<1.7
       ?{type:'hideCorrector',label:'어둠 속에 숨기'}
-      :R.getInteraction(state,player)||C3.interaction(state,player)
+      :(namedSurface?{type:'rewrite',label:namedSurface.label,id:namedSurface.id}:null)
+        ||R.getInteraction(state,player)||C3.interaction(state,player)
         ||(nearbyError?{type:'literacy',label:'틀린 기록 교정',uid:nearbyError.uid}:null);
   hud.prompt.classList.toggle('show',!!currentInteraction&&!failed);
   hud.prompt.innerHTML=currentInteraction
@@ -866,8 +887,11 @@ function tryMove(dx,dz) {
   const steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dz))/.12));
   for(let i=0;i<steps;i++){
     const nx=player.x+dx/steps,nz=player.z+dz/steps;
-    if(player.z< -37.4?C3.canMove(state,nx,player.z):R.canMove(state,nx,player.z))player.x=nx;
-    if(nz< -37.4?C3.canMove(state,player.x,nz):R.canMove(state,player.x,nz))player.z=nz;
+    const pass=(x,z)=>z< -37.4
+      ?RW.canMove(rewrite,x,z,(a,b)=>C3.canMove(state,a,b))
+      :R.canMove(state,x,z);
+    if(pass(nx,player.z))player.x=nx;
+    if(pass(player.x,nz))player.z=nz;
   }
 }
 function update(dt) {
@@ -1066,17 +1090,18 @@ function update(dt) {
     :corrector.phase==='search'?'주변에서 이름을 찾고 있습니다'
     :distance<7?'지직… 단어가 바뀌고 있습니다':'멀리서 글자가 지워지고 있습니다';
   if(hud.correctorText.textContent!==signal)hud.correctorText.textContent=signal;
-  updateWordArchitecture(elapsed,threat);updateCalligrams(dt,threat);updateWayfindingSigns();setCamera();updatePrompt();syncHintScope();
+  updateWordArchitecture(elapsed,threat);updateCalligrams(dt,threat);
+  updateRewriteWorld(elapsed);updateWayfindingSigns();setCamera();updatePrompt();syncHintScope();
 }
 function look(dx,dy) {
-  if(state.hidden || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed'))return;
+  if(state.hidden || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed')||!overlays.rewrite.classList.contains('closed'))return;
   player.yaw-=dx*.0036;
   player.pitch=Math.max(-.76,Math.min(.76,player.pitch-dy*.0031));
 }
 function animate(now) {
   requestAnimationFrame(animate);
   const dt=Math.min(.1,Math.max(0,(now-lastFrame)/1000||0));lastFrame=now;
-  if(started && !failed && document.visibilityState!=='hidden' && overlays.fix.classList.contains('closed')&&overlays.correction.classList.contains('closed'))update(dt);
+  if(started && !failed && document.visibilityState!=='hidden' && overlays.fix.classList.contains('closed')&&overlays.correction.classList.contains('closed')&&overlays.rewrite.classList.contains('closed'))update(dt);
   else setCamera();
   renderer.render(scene,camera);
 }
@@ -1199,6 +1224,8 @@ window.OtaDebug = Object.freeze({
     guidance:{scope:hintScope,level:hintLevel},chapter3:JSON.parse(JSON.stringify(C3.ensure(state))),echo:{...state.echo},monster:{...state.monster},
     corrector:{phase:corrector.phase,x:corrector.x,z:corrector.z,hidden:corrector.hidden,grace:corrector.grace},
     literacy:{coreDone:literacy.coreDone,corrected:literacy.corrected,contamination:literacy.contamination,awakened:literacy.awakened,items:literacy.items.map(i=>({uid:i.uid,x:i.x,z:i.z,bankIndex:i.bankIndex,kind:i.kind}))},
+    rewrite:{...rewrite,lightIntensity:rewriteLight?.intensity||0,
+      wallPlug:rewriteWallPlug?.visible,doorBlock:rewriteDoorBlock?.visible},
     visuals:{calligrams:calligramObjects.map(o=>({id:o.id,type:o.type,parts:o.parts.length,
       visible:o.root.visible,progress:o.progress,swing:o.swing,
       screen:o.type==='computer'?o.screenText:null})),
