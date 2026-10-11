@@ -26,7 +26,7 @@
         
         <button id="drawBtn" class="primary" type="button">이번 생은 어디에서 시작될까? <span aria-hidden="true">↗</span></button>
         <button id="resumeBtn" class="secondary hidden" type="button">이어서 살아가기</button>
-        <p class="footnote">자동으로 시간이 흐르고, 중요한 순간에만 선택합니다. 인생은 기본적으로 빠르게 진행되어 약 1~2분의 자동 진행 시간이 걸리며, 선택을 고민하는 시간은 별도입니다.</p>
+        <p class="footnote">자동으로 시간이 흐르고, 중요한 순간에만 선택합니다. 한 번의 인생은 자동 진행 약 20~30초. 중요한 선택 5번에서만 잠시 멈춥니다.</p>
       </div>
       <div class="intro-foot"><span>01 / RANDOM BIRTH</span><span>02 / LIFE IN MOTION</span><span>03 / YOUR STORY</span></div>
     </section>
@@ -91,8 +91,15 @@
           <dl class="traits">
             <div><dt>태어난 곳</dt><dd id="traitCountry">—</dd></div>
             <div><dt>가정환경</dt><dd id="traitFamily">—</dd></div>
+            <div><dt>학교와 배움</dt><dd id="traitEducation">—</dd></div>
+            <div><dt>거주 환경</dt><dd id="traitRegion">—</dd></div>
             <div><dt>삶의 방향</dt><dd id="traitCareer">—</dd></div>
           </dl>
+          <div class="country-context" aria-label="태어난 곳의 사회적 조건">
+            <strong>태어난 곳의 생활 조건</strong>
+            <div id="countryContextText">학교·의료·경제적 기회가 반영됩니다.</div>
+            <small id="countrySourceNote">모두가 같은 삶을 살지는 않습니다.</small>
+          </div>
           <div class="focus-block">
             <div class="stat-title">올해의 생활 방향 <span>언제든 변경</span></div>
             <div class="focus-grid" role="group" aria-label="올해의 생활 방향">
@@ -118,7 +125,7 @@
           <div class="stat-title">지금의 나 <span>0 ~ 100</span></div>
           <div id="statList" class="stats" aria-label="인생 상태 지표"></div>
           <div class="controls">
-            <div class="controls-label"><b>인생의 시간</b><span>자동 진행</span></div>
+            <div class="controls-label"><b>인생의 시간</b><span>빠른 자동 진행</span></div>
             <button id="pauseBtn" class="pause" type="button">Ⅱ 일시정지</button>
             <p class="hint">선택지가 나타나면 시간이 자동으로 멈춥니다. 화면을 닫거나 다른 앱으로 이동하면 일시정지됩니다.</p>
           </div>
@@ -160,6 +167,7 @@
 <script src="./engine.js?v=3"></script>
 <script src="./world-v2.js?v=3"></script>
 <script src="./pixel-scene.js?v=3"></script>
-<script src="./game.js?v=3"></script>
+<script src="./world-v3.js?v=1"></script>
+<script src="./game.js?v=4"></script>
 </body>
 </html>
