@@ -93,8 +93,21 @@
   }
   function showDecision() {
     const choice = life.getChoice();
-    $('decision').classList.toggle('hidden',!choice);
-    $('waiting').classList.toggle('hidden',!!choice);
+    const reflection = life.getReflection();
+    $('decision').classList.toggle('hidden',!choice && !reflection);
+    $('waiting').classList.toggle('hidden',!!choice || !!reflection);
+    if(reflection) {
+      const prompts={5:'지금 가장 좋아하는 것은 무엇인가요?',15:'이 사람은 어떤 어른이 되고 싶었을까요?',30:'어릴 적에 꿈꾼 삶과 지금은 얼마나 다른가요?',50:'이 사람의 삶에서 가장 소중했던 것은 무엇일까요?',70:'지나온 시간을 돌아본다면 어떤 말을 남길까요?'};
+      $('choiceTitle').textContent=reflection+'세, 잠시 멈추어 돌아봅니다.';
+      $('choiceText').textContent=prompts[reflection];
+      const target=$('choiceOptions');target.replaceChildren();
+      const note=document.createElement('textarea');note.className='reflection-note';note.rows=2;note.maxLength=140;note.placeholder='생각을 한 줄로 남겨도 좋습니다 (선택 사항).';
+      note.setAttribute('aria-label','이 사람의 삶을 돌아보는 한 줄');
+      const btn=document.createElement('button');btn.type='button';btn.className='reflection-next';btn.textContent='계속 살아가기 →';
+      btn.addEventListener('click',()=>{life.reflect(note.value);save();elapsed=0;lastTick=performance.now();render();});
+      target.append(note,btn);
+      return;
+    }
     if (!choice) return;
     $('choiceTitle').textContent=choice.title;
     $('choiceText').textContent=choice.description;
@@ -113,6 +126,36 @@
       target.append(btn);
     });
     $('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+  function paintPeers() {
+    const board=$('peers');
+    if(!life || !board) return;
+    board.replaceChildren();
+    for(let i=0;i<4;i++) {
+      const peer=new Sim.Life((life.seed + Math.imul(i+1,2654435761))>>>0);
+      while(peer.alive && peer.age<life.age) {
+        if(peer.pending){ const opts=peer.getChoice(); if(opts) peer.choose((i+peer.age)%3); else peer.reflect(); continue; }
+        peer.tick();
+      }
+      const card=document.createElement('div');card.className='peer';
+      const flag=document.createElement('span');flag.className='peer-flag';flag.textContent=peer.country[1];
+      const label=document.createElement('b');label.textContent=peer.country[0];
+      const age=document.createElement('small');age.textContent=peer.alive?peer.age+'세 · 살아가는 중':peer.age+'세 · 삶을 마침';
+      card.append(flag,label,age);board.append(card);
+    }
+  }
+  function paintAgeMap() {
+    const board=$('ageMap');if(!board||!life)return;
+    board.replaceChildren();
+    for(let year=0;year<108;year++) {
+      const box=document.createElement('span');box.className='age-cell';
+      if(year<=life.age) box.classList.add(year<7?'child':year<19?'teen':year<35?'young':year<65?'adult':'elder');
+      if(year===life.age) box.classList.add('now');
+      const entry=life.log.find(e=>e.age===year&&(e.kind==='decision'||e.kind==='reflection'));
+      if(entry)box.classList.add('landmark');
+      box.title=year+'세'+(entry?(' · '+entry.text):'');
+      board.append(box);
+    }
   }
   function render() {
     if (!life) return;
@@ -133,6 +176,9 @@
     $('lifeProgress').style.width=Math.min(100,life.age/105*100)+'%';
     paintTimeline();
     paintStats();
+    paintPeers();
+    paintAgeMap();
+    document.querySelectorAll('[data-focus]').forEach(btn=>btn.setAttribute('aria-pressed',String(btn.dataset.focus===life.focus)));
     showDecision();
     updatePause();
   }
@@ -223,6 +269,10 @@
     life=restored;completed=false;startLife(true);
   });
   $('pauseBtn').addEventListener('click',togglePause);
+  document.querySelectorAll('[data-focus]').forEach(button=>button.addEventListener('click',()=>{
+    if(stage!=='play'||!life?.setFocus(button.dataset.focus))return;
+    save();render();
+  }));
   document.querySelectorAll('[data-speed]').forEach(btn=>btn.addEventListener('click',()=>updateSpeed(btn)));
   document.addEventListener('keydown',e=>{
     if(e.key==='Escape' && !$('rules').classList.contains('hidden')) closeRules();
