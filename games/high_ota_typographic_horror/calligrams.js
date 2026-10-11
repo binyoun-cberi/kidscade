@@ -10,13 +10,14 @@
     {word,x,y,z,w,h,role,rx});
   function door(id,x,z,rotation,gate=null){
     const parts=[];
-    // Repeated words trace a doorway. Its center stays walkable in the real collision model.
+    const halfWidth=gate?1.02:2.30;
+    // Repeated words trace the REAL opening: small puzzle door, broad side passages.
     for(const y of [.39,.78,1.17,1.56,1.95,2.34]){
-      parts.push(part('문',-1.02,y,0,.34,.28));
-      parts.push(part('문',1.02,y,0,.34,.28));
+      parts.push(part('문',-halfWidth,y,0,.34,.28));
+      parts.push(part('문',halfWidth,y,0,.34,.28));
     }
-    parts.push(part('문문문문문',0,2.66,0,2.17,.29));
-    parts.push(part('문턱문턱',0,.13,0,1.86,.24));
+    parts.push(part('문문문문문',0,2.66,0,halfWidth*2+.16,.29));
+    parts.push(part('문턱문턱',0,.13,0,halfWidth*2-.12,.24));
     // A repaired door unfolds out of the opening. Open side passages have no leaf.
     if(gate){
       for(const y of [.49,.88,1.27,1.66,2.05]){
