@@ -54,6 +54,7 @@
     roulette = null;
     const desired=Number($('birthYearInput').value);
     const birthYear=Number.isInteger(desired)&&desired>=1900&&desired<=2026?desired:2026;
+    $('birthYearInput').value=String(birthYear);
     const countryName=$('birthLocation').value==='korea'?'대한민국':undefined;
     life = new Sim.Life(undefined,{birthYear,countryName});
     World8.ensure(life);World8.moment(life);History.contextualize(life);
