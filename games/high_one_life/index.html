@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="./world-v3.css?v=1">
 <link rel="stylesheet" href="./world-v4.css?v=1">
 <link rel="stylesheet" href="./world-v5.css?v=1">
-<link rel="stylesheet" href="./world-v6.css?v=1">
+<link rel="stylesheet" href="./world-v6.css?v=2">
 </head>
 <body>
 <div class="app" id="app">
@@ -30,7 +30,7 @@
         
         <button id="drawBtn" class="primary" type="button">이번 생은 어디에서 시작될까? <span aria-hidden="true">↗</span></button>
         <button id="resumeBtn" class="secondary hidden" type="button">이어서 살아가기</button>
-        <p class="footnote">빠른 자동 인생 · 중요한 선택 5번 · 이전 선택이 수십 년 뒤 새로운 사건을 만듭니다.</p>
+        <p class="footnote">빠른 자동 인생 · 중요한 갈림길에서 선택하며, 그 뒤의 이야기를 함께 살펴봅니다.</p>
       </div>
       <div class="intro-foot"><span>01 / RANDOM BIRTH</span><span>02 / LIFE IN MOTION</span><span>03 / YOUR STORY</span></div>
     </section>
@@ -101,7 +101,8 @@
           </dl>
           <div class="country-context" aria-label="태어난 곳의 사회적 조건">
             <strong>태어난 곳의 생활 조건</strong>
-            <div id="countryContextText">학교·의료·경제적 기회가 반영됩니다.</div>
+            <div id="countryContextText">학교·의료·지역 경제 기회가 반영됩니다.</div>
+            <small>가족의 형편과 별개로, 태어난 나라·지역의 평균 조건을 보여줍니다.</small>
             <small id="countrySourceNote">모두가 같은 삶을 살지는 않습니다.</small>
           </div>
           <div class="focus-block">
@@ -166,6 +167,7 @@
       <div class="end-summary"><div><span>태어난 곳</span><b id="endCountry">—</b></div><div><span>살아온 시간</span><b id="endAge">—</b></div><div><span>삶의 방향</span><b id="endCareer">—</b></div></div>
       <div class="end-finance">마지막 순자산 <strong id="endNetWorth">—</strong><span> · 가상 단위</span></div>
       <p id="endStory" class="end-story"></p>
+      <div class="end-choice-review"><div class="end-divider">내가 내린 선택</div><ol id="endChoices" class="end-highlights" aria-label="삶에서 내린 선택"></ol><p class="end-choice-note">이후 사건은 시간상 뒤에 이어진 장면이며, 모두가 선택의 직접적인 결과라는 뜻은 아닙니다.</p></div>
       <div id="endComparison" class="end-comparison hidden" aria-live="polite">
         <h3>같은 출생, 다른 선택</h3>
         <p>같은 조건에서 다시 태어났지만, 선택 이후의 기회와 사건이 달라졌어요.</p>
@@ -201,6 +203,6 @@
 <script src="./events-v6.js?v=1"></script>
 <script src="./world-v6.js?v=1"></script>
 <script src="./scenes-v6.js?v=1"></script>
-<script src="./game.js?v=8"></script>
+<script src="./game.js?v=9"></script>
 </body>
 </html>
