@@ -131,3 +131,15 @@ test('render code remains parseable, local-only and catalogued for older players
   assert.equal(entry.classroom,false);
   assert.equal(entry.href,'games/high_ota_typographic_horror/index.html');
 });
+
+
+test('void rendering hides room grids while corrupted words flicker',()=>{
+  const source=fs.readFileSync(path.join(dir,'game.js'),'utf8');
+  assert.match(source,/scene\.background = new THREE\.Color\(0x000000\)/);
+  assert.match(source,/scene\.fog = new THREE\.FogExp2\(0x000000/);
+  assert.doesNotMatch(source,/stamp\(['"](?:벽|바닥|천장)/);
+  assert.doesNotMatch(source,/trimMat/);
+  assert.match(source,/function hauntedLabel\(/);
+  assert.match(source,/updateHauntedWords\(elapsed\)/);
+  assert.match(source,/hauntedLabel\('아무것도 없다'[^\n]*'여기 있다'/);
+});

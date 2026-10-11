@@ -33,22 +33,22 @@ let audioCtx = null;
 const renderer = new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, touchDevice ? 1.4 : 1.75));
 renderer.setSize(window.innerWidth, window.innerHeight, false);
-renderer.setClearColor(0x050608);
+renderer.setClearColor(0x000000);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x050608);
-scene.fog = new THREE.FogExp2(0x050608, .020);
+scene.background = new THREE.Color(0x000000);
+scene.fog = new THREE.FogExp2(0x000000, .024);
 const camera = new THREE.PerspectiveCamera(75, 1, .08, 65);
 camera.rotation.order = 'YXZ';
 
 const textMaterials = new Map();
 const unitPlane = new THREE.PlaneGeometry(1, 1);
-const stamps = new Map();
-const wallMat = new THREE.MeshBasicMaterial({color:0x172331});
-const floorMat = new THREE.MeshBasicMaterial({color:0x101b28});
-const propMat = new THREE.MeshBasicMaterial({color:0x263544});
-const trimMat = new THREE.MeshBasicMaterial({color:0x354556});
-const warnMat = new THREE.MeshBasicMaterial({color:0x3b1a2b});
+// Black-on-black surfaces preserve collision and occlusion without visible borders.
+// There is no starfield: only names floating in what feels like endless darkness.
+const wallMat = new THREE.MeshBasicMaterial({color:0x000000});
+const floorMat = new THREE.MeshBasicMaterial({color:0x000000});
+const propMat = new THREE.MeshBasicMaterial({color:0x030204});
+const warnMat = new THREE.MeshBasicMaterial({color:0x0e0206});
 
 function material(word, color) {
   const key = word + '|' + color;
@@ -77,22 +77,37 @@ function label(word, color, x,y,z, rx=0,ry=0, w=1,h=.55) {
   mesh.renderOrder = 1;
   scene.add(mesh); return mesh;
 }
-function stamp(word,color,x,y,z,rx,ry,w,h) {
-  const key = word + '|' + color;
-  if (!stamps.has(key)) stamps.set(key,{word,color,entries:[]});
-  stamps.get(key).entries.push({x,y,z,rx,ry,w,h});
+// A few words are intermittently overwritten by something unseen.
+const hauntedWords = [];
+function hauntedLabel(word, color, altered, x,y,z, rx=0,ry=0,w=1,h=.55) {
+  const mesh = label(word,color,x,y,z,rx,ry,w,h);
+  const ghost = new THREE.Mesh(unitPlane,material(altered,'#ff3654'));
+  ghost.position.copy(mesh.position);
+  ghost.rotation.copy(mesh.rotation);
+  ghost.scale.copy(mesh.scale);
+  ghost.translateZ(.025);
+  ghost.renderOrder = 2;
+  ghost.visible = false;
+  scene.add(ghost);
+  hauntedWords.push({mesh,ghost,word,color,altered,x,y,z});
+  return mesh;
 }
-function buildStamps() {
-  const dummy = new THREE.Object3D();
-  for (const batch of stamps.values()) {
-    const mesh = new THREE.InstancedMesh(unitPlane,material(batch.word,batch.color),batch.entries.length);
-    batch.entries.forEach((s,i) => {
-      dummy.position.set(s.x,s.y,s.z); dummy.rotation.set(s.rx,s.ry,0);
-      dummy.scale.set(s.w,s.h,1); dummy.updateMatrix(); mesh.setMatrixAt(i,dummy.matrix);
-    });
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.computeBoundingSphere(); mesh.renderOrder = 1; scene.add(mesh);
-  }
+function updateHauntedWords(time) {
+  hauntedWords.forEach((entry,i) => {
+    // Short asynchronous bursts, like damaged text being rewritten in place.
+    const burst = Math.sin(time*(1.24+(i%5)*.13)+i*2.37)>.954;
+    const flicker = burst && Math.sin(time*79+i*11.3)>-.26;
+    entry.mesh.material = material(flicker?entry.altered:entry.word,
+      flicker?'#f34a60':entry.color);
+    entry.mesh.position.set(entry.x+(flicker?Math.sin(time*137+i)*.072:0),
+      entry.y+(flicker?Math.cos(time*91+i)*.024:0),entry.z);
+    entry.ghost.visible = flicker && Math.sin(time*121+i*1.7)>.05;
+    if(entry.ghost.visible){
+      entry.ghost.position.copy(entry.mesh.position);
+      entry.ghost.translateZ(.025);
+      entry.ghost.position.x+=.085;
+    }
+  });
 }
 function box(w,h,d,x,y,z,mat) {
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
@@ -118,9 +133,9 @@ function scenery() {
   box(2.50,.54,.20,0,2.99,-25.85,wallMat);
   corridorMesh = box(2.50,2.69,.17,0,1.37,-25.85,warnMat);
   corridorWord = label('막힘','#e86d7f',0,1.68,-25.72,0,0,2.1,.82);
-  label('기록 02','#deb987',-3.22,2.65,-23.6,0,Math.PI/2,1.45,.52);
-  label('이어진 곳','#bec6d1',-3.22,1.95,-23.9,0,Math.PI/2,1.6,.58);
-  label('달리지 마세요','#c98290',3.22,1.98,-26.8,0,-Math.PI/2,1.78,.56);
+  hauntedLabel('기록 02','#b59a85','기록 00',-3.22,2.65,-23.6,0,Math.PI/2,1.45,.52);
+  hauntedLabel('이어진 곳','#9d9ba5','끊어진 곳',-3.22,1.95,-23.9,0,Math.PI/2,1.6,.58);
+  hauntedLabel('달리지 마세요','#c98290','달려',3.22,1.98,-26.8,0,-Math.PI/2,1.78,.56);
   for(let i=0;i<9;i++){
     const x=-1.95+(i%3)*1.95,y=.62+Math.floor(i/3)*.9;
     const mesh=label(i%3===0?'끊김':i%3===1?'이름':'????',
@@ -137,43 +152,17 @@ function scenery() {
   doorWord = label('벽','#e66a77',0,1.65,-30.037,0,0,1.32,.89);
   label('제2구역','#e8d7ad',0,2.4,-35.5,0,0,1.7,.78);
   label('좌: 사무실     우: 서고','#afc9c9',0,1.55,-38.6,0,0,3.6,.55);
-  for (let z=5.8;z>-36.8;z-=1.5) {
-    for (let y=.52;y<3.04;y+=.79) {
-      stamp('벽','#a3adb9',-3.245,y,z,0,Math.PI/2,.68,.44);
-      stamp('벽','#929ca9',3.245,y,z,0,-Math.PI/2,.68,.44);
-    }
-  }
-  for (let z=5.5;z>-36.6;z-=1.65) {
-    for (let x=-2.55;x<2.9;x+=1.35) {
-      stamp('바닥','#87929f',x,.014,z,-Math.PI/2,0,1.03,.50);
-    }
-  }
-  for (let z=5.5;z>-36.4;z-=2.1) {
-    for (let x=-2.25;x<2.7;x+=1.48) stamp('천장','#757e8d',x,3.19,z,Math.PI/2,0,1.05,.48);
-  }
-  for (let x=-2.6;x<=2.7;x+=1.38) {
-    for (let y=.65;y<3;y+=.78) {
-      stamp('벽','#8995a2',x,y,6.91,0,0,.65,.48);
-      stamp('벽','#8e99a7',x,y,-37.40,0,0,.65,.48);
-    }
-  }
-  // Just enough invisible architecture to communicate a space without normal 3D assets.
-  for (let z=3.8;z>-35;z-=5.8) {
-    box(.035,3.18,.045,-3.22,1.59,z,trimMat);
-    box(.035,3.18,.045,3.22,1.59,z,trimMat);
-    box(6.65,.04,.08,0,3.11,z,trimMat);
-  }
+  // No repeated surface words or visible rectangular corridor frames.
   // Management station: legible computer/desk names and a clickable record.
   box(1.6,.13,1.15,-2.15,.92,2.04,propMat);
-  box(.08,.89,.08,-2.75,.45,2.55,trimMat);
-  box(.08,.89,.08,-1.53,.45,2.55,trimMat);
-  box(.9,.76,.1,-2.15,1.50,1.94,trimMat);
+  box(.08,.89,.08,-2.75,.45,2.55,propMat);
+  box(.08,.89,.08,-1.53,.45,2.55,propMat);
+  box(.9,.76,.1,-2.15,1.50,1.94,propMat);
   label('컴퓨터','#e3d2a0',-2.13,1.7,2.005,0,0,1.15,.47);
-  label('책상','#aa9f94',-2.15,1.00,2.06,-Math.PI/2,0,1.1,.52);
   label('기록','#d7b786',-1.02,1.65,1.20,0,0,.90,.52);
   // A first harmless typographical anomaly before the hostile encounter.
-  label('의ㅈㅏ','#8b8590',-3.23,1.3,-5.5,0,Math.PI/2,1.18,.62);
-  label('아무것도 없다','#666771',3.23,1.9,-8,0,-Math.PI/2,2.0,.50);
+  hauntedLabel('의ㅈㅏ','#b3a8b2','의자',-3.23,1.3,-5.5,0,Math.PI/2,1.18,.62);
+  hauntedLabel('아무것도 없다','#99919e','여기 있다',3.23,1.9,-8,0,-Math.PI/2,2.0,.50);
   // Lockers are decorative word shapes, while rules control where one can hide.
   R.LOCKERS.forEach((loc,i) => {
     box(.56,2.35,1.05,loc.x>0?3.07:-3.07,1.16,loc.z,propMat);
@@ -185,10 +174,9 @@ function scenery() {
   personWord = label('사람','#afb7c1',0,1.7,-17.3,0,0,1.1,.60);
   monsterWord = label('무언가','#d65368',0,1.7,-17.29,0,0,1.86,.82);
   monsterWord.visible = false;
-  label('문이었던 것','#a9a0a2',-2.70,1.82,-29.2,0,Math.PI/2,1.5,.55);
-  label('벽이 아니다','#b5a5a9',2.70,1.82,-29.2,0,-Math.PI/2,1.65,.55);
+  hauntedLabel('문이었던 것','#bba8b0','벽이었던 것',-2.70,1.82,-29.2,0,Math.PI/2,1.5,.55);
+  hauntedLabel('벽이 아니다','#b5a5a9','벽이다',2.70,1.82,-29.2,0,-Math.PI/2,1.65,.55);
   buildChapterThreeRooms();
-  buildStamps();
   enemyGroup = new THREE.Group(); scene.add(enemyGroup);
   [['사람','#9499a4',0,2.15,1.0,.43],['무언가','#f16b7c',0,1.58,1.85,.75],
     ['사람사람','#ae3a52',-.28,1.04,1.8,.50],['무언가','#ca4e62',.11,.58,1.55,.52],
@@ -207,15 +195,6 @@ function buildChapterThreeRooms(){
     box(12.3,.12,16.7,cx,3.27,-47.2,wallMat);
     box(.2,3.24,16.7,side*15.52,1.6,-47.2,wallMat);
     for(const z of [-55.6,-38.85])box(12.3,3.2,.2,cx,1.6,z,wallMat);
-    for(let x=side*4.4;Math.abs(x)<15.1;x+=side*1.55){
-      for(let z=-40;z>-54.9;z-=2.05){
-        stamp('바닥','#7e91a0',x,.018,z,-Math.PI/2,0,1.1,.5);
-        stamp('천장','#687988',x,3.19,z,Math.PI/2,0,1.1,.49);
-      }
-    }
-    for(let z=-40.3;z>-54.9;z-=1.5){
-      for(let y=.58;y<3.0;y+=.88)stamp('벽','#93a1b0',side*15.36,y,z,0,side<0?Math.PI/2:-Math.PI/2,.66,.48);
-    }
     label(title,'#d6d0ba',cx,2.52,-55.47,0,0,3.5,.6);
     label(side<0?'사물은 거짓 이름을 가진다':'너무 오래 읽지 마라',
       '#b8c2cc',cx,1.68,-55.44,0,0,3.7,.50);
@@ -224,18 +203,6 @@ function buildChapterThreeRooms(){
   label('← 사무실', '#f3c895', -1.55, 2.55, -42.0, 0, 0, 2.55, .7);
   label('서고 →', '#a8d5f0', 1.55, 2.55, -42.0, 0, 0, 2.55, .7);
   label('기록 두 개를 찾으세요', '#bed1db', 0, 1.76, -56.3, 0, 0, 3.2, .62);
-  for(let z=-38.3;z>-65.5;z-=1.65){
-    for(let x=-2.55;x<2.7;x+=1.45){
-      stamp('바닥','#80909b',x,.018,z,-Math.PI/2,0,1.05,.5);
-      stamp('천장','#70808d',x,3.19,z,Math.PI/2,0,1.07,.5);
-    }
-    if(z> -44.0 || z< -49.1){
-      for(let y=.52;y<3.0;y+=.79){
-        stamp('벽','#8e9eaa',-3.24,y,z,0,Math.PI/2,.67,.45);
-        stamp('벽','#8a9ca9',3.24,y,z,0,-Math.PI/2,.67,.45);
-      }
-    }
-  }
   label('사무실','#ddcaaf',-3.25,2.5,-45.8,0,Math.PI/2,1.35,.6);
   label('서고','#ddcaaf',3.25,2.5,-45.8,0,-Math.PI/2,1.3,.6);
   label('사무실 · 책상을 다시 부르세요','#f1c991',-7.6,2.63,-39.05,0,0,4.2,.7);
@@ -245,9 +212,7 @@ function buildChapterThreeRooms(){
     box(1.15,.68,.70,x,.36,z,propMat);
     // Labelled faces on three axes make the desk a volume of words, not a textureless block.
     label(name,'#f2d9b8',x,1.05,z+.43,0,0,1.46,.65);
-    label(name,'#ddc5a8',x+.54,.66,z,0,Math.PI/2,.70,.49);
-    label('정리되지 않음','#b5a28f',x,1.71,z+.45,0,0,1.8,.50);
-    label('사물','#b4a48c',x,.76,z,-Math.PI/2,0,1.0,.50);
+    hauntedLabel('정리되지 않음','#a7a0a6','삭제됨',x,1.71,z+.45,0,0,1.8,.50);
   }
   for(let i=0;i<4;i++){
     label(i%2?'이름을 고치세요':'책상은 어디에', '#d2bca2',-8.8,.65+i*.52,-55.44,0,0,3.3,.51);
@@ -258,10 +223,10 @@ function buildChapterThreeRooms(){
   box(.18,.56,3.3,-11,3.00,-48.65,wallMat);
   chapterVisual.officeSeal=box(.18,2.70,3.3,-11,1.36,-48.65,warnMat);
   chapterVisual.officeWord=label('벽','#e47682',-10.83,1.62,-48.65,0,Math.PI/2,1.55,.77);
-  label('여기에 있었던 것은 책상','#d8b58e',-8.6,1.8,-40.0,0,0,3.0,.53);
+  hauntedLabel('여기에 있었던 것은 책상','#d8b58e','벽',-8.6,1.8,-40.0,0,0,3.0,.53);
   box(1.8,.72,.9,-13.5,.40,-52.0,propMat);
   chapterVisual.officeRecord=label('기록 A','#eac58c',-13.0,1.38,-51,0,Math.PI/2,1.65,.58);
-  label('누군가는 벽이라고 적었다','#b0a0a4',-14.8,2.02,-49,0,Math.PI/2,2.2,.6);
+  hauntedLabel('누군가는 벽이라고 적었다','#b0a0a4','누군가 이름을 지웠다',-14.8,2.02,-49,0,Math.PI/2,2.2,.6);
   // Archive shelves are present as words, not impassable invisible props.
   for(const [x,z] of [[6,-42],[6,-53],[14,-42],[14,-53]]){
     box(.22,2.35,2.4,x,1.2,z,propMat);
@@ -285,7 +250,7 @@ function buildChapterThreeRooms(){
   });
   // The watcher is layered text so it is distinguishable from the static wall glyphs.
   chapterVisual.watcher=label('사람','#e4dae1',10.5,1.7,-44.5,0,0,1.8,1.0);
-  label('보지 마', '#b8808e', 12.8, 2.15, -42.6, 0, 0, 2.0, .65);
+  hauntedLabel('보지 마', '#b8808e','나를 봐', 12.8, 2.15, -42.6, 0, 0, 2.0, .65);
   chapterVisual.watcherText=label('나를 봐','#f07181',10.5,2.43,-44.5,0,0,2.0,.57);
   chapterVisual.watcherText.visible=false;
   // Central archive opens only after both records are found.
@@ -298,7 +263,7 @@ function buildChapterThreeRooms(){
   for(let j=0;j<6;j++){
     label(j%2?'이름':'기억','#b6a8be',-2.0+j*.78,.88,-65.35,0,0,.74,.5);
   }
-  label('나','#eee5e3',0,1.45,-65.5,0,0,1.2,1);
+  hauntedLabel('나','#eee5e3','없음',0,1.45,-65.5,0,0,1.2,1);
   chapterVisual.anomaly=label('의자','#a3b1be',-7.2,1.38,-41,0,0,1.43,.66);
 }
 function syncChapterVisuals(){
@@ -601,6 +566,7 @@ function update(dt) {
       chapterVisual.anomaly.material=material(odd?'사람':'의자',odd?'#dc8191':'#a3b1be');
     }
   }
+  updateHauntedWords(elapsed);
   shiftingWords.forEach((entry,i)=>{
     if(entry.mesh.visible){
       entry.mesh.position.x=entry.x+Math.sin(elapsed*(2.8+i*.13)+i)*.13;
