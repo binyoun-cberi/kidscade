@@ -183,9 +183,9 @@ function fitCurvedFaceParts(group,body,eyes,fit){
       const hem=THREE.MathUtils.clamp((group.userData.faceEyeY-.20-y)/.19,0,1);
       const clothClearance=.008+.022*(1-nx*nx)*(1-.70*hem*hem);
       const side=Math.min(1,Math.abs(x)/.28);
-      const lensClearance=.052+.016*side*side;
+      const lensClearance=.062+.025*side*side;
       attr.setZ(i,(Number.isFinite(actual)?actual:fallback)+
-        (spec==='lens'?lensClearance:clothClearance));
+        (spec==='lens'?lensClearance:clothClearance+(spec==='pleat'?.006:0)));
     }
     attr.needsUpdate=true;
     projected.userData.kidscadeFaceProjection=spec;
@@ -291,7 +291,7 @@ function facePatch(cx,cy,frontZ,width,height,curve=.028,rows=10,columns=20,shape
       const u=i/columns,nx=u*2-1;
       const lateralShape=shape==='mask'
         ?1-.24*(1-v)*(1-v)
-        :1-.08*Math.pow(Math.abs(ny),6);
+        :1-.18*Math.pow(Math.abs(ny),6);
       const x=cx+nx*width*.5*lateralShape;
       const y=cy+ny*height*.5+(shape==='mask'?.042*(1-v)*nx*nx:0);
       // The nose/central lens edge projects slightly more than the cheeks.
@@ -368,7 +368,7 @@ function buildGeometry(style,source,sourceHair,eyes){
     case 'straw':return cyl(headR*.88,headR*.98,.145,hc.x,scalpY+.016,hc.z);
     case 'round':return ring(.071,.009,-.110,eyeY,faceZ);
     case 'square':return box(.150,.119,.012,-.110,eyeY,faceZ);
-    case 'sunglasses':return facePatch(-.145,eyeY-.027,faceZ+.016,.278,.206,.032);
+    case 'sunglasses':return facePatch(-.168,eyeY-.027,faceZ+.016,.316,.202,.032);
     case 'goggles':return box(.365,.133,.055,0,eyeY,faceZ+.015);
     case 'mask':return facePatch(0,eyeY-.305,faceZ+.009,.335,.205,.055,14,28,'mask');
     case 'schoolbag':return box(.335,.360,.172,0,.966,-.240);
@@ -443,7 +443,7 @@ function createDetails(style,context){
         for(const sign of [-1,1])
           add(box(.144,.012,.021,sign*.110,eyeY+.061,faceZ),black,'topFrame_'+sign);
       }else if(kind==='sunglasses')
-        add(facePatch(.145,eyeY-.027,faceZ+.016,.278,.206,.032),style.color,'rightLens');
+        add(facePatch(.168,eyeY-.027,faceZ+.016,.316,.202,.032),style.color,'rightLens');
       else if(kind==='goggles')
         add(box(.327,.091,.017,0,eyeY,faceZ+.046),'#8bcdd7','glass');
       add(facePatch(0,eyeY+.008,faceZ+.022,.055,.014,.006,2,8),style.color,'bridge');
@@ -458,6 +458,12 @@ function createDetails(style,context){
       }
     }else if(kind==='mask'){
       add(facePatch(0,eyeY-.225,faceZ+.014,.265,.014,.030,2,20),white,'noseBridge');
+      // Subtle cloth pleats share the exact curved cheek surface instead of
+      // floating as straight rigid decals.
+      add(facePatch(0,eyeY-.286,faceZ+.012,.246,.008,.022,2,24,'mask'),
+        '#b8cbd5','pleat_upper');
+      add(facePatch(0,eyeY-.333,faceZ+.012,.220,.007,.022,2,24,'mask'),
+        '#cedde4','pleat_lower');
       for(const sign of [-1,1])
         add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
           new THREE.Vector3(sign*.155,eyeY-.238,faceZ+.015),
@@ -541,6 +547,7 @@ export function createAccessoryPack({
         if(geometry.userData.kidscadeFacePatch)
           geometry.userData.kidscadeFaceProjection=style.kind==='sunglasses'?'lens':'skin';
         if(id.startsWith('earLoop_'))geometry.userData.kidscadeFaceProjection='strap';
+        if(id.startsWith('pleat_'))geometry.userData.kidscadeFaceProjection='pleat';
         if(id.startsWith('temple_'))geometry.userData.kidscadeFaceProjection='temple';
       }
       const material=makeSolidMaterial(color,style.label+' '+id);
