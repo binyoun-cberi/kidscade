@@ -154,6 +154,8 @@
   if(age===42&&index===1){s.training+=1;s.effort+=1;}
  }
  function certification(life){
+  // Contemporary degree/licensing catalogue must not award modern certificates in 1930s Korea.
+  if(life.country[0]==='대한민국'&&life.year<1960)return;
   const s=ensure(life),w=life.world;
   if(life.age!==24||!s.studyPath||s.qualification.length)return;
   if(s.studyPath==='university'){
