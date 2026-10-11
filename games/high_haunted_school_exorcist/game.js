@@ -539,6 +539,24 @@ function fitSceneryToBox(model,width,height,depth){
   model.updateMatrixWorld(true);
   return model;
 }
+function colorizeSchoolModel(root,type){
+  const colors=type==='locker'?[0x607989,0x385165,0x8d7661]:[0x829da7,0x4c606c,0x88745e];
+  root.traverse(mesh=>{
+    if(!mesh.isMesh)return;
+    const fix=material=>{
+      if(!material)return material;
+      const copy=material.clone();if(copy.map||!copy.color)return copy;
+      const hsl={};copy.color.getHSL(hsl);
+      if(hsl.s>.24&&hsl.l>.2&&hsl.l<.84)return copy;
+      const label=(mesh.name+' '+(copy.name||'')).toLowerCase();
+      copy.color.set(/frame|metal|iron|handle/i.test(label)?colors[1]:
+        /wood|floor|plank|board/i.test(label)?colors[2]:colors[0]);
+      if(copy.roughness!==undefined)copy.roughness=Math.max(.6,copy.roughness);
+      return copy;
+    };
+    mesh.material=Array.isArray(mesh.material)?mesh.material.map(fix):fix(mesh.material);
+  });
+}
 function buildOldLockers(){
   for(const [i,spot] of LOCKER_SPOTS.entries()){
     const holder=new THREE.Group();holder.position.set(spot.x,0,spot.z);
@@ -552,7 +570,7 @@ function buildOldLockers(){
     lockers.push({...spot,id:i,holder,obstacle,interact:{x:spot.x,z:spot.z+spot.front*.97}});
     loadTemplate(OLD_LOCKER).then(template=>{
       const visual=fitSceneryToBox(template.clone(true),.91,2.18,.52);
-      holder.clear();holder.add(visual);
+      colorizeSchoolModel(visual,'locker');holder.clear();holder.add(visual);
     }).catch(err=>console.warn('사물함 에셋을 불러오지 못해 기본 모델 사용',err));
   }
 }
@@ -578,7 +596,7 @@ function decorateSchoolCorridors(){
       const host=new THREE.Group();host.position.set(29.19,0,z);
       scene.add(host);
       const visual=fitSceneryToBox(template.clone(true),.82,2.92,2.72);
-      host.add(visual);
+      colorizeSchoolModel(visual,'hallway');host.add(visual);
     }
   }).catch(err=>console.warn('복도 에셋을 불러오지 못해 기존 학교 장식 유지',err));
 }
