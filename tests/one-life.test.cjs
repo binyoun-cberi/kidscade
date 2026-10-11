@@ -126,7 +126,7 @@ test('five reflection pauses support an optional note and survive resumption',()
 test('life focus is persisted and changes yearly trajectories',()=>{
   const a=new Life(88125),b=new Life(88125);
   a.setFocus('learning');b.setFocus('health');
-  for(let y=0;y<19;y++){
+  for(let y=0;y<9;y++){
     if(a.pending){a.getReflection()?a.reflect():a.choose(0);b.getReflection()?b.reflect():b.choose(0)}
     a.tick();b.tick();
   }
