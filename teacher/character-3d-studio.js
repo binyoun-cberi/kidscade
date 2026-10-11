@@ -904,6 +904,9 @@ function refreshPartChecks(){
 // This is deliberately separate from the unrestricted administrator GLB studio.
 function enforceAccountOutfit(){
   if(!accountStudio||!loaded)return;
+  // The original male base set carries a legacy 'shoe' mesh. Never stack it
+  // under the account footwear: a single complete pair must remain visible.
+  setNodeVisible('shoe',false);
   const catalog=CHIBI_ACCOUNT_CATALOG[activeBodyFit];
   const defaults=CHIBI_ACCOUNT_DEFAULTS[activeBodyFit];
   for(const slot of ACCOUNT_REQUIRED){
@@ -927,6 +930,7 @@ function applyAccountAvatar(value){
   const avatar=sanitizeChibiAccountAvatar(value||{bodyFit:'male'});
   if(avatar.bodyFit!==activeBodyFit)selectBodyFit(avatar.bodyFit);
   applyPreset(avatar.bodyFit==='male'?'male':'base');
+  setNodeVisible('shoe',false);
   for(const [slot,id] of Object.entries(avatar.parts)){
     const allowed=CHIBI_ACCOUNT_CATALOG[avatar.bodyFit][slot];
     if(!allowed?.includes(id))continue;
@@ -954,6 +958,7 @@ function saveAccountAvatar(){
   }
   window.parent.postMessage({type:'kidscade:account-chibi-save',avatar},location.origin);
   setStatus('계정에 저장하고 있어요…');
+
 }
 
 function applyHair(name){
@@ -2939,6 +2944,12 @@ async function boot(){
   const ok=await authorize();
   if(!ok)return;
   if(accountStudio){
+    window.addEventListener('message',event=>{
+      if(event.origin!==location.origin||event.source!==window.parent)return;
+      if(event.data?.type==='kidscade:account-chibi-result'&&!event.data.ok){
+        setStatus('계정 동기화에 실패했어요. 네트워크를 확인하고 다시 저장해 주세요.',true);
+      }
+    });
     $('exportGlb').closest('.export-actions')?.classList.add('hidden');
     $('exportSpec').closest('.export-actions')?.classList.add('hidden');
     document.querySelector('[data-wardrobe-category="costume"]')?.setAttribute('hidden','');
