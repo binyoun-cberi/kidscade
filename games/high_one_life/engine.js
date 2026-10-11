@@ -60,7 +60,22 @@
     ['파라과이','🇵🇾',7,0.58,0.62],['라오스','🇱🇦',8,0.46,0.55],
     ['니카라과','🇳🇮',7,0.48,0.55],['키르기스스탄','🇰🇬',7,0.53,0.61]
   ];
-  const CHOICES = [
+  // 2025 UN WPP projected births for major countries (millions); unlisted locations
+  // are modeled from their population and a broad illustrative rate, not measured data.
+  // Source: https://database.earth/population/births/2025
+  const BIRTH_COUNTS_2025 = Object.freeze({
+    '인도':23.073267,'중국':8.709352,'나이지리아':7.640590,'파키스탄':6.909545,
+    '콩고민주공화국':4.559718,'인도네시아':4.440838,'에티오피아':4.176742,
+    '미국':3.663798,'방글라데시':3.441259,'브라질':2.528724,'이집트':2.450027,
+    '탄자니아':2.419272,'멕시코':2.003673,'필리핀':1.845745,
+    '우간다':1.734565,'수단':1.656421,'케냐':1.540813,
+    '아프가니스탄':1.507838,'앙골라':1.429803,'예멘':1.401358,
+    '베트남':1.328422,'모잠비크':1.304409,'러시아':1.241824,'이라크':1.187570
+  });
+  const birthWeight = country => BIRTH_COUNTS_2025[country[0]]
+    ?? country[2] * Math.max(7, 40 - 36*country[3]) / 1000;
+  const totalBirthWeight = COUNTRIES.reduce((a,c)=>a+birthWeight(c),0);
+    const CHOICES = [
     {age:10,title:'학교가 끝난 오후',description:'가족과 친구들, 그리고 혼자만의 시간이 기다립니다.',options:[
       {label:'궁금한 것을 배운다',note:'공부와 새로운 발견',effects:{knowledge:12,happiness:2,bonds:-2},text:'책과 새로운 질문이 어린 시절을 채웠다.'},
       {label:'친구들과 마음껏 논다',note:'관계와 즐거움',effects:{bonds:13,happiness:8,knowledge:-3},text:'함께 웃던 장면들이 기억에 남았다.'},
@@ -142,9 +157,9 @@
       this.rng = this.seed || 0x9e3779b9;
       this.age = 0;
       this.year = 2026;
-      let pick = this.rand() * COUNTRIES.reduce((a,c) => a+c[2],0);
+      let pick = this.rand() * totalBirthWeight;
       this.country = COUNTRIES[COUNTRIES.length-1];
-      for (const c of COUNTRIES) { pick -= c[2]; if (pick < 0) { this.country = c; break; } }
+      for (const c of COUNTRIES) { pick -= birthWeight(c); if (pick < 0) { this.country = c; break; } }
       this.gender = this.rand() < 0.49 ? '여자' : '남자';
       this.familyLevel = this.rand() < 0.24 ? '빠듯한 형편' : this.rand() < 0.32 ? '여유 있는 형편' : '평범한 형편';
       const wealthBase = this.familyLevel === '여유 있는 형편' ? 65 : this.familyLevel === '빠듯한 형편' ? 28 : 46;
@@ -191,6 +206,13 @@
           const {e,i}=choices[Math.floor(this.rand()*choices.length)];
           this.seen.push(i); this.change(e[3]); this.logEvent(e[2], 'event');
         }
+      }
+      // A 0-100 scale is momentary wellbeing/learning/relationships, not a
+      // cumulative lifetime score. High values naturally settle over time,
+      // so almost everybody does not reach 100 by middle age.
+      for(const key of ['happiness','knowledge','bonds']) {
+        const value=this.stats[key];
+        if(value>70)this.change({[key]:-Math.ceil((value-70)*.12)});
       }
       // 사망 가능성은 게임을 위한 추상적인 난수 모델이다.
       const ageRisk = this.age < 4 ? .001 : this.age < 58 ? .0004 : this.age < 70 ? .003
@@ -279,5 +301,5 @@
       return life;
     }
   }
-  return Object.freeze({Life,COUNTRIES,CHOICES,EVENTS,REFLECTION_AGES,FOCUS,stages});
+  return Object.freeze({Life,COUNTRIES,CHOICES,EVENTS,REFLECTION_AGES,FOCUS,stages,birthWeight,BIRTH_COUNTS_2025});
 });

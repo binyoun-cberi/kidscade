@@ -1,0 +1,96 @@
+/* One Life light refresh: bright paper, pale mint and warm coral. Loaded last. */
+:root{color-scheme:light;color:#213941;background:#f2f8f6}
+body{background:#f2f8f6;color:#213941}
+.app{background:radial-gradient(ellipse at 17% 0%,#fff6e5 0%,transparent 40%),radial-gradient(ellipse at 93% 14%,#dbf2e9 0%,transparent 43%),#f2f8f6}
+.top{border-bottom:1px solid #cededb;background:#ffffffc9}
+.mark-icon{color:#167b73;border-color:#b6d5cc;background:#e5f7f0}
+.mark b{color:#203b42}
+.mark small,.edition,.text-button{color:#4b7275}
+.text-button{border-bottom-color:#99b6b2}
+.eyebrow,.small-index{color:#8d5c34}
+.intro h1,.end h2,.birth-heading{color:#233b41}
+.intro h1 em,.end h2 em{color:#c27139}
+.lead{color:#4d6b70}
+.hero-art:before{background:radial-gradient(circle at 43% 38%,#fff7cb,#97d8cdbb 40%,#c6e8df55 64%,transparent 75%)}
+.orbit{border-color:#449c9366}
+.globe{color:#37a494;text-shadow:0 0 45px #e4fff7}
+.primary{background:#f6bb79;color:#263c40;border-color:#e5a762;box-shadow:0 7px 20px #c5d4c877}
+.primary:hover{background:#ffd09a}
+.secondary{color:#335f63;border-color:#91b8b0;background:#ffffffd9}
+.footnote,.intro-foot{color:#567b7b}
+.intro-foot{border-top-color:#bdd6d0}
+.ticket{background:#fbfdfb;box-shadow:0 15px 38px #7d9d943b}
+.ticket-top,.ticket-bottom{background:linear-gradient(#fff,#f0f6f3);color:#577470;border-color:#c3d7d0}
+.birth>.footnote{color:#517276}
+.playing-top{border-bottom-color:#b9d5cb}
+.place strong,.time strong{color:#23454a}
+.time>span,.name-headline{color:#54817f}
+.chronicle{background:#ffffff;box-shadow:0 6px 23px #b2cdc226;border:1px solid #d5e7e0;color:#25454b}
+.chapter-line{color:#678583}
+.chapter{color:#326e69}
+.progress{background:#d8eae5}
+.progress>div{background:#e2a161}
+.story-head h2{color:#223b41}
+.story-head p,.timeline li span{color:#536d6c}
+.timeline li{border-left-color:#d8e5e0}
+.timeline li b{color:#a96b35}
+.waiting{color:#62857f}
+.decision{background:#fffaf1;border-color:#e2cba9;box-shadow:0 6px 22px #d8b88a2f}
+.decision h3{color:#273f45}
+.decision>p:not(.choice-note){color:#617b76}
+.info{background:#fff;border:1px solid #cce1d9;box-shadow:0 7px 25px #b7cfc32b}
+.info-heading{color:#527771;border-bottom-color:#dceae5}
+.info-heading span:last-child{color:#8baaa6}
+.traits dt{color:#698784}
+.traits dd{color:#29444a}
+.stat-title{color:#2b4b50}
+.stat-title span{color:#698e8b}
+.stat-label{color:#3d6665}
+.stat-track{background:#e0ece8}
+.controls,.focus-block{border-color:#dbe9e4}
+.controls-label{color:#355960}
+.controls-label span{color:#9c663c}
+.pause{background:#e5f6ef;border-color:#9bbfb5;color:#216963}
+.pause:hover{background:#d2f0e4}
+.hint,.focus-hint{color:#668b87}
+.focus-grid button{background:#f0f7f3;border:1px solid #bed7cc;color:#3c6463}
+.focus-grid button[aria-pressed="true"]{background:#b8ead9;color:#155a53;border-color:#7ac9b3}
+.finance-panel{background:#f5faf8;border:1px solid #cce1d8}
+.finance-panel .stat-title{color:#294b50}
+.finance-big{border-bottom-color:#d4e3dd}
+.finance-big small,.finance-detail dt{color:#5d817d}
+.finance-big strong{color:#247e72}
+.finance-big strong.negative,.finance-detail dd.negative{color:#b4414d}
+.finance-detail dd{color:#304f51}
+.finance-note{color:#678782}
+.mini-passport{border-bottom-color:#dce8e3}
+.avatar-silhouette{background:#e0efeb;border-color:#badbd0;color:#57938b}
+.mini-passport strong{color:#2b4b50}
+.mini-passport small,.mini-passport span:not(.avatar-silhouette){color:#60817f}
+.pixel-frame{border-color:#beddd2;background:#e8f2ee}
+.pixel-frame figcaption{background:#ebf6f0;color:#426b65}
+.comparison,.life-map{border-top-color:#bfdad0}
+.comparison-head h2,.life-map h2{color:#25464b}
+.comparison-head p,.life-map>p{color:#587977}
+.peer{background:#fff;border:1px solid #d0e4db;box-shadow:0 3px 14px #c3d9ce33}
+.peer b{color:#294b50}
+.peer small{color:#5a807c}
+.age-cell{background:#d7e7e1}
+.age-cell.now{outline-color:#2e706b}
+.age-cell.landmark:after{background:#fffdf6}
+.end-years{color:#59807f}
+.end-icon{color:#d09e65}
+.end-summary{border-color:#bbd7cd}
+.end-summary span{color:#668884}
+.end-summary b{color:#26484b}
+.end-story,.end-highlights li{color:#36595b}
+.end-divider{color:#94623a;border-color:#bed8d0}
+.end-highlights b{color:#ae7442}
+.end-finance{color:#4e7774;border-bottom-color:#c2dbd1}
+.end-finance strong{color:#2a8b7a}
+.end-finance span{color:#6e918a}
+.duration-select{display:none!important}
+@media(max-width:780px){
+  .info{background:#ffffff}
+  .top{background:#ffffffed}
+}

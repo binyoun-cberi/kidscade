@@ -9,10 +9,11 @@
   if (!World2 || !Pixel) throw new Error('One Life v2 assets missing');
   const SAVE_KEY = 'kidscade_one_life_save_v1';
   const RECORD_KEY = 'kidscade_one_life_history_v1';
-  const MINUTES_PER_LIFE = [30,60,90];
+  // Roughly 70-90 seconds of automatic years, excluding user decisions.
+  const YEAR_MS = 850;
   const STAT_NAMES = [['health','건강'],['happiness','행복'],['knowledge','배움'],['bonds','인연'],['wealth','경제']];
   const views = ['intro','birth','play','end'];
-  let life = null, speed = 2, durationMinutes = 30, paused = false, stage = 'intro';
+  let life = null, paused = false, stage = 'intro';
   let lastTick = performance.now(), elapsed = 0, roulette = null, screenTime = 0;
   let completed = false, ruleWasRunning = false;
   const sdk = window.KidscadeGame || null;
@@ -29,7 +30,7 @@
     $('resumeBtn').classList.toggle('hidden', !resume || !resume.alive);
   }
   function save() {
-    if (stage === 'play' && life?.alive) safeSet(SAVE_KEY, {life:life.snapshot(),durationMinutes,at:Date.now()});
+    if (stage === 'play' && life?.alive) safeSet(SAVE_KEY, {life:life.snapshot(),at:Date.now()});
   }
   function draw() {
     clearInterval(roulette);
@@ -37,7 +38,7 @@
     life = new Sim.Life();
     World2.enrich(life);
     $('birthCertificate').classList.add('hidden');
-    completed = false; speed = 2; paused = false; elapsed = 0;
+    completed = false; paused = false; elapsed = 0;
     $('lifeStartBtn').classList.add('hidden');
     $('birthCountry').textContent = '출생을 기다리는 중…';
     $('birthFlag').textContent = '🌐';
@@ -276,21 +277,14 @@
     const delta=Math.max(0,Math.min(260,now-lastTick));
     lastTick=now;
     if(stage!=='play' || !life || !life.alive || life.pending || paused || document.hidden) return;
-    elapsed+=delta*speed;
+    elapsed+=delta;
     let count=0;
-    const yearMs=durationMinutes*60000/84;
+    const yearMs=YEAR_MS;
     while(elapsed>=yearMs && count++<5) {
       elapsed-=yearMs;
       stepYear();
       if(stage!=='play' || life.pending || !life.alive) {elapsed=0;break;}
     }
-  }
-  function updateSpeed(button) {
-    const next=Number(button.dataset.speed);
-    if(![1,2,4,8,16].includes(next)) return;
-    speed=next; lastTick=performance.now();
-    document.querySelectorAll('[data-speed]').forEach(btn=>btn.setAttribute('aria-pressed',String(Number(btn.dataset.speed)===speed)));
-    $('speedText').textContent=speed+'배속';
   }
   function togglePause() {
     if(stage!=='play'||!life?.alive||life.pending) return;
@@ -303,17 +297,10 @@
   $('rulesClose').addEventListener('click',closeRules);
   $('rulesOkay').addEventListener('click',closeRules);
   document.querySelector('[data-close="rules"]').addEventListener('click',closeRules);
-  document.querySelectorAll('[data-duration]').forEach(button=>button.addEventListener('click',()=>{
-    const minutes=Number(button.dataset.duration);
-    if(!MINUTES_PER_LIFE.includes(minutes))return;
-    durationMinutes=minutes;
-    document.querySelectorAll('[data-duration]').forEach(btn=>btn.setAttribute('aria-pressed',String(Number(btn.dataset.duration)===minutes)));
-  }));
   $('drawBtn').addEventListener('click',draw);
   $('lifeStartBtn').addEventListener('click',()=>startLife());
   $('againBtn').addEventListener('click',()=>{life=null;show('intro');refreshResume();draw();});
   $('resumeBtn').addEventListener('click',()=>{
-    const saved=safeGet(SAVE_KEY);durationMinutes=MINUTES_PER_LIFE.includes(saved?.durationMinutes)?saved.durationMinutes:30;
     const restored=currentSave();
     if(!restored || !restored.alive){refreshResume();return;}
     life=restored;completed=false;startLife(true);
@@ -323,7 +310,6 @@
     if(stage!=='play'||!life?.setFocus(button.dataset.focus))return;
     save();render();
   }));
-  document.querySelectorAll('[data-speed]').forEach(btn=>btn.addEventListener('click',()=>updateSpeed(btn)));
   document.addEventListener('keydown',e=>{
     if(e.key==='Escape' && !$('rules').classList.contains('hidden')) closeRules();
     else if(e.code==='Space' && stage==='play' && $('rules').classList.contains('hidden') && !life?.pending){

@@ -97,42 +97,65 @@
     enrich(life);
     const m=life.money,p=life.profile,age=life.age;
     if(age<18)return;
-    if(age===18){
-      const help=round(p.familyIncome * (life.familyLevel==='여유 있는 형편'?.65:life.familyLevel==='빠듯한 형편'?.04:.19));
-      m.netWorth+=help;life.logEvent('어른이 되며 가족으로부터 시작 자금 '+Math.abs(help).toLocaleString('en-US')+'점을 지원받았다.','money');
-    }
     const factor=COUNTRY_FACTOR(life.country);
-    const skill=clamp(.62+life.stats.knowledge/130,.6,1.5);
-    const employed=age>=20 && life.career!=='학생' && life.career!=='진로 탐색 중' && life.career!=='아직 정해지지 않음';
-    if(age===75 && !m.retired){ m.pension=round(m.income*.28);m.retired=true;life.logEvent('일을 마치고 모은 돈과 연금으로 생활하기 시작했다.','money'); }
-    const isRetired=!!m.retired || age>=75;
+    const personalFactor=.76+between(life.seed,21,0,62)/100; // individual opportunities differ
+    const householdCost=.58+between(life.seed,22,0,45)/100; // housing and living expenses
+    if(age===18) {
+      const help=round(p.familyIncome * (life.familyLevel==='여유 있는 형편'?.65:life.familyLevel==='빠듯한 형편'?.04:.19));
+      m.netWorth+=help;
+      life.logEvent('성인이 되며 가족으로부터 시작 자금 '+Math.abs(help).toLocaleString('en-US')+'점을 지원받았다.','money');
+    }
+    const skill=clamp(.62+life.stats.knowledge/130,.6,1.50);
+    const employed=age>=20 && !['학생','진로 탐색 중','아직 정해지지 않음'].includes(life.career);
+    if(age===75 && m.retired!==true){
+      m.pension=round(Math.max(m.pension,m.income*.28));
+      m.retired=true;life.logEvent('일을 정리하고 연금과 모은 돈으로 생활하기 시작했다.','money');
+    }
     let yearly=0;
-    if(isRetired && m.retired!=='partial' && m.retired!=='new'){
+    if(m.retired===true){
       yearly=m.pension;
       m.employment='은퇴';
     }else if(employed){
-      const jobBoost=/기술|전문/.test(life.career)?1.2:/자영업|도전/.test(life.career)?1.07:1;
-      yearly=round(BASE*factor*skill*jobBoost*m.careerIncomeFactor*(.78+Math.min(25,age-19)*.014));
-      const change=life.rand();
-      if(change<.055 && age<62){yearly=0;m.employment='구직 중';life.logEvent('예상치 못한 실직으로 잠시 일자리를 찾아야 했다.','money');}
-      else if(change<.14){yearly=round(yearly*.71);m.employment='근로 시간 감소';}
-      else m.employment=life.career;
-      if(m.retired==='partial'||m.retired==='new')yearly=round(yearly*.46+m.pension*.4);
-    }else if(age>=20){
+      const jobBoost=/기술|전문/.test(life.career)?1.15:/자영업|도전/.test(life.career)?1.02:1;
+      yearly=round(BASE*factor*skill*jobBoost*personalFactor*m.careerIncomeFactor
+        *(.77+Math.min(25,age-19)*.012));
+      const chance=life.rand();
+      if(chance<.055 && age<62){
+        yearly=0;m.employment='구직 중';
+        life.logEvent('예상치 못한 실직으로 잠시 일자리를 찾아야 했다.','money');
+      }else if(chance<.15){
+        yearly=round(yearly*.70);m.employment='근로 시간 감소';
+      }else m.employment=life.career;
+      if(m.retired==='partial'||m.retired==='new') yearly=round(yearly*.46+m.pension*.4);
+    }else if(age>=21){
       m.employment=life.career;
-      yearly=round(BASE*factor*.15);
-    }else m.employment='학업·성장';
-    const fixedCost=round(BASE*factor*(age<20?.32:isRetired?.43:.51)*(p.settlement==='도시'?1.12:1));
-    const dependent=p.child&&age>=37&&age<=56?round(BASE*factor*.16):0;
-    const tuition=life.career==='학생'&&age<=24?round(BASE*factor*.34):0;
-    const expense=fixedCost+dependent+tuition;
+      yearly=round(BASE*factor*(.12+.12*(life.familyLevel==='여유 있는 형편'?1:0)));
+    }else{
+      m.employment='학업·성장';
+      // 18-19 year olds may still live in their family household.
+      // Only personal spending, offset by part-time/family support, is charged.
+      yearly=round(BASE*factor*.10);
+    }
+    const housing=p.settlement==='도시'?1.12:p.settlement==='농촌'?.91:1;
+    // Study and the transition to adulthood often happen in a shared household;
+    // charging a full independent home at age 20 before a career choice creates forced debt.
+    const studying=life.career==='학생'&&age<=24;
+    const costRate=age<=20?.12:studying?householdCost*.44:m.retired===true?.56:householdCost;
+    const fixedCost=round(BASE*factor*costRate*housing);
+    const dependent=p.child&&age>=37&&age<=56?round(BASE*factor*.17):0;
+    const tuition=studying?round(BASE*factor*.23):0;
+    const healthcare=age>=25 && life.stats.health<35?round(BASE*factor*.12):0;
+    const expense=fixedCost+dependent+tuition+healthcare;
     m.income=yearly;
     m.expense=expense;
     m.educationCost=tuition;
     m.lastBalance=yearly-expense;
     m.netWorth=clamp(round(m.netWorth+m.lastBalance),-20000000,20000000);
-    if(age===21 && tuition)life.logEvent('공부와 생활에 돈이 들어가며 지출을 줄여야 했다.','money');
-    if(m.netWorth<0 && age%8===0)life.logEvent('순자산이 마이너스가 되어 지출 계획을 다시 살폈다.','money');
+    // Economic wellbeing must reflect the ledger, not unrelated random "wealth" points.
+    const relative=m.netWorth/Math.max(1,BASE*factor);
+    life.stats.wealth=clamp(round(43+9*Math.sign(relative)*Math.log1p(Math.abs(relative))),0,97);
+    if(age===21 && tuition)life.logEvent('학업 비용과 생활비를 마련하며 지출을 조정했다.','money');
+    if(m.netWorth<0 && age%8===0)life.logEvent('빚이 남아 있어 지출 계획을 다시 살폈다.','money');
     if(age%9===0 && m.netWorth>BASE*factor*3)life.logEvent('수년간 모은 돈이 작은 안전망이 되어 주었다.','money');
   }
   function applyExtra(life,opt){

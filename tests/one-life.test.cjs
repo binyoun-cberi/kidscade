@@ -23,11 +23,12 @@ test('screen includes drawing, choice, time and archive entry points for mobile'
   for(const id of ['intro','birth','play','end','drawBtn','lifeStartBtn','resumeBtn','decision','choiceOptions','timeline','endHighlights','pauseBtn','rulesBtn']) {
     assert.match(html,new RegExp('id="'+id+'"'),id);
   }
-  for(const speed of [1,2,4,8,16])assert.ok(html.includes('data-speed="'+speed+'"'));
+  assert.doesNotMatch(html,/data-speed=|data-duration=|speedText/);
+  assert.match(html,/id="pauseBtn"/);
   assert.match(html,/viewport-fit=cover/);
   assert.match(html,/kidscade-game-sdk.js/);
   assert.match(html,/data-game-id="high_one_life"/);
-  assert.match(html,/engine.js\?v=1/);
+  assert.match(html,/engine.js\?v=3/);
   assert.match(css,/@media\(max-width:780px\)/);
   assert.match(css,/@media\(max-width:440px\)/);
   assert.match(css,/prefers-reduced-motion/);
@@ -137,11 +138,20 @@ test('life focus is persisted and changes yearly trajectories',()=>{
   assert.ok(b.stats.health>=a.stats.health);
   assert.equal(Life.restore(a.snapshot()).focus,'learning');
 });
-test('life screen exposes duration, annual focus, four peers, timeline and age map',()=>{
+test('life screen exposes fast autoplay, annual focus, four peers, timeline and age map',()=>{
   const html=read('index.html'),js=read('game.js');
-  for(const n of [30,60,90]) assert.ok(html.includes('data-duration="'+n+'"'));
+  assert.doesNotMatch(html,/data-duration=|data-speed=/);
   for(const id of ['peers','ageMap']) assert.ok(html.includes('id="'+id+'"'));
   for(const focus of ['balance','learning','people','health','work'])assert.ok(html.includes('data-focus="'+focus+'"'));
-  for(const feature of ['paintPeers','paintAgeMap','getReflection','reflect(','durationMinutes','visibilitychange'])
+  for(const feature of ['paintPeers','paintAgeMap','getReflection','reflect(','YEAR_MS','visibilitychange'])
     assert.ok(js.includes(feature),feature);
+});
+
+test('single fast autoplay uses fixed year duration and retains pause and save',()=>{
+  const script=read('game.js');
+  assert.match(script,/const YEAR_MS = 850/);
+  assert.match(script,/const yearMs=YEAR_MS;/);
+  assert.doesNotMatch(script,/updateSpeed|MINUTES_PER_LIFE|durationMinutes|data-speed/);
+  assert.match(script,/function togglePause/);
+  assert.match(script,/function save/);
 });
