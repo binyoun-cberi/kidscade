@@ -6,6 +6,7 @@ const mode=script?.dataset?.mode;
 if(!rules.MODES[mode])throw new Error('Unsupported survival mini game');
 const standalone=!(new URLSearchParams(location.search).get('survival')==='1'&&window.parent!==window);
 document.body.dataset.mode=mode;
+document.body.dataset.survival=String(!standalone);
 const $=id=>document.getElementById(id);
 const ui={canvas:$('scene'),title:$('title'),hint:$('hint'),time:$('time'),sub:$('sub'),progress:$('progress'),
 action:$('action'),choice:$('choices'),intro:$('intro'),result:$('result'),resultTitle:$('resultTitle'),resultText:$('resultText'),
@@ -115,7 +116,7 @@ function render(){
  if(mode==='marbles'){progress=model.questionIndex/5*100;metric='맞힌 문제 '+model.correct+'/5 · 실수 '+model.misses+'/2';}
  if(mode==='final'){progress=model.part==='preview'?0:model.part==='memory'?model.entered*8:model.part==='timing'?35+model.timingHits*20:85;metric='최종 과제: '+({preview:'기억하기',memory:'순서 맞히기',timing:'타이밍',math:'계산'}[model.part]);}
  ui.progress.style.width=Math.max(0,Math.min(100,progress))+'%';
- ui.progress.setAttribute('aria-valuenow',String(Math.round(progress)));
+ ui.progress.parentElement?.setAttribute('aria-valuenow',String(Math.round(progress)));
  ui.top.textContent=metric;
  controls();
 }
