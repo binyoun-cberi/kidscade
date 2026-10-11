@@ -10,7 +10,8 @@
   const World4 = window.OneLifeWorld4;
   const World5 = window.OneLifeWorld5;
   const World6 = window.OneLifeWorld6;
-  if (!World2 || !Pixel || !World3 || !World4 || !World5 || !World6) throw new Error('One Life world assets missing');
+  const World7 = window.OneLifeWorld7;
+  if (!World2 || !Pixel || !World3 || !World4 || !World5 || !World6 || !World7) throw new Error('One Life world assets missing');
   const SAVE_KEY = 'kidscade_one_life_save_v1';
   const RECORD_KEY = 'kidscade_one_life_history_v1';
   // About 20–30 seconds of automatic years, excluding choices.
@@ -41,7 +42,7 @@
     clearInterval(roulette);
     roulette = null;
     life = new Sim.Life();
-    World6.ensure(life);
+    World7.ensure(life);
     replayBasis=null;
     peerCache = null;lastPeerRenderedAge = -1;lastMapRenderedAge = -1;
     $('birthCertificate').classList.add('hidden');
@@ -87,6 +88,7 @@
   function paintLifeRecord() {
     const p=World2.enrich(life).profile;
     const money=life.money;
+    const personal=World7.ensure(life);
     $('nameHeadline').textContent=p.name+' · '+p.city;
     $('profileName').textContent=p.name;
     $('profileMeta').textContent=life.gender+' · '+p.city+' · '+life.age+'세';
@@ -99,6 +101,14 @@
     $('annualBalance').classList.toggle('negative',money.lastBalance<0);
     $('employmentStatus').textContent=money.employment;
     $('traitEducation').textContent=life.world?.educationLevel||'배움의 기회를 기다리는 중';
+    const names={language:'언어·표현',logic:'논리·탐구',physical:'신체·운동',creative:'창작·예술',social:'사회·관계'};
+    $('traitAptitude').textContent=personal.interests.map(k=>names[k]).join(' · ')+'에 관심';
+    $('traitQualification').textContent=personal.qualification.length
+      ? (personal.degree?'학위 수료 · ':'')+personal.qualification.filter(x=>!x.startsWith('degree:')).map(x=>({
+        teaching:'교육 자격',nursing:'간호 자격',therapy:'재활 자격',pharmacy:'약학 자격',
+        emergency:'응급 지원 자격',socialwork:'사회복지 자격',electrical:'전기 자격',
+        vocational:'직업훈련 수료','continuing-education':'계속 학습'}[x]||x)).join(' · ')
+      : (life.age<16?'학교와 경험으로 배우는 중':'학습·직업 경험을 쌓는 중');
     $('traitRegion').textContent=p.settlement+' · '+p.city;
     $('countryContextText').textContent=life.world?.schooling+' · 지역 경제 기회 '+(life.world?.economyScale>=1?'상대적으로 넓은 편':'상대적으로 제한적인 편');
     $('countrySourceNote').textContent=life.world?.hasPublishedBaseline
@@ -149,6 +159,7 @@
   function captureEnding(life){
     return {seed:life.seed,country:life.country[0],family:life.familyLevel,
       age:life.age,career:life.career,education:life.world?.educationLevel||'',
+      qualification:life.world7?.qualification?.join(', ')||'없음',
       netWorth:life.money.netWorth,health:life.stats.health,
       child:!!life.profile.child,partner:!!life.profile.partner,
       roles:life.world6?.history?.map(x=>x.job)||[],
@@ -167,6 +178,7 @@
       ['삶의 방향',replayBasis.career,now.career],
       ['거쳐 온 직업',replayBasis.roles?.join(' → ')||'없음',now.roles?.join(' → ')||'없음'],
       ['교육 경험',replayBasis.education,now.education],
+      ['자격 이력',replayBasis.qualification||'없음',now.qualification||'없음'],
       ['최종 순자산',formatCredits(replayBasis.netWorth),formatCredits(now.netWorth)],
       ['가족·관계',replayBasis.child?'아이 돌봄':replayBasis.partner?'동반자':'다양한 관계',
         now.child?'아이 돌봄':now.partner?'동반자':'다양한 관계']
@@ -332,7 +344,7 @@
     $('lifeStage').textContent=Sim.stages(life.age);
     $('chapterNumber').textContent=String(Math.floor(life.age/10)+1).padStart(2,'0');
     $('traitCountry').textContent=life.country[0]+' · '+life.gender;
-    $('traitFamily').textContent=life.familyLevel;
+    $('traitFamily').textContent=life.familyLevel+' · 가정 안에서도 다양한 경제 여건';
     $('traitCareer').textContent=life.career;
     $('storyTitle').textContent=life.getChoice()?.title || (life.age<6?'인생의 첫 장면':life.age<20?'세상을 배우는 날들':life.age<40?'나만의 길을 찾아서':life.age<65?'살아온 시간의 무게':'오늘이라는 선물');
     const current = life.log[life.log.length-1];
@@ -443,7 +455,7 @@
     const snapshot=captureEnding(life);
     replayBasis=snapshot;
     life=new Sim.Life(snapshot.seed);
-    World6.ensure(life);
+    World7.ensure(life);
     peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
     $('birthCertificate').classList.add('hidden');
     $('birthFlag').textContent=life.country[1];
