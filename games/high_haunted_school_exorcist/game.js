@@ -970,7 +970,12 @@ function chaseSurvivalGhost(g,dt,speed){
   const target=g.nav.path[0]||player,dx=target.x-a.x,dz=target.z-a.z,len=Math.hypot(dx,dz);
   if(len<.07)return;
   const step=Math.min(len,dt*speed),x=a.x+dx/len*step,z=a.z+dz/len*step;
-  if(canWalk(x,z)){a.x=x;a.z=z;}else g.nav=null;
+  // Grid waypoints and a smooth actor position can disagree at narrow door corners.
+  // Try collision-checked axis slides rather than giving up at a doorway.
+  if(canWalk(x,z)){a.x=x;a.z=z;}
+  else if(canWalk(a.x,z)){a.z=z;}
+  else if(canWalk(x,a.z)){a.x=x;}
+  else g.nav=null;
   a.root.rotation.y=Math.atan2(player.x-a.x,player.z-a.z);
 }
 function updateSurvival(dt){

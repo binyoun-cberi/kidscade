@@ -286,6 +286,22 @@ test('ㄷ-shaped campus keeps west guard office connected to all fifteen rooms',
     }
     assert.ok(maidenDone,'maiden must reach music room without door-corner stall at '+frameStep);
   }
+  // Survival AI must not stop outside the office when grid-aligned waypoints
+  // clip the lip of its doorway. Test actual ㄷ-school collision rectangles.
+  const survivalSrc=js.slice(js.indexOf('function chaseSurvivalGhost('),js.indexOf('function updateSurvival('));
+  const chaseSurvivor=new Function('routePlan','dist','canWalk','player',
+    survivalSrc+'return chaseSurvivalGhost;')(navigation.routePlan,dist,navigation.canWalk,school.guard);
+  for(const [x,z] of [[25,-15],[-10.5,-14],[-23,15],[8,8.5],[24,8.5]]){
+    const enemy={actor:{x,z,root:{rotation:{y:0}}},nav:null};
+    let reached=false;
+    for(let i=0;i<1500;i++){
+      chaseSurvivor(enemy,.05,2.1);
+      assert.ok(navigation.canWalk(enemy.actor.x,enemy.actor.z),
+        'survival ghost crossed wall from '+x+','+z);
+      if(dist(enemy.actor,school.guard)<1.22){reached=true;break;}
+    }
+    assert.ok(reached,'survival ghost stuck at school doorway from '+x+','+z);
+  }
   // Closed reaper doors must block physical passage but reopen for the seal.
   const doorState={doorClosed:false};
   const realDoors=new Function('walls','furniture','encounter',physics+'return {canWalk,routePlan};')(
