@@ -51,3 +51,8 @@ body[data-mode="final"] .choice{background:#65543b;border-color:#e8cf98;box-shad
 @media(prefers-reduced-motion:reduce){*,*:after,*:before{animation:none!important;transition:none!important}}
 
 body[data-survival="true"] .personal-best{display:none}
+
+.head-stats .timer.urgent{background:#562d32;border-color:#ff8c98;animation:timerWarning .9s alternate infinite}
+.head-stats .timer.urgent b{color:#ffe9cd}
+@keyframes timerWarning{to{box-shadow:0 0 16px #ff63713d}}
+@media(prefers-reduced-motion:reduce){.head-stats .timer.urgent{animation:none}}
