@@ -155,6 +155,14 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await key('KeyH',true);await key('KeyH',false);await sleep(60);
   assert.equal((await snap()).guidance.level,2);
   await screenshot('02-management-room.png','desktop');
+  const initialCalligrams=(await snap()).visuals.calligrams;
+  assert.equal(initialCalligrams.length,8,'all eight world calligrams are integrated');
+  assert.equal(initialCalligrams.find(o=>o.id==='management-computer').visible,true);
+  assert.equal(initialCalligrams.find(o=>o.id==='management-computer').screen,'기록 대기');
+  assert.equal(initialCalligrams.find(o=>o.id==='gate-door').visible,false,
+    'a word-door must not reveal itself before the spelling is corrected');
+  report.calligramIntro=initialCalligrams;
+  await screenshot('02c-computer-calligram.png','desktop');
   const wordWorld=(await snap()).visuals.surfaces;
   assert.deepEqual({wall:wordWorld.wall,floor:wordWorld.floor,ceiling:wordWorld.ceiling,door:wordWorld.door},
     {wall:16,floor:4,ceiling:4,door:12},
@@ -168,6 +176,9 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   const near=await snap();
   report.consoleApproach=near;
   await interact();await ensureStage('anomaly','read management report');
+  await sleep(100);
+  assert.equal((await snap()).visuals.calligrams.find(o=>o.id==='management-computer').screen,
+    '오류 감지','the computer reacts to the real investigated report');
   await sleep(60);
   assert.equal((await snap()).guidance.level,0,'Stage change resets old room hint');
   assert.equal(await evalPage("document.getElementById('hintBox').classList.contains('show')"),false);
@@ -181,6 +192,10 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await moveUntil('x',2.35,'chase',3);
   const preHide=await snap();report.preHide=preHide;
   await interact();await ensureStage('hiding','enter locker');
+  await sleep(110);
+  const lockerOpened=(await snap()).visuals.calligrams.find(o=>o.id==='locker-chase');
+  assert.ok(lockerOpened.visible&&lockerOpened.swing>.08,'word-built locker doors open on hiding');
+  report.lockerCalligram=lockerOpened;
   await screenshot('05-hidden-in-locker.png','desktop');
   let hidingDone=false;
   for(let wait=0;wait<20;wait++){
@@ -218,6 +233,10 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   assert.equal((await snap()).mistakes,2,'Wrong door and corridor labels increment errors');
   await evalPage("document.querySelector('[data-word=\\\"문\\\"]').click()");
   await ensureStage('exit','door repaired');
+  await sleep(230);
+  const openedDoor=(await snap()).visuals.calligrams.find(o=>o.id==='gate-door');
+  assert.ok(openedDoor.visible&&openedDoor.progress>0,'corrected 문 creates an unfolding doorway');
+  await screenshot('11b-unfolding-calligram-door.png','desktop');
   await screenshot('11-open-door.png','desktop');
   await moveUntil('z',-36.0,'exit',15,false);
   await ensureStage('explore','enter new multi-room records chapter');
@@ -310,6 +329,9 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await screenshot('17-final-record-puzzle.png','desktop');
   await evalPage("document.querySelector('[data-word=기억]').click()");
   await ensureStage('final','central room opened');
+  await sleep(130);
+  assert.ok((await snap()).visuals.calligrams.find(o=>o.id==='final-door').visible,
+    'final repaired name creates the second calligram gate');
   await moveUntil('z',-64.1,'final',15);
   await ensureStage('won','complete two-room chapter and recover name');
   await screenshot('18-victory.png','desktop');
