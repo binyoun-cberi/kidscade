@@ -229,9 +229,21 @@ function openRegions(){
  '<div class="shop-list">'+rows+'</div>');
 }
 function talkNewVillage(village){
+ const quest=E.questStatus(save,village.key),leader=T.GYMS.find(g=>g.village===village.key);
+ const beaten=!!save.trainerWins?.[leader.id],can=T.available(save,leader.id);
+ const target=species(quest.capture);
  openGeneric(village.name+" · "+village.npc,
- '<p>'+esc(E.ZONES.find(z=>z.key===village.key)?.hint||"")+'</p>'+
- '<p>오늘의 탐구: <strong>'+esc(village.lesson)+'</strong>. 주변의 관련 키즈몬을 찾아 기술과 특성을 비교해 보자.</p>'+
+ '<p>오늘의 과학: '+esc(village.lesson)+'. 주변의 야생 키즈몬을 관찰하며 연구해 봐.</p>'+
+ '<div class="shop-list"><div class="shop-item"><div><strong>지역 연구 · '+esc(quest.name)+'</strong>'+
+ '<small>'+esc(quest.study)+'</small>'+
+ '<small>관찰 '+Math.min(3,quest.observed)+'/3종 · '+esc(target.name)+' 포획 '+(quest.captured?'완료':'미완료')+'</small></div>'+
+ '<button type="button" data-quest="'+village.key+'" '+(!quest.ready?'disabled':'')+'>'+
+ (quest.claimed?'완료':quest.ready?'보상 받기':'조사 중')+'</button></div>'+
+ '<div class="shop-item"><div><strong>'+esc(leader.name)+'</strong>'+
+ '<small>'+esc(leader.title)+' · '+esc(leader.badge)+'</small>'+
+ '<small>'+(beaten?'배지 획득 · 재도전 가능':!quest.claimed?'연구 의뢰를 먼저 완료해':
+  leader.prev&&!save.trainerWins?.[leader.prev]?'이전 체육관 배지가 필요해':'3대3 배틀에 도전할 수 있어')+'</small></div>'+
+ '<button type="button" data-gym="'+leader.id+'" '+(!can?'disabled':'')+'>'+(can?'3대3 도전':'잠김')+'</button></div></div>'+
  '<div class="action-row"><button type="button" class="act primary" data-village-heal="1">HP·PP 무료 회복</button>'+
  '<button type="button" class="act" data-hud-action="regions">세계 지도·빠른 이동</button></div>');
 }
@@ -295,7 +307,7 @@ function openTrainerSelection(id){
 }
 function renderTrainerSelection(){
  if(!save||!trainerSelection)return;
- const config=T.TRAINERS.find(x=>x.id===trainerSelection.id);
+ const config=T.configFor(trainerSelection.id);
  if(!config)return;
  const chosen=trainerSelection.slots;
  const cards=save.party.map((p,i)=>{
@@ -320,7 +332,7 @@ function enterTrainer(id,selectedSlots=null){
  if(!trainer.playerSlots.includes(save.active))save.active=trainer.playerSlots[0];
  for(const p of trainer.party)B.normalize(p);
  const foe=trainer.party[trainer.active];
- battle={foe,trainer,zone:"town",special:false,firstRoad:false,turn:1,
+ battle={foe,trainer,zone:T.configFor(id)?.village||"town",special:false,firstRoad:false,turn:1,
   done:false,menu:"root",turnState:B.state(),
   message:trainer.name+"이(가) 대결을 신청했어! 세 마리를 모두 쓰러뜨리면 승리야.\n"+
    trainer.lesson};
@@ -654,6 +666,7 @@ function resolveBattleTurn(choice){
   endFight(res.events.join("\n")+"\n"+trainer.name+"에게 승리! 세 마리 모두 쓰러뜨렸어!"+
    "\n참가한 키즈몬 경험치 +"+prize.xpEach+" · 연구코인 +"+prize.coins+
    (prize.first?"\n첫 승리 보너스 획득!":"")+
+    (prize.badge?"\n"+prize.badge+" 획득! 특별한 기상 현상에서 희귀 키즈몬을 찾아봐!":"")+
    (newLevels.length?"\n키즈몬 레벨 업! 파티에서 진화도 확인해 봐.":""),"win");
   return;
  }
@@ -983,6 +996,13 @@ function attach(){
   if(b&&trainerSelection&&T.validateSelection(save,trainerSelection.slots)){
    enterTrainer(b.dataset.trainerStart,trainerSelection.slots);return;
   }
+  b=e.target.closest("button[data-quest]");
+  if(b){
+   const award=E.claimRegionalQuest(save,b.dataset.quest);
+   if(award){beep("win");persist();updateAll();setToast(award.quest+" 완료 · 결정 +1, 연구코인 +"+award.coins);}
+   const v=E.VILLAGES.find(x=>x.key===b.dataset.quest);if(v)talkNewVillage(v);return;
+  }
+  b=e.target.closest("button[data-gym]");if(b){openTrainerSelection(b.dataset.gym);return;}
   b=e.target.closest("button[data-village-heal]");if(b){
    E.healAll(save);updateAll();persist();beep("win");
    setToast("마을 연구원이 모든 키즈몬의 HP와 PP를 회복해 줬어!");closeGeneric();return;
