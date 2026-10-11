@@ -7,7 +7,7 @@ const clamp=(n,a,b)=>Math.max(a,Math.min(b,n)),r=(life,age,s)=>W4.roll(life,age,
 function ensure(life){W5.ensure(life);return life.world6||(life.world6={sector:'',profession:'',scene:'home',history:[],seen:[],eventCount:0,lastStory:'',incomeFactor:1,roleChanges:0,active:true});}
 function career(life,sector,index,reason){
  const w=ensure(life),data=C.tracks[sector];if(!data)return false;
- const title=data.jobs[((index%7)+7)%7],changed=title!==w.profession;
+ const suggested=data.jobs[((index%7)+7)%7],title=typeof life.__v7resolveCareer==='function'?life.__v7resolveCareer(sector,suggested):suggested,changed=title!==w.profession;
  w.sector=sector;w.profession=title;w.incomeFactor=data.income;w.scene=C.mainScene[sector];
  life.career=title;life.world.occupation=title;
  if(changed){w.roleChanges++;w.history.push({age:life.age,sector,job:title});
@@ -28,7 +28,7 @@ function findCareer(life,age,reason){
   if(key==='sports')p*=a.tags.includes('sports')?3:1;
   if(key==='agriculture')p*=life.profile.settlement==='농촌'?5:.65;
   if(age>32&&life.world6.sector===key)p*=1.8;
-  return p;
+  return p*(typeof life.__v7sectorWeight==='function'?life.__v7sectorWeight(key):1);
  });
  let n=r(life,age,201)*weights.reduce((s,v)=>s+v,0),chosen=keys.at(-1);
  for(let i=0;i<keys.length;i++)if((n-=weights[i])<=0){chosen=keys[i];break;}
