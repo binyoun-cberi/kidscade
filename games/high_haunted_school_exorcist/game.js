@@ -59,6 +59,7 @@ let tutorialMode=false,survivalKills=0,survivalSpawnClock=0;
 const SURVIVAL_SECONDS=300,SURVIVAL_REQUIRED_SEALS=8,survivalGhosts=[];
 const HORROR_NAMES={maiden:'처녀귀신',egg:'달걀귀신',yuki:'유키온나',reaper:'저승사자',wolf:'늑대인간'};
 const HORROR_RULES={maiden:'정면으로 바라보기',egg:'등 돌리기',yuki:'손전등 끄기',reaper:'빛 비추기',wolf:'빛으로 돌진 막기'};
+const HORROR_CLUES={maiden:'시선에 움직임이 반응한다',egg:'눈이 마주치면 불길하다',yuki:'찬 기운이 불빛에 맺힌다',reaper:'검은 두건 뒤로 빛이 새어 든다',wolf:'번쩍이는 빛에 움찔한다'};
 const SURVIVAL_SPAWNS=[[-10.5,-14],[7.5,-15],[25,-15],[24,14],[-10.5,15],[8,15],[-23,15],[-23,-16],[-8,-8.5],[8,-8.5],[24,-8.5],[-8,8.5],[8,8.5],[24,8.5],[-17.5,-15],[-17.5,15]];
 
 let gazeLocked=false,ghostNav=null;
@@ -982,11 +983,11 @@ function updateSurvival(dt){
     g.hitCooldown=Math.max(0,g.hitCooldown-dt);
     const threshold={maiden:2.3,egg:2.2,yuki:2.3,reaper:1.9,wolf:1.8}[k];
     const condition={
-      maiden:look.clear&&look.score>.88&&d<9,
-      egg:look.clear&&look.score<-.20&&d<7,
-      yuki:!flashOn&&d<6.4,
-      reaper:flashOn&&look.clear&&look.score>.75&&d<8,
-      wolf:flashOn&&look.clear&&look.score>.80&&d<7.3
+      maiden:!hidingLocker&&look.clear&&look.score>.88&&d<9,
+      egg:!hidingLocker&&look.clear&&look.score<-.20&&d<7,
+      yuki:!hidingLocker&&!flashOn&&d<6.4,
+      reaper:!hidingLocker&&flashOn&&look.clear&&look.score>.75&&d<8,
+      wolf:!hidingLocker&&flashOn&&look.clear&&look.score>.80&&d<7.3
     }[k];
     if(g.ready>0){g.ready=Math.max(0,g.ready-dt);if(!g.ready)g.charge=0;}
     else{
@@ -1118,6 +1119,7 @@ function finish(ok){
 }
 function reset(mode='survival'){
   tutorialMode=mode==='tutorial';survivalKills=0;survivalSpawnClock=0;
+  document.querySelectorAll('.tutorial-rules').forEach(el=>el.classList.toggle('hidden',!tutorialMode));
   for(const g of survivalGhosts)g.actor.root.visible=false;
   survivalGhosts.length=0;
   ui.lesson.classList.add('hidden');ui.navigation.classList.add('hidden');
@@ -1160,14 +1162,14 @@ function updateHud(){
     const near=nearestSurvivalGhost();
     ui.mission.textContent='자정 생존 퇴마 · '+Math.ceil(Math.max(0,SURVIVAL_SECONDS-elapsed)/60)+'분';
     ui.detail.textContent='봉인 '+survivalKills+'/'+SURVIVAL_REQUIRED_SEALS+' · 동시 출현 '+survivalGhosts.length+'/3'+
-      (near.ghost&&near.distance<10?' · '+HORROR_NAMES[near.ghost.kind]+': '+HORROR_RULES[near.ghost.kind]:' · 주변을 살피세요');
+      (near.ghost&&near.distance<10?' · '+HORROR_NAMES[near.ghost.kind]+': '+HORROR_CLUES[near.ghost.kind]:' · 주변을 살피세요');
     ui.progress.style.width=Math.min(100,elapsed/SURVIVAL_SECONDS*100)+'%';
     ui.health.textContent='♥'.repeat(Math.max(0,hp))+'♡'.repeat(3-Math.max(0,hp));
     ui.battery.textContent=Math.floor(power)+'%';
     ui.flash.textContent=flashOn?'손전등 켜짐 [F]':'손전등 꺼짐 [F]';
     ui.navigation.classList.add('hidden');ui.lesson.classList.add('hidden');
     ui.gaze.classList.toggle('hidden',!near.ghost||near.distance>10||!!hidingLocker);
-    ui.gazeLabel.textContent=near.ghost?HORROR_NAMES[near.ghost.kind]+(near.ghost.ready>0?' · 지금 봉인!':' · '+HORROR_RULES[near.ghost.kind]):'';
+    ui.gazeLabel.textContent=near.ghost?HORROR_NAMES[near.ghost.kind]+(near.ghost.ready>0?' · 지금 봉인!':' · '+HORROR_CLUES[near.ghost.kind]):'';
     const limits={maiden:2.3,egg:2.2,yuki:2.3,reaper:1.9,wolf:1.8};
     ui.gazeValue.style.width=near.ghost?Math.min(100,near.ghost.charge/limits[near.ghost.kind]*100)+'%':'0%';
     ui.reticle.classList.toggle('hidden',!started||ended||!!hidingLocker);
