@@ -207,14 +207,14 @@ function openRegions(){
  const rows=E.ZONES.map(zone=>{
   const known=visited.has(zone.key),habitat=DB.habitats?.[zone.key],cfg=DB.encounters[zone.key];
   const pool=cfg?E.unlockedPool(zone.key,save):[];
-  const found=known?pool.slice(0,7).map(id=>species(id)?.name).filter(Boolean).join(" · "):
+  const found=known?pool.slice(0,12).map(id=>species(id)?.name).filter(Boolean).join(" · "):
    "미발견 · 지역에 도착하면 목록을 확인할 수 있어";
   const village=E.VILLAGES.find(v=>v.key===zone.key);
   const reachable=village&&places.some(v=>v.key===zone.key);
   return '<div class="shop-item region-card"><div><strong>'+(known?'● ':'○ ')+esc(zone.name)+'</strong>'+
    '<small>'+esc(zone.theme||"")+(cfg?' · Lv.'+cfg.level.join("~"):' · 안전한 마을')+'</small>'+
    '<small>'+esc(zone.hint||"")+'</small>'+
-   (cfg?'<small>야생: '+esc(found)+(known&&pool.length>7?' 외':'')+'</small>':'')+
+   (cfg?'<small>야생: '+esc(found)+(known&&pool.length>12?' 외 '+(pool.length-12)+'종':'')+'</small>':'')+
    (habitat?'<small>연구 주제: '+esc(habitat.subject)+'</small>':'')+
    (cfg?'<small>지역 조사: '+(save.regionResearch?.[zone.key]?.seen?.length||0)+'/3종'+
     (save.regionResearch?.[zone.key]?.rewarded?' · 연구 완료':
