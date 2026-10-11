@@ -340,6 +340,7 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await interact();
   assert.equal(await evalPage("document.getElementById('rewritePanel').dataset.site"),'wall');
   await evalPage("(()=>{document.getElementById('rewriteInput').value='문';document.getElementById('rewriteForm').requestSubmit()})()");
+  await sleep(240); // Wait for the next Three.js frame to materialize and unfold the hinged word door.
   const openedWall=(await snap()).rewrite;
   assert.equal(openedWall.doorMade,true,'writing 문 creates an actual doorway');
   assert.equal(openedWall.doorOpen,true,'new doorway is traversable');
