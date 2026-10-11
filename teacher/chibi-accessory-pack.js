@@ -247,6 +247,13 @@ export function applyAccessoryFit({getNode,fit='male',topName='',headwearName=''
         reference.updateWorldMatrix(true,true);
         const accessoryBox=new THREE.Box3().setFromObject(group,true);
         const referenceBox=new THREE.Box3().setFromObject(reference,true);
+        // HAT-SAFE shrinks the visible hair geometry *after* a hat is fitted.
+        // Never refit against that shortened crown on the next outfit change:
+        // it sinks the hat into the skull and pokes hair through its lid.
+        if(style.slot==='hat'&&
+          !Number.isFinite(reference.userData.kidscadeHatRestCrownY)){
+          reference.userData.kidscadeHatRestCrownY=referenceBox.max.y;
+        }
         if(!accessoryBox.isEmpty()&&!referenceBox.isEmpty()){
           // The v5 cap anchored its BOTTOM to the hair crown: it pushed the
           // entire hat into the air. Anchor the cap TOP instead, keeping its
@@ -254,7 +261,7 @@ export function applyAccessoryFit({getNode,fit='male',topName='',headwearName=''
           const hatCrownAllowance=style.kind==='beret'?.085:
             style.kind==='straw'?.070:-.158;
           const target=style.slot==='hat'
-            ?referenceBox.max.y+hatCrownAllowance
+            ?reference.userData.kidscadeHatRestCrownY+hatCrownAllowance
             :referenceBox.min.y;
           const current=style.slot==='hat'?accessoryBox.max.y:accessoryBox.min.y;
           const worldDelta=THREE.MathUtils.clamp(target-current,style.slot==='hat'?-.21:-.035,.10);
