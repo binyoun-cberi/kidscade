@@ -28,7 +28,7 @@ const wayfindingSigns=[];
 const architectureMeshes=[],architectureErrors=[],architectureLights=[];
 const calligramObjects=[],calligramById=new Map();
 let rewriteWallPlug=null,rewriteDoorBlock=null,rewriteWallWord=null,rewriteCeilingWord=null;
-let rewriteLight=null,rewriteLightPool=null,rewriteGlow=null;
+let rewriteLight=null,rewriteLightPool=null,rewriteGlow=null,rewriteBulb=null;
 let apparitionAnchor=null,apparitionNumber=-1;
 const corrector=X.create();
 let soundPulse=0, lastCorrectorSound=0;
@@ -364,15 +364,23 @@ function buildRewriteWorld(){
   const texture=rewriteGlowTexture();
   const poolMat=new THREE.MeshBasicMaterial({map:texture,transparent:true,
     opacity:.38,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending});
-  rewriteLightPool=new THREE.Mesh(new THREE.PlaneGeometry(5.7,5.7),poolMat);
+  rewriteLightPool=new THREE.Mesh(new THREE.PlaneGeometry(7.2,7.2),poolMat);
   rewriteLightPool.rotation.x=-Math.PI/2;
   rewriteLightPool.position.set(l.x,.047,l.z);
   rewriteLightPool.renderOrder=3;scene.add(rewriteLightPool);
   rewriteGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,
     opacity:.66,depthWrite:false,blending:THREE.AdditiveBlending}));
   rewriteGlow.position.set(l.x,2.94,l.z);
-  rewriteGlow.scale.set(2.20,2.20,1);
+  rewriteGlow.scale.set(3.35,3.35,1);
   scene.add(rewriteGlow);
+  rewriteBulb=new THREE.Mesh(new THREE.SphereGeometry(.22,14,10),
+    new THREE.MeshBasicMaterial({color:0xffd25b,toneMapped:false}));
+  rewriteBulb.position.set(l.x,2.89,l.z);
+  scene.add(rewriteBulb);rewriteBulb.visible=false;
+  for(const [x,y,z] of [[-.38,2.36,-43.95],[.35,1.97,-43.40],[-.25,1.52,-43.95]]){
+    const word=label('빛','#ffd46d',x,y,z,0,0,.54,.42);
+    word.material=word.material.clone();word.userData.rewriteRay=true;
+  }
   for(const [x,z] of [[-.8,-44.6],[.94,-43.25],[-.05,-42.15]]){
     const word=label('빛','#f9d16c',x,.064,z,-Math.PI/2,0,.46,.3);
     word.material=word.material.clone();word.userData.rewriteRay=true;
@@ -395,8 +403,9 @@ function updateRewriteWorld(t){
   rewriteLight.intensity=rewrite.lightOn?(2+.11*Math.sin(t*3.0)):0;
   rewriteLightPool.visible=rewrite.lightOn;
   rewriteGlow.visible=rewrite.lightOn;
-  rewriteLightPool.material.opacity=rewrite.lightOn?.40+.04*Math.sin(t*2.5):0;
-  rewriteGlow.material.opacity=rewrite.lightOn?.55+.05*Math.sin(t*3.4):0;
+  rewriteBulb.visible=rewrite.lightOn;
+  rewriteLightPool.material.opacity=rewrite.lightOn?.64+.05*Math.sin(t*2.5):0;
+  rewriteGlow.material.opacity=rewrite.lightOn?.88+.05*Math.sin(t*3.4):0;
   scene.children.forEach(obj=>{
     if(obj.userData?.rewriteRay)obj.visible=rewrite.lightOn;
   });
