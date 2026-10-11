@@ -16,7 +16,7 @@ test('One Life v2 provides concrete birth profile, financial statement and pixel
  for(const id of ['birthCertificate','birthName','birthDate','birthMother','birthFather','birthSiblings',
   'lifeScene','sceneLabel','profileName','nameHeadline','netWorth','annualIncome','annualExpense',
   'annualBalance','employmentStatus','endNetWorth']) assert.ok(html.includes('id="'+id+'"'),id);
- assert.match(html,/world-v2\.js\?v=3/);
+ assert.match(html,/world-v2\.js\?v=4/);
  assert.match(html,/pixel-scene\.js\?v=3/);
  assert.match(html,/v2-style\.css/);
  assert.match(html,/light-theme\.css\?v=1/);
