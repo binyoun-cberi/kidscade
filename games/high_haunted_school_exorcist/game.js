@@ -1373,7 +1373,7 @@ function takeAnomalyHit(reason,resetToStage=null){
   if(hp<=0){finish(false);return;}
   if(resetToStage!==null)setStage(resetToStage);
   showLesson('다시 도전할 기회가 있어요',reason+' · 관리실에서 다시 시작합니다.',12);
-  showToast('생명 '+hp+'개 남았어요. 괴이마다 규칙이 달라요.');
+  showToast(tutorialMode?'생명 '+hp+'개 남았어요. 괴이마다 규칙이 달라요.':reason+' · 남은 생명 '+hp+'개');
 }
 function moveWolfToward(target,dt){
   const w=encounter.wolf;
