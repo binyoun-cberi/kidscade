@@ -11,7 +11,7 @@
     endRounds:R.ROUNDS.map((_,i)=>$('endRound'+i)),endButton:$('endButton'),quit:$('quitButton'),
     demoIcon:$('demoExtraIcon'),demoDesc:$('demoExtraDesc'),watermark:$('roundWatermark')
   };
-  let state=R.initial(),ticker=null,deadline=0,runStartedAt=0,loadId=0;
+  let state=R.initial(),ticker=null,deadline=0,runStartedAt=0,loadId=0,practiceId=null;
   const record=(()=>{
     try{
       const v=JSON.parse(localStorage.getItem(R.SAVE_KEY)||'{}');
@@ -32,15 +32,18 @@
   }
   function render(){
     el.best.textContent=record.best+' / '+R.ROUNDS.length;
-    el.shell.classList.toggle('running',state.phase==='running');
-    el.frame.hidden=state.phase!=='running';
-    el.quit.hidden=state.phase!=='running';
+    const isPlaying=state.phase==='running'||practiceId!==null;
+    el.shell.classList.toggle('running',isPlaying);
+    el.frame.hidden=!isPlaying;
+    el.quit.hidden=!isPlaying;
+    el.quit.textContent=practiceId!==null?'연습 나가기 ↩':'대회 포기 ×';
     for(let i=0;i<R.ROUNDS.length;i++){
       const pill=el.pills[i];
       pill.classList.toggle('passed',i<state.clearCount);
       pill.classList.toggle('active',i===state.roundIndex&&['intro','rotate','running'].includes(state.phase));
     }
-    if(state.phase==='lobby')show('lobby');
+    if(practiceId!==null)show('');
+    else if(state.phase==='lobby')show('lobby');
     else if(state.phase==='rotate')show('rotate');
     else if(state.phase==='intro'){
       show('pregame');
@@ -79,7 +82,25 @@
       badge.classList.toggle('failed',failed&&i===state.roundIndex);
     }
   }
+  function startPractice(id){
+    if(practiceId!==null||!['lobby','intermission','failed','champion'].includes(state.phase))return;
+    const round=R.ROUNDS.find(item=>item.id===id);
+    if(!round)return;
+    stopCountdown();
+    practiceId=round.id;
+    el.frame.title='개별 연습: '+round.title;
+    // Normal standalone rules and saved practice records, embedded inside this lobby.
+    el.frame.src=round.src;
+    render();
+  }
+  function leavePractice(){
+    if(practiceId===null)return;
+    practiceId=null;
+    el.frame.removeAttribute('src');
+    render();
+  }
   function startTournament(){
+    if(practiceId!==null)return;
     if(!['lobby','champion','failed'].includes(state.phase))return;
     stopCountdown();
     el.frame.removeAttribute('src');
@@ -158,17 +179,23 @@
     }
   });
   $('startButton').addEventListener('click',startTournament);
+  for(const round of R.ROUNDS){
+    $('practice-'+round.id).addEventListener('click',()=>startPractice(round.id));
+    $('end-practice-'+round.id).addEventListener('click',()=>startPractice(round.id));
+  }
   el.endButton.addEventListener('click',()=>{
     if(state.phase==='intermission'){
       state=R.reduce(state,{type:'NEXT'});prepareRound();
     }else if(state.phase==='failed'||state.phase==='champion')startTournament();
   });
   el.quit.addEventListener('click',()=>{
+    if(practiceId!==null){leavePractice();return;}
     if(state.phase!=='running')return;
     const round=R.ROUNDS[state.roundIndex];
     recordResult({type:'RESULT',gameId:round.gameId,status:'failed',outcome:'loss',score:0});
   });
   el.frame.addEventListener('error',()=>{
+    if(practiceId!==null){leavePractice();return;}
     if(state.phase!=='running')return;
     const round=R.ROUNDS[state.roundIndex];
     recordResult({type:'RESULT',gameId:round.gameId,status:'failed',outcome:'loss',score:0});
