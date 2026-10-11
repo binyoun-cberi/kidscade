@@ -83,8 +83,12 @@
     const ppp=countryEconomy(life.country);
     const individual=roll(seed,48)*2-1;
     const uhc=officialValue(life,'healthCoverage');
+    const physicianDensity=officialValue(life,'physiciansPerThousand');
+    const doctorShift=Number.isFinite(physicianDensity)
+      ?clamp((physicianDensity-2)*.015,-.025,.045):0;
+    // National physician density is NOT individual access; game-only bounded shift.
     const healthResource=clamp(structuralContext(life).healthcareAccess+
-      (Number.isFinite(uhc)?(uhc-65)/100*.09:0),.08,.96);
+      (Number.isFinite(uhc)?(uhc-65)/100*.09:0)+doctorShift,.08,.96);
     const observedLife=officialValue(life,'lifeExpectancy');
     const populationBaseline=Number.isFinite(observedLife)&&observedLife>35&&observedLife<100
       ?observedLife:baseline(life.country);
