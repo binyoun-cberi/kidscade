@@ -96,9 +96,9 @@
     const c=ensure(s);
     if(s.stage==='final')return '열린 기록실 안으로 들어가 자신의 이름을 지키세요';
     if(s.stage!=='explore')return '';
-    if(!both(s))return '기록 A·B를 찾고 잘못된 기록을 교정하세요 ('+(+c.records.office+ +c.records.archive)+'/2)';
+    if(!both(s))return '기록을 찾으세요 ('+(+c.records.office+ +c.records.archive)+'/2) · 서고는 시선으로 해독합니다';
     if(s.literacy&&s.literacy.coreDone<5)return '핵심 오타를 바로잡으세요 ('+s.literacy.coreDone+'/5)';
-    return '기록 복구 완료! 복도 끝 중앙 기록실로 가세요';
+    return '두 기록을 모았습니다. 복도 끝 중앙 기록실로 가세요';
   }
   function stepWatcher(s,dt,p,yaw,pitch){
     const c=ensure(s), w=c.watcher;
