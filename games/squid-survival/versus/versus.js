@@ -39,6 +39,12 @@ function send(id,action,value){
  if(previous!=='finished'&&state.phase==='finished'){maybeFinish();showDialog();}
 }
 function releaseAll(id){
+ if(paused()){
+   const p=state.round?.players[id];
+   if(p?.body&&state.round?.id==='redlight')p.body.held=false;
+   if(p?.traceState){p.traceState.active=false;p.hold=false;p.assist=0;}
+   clearFinger(id);return;
+ }
  if(state.phase==='playing'&&state.round){
   const mode=state.round.id,at=now();
   if(mode==='redlight')state=E.input(state,id,'hold',false,at);
@@ -197,6 +203,8 @@ function onDialog(){
  }else if(state.phase==='finished'){
    state=E.start(state);recorded=false;showDialog();
  }else if(state.phase==='tiebreak'){
+   // Give both players the full tie-break window after they read the instructions.
+   state.tie=E.makeTie(state.seed,state.rematch,now());
    el.dialog.hidden=true;renderHud();
  }
 }
