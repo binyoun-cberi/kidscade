@@ -85,6 +85,7 @@ test('2D and 3D account atelier modes coexist in one overlay without overwriting
   const three=read('teacher/character-3d-studio.js');
   const account=read('chibi-account-entry.js');
   const css=read('chibi/account-studio.css');
+  const lazyBoot=read('avatar-preview-boot-fix.js');
   assert.match(pixel,/id="switchToChibi"/);
   assert.match(pixel,/kidscade:avatar-switch-mode/);
   assert.match(studio,/class="kc3d-mode-nav"/);
@@ -103,6 +104,9 @@ test('2D and 3D account atelier modes coexist in one overlay without overwriting
   assert.match(account,/KidscadeAvatarStudio\?\.open\?\.\('3d'\)/);
   assert.match(account,/event\.source!==studio\.frame\.contentWindow/);
   assert.match(account,/const previous=store\(\)\?\.getJson/);
+  assert.match(integration,/frame\.dataset\.kidscadeDeferredSrc=nextSrc/);
+  assert.match(lazyBoot,/frame\.getAttribute\('src'\)/);
+  assert.match(lazyBoot,/current\.startsWith\('about:blank'\)/);
   // The pixel avatar is independently loaded in its original studio.
   assert.match(pixel,/id="avatarCanvas"/);
   assert.match(pixel,/avatar-pixel-studio\.js/);
