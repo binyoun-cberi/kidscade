@@ -316,12 +316,18 @@ let chrome,ws,profile;
   const regionAudit=await evalFn(()=>{
    const E=window.OPENMON_EXPEDITION_ENGINE,debug=window.OPENMON_EXPEDITION_DEBUG,s=debug.getState(),$=id=>document.getElementById(id);
    s.pos={x:83,y:12};const entry=E.move(s,1,0,()=>.999);
-   $('hudGoals').click();document.querySelector('[data-hud-action="regions"]')?.click();
+   $('hudGoals').click();
+   const goalBefore=$('genericTitle').textContent;
+   const trigger=document.querySelector('[data-hud-action="regions"]');
+   const triggerInBody=!!trigger?.closest('#genericBody');
+   const inBattle=!!debug.getBattle();
+   trigger?.click();
    const cards=document.querySelectorAll('.region-card').length;
    const travel=document.querySelector('[data-travel="crystalTown"]');
    const locked=document.querySelector('[data-travel="snowTown"]')?.disabled;
    return {zone:entry.zone,welcome:entry.welcome,cards,unlocked:!!travel&&!travel.disabled,locked,
-    heading:$('genericTitle').textContent,scrollWidth:document.documentElement.scrollWidth};
+    heading:$('genericTitle').textContent,scrollWidth:document.documentElement.scrollWidth,
+    goalBefore,triggerFound:!!trigger,triggerInBody,inBattle};
   });
   assert.ok(regionAudit.zone==='crystalTown'&&regionAudit.welcome&&regionAudit.cards===10&&
     regionAudit.unlocked&&regionAudit.locked&&regionAudit.heading.includes('세계 지도')&&
