@@ -99,7 +99,7 @@
     W3.setup(life);
     if(life.arc)return life.arc;
     const a={path:'open',skill:0,learning:0,network:0,security:0,wellness:0,ambition:0,
-      community:0,business:false,careerRisk:0,decisionCount:0,decisions:[],tags:[],
+      community:0,business:false,careerRisk:0,unemployedUntil:0,decisionCount:0,decisions:[],tags:[],
       seen:[],eventCount:0,earnedEvents:[],lastEvent:'',firstJob:'',replayFrom:null};
     life.arc=a;
     return a;
@@ -174,7 +174,7 @@
     if(!life.alive||!opt||!Number.isInteger(index)||index<0||index>=opt.options.length)return false;
     const w=life.world,m=life.money;let result='';
     if(age===16){
-      if(index===0){a.path='academic';effects(life,{learning:4,knowledge:12,money:-1800,tag:'academic'});if(w.educationYears<5){w.educationYears+=3;w.schooling='늦게 학교로 돌아옴';w.educationLevel='기초 교육';}result='학업을 더 이어갈 수 있는 길을 찾았다.';}
+      if(index===0){a.path='academic';effects(life,{learning:4,knowledge:12,tag:'academic'});if(w.educationYears<5){w.educationYears+=3;w.schooling='늦게 학교로 돌아옴';w.educationLevel='기초 교육';}result='학업을 더 이어갈 수 있는 길을 찾았다.';}
       if(index===1){a.path='trade';effects(life,{skill:3,learning:1,knowledge:5,tag:'trade'});result='기술을 배우며 손으로 만드는 일에 관심을 가졌다.';}
       if(index===2){a.path='community';effects(life,{network:3,community:3,bonds:10,tag:'mentor'});result='함께하는 사람들에게서 많은 것을 배웠다.';}
     }
@@ -202,7 +202,7 @@
         else {life.career='경력 발전 중';result='일과 전문성에 집중하기 시작했다.';}
       } else if(index===1){
         a.network+=2;a.security+=3;a.wellness+=2;life.change({bonds:7,happiness:6});
-        if(a.business){a.business=false;life.career='사업·직장 병행';result='사업 규모를 조절하고 꾸준한 일자리를 병행했다.';}
+        if(a.business){a.business=false;life.career='사업 정리 후 안정적인 직장';result='사업 규모를 정리하고 꾸준한 일자리로 옮겼다.';}
         else if(m.employment==='구직 중'||m.netWorth<0){a.learning+=2;result='생활을 안정시키며 재도전할 시간을 만들었다.';}
         else result='사람들과 함께할 시간과 안정적인 생활을 선택했다.';
       } else {
@@ -243,6 +243,11 @@
     const variation=hash(life.seed,life.age,101)%chosen.lines.length;
     const message=chosen.lines[variation];
     effects(life,chosen.effects);
+    if(chosen.id==='job-loss')a.unemployedUntil=life.age+2;
+    if(chosen.id==='job-recovery')a.unemployedUntil=0;
+    if(chosen.id==='business-crisis')a.careerRisk+=2;
+    if(chosen.id==='business-growth')a.security+=2;
+    if(chosen.id==='business-close'){a.business=false;life.career='재취업·직업전환 중';}
     a.seen.push(chosen.id);a.eventCount++;a.lastEvent=message;
     a.earnedEvents.push({age:life.age,id:chosen.id,text:message});
     if(a.earnedEvents.length>35)a.earnedEvents.shift();
@@ -284,7 +289,7 @@
       if(data?.arc && typeof data.arc==='object'){
         const d=data.arc,a=life.arc;
         for(const k of ['path','lastEvent','firstJob'])if(typeof d[k]==='string')a[k]=d[k].slice(0,130);
-        for(const k of ['skill','learning','network','security','wellness','ambition','community','careerRisk','decisionCount','eventCount'])
+        for(const k of ['skill','learning','network','security','wellness','ambition','community','careerRisk','unemployedUntil','decisionCount','eventCount'])
           if(Number.isFinite(d[k]))a[k]=clamp(d[k],-8,50);
         a.business=d.business===true;
         for(const key of ['tags','seen'])if(Array.isArray(d[key]))a[key]=d[key].filter(x=>typeof x==='string').slice(0,90);
