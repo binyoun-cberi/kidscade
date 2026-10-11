@@ -758,7 +758,7 @@ function renderPartChecks(){
     (!accountStudio||Object.values(CHIBI_ACCOUNT_CATALOG[activeBodyFit])
       .some(ids=>ids.includes(name)))
   );
-  const showTiles=accountStudio||activeWardrobeCategory==='shoes'||activeWardrobeCategory==='accessory';
+  const showTiles=(accountStudio&&!accountPreview)||activeWardrobeCategory==='shoes'||activeWardrobeCategory==='accessory';
   const descriptions={hat:'모자·헤드폰',face:'안경·마스크',bag:'가방',neck:'목도리',wrist:'시계'};
   let currentSlot='';
   host.classList.toggle('with-thumbnails',showTiles);
