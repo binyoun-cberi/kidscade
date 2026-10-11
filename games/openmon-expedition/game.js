@@ -86,7 +86,9 @@ function updateAll(){
  $("potions").textContent=save.items.potion+"개";
  $("seenCount").textContent=Object.keys(save.seen).filter(id=>species(id)?.playable).length+" / "+DB.species.length;
  $("caughtCount").textContent=Object.keys(save.collection).filter(id=>species(id)?.playable).length+" / "+DB.species.length;
- $("worldHint").textContent="현재 위치 "+(data?.name||"")+" ("+save.pos.x+","+save.pos.y+")";
+ const rareStatus=E.eventStatus(area,save);
+ $("worldHint").textContent="현재 위치 "+(data?.name||"")+" ("+save.pos.x+","+save.pos.y+")"+
+  (rareStatus?" · "+rareStatus.name+(rareStatus.active?" 발생 중!":" 준비 중"):"");
  const progress=save.wins+save.catches;
  $("objective").textContent=save.encounters===0?"→ 초원 입구에서 첫 키즈몬 만나기":save.catches===0?"첫 야생 키즈몬 포획하기":progress<3?"키즈몬을 더 만나고 연구하기":progress<12?"연구 도감 확장 · 새 종류 찾기":"새로운 키즈몬을 모아 도감 완성하기";
  renderTeam();
@@ -211,6 +213,9 @@ function openRegions(){
   const found=known?pool.slice(0,12).map(id=>species(id)?.name).filter(Boolean).join(" · "):
    "미발견 · 지역에 도착하면 목록을 확인할 수 있어";
   const village=E.VILLAGES.find(v=>v.key===zone.key);
+  const quest=village?E.questStatus(save,village.key):null;
+  const leader=village?T.GYMS.find(g=>g.village===village.key):null;
+  const special=E.eventStatus(zone.key,save);
   const reachable=village&&places.some(v=>v.key===zone.key);
   return '<div class="shop-item region-card"><div><strong>'+(known?'● ':'○ ')+esc(zone.name)+'</strong>'+
    '<small>'+esc(zone.theme||"")+(cfg?' · Lv.'+cfg.level.join("~"):' · 안전한 마을')+'</small>'+
@@ -219,7 +224,12 @@ function openRegions(){
    (habitat?'<small>연구 주제: '+esc(habitat.subject)+'</small>':'')+
    (cfg?'<small>지역 조사: '+(save.regionResearch?.[zone.key]?.seen?.length||0)+'/3종'+
     (save.regionResearch?.[zone.key]?.rewarded?' · 연구 완료':
-     ' · 보상 '+(E.HABITAT_REWARDS[zone.key]?.name||"연구 보상"))+'</small>':'')+'</div>'+
+     ' · 보상 '+(E.HABITAT_REWARDS[zone.key]?.name||"연구 보상"))+'</small>':'')+
+   (special&&known?'<small>특수 현상 '+esc(special.name)+': '+
+    (special.unlocked?(special.active?'현재 희귀종 출현 가능 (12%)':'잠잠함 · '+special.cycle+'걸음 후 변화'):'체육관 배지 필요')+'</small>':'')+
+   (quest&&known?'<small>연구 의뢰: '+(quest.claimed?'완료':quest.ready?'보상 수령 가능':
+    Math.min(3,quest.observed)+'/3종 관찰 · '+(quest.captured?'포획 완료':'포획 필요'))+'</small>':'')+
+   (leader&&known?'<small>체육관 '+esc(leader.badge)+' · '+(save.trainerWins?.[leader.id]?'획득':'도전 전')+'</small>':'')+'</div>'+
    (village?'<button type="button" data-travel="'+zone.key+'" '+(!reachable?'disabled':'')+
    '>'+(reachable?'빠른 이동':'미발견')+'</button>':'')+'</div>';
  }).join("");
@@ -516,7 +526,8 @@ function enterBattle(enemy,zone,special=false,firstRoad=false){
  B.normalize(lead);B.normalize(enemy);
  battle={foe:enemy,zone,special,firstRoad,turn:1,done:false,menu:"root",turnState:B.state(),
   message:firstRoad?"첫 번째 키즈몬, "+species(enemy.id).name+"을(를) 만났어! 싸우기에서 기술을 골라 HP를 낮추고 키즈볼을 던져 보자!":
-   "야생 "+species(enemy.id).name+" 등장! 기술의 PP·상성·행동 순서를 생각하며 싸워보자."};
+   (enemy.rareHabitat?"특별한 기상 현상 속 희귀 키즈몬! ":"야생 ")+species(enemy.id).name+
+   " 등장! 기술의 PP·상성·행동 순서를 생각하며 싸워보자."};
  save.seen[enemy.id]=true;save.grassSteps=0;
  $("battleOverlay").classList.remove("hidden");
  $("battleActionPanel").classList.remove("hidden");$("battleAfter").classList.add("hidden");
