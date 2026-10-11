@@ -4,13 +4,13 @@
 const D=w.OPENMON_DEX,E=w.OPENMON_EXPEDITION_ENGINE,B=w.OPENMON_TURN_BATTLE;
 if(!D?.combat||!E?.makeCreature||!B?.moves)throw Error("Trainer mode requires dex, expedition and battle engine");
 const TRAINERS=Object.freeze([
- {id:"meadow",name:"초원의 연구원",title:"속성의 첫걸음",requiredWins:0,bonus:0,
+ {id:"meadow",name:"초원의 연구원",title:"속성의 첫걸음",requiredWins:0,bonus:-4,
   species:["set1_r01_c01","set2_r00_c04","set4_r00_c03"],
   lesson:"식물·물·불의 상성에 맞춰 키즈몬을 교체해 봐."},
- {id:"forest",name:"숲의 전술가",title:"반격과 교체",requiredWins:3,bonus:2,
+ {id:"forest",name:"숲의 전술가",title:"반격과 교체",requiredWins:3,bonus:1,
   species:["set1_r00_c01","set4_r01_c02","set5_r00_c02"],
   lesson:"반격을 예상했다면 보조 기술이나 교체를 선택할 수 있어."},
- {id:"lab",name:"연구소 수석 연구원",title:"속도와 방어",requiredWins:8,bonus:4,
+ {id:"lab",name:"연구소 수석 연구원",title:"속도와 방어",requiredWins:8,bonus:1,
   species:["set5_r01_c04","set5_r02_c02","set1_r04_c02"],
   lesson:"속도·속박·반격을 이용해 세 마리의 전투 순서를 설계해 봐."}
 ]);
@@ -27,7 +27,7 @@ function makeTrainer(save,id,rand=Math.random){
  if(!available(save,id))return null;
  const preset=TRAINERS.find(x=>x.id===id);
  const playerSlots=eligibleSlots(save);
- const level=Math.min(55,Math.max(4,Math.round(playerSlots.reduce((n,i)=>n+save.party[i].level,0)/3)+preset.bonus));
+ const level=Math.min(55,Math.max(2,Math.round(playerSlots.reduce((n,i)=>n+save.party[i].level,0)/3)+preset.bonus));
  const team=preset.species.map((id,i)=>{
   const mon=E.makeCreature(id,Math.min(60,level+(i===2?1:0)),rand);
   mon.shiny=false;return mon;
