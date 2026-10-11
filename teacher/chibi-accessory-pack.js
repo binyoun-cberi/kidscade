@@ -251,8 +251,8 @@ export function applyAccessoryFit({getNode,fit='male',topName='',headwearName=''
           // The v5 cap anchored its BOTTOM to the hair crown: it pushed the
           // entire hat into the air. Anchor the cap TOP instead, keeping its
           // crown intersecting the hair while the brim sits over the forehead.
-          const hatCrownAllowance=style.kind==='beret'?.040:
-            style.kind==='straw'?-.045:-.158;
+          const hatCrownAllowance=style.kind==='beret'?.085:
+            style.kind==='straw'?.070:-.158;
           const target=style.slot==='hat'
             ?referenceBox.max.y+hatCrownAllowance
             :referenceBox.min.y;
@@ -369,9 +369,9 @@ function buildGeometry(style,source,sourceHair,eyes){
     case 'beret':{
       // Upper hemisphere + deeper cloth band; unlike a squashed sphere the
       // lower edge wraps the crown rather than hovering as a flat plate.
-      const dome=new THREE.SphereGeometry(1,24,12,0,Math.PI*2,0,Math.PI*.56);
-      dome.scale(headR*1.22,.160,headR*1.035);
-      dome.translate(hc.x-.022,scalpY-.059,hc.z);
+      const dome=new THREE.SphereGeometry(1,24,12,0,Math.PI*2,0,Math.PI*.60);
+      dome.scale(headR*1.22,.190,headR*1.08);
+      dome.translate(hc.x-.022,scalpY+.025,hc.z);
       return dome;
     }
     case 'straw':return cyl(headR*.92,headR*1.02,.205,hc.x,scalpY-.080,hc.z);
@@ -438,8 +438,8 @@ function createDetails(style,context){
       add(ring(headR*.96,.030,0,scalpY-.089,hc.z,'y'),white,'cuff');
       add(sphere(0,scalpY+.174,hc.z,.052,.046,.052),style.color,'pom');
     }else if(kind==='beret'){
-      add(ring(headR*1.025,.019,hc.x,scalpY-.073,hc.z,'y'),black,'edge');
-      add(cyl(.018,.020,.033,-.03,scalpY+.104,hc.z),black,'stem');
+      add(ring(headR*1.035,.020,hc.x,scalpY-.035,hc.z,'y'),black,'edge');
+      add(cyl(.018,.020,.030,-.03,scalpY+.217,hc.z),black,'stem');
     }else if(kind==='straw'){
       add(cyl(headR*1.44,headR*1.44,.019,hc.x,scalpY-.173,hc.z),style.color,'brim');
       add(ring(headR*.985,.021,hc.x,scalpY-.112,hc.z,'y'),'#9b7250','ribbon');
