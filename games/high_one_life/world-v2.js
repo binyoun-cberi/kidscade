@@ -69,6 +69,18 @@
   const between=(s,k,min,max)=>min+hash(s,k)%(max-min+1);
   const clamp=(v,min,max)=>Math.min(max,Math.max(min,v));
   const round=v=>Math.round(v);
+  const Official=typeof module!=='undefined'&&module.exports
+    ? require('./official-data.js') : (typeof window!=='undefined'?window.OneLifeOfficialStats:null);
+  // Urban share describes the overall population, not the share of births.
+  // Applying it to newborn settlement is an explicitly approximate game rule.
+  function settlementFor(country,seed,community){
+    const urban=Official?.countries?.[country]?.urbanPercent?.value;
+    if(!Number.isFinite(urban)||urban<0||urban>100)
+      return community%3===0?'농촌':community%3===1?'도시':'소도시';
+    const share=urban/100,toss=hash(seed,1001)/4294967296;
+    if(toss>=share)return '농촌';
+    return hash(seed,1002)%10<7?'도시':'소도시';
+  }
   const BASE=22000;
   const COUNTRY_FACTOR=country=>clamp(0.15+(country[3]||.5)*1.52,.4,1.7);
   function enrich(life){
@@ -86,7 +98,7 @@
       motherJob:FAMILY_JOBS[between(seed,6,0,FAMILY_JOBS.length-1)],
       fatherJob:FAMILY_JOBS[between(seed,7,0,FAMILY_JOBS.length-1)],
       familyIncome:round(BASE*COUNTRY_FACTOR(life.country)*familyAsset),
-      siblings:between(seed,8,0,3),settlement:community%3===0?'농촌':community%3===1?'도시':'소도시',
+      siblings:between(seed,8,0,3),settlement:settlementFor(ct,seed,community),
       partner:false,child:false};
     life.profile=p;
     life.money={netWorth:0,income:0,expense:0,careerIncomeFactor:1,

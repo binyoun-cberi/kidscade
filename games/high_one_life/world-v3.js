@@ -64,6 +64,9 @@
       healthcareAccess:clamp(.22+healthIndex*.65+household*.20-rural*.30,.12,.91)
     };
   }
+  const Official=typeof module!=='undefined'&&module.exports
+    ? require('./official-data.js') : (typeof window!=='undefined'?window.OneLifeOfficialStats:null);
+  const officialValue=(life,key)=>Official?.countries?.[life.country[0]]?.[key]?.value;
   function setup(life){
     World2.enrich(life);
     if(life.world){Object.assign(life.world,structuralContext(life));return life.world;}
@@ -71,15 +74,28 @@
     const bonus=family==='여유 있는 형편'?.18:family==='빠듯한 형편'?-.15:0;
     const rural=p.settlement==='농촌'?.13:p.settlement==='소도시'?.04:0;
     // Separate access and completion; no geography or family state guarantees a result.
-    const schoolChance=clamp(.38+schoolIndex*.68+bonus-rural,.17,.99);
+    const primary=officialValue(life,'primaryCompletion');
+    // UNESCO gross primary completion is not an individual probability.
+    // Only a small bounded directional adjustment is made to fictional access.
+    const schoolShift=Number.isFinite(primary)?clamp((primary-85)/100*.12,-.08,.06):0;
+    const schoolChance=clamp(.38+schoolIndex*.68+bonus-rural+schoolShift,.17,.99);
     const secondaryChance=clamp(.19+schoolIndex*.67+bonus*.7-rural*.65,.13,.96);
     const ppp=countryEconomy(life.country);
     const individual=roll(seed,48)*2-1;
-    const healthResource=structuralContext(life).healthcareAccess;
-    const target=clamp(baseline(life.country)+(family==='여유 있는 형편'?3:family==='빠듯한 형편'?-4:0)
+    const uhc=officialValue(life,'healthCoverage');
+    const physicianDensity=officialValue(life,'physiciansPerThousand');
+    const doctorShift=Number.isFinite(physicianDensity)
+      ?clamp((physicianDensity-2)*.015,-.025,.045):0;
+    // National physician density is NOT individual access; game-only bounded shift.
+    const healthResource=clamp(structuralContext(life).healthcareAccess+
+      (Number.isFinite(uhc)?(uhc-65)/100*.09:0)+doctorShift,.08,.96);
+    const observedLife=officialValue(life,'lifeExpectancy');
+    const populationBaseline=Number.isFinite(observedLife)&&observedLife>35&&observedLife<100
+      ?observedLife:baseline(life.country);
+    const target=clamp(populationBaseline+(family==='여유 있는 형편'?3:family==='빠듯한 형편'?-4:0)
       -(rural*9)+individual*7+(life.gender==='여자'?1:-1),45,94);
     const w={
-      lifeBaseline:baseline(life.country),hasPublishedBaseline:Object.hasOwn(LIFE_2024,life.country[0]),
+      lifeBaseline:populationBaseline,hasPublishedBaseline:Number.isFinite(observedLife),
       mortalityTarget:target,schoolChance,secondaryChance,healthResource,economyScale:ppp,
       schooling:'미취학',educationLevel:'없음',educationYears:0,occupation:'가족과 성장 중',
       startedWorking:false,eventCount:0,turningPoints:0,opportunityNarrative:'',

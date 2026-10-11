@@ -12,6 +12,14 @@
   const World6 = window.OneLifeWorld6;
   const World7 = window.OneLifeWorld7;
   const World8 = window.OneLifeWorld8;
+  const Official=window.OneLifeOfficialStats||{countries:{}};
+  const metric=(key)=>Official.countries?.[life?.country?.[0]]?.[key]||null;
+  const metricLabel=(key,label,unit='')=>{
+    const row=metric(key);
+    return row&&Number.isFinite(row.value)
+      ? label+' '+Number(row.value).toLocaleString('ko-KR',{maximumFractionDigits:1})+unit+' ('+row.year+'년)'
+      : label+' 자료 없음';
+  };
   if (!World2 || !Pixel || !World3 || !World4 || !World5 || !World6 || !World7 || !World8) throw new Error('One Life world assets missing');
   const SAVE_KEY = 'kidscade_one_life_save_v1';
   const RECORD_KEY = 'kidscade_one_life_history_v1';
@@ -118,7 +126,18 @@
       : (life.age<16?'학교와 경험으로 배우는 중':'학습·직업 경험을 쌓는 중');
     $('traitRegion').textContent=p.settlement+' · '+p.city+' · '+hometown.housing;
     $('countryContextText').textContent=life.world?.schooling+' · 지역 경제 기회 '+(life.world?.economyScale>=1?'상대적으로 넓은 편':'상대적으로 제한적인 편');
-    $('countrySourceNote').textContent='참고 수명 '+(life.world?.lifeBaseline||0).toFixed(1)+'세는 게임용 근사값 · 실제 자료와 다를 수 있음. 교육·직업·미래 사건은 모두 가상 모델';
+    const observed=metric('lifeExpectancy');
+    $('countrySourceNote').textContent=observed
+      ? '평균 기대수명 '+observed.value.toFixed(1)+'세 ('+observed.year+'년·출처: UN/세계은행). 개인의 수명을 예측하지 않아요.'
+      : '참고 기대수명 '+(life.world?.lifeBaseline||0).toFixed(1)+'세는 게임용 근사값. 실제 개인 예측이 아니에요.';
+    $('officialContext').textContent=[
+      metricLabel('estimatedBirths','연간 출생아 수(인구×출생률 계산)','명'),
+      metricLabel('urbanPercent','도시 인구 비중','%'),
+      metricLabel('primaryCompletion','초등 최종 학년 진입 비율(총량 지표)','%'),
+      metricLabel('unemployment','ILO 추정 실업률','%'),
+      metricLabel('healthCoverage','WHO 필수의료 보장 지수','점'),
+      metricLabel('physiciansPerThousand','WHO 의료진 밀도(인구 천 명당 의사)','명')
+    ].join(' · ');
     const sceneName=Pixel.paint($('lifeScene'),life);
     const sceneTitle=Pixel.names?.[sceneName]||sceneName;
     $('sceneLabel').textContent=life.year+'년 · '+life.country[0]+' '+p.city+' ('+p.settlement+') · '+sceneTitle+'에서 보내는 하루';
@@ -396,10 +415,12 @@
       ' · 출생부터 5세까지 생존 '+Math.round(World8.survival(life.country,life.gender,5)*1000)/10+
       '%(게임 모형), '+life.age+'세 기준 '+Math.round(World8.survival(life.country,life.gender,life.age)*1000)/10+
       '%(동일 가상 집단). 개인의 실제 생존 확률이 아니에요.';
-    $('v8CountryStats').textContent='모델 기대수명 참고치 '+mod.baseline.toFixed(1)+
-      '세 · 학교 접근성 '+Math.round(life.world.schoolChance*100)+
-      '%(게임 가정) · 가족 생활: '+World8.ensure(life).housing+
-      ' · 실제 국가통계가 아닌 근사·가상값.';
+    $('v8CountryStats').textContent=
+      metricLabel('under5Mortality','5세 이전 사망 추정치','‰')+' · '+
+      metricLabel('lifeExpectancy','출생 시 평균 기대수명','세')+
+      ' · 학교 접근 가능성 '+Math.round(life.world.schoolChance*100)+
+      '%(게임 가정) · 주거 '+World8.ensure(life).housing+
+      ' (게임 설정)';
   }
   function renderStoryPanel(){
     const active=!!storyTab;

@@ -16,7 +16,7 @@ test('One Life v2 provides concrete birth profile, financial statement and pixel
  for(const id of ['birthCertificate','birthName','birthDate','birthMother','birthFather','birthSiblings',
   'lifeScene','sceneLabel','profileName','nameHeadline','netWorth','annualIncome','annualExpense',
   'annualBalance','employmentStatus','endNetWorth']) assert.ok(html.includes('id="'+id+'"'),id);
- assert.match(html,/world-v2\.js\?v=6/);
+ assert.match(html,/world-v2\.js\?v=\d+/);
  assert.match(html,/pixel-scene\.js\?v=3/);
  assert.match(html,/v2-style\.css/);
  assert.match(html,/light-theme\.css\?v=1/);
@@ -105,13 +105,19 @@ test('light design replaces dark canvas and leaves document panels readable',()=
  assert.match(css,/\.finance-panel\{background:#f5faf8/);
  assert.doesNotMatch(read('index.html'),/data-speed=|data-duration=/);
 });
-test('simulated birth weights follow more realistic relative annual births rather than populations',()=>{
+test('birth weights match the sourced estimates instead of old game-model ratios',()=>{
+ const source=require(path.join(dir,'official-data.js'));
+ const samples=['인도','중국','나이지리아','대한민국','대만'];
+ for(const name of samples){
+  const country=Sim.COUNTRIES.find(x=>x[0]===name);
+  const measured=source.countries?.[name]?.estimatedBirths?.value;
+  const weight=Sim.birthWeight(country);
+  assert.ok(Number.isFinite(weight)&&weight>0,name);
+  if(measured)assert.ok(Math.abs(weight-measured/1e6)<1e-9,name+' official birth weight mismatch');
+ }
  const india=Sim.COUNTRIES.find(x=>x[0]==='인도');
  const china=Sim.COUNTRIES.find(x=>x[0]==='중국');
- const nigeria=Sim.COUNTRIES.find(x=>x[0]==='나이지리아');
- assert.ok(Sim.birthWeight(india)>Sim.birthWeight(china)*2);
- assert.ok(Sim.birthWeight(nigeria)>Sim.birthWeight(china)*.8);
- assert.ok(Sim.birthWeight(india)>Sim.birthWeight(nigeria));
+ assert.ok(Sim.birthWeight(india)>Sim.birthWeight(china),'India should still have more births than China');
 });
 test('large sample avoids near-universal capped stats and runaway adult finances',()=>{
  const n=1200;let adult=0,maxKnowledge=0,maxBonds=0,finalDebt=0;
