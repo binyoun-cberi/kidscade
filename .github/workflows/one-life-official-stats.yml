@@ -2,6 +2,8 @@ name: One Life official statistics refresh
 
 on:
   push:
+    branches:
+      - "feat/one-life-official-stats-20261012"
     paths:
       - "scripts/sync-one-life-official-stats.cjs"
       - ".github/workflows/one-life-official-stats.yml"
