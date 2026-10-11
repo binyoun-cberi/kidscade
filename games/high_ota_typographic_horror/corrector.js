@@ -11,7 +11,7 @@
     {x:-6.2,z:-52.0},{x:0,z:-54.6},{x:-1.5,z:-45.2}
   ]);
   const DIST=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
-  const cell=.5,gridX=-15,gridZ=-65.5,NX=37,NZ=56;
+  const cell=.5,gridX=-15,gridZ=-65.5,NX=62,NZ=56; // include the archive after Record B is collected
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const copy=p=>({x:p.x,z:p.z});
   function create(){
