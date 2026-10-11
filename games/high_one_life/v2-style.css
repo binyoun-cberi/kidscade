@@ -1,0 +1,41 @@
+
+/* Life v2: documentary identity, finance and contextual pixel-diorama */
+.certificate{width:min(100%,570px);margin:25px auto 0;border:1px solid #c1bdb1;background:#fdfdf9;text-align:left;box-shadow:0 6px 16px #13242a18}
+.certificate-header{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#9b2945;color:#fff;padding:10px 14px}
+.certificate-header strong{font-size:15px}.certificate-header span{font-size:9px;letter-spacing:.12em;opacity:.9}
+.certificate-name{padding:15px 17px 12px;border-bottom:1px solid #d7dbd2}
+.certificate-name small{display:block;font-size:10px;color:#65716e}
+.certificate-name strong{display:block;font-size:clamp(22px,4vw,29px);line-height:1.2;margin:4px 0;color:#20333a;letter-spacing:-.05em}
+.certificate-name>span{font-size:12px;color:#5a7375}
+.certificate-details{padding:14px 17px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 8px;margin:0}
+.certificate-details>div{min-width:0}.certificate-details dt{font-size:10px;color:#68777b;margin-bottom:4px}.certificate-details dd{font-size:12px;line-height:1.4;color:#24343b;font-weight:750;margin:0;overflow-wrap:anywhere}
+.certificate-disclaimer{font-size:10px;color:#657777;background:#ecf4ee;margin:0;padding:9px 15px;line-height:1.5}
+.birth .ticket-body{padding:30px 18px}.birth-flag{font-size:36px}.birth-country{font-size:clamp(31px,5vw,56px)}.birth-detail{margin-top:9px}
+.name-headline{display:block;font-size:12px;color:#c2d3ca;padding-top:4px}
+.pixel-frame{margin:25px 0 10px;border:1px solid #b8c9c4;background:#213947;overflow:hidden}
+.pixel-frame canvas{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;aspect-ratio:600/258}
+.pixel-frame figcaption{padding:9px 15px;background:#d9e4dd;color:#3f5958;font-size:11px;line-height:1.5;letter-spacing:-.01em}
+.mini-passport{display:flex;gap:13px;padding:20px 0 17px;border-bottom:1px solid #ffffff23;align-items:center}
+.avatar-silhouette{width:48px;height:60px;display:grid;place-items:center;background:#e3ded1;color:#617b7d;font-size:26px;flex-shrink:0;border:3px solid #b9c7bc}
+.mini-passport strong,.mini-passport small,.mini-passport span:not(.avatar-silhouette){display:block}
+.mini-passport strong{font-size:15px;letter-spacing:-.02em;color:#f8f0df}
+.mini-passport small{font-size:11px;color:#b1c9ca;margin-top:5px}
+.mini-passport span:not(.avatar-silhouette){font-size:11px;color:#94aaab;margin-top:4px}
+.finance-panel{margin:22px 0 24px;padding:16px;border:1px solid #3f5f64;background:#102229;border-radius:5px}
+.finance-panel .stat-title{margin:0 0 15px}
+.finance-big{padding:0 0 14px;border-bottom:1px solid #486064}
+.finance-big small{display:block;color:#9bb6b4;font-size:11px;margin-bottom:5px}
+.finance-big strong{display:block;color:#e5d1a8;font-size:clamp(18px,3vw,26px);font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.finance-big strong.negative{color:#e6a49f}
+.finance-detail{margin:15px 0;display:grid;gap:9px}
+.finance-detail>div{display:flex;justify-content:space-between;gap:10px}
+.finance-detail dt{font-size:11px;color:#a2baba}
+.finance-detail dd{margin:0;text-align:right;color:#f3f0e5;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
+.finance-detail dd.negative{color:#e6a49f}
+.finance-note{font-size:10px;color:#8caaaa;line-height:1.6;margin:7px 0 0}
+.end-finance{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;color:#b6c7c4;font-size:13px;border-bottom:1px solid #40545a;padding:18px 0}
+.end-finance strong{color:#e2c59a;font-size:19px;font-variant-numeric:tabular-nums}
+.end-finance span{font-size:11px;color:#8da6aa}
+@media(min-width:900px){.play-layout{grid-template-columns:minmax(0,1fr) 320px}.chronicle{padding-top:22px}.story-head{margin-top:28px}}
+@media(max-width:780px){.certificate-details{grid-template-columns:repeat(2,minmax(0,1fr))}.mini-passport{grid-column:1/-1;padding:14px 0}.finance-panel{grid-column:1/-1;margin:12px 0 20px}.finance-detail{grid-template-columns:1fr 1fr;gap:13px}.pixel-frame{margin-top:14px}}
+@media(max-width:440px){.certificate-header span{letter-spacing:0}.certificate-details{gap:12px}.finance-panel .stat-title{margin-bottom:10px}.finance-detail{grid-template-columns:1fr}.pixel-frame figcaption{font-size:10px}.birth .ticket-body{padding:19px 12px}}
