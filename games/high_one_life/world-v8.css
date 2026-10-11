@@ -32,3 +32,27 @@
 @media(max-width:650px){.v8-tools-nav{gap:4px}.v8-tools-nav button{font-size:11px;padding:8px 2px;min-height:42px}
 .v8-tool-panel{padding:12px 10px}.v8-tool-page .age-map{grid-template-columns:repeat(12,minmax(0,1fr))}
 .v8-tool-page .peer{padding:8px}.v8-tool-page .peers{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Keep the simulator itself ahead of the encyclopedic sidebar on phones.
+   The controls belong to the story, not at the bottom of a long sidebar. */
+.chronicle>.controls{border:0;padding:0;margin:15px 0 5px;display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}
+.chronicle>.controls .controls-label{margin:0;display:flex;align-items:center;gap:9px;font-size:12px}
+.chronicle>.controls .controls-label span{font-size:11px}
+.chronicle>.controls .pause{width:auto;min-height:44px;margin:0;padding:10px 19px;flex-shrink:0}
+.chronicle>.controls .hint{margin:0;flex-basis:100%;font-size:11px;line-height:1.5}
+@media(max-width:780px){
+  .play-layout>.chronicle{order:0}
+  .play-layout>.info{order:1}
+  .chronicle>.controls{margin:12px 0 4px;justify-content:space-between}
+  .chronicle>.controls .pause{min-height:46px}
+  .v8-tools-nav button{min-height:44px}
+  .v8-peer-ages button{min-height:44px}
+  .v8-tool-page .age-cell{height:23px}
+}
+@media(max-width:390px){
+  .chronicle>.controls .controls-label{width:100%;justify-content:space-between}
+  .chronicle>.controls .pause{width:100%}
+  .v8-tools-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .v8-tool-page .peers{grid-template-columns:1fr}
+  .v8-tool-page .age-map{grid-template-columns:repeat(9,minmax(0,1fr))}
+}
