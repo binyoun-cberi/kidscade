@@ -158,11 +158,43 @@ test('quit is elimination and repeats cannot award extra championships',()=>{
   s.click('endButton');
   assert.equal(s.get('pregame').classList.contains('hidden'),false);
 });
-test('game catalog, common save key, and all six standalone launch paths exist',()=>{
+test('all six mini-games run as embedded practice and do not change tournament results',()=>{
+  const s=simulator();
+  s.click('practice-dalgona');
+  assert.equal(s.get('gameFrame').src,'../dalgona-trace/index.html');
+  assert.equal(s.get('gameFrame').hidden,false);
+  assert.equal(s.get('quitButton').textContent,'연습 나가기 ↩');
+  assert.equal(s.get('lobby').classList.contains('hidden'),true);
+  s.send(event(rules.ROUNDS[0]));
+  assert.equal(s.get('endClears').textContent,'');
+  s.click('quitButton');
+  assert.equal(s.get('gameFrame').src,'');
+  assert.equal(s.get('lobby').classList.contains('hidden'),false);
+  s.click('startButton');s.advance(3100);
+  s.send(event(rules.ROUNDS[0]));
+  assert.equal(s.get('endClears').textContent,'1 / 6');
+  s.click('end-practice-final');
+  assert.equal(s.get('gameFrame').src,'./final/index.html');
+  assert.equal(s.get('gameFrame').hidden,false);
+  s.send(event(rules.ROUNDS[5]));
+  s.click('quitButton');
+  assert.equal(s.get('end').classList.contains('hidden'),false);
+  assert.equal(s.get('endClears').textContent,'1 / 6');
+  s.click('endButton');s.advance(3100);
+  assert.match(s.get('gameFrame').src,/squid-memory-bridge.*survival=1/);
+});
+
+test('catalog has only the unified Squid game while practice files remain accessible',()=>{
   const catalog=JSON.parse(fs.readFileSync(path.join(ROOT,'data/games.json'),'utf8'));
   const game=catalog.games.find(x=>x.id==='squid_survival');
   assert.ok(game);
   assert.equal(game.href,'games/squid-survival/index.html');
+  const internalIds=['dalgona_trace','squid_memory_bridge','squid_redlight','squid_tug','squid_marbles','squid_final'];
+  assert.ok(internalIds.every(id=>!catalog.games.some(item=>item.id===id)));
+  for(const round of rules.ROUNDS){
+    assert.match(html,new RegExp('id="practice-'+round.id+'"'));
+    assert.match(html,new RegExp('id="end-practice-'+round.id+'"'));
+  }
   assert.match(html,/data-game-id="squid_survival"/);
   assert.match(html,/gameFrame/);
   assert.match(html,/quitButton/);
