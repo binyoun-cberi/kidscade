@@ -104,6 +104,7 @@
     const factor=COUNTRY_FACTOR(life.country);
     const skill=clamp(.62+life.stats.knowledge/130,.6,1.5);
     const employed=age>=20 && life.career!=='학생' && life.career!=='진로 탐색 중' && life.career!=='아직 정해지지 않음';
+    if(age===75 && !m.retired){ m.pension=round(m.income*.28);m.retired=true;life.logEvent('일을 마치고 모은 돈과 연금으로 생활하기 시작했다.','money'); }
     const isRetired=!!m.retired || age>=75;
     let yearly=0;
     if(isRetired && m.retired!=='partial' && m.retired!=='new'){
@@ -182,6 +183,7 @@
       const obj=restore.call(this,data);
       if(!obj)return null;
       enrich(obj);
+      if(data?.alive && typeof data.pending==='string' && /^extra:(24|33|37|48|64)$/.test(data.pending) && Number(data.pending.split(':')[1])===obj.age) obj.pending=data.pending;
       if(data?.profile && data?.money){
         // Carefully filter saved state; never allow NaN or arbitrary huge financial values.
         for(const key of ['partner','child'])obj.profile[key]=Boolean(data.profile[key]);
