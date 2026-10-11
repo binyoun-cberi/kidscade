@@ -350,8 +350,9 @@ function createOrbitControls(camera,domElement){
 function initScene(){
   const canvas=$('view');
   scene=new THREE.Scene();
-  scene.background=new THREE.Color(0x1d2935);
-  scene.fog=new THREE.Fog(0x1d2935,6,11);
+  const stageColor=accountStudio?0xf7efe8:0x1d2935;
+  scene.background=new THREE.Color(stageColor);
+  scene.fog=new THREE.Fog(stageColor,6,11);
 
   camera=new THREE.PerspectiveCamera(38,1,.01,40);
   camera.position.set(1.7,1.25,2.2);
@@ -372,7 +373,7 @@ function initScene(){
 
   const floor=new THREE.Mesh(
     new THREE.CircleGeometry(3.3,48),
-    new THREE.MeshStandardMaterial({color:0x52636d,roughness:.98,metalness:0})
+    new THREE.MeshStandardMaterial({color:accountStudio?0xe9ddd4:0x52636d,roughness:.98,metalness:0})
   );
   floor.rotation.x=-Math.PI/2;
   floor.position.y=-.006;
@@ -381,7 +382,7 @@ function initScene(){
 
   const grid=new THREE.GridHelper(6,30,0x81929f,0x465863);
   grid.position.y=.002;
-  scene.add(grid);
+  if(!accountStudio)scene.add(grid);
 
   controls=createOrbitControls(camera,canvas);
   controls.minDistance=.75;
