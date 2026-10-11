@@ -62,7 +62,8 @@
   // A few wrong surface names, not an entire red room. Puzzle labels stay clean.
   for(const entry of [
     ['wall-01','wall','볏',-3.215,1.6,-9,0,Math.PI/2],
-    ['wall-02','wall','뭄',3.215,1.8,-22,0,-Math.PI/2],
+    ['wall-02','wall','벅',3.215,1.8,-22,0,-Math.PI/2],
+    ['door-01','door','뭄',3.215,1.45,-46.7,0,-Math.PI/2],
     ['wall-03','wall','병',-3.215,1.5,-43.5,0,Math.PI/2],
     ['wall-04','wall','벽?',3.215,1.9,-60.3,0,-Math.PI/2],
     ['ceiling-01','ceiling','조멍',0,3.135,-13.6,Math.PI/2,0],
