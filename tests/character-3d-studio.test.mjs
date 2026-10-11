@@ -1127,7 +1127,7 @@ test('v6.6 wardrobe repairs knight hair, shoe spike and grounded headwear',()=>{
   assert.match(studio,/repairKnightHairForOpenHead\(\)/);
   assert.match(studio,/kidscadeOpenHeadRepair:'v6\.6-full-helmet-safe-hair'/);
   assert.match(studio,/ball\('himeSide_'\+sign,at\(sign\*\.32/);
-  assert.match(studio,/ball\('tail_'\+sign,at\(sign\*\.51/);
+  assert.match(studio,/ball\('tail_'\+sign,at\(sign\*\.49/);
   assert.match(accessory,/sneakers:\[1\.055,1\.025,1\.015\]/);
   assert.match(accessory,/if\(kind==='hightop'\)/);
   assert.doesNotMatch(accessory,/if\(kind==='sneakers'\|\|kind==='hightop'\)/);
