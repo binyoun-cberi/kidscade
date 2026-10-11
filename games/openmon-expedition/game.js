@@ -706,21 +706,53 @@ function showSwap(){
 }
 function renderTerrain(x,y,sx,sy){
  const t=E.terrain(x,y),area=E.zoneAt(x),seed=(x*73+y*91)%41;
- const base={town:"#94b889",meadow:"#9cc987",forest:"#72aa76",cave:"#818792"};
+ const base={town:"#94b889",meadow:"#9cc987",forest:"#72aa76",cave:"#818792",
+ crystalTown:"#81aaa8",powerPlant:"#a6a08c",harborTown:"#81aeb9",tidal:"#82b7bc",
+ snowTown:"#b8c7db",snowfield:"#d3e4ef"};
  cx.fillStyle=base[area];cx.fillRect(sx,sy,16,16);
  if(t==="path"){
-  cx.fillStyle=area==="cave"?"#c0b49b":area==="town"?"#d1c0a0":"#d5bc93";cx.fillRect(sx,sy,16,16);
+  cx.fillStyle=area==="cave"?"#c0b49b":area==="snowfield"||area==="snowTown"?"#d4e3e5":
+  area==="harborTown"||area==="tidal"?"#d0d5c3":area==="powerPlant"?"#bcaea1":
+  area==="town"?"#d1c0a0":"#d5bc93";cx.fillRect(sx,sy,16,16);
   cx.fillStyle="#fff7d62b";cx.fillRect(sx,sy,16,2);
   cx.fillStyle="#746e5740";cx.fillRect(sx+(seed%7),sy+6,4,1);cx.fillRect(sx+((seed+8)%9),sy+12,4,1);
   if(area==="town"){cx.fillStyle="#f8edce3a";cx.fillRect(sx+1,sy+1,6,4)}
   return;
  }
- if(t==="building"){cx.fillStyle="#d5bc8c";cx.fillRect(sx,sy,16,16);return}
+ if(t==="building"){cx.fillStyle=area==="snowTown"?"#91a6c6":area==="harborTown"?"#b59873":area==="crystalTown"?"#8dbeb9":"#d5bc8c";cx.fillRect(sx,sy,16,16);return}
  if(t==="wall"){
   cx.fillStyle=area==="cave"?"#4c5662":"#477252";cx.fillRect(sx,sy,16,16);
   cx.fillStyle="#ffffff16";cx.fillRect(sx+2,sy+2,12,2);return
  }
- if(t==="rock"){
+ if(t==="charged"){
+ cx.fillStyle="#626f70";cx.fillRect(sx,sy,16,16);
+ cx.fillStyle="#e9d674";cx.fillRect(sx+2,sy+((seed%3)+3),7,2);
+ cx.fillRect(sx+8,sy+7,3,2);cx.fillRect(sx+7,sy+9,7,2);return;
+}
+if(t==="wetland"){
+ cx.fillStyle="#4eaaa5";cx.fillRect(sx,sy,16,16);
+ cx.fillStyle="#c0e7c3";cx.fillRect(sx+2,sy+5,10,2);cx.fillRect(sx+6,sy+12,7,1);
+ cx.fillStyle="#467c64";cx.fillRect(sx+seed%7,sy+2,2,4);return;
+}
+if(t==="snow"){
+ cx.fillStyle="#d3e7ef";cx.fillRect(sx,sy,16,16);
+ cx.fillStyle="#ffffff";cx.fillRect(sx+seed%11,sy+3,4,2);
+ cx.fillRect(sx+((seed+6)%10),sy+11,5,2);return;
+}
+if(t==="water"){
+ cx.fillStyle="#438cae";cx.fillRect(sx,sy,16,16);
+ cx.fillStyle="#9cd6e3";cx.fillRect(sx+3,sy+4,8,2);cx.fillRect(sx+6,sy+11,7,2);return;
+}
+if(t==="tower"||t==="conductor"){
+ cx.fillStyle="#5a7779";cx.fillRect(sx,sy,16,16);
+ cx.fillStyle="#46505c";cx.fillRect(sx+5,sy+2,6,14);cx.fillRect(sx+1,sy+6,14,3);
+ cx.fillStyle="#e8d47a";cx.fillRect(sx+7,sy+1,2,3);return;
+}
+if(t==="iceberg"){
+ cx.fillStyle="#aacdda";cx.fillRect(sx,sy,16,16);cx.fillStyle="#eefcff";
+ cx.beginPath();cx.moveTo(sx+2,sy+14);cx.lineTo(sx+8,sy+1);cx.lineTo(sx+14,sy+14);cx.fill();return;
+}
+if(t==="rock"){
   cx.fillStyle="#7b8188";cx.fillRect(sx,sy,16,16);
   cx.fillStyle="#535d67";cx.fillRect(sx+2,sy+5,12,9);
   cx.fillStyle="#a7aab0";cx.fillRect(sx+4,sy+3,7,5);return
@@ -783,6 +815,12 @@ function drawLandmarks(camX,camY){
  sign(16,10,"→ 첫 만남");
  sign(39,9,"→ 가지숲");
  sign(61,9,"→ 동굴");
+sign(81,9,"→ 수정마을");
+sign(101,9,"→ 발전소");
+sign(127,9,"→ 해류항");
+sign(146,9,"→ 갯벌");
+sign(172,9,"→ 설빛");
+sign(193,9,"→ 서리고원");
  flowerbed(3,17);flowerbed(4,17);flowerbed(5,17);
 }
 function drawBuilding(camX,camY){
