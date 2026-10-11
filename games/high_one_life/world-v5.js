@@ -162,7 +162,7 @@
   const w=ensure(life),effects=event.change||{},arc=life.arc;
   const change={};
   for(const [k,v] of Object.entries(effects)){
-   if(k==='money')life.money.netWorth=clamp(life.money.netWorth+amount(life,v),-2e7,2e7);
+   if(k==='money' && !['stocks-growth','stocks-loss','crypto-boom','crypto-crash'].includes(event.id))life.money.netWorth=clamp(life.money.netWorth+amount(life,v),-2e7,2e7);
    else if(k==='tag'){if(!arc.tags.includes(v))arc.tags.push(v);}
    else if(['health','knowledge','happiness','bonds'].includes(k))change[k]=v;
    else if(typeof arc[k]==='number')arc[k]=clamp(arc[k]+v,-8,30);
@@ -220,12 +220,18 @@
   let needle=r(life,age,321)*total,selected=items[items.length-1];
   for(const e of items){needle-=e.weight;if(needle<=0){selected=e;break;}}
   apply(life,selected);
+  // A very rare non-graphic fatal outcome exists only inside a fictional future
+  // conflict that already arose during this particular life, never from birth.
+  if(selected.id==='russia-drone-loss' && w.fictionalCrisis && r(life,age,777)<.045){
+    life.alive=false;life.deathReason='가상의 분쟁에서 발생한 무인기 공격으로 생을 마쳤다.';
+    life.logEvent('분쟁 지역에서 목숨을 잃었다. 남겨진 사람들은 평화를 바랐다.','death');
+  }
  }
  function specialGate(life){
   if(life.pending!==29)return null;
   ensure(life);
   // Voluntary spirituality route. Sikh identity is not assigned by birth.
-  if(life.country[0]==='인도' && life.arc.path==='community'){
+  if(life.country[0]==='인도' && life.arc.community>=3){
     return {age:29,title:'수행과 봉사, 직업 중에서',description:'인도에는 다양한 종교와 비종교적 삶이 함께 있습니다. 어느 길도 태어날 때 정해지지 않았습니다.',options:[
       {label:'불교 수행 공동체에서 생활한다',note:'수행과 공부·지역봉사, 개인소득 감소'},
       {label:'시크교 공동체의 봉사에 참여한다',note:'랑가르와 세바 활동, 사람들과 협력'},
