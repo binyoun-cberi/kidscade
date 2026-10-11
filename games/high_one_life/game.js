@@ -299,46 +299,122 @@
     });
     $('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
   }
-  function paintPeers() {
-    const board=$('peers');
-    if(!life || !board)return;
-    if(life.age===lastPeerRenderedAge || (life.age%4!==0 && life.age!==0 && !life.pending))return;
+  function peerView(peer){
+    return {age:peer.age,alive:peer.alive,name:peer.profile?.name||'이름 없는 이웃',
+      country:peer.country[0],flag:peer.country[1],career:peer.world6?.profession||peer.career,
+      school:peer.world?.educationLevel||'배움을 시작하는 중',
+      history:peer.log?.filter(e=>['decision','world','profession','family'].includes(e.kind)).slice(-1)[0]?.text||'자신만의 하루를 살아가는 중'};
+  }
+  function paintPeers(force=false) {
+    if(!life)return;
+    if(!force && life.age===lastPeerRenderedAge)return;
     lastPeerRenderedAge=life.age;
-    if(!peerCache || peerCache.seed!==life.seed){
-      peerCache={seed:life.seed,people:Array.from({length:4},(_,i)=>new Sim.Life((life.seed+Math.imul(i+1,2654435761))>>>0))};
+    if(!peerCache||peerCache.seed!==life.seed){
+      peerCache={seed:life.seed,people:Array.from({length:4},(_,i)=>{
+        const peer=new Sim.Life((life.seed+Math.imul(i+1,2654435761))>>>0);
+        World8.ensure(peer);World8.moment(peer);
+        return {life:peer,samples:[peerView(peer)]};
+      })};
     }
-    board.replaceChildren();
-    for(const peer of peerCache.people){
-      let guard=0;
-      while(peer.alive && peer.age<life.age && guard++<140){
+    const board=$('peers');board.replaceChildren();
+    for(const record of peerCache.people){
+      const peer=record.life;let guard=0;
+      while(peer.alive && peer.age<life.age && guard++<150){
         if(peer.pending){
           const decision=peer.getChoice();
           if(decision)peer.choose(Math.floor(peer.rand()*decision.options.length));
           else if(peer.getReflection())peer.reflect();
           else break;
-        } else peer.tick();
+        }else{
+          peer.tick();
+          if(peer.age===10||peer.age===20||peer.age===40||peer.age===60||!peer.alive)record.samples.push(peerView(peer));
+        }
       }
+      const target=peerAgeChoice?Math.min(peerAgeChoice,life.age):life.age;
+      const sample=peerAgeChoice
+        ? (record.samples.filter(x=>x.age<=target).at(-1)||record.samples[0])
+        :peerView(peer);
       const card=document.createElement('div');card.className='peer';
-      const flag=document.createElement('span');flag.className='peer-flag';flag.textContent=peer.country[1];
-      const label=document.createElement('b');label.textContent=peer.country[0];
-      const age=document.createElement('small');
-      age.textContent=peer.alive?peer.age+'세 · 살아가는 중':peer.age+'세 · 삶을 마침';
-      card.append(flag,label,age);board.append(card);
+      const flag=document.createElement('span');flag.className='peer-flag';flag.textContent=sample.flag;
+      const name=document.createElement('b');name.textContent=sample.name;
+      const label=document.createElement('small');label.textContent=sample.country+' · '+sample.age+'세 · '+
+        (sample.alive?sample.career||'성장 중':'삶을 마침');
+      const detail=document.createElement('small');detail.textContent=sample.history;
+      card.append(flag,name,label,detail);board.append(card);
     }
+    document.querySelectorAll('[data-peer-age]').forEach(button=>{
+      const age=Number(button.dataset.peerAge);
+      button.disabled=age>life.age;
+      button.setAttribute('aria-pressed',String(age===peerAgeChoice));
+    });
   }
-  function paintAgeMap() {
-    const board=$('ageMap');if(!board||!life || (life.age===lastMapRenderedAge) || (life.age%4!==0 && !life.pending))return;
+  function paintAgeMap(force=false) {
+    const board=$('ageMap');
+    if(!board||!life || (!force && life.age===lastMapRenderedAge))return;
     lastMapRenderedAge=life.age;
     board.replaceChildren();
-    for(let year=0;year<108;year++) {
-      const box=document.createElement('span');box.className='age-cell';
-      if(year<=life.age) box.classList.add(year<7?'child':year<19?'teen':year<35?'young':year<65?'adult':'elder');
-      if(year===life.age) box.classList.add('now');
-      const entry=life.log.find(e=>e.age===year&&(e.kind==='decision'||e.kind==='reflection'));
-      if(entry)box.classList.add('landmark');
-      box.title=year+'세'+(entry?(' · '+entry.text):'');
-      board.append(box);
+    const notable=['decision','reflection','family','profession','world','safety','death'];
+    const entries=new Map();
+    for(const entry of life.log){
+      if(!notable.includes(entry.kind))continue;
+      const old=entries.get(entry.age);
+      if(!old||['decision','death'].includes(entry.kind))entries.set(entry.age,entry);
     }
+    for(let year=0;year<108;year++){
+      const cell=document.createElement('button');cell.type='button';cell.className='age-cell';
+      if(year<=life.age)cell.classList.add(year<7?'child':year<19?'teen':year<35?'young':year<65?'adult':'elder');
+      if(year===life.age)cell.classList.add('now');
+      const entry=entries.get(year);
+      if(entry)cell.classList.add(['decision','reflection'].includes(entry.kind)?'landmark':'important');
+      cell.title=year+'세'+(entry?' · '+entry.text:'');
+      cell.setAttribute('aria-label',cell.title);
+      cell.addEventListener('click',()=>{
+        $('yearDetail').textContent=year+'세 · '+(entry?.text||'특별한 기록이 없는 해. 평범한 하루들도 이 인생을 이루었어요.');
+      });
+      board.append(cell);
+    }
+  }
+  function paintSurvival() {
+    if(!life)return;
+    const world=['게임 세계 기준','',0,.55,.69];
+    const point=(country,gender,a)=>{
+      const x=38+3.1*a,y=12+131*(1-World8.survival(country,gender,a));
+      return [x.toFixed(1),y.toFixed(1)];
+    };
+    const draw=(country,gender)=>Array.from({length:51},(_,i)=>{
+      const p=point(country,gender,i*2);
+      return (i?'L':'M')+p.join(' ');
+    }).join(' ');
+    $('survivalActual').setAttribute('d',draw(life.country,life.gender));
+    $('survivalOther').setAttribute('d',draw(world,'남자'));
+    const m=point(life.country,life.gender,Math.min(life.age,100));
+    $('survivalDot').setAttribute('cx',m[0]);$('survivalDot').setAttribute('cy',m[1]);
+    const mod=World8.mortality(life.country,life.gender);
+    $('survivalSummary').textContent=life.country[0]+' · '+life.gender+
+      ' · 출생부터 5세까지 생존 '+Math.round(World8.survival(life.country,life.gender,5)*1000)/10+
+      '%(게임 모형), '+life.age+'세 기준 '+Math.round(World8.survival(life.country,life.gender,life.age)*1000)/10+
+      '%(동일 가상 집단). 개인의 실제 생존 확률이 아니에요.';
+    $('v8CountryStats').textContent='모델 기대수명 참고치 '+mod.baseline.toFixed(1)+
+      '세 · 학교 접근성 '+Math.round(life.world.schoolChance*100)+
+      '%(게임 가정) · 가족 생활: '+World8.ensure(life).housing+
+      ' · 실제 국가통계가 아닌 근사·가상값.';
+  }
+  function renderStoryPanel(){
+    const active=!!storyTab;
+    $('storyTools').classList.toggle('hidden',!active);
+    document.querySelectorAll('[data-story-tab]').forEach(button=>
+      button.setAttribute('aria-pressed',String(button.dataset.storyTab===storyTab)));
+    for(const [name,id] of [['birth','storyBirth'],['years','storyYears'],['stats','storyStats'],['peers','storyPeers']])
+      $(id).classList.toggle('hidden',name!==storyTab);
+    if(!life||!active)return;
+    if(storyTab==='birth'){
+      $('storyBirthText').textContent=World8.synopsis(life)+'. '+World8.ensure(life).familyNote+'.';
+      $('storyBirthNote').textContent=World8.ensure(life).climate+' · '+
+        World8.ensure(life).accent+' · 부모 직업·집·이름은 교육용 가상 설정.';
+    }
+    if(storyTab==='stats')paintSurvival();
+    if(storyTab==='years')paintAgeMap();
+    if(storyTab==='peers')paintPeers();
   }
   function render() {
     if (!life) return;
@@ -362,7 +438,8 @@
     paintTimeline();
     paintStats();
     paintPeers();
-    paintAgeMap();
+    if(storyTab==='years')paintAgeMap();
+    if(storyTab==='stats')paintSurvival();
     document.querySelectorAll('[data-focus]').forEach(btn=>btn.setAttribute('aria-pressed',String(btn.dataset.focus===life.focus)));
     showDecision();
     updatePause();
@@ -372,7 +449,7 @@
     if(!fromSave) safeRemove(SAVE_KEY);
     paused=false; elapsed=0; lastTick=performance.now();
     show('play');
-    render();
+    render();renderStoryPanel();
     sdk?.start?.({mode:'one-life',country:life.country[0]});
     save();
   }
@@ -480,6 +557,15 @@
     life=restored;World8.ensure(life);replayBasis=safeGet(SAVE_KEY)?.replayBasis||null;completed=false;peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;startLife(true);
   });
   $('pauseBtn').addEventListener('click',togglePause);
+  document.querySelectorAll('[data-story-tab]').forEach(button=>button.addEventListener('click',()=>{
+    storyTab=storyTab===button.dataset.storyTab?'':button.dataset.storyTab;
+    lastMapRenderedAge=-1;lastPeerRenderedAge=-1;renderStoryPanel();
+  }));
+  document.querySelectorAll('[data-peer-age]').forEach(button=>button.addEventListener('click',()=>{
+    const age=Number(button.dataset.peerAge);
+    if(!life||age>life.age)return;
+    peerAgeChoice=age;lastPeerRenderedAge=-1;paintPeers(true);
+  }));
   document.querySelectorAll('[data-focus]').forEach(button=>button.addEventListener('click',()=>{
     if(stage!=='play'||!life?.setFocus(button.dataset.focus))return;
     save();render();
