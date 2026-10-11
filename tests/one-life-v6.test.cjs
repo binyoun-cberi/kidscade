@@ -36,7 +36,7 @@ test('career catalogue offers 84 professions in twelve areas and 32 image scenes
  assert.equal(Careers.scenes.length,32);
  assert.equal(new Set(Careers.scenes).size,32);
  assert.equal(Events.events.length,170);
- assert.equal(W4.EVENTS.length+W5.templates.length+Events.events.length,309);
+ assert.equal(W4.EVENTS.length+W5.templates.length+Events.events.length,314);
  const html=fs.readFileSync(path.join(dir,'index.html'),'utf8');
  for(const file of ['careers-v6.js','events-v6.js','world-v6.js','scenes-v6.js','world-v6.css'])
   assert.ok(html.includes(file),file);
