@@ -6,7 +6,7 @@ const $=id=>document.getElementById(id);
 const C=$("worldCanvas"),cx=C.getContext("2d",{alpha:false});
 cx.imageSmoothingEnabled=false;
 const SAVE_KEY="kidscade.openmon.expedition.save.v1";
-let save=null,battle=null,lastDraw=0,lastMove=0,held=null,moveTimer=0,soundOn=true,audio=null;
+let save=null,battle=null,lastDraw=0,lastMove=0,held=null,moveTimer=0,soundOn=true,audio=null,trainerSelection=null;
 let latestToast="풀숲이나 동굴의 거친 땅으로 이동하면 키즈몬을 만날 수 있어요.";
 let toastTimer=null;
 const imgs={};
@@ -245,13 +245,38 @@ function openTrainers(){
    '<small>필요 야생 승리 '+t.requiredWins+'회 · 도전 성공 '+record+'회</small></div>'+
    '<button type="button" data-trainer="'+t.id+'" '+(can?'':'disabled')+'>'+(can?'대결 시작':!ready?'3마리 필요':'잠김')+'</button></div>';
  }).join("");
- openGeneric("연구원 3대3 배틀",'<p>HP가 남은 파티의 앞쪽 세 마리만 참가해. 싸우기·교체·회복약을 사용할 수 있고, 키즈볼과 도망은 사용할 수 없어.</p>'+
+ openGeneric("연구원 3대3 배틀",'<p>연구원을 선택한 다음, 파티에서 원하는 세 마리를 골라 출전해. 싸우기·교체·회복약을 사용할 수 있고 키즈볼과 도망은 사용할 수 없어.</p>'+
   '<p>준비한 키즈몬 '+slots.length+'/3 · 상대 연구원은 불리한 상성이 되면 키즈몬을 교체할 수 있어.</p>'+
   '<div class="shop-list">'+cards+'</div><p>승리하면 세 마리가 함께 경험치를 얻고 첫 클리어 보너스를 받아.</p>');
 }
-function enterTrainer(id){
+function openTrainerSelection(id){
+ if(!save||battle||!T.available(save,id))return;
+ trainerSelection={id,slots:T.eligibleSlots(save)};
+ renderTrainerSelection();
+}
+function renderTrainerSelection(){
+ if(!save||!trainerSelection)return;
+ const config=T.TRAINERS.find(x=>x.id===trainerSelection.id);
+ if(!config)return;
+ const chosen=trainerSelection.slots;
+ const cards=save.party.map((p,i)=>{
+  const selected=chosen.includes(i);
+  return '<div class="shop-item">'+miniArt(p.id)+'<div><strong>'+esc(species(p.id).name)+
+   ' · Lv.'+p.level+'</strong><small>'+esc(DB.types[species(p.id).type].name)+' 속성 · HP '+hpText(p)+'</small></div>'+
+   '<button type="button" data-trainer-slot="'+i+'" aria-pressed="'+selected+'" '+
+    (p.hp<=0?'disabled':'')+'>'+(selected?'✓ 출전':'선택')+'</button></div>';
+ }).join("");
+ openGeneric(config.name+" · 출전 팀 선발",
+  '<p>총 3마리를 선택해. 유리한 속성의 키즈몬을 섞으면 더 쉽게 싸울 수 있어.</p>'+
+  '<p><strong>선발 '+chosen.length+'/3</strong> · 상대: '+config.species.map(id=>esc(species(id).name)).join(' · ')+'</p>'+
+  '<div class="shop-list">'+cards+'</div>'+
+  '<div class="action-row"><button class="act primary" type="button" data-trainer-start="'+config.id+'" '+
+   (T.validateSelection(save,chosen)?'':'disabled')+'>이 팀으로 도전!</button>'+
+  '<button class="act" type="button" data-hud-action="trainers">연구원 다시 선택</button></div>');
+}
+function enterTrainer(id,selectedSlots=null){
  if(!save||battle)return false;
- const trainer=T.makeTrainer(save,id,Math.random);
+ const trainer=T.makeTrainer(save,id,Math.random,selectedSlots);
  if(!trainer){setToast("세 마리의 건강한 키즈몬과 도전 조건을 확인해 줘.");return false}
  if(!trainer.playerSlots.includes(save.active))save.active=trainer.playerSlots[0];
  for(const p of trainer.party)B.normalize(p);
@@ -263,6 +288,7 @@ function enterTrainer(id){
  $("battleOverlay").classList.remove("hidden");
  $("battleActionPanel").classList.remove("hidden");
  $("battleAfter").classList.add("hidden");
+ trainerSelection=null;
  closeGeneric();renderBattle();persist();return true;
 }
 function openBox(){
@@ -827,7 +853,19 @@ function attach(){
    openParty();return;
   }
   b=e.target.closest("button[data-trainer]");
-  if(b){enterTrainer(b.dataset.trainer);return}
+  if(b){openTrainerSelection(b.dataset.trainer);return}
+  b=e.target.closest("button[data-trainer-slot]");
+  if(b&&trainerSelection){
+   const index=Number(b.dataset.trainerSlot),selected=trainerSelection.slots;
+   if(selected.includes(index))trainerSelection.slots=selected.filter(i=>i!==index);
+   else if(save.party[index]?.hp>0&&selected.length<3)trainerSelection.slots=[...selected,index];
+   else setToast("세 명이 모두 정해졌어. 다른 친구를 고르려면 먼저 한 명을 해제해.");
+   renderTrainerSelection();return;
+  }
+  b=e.target.closest("button[data-trainer-start]");
+  if(b&&trainerSelection&&T.validateSelection(save,trainerSelection.slots)){
+   enterTrainer(b.dataset.trainerStart,trainerSelection.slots);return;
+  }
   b=e.target.closest("button[data-buy]");if(b){buy(b.dataset.buy);return}
   b=e.target.closest("button[data-swap]");if(b){const choice=Number(b.dataset.swap);closeGeneric();resolveBattleTurn({type:"switch",index:choice});return}
   b=e.target.closest("button[data-dex-tab]");
