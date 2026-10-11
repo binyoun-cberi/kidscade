@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#09151b">
+<title>단 하나의 인생 | KIDSCADE</title>
+<link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="mark"><span class="mark-icon" aria-hidden="true">◌</span><div><b>단 하나의 인생</b><small>ONE LIFE · KIDSCADE</small></div></div>
+    <div class="top-right"><span class="edition">인생 체험 시뮬레이션</span><button id="rulesBtn" type="button" class="text-button">게임 방법 ?</button></div>
+  </header>
+
+  <main>
+    <section id="intro" class="intro section">
+      <div class="hero-art" aria-hidden="true"><span class="orbit orbit-a"></span><span class="orbit orbit-b"></span><span class="globe">◉</span></div>
+      <div class="intro-copy">
+        <p class="eyebrow">ONE PERSON · ONE STORY</p>
+        <h1>80억 개의 삶,<br><em>단 하나의 인생.</em></h1>
+        <p class="lead">어느 나라, 어떤 집에서 태어날지는 고를 수 없습니다.<br>하지만 당신의 삶에는 당신만의 선택이 있습니다.</p>
+        <button id="drawBtn" class="primary" type="button">이번 생은 어디에서 시작될까? <span aria-hidden="true">↗</span></button>
+        <button id="resumeBtn" class="secondary hidden" type="button">이어서 살아가기</button>
+        <p class="footnote">자동으로 시간이 흐르고, 중요한 순간에만 선택합니다. 한 번의 인생은 약 1~3분.</p>
+      </div>
+      <div class="intro-foot"><span>01 / RANDOM BIRTH</span><span>02 / LIFE IN MOTION</span><span>03 / YOUR STORY</span></div>
+    </section>
+
+    <section id="birth" class="section birth hidden" aria-label="출생 추첨">
+      <p class="eyebrow">BIRTH LOTTERY</p>
+      <p class="birth-heading">당신은 어디에서 태어날까요?</p>
+      <div class="ticket">
+        <div class="ticket-top"><span>ONE LIFE / 0001</span><span>출생 기록</span></div>
+        <div class="ticket-body">
+          <div id="birthFlag" class="birth-flag" aria-hidden="true">🌐</div>
+          <div id="birthCountry" class="birth-country" aria-live="polite">추첨 중…</div>
+          <p id="birthDetail" class="birth-detail">한 사람의 삶이 정해지고 있습니다.</p>
+        </div>
+        <div class="ticket-bottom">탄생은 우연입니다. 살아가는 이야기는 지금부터 시작됩니다.</div>
+      </div>
+      <button id="lifeStartBtn" class="primary hidden" type="button">이 인생 살아보기 <span aria-hidden="true">→</span></button>
+      <p class="footnote">국가 추첨은 세계 인구 규모를 참고한 게임용 모형이며 실제 출생 확률이 아닙니다.</p>
+    </section>
+
+    <section id="play" class="section play hidden">
+      <div class="playing-top">
+        <div class="place"><span id="placeFlag" class="place-flag" aria-hidden="true">🌐</span><div><span class="eyebrow">당신의 이야기</span><strong id="placeName">출생 국가</strong></div></div>
+        <div class="time"><span id="currentYear">2026년</span><strong><span id="currentAge">0</span><small>세</small></strong></div>
+      </div>
+      <div class="play-layout">
+        <article class="chronicle">
+          <div class="chapter-line"><span id="lifeStage" class="chapter">유년기</span><span id="playStatus">인생이 흘러가는 중</span></div>
+          <div class="progress" aria-label="인생 시간의 흐름"><div id="lifeProgress"></div></div>
+          <div class="story-head"><div class="small-index">THE STORY OF YOU</div><h2 id="storyTitle">지금 이 순간의 삶</h2><p id="storyCaption">해가 바뀌고 새로운 일이 일어납니다.</p></div>
+          <ol id="timeline" class="timeline" aria-label="인생 연대기"></ol>
+          <div id="decision" class="decision hidden" aria-live="polite">
+            <span class="eyebrow decision-tag">중요한 선택</span><h3 id="choiceTitle">당신의 선택은?</h3>
+            <p id="choiceText"></p><div id="choiceOptions" class="choice-options"></div>
+            <p class="choice-note">정답은 없습니다. 다른 선택은 다른 이야기를 만듭니다.</p>
+          </div>
+          <div id="waiting" class="waiting"><span class="pulse" aria-hidden="true"></span><span>시간이 흐르며 새로운 이야기가 펼쳐지고 있습니다.</span></div>
+        </article>
+        <aside class="info">
+          <div class="info-heading"><span>인생의 한 장면</span><span id="chapterNumber">01</span></div>
+          <dl class="traits">
+            <div><dt>태어난 곳</dt><dd id="traitCountry">—</dd></div>
+            <div><dt>가정환경</dt><dd id="traitFamily">—</dd></div>
+            <div><dt>삶의 방향</dt><dd id="traitCareer">—</dd></div>
+          </dl>
+          <div class="stat-title">지금의 나 <span>0 ~ 100</span></div>
+          <div id="statList" class="stats" aria-label="인생 상태 지표"></div>
+          <div class="controls">
+            <div class="controls-label"><b>시간의 속도</b><span id="speedText">2배속</span></div>
+            <div class="speed-group" role="group" aria-label="시간 속도">
+              <button data-speed="1" type="button">1×</button><button data-speed="2" type="button" aria-pressed="true">2×</button>
+              <button data-speed="4" type="button">4×</button><button data-speed="8" type="button">8×</button><button data-speed="16" type="button">16×</button>
+            </div>
+            <button id="pauseBtn" class="pause" type="button">Ⅱ 일시정지</button>
+            <p class="hint">선택지가 나타나면 시간이 자동으로 멈춥니다. 화면을 닫거나 다른 앱으로 이동하면 일시정지됩니다.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="end" class="section end hidden">
+      <div class="end-header"><span class="eyebrow">A LIFE COMPLETED</span><span class="end-icon" aria-hidden="true">✳</span></div>
+      <h2>당신의 <em>단 하나의 인생.</em></h2>
+      <p class="end-years" id="endYears">2026 — 2096</p>
+      <div class="end-summary"><div><span>태어난 곳</span><b id="endCountry">—</b></div><div><span>살아온 시간</span><b id="endAge">—</b></div><div><span>삶의 방향</span><b id="endCareer">—</b></div></div>
+      <p id="endStory" class="end-story"></p>
+      <div class="end-divider"><span>삶에 남은 장면들</span></div>
+      <ol id="endHighlights" class="end-highlights"></ol>
+      <div class="end-actions"><button id="againBtn" class="primary" type="button">다른 인생으로 태어나기 <span aria-hidden="true">↗</span></button><span id="livesCount" class="footnote"></span></div>
+      <p class="footnote">이야기와 확률은 교육용 가상 시뮬레이션입니다. 출생 국가, 경제적 형편, 선택만으로 실제 삶의 가치가 결정되지는 않습니다.</p>
+    </section>
+  </main>
+  <div id="rules" class="rules hidden" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
+    <div class="rules-backdrop" data-close="rules"></div>
+    <div class="rules-content"><button id="rulesClose" class="rule-close" type="button" aria-label="닫기">×</button>
+      <p class="eyebrow">HOW TO PLAY</p><h2 id="rulesTitle">게임 방법</h2>
+      <p>태어날 나라는 무작위로 정해집니다. 인생은 자동으로 흐르고, 중요한 갈림길에 서면 잠시 멈춥니다. 선택을 누르면 다시 시간이 흐릅니다.</p>
+      <p>건강·행복·배움·인연·경제 지표가 변하지만 하나의 정답이나 승리 조건은 없습니다. 삶이 끝난 뒤에는 지나온 선택들을 되돌아볼 수 있습니다.</p>
+      <p class="rules-small">자신의 인생을 체험하는 게임이 아니라 다양한 조건에서 살아가는 가상의 사람을 이해하는 이야기입니다. 통계나 미래 예측의 근거로 사용하지 마세요.</p>
+      <button type="button" id="rulesOkay" class="primary">알겠어요</button>
+    </div>
+  </div>
+</div>
+<script src="../../kidscade-storage.js"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="high_one_life" data-title="단 하나의 인생" data-shell="false" data-pauseable="true" data-orientation="any"></script>
+<script src="./engine.js?v=1"></script>
+<script src="./game.js?v=1"></script>
+</body>
+</html>

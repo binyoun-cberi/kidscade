@@ -3834,6 +3834,29 @@
       ],
       "qualityStatus": "standard",
       "classroom": false
+    },
+    {
+      "id": "high_one_life",
+      "addedAt": "2026-10-11T12:00:00+09:00",
+      "title": "단 하나의 인생",
+      "href": "games/high_one_life/index.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "🌍",
+      "description": "80억 개의 삶 중 하나로 태어나세요. 출생 국가와 가정환경은 무작위! 인생은 자동으로 흘러가고 중요한 순간에만 선택합니다. 건강·행복·배움·인연·경제가 변하는 인생의 갈림길을 거쳐 마지막에는 나만의 생애 기록이 남아요. 실제 출생 통계가 아닌 교육용 가상 시뮬레이션입니다.",
+      "subject": "social",
+      "genre": "simulation",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
     }
   ],
   "taxonomy": {
