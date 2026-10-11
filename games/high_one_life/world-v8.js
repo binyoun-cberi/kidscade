@@ -61,12 +61,15 @@ function moment(life){
 function mortality(country,gender,birthYear=2026){
  const observedLife=measured(country,'lifeExpectancy',birthYear);
  const observedUnder5=measured(country,'under5Mortality',birthYear);
- const baseline=Number.isFinite(observedLife)?observedLife:W3.baseline(country);
+ const baseline=birthYear!==2026
+   ?clamp(58+(birthYear-1900)*.14,56,76)
+   :Number.isFinite(observedLife)?observedLife:W3.baseline(country);
  const ref=clamp(baseline+(gender==='여자'?1.7:-1.7),48,93);
  // This one number is a published under-five estimate; the detailed ages
  // and the entire adult survival curve remain illustrative until sex/age life tables arrive.
  const under5=Number.isFinite(observedUnder5)
    ?clamp(observedUnder5/1000,0,.9)
+   :birthYear!==2026?clamp(.09-(birthYear-1900)*.00065,.015,.09)
    :clamp(.003+(.95-(country[4]||.6))*.053,.003,.062);
  const scale=clamp((ref-4.6)/(.906*(1-under5)),48,110);
  return {baseline,reference:ref,under5,scale,shape:3.8,
