@@ -118,7 +118,7 @@ async function browserRun(){
    await sleep(100);
    assert.equal(errors.length,errorStart,size.name+' browser errors: '+errors.slice(errorStart).join('; '));
    stats.push({device:size.name,...snapshot,exceptions:errors.slice(errorStart)});
-   if(process.env.KIDSCADE_VERSUS_CAPTURE==='1'&&size.name==='아이폰 가로'){
+   if(size.name==='아이폰 가로'){
       const shot=await send('Page.captureScreenshot',{format:'jpeg',quality:38,captureBeyondViewport:false});
       console.log('KIDSCADE_VERSUS_CAPTURE_START'+shot.data+'KIDSCADE_VERSUS_CAPTURE_END');
    }
