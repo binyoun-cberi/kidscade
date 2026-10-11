@@ -57,6 +57,19 @@ async function move(code,ms,withShift=false) {
   if(withShift)await key('ShiftLeft',false);
 }
 async function interact(){await key('KeyE',true);await sleep(65);await key('KeyE',false);}
+async function solveCore(uid){
+  const snapshot=await snap();
+  const item=snapshot.literacy.items.find(i=>i.uid===uid);
+  assert.ok(item,'Core record exists: '+uid);
+  const bank=await evalPage('window.OtaLiteracy.BANK['+item.bankIndex+']');
+  await interact();
+  assert.equal(await evalPage("document.getElementById('correctionPanel').classList.contains('closed')"),false,
+    'Error panel opens from the actual world word: '+uid);
+  const ok=await evalPage("(()=>{const b=[...document.querySelectorAll('#correctionChoices button')].find(x=>x.dataset.answer==="+JSON.stringify(bank.correct)+");if(!b)return false;b.click();return true})()");
+  assert.equal(ok,true,'Correct spelling option available for '+uid);
+  assert.equal(await evalPage("document.getElementById('correctionPanel').classList.contains('closed')"),true);
+  assert.equal((await snap()).literacy.coreDone,snapshot.literacy.coreDone+1,'Core spelling repaired: '+uid);
+}
 async function ensureStage(stage,context){
   const got=await snap();
   assert.equal(got.stage,stage,context+': '+JSON.stringify(got));
@@ -203,6 +216,12 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await ensureStage('explore','enter new multi-room records chapter');
   assert.equal(await evalPage("!!sessionStorage.getItem('kidscade-ota-v3-checkpoint')"),true);
   await screenshot('12-hub.png','desktop');
+  await moveUntil('z',-40.8,'explore',9);
+  await solveCore('core-0');
+  await moveUntil('z',-41.5,'explore',8);
+  await moveUntil('x',-6.9,'explore',14);
+  await solveCore('core-1');
+  await screenshot('12b-literacy-core.png','desktop');
 
   // Investigate the office first. Both rooms are real walkable spaces.
   await moveUntil('z',-47.8,'explore',18);
@@ -217,6 +236,10 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await interact();
   assert.equal((await snap()).chapter3.records.office,true,'first record collected');
   await screenshot('14-office-record.png','desktop');
+  await moveUntil('z',-48.4,'explore',10);
+  await moveUntil('x',-8.8,'explore',12);
+  await moveUntil('z',-51.2,'explore',9);
+  await solveCore('core-2');
 
   await moveUntil('z',-47.8,'explore',11);
   await moveUntil('x',12.8,'explore',32);
@@ -249,8 +272,16 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await interact();
   assert.equal((await snap()).chapter3.records.archive,true,'second record only after three glimpses');
   await screenshot('16-archive-record.png','desktop');
+  await moveUntil('x',9.2,'explore',11);
+  await moveUntil('z',-53.1,'explore',11);
+  await solveCore('core-3');
   await moveUntil('z',-47.8,'explore',11);
-  await moveUntil('x',0,'explore',18);
+  await moveUntil('x',1.7,'explore',18);
+  await moveUntil('z',-54.1,'explore',13);
+  await solveCore('core-4');
+  assert.equal((await snap()).literacy.coreDone,5,'all five reviewed spellings are required');
+  await screenshot('16b-all-core-corrected.png','desktop');
+  await moveUntil('x',0,'explore',9);
   await moveUntil('z',-57.2,'explore',18);
   const finalBlock=await evalPage('window.OtaChapter3.canMove({stage:"explore"},0,-58.65)');
   assert.equal(finalBlock,false,'unrepaired record room remains solid');
