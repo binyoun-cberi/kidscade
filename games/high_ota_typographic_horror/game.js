@@ -214,7 +214,7 @@ function updateWordArchitecture(time,threat){
       mesh.visible=false;continue;
     }
     const fade=S.visibility(spec,player);
-    const focalDistance=focus?Math.hypot(spec.x-focus.x,spec.z-focus.z):Infinity;
+    const focalDistance=focus?S.nearestDistance(spec,focus):Infinity;
     const focusFactor=focus&&focalDistance<5.5?.40:1;
     const strength=spec.kind==='door'?.36:spec.kind==='wall'?.32:
       spec.kind==='ceiling'?.23:.17;
