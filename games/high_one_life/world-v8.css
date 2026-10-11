@@ -63,3 +63,6 @@
 .chronicle>.focus-block .focus-grid button{min-height:44px;font-size:12px}
 .chronicle>.focus-block .focus-hint{margin:8px 0 0}
 @media(max-width:350px){.chronicle>.focus-block .focus-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* The official-data card wraps sourced years and preserves readability on phones. */
+.official-stats-source{display:block;margin-top:8px;padding:10px;border-radius:7px;background:#e8f3ef;color:#315d55;line-height:1.8;overflow-wrap:anywhere}
+.country-context a{color:#176b65;text-decoration:underline}
