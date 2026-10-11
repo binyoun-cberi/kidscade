@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#081a20">
 <title>꼴뚜기 게임: 서바이벌 | KIDSCADE</title>
-<link rel="stylesheet" href="./style.css?v=1">
+<link rel="stylesheet" href="./style.css?v=3">
 </head>
 <body>
 <div class="shell" id="shell">
@@ -30,9 +30,16 @@
     <section class="scene lobby" id="lobby">
       <div class="stage-light a"></div><div class="stage-light b"></div>
       <div class="lobby-content">
+       <div class="hero-panel">
         <p class="kicker"><span class="live-dot"></span> KIDSCADE SURVIVAL · SEASON 01</p>
         <h1>꼴뚜기 게임<span>서바이벌</span></h1>
-        <p class="description">여섯 개의 미니게임, 단 한 번의 도전.<br>모든 관문을 통과해야 최종 생존!</p>
+        <div class="hero-crest" aria-hidden="true"><span>◯</span><span>△</span><span>□</span><i>01—06</i></div>
+        <p class="description">6개의 관문 · 1번의 기회.<br>모든 게임을 살아남아 마지막 문을 여세요.</p>
+        <div class="hero-stats" aria-label="대회 규칙"><span>6 ROUNDS</span><span>ONE LIFE</span><span>ALL CLEAR</span></div>
+        <button type="button" id="startButton" class="primary">대회 입장하기 <span aria-hidden="true">↗</span></button>
+        <p class="fine-print">단 한 번이라도 실패하면 첫 관문부터 다시 시작합니다.</p>
+       </div>
+       <div class="route-panel"><div class="route-top"><span>THE SIX GATES</span><strong>오늘의 경기 순서</strong></div>
         <div class="game-cards">
           <article class="game-card"><div class="card-icon dalgona"><img src="../../assets/game/2d/platformer-art/base/items/coin-gold.png" alt=""></div><div><small>ROUND 01</small><strong>달고나 게임</strong><span>선을 따라 정확한 속도로</span></div><span class="card-check" aria-hidden="true">01</span></article>
           <article class="game-card"><div class="card-icon bridge">▦</div><div><small>ROUND 02</small><strong>기억의 다리</strong><span>정답 길을 기억하고 통과</span></div><span class="card-check" aria-hidden="true">02</span></article>
@@ -41,14 +48,15 @@
           <article class="game-card"><div class="card-icon marbles">◉</div><div><small>ROUND 05</small><strong>구슬 승부</strong><span>홀짝·수량 비교 문제</span></div><span class="card-check" aria-hidden="true">05</span></article>
           <article class="game-card"><div class="card-icon final">★</div><div><small>ROUND 06</small><strong>꼴뚜기 결승전</strong><span>기억력·타이밍·계산 종합</span></div><span class="card-check" aria-hidden="true">06</span></article>
         </div>
-        <button type="button" id="startButton" class="primary">서바이벌 참가하기 <span aria-hidden="true">→</span></button>
-        <p class="fine-print">한 라운드라도 실패하면 대회 탈락 · 성공해야 다음 게임 개방</p>
+
         <div class="practice">개별 연습: <a href="../dalgona-trace/index.html">달고나</a> · <a href="../squid-memory-bridge/index.html">기억의 다리</a> · <a href="./redlight/index.html">신호등</a> · <a href="./tug/index.html">줄다리기</a> · <a href="./marbles/index.html">구슬</a> · <a href="./final/index.html">결승전</a></div>
+       </div>
       </div>
     </section>
     <section class="scene pregame hidden" id="pregame" aria-labelledby="pregameTitle">
       <div class="pregame-content">
-        <p class="kicker" id="pregameLabel">ROUND 01 / 02</p>
+        <div class="gate-outline" aria-hidden="true"></div><div class="round-watermark" id="roundWatermark" aria-hidden="true">01</div>
+        <p class="kicker" id="pregameLabel">ROUND 01 / 06</p>
         <div class="demo" id="demo" aria-hidden="true">
           <svg class="demo-dalgona" viewBox="0 0 240 240" width="220">
             <circle cx="120" cy="120" r="100" fill="#e5b677" stroke="#ad7a4c" stroke-width="10"/>
@@ -64,6 +72,7 @@
         <h2 id="pregameTitle">달고나 게임</h2>
         <p id="pregameRule">선을 따라 알맞은 속도로 그리세요.</p>
         <p class="warning" id="pregameWarning">너무 빠르거나 느리면 탈락!</p>
+        <div class="instruction-key"><span class="instruction-dot" aria-hidden="true"></span> 규칙을 확인하세요. 잠시 후 자동 시작합니다.</div>
         <div class="countdown"><span>시작까지</span><strong id="countdownNumber">3</strong><span>초</span></div>
         <div class="countdown-track"><div id="countdownFill"></div></div>
       </div>
@@ -74,12 +83,12 @@
     </section>
     <section class="scene end hidden" id="end" aria-labelledby="endTitle">
       <div class="end-content">
-        <p class="kicker" id="endLabel">ROUND CLEAR</p>
+        <div class="result-beam" aria-hidden="true"></div><p class="kicker" id="endLabel">ROUND CLEAR</p>
         <div id="endIcon" class="end-icon" aria-hidden="true">✓</div>
         <h2 id="endTitle">1라운드 통과!</h2><p id="endDetail">다음 게임을 준비하세요.</p>
         <div class="scoreboard">
-          <div><small>이번 대회 통과</small><strong id="endClears">1 / 2</strong></div>
-          <div><small>최고 기록</small><strong id="endBest">1 / 2</strong></div>
+          <div><small>이번 대회 통과</small><strong id="endClears">1 / 6</strong></div>
+          <div><small>최고 기록</small><strong id="endBest">1 / 6</strong></div>
           <div><small>완주 횟수</small><strong id="endWins">0</strong></div>
         </div>
         <div class="result-path" id="resultPath" aria-label="라운드 결과"><span id="endRound0">01 달고나</span><span id="endRound1">02 기억의 다리</span><span id="endRound2">03 신호등</span><span id="endRound3">04 줄다리기</span><span id="endRound4">05 구슬</span><span id="endRound5">06 결승전</span></div>
@@ -91,6 +100,6 @@
 </div>
 <script src="../../kidscade-game-sdk.js" data-game-id="squid_survival" data-title="꼴뚜기 게임: 서바이벌" data-shell="true" data-orientation="any"></script>
 <script src="./rules.js?v=2"></script>
-<script src="./game.js?v=2"></script>
+<script src="./game.js?v=3"></script>
 </body>
 </html>
