@@ -248,7 +248,7 @@ const errors=[];
       const leftover=await evalPage("(()=>{"+
         "const list=window.__kc3dAudit.accessoryCatalog().filter(x=>x.visible);"+
         "for(const item of list){"+
-        "const e=document.querySelector('[data-chibi-part="+JSON.stringify('')+"'+item.id+'"+JSON.stringify(']')+");"+
+        "const e=[...document.querySelectorAll('[data-chibi-part]')].find(x=>x.dataset.chibiPart===item.id);"+
         "if(e){e.checked=false;e.dispatchEvent(new Event('change',{bubbles:true}))}"+
         "}return window.__kc3dAudit.accessoryCatalog().filter(x=>x.visible).map(x=>x.id);"+
         "})()");
