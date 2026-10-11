@@ -572,7 +572,7 @@ test('Chibi v5 provides eight distinct skinned hair entries per body fit, with u
   assert.match(js,/function createKidscadeHairCollection\(\)/);
   assert.match(js,/geometry\.computeVertexNormals\(\)/);
   assert.match(js,/template\.parent\.add\(hair\)/);
-  assert.match(js,/createKidscadeMaleHairShort\(\);\s*createKidscadeHairCollection\(\);/);
+  assert.match(js,/createKidscadeMaleHairShort\(\);\s*repairKnightHairForOpenHead\(\);\s*createKidscadeHairCollection\(\);/);
   assert.match(js,/const part=style\.part\*size\.x\*crown/);
   assert.match(js,/const wave=style\.wave\*size\.y\*Math\.sin/);
   assert.match(js,/styleParameters:\{\.\.\.style\}/);
@@ -921,7 +921,7 @@ test('v5.8 visual cleanup uses continuous skinned sleeves and visibly separate w
   assert.doesNotMatch(pack,/shoulderCap=new THREE\.SphereGeometry/);
   assert.match(pack,/const upperRadius=wide\?\.140/);
   assert.match(pack,/const lowerRadius=wide\?\.104/);
-  assert.match(pack,/geometry\.translate\(sign\*\(wide\?\.178:\.153\)/);
+  assert.match(pack,/geometry\.translate\(sign\*\(wide\?\.178:\.155\)/);
   assert.match(pack,/const fullness=1-\.11\*knee\+\.025\*hem/);
 });
 
@@ -930,7 +930,7 @@ test('v5.9 repairs exposed long-sleeve wrists and trouser crotch wedge without j
   const audit=read('tests/chibi-visual-browser-audit.cjs');
   assert.match(pack,/const coverage=smooth\(\.50,\.61,y\)/);
   assert.match(pack,/function addTrouserHipYoke\(/);
-  assert.match(pack,/new THREE\.CylinderGeometry\(\.227,\.201,top-bottom,24,7,true\)/);
+  assert.match(pack,/new THREE\.CylinderGeometry\(\s*male\?\.216:\.227,male\?\.193:\.201,top-bottom,24,7,true\)/);
   assert.match(pack,/addTrouserHipYoke\(\{source,style,group,material,reference,cloneSkinnedMeshWithGeometry\}\)/);
   assert.match(pack,/bindYokeToPelvis\(geometry,source\.skeleton\)/);
   assert.match(pack,/style\.id\+'_hip_yoke'/);
@@ -1030,7 +1030,7 @@ test('v6.1 hair silhouettes use head-bone rigged volumes and pixie avoids pinche
 });
 test('v6.1 hats and face items use corrected crown/mouth registration',()=>{
   const pack=read('teacher/chibi-accessory-pack.js');
-  assert.match(pack,/referenceBox\.max\.y-\.158/);
+  assert.match(pack,/reference\.userData\.kidscadeHatRestCrownY\+hatCrownAllowance/);
   assert.match(pack,/accessoryBox\.max\.y:accessoryBox\.min\.y/);
   assert.match(pack,/scalpY-\.012,hc\.z/);
   assert.match(pack,/crownWall/);
@@ -1117,4 +1117,23 @@ test('v6.5 mask pleats and rounded wider lenses follow the same projected rigged
   assert.match(pack,/pleat_upper/);
   assert.match(pack,/pleat_lower/);
   assert.match(pack,/1-\.18\*Math\.pow\(Math\.abs\(ny\),6\)/);
+});
+
+test('v6.6 wardrobe repairs knight hair, shoe spike and grounded headwear',()=>{
+  const studio=read('teacher/character-3d-studio.js');
+  const outfit=read('teacher/chibi-outfit-pack.js');
+  const accessory=read('teacher/chibi-accessory-pack.js');
+  assert.match(studio,/function repairKnightHairForOpenHead\(/);
+  assert.match(studio,/repairKnightHairForOpenHead\(\)/);
+  assert.match(studio,/kidscadeOpenHeadRepair:'v6\.6-full-helmet-safe-hair'/);
+  assert.match(studio,/ball\('himeSide_'\+sign,at\(sign\*\.32/);
+  assert.match(studio,/const twin=name==='chibi_female_hair_twintail'/);
+  assert.match(accessory,/sneakers:\[1\.055,1\.025,1\.015\]/);
+  assert.match(accessory,/if\(kind==='hightop'\)/);
+  assert.doesNotMatch(accessory,/if\(kind==='sneakers'\|\|kind==='hightop'\)/);
+  assert.match(accessory,/const hatCrownAllowance=style\.kind==='beret'/);
+  assert.match(accessory,/kidscadeHatRestCrownY/);
+  assert.match(accessory,/case 'beret':\{/);
+  assert.match(outfit,/male\?\.216:\.227/);
+  assert.match(outfit,/jogger\?\.143:chino\?\.137/);
 });

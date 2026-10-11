@@ -1438,7 +1438,7 @@ function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
   // it on spheres/cones punched circular holes through ponytails and spikes.
   // Hair volumes need an opaque solid material independent of those UVs.
   const material=new THREE.MeshStandardMaterial({
-    color:'#9f604c',roughness:.83,metalness:0,side:THREE.DoubleSide
+    color:'#b57b65',roughness:.83,metalness:0,side:THREE.DoubleSide
   });
   // Some GLB exports rename the head bone. Fall back to the original
   // crown vertex's dominant skin influence instead of failing to load hair.
@@ -1457,8 +1457,20 @@ function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
   const cx=(bounds.min.x+bounds.max.x)*.5;
   const cz=(bounds.min.z+bounds.max.z)*.5;
   const at=(u,v,w)=>[cx+u*size.x,bounds.min.y+v*size.y,cz+w*size.z];
-  const ball=(id,[x,y,z],sx,sy,sz)=>{
+  const ball=(id,[x,y,z],sx,sy,sz,tailTaper=false)=>{
     const g=new THREE.SphereGeometry(1,14,10);
+    if(tailTaper){
+      const p=g.getAttribute('position');
+      for(let i=0;i<p.count;i++){
+        // Lower hair tips should narrow like a real lock, not end as a
+        // detached oval patch at the side of the original bob.
+        const t=THREE.MathUtils.clamp((p.getY(i)+1)*.5,0,1);
+        const radius=.30+.70*t;
+        p.setX(i,p.getX(i)*radius);
+        p.setZ(i,p.getZ(i)*radius);
+      }
+      p.needsUpdate=true;
+    }
     g.scale(sx*size.x,sy*size.y,sz*size.z);
     g.translate(x,y,z);
     const piece=makeRigidSkinnedPiece(template,g,head.name,material,name+'_'+id);
@@ -1471,12 +1483,10 @@ function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
     hair.add(piece);
   };
   if(name==='chibi_female_hair_twintail'){
-    for(const sign of [-1,1]){
-      ball('tie_'+sign,at(sign*.415,.57,-.06),.052,.057,.055);
-      ball('tail_'+sign,at(sign*.535,.35,-.105),.092,.185,.097);
-      ball('tailTip_'+sign,at(sign*.55,.205,-.115),.068,.099,.076);
-    }
-  }else if(name==='chibi_female_hair_curl'){
+    // No separate oval volumes: two low rear hair locks are sculpted from
+    // the shared source-skinned geometry in createKidscadeHairCollection().
+    // Detachable sphere details were conspicuous side discs in Chrome.
+    }else if(name==='chibi_female_hair_curl'){
     for(const sign of [-1,1]){
       for(let row=0;row<3;row++){
         const v=.34+row*.16;
@@ -1486,7 +1496,7 @@ function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
     }
   }else if(name==='chibi_female_hair_hime'){
     for(const sign of [-1,1]){
-      ball('himeSide_'+sign,at(sign*.385,.35,.285),.073,.24,.075);
+      ball('himeSide_'+sign,at(sign*.32,.385,.13),.047,.155,.058);
     }
   }else if(name==='kidscade_male_hair_spiky'){
     for(const [j,u] of [-.34,-.16,.04,.21,.35].entries()){
@@ -1499,6 +1509,33 @@ function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
       hair.add(piece);
     }
   }
+}
+// The original knight hair is only a narrow temple wisp designed to sit
+// below a closed helmet. It must not present as a nearly bald selectable hair.
+// Give its public slot a compact, full skinned cut from the original bob while
+// retaining the 78-bone binding and keeping the source GLB untouched.
+function repairKnightHairForOpenHead(){
+  const knight=getNode('hairtailknight'),bob=getNode('hairone');
+  if(!knight?.isSkinnedMesh||!bob?.isSkinnedMesh)return;
+  if(knight.userData.kidscadeOpenHeadRepair)return;
+  const geo=bob.geometry.clone();
+  geo.computeBoundingBox();
+  const bb=geo.boundingBox,center=bb.getCenter(new THREE.Vector3());
+  const h=Math.max(.001,bb.max.y-bb.min.y);
+  const pos=geo.getAttribute('position');
+  for(let i=0;i<pos.count;i++){
+    const y=pos.getY(i);
+    const lower=THREE.MathUtils.clamp((bb.max.y-y)/h,0,1);
+    pos.setXYZ(i,
+      center.x+(pos.getX(i)-center.x)*(1-.095*lower),
+      y+.075*h*lower,
+      center.z+(pos.getZ(i)-center.z)*(.955-.035*lower));
+  }
+  pos.needsUpdate=true;
+  geo.computeVertexNormals();geo.computeBoundingBox();geo.computeBoundingSphere();
+  knight.geometry=geo;
+  knight.material=Array.isArray(bob.material)?bob.material.slice():bob.material;
+  knight.userData={...knight.userData,kidscadeOpenHeadRepair:'v6.6-full-helmet-safe-hair'};
 }
 function createKidscadeHairCollection(){
   const maleBase=getNode('kidscade_male_hair_short');
@@ -1548,7 +1585,16 @@ function createKidscadeHairCollection(){
         templeFill*temple*.11)+wave+pixieLift-mulletDrop;
       const pz=z+size.z*(style.front*front*.12+style.crown*crown*.025+
         templeFill*temple*.055);
-      points.setXYZ(i,px,py,pz);
+      // v6.6: form two nape locks from the ORIGINAL skinned hair instead of
+      // attaching head-bone spheres which rendered as flat round stickers.
+      const twin=name==='chibi_female_hair_twintail'
+        ?smooth(.1,.67,-nz)*(1-smooth(.28,.69,ny)):0;
+      const centerNape=1-smooth(.12,.47,Math.abs(nx));
+      const twinTail=1-centerNape;
+      points.setXYZ(i,
+        px+Math.sign(nx)*size.x*.075*twin*twinTail,
+        py+size.y*twin*(.15*centerNape-.11*twinTail),
+        pz-size.z*.030*twin*twinTail);
     }
     points.needsUpdate=true;
     geometry.computeVertexNormals();
@@ -2229,6 +2275,7 @@ async function loadChibi(){
     createKidscadeBlueHoodie();
     createKidscadeMaleSet();
     createKidscadeMaleHairShort();
+    repairKnightHairForOpenHead();
     createKidscadeHairCollection();
     createOutfitPack({getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial,makeRigidSkinnedPiece,resolveFirstBoneName});
     createAccessoryPack({getNode,cloneSkinnedMeshWithGeometry,makeSolidMaterial});

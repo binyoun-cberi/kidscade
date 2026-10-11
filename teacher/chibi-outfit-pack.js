@@ -591,7 +591,11 @@ function add3dDetails({THREE: _THREE, getNode,cloneSkinnedMeshWithGeometry,sourc
 // without joining the trouser legs all the way down like a skirt.
 function addTrouserHipYoke({source,style,group,material,reference,cloneSkinnedMeshWithGeometry}){
   const top=.79,bottom=.365;
-  const geometry=new THREE.CylinderGeometry(.227,.201,top-bottom,24,7,true);
+  // Men use a slightly narrower fitted pelvic yoke. Keep the bridge wide
+  // enough to hide the upper-thigh seam, but not a skirt-like belt.
+  const male=style.fit==='male';
+  const geometry=new THREE.CylinderGeometry(
+    male?.216:.227,male?.193:.201,top-bottom,24,7,true);
   geometry.scale(1,1,.82);
   geometry.translate(0,(top+bottom)*.5,.003);
   const p=geometry.getAttribute('position');
@@ -638,18 +642,21 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
     const chino=style.id==='chibi_male_chinos';
     // Overlap the original shorts cuff at the upper thigh to prevent skin
     // wedges between the pelvis shell and the independent leg cylinders.
-    const upperRadius=wide?.140:jogger?.154:chino?.145:.143;
-    const lowerRadius=wide?.104:jogger?.075:chino?.076:.088;
+    // v6.6: protect thigh and knee clearance while removing the balloon-like
+    // cylindrical profile identified by the real WebGL wardrobe audit.
+    const male=style.fit==='male';
+    const upperRadius=wide?.140:jogger?.143:chino?.137:male?.137:.143;
+    const lowerRadius=wide?.104:jogger?.075:chino?.074:male?.081:.088;
     const top=.755,bottom=.082;
     const geometry=new THREE.CylinderGeometry(upperRadius,lowerRadius,top-bottom,16,9,false);
-    geometry.translate(sign*(wide?.178:.153),(top+bottom)*.5,0);
+    geometry.translate(sign*(wide?.178:.155),(top+bottom)*.5,0);
     const positions=geometry.getAttribute('position');
     // Body knees and upper thighs protrude more toward +Z than a round tube.
     // Give the front thigh an anatomically shaped clearance allowance.
     for(let i=0;i<positions.count;i++){
       const y=positions.getY(i),z=positions.getZ(i);
       const thighFront=smooth(.22,.36,y)*(1-smooth(.58,.75,y));
-      if(z>0)positions.setZ(i,z*(1+(wide?.42:.68)*thighFront));
+      if(z>0)positions.setZ(i,z*(1+(wide?.42:male?.48:.68)*thighFront));
       if(wide){
         // Define two visible trouser legs instead of a skirt-like broad tube;
         // a tapered knee with a relaxed hem keeps the garment recognizable.
@@ -676,7 +683,7 @@ function makeTrouserLegs({getNode,source,style,group,material,cloneSkinnedMeshWi
       // with its own smooth four-neighbor leg weights. No rigid unattached
       // thigh/shin boxes; no gap at the knee during WALK/RUN.
       const verts=[],triangles=[],steps=16,width=.016;
-      const center=sign*(wide?.178:.153);
+      const center=sign*(wide?.178:.155);
       for(let j=0;j<=steps;j++){
         const y=top-(top-bottom)*j/steps;
         const fraction=(y-bottom)/(top-bottom);
