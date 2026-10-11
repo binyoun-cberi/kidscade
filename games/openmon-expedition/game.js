@@ -215,7 +215,10 @@ function openRegions(){
    '<small>'+esc(zone.theme||"")+(cfg?' · Lv.'+cfg.level.join("~"):' · 안전한 마을')+'</small>'+
    '<small>'+esc(zone.hint||"")+'</small>'+
    (cfg?'<small>야생: '+esc(found)+(known&&pool.length>7?' 외':'')+'</small>':'')+
-   (habitat?'<small>연구 주제: '+esc(habitat.subject)+'</small>':'')+'</div>'+
+   (habitat?'<small>연구 주제: '+esc(habitat.subject)+'</small>':'')+
+   (cfg?'<small>지역 조사: '+(save.regionResearch?.[zone.key]?.seen?.length||0)+'/3종'+
+    (save.regionResearch?.[zone.key]?.rewarded?' · 연구 완료':
+     ' · 보상 '+(E.HABITAT_REWARDS[zone.key]?.name||"연구 보상"))+'</small>':'')+'</div>'+
    (village?'<button type="button" data-travel="'+zone.key+'" '+(!reachable?'disabled':'')+
    '>'+(reachable?'빠른 이동':'미발견')+'</button>':'')+'</div>';
  }).join("");
@@ -483,6 +486,10 @@ function movePlayer(dx,dy,now=performance.now()){
  if(result.encounter){
    beep("click");
    enterBattle(result.encounter,result.zone,!!(result.encounter.id==="shibu_r00_c00"),!!result.firstRoad);
+   if(result.regionalReward&&battle){
+    battle.message+="\n지역 조사 완료! 새로운 3종 발견 · "+result.regionalReward.name+" 획득!";
+    renderBattle();
+   }
  }
  if(save.steps%5===0)persist();
  updateAll();
