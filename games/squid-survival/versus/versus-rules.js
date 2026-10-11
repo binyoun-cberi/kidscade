@@ -19,7 +19,7 @@ function makeRound(index,seed,now){
   const def=ROUNDS[index];if(!def)throw new Error('Invalid versus round');
   const kind=def.id,round={index,id:kind,title:def.title,seed:seedFor(seed,index),startedAt:now,
     now,elapsed:0,limit:LIMITS[kind],phase:kind==='bridge'||kind==='final'?'preview':'playing',
-    previewUntil:kind==='bridge'?5000:kind==='final'?3800:0,players:[makePlayer(0),makePlayer(1)],map:null,trace:null};
+    previewUntil:kind==='bridge'?5000:kind==='final'?3800:0,players:[makePlayer(0),makePlayer(1)],map:null,trace:null,tug:null};
   if(kind==='dalgona'){
     round.trace=T.buildTrace(1);
     round.trace={...round.trace,timeLimitMs:round.limit};
@@ -31,6 +31,7 @@ function makeRound(index,seed,now){
     if(!round.map)throw new Error('Could not build memory bridge');
   }else {
     for(const p of round.players){p.body=M.create(kind,round.seed);M.start(p.body,now);}
+    if(kind==='tug')round.tug={offset:0,target:62};
   }
   return round;
 }
@@ -46,7 +47,7 @@ function progressOf(round,p){
  if(round.id==='dalgona')return p.traceState.progress/round.trace.total;
  if(round.id==='bridge')return p.bridgeStep/(round.map.path.length-1);
  if(round.id==='redlight')return p.body.progress/100;
- if(round.id==='tug')return clamp((p.body.rope-0)/100,0,1);
+ if(round.id==='tug')return clamp(.5+(p.id===0?1:-1)*round.tug.offset/(2*round.tug.target),0,1);
  if(round.id==='marbles')return clamp((p.body.questionIndex-p.body.misses*.35)/5,0,1);
  const b=p.body;
  return b.part==='preview'?0:b.part==='memory'?b.entered*.08:b.part==='timing'?.36+b.timingHits*.20:.84;
@@ -65,6 +66,8 @@ function syncPlayer(round,p,now){
    if(p.traceState.complete)done(round,p,now,true);
  }else if(round.id==='bridge'){
    // All bridge navigation is via explicit input; clock applies to both equally.
+ }else if(round.id==='tug'){
+   // Tug has one shared rope. Never run the single-player opponent simulation.
  }else{
    M.advance(p.body,now);
    if(p.body.status==='cleared')done(round,p,now,true);
@@ -97,6 +100,13 @@ function tick(state,now){
    const delta=Math.min(250,Math.max(0,now-r.now));
    r.now=now;r.elapsed=Math.min(r.limit,now-r.startedAt);
    if(r.phase==='preview'&&r.elapsed>=r.previewUntil)r.phase='playing';
+   if(r.id==='tug'){
+     r.tug.offset*=Math.max(0,1-delta*.00005);
+     for(const p of r.players){
+       p.body.at=now;p.body.elapsed=r.elapsed;
+       p.body.fatigue=Math.max(0,p.body.fatigue-delta*.0015);
+     }
+   }
    for(const p of r.players){
      if(r.id==='dalgona'&&p.assist!==0&&p.hold&&!p.done){
        const tip=T.sampleAt(r.trace,p.traceState.progress);
@@ -206,7 +216,24 @@ function input(state,id,action,value,now){
  }else if(r.id==='redlight'){
    if(action==='hold')M.act(p.body,'hold',Boolean(value),now);
  }else if(r.id==='tug'){
-   if(action==='tap')M.act(p.body,'pull',null,now);
+   if(action==='tap'){
+     const b=p.body,delta=b.elapsed-b.lastTap,phase=(b.elapsed%1000)/1000;
+     const distance=Math.abs(phase-.5);
+     b.lastTap=b.elapsed;b.pulls++;b.events++;
+     let force=0;
+     if(delta<260){b.fatigue=Math.min(100,b.fatigue+24);force=-8;b.combo=0;}
+     else if(distance<=.10){
+       force=15-Math.round(b.fatigue*.08);b.perfect++;b.combo++;
+     }else if(distance<=.21){force=7-Math.round(b.fatigue*.04);b.combo=0;}
+     else{force=-6;b.fatigue=Math.min(100,b.fatigue+12);b.combo=0;}
+     // A single rope moves in opposite directions for 1P and 2P.
+     r.tug.offset=clamp(r.tug.offset+(id===0?1:-1)*force,-r.tug.target,r.tug.target);
+     if(Math.abs(r.tug.offset)>=r.tug.target){
+       const winner=r.tug.offset>0?0:1;
+       done(r,r.players[winner],now,true,'줄을 당겨 이겼어요!');
+       done(r,r.players[1-winner],now,false,'상대 팀이 줄을 가져갔어요.');
+     }
+   }
  }else if(r.id==='marbles'){
    if(action==='choose')M.act(p.body,'choose',value,now);
  }else if(r.id==='final'){

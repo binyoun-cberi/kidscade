@@ -92,6 +92,37 @@ test('tug rewards timing and punishes repeated tapping separately',()=>{
  if(s.phase==='playing')s=V.tick(s,30000);
  assert.equal(s.phase,'summary');assert.equal(s.results[0].winner,0);
 });
+test('shared tug rope is genuinely opposed: 100 seeded symmetrical duels draw',()=>{
+ for(let seed=1;seed<=100;seed++){
+   let s=runAt(3,seed),r=s.round;
+   assert.ok(r.tug,'one shared rope required');
+   for(let t=1500;t<16000&&s.phase==='playing';t+=1000){
+     s=V.input(s,0,'tap',null,t);
+     assert.ok(r.tug.offset>0,'1P must physically pull the common rope toward 1P');
+     s=V.input(s,1,'tap',null,t);
+     assert.ok(Math.abs(r.tug.offset)<1e-7,'same-time equally good 2P must pull it back');
+   }
+   s=V.tick(s,40000);
+   assert.equal(s.phase,'summary');
+   assert.equal(s.results[0].winner,null);
+ }
+});
+test('shared tug rope: perfect 1P wins; mirror perfect 2P wins; poor spam hurts only spammer',()=>{
+ for(let seed=1;seed<=100;seed++){
+   const strong=seed%2,weak=1-strong;
+   let s=runAt(3,seed),r=s.round;
+   for(let t=1500;t<15000&&s.phase==='playing';t+=1000){
+     s=V.input(s,strong,'tap',null,t);
+     if(seed%3===0)for(let n=0;n<3&&s.phase==='playing';n++)
+       s=V.input(s,weak,'tap',null,t+n*50);
+   }
+   assert.equal(s.phase,'summary');
+   assert.equal(s.results[0].winner,strong);
+   assert.equal(r.players[strong].clear,true);
+   assert.equal(r.players[weak].failed,true);
+   assert.equal(Math.sign(r.tug.offset),strong===0?1:-1);
+ }
+});
 test('same marble questions, wrong answers affect only responding player',()=>{
  let s=runAt(4,66),r=s.round,time=1000;
  for(let i=0;i<5&&s.phase==='playing';i++){
