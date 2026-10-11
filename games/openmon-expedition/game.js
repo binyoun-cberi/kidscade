@@ -178,7 +178,8 @@ function openGoals(){
  "<strong>다음 행동 힌트</strong><p>"+esc(hint)+"</p>"+
  '<div class="equipment"><span>발견한 키즈몬</span><b>'+$("seenCount").textContent+'</b></div>'+
  '<div class="equipment"><span>수집한 키즈몬</span><b>'+$("caughtCount").textContent+'</b></div>'+
- '<div class="equipment"><span>진행 걸음 수</span><b>'+save.steps+'걸음</b></div></div>',
+ '<div class="equipment"><span>진행 걸음 수</span><b>'+save.steps+'걸음</b></div></div>'+
+ '<div class="action-row"><button type="button" class="act primary" data-hud-action="regions">지역 지도 · 서식지</button></div>',
  "연구 진행 "+(save.wins+save.catches)+" · 새 야생 종 해금: 3·7·12 기록");
 }
 function openMenu(){
@@ -186,6 +187,7 @@ function openMenu(){
  openGeneric("키즈몬 메뉴",'<div class="shop-list">'+
  '<div class="shop-item"><div><strong>소리</strong><small>효과음 켜기·끄기</small></div><button type="button" data-hud-action="audio">'+(soundOn?"끄기":"켜기")+'</button></div>'+
  '<div class="shop-item"><div><strong>자동 저장</strong><small>이 기기에서 진행 기록을 이어할 수 있어</small></div><strong>'+($("saveInfo").textContent==="!"?"저장 실패":"저장됨")+'</strong></div>'+
+ '<div class="shop-item"><div><strong>지역 지도·서식지</strong><small>발견한 마을 사이 빠른 이동과 출현 키즈몬 보기</small></div><button type="button" data-hud-action="regions">지도 열기</button></div>'+
  '<div class="shop-item"><div><strong>처음부터</strong><small>현재 탐험 기록 초기화 · 확인 후 실행</small></div><button type="button" data-hud-action="restart">초기화</button></div>'+
  '<div class="shop-item"><div><strong>키즈케이드로</strong><small>진행을 저장하고 게임에서 나가기</small></div><button type="button" data-hud-action="exit">나가기</button></div>'+
  '</div>');
@@ -196,12 +198,45 @@ function openHud(tab){
  else if(tab==="bag")openBag();
  else if(tab==="dex")openDex();
  else if(tab==="goals")openGoals();
+ else if(tab==="regions")openRegions();
  else if(tab==="menu")openMenu();
+}
+function openRegions(){
+ if(!save||battle)return;
+ const visited=new Set(save.flags?.visitedZones||["town"]),places=E.visitedVillages(save);
+ const rows=E.ZONES.map(zone=>{
+  const known=visited.has(zone.key),habitat=DB.habitats?.[zone.key],cfg=DB.encounters[zone.key];
+  const pool=cfg?E.unlockedPool(zone.key,save):[];
+  const found=known?pool.slice(0,7).map(id=>species(id)?.name).filter(Boolean).join(" · "):
+   "미발견 · 지역에 도착하면 목록을 확인할 수 있어";
+  const village=E.VILLAGES.find(v=>v.key===zone.key);
+  const reachable=village&&places.some(v=>v.key===zone.key);
+  return '<div class="shop-item region-card"><div><strong>'+(known?'● ':'○ ')+esc(zone.name)+'</strong>'+
+   '<small>'+esc(zone.theme||"")+(cfg?' · Lv.'+cfg.level.join("~"):' · 안전한 마을')+'</small>'+
+   '<small>'+esc(zone.hint||"")+'</small>'+
+   (cfg?'<small>야생: '+esc(found)+(known&&pool.length>7?' 외':'')+'</small>':'')+
+   (habitat?'<small>연구 주제: '+esc(habitat.subject)+'</small>':'')+'</div>'+
+   (village?'<button type="button" data-travel="'+zone.key+'" '+(!reachable?'disabled':'')+
+   '>'+(reachable?'빠른 이동':'미발견')+'</button>':'')+'</div>';
+ }).join("");
+ openGeneric("키즈몬 세계 지도 · 지역 도감",
+ '<p>마을은 안전하고 초원·숲·동굴 등에서는 지역 특유의 키즈몬을 만날 수 있어. 연구가 진행되면 더 많은 종이 출현해.</p>'+
+ '<p>발견한 마을 사이에서는 빠르게 이동할 수 있어. 아직 방문하지 않은 마을은 걸어서 찾아가야 해.</p>'+
+ '<div class="shop-list">'+rows+'</div>');
+}
+function talkNewVillage(village){
+ openGeneric(village.name+" · "+village.npc,
+ '<p>'+esc(E.ZONES.find(z=>z.key===village.key)?.hint||"")+'</p>'+
+ '<p>오늘의 탐구: <strong>'+esc(village.lesson)+'</strong>. 주변의 관련 키즈몬을 찾아 기술과 특성을 비교해 보자.</p>'+
+ '<div class="action-row"><button type="button" class="act primary" data-village-heal="1">HP·PP 무료 회복</button>'+
+ '<button type="button" class="act" data-hud-action="regions">세계 지도·빠른 이동</button></div>');
 }
 function closeGeneric(){$("genericOverlay").classList.add("hidden")}
 function talk(){
  if(!save||battle||!$("genericOverlay").classList.contains("hidden"))return;
  const x=save.pos.x,y=save.pos.y;
+ const village=E.VILLAGES.find(v=>v.key!=="town"&&Math.abs(x-v.npcX)+Math.abs(y-v.npcY)<=2);
+ if(village){talkNewVillage(village);return}
  if(Math.abs(x-9)+Math.abs(y-10)<=2){openClinic();return}
  if(Math.abs(x-13)+Math.abs(y-10)<=2){
   openGeneric("수학 연구원",'<p>야생 키즈몬의 남은 체력과 기술의 피해량을 비교해 봐. 세 마리의 동료가 모였다면 트레이너 배틀에도 도전해 봐!</p>'+
@@ -212,8 +247,8 @@ function talk(){
  if(E.terrain(x,y)==="clearing"||Math.abs(x-56)+Math.abs(y-7)<=1){
   setToast("이 숲에서는 분기견이 발견되었다고 해. 풀숲을 살펴봐!");return
  }
- if(E.zoneAt(x)==="town")setToast("오른쪽으로 걸어가 이슬초원을 찾아봐. 위쪽 연구소의 연구원에게도 이야기할 수 있어.");
- else setToast("초록색 긴 풀이나 동굴의 거친 땅을 밟아야 야생 키즈몬과 만날 수 있어!");
+ const zone=E.ZONES.find(z=>z.key===E.zoneAt(x));
+ setToast(zone?.hint||"주변의 특별한 땅을 조사해 야생 키즈몬을 찾아봐!");
  beep("click");
 }
 function openClinic(){
@@ -440,7 +475,11 @@ function movePlayer(dx,dy,now=performance.now()){
  lastMove=now;
  const old=E.zoneAt(save.pos.x),result=E.move(save,dx,dy);
  if(!result.moved)return;
- if(result.zone!==old)setToast((E.ZONES.find(z=>z.key===result.zone)?.name||"새 지역")+"에 도착했어!");
+ if(result.zone!==old){
+  const place=E.ZONES.find(z=>z.key===result.zone);
+  setToast((place?.name||"새 지역")+"에 도착! "+(place?.theme||"")+
+    (result.welcome?" · 새 마을 발견 보상 키즈볼 2개!":""));
+ }
  if(result.encounter){
    beep("click");
    enterBattle(result.encounter,result.zone,!!(result.encounter.id==="shibu_r00_c00"),!!result.firstRoad);
@@ -865,6 +904,15 @@ function attach(){
   b=e.target.closest("button[data-trainer-start]");
   if(b&&trainerSelection&&T.validateSelection(save,trainerSelection.slots)){
    enterTrainer(b.dataset.trainerStart,trainerSelection.slots);return;
+  }
+  b=e.target.closest("button[data-village-heal]");if(b){
+   E.healAll(save);updateAll();persist();beep("win");
+   setToast("마을 연구원이 모든 키즈몬의 HP와 PP를 회복해 줬어!");closeGeneric();return;
+  }
+  b=e.target.closest("button[data-travel]");if(b){
+   if(E.fastTravel(save,b.dataset.travel)){
+    updateAll();persist();closeGeneric();setToast(E.ZONES.find(z=>z.key===b.dataset.travel).name+"에 도착!");
+   }else setToast("아직 발견하지 않은 마을이야. 직접 걸어서 방문해 봐.");return;
   }
   b=e.target.closest("button[data-buy]");if(b){buy(b.dataset.buy);return}
   b=e.target.closest("button[data-swap]");if(b){const choice=Number(b.dataset.swap);closeGeneric();resolveBattleTurn({type:"switch",index:choice});return}
