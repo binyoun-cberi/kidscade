@@ -6,7 +6,8 @@ const G = window.OtaGuide;
 const X = window.OtaCorrector;
 const L = window.OtaLiteracy;
 const S = window.OtaSurfaces;
-if (!R || !C3 || !G || !X || !L || !S) throw new Error('Ota chapter or guidance rules are missing');
+const CG = window.OtaCalligrams;
+if (!R || !C3 || !G || !X || !L || !S || !CG) throw new Error('Ota chapter or guidance rules are missing');
 const el = id => document.getElementById(id);
 const canvas = el('scene');
 const hud = { objective:el('objective'), stage:el('stage'), prompt:el('prompt'),
@@ -23,6 +24,7 @@ const literacyMeshes=new Map();let activeCorrection=null;
 const repairEffects=[];
 const wayfindingSigns=[];
 const architectureMeshes=[],architectureErrors=[],architectureLights=[];
+const calligramObjects=[],calligramById=new Map();
 let apparitionAnchor=null,apparitionNumber=-1;
 const corrector=X.create();
 let soundPulse=0, lastCorrectorSound=0;
@@ -191,7 +193,8 @@ function makeArchitecturePlane(spec){
 }
 function buildWordArchitecture(){
   for(const spec of S.surfaces)makeArchitecturePlane(spec);
-  for(const spec of S.portals)makeArchitecturePlane(spec);
+  // Calligram contours replace flat doorway strips without changing their collision rules.
+  for(const spec of S.portals)if(spec.kind!=='door')makeArchitecturePlane(spec);
   for(const spec of S.mistakes){
     const mesh=label(spec.wrong,'#c24664',spec.x,spec.y,spec.z,
       spec.rx,spec.ry,1.1,.43);
@@ -233,6 +236,101 @@ function updateWordArchitecture(time,threat){
     const distance=R.distance(player,lamp.position);
     lamp.visible=distance<12&&distance>1;
     lamp.material.opacity=distance<12?.28*(Math.sin(time*.72+lamp.position.z)*.05+.95):0;
+  }
+}
+// The three focal objects are actual shapes built out of individual Hangul strokes.
+// Group-local hinges can animate without moving the collidable object.
+function buildCalligrams(){
+  const corrupt={문:'뭄',사물함:'사믈함',화면:'하면',철문:'철뭄',전원:'전언'};
+  const colorFor=(object,part)=>part.role==='action'?'#e2bc86':
+    part.role==='screen'?'#d1ddbe':part.role==='power'?'#a9d4af':
+    object.type==='computer'?'#b4c4bd':object.type==='door'?'#cbb3a4':'#bac1c9';
+  for(const spec of CG.collection()){
+    const root=new THREE.Group();
+    root.name='calligram-'+spec.id;
+    root.position.set(spec.x,0,spec.z);
+    root.rotation.y=spec.rotation||0;
+    root.visible=false;
+    scene.add(root);
+    const leafL=new THREE.Group(),leafR=new THREE.Group();
+    const hinge=spec.type==='door'?.86:.46;
+    leafL.position.x=-hinge;leafR.position.x=hinge;
+    root.add(leafL,leafR);
+    const pieces=[];
+    for(const p of spec.parts){
+      const parent=p.role==='leafL'?leafL:p.role==='leafR'?leafR:root;
+      const mesh=label(p.word,colorFor(spec,p),0,0,0,0,0,p.w,p.h);
+      mesh.position.set(p.x-(parent===leafL?-hinge:parent===leafR?hinge:0),p.y,p.z);
+      mesh.rotation.x=p.rx||0;
+      mesh.renderOrder=1;
+      // label() attaches to the scene, then Three.js reparents it to the object.
+      mesh.material=mesh.material.clone();
+      const goodMap=mesh.material.map;
+      const badMap=material(corrupt[p.word]||p.word,p.role==='action'?'#c79883':'#b85870').map;
+      parent.add(mesh);
+      pieces.push({mesh,p,goodMap,badMap});
+    }
+    const object={...spec,root,leafL,leafR,pieces,opened:!spec.gate,
+      progress:spec.gate?0:1,swing:0,swingUntil:0,screenText:'기록 대기'};
+    calligramObjects.push(object);calligramById.set(spec.id,object);
+  }
+}
+function flashLockerAt(place){
+  let winner=null,best=1.8;
+  for(const obj of calligramObjects){
+    if(obj.type!=='locker')continue;
+    const d=R.distance(place,obj);
+    if(d<best){winner=obj;best=d;}
+  }
+  if(winner){winner.swingUntil=elapsed+.72;winner.swing=Math.max(winner.swing,.08);}
+}
+function updateCalligrams(dt,threat){
+  for(const obj of calligramObjects){
+    const dist=R.distance(player,obj);
+    const unlocked=!obj.gate||(obj.gate==='doorFixed'?state.doorFixed:C3.ensure(state).finalFixed);
+    if(!unlocked){obj.root.visible=false;continue;}
+    // Only one restored door visibly unfolds; already-open room passages stay empty.
+    if(obj.type==='door'&&obj.gate)obj.progress=Math.min(1,obj.progress+dt/1.1);
+    const hidden=obj.type==='locker'&&
+      ((state.hidden||corrector.hidden)&&R.distance(player,obj)<2.4);
+    if(obj.type==='locker'){
+      // The hinged letters open for the entry/exit gesture, then fold closed while hidden.
+      const target=elapsed<obj.swingUntil?.88:0;
+      obj.swing+=(target-obj.swing)*Math.min(1,dt*10);
+    }
+    obj.leafL.rotation.y=obj.type==='locker'?-obj.swing:obj.type==='door'&&obj.gate?-obj.progress*1.28:0;
+    obj.leafR.rotation.y=obj.type==='locker'?obj.swing:obj.type==='door'&&obj.gate?obj.progress*1.28:0;
+    if(obj.type==='computer'){
+      const mode=state.stage==='console'?'기록 대기':
+        ['anomaly','chase','hiding'].includes(state.stage)?'오류 감지':
+        ['distortion','door'].includes(state.stage)?'기록 손상':
+        ['won','final'].includes(state.stage)?'복원 완료':'복원 중';
+      if(mode!==obj.screenText){
+        obj.screenText=mode;
+        const screen=obj.pieces.find(e=>e.p.role==='screen');
+        screen.goodMap=material(mode,mode==='오류 감지'?'#ed7188':'#b9dac8').map;
+      }
+    }
+    // Hiding places must remain visible at the same close range at which E is available.
+    const near=Math.min(1,Math.max(0,(dist-.14)/.65));
+    const far=Math.min(1,Math.max(0,(15-dist)/5));
+    const fade=near*far;
+    const danger=threat?Math.max(0,1-R.distance(threat,obj)/8):0;
+    const distortion=(state.stage==='explore'?literacy.contamination:0)/100;
+    obj.root.visible=fade>.035;
+    for(const entry of obj.pieces){
+      const {mesh,p,goodMap,badMap}=entry;
+      const wrong=(danger>.15||distortion>.60)&&
+        Math.sin(elapsed*(6+danger*18)+p.x*17+p.y*3)>(.94-danger*.19-distortion*.12);
+      const map=wrong?badMap:goodMap;
+      if(mesh.material.map!==map){mesh.material.map=map;mesh.material.needsUpdate=true;}
+      mesh.material.opacity=fade*(p.role==='action'?.94:p.role==='screen'?.91:.67);
+      mesh.visible=fade>.035;
+      if(p.role==='action')mesh.material.opacity*=hidden?.48:1;
+      if(p.role==='power')mesh.material.opacity*=.65+.30*Math.sin(elapsed*3.1);
+      // Ambient tremor never accumulates: reset relative to template each frame.
+      mesh.position.y=p.y+((danger>.4&&wrong)?Math.sin(elapsed*37+p.x*13)*.018:0);
+    }
   }
 }
 function scenery() {
@@ -280,7 +378,7 @@ function scenery() {
   box(.08,.89,.08,-2.75,.45,2.55,propMat);
   box(.08,.89,.08,-1.53,.45,2.55,propMat);
   box(.9,.76,.1,-2.15,1.50,1.94,propMat);
-  label('컴퓨터','#e3d2a0',-2.13,1.7,2.005,0,0,1.15,.47);
+  // Computer screen, keyboard, stand and tower are rebuilt from actual word contours.
   label('기록','#d7b786',-1.02,1.65,1.20,0,0,.90,.52);
   // A first harmless typographical anomaly before the hostile encounter.
   hauntedLabel('의ㅈㅏ','#b3a8b2','의자',-3.23,1.3,-5.5,0,Math.PI/2,1.18,.62);
@@ -289,8 +387,7 @@ function scenery() {
   R.LOCKERS.forEach((loc,i) => {
     box(.56,2.35,1.05,loc.x>0?3.07:-3.07,1.16,loc.z,propMat);
     const forwardZ = loc.z + .62;
-    label('사물함','#c5bda8',loc.x,2.08,forwardZ,0,0,1.21,.57);
-    label('숨기','#c9a774',loc.x,1.4,forwardZ+.012,0,0,.9,.48);
+    // The original black collider remains; the shape is now a hinged word-locker.
     if(i===0) label('발소리','#747b83',3.23,2.43,-18.0,0,-Math.PI/2,1.38,.62);
   });
   personWord = label('사람','#afb7c1',0,1.7,-17.3,0,0,1.1,.60);
@@ -326,7 +423,7 @@ function scenery() {
     m.userData={word,color,x,y};enemyGroup.add(m);correctorGlyphs.push(m);
   });
   enemyGroup.visible=false;
-  buildWordArchitecture();
+  buildWordArchitecture();buildCalligrams();
 }
 
 function buildChapterThreeRooms(){
@@ -609,6 +706,7 @@ function updateStage(stage,old) {
     shock();announce('도망쳐! 달려서 사물함에 숨으세요.',true,4.4);
     hud.stage.textContent='경고 · 이름 불명의 존재 감지';
   } else if(stage==='hiding') {
+    flashLockerAt(player);
     document.body.classList.add('hidden-in-locker');
     tone(120,.22,'triangle',.05);announce('쉿. 가만히 기다리세요.',false,2.3);
     hud.stage.textContent='사물함 내부 · 숨소리를 죽이세요';
@@ -626,7 +724,7 @@ function updateStage(stage,old) {
   } else if(stage==='exit') {
     scene.remove(doorMesh);doorMesh.geometry.dispose();
     scene.remove(doorWord);
-    doorWord=label('문','#d6cfbc',0,2.55,-30.028,0,0,1.6,.55);
+    doorWord=null; // The opening is now drawn by the assembled 문·문틀·경첩 calligram.
     announce('문이 열렸습니다. 달리지 말고 다음 구역으로 이동하세요.',false,4.0);tone(523,.25,'sine',.07);
     hud.stage.textContent='기록보관소 · 탈출 통로 열림';
     try{window.KidscadeGame?.milestone?.('ota_door_fixed',{uniqueKey:'ota-prologue'});}catch(_){}
@@ -655,13 +753,13 @@ function interact() {
   if(!started || failed || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed')) return;
   const nearShelter=state.stage==='explore'&&R.distance(player,X.SHELTER)<1.7;
   if(corrector.hidden){
-    X.leave(corrector);document.body.classList.remove('hidden-in-locker');
+    flashLockerAt(player);X.leave(corrector);document.body.classList.remove('hidden-in-locker');
     announce('은신처에서 나왔습니다. 주변의 글자를 살피세요.',false,2.3);
     return;
   }
   if(nearShelter){
     if(X.enter(corrector,player)){
-      player.moving=false;
+      flashLockerAt(player);player.moving=false;
       document.body.classList.add('hidden-in-locker');
       if(document.pointerLockElement===canvas)document.exitPointerLock?.();
       announce('쉿. 지직거리는 소리가 멀어질 때까지 기다리세요.',false,3);
@@ -687,7 +785,7 @@ function interact() {
     }
   } else if(action.type==='leave') {
     if(R.leaveLocker(state)) {
-      document.body.classList.remove('hidden-in-locker');
+      flashLockerAt(player);document.body.classList.remove('hidden-in-locker');
       announce('복도가 막혔어요. 붉은 「막힘」의 이름을 바로잡으세요.',false,3.0);
     }
   } else if(action.type==='literacy'){
@@ -968,7 +1066,7 @@ function update(dt) {
     :corrector.phase==='search'?'주변에서 이름을 찾고 있습니다'
     :distance<7?'지직… 단어가 바뀌고 있습니다':'멀리서 글자가 지워지고 있습니다';
   if(hud.correctorText.textContent!==signal)hud.correctorText.textContent=signal;
-  updateWordArchitecture(elapsed,threat);updateWayfindingSigns();setCamera();updatePrompt();syncHintScope();
+  updateWordArchitecture(elapsed,threat);updateCalligrams(dt,threat);updateWayfindingSigns();setCamera();updatePrompt();syncHintScope();
 }
 function look(dx,dy) {
   if(state.hidden || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed'))return;
@@ -1101,7 +1199,10 @@ window.OtaDebug = Object.freeze({
     guidance:{scope:hintScope,level:hintLevel},chapter3:JSON.parse(JSON.stringify(C3.ensure(state))),echo:{...state.echo},monster:{...state.monster},
     corrector:{phase:corrector.phase,x:corrector.x,z:corrector.z,hidden:corrector.hidden,grace:corrector.grace},
     literacy:{coreDone:literacy.coreDone,corrected:literacy.corrected,contamination:literacy.contamination,awakened:literacy.awakened,items:literacy.items.map(i=>({uid:i.uid,x:i.x,z:i.z,bankIndex:i.bankIndex,kind:i.kind}))},
-    visuals:{surfaces:{wall:S.surfaces.filter(x=>x.kind==='wall').length,
+    visuals:{calligrams:calligramObjects.map(o=>({id:o.id,type:o.type,parts:o.parts.length,
+      visible:o.root.visible,progress:o.progress,swing:o.swing,
+      screen:o.type==='computer'?o.screenText:null})),
+      surfaces:{wall:S.surfaces.filter(x=>x.kind==='wall').length,
       floor:S.surfaces.filter(x=>x.kind==='floor').length,
       ceiling:S.surfaces.filter(x=>x.kind==='ceiling').length,
       door:S.portals.length,visible:architectureMeshes.filter(x=>x.mesh.visible).length,
