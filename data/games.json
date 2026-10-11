@@ -1023,8 +1023,7 @@
       ],
       "input": [
         "touch",
-        "keyboard",
-        "mouse"
+        "keyboard"
       ],
       "qualityStatus": "rework",
       "classroom": false
