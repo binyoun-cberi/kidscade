@@ -127,9 +127,9 @@
         yearly=round(yearly*.70);m.employment='근로 시간 감소';
       }else m.employment=life.career;
       if(m.retired==='partial'||m.retired==='new') yearly=round(yearly*.46+m.pension*.4);
-    }else if(age>=20){
+    }else if(age>=21){
       m.employment=life.career;
-      yearly=round(BASE*factor*(.08+.1*(life.familyLevel==='여유 있는 형편'?1:0)));
+      yearly=round(BASE*factor*(.12+.12*(life.familyLevel==='여유 있는 형편'?1:0)));
     }else{
       m.employment='학업·성장';
       // 18-19 year olds may still live in their family household.
@@ -137,9 +137,13 @@
       yearly=round(BASE*factor*.10);
     }
     const housing=p.settlement==='도시'?1.12:p.settlement==='농촌'?.91:1;
-    const fixedCost=round(BASE*factor*(age<20?.10:m.retired===true?.56:householdCost)*housing);
+    // Study and the transition to adulthood often happen in a shared household;
+    // charging a full independent home at age 20 before a career choice creates forced debt.
+    const studying=life.career==='학생'&&age<=24;
+    const costRate=age<=20?.12:studying?householdCost*.44:m.retired===true?.56:householdCost;
+    const fixedCost=round(BASE*factor*costRate*housing);
     const dependent=p.child&&age>=37&&age<=56?round(BASE*factor*.17):0;
-    const tuition=life.career==='학생'&&age<=24?round(BASE*factor*.34):0;
+    const tuition=studying?round(BASE*factor*.23):0;
     const healthcare=age>=25 && life.stats.health<35?round(BASE*factor*.12):0;
     const expense=fixedCost+dependent+tuition+healthcare;
     m.income=yearly;
