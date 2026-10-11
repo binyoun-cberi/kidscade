@@ -104,7 +104,8 @@ function tick(state,now){
          p.traceState=T.begin(r.trace,p.traceState,tip,now-delta).state;
        }
        const wave=Math.sin(r.elapsed/360);
-       const speed=105+65*wave+p.assist*46;
+       // A fixed held key is deliberately unsafe: alternate slow/fast as the speed fluctuates.
+       const speed=120+112*wave+p.assist*62;
        const pos=T.sampleAt(r.trace,p.traceState.progress+Math.max(0,speed)*delta/1000);
        p.traceState=T.move(r.trace,p.traceState,pos,now);
      }
