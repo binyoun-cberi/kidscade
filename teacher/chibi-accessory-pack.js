@@ -128,9 +128,9 @@ function fitCurvedFaceParts(group,body,eyes,fit){
       const sign=node.name.endsWith('_-1')?-1:1;
       const ey=group.userData.faceEyeY;
       const pts=[
-        [sign*.247,ey+.017,.065],
-        [sign*.276,ey+.019,.018],
-        [sign*.314,ey+.009,-.038]
+        [sign*.315,ey+.017,.065],
+        [sign*.344,ey+.019,.018],
+        [sign*.375,ey+.009,-.038]
       ].map(([x,y,offset])=>{
         const surface=faceZ(Math.sign(x)*Math.min(Math.abs(x),.29),y,true);
         return new THREE.Vector3(x,y,(Number.isFinite(surface)?surface:group.userData.faceFallbackZ)+offset);
@@ -368,7 +368,7 @@ function buildGeometry(style,source,sourceHair,eyes){
     case 'straw':return cyl(headR*.88,headR*.98,.145,hc.x,scalpY+.016,hc.z);
     case 'round':return ring(.071,.009,-.110,eyeY,faceZ);
     case 'square':return box(.150,.119,.012,-.110,eyeY,faceZ);
-    case 'sunglasses':return facePatch(-.168,eyeY-.027,faceZ+.016,.316,.202,.032);
+    case 'sunglasses':return facePatch(-.198,eyeY-.027,faceZ+.016,.372,.202,.032);
     case 'goggles':return box(.365,.133,.055,0,eyeY,faceZ+.015);
     case 'mask':return facePatch(0,eyeY-.305,faceZ+.009,.335,.205,.055,14,28,'mask');
     case 'schoolbag':return box(.335,.360,.172,0,.966,-.240);
@@ -443,16 +443,16 @@ function createDetails(style,context){
         for(const sign of [-1,1])
           add(box(.144,.012,.021,sign*.110,eyeY+.061,faceZ),black,'topFrame_'+sign);
       }else if(kind==='sunglasses')
-        add(facePatch(.168,eyeY-.027,faceZ+.016,.316,.202,.032),style.color,'rightLens');
+        add(facePatch(.198,eyeY-.027,faceZ+.016,.372,.202,.032),style.color,'rightLens');
       else if(kind==='goggles')
         add(box(.327,.091,.017,0,eyeY,faceZ+.046),'#8bcdd7','glass');
       add(facePatch(0,eyeY+.008,faceZ+.022,.055,.014,.006,2,8),style.color,'bridge');
       for(const sign of [-1,1]){
         if(kind==='sunglasses'){
           add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
-            new THREE.Vector3(sign*.247,eyeY+.017,faceZ+.045),
-            new THREE.Vector3(sign*.276,eyeY+.019,faceZ+.018),
-            new THREE.Vector3(sign*.314,eyeY+.009,faceZ-.038)
+            new THREE.Vector3(sign*.315,eyeY+.017,faceZ+.045),
+            new THREE.Vector3(sign*.344,eyeY+.019,faceZ+.018),
+            new THREE.Vector3(sign*.375,eyeY+.009,faceZ-.038)
           ]),16,.007,6,false),black,'temple_'+sign);
         }else add(box(.113,.014,.012,sign*.238,eyeY+.02,faceZ-.004),black,'temple_'+sign);
       }
