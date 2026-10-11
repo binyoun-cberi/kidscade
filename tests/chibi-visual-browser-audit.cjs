@@ -784,6 +784,80 @@ const errors=[];
   report.mobile=phone;
   await sample('RUN','side',.25,'phone');
 
+  // Curated reviewer contact sheets: all 30 garment styles, all 22
+  // accessories, all 12 male hairstyles and newly captured 12 female styles.
+  // Evidence is actual CDP Chrome WebGL screenshots, not mockups.
+  if(process.env.KIDSCADE_CHIBI_CONTACT_SHEETS==='1'){
+    const ledger=new Map();
+    const add=(group,id,filename)=>{
+      if(!fs.existsSync(path.join(OUT,filename)))
+        throw Error('Missing reviewer screenshot '+group+'/'+id+': '+filename);
+      if(!ledger.has(group))ledger.set(group,[]);
+      ledger.get(group).push({id,filename});
+    };
+    for(const id of catalog.male)
+      add('male-hair',id,'temple-'+id+'-walk-threeQuarter-50.png');
+    await setFit('female');
+    for(const id of catalog.female){
+      const selected=await evalPage("(()=>{const e=document.getElementById('chibiHair');e.value="+JSON.stringify(id)+";e.dispatchEvent(new Event('change',{bubbles:true}));return e.value})()");
+      assert.equal(selected,id,'Female hairstyle selection failed: '+id);
+      const pose=await sample('IDLE','threeQuarter',0,'review-female-hair-'+id);
+      assert.ok(pose.selectedParts.includes(id),'Female hair invisible '+id);
+      const movement=await sample('WALK','side',.25,'review-female-hair-'+id);
+      assert.ok(movement.selectedParts.includes(id),'Female hair motion invisible '+id);
+      add('female-hair',id,'review-female-hair-'+id+'-idle-threeQuarter-0.png');
+    }
+    for(const o of report.outfitPack.styles)
+      add(o.fit+'-'+o.category,o.name,'outfit-'+o.name+'-idle-threeQuarter-0.png');
+    for(const a of report.accessoryPack.styles){
+      if(a.slot==='face'&&(a.id==='chibi_face_mask'||a.id==='chibi_face_sunglasses'))continue;
+      add('shared-'+a.slot,a.id,'v53-'+a.id+'-walk-threeQuarter-25.png');
+    }
+    const escapeXml=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+    const tileWidth=290,tileHeight=332,columns=3;
+    const cropFor=(group,w,h)=>{
+      let y=.07,height=.80;
+      if(group.includes('hair')||group.includes('hat')){y=.055;height=.53;}
+      else if(group.includes('bottom')){y=.49;height=.46;}
+      else if(group.includes('shoes')){y=.68;height=.29;}
+      else if(group.includes('top')){y=.22;height=.64;}
+      else if(group.includes('wrist')){y=.24;height=.67;}
+      else if(group.includes('bag')){y=.22;height=.70;}
+      let left=Math.floor(w*.24),width=Math.floor(w*.53);
+      let top=Math.floor(h*y),hh=Math.floor(h*height);
+      width=Math.min(width,w-left);hh=Math.min(hh,h-top);
+      return {left,top,width,height:hh};
+    };
+    const stats={};
+    for(const [group,items] of ledger){
+      stats[group]=items.length;
+      for(let start=0;start<items.length;start+=9){
+        const segment=items.slice(start,start+9);
+        const rows=Math.ceil(segment.length/columns);
+        const composites=[];
+        for(let i=0;i<segment.length;i++){
+          const {id,filename}=segment[i],c=i%columns,row=Math.floor(i/columns);
+          const src=path.join(OUT,filename),m=await sharp(src).metadata();
+          const crop=cropFor(group,m.width,m.height);
+          const screenshot=await sharp(src).extract(crop).resize({
+            width:270,height:290,fit:'contain',background:'#1e2d3b'
+          }).png().toBuffer();
+          composites.push({input:screenshot,left:c*tileWidth+10,top:row*tileHeight+5});
+          const label=id.replace(/^kidscade_/,'').replace(/^chibi_/,'');
+          const svg=Buffer.from('<svg width="290" height="32"><text x="7" y="21" font-family="sans-serif" font-size="13" fill="#fff">'+escapeXml(label)+'</text></svg>');
+          composites.push({input:svg,left:c*tileWidth,top:row*tileHeight+297});
+        }
+        const sheet=await sharp({create:{width:tileWidth*columns,height:tileHeight*rows,channels:4,background:'#1e2d3b'}})
+          .composite(composites).webp({quality:80}).toBuffer();
+        const tag=group+'-'+(1+Math.floor(start/9));
+        fs.writeFileSync(path.join(OUT,'wardrobe-contact-'+tag+'.webp'),sheet);
+        console.log('CHIBI_WARDROBE_SHEET '+tag+' '+sheet.toString('base64'));
+      }
+    }
+    report.wardrobeVisualReview={count:[...ledger.values()].reduce((v,a)=>v+a.length,0),groups:stats};
+    console.log('CHIBI_WARDROBE_CONTACT_SUCCESS '+JSON.stringify(report.wardrobeVisualReview));
+  }
+
   fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');
   assert.equal(errors.length,0,'Browser exceptions: '+errors.join('; '));
   console.log('CHIBI_VISUAL_AUDIT '+JSON.stringify({cases:report.cases.length,viewport:'1024x900 + 390x844',
