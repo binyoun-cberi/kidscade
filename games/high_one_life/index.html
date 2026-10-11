@@ -69,6 +69,17 @@
             <div><dt>가정환경</dt><dd id="traitFamily">—</dd></div>
             <div><dt>삶의 방향</dt><dd id="traitCareer">—</dd></div>
           </dl>
+          <div class="focus-block">
+            <div class="stat-title">올해의 생활 방향 <span>언제든 변경</span></div>
+            <div class="focus-grid" role="group" aria-label="올해의 생활 방향">
+              <button data-focus="balance" aria-pressed="true" type="button">균형</button>
+              <button data-focus="learning" type="button">배움</button>
+              <button data-focus="people" type="button">사람</button>
+              <button data-focus="health" type="button">건강</button>
+              <button data-focus="work" type="button">일</button>
+            </div>
+            <p class="focus-hint">집중하는 것에 따라 매년 조금씩 다른 삶이 펼쳐집니다.</p>
+          </div>
           <div class="stat-title">지금의 나 <span>0 ~ 100</span></div>
           <div id="statList" class="stats" aria-label="인생 상태 지표"></div>
           <div class="controls">
@@ -82,6 +93,11 @@
           </div>
         </aside>
       </div>
+      <section class="comparison" aria-label="같은 순간에 태어난 다른 사람들">
+        <div class="comparison-head"><span class="eyebrow">BORN IN THE SAME MOMENT</span><h2>그 순간, 다른 곳에서도 누군가 태어났습니다.</h2><p>네 사람의 인생도 당신과 같은 나이까지 함께 흘러갑니다. 그들도 출생지를 고르지 못했습니다.</p></div>
+        <div id="peers" class="peers"></div>
+      </section>
+      <section class="life-map" aria-label="인생 지도"><span class="eyebrow">A MAP OF THE YEARS</span><h2>지나온 시간</h2><p>한 칸이 한 해입니다. 당신만의 인생 지도가 쌓여갑니다.</p><div id="ageMap" class="age-map"></div></section>
     </section>
 
     <section id="end" class="section end hidden">
