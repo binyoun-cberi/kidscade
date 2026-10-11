@@ -89,7 +89,7 @@ function eligible(life,e){const w=ensure(life);
 }
 function event(life){
  // Career event catalogue is written for contemporary employment.
- if(life.year<1990)return false;
+ if(life.year<2026)return false;
  const w=ensure(life),age=life.age;if(age<9||r(life,age,300)>.36)return false;
  const choices=E.events.filter(e=>eligible(life,e));if(!choices.length)return false;
  let sum=choices.reduce((s,e)=>s+e.weight*(e.domain===w.sector?1.8:1),0);
