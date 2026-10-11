@@ -155,6 +155,13 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await key('KeyH',true);await key('KeyH',false);await sleep(60);
   assert.equal((await snap()).guidance.level,2);
   await screenshot('02-management-room.png','desktop');
+  const wordWorld=(await snap()).visuals.surfaces;
+  assert.deepEqual({wall:wordWorld.wall,floor:wordWorld.floor,ceiling:wordWorld.ceiling,door:wordWorld.door},
+    {wall:16,floor:4,ceiling:4,door:12},
+    'collidable world geometry must be readable as wall, floor, ceiling and door words');
+  assert.ok(wordWorld.visible>=4,'surface text must be visible without obscuring the starting console');
+  report.wordArchitecture=wordWorld;
+  await screenshot('02b-wall-floor-ceiling-words.png','desktop');
   // Approach the desk without moving inside the collision volume.
   await moveUntil('x',-1.4,'console');
   await moveUntil('z',3.45,'console');
@@ -231,6 +238,8 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await moveUntil('x',-5.4,'explore',12);
   await solveCore('core-1');
   await screenshot('12b-literacy-core.png','desktop');
+  assert.ok((await snap()).visuals.surfaces.visible>=2,'room words must remain visible after repair');
+  await screenshot('12c-word-built-office.png','desktop');
 
   // Investigate the office first. Both rooms are real walkable spaces.
   await moveUntil('z',-47.8,'explore',18);
