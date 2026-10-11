@@ -234,7 +234,7 @@
       }
       // 사망 가능성은 게임을 위한 추상적인 난수 모델이다.
       const childMortality=measured(this.country,'under5Mortality');
-      const observedChildHazard=this.age<=5 && childMortality>=0 && childMortality<1000
+      const observedChildHazard=this.age<=5 && childMortality!==null && childMortality>=0 && childMortality<1000
         ? 1-Math.pow(1-childMortality/1000,1/5) : null;
       // Under-five aggregate rate is distributed across five years for playability;
       // it is NOT an observed single-year infant hazard.
