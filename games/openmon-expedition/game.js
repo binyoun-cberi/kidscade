@@ -555,8 +555,10 @@ function renderBattle(){
     esc(species(m.id).name)+' '+(m.hp>0?'●':'×')+'</span>').join("")+
    '</div></div>').join("");
  }
- const bg=battle.zone==="cave"?"Cave_Back.png":"Forest_Background.png";
- $("battleBackdrop").style.backgroundImage="linear-gradient(#ffffff15,#bdd2a725),url('"+ASSET+"more%20assets/"+bg+"')";
+ const bg=["cave","powerPlant"].includes(battle.zone)?"Cave_Back.png":"Forest_Background.png";
+ const tone=battle.zone==="snowfield"?"#d2eafa70":battle.zone==="tidal"?"#67b5d547":
+ battle.zone==="powerPlant"?"#e9c27340":"#bdd2a725";
+ $("battleBackdrop").style.backgroundImage="linear-gradient(#ffffff15,"+tone+"),url('"+ASSET+"more%20assets/"+bg+"')";
  $("battleTurn").textContent=battle.turn+"턴"+(battle.trainer?" · "+battle.trainer.party.filter(m=>m.hp>0).length+"/3 남음":"");
  $("battleLog").textContent=battle.message;
  if(battle.done){$("battleActionPanel").classList.add("hidden");$("battleAfter").classList.remove("hidden");return}
@@ -835,6 +837,32 @@ function drawBuilding(camX,camY){
  cx.fillStyle="#eed7a6";cx.fillRect(sx+51,sy+19,38,17);
  cx.fillStyle="#315648";cx.font="bold 9px monospace";cx.fillText("키즈몬",sx+52,sy+31);
 }
+function drawSettlements(camX,camY){
+ for(const [key,left,label,roof,walls] of [
+  ["crystalTown",89,"수정 연구소","#51797e","#b9dcd3"],
+  ["harborTown",135,"해류 탐사소","#387b91","#f2d6a4"],
+  ["snowTown",180,"기후 연구소","#667ab6","#e0e9f4"]
+ ]){
+  const x=(left-camX)*16,y=(5-camY)*16;
+  if(x>C.width+8||x+128<0||y>C.height+8||y+80<0)continue;
+  cx.fillStyle="#35545e";cx.fillRect(x+1,y+22,125,61);
+  cx.fillStyle=walls;cx.fillRect(x+3,y+27,120,54);
+  cx.fillStyle=roof;cx.fillRect(x-4,y+13,135,16);cx.fillRect(x+9,y+3,109,12);
+  cx.fillStyle="#679ab6";cx.fillRect(x+12,y+39,25,24);cx.fillRect(x+90,y+39,25,24);
+  cx.fillStyle="#ecf8f3";cx.fillRect(x+15,y+43,6,14);cx.fillRect(x+94,y+43,6,14);
+  cx.fillStyle="#405b65";cx.fillRect(x+54,y+46,23,36);
+  cx.fillStyle="#fff3d8";cx.fillRect(x+26,y+16,74,15);
+  cx.fillStyle="#294f54";cx.font="bold 9px sans-serif";cx.fillText(label,x+29,y+27);
+  if(key==="crystalTown"){
+   cx.fillStyle="#92f4e9";cx.fillRect(x+6,y+2,5,8);cx.fillRect(x+117,y+1,5,9);
+  }else if(key==="harborTown"){
+   cx.fillStyle="#f2ece1";cx.fillRect(x+117,y-6,2,23);
+   cx.beginPath();cx.moveTo(x+120,y-5);cx.lineTo(x+136,y+8);cx.lineTo(x+120,y+8);cx.fill();
+  }else{
+   cx.fillStyle="#fff";cx.fillRect(x+4,y+2,20,4);cx.fillRect(x+90,y+1,29,4);
+  }
+ }
+}
 function drawNpc(name,img,x,y,camX,camY,frame=0){
  const sx=(x-camX)*16,sy=(y-camY)*16;
  if(sx<-24||sx>C.width+18||sy<-24||sy>C.height+25)return;
@@ -861,8 +889,11 @@ function render(now){
  cx.fillStyle="#80af72";cx.fillRect(0,0,C.width,C.height);
  for(let dy=0;dy<rows;dy++)for(let dx=0;dx<columns;dx++){const x=camX+dx,y=camY+dy;renderTerrain(x,y,dx*16,dy*16)}
  drawBuilding(camX,camY);
+  drawSettlements(camX,camY);
  drawLandmarks(camX,camY);
  if(camX<=13&&camY<=10){drawNpc("회복·상점",imgs.staff,9,10,camX,camY);drawNpc("연구원",imgs.npc,13,10,camX,camY)}
+  for(const v of E.VILLAGES.filter(v=>v.key!=="town"))
+   drawNpc(v.npc,imgs.staff,v.npcX,v.npcY,camX,camY);
  const px=(player.x-camX)*16,py=(player.y-camY)*16;
  cx.fillStyle="#254c3950";cx.fillRect(px+2,py+11,13,4);
  const frame=Math.floor(now/210)%3;
