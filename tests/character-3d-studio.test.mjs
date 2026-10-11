@@ -1069,7 +1069,7 @@ test('Chibi v6.3 facial accessories use curved, outward-facing geometry',()=>{
   assert.match(pack,/indices\.push\(a,a\+1,b,b,a\+1,b\+1\)/);
   assert.match(pack,/case 'mask':return facePatch\(/);
   assert.match(pack,/case 'sunglasses':return facePatch\(/);
-  assert.match(pack,/add\(facePatch\(\.137,eyeY/);
+  assert.match(pack,/add\(facePatch\(\.145,eyeY/);
   assert.doesNotMatch(pack,/case 'mask':return sphere\(/);
   assert.doesNotMatch(pack,/case 'sunglasses':return sphere\(/);
 });
@@ -1084,7 +1084,20 @@ test('v6.4 mask and sunglasses sample the active face surface for each body fit'
   assert.match(pack,/kidscadeFaceProjection='strap'/);
   assert.match(pack,/kidscadeFaceProjection=style\.kind==='sunglasses'\?'lens':'skin'/);
   assert.match(pack,/const actual=faceZ\(x,y,spec==='lens'\)/);
-  assert.match(pack,/const clothClearance=\.010\+\.030/);
+  assert.match(pack,/const clothClearance=\.008\+\.022/);
   assert.match(pack,/shape==='mask'\?\.042\*\(1-v\)\*nx\*nx/);
   assert.doesNotMatch(pack,/add\(ring\(\.065,\.008,sign\*\.186/);
+});
+
+test('v6.5 facial contours track real jaw edges and round both eye lenses',()=>{
+  const pack=read('teacher/chibi-accessory-pack.js');
+  assert.match(pack,/const facialSurfaceCache=new WeakMap\(\)/);
+  assert.match(pack,/surfacePoints\.push\(\[x,y,z\]\)/);
+  assert.match(pack,/if\(Number\.isFinite\(front\)\)return front/);
+  assert.match(pack,/const lensClearance=\.052\+\.016\*side\*side/);
+  assert.match(pack,/case 'sunglasses':return facePatch\(-\.145,eyeY/);
+  assert.match(pack,/kind==='sunglasses'\)\{/);
+  assert.match(pack,/kidscadeFaceProjection='temple'/);
+  assert.match(pack,/Math\.pow\(Math\.abs\(ny\),6\)/);
+  assert.match(pack,/const hem=THREE\.MathUtils\.clamp/);
 });
