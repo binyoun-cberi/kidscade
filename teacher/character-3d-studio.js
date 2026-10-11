@@ -621,7 +621,7 @@ function hatSafeGeometry(mesh){
     const amount=crown*(.36+.64*keepFringe);
     p.setXYZ(i,
       center.x+(x-center.x)*(1-.105*amount),
-      y-height*.125*amount,
+      y-height*.075*amount,
       center.z+(z-center.z)*(1-.085*amount)
     );
   }
@@ -1483,12 +1483,10 @@ function attachChibiHairDetailMeshes(hair,template,name,bounds,size){
     hair.add(piece);
   };
   if(name==='chibi_female_hair_twintail'){
-    for(const sign of [-1,1]){
-      ball('tie_'+sign,at(sign*.45,.47,-.17),.035,.042,.044);
-      ball('tail_'+sign,at(sign*.49,.30,-.21),.049,.140,.057,true);
-      ball('tailTip_'+sign,at(sign*.50,.21,-.23),.032,.076,.040,true);
-    }
-  }else if(name==='chibi_female_hair_curl'){
+    // No separate oval volumes: two low rear hair locks are sculpted from
+    // the shared source-skinned geometry in createKidscadeHairCollection().
+    // Detachable sphere details were conspicuous side discs in Chrome.
+    }else if(name==='chibi_female_hair_curl'){
     for(const sign of [-1,1]){
       for(let row=0;row<3;row++){
         const v=.34+row*.16;
@@ -1587,7 +1585,16 @@ function createKidscadeHairCollection(){
         templeFill*temple*.11)+wave+pixieLift-mulletDrop;
       const pz=z+size.z*(style.front*front*.12+style.crown*crown*.025+
         templeFill*temple*.055);
-      points.setXYZ(i,px,py,pz);
+      // v6.6: form two nape locks from the ORIGINAL skinned hair instead of
+      // attaching head-bone spheres which rendered as flat round stickers.
+      const twin=name==='chibi_female_hair_twintail'
+        ?smooth(.1,.67,-nz)*(1-smooth(.28,.69,ny)):0;
+      const centerNape=1-smooth(.12,.47,Math.abs(nx));
+      const twinTail=1-centerNape;
+      points.setXYZ(i,
+        px+Math.sign(nx)*size.x*.075*twin*twinTail,
+        py+size.y*twin*(.15*centerNape-.11*twinTail),
+        pz-size.z*.030*twin*twinTail);
     }
     points.needsUpdate=true;
     geometry.computeVertexNormals();
