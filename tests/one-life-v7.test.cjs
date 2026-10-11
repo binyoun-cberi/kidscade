@@ -29,7 +29,7 @@ function toAge(life,target,choiceIndex=1){
 }
 test('v7 integrated with all existing branches and fast single-speed game',()=>{
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8'),game=fs.readFileSync(path.join(root,'game.js'),'utf8');
- assert.match(html,/world-v7\.js\?v=1/);
+ assert.match(html,/world-v7\.js\?v=\d+/);
  assert.match(html,/traitAptitude/);assert.match(html,/traitQualification/);
  assert.match(game,/YEAR_MS = 260/);
  assert.equal(W7.SKILLS.length,5);

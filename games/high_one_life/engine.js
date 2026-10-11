@@ -11,7 +11,8 @@
   const Official=typeof module!=='undefined'&&module.exports
     ? require('./official-data.js')
     : (typeof window!=='undefined'?window.OneLifeOfficialStats:null);
-  const measured=(country,key)=>{
+  const measured=(country,key,birthYear=2026)=>{
+    if(birthYear!==2026)return null; // 2024/25 data cannot represent historical births.
     const sample=Official?.countries?.[country?.[0]]?.[key];
     return sample&&Number.isFinite(sample.value)?sample.value:null;
   };
@@ -82,7 +83,8 @@
     '아프가니스탄':1.507838,'앙골라':1.429803,'예멘':1.401358,
     '베트남':1.328422,'모잠비크':1.304409,'러시아':1.241824,'이라크':1.187570
   });
-  const birthWeight = country => {
+  const birthWeight = (country,birthYear=2026) => {
+    if(birthYear!==2026)return 1; // Equal-weight historical sandbox, not reconstructed birth counts.
     const births=measured(country,'estimatedBirths');
     return births>0?births/1e6:(BIRTH_COUNTS_2025[country[0]]
       ?? country[2]*Math.max(7,40-36*country[3])/1000);
@@ -165,15 +167,17 @@
   const FOCUS = Object.freeze(['balance','learning','people','health','work']);
   const stages = age => age < 7 ? '유년기' : age < 19 ? '성장기' : age < 31 ? '청년기' : age < 61 ? '성인기' : '노년기';
   class Life {
-    constructor(seed) {
+    constructor(seed, options={}) {
+      this.birthYear=Number.isInteger(options?.birthYear)&&options.birthYear>=1900&&options.birthYear<=2026?options.birthYear:2026;
       this.seed = Number.isFinite(seed) ? (seed >>> 0) : (((Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0));
       this.rng = this.seed || 0x9e3779b9;
       this.age = 0;
-      this.year = 2026;
-      let pick = this.rand() * totalBirthWeight;
+      this.year = this.birthYear;
+      let pick = this.rand() * (this.birthYear===2026?totalBirthWeight:COUNTRIES.length);
       this.country = COUNTRIES[COUNTRIES.length-1];
-      for (const c of COUNTRIES) { pick -= birthWeight(c); if (pick < 0) { this.country = c; break; } }
-      const birthSexRatio=measured(this.country,'sexRatioBirth');
+      for (const c of COUNTRIES) { pick -= birthWeight(c,this.birthYear); if (pick < 0) { this.country = c; break; } }
+      if(options?.countryName==='대한민국')this.country=COUNTRIES.find(c=>c[0]==='대한민국');
+      const birthSexRatio=measured(this.country,'sexRatioBirth',this.birthYear);
       const femaleShare=birthSexRatio>0.9&&birthSexRatio<1.3?1/(1+birthSexRatio):0.49;
       this.gender=this.rand()<femaleShare?'여자':'남자';
       this.familyLevel = this.rand() < 0.24 ? '빠듯한 형편' : this.rand() < 0.32 ? '여유 있는 형편' : '평범한 형편';
@@ -233,12 +237,20 @@
         if(value>70)this.change({[key]:-Math.ceil((value-70)*.12)});
       }
       // 사망 가능성은 게임을 위한 추상적인 난수 모델이다.
-      const childMortality=measured(this.country,'under5Mortality');
-      const observedChildHazard=this.age<=5 && childMortality!==null && childMortality>=0 && childMortality<1000
-        ? 1-Math.pow(1-childMortality/1000,1/5) : null;
+      const childMortality=measured(this.country,'under5Mortality',this.birthYear);
+      // Historical births have no verified period-specific life table in this build.
+      // Their invented under-five risk matches the labelled game-only survival chart.
+      const fictionalUnder5=this.birthYear!==2026
+        ?Math.max(.015,Math.min(.09,.09-(this.birthYear-1900)*.00065))
+        :null;
+      const age0To5Hazard=this.age<=5 && childMortality!==null && childMortality>=0 && childMortality<1000
+        ?1-Math.pow(1-childMortality/1000,1/5)
+        :this.age<=5 && fictionalUnder5!==null
+          ?1-Math.pow(1-fictionalUnder5,1/5)
+          :null;
       // Under-five aggregate rate is distributed across five years for playability;
       // it is NOT an observed single-year infant hazard.
-      const ageRisk = observedChildHazard!==null?observedChildHazard:
+      const ageRisk = age0To5Hazard!==null?age0To5Hazard:
         this.world && Number.isFinite(this.world.mortalityTarget)
         ? (() => {
             // A broad stochastic hazard curve centered near a 2024 country
@@ -308,18 +320,20 @@
         story:'태어나서 '+this.age+'년을 살아온 당신의 삶에는 '+top+'의 순간들이 남았다. 정해진 정답은 없다. 그 모든 순간이 하나의 인생이다.'};
     }
     snapshot() {
-      return {version:1,seed:this.seed,rng:this.rng,age:this.age,year:this.year,country:this.country[0],
+      return {version:1,seed:this.seed,rng:this.rng,birthYear:this.birthYear,age:this.age,year:this.year,country:this.country[0],
         gender:this.gender,familyLevel:this.familyLevel,stats:{...this.stats},career:this.career,focus:this.focus,reflections:this.reflections.map(e=>({...e})),
         log:this.log.map(e=>({...e})),seen:[...this.seen],pending:this.pending,
         alive:this.alive,deathReason:this.deathReason};
     }
     static restore(data) {
       if(!data||data.version!==1 || !Number.isInteger(data.age) || data.age<0 || data.age>108) return null;
-      const life=new Life(data.seed);
+      // Old v1 saves omit birthYear: those are always 2026 births.
+      const birthYear=Number.isInteger(data.birthYear)&&data.birthYear>=1900&&data.birthYear<=2026?data.birthYear:2026;
+      const life=new Life(data.seed,{birthYear});
       const country=COUNTRIES.find(c=>c[0]===data.country);
       if(!country || !data.stats || !Array.isArray(data.log) || !Array.isArray(data.seen)) return null;
       life.rng = Number(data.rng)>>>0;
-      life.age=data.age; life.year=2026+data.age; life.country=country;
+      life.age=data.age; life.year=birthYear+data.age; life.country=country;
       life.gender=data.gender==='여자'?'여자':'남자';
       life.familyLevel=String(data.familyLevel||'평범한 형편');
       life.stats=Object.fromEntries(['health','happiness','knowledge','bonds','wealth'].map(k=>[k,clamp(Number(data.stats[k])||0)]));
@@ -328,7 +342,7 @@
       life.reflections=Array.isArray(data.reflections)?data.reflections.filter(e=>REFLECTION_AGES.includes(e.age)).slice(-5).map(e=>({age:e.age,text:String(e.text||'').slice(0,140)})):[];
       const validLog=data.log.filter(e=>Number.isInteger(e.age)&&typeof e.text==='string');
       life.log=validLog.filter((e,index)=>index>=Math.max(0,validLog.length-100)||e.kind==='decision'||e.kind==='decision-effect')
-        .map(e=>({age:e.age,year:2026+e.age,text:e.text.slice(0,160),kind:String(e.kind||'life')}));
+        .map(e=>({age:e.age,year:birthYear+e.age,text:e.text.slice(0,160),kind:String(e.kind||'life')}));
       life.seen=data.seen.filter(i=>Number.isInteger(i)&&i>=0&&i<EVENTS.length);
       life.pending=data.alive && (CHOICES.some(c=>c.age===data.pending) || (typeof data.pending==='string' && /^reflection:(5|15|30|50|70)$/.test(data.pending))) ? data.pending : null;
       life.alive=data.alive===true; life.deathReason=String(data.deathReason||'');

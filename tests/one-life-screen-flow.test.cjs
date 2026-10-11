@@ -31,6 +31,7 @@ global.window.OneLifeScene=Scene;
 const Scenes6=require(path.join(root,'scenes-v6.js'));
 global.window.OneLifeScenes6=Scenes6;
 const Scenes8=require(path.join(root,'scenes-v8.js'));
+const History=require(path.join(root,'history.js'));
 delete global.window;
 const makeElement=(tag='div')=>{
  const listeners={}; const classes=new Set();
@@ -64,9 +65,9 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  const sdk={start:()=>{},result:(payload)=>{document.result=payload;},registerPauseHandlers:()=>{},registerCleanup:()=>{}};
  // Use a reproducible full-length life to test adult UI without early-death flakiness.
  const StableSim={...Sim,Life:class extends Sim.Life{
-  constructor(seed){super(seed===undefined?911:seed);}
+  constructor(seed,options){super(seed===undefined?911:seed,options);}
  }};
- const window={OneLifeSim:StableSim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeWorld6:World6,OneLifeWorld7:World7,OneLifeWorld8:World8,OneLifeCareers6:Careers6,OneLifeEvents6:Events6,OneLifeScene:Scene,OneLifeScenes6:Scenes6,OneLifeScenes8:Scenes8,KidscadeGame:sdk,
+ const window={OneLifeSim:StableSim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeWorld6:World6,OneLifeWorld7:World7,OneLifeWorld8:World8,OneLifeCareers6:Careers6,OneLifeEvents6:Events6,OneLifeScene:Scene,OneLifeScenes6:Scenes6,OneLifeScenes8:Scenes8,OneLifeHistory:History,KidscadeGame:sdk,
   scrollTo(){},addEventListener(){}};
  new Function('window','document','localStorage','performance','setInterval','clearInterval',
   code)(window,document,localStorage,{now:()=>now},
@@ -162,4 +163,18 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.ok(!get('endComparison').classList.contains('hidden'));
  assert.ok(get('endComparisonRows').children.length>=7);
  assert.ok(get('endComparisonRows').children.some(node=>node.classList.contains('changed')),'no changed outcome or choices');
+ // The exact same controller must also support a birth in colonial-era Korea.
+ get('birthYearInput').value='1919';
+ get('birthLocation').value='korea';
+ get('drawBtn').click();
+ const historicDraw=[...intervals.values()].at(-1);
+ for(let i=0;i<19;i++)historicDraw();
+ assert.match(get('birthDate').textContent,/^1919년/);
+ assert.match(get('birthPlace').textContent,/한반도/);
+ assert.match(get('birthEraNote').textContent,/역사 체험/);
+ get('lifeStartBtn').click();
+ assert.equal(get('currentYear').textContent,'1919년');
+ assert.match(get('historyContext').textContent,/일제강점기/);
+ assert.ok(get('sceneLabel').textContent.includes('상상한 장면'));
+ assert.match(get('countrySourceNote').textContent,/역사적 출생/);
 });
