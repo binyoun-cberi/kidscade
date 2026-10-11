@@ -119,6 +119,11 @@ body.in-locker #joystick{opacity:.2;pointer-events:none}
   .controls{bottom:8px}
   .card{max-height:97vh}
 }
+#mouseLockHint{position:absolute;bottom:23px;left:50%;transform:translateX(-50%);z-index:7;
+padding:11px 18px;border:1px solid #99c6d8;border-radius:10px;background:#183344eb;color:#ecf6fb;font-weight:750}
+#lookSensitivity{margin:8px;padding:7px;color:#eaf1f5;background:#1b3343;border:1px solid #7e9bab;border-radius:7px}
+#tutorialStart{background:linear-gradient(120deg,#365468,#1c3345)!important;color:#eaf1f5!important}
+@media (hover:hover) and (pointer:fine){#joystick,.controls{display:none!important}}
 </style>
 </head>
 <body>
@@ -158,19 +163,15 @@ body.in-locker #joystick{opacity:.2;pointer-events:none}
 <button id="mouseLockHint" class="hidden" type="button">화면을 클릭해 마우스 시점 조작하기</button>
 <section id="intro" class="overlay">
   <div class="card">
-    <span class="eyebrow">CASE 001 · 자정의 학교 · SIX ANOMALIES</span>
+    <span class="eyebrow">CASE 002 · MIDNIGHT SURVIVAL</span>
     <h1>괴담 학교 퇴마</h1>
-    <p class="introLead">ㄷ자 학교에 괴이 여섯이 숨어 있습니다. 서쪽 연결동 관리실에서 출발해 교실을 직접 조사하고, 각 괴이의 약점을 알아내 봉인하세요.</p>
-    <div class="rule"><b>1. 도깨비 · 북쪽 6-1</b> · 처음 물건까지 안내선이 나타납니다. 물건 세 개를 바로잡고 봉인하세요.</div>
-    <div class="rule"><b>2. 처녀귀신 · 북쪽 과학실</b> · 직접 얼굴을 바라보면 멈춥니다. 마우스나 화면을 돌려 시선을 맞추세요. 첫 만남은 안전한 연습입니다.</div>
-    <div class="rule"><b>3. 유키온나 · 남쪽 가사실</b> · 얼어붙기 전에 난방장치 세 곳을 복구하세요.</div>
-    <div class="rule"><b>4. 달걀귀신 · 북쪽 음악실</b> · 바라보면 위험합니다. 화면을 돌려 진짜로 등을 돌린 채 4초를 버티세요.</div>
-    <div class="rule"><b>5. 저승사자 · 연결동 전기실</b> · 종소리 세 번을 듣고 마지막 종에 맞춰 문을 닫으세요.</div>
-    <div class="rule"><b>6. 늑대인간 · 남쪽 날개</b> · 소리를 따라오는 늑대를 스피커로 함정에 유인하세요.</div>
-<div class="rule"><b>낡은 사물함</b> · 복도에 놓인 사물함 가까이에서 E 또는 행동 버튼을 누르면 숨을 수 있어요. 귀신이 마지막 목격 지점을 살피는 동안 눈을 피하세요. 너무 오래 바로 앞에 있으면 발각돼요.</div>
+    <p class="introLead">자정의 학교에서 5분을 버티세요. 괴이를 반복해서 약화·봉인해야 합니다. 시간이 지날수록 추격자가 많아져 최대 3마리가 동시에 등장합니다.</p>
+    <div class="rule"><b>승리 조건</b> · 생명 3개로 5분을 버티면서 최소 8회 퇴마에 성공하기. 봉인하면 손전등 전력을 일부 회복할 수 있습니다.</div>
+    <div class="rule"><b>규칙을 눈으로 발견하기</b> · 눈을 마주쳐야 멈추는 괴이, 등을 돌려야 약해지는 괴이, 빛을 싫어하는 괴이가 있습니다. 가까이 가면 짧은 힌트와 약화 게이지가 표시됩니다.</div>
+    <div class="rule"><b>조작</b> · PC는 WASD 이동 / 마우스 이동으로 시점 회전 / E 봉인 / F 손전등 / Shift 달리기. 모바일은 왼쪽 스틱 이동, 오른쪽 화면 드래그.</div>
     <button id="start" type="button" class="primary">일반 플레이 · 5분 생존 시작</button>
     <button id="tutorialStart" type="button" class="primary">튜토리얼 · 여섯 괴이 연습하기</button>
-    <small class="note">1인칭 시점 · 카메라가 캐릭터 눈에 고정됩니다. PC: WASD 이동 · 마우스 드래그로 고개 돌리기(위아래 가능) · E 조사 · F 손전등 · Shift 달리기. 모바일: 왼쪽 스틱 이동, 오른쪽 화면 드래그로 보기. 노란 안내선은 첫 조사까지만 나타납니다. <a href="../../credits.html" target="_blank" rel="noopener">괴이 3D 모델 제작자 출처·라이선스</a></small>
+    <small class="note">튜토리얼을 선택하면 도깨비, 처녀귀신, 유키온나, 달걀귀신, 저승사자, 늑대인간을 순서대로 익히는 기존 학습 코스가 열립니다. 일반 플레이에는 안내선과 단계별 설명이 나타나지 않습니다. <a href="../../credits.html" target="_blank" rel="noopener">괴이 모델 저작자 및 라이선스</a></small>
   </div>
 </section>
 <section id="help" class="overlay hidden">
