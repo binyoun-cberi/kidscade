@@ -94,6 +94,15 @@ async function browserRun(){
         controls:[document.getElementById('controls0').querySelectorAll('button').length,
                   document.getElementById('controls1').querySelectorAll('button').length],
         pickable:[first?.id,second?.id],
+        buttonReachable:[0,1].map(player=>{
+          const controls=document.getElementById('controls'+player);
+          const button=controls.querySelector('button:last-of-type');
+          const r=button.getBoundingClientRect();
+          const hit=document.elementFromPoint(r.x+r.width*.85,r.y+r.height*.55);
+          return button===hit||button.contains(hit);
+        }),
+        shellMenu:(()=>{const menu=document.querySelector('#kidscade-game-shell .kcgs-open');
+          if(!menu)return null;const r=menu.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};})(),
         count:[document.getElementById('board0').width,document.getElementById('board1').width]};})()`);
    assert.equal(snapshot.elements.dialog.hidden,true,size.name+' never started');
    assert.equal(snapshot.pickable[0],'board0',size.name+' left canvas obscured');
@@ -103,6 +112,7 @@ async function browserRun(){
       assert.ok(c.y>=0&&c.y+c.h<=size.h+1,size.name+' canvas outside viewport');
    }
    assert.equal(snapshot.controls[0],2);assert.equal(snapshot.controls[1],2);
+   assert.deepEqual(snapshot.buttonReachable,[true,true],size.name+' touch button is covered by a fixed overlay: '+JSON.stringify(snapshot));
    if(size.mobile){
      // Two real concurrent touch contacts, one per candy canvas.
      const fingerPoints=await evaluate(`(()=>{
