@@ -9,3 +9,5 @@
 @media(max-width:780px){.career-panel{grid-column:1/-1;padding:12px}.career-journey{gap:4px}}
 
 .end-choice-item span{display:block;flex:1}.end-choice-note{margin:-18px 0 28px;color:#78908b;font-size:12px;line-height:1.7}
+
+.timeline li.is-choice-effect{padding-left:16px;color:#66827d;font-size:12px}.end-choice-item>div{flex:1}.end-choice-item small{display:block;margin-top:5px;color:#9aada7;font-size:12px;line-height:1.6}
