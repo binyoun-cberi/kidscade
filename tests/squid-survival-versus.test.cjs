@@ -134,6 +134,40 @@ test('each of six rounds can be cleared by both players using full-screen inputs
    assert.equal(s.history.length,1);
  }
 });
+test('pass-and-play accepts opposite tracing directions from both players',()=>{
+ for(let seed=1;seed<=100;seed++){
+   let s=base(0,seed),clock=1000;
+   for(let turn=0;turn<2;turn++){
+     s=E.ready(s,clock);
+     const g=s.game,backwards=(seed+turn)%2===1;
+     const samples=(backwards?g.traceReverse:g.trace).path;
+     s=E.input(s,'trace-start',{x:samples[0].x,y:samples[0].y},clock);
+     for(let j=1;j<samples.length&&s.phase==='playing';j++)
+       s=E.input(s,'trace-move',{x:samples[j].x,y:samples[j].y},clock+j*18);
+     assert.equal(s.phase,turn===0?'handoff':'round-result','seed '+seed+' turn '+turn);
+     assert.equal(g.traceDirection,backwards?'reverse':'forward');
+     clock+=g.limit+4000;
+   }
+   assert.deepEqual(s.turns.map(p=>p.clear),[true,true]);
+   assert.ok(Math.abs(s.turns[0].metric-s.turns[1].metric)<=3,'opposite tracing direction was unfair');
+ }
+});
+test('pass-and-play warning light obeys held input until the actual release',()=>{
+ for(let seed=1;seed<=100;seed++){
+   let s=base(2,seed);s=E.ready(s,1000);const g=s.game;
+   s=E.input(s,'hold',true,1020);
+   let yellow=null,continued=null;
+   for(let now=1040;now<9500&&s.phase==='playing';now+=20){
+     s=E.tick(s,now);
+     if(s.phase!=='playing')break;
+     if(g.body.signal==='warning'&&yellow===null)yellow={when:now,progress:g.body.progress};
+     if(yellow&&now===yellow.when+200)continued=g.body.progress;
+   }
+   assert.ok(continued>yellow.progress+2,'player was automatically stopped on warning');
+   assert.equal(s.phase,'handoff','holding into red must fail and hand off');
+   assert.equal(s.turns[0].clear,false);
+ }
+});
 test('only skilled player wins even when the first competitor changes sides',()=>{
  for(let round=0;round<6;round++)for(let seed=1;seed<=20;seed++){
    const champion=seed%2;

@@ -25,7 +25,7 @@
     catch(_){return {best:0,clears:0};}
   })();
   const game={
-    stage:1,trace:null,state:null,phase:'intro',pointerId:null,
+    stage:1,trace:null,traceReverse:null,traceDirection:null,state:null,phase:'intro',pointerId:null,
     frameW:0,frameH:0,viewX:0,viewY:0,scale:1,lastFrame:0,
     lastSound:0,lastToast:0,soundOn:true,confetti:[],crumble:[],startAt:0
   };
@@ -65,6 +65,8 @@
   function stageStart(stage){
     game.stage=stage;
     game.trace=engine.buildTrace(stage);
+    game.traceReverse=engine.reversed(game.trace);
+    game.traceDirection=null;
     game.state=engine.createState(game.trace);
     game.phase='ready';game.pointerId=null;game.confetti=[];game.crumble=[];
     el.result.classList.add('hidden');el.intro.classList.add('hidden');
@@ -72,7 +74,7 @@
     el.best.textContent=String(record.best).padStart(2,'0');
     el.shape.textContent=game.trace.name;
     el.desc.textContent=game.trace.description;
-    el.hint.textContent='노란 점에서 출발해 선을 따라 그려요';
+    el.hint.textContent='노란 점에서 출발! 왼쪽·오른쪽 어느 방향으로든 따라 그려요';
     ui();resize();
   }
   function start(){
@@ -147,6 +149,13 @@
     if(game.pointerId!==event.pointerId||game.phase!=='playing')return;
     if(event.cancelable)event.preventDefault();
     const before=game.state,point=toPoint(event);
+    if(game.traceDirection===null&&game.state.progress<2){
+      const direction=engine.directionFor(game.trace,game.traceReverse,point);
+      if(direction){
+        game.traceDirection=direction;
+        if(direction==='reverse')game.trace=game.traceReverse;
+      }
+    }
     game.state=engine.move(game.trace,game.state,point,Date.now());
     if(game.state.progress>before.progress+.8)play('trace');
     if(game.state.failed||game.state.complete)outcome(game.state.complete);
