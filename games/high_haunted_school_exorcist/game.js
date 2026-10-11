@@ -9,7 +9,8 @@ const ui={canvas:$('game'),intro:$('intro'),end:$('end'),endTitle:$('endTitle'),
   map:$('minimap'),help:$('help'),flash:$('flash'),gaze:$('gaze'),gazeValue:$('gazeValue'),
   navigation:$('navigation'),navArrow:$('navArrow'),navTitle:$('navTitle'),navRange:$('navRange'),
   lesson:$('lesson'),lessonTitle:$('lessonTitle'),lessonText:$('lessonText'),reticle:$('reticle'),gazeLabel:$('gazeLabel'),guide:$('guide'),
-  lockerView:$('lockerView'),lockerWarning:$('lockerWarning')};
+  lockerView:$('lockerView'),lockerWarning:$('lockerWarning'),
+  hauntVeil:$('hauntVeil'),hauntCaption:$('hauntCaption')};
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090f19);scene.fog=new THREE.FogExp2(0x090f19,.019);
 const renderer=new THREE.WebGLRenderer({canvas:ui.canvas,antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);
@@ -58,7 +59,9 @@ let guideAssistance=false;
 let tutorialMode=false,survivalKills=0,survivalSpawnClock=0;
 const SURVIVAL_SECONDS=300,SURVIVAL_REQUIRED_SEALS=8,survivalGhosts=[];
 // Each seal suppresses a particular apparition temporarily, rather than deleting it.
-const survivalReturnAt=Object.create(null),survivalSealCounts=Object.create(null);
+const survivalReturnAt=Object.create(null),survivalSealCounts=Object.create(null),survivalLastSealAt=Object.create(null);
+const SURVIVAL_OMEN_SECONDS=2.4;
+let survivalManifest=null;
 const HORROR_NAMES={maiden:'처녀귀신',egg:'달걀귀신',yuki:'유키온나',reaper:'저승사자',wolf:'늑대인간'};
 const HORROR_RULES={maiden:'정면으로 바라보기',egg:'등 돌리기',yuki:'손전등 끄기',reaper:'빛 비추기',wolf:'빛으로 돌진 막기'};
 const HORROR_CLUES={maiden:'시선에 움직임이 반응한다',egg:'눈이 마주치면 불길하다',yuki:'찬 기운이 불빛에 맺힌다',reaper:'검은 두건 뒤로 빛이 새어 든다',wolf:'번쩍이는 빛에 움찔한다'};
@@ -695,6 +698,108 @@ cube(wolfFallback,0,1.04,-.59,.50,.44,.45,mat(0x75666c));
 // Repeated stage changes share the same promise, not concurrent duplicate loads.
 const horrorLoadState=new Map();
 const horrorVisuals={maiden,yuki,egg,reaper,wolf:encounter.wolf};
+// Small, reusable floor-level omen: no new image assets, particle libraries or
+// full-screen strobe. One global warning pool is shared by all five creatures.
+const SURVIVAL_FX_COLORS={maiden:0xc8a2f2,egg:0xaebdcc,yuki:0x86e4f4,reaper:0xb487dc,wolf:0xe0a27d};
+const omenGroup=new THREE.Group();scene.add(omenGroup);omenGroup.visible=false;
+const omenRing=new THREE.Mesh(new THREE.RingGeometry(.70,.94,36),
+  new THREE.MeshBasicMaterial({color:0xc6a3f8,transparent:true,opacity:.48,depthWrite:false,side:THREE.DoubleSide}));
+omenRing.rotation.x=-Math.PI/2;omenRing.position.y=.045;omenGroup.add(omenRing);
+const omenInner=new THREE.Mesh(new THREE.RingGeometry(.18,.25,30),
+  new THREE.MeshBasicMaterial({color:0xffe5d0,transparent:true,opacity:.5,depthWrite:false,side:THREE.DoubleSide}));
+omenInner.rotation.x=-Math.PI/2;omenInner.position.y=.065;omenGroup.add(omenInner);
+const omenMist=new THREE.Mesh(new THREE.SphereGeometry(.82,14,9),
+  new THREE.MeshBasicMaterial({color:0x9c6eaf,transparent:true,opacity:.12,depthWrite:false,side:THREE.DoubleSide}));
+omenMist.position.y=.68;omenMist.scale.set(1.3,1.9,1.3);omenGroup.add(omenMist);
+const omenSparks=[];
+for(let i=0;i<8;i++){
+  const p=new THREE.Mesh(new THREE.SphereGeometry(.055,6,5),
+    new THREE.MeshBasicMaterial({color:0xf9d4f2,transparent:true,opacity:.72,depthWrite:false}));
+  omenGroup.add(p);omenSparks.push(p);
+}
+const omenLight=new THREE.PointLight(0xab8cc9,0,7.5,2);omenLight.position.y=1;omenGroup.add(omenLight);
+const sealBursts=[];
+function disposeSurvivalBurst(b){
+  scene.remove(b.group);
+  b.group.traverse(o=>{
+    if(!o.isMesh)return;
+    o.geometry.dispose();
+    o.material.dispose();
+  });
+}
+function clearSurvivalEffects(){
+  survivalManifest=null;omenGroup.visible=false;omenLight.intensity=0;
+  ui.hauntVeil.style.opacity='0';ui.hauntCaption.classList.remove('show');
+  while(sealBursts.length)disposeSurvivalBurst(sealBursts.pop());
+}
+function emitSurvivalSealBurst(x,z,kind){
+  const color=SURVIVAL_FX_COLORS[kind]||0xb4d9ef,group=new THREE.Group();
+  group.position.set(x,0,z);scene.add(group);
+  const rings=[];
+  for(let i=0;i<2;i++){
+    const ring=new THREE.Mesh(new THREE.RingGeometry(.54+i*.23,.62+i*.23,32),
+      new THREE.MeshBasicMaterial({color,transparent:true,opacity:.78-i*.21,depthWrite:false,side:THREE.DoubleSide}));
+    ring.rotation.x=-Math.PI/2;ring.position.y=.06+i*.018;group.add(ring);rings.push(ring);
+  }
+  const shards=[];
+  for(let i=0;i<6;i++){
+    const shard=new THREE.Mesh(new THREE.BoxGeometry(.065,.23,.065),
+      new THREE.MeshBasicMaterial({color,transparent:true,opacity:.85,depthWrite:false}));
+    const a=i*Math.PI/3;shard.position.set(Math.cos(a)*.65,.4,Math.sin(a)*.65);group.add(shard);shards.push(shard);
+  }
+  sealBursts.push({group,rings,shards,life:1.2});
+  if(sealBursts.length>6)disposeSurvivalBurst(sealBursts.shift());
+}
+function beginSurvivalOmen(m){
+  const color=SURVIVAL_FX_COLORS[m.kind]||0xd2adf0;
+  omenGroup.visible=true;omenGroup.position.set(m.pos.x,0,m.pos.z);
+  omenRing.material.color.set(color);omenInner.material.color.set(0xf1e8dd);
+  omenMist.material.color.set(color);omenLight.color.set(color);
+  ui.hauntCaption.textContent=m.returning?'봉인진에 금이 갑니다… 다시 깨어납니다.':'멀리서 이상한 기척이 퍼집니다…';
+  ui.hauntCaption.classList.add('show');
+  // Audible warning when the entity is far away, without revealing its map position.
+  sfx('sfx_horror_sting_01.mp3',m.returning?.17:.11);
+  loadHorrorAsset(m.kind); // Preload while the omen plays.
+}
+function endSurvivalOmen(){
+  omenGroup.visible=false;omenLight.intensity=0;
+  ui.hauntVeil.style.opacity='0';ui.hauntCaption.classList.remove('show');
+}
+function updateSurvivalEffects(dt){
+  for(let i=sealBursts.length-1;i>=0;i--){
+    const b=sealBursts[i];b.life-=dt;
+    if(b.life<=0){disposeSurvivalBurst(b);sealBursts.splice(i,1);continue;}
+    const progress=1-b.life/1.2;
+    b.rings.forEach((r,j)=>{
+      r.scale.setScalar(1+progress*(1.3+j*.6));
+      r.material.opacity=(j===0?.75:.55)*(1-progress);
+    });
+    b.shards.forEach((p,j)=>{
+      p.position.y=.4+progress*(1.05+j*.06);
+      p.material.opacity=.85*(1-progress);
+    });
+  }
+  const m=survivalManifest;
+  if(!m){ui.hauntVeil.style.opacity='0';return;}
+  const progress=Math.max(0,Math.min(1,1-m.left/SURVIVAL_OMEN_SECONDS));
+  const rise=Math.min(1,progress/.25),fade=progress>.84?Math.max(0,(1-progress)/.16):1;
+  omenRing.scale.setScalar(.6+progress*1.7);
+  omenRing.material.opacity=(.25+.3*Math.sin(progress*Math.PI))*fade;
+  omenInner.scale.setScalar(1+progress*3.6);
+  omenInner.material.opacity=.48*fade;
+  omenMist.position.y=.45+progress*.95;omenMist.scale.set(1+progress*.7,1.4+progress*.6,1+progress*.7);
+  omenMist.material.opacity=.07+.15*rise*fade;
+  omenLight.intensity=5*rise*fade;
+  for(let i=0;i<omenSparks.length;i++){
+    const p=omenSparks[i],a=i*Math.PI/4+progress*.9,r=.38+progress*(.58+(i%3)*.12);
+    p.position.set(Math.cos(a)*r,.22+progress*(1.4+(i%3)*.2),Math.sin(a)*r);
+    p.material.opacity=(.4+.4*Math.sin(progress*Math.PI))*fade;
+  }
+  // Vignette is local and very mild; supports reduced-motion accessibility.
+  const distance=dist(player,m.pos),proximity=Math.max(0,1-distance/19);
+  ui.hauntVeil.style.opacity=String(Math.min(.16,proximity*(.06+.1*Math.sin(progress*Math.PI))));
+}
+
 // Runtime painting for monochrome GLBs: keep UV textures, recolor untextured
 // materials with each creature's specific fur/hair/costume palette.
 const HORROR_PALETTE={
@@ -938,19 +1043,32 @@ function setStage(next){
 
 function spawnSurvivalGhost(){
   const max=1+(elapsed>=55?1:0)+(elapsed>=140?1:0);
-  if(survivalGhosts.length>=max)return false;
+  if(survivalManifest||survivalGhosts.length>=max)return false;
   const kinds=Object.keys(HORROR_NAMES).filter(k=>!survivalGhosts.some(g=>g.kind===k)&&elapsed>=(survivalReturnAt[k]||0));
-  const spots=SURVIVAL_SPAWNS.map(([x,z])=>({x,z})).filter(p=>canWalk(p.x,p.z)&&
-    dist(p,player)>11&&survivalGhosts.every(g=>dist(g.actor,p)>6));
-  if(!kinds.length||!spots.length)return false;
+  if(!kinds.length)return false;
   const kind=kinds[Math.floor(Math.random()*kinds.length)];
-  const pos=spots[Math.floor(Math.random()*spots.length)],actor=horrorVisuals[kind];
-  actor.x=pos.x;actor.z=pos.z;actor.root.position.set(pos.x,0,pos.z);actor.root.visible=true;
-  const ghost={kind,actor,charge:0,ready:0,nav:null,hitCooldown:3};
-  survivalGhosts.push(ghost);loadHorrorAsset(kind);
-  const returning=(survivalSealCounts[kind]||0)>0;
-  sfx(kind==='wolf'?'sfx_wolf_howl.mp3':'sfx_horror_sting_01.mp3',returning?.2:.14);
-  showToast(returning?HORROR_NAMES[kind]+'의 봉인이 풀렸습니다…':HORROR_NAMES[kind]+'의 기척이 느껴집니다…');
+  // A sealed monster cannot rematerialize on its own most recent seal location.
+  const last=survivalLastSealAt[kind];
+  const spots=SURVIVAL_SPAWNS.map(([x,z])=>({x,z})).filter(p=>canWalk(p.x,p.z)&&
+    dist(p,player)>11&&(!last||dist(p,last)>9)&&survivalGhosts.every(g=>dist(g.actor,p)>6));
+  if(!spots.length)return false;
+  const pos=spots[Math.floor(Math.random()*spots.length)];
+  survivalManifest={kind,pos,left:SURVIVAL_OMEN_SECONDS,returning:(survivalSealCounts[kind]||0)>0};
+  beginSurvivalOmen(survivalManifest);
+  return true;
+}
+function completeSurvivalManifest(){
+  const m=survivalManifest;
+  if(!m)return false;
+  const max=1+(elapsed>=55?1:0)+(elapsed>=140?1:0);
+  survivalManifest=null;endSurvivalOmen();
+  if(survivalGhosts.length>=max||survivalGhosts.some(g=>g.kind===m.kind))return false;
+  const actor=horrorVisuals[m.kind];
+  actor.x=m.pos.x;actor.z=m.pos.z;actor.root.position.set(m.pos.x,0,m.pos.z);actor.root.visible=true;
+  const ghost={kind:m.kind,actor,charge:0,ready:0,nav:null,hitCooldown:3};
+  survivalGhosts.push(ghost);
+  sfx(m.kind==='wolf'?'sfx_wolf_howl.mp3':'sfx_horror_sting_01.mp3',m.returning?.15:.12);
+  showToast(m.returning?HORROR_NAMES[m.kind]+'의 봉인이 풀렸습니다…':HORROR_NAMES[m.kind]+'의 기척이 느껴집니다…');
   return true;
 }
 function nearestSurvivalGhost(){
@@ -983,6 +1101,8 @@ function chaseSurvivalGhost(g,dt,speed){
 }
 function updateSurvival(dt){
   if(elapsed>=SURVIVAL_SECONDS){finish(survivalKills>=SURVIVAL_REQUIRED_SEALS);return;}
+  updateSurvivalEffects(dt);
+  if(survivalManifest&&(survivalManifest.left-=dt)<=0)completeSurvivalManifest();
   survivalSpawnClock-=dt;
   if(survivalSpawnClock<=0)survivalSpawnClock=spawnSurvivalGhost()?Math.max(3.2,6-elapsed/140):1.5;
   const ramp=1+Math.min(.5,elapsed/SURVIVAL_SECONDS*.5);
@@ -1029,6 +1149,8 @@ function sealSurvivalGhost(g){
   const i=survivalGhosts.indexOf(g);
   if(i<0||g.ready<=0||dist(g.actor,player)>2.85)return;
   survivalGhosts.splice(i,1);g.actor.root.visible=false;
+  emitSurvivalSealBurst(g.actor.x,g.actor.z,g.kind);
+  survivalLastSealAt[g.kind]={x:g.actor.x,z:g.actor.z};
   survivalKills++;power=Math.min(100,power+11);invulnerable=Math.max(invulnerable,.85);
   survivalSealCounts[g.kind]=(survivalSealCounts[g.kind]||0)+1;
   // The same monster cannot return for 20–32 seconds; other threats may appear sooner.
@@ -1111,6 +1233,7 @@ function act(){
 }
 function finish(ok){
   if(!tutorialMode){
+    clearSurvivalEffects();
     leaveLocker();ended=true;started=false;bgm.pause();document.exitPointerLock?.();
     ui.progress.style.width='100%';
     ui.endTitle.textContent=ok?'생존 성공 · 학교를 지켰어요!':'생존 실패 · 퇴마 작전 종료';
@@ -1132,6 +1255,8 @@ function reset(mode='survival'){
   tutorialMode=mode==='tutorial';survivalKills=0;survivalSpawnClock=0;
   for(const k of Object.keys(survivalReturnAt))delete survivalReturnAt[k];
   for(const k of Object.keys(survivalSealCounts))delete survivalSealCounts[k];
+  for(const k of Object.keys(survivalLastSealAt))delete survivalLastSealAt[k];
+  clearSurvivalEffects();
   document.querySelectorAll('.tutorial-rules').forEach(el=>el.classList.toggle('hidden',!tutorialMode));
   for(const g of survivalGhosts)g.actor.root.visible=false;
   survivalGhosts.length=0;
