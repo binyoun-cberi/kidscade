@@ -6,6 +6,15 @@
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
   const clamp = value => Math.max(0, Math.min(100, Math.round(value)));
+  // Offline official indicator snapshot, refreshed by a separate source-audited job.
+  // Country-level observations are historical; no future events are presented as data.
+  const Official=typeof module!=='undefined'&&module.exports
+    ? require('./official-data.js')
+    : (typeof window!=='undefined'?window.OneLifeOfficialStats:null);
+  const measured=(country,key)=>{
+    const sample=Official?.countries?.[country?.[0]]?.[key];
+    return sample&&Number.isFinite(sample.value)?sample.value:null;
+  };
   // 세계 인구 규모를 대략 참고한 게임용 가중치. 실제 '출생 확률' 자료가 아니다.
   const COUNTRIES = [
     ['인도','🇮🇳',1460,0.51,0.56],['중국','🇨🇳',1410,0.65,0.69],
@@ -73,8 +82,11 @@
     '아프가니스탄':1.507838,'앙골라':1.429803,'예멘':1.401358,
     '베트남':1.328422,'모잠비크':1.304409,'러시아':1.241824,'이라크':1.187570
   });
-  const birthWeight = country => BIRTH_COUNTS_2025[country[0]]
-    ?? country[2] * Math.max(7, 40 - 36*country[3]) / 1000;
+  const birthWeight = country => {
+    const births=measured(country,'estimatedBirths');
+    return births>0?births/1e6:(BIRTH_COUNTS_2025[country[0]]
+      ?? country[2]*Math.max(7,40-36*country[3])/1000);
+  };
   const totalBirthWeight = COUNTRIES.reduce((a,c)=>a+birthWeight(c),0);
     const CHOICES = [
     {age:10,title:'학교가 끝난 오후',description:'가족과 친구들, 그리고 혼자만의 시간이 기다립니다.',options:[
@@ -161,7 +173,9 @@
       let pick = this.rand() * totalBirthWeight;
       this.country = COUNTRIES[COUNTRIES.length-1];
       for (const c of COUNTRIES) { pick -= birthWeight(c); if (pick < 0) { this.country = c; break; } }
-      this.gender = this.rand() < 0.49 ? '여자' : '남자';
+      const birthSexRatio=measured(this.country,'sexRatioBirth');
+      const femaleShare=birthSexRatio>0.9&&birthSexRatio<1.3?1/(1+birthSexRatio):0.49;
+      this.gender=this.rand()<femaleShare?'여자':'남자';
       this.familyLevel = this.rand() < 0.24 ? '빠듯한 형편' : this.rand() < 0.32 ? '여유 있는 형편' : '평범한 형편';
       const wealthBase = this.familyLevel === '여유 있는 형편' ? 65 : this.familyLevel === '빠듯한 형편' ? 28 : 46;
       this.stats = {health:clamp(55+this.country[4]*22+this.rand()*16-10),
@@ -219,7 +233,13 @@
         if(value>70)this.change({[key]:-Math.ceil((value-70)*.12)});
       }
       // 사망 가능성은 게임을 위한 추상적인 난수 모델이다.
-      const ageRisk = this.world && Number.isFinite(this.world.mortalityTarget)
+      const childMortality=measured(this.country,'under5Mortality');
+      const observedChildHazard=this.age<=5 && childMortality>=0 && childMortality<1000
+        ? 1-Math.pow(1-childMortality/1000,1/5) : null;
+      // Under-five aggregate rate is distributed across five years for playability;
+      // it is NOT an observed single-year infant hazard.
+      const ageRisk = observedChildHazard!==null?observedChildHazard:
+        this.world && Number.isFinite(this.world.mortalityTarget)
         ? (() => {
             // A broad stochastic hazard curve centered near a 2024 country
             // life-expectancy baseline. This is not an individual's forecast.
