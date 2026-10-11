@@ -34,9 +34,9 @@ window.addEventListener('blur',release);
 function scoreText(n){return Number.isInteger(n)?String(n):n.toFixed(1);}
 function countdownText(ms){const n=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');}
 const lesson={
- dalgona:'노란 출발점에서 모양을 따라 긁으세요. 너무 빠르거나 느리면 금이 가요.',
+ dalgona:'노란 출발점에서 왼쪽 또는 오른쪽, 편한 방향으로 한 바퀴 그리세요. 너무 빠르면 금이 가요.',
  bridge:'먼저 초록색으로 나타나는 길을 5초 동안 기억하고 방향 버튼으로 건너세요.',
- redlight:'초록불에는 꾹 누르고, 노란불이 되면 손을 떼세요. 빨간불에 달리면 탈락!',
+ redlight:'버튼을 누르고 있는 동안 계속 달려요. 노란불에도 자동으로 멈추지 않아요! 손을 직접 떼야 안전합니다.',
  tug:'바늘이 초록색 중앙에 왔을 때 당기세요. 빠른 연타는 오히려 손해예요.',
  marbles:'구슬 개수를 세어 조건에 맞는 왼쪽 또는 오른쪽 주머니를 선택하세요.',
  final:'네 가지 모양 순서를 기억하고, 타이밍 두 번을 성공한 뒤 덧셈 문제를 푸세요.',
@@ -150,7 +150,7 @@ function nowDetails(){
  if(!g)return '';
  if(g.id==='dalgona')return '모양 완성 '+Math.round(E.percentage(g)*100)+'% · 금 '+Math.round(g.traceState.crack)+'%';
  if(g.id==='bridge')return g.phase==='preview'?'정답 길을 기억하는 시간':'현재 '+g.step+' / '+(g.map.path.length-1)+'칸';
- if(g.id==='redlight')return b.signal==='green'?'초록불: 지금 달려요!':b.signal==='warning'?'노란불: 손을 떼세요!':'빨간불: 멈추세요!';
+ if(g.id==='redlight')return b.signal==='green'?(b.held?'달리는 중 · 버튼 누름':'초록불 · 버튼을 누르면 출발'):b.signal==='warning'?(b.held?'노란불 · 아직 달리는 중! 손을 떼세요':'노란불 · 손을 떼서 정지 중'):(b.held?'빨간불 · 아직 달리는 중!':'빨간불 · 정지 성공');
  if(g.id==='tug')return '힘 '+Math.round(b.rope)+'% · 피로 '+Math.round(b.fatigue)+'%';
  if(g.id==='marbles')return b.questions[b.questionIndex]?.prompt||'구슬 승부 완료';
  if(g.id==='final')return {preview:'모양 기억',memory:'모양 순서 입력',timing:'타이밍 맞히기',math:'덧셈 정답 고르기'}[b.part];
@@ -199,8 +199,8 @@ function trace(g){
   for(let i=1;i<=count&&i<g.trace.path.length;i++)ctx.lineTo(g.trace.path[i].x,g.trace.path[i].y);
   ctx.strokeStyle='#55b18a';ctx.lineWidth=6;ctx.stroke();
  }
- const tip=T.sampleAt(g.trace,state.progress);circle(tip.x,tip.y,9,'#6df7b3');
- ctx.restore();text('노란 점을 따라 그려요',W/2,20,17);
+ const tip=T.sampleAt(g.trace,state.progress);circle(tip.x,tip.y,11,state.progress<2?'#ffe180':'#6df7b3');
+ ctx.restore();text('노란 점에서 시작 · 양쪽 방향 가능',W/2,20,17);
 }
 function bridge(g){
  bg('#1a4048');const path=g.map.path,w=g.map.width,coords=path.map(n=>({x:n%w,y:Math.floor(n/w)}));
@@ -218,13 +218,14 @@ function bridge(g){
 function redlight(g){
  bg('#183d46');const b=g.body,signal=b.signal,color=signal==='green'?'#9effc7':signal==='warning'?'#ffe1a2':'#ff9aab';
  rect(0,H*.76,W,H*.24,'#3d644b');rect(25,23,330,70,'#0c2833',10);
- text(signal==='green'?'움직여!':signal==='warning'?'멈출 준비!':'멈춰!',192,58,38,color);
+ text(signal==='green'?'움직여!':signal==='warning'?'손을 떼세요!':'멈춰!',192,58,signal==='warning'?28:38,color);
  rect(W*.83,55,56,152,'#152932',12);
  for(let i=0;i<3;i++)circle(W*.83+28,78+i*48,17,
   i===0&&signal==='red'?'#ff758e':i===1&&signal==='warning'?'#ffe09c':i===2&&signal==='green'?'#83ffb1':'#34534c');
  rect(W*.83+25,205,6,H*.76-205,'#bcd7c3');
  const x=27+b.progress/100*(W-110);circle(x,H*.76-65,22,'#f1c8a1');rect(x-21,H*.76-45,42,46,'#82e2ad',6);
  rect(W-54,H*.76-140,5,140,'#efebcf');text(Math.round(b.progress)+'%',W*.25,H-25,22,'#e6f8d9');
+ text(b.held?'현재 달리는 중':'현재 멈춘 상태',W*.55,H-25,16,b.held?'#ffd29a':'#b5f5d4');
 }
 function tug(g){
  bg('#463b35');const b=g.body,marker=b.elapsed%1000/1000;
