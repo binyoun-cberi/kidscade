@@ -123,8 +123,8 @@ test('release has a crack cost, regrab starts near the traced tip and time never
 
 test('layout and shared game SDK bind actual pointer handlers and HUD',()=>{
   assert.match(HTML,/data-game-id="dalgona_trace"/);
-  assert.match(HTML,/\.\/trace\.js\?v=1/);
-  assert.match(HTML,/\.\/game\.js\?v=1/);
+  assert.match(HTML,/\.\/trace\.js\?v=2/);
+  assert.match(HTML,/\.\/game\.js\?v=2/);
   assert.match(HTML,/coin-gold\.png/);
   assert.match(UI,/addEventListener\('pointerdown',pointerDown\)/);
   assert.match(UI,/addEventListener\('pointermove',pointerMove\)/);
