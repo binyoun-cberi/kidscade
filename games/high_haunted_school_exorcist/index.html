@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#101923">
-<title>괴담 학교 퇴마 · 3D 프로토타입</title>
+<title>괴담 학교 퇴마 · 생존 퇴마전</title>
 <script type="importmap">
 {"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}
 </script>
@@ -124,7 +124,7 @@ body.in-locker #joystick{opacity:.2;pointer-events:none}
 <body>
 <canvas id="game" aria-label="괴담 학교 3D 탐험 장면"></canvas>
 <header>
-  <div class="logo"><small>KIDSCADE · 3D HORROR PROTOTYPE</small><strong>괴담 학교 퇴마</strong></div>
+  <div class="logo"><small>KIDSCADE · MIDNIGHT SURVIVAL</small><strong>괴담 학교 퇴마</strong></div>
   <div class="stats">
     <span>생명 <b id="health">♥♥♥</b></span>
     <span>전력 <b id="battery">100%</b></span>
@@ -133,9 +133,9 @@ body.in-locker #joystick{opacity:.2;pointer-events:none}
   </div>
 </header>
 <section id="missionPanel" aria-label="현재 퇴마 목표">
-  <small class="eyebrow">오늘의 사건 · 첫 번째 퇴마 실습</small>
-  <div id="mission" role="heading" aria-level="2">도깨비 조사</div>
-  <div id="detail">6-1 교실로 이동하세요.</div>
+  <small class="eyebrow">생존 모드 · 최대 3마리 동시 출현</small>
+  <div id="mission" role="heading" aria-level="2">5분 생존 퇴마</div>
+  <div id="detail">5분 동안 8회 이상 봉인하세요.</div>
   <div class="track" aria-label="퇴마 진행률"><i id="progress"></i></div>
 </section>
 <div id="minimapWrap"><small>ㄷ자 학교 지도 · 하늘색은 내 위치</small><canvas width="210" height="142" id="minimap" aria-label="ㄷ자 학교 내부 미니맵"></canvas></div>
@@ -154,7 +154,8 @@ body.in-locker #joystick{opacity:.2;pointer-events:none}
   <button id="flash" type="button">손전등 켜짐 [F]</button>
   <button id="action" type="button" disabled><strong id="actionText">가까이에서 조사 [E]</strong></button>
 </div>
-<div id="controlHint">WASD 이동 · 드래그 시점 · E 조사/숨기 · H 길찾기 · F 손전등</div>
+<div id="controlHint">PC: WASD 이동 · 마우스 시점 · Shift 달리기 · E 퇴마/숨기 · F 손전등 · ESC 도움말</div>
+<button id="mouseLockHint" class="hidden" type="button">화면을 클릭해 마우스 시점 조작하기</button>
 <section id="intro" class="overlay">
   <div class="card">
     <span class="eyebrow">CASE 001 · 자정의 학교 · SIX ANOMALIES</span>
@@ -167,14 +168,16 @@ body.in-locker #joystick{opacity:.2;pointer-events:none}
     <div class="rule"><b>5. 저승사자 · 연결동 전기실</b> · 종소리 세 번을 듣고 마지막 종에 맞춰 문을 닫으세요.</div>
     <div class="rule"><b>6. 늑대인간 · 남쪽 날개</b> · 소리를 따라오는 늑대를 스피커로 함정에 유인하세요.</div>
 <div class="rule"><b>낡은 사물함</b> · 복도에 놓인 사물함 가까이에서 E 또는 행동 버튼을 누르면 숨을 수 있어요. 귀신이 마지막 목격 지점을 살피는 동안 눈을 피하세요. 너무 오래 바로 앞에 있으면 발각돼요.</div>
-    <button id="start" type="button" class="primary">학교에 들어가기</button>
+    <button id="start" type="button" class="primary">일반 플레이 · 5분 생존 시작</button>
+    <button id="tutorialStart" type="button" class="primary">튜토리얼 · 여섯 괴이 연습하기</button>
     <small class="note">1인칭 시점 · 카메라가 캐릭터 눈에 고정됩니다. PC: WASD 이동 · 마우스 드래그로 고개 돌리기(위아래 가능) · E 조사 · F 손전등 · Shift 달리기. 모바일: 왼쪽 스틱 이동, 오른쪽 화면 드래그로 보기. 노란 안내선은 첫 조사까지만 나타납니다. <a href="../../credits.html" target="_blank" rel="noopener">괴이 3D 모델 제작자 출처·라이선스</a></small>
   </div>
 </section>
 <section id="help" class="overlay hidden">
   <div class="card">
     <h2>조작과 괴이 대응법</h2>
-    <div class="rule"><b>1인칭 이동</b> · 카메라는 캐릭터의 눈과 같습니다. WASD 또는 왼쪽 스틱으로 이동하고, 화면을 드래그하면 캐릭터도 고개를 돌립니다. 위아래로도 볼 수 있습니다.</div>
+    <div class="rule"><b>1인칭 이동</b> · PC는 WASD 이동, 마우스 움직임으로 시점 전환(드래그 불필요), ESC로 커서 해제. 모바일은 왼쪽 스틱 이동, 오른쪽 화면 드래그입니다.</div>
+  <label for="lookSensitivity">PC 마우스 민감도 <select id="lookSensitivity"><option value="0.0016">느리게</option><option value="0.0027" selected>보통</option><option value="0.0042">빠르게</option></select></label>
     <div class="rule"><b>교실 문</b> · 닫힌 교실 문은 가까이 가면 자동으로 열리고, 지나간 뒤 다시 닫힙니다.</div>
     <div class="rule"><b>길찾기</b> · 첫 물건까지 노란 안내선이 표시됩니다. 이후 길을 잃으면 H 키나 길찾기 버튼으로 현재 임무의 안내선을 켜고 끌 수 있습니다.</div>
     <div class="rule"><b>조사하기</b> · 물건 바로 옆에 다가가면 오른쪽 행동 버튼이 활성화됩니다. E 키로도 행동할 수 있습니다.</div>
@@ -194,6 +197,6 @@ body.in-locker #joystick{opacity:.2;pointer-events:none}
   </div>
 </section>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_haunted_school_exorcist" data-title="괴담 학교 퇴마" data-shell="true" data-pauseable="true" data-orientation="landscape"></script>
-<script type="module" src="./game.js?v=14"></script>
+<script type="module" src="./game.js?v=15-survival"></script>
 </body>
 </html>
