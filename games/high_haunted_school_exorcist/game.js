@@ -674,6 +674,47 @@ cube(wolfFallback,0,1.04,-.59,.50,.44,.45,mat(0x75666c));
 // Repeated stage changes share the same promise, not concurrent duplicate loads.
 const horrorLoadState=new Map();
 const horrorVisuals={maiden,yuki,egg,reaper,wolf:encounter.wolf};
+// Runtime painting for monochrome GLBs: keep UV textures, recolor untextured
+// materials with each creature's specific fur/hair/costume palette.
+const HORROR_PALETTE={
+  maiden:[0x25283b,0xb6a6c6,0xb4afc4],
+  yuki:[0xc7e6ef,0x6399bd,0xe2d5e5],
+  egg:[0x333a44,0x7d6972,0xc6c2b7],
+  reaper:[0x202234,0x53415d,0xc5b9b3],
+  wolf:[0x4a343b,0x805f52,0xb19078]
+};
+function repaintHorrorMaterial(node,material,kind){
+  if(!material)return material;
+  const copy=material.clone();
+  if(copy.map||!copy.color)return copy; // Never flatten a painted diffuse map.
+  const hsl={};copy.color.getHSL(hsl);
+  if(hsl.s>.25&&hsl.l>.20&&hsl.l<.83)return copy;
+  const palette=HORROR_PALETTE[kind],label=(node.name+' '+(copy.name||'')).toLowerCase();
+  const dark=/hair|hood|cloak|fur|shoe|boot|pant|shadow/i.test(label);
+  const skin=/face|skin|eye|head|skull|hand|horn/i.test(label);
+  const source=skin?palette[2]:dark?palette[0]:palette[1];
+  copy.color.set(source);
+  if(copy.roughness!==undefined)copy.roughness=Math.max(.65,copy.roughness);
+  if(copy.emissive){copy.emissive.set(palette[1]);copy.emissiveIntensity=Math.max(copy.emissiveIntensity||0,.04);}
+  // Large textureless single-mesh imports still get three vertical tones.
+  const position=node.geometry?.getAttribute('position');
+  if(!skin&&!dark&&position&&position.count>32&&position.count<=120000){
+    node.geometry=node.geometry.clone();
+    const geo=node.geometry,pos=geo.getAttribute('position');geo.computeBoundingBox();
+    const min=geo.boundingBox.min.y,span=Math.max(.001,geo.boundingBox.max.y-min);
+    const out=new Float32Array(pos.count*3);
+    const lower=new THREE.Color(palette[0]),middle=new THREE.Color(palette[1]),upper=new THREE.Color(palette[2]),blend=new THREE.Color();
+    for(let i=0;i<pos.count;i++){
+      const t=Math.max(0,Math.min(1,(pos.getY(i)-min)/span));
+      if(t<.62)blend.copy(lower).lerp(middle,t/.62);
+      else blend.copy(middle).lerp(upper,(t-.62)/.38);
+      out[3*i]=blend.r;out[3*i+1]=blend.g;out[3*i+2]=blend.b;
+    }
+    geo.setAttribute('color',new THREE.BufferAttribute(out,3));
+    copy.vertexColors=true;copy.color.set(0xffffff);
+  }
+  return copy;
+}
 function installHorrorAsset(kind,gltf,url){
   const spec=HORROR_MODELS[kind],actor=horrorVisuals[kind];
   const visual=cloneSkeleton(gltf.scene);
@@ -683,9 +724,9 @@ function installHorrorAsset(kind,gltf,url){
     node.frustumCulled=false; // Animated/oddly posed SkinnedMesh bounds may be stale.
     const tintMaterial=material=>{
       if(!material)return material;
-      const copy=material.clone();
-      // Respect source PBR texture maps; light environmental tint only.
-      if(spec.blend&&copy.color)copy.color.lerp(new THREE.Color(spec.tint),spec.blend);
+      const copy=repaintHorrorMaterial(node,material,kind);
+      // Textured models retain their source details and receive a subtle cold-light tint.
+      if(copy.map&&spec.blend&&copy.color)copy.color.lerp(new THREE.Color(spec.tint),spec.blend);
       return copy;
     };
     node.material=Array.isArray(node.material)?node.material.map(tintMaterial):tintMaterial(node.material);
