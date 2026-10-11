@@ -19,14 +19,19 @@ const maxHp=mon=>D.combat.statsAtLevel(mon.id,mon.level,mon).hp;
 function eligibleSlots(save){
  return Array.isArray(save?.party)?save.party.map((p,i)=>p.hp>0?i:-1).filter(i=>i>=0).slice(0,3):[];
 }
+function validateSelection(save,indices){
+ return Array.isArray(indices)&&indices.length===3&&new Set(indices).size===3&&
+  indices.every(i=>Number.isInteger(i)&&i>=0&&i<save.party.length&&save.party[i].hp>0);
+}
 function available(save,id){
  const preset=TRAINERS.find(x=>x.id===id);
  return !!(preset&&save&&(save.wins||0)>=preset.requiredWins&&eligibleSlots(save).length===3);
 }
-function makeTrainer(save,id,rand=Math.random){
+function makeTrainer(save,id,rand=Math.random,selected=null){
  if(!available(save,id))return null;
  const preset=TRAINERS.find(x=>x.id===id);
- const playerSlots=eligibleSlots(save);
+ const playerSlots=selected===null?eligibleSlots(save):selected.slice();
+ if(!validateSelection(save,playerSlots))return null;
  const level=Math.min(55,Math.max(2,Math.round(playerSlots.reduce((n,i)=>n+save.party[i].level,0)/3)+preset.bonus));
  const team=preset.species.map((id,i)=>{
   const mon=E.makeCreature(id,Math.min(60,level+(i===2?1:0)),rand);
@@ -92,5 +97,5 @@ function reward(save,trainer){
  save.active=original;save.coins+=coins;save.trainerWins[trainer.id]=(save.trainerWins[trainer.id]||0)+1;
  return {coins,first,xpEach:participantIndices.length?Math.max(4,Math.floor(exp/participantIndices.length)):0,changes};
 }
-w.KIDSMON_TRAINERS={TRAINERS,available,eligibleSlots,makeTrainer,preview,estimate,matchup,chooseSwitch,chooseReplacement,reward};
+w.KIDSMON_TRAINERS={TRAINERS,available,eligibleSlots,validateSelection,makeTrainer,preview,estimate,matchup,chooseSwitch,chooseReplacement,reward};
 })(window);
