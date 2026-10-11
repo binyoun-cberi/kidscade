@@ -39,6 +39,21 @@ test('two pointer-like traces can finish in parallel without overwriting progres
  assert.equal(s.results[0].winner,null);
  assert.deepEqual(s.totals,[.5,.5]);
 });
+test('keyboard tracing demands speed adjustment instead of winning by one held key',()=>{
+ let s=runAt(0,912),r=s.round;
+ s=V.input(s,0,'hold',true,1000);
+ s=V.input(s,0,'assist',1,1000);
+ s=V.input(s,1,'hold',true,1000);
+ s=V.input(s,1,'assist',1,1000);
+ for(let t=1032;t<22000&&s.phase==='playing';t+=32){
+    const wave=Math.sin((t-1000)/360);
+    s=V.input(s,0,'assist',wave>0?-1:1,t);
+    s=V.tick(s,t);
+    if(r.players[0].done&&r.players[1].done)break;
+ }
+ assert.equal(r.players[0].clear,true,'timed speed changes should complete');
+ assert.equal(r.players[1].clear,false,'one held fast key should not automatically win');
+});
 test('bridge wrong step fails only 1P, other player can still clear the same map',()=>{
  let s=runAt(1,45),r=s.round,time=1000;
  s=V.tick(s,time+5200);time+=5200;
