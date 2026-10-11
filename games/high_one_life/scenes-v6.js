@@ -6,7 +6,7 @@
 const names={
 home:'집과 가족',classroom:'학교 교실',campus:'대학교',library:'도서관',laboratory:'연구실',
 clinic:'진료소',hospital:'병원',rehab:'재활 공간',computers:'개발실',workshop:'정비 작업장',
-factory:'공장',construction:'건설 현장',farm:'농장',orchard:'과수원',forest:'숲',
+hotel:'호텔',construction:'건설 현장',farm:'농장',orchard:'과수원',forest:'숲',
 harbor:'항구',stage:'공연장',gallery:'미술관',studio:'녹음실',stadium:'경기장',gym:'체육관',
 market:'시장',bakery:'빵집',restaurant:'식당',cafe:'카페',townhall:'주민센터',
 street:'도시 거리',airport:'공항',temple:'수행 공간',community:'마을 모임',
@@ -17,9 +17,9 @@ const palettes=['#7fadbd','#d7bb8a','#9eb7d6','#bed9ba','#8bacbb','#abd1b5','#dc
 '#d6adc9','#e5c3a9','#b5b0d4','#a5c6bf','#dbc8a0','#d6b9a1','#e9c8a3','#d9b89b',
 '#c6b49e','#c3d6d1','#b6bccc','#c6d4dc','#d7c49f','#acceb2','#d8cbbc','#aabccc'];
 const groups={
-book:'classroom,campus,library',med:'clinic,hospital,rehab',work:'computers,workshop,factory,construction',
+book:'classroom,campus,library',med:'clinic,hospital,rehab',work:'computers,workshop,construction',
 nature:'farm,orchard,forest,harbor',art:'stage,gallery,studio',sport:'stadium,gym',
-shop:'market,bakery,restaurant,cafe',public:'townhall,street,airport,temple,community,shelter',
+shop:'market,bakery,restaurant,cafe,hotel',public:'townhall,street,airport,temple,community,shelter',
 house:'home,retirement'
 };
 const sceneGroup=id=>Object.keys(groups).find(k=>groups[k].split(',').includes(id))||'house';
