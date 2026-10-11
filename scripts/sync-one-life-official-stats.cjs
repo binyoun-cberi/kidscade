@@ -18,6 +18,7 @@ const SERIES={
   unemployment:{code:'SL.UEM.TOTL.ZS',source:'ILO modelled estimate',unit:'%'},
   under5Mortality:{code:'SH.DYN.MORT',source:'UN IGME / UNICEF, WHO, UN, World Bank',unit:'deaths per 1000 live births'},
   healthCoverage:{code:'SH.UHC.SRVS.CV.XD',source:'WHO GHO',unit:'0-100 index'},
+  physiciansPerThousand:{code:'SH.MED.PHYS.ZS',source:'WHO Global Health Workforce / OECD / national statistics',unit:'doctors per 1000'},
   lifeExpectancy:{code:'SP.DYN.LE00.IN',source:'UN DESA / national statistics via World Bank',unit:'years'}
 };
 const slugFromFlag=flag=>Array.from(flag||'').map(ch=>String.fromCharCode(ch.codePointAt(0)-0x1f1e6+65)).join('');
@@ -88,8 +89,8 @@ async function collect(){
     definitions:SERIES,coverage,countries};
   for(const [country,data] of Object.entries(countries)){
     if(data.estimatedBirths && !(data.estimatedBirths.value>0))throw new Error('Invalid births '+country);
-    for(const k of ['primaryCompletion','unemployment','urbanPercent','under5Mortality','healthCoverage']){
-      if(data[k] && (data[k].value<0||data[k].value>(k==='under5Mortality'?1000:k==='primaryCompletion'?250:100)))
+    for(const k of ['primaryCompletion','unemployment','urbanPercent','under5Mortality','healthCoverage','physiciansPerThousand']){
+      if(data[k] && (data[k].value<0||data[k].value>(k==='under5Mortality'?1000:k==='primaryCompletion'?250:k==='physiciansPerThousand'?30:100)))
         throw new Error('Out-of-range '+country+' '+k+' '+data[k].value);
     }
   }
