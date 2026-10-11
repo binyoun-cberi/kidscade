@@ -432,7 +432,11 @@
       if (activeStudioMode === '2d' && src && !src.startsWith('about:blank')) snapshotFromStudio();
       activeStudioMode = mode;
       frameLoaded = false;
-      frame.src = mode === '3d' ? CHIBI_STUDIO_URL : STUDIO_URL;
+      const nextSrc=mode === '3d' ? CHIBI_STUDIO_URL : STUDIO_URL;
+      // The original pixel avatar lazy-loader may still own initial iframe
+      // activation. Point its deferred source at the requested mode too.
+      if(frame.dataset.kidscadeDeferred==='1')frame.dataset.kidscadeDeferredSrc=nextSrc;
+      frame.src = nextSrc;
       if (mode === '2d') {
         setTimeout(()=>syncFrameReady(0),100);
       }
