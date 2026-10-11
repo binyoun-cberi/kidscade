@@ -891,6 +891,9 @@ function updateStage(stage,old) {
     syncChapterVisuals();
   } else if(stage==='final'){
     X.beginFinal(corrector);
+    // Correct spelling restores its physical door immediately, even at very low FPS.
+    const finalGate=calligramById.get('final-door');
+    if(finalGate){finalGate.root.visible=true;finalGate.progress=Math.max(.07,finalGate.progress);}
     chapterVisual.finalSeal.visible=false;
     chapterVisual.finalWord.visible=false;
     saveChapterCheckpoint();
