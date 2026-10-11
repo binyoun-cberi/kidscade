@@ -119,7 +119,7 @@ function renderHud(){
      if(r.id==='dalgona')desc='완성 '+Math.round(score*100)+'% · 금 '+Math.round(p.traceState.crack)+'%';
      else if(r.id==='bridge')desc='정답 '+p.bridgeStep+' / '+(r.map.path.length-1);
      else if(r.id==='redlight')desc=r.players[i].body.signal==='green'?'초록불 · 이동':'멈춰야 해요!';
-     else if(r.id==='tug')desc='당기기 '+Math.round(p.body.rope)+'% · 피로 '+Math.round(p.body.fatigue)+'%';
+     else if(r.id==='tug')desc='우리 쪽 줄 위치 '+Math.round(score*100)+'% · 피로 '+Math.round(p.body.fatigue)+'%';
      else if(r.id==='marbles')desc='정답 '+p.body.correct+'/5 · 실수 '+p.body.misses;
      else desc='결승 과제: '+p.body.part;
      el.detail[i].textContent=desc;
@@ -138,7 +138,7 @@ function renderHud(){
      dalgona:'각자 노란 출발점을 눌러 선을 따라 긁으세요. 너무 빠르거나 느리면 실패!',
      bridge:r.phase==='preview'?'같은 정답 길을 5초 동안 외우세요.':'발판을 기억해서 ↑↓←→로 순서대로 건너세요.',
      redlight:'같은 신호! 초록불에는 버튼을 누르고 노란불에 손을 떼세요.',
-     tug:'타이밍 바의 초록 구간에서 당기세요. 연타하면 피로가 쌓여요.',
+     tug:'하나의 줄을 서로 반대로 당겨요! 초록 타이밍에 당기고 연타는 피하세요.',
      marbles:'각자 문제 조건에 맞는 왼쪽/오른쪽 주머니를 선택하세요.',
      final:'기억한 모양 4개 → 초록 타이밍 2회 → 덧셈 문제의 순서입니다.'
    })[r.id];
@@ -175,7 +175,7 @@ function showDialog(){
      dalgona:'양쪽 달고나의 선을 따라 그리세요. 너무 빠르거나 느려도 깨져요.',
      bridge:'같은 정답 길을 5초 동안 외운 뒤 각자 화살표로 건너세요.',
      redlight:'양쪽 모두 같은 신호를 보고 달립니다. 노란불에 손을 떼야 해요.',
-     tug:'서로 초록 타이밍에 줄을 당겨 더 빨리 100%를 달성하세요.',
+     tug:'한 개의 줄을 양쪽에서 당겨요. 초록색 바늘에 맞춰 반대편 선수를 밀어내세요.',
      marbles:'같은 조건의 구슬 문제 다섯 개. 각자 왼쪽과 오른쪽을 고르세요.',
      final:'모양의 순서를 외우고 → 타이밍 → 계산 문제까지 통과하세요.'
    };
@@ -284,9 +284,9 @@ function drawTug(r,p){
  rounded(70+pos*barW-5,52,10,52,'#fff6d5',3);
  rounded(0,H*.74,W,H*.26,'#385a49');
  c.beginPath();c.moveTo(48,H*.59);c.lineTo(472,H*.59);c.lineWidth=18;c.strokeStyle='#c9a26d';c.stroke();
- const amount=clamp(b.rope,0,100);
- rounded(W*.5-5+amount*1.15,H*.59-27,10,54,'#ff9f82',4);
- label('힘 '+Math.round(b.rope)+'%  피로 '+Math.round(b.fatigue)+'%',W/2,H*.89,20);
+ const amount=clamp(E.progressOf(r,p)*100,0,100);
+ rounded(W*.5-5+r.tug.offset*(p.id===0?1:-1)*1.7,H*.59-27,10,54,'#ff9f82',4);
+ label('줄 우세 '+Math.round(amount)+'%  피로 '+Math.round(b.fatigue)+'%',W/2,H*.89,20);
 }
 function drawMarbles(r,p){
  const b=p.body,q=b.questions[b.questionIndex];if(!q)return;
