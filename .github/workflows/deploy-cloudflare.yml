@@ -59,6 +59,7 @@ jobs:
     timeout-minutes: 20
     concurrency:
       # Serialize publication, without reserving its slot during regression tests.
+      # Queue pruning preserves this job once publication has started.
       group: kidscade-cloudflare-publish
       cancel-in-progress: false
     steps:

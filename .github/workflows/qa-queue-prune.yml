@@ -121,8 +121,35 @@ jobs:
                       errors.append((run["id"], str(exc)))
                       print(f"Cancel failed: {run['id']}: {exc}")
 
+          # Release obsolete production quality gates, never publication or the newest run.
+          deploy_history = api(f"/repos/{repo}/actions/workflows/deploy-cloudflare.yml/runs?branch=main&per_page=100").get("workflow_runs", [])
+          latest_deploy = max(deploy_history, key=lambda r: (r["created_at"], r["id"]), default={})
+          stale_deploys = []
+          for run in deploy_history:
+              if (run.get("event") != "push" or run.get("head_branch") != "main"
+                  or run.get("status") not in ("queued", "pending", "in_progress")
+                  or run["id"] == latest_deploy.get("id")
+                  or run.get("head_sha") == latest_deploy.get("head_sha")):
+                  continue
+              jobs = list_all(f"/repos/{repo}/actions/runs/{run['id']}/jobs", "jobs")
+              if any(j.get("name") not in ("quality-gate", "deploy") for j in jobs):
+                  continue
+              if run.get("status") == "in_progress" and not any(j.get("name") == "quality-gate" and j.get("status") == "in_progress" for j in jobs):
+                  continue
+              if any(j.get("name") == "deploy" and
+                     (j.get("started_at") or j.get("status") in ("in_progress", "completed")) for j in jobs):
+                  continue
+              try:
+                  api(f"/repos/{repo}/actions/runs/{run['id']}/cancel", method="POST")
+                  stale_deploys.append(run["id"])
+                  print(f"Obsolete pre-publication gate cancelled: {run['id']}")
+              except Exception as exc:
+                  if api(f"/repos/{repo}/actions/runs/{run['id']}").get("status") != "completed":
+                      errors.append((run["id"], str(exc)))
+          print(f"Obsolete deployment gates cancelled: {len(stale_deploys)}; newest deployment preserved: {latest_deploy.get('id')}")
+
           print(f"QA runs found: {len(active)}; cancelled requests: {len(cancelled)}; preserved: {len(kept)}; errors: {len(errors)}")
-          print("No Cloudflare deployment workflows, current PR heads or manual runs were cancelled.")
+          print("Newest Cloudflare deployment, started publication jobs, current PR heads and manual runs were preserved.")
           if errors:
               raise SystemExit(1)
           PY
