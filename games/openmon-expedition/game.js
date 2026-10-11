@@ -925,6 +925,7 @@ function attach(){
    else if(act==="clinic"){closeGeneric();$("goClinic").click()}
    else if(act==="box")openBox();
    else if(act==="trainers")openTrainers();
+   else if(act==="regions")openRegions();
    else if(act==="evolve"){closeGeneric();evolveIfReady();}
    else if(act==="stones")openStoneEvolution();
    else if(act==="skills")openSkills();
