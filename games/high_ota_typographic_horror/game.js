@@ -19,6 +19,8 @@ const overlays = { intro:el('intro'), fix:el('fixPanel'), correction:el('correct
 const state = R.initialState();
 const literacy=L.create();state.literacy=literacy;
 const literacyMeshes=new Map();let activeCorrection=null;
+const repairEffects=[];
+let apparitionAnchor=null,apparitionNumber=-1;
 const corrector=X.create();
 let soundPulse=0, lastCorrectorSound=0;
 const player = { x:0, z:4.8, yaw:0, pitch:0, moving:false };
@@ -335,7 +337,9 @@ function syncLiteracyVisuals(){
   const available=new Set(literacy.items.map(item=>item.uid));
   for(const [uid,visual] of literacyMeshes){
     if(available.has(uid))continue;
-    scene.remove(visual.word);scene.remove(visual.hint);literacyMeshes.delete(uid);
+    scene.remove(visual.word);scene.remove(visual.hint);
+    visual.base.dispose();visual.hot.dispose();visual.hintMaterial.dispose();
+    literacyMeshes.delete(uid);
   }
   for(const item of literacy.items){
     if(literacyMeshes.has(item.uid))continue;
@@ -344,7 +348,45 @@ function syncLiteracyVisuals(){
       item.x,1.62,item.z,0,0,2.55,.77);
     const hint=label(item.kind==='core'?'핵심 오타 · 조사':'새 오류 · 조사',
       item.kind==='core'?'#cfc3b2':'#a296a0',item.x,2.21,item.z,0,0,1.65,.40);
-    literacyMeshes.set(item.uid,{word,hint,item});
+    const base=word.material.clone(),hot=material(q.wrong,'#f15b76').clone();
+    const hintMaterial=hint.material.clone();
+    word.material=base;hint.material=hintMaterial;
+    literacyMeshes.set(item.uid,{word,hint,item,base,hot,hintMaterial});
+  }
+}
+function startRepairEffect(item,q){
+  // Broken syllables converge into a readable corrected word.
+  const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const chars=[...q.correct.replace(/\s/g,'')].slice(0,10);
+  const shards=reduce?[]:chars.map((char,i)=>{
+    const m=label(char,i%2?'#f2b78e':'#f57389',item.x,1.59,item.z+.12,0,0,.42,.46);
+    m.userData={offset:(i-(chars.length-1)/2)*.27,fromX:Math.sin(i*3.7)*.75,fromY:Math.cos(i*4.1)*.53};
+    return m;
+  });
+  const result=label(q.correct,'#aeecca',item.x,1.73,item.z+.1,0,0,2.45,.73);
+  result.visible=reduce;
+  repairEffects.push({t:0,x:item.x,z:item.z,result,shards,reduce});
+}
+function updateRepairEffects(dt){
+  for(let i=repairEffects.length-1;i>=0;i--){
+    const fx=repairEffects[i];fx.t+=dt;
+    const converge=Math.min(1,fx.t/.54);
+    for(const shard of fx.shards){
+      const {offset,fromX,fromY}=shard.userData;
+      shard.position.set(fx.x+fromX*(1-converge)+offset*converge,
+        1.73+fromY*(1-converge)+Math.sin(converge*Math.PI)*.09,fx.z+.12);
+      shard.scale.setScalar(.42*(1-Math.max(0,(fx.t-.50)/.22)));
+      shard.lookAt(camera.position);
+      shard.visible=fx.t<.69;
+    }
+    fx.result.visible=fx.t>=.48||fx.reduce;
+    fx.result.position.y=1.73+(fx.t>.65?(fx.t-.65)*.12:0);
+    fx.result.scale.set(2.45*Math.min(1,Math.max(.08,(fx.t-.44)/.22)),.73,1);
+    fx.result.lookAt(camera.position);
+    if(fx.t>=1.45){
+      for(const shard of fx.shards)scene.remove(shard);
+      scene.remove(fx.result);repairEffects.splice(i,1);
+    }
   }
 }
 function updateLiteracyHud(){
@@ -383,6 +425,8 @@ function respawnAtCheckpoint(){
   L.restore(literacy,data.literacy);
   Object.assign(player,{x:C3.START.x,z:C3.START.z,yaw:0,pitch:0,moving:false});
   failed=false;X.reset(corrector);soundPulse=0;closeCorrection();
+  for(const fx of repairEffects){fx.shards.forEach(m=>scene.remove(m));scene.remove(fx.result);}
+  repairEffects.length=0;apparitionAnchor=null;apparitionNumber=-1;
   overlays.ending.classList.add('closed');overlays.fix.classList.add('closed');
   document.body.classList.remove('hidden-in-locker');
   hud.objective.textContent=C3.objective(state);
@@ -470,7 +514,7 @@ function updateStage(stage,old) {
     hud.stage.textContent='기록보관소 · 탈출 통로 열림';
     try{window.KidscadeGame?.milestone?.('ota_door_fixed',{uniqueKey:'ota-prologue'});}catch(_){}
   } else if(stage==='explore'){
-    X.reset(corrector);
+    X.reset(corrector);apparitionAnchor=null;apparitionNumber=-1;
     C3.ensure(state).checkpoint=true;
     syncLiteracyVisuals();updateLiteracyHud();saveChapterCheckpoint();
     announce('잘못된 기록을 발견하면 조사해 고치세요. 핵심 교정 5개가 필요합니다.',false,5.0);
@@ -678,10 +722,13 @@ function update(dt) {
   }
   if(state.stage==='explore'||state.stage==='final'){
     soundPulse=Math.max(0,soundPulse-dt);
-    const safe=state.stage==='explore'&&C3.inArchive(player);
+    // The archive is protected ONLY while its separate gaze puzzle is unresolved.
+    const archiveClear=C3.ensure(state).records.archive;
+    const archiveOpen=archiveClear;
+    const safe=state.stage==='explore'&&C3.inArchive(player)&&!archiveClear;
     const report=X.step(corrector,dt,player,{
-      stage:state.stage,safe,awakened:literacy.awakened,moving:player.moving,running,noise:soundPulse>0,
-      passable:(x,z)=>x<=3.03&&C3.canMove(state,x,z)
+      stage:state.stage,safe,archiveOpen,awakened:literacy.awakened,moving:player.moving,running,noise:soundPulse>0,
+      passable:(x,z)=>(archiveClear||x<=3.03)&&C3.canMove(state,x,z)
     });
     if(report.caught){
       state.stage='lost';state.lossReason='corrector';state.losses++;
@@ -700,14 +747,31 @@ function update(dt) {
   const corruptorSource=state.monster.active?state.monster
     :corrector.phase!=='dormant'?corrector:null;
   updateHauntedWords(elapsed,corruptorSource,state.stage==='final');
+  updateRepairEffects(dt);
   if(state.stage==='explore'){
-    for(const {word,hint,item} of literacyMeshes.values()){
+    // Show one clear nearby learning target; distant record text fades away.
+    const nearest=L.nearest(literacy,player,9);
+    for(const {word,hint,item,base,hot,hintMaterial} of literacyMeshes.values()){
+      const dist=R.distance(player,item);
+      const fade=Math.max(0,Math.min(1,(10-dist)/4));
+      const emphasis=nearest&&nearest.uid!==item.uid&&dist<6?.32:1;
       const beat=Math.sin(elapsed*(1.6+literacy.contamination*.015)+item.age*.4);
-      word.position.y=1.62+beat*.038;
-      word.lookAt(camera.position);hint.lookAt(camera.position);
-      word.material=material(L.question(item).wrong,
-        literacy.contamination>=40&&beat>.65?'#ed4c65':item.kind==='core'?'#e79ca8':'#cb7b8a');
+      word.position.y=1.62+beat*.025;
+      word.material=literacy.contamination>=40&&beat>.75?hot:base;
+      word.material.opacity=fade*emphasis;
+      word.visible=fade*emphasis>.04;
+      word.lookAt(camera.position);
+      hint.visible=dist<4.7&&(!nearest||nearest.uid===item.uid);
+      hintMaterial.opacity=Math.min(1,(4.7-dist)/1.6);
+      hint.lookAt(camera.position);
     }
+    const focused=nearest&&R.distance(player,nearest)<4.2?nearest:null;
+    hauntedWords.forEach(entry=>{
+      if(entry.z< -38&&entry.z> -57&&focused&&
+        Math.hypot(entry.x-focused.x,entry.z-focused.z)<3.1){
+        entry.mesh.visible=false;entry.ghost.visible=false;
+      }else entry.mesh.visible=true;
+    });
   }
   shiftingWords.forEach((entry,i)=>{
     if(entry.mesh.visible){
@@ -735,21 +799,40 @@ function update(dt) {
   const stalking=corrector.phase!=='dormant'&&!failed;
   const threat=prologue?state.monster:stalking?corrector:null;
   const distance=threat?R.distance(player,threat):Infinity;
-  enemyGroup.visible=Boolean(threat);
-  if(threat){
-    enemyGroup.position.set(threat.x,Math.sin(elapsed*1.8)*.035,threat.z);
+  // Non-lethal silhouette: careful students can still experience the horror.
+  // This is a scripted echo, not an omniscient second monster.
+  const chapterTime=literacy.time;
+  const apparitionWindow=state.stage==='explore'&&!threat
+    ?(chapterTime>=19&&chapterTime<23?0:
+      chapterTime>=77&&chapterTime<81&&literacy.contamination>=18?1:-1)
+    :-1;
+  const mirage=apparitionWindow>=0;
+  if(mirage&&apparitionNumber!==apparitionWindow){
+    apparitionNumber=apparitionWindow;
+    apparitionAnchor={x:Math.max(-13,Math.min(14,player.x-Math.sin(player.yaw)*9)),
+      z:Math.max(-54,Math.min(-40,player.z-Math.cos(player.yaw)*9))};
+    tone(93,.29,'sawtooth',.018);
+    announce('멀리서 누군가 기록의 이름을 지우고 있습니다.',false,3);
+  }
+  if(!mirage)apparitionAnchor=null;
+  enemyGroup.visible=Boolean(threat||mirage);
+  if(threat||mirage){
+    const locus=threat||apparitionAnchor;
+    enemyGroup.position.set(locus.x,Math.sin(elapsed*1.8)*.035,locus.z);
+    enemyGroup.scale.setScalar(mirage?.76:1);
     enemyGroup.lookAt(camera.position.x,2.4,camera.position.z);
     correctorGlyphs.forEach((m,i)=>{
       const glitch=Math.sin(elapsed*(29+i*2.15)+i*5.3)>.91;
+      m.visible=!mirage||i%3!==1;
       m.position.x=m.userData.x+(glitch?Math.sin(elapsed*121+i)*.12:Math.sin(elapsed*1.8+i)*.014);
       m.position.y=m.userData.y+(glitch?Math.cos(elapsed*84+i)*.075:0);
       m.material=material(glitch?(i%3===0?'없음':m.userData.word):m.userData.word,
-        glitch?'#ff3654':m.userData.color);
+        mirage?'#756671':glitch?'#ff3654':m.userData.color);
     });
     const near=Math.max(0,1-distance/11);
-    hud.danger.style.opacity=String(Math.min(.78,near*.48+(prologue?Math.sin(elapsed*7)*.09:.0)));
-    hud.noise.style.opacity=String(Math.min(.38,near*.22));
-    if(distance<10&&elapsed-lastCorrectorSound>Math.max(.60,2.0-distance*.12)){
+    hud.danger.style.opacity=mirage?'.07':String(Math.min(.78,near*.48+(prologue?Math.sin(elapsed*7)*.09:0)));
+    hud.noise.style.opacity=mirage?'.06':String(Math.min(.38,near*.22));
+    if(threat&&distance<10&&elapsed-lastCorrectorSound>Math.max(.60,2.0-distance*.12)){
       lastCorrectorSound=elapsed;
       tone(distance<4?64:95,.17,'sawtooth',distance<4?.026:.010);
       tone(180+Math.round(distance*17),.045,'square',.006);
@@ -759,9 +842,10 @@ function update(dt) {
     hud.noise.style.opacity=echoActive?String(.18+state.echo.alert/270):state.stage==='hiding'?'0.07':'0';
   }
   const approaching=stalking&&!corrector.hidden&&distance<11;
-  hud.corrector.classList.toggle('show',approaching||corrector.hidden);
+  hud.corrector.classList.toggle('show',approaching||corrector.hidden||mirage);
   hud.corrector.classList.toggle('alert',approaching&&distance<4.1);
-  const signal=corrector.hidden?'숨은 상태 · 소리가 멀어질 때까지 기다리세요'
+  const signal=mirage?'교정자의 잔상입니다. 아직 추격하지 않습니다'
+    :corrector.hidden?'숨은 상태 · 소리가 멀어질 때까지 기다리세요'
     :corrector.phase==='final'?'뒤에서 이름을 지우고 있습니다 — 앞으로 이동!'
     :corrector.phase==='chase'?'교정자가 찾았습니다 — 시야를 벗어나세요'
     :corrector.phase==='search'?'주변에서 이름을 찾고 있습니다'
@@ -883,10 +967,13 @@ el('correctionChoices').querySelectorAll('button').forEach(button=>{
       updateLiteracyHud();
       return;
     }
-    closeCorrection();syncLiteracyVisuals();updateLiteracyHud();
+    closeCorrection();startRepairEffect(result.item,result.question);
+    syncLiteracyVisuals();updateLiteracyHud();
     hud.objective.textContent=C3.objective(state);
-    saveChapterCheckpoint();tone(523,.18,'triangle',.057);
-    announce(result.item.kind==='core'?'핵심 기록 복구 '+literacy.coreDone+'/5':'오타 교정 성공! 오염도가 낮아졌어요.',false,2.8);
+    saveChapterCheckpoint();
+    tone(392,.12,'triangle',.047);
+    tone(523,.22,'triangle',.048);tone(784,.28,'sine',.042);
+    announce((result.item.kind==='core'?'핵심 기록 '+literacy.coreDone+'/5 복구! ':'오타 교정 성공! ')+result.question.explain,false,3.9);
     if(result.completed&&C3.both(state))
       announce('핵심 기록 5개 복구 완료! 중앙 기록실로 이동하세요.',false,4.0);
     try{window.KidscadeGame?.milestone?.('ota_literacy_'+literacy.coreDone,{uniqueKey:'ota-literacy-'+literacy.coreDone});}catch(_){}
@@ -897,6 +984,8 @@ window.OtaDebug = Object.freeze({
     guidance:{scope:hintScope,level:hintLevel},chapter3:JSON.parse(JSON.stringify(C3.ensure(state))),echo:{...state.echo},monster:{...state.monster},
     corrector:{phase:corrector.phase,x:corrector.x,z:corrector.z,hidden:corrector.hidden,grace:corrector.grace},
     literacy:{coreDone:literacy.coreDone,corrected:literacy.corrected,contamination:literacy.contamination,awakened:literacy.awakened,items:literacy.items.map(i=>({uid:i.uid,x:i.x,z:i.z,bankIndex:i.bankIndex,kind:i.kind}))},
+    visuals:{nearbyWords:[...literacyMeshes.values()].filter(v=>v.word.visible).length,
+      nearbyHints:[...literacyMeshes.values()].filter(v=>v.hint.visible).length,repairs:repairEffects.length},
     player:{x:player.x,z:player.z,yaw:player.yaw,pitch:player.pitch},mistakes:state.mistakes}),
   // Browser QA may aim the camera to verify gaze rules, but cannot edit game progress.
   aimForVisualAudit:(yaw,pitch)=>{
