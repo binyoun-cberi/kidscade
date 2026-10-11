@@ -65,6 +65,11 @@ border-radius:9px;padding:9px 13px;text-align:center;transition:opacity .2s}
 #gazeTrack{height:5px;background:#3c303f;border-radius:4px;margin-top:7px;overflow:hidden}
 #gazeFill{display:block;width:0;height:100%;background:#eb748c}
 #recordStatus{color:#c6b18d;font-size:11px;letter-spacing:.06em;padding-top:6px;font-weight:800}
+#correctorWarning{position:fixed;z-index:3;left:50%;bottom:clamp(148px,25vh,202px);transform:translateX(-50%);pointer-events:none;opacity:0;visibility:hidden;transition:opacity .4s;max-width:min(420px,83vw);text-align:center}
+#correctorWarning.show{opacity:.85;visibility:visible}
+#correctorText{display:block;color:#bfb0b9;font-size:clamp(11px,1.4vw,13px);font-weight:850;letter-spacing:.035em;text-shadow:0 1px 14px #000,0 0 15px #000}
+#correctorWarning.alert #correctorText{color:#f098a8;text-shadow:0 0 12px #961d3c,0 2px 12px #000}
+@media(prefers-reduced-motion:reduce){#correctorWarning{transition:none}}
 #intro .rules{white-space:normal}
 #resume{margin-left:10px;background:#293444;color:#eff2f7}
 #respawn{margin-left:10px;background:#293444;color:#eff2f7}
@@ -104,6 +109,7 @@ body.hidden-in-locker #lockerMask{display:block}
 <body>
 <canvas id="scene" aria-label="글자로 이루어진 3D 기록보관소"></canvas>
 <div id="vignette"></div><div id="danger"></div><div id="static"></div>
+<div id="correctorWarning" role="status" aria-live="off"><span id="correctorText"></span></div>
 <header id="top">
  <div><div id="brand">KIDSCADE / TYPE HORROR<b>오 타</b></div><div id="mission"><small>현재 기록</small><div id="objective">관리실 컴퓨터의 기록을 확인하세요</div><div id="recordStatus">기록 0/2</div><div id="stage">제0기록보관소 · 02:17</div></div></div>
  <div id="topControls"><button id="mute" type="button" aria-label="음소거 전환">소리 켜짐</button>
@@ -126,7 +132,7 @@ body.hidden-in-locker #lockerMask{display:block}
   <small>제0기록보관소 / 02:17</small><h1 id="introTitle">오 타</h1>
   <p>이곳의 모든 것은 이름으로 존재합니다.<br>잘못된 이름을 고쳐 자신의 이름을 지키세요.</p>
   <div class="note">사람이 아닌 것을 사람이라고 부르지 마십시오.<br>이름이 바뀌면, 존재도 바뀝니다.</div>
-  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사 · H 힌트<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면으로 시점 조절 · 조사/달리기/힌트 버튼<br>위험한 상황에서는 그때 필요한 행동을 알려줍니다. 막히면 힌트 버튼을 사용하세요.</div>
+  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사 · H 힌트<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면으로 시점 조절 · 조사/달리기/힌트 버튼<br>거대한 교정자는 소리와 시선을 따라옵니다. 단어가 지직거리면 걷거나 은신처에 숨으세요.<br>위험한 상황에서는 그때 필요한 행동을 알려줍니다. 막히면 힌트 버튼을 사용하세요.</div>
   <button class="primary" id="start" type="button">기록 시작</button><button class="primary" id="resume" type="button" hidden>마지막 기록부터</button>
  </div>
 </section>
@@ -150,6 +156,7 @@ body.hidden-in-locker #lockerMask{display:block}
 <script src="rules.js"></script>
 <script src="chapter3.js"></script>
 <script src="guidance.js"></script>
+<script src="corrector.js"></script>
 <script type="module" src="game.js"></script>
 </body>
 </html>

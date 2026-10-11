@@ -140,6 +140,6 @@ test('void rendering hides room grids while corrupted words flicker',()=>{
   assert.doesNotMatch(source,/stamp\(['"](?:벽|바닥|천장)/);
   assert.doesNotMatch(source,/trimMat/);
   assert.match(source,/function hauntedLabel\(/);
-  assert.match(source,/updateHauntedWords\(elapsed\)/);
+  assert.match(source,/updateHauntedWords\(elapsed,corruptorSource/);
   assert.match(source,/hauntedLabel\('아무것도 없다'[^\n]*'여기 있다'/);
 });
