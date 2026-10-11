@@ -1101,3 +1101,11 @@ test('v6.5 facial contours track real jaw edges and round both eye lenses',()=>{
   assert.match(pack,/Math\.pow\(Math\.abs\(ny\),6\)/);
   assert.match(pack,/const hem=THREE\.MathUtils\.clamp/);
 });
+
+test('dynamic Chibi mask straps and sunglass temples retain rig skin attributes',()=>{
+  const pack=read('teacher/chibi-accessory-pack.js');
+  assert.match(pack,/arm\.setAttribute\(attr,source\.clone\(\)\)/);
+  assert.match(pack,/loop\.setAttribute\(attr,source\.clone\(\)\)/);
+  assert.match(pack,/source\.count!==arm\.getAttribute\('position'\)\.count/);
+  assert.match(pack,/source\.count!==loop\.getAttribute\('position'\)\.count/);
+});
