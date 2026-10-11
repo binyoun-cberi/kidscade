@@ -11,6 +11,7 @@ const TEST_FILES = [
   "tests/one-life-world-events.test.cjs",
   "tests/one-life-v6.test.cjs",
   "tests/one-life-v7.test.cjs",
+  "tests/one-life-v8.test.cjs",
   "tests/one-life-screen-flow.test.cjs",
   "tests/openmon-dex.test.cjs",
   "tests/openmon-roster.test.cjs",
