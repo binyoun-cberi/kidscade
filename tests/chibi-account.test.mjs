@@ -97,7 +97,7 @@ test('2D and 3D account atelier modes coexist in one overlay without overwriting
   assert.match(integration,/if \(mode === '3d' && !window\.KidscadeAccount\?\.account\)/);
   assert.match(integration,/if \(activeStudioMode === '2d'\) snapshotFromStudio\(\)/);
   assert.match(three,/function prepareAccountStudioLayout\(\)/);
-  assert.match(three,/const showTiles=accountStudio\|\|/);
+  assert.match(three,/const showTiles=\(accountStudio&&!accountPreview\)\|\|/);
   assert.match(three,/window\.parent\.postMessage\(\{/);
   assert.match(css,/grid-template-columns:minmax\(300px,400px\)/);
   assert.match(css,/#wardrobeParts \.part-tile/);
