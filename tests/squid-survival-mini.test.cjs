@@ -46,6 +46,43 @@ test('running on a red signal causes an immediate loss after the reaction window
   assert.equal(s.status,'failed');
   assert.match(s.reason,/빨간불/);
 });
+test('yellow warning never brakes a held runner: movement continues until manual release',()=>{
+ for(let seed=1;seed<=100;seed++){
+   const held=R.create('redlight',seed);R.start(held,0);
+   R.act(held,'hold',true,20);
+   let yellowAt=null,yellowProgress=0,postYellow=0;
+   for(let now=40;now<8000&&held.status==='playing';now+=20){
+     R.advance(held,now);
+     if(held.signal==='warning'&&yellowAt===null){
+       yellowAt=now;yellowProgress=held.progress;
+     }
+     if(yellowAt!==null&&now===yellowAt+200)postYellow=held.progress;
+   }
+   assert.ok(yellowAt!==null,'seed '+seed+' warning not reached');
+   assert.ok(postYellow>yellowProgress+2,'seed '+seed+' held runner auto-stopped on yellow');
+   assert.equal(held.status,'failed','seed '+seed+' must fail if still holding into red');
+   assert.match(held.reason,/빨간불/);
+ }
+});
+test('releasing during yellow actually stops player through red; pressing green restarts movement',()=>{
+ for(let seed=1;seed<=100;seed++){
+   const s=R.create('redlight',seed);R.start(s,0);R.act(s,'hold',true,20);
+   let releasedAt=null,whenStopped=0,survivedRed=false;
+   for(let now=40;now<9500;now+=20){
+     R.advance(s,now);
+     if(s.signal==='warning'&&releasedAt===null){
+       R.act(s,'hold',false,now);releasedAt=now;whenStopped=s.progress;
+     }
+     if(releasedAt!==null&&s.signal==='red'){
+       assert.ok(Math.abs(s.progress-whenStopped)<.01,'seed '+seed+' player moved with button released');
+       survivedRed=true;break;
+     }
+   }
+   assert.ok(survivedRed,'seed '+seed+' never reached red after release');
+   assert.equal(s.status,'playing','seed '+seed+' release should prevent disqualification');
+   assert.equal(s.held,false);
+ }
+});
 test('timed pulls consistently beat the opponent, while repeated spam leads to defeat',()=>{
   for(let seed=1;seed<=100;seed++){
     const s=R.create('tug',seed);R.start(s,0);
