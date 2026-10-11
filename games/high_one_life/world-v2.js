@@ -97,8 +97,11 @@
     enrich(life);
     const m=life.money,p=life.profile,age=life.age;
     if(age<18)return;
-    const factor=COUNTRY_FACTOR(life.country);
-    const personalFactor=.76+between(life.seed,21,0,62)/100; // individual opportunities differ
+    const factor=COUNTRY_FACTOR(life.country)*(life.world?.economyScale||1);
+    const personalFactor=.58+between(life.seed,21,0,110)/100; // personal chances vary widely
+    const schoolingBoost=life.world?.educationLevel==='고등 교육·훈련 수료'?1.30
+      : life.world?.educationLevel==='중등 과정 이수'?1.08
+      : life.world?.educationLevel==='기초 교육'?.96:.79;
     const householdCost=.58+between(life.seed,22,0,45)/100; // housing and living expenses
     if(age===18) {
       const help=round(p.familyIncome * (life.familyLevel==='여유 있는 형편'?.65:life.familyLevel==='빠듯한 형편'?.04:.19));
@@ -117,10 +120,10 @@
       m.employment='은퇴';
     }else if(employed){
       const jobBoost=/기술|전문/.test(life.career)?1.15:/자영업|도전/.test(life.career)?1.02:1;
-      yearly=round(BASE*factor*skill*jobBoost*personalFactor*m.careerIncomeFactor
+      yearly=round(BASE*factor*skill*schoolingBoost*jobBoost*personalFactor*m.careerIncomeFactor
         *(.77+Math.min(25,age-19)*.012));
       const chance=life.rand();
-      if(chance<.055 && age<62){
+      if(chance<(.04+(1-(life.country[3]||.55))*.07) && age<62){
         yearly=0;m.employment='구직 중';
         life.logEvent('예상치 못한 실직으로 잠시 일자리를 찾아야 했다.','money');
       }else if(chance<.15){
@@ -167,7 +170,7 @@
       life.money.retired=opt.retire;
     }
     if(opt.payment){
-      const cost=round(BASE*COUNTRY_FACTOR(life.country)*.68);
+      const cost=round(BASE*COUNTRY_FACTOR(life.country)*(life.world?.economyScale||1)*.68);
       const ratio=opt.payment==='budget'?.8:opt.payment==='help'?.48:1;
       life.money.netWorth-=round(cost*ratio);
     }
