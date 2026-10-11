@@ -46,7 +46,7 @@
       "difficulty": "medium",
       "sessionMinutes": 10,
       "players": [
-        "multi"
+        "local2"
       ],
       "input": [
         "touch",
