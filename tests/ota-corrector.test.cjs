@@ -24,7 +24,7 @@ test('corrector remains harmless during introduction and respects the archive sa
 });
 
 test('sound and sight trigger pursuit, a lost target becomes a search',()=>{
- const s=X.create();s.x=0;s.z=-49;s.heading=0;s.grace=0;
+ const s=X.create();s.phase='patrol';s.x=0;s.z=-49;s.heading=0;s.grace=0;
  const p={x:0,z:-43};
  const report=X.step(s,.1,p,{stage:'explore',passable,moving:true,running:true,safe:false});
  assert.equal(report.phase,'chase');
