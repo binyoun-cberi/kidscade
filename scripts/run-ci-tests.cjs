@@ -15,6 +15,7 @@ const TEST_FILES = [
   "tests/kidsmon-tactics-v3.test.cjs",
   "tests/kidsmon-trainer-three-vs-three.test.cjs",
   "tests/kidsmon-world-habitats.test.cjs",
+  "tests/kidsmon-regional-gyms.test.cjs",
   "tests/kidsmon-move-dex.test.cjs",
   "tests/kidsmon-family-signatures.test.cjs",
   "tests/cosmic-growth.test.cjs",
