@@ -5,7 +5,8 @@ const C3 = window.OtaChapter3;
 const G = window.OtaGuide;
 const X = window.OtaCorrector;
 const L = window.OtaLiteracy;
-if (!R || !C3 || !G || !X || !L) throw new Error('Ota chapter or guidance rules are missing');
+const S = window.OtaSurfaces;
+if (!R || !C3 || !G || !X || !L || !S) throw new Error('Ota chapter or guidance rules are missing');
 const el = id => document.getElementById(id);
 const canvas = el('scene');
 const hud = { objective:el('objective'), stage:el('stage'), prompt:el('prompt'),
@@ -21,6 +22,7 @@ const literacy=L.create();state.literacy=literacy;
 const literacyMeshes=new Map();let activeCorrection=null;
 const repairEffects=[];
 const wayfindingSigns=[];
+const architectureMeshes=[],architectureErrors=[],architectureLights=[];
 let apparitionAnchor=null,apparitionNumber=-1;
 const corrector=X.create();
 let soundPulse=0, lastCorrectorSound=0;
@@ -144,6 +146,95 @@ function box(w,h,d,x,y,z,mat) {
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
   mesh.position.set(x,y,z); scene.add(mesh); return mesh;
 }
+// Room shapes are read as tiled text rather than outlined polygons or solid textures.
+const architectureAtlas=new Map();
+function surfaceAtlas(kind){
+  if(architectureAtlas.has(kind))return architectureAtlas.get(kind);
+  const c=document.createElement('canvas');c.width=512;c.height=256;
+  const cx=c.getContext('2d');
+  cx.clearRect(0,0,512,256);
+  cx.textBaseline='middle';cx.textAlign='center';
+  cx.fillStyle=kind==='door'?'#c8ad97':kind==='ceiling'?'#aeb5c2':
+    kind==='floor'?'#7a808c':'#adb1be';
+  cx.font=(kind==='door'?'800 37px':'700 31px')+
+    ' "Noto Sans CJK KR","Noto Sans KR","Malgun Gothic",sans-serif';
+  for(let row=0;row<4;row++){
+    const cells=kind==='wall'?8:kind==='door'?6:4;
+    for(let col=0;col<cells;col++){
+      const word=kind==='wall'?'벽':kind==='floor'?'바닥':
+        kind==='door'?'문':col===2&&row%2===0?'조명':'천장';
+      cx.fillText(word,(col+.5)*512/cells,30+row*64);
+    }
+  }
+  const tex=new THREE.CanvasTexture(c);
+  tex.colorSpace=THREE.SRGBColorSpace;
+  tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
+  tex.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+  architectureAtlas.set(kind,tex);
+  return tex;
+}
+function makeArchitecturePlane(spec){
+  const tile=surfaceAtlas(spec.kind).clone();
+  tile.needsUpdate=true;
+  const tileWidth=spec.kind==='wall'?4.2:spec.kind==='door'?2:
+    spec.kind==='ceiling'?4.8:4.3;
+  const tileHeight=(spec.kind==='wall'||spec.kind==='door')?1.65:4.3;
+  tile.repeat.set(Math.max(.26,spec.w/tileWidth),Math.max(.24,spec.h/tileHeight));
+  const mat=new THREE.MeshBasicMaterial({map:tile,transparent:true,
+    depthTest:true,depthWrite:false,side:THREE.DoubleSide,toneMapped:false,
+    fog:true,opacity:1});
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(spec.w,spec.h),mat);
+  mesh.rotation.set(spec.rx,spec.ry,0);
+  mesh.position.set(spec.x,spec.y,spec.z);
+  mesh.renderOrder=-1;mesh.userData.surfaceKind=spec.kind;
+  scene.add(mesh);architectureMeshes.push({mesh,spec});
+}
+function buildWordArchitecture(){
+  for(const spec of S.surfaces)makeArchitecturePlane(spec);
+  for(const spec of S.portals)makeArchitecturePlane(spec);
+  for(const spec of S.mistakes){
+    const mesh=label(spec.wrong,'#c24664',spec.x,spec.y,spec.z,
+      spec.rx,spec.ry,1.1,.43);
+    mesh.renderOrder=0;
+    mesh.material=mesh.material.clone();
+    mesh.material.opacity=.28;mesh.visible=false;
+    architectureErrors.push({mesh,spec});
+  }
+  for(const [x,z] of [[0,-5],[0,-18],[0,-34.5],[0,-48],[-8.8,-47.3],[9.1,-47.3]]){
+    const mesh=label('조명','#b1b7cc',x,3.13,z,Math.PI/2,0,1.13,.53);
+    mesh.renderOrder=0;mesh.material=mesh.material.clone();mesh.material.opacity=.31;
+    architectureLights.push(mesh);
+  }
+}
+function updateWordArchitecture(time,threat){
+  const focus=state.stage==='explore'?L.nearest(literacy,player,4):null;
+  const pollution=state.stage==='explore'?literacy.contamination:0;
+  for(const {mesh,spec} of architectureMeshes){
+    if(spec.when&& !C3.ensure(state)[spec.when]&& !state[spec.when]){
+      mesh.visible=false;continue;
+    }
+    const fade=S.visibility(spec,player);
+    const focalDistance=focus?Math.hypot(spec.x-focus.x,spec.z-focus.z):Infinity;
+    const focusFactor=focus&&focalDistance<5.5?.40:1;
+    const strength=spec.kind==='door'?.36:spec.kind==='wall'?.32:
+      spec.kind==='ceiling'?.23:.17;
+    mesh.material.opacity=fade*strength*focusFactor;
+    mesh.visible=mesh.material.opacity>.018;
+  }
+  for(const {mesh,spec} of architectureErrors){
+    const dist=R.distance(player,spec);
+    const danger=threat?Math.max(0,1-R.distance(threat,spec)/8):0;
+    const rate=.968-.21*danger-.12*pollution/100;
+    const flash=Math.sin(time*(2.05+spec.x*.07)+spec.z*.47)>rate;
+    mesh.visible=dist<8.5&&dist>1.1&&flash&&!(focus&&R.distance(focus,spec)<3);
+    mesh.material.opacity=.33+danger*.28;
+  }
+  for(const lamp of architectureLights){
+    const distance=R.distance(player,lamp.position);
+    lamp.visible=distance<12&&distance>1;
+    lamp.material.opacity=distance<12?.28*(Math.sin(time*.72+lamp.position.z)*.05+.95):0;
+  }
+}
 function scenery() {
   box(6.9,.12,45,0,-.12,-15.15,floorMat);
   box(.22,3.26,45,-3.38,1.61,-15.15,wallMat);
@@ -235,6 +326,7 @@ function scenery() {
     m.userData={word,color,x,y};enemyGroup.add(m);correctorGlyphs.push(m);
   });
   enemyGroup.visible=false;
+  buildWordArchitecture();
 }
 
 function buildChapterThreeRooms(){
@@ -869,7 +961,7 @@ function update(dt) {
     :corrector.phase==='search'?'주변에서 이름을 찾고 있습니다'
     :distance<7?'지직… 단어가 바뀌고 있습니다':'멀리서 글자가 지워지고 있습니다';
   if(hud.correctorText.textContent!==signal)hud.correctorText.textContent=signal;
-  updateWayfindingSigns();setCamera();updatePrompt();syncHintScope();
+  updateWordArchitecture(elapsed,threat);updateWayfindingSigns();setCamera();updatePrompt();syncHintScope();
 }
 function look(dx,dy) {
   if(state.hidden || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed'))return;
@@ -1002,7 +1094,12 @@ window.OtaDebug = Object.freeze({
     guidance:{scope:hintScope,level:hintLevel},chapter3:JSON.parse(JSON.stringify(C3.ensure(state))),echo:{...state.echo},monster:{...state.monster},
     corrector:{phase:corrector.phase,x:corrector.x,z:corrector.z,hidden:corrector.hidden,grace:corrector.grace},
     literacy:{coreDone:literacy.coreDone,corrected:literacy.corrected,contamination:literacy.contamination,awakened:literacy.awakened,items:literacy.items.map(i=>({uid:i.uid,x:i.x,z:i.z,bankIndex:i.bankIndex,kind:i.kind}))},
-    visuals:{nearbyWords:[...literacyMeshes.values()].filter(v=>v.word.visible).length,
+    visuals:{surfaces:{wall:S.surfaces.filter(x=>x.kind==='wall').length,
+      floor:S.surfaces.filter(x=>x.kind==='floor').length,
+      ceiling:S.surfaces.filter(x=>x.kind==='ceiling').length,
+      door:S.portals.length,visible:architectureMeshes.filter(x=>x.mesh.visible).length,
+      anomalies:architectureErrors.filter(x=>x.mesh.visible).length},
+      nearbyWords:[...literacyMeshes.values()].filter(v=>v.word.visible).length,
       nearbyHints:[...literacyMeshes.values()].filter(v=>v.hint.visible).length,repairs:repairEffects.length,
       wayfinding:wayfindingSigns.map(mesh=>({word:mesh.userData.wayfindingWord,visible:mesh.visible}))},
     player:{x:player.x,z:player.z,yaw:player.yaw,pitch:player.pitch},mistakes:state.mistakes}),
