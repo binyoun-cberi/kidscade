@@ -474,10 +474,25 @@ function renderBattle(){
   $("ownArt").style.filter=own.shiny?"hue-rotate(95deg) saturate(1.7)":"none";
  $("foeArt").innerHTML=artHtml(foe.id);
   $("foeArt").style.filter=foe.shiny?"hue-rotate(95deg) saturate(1.7)":"none";
- $("battleZone").textContent=E.ZONES.find(z=>z.key===battle.zone)?.name||"비밀숲";
+ const trainer=battle.trainer;
+ $("battleOverlay").querySelector(".modal-head h2").textContent=trainer?"트레이너 3대3 대결":"야생 키즈몬 등장!";
+ $("battleZone").textContent=trainer?trainer.name:(E.ZONES.find(z=>z.key===battle.zone)?.name||"비밀숲");
+ const roster=$("trainerRoster");
+ roster.hidden=!trainer;
+ if(trainer){
+  const columns=[
+   {name:"내 팀",members:trainer.playerSlots.map(i=>save.party[i]),current:save.active,ids:trainer.playerSlots},
+   {name:trainer.name,members:trainer.party,current:trainer.active,ids:[0,1,2]}
+  ];
+  roster.innerHTML=columns.map(col=>
+   '<div class="trainer-roster-group"><strong>'+esc(col.name)+'</strong><div class="trainer-pips">'+
+   col.members.map((m,i)=>'<span class="trainer-pip '+(m.hp<=0?'fainted':col.ids[i]===col.current?'active':'')+'">'+
+    esc(species(m.id).name)+' '+(m.hp>0?'●':'×')+'</span>').join("")+
+   '</div></div>').join("");
+ }
  const bg=battle.zone==="cave"?"Cave_Back.png":"Forest_Background.png";
  $("battleBackdrop").style.backgroundImage="linear-gradient(#ffffff15,#bdd2a725),url('"+ASSET+"more%20assets/"+bg+"')";
- $("battleTurn").textContent=battle.turn+"턴";
+ $("battleTurn").textContent=battle.turn+"턴"+(battle.trainer?" · "+battle.trainer.party.filter(m=>m.hp>0).length+"/3 남음":"");
  $("battleLog").textContent=battle.message;
  if(battle.done){$("battleActionPanel").classList.add("hidden");$("battleAfter").classList.remove("hidden");return}
  $("battleAfter").classList.add("hidden");
@@ -494,22 +509,25 @@ function renderBattle(){
    const detail=DB.types[m.type].name+" · "+(m.power?(DB.combat.SPECIAL_TYPES.has(m.type)?"특수 ":"물리 ")+hitEstimate(slot.id):m.kind==="counter"?"반격 자세":"보조 효과")+
     " · PP "+slot.pp+"/"+m.pp;
    return button("move:"+slot.id,m.name,detail,"strong",slot.pp<=0);
-  }).join("")+button("soft","살살 공격","포획용 · HP 1 남김","utility")+
+  }).join("")+(battle.trainer?"":button("soft","살살 공격","포획용 · HP 1 남김","utility"))+
    button("back","← 돌아가기","행동 선택으로","menu-back");
  }else if(battle.menu==="bag"){
   $("battlePrompt").textContent="가방과 다른 행동";
   $("battleHint").textContent="아이템은 내 턴 사용";
   html=button("potion","회복약","HP +20 · "+save.items.potion+"개","utility",
        save.items.potion<=0||own.hp>=maxOwn)+
-   button("run","도망가기","전투를 빠져나가기")+
+   (battle.trainer?"":button("run","도망가기","전투를 빠져나가기"))+
    button("back","← 돌아가기","행동 선택으로","menu-back");
  }else{
   $("battlePrompt").textContent="무엇을 할까?";
   $("battleHint").textContent="속도 순서에 따라 행동";
   html=button("fight","싸우기","기술 네 가지와 PP","strong")+
-   button("ball","키즈볼 던지기",catchEstimate()+" · "+save.items.ball+"개","utility",save.items.ball<=0)+
-   button("bag","가방","회복약 · 도망가기")+
-   button("switch","키즈몬 교체","다른 동료 출전", "",save.party.filter(x=>x.hp>0).length<2);
+   (battle.trainer?button("switch","키즈몬 교체","세 명의 참가자 중 선택","utility",
+     battle.trainer.playerSlots.filter(i=>save.party[i].hp>0).length<2||side.player.trapTurns>0):
+    button("ball","키즈볼 던지기",catchEstimate()+" · "+save.items.ball+"개","utility",save.items.ball<=0))+
+   button("bag","가방",battle.trainer?"회복약":"회복약 · 도망가기")+
+   (battle.trainer?button("tips","전술 힌트","상성과 교체 규칙 확인"):
+    button("switch","키즈몬 교체","다른 동료 출전","",save.party.filter(x=>x.hp>0).length<2));
  }
  $("battleButtons").innerHTML=html;
 }
@@ -523,6 +541,7 @@ function battleAction(action){
  if(action==="fight"||action==="bag"){battle.menu=action;renderBattle();return}
  if(action==="back"){battle.menu="root";renderBattle();return}
  if(action==="switch"){showSwap();return}
+ if(action==="tips"&&battle.trainer){appendBattle(battle.trainer.lesson+"\n싸우기: 공격 · 교체: 다른 속성으로 대응 · 회복약: HP +20\n서로의 키즈몬 세 마리를 모두 쓰러뜨리면 승리!");renderBattle();return}
  const choice=action.startsWith("move:")?{type:"move",id:action.slice(5)}:
   action==="soft"?{type:"soft"}:
   action==="ball"?{type:"ball"}:
@@ -601,8 +620,13 @@ function openStoneEvolution(){
 function showSwap(){
  if(!save||!battle)return;
  if(battle.turnState?.player?.trapTurns>0){setToast("속박 상태에서는 교체할 수 없어.");return}
- openGeneric("교체할 키즈몬",'<p>교체 행동은 우선 처리되며 상대가 기술을 사용할 수 있어.</p><div class="shop-list">'+save.party.map((p,i)=>
- '<div class="shop-item">'+miniArt(p.id)+'<div><strong>'+esc(species(p.id).name)+'</strong><small>Lv.'+p.level+' / HP '+hpText(p)+'</small></div><button type="button" data-swap="'+i+'" '+(i===save.active||p.hp<=0?"disabled":"")+'>선택</button></div>').join("")+'</div>');
+ const selected=battle.trainer?battle.trainer.playerSlots:save.party.map((p,i)=>i);
+ openGeneric("교체할 키즈몬",'<p>교체는 먼저 진행되지만 상대에게 공격 기회를 줘. 속박 상태에서는 교체할 수 없어.</p><div class="shop-list">'+
+ selected.map(i=>{
+  const p=save.party[i];
+  return '<div class="shop-item">'+miniArt(p.id)+'<div><strong>'+esc(species(p.id).name)+'</strong><small>Lv.'+p.level+' / HP '+hpText(p)+'</small></div>'+
+   '<button type="button" data-swap="'+i+'" '+(i===save.active||p.hp<=0?"disabled":"")+'>선택</button></div>';
+ }).join("")+'</div>');
 }
 function renderTerrain(x,y,sx,sy){
  const t=E.terrain(x,y),area=E.zoneAt(x),seed=(x*73+y*91)%41;
