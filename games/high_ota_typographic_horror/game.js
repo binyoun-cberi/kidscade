@@ -802,9 +802,10 @@ function update(dt) {
   // Non-lethal silhouette: careful students can still experience the horror.
   // This is a scripted echo, not an omniscient second monster.
   const chapterTime=literacy.time;
-  const apparitionWindow=state.stage==='explore'&&!threat&&
-    (chapterTime>=19&&chapterTime<23?0:
-      chapterTime>=77&&chapterTime<81&&literacy.contamination>=18?1:-1);
+  const apparitionWindow=state.stage==='explore'&&!threat
+    ?(chapterTime>=19&&chapterTime<23?0:
+      chapterTime>=77&&chapterTime<81&&literacy.contamination>=18?1:-1)
+    :-1;
   const mirage=apparitionWindow>=0;
   if(mirage&&apparitionNumber!==apparitionWindow){
     apparitionNumber=apparitionWindow;
