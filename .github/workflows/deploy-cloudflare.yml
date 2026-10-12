@@ -133,6 +133,23 @@ jobs:
           fi
           curl -fsS -H 'Cache-Control: no-cache' "https://kidscade.binyoun.workers.dev/home-v2.js?verify=${EXPECTED_BUILD}" -o /dev/null
 
+          # Confirm the actual deployed HTML references downloadable icon binaries.
+          favicon_path="$(grep -oE '/favicon-[0-9a-f]{12}\.png' /tmp/kidscade-home.html | head -n 1)"
+          touch_path="$(grep -oE '/apple-touch-icon-[0-9a-f]{12}\.png' /tmp/kidscade-home.html | head -n 1)"
+          curl -fsS "https://kidscade.binyoun.workers.dev${favicon_path}" -o /tmp/kidscade-favicon.png
+          curl -fsS "https://kidscade.binyoun.workers.dev${touch_path}" -o /tmp/kidscade-apple-touch.png
+          curl -fsS "https://kidscade.binyoun.workers.dev/favicon.ico" -o /tmp/kidscade-favicon.ico
+          node -e '
+            const fs = require("node:fs");
+            for (const path of ["/tmp/kidscade-favicon.png", "/tmp/kidscade-apple-touch.png"]) {
+              const data = fs.readFileSync(path);
+              if (!data.subarray(0, 8).equals(Buffer.from("89504e470d0a1a0a", "hex"))) process.exit(1);
+            }
+            const ico = fs.readFileSync("/tmp/kidscade-favicon.ico");
+            if (ico.readUInt16LE(0) !== 0 || ico.readUInt16LE(2) !== 1 || ico.readUInt16LE(4) !== 2) process.exit(1);
+          '
+
+
           teacher_url="https://kidscade.binyoun.workers.dev/teacher/character-3d-studio.html?verify=${EXPECTED_BUILD}"
           curl -fsS -D /tmp/kidscade-teacher.headers -H 'Cache-Control: no-cache' "$teacher_url" -o /tmp/kidscade-teacher.html
           grep -q 'data-layout-version="left-rail-no-scroll-v4"' /tmp/kidscade-teacher.html

@@ -25,11 +25,41 @@ test('catalog covers point directly to real gate images', () => {
   }
 });
 
-test('uploaded Kidscade favicon exists and index declares it', () => {
+test('each Kidscade entry point declares a favicon and an iOS touch icon', () => {
   const favicon = path.join(ROOT, 'assets/gate-image/favicon.png');
   assert.equal(fs.existsSync(favicon), true);
   assert.ok(fs.statSync(favicon).size > 1000);
 
-  const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  assert.match(index, /<link\s+rel="icon"[^>]+assets\/gate-image\/favicon\.png/);
+  for (const page of ['index.html', 'index_base.html', 'economy.html']) {
+    const html = fs.readFileSync(path.join(ROOT, page), 'utf8');
+    assert.match(html, /<link\s+rel="icon"[^>]+href="assets\/gate-image\/favicon\.png"/, page);
+    assert.match(html, /<link\s+rel="apple-touch-icon"[^>]+sizes="180x180"[^>]+href="\/apple-touch-icon\.png"/, page);
+  }
+});
+
+test('Cloudflare build emits versioned icons and the final lobby retains their links', () => {
+  const build = fs.readFileSync(path.join(ROOT, 'scripts/build-cloudflare.cjs'), 'utf8');
+  const finalizer = fs.readFileSync(path.join(ROOT, 'scripts/finalize-lobby-build.cjs'), 'utf8');
+  assert.match(build, /function encodePngIco\(/);
+  assert.match(build, /const faviconFile/);
+  assert.match(build, /const touchFile/);
+  assert.match(finalizer, /Final lobby is missing consistent versioned favicon/);
+
+  const dist = path.join(ROOT, 'dist');
+  const indexPath = path.join(dist, 'index.html');
+  if (!fs.existsSync(indexPath)) return;
+  const html = fs.readFileSync(indexPath, 'utf8');
+  const favicon = html.match(/<link\s+rel="icon"[^>]+href="\/(favicon-[a-f0-9]{12}\.png)"/);
+  const touch = html.match(/<link\s+rel="apple-touch-icon"[^>]+href="\/(apple-touch-icon-[a-f0-9]{12}\.png)"/);
+  assert.ok(favicon, 'final lobby must link the hashed PNG favicon');
+  assert.ok(touch, 'final lobby must link the hashed Apple touch icon');
+  assert.equal(favicon[1].slice(8, 20), touch[1].slice(17, 29));
+  for (const name of [favicon[1], touch[1], 'favicon.ico', 'favicon.png', 'apple-touch-icon.png']) {
+    assert.ok(fs.statSync(path.join(dist, name)).size > 100, 'missing or empty ' + name);
+  }
+  const ico = fs.readFileSync(path.join(dist, 'favicon.ico'));
+  assert.equal(ico.readUInt16LE(0), 0);
+  assert.equal(ico.readUInt16LE(2), 1);
+  assert.equal(ico.readUInt16LE(4), 2, 'ICO must contain 16px and 32px images');
+  assert.ok(fs.readFileSync(path.join(dist, '_headers'), 'utf8').includes('/favicon-*.png'));
 });
