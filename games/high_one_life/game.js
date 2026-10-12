@@ -688,7 +688,7 @@
     showComparison();
     const list=$('endHighlights'); list.replaceChildren();
     const highlights=[...life.log.filter(e=>['milestone','decision','chain','world','safety','profession','history-choice','history-followup','era-choice','era-followup','care13-choice','care13-followup','care13-memory','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon-followup','joseon2-followup','joseon3-followup','joseon4-followup','joseon-memory','joseon2-memory','joseon3-memory','joseon4-memory'].includes(e.kind))]
-      .filter(e=>e.kind==='decision'||e.kind==='chain'||e.kind==='world'||e.kind==='safety'||e.kind==='profession'||e.kind==='history-choice'||e.kind==='history-followup'||e.kind==='care13-choice'||e.kind==='care13-followup'||e.kind==='joseon-choice'||e.kind==='joseon-followup'||e.kind==='joseon-memory'||e.kind==='joseon2-choice','joseon3-choice','joseon4-choice'||e.kind==='joseon2-followup','joseon3-followup','joseon4-followup'||e.kind==='joseon2-memory','joseon3-memory','joseon4-memory'||e.kind==='joseon3-choice','joseon4-choice'||e.kind==='joseon3-followup','joseon4-followup'||e.kind==='joseon3-memory','joseon4-memory'||e.age<21)
+      .filter(e=>['decision','chain','world','safety','profession','history-choice','history-followup','care13-choice','care13-followup','joseon-choice','joseon-followup','joseon-memory','joseon2-choice','joseon2-followup','joseon2-memory','joseon3-choice','joseon3-followup','joseon3-memory','joseon4-choice','joseon4-followup','joseon4-memory'].includes(e.kind)||e.age<21)
       .slice(-16);
     if(!highlights.length) highlights.push(life.log[0]);
     highlights.forEach(e=>{
