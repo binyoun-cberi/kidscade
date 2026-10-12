@@ -273,6 +273,7 @@ function ensure(life){
   active:null,childCount:0,relocations:0,exposedFacts:0};
  life.joseon=s;
  life.log[0].text=p.name+'(이)가 '+region.name+'의 '+orig.name+'에서 태어났다.';
+ historical(life,s);
  return s;
 }
 function log(life,text,kind='joseon-life'){life.logEvent(text,kind);}
