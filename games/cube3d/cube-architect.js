@@ -6810,8 +6810,8 @@ function campInstruction(step){
     if(step.action==='shelter'&&!['planks','dirt'].includes(selectedType))return '아래 물건 칸에서 판자나 흙을 골라 보자.';
     if(step.action==='place'&&selectedType!==step.type)return '아래 물건 칸에서 '+blockDef(step.type).name+'를 골라 보자.';
     if(!bagCount(selectedType))return '재료가 다 떨어졌네. '+(mobile?'도움 받기를 눌러 보자.':'H를 눌러 도움을 받아 보자.');
-    if(step.independent)return mobile?'놓고 싶은 곳을 보고 행동 버튼을 눌러 보자.':'놓고 싶은 곳을 보고 마우스 오른쪽 버튼을 눌러 보자.';
-    return mobile?'노란 테두리 옆면이나 바닥을 보고 행동 버튼을 눌러 보자.':'노란 테두리 옆면이나 바닥을 보고 마우스 오른쪽 버튼을 눌러 보자.';
+    if(step.independent)return mobile?'놓고 싶은 곳을 보고 행동 버튼에서 설치를 선택해 보자.':'놓고 싶은 곳을 보고 마우스 오른쪽 버튼을 눌러 보자.';
+    return mobile?'노란 테두리 옆면이나 바닥을 보고 행동 버튼에서 설치를 선택해 보자.':'노란 테두리 옆면이나 바닥을 보고 마우스 오른쪽 버튼을 눌러 보자.';
   }
   return step.text;
 }
