@@ -120,3 +120,13 @@
 .v13-care-strip small{font-size:10px;line-height:1.5;color:#627971}
 .timeline .is-care13-choice{border-left:3px solid #327e6d;background:#edf8f2}
 .timeline .is-care13-followup{border-left:3px solid #b68d53;background:#faf6ed}
+/* Joseon: the historical ledger is part of the game, not a separate modal. */
+.joseon-panel{border:1px solid #b7a18a;border-radius:12px;padding:13px 15px;
+background:linear-gradient(135deg,#f7efe0,#ede6d6);display:grid;gap:7px;color:#493d30}
+.joseon-panel p{font-size:12px;line-height:1.6;margin:0}
+.joseon-panel #joseonMemory{padding:8px 10px;background:#fff9f0;border-left:3px solid #96785a;border-radius:5px}
+.joseon-panel small{font-size:10px;color:#6c6256;line-height:1.5}
+.joseon-panel.hidden{display:none}
+.historical-picker .era-presets{flex-wrap:wrap;row-gap:6px}
+.timeline .is-joseon-choice{border-left:3px solid #6d7458;background:#f3f5ee}
+.timeline .is-joseon-followup{border-left:3px solid #a7885b;background:#f9f2e8}
