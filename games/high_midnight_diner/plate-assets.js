@@ -65,6 +65,7 @@ async function build(){
   camera.position.set(view[0]*distance,view[1]*distance,view[2]*distance);
   const ortho=diameter*(id==='skewer'?1.08:1.03);
   camera.left=-ortho;camera.right=ortho;camera.top=ortho;camera.bottom=-ortho;
+  camera.far=Math.max(200,diameter*24);
   camera.lookAt(0,0,0);camera.updateProjectionMatrix();
   renderer.clear();renderer.render(scene,camera);
   const still=document.createElement('canvas');still.width=320;still.height=320;
