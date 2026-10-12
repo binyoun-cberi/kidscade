@@ -257,25 +257,27 @@
   function paintArc() {
     if(!life)return;
     if(Joseon.inOldEra(life)){
-      const j=Joseon.summary(life),s=Joseon.ensure(life);
-      $('careerChangeCount').textContent=(j.decisions+Joseon2.summary(life).decisions+Joseon3.summary(life).choices)+'번의 선택';
+      const j=Joseon.summary(life),s=Joseon.ensure(life),allChoices=life.log
+        .filter(e=>['joseon-choice','joseon2-choice','joseon3-choice'].includes(e.kind)).slice(-3);
+      const n=j.decisions+Joseon2.summary(life).decisions+Joseon3.summary(life).choices;
+      $('careerChangeCount').textContent=n+'번의 선택';
       $('careerCurrent').textContent=j.occupation;
       const list=$('careerJourney');list.replaceChildren();
-      for(const d of s.decisions.slice(-3)){
+      for(const event of allChoices){
         const item=document.createElement('div');item.className='career-chapter';
-        const when=document.createElement('b');when.textContent=d.age+'세';
-        const what=document.createElement('span');what.textContent=d.action;
+        const when=document.createElement('b');when.textContent=event.age+'세';
+        const what=document.createElement('span');what.textContent=event.text;
         item.append(when,what);list.append(item);
       }
       $('worldRegionLabel').textContent='조선 · '+j.region;
-      $('worldEventCount').textContent=s.seen.length+'개 역사 사건';
-      $('worldLatest').textContent=s.warMemory.at(-1)||j.era+'의 하루';
-      $('arcCount').textContent=(j.decisions+Joseon2.summary(life).decisions+Joseon3.summary(life).choices)+'번의 선택';
+      $('worldEventCount').textContent=(s.seen.length+Joseon2.summary(life).events)+'개 역사 사건';
+      $('worldLatest').textContent=Joseon2.summary(life).lastMemory||s.warMemory.at(-1)||j.era+'의 하루';
+      $('arcCount').textContent=n+'번의 선택';
       $('arcStatus').textContent='삶의 방향 · '+j.occupation+(Joseon3.summary(life).legacy?' · '+Joseon3.summary(life).legacy:'');
       const tags=$('arcMilestones');tags.replaceChildren();
-      for(const d of s.decisions.slice(-3)){
+      for(const event of allChoices){
         const item=document.createElement('div');item.className='arc-milestone';
-        item.textContent=d.age+'세 · '+d.kind;tags.append(item);
+        item.textContent=event.age+'세 · '+event.text;tags.append(item);
       }
       return;
     }
