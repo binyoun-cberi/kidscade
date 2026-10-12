@@ -3498,7 +3498,10 @@ function initFree(){
   buildHotbar();buildInventory();setupShapeWorkbench();buildFurnaceRecipes();
   $('actionXray').classList.remove('hidden');
   setupWeather();spawnCritters();updateCreatureHealthUi();updateFreeMission();
-  $('actionSave').onclick=()=>{saveFreeWorld();toast('월드를 저장했어요.')};
+  $('actionSave').onclick=()=>{
+    if(saveFreeWorld())toast('월드를 저장했어요.');
+    else toast('저장에 실패했어. 브라우저 저장 공간을 확인하고 다시 눌러 보자.');
+  };
   $('actionWorks').classList.toggle('hidden',mobileModeEnabled);$('actionWorks').onclick=()=>toggleBuildingWorks(true);
   $('mobileWorks').onclick=()=>toggleBuildingWorks(true);
   $('worksClose').onclick=()=>toggleBuildingWorks(false);$('worksCapture').onclick=captureBuildingWork;
