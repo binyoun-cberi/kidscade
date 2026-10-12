@@ -22,21 +22,20 @@ function processYear(life,s){
   if(s.factsSeen.includes(fact.id))continue;
   s.factsSeen.push(fact.id);
   if(s.factsSeen.length>MAX_FACTS)s.factsSeen.shift();
-  life.logEvent(fact.year+'년 실제 역사 — '+fact.title+': '+fact.detail+
-   ' (이 인물이 실제로 참여하거나 직접 피해를 겪었다는 뜻은 아닙니다.)','history');
+  life.logEvent(fact.year+'년 · '+fact.title+' — '+fact.detail,'history');
   Effects.autoContext(life,s,fact);
  }
  // Scheduled consequences of past player choices, never attached to unrelated lives.
  const due=s.followups.filter(e=>e.year<=life.year);
  s.followups=s.followups.filter(e=>e.year>life.year);
  for(const f of due){
-  life.logEvent(f.text+' (앞서 선택한 가상 인생 경로의 후속 사건)','history-followup');
+  life.logEvent(f.text,'history-followup');
   s.historyImpacts++;
  }
  if(s.hardship>0){
   s.hardship=Math.max(0,s.hardship-1);
   if(life.year>=1950&&life.year<=1953&&life.age>=8&&life.age<=65){
-   life.logEvent('전쟁 시기에 가족의 생활과 배움, 생계를 함께 살피며 하루를 보냈다. (가상 인생)','history-impact');
+   life.logEvent('전쟁이 길어지자 집안의 살림과 공부를 챙기는 일도 쉽지 않았다.','history-impact');
    s.historyImpacts++;
   }
  }
@@ -46,7 +45,7 @@ function processYear(life,s){
   if(story){
    s.storiesSeen.push(story.id);
    s.storiesSeen=s.storiesSeen.slice(-MAX_STORIES);
-   life.logEvent(story.text+' (시대 배경을 바탕으로 한 가상 일상)','history-life');
+   life.logEvent(story.text,'history-life');
   }
  }
  const impact=Effects.selectFact(life,facts);
