@@ -4190,6 +4190,7 @@ function miningTargetData(hit){
 function canMineTarget(hit,notify=true){
   const target=miningTargetData(hit);if(!target)return null;
   const {u,data}=target;
+  if(data.magicWorkbench){if(notify)toast('마법의 직육면체는 부술 수 없는 시작 거점이야. 오른쪽 클릭으로 만들기를 열어 보자.');return null}
   if(blockDef(data).unbreakable){if(notify)toast('기반암은 부술 수 없어요.');return null}
   if(data.protectedPoi){
     const poi=poiRules.poiById(data.landmarkPoi);
