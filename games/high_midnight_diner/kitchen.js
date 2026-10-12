@@ -74,7 +74,8 @@ load(PEOPLE+'Chef_Male.gltf',2.22,-.1,0,.43,0).then(async obj=>{
  }
  else console.warn('Midnight diner: chef asset missing, illustrated fallback remains visible');
 });
-const foods=[F+'pancakes-stack.glb',S+'ramen.glb',S+'dango.glb',S+'gyoza.glb',F+'cupcake.glb'];
+// Use course-appropriate 3D props: the previous dango/cupcake did not match the skewer/cake on the eating plate.
+const foods=[F+'pancakes-stack.glb',S+'ramen.glb',FOOD_ITEMS+'skewer.glb',S+'gyoza.glb',FOOD_ITEMS+'cake-slicer.glb'];
 async function setCourse(index){
  const old=food;food=null;if(old)scene.remove(old);
  const next=await load(foods[index]||foods[0],.36,1.35,1.21,-.45,-.25);
@@ -173,20 +174,20 @@ function tick(){
  const delta=clock.getDelta(),t=clock.elapsedTime;frame++;
  if(chefMixer)chefMixer.update(delta);
  if(frame%20===0)resize();
- lamp.intensity=(gazePhase==='LOOK'&&cookingPhase?29:38)+Math.sin(t*17)*.7+(mood>.6?Math.sin(t*8)*2:0);
+ lamp.intensity=(gazePhase==='LOOK'&&cookingPhase?29:gazePhase==='FEINT'&&cookingPhase?35:38)+Math.sin(t*17)*.7+(mood>.6?Math.sin(t*8)*2:0);
  if(chef){
  const reacting=t<reactionUntil;
  // The cook looks away during SAFE, begins turning on WARN,
  // and faces the player while LOOK. Never snap the entire model in one frame.
  const target=cookingPhase?
-  (gazePhase==='SAFE'?Math.PI*.72:gazePhase==='WARN'?Math.PI*.37:0):
+  (gazePhase==='SAFE'?Math.PI*.72:gazePhase==='FEINT'?Math.PI*.54:gazePhase==='WARN'?Math.PI*.37:0):
   Math.sin(t*.7)*.05;
  chef.rotation.y+=(target-chef.rotation.y)*.16;
  chef.position.x=Math.sin(t*.4)*.03;
  chef.position.z=.43+(reacting&&reactionName==='reject'?.17:0);
  chef.rotation.z=shock*.055+(reacting&&reactionName==='inspect'?.07:0);
  if(chefNeck){
-  const targetTurn=cookingPhase?(gazePhase==='WARN'?.22:gazePhase==='LOOK'?-.12:0):0;
+  const targetTurn=cookingPhase?(gazePhase==='FEINT'?.14:gazePhase==='WARN'?.22:gazePhase==='LOOK'?-.12:0):0;
   chefNeck.rotation.y+=(targetTurn-chefNeck.rotation.y)*.18;
  }
 }
