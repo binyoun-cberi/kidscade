@@ -116,7 +116,13 @@ function apply(life,state,fact,index){
  case 'armistice':
   tag(life,state,'정전 이후 생활 회복');
   if(i===0){
-   if(state.schoolInterrupted){state.schoolInterrupted=false;life.world.schooling='다시 교육·기술을 배우는 중';}
+   if(state.schoolInterrupted){
+     state.schoolInterrupted=false;
+     life.world.schooling='다시 교육·기술을 배우는 중';
+     life.world.educationYears=Math.min(16,(life.world.educationYears||0)+1);
+     life.world.educationLevel=life.age>=17?'직업훈련·재교육 탐색':'기초 교육 재개';
+     tag(life,state,'재교육 시작');
+    }
    stats(life,{knowledge:5,happiness:2});notes.push('교육과 기술을 다시 배울 길을 찾기 시작했다.');
   }else{stats(life,{knowledge:2,bonds:1});money(life,110);notes.push('지역에서 생계를 꾸릴 방법을 찾아보기 시작했다.');}
   break;
