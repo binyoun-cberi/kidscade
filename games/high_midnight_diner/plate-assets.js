@@ -72,7 +72,13 @@ async function build(){
   const ctx=still.getContext('2d');
   if(!ctx){scene.remove(group);throw new Error('2D canvas unavailable');}
   ctx.drawImage(renderer.domElement,0,0);
+  // GLB can load successfully yet render nothing (bad scale, clip, material).
+  // Do not replace an illustrated plate with an invisible food snapshot.
+  const rgba=ctx.getImageData(0,0,320,320).data;
+  let visible=0;
+  for(let i=3;i<rgba.length;i+=64)if(rgba[i]>16)visible++;
   scene.remove(group);
+  if(visible<25)throw new Error('Blank food GLB preview: '+id);
   return still;
  }
  try{
