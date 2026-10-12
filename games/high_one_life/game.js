@@ -13,6 +13,7 @@
   const World7 = window.OneLifeWorld7;
   const World8 = window.OneLifeWorld8;
   const World9 = window.OneLifeWorld9;
+  const World10 = window.OneLifeWorld10;
   const History = window.OneLifeHistory;
   const Official=window.OneLifeOfficialStats||{countries:{}};
   const metric=(key)=>life?.birthYear===2026?Official.countries?.[life?.country?.[0]]?.[key]||null:null;
@@ -22,7 +23,7 @@
       ? label+' '+Number(row.value).toLocaleString('ko-KR',{maximumFractionDigits:1})+unit+' ('+row.year+'년)'
       : label+' 자료 없음';
   };
-  if (!World2 || !Pixel || !World3 || !World4 || !World5 || !World6 || !World7 || !World8 || !World9 || !History) throw new Error('One Life world assets missing');
+  if (!World2 || !Pixel || !World3 || !World4 || !World5 || !World6 || !World7 || !World8 || !World9 || !World10 || !History) throw new Error('One Life world assets missing');
   const SAVE_KEY = 'kidscade_one_life_save_v1';
   const RECORD_KEY = 'kidscade_one_life_history_v1';
   // About 20–30 seconds of automatic years, excluding choices.
@@ -59,7 +60,7 @@
     $('birthYearInput').value=String(birthYear);
     const countryName=$('birthLocation').value==='korea'?'대한민국':undefined;
     life = new Sim.Life(undefined,{birthYear,countryName});
-    World8.ensure(life);World8.moment(life);History.contextualize(life);
+    World8.ensure(life);World8.moment(life);World10.ensure(life);History.contextualize(life);
     storyTab='';peerAgeChoice=0;timelineVisible=22;
     replayBasis=null;
     peerCache = null;lastPeerRenderedAge = -1;lastMapRenderedAge = -1;
@@ -117,6 +118,7 @@
     const personal=World7.ensure(life);
     const hometown=World8.ensure(life);
     const memories=World9.ensure(life);
+    const livedEra=World10.summary(life);
     const people=$('v9PeopleList');people.replaceChildren();
     const ordered=[...memories.people].sort((a,b)=>Number(b.alive)-Number(a.alive));
     for(const member of ordered.slice(0,7)){
@@ -130,6 +132,20 @@
     $('v9Loan').textContent=memories.finance.debt
       ?'생활 대출 잔액 '+formatCredits(memories.finance.debt)+' · 남은 상환 '+memories.finance.yearsLeft+'년'
       :memories.finance.paidOff?'생활 대출 모두 상환':'생활 대출 없음';
+    if(livedEra){
+      $('v10HistoricalCount').textContent=livedEra.facts+'개 역사 사건 · '+livedEra.impacts+'개 영향 기록';
+      $('v10HistoryStatus').textContent=livedEra.period+
+        (livedEra.event?' · '+livedEra.event.title:' · 현재 해에 등록된 별도 역사 사건은 없음');
+      const marks=[...livedEra.memories];
+      if(livedEra.schoolInterrupted)marks.push('학업을 이어 가기 어려웠던 경험');
+      if(livedEra.moved)marks.push('거주지 이동 '+livedEra.moved+'회');
+      $('v10HistoryEffects').textContent=marks.length?'가상 인생에 남은 경험: '+marks.join(' · '):
+        '아직 개인에게 연결된 역사적 선택이 없습니다.';
+    }else{
+      $('v10HistoricalCount').textContent='한국 역사 모드가 아님';
+      $('v10HistoryStatus').textContent='이 지역의 역사 효과는 아직 별도 모델로 제공되지 않습니다.';
+      $('v10HistoryEffects').textContent='국가별 일반 인생 시스템을 사용합니다.';
+    }
     $('nameHeadline').textContent=p.name+' · '+p.city;
     $('profileName').textContent=p.name;
     $('profileMeta').textContent=life.gender+' · '+p.city+' · '+life.age+'세';
@@ -408,7 +424,7 @@
     if(!board||!life || (!force && life.age===lastMapRenderedAge))return;
     lastMapRenderedAge=life.age;
     board.replaceChildren();
-    const notable=['decision','reflection','family','profession','world','safety','death','history'];
+    const notable=['decision','reflection','family','profession','world','safety','death','history','history-choice','history-impact','history-followup'];
     const entries=new Map();
     for(const entry of life.log){
       if(!notable.includes(entry.kind))continue;
@@ -485,7 +501,7 @@
     $('historyContext').textContent=life.birthYear===2026
       ? '현대 출생 · 최근 통계 + 게임용 미래 시나리오'
       : History.period(life)+' · 역사적 사실과 가상 인물의 경험을 구분합니다.';
-    const archive=History.currentEvent(life),sourceLink=$('historySourceLink');
+    const archive=World10.readCurrent(life)||History.currentEvent(life),sourceLink=$('historySourceLink');
     sourceLink.classList.toggle('hidden',!archive);
     if(archive){sourceLink.href=archive.source;sourceLink.textContent=archive.year+'년 '+archive.title+' · 공식 사료 보기';}
     $('currentAge').textContent=String(life.age);
@@ -550,8 +566,8 @@
     });
     showComparison();
     const list=$('endHighlights'); list.replaceChildren();
-    const highlights=[...life.log.filter(e=>['milestone','decision','chain','world','safety','profession'].includes(e.kind))]
-      .filter(e=>e.kind==='decision'||e.kind==='chain'||e.kind==='world'||e.kind==='safety'||e.kind==='profession'||e.age<21)
+    const highlights=[...life.log.filter(e=>['milestone','decision','chain','world','safety','profession','history-choice','history-followup'].includes(e.kind))]
+      .filter(e=>e.kind==='decision'||e.kind==='chain'||e.kind==='world'||e.kind==='safety'||e.kind==='profession'||e.kind==='history-choice'||e.kind==='history-followup'||e.age<21)
       .slice(-16);
     if(!highlights.length) highlights.push(life.log[0]);
     highlights.forEach(e=>{
@@ -624,7 +640,7 @@
     const snapshot=captureEnding(life);
     replayBasis=snapshot;
     life=new Sim.Life(snapshot.seed,{birthYear:snapshot.birthYear,countryName:snapshot.country});
-    World8.ensure(life);World8.moment(life);History.contextualize(life);
+    World8.ensure(life);World8.moment(life);World10.ensure(life);History.contextualize(life);
     storyTab='';peerAgeChoice=0;timelineVisible=22;playSpeed=1;nextDecision=false;refreshSpeedControls();
     peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
     $('birthCertificate').classList.add('hidden');
