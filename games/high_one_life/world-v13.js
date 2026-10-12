@@ -28,7 +28,7 @@ function state(life){
 function narrate(life,s,id,text,kind='family13'){
  if(s.eventsSeen.includes(id))return false;
  s.eventsSeen.push(id);s.eventsSeen=s.eventsSeen.slice(-300);
- life.logEvent(safeText(text)+' (가상 인생)',''+kind);
+ life.logEvent(safeText(text),kind);
  return true;
 }
 function remember(life,s,tag){
@@ -71,14 +71,14 @@ function family(life,s){
 }
 const PICKS=Object.freeze({
  care:[
-  {label:'돌봄을 가족과 나누어 맡는다',note:'시간과 비용이 들지만 가족의 안부와 생활을 함께 살핌'},
-  {label:'지역의 의료·돌봄 지원을 알아본다',note:'지원 경로를 찾아 일·가족·휴식을 조율함'},
-  {label:'일정을 줄이고 직접 돌보는 시간을 확보한다',note:'일과 수입 조정 부담이 생기지만 함께하는 시간이 늘어남'}
+  {label:'돌봄을 가족과 나누어 맡는다',note:'번갈아 시간을 내면 혼자 짊어지지 않아도 된다'},
+  {label:'지역의 의료·돌봄 지원을 알아본다',note:'가족과 일을 계속하면서 도움을 받을 곳을 찾는다'},
+  {label:'일정을 줄이고 직접 돌보는 시간을 확보한다',note:'벌이는 줄 수 있지만 함께 있을 시간이 늘어난다'}
  ],
  wellness:[
-  {label:'진료·상담을 받고 생활 일정을 조절한다',note:'가상의 건강 관리 비용이 발생하고 회복 계획을 세움'},
+  {label:'진료를 받고 쉬는 시간을 마련한다',note:'진료비를 내더라도 몸 상태부터 확인한다'},
   {label:'쉬는 시간을 늘리고 주변의 도움을 요청한다',note:'삶의 속도를 줄이고 가족·친구의 도움을 구함'},
-  {label:'가까운 사람과 건강 관리 습관을 시작한다',note:'함께 꾸준히 생활 습관을 점검함'}
+  {label:'가까운 사람과 건강 관리 습관을 시작한다',note:'같이 걷거나 식사 시간을 맞춰 보기로 한다'}
  ],
  education:[
   {label:'늦게라도 다시 배울 기회를 찾는다',note:'예전에 중단했던 교육과 기술을 다시 익힘'},
@@ -117,13 +117,13 @@ function prompt(life){
  if(!a)return null;
  const p=a.personId?find(life,a.personId):null;
  const descriptions={
-  care:p?p.name+'(이)가 나이가 들면서 생활 속 도움을 필요로 하는 시기가 왔습니다. 실제 질환을 진단하거나 누구의 돌봄을 강요하는 설정은 아닙니다.':'돌봄의 필요를 함께 의논합니다.',
-  wellness:'피로나 생활상의 어려움을 느끼는 시기입니다. 특정 질환의 발생을 의미하지 않습니다.',
-  education:'예전에 공부나 기술을 이어 가지 못했던 경험을 떠올렸습니다. 지금 선택이 새로운 기회를 만들 수 있습니다.',
-  reunion:'과거 지역을 옮겼거나 힘든 시기를 지나며 관계가 달라졌습니다. 누구에게 어떻게 마음을 전할까요?',
-  parenting:p?p.name+'(이)가 자라며 새로운 고민을 나누기 시작했습니다. 가족의 시간을 어떻게 보낼까요?':'자녀와 가족의 시간을 계획합니다.'
+  care:p?p.name+'(이)가 요즘 혼자 하기 버거운 일이 늘었다. 누구와 어떻게 도울지 가족들이 이야기를 꺼냈다.':'가족에게 도움이 필요한 일이 생겼다.',
+  wellness:'요즘 쉬어도 피로가 쉽게 가시지 않는다. 이대로 지내도 괜찮을까?',
+  education:'오래전 그만둬야 했던 공부가 문득 생각났다. 지금이라도 다시 시작할 수 있을까?',
+  reunion:'이사와 바쁜 생활 속에 연락이 뜸해진 사람이 떠올랐다. 다시 연락해 볼까?',
+  parenting:p?p.name+'(이)가 부쩍 자신의 생각을 이야기하기 시작했다. 함께 보낼 시간을 어떻게 만들까?':'아이와 시간을 보내는 방법을 생각했다.'
  };
- return {age:life.age,title:a.title,description:descriptions[a.kind]+' (게임용 가상 상황·효과)',
+ return {age:life.age,title:a.title,description:descriptions[a.kind],
   options:PICKS[a.kind],familyCare:true};
 }
 function schedule(s,year,id,text,kind){
@@ -168,7 +168,7 @@ function afterChoice(life,index){
   life.change(index===1?{health:2,happiness:3,bonds:3}:index===0?
    {health:4,knowledge:2,happiness:1}:{health:3,bonds:4});
   remember(life,s,'생활 리듬과 건강을 돌본 경험');
-  schedule(s,life.year+2,a.id+'-echo','건강을 돌보기 위해 조정했던 생활 방식이 일상에 조금씩 자리 잡았다.','wellness');
+  schedule(s,life.year+2,a.id+'-echo','쉬는 시간을 챙기고 생활을 바꾸려던 노력이 조금씩 습관이 되었다.','wellness');
  }else if(a.kind==='education'){
   life.change(index===0?{knowledge:7,happiness:2}:{knowledge:3,bonds:5});
   if(index===0&&life.world){

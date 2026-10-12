@@ -15,10 +15,10 @@ function fresh(life){
  const p=Policy.at(life);
  return {version:12,processedYear:life.year,seen:[],active:null,decisions:[],followups:[],
   tags:[],relocations:0,lastEra:p?.era||'',primaryYear:null,secondaryYear:null,
-  metrics:{incomeLabel:p?.label||'일반 가상 경제',schoolBand:'미설정',year:life.year}};
+  metrics:{incomeLabel:p?.label||'그해의 생업',schoolBand:'미설정',year:life.year}};
 }
 function ensure(life){W10.ensure(life);return life.world12||(life.world12=fresh(life));}
-function log(life,text,kind='era-life'){life.logEvent(text+' (시대 배경에 근거한 가상 개인 경험)',''+kind);}
+function log(life,text,kind='era-life'){life.logEvent(text,kind);}
 function tag(s,value){
  if(value&&!s.tags.includes(value)){s.tags.push(value);s.tags=s.tags.slice(-55);}
 }
@@ -58,7 +58,7 @@ function apply(life,item,index){
  }
  if(topic==='work'&&life.age>=18&&changed&&life.money?.retired!==true){
   const sector=((life.seed>>>0)+life.year)%2===0?'trades':'service';
-  W6.career(life,sector,(life.age+index)%7,'시대 변화에 적응하여');
+  W6.career(life,sector,(life.age+index)%7,'새 일자리를 찾아');
   tag(s,'진로 전환');
  }else if(topic==='work')tag(s,'기존 일의 경험');
  if(topic==='move'){
@@ -114,13 +114,13 @@ function beforeYear(life){
   const world=W3.setup(life);
   world.schoolChance=Math.min(world.schoolChance,p.schoolCap);
   s.primaryYear=life.year+1;
-  s.metrics.schoolBand=p.label+' · 초등 교육 기회(가상 상한)';
+  s.metrics.schoolBand=p.label+' · 처음 학교에 갈 무렵';
  }
  if(life.age===15&&s.secondaryYear===null){
   const world=W3.setup(life);
   world.secondaryChance=Math.min(world.secondaryChance,p.secondaryCap);
   s.secondaryYear=life.year+1;
-  s.metrics.schoolBand=p.label+' · 중등 교육 기회(가상 상한)';
+  s.metrics.schoolBand=p.label+' · 중등학교에 갈 무렵';
  }
 }
 function afterYear(life){
@@ -131,10 +131,10 @@ function afterYear(life){
  if(p&&s.lastEra!==p.era){
   s.lastEra=p.era;
   s.metrics.schoolBand=p.label;
-  log(life,'사회와 생업의 환경이 '+p.label+'(으)로 달라졌다','era-context');
+  log(life,'세상은 어느새 '+p.label+'로 접어들었다','era-context');
  }
  s.metrics.year=life.year;
- s.metrics.incomeLabel=p?.label||'일반 가상 경제';
+ s.metrics.incomeLabel=p?.label||'그해의 살림';
  const due=s.followups.filter(f=>f.year<=life.year);
  s.followups=s.followups.filter(f=>f.year>life.year);
  for(const event of due){
@@ -158,7 +158,7 @@ function choose(life,index){
 function summary(life){
  if(life.country?.[0]!=='대한민국')return null;
  const s=ensure(life),policy=Policy.at(life);
- return {period:policy?.label||'가상 한국',incomeFactor:policy?.incomeFactor||1,
+ return {period:policy?.label||'한국의 생활',incomeFactor:policy?.incomeFactor||1,
   costFactor:policy?.costFactor||1,schoolNote:s.metrics.schoolBand,
   choices:s.decisions.length,longConsequences:s.tags.slice(-4),moves:s.relocations,
   totalPaths:Choices.count};
@@ -174,7 +174,7 @@ function hydrate(life,data){
  if(Number.isInteger(old.relocations))s.relocations=clamp(old.relocations,0,2);
  if(typeof old.lastEra==='string')s.lastEra=old.lastEra.slice(0,25);
  if(old.metrics&&typeof old.metrics==='object')s.metrics={
-  incomeLabel:String(old.metrics.incomeLabel||'가상 경제').slice(0,100),
+  incomeLabel:String(old.metrics.incomeLabel||'그해의 경제').slice(0,100),
   schoolBand:String(old.metrics.schoolBand||'미설정').slice(0,100),
   year:Number.isInteger(old.metrics.year)?old.metrics.year:life.year
  };

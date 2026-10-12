@@ -8,17 +8,17 @@
 })(typeof window!=='undefined'?window:null,function(){
 'use strict';
 const PERIODS=[
- {max:1909,era:'precolonial',label:'대한제국 시대의 생업',incomeFactor:.72,costFactor:.82,schoolCap:.58,secondaryCap:.36,jobDisruption:.025},
- {max:1944,era:'colonial',label:'일제강점기의 제한된 교육·일자리',incomeFactor:.70,costFactor:.88,schoolCap:.63,secondaryCap:.43,jobDisruption:.035},
- {max:1947,era:'transition',label:'광복 이후 교육·일자리 재정비',incomeFactor:.72,costFactor:.85,schoolCap:.68,secondaryCap:.47,jobDisruption:.075},
- {max:1953,era:'war',label:'한국전쟁기의 생활 기반',incomeFactor:.58,costFactor:.98,schoolCap:.55,secondaryCap:.38,jobDisruption:.12},
- {max:1961,era:'rebuilding',label:'전후 복구와 직업훈련',incomeFactor:.76,costFactor:.84,schoolCap:.78,secondaryCap:.60,jobDisruption:.06},
- {max:1987,era:'industrial',label:'산업화와 지역 이동',incomeFactor:.91,costFactor:.96,schoolCap:.85,secondaryCap:.74,jobDisruption:.04},
- {max:1996,era:'democracy',label:'민주화 이후 산업 변화',incomeFactor:1,costFactor:1,schoolCap:.97,secondaryCap:.91,jobDisruption:.04},
- {max:2009,era:'crisis',label:'외환위기·정보화 시기',incomeFactor:.97,costFactor:1.03,schoolCap:.98,secondaryCap:.95,jobDisruption:.055},
- {max:2019,era:'digital',label:'디지털 경제와 생활',incomeFactor:1,costFactor:1,schoolCap:1,secondaryCap:1,jobDisruption:.04},
- {max:2022,era:'pandemic',label:'감염병 유행기의 일상',incomeFactor:.94,costFactor:1.02,schoolCap:1,secondaryCap:1,jobDisruption:.07},
- {max:9999,era:'digital',label:'현대 또는 가상 미래',incomeFactor:1,costFactor:1,schoolCap:1,secondaryCap:1,jobDisruption:0}
+ {max:1909,era:'precolonial',label:'대한제국 시절',incomeFactor:.72,costFactor:.82,schoolCap:.58,secondaryCap:.36,jobDisruption:.025},
+ {max:1944,era:'colonial',label:'일제강점기',incomeFactor:.70,costFactor:.88,schoolCap:.63,secondaryCap:.43,jobDisruption:.035},
+ {max:1947,era:'transition',label:'광복 직후',incomeFactor:.72,costFactor:.85,schoolCap:.68,secondaryCap:.47,jobDisruption:.075},
+ {max:1953,era:'war',label:'한국전쟁 시기',incomeFactor:.58,costFactor:.98,schoolCap:.55,secondaryCap:.38,jobDisruption:.12},
+ {max:1961,era:'rebuilding',label:'전쟁 뒤 재건의 시절',incomeFactor:.76,costFactor:.84,schoolCap:.78,secondaryCap:.60,jobDisruption:.06},
+ {max:1987,era:'industrial',label:'산업화의 시절',incomeFactor:.91,costFactor:.96,schoolCap:.85,secondaryCap:.74,jobDisruption:.04},
+ {max:1996,era:'democracy',label:'민주화 이후',incomeFactor:1,costFactor:1,schoolCap:.97,secondaryCap:.91,jobDisruption:.04},
+ {max:2009,era:'crisis',label:'외환위기와 정보화의 시절',incomeFactor:.97,costFactor:1.03,schoolCap:.98,secondaryCap:.95,jobDisruption:.055},
+ {max:2019,era:'digital',label:'인터넷이 일상이 된 시절',incomeFactor:1,costFactor:1,schoolCap:1,secondaryCap:1,jobDisruption:.04},
+ {max:2022,era:'pandemic',label:'감염병으로 달라진 일상',incomeFactor:.94,costFactor:1.02,schoolCap:1,secondaryCap:1,jobDisruption:.07},
+ {max:9999,era:'digital',label:'현대의 일상',incomeFactor:1,costFactor:1,schoolCap:1,secondaryCap:1,jobDisruption:0}
 ].map(p=>Object.freeze(p));
 const safe=(x,period,defaultValue)=>x?.country?.[0]==='대한민국'?period:defaultValue;
 function at(life,year=life?.year){
@@ -28,7 +28,7 @@ function at(life,year=life?.year){
  // Macro context only affects country-level fictional play, never asserted per-person fact.
  const shock=([1997,1998].includes(yearValue)?0.09:
   yearValue===2008?0.05:yearValue===2020?0.06:0);
- return {...found,jobDisruption:found.jobDisruption+shock};
+ return {...found,label:yearValue>2026?'아직 오지 않은 시대':found.label,jobDisruption:found.jobDisruption+shock};
 }
 const JOBS={
  precolonial:{

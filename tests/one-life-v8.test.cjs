@@ -39,7 +39,7 @@ test('v8 maintains fast game, four in-game panels, original choices and existing
  assert.match(g,/YEAR_MS = 260/);
  assert.equal((h.match(/data-story-tab=/g)||[]).length,4);
  assert.equal((h.match(/data-peer-age=/g)||[]).length,5);
- assert.match(h,/게임용 사망 모형/);assert.match(h,/실제 연령별 생명표/);
+ assert.match(h,/나이별 곡선은 게임에서 재구성한 값/);assert.match(h,/개인의 수명이나 사망 시기를 알려 주지는 않습니다/);
 });
 test('birth home and parent occupations persist with the same birth seed',()=>{
  for(const nation of ['케냐','대한민국','인도','모나코','나이지리아']){
@@ -120,6 +120,6 @@ test('mobile story and pause controls precede the long sidebar',()=>{
  assert.match(css,/\.play-layout>\.info\s*\{order:1\}/);
  assert.match(css,/\.chronicle>\.controls \.pause\s*\{[^}]*min-height:44px/);
  assert.match(html,/같은 해에 태어난 네 사람/);
- assert.match(html,/각자의 생일과 출생 조건은 다르며/);
+ assert.match(html,/사는 곳도, 가족도, 살아온 시간도 서로 다릅니다/);
  assert.doesNotMatch(html,/같은 순간에 태어난 네 사람/);
 });

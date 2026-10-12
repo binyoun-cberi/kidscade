@@ -13,13 +13,13 @@ const c=(label,note)=>Object.freeze({label,note});
 const OPTIONS=Object.freeze({
  'colonial-school':[c('가족과 배울 방법을 알아본다','시간·거리·경제적 제약 속에서 다른 배움터도 찾음'),c('생업에 필요한 기술을 먼저 배운다','교육 기회는 줄 수 있지만 기술 경험을 얻음')],
  'rural-land':[c('가족의 생업을 지킬 방법을 알아본다','생활과 거주 여건을 다시 의논함'),c('다른 지역의 일을 알아본다','거주지와 직업 경로가 달라질 수 있음')],
- 'community-news':[c('믿을 만한 소식과 역사적 배경을 알아본다','사실을 확인하고 주변의 이야기를 경청함'),c('가족과 일상의 안전을 먼저 살핀다','가정의 생활과 안전에 더 집중함')],
+ 'community-news':[c('사실을 확인하러 나선다','사실을 확인하고 주변의 이야기를 경청함'),c('가족과 일상의 안전을 먼저 살핀다','가정의 생활과 안전에 더 집중함')],
  'wartime-labor':[c('가족과 현재 상황을 의논한다','일자리와 생계를 유지하기 위한 방안을 찾음'),c('가능한 기술과 배움을 이어 간다','제약 속에서도 공부·훈련 기회를 알아봄')],
  liberation:[c('중단했던 배움의 기회를 알아본다','학업과 기술을 다시 배울 가능성'),c('가족의 생계를 정비한다','변화 속에서도 일상과 생활을 다시 세움')],
  transition:[c('지역의 새로운 교육·훈련 정보를 찾아본다','진학·기술 관련 기회 탐색'),c('가족과 생계를 위한 계획을 세운다','생활 기반 정비')],
  'war-start':[c('가족과 피란·연락 방법을 준비한다','안전한 이동을 도모하지만 시간·비용 부담이 생길 수 있음'),c('이웃과 서로 도울 방법을 찾는다','주변 지원 관계를 살리며 생활 필수품을 준비함'),c('가족의 돌봄과 생계를 우선 정리한다','당장 이동하지 않더라도 대비하며 생활을 조정함')],
  'war-years':[c('가족의 안부와 생활필수품을 확인한다','모든 사람에게 같은 피해가 발생하는 것은 아님'),c('아이와 가족의 배움·생활을 지킬 방법을 찾는다','임시 배움·돌봄을 고려함')],
- armistice:[c('중단한 배움을 다시 시작해 본다','복학·지역 학습·기술훈련 중 가능한 경로 탐색'),c('새로운 일자리와 생활을 찾는다','생계 기반을 다시 만드는 경로')],
+ armistice:[c('다시 책을 펼친다','복학·지역 학습·기술훈련 중 가능한 경로 탐색'),c('일터를 찾아 나선다','생계 기반을 다시 만드는 경로')],
  rebuild:[c('주거와 가족 생활을 함께 정비한다','생활 안정에 시간을 쓰고 비용을 나눠 부담함'),c('지역의 직업훈련을 알아본다','새로운 기술을 익히는 기회')],
  'civic-life':[c('사건의 배경을 공부하고 주변의 이야기를 듣는다','모든 사람이 직접 참여한 것으로 기록되지 않음'),c('가족과 생활을 이어 가며 소식을 살핀다','가족의 일상과 안전에 집중함')],
  'industrial-choice':[c('기술을 배우고 새로운 일자리를 찾아본다','직업 기술·교육 기회 확대'),c('지금 지역에서 생업을 이어 간다','지역의 인연을 유지하며 기존 일을 다듬음')],
@@ -53,7 +53,7 @@ function selectFact(life,facts){
 function prompt(fact,life){
  if(!eligible(life,fact))return null;
  return {age:life.age,title:fact.year+'년 · '+fact.title,
- description:'실제 역사: '+fact.detail+' 이 가상 인물과 가족은 이 시대를 어떻게 지낼까요? 선택 결과는 실제 통계가 아닌 게임 시나리오입니다.',
+ description:fact.detail+' 그해 우리 가족은 어떻게 살아갈까?',
  options:OPTIONS[fact.scenario],history:true,source:fact.source};
 }
 function tag(life,state,value){
@@ -75,16 +75,16 @@ function move(life,state){
  const dest=p.settlement==='농촌'?'지역의 다른 마을':'다른 지역의 임시 거처';
  p.city=dest;p.settlement='소도시';state.moves++;
  tag(life,state,'거주지 이동');
- life.logEvent('가족과 상의해 '+before+'에서 '+dest+'(으)로 생활 터전을 옮겼다. (가상 인생)','history-impact');
+ life.logEvent('가족과 상의해 '+before+'에서 '+dest+'(으)로 생활 터전을 옮겼다.','history-impact');
  return true;
 }
 function school(life,state){
  if(life.age<6||life.age>21)return false;
  if(!state.schoolInterrupted){
   state.schoolInterrupted=true;
-  if(life.world)life.world.schooling='역사적 변화로 학업이 일시 중단된 가상 경로';
+  if(life.world)life.world.schooling='전쟁과 시대 변화로 공부를 쉬는 중';
   tag(life,state,'학업 중단');
-  life.logEvent('그해의 사회적 변화로 공부를 이어 가기 어려워졌다. 배움을 다시 찾을 방법을 생각했다. (가상 인생)','history-impact');
+  life.logEvent('한동안 학교에 갈 수 없었다. 다시 공부할 날을 기다렸다.','history-impact');
  }
  return true;
 }
@@ -144,7 +144,7 @@ function apply(life,state,fact,index){
  case 'financial-crisis':
   tag(life,state,'외환·금융 위기 경험');
   state.hardship=Math.max(state.hardship,2);
-  if(i===0){stats(life,{happiness:-1});money(life,110);notes.push('생활비를 줄여 가상 비상자금을 마련했다.');}
+  if(i===0){stats(life,{happiness:-1});money(life,110);notes.push('허리띠를 졸라매며 비상금을 모았다.');}
   if(i===1){stats(life,{knowledge:4});money(life,-130);notes.push('재교육을 알아보고 새로운 일자리에 대비했다.');}
   if(i===2){stats(life,{bonds:5});money(life,-40);notes.push('가족·이웃과 도움을 주고받을 방법을 마련했다.');}
   plan(life,state,year+2,'financial-recovery','경제가 어려웠던 시기의 선택을 돌아보며 저축·기술·인연을 다시 살펴보았다.');
@@ -192,7 +192,7 @@ function apply(life,state,fact,index){
  }
  state.decisions.push({id:fact.id,scenario:key,year,age:life.age,index:i});
  state.decisions=state.decisions.slice(-50);
- life.logEvent(fact.year+'년 '+fact.title+' 이후 선택: '+opts[i].label+'. '+notes.join(' ')+' (가상 인생)','history-choice');
+ life.logEvent(fact.year+'년 '+fact.title+'. '+opts[i].label+'. '+notes.join(' ')+'','history-choice');
  return true;
 }
 function autoContext(life,state,fact){
@@ -200,12 +200,12 @@ function autoContext(life,state,fact){
   state.hardship=Math.max(state.hardship,2);tag(life,state,'한국전쟁 시기');
   state.familyProtected=true;
   if(life.age>=6)school(life,state);
-  life.logEvent('보호자들이 전쟁 속에서 가족의 안전과 생활을 지키려 애썼다. 이 인물의 경험은 가상이다.','history-impact');
+  life.logEvent('어른들은 어린아이를 안고 어디서 밤을 보내야 할지 의논했다.','history-impact');
   plan(life,state,1953,'war-after','전쟁 시기의 가족 경험을 돌아보며 생활을 다시 정비했다.');
  }
  if(fact.scenario==='pandemic'&&life.age<8){
   tag(life,state,'감염병 유행기의 생활');
-  life.logEvent('가족들이 변화한 생활 속에서 어린아이의 돌봄과 안전을 챙겼다. (가상 인생)','history-impact');
+  life.logEvent('어른들은 아이를 곁에 두고 하루를 조심스레 보냈다.','history-impact');
  }
 }
 return Object.freeze({OPTIONS,eligible,selectFact,prompt,apply,autoContext,important});

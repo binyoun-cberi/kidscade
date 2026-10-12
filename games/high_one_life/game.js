@@ -110,8 +110,8 @@
     $('birthHome').textContent=setting.housing+' · '+setting.familyNote;
     $('birthContext').textContent=History.period(life)+' · '+setting.regionName+' · '+setting.neighborhood;
     $('birthEraNote').textContent=life.birthYear===2026
-      ? '현대 국가별 출생 가중치와 최근 국제기구 통계가 반영됩니다.'
-      : '역사 체험: 당시 출생·경제·사망 통계는 미확보로 게임용 추정입니다. 나라 이름과 경계는 현대 목록을 참고합니다.';
+      ? '어느 나라에서 태어날지는 우연이지만, 그곳의 환경은 저마다 다릅니다.'
+      : '그 시대의 한반도에서 이야기가 시작됩니다. 어떤 일들이 기다리고 있을까요?';
     $('birthCertificate').classList.remove('hidden');
   }
   function paintLifeRecord() {
@@ -143,8 +143,8 @@
       const marks=[...livedEra.memories];
       if(livedEra.schoolInterrupted)marks.push('학업을 이어 가기 어려웠던 경험');
       if(livedEra.moved)marks.push('거주지 이동 '+livedEra.moved+'회');
-      $('v10HistoryEffects').textContent=marks.length?'가상 인생에 남은 경험: '+marks.join(' · '):
-        '아직 개인에게 연결된 역사적 선택이 없습니다.';
+      $('v10HistoryEffects').textContent=marks.length?'살면서 겪은 일 · '+marks.join(' · '):
+        '아직 특별히 남은 기억은 없습니다.';
     }else{
       $('v10HistoricalCount').textContent='한국 역사 모드가 아님';
       $('v10HistoryStatus').textContent='이 지역의 역사 효과는 아직 별도 모델로 제공되지 않습니다.';
@@ -152,29 +152,28 @@
     }
     if(periodLife){
       $('v12EducationEra').textContent=periodLife.schoolNote||
-        '배움과 교육의 기회는 실제 게임 연도에 따라 달라집니다.';
-      $('v12WorkEra').textContent='이 시대의 생업 · '+periodLife.period+
+        '학교에 다닐 무렵의 세상은 어땠을까요?';
+      $('v12WorkEra').textContent='그해의 일자리 · '+periodLife.period+
         (life.world6?.profession?' · 현재 '+life.world6.profession:'');
-      $('v12EconomyEra').textContent='가상 경제 점수 기준 · 수입 계수 '+
-        Math.round(periodLife.incomeFactor*100)+'% · 필수 생활비 계수 '+
-        Math.round(periodLife.costFactor*100)+'%';
-      $('v12ChoicesCount').textContent='시대별 생활 선택 '+periodLife.choices+
-        '회 · 장기 영향 '+periodLife.longConsequences.length+'종';
+      $('v12EconomyEra').textContent='살림살이 · '+
+        (periodLife.incomeFactor<.85?'벌이가 넉넉하지 않은 시기':periodLife.incomeFactor<1?'수입이 들쭉날쭉한 시기':'일자리가 변해 가는 시기')+
+        ' · '+(periodLife.costFactor>1?'생활비 부담이 늘어남':'평소 생활비를 꾸려 나가는 중');
+      $('v12ChoicesCount').textContent='지금까지 고민했던 갈림길 '+periodLife.choices+'번'+
+        (periodLife.longConsequences.length?' · 오래 남은 경험 '+periodLife.longConsequences.length+'가지':'');
     }else{
-      $('v12EducationEra').textContent='한국의 시대별 교육 정책은 적용되지 않음';
-      $('v12WorkEra').textContent='해당 국가의 기본 직업 체계 사용';
-      $('v12EconomyEra').textContent='기본 가상 경제 점수 사용';
-      $('v12ChoicesCount').textContent='한국 역사 선택 없음';
+      $('v12EducationEra').textContent='학교와 배움의 이야기';
+      $('v12WorkEra').textContent='일터와 일상의 변화';
+      $('v12EconomyEra').textContent='그해의 살림살이';
+      $('v12ChoicesCount').textContent='살아온 시간 속 선택';
     }
-    $('v13CareYears').textContent='가족 돌봄 '+livedFamily.careYears+'년 · 회복·돌봄 선택 '+livedFamily.decisions+'회';
+    $('v13CareYears').textContent='가족과 함께 돌본 시간 '+livedFamily.careYears+'년';
     $('v13FamilyStatus').textContent=livedFamily.caringFor.length?
-      '현재 돌봄을 조율하는 가족 · '+livedFamily.caringFor.join(' · '):
-      livedFamily.episodes?'현재 나의 생활·건강을 돌보는 중':
-      '가족의 성장과 건강을 함께 기록합니다.';
+      '요즘 함께 돌보는 가족 · '+livedFamily.caringFor.join(' · '):
+      livedFamily.episodes?'몸과 마음을 살피며 지내는 중':
+      '가족들도 저마다의 시간을 살아갑니다.';
     $('v13LifeMemories').textContent=livedFamily.memories.length?
-      '오래 남은 기억 · '+livedFamily.memories.join(' · ')+
-        ' · 이어진 후속 사건 '+livedFamily.followups+'건':
-      '앞서 경험한 일과 관계가 이후의 인생에 연결됩니다.';
+      '마음에 남은 일 · '+livedFamily.memories.join(' · '):
+      '언젠가 오늘의 일이 다시 떠오르겠지요.';
     $('nameHeadline').textContent=p.name+' · '+p.city;
     $('profileName').textContent=p.name;
     $('profileMeta').textContent=life.gender+' · '+p.city+' · '+life.age+'세';
@@ -199,10 +198,10 @@
     $('countryContextText').textContent=life.world?.schooling+' · 지역 경제 기회 '+(life.world?.economyScale>=1?'상대적으로 넓은 편':'상대적으로 제한적인 편');
     const observed=metric('lifeExpectancy');
     $('countrySourceNote').textContent=life.birthYear!==2026
-      ? '역사적 출생에 현대의 기대수명·교육률·출생률을 적용하지 않습니다. 개인의 수명과 경제는 가상 모형입니다.'
+      ? '이 시기의 생활환경을 바탕으로 한 이야기입니다.'
       : observed
-      ? '평균 기대수명 '+observed.value.toFixed(1)+'세 ('+observed.year+'년·출처: UN/세계은행). 개인의 수명을 예측하지 않아요.'
-      : '참고 기대수명 '+(life.world?.lifeBaseline||0).toFixed(1)+'세는 게임용 근사값. 실제 개인 예측이 아니에요.';
+      ? observed.year+'년 기준 평균 기대수명 '+observed.value.toFixed(1)+'세 · 세계은행'
+      : '이 나라의 수명 자료가 충분하지 않습니다.';
     $('officialContext').textContent=[
       metricLabel('estimatedBirths','연간 출생아 수(인구×출생률 계산)','명'),
       metricLabel('urbanPercent','도시 인구 비중','%'),
@@ -213,7 +212,7 @@
     ].join(' · ');
     const sceneName=History.paint($('lifeScene'),life)?'역사 속 생활':Pixel.paint($('lifeScene'),life);
     const sceneTitle=Pixel.names?.[sceneName]||sceneName;
-    $('sceneLabel').textContent=life.year+'년 · '+History.place(life)+' '+p.city+' ('+p.settlement+') · '+(life.birthYear===2026?sceneTitle+'에서 보내는 하루':History.period(life)+'의 생활을 상상한 장면');
+    $('sceneLabel').textContent=life.year+'년 · '+History.place(life)+' '+p.city+' ('+p.settlement+') · '+(life.birthYear===2026?sceneTitle+'에서 보내는 하루':History.period(life)+'의 풍경');
   }
   function paintArc() {
     if(!life)return;
@@ -385,15 +384,15 @@
       btn.addEventListener('click',()=>{
         const before={stats:{...life.stats},netWorth:life.money?.netWorth,career:life.career};
         if(!life?.choose(index)) return;
-        const labels={health:'건강',happiness:'행복',knowledge:'배움',bonds:'인연',wealth:'경제 지표'};
+        const labels={health:'건강',happiness:'행복',knowledge:'배움',bonds:'인연',wealth:'살림'};
         const changes=Object.entries(labels).flatMap(([key,label])=>{
           const delta=(life.stats?.[key]||0)-(before.stats?.[key]||0);
           return delta?[label+' '+(delta>0?'+':'')+delta]:[];
         });
         const moneyDelta=(life.money?.netWorth??before.netWorth)-(before.netWorth??life.money?.netWorth??0);
-        if(moneyDelta)changes.push('가상 순자산 '+(moneyDelta>0?'+':'')+formatCredits(moneyDelta));
+        if(moneyDelta)changes.push('살림 '+(moneyDelta>0?'+':'')+formatCredits(moneyDelta));
         if(life.career!==before.career)changes.push('진로 '+life.career);
-        const effectText=changes.length?'선택 직후 변화: '+changes.join(' · '):'선택 직후 지표 변화 없음 · 이후 선택지와 사건에 반영될 수 있음';
+        const effectText=changes.length?'이후 달라진 점 · '+changes.join(' · '):'당장은 눈에 띄는 변화가 없었다.';
         life.logEvent(effectText,'decision-effect');
         save(); elapsed=0; lastTick=performance.now(); render();
       });
@@ -496,14 +495,13 @@
     const mod=World8.mortality(life.country,life.gender,life.birthYear);
     $('survivalSummary').textContent=life.country[0]+' · '+life.gender+
       ' · 출생부터 5세까지 생존 '+Math.round(World8.survival(life.country,life.gender,5,life.birthYear)*1000)/10+
-      '%(게임 모형), '+life.age+'세 기준 '+Math.round(World8.survival(life.country,life.gender,life.age,life.birthYear)*1000)/10+
-      '%(동일 가상 집단). 개인의 실제 생존 확률이 아니에요.';
+      '%, '+life.age+'세까지 생존 '+Math.round(World8.survival(life.country,life.gender,life.age,life.birthYear)*1000)/10+
+      '% · 참고용 생존 곡선';
     $('v8CountryStats').textContent=
       metricLabel('under5Mortality','5세 이전 사망 추정치','‰')+' · '+
       metricLabel('lifeExpectancy','출생 시 평균 기대수명','세')+
       ' · 학교 접근 가능성 '+Math.round(life.world.schoolChance*100)+
-      '%(게임 가정) · 주거 '+World8.ensure(life).housing+
-      ' (게임 설정)';
+      '% · 사는 집 '+World8.ensure(life).housing;
   }
   function renderStoryPanel(){
     const active=!!storyTab;
@@ -516,7 +514,7 @@
     if(storyTab==='birth'){
       $('storyBirthText').textContent=History.period(life)+' · '+life.birthYear+'년 출생. '+World8.synopsis(life)+'. '+World8.ensure(life).familyNote+'.';
       $('storyBirthNote').textContent=World8.ensure(life).climate+' · '+
-        World8.ensure(life).accent+' · 부모 직업·집·이름은 교육용 가상 설정.';
+        World8.ensure(life).accent+' · '+life.profile.city+'에서 시작된 삶.';
     }
     if(storyTab==='stats')paintSurvival();
     if(storyTab==='years')paintAgeMap();
@@ -530,22 +528,22 @@
     $('placeName').textContent=History.place(life);
     $('currentYear').textContent=life.year+'년';
     $('historyContext').textContent=life.birthYear===2026
-      ? '현대 출생 · 최근 통계 + 게임용 미래 시나리오'
-      : History.period(life)+' · 역사적 사실과 가상 인물의 경험을 구분합니다.';
+      ? '2026년, 새로운 인생이 시작됐다.'
+      : History.period(life)+' · '+life.year+'년의 세상';
     const archive=World10.readCurrent(life)||History.currentEvent(life),sourceLink=$('historySourceLink');
     sourceLink.classList.toggle('hidden',!archive);
-    if(archive){sourceLink.href=archive.source;sourceLink.textContent=archive.year+'년 '+archive.title+' · 공식 사료 보기';}
+    if(archive){sourceLink.href=archive.source;sourceLink.textContent=archive.year+'년 '+archive.title+' · 역사 자료';}
     $('currentAge').textContent=String(life.age);
     $('lifeStage').textContent=Sim.stages(life.age);
     $('chapterNumber').textContent=String(Math.floor(life.age/10)+1).padStart(2,'0');
     $('traitCountry').textContent=History.place(life)+' · '+life.gender;
-    $('traitFamily').textContent=life.familyLevel+' · 가정 안에서도 다양한 경제 여건';
+    $('traitFamily').textContent=life.familyLevel;
     $('traitCareer').textContent=life.career;
     $('storyTitle').textContent=life.getChoice()?.title || (life.age<6?'인생의 첫 장면':life.age<20?'세상을 배우는 날들':life.age<40?'나만의 길을 찾아서':life.age<65?'살아온 시간의 무게':'오늘이라는 선물');
     const current = life.log[life.log.length-1];
     $('storyCaption').textContent=life.getChoice()
-      ? '이 선택은 앞으로의 삶에 영향을 줄 수 있습니다.'
-      : current?.text || '인생은 천천히 흘러갑니다.';
+      ? '이번에는 어떻게 할까?'
+      : current?.text || '올해도 하루하루가 흘러간다.';
     $('lifeProgress').style.width=Math.min(100,life.age/105*100)+'%';
     paintTimeline();
     paintStats();
@@ -585,9 +583,18 @@
     $('endNetWorth').textContent=formatCredits(life.money.netWorth);
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=life.career;
-    $('endStory').textContent=life.birthYear+'년 '+History.period({...life,year:life.birthYear})+'에서 시작된 삶. '+World8.synopsis(life)+'. '+summary.story+' '+life.deathReason+' '+(life.world?.educationLevel||'')+' · '+life.career+'의 경로를 걸었다. '+(life.world6?.history?.length||0)+'개 직업 이력과 '+(life.world6?.eventCount||0)+'개 직업·생활 사건, '+(life.world5?.eventCount||0)+'개 지역 사건, 중요한 선택 '+choiceLog.length+'번이 삶을 바꾸었다. '
-      +'가족 돌봄을 나누어 맡은 '+careLife.careYears+'년, 오래 남은 경험 '+careLife.memories.slice(-3).join(' · ')
-      +', 그 뒤 이어진 이야기 '+careLife.followups+'건이 있었다.';
+    const firstPlace=History.place({...life,year:life.birthYear});
+    const chapters=[
+      life.birthYear+'년, '+firstPlace+'에서 태어났다.',
+      summary.story,
+      life.deathReason,
+      life.world?.educationLevel&&life.world.educationLevel!=='없음'
+        ?'살면서 '+life.world.educationLevel+'의 시간을 보냈다.':'',
+      life.career&&life.career!=='학생'?'마지막으로 기억되는 일은 '+life.career+'이었다.':'',
+      careLife.careYears?'가족을 돌보며 보낸 시간도 '+careLife.careYears+'년이었다.':'',
+      careLife.memories.length?'마지막까지 떠오른 기억은 '+careLife.memories.slice(-2).join(', ')+'였다.':''
+    ].filter(Boolean);
+    $('endStory').textContent=chapters.join(' ');
     const endChoices=$('endChoices');endChoices.replaceChildren();
     choiceLog.slice(-60).forEach(e=>{
       const item=document.createElement('li');item.className='end-choice-item';
@@ -595,9 +602,12 @@
       const text=document.createElement('span');text.textContent=e.text;
       const copy=document.createElement('div');copy.append(text);
       const effect=life.log.find(x=>x.kind==='decision-effect'&&x.age===e.age);
-      const detail=document.createElement('small');detail.textContent=effect?.text||'선택 직후의 지표 변화 기록 없음';
+      const detail=document.createElement('small');detail.textContent=effect?.text||'그때는 무엇이 달라질지 몰랐다.';
       if(e.kind==='decision')copy.append(detail);
-      else{detail.textContent='기록 속 이후의 변화는 아래 인생 연대기에서 확인할 수 있어요.';copy.append(detail);}
+      else if(['history-choice','era-choice','care13-choice'].includes(e.kind)){
+        const after=life.log.find(x=>x.year>e.year&&['history-followup','era-followup','care13-followup'].includes(x.kind));
+        if(after){detail.textContent='그 뒤 '+after.age+'세 · '+after.text;copy.append(detail);}
+      }
       item.append(age,copy);endChoices.append(item);
     });
     showComparison();

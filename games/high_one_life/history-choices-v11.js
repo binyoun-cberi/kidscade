@@ -8,28 +8,28 @@
 })(typeof window!=='undefined'?window:null,function(){
 'use strict';
 const OPTIONS=Object.freeze({
- study:[['배울 기회를 찾아본다','공부와 기술을 익히는 데 시간을 쓴다'],['가족의 생업과 배움을 병행한다','가정과 일상에서 익힐 방법을 찾는다']],
- trade:[['기술을 배우는 시간을 마련한다','기술을 배우며 다른 직업을 준비한다'],['지금 하던 일을 더 익힌다','익숙한 일을 정리하고 경험을 쌓는다']],
- work:[['새로운 일자리를 알아본다','새로운 직업의 조건과 이동 비용을 알아본다'],['기존 일터에서 일하는 방법을 바꾼다','경험을 활용해 현재의 생업을 다듬는다']],
- move:[['다른 지역의 생활을 준비한다','거주지 이동 비용을 알아보고 주변에 연락한다'],['기존 지역에서 생활을 정비한다','친숙한 지역과 인연을 유지한다']],
- family:[['가족들과 시간을 나누어 돌본다','생활 속에서 서로 돌보는 역할을 조정한다'],['지역의 도움을 찾아본다','이웃과 친척에게 도움을 요청한다']],
- market:[['소비를 줄이고 저축을 우선한다','필수 지출을 정리하고 비상 여력을 마련한다'],['새로운 수입 경로를 알아본다','소규모 생업이나 다른 기술을 알아본다']],
- civic:[['사건의 역사적 배경을 더 배운다','서로 다른 기록을 살펴보고 상황을 이해한다'],['가족과 주변 사람의 이야기를 듣는다','안부와 생활을 살피며 관계를 돌본다']],
- community:[['이웃들과 함께 준비한다','다른 사람과 역할을 나누어 생활을 돕는다'],['가족의 일상을 먼저 정비한다','식구들과 필요한 일을 나누어 맡는다']],
- health:[['생활 습관과 위생을 점검한다','건강 관리에 필요한 정보를 확인한다'],['가족·이웃 돌봄을 계획한다','주변의 돌봄 지원과 생활 여건을 살핀다']],
- digital:[['새로운 기술을 직접 배운다','디지털 기기와 업무 도구를 익힌다'],['가족과 필요한 기술을 나눈다','익힌 기술을 주변 사람과 함께 사용한다']]
+ study:[['배울 수 있는 곳을 찾아간다','여유가 많지는 않아도 공부할 시간을 내 본다'],['집안일을 도우며 틈틈이 배운다','하루가 바쁘지만 가까운 사람에게 배울 수 있다']],
+ trade:[['새 기술을 배우러 간다','익숙하지 않은 일부터 다시 시작해야 한다'],['지금 하는 일을 계속한다','배워 온 일에 더 능숙해지기로 한다']],
+ work:[['다른 일자리를 찾아간다','새로운 일은 낯설지만 더 나은 기회가 있을지 모른다'],['지금 일터에서 방법을 바꿔 본다','알고 있는 사람과 일을 놓치지 않을 수 있다']],
+ move:[['다른 고장으로 떠난다','집을 떠나는 비용도, 두고 가는 사람도 마음에 걸린다'],['여기에 남는다','익숙한 집과 사람들 곁에서 버텨 보기로 한다']],
+ family:[['가족끼리 번갈아 돌본다','누군가 혼자 책임지지 않도록 시간을 나눈다'],['도움을 청할 곳을 찾아본다','혼자 감당하기 어려운 일을 주변과 나눈다']],
+ market:[['지출을 줄인다','꼭 필요한 돈만 쓰고 조금씩 모은다'],['다른 벌이를 찾는다','다른 일을 시작하자면 시간이 들고 위험도 따른다']],
+ civic:[['신문과 기록을 더 찾아 읽는다','한쪽 이야기만 듣지 않고 무슨 일이 있었는지 살펴본다'],['가까운 사람들과 이야기를 나눈다','서로 다른 생각을 가진 사람의 말도 들어 본다']],
+ community:[['이웃들과 힘을 모은다','서로 할 수 있는 일을 하나씩 맡는다'],['우리 집 일부터 챙긴다','지금 급한 일부터 가족끼리 해결한다']],
+ health:[['몸을 돌볼 시간을 만든다','쉬는 시간을 늘리고 몸 상태를 살핀다'],['몸이 불편한 사람의 안부를 살핀다','함께 도울 수 있는 일을 찾는다']],
+ digital:[['새 기계를 직접 써 본다','처음에는 서툴지만 쓰다 보면 익숙해질 것이다'],['가족에게도 알려 준다','혼자 익힌 것을 다른 사람과 나눠 쓴다']]
 });
 const row=(id,era,min,max,topic,title,detail,condition='')=>
  Object.freeze({id,era,min,max,topic,title,detail,condition});
 const PATHS=Object.freeze([
- row('imperial-literacy','precolonial',7,18,'study','동네에서 글을 배우는 기회','먼 거리나 생업 시간 때문에 배우는 방법을 정해야 한다.'),
- row('imperial-craft','precolonial',13,32,'trade','가족의 생업을 이어 갈 방법','주변에서 배우는 기술과 현재의 일을 비교한다.'),
- row('imperial-market','precolonial',18,65,'market','장날의 지출 계획','가족 생활비와 새 물건 구입을 함께 고민한다.'),
+ row('imperial-literacy','precolonial',7,18,'study','동네에서 글을 배우는 기회','배우고 싶은 마음은 크지만, 집에서 해야 할 일도 많다.'),
+ row('imperial-craft','precolonial',13,32,'trade','가족의 생업을 이어 갈 방법','집에서 해 온 일을 계속할지, 다른 일을 배워 볼지 고민한다.'),
+ row('imperial-market','precolonial',18,65,'market','장날의 지출 계획','이번 장날에는 꼭 필요한 것부터 사야 한다.'),
  row('imperial-neighbors','precolonial',8,70,'community','함께 고치는 마을 길','이웃들과 시간을 맞춰 필요한 일을 도울 기회다.'),
- row('colonial-school','colonial',7,17,'study','어려운 환경의 통학과 배움','학교까지의 거리와 생활 여건을 생각하며 방법을 고른다.'),
+ row('colonial-school','colonial',7,17,'study','어려운 환경의 통학과 배움','학교는 멀고 집안일은 많다. 어느 쪽을 먼저 해야 할까.'),
  row('colonial-books','colonial',11,25,'study','이웃에게서 빌린 책','공부할 시간을 따로 마련할지 고민한다.'),
  row('colonial-trade','colonial',15,35,'trade','가족에게 배우는 손기술','새로운 기술을 배울 시간과 생업을 고민한다.'),
- row('colonial-work','colonial',18,59,'work','다른 지역의 생업 소식','친척에게서 새로운 일자리에 관한 편지를 받았다.'),
+ row('colonial-work','colonial',18,59,'work','다른 지역의 생업 소식','먼 곳에 사는 친척이 사람을 구한다는 편지를 보냈다.'),
  row('colonial-transport','colonial',16,55,'move','먼 곳에서 지내는 가족','직장과 가족이 사는 곳을 함께 생각한다.'),
  row('colonial-rural','colonial',20,70,'market','농촌 가계 지출과 수입','가족은 한 계절의 생업과 지출을 정리한다.','rural'),
  row('colonial-urban','colonial',15,55,'work','도시의 수공업 일자리','수공업과 서비스 일을 비교해 본다.','urban'),
@@ -50,7 +50,7 @@ const PATHS=Object.freeze([
  row('rebuild-home','rebuilding',15,70,'family','가족의 주거를 정비하다','생활 공간을 정비하는 방법을 가족과 의논한다.'),
  row('rebuild-neighbor','rebuilding',8,85,'community','이웃과 함께하는 복구','동네에서 필요한 일을 함께 나눈다.'),
  row('industrial-tech','industrial',15,50,'trade','새로운 산업 기술','생업에서 쓰는 도구와 기술이 달라지기 시작했다.'),
- row('industrial-factory','industrial',18,55,'work','도시의 새로운 일터','새로운 취업 기회와 기존 생업을 비교한다.'),
+ row('industrial-factory','industrial',18,55,'work','도시의 새로운 일터','새 일자리에서 일할 수 있다지만 지금 하던 일을 그만둬야 한다.'),
  row('industrial-migration','industrial',18,65,'move','고향에 남을까 도시로 갈까','새로운 직장과 기존 관계를 함께 생각한다.'),
  row('industrial-commute','industrial',16,55,'move','통학과 출퇴근 거리','교통비와 시간을 계산한다.'),
  row('industrial-workplace','industrial',18,68,'health','안전한 일터 만들기','몸을 돌보며 일하는 방법을 고민한다.'),
@@ -92,8 +92,7 @@ function select(life,seen,era){
 }
 function prompt(item,life){
  if(!item||life.age<item.min||life.age>item.max)return null;
- return {age:life.age,title:item.title,description:item.detail+
-   ' (해당 시대를 배경으로 만든 가상의 생활 선택입니다.)',
+ return {age:life.age,title:item.title,description:item.detail,
   options:OPTIONS[item.topic].map(([label,note])=>({label,note})),historicalLife:true};
 }
 return Object.freeze({PATHS,OPTIONS,candidates,select,prompt,count:PATHS.length});
