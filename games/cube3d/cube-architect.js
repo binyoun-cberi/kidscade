@@ -2649,17 +2649,112 @@ function makeStairObject(mat,facing=0){
   const g=new THREE.Group(),bottom=new THREE.Mesh(new THREE.BoxGeometry(1,.5,1),mat),top=new THREE.Mesh(new THREE.BoxGeometry(1,.5,.5),mat);
   bottom.position.y=-.25;top.position.set(0,.25,.25);g.add(bottom,top);g.rotation.y=(facing||0)*Math.PI/2;return g;
 }
+
+/* Shared low-poly voxel furniture language: pixelated wood/stone, muted metal and clear silhouettes. */
+const ARCH_DETAIL_MATERIALS=new Map();
+function architecturalMaterial(kind){
+  if(ARCH_DETAIL_MATERIALS.has(kind))return ARCH_DETAIL_MATERIALS.get(kind);
+  const palette={
+    darkWood:[0x64442e,.9],lightWood:[0xc49a68,.85],
+    iron:[0x596a70,.72],ironLight:[0xaebdc1,.62],stoneTrim:[0x575f68,.94],
+    charcoal:[0x201e20,.96],glassGlint:[0xcff8ff,.18]
+  };
+  const [color,roughness]=palette[kind]||palette.darkWood;
+  const material=new THREE.MeshStandardMaterial({color,roughness,metalness:kind.startsWith('iron')?.2:0,
+    transparent:kind==='glassGlint',opacity:kind==='glassGlint'?.34:1,depthWrite:kind!=='glassGlint',
+    side:kind==='glassGlint'?THREE.DoubleSide:THREE.FrontSide});
+  ARCH_DETAIL_MATERIALS.set(kind,material);return material;
+}
+function architecturalBox(parent,dimensions,position,material){
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(...dimensions),material);
+  mesh.position.set(...position);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;
+}
 function makeWindowObject(){
-  const g=new THREE.Group(),wood=materialFor('planks'),glass=materialFor('glass');
-  const bars=[new THREE.Mesh(new THREE.BoxGeometry(.1,1,.1),wood),new THREE.Mesh(new THREE.BoxGeometry(.1,1,.1),wood),
-    new THREE.Mesh(new THREE.BoxGeometry(.1,.1,1),wood),new THREE.Mesh(new THREE.BoxGeometry(.1,.1,1),wood)];
-  bars[0].position.z=-.45;bars[1].position.z=.45;bars[2].position.y=.45;bars[3].position.y=-.45;
-  const pane=new THREE.Mesh(new THREE.BoxGeometry(.06,.82,.82),glass);g.add(...bars,pane);return g;
+  // The pane is normal to X, matching the collision and placement preview.
+  const group=new THREE.Group(),wood=materialFor('planks'),dark=architecturalMaterial('darkWood');
+  const metal=architecturalMaterial('iron'),glass=materialFor('glass');
+  const pane=architecturalBox(group,[.045,.79,.79],[0,0,0],glass);pane.userData.worldGlazing=true;
+  for(const z of [-.445,.445]){
+    architecturalBox(group,[.18,.94,.095],[0,0,z],wood);
+    architecturalBox(group,[.205,.10,.11],[0,-.40,z],dark);
+  }
+  for(const y of [-.445,.445])architecturalBox(group,[.18,.105,.98],[0,y,0],wood);
+  architecturalBox(group,[.23,.065,1.01],[.025,-.462,0],dark); // projecting sill
+  architecturalBox(group,[.155,.79,.07],[0,0,0],wood);
+  architecturalBox(group,[.155,.07,.83],[0,0,0],wood);
+  for(const y of [-.39,.39])for(const z of [-.4,.4])
+    architecturalBox(group,[.205,.038,.038],[.007,y,z],metal);
+  const glint=architecturalBox(group,[.007,.30,.11],[.032,.17,-.22],architecturalMaterial('glassGlint'));
+  glint.userData.worldGlazing=true;
+  return group;
+}
+function makeDoorObject(facing=0,open=false){
+  const group=new THREE.Group(),wood=materialFor('planks'),dark=architecturalMaterial('darkWood');
+  const metal=architecturalMaterial('iron'),shine=architecturalMaterial('ironLight');
+  // Frame stays fixed. Only the leaf rotates around the left jamb.
+  for(const z of [-.455,.455])architecturalBox(group,[.19,1.94,.11],[0,0,z],dark);
+  architecturalBox(group,[.20,.10,1.01],[0,.965,0],wood);
+  const hinge=new THREE.Group();hinge.position.z=-.415;group.add(hinge);
+  architecturalBox(hinge,[.115,1.77,.82],[0,-.04,.415],wood);
+  for(const y of [-.62,-.04,.54]){
+    architecturalBox(hinge,[.014,.07,.70],[.068,y,.415],dark);
+    architecturalBox(hinge,[.014,.07,.70],[-.068,y,.415],dark);
+  }
+  for(const z of [.12,.68]){
+    architecturalBox(hinge,[.015,1.55,.035],[.067,-.04,z],dark);
+    architecturalBox(hinge,[.015,1.55,.035],[-.067,-.04,z],dark);
+  }
+  for(const y of [-.62,.54]){
+    architecturalBox(hinge,[.035,.11,.10],[.098,y,.028],metal);
+    architecturalBox(hinge,[.035,.11,.10],[-.098,y,.028],metal);
+  }
+  for(const side of [-1,1]){
+    architecturalBox(hinge,[.045,.10,.13],[side*.1,-.05,.72],metal);
+    architecturalBox(hinge,[.07,.045,.09],[side*.12,-.05,.76],shine);
+  }
+  hinge.rotation.y=open?-Math.PI/2:0;
+  group.rotation.y=((facing||0)%4)*Math.PI/2;return group;
 }
 function makeFurnaceObject(facing=0){
-  const mats=[materialFor('stone'),materialFor('stone'),materialFor('stone'),materialFor('stone'),materialFor('stone'),materialFor('stone')];
-  const front=new THREE.MeshStandardMaterial({color:0x31353b,roughness:.92,emissive:0xff6a28,emissiveIntensity:.05});
-  mats[4]=front;const m=new THREE.Mesh(freeCubeGeo,mats);m.rotation.y=(facing||0)*Math.PI/2;return m;
+  const group=new THREE.Group(),stone=materialFor('stone'),trim=architecturalMaterial('stoneTrim');
+  const iron=architecturalMaterial('iron'),shine=architecturalMaterial('ironLight');
+  const dark=architecturalMaterial('charcoal');
+  architecturalBox(group,[.92,.85,.92],[0,-.035,0],stone);
+  architecturalBox(group,[.98,.105,.98],[0,.427,0],stone);
+  architecturalBox(group,[.96,.11,.97],[0,-.425,0],trim);
+  // Black inset covers the front stone face; trims make the opening readable.
+  architecturalBox(group,[.64,.45,.018],[0,-.075,.474],dark);
+  for(const x of [-.345,.345])architecturalBox(group,[.075,.53,.065],[x,-.075,.495],trim);
+  architecturalBox(group,[.76,.085,.065],[0,.205,.495],stone);
+  architecturalBox(group,[.76,.09,.08],[0,-.337,.5],stone);
+  for(const y of [-.22,-.12,-.02,.08])architecturalBox(group,[.56,.016,.021],[0,y,.512],iron);
+  architecturalBox(group,[.47,.08,.018],[0,-.352,.551],iron);
+  for(const x of [-.31,.31])architecturalBox(group,[.065,.07,.052],[x,.293,.49],shine);
+  // Independent materials per furnace allow transient heating without changing saves.
+  const embersMaterial=new THREE.MeshStandardMaterial({
+    color:0xff8734,emissive:0xff4e1d,emissiveIntensity:.14,roughness:.88});
+  const embers=architecturalBox(group,[.45,.075,.025],[0,-.267,.525],embersMaterial);
+  const flameMaterial=new THREE.MeshStandardMaterial({
+    color:0xffc36a,emissive:0xff7428,emissiveIntensity:1.4,roughness:.72});
+  const flames=[];
+  for(const [x,h] of [[-.14,.15],[0,.22],[.14,.17]]){
+    const flame=new THREE.Mesh(new THREE.ConeGeometry(.075,h,4),flameMaterial);
+    flame.position.set(x,-.17+h*.1,.545);flame.visible=false;
+    flame.userData.worldDecorative=true;group.add(flame);flames.push(flame);
+  }
+  const light=new THREE.PointLight(0xff8c4b,0,3.2,2);
+  light.position.set(0,-.08,.57);light.userData.persistentWorldEffect=true;group.add(light);
+  group.userData.setHeating=(heating,progress=0)=>{
+    embersMaterial.emissiveIntensity=heating?1.45+.45*Math.sin(progress*10):.14;
+    flameMaterial.emissiveIntensity=heating?1.25+.5*Math.sin(progress*12):1.4;
+    flames.forEach((flame,i)=>{flame.visible=!!heating;flame.scale.y=heating?(.84+.22*Math.sin(progress*15+i)):1});
+    light.intensity=heating?1.2+.3*Math.sin(progress*11):0;
+  };
+  group.rotation.y=((facing||0)%4)*Math.PI/2;return group;
+}
+function setFurnaceHeating(key,heating,progress=0){
+  const root=worldMeshMap.get(key);
+  root?.userData?.setHeating?.(heating,progress);
 }
 function makeChestObject(facing=0){
   const g=new THREE.Group(),wood=materialFor('planks');
@@ -2865,8 +2960,7 @@ function makeWorldMesh(x,y,z,data){
   const d=blockDef(data),type=data.type,key=worldKey(x,y,z);if(d.hidden||isChunkRenderableData(data))return null;
   let root;
   if(type==='door'){
-    root=new THREE.Mesh(doorGeo,materialFor('door'));root.position.set(x,y+1,z);
-    const facing=(data.facing||0)*Math.PI/2;root.rotation.y=facing+(data.open?Math.PI/2:0);
+    root=makeDoorObject(data.facing||0,!!data.open);root.position.set(x,y+1,z);
   }else if(type==='torch'){
     root=new THREE.Mesh(torchGeo,materialFor('torch'));root.position.set(x,y+.34,z);
     const light=new THREE.PointLight(0xffb45e,1.25,7,2);light.position.y=.42;root.add(light);
@@ -2926,9 +3020,9 @@ function makeWorldMesh(x,y,z,data){
       root.scale.set(v,.95+hash2(x*5,z*13)*.06,v);
     }
   }
-  const casts=!(type==='water'||type==='glass'||type==='glassPane'||type==='leaves'||type==='pineLeaves'||type==='fire'||type==='windowFrame');
+  const casts=!(type==='water'||type==='glass'||type==='glassPane'||type==='leaves'||type==='pineLeaves'||type==='fire');
   root.castShadow=casts;root.receiveShadow=true;
-  root.traverse?.(o=>{if(o.isMesh&&!o.userData?.worldDecorative){o.castShadow=casts;o.receiveShadow=true}});
+  root.traverse?.(o=>{if(o.isMesh&&!o.userData?.worldDecorative){o.castShadow=casts&&!o.userData?.worldGlazing;o.receiveShadow=true}});
   scene.add(root);worldMeshMap.set(key,root);registerWorldObject(root,key,x,y,z,type);
   if(FURNISHING_ASSET_TYPES.has(type)){
     addFurnishingEffect(root,type,data);
