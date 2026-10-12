@@ -33,7 +33,7 @@
   let lastTick = performance.now(), elapsed = 0, roulette = null, screenTime = 0;
   let completed = false, ruleWasRunning = false, replayBasis = null;
   let peerCache = null, lastPeerRenderedAge = -1, lastMapRenderedAge = -1;
-  let storyTab='', peerAgeChoice=0, timelineVisible=22;
+  let storyTab='', peerAgeChoice=0, timelineVisible=22, playSpeed=1, nextDecision=false;
   const sdk = window.KidscadeGame || null;
   const show = name => { stage = name; for (const id of views) $(id).classList.toggle('hidden',id!==name); window.scrollTo?.(0,0); };
   const safeGet = key => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) { return null; } };
@@ -53,6 +53,7 @@
   function draw() {
     clearInterval(roulette);
     roulette = null;
+    playSpeed=1;nextDecision=false;refreshSpeedControls();
     const desired=Number($('birthYearInput').value);
     const birthYear=Number.isInteger(desired)&&desired>=1900&&desired<=2026?desired:2026;
     $('birthYearInput').value=String(birthYear);
@@ -258,6 +259,12 @@
       const after=document.createElement('b');after.textContent=b||'선택 이전에 삶을 마침';
       line.append(title,before,icon,after);rows.append(line);
     }
+  }
+  function refreshSpeedControls(){
+    document.querySelectorAll('[data-life-speed]').forEach(button=>{
+      button.setAttribute('aria-pressed',String(Number(button.dataset.lifeSpeed)===playSpeed&&!nextDecision));
+    });
+    $('v9NextChoice').setAttribute('aria-pressed',String(nextDecision));
   }
   function updatePause() {
     $('pauseBtn').textContent = paused ? '▶ 이어가기' : 'Ⅱ 일시정지';
@@ -562,6 +569,7 @@
     life.tick();
     History.contextualize(life);
     if(!life.alive) return finish();
+    if(nextDecision&&life.pending){nextDecision=false;playSpeed=1;refreshSpeedControls();}
     render();
     // Each year may have several linked events: save complete year boundaries.
     save();
@@ -571,7 +579,7 @@
     const delta=Math.max(0,Math.min(260,now-lastTick));
     lastTick=now;
     if(stage!=='play' || !life || !life.alive || life.pending || paused || document.hidden) return;
-    elapsed+=delta;
+    elapsed+=delta*playSpeed;
     let count=0;
     const yearMs=YEAR_MS;
     while(elapsed>=yearMs && count++<5) {
@@ -596,6 +604,17 @@
     $('birthLocation').value=btn.dataset.eraPlace||'random';
     document.querySelectorAll('[data-era-year]').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
   }));
+  document.querySelectorAll('[data-life-speed]').forEach(button=>button.addEventListener('click',()=>{
+    const n=Number(button.dataset.lifeSpeed);
+    if(![1,2,4,8].includes(n))return;
+    playSpeed=n;nextDecision=false;refreshSpeedControls();
+  }));
+  $('v9NextChoice').addEventListener('click',()=>{
+    if(!life?.alive||life.pending||stage!=='play')return;
+    playSpeed=8;nextDecision=true;
+    if(paused){paused=false;updatePause();}
+    refreshSpeedControls();
+  });
   $('v9TimelineMore').addEventListener('click',()=>{timelineVisible=Math.min(760,timelineVisible+60);paintTimeline();});
   $('drawBtn').addEventListener('click',draw);
   $('lifeStartBtn').addEventListener('click',()=>startLife());
@@ -606,7 +625,7 @@
     replayBasis=snapshot;
     life=new Sim.Life(snapshot.seed,{birthYear:snapshot.birthYear,countryName:snapshot.country});
     World8.ensure(life);World8.moment(life);History.contextualize(life);
-    storyTab='';peerAgeChoice=0;timelineVisible=22;
+    storyTab='';peerAgeChoice=0;timelineVisible=22;playSpeed=1;nextDecision=false;refreshSpeedControls();
     peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
     $('birthCertificate').classList.add('hidden');
     $('birthFlag').textContent=life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1];
@@ -620,7 +639,7 @@
   $('resumeBtn').addEventListener('click',()=>{
     const restored=currentSave();
     if(!restored || !restored.alive){refreshResume();return;}
-    life=restored;timelineVisible=22;World9.ensure(life);World8.ensure(life);replayBasis=safeGet(SAVE_KEY)?.replayBasis||null;completed=false;peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;startLife(true);
+    life=restored;timelineVisible=22;playSpeed=1;nextDecision=false;refreshSpeedControls();World9.ensure(life);World8.ensure(life);replayBasis=safeGet(SAVE_KEY)?.replayBasis||null;completed=false;peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;startLife(true);
   });
   $('pauseBtn').addEventListener('click',togglePause);
   document.querySelectorAll('[data-story-tab]').forEach(button=>button.addEventListener('click',()=>{
