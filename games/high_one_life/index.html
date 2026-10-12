@@ -19,14 +19,14 @@
 <div class="app" id="app">
   <header class="top">
     <div class="mark"><span class="mark-icon" aria-hidden="true">◌</span><div><b>단 하나의 인생</b><small>ONE LIFE · KIDSCADE</small></div></div>
-    <div class="top-right"><span class="edition">인생 체험 시뮬레이션</span><button id="rulesBtn" type="button" class="text-button">게임 방법 ?</button></div>
+    <div class="top-right"><span class="edition">한 사람의 평생</span><button id="rulesBtn" type="button" class="text-button">게임 방법 ?</button></div>
   </header>
 
   <main>
     <section id="intro" class="intro section">
       <div class="hero-art" aria-hidden="true"><span class="orbit orbit-a"></span><span class="orbit orbit-b"></span><span class="globe">◉</span></div>
       <div class="intro-copy">
-        <p class="eyebrow">ONE PERSON · ONE STORY</p>
+        <p class="eyebrow">한 번의 출생, 수많은 갈림길</p>
         <h1>80억 개의 삶,<br><em>단 하나의 인생.</em></h1>
         <p class="lead">어느 나라, 어떤 집에서 태어날지는 고를 수 없습니다.<br>하지만 당신의 삶에는 당신만의 선택이 있습니다.</p>
         
@@ -45,24 +45,24 @@
             <button type="button" data-era-year="1935" data-era-place="korea" aria-pressed="false">1935년 일제강점기</button>
             <button type="button" data-era-year="1950" data-era-place="korea" aria-pressed="false">1950년 한국전쟁기</button>
           </div>
-          <p id="eraHelp">1900~2026년 중 선택할 수 있어요. 역사 체험은 실제 사건과 가상 인물의 삶을 구분하며, 옛 시대의 출생·사망 확률은 게임용 추정입니다.</p>
+          <p id="eraHelp">1900년부터 2026년까지. 같은 땅에서 태어나도 시대가 다르면 삶의 모습은 달라집니다.</p>
         </div>
         <button id="drawBtn" class="primary" type="button">이번 생은 어디에서 시작될까? <span aria-hidden="true">↗</span></button>
         <button id="resumeBtn" class="secondary hidden" type="button">이어서 살아가기</button>
-        <p class="footnote">빠른 자동 인생 · 중요한 갈림길에서 선택하며, 그 뒤의 이야기를 함께 살펴봅니다.</p>
+        <p class="footnote">시간은 흘러가고, 중요한 순간마다 당신이 길을 고릅니다.</p>
       </div>
-      <div class="intro-foot"><span>01 / RANDOM BIRTH</span><span>02 / LIFE IN MOTION</span><span>03 / YOUR STORY</span></div>
+      <div class="intro-foot"><span>01 / 탄생</span><span>02 / 성장</span><span>03 / 지나온 삶</span></div>
     </section>
 
     <section id="birth" class="section birth hidden" aria-label="출생 추첨">
-      <p class="eyebrow">BIRTH LOTTERY</p>
+      <p class="eyebrow">탄생의 순간</p>
       <p class="birth-heading">당신은 어디에서 태어날까요?</p>
       <div class="ticket">
         <div class="ticket-top"><span>ONE LIFE / 0001</span><span>출생 기록</span></div>
         <div class="ticket-body">
           <div id="birthFlag" class="birth-flag" aria-hidden="true">🌐</div>
           <div id="birthCountry" class="birth-country" aria-live="polite">추첨 중…</div>
-          <p id="birthDetail" class="birth-detail">한 사람의 삶이 정해지고 있습니다.</p>
+          <p id="birthDetail" class="birth-detail">어떤 삶이 기다리고 있을까요?</p>
           <div id="birthCertificate" class="certificate hidden" aria-label="출생 신고서">
             <div class="certificate-header"><strong>출생 신고서</strong><span>ONE LIFE / BIRTH RECORD</span></div>
             <div class="certificate-name"><small>이름</small><strong id="birthName">—</strong><span id="birthPlace">—</span></div>
@@ -77,15 +77,15 @@
             <div class="v8-birth-context">
   <strong>가족의 일상</strong><p id="birthHome">어떤 집에서 살아가게 될까요?</p>
   <p id="birthContext">같은 나라 안에서도 지역과 가정은 서로 다릅니다.</p>
-  <p id="birthEraNote">역사적 시대와 가상 설정을 구분합니다.</p>
+  <p id="birthEraNote">태어난 해의 세상을 만나게 됩니다.</p>
 </div>
-<p class="certificate-disclaimer">이름·부모·주거는 가상의 설정이며 실제 개인 기록이 아닙니다.</p>
+<p class="certificate-disclaimer">이 집에서 당신의 이야기가 시작됩니다.</p>
           </div>
         </div>
         <div class="ticket-bottom">탄생은 우연입니다. 살아가는 이야기는 지금부터 시작됩니다.</div>
       </div>
       <button id="lifeStartBtn" class="primary hidden" type="button">이 인생 살아보기 <span aria-hidden="true">→</span></button>
-      <p class="footnote">2026년 출생은 공개 지표 기반 국가별 출생 추정치를 활용합니다. 과거 시대는 해당 연도 출생 분포와 생명표를 재현하지 못하며, 국경도 현대 국가 목록을 참고한 가상 역사 체험입니다.</p>
+      <p class="footnote">시대의 사건은 역사 기록을 따르지만, 당신이 만날 사람과 일상은 매번 달라집니다.</p>
     </section>
 
     <section id="play" class="section play hidden">
@@ -99,26 +99,26 @@
           <p id="historyContext" class="history-context">이 인생이 놓인 시대</p>
           <section id="v10HistoryPanel" class="v10-history-panel" aria-label="역사적 사건이 이 인생에 미치는 영향">
             <div class="stat-title">내가 살아온 시대 <span id="v10HistoricalCount">0개 역사 사건</span></div>
-            <p id="v10HistoryStatus">이 시대의 사건과 개인의 경험은 다릅니다.</p>
-            <p id="v10HistoryEffects">아직 남은 역사적 경험이 없습니다.</p>
+            <p id="v10HistoryStatus">그해 세상에서는 어떤 일이 있었을까?</p>
+            <p id="v10HistoryEffects">아직 그 시절의 기억은 없습니다.</p>
             <div class="v12-era-ledger" aria-label="시대별 교육과 직업·경제">
-              <p id="v12EducationEra">교육 환경을 확인하는 중</p>
-              <p id="v12WorkEra">그 시기의 직업과 생업</p>
-              <p id="v12EconomyEra">생활비·직업 환경은 가상 경제 점수로 계산됨</p>
-              <p id="v12ChoicesCount">시대와 연결된 중요한 선택 0회</p>
+              <p id="v12EducationEra">그 시절의 학교 이야기</p>
+              <p id="v12WorkEra">그 시절의 일터</p>
+              <p id="v12EconomyEra">올해의 살림살이</p>
+              <p id="v12ChoicesCount">지금까지 내린 선택 0번</p>
             </div>
-            <small>역사의 날짜·사실은 출처가 있는 기록입니다. 교육·이사·경제와 관련한 개인 경험은 게임에서 구성한 가상의 선택과 결과입니다.</small>
+            <small>세상이 바뀔 때마다 삶에도 새로운 일이 찾아옵니다.</small>
           </section>
           <section class="v13-care-strip" aria-label="가족과 건강의 장기 변화">
             <div class="stat-title">가족·건강·기억 <span id="v13CareYears">돌봄 기록 0년</span></div>
-            <p id="v13FamilyStatus">가족의 성장을 함께 기록해요.</p>
-            <p id="v13LifeMemories">돌봄과 건강, 어릴 적 기억이 시간이 지나 다시 연결됩니다.</p>
-            <small>건강 문제와 돌봄 비용은 가상 인생 모형입니다. 실제 질병의 발생이나 의료비 추정이 아닙니다.</small>
+            <p id="v13FamilyStatus">가족은 나와 함께 나이 들어 갑니다.</p>
+            <p id="v13LifeMemories">오래전 일이 문득 생각나는 날도 있습니다.</p>
+            <small>가족과 보낸 시간은 오래 남습니다.</small>
           </section>
           <a id="historySourceLink" class="history-source-link hidden" target="_blank" rel="noopener noreferrer" href="https://contents.history.go.kr/">이 시기의 역사 자료 보기</a>
           <div class="progress" aria-label="인생 시간의 흐름"><div id="lifeProgress"></div></div>
           <div class="controls">
-            <div class="controls-label"><b>인생의 시간</b><span>빠른 자동 진행</span></div>
+            <div class="controls-label"><b>시간의 흐름</b><span>속도 조절</span></div>
             <button id="pauseBtn" class="pause" type="button">Ⅱ 일시정지</button>
             <div class="v9-speed-controls" role="group" aria-label="인생 진행 배속">
               <button type="button" data-life-speed="1" aria-pressed="true">1배</button>
@@ -142,7 +142,7 @@
               <button data-focus="health" type="button">건강</button>
               <button data-focus="work" type="button">일</button>
             </div>
-            <p class="focus-hint">어떤 강점도 한계를 정하지 않습니다. 관심·훈련·기회에 따라 배울 수 있고, 생활 방향을 바꾸면 시간이 지나며 실력도 달라집니다.</p>
+            <p class="focus-hint">올해는 어디에 시간을 쓸까요? 선택한 방향은 조금씩 삶에 쌓입니다.</p>
           </div>
           <nav class="v8-tools-nav" aria-label="이 인생의 정보 보기">
             <button type="button" data-story-tab="birth" aria-pressed="false">출생 기록</button>
@@ -156,7 +156,7 @@
             </div>
             <div id="storyStats" class="v8-tool-page hidden">
               <h3>이 출생 집단의 생존 곡선</h3>
-              <p class="v8-fine">5세 미만 총 사망률은 UN IGME 추정치를 이용할 수 있지만, 연령별 분배와 이후 나이의 생존 곡선은 게임용 사망 모형입니다. 실제 연령별 생명표나 내 사망 날짜를 예측하는 그래프가 아닙니다.</p>
+              <p class="v8-fine">출생 국가의 공개 통계를 참고한 비교 그래프입니다. 나이별 곡선은 게임에서 재구성한 값이며, 개인의 수명이나 사망 시기를 알려 주지는 않습니다.</p>
               <svg id="survivalChart" viewBox="0 0 360 170" role="img" aria-label="0세부터 100세까지 생존 비율을 보여주는 게임 모형 그래프">
                 <path d="M38 12 V143 H348" stroke="#8aa5a0" fill="none" stroke-width="1"/>
                 <path id="survivalOther" d="" fill="none" stroke="#9caeab" stroke-width="2" stroke-dasharray="4 4"/>
@@ -165,10 +165,10 @@
                 <text x="4" y="17" font-size="10">100%</text><text x="11" y="145" font-size="10">0%</text>
                 <text x="33" y="160" font-size="10">0세</text><text x="166" y="160" font-size="10">50세</text><text x="313" y="160" font-size="10">100세</text>
               </svg>
-              <div class="v8-chart-key"><span>● 이 출생 국가·성별 모형</span><span>┄ 비교용 세계 모형</span></div>
+              <div class="v8-chart-key"><span>● 태어난 나라의 곡선</span><span>┄ 세계 비교 곡선</span></div>
               <p id="survivalSummary"></p>
               <p id="v8CountryStats" class="v8-country-stats"></p>
-              <p class="v8-fine">국가 수명 참고: <a href="https://data.worldbank.org/indicator/SP.DYN.LE00.IN" target="_blank" rel="noopener noreferrer">세계은행 기대수명 지표</a>. 수집된 실제 국가 지표와 게임용 근사·추정을 구분해 표기합니다. 평균 지표가 개인의 확률은 아니며, 학교·직업·경제·미래 사건은 가상 모형입니다.</p>
+              <p class="v8-fine">자료: <a href="https://data.worldbank.org/indicator/SP.DYN.LE00.IN" target="_blank" rel="noopener noreferrer">세계은행 기대수명 지표</a>. 실제 관측값이 없는 시대와 연령은 게임에서 추정한 값입니다.</p>
             </div>
             <div id="storyYears" class="v8-tool-page hidden"><h3>한 칸은 인생의 1년</h3>
               <p class="v8-fine">선택·가족·이동·직업·위기가 일어난 해를 표시했어요. 칸을 누르면 기록을 읽을 수 있습니다.</p>
@@ -176,7 +176,7 @@
               <p id="yearDetail" class="v8-year-detail">칸을 선택하면 그 해에 일어난 이야기가 보입니다.</p>
             </div>
             <div id="storyPeers" class="v8-tool-page hidden"><h3>같은 해에 태어난 네 사람</h3>
-              <p class="v8-fine">나와 같은 해에 태어난 가상의 네 사람을 비교해 보세요. 각자의 생일과 출생 조건은 다르며, 인생은 점수로 우열을 정하지 않습니다.</p>
+              <p class="v8-fine">같은 해에 태어난 네 사람. 사는 곳도, 가족도, 살아온 시간도 서로 다릅니다.</p>
               <div class="v8-peer-ages" id="peerAgeChoices">
                 <button type="button" data-peer-age="0">현재</button>
                 <button type="button" data-peer-age="10">10세</button>
@@ -214,14 +214,14 @@
           </dl>
           <div class="country-context" aria-label="태어난 곳의 사회적 조건">
             <strong>태어난 곳의 생활 조건</strong>
-            <div id="countryContextText">학교·의료·지역 경제 기회가 반영됩니다.</div>
+            <div id="countryContextText">이곳에서 학교에 다니고 일하며 살아갑니다.</div>
             <small>가족의 형편과 별개로, 태어난 나라·지역의 평균 조건을 보여줍니다.</small>
-            <small id="countrySourceNote">모두가 같은 삶을 살지는 않습니다.</small>
-            <small id="officialContext" class="official-stats-source">공식 지표는 자료가 갱신되면 기준 연도와 함께 표시됩니다.</small>
-            <small>UN·UNESCO·ILO·WHO·UNICEF/UN IGME 통계는 <a href="https://data.worldbank.org/" target="_blank" rel="noopener noreferrer">세계은행 공개 지표</a>를 통해 수집합니다. 일부 국가는 공식 수치가 없어 게임 추정값으로 대체됩니다. 개인의 미래·선택 결과는 가상 모델입니다.</small>
+            <small id="countrySourceNote">같은 고장에서 태어나도 처지는 제각각입니다.</small>
+            <small id="officialContext" class="official-stats-source">이 나라의 교육과 생활 여건</small>
+            <small>자료: <a href="https://data.worldbank.org/" target="_blank" rel="noopener noreferrer">세계은행 공개 지표</a>. 자료가 없는 항목은 별도로 추정합니다.</small>
           </div>
-          <div class="finance-panel" aria-label="가상 경제 생활 기록">
-            <div class="stat-title">경제 생활 <span>가상 금액 단위</span></div>
+          <div class="finance-panel" aria-label="살림살이 기록">
+            <div class="stat-title">살림살이 <span>게임 속 금액</span></div>
             <div class="finance-big"><small>순자산</small><strong id="netWorth">0</strong></div>
             <dl class="finance-detail">
               <div><dt>연 수입</dt><dd id="annualIncome">0</dd></div>
@@ -229,14 +229,14 @@
               <div><dt>연간 수지</dt><dd id="annualBalance">0</dd></div>
               <div><dt>직업 상태</dt><dd id="employmentStatus">—</dd></div>
             </dl>
-            <p class="finance-note">실제 국가별 임금·물가·구매력을 나타내지 않는 가상 경제 모델입니다.</p>
+            <p class="finance-note">이 금액은 실제 원화가 아닌, 인생의 살림을 나타내는 숫자입니다.</p>
           </div>
           <section class="v9-living-people" aria-label="인생에서 기억하는 사람들과 취미">
             <div class="stat-title">함께 살아가는 사람들 <span id="v9PeopleCount">0명</span></div>
             <ul id="v9PeopleList" class="v9-people-list"></ul>
             <p id="v9Hobby" class="v9-memory-caption">아직 정해진 취미가 없습니다.</p>
             <p id="v9Loan" class="v9-memory-caption">생활 대출 없음</p>
-            <small>이름·가족의 생애·생활 대출은 교육용 가상 인생입니다. 실제 인구 통계나 금융 상품을 뜻하지 않습니다.</small>
+            <small>나와 함께한 사람들의 이야기가 이어집니다.</small>
           </section>
           <div class="stat-title">지금의 나 <span>0 ~ 100</span></div>
           <div id="statList" class="stats" aria-label="인생 상태 지표"></div>
@@ -244,13 +244,13 @@
             <div class="stat-title">세계 속 나의 이야기 <span id="worldEventCount">0개 사건</span></div>
             <div class="world-stories-category" id="worldRegionLabel">다양한 문화와 삶</div>
             <p id="worldLatest">지역의 문화와 세계의 변화가 인생에 영향을 줍니다.</p>
-            <small>실제 역사 사건은 기록에 근거한 배경 정보이며, 등장인물의 경험·경제·직업 경로는 가상입니다. 현대 이후 미래 사건도 예측이 아닙니다.</small>
+            <small>같은 사건을 겪어도 사람마다 남는 기억은 다릅니다.</small>
           </div>
           <div class="career-panel" aria-label="직업과 생활 방식의 변화">
   <div class="stat-title">지금까지의 직업과 삶 <span id="careerChangeCount">0개</span></div>
   <div id="careerCurrent" class="career-current">배우고 성장하는 중</div>
   <div id="careerJourney" class="career-journey"></div>
-  <small>하나의 직업만이 아니라 이직, 재교육, 관계와 취미가 함께 인생을 만듭니다.</small>
+  <small>한 직장에 머물기도, 새 일을 배우기도 했습니다.</small>
 </div>
 <div class="arc-panel" aria-label="현재까지의 선택과 영향">
             <div class="stat-title">이어지는 인생의 선택 <span id="arcCount">0번</span></div>
@@ -263,32 +263,32 @@
     </section>
 
     <section id="end" class="section end hidden">
-      <div class="end-header"><span class="eyebrow">A LIFE COMPLETED</span><span class="end-icon" aria-hidden="true">✳</span></div>
+      <div class="end-header"><span class="eyebrow">한 사람의 이야기</span><span class="end-icon" aria-hidden="true">✳</span></div>
       <h2>당신의 <em>단 하나의 인생.</em></h2>
       <p class="end-years" id="endYears">2026 — 2096</p>
       <div class="end-summary"><div><span>태어난 곳</span><b id="endCountry">—</b></div><div><span>살아온 시간</span><b id="endAge">—</b></div><div><span>삶의 방향</span><b id="endCareer">—</b></div></div>
-      <div class="end-finance">마지막 순자산 <strong id="endNetWorth">—</strong><span> · 가상 단위</span></div>
+      <div class="end-finance">남겨진 살림 <strong id="endNetWorth">—</strong><span> · 게임 속 금액</span></div>
       <p id="endStory" class="end-story"></p>
-      <div class="end-choice-review"><div class="end-divider">내가 내린 선택</div><ol id="endChoices" class="end-highlights" aria-label="삶에서 내린 선택"></ol><p class="end-choice-note">이후 사건은 시간상 뒤에 이어진 장면이며, 모두가 선택의 직접적인 결과라는 뜻은 아닙니다.</p></div>
+      <div class="end-choice-review"><div class="end-divider">내가 내린 선택</div><ol id="endChoices" class="end-highlights" aria-label="삶에서 내린 선택"></ol><p class="end-choice-note">어떤 선택은 오래 남았고, 어떤 일은 뜻밖에 찾아왔습니다.</p></div>
       <div id="endComparison" class="end-comparison hidden" aria-live="polite">
         <h3>같은 출생, 다른 선택</h3>
         <p>같은 조건에서 다시 태어났지만, 선택 이후의 기회와 사건이 달라졌어요.</p>
         <div id="endComparisonRows" class="end-comparison-rows"></div>
-        <p class="comparison-disclaimer">같은 난수 시드로 다시 시작하더라도 선택에 따라 이후 사건의 우연까지 달라질 수 있어요. 차이를 모두 선택의 직접적인 효과로 해석하지 마세요.</p>
+        <p class="comparison-disclaimer">같은 곳에서 태어나도 살아가는 길은 달라집니다.</p>
       </div>
       <div class="end-divider"><span>삶에 남은 장면들</span></div>
       <ol id="endHighlights" class="end-highlights"></ol>
       <div class="end-actions"><button id="againBtn" class="primary" type="button">다른 인생으로 태어나기 <span aria-hidden="true">↗</span></button><button id="sameBirthBtn" class="secondary" type="button">같은 출생, 다른 선택으로 살아보기</button><span id="livesCount" class="footnote"></span></div>
-      <p class="footnote">이야기와 확률은 교육용 가상 시뮬레이션입니다. 직업·연봉·사회적 기회는 실제 국가별 통계가 아닌 가상 모델입니다. 출생 조건과 직업이 한 사람의 삶의 가치를 결정하지 않습니다.</p>
+      <p class="footnote">어떤 삶을 살았든, 그 시간은 그 사람만의 이야기였습니다.</p>
     </section>
   </main>
   <div id="rules" class="rules hidden" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
     <div class="rules-backdrop" data-close="rules"></div>
     <div class="rules-content"><button id="rulesClose" class="rule-close" type="button" aria-label="닫기">×</button>
-      <p class="eyebrow">HOW TO PLAY</p><h2 id="rulesTitle">게임 방법</h2>
-      <p>태어날 연도는 1900~2026년에서 선택할 수 있고 국가는 무작위 또는 한반도 지역으로 설정할 수 있습니다. 인생은 자동으로 흐르고, 중요한 갈림길에 서면 잠시 멈춥니다. 선택을 누르면 다시 시간이 흐릅니다.</p>
-      <p>건강·행복·배움·인연·경제 지표가 변하지만 하나의 정답이나 승리 조건은 없습니다. 삶이 끝난 뒤에는 지나온 선택들을 되돌아볼 수 있습니다.</p>
-      <p class="rules-small">자신의 인생을 체험하는 게임이 아니라 다양한 조건에서 살아가는 가상의 사람을 이해하는 이야기입니다. 통계나 미래 예측의 근거로 사용하지 마세요.</p>
+      <p class="eyebrow">시작하기 전에</p><h2 id="rulesTitle">게임 방법</h2>
+      <p>1900년부터 2026년까지 태어날 해를 정하세요. 태어날 곳은 세계 어디든 될 수 있고, 한반도로 정할 수도 있습니다. 시간은 저절로 흐르다가 선택해야 할 순간에 잠시 멈춥니다.</p>
+      <p>학교를 다니고 일하고 사람을 만납니다. 마음대로 풀리지 않는 일도 있겠죠. 삶이 끝나면 지나온 시간을 다시 읽을 수 있습니다.</p>
+      <p class="rules-small">**역사와 이야기의 구분** — 역사적 사건의 연도와 내용은 공개 자료를 참고했습니다. 등장인물의 가족·교육·직업·건강·선택, 과거 출생·사망 확률과 경제 금액은 게임을 위해 구성한 이야기와 추정치입니다. 실제 개인이나 그 시대 사람들의 삶을 대표하지 않습니다.</p>
       <button type="button" id="rulesOkay" class="primary">알겠어요</button>
     </div>
   </div>
