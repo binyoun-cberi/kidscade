@@ -341,7 +341,7 @@
       life.focus=FOCUS.includes(data.focus)?data.focus:'balance';
       life.reflections=Array.isArray(data.reflections)?data.reflections.filter(e=>REFLECTION_AGES.includes(e.age)).slice(-5).map(e=>({age:e.age,text:String(e.text||'').slice(0,140)})):[];
       const validLog=data.log.filter(e=>Number.isInteger(e.age)&&typeof e.text==='string');
-      life.log=validLog.filter((e,index)=>index>=Math.max(0,validLog.length-100)||e.kind==='decision'||e.kind==='decision-effect')
+      life.log=validLog.filter((e,index)=>index>=Math.max(0,validLog.length-760)||e.kind==='decision'||e.kind==='decision-effect')
         .map(e=>({age:e.age,year:birthYear+e.age,text:e.text.slice(0,160),kind:String(e.kind||'life')}));
       life.seen=data.seen.filter(i=>Number.isInteger(i)&&i>=0&&i<EVENTS.length);
       life.pending=data.alive && (CHOICES.some(c=>c.age===data.pending) || (typeof data.pending==='string' && /^reflection:(5|15|30|50|70)$/.test(data.pending))) ? data.pending : null;
