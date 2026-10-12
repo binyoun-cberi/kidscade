@@ -1,0 +1,96 @@
+/* v7.1 — keep the finished meal in the foreground of the immersive diner.
+   The cooking phase deliberately has no edible plate; the eating phase must
+   always reserve an unobstructed, tappable area above the action buttons. */
+.game-layout.eating .plate-wrap{
+ display:block!important;
+ position:absolute!important;
+ z-index:22!important;
+ left:50%!important;
+ right:auto!important;
+ bottom:calc(105px + env(safe-area-inset-bottom, 0px))!important;
+ transform:translateX(-50%)!important;
+ width:min(650px,82vw,68dvh)!important;
+ min-width:0!important;
+ max-width:calc(100vw - 20px)!important;
+ height:auto!important;
+ min-height:0!important;
+ margin:0!important;
+ overflow:visible!important;
+ opacity:1!important;
+ visibility:visible!important;
+ pointer-events:auto!important;
+ background:radial-gradient(ellipse at 50% 55%,#100c0799 15%,#100c0755 49%,transparent 75%)!important;
+ filter:none!important;
+}
+.game-layout.eating #plate{
+ display:block!important;
+ position:relative;
+ z-index:1;
+ width:100%!important;
+ height:auto!important;
+ max-width:none!important;
+ max-height:none!important;
+ aspect-ratio:10 / 7!important;
+ opacity:1!important;
+ visibility:visible!important;
+ touch-action:manipulation;
+ cursor:crosshair;
+ filter:drop-shadow(0 16px 19px #050402bb);
+}
+.game-layout.eating .plate-eyebrow,
+.game-layout.eating .plate-instruction{z-index:3}
+.game-layout.eating .action-bar{z-index:30!important}
+.game-layout.eating .dialogue-right,
+.game-layout.eating .feedback{z-index:12}
+/* Portrait phones: fit a readable plate between the chef's text and the
+   two-row action bar; do not scale it down to the previous 43vh cap. */
+@media(max-width:930px) and (orientation:portrait){
+ .game-layout.eating .plate-wrap{
+  width:min(96vw,52dvh)!important;
+  bottom:calc(105px + env(safe-area-inset-bottom, 0px))!important;
+ }
+ .game-layout.eating .plate-eyebrow{font-size:10px}
+}
+@media(max-width:930px) and (orientation:portrait) and (max-height:590px){
+ .game-layout.eating .plate-wrap{
+  width:min(94vw,48dvh)!important;
+  bottom:calc(97px + env(safe-area-inset-bottom, 0px))!important;
+ }
+ .game-layout.eating .dialogue-right{top:180px!important}
+ .game-layout.eating .feedback{top:211px!important;padding:4px 8px}
+}
+/* Landscape phones and short tablets need two in-scene columns rather than
+   a miniature plate squeezed beneath the HUD. */
+@media(orientation:landscape) and (max-height:530px) and (max-width:1050px){
+ .game-layout.eating .status{top:55px;left:10px;max-width:45vw}
+ .game-layout.eating .course-timeline{
+  top:110px;left:10px;right:auto;width:min(250px,43vw);
+ }
+ .game-layout.eating .course-line{
+  top:143px!important;left:10px;max-width:42vw;
+ }
+ .game-layout.eating .plate-wrap{
+  left:73%!important;
+  bottom:calc(100px + env(safe-area-inset-bottom, 0px))!important;
+  width:min(43vw,72dvh)!important;
+  max-width:53vw!important;
+ }
+ .game-layout.eating .dialogue-right{
+  top:210px!important;bottom:auto!important;left:10px!important;
+  transform:none!important;max-width:42vw!important;
+ }
+ .game-layout.eating .feedback{
+  top:267px!important;left:10px!important;
+  transform:none!important;max-width:42vw!important;
+ }
+ .game-layout.eating .footnote{display:none!important}
+}
+/* Keep the plate within view on very short landscape devices. */
+@media(orientation:landscape) and (max-height:380px) and (max-width:1050px){
+ .game-layout.eating .plate-wrap{
+  width:min(42vw,62dvh)!important;
+  bottom:calc(95px + env(safe-area-inset-bottom, 0px))!important;
+ }
+ .game-layout.eating .dialogue-right{top:181px!important}
+ .game-layout.eating .feedback{top:233px!important}
+}
