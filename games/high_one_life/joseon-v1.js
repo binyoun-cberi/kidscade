@@ -71,6 +71,7 @@ function seedState(life){
    parentsSupported:false,retired:false,finalEra:null};
 }
 function sync(life,s){
+ if(life.year>=1900)return; // The later-life handoff must not undo modern career and family changes.
  life.familyLevel=s.family+' · '+(life.year>=1894?'옛 '+s.birthStatus+' 출신':s.status+' 집안');
  life.career=s.occupation;
  life.profile.city=s.region;
@@ -98,8 +99,10 @@ function ensure(life){
  if(!s){s=seedState(life);life.joseon=s;
   const names=NAMES[life.gender]||NAMES.남자;
   life.profile.name=names[Math.floor(roll(life.seed,1413)*names.length)];
-  life.logEvent(s.region+'의 '+s.status+' 집안에서 태어났다. '+s.landmark+'이 가까운 고을이다.','joseon-birth');
-  life.logEvent('신분과 집안 사정이 앞으로 만날 기회에 영향을 미친다. 하지만 삶의 모든 일이 정해진 것은 아니다.','joseon-life');
+  if(life.age===0&&!life.log.some(e=>e.kind==='joseon-birth')){
+   life.logEvent(s.region+'의 '+s.status+' 집안에서 태어났다. '+s.landmark+'이 가까운 고을이다.','joseon-birth');
+   life.logEvent('신분과 집안 사정이 앞으로 만날 기회에 영향을 미친다. 하지만 삶의 모든 일이 정해진 것은 아니다.','joseon-life');
+  }
  }
  sync(life,s);
  return s;
@@ -193,12 +196,17 @@ function yearly(life){
  if(life.age<16)life.change({health:life.rand()<.18?-1:0});
  if(life.age>44)life.change({health:life.age>68?-2:life.age%2===0?-1:0});
  if(life.age===12)note(life,s,'집안 형편과 신분에 따라 글공부·농사·기술을 배울 기회가 달랐다.','joseon-life');
+ if(life.year===1446&&s.literacy<2)note(life,s,'새 글자가 널리 알려지기까지는 시간이 필요했다. 배울 기회는 여전히 집안마다 달랐다.','joseon-life');
  if(s.studyYears&&life.age>=9&&life.age<=24&&life.year>s.educationPausedUntil){s.studyYears++;if(life.age%4===0)s.literacy++;}
  let income=0,expense=0;
  if(life.age>=12){
   const production=s.retired?5:s.office?26:s.occupation.includes('장사')?19:s.occupation.includes('글')?13:s.occupation.includes('돌봄')?9:12+s.land*3;
   const hardship=life.year<=s.hardshipUntil?.55:1;
-  income=Math.round(production*hardship*(.75+life.rand()*.55));
+  // The century shifts risk and opportunities in gameplay, not in historical wage units.
+  const periodFactor=life.year<1500?.94:life.year<1600?.9:life.year<1700?.78:
+    life.year<1800?1.06:life.year<1876?.89:life.year<1894?1.04:1;
+  const openPortBonus=life.year>=1876&&s.occupation.includes('장사')?3:0;
+  income=Math.round((production+openPortBonus)*periodFactor*hardship*(.75+life.rand()*.55));
   expense=9+Math.round(s.household*2)+(s.married?2:0)+(s.children*2)+Math.max(0,s.land);
   if(life.year<1894&&s.status==='상민')expense+=3;
   if(life.year===1750&&life.gender==='남자'&&s.status==='상민')expense=Math.max(0,expense-2);
