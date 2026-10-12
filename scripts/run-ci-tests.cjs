@@ -104,6 +104,7 @@ const TEST_FILES = [
   "tests/folklore-night-guard-persistence.test.cjs",
   "tests/haunted-school-exorcist.test.cjs",
   "tests/midnight-diner.test.cjs",
+  "tests/midnight-diner-browser-audit.test.cjs",
   "tests/quarantine-field-topdown.test.cjs",
   "tests/drone-pilot-v3.test.cjs",
   "tests/byeokrando-tutorial.test.cjs",
