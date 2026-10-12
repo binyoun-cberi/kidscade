@@ -52,6 +52,8 @@ function repaint(){
  P.draw($('plate'),dish,chosen);
  reportMood(false);
 }
+// Repaint when any real food GLB finishes rendering into the foreground plate.
+window.addEventListener('midnight-diner:food-assets',()=>{if(game)repaint();});
 function intro(){ $('veil').classList.remove('hidden');$('introModal').classList.remove('hidden');$('resultModal').classList.add('hidden');}
 function start(){
  stopCooking();game=R.begin();chosen=null;started=true;reviewPending=false;runReported=false;
