@@ -25,7 +25,10 @@ test('a first-time player can finish every action using real recipe costs',()=>{
  assert.ok(bag.planks>=camp.SHELTER.length);
  bag.planks-=camp.SHELTER.length;stats.placed.planks=camp.SHELTER.length;
  c.shelterComplete=true;assert.ok(camp.satisfied('shelter',c));
- stats.shelterBuilt=true;assert.ok(camp.satisfied('inside',c));
+ stats.shelterBuilt=true;
+ // Completing the roof is not the same as walking inside to the yellow ring.
+ assert.equal(camp.satisfied('inside',c),false);
+ c.insideShelter=true;assert.ok(camp.satisfied('inside',c));
  Object.assign(baseline,camp.snapshot(stats));
  for(const id of ['ownWood','ownPlanks','ownPlace'])assert.equal(camp.satisfied(id,c),false,id);
  harvest('log',1);assert.ok(camp.satisfied('ownWood',c));craft('planks');assert.ok(camp.satisfied('ownPlanks',c));
