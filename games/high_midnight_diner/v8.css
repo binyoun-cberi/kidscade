@@ -1,0 +1,32 @@
+/* Midnight Diner v8: foreground plated food + readable phase cues. */
+.game-layout.eating .plate-wrap{z-index:22!important}
+.game-layout.eating #plate{
+ image-rendering:auto;
+ -webkit-tap-highlight-color:transparent;
+}
+.game-layout.eating .plate-eyebrow{
+ background:linear-gradient(90deg,#14110ad9,#1b150b8d);
+ border-radius:3px;padding:5px 9px;top:-3px!important;
+ text-shadow:0 1px 3px #000;
+}
+.game-layout.eating .plate-instruction{
+ background:#211b15eb;border-color:#bfa476;
+ box-shadow:0 3px 13px #0009;
+}
+.kitchen.gaze-feint .scene-legend{
+ border-color:#bd9662;
+ color:#fbe7bf;
+ box-shadow:0 0 14px #a57c3544;
+}
+.kitchen.gaze-feint .fallback-chef .face{
+ transform:translateX(2px) rotate(6deg);
+ transition:transform .20s;
+}
+.gaze-indicator.gaze-feint{
+ background:#5f4830;border-color:#d3a769;color:#fce6c6;
+}
+.cook-flash.gaze-feint{background:#413524;border-color:#d3a769}
+@media(max-width:600px){
+ .game-layout.eating .plate-eyebrow{font-size:10px;padding:4px 7px}
+ .game-layout.eating .plate-instruction{font-size:11px}
+}
