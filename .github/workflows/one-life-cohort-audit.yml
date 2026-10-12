@@ -1,0 +1,27 @@
+name: One Life birth-year diversity audit
+
+on:
+  push:
+    branches:
+      - test/one-life-uncommon-birth-year-audit-20261012
+    paths:
+      - scripts/one-life-cohort-audit.cjs
+      - .github/workflows/one-life-cohort-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate-cohorts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        run: node --check scripts/one-life-cohort-audit.cjs
+      - name: Run 2000 multi-cohort whole lives and print comparison
+        run: node scripts/one-life-cohort-audit.cjs 250
