@@ -166,7 +166,7 @@ test('850 varied-era simulated lives maintain year, bounded logs, unique decisio
   let n=0;
   while(l.alive&&n++<400){
    if(l.pending){
-    resolve(l,()=>i%3);
+    resolve(l,choice=>i%choice.options.length);
     choices++;continue;
    }
    l.tick();History.contextualize(l);
