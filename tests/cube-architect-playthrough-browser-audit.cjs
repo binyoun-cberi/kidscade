@@ -168,7 +168,8 @@ async function run(){
   assert.ok(made.bag.planks>=4,'Craft action did not add planks');
   await screenshot('07-desktop-made-planks');
   await click('#inventoryClose');await click('#actionSave');await sleep(250);
-  await send('Page.reload',{ignoreCache:true});await waitFor('window.CubeArchitectReady===true',20000);
+  await send('Page.reload',{ignoreCache:true});
+  await waitFor('window.CubeArchitectReady===true && window.__cubePlaytest?.state()?.mode==="home" && document.querySelector("[data-mode=free]")',25000);
   await click('[data-mode="free"]');await waitFor('window.__cubePlaytest?.state()?.workbench?.length===3',20000);
   const reloaded=await state();record('reload',{workbench:reloaded.workbench,bag:reloaded.bag,edits:reloaded.saveEdits});
   assert.deepEqual(reloaded.workbench,start.workbench,'Workshop moved on reload');
@@ -178,7 +179,7 @@ async function run(){
   await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:5});
   await viewport(844,390,2,true);
   await send('Page.navigate',{url:url+'?tablet=1'});
-  await waitFor('window.CubeArchitectReady===true',20000);
+  await waitFor('window.CubeArchitectReady===true && location.search==="?tablet=1" && window.__cubePlaytest?.state()?.mode==="home"',25000);
   await click('[data-mode="free"]');await waitFor('window.__cubePlaytest?.state()?.workbench?.length===3',20000);
   await sleep(450);await screenshot('08-tablet-survival');
   const tablet=await evaluate('({mobile:!document.querySelector("#mobileControls").classList.contains("hidden"),inventory:!!document.querySelector("#mobileInventory"),direction:!document.querySelector("#magicWorkbenchGuide").classList.contains("hidden"),viewport:innerWidth,scroll:document.documentElement.scrollWidth})');
