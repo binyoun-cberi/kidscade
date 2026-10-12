@@ -12,6 +12,7 @@
   const World6 = window.OneLifeWorld6;
   const World7 = window.OneLifeWorld7;
   const World8 = window.OneLifeWorld8;
+  const World9 = window.OneLifeWorld9;
   const History = window.OneLifeHistory;
   const Official=window.OneLifeOfficialStats||{countries:{}};
   const metric=(key)=>life?.birthYear===2026?Official.countries?.[life?.country?.[0]]?.[key]||null:null;
@@ -21,7 +22,7 @@
       ? label+' '+Number(row.value).toLocaleString('ko-KR',{maximumFractionDigits:1})+unit+' ('+row.year+'년)'
       : label+' 자료 없음';
   };
-  if (!World2 || !Pixel || !World3 || !World4 || !World5 || !World6 || !World7 || !World8 || !History) throw new Error('One Life world assets missing');
+  if (!World2 || !Pixel || !World3 || !World4 || !World5 || !World6 || !World7 || !World8 || !World9 || !History) throw new Error('One Life world assets missing');
   const SAVE_KEY = 'kidscade_one_life_save_v1';
   const RECORD_KEY = 'kidscade_one_life_history_v1';
   // About 20–30 seconds of automatic years, excluding choices.
@@ -32,7 +33,7 @@
   let lastTick = performance.now(), elapsed = 0, roulette = null, screenTime = 0;
   let completed = false, ruleWasRunning = false, replayBasis = null;
   let peerCache = null, lastPeerRenderedAge = -1, lastMapRenderedAge = -1;
-  let storyTab='', peerAgeChoice=0;
+  let storyTab='', peerAgeChoice=0, timelineVisible=22;
   const sdk = window.KidscadeGame || null;
   const show = name => { stage = name; for (const id of views) $(id).classList.toggle('hidden',id!==name); window.scrollTo?.(0,0); };
   const safeGet = key => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) { return null; } };
@@ -58,7 +59,7 @@
     const countryName=$('birthLocation').value==='korea'?'대한민국':undefined;
     life = new Sim.Life(undefined,{birthYear,countryName});
     World8.ensure(life);World8.moment(life);History.contextualize(life);
-    storyTab='';peerAgeChoice=0;
+    storyTab='';peerAgeChoice=0;timelineVisible=22;
     replayBasis=null;
     peerCache = null;lastPeerRenderedAge = -1;lastMapRenderedAge = -1;
     $('birthCertificate').classList.add('hidden');
@@ -114,6 +115,20 @@
     const money=life.money;
     const personal=World7.ensure(life);
     const hometown=World8.ensure(life);
+    const memories=World9.ensure(life);
+    const people=$('v9PeopleList');people.replaceChildren();
+    const ordered=[...memories.people].sort((a,b)=>Number(b.alive)-Number(a.alive));
+    for(const member of ordered.slice(0,7)){
+      const li=document.createElement('li');
+      const age=Math.max(0,life.year-member.birthYear);
+      li.textContent=member.name+' · '+member.role+' · '+(member.alive?age+'세':'작고 ('+member.deadYear+'년)');
+      people.append(li);
+    }
+    $('v9PeopleCount').textContent=memories.people.filter(x=>x.alive).length+'명';
+    $('v9Hobby').textContent=memories.hobby?'오래 이어온 취미 · '+memories.hobby+' ('+memories.hobbySince+'세부터)':'아직 정해진 취미가 없습니다.';
+    $('v9Loan').textContent=memories.finance.debt
+      ?'생활 대출 잔액 '+formatCredits(memories.finance.debt)+' · 남은 상환 '+memories.finance.yearsLeft+'년'
+      :memories.finance.paidOff?'생활 대출 모두 상환':'생활 대출 없음';
     $('nameHeadline').textContent=p.name+' · '+p.city;
     $('profileName').textContent=p.name;
     $('profileMeta').textContent=life.gender+' · '+p.city+' · '+life.age+'세';
@@ -254,7 +269,9 @@
     const timeline = $('timeline');
     const endWasNear = timeline.scrollTop+timeline.clientHeight>=timeline.scrollHeight-38;
     timeline.replaceChildren();
-    const recent = life.log.slice(-22);
+    const recent = life.log.slice(-timelineVisible);
+    $('v9ChronicleCount').textContent='누적 기록 '+life.log.length+'개';
+    $('v9TimelineMore').hidden=timelineVisible>=life.log.length;
     for (const entry of recent) {
       const li = document.createElement('li');
       if (entry.kind === 'decision') li.className = 'is-decision';
@@ -546,7 +563,8 @@
     History.contextualize(life);
     if(!life.alive) return finish();
     render();
-    if(life.pending || life.age%5===0) save();
+    // Each year may have several linked events: save complete year boundaries.
+    save();
   }
   function loop() {
     const now=performance.now();
@@ -578,6 +596,7 @@
     $('birthLocation').value=btn.dataset.eraPlace||'random';
     document.querySelectorAll('[data-era-year]').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
   }));
+  $('v9TimelineMore').addEventListener('click',()=>{timelineVisible=Math.min(760,timelineVisible+60);paintTimeline();});
   $('drawBtn').addEventListener('click',draw);
   $('lifeStartBtn').addEventListener('click',()=>startLife());
   $('againBtn').addEventListener('click',()=>{replayBasis=null;life=null;show('intro');refreshResume();draw();});
@@ -587,7 +606,7 @@
     replayBasis=snapshot;
     life=new Sim.Life(snapshot.seed,{birthYear:snapshot.birthYear,countryName:snapshot.country});
     World8.ensure(life);World8.moment(life);History.contextualize(life);
-    storyTab='';peerAgeChoice=0;
+    storyTab='';peerAgeChoice=0;timelineVisible=22;
     peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
     $('birthCertificate').classList.add('hidden');
     $('birthFlag').textContent=life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1];
@@ -601,7 +620,7 @@
   $('resumeBtn').addEventListener('click',()=>{
     const restored=currentSave();
     if(!restored || !restored.alive){refreshResume();return;}
-    life=restored;World8.ensure(life);replayBasis=safeGet(SAVE_KEY)?.replayBasis||null;completed=false;peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;startLife(true);
+    life=restored;timelineVisible=22;World9.ensure(life);World8.ensure(life);replayBasis=safeGet(SAVE_KEY)?.replayBasis||null;completed=false;peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;startLife(true);
   });
   $('pauseBtn').addEventListener('click',togglePause);
   document.querySelectorAll('[data-story-tab]').forEach(button=>button.addEventListener('click',()=>{
