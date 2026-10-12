@@ -14,7 +14,7 @@ function seedState(){return {version:10,processedYear:-1,factsSeen:[],storiesSee
   active:null,tags:[],decisions:[],followups:[],moves:0,schoolInterrupted:false,hardship:0,
   familyProtected:false,historyImpacts:0,source:'factual-calendar-plus-fictional-effects'};}
 function processYear(life,s){
- if(!life?.alive||life.country?.[0]!=='대한민국')return false;
+ if(!life?.alive||life.country?.[0]!=='대한민국'||life.birthYear<1900)return false;
  if(s.processedYear===life.year)return false;
  s.processedYear=life.year;
  const facts=Data.forYear(life.year);
