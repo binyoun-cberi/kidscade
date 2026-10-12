@@ -3612,7 +3612,9 @@ function ensureMagicWorkbench(){
   // Preserve player constructions on existing saves. If the starting region is occupied,
   // point home to a regular placed bench rather than erasing anyone's blocks.
   for(const [key,data] of worldData)if(data?.type==='workbench'){
-    magicWorkbenchPos=parseWorldKey(key);return magicWorkbenchPos
+    magicWorkbenchPos=parseWorldKey(key);
+    const promoted={...data,magicWorkbench:true};setRawBlock(...magicWorkbenchPos,promoted);
+    markEdit(...magicWorkbenchPos,promoted);markFreeWorldDirty(400);return magicWorkbenchPos;
   }
   magicWorkbenchPos=null;return null;
 }
@@ -5725,7 +5727,7 @@ function survivalReturnPoint(){
   if(Array.isArray(p)&&p.length===3&&p.every(Number.isFinite)&&Array.isArray(b)&&b.length===3){
     const bed=getBlock(...b);if(bed?.type==='bed')return p;survivalHome=null;
   }
-  return [0,safeReturnEyeY(),5];
+  return magicWorkbenchReturnPoint()||[0,safeReturnEyeY(),5];
 }
 function returnAfterCreatureDefeat(){
   const p=survivalReturnPoint();camera.position.set(p[0],p[1],p[2]);freePhysicsY=camera.position.y;
@@ -5734,7 +5736,7 @@ function returnAfterCreatureDefeat(){
   const restoreView=freeViewBeforeDefeat;freeViewBeforeDefeat=null;
   if(restoreView&&restoreView!==freeViewMode)setFreeView(restoreView,false);
   streamWorldMeshes(true);
-  toast(survivalHome?'기절해서 내 침대로 돌아왔어요. 가방의 재료는 그대로예요.':'기절해서 시작 지점으로 돌아왔어요. 가방의 재료는 그대로예요.');
+  toast(survivalHome?'기절해서 내 침대로 돌아왔어요. 가방의 재료는 그대로예요.':'기절해서 마법의 직육면체 근처로 돌아왔어요. 가방의 재료는 그대로예요.');
   updateCreatureHealthUi();updateBreathUi(false);saveFreeWorld();
 }
 function damageByCreature(root,t){
@@ -6261,7 +6263,7 @@ function renderSurvivalSafety(shelter){
   $('exposureBar').classList.toggle('hidden',survivalExposure<1);
   $('exposureFill').style.width=Math.round(survivalExposure)+'%';
   $('exposureBar').setAttribute('aria-valuenow',String(Math.round(survivalExposure)));
-  $('survivalReturn').classList.toggle('hidden',survivalExposure<85||
+  $('survivalReturn').classList.toggle('hidden',survivalExposure<85||!magicWorkbenchPos||
     performance.now()-magicWorkbenchReturnAt<45000);
 }
 function emergencyReturn(){
