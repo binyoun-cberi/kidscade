@@ -238,7 +238,7 @@ test('v8 all five edible illustrations render without hiding the forbidden ingre
  const plate=win.MidnightDinerPlate;
  assert.ok(plate?.draw&&plate?.hit&&plate?.hitAt);
  assert.doesNotMatch(plateSource,/z\.dangerous|zone\.dangerous/,'finished food must not reveal danger simply through color');
- const methods=['clearRect','beginPath','ellipse','fill','stroke','moveTo','lineTo','arc','bezierCurveTo','quadraticCurveTo','fillText','fillRect','save','restore','translate','scale','rotate','clip'];
+ const methods=['clearRect','beginPath','closePath','ellipse','fill','stroke','moveTo','lineTo','arc','bezierCurveTo','quadraticCurveTo','fillText','fillRect','save','restore','translate','scale','rotate','clip'];
  const ctx={createRadialGradient(){return {addColorStop(){}}}};
  methods.forEach(m=>ctx[m]=()=>{});
  const canvas={getContext:()=>ctx,getBoundingClientRect:()=>({left:0,top:0,width:600,height:420})};
