@@ -283,6 +283,13 @@
           if(typeof data.world[k]==='string')life.world[k]=data.world[k].slice(0,100);
         for(const k of ['educationYears','eventCount','turningPoints'])
           if(Number.isFinite(data.world[k]))life.world[k]=clamp(data.world[k],0,110);
+        // Relocation changes current geography, not the personal birth-time
+        // schooling and mortality parameters. Rehydrate saved baselines rather
+        // than silently deriving a new childhood after restoring the same life.
+        for(const k of ['schoolChance','secondaryChance','healthResource'])
+          if(Number.isFinite(data.world[k]))life.world[k]=clamp(data.world[k],0,1);
+        for(const k of ['lifeBaseline','mortalityTarget'])
+          if(Number.isFinite(data.world[k]))life.world[k]=clamp(data.world[k],30,110);
         life.world.startedWorking=data.world.startedWorking===true;
       }
       return life;
