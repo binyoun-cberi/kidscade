@@ -95,32 +95,32 @@ function renderMemory(){
 function updateGaze(){
  if(!game||game.phase!=='cooking')return;
  const ev=R.cookingEvent(game);if(!ev)return;
- const labels={SAFE:'등을 돌리고 있다 · 지금 관찰 가능',WARN:'어깨가 움직인다 · 눈을 떼!',LOOK:'요리사가 돌아봤다 · 보지 마!'};
- const names={SAFE:'안전',WARN:'경고',LOOK:'응시'};
+ const labels={SAFE:'등을 돌리고 있다 · 지금 관찰 가능',FEINT:'어깨가 움찔했다 · 잠깐 멈추자',WARN:'어깨가 움직인다 · 눈을 떼!',LOOK:'요리사가 돌아봤다 · 보지 마!'};
+ const names={SAFE:'안전',FEINT:'움찔',WARN:'경고',LOOK:'응시'};
  const phase=ev.phase;
  const nextCost=R.peekCost(game.dish.peekCount);
  $('peekBudget').textContent=nextCost?'이미 '+game.dish.peekCount+'회 확인 · 다음 관찰 의심 +'+nextCost:'이미 '+game.dish.peekCount+'회 확인 · 다음 관찰 부담 없음';
  $('peekBudget').classList.toggle('costly',nextCost>0);
- $('peekCaption').textContent=phase==='SAFE'?'꾹 눌러 훔쳐보기':phase==='WARN'?'지금 손 떼기!':'요리사가 보고 있다!';
+ $('peekCaption').textContent=phase==='SAFE'?'꾹 눌러 훔쳐보기':phase==='FEINT'?'움찔했다! 잠깐 기다리기':phase==='WARN'?'지금 손 떼기!':'요리사가 보고 있다!';
  const clock=$('cookClock');
  clock.textContent=names[phase];
  clock.className='gaze-indicator gaze-'+phase.toLowerCase();
  const stage=$('cookFlash'),peek=game.dish.currentPeek;
  stage.classList.toggle('revealed',!!peek&&peekHeld&&!peek.concealed&&phase==='SAFE');
- stage.classList.toggle('gaze-warn',phase==='WARN');
+ stage.classList.toggle('gaze-warn',phase==='WARN'||phase==='FEINT');
  stage.classList.toggle('gaze-look',phase==='LOOK');
  stage.textContent=phase==='SAFE'&&peekHeld&&peek?
    peek.concealed?'손에 가려 재료를 보지 못했다.':peek.zone+'번: '+peek.ingredient:
    labels[phase];
- $('peekBtn').disabled=phase==='LOOK';
- $('peekBtn').classList.toggle('warning',phase==='WARN');
+ $('peekBtn').disabled=phase==='LOOK'||phase==='FEINT';
+ $('peekBtn').classList.toggle('warning',phase==='WARN'||phase==='FEINT');
  $('peekBtn').classList.toggle('looking',peekHeld);
  const timeFraction=(ev.index+ev.elapsedMs/ev.totalMs)/ev.total;
  $('cookBar').style.width=(100*timeFraction).toFixed(1)+'%';
  if(phase!==lastGazePhase){
   lastGazePhase=phase;
   window.dispatchEvent(new CustomEvent('midnight-diner:gaze',{detail:{phase,course:game.course,zone:ev.zone}}));
-  if(phase==='WARN')sound('warn');
+  if(phase==='WARN'||phase==='FEINT')sound('warn');
   dispatchCookVisual();
  }
 }

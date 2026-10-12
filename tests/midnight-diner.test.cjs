@@ -180,7 +180,7 @@ test('v7 renders stage and interactions inside one immersive viewport',()=>{
  const html=read('games/high_midnight_diner/index.html');
  const css=read('games/high_midnight_diner/immersive.css');
  assert.match(html,/immersive\.css/);
- assert.match(html,/VERSION 7/);
+ assert.match(html,/VERSION 8/);
  assert.match(css,/#game\{position:relative;[^}]*height:100dvh/);
  assert.match(css,/\.dining,\.game-layout\.cooking \.dining,\.game-layout\.eating \.dining\{/);
  assert.match(css,/\.kitchen,\.game-layout\.cooking \.kitchen,\.game-layout\.eating \.kitchen\{/);
@@ -229,4 +229,70 @@ test('v7.1 finished food plate stays above the scene and action bar on all scree
  const g=R.begin(42);
  progressCooking(g);
  assert.equal(g.phase,'playing','finished cooking should activate the visible eating stage');
+});
+
+test('v8 all five edible illustrations render without hiding the forbidden ingredient answer',()=>{
+ const vm=require('node:vm'),plateSource=read('games/high_midnight_diner/plate.js');
+ const win={},sandbox={window:win};
+ vm.runInNewContext(plateSource,sandbox,{filename:'plate.js'});
+ const plate=win.MidnightDinerPlate;
+ assert.ok(plate?.draw&&plate?.hit&&plate?.hitAt);
+ assert.doesNotMatch(plateSource,/z\.dangerous|zone\.dangerous/,'finished food must not reveal danger simply through color');
+ const methods=['clearRect','beginPath','closePath','ellipse','fill','stroke','moveTo','lineTo','arc','bezierCurveTo','quadraticCurveTo','fillText','fillRect','save','restore','translate','scale','rotate','clip'];
+ const ctx={createRadialGradient(){return {addColorStop(){}}}};
+ methods.forEach(m=>ctx[m]=()=>{});
+ const canvas={getContext:()=>ctx,getBoundingClientRect:()=>({left:0,top:0,width:600,height:420})};
+ for(let course=0;course<R.FOODS.length;course++){
+  const dish=R.dishFor(course,R.rng(12345+course));
+  assert.doesNotThrow(()=>plate.draw(canvas,dish,null),dish.spec.id);
+  assert.doesNotThrow(()=>plate.draw(canvas,dish,0),dish.spec.id+' selected');
+  for(const z of dish.zones){
+   const p=dish.spec.id==='pancake'
+    ?{x:300+Math.cos(-Math.PI/2+(z.id+.5)*Math.PI/4)*135,y:210+Math.sin(-Math.PI/2+(z.id+.5)*Math.PI/4)*135*.68}
+    :plate.PLACES[dish.spec.id](z.id);
+   assert.equal(plate.hitAt(p.x,p.y,dish),z.id,dish.spec.id+' center '+z.id);
+   if(dish.spec.id!=='pancake'){
+    const numberPosition={soup:[25,23],skewer:[0,27],dumpling:[26,22],cake:[24,23]}[dish.spec.id];
+    assert.equal(plate.hitAt(p.x+numberPosition[0],p.y+numberPosition[1],dish),z.id,dish.spec.id+' badge '+z.id);
+   }
+  }
+ }
+});
+test('v8 gaze patterns vary by action with fair fake turns and warning windows',()=>{
+ let feints=0;let minSafe=Infinity,maxSafe=0;
+ const rhythms=new Set();
+ for(let seed=1;seed<=100;seed++){
+  const g=R.begin(seed);
+  for(let step=0;step<g.dish.spec.count;step++){
+   const t=R.timingFor(g);
+   assert.ok(t.warnEnd-t.safeEnd>=500);
+   assert.ok(t.totalMs-t.warnEnd>=390);
+   minSafe=Math.min(minSafe,t.safeEnd);maxSafe=Math.max(maxSafe,t.safeEnd);
+   rhythms.add([t.safeEnd,t.warnEnd-t.safeEnd,t.totalMs-t.warnEnd].join(','));
+   if(t.feintStart!==null){
+    feints++;
+    assert.ok(t.feintStart>t.revealAt+t.holdNeeded,'first safe look remains fair');
+    g.dish.elapsedMs=t.feintStart+40;
+    assert.equal(R.gazePhase(g),'FEINT');
+    const before=g.suspicion,ev=R.tickCooking(g,50,true);
+    assert.equal(ev.caught,false);assert.equal(ev.warned,false);
+    assert.equal(g.suspicion,before,'harmless fake turn must not cause punishment');
+    g.dish.elapsedMs=t.feintEnd;
+    assert.equal(R.gazePhase(g),'SAFE');
+   }
+   R.observeCooking(g,false);
+  }
+ }
+ assert.ok(maxSafe-minSafe>=400,'safe time should not sound like fixed beats');
+ assert.ok(rhythms.size>100,'chef must have diverse timing');
+ assert.ok(feints>=60,'fake turns should actually occur');
+ const html=read('games/high_midnight_diner/index.html');
+ const js=read('games/high_midnight_diner/game.js');
+ const kitchen=read('games/high_midnight_diner/kitchen.js');
+ assert.match(html,/v8\.css/);
+ assert.doesNotMatch(html,/plate-extra\.js/);
+ assert.match(js,/FEINT/);
+ assert.match(kitchen,/gazePhase==='FEINT'/);
+ assert.match(kitchen,/FOOD_ITEMS\+'skewer\.glb'/);
+ assert.match(kitchen,/FOOD_ITEMS\+'cake-slicer\.glb'/);
 });

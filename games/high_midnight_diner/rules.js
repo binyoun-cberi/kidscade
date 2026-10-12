@@ -101,20 +101,30 @@ function peekCost(previouslySeen){
  if(previouslySeen===6)return 9;
  return 11;
 }
-// v5: gaze timing is part of the game rules, not CSS decoration.
-// Timings vary by course and by portion but WARN always lasts >= 460ms.
+// v8: independent, seeded tempos per ingredient. No regular three-beat loop:
+// some stares are short, some linger, and a few are harmless fake-outs.
+// All real looks have an observable WARN interval >= 500 ms.
 function timingFor(state){
- const d=state.dish,id=d.cookOrder[d.cookIndex],z=d.zones[id];
- const safeEnd=Math.max(1120,1620-state.course*95+Math.round((z.shade-.5)*210));
- const warnLength=Math.max(460,630-state.course*35);
- const lookLength=350;
+ const d=state.dish,step=d.cookIndex;
+ const a=(state.seed ^ Math.imul(state.course+1,0x9e3779b1) ^ Math.imul(step+1,0x85ebca6b))>>>0;
+ let h=a^a>>>16;h=Math.imul(h,0x7feb352d);h^=h>>>15;h=Math.imul(h,0x846ca68b);h=(h^h>>>16)>>>0;
+ const safeEnd=Math.max(1220,1300+(h%1050)-state.course*28);
+ const warnLength=510+((h>>>10)%390);
+ const lookLength=390+((h>>>21)%470);
+ const fake=(h%5===0||h%7===0);
+ const feintStart=fake?Math.min(safeEnd-430,800+((h>>>13)%130)):null;
+ const feintEnd=fake?Math.min(safeEnd-270,feintStart+190+((h>>>17)%110)):null;
  return {safeEnd,warnEnd:safeEnd+warnLength,totalMs:safeEnd+warnLength+lookLength,
-  revealAt:230+z.garnish*50,holdNeeded:310};
+  revealAt:230+d.zones[d.cookOrder[step]].garnish*50,holdNeeded:310,
+  feintStart,feintEnd};
 }
 function gazePhase(state){
  if(state.phase!=='cooking')return 'DONE';
  const t=timingFor(state),ms=state.dish.elapsedMs;
- return ms<t.safeEnd?'SAFE':ms<t.warnEnd?'WARN':'LOOK';
+ if(ms<t.safeEnd){
+  return t.feintStart!==null&&ms>=t.feintStart&&ms<t.feintEnd?'FEINT':'SAFE';
+ }
+ return ms<t.warnEnd?'WARN':'LOOK';
 }
 function cookingEvent(state){
  if(state.phase!=='cooking')return null;
@@ -136,7 +146,10 @@ function tickCooking(state,deltaMs,looking){
  if(looking){
    if(before<timing.safeEnd){
     const eligible=Math.max(0,Math.min(after,timing.safeEnd)-Math.max(before,timing.revealAt));
-    d.holdMs+=eligible;
+    // The mock turn is visible and suspends useful peeking, but never punishes.
+    const fakeOverlap=timing.feintStart===null?0:Math.max(0,
+      Math.min(after,timing.feintEnd)-Math.max(before,timing.feintStart,timing.revealAt));
+    d.holdMs+=Math.max(0,eligible-fakeOverlap);
     if(d.holdMs>=timing.holdNeeded&&!d.currentPeek){
      concealed=z.shade<.18;
      const ingredient=concealed?'가려진 재료':z.dangerous?d.spec.word:'일반 양념';
