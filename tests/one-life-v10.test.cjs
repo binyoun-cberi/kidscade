@@ -57,7 +57,7 @@ test('v10 historical source catalogue is unique, dated, and separate from fictio
  assert.equal(Data.legalFor(2002,'smartphone'),false);
  assert.equal(Data.legalFor(2020,'mortgage'),true);
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
- assert.match(html,/history-data-v10\.js\?v=1/);
+ assert.match(html,/history-data-v10\.js\?v=\d+/);
  assert.ok(html.indexOf('world-v9.js')<html.indexOf('world-v10.js'));
  assert.ok(html.indexOf('world-v10.js')<html.indexOf('game.js'));
 });
