@@ -475,6 +475,9 @@ linear-gradient(145deg,#a8ddff 0%,#ddf5e3 52%,#fff3c7 100%)}
 .tutorial-card h2,.tutorial-card h3{margin:0 0 8px;color:#17223b}
 .tutorial-card .tutorial-do{margin:12px 0 0;padding:11px 12px;border-radius:14px;background:#eefaf6;color:#176a55;font-weight:900;line-height:1.45}
 .tutorial-card .tutorial-tip{margin:8px 0 0;font-size:13px;color:#667085;line-height:1.45}
+.tutorial-recovery{margin-top:10px;padding:10px 12px;border:2px solid #f2cc63;border-radius:13px;background:#fff9e7;color:#5e481d;font-size:13px;line-height:1.45}
+.tutorial-recovery b{display:block;margin-bottom:4px}
+.tutorial-recovery p{margin:0;color:#5e481d;font-size:13px;line-height:1.5}
 .tutorial-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 .tutorial-actions button{min-height:40px;border:0;border-radius:12px;padding:0 14px;font-weight:900;cursor:pointer}
 #tutorialBack{background:#eef1f6;color:#344054}
