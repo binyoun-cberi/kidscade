@@ -14,6 +14,7 @@
   const World8 = window.OneLifeWorld8;
   const World9 = window.OneLifeWorld9;
   const World10 = window.OneLifeWorld10;
+  const World12 = window.OneLifeWorld12;
   const History = window.OneLifeHistory;
   const Official=window.OneLifeOfficialStats||{countries:{}};
   const metric=(key)=>life?.birthYear===2026?Official.countries?.[life?.country?.[0]]?.[key]||null:null;
@@ -23,7 +24,7 @@
       ? label+' '+Number(row.value).toLocaleString('ko-KR',{maximumFractionDigits:1})+unit+' ('+row.year+'년)'
       : label+' 자료 없음';
   };
-  if (!World2 || !Pixel || !World3 || !World4 || !World5 || !World6 || !World7 || !World8 || !World9 || !World10 || !History) throw new Error('One Life world assets missing');
+  if (!World2 || !Pixel || !World3 || !World4 || !World5 || !World6 || !World7 || !World8 || !World9 || !World10 || !World12 || !History) throw new Error('One Life world assets missing');
   const SAVE_KEY = 'kidscade_one_life_save_v1';
   const RECORD_KEY = 'kidscade_one_life_history_v1';
   // About 20–30 seconds of automatic years, excluding choices.
@@ -119,6 +120,7 @@
     const hometown=World8.ensure(life);
     const memories=World9.ensure(life);
     const livedEra=World10.summary(life);
+    const periodLife=World12.summary(life);
     const people=$('v9PeopleList');people.replaceChildren();
     const ordered=[...memories.people].sort((a,b)=>Number(b.alive)-Number(a.alive));
     for(const member of ordered.slice(0,7)){
@@ -145,6 +147,22 @@
       $('v10HistoricalCount').textContent='한국 역사 모드가 아님';
       $('v10HistoryStatus').textContent='이 지역의 역사 효과는 아직 별도 모델로 제공되지 않습니다.';
       $('v10HistoryEffects').textContent='국가별 일반 인생 시스템을 사용합니다.';
+    }
+    if(periodLife){
+      $('v12EducationEra').textContent=periodLife.schoolNote||
+        '배움과 교육의 기회는 실제 게임 연도에 따라 달라집니다.';
+      $('v12WorkEra').textContent='이 시대의 생업 · '+periodLife.period+
+        (life.world6?.profession?' · 현재 '+life.world6.profession:'');
+      $('v12EconomyEra').textContent='가상 경제 점수 기준 · 수입 계수 '+
+        Math.round(periodLife.incomeFactor*100)+'% · 필수 생활비 계수 '+
+        Math.round(periodLife.costFactor*100)+'%';
+      $('v12ChoicesCount').textContent='시대별 생활 선택 '+periodLife.choices+
+        '회 · 장기 영향 '+periodLife.longConsequences.length+'종';
+    }else{
+      $('v12EducationEra').textContent='한국의 시대별 교육 정책은 적용되지 않음';
+      $('v12WorkEra').textContent='해당 국가의 기본 직업 체계 사용';
+      $('v12EconomyEra').textContent='기본 가상 경제 점수 사용';
+      $('v12ChoicesCount').textContent='한국 역사 선택 없음';
     }
     $('nameHeadline').textContent=p.name+' · '+p.city;
     $('profileName').textContent=p.name;
@@ -426,7 +444,7 @@
     if(!board||!life || (!force && life.age===lastMapRenderedAge))return;
     lastMapRenderedAge=life.age;
     board.replaceChildren();
-    const notable=['decision','reflection','family','profession','world','safety','death','history','history-choice','history-impact','history-followup'];
+    const notable=['decision','reflection','family','profession','world','safety','death','history','history-choice','history-impact','history-followup','era-choice','era-followup'];
     const entries=new Map();
     for(const entry of life.log){
       if(!notable.includes(entry.kind))continue;
@@ -568,7 +586,7 @@
     });
     showComparison();
     const list=$('endHighlights'); list.replaceChildren();
-    const highlights=[...life.log.filter(e=>['milestone','decision','chain','world','safety','profession','history-choice','history-followup'].includes(e.kind))]
+    const highlights=[...life.log.filter(e=>['milestone','decision','chain','world','safety','profession','history-choice','history-followup','era-choice','era-followup'].includes(e.kind))]
       .filter(e=>e.kind==='decision'||e.kind==='chain'||e.kind==='world'||e.kind==='safety'||e.kind==='profession'||e.kind==='history-choice'||e.kind==='history-followup'||e.age<21)
       .slice(-16);
     if(!highlights.length) highlights.push(life.log[0]);
