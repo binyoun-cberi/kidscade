@@ -40,5 +40,5 @@ test('all existing interactive IDs and script order remain intact',()=>{
  for(const id of ids)assert.ok(ui.includes('id="'+id+'"'),id);
  const scripts=['world-v9.js','world-v10.js','world-v12.js','world-v13.js','game.js'];
  for(let i=1;i<scripts.length;i++)
-  assert.ok(ui.indexOf('src="./'+scripts[i-1]+'.')<ui.indexOf('src="./'+scripts[i]+'.'),scripts[i]);
+  assert.ok(ui.indexOf('src="./'+scripts[i-1]+'?')<ui.indexOf('src="./'+scripts[i]+'?'),scripts[i]);
 });
