@@ -246,8 +246,10 @@ function ensure(life,fromSave=false){
  p.motherJob=orig.job;p.fatherJob=orig.job;
  life.familyLevel=orig.name;
  life.career='아직 정해지지 않음';
- life.money.netWorth=orig.id==='yangban'?620:orig.id==='merchant'?450:orig.id==='servile'?30:250;
- life.money.income=0;life.money.expense=0;life.money.employment='어린 시절';
+ if(!fromSave){
+  life.money.netWorth=orig.id==='yangban'?620:orig.id==='merchant'?450:orig.id==='servile'?30:250;
+  life.money.income=0;life.money.expense=0;life.money.employment='어린 시절';
+ }
  const surname=p.name[0];
  for(const m of state.people){
   const gender=m.role==='아버지'?'남자':'여자';
