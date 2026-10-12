@@ -333,7 +333,7 @@ const STORY_BANK=Object.freeze({
  ]
 });
 function everydayStories(life,state,count){
- const age=life.age,older=life.year<1990||life.birthYear<1970,profile=life.profile||{};
+ const age=life.age,older=life.year<1990,profile=life.profile||{};
  const groups=[];
  if(older)groups.push('history');
  else groups.push(age<7?'childhood':age<13?'school':age<19?'teen':age<33?'young':age<65?'adult':'senior');
@@ -375,11 +375,11 @@ function eventsForYear(life,state){
  const childhood=a>=2&&a<=17;
  if(a===7&&!state.hobby)
   q.push({id:'choose-hobby',text:'',month:3,kind:'memory',choice:'hobby'});
- if(a===23&&!state.finance.originalDebt&&life.money?.netWorth<6500)
+ if(a===23&&life.year>=1990&&!state.finance.originalDebt&&life.money?.netWorth<6500)
   q.push({id:'repair-cost',text:'',month:8,kind:'finance9',choice:'repair'});
  if(a===35&&life.profile?.partner&&!state.memories.includes('혼인'))
   q.push({id:'marriage',text:'',month:9,kind:'relationship',choice:'marriage'});
- if(a===43&&life.money?.netWorth>11000&&!state.finance.home)
+ if(a===43&&life.year>=1990&&life.money?.netWorth>11000&&!state.finance.home)
   q.push({id:'housing',text:'',month:6,kind:'finance9',choice:'housing'});
  if(a===64&&state.hobby)
   push('hobby-retirement',state.hobbySince+'세에 시작한 '+state.hobby+'(을)를 다시 즐겼다. 오래전 취미가 노년의 하루를 채워 주었다.','memory',9);

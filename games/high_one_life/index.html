@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="./world-v5.css?v=1">
 <link rel="stylesheet" href="./world-v6.css?v=2">
 <link rel="stylesheet" href="./world-v7.css?v=1">
-<link rel="stylesheet" href="./world-v8.css?v=4">
+<link rel="stylesheet" href="./world-v8.css?v=5">
 </head>
 <body>
 <div class="app" id="app">
@@ -97,6 +97,12 @@
         <article class="chronicle">
           <div class="chapter-line"><span id="lifeStage" class="chapter">유년기</span><span id="playStatus">인생이 흘러가는 중</span></div>
           <p id="historyContext" class="history-context">이 인생이 놓인 시대</p>
+          <section id="v10HistoryPanel" class="v10-history-panel" aria-label="역사적 사건이 이 인생에 미치는 영향">
+            <div class="stat-title">내가 살아온 시대 <span id="v10HistoricalCount">0개 역사 사건</span></div>
+            <p id="v10HistoryStatus">이 시대의 사건과 개인의 경험은 다릅니다.</p>
+            <p id="v10HistoryEffects">아직 남은 역사적 경험이 없습니다.</p>
+            <small>역사의 날짜·사실은 출처가 있는 기록입니다. 교육·이사·경제와 관련한 개인 경험은 게임에서 구성한 가상의 선택과 결과입니다.</small>
+          </section>
           <a id="historySourceLink" class="history-source-link hidden" target="_blank" rel="noopener noreferrer" href="https://contents.history.go.kr/">이 시기의 역사 자료 보기</a>
           <div class="progress" aria-label="인생 시간의 흐름"><div id="lifeProgress"></div></div>
           <div class="controls">
@@ -281,7 +287,7 @@
 <script src="./engine.js?v=6"></script>
 <script src="./world-v2.js?v=8"></script>
 <script src="./pixel-scene.js?v=3"></script>
-<script src="./world-v3.js?v=3"></script>
+<script src="./world-v3.js?v=5"></script>
 <script src="./world-v4.js?v=1"></script>
 <script src="./world-v5.js?v=2"></script>
 <script src="./careers-v6.js?v=1"></script>
@@ -292,7 +298,11 @@
 <script src="./scenes-v6.js?v=1"></script>
 <script src="./scenes-v8.js?v=1"></script>
 <script src="./history.js?v=1"></script>
-<script src="./world-v9.js?v=1"></script>
-<script src="./game.js?v=17"></script>
+<script src="./world-v9.js?v=2"></script>
+<script src="./history-data-v10.js?v=1"></script>
+<script src="./history-stories-v10.js?v=1"></script>
+<script src="./history-effects-v10.js?v=2"></script>
+<script src="./world-v10.js?v=1"></script>
+<script src="./game.js?v=18"></script>
 </body>
 </html>
