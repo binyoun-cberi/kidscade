@@ -196,10 +196,10 @@ function applyChoice(life,index){
  if(act==='marry'){s.married=true;s.capital-=10;note(life,s,'혼인을 치르고 함께할 가족이 늘었다.','joseon-family');}
  if(act==='independent'){s.capital-=5;s.relocations++;note(life,s,'가족의 집을 떠나 새 살림을 시작했다.','joseon-family');}
  if(act==='exam'){s.exams++;const chance=clamp((.04+s.studyYears*.055+s.literacy*.03)*(s.birthStatus==='상민'?.20:1),0,.42);
-  if(life.rand()<chance){s.office=true;s.occupation='관직 생활';s.capital+=42;note(life,s,'과거에 급제하여 관직에 나아갔다.','joseon-career');}
+  if((s.birthStatus==='상민'?roll(life.seed,life.year+831):life.rand())<chance){s.office=true;s.occupation='관직 생활';s.capital+=42;note(life,s,'과거에 급제하여 관직에 나아갔다.','joseon-career');}
   else note(life,s,'과거를 치렀지만 이번에는 급제하지 못했다.','joseon-career');}
  if(act==='technical'){s.exams++;const chance=clamp(.10+s.studyYears*.035+s.literacy*.025,0,.35);
-  if(life.rand()<chance){s.occupation='관청의 전문 기술직';s.capital+=24;note(life,s,'오래 준비한 전문 분야의 시험에 합격했다. 관청에서 맡을 일을 기다린다.','joseon-career');}
+  if(roll(life.seed,life.year+901)<chance){s.occupation='관청의 전문 기술직';s.capital+=24;note(life,s,'오래 준비한 전문 분야의 시험에 합격했다. 관청에서 맡을 일을 기다린다.','joseon-career');}
   else {s.literacy+=1;s.school='전문 기술을 익히는 중';note(life,s,'시험에서는 뜻을 이루지 못했지만 공부한 기술은 남았다.','joseon-career');}}
  if(act==='teach'||act==='mentor'){s.occupation='마을에서 글과 기술을 가르치는 일';s.school='가르치며 배우는 생활';}
  if(act==='scribe'){s.occupation='글과 셈을 쓰는 생업';s.literacy+=1;}
