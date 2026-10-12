@@ -376,5 +376,5 @@ function install(){
  return true;
 }
 install();
-return Object.freeze({install,ensure,summary,age,prompt,choose,afterYear,ROLES});
+return Object.freeze({install,ensure,summary,age,prompt,choose,afterYear,ROLES,particle});
 });
