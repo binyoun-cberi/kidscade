@@ -191,7 +191,7 @@
     }else{
       $('v10HistoricalCount').textContent='한국 역사 모드가 아님';
       $('v10HistoryStatus').textContent='이 지역의 역사 효과는 아직 별도 모델로 제공되지 않습니다.';
-      $('v10HistoryEffects').textContent='국가별 일반 인생 시스템을 사용합니다.';
+      $('v10HistoryEffects').textContent='세상이 바뀌는 동안 이 사람의 하루도 조금씩 달라지고 있다.';
     }
     if(periodLife){
       $('v12EducationEra').textContent=periodLife.schoolNote||
@@ -687,14 +687,14 @@
     const firstPlace=History.place({...life,year:life.birthYear});
     const chapters=[
       life.birthYear+'년, '+firstPlace+'에서 태어났다.',
-      oldLife?'출생할 때의 신분은 '+oldLife.status+'이고, '+oldLife.region+'에서 '+oldLife.occupation+' 일을 하며 살아왔다.':summary.story,
+      oldLife?'태어날 때는 '+Joseon.ensure(life).birthStatus+' 집안의 아이였다. '+oldLife.region+'에서 '+oldLife.occupation+' 일을 하며 세월을 보냈다.':summary.story,
       oldLife&&oldLife.warMemory.length?'삶에 영향을 준 사건은 '+oldLife.warMemory.join(', ')+'이었다.':'',
       oldLife&&Joseon4.summary(life).spouse?'혼인하여 '+Joseon4.particle(Joseon4.summary(life).spouse.name,'과','와')+' 삶을 함께한 시절이 있었다.':'',
       oldLife&&Joseon2.summary(life).events?'살아가는 동안 '+Joseon2.summary(life).events+'가지 지역·시대 변화도 지나갔다.':'',
       oldLife&&Joseon3.summary(life).legacy?'마지막에는 '+Joseon3.summary(life).legacy+'의 시간을 보냈다.':'',
       oldLife&&Joseon4.summary(life).memories.length?'가족과 함께한 기억으로 '+Joseon4.summary(life).memories.slice(-2).join(' ') :'',
       life.deathReason,
-      life.world?.educationLevel&&life.world.educationLevel!=='없음'
+      !oldLife&&life.world?.educationLevel&&life.world.educationLevel!=='없음'
         ?'살면서 '+life.world.educationLevel+'의 시간을 보냈다.':'',
       life.career&&life.career!=='학생'?'마지막으로 기억되는 일은 '+life.career+'이었다.':'',
       !oldLife&&careLife.careYears?'가족을 돌보며 보낸 시간도 '+careLife.careYears+'년이었다.':'',
