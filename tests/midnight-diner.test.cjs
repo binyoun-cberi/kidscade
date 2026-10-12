@@ -180,7 +180,7 @@ test('v7 renders stage and interactions inside one immersive viewport',()=>{
  const html=read('games/high_midnight_diner/index.html');
  const css=read('games/high_midnight_diner/immersive.css');
  assert.match(html,/immersive\.css/);
- assert.match(html,/VERSION 8/);
+ assert.match(html,/VERSION 9/);
  assert.match(css,/#game\{position:relative;[^}]*height:100dvh/);
  assert.match(css,/\.dining,\.game-layout\.cooking \.dining,\.game-layout\.eating \.dining\{/);
  assert.match(css,/\.kitchen,\.game-layout\.cooking \.kitchen,\.game-layout\.eating \.kitchen\{/);
@@ -294,5 +294,72 @@ test('v8 gaze patterns vary by action with fair fake turns and warning windows',
  assert.match(js,/FEINT/);
  assert.match(kitchen,/gazePhase==='FEINT'/);
  assert.match(kitchen,/FOOD_ITEMS\+'skewer\.glb'/);
- assert.match(kitchen,/FOOD_ITEMS\+'cake-slicer\.glb'/);
+ assert.match(kitchen,/FOOD_ITEMS\+'cake\.glb'/);
+});
+
+// v9: real GLB food models replace decorative sketches only after successful
+// screenshot conversion. Every course remains playable offline/WebGL-disabled.
+test('v9 uses real local food GLB geometry for every dish, keeping illustrated fallback',()=>{
+ const html=read('games/high_midnight_diner/index.html');
+ const assetLoader=read('games/high_midnight_diner/plate-assets.js');
+ const plateSource=read('games/high_midnight_diner/plate.js');
+ const kitchen=read('games/high_midnight_diner/kitchen.js');
+ const gameSource=read('games/high_midnight_diner/game.js');
+ assert.match(html,/plate-assets\.js/);
+ assert.match(html,/VERSION 9/);
+ assert.match(assetLoader,/GLTFLoader/);
+ assert.match(assetLoader,/setAssetImages/);
+ assert.match(assetLoader,/drawImage\(renderer\.domElement,0,0\)/);
+ assert.match(plateSource,/drawAssetFood\(c,dish,selected\)/);
+ assert.match(gameSource,/midnight-diner:food-assets/);
+ assert.match(kitchen,/FOOD_ITEMS\+'cake\.glb'/);
+ assert.doesNotMatch(kitchen,/cake-slicer\.glb/);
+ const files=[
+  'assets/game/3d/food/ultimate-food-pack/pancakes-stack.glb',
+  'assets/game/food/bowl-soup.glb',
+  'assets/game/food/mushroom-half.glb',
+  'assets/game/food/skewer.glb',
+  'assets/game/3d/interiors/modular-sushi-restaurant-kit/gyoza.glb',
+  'assets/game/food/cake.glb'
+ ];
+ for(const file of files)assert.ok(fs.existsSync(path.join(root,file)),file);
+});
+test('v9 asset-rendered portions, labels, removed pieces, and interactions stay in sync',()=>{
+ const vm=require('node:vm'),plateSource=read('games/high_midnight_diner/plate.js');
+ const target={};vm.runInNewContext(plateSource,{window:target},{filename:'plate.js'});
+ const plate=target.MidnightDinerPlate;
+ let images=0,labels=0;
+ const fake={width:320,height:320};
+ const ctx={createRadialGradient:()=>({addColorStop(){}}),drawImage(){images++},fillText(){labels++}};
+ for(const fn of ['clearRect','beginPath','closePath','ellipse','fill','stroke','moveTo','lineTo','arc','rect','bezierCurveTo','quadraticCurveTo','fillRect','save','restore','translate','scale','rotate','clip'])ctx[fn]=()=>{};
+ const canvas={getContext:()=>ctx,getBoundingClientRect:()=>({left:0,top:0,width:600,height:420})};
+ let fallbackDraws=0;
+ const first=R.dishFor(0,R.rng(12));
+ plate.draw(canvas,first,null);fallbackDraws=images;
+ assert.equal(fallbackDraws,0,'illustrated backup must remain active before GLB loads');
+ const graphics={pancake:{main:fake},soup:{main:fake,piece:fake},
+  skewer:{main:fake},dumpling:{piece:fake},cake:{main:fake}};
+ for(let i=0;i<R.FOODS.length;i++){
+  const dish=R.dishFor(i,R.rng(i+47)),type=dish.spec.id;
+  plate.setAssetImages(type,graphics[type]);
+  const before=images;
+  assert.doesNotThrow(()=>plate.draw(canvas,dish,0),type);
+  assert.ok(images>before,type+' must composite real GLB imagery');
+  assert.ok(labels>0,type+' must label selectable pieces');
+  const removed=dish.zones[0];
+  removed.removed=true;const beforeRemoved=images;
+  plate.draw(canvas,dish,null);
+  const remaining=images-beforeRemoved;
+  if(type==='pancake'||type==='cake'||type==='skewer'||type==='dumpling'){
+   assert.equal(remaining,dish.spec.count-1,'removed food portion should disappear '+type);
+  }else assert.equal(remaining,dish.spec.count,
+   'soup should keep bowl plus remaining mushrooms');
+  removed.removed=false;
+  if(type==='cake'){
+   for(let z=0;z<dish.spec.count;z++){
+    const pt=plate.cakeSectorCenter(z);
+    assert.equal(plate.hitAt(pt.x,pt.y,dish),z,'slice '+z+' should select');
+   }
+  }
+ }
 });

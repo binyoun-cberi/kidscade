@@ -7,10 +7,10 @@
 'use strict';
 const FOODS=Object.freeze([
  {id:'pancake',title:'의문의 부침개',detail:'초록빛 부침개 · 8조각',banned:'seed',count:8,hazards:2,word:'붉은 씨앗',line:'식으면 맛없어. 천천히 살펴보진 말고.',glb:'pancakes-stack.glb'},
- {id:'soup',title:'검은 국물 수프',detail:'국물 속 건더기 · 6개',banned:'mushroom',count:6,hazards:2,word:'달빛 버섯',line:'국물을 젓지 마. 속을 들여다보는 건 실례야.',glb:'ramen.glb'},
- {id:'skewer',title:'다섯 조각 꼬치',detail:'수상한 꼬치 · 5조각',banned:'bean',count:5,hazards:2,word:'그림자 콩',line:'푸른 점이 전부 나쁜 건 아니지.',glb:'dango.glb'},
+ {id:'soup',title:'검은 국물 수프',detail:'국물 속 건더기 · 6개',banned:'mushroom',count:6,hazards:2,word:'달빛 버섯',line:'국물을 젓지 마. 속을 들여다보는 건 실례야.',glb:'bowl-soup.glb'},
+ {id:'skewer',title:'다섯 조각 꼬치',detail:'수상한 꼬치 · 5조각',banned:'bean',count:5,hazards:2,word:'그림자 콩',line:'푸른 점이 전부 나쁜 건 아니지.',glb:'skewer.glb'},
  {id:'dumpling',title:'봉인된 만두',detail:'얇은 피 속의 비밀 · 6개',banned:'thread',count:6,hazards:2,word:'검은 실뿌리',line:'만두에 꼭꼭 접힌 자국이 보이니?',glb:'gyoza.glb'},
- {id:'cake',title:'마지막 조각 케이크',detail:'은빛 가루를 뿌린 케이크 · 7조각',banned:'dust',count:7,hazards:3,word:'은빛 가루',line:'자정이 지나면 은빛이 더 잘 보인단다.',glb:'cupcake.glb'}
+ {id:'cake',title:'마지막 조각 케이크',detail:'은빛 가루를 뿌린 케이크 · 7조각',banned:'dust',count:7,hazards:3,word:'은빛 가루',line:'자정이 지나면 은빛이 더 잘 보인단다.',glb:'cake.glb'}
 ]);
 const INGREDIENTS=Object.freeze({
  seed:{name:'붉은 씨앗',clue:'조리 과정에서 1개씩 올린 붉은 씨앗은 뒤집힌 부침개에 섞여 겉에서 확실히 드러나지 않는다.',safety:'조리 중 어느 번호에 붉은 씨앗이 들어갔나요?'},
