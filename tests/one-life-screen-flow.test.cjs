@@ -55,6 +55,8 @@ global.window.OneLifeJoseon=Joseon;
 const Joseon2=require(path.join(root,'joseon-v2.js'));
 global.window.OneLifeJoseon2=Joseon2;
 const Joseon3=require(path.join(root,'joseon-v3.js'));
+global.window.OneLifeJoseon3=Joseon3;
+const Joseon4=require(path.join(root,'joseon-v4.js'));
 delete global.window;
 const makeElement=(tag='div')=>{
  const listeners={}; const classes=new Set();
@@ -90,7 +92,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  const StableSim={...Sim,Life:class extends Sim.Life{
   constructor(seed,options){super(seed===undefined?911:seed,options);}
  }};
- const window={OneLifeSim:StableSim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeWorld6:World6,OneLifeWorld7:World7,OneLifeWorld8:World8,OneLifeCareers6:Careers6,OneLifeEvents6:Events6,OneLifeScene:Scene,OneLifeScenes6:Scenes6,OneLifeScenes8:Scenes8,OneLifeHistory:History,OneLifeWorld9:World9,OneLifeWorld10:World10,OneLifeWorld12:World12,OneLifeWorld13:World13,OneLifeJoseon:Joseon,OneLifeJoseon2:Joseon2,OneLifeJoseon3:Joseon3,KidscadeGame:sdk,
+ const window={OneLifeSim:StableSim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeWorld6:World6,OneLifeWorld7:World7,OneLifeWorld8:World8,OneLifeCareers6:Careers6,OneLifeEvents6:Events6,OneLifeScene:Scene,OneLifeScenes6:Scenes6,OneLifeScenes8:Scenes8,OneLifeHistory:History,OneLifeWorld9:World9,OneLifeWorld10:World10,OneLifeWorld12:World12,OneLifeWorld13:World13,OneLifeJoseon:Joseon,OneLifeJoseon2:Joseon2,OneLifeJoseon3:Joseon3,OneLifeJoseon4:Joseon4,KidscadeGame:sdk,
   scrollTo(){},addEventListener(){}};
  new Function('window','document','localStorage','performance','setInterval','clearInterval',
   code)(window,document,localStorage,{now:()=>now},
@@ -212,5 +214,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.match(get('historyContext').textContent,/조선/);
  assert.match(get('sceneLabel').textContent,/봄|여름|가을|겨울/);
  assert.match(get('v12EconomyEra').textContent,/곡식/);
+ assert.match(get('v13FamilyStatus').textContent,/부모님/);
+ assert.ok(get('v9PeopleList').children.length>=2);
  assert.match(get('countryContextText').textContent,/출신/);
 });
