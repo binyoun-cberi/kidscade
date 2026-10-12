@@ -551,7 +551,7 @@ function install(){
  p.getChoice=function(){return is(this)&&String(this.pending||'').startsWith('joseon:')?prompt(this):priorGet.call(this);};
  p.choose=function(index){return is(this)&&String(this.pending||'').startsWith('joseon:')?choice(this,index):priorChoose.call(this,index);};
  p.summary=function(){return is(this)?summary(this):priorSummary.call(this);};
- p.snapshot=function(){return {...priorSnapshot.call(this),joseon:is(this)?JSON.parse(JSON.stringify(ensure(this))):undefined};};
+ p.snapshot=function(){const base=priorSnapshot.call(this);return is(this)?{...base,joseon:JSON.parse(JSON.stringify(ensure(this)))}:base;};
  L.restore=function(data){
   const life=priorRestore.call(this,data);
   if(life&&is(life)){
