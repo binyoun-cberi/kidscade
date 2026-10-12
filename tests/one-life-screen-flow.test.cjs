@@ -188,10 +188,10 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  for(let i=0;i<19;i++)historicDraw();
  assert.match(get('birthDate').textContent,/^1919년/);
  assert.match(get('birthPlace').textContent,/한반도/);
- assert.match(get('birthEraNote').textContent,/역사 체험/);
+ assert.match(get('birthEraNote').textContent,/그 시대의 한반도/);
  get('lifeStartBtn').click();
  assert.equal(get('currentYear').textContent,'1919년');
  assert.match(get('historyContext').textContent,/일제강점기/);
- assert.ok(get('sceneLabel').textContent.includes('상상한 장면'));
- assert.match(get('countrySourceNote').textContent,/역사적 출생/);
+ assert.ok(get('sceneLabel').textContent.includes('의 풍경'));
+ assert.match(get('countrySourceNote').textContent,/이 시기의 생활환경/);
 });
