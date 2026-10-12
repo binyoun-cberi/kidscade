@@ -1201,6 +1201,7 @@ const WORLD_VIEW_RADIUS=mobileModeEnabled?21:30;
 let streamCenterX=Infinity,streamCenterZ=Infinity;
 let gameFreeMode='survival',survivalBag={},survivalStage=0,freePhysicsY=0,legacyWorld=false,savedFreePosition=null,visitedBiomes=new Set();
 let survivalEquipment={head:'',chest:'',legs:'',feet:'',shield:''},survivalDamageCarry=0;
+let magicWorkbenchPos=null,magicWorkbenchBeacon=null,magicWorkbenchReturnAt=-60000;
 let survivalStats={},survivalFinished=false,survivalAdventureDone=new Set(),survivalExposure=0,survivalTimeAcc=0,firstNightStarted=false;
 let discoveredLandmarks=new Set(),restoredLandmarks=new Set(),unlockedTech=new Set();
 let nearLandmarkPoi=null,restorationSession=null,dungeonSession=null;
@@ -3104,7 +3105,7 @@ function removeCuboidAt(ax,ay,az,record=true){
   return true;
 }
 function removeWorldBlockData(x,y,z,record=true){
-  const data=getBlock(x,y,z);if(!data||blockDef(data).unbreakable)return false;
+  const data=getBlock(x,y,z);if(!data||blockDef(data).unbreakable||data.magicWorkbench)return false;
   if(data.type==='cuboidPart'){
     const a=data.anchor||[x,y,z];return removeCuboidAt(a[0],a[1],a[2],record);
   }
@@ -3457,6 +3458,7 @@ function initFree(){
   freeAvatarFacingRight=false;
   freeAvatarAction='';freeAvatarActionStartedAt=0;freeAvatarActionUntil=0;freeAvatarDefeated=false;freeAvatarReturnAt=0;freeViewBeforeDefeat=null;
   survivalBag={};survivalStage=0;survivalAdventureDone=new Set();survivalHome=null;trackedTarget=null;savedFreePosition=null;visitedBiomes=new Set();
+  magicWorkbenchPos=null;magicWorkbenchBeacon=null;magicWorkbenchReturnAt=-60000;
   firstJourney={phase:'idle',plan:null};buildingWorks=[];projectGuide='';journeyUiAt=0;
   survivalStats=newSurvivalStats();survivalFinished=false;survivalExposure=0;survivalHealth=5;healthRegenClock=0;lastCreatureDamage=0;lastCreatureAttackAt=0;
   freeFluidKind='';lastEnvironmentDamage=0;survivalBreath=100;lastDrownDamage=0;freeFallPeakY=0;
@@ -3477,6 +3479,7 @@ function initFree(){
   legacyWorld=!!(storedCreative?.legacyTerrain||previous);
   buildFreeWorld();if(gameFreeMode==='survival'){survivalEquipment={head:'',chest:'',legs:'',feet:'',shield:''};survivalDamageCarry=0}
   loadFreeWorld();prepareSurvivalCamp();
+  if(survival)ensureMagicWorkbench();
   const ground=getHighestSolidY(0,5,10);
   const spawn=savedFreePosition&&savedFreePosition.length===3?savedFreePosition:
     [0,ground+1+1.62,5];
@@ -3491,6 +3494,7 @@ function initFree(){
   setFreeView('third',false);refreshFreeAvatar(true);
   applyRestoredLandmarksToLoadedWorld();
   rebuildAllWorldMeshes();
+  if(survival)buildMagicWorkbenchBeacon();
   buildHotbar();buildInventory();setupShapeWorkbench();buildFurnaceRecipes();
   $('actionXray').classList.remove('hidden');
   setupWeather();spawnCritters();updateCreatureHealthUi();updateFreeMission();
@@ -3511,7 +3515,11 @@ function initFree(){
   configureMobileMode('free');
   $('lockNotice').onclick=()=>{if(!inventoryOpen&&!furnaceOpen&&!lifePanelOpen)requestGamePointerLock()};
   $('survivalReturn').onclick=emergencyReturn;
-  if($('craftDiscoveryNotice'))$('craftDiscoveryNotice').onclick=()=>{survivalInventoryTab='craft';toggleInventory(true)};
+  $('magicWorkbenchReturn').onclick=magicWorkbenchReturn;
+  if($('craftDiscoveryNotice'))$('craftDiscoveryNotice').onclick=()=>{
+    if(hasWorkbench()){survivalInventoryTab='craft';toggleInventory(true,'craft')}
+    else{toast('새 제작법을 발견했어! 만들기는 마법의 직육면체에서 할 수 있어.');updateMagicWorkbenchGuide(true)}
+  };
   renderSurvivalSafety(null);
   $('inventoryClose').onclick=()=>toggleInventory(false);
   document.querySelectorAll('[data-bag-tab]').forEach(b=>b.onclick=()=>setSurvivalInventoryTab(b.dataset.bagTab));
@@ -3577,6 +3585,88 @@ function updateSurvivalEquipmentUi(){
     hud.textContent='🛡 '+protection+'%';
     hud.title='장비 방어율 '+protection+'%';
   }
+}
+const MAGIC_WORKBENCH_SITE=[2,3,3];
+function ensureMagicWorkbench(){
+  if(gameFreeMode!=='survival')return null;
+  // Never overwrite an existing structure or move an earlier player's magical station.
+  if(magicWorkbenchPos&&getBlock(...magicWorkbenchPos)?.magicWorkbench)return magicWorkbenchPos;
+  for(const [key,data] of worldEdits){
+    if(data?.type==='workbench'&&data.magicWorkbench){magicWorkbenchPos=parseWorldKey(key);return magicWorkbenchPos}
+  }
+  const candidates=[MAGIC_WORKBENCH_SITE,[2,3,4],[3,3,3],[3,3,4],[-2,3,5],[2,3,6],[-3,3,5],[-2,3,2],[3,3,6]];
+  for(const [x,ignoredY,z] of candidates){
+    const y=getHighestSolidY(x,z,12)+1;
+    if(y<1||y>12||getBlock(x,y,z)||getBlock(x,y+1,z))continue;
+    const below=getBlock(x,y-1,z);
+    if(!below||!isSolidData(below,x,y-1,z)||['lava','fire','water','cactus'].includes(below.type))continue;
+    magicWorkbenchPos=[x,y,z];
+    const block={type:'workbench',magicWorkbench:true,playerBuilt:true,facing:0};
+    setRawBlock(x,y,z,block);markEdit(x,y,z,block);markFreeWorldDirty(400);
+    return magicWorkbenchPos;
+  }
+  // Preserve player constructions on existing saves. If the starting region is occupied,
+  // point home to a regular placed bench rather than erasing anyone's blocks.
+  for(const [key,data] of worldData)if(data?.type==='workbench'){
+    magicWorkbenchPos=parseWorldKey(key);return magicWorkbenchPos
+  }
+  magicWorkbenchPos=null;return null;
+}
+function buildMagicWorkbenchBeacon(){
+  if(magicWorkbenchBeacon?.parent)magicWorkbenchBeacon.parent.remove(magicWorkbenchBeacon);
+  magicWorkbenchBeacon=null;
+  if(!magicWorkbenchPos||getBlock(...magicWorkbenchPos)?.type!=='workbench')return;
+  const [x,y,z]=magicWorkbenchPos;
+  const group=new THREE.Group();group.position.set(x,y+.5,z);
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(.12,.48,18,6),
+    new THREE.MeshBasicMaterial({color:0x9beafb,transparent:true,opacity:.18,depthWrite:false,side:THREE.DoubleSide,fog:false}));
+  beam.position.y=9;beam.userData.worldDecorative=true;group.add(beam);
+  const crown=new THREE.Mesh(new THREE.OctahedronGeometry(.38),
+    new THREE.MeshBasicMaterial({color:0xf6dd8c,transparent:true,opacity:.95,fog:false}));
+  crown.position.y=2.65;crown.userData.worldDecorative=true;group.add(crown);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.52,.055,6,24),
+    new THREE.MeshBasicMaterial({color:0xffda83,transparent:true,opacity:.88,fog:false}));
+  ring.position.y=1.18;ring.rotation.x=Math.PI/2;ring.userData.worldDecorative=true;group.add(ring);
+  group.userData.worldDecorative=true;scene.add(group);magicWorkbenchBeacon=group;
+}
+function magicWorkbenchReturnPoint(){
+  if(!magicWorkbenchPos||getBlock(...magicWorkbenchPos)?.type!=='workbench')return null;
+  const [x,y,z]=magicWorkbenchPos;
+  for(const radius of [1,2,3,4])for(const [dx,dz] of [[0,1],[1,0],[0,-1],[-1,0],[1,1],[-1,1],[1,-1],[-1,-1]]){
+    const px=x+dx*radius,pz=z+dz*radius;
+    const top=groundTopBelow(px,y+4.62,pz),eye=top+1.62,feet=eye-1.62;
+    if(Math.abs(top-y)>.85||playerCollidesAt(px,eye,pz))continue;
+    const body=getBlock(px,Math.floor(feet+.2),pz),floor=getBlock(px,Math.floor(feet-.05),pz);
+    if([body?.type,floor?.type].some(type=>['lava','fire','cactus','water'].includes(type)))continue;
+    return [px,eye,pz];
+  }
+  return null;
+}
+function updateMagicWorkbenchGuide(force=false){
+  const root=$('magicWorkbenchGuide');if(!root)return;
+  const active=mode==='free'&&gameFreeMode==='survival'&&!!magicWorkbenchPos;
+  root.classList.toggle('hidden',!active);if(!active)return;
+  const [x,,z]=magicWorkbenchPos,dx=x-camera.position.x,dz=z-camera.position.z;
+  const distance=Math.round(Math.hypot(dx,dz)),len=Math.max(.001,Math.hypot(dx,dz));
+  const lookX=-Math.sin(yaw),lookZ=-Math.cos(yaw),relative=Math.atan2(lookX*dz/len-lookZ*dx/len,lookX*dx/len+lookZ*dz/len);
+  $('magicWorkbenchArrow').style.transform='rotate('+relative+'rad)';
+  $('magicWorkbenchLabel').textContent=distance<=3?'마법의 직육면체 · 바로 앞':'마법의 직육면체 · '+distance+'칸';
+  const remaining=Math.max(0,45000-(performance.now()-magicWorkbenchReturnAt));
+  const button=$('magicWorkbenchReturn');button.disabled=distance<=3||remaining>0;
+  button.textContent=remaining>0?'귀환 '+Math.ceil(remaining/1000)+'초':distance<=3?'제작대 도착':'위험할 때 귀환';
+  if(force)root.classList.add('attention');else root.classList.remove('attention');
+}
+function magicWorkbenchReturn(){
+  if(gameFreeMode!=='survival'||mode!=='free'||freeAvatarDefeated)return false;
+  if(performance.now()-magicWorkbenchReturnAt<45000){toast('마법의 귀환을 다시 쓰려면 잠깐 기다려 보자.');return false}
+  const p=magicWorkbenchReturnPoint();if(!p){toast('제작대 근처에 안전한 공간이 없어. 제작대 주변을 조금 정리해 보자.');return false}
+  if(inventoryOpen)toggleInventory(false);
+  if(furnaceOpen)toggleFurnace(false);
+  if(lifePanelOpen)closeLifePanel();
+  stopMining();resetMobileInput();camera.position.set(...p);freePhysicsY=p[1];freeVelocityY=0;onGround=true;
+  survivalExposure=Math.min(survivalExposure,15);survivalBreath=100;freeFluidKind='';freeFallPeakY=freePhysicsY;
+  magicWorkbenchReturnAt=performance.now();streamWorldMeshes(true);updateMagicWorkbenchGuide();renderSurvivalSafety(null);
+  toast('마법의 직육면체로 돌아왔어! 가방의 물건은 그대로야.');markFreeWorldDirty(300);return true;
 }
 function hasWorkbench(){
   const x=Math.round(camera.position.x),z=Math.round(camera.position.z);
@@ -4708,7 +4798,7 @@ function placeFreeBlock(hit){
   const hitType=hit.object.userData.type,u=hit.object.userData;
   if(hitType==='door'){toggleDoorAt(u.gx,u.gy,u.gz);return}
   if(hitType==='furnace'){toggleFurnace(true,u.gx,u.gy,u.gz);return}
-  if(hitType==='workbench'){survivalInventoryTab='craft';toggleInventory(true);return}
+  if(hitType==='workbench'){survivalInventoryTab='craft';if(campActive())survivalCamp.workbenchOpened=true;toggleInventory(true,'craft');return}
   if(typeof interactLifeBlock==='function'&&interactLifeBlock(hitType,u.gx,u.gy,u.gz))return;
   if(typeof FARM_PLANT_TYPES!=='undefined'&&FARM_PLANT_TYPES.includes(selectedType)){plantFarmItem(hit);return}
   if(!PLACEABLE_TYPES.includes(selectedType)){
@@ -4775,7 +4865,7 @@ function breakFreeBlock(hit){
   if(!hit||!hit.object.userData.worldBlock)return;
   const {gx:x,gy:y,gz:z}=hit.object.userData;
   const data=getBlock(x,y,z);
-  if(!data||blockDef(data).unbreakable){toast('기반암은 부술 수 없어요.');return}
+  if(!data||blockDef(data).unbreakable||data.magicWorkbench){toast(data?.magicWorkbench?'마법의 직육면체는 이동할 수 없는 시작 거점이야.':'기반암은 부술 수 없어요.');return}
   if(['chair','sofa','bench'].includes(data.type)&&seatedFurniture===worldKey(x,y,z))leaveChair();
   if(FARM_CROP_TYPES.includes(data.type)){harvestCrop(x,y,z,data);return}
   if((data.type==='chest'&&data.items&&gameFreeMode==='survival')||(data.type==='crate'&&data.items&&gameFreeMode==='survival')){
@@ -5043,6 +5133,7 @@ function saveFreeWorld(){
     firstJourney,buildingWorks,projectGuide,survivalHome,trackedTarget,
     position:[camera.position.x,freePhysicsY,camera.position.z],
     bag:survivalBag,stage:survivalStage,adventures:[...survivalAdventureDone],legacyTerrain:legacyWorld,visitedBiomes:[...visitedBiomes],
+    magicWorkbenchPos:magicWorkbenchPos?.slice()||null,
     discoveredResources:[...discoveredResources],discoveredRecipes:[...discoveredRecipeIds],unreadRecipes:[...unreadRecipeIds],
     stats:survivalStats,finished:survivalFinished,exposure:survivalExposure,
     firstNightStarted,health:survivalHealth,worldTime:survivalWorldTime,
@@ -5083,6 +5174,8 @@ function loadFreeWorld(){
           const saved=data.campLesson;survivalCamp={version:1,completed:Array.isArray(saved.completed)?saved.completed.filter(id=>window.CubeArchitectCamp.STEPS.some(s=>s.id===id)):[],dismissed:!!saved.dismissed,finished:!!saved.finished,baseline:saved.baseline||null,prepared:!!saved.prepared,site:Array.isArray(saved.site)&&saved.site.length===3&&saved.site.every(Number.isFinite)?saved.site:null};
         }
         survivalBag=data.bag&&typeof data.bag==='object'?data.bag:{};
+        if(Array.isArray(data.magicWorkbenchPos)&&data.magicWorkbenchPos.length===3&&data.magicWorkbenchPos.every(Number.isFinite))
+          magicWorkbenchPos=data.magicWorkbenchPos.map(Math.round);
         const home=data.survivalHome;
         survivalHome=home&&Array.isArray(home.bed)&&home.bed.length===3&&Array.isArray(home.position)&&home.position.length===3&&home.position.every(Number.isFinite)?
           {bed:home.bed.map(Number),position:home.position.map(Number)}:null;
@@ -6488,7 +6581,7 @@ function mobileSpecialUseTarget(){
     if(toggleDoorAt(u.gx,u.gy,u.gz))return true;
   }
   if(type==='furnace'){toggleFurnace(true,u.gx,u.gy,u.gz);return true}
-  if(type==='workbench'){survivalInventoryTab='craft';toggleInventory(true);return true}
+  if(type==='workbench'){survivalInventoryTab='craft';if(campActive())survivalCamp.workbenchOpened=true;toggleInventory(true,'craft');return true}
   if(interactLifeBlock(type,u.gx,u.gy,u.gz))return true
   if(nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
     openLandmarkDungeon(nearLandmarkPoi);return true;
