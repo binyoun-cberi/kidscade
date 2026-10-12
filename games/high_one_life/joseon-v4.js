@@ -45,7 +45,7 @@ function makeState(life){
   people.push(person(life,'sibling-'+i,'sibling',birth+difference,hash(life.seed,529+i)<.48?'여자':'남자'));
  }
  const state={version:4,processedYear:life.year,people,queue:[],active:null,
-  decisions:[],memories:[],recent:[],seen:[],careYears:0,legacies:0};
+  decisions:[],memories:[],recent:[],seen:[],followups:[],careYears:0,legacies:0};
  // Older saved games had only married/children counters. Reconstruct cautiously.
  if(p.married)addSpouse(life,state,life.birthYear+19);
  if(p.children>0)addChild(life,state,life.birthYear+25);
@@ -69,7 +69,7 @@ function addChild(life,s,bornYear){
   remember(life,s,child.name+'가 태어났다. 집안에 작은 아이의 울음소리가 들렸다.','joseon4-family');
 }
 function age(person,year){return Math.max(0,year-person.birthYear);}
-function living(s,role){return s.people.filter(x=>x.alive&&(!role||x.role===role));}
+function living(s,role,year=Infinity){return s.people.filter(x=>x.alive&&x.birthYear<=year&&(!role||x.role===role));}
 function remember(life,s,message,kind='joseon4-family'){
  life.logEvent(message,kind);
  s.recent.push(message);s.recent=s.recent.slice(-12);
@@ -81,7 +81,7 @@ function sync(life,s){
  if(!j)return;
  const spouse=s.people.find(x=>x.role==='spouse');
  if(spouse&& !spouse.alive){j.married=false;life.profile.partner=false;}
- if(life.year<1900)j.household=clamp(1+living(s).filter(x=>age(x,life.year)>=0).length,1,8);
+ if(life.year<1900)j.household=clamp(1+living(s,null,life.year).length,1,8);
 }
 function catchUp(life,s){
  const j=J.ensure(life);
@@ -195,9 +195,8 @@ function choose(life,index){
  if(life.money)life.money.netWorth=j.capital*100;
  s.decisions.push({id:q.id,kind:q.kind,personId:q.personId,year:life.year,action:a,label:selected.label});
  s.decisions=s.decisions.slice(-36);
- s.memories.push(OUTCOMES[a]);s.memories=s.memories.slice(-20);
+ s.followups.push({year:life.year+3,personId:q.personId,action:a});s.followups=s.followups.slice(-24);
  remember(life,s,p.title+' — '+selected.label,'joseon4-choice');
- if(who&&a!=='remember')s.queue.length=Math.min(s.queue.length,8);
  s.active=null;life.pending=null;promote(life,s);
  return true;
 }
@@ -207,9 +206,17 @@ function afterYear(life){
  s.processedYear=life.year;
  catchUp(life,s);
  const year=life.year,j=J.ensure(life),v=V2.ensure(life);
+ for(const effect of s.followups.filter(x=>x.year<=year)){
+  const relative=s.people.find(p=>p.id===effect.personId);
+  const sentence=relative?relative.name+'와의 일: '+OUTCOMES[effect.action]:OUTCOMES[effect.action];
+  if(sentence){remember(life,s,sentence,'joseon4-followup');s.memories.push(sentence);s.memories=s.memories.slice(-20);}
+  if(['support','plan','inherit','talk'].includes(effect.action))v.grain=clamp(v.grain+3,0,200);
+ }
+ s.followups=s.followups.filter(x=>x.year>year);
  for(const p of s.people){
-  if(!p.alive)continue;
+  if(!p.alive||p.birthYear>year)continue;
   const years=age(p,year);
+  if(p.role==='sibling'&&p.birthYear===year)remember(life,s,p.name+'가 태어나 형제자매가 늘었다.','joseon4-family');
   const troubled=year<=j.hardshipUntil||year<=v.scarcityUntil;
   const stress=troubled&&hash(life.seed,year+yearNumber(p.id)+171)<.22;
   if(stress){p.wellbeing=clamp(p.wellbeing-5,0,100);
@@ -241,7 +248,7 @@ function afterYear(life){
 }
 function summary(life){
  const s=ensure(life);if(!s)return null;
- const people=s.people.map(p=>({id:p.id,role:p.role,name:p.name,
+ const people=s.people.filter(p=>p.birthYear<=life.year).map(p=>({id:p.id,role:p.role,name:p.name,
   age:age(p,life.year),alive:p.alive,relation:p.relation,wellbeing:p.wellbeing,
   trait:p.trait,learning:p.learning,work:p.work,married:p.married,diedYear:p.diedYear}));
  return {people,alive:people.filter(p=>p.alive).length,
@@ -276,6 +283,9 @@ function hydrate(life,data){
   s[key]=clamp(old[key],0,key==='processedYear'?life.year:500);
  s.seen=Array.isArray(old.seen)?old.seen.filter(x=>typeof x==='string').slice(-30).map(x=>x.slice(0,60)):[];
  s.recent=Array.isArray(old.recent)?old.recent.filter(x=>typeof x==='string').slice(-12).map(x=>x.slice(0,220)):[];
+ s.followups=Array.isArray(old.followups)?old.followups.filter(f=>f&&Number.isInteger(f.year)&&f.year>life.year&&
+    typeof f.personId==='string'&&s.people.some(p=>p.id===f.personId)&&
+    typeof f.action==='string'&&OUTCOMES[f.action]).slice(-24).map(f=>({year:f.year,personId:f.personId,action:f.action})):[];
  s.memories=Array.isArray(old.memories)?old.memories.filter(x=>typeof x==='string').slice(-20).map(x=>x.slice(0,220)):[];
  const allowedKinds=new Set(Object.keys(TITLES));
  const valid=q=>q&&typeof q.id==='string'&&q.id.length<=80&&
