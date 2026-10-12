@@ -1,0 +1,31 @@
+name: One Life v10 historical validation
+on:
+  push:
+    branches:
+      - feat/one-life-v10-historical-impact-20261012
+    paths:
+      - 'games/high_one_life/**'
+      - 'tests/one-life-*.test.cjs'
+      - '.github/workflows/one-life-v10-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  life-history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Historical and old-save regression tests
+        run: node --test tests/one-life-v10.test.cjs tests/one-life-v9.test.cjs tests/one-life-historical.test.cjs tests/one-life-screen-flow.test.cjs
+      - name: Verify historical static scripts
+        run: |
+          node --check games/high_one_life/world-v10.js
+          node --check games/high_one_life/history-data-v10.js
+          node --check games/high_one_life/history-effects-v10.js
+          node --check games/high_one_life/history-stories-v10.js
