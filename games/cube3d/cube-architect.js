@@ -1088,7 +1088,7 @@ const BLOCK_DEFS={
   pineLeaves:{name:'침엽수 잎',icon:'🌲',color:0x31624a,category:'자연',solid:true,flammable:true,transparent:true,opacity:.86},
   cactus:{name:'선인장',icon:'🌵',color:0x477a42,category:'자연',solid:true},
   reed:{name:'갈대',icon:'🌾',color:0x9cab64,category:'자연',solid:false,special:'reed'},
-  workbench:{name:'제작대',icon:'🛠',color:0x9b744b,category:'기능',solid:true},
+  workbench:{name:'제작대',icon:'🛠',color:0x9b744b,category:'기능',solid:true,special:'workbench'},
   hand:{name:'맨손',icon:'✊',color:0x8fa3b7,category:'기능',solid:false,hidden:true},
   sticks:{name:'막대',icon:'╱',color:0x9b744b,category:'기능',solid:false,hidden:true},
   woodPick:{name:'나무 곡괭이',icon:'⛏',color:0xad906c,category:'기능',solid:false,hidden:true},
@@ -1990,6 +1990,7 @@ function loadCubeWorldBlockAtlas(){
 }
 loadCubeWorldBlockAtlas();
 let worldData=new Map(),worldMeshMap=new Map(),worldEdits=new Map(),worldInteractables=[],freeMeshes=[];
+const animatedCampfireRoots=new Set();
 let worldChunkMeshMap=new Map(),worldChunkDecorMap=new Map(),dirtyWorldChunks=new Set(),chunkRemeshQueued=false;
 let collectibles=[],collected=new Set(),selectedHotbarSlot=0,selectedType='grass';
 let hotbarTypes=['grass','dirt','stone','sand','log','planks','glass','door','water'];
@@ -2002,7 +2003,7 @@ let pendingPlayerStrikes=[],freeHitStopUntil=0;
 let inventoryBatchDepth=0,selectedCraftRecipeId=null,survivalCraftCategory='전체',craftingBusy=false;
 let discoveredResources=new Set(),discoveredRecipeIds=new Set(),unreadRecipeIds=new Set();
 let footstepDistanceAcc=0,lastFootstepX=null,lastFootstepZ=null,ambientAudioClock=0;
-let freeFlying=false,inventoryOpen=false,furnaceOpen=false,freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
+let freeFlying=false,inventoryOpen=false,furnaceOpen=false,furnaceTargetKey='',freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
 let freeFluidKind='',lastEnvironmentDamage=0,survivalBreath=100,lastDrownDamage=0,freeFallPeakY=0;
 let freeViewMode='third',freeAvatarRoot=null,freeAvatarSignature='',freeAvatarSyncAt=0,freeAvatarFacingRight=false;
 let freeAvatarAction='',freeAvatarActionStartedAt=0,freeAvatarActionUntil=0,freeAvatarDefeated=false,freeAvatarReturnAt=0,freeViewBeforeDefeat=null;
@@ -2622,7 +2623,7 @@ function forEachActiveWorldBlock(fn){
 }
 function removeWorldMesh(key){
   const root=worldMeshMap.get(key);if(!root)return;
-  scene.remove(root);worldMeshMap.delete(key);
+  scene.remove(root);worldMeshMap.delete(key);animatedCampfireRoots.delete(root);
   worldInteractables=worldInteractables.filter(x=>x.userData?.worldKey!==key);
   freeMeshes=freeMeshes.filter(x=>x.userData?.worldKey!==key);
 }
@@ -2649,17 +2650,112 @@ function makeStairObject(mat,facing=0){
   const g=new THREE.Group(),bottom=new THREE.Mesh(new THREE.BoxGeometry(1,.5,1),mat),top=new THREE.Mesh(new THREE.BoxGeometry(1,.5,.5),mat);
   bottom.position.y=-.25;top.position.set(0,.25,.25);g.add(bottom,top);g.rotation.y=(facing||0)*Math.PI/2;return g;
 }
+
+/* Shared low-poly voxel furniture language: pixelated wood/stone, muted metal and clear silhouettes. */
+const ARCH_DETAIL_MATERIALS=new Map();
+function architecturalMaterial(kind){
+  if(ARCH_DETAIL_MATERIALS.has(kind))return ARCH_DETAIL_MATERIALS.get(kind);
+  const palette={
+    darkWood:[0x64442e,.9],lightWood:[0xc49a68,.85],
+    iron:[0x596a70,.72],ironLight:[0xaebdc1,.62],stoneTrim:[0x575f68,.94],
+    charcoal:[0x201e20,.96],glassGlint:[0xcff8ff,.18]
+  };
+  const [color,roughness]=palette[kind]||palette.darkWood;
+  const material=new THREE.MeshStandardMaterial({color,roughness,metalness:kind.startsWith('iron')?.2:0,
+    transparent:kind==='glassGlint',opacity:kind==='glassGlint'?.34:1,depthWrite:kind!=='glassGlint',
+    side:kind==='glassGlint'?THREE.DoubleSide:THREE.FrontSide});
+  ARCH_DETAIL_MATERIALS.set(kind,material);return material;
+}
+function architecturalBox(parent,dimensions,position,material){
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(...dimensions),material);
+  mesh.position.set(...position);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;
+}
 function makeWindowObject(){
-  const g=new THREE.Group(),wood=materialFor('planks'),glass=materialFor('glass');
-  const bars=[new THREE.Mesh(new THREE.BoxGeometry(.1,1,.1),wood),new THREE.Mesh(new THREE.BoxGeometry(.1,1,.1),wood),
-    new THREE.Mesh(new THREE.BoxGeometry(.1,.1,1),wood),new THREE.Mesh(new THREE.BoxGeometry(.1,.1,1),wood)];
-  bars[0].position.z=-.45;bars[1].position.z=.45;bars[2].position.y=.45;bars[3].position.y=-.45;
-  const pane=new THREE.Mesh(new THREE.BoxGeometry(.06,.82,.82),glass);g.add(...bars,pane);return g;
+  // The pane is normal to X, matching the collision and placement preview.
+  const group=new THREE.Group(),wood=materialFor('planks'),dark=architecturalMaterial('darkWood');
+  const metal=architecturalMaterial('iron'),glass=materialFor('glass');
+  const pane=architecturalBox(group,[.045,.79,.79],[0,0,0],glass);pane.userData.worldGlazing=true;
+  for(const z of [-.445,.445]){
+    architecturalBox(group,[.18,.94,.095],[0,0,z],wood);
+    architecturalBox(group,[.205,.10,.11],[0,-.40,z],dark);
+  }
+  for(const y of [-.445,.445])architecturalBox(group,[.18,.105,.98],[0,y,0],wood);
+  architecturalBox(group,[.23,.065,1.01],[.025,-.462,0],dark); // projecting sill
+  architecturalBox(group,[.155,.79,.07],[0,0,0],wood);
+  architecturalBox(group,[.155,.07,.83],[0,0,0],wood);
+  for(const y of [-.39,.39])for(const z of [-.4,.4])
+    architecturalBox(group,[.205,.038,.038],[.007,y,z],metal);
+  const glint=architecturalBox(group,[.007,.30,.11],[.032,.17,-.22],architecturalMaterial('glassGlint'));
+  glint.userData.worldGlazing=true;
+  return group;
+}
+function makeDoorObject(facing=0,open=false){
+  const group=new THREE.Group(),wood=materialFor('planks'),dark=architecturalMaterial('darkWood');
+  const metal=architecturalMaterial('iron'),shine=architecturalMaterial('ironLight');
+  // Frame stays fixed. Only the leaf rotates around the left jamb.
+  for(const z of [-.455,.455])architecturalBox(group,[.19,1.94,.11],[0,0,z],dark);
+  architecturalBox(group,[.20,.10,1.01],[0,.965,0],wood);
+  const hinge=new THREE.Group();hinge.position.z=-.415;group.add(hinge);
+  architecturalBox(hinge,[.115,1.77,.82],[0,-.04,.415],wood);
+  for(const y of [-.62,-.04,.54]){
+    architecturalBox(hinge,[.014,.07,.70],[.068,y,.415],dark);
+    architecturalBox(hinge,[.014,.07,.70],[-.068,y,.415],dark);
+  }
+  for(const z of [.12,.68]){
+    architecturalBox(hinge,[.015,1.55,.035],[.067,-.04,z],dark);
+    architecturalBox(hinge,[.015,1.55,.035],[-.067,-.04,z],dark);
+  }
+  for(const y of [-.62,.54]){
+    architecturalBox(hinge,[.035,.11,.10],[.098,y,.028],metal);
+    architecturalBox(hinge,[.035,.11,.10],[-.098,y,.028],metal);
+  }
+  for(const side of [-1,1]){
+    architecturalBox(hinge,[.045,.10,.13],[side*.1,-.05,.72],metal);
+    architecturalBox(hinge,[.07,.045,.09],[side*.12,-.05,.76],shine);
+  }
+  hinge.rotation.y=open?-Math.PI/2:0;
+  group.rotation.y=((facing||0)%4)*Math.PI/2;return group;
 }
 function makeFurnaceObject(facing=0){
-  const mats=[materialFor('stone'),materialFor('stone'),materialFor('stone'),materialFor('stone'),materialFor('stone'),materialFor('stone')];
-  const front=new THREE.MeshStandardMaterial({color:0x31353b,roughness:.92,emissive:0xff6a28,emissiveIntensity:.05});
-  mats[4]=front;const m=new THREE.Mesh(freeCubeGeo,mats);m.rotation.y=(facing||0)*Math.PI/2;return m;
+  const group=new THREE.Group(),stone=materialFor('stone'),trim=architecturalMaterial('stoneTrim');
+  const iron=architecturalMaterial('iron'),shine=architecturalMaterial('ironLight');
+  const dark=architecturalMaterial('charcoal');
+  architecturalBox(group,[.92,.85,.92],[0,-.035,0],stone);
+  architecturalBox(group,[.98,.105,.98],[0,.427,0],stone);
+  architecturalBox(group,[.96,.11,.97],[0,-.425,0],trim);
+  // Black inset covers the front stone face; trims make the opening readable.
+  architecturalBox(group,[.64,.45,.018],[0,-.075,.474],dark);
+  for(const x of [-.345,.345])architecturalBox(group,[.075,.53,.065],[x,-.075,.495],trim);
+  architecturalBox(group,[.76,.085,.065],[0,.205,.495],stone);
+  architecturalBox(group,[.76,.09,.08],[0,-.337,.5],stone);
+  for(const y of [-.22,-.12,-.02,.08])architecturalBox(group,[.56,.016,.021],[0,y,.512],iron);
+  architecturalBox(group,[.47,.08,.018],[0,-.352,.551],iron);
+  for(const x of [-.31,.31])architecturalBox(group,[.065,.07,.052],[x,.293,.49],shine);
+  // Independent materials per furnace allow transient heating without changing saves.
+  const embersMaterial=new THREE.MeshStandardMaterial({
+    color:0xff8734,emissive:0xff4e1d,emissiveIntensity:.14,roughness:.88});
+  const embers=architecturalBox(group,[.45,.075,.025],[0,-.267,.525],embersMaterial);
+  const flameMaterial=new THREE.MeshStandardMaterial({
+    color:0xffc36a,emissive:0xff7428,emissiveIntensity:1.4,roughness:.72});
+  const flames=[];
+  for(const [x,h] of [[-.14,.15],[0,.22],[.14,.17]]){
+    const flame=new THREE.Mesh(new THREE.ConeGeometry(.075,h,4),flameMaterial);
+    flame.position.set(x,-.17+h*.1,.545);flame.visible=false;
+    flame.userData.worldDecorative=true;group.add(flame);flames.push(flame);
+  }
+  const light=new THREE.PointLight(0xff8c4b,0,3.2,2);
+  light.position.set(0,-.08,.57);light.userData.persistentWorldEffect=true;group.add(light);
+  group.userData.setHeating=(heating,progress=0)=>{
+    embersMaterial.emissiveIntensity=heating?1.45+.45*Math.sin(progress*10):.14;
+    flameMaterial.emissiveIntensity=heating?1.25+.5*Math.sin(progress*12):1.4;
+    flames.forEach((flame,i)=>{flame.visible=!!heating;flame.scale.y=heating?(.84+.22*Math.sin(progress*15+i)):1});
+    light.intensity=heating?1.2+.3*Math.sin(progress*11):0;
+  };
+  group.rotation.y=((facing||0)%4)*Math.PI/2;return group;
+}
+function setFurnaceHeating(key,heating,progress=0){
+  const root=worldMeshMap.get(key);
+  root?.userData?.setHeating?.(heating,progress);
 }
 function makeChestObject(facing=0){
   const g=new THREE.Group(),wood=materialFor('planks');
@@ -2811,10 +2907,33 @@ function decorateGrassTop(root,x,y,z,data){
 // Real models decorate the same voxel coordinate. Physics, saves and item recipes remain voxel authoritative.
 function makeFurnishingFallback(type,data){
   const root=new THREE.Group(),info=blockDef(type);
-  const material=new THREE.MeshStandardMaterial({color:info.color||0xa9835c,roughness:.83});
-  const flat=['rug','bedroll','campfire'].includes(type),tall=['floorLamp','tent'].includes(type);
-  const shape=new THREE.Mesh(new THREE.BoxGeometry(flat?.82:.79,flat?.09:tall?.94:.72,flat?.82:.79),material);
-  shape.position.y=flat?-.44:tall?-.03:-.14;root.add(shape);
+  if(type==='workbench'){
+    // Recognizable even while the textured GLB is still loading or fails.
+    const wood=materialFor('planks'),dark=architecturalMaterial('darkWood');
+    const metal=architecturalMaterial('iron'),light=architecturalMaterial('ironLight');
+    architecturalBox(root,[.91,.14,.87],[0,.33,0],wood);
+    for(const x of [-.34,.34])for(const z of [-.32,.32])
+      architecturalBox(root,[.13,.66,.13],[x,-.05,z],dark);
+    for(const z of [-.32,.32])architecturalBox(root,[.78,.09,.10],[0,-.12,z],wood);
+    architecturalBox(root,[.78,.06,.10],[0,.35,-.405],metal);
+    architecturalBox(root,[.24,.02,.25],[-.19,.415,-.09],architecturalMaterial('lightWood'));
+    architecturalBox(root,[.25,.055,.075],[.19,.44,.15],metal);
+    architecturalBox(root,[.055,.06,.27],[.19,.425,.27],dark);
+    architecturalBox(root,[.035,.055,.07],[0,.03,.408],light);
+  }else if(type==='campfire'){
+    // Stone ring, with the real survival-kit model replacing this geometry once loaded.
+    const stone=materialFor('stone'),wood=materialFor('planks');
+    for(const [x,z] of [[-.29,0],[.29,0],[0,-.29],[0,.29]])
+      architecturalBox(root,[.27,.19,.27],[x,-.395,z],stone);
+    for(const rot of [-.6,.6]){
+      const log=architecturalBox(root,[.16,.13,.65],[0,-.4,0],wood);log.rotation.y=rot;
+    }
+  }else{
+    const material=new THREE.MeshStandardMaterial({color:info.color||0xa9835c,roughness:.83});
+    const flat=['rug','bedroll'].includes(type),tall=['floorLamp','tent'].includes(type);
+    const shape=new THREE.Mesh(new THREE.BoxGeometry(flat?.82:.79,flat?.09:tall?.94:.72,flat?.82:.79),material);
+    shape.position.y=flat?-.44:tall?-.03:-.14;root.add(shape);
+  }
   root.rotation.y=(data.facing||0)*Math.PI/2;
   return root;
 }
@@ -2824,13 +2943,31 @@ function addFurnishingEffect(root,type,data){
     light.userData.persistentWorldEffect=true;root.add(light);
   }
   if(type==='campfire'&&data.lit!==false){
-    const flame=new THREE.Mesh(
-      new THREE.ConeGeometry(.15,.37,8),
-      new THREE.MeshStandardMaterial({color:0xff8e36,emissive:0xff531d,emissiveIntensity:1.15,transparent:true,opacity:.92}));
-    flame.position.set(0,-.17,0);flame.userData.worldDecorative=true;
-    flame.userData.persistentWorldEffect=true;root.add(flame);
-    const light=new THREE.PointLight(0xff873e,1.05,6.5,2);
-    light.position.set(0,.1,0);light.userData.persistentWorldEffect=true;root.add(light);
+    const flames=new THREE.Group();
+    const colors=[0xffa13d,0xffd26d,0xff7234],heights=[.31,.23,.26];
+    const mats=colors.map(color=>new THREE.MeshStandardMaterial({
+      color,emissive:color,emissiveIntensity:1.15,transparent:true,opacity:.94,depthWrite:false}));
+    for(let i=0;i<3;i++){
+      const flame=new THREE.Mesh(new THREE.ConeGeometry([.155,.11,.105][i],heights[i],5),mats[i]);
+      flame.position.set((i-1)*.105,-.24+heights[i]*.38,i===1?-.035:.025);
+      flames.add(flame);
+    }
+    flames.userData.worldDecorative=true;flames.userData.persistentWorldEffect=true;
+    root.add(flames);
+    const light=new THREE.PointLight(0xff873e,1,6.5,2);
+    light.position.set(0,-.12,0);light.userData.persistentWorldEffect=true;root.add(light);
+    root.userData.fireVisual={flames,light};
+    animatedCampfireRoots.add(root);
+  }
+}
+function animateCampfireVisuals(now){
+  for(const root of animatedCampfireRoots){
+    if(!root.parent){animatedCampfireRoots.delete(root);continue}
+    const visual=root.userData.fireVisual;if(!visual)continue;
+    const wobble=Math.sin(now*.006+root.position.x*2+root.position.z*3);
+    visual.flames.scale.set(1+.04*wobble,1+.11*wobble,1-.03*wobble);
+    visual.flames.rotation.y=.12*Math.sin(now*.002+root.position.z);
+    visual.light.intensity=.95+.18*wobble;
   }
 }
 function hydrateFurnishingGLB(root,key,x,y,z,type,data){
@@ -2865,8 +3002,7 @@ function makeWorldMesh(x,y,z,data){
   const d=blockDef(data),type=data.type,key=worldKey(x,y,z);if(d.hidden||isChunkRenderableData(data))return null;
   let root;
   if(type==='door'){
-    root=new THREE.Mesh(doorGeo,materialFor('door'));root.position.set(x,y+1,z);
-    const facing=(data.facing||0)*Math.PI/2;root.rotation.y=facing+(data.open?Math.PI/2:0);
+    root=makeDoorObject(data.facing||0,!!data.open);root.position.set(x,y+1,z);
   }else if(type==='torch'){
     root=new THREE.Mesh(torchGeo,materialFor('torch'));root.position.set(x,y+.34,z);
     const light=new THREE.PointLight(0xffb45e,1.25,7,2);light.position.y=.42;root.add(light);
@@ -2926,9 +3062,9 @@ function makeWorldMesh(x,y,z,data){
       root.scale.set(v,.95+hash2(x*5,z*13)*.06,v);
     }
   }
-  const casts=!(type==='water'||type==='glass'||type==='glassPane'||type==='leaves'||type==='pineLeaves'||type==='fire'||type==='windowFrame');
+  const casts=!(type==='water'||type==='glass'||type==='glassPane'||type==='leaves'||type==='pineLeaves'||type==='fire');
   root.castShadow=casts;root.receiveShadow=true;
-  root.traverse?.(o=>{if(o.isMesh&&!o.userData?.worldDecorative){o.castShadow=casts;o.receiveShadow=true}});
+  root.traverse?.(o=>{if(o.isMesh&&!o.userData?.worldDecorative){o.castShadow=casts&&!o.userData?.worldGlazing;o.receiveShadow=true}});
   scene.add(root);worldMeshMap.set(key,root);registerWorldObject(root,key,x,y,z,type);
   if(FURNISHING_ASSET_TYPES.has(type)){
     addFurnishingEffect(root,type,data);
@@ -4571,7 +4707,7 @@ function placeFreeBlock(hit){
   if(!hit){toast('놓을 곳을 조금 더 가까이에서 바라보자.');return;}
   const hitType=hit.object.userData.type,u=hit.object.userData;
   if(hitType==='door'){toggleDoorAt(u.gx,u.gy,u.gz);return}
-  if(hitType==='furnace'){toggleFurnace(true);return}
+  if(hitType==='furnace'){toggleFurnace(true,u.gx,u.gy,u.gz);return}
   if(hitType==='workbench'){survivalInventoryTab='craft';toggleInventory(true);return}
   if(typeof interactLifeBlock==='function'&&interactLifeBlock(hitType,u.gx,u.gy,u.gz))return;
   if(typeof FARM_PLANT_TYPES!=='undefined'&&FARM_PLANT_TYPES.includes(selectedType)){plantFarmItem(hit);return}
@@ -4842,9 +4978,11 @@ function buildFurnaceRecipes(){
     b.onclick=()=>runFurnace(recipe);box.appendChild(b);
   });
 }
-function toggleFurnace(force){
+function toggleFurnace(force,x,y,z){
   const wasOpen=furnaceOpen;
   furnaceOpen=typeof force==='boolean'?force:!furnaceOpen;
+  if(furnaceOpen&&Number.isFinite(x)&&Number.isFinite(y)&&Number.isFinite(z))furnaceTargetKey=worldKey(x,y,z);
+  if(!furnaceOpen)furnaceTargetKey='';
   if(furnaceOpen){
     stopMining();
     if(lifePanelOpen){lifePanelOpen=false;$('lifePanel')?.classList.add('hidden')}
@@ -4870,11 +5008,14 @@ function runFurnace(recipe){
     consumeBag(bagCount('charcoal')?'charcoal':'log',1);
   }
   runFurnace.busy=true;
+  const heatingKey=furnaceTargetKey;
+  setFurnaceHeating(heatingKey,true,0);
   $('furnaceMessage').textContent=blockDef(recipe.input).name+'을(를) 가열하는 중…';
   $('furnaceProgress').querySelector('i').style.width='0%';
   const start=performance.now(),duration=1800;
   const tick=()=>{
     const p=Math.min(1,(performance.now()-start)/duration);
+    setFurnaceHeating(heatingKey,p<1,p);
     $('furnaceProgress').querySelector('i').style.width=(p*100)+'%';
     if(p<1)requestAnimationFrame(tick);
     else{
@@ -6346,7 +6487,7 @@ function mobileSpecialUseTarget(){
   if(type==='door'||type==='doorTop'){
     if(toggleDoorAt(u.gx,u.gy,u.gz))return true;
   }
-  if(type==='furnace'){toggleFurnace(true);return true}
+  if(type==='furnace'){toggleFurnace(true,u.gx,u.gy,u.gz);return true}
   if(type==='workbench'){survivalInventoryTab='craft';toggleInventory(true);return true}
   if(interactLifeBlock(type,u.gx,u.gy,u.gz))return true
   if(nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
@@ -7238,7 +7379,7 @@ function animate(now){
   if(mode==='challenge')updateChallengeFly(dt);
   if(mode==='dungeon')updateDungeon(dt);
   if(mode==='free'){
-    updateFree(dt,now);
+    updateFree(dt,now);animateCampfireVisuals(now);
     if(freeSaveDirty){
       if(now>=freeSaveDueAt)saveFreeWorld();
     }else if(now-lastFreeSave>30000)saveFreeWorld();
