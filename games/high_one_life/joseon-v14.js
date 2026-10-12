@@ -234,7 +234,7 @@ function origin(seed,year){
 }
 function name(seed,salt,gender){return pick(seed,salt,SURNAMES)+pick(seed,salt+87,gender==='여자'?GIVEN_F:GIVEN_M);}
 function currentTitle(life){return is(life)?period(life.year):null;}
-function ensure(life){
+function ensure(life,fromSave=false){
  if(!is(life))return null;
  if(life.joseon)return life.joseon;
  const state=W9.ensure(life),p=life.profile;
@@ -273,7 +273,7 @@ function ensure(life){
   active:null,childCount:0,relocations:0,exposedFacts:0};
  life.joseon=s;
  life.log[0].text=p.name+'(이)가 '+region.name+'의 '+orig.name+'에서 태어났다.';
- historical(life,s);
+ if(!fromSave)historical(life,s);
  return s;
 }
 function log(life,text,kind='joseon-life'){life.logEvent(text,kind);}
@@ -329,6 +329,34 @@ function annual(life,s){
  life.career=age<14?'가업과 마을에서 배움':s.occupation;
  if(s.grain<60&&age>17&&age%6===0)log(life,'올해는 곡식이 모자라 가족이 끼니를 아껴 먹었다.','joseon-livelihood');
  if(s.grain>420&&age>17&&age%11===0)log(life,'곳간에 남은 양식을 보며 잠시 마음을 놓았다.','joseon-livelihood');
+ familyYears(life,s);
+}
+function familyYears(life,s){
+ const family=W9.ensure(life).people;
+ for(const p of family){
+  if(!p.alive||p.birthYear>life.year)continue;
+  const age=life.year-p.birthYear;
+  if(p.role==='자녀'){
+   for(const [when,what] of [[6,'아이가 동네 친구들과 놀러 다니기 시작했다.'],
+    [14,'아이가 집안일과 생업을 조금씩 거들기 시작했다.'],
+    [21,'아이가 자신의 앞날을 고민할 만큼 자랐다.']]){
+    const key='child-'+p.id+'-'+when;
+    if(age===when&&!s.yearSeen.includes(key)){
+     s.yearSeen.push(key);log(life,p.name+'(이)가 '+when+'세가 됐다. '+what,'joseon-family');
+     remember(s,p.name+'의 성장');
+    }
+   }
+  }
+  if(['어머니','아버지','외할머니','동반자'].includes(p.role)&&age>=64&&age<=100){
+   const roll=number(life.seed,p.birthYear+age*11+(p.id.length*37));
+   const chance=age>=92?.22:age>=83?.11:age>=74?.05:.016;
+   if(roll<chance){
+    p.alive=false;p.deadYear=life.year;
+    log(life,p.name+'(이)가 세상을 떠났다. 남겨진 가족들은 오래도록 그를 떠올렸다.','joseon-family');
+    remember(s,p.name+'을 떠나보낸 해');
+   }
+  }
+ }
 }
 function mortality(life,s){
  const a=life.age,h=life.stats.health;
@@ -454,7 +482,7 @@ function year(life){
  return true;
 }
 function restore(life,raw){
- const s=ensure(life);
+ const s=ensure(life,true);
  if(!s||!raw||raw.version!==14)return s;
  const str=(v,max=100)=>String(v||'').slice(0,max);
  for(const field of ['origin','originLabel','birthRegion','home','settlement','occupation','education'])
