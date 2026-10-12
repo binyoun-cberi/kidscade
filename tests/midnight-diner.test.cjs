@@ -210,3 +210,23 @@ test('v7 notebook pauses observation and prevents invisible punishment',()=>{
  assert.match(js,/document\.hidden\|\|!\$\('notebookPanel'\)\.classList\.contains\('hidden'\)/);
  assert.match(js,/function closeNotebook\(\)/);
 });
+
+test('v7.1 finished food plate stays above the scene and action bar on all screen shapes',()=>{
+ const html=read('games/high_midnight_diner/index.html');
+ const css=read('games/high_midnight_diner/plate-visibility.css');
+ const js=read('games/high_midnight_diner/game.js');
+ assert.match(html,/href="plate-visibility\.css"/);
+ assert.match(css,/\.game-layout\.eating \.plate-wrap\{/);
+ assert.match(css,/z-index:22!important/);
+ assert.match(css,/\.game-layout\.eating #plate\{/);
+ assert.match(css,/visibility:visible!important/);
+ assert.match(css,/\.game-layout\.eating \.action-bar\{z-index:30!important\}/);
+ assert.match(css,/orientation:portrait/);
+ assert.match(css,/orientation:landscape/);
+ assert.match(css,/safe-area-inset-bottom/);
+ assert.match(js,/layout\.classList\.toggle\('eating',game\.phase==='playing'\)/);
+ assert.match(js,/P\.draw\(\$\('plate'\),dish,chosen\)/);
+ const g=R.begin(42);
+ progressCooking(g);
+ assert.equal(g.phase,'playing','finished cooking should activate the visible eating stage');
+});
