@@ -8,26 +8,6 @@ const assert=require('node:assert/strict'),path=require('node:path');
 const root=path.resolve(__dirname,'../games/high_one_life');
 const Sim=require(path.join(root,'engine.js'));
 const traces=new WeakMap();
-const originalLog=Sim.Life.prototype.logEvent;
-Sim.Life.prototype.logEvent=function(text,kind){
- let t=traces.get(this);
- if(!t){t={raw:0,kind:{},perAge:{},unique:new Set(),repeated:0,beforeBirth:0,
-   afterDeath:0,wrongYear:0,historyYearErrors:0,futureHistory:0,wording:0};
-   traces.set(this,t);}
- const k=kind||'life';
- t.raw++;t.kind[k]=(t.kind[k]||0)+1;
- const age=this.age,year=this.year;
- t.perAge[age]=(t.perAge[age]||0)+1;
- if(year!==this.birthYear+age)t.wrongYear++;
- if(age<0)t.beforeBirth++;
- if(this.alive===false&&k!=='death')t.afterDeath++;
- if(k==='history'&&year>2026)t.futureHistory++;
- // A repeated story in the same lifetime is a narrative defect, not "variety".
- if(t.unique.has(text))t.repeated++;
- else t.unique.add(text);
- if(/게임용|가상 인생|시뮬레이션|게임 모형/.test(text))t.wording++;
- return originalLog.call(this,text,kind);
-};
 global.window={OneLifeSim:Sim};
 for(const [file,key] of [
  ['world-v2.js','OneLifeWorld2'],['world-v3.js','OneLifeWorld3'],
@@ -48,6 +28,27 @@ const W9=global.window.OneLifeWorld9,W10=global.window.OneLifeWorld10,
  W12=global.window.OneLifeWorld12,W13=global.window.OneLifeWorld13,
  DATA=global.window.OneLifeHistoryData10;
 delete global.window;
+// World9 replaces logEvent; wrap the final installed logger, not the v1 logger.
+const originalLog=Sim.Life.prototype.logEvent;
+Sim.Life.prototype.logEvent=function(text,kind){
+ let t=traces.get(this);
+ if(!t){t={raw:0,kind:{},perAge:{},unique:new Set(),repeated:0,beforeBirth:0,
+   afterDeath:0,wrongYear:0,historyYearErrors:0,futureHistory:0,wording:0};
+   traces.set(this,t);}
+ const k=kind||'life';
+ t.raw++;t.kind[k]=(t.kind[k]||0)+1;
+ const age=this.age,year=this.year;
+ t.perAge[age]=(t.perAge[age]||0)+1;
+ if(year!==this.birthYear+age)t.wrongYear++;
+ if(age<0)t.beforeBirth++;
+ if(this.alive===false&&k!=='death')t.afterDeath++;
+ if(k==='history'&&year>2026)t.futureHistory++;
+ // A repeated story in the same lifetime is a narrative defect, not "variety".
+ if(t.unique.has(text))t.repeated++;
+ else t.unique.add(text);
+ if(/게임용|가상 인생|시뮬레이션|게임 모형/.test(text))t.wording++;
+ return originalLog.call(this,text,kind);
+};
 const YEARS=[1907,1919,1935,1942,1968,1983,2004,2026];
 const N=Math.max(10,Math.min(1000,parseInt(process.argv[2]||'250',10)||250));
 const groups=[],totals={lives:0,fullRuns:0,invalidYears:0,stuckChoices:0,repeats:0};
