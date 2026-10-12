@@ -75,7 +75,7 @@ function move(life,state){
  const dest=p.settlement==='농촌'?'지역의 다른 마을':'다른 지역의 임시 거처';
  p.city=dest;p.settlement='소도시';state.moves++;
  tag(life,state,'거주지 이동');
- life.logEvent('가족과 상의해 '+before+'에서 '+dest+'(으)로 생활 터전을 옮겼다. (가상 인생)','history-impact');
+ life.logEvent('가족과 상의해 '+before+'에서 '+dest+'(으)로 생활 터전을 옮겼다.','history-impact');
  return true;
 }
 function school(life,state){
@@ -84,7 +84,7 @@ function school(life,state){
   state.schoolInterrupted=true;
   if(life.world)life.world.schooling='전쟁과 시대 변화로 공부를 쉬는 중';
   tag(life,state,'학업 중단');
-  life.logEvent('그해의 사회적 변화로 공부를 이어 가기 어려워졌다. 배움을 다시 찾을 방법을 생각했다. (가상 인생)','history-impact');
+  life.logEvent('한동안 학교에 갈 수 없었다. 다시 공부할 날을 기다렸다.','history-impact');
  }
  return true;
 }
@@ -205,7 +205,7 @@ function autoContext(life,state,fact){
  }
  if(fact.scenario==='pandemic'&&life.age<8){
   tag(life,state,'감염병 유행기의 생활');
-  life.logEvent('가족들이 변화한 생활 속에서 어린아이의 돌봄과 안전을 챙겼다. (가상 인생)','history-impact');
+  life.logEvent('어른들은 아이를 곁에 두고 하루를 조심스레 보냈다.','history-impact');
  }
 }
 return Object.freeze({OPTIONS,eligible,selectFact,prompt,apply,autoContext,important});
