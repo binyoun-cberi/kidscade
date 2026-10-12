@@ -365,7 +365,7 @@ test('v9 asset-rendered portions, labels, removed pieces, and interactions stay 
 });
 
 
-test('v9 food GLB material-color audit (textures, vertex colors, baseColor and coverage)',()=>{
+test('v9 food GLB material-color audit (textures, vertex colors, baseColor and coverage)',async()=>{
  const files=[
   ['부침개','assets/game/3d/food/ultimate-food-pack/pancakes-stack.glb'],
   ['수프','assets/game/food/bowl-soup.glb'],
@@ -402,6 +402,42 @@ test('v9 food GLB material-color audit (textures, vertex colors, baseColor and c
    rgb:colors.slice(0,20).map(c=>c.slice(0,3).map(n=>Number(n.toFixed(2))))
   };
   console.log('DINER_FOOD_MATERIAL_AUDIT '+JSON.stringify(assetReport));
+  // Inspect actual embedded/external PNG pixels, not just a texture filename.
+  const sharp=require('sharp');
+  let coloredTexturePixels=0,visibleTexturePixels=0,textureRefs=0;
+  const usedMaterials=new Set(primitives.map(p=>p.material).filter(Number.isInteger));
+  for(const materialId of usedMaterials){
+   const material=materials[materialId];
+   const texInfo=material?.pbrMetallicRoughness?.baseColorTexture;
+   if(!texInfo)continue;
+   textureRefs++;
+   const tex=textures[texInfo.index],image=images[tex?.source];
+   assert.ok(image,name+' baseColor texture image');
+   let payload;
+   if(image.uri){
+    const imagePath=path.resolve(path.dirname(path.join(root,file)),image.uri);
+    assert.ok(fs.existsSync(imagePath),name+' external texture must be packaged: '+image.uri);
+    payload=fs.readFileSync(imagePath);
+   }else if(Number.isInteger(image.bufferView)){
+    const glbBinaryOffset=20+len+8;
+    const bufferView=meta.bufferViews[image.bufferView];
+    payload=bytes.subarray(glbBinaryOffset+(bufferView.byteOffset||0),glbBinaryOffset+(bufferView.byteOffset||0)+bufferView.byteLength);
+   }else assert.fail(name+' texture has neither embedded bytes nor external URI');
+   const decoded=await sharp(payload).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+   const rgba=decoded.data;
+   for(let p=0;p<rgba.length;p+=4){
+    if(rgba[p+3]<32)continue;
+    visibleTexturePixels++;
+    const r=rgba[p],g=rgba[p+1],b=rgba[p+2];
+    if(Math.max(r,g,b)-Math.min(r,g,b)>9)coloredTexturePixels++;
+   }
+  }
+  console.log('DINER_FOOD_TEXTURE_PIXELS '+JSON.stringify({food:name,textureRefs,visibleTexturePixels,coloredTexturePixels}));
+  const tintedMaterial=usedMaterials.size>0&&Array.from(usedMaterials).some(i=>
+   (materials[i]?.pbrMetallicRoughness?.baseColorFactor||[1,1,1]).slice(0,3).some(v=>v<.90));
+  assert.ok(tintedMaterial||coloredTexturePixels>0||vertexColorCount>0,
+   name+' lacks all visible tinted, textured or vertex-color material evidence');
+
   assert.ok(materials.length>0||vertexColorCount>0,
    name+' has no material at all and may render white');
  }
