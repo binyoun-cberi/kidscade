@@ -43,6 +43,8 @@ test('Joseon scenes render with valid canvas-only drawing for every landscape',(
    kindNames.add(V3.summary(life).scene);
    assert.equal(V3.paint(fake,life),true);
   }
+ const scholar=born(123,1510);J.ensure(scholar).occupation='마을에서 글과 기술을 가르치는 일';
+ kindNames.add(V3.summary(scholar).scene);assert.equal(V3.paint(fake,scholar),true);
  for(const kind of ['farm','market','mountain','port','study'])assert.ok(kindNames.has(kind),'missing '+kind);
  assert.ok(fills.size>=10,'little visual palette variation');
  assert.equal(V3.paint(fake,born(77,2026)),false);
@@ -81,7 +83,7 @@ test('famine and family choices can coexist in one saved life without losing pen
  assert.equal(restored.getChoice().title,l.getChoice().title);
  settle(restored,1);
  toYear(restored,1680,2);
- const second=Sim.Life.restore(JSON.parse(JSON.stringify(restored.snapshot()));
+ const second=Sim.Life.restore(JSON.parse(JSON.stringify(restored.snapshot())));
  assert.ok(second);
  assert.equal(second.joseon3.choiceCount,restored.joseon3.choiceCount);
  assert.equal(second.joseon2.grain,restored.joseon2.grain);
@@ -91,6 +93,7 @@ test('trade, farming and family legacy make different trajectories',()=>{
  const farmer=toYear(born(26,1710),1737,0);
  const trader=toYear(born(26,1710),1737,1);
  assert.ok(farmer.alive&&trader.alive);
+ settle(farmer,0);settle(trader,1);
  const a=V3.ensure(farmer).decisions.find(d=>d.kind==='livelihood');
  const b=V3.ensure(trader).decisions.find(d=>d.kind==='livelihood');
  assert.ok(a&&b);assert.notEqual(a.action,b.action);
