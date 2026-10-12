@@ -97,3 +97,13 @@
 .v9-speed-controls button{min-height:44px;padding:6px 10px;border:1px solid #a2c8b6;border-radius:7px;font:inherit;font-size:12px;font-weight:700;background:#f2faf5;color:#366858}
 .v9-speed-controls button[aria-pressed="true"]{background:#326d61;color:#fff;border-color:#326d61}
 .v9-speed-controls #v9NextChoice{flex:1;min-width:115px}
+/* V10: historical facts and the player's fictional long-term consequences. */
+.v10-history-panel{margin:10px 0 12px;padding:12px;border-radius:11px;
+ border:1px solid #ddc3a3;background:#fbf7ef;display:grid;gap:8px}
+.v10-history-panel .stat-title{margin:0}
+.v10-history-panel p{font-size:12px;line-height:1.6;margin:0;overflow-wrap:anywhere}
+#v10HistoryStatus{font-weight:800;color:#67503c}
+#v10HistoryEffects{background:#fff;border-left:3px solid #ac8863;color:#5e534a;padding:9px}
+.v10-history-panel small{font-size:10px;color:#745f4c;line-height:1.6}
+.timeline .is-history{border-left:3px solid #a98664;background:#fcf8ef}
+.timeline .is-history-choice{border-left:3px solid #4b857c;background:#f0f8f3}
