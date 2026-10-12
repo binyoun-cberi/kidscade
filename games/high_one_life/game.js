@@ -608,7 +608,7 @@
       if(Joseon.isJoseon(life)){
         const home=Joseon.summary(life),family=Joseon4.summary(life);
         $('storyBirthText').textContent=life.birthYear+'년, '+home.region+'의 '+Joseon.ensure(life).birthStatus+' 집안에서 태어났다. '+
-          family.people.filter(x=>x.role==='mother'||x.role==='father').map(x=>x.name+'('+Joseon4.ROLES[x.role]+')').join('과/와 ')+'이 가까이 있었다.';
+          family.people.filter(x=>x.role==='mother'||x.role==='father').map(x=>x.name+'('+Joseon4.ROLES[x.role]+')').join(', ')+'이 곁에 있었다.';
         $('storyBirthNote').textContent=Joseon.ensure(life).landmark+'이 가까운 고을. 집안의 형편과 배울 기회는 모두 같지 않았다.';
         return;
       }
@@ -689,7 +689,7 @@
       life.birthYear+'년, '+firstPlace+'에서 태어났다.',
       oldLife?'출생할 때의 신분은 '+oldLife.status+'이고, '+oldLife.region+'에서 '+oldLife.occupation+' 일을 하며 살아왔다.':summary.story,
       oldLife&&oldLife.warMemory.length?'삶에 영향을 준 사건은 '+oldLife.warMemory.join(', ')+'이었다.':'',
-      oldLife&&Joseon4.summary(life).spouse?'혼인하여 '+Joseon4.summary(life).spouse.name+'와 삶을 함께한 시절이 있었다.':'',
+      oldLife&&Joseon4.summary(life).spouse?'혼인하여 '+Joseon4.particle(Joseon4.summary(life).spouse.name,'과','와')+' 삶을 함께한 시절이 있었다.':'',
       oldLife&&Joseon2.summary(life).events?'살아가는 동안 '+Joseon2.summary(life).events+'가지 지역·시대 변화도 지나갔다.':'',
       oldLife&&Joseon3.summary(life).legacy?'마지막에는 '+Joseon3.summary(life).legacy+'의 시간을 보냈다.':'',
       oldLife&&Joseon4.summary(life).memories.length?'가족과 함께한 기억으로 '+Joseon4.summary(life).memories.slice(-2).join(' ') :'',
