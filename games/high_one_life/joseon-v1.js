@@ -280,7 +280,7 @@ function hydrate(life,data){
  for(const k of ['region','landmark','settlement','birthStatus','status','family','occupation','school'])
   if(typeof old[k]==='string')fresh[k]=old[k].slice(0,70);
  for(const k of ['land','capital','literacy','studyYears','exams','children','household','relocations','hardshipUntil','educationPausedUntil','processedYear'])
-  if(Number.isInteger(old[k]))fresh[k]=clamp(old[k],k==='capital'?-120:0,k==='processedYear'||k.endsWith('Until')?life.year:1000);
+  if(Number.isInteger(old[k]))fresh[k]=clamp(old[k],k==='capital'?-120:0,k==='processedYear'?life.year:k.endsWith('Until')?life.year+12:1000);
  for(const k of ['office','married','parentsSupported','retired'])fresh[k]=old[k]===true;
  for(const k of ['seen','warMemory','memories','decisions','followups']){
   if(Array.isArray(old[k]))fresh[k]=old[k].slice(-40).filter(x=>x!==null&&['string','number','object'].includes(typeof x));
