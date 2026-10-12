@@ -53,6 +53,8 @@ global.window.OneLifeWorld13=World13;
 const Joseon=require(path.join(root,'joseon-v1.js'));
 global.window.OneLifeJoseon=Joseon;
 const Joseon2=require(path.join(root,'joseon-v2.js'));
+global.window.OneLifeJoseon2=Joseon2;
+const Joseon3=require(path.join(root,'joseon-v3.js'));
 delete global.window;
 const makeElement=(tag='div')=>{
  const listeners={}; const classes=new Set();
@@ -88,7 +90,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  const StableSim={...Sim,Life:class extends Sim.Life{
   constructor(seed,options){super(seed===undefined?911:seed,options);}
  }};
- const window={OneLifeSim:StableSim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeWorld6:World6,OneLifeWorld7:World7,OneLifeWorld8:World8,OneLifeCareers6:Careers6,OneLifeEvents6:Events6,OneLifeScene:Scene,OneLifeScenes6:Scenes6,OneLifeScenes8:Scenes8,OneLifeHistory:History,OneLifeWorld9:World9,OneLifeWorld10:World10,OneLifeWorld12:World12,OneLifeWorld13:World13,OneLifeJoseon:Joseon,OneLifeJoseon2:Joseon2,KidscadeGame:sdk,
+ const window={OneLifeSim:StableSim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeWorld6:World6,OneLifeWorld7:World7,OneLifeWorld8:World8,OneLifeCareers6:Careers6,OneLifeEvents6:Events6,OneLifeScene:Scene,OneLifeScenes6:Scenes6,OneLifeScenes8:Scenes8,OneLifeHistory:History,OneLifeWorld9:World9,OneLifeWorld10:World10,OneLifeWorld12:World12,OneLifeWorld13:World13,OneLifeJoseon:Joseon,OneLifeJoseon2:Joseon2,OneLifeJoseon3:Joseon3,KidscadeGame:sdk,
   scrollTo(){},addEventListener(){}};
  new Function('window','document','localStorage','performance','setInterval','clearInterval',
   code)(window,document,localStorage,{now:()=>now},
@@ -198,4 +200,17 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.match(get('historyContext').textContent,/일제강점기/);
  assert.ok(get('sceneLabel').textContent.includes('의 풍경'));
  assert.match(get('countrySourceNote').textContent,/이 시기의 생활환경/);
+ // Joseon births must open their own historical scene instead of modern stock scenery.
+ get('birthYearInput').value='1580';
+ get('birthLocation').value='korea';
+ get('drawBtn').click();
+ const joseonDraw=[...intervals.values()].at(-1);
+ for(let i=0;i<19;i++)joseonDraw();
+ assert.match(get('birthDate').textContent,/^1580년/);
+ get('lifeStartBtn').click();
+ assert.equal(get('currentYear').textContent,'1580년');
+ assert.match(get('historyContext').textContent,/조선/);
+ assert.match(get('sceneLabel').textContent,/봄|여름|가을|겨울/);
+ assert.match(get('v12EconomyEra').textContent,/곡식/);
+ assert.match(get('countryContextText').textContent,/출신/);
 });
