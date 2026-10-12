@@ -38,7 +38,7 @@ function gameHarness(){
   const ticks=Math.ceil(milliseconds/50);
   for(let i=0;i<ticks;i++){ms+=50;for(const fn of [...timers.values()])fn()}
  }
- return {node,advance,win,key(n){for(const fn of docListeners.get('keydown')||[])fn({key:String(n),code:'Digit'+n});}};
+ return {node,advance,win,key(n){for(const fn of listeners.get('keydown')||[])fn({key:String(n),code:'Digit'+n});}};
 }
 test('the first dish quietly invites a glance, then withdraws the signal on observation',()=>{
  const h=gameHarness();
