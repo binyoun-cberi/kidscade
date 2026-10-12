@@ -106,7 +106,9 @@ async function run(){
  }finally{
   try{ws?.close()}catch(_){}
   chrome.kill('SIGKILL');server.close();
-  fs.rmSync(dir,{force:true,recursive:true});
+  // Chrome may still be releasing its profile during process shutdown.
+  try{fs.rmSync(dir,{force:true,recursive:true,maxRetries:12,retryDelay:200});}
+  catch(err){console.warn('Nonfatal Chromium temporary-profile cleanup:',err.message);}
  }
 }
 test('midnight diner food visibility, WebGL loading, tap and 5 course gameplay on 4 viewports',{skip:!CHROME,timeout:180000},run);
