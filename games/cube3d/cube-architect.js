@@ -1990,6 +1990,7 @@ function loadCubeWorldBlockAtlas(){
 }
 loadCubeWorldBlockAtlas();
 let worldData=new Map(),worldMeshMap=new Map(),worldEdits=new Map(),worldInteractables=[],freeMeshes=[];
+const animatedCampfireRoots=new Set();
 let worldChunkMeshMap=new Map(),worldChunkDecorMap=new Map(),dirtyWorldChunks=new Set(),chunkRemeshQueued=false;
 let collectibles=[],collected=new Set(),selectedHotbarSlot=0,selectedType='grass';
 let hotbarTypes=['grass','dirt','stone','sand','log','planks','glass','door','water'];
@@ -2002,7 +2003,7 @@ let pendingPlayerStrikes=[],freeHitStopUntil=0;
 let inventoryBatchDepth=0,selectedCraftRecipeId=null,survivalCraftCategory='전체',craftingBusy=false;
 let discoveredResources=new Set(),discoveredRecipeIds=new Set(),unreadRecipeIds=new Set();
 let footstepDistanceAcc=0,lastFootstepX=null,lastFootstepZ=null,ambientAudioClock=0;
-let freeFlying=false,inventoryOpen=false,furnaceOpen=false,freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
+let freeFlying=false,inventoryOpen=false,furnaceOpen=false,furnaceTargetKey='',freeSimAccum=0,freeSimTick=0,dayTime=.28,freeHemi=null,freeSun=null,lastChemToast=0;
 let freeFluidKind='',lastEnvironmentDamage=0,survivalBreath=100,lastDrownDamage=0,freeFallPeakY=0;
 let freeViewMode='third',freeAvatarRoot=null,freeAvatarSignature='',freeAvatarSyncAt=0,freeAvatarFacingRight=false;
 let freeAvatarAction='',freeAvatarActionStartedAt=0,freeAvatarActionUntil=0,freeAvatarDefeated=false,freeAvatarReturnAt=0,freeViewBeforeDefeat=null;
@@ -2622,7 +2623,7 @@ function forEachActiveWorldBlock(fn){
 }
 function removeWorldMesh(key){
   const root=worldMeshMap.get(key);if(!root)return;
-  scene.remove(root);worldMeshMap.delete(key);
+  scene.remove(root);worldMeshMap.delete(key);animatedCampfireRoots.delete(root);
   worldInteractables=worldInteractables.filter(x=>x.userData?.worldKey!==key);
   freeMeshes=freeMeshes.filter(x=>x.userData?.worldKey!==key);
 }
@@ -2906,10 +2907,33 @@ function decorateGrassTop(root,x,y,z,data){
 // Real models decorate the same voxel coordinate. Physics, saves and item recipes remain voxel authoritative.
 function makeFurnishingFallback(type,data){
   const root=new THREE.Group(),info=blockDef(type);
-  const material=new THREE.MeshStandardMaterial({color:info.color||0xa9835c,roughness:.83});
-  const flat=['rug','bedroll','campfire'].includes(type),tall=['floorLamp','tent'].includes(type);
-  const shape=new THREE.Mesh(new THREE.BoxGeometry(flat?.82:.79,flat?.09:tall?.94:.72,flat?.82:.79),material);
-  shape.position.y=flat?-.44:tall?-.03:-.14;root.add(shape);
+  if(type==='workbench'){
+    // Recognizable even while the textured GLB is still loading or fails.
+    const wood=materialFor('planks'),dark=architecturalMaterial('darkWood');
+    const metal=architecturalMaterial('iron'),light=architecturalMaterial('ironLight');
+    architecturalBox(root,[.91,.14,.87],[0,.33,0],wood);
+    for(const x of [-.34,.34])for(const z of [-.32,.32])
+      architecturalBox(root,[.13,.66,.13],[x,-.05,z],dark);
+    for(const z of [-.32,.32])architecturalBox(root,[.78,.09,.10],[0,-.12,z],wood);
+    architecturalBox(root,[.78,.06,.10],[0,.35,-.405],metal);
+    architecturalBox(root,[.24,.02,.25],[-.19,.415,-.09],architecturalMaterial('lightWood'));
+    architecturalBox(root,[.25,.055,.075],[.19,.44,.15],metal);
+    architecturalBox(root,[.055,.06,.27],[.19,.425,.27],dark);
+    architecturalBox(root,[.035,.055,.07],[0,.03,.408],light);
+  }else if(type==='campfire'){
+    // Stone ring, with the real survival-kit model replacing this geometry once loaded.
+    const stone=materialFor('stone'),wood=materialFor('planks');
+    for(const [x,z] of [[-.29,0],[.29,0],[0,-.29],[0,.29]])
+      architecturalBox(root,[.27,.19,.27],[x,-.395,z],stone);
+    for(const rot of [-.6,.6]){
+      const log=architecturalBox(root,[.16,.13,.65],[0,-.4,0],wood);log.rotation.y=rot;
+    }
+  }else{
+    const material=new THREE.MeshStandardMaterial({color:info.color||0xa9835c,roughness:.83});
+    const flat=['rug','bedroll'].includes(type),tall=['floorLamp','tent'].includes(type);
+    const shape=new THREE.Mesh(new THREE.BoxGeometry(flat?.82:.79,flat?.09:tall?.94:.72,flat?.82:.79),material);
+    shape.position.y=flat?-.44:tall?-.03:-.14;root.add(shape);
+  }
   root.rotation.y=(data.facing||0)*Math.PI/2;
   return root;
 }
@@ -2919,13 +2943,31 @@ function addFurnishingEffect(root,type,data){
     light.userData.persistentWorldEffect=true;root.add(light);
   }
   if(type==='campfire'&&data.lit!==false){
-    const flame=new THREE.Mesh(
-      new THREE.ConeGeometry(.15,.37,8),
-      new THREE.MeshStandardMaterial({color:0xff8e36,emissive:0xff531d,emissiveIntensity:1.15,transparent:true,opacity:.92}));
-    flame.position.set(0,-.17,0);flame.userData.worldDecorative=true;
-    flame.userData.persistentWorldEffect=true;root.add(flame);
-    const light=new THREE.PointLight(0xff873e,1.05,6.5,2);
-    light.position.set(0,.1,0);light.userData.persistentWorldEffect=true;root.add(light);
+    const flames=new THREE.Group();
+    const colors=[0xffa13d,0xffd26d,0xff7234],heights=[.31,.23,.26];
+    const mats=colors.map(color=>new THREE.MeshStandardMaterial({
+      color,emissive:color,emissiveIntensity:1.15,transparent:true,opacity:.94,depthWrite:false}));
+    for(let i=0;i<3;i++){
+      const flame=new THREE.Mesh(new THREE.ConeGeometry([.155,.11,.105][i],heights[i],5),mats[i]);
+      flame.position.set((i-1)*.105,-.24+heights[i]*.38,i===1?-.035:.025);
+      flames.add(flame);
+    }
+    flames.userData.worldDecorative=true;flames.userData.persistentWorldEffect=true;
+    root.add(flames);
+    const light=new THREE.PointLight(0xff873e,1,6.5,2);
+    light.position.set(0,-.12,0);light.userData.persistentWorldEffect=true;root.add(light);
+    root.userData.fireVisual={flames,light};
+    animatedCampfireRoots.add(root);
+  }
+}
+function animateCampfireVisuals(now){
+  for(const root of animatedCampfireRoots){
+    if(!root.parent){animatedCampfireRoots.delete(root);continue}
+    const visual=root.userData.fireVisual;if(!visual)continue;
+    const wobble=Math.sin(now*.006+root.position.x*2+root.position.z*3);
+    visual.flames.scale.set(1+.04*wobble,1+.11*wobble,1-.03*wobble);
+    visual.flames.rotation.y=.12*Math.sin(now*.002+root.position.z);
+    visual.light.intensity=.95+.18*wobble;
   }
 }
 function hydrateFurnishingGLB(root,key,x,y,z,type,data){
@@ -4665,7 +4707,7 @@ function placeFreeBlock(hit){
   if(!hit){toast('놓을 곳을 조금 더 가까이에서 바라보자.');return;}
   const hitType=hit.object.userData.type,u=hit.object.userData;
   if(hitType==='door'){toggleDoorAt(u.gx,u.gy,u.gz);return}
-  if(hitType==='furnace'){toggleFurnace(true);return}
+  if(hitType==='furnace'){toggleFurnace(true,u.gx,u.gy,u.gz);return}
   if(hitType==='workbench'){survivalInventoryTab='craft';toggleInventory(true);return}
   if(typeof interactLifeBlock==='function'&&interactLifeBlock(hitType,u.gx,u.gy,u.gz))return;
   if(typeof FARM_PLANT_TYPES!=='undefined'&&FARM_PLANT_TYPES.includes(selectedType)){plantFarmItem(hit);return}
@@ -4936,9 +4978,11 @@ function buildFurnaceRecipes(){
     b.onclick=()=>runFurnace(recipe);box.appendChild(b);
   });
 }
-function toggleFurnace(force){
+function toggleFurnace(force,x,y,z){
   const wasOpen=furnaceOpen;
   furnaceOpen=typeof force==='boolean'?force:!furnaceOpen;
+  if(furnaceOpen&&Number.isFinite(x)&&Number.isFinite(y)&&Number.isFinite(z))furnaceTargetKey=worldKey(x,y,z);
+  if(!furnaceOpen)furnaceTargetKey='';
   if(furnaceOpen){
     stopMining();
     if(lifePanelOpen){lifePanelOpen=false;$('lifePanel')?.classList.add('hidden')}
@@ -4964,11 +5008,14 @@ function runFurnace(recipe){
     consumeBag(bagCount('charcoal')?'charcoal':'log',1);
   }
   runFurnace.busy=true;
+  const heatingKey=furnaceTargetKey;
+  setFurnaceHeating(heatingKey,true,0);
   $('furnaceMessage').textContent=blockDef(recipe.input).name+'을(를) 가열하는 중…';
   $('furnaceProgress').querySelector('i').style.width='0%';
   const start=performance.now(),duration=1800;
   const tick=()=>{
     const p=Math.min(1,(performance.now()-start)/duration);
+    setFurnaceHeating(heatingKey,p<1,p);
     $('furnaceProgress').querySelector('i').style.width=(p*100)+'%';
     if(p<1)requestAnimationFrame(tick);
     else{
@@ -6440,7 +6487,7 @@ function mobileSpecialUseTarget(){
   if(type==='door'||type==='doorTop'){
     if(toggleDoorAt(u.gx,u.gy,u.gz))return true;
   }
-  if(type==='furnace'){toggleFurnace(true);return true}
+  if(type==='furnace'){toggleFurnace(true,u.gx,u.gy,u.gz);return true}
   if(type==='workbench'){survivalInventoryTab='craft';toggleInventory(true);return true}
   if(interactLifeBlock(type,u.gx,u.gy,u.gz))return true
   if(nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
@@ -7332,7 +7379,7 @@ function animate(now){
   if(mode==='challenge')updateChallengeFly(dt);
   if(mode==='dungeon')updateDungeon(dt);
   if(mode==='free'){
-    updateFree(dt,now);
+    updateFree(dt,now);animateCampfireVisuals(now);
     if(freeSaveDirty){
       if(now>=freeSaveDueAt)saveFreeWorld();
     }else if(now-lastFreeSave>30000)saveFreeWorld();
