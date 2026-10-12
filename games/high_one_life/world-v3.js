@@ -114,6 +114,20 @@
   }
   function childEvents(life){
     const w=setup(life),p=life.profile,age=life.age;
+    // A documented historical war may lead to a FICTIONAL interruption.
+    // Do not grant uninterrupted school years or age-16 graduation while
+    // that particular saved life remains marked as having paused studies.
+    if(life.world10?.schoolInterrupted&&age>=7&&age<=16){
+      if(age===16){
+        w.schooling='시대적 위기로 학업 중단';
+        w.educationLevel='학업 중단·추후 재교육 가능';
+        life.logEvent('그해에는 학업을 마치지 못했다. 훗날 다시 배움을 이어 갈 수 있다. (가상 인생)','history-impact');
+      }else if(age%3===0){
+        life.logEvent('배움이 잠시 중단되어 가족과 다른 학습 방법을 알아보았다. (가상 인생)','history-life');
+      }
+      return;
+    }
+
     if(age===6){
       if(w.schoolRoll<w.schoolChance){
         w.schooling='학교에 다니는 중';w.educationYears=1;w.educationLevel='기초 교육';
