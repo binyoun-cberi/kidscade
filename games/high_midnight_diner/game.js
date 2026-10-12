@@ -44,6 +44,7 @@ function repaint(){
  const layout=document.querySelector('.game-layout');
  layout.classList.toggle('cooking',game.phase==='cooking');
  layout.classList.toggle('eating',game.phase==='playing');
+ layout.classList.toggle('first-plate-choice',isFirstPlate()&&game.phase==='playing'&&!firstPlate.firstChoice);
  $('cookPanel').classList.toggle('hidden',game.phase!=='cooking');
  $('memoryPanel').classList.toggle('hidden',!dish.observed.length);
  renderMemory();
@@ -174,7 +175,7 @@ function startCooking(){
   const outcome=R.tickCooking(game,dt,peekHeld);
   if(!outcome.ok){stopCooking();return;}
   if(outcome.revealed){
-   if(isFirstPlate()&&!firstPlate.peeked){
+   if(isFirstPlate()&&!firstPlate.peeked&&!game.dish.currentPeek?.concealed){
     firstPlate.peeked=true;
     $('peekBtn').classList.remove('first-glimpse');
     $('chefLine').textContent='“내 손을 보고 있었나?”';
