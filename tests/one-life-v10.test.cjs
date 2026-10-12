@@ -73,7 +73,7 @@ test('1935 birth faces war-time household decision, resettlement and interrupted
   resolve(l);
   const s=W10.ensure(l);
   assert.ok(s.factsSeen.some(id=>Data.FACTS.find(f=>f.id===id)?.title==='한국전쟁 발발'));
-  assert.ok(l.log.filter(e=>e.kind==='history'&&e.year===1950).length===1);
+  assert.equal(l.log.filter(e=>e.kind==='history'&&e.year===1950).length,Data.forYear(1950).length);
   assert.ok(s.tags.includes('한국전쟁 시기'));
   assert.equal(s.schoolInterrupted,true);
   assert.ok(s.moves>=1);
