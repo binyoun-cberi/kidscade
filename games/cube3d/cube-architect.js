@@ -1088,7 +1088,7 @@ const BLOCK_DEFS={
   pineLeaves:{name:'침엽수 잎',icon:'🌲',color:0x31624a,category:'자연',solid:true,flammable:true,transparent:true,opacity:.86},
   cactus:{name:'선인장',icon:'🌵',color:0x477a42,category:'자연',solid:true},
   reed:{name:'갈대',icon:'🌾',color:0x9cab64,category:'자연',solid:false,special:'reed'},
-  workbench:{name:'제작대',icon:'🛠',color:0x9b744b,category:'기능',solid:true},
+  workbench:{name:'제작대',icon:'🛠',color:0x9b744b,category:'기능',solid:true,special:'workbench'},
   hand:{name:'맨손',icon:'✊',color:0x8fa3b7,category:'기능',solid:false,hidden:true},
   sticks:{name:'막대',icon:'╱',color:0x9b744b,category:'기능',solid:false,hidden:true},
   woodPick:{name:'나무 곡괭이',icon:'⛏',color:0xad906c,category:'기능',solid:false,hidden:true},
