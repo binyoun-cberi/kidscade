@@ -91,3 +91,9 @@
 .v9-chronicle-tools button{min-height:35px;border:1px solid #a9c9bb;border-radius:7px;padding:6px 11px;background:#e8f2ed}
 .v9-chronicle-tools button[hidden]{display:none}
 @media(max-width:410px){.v9-people-list{grid-template-columns:1fr}}
+
+
+.v9-speed-controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:9px}
+.v9-speed-controls button{min-height:44px;padding:6px 10px;border:1px solid #a2c8b6;border-radius:7px;font:inherit;font-size:12px;font-weight:700;background:#f2faf5;color:#366858}
+.v9-speed-controls button[aria-pressed="true"]{background:#326d61;color:#fff;border-color:#326d61}
+.v9-speed-controls #v9NextChoice{flex:1;min-width:115px}
