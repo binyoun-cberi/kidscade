@@ -592,7 +592,7 @@
         ?'살면서 '+life.world.educationLevel+'의 시간을 보냈다.':'',
       life.career&&life.career!=='학생'?'마지막으로 기억되는 일은 '+life.career+'이었다.':'',
       careLife.careYears?'가족을 돌보며 보낸 시간도 '+careLife.careYears+'년이었다.':'',
-      careLife.memories.length?'오래도록 마음에 남은 것은 '+careLife.memories.slice(-2).join('와 ')+'이었다.':''
+      careLife.memories.length?'마지막까지 떠오른 기억은 '+careLife.memories.slice(-2).join(', ')+'였다.':''
     ].filter(Boolean);
     $('endStory').textContent=chapters.join(' ');
     const endChoices=$('endChoices');endChoices.replaceChildren();
