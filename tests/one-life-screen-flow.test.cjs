@@ -49,6 +49,8 @@ global.window.OneLifeEraPolicy12=EraPolicy12;
 const World12=require(path.join(root,'world-v12.js'));
 global.window.OneLifeWorld12=World12;
 const World13=require(path.join(root,'world-v13.js'));
+global.window.OneLifeWorld13=World13;
+const Joseon=require(path.join(root,'joseon-v1.js'));
 delete global.window;
 const makeElement=(tag='div')=>{
  const listeners={}; const classes=new Set();
@@ -84,7 +86,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  const StableSim={...Sim,Life:class extends Sim.Life{
   constructor(seed,options){super(seed===undefined?911:seed,options);}
  }};
- const window={OneLifeSim:StableSim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeWorld6:World6,OneLifeWorld7:World7,OneLifeWorld8:World8,OneLifeCareers6:Careers6,OneLifeEvents6:Events6,OneLifeScene:Scene,OneLifeScenes6:Scenes6,OneLifeScenes8:Scenes8,OneLifeHistory:History,OneLifeWorld9:World9,OneLifeWorld10:World10,OneLifeWorld12:World12,OneLifeWorld13:World13,KidscadeGame:sdk,
+ const window={OneLifeSim:StableSim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeWorld6:World6,OneLifeWorld7:World7,OneLifeWorld8:World8,OneLifeCareers6:Careers6,OneLifeEvents6:Events6,OneLifeScene:Scene,OneLifeScenes6:Scenes6,OneLifeScenes8:Scenes8,OneLifeHistory:History,OneLifeWorld9:World9,OneLifeWorld10:World10,OneLifeWorld12:World12,OneLifeWorld13:World13,OneLifeJoseon:Joseon,KidscadeGame:sdk,
   scrollTo(){},addEventListener(){}};
  new Function('window','document','localStorage','performance','setInterval','clearInterval',
   code)(window,document,localStorage,{now:()=>now},
