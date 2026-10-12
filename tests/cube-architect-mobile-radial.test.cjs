@@ -39,7 +39,8 @@ test('survival uses one action hub instead of duplicate harvest and place button
 test('camp starts with simple taps while the radial menu remains available',()=>{
   const camp=read('games/cube3d/cube-architect-camp.js');
   assert.doesNotMatch(camp,/mobile-radial-open|mobile-radial-harvest/);
-  assert.match(js,/행동 버튼을 한 번 눌러 보자/);
+  assert.match(js,/else mobileDefaultAction\(\)/);
+  assert.match(js,/행동 버튼을 꾹 누르면 관찰·사용·채집·설치를 골라 쓸 수 있어요/);
   assert.match(js,/function executeMobileRadialAction/);
 });
 
