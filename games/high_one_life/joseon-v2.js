@@ -80,7 +80,7 @@ const option=(label,noteText,action,effects)=>({label,note:noteText,action,effec
 function prompt(life){
  const s=ensure(life),q=s?.active;if(!q)return null;
  const j=J.ensure(life),r=REGIONAL[j.region]||REGIONAL['경기도'];
- if(q.kind==='famine')return {title:q.title+' · 집안의 곡식을 어떻게 할까?',description:j.region+'에 살고 있다. 곡식이 귀해지고 이웃의 사정도 어려워졌다. 선택은 이후의 먹을거리와 인연에 영향을 준다.',options:[
+ if(q.kind==='famine')return {title:q.title+' · 집안의 곡식을 어떻게 할까?',description:j.region+'에 살고 있다. 곡식이 귀해지고 이웃의 사정도 어려워졌다. 곳간에 남은 곡식이 얼마 되지 않는다. 무엇부터 지킬까?',options:[
   option('비축한 곡식을 아껴 쓴다','당장의 생존을 위해 식사를 줄여 가며 버틴다','ration',{health:-3,happiness:-3}),
   option('이웃과 곡식을 나눈다','서로 도우며 버티지만 집안의 여분은 줄어든다','share',{bonds:9,wealth:-5}),
   option('먹을 것을 찾아 다른 고을로 간다','옮겨 갈 비용과 위험을 감수한다','move',{health:2,wealth:-8})]};
@@ -121,7 +121,21 @@ function decide(life,index){
  record(life,s,chosen,'joseon2-choice');
  s.decisions.push({id:s.active.id,year:life.year,kind,action:a.action,label:a.label});
  s.decisions=s.decisions.slice(-40);
- s.followups.push({year:life.year+3,id:s.active.id,text:'몇 해 전 '+a.label+'는 선택이 지금의 고을 살림과 이웃의 관계에 남았다.'});
+ const echoes={
+  ration:'흉년 뒤에도 아껴 먹던 버릇이 남았다. 곳간의 곡식을 다시 헤아렸다.',
+  share:'곡식을 나누었던 이웃과 다시 만났다. 어려운 시절에 나눈 몫을 기억하고 있었다.',
+  move:'낯선 고을에서 지내며 잃어버린 물건과 새로 얻은 인연을 헤아렸다.',
+  openTrade:'새로 알게 된 상인이 다시 물건을 보러 찾아왔다.',
+  steady:'익숙한 장터에서 거래를 이어 가며 변해 가는 상권을 지켜보았다.',
+  cooperate:'짐을 나누어 나르던 사람들이 다시 장터에 모였다.',
+  homeland:'돌보던 논밭에서 그해의 수확을 거두었다.',
+  commerce:'다른 고을 장터에서 배운 흥정법을 다시 써 볼 일이 생겼다.',
+  mutual:'함께 살림을 돌본 이웃이 이번에는 손을 보태 주었다.',
+  shelter:'고을의 혼란은 가라앉았지만 그때 잃은 것은 쉽게 돌아오지 않았다.',
+  avoid:'피란을 끝내고 돌아와도 살림을 다시 꾸리는 데 시간이 들었다.',
+  aid:'혼란 속에서 이웃을 돕던 날이 사람들 사이에서 다시 이야기되었다.'
+ };
+ s.followups.push({year:life.year+3,id:s.active.id,text:echoes[a.action]||'그 무렵의 일이 오래 기억에 남았다.'});
  s.followups=s.followups.slice(-16);
  s.active=null;life.pending=null;
  promote(life,s);return true;

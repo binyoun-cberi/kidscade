@@ -20,6 +20,32 @@ const BOY=['돌쇠','복동','만수','길동','춘식','덕수','영수','명�
 const GIRL=['분이','순이','복순','덕이','춘희','금이','영희','점순','달래','연이','정이','옥이'];
 const TRAITS=['부지런한','다정한','조용한','호기심 많은','꼼꼼한','신중한','활달한'];
 const ROLES={mother:'어머니',father:'아버지',sibling:'형제자매',spouse:'배우자',child:'자녀'};
+
+// Names in dialogue need grammatical endings, not an unconditional '가' or '와'.
+const particle=(n,closed,open)=>{const s=String(n),code=s.charCodeAt(s.length-1);return s+(code>=44032&&code<=55203&&(code-44032)%28?closed:open);};
+function rememberedRelative(person,action){
+ const n=person.name,withPerson=particle(n,'과','와');
+ const lines={
+  help:withPerson+' 일손을 나누던 날이 떠올랐다.',
+  support:n+'에게 보낸 곡식이 어려웠던 철에 도움이 되었다.',
+  visit:n+'의 안부를 살피러 갔던 날을 기억한다.',
+  teach:n+'에게 일러 준 글자를 이제 장부에서 찾아 읽었다.',
+  work:n+'에게 가르친 손기술이 실제 살림에 쓰이기 시작했다.',
+  listen:n+'의 이야기를 끝까지 들은 뒤 서로 나누는 말이 늘었다.',
+  settle:n+'에게 소개했던 일터에서 반가운 소식이 왔다.',
+  journey:n+'에게서 다른 고을의 소식을 담은 편지가 도착했다.',
+  inherit:n+'에게 맡긴 생업이 다음 계절의 살림을 지탱했다.',
+  sharework:withPerson+' 일손을 나누며 바쁜 철을 넘겼다.',
+  gift:n+'에게 건넸던 작은 물건을 아직 간직하고 있었다.',
+  plan:withPerson+' 아껴 둔 곡식이 필요한 날에 쓰였다.',
+  kinwork:withPerson+' 함께 일을 해낸 날이 떠올랐다.',
+  encourage:particle(n,'은','는')+' 그때 건넨 격려를 기억한다고 했다.',
+  talk:withPerson+' 집안 살림을 의논했던 날이 생각났다.',
+  remember:withPerson+' 지냈던 때가 떠올랐다.'
+ };
+ return person.alive?lines[action]||'함께 지낸 날이 떠올랐다.':'세상을 떠난 '+n+'의 목소리가 떠올랐다. '+(lines[action]||'');
+}
+
 function person(life,id,role,birthYear,sex){
  const salt=role==='mother'?70:role==='father'?72:role==='spouse'?74:role==='child'?80:84;
  const n=Math.floor(hash(life.seed,salt+birthYear+id.length)*12);
@@ -27,11 +53,20 @@ function person(life,id,role,birthYear,sex){
  return {id,role,name:(sex==='여자'?GIRL:BOY)[n],sex,birthYear,
   trait,alive:true,relation:clamp(52+Math.floor(hash(life.seed,salt+birthYear)*31),35,94),
   wellbeing:clamp(70+Math.floor(hash(life.seed,salt+yearNumber(id))*23),40,100),
-  learning:0,work:role==='mother'||role==='father'?'집안과 생업을 돌봄':role==='child'?'자라는 중':'집안의 일',
+  learning:0,atHome:role!=='sibling'||life.birthYear-birthYear<22,joinedYear:null,work:role==='mother'||role==='father'?'집안과 생업을 돌봄':role==='child'?'자라는 중':'집안의 일',
   married:false,lifeYears:59+Math.floor(hash(life.seed,salt+yearNumber(id)+299)*33),
   diedYear:null};
 }
 function yearNumber(id){return [...id].reduce((n,c)=>n+c.charCodeAt(0),0);}
+function uniqueName(people,p){
+ const choices=p.sex==='여자'?GIRL:BOY;
+ const at=choices.indexOf(p.name);
+ for(let i=0;i<choices.length;i++){
+  const candidate=choices[(Math.max(0,at)+i)%choices.length];
+  if(!people.some(x=>x.name===candidate)){p.name=candidate;return p;}
+ }
+ return p;
+}
 function makeState(life){
  const p=J.ensure(life),n=Math.min(3,Math.max(0,life.profile.siblings||0)),birth=life.birthYear;
  const motherAge=clamp(life.profile.motherAge||29,18,49),
@@ -42,7 +77,7 @@ function makeState(life){
  ];
  for(let i=0;i<n;i++){
   const difference=Math.floor(hash(life.seed,510+i)*13)-6;
-  people.push(person(life,'sibling-'+i,'sibling',birth+difference,hash(life.seed,529+i)<.48?'여자':'남자'));
+  people.push(uniqueName(people,person(life,'sibling-'+i,'sibling',birth+difference,hash(life.seed,529+i)<.48?'여자':'남자')));
  }
  const state={version:4,processedYear:life.year,people,queue:[],active:null,
   decisions:[],memories:[],recent:[],seen:[],followups:[],careYears:0,legacies:0};
@@ -56,17 +91,17 @@ function addSpouse(life,s,marriageYear){
  const sex=life.gender==='남자'?'여자':'남자';
  const ageAtMarriage=clamp(18+Math.floor(hash(life.seed,690)*7),17,30);
  const spouse=person(life,'spouse','spouse',marriageYear-ageAtMarriage,sex);
- spouse.work='집안과 생업을 함께 돌봄';s.people.push(spouse);
+ spouse.joinedYear=marriageYear;spouse.work='집안과 생업을 함께 돌봄';s.people.push(uniqueName(s.people,spouse));
  if(marriageYear===life.year)
-  remember(life,s,spouse.name+'와 혼인하고 한집에서 새로운 생활을 시작했다.','joseon4-family');
+  remember(life,s,particle(spouse.name,'과','와')+' 혼인하고 한집에서 새로운 생활을 시작했다.','joseon4-family');
 }
 function addChild(life,s,bornYear){
  if(s.people.filter(x=>x.role==='child').length>=6)return;
  const id='child-'+s.people.filter(x=>x.role==='child').length;
  const child=person(life,id,'child',bornYear,hash(life.seed,bornYear+456)<.50?'여자':'남자');
- s.people.push(child);
+ s.people.push(uniqueName(s.people,child));
  if(bornYear===life.year)
-  remember(life,s,child.name+'가 태어났다. 집안에 작은 아이의 울음소리가 들렸다.','joseon4-family');
+  remember(life,s,particle(child.name,'이','가')+' 태어났다. 아이의 울음소리가 집안에 퍼졌다.','joseon4-family');
 }
 function age(person,year){return Math.max(0,year-person.birthYear);}
 function living(s,role,year=Infinity){return s.people.filter(x=>x.alive&&x.birthYear<=year&&(!role||x.role===role));}
@@ -81,7 +116,7 @@ function sync(life,s){
  if(!j)return;
  const spouse=s.people.find(x=>x.role==='spouse');
  if(spouse&& !spouse.alive){j.married=false;life.profile.partner=false;}
- if(life.year<1900)j.household=clamp(1+living(s,null,life.year).length,1,8);
+ if(life.year<1900)j.household=clamp(1+living(s,null,life.year).filter(x=>x.atHome!==false).length,1,8);
 }
 function catchUp(life,s){
  const j=J.ensure(life);
@@ -105,7 +140,7 @@ function enqueue(life,s,kind,p){
  promote(life,s);
 }
 function promote(life,s){
- if(!s||s.active||life.pending||!life.alive||!J.inOldEra(life)||!s.queue.length)return;
+ if(!s||s.active||life.pending||!life.alive||!J.isJoseon(life)||!s.queue.length)return;
  s.active=s.queue.shift();
  life.pending='joseon4:'+s.active.id;
 }
@@ -145,7 +180,7 @@ function prompt(life){
  const p=s.people.find(x=>x.id===q.personId);
  if(!p?.alive){return {title:'가족을 기억하는 날',description:'집안의 소식을 돌아본다.',
   options:[{label:'지난날을 기억한다',note:'함께한 시간을 마음에 남긴다',action:'remember',effects:{bonds:1}}]};}
- return {title:TITLES[q.kind],description:p.name+'('+ROLES[p.role]+', '+age(p,life.year)+'세)은 '+p.trait+' 사람이다. 집안의 일에도 각자의 바람이 있다.',
+ return {title:TITLES[q.kind],description:particle(p.name,'은','는')+' '+age(p,life.year)+'세의 '+ROLES[p.role]+'다. '+p.trait+' 성격으로 '+p.work+'에 마음을 쓰고 있다.',
   options:options(q.kind,p)};
 }
 const OUTCOMES={
@@ -183,8 +218,8 @@ function choose(life,index){
  if(a==='work'&&who){who.work='집안의 생업을 배우는 중';who.learning++;}
  if(a==='listen'&&who){who.learning+=2;}
  if(a==='settle'&&who){who.work='마을에서 일하는 중';j.capital-=4;}
- if(a==='journey'&&who){who.work='다른 고을에서 일하는 중';s.legacies++;}
- if(a==='inherit'&&who){who.work='가족의 생업을 함께 이음';j.capital+=6;s.legacies++;}
+ if(a==='journey'&&who){who.work='다른 고을에서 일하는 중';who.atHome=false;who.relation=clamp(who.relation-5,0,100);s.legacies++;}
+ if(a==='inherit'&&who){who.work='가족의 생업을 함께 이음';who.atHome=true;j.capital+=6;s.legacies++;}
  if(a==='sharework'){j.capital+=4;}
  if(a==='gift'){j.capital-=4;}
  if(a==='plan'){v.grain=clamp(v.grain+10,0,200);}
@@ -202,13 +237,13 @@ function choose(life,index){
 }
 function afterYear(life){
  const s=ensure(life);
- if(!s||!J.inOldEra(life)||!life.alive||s.processedYear>=life.year)return;
+ if(!s||!J.isJoseon(life)||!life.alive||s.processedYear>=life.year)return;
  s.processedYear=life.year;
  catchUp(life,s);
  const year=life.year,j=J.ensure(life),v=V2.ensure(life);
  for(const effect of s.followups.filter(x=>x.year<=year)){
   const relative=s.people.find(p=>p.id===effect.personId);
-  const sentence=relative?relative.name+'와의 일: '+OUTCOMES[effect.action]:OUTCOMES[effect.action];
+  const sentence=relative?rememberedRelative(relative,effect.action):OUTCOMES[effect.action];
   if(sentence){remember(life,s,sentence,'joseon4-followup');s.memories.push(sentence);s.memories=s.memories.slice(-20);}
   if(['support','plan','inherit','talk'].includes(effect.action))v.grain=clamp(v.grain+3,0,200);
  }
@@ -216,7 +251,7 @@ function afterYear(life){
  for(const p of s.people){
   if(!p.alive||p.birthYear>year)continue;
   const years=age(p,year);
-  if(p.role==='sibling'&&p.birthYear===year)remember(life,s,p.name+'가 태어나 형제자매가 늘었다.','joseon4-family');
+  if(p.role==='sibling'&&p.birthYear===year)remember(life,s,particle(p.name,'이','가')+' 태어나 형제자매가 늘었다.','joseon4-family');
   const troubled=year<=j.hardshipUntil||year<=v.scarcityUntil;
   const stress=troubled&&hash(life.seed,year+yearNumber(p.id)+171)<.22;
   if(stress){p.wellbeing=clamp(p.wellbeing-5,0,100);
@@ -225,22 +260,27 @@ function afterYear(life){
   }
   if(years>=p.lifeYears+(p.wellbeing>85?3:0)){
    p.alive=false;p.diedYear=year;
-   remember(life,s,p.name+'가 세상을 떠났다. 함께 지낸 시간이 집안의 기억으로 남았다.','joseon4-memory');
+   remember(life,s,particle(p.name,'은','는')+' 세상을 떠났다. 집안에 빈자리가 생겼다.','joseon4-memory');
    life.change({happiness:-5,bonds:-3});
    if(p.role==='spouse'){j.married=false;life.profile.partner=false;}
    continue;
   }
+  if(p.role==='sibling'&&years>=22)p.atHome=false;
   if(p.role==='mother'||p.role==='father'){
    if(years===60||years===70)enqueue(life,s,'elders',p);
   }else if(p.role==='child'){
+   if(years>=8&&p.work==='자라는 중')p.work='글과 생업을 익히는 중';
+   if(years>=16&&p.work==='글과 생업을 익히는 중')p.work='일할 길을 찾는 중';
    if(years===7)enqueue(life,s,'child-school',p);
    if(years===16)enqueue(life,s,'child-grown',p);
    if(years===22&&!s.seen.includes(p.id+'-independent')){
     s.seen.push(p.id+'-independent');
     p.married=hash(life.seed,year+yearNumber(p.id)+220)<.58;
-    remember(life,s,p.name+'가 어른이 되어 집안의 일을 스스로 결정할 수 있게 되었다.','joseon4-memory');
+    if(p.married&&p.work!=='가족의 생업을 함께 이음')p.atHome=false;
+    if(p.work==='일할 길을 찾는 중')p.work=p.atHome?'집안 생업을 돕는 중':'다른 살림에서 생업을 꾸리는 중';
+    remember(life,s,particle(p.name,'은','는')+' 어른이 되어 앞으로의 살림과 일을 고민하기 시작했다.','joseon4-memory');
    }
-  }else if(p.role==='spouse'&&[5,15,30].includes(year-(life.birthYear+19))){
+  }else if(p.role==='spouse'&&[5,15,30].includes(year-(p.joinedYear||life.birthYear+19))){
    enqueue(life,s,'spouse',p);
   }else if(p.role==='sibling'&&years===25)enqueue(life,s,'sibling',p);
  }
@@ -249,9 +289,9 @@ function afterYear(life){
 function summary(life){
  const s=ensure(life);if(!s)return null;
  const people=s.people.filter(p=>p.birthYear<=life.year).map(p=>({id:p.id,role:p.role,name:p.name,
-  age:age(p,life.year),alive:p.alive,relation:p.relation,wellbeing:p.wellbeing,
+  age:age(p,p.alive?life.year:(p.diedYear||life.year)),alive:p.alive,atHome:p.atHome!==false,relation:p.relation,wellbeing:p.wellbeing,
   trait:p.trait,learning:p.learning,work:p.work,married:p.married,diedYear:p.diedYear}));
- return {people,alive:people.filter(p=>p.alive).length,
+ return {people,alive:people.filter(p=>p.alive).length,atHome:people.filter(p=>p.alive&&p.atHome).length,
   spouse:people.find(p=>p.role==='spouse')||null,
   children:people.filter(p=>p.role==='child'&&p.alive).length,
   parents:people.filter(p=>['mother','father'].includes(p.role)&&p.alive).length,
@@ -270,6 +310,8 @@ function hydrate(life,data){
       seen.add(p.id);
       return {id:p.id,role:p.role,name:String(p.name||'가족').slice(0,24),
         sex:p.sex==='여자'?'여자':'남자',birthYear:p.birthYear,
+        atHome:typeof p.atHome==='boolean'?p.atHome:!(p.role==='sibling'&&life.year-p.birthYear>=22)&&!(p.role==='child'&&p.work==='다른 고을에서 일하는 중'),
+        joinedYear:Number.isInteger(p.joinedYear)?p.joinedYear:null,
         trait:String(p.trait||'다정한').slice(0,24),alive:p.alive!==false,
         relation:clamp(Number(p.relation)||0,0,100),
         wellbeing:clamp(Number(p.wellbeing)||0,0,100),
@@ -295,7 +337,7 @@ function hydrate(life,data){
  s.queue=Array.isArray(old.queue)?old.queue.filter(valid).slice(-8).map(asQueue):[];
  s.decisions=Array.isArray(old.decisions)?old.decisions.filter(q=>valid(q)&&typeof q.action==='string').slice(-36).map(q=>({
   ...asQueue(q),action:q.action.slice(0,40),label:String(q.label||'').slice(0,90)})):[];
- if(valid(old.active)&&data?.pending==='joseon4:'+old.active.id&&life.alive&&J.inOldEra(life)){
+ if(valid(old.active)&&data?.pending==='joseon4:'+old.active.id&&life.alive&&J.isJoseon(life)){
   s.active=asQueue(old.active);life.pending='joseon4:'+s.active.id;
  }
  sync(life,s);
@@ -307,7 +349,7 @@ function install(){
   oldReflect=L.prototype.reflect,oldGet=L.prototype.getChoice,
   oldSnapshot=L.prototype.snapshot,oldRestore=L.restore;
  L.prototype.tick=function(){
-  if(!J.inOldEra(this))return oldTick.call(this);
+  if(!J.isJoseon(this))return oldTick.call(this);
   const year=this.year,ok=oldTick.call(this);
   if(ok&&this.year!==year&&this.alive)afterYear(this);
   return ok;
@@ -321,12 +363,12 @@ function install(){
   if(J.isJoseon(this)&&typeof this.pending==='string'&&this.pending.startsWith('joseon4:'))
    return choose(this,index);
   const result=oldChoose.call(this,index);
-  if(result&&J.inOldEra(this))promote(this,ensure(this));
+  if(result&&J.isJoseon(this))promote(this,ensure(this));
   return result;
  };
  L.prototype.reflect=function(text){
   const result=oldReflect.call(this,text);
-  if(result&&J.inOldEra(this))promote(this,ensure(this));
+  if(result&&J.isJoseon(this))promote(this,ensure(this));
   return result;
  };
  L.prototype.snapshot=function(){
@@ -343,5 +385,5 @@ function install(){
  return true;
 }
 install();
-return Object.freeze({install,ensure,summary,age,prompt,choose,afterYear,ROLES});
+return Object.freeze({install,ensure,summary,age,prompt,choose,afterYear,ROLES,particle});
 });
