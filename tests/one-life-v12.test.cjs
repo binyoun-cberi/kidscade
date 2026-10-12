@@ -103,12 +103,14 @@ test('a historical choice changes family, skill or livelihood and returns in fut
  assert.deepEqual(loaded.snapshot(),saved);
  assert.equal(loaded.pending,target.pending);
  const age=loaded.age,year=loaded.year;
+ const priorChoices=W12.ensure(loaded).decisions.length;
+ const priorFollowups=W12.ensure(loaded).followups.length;
  assert.equal(loaded.choose(0),true);
  assert.equal(loaded.age,age);
  const state=W12.ensure(loaded);
- assert.equal(state.decisions.length,1);
- assert.equal(state.followups.length,1);
- const event=state.followups[0];
+ assert.equal(state.decisions.length,priorChoices+1);
+ assert.equal(state.followups.length,priorFollowups+1);
+ const event=state.followups.at(-1);
  assert.ok(event.year>year&&event.year<=year+5);
  while(loaded.alive&&loaded.year<=event.year){
   if(loaded.pending)pending(loaded);
