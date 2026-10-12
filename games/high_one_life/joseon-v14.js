@@ -462,7 +462,7 @@ function restore(life,raw){
   if(Number.isFinite(raw[n]))s[n]=clamp(Math.round(raw[n]),0,n==='grain'?50000:1000);
  if(Number.isInteger(raw.processedYear))s.processedYear=clamp(raw.processedYear,life.birthYear,life.year);
  for(const field of ['yearSeen','scenesSeen','memories'])
-  if(Array.isArray(raw[field]))s[field]=raw[field].filter(x=>typeof x==='string').slice(-field==='scenesSeen'?100:90);
+  if(Array.isArray(raw[field]))s[field]=raw[field].filter(x=>typeof x==='string').slice(field==='scenesSeen'?-100:-90);
  if(Array.isArray(raw.choices))s.choices=raw.choices.filter(x=>x&&typeof x.id==='string'&&Number.isInteger(x.year)&&x.year<=life.year&&OPTIONS[x.kind]).slice(-100);
  if(Array.isArray(raw.followups))s.followups=raw.followups.filter(x=>x&&Number.isInteger(x.year)&&x.year>life.year&&typeof x.text==='string').slice(-12).map(x=>({
    id:str(x.id,120),year:x.year,text:str(x.text,300),memory:str(x.memory,80)
@@ -523,8 +523,8 @@ function install(){
  L.restore=function(data){
   const life=priorRestore.call(this,data);
   if(life&&is(life)){
-   // All earlier restore hooks leave unfamiliar pending choices untouched.
-   if(typeof data?.pending==='string'&&data.pending.startsWith('joseon:')&&data.alive)life.pending=null;
+   // Restore only v14 pending choices; previous eras' choices are not eligible before 1900.
+   life.pending=null;
    restore(life,data?.joseon);
   }
   return life;
