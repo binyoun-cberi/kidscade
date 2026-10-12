@@ -16,6 +16,7 @@
   const World10 = window.OneLifeWorld10;
   const World12 = window.OneLifeWorld12;
   const World13 = window.OneLifeWorld13;
+  const Joseon = window.OneLifeJoseon;
   const History = window.OneLifeHistory;
   const Official=window.OneLifeOfficialStats||{countries:{}};
   const metric=(key)=>life?.birthYear===2026?Official.countries?.[life?.country?.[0]]?.[key]||null:null;
@@ -25,7 +26,7 @@
       ? label+' '+Number(row.value).toLocaleString('ko-KR',{maximumFractionDigits:1})+unit+' ('+row.year+'년)'
       : label+' 자료 없음';
   };
-  if (!World2 || !Pixel || !World3 || !World4 || !World5 || !World6 || !World7 || !World8 || !World9 || !World10 || !World12 || !World13 || !History) throw new Error('One Life world assets missing');
+  if (!World2 || !Pixel || !World3 || !World4 || !World5 || !World6 || !World7 || !World8 || !World9 || !World10 || !World12 || !World13 || !Joseon || !History) throw new Error('One Life world assets missing');
   const SAVE_KEY = 'kidscade_one_life_save_v1';
   const RECORD_KEY = 'kidscade_one_life_history_v1';
   // About 20–30 seconds of automatic years, excluding choices.
@@ -58,11 +59,12 @@
     roulette = null;
     playSpeed=1;nextDecision=false;refreshSpeedControls();
     const desired=Number($('birthYearInput').value);
-    const birthYear=Number.isInteger(desired)&&desired>=1900&&desired<=2026?desired:2026;
+    const birthYear=Number.isInteger(desired)&&desired>=1392&&desired<=2026?desired:2026;
     $('birthYearInput').value=String(birthYear);
-    const countryName=$('birthLocation').value==='korea'?'대한민국':undefined;
+    const countryName=birthYear<1900||$('birthLocation').value==='korea'?'대한민국':undefined;
     life = new Sim.Life(undefined,{birthYear,countryName});
-    World8.ensure(life);World8.moment(life);World10.ensure(life);History.contextualize(life);
+    World8.ensure(life);if(Joseon.isJoseon(life))Joseon.ensure(life);
+    else {World8.moment(life);World10.ensure(life);}History.contextualize(life);
     storyTab='';peerAgeChoice=0;timelineVisible=22;
     replayBasis=null;
     peerCache = null;lastPeerRenderedAge = -1;lastMapRenderedAge = -1;
@@ -107,14 +109,50 @@
     $('birthFather').textContent=p.fatherAge+'세 · '+p.fatherJob;
     $('birthSiblings').textContent=p.siblings+'명';
     const setting=World8.ensure(life);
-    $('birthHome').textContent=setting.housing+' · '+setting.familyNote;
-    $('birthContext').textContent=History.period(life)+' · '+setting.regionName+' · '+setting.neighborhood;
-    $('birthEraNote').textContent=life.birthYear===2026
+    $('birthHome').textContent=Joseon.inOldEra(life)?'살림과 땅 · '+Joseon.summary(life).land+'단위 (게임용 지표)':setting.housing+' · '+setting.familyNote;
+    $('birthContext').textContent=Joseon.inOldEra(life)?Joseon.era(life.year)+' · '+life.profile.city+' · '+Joseon.ensure(life).landmark:History.period(life)+' · '+setting.regionName+' · '+setting.neighborhood;
+    $('birthEraNote').textContent=Joseon.inOldEra(life)?'이 인생에는 태어난 집안의 신분과 지역이 영향을 줍니다. 선택과 재난의 여파는 다음 해에도 남습니다.':life.birthYear===2026
       ? '어느 나라에서 태어날지는 우연이지만, 그곳의 환경은 저마다 다릅니다.'
       : '그 시대의 한반도에서 이야기가 시작됩니다. 어떤 일들이 기다리고 있을까요?';
     $('birthCertificate').classList.remove('hidden');
   }
   function paintLifeRecord() {
+    if(Joseon.inOldEra(life)){
+      const j=Joseon.summary(life),p=Joseon.ensure(life)&&life.profile,m=life.money;
+      const put=(id,value)=>{$(id).textContent=String(value);};
+      put('v10HistoricalCount',Joseon.ensure(life).seen.length+'개 역사 사건');
+      put('v10HistoryStatus',j.era+' · '+(Joseon.eventFor(life.year)?.title||j.region+'에서 살아가는 중'));
+      put('v10HistoryEffects',j.warMemory.length?'삶을 바꾼 사건 · '+j.warMemory.join(' · '):'기록에 남을 사건이 없어도 매일의 살림이 이어집니다.');
+      put('v12EducationEra','배움 · '+j.school+' · 글공부 '+j.literacy+'단계');
+      put('v12WorkEra','생업 · '+j.occupation+' · '+j.status);
+      put('v12EconomyEra','살림 · 땅 '+j.land+'단위 · 재산 '+j.capital+'점 (모두 게임용 값)');
+      put('v12ChoicesCount','삶의 갈림길 '+j.decisions+'번 · 이주 '+j.relocations+'번');
+      put('v13CareYears','집안 식구 '+(Joseon.ensure(life).household)+'명');
+      put('v13FamilyStatus',j.married?'혼인한 가족 · 자녀 '+j.children+'명':'가족과 생업을 이어 가는 중');
+      put('v13LifeMemories',j.memories.join(' · ')||'세월이 지나며 이야기들이 남습니다.');
+      put('nameHeadline',p.name+' · '+j.region);put('profileName',p.name);
+      put('profileMeta',life.gender+' · '+j.region+' · '+life.age+'세');
+      put('profileFamily',j.status);
+      put('netWorth',formatCredits(m.netWorth));$('netWorth').classList.toggle('negative',m.netWorth<0);
+      put('annualIncome',formatCredits(m.income));put('annualExpense',formatCredits(m.expense));
+      put('annualBalance',formatCredits(m.lastBalance));$('annualBalance').classList.toggle('negative',m.lastBalance<0);
+      put('employmentStatus',j.occupation);put('traitEducation',j.school);
+      put('traitAptitude','생활의 경험과 배움');put('traitQualification',j.office?'과거 급제·관직 경험':j.literacy?'글과 셈의 배움':'생활 기술을 익히는 중');
+      put('traitRegion',j.region+' · '+Joseon.ensure(life).landmark);
+      put('countryContextText','출신 '+j.status+' · '+j.region+' · '+j.occupation);
+      put('countrySourceNote','역사적 배경에 바탕을 둔 가상 인생이며, 신분 분포·수명·재산의 통계적 재현이 아닙니다.');
+      put('officialContext','조선의 지역·신분·생업·혼인·조세를 다룬 이야기입니다. 현대 국제기구 통계를 적용하지 않습니다.');
+      const people=$('v9PeopleList');people.replaceChildren();
+      for(const name of ['부모와 집안 어른',j.married?'혼인한 동반자':null,j.children?'자녀 '+j.children+'명':null].filter(Boolean)){
+        const item=document.createElement('li');item.textContent=name;people.append(item);
+      }
+      put('v9PeopleCount',Joseon.ensure(life).household+'명');put('v9Hobby','생업과 이웃 사이에서 남은 일상');
+      put('v9Loan','가족의 살림 · '+j.capital+'점 (가상 재산)');
+      const picture=Joseon.paint($('lifeScene'),life);
+      if(!picture)Pixel.paint($('lifeScene'),life);
+      put('sceneLabel',life.year+'년 · '+j.era+' · '+j.region+' · '+j.occupation);
+      return;
+    }
     const p=World2.enrich(life).profile;
     const money=life.money;
     const personal=World7.ensure(life);
@@ -216,6 +254,30 @@
   }
   function paintArc() {
     if(!life)return;
+    if(Joseon.inOldEra(life)){
+      const j=Joseon.summary(life),s=Joseon.ensure(life);
+      $('careerChangeCount').textContent=j.decisions+'번의 선택';
+      $('careerCurrent').textContent=j.occupation;
+      const list=$('careerJourney');list.replaceChildren();
+      for(const d of s.decisions.slice(-3)){
+        const item=document.createElement('div');item.className='career-chapter';
+        const when=document.createElement('b');when.textContent=d.age+'세';
+        const what=document.createElement('span');what.textContent=d.action;
+        item.append(when,what);list.append(item);
+      }
+      $('worldRegionLabel').textContent='조선 · '+j.region;
+      $('worldEventCount').textContent=s.seen.length+'개 역사 사건';
+      $('worldLatest').textContent=s.warMemory.at(-1)||j.era+'의 하루';
+      $('arcCount').textContent=j.decisions+'번의 선택';
+      $('arcStatus').textContent='삶의 방향 · '+j.occupation;
+      const tags=$('arcMilestones');tags.replaceChildren();
+      for(const d of s.decisions.slice(-3)){
+        const item=document.createElement('div');item.className='arc-milestone';
+        item.textContent=d.age+'세 · '+d.kind;tags.append(item);
+      }
+      return;
+    }
+
     const a=World4.ensure(life);
     const world=World5.ensure(life);
     const career=World6.ensure(life);
@@ -241,7 +303,7 @@
     $('worldRegionLabel').textContent=category[region]+' · '+(world.faith==='없음'?'다양한 삶':world.faith);
     $('worldEventCount').textContent=world.eventCount+'개 사건';
     $('worldLatest').textContent=world.lastContext||'어떤 세계적 변화와 만남이 찾아올까요?';
-    const choiceLog=life.log.filter(e=>['decision','history-choice','era-choice','care13-choice'].includes(e.kind));
+    const choiceLog=life.log.filter(e=>['decision','history-choice','era-choice','care13-choice','joseon-choice'].includes(e.kind));
     $('arcCount').textContent=choiceLog.length+'번의 선택';
     $('arcStatus').textContent=a.lastEvent || '아직 미래는 정해지지 않았어요.';
     const box=$('arcMilestones');box.replaceChildren();
@@ -413,7 +475,7 @@
     if(!peerCache||peerCache.seed!==life.seed){
       peerCache={seed:life.seed,people:Array.from({length:4},(_,i)=>{
         const peer=new Sim.Life((life.seed+Math.imul(i+1,2654435761))>>>0,{birthYear:life.birthYear});
-        World8.ensure(peer);World8.moment(peer);History.contextualize(peer);
+        World8.ensure(peer);if(Joseon.isJoseon(peer))Joseon.ensure(peer);else World8.moment(peer);History.contextualize(peer);
         return {life:peer,samples:[peerView(peer)]};
       })};
     }
@@ -454,7 +516,7 @@
     if(!board||!life || (!force && life.age===lastMapRenderedAge))return;
     lastMapRenderedAge=life.age;
     board.replaceChildren();
-    const notable=['decision','reflection','family','profession','world','safety','death','history','history-choice','history-impact','history-followup','era-choice','era-followup','care13-choice','care13-followup','care13-memory'];
+    const notable=['decision','reflection','family','profession','world','safety','death','history','history-choice','history-impact','history-followup','era-choice','era-followup','care13-choice','care13-followup','care13-memory','joseon-choice','joseon-memory','joseon-followup'];
     const entries=new Map();
     for(const entry of life.log){
       if(!notable.includes(entry.kind))continue;
@@ -530,7 +592,7 @@
     $('historyContext').textContent=life.birthYear===2026
       ? '2026년, 새로운 인생이 시작됐다.'
       : History.period(life)+' · '+life.year+'년의 세상';
-    const archive=World10.readCurrent(life)||History.currentEvent(life),sourceLink=$('historySourceLink');
+    const archive=(Joseon.inOldEra(life)?Joseon.eventFor(life.year):null)||World10.readCurrent(life)||History.currentEvent(life),sourceLink=$('historySourceLink');
     sourceLink.classList.toggle('hidden',!archive);
     if(archive){sourceLink.href=archive.source;sourceLink.textContent=archive.year+'년 '+archive.title+' · 역사 자료';}
     $('currentAge').textContent=String(life.age);
@@ -686,7 +748,7 @@
     const snapshot=captureEnding(life);
     replayBasis=snapshot;
     life=new Sim.Life(snapshot.seed,{birthYear:snapshot.birthYear,countryName:snapshot.country});
-    World8.ensure(life);World8.moment(life);World10.ensure(life);History.contextualize(life);
+    World8.ensure(life);if(Joseon.isJoseon(life))Joseon.ensure(life);else {World8.moment(life);World10.ensure(life);}History.contextualize(life);
     storyTab='';peerAgeChoice=0;timelineVisible=22;playSpeed=1;nextDecision=false;refreshSpeedControls();
     peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
     $('birthCertificate').classList.add('hidden');
