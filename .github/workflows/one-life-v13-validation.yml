@@ -1,0 +1,28 @@
+name: One Life v13 family-care validation
+on:
+  push:
+    branches:
+      - feat/one-life-v13-relationships-care-continuity-20261012
+    paths:
+      - 'games/high_one_life/**'
+      - 'tests/one-life-*.test.cjs'
+      - '.github/workflows/one-life-v13-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  family-care:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: v13 and old saves / screen flow
+        run: |
+          node --test tests/one-life-v13.test.cjs tests/one-life-v12.test.cjs tests/one-life-v10.test.cjs tests/one-life-v9.test.cjs tests/one-life-historical.test.cjs tests/one-life-screen-flow.test.cjs
+      - name: Syntax check
+        run: |
+          node --check games/high_one_life/world-v13.js
+          node --check games/high_one_life/game.js
