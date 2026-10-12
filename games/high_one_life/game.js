@@ -662,7 +662,7 @@
     safeRemove(SAVE_KEY);
     const summary=life.summary();
     const choiceLog=life.log.filter(e=>['decision','history-choice','era-choice','care13-choice'].includes(e.kind));
-    const careLife=World13.summary(life);
+    const careLife=isJoseon()?{careYears:0,memories:[]}:World13.summary(life);
     const count=rememberLife();
     $('endYears').textContent=life.birthYear+' — '+life.year;
     $('endCountry').textContent=(life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1])+' '+History.place({...life,year:life.birthYear})+' · '+life.profile.name+' ('+life.profile.city+')';
