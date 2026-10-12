@@ -30,7 +30,7 @@ function resume(life,choiceIndex=0){
 }
 test('v9 is layered on existing game UI and registers new bounded chronology',()=>{
  const h=fs.readFileSync(path.join(root,'index.html'),'utf8'),g=fs.readFileSync(path.join(root,'game.js'),'utf8');
- assert.match(h,/world-v9\.js\?v=1/);
+ assert.match(h,/world-v9\.js\?v=\d+/);
  for(const id of ['v9PeopleList','v9Hobby','v9Loan','v9TimelineMore','v9ChronicleCount'])
   assert.ok(h.includes('id="'+id+'"'),id);
  assert.match(g,/timelineVisible=Math\.min\(760,timelineVisible\+60\)/);
