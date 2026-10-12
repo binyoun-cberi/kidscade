@@ -3595,11 +3595,15 @@ function ensureMagicWorkbench(){
     if(data?.type==='workbench'&&data.magicWorkbench){magicWorkbenchPos=parseWorldKey(key);return magicWorkbenchPos}
   }
   const candidates=[MAGIC_WORKBENCH_SITE,[2,3,4],[3,3,3],[3,3,4],[-2,3,5],[2,3,6],[-3,3,5],[-2,3,2],[3,3,6]];
+  for(let radius=2;radius<=10;radius++)for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++){
+    if(Math.max(Math.abs(dx),Math.abs(dz))===radius&&Math.hypot(dx,dz)>1.5)candidates.push([dx,3,5+dz]);
+  }
   for(const [x,ignoredY,z] of candidates){
     const y=getHighestSolidY(x,z,12)+1;
     if(y<1||y>12||getBlock(x,y,z)||getBlock(x,y+1,z))continue;
     const below=getBlock(x,y-1,z);
     if(!below||!isSolidData(below,x,y-1,z)||['lava','fire','water','cactus'].includes(below.type))continue;
+    if(Math.hypot(x,z-5)<1.5)continue;
     magicWorkbenchPos=[x,y,z];
     const block={type:'workbench',magicWorkbench:true,playerBuilt:true,facing:0};
     setRawBlock(x,y,z,block);markEdit(x,y,z,block);markFreeWorldDirty(400);
