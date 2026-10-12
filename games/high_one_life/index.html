@@ -33,19 +33,24 @@
         <div class="historical-picker" aria-label="출생 연도와 출생 지역">
           <label for="birthYearInput">태어날 연도</label>
           <div class="historical-picker-fields">
-            <input id="birthYearInput" type="number" min="1900" max="2026" step="1" value="2026" inputmode="numeric" aria-describedby="eraHelp">
+            <input id="birthYearInput" type="number" min="1392" max="2026" step="1" value="2026" inputmode="numeric" aria-describedby="eraHelp">
             <select id="birthLocation" aria-label="출생할 지역">
               <option value="random">전 세계에서 추첨</option>
-              <option value="korea">한반도(현 대한민국 지역)</option>
+              <option value="korea">한반도(조선·근현대)</option>
             </select>
           </div>
           <div class="era-presets" role="group" aria-label="시대 바로 선택">
             <button type="button" data-era-year="2026" data-era-place="random" aria-pressed="true">2026년 무작위</button>
+            <button type="button" data-era-year="1435" data-era-place="korea" aria-pressed="false">1435년 세종 시대</button>
+            <button type="button" data-era-year="1580" data-era-place="korea" aria-pressed="false">1580년 임진왜란 전</button>
+            <button type="button" data-era-year="1650" data-era-place="korea" aria-pressed="false">1650년 조선 후기</button>
+            <button type="button" data-era-year="1780" data-era-place="korea" aria-pressed="false">1780년 정조 시대</button>
+            <button type="button" data-era-year="1860" data-era-place="korea" aria-pressed="false">1860년 개항 이전</button>
             <button type="button" data-era-year="1919" data-era-place="korea" aria-pressed="false">1919년 일제강점기</button>
             <button type="button" data-era-year="1935" data-era-place="korea" aria-pressed="false">1935년 일제강점기</button>
             <button type="button" data-era-year="1950" data-era-place="korea" aria-pressed="false">1950년 한국전쟁기</button>
           </div>
-          <p id="eraHelp">1900년부터 2026년까지. 같은 땅에서 태어나도 시대가 다르면 삶의 모습은 달라집니다.</p>
+          <p id="eraHelp">1392~1896년은 조선에서 시작하는 인생이에요. 1900~2026년은 기존 세계 인생이 이어집니다.</p>
         </div>
         <button id="drawBtn" class="primary" type="button">이번 생은 어디에서 시작될까? <span aria-hidden="true">↗</span></button>
         <button id="resumeBtn" class="secondary hidden" type="button">이어서 살아가기</button>
@@ -97,6 +102,14 @@
         <article class="chronicle">
           <div class="chapter-line"><span id="lifeStage" class="chapter">유년기</span><span id="playStatus">인생이 흘러가는 중</span></div>
           <p id="historyContext" class="history-context">이 인생이 놓인 시대</p>
+          <section id="joseonPanel" class="joseon-panel hidden" aria-label="조선시대의 삶">
+            <div class="stat-title">조선에서 살아가기 <span id="joseonEra">조선 전기</span></div>
+            <p id="joseonOrigin">태어난 집안과 신분</p>
+            <p id="joseonWork">농사와 장터의 생활</p>
+            <p id="joseonHousehold">올해의 살림</p>
+            <p id="joseonMemory">오래 남은 기억</p>
+            <small>실제 역사 사건은 자료에 근거합니다. 가족·선택·재산·수명과 그 결과는 창작된 이야기입니다. 신분별 삶의 차이는 역사적 제약을 다루며, 인물의 가치를 매기지 않습니다.</small>
+          </section>
           <section id="v10HistoryPanel" class="v10-history-panel" aria-label="역사적 사건이 이 인생에 미치는 영향">
             <div class="stat-title">내가 살아온 시대 <span id="v10HistoricalCount">0개 역사 사건</span></div>
             <p id="v10HistoryStatus">그해 세상에서는 어떤 일이 있었을까?</p>
@@ -296,7 +309,7 @@
 <script src="../../kidscade-storage.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_one_life" data-title="단 하나의 인생" data-shell="false" data-pauseable="true" data-orientation="any"></script>
 <script src="./official-data.js?v=202610111530"></script>
-<script src="./engine.js?v=6"></script>
+<script src="./engine.js?v=7"></script>
 <script src="./world-v2.js?v=9"></script>
 <script src="./pixel-scene.js?v=3"></script>
 <script src="./world-v3.js?v=6"></script>
@@ -309,7 +322,7 @@
 <script src="./world-v8.js?v=3"></script>
 <script src="./scenes-v6.js?v=1"></script>
 <script src="./scenes-v8.js?v=1"></script>
-<script src="./history.js?v=2"></script>
+<script src="./history.js?v=3"></script>
 <script src="./world-v9.js?v=3"></script>
 <script src="./history-data-v10.js?v=2"></script>
 <script src="./history-stories-v10.js?v=3"></script>
@@ -319,6 +332,7 @@
 <script src="./era-policy-v12.js?v=2"></script>
 <script src="./world-v12.js?v=2"></script>
 <script src="./world-v13.js?v=2"></script>
-<script src="./game.js?v=21"></script>
+<script src="./joseon-v14.js?v=1"></script>
+<script src="./game.js?v=22"></script>
 </body>
 </html>
