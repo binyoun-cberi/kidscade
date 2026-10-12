@@ -3627,7 +3627,7 @@ function buildMagicWorkbenchBeacon(){
   const beam=new THREE.Mesh(new THREE.CylinderGeometry(.12,.48,18,6),
     new THREE.MeshBasicMaterial({color:0x9beafb,transparent:true,opacity:.18,depthWrite:false,side:THREE.DoubleSide,fog:false}));
   beam.position.y=9;beam.userData.worldDecorative=true;group.add(beam);
-  const crown=new THREE.Mesh(new THREE.OctahedronGeometry(.38),
+  const crown=new THREE.Mesh(new THREE.BoxGeometry(.56,.76,.44),
     new THREE.MeshBasicMaterial({color:0xf6dd8c,transparent:true,opacity:.95,fog:false}));
   crown.position.y=2.65;crown.userData.worldDecorative=true;group.add(crown);
   const ring=new THREE.Mesh(new THREE.TorusGeometry(.52,.055,6,24),
@@ -3671,7 +3671,10 @@ function magicWorkbenchReturn(){
   if(lifePanelOpen)closeLifePanel();
   stopMining();resetMobileInput();camera.position.set(...p);freePhysicsY=p[1];freeVelocityY=0;onGround=true;
   survivalExposure=Math.min(survivalExposure,15);survivalBreath=100;freeFluidKind='';freeFallPeakY=freePhysicsY;
-  magicWorkbenchReturnAt=performance.now();streamWorldMeshes(true);updateMagicWorkbenchGuide();renderSurvivalSafety(null);
+  magicWorkbenchReturnAt=performance.now();
+  lastCreatureDamage=magicWorkbenchReturnAt+1000;lastEnvironmentDamage=magicWorkbenchReturnAt+1000;
+  survivalHealth=Math.max(2,survivalHealth);
+  streamWorldMeshes(true);updateMagicWorkbenchGuide();renderSurvivalSafety(null);
   toast('마법의 직육면체로 돌아왔어! 가방의 물건은 그대로야.');markFreeWorldDirty(300);return true;
 }
 function hasWorkbench(){
