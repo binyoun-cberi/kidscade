@@ -8,6 +8,7 @@ const TEST_FILES = [
   "tests/one-life-joseon.test.cjs",
   "tests/one-life-joseon-v2.test.cjs",
   "tests/one-life-joseon-v3.test.cjs",
+  "tests/one-life-joseon-v4.test.cjs",
   "tests/one-life-v2.test.cjs",
   "tests/one-life-country.test.cjs",
   "tests/one-life-branches.test.cjs",
