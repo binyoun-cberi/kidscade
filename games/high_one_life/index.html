@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="./world-v5.css?v=1">
 <link rel="stylesheet" href="./world-v6.css?v=2">
 <link rel="stylesheet" href="./world-v7.css?v=1">
-<link rel="stylesheet" href="./world-v8.css?v=3">
+<link rel="stylesheet" href="./world-v8.css?v=4">
 </head>
 <body>
 <div class="app" id="app">
@@ -102,6 +102,13 @@
           <div class="controls">
             <div class="controls-label"><b>인생의 시간</b><span>빠른 자동 진행</span></div>
             <button id="pauseBtn" class="pause" type="button">Ⅱ 일시정지</button>
+            <div class="v9-speed-controls" role="group" aria-label="인생 진행 배속">
+              <button type="button" data-life-speed="1" aria-pressed="true">1배</button>
+              <button type="button" data-life-speed="2" aria-pressed="false">2배</button>
+              <button type="button" data-life-speed="4" aria-pressed="false">4배</button>
+              <button type="button" data-life-speed="8" aria-pressed="false">8배</button>
+              <button id="v9NextChoice" type="button">다음 선택까지</button>
+            </div>
             <p class="hint">선택지가 나타나면 시간이 자동으로 멈춥니다. 화면을 닫거나 다른 앱으로 이동하면 일시정지됩니다.</p>
           </div>
           <figure class="pixel-frame">
@@ -163,6 +170,7 @@
             </div>
           </section>
           <div class="story-head"><div class="small-index">THE STORY OF YOU</div><h2 id="storyTitle">지금 이 순간의 삶</h2><p id="storyCaption">해가 바뀌고 새로운 일이 일어납니다.</p></div>
+          <div class="v9-chronicle-tools"><span id="v9ChronicleCount">인생의 기록</span><button id="v9TimelineMore" type="button">이전 기록 더 보기</button></div>
           <ol id="timeline" class="timeline" aria-label="인생 연대기"></ol>
           <div id="decision" class="decision hidden" aria-live="polite">
             <span class="eyebrow decision-tag">중요한 선택</span><h3 id="choiceTitle">당신의 선택은?</h3>
@@ -205,6 +213,13 @@
             </dl>
             <p class="finance-note">실제 국가별 임금·물가·구매력을 나타내지 않는 가상 경제 모델입니다.</p>
           </div>
+          <section class="v9-living-people" aria-label="인생에서 기억하는 사람들과 취미">
+            <div class="stat-title">함께 살아가는 사람들 <span id="v9PeopleCount">0명</span></div>
+            <ul id="v9PeopleList" class="v9-people-list"></ul>
+            <p id="v9Hobby" class="v9-memory-caption">아직 정해진 취미가 없습니다.</p>
+            <p id="v9Loan" class="v9-memory-caption">생활 대출 없음</p>
+            <small>이름·가족의 생애·생활 대출은 교육용 가상 인생입니다. 실제 인구 통계나 금융 상품을 뜻하지 않습니다.</small>
+          </section>
           <div class="stat-title">지금의 나 <span>0 ~ 100</span></div>
           <div id="statList" class="stats" aria-label="인생 상태 지표"></div>
           <div class="world-stories" aria-label="국가와 시대의 인생 사건">
@@ -277,6 +292,7 @@
 <script src="./scenes-v6.js?v=1"></script>
 <script src="./scenes-v8.js?v=1"></script>
 <script src="./history.js?v=1"></script>
-<script src="./game.js?v=15"></script>
+<script src="./world-v9.js?v=1"></script>
+<script src="./game.js?v=17"></script>
 </body>
 </html>

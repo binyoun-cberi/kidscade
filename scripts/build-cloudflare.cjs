@@ -228,8 +228,13 @@ async function optimizeFavicon() {
     const target = path.join(OUT, rel);
     if (!fs.existsSync(target)) continue;
     let html = fs.readFileSync(target, 'utf8');
+    // Replace the Apple link first: source HTML must reference a real tracked asset
+    // for the strict deployment-path audit, even before the build runs.
+    html = html.replaceAll(
+      'rel="apple-touch-icon" sizes="180x180" href="assets/gate-image/favicon.png"',
+      `rel="apple-touch-icon" sizes="180x180" href="${touchHref}"`
+    );
     html = html.replaceAll('assets/gate-image/favicon.png', faviconHref);
-    html = html.replaceAll('href="/apple-touch-icon.png"', `href="${touchHref}"`);
     fs.writeFileSync(target, html, 'utf8');
   }
 
