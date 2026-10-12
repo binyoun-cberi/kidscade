@@ -593,7 +593,7 @@ function initChallenge(){
     .forEach(([id,name])=>$(id).onclick=()=>setChallengeTool(name));
   $('challengeSelect').onclick=selectLookedChallengePiece;
   $('challengeColor').oninput=e=>{challengeTint=e.target.value};
-  configureMobileMode('challenge');$('challengeLockNotice').onclick=()=>{tutorialSignal('start-control');requestGamePointerLock()};
+  configureMobileMode('challenge');$('challengeLockNotice').onclick=()=>requestGamePointerLock();
   showTutorial('challenge');
 }
 function challengeCenterHit(max=8){
@@ -3373,7 +3373,7 @@ function initFree(){
   $('blockInventory').classList.add('hidden');$('furnacePanel').classList.add('hidden');$('lifePanel')?.classList.add('hidden');
   $('mathLensBadge').classList.add('hidden');
   configureMobileMode('free');
-  $('lockNotice').onclick=()=>{if(!inventoryOpen&&!furnaceOpen&&!lifePanelOpen){tutorialSignal('start-control');requestGamePointerLock()}};
+  $('lockNotice').onclick=()=>{if(!inventoryOpen&&!furnaceOpen&&!lifePanelOpen)requestGamePointerLock()};
   $('survivalReturn').onclick=emergencyReturn;
   if($('craftDiscoveryNotice'))$('craftDiscoveryNotice').onclick=()=>{survivalInventoryTab='craft';toggleInventory(true)};
   renderSurvivalSafety(null);
@@ -6294,6 +6294,7 @@ function configureMobileMode(target){
 }
 function enableMobileFallback(){
   mobileModeEnabled=true;configureMobileMode(mode);
+  tutorialSignal('start-control');
   toast('이 브라우저에서는 마우스 고정 대신 터치·화면 조작을 사용해요.');
 }
 function requestGamePointerLock(){
@@ -7011,11 +7012,26 @@ function tutorialSteps(kind){
   ];
   return[{title:'튜토리얼',text:'이 모드의 기본 기능을 화면에서 직접 확인해 보세요.',do:'상단 튜토리얼 버튼으로 다시 볼 수 있습니다.'}];
 }
+function tutorialRecoveryHint(step){
+  if(step.wait==='start-control')return '화면 가운데의 시작 안내를 눌러 보세요. 화면이 움직이지 않으면 게임 화면을 다시 눌러 보세요.';
+  if(step.wait==='challenge-place')return '건축 모드를 고르고 가운데 +를 가까운 땅에 맞춰 보세요. PC는 오른쪽 마우스 버튼, 태블릿은 설치 버튼을 눌러요.';
+  if(step.wait==='challenge-break')return '방금 놓은 블록을 가운데 +로 정확히 바라보세요. PC는 왼쪽 마우스 버튼, 태블릿은 파괴 버튼을 눌러요.';
+  if(step.wait==='net-sticker')return '그림 목록에서 원하는 그림을 한 번 눌러 보세요.';
+  if(step.wait==='net-assign')return '오른쪽 3D 직육면체에서 면을 직접 눌러 보세요. 왼쪽의 전개도 그림을 누르는 것이 아니에요.';
+  if(step.wait==='free-place')return '핫바에서 흙이나 나무 블록을 고르세요. 가까운 바닥에 가운데 +를 맞추고 설치해 보세요.';
+  if(step.wait==='free-break')return '방금 놓은 블록에 조금 더 가까이 가서 가운데 +를 맞춘 뒤 파괴해 보세요.';
+  if(step.wait==='free-view-toggle')return 'PC는 V 키 또는 상단 시점 버튼, 태블릿은 시점 버튼을 눌러 보세요.';
+  return '노란색으로 강조된 버튼을 확인하세요. 어려우면 이 단계만 건너뛰고 나중에 다시 연습해도 돼요.';
+}
 function renderTutorialStep(){
   if(!tutorialState)return;
   if(campActive()){renderCampStep();return}
   tutorialClearFocus();
   const step=tutorialState.steps[tutorialState.index],total=tutorialState.steps.length;
+  if(step.wait==='start-control'&&document.pointerLockElement===canvas){
+    tutorialState.index=Math.min(tutorialState.index+1,total-1);renderTutorialStep();return;
+  }
+  const helpUsed=!!tutorialState.assists?.[tutorialState.index];
   const isIntro=tutorialState.index===0;
   $('tutorial').classList.remove('hidden');$('tutorial').classList.toggle('coach',!isIntro);
   $('tutorialProgress').textContent=(tutorialState.index+1)+' / '+total;
@@ -7023,16 +7039,24 @@ function renderTutorialStep(){
     '<div class="tutorial-step-kicker">'+(isIntro?'처음 조작 연습':'직접 해보기')+'</div>'+
     '<h2>'+step.title+'</h2><p>'+step.text+'</p>'+
     (step.do?'<div class="tutorial-do">'+step.do+'</div>':'')+
-    (step.wait?'<div class="tutorial-tip">안내대로 해 보면 다음 활동이 열려요.</div>':'');
+    (helpUsed?'<div class="tutorial-recovery"><b>다시 해보는 방법</b><p>'+tutorialRecoveryHint(step)+'</p></div>':'')+
+    (step.wait?'<div class="tutorial-tip">직접 성공하면 자동으로 넘어가요. 어려우면 도움받기를 눌러 보세요.</div>':'');
   const target=tutorialTarget(step.target);
   if(target){target.classList.add('tutorial-focus');tutorialFocusEl=target}
   $('tutorialBack').disabled=tutorialState.index===0;
   $('tutorialBack').style.visibility=tutorialState.index===0?'hidden':'visible';
   const last=tutorialState.index===total-1;
-  const conditionDone=false;
-  $('tutorialClose').disabled=!!step.wait&&!conditionDone;
-  $('tutorialClose').textContent=step.wait?(conditionDone?'완료 · 다음':'직접 성공해 보세요'):last?'완료':'다음';
-  $('tutorialClose').onclick=()=>{if(last)tutorialFinish(true);else{tutorialState.index++;renderTutorialStep()}};
+  $('tutorialClose').disabled=false;
+  $('tutorialClose').textContent=step.wait?(helpUsed?'이 단계 넘어가기':'막혔어요 · 도움받기'):last?'완료':'다음';
+  $('tutorialClose').onclick=()=>{
+    if(step.wait&&!helpUsed){
+      tutorialState.assists=tutorialState.assists||{};
+      tutorialState.assists[tutorialState.index]=true;
+      renderTutorialStep();return;
+    }
+    if(step.wait)toast('이 연습만 건너뛰었어. 나중에 튜토리얼에서 다시 연습할 수 있어.');
+    if(last)tutorialFinish(true);else{tutorialState.index++;renderTutorialStep()}
+  };
   $('tutorialBack').onclick=()=>{tutorialState.index=Math.max(0,tutorialState.index-1);renderTutorialStep()};
   $('tutorialSkip').onclick=()=>tutorialFinish(true);
 }
@@ -7042,7 +7066,7 @@ function showTutorial(kind,force=false){
     (kind==='free'?'_'+gameFreeMode:'')+(mobileModeEnabled?'_touch':'_desktop');
   try{if(!force&&localStorage.getItem(once))return}catch(_){}
   tutorialFinish(false);
-  tutorialState={kind,once,index:0,steps:tutorialSteps(kind)};
+  tutorialState={kind,once,index:0,assists:{},steps:tutorialSteps(kind)};
   renderTutorialStep();
 }
 $('actionTutorial')?.addEventListener('click',()=>showTutorial(mode==='free'?'free':mode,true));
@@ -7111,6 +7135,7 @@ canvas.addEventListener('mousedown',e=>{
 window.addEventListener('mouseup',e=>{if(e.button===0&&miningSource==='mouse')stopMining()});
 canvas.addEventListener('click',()=>{if(!mobileModeEnabled&&(mode==='free'||mode==='challenge'||mode==='dungeon')&&document.pointerLockElement!==canvas&&($('tutorial').classList.contains('hidden')||campActive())&&!(mode==='free'&&(inventoryOpen||furnaceOpen||lifePanelOpen)))requestGamePointerLock()});
 document.addEventListener('pointerlockchange',()=>{
+  if(document.pointerLockElement===canvas)tutorialSignal('start-control');
   if(mode==='free'&&document.pointerLockElement!==canvas&&miningSource==='mouse')stopMining();
   if(mode==='free')$('lockNotice').classList.toggle('hidden',mobileModeEnabled||inventoryOpen||furnaceOpen||lifePanelOpen||document.pointerLockElement===canvas);
   if(mode==='challenge')$('challengeLockNotice').classList.toggle('hidden',mobileModeEnabled||document.pointerLockElement===canvas);
