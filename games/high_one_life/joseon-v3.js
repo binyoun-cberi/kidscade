@@ -21,12 +21,13 @@ const CHOICE_AGES={12:'apprentice',27:'livelihood',41:'household',55:'neighbors'
 function season(life){return SEASONS[Math.floor(hash(life.seed,life.year+380)*4)];}
 function zone(life){
  const j=J.ensure(life);
- if(j.occupation.includes('관직')||j.occupation.includes('글')||j.occupation.includes('서당'))return 'study';
- if(j.occupation.includes('장사')||j.occupation.includes('수공업'))return 'market';
- if(j.region==='한양')return 'market';
- if(['경상도','전라도','황해도'].includes(j.region)&&j.occupation.includes('운송'))return 'port';
+ if(j.occupation.includes('관직')||j.occupation.includes('글')||j.occupation.includes('서당')||
+   (j.studyYears>=4&&life.age<=26&&hash(life.seed,life.year+84)<.38))return 'study';
+ // Coastal provinces alternate between inland livelihoods and reachable harbors.
+ if(['경상도','전라도','황해도'].includes(j.region)&&
+    (j.occupation.includes('운송')||hash(life.seed,life.year+77)<.38))return 'port';
+ if(j.occupation.includes('장사')||j.occupation.includes('수공업')||j.region==='한양')return 'market';
  if(j.region==='강원도'||j.region==='함경도')return 'mountain';
- if(['평안도','경상도'].includes(j.region)&&j.occupation.includes('장사'))return 'market';
  return 'farm';
 }
 const ZONE_LABEL={study:'서책을 읽는 마루',market:'장터와 골목',port:'포구의 바닷길',mountain:'산골짜기의 길',farm:'논밭과 마을'};
@@ -106,7 +107,7 @@ const EVENTS={
  }
 };
 function fresh(life){
- return {version:3,processedYear:life.year,memories:[],storiesSeen:[],
+ return {version:3,processedYear:life.year-1,memories:[],storiesSeen:[],
   decisions:[],followups:[],active:null,deferred:null,skill:0,
   kinship:50,craft:0,legacy:'',choiceCount:0};
 }
