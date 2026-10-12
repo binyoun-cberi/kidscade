@@ -6,6 +6,7 @@ on:
     paths:
       - 'games/high_one_life/**'
       - 'tests/one-life*.test.cjs'
+      - 'scripts/one-life-v12-stress.cjs'
       - '.github/workflows/one-life-v12-validation.yml'
   workflow_dispatch:
 permissions:
@@ -13,7 +14,7 @@ permissions:
 jobs:
   era-regression:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,6 +23,8 @@ jobs:
       - name: One Life era, saved-life and controller tests
         run: |
           node --test tests/one-life-v12.test.cjs tests/one-life-v10.test.cjs tests/one-life-v9.test.cjs tests/one-life-historical.test.cjs tests/one-life-screen-flow.test.cjs
+      - name: Run 10,000 whole-life historical stress simulations
+        run: node scripts/one-life-v12-stress.cjs 10000
       - name: Syntax validation
         run: |
           node --check games/high_one_life/world-v12.js
