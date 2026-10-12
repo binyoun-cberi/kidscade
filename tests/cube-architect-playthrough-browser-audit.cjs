@@ -96,6 +96,14 @@ async function run(){
     return result.result?.value;
   };
   const click=selector=>evaluate('document.querySelector('+JSON.stringify(selector)+').click()');
+  // Mobile game buttons deliberately use pointerdown (not click).
+  const touchTap=async selector=>{
+    const point=await evaluate('(()=>{const r=document.querySelector('+JSON.stringify(selector)+').getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2,w:r.width,h:r.height}})()');
+    assert.ok(point.w>0&&point.h>0,'Touch target invisible: '+selector);
+    await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:point.x,y:point.y,id:72}]});
+    await sleep(95);
+    await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  };
   const state=()=>evaluate('window.__cubePlaytest?.state()');
   const waitFor=async(expr,timeout=15000)=>{
     for(let i=0;i<timeout/160;i++){try{if(await evaluate(expr))return true}catch{}await sleep(160)}
@@ -197,7 +205,7 @@ async function run(){
   const tablet=await evaluate('({mobile:!document.querySelector("#mobileControls").classList.contains("hidden"),inventory:!!document.querySelector("#mobileInventory"),direction:!document.querySelector("#magicWorkbenchGuide").classList.contains("hidden"),viewport:innerWidth,scroll:document.documentElement.scrollWidth})');
   record('tablet_start',tablet);
   assert.ok(tablet.mobile&&tablet.direction,'Tablet HUD/control missing');
-  await click('#tutorialSkip');await click('#mobileInventory');await sleep(220);
+  await click('#tutorialSkip');await touchTap('#mobileInventory');await sleep(220);
   const mobileBag=await evaluate('({open:!document.querySelector("#blockInventory").classList.contains("hidden"),tab:document.querySelector("#blockInventory").dataset.bagTab,display:getComputedStyle(document.querySelector("#survivalCraftPanel")).display,rect:(()=>{const r=document.querySelector("#blockInventory").getBoundingClientRect();return {top:r.top,bottom:r.bottom}})()})');
   record('tablet_bag',mobileBag);
   assert.ok(mobileBag.open&&mobileBag.tab==='bag'&&mobileBag.display==='none','Tablet backpack opens crafting unexpectedly');
