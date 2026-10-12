@@ -32,7 +32,7 @@ delete global.window;
 const originalLog=Sim.Life.prototype.logEvent;
 Sim.Life.prototype.logEvent=function(text,kind){
  let t=traces.get(this);
- if(!t){t={raw:0,kind:{},perAge:{},unique:new Set(),repeated:0,beforeBirth:0,
+ if(!t){t={raw:0,kind:{},perAge:{},unique:new Set(),countText:new Map(),repeated:0,beforeBirth:0,
    afterDeath:0,wrongYear:0,historyYearErrors:0,futureHistory:0,wording:0};
    traces.set(this,t);}
  const k=kind||'life';
@@ -46,6 +46,7 @@ Sim.Life.prototype.logEvent=function(text,kind){
  // A repeated story in the same lifetime is a narrative defect, not "variety".
  if(t.unique.has(text))t.repeated++;
  else t.unique.add(text);
+ t.countText.set(text,(t.countText.get(text)||0)+1);
  if(/게임용|가상 인생|시뮬레이션|게임 모형/.test(text))t.wording++;
  return originalLog.call(this,text,kind);
 };
@@ -64,7 +65,7 @@ function createGroup(year){
   after2026Years:0,after2026EraChoices:0,after2026Facts:0,after2026Events:0,
   decisions:0,distinctPerLife:0,repeatedTexts:0,
   childYears:{years:0,events:0},youngAdult:{years:0,events:0},midlife:{years:0,events:0},elderly:{years:0,events:0},
-  historyExposureYears:new Set(),sample:[],timeSlots:{},eras:new Set(),
+  historyExposureYears:new Set(),sample:[],timeSlots:{},eras:new Set(),repeatExamples:new Map(),
   versions:['world-v9','world-v10','world-v12','world-v13']};
 }
 const rowByKind=(trace,k)=>trace.kind[k]||0;
@@ -121,6 +122,7 @@ for(const year of YEARS){
   g.totalYears+=actualYears;g.survivorsTo20+=Number(life.age>=20);g.survivorsTo50+=Number(life.age>=50);
   g.allRawEvents+=t.raw;g.allRetainedEvents+=life.log.length;g.eventRecordsLost+=t.raw-life.log.length;
   g.distinctPerLife+=t.unique.size;g.repeatedTexts+=t.repeated;
+  for(const [text,n] of t.countText)if(n>1)g.repeatExamples.set(text,(g.repeatExamples.get(text)||0)+n-1);
   g.historicalFacts+=rowByKind(t,'history');
   g.historicalChoices+=rowByKind(t,'history-choice');
   g.historicalImpact+=rowByKind(t,'history-impact');
@@ -173,7 +175,8 @@ for(const year of YEARS){
  g.timeSlots=Object.fromEntries(Object.entries(g.timeSlots).sort().map(([key,v])=>
   [key,{eventsPerYear:means(v.events,v.years),under3Percent:means(v.under3*100,v.years),years:v.years}]));
  g.sample=sampledSeeds;
- delete g.historyExposureYears;delete g.eras;
+ g.frequentRepeatedTexts=[...g.repeatExamples.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10).map(([text,repetitions])=>({text,repetitions}));
+ delete g.historyExposureYears;delete g.eras;delete g.repeatExamples;
  totals.lives+=N;totals.fullRuns+=N;totals.repeats+=g.repeatedTexts;
 }
 totals.runtimeSeconds=round((Date.now()-began)/1000);
