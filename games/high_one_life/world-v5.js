@@ -97,9 +97,9 @@
  entry('korea-mine-injury','all',21,30,['복무 중 폭발물 사고로 다리를 다쳐 재활치료를 시작했다.','접경 지역에서의 사고로 이동에 어려움이 생겼다.','복무 중 사고 뒤 의료지원과 재활이 필요해졌다.'],{health:-9,money:-1200,tag:'injury'},{country:'대한민국',needs:['border-duty'],weight:.045,rarity:'rare',serious:true});
  entry('korea-accessibility','all',23,77,['재활과 보조기기 지원으로 이동과 일을 이어 갔다.','장애가 있는 사람들의 접근성을 높이는 일을 도왔다.','직장에서 필요한 환경을 조정하고 새 기술을 배웠다.'],{learning:2,network:3,tag:'rehabilitation'},{country:'대한민국',needs:['injury'],weight:7});
  entry('russia-service','all',20,40,['군 복무와 민간 경력 사이에서 진로를 고민했다.','지역 사회에서 복무 제도에 관한 정보를 살펴봤다.','위기 때 가족과 연락할 계획을 세웠다.'],{knowledge:2,tag:'service-info'},{country:'러시아'});
- entry('russia-future-crisis','all',20,53,['가상의 미래 분쟁이 발생해 징집 통보와 피난 문제를 마주했다.','시대의 불안정으로 복무와 가족 안전을 함께 고민했다.','지역에 군사적 긴장이 높아져 생활이 달라졌다.'],{happiness:-4,tag:'armed-conflict'},{country:'러시아',weight:.075,rarity:'rare',serious:true});
+ entry('russia-future-crisis','all',20,53,['징집 통보가 도착했다. 가족에게는 피할 곳을 찾아야 한다고 말했다.','시대의 불안정으로 복무와 가족 안전을 함께 고민했다.','지역에 군사적 긴장이 높아져 생활이 달라졌다.'],{happiness:-4,tag:'armed-conflict'},{country:'러시아',weight:.075,rarity:'rare',serious:true});
  entry('russia-shelter','all',21,61,['분쟁 위협이 커져 안전한 장소로 대피했다.','가족과 통신하며 피난 계획을 실행했다.','이웃과 함께 안전한 대피시설을 찾았다.'],{community:2,health:-2,tag:'evacuation'},{country:'러시아',needs:['armed-conflict'],weight:5,serious:true});
- entry('russia-drone-loss','all',21,62,['가상 분쟁 중 무인기 공격으로 동료를 잃고 도움을 받았다.','분쟁 중 드론의 위협을 겪은 뒤 심리적 지원을 구했다.','전투 지역에서 무인기 공격을 겪고 구조대의 도움을 받았다.'],{health:-10,bonds:-4,tag:'war-trauma'},{country:'러시아',needs:['armed-conflict'],weight:.08,rarity:'rare',serious:true});
+ entry('russia-drone-loss','all',21,62,['무인기 공격으로 함께 일하던 사람을 잃었다. 한동안 마음을 추스르기 어려웠다.','분쟁 중 드론의 위협을 겪은 뒤 심리적 지원을 구했다.','전투 지역에서 무인기 공격을 겪고 구조대의 도움을 받았다.'],{health:-10,bonds:-4,tag:'war-trauma'},{country:'러시아',needs:['armed-conflict'],weight:.08,rarity:'rare',serious:true});
  entry('russia-recovery','all',22,85,['분쟁 경험 뒤 직업 훈련을 받아 민간 일터로 돌아왔다.','가족과 전문 상담의 도움으로 일상을 재건했다.','새로운 기술을 배우며 안정된 생활을 준비했다.'],{learning:3,health:4,tag:'reintegration'},{country:'러시아',needs:['war-trauma'],weight:8,serious:true});
  entry('usa-bullying','all',9,17,['학교에서 괴롭힘을 겪어 믿을 만한 어른에게 도움을 요청했다.','반 친구들의 따돌림 문제가 알려져 학교에서 지원을 시작했다.','친구가 어려움을 겪는 것을 보고 상담 선생님에게 알렸다.'],{happiness:-5,tag:'school-support'},{country:'미국',weight:.8,serious:true});
  entry('usa-school-safety','all',9,18,['학교 안전 문제로 수업이 중단되어 보호자와 함께 안전한 곳으로 이동했다.','학교 근처에서 총격 사건이 발생해 학생들이 보호받으며 심리적 지원을 받았다.','학교에서 안전 위기 대응 훈련과 상담이 진행되었다.'],{happiness:-5,tag:'safety-recovery'},{country:'미국',weight:.10,rarity:'rare',serious:true});
@@ -110,7 +110,7 @@
  entry('monaco-demonstration-injury','all',23,79,['시민행사 현장에서 사고가 발생해 병원 치료를 받았다.','혼잡한 행사에서 넘어져 재활과 돌봄이 필요해졌다.','평화로운 집회 주변의 사고로 한동안 회복이 필요했다.'],{health:-6,tag:'injury'},{country:'모나코',needs:['civic'],weight:.035,rarity:'rare',serious:true});
  // Region-specific humanitarian stories are conditional and hypothetical, not
  // a continent-wide description and not an estimate of real future conflict rates.
- entry('fictional-displacement','all',7,67,['가상의 지역 분쟁이 발생해 가족과 함께 안전한 곳으로 대피했다.','분쟁으로 거처를 옮기고 임시 배움터에 다녔다.','인근 지역의 긴장으로 가족과 떨어졌다가 연락을 되찾았다.'],{happiness:-6,money:-1500,tag:'displaced'},{needs:['future-crisis'],weight:.25,rarity:'rare',serious:true});
+ entry('fictional-displacement','all',7,67,['지역의 충돌이 격해지자 가족과 함께 짐을 챙겨 집을 떠났다.','분쟁으로 거처를 옮기고 임시 배움터에 다녔다.','인근 지역의 긴장으로 가족과 떨어졌다가 연락을 되찾았다.'],{happiness:-6,money:-1500,tag:'displaced'},{needs:['future-crisis'],weight:.25,rarity:'rare',serious:true});
  entry('child-protection','all',10,17,['분쟁 중 무장단체에 강제로 동원되었다가 보호기관의 도움으로 벗어났다.','분쟁 상황에서 강제노동 피해를 겪었지만 구조와 보호를 받았다.','무장집단의 위협에서 벗어나 안전한 임시 보호시설에 머물렀다.'],{health:-8,tag:'child-protected'},{needs:['displaced','minor'],weight:.03,rarity:'extremely-rare',serious:true});
  entry('reintegration-study','all',11,32,['사회복지사와 함께 학교로 돌아갈 준비를 했다.','심리적 지원과 직업교육을 받으며 일상을 회복했다.','가족 찾기와 공동체 복귀 지원을 받았다.'],{learning:3,bonds:5,tag:'reintegration'},{needs:['child-protected'],weight:8,serious:true});
  entry('refugee-resettlement','all',10,82,['보호기관의 도움으로 새로운 지역에서 생활을 시작했다.','이주한 곳에서 언어와 직업 기술을 익혔다.','가족과 떨어져 살다가 다시 만날 방법을 찾았다.'],{learning:2,network:1,tag:'resettled'},{needs:['displaced'],weight:5});
@@ -210,12 +210,12 @@
   const w=ensure(life),age=life.age;
   if(age===9 && storyCrisisCountries.has(life.country[0]) && r(life,age,310)<.055){
    w.fictionalCrisis=true;
-   life.logEvent('이 이야기에서는 몇 년 뒤 지역에 가상의 분쟁이 발생했다고 가정합니다. 실제 미래 예측이 아닙니다.','context');
+   life.logEvent('지역의 긴장이 높아져 사람들의 표정이 어두워졌다. 가족들은 혹시 모를 일에 대비하기 시작했다.','context');
   }
   // Optional peacetime military and civil service; no conscription forecast
   // for anyone born in 2026. Respect eligibility, choice and future uncertainty.
   if(age===21&&['대한민국','러시아'].includes(life.country[0])&&r(life,age,313)<.52){
-    w.service='복무';life.logEvent('가상 시나리오에서 군 복무 경험을 하게 되었다. 이후 민간 생활로 돌아갈 길도 남아 있다.','context');
+    w.service='복무';life.logEvent('군 복무를 하게 됐다. 제대하고 다시 평범한 일상으로 돌아갈 날을 기다렸다.','context');
   }
   if(w.investment && age>=30 && age<=75 && w.investmentEntry && r(life,age,392)<.16){
     const id=w.investment==='주식'?(r(life,age,393)<.60?'stocks-growth':'stocks-loss')
@@ -245,7 +245,7 @@
   // A very rare non-graphic fatal outcome exists only inside a fictional future
   // conflict that already arose during this particular life, never from birth.
   if(selected.id==='russia-drone-loss' && w.fictionalCrisis && r(life,age,777)<.045){
-    life.alive=false;life.deathReason='가상의 분쟁에서 발생한 무인기 공격으로 생을 마쳤다.';
+    life.alive=false;life.deathReason='무인기 공격으로 목숨을 잃었다.';
     life.logEvent('분쟁 지역에서 목숨을 잃었다. 남겨진 사람들은 평화를 바랐다.','death');
   }
  }
