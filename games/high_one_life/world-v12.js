@@ -131,7 +131,7 @@ function afterYear(life){
  if(p&&s.lastEra!==p.era){
   s.lastEra=p.era;
   s.metrics.schoolBand=p.label;
-  log(life,'어느새 '+p.label+'가 시작됐다','era-context');
+  log(life,'세상은 어느새 '+p.label+'로 접어들었다','era-context');
  }
  s.metrics.year=life.year;
  s.metrics.incomeLabel=p?.label||'그해의 살림';
