@@ -210,9 +210,15 @@
         <b id="trackingLabel">추적 중</b>
         <button id="trackingStop" type="button">추적 취소</button>
       </div>
+      <div id="magicWorkbenchGuide" class="magic-workbench-guide hidden" aria-label="마법의 직육면체 제작대 방향 안내">
+        <span class="magic-home-symbol" aria-hidden="true">◆</span>
+        <b id="magicWorkbenchLabel">마법의 직육면체 · 제작대</b>
+        <span id="magicWorkbenchArrow" class="magic-home-arrow" aria-hidden="true">↑</span>
+        <button id="magicWorkbenchReturn" type="button" title="안전한 제작대 근처로 순간이동합니다. 재료는 유지됩니다.">위험할 때 귀환</button>
+      </div>
       <div id="exposureBar" class="progress hidden" role="progressbar" aria-label="추위 노출" aria-valuemin="0" aria-valuemax="100"><i id="exposureFill"></i></div>
       <div id="breathBar" class="progress hidden" role="progressbar" aria-label="남은 숨" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i id="breathFill"></i></div>
-      <button id="survivalReturn" class="hidden" type="button">추위가 심해요 · 시작 지점으로 귀환</button>
+      <button id="survivalReturn" class="hidden" type="button">추위가 심해요 · 마법의 직육면체로 귀환</button>
       <div class="progress"><i id="adventureBar"></i></div>
     </div>
     <section id="journeyCard" class="hidden"><b id="journeyTitle"></b><p id="journeyText"></p><button id="journeyStart" type="button">다리 만들러 가기</button><button id="journeyHelp" class="hidden" type="button">도움 받기</button><button id="journeySkip" type="button">자유롭게 탐험하기</button></section>
@@ -221,7 +227,7 @@
     <section id="blockInventory" class="hidden">
       <div class="inventory-head"><div><b id="inventoryTitle">가방 · 제작</b><small id="inventorySubtitle">필요한 재료를 모아 새 도구를 만들어 보세요.</small></div><button id="inventoryClose">×</button></div>
       <div id="campInventoryHint" class="hidden"><span id="campInventoryText"></span><button id="campInventoryHelp" type="button">도움 받기</button></div>
-      <div id="simpleBagTabs" class="hidden"><button type="button" data-bag-tab="bag">가진 물건</button><button type="button" data-bag-tab="craft">만들기</button></div>
+      <div id="simpleBagTabs" class="hidden"><button type="button" data-bag-tab="bag">배낭</button><button type="button" data-bag-tab="craft">제작대에서 만들기</button></div>
       <div class="inventory-tabs">
         <button data-inv-cat="전체" class="active">전체</button>
         <button data-inv-cat="자연">자연</button>
@@ -234,7 +240,7 @@
       </div>
       <section id="survivalCraftPanel" class="hidden">
         <div class="craft-panel-head">
-          <div><b>제작 작업대</b><small id="survivalCraftHint">나무를 먼저 모아 보세요.</small><small id="craftDiscoverySummary" class="craft-discovery-summary">발견한 제작법 0</small></div>
+          <div><b>마법의 직육면체 · 만들기</b><small id="survivalCraftHint">제작대에서 원하는 물건을 만들어 보세요.</small><small id="craftDiscoverySummary" class="craft-discovery-summary">발견한 제작법 0</small></div>
           <small id="survivalTechs">설계도 기술 · 아직 없음</small>
         </div>
         <div class="craft-workspace">
