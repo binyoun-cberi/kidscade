@@ -58,6 +58,15 @@ function person(life,id,role,birthYear,sex){
   diedYear:null};
 }
 function yearNumber(id){return [...id].reduce((n,c)=>n+c.charCodeAt(0),0);}
+function uniqueName(people,p){
+ const choices=p.sex==='여자'?GIRL:BOY;
+ const at=choices.indexOf(p.name);
+ for(let i=0;i<choices.length;i++){
+  const candidate=choices[(Math.max(0,at)+i)%choices.length];
+  if(!people.some(x=>x.name===candidate)){p.name=candidate;return p;}
+ }
+ return p;
+}
 function makeState(life){
  const p=J.ensure(life),n=Math.min(3,Math.max(0,life.profile.siblings||0)),birth=life.birthYear;
  const motherAge=clamp(life.profile.motherAge||29,18,49),
@@ -68,7 +77,7 @@ function makeState(life){
  ];
  for(let i=0;i<n;i++){
   const difference=Math.floor(hash(life.seed,510+i)*13)-6;
-  people.push(person(life,'sibling-'+i,'sibling',birth+difference,hash(life.seed,529+i)<.48?'여자':'남자'));
+  people.push(uniqueName(people,person(life,'sibling-'+i,'sibling',birth+difference,hash(life.seed,529+i)<.48?'여자':'남자')));
  }
  const state={version:4,processedYear:life.year,people,queue:[],active:null,
   decisions:[],memories:[],recent:[],seen:[],followups:[],careYears:0,legacies:0};
@@ -82,7 +91,7 @@ function addSpouse(life,s,marriageYear){
  const sex=life.gender==='남자'?'여자':'남자';
  const ageAtMarriage=clamp(18+Math.floor(hash(life.seed,690)*7),17,30);
  const spouse=person(life,'spouse','spouse',marriageYear-ageAtMarriage,sex);
- spouse.joinedYear=marriageYear;spouse.work='집안과 생업을 함께 돌봄';s.people.push(spouse);
+ spouse.joinedYear=marriageYear;spouse.work='집안과 생업을 함께 돌봄';s.people.push(uniqueName(s.people,spouse));
  if(marriageYear===life.year)
   remember(life,s,particle(spouse.name,'과','와')+' 혼인하고 한집에서 새로운 생활을 시작했다.','joseon4-family');
 }
@@ -90,7 +99,7 @@ function addChild(life,s,bornYear){
  if(s.people.filter(x=>x.role==='child').length>=6)return;
  const id='child-'+s.people.filter(x=>x.role==='child').length;
  const child=person(life,id,'child',bornYear,hash(life.seed,bornYear+456)<.50?'여자':'남자');
- s.people.push(child);
+ s.people.push(uniqueName(s.people,child));
  if(bornYear===life.year)
   remember(life,s,particle(child.name,'이','가')+' 태어났다. 아이의 울음소리가 집안에 퍼졌다.','joseon4-family');
 }
