@@ -36,7 +36,7 @@ function addMemory(state,tag){if(!state.memories.includes(tag)&&state.memories.l
 function init(life){
  const p=W2.enrich(life).profile;
  const state={version:VERSION,people:[],memories:[],hobby:'',hobbySince:null,
-   eventsSeen:[],yearQueue:[],queueYear:-1,decisions:[],annualEvents:0,
+   eventsSeen:[],yearQueue:[],activeChoice:null,queueYear:-1,decisions:[],annualEvents:0,
    finance:{debt:0,originalDebt:0,rate:.05,yearsLeft:0,home:false,paidOff:false,lastInterest:0,lastPrincipal:0},
    source:'fictional-lifepath-v9'};
  person(state,'mother','어머니',chooseName(life,21,'female'),life.birthYear-p.motherAge,85).job=p.motherJob;
@@ -139,13 +139,13 @@ function eventsForYear(life,state){
  const q=[],push=(id,text,kind='life9',month=5)=>q.push({id,text,kind,month});
  const childhood=a>=2&&a<=17;
  if(a===7&&!state.hobby)
-  q.push({id:'choose-hobby',month:3,kind:'memory',choice:'hobby'});
+  q.push({id:'choose-hobby',text:'',month:3,kind:'memory',choice:'hobby'});
  if(a===23&&!state.finance.originalDebt&&life.money?.netWorth<6500)
-  q.push({id:'repair-cost',month:8,kind:'finance9',choice:'repair'});
+  q.push({id:'repair-cost',text:'',month:8,kind:'finance9',choice:'repair'});
  if(a===35&&life.profile?.partner&&!state.memories.includes('혼인'))
-  q.push({id:'marriage',month:9,kind:'relationship',choice:'marriage'});
+  q.push({id:'marriage',text:'',month:9,kind:'relationship',choice:'marriage'});
  if(a===43&&life.money?.netWorth>11000&&!state.finance.home)
-  q.push({id:'housing',month:6,kind:'finance9',choice:'housing'});
+  q.push({id:'housing',text:'',month:6,kind:'finance9',choice:'housing'});
  if(a===64&&state.hobby)
   push('hobby-retirement',state.hobbySince+'세에 시작한 '+state.hobby+'(을)를 다시 즐겼다. 오래전 취미가 노년의 하루를 채워 주었다.','memory',9);
  if(a===30&&state.hobby)
@@ -352,7 +352,7 @@ function install(){
      choice:['hobby','repair','marriage','housing'].includes(e.choice)?e.choice:undefined}));
    const e=saved.activeChoice;
    if(e&&typeof e.id==='string'&&['hobby','repair','marriage','housing'].includes(e.choice))
-    state.activeChoice={id:e.id.slice(0,90),choice:e.choice,month:clamp(Number(e.month)||5,1,12)};
+    state.activeChoice={id:e.id.slice(0,90),text:String(e.text||''),kind:String(e.kind||'life9'),choice:e.choice,month:clamp(Number(e.month)||5,1,12)};
    if(typeof data.pending==='string'&&data.pending.startsWith('v9:')&&data.pending==='v9:'+state.activeChoice?.id&&life.alive)
     life.pending=data.pending;
   }
