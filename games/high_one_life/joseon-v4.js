@@ -289,7 +289,7 @@ function afterYear(life){
 function summary(life){
  const s=ensure(life);if(!s)return null;
  const people=s.people.filter(p=>p.birthYear<=life.year).map(p=>({id:p.id,role:p.role,name:p.name,
-  age:age(p,life.year),alive:p.alive,atHome:p.atHome!==false,relation:p.relation,wellbeing:p.wellbeing,
+  age:age(p,p.alive?life.year:(p.diedYear||life.year)),alive:p.alive,atHome:p.atHome!==false,relation:p.relation,wellbeing:p.wellbeing,
   trait:p.trait,learning:p.learning,work:p.work,married:p.married,diedYear:p.diedYear}));
  return {people,alive:people.filter(p=>p.alive).length,atHome:people.filter(p=>p.alive&&p.atHome).length,
   spouse:people.find(p=>p.role==='spouse')||null,
