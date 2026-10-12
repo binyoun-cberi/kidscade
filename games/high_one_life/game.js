@@ -607,7 +607,7 @@
     const olderMode=isJoseon();
     $('joseonPanel').classList.toggle('hidden',!olderMode);
     $('v10HistoryPanel').classList.toggle('hidden',olderMode);
-    document.querySelector('.v13-care-strip').classList.toggle('hidden',olderMode);
+    $('v13CareStrip').classList.toggle('hidden',olderMode);
     paintLifeRecord();
     paintArc();
     $('placeFlag').textContent=life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1];
