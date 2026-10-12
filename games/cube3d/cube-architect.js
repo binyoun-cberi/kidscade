@@ -3837,9 +3837,9 @@ function renderCraftTabs(recipes){
   }
 }
 function craftNeedHint(recipe){
-  if(!hasWorkbench())return '마법의 직육면체 제작대 가까이로 가 보자.';
+  if(recipe.bench&&!hasWorkbench())return '마법의 직육면체 제작대 가까이로 가 보자.';
   const missing=Object.entries(recipe.needs).find(([type,n])=>bagCount(type)<n);
-  if(!missing)return '다시 한번 만들어 보자.';
+  if(!missing)return hasWorkbench()?'다시 한번 만들어 보자.':'마법의 직육면체 제작대 가까이로 가 보자.';
   const [type,n]=missing,amount=n-bagCount(type);
   const hints={log:'나무를 캐 보자.',planks:'원목으로 판자를 만들어 보자.',sticks:'판자로 막대를 만들어 보자.',stone:'곡괭이로 돌을 캐 보자.',glass:'화로에 모래를 넣어 보자.',ironBlock:'화로에 철광석을 넣어 보자.'};
   return blockDef(type).name+' '+amount+'개가 더 필요해. '+(hints[type]||'주변을 탐험해 보자.');
