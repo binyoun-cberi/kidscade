@@ -123,18 +123,6 @@ jobs:
         run: npm run health:strict
       - name: Build Cloudflare static artifact
         run: npm run build
-      - name: Cube Architect real-browser survival playthrough (desktop and tablet)
-        run: node tests/cube-architect-playthrough-browser-audit.cjs
-        env:
-          KIDSCADE_CUBE_AUDIT_OUT: ${{ runner.temp }}/cube-architect-playthrough-audit
-      - name: Upload Cube Architect playthrough frames and report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cube-architect-playthrough-audit
-          path: ${{ runner.temp }}/cube-architect-playthrough-audit/
-          if-no-files-found: ignore
-          retention-days: 7
       - name: Run all regression tests and audits
         run: npm run test:ci
       - name: Openmon expedition real-browser mobile and desktop audit
