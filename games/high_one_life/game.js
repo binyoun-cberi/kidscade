@@ -299,6 +299,8 @@
       const li = document.createElement('li');
       if (entry.kind === 'decision') li.className = 'is-decision';
       else if (entry.kind === 'decision-effect') li.className = 'is-choice-effect';
+      else if (entry.kind === 'history') li.className = 'is-history';
+      else if (['history-choice','history-impact','history-followup'].includes(entry.kind)) li.className = 'is-history-choice';
       const age = document.createElement('b');
       age.textContent = entry.age + '세';
       const text = document.createElement('span');
