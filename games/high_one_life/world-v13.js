@@ -19,7 +19,7 @@ function hash(life,salt){
 function state(life){
  W12.ensure(life);
  if(!life.world13)life.world13={
-  version:13,processedYear:life.year,peopleState:{},eventsSeen:[],memories:[],
+  version:13,processedYear:life.year,lastOfferYear:-1,peopleState:{},eventsSeen:[],memories:[],
   episodes:[],pendingCare:null,active:null,decisions:[],followups:[],
   historicalEchoes:[],careYears:0,carePoints:0,totalFollowups:0,source:'fictional-relationships-and-care-v13'
  };
@@ -94,7 +94,7 @@ const PICKS=Object.freeze({
  ]
 });
 function createOffer(life,s,kind,person,topic){
- if(!life.alive||life.pending||s.active||s.pendingCare)return false;
+ if(!life.alive||life.pending||s.active||s.lastOfferYear===life.year)return false;
  if(s.decisions.some(x=>x.topic===topic&&x.personId===(person?.id||'')))return false;
  const id=kind+'-'+(person?.id||'self')+'-'+life.year;
  if(s.eventsSeen.includes('offered-'+id))return false;
@@ -106,6 +106,7 @@ function createOffer(life,s,kind,person,topic){
   parenting:(person?.name||'아이')+'(와)과 함께 성장하기'
  };
  s.active={id,kind,topic,personId:person?.id||'',year:life.year,title:titles[kind]};
+ s.lastOfferYear=life.year;
  s.eventsSeen.push('offered-'+id);
  s.eventsSeen=s.eventsSeen.slice(-300);
  life.pending='v13:'+id;
@@ -163,6 +164,7 @@ function afterChoice(life,index){
  }else if(a.kind==='wellness'){
   const e=startEpisode(life,s,'wellness');
   if(e)e.intensity=index===0?2:1;
+  if(index===0&&life.money)life.money.netWorth=clamp(life.money.netWorth-70,-2e7,2e7);
   life.change(index===1?{health:2,happiness:3,bonds:3}:index===0?
    {health:4,knowledge:2,happiness:1}:{health:3,bonds:4});
   remember(life,s,'생활 리듬과 건강을 돌본 경험');
@@ -226,6 +228,10 @@ function events(life,s){
     '지난해 시작한 가족 돌봄을 올해도 역할을 나누어 이어 갔다.','care13');
   }
  }
+ offerYear(life,s);
+}
+function offerYear(life,s){
+ if(!life.alive||life.pending||s.lastOfferYear===life.year)return false;
  const h=W10.ensure(life),past=W12.ensure(life);
  if(life.country?.[0]==='대한민국'){
   if(life.age>=25&&life.age<=50&&h.tags.some(t=>t.includes('학업 중단'))&&
@@ -282,6 +288,7 @@ function hydrate(life,data){
  const s=state(life),raw=data?.world13;
  if(!raw||raw.version!==13)return s;
  if(Number.isInteger(raw.processedYear))s.processedYear=clamp(raw.processedYear,life.birthYear-1,life.year);
+ if(Number.isInteger(raw.lastOfferYear))s.lastOfferYear=clamp(raw.lastOfferYear,-1,life.year);
  function strings(key,n){return Array.isArray(raw[key])?raw[key].filter(x=>typeof x==='string').slice(-n):[];}
  s.eventsSeen=strings('eventsSeen',300);s.memories=strings('memories',70);
  if(raw.peopleState&&typeof raw.peopleState==='object'){
@@ -342,9 +349,21 @@ function install(){
  L.prototype.choose=function(index){
   if(typeof this.pending==='string'&&this.pending.startsWith('v13:'))
    return afterChoice(this,index);
-  return choose.call(this,index);
+  const done=choose.call(this,index);
+  if(done&&!this.pending&&this.alive){
+   const s=state(this);
+   if(s.processedYear===this.year)offerYear(this,s);
+  }
+  return done;
  };
- L.prototype.reflect=function(text){return reflect.call(this,text);};
+ L.prototype.reflect=function(text){
+  const done=reflect.call(this,text);
+  if(done&&!this.pending&&this.alive){
+   const s=state(this);
+   if(s.processedYear===this.year)offerYear(this,s);
+  }
+  return done;
+ };
  L.prototype.snapshot=function(){
   return {...snapshot.call(this),world13:JSON.parse(JSON.stringify(state(this)))};
  };
