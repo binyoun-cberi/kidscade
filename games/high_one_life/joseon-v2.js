@@ -186,8 +186,11 @@ function summary(life){
 function hydrate(life,data){
  const s=ensure(life),old=data?.joseon2;if(!s||!old||old.version!==2)return s;
  for(const k of ['grain','community','helpGiven','scarcityUntil','regionVisits','processedYear']){
-  if(Number.isInteger(old[k]))s[k]=clamp(old[k],0,k==='grain'?200:k==='community'?100:k==='processedYear'||k==='scarcityUntil'?life.year:10000);
+  if(Number.isInteger(old[k]))s[k]=clamp(old[k],0,k==='grain'?200:k==='community'?100:k==='processedYear'?life.year:k==='scarcityUntil'?life.year+12:10000);
  }
+ // W2 reconstitutes household data from seed; retain the actual saved profile for a Joseon life.
+ if(data?.profile&&Number.isFinite(data.profile.familyIncome)&&life.profile)
+  life.profile.familyIncome=clamp(Math.round(data.profile.familyIncome),0,100000000);
  s.eventsSeen=Array.isArray(old.eventsSeen)?old.eventsSeen.filter(x=>Number.isInteger(x)&&x>=1392&&x<=1897).slice(-24):[];
  s.regionMemories=Array.isArray(old.regionMemories)?old.regionMemories.filter(x=>typeof x==='string').slice(-16).map(x=>x.slice(0,160)):[];
  s.decisions=Array.isArray(old.decisions)?old.decisions.filter(x=>x&&typeof x.id==='string'&&Number.isInteger(x.year)&&x.year<=life.year).slice(-40)
