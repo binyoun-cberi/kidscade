@@ -53,7 +53,7 @@ function selectFact(life,facts){
 function prompt(fact,life){
  if(!eligible(life,fact))return null;
  return {age:life.age,title:fact.year+'년 · '+fact.title,
- description:'실제 역사: '+fact.detail+' 이 가상 인물과 가족은 이 시대를 어떻게 지낼까요? 선택 결과는 실제 통계가 아닌 게임 시나리오입니다.',
+ description:fact.detail+' 그해 우리 가족은 어떻게 살아갈까?',
  options:OPTIONS[fact.scenario],history:true,source:fact.source};
 }
 function tag(life,state,value){
@@ -82,7 +82,7 @@ function school(life,state){
  if(life.age<6||life.age>21)return false;
  if(!state.schoolInterrupted){
   state.schoolInterrupted=true;
-  if(life.world)life.world.schooling='역사적 변화로 학업이 일시 중단된 가상 경로';
+  if(life.world)life.world.schooling='전쟁과 시대 변화로 공부를 쉬는 중';
   tag(life,state,'학업 중단');
   life.logEvent('그해의 사회적 변화로 공부를 이어 가기 어려워졌다. 배움을 다시 찾을 방법을 생각했다. (가상 인생)','history-impact');
  }
@@ -144,7 +144,7 @@ function apply(life,state,fact,index){
  case 'financial-crisis':
   tag(life,state,'외환·금융 위기 경험');
   state.hardship=Math.max(state.hardship,2);
-  if(i===0){stats(life,{happiness:-1});money(life,110);notes.push('생활비를 줄여 가상 비상자금을 마련했다.');}
+  if(i===0){stats(life,{happiness:-1});money(life,110);notes.push('허리띠를 졸라매며 비상금을 모았다.');}
   if(i===1){stats(life,{knowledge:4});money(life,-130);notes.push('재교육을 알아보고 새로운 일자리에 대비했다.');}
   if(i===2){stats(life,{bonds:5});money(life,-40);notes.push('가족·이웃과 도움을 주고받을 방법을 마련했다.');}
   plan(life,state,year+2,'financial-recovery','경제가 어려웠던 시기의 선택을 돌아보며 저축·기술·인연을 다시 살펴보았다.');
@@ -192,7 +192,7 @@ function apply(life,state,fact,index){
  }
  state.decisions.push({id:fact.id,scenario:key,year,age:life.age,index:i});
  state.decisions=state.decisions.slice(-50);
- life.logEvent(fact.year+'년 '+fact.title+' 이후 선택: '+opts[i].label+'. '+notes.join(' ')+' (가상 인생)','history-choice');
+ life.logEvent(fact.year+'년 '+fact.title+' 이후 선택: '+opts[i].label+'. '+notes.join(' ')+'','history-choice');
  return true;
 }
 function autoContext(life,state,fact){
@@ -200,7 +200,7 @@ function autoContext(life,state,fact){
   state.hardship=Math.max(state.hardship,2);tag(life,state,'한국전쟁 시기');
   state.familyProtected=true;
   if(life.age>=6)school(life,state);
-  life.logEvent('보호자들이 전쟁 속에서 가족의 안전과 생활을 지키려 애썼다. 이 인물의 경험은 가상이다.','history-impact');
+  life.logEvent('어른들은 어린아이를 안고 어디서 밤을 보내야 할지 의논했다.','history-impact');
   plan(life,state,1953,'war-after','전쟁 시기의 가족 경험을 돌아보며 생활을 다시 정비했다.');
  }
  if(fact.scenario==='pandemic'&&life.age<8){
