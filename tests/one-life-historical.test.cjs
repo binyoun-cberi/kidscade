@@ -61,7 +61,7 @@ test('historical scene labels and years are selectable without replacing main ga
  const c=fs.readFileSync(path.join(root,'game.js'),'utf8');
  for(const name of ['birthYearInput','birthLocation','birthEraNote','historyContext'])
   assert.ok(h.includes('id="'+name+'"'),name);
- assert.match(h,/min="1900" max="2026"/);
+ assert.match(h,/min="1392" max="2026"/);
  assert.match(h,/data-era-year="1919"/);
  assert.match(h,/data-era-year="1935"/);
  assert.match(h,/history\.js\?v=/);

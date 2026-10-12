@@ -24,6 +24,7 @@ const events=Object.freeze([
 function period(life){
  const y=life?.year??2026,c=life?.country?.[0];
  if(c!=='대한민국')return life?.birthYear===2026?'현대 세계':'과거의 세계 (현대 국가 경계로 단순화)';
+ if(y<1897)return y<1500?'조선 전기':y<1600?'16세기 조선':y<1700?'17세기 조선':y<1800?'18세기 조선':y<1876?'19세기 조선':'조선 말기·개항기';
  if(y<1910)return '대한제국 시기';
  if(y<=1945)return y===1945?'광복의 해':'일제강점기';
  if(y<1948)return '광복 이후 전환기';
@@ -34,7 +35,7 @@ function period(life){
 function place(life){
  const c=life?.country?.[0]||'';
  if(c!=='대한민국')return c;
- return life.year<1910?'대한제국 시기의 한반도':life.year<1945?'한반도(당시 일본 식민 지배하의 조선)':life.year===1945?'광복을 맞은 한반도':life.year<1948?'광복 이후 한반도':'대한민국';
+ return life.year<1897?'조선의 한반도':life.year<1910?'대한제국 시기의 한반도':life.year<1945?'한반도(당시 일본 식민 지배하의 조선)':life.year===1945?'광복을 맞은 한반도':life.year<1948?'광복 이후 한반도':'대한민국';
 }
 function contextualize(life){
  if(!life||!life.alive||life.country[0]!=='대한민국')return false;

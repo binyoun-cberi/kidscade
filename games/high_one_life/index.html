@@ -33,7 +33,7 @@
         <div class="historical-picker" aria-label="출생 연도와 출생 지역">
           <label for="birthYearInput">태어날 연도</label>
           <div class="historical-picker-fields">
-            <input id="birthYearInput" type="number" min="1900" max="2026" step="1" value="2026" inputmode="numeric" aria-describedby="eraHelp">
+            <input id="birthYearInput" type="number" min="1392" max="2026" step="1" value="2026" inputmode="numeric" aria-describedby="eraHelp">
             <select id="birthLocation" aria-label="출생할 지역">
               <option value="random">전 세계에서 추첨</option>
               <option value="korea">한반도(현 대한민국 지역)</option>
@@ -41,11 +41,16 @@
           </div>
           <div class="era-presets" role="group" aria-label="시대 바로 선택">
             <button type="button" data-era-year="2026" data-era-place="random" aria-pressed="true">2026년 무작위</button>
+            <button type="button" data-era-year="1480" data-era-place="korea" aria-pressed="false">1480년 조선 전기</button>
+            <button type="button" data-era-year="1580" data-era-place="korea" aria-pressed="false">1580년 임진왜란 전</button>
+            <button type="button" data-era-year="1618" data-era-place="korea" aria-pressed="false">1618년 병자호란 전</button>
+            <button type="button" data-era-year="1740" data-era-place="korea" aria-pressed="false">1740년 영조 대</button>
+            <button type="button" data-era-year="1880" data-era-place="korea" aria-pressed="false">1880년 개항기</button>
             <button type="button" data-era-year="1919" data-era-place="korea" aria-pressed="false">1919년 일제강점기</button>
             <button type="button" data-era-year="1935" data-era-place="korea" aria-pressed="false">1935년 일제강점기</button>
             <button type="button" data-era-year="1950" data-era-place="korea" aria-pressed="false">1950년 한국전쟁기</button>
           </div>
-          <p id="eraHelp">1900년부터 2026년까지. 같은 땅에서 태어나도 시대가 다르면 삶의 모습은 달라집니다.</p>
+          <p id="eraHelp">1392~1897년은 조선의 한반도에서 태어납니다. 1900~2026년은 기존 세계 출생 모드입니다. 시대별 확률·재산은 역사 통계가 아닌 이야기용 수치입니다.</p>
         </div>
         <button id="drawBtn" class="primary" type="button">이번 생은 어디에서 시작될까? <span aria-hidden="true">↗</span></button>
         <button id="resumeBtn" class="secondary hidden" type="button">이어서 살아가기</button>
@@ -296,7 +301,7 @@
 <script src="../../kidscade-storage.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_one_life" data-title="단 하나의 인생" data-shell="false" data-pauseable="true" data-orientation="any"></script>
 <script src="./official-data.js?v=202610111530"></script>
-<script src="./engine.js?v=6"></script>
+<script src="./engine.js?v=7"></script>
 <script src="./world-v2.js?v=9"></script>
 <script src="./pixel-scene.js?v=3"></script>
 <script src="./world-v3.js?v=6"></script>
@@ -319,6 +324,7 @@
 <script src="./era-policy-v12.js?v=2"></script>
 <script src="./world-v12.js?v=2"></script>
 <script src="./world-v13.js?v=2"></script>
-<script src="./game.js?v=21"></script>
+<script src="./joseon-v1.js?v=1"></script>
+<script src="./game.js?v=22"></script>
 </body>
 </html>
