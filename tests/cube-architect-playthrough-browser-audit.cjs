@@ -53,23 +53,31 @@ let chrome,ws,profile;
 const errors=[],steps=[],requests=[];
 async function run(){
   server.listen(0,'127.0.0.1');await once(server,'listening');
-  profile=fs.mkdtempSync(path.join(os.tmpdir(),'cube-realbrowser-'));
-  chrome=cp.spawn(CHROME,['--headless=new','--no-sandbox','--disable-dev-shm-usage',
-    '--enable-webgl','--enable-unsafe-swiftshader','--use-angle=swiftshader','--remote-allow-origins=*',
-    '--disable-background-networking','--no-first-run','--remote-debugging-port=0','--user-data-dir='+profile,
-    'about:blank'],{stdio:['ignore','ignore','pipe']});
-  let stderr='';chrome.stderr.on('data',data=>{stderr=(stderr+String(data)).slice(-1800)});
-  let endpoint;
-  for(let i=0;i<200;i++){
-    if(chrome.exitCode!==null)throw Error('Chrome died '+stderr);
-    const p=path.join(profile,'DevToolsActivePort');
-    if(fs.existsSync(p))try{
-      const port=Number(fs.readFileSync(p,'utf8').split('\n')[0]);
-      endpoint=(await(await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(x=>x.type==='page')?.webSocketDebuggerUrl;
-    }catch{}
-    if(endpoint)break;await sleep(100);
+  let endpoint,stderr='';
+  // Shared GitHub runners occasionally stall during Chrome startup; retry with
+  // a new isolated browser profile rather than treating infrastructure as game failure.
+  for(let attempt=1;attempt<=3&&!endpoint;attempt++){
+    if(chrome){try{chrome.kill('SIGKILL')}catch{};await sleep(400)}
+    if(profile){try{fs.rmSync(profile,{force:true,recursive:true})}catch{}}
+    profile=fs.mkdtempSync(path.join(os.tmpdir(),'cube-realbrowser-'));
+    chrome=cp.spawn(CHROME,['--headless=new','--no-sandbox','--disable-dev-shm-usage',
+      '--enable-webgl','--enable-unsafe-swiftshader','--use-angle=swiftshader',
+      '--remote-allow-origins=*','--disable-background-networking','--no-first-run',
+      '--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],
+      {stdio:['ignore','ignore','pipe']});
+    stderr='';chrome.stderr.on('data',data=>{stderr=(stderr+String(data)).slice(-1800)});
+    for(let i=0;i<155;i++){
+      if(chrome.exitCode!==null)break;
+      const p=path.join(profile,'DevToolsActivePort');
+      if(fs.existsSync(p))try{
+        const port=Number(fs.readFileSync(p,'utf8').split('\n')[0]);
+        endpoint=(await(await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(x=>x.type==='page')?.webSocketDebuggerUrl;
+      }catch{}
+      if(endpoint)break;await sleep(100);
+    }
+    if(!endpoint)console.warn('CUBE_CHROME_START_RETRY',attempt,stderr.slice(-700));
   }
-  assert.ok(endpoint,'No Chrome DevTools endpoint '+stderr);
+  assert.ok(endpoint,'No Chrome DevTools endpoint after 3 attempts '+stderr);
   ws=new WebSocket(endpoint);await new Promise((r,j)=>{ws.onopen=r;ws.onerror=j});
   let id=0;const pending=new Map();
   ws.onmessage=e=>{
@@ -98,6 +106,10 @@ async function run(){
     const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false,fromSurface:true});
     const buffer=Buffer.from(shot.data,'base64');fs.writeFileSync(path.join(OUTPUT,name+'.png'),buffer);
     const sharp=require('sharp'),meta=await sharp(buffer).stats();
+    if(['02-desktop-tutorial-and-workshop','06-desktop-crafting','08-tablet-survival','10-tablet-craft'].includes(name)){
+      const thumbnail=await sharp(buffer).resize({width:470,withoutEnlargement:true}).jpeg({quality:42}).toBuffer();
+      console.log('CUBE_PREVIEW',name,thumbnail.toString('base64'));
+    }
     record('frame_'+name,{bytes:buffer.length,mean:Math.round(meta.channels.slice(0,3).reduce((a,c)=>a+c.mean,0)/3)});
     assert.ok(buffer.length>12000,'Blank browser render '+name);
   };
