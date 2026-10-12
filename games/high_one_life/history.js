@@ -41,7 +41,7 @@ function contextualize(life){
  const hit=events.find(e=>e.year===life.year);
  if(!hit)return false;
  if(life.log.some(e=>e.kind==='history'&&e.year===hit.year))return false;
- life.logEvent(hit.year+'년의 실제 역사 — '+hit.title+': '+hit.detail+' 이 가상 인물이 직접 참여했다는 뜻은 아니다.','history');
+ life.logEvent(hit.year+'년 · '+hit.title+' — '+hit.detail,'history');
  return true;
 }
 function currentEvent(life){
