@@ -212,7 +212,7 @@
     ].join(' · ');
     const sceneName=History.paint($('lifeScene'),life)?'역사 속 생활':Pixel.paint($('lifeScene'),life);
     const sceneTitle=Pixel.names?.[sceneName]||sceneName;
-    $('sceneLabel').textContent=life.year+'년 · '+History.place(life)+' '+p.city+' ('+p.settlement+') · '+(life.birthYear===2026?sceneTitle+'에서 보내는 하루':History.period(life)+'의 생활을 상상한 장면');
+    $('sceneLabel').textContent=life.year+'년 · '+History.place(life)+' '+p.city+' ('+p.settlement+') · '+(life.birthYear===2026?sceneTitle+'에서 보내는 하루':History.period(life)+'의 풍경');
   }
   function paintArc() {
     if(!life)return;
@@ -583,9 +583,18 @@
     $('endNetWorth').textContent=formatCredits(life.money.netWorth);
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=life.career;
-    $('endStory').textContent=life.birthYear+'년 '+History.period({...life,year:life.birthYear})+'에서 시작된 삶. '+World8.synopsis(life)+'. '+summary.story+' '+life.deathReason+' '+(life.world?.educationLevel||'')+' · '+life.career+'의 경로를 걸었다. '+(life.world6?.history?.length||0)+'개 직업 이력과 '+(life.world6?.eventCount||0)+'개 직업·생활 사건, '+(life.world5?.eventCount||0)+'개 지역 사건, 중요한 선택 '+choiceLog.length+'번이 삶을 바꾸었다. '
-      +'가족 돌봄을 나누어 맡은 '+careLife.careYears+'년, 오래 남은 경험 '+careLife.memories.slice(-3).join(' · ')
-      +', 그 뒤 이어진 이야기 '+careLife.followups+'건이 있었다.';
+    const firstPlace=History.place({...life,year:life.birthYear});
+    const chapters=[
+      life.birthYear+'년, '+firstPlace+'에서 태어났다.',
+      summary.story,
+      life.deathReason,
+      life.world?.educationLevel&&life.world.educationLevel!=='없음'
+        ?'살면서 '+life.world.educationLevel+'의 시간을 보냈다.':'',
+      life.career&&life.career!=='학생'?'마지막으로 기억되는 일은 '+life.career+'이었다.':'',
+      careLife.careYears?'가족을 돌보며 보낸 시간도 '+careLife.careYears+'년이었다.':'',
+      careLife.memories.length?'오래도록 마음에 남은 것은 '+careLife.memories.slice(-2).join('와 ')+'이었다.':''
+    ].filter(Boolean);
+    $('endStory').textContent=chapters.join(' ');
     const endChoices=$('endChoices');endChoices.replaceChildren();
     choiceLog.slice(-60).forEach(e=>{
       const item=document.createElement('li');item.className='end-choice-item';
@@ -595,7 +604,10 @@
       const effect=life.log.find(x=>x.kind==='decision-effect'&&x.age===e.age);
       const detail=document.createElement('small');detail.textContent=effect?.text||'그때는 무엇이 달라질지 몰랐다.';
       if(e.kind==='decision')copy.append(detail);
-      else{detail.textContent='그 뒤의 일은 이어지는 기록에 남았다.';copy.append(detail);}
+      else if(['history-choice','era-choice','care13-choice'].includes(e.kind)){
+        const after=life.log.find(x=>x.year>e.year&&['history-followup','era-followup','care13-followup'].includes(x.kind));
+        if(after){detail.textContent='그 뒤 '+after.age+'세 · '+after.text;copy.append(detail);}
+      }
       item.append(age,copy);endChoices.append(item);
     });
     showComparison();
