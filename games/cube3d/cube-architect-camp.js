@@ -6,9 +6,8 @@ const STEPS=[
  {id:'walk',title:'나무 앞으로 가 보자',text:'노란 고리까지 걸어가 보자.',action:'walk'},
  {id:'wood',title:'원목을 모아 보자',text:'나무 줄기에서 원목 3개를 얻어 보자.',action:'harvest',type:'log'},
  {id:'bag',title:'가방을 열어 보자',text:'모은 원목이 가방에 들어 있어.',action:'bag'},
- {id:'planks',title:'나무를 판자로 바꿔 보자',text:'나무 판자를 고르고 만들기를 눌러 보자.',recipe:'planks'},
- {id:'benchCraft',title:'제작대를 만들어 보자',text:'판자 4개로 제작대를 만들 수 있어.',recipe:'workbench'},
- {id:'benchPlace',title:'제작대를 놓아 보자',text:'제작대를 고른 뒤 빈 땅에 놓아 보자.',action:'place',type:'workbench'},
+ {id:'benchFind',title:'마법의 직육면체를 찾아 보자',text:'멀리서도 보이는 빛 기둥을 따라 시작 제작대에 가서 눌러 보자. 제작대가 만들기 화면을 열어 줘.',action:'bench'},
+ {id:'planks',title:'나무를 판자로 바꿔 보자',text:'제작대에서 나무 판자를 골라 만들기를 눌러 보자.',recipe:'planks'},
  {id:'morePlanks',title:'도구에 쓸 판자를 만들자',text:'제작대 옆에서 판자를 4개 준비해 보자.',recipe:'planks'},
  {id:'sticks',title:'곡괭이 손잡이를 만들자',text:'판자 1개로 막대 4개를 만들 수 있어.',recipe:'sticks'},
  {id:'pick',title:'나무 곡괭이를 만들자',text:'판자 3개와 막대 2개를 모아 곡괭이를 만들자.',recipe:'woodPick'},
@@ -28,8 +27,7 @@ function satisfied(id,c){
   case 'wood':return (s.harvestedWood||0)>=3;
   case 'bag':return c.inventoryOpen||c.bagOpened;
   case 'planks':return (crafted.planks||0)>0;
-  case 'benchCraft':return (crafted.workbench||0)>0||(bag.workbench||0)>0||(placed.workbench||0)>0;
-  case 'benchPlace':return (placed.workbench||0)>0;
+  case 'benchFind':return !!c.workbenchOpened;
   case 'morePlanks':return (bag.planks||0)>=4||(crafted.woodPick||0)>0;
   case 'sticks':return (crafted.sticks||0)>0||(bag.sticks||0)>=2||(crafted.woodPick||0)>0;
   case 'pick':return (crafted.woodPick||0)>0||(bag.woodPick||0)>0;
