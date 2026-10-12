@@ -252,6 +252,7 @@ function ensure(life,fromSave=false){
  }
  const surname=p.name[0];
  for(const m of state.people){
+  if(fromSave)break; // Persist the actual names of spouse, children and relatives from this saved life.
   const gender=m.role==='아버지'?'남자':'여자';
   m.name=(m.id==='father'||m.id==='mother'?surname:pick(life.seed,20+m.id.length,SURNAMES))+
    pick(life.seed,31+m.id.length,gender==='여자'?GIVEN_F:GIVEN_M);
