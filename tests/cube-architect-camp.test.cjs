@@ -14,10 +14,10 @@ test('a first-time player can finish every action using real recipe costs',()=>{
  c.moved=3;c.atWalkTarget=true;assert.ok(camp.satisfied('walk',c));
  harvest('log',3);assert.ok(camp.satisfied('wood',c));
  c.inventoryOpen=true;assert.ok(camp.satisfied('bag',c));
+ assert.equal(camp.satisfied('benchFind',c),false);
+ c.workbenchOpened=true;assert.ok(camp.satisfied('benchFind',c));
  craft('planks');assert.ok(camp.satisfied('planks',c));
- craft('workbench');assert.ok(camp.satisfied('benchCraft',c));
- bag.workbench--;stats.placed.workbench=1;assert.ok(camp.satisfied('benchPlace',c));
- craft('planks');assert.ok(camp.satisfied('morePlanks',c));
+ assert.ok(camp.satisfied('morePlanks',c));
  craft('sticks');assert.ok(camp.satisfied('sticks',c));
  craft('woodPick');assert.ok(camp.satisfied('pick',c));
  harvest('stone',1);assert.ok(camp.satisfied('stone',c));
@@ -33,6 +33,12 @@ test('a first-time player can finish every action using real recipe costs',()=>{
  for(const id of ['ownWood','ownPlanks','ownPlace'])assert.equal(camp.satisfied(id,c),false,id);
  harvest('log',1);assert.ok(camp.satisfied('ownWood',c));craft('planks');assert.ok(camp.satisfied('ownPlanks',c));
  bag.planks--;stats.placed.planks++;assert.ok(camp.satisfied('ownPlace',c));
+});
+test('starter workbench is discoverable but does not automatically count as the learner using it',()=>{
+ assert.ok(camp.STEPS.some(s=>s.id==='benchFind'));
+ assert.equal(camp.STEPS.some(s=>s.id==='benchCraft'||s.id==='benchPlace'),false);
+ assert.equal(camp.satisfied('benchFind',{workbenchOpened:false}),false);
+ assert.equal(camp.satisfied('benchFind',{workbenchOpened:true}),true);
 });
 test('walking requires reaching the displayed destination',()=>{
  assert.equal(camp.satisfied('walk',{moved:5,atWalkTarget:false}),false);
@@ -60,7 +66,7 @@ test('stored lesson achievements do not require recrafting spent materials',()=>
 });
 test('runtime advances from saved milestones and captures independent practice once',()=>{
  const section=main.slice(main.indexOf('function tutorialRefreshProgress(){'),main.indexOf('function tutorialSignal(action){'));
- const context={tutorialState:{camp:true,index:0,steps:camp.STEPS},survivalCamp:{completed:['walk','wood','bag','planks','benchCraft','benchPlace','morePlanks','sticks','pick','stone','shelter','inside'],baseline:null},
+ const context={tutorialState:{camp:true,index:0,steps:camp.STEPS},survivalCamp:{completed:['walk','wood','bag','benchFind','planks','benchCraft','benchPlace','morePlanks','sticks','pick','stone','shelter','inside'],baseline:null},
   stats:{harvestedWood:8,crafted:{planks:4},placed:{planks:6}},window:w,rendered:0,
   campActive:()=>true,campHelpTarget:null,campStep:()=>context.tutorialState.steps[context.tutorialState.index],
   campContext:()=>({stats:context.stats,baseline:context.survivalCamp.baseline}),survivalStats:null,
