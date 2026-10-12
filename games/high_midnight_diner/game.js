@@ -4,6 +4,9 @@ const R=window.MidnightDinerRules,P=window.MidnightDinerPlate;
 const $=id=>document.getElementById(id);
 const saveKey='midnightDinerBestV1';
 let game=null,chosen=null,audio=null,muted=false,record=0,started=false,reviewPending=false,runReported=false,cookTimer=null,peekHeld=false,lastCookTick=0,lastGazePhase='',caughtFlashIndex=-1;
+// The first plate teaches by its ordinary scene, never with a tutorial overlay.
+let firstPlate={peeked:false,firstChoice:false,firstBite:false};
+function isFirstPlate(){return !!game&&game.course===0;}
 try{record=Number(localStorage.getItem(saveKey))||0;}catch(_){}
 function sound(type){
  if(muted)return;
@@ -36,10 +39,12 @@ function repaint(){
  $('courseTitle').textContent=dish.spec.title;$('courseDetail').textContent=dish.spec.detail;
  $('banned').textContent=dish.spec.word;$('bites').textContent=dish.eaten+' / 3 한입';
  $('inspections').textContent=dish.inspectionsLeft+'회';
- $('selectionText').textContent=chosen===null?'어느 부분을 먹을까요?':String(chosen+1)+'번 부분 선택';
+ $('selectionText').textContent=chosen!==null?String(chosen+1)+'번 부분 선택':
+  isFirstPlate()&&!firstPlate.firstChoice?(firstPlate.peeked?'아까 본 조각은 어느 쪽이었지?':'여덟 조각 중 어디로 손이 갈까?'):'어느 부분을 먹을까요?';
  const layout=document.querySelector('.game-layout');
  layout.classList.toggle('cooking',game.phase==='cooking');
  layout.classList.toggle('eating',game.phase==='playing');
+ layout.classList.toggle('first-plate-choice',isFirstPlate()&&game.phase==='playing'&&!firstPlate.firstChoice);
  $('cookPanel').classList.toggle('hidden',game.phase!=='cooking');
  $('memoryPanel').classList.toggle('hidden',!dish.observed.length);
  renderMemory();
@@ -57,10 +62,11 @@ window.addEventListener('midnight-diner:food-assets',()=>{if(game)repaint();});
 function intro(){ $('veil').classList.remove('hidden');$('introModal').classList.remove('hidden');$('resultModal').classList.add('hidden');}
 function start(){
  stopCooking();game=R.begin();chosen=null;started=true;reviewPending=false;runReported=false;
+ firstPlate={peeked:false,firstChoice:false,firstBite:false};
  $('reviewVeil').classList.add('hidden');
  $('veil').classList.add('hidden');$('notebookPanel').classList.add('hidden');
  $('chefLine').textContent='“'+game.dish.spec.line+'”';
- note('등을 돌릴 때 꾹 누르고, 어깨가 움직이면 즉시 놓으세요! 들키면 의심이 크게 올라갑니다.');
+ note('부침개 여덟 조각. 요리사가 재료를 하나씩 집어 올린다.');
  try{window.KidscadeGame?.start?.();}catch(_){}
  repaint();reportMood(false);startCooking();
 }
@@ -80,7 +86,7 @@ const COOK_TICK_MS=50;
 function stopCooking(){
  if(cookTimer!==null){clearInterval(cookTimer);cookTimer=null;}
  peekHeld=false;lastGazePhase='';
- $('peekBtn').classList.remove('looking');
+ $('peekBtn').classList.remove('looking','first-glimpse');
 }
 function renderMemory(){
  if(!game)return;
@@ -117,6 +123,10 @@ function updateGaze(){
  $('peekBtn').disabled=phase==='LOOK'||phase==='FEINT';
  $('peekBtn').classList.toggle('warning',phase==='WARN'||phase==='FEINT');
  $('peekBtn').classList.toggle('looking',peekHeld);
+ // A faint warmth on the hold control only during the first two safe openings.
+ // It stops after the first successful observation, or when the moment passes.
+ $('peekBtn').classList.toggle('first-glimpse',
+  isFirstPlate()&&!firstPlate.peeked&&ev.index<2&&phase==='SAFE'&&!peekHeld);
  const timeFraction=(ev.index+ev.elapsedMs/ev.totalMs)/ev.total;
  $('cookBar').style.width=(100*timeFraction).toFixed(1)+'%';
  if(phase!==lastGazePhase){
@@ -165,6 +175,11 @@ function startCooking(){
   const outcome=R.tickCooking(game,dt,peekHeld);
   if(!outcome.ok){stopCooking();return;}
   if(outcome.revealed){
+   if(isFirstPlate()&&!firstPlate.peeked&&!game.dish.currentPeek?.concealed){
+    firstPlate.peeked=true;
+    $('peekBtn').classList.remove('first-glimpse');
+    $('chefLine').textContent='“내 손을 보고 있었나?”';
+   }
    const peek=game.dish.currentPeek;
    if(peek)note(outcome.message, R.peekCost(game.dish.peekCount-1)>0?'danger':'good');
    sound(R.peekCost(game.dish.peekCount-1)>0?'warn':'safe');renderMemory();
@@ -180,8 +195,12 @@ function startCooking(){
   if(game.phase==='finished'){stopCooking();finish();return;}
   if(outcome.finishedCooking){
    stopCooking();$('cookBar').style.width='100%';
-   $('chefLine').textContent='“자, 다 됐어. 이번에는 어디를 먹겠니?”';
-   note('조리 완료. 몰래 본 재료 위치를 기억해 안전한 부분을 선택하세요.');
+   $('chefLine').textContent=isFirstPlate()?
+    '“다 익었다. 네 눈에는 뭐가 남았을까?”':
+    '“자, 다 됐어. 이번에는 어디를 먹겠니?”';
+   note(isFirstPlate()?
+    '조금 전 손끝을 떠올려 본다. 접시는 아직 따뜻하다.':
+    '조리 완료. 몰래 본 재료 위치를 기억해 안전한 부분을 선택하세요.');
    repaint();
    // The kitchen and plate now share one viewport; avoid jumping the page on mobile.
    return;
@@ -256,17 +275,35 @@ function act(name){
  else if(name==='reject')$('chefLine').textContent='“정말 안 먹겠다고?”';
  else if(name==='question')$('chefLine').textContent='“더는 묻지 마.”';
  else if(outcome.dangerous)$('chefLine').textContent='“천천히. 아직 끝나지 않았어.”';
- else if(name==='eat')$('chefLine').textContent='“그래, 한입 더.”';
+ else if(name==='eat'){
+  if(isFirstPlate()&&!firstPlate.firstBite){
+   firstPlate.firstBite=true;
+   $('chefLine').textContent='“첫입은 넘겼군.”';
+  }else $('chefLine').textContent='“그래, 한입 더.”';
+ }
  repaint();reportMood(!!outcome.dangerous);
  if(game.phase==='finished')finish();
  else if(outcome.courseReview)showReview(outcome.courseReview);
 }
+function choosePortion(index){
+ if(!game||game.phase!=='playing'||reviewPending)return false;
+ if(!Number.isInteger(index)||index<0||!game.dish.zones[index])return false;
+ if(game.dish.zones[index].removed){
+  note('이미 먹은 부분이에요. 다른 부분을 골라 주세요.');
+  return false;
+ }
+ chosen=index;
+ if(isFirstPlate()&&!firstPlate.firstChoice){
+  firstPlate.firstChoice=true;
+  $('chefLine').textContent='“그 조각으로 할 거냐?”';
+ }
+ sound('tap');repaint();
+ return true;
+}
 $('plate').addEventListener('pointerdown',ev=>{
  if(!game||game.phase!=='playing'||reviewPending)return;
  const index=P.hit($('plate'),ev,game.dish);
- if(index===null||index===undefined)return;
- if(game.dish.zones[index]?.removed){note('이미 먹은 부분이에요. 다른 부분을 골라 주세요.');return;}
- chosen=index;sound('tap');repaint();
+ if(index!==null&&index!==undefined)choosePortion(index);
 });
 for(const [id,name] of [['eatBtn','eat'],['inspectBtn','inspect'],['questionBtn','question'],['rejectBtn','reject']])$(id).addEventListener('click',()=>act(name));
 $('startBtn').addEventListener('click',start);$('retryBtn').addEventListener('click',start);
@@ -306,7 +343,7 @@ window.addEventListener('keydown',e=>{
  if(!game||game.phase!=='playing'||!$('notebookPanel').classList.contains('hidden'))return;
  const n=Number(e.key);
  if(Number.isInteger(n)&&n>=1&&n<=game.dish.zones.length){
-  if(!game.dish.zones[n-1].removed){chosen=n-1;repaint();}return;
+  choosePortion(n-1);return;
  }
  const key=e.key.toLowerCase();
  if(key==='e')act('eat');

@@ -1,0 +1,16 @@
+/* First plate: quiet in-world invitations, not a separate tutorial layer. */
+#peekBtn.first-glimpse:not(:disabled):not(.looking){
+ border-color:#d0b37c!important;
+ box-shadow:inset 0 0 0 1px #f2d5a72b,0 0 16px #d0a25a40!important;
+ transition:border-color .35s ease,box-shadow .35s ease;
+}
+.game-layout.eating.first-plate-choice .plate-instruction{
+ border-color:#d1ad73;
+ box-shadow:0 0 13px #ad8a5c31;
+ transition:border-color .3s ease,box-shadow .3s ease;
+}
+@media(prefers-reduced-motion:reduce){
+ #peekBtn.first-glimpse,.game-layout.eating.first-plate-choice .plate-instruction{
+  transition:none!important;
+ }
+}
