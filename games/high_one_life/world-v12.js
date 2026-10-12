@@ -134,7 +134,7 @@ function afterYear(life){
   log(life,'어느새 '+p.label+'가 시작됐다','era-context');
  }
  s.metrics.year=life.year;
- s.metrics.incomeLabel=p?.label||'일반 가상 경제';
+ s.metrics.incomeLabel=p?.label||'그해의 살림';
  const due=s.followups.filter(f=>f.year<=life.year);
  s.followups=s.followups.filter(f=>f.year>life.year);
  for(const event of due){
@@ -158,7 +158,7 @@ function choose(life,index){
 function summary(life){
  if(life.country?.[0]!=='대한민국')return null;
  const s=ensure(life),policy=Policy.at(life);
- return {period:policy?.label||'가상 한국',incomeFactor:policy?.incomeFactor||1,
+ return {period:policy?.label||'한국의 생활',incomeFactor:policy?.incomeFactor||1,
   costFactor:policy?.costFactor||1,schoolNote:s.metrics.schoolBand,
   choices:s.decisions.length,longConsequences:s.tags.slice(-4),moves:s.relocations,
   totalPaths:Choices.count};
