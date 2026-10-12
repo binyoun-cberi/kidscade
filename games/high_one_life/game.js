@@ -242,7 +242,8 @@
     $('worldRegionLabel').textContent=category[region]+' · '+(world.faith==='없음'?'다양한 삶':world.faith);
     $('worldEventCount').textContent=world.eventCount+'개 사건';
     $('worldLatest').textContent=world.lastContext||'어떤 세계적 변화와 만남이 찾아올까요?';
-    const choiceLog=life.log.filter(e=>e.kind==='decision');
+    const choiceLog=life.log.filter(e=>['decision','history-choice','era-choice','care13-choice'].includes(e.kind));
+    const careLife=World13.summary(life);
     $('arcCount').textContent=choiceLog.length+'번의 선택';
     $('arcStatus').textContent=a.lastEvent || '아직 미래는 정해지지 않았어요.';
     const box=$('arcMilestones');box.replaceChildren();
@@ -584,21 +585,25 @@
     $('endNetWorth').textContent=formatCredits(life.money.netWorth);
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=life.career;
-    $('endStory').textContent=life.birthYear+'년 '+History.period({...life,year:life.birthYear})+'에서 시작된 삶. '+World8.synopsis(life)+'. '+summary.story+' '+life.deathReason+' '+(life.world?.educationLevel||'')+' · '+life.career+'의 경로를 걸었다. '+(life.world6?.history?.length||0)+'개 직업 이력과 '+(life.world6?.eventCount||0)+'개 직업·생활 사건, '+(life.world5?.eventCount||0)+'개 지역 사건, 중요한 선택 '+choiceLog.length+'번이 삶을 바꾸었다.';
+    $('endStory').textContent=life.birthYear+'년 '+History.period({...life,year:life.birthYear})+'에서 시작된 삶. '+World8.synopsis(life)+'. '+summary.story+' '+life.deathReason+' '+(life.world?.educationLevel||'')+' · '+life.career+'의 경로를 걸었다. '+(life.world6?.history?.length||0)+'개 직업 이력과 '+(life.world6?.eventCount||0)+'개 직업·생활 사건, '+(life.world5?.eventCount||0)+'개 지역 사건, 중요한 선택 '+choiceLog.length+'번이 삶을 바꾸었다. '
+      +'가족 돌봄을 나누어 맡은 '+careLife.careYears+'년, 오래 남은 경험 '+careLife.memories.slice(-3).join(' · ')
+      +', 그 뒤 이어진 이야기 '+careLife.followups+'건이 있었다.';
     const endChoices=$('endChoices');endChoices.replaceChildren();
-    choiceLog.forEach(e=>{
+    choiceLog.slice(-60).forEach(e=>{
       const item=document.createElement('li');item.className='end-choice-item';
       const age=document.createElement('b');age.textContent=e.age+'세';
       const text=document.createElement('span');text.textContent=e.text;
       const copy=document.createElement('div');copy.append(text);
       const effect=life.log.find(x=>x.kind==='decision-effect'&&x.age===e.age);
       const detail=document.createElement('small');detail.textContent=effect?.text||'선택 직후의 지표 변화 기록 없음';
-      copy.append(detail);item.append(age,copy);endChoices.append(item);
+      if(e.kind==='decision')copy.append(detail);
+      else{detail.textContent='기록 속 이후의 변화는 아래 인생 연대기에서 확인할 수 있어요.';copy.append(detail);}
+      item.append(age,copy);endChoices.append(item);
     });
     showComparison();
     const list=$('endHighlights'); list.replaceChildren();
-    const highlights=[...life.log.filter(e=>['milestone','decision','chain','world','safety','profession','history-choice','history-followup','era-choice','era-followup'].includes(e.kind))]
-      .filter(e=>e.kind==='decision'||e.kind==='chain'||e.kind==='world'||e.kind==='safety'||e.kind==='profession'||e.kind==='history-choice'||e.kind==='history-followup'||e.age<21)
+    const highlights=[...life.log.filter(e=>['milestone','decision','chain','world','safety','profession','history-choice','history-followup','era-choice','era-followup','care13-choice','care13-followup','care13-memory'].includes(e.kind))]
+      .filter(e=>e.kind==='decision'||e.kind==='chain'||e.kind==='world'||e.kind==='safety'||e.kind==='profession'||e.kind==='history-choice'||e.kind==='history-followup'||e.kind==='care13-choice'||e.kind==='care13-followup'||e.age<21)
       .slice(-16);
     if(!highlights.length) highlights.push(life.log[0]);
     highlights.forEach(e=>{
