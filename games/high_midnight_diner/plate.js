@@ -170,9 +170,80 @@ function cake(c,d,selected){
   mark(c,z.id+1,x+24,y+23,selected===z.id,z.inspected);
  }
 }
+// Real 3D food images are generated once from GLB models by plate-assets.js.
+// Keep the illustrated dish as a strict fallback until each course has all
+// required assets, so a missing GLB or disabled WebGL never hides the food.
+const assetImages=Object.create(null);
+function setAssetImages(course,images){assetImages[course]={...images};}
+function cakeSectorCenter(i){
+ const angle=-Math.PI/2+(i+.5)*TAU/7;
+ return {x:300+Math.cos(angle)*128,y:210+Math.sin(angle)*128*.68};
+}
+function drawRoundAsset(c,d,selected,img){
+ const count=d.spec.count;
+ c.save();c.translate(300,210);c.scale(1,.68);
+ for(const z of d.zones){
+  if(z.removed)continue;
+  const a=-Math.PI/2+z.id*TAU/count,b=a+TAU/count,m=(a+b)/2;
+  c.save();
+  c.beginPath();c.moveTo(0,0);c.arc(0,0,190,a+.008,b-.008);c.closePath();c.clip();
+  c.drawImage(img,-226,-245,452,488);
+  c.restore();
+  c.beginPath();c.moveTo(0,0);c.arc(0,0,190,a+.008,b-.008);c.closePath();
+  c.strokeStyle=selected===z.id?'#fff0b0':'#cab789bb';
+  c.lineWidth=selected===z.id?7:2.2;c.stroke();
+  c.save();c.translate(Math.cos(m)*130,Math.sin(m)*130);c.scale(1,1/.68);
+  mark(c,z.id+1,0,0,selected===z.id,z.inspected);
+  c.restore();
+ }
+ c.restore();
+}
+function drawAssetFood(c,d,selected){
+ const id=d.spec.id,a=assetImages[id]||{};
+ if(id==='pancake'&&a.main){drawRoundAsset(c,d,selected,a.main);return true;}
+ if(id==='cake'&&a.main){drawRoundAsset(c,d,selected,a.main);return true;}
+ if(id==='soup'&&a.main&&a.piece){
+  // The bowl and the six edible pieces both come from actual food GLBs.
+  c.drawImage(a.main,96,61,408,299);
+  for(const z of d.zones){
+   if(z.removed)continue;
+   const p=POS.soup(z.id);
+   c.save();c.shadowColor='#20170d99';c.shadowBlur=7;c.shadowOffsetY=4;
+   c.drawImage(a.piece,p.x-44,p.y-37,88,76);c.restore();
+   if(selected===z.id)oval(c,p.x,p.y,43,35,null,'#fff0ba',4);
+   mark(c,z.id+1,p.x+25,p.y+23,selected===z.id,z.inspected);
+  }
+  return true;
+ }
+ if(id==='skewer'&&a.main){
+  // One real skewer, divided into five selectable sections.
+  for(const z of d.zones){
+   if(z.removed)continue;
+   const p=POS.skewer(z.id);
+   c.save();c.beginPath();c.rect(p.x-43,137,86,160);c.clip();
+   c.drawImage(a.main,75,128,450,182);c.restore();
+   if(selected===z.id)oval(c,p.x,211,44,52,null,'#fff0ba',4);
+   mark(c,z.id+1,p.x,245,selected===z.id,z.inspected);
+  }
+  return true;
+ }
+ if(id==='dumpling'&&a.piece){
+  for(const z of d.zones){
+   if(z.removed)continue;
+   const p=POS.dumpling(z.id);
+   c.save();c.shadowColor='#24150c99';c.shadowBlur=6;c.shadowOffsetY=6;
+   c.drawImage(a.piece,p.x-52,p.y-49,104,98);c.restore();
+   if(selected===z.id)oval(c,p.x,p.y,46,42,null,'#fff0ba',4);
+   mark(c,z.id+1,p.x+26,p.y+22,selected===z.id,z.inspected);
+  }
+  return true;
+ }
+ return false;
+}
 function draw(canvas,dish,selected){
  const c=canvas.getContext('2d');if(!c||!dish?.spec)return;
  c.clearRect(0,0,W,H);platter(c,dish.spec.id);
+ if(drawAssetFood(c,dish,selected))return;
  switch(dish.spec.id){
  case 'pancake':pancake(c,dish,selected);break;
  case 'soup':soup(c,dish,selected);break;
@@ -183,6 +254,11 @@ function draw(canvas,dish,selected){
 }
 function hitAt(x,y,dish){
  if(!dish?.spec||!Number.isFinite(x)||!Number.isFinite(y))return null;
+ if(dish.spec.id==='cake'&&assetImages.cake?.main){
+  const dx=x-300,dy=(y-210)/.68;
+  if(Math.hypot(dx,dy)>190||Math.hypot(dx,dy)<9)return null;
+  return Math.floor(((Math.atan2(dy,dx)+Math.PI/2+TAU)%TAU)/(TAU/7));
+ }
  if(dish.spec.id==='pancake'){
   const dx=x-300,dy=(y-210)/.68;
   if(Math.hypot(dx,dy)>192||Math.hypot(dx,dy)<9)return null;
@@ -206,5 +282,5 @@ function hit(canvas,ev,dish){
  if(!r.width||!r.height)return null;
  return hitAt((ev.clientX-r.left)*W/r.width,(ev.clientY-r.top)*H/r.height,dish);
 }
-root.MidnightDinerPlate={draw,hit,hitAt,PLACES:POS};
+root.MidnightDinerPlate={draw,hit,hitAt,PLACES:POS,setAssetImages,cakeSectorCenter};
 })(typeof window!=='undefined'?window:globalThis);
