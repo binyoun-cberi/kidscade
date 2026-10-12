@@ -33,7 +33,7 @@ test('each Kidscade entry point declares a favicon and an iOS touch icon', () =>
   for (const page of ['index.html', 'index_base.html', 'economy.html']) {
     const html = fs.readFileSync(path.join(ROOT, page), 'utf8');
     assert.match(html, /<link\s+rel="icon"[^>]+href="assets\/gate-image\/favicon\.png"/, page);
-    assert.match(html, /<link\s+rel="apple-touch-icon"[^>]+sizes="180x180"[^>]+href="\/apple-touch-icon\.png"/, page);
+    assert.match(html, /<link\s+rel="apple-touch-icon"[^>]+sizes="180x180"[^>]+href="assets\/gate-image\/favicon\.png"/, page);
   }
 });
 
