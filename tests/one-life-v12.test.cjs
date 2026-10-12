@@ -68,7 +68,8 @@ test('early and late occupations are plausibly distinct and respect school quali
  assert.match(later,/전기|전자|기계/);
  assert.notEqual(early,later);
  l.year=2017;assert.equal(Policy.careerName(l,'technology',1,'소프트웨어 개발자'),'소프트웨어 개발자');
- assert.equal(Policy.at(new Sim.Life(3,{birthYear:1919})),null);
+ const foreign=birth(3,1919);foreign.country=Sim.COUNTRIES.find(c=>c[0]==='브라질');
+ assert.equal(Policy.at(foreign),null);
 });
 test('school age limits are based on year of schooling, not year of birth',()=>{
  const l=birth(34012,1935);
@@ -123,7 +124,8 @@ test('basic era economy model reflects 1997 crisis but never claims observed amo
  assert.ok(crisis.jobDisruption>Policy.at(k,1995).jobDisruption);
  assert.ok(crisis.incomeFactor<1);
  assert.equal(Policy.at(k,2026).incomeFactor,1);
- const b=birth(27182,1970,'브라질');
+ const b=birth(27182,1970);
+ b.country=Sim.COUNTRIES.find(c=>c[0]==='브라질');
  assert.equal(Policy.at(b),null);
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
  assert.ok(html.includes('v12EconomyEra'));
