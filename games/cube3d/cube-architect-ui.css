@@ -544,3 +544,23 @@
 .next-correction{padding:10px;border-radius:10px;background:#fff3c8;color:#564514;font-weight:900;font-size:14px}
 @media(max-width:700px){#buildingWorksPanel{inset:4% 3%;padding:12px}#journeyCard{top:185px;left:8px;width:min(240px,55vw);padding:9px}}
 @media(pointer:coarse){.simple-survival #actionWorks{display:none!important}}
+
+/* Magic cuboid workshop: always-readable return point on PC and tablets. */
+.magic-workbench-guide{display:grid;grid-template-columns:24px minmax(0,1fr) 24px;align-items:center;
+  gap:5px;margin:7px 0 4px;padding:7px 8px;border:1px solid rgba(247,209,118,.52);
+  border-radius:11px;background:rgba(36,60,76,.94);color:#fff8dc}
+.magic-workbench-guide.hidden{display:none!important}
+.magic-home-symbol{font-size:18px;color:#ffd67b;text-align:center;text-shadow:0 0 9px rgba(255,218,121,.7)}
+#magicWorkbenchLabel{font-size:10px;font-weight:900;line-height:1.4;min-width:0}
+.magic-home-arrow{font-size:20px;text-align:center;color:#ffdf8c;transition:transform .12s linear}
+#magicWorkbenchReturn{grid-column:1/-1;width:100%;border:1px solid rgba(254,220,149,.7);
+  background:#ffedd0;color:#614223;border-radius:8px;min-height:30px;font-size:11px;font-weight:950;cursor:pointer}
+#magicWorkbenchReturn:disabled{opacity:.55;cursor:default}
+.magic-workbench-guide.attention{box-shadow:0 0 0 2px rgba(250,220,143,.5)}
+#blockInventory.survival-inventory .inventory-head b{font-size:17px}
+#simpleBagTabs [data-bag-tab="craft"]:disabled{opacity:.48}
+@media(max-width:650px){
+  .magic-workbench-guide{gap:3px;padding:5px 6px}
+  #magicWorkbenchLabel{font-size:9px}
+  #magicWorkbenchReturn{min-height:30px;font-size:10px}
+}
