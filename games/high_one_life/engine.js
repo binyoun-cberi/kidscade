@@ -168,7 +168,7 @@
   const stages = age => age < 7 ? '유년기' : age < 19 ? '성장기' : age < 31 ? '청년기' : age < 61 ? '성인기' : '노년기';
   class Life {
     constructor(seed, options={}) {
-      this.birthYear=Number.isInteger(options?.birthYear)&&options.birthYear>=1900&&options.birthYear<=2026?options.birthYear:2026;
+      this.birthYear=Number.isInteger(options?.birthYear)&&options.birthYear>=1392&&options.birthYear<=2026?options.birthYear:2026;
       this.seed = Number.isFinite(seed) ? (seed >>> 0) : (((Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0));
       this.rng = this.seed || 0x9e3779b9;
       this.age = 0;
@@ -176,7 +176,7 @@
       let pick = this.rand() * (this.birthYear===2026?totalBirthWeight:COUNTRIES.length);
       this.country = COUNTRIES[COUNTRIES.length-1];
       for (const c of COUNTRIES) { pick -= birthWeight(c,this.birthYear); if (pick < 0) { this.country = c; break; } }
-      if(options?.countryName==='대한민국')this.country=COUNTRIES.find(c=>c[0]==='대한민국');
+      if(options?.countryName==='대한민국'||this.birthYear<1900)this.country=COUNTRIES.find(c=>c[0]==='대한민국');
       const birthSexRatio=measured(this.country,'sexRatioBirth',this.birthYear);
       const femaleShare=birthSexRatio>0.9&&birthSexRatio<1.3?1/(1+birthSexRatio):0.49;
       this.gender=this.rand()<femaleShare?'여자':'남자';
@@ -328,7 +328,7 @@
     static restore(data) {
       if(!data||data.version!==1 || !Number.isInteger(data.age) || data.age<0 || data.age>108) return null;
       // Old v1 saves omit birthYear: those are always 2026 births.
-      const birthYear=Number.isInteger(data.birthYear)&&data.birthYear>=1900&&data.birthYear<=2026?data.birthYear:2026;
+      const birthYear=Number.isInteger(data.birthYear)&&data.birthYear>=1392&&data.birthYear<=2026?data.birthYear:2026;
       const life=new Life(data.seed,{birthYear});
       const country=COUNTRIES.find(c=>c[0]===data.country);
       if(!country || !data.stats || !Array.isArray(data.log) || !Array.isArray(data.seen)) return null;
