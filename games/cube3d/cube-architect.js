@@ -6295,6 +6295,10 @@ function configureMobileMode(target){
 function enableMobileFallback(){
   mobileModeEnabled=true;configureMobileMode(mode);
   tutorialSignal('start-control');
+  if(tutorialState&&!tutorialState.camp){
+    tutorialState.steps=tutorialSteps(tutorialState.kind);
+    renderTutorialStep();
+  }
   toast('이 브라우저에서는 마우스 고정 대신 터치·화면 조작을 사용해요.');
 }
 function requestGamePointerLock(){
