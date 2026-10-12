@@ -38,6 +38,20 @@ async function main() {
     throw new Error('Final lobby is missing the boot catalog payload.');
   }
 
+  // The final HTML is composed from index_base.html; validating only the
+  // bootstrap index.html would silently miss absent favicon links.
+  const pngMatch = html.match(/<link\\s+rel="icon"[^>]*href="\\/(favicon-[a-f0-9]{12}\\.png)"/i);
+  const touchMatch = html.match(/<link\\s+rel="apple-touch-icon"[^>]*href="\\/(apple-touch-icon-[a-f0-9]{12}\\.png)"/i);
+  if (!pngMatch || !touchMatch || pngMatch[1].slice(8, 20) !== touchMatch[1].slice(17, 29)) {
+    throw new Error('Final lobby is missing consistent versioned favicon and Apple touch icon links.');
+  }
+  for (const file of [pngMatch[1], touchMatch[1], 'favicon.ico']) {
+    const filepath = path.join(OUT, file);
+    if (!fs.existsSync(filepath) || fs.statSync(filepath).size < 100) {
+      throw new Error(`Final lobby favicon asset is missing or empty: ${file}`);
+    }
+  }
+
   fs.writeFileSync(path.join(OUT, 'index.html'), html, 'utf8');
 
   const legacyTemplatePath = path.join(OUT, 'index_base.html');
