@@ -6725,12 +6725,33 @@ function campNearest(types){
   }
   if(nearest)campNearestCache.set(cacheKey,nearest);return nearest;
 }
+// Restore a nearby practice tree only when help is requested and local logs are unavailable.
+function campEnsurePracticeTree(){
+  const nearest=campNearest(['log','pineLog']);
+  if(nearest&&Math.hypot(nearest[0]-camera.position.x,nearest[2]-camera.position.z)<=12)return nearest;
+  for(const [x,z] of [[4,5],[4,4],[3,6],[2,6],[1,6],[-1,6]]){
+    if(Math.hypot(camera.position.x-x,camera.position.z-z)<1.4)continue;
+    const y=getHighestSolidY(x,z,10)+1;
+    if(y<1||y>5||!blockDef(getBlock(x,y-1,z)).solid)continue;
+    if([0,1,2].some(dy=>getBlock(x,y+dy,z)))continue;
+    for(let dy=0;dy<3;dy++)setWorldBlock(x,y+dy,z,{type:'log',natural:true},true);
+    campNearestCache.clear();markFreeWorldDirty(300);
+    toast('연습용 나무를 다시 준비했어. 노란 테두리까지 가서 채집해 보자.');
+    return [x,y,z];
+  }
+  return nearest;
+}
 function campStep(){return campActive()?tutorialState.steps[tutorialState.index]:null}
 function campContext(){
+  const site=survivalCamp.site||[-3,3,3],feet=freePhysicsY-1.62;
+  const atShelter=Math.hypot(camera.position.x-site[0],camera.position.z-site[2])<.9&&
+    Math.abs(feet-site[1])<1;
+  const insideShelter=atShelter&&campShelterComplete()&&
+    worldRules.shelterAt(getBlock,camera.position.x,feet,camera.position.z).playerBuilt;
   return {stats:survivalStats,bag:survivalBag,inventoryOpen,bagOpened:survivalCamp.completed.includes('bag'),
     moved:campWalkStart?Math.hypot(camera.position.x-campWalkStart[0],camera.position.z-campWalkStart[1]):0,
     atWalkTarget:Math.hypot(camera.position.x-3,camera.position.z-5)<.9,
-    walked:survivalStage>0,shelterComplete:campShelterComplete(),baseline:survivalCamp.baseline};
+    walked:survivalStage>0,shelterComplete:campShelterComplete(),insideShelter,baseline:survivalCamp.baseline};
 }
 function campTarget(step){
   if(campHelpTarget)return campHelpTarget;
@@ -6768,6 +6789,7 @@ function campInstruction(step){
   const mobile=mobileModeEnabled;
   if(step.id==='walk')return mobile?'왼쪽 동그라미로 움직여 보자. 화면을 밀면 주변을 볼 수 있어.':'화면을 누르고 W·A·S·D로 움직여 보자. 마우스로 주변을 볼 수 있어.';
   if(step.id==='bag')return mobile?'위쪽 가방 버튼을 눌러 보자.':'E를 눌러 가방을 열어 보자.';
+  if(step.id==='inside')return '완성한 쉼터의 노란 고리로 들어가서 잠깐 서 보자. 지붕 바로 아래가 목적지야.';
   if(step.recipe){
     const recipe=worldRules.RECIPES.find(r=>r.id===step.recipe);
     if(recipe?.bench&&!hasWorkbench())return '제작대 가까이로 가 보자.';
@@ -6780,7 +6802,7 @@ function campInstruction(step){
     if(inventoryOpen)return mobile?'가방을 닫고 나무나 돌을 바라보자.':'E로 가방을 닫고 나무나 돌을 바라보자.';
     if(step.type==='stone'&&pickTier(selectedType)<pickTier('woodPick'))return '아래 물건 칸에서 곡괭이를 골라 보자.';
     if(step.type==='log'&&PLACEABLE_TYPES.includes(selectedType))return '아래 물건 칸에서 맨손을 골라 보자.';
-    return mobile?'가운데 +를 맞추고 행동 버튼을 한 번 눌러 보자.':'가운데 +를 맞추고 마우스 왼쪽 버튼을 꾹 눌러 보자.';
+    return mobile?'가운데 +를 맞추고 행동 버튼에서 채집을 골라 보자. 채집이 끝날 때까지 기다려 보자.':'가운데 +를 맞추고 마우스 왼쪽 버튼을 꾹 눌러 보자.';
   }
   if(step.action==='place'||step.action==='shelter'){
     if(inventoryOpen)return mobile?'놓을 물건을 고르고 가방을 닫아 보자.':'놓을 물건을 고르고 E로 가방을 닫아 보자.';
@@ -6863,7 +6885,7 @@ function campHelp(step){
     const missing=Object.entries(recipe.needs).find(([type,n])=>bagCount(type)<n);
     if(missing?.[0]==='planks'||missing?.[0]==='sticks')recipe=worldRules.RECIPES.find(r=>r.id===missing[0]);
     if(Object.keys(recipe.needs).includes('log')&&!bagCount('log')){
-      toggleInventory(false);putOnHotbar('hand');campHelpTarget=campNearest(['log','pineLog']);
+      toggleInventory(false);putOnHotbar('hand');campHelpTarget=campEnsurePracticeTree();
       toast('노란 테두리의 나무에서 원목을 더 얻어 보자.');updateCampMarker(step);return;
     }
     survivalCraftCategory='전체';selectedCraftRecipeId=recipe.id;survivalInventoryTab='craft';toggleInventory(true);
@@ -6871,7 +6893,10 @@ function campHelp(step){
     if(button){button.classList.add('tutorial-focus');tutorialFocusEl=button;button.scrollIntoView({block:'nearest'})}
     toast(recipe.name+'를 골랐어. 재료를 확인하고 만들어 보자.');return;
   }
-  if(step.action==='harvest'){putOnHotbar(step.type==='stone'?'woodPick':'hand');toggleInventory(false);campHelpTarget=campNearest(step.type==='stone'?['stone']:['log','pineLog'])}
+  if(step.action==='harvest'){
+    putOnHotbar(step.type==='stone'?'woodPick':'hand');toggleInventory(false);
+    campHelpTarget=step.type==='stone'?campNearest(['stone']):campEnsurePracticeTree();
+  }
   if(step.action==='place'||step.action==='shelter'){
     const type=step.action==='shelter'?(bagCount('planks')?'planks':bagCount('dirt')?'dirt':'planks'):step.type;
     if(!bagCount(type)){
