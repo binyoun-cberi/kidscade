@@ -243,7 +243,6 @@
     $('worldEventCount').textContent=world.eventCount+'개 사건';
     $('worldLatest').textContent=world.lastContext||'어떤 세계적 변화와 만남이 찾아올까요?';
     const choiceLog=life.log.filter(e=>['decision','history-choice','era-choice','care13-choice'].includes(e.kind));
-    const careLife=World13.summary(life);
     $('arcCount').textContent=choiceLog.length+'번의 선택';
     $('arcStatus').textContent=a.lastEvent || '아직 미래는 정해지지 않았어요.';
     const box=$('arcMilestones');box.replaceChildren();
@@ -578,7 +577,8 @@
     completed=true;
     safeRemove(SAVE_KEY);
     const summary=life.summary();
-    const choiceLog=life.log.filter(e=>e.kind==='decision');
+    const choiceLog=life.log.filter(e=>['decision','history-choice','era-choice','care13-choice'].includes(e.kind));
+    const careLife=World13.summary(life);
     const count=rememberLife();
     $('endYears').textContent=life.birthYear+' — '+life.year;
     $('endCountry').textContent=(life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1])+' '+History.place({...life,year:life.birthYear})+' · '+life.profile.name+' ('+life.profile.city+')';
