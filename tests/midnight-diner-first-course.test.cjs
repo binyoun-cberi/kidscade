@@ -38,7 +38,7 @@ function gameHarness(){
   const ticks=Math.ceil(milliseconds/50);
   for(let i=0;i<ticks;i++){ms+=50;for(const fn of [...timers.values()])fn()}
  }
- return {node,advance,win};
+ return {node,advance,win,key(n){for(const fn of docListeners.get('keydown')||[])fn({key:String(n),code:'Digit'+n});}};
 }
 test('the first dish quietly invites a glance, then withdraws the signal on observation',()=>{
  const h=gameHarness();
@@ -52,7 +52,6 @@ test('the first dish quietly invites a glance, then withdraws the signal on obse
  assert.equal(h.node('peekBtn').classList.contains('first-glimpse'),false);
  // This is merely an invitation: ordinary cooking completes without a scripted pause.
  h.advance(26000);
- assert.equal(h.node('first').id==='first',true);
  assert.equal(h.node('selectionText').textContent,'아까 본 조각은 어느 쪽이었지?');
  assert.equal(h.node('.game-layout').classList.contains('first-plate-choice'),true);
 });
@@ -62,7 +61,6 @@ test('first dish selection and first bite are responsive, keyboard/pointer equiv
  // Wait out normal cooking without peeking; no forced input or automatic reward.
  h.advance(27000);
  assert.equal(h.node('selectionText').textContent,'여덟 조각 중 어디로 손이 갈까?');
- const g=h.win.MidnightDinerRules; // Use original deterministic seed 42 to find safe zones.
  const safe=R.begin(42).dish.zones.filter(z=>!z.dangerous).slice(0,3).map(z=>z.id);
  h.node('plate').emit('pointerdown',{zone:safe[0]});
  assert.match(h.node('chefLine').textContent,/그 조각으로 할 거냐/);
@@ -80,7 +78,9 @@ test('first dish selection and first bite are responsive, keyboard/pointer equiv
  h.node('retryBtn').emit('click');
  assert.equal(h.node('peekBtn').classList.contains('first-glimpse'),true);
  h.advance(27000);
- h.node('document')?.emit?.('noop');
+ h.key(safe[0]+1);
+ assert.match(h.node('chefLine').textContent,/그 조각으로 할 거냐/);
+ assert.match(h.node('selectionText').textContent,/번 부분 선택/);
 });
 test('the subtle first-course styling avoids overlays and respects reduced motion',()=>{
  const html=fs.readFileSync(path.join(ROOT,'games/high_midnight_diner/index.html'),'utf8');
