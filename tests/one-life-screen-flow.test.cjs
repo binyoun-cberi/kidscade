@@ -200,4 +200,17 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.match(get('historyContext').textContent,/일제강점기/);
  assert.ok(get('sceneLabel').textContent.includes('의 풍경'));
  assert.match(get('countrySourceNote').textContent,/이 시기의 생활환경/);
+ // Joseon births must open their own historical scene instead of modern stock scenery.
+ get('birthYearInput').value='1580';
+ get('birthLocation').value='korea';
+ get('drawBtn').click();
+ const joseonDraw=[...intervals.values()].at(-1);
+ for(let i=0;i<19;i++)joseonDraw();
+ assert.match(get('birthDate').textContent,/^1580년/);
+ get('lifeStartBtn').click();
+ assert.equal(get('currentYear').textContent,'1580년');
+ assert.match(get('historyContext').textContent,/조선/);
+ assert.match(get('sceneLabel').textContent,/봄|여름|가을|겨울/);
+ assert.match(get('v12EconomyEra').textContent,/곡식/);
+ assert.match(get('countryContextText').textContent,/출신/);
 });
