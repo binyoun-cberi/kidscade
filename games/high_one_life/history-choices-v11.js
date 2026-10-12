@@ -92,8 +92,7 @@ function select(life,seen,era){
 }
 function prompt(item,life){
  if(!item||life.age<item.min||life.age>item.max)return null;
- return {age:life.age,title:item.title,description:item.detail+
-   ' (해당 시대를 배경으로 만든 가상의 생활 선택입니다.)',
+ return {age:life.age,title:item.title,description:item.detail,
   options:OPTIONS[item.topic].map(([label,note])=>({label,note})),historicalLife:true};
 }
 return Object.freeze({PATHS,OPTIONS,candidates,select,prompt,count:PATHS.length});
