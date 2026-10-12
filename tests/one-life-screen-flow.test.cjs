@@ -116,7 +116,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  storyButtons.find(b=>b.dataset.storyTab==='stats').click();
  assert.ok(!get('storyStats').classList.contains('hidden'));
  assert.match(get('survivalActual').attributes.d,/^M/);
- assert.match(get('survivalSummary').textContent,/게임 모형/);
+ assert.match(get('survivalSummary').textContent,/참고용 생존 곡선/);
  storyButtons.find(b=>b.dataset.storyTab==='years').click();
  assert.equal(get('ageMap').children.length,108);
  assert.equal(get('ageMap').children[107].disabled,true,'future map cells should not be interactive');
