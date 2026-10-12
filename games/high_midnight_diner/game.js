@@ -40,7 +40,7 @@ function repaint(){
  $('banned').textContent=dish.spec.word;$('bites').textContent=dish.eaten+' / 3 한입';
  $('inspections').textContent=dish.inspectionsLeft+'회';
  $('selectionText').textContent=chosen!==null?String(chosen+1)+'번 부분 선택':
-  isFirstPlate()&&!firstPlate.firstChoice?'아까 본 조각은 어느 쪽이었지?':'어느 부분을 먹을까요?';
+  isFirstPlate()&&!firstPlate.firstChoice?(firstPlate.peeked?'아까 본 조각은 어느 쪽이었지?':'여덟 조각 중 어디로 손이 갈까?'):'어느 부분을 먹을까요?';
  const layout=document.querySelector('.game-layout');
  layout.classList.toggle('cooking',game.phase==='cooking');
  layout.classList.toggle('eating',game.phase==='playing');
@@ -284,17 +284,25 @@ function act(name){
  if(game.phase==='finished')finish();
  else if(outcome.courseReview)showReview(outcome.courseReview);
 }
-$('plate').addEventListener('pointerdown',ev=>{
- if(!game||game.phase!=='playing'||reviewPending)return;
- const index=P.hit($('plate'),ev,game.dish);
- if(index===null||index===undefined)return;
- if(game.dish.zones[index]?.removed){note('이미 먹은 부분이에요. 다른 부분을 골라 주세요.');return;}
+function choosePortion(index){
+ if(!game||game.phase!=='playing'||reviewPending)return false;
+ if(!Number.isInteger(index)||index<0||!game.dish.zones[index])return false;
+ if(game.dish.zones[index].removed){
+  note('이미 먹은 부분이에요. 다른 부분을 골라 주세요.');
+  return false;
+ }
  chosen=index;
  if(isFirstPlate()&&!firstPlate.firstChoice){
   firstPlate.firstChoice=true;
   $('chefLine').textContent='“그 조각으로 할 거냐?”';
  }
  sound('tap');repaint();
+ return true;
+}
+$('plate').addEventListener('pointerdown',ev=>{
+ if(!game||game.phase!=='playing'||reviewPending)return;
+ const index=P.hit($('plate'),ev,game.dish);
+ if(index!==null&&index!==undefined)choosePortion(index);
 });
 for(const [id,name] of [['eatBtn','eat'],['inspectBtn','inspect'],['questionBtn','question'],['rejectBtn','reject']])$(id).addEventListener('click',()=>act(name));
 $('startBtn').addEventListener('click',start);$('retryBtn').addEventListener('click',start);
@@ -334,7 +342,7 @@ window.addEventListener('keydown',e=>{
  if(!game||game.phase!=='playing'||!$('notebookPanel').classList.contains('hidden'))return;
  const n=Number(e.key);
  if(Number.isInteger(n)&&n>=1&&n<=game.dish.zones.length){
-  if(!game.dish.zones[n-1].removed){chosen=n-1;repaint();}return;
+  choosePortion(n-1);return;
  }
  const key=e.key.toLowerCase();
  if(key==='e')act('eat');
