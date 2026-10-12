@@ -113,7 +113,7 @@ function note(life,s,text,kind='joseon-life'){
 }
 function promptFor(life,s){
  if(!s.active)return null;
- const kind=s.active.kind,canExam=life.gender==='남자'&&s.status==='양반'&&life.year<1894;
+ const kind=s.active.kind,canExam=life.gender==='남자'&&['양반','상민'].includes(s.birthStatus)&&life.year<1894;
  const opt=(label,noteText,action,effects={})=>({label,note:noteText,action,effects,text:label});
  if(kind==='school')return {title:'글을 배울 수 있을까?',description:s.status+' 집안에서 '+s.region+'의 하루를 살아간다. 책을 배울지, 생업을 익힐지 생각할 때다.',options:[
   opt('글을 배울 길을 찾아본다',s.status==='양반'?'가문의 글공부와 서당':'지역의 배움이나 가족·이웃의 가르침','study',{knowledge:6,wealth:-3}),
@@ -129,9 +129,14 @@ function promptFor(life,s){
   opt('새 거처에서 홀로 생업을 꾸린다','홀로 서는 기쁨과 어려움이 함께한다','independent',{happiness:4,health:-2})]};
  if(kind==='examination'){
   if(canExam)return {title:'과거에 도전할까?',description:'글을 익혔더라도 과거에 급제하는 일은 쉽지 않다. 신분·성별·학습 기회도 응시를 좌우했다.',options:[
-   opt('과거 시험을 준비한다',s.studyYears>=3?'공부가 쌓였지만 결과는 알 수 없다':'학업 경험이 적어 합격이 어려울 수 있다','exam',{knowledge:5,wealth:-7}),
+   opt('문과 시험을 준비한다',s.studyYears>=3?'글공부를 이어 왔지만 합격과 관직은 별개의 길이다.':'시험에 나갈 자격과 준비할 수 있는 형편은 달랐다.','exam',{knowledge:5,wealth:-7}),
    opt('마을에서 글을 가르친다','서당과 가정에서 배움을 나눈다','teach',{bonds:5,wealth:3}),
    opt('집안의 다른 생업을 이어 간다','농사와 장터의 기회도 살핀다','practical',{wealth:5})]};
+  if(s.status==='중인'&&life.gender==='남자'&&life.year<1894)
+   return {title:'관청의 기술직을 향한 길',description:'관청에는 역관·의관·율관처럼 전문 지식을 쓰는 길도 있었다. 배우는 기회와 신분의 벽은 여전히 높았다.',options:[
+    opt('잡과에 필요한 공부를 한다','역학·의학 등 전문 지식을 배우며 시험을 준비한다','technical',{knowledge:6,wealth:-6}),
+    opt('관청의 실무를 이어 간다','기록과 셈을 익혀 맡은 일을 지킨다','scribe',{knowledge:3,wealth:3}),
+    opt('장터에서 기술을 써 본다','배운 솜씨를 생업에 보탠다','trade',{wealth:4})]};
   return {title:'배움과 일의 길',description:life.gender==='여자'?'여성에게 관직 시험의 문은 닫혀 있었지만 글과 기술을 익히는 길까지 없었던 것은 아니다.':'출신 신분과 처지에 따라 관직 시험에 접근하기 어려웠다.',options:[
    opt('배운 글과 셈을 생업에 쓴다','기록과 셈이 도움이 되는 일을 한다','scribe',{knowledge:4,wealth:4}),
    opt('기술과 장사로 살림을 넓힌다','장시에서 기술·물건을 다룬다','trade',{wealth:6}),
@@ -151,6 +156,31 @@ function promptFor(life,s){
   opt('이웃과 함께 피란처를 마련한다','서로 도우며 짐과 위험을 나눈다','together',{bonds:8,wealth:-5})]};
  return null;
 }
+const FOLLOWUP={
+ study:'서당과 집안에서 익힌 글자를 다시 펼쳐 보았다. 익숙한 문장이 하나둘 늘었다.',
+ work:'어려서 배운 집안일이 이제는 몸에 배어 있었다.',
+ mixed:'낮에 일을 하고 밤에 글자를 익히던 시절을 떠올렸다.',
+ farm:'가꾸던 논밭에서 첫 수확을 거두었지만, 다음 해 날씨는 여전히 알 수 없었다.',
+ trade:'장터에 나가면서 알게 된 얼굴들이 조금씩 늘었다.',
+ home:'집안의 끼니와 돌봄을 맡는 날이 늘었다.',
+ kin:'함께 살던 식구들과 각자의 몫을 나누었다.',
+ care:'집안 어른과 아이의 안부를 살피는 일이 하루의 중요한 몫이 되었다.',
+ marry:'혼인한 뒤 함께 의논해야 할 일이 생겼다.',
+ independent:'새 거처에서 처음 보내는 계절은 낯설었다.',
+ exam:'과거를 준비했던 밤들이 떠올랐다. 합격 여부와 별개로 익힌 글은 남았다.',
+ technical:'관청에서 쓰이는 글과 기술을 다시 손에 익혔다.',
+ scribe:'배운 글과 셈으로 장부를 정리할 기회가 생겼다.',
+ mentor:'마을의 어린 이들이 배우러 찾아오는 날이 있었다.',
+ teach:'가르친 글자를 다른 사람이 써 보는 모습을 보았다.',
+ practical:'집안 생업을 다시 맡으며 손에 익은 일을 이어 갔다.',
+ land:'구한 땅을 돌보느라 손쓸 일이 많아졌다.',
+ market:'장터에서 거래하던 사람이 다시 찾아왔다.',
+ retire:'하던 일을 다른 식구에게 맡기고 뒤에서 지켜보는 날이 늘었다.',
+ continue:'계속 일하며 살림을 지켰지만 쉬는 날은 드물었다.',
+ flee:'피란길에서 잃은 물건과 사람들을 떠올렸다. 돌아갈 곳이 예전 같지는 않았다.',
+ stay:'고향에 남았으나 전란 뒤에도 수리할 집과 돌볼 땅이 많았다.',
+ together:'함께 피란했던 이웃과 길에서 있었던 일을 이야기했다.'
+};
 const MILESTONES={8:'school',15:'vocation',19:'marriage',24:'examination',35:'household',58:'elder'};
 function applyChoice(life,index){
  const s=ensure(life),p=promptFor(life,s);
@@ -165,9 +195,12 @@ function applyChoice(life,index){
  if(act==='home'||act==='kin'||act==='care'){s.occupation='집안 살림과 돌봄';s.household=Math.min(8,s.household+1);s.parentsSupported=true;}
  if(act==='marry'){s.married=true;s.capital-=10;note(life,s,'혼인을 치르고 함께할 가족이 늘었다.','joseon-family');}
  if(act==='independent'){s.capital-=5;s.relocations++;note(life,s,'가족의 집을 떠나 새 살림을 시작했다.','joseon-family');}
- if(act==='exam'){s.exams++;const chance=clamp(.04+s.studyYears*.055+s.literacy*.03,0,.42);
+ if(act==='exam'){s.exams++;const chance=clamp((.04+s.studyYears*.055+s.literacy*.03)*(s.birthStatus==='상민'?.20:1),0,.42);
   if(life.rand()<chance){s.office=true;s.occupation='관직 생활';s.capital+=42;note(life,s,'과거에 급제하여 관직에 나아갔다.','joseon-career');}
   else note(life,s,'과거를 치렀지만 이번에는 급제하지 못했다.','joseon-career');}
+ if(act==='technical'){s.exams++;const chance=clamp(.10+s.studyYears*.035+s.literacy*.025,0,.35);
+  if(life.rand()<chance){s.occupation='관청의 전문 기술직';s.capital+=24;note(life,s,'오래 준비한 전문 분야의 시험에 합격했다. 관청에서 맡을 일을 기다린다.','joseon-career');}
+  else {s.literacy+=1;s.school='전문 기술을 익히는 중';note(life,s,'시험에서는 뜻을 이루지 못했지만 공부한 기술은 남았다.','joseon-career');}}
  if(act==='teach'||act==='mentor'){s.occupation='마을에서 글과 기술을 가르치는 일';s.school='가르치며 배우는 생활';}
  if(act==='scribe'){s.occupation='글과 셈을 쓰는 생업';s.literacy+=1;}
  if(act==='practical'){s.occupation='농사와 집안 생업';s.capital+=4;}
@@ -180,7 +213,7 @@ function applyChoice(life,index){
  s.decisions.push({year:life.year,age:life.age,kind,action:act});
  s.decisions=s.decisions.slice(-40);
  note(life,s,p.title+' — '+option.label,'joseon-choice');
- s.followups.push({year:life.year+3,text:'예전에 '+option.label+'고 선택했던 일이 오늘의 살림과 가족관계에도 남아 있다.'});
+ s.followups.push({year:life.year+3,text:FOLLOWUP[act]||'그날의 결정은 집안의 살림에 작은 흔적을 남겼다.'});
  s.followups=s.followups.slice(-20);
  s.active=null;life.pending=null;sync(life,s);
  return true;
