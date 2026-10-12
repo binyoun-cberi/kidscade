@@ -13,7 +13,7 @@ for(const [file,key] of [
  ['history-effects-v10.js','OneLifeHistoryEffects10'],['world-v10.js','OneLifeWorld10'],
  ['history-choices-v11.js','OneLifeHistoryChoices11'],['era-policy-v12.js','OneLifeEraPolicy12'],
  ['world-v12.js','OneLifeWorld12'],['world-v13.js','OneLifeWorld13'],
- ['joseon-v1.js','OneLifeJoseon']
+ ['joseon-v1.js','OneLifeJoseon'],['joseon-v2.js','OneLifeJoseon2']
 ])global.window[key]=require(path.join(base,file));
 const J=global.window.OneLifeJoseon, W8=global.window.OneLifeWorld8;
 delete global.window;
@@ -106,7 +106,8 @@ test('the browser entry loads the Joseon rules after modern modules and before t
  const html=fs.readFileSync(path.join(base,'index.html'),'utf8');
  assert.match(html,/min="1392" max="2026"/);
  assert.ok(html.indexOf('world-v13.js')<html.indexOf('joseon-v1.js'));
- assert.ok(html.indexOf('joseon-v1.js')<html.indexOf('game.js'));
+ assert.ok(html.indexOf('joseon-v1.js')<html.indexOf('joseon-v2.js'));
+ assert.ok(html.indexOf('joseon-v2.js')<html.indexOf('game.js'));
  const game=fs.readFileSync(path.join(base,'game.js'),'utf8');
  assert.match(game,/Joseon\.inOldEra/);assert.match(game,/Joseon\.eventFor/);
 });
