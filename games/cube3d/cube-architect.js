@@ -593,7 +593,7 @@ function initChallenge(){
     .forEach(([id,name])=>$(id).onclick=()=>setChallengeTool(name));
   $('challengeSelect').onclick=selectLookedChallengePiece;
   $('challengeColor').oninput=e=>{challengeTint=e.target.value};
-  configureMobileMode('challenge');$('challengeLockNotice').onclick=()=>{tutorialSignal('start-control');requestGamePointerLock()};
+  configureMobileMode('challenge');$('challengeLockNotice').onclick=()=>requestGamePointerLock();
   showTutorial('challenge');
 }
 function challengeCenterHit(max=8){
@@ -3373,7 +3373,7 @@ function initFree(){
   $('blockInventory').classList.add('hidden');$('furnacePanel').classList.add('hidden');$('lifePanel')?.classList.add('hidden');
   $('mathLensBadge').classList.add('hidden');
   configureMobileMode('free');
-  $('lockNotice').onclick=()=>{if(!inventoryOpen&&!furnaceOpen&&!lifePanelOpen){tutorialSignal('start-control');requestGamePointerLock()}};
+  $('lockNotice').onclick=()=>{if(!inventoryOpen&&!furnaceOpen&&!lifePanelOpen)requestGamePointerLock()};
   $('survivalReturn').onclick=emergencyReturn;
   if($('craftDiscoveryNotice'))$('craftDiscoveryNotice').onclick=()=>{survivalInventoryTab='craft';toggleInventory(true)};
   renderSurvivalSafety(null);
@@ -6294,6 +6294,11 @@ function configureMobileMode(target){
 }
 function enableMobileFallback(){
   mobileModeEnabled=true;configureMobileMode(mode);
+  tutorialSignal('start-control');
+  if(tutorialState&&!tutorialState.camp){
+    tutorialState.steps=tutorialSteps(tutorialState.kind);
+    renderTutorialStep();
+  }
   toast('이 브라우저에서는 마우스 고정 대신 터치·화면 조작을 사용해요.');
 }
 function requestGamePointerLock(){
@@ -6725,12 +6730,33 @@ function campNearest(types){
   }
   if(nearest)campNearestCache.set(cacheKey,nearest);return nearest;
 }
+// Restore a nearby practice tree only when help is requested and local logs are unavailable.
+function campEnsurePracticeTree(){
+  const nearest=campNearest(['log','pineLog']);
+  if(nearest&&Math.hypot(nearest[0]-camera.position.x,nearest[2]-camera.position.z)<=12)return nearest;
+  for(const [x,z] of [[4,5],[4,4],[3,6],[2,6],[1,6],[-1,6]]){
+    if(Math.hypot(camera.position.x-x,camera.position.z-z)<1.4)continue;
+    const y=getHighestSolidY(x,z,10)+1;
+    if(y<1||y>5||!blockDef(getBlock(x,y-1,z)).solid)continue;
+    if([0,1,2].some(dy=>getBlock(x,y+dy,z)))continue;
+    for(let dy=0;dy<3;dy++)setWorldBlock(x,y+dy,z,{type:'log',natural:true},true);
+    campNearestCache.clear();markFreeWorldDirty(300);
+    toast('연습용 나무를 다시 준비했어. 노란 테두리까지 가서 채집해 보자.');
+    return [x,y,z];
+  }
+  return nearest;
+}
 function campStep(){return campActive()?tutorialState.steps[tutorialState.index]:null}
 function campContext(){
+  const site=survivalCamp.site||[-3,3,3],feet=freePhysicsY-1.62;
+  const atShelter=Math.hypot(camera.position.x-site[0],camera.position.z-site[2])<.9&&
+    Math.abs(feet-site[1])<1;
+  const insideShelter=atShelter&&campShelterComplete()&&
+    worldRules.shelterAt(getBlock,camera.position.x,feet,camera.position.z).playerBuilt;
   return {stats:survivalStats,bag:survivalBag,inventoryOpen,bagOpened:survivalCamp.completed.includes('bag'),
     moved:campWalkStart?Math.hypot(camera.position.x-campWalkStart[0],camera.position.z-campWalkStart[1]):0,
     atWalkTarget:Math.hypot(camera.position.x-3,camera.position.z-5)<.9,
-    walked:survivalStage>0,shelterComplete:campShelterComplete(),baseline:survivalCamp.baseline};
+    walked:survivalStage>0,shelterComplete:campShelterComplete(),insideShelter,baseline:survivalCamp.baseline};
 }
 function campTarget(step){
   if(campHelpTarget)return campHelpTarget;
@@ -6768,6 +6794,7 @@ function campInstruction(step){
   const mobile=mobileModeEnabled;
   if(step.id==='walk')return mobile?'왼쪽 동그라미로 움직여 보자. 화면을 밀면 주변을 볼 수 있어.':'화면을 누르고 W·A·S·D로 움직여 보자. 마우스로 주변을 볼 수 있어.';
   if(step.id==='bag')return mobile?'위쪽 가방 버튼을 눌러 보자.':'E를 눌러 가방을 열어 보자.';
+  if(step.id==='inside')return '완성한 쉼터의 노란 고리로 들어가서 잠깐 서 보자. 지붕 바로 아래가 목적지야.';
   if(step.recipe){
     const recipe=worldRules.RECIPES.find(r=>r.id===step.recipe);
     if(recipe?.bench&&!hasWorkbench())return '제작대 가까이로 가 보자.';
@@ -6780,15 +6807,15 @@ function campInstruction(step){
     if(inventoryOpen)return mobile?'가방을 닫고 나무나 돌을 바라보자.':'E로 가방을 닫고 나무나 돌을 바라보자.';
     if(step.type==='stone'&&pickTier(selectedType)<pickTier('woodPick'))return '아래 물건 칸에서 곡괭이를 골라 보자.';
     if(step.type==='log'&&PLACEABLE_TYPES.includes(selectedType))return '아래 물건 칸에서 맨손을 골라 보자.';
-    return mobile?'가운데 +를 맞추고 행동 버튼을 한 번 눌러 보자.':'가운데 +를 맞추고 마우스 왼쪽 버튼을 꾹 눌러 보자.';
+    return mobile?'가운데 +를 맞추고 행동 버튼에서 채집을 골라 보자. 채집이 끝날 때까지 기다려 보자.':'가운데 +를 맞추고 마우스 왼쪽 버튼을 꾹 눌러 보자.';
   }
   if(step.action==='place'||step.action==='shelter'){
     if(inventoryOpen)return mobile?'놓을 물건을 고르고 가방을 닫아 보자.':'놓을 물건을 고르고 E로 가방을 닫아 보자.';
     if(step.action==='shelter'&&!['planks','dirt'].includes(selectedType))return '아래 물건 칸에서 판자나 흙을 골라 보자.';
     if(step.action==='place'&&selectedType!==step.type)return '아래 물건 칸에서 '+blockDef(step.type).name+'를 골라 보자.';
     if(!bagCount(selectedType))return '재료가 다 떨어졌네. '+(mobile?'도움 받기를 눌러 보자.':'H를 눌러 도움을 받아 보자.');
-    if(step.independent)return mobile?'놓고 싶은 곳을 보고 행동 버튼을 눌러 보자.':'놓고 싶은 곳을 보고 마우스 오른쪽 버튼을 눌러 보자.';
-    return mobile?'노란 테두리 옆면이나 바닥을 보고 행동 버튼을 눌러 보자.':'노란 테두리 옆면이나 바닥을 보고 마우스 오른쪽 버튼을 눌러 보자.';
+    if(step.independent)return mobile?'놓고 싶은 곳을 보고 행동 버튼에서 설치를 선택해 보자.':'놓고 싶은 곳을 보고 마우스 오른쪽 버튼을 눌러 보자.';
+    return mobile?'노란 테두리 옆면이나 바닥을 보고 행동 버튼에서 설치를 선택해 보자.':'노란 테두리 옆면이나 바닥을 보고 마우스 오른쪽 버튼을 눌러 보자.';
   }
   return step.text;
 }
@@ -6863,7 +6890,7 @@ function campHelp(step){
     const missing=Object.entries(recipe.needs).find(([type,n])=>bagCount(type)<n);
     if(missing?.[0]==='planks'||missing?.[0]==='sticks')recipe=worldRules.RECIPES.find(r=>r.id===missing[0]);
     if(Object.keys(recipe.needs).includes('log')&&!bagCount('log')){
-      toggleInventory(false);putOnHotbar('hand');campHelpTarget=campNearest(['log','pineLog']);
+      toggleInventory(false);putOnHotbar('hand');campHelpTarget=campEnsurePracticeTree();
       toast('노란 테두리의 나무에서 원목을 더 얻어 보자.');updateCampMarker(step);return;
     }
     survivalCraftCategory='전체';selectedCraftRecipeId=recipe.id;survivalInventoryTab='craft';toggleInventory(true);
@@ -6871,7 +6898,10 @@ function campHelp(step){
     if(button){button.classList.add('tutorial-focus');tutorialFocusEl=button;button.scrollIntoView({block:'nearest'})}
     toast(recipe.name+'를 골랐어. 재료를 확인하고 만들어 보자.');return;
   }
-  if(step.action==='harvest'){putOnHotbar(step.type==='stone'?'woodPick':'hand');toggleInventory(false);campHelpTarget=campNearest(step.type==='stone'?['stone']:['log','pineLog'])}
+  if(step.action==='harvest'){
+    putOnHotbar(step.type==='stone'?'woodPick':'hand');toggleInventory(false);
+    campHelpTarget=step.type==='stone'?campNearest(['stone']):campEnsurePracticeTree();
+  }
   if(step.action==='place'||step.action==='shelter'){
     const type=step.action==='shelter'?(bagCount('planks')?'planks':bagCount('dirt')?'dirt':'planks'):step.type;
     if(!bagCount(type)){
@@ -6986,11 +7016,26 @@ function tutorialSteps(kind){
   ];
   return[{title:'튜토리얼',text:'이 모드의 기본 기능을 화면에서 직접 확인해 보세요.',do:'상단 튜토리얼 버튼으로 다시 볼 수 있습니다.'}];
 }
+function tutorialRecoveryHint(step){
+  if(step.wait==='start-control')return '화면 가운데의 시작 안내를 눌러 보세요. 화면이 움직이지 않으면 게임 화면을 다시 눌러 보세요.';
+  if(step.wait==='challenge-place')return '건축 모드를 고르고 가운데 +를 가까운 땅에 맞춰 보세요. PC는 오른쪽 마우스 버튼, 태블릿은 설치 버튼을 눌러요.';
+  if(step.wait==='challenge-break')return '방금 놓은 블록을 가운데 +로 정확히 바라보세요. PC는 왼쪽 마우스 버튼, 태블릿은 파괴 버튼을 눌러요.';
+  if(step.wait==='net-sticker')return '그림 목록에서 원하는 그림을 한 번 눌러 보세요.';
+  if(step.wait==='net-assign')return '오른쪽 3D 직육면체에서 면을 직접 눌러 보세요. 왼쪽의 전개도 그림을 누르는 것이 아니에요.';
+  if(step.wait==='free-place')return '핫바에서 흙이나 나무 블록을 고르세요. 가까운 바닥에 가운데 +를 맞추고 설치해 보세요.';
+  if(step.wait==='free-break')return '방금 놓은 블록에 조금 더 가까이 가서 가운데 +를 맞춘 뒤 파괴해 보세요.';
+  if(step.wait==='free-view-toggle')return 'PC는 V 키 또는 상단 시점 버튼, 태블릿은 시점 버튼을 눌러 보세요.';
+  return '노란색으로 강조된 버튼을 확인하세요. 어려우면 이 단계만 건너뛰고 나중에 다시 연습해도 돼요.';
+}
 function renderTutorialStep(){
   if(!tutorialState)return;
   if(campActive()){renderCampStep();return}
   tutorialClearFocus();
   const step=tutorialState.steps[tutorialState.index],total=tutorialState.steps.length;
+  if(step.wait==='start-control'&&document.pointerLockElement===canvas){
+    tutorialState.index=Math.min(tutorialState.index+1,total-1);renderTutorialStep();return;
+  }
+  const helpUsed=!!tutorialState.assists?.[tutorialState.index];
   const isIntro=tutorialState.index===0;
   $('tutorial').classList.remove('hidden');$('tutorial').classList.toggle('coach',!isIntro);
   $('tutorialProgress').textContent=(tutorialState.index+1)+' / '+total;
@@ -6998,16 +7043,24 @@ function renderTutorialStep(){
     '<div class="tutorial-step-kicker">'+(isIntro?'처음 조작 연습':'직접 해보기')+'</div>'+
     '<h2>'+step.title+'</h2><p>'+step.text+'</p>'+
     (step.do?'<div class="tutorial-do">'+step.do+'</div>':'')+
-    (step.wait?'<div class="tutorial-tip">안내대로 해 보면 다음 활동이 열려요.</div>':'');
+    (helpUsed?'<div class="tutorial-recovery"><b>다시 해보는 방법</b><p>'+tutorialRecoveryHint(step)+'</p></div>':'')+
+    (step.wait?'<div class="tutorial-tip">직접 성공하면 자동으로 넘어가요. 어려우면 도움받기를 눌러 보세요.</div>':'');
   const target=tutorialTarget(step.target);
   if(target){target.classList.add('tutorial-focus');tutorialFocusEl=target}
   $('tutorialBack').disabled=tutorialState.index===0;
   $('tutorialBack').style.visibility=tutorialState.index===0?'hidden':'visible';
   const last=tutorialState.index===total-1;
-  const conditionDone=false;
-  $('tutorialClose').disabled=!!step.wait&&!conditionDone;
-  $('tutorialClose').textContent=step.wait?(conditionDone?'완료 · 다음':'직접 성공해 보세요'):last?'완료':'다음';
-  $('tutorialClose').onclick=()=>{if(last)tutorialFinish(true);else{tutorialState.index++;renderTutorialStep()}};
+  $('tutorialClose').disabled=false;
+  $('tutorialClose').textContent=step.wait?(helpUsed?'이 단계 넘어가기':'막혔어요 · 도움받기'):last?'완료':'다음';
+  $('tutorialClose').onclick=()=>{
+    if(step.wait&&!helpUsed){
+      tutorialState.assists=tutorialState.assists||{};
+      tutorialState.assists[tutorialState.index]=true;
+      renderTutorialStep();return;
+    }
+    if(step.wait)toast('이 연습만 건너뛰었어. 나중에 튜토리얼에서 다시 연습할 수 있어.');
+    if(last)tutorialFinish(true);else{tutorialState.index++;renderTutorialStep()}
+  };
   $('tutorialBack').onclick=()=>{tutorialState.index=Math.max(0,tutorialState.index-1);renderTutorialStep()};
   $('tutorialSkip').onclick=()=>tutorialFinish(true);
 }
@@ -7017,7 +7070,7 @@ function showTutorial(kind,force=false){
     (kind==='free'?'_'+gameFreeMode:'')+(mobileModeEnabled?'_touch':'_desktop');
   try{if(!force&&localStorage.getItem(once))return}catch(_){}
   tutorialFinish(false);
-  tutorialState={kind,once,index:0,steps:tutorialSteps(kind)};
+  tutorialState={kind,once,index:0,assists:{},steps:tutorialSteps(kind)};
   renderTutorialStep();
 }
 $('actionTutorial')?.addEventListener('click',()=>showTutorial(mode==='free'?'free':mode,true));
@@ -7086,6 +7139,7 @@ canvas.addEventListener('mousedown',e=>{
 window.addEventListener('mouseup',e=>{if(e.button===0&&miningSource==='mouse')stopMining()});
 canvas.addEventListener('click',()=>{if(!mobileModeEnabled&&(mode==='free'||mode==='challenge'||mode==='dungeon')&&document.pointerLockElement!==canvas&&($('tutorial').classList.contains('hidden')||campActive())&&!(mode==='free'&&(inventoryOpen||furnaceOpen||lifePanelOpen)))requestGamePointerLock()});
 document.addEventListener('pointerlockchange',()=>{
+  if(document.pointerLockElement===canvas)tutorialSignal('start-control');
   if(mode==='free'&&document.pointerLockElement!==canvas&&miningSource==='mouse')stopMining();
   if(mode==='free')$('lockNotice').classList.toggle('hidden',mobileModeEnabled||inventoryOpen||furnaceOpen||lifePanelOpen||document.pointerLockElement===canvas);
   if(mode==='challenge')$('challengeLockNotice').classList.toggle('hidden',mobileModeEnabled||document.pointerLockElement===canvas);

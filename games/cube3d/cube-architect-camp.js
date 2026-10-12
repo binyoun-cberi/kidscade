@@ -14,7 +14,7 @@ const STEPS=[
  {id:'pick',title:'나무 곡괭이를 만들자',text:'판자 3개와 막대 2개를 모아 곡괭이를 만들자.',recipe:'woodPick'},
  {id:'stone',title:'곡괭이로 돌을 캐 보자',text:'곡괭이를 고르고 돌 하나를 캐 보자.',action:'harvest',type:'stone'},
  {id:'shelter',title:'작은 쉼터를 지어 보자',text:'판자나 흙을 골라 노란 테두리를 하나씩 채워 보자.',action:'shelter',type:'planks'},
- {id:'inside',title:'쉼터 안으로 들어가 보자',text:'노란 고리 안에 서서 지붕 아래를 살펴보자.',action:'inside'},
+ {id:'inside',title:'쉼터 안으로 들어가 보자',text:'완성한 쉼터 안쪽의 노란 고리까지 걸어가 보자.',action:'inside'},
  {id:'ownWood',title:'이번에는 혼자 원목을 얻어 보자',text:'원하는 나무에서 원목 하나를 얻어 보자.',action:'harvest',type:'log',independent:true},
  {id:'ownPlanks',title:'모은 원목으로 판자를 만들자',text:'가방을 열고 판자를 한 번 만들어 보자.',recipe:'planks',independent:true},
  {id:'ownPlace',title:'원하는 곳에 판자를 놓아 보자',text:'판자를 골라 쉼터를 더 꾸며 보자.',action:'place',type:'planks',independent:true},
@@ -35,7 +35,7 @@ function satisfied(id,c){
   case 'pick':return (crafted.woodPick||0)>0||(bag.woodPick||0)>0;
   case 'stone':return (s.harvestedStone||0)>0;
   case 'shelter':return c.shelterComplete||s.shelterBuilt;
-  case 'inside':return s.shelterBuilt;
+  case 'inside':return !!c.insideShelter;
   case 'ownWood':return (s.harvestedWood||0)>(base.wood??Infinity);
   case 'ownPlanks':return (crafted.planks||0)>(base.planks??Infinity);
   case 'ownPlace':return (placed.planks||0)>(base.placed??Infinity);
