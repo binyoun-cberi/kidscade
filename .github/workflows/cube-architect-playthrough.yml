@@ -1,0 +1,35 @@
+name: Cube Architect manual browser playthrough
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cube-architect-manual-playtest
+  cancel-in-progress: true
+
+jobs:
+  browser-playthrough:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Playtest Cube Architect on Chromium desktop and tablet
+        run: node tests/cube-architect-playthrough-browser-audit.cjs
+        env:
+          KIDSCADE_CUBE_AUDIT_OUT: ${{ runner.temp }}/cube-architect-playthrough-audit
+      - name: Upload frames and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cube-architect-playthrough-audit
+          path: ${{ runner.temp }}/cube-architect-playthrough-audit/
+          if-no-files-found: ignore
+          retention-days: 7
