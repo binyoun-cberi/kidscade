@@ -57,7 +57,7 @@ test('v10 historical source catalogue is unique, dated, and separate from fictio
  assert.equal(Data.legalFor(2002,'smartphone'),false);
  assert.equal(Data.legalFor(2020,'mortgage'),true);
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
- assert.match(html,/history-data-v10\.js\?v=1/);
+ assert.match(html,/history-data-v10\.js\?v=\d+/);
  assert.ok(html.indexOf('world-v9.js')<html.indexOf('world-v10.js'));
  assert.ok(html.indexOf('world-v10.js')<html.indexOf('game.js'));
 });
@@ -73,7 +73,7 @@ test('1935 birth faces war-time household decision, resettlement and interrupted
   resolve(l);
   const s=W10.ensure(l);
   assert.ok(s.factsSeen.some(id=>Data.FACTS.find(f=>f.id===id)?.title==='한국전쟁 발발'));
-  assert.ok(l.log.filter(e=>e.kind==='history'&&e.year===1950).length===1);
+  assert.equal(l.log.filter(e=>e.kind==='history'&&e.year===1950).length,Data.forYear(1950).length);
   assert.ok(s.tags.includes('한국전쟁 시기'));
   assert.equal(s.schoolInterrupted,true);
   assert.ok(s.moves>=1);

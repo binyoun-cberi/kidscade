@@ -107,3 +107,10 @@
 .v10-history-panel small{font-size:10px;color:#745f4c;line-height:1.6}
 .timeline .is-history{border-left:3px solid #a98664;background:#fcf8ef}
 .timeline .is-history-choice{border-left:3px solid #4b857c;background:#f0f8f3}
+
+
+.v12-era-ledger{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:5px}
+.v12-era-ledger p{margin:0!important;padding:9px 10px;border:1px solid #e2d4ba;border-radius:7px;background:#fffcf6;color:#5b5143;font-size:11px!important;line-height:1.55!important}
+.timeline .is-era-choice{border-left:3px solid #3e8b72;background:#f0f8f3}
+.timeline .is-era-followup{border-left:3px solid #c19569;background:#faf5eb}
+@media(max-width:560px){.v12-era-ledger{grid-template-columns:1fr}}

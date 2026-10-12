@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="./world-v5.css?v=1">
 <link rel="stylesheet" href="./world-v6.css?v=2">
 <link rel="stylesheet" href="./world-v7.css?v=1">
-<link rel="stylesheet" href="./world-v8.css?v=5">
+<link rel="stylesheet" href="./world-v8.css?v=6">
 </head>
 <body>
 <div class="app" id="app">
@@ -101,6 +101,12 @@
             <div class="stat-title">내가 살아온 시대 <span id="v10HistoricalCount">0개 역사 사건</span></div>
             <p id="v10HistoryStatus">이 시대의 사건과 개인의 경험은 다릅니다.</p>
             <p id="v10HistoryEffects">아직 남은 역사적 경험이 없습니다.</p>
+            <div class="v12-era-ledger" aria-label="시대별 교육과 직업·경제">
+              <p id="v12EducationEra">교육 환경을 확인하는 중</p>
+              <p id="v12WorkEra">그 시기의 직업과 생업</p>
+              <p id="v12EconomyEra">생활비·직업 환경은 가상 경제 점수로 계산됨</p>
+              <p id="v12ChoicesCount">시대와 연결된 중요한 선택 0회</p>
+            </div>
             <small>역사의 날짜·사실은 출처가 있는 기록입니다. 교육·이사·경제와 관련한 개인 경험은 게임에서 구성한 가상의 선택과 결과입니다.</small>
           </section>
           <a id="historySourceLink" class="history-source-link hidden" target="_blank" rel="noopener noreferrer" href="https://contents.history.go.kr/">이 시기의 역사 자료 보기</a>
@@ -285,24 +291,27 @@
 <script src="../../kidscade-game-sdk.js" data-game-id="high_one_life" data-title="단 하나의 인생" data-shell="false" data-pauseable="true" data-orientation="any"></script>
 <script src="./official-data.js?v=202610111530"></script>
 <script src="./engine.js?v=6"></script>
-<script src="./world-v2.js?v=8"></script>
+<script src="./world-v2.js?v=9"></script>
 <script src="./pixel-scene.js?v=3"></script>
 <script src="./world-v3.js?v=5"></script>
 <script src="./world-v4.js?v=1"></script>
 <script src="./world-v5.js?v=2"></script>
 <script src="./careers-v6.js?v=1"></script>
 <script src="./events-v6.js?v=1"></script>
-<script src="./world-v6.js?v=2"></script>
+<script src="./world-v6.js?v=3"></script>
 <script src="./world-v7.js?v=2"></script>
 <script src="./world-v8.js?v=3"></script>
 <script src="./scenes-v6.js?v=1"></script>
 <script src="./scenes-v8.js?v=1"></script>
 <script src="./history.js?v=1"></script>
 <script src="./world-v9.js?v=2"></script>
-<script src="./history-data-v10.js?v=1"></script>
-<script src="./history-stories-v10.js?v=1"></script>
+<script src="./history-data-v10.js?v=2"></script>
+<script src="./history-stories-v10.js?v=2"></script>
 <script src="./history-effects-v10.js?v=2"></script>
 <script src="./world-v10.js?v=1"></script>
-<script src="./game.js?v=18"></script>
+<script src="./history-choices-v11.js?v=1"></script>
+<script src="./era-policy-v12.js?v=1"></script>
+<script src="./world-v12.js?v=1"></script>
+<script src="./game.js?v=19"></script>
 </body>
 </html>

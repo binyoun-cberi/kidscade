@@ -114,7 +114,9 @@
     enrich(life);
     const m=life.money,p=life.profile,age=life.age;
     if(age<18)return;
-    const factor=COUNTRY_FACTOR(life.country)*(life.world?.economyScale||1);
+    // Historical economy coefficients are narrative game units, not reconstructed Korean won.
+    const policy=typeof window!=='undefined'?window.OneLifeEraPolicy12?.at?.(life):null;
+    const factor=COUNTRY_FACTOR(life.country)*(life.world?.economyScale||1)*(policy?.incomeFactor||1);
     const personalFactor=.58+between(life.seed,21,0,110)/100; // personal chances vary widely
     const schoolingBoost=life.world?.educationLevel==='고등 교육·훈련 수료'?1.30
       : life.world?.educationLevel==='직업훈련 수료'?1.10
@@ -146,8 +148,8 @@
       yearly=round(BASE*factor*skill*schoolingBoost*jobBoost*personalFactor*m.careerIncomeFactor*experienceBoost*(life.world6?.incomeFactor||1)
         *(.77+Math.min(25,age-19)*.012));
       const chance=life.rand();
-      const jobLossChance=(.05+(1-(life.world?.formalWorkAccess||life.country[3]||.55))*.12-(life.world?.safetyNetAccess||.4)*.025)*(arc?
-        Math.max(.40,Math.min(2.0,1-arc.security*.065+arc.careerRisk*.065)):1);
+      const jobLossChance=Math.min(.65,(.05+(1-(life.world?.formalWorkAccess||life.country[3]||.55))*.12-(life.world?.safetyNetAccess||.4)*.025+(policy?.jobDisruption||0))*(arc?
+        Math.max(.40,Math.min(2.0,1-arc.security*.065+arc.careerRisk*.065)):1));
       if(arc?.unemployedUntil>=age){
         yearly=0;m.employment='구직 중';
       }else if(chance<jobLossChance && age<62){
@@ -176,7 +178,7 @@
     // charging a full independent home at age 20 before a career choice creates forced debt.
     const studying=life.career==='학생'&&age<=24;
     const costRate=age<=20?.12:studying?householdCost*.44:m.retired===true?.56:householdCost;
-    const fixedCost=round(BASE*factor*costRate*housing);
+    const fixedCost=round(BASE*factor*costRate*housing*(policy?.costFactor||1));
     const dependent=p.child&&age>=37&&age<=56?
       round(BASE*factor*.17*(arc?.tags?.includes('care-support')?.68:1)):0;
     const tuition=studying?round(BASE*factor*.23):0;

@@ -9,7 +9,9 @@ const PERIOD_JOBS=Object.freeze({agriculture:'농업 노동자',trades:'수공�
 function career(life,sector,index,reason){
  const w=ensure(life),data=C.tracks[sector];if(!data)return false;
  const suggested=data.jobs[((index%7)+7)%7],resolved=typeof life.__v7resolveCareer==='function'?life.__v7resolveCareer(sector,suggested):suggested,
- title=life.country[0]==='대한민국'&&life.year<1990?(PERIOD_JOBS[sector]||'지역 생활 노동자'):resolved,
+ title=typeof window!=='undefined'&&window.OneLifeEraPolicy12?.careerName
+ ?window.OneLifeEraPolicy12.careerName(life,sector,index,resolved)
+ :life.country[0]==='대한민국'&&life.year<1990?(PERIOD_JOBS[sector]||'지역 생활 노동자'):resolved,
  changed=title!==w.profession;
  w.sector=sector;w.profession=title;w.incomeFactor=data.income;w.scene=C.mainScene[sector];
  life.career=title;life.world.occupation=title;
