@@ -15,6 +15,7 @@
   const World9 = window.OneLifeWorld9;
   const World10 = window.OneLifeWorld10;
   const World12 = window.OneLifeWorld12;
+  const World13 = window.OneLifeWorld13;
   const History = window.OneLifeHistory;
   const Official=window.OneLifeOfficialStats||{countries:{}};
   const metric=(key)=>life?.birthYear===2026?Official.countries?.[life?.country?.[0]]?.[key]||null:null;
@@ -24,7 +25,7 @@
       ? label+' '+Number(row.value).toLocaleString('ko-KR',{maximumFractionDigits:1})+unit+' ('+row.year+'년)'
       : label+' 자료 없음';
   };
-  if (!World2 || !Pixel || !World3 || !World4 || !World5 || !World6 || !World7 || !World8 || !World9 || !World10 || !World12 || !History) throw new Error('One Life world assets missing');
+  if (!World2 || !Pixel || !World3 || !World4 || !World5 || !World6 || !World7 || !World8 || !World9 || !World10 || !World12 || !World13 || !History) throw new Error('One Life world assets missing');
   const SAVE_KEY = 'kidscade_one_life_save_v1';
   const RECORD_KEY = 'kidscade_one_life_history_v1';
   // About 20–30 seconds of automatic years, excluding choices.
@@ -121,6 +122,7 @@
     const memories=World9.ensure(life);
     const livedEra=World10.summary(life);
     const periodLife=World12.summary(life);
+    const livedFamily=World13.summary(life);
     const people=$('v9PeopleList');people.replaceChildren();
     const ordered=[...memories.people].sort((a,b)=>Number(b.alive)-Number(a.alive));
     for(const member of ordered.slice(0,7)){
@@ -164,6 +166,15 @@
       $('v12EconomyEra').textContent='기본 가상 경제 점수 사용';
       $('v12ChoicesCount').textContent='한국 역사 선택 없음';
     }
+    $('v13CareYears').textContent='가족 돌봄 '+livedFamily.careYears+'년 · 회복·돌봄 선택 '+livedFamily.decisions+'회';
+    $('v13FamilyStatus').textContent=livedFamily.caringFor.length?
+      '현재 돌봄을 조율하는 가족 · '+livedFamily.caringFor.join(' · '):
+      livedFamily.episodes?'현재 나의 생활·건강을 돌보는 중':
+      '가족의 성장과 건강을 함께 기록합니다.';
+    $('v13LifeMemories').textContent=livedFamily.memories.length?
+      '오래 남은 기억 · '+livedFamily.memories.join(' · ')+
+        ' · 이어진 후속 사건 '+livedFamily.followups+'건':
+      '앞서 경험한 일과 관계가 이후의 인생에 연결됩니다.';
     $('nameHeadline').textContent=p.name+' · '+p.city;
     $('profileName').textContent=p.name;
     $('profileMeta').textContent=life.gender+' · '+p.city+' · '+life.age+'세';
@@ -444,7 +455,7 @@
     if(!board||!life || (!force && life.age===lastMapRenderedAge))return;
     lastMapRenderedAge=life.age;
     board.replaceChildren();
-    const notable=['decision','reflection','family','profession','world','safety','death','history','history-choice','history-impact','history-followup','era-choice','era-followup'];
+    const notable=['decision','reflection','family','profession','world','safety','death','history','history-choice','history-impact','history-followup','era-choice','era-followup','care13-choice','care13-followup','care13-memory'];
     const entries=new Map();
     for(const entry of life.log){
       if(!notable.includes(entry.kind))continue;
