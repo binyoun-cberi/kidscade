@@ -83,6 +83,11 @@
     fractionSmithBest: 'kidscade_fraction_smith_best_v1',
     mafiaPassPlaySave: 'kidscade_mafia_passplay_v1',
     cubeArchitectWorldSave: 'kidscade_cube_architect_world_v1',
+    // Preserve the exact physical keys previously used by the Cube Architect world saves.
+    cubeArchitectWorldSaveV2: 'cubeArchitectWorldSaveV2',
+    cubeArchitectWorldSaveV3: 'cubeArchitectWorldSaveV3',
+    cubeArchitectWorldSaveV4_survival: 'cubeArchitectWorldSaveV4_survival',
+    cubeArchitectWorldSaveV4_creative: 'cubeArchitectWorldSaveV4_creative',
     driverLicenseBest: 'kidscade_driver_license_best_v1',
     bodySlow3dTutorial: 'kidscade_body_slow3d_tutorial',
     driftSurvivalSaveV2: 'kidscade_drift_v2_save',
