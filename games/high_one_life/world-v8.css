@@ -114,3 +114,9 @@
 .timeline .is-era-choice{border-left:3px solid #3e8b72;background:#f0f8f3}
 .timeline .is-era-followup{border-left:3px solid #c19569;background:#faf5eb}
 @media(max-width:560px){.v12-era-ledger{grid-template-columns:1fr}}
+
+.v13-care-strip{display:grid;gap:7px;margin:10px 0 12px;padding:12px 14px;border:1px solid #cddcd3;border-radius:10px;background:#f5faf7}
+.v13-care-strip p{font-size:12px;line-height:1.6;margin:0;color:#335a52}
+.v13-care-strip small{font-size:10px;line-height:1.5;color:#627971}
+.timeline .is-care13-choice{border-left:3px solid #327e6d;background:#edf8f2}
+.timeline .is-care13-followup{border-left:3px solid #b68d53;background:#faf6ed}
