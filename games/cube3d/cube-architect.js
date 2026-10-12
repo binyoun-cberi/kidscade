@@ -1201,7 +1201,7 @@ const WORLD_VIEW_RADIUS=mobileModeEnabled?21:30;
 let streamCenterX=Infinity,streamCenterZ=Infinity;
 let gameFreeMode='survival',survivalBag={},survivalStage=0,freePhysicsY=0,legacyWorld=false,savedFreePosition=null,visitedBiomes=new Set();
 let survivalEquipment={head:'',chest:'',legs:'',feet:'',shield:''},survivalDamageCarry=0;
-let magicWorkbenchPos=null,magicWorkbenchBeacon=null,magicWorkbenchReturnAt=-60000;
+let magicWorkbenchPos=null,magicWorkbenchBeacon=null,magicWorkbenchReturnAt=-60000,magicWorkbenchHudTick=0;
 let survivalStats={},survivalFinished=false,survivalAdventureDone=new Set(),survivalExposure=0,survivalTimeAcc=0,firstNightStarted=false;
 let discoveredLandmarks=new Set(),restoredLandmarks=new Set(),unlockedTech=new Set();
 let nearLandmarkPoi=null,restorationSession=null,dungeonSession=null;
@@ -3799,7 +3799,7 @@ function markRecipeSeen(id){
   unreadRecipeIds.delete(id);updateCraftDiscoveryHud();markFreeWorldDirty(500);
 }
 function recipePossible(recipe){
-  return (!recipe.bench||hasWorkbench())&&
+  return gameFreeMode==='survival'&&hasWorkbench()&&(!recipe.bench||hasWorkbench())&&
     Object.entries(recipe.needs).every(([item,amount])=>bagCount(item)>=amount);
 }
 function recipeCategory(recipe){
@@ -3831,7 +3831,7 @@ function renderCraftTabs(recipes){
   }
 }
 function craftNeedHint(recipe){
-  if(recipe.bench&&!hasWorkbench())return '제작대 가까이로 가 보자.';
+  if(!hasWorkbench())return '마법의 직육면체 제작대 가까이로 가 보자.';
   const missing=Object.entries(recipe.needs).find(([type,n])=>bagCount(type)<n);
   if(!missing)return '다시 한번 만들어 보자.';
   const [type,n]=missing,amount=n-bagCount(type);
@@ -3840,8 +3840,8 @@ function craftNeedHint(recipe){
 }
 function showCraftSource(recipe){
   const missing=Object.entries(recipe.needs).find(([type,n])=>bagCount(type)<n);
-  if(recipe.bench&&!hasWorkbench()){
-    const p=campNearest(['workbench']);if(p){toggleInventory(false);showJourneyMarker(p);toast('노란 테두리의 제작대로 가 보자.')}return;
+  if(!hasWorkbench()){
+    const p=magicWorkbenchPos||campNearest(['workbench']);if(p){toggleInventory(false);showJourneyMarker(p);toast('노란 테두리의 제작대로 가 보자.')}return;
   }
   if(!missing)return;
   const type=missing[0],sub=worldRules.RECIPES.find(r=>r.id!==recipe.id&&r.gives[type]);
@@ -3926,15 +3926,15 @@ function buildInventory(category='전체'){
   $('blockInventory').classList.toggle('survival-inventory',survival);
   $('simpleBagTabs')?.classList.toggle('hidden',!survival);
   setSurvivalInventoryTab(survivalInventoryTab);
-  $('inventoryTitle').textContent=survival?'가방 · 제작':'건축 인벤토리';
-  $('inventorySubtitle').textContent=survival?'지금 얻은 재료와 만들 수 있는 물건만 보여요.':
+  $('inventoryTitle').textContent=survival?(survivalInventoryTab==='craft'?'마법의 직육면체 · 만들기':'내 배낭'):'건축 인벤토리';
+  $('inventorySubtitle').textContent=survival?(survivalInventoryTab==='craft'?'재료를 조합해 새 물건을 만듭니다.':'물건을 확인하고 핫바에 넣거나 장착할 수 있습니다.'):
     '선택한 재료가 현재 핫바 칸에 들어갑니다.';
   $('survivalCraftPanel').classList.toggle('hidden',!survival);
   $('survivalBagHeader')?.classList.toggle('hidden',!survival);
   $('shapeWorkbench').classList.toggle('hidden',survival?
     campActive()||!hasWorkbench():!(category==='도형'||category==='전체'));
   $('inventoryNote').textContent=survival?
-    '제작대를 설치하면 도형과 장비 제작이 열려요. 방어구·방패는 가방에서 눌러 장착하고, 검·곡괭이는 핫바에서 사용해요.':
+    (survivalInventoryTab==='craft'?'마법의 직육면체 옆에서 새 물건을 만들 수 있어요.':'배낭에서는 물건을 장착하거나 핫바에 옮겨요. 만들기는 마법의 직육면체로 가세요.'):
     '물·모래·불과 식물은 서로 다른 물리·화학적 성질을 갖고 있어요.';
   if(survival){
     const resources=Object.entries(survivalBag).filter(([type,n])=>n>0)
@@ -3977,9 +3977,8 @@ function buildInventory(category='전체'){
     }
     renderCraftDetail(filtered.find(r=>r.id===selectedCraftRecipeId)||null);
     $('survivalCraftHint').textContent=!visible.length?
-      '새 재료를 처음 얻으면 관련 제작법이 이곳에 발견됩니다.':
-      hasWorkbench()?'제작대 근처예요. 새 재료를 모으면 만들 수 있는 것이 더 늘어나요.':
-      '새 재료를 모아 제작법을 발견하세요. 제작대가 필요한 물건은 가까이에서 만들 수 있어요.';
+      '새 재료를 모으면 새로운 제작법이 열려요.':
+      hasWorkbench()?'마법의 직육면체에서 만들고 있어요.':'제작대 근처로 가서 만들 수 있어요.';
     const techLabels=poiRules.POIS.filter(p=>unlockedTech.has(p.tech.id)).map(p=>p.tech.label);
     $('survivalTechs').textContent=techLabels.length?
       '설계도 기술 · '+techLabels.join(' · '):
@@ -4004,18 +4003,18 @@ function resumeFreePointerLock(){
     if(p&&typeof p.catch==='function')p.catch(()=>{$('lockNotice')?.classList.remove('hidden')});
   }catch(_){$('lockNotice')?.classList.remove('hidden')}
 }
-function toggleInventory(force){
+function toggleInventory(force,surface='bag'){
   if(force!==false&&worksOpen)toggleBuildingWorks(false);
   if(force!==false&&lifePanelOpen)closeLifePanel();
   const wasOpen=inventoryOpen;
   inventoryOpen=typeof force==='boolean'?force:!inventoryOpen;
+  if(inventoryOpen&&gameFreeMode==='survival')survivalInventoryTab=surface==='craft'&&hasWorkbench()?'craft':'bag';
   if(inventoryOpen){
     stopMining();
     if(furnaceOpen)toggleFurnace(false);
   }
   $('blockInventory').classList.toggle('hidden',!inventoryOpen);
   if(inventoryOpen){
-    if(campActive()&&campStep()?.action==='craft')survivalInventoryTab='craft';
     if(document.pointerLockElement===canvas)document.exitPointerLock();
     buildInventory('전체');tutorialSignal('inventory-open');
   }
@@ -6259,17 +6258,11 @@ function renderSurvivalSafety(shelter){
   $('exposureFill').style.width=Math.round(survivalExposure)+'%';
   $('exposureBar').setAttribute('aria-valuenow',String(Math.round(survivalExposure)));
   $('survivalReturn').classList.toggle('hidden',survivalExposure<85||
-    performance.now()-lastEmergencyReturn<90000);
+    performance.now()-magicWorkbenchReturnAt<45000);
 }
 function emergencyReturn(){
-  if(gameFreeMode!=='survival'||survivalExposure<85||
-    performance.now()-lastEmergencyReturn<90000)return;
-  const p=survivalReturnPoint();camera.position.set(p[0],p[1],p[2]);
-  freePhysicsY=camera.position.y;
-  freeVelocityY=0;onGround=true;survivalExposure=15;survivalBreath=100;freeFallPeakY=freePhysicsY;
-  lastEmergencyReturn=performance.now();streamWorldMeshes(true);
-  toast(survivalHome?'추위를 피해 내 침대로 귀환했어요.':'시작 지점으로 귀환했어요. 재료는 잃지 않아요. 지붕과 벽을 지어 보세요.');
-  renderSurvivalSafety(null);saveFreeWorld();
+  if(gameFreeMode!=='survival'||survivalExposure<85)return;
+  if(magicWorkbenchReturn())lastEmergencyReturn=performance.now();
 }
 function groundSurfaceType(){
   const feet=freePhysicsY-1.62,x=blockCoordFromWorld(camera.position.x),z=blockCoordFromWorld(camera.position.z);
@@ -6726,10 +6719,22 @@ function updateSimpleSurvivalUi(){
   const jump=$('mobileUp'),jumpHint=jump?.querySelector('small');if(jumpHint&&!freeFlying&&!freeFluidKind&&jumpHint.textContent!=='점프')jumpHint.textContent='점프';
 }
 function setSurvivalInventoryTab(tab){
+  if(tab==='craft'&&gameFreeMode==='survival'&&!hasWorkbench()){
+    toast('만들기는 마법의 직육면체 옆에서 할 수 있어. 화면의 방향표시를 따라가 보자.');
+    updateMagicWorkbenchGuide(true);return false;
+  }
   survivalInventoryTab=tab==='craft'?'craft':'bag';
   const panel=$('blockInventory');if(!panel)return;
   panel.dataset.bagTab=survivalInventoryTab;
-  panel.querySelectorAll('[data-bag-tab]').forEach(b=>b.classList.toggle('active',b.dataset.bagTab===survivalInventoryTab));
+  panel.querySelectorAll('[data-bag-tab]').forEach(b=>{
+    b.classList.toggle('active',b.dataset.bagTab===survivalInventoryTab);
+    b.disabled=b.dataset.bagTab==='craft'&&gameFreeMode==='survival'&&!hasWorkbench();
+  });
+  if(gameFreeMode==='survival'){
+    $('inventoryTitle').textContent=survivalInventoryTab==='craft'?'마법의 직육면체 · 만들기':'내 배낭';
+    $('inventorySubtitle').textContent=survivalInventoryTab==='craft'?'재료를 조합해 새 물건을 만듭니다.':'물건을 확인하고 장착하거나 핫바에 넣을 수 있어요.';
+  }
+  return true;
 }
 function mobileDefaultAction(){
   if(mode!=='free'||gameFreeMode!=='survival')return;
@@ -6989,6 +6994,7 @@ function campContext(){
     worldRules.shelterAt(getBlock,camera.position.x,feet,camera.position.z).playerBuilt;
   return {stats:survivalStats,bag:survivalBag,inventoryOpen,bagOpened:survivalCamp.completed.includes('bag'),
     moved:campWalkStart?Math.hypot(camera.position.x-campWalkStart[0],camera.position.z-campWalkStart[1]):0,
+    workbenchOpened:!!survivalCamp.workbenchOpened,
     atWalkTarget:Math.hypot(camera.position.x-3,camera.position.z-5)<.9,
     walked:survivalStage>0,shelterComplete:campShelterComplete(),insideShelter,baseline:survivalCamp.baseline};
 }
@@ -6998,7 +7004,8 @@ function campTarget(step){
   if(step.id==='walk')return [3,3,5];
   if(step.id==='wood')return campNearest(['log','pineLog']);
   if(step.id==='stone')return campNearest(['stone']);
-  if(step.id==='benchPlace')return survivalCamp.prepared&&!getBlock(2,3,3)?[2,3,3]:null;
+  if(step.id==='benchFind')return magicWorkbenchPos;
+
   if(step.id==='shelter')return campShelterPlan().find(p=>{
     const d=getBlock(...p);return !(d?.playerBuilt&&worldRules.shelterBlock(d));
   })||null;
@@ -7027,14 +7034,15 @@ function updateCampMarker(step){
 function campInstruction(step){
   const mobile=mobileModeEnabled;
   if(step.id==='walk')return mobile?'왼쪽 동그라미로 움직여 보자. 화면을 밀면 주변을 볼 수 있어.':'화면을 누르고 W·A·S·D로 움직여 보자. 마우스로 주변을 볼 수 있어.';
-  if(step.id==='bag')return mobile?'위쪽 가방 버튼을 눌러 보자.':'E를 눌러 가방을 열어 보자.';
+  if(step.id==='bag')return mobile?'위쪽 배낭 버튼을 눌러 보자.':'E를 눌러 배낭을 열어 보자.';
+  if(step.id==='benchFind')return mobile?'◆ 방향표시를 따라가서 제작대를 바라보고 행동에서 사용을 눌러 보자.':'◆ 방향표시를 따라가서 마법의 직육면체를 바라보고 마우스 오른쪽 버튼을 눌러 보자.';
   if(step.id==='inside')return '완성한 쉼터의 노란 고리로 들어가서 잠깐 서 보자. 지붕 바로 아래가 목적지야.';
   if(step.recipe){
     const recipe=worldRules.RECIPES.find(r=>r.id===step.recipe);
-    if(recipe?.bench&&!hasWorkbench())return '제작대 가까이로 가 보자.';
+    if(!hasWorkbench())return '마법의 직육면체로 가서 만들기 화면을 열어 보자.';
     const missing=Object.entries(recipe?.needs||{}).find(([type,n])=>bagCount(type)<n);
     if(missing)return blockDef(missing[0]).name+' '+(missing[1]-bagCount(missing[0]))+'개가 더 필요해. '+(mobile?'도움 받기를 눌러 보자.':'H를 눌러 도움을 받아 보자.');
-    if(!inventoryOpen)return mobile?'가방을 열고 '+recipe.name+'를 골라 보자.':'E로 가방을 열고 '+recipe.name+'를 골라 보자.';
+    if(!inventoryOpen)return mobile?'제작대를 눌러 만들기 화면을 열어 보자.':'제작대를 오른쪽 클릭해서 만들기 화면을 열어 보자.';
     return recipe.name+'를 고른 뒤 만들기를 눌러 보자.';
   }
   if(step.action==='harvest'){
@@ -7062,6 +7070,7 @@ function campFocus(step){
   if(step.recipe&&inventoryOpen)return '[data-recipe-id="'+step.recipe+'"]';
   if(step.id==='bag'||step.recipe)return mobileModeEnabled?'#mobileInventory':null;
   if(step.action==='walk')return mobileModeEnabled?'#mobileJoystick':null;
+  if(step.id==='benchFind')return '#magicWorkbenchGuide';
   if(step.action==='harvest'||step.action==='place'||step.action==='shelter')
     return mobileModeEnabled?'#mobileInteract':null;
   return null;
@@ -7109,11 +7118,21 @@ function renderCampQuest(step){
   $('adventureBar').style.width=(step.id==='done'?100:Math.max(0,(step.chapter||1)-1)/7*100)+'%';
   $('freeHint').textContent=step.id==='welcome'?'차근차근 함께 해 보자.':campInstruction(step);
   $('freeMission').classList.add('camp-quest');
+  updateMagicWorkbenchGuide();
   $('explorationHint').classList.add('hidden');
 }
 function campHelp(step){
   campHelpTarget=null;
+  if(step.id==='benchFind'){
+    toggleInventory(false);campHelpTarget=magicWorkbenchPos;updateCampMarker(step);updateMagicWorkbenchGuide(true);
+    toast('◆ 마법의 직육면체로 가서 제작대를 사용해 보자.');return;
+  }
   if(step.recipe){
+    if(!hasWorkbench()){
+      toggleInventory(false);campHelpTarget=magicWorkbenchPos||campNearest(['workbench']);
+      updateCampMarker(step);updateMagicWorkbenchGuide(true);
+      toast('◆ 마법의 직육면체로 가서 만들기 화면을 열어 보자.');return;
+    }
     let recipe=worldRules.RECIPES.find(r=>r.id===step.recipe);
     if(recipe.bench&&!hasWorkbench()){
       if(!campNearest(['workbench'])){
@@ -7127,7 +7146,7 @@ function campHelp(step){
       toggleInventory(false);putOnHotbar('hand');campHelpTarget=campEnsurePracticeTree();
       toast('노란 테두리의 나무에서 원목을 더 얻어 보자.');updateCampMarker(step);return;
     }
-    survivalCraftCategory='전체';selectedCraftRecipeId=recipe.id;survivalInventoryTab='craft';toggleInventory(true);
+    survivalCraftCategory='전체';selectedCraftRecipeId=recipe.id;survivalInventoryTab='craft';toggleInventory(true,'craft');
     const button=tutorialTarget('[data-recipe-id="'+recipe.id+'"]');tutorialClearFocus();
     if(button){button.classList.add('tutorial-focus');tutorialFocusEl=button;button.scrollIntoView({block:'nearest'})}
     toast(recipe.name+'를 골랐어. 재료를 확인하고 만들어 보자.');return;
@@ -7160,7 +7179,7 @@ function showSurvivalCamp(force=false){
   chooseCampSite();
   const steps=window.CubeArchitectCamp.STEPS.map((step,i)=>({...step,chapter:i<1?1:i<2?2:i<5?3:i<6?4:i<10?5:i<12?6:7}));
   const resume=survivalCamp.completed.length>0||survivalStage>0;
-  tutorialState={camp:true,kind:'free',index:0,steps:resume?steps:[{id:'welcome',title:'함께 첫 집을 지어 보자',text:'나무를 모으고, 곡괭이를 만들고, 작은 쉼터를 지어 보자. 연습하는 동안은 안전해.',chapter:1},...steps]};
+  tutorialState={camp:true,kind:'free',index:0,steps:resume?steps:[{id:'welcome',title:'함께 첫 집을 지어 보자',text:'마법의 직육면체에서 물건을 만들고, 곡괭이와 작은 쉼터를 만들어 보자. 연습하는 동안은 안전해.',chapter:1},...steps]};
   survivalCamp.dismissed=false;
   dayTime=.35;setWeather('clear',false);
   if(survivalCamp.finished){tutorialState.steps=steps.filter(s=>s.id==='done')}
@@ -7473,6 +7492,7 @@ function animate(now){
   if(mode==='dungeon')updateDungeon(dt);
   if(mode==='free'){
     updateFree(dt,now);animateCampfireVisuals(now);
+    if(now-magicWorkbenchHudTick>180){magicWorkbenchHudTick=now;updateMagicWorkbenchGuide()}
     if(freeSaveDirty){
       if(now>=freeSaveDueAt)saveFreeWorld();
     }else if(now-lastFreeSave>30000)saveFreeWorld();
