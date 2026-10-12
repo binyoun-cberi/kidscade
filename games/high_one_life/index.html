@@ -102,6 +102,13 @@
           <div class="controls">
             <div class="controls-label"><b>인생의 시간</b><span>빠른 자동 진행</span></div>
             <button id="pauseBtn" class="pause" type="button">Ⅱ 일시정지</button>
+            <div class="v9-speed-controls" role="group" aria-label="인생 진행 배속">
+              <button type="button" data-life-speed="1" aria-pressed="true">1배</button>
+              <button type="button" data-life-speed="2" aria-pressed="false">2배</button>
+              <button type="button" data-life-speed="4" aria-pressed="false">4배</button>
+              <button type="button" data-life-speed="8" aria-pressed="false">8배</button>
+              <button id="v9NextChoice" type="button">다음 선택까지</button>
+            </div>
             <p class="hint">선택지가 나타나면 시간이 자동으로 멈춥니다. 화면을 닫거나 다른 앱으로 이동하면 일시정지됩니다.</p>
           </div>
           <figure class="pixel-frame">
@@ -286,6 +293,6 @@
 <script src="./scenes-v8.js?v=1"></script>
 <script src="./history.js?v=1"></script>
 <script src="./world-v9.js?v=1"></script>
-<script src="./game.js?v=16"></script>
+<script src="./game.js?v=17"></script>
 </body>
 </html>
