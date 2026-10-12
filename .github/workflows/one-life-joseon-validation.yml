@@ -1,0 +1,28 @@
+name: One Life Joseon historical play validation
+on:
+  push:
+    branches:
+      - feat/one-life-joseon-first-playable-20261012
+    paths:
+      - 'games/high_one_life/**'
+      - 'tests/one-life-*.test.cjs'
+      - '.github/workflows/one-life-joseon-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  life-history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check Joseon and modern script syntax
+        run: |
+          node --check games/high_one_life/joseon-v14.js
+          node --check games/high_one_life/engine.js
+          node --check games/high_one_life/game.js
+      - name: Simulate Joseon and run legacy lifespan tests
+        run: node --test tests/one-life-joseon.test.cjs tests/one-life-v13.test.cjs tests/one-life-v12.test.cjs tests/one-life-v10.test.cjs tests/one-life-historical.test.cjs tests/one-life-screen-flow.test.cjs
