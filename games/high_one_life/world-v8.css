@@ -80,3 +80,14 @@
 #birthEraNote{font-size:11px;color:#77563e}
 @media(max-width:390px){.historical-picker{padding:11px}.historical-picker-fields{grid-template-columns:1fr}.era-presets button{font-size:11px}}
 .history-source-link{display:inline-block;font-size:12px;line-height:1.5;color:#176b65;margin-bottom:8px;text-decoration:underline;text-underline-offset:2px}
+
+
+.v9-living-people{padding:12px;border:1px solid #ccdcd3;border-radius:11px;margin:13px 0;background:#f4faf7}
+.v9-people-list{margin:9px 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.v9-people-list li{font-size:11px;background:#fff;border:1px solid #d7e5df;padding:8px;border-radius:7px}
+.v9-memory-caption{font-size:12px;margin:6px 0;padding:7px 9px;background:#e8f3eb;color:#375c54;border-radius:7px}
+.v9-living-people>small{color:#577168;font-size:10px}
+.v9-chronicle-tools{display:flex;justify-content:space-between;gap:12px;margin:10px 0;align-items:center;font-size:12px}
+.v9-chronicle-tools button{min-height:35px;border:1px solid #a9c9bb;border-radius:7px;padding:6px 11px;background:#e8f2ed}
+.v9-chronicle-tools button[hidden]{display:none}
+@media(max-width:410px){.v9-people-list{grid-template-columns:1fr}}
