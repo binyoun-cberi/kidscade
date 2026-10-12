@@ -75,7 +75,7 @@ load(PEOPLE+'Chef_Male.gltf',2.22,-.1,0,.43,0).then(async obj=>{
  else console.warn('Midnight diner: chef asset missing, illustrated fallback remains visible');
 });
 // Use course-appropriate 3D props: the previous dango/cupcake did not match the skewer/cake on the eating plate.
-const foods=[F+'pancakes-stack.glb',S+'ramen.glb',FOOD_ITEMS+'skewer.glb',S+'gyoza.glb',FOOD_ITEMS+'cake-slicer.glb'];
+const foods=[F+'pancakes-stack.glb',FOOD_ITEMS+'bowl-soup.glb',FOOD_ITEMS+'skewer.glb',S+'gyoza.glb',FOOD_ITEMS+'cake.glb'];
 async function setCourse(index){
  const old=food;food=null;if(old)scene.remove(old);
  const next=await load(foods[index]||foods[0],.36,1.35,1.21,-.45,-.25);
