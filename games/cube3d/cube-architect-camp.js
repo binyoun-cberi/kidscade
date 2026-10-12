@@ -28,6 +28,9 @@ function satisfied(id,c){
   case 'bag':return c.inventoryOpen||c.bagOpened;
   case 'planks':return (crafted.planks||0)>0;
   case 'benchFind':return !!c.workbenchOpened;
+  // Older saved milestones are still recognized, but no longer mandatory lessons.
+  case 'benchCraft':return (crafted.workbench||0)>0||(bag.workbench||0)>0||(placed.workbench||0)>0;
+  case 'benchPlace':return (placed.workbench||0)>0;
   case 'morePlanks':return (bag.planks||0)>=4||(crafted.woodPick||0)>0;
   case 'sticks':return (crafted.sticks||0)>0||(bag.sticks||0)>=2||(crafted.woodPick||0)>0;
   case 'pick':return (crafted.woodPick||0)>0||(bag.woodPick||0)>0;
