@@ -5116,6 +5116,58 @@ function pickTargetBlock(){
   if(!PLACEABLE_TYPES.includes(type))return;
   hotbarTypes[selectedHotbarSlot]=type;selectedType=type;buildHotbar();toast(blockDef(type).name+'을(를) 선택했어요.');
 }
+let cuboidCompareProblem=null,cuboidCompareAnswered=false;
+function renderCuboidComparison(dims){
+  const math=window.CubeArchitectMath;
+  const original=math.measurements(dims),other=math.equalVolumeAlternative(dims);
+  const fallback=!other,base=fallback?math.measurements([2,3,4]):original;
+  const alt=fallback?math.equalVolumeAlternative([2,3,4]):other;
+  cuboidCompareProblem={base,alt,fallback};
+  cuboidCompareAnswered=false;
+  $('cuboidCompareOptions').innerHTML='';
+  for(const [label,entry] of [['A',base],['B',alt]]){
+    const card=document.createElement('div');
+    card.className='cuboid-compare-shape';
+    const title=document.createElement('strong');title.textContent=label+' · '+entry.dimensions.join(' × ');
+    const detail=document.createElement('small');
+    detail.textContent='블록 '+entry.volume+'개 · 겉넓이 ?';
+    card.append(title,detail);$('cuboidCompareOptions').appendChild(card);
+  }
+  $('cuboidCompareFeedback').textContent=(fallback?'연습 문제 · ':'현재 설계와 비교 · ')+
+    '같은 블록 '+base.volume+'개라면, 겉면을 칠할 가상 페인트는 어느 쪽이 적게 들까? (밑면 포함)';
+  $('cuboidCompareApply').classList.add('hidden');
+}
+function answerCuboidComparison(choice){
+  if(!cuboidCompareProblem)return;
+  const {base,alt,fallback}=cuboidCompareProblem;
+  const correct=base.area<alt.area?'A':'B';
+  cuboidCompareAnswered=true;
+  const good=choice===correct;
+  const text='A: '+base.area+'cm² · B: '+alt.area+'cm². 블록은 둘 다 '+
+    base.volume+'개지만 '+correct+'의 겉넓이가 '+Math.abs(base.area-alt.area)+
+    'cm² 작아. 따라서 겉면 한 칸씩 색칠한다면 페인트도 그만큼 덜 필요해.';
+  $('cuboidCompareFeedback').textContent=(good?'맞았어! ':'다르게 생각해 보자. ')+text;
+  for(const [i,entry] of [base,alt].entries()){
+    const detail=$('cuboidCompareOptions').children[i]?.querySelector('small');
+    if(detail)detail.textContent='블록 '+entry.volume+'개 · 겉넓이 '+entry.area+'cm²';
+  }
+  const apply=$('cuboidCompareApply');
+  if(!fallback&&correct==='B'){
+    apply.classList.remove('hidden');
+    const unlocked=alt.dimensions.every(d=>d<=survivalCuboidMax());
+    apply.disabled=!unlocked;
+    apply.textContent=unlocked?'더 적게 칠하는 B 설계로 변경':
+      'B 설계는 더 큰 치수 기술이 열리면 제작 가능';
+  }else apply.classList.add('hidden');
+}
+function applyCuboidComparison(){
+  const p=cuboidCompareProblem;if(!cuboidCompareAnswered||!p||p.fallback||p.alt.area>=p.base.area||
+    p.alt.dimensions.some(d=>d>survivalCuboidMax()))return;
+  const [w,h,d]=p.alt.dimensions;
+  $('shapeW').value=w;$('shapeH').value=h;$('shapeD').value=d;
+  updateCuboidMathPrompt();
+  $('cuboidCompareFeedback').textContent='재료가 절약되는 치수로 바꿨어. 원하면 현재 칸에 직육면체를 담아 건축해 보자.';
+}
 function shapeMathDimensions(){
   const limit=survivalCuboidMax();
   return [$('shapeW').value,$('shapeH').value,$('shapeD').value]
@@ -5127,6 +5179,7 @@ function updateCuboidMathPrompt(){
     ' · 한 층 '+(w*d)+'칸 × '+h+'층 · 면은 6개';
   $('cuboidMathFeedback').textContent='층별 큐브 수를 더하고, 서로 마주 보는 같은 면을 세어 보자.';
   $('cuboidVolumeGuess').value='';$('cuboidAreaGuess').value='';
+  renderCuboidComparison(dims);
 }
 function checkCuboidMath(reveal=false){
   const dims=shapeMathDimensions(),[w,h,d]=dims;
@@ -5148,6 +5201,9 @@ function setupShapeWorkbench(){
   for(const id of ['shapeW','shapeH','shapeD'])$(id).addEventListener('input',updateCuboidMathPrompt);
   $('cuboidMathCheck').onclick=()=>checkCuboidMath(false);
   $('cuboidMathShow').onclick=()=>checkCuboidMath(true);
+  $('cuboidCompareA').onclick=()=>answerCuboidComparison('A');
+  $('cuboidCompareB').onclick=()=>answerCuboidComparison('B');
+  $('cuboidCompareApply').onclick=applyCuboidComparison;
   $('freeSelectShape').onclick=selectFreeGeometry;
   $('freeEdgeMode').onclick=()=>{freeElementMode='edge';updateFreeGeometryEditor()};
   $('freeVertexMode').onclick=()=>{freeElementMode='vertex';updateFreeGeometryEditor()};
