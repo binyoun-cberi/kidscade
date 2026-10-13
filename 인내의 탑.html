@@ -227,6 +227,7 @@
     <div class="pill">현재 <b id="heightNow">0m</b></div>
     <div class="pill">최고 <b id="heightBest">0m</b></div>
     <div class="pill">낙하 <b class="red" id="fallNow">0m</b></div>
+    <div class="pill" title="공중에서 바람이 플레이어를 미는 방향과 세기">바람 <b id="windNow">고요</b></div>
     <div class="pill">모드 <b id="modeText">분노</b></div>
   </div>
 
@@ -262,6 +263,7 @@
       </div>
       <div class="hint">
         조작: A/D 또는 ←/→ 이동 · Space/W/↑ 점프 · 점프키를 짧게/길게 눌러 높이 조절<br>
+        바람 표시를 읽고 공중에서 반대 방향을 눌러 이동 경로를 조절해 보세요.<br>
         R: 완전 재시작 / 체크포인트 복귀 · P: 일시정지 · M: 소리 끄기
       </div>
     </div>
@@ -289,6 +291,7 @@
     heightNow: document.getElementById("heightNow"),
     heightBest: document.getElementById("heightBest"),
     fallNow: document.getElementById("fallNow"),
+    windNow: document.getElementById("windNow"),
     modeText: document.getElementById("modeText"),
     menu: document.getElementById("menu"),
     startBtn: document.getElementById("startBtn"),
@@ -887,6 +890,13 @@
     ui.heightNow.textContent = `${mNow}m`;
     ui.heightBest.textContent = `${state.bestMeter}m`;
     ui.fallNow.textContent = `${fallingLoss}m`;
+    const currentWind = windAtY(player.y);
+    if (Math.abs(currentWind) < 1) ui.windNow.textContent = "고요";
+    else {
+      const strength = Math.abs(currentWind) < 70 ? "약" : Math.abs(currentWind) < 100 ? "중" : "강";
+      ui.windNow.textContent = `${currentWind > 0 ? "→ 오른쪽" : "← 왼쪽"} · ${strength}`;
+      ui.windNow.title = `바람이 공중 이동에 더하는 속도: ${Math.round(Math.abs(currentWind))} 게임 단위/초`;
+    }
     ui.modeText.textContent = state.practice ? "연습" : "분노";
   }
 

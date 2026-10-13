@@ -42,8 +42,12 @@ kbd{display:inline-block;min-width:28px;text-align:center;padding:2px 6px;border
 #serveGaugeTrack{height:18px;border:2px solid rgba(255,255,255,.8);border-radius:999px;padding:2px;background:rgba(255,255,255,.12);overflow:hidden}
 #serveGaugeFill{width:0%;height:100%;border-radius:999px;background:linear-gradient(90deg,#22c55e 0%,#facc15 55%,#fb923c 78%,#ef4444 100%);transition:width .03s linear;box-shadow:0 0 16px rgba(250,204,21,.28)}
 #serveGaugeHint{margin-top:6px;font-size:11px;font-weight:800;opacity:.78}
+.learning-option{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border:1px solid rgba(250,204,21,.45);border-radius:14px;background:rgba(250,204,21,.08);color:#e2e8f0;font-size:13px;line-height:1.45;font-weight:750}.learning-option input{width:19px;height:19px;flex:0 0 auto;accent-color:#facc15}.learning-option:has(input:disabled){opacity:.48}
+#landingPrompt{position:absolute;left:50%;bottom:clamp(118px,20vh,154px);transform:translateX(-50%);z-index:6;width:min(390px,92vw);padding:11px;border:1px solid rgba(250,204,21,.65);border-radius:16px;background:rgba(7,16,32,.94);box-shadow:0 12px 32px rgba(0,0,0,.3);text-align:center}
+#landingPrompt[hidden]{display:none!important}#landingPrompt p{margin:0 0 8px;font-size:13px;font-weight:900}#landingChoices{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}#landingChoices button{min-height:42px;padding:8px 4px;border:1px solid #64748b;border-radius:11px;background:#1e293b;color:white;font-size:12px;font-weight:900}
 @media (hover:hover) and (pointer:fine){#touch{display:none}}
-@media (max-width:560px){.panel{padding:18px}.options,.keys{grid-template-columns:1fr}.score{min-width:88px;padding:8px 9px}.grid{grid-template-columns:1fr 1fr}#pauseBtn{top:76px}}
+@media (hover:hover) and (pointer:fine){#landingPrompt{bottom:18px}}
+@media (max-width:560px){.panel{padding:18px}.options,.keys{grid-template-columns:1fr}.score{min-width:88px;padding:8px 9px}.grid{grid-template-columns:1fr 1fr}#pauseBtn{top:76px}#landingPrompt{bottom:clamp(118px,24vh,152px)}}
 </style>
 </head>
 <body>
@@ -59,6 +63,7 @@ kbd{display:inline-block;min-width:28px;text-align:center;padding:2px 6px;border
   <div class="score" id="score2"><small>파랑 팀</small><span>0</span></div>
 </div>
 <div id="serveText"></div>
+<section id="landingPrompt" hidden aria-live="polite"><p>공이 초록 코트 어디에 떨어질까요?</p><div id="landingChoices"><button type="button" data-landing="back">바깥쪽</button><button type="button" data-landing="middle">가운데</button><button type="button" data-landing="net">네트 쪽</button></div></section>
 <div id="serveGauge" class="hidden" aria-hidden="true">
   <div id="serveGaugeLabel">서브 파워 0%</div>
   <div id="serveGaugeTrack"><div id="serveGaugeFill"></div></div>
@@ -85,6 +90,7 @@ kbd{display:inline-block;min-width:28px;text-align:center;padding:2px 6px;border
       <button class="mode" type="button" data-mode="practice">조작 연습</button>
       <button class="mode" type="button" id="helpBtn">조작 설명</button>
     </div>
+    <label class="learning-option"><input id="landingPredictionChk" type="checkbox"><span><b>공의 낙하지점 예상하기</b><br>상대가 공을 넘기면 방향과 속도를 보고 떨어질 곳을 골라요. 2인 대전에서는 꺼져요.</span></label>
     <div class="options">
       <label class="field">CPU 난이도<select id="difficulty"><option value="easy">쉬움</option><option value="normal" selected>보통</option><option value="hard">어려움</option><option value="boss">보스</option></select></label>
       <label class="field">승리 점수<select id="target"><option>5</option><option selected>7</option><option>11</option></select></label>
@@ -115,7 +121,7 @@ kbd{display:inline-block;min-width:28px;text-align:center;padding:2px 6px;border
   </div>
 </div>
 </div>
-<script src="./game.js?v=19"></script>
+<script src="./game.js?v=20"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_seed_volleyball" data-title="씨앗 배구" data-shell="true" data-mute="false" data-orientation="landscape"></script>
 </body>
 </html>

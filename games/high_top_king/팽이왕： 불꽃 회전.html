@@ -46,6 +46,7 @@ button{font:inherit}
 #combo span{font-size:15px;font-weight:900;letter-spacing:.12em}
 #guide{position:absolute;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translateX(-50%);padding:11px 17px;border-radius:999px;background:rgba(8,17,34,.7);border:1px solid rgba(255,255,255,.18);color:white;font-weight:800;font-size:13px;max-width:calc(100vw - 24px);width:max-content;white-space:normal;text-align:center;line-height:1.45;opacity:1;transition:opacity .35s}
 #guide.hide{opacity:0}
+.learning-toggle{display:flex;align-items:flex-start;gap:10px;margin:14px 0 0;padding:12px 14px;border:1px solid #c6d5f2;border-radius:15px;background:#f0f5ff;color:#344461;text-align:left;font-size:13px;line-height:1.5;font-weight:750}.learning-toggle input{width:19px;height:19px;flex:0 0 auto;accent-color:#4269db}
 .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(rgba(6,14,30,.2),rgba(6,14,30,.52));backdrop-filter:blur(4px)}
 .panel{width:min(560px,100%);max-height:calc(100vh - 36px);overflow:auto;padding:clamp(22px,5vw,42px);border-radius:32px;background:linear-gradient(160deg,#fffefb,#fff7e7);box-shadow:var(--shadow);border:3px solid rgba(255,255,255,.85);text-align:center}
 .eyebrow{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:999px;background:#ffead5;color:#bd4a24;font-size:12px;font-weight:1000;letter-spacing:.08em}
@@ -142,6 +143,7 @@ button{font:inherit}
       <button class="primary" id="startBtn">회전 시작</button>
       <div class="mini-row"><span>터치·마우스 지원</span><span>최고 기록 자동 저장</span></div>
       <div class="how">① 노란 표시에서 팽이 중심으로 짧게 쓸어 회전력과 균형을 회복하세요. ② 정확하게 쓸면 푸른 방어막이 잠시 생겨 CPU 충돌 피해를 줄여 줍니다. ③ 가장자리에서는 중앙으로 쓸어 복귀하세요. ④ 처음 한 번은 가장자리에서 튕겨 돌아올 수 있지만, 연속으로 밀리면 탈락합니다. 마구 연타하면 균형이 무너집니다.</div>
+      <label class="learning-toggle"><input id="learningFeedback" type="checkbox" checked><span><b>회전 원리 힌트 보기</b><br>쓸어 친 방향과 세기가 회전력·균형을 어떻게 바꾸는지 알려줘요.</span></label>
     </div>
   </div>
 
@@ -196,7 +198,7 @@ const UI = {
   combo: $('#combo'), comboNum: $('#comboNum'), guide: $('#guide'),
   resultTime: $('#resultTime'), resultScore: $('#resultScore'), resultTitle: $('#resultTitle'), resultEyebrow: $('#resultEyebrow'),
   newRecord: $('#newRecord'), bestTimeResult: $('#bestTimeResult'), bestScoreResult: $('#bestScoreResult'),
-  soundBtn: $('#soundBtn'), cpuMini: $('#cpuMini')
+  soundBtn: $('#soundBtn'), cpuMini: $('#cpuMini'), learningFeedback: $('#learningFeedback')
 };
 
 const palettes = [
@@ -222,6 +224,8 @@ let collisionCount = 0;
 let lastCollisionAt = -99;
 let guardBlocks = 0;
 let edgeRescues = 0;
+let strikeStats={hits:0,centered:0,wellTimed:0};
+const GUIDE_TEXT='노란 표시에서 중심으로 쓸어 회복하세요. CPU 돌진 전에 정확히 치면 방어!';
 
 const MATCH_GOAL_SECONDS=150;
 const TOP_KING_RECORD_KEY='kidscade_top_king_record_v1';
@@ -532,6 +536,7 @@ resize();
 function resetGame(){
   elapsed=0;score=0;combo=0;bestCombo=0;lastHitAt=-99;fallTimer=0;guideTimer=0;shake=0;
   collisionCount=0;lastCollisionAt=-99;guardBlocks=0;edgeRescues=0;
+  strikeStats={hits:0,centered:0,wellTimed:0};
   top.x=.48;top.y=0;top.z=.15;top.vx=0;top.vz=0;top.angle=0;top.spin=19;top.wobble=0.03;top.wobblePhase=0;
   top.balance=1;top.targetAngle=Math.random()*Math.PI*2;top.targetSpeed=.9+Math.random()*.4;top.lastStrikeMs=-9999;
   top.guardUntil=-1;top.guardLevel=0;top.lastEdgeSave=-99;
@@ -541,6 +546,7 @@ function resetGame(){
   arena.currentEdge=arena.baseEdge;arena.scale=1;
   particles.length=0;streaks.length=0;shockwaves.length=0;
   deleteMesh(topMesh);topMesh=createTopMesh(palettes[chosenPalette]);
+  UI.guide.textContent=GUIDE_TEXT;
   UI.guide.classList.remove('hide');
   updateHud();
 }
@@ -580,6 +586,13 @@ function endGame(reason='stop'){
   localStorage.setItem(TOP_KING_RECORD_KEY,JSON.stringify({time:bestTime,score:bestScore}));
   UI.resultTime.textContent=elapsed.toFixed(1)+'초';
   UI.resultScore.textContent=`CPU 충돌 ${collisionCount}회 · 방어 ${guardBlocks}회 · 링 복귀 ${edgeRescues}회 · 점수 ${Math.round(score).toLocaleString()}점 · 최고 콤보 ${bestCombo}`;
+  if(UI.learningFeedback.checked){
+    const denominator=Math.max(1,strikeStats.hits);
+    const accuracy=Math.round(strikeStats.wellTimed/denominator*100);
+    UI.resultScore.textContent+=`\n중심 방향 ${strikeStats.centered}/${strikeStats.hits}회 · 표시 방향 타이밍 ${strikeStats.wellTimed}/${strikeStats.hits}회`;
+    UI.resultScore.style.whiteSpace='pre-line';
+    UI.resultScore.textContent+=strikeStats.hits===0?'\n다음 판에는 노란 표시가 가리키는 쪽에서 중심으로 쓸어보세요.':accuracy>=60?'\n정확한 타격은 균형을 지키고 방어 기회를 만들어요.':'\n노란 표시 방향을 보고, 팽이 중심을 향해 천천히 쓸어보세요.';
+  }else UI.resultScore.style.whiteSpace='';
   UI.bestTimeResult.textContent=bestTime.toFixed(1)+'초';
   UI.bestScoreResult.textContent=Math.round(bestScore).toLocaleString();
   UI.resultTitle.textContent=reason==='champion'?'불꽃 팽이왕 등극!':reason==='fall'
@@ -674,6 +687,7 @@ function tryStrike(x1,y1,x2,y2,dtMs){
   top.lastStrikeMs=nowMs;
 
   const add=(1.25+force*3.35)*(0.48+timingScore*.82);
+  const spinBefore=top.spin,balanceBefore=top.balance;
   top.spin=Math.min(38,top.spin+add);
 
   const nx=dx/len,ny=dy/len;
@@ -696,6 +710,16 @@ function tryStrike(x1,y1,x2,y2,dtMs){
   const balanceGain=timingScore*.16*accuracy;
   const balanceLoss=(1-timingScore)*(.06+force*.07)+rapid*.05+Math.max(0,force-1)*.04;
   top.balance=Math.max(0,Math.min(1,top.balance+balanceGain-balanceLoss));
+  if(UI.learningFeedback.checked){
+    strikeStats.hits++;
+    if(directionMatch>.7)strikeStats.centered++;
+    if(sideMatch>.7&&accuracy>.38&&rapid<.48)strikeStats.wellTimed++;
+    const directionHint=directionMatch>.7?'중심을 향한 쓸기예요':'팽이 중심을 향해 쓸어보세요';
+    const timingHint=sideMatch>.7?'표시 방향에 맞았어요':'노란 표시 방향을 기다려 보세요';
+    const spinDelta=(top.spin-spinBefore).toFixed(1),balanceDelta=Math.round((top.balance-balanceBefore)*100);
+    UI.guide.textContent=`${directionHint} · ${timingHint} · 회전력 +${spinDelta}, 균형 ${balanceDelta>=0?'+':''}${balanceDelta}%`;
+    UI.guide.classList.remove('hide');guideTimer=0;
+  }
   top.wobble=Math.max(.025,top.wobble-.032*timingScore+.035*(1-timingScore));
   // Reward precision, not swipe spam: a temporary guard can block one CPU hit.
   if(accuracy>.38 && timingScore>.57 && rapid<.48){
@@ -717,7 +741,7 @@ function tryStrike(x1,y1,x2,y2,dtMs){
   UI.combo.classList.add('show');
   clearTimeout(UI.combo._timer);
   UI.combo._timer=setTimeout(()=>UI.combo.classList.remove('show'),540);
-  guideTimer=99;UI.guide.classList.add('hide');
+  if(!UI.learningFeedback.checked){guideTimer=99;UI.guide.classList.add('hide')}
 
   const good=timingScore>.62;
   addStreak(x1,y1,x2,y2,good?'rgba(255,220,80,.95)':'rgba(255,115,85,.75)');

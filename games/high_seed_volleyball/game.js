@@ -7,6 +7,7 @@ const canvas=document.getElementById('game'),ctx=canvas.getContext('2d',{alpha:f
 const DPR=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);ctx.imageSmoothingEnabled=true;
 const menu=document.getElementById('menu'),result=document.getElementById('result'),help=document.getElementById('help'),pauseLayer=document.getElementById('pauseLayer');
 const app=document.getElementById('app'),tip=document.getElementById('tip'),pad2=document.getElementById('pad2'),serveText=document.getElementById('serveText'),serveGauge=document.getElementById('serveGauge'),serveGaugeFill=document.getElementById('serveGaugeFill'),serveGaugeLabel=document.getElementById('serveGaugeLabel');
+const landingPrompt=document.getElementById('landingPrompt');
 const scoreEls=[document.querySelector('#score1 span'),document.querySelector('#score2 span')],rallyEl=document.getElementById('rallyInfo');
 const keys=Object.create(null),touch=Object.create(null);
 const inputCache=[{l:false,r:false,j:false,s:false,aim:0},{l:false,r:false,j:false,s:false,aim:0}];
@@ -20,6 +21,8 @@ function lerp(a,b,t){return a+(b-a)*t}
 let mode='cpu',difficulty='normal',target=7,playing=false,paused=false,last=0,acc=0,practice=false,simTime=0,renderDirty=true;
 let score=[0,0],serveSide=0,rally=0,bestRally=Number(localStorage.getItem('seedVolleyBestRally')||0),hintTimer=0;
 let phase='serve',phaseTimer=.9,shake=0,particles=[],trailTimer=0,practiceStage=0;
+let landingPredictionEnabled=false,landingPredictionAvailable=false,predictionOpen=false,predictedLandingX=null;
+let landingPredictionStats={attempts:0,correct:0};
 
 function player(side){
  return {side,x:side===0?250:710,y:GROUND-48,w:72,h:96,vx:0,vy:0,onGround:true,state:'GROUND',jumpLatch:false,smashLatch:false,attack:0,slideTimer:0,recover:0,land:0,run:0,face:side===0?1:-1,touches:0};
@@ -181,6 +184,7 @@ const bg=document.createElement('canvas');bg.width=W;bg.height=H;const b=bg.getC
 
 function setPhase(next,time){phase=next;phaseTimer=time}
 function resetEntities(server){
+ predictionOpen=false;predictedLandingX=null;landingPredictionAvailable=false;landingPrompt.hidden=true;
  p=[player(0),player(1)];serveSide=server;cpuState.think=0;cpuState.targetX=710;cpuState.jumpTimer=0;cpuState.attackTimer=0;cpuState.aim=0;cpuState.predX=710;cpuState.predT=1;cpuState.shotCooldown=0;
  const sx=server===0?305:655;ball.x=sx;ball.y=220;ball.vx=0;ball.vy=0;ball.lastTouch=-1;ball.hitLock=0;ball.trail.forEach(t=>{t.x=sx;t.y=220;t.a=0});ball.trailHead=0;
  rally=0;rallyEl.textContent='랠리 0';serveArmed=false;serveCharging=false;serveCharge=0;ball.speedCap=520;cpuServeTarget=-1;updateServeGauge(0,false);setPhase('serve',.42);renderDirty=true;
@@ -188,6 +192,7 @@ function resetEntities(server){
 }
 function startGame(){
  mode=document.querySelector('.mode.active[data-mode]')?.dataset.mode||'cpu';difficulty=document.getElementById('difficulty').value;target=Number(document.getElementById('target').value)||7;practice=mode==='practice';practiceStage=0;
+ landingPredictionEnabled=mode!=='2p'&&document.getElementById('landingPredictionChk').checked;landingPredictionStats={attempts:0,correct:0};landingPrompt.hidden=true;
  score=[0,0];playing=true;paused=false;simTime=0;last=performance.now();acc=0;if(mode==='cpu'||mode==='practice')rotateCpuAvatarPreset();menu.classList.add('hidden');result.classList.add('hidden');pauseLayer.classList.add('hidden');pad2.classList.toggle('hidden',mode!=='2p');document.getElementById('pauseBtn').textContent='⏸';
  document.getElementById('matchInfo').textContent=practice?'연습 모드 · 최고 '+bestRally:target+'점 · 2점 차 승리';updateScore();resetEntities(0);showTip(practice?'먼저 좌우로 움직여 공 아래에 자리 잡아 보세요.':'공을 쫓지 말고 먼저 타점으로 이동하세요.',2600);app.focus();
 }
@@ -267,6 +272,21 @@ function predictBallLanding(){
  const g={x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy,r:ball.r,speedCap:ball.speedCap};let t=0;
  for(let i=0;i<720;i++){stepBallBody(g,FIXED);t+=FIXED;if(g.y+g.r>=GROUND)return {x:g.x,t}}
  return {x:g.x,t:6};
+}
+function landingZone(x){if(x<160)return'back';if(x<320)return'middle';return'net'}
+function landingZoneLabel(zone){return zone==='back'?'바깥쪽':zone==='net'?'네트 쪽':'가운데'}
+function openLandingPrediction(){
+ if(!landingPredictionEnabled||!landingPredictionAvailable||predictionOpen||phase!=='play'||ball.lastTouch!==1||ball.vx>=0||ball.x>=NETX)return;
+ const prediction=predictBallLanding();if(!Number.isFinite(prediction.x)||prediction.x>=NETX)return;
+ predictedLandingX=prediction.x;predictionOpen=true;landingPredictionAvailable=false;landingPrompt.hidden=false;
+}
+function answerLandingPrediction(zone){
+ if(!predictionOpen||predictedLandingX===null)return;
+ const answer=landingZone(predictedLandingX),correct=zone===answer;landingPredictionStats.attempts++;if(correct)landingPredictionStats.correct++;
+ predictionOpen=false;landingPrompt.hidden=true;
+ if(practice){const total=landingPredictionStats.attempts,rate=Math.round(landingPredictionStats.correct/total*100);document.getElementById('matchInfo').textContent=`낙하지점 예상 ${landingPredictionStats.correct}/${total}회 · ${rate}%`}
+ showTip(`${correct?'맞았어요!':'살펴봐요.'} 지금 궤적으로 계산한 낙하지점은 ${landingZoneLabel(answer)}예요. 그쪽으로 먼저 움직여 받아보세요.`,2100);
+ predictedLandingX=null;
 }
 
 const cpuState={think:0,targetX:710,jumpTimer:0,attackTimer:0,aim:0,predX:710,predT:1,shotCooldown:0};
@@ -523,7 +543,7 @@ function collidePlayer(me,inp){
    if(dive){burst(ball.x,ball.y,5);shake=Math.max(shake,1.8);sound('hit',1.24)}else sound('hit',1.44);
  }
  capBallBody(ball);ball.hitLock=.07;
- if(ball.lastTouch!==me.side){ball.lastTouch=me.side;me.touches++;rally++;rallyEl.textContent='랠리 '+rally;if(practice){if(rally>bestRally){bestRally=rally;localStorage.setItem('seedVolleyBestRally',String(bestRally));document.getElementById('matchInfo').textContent='연습 모드 · 최고 '+bestRally}practiceCoach(me,smash,dive)}}
+ if(ball.lastTouch!==me.side){ball.lastTouch=me.side;me.touches++;rally++;rallyEl.textContent='랠리 '+rally;if(me.side===1){landingPredictionAvailable=true}else{landingPredictionAvailable=false;predictionOpen=false;landingPrompt.hidden=true}if(practice){if(rally>bestRally){bestRally=rally;localStorage.setItem('seedVolleyBestRally',String(bestRally));document.getElementById('matchInfo').textContent='연습 모드 · 최고 '+bestRally}practiceCoach(me,smash,dive)}}
 }
 function practiceCoach(me,smash,dive){if(me.side!==0)return;if(practiceStage===0){practiceStage=1;showTip('좋아요! 이제 W로 점프해서 더 높은 타점을 만들어 보세요.',1800)}else if(practiceStage===1&&!me.onGround){practiceStage=2;showTip('공중에서 S를 누르면 강타! 방향키를 함께 누르면 길이를 조절해요.',2100)}else if(practiceStage===2&&smash){practiceStage=3;showTip('마지막 기술: 땅에서 방향키+S를 누르면 슬라이딩 수비!',2100)}else if(practiceStage===3&&dive){practiceStage=4;showTip('조작 완료! 이제 긴 랠리에 도전하세요.',2200)}}
 function updateServeGauge(power,show=true){
@@ -579,7 +599,7 @@ function scorePoint(winner){
  if(phase!=='play')return;if(practice){sound('cheer',1.04);resetEntities(winner===0?1:0);showTip('괜찮아요. 다시 타점을 잡아 이어 가요!',900);return}
  score[winner]++;updateScore();sound('cheer',winner===0?1.07:.98);serveSide=1-winner;setPhase('point',.75);serveText.textContent=(winner===0?'초록 팀':'파랑 팀')+' 득점!';serveText.classList.add('show');const a=score[0],bb=score[1],done=Math.max(a,bb)>=target&&Math.abs(a-bb)>=2;if(done){phase='finish';phaseTimer=.72;serveSide=a>bb?0:1}
 }
-function finish(winner){playing=false;renderDirty=true;serveText.classList.remove('show');document.getElementById('resultTitle').textContent=(winner===0?'초록 팀':'파랑 팀')+' 승리!';document.getElementById('resultText').textContent=score[0]+' : '+score[1]+' · 최고 랠리 '+Math.max(bestRally,rally);result.classList.remove('hidden');sound('win',1)}
+function finish(winner){playing=false;renderDirty=true;serveText.classList.remove('show');document.getElementById('resultTitle').textContent=(winner===0?'초록 팀':'파랑 팀')+' 승리!';let summary=score[0]+' : '+score[1]+' · 최고 랠리 '+Math.max(bestRally,rally);if(landingPredictionEnabled){const total=landingPredictionStats.attempts,rate=total?Math.round(landingPredictionStats.correct/total*100):0;summary+=` · 낙하지점 예상 ${landingPredictionStats.correct}/${total}회`;summary+=total?` (${rate}%)`:' · 공을 받은 뒤 다음 공에서 예상해 보세요'}document.getElementById('resultText').textContent=summary;result.classList.remove('hidden');sound('win',1)}
 function updateBall(dt){ball.hitLock=Math.max(0,ball.hitLock-dt);stepBallBody(ball,dt)}
 function updateParticles(dt){for(let i=particles.length-1;i>=0;i--){const q=particles[i];q.t-=dt;if(q.t<=0){particles.splice(i,1);continue}q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=420*dt}}
 function update(dt){
@@ -603,7 +623,7 @@ function update(dt){
    return;
  }
  if(phase==='point'){phaseTimer-=dt;if(phaseTimer<=0)resetEntities(serveSide);return}if(phase==='finish'){phaseTimer-=dt;if(phaseTimer<=0)finish(serveSide);return}if(phase!=='play')return;
- updateBall(dt);collidePlayer(p[0],in0);collidePlayer(p[1],in1);trailTimer-=dt;if(trailTimer<=0){trailTimer=1/45;const t=ball.trail[ball.trailHead];t.x=ball.x;t.y=ball.y;t.a=1;ball.trailHead=(ball.trailHead+1)%ball.trail.length}for(const t of ball.trail)t.a=Math.max(0,t.a-dt*3.8);
+ updateBall(dt);collidePlayer(p[0],in0);collidePlayer(p[1],in1);openLandingPrediction();trailTimer-=dt;if(trailTimer<=0){trailTimer=1/45;const t=ball.trail[ball.trailHead];t.x=ball.x;t.y=ball.y;t.a=1;ball.trailHead=(ball.trailHead+1)%ball.trail.length}for(const t of ball.trail)t.a=Math.max(0,t.a-dt*3.8);
  if(ball.y+ball.r>=GROUND){ball.y=GROUND-ball.r;ball.vx=ball.vy=0;scorePoint(ball.x<NETX?1:0)}
 }
 
@@ -626,7 +646,8 @@ function draw(){ctx.drawImage(bg,0,0);ctx.save();if(shake)ctx.translate(Math.sin
 function frame(t){requestAnimationFrame(frame);if(!playing||paused){if(renderDirty){draw();renderDirty=false}last=t;return}let delta=Math.min(.033,Math.max(0,(t-last)/1000||0));last=t;acc=Math.min(acc+delta,FIXED*3);let steps=0;while(acc>=FIXED&&steps<4){update(FIXED);acc-=FIXED;steps++}if(steps===4)acc=Math.min(acc,FIXED*.5);draw()}
 requestAnimationFrame(frame);
 
-document.getElementById('modeGrid').addEventListener('click',e=>{const btn=e.target.closest('[data-mode]');if(!btn)return;document.querySelectorAll('.mode[data-mode]').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.getElementById('difficulty').disabled=btn.dataset.mode!=='cpu'});
+document.getElementById('modeGrid').addEventListener('click',e=>{const btn=e.target.closest('[data-mode]');if(!btn)return;document.querySelectorAll('.mode[data-mode]').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.getElementById('difficulty').disabled=btn.dataset.mode!=='cpu';document.getElementById('landingPredictionChk').disabled=btn.dataset.mode==='2p'});
+document.getElementById('landingChoices').addEventListener('click',e=>{const choice=e.target.closest('[data-landing]');if(choice)answerLandingPrediction(choice.dataset.landing)});
 document.getElementById('startBtn').addEventListener('click',startGame);document.getElementById('helpBtn').addEventListener('click',()=>help.classList.remove('hidden'));document.getElementById('closeHelp').addEventListener('click',()=>help.classList.add('hidden'));
 document.getElementById('rematchBtn').addEventListener('click',startGame);document.getElementById('menuBtn').addEventListener('click',()=>{result.classList.add('hidden');menu.classList.remove('hidden');renderDirty=true});
 function togglePause(force){if(!playing)return;paused=typeof force==='boolean'?force:!paused;pauseLayer.classList.toggle('hidden',!paused);document.getElementById('pauseBtn').textContent=paused?'▶':'⏸';renderDirty=true;if(!paused){last=performance.now();acc=0;app.focus()}}
