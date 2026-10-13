@@ -255,6 +255,10 @@ function promptFor(life,s){
    opt('기술과 장사로 살림을 넓힌다','장시에서 기술·물건을 다룬다','trade',{wealth:6}),
    opt('아이들과 이웃에게 배움을 나눈다','집안이나 마을에서 가르친다','teach',{bonds:7})]};
  }
+ if(kind==='household'&&bound)return {title:'예속된 집안의 살림',description:'노비도 일부 재산이나 기술을 갖고 살 수 있지만, 주인이나 관아에 대한 의무가 삶을 제약한다.',options:[
+  opt('맡은 일에 힘을 보탠다','정해진 일을 마치고 필요한 살림을 챙긴다','serve',{health:-3}),
+  opt('가족과 동료의 일을 함께 나눈다','서로를 돕는 것이 살아갈 힘이 된다','servileKin',{bonds:7}),
+  opt('속량을 청할 길을 알아본다','모은 돈과 관계를 바탕으로 허락을 구한다','petitionRelease',{knowledge:3,wealth:-3})]};
  if(kind==='household'&&s.capital<0)return {title:'빚이 남은 집안의 선택',description:'곡식과 땅, 갚지 못한 몫을 헤아린다. 당장 모든 빚을 갚을 방법은 없지만 각자의 길이 있다.',options:[
   opt('남의 일을 거들어 빚을 조금 덜어 낸다','더 많은 품을 팔아 수입을 얻지만 몸이 고되다','wagework',{health:-4,wealth:4}),
   opt('이웃과 품앗이하며 버틴다','돈보다 서로의 일손과 신뢰를 나눈다','mutualAid',{bonds:7,knowledge:2}),
@@ -263,6 +267,10 @@ function promptFor(life,s){
   opt('작은 땅을 가꾸거나 빌린다','흉년의 위험은 있지만 수확을 기대할 수 있다','land',{wealth:-4}),
   opt('장터 거래에 힘을 보탠다','새 거래처와 이웃을 만난다','market',{bonds:4,knowledge:2}),
   opt('집안 어른과 자녀를 돌본다','시간과 비용을 가족에게 쓴다','care',{bonds:8,wealth:-5})]};
+ if(kind==='elder'&&bound)return {title:'예속된 신분으로 나이가 들어가다',description:'나이가 들어도 일과 예속에서 완전히 자유롭지는 않다.',options:[
+  opt('힘이 닿는 만큼 맡은 일을 이어 간다','몸을 살피며 지낸다','serve',{health:-2}),
+  opt('젊은 일꾼에게 기술을 알려 준다','함께 살아가는 사람에게 경험을 전한다','servileSkill',{knowledge:4,bonds:5}),
+  opt('가족과 자신의 앞날을 부탁한다','도움과 관계를 이어 간다','servileKin',{bonds:7})]};
  if(kind==='elder')return {title:'나이가 들어가는 날',description:'세월이 지나며 땅과 일, 자녀와 이웃이 중요해진다.',options:[
   opt('하던 일을 후대에 조금씩 맡긴다','가족에게 생업을 전한다','retire',{health:4,bonds:4}),
   opt('계속 일하며 살림을 유지한다','생활은 유지되지만 몸이 고될 수 있다','continue',{wealth:5,health:-4}),
