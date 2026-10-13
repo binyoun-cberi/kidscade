@@ -40,6 +40,7 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
 .solo-empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed #31506f;border-radius:14px}
 @media(max-width:640px){.solo-qitem>summary,.solo-run>summary{align-items:flex-start;flex-direction:column}.solo-history-list{max-height:65vh}}
 </style>
+<link rel="stylesheet" href="timebattle-ui-v2.css?v=1">
 </head>
 <body>
 <div id="fxFlash" class="fx-flash"></div><div id="fxBurst" class="fx-burst" aria-hidden="true"></div><div id="fxToast" class="fx-toast" role="status" aria-live="polite"></div>
@@ -211,6 +212,7 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
 </div>
 <script src="../../audio-manager.js?v=20260917-1"></script>
 <script src="../../history-live-realtime.js?v=1"></script>
+<script src="timebattle-ui-v2.js?v=1"></script>
 <script>
 const API='/api/history-live';
 const SOLO_HISTORY_KEY='kidscade_game_v1:high_history_timebattle_live:solo-history-v1';
@@ -285,7 +287,7 @@ const ERA_PRESETS={
 };
 function selectedEras(id){return [...document.querySelectorAll('#'+id+' input[type="checkbox"]:checked')].map(x=>x.value)}
 function syncEraPicker(id,eras){const set=new Set(Array.isArray(eras)&&eras.length?eras:ERA_PRESETS.all);document.querySelectorAll('#'+id+' input[type="checkbox"]').forEach(x=>x.checked=set.has(x.value))}
-function setEraPreset(id,preset){syncEraPicker(id,ERA_PRESETS[preset]||ERA_PRESETS.all)}
+function setEraPreset(id,preset){syncEraPicker(id,ERA_PRESETS[preset]||ERA_PRESETS.all);window.TimebattleUI?.refresh()}
 function eraSummary(eras){const list=Array.isArray(eras)?eras:[];if(list.length>=ERA_PRESETS.all.length)return '전체 시대';if(list.length<=3)return list.join(' · ');return list.slice(0,3).join(' · ')+' 외 '+(list.length-3)+'개 시대'}
 function save(){if(session?.role!=='solo')sessionStorage.setItem('kc-history-live-v1',JSON.stringify(session||{}))}
 function clearSession(){stopRealtime();sessionStorage.removeItem('kc-history-live-v1');session=null;soloGame=null;lastState=null;roundEditing=false;clearTimeout(poller);clearTimeout(heartbeatTimer);cancelAnimationFrame(timerRAF);closeRecoveryPanel();$('recoveryToggle')?.classList.add('hidden')}
@@ -382,7 +384,7 @@ function applyHostPreset(kind){
     people:{count:'15',seconds:'15',order:'random',type:'people',checkpoint:'every5'},
     heritage:{count:'15',seconds:'15',order:'random',type:'heritage',checkpoint:'every5'}
   },p=map[kind];if(!p)return;
-  $('questionCount').value=p.count;$('seconds').value=p.seconds;$('orderMode').value=p.order;$('questionMode').value=p.type;$('checkpointMode').value=p.checkpoint;toggleCheckpointCustom();
+  $('questionCount').value=p.count;$('seconds').value=p.seconds;$('orderMode').value=p.order;$('questionMode').value=p.type;$('checkpointMode').value=p.checkpoint;toggleCheckpointCustom();window.TimebattleUI?.refresh();
 }
 async function createRoom(){
   try{
@@ -408,7 +410,7 @@ function openRoundSetup(){
   $('roundSetupTitle').textContent=r.status==='finished'?'제 '+(Number(r.round||1)+1)+'판 설정':'제 '+Number(r.round||1)+'판 설정 변경';
   $('roundQuestionCount').value=String(r.questionCount||15);$('roundSeconds').value=String(r.secondsPerQuestion||12);
   $('roundOrderMode').value=r.orderMode||'random';$('roundQuestionMode').value=r.questionMode||'choice';$('roundScoreMode').value=r.scoreMode||'reset';
-  syncEraPicker('roundEraPicker',r.eras);
+  syncEraPicker('roundEraPicker',r.eras);window.TimebattleUI?.refresh();
   const mode=inferCheckpointMode(r);$('roundCheckpointMode').value=mode;$('roundCheckpointQuestions').value=(r.checkpoints||[]).join(', ');toggleRoundCheckpointCustom();
   showOnly('roundSetup');
 }
@@ -422,7 +424,7 @@ function applyRoundPreset(kind){
     heritage:{count:'15',seconds:'15',order:'random',type:'heritage',checkpoint:'every5',score:'reset'},
     challenge:{count:'20',seconds:'10',order:'random',type:'mixed',checkpoint:'every5',score:'cumulative'}
   },p=map[kind];if(!p)return;
-  $('roundQuestionCount').value=p.count;$('roundSeconds').value=p.seconds;$('roundOrderMode').value=p.order;$('roundQuestionMode').value=p.type;$('roundCheckpointMode').value=p.checkpoint;$('roundScoreMode').value=p.score;toggleRoundCheckpointCustom();
+  $('roundQuestionCount').value=p.count;$('roundSeconds').value=p.seconds;$('roundOrderMode').value=p.order;$('roundQuestionMode').value=p.type;$('roundCheckpointMode').value=p.checkpoint;$('roundScoreMode').value=p.score;toggleRoundCheckpointCustom();window.TimebattleUI?.refresh();
 }
 async function saveRoundSetup(){
   const eras=selectedEras('roundEraPicker');if(!eras.length)return alert('가르칠 시대를 하나 이상 선택해 주세요.');
@@ -537,7 +539,7 @@ function soloState(status){
   const q=soloGame.questions[soloGame.index],number=soloGame.index+1;
   const player={id:'solo',nickname:session.nickname,score:soloGame.score,streak:soloGame.streak,rank:1,answered:Boolean(soloGame.last),online:true};
   const isShort=q.soloKind==='short';
-  const state={room:{status,questionNumber:number,questionCount:soloGame.questions.length,secondsPerQuestion:soloGame.seconds,deadlineAt:new Date(soloGame.deadlineAt).toISOString(),serverNow:new Date().toISOString(),checkpoints:[]},players:[player],question:{number,total:soloGame.questions.length,difficulty:q.difficulty,prompt:q.q,options:isShort?[]:q.o,kind:isShort?'short':q.family==='ox'?'ox':'choice',...(status==='reveal'?{era:q.era}:{})}};
+  const state={room:{status,questionNumber:number,questionCount:soloGame.questions.length,secondsPerQuestion:soloGame.seconds,deadlineAt:new Date(soloGame.deadlineAt).toISOString(),serverNow:new Date().toISOString(),checkpoints:[],questionMode:soloGame.settings.questionMode},players:[player],question:{number,total:soloGame.questions.length,difficulty:q.difficulty,prompt:q.q,options:isShort?[]:q.o,kind:isShort?'short':q.family==='ox'?'ox':'choice',...(status==='reveal'?{era:q.era}:{})}};
   if(status==='reveal'){
     const stats=isShort?[]:Array.from({length:q.o.length},()=>0); if(!isShort&&soloGame.last?.option>=0)stats[soloGame.last.option]=1;
     state.reveal={answerIndex:isShort?-1:q.a,answerText:isShort?(q.shortAnswer||q.o[q.a]||''):'',era:q.era,explanation:q.e,optionStats:stats,answeredCount:soloGame.last?1:0,correctCount:soloGame.last?.correct?1:0};
@@ -675,7 +677,9 @@ function renderLobby(s){
   $('roster').innerHTML=s.players.map(p=>'<span class="pill '+(p.online?'':'off')+'">'+esc(p.nickname)+'</span>').join('');
 }
 function renderQuestion(s){
-  showOnly('game');const q=s.question;const fxKey='q:'+String(s.room.round||0)+':'+String(q.number);fxOnce(fxKey,()=>{playSfx('ui.open',{volume:.24,rate:1.05});animateQuestion()});$('qEra').textContent='시대 비공개';$('qNum').textContent=(session.role==='solo'?'':('제 '+Number(s.room.round||1)+'판 · '))+q.number+' / '+q.total;$('question').textContent=q.prompt;$('submitted').classList.add('hidden');
+  showOnly('game');const q=s.question;const fxKey='q:'+String(s.room.round||0)+':'+String(q.number);fxOnce(fxKey,()=>{playSfx('ui.open',{volume:.24,rate:1.05});animateQuestion()});
+  const typeName={people:'인물 이름 맞히기',heritage:'문화유산 맞히기',ox:'OX 문제',mixed:'한국사 혼합 문제','choice-short':'한국사 주관식'};
+  $('qEra').textContent=typeName[s.room.questionMode]||'한국사 퀴즈';$('qNum').textContent=(session.role==='solo'?'':('제 '+Number(s.room.round||1)+'판 · '))+q.number+' / '+q.total;$('question').textContent=q.prompt;$('submitted').classList.add('hidden');
   $('hostProgress').classList.toggle('hidden',session.role!=='host');
   const n=s.players.filter(p=>p.answered).length;$('answeredCount').textContent=n;$('totalCount').textContent=s.players.length;$('answerBar').style.width=(s.players.length?n/s.players.length*100:0)+'%';
   const self=s.players.find(p=>p.id===session.playerId),alreadySubmitted=session.role==='solo'?Boolean(soloGame?.last):(Boolean(self?.answered)||answeredFor===s.room.questionNumber);
@@ -692,11 +696,11 @@ function renderQuestion(s){
 }
 function runTimer(deadline){
   cancelAnimationFrame(timerRAF);const end=new Date(deadline).getTime();
-  const step=()=>{const reference=session?.role==='solo'?Date.now():Date.now()+serverOffset;const left=Math.max(0,Math.ceil((end-reference)/1000));$('timer').textContent=left;if(left<=3&&left>0&&left!==lastTimerTick){lastTimerTick=left;playSfx('ui.tick',{volume:.25,rate:1+(3-left)*.08,cooldownMs:180})}if(left>0)timerRAF=requestAnimationFrame(step);else if(session?.role==='solo'&&!soloTimeoutHandled&&!soloGame?.last){soloTimeoutHandled=true;playSfx('ui.error',{volume:.28});toastFx('시간 종료!');flashFx('bad');const current=soloGame?.questions?.[soloGame.index];if(current?.soloKind==='short')submitSoloShortAnswer('',true);else submitSoloAnswer(-1,true)}};
+  const step=()=>{const reference=session?.role==='solo'?Date.now():Date.now()+serverOffset;const left=Math.max(0,Math.ceil((end-reference)/1000));$('timer').textContent=left;$('timer').classList.toggle('urgent',left>0&&left<=5);if(left<=3&&left>0&&left!==lastTimerTick){lastTimerTick=left;playSfx('ui.tick',{volume:.25,rate:1+(3-left)*.08,cooldownMs:180})}if(left>0)timerRAF=requestAnimationFrame(step);else if(session?.role==='solo'&&!soloTimeoutHandled&&!soloGame?.last){soloTimeoutHandled=true;playSfx('ui.error',{volume:.28});toastFx('시간 종료!');flashFx('bad');const current=soloGame?.questions?.[soloGame.index];if(current?.soloKind==='short')submitSoloShortAnswer('',true);else submitSoloAnswer(-1,true)}};
   step();
 }
 function renderReveal(s){
-  showOnly('reveal');cancelAnimationFrame(timerRAF);const q=s.question,r=s.reveal;
+  showOnly('reveal');cancelAnimationFrame(timerRAF);$('timer').classList.remove('urgent');const q=s.question,r=s.reveal;
   const me=s.players.find(p=>p.id===session.playerId),revealKey='r:'+String(s.room.round||0)+':'+String(q.number);
   fxOnce(revealKey,()=>{
     if(session.role==='solo'){
