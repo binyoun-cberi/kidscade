@@ -99,7 +99,13 @@ function recordEconomy(life){
  if(e.currentYear!==null&&life.year<=e.currentYear)return;
  e.currentYear=life.year;
  if(now<0)e.povertyYears++;
- const title=today.costs?.scarcity?'흉년과 먹을거리의 부담':today.costs?.rent?'땅을 빌려 쓰는 데 드는 몫':today.costs?.care?'식구의 끼니와 돌봄': '생업과 생활비의 차이';
+ const costs=today.costs||{};
+ const title=costs.scarcity?'흉년과 줄어든 벌이'
+  :costs.rent>=Math.max(5,today.income/4)?'빌린 땅을 가꾸기 위해 내는 몫'
+  :costs.subsistence>=today.income?'식구들이 먹고사는 데 필요한 지출'
+  :costs.care>=5?'가족의 돌봄에 드는 비용'
+  :costs.levies>0&&costs.levies>=today.income/5?'조세와 살림의 부담'
+  :'벌이보다 많이 든 집안 살림';
  e.lastCause=today.debt?(now<(was??now)?title:'이전에 생긴 빚을 아직 갚지 못함'):
   today.granary<8?'곳간의 먹을거리가 적음':today.cash<25?'벌이가 생겨도 남는 몫이 적음':'생업과 살림을 이어 감';
  let message='';
