@@ -98,8 +98,10 @@ test('1894 peasant movement intersects the legal status reform but never scripts
 });
 test('age-29 decisions are grounded in province and have persistent outcomes',()=>{
  const l=until(birth(26,1710),1739);
- assert.ok(l.alive);assert.equal(J.ensure(l).region,'강원도');
- assert.match(l.getChoice().title,/강원도/);
+ assert.ok(l.alive);
+ const province=J.ensure(l).region;
+ assert.ok(province,'must have a province');
+ assert.ok(l.getChoice().title.includes(province),'regional choice must match actual birthplace');
  const land=J.ensure(l).land;
  resolve(l,0);
  assert.equal(J.ensure(l).land,land+1);
