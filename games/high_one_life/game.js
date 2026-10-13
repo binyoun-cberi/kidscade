@@ -112,7 +112,7 @@
     $('birthFather').textContent=(Joseon.inOldEra(life)?Joseon4.summary(life).people.find(r=>r.role==='father')?.name+' · ':'')+p.fatherAge+'세 · '+p.fatherJob;
     $('birthSiblings').textContent=p.siblings+'명';
     const setting=World8.ensure(life);
-    $('birthHome').textContent=Joseon.inOldEra(life)?'살림과 땅 · '+Joseon.summary(life).land+'단위 (게임용 지표)':setting.housing+' · '+setting.familyNote;
+    $('birthHome').textContent=Joseon.inOldEra(life)?'가꾸는 땅 '+Joseon.summary(life).economy.workedLand+'몫 · 소유한 땅 '+Joseon.summary(life).economy.ownedLand+'몫 · 빌려 가꾸는 땅 '+Joseon.summary(life).economy.leasedLand+'몫':setting.housing+' · '+setting.familyNote;
     $('birthContext').textContent=Joseon.inOldEra(life)?Joseon.era(life.year)+' · '+life.profile.city+' · '+Joseon.ensure(life).landmark:History.period(life)+' · '+setting.regionName+' · '+setting.neighborhood;
     $('birthEraNote').textContent=Joseon.inOldEra(life)?'이 인생에는 태어난 집안의 신분과 지역이 영향을 줍니다. 선택과 재난의 여파는 다음 해에도 남습니다.':life.birthYear===2026
       ? '어느 나라에서 태어날지는 우연이지만, 그곳의 환경은 저마다 다릅니다.'
