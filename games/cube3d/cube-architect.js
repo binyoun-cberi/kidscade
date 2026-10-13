@@ -1182,11 +1182,20 @@ function checkNet(){
 function foldPreview(){
   if(!netBox)return;
   const custom=netQuizMode==='design';
-  if(custom&&!checkNetDesign())return;
-  const ticket=++foldNonce;foldPieces.forEach(x=>scene.remove(x));foldPieces=[];clearNetProof();
   const activeLayout=custom?netDesignLayout:NET_LAYOUT;
   const geometry=window.CubeArchitectMath.unfoldedLayout(activeLayout);
-  if(!geometry.valid){toast('전개도가 서로 겹쳐 접힐 수 없어. 다른 배열을 골라 보자.');return}
+  const showOverlap=custom&&geometry.reason==='overlap'&&geometry.hinges.length===5;
+  if(custom){
+    netDesignChecked=true;renderNetDesign();
+    if(!geometry.valid&&!showOverlap){
+      toast(geometry.reason==='disconnected'?
+        '면들이 서로 떨어져 있어 접을 수 없어. 정사각형을 이어 붙여 보자.':
+        '정사각형 여섯 장을 놓은 다음 접어 보자.');return;
+    }
+    if(showOverlap)toast('접으면 겹치는 두 면을 붉게 표시할게. 왜 겹치는지 관찰해 보자.');
+    else{sfx('good');toast('내가 만든 전개도가 정육면체로 접힐 수 있어!')}
+  }else if(!geometry.valid){toast('전개도를 다시 살펴보자.');return}
+  const ticket=++foldNonce;foldPieces.forEach(x=>scene.remove(x));foldPieces=[];clearNetProof();
   netBox.visible=false;
   const size=2.2,root=new THREE.Group();
   const faceGroups=new Array(6);faceGroups[0]=root;
@@ -1203,6 +1212,8 @@ function foldPreview(){
   }
   for(let i=0;i<6;i++){
     const plane=new THREE.Mesh(new THREE.PlaneGeometry(size,size),symbolMaterial(custom?NET_DESIGN_LABELS[i]:netTarget[i],'#ffffff'));
+    if(showOverlap&&geometry.normals.filter(n=>n===geometry.normals[i]).length>1)
+      plane.material.color.set(0xff9999);
     plane.material.side=THREE.DoubleSide;
     faceGroups[i].add(plane);
   }
@@ -1219,8 +1230,13 @@ function foldPreview(){
     for(const h of hinges)h.pivot.rotation[h.axis]=h.sign*e*Math.PI/2;
     if(t<1)requestAnimationFrame(step);
     else if(custom){
-      $('netDesignStatus').textContent='접기 성공! 만든 전개도가 겹치지 않고 정육면체로 완성되었어. 3D 모형을 돌려 보자.';
-      reportResult('net-design',100,true);
+      if(showOverlap){
+        $('netDesignStatus').textContent='붉은 면이 같은 자리에 겹쳤어. 면 하나를 옮겨서 다시 접어 보자.';
+        sfx('bad');
+      }else{
+        $('netDesignStatus').textContent='접기 성공! 여섯 면이 겹치지 않고 정육면체가 완성됐어. 3D 모형을 돌려 보자.';
+        reportResult('net-design',100,true);
+      }
       // Keep the constructed cube in the scene until the next edit/attempt.
     }else setTimeout(()=>{
       if(ticket!==foldNonce)return;
