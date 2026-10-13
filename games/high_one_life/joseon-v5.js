@@ -78,7 +78,7 @@ function make(life){
   publicOffice:origin==='공노비'?(dice(life.seed,1915)<.58?'중앙 관서':'지방 관아'):null,
   processedYear:life.year,queue:[],active:null,seen:[],followups:[],rank:0,royalClaim:false,
   freed:life.year>=1894&&isEnslaved(origin),monastic:false,inspector:false,inspectorUntil:null,complaints:0};
- if(origin==='노비 후손 가계'){s.freed=true;s.originLabel=info.label;}
+ if(origin==='노비 후손 가계'){s.freed=false;s.originLabel=info.label;}
  if(origin==='공노비')s.originLabel=info.label+' · '+s.publicOffice+' 소속';
  if(isEnslaved(origin)&&life.birthYear>=1886){
   s.freed=true;s.originLabel='노비 출신 부모를 둔 양인 가계';
@@ -361,7 +361,11 @@ function hydrate(life,data){
  for(const key of ['serviceYears','rank','processedYear','complaints','inspectorUntil'])
   if(Number.isInteger(old[key]))s[key]=clamp(old[key],0,key==='processedYear'?life.year:key==='inspectorUntil'?life.year+3:300);
  for(const key of ['freed','royalClaim','monastic','inspector'])s[key]=old[key]===true;
- if(s.role==='왕'||s.role==='국왕'){s.role='왕실 종친';s.royalClaim=false;s.rank=Math.min(s.rank,1);}
+ if(s.role==='왕'||s.role==='국왕'){
+  s.role='왕실 종친';s.royalClaim=false;s.rank=Math.min(s.rank,1);
+  const historical=J.ensure(life);
+  if(historical.occupation==='국왕'){historical.occupation='왕실 종친의 일상';if(life.year<1900)life.career=historical.occupation;}
+ }
  if(s.role==='암행어사'&&!P.canInspect(s.origin,s.rank,J.ensure(life).office,s.role,life.year)){s.role='관청 일을 맡던 인물';s.inspector=false;}
  for(const key of ['memories','burdens','seen'])
   s[key]=Array.isArray(old[key])?old[key].filter(x=>typeof x==='string').slice(-45).map(x=>x.slice(0,200)):[];
