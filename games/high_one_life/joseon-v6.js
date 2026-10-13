@@ -215,13 +215,36 @@ function promote(life,s){
 function pathway(life,s){
  const j=J.ensure(life),social=V5.ensure(life);
  const preferred=PATHS.filter(c=>CAREERS[c].origin.includes(social.origin));
- const fallback=['teacher','healer','inn','fisher','smith','merchant'].filter(c=>!preferred.includes(c));
- const options=[...preferred,...fallback].filter(c=>c!=='teacher'||j.studyYears>=1||life.stats.knowledge>=40);
- const picks=options.slice(0,2);
+ const fallback=PATHS.filter(c=>!preferred.includes(c));
+ const shuffled=fallback.map((code,i)=>({code,sort:roll(life.seed,life.year+i*41+761)}))
+  .sort((a,b)=>a.sort-b.sort).map(o=>o.code);
+ const options=[...preferred,...shuffled].filter(c=>
+  c!=='teacher'||j.studyYears>=1||life.stats.knowledge>=40);
+ const availableOptions=options.filter(c=>c!==s.career?.code&&c!==s.secondary?.code);
+ const picks=availableOptions.slice(0,2);
  if(!picks.length)return;
- const choices=picks.map(code=>({label:CAREERS[code].name+'의 길을 알아본다',action:'enter:'+code,note:'배움과 준비가 필요하며 처음부터 숙련된 일꾼이 되는 것은 아니다.'}));
- choices.push({label:'지금의 생업을 이어 간다',action:'continue',note:'돈의 많고 적음과 무관하게 하던 일을 지킨다.'});
- offer(life,s,life.year+'-path','나의 일과 배움의 갈림길','지금의 일과 새로운 배움 중에서 선택할 수 있다. 어느 길도 반드시 부유해지지는 않는다.',choices,'path');
+ let choices;
+ if(s.career){
+  const target=picks[0];
+  choices=[
+   {label:CAREERS[target].name+'을 겸업으로 배운다',action:'side:'+target,
+    note:'기존 일을 계속하지만 두 생업을 함께 돌보려면 시간과 몸을 나누어야 한다.'},
+   {label:CAREERS[(picks[1]||target)].name+'으로 전직한다',action:'enter:'+(picks[1]||target),
+    note:'지금까지 쌓은 경험은 남지만 새 생업의 살림을 다시 꾸려야 한다.'},
+   {label:'지금의 생업을 계속 이어 간다',action:'continue',
+    note:'일을 계속하는 것도 스스로 선택한 의미 있는 삶이다.'}
+  ];
+ }else{
+  choices=picks.map(code=>({label:CAREERS[code].name+'의 길을 알아본다',
+   action:'enter:'+code,note:'가르침이나 전문 의료는 배우는 시간이 필요하다.'}));
+  if(choices.length===1)choices.push({label:'이웃과 생업을 배워 본다',
+   action:'continue',note:'바로 직업을 바꾸지 않고 지낸다.'});
+  choices.push({label:'지금의 생업을 이어 간다',action:'continue',
+   note:'지금의 일이 더 중요할 수도 있다.'});
+ }
+ offer(life,s,life.year+'-path','나의 일과 배움의 갈림길',
+  '가문과 지금까지 익힌 일, 새로운 기회 사이에서 어느 길로 나아갈지 생각한다.',
+  choices,'path');
 }
 function careerEvent(life,s,work,secondary=false){
  if(!work||work.ended||life.age<16)return;
@@ -256,7 +279,7 @@ function yearEnd(life,s){
    }
   }
  }
- if([25,37,49].includes(life.age)&&(!s.career||life.age===49)&&!s.active)pathway(life,s);
+ if([25,37,49].includes(life.age)&&!s.active)pathway(life,s);
  // Alternate between primary and secondary on eligible years, never create
  // more than one career-specific choice in a calendar year.
  const side=!!s.secondary&&life.age%8>=4;
@@ -291,6 +314,7 @@ function choose(life,index){
  const eventTitle=q.title;
  if(q.type==='path'){
   if(action.startsWith('enter:'))adopt(life,action.slice(6));
+  else if(action.startsWith('side:'))adopt(life,action.slice(5),{secondary:true});
   else life.change({bonds:2});
  }else if(work){
   const result=updateWork(life,work,action,q.eventIndex);
