@@ -988,12 +988,12 @@ function showNetProof(){
       color:i===f?0x4fd49e:i===o?0x668bff:0xffffff,
       transparent:true,opacity:i===f||i===o?.32:0,depthWrite:false,side:THREE.DoubleSide
     }));
-    const mesh=new THREE.Mesh(new THREE.BoxGeometry(2.83,1.93,1.58),mats);mesh.renderOrder=20;g.add(mesh);
+    const mesh=new THREE.Mesh(new THREE.BoxGeometry(2.23,2.23,2.23),mats);mesh.renderOrder=20;g.add(mesh);
   }else{
     const names=netQuiz.kind==='edge'?netQuiz.proofEdge:[netQuiz.proofVertex];
     const points=names.map(name=>{
       const v=CUBOID_TOPOLOGY.vertices.find(item=>item.id===name);
-      return new THREE.Vector3(v.s[0]*1.4,v.s[1]*.95,v.s[2]*.775);
+      return new THREE.Vector3(v.s[0]*1.1,v.s[1]*1.1,v.s[2]*1.1);
     });
     if(netQuiz.kind==='edge'){
       const geometry=new THREE.BufferGeometry().setFromPoints(points);
@@ -1020,7 +1020,7 @@ function initNet(){
   chooseNetVariant();
   cleanScene(0xfff5dc);netQuizProof=null;camera.position.set(5,4.2,6);camera.lookAt(0,0,0);makeOrbit(new THREE.Vector3(0,0,0));orbit.minDistance=4;orbit.maxDistance=10;
   netTarget=shuffle(symbols);netAssigned=['','','','','',''];selectedSymbol=netTarget[0];buildNetBoard();buildPalette();
-  netBox=new THREE.Mesh(new THREE.BoxGeometry(2.8,1.9,1.55),netAssigned.map(s=>symbolMaterial(s,'#ffffff')));netBox.castShadow=true;netBox.receiveShadow=true;netBox.userData.netbox=true;scene.add(netBox);
+  netBox=new THREE.Mesh(new THREE.BoxGeometry(2.2,2.2,2.2),netAssigned.map(s=>symbolMaterial(s,'#ffffff')));netBox.castShadow=true;netBox.receiveShadow=true;netBox.userData.netbox=true;scene.add(netBox);
   const floor=new THREE.Mesh(new THREE.CircleGeometry(4.5,64),new THREE.MeshStandardMaterial({color:0xf0dfb7,roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-1.15;floor.receiveShadow=true;scene.add(floor);
   $('actionCheck').onclick=checkNet;
   $('actionNext').onclick=()=>netQuizMode==='decorate'?initNet():nextNetQuiz();
@@ -1037,7 +1037,7 @@ function buildNetBoard(){
   const variant=NET_VARIANTS[netVariantIndex],board=$('netBoard');
   if(board){
     board.style.gridTemplateColumns='repeat('+variant.cols+',56px)';
-    board.style.gridTemplateRows='repeat('+variant.rows+',44px)';
+    board.style.gridTemplateRows='repeat('+variant.rows+',56px)';
   }
   document.querySelectorAll('.net-face').forEach(el=>{
     const f=Number(el.dataset.face),pos=NET_LAYOUT[f];
@@ -1054,7 +1054,7 @@ function buildNetBoard(){
     }
     if(netQuizMode==='face'&&netQuiz?.source===f)el.classList.add('quiz-target');
   });
-  if(netQuizMode==='decorate')$('netMission').textContent='11가지 정육면체 전개도 중 하나예요. 그림이 직육면체의 어느 면으로 오는지 찾아 배치하세요.';
+  if(netQuizMode==='decorate')$('netMission').textContent='11가지 정육면체 전개도 중 하나야. 같은 크기의 정사각형 여섯 개를 접어서 확인해 보자.';
 }
 function buildPalette(){
   const p=$('stickerPalette');p.innerHTML='';
@@ -1079,29 +1079,44 @@ function checkNet(){
   else{sfx('bad');toast('몇 면의 위치가 달라요. 전개도의 붙어 있는 면을 따라가 보세요.')}
 }
 function foldPreview(){
-  if(!netBox)return;const ticket=++foldNonce;
-  foldPieces.forEach(x=>scene.remove(x));foldPieces=[];clearNetProof();netBox.visible=false;
-  const xs=NET_LAYOUT.map(p=>p[0]),ys=NET_LAYOUT.map(p=>p[1]);
-  const cx=(Math.min(...xs)+Math.max(...xs))/2,cy=(Math.min(...ys)+Math.max(...ys))/2;
-  const starts=NET_LAYOUT.map(([col,row])=>new THREE.Vector3((col-cx)*2.75,(cy-row)*1.95,0));
-  const ends=[new THREE.Vector3(1.41,0,0),new THREE.Vector3(-1.41,0,0),new THREE.Vector3(0,.96,0),new THREE.Vector3(0,-.96,0),new THREE.Vector3(0,0,.79),new THREE.Vector3(0,0,-.79)];
-  const rots=[
-    new THREE.Euler(0,Math.PI/2,0),new THREE.Euler(0,-Math.PI/2,0),new THREE.Euler(-Math.PI/2,0,0),new THREE.Euler(Math.PI/2,0,0),new THREE.Euler(0,0,0),new THREE.Euler(0,Math.PI,0)
-  ];
-  for(let i=0;i<6;i++){
-    const g=new THREE.PlaneGeometry(i<2?1.55:2.8,(i===2||i===3)?1.55:1.9),m=symbolMaterial(netTarget[i],'#ffffff'),p=new THREE.Mesh(g,m);
-    p.position.copy(starts[i]);p.userData.start=starts[i].clone();p.userData.end=ends[i].clone();p.userData.rot=rots[i];scene.add(p);foldPieces.push(p);
+  if(!netBox)return;
+  const ticket=++foldNonce;foldPieces.forEach(x=>scene.remove(x));foldPieces=[];clearNetProof();
+  const geometry=window.CubeArchitectMath.unfoldedLayout(NET_LAYOUT);
+  if(!geometry.valid){toast('전개도가 서로 겹쳐 접힐 수 없어. 다른 배열을 골라 보자.');return}
+  netBox.visible=false;
+  const size=2.2,root=new THREE.Group();
+  const faceGroups=new Array(6);faceGroups[0]=root;
+  // Every fold is a real rotation around the edge shared by its two squares.
+  const hinges=[];
+  for(const edge of geometry.hinges){
+    const {parent,child,dx,dy}=edge;
+    const pivot=new THREE.Group();
+    pivot.position.set(dx*size/2,-dy*size/2,0);
+    faceGroups[parent].add(pivot);
+    const face=new THREE.Group();face.position.set(dx*size/2,-dy*size/2,0);
+    pivot.add(face);faceGroups[child]=face;
+    hinges.push({pivot,axis:dx?'y':'x',sign:dx||dy});
   }
-  const start=performance.now();function step(now){
+  for(let i=0;i<6;i++){
+    const plane=new THREE.Mesh(new THREE.PlaneGeometry(size,size),symbolMaterial(netTarget[i],'#ffffff'));
+    plane.material.side=THREE.DoubleSide;
+    faceGroups[i].add(plane);
+  }
+  root.position.set(0,0,0);scene.add(root);foldPieces.push(root);
+  // Since rotations propagate down the graph, each child stays attached to its parent.
+  const start=performance.now();
+  function step(now){
     if(ticket!==foldNonce)return;
-    const q=Math.min(1,(now-start)/1250),e=1-Math.pow(1-q,3);
-    foldPieces.forEach(p=>{p.position.lerpVectors(p.userData.start,p.userData.end,e);p.rotation.set(p.userData.rot.x*e,p.userData.rot.y*e,p.userData.rot.z*e)});
-    if(q<1)requestAnimationFrame(step);else setTimeout(()=>{
+    const t=Math.min(1,(now-start)/1650),e=t*t*(3-2*t);
+    for(const h of hinges)h.pivot.rotation[h.axis]=h.sign*e*Math.PI/2;
+    if(t<1)requestAnimationFrame(step);
+    else setTimeout(()=>{
       if(ticket!==foldNonce)return;
-      foldPieces.forEach(x=>scene.remove(x));foldPieces=[];netBox.visible=true;
+      scene.remove(root);foldPieces=[];netBox.visible=true;
       if(netQuizMode!=='decorate')showNetProof();
-    },550);
-  }requestAnimationFrame(step);toast('전개도의 면들이 3D 위치로 접히고 있어요.');
+    },850);
+  }
+  requestAnimationFrame(step);toast('붙어 있는 모서리를 중심으로 정사각형 여섯 개가 접히고 있어.');
 }
 
 /* ---------------- 아키텍트 월드: 살아있는 복셀 샌드박스 ---------------- */
@@ -7327,9 +7342,9 @@ function tutorialSteps(kind){
     {title:'튜토리얼 완료!',text:'이제 최소한 “보기 → 설치 → 파괴 → 힌트 → 검사” 순서는 혼자 할 수 있어요.',do:'처음에는 블록 1개만 정확하게 놓는 것부터 시작해도 충분합니다.'}
   ];
   if(kind==='net')return[
-    {title:'전개도 연구실 사용법',text:'그림을 고르고, 3D 직육면체의 면에 붙이고, 실제로 접어 확인하는 순서입니다.',do:'한 단계씩 직접 해 봐요.'},
+    {title:'전개도 연구실 사용법',text:'정육면체 전개도를 보고 그림을 3D 정육면체의 면에 붙인 다음 접어 확인해 봐요.',do:'한 단계씩 직접 해 봐요.'},
     {title:'1. 붙일 그림 고르기',target:'#stickerPalette',text:'아래 그림 중 하나를 먼저 선택합니다.',do:'그림 하나를 눌러 보세요.',wait:'net-sticker'},
-    {title:'2. 3D 면에 붙이기',target:'#gameCanvas',text:'오른쪽 3D 직육면체를 돌려 보고 원하는 면을 클릭하세요.',do:'선택한 그림이 실제 면에 붙어야 다음으로 넘어갑니다.',wait:'net-assign'},
+    {title:'2. 3D 면에 붙이기',target:'#gameCanvas',text:'오른쪽 3D 정육면체를 돌려 보고 원하는 면을 클릭하세요.',do:'선택한 그림이 실제 면에 붙어야 다음으로 넘어갑니다.',wait:'net-assign'},
     {title:'3. 접어 보기',target:'#foldNet',text:'전개도가 실제로 어떻게 접히는지 애니메이션으로 확인할 수 있어요.',do:'“접어 보기”를 눌러 확인해 보세요.'},
     {title:'4. 다른 수학 활동',target:'[data-net-mode="face"]',text:'면 관계, 모서리, 꼭짓점 탭은 기본 그림 배치에 익숙해진 뒤 도전하면 됩니다.',do:'처음 하는 학생은 “그림 배치”부터 시작하세요.'},
     {title:'5. 검사와 다음',target:'#actionCheck',text:'검사하기로 답을 확인하고, 다음 버튼으로 새 전개도로 바꿉니다.',do:'상단 튜토리얼 버튼으로 언제든 다시 볼 수 있어요.'}
