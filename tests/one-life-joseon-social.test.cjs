@@ -126,6 +126,34 @@ test('long lives and save files preserve full social identity and pending choice
  }
  assert.equal(count,450);assert.ok(events>=400);
 });
+test('life choices have an exact three-year followup and survive save/restore',()=>{
+ let found=false;
+ for(let seed=1;seed<=28&&!found;seed++){
+  const l=progress(born(1670,seed*321),1710,seed%3);
+  const choices=l.log.filter(x=>x.kind==='joseon5-choice'&&x.causeId);
+  const later=l.log.filter(x=>x.kind==='joseon5-followup'&&x.causeId);
+  if(!choices.length||!later.length)continue;
+  const same=later.find(x=>choices.some(y=>y.causeId===x.causeId));
+  if(!same)continue;
+  const saved=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));
+  assert.ok(saved.log.some(x=>x.kind==='joseon5-followup'&&x.causeId===same.causeId));
+  assert.deepEqual(V5.summary(saved),V5.summary(l));
+  found=true;
+ }
+ assert.ok(found,'no socially linked choice and delayed consequence was found');
+});
+test('pending personal consequences retain their specific original choice IDs',()=>{
+ const l=born(1700,17);
+ const s=V5.ensure(l);
+ s.active={id:'1700-living',type:'living',year:1700,title:'생업',choices:[
+  {label:'내 일을 계속한다',action:'work',note:'',effects:{knowledge:2},cost:0,grain:0}]};
+ l.pending='joseon5:1700-living';
+ assert.equal(l.choose(0),true);
+ assert.equal(s.followups.length,1);
+ assert.equal(s.followups[0].id,'1700-living');
+ const loaded=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));
+ assert.deepEqual(V5.ensure(loaded).followups,s.followups);
+});
 test('player-facing story and scripts include the expanded social layer',()=>{
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8'),game=fs.readFileSync(path.join(root,'game.js'),'utf8');
  assert.ok(html.indexOf('joseon-v4.js')<html.indexOf('joseon-v5.js'));
