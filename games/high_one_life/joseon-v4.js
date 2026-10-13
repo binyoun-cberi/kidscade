@@ -159,7 +159,7 @@ function enqueue(life,s,kind,p){
  promote(life,s);
 }
 function promote(life,s){
- if(!s||s.active||life.pending||!life.alive||!J.isJoseon(life)||!s.queue.length)return;
+ if(!s||s.active||life.pending||!life.alive||!J.isJoseon(life)||!s.queue.length||s.decisions.some(d=>d.year===life.year))return;
  s.active=s.queue.shift();
  life.pending='joseon4:'+s.active.id;
 }
