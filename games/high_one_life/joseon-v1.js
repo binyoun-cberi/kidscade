@@ -100,7 +100,7 @@ function ensure(life){
   const names=NAMES[life.gender]||NAMES.남자;
   life.profile.name=names[Math.floor(roll(life.seed,1413)*names.length)];
   if(life.age===0&&!life.log.some(e=>e.kind==='joseon-birth')){
-   life.logEvent(s.region+'의 '+s.status+' 집안에서 태어났다. '+s.landmark+'이 가까운 고을이다.','joseon-birth');
+   life.logEvent(s.region+'의 '+(life.birthYear>=1894?'옛 '+s.birthStatus+' 가계':s.status+' 집안')+'에서 태어났다. '+s.landmark+'이 가까운 고을이다.','joseon-birth');
    life.logEvent('신분과 집안 사정이 앞으로 만날 기회에 영향을 미친다. 하지만 삶의 모든 일이 정해진 것은 아니다.','joseon-life');
   }
  }
@@ -115,7 +115,7 @@ function promptFor(life,s){
  if(!s.active)return null;
  const kind=s.active.kind,canExam=life.gender==='남자'&&['양반','상민'].includes(s.birthStatus)&&life.year<1894;
  const opt=(label,noteText,action,effects={})=>({label,note:noteText,action,effects,text:label});
- if(kind==='school')return {title:'글을 배울 수 있을까?',description:s.status+' 집안에서 '+s.region+'의 하루를 살아간다. 책을 배울지, 생업을 익힐지 생각할 때다.',options:[
+ if(kind==='school')return {title:'글을 배울 수 있을까?',description:(life.year>=1894?'옛 '+s.birthStatus+' 가계':' '+s.status+' 집안')+'에서 '+s.region+'의 하루를 살아간다. 무엇을 배울까?',options:[
   opt('글을 배울 길을 찾아본다',s.status==='양반'?'가문의 글공부와 서당':'지역의 배움이나 가족·이웃의 가르침','study',{knowledge:6,wealth:-3}),
   opt('집안의 일을 배우며 지낸다','생업을 일찍 익히고 가족을 돕는다','work',{bonds:4,wealth:4}),
   opt('일도 하며 틈틈이 글을 익힌다','시간은 적지만 두 길을 이어 간다','mixed',{knowledge:3,health:-2})]};
@@ -210,10 +210,11 @@ function applyChoice(life,index){
  if(act==='stay'){s.capital-=11;s.hardshipUntil=Math.max(s.hardshipUntil,life.year+3);}
  if(act==='together'){s.capital-=13;s.relocations++;s.household=Math.min(8,s.household+1);s.hardshipUntil=Math.max(s.hardshipUntil,life.year+2);}
  s.capital=clamp(s.capital,-120,600);
- s.decisions.push({year:life.year,age:life.age,kind,action:act});
+ const causeId='joseon:'+s.active.id;
+ s.decisions.push({id:s.active.id,year:life.year,age:life.age,kind,action:act});
  s.decisions=s.decisions.slice(-40);
- note(life,s,p.title+' — '+option.label,'joseon-choice');
- s.followups.push({year:life.year+3,text:FOLLOWUP[act]||'그날의 결정은 집안의 살림에 작은 흔적을 남겼다.'});
+ note(life,s,p.title+' — '+option.label,'joseon-choice');life.log.at(-1).causeId=causeId;
+ s.followups.push({id:s.active.id,year:life.year+3,text:FOLLOWUP[act]||'그날의 결정은 집안의 살림에 작은 흔적을 남겼다.'});
  s.followups=s.followups.slice(-20);
  s.active=null;life.pending=null;sync(life,s);
  return true;
@@ -259,7 +260,7 @@ function yearly(life){
  if(life.age===55&&s.parentsSupported)note(life,s,'젊은 시절 집안 어른을 돌보았던 시간이 떠올랐다.','joseon-family');
  const due=s.followups.filter(f=>f.year===life.year);
  s.followups=s.followups.filter(f=>f.year>life.year);
- for(const f of due)note(life,s,f.text,'joseon-followup');
+ for(const f of due){note(life,s,f.text,'joseon-followup');if(f.id)life.log.at(-1).causeId='joseon:'+f.id;}
  const event=eventFor(life.year);
  if(event&&!s.seen.includes(event.year)){
   s.seen.push(event.year);note(life,s,event.year+'년 · '+event.title+' — '+event.detail,'history');

@@ -145,8 +145,10 @@ function prompt(life){
  if(!bank)return null;
  const j=J.ensure(life);
  const family=life.age>=41?(j.married?'식구가 늘어 서로 돌볼 일이 많다. ':'혼자 지내는 때도 이웃과 관계를 이어갈 수 있다. '):'';
- return {title:bank.title,description:j.region+'에서 '+j.occupation+' 일을 경험하며 살아왔다. '+family+'지금 어떤 일을 먼저 할까?',
-  options:bank.options.map(([label,note,action,effects])=>({label,note,action,effects}))};
+ return {title:bank.title,description:j.region+'에서 '+j.occupation+' 일을 해 왔다. '+family+'무엇부터 할까?',
+  options:bank.options.map(([label,note,action,effects])=>action==='share'&&V2.ensure(life).grain<12
+    ?{label:'친척과 이웃의 일손을 돕는다',note:'나눌 곡식이 없어 대신 시간과 품을 보탠다',action:'shareLabor',effects:{bonds:5,health:-2}}
+    :{label,note,action,effects})};
 }
 const OUTCOMES={
  hands:'집안에서 익힌 손기술이 바쁜 날에 도움이 되었다.',
@@ -158,6 +160,7 @@ const OUTCOMES={
  store:'예전에 아껴 둔 곡식이 살림이 어려운 때 도움이 되었다.',
  repair:'고쳐 놓은 집과 도구를 다시 쓸 수 있었다.',
  share:'어려울 때 곡식을 나누었던 이웃이 오늘은 집안일을 거들어 주었다.',
+ shareLabor:'곡식 대신 일손을 보탰던 이웃이 그날의 일을 기억하고 있었다.',
  teach:'어린 이웃에게 알려 준 기술이 마을에서 이어지고 있었다.',
  work:'함께 손본 길을 걸으며 그날 도왔던 사람들이 떠올랐다.',
  rest:'몸을 돌보며 지낸 시간 덕분에 하던 일을 다시 할 힘을 찾았다.',
@@ -178,7 +181,8 @@ function choose(life,index){
  if(a==='craft'){s.craft+=2;s.skill+=1;j.capital+=5;}
  if(a==='store'){w.grain=clamp(w.grain+20,0,200);j.capital-=9;}
  if(a==='repair'){s.skill+=1;j.capital-=5;w.grain=clamp(w.grain+4,0,200);}
- if(a==='share'){w.grain=clamp(w.grain-12,0,200);w.community=clamp(w.community+10,0,100);w.helpGiven++;s.kinship+=8;}
+ if(a==='share'){if(w.grain<12)return false;w.grain-=12;w.community=clamp(w.community+10,0,100);w.helpGiven++;s.kinship+=8;}
+ if(a==='shareLabor'){w.community=clamp(w.community+7,0,100);s.kinship+=6;}
  if(a==='teach'){s.kinship+=8;j.literacy+=1;}
  if(a==='work'){s.kinship+=7;w.community=clamp(w.community+7,0,100);}
  if(a==='rest'){j.capital+=3;}
@@ -192,7 +196,7 @@ function choose(life,index){
  s.decisions=s.decisions.slice(-35);s.choiceCount++;
  s.followups.push({id,year:life.year+3,action:a,text:OUTCOMES[a]});
  s.followups=s.followups.slice(-20);
- log(life,s,choice.title+' — '+opt.label,'joseon3-choice');
+ log(life,s,choice.title+' — '+opt.label,'joseon3-choice');life.log.at(-1).causeId='joseon3:'+id;
  s.active=null;life.pending=null;promote(life,s);
  return true;
 }
@@ -204,10 +208,10 @@ function afterYear(life){
   const bonus=Math.min(4,Math.floor(s.skill/2));j.capital=clamp(j.capital+bonus,-120,600);
  }
  for(const event of s.followups.filter(e=>e.year<=life.year)){
-  log(life,s,event.text,'joseon3-followup');
+  log(life,s,event.text,'joseon3-followup');if(event.id)life.log.at(-1).causeId='joseon3:'+event.id;
   if(event.action==='store'){w.grain=clamp(w.grain+8,0,200);}
   if(['route','craft','field','hands'].includes(event.action))j.capital=clamp(j.capital+5,-120,600);
-  if(['share','teach','mentor','work'].includes(event.action)){s.kinship=clamp(s.kinship+5,0,100);life.change({bonds:2});}
+  if(['share','shareLabor','teach','mentor','work'].includes(event.action)){s.kinship=clamp(s.kinship+5,0,100);life.change({bonds:2});}
  }
  s.followups=s.followups.filter(e=>e.year>life.year);
  livedMoment(life,s);
