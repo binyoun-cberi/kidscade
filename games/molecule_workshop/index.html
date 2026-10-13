@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ecf7ff">
+  <meta name="description" content="원자 타일을 모아 물과 여러 물질의 화학식을 완성하는 키즈케이드 과학 퍼즐 게임">
+  <title>분자 공방: 원자 타일 연구소 | KIDSCADE</title>
+  <script src="../../kidscade-game-sdk.js" data-game-id="molecule_workshop" data-title="분자 공방" data-shell="true" data-mute="false"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">K</span><div><p class="eyebrow">KIDSCADE SCIENCE CLUB</p><h1>분자 공방</h1><p class="subtitle">원자 타일을 모아 새로운 물질을 발견해 봐!</p></div></div>
+      <div class="top-stat"><span aria-hidden="true">🔎</span><span id="discovery-count">0 / 12</span><small>발견한 물질</small></div>
+    </header>
+
+    <section class="mission panel" aria-labelledby="goal-name">
+      <div class="mission-icon" aria-hidden="true">🧪</div>
+      <div class="mission-main">
+        <div class="mission-kicker"><span class="live-dot"></span> 오늘의 연구 <span id="goal-status" class="status-pill">목표 0 / 12</span></div>
+        <h2 id="goal-name">물</h2>
+        <p>원자 타일을 작업대에 놓고 화학식을 완성해 봐.</p>
+      </div>
+      <div class="goal-formula-card" id="goal-card"><span class="goal-kind" id="goal-kind">분자</span><strong id="goal-formula">H₂O</strong><small id="goal-composition">H2 · O</small></div>
+      <label class="goal-picker">목표 바꾸기<select id="goal-select" aria-label="연구 목표 선택"></select></label>
+    </section>
+
+    <section class="workshop-layout" aria-label="분자 공방">
+      <aside class="materials-panel panel">
+        <div class="section-heading"><div><span class="step-number">01</span><h2>원자 서랍</h2></div><span class="tiny-note">눌러서 한 개 꺼내기</span></div>
+        <p class="helper">필요한 원자를 골라 작업대에 놓아 봐. PC에서는 끌어다 놓을 수도 있어!</p>
+        <div id="materials" class="materials-grid" aria-label="사용할 수 있는 원자"></div>
+        <div class="drawer-note"><span>💡</span><span>각 타일은 원자 1개야. 같은 타일을 여러 번 눌러도 돼.</span></div>
+      </aside>
+
+      <section class="bench-panel panel" aria-labelledby="bench-title">
+        <div class="section-heading bench-heading"><div><span class="step-number">02</span><h2 id="bench-title">조합 작업대</h2></div><span id="piece-count" class="piece-count">0 / 8 타일</span></div>
+        <div class="board-frame">
+          <div class="board-grid" aria-hidden="true"></div>
+          <div id="board" class="board" aria-label="원자 타일을 놓는 작업대" aria-live="polite"><p class="board-empty">원자 타일을 여기에 놓아 봐!</p></div>
+          <div class="board-caption"><span class="orbit" aria-hidden="true">✦</span><span>원자 수를 맞추면 물질을 발견할 수 있어!</span></div>
+        </div>
+        <div class="formula-strip"><span>지금 놓은 원자</span><strong id="current-formula">아직 비어 있어요</strong></div>
+        <div class="bench-actions">
+          <button id="combine-button" class="primary-button" type="button" disabled><span aria-hidden="true">✦</span> 조합하기</button>
+          <button id="hint-button" class="soft-button" type="button">힌트</button>
+          <button id="undo-button" class="icon-button" type="button" aria-label="마지막 원자 빼기" title="마지막 원자 빼기" disabled>↶</button>
+          <button id="clear-button" class="icon-button" type="button" aria-label="작업대 비우기" title="작업대 비우기">⌫</button>
+        </div>
+        <p class="bench-footnote">틀려도 괜찮아. 원자 타일을 눌러 빼고 다시 조합해 보자.</p>
+      </section>
+
+      <aside class="collection-panel panel">
+        <div class="section-heading"><div><span class="step-number">03</span><h2>발견 도감</h2></div><span id="completed-count" class="tiny-note">0개 목표 달성</span></div>
+        <div class="collection-progress"><div class="progress-track"><span id="collection-fill"></span></div><span id="collection-discovery-count">0 / 12</span></div>
+        <div id="collection" class="collection-list" aria-label="발견한 물질과 목표 목록"></div>
+      </aside>
+    </section>
+
+    <footer class="safety-note"><span aria-hidden="true">🛡️</span><p>이 게임은 화학식을 배우는 모형 퍼즐이에요. 실제 물질을 만들거나 섞는 방법을 안내하지 않아요.</p><span class="footer-stars" aria-hidden="true">✦ ✦ ✦</span></footer>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="result-dialog" class="result-dialog" aria-labelledby="result-title">
+    <div class="result-content"><div id="result-symbol" class="result-symbol">H₂O</div><span class="result-kicker">LAB NOTE</span><h2 id="result-title">물 발견!</h2><p id="result-copy"></p><div class="fact-card"><span>🔬 작은 발견</span><p id="result-fact"></p></div><button id="result-next" class="primary-button" type="button">계속 탐험하기</button></div>
+  </dialog>
+
+  <script src="core.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
