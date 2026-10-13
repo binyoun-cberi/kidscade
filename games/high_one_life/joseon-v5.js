@@ -73,10 +73,14 @@ function make(life){
   legal,role:'',duty:info.duty,serviceYears:0,burdens:[],memories:[],decisions:[],
   processedYear:life.year,queue:[],active:null,seen:[],rank:0,royalClaim:false,
   freed:life.year>=1894&&isEnslaved(origin),monastic:false,inspector:false,complaints:0};
- if(origin==='몰락 양반')j.capital=Math.min(j.capital,30);
  if(s.freed){s.originLabel='옛 '+info.label;s.trade='품팔이와 가족의 살림';}
- if(origin==='소작 농가')j.land=Math.max(1,j.land);
- if(origin==='어부 가계'||origin==='주막 가계')j.land=Math.min(j.land,1);
+ // Historical origin sets starting conditions only, never reapplies them to
+ // an adult restoring a saved game.
+ if(life.age===0){
+  if(origin==='몰락 양반')j.capital=Math.min(j.capital,30);
+  if(origin==='소작 농가')j.land=Math.max(1,j.land);
+  if(origin==='어부 가계'||origin==='주막 가계')j.land=Math.min(j.land,1);
+ }
  if(life.age===0)life.logEvent(s.originLabel+'에서 태어났다. '+(s.freed?'법적 노비제는 이미 폐지되었지만 가족의 처지는 쉽게 바뀌지 않았다.':info.duty+'이 집안의 생활과 가까웠다.'),'joseon5-family');
  if(life.money&&life.year<1900)life.money.netWorth=j.capital*100;
  return s;
