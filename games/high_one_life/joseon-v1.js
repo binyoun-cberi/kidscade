@@ -480,9 +480,10 @@ function yearly(life){
  if(event&&!s.seen.includes(event.year)){
   s.seen.push(event.year);note(life,s,event.year+'년 · '+event.title+' — '+event.detail,'history');
   if(event.kind==='war'||event.kind==='borderWar'||event.kind==='unrest'){
-   const northern=['평안도','함경도'].includes(s.region);
+   const borderRegion=event.year===1528?s.region==='평안도':
+    (event.year===1406||event.year===1554)?s.region==='함경도':['평안도','함경도'].includes(s.region);
    const involved=event.kind==='war'&&(event.year!==1627||['평안도','황해도','경기도','한양'].includes(s.region))||
-    event.kind==='borderWar'&&northern||event.kind==='unrest'&&(event.year!==1811||s.region==='평안도');
+    event.kind==='borderWar'&&borderRegion||event.kind==='unrest'&&(event.year!==1811||s.region==='평안도');
    if(involved){
     s.warMemory.push(event.title);s.warMemory=s.warMemory.slice(-8);
     s.hardshipUntil=Math.max(s.hardshipUntil,life.year+3);
