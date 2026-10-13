@@ -3,10 +3,11 @@
  * This module is loaded after v13 so pre-1900 years never run modern life rules.
  */
 (function(root,factory){
-  const api=factory(root?.OneLifeSim,root?.OneLifeWorld2);
+  const policy=root?.OneLifeJoseonPolicy||(typeof module!=='undefined'&&module.exports?require('./joseon-history-policy.js'):null);
+  const api=factory(root?.OneLifeSim,root?.OneLifeWorld2,policy);
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   if(root)root.OneLifeJoseon=api;
-})(typeof window!=='undefined'?window:null,function(Sim,W2){
+})(typeof window!=='undefined'?window:null,function(Sim,W2,P){
 'use strict';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const isJoseon=life=>!!life&&life.country?.[0]==='대한민국'&&life.birthYear>=1392&&life.birthYear<=1897;
@@ -400,21 +401,38 @@ function yearly(life){
  let income=0,expense=0;
  if(life.age>=12){
   const labor=householdLabor(life,s);
-  const production=s.retired?5:s.office?26:s.occupation.includes('장사')?19:s.occupation.includes('글')?13:s.occupation.includes('돌봄')?9:s.occupation.includes('품팔이')?13+s.land*2:12+s.land*3;
+  const trade=s.occupation,job=life.joseon5?.role||'';
+  const production=s.retired?5:s.office?26:
+   /어부|어업|고기잡/.test(trade+' '+job)?15:
+   /주모|주막/.test(trade+' '+job)?17:
+   /도공|대장장이|목수|장인/.test(trade+' '+job)?16:
+   /통역|역관|의관|서리/.test(trade+' '+job)?15:
+   /승려|비구니|사찰/.test(trade+' '+job)?9:
+   trade.includes('장사')?19:trade.includes('글')?13:trade.includes('돌봄')?9:
+   trade.includes('품팔이')?13+s.land*2:12+s.land*3;
+  const livelihoodVariance=/어부|어업|고기잡/.test(trade+' '+job)&&life.rand()<.17?-8:
+   /주모|주막/.test(trade+' '+job)&&life.rand()<.16?-5:0;
   const helpFromFamily=life.age>=12?Math.min(3,Math.max(0,labor.hands-1))*2:0;
   const hardship=life.year<=s.hardshipUntil?.55:1;
   // The century shifts risk and opportunities in gameplay, not in historical wage units.
   const periodFactor=life.year<1500?.94:life.year<1600?.9:life.year<1700?.78:
     life.year<1800?1.06:life.year<1876?.89:life.year<1894?1.04:1;
   const openPortBonus=life.year>=1876&&s.occupation.includes('장사')?3:0;
-  income=Math.round((production+openPortBonus+helpFromFamily)*periodFactor*hardship*(.75+life.rand()*.55));
+  income=Math.round(Math.max(0,production+livelihoodVariance+openPortBonus+helpFromFamily)*periodFactor*hardship*(.75+life.rand()*.55));
   const book=economicBook(s),rented=Math.max(0,s.land-book.ownedLand);
   const subsistence=9+Math.round(s.household*2),care=(s.married?2:0)+s.children*2;
   const landExpenses=Math.max(0,s.land),rent=Math.round(rented*1.5);
   expense=subsistence+care+landExpenses+rent;
   const beforeLevies=expense;
-  if(life.year<1894&&s.status==='상민')expense+=3;
-  if(life.year===1750&&life.gender==='남자'&&s.status==='상민')expense=Math.max(0,expense-2);
+  // Regional tribute is either customary in-kind obligations or a land-linked
+  // Daedong levy; annual game units are not reconstructed historic tax rates.
+  const levy=P?.tribute(life.year,s.region);
+  if(life.year<1894&&s.status!=='천민'){
+   if(levy?.kind==='daedong')expense+=Math.max(1,Math.round(s.land*1.2));
+   else if(levy?.kind==='tribute')expense+=3;
+   else if(levy?.kind==='pyeongan')expense+=2;
+   else if(levy?.kind==='capital')expense+=2;
+  }
   book.yearlyIncome=income;book.yearlyExpense=expense;
   book.lastCosts={subsistence,care,landExpenses,rent,levies:expense-beforeLevies,scarcity:life.year<=s.hardshipUntil,helpFromFamily};
   s.capital=clamp(s.capital+income-expense,-120,600);
