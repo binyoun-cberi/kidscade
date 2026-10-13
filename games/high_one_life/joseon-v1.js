@@ -407,7 +407,7 @@ function hydrate(life,data){
    if(Number.isFinite(safe[k]))book[k]=clamp(Math.round(safe[k]),k==='previousCapital'?-120:0,2000);
   if(Number.isInteger(safe.currentYear))book.currentYear=clamp(safe.currentYear,life.birthYear,life.year);
   if(safe.lastCosts&&typeof safe.lastCosts==='object')
-   book.lastCosts=Object.fromEntries(['subsistence','care','landExpenses','rent','helpFromFamily'].map(k=>[k,clamp(Number(safe.lastCosts[k])||0,0,1000)]));
+   book.lastCosts={...Object.fromEntries(['subsistence','care','landExpenses','rent','helpFromFamily'].map(k=>[k,clamp(Number(safe.lastCosts[k])||0,0,1000)])),scarcity:safe.lastCosts.scarcity===true};
   for(const k of ['lastCause','creditor'])if(typeof safe[k]==='string')book[k]=safe[k].slice(0,140);
   book.experiencedDebt=safe.experiencedDebt===true;
   book.recent=Array.isArray(safe.recent)?safe.recent.filter(x=>typeof x==='string').slice(-8).map(x=>x.slice(0,180)):[];
