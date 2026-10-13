@@ -227,7 +227,9 @@ function pathway(life,s){
  if(s.career){
   const target=picks[0];
   choices=[
-   {label:CAREERS[target].name+'을 겸업으로 배운다',action:'side:'+target,
+   s.secondary?{label:'두 생업의 시간을 조정한다',action:'balance',
+    note:'겸업을 유지하면서 몸과 살림에 무리가 없도록 일을 조정한다.'}:
+    {label:CAREERS[target].name+'을 겸업으로 배운다',action:'side:'+target,
     note:'기존 일을 계속하지만 두 생업을 함께 돌보려면 시간과 몸을 나누어야 한다.'},
    {label:CAREERS[(picks[1]||target)].name+'으로 전직한다',action:'enter:'+(picks[1]||target),
     note:'지금까지 쌓은 경험은 남지만 새 생업의 살림을 다시 꾸려야 한다.'},
@@ -322,7 +324,11 @@ function choose(life,index){
  if(q.type==='path'){
   if(action.startsWith('enter:'))adopt(life,action.slice(6));
   else if(action.startsWith('side:'))adopt(life,action.slice(5),{secondary:true});
-  else life.change({bonds:2});
+  else if(action==='balance'){
+   life.change({health:-1,bonds:2});
+   if(s.career)s.career.quality=clamp(s.career.quality+2,0,100);
+   if(s.secondary)s.secondary.quality=clamp(s.secondary.quality+2,0,100);
+  }else life.change({bonds:2});
  }else if(work){
   const result=updateWork(life,work,action,q.eventIndex);
   if(result.needsMore)remember(life,s,'필요한 '+CAREERS[work.code].supply+'이 부족해 계획한 일을 다 이루지 못했다.');
