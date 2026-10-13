@@ -1262,7 +1262,7 @@ function worldChunkKey(x,z){
 }
 const voxelRuntime=window.CubeArchitectVoxel||null;
 function newSurvivalStats(){
-  return {harvestedWood:0,harvestedStone:0,crafted:{},placed:{},placedBlocks:0,
+  return {harvestedWood:0,harvestedStone:0,workbenchUsed:false,crafted:{},placed:{},placedBlocks:0,
     cuboids:[],shelterBuilt:false,paintedFaces:[],smelted:{},biomes:[],found:[],restored:[],
     foraged:{},hunted:{},foodsEaten:0};
 }
@@ -1275,6 +1275,8 @@ function trackSurvival(action,type,n=1){
     const field=action==='craft'?'crafted':action==='place'?'placed':'smelted';
     survivalStats[field][type]=(survivalStats[field][type]||0)+n;
     if(action==='place')survivalStats.placedBlocks++;
+  }else if(action==='workbench'){
+    survivalStats.workbenchUsed=true;
   }else if(action==='cuboid'){
     const dims=String(type).split('x').map(Number).sort((a,b)=>a-b).join('x');
     if(dims&&!survivalStats.cuboids.includes(dims))survivalStats.cuboids.push(dims);
@@ -3770,7 +3772,7 @@ function advanceSurvival(){
   if(gameFreeMode!=='survival')return;
   const discovered=refreshRecipeDiscoveries(true);
   const progressed=syncSurvivalAdventureState(true);
-  if(discovered.length&&!progressed)toast('새 제작법 '+discovered.length+'개 발견 · 가방에서 확인해 보세요.');
+  if(discovered.length&&!progressed)toast('새 제작법 '+discovered.length+'개 발견 · 마법의 제작대에서 확인해 보자.');
   if(progressed||discovered.length)saveFreeWorld();
   $('actionXray').classList.remove('hidden');
   configureMobileMode('free');updateFreeMission();
@@ -3835,7 +3837,7 @@ function updateCraftDiscoveryHud(){
   const notice=$('craftDiscoveryNotice');
   if(notice){
     notice.classList.toggle('hidden',gameFreeMode!=='survival'||unread===0);
-    notice.textContent=unread?('새 제작법 '+unread+' · E로 확인'):'';
+    notice.textContent=unread?('새 제작법 '+unread+' · 제작대에서 확인'):'';
   }
   const summary=$('craftDiscoverySummary');
   if(summary)summary.textContent='발견한 제작법 '+discoveredRecipeIds.size+' / '+worldRules.RECIPES.length+
@@ -4857,7 +4859,10 @@ function placeFreeBlock(hit){
   const hitType=hit.object.userData.type,u=hit.object.userData;
   if(hitType==='door'){toggleDoorAt(u.gx,u.gy,u.gz);return}
   if(hitType==='furnace'){toggleFurnace(true,u.gx,u.gy,u.gz);return}
-  if(hitType==='workbench'){survivalInventoryTab='craft';if(campActive())survivalCamp.workbenchOpened=true;toggleInventory(true,'craft');return}
+  if(hitType==='workbench'){
+    survivalInventoryTab='craft';if(campActive())survivalCamp.workbenchOpened=true;
+    trackSurvival('workbench','used');toggleInventory(true,'craft');return
+  }
   if(typeof interactLifeBlock==='function'&&interactLifeBlock(hitType,u.gx,u.gy,u.gz))return;
   if(typeof FARM_PLANT_TYPES!=='undefined'&&FARM_PLANT_TYPES.includes(selectedType)){plantFarmItem(hit);return}
   if(!PLACEABLE_TYPES.includes(selectedType)){
@@ -6668,7 +6673,10 @@ function mobileSpecialUseTarget(){
     if(toggleDoorAt(u.gx,u.gy,u.gz))return true;
   }
   if(type==='furnace'){toggleFurnace(true,u.gx,u.gy,u.gz);return true}
-  if(type==='workbench'){survivalInventoryTab='craft';if(campActive())survivalCamp.workbenchOpened=true;toggleInventory(true,'craft');return true}
+  if(type==='workbench'){
+    survivalInventoryTab='craft';if(campActive())survivalCamp.workbenchOpened=true;
+    trackSurvival('workbench','used');toggleInventory(true,'craft');return true
+  }
   if(interactLifeBlock(type,u.gx,u.gy,u.gz))return true
   if(nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
     openLandmarkDungeon(nearLandmarkPoi);return true;
