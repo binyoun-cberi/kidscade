@@ -14,6 +14,7 @@ const TEST_FILES = [
   "tests/one-life-joseon-economy.test.cjs",
   "tests/one-life-joseon-social.test.cjs",
   "tests/one-life-joseon-policy.test.cjs",
+  "tests/one-life-joseon-careers.test.cjs",
   "tests/one-life-v2.test.cjs",
   "tests/one-life-country.test.cjs",
   "tests/one-life-branches.test.cjs",
