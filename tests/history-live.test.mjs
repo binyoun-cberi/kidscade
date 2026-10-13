@@ -572,3 +572,31 @@ test('heritage name mode appears in teacher, next-round, and solo setup',()=>{
   assert.match(durable,/hasHistoricalHeritage/);
   assert.match(durable,/questionMode==='heritage'/);
 });
+
+
+test('timebattle v2 layout keeps teacher, solo and next-round quiz controls intact', () => {
+  const base = new URL('../games/high_history_timebattle/', import.meta.url);
+  const html=fs.readFileSync(new URL('history_timebattle.html',base),'utf8');
+  const css=fs.readFileSync(new URL('timebattle-ui-v2.css',base),'utf8');
+  const js=fs.readFileSync(new URL('timebattle-ui-v2.js',base),'utf8');
+  assert.match(html,/timebattle-ui-v2\.css\?v=1/);
+  assert.match(html,/timebattle-ui-v2\.js\?v=1/);
+  for (const id of ['hostSetup','soloSetup','roundSetup','questionMode','soloQuestionMode',
+    'roundQuestionMode','hostEraPicker','soloEraPicker','roundEraPicker',
+    'questionCount','soloQuestionCount','roundQuestionCount','checkpointCustom','roundCheckpointCustom']) {
+    assert.ok(html.includes('id="'+id+'"'),id+' was removed');
+  }
+  assert.match(js,/\.dispatchEvent\(new Event\('change'/);
+  assert.match(js,/aria-pressed/);
+  assert.match(js,/aria-hidden/);
+  assert.match(js,/document\.createElement/);
+  assert.match(js,/advanced-fields/);
+  assert.match(js,/\.querySelectorAll\('input\[type="checkbox"\]'/);
+  assert.match(js,/TimebattleUI=\{init,refresh/);
+  assert.match(css,/\.mode-card:focus-visible/);
+  assert.match(css,/\.era-chip input:focus-visible/);
+  assert.match(css,/#game \.answers\.ox/);
+  assert.match(css,/@media\(max-width:760px\)/);
+  assert.match(html,/questionMode:soloGame\.settings\.questionMode/);
+  assert.match(html,/classList\.toggle\('urgent',left>0&&left<=5\)/);
+});
