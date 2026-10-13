@@ -315,7 +315,7 @@ async function api(path,opts={},retries=0){
   }
   throw last||new Error('server_error');
 }
-function errorText(e){const m=String(e.message||e);return ({room_not_found:'방을 찾을 수 없어요.',room_closed:'수업 방이 종료되었어요.',room_full:'방이 가득 찼어요.',room_already_started:'이미 시작한 방이에요.',no_players:'한 명 이상 입장해야 시작할 수 있어요.',already_answered:'이미 답을 제출했어요.',answer_closed:'답을 받을 시간이 끝났어요.',stale_question:'이미 다음 문제로 넘어갔어요.',reveal_not_ready:'아직 문제 풀이 시간이 남아 있어요.',checkpoint_not_ready:'지금은 중간 순위 화면이 아니에요.',round_in_progress:'문제를 푸는 중에는 판 설정을 바꿀 수 없어요.',person_era_empty:'선택한 시대에는 인물 이름 문제가 없어요. 삼국 이후의 시대를 포함해 주세요.',heritage_era_empty:'선택한 시대에는 문화유산 문제가 없어요. 다른 시대를 포함해 주세요.'})[m]||'연결에 문제가 생겼어요. 다시 시도해 주세요.'}
+function errorText(e){const m=String(e.message||e);return ({room_not_found:'방을 찾을 수 없어요.',room_closed:'수업 방이 종료되었어요.',room_full:'방이 가득 찼어요.',room_already_started:'이미 시작한 방이에요.',no_players:'한 명 이상 입장해야 시작할 수 있어요.',already_answered:'이미 답을 제출했어요.',answer_closed:'답을 받을 시간이 끝났어요.',stale_question:'이미 다음 문제로 넘어갔어요.',reveal_not_ready:'아직 문제 풀이 시간이 남아 있어요.',checkpoint_not_ready:'지금은 중간 순위 화면이 아니에요.',round_in_progress:'문제를 푸는 중에는 판 설정을 바꿀 수 없어요.',person_era_empty:'선택한 시대에는 인물 이름 문제가 없어요. 삼국 이후의 시대를 포함해 주세요.',heritage_era_empty:'선택한 시대에는 문화유산 문제가 부족해요. 문제 수를 줄이거나 시대를 더 선택해 주세요.'})[m]||'연결에 문제가 생겼어요. 다시 시도해 주세요.'}
 async function checkHealth(){const el=$('serverStatus');try{const r=await fetch(API+'/health',{cache:'no-store'});const d=await r.json();if(!r.ok||!d.ok)throw new Error();el.textContent='● LIVE 서버 연결됨 · 핵심 지식 '+Number(d.facts||0).toLocaleString()+'개 · 출제 문항 '+Number(d.questions||0).toLocaleString()+'개';el.style.color='#6ee7b7'}catch(_){el.textContent='● LIVE 서버에 연결되지 않았어요 · 혼자 연습은 그대로 이용할 수 있어요';el.style.color='#ff9aa5'}}
 
 function setConnectionState(kind='',text=''){
@@ -388,7 +388,7 @@ async function createRoom(){
   try{
     if(!selectedEras('hostEraPicker').length)return alert('가르칠 시대를 하나 이상 선택해 주세요.');
     if(!await validatePeopleEras($('questionMode').value,selectedEras('hostEraPicker')))return;
-    if(!await validateHeritageEras($('questionMode').value,selectedEras('hostEraPicker')))return;
+    if(!await validateHeritageEras($('questionMode').value,selectedEras('hostEraPicker'),+$('questionCount').value))return;
     const d=await api('/rooms',{method:'POST',body:JSON.stringify({transport:'v2',questionCount:+$('questionCount').value,secondsPerQuestion:+$('seconds').value,...checkpointBody(),orderMode:$('orderMode').value,questionMode:$('questionMode').value,eras:selectedEras('hostEraPicker'),scoreMode:'reset'})});
     session={role:'host',code:d.code,token:d.hostToken}; save(); startPolling();
   }catch(e){alert(errorText(e))}
@@ -428,7 +428,7 @@ async function saveRoundSetup(){
   const eras=selectedEras('roundEraPicker');if(!eras.length)return alert('가르칠 시대를 하나 이상 선택해 주세요.');
   try{
     if(!await validatePeopleEras($('roundQuestionMode').value,eras))return;
-    if(!await validateHeritageEras($('roundQuestionMode').value,eras))return;
+    if(!await validateHeritageEras($('roundQuestionMode').value,eras,+$('roundQuestionCount').value))return;
     await api('/reconfigure',{method:'POST',headers:authHeaders(),body:JSON.stringify({
       code:session.code,questionCount:+$('roundQuestionCount').value,secondsPerQuestion:+$('roundSeconds').value,
       orderMode:$('roundOrderMode').value,questionMode:$('roundQuestionMode').value,eras,scoreMode:$('roundScoreMode').value,
@@ -477,9 +477,9 @@ async function issueRecovery(playerId){
 async function copyText(value,message){try{await navigator.clipboard.writeText(value);toastFx(message)}catch(_){prompt(message,value)}}
 
 async function loadBank(){if(!bankModule)bankModule=await import('../../data/history-live-question-bank.mjs');return bankModule}
-async function validateHeritageEras(mode,eras){
+async function validateHeritageEras(mode,eras,count){
   if(mode!=='heritage')return true;
-  if((await loadBank()).hasHistoricalHeritage(eras))return true;
+  if((await loadBank()).hasHistoricalHeritage(eras,count))return true;
   alert('선택한 시대에는 문화유산 문제가 없어요. 다른 시대를 포함해 주세요.');
   return false;
 }
@@ -522,7 +522,7 @@ function prepareSoloQuestions(bank,questions,questionMode){
 async function startSolo(){
   try{
     const bank=await loadBank(),count=+$('soloQuestionCount').value,seconds=+$('soloSeconds').value,nickname=$('soloNickname').value.trim()||'나';
-    const orderMode=$('soloOrderMode').value,questionMode=$('soloQuestionMode').value,eras=selectedEras('soloEraPicker');if(!eras.length)return alert('연습할 시대를 하나 이상 선택해 주세요.');if(!await validatePeopleEras(questionMode,eras))return;if(!await validateHeritageEras(questionMode,eras))return;const bankMode=questionMode==='choice-short'?'choice':questionMode,picked=bank.pickHistoryQuestions(count,Math.random,orderMode,bankMode,eras),questions=prepareSoloQuestions(bank,picked,questionMode);
+    const orderMode=$('soloOrderMode').value,questionMode=$('soloQuestionMode').value,eras=selectedEras('soloEraPicker');if(!eras.length)return alert('연습할 시대를 하나 이상 선택해 주세요.');if(!await validatePeopleEras(questionMode,eras))return;if(!await validateHeritageEras(questionMode,eras,count))return;const bankMode=questionMode==='choice-short'?'choice':questionMode,picked=bank.pickHistoryQuestions(count,Math.random,orderMode,bankMode,eras),questions=prepareSoloQuestions(bank,picked,questionMode);
     session={role:'solo',playerId:'solo',nickname}; answeredFor=-1;
     soloGame={questions,index:0,seconds,score:0,streak:0,correct:0,totalAnswered:0,last:null,answers:[],saved:false,runStartedAt:Date.now(),settings:{count,seconds,orderMode,questionMode,eras:[...eras]}};
     startSoloQuestion();
