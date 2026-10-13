@@ -1102,6 +1102,10 @@ function foldPreview(){
     plane.material.side=THREE.DoubleSide;
     faceGroups[i].add(plane);
   }
+  // Match the finished cube's fixed face order (+X,-X,+Y,-Y,+Z,-Z).
+  // The unfolded layout starts with face 0 on +Z; this rotation keeps the same
+  // marked faces on the same physical sides after folding.
+  root.rotation.set(Math.PI,Math.PI/2,0);
   root.position.set(0,0,0);scene.add(root);foldPieces.push(root);
   // Since rotations propagate down the graph, each child stays attached to its parent.
   const start=performance.now();
