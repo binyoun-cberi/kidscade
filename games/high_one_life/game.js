@@ -50,7 +50,9 @@
   const safeRemove = key => { try { localStorage.removeItem(key); } catch (_) {} };
   function currentSave() {
     const stored = safeGet(SAVE_KEY);
-    return stored && stored.life ? Sim.Life.restore(stored.life) : null;
+    if(!stored?.life)return null;
+    const restored=Sim.Life.restore(stored.life);
+    return restored?.country?.[0]==='대한민국'?restored:null;
   }
   function refreshResume() {
     const resume = currentSave();
@@ -66,7 +68,7 @@
     const desired=Number($('birthYearInput').value);
     const birthYear=Number.isInteger(desired)&&desired>=1392&&desired<=2026?desired:2026;
     $('birthYearInput').value=String(birthYear);
-    const countryName=birthYear<1900||$('birthLocation').value==='korea'?'대한민국':undefined;
+    const countryName='대한민국';
     life = new Sim.Life(undefined,{birthYear,countryName});
     World8.ensure(life);if(Joseon.isJoseon(life))Joseon.ensure(life);
     else {World8.moment(life);World10.ensure(life);}History.contextualize(life);
@@ -76,21 +78,20 @@
     $('birthCertificate').classList.add('hidden');
     completed = false; paused = false; elapsed = 0;
     $('lifeStartBtn').classList.add('hidden');
-    $('birthCountry').textContent = '출생을 기다리는 중…';
-    $('birthFlag').textContent = '🌐';
+    $('birthCountry').textContent = '출생 지역을 정하는 중…';
+    $('birthFlag').textContent = '🇰🇷';
     $('birthDetail').textContent = birthYear+'년에 시작될 인생을 추첨합니다.';
     show('birth');
     let loops = 0;
-    const sample = Sim.COUNTRIES;
+    const sample = [['한양','📜'],['경상도','📜'],['평안도','📜'],['함경도','📜'],['제주도','📜']];
     const paint = country => { $('birthFlag').textContent = country[1]; $('birthCountry').textContent = country[0]; };
     roulette = setInterval(() => {
       loops++;
       paint(sample[(loops*7)%sample.length]);
       if(loops >= 19) {
         clearInterval(roulette); roulette = null;
-        paint(life.country);
-        if(life.country[0]==='대한민국' && life.year<1945)$('birthFlag').textContent='📜';
-        if(life.country[0]==='대한민국' && life.year<1945)$('birthCountry').textContent=History.place(life);
+        $('birthFlag').textContent='🇰🇷';
+        $('birthCountry').textContent=History.place(life);
         $('birthDetail').textContent = life.gender + ' · ' + life.familyLevel + ' · ' + life.year + '년 출생';
         paintCertificate();
         $('lifeStartBtn').classList.remove('hidden');
@@ -361,7 +362,7 @@
     rows.replaceChildren();
     if(!replayBasis || replayBasis.seed!==life.seed)return;
     const items=[
-      ['출생 국가',replayBasis.country,now.country],
+      ['출생 시대와 지역',replayBasis.country,now.country],
       ['가정환경',replayBasis.family,now.family],
       ['출생 주거',replayBasis.housing||'미상',now.housing||'미상'],
       ['살아온 기간',replayBasis.age+'세',now.age+'세'],
@@ -476,6 +477,7 @@
       btn.addEventListener('click',()=>{
         const before={stats:{...life.stats},netWorth:life.money?.netWorth,career:life.career};
         if(!life?.choose(index)) return;
+        if(!life.alive){finish();return;}
         const labels={health:'건강',happiness:'행복',knowledge:'배움',bonds:'인연',wealth:'살림'};
         const changes=Object.entries(labels).flatMap(([key,label])=>{
           const delta=(life.stats?.[key]||0)-(before.stats?.[key]||0);
@@ -504,7 +506,7 @@
     lastPeerRenderedAge=life.age;
     if(!peerCache||peerCache.seed!==life.seed){
       peerCache={seed:life.seed,people:Array.from({length:4},(_,i)=>{
-        const peer=new Sim.Life((life.seed+Math.imul(i+1,2654435761))>>>0,{birthYear:life.birthYear});
+        const peer=new Sim.Life((life.seed+Math.imul(i+1,2654435761))>>>0,{birthYear:life.birthYear,countryName:'대한민국'});
         World8.ensure(peer);if(Joseon.isJoseon(peer))Joseon.ensure(peer);else World8.moment(peer);History.contextualize(peer);
         return {life:peer,samples:[peerView(peer)]};
       })};
@@ -794,7 +796,6 @@
   document.querySelector('[data-close="rules"]').addEventListener('click',closeRules);
   document.querySelectorAll('[data-era-year]').forEach(btn=>btn.addEventListener('click',()=>{
     $('birthYearInput').value=btn.dataset.eraYear;
-    $('birthLocation').value=btn.dataset.eraPlace||'random';
     document.querySelectorAll('[data-era-year]').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
   }));
   document.querySelectorAll('[data-life-speed]').forEach(button=>button.addEventListener('click',()=>{
@@ -816,7 +817,7 @@
     if(!life||life.alive)return;
     const snapshot=captureEnding(life);
     replayBasis=snapshot;
-    life=new Sim.Life(snapshot.seed,{birthYear:snapshot.birthYear,countryName:snapshot.country});
+    life=new Sim.Life(snapshot.seed,{birthYear:snapshot.birthYear,countryName:'대한민국'});
     World8.ensure(life);if(Joseon.isJoseon(life))Joseon.ensure(life);else {World8.moment(life);World10.ensure(life);}History.contextualize(life);
     storyTab='';peerAgeChoice=0;timelineVisible=22;playSpeed=1;nextDecision=false;refreshSpeedControls();
     peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
