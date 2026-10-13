@@ -74,7 +74,7 @@ function make(life){
   processedYear:life.year,queue:[],active:null,seen:[],rank:0,royalClaim:false,
   freed:life.year>=1894&&isEnslaved(origin),monastic:false,inspector:false,complaints:0};
  if(origin==='몰락 양반')j.capital=Math.min(j.capital,30);
- if(s.freed)s.originLabel='옛 '+info.label;
+ if(s.freed){s.originLabel='옛 '+info.label;s.trade='품팔이와 가족의 살림';}
  if(origin==='소작 농가')j.land=Math.max(1,j.land);
  if(origin==='어부 가계'||origin==='주막 가계')j.land=Math.min(j.land,1);
  if(life.age===0)life.logEvent(s.originLabel+'에서 태어났다. '+(s.freed?'법적 노비제는 이미 폐지되었지만 가족의 처지는 쉽게 바뀌지 않았다.':info.duty+'이 집안의 생활과 가까웠다.'),'joseon5-family');
@@ -181,9 +181,17 @@ function troubleChoices(type){
 }
 function prepare(life,s){
  const j=J.ensure(life),age=life.age,origin=s.origin;
+ if(life.year===1801&&origin==='공노비'&&!s.freed&&dice(life.seed,1801)<.58){
+  // 1801 affected major palace and central-office slave registers, not all
+  // government and local bonded workers. This fictional branch is only a
+  // scenario illustrating the reform's uneven reach.
+  s.freed=true;s.legal='양인';
+  s.trade='품팔이와 가족의 살림';
+  remember(life,s,'내노비·시노비 혁파의 영향이 이 집안에도 미쳤다. 관아에 남은 노비가 모두 같은 처지가 된 것은 아니었다.');
+ }
  if(life.year>=1894&&s.legal!=='법적 신분 구별 폐지'){
   s.legal='법적 신분 구별 폐지';
-  if(isEnslaved(origin)&&!s.freed){s.freed=true;remember(life,s,'법적 노비제가 폐지되었다. 하지만 그동안의 예속과 차별이 곧바로 사라지지는 않았다.');}
+  if(isEnslaved(origin)&&!s.freed){s.freed=true;s.trade='품팔이와 가족의 살림';remember(life,s,'법적 노비제가 폐지되었다. 하지만 그동안의 예속과 차별이 곧바로 사라지지는 않았다.');}
  }
  if([18,27,39,54].includes(age))offer(life,s,'living','올해 나의 생업',roleChoices(s,j,life));
  const eligible=age>=16&&age<=58&&life.gender==='남자'&&s.legal==='양인'&&!isRoyal(origin);
@@ -246,7 +254,7 @@ function choose(life,index){
  if(['payservice','labor','guard'].includes(a))s.serviceYears++;
  if(['tribute','sharetribute','payservice','labor'].includes(a))s.burdens.push(life.year+'년 '+q.title);
  if(a==='freedom'){
-  if(success<.22){s.freed=true;s.legal='양인';remember(life,s,'속량이 받아들여져 예속된 신분에서 벗어났다. 아직 생계와 차별의 어려움은 남아 있었다.');}
+  if(success<.22){s.freed=true;s.legal='양인';s.trade='품팔이와 가족의 살림';remember(life,s,'속량이 받아들여져 예속된 신분에서 벗어났다. 아직 생계와 차별의 어려움은 남아 있었다.');}
   else remember(life,s,'속량의 길을 알아보았지만 허락을 얻지 못했다. 배운 일과 인연은 남았다.');
  }
  if(a==='throne'){s.royalClaim=true;s.rank=5;s.role='왕';j.occupation='국왕';remember(life,s,'계승을 거쳐 왕위에 올랐다. 국정을 결정하는 무거운 책임이 뒤따랐다.');}
@@ -276,7 +284,7 @@ function choose(life,index){
 function summary(life){
  const s=ensure(life);if(!s)return null;
  const j=J.ensure(life);
- return {origin:s.origin,originLabel:s.originLabel,legal:s.legal,role:s.role||j.occupation,
+ return {origin:s.origin,originLabel:s.originLabel,legal:life.year>=1894?'법적 신분 구별 폐지':s.legal,role:s.role||j.occupation,
   trade:s.trade,duty:s.duty,freed:s.freed,rank:s.rank,
   obligations:s.burdens.slice(-3),serviceYears:s.serviceYears,memories:s.memories.slice(-3),
   decisions:s.decisions.length,inspector:s.inspector,monastic:s.monastic};
