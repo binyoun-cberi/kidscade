@@ -287,7 +287,14 @@ function yearEnd(life,s){
 }
 function prompt(life){
  const s=ensure(life),q=s?.active;if(!q)return null;
- return {title:q.title,description:q.description,options:q.choices.map(x=>({label:x.label,note:x.note||'',action:x.action}))};
+ const work=q.type==='career'?[s.career,s.secondary].find(x=>x?.code===q.code):null;
+ return {title:q.title,description:q.description,options:q.choices.map(x=>{
+  const rule=STANCES[x.action],supply=work&&CAREERS[work.code].supplyKey;
+  const unavailable=rule?.stock<0&&work&&work.resources[supply]<-rule.stock;
+  return unavailable?{label:'부족한 '+CAREERS[work.code].supply+'을 구할 다른 방법을 찾는다',
+   note:'지금 가진 재료로는 원래 하려던 일을 할 수 없다.',action:'adapt'}:
+   {label:x.label,note:x.note||'',action:x.action};
+ })};
 }
 function updateWork(life,work,action,eventIndex){
  const cfg=CAREERS[work.code],supply=cfg.supplyKey,asset=cfg.assetKey;
@@ -309,7 +316,7 @@ function updateWork(life,work,action,eventIndex){
 function choose(life,index){
  const s=ensure(life),p=prompt(life),q=s?.active;
  if(!q||!p||!life.alive||!Number.isInteger(index)||index<0||index>=p.options.length)return false;
- const picked=q.choices[index],action=picked.action,work=q.type==='career'?
+ const picked=p.options[index],action=picked.action,work=q.type==='career'?
   [s.career,s.secondary].find(x=>x?.code===q.code&&x.started<=q.year&&(!x.ended||x.ended>=q.year)):null;
  const eventTitle=q.title;
  if(q.type==='path'){
