@@ -4,10 +4,11 @@
  * Runs only for births before 1900 and during Joseon-era gameplay.
  */
 (function(root,factory){
- const api=factory(root?.OneLifeSim,root?.OneLifeJoseon,root?.OneLifeJoseon2,root?.OneLifeJoseon3);
+ const policy=root?.OneLifeJoseonPolicy||(typeof module!=='undefined'&&module.exports?require('./joseon-history-policy.js'):null);
+ const api=factory(root?.OneLifeSim,root?.OneLifeJoseon,root?.OneLifeJoseon2,root?.OneLifeJoseon3,policy);
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.OneLifeJoseon4=api;
-})(typeof window!=='undefined'?window:null,function(Sim,J,V2,V3){
+})(typeof window!=='undefined'?window:null,function(Sim,J,V2,V3,P){
 'use strict';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function hash(seed,salt){
@@ -99,6 +100,11 @@ function addChild(life,s,bornYear){
  if(s.people.filter(x=>x.role==='child').length>=6)return;
  const id='child-'+s.people.filter(x=>x.role==='child').length;
  const child=person(life,id,'child',bornYear,hash(life.seed,bornYear+456)<.50?'여자':'남자');
+ const origin=life.joseon5?.origin;
+ const bondedParent=['공노비','사노비'].includes(origin)&&!life.joseon5.freed;
+ const motherBonded=life.gender==='여자'?bondedParent:bondedParent&&hash(life.seed,bornYear+307)<.7;
+ const fatherBonded=life.gender==='남자'?bondedParent:bondedParent&&hash(life.seed,bornYear+308)<.7;
+ child.legal=P?.childStatus(bornYear,motherBonded,fatherBonded)||'양인';
  s.people.push(uniqueName(s.people,child));
  if(bornYear===life.year)
   remember(life,s,particle(child.name,'이','가')+' 태어났다. 아이의 울음소리가 집안에 퍼졌다.','joseon4-family');
@@ -336,7 +342,7 @@ function summary(life){
  const s=ensure(life);if(!s)return null;
  const people=s.people.filter(p=>p.birthYear<=life.year).map(p=>({id:p.id,role:p.role,name:p.name,
   age:age(p,p.alive?life.year:(p.diedYear||life.year)),alive:p.alive,atHome:p.atHome!==false,relation:p.relation,wellbeing:p.wellbeing,
-  trait:p.trait,learning:p.learning,work:p.work,married:p.married,diedYear:p.diedYear}));
+  trait:p.trait,learning:p.learning,work:p.work,legal:p.legal||null,married:p.married,diedYear:p.diedYear}));
  return {people,alive:people.filter(p=>p.alive).length,atHome:people.filter(p=>p.alive&&p.atHome).length,
   spouse:people.find(p=>p.role==='spouse'&&p.alive)||people.find(p=>p.role==='spouse')||null,
   children:people.filter(p=>p.role==='child'&&p.alive).length,
@@ -363,6 +369,7 @@ function hydrate(life,data){
         wellbeing:clamp(Number(p.wellbeing)||0,0,100),
         learning:clamp(Number(p.learning)||0,0,100),
         work:String(p.work||'집안의 일').slice(0,70),
+        legal:['양인','천인'].includes(p.legal)?p.legal:null,
         married:p.married===true,lifeYears:clamp(Number(p.lifeYears)||70,40,110),
         diedYear:Number.isInteger(p.diedYear)?clamp(p.diedYear,life.birthYear,life.year):null};
     });
