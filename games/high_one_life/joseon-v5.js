@@ -3,10 +3,11 @@
  * Lives born before 1900 retain their family identity after the legal status reforms.
  */
 (function(root,factory){
- const api=factory(root?.OneLifeSim,root?.OneLifeJoseon,root?.OneLifeJoseon2,root?.OneLifeJoseon4);
+ const policy=root?.OneLifeJoseonPolicy||(typeof module!=='undefined'&&module.exports?require('./joseon-history-policy.js'):null);
+ const api=factory(root?.OneLifeSim,root?.OneLifeJoseon,root?.OneLifeJoseon2,root?.OneLifeJoseon4,policy);
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.OneLifeJoseon5=api;
-})(typeof window!=='undefined'?window:null,function(Sim,J,V2,V4){
+})(typeof window!=='undefined'?window:null,function(Sim,J,V2,V4,P){
 'use strict';
 const clamp=(n,lo,hi)=>Math.max(lo,Math.min(hi,n));
 function dice(seed,salt){
@@ -68,12 +69,15 @@ function originFor(life,j){
 }
 function make(life){
  const j=J.ensure(life),origin=originFor(life,j),info=ORIGINS[origin];
- const legal=life.year>=1894?'법적 신분 구별 폐지':isEnslaved(origin)?'천인':'양인';
- const s={version:1,origin,originLabel:info.label,trade:info.trade,
+ const legal=P.legalStatus(life.birthYear,origin,life.year);
+ const s={version:1,origin,originLabel:P.originLabel(life.birthYear,origin)===origin?info.label:P.originLabel(life.birthYear,origin),trade:info.trade,
   legal,role:'',duty:info.duty,serviceYears:0,burdens:[],memories:[],decisions:[],
   processedYear:life.year,queue:[],active:null,seen:[],followups:[],rank:0,royalClaim:false,
   freed:life.year>=1894&&isEnslaved(origin),monastic:false,inspector:false,complaints:0};
- if(s.freed){s.originLabel='옛 '+info.label;s.trade='품팔이와 가족의 살림';}
+ if(isEnslaved(origin)&&life.birthYear>=1886){
+  s.freed=true;s.originLabel='노비 출신 부모를 둔 양인 가계';
+  s.trade='품팔이와 가족의 살림';
+ }else if(s.freed){s.originLabel='옛 '+info.label;s.trade='품팔이와 가족의 살림';}
  // Historical origin sets starting conditions only, never reapplies them to
  // an adult restoring a saved game.
  if(life.age===0){
@@ -151,13 +155,13 @@ function roleChoices(s,j,life){
   option('이웃과 품을 나눈다','mutual','오고 가는 도움과 관계를 소중히 여긴다.',{bonds:6}),
   option('기술이나 글을 더 익힌다','learn','다음 선택의 폭을 넓혀 본다.',{knowledge:4},3)];
 }
-function taxChoices(type){
+function taxChoices(type,duty){
  if(type==='military')return [
-  option('군역이나 군포 부담을 감당한다','payservice','군사와 나라의 의무가 생업을 흔든다.',{health:-2},5),
-  option('대신할 품이나 비용을 구한다','arrange','다른 사람과 의논하지만 비용이 든다.',{bonds:2},7),
+  option(duty.kind==='hopo'?'집안의 호포를 마련한다':duty.kind==='service'?'지정된 군무를 맡는다':'군포 부담을 감당한다','payservice',duty.note||'군사와 나라의 의무가 생업을 흔든다.',{health:-2},duty.cost),
+  option('군무나 납부 부담을 집안과 의논한다','arrange','다른 사람과 의논하지만 비용이 든다.',{bonds:2},duty.cost+2),
   option('형편을 알리고 부담을 줄여 달라 청한다','petition','요구가 받아들여진다는 보장은 없다.',{knowledge:2,bonds:1})];
  if(type==='tribute')return [
-  option('내야 할 공물 또는 대동미를 마련한다','tribute','지역과 시기에 따른 물품·쌀 납부 부담을 감당한다.',{health:-1},3,6),
+  option('그 고을에 정해진 세금을 마련한다','tribute','납세 방식은 지역별 제도와 형편에 따라 다르다.',{health:-1},3,0),
   option('이웃과 필요한 몫을 함께 마련한다','sharetribute','함께 힘을 모으지만 서로 부담을 나눈다.',{bonds:5},2,3),
   option('납부 방식과 부담을 알아본다','replace','고을과 시기에 따라 납부 규정이 다르다.',{knowledge:3},5)];
  return [
@@ -198,9 +202,13 @@ function prepare(life,s){
   if(isEnslaved(origin)&&!s.freed){s.freed=true;s.trade='품팔이와 가족의 살림';remember(life,s,'법적 노비제가 폐지되었다. 하지만 그동안의 예속과 차별이 곧바로 사라지지는 않았다.');}
  }
  if([18,27,39,54].includes(age))offer(life,s,'living','올해 나의 생업',roleChoices(s,j,life));
- const eligible=age>=16&&age<=58&&life.gender==='남자'&&s.legal==='양인'&&!isRoyal(origin);
- if(eligible&&age===22)offer(life,s,'military','군역과 군포의 부담',taxChoices('military'));
- if(age===34&&!isRoyal(origin)&&!(isEnslaved(origin)&&!s.freed)&&life.year<1894)offer(life,s,'tribute',life.year>=1750?'대동미와 고을의 조세 부담':'공납과 고을의 세금 부담',taxChoices('tribute'));
+ const duty=P.military(life.year,origin,life.gender);
+ if(age===22&&duty.eligible&&duty.kind!=='reform')
+  offer(life,s,'military',duty.title,taxChoices('military',duty));
+ if(age===34&&!isRoyal(origin)&&!(isEnslaved(origin)&&!s.freed)&&life.year<1894){
+  const levy=P.tribute(life.year,j.region);
+  offer(life,s,'tribute',levy.title,taxChoices('tribute'));
+ }
  if(age===42&&!isRoyal(origin)&&life.year<1894)offer(life,s,'labor','관아에서 일손을 부르는 날',taxChoices('labor'));
  // Fictional personal encounters, not a statement that a real raid happened
  // in the specified village or year. Regional exposure and era alter the chance.
@@ -213,16 +221,16 @@ function prepare(life,s){
  if(age>=19&&age<=70&&age%17===2&&life.year<1894&&dice(life.seed,life.year+1739)<.32&&!isRoyal(origin))
   offer(life,s,'corruption','고을의 부당한 징수와 관리의 횡포',troubleChoices('corruption'));
  // The royal bloodline alone does not confer a reign.
- if(isRoyal(origin)&&life.gender==='남자'&&!s.royalClaim&&age===26&&dice(life.seed,1908)<.018)
-  offer(life,s,'succession','왕실의 후계 문제에 이름이 오르다',[
-   option('왕위 계승의 책임을 받아들인다','throne','왕위는 드물고 위험한 자리다.',{health:-3,knowledge:3}),
-   option('왕실 친족으로 남는다','relative','권력보다 자신의 일상을 택한다.',{bonds:4}),
-   option('정치와 거리를 둔다','withdraw','조정에서 거리를 두고 살기로 한다.',{health:2})]);
+ if(isRoyal(origin)&&life.gender==='남자'&&age===26&&dice(life.seed,1908)<.018)
+  offer(life,s,'succession','왕실의 계승 다툼과 친족의 고민',[
+   option('왕실 친족으로 정국을 살핀다','relative','실제 왕위는 역사에 기록된 군주가 계승한다.',{knowledge:3}),
+   option('궁궐의 권력에서 거리를 둔다','withdraw','권력 다툼보다 생계와 안전을 지킨다.',{health:2}),
+   option('친족과 백성의 사정을 듣는다','hearRoyal','왕위와 거리를 두고 신분의 책임을 헤아린다.',{bonds:4})]);
  if(j.office&&s.rank>=2&&age===42&&dice(life.seed,1909)<.06){
   s.rank=4;s.role='대신';j.occupation='조정의 대신';
   remember(life,s,'벼슬길에서 중요한 직책을 맡아 조정의 일을 헤아리게 되었다. 그러나 모든 대신이 나라의 정치를 마음대로 움직일 수 있는 것은 아니었다.');
  }
- if(s.rank>=2&&!s.inspector&&age>=29&&age<=55&&age%13===3&&dice(life.seed,life.year+1791)<.045)
+ if(P.canInspect(origin,s.rank,j.office,s.role,life.year)&&!s.inspector&&age>=29&&age<=55&&age%13===3&&dice(life.seed,life.year+1791)<.045)
   offer(life,s,'inspector','어사로 고을의 일을 살필 기회',troubleChoices('inspector'));
 }
 const LATER={
@@ -299,9 +307,9 @@ function choose(life,index){
   if(success<.22){s.freed=true;s.legal='양인';s.trade='품팔이와 가족의 살림';remember(life,s,'속량이 받아들여져 예속된 신분에서 벗어났다. 아직 생계와 차별의 어려움은 남아 있었다.');}
   else remember(life,s,'속량의 길을 알아보았지만 허락을 얻지 못했다. 배운 일과 인연은 남았다.');
  }
- if(a==='throne'){s.royalClaim=true;s.rank=5;s.role='왕';j.occupation='국왕';remember(life,s,'계승을 거쳐 왕위에 올랐다. 국정을 결정하는 무거운 책임이 뒤따랐다.');}
+ if(a==='throne'){remember(life,s,'실제 왕위 계승은 역사에 기록된 군주의 몫이다. 왕실 친족의 자리에서 정국을 지켜보았다.');}
  if(a==='courtstudy'||a==='courtduty')s.rank=Math.max(s.rank,1);
- if(a==='inspector'||a==='inspect'||a==='reform'||a==='hear'){s.inspector=true;s.role='암행어사';j.occupation='어사로 감찰하는 임무';}
+ if(['inspect','reform','hear'].includes(a)&&P.canInspect(origin,s.rank,j.office,s.role,life.year)){s.inspector=true;s.role='암행어사';j.occupation='어사로 감찰하는 임무';}
  if(a==='flee'){j.relocations++;j.hardshipUntil=Math.max(j.hardshipUntil,life.year+1);}
  if(a==='appeal'||a==='witness')s.complaints++;
  if(a==='petition'&&success<.35)j.capital=clamp(j.capital+4,-120,600);
@@ -327,7 +335,7 @@ function choose(life,index){
 function summary(life){
  const s=ensure(life);if(!s)return null;
  const j=J.ensure(life);
- return {origin:s.origin,originLabel:s.originLabel,legal:life.year>=1894?'법적 신분 구별 폐지':s.legal,role:s.role||j.occupation,
+ return {origin:s.origin,originLabel:s.originLabel,legal:P.legalStatus(life.birthYear,s.origin,life.year,s.freed),role:s.role||j.occupation,
   trade:s.trade,duty:s.duty,freed:s.freed,rank:s.rank,
   obligations:s.burdens.slice(-3),serviceYears:s.serviceYears,memories:s.memories.slice(-3),
   decisions:s.decisions.length,inspector:s.inspector,monastic:s.monastic};
@@ -341,6 +349,8 @@ function hydrate(life,data){
  for(const key of ['serviceYears','rank','processedYear','complaints'])
   if(Number.isInteger(old[key]))s[key]=clamp(old[key],0,key==='processedYear'?life.year:300);
  for(const key of ['freed','royalClaim','monastic','inspector'])s[key]=old[key]===true;
+ if(s.role==='왕'||s.role==='국왕'){s.role='왕실 종친';s.royalClaim=false;s.rank=Math.min(s.rank,1);}
+ if(s.role==='암행어사'&&!P.canInspect(s.origin,s.rank,J.ensure(life).office,s.role,life.year)){s.role='관청 일을 맡던 인물';s.inspector=false;}
  for(const key of ['memories','burdens','seen'])
   s[key]=Array.isArray(old[key])?old[key].filter(x=>typeof x==='string').slice(-45).map(x=>x.slice(0,200)):[];
  s.decisions=Array.isArray(old.decisions)?old.decisions.filter(d=>d&&typeof d.id==='string'&&Number.isInteger(d.year)).slice(-60).map(d=>({
