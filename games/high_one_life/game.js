@@ -121,7 +121,7 @@
   }
   function paintLifeRecord() {
     if(Joseon.inOldEra(life)){
-      const j=Joseon.summary(life),v2=Joseon2.summary(life),v3=Joseon3.summary(life),v4=Joseon4.summary(life),p=Joseon.ensure(life)&&life.profile,m=life.money,e=j.economy;
+      const v2=Joseon2.summary(life),j=Joseon.summary(life),v3=Joseon3.summary(life),v4=Joseon4.summary(life),p=Joseon.ensure(life)&&life.profile,m=life.money,e=j.economy;
       const put=(id,value)=>{$(id).textContent=String(value);};
       put('v10HistoricalCount',Joseon.ensure(life).seen.length+'개 역사 사건');
       put('v10HistoryStatus',j.era+' · '+(Joseon.eventFor(life.year)?.title||j.region+'에서 살아가는 중'));
