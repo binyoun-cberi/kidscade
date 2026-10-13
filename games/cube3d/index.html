@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#9bd8ff">
 <title>큐브 아키텍트 | Kidscade</title>
-<link rel="stylesheet" href="./cube-architect.css?v=20261007-homestead2&furnishing=1&math=20261013-1">
+<link rel="stylesheet" href="./cube-architect.css?v=20261007-homestead2&furnishing=1&math=20261013-2">
 <link rel="stylesheet" href="./cube-architect-ui.css?v=20261006-experience1&magic=20261012">
 <link rel="stylesheet" href="./cube-architect-cuboid-puzzle.css?v=20261006-2">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
@@ -177,6 +177,7 @@
       <button data-net-mode="face">면 관계</button>
       <button data-net-mode="edge">모서리</button>
       <button data-net-mode="vertex">꼭짓점</button>
+      <button data-net-mode="design">직접 그리기</button>
     </div>
     <div id="netMission" class="panel-sub">정육면체의 여섯 정사각형을 보고 접힌 면을 예상해 보자.</div>
     <div id="netBoard" aria-label="정육면체 전개도">
@@ -187,6 +188,19 @@
       <div class="net-face" data-face="5"></div>
       <div class="net-face" data-face="3"></div>
     </div>
+    <section id="netDesignPanel" class="net-design-panel hidden" aria-label="정육면체 전개도를 직접 만드는 편집기">
+      <b>나만의 정육면체 전개도 <small>5~6학년 · 전개도</small></b>
+      <p>①~⑥ 중 붙일 정사각형을 고른 뒤 빈 격자칸을 누르세요. 잘못 놓았으면 그 칸을 다시 누르거나 다른 칸으로 옮길 수 있어요.</p>
+      <div id="netDesignPalette" class="net-design-palette" aria-label="배치할 여섯 개의 정사각형"></div>
+      <div id="netDesignGrid" class="net-design-grid" role="group" aria-label="6행 6열 전개도 그리기"></div>
+      <div id="netDesignStatus" class="net-design-status" aria-live="polite">첫 번째 정사각형을 놓아 보자.</div>
+      <div class="net-design-actions">
+        <button id="netDesignUndo" type="button">한 번 되돌리기</button>
+        <button id="netDesignReset" type="button">다시 그리기</button>
+        <button id="netDesignExample" type="button">예시 보기</button>
+        <button id="netDesignCheck" type="button">접힐지 검사</button>
+      </div>
+    </section>
     <div id="netDecorateInstructions" class="panel-sub"><b>1.</b> 붙일 그림을 고르고 <b>2.</b> 오른쪽 3D 정육면체의 면을 클릭하세요. 같은 크기의 정사각형 여섯 개가 접혀요.</div>
     <div id="stickerPalette"></div>
     <div class="hint-box" id="selectedFace">그림을 고른 뒤 직육면체의 면을 클릭해 보세요.</div>
@@ -290,6 +304,17 @@
           <div class="math-architect-actions"><button id="cuboidMathCheck" type="button">예상 확인</button>
             <button id="cuboidMathShow" type="button">계산 방법 보기</button></div>
           <div id="cuboidMathFeedback" class="math-architect-feedback" aria-live="polite">가로·높이·세로를 바꾸고 답을 예상해 보자.</div>
+        </section>
+        <section class="math-architect-card" id="cuboidCompareCard" aria-label="같은 부피 두 건축물의 겉넓이 비교">
+          <b>같은 부피, 다른 겉면 <small>재료 비교</small></b>
+          <p>모든 겉면을 한 칸씩 칠한다고 생각해 보자. 같은 수의 블록을 사용해도 겉면의 넓이는 다를 수 있어.</p>
+          <div id="cuboidCompareOptions" class="cuboid-compare-options"></div>
+          <div class="math-architect-actions">
+            <button id="cuboidCompareA" type="button">A가 더 적게 필요해</button>
+            <button id="cuboidCompareB" type="button">B가 더 적게 필요해</button>
+          </div>
+          <div id="cuboidCompareFeedback" class="math-architect-feedback" aria-live="polite">두 설계를 비교해 선택해 보자.</div>
+          <button id="cuboidCompareApply" type="button" class="hidden">재료가 적게 드는 설계로 바꾸기</button>
         </section>
         <div class="face-color-grid">
           <label>오른쪽<input id="faceColor0" type="color" value="#ef5350"></label>
@@ -417,8 +442,8 @@
 <script src="./cube-architect-voxel.js?v=20261003-29"></script>
 <script src="./cube-architect-camp.js?v=20261006-survival-camp2&magic=20261012"></script>
 <script src="./cube-architect-experience.js?v=20261006-experience1"></script>
-<script src="./cube-architect-math.js?v=20261013-geometry1"></script>
-<script src="./cube-architect.js?v=20261007-homestead4&furnishing=1&magic=20261012&math=20261013-1"></script>
+<script src="./cube-architect-math.js?v=20261013-geometry2"></script>
+<script src="./cube-architect.js?v=20261007-homestead4&furnishing=1&magic=20261012&math=20261013-2"></script>
 <script src="./cube-architect-cuboid-puzzle.js?v=20261006-2"></script>
 <script>
 (()=>{

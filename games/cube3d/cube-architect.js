@@ -870,6 +870,7 @@ const NET_SIDES=['윗쪽','오른쪽','아랫쪽','왼쪽'];
 const NET_CORNER_NAMES=['왼쪽 위','오른쪽 위','오른쪽 아래','왼쪽 아래'];
 const NET_EDGE_CORNERS=[[0,1],[1,2],[3,2],[0,3]];
 let netQuizMode='decorate',netQuiz=null,netQuizChoice=null,netQuizRevealed=false;
+let netDesignLayout=Array(6).fill(null),netDesignSelected=0,netDesignHistory=[],netDesignChecked=false;
 let netQuizAnswered=0,netQuizCorrect=0,netQuizProof=null,foldNonce=0;
 function netEdgeData(){
   const result=[];
@@ -925,8 +926,101 @@ function makeNetQuiz(kind){
     explanation:netChoiceLabel(source,kind)+'과 '+netChoiceLabel(mate,kind)+
       '은 접으면 꼭짓점 '+source.vertex+'에서 만나요.',proofVertex:source.vertex};
 }
+const NET_DESIGN_LABELS=['①','②','③','④','⑤','⑥'];
+function clearNetDesignFold(){
+  foldNonce++;
+  for(const piece of foldPieces)scene.remove(piece);
+  foldPieces=[];
+  if(netBox)netBox.visible=netQuizMode!=='design';
+}
+function netDesignSelect(index){
+  netDesignSelected=index;renderNetDesign();
+}
+function netDesignEdit(x,y){
+  const at=netDesignLayout.findIndex(p=>p&&p[0]===x&&p[1]===y);
+  if(at!==-1&&at!==netDesignSelected){netDesignSelect(at);return}
+  const previous=netDesignLayout.map(p=>p?p.slice():null);
+  let next=null;
+  if(at===netDesignSelected){
+    next=previous.map((p,i)=>i===at?null:p);
+  }else{
+    next=window.CubeArchitectMath.draftPlace(netDesignLayout,netDesignSelected,x,y);
+  }
+  if(!next)return;
+  netDesignHistory.push({layout:previous,selected:netDesignSelected});
+  if(netDesignHistory.length>60)netDesignHistory.shift();
+  netDesignLayout=next;
+  netDesignSelected=netDesignLayout.findIndex(p=>!p);
+  if(netDesignSelected<0)netDesignSelected=at!==-1?at:5;
+  netDesignChecked=false;
+  clearNetDesignFold();renderNetDesign();
+}
+function resetNetDesign(example=false){
+  netDesignHistory=[];
+  netDesignLayout=example?NET_VARIANTS[0].layout.map(p=>p.slice()):Array(6).fill(null);
+  netDesignSelected=example?0:0;netDesignChecked=false;
+  clearNetDesignFold();renderNetDesign();
+}
+function undoNetDesign(){
+  const last=netDesignHistory.pop();
+  if(!last)return;
+  netDesignLayout=last.layout;netDesignSelected=last.selected;
+  netDesignChecked=false;clearNetDesignFold();renderNetDesign();
+}
+function netDesignFeedback(result,checked=false){
+  if(result.placed<6)return '정사각형 '+result.placed+'/6개 배치 · 서로 이어지게 붙여 보자. 겹치지 않게 놓을 수 있어.';
+  if(result.valid)return checked?
+    '성공! 정사각형 6개가 겹치지 않고 정육면체로 접혀. 아래의 접어 보기로 확인해 보자.':
+    '6개를 놓았어. 접힐지 먼저 예상한 뒤 검사해 보자.';
+  if(!checked)return '6개를 놓았어. 정육면체가 될지 예상한 뒤 검사해 보자.';
+  return result.reason==='disconnected'?
+    '서로 떨어진 정사각형이 있어. 여섯 장을 모서리로 이어 붙여 보자.':
+    '접으면 두 면이 같은 자리를 차지해. 네모들이 모인 위치를 바꾸어 보자.';
+}
+function checkNetDesign(){
+  const report=window.CubeArchitectMath.draftReport(netDesignLayout);
+  netDesignChecked=true;renderNetDesign();
+  if(report.valid){sfx('good');toast('내가 만든 전개도가 정육면체로 접힐 수 있어!')}
+  else{sfx('bad');toast(netDesignFeedback(report,true))}
+  return report.valid;
+}
+function renderNetDesign(){
+  const grid=$('netDesignGrid'),palette=$('netDesignPalette');
+  if(!grid||!palette)return;
+  palette.innerHTML='';grid.innerHTML='';
+  for(let i=0;i<6;i++){
+    const button=document.createElement('button');button.type='button';
+    button.className='net-design-tile'+(netDesignSelected===i?' active':'')+(netDesignLayout[i]?' placed':'');
+    button.textContent=NET_DESIGN_LABELS[i];button.title=NET_DESIGN_LABELS[i]+(netDesignLayout[i]?' 배치됨 · 누르면 이동':' 배치하기');
+    button.setAttribute('aria-label',button.title);button.onclick=()=>netDesignSelect(i);palette.appendChild(button);
+  }
+  for(let y=0;y<window.CubeArchitectMath.DRAFT_GRID_SIZE;y++)
+    for(let x=0;x<window.CubeArchitectMath.DRAFT_GRID_SIZE;x++){
+      const i=netDesignLayout.findIndex(p=>p&&p[0]===x&&p[1]===y);
+      const button=document.createElement('button');button.type='button';
+      button.className='net-design-cell'+(i!==-1?' occupied':'')+(i===netDesignSelected?' active':'');
+      button.textContent=i<0?'':NET_DESIGN_LABELS[i];
+      button.setAttribute('aria-label',(y+1)+'행 '+(x+1)+'열 '+(i<0?'빈칸':NET_DESIGN_LABELS[i]+' 정사각형'));
+      button.title=button.getAttribute('aria-label');
+      button.onclick=()=>netDesignEdit(x,y);grid.appendChild(button);
+    }
+  const status=window.CubeArchitectMath.draftReport(netDesignLayout);
+  $('netDesignStatus').textContent=netDesignFeedback(status,netDesignChecked);
+  $('netDesignUndo').disabled=!netDesignHistory.length;
+}
 function setNetQuizMode(kind){
   netQuizMode=kind;netQuizAnswered=0;netQuizCorrect=0;netQuizChoice=null;netQuizRevealed=false;
+  $('netDesignPanel').classList.toggle('hidden',kind!=='design');
+  $('netBoard').classList.toggle('hidden',kind==='design');
+  $('foldNet').textContent=kind==='design'?'내 전개도 접어 보기':'접어 보기';
+  clearNetDesignFold();
+  if(kind==='design'){
+    document.querySelectorAll('[data-net-mode]').forEach(b=>b.classList.toggle('active',b.dataset.netMode==='design'));
+    ['netDecorateInstructions','stickerPalette','selectedFace','netQuizCard'].forEach(id=>$(id).classList.add('hidden'));
+    $('resultCard').classList.add('hidden');clearNetProof();
+    $('netMission').textContent='정사각형 여섯 개를 직접 붙여서 정육면체의 전개도를 만들어 보자.';
+    renderNetDesign();return;
+  }
   document.querySelectorAll('[data-net-mode]').forEach(b=>b.classList.toggle('active',b.dataset.netMode===kind));
   const decorate=kind==='decorate';
   ['netDecorateInstructions','stickerPalette','selectedFace','netQuizCard'].forEach(id=>{
@@ -1016,15 +1110,21 @@ function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor
 function initNet(){
   modeTitle('전개도 연구실','2D 전개도 → 3D 관계 찾기');
   setVisible('netPanel',true);$('actionCheck').classList.remove('hidden');$('actionNext').classList.remove('hidden');
-  foldNonce++;foldPieces=[];netQuizMode='decorate';netQuiz=null;netQuizAnswered=0;netQuizCorrect=0;netQuizChoice=null;netQuizRevealed=false;
+  foldNonce++;foldPieces=[];netDesignLayout=Array(6).fill(null);netDesignSelected=0;netDesignHistory=[];netDesignChecked=false;netQuizMode='decorate';netQuiz=null;netQuizAnswered=0;netQuizCorrect=0;netQuizChoice=null;netQuizRevealed=false;
   chooseNetVariant();
   cleanScene(0xfff5dc);netQuizProof=null;camera.position.set(5,4.2,6);camera.lookAt(0,0,0);makeOrbit(new THREE.Vector3(0,0,0));orbit.minDistance=4;orbit.maxDistance=10;
   netTarget=shuffle(symbols);netAssigned=['','','','','',''];selectedSymbol=netTarget[0];buildNetBoard();buildPalette();
   netBox=new THREE.Mesh(new THREE.BoxGeometry(2.2,2.2,2.2),netAssigned.map(s=>symbolMaterial(s,'#ffffff')));netBox.castShadow=true;netBox.receiveShadow=true;netBox.userData.netbox=true;scene.add(netBox);
   const floor=new THREE.Mesh(new THREE.CircleGeometry(4.5,64),new THREE.MeshStandardMaterial({color:0xf0dfb7,roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-1.15;floor.receiveShadow=true;scene.add(floor);
   $('actionCheck').onclick=checkNet;
-  $('actionNext').onclick=()=>netQuizMode==='decorate'?initNet():nextNetQuiz();
+  $('actionNext').onclick=()=>netQuizMode==='design'?resetNetDesign(false):netQuizMode==='decorate'?initNet():nextNetQuiz();
   $('foldNet').onclick=foldPreview;
+  $('netDesignUndo').onclick=undoNetDesign;
+  $('netDesignReset').onclick=()=>resetNetDesign(false);
+  $('netDesignExample').onclick=()=>resetNetDesign(true);
+  $('netDesignCheck').onclick=checkNetDesign;
+  $('netDesignPanel').classList.add('hidden');$('netBoard').classList.remove('hidden');
+  $('foldNet').textContent='접어 보기';
   document.querySelectorAll('[data-net-mode]').forEach(btn=>{
     btn.onclick=()=>setNetQuizMode(btn.dataset.netMode);
     btn.classList.toggle('active',btn.dataset.netMode==='decorate');
@@ -1070,6 +1170,7 @@ function assignNetFace(hit){
   $('selectedFace').textContent=faceNames[idx]+' 면 ← '+selectedSymbol;
 }
 function checkNet(){
+  if(netQuizMode==='design'){checkNetDesign();return}
   if(netQuizMode!=='decorate'){checkNetQuiz();return}
   let good=0;for(let i=0;i<6;i++)if(netAssigned[i]===netTarget[i])good++;
   $('resultCard').classList.remove('hidden');$('resultScore').textContent=good+'/6';
@@ -1080,9 +1181,21 @@ function checkNet(){
 }
 function foldPreview(){
   if(!netBox)return;
+  const custom=netQuizMode==='design';
+  const activeLayout=custom?netDesignLayout:NET_LAYOUT;
+  const geometry=window.CubeArchitectMath.unfoldedLayout(activeLayout);
+  const showOverlap=custom&&geometry.reason==='overlap'&&geometry.hinges.length===5;
+  if(custom){
+    netDesignChecked=true;renderNetDesign();
+    if(!geometry.valid&&!showOverlap){
+      toast(geometry.reason==='disconnected'?
+        '면들이 서로 떨어져 있어 접을 수 없어. 정사각형을 이어 붙여 보자.':
+        '정사각형 여섯 장을 놓은 다음 접어 보자.');return;
+    }
+    if(showOverlap)toast('접으면 겹치는 두 면을 붉게 표시할게. 왜 겹치는지 관찰해 보자.');
+    else{sfx('good');toast('내가 만든 전개도가 정육면체로 접힐 수 있어!')}
+  }else if(!geometry.valid){toast('전개도를 다시 살펴보자.');return}
   const ticket=++foldNonce;foldPieces.forEach(x=>scene.remove(x));foldPieces=[];clearNetProof();
-  const geometry=window.CubeArchitectMath.unfoldedLayout(NET_LAYOUT);
-  if(!geometry.valid){toast('전개도가 서로 겹쳐 접힐 수 없어. 다른 배열을 골라 보자.');return}
   netBox.visible=false;
   const size=2.2,root=new THREE.Group();
   const faceGroups=new Array(6);faceGroups[0]=root;
@@ -1098,7 +1211,9 @@ function foldPreview(){
     hinges.push({pivot,axis:dx?'y':'x',sign:dx||dy});
   }
   for(let i=0;i<6;i++){
-    const plane=new THREE.Mesh(new THREE.PlaneGeometry(size,size),symbolMaterial(netTarget[i],'#ffffff'));
+    const plane=new THREE.Mesh(new THREE.PlaneGeometry(size,size),symbolMaterial(custom?NET_DESIGN_LABELS[i]:netTarget[i],'#ffffff'));
+    if(showOverlap&&geometry.normals.filter(n=>n===geometry.normals[i]).length>1)
+      plane.material.color.set(0xff9999);
     plane.material.side=THREE.DoubleSide;
     faceGroups[i].add(plane);
   }
@@ -1114,7 +1229,16 @@ function foldPreview(){
     const t=Math.min(1,(now-start)/1650),e=t*t*(3-2*t);
     for(const h of hinges)h.pivot.rotation[h.axis]=h.sign*e*Math.PI/2;
     if(t<1)requestAnimationFrame(step);
-    else setTimeout(()=>{
+    else if(custom){
+      if(showOverlap){
+        $('netDesignStatus').textContent='붉은 면이 같은 자리에 겹쳤어. 면 하나를 옮겨서 다시 접어 보자.';
+        sfx('bad');
+      }else{
+        $('netDesignStatus').textContent='접기 성공! 여섯 면이 겹치지 않고 정육면체가 완성됐어. 3D 모형을 돌려 보자.';
+        reportResult('net-design',100,true);
+      }
+      // Keep the constructed cube in the scene until the next edit/attempt.
+    }else setTimeout(()=>{
       if(ticket!==foldNonce)return;
       scene.remove(root);foldPieces=[];netBox.visible=true;
       if(netQuizMode!=='decorate')showNetProof();
@@ -5008,6 +5132,81 @@ function pickTargetBlock(){
   if(!PLACEABLE_TYPES.includes(type))return;
   hotbarTypes[selectedHotbarSlot]=type;selectedType=type;buildHotbar();toast(blockDef(type).name+'을(를) 선택했어요.');
 }
+let cuboidCompareProblem=null,cuboidCompareAnswered=false;
+function cuboidComparisonPreview(dims){
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 160 110');svg.setAttribute('role','img');
+  svg.setAttribute('aria-label','가로 '+dims[0]+'칸, 높이 '+dims[1]+'칸, 세로 '+dims[2]+'칸 직육면체');
+  svg.classList.add('cuboid-compare-preview');
+  const [w,h,d]=dims,unit=Math.min(11,115/(w+d),66/h);
+  const vx=[w*unit,w*unit*.39],vz=[-d*unit,d*unit*.39],vy=[0,-h*unit*.9];
+  const add=(a,b)=>[a[0]+b[0],a[1]+b[1]];
+  const origin=[80-(vx[0]+vz[0])/2,74-(vx[1]+vz[1])/2+Math.abs(vy[1])*.33];
+  const top=add(origin,vy);
+  for(const [vertices,fill] of [
+    [[origin,add(origin,vx),add(top,vx),top],'#a6b8df'],
+    [[origin,add(origin,vz),add(top,vz),top],'#7697c9'],
+    [[top,add(top,vx),add(add(top,vx),vz),add(top,vz)],'#e1eafd']
+  ]){
+    const polygon=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    polygon.setAttribute('points',vertices.map(p=>p.map(v=>v.toFixed(2)).join(',')).join(' '));
+    polygon.setAttribute('fill',fill);polygon.setAttribute('stroke','#405f91');
+    polygon.setAttribute('stroke-width','1.5');svg.appendChild(polygon);
+  }
+  return svg;
+}
+function renderCuboidComparison(dims){
+  const math=window.CubeArchitectMath;
+  const original=math.measurements(dims),other=math.equalVolumeAlternative(dims);
+  const fallback=!other,base=fallback?math.measurements([2,3,4]):original;
+  const alt=fallback?math.equalVolumeAlternative([2,3,4]):other;
+  cuboidCompareProblem={base,alt,fallback};
+  cuboidCompareAnswered=false;
+  $('cuboidCompareOptions').innerHTML='';
+  for(const [label,entry] of [['A',base],['B',alt]]){
+    const card=document.createElement('div');
+    card.className='cuboid-compare-shape';
+    const title=document.createElement('strong');title.textContent=label+' · '+entry.dimensions.join(' × ');
+    const detail=document.createElement('small');
+    detail.textContent='블록 '+entry.volume+'개 · 겉넓이 ?';
+    card.append(title,cuboidComparisonPreview(entry.dimensions),detail);
+    $('cuboidCompareOptions').appendChild(card);
+  }
+  $('cuboidCompareFeedback').textContent=(fallback?'연습 문제 · ':'현재 설계와 비교 · ')+
+    '같은 블록 '+base.volume+'개라면, 겉면을 칠할 가상 페인트는 어느 쪽이 적게 들까? (밑면 포함)';
+  $('cuboidCompareApply').classList.add('hidden');
+}
+function answerCuboidComparison(choice){
+  if(!cuboidCompareProblem)return;
+  const {base,alt,fallback}=cuboidCompareProblem;
+  const correct=base.area<alt.area?'A':'B';
+  cuboidCompareAnswered=true;
+  const good=choice===correct;
+  const text='A: '+base.area+'cm² · B: '+alt.area+'cm². 블록은 둘 다 '+
+    base.volume+'개지만 '+correct+'의 겉넓이가 '+Math.abs(base.area-alt.area)+
+    'cm² 작아. 따라서 겉면 한 칸씩 색칠한다면 페인트도 그만큼 덜 필요해.';
+  $('cuboidCompareFeedback').textContent=(good?'맞았어! ':'다르게 생각해 보자. ')+text;
+  for(const [i,entry] of [base,alt].entries()){
+    const detail=$('cuboidCompareOptions').children[i]?.querySelector('small');
+    if(detail)detail.textContent='블록 '+entry.volume+'개 · 겉넓이 '+entry.area+'cm²';
+  }
+  const apply=$('cuboidCompareApply');
+  if(!fallback&&correct==='B'){
+    apply.classList.remove('hidden');
+    const unlocked=alt.dimensions.every(d=>d<=survivalCuboidMax());
+    apply.disabled=!unlocked;
+    apply.textContent=unlocked?'더 적게 칠하는 B 설계로 변경':
+      'B 설계는 더 큰 치수 기술이 열리면 제작 가능';
+  }else apply.classList.add('hidden');
+}
+function applyCuboidComparison(){
+  const p=cuboidCompareProblem;if(!cuboidCompareAnswered||!p||p.fallback||p.alt.area>=p.base.area||
+    p.alt.dimensions.some(d=>d>survivalCuboidMax()))return;
+  const [w,h,d]=p.alt.dimensions;
+  $('shapeW').value=w;$('shapeH').value=h;$('shapeD').value=d;
+  updateCuboidMathPrompt();
+  $('cuboidCompareFeedback').textContent='재료가 절약되는 치수로 바꿨어. 원하면 현재 칸에 직육면체를 담아 건축해 보자.';
+}
 function shapeMathDimensions(){
   const limit=survivalCuboidMax();
   return [$('shapeW').value,$('shapeH').value,$('shapeD').value]
@@ -5019,6 +5218,7 @@ function updateCuboidMathPrompt(){
     ' · 한 층 '+(w*d)+'칸 × '+h+'층 · 면은 6개';
   $('cuboidMathFeedback').textContent='층별 큐브 수를 더하고, 서로 마주 보는 같은 면을 세어 보자.';
   $('cuboidVolumeGuess').value='';$('cuboidAreaGuess').value='';
+  renderCuboidComparison(dims);
 }
 function checkCuboidMath(reveal=false){
   const dims=shapeMathDimensions(),[w,h,d]=dims;
@@ -5040,6 +5240,9 @@ function setupShapeWorkbench(){
   for(const id of ['shapeW','shapeH','shapeD'])$(id).addEventListener('input',updateCuboidMathPrompt);
   $('cuboidMathCheck').onclick=()=>checkCuboidMath(false);
   $('cuboidMathShow').onclick=()=>checkCuboidMath(true);
+  $('cuboidCompareA').onclick=()=>answerCuboidComparison('A');
+  $('cuboidCompareB').onclick=()=>answerCuboidComparison('B');
+  $('cuboidCompareApply').onclick=applyCuboidComparison;
   $('freeSelectShape').onclick=selectFreeGeometry;
   $('freeEdgeMode').onclick=()=>{freeElementMode='edge';updateFreeGeometryEditor()};
   $('freeVertexMode').onclick=()=>{freeElementMode='vertex';updateFreeGeometryEditor()};
