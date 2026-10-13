@@ -3,10 +3,11 @@
  * This module is loaded after v13 so pre-1900 years never run modern life rules.
  */
 (function(root,factory){
-  const api=factory(root?.OneLifeSim,root?.OneLifeWorld2);
+  const policy=root?.OneLifeJoseonPolicy||(typeof module!=='undefined'&&module.exports?require('./joseon-history-policy.js'):null);
+  const api=factory(root?.OneLifeSim,root?.OneLifeWorld2,policy);
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   if(root)root.OneLifeJoseon=api;
-})(typeof window!=='undefined'?window:null,function(Sim,W2){
+})(typeof window!=='undefined'?window:null,function(Sim,W2,P){
 'use strict';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const isJoseon=life=>!!life&&life.country?.[0]==='대한민국'&&life.birthYear>=1392&&life.birthYear<=1897;
@@ -156,7 +157,7 @@ function seedState(life){
 }
 function sync(life,s){
  if(life.year>=1900)return; // The later-life handoff must not undo modern career and family changes.
- life.familyLevel=s.family+' · '+(life.year>=1894?'옛 '+s.birthStatus+' 출신':s.status+' 집안');
+ life.familyLevel=s.family+' · '+(life.year>=1894?'옛 '+s.birthStatus+' 출신':life.birthYear<1600&&s.birthStatus==='중인'?'관아 실무·기술직 가계':s.status+' 집안');
  life.career=s.occupation;
  life.profile.city=s.region;
  life.profile.settlement=s.settlement;
@@ -184,7 +185,7 @@ function ensure(life){
   const names=NAMES[life.gender]||NAMES.남자;
   life.profile.name=names[Math.floor(roll(life.seed,1413)*names.length)];
   if(life.age===0&&!life.log.some(e=>e.kind==='joseon-birth')){
-   life.logEvent(s.region+'의 '+(life.birthYear>=1894?'옛 '+s.birthStatus+' 가계':s.status+' 집안')+'에서 태어났다. '+s.landmark+'이 가까운 고을이다.','joseon-birth');
+   life.logEvent(s.region+'의 '+(life.birthYear>=1894?'옛 '+s.birthStatus+' 가계':life.birthYear<1600&&s.birthStatus==='중인'?'관청 실무·기술직 가계':s.status+' 집안')+'에서 태어났다. '+s.landmark+'이 가까운 고을이다.','joseon-birth');
    life.logEvent('신분과 집안 사정이 앞으로 만날 기회에 영향을 미친다. 하지만 삶의 모든 일이 정해진 것은 아니다.','joseon-life');
   }
  }
@@ -222,7 +223,10 @@ function promptFor(life,s){
  if(kind==='vocation'&&social?.trade)return {title:'어떤 일을 하며 살아갈까?',description:social.originLabel+' · '+social.trade+'을 접하며 자랐다. 같은 일을 이어 갈 수도, 다른 길을 찾을 수도 있다.',options:[
   opt('집안에서 해 온 일을 이어 간다',social.trade+'의 어려움과 솜씨를 익힌다','workTrade',{knowledge:3,bonds:3}),
   opt('장터나 다른 고을의 일을 배운다','낯선 사람과 새로운 일을 만난다','trade',{knowledge:3,bonds:2}),
-  opt('농사와 가족 돌봄을 이어 간다','집안에 필요한 일을 먼저 챙긴다','farm',{bonds:5,health:-1})]};
+  opt((life.joseon5&&!['역관 가계','의관 가계','서리 가계','관청 장인'].includes(social.origin)&&['몰락 양반','소작 농가','자작 농가','상인 가계','어부 가계','백정'].includes(social.origin))?'사찰에 들어가 배움을 이어 간다':'농사와 가족 돌봄을 이어 간다',
+   '생업과 자신의 처지에 따라 길이 달라진다.',
+   (life.joseon5&&!['역관 가계','의관 가계','서리 가계','관청 장인'].includes(social.origin)&&['몰락 양반','소작 농가','자작 농가','상인 가계','어부 가계','백정'].includes(social.origin))?'templeJoin':'farm',
+   {bonds:5,health:-1})]};
  if(kind==='vocation')return {title:'어떤 일로 살아갈까?',description:s.region+'의 생업과 집안의 처지를 생각한다.',options:[
   opt('농사와 땅을 돌본다','곡식과 날씨에 생활이 달려 있다','farm',{wealth:3}),
   opt('장터에서 물건을 팔거나 기술을 익힌다','수공업·장시에서 새로운 인연을 만난다','trade',{knowledge:3,bonds:3}),
@@ -324,14 +328,14 @@ function applyChoice(life,index){
  if(act==='workTrade'&&life.joseon5){
   const social=life.joseon5;s.occupation=social.trade;
   const map={'어부 가계':'어부','주막 가계':life.gender==='여자'?'주모':'주막을 꾸리는 사람',
-   '역관 가계':'역관','의관 가계':'의관','서리 가계':'서리','도공 가계':'도공',
+   '역관 가계':'통역과 외국어를 익히는 사람','의관 가계':'의술을 배우는 사람','서리 가계':'관아 기록 일을 배우는 사람','도공 가계':'도공',
    '대장장이 가계':'대장장이','목수 가계':'목수','보부상 가계':'보부상',
    '상인 가계':'상인','수군 가계':'수군','사찰 주변 가계':'사찰을 돕는 사람',
    '백정':'백정의 생업을 잇는 장인'};
   social.role=map[social.origin]||social.trade;s.capital+=3;
   note(life,s,'집안에서 보고 익힌 '+social.trade+'을 생업으로 삼았다.','joseon-career');
  }
- if(act==='templeJoin'&&life.joseon5){life.joseon5.monastic=true;life.joseon5.role='승려';s.occupation='사찰의 수행과 노동';note(life,s,'출가하여 사찰의 규율 아래 불경을 배우고 일손을 보탰다.','joseon-career');}
+ if(act==='templeJoin'&&life.joseon5){life.joseon5.monastic=true;life.joseon5.role=life.gender==='여자'?'비구니':'승려';s.occupation='사찰의 수행과 노동';note(life,s,'출가하여 사찰의 규율 아래 불경을 배우고 일손을 보탰다.','joseon-career');}
  if(['serve','servileSkill','petitionRelease','servileMarry','servileKin','servileHope'].includes(act)){
   if(act==='serve')s.occupation=life.joseon5?.trade||'예속된 노동';
   if(act==='servileSkill')s.literacy+=1;
@@ -397,21 +401,38 @@ function yearly(life){
  let income=0,expense=0;
  if(life.age>=12){
   const labor=householdLabor(life,s);
-  const production=s.retired?5:s.office?26:s.occupation.includes('장사')?19:s.occupation.includes('글')?13:s.occupation.includes('돌봄')?9:s.occupation.includes('품팔이')?13+s.land*2:12+s.land*3;
+  const trade=s.occupation,job=life.joseon5?.role||'';
+  const production=s.retired?5:s.office?26:
+   /어부|어업|고기잡/.test(trade+' '+job)?15:
+   /주모|주막/.test(trade+' '+job)?17:
+   /도공|대장장이|목수|장인/.test(trade+' '+job)?16:
+   /통역|역관|의관|서리/.test(trade+' '+job)?15:
+   /승려|비구니|사찰/.test(trade+' '+job)?9:
+   trade.includes('장사')?19:trade.includes('글')?13:trade.includes('돌봄')?9:
+   trade.includes('품팔이')?13+s.land*2:12+s.land*3;
+  const livelihoodVariance=/어부|어업|고기잡/.test(trade+' '+job)&&life.rand()<.17?-8:
+   /주모|주막/.test(trade+' '+job)&&life.rand()<.16?-5:0;
   const helpFromFamily=life.age>=12?Math.min(3,Math.max(0,labor.hands-1))*2:0;
   const hardship=life.year<=s.hardshipUntil?.55:1;
   // The century shifts risk and opportunities in gameplay, not in historical wage units.
   const periodFactor=life.year<1500?.94:life.year<1600?.9:life.year<1700?.78:
     life.year<1800?1.06:life.year<1876?.89:life.year<1894?1.04:1;
   const openPortBonus=life.year>=1876&&s.occupation.includes('장사')?3:0;
-  income=Math.round((production+openPortBonus+helpFromFamily)*periodFactor*hardship*(.75+life.rand()*.55));
+  income=Math.round(Math.max(0,production+livelihoodVariance+openPortBonus+helpFromFamily)*periodFactor*hardship*(.75+life.rand()*.55));
   const book=economicBook(s),rented=Math.max(0,s.land-book.ownedLand);
   const subsistence=9+Math.round(s.household*2),care=(s.married?2:0)+s.children*2;
   const landExpenses=Math.max(0,s.land),rent=Math.round(rented*1.5);
   expense=subsistence+care+landExpenses+rent;
   const beforeLevies=expense;
-  if(life.year<1894&&s.status==='상민')expense+=3;
-  if(life.year===1750&&life.gender==='남자'&&s.status==='상민')expense=Math.max(0,expense-2);
+  // Regional tribute is either customary in-kind obligations or a land-linked
+  // Daedong levy; annual game units are not reconstructed historic tax rates.
+  const levy=P?.tribute(life.year,s.region);
+  if(life.year<1894&&s.status!=='천민'){
+   if(levy?.kind==='daedong')expense+=Math.max(1,Math.round(s.land*1.2));
+   else if(levy?.kind==='tribute')expense+=3;
+   else if(levy?.kind==='pyeongan')expense+=2;
+   else if(levy?.kind==='capital')expense+=2;
+  }
   book.yearlyIncome=income;book.yearlyExpense=expense;
   book.lastCosts={subsistence,care,landExpenses,rent,levies:expense-beforeLevies,scarcity:life.year<=s.hardshipUntil,helpFromFamily};
   s.capital=clamp(s.capital+income-expense,-120,600);

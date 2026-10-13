@@ -75,20 +75,24 @@ test('distinct working households have actual occupations and trade choices',()=
   else assert.ok(V5.summary(l).role!=='',origin);
  }
 });
-test('royal family is rare, and only a separate eligible succession can make a king',()=>{
+test('royal descent cannot overwrite recorded monarchs or become an inspector',()=>{
  let royal=0;
  for(let seed=1;seed<=18000;seed++)if(V5.originFor({seed},{birthStatus:'양반',region:'한양'})==='왕실 종친')royal++;
- assert.ok(royal>=5&&royal<=110,'royal descent should be possible but rare');
+ assert.ok(royal>=5&&royal<=110,'royal descent should remain possible but rare');
  let candidate=0;for(let seed=1;seed<2000;seed++)if(V5.dice(seed,1908)<.018){candidate=seed;break;}
  assert.ok(candidate>0);
  const l=born(1650,candidate),s=putInSocialClass(l,'왕실 종친');
  l.gender='남자';l.age=26;l.year=1676;l.pending=null;J.ensure(l).active=null;
  V5.prepare(l,s);
  const q=l.getChoice();
- assert.ok(q&&q.options.some(x=>x.action==='throne'));
- assert.equal(s.role,'','royal descent alone is not the kingship');
- assert.equal(l.choose(q.options.findIndex(x=>x.action==='throne')),true);
- assert.equal(V5.summary(l).role,'왕');
+ assert.ok(q);
+ assert.ok(!q.options.some(x=>x.action==='throne'));
+ assert.equal(s.role,'');
+ assert.equal(l.choose(0),true);
+ assert.notEqual(V5.summary(l).role,'왕');
+ l.age=29;l.year=1679;l.pending=null;J.ensure(l).active=null;s.queue=[];s.active=null;
+ V5.prepare(l,s);
+ assert.notEqual(V5.summary(l).role,'암행어사');
 });
 test('local events include tribute, corvee, military service, corruption and coastal/border news',()=>{
  const counts={};
