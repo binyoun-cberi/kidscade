@@ -319,7 +319,7 @@ function choose(life,index){
  }
  if(a==='throne'){remember(life,s,'실제 왕위 계승은 역사에 기록된 군주의 몫이다. 왕실 친족의 자리에서 정국을 지켜보았다.');}
  if(a==='courtstudy'||a==='courtduty')s.rank=Math.max(s.rank,1);
- if(['inspect','reform','hear'].includes(a)&&P.canInspect(origin,s.rank,j.office,s.role,life.year)){s.inspector=true;s.role='암행어사';s.inspectorUntil=life.year+3;j.occupation='어사로 감찰하는 임무';}
+ if(['inspect','reform','hear'].includes(a)&&P.canInspect(s.origin,s.rank,j.office,s.role,life.year)){s.inspector=true;s.role='암행어사';s.inspectorUntil=life.year+3;j.occupation='어사로 감찰하는 임무';}
  if(a==='flee'){j.relocations++;j.hardshipUntil=Math.max(j.hardshipUntil,life.year+1);}
  if(a==='appeal'||a==='witness')s.complaints++;
  if(a==='petition'&&success<.35)j.capital=clamp(j.capital+4,-120,600);
