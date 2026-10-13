@@ -397,7 +397,7 @@ function install(){
  L.prototype.tick=function(){
   if(!J.isJoseon(this))return oldTick.call(this);
   const year=this.year,ok=oldTick.call(this);
-  if(ok&&this.year!==year){if(this.alive)afterYear(this);else sync(this,ensure(this));}
+  if(ok&&this.year!==year){if(this.alive)afterYear(this);else sync(this,ensure(this));if(this.year<1900)J.recordEconomy(this);}
   return ok;
  };
  L.prototype.getChoice=function(){
