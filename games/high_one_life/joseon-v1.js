@@ -53,6 +53,73 @@ function era(year){
  if(year>=1500)return '16세기 조선';
  return '조선 전기';
 }
+
+const CAPITAL_MIN=-120;
+function initialOwnedLand(s){
+ // 'land' is the area used for cultivation, not proof of ownership.
+ return s.birthStatus==='양반'?s.land:s.birthStatus==='상민'&&s.family==='여유 있는 형편'?Math.min(1,s.land):0;
+}
+function economicBook(s){
+ if(!s.economy||s.economy.version!==1){
+  s.economy={version:1,ownedLand:initialOwnedLand(s),tools:s.family==='여유 있는 형편'?2:1,
+   yearlyIncome:0,yearlyExpense:0,lastCosts:null,lastCause:'',previousCapital:s.capital,
+   currentYear:null,povertyYears:0,experiencedDebt:false,creditor:'',recent:[],careLabor:0};
+ }
+ return s.economy;
+}
+function householdLabor(life,s){
+ const people=life.joseon4?.people;
+ if(!Array.isArray(people))return {hands:life.age>=12?1:0,dependents:Math.max(0,s.household-1)};
+ const living=people.filter(p=>p.alive&&p.birthYear<=life.year&&p.atHome!==false);
+ const adults=living.filter(p=>life.year-p.birthYear>=15&&life.year-p.birthYear<70).length;
+ const hands=(life.age>=12&&life.age<72?1:0)+adults;
+ return {hands,dependents:living.filter(p=>life.year-p.birthYear<15||life.year-p.birthYear>=70).length};
+}
+function economicView(life,s){
+ const e=economicBook(s);
+ e.ownedLand=clamp(Math.round(e.ownedLand),0,Math.max(0,s.land));
+ const leasedLand=Math.max(0,s.land-e.ownedLand);
+ const cash=Math.max(0,s.capital),debt=Math.max(0,-s.capital),stock=life.joseon2?.grain??0;
+ const labor=householdLabor(life,s);
+ const condition=debt>0?(stock<8?'먹을거리와 갚을 빚이 모두 빠듯한 살림':'빚을 갚아 가야 하는 살림')
+  :stock<8?'곳간이 비어 걱정되는 살림':s.capital>130?'여유가 생긴 살림':'그날그날 살림을 꾸리는 중';
+ const savings=debt>0?'':s.capital>=80?'한 해를 넘길 여유가 조금 생겼다.':'큰 재산이 없어도 생업을 이어 가고 있다.';
+ return {cash,debt,ownedLand:e.ownedLand,leasedLand,workedLand:s.land,
+  granary:stock,labor:handsLabel(labor),hands:labor.hands,dependents:labor.dependents,
+  occupation:s.occupation,income:e.yearlyIncome,expense:e.yearlyExpense,costs:e.lastCosts,
+  condition,why:e.lastCause||'집안의 벌이와 필요한 지출을 함께 살피는 중',
+  creditor:debt?e.creditor:'',savings,povertyYears:e.povertyYears,memories:e.recent.slice(-3)};
+}
+function handsLabel(l){return '일손 '+l.hands+'명 · 돌봄이 필요한 식구 '+l.dependents+'명';}
+function recordEconomy(life){
+ const s=life.joseon;if(!s||life.year>=1900)return;
+ const e=economicBook(s),now=s.capital,was=e.previousCapital;
+ const today=economicView(life,s);
+ if(e.currentYear===life.year)return;
+ if(e.currentYear!==null&&life.year<=e.currentYear)return;
+ e.currentYear=life.year;
+ if(now<0)e.povertyYears++;
+ const title=today.costs?.scarcity?'흉년과 먹을거리의 부담':today.costs?.rent?'땅을 빌려 쓰는 데 드는 몫':today.costs?.care?'식구의 끼니와 돌봄': '생업과 생활비의 차이';
+ e.lastCause=today.debt?(now<(was??now)?title:'이전에 생긴 빚을 아직 갚지 못함'):
+  today.granary<8?'곳간의 먹을거리가 적음':today.cash<25?'벌이가 생겨도 남는 몫이 적음':'생업과 살림을 이어 감';
+ let message='';
+ if(now<0&&(was??0)>=0){
+  e.experiencedDebt=true;e.creditor=e.creditor||'이웃과 친척에게 빌린 몫';
+  message='그해 벌이로는 살림을 감당하기 어려워 이웃이나 친척에게 빚을 지게 되었다. '+title+'이 컸다.';
+ }else if(now>=0&&(was??0)<0){
+  message='오래 남아 있던 빚을 모두 갚았다. 아직 넉넉하지는 않아도 마음의 짐 하나가 줄었다.';
+ }else if(now<0&&(was??now)<0&&now-(was??now)>=12&&life.age%5===0){
+  message='살림을 아껴 빚의 일부를 덜었다. 갚아야 할 몫은 아직 남아 있다.';
+ }else if(now<0&&e.povertyYears===5&&life.age>12){
+  message='몇 해째 벌이보다 지출이 무거웠다. 식구들은 저마다 할 수 있는 일을 나누었다.';
+ }
+ if(message){
+  life.logEvent(message,'joseon-economy');
+  e.recent.push(message);e.recent=e.recent.slice(-8);
+ }
+ e.previousCapital=now;
+}
+
 function seedState(life){
  const r=REGIONS[Math.floor(roll(life.seed,1400)*REGIONS.length)];
  // Purely fictional spread for varied stories. This is not a class census.
@@ -68,7 +135,7 @@ function seedState(life){
    office:false,married:false,children:0,household:1,relocations:0,
    hardshipUntil:0,educationPausedUntil:0,warMemory:[],memories:[],
    seen:[],followups:[],decisions:[],active:null,processedYear:life.birthYear,
-   parentsSupported:false,retired:false,finalEra:null};
+   parentsSupported:false,retired:false,finalEra:null,economy:null};
 }
 function sync(life,s){
  if(life.year>=1900)return; // The later-life handoff must not undo modern career and family changes.
@@ -104,6 +171,7 @@ function ensure(life){
    life.logEvent('신분과 집안 사정이 앞으로 만날 기회에 영향을 미친다. 하지만 삶의 모든 일이 정해진 것은 아니다.','joseon-life');
   }
  }
+ economicBook(s);
  sync(life,s);
  return s;
 }
@@ -234,18 +302,26 @@ function yearly(life){
  if(s.studyYears&&life.age>=9&&life.age<=24&&life.year>s.educationPausedUntil){s.studyYears++;if(life.age%4===0)s.literacy++;}
  let income=0,expense=0;
  if(life.age>=12){
+  const labor=householdLabor(life,s);
   const production=s.retired?5:s.office?26:s.occupation.includes('장사')?19:s.occupation.includes('글')?13:s.occupation.includes('돌봄')?9:12+s.land*3;
+  const helpFromFamily=life.age>=12?Math.min(3,Math.max(0,labor.hands-1))*2:0;
   const hardship=life.year<=s.hardshipUntil?.55:1;
   // The century shifts risk and opportunities in gameplay, not in historical wage units.
   const periodFactor=life.year<1500?.94:life.year<1600?.9:life.year<1700?.78:
     life.year<1800?1.06:life.year<1876?.89:life.year<1894?1.04:1;
   const openPortBonus=life.year>=1876&&s.occupation.includes('장사')?3:0;
-  income=Math.round((production+openPortBonus)*periodFactor*hardship*(.75+life.rand()*.55));
-  expense=9+Math.round(s.household*2)+(s.married?2:0)+(s.children*2)+Math.max(0,s.land);
+  income=Math.round((production+openPortBonus+helpFromFamily)*periodFactor*hardship*(.75+life.rand()*.55));
+  const book=economicBook(s),rented=Math.max(0,s.land-book.ownedLand);
+  const subsistence=9+Math.round(s.household*2),care=(s.married?2:0)+s.children*2;
+  const landExpenses=Math.max(0,s.land),rent=Math.round(rented*1.5);
+  expense=subsistence+care+landExpenses+rent;
+  book.yearlyIncome=income;book.yearlyExpense=expense;
+  book.lastCosts={subsistence,care,landExpenses,rent,scarcity:life.year<=s.hardshipUntil,helpFromFamily};
   if(life.year<1894&&s.status==='상민')expense+=3;
   if(life.year===1750&&life.gender==='남자'&&s.status==='상민')expense=Math.max(0,expense-2);
   s.capital=clamp(s.capital+income-expense,-120,600);
-  if(s.capital<-25&&life.age%5===0)life.change({health:-2,happiness:-3});
+  // Lack of money alone is not a moral judgment or an automatic loss of happiness.
+  if(s.capital<-25&&life.joseon2?.grain<8&&life.age%5===0)life.change({health:-2});
   if(s.capital>180&&life.age%6===0)life.change({happiness:2});
  }
  if(life.money){
@@ -303,6 +379,7 @@ function summary(life){
  const s=ensure(life);if(!s)return null;
  return {era:era(life.year),region:s.region,status:life.year>=1894?s.birthStatus+' 출신 (법적 신분제 폐지)':s.status,
   occupation:s.occupation,school:s.school,literacy:s.literacy,land:s.land,capital:s.capital,
+  economy:economicView(life,s),
   married:s.married,children:s.children,relocations:s.relocations,office:s.office,
   decisions:s.decisions.length,warMemory:s.warMemory.slice(),memories:s.memories.slice(-3)};
 }
@@ -316,6 +393,17 @@ function hydrate(life,data){
  for(const k of ['land','capital','literacy','studyYears','exams','children','household','relocations','hardshipUntil','educationPausedUntil','processedYear'])
   if(Number.isInteger(old[k]))fresh[k]=clamp(old[k],k==='capital'?-120:0,k==='processedYear'?life.year:k.endsWith('Until')?life.year+12:1000);
  for(const k of ['office','married','parentsSupported','retired'])fresh[k]=old[k]===true;
+ if(old.economy&&old.economy.version===1){
+  const book=economicBook(fresh),safe=old.economy;
+  for(const k of ['ownedLand','tools','yearlyIncome','yearlyExpense','previousCapital','povertyYears','careLabor'])
+   if(Number.isFinite(safe[k]))book[k]=clamp(Math.round(safe[k]),k==='previousCapital'?-120:0,2000);
+  if(Number.isInteger(safe.currentYear))book.currentYear=clamp(safe.currentYear,life.birthYear,life.year);
+  if(safe.lastCosts&&typeof safe.lastCosts==='object')
+   book.lastCosts=Object.fromEntries(['subsistence','care','landExpenses','rent','helpFromFamily'].map(k=>[k,clamp(Number(safe.lastCosts[k])||0,0,1000)]));
+  for(const k of ['lastCause','creditor'])if(typeof safe[k]==='string')book[k]=safe[k].slice(0,140);
+  book.experiencedDebt=safe.experiencedDebt===true;
+  book.recent=Array.isArray(safe.recent)?safe.recent.filter(x=>typeof x==='string').slice(-8).map(x=>x.slice(0,180)):[];
+ }
  for(const k of ['seen','warMemory','memories','decisions','followups']){
   if(Array.isArray(old[k]))fresh[k]=old[k].slice(-40).filter(x=>x!==null&&['string','number','object'].includes(typeof x));
  }
@@ -374,5 +462,5 @@ function install(){
  return true;
 }
 install();
-return Object.freeze({install,isJoseon,inOldEra,ensure,yearly,summary,eventFor,era,promptFor,applyChoice,paint,EVENTS,REGIONS});
+return Object.freeze({install,isJoseon,inOldEra,ensure,yearly,summary,recordEconomy,economicView,eventFor,era,promptFor,applyChoice,paint,EVENTS,REGIONS});
 });
