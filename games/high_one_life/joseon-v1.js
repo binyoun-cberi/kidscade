@@ -1,5 +1,6 @@
 /* Joseon life rules (1392-1897 births). Educational fiction, not reconstructed
- * household statistics, caste probabilities, wages, or mortality tables.
+ * household statistics, caste probabilities, wages, or mortality tables. War-event
+ * death and captivity outcomes are narrative gameplay tuning, not historical rates.
  * This module is loaded after v13 so pre-1900 years never run modern life rules.
  */
 (function(root,factory){
@@ -29,8 +30,11 @@ const NAMES={
 };
 const EVENTS=[
  {year:1392,title:'조선 건국',detail:'새 왕조가 들어서고 나라의 제도가 바뀌기 시작했다.',kind:'change'},
+ {year:1406,title:'경원 지역의 여진 침입',detail:'북방 국경인 경원 지역에 여진 세력이 침입해 주민과 군사 거점이 피해를 입었다.',kind:'borderWar'},
  {year:1446,title:'훈민정음 반포',detail:'새 문자 훈민정음이 세상에 알려졌다.',kind:'learning'},
  {year:1485,title:'경국대전 완성',detail:'나라를 운영하는 법과 제도가 정비되었다.',kind:'change'},
+ {year:1528,title:'압록강 일대의 여진 침입',detail:'북방 변경에서 충돌이 일어나 국경 지역의 경계와 방어가 강화되었다.',kind:'borderWar'},
+ {year:1554,title:'두만강 인근의 여진 충돌',detail:'북방 국경을 지키던 주민과 군사들이 긴장과 피해를 겪었다.',kind:'borderWar'},
  {year:1592,title:'임진왜란 발발',detail:'왜군의 침입으로 전쟁이 일어나 삶의 터전이 무너졌다.',kind:'war'},
  {year:1597,title:'정유재란',detail:'전쟁이 다시 거세지며 마을과 농토가 피해를 입었다.',kind:'war'},
  {year:1608,title:'대동법 경기도 첫 시행',detail:'경기도에서 공물을 쌀로 거두는 대동법이 시작되었다. 다른 지역은 시행 시기가 달랐다.',kind:'tax'},
@@ -282,10 +286,10 @@ function promptFor(life,s){
   opt('하던 일을 후대에 조금씩 맡긴다','가족에게 생업을 전한다','retire',{health:4,bonds:4}),
   opt('계속 일하며 살림을 유지한다','생활은 유지되지만 몸이 고될 수 있다','continue',{wealth:5,health:-4}),
   opt('아이와 이웃에게 기술을 알려 준다','배운 것과 기억을 남긴다','mentor',{knowledge:4,bonds:7})]};
- if(kind==='war')return {title:s.active.title+' · 갈림길',description:'전쟁으로 피란과 생업의 어려움이 닥쳤다. 어느 선택도 안전을 보장하지 않는다.',options:[
-  opt('가족과 함께 피란을 떠난다','집과 땅을 두고 떠나지만 위험을 피하려 한다','flee',{health:3,wealth:-8}),
-  opt('고향에 남아 살림을 지킨다','익숙한 터전을 지키지만 전란의 위험이 남는다','stay',{wealth:2,health:-8}),
-  opt('이웃과 함께 피란처를 마련한다','서로 도우며 짐과 위험을 나눈다','together',{bonds:8,wealth:-5})]};
+ if(kind==='war')return {title:s.active.title+' · 갈림길',description:'전란으로 가족과 생업이 위험해졌다. 피란과 잔류 모두 안전을 보장하지 않으며, 포로가 되거나 목숨을 잃는 일도 생길 수 있다.',options:[
+  opt('가족과 함께 피란을 떠난다','살림을 두고 떠나지만 위험을 줄일 길을 찾는다','flee',{health:3,wealth:-8}),
+  opt('고향에 남아 살림을 지킨다','터전을 지키려 하지만 전란의 위험을 감수한다','stay',{wealth:2,health:-8}),
+  opt('이웃과 함께 피란처를 마련한다','짐과 피란길을 나누며 서로를 돕는다','together',{bonds:8,wealth:-5})]};
  return null;
 }
 const FOLLOWUP={
@@ -375,6 +379,24 @@ function applyChoice(life,index){
  if(act==='flee'){s.relocations++;s.land=Math.max(0,s.land-1);s.capital-=22;s.hardshipUntil=Math.max(s.hardshipUntil,life.year+2);}
  if(act==='stay'){s.capital-=11;s.hardshipUntil=Math.max(s.hardshipUntil,life.year+3);}
  if(act==='together'){s.capital-=13;s.relocations++;s.household=Math.min(8,s.household+1);s.hardshipUntil=Math.max(s.hardshipUntil,life.year+2);}
+ let diedInWar=false;
+ if(kind==='war'){
+  const eventYear=Number(String(s.active?.id||'').split('-')[0]);
+  const border=s.active?.title?.includes('여진')===true;
+  const imjin=[1592,1597].includes(eventYear);
+  const danger=act==='stay' ? 1 : act==='together' ? 0.55 : 0.2;
+  const captureChance=danger*(imjin ? 0.20 : border ? 0.10 : 0.12);
+  const deathChance=danger*(imjin ? 0.055 : border ? 0.018 : 0.03);
+  const outcome=roll(life.seed,life.year+eventYear*37+index*911);
+  if(outcome<captureChance){
+   life.change({health:-10,happiness:-12,bonds:-8,wealth:-12});
+   s.capital-=20;s.hardshipUntil=Math.max(s.hardshipUntil,life.year+4);
+   note(life,s,imjin?'전쟁 중 포로로 끌려가 가족과 떨어져 지냈다. 포로가 된 조선인 가운데에는 끝내 돌아오지 못한 사람도 있었다.':'북방 충돌 중 포로가 되어 가족과 고향에서 떨어져 지냈다. 언제 돌아올 수 있을지 알 수 없었다.','joseon-memory');
+   s.followups.push({id:s.active.id,year:life.year+3,text:'여러 해가 흐른 뒤 고향으로 돌아올 길을 찾았다. 돌아온 뒤에도 헤어진 가족과 잃은 살림의 흔적은 오래 남았다.'});
+  }else if(outcome<captureChance+deathChance){
+   diedInWar=true;
+  }
+ }
  s.capital=clamp(s.capital,-120,600);
  const causeId='joseon:'+s.active.id;
  s.decisions.push({id:s.active.id,year:life.year,age:life.age,kind,action:act});
@@ -383,6 +405,7 @@ function applyChoice(life,index){
  s.followups.push({id:s.active.id,year:life.year+3,text:FOLLOWUP[act]||'그날의 결정은 집안의 살림에 작은 흔적을 남겼다.'});
  s.followups=s.followups.slice(-20);
  s.active=null;life.pending=null;sync(life,s);
+ if(diedInWar)life.finish('전란의 혼란 속에서 목숨을 잃었다.');
  return true;
 }
 function yearly(life){
@@ -456,9 +479,10 @@ function yearly(life){
  const event=eventFor(life.year);
  if(event&&!s.seen.includes(event.year)){
   s.seen.push(event.year);note(life,s,event.year+'년 · '+event.title+' — '+event.detail,'history');
-  if(event.kind==='war'||event.kind==='unrest'){
+  if(event.kind==='war'||event.kind==='borderWar'||event.kind==='unrest'){
+   const northern=['평안도','함경도'].includes(s.region);
    const involved=event.kind==='war'&&(event.year!==1627||['평안도','황해도','경기도','한양'].includes(s.region))||
-    event.kind==='unrest'&&(event.year!==1811||s.region==='평안도');
+    event.kind==='borderWar'&&northern||event.kind==='unrest'&&(event.year!==1811||s.region==='평안도');
    if(involved){
     s.warMemory.push(event.title);s.warMemory=s.warMemory.slice(-8);
     s.hardshipUntil=Math.max(s.hardshipUntil,life.year+3);
@@ -466,7 +490,7 @@ function yearly(life){
     s.capital=clamp(s.capital-(s.region==='경상도'&&event.year===1592?29:18),-120,600);
     life.change({health:-5,happiness:-6,wealth:-8,bonds:-2});
     note(life,s,'전란과 소요로 생업과 배움이 흔들렸다. 여파가 앞으로도 이어질 수 있다.','joseon-memory');
-    if(life.age>=7&&life.age<=75&&event.kind==='war'){
+    if(life.age>=7&&life.age<=75&&(event.kind==='war'||event.kind==='borderWar')){
      s.active={id:event.year+'-war',kind:'war',title:event.title};life.pending='joseon:'+s.active.id;
     }
    }
