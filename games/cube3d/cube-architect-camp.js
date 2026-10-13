@@ -15,7 +15,7 @@ const STEPS=[
  {id:'shelter',title:'작은 쉼터를 지어 보자',text:'판자나 흙을 골라 노란 테두리를 하나씩 채워 보자.',action:'shelter',type:'planks'},
  {id:'inside',title:'쉼터 안으로 들어가 보자',text:'완성한 쉼터 안쪽의 노란 고리까지 걸어가 보자.',action:'inside'},
  {id:'ownWood',title:'이번에는 혼자 원목을 얻어 보자',text:'원하는 나무에서 원목 하나를 얻어 보자.',action:'harvest',type:'log',independent:true},
- {id:'ownPlanks',title:'모은 원목으로 판자를 만들자',text:'가방을 열고 판자를 한 번 만들어 보자.',recipe:'planks',independent:true},
+ {id:'ownPlanks',title:'모은 원목으로 판자를 만들자',text:'마법의 제작대에서 판자를 한 번 더 만들어 보자.',recipe:'planks',independent:true},
  {id:'ownPlace',title:'원하는 곳에 판자를 놓아 보자',text:'판자를 골라 쉼터를 더 꾸며 보자.',action:'place',type:'planks',independent:true},
  {id:'done',title:'첫 생존 성공!',text:'이제 나무를 모으고, 물건을 만들고, 집도 지을 수 있어. 더 넓은 세상으로 가 보자.'}
 ];

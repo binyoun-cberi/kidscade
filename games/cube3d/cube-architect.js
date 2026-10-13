@@ -213,6 +213,7 @@ let challengeShapeMode='cube',challengeTool='build',challengeSelected=null,chall
 let challengeTint='#ff7043',blueprintAngle='iso',blueprintModalOpen=false;
 let challengeBlocks=new Map(),challengeMeshes=[],challengePlane=null,challengeGhost=null,targetGhosts=[],missionIndex=0;
 let challengeYaw=0,challengePitch=0,challengeKeys={},challengeDifficulty='easy';
+let challengeEstimateDone=false,challengeEstimateMistakes=0;
 
 function makeChallengeShape(build){
   const map=new Map();
@@ -311,10 +312,32 @@ function updateChallengeStats(){
     target=projectionSet(mission.blocks,'top').size+
       projectionSet(mission.blocks,'front').size+projectionSet(mission.blocks,'side').size;
   }
-  $('placedCount').textContent=placed;$('targetCount').textContent=target;
+  $('placedCount').textContent=placed;$('targetCount').textContent=hard||challengeEstimateDone?target:'?';
   $('placedCount').parentElement.querySelector('span').textContent=hard?'내 투영 칸':'놓은 블록';
   $('targetCount').parentElement.querySelector('span').textContent=hard?'설계 투영 칸':'설계 규모';
   const maxY=Math.max(0,...Array.from(challengeBlocks.values()).map(m=>m.userData.cy+1));$('heightCount').textContent=maxY;
+}
+function checkChallengeEstimate(){
+  const answer=$('challengeEstimate').value.trim(),guess=Number(answer);
+  const target=currentChallengeMission().blocks.length;
+  if(!answer||!Number.isInteger(guess)||guess<0){$('challengeMathFeedback').textContent='먼저 블록 수를 예상해 적어 보자.';return false}
+  const layers=window.CubeArchitectMath.layeredCounts(currentChallengeMission().blocks);
+  const layerHint=layers.map(o=>o.height+'층 '+o.count+'개').join(' + ');
+  if(guess===target){
+    challengeEstimateDone=true;
+    $('challengeMathFeedback').textContent='정확해! '+layerHint+' = 모두 '+target+'개. 층마다 나누어 세어 볼 수 있어.';
+    updateChallengeStats();return true;
+  }
+  challengeEstimateMistakes++;
+  $('challengeMathFeedback').textContent=challengeEstimateMistakes<2?
+    '아직 달라. 위에서 본 모양과 각 층의 높이를 비교해 보자.':
+    '층별 힌트: '+layerHint+'. 다시 더해 보자.';
+  return false;
+}
+function resetChallengeEstimate(){
+  challengeEstimateDone=false;challengeEstimateMistakes=0;
+  $('challengeEstimate').value='';
+  $('challengeMathFeedback').textContent='위·앞·옆 모습을 보고 필요한 블록 수를 먼저 예상해 보자.';
 }
 function setChallengeTool(tool){
   challengeTool=tool;challengeSelectedElement=0;updateChallengeEditor();drawChallengeSelection();
@@ -566,6 +589,8 @@ function initChallenge(){
   challengeGhost=new THREE.Mesh(blockGeo,new THREE.MeshBasicMaterial({color:0x5a67f2,transparent:true,opacity:.3,depthWrite:false}));challengeGhost.visible=false;scene.add(challengeGhost);
   challengeBlocks=new Map();challengeMeshes=[];targetGhosts=[];challengeSelected=null;challengeShapeMode='cube';challengeTool='build';challengeSelectedElement=0;
   if(restorationSession)seedRestorationChallenge();
+  resetChallengeEstimate();
+  $('challengeEstimateCheck').onclick=checkChallengeEstimate;
   $('blueprintView').value='iso';blueprintAngle='iso';updateChallengeEditor();
   updateChallengeDifficultyUI();drawBlueprint();
   if(restorationSession){
@@ -581,9 +606,9 @@ function initChallenge(){
   }else{
     $('mobileNext').textContent='다음';
     $('actionNext').textContent='다음 미션';
-    $('actionNext').onclick=()=>{missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()};
+    $('actionNext').onclick=()=>{missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();resetChallengeEstimate();drawBlueprint()};
   }
-  $('clearChallenge').onclick=clearChallenge;$('hintChallenge').onclick=()=>{$('blueprintView').value='top';blueprintAngle='top';drawBlueprint();toast('윗면도를 열었어요. '+currentChallengeMission().tip)};
+  $('clearChallenge').onclick=()=>{clearChallenge();resetChallengeEstimate();updateChallengeStats()};$('hintChallenge').onclick=()=>{$('blueprintView').value='top';blueprintAngle='top';drawBlueprint();toast('윗면도를 열었어요. '+currentChallengeMission().tip)};
   $('blueprintView').onchange=e=>{blueprintAngle=e.target.value;drawBlueprint()};
   $('blueprintZoom').onclick=()=>toggleBlueprintModal(true);
   $('blueprintClose').onclick=()=>toggleBlueprintModal(false);
@@ -684,6 +709,13 @@ function checkChallenge(){
     restorationScore=Math.round(common/Math.max(1,outer.length)*100);
   }
   const shownScore=restorationScore===null?match.score:restorationScore;
+  if(!hard&&!challengeEstimateDone){
+    const targetCount=currentChallengeMission().blocks.length;
+    $('challengeMathFeedback').textContent='정답 확인: '+targetCount+'개. 층별로 더하면 '+
+      window.CubeArchitectMath.layeredCounts(currentChallengeMission().blocks).map(r=>r.count).join(' + ')+
+      ' = '+targetCount+'개야. 다음에는 먼저 예상해 보자.';
+    challengeEstimateDone=true;updateChallengeStats();
+  }
   $('resultCard').classList.remove('hidden');$('resultScore').textContent=shownScore+'%';
   if(!match.user.keys.size){
     $('resultText').textContent='아직 건축한 블록이 없어요. 설계도를 보고 첫 직육면체부터 만들어 보세요.';
@@ -956,12 +988,12 @@ function showNetProof(){
       color:i===f?0x4fd49e:i===o?0x668bff:0xffffff,
       transparent:true,opacity:i===f||i===o?.32:0,depthWrite:false,side:THREE.DoubleSide
     }));
-    const mesh=new THREE.Mesh(new THREE.BoxGeometry(2.83,1.93,1.58),mats);mesh.renderOrder=20;g.add(mesh);
+    const mesh=new THREE.Mesh(new THREE.BoxGeometry(2.23,2.23,2.23),mats);mesh.renderOrder=20;g.add(mesh);
   }else{
     const names=netQuiz.kind==='edge'?netQuiz.proofEdge:[netQuiz.proofVertex];
     const points=names.map(name=>{
       const v=CUBOID_TOPOLOGY.vertices.find(item=>item.id===name);
-      return new THREE.Vector3(v.s[0]*1.4,v.s[1]*.95,v.s[2]*.775);
+      return new THREE.Vector3(v.s[0]*1.1,v.s[1]*1.1,v.s[2]*1.1);
     });
     if(netQuiz.kind==='edge'){
       const geometry=new THREE.BufferGeometry().setFromPoints(points);
@@ -988,7 +1020,7 @@ function initNet(){
   chooseNetVariant();
   cleanScene(0xfff5dc);netQuizProof=null;camera.position.set(5,4.2,6);camera.lookAt(0,0,0);makeOrbit(new THREE.Vector3(0,0,0));orbit.minDistance=4;orbit.maxDistance=10;
   netTarget=shuffle(symbols);netAssigned=['','','','','',''];selectedSymbol=netTarget[0];buildNetBoard();buildPalette();
-  netBox=new THREE.Mesh(new THREE.BoxGeometry(2.8,1.9,1.55),netAssigned.map(s=>symbolMaterial(s,'#ffffff')));netBox.castShadow=true;netBox.receiveShadow=true;netBox.userData.netbox=true;scene.add(netBox);
+  netBox=new THREE.Mesh(new THREE.BoxGeometry(2.2,2.2,2.2),netAssigned.map(s=>symbolMaterial(s,'#ffffff')));netBox.castShadow=true;netBox.receiveShadow=true;netBox.userData.netbox=true;scene.add(netBox);
   const floor=new THREE.Mesh(new THREE.CircleGeometry(4.5,64),new THREE.MeshStandardMaterial({color:0xf0dfb7,roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-1.15;floor.receiveShadow=true;scene.add(floor);
   $('actionCheck').onclick=checkNet;
   $('actionNext').onclick=()=>netQuizMode==='decorate'?initNet():nextNetQuiz();
@@ -1005,7 +1037,7 @@ function buildNetBoard(){
   const variant=NET_VARIANTS[netVariantIndex],board=$('netBoard');
   if(board){
     board.style.gridTemplateColumns='repeat('+variant.cols+',56px)';
-    board.style.gridTemplateRows='repeat('+variant.rows+',44px)';
+    board.style.gridTemplateRows='repeat('+variant.rows+',56px)';
   }
   document.querySelectorAll('.net-face').forEach(el=>{
     const f=Number(el.dataset.face),pos=NET_LAYOUT[f];
@@ -1022,7 +1054,7 @@ function buildNetBoard(){
     }
     if(netQuizMode==='face'&&netQuiz?.source===f)el.classList.add('quiz-target');
   });
-  if(netQuizMode==='decorate')$('netMission').textContent='11가지 정육면체 전개도 중 하나예요. 그림이 직육면체의 어느 면으로 오는지 찾아 배치하세요.';
+  if(netQuizMode==='decorate')$('netMission').textContent='11가지 정육면체 전개도 중 하나야. 같은 크기의 정사각형 여섯 개를 접어서 확인해 보자.';
 }
 function buildPalette(){
   const p=$('stickerPalette');p.innerHTML='';
@@ -1047,29 +1079,48 @@ function checkNet(){
   else{sfx('bad');toast('몇 면의 위치가 달라요. 전개도의 붙어 있는 면을 따라가 보세요.')}
 }
 function foldPreview(){
-  if(!netBox)return;const ticket=++foldNonce;
-  foldPieces.forEach(x=>scene.remove(x));foldPieces=[];clearNetProof();netBox.visible=false;
-  const xs=NET_LAYOUT.map(p=>p[0]),ys=NET_LAYOUT.map(p=>p[1]);
-  const cx=(Math.min(...xs)+Math.max(...xs))/2,cy=(Math.min(...ys)+Math.max(...ys))/2;
-  const starts=NET_LAYOUT.map(([col,row])=>new THREE.Vector3((col-cx)*2.75,(cy-row)*1.95,0));
-  const ends=[new THREE.Vector3(1.41,0,0),new THREE.Vector3(-1.41,0,0),new THREE.Vector3(0,.96,0),new THREE.Vector3(0,-.96,0),new THREE.Vector3(0,0,.79),new THREE.Vector3(0,0,-.79)];
-  const rots=[
-    new THREE.Euler(0,Math.PI/2,0),new THREE.Euler(0,-Math.PI/2,0),new THREE.Euler(-Math.PI/2,0,0),new THREE.Euler(Math.PI/2,0,0),new THREE.Euler(0,0,0),new THREE.Euler(0,Math.PI,0)
-  ];
-  for(let i=0;i<6;i++){
-    const g=new THREE.PlaneGeometry(i<2?1.55:2.8,(i===2||i===3)?1.55:1.9),m=symbolMaterial(netTarget[i],'#ffffff'),p=new THREE.Mesh(g,m);
-    p.position.copy(starts[i]);p.userData.start=starts[i].clone();p.userData.end=ends[i].clone();p.userData.rot=rots[i];scene.add(p);foldPieces.push(p);
+  if(!netBox)return;
+  const ticket=++foldNonce;foldPieces.forEach(x=>scene.remove(x));foldPieces=[];clearNetProof();
+  const geometry=window.CubeArchitectMath.unfoldedLayout(NET_LAYOUT);
+  if(!geometry.valid){toast('전개도가 서로 겹쳐 접힐 수 없어. 다른 배열을 골라 보자.');return}
+  netBox.visible=false;
+  const size=2.2,root=new THREE.Group();
+  const faceGroups=new Array(6);faceGroups[0]=root;
+  // Every fold is a real rotation around the edge shared by its two squares.
+  const hinges=[];
+  for(const edge of geometry.hinges){
+    const {parent,child,dx,dy}=edge;
+    const pivot=new THREE.Group();
+    pivot.position.set(dx*size/2,-dy*size/2,0);
+    faceGroups[parent].add(pivot);
+    const face=new THREE.Group();face.position.set(dx*size/2,-dy*size/2,0);
+    pivot.add(face);faceGroups[child]=face;
+    hinges.push({pivot,axis:dx?'y':'x',sign:dx||dy});
   }
-  const start=performance.now();function step(now){
+  for(let i=0;i<6;i++){
+    const plane=new THREE.Mesh(new THREE.PlaneGeometry(size,size),symbolMaterial(netTarget[i],'#ffffff'));
+    plane.material.side=THREE.DoubleSide;
+    faceGroups[i].add(plane);
+  }
+  // Rotate the flat XY-paper cube to the finished cube's face convention.
+  // The grid's positive row points DOWN while Three's Y points UP; the real
+  // edge rotations already account for that inversion. Yaw 90° is sufficient.
+  root.rotation.y=Math.PI/2;
+  root.position.set(0,0,0);scene.add(root);foldPieces.push(root);
+  // Since rotations propagate down the graph, each child stays attached to its parent.
+  const start=performance.now();
+  function step(now){
     if(ticket!==foldNonce)return;
-    const q=Math.min(1,(now-start)/1250),e=1-Math.pow(1-q,3);
-    foldPieces.forEach(p=>{p.position.lerpVectors(p.userData.start,p.userData.end,e);p.rotation.set(p.userData.rot.x*e,p.userData.rot.y*e,p.userData.rot.z*e)});
-    if(q<1)requestAnimationFrame(step);else setTimeout(()=>{
+    const t=Math.min(1,(now-start)/1650),e=t*t*(3-2*t);
+    for(const h of hinges)h.pivot.rotation[h.axis]=h.sign*e*Math.PI/2;
+    if(t<1)requestAnimationFrame(step);
+    else setTimeout(()=>{
       if(ticket!==foldNonce)return;
-      foldPieces.forEach(x=>scene.remove(x));foldPieces=[];netBox.visible=true;
+      scene.remove(root);foldPieces=[];netBox.visible=true;
       if(netQuizMode!=='decorate')showNetProof();
-    },550);
-  }requestAnimationFrame(step);toast('전개도의 면들이 3D 위치로 접히고 있어요.');
+    },850);
+  }
+  requestAnimationFrame(step);toast('붙어 있는 모서리를 중심으로 정사각형 여섯 개가 접히고 있어.');
 }
 
 /* ---------------- 아키텍트 월드: 살아있는 복셀 샌드박스 ---------------- */
@@ -1215,7 +1266,7 @@ function worldChunkKey(x,z){
 }
 const voxelRuntime=window.CubeArchitectVoxel||null;
 function newSurvivalStats(){
-  return {harvestedWood:0,harvestedStone:0,crafted:{},placed:{},placedBlocks:0,
+  return {harvestedWood:0,harvestedStone:0,workbenchUsed:false,crafted:{},placed:{},placedBlocks:0,
     cuboids:[],shelterBuilt:false,paintedFaces:[],smelted:{},biomes:[],found:[],restored:[],
     foraged:{},hunted:{},foodsEaten:0};
 }
@@ -1228,6 +1279,8 @@ function trackSurvival(action,type,n=1){
     const field=action==='craft'?'crafted':action==='place'?'placed':'smelted';
     survivalStats[field][type]=(survivalStats[field][type]||0)+n;
     if(action==='place')survivalStats.placedBlocks++;
+  }else if(action==='workbench'){
+    survivalStats.workbenchUsed=true;
   }else if(action==='cuboid'){
     const dims=String(type).split('x').map(Number).sort((a,b)=>a-b).join('x');
     if(dims&&!survivalStats.cuboids.includes(dims))survivalStats.cuboids.push(dims);
@@ -3723,7 +3776,7 @@ function advanceSurvival(){
   if(gameFreeMode!=='survival')return;
   const discovered=refreshRecipeDiscoveries(true);
   const progressed=syncSurvivalAdventureState(true);
-  if(discovered.length&&!progressed)toast('새 제작법 '+discovered.length+'개 발견 · 가방에서 확인해 보세요.');
+  if(discovered.length&&!progressed)toast('새 제작법 '+discovered.length+'개 발견 · 마법의 제작대에서 확인해 보자.');
   if(progressed||discovered.length)saveFreeWorld();
   $('actionXray').classList.remove('hidden');
   configureMobileMode('free');updateFreeMission();
@@ -3788,7 +3841,7 @@ function updateCraftDiscoveryHud(){
   const notice=$('craftDiscoveryNotice');
   if(notice){
     notice.classList.toggle('hidden',gameFreeMode!=='survival'||unread===0);
-    notice.textContent=unread?('새 제작법 '+unread+' · E로 확인'):'';
+    notice.textContent=unread?('새 제작법 '+unread+' · 제작대에서 확인'):'';
   }
   const summary=$('craftDiscoverySummary');
   if(summary)summary.textContent='발견한 제작법 '+discoveredRecipeIds.size+' / '+worldRules.RECIPES.length+
@@ -4810,7 +4863,10 @@ function placeFreeBlock(hit){
   const hitType=hit.object.userData.type,u=hit.object.userData;
   if(hitType==='door'){toggleDoorAt(u.gx,u.gy,u.gz);return}
   if(hitType==='furnace'){toggleFurnace(true,u.gx,u.gy,u.gz);return}
-  if(hitType==='workbench'){survivalInventoryTab='craft';if(campActive())survivalCamp.workbenchOpened=true;toggleInventory(true,'craft');return}
+  if(hitType==='workbench'){
+    survivalInventoryTab='craft';if(campActive())survivalCamp.workbenchOpened=true;
+    trackSurvival('workbench','used');toggleInventory(true,'craft');return
+  }
   if(typeof interactLifeBlock==='function'&&interactLifeBlock(hitType,u.gx,u.gy,u.gz))return;
   if(typeof FARM_PLANT_TYPES!=='undefined'&&FARM_PLANT_TYPES.includes(selectedType)){plantFarmItem(hit);return}
   if(!PLACEABLE_TYPES.includes(selectedType)){
@@ -4952,8 +5008,38 @@ function pickTargetBlock(){
   if(!PLACEABLE_TYPES.includes(type))return;
   hotbarTypes[selectedHotbarSlot]=type;selectedType=type;buildHotbar();toast(blockDef(type).name+'을(를) 선택했어요.');
 }
+function shapeMathDimensions(){
+  const limit=survivalCuboidMax();
+  return [$('shapeW').value,$('shapeH').value,$('shapeD').value]
+    .map(v=>THREE.MathUtils.clamp(Math.round(Number(v)||1),1,limit));
+}
+function updateCuboidMathPrompt(){
+  const dims=shapeMathDimensions(),[w,h,d]=dims;
+  $('cuboidMathDimensions').textContent=w+' × '+h+' × '+d+
+    ' · 한 층 '+(w*d)+'칸 × '+h+'층 · 면은 6개';
+  $('cuboidMathFeedback').textContent='층별 큐브 수를 더하고, 서로 마주 보는 같은 면을 세어 보자.';
+  $('cuboidVolumeGuess').value='';$('cuboidAreaGuess').value='';
+}
+function checkCuboidMath(reveal=false){
+  const dims=shapeMathDimensions(),[w,h,d]=dims;
+  const result=window.CubeArchitectMath.measurements(dims);
+  const volumeInput=$('cuboidVolumeGuess').value.trim(),areaInput=$('cuboidAreaGuess').value.trim();
+  const volume=Number(volumeInput),area=Number(areaInput);
+  const volumeCorrect=volumeInput!==''&&volume===result.volume;
+  const areaCorrect=areaInput!==''&&area===result.area;
+  const faceText='가로×높이 '+(w*h)+'cm², 가로×세로 '+(w*d)+'cm², 높이×세로 '+(h*d)+'cm²';
+  $('cuboidMathFeedback').textContent=(reveal?'계산 방법 · ':volumeCorrect&&areaCorrect?'두 답 모두 정확해! ':'다시 확인해 보자. ')+
+    (reveal||volumeCorrect?'부피 '+w+' × '+h+' × '+d+' = '+result.volume+'cm³. ':
+      '부피: 한 층의 블록 '+(w*d)+'개가 '+h+'층이면? ')+
+    (reveal||areaCorrect?'겉넓이 ('+faceText+') × 2 = '+result.area+'cm². ':
+      '겉넓이: 마주 보는 면은 넓이가 같아. 세 쌍을 더해 보자.');
+  return {volumeCorrect,areaCorrect};
+}
 function setupShapeWorkbench(){
   syncShapeWorkbench();
+  for(const id of ['shapeW','shapeH','shapeD'])$(id).addEventListener('input',updateCuboidMathPrompt);
+  $('cuboidMathCheck').onclick=()=>checkCuboidMath(false);
+  $('cuboidMathShow').onclick=()=>checkCuboidMath(true);
   $('freeSelectShape').onclick=selectFreeGeometry;
   $('freeEdgeMode').onclick=()=>{freeElementMode='edge';updateFreeGeometryEditor()};
   $('freeVertexMode').onclick=()=>{freeElementMode='vertex';updateFreeGeometryEditor()};
@@ -4964,7 +5050,10 @@ function setupShapeWorkbench(){
     const dims=[$('shapeW').value,$('shapeH').value,$('shapeD').value]
       .map(v=>THREE.MathUtils.clamp(parseInt(v)||1,1,limit));
     const faceColors=Array.from({length:6},(_,i)=>$('faceColor'+i).value||DEFAULT_FACE_COLORS[i]);
-    currentCuboidSpec={dims,faceColors};putOnHotbar('cuboid');toast('직육면체 '+dims.join('×')+'를 '+(selectedHotbarSlot+1)+'번 칸에 담았어요.');tutorialRefreshProgress();
+    currentCuboidSpec={dims,faceColors};putOnHotbar('cuboid');
+    const math=window.CubeArchitectMath.measurements(dims);
+    toast('직육면체 '+dims.join('×')+' · 필요한 블록 '+math.volume+'개, 겉넓이 '+math.area+'칸². 핫바에 담았어.');
+    tutorialRefreshProgress();
   };
   $('facePaintColor').oninput=e=>{facePaintColor=e.target.value};
 }
@@ -4977,6 +5066,7 @@ function syncShapeWorkbench(){
   $('shapeD').value=Math.min(max,currentCuboidSpec.dims[2]);
   currentCuboidSpec.faceColors.forEach((c,i)=>{if($('faceColor'+i))$('faceColor'+i).value=c});
   $('facePaintColor').value=facePaintColor;
+  if($('cuboidMathDimensions'))updateCuboidMathPrompt();
 }
 function selectFreeGeometry(){
   const hit=freeCenterHit(9);
@@ -6587,7 +6677,10 @@ function mobileSpecialUseTarget(){
     if(toggleDoorAt(u.gx,u.gy,u.gz))return true;
   }
   if(type==='furnace'){toggleFurnace(true,u.gx,u.gy,u.gz);return true}
-  if(type==='workbench'){survivalInventoryTab='craft';if(campActive())survivalCamp.workbenchOpened=true;toggleInventory(true,'craft');return true}
+  if(type==='workbench'){
+    survivalInventoryTab='craft';if(campActive())survivalCamp.workbenchOpened=true;
+    trackSurvival('workbench','used');toggleInventory(true,'craft');return true
+  }
   if(interactLifeBlock(type,u.gx,u.gy,u.gz))return true
   if(nearLandmarkPoi&&!restoredLandmarks.has(nearLandmarkPoi.id)){
     openLandmarkDungeon(nearLandmarkPoi);return true;
@@ -7261,9 +7354,9 @@ function tutorialSteps(kind){
     {title:'튜토리얼 완료!',text:'이제 최소한 “보기 → 설치 → 파괴 → 힌트 → 검사” 순서는 혼자 할 수 있어요.',do:'처음에는 블록 1개만 정확하게 놓는 것부터 시작해도 충분합니다.'}
   ];
   if(kind==='net')return[
-    {title:'전개도 연구실 사용법',text:'그림을 고르고, 3D 직육면체의 면에 붙이고, 실제로 접어 확인하는 순서입니다.',do:'한 단계씩 직접 해 봐요.'},
+    {title:'전개도 연구실 사용법',text:'정육면체 전개도를 보고 그림을 3D 정육면체의 면에 붙인 다음 접어 확인해 봐요.',do:'한 단계씩 직접 해 봐요.'},
     {title:'1. 붙일 그림 고르기',target:'#stickerPalette',text:'아래 그림 중 하나를 먼저 선택합니다.',do:'그림 하나를 눌러 보세요.',wait:'net-sticker'},
-    {title:'2. 3D 면에 붙이기',target:'#gameCanvas',text:'오른쪽 3D 직육면체를 돌려 보고 원하는 면을 클릭하세요.',do:'선택한 그림이 실제 면에 붙어야 다음으로 넘어갑니다.',wait:'net-assign'},
+    {title:'2. 3D 면에 붙이기',target:'#gameCanvas',text:'오른쪽 3D 정육면체를 돌려 보고 원하는 면을 클릭하세요.',do:'선택한 그림이 실제 면에 붙어야 다음으로 넘어갑니다.',wait:'net-assign'},
     {title:'3. 접어 보기',target:'#foldNet',text:'전개도가 실제로 어떻게 접히는지 애니메이션으로 확인할 수 있어요.',do:'“접어 보기”를 눌러 확인해 보세요.'},
     {title:'4. 다른 수학 활동',target:'[data-net-mode="face"]',text:'면 관계, 모서리, 꼭짓점 탭은 기본 그림 배치에 익숙해진 뒤 도전하면 됩니다.',do:'처음 하는 학생은 “그림 배치”부터 시작하세요.'},
     {title:'5. 검사와 다음',target:'#actionCheck',text:'검사하기로 답을 확인하고, 다음 버튼으로 새 전개도로 바꿉니다.',do:'상단 튜토리얼 버튼으로 언제든 다시 볼 수 있어요.'}
