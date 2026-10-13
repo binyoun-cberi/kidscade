@@ -63,7 +63,42 @@ function unfoldedLayout(layout){
   return {valid:connected&&new Set(normals).size===6&&!errors.length,
     hinges,normals,reason:!connected?'disconnected':errors.length?'overlap':new Set(normals).size!==6?'overlap':'ok'};
 }
-const api=Object.freeze({measurements,visibleUnitFaces,layeredCounts,projectionCounts,unfoldedLayout});
+/* Compare shapes with exactly the same volume; count all 6 exterior faces,
+ * including the underside (a closed painted model, not an open building).
+ */
+function equalVolumeAlternative(raw,maximum=12){
+  const current=measurements(raw);if(!current)return null;
+  const candidates=[];
+  for(let a=1;a<=maximum;a++)for(let b=a;b<=maximum;b++){
+    const c=current.volume/(a*b);
+    if(!Number.isInteger(c)||c<b||c>maximum)continue;
+    const alt=measurements([a,b,c]);
+    if(alt.area!==current.area)candidates.push(alt);
+  }
+  candidates.sort((a,b)=>{
+    const compactA=Math.max(...a.dimensions)<=6?0:1;
+    const compactB=Math.max(...b.dimensions)<=6?0:1;
+    return compactA-compactB||Math.abs(a.area-current.area)-Math.abs(b.area-current.area)||
+      Math.max(...a.dimensions)-Math.max(...b.dimensions);
+  });
+  return candidates[0]||null;
+}
+const DRAFT_GRID_SIZE=6;
+function draftPlace(layout,index,x,y){
+  if(!Array.isArray(layout)||layout.length!==6||!Number.isInteger(index)||index<0||index>5||
+    !Number.isInteger(x)||!Number.isInteger(y)||x<0||y<0||
+    x>=DRAFT_GRID_SIZE||y>=DRAFT_GRID_SIZE)return null;
+  const next=layout.map(p=>Array.isArray(p)?p.slice():null);
+  for(let i=0;i<next.length;i++)if(i!==index&&next[i]&&next[i][0]===x&&next[i][1]===y)return null;
+  next[index]=[x,y];return next;
+}
+function draftReport(layout){
+  if(!Array.isArray(layout)||layout.length!==6)return {placed:0,valid:false,reason:'six'};
+  const placed=layout.filter(v=>Array.isArray(v)).length;
+  if(placed!==6)return {placed,valid:false,reason:'incomplete'};
+  return {placed,...unfoldedLayout(layout)};
+}
+const api=Object.freeze({measurements,visibleUnitFaces,layeredCounts,projectionCounts,unfoldedLayout,equalVolumeAlternative,draftPlace,draftReport,DRAFT_GRID_SIZE});
 if(typeof window!=='undefined')window.CubeArchitectMath=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })();
