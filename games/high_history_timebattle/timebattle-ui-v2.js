@@ -45,6 +45,9 @@
     const cards=make('div','mode-grid');
     cards.setAttribute('role','group');cards.setAttribute('aria-label','문제 유형 선택');
     field.append(cards);
+    // Mode cards become the keyboard and screen-reader controls; keep the select for the existing game logic.
+    select.tabIndex=-1;
+    select.setAttribute('aria-hidden','true');
     const buttons=[];
     for(const option of select.options){
       const info=DESCRIPTIONS[option.value]||{title:option.textContent,detail:'문제 유형'};
@@ -103,6 +106,7 @@
       const scoreField=byId(section.score)?.closest('.field');
       if(scoreField)fields.append(scoreField);
     }
+    node.querySelectorAll(':scope > .grid').forEach(unused=>{if(!unused.children.length)unused.remove();});
     select.addEventListener('change',refresh);
     byId(section.count)?.addEventListener('change',refresh);
     panels.push({section,select,buttons,eraFold,advanced});
