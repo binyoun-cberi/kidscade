@@ -1410,6 +1410,29 @@ function pickDistractors(index, field, count = 3) {
   return out.slice(0,count);
 }
 
+// 문화유산 전용 보기는 모두 다른 문화유산이어야 하며 가급적 동시대·같은 종류로 고른다.
+function heritageDistractors(index){
+  const fact=CORE_FACTS[index],eraIndex=ERA_OPTIONS.indexOf(fact.era);
+  const nearby=[ERA_OPTIONS[eraIndex-1],ERA_OPTIONS[eraIndex+1]].filter(Boolean);
+  const possible=CORE_FACTS.filter((other,i)=>i!==index&&isHeritageFact(other)&&other.term!==fact.term);
+  const groups=[
+    possible.filter(other=>other.era===fact.era&&other.type===fact.type),
+    possible.filter(other=>other.era===fact.era),
+    possible.filter(other=>nearby.includes(other.era)&&other.type===fact.type),
+    possible.filter(other=>other.type===fact.type),possible
+  ];
+  const chosen=[],used=new Set([fact.term]);
+  for(let groupIndex=0;groupIndex<groups.length&&chosen.length<3;groupIndex++){
+    const group=groups[groupIndex];if(!group.length)continue;
+    const start=hashText(fact.term+':heritage:'+groupIndex)%group.length;
+    for(let step=0;step<group.length&&chosen.length<3;step++){
+      const term=group[(start+step)%group.length].term;
+      if(!used.has(term)){chosen.push(term);used.add(term);}
+    }
+  }
+  return chosen;
+}
+
 function eraDistractors(correct, seed) {
   const pos=ERA_OPTIONS.indexOf(correct),out=[];
   const candidates=[];
@@ -1579,6 +1602,18 @@ function buildBank() {
     relationQuestions(fact,index).forEach(q=>out.push(q));
     regularOxQuestions(fact,index).forEach(q=>out.push(q));
   });
+  // 이전 게임에서 사용 중인 숫자형 문제 인덱스를 바꾸지 않도록 끝에 추가한다.
+  CORE_FACTS.forEach((fact,index)=>{
+    if(!isHeritageFact(fact))return;
+    const distractors=heritageDistractors(index);
+    if(distractors.length!==3)return;
+    out.push({
+      id:`heritage-${index}`,era:fact.era,difficulty:2,
+      q:`문화유산 이름 맞히기\\n${fact.clue}\\n이 문화유산의 이름은 무엇일까요?`,
+      o:[fact.term,...distractors],a:0,
+      e:`${fact.term}: ${fact.clue}`,sourceFact:index,family:'heritage-identify'
+    });
+  });
   return out;
 }
 
@@ -1723,7 +1758,8 @@ function chronologicalSourceFactIndexes(count = 15, eras = ERA_ORDER, factType =
 function candidatesForFact(factIndex,questionMode,position,random){
   const all=QUESTION_BANK.filter(q=>q.sourceFact===factIndex);
   const ox=all.filter(q=>q.family==='ox'),choice=all.filter(q=>q.family!=='ox');
-  if(questionMode==='people'||questionMode==='heritage')return all.filter(q=>q.family==='identify');
+  if(questionMode==='people')return all.filter(q=>q.family==='identify');
+  if(questionMode==='heritage')return all.filter(q=>q.family==='heritage-identify');
   if(questionMode==='ox')return ox.length?ox:choice;
   if(questionMode==='mixed'){
     const useOx=position%2===1;
@@ -1737,9 +1773,10 @@ export function hasHistoricalFigures(eras = ERA_ORDER) {
   return CORE_FACTS.some(f=>f.type==='인물'&&selected.includes(f.era));
 }
 
-export function hasHistoricalHeritage(eras = ERA_ORDER) {
+export function hasHistoricalHeritage(eras = ERA_ORDER, count = 1) {
   const selected=normalizeEraSelection(eras);
-  return CORE_FACTS.some(f=>isHeritageFact(f)&&selected.includes(f.era));
+  const needed=Math.max(1,Math.min(40,Math.floor(Number(count)||1)));
+  return CORE_FACTS.filter(f=>isHeritageFact(f)&&selected.includes(f.era)).length>=needed;
 }
 
 export function pickHistoryQuestions(count = 15, random = Math.random, orderMode = 'random', questionMode = 'choice', eras = ERA_ORDER) {
@@ -1747,6 +1784,7 @@ export function pickHistoryQuestions(count = 15, random = Math.random, orderMode
   const wanted=Math.max(1,Math.min(Number(count)||15,40));
   let factIndexes;
 
+  if(questionMode==='heritage'&&!hasHistoricalHeritage(selectedEras,wanted))return [];
   const factType=questionMode==='people'?'인물':questionMode==='heritage'?'heritage':null;
   if (orderMode === 'chronological') {
     factIndexes = chronologicalSourceFactIndexes(wanted,selectedEras,factType);
