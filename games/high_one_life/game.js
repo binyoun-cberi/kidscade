@@ -160,7 +160,7 @@
       put('v9Loan',e.debt?'갚아야 할 빚 '+e.debt+'몫 · '+(e.creditor||'빌려 쓴 몫')+' · '+e.why
         :'손에 남은 살림 '+e.cash+'몫 · '+e.why);
       put('v9Hobby',(jobs?.primary?jobs.primary.supply+' · '+jobs.primary.people+' · 숙련 '+jobs.primary.skills+' · 단골/제자 '+jobs.primary.contacts.length+'명':(social?.memories.at(-1)||v3.memories.at(-1)||'생업과 이웃 사이에서 남은 일상'))+' · '+e.labor);
-      const picture=Joseon3.paint($('lifeScene'),life)||Joseon.paint($('lifeScene'),life);
+      const picture=window.OneLifeJoseonPixel2?.paint($('lifeScene'),life)||Joseon3.paint($('lifeScene'),life)||Joseon.paint($('lifeScene'),life);
       if(!picture)Pixel.paint($('lifeScene'),life);
       put('sceneLabel',life.year+'년 '+v3.season+' · '+j.region+' '+v3.sceneLabel+' · '+(jobs?.primary?.name||j.occupation));
       return;

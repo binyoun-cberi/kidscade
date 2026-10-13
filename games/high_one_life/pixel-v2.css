@@ -1,0 +1,32 @@
+/* Pixel art frame: a quiet mint frame lets the warm Joseon palette lead. */
+.pixel-frame{
+  overflow:hidden;
+  border:1px solid #c8ddd4;
+  border-radius:14px;
+  background:#edf5f1;
+  box-shadow:0 8px 24px rgba(48,83,72,.08);
+}
+.pixel-frame canvas{
+  display:block;
+  width:100%;
+  height:auto;
+  aspect-ratio:600/258;
+  image-rendering:pixelated;
+  image-rendering:crisp-edges;
+  background:#c8e4d9;
+}
+.pixel-frame figcaption{
+  min-height:38px;
+  display:flex;
+  align-items:center;
+  padding:8px 13px;
+  background:#edf5f1;
+  color:#47685f;
+  border-top:1px solid #d7e6df;
+  font-size:12px;
+  line-height:1.5;
+}
+@media(max-width:560px){
+ .pixel-frame{border-radius:11px}
+ .pixel-frame figcaption{font-size:11px;padding:8px 10px}
+}
