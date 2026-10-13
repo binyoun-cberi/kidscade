@@ -214,7 +214,7 @@ function prepare(life,s){
  if([18,27,39,54].includes(age))offer(life,s,'living','올해 나의 생업',roleChoices(s,j,life));
  const duty=P.military(life.year,origin,life.gender);
  if([22,37,52].includes(age)&&duty.eligible&&duty.kind!=='reform')
-  offer(life,s,'military',duty.title,taxChoices('military',duty));
+  offer(life,s,duty.kind==='hopo'?'hopo':'military',duty.title,taxChoices('military',duty));
  if([34,49].includes(age)&&!isRoyal(origin)&&!(isEnslaved(origin)&&!s.freed)&&life.year<1894){
   const levy=P.tribute(life.year,j.region);
   offer(life,s,'tribute',levy.title,taxChoices('tribute'));
@@ -311,7 +311,7 @@ function choose(life,index){
   const gain=a==='market'?7:a==='inn'?8:a==='fish'?6:a==='craft'?7:a==='service'?5:3;
   j.capital=clamp(j.capital+Math.floor(gain*(.5+success)),-120,600);
  }
- if(['payservice','labor','guard'].includes(a))s.serviceYears++;
+ if((a==='payservice'&&q.type!=='hopo')||['labor','guard'].includes(a))s.serviceYears++;
  if(['tribute','sharetribute','payservice','labor'].includes(a))s.burdens.push(life.year+'년 '+q.title);
  if(a==='freedom'){
   if(success<.22){s.freed=true;s.legal='양인';s.trade='품팔이와 가족의 살림';remember(life,s,'속량이 받아들여져 예속된 신분에서 벗어났다. 아직 생계와 차별의 어려움은 남아 있었다.');}
