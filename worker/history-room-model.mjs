@@ -10,7 +10,7 @@ export function settings(body = {}) {
   const questionMode = ['ox','mixed','people','heritage'].includes(body.questionMode) ? body.questionMode : 'choice';
   const eras = normalizeEraSelection(body.eras || ERA_ORDER);
   if(questionMode==='people'&&!hasHistoricalFigures(eras))fail('person_era_empty',400);
-  if(questionMode==='heritage'&&!hasHistoricalHeritage(eras))fail('heritage_era_empty',400);
+  if(questionMode==='heritage'&&!hasHistoricalHeritage(eras,questionCount))fail('heritage_era_empty',400);
   const orderMode = body.orderMode === 'chronological' ? 'chronological' : 'random';
   const indexes = orderMode === 'chronological' ? chronologicalQuestionIndexes(questionCount, questionMode, eras) : randomQuestionIndexes(questionCount, questionMode, eras);
   return { questionCount, secondsPerQuestion: int(body.secondsPerQuestion, 8, 30, 12), questionMode, eras, orderMode,
