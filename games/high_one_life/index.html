@@ -34,7 +34,7 @@
           <label for="birthYearInput">태어날 연도</label>
           <div class="historical-picker-fields">
             <input id="birthYearInput" type="number" min="1392" max="2026" step="1" value="2026" inputmode="numeric" aria-describedby="eraHelp">
-            <span class="korean-only-note">출생지는 한반도 안에서 정해집니다</span>
+            <input id="birthLocation" type="hidden" value="korea" aria-label="출생 지역"><span class="korean-only-note">출생지는 한반도 안에서 정해집니다</span>
           </div>
           <div class="era-presets" role="group" aria-label="시대 바로 선택">
             <button type="button" data-era-year="2026" aria-pressed="true">2026년 대한민국</button>
