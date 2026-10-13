@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { QUESTIONS, MAX_PLAYERS } from '../worker/history-live.mjs';
-import { QUESTION_BANK, CORE_HISTORY_FACTS, QUESTION_BANK_SIZE, ERA_ORDER, normalizeEraSelection, pickHistoryQuestions, chronologicalQuestionIndexes, hasHistoricalFigures } from '../data/history-live-question-bank.mjs';
+import { QUESTION_BANK, CORE_HISTORY_FACTS, QUESTION_BANK_SIZE, ERA_ORDER, normalizeEraSelection, pickHistoryQuestions, chronologicalQuestionIndexes, hasHistoricalFigures, hasHistoricalHeritage, isHeritageFact } from '../data/history-live-question-bank.mjs';
 
 test('history live supports a full classroom', () => {
   assert.equal(MAX_PLAYERS, 26);
@@ -512,4 +512,63 @@ test('figure mode is accessible in every setup without replacing general history
   const v2=fs.readFileSync(new URL('../worker/history-room-model.mjs',import.meta.url),'utf8');
   assert.match(v1,/isPeople/);assert.match(v1,/hasHistoricalFigures/);
   assert.match(v2,/hasHistoricalFigures/);assert.match(v2,/questionMode==='people'/);
+});
+
+
+test('heritage quiz uses only named artifacts and distinctive heritage distractors',()=>{
+  const allHeritage=CORE_HISTORY_FACTS.filter(isHeritageFact);
+  assert.ok(allHeritage.length>=100,'historical heritage should span artifacts, buildings, and written records');
+  assert.ok(new Set(allHeritage.map(f=>f.term)).size===allHeritage.length,'heritage names must not repeat');
+  const selected=pickHistoryQuestions(40,()=>0.42,'random','heritage',ERA_ORDER);
+  const ordered=pickHistoryQuestions(40,()=>0.42,'chronological','heritage',ERA_ORDER);
+  assert.equal(selected.length,40);
+  assert.equal(ordered.length,40);
+  const eras=[
+    ['선사','고조선','삼국','남북국'],['고려'],['조선 전기','조선 후기'],
+    ['개항기','대한제국','국권 피탈','일제강점기','광복 이후','6·25 전쟁']
+  ];
+  assert.deepEqual(eras.map(group=>selected.filter(q=>group.includes(q.era)).length),[10,10,10,10]);
+  for(const round of [selected,ordered]){
+    assert.equal(new Set(round.map(q=>q.sourceFact)).size,40,'no heritage should repeat within a round');
+    for(const q of round){
+      assert.equal(q.family,'heritage-identify');
+      assert.ok(isHeritageFact(CORE_HISTORY_FACTS[q.sourceFact]));
+      assert.ok(q.q.includes('문화유산 이름 맞히기'));
+      assert.equal(q.o.length,4);
+      assert.equal(new Set(q.o).size,4);
+      assert.ok(q.o.every(name=>allHeritage.some(item=>item.term===name)),'all choices must be heritage names');
+      assert.ok(q.e.includes(q.o[q.a]),'explanation must identify the selected artifact');
+      assert.ok(!q.q.includes(q.o[q.a]),'the clue must not reveal the artifact name');
+    }
+  }
+  const positions=ordered.map(q=>ERA_ORDER.indexOf(q.era));
+  assert.deepEqual(positions,[...positions].sort((a,b)=>a-b));
+  assert.ok(chronologicalQuestionIndexes(40,'heritage').every(i=>QUESTION_BANK[i].family==='heritage-identify'));
+});
+
+test('heritage quizzes respect selected eras and reject insufficient nonrepeating source facts',()=>{
+  assert.equal(hasHistoricalHeritage(['고려'],10),true);
+  assert.equal(hasHistoricalHeritage(['고조선'],10),false);
+  assert.equal(hasHistoricalHeritage(['6·25 전쟁'],1),false);
+  assert.deepEqual(pickHistoryQuestions(10,()=>0.51,'random','heritage',['고조선']),[]);
+  for(const order of ['random','chronological']){
+    const picked=pickHistoryQuestions(10,()=>0.51,order,'heritage',['고려']);
+    assert.equal(picked.length,10);
+    assert.ok(picked.every(q=>q.era==='고려'&&q.family==='heritage-identify'));
+    assert.equal(new Set(picked.map(q=>q.sourceFact)).size,10);
+  }
+});
+
+test('heritage name mode appears in teacher, next-round, and solo setup',()=>{
+  const html=fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html',import.meta.url),'utf8');
+  assert.equal(html.split('<option value="heritage">문화유산 맞히기</option>').length-1,3);
+  assert.match(html,/applyHostPreset\('heritage'\)/);
+  assert.match(html,/applyRoundPreset\('heritage'\)/);
+  assert.match(html,/validateHeritageEras/);
+  const legacy=fs.readFileSync(new URL('../worker/history-live.mjs',import.meta.url),'utf8');
+  const durable=fs.readFileSync(new URL('../worker/history-room-model.mjs',import.meta.url),'utf8');
+  assert.match(legacy,/heritage-identify/);
+  assert.match(legacy,/hasHistoricalHeritage/);
+  assert.match(durable,/hasHistoricalHeritage/);
+  assert.match(durable,/questionMode==='heritage'/);
 });
