@@ -1359,7 +1359,7 @@ for(const heritage of HISTORY_HERITAGE_FACTS){
   knownHeritage.add(heritage.term);
 }
 
-const HERITAGE_TYPES = new Set(['유물','문화유산','역사서']);
+const HERITAGE_TYPES = new Set(['유물','문화유산','역사서','법전','지도','과학']);
 export function isHeritageFact(fact){return Boolean(fact&&!fact.direct&&HERITAGE_TYPES.has(fact.type));}
 function matchesFactType(fact,factType){
   return !factType || (factType==='heritage'?isHeritageFact(fact):fact.type===factType);
