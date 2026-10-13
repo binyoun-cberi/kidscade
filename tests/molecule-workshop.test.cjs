@@ -23,7 +23,21 @@ test('unknown or oversized combinations never produce a discovery', () => {
 test('display formula hides a coefficient of one and preserves counts', () => {
   assert.equal(Core.formulaFromCounts({ C: 1, O: 2 }), 'CO2');
   assert.equal(Core.formulaFromCounts({ H: 2, O: 1 }), 'H2O');
+  assert.equal(Core.formulaFromCounts({ O: 1, H: 2 }), 'H2O');
+  assert.equal(Core.formulaFromCounts({ O: 3, C: 1, H: 1, Na: 1 }), 'NaHCO3');
   assert.deepEqual({ ...Core.countTiles(['H', 'O', 'H']) }, { H: 2, O: 1 });
+});
+
+test('hints show both missing and excess atoms for the selected goal', () => {
+  assert.deepEqual(Core.hintForComposition({ H: 2, O: 1 }, ['H']), {
+    missing: [{ symbol: 'H', count: 1 }, { symbol: 'O', count: 1 }], excess: []
+  });
+  assert.deepEqual(Core.hintForComposition({ H: 2, O: 1 }, ['H', 'H', 'O', 'O']), {
+    missing: [], excess: [{ symbol: 'O', count: 1 }]
+  });
+  assert.deepEqual(Core.hintForComposition({ H: 2, O: 1 }, ['H', 'H', 'C']), {
+    missing: [{ symbol: 'O', count: 1 }], excess: [{ symbol: 'C', count: 1 }]
+  });
 });
 
 test('saved progress is validated against the curated discovery set', () => {
