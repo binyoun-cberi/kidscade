@@ -355,7 +355,7 @@ function hydrate(life,data){
    cost:clamp(Number(x.cost)||0,0,40),grain:clamp(Number(x.grain)||0,0,40)}))});
  s.queue=Array.isArray(old.queue)?old.queue.filter(valid).slice(-7).map(clean):[];
  s.followups=Array.isArray(old.followups)?old.followups.filter(x=>x&&
-  typeof x.id==='string'&&/^\\d{4}-[a-z]+$/.test(x.id)&&
+  typeof x.id==='string'&&/^\d{4}-[a-z]+$/.test(x.id)&&
   Number.isInteger(x.year)&&x.year>life.year&&x.year<=life.year+6&&
   typeof x.action==='string').slice(-38).map(x=>({id:x.id.slice(0,80),year:x.year,action:x.action.slice(0,40)})):[];
  if(valid(old.active)&&data?.pending==='joseon5:'+old.active.id&&life.alive&&J.inOldEra(life)){
