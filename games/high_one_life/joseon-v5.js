@@ -72,11 +72,13 @@ function make(life){
  const s={version:1,origin,originLabel:info.label,trade:info.trade,
   legal,role:'',duty:info.duty,serviceYears:0,burdens:[],memories:[],decisions:[],
   processedYear:life.year,queue:[],active:null,seen:[],rank:0,royalClaim:false,
-  freed:false,monastic:false,inspector:false,complaints:0};
+  freed:life.year>=1894&&isEnslaved(origin),monastic:false,inspector:false,complaints:0};
  if(origin==='몰락 양반')j.capital=Math.min(j.capital,30);
+ if(s.freed)s.originLabel='옛 '+info.label;
  if(origin==='소작 농가')j.land=Math.max(1,j.land);
  if(origin==='어부 가계'||origin==='주막 가계')j.land=Math.min(j.land,1);
- if(life.age===0)life.logEvent(info.label+'에서 태어났다. '+info.duty+'이 이 집안의 생활과 가까웠다.','joseon5-family');
+ if(life.age===0)life.logEvent(s.originLabel+'에서 태어났다. '+(s.freed?'법적 노비제는 이미 폐지되었지만 가족의 처지는 쉽게 바뀌지 않았다.':info.duty+'이 집안의 생활과 가까웠다.'),'joseon5-family');
+ if(life.money&&life.year<1900)life.money.netWorth=j.capital*100;
  return s;
 }
 function ensure(life){
@@ -151,9 +153,9 @@ function taxChoices(type){
   option('대신할 품이나 비용을 구한다','arrange','다른 사람과 의논하지만 비용이 든다.',{bonds:2},7),
   option('형편을 알리고 부담을 줄여 달라 청한다','petition','요구가 받아들여진다는 보장은 없다.',{knowledge:2,bonds:1})];
  if(type==='tribute')return [
-  option('내야 할 공물을 마련한다','tribute','현물을 마련하느라 한 해 살림이 빠듯해진다.',{health:-1},3,6),
-  option('이웃과 물건을 함께 마련한다','sharetribute','함께 힘을 모으지만 서로 부담을 나눈다.',{bonds:5},2,3),
-  option('다른 물품으로 대신할 길을 알아본다','replace','고을의 규칙과 사람에 따라 성사 여부가 다르다.',{knowledge:3},5)];
+  option('내야 할 공물 또는 대동미를 마련한다','tribute','지역과 시기에 따른 물품·쌀 납부 부담을 감당한다.',{health:-1},3,6),
+  option('이웃과 필요한 몫을 함께 마련한다','sharetribute','함께 힘을 모으지만 서로 부담을 나눈다.',{bonds:5},2,3),
+  option('납부 방식과 부담을 알아본다','replace','고을과 시기에 따라 납부 규정이 다르다.',{knowledge:3},5)];
  return [
   option('공사에 나가 품을 보탠다','labor','노역으로 집안일을 돌볼 시간이 줄어든다.',{health:-4}),
   option('가족과 일손을 나누어 맡는다','familylabor','내가 없는 동안 살림이 이어지도록 부탁한다.',{bonds:4,health:-2},2),
@@ -186,7 +188,7 @@ function prepare(life,s){
  if([18,27,39,54].includes(age))offer(life,s,'living','올해 나의 생업',roleChoices(s,j,life));
  const eligible=age>=16&&age<=58&&life.gender==='남자'&&s.legal==='양인'&&!isRoyal(origin);
  if(eligible&&age===22)offer(life,s,'military','군역과 군포의 부담',taxChoices('military'));
- if(age===34&&!isRoyal(origin)&&!isEnslaved(origin)&&life.year<1894)offer(life,s,'tribute','고을에서 공물을 마련하는 날',taxChoices('tribute'));
+ if(age===34&&!isRoyal(origin)&&!(isEnslaved(origin)&&!s.freed)&&life.year<1894)offer(life,s,'tribute',life.year>=1750?'대동미와 고을의 조세 부담':'공납과 고을의 세금 부담',taxChoices('tribute'));
  if(age===42&&!isRoyal(origin)&&life.year<1894)offer(life,s,'labor','관아에서 일손을 부르는 날',taxChoices('labor'));
  // Fictional personal encounters, not a statement that a real raid happened
  // in the specified village or year. Regional exposure and era alter the chance.
@@ -204,6 +206,10 @@ function prepare(life,s){
    option('왕위 계승의 책임을 받아들인다','throne','왕위는 드물고 위험한 자리다.',{health:-3,knowledge:3}),
    option('왕실 친족으로 남는다','relative','권력보다 자신의 일상을 택한다.',{bonds:4}),
    option('정치와 거리를 둔다','withdraw','조정에서 거리를 두고 살기로 한다.',{health:2})]);
+ if(j.office&&s.rank>=2&&age===42&&dice(life.seed,1909)<.06){
+  s.rank=4;s.role='대신';j.occupation='조정의 대신';
+  remember(life,s,'벼슬길에서 중요한 직책을 맡아 조정의 일을 헤아리게 되었다. 그러나 모든 대신이 나라의 정치를 마음대로 움직일 수 있는 것은 아니었다.');
+ }
  if(s.rank>=2&&!s.inspector&&age>=29&&age<=55&&age%13===3&&dice(life.seed,life.year+1791)<.045)
   offer(life,s,'inspector','어사로 고을의 일을 살필 기회',troubleChoices('inspector'));
 }
@@ -219,8 +225,11 @@ function yearEnd(life,s){
 function prompt(life){
  const s=ensure(life),q=s?.active;
  if(!q)return null;
- return {title:q.title,description:ORIGINS[s.origin]?.label+' · '+(s.role||s.trade)+' · '+s.duty,
-  options:q.choices.filter(x=>x&&typeof x.action==='string')};
+ const grain=V2.ensure(life)?.grain||0;
+ return {title:q.title,description:s.originLabel+' · '+(s.role||s.trade)+' · '+s.duty,
+  options:q.choices.filter(x=>x&&typeof x.action==='string').map(x=>x.grain>grain
+   ?option('재료를 구할 길을 알아본다','askResources','지금 가진 곡식만으로는 그 일을 할 수 없다. 다른 방법을 찾아본다.',{knowledge:2,bonds:2},0,0)
+   :x)};
 }
 function choose(life,index){
  const s=ensure(life),p=prompt(life),q=s?.active;
@@ -228,7 +237,7 @@ function choose(life,index){
  const x=p.options[index],j=J.ensure(life),v=V2.ensure(life),success=dice(life.seed,life.year+1864+index),before=j.capital;
  life.change(x.effects||{});
  if(x.cost)j.capital=clamp(j.capital-x.cost,-120,600);
- if(x.grain)v.grain=clamp(v.grain-x.grain,0,200);
+ if(x.grain){if(v.grain<x.grain)return false;v.grain-=x.grain;}
  const a=x.action;
  if(['fish','market','inn','craft','service','fishtrade','travel','work'].includes(a)){
   const gain=a==='market'?7:a==='inn'?8:a==='fish'?6:a==='craft'?7:a==='service'?5:3;
@@ -247,8 +256,9 @@ function choose(life,index){
  if(a==='appeal'||a==='witness')s.complaints++;
  if(a==='petition'&&success<.35)j.capital=clamp(j.capital+4,-120,600);
  if(a==='craft'&&s.origin==='백정')s.role='백정의 생업을 잇는 장인';
- if(j.money&&false)j.money.netWorth=j.capital*100;
+ if(a==='askResources')remember(life,s,'필요한 재료가 부족해 이웃과 장터에서 다른 길을 알아보았다.');
  if(life.money&&life.year<1900)life.money.netWorth=j.capital*100;
+ if(life.year<1900)life.career=j.occupation;
  const id='joseon5:'+q.id;
  life.logEvent(q.title+' — '+x.label,'joseon5-choice');life.log.at(-1).causeId=id;
  if(s.decisions.length<60)s.decisions.push({id:q.id,year:life.year,type:q.type,action:a});
