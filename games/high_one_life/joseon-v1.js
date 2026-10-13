@@ -323,10 +323,11 @@ function yearly(life){
   const subsistence=9+Math.round(s.household*2),care=(s.married?2:0)+s.children*2;
   const landExpenses=Math.max(0,s.land),rent=Math.round(rented*1.5);
   expense=subsistence+care+landExpenses+rent;
-  book.yearlyIncome=income;book.yearlyExpense=expense;
-  book.lastCosts={subsistence,care,landExpenses,rent,scarcity:life.year<=s.hardshipUntil,helpFromFamily};
+  const beforeLevies=expense;
   if(life.year<1894&&s.status==='상민')expense+=3;
   if(life.year===1750&&life.gender==='남자'&&s.status==='상민')expense=Math.max(0,expense-2);
+  book.yearlyIncome=income;book.yearlyExpense=expense;
+  book.lastCosts={subsistence,care,landExpenses,rent,levies:expense-beforeLevies,scarcity:life.year<=s.hardshipUntil,helpFromFamily};
   s.capital=clamp(s.capital+income-expense,-120,600);
   // Lack of money alone is not a moral judgment or an automatic loss of happiness.
   if(s.capital<-25&&life.joseon2?.grain<8&&life.age%5===0)life.change({health:-2});
@@ -407,7 +408,7 @@ function hydrate(life,data){
    if(Number.isFinite(safe[k]))book[k]=clamp(Math.round(safe[k]),k==='previousCapital'?-120:0,2000);
   if(Number.isInteger(safe.currentYear))book.currentYear=clamp(safe.currentYear,life.birthYear,life.year);
   if(safe.lastCosts&&typeof safe.lastCosts==='object')
-   book.lastCosts={...Object.fromEntries(['subsistence','care','landExpenses','rent','helpFromFamily'].map(k=>[k,clamp(Number(safe.lastCosts[k])||0,0,1000)])),scarcity:safe.lastCosts.scarcity===true};
+   book.lastCosts={...Object.fromEntries(['subsistence','care','landExpenses','rent','levies','helpFromFamily'].map(k=>[k,clamp(Number(safe.lastCosts[k])||0,k==='levies'?-30:0,1000)])),scarcity:safe.lastCosts.scarcity===true};
   for(const k of ['lastCause','creditor'])if(typeof safe[k]==='string')book[k]=safe[k].slice(0,140);
   book.experiencedDebt=safe.experiencedDebt===true;
   book.recent=Array.isArray(safe.recent)?safe.recent.filter(x=>typeof x==='string').slice(-8).map(x=>x.slice(0,180)):[];
