@@ -516,6 +516,7 @@ let cameraX = 0, tiles = [], particles = [], levelLength = 0, progress = 0;
 let beatCounter = 0, lastBeatX = 0, beatPulse = 0;
 let coinsTotal = 0, coinsCollected = 0, attemptCount = 0, practiceMode = false;
 let rhythmCombo = 0, rhythmJudgeText = '', rhythmJudgeClass = 'text-sky-300', rhythmJudgeTimer = 0;
+let rhythmStats = { perfect: 0, good: 0, offBeat: 0 };
 let keys = { space: false, click: false };
 let jumpBufferFrames = 0, coyoteFrames = 0;
 let queuedJumpReleased = false;
@@ -551,9 +552,9 @@ function judgeRhythmInput() {
     const perfectWindow = assist >= 3 ? 34 : 30;
     const goodWindow = assist >= 3 ? 62 : 54;
     const timingWord = deltaPx < 0 ? '조금 빠름' : '조금 늦음';
-    if (absPx <= perfectWindow) { rhythmCombo++; rhythmJudgeText = '정확!'; rhythmJudgeClass = 'text-emerald-300'; createParticles(player.x + player.w/2, player.y + player.h/2, 8, '#34d399'); }
-    else if (absPx <= goodWindow) { rhythmCombo++; rhythmJudgeText = `좋음 · ${timingWord}`; rhythmJudgeClass = 'text-sky-300'; }
-    else { rhythmCombo = 0; rhythmJudgeText = `박자 밖 · ${timingWord}`; rhythmJudgeClass = 'text-amber-300'; }
+    if (absPx <= perfectWindow) { rhythmStats.perfect++; rhythmCombo++; rhythmJudgeText = '정확!'; rhythmJudgeClass = 'text-emerald-300'; createParticles(player.x + player.w/2, player.y + player.h/2, 8, '#34d399'); }
+    else if (absPx <= goodWindow) { rhythmStats.good++; rhythmCombo++; rhythmJudgeText = `좋음 · ${timingWord}`; rhythmJudgeClass = 'text-sky-300'; }
+    else { rhythmStats.offBeat++; rhythmCombo = 0; rhythmJudgeText = `박자 밖 · ${timingWord}`; rhythmJudgeClass = 'text-amber-300'; }
     rhythmJudgeTimer = 45;
     renderRhythmHud();
 }
@@ -638,7 +639,7 @@ function initGame(levelId) {
     lastBeatX = Math.floor(player.x / getBeatDistance()) * getBeatDistance();
     beatCounter = 0; beatPulse = 0;
     particles = []; jumpBufferFrames = 0; coyoteFrames = 0; queuedJumpReleased = false;
-    rhythmCombo = 0; rhythmJudgeText = ''; rhythmJudgeTimer = 0;
+    rhythmCombo = 0; rhythmJudgeText = ''; rhythmJudgeTimer = 0; rhythmStats = { perfect: 0, good: 0, offBeat: 0 };
     highScoreDisplay.innerText = `${gameData.highScores[currentLevel.id] || 0}%`;
     if (attemptDisplay) attemptDisplay.innerText = attemptCount;
     if (coinDisplay) coinDisplay.innerText = `코인: ${coinsCollected} / ${coinsTotal}`;
@@ -823,6 +824,12 @@ function gameOver(isClear) {
     resultScore.innerText = `${progress}%`;
     if (isClear) { audio.playClear(); resultTitle.innerText = '목표 도착!'; resultTitle.className = 'font-display text-6xl mb-4 text-emerald-400 neon-text-green'; resultMsg.innerText = practiceMode ? '연습모드 클리어! 이제 일반모드로 도전하면 다음 스테이지가 열립니다.' : '장단을 정확히 탔어요! 멋진 연주였습니다!'; if (!practiceMode) unlockNextLevel(currentLevel.id); document.getElementById('btnRetry').innerText = '다시 하기'; }
     else { audio.playCrash(); resultTitle.innerText = '파괴됨!'; resultTitle.className = 'font-display text-6xl mb-4 text-rose-500 neon-text-red'; if (progress > 80) resultMsg.innerText = '거의 다 왔습니다. 마지막까지 장단 칩을 보고 톡톡 누르세요.'; else if (progress > 50) resultMsg.innerText = '절반 이상 왔습니다. 누르고 있기보다 세로 장단선마다 짧게 누르세요.'; else resultMsg.innerText = '하얀 장단선과 오른쪽 칩을 같이 보며 스페이스바를 짧게 톡 눌러보세요.'; document.getElementById('btnRetry').innerText = '다시 시도'; }
+    const rhythmInputCount = rhythmStats.perfect + rhythmStats.good + rhythmStats.offBeat;
+    resultMsg.innerText += `  ·  박자 연습: 정확 ${rhythmStats.perfect}회 · 가까움 ${rhythmStats.good}회 · 박자 밖 ${rhythmStats.offBeat}회.`;
+    if (rhythmInputCount === 0) resultMsg.innerText += ' 다음 판에는 박자선마다 한 번 눌러보세요.';
+    else if (rhythmStats.offBeat > rhythmStats.perfect + rhythmStats.good) resultMsg.innerText += ' 금색 강박 칩과 하얀 박자선을 함께 보고 눌러보세요.';
+    else if (rhythmStats.good > rhythmStats.perfect) resultMsg.innerText += ' 입력을 박자선에 조금 더 가깝게 맞춰보세요.';
+    else resultMsg.innerText += ' 박자에 맞춘 입력이 좋아요. 같은 간격을 유지해 보세요.';
     if (coinsTotal > 0) resultMsg.innerText += `  ·  코인 ${coinsCollected}/${coinsTotal}`;
     renderLevelSelect(); changeState('GAMEOVER');
 }

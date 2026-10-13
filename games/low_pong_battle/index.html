@@ -31,6 +31,9 @@ h1,h2,p{margin-top:0}h1{margin-bottom:6px;font-size:clamp(40px,8vw,70px);line-he
 .field select{width:100%;border:2px solid #ccd7e7;border-radius:14px;background:white;color:var(--ink);padding:11px}
 .helpBox{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
 .helpCard{border-radius:16px;padding:12px;background:white;border:2px solid #e1e7ef;line-height:1.55;font-size:13px}
+.learningField{display:flex;align-items:flex-start;gap:9px;margin:10px 0;padding:12px;border:2px solid #bae6fd;border-radius:16px;background:#effaff;color:#164e63;font-size:13px;line-height:1.45;font-weight:850}.learningField input{width:20px;height:20px;flex:0 0 auto;accent-color:#0284c7}
+#predictionPanel{position:absolute;left:50%;bottom:76px;transform:translateX(-50%);z-index:7;width:min(370px,92vw);padding:10px;border:1px solid rgba(125,211,252,.7);border-radius:18px;background:rgba(8,47,73,.94);box-shadow:0 10px 30px rgba(0,0,0,.3);text-align:center;pointer-events:auto}
+#predictionPanel[hidden]{display:none!important}#predictionPanel p{margin:0 0 7px;font-size:13px;font-weight:900}#predictionChoices{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}#predictionChoices button{min-height:42px;border-radius:12px;background:#e0f2fe;color:#0c4a6e;font-size:13px;font-weight:1000}
 kbd{display:inline-block;min-width:29px;padding:3px 7px;border-radius:8px;background:#172033;color:white;text-align:center;font-weight:950;box-shadow:inset 0 -2px rgba(255,255,255,.15)}
 .primary,.secondary{width:100%;border-radius:17px;padding:14px 16px;font-weight:1000}
 .primary{background:var(--yellow);color:#2a2a2a;font-size:18px}.secondary{background:#dfe7f2;color:var(--ink);margin-top:8px}
@@ -59,6 +62,7 @@ kbd{display:inline-block;min-width:29px;padding:3px 7px;border-radius:8px;backgr
     <div class="team"><small id="rightName">컴퓨터</small><span id="rightScore">0</span></div>
   </div>
   <div id="message"></div>
+  <section id="predictionPanel" hidden aria-live="polite"><p>공이 어느 높이로 돌아올까요?</p><div id="predictionChoices"><button type="button" data-prediction="top">위쪽</button><button type="button" data-prediction="middle">가운데</button><button type="button" data-prediction="bottom">아래쪽</button></div></section>
   <button id="pauseBtn" type="button" aria-label="일시정지">Ⅱ</button>
   <div id="touchControls" aria-label="터치 조작">
     <div class="touchSide" id="touchLeft">
@@ -80,6 +84,7 @@ kbd{display:inline-block;min-width:29px;padding:3px 7px;border-radius:8px;backgr
         <button class="mode active" type="button" data-mode="cpu">🤖 컴퓨터와</button>
         <button class="mode" type="button" data-mode="2p">👫 둘이서</button>
       </div>
+      <label class="learningField"><input id="learningMode" type="checkbox"><span><b>🧭 공의 경로 예측 연습</b><br>공이 내 쪽으로 올 때 위·가운데·아래 중 어디로 올지 고르고, 실제 위치와 비교해요.</span></label>
       <div class="settings">
         <label class="field">컴퓨터 난이도
           <select id="difficulty">

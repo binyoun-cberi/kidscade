@@ -3,7 +3,7 @@ const W=960,H=540,PAD_W=24,PAD_H=138,BALL_R=15;
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
 const dpr=Math.min(devicePixelRatio||1,2);canvas.width=W*dpr;canvas.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
 const $=id=>document.getElementById(id);
-const ui={menu:$('menu'),pause:$('pauseLayer'),result:$('result'),leftScore:$('leftScore'),rightScore:$('rightScore'),leftName:$('leftName'),rightName:$('rightName'),match:$('matchInfo'),rally:$('rallyInfo'),message:$('message'),touchRight:$('touchRight'),difficulty:$('difficulty'),target:$('targetScore'),resultTitle:$('resultTitle'),resultText:$('resultText'),bestRally:$('bestRallyStat'),finalScore:$('finalScoreStat')};
+const ui={menu:$('menu'),pause:$('pauseLayer'),result:$('result'),leftScore:$('leftScore'),rightScore:$('rightScore'),leftName:$('leftName'),rightName:$('rightName'),match:$('matchInfo'),rally:$('rallyInfo'),message:$('message'),touchRight:$('touchRight'),difficulty:$('difficulty'),target:$('targetScore'),resultTitle:$('resultTitle'),resultText:$('resultText'),bestRally:$('bestRallyStat'),finalScore:$('finalScoreStat'),predictionPanel:$('predictionPanel')};
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const keys=new Set(),touch={p1up:false,p1down:false,p2up:false,p2down:false};
 let drag={p1:null,p2:null};
@@ -14,6 +14,7 @@ const configs={
 };
 let mode='cpu',difficulty='easy',target=5,status='menu',pausedFrom='',countdownEnd=0,pointEnd=0,lastCountdown=0,lastTime=performance.now(),flashTimer=0;
 let leftScore=0,rightScore=0,rally=0,bestRally=0,serveDir=1,particles=[],stars=[],aiThink=0,aiTarget=H/2;
+let learningMode=false,predictionPending=false,predictionMade=null,predictionAttempts=0,predictionCorrect=0;
 const left={x:54,y:H/2-PAD_H/2,w:PAD_W,h:PAD_H,vy:0};
 const right={x:W-54-PAD_W,y:H/2-PAD_H/2,w:PAD_W,h:PAD_H,vy:0};
 const ball={x:W/2,y:H/2,vx:0,vy:0,r:BALL_R,trail:[]};
@@ -31,16 +32,24 @@ function resetBall(){ball.x=W/2;ball.y=H/2;ball.vx=ball.vy=0;ball.trail.length=0
 function setMode(next){mode=next;document.querySelectorAll('.mode[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));ui.difficulty.disabled=mode==='2p';ui.rightName.textContent=mode==='2p'?'친구':'컴퓨터';ui.touchRight.style.visibility=mode==='2p'?'visible':'hidden'}
 function readOptions(){difficulty=ui.difficulty.value||'easy';target=Number(ui.target.value)||5;mode=document.querySelector('.mode.active[data-mode]')?.dataset.mode||'cpu'}
 function startGame(){
- readOptions();leftScore=rightScore=rally=bestRally=0;serveDir=Math.random()<.5?-1:1;particles.length=0;stars.length=0;resetPaddles();resetBall();ui.menu.classList.add('hidden');ui.result.classList.add('hidden');ui.pause.classList.add('hidden');setMode(mode);updateHud();sdkStart();beginCountdown();lastTime=performance.now();$('app').focus();
+ readOptions();learningMode=$('learningMode').checked;predictionPending=false;predictionMade=null;predictionAttempts=predictionCorrect=0;ui.predictionPanel.hidden=true;leftScore=rightScore=rally=bestRally=0;serveDir=Math.random()<.5?-1:1;particles.length=0;stars.length=0;resetPaddles();resetBall();ui.menu.classList.add('hidden');ui.result.classList.add('hidden');ui.pause.classList.add('hidden');setMode(mode);updateHud();sdkStart();beginCountdown();lastTime=performance.now();$('app').focus();
 }
 function beginCountdown(){
  status='countdown';resetBall();countdownEnd=performance.now()+3000;lastCountdown=0;showMessage('3');sdkSound('click');
 }
 function launchServe(){
- const cfg=configs[difficulty];const angle=(Math.random()*.58-.29);ball.vx=serveDir*cfg.ball*Math.cos(angle);ball.vy=cfg.ball*Math.sin(angle)+(Math.random()<.5?-75:75);status='playing';showMessage('퐁!',330);
+ predictionPending=false;predictionMade=null;ui.predictionPanel.hidden=true;const cfg=configs[difficulty];const angle=(Math.random()*.58-.29);ball.vx=serveDir*cfg.ball*Math.cos(angle);ball.vy=cfg.ball*Math.sin(angle)+(Math.random()<.5?-75:75);status='playing';showMessage('퐁!',330);
+}
+function zoneFor(y){const playHeight=H-82;if(y<playHeight/3)return'top';if(y<playHeight*2/3)return'middle';return'bottom'}
+function settlePrediction(actualY){
+ if(!learningMode||predictionMade===null)return;
+ const correct=predictionMade===zoneFor(actualY);predictionAttempts++;if(correct)predictionCorrect++;
+ predictionMade=null;predictionPending=false;ui.predictionPanel.hidden=true;
+ showMessage(correct?'예측 적중! 공의 높이를 잘 읽었어요.':'예측과 실제 높이를 비교해 봐요.',850);
 }
 function point(side){
  if(status!=='playing')return;
+ if(side==='right')settlePrediction(ball.y);
  if(side==='left')leftScore++;else rightScore++;
  sdkSound('correct');spawnBurst(side==='left'?W*.72:W*.28,H*.28,side==='left'?'⭐':'✨',16);
  showMessage(side==='left'?(mode==='2p'?'1P +1!':'좋아요! +1'):(mode==='2p'?'2P +1!':'컴퓨터 +1'),650);
@@ -50,6 +59,7 @@ function point(side){
 function endGame(){
  status='result';const leftWon=leftScore>rightScore;ui.resultTitle.textContent=leftWon?(mode==='2p'?'1P 승리!':'이겼어요!'):(mode==='2p'?'2P 승리!':'다음 판엔 이겨봐요!');
  ui.resultText.textContent=leftWon?'공을 끝까지 잘 따라갔어요.':'괜찮아요. 공이 오는 높이를 먼저 보고 움직여 보세요.';
+ if(learningMode)ui.resultText.textContent+=` 경로 예측 ${predictionCorrect}/${predictionAttempts}회 적중. 공이 위아래 벽에 닿으면 진행 방향이 바뀌어요.`;
  ui.bestRally.textContent=bestRally;ui.finalScore.textContent=leftScore+' : '+rightScore;ui.result.classList.remove('hidden');sdkScore();sdkGameOver(leftWon?'left':'right');
 }
 function pause(force){
@@ -78,6 +88,7 @@ function paddleHit(p,side){
  const withinY=ball.y+ball.r>=p.y-assist&&ball.y-ball.r<=p.y+p.h+assist;
  if(!withinY)return false;
  if(side==='left'&&ball.vx<0&&ball.x-ball.r<=p.x+p.w&&ball.x>p.x-8){
+   settlePrediction(ball.y);
    ball.x=p.x+p.w+ball.r;bounceFromPaddle(p,1);return true;
  }
  if(side==='right'&&ball.vx>0&&ball.x+ball.r>=p.x&&ball.x<p.x+p.w+8){
@@ -106,6 +117,7 @@ function update(dt,now){
  if(mode==='2p')updatePaddle(right,inputFor(2),drag.p2,dt,cfg.paddle);else updateAI(dt);
  ball.trail.push({x:ball.x,y:ball.y});if(ball.trail.length>10)ball.trail.shift();
  ball.x+=ball.vx*dt;ball.y+=ball.vy*dt;
+ if(learningMode&&ball.vx<0&&!predictionPending&&predictionMade===null){predictionPending=true;ui.predictionPanel.hidden=false}
  if(ball.y-ball.r<=8){ball.y=8+ball.r;ball.vy=Math.abs(ball.vy);sdkSound('click')}
  if(ball.y+ball.r>=H-8){ball.y=H-8-ball.r;ball.vy=-Math.abs(ball.vy);sdkSound('click')}
  paddleHit(left,'left');paddleHit(right,'right');
@@ -138,6 +150,7 @@ requestAnimationFrame(frame);
 $('modeGrid').addEventListener('click',e=>{const b=e.target.closest('[data-mode]');if(b)setMode(b.dataset.mode)});
 $('startBtn').addEventListener('click',startGame);
 $('rematchBtn').addEventListener('click',startGame);
+$('predictionChoices').addEventListener('click',e=>{const choice=e.target.closest('[data-prediction]');if(!choice||!predictionPending)return;predictionMade=choice.dataset.prediction;predictionPending=false;ui.predictionPanel.hidden=true;showMessage('예측을 기억하고 공을 따라가 보세요.',650)});
 $('resultMenuBtn').addEventListener('click',toMenu);
 $('pauseMenuBtn').addEventListener('click',toMenu);
 $('pauseBtn').addEventListener('click',()=>pause());
