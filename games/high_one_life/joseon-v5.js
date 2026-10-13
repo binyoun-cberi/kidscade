@@ -24,6 +24,7 @@ const ORIGINS={
  '사노비':{label:'사노비 가계',trade:'주인집의 농사와 집안일',duty:'주인집에 정해진 노동을 바침'},
  '공노비':{label:'공노비 가계',trade:'관아의 잡무와 기술 노동',duty:'관아의 지정된 역을 담당'},
  '백정':{label:'차별받는 백정 가계',trade:'도축과 가죽 손질',duty:'마을의 생업을 잇되 배척과 차별을 겪음'},
+ '노비 후손 가계':{label:'노비 출신 부모를 둔 양인 가계',trade:'품팔이와 가족의 살림',duty:'법적 출신과 달리 옛 차별이 일상에 남아 있음'},
  '왕실 종친':{label:'왕실 종친 가계',trade:'왕실의 예법과 교육',duty:'왕실의 규범과 정치적 위험'},
  '문반 양반':{label:'문반과 학문을 이어 온 가계',trade:'서당과 글공부',duty:'가문의 학문과 관직 진출의 압박'},
  '무반 양반':{label:'무반의 일을 이어 온 가계',trade:'무예와 군무',duty:'군사 훈련과 집안 책임'},
@@ -60,6 +61,8 @@ function originFor(life,j){
   return weighted(seed,1903,[['문반 양반',37],['무반 양반',20],['몰락 양반',43]]);
  }
  if(j.birthStatus==='중인')return weighted(seed,1904,[['역관 가계',24],['의관 가계',18],['서리 가계',40],['관청 장인',18]]);
+ // Children born after 1886 may have bonded parents but are not hereditary slaves.
+ if(life.birthYear>=1886&&dice(seed,1906)<.07)return '노비 후손 가계';
  const weights=[['소작 농가',31],['자작 농가',29],['상인 가계',9],['보부상 가계',6],['주막 가계',3],
   ['도공 가계',4],['대장장이 가계',4],['목수 가계',4],['사찰 주변 가계',2],
   ['백정',1],['수군 가계',2]];
@@ -74,6 +77,7 @@ function make(life){
   legal,role:'',duty:info.duty,serviceYears:0,burdens:[],memories:[],decisions:[],
   processedYear:life.year,queue:[],active:null,seen:[],followups:[],rank:0,royalClaim:false,
   freed:life.year>=1894&&isEnslaved(origin),monastic:false,inspector:false,complaints:0};
+ if(origin==='노비 후손 가계'){s.freed=true;s.originLabel=info.label;}
  if(isEnslaved(origin)&&life.birthYear>=1886){
   s.freed=true;s.originLabel='노비 출신 부모를 둔 양인 가계';
   s.trade='품팔이와 가족의 살림';
