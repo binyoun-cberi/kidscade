@@ -697,7 +697,7 @@
     const chapters=[
       life.birthYear+'년, '+firstPlace+'에서 태어났다.',
       oldLife?'태어날 때는 '+(oldSocial?.originLabel||Joseon.ensure(life).birthStatus+' 집안')+'에서 자랐다. '+oldLife.region+'에서 '+oldLife.occupation+' 일을 하며 세월을 보냈다.':summary.story,
-      oldSocial?'그 시대의 법적 처지는 '+oldSocial.legal+'이었고, '+oldSocial.duty+'과 마주했다.':'',
+      oldSocial?'그 시대의 신분 관련 제도는 '+oldSocial.legal+' 상태였다. '+oldSocial.duty+'이라는 일도 삶에 영향을 주었다.':'',
       oldSocial&&oldSocial.memories.length?'살면서 남은 일에는 '+oldSocial.memories.slice(-2).join(' ') :'',
       oldLife&&oldLife.warMemory.length?'삶에 영향을 준 사건은 '+oldLife.warMemory.join(', ')+'이었다.':'',
       oldLife&&Joseon4.summary(life).spouse?'혼인하여 '+Joseon4.particle(Joseon4.summary(life).spouse.name,'과','와')+' 삶을 함께한 시절이 있었다.':'',
