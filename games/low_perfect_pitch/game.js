@@ -24,7 +24,7 @@ const DIFFICULTY = {
 const NOTE_NAMES = ['도','레','미','파','솔','라','시','높은 도'];
 const SCALE = [0,2,4,5,7,9,11,12];
 const MAJOR_SCALE = [0,2,4,5,7,9,11];
-const STAIR = {passCents:88,perfectCents:32,holdMs:520,stepMs:6500,restEvery:7,restMs:2600,maxHz:900};
+const STAIR = {passCents:88,perfectCents:32,holdMs:390,stepMs:7500,restEvery:7,restMs:2600,maxHz:900};
 const CLASSIC = {
   countdownMs:2400,feverMs:5200,starEvery:5,
   chapters:[
@@ -62,7 +62,8 @@ const TAU = Math.PI * 2;
 const state = {
   phase:'intro', gameMode:'classic', difficulty:'easy', audioCtx:null, analyser:null, stream:null, buffer:null,
   pitchHz:null, smoothHz:null, voiced:false, rms:0, rootMidi:60, calibrated:false,
-  calSamples:[], calStartedAt:0, calCollectAt:0, calRaf:0,
+  pitchSamples:[], lastReliablePitchAt:0,
+  calSamples:[], calStartedAt:0, calCollectAt:0, calLastSampleAt:0, calRaf:0,
   gameStartedAt:0, gameEndsAt:0, lastFrame:0, lastPitchAt:0, lastSpawnAt:0,
   gates:[], particles:[], sequenceIndex:0, phraseQueue:[], score:0, combo:0, maxCombo:0, perfect:0, good:0, miss:0,
   countdownUntil:0,classicStarted:false,gateCount:0,passedGates:0,chapterIndex:0,feverUntil:0,lastFeverCombo:0,starsEarned:0,
@@ -90,6 +91,7 @@ function stopMic(){
   if(state.stream){state.stream.getTracks().forEach(t=>t.stop());state.stream=null}
   if(state.audioCtx&&state.audioCtx.state!=='closed'){try{state.audioCtx.close()}catch(_){}}
   state.audioCtx=null;state.analyser=null;state.buffer=null;state.pitchHz=null;state.smoothHz=null;state.voiced=false;
+  state.pitchSamples=[];state.lastReliablePitchAt=0;state.lastPitchAt=0;state.rms=0;
 }
 async function requestMic(){
   if(!navigator.mediaDevices?.getUserMedia)throw new Error('이 브라우저는 마이크 입력을 지원하지 않아요.');
@@ -103,7 +105,7 @@ async function requestMic(){
   const ctx=new AC();
   if(ctx.state==='suspended')await ctx.resume();
   const analyser=ctx.createAnalyser();
-  analyser.fftSize=2048;
+  analyser.fftSize=4096;
   analyser.smoothingTimeConstant=0;
   const source=ctx.createMediaStreamSource(stream);
   source.connect(analyser);
@@ -124,82 +126,39 @@ function median(arr){
   return a.length%2?a[m]:(a[m-1]+a[m])/2;
 }
 function detectPitch(){
-  if(!state.analyser||!state.buffer)return null;
+  if(!state.analyser||!state.buffer||!state.audioCtx||!window.KidscadePitch)return null;
   state.analyser.getFloatTimeDomainData(state.buffer);
-  const buf=state.buffer;
-  let rms=0;
-  for(let i=0;i<buf.length;i++)rms+=buf[i]*buf[i];
-  rms=Math.sqrt(rms/buf.length);state.rms=rms;
-  if(rms<0.012){state.voiced=false;return null}
-
-  const sampleRate=state.audioCtx.sampleRate;
-  const minFreq=80,maxFreq=950;
-  const minTau=Math.max(2,Math.floor(sampleRate/maxFreq));
-  const maxTau=Math.min(Math.floor(sampleRate/minFreq),Math.floor(buf.length/2));
-  const difference=new Float32Array(maxTau+1);
-  const cmnd=new Float32Array(maxTau+1);
-
-  for(let tau=1;tau<=maxTau;tau++){
-    let sum=0;
-    const limit=buf.length-tau;
-    for(let i=0;i<limit;i++){
-      const delta=buf[i]-buf[i+tau];
-      sum+=delta*delta;
-    }
-    difference[tau]=sum;
-  }
-
-  cmnd[0]=1;
-  let running=0;
-  for(let tau=1;tau<=maxTau;tau++){
-    running+=difference[tau];
-    cmnd[tau]=running?difference[tau]*tau/running:1;
-  }
-
-  const threshold=0.14;
-  let bestTau=-1;
-  for(let tau=minTau;tau<=maxTau;tau++){
-    if(cmnd[tau]<threshold){
-      while(tau+1<=maxTau&&cmnd[tau+1]<cmnd[tau])tau++;
-      bestTau=tau;
-      break;
-    }
-  }
-  if(bestTau<0){
-    let bestValue=1;
-    for(let tau=minTau;tau<=maxTau;tau++){
-      if(cmnd[tau]<bestValue){bestValue=cmnd[tau];bestTau=tau}
-    }
-    if(bestTau<0||bestValue>0.30){state.voiced=false;return null}
-  }
-
-  let refined=bestTau;
-  if(bestTau>1&&bestTau<maxTau){
-    const left=cmnd[bestTau-1],center=cmnd[bestTau],right=cmnd[bestTau+1];
-    const den=2*center-right-left;
-    if(Math.abs(den)>1e-6)refined=bestTau+(right-left)/(2*den);
-  }
-
-  const hz=sampleRate/refined;
-  if(!Number.isFinite(hz)||hz<minFreq||hz>maxFreq){state.voiced=false;return null}
-  state.voiced=true;
-  return hz;
+  const result=window.KidscadePitch.detectPitch(state.buffer,state.audioCtx.sampleRate);
+  state.rms=result.rms;
+  return result.hz;
 }
 function updatePitch(now){
   if(now-state.lastPitchAt<45)return;
   state.lastPitchAt=now;
   const hz=detectPitch();
   if(hz){
+    // A short median removes individual harmonic/octave spikes without
+    // delaying real melodic changes for more than a couple of frames.
+    state.pitchSamples=state.pitchSamples.filter(s=>now-s.time<220);
+    state.pitchSamples.push({midi:hzToMidi(hz),time:now});
+    if(state.pitchSamples.length>5)state.pitchSamples.shift();
+    const recent=state.pitchSamples.slice(-3).map(s=>s.midi);
+    const midi=median(recent);
+    state.pitchHz=midiToHz(midi);
     if(state.smoothHz){
-      const a=hzToMidi(state.smoothHz),b=hzToMidi(hz);
-      const diff=Math.abs(a-b);
-      const mix=diff>3?0.5:0.28;
-      state.smoothHz=midiToHz(a+(b-a)*mix);
-    }else state.smoothHz=hz;
-    state.pitchHz=hz;
-  }else{
+      const previous=hzToMidi(state.smoothHz);
+      const diff=Math.abs(midi-previous);
+      state.smoothHz=midiToHz(previous+(midi-previous)*(diff>2?0.72:0.48));
+    }else state.smoothHz=state.pitchHz;
+    state.voiced=true;
+    state.lastReliablePitchAt=now;
+  }else if(now-state.lastReliablePitchAt>110){
+    // A single bad mobile audio frame should not break a note, but silence
+    // must release the ball instead of leaving a stale pitch on screen.
     state.pitchHz=null;
-    if(state.phase!=='game')state.smoothHz=null;
+    state.smoothHz=null;
+    state.voiced=false;
+    state.pitchSamples=[];
   }
 }
 
@@ -237,7 +196,7 @@ async function beginCalibration(){
   ui.introStatus.textContent='';
   try{
     await requestMic();
-    state.calSamples=[];state.calStartedAt=performance.now();state.calCollectAt=state.calStartedAt+450;state.lastPitchAt=0;
+    state.calSamples=[];state.calStartedAt=performance.now();state.calCollectAt=state.calStartedAt+450;state.calLastSampleAt=0;state.lastPitchAt=0;
     ui.calProgress.style.width='0%';ui.calHint.textContent='1.5초 이상 안정적으로 소리를 내주세요.';
     showScreen('calibration');
     cancelAnimationFrame(state.calRaf);
@@ -252,29 +211,39 @@ function calibrationLoop(now){
   if(state.voiced&&state.pitchHz){
     ui.calValue.textContent=Math.round(state.pitchHz)+' Hz';
     ui.calNote.textContent='현재 '+nearestNoteName(state.pitchHz)+' 근처';
-    const scale=Math.max(.82,Math.min(1.14,.9+state.rms*3.2));ui.calOrb.style.transform='scale('+scale+')';
-    if(now>=state.calCollectAt){
+    const scale=Math.max(.82,Math.min(1.14,.9+state.rms*3.2));
+    ui.calOrb.style.transform='scale('+scale+')';
+    // Count distinct microphone analysis frames, not display refreshes
+    // (a 120Hz screen otherwise completes 1.5 seconds of singing too soon).
+    if(now>=state.calCollectAt&&state.lastPitchAt!==state.calLastSampleAt){
       state.calSamples.push(hzToMidi(state.pitchHz));
-      if(state.calSamples.length>60)state.calSamples.shift();
+      state.calLastSampleAt=state.lastPitchAt;
+      if(state.calSamples.length>55)state.calSamples.shift();
     }
   }else{
-    ui.calValue.textContent='-- Hz';ui.calNote.textContent='목소리를 기다리는 중';ui.calOrb.style.transform='scale(.94)';
+    ui.calValue.textContent='-- Hz';
+    ui.calNote.textContent=state.rms>=0.003?'소리는 들려요 · “아~~~” 하고 길게 불러보세요':'목소리를 기다리는 중 · 마이크 가까이 불러보세요';
+    ui.calOrb.style.transform='scale(.94)';
   }
-  const voicedMs=Math.min(1700,state.calSamples.length*45);
-  const pct=Math.round(voicedMs/1700*100);ui.calProgress.style.width=pct+'%';
-  if(state.calSamples.length>=34){
+  const needed=32;
+  const pct=Math.min(100,Math.round(state.calSamples.length/needed*100));
+  ui.calProgress.style.width=pct+'%';
+  if(state.calSamples.length>=needed){
     const m=median(state.calSamples);
-    const spread=Math.max(...state.calSamples)-Math.min(...state.calSamples);
-    if(spread<2.4){
-      state.rootMidi=Math.round(m-4);
+    const deviations=state.calSamples.map(v=>Math.abs(v-m)).sort((x,y)=>x-y);
+    const eightieth=deviations[Math.floor((deviations.length-1)*.8)];
+    if(eightieth<.8){
+      // High-note stair starts on the note actually sung during calibration;
+      // the melody mode puts 'do' slightly below the comfortable note.
+      state.rootMidi=Math.round(m-(state.gameMode==='stair'?0:4));
       state.calibrated=true;
       ui.calHint.textContent='좋아요! 이 목소리를 기준으로 음역을 맞췄어요.';
       setTimeout(()=>{if(state.phase==='calibration')startGame()},360);
       return;
     }
-    if(state.calSamples.length>=55){
-      state.calSamples=state.calSamples.slice(-18);
-      ui.calHint.textContent='조금 더 한 높이로 길게 “아~~~” 해주세요.';
+    if(state.calSamples.length>=52){
+      state.calSamples=state.calSamples.slice(-12);
+      ui.calHint.textContent='음이 조금 흔들렸어요. 한 높이로 “아~~~” 해보세요.';
     }
   }
   state.calRaf=requestAnimationFrame(calibrationLoop);
@@ -337,7 +306,7 @@ function spawnGate(initial=false){
   const target=nextTargetIndex(),w=state.viewW||900;
   state.gateCount++;
   const star=!initial&&(state.gateCount%CLASSIC.starEvery===0||(state.chapterIndex===2&&state.gateCount%3===0));
-  state.gates.push({x:initial?w*.70:w+70,target,judged:false,grade:null,flash:0,kind:star?'star':'note'});
+  state.gates.push({x:initial?w*.70:w+70,target,judged:false,grade:null,bestError:null,flash:0,kind:star?'star':'note'});
   updateTargetHud();
 }
 function classicChapterFor(now){
@@ -554,7 +523,7 @@ function popGrade(text,kind){
 function judgeGate(g){
   if(g.judged)return;
   g.judged=true;
-  const err=noteErrorCents(g.target),c=cfg(),now=performance.now(),fever=state.feverUntil>now,bonus=g.kind==='star';
+  const err=g.bestError??noteErrorCents(g.target),c=cfg(),now=performance.now(),fever=state.feverUntil>now,bonus=g.kind==='star';
   const mult=fever?1.5:1;
   if(err!==null&&Math.abs(err)<=c.perfectCents){
     g.grade='perfect';state.perfect++;state.combo++;state.passedGates++;
@@ -593,7 +562,15 @@ function gameLoop(now){
   if(now-state.lastSpawnAt>=c.spawnMs*spawnMul){spawnGate(false);state.lastSpawnAt=now}
   for(const g of state.gates){
     g.x-=c.speed*speedMul*dt;if(g.flash>0)g.flash-=dt;
-    if(!g.judged&&g.x<=px+8)judgeGate(g);
+    if(!g.judged){
+       // Judge across the visible crossing, not a single 45ms audio sample.
+       const windowPx=Math.max(24,c.speed*0.16);
+       if(Math.abs(g.x-px)<=windowPx){
+         const err=noteErrorCents(g.target);
+         if(err!==null&&(g.bestError===null||Math.abs(err)<Math.abs(g.bestError)))g.bestError=err;
+       }
+       if(g.x<=px-windowPx)judgeGate(g);
+     }
   }
   state.gates=state.gates.filter(g=>g.x>-100);
   for(const p of state.particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=90*dt;p.life-=dt}
@@ -612,7 +589,7 @@ function updatePitchHud(){
     ui.currentHz.textContent=Math.round(state.pitchHz)+' Hz';
     ui.micText.textContent='목소리 감지 중';
   }else{
-    ui.currentNote.textContent='--';ui.currentHz.textContent='목소리를 내보세요';ui.micText.textContent='목소리를 기다리는 중';
+    ui.currentNote.textContent='--';ui.currentHz.textContent='목소리를 내보세요';ui.micText.textContent=state.rms>=0.003?'소리는 들리지만 음이 불분명해요':'마이크 가까이 길게 “아~~~”';
   }
   if(state.currentTarget!=null){
     const err=noteErrorCents(state.currentTarget);
