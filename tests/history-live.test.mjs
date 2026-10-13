@@ -331,7 +331,7 @@ test('question phase does not leak the era before reveal', () => {
   const html=fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html',import.meta.url),'utf8');
   assert.match(worker,/fresh\.status==='reveal'\?\{era:q\.era\}:\{\}/);
   assert.match(worker,/payload\.reveal=\{answerIndex:display\.answerIndex,era:q\.era/);
-  assert.match(html,/qEra'\)\.textContent='시대 비공개'/);
+  assert.match(html,/qEra'\)\.textContent=typeName\[s\.room\.questionMode\]/);
   assert.match(html,/revealEra'\)\.textContent=r\.era\|\|q\.era/);
 });
 
