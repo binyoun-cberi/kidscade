@@ -106,6 +106,12 @@
       <div class="metric"><b id="heightCount">0</b><span>현재 높이</span></div>
     </div>
     <div class="hint-box"><b id="missionName">설계도</b><br><span id="missionTip">겨냥도의 모서리 방향을 살펴보세요.</span></div>
+    <section class="math-architect-card" aria-label="쌓기나무 개수 추측">
+      <b>쌓기나무 수를 예상해 보자 <small>[6수03-09]</small></b>
+      <div class="math-architect-input"><label>필요한 블록 <input id="challengeEstimate" type="number" min="0" max="10000" inputmode="numeric" placeholder="몇 개일까?"></label>
+        <button id="challengeEstimateCheck" type="button">예상 확인</button></div>
+      <div id="challengeMathFeedback" class="math-architect-feedback" aria-live="polite">층별 블록과 위·앞·옆 모습을 생각해 보자.</div>
+    </section>
     <div class="panel-buttons">
       <button id="hintChallenge" class="btn-soft">힌트</button>
       <button id="clearChallenge" class="btn-main">모두 지우기</button>
@@ -172,8 +178,8 @@
       <button data-net-mode="edge">모서리</button>
       <button data-net-mode="vertex">꼭짓점</button>
     </div>
-    <div id="netMission" class="panel-sub">전개도의 그림이 직육면체의 어느 면으로 오는지 찾아보세요.</div>
-    <div id="netBoard" aria-label="직육면체 전개도">
+    <div id="netMission" class="panel-sub">정육면체의 여섯 정사각형을 보고 접힌 면을 예상해 보자.</div>
+    <div id="netBoard" aria-label="정육면체 전개도">
       <div class="net-face" data-face="2"></div>
       <div class="net-face" data-face="1"></div>
       <div class="net-face" data-face="4"></div>
@@ -181,7 +187,7 @@
       <div class="net-face" data-face="5"></div>
       <div class="net-face" data-face="3"></div>
     </div>
-    <div id="netDecorateInstructions" class="panel-sub"><b>1.</b> 붙일 그림을 고르고 <b>2.</b> 오른쪽 3D 직육면체의 면을 클릭하세요.</div>
+    <div id="netDecorateInstructions" class="panel-sub"><b>1.</b> 붙일 그림을 고르고 <b>2.</b> 오른쪽 3D 정육면체의 면을 클릭하세요. 같은 크기의 정사각형 여섯 개가 접혀요.</div>
     <div id="stickerPalette"></div>
     <div class="hint-box" id="selectedFace">그림을 고른 뒤 직육면체의 면을 클릭해 보세요.</div>
     <div id="netQuizCard" class="hidden">
@@ -273,6 +279,18 @@
           <label>높이 Y<input id="shapeH" type="number" min="1" max="4" value="1"></label>
           <label>세로 Z<input id="shapeD" type="number" min="1" max="4" value="1"></label>
         </div>
+        <section class="math-architect-card" id="cuboidMathCard" aria-label="직육면체 부피와 겉넓이 예상">
+          <b>마법 설계 수첩 <small>[6수03-17~19]</small></b>
+          <p>한 칸을 1cm로 생각해 보자. 직육면체 안을 채우는 큐브 수와 바깥을 색칠할 면적을 예상해 봐.</p>
+          <div id="cuboidMathDimensions" class="math-architect-feedback">가로 × 높이 × 세로</div>
+          <div class="math-architect-input">
+            <label>안의 큐브 수 · cm³<input id="cuboidVolumeGuess" type="number" min="1" max="32768" inputmode="numeric" placeholder="몇 개?"></label>
+            <label>겉면 넓이 · cm²<input id="cuboidAreaGuess" type="number" min="6" max="24576" inputmode="numeric" placeholder="얼마나 넓을까?"></label>
+          </div>
+          <div class="math-architect-actions"><button id="cuboidMathCheck" type="button">예상 확인</button>
+            <button id="cuboidMathShow" type="button">계산 방법 보기</button></div>
+          <div id="cuboidMathFeedback" class="math-architect-feedback" aria-live="polite">가로·높이·세로를 바꾸고 답을 예상해 보자.</div>
+        </section>
         <div class="face-color-grid">
           <label>오른쪽<input id="faceColor0" type="color" value="#ef5350"></label>
           <label>왼쪽<input id="faceColor1" type="color" value="#42a5f5"></label>
@@ -390,7 +408,7 @@
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 <script src="../../assets/vendor/three-r160/three-global.js?v=160-2"></script>
 <script src="./cube-architect-landmarks.js?v=20261003-29"></script>
-<script src="./cube-architect-world.js?v=20261007-homestead2&furnishing=1"></script>
+<script src="./cube-architect-world.js?v=20261013-grade56-1"></script>
 <script src="./cube-architect-poi.js?v=20261003-29"></script>
 <script src="./cube-architect-avatar.js?v=20261006-armor1"></script>
 <script src="./cube-architect-creatures.js?v=20261005-hunt1"></script>
@@ -399,7 +417,8 @@
 <script src="./cube-architect-voxel.js?v=20261003-29"></script>
 <script src="./cube-architect-camp.js?v=20261006-survival-camp2&magic=20261012"></script>
 <script src="./cube-architect-experience.js?v=20261006-experience1"></script>
-<script src="./cube-architect.js?v=20261007-homestead4&furnishing=1&magic=20261012"></script>
+<script src="./cube-architect-math.js?v=20261013-geometry1"></script>
+<script src="./cube-architect.js?v=20261013-grade56-1"></script>
 <script src="./cube-architect-cuboid-puzzle.js?v=20261006-2"></script>
 <script>
 (()=>{
