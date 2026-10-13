@@ -88,5 +88,5 @@ test('800 historical and modern lives complete with stable career saves',()=>{
 test('page and story surface profession scene, legacy and delayed consequences',()=>{
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8'),game=fs.readFileSync(path.join(root,'game.js'),'utf8');
  a.ok(html.indexOf('joseon-v5.js')<html.indexOf('joseon-v6.js'));a.ok(html.indexOf('joseon-v6.js')<html.indexOf('game.js'));
- a.match(game,/Joseon6\.summary/);a.match(game,/joseon6-choice/);a.match(game,/joseon6-followup/);
+ a.match(game,/Joseon6\?\.summary/);a.match(game,/joseon6-choice/);a.match(game,/joseon6-followup/);
 });
