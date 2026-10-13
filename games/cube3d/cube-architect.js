@@ -5133,6 +5133,28 @@ function pickTargetBlock(){
   hotbarTypes[selectedHotbarSlot]=type;selectedType=type;buildHotbar();toast(blockDef(type).name+'을(를) 선택했어요.');
 }
 let cuboidCompareProblem=null,cuboidCompareAnswered=false;
+function cuboidComparisonPreview(dims){
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 160 110');svg.setAttribute('role','img');
+  svg.setAttribute('aria-label','가로 '+dims[0]+'칸, 높이 '+dims[1]+'칸, 세로 '+dims[2]+'칸 직육면체');
+  svg.classList.add('cuboid-compare-preview');
+  const [w,h,d]=dims,unit=Math.min(11,115/(w+d),66/h);
+  const vx=[w*unit,w*unit*.39],vz=[-d*unit,d*unit*.39],vy=[0,-h*unit*.9];
+  const add=(a,b)=>[a[0]+b[0],a[1]+b[1]];
+  const origin=[80-(vx[0]+vz[0])/2,74-(vx[1]+vz[1])/2+Math.abs(vy[1])*.33];
+  const top=add(origin,vy);
+  for(const [vertices,fill] of [
+    [[origin,add(origin,vx),add(top,vx),top],'#a6b8df'],
+    [[origin,add(origin,vz),add(top,vz),top],'#7697c9'],
+    [[top,add(top,vx),add(add(top,vx),vz),add(top,vz)],'#e1eafd']
+  ]){
+    const polygon=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    polygon.setAttribute('points',vertices.map(p=>p.map(v=>v.toFixed(2)).join(',')).join(' '));
+    polygon.setAttribute('fill',fill);polygon.setAttribute('stroke','#405f91');
+    polygon.setAttribute('stroke-width','1.5');svg.appendChild(polygon);
+  }
+  return svg;
+}
 function renderCuboidComparison(dims){
   const math=window.CubeArchitectMath;
   const original=math.measurements(dims),other=math.equalVolumeAlternative(dims);
@@ -5147,7 +5169,8 @@ function renderCuboidComparison(dims){
     const title=document.createElement('strong');title.textContent=label+' · '+entry.dimensions.join(' × ');
     const detail=document.createElement('small');
     detail.textContent='블록 '+entry.volume+'개 · 겉넓이 ?';
-    card.append(title,detail);$('cuboidCompareOptions').appendChild(card);
+    card.append(title,cuboidComparisonPreview(entry.dimensions),detail);
+    $('cuboidCompareOptions').appendChild(card);
   }
   $('cuboidCompareFeedback').textContent=(fallback?'연습 문제 · ':'현재 설계와 비교 · ')+
     '같은 블록 '+base.volume+'개라면, 겉면을 칠할 가상 페인트는 어느 쪽이 적게 들까? (밑면 포함)';
