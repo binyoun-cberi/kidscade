@@ -322,7 +322,10 @@ function summary(life){
 }
 function validWork(w,year){
  if(!w||!CAREERS[w.code]||!Number.isInteger(w.started)||w.started>year)return null;
- const x={...starter({year: w.started,gender:'남자',joseon:{},stats:{knowledge:65}},w.code)};
+ const cfg=CAREERS[w.code];
+ const x={code:w.code,started:w.started,trained:false,practice:0,quality:18,
+  resources:{[cfg.supplyKey]:cfg.initial,[cfg.assetKey]:w.code==='teacher'?3:1},
+  reputation:10,contacts:[],events:0,stories:[],ended:null};
  x.code=w.code;x.started=w.started;x.trained=w.trained===true;x.practice=clamp(Number(w.practice)||0,0,100);
  x.quality=clamp(Number(w.quality)||0,0,100);x.reputation=clamp(Number(w.reputation)||0,0,100);
  x.events=clamp(Number(w.events)||0,0,12);
