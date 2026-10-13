@@ -505,7 +505,7 @@ test('figure mode honors selected periods and handles eras without named individ
 
 test('figure mode is accessible in every setup without replacing general history modes',()=>{
   const html=fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html',import.meta.url),'utf8');
-  assert.equal((html.match(/<option value="people">역사 인물 이름 맞히기<\\/option>/g)||[]).length,3);
+  assert.equal(html.split('<option value="people">역사 인물 이름 맞히기</option>').length-1,3);
   assert.match(html,/validatePeopleEras/);
   assert.match(html,/인물 맞히기/);
   const v1=fs.readFileSync(new URL('../worker/history-live.mjs',import.meta.url),'utf8');
