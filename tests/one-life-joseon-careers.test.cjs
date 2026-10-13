@@ -90,3 +90,14 @@ test('page and story surface profession scene, legacy and delayed consequences',
  a.ok(html.indexOf('joseon-v5.js')<html.indexOf('joseon-v6.js'));a.ok(html.indexOf('joseon-v6.js')<html.indexOf('game.js'));
  a.match(game,/Joseon6\?\.summary/);a.match(game,/joseon6-choice/);a.match(game,/joseon6-followup/);
 });
+
+test('promoting a side trade to main work clears duplicate side occupation',()=>{
+ const l=free(born(1700,151),25),s=V6.ensure(l);
+ a.ok(V6.adopt(l,'smith'));
+ a.ok(V6.adopt(l,'inn',{secondary:true}));
+ a.equal(s.secondary.code,'inn');
+ l.year=1732;l.age=32;
+ a.ok(V6.adopt(l,'inn'));
+ a.equal(V6.summary(l).primary.code,'inn');
+ a.equal(V6.summary(l).secondary,null);
+});
