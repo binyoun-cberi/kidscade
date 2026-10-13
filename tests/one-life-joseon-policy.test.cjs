@@ -81,6 +81,18 @@ test('legally free children may be born to slave-descended families after 1886',
  for(let i=1;i<=3400;i++){const l=born(1890,891*i);if(V5.summary(l).origin==='노비 후손 가계')descendants++;}
  assert.ok(descendants>0,'post-1886 legally free descendants must be represented');
 });
+test('1801 frees central-agency slaves but not every provincial office slave',()=>{
+ const a=born(1760,14),b=born(1760,15);
+ const sa=V5.ensure(a),sb=V5.ensure(b);
+ for(const s of [sa,sb]){s.origin='공노비';s.freed=false;s.legal='천인';}
+ sa.publicOffice='중앙 관서';sb.publicOffice='지방 관아';
+ for(const l of [a,b]){l.year=1801;l.age=41;l.pending=null;J.ensure(l).active=null;}
+ V5.prepare(a,sa);V5.prepare(b,sb);
+ assert.equal(sa.freed,true);
+ assert.equal(sb.freed,false);
+ assert.equal(V5.summary(a).legal,'양인');
+ assert.equal(V5.summary(b).legal,'천인');
+});
 test('random royal relatives cannot displace a documented monarch',()=>{
  for(const year of [1418,1494,1608,1674,1776,1863]){
   assert.equal(P.royalSuccession(year,year-26,'왕실 종친','남자').allowed,false);
