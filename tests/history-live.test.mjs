@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { QUESTIONS, MAX_PLAYERS } from '../worker/history-live.mjs';
-import { QUESTION_BANK, CORE_HISTORY_FACTS, QUESTION_BANK_SIZE, ERA_ORDER, normalizeEraSelection, pickHistoryQuestions, chronologicalQuestionIndexes } from '../data/history-live-question-bank.mjs';
+import { QUESTION_BANK, CORE_HISTORY_FACTS, QUESTION_BANK_SIZE, ERA_ORDER, normalizeEraSelection, pickHistoryQuestions, chronologicalQuestionIndexes, hasHistoricalFigures } from '../data/history-live-question-bank.mjs';
 
 test('history live supports a full classroom', () => {
   assert.equal(MAX_PLAYERS, 26);
@@ -461,4 +461,55 @@ test('state polling reads the current round answer slot', () => {
   const state=worker.slice(worker.indexOf('async function state'),worker.indexOf('async function hostAction'));
   assert.match(state,/slot=qi>=0\?answerSlot\(fresh,qi\):-1/);
   assert.match(state,/\.bind\(slot,fresh\.id\)\.all\(\)/);
+});
+
+
+test('figure-name quiz draws only unique historical people in both chronological and random rounds', () => {
+  const figures=CORE_HISTORY_FACTS.filter(f=>f.type==='인물'&&!f.direct);
+  assert.ok(figures.length>=100, 'the figure pool should cover varied historical roles');
+  assert.ok(new Set(figures.map(f=>f.term)).size===figures.length, 'figure names must not be duplicated');
+  const groups=[
+    ['삼국','남북국'],['고려'],['조선 전기','조선 후기'],
+    ['개항기','대한제국','국권 피탈','일제강점기','광복 이후','6·25 전쟁']
+  ];
+  const random=pickHistoryQuestions(40,()=>0.37,'random','people',ERA_ORDER);
+  const chronological=pickHistoryQuestions(40,()=>0.37,'chronological','people',ERA_ORDER);
+  const checks=[random,chronological];
+  for(const round of checks){
+    assert.equal(round.length,40);
+    assert.equal(new Set(round.map(q=>q.sourceFact)).size,40,'do not repeat a figure within one round');
+    for(const q of round){
+      assert.equal(q.family,'identify','people mode must ask for the NAME, not the era or description');
+      assert.equal(CORE_HISTORY_FACTS[q.sourceFact].type,'인물');
+      assert.equal(q.o.length,4);
+      assert.equal(new Set(q.o).size,4);
+      assert.ok(q.e.includes(q.o[q.a]),'reveal explanation must name the figure');
+      assert.ok(!q.q.includes(q.o[q.a]),'the clue must not leak the answer');
+    }
+  }
+  assert.deepEqual(groups.map(eras=>random.filter(q=>eras.includes(q.era)).length),[10,10,10,10]);
+  assert.deepEqual([...chronological.map(q=>ERA_ORDER.indexOf(q.era))].sort((a,b)=>a-b),chronological.map(q=>ERA_ORDER.indexOf(q.era)));
+  assert.ok(chronologicalQuestionIndexes(40,'people').every(i=>QUESTION_BANK[i].family==='identify'));
+});
+
+test('figure mode honors selected periods and handles eras without named individuals',()=>{
+  assert.equal(hasHistoricalFigures(['선사','고조선']),false);
+  assert.equal(hasHistoricalFigures(['삼국']),true);
+  assert.deepEqual(pickHistoryQuestions(10,()=>0.41,'random','people',['선사','고조선']),[]);
+  for(const mode of ['random','chronological']){
+    const questions=pickHistoryQuestions(20,()=>0.41,mode,'people',['고려']);
+    assert.equal(questions.length,20);
+    assert.ok(questions.every(q=>q.era==='고려'&&q.family==='identify'));
+  }
+});
+
+test('figure mode is accessible in every setup without replacing general history modes',()=>{
+  const html=fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html',import.meta.url),'utf8');
+  assert.equal(html.split('<option value="people">역사 인물 이름 맞히기</option>').length-1,3);
+  assert.match(html,/validatePeopleEras/);
+  assert.match(html,/인물 맞히기/);
+  const v1=fs.readFileSync(new URL('../worker/history-live.mjs',import.meta.url),'utf8');
+  const v2=fs.readFileSync(new URL('../worker/history-room-model.mjs',import.meta.url),'utf8');
+  assert.match(v1,/isPeople/);assert.match(v1,/hasHistoricalFigures/);
+  assert.match(v2,/hasHistoricalFigures/);assert.match(v2,/questionMode==='people'/);
 });
