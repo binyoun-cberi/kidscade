@@ -4984,8 +4984,38 @@ function pickTargetBlock(){
   if(!PLACEABLE_TYPES.includes(type))return;
   hotbarTypes[selectedHotbarSlot]=type;selectedType=type;buildHotbar();toast(blockDef(type).name+'을(를) 선택했어요.');
 }
+function shapeMathDimensions(){
+  const limit=survivalCuboidMax();
+  return [$('shapeW').value,$('shapeH').value,$('shapeD').value]
+    .map(v=>THREE.MathUtils.clamp(Math.round(Number(v)||1),1,limit));
+}
+function updateCuboidMathPrompt(){
+  const dims=shapeMathDimensions(),[w,h,d]=dims;
+  $('cuboidMathDimensions').textContent=w+' × '+h+' × '+d+
+    ' · 한 층 '+(w*d)+'칸 × '+h+'층 · 면은 6개';
+  $('cuboidMathFeedback').textContent='층별 큐브 수를 더하고, 서로 마주 보는 같은 면을 세어 보자.';
+  $('cuboidVolumeGuess').value='';$('cuboidAreaGuess').value='';
+}
+function checkCuboidMath(reveal=false){
+  const dims=shapeMathDimensions(),[w,h,d]=dims;
+  const result=window.CubeArchitectMath.measurements(dims);
+  const volumeInput=$('cuboidVolumeGuess').value.trim(),areaInput=$('cuboidAreaGuess').value.trim();
+  const volume=Number(volumeInput),area=Number(areaInput);
+  const volumeCorrect=volumeInput!==''&&volume===result.volume;
+  const areaCorrect=areaInput!==''&&area===result.area;
+  const faceText='가로×높이 '+(w*h)+'cm², 가로×세로 '+(w*d)+'cm², 높이×세로 '+(h*d)+'cm²';
+  $('cuboidMathFeedback').textContent=(reveal?'계산 방법 · ':volumeCorrect&&areaCorrect?'두 답 모두 정확해! ':'다시 확인해 보자. ')+
+    (reveal||volumeCorrect?'부피 '+w+' × '+h+' × '+d+' = '+result.volume+'cm³. ':
+      '부피: 한 층의 블록 '+(w*d)+'개가 '+h+'층이면? ')+
+    (reveal||areaCorrect?'겉넓이 ('+faceText+') × 2 = '+result.area+'cm². ':
+      '겉넓이: 마주 보는 면은 넓이가 같아. 세 쌍을 더해 보자.');
+  return {volumeCorrect,areaCorrect};
+}
 function setupShapeWorkbench(){
   syncShapeWorkbench();
+  for(const id of ['shapeW','shapeH','shapeD'])$(id).addEventListener('input',updateCuboidMathPrompt);
+  $('cuboidMathCheck').onclick=()=>checkCuboidMath(false);
+  $('cuboidMathShow').onclick=()=>checkCuboidMath(true);
   $('freeSelectShape').onclick=selectFreeGeometry;
   $('freeEdgeMode').onclick=()=>{freeElementMode='edge';updateFreeGeometryEditor()};
   $('freeVertexMode').onclick=()=>{freeElementMode='vertex';updateFreeGeometryEditor()};
@@ -4996,7 +5026,10 @@ function setupShapeWorkbench(){
     const dims=[$('shapeW').value,$('shapeH').value,$('shapeD').value]
       .map(v=>THREE.MathUtils.clamp(parseInt(v)||1,1,limit));
     const faceColors=Array.from({length:6},(_,i)=>$('faceColor'+i).value||DEFAULT_FACE_COLORS[i]);
-    currentCuboidSpec={dims,faceColors};putOnHotbar('cuboid');toast('직육면체 '+dims.join('×')+'를 '+(selectedHotbarSlot+1)+'번 칸에 담았어요.');tutorialRefreshProgress();
+    currentCuboidSpec={dims,faceColors};putOnHotbar('cuboid');
+    const math=window.CubeArchitectMath.measurements(dims);
+    toast('직육면체 '+dims.join('×')+' · 필요한 블록 '+math.volume+'개, 겉넓이 '+math.area+'칸². 핫바에 담았어.');
+    tutorialRefreshProgress();
   };
   $('facePaintColor').oninput=e=>{facePaintColor=e.target.value};
 }
@@ -5009,6 +5042,7 @@ function syncShapeWorkbench(){
   $('shapeD').value=Math.min(max,currentCuboidSpec.dims[2]);
   currentCuboidSpec.faceColors.forEach((c,i)=>{if($('faceColor'+i))$('faceColor'+i).value=c});
   $('facePaintColor').value=facePaintColor;
+  if($('cuboidMathDimensions'))updateCuboidMathPrompt();
 }
 function selectFreeGeometry(){
   const hit=freeCenterHit(9);
