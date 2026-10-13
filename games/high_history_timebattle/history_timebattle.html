@@ -539,7 +539,7 @@ function soloState(status){
   const q=soloGame.questions[soloGame.index],number=soloGame.index+1;
   const player={id:'solo',nickname:session.nickname,score:soloGame.score,streak:soloGame.streak,rank:1,answered:Boolean(soloGame.last),online:true};
   const isShort=q.soloKind==='short';
-  const state={room:{status,questionNumber:number,questionCount:soloGame.questions.length,secondsPerQuestion:soloGame.seconds,deadlineAt:new Date(soloGame.deadlineAt).toISOString(),serverNow:new Date().toISOString(),checkpoints:[]},players:[player],question:{number,total:soloGame.questions.length,difficulty:q.difficulty,prompt:q.q,options:isShort?[]:q.o,kind:isShort?'short':q.family==='ox'?'ox':'choice',...(status==='reveal'?{era:q.era}:{})}};
+  const state={room:{status,questionNumber:number,questionCount:soloGame.questions.length,secondsPerQuestion:soloGame.seconds,deadlineAt:new Date(soloGame.deadlineAt).toISOString(),serverNow:new Date().toISOString(),checkpoints:[],questionMode:soloGame.settings.questionMode},players:[player],question:{number,total:soloGame.questions.length,difficulty:q.difficulty,prompt:q.q,options:isShort?[]:q.o,kind:isShort?'short':q.family==='ox'?'ox':'choice',...(status==='reveal'?{era:q.era}:{})}};
   if(status==='reveal'){
     const stats=isShort?[]:Array.from({length:q.o.length},()=>0); if(!isShort&&soloGame.last?.option>=0)stats[soloGame.last.option]=1;
     state.reveal={answerIndex:isShort?-1:q.a,answerText:isShort?(q.shortAnswer||q.o[q.a]||''):'',era:q.era,explanation:q.e,optionStats:stats,answeredCount:soloGame.last?1:0,correctCount:soloGame.last?.correct?1:0};
