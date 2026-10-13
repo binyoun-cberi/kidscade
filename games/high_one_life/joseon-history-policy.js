@@ -53,7 +53,7 @@ function originLabel(year,origin){
  return origin;
 }
 function legalStatus(birthYear,origin,currentYear=birthYear,freed=false){
- if(currentYear>=1894)return '법적 신분제 폐지';
+ if(currentYear>=1894)return '법적 신분 구별 폐지';
  const fromBonded=['사노비','공노비'].includes(origin);
  if(fromBonded&&birthYear>=1886)return '양인 (노비 출신 가계)';
  if(fromBonded&&!freed)return '천인';
