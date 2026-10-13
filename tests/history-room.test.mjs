@@ -151,3 +151,17 @@ test('explicit host retry restores bounded failed result export',async()=>{
  assert.equal((await h.room.fetch(req('retry-results',{},h.created.hostToken))).status,200);
  assert.equal(h.room.state.outbox[0].attempts,0);assert.ok(h.room.state.outbox[0].retryAt>Date.now());
 });
+
+
+test('v2 teacher-created figure room uses answer-safe name questions',()=>{
+  const state=createState('0PEOPLE','host',{questionMode:'people',eras:['고려','조선 후기'],questionCount:20},Date.now());
+  assert.equal(state.questionMode,'people');
+  assert.equal(state.questions.length,20);
+  assert.ok(state.questions.every(q=>q.family==='identify'&&['고려','조선 후기'].includes(q.era)));
+  addPlayer(state,'한국사 학생','hash-one',Date.now());
+  command(state,'start');
+  const view=snapshot(state,{role:'player',id:state.players[0].id},Date.now());
+  assert.equal(view.question.answerIndex,undefined);
+  assert.ok(view.question.prompt.includes('다음')||view.question.prompt.includes('설명')||view.question.prompt.includes('단서'));
+  assert.throws(()=>createState('0BAD','host',{questionMode:'people',eras:['선사','고조선']},Date.now()),/person_era_empty/);
+});
