@@ -58,9 +58,10 @@ function unfoldedLayout(layout){
         errors.push('orientation');
     }
   }
-  const normals=axis.filter(Boolean).map(a=>a.normal.join());
-  return {valid:axis.every(Boolean)&&new Set(normals).size===6&&!errors.length,
-    hinges,normals,reason:errors.length?'overlap':axis.some(a=>!a)?'disconnected':'ok'};
+  const faces=axis.filter(Boolean),normals=faces.map(a=>a.normal.join());
+  const connected=faces.length===6;
+  return {valid:connected&&new Set(normals).size===6&&!errors.length,
+    hinges,normals,reason:!connected?'disconnected':errors.length?'overlap':new Set(normals).size!==6?'overlap':'ok'};
 }
 const api=Object.freeze({measurements,visibleUnitFaces,layeredCounts,projectionCounts,unfoldedLayout});
 if(typeof window!=='undefined')window.CubeArchitectMath=api;
