@@ -165,3 +165,18 @@ test('v2 teacher-created figure room uses answer-safe name questions',()=>{
   assert.ok(view.question.prompt.includes('다음')||view.question.prompt.includes('설명')||view.question.prompt.includes('단서'));
   assert.throws(()=>createState('0BAD','host',{questionMode:'people',eras:['선사','고조선']},Date.now()),/person_era_empty/);
 });
+
+
+test('v2 heritage room keeps answers hidden and prevents underfilled category sessions',()=>{
+  const state=createState('0HERIT','host',{questionMode:'heritage',eras:['고려','조선 후기'],questionCount:20},Date.now());
+  assert.equal(state.questionMode,'heritage');
+  assert.equal(state.questions.length,20);
+  assert.equal(new Set(state.questions.map(q=>q.sourceFact)).size,20);
+  assert.ok(state.questions.every(q=>q.family==='heritage-identify'&&['고려','조선 후기'].includes(q.era)));
+  addPlayer(state,'문화유산 학생','hash-heritage',Date.now());
+  command(state,'start');
+  const view=snapshot(state,{role:'player',id:state.players[0].id},Date.now());
+  assert.equal(view.question.answerIndex,undefined);
+  assert.ok(view.question.prompt.includes('문화유산 이름 맞히기'));
+  assert.throws(()=>createState('0EMPTY','host',{questionMode:'heritage',eras:['고조선'],questionCount:10},Date.now()),/heritage_era_empty/);
+});
