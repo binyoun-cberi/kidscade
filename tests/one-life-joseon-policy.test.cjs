@@ -54,6 +54,19 @@ test('1750 reduction and 1871 household tax change the bearer, not just the titl
  assert.equal(P.military(1871,'소작 농가','여자').kind,'hopo');
  assert.equal(P.military(1871,'사노비','남자').kind,'hopo');
 });
+test('1871 household levy does not award fictional military service years',()=>{
+ const l=born(1849,129),s=V5.ensure(l),j=J.ensure(l);
+ s.origin='문반 양반';s.legal='양인';l.gender='남자';l.year=1871;l.age=22;
+ l.pending=null;j.active=null;s.queue=[];s.active=null;s.seen=[];
+ V5.prepare(l,s);
+ const q=s.active||s.queue.find(x=>x.type==='hopo');
+ assert.ok(q,'expected household levies');
+ assert.equal(q.type,'hopo');
+ l.pending='joseon5:'+q.id;s.active=q;
+ const before=s.serviceYears;
+ assert.equal(l.choose(0),true);
+ assert.equal(s.serviceYears,before);
+});
 test('one generic kingdom-wide male-draft rule no longer controls regional taxes',()=>{
  const code=fs.readFileSync(path.join(root,'joseon-v5.js'),'utf8');
  assert.match(code,/P\.military\(life\.year,origin,life\.gender\)/);
