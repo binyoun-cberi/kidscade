@@ -143,12 +143,12 @@
   }
   function showHint() {
     const goal = recipeByGoal();
-    const currently = Core.countTiles(board);
-    const need = Object.entries(goal.composition).map(([symbol, count]) => {
-      const remaining = count - (currently[symbol] || 0);
-      return remaining > 0 ? `${Core.elementBySymbol.get(symbol).name} ${remaining}개` : '';
-    }).filter(Boolean);
-    showToast(need.length ? `힌트: ${need.join(' · ')}가 더 필요해!` : '필요한 원자 수는 맞아 보여. 조합하기를 눌러 확인해 봐!');
+    const { missing, excess } = Core.hintForComposition(goal.composition, board);
+    const format = items => items.map(({ symbol, count }) => `${Core.elementBySymbol.get(symbol).name} ${count}개`).join(' · ');
+    if (missing.length && excess.length) showToast(`힌트 · 더 놓기: ${format(missing)} / 빼기: ${format(excess)}`);
+    else if (missing.length) showToast(`힌트 · 더 놓기: ${format(missing)}`);
+    else if (excess.length) showToast(`힌트 · 빼기: ${format(excess)}`);
+    else showToast('필요한 원자 수가 맞아. 조합하기를 눌러 확인해 봐!');
   }
   function resetBoard() { board = []; renderBoard(); }
   function removeTile(index) { board.splice(index, 1); renderBoard(); }
