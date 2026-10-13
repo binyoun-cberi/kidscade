@@ -199,8 +199,11 @@
     change(delta) { for(const [key,value] of Object.entries(delta)) if(key in this.stats) this.stats[key]=clamp(this.stats[key]+value); }
     logEvent(text,kind='life') {
       this.log.push({age:this.age,year:this.year,text,kind});
-      if(this.log.length>100){
-        const cutoff=this.log.length-100;
+      // Historical biographies need their earlier chapters at the ending.
+      // Keep modern-game limits unchanged.
+      const maxLog=this.country?.[0]==='대한민국'&&this.birthYear>=1392&&this.birthYear<=1897?420:100;
+      if(this.log.length>maxLog){
+        const cutoff=this.log.length-maxLog;
         this.log=this.log.filter((entry,index)=>index>=cutoff||entry.kind==='decision'||entry.kind==='decision-effect');
       }
     }
