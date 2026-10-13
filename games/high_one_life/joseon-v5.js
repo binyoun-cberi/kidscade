@@ -76,7 +76,7 @@ function make(life){
  const s={version:1,origin,originLabel:P.originLabel(life.birthYear,origin)===origin?info.label:P.originLabel(life.birthYear,origin),trade:info.trade,
   legal,role:'',duty:info.duty,serviceYears:0,burdens:[],memories:[],decisions:[],
   processedYear:life.year,queue:[],active:null,seen:[],followups:[],rank:0,royalClaim:false,
-  freed:life.year>=1894&&isEnslaved(origin),monastic:false,inspector:false,complaints:0};
+  freed:life.year>=1894&&isEnslaved(origin),monastic:false,inspector:false,inspectorUntil:null,complaints:0};
  if(origin==='노비 후손 가계'){s.freed=true;s.originLabel=info.label;}
  if(isEnslaved(origin)&&life.birthYear>=1886){
   s.freed=true;s.originLabel='노비 출신 부모를 둔 양인 가계';
@@ -205,15 +205,19 @@ function prepare(life,s){
   s.legal='법적 신분 구별 폐지';
   if(isEnslaved(origin)&&!s.freed){s.freed=true;s.trade='품팔이와 가족의 살림';remember(life,s,'법적 노비제가 폐지되었다. 하지만 그동안의 예속과 차별이 곧바로 사라지지는 않았다.');}
  }
+ if(s.role==='암행어사'&&s.inspectorUntil&&life.year>=s.inspectorUntil){
+  s.role='관료';s.inspector=false;s.inspectorUntil=null;j.occupation='관직 생활';
+  remember(life,s,'어사의 임무를 마치고 원래의 관직으로 돌아왔다. 고을에서 본 일을 조정에 전했다.');
+ }
  if([18,27,39,54].includes(age))offer(life,s,'living','올해 나의 생업',roleChoices(s,j,life));
  const duty=P.military(life.year,origin,life.gender);
- if(age===22&&duty.eligible&&duty.kind!=='reform')
+ if([22,37,52].includes(age)&&duty.eligible&&duty.kind!=='reform')
   offer(life,s,'military',duty.title,taxChoices('military',duty));
- if(age===34&&!isRoyal(origin)&&!(isEnslaved(origin)&&!s.freed)&&life.year<1894){
+ if([34,49].includes(age)&&!isRoyal(origin)&&!(isEnslaved(origin)&&!s.freed)&&life.year<1894){
   const levy=P.tribute(life.year,j.region);
   offer(life,s,'tribute',levy.title,taxChoices('tribute'));
  }
- if(age===42&&!isRoyal(origin)&&life.year<1894)offer(life,s,'labor','관아에서 일손을 부르는 날',taxChoices('labor'));
+ if([42,57].includes(age)&&!isRoyal(origin)&&life.year<1894)offer(life,s,'labor','관아에서 일손을 부르는 날',taxChoices('labor'));
  // Fictional personal encounters, not a statement that a real raid happened
  // in the specified village or year. Regional exposure and era alter the chance.
  if(age>=13&&age<=58&&life.year<1600&&age%11===3){
@@ -313,7 +317,7 @@ function choose(life,index){
  }
  if(a==='throne'){remember(life,s,'실제 왕위 계승은 역사에 기록된 군주의 몫이다. 왕실 친족의 자리에서 정국을 지켜보았다.');}
  if(a==='courtstudy'||a==='courtduty')s.rank=Math.max(s.rank,1);
- if(['inspect','reform','hear'].includes(a)&&P.canInspect(origin,s.rank,j.office,s.role,life.year)){s.inspector=true;s.role='암행어사';j.occupation='어사로 감찰하는 임무';}
+ if(['inspect','reform','hear'].includes(a)&&P.canInspect(origin,s.rank,j.office,s.role,life.year)){s.inspector=true;s.role='암행어사';s.inspectorUntil=life.year+3;j.occupation='어사로 감찰하는 임무';}
  if(a==='flee'){j.relocations++;j.hardshipUntil=Math.max(j.hardshipUntil,life.year+1);}
  if(a==='appeal'||a==='witness')s.complaints++;
  if(a==='petition'&&success<.35)j.capital=clamp(j.capital+4,-120,600);
@@ -350,8 +354,8 @@ function hydrate(life,data){
  if(!ORIGINS[old.origin])return s;
  for(const key of ['origin','role','trade','legal','duty','originLabel'])
   if(typeof old[key]==='string')s[key]=old[key].slice(0,90);
- for(const key of ['serviceYears','rank','processedYear','complaints'])
-  if(Number.isInteger(old[key]))s[key]=clamp(old[key],0,key==='processedYear'?life.year:300);
+ for(const key of ['serviceYears','rank','processedYear','complaints','inspectorUntil'])
+  if(Number.isInteger(old[key]))s[key]=clamp(old[key],0,key==='processedYear'?life.year:key==='inspectorUntil'?life.year+3:300);
  for(const key of ['freed','royalClaim','monastic','inspector'])s[key]=old[key]===true;
  if(s.role==='왕'||s.role==='국왕'){s.role='왕실 종친';s.royalClaim=false;s.rank=Math.min(s.rank,1);}
  if(s.role==='암행어사'&&!P.canInspect(s.origin,s.rank,J.ensure(life).office,s.role,life.year)){s.role='관청 일을 맡던 인물';s.inspector=false;}
