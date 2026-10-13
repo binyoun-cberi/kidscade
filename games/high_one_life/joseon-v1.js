@@ -127,10 +127,18 @@ function recordEconomy(life){
 }
 
 function seedState(life){
- const r=REGIONS[Math.floor(roll(life.seed,1400)*REGIONS.length)];
- // Purely fictional spread for varied stories. This is not a class census.
- const n=roll(life.seed,1401);
- const status=n<.12?'양반':n<.23?'중인':n<.84?'상민':'천민';
+ // These are *fictional design weights*, not historically measured nationwide census shares.
+ // Later periods give more room for families identifying as yangban and fewer
+ // household origins under legal enslavement; the 1894 abolition is handled separately.
+ const era=life.birthYear<1600?0:life.birthYear<1750?1:life.birthYear<1894?2:3;
+ const weights=[[7,5,65,23],[11,7,59,23],[22,9,57,12],[24,10,60,6]][era];
+ const regionWeights=[5,12,13,15,16,8,11,11,9];
+ const pick=roll(life.seed,1400)*regionWeights.reduce((sum,n)=>sum+n,0);
+ let rem=pick,regionIndex=0;
+ while(regionIndex<regionWeights.length-1&&rem>=regionWeights[regionIndex])rem-=regionWeights[regionIndex++];
+ const r=REGIONS[regionIndex];
+ const n=roll(life.seed,1401)*100;
+ const status=n<weights[0]?'양반':n<weights[0]+weights[1]?'중인':n<weights[0]+weights[1]+weights[2]?'상민':'천민';
  const family=(status==='양반'&&roll(life.seed,1402)<.67)||roll(life.seed,1403)<.10?'여유 있는 형편'
     :(status==='천민'||roll(life.seed,1404)<.24?'빠듯한 형편':'평범한 형편');
  const home=status==='양반'?'가문 살림':status==='중인'?'기술·서리 일':status==='천민'?'종속된 집안일':'농사';
@@ -187,20 +195,51 @@ function note(life,s,text,kind='joseon-life'){
 }
 function promptFor(life,s){
  if(!s.active)return null;
- const kind=s.active.kind,canExam=life.gender==='남자'&&['양반','상민'].includes(s.birthStatus)&&life.year<1894;
+ const kind=s.active.kind,social=life.joseon5,origin=social?.origin||'';
+ const bound=['사노비','공노비'].includes(origin)&&!social.freed&&life.year<1894;
+ const royal=origin==='왕실 종친';
+ const canExam=!royal&&!bound&&!social?.monastic&&life.gender==='남자'&&['양반','상민'].includes(s.birthStatus)&&life.year<1894;
  const opt=(label,noteText,action,effects={})=>({label,note:noteText,action,effects,text:label});
  if(kind==='school')return {title:'글을 배울 수 있을까?',description:(life.year>=1894?'옛 '+s.birthStatus+' 가계':' '+s.status+' 집안')+'에서 '+s.region+'의 하루를 살아간다. 무엇을 배울까?',options:[
   opt('글을 배울 길을 찾아본다',s.status==='양반'?'가문의 글공부와 서당':'지역의 배움이나 가족·이웃의 가르침','study',{knowledge:6,wealth:-3}),
   opt('집안의 일을 배우며 지낸다','생업을 일찍 익히고 가족을 돕는다','work',{bonds:4,wealth:4}),
   opt('일도 하며 틈틈이 글을 익힌다','시간은 적지만 두 길을 이어 간다','mixed',{knowledge:3,health:-2})]};
+ if(kind==='vocation'&&bound)return {title:'정해진 일과 자유를 찾는 길',description:social.originLabel+'에서 태어났다. 주인이나 관아의 예속 아래 생업을 마음대로 선택하기 어렵다.',options:[
+  opt('맡겨진 일터의 노동을 이어 간다','매일의 노동으로 집안과 몸을 버틴다','serve',{health:-3,bonds:2}),
+  opt('일하는 틈에 기술을 배운다','사람들과 일을 배우며 다른 가능성을 찾는다','servileSkill',{knowledge:5,health:-1}),
+  opt('속량을 청할 방법을 알아본다','허락과 비용이 필요하며 실패할 수도 있다','petitionRelease',{knowledge:4,wealth:-4})]};
+ if(kind==='vocation'&&royal)return {title:'왕실 친족의 앞날',description:'왕실 사람이라고 모두 왕이 되는 것은 아니다. 예법과 정치에서의 거리를 생각한다.',options:[
+  opt('왕실의 교육과 예법을 익힌다','글공부와 예법을 함께 배운다','courtStudy',{knowledge:6}),
+  opt('무예와 궁중의 일을 배운다','왕실에서 맡을 수 있는 일을 알아본다','courtGuard',{knowledge:3,health:-2}),
+  opt('권력과 거리를 두고 지낸다','정치적 위험을 피하고 일상의 일을 찾는다','courtQuiet',{bonds:3,happiness:2})]};
+ if(kind==='vocation'&&social?.origin==='사찰 주변 가계')return {title:'집안의 생업과 사찰의 길',description:'사찰과 집안을 오가며 살아왔다. 어디에서 시간을 보낼까?',options:[
+  opt('출가해 승려의 길을 걷는다','사찰의 규율·공부·노동을 받아들인다','templeJoin',{knowledge:4,health:-1}),
+  opt('사찰을 도우며 집안 생업을 잇는다','속세의 가족을 돌보며 사찰을 돕는다','workTrade',{bonds:5}),
+  opt('다른 고을의 생업을 찾아본다','새로운 곳에서 배우고 일할 길을 찾는다','trade',{knowledge:3})]};
+ if(kind==='vocation'&&social?.trade)return {title:'어떤 일을 하며 살아갈까?',description:social.originLabel+' · '+social.trade+'을 접하며 자랐다. 같은 일을 이어 갈 수도, 다른 길을 찾을 수도 있다.',options:[
+  opt('집안에서 해 온 일을 이어 간다',social.trade+'의 어려움과 솜씨를 익힌다','workTrade',{knowledge:3,bonds:3}),
+  opt('장터나 다른 고을의 일을 배운다','낯선 사람과 새로운 일을 만난다','trade',{knowledge:3,bonds:2}),
+  opt('농사와 가족 돌봄을 이어 간다','집안에 필요한 일을 먼저 챙긴다','farm',{bonds:5,health:-1})]};
  if(kind==='vocation')return {title:'어떤 일로 살아갈까?',description:s.region+'의 생업과 집안의 처지를 생각한다.',options:[
   opt('농사와 땅을 돌본다','곡식과 날씨에 생활이 달려 있다','farm',{wealth:3}),
   opt('장터에서 물건을 팔거나 기술을 익힌다','수공업·장시에서 새로운 인연을 만난다','trade',{knowledge:3,bonds:3}),
   opt('집안일과 가족 돌봄을 맡는다','가까운 사람들의 살림을 지켜 간다','home',{bonds:7,health:-2})]};
+ if(kind==='marriage'&&bound)return {title:'예속된 집안의 관계와 일상',description:'스스로 혼인과 거처를 정하기 어려운 처지다. 사람과의 관계도 주인이나 관아의 통제에 영향을 받는다.',options:[
+  opt('함께 지낼 허락을 청한다','허락을 얻지 못할 수도 있지만 관계를 지키려 한다','servileMarry',{bonds:4}),
+  opt('함께 일하는 이들과 서로 돕는다','일상 속에서 서로의 어려움을 나눈다','servileKin',{bonds:6}),
+  opt('자유로운 살림을 꿈꾸며 길을 모색한다','당장 벗어날 수 없더라도 정보를 모은다','servileHope',{knowledge:4})]};
+ if(kind==='marriage'&&royal)return {title:'왕실의 혼인과 관계',description:'왕실 혼인은 정치와 집안의 허락을 떠나기 어렵다.',options:[
+  opt('집안이 정한 혼인을 받아들인다','왕실과 가문의 책임을 감수한다','royalMarriage',{bonds:3}),
+  opt('혼인을 서두르지 않고 공부를 한다','정치적 결정을 미루고 배움을 쌓는다','royalKin',{knowledge:4}),
+  opt('궁중과 거리를 두며 친족과 지낸다','친족과의 관계를 우선한다','royalQuiet',{happiness:3})]};
  if(kind==='marriage')return {title:'혼인과 집안의 일',description:'당시에는 혼인에 집안의 뜻과 처지가 크게 작용했다. 자신의 형편에서 관계를 이어 갈 길을 생각한다.',options:[
   opt('혼인을 준비한다','가족 사이의 약속과 비용이 따른다','marry',{bonds:6,wealth:-5}),
   opt('지금은 가족과 함께 지낸다','집안의 생업과 돌봄을 이어 간다','kin',{bonds:4,wealth:4}),
   opt('새 거처에서 홀로 생업을 꾸린다','홀로 서는 기쁨과 어려움이 함께한다','independent',{happiness:4,health:-2})]};
+ if(kind==='examination'&&(bound||royal||social?.monastic))return {title:'지금 내게 열린 배움과 일',description:bound?'예속 때문에 시험과 관직의 길이 제한되어 있다.':royal?'왕실의 직무는 일반 과거 시험만으로 정해지지 않는다.':'사찰에서의 배움과 속세의 시험은 다른 길이다.',options:[
+  opt('지금 맡은 일과 공부를 이어 간다','지금의 처지에서 배움을 쌓는다','mixed',{knowledge:4}),
+  opt('가족과 동료의 기술을 익힌다','살아가는 데 필요한 손기술을 배운다','servileSkill',{knowledge:3,bonds:2}),
+  opt('관계와 일상에서 도움을 나눈다','주변 사람을 돕고 안부를 살핀다','servileKin',{bonds:5})]};
  if(kind==='examination'){
   if(canExam)return {title:'과거에 도전할까?',description:'글을 익혔더라도 과거에 급제하는 일은 쉽지 않다. 신분·성별·학습 기회도 응시를 좌우했다.',options:[
    opt('문과 시험을 준비한다',s.studyYears>=3?'글공부를 이어 왔지만 합격과 관직은 별개의 길이다.':'시험에 나갈 자격과 준비할 수 있는 형편은 달랐다.','exam',{knowledge:5,wealth:-7}),
@@ -271,15 +310,45 @@ function applyChoice(life,index){
  if(act==='work'){s.occupation=s.birthStatus==='중인'?'관청 실무와 기술':'집안 생업';s.capital+=8;}
  if(act==='mixed'){s.studyYears+=1;s.literacy+=1;s.school='생업과 글공부를 함께 함';}
  if(act==='farm'){s.occupation='농사';s.land=Math.max(1,s.land);s.capital+=5;}
+ if(act==='workTrade'&&life.joseon5){
+  const social=life.joseon5;s.occupation=social.trade;
+  const map={'어부 가계':'어부','주막 가계':life.gender==='여자'?'주모':'주막을 꾸리는 사람',
+   '역관 가계':'역관','의관 가계':'의관','서리 가계':'서리','도공 가계':'도공',
+   '대장장이 가계':'대장장이','목수 가계':'목수','보부상 가계':'보부상',
+   '상인 가계':'상인','수군 가계':'수군','사찰 주변 가계':'사찰을 돕는 사람',
+   '백정':'백정의 생업을 잇는 장인'};
+  social.role=map[social.origin]||social.trade;s.capital+=3;
+  note(life,s,'집안에서 보고 익힌 '+social.trade+'을 생업으로 삼았다.','joseon-career');
+ }
+ if(act==='templeJoin'&&life.joseon5){life.joseon5.monastic=true;life.joseon5.role='승려';s.occupation='사찰의 수행과 노동';note(life,s,'출가하여 사찰의 규율 아래 불경을 배우고 일손을 보탰다.','joseon-career');}
+ if(['serve','servileSkill','petitionRelease','servileMarry','servileKin','servileHope'].includes(act)){
+  if(act==='serve')s.occupation=life.joseon5?.trade||'예속된 노동';
+  if(act==='servileSkill')s.literacy+=1;
+  if(act==='petitionRelease'){
+   s.capital-=6;
+   if(roll(life.seed,life.year+1891)<.13&&life.joseon5){life.joseon5.freed=true;life.joseon5.legal='양인';s.status='속량된 양인';s.occupation='새 살림을 꾸릴 길을 찾는 중';note(life,s,'속량이 허락되었다. 예속에서는 벗어났지만 생활을 다시 꾸릴 일이 남았다.','joseon-life');}
+   else note(life,s,'속량을 청했지만 허락을 얻지 못했다. 스스로 선택할 수 있는 일은 여전히 제한되어 있다.','joseon-life');
+  }
+  if(act==='servileMarry'){
+   if(roll(life.seed,life.year+1892)<.48){s.married=true;note(life,s,'허락을 얻어 함께 지낼 사람이 생겼다. 예속된 처지는 달라지지 않았다.','joseon-family');}
+   else note(life,s,'혼인을 청했지만 허락을 얻기 어려웠다. 서로의 소식은 계속 주고받았다.','joseon-family');
+  }
+ }
+ if(['courtStudy','courtGuard','courtQuiet','royalMarriage','royalKin','royalQuiet'].includes(act)){
+  if(act==='courtStudy'){s.literacy+=2;s.school='왕실 친족의 글공부';}
+  if(act==='courtGuard')s.occupation='왕실의 무예와 직무';
+  if(act==='courtQuiet')s.occupation='왕실의 일에서 거리를 둔 삶';
+  if(act==='royalMarriage'){s.married=true;s.capital-=8;note(life,s,'왕실과 가문의 허락을 받아 혼인했다.','joseon-family');}
+ }
  if(act==='trade'||act==='market'){s.occupation='장사·수공업';s.capital+=6;}
  if(act==='home'||act==='kin'||act==='care'){s.occupation='집안 살림과 돌봄';s.household=Math.min(8,s.household+1);s.parentsSupported=true;}
  if(act==='marry'){s.married=true;s.capital-=10;note(life,s,'혼인을 치르고 함께할 가족이 늘었다.','joseon-family');}
  if(act==='independent'){s.capital-=5;s.relocations++;note(life,s,'가족의 집을 떠나 새 살림을 시작했다.','joseon-family');}
  if(act==='exam'){s.exams++;const chance=clamp((.04+s.studyYears*.055+s.literacy*.03)*(s.birthStatus==='상민'?.20:1),0,.42);
-  if((s.birthStatus==='상민'?roll(life.seed,life.year+831):life.rand())<chance){s.office=true;s.occupation='관직 생활';s.capital+=42;note(life,s,'과거에 급제하여 관직에 나아갔다.','joseon-career');}
+  if((s.birthStatus==='상민'?roll(life.seed,life.year+831):life.rand())<chance){s.office=true;s.occupation='관직 생활';if(life.joseon5){life.joseon5.rank=2;life.joseon5.role='관료';}s.capital+=42;note(life,s,'과거에 급제하여 관직에 나아갔다.','joseon-career');}
   else note(life,s,'과거를 치렀지만 이번에는 급제하지 못했다.','joseon-career');}
  if(act==='technical'){s.exams++;const chance=clamp(.10+s.studyYears*.035+s.literacy*.025,0,.35);
-  if(roll(life.seed,life.year+901)<chance){s.occupation='관청의 전문 기술직';s.capital+=24;note(life,s,'오래 준비한 전문 분야의 시험에 합격했다. 관청에서 맡을 일을 기다린다.','joseon-career');}
+  if(roll(life.seed,life.year+901)<chance){s.occupation=life.joseon5?.origin==='역관 가계'?'역관':life.joseon5?.origin==='의관 가계'?'의관':'관청의 전문 기술직';if(life.joseon5)life.joseon5.role=s.occupation;s.capital+=24;note(life,s,'오래 준비한 전문 분야의 시험에 합격했다. 관청에서 맡을 일을 기다린다.','joseon-career');}
   else {s.literacy+=1;s.school='전문 기술을 익히는 중';note(life,s,'시험에서는 뜻을 이루지 못했지만 공부한 기술은 남았다.','joseon-career');}}
  if(act==='teach'||act==='mentor'){s.occupation='마을에서 글과 기술을 가르치는 일';s.school='가르치며 배우는 생활';}
  if(act==='scribe'){s.occupation='글과 셈을 쓰는 생업';s.literacy+=1;}
