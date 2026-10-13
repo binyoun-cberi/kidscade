@@ -55,7 +55,7 @@ function randomQuestionIndexes(count,questionMode='choice',eras=ERA_ORDER){
   const selectedEras=normalizeEraSelection(eras),byFact=new Map(),isPeople=questionMode==='people',isHeritage=questionMode==='heritage';
   QUESTIONS.forEach((q,index)=>{
     const fact=CORE_HISTORY_FACTS[Number(q.sourceFact)];
-    if(!fact||!selectedEras.includes(fact.era)||((isPeople||isHeritage)&&((isPeople&&fact.type!=='인물')||(isHeritage&&!isHeritageFact(fact))||q.family!=='identify')))return;
+    if(!fact||!selectedEras.includes(fact.era)||((isPeople||isHeritage)&&((isPeople&&fact.type!=='인물')||(isHeritage&&!isHeritageFact(fact))||(isHeritage?q.family!=='heritage-identify':q.family!=='identify'))))return;
     const key=Number(q.sourceFact);if(!byFact.has(key))byFact.set(key,[]);byFact.get(key).push(index);
   });
   const allErasSelected=selectedEras.length===ERA_ORDER.length&&ERA_ORDER.every(era=>selectedEras.includes(era));
@@ -70,7 +70,7 @@ function randomQuestionIndexes(count,questionMode='choice',eras=ERA_ORDER){
   let cursor=0;while(pickedFacts.length<count){pickedFacts.push(facts[cursor%facts.length]);cursor++;}
   return pickedFacts.map((fact,pos)=>{
     const all=byFact.get(fact)||[],ox=all.filter(i=>QUESTIONS[i]?.family==='ox'),choice=all.filter(i=>QUESTIONS[i]?.family!=='ox');
-    const options=(isPeople||isHeritage)?all.filter(i=>QUESTIONS[i]?.family==='identify'):questionMode==='ox'?(ox.length?ox:choice):questionMode==='mixed'?(pos%2===1&&ox.length?ox:(choice.length?choice:ox)):(choice.length?choice:ox);
+    const options=(isPeople||isHeritage)?all.filter(i=>QUESTIONS[i]?.family===(isHeritage?'heritage-identify':'identify')):questionMode==='ox'?(ox.length?ox:choice):questionMode==='mixed'?(pos%2===1&&ox.length?ox:(choice.length?choice:ox)):(choice.length?choice:ox);
     const pick=bytes[(facts.length+pos)%bytes.length]%options.length;
     return options[pick];
   });
@@ -177,7 +177,7 @@ async function createRoom(request,env){
   let body={}; try{body=await parseJson(request)}catch(_){}
   const questionCount=clampInt(body.questionCount,5,40,15), seconds=clampInt(body.secondsPerQuestion,8,30,12), checkpoints=normalizeCheckpoints(questionCount,body), orderMode=body.orderMode==='chronological'?'chronological':'random', questionMode=['ox','mixed','people','heritage'].includes(body.questionMode)?body.questionMode:'choice', eras=normalizeEraSelection(body.eras), scoreMode=body.scoreMode==='cumulative'?'cumulative':'reset';
   if(questionMode==='people'&&!hasHistoricalFigures(eras))return json({ok:false,error:'person_era_empty'},400);
-  if(questionMode==='heritage'&&!hasHistoricalHeritage(eras))return json({ok:false,error:'heritage_era_empty'},400);
+  if(questionMode==='heritage'&&!hasHistoricalHeritage(eras,questionCount))return json({ok:false,error:'heritage_era_empty'},400);
   const id=crypto.randomUUID(),code=await uniqueCode(env),token=randomToken(),hash=await sha256(token),now=Date.now(),order=orderMode==='chronological'?chronologicalQuestionIndexes(questionCount,questionMode,eras):randomQuestionIndexes(questionCount,questionMode,eras),plan={questions:order,checkpoints,orderMode,questionMode,eras,scoreMode,round:1};
   await env.DB.prepare(`INSERT INTO history_live_rooms
     (id,room_code,host_token_hash,status,question_order_json,current_question,question_count,seconds_per_question,created_at,updated_at,expires_at)
@@ -197,7 +197,7 @@ async function reconfigureRoom(request,env){
   const checkpoints=normalizeCheckpoints(questionCount,body),orderMode=body.orderMode==='chronological'?'chronological':'random';
   const questionMode=['ox','mixed','people','heritage'].includes(body.questionMode)?body.questionMode:'choice',eras=normalizeEraSelection(body.eras),scoreMode=body.scoreMode==='cumulative'?'cumulative':'reset';
   if(questionMode==='people'&&!hasHistoricalFigures(eras))return json({ok:false,error:'person_era_empty'},400);
-  if(questionMode==='heritage'&&!hasHistoricalHeritage(eras))return json({ok:false,error:'heritage_era_empty'},400);
+  if(questionMode==='heritage'&&!hasHistoricalHeritage(eras,questionCount))return json({ok:false,error:'heritage_era_empty'},400);
   const round=room.status==='finished'?previous.round+1:previous.round;
   const order=orderMode==='chronological'?chronologicalQuestionIndexes(questionCount,questionMode,eras):randomQuestionIndexes(questionCount,questionMode,eras);
   const plan={questions:order,checkpoints,orderMode,questionMode,eras,scoreMode,round},now=Date.now();
