@@ -1609,7 +1609,7 @@ function buildBank() {
     if(distractors.length!==3)return;
     out.push({
       id:`heritage-${index}`,era:fact.era,difficulty:2,
-      q:`문화유산 이름 맞히기\\n${fact.clue}\\n이 문화유산의 이름은 무엇일까요?`,
+      q:`문화유산 이름 맞히기\n${fact.clue}\n이 문화유산의 이름은 무엇일까요?`,
       o:[fact.term,...distractors],a:0,
       e:`${fact.term}: ${fact.clue}`,sourceFact:index,family:'heritage-identify'
     });
