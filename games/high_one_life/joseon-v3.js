@@ -143,7 +143,16 @@ function promote(life,s){
 function prompt(life){
  const s=ensure(life),q=s?.active,bank=q&&EVENTS[q.kind];
  if(!bank)return null;
- const j=J.ensure(life);
+ const j=J.ensure(life),social=life.joseon5;
+ const bound=social&&['사노비','공노비'].includes(social.origin)&&!social.freed&&life.year<1894;
+ if(bound)return {title:bank.title,description:social.originLabel+'의 처지에서는 이동과 생업을 마음대로 바꾸기 어렵다. 일터와 가족 사이에서 가능한 일을 생각한다.',options:[
+  {label:'맡은 일터에서 경험을 쌓는다',note:'몸이 고되지만 일손을 보태며 기술을 배운다.',action:'hands',effects:{knowledge:2,health:-2}},
+  {label:'동료에게 기술을 배우고 가르친다',note:'주변 사람과 경험을 나눈다.',action:'skill',effects:{knowledge:4,bonds:3}},
+  {label:'몸과 가족을 돌본다',note:'잠시 숨을 돌리고 서로의 안부를 챙긴다.',action:'rest',effects:{health:4,bonds:3}}]};
+ if(social?.origin==='왕실 종친')return {title:bank.title,description:'왕실 종친으로 살아가는 동안 권력과의 거리를 생각한다.',options:[
+  {label:'왕실의 글과 예법을 배운다',note:'문서와 학문을 익힌다.',action:'letters',effects:{knowledge:4}},
+  {label:'집안과 왕실의 일을 나누어 맡는다',note:'필요한 기술을 익힌다.',action:'skill',effects:{bonds:3}},
+  {label:'소란에서 거리를 두고 몸을 돌본다',note:'정치적 위험을 피한다.',action:'rest',effects:{health:4}}]};
  const family=life.age>=41?(j.married?'식구가 늘어 서로 돌볼 일이 많다. ':'혼자 지내는 때도 이웃과 관계를 이어갈 수 있다. '):'';
  return {title:bank.title,description:j.region+'에서 '+j.occupation+' 일을 해 왔다. '+family+'무엇부터 할까?',
   options:bank.options.map(([label,note,action,effects])=>action==='share'&&V2.ensure(life).grain<12
