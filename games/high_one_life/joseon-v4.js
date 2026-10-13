@@ -115,15 +115,27 @@ function sync(life,s){
  const j=J.ensure(life);
  if(!j)return;
  const spouse=s.people.find(x=>x.role==='spouse');
- if(spouse&& !spouse.alive){j.married=false;life.profile.partner=false;}
+ if(spouse&&!spouse.alive){j.married=false;if(life.year<1900)life.profile.partner=false;}
  if(life.year<1900)j.household=clamp(1+living(s,null,life.year).filter(x=>x.atHome!==false).length,1,8);
 }
 function catchUp(life,s){
- const j=J.ensure(life);
- if(j.married&&!s.people.some(x=>x.role==='spouse'))addSpouse(life,s,life.year);
+ const j=J.ensure(life),modern=life.year>=1900;
+ const known=modern&&Array.isArray(life.world9?.people)?life.world9.people:[];
+ const partner=known.find(x=>x.id==='partner'&&x.alive);
+ if(!s.people.some(x=>x.role==='spouse')&&(j.married||(modern&&(life.profile.partner||partner)))){
+  addSpouse(life,s,modern?life.year:life.birthYear+19);
+  const p=s.people.find(x=>x.role==='spouse');
+  if(p&&partner){p.name=String(partner.name||p.name).slice(0,24);p.birthYear=partner.birthYear;p.joinedYear=life.year;}
+ }
  while(s.people.filter(x=>x.role==='child').length<j.children&&s.people.length<12){
   const ordinal=s.people.filter(x=>x.role==='child').length;
   addChild(life,s,life.year-ordinal*3);
+ }
+ const modernChild=known.find(x=>x.role==='자녀'&&x.alive);
+ if(modern&&(life.profile.child||modernChild)&&!s.people.some(x=>x.role==='child')&&s.people.length<12){
+  addChild(life,s,modernChild?.birthYear??life.year);
+  const child=s.people.find(x=>x.role==='child');
+  if(child&&modernChild)child.name=String(modernChild.name||child.name).slice(0,24);
  }
  sync(life,s);
 }
@@ -207,12 +219,13 @@ function choose(life,index){
  const selected=p.options[index],who=s.people.find(x=>x.id===q.personId),a=selected.action;
  life.change(selected.effects);
  const j=J.ensure(life),v=V2.ensure(life),memory=V3.ensure(life);
+ const modern=life.year>=1900,netBefore=life.money?.netWorth??0,capitalBefore=j.capital;
  if(who){
   const relationDelta=['gift','visit','listen','teach','sharework','help','support','kinwork'].includes(a)?9:5;
   who.relation=clamp(who.relation+relationDelta,0,100);
   who.wellbeing=clamp(who.wellbeing+(['support','help','visit'].includes(a)?8:2),0,100);
  }
- if(a==='support'){j.capital-=9;v.grain=clamp(v.grain-7,0,200);s.careYears++;}
+ if(a==='support'){j.capital-=9;if(v.grain>=7)v.grain-=7;s.careYears++;}
  if(a==='help'||a==='visit')s.careYears++;
  if(a==='teach'&&who){who.learning+=3;j.capital-=5;}
  if(a==='work'&&who){who.work='집안의 생업을 배우는 중';who.learning++;}
@@ -227,11 +240,12 @@ function choose(life,index){
  if(a==='talk'){v.grain=clamp(v.grain+5,0,200);}
  if(who&&memory)memory.kinship=clamp(memory.kinship+3,0,100);
  j.capital=clamp(j.capital,-120,600);
- if(life.money)life.money.netWorth=j.capital*100;
+ if(life.money)life.money.netWorth=modern?netBefore+(j.capital-capitalBefore)*100:j.capital*100;
  s.decisions.push({id:q.id,kind:q.kind,personId:q.personId,year:life.year,action:a,label:selected.label});
  s.decisions=s.decisions.slice(-36);
- s.followups.push({year:life.year+3,personId:q.personId,action:a});s.followups=s.followups.slice(-24);
+ s.followups.push({id:q.id,year:life.year+3,personId:q.personId,action:a});s.followups=s.followups.slice(-24);
  remember(life,s,p.title+' — '+selected.label,'joseon4-choice');
+ life.log.at(-1).causeId='joseon4:'+q.id;
  s.active=null;life.pending=null;promote(life,s);
  return true;
 }
@@ -244,8 +258,8 @@ function afterYear(life){
  for(const effect of s.followups.filter(x=>x.year<=year)){
   const relative=s.people.find(p=>p.id===effect.personId);
   const sentence=relative?rememberedRelative(relative,effect.action):OUTCOMES[effect.action];
-  if(sentence){remember(life,s,sentence,'joseon4-followup');s.memories.push(sentence);s.memories=s.memories.slice(-20);}
-  if(['support','plan','inherit','talk'].includes(effect.action))v.grain=clamp(v.grain+3,0,200);
+  if(sentence){remember(life,s,sentence,'joseon4-followup');if(effect.id)life.log.at(-1).causeId='joseon4:'+effect.id;s.memories.push(sentence);s.memories=s.memories.slice(-20);}
+  if(year<1900&&['support','plan','inherit','talk'].includes(effect.action))v.grain=clamp(v.grain+3,0,200);
  }
  s.followups=s.followups.filter(x=>x.year>year);
  for(const p of s.people){
@@ -256,13 +270,15 @@ function afterYear(life){
   const stress=troubled&&hash(life.seed,year+yearNumber(p.id)+171)<.22;
   if(stress){p.wellbeing=clamp(p.wellbeing-5,0,100);
    if(p.role==='child'&&years<=12&&hash(life.seed,year+yearNumber(p.id)+172)<.22)
-    remember(life,s,p.name+'가 몸이 불편한 날을 보내 집안에서 번갈아 보살폈다.','joseon4-memory');
+    remember(life,s,particle(p.name,'이','가')+' 몸이 불편한 날을 보내 집안에서 번갈아 보살폈다.','joseon4-memory');
   }
-  if(years>=p.lifeYears+(p.wellbeing>85?3:0)){
+  const youngHardship=(troubled||p.wellbeing<42)&&years<16&&
+   hash(life.seed,year+yearNumber(p.id)+380)<(troubled?.025:.008);
+  if(youngHardship||years>=p.lifeYears+(p.wellbeing>85?3:0)){
    p.alive=false;p.diedYear=year;
    remember(life,s,particle(p.name,'은','는')+' 세상을 떠났다. 집안에 빈자리가 생겼다.','joseon4-memory');
    life.change({happiness:-5,bonds:-3});
-   if(p.role==='spouse'){j.married=false;life.profile.partner=false;}
+   if(p.role==='spouse'){j.married=false;if(year<1900)life.profile.partner=false;}
    continue;
   }
   if(p.role==='sibling'&&years>=22)p.atHome=false;
@@ -306,7 +322,7 @@ function hydrate(life,data){
   const seen=new Set();
   s.people=old.people.slice(0,12).filter(p=>p&&typeof p.id==='string'&&p.id.length<=30&&
     allowedRoles.has(p.role)&&!seen.has(p.id)&&Number.isInteger(p.birthYear)&&
-    p.birthYear>=life.birthYear-110&&p.birthYear<=life.year).map(p=>{
+    p.birthYear>=life.birthYear-110&&p.birthYear<=(p.role==='sibling'?life.birthYear+7:life.year)).map(p=>{
       seen.add(p.id);
       return {id:p.id,role:p.role,name:String(p.name||'가족').slice(0,24),
         sex:p.sex==='여자'?'여자':'남자',birthYear:p.birthYear,
@@ -327,7 +343,7 @@ function hydrate(life,data){
  s.recent=Array.isArray(old.recent)?old.recent.filter(x=>typeof x==='string').slice(-12).map(x=>x.slice(0,220)):[];
  s.followups=Array.isArray(old.followups)?old.followups.filter(f=>f&&Number.isInteger(f.year)&&f.year>life.year&&
     typeof f.personId==='string'&&s.people.some(p=>p.id===f.personId)&&
-    typeof f.action==='string'&&OUTCOMES[f.action]).slice(-24).map(f=>({year:f.year,personId:f.personId,action:f.action})):[];
+    typeof f.action==='string'&&OUTCOMES[f.action]).slice(-24).map(f=>({id:typeof f.id==='string'?f.id.slice(0,80):null,year:f.year,personId:f.personId,action:f.action})):[];
  s.memories=Array.isArray(old.memories)?old.memories.filter(x=>typeof x==='string').slice(-20).map(x=>x.slice(0,220)):[];
  const allowedKinds=new Set(Object.keys(TITLES));
  const valid=q=>q&&typeof q.id==='string'&&q.id.length<=80&&
