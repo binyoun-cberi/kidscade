@@ -54,9 +54,7 @@ test('income has itemized subsistence, cultivation and borrowed-land charges',()
  const view=J.summary(l).economy;
  assert.ok(view.costs);
  const c=view.costs;
- assert.equal(view.expense,c.subsistence+c.care+c.landExpenses+c.rent+
-  // Annual levies may appear in household expense without being part of a lease.
-  (view.expense-(c.subsistence+c.care+c.landExpenses+c.rent)));
+ assert.equal(view.expense,c.subsistence+c.care+c.landExpenses+c.rent+c.levies);
  assert.ok(view.income>=0&&view.expense>=0);
  assert.equal(view.leasedLand,view.workedLand-view.ownedLand);
  assert.ok(c.rent>=0);
@@ -90,7 +88,7 @@ test('the lived household and biography show land, grain, debt, work and relatio
  assert.match(source,/e\.condition/);
  assert.match(source,/e\.debt/);
  assert.match(source,/life\.stats\.bonds>=65/);
- assert.doesNotMatch(source,/지금까지 모아 온 집안 재산 · '+j\.capital/);
+ assert.doesNotMatch(source,/지금까지 모아 온 집안 재산/);
 });
 test('360 simulated lives preserve poverty, autonomy and chronology across eras',()=>{
  let lives=0,poor=0,socialInDebt=0;
