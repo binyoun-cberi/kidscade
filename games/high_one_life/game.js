@@ -151,7 +151,7 @@
       const people=$('v9PeopleList');people.replaceChildren();
       for(const member of v4.people.slice(0,11)){
         const item=document.createElement('li'),role=Joseon4.ROLES[member.role]||'가족';
-        item.textContent=role+' '+member.name+' · '+member.age+'세 · '+(member.alive?member.work+(member.atHome?' · 한집 거주':' · 따로 거주'):member.diedYear+'년 별세')+' · '+member.trait+' 성격';
+        item.textContent=role+' '+member.name+' · '+member.age+'세 · '+(member.alive?member.work+(member.atHome?' · 한집 거주':' · 따로 거주'):member.diedYear+'년 별세')+(member.role==='child'&&member.legal?' · 법적 처지 '+member.legal:'')+' · '+member.trait+' 성격';
         people.append(item);
       }
       put('v9PeopleCount','가족 '+v4.people.length+'명 중 '+v4.alive+'명 생존 · 함께 사는 식구 '+v4.atHome+'명');put('v9Hobby',v3.memories.at(-1)||'생업과 이웃 사이에서 남은 일상');
