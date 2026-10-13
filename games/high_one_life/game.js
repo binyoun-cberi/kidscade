@@ -137,7 +137,7 @@
       put('profileMeta',life.gender+' · '+j.region+' · '+life.age+'세');
       put('profileFamily',j.status);
       put('netWorth',formatCredits(m.netWorth));$('netWorth').classList.toggle('negative',m.netWorth<0);
-      $('netWorth').parentElement.querySelector('small').textContent='살림의 남은 몫';
+      $('netWorthLabel').textContent='살림의 남은 몫';
       put('annualIncome',formatCredits(m.income));put('annualExpense',formatCredits(m.expense));
       put('annualBalance',formatCredits(m.lastBalance));$('annualBalance').classList.toggle('negative',m.lastBalance<0);
       put('employmentStatus',j.occupation);put('traitEducation',j.school);
@@ -224,7 +224,7 @@
     $('profileName').textContent=p.name;
     $('profileMeta').textContent=life.gender+' · '+p.city+' · '+life.age+'세';
     $('profileFamily').textContent=p.child?'돌봄 중인 아이가 있어요':p.partner?'함께하는 동반자가 있어요':life.familyLevel;
-    $('netWorth').parentElement.querySelector('small').textContent='순자산';
+    $('netWorthLabel').textContent='순자산';
     $('netWorth').textContent=formatCredits(money.netWorth);
     $('netWorth').classList.toggle('negative',money.netWorth<0);
     $('annualIncome').textContent=formatCredits(money.income);
