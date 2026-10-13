@@ -23,10 +23,14 @@ function advance(life,to,choiceIndex=0){
  return life;
 }
 test('family choice past 1900 changes only that decision cost, not the whole balance',()=>{
- const l=born(1870,17);advance(l,1925);
- if(!l.alive)return;
- const s=V4.ensure(l),p=s.people.find(x=>x.role==='mother'&&x.alive);
- if(!p)return;
+ let l=null;
+ for(let seed=1;seed<=90&&!l;seed++){
+  const candidate=advance(born(1870,seed),1925);
+  if(candidate.alive)l=candidate;
+ }
+ assert.ok(l,'could not find a living historical-to-modern handoff');
+ const s=V4.ensure(l),p=s.people.find(x=>x.alive);
+ assert.ok(p);
  l.pending=null;s.active={id:'audit-modern',kind:'elders',personId:p.id,year:l.year};
  l.pending='joseon4:audit-modern';
  l.money.netWorth=789123;const old=jcap(),initial=l.money.netWorth;
