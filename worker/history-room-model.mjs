@@ -1,4 +1,4 @@
-import { QUESTION_BANK, ERA_ORDER, normalizeEraSelection, chronologicalQuestionIndexes } from '../data/history-live-question-bank.mjs';
+import { QUESTION_BANK, ERA_ORDER, normalizeEraSelection, chronologicalQuestionIndexes, hasHistoricalFigures } from '../data/history-live-question-bank.mjs';
 import { randomQuestionIndexes, normalizeCheckpoints, displayedQuestion } from './history-live.mjs';
 
 export const MAX_PLAYERS = 26;
@@ -7,8 +7,9 @@ const int = (v, lo, hi, fallback) => Number.isFinite(Number(v)) ? Math.max(lo, M
 export function fail(code, status = 409) { throw Object.assign(new Error(code), { status }); }
 export function settings(body = {}) {
   const questionCount = int(body.questionCount, 5, 40, 15);
-  const questionMode = ['ox','mixed'].includes(body.questionMode) ? body.questionMode : 'choice';
+  const questionMode = ['ox','mixed','people'].includes(body.questionMode) ? body.questionMode : 'choice';
   const eras = normalizeEraSelection(body.eras || ERA_ORDER);
+  if(questionMode==='people'&&!hasHistoricalFigures(eras))fail('person_era_empty',400);
   const orderMode = body.orderMode === 'chronological' ? 'chronological' : 'random';
   const indexes = orderMode === 'chronological' ? chronologicalQuestionIndexes(questionCount, questionMode, eras) : randomQuestionIndexes(questionCount, questionMode, eras);
   return { questionCount, secondsPerQuestion: int(body.secondsPerQuestion, 8, 30, 12), questionMode, eras, orderMode,
