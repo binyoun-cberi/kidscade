@@ -210,6 +210,10 @@ function promptFor(life,s){
    opt('기술과 장사로 살림을 넓힌다','장시에서 기술·물건을 다룬다','trade',{wealth:6}),
    opt('아이들과 이웃에게 배움을 나눈다','집안이나 마을에서 가르친다','teach',{bonds:7})]};
  }
+ if(kind==='household'&&s.capital<0)return {title:'빚이 남은 집안의 선택',description:'곡식과 땅, 갚지 못한 몫을 헤아린다. 당장 모든 빚을 갚을 방법은 없지만 각자의 길이 있다.',options:[
+  opt('남의 일을 거들어 빚을 조금 덜어 낸다','더 많은 품을 팔아 수입을 얻지만 몸이 고되다','wagework',{health:-4,wealth:4}),
+  opt('이웃과 품앗이하며 버틴다','돈보다 서로의 일손과 신뢰를 나눈다','mutualAid',{bonds:7,knowledge:2}),
+  opt('가족을 돌보는 일을 계속한다','지금은 빚을 갚기 어렵지만 돌봄을 포기하지 않는다','care',{bonds:8,wealth:-4})]};
  if(kind==='household')return {title:'살림의 큰 갈림길',description:'가족의 생계와 자신이 할 수 있는 일을 돌아본다.',options:[
   opt('작은 땅을 가꾸거나 빌린다','흉년의 위험은 있지만 수확을 기대할 수 있다','land',{wealth:-4}),
   opt('장터 거래에 힘을 보탠다','새 거래처와 이웃을 만난다','market',{bonds:4,knowledge:2}),
@@ -242,6 +246,8 @@ const FOLLOWUP={
  teach:'가르친 글자를 다른 사람이 써 보는 모습을 보았다.',
  practical:'집안 생업을 다시 맡으며 손에 익은 일을 이어 갔다.',
  land:'구한 땅을 돌보느라 손쓸 일이 많아졌다.',
+ wagework:'남의 일을 도우며 얻은 품삯을 빚을 갚는 데 보탰다. 몸은 전보다 고단했다.',
+ mutualAid:'품앗이한 이웃과 다시 마주쳤다. 돈이 없어도 서로에게 건넬 손이 있었다.',
  market:'장터에서 거래하던 사람이 다시 찾아왔다.',
  retire:'하던 일을 다른 식구에게 맡기고 뒤에서 지켜보는 날이 늘었다.',
  continue:'계속 일하며 살림을 지켰지만 쉬는 날은 드물었다.',
@@ -273,6 +279,8 @@ function applyChoice(life,index){
  if(act==='scribe'){s.occupation='글과 셈을 쓰는 생업';s.literacy+=1;}
  if(act==='practical'){s.occupation='농사와 집안 생업';s.capital+=4;}
  if(act==='land'){s.land+=1;s.capital-=12;s.occupation='농사';}
+ if(act==='wagework'){s.occupation='농사와 품팔이';s.capital+=7;}
+ if(act==='mutualAid'){s.parentsSupported=true;}
  if(act==='retire'){s.retired=true;s.occupation='가족에게 생업을 맡기고 지내는 삶';}
  if(act==='flee'){s.relocations++;s.land=Math.max(0,s.land-1);s.capital-=22;s.hardshipUntil=Math.max(s.hardshipUntil,life.year+2);}
  if(act==='stay'){s.capital-=11;s.hardshipUntil=Math.max(s.hardshipUntil,life.year+3);}
@@ -303,7 +311,7 @@ function yearly(life){
  let income=0,expense=0;
  if(life.age>=12){
   const labor=householdLabor(life,s);
-  const production=s.retired?5:s.office?26:s.occupation.includes('장사')?19:s.occupation.includes('글')?13:s.occupation.includes('돌봄')?9:12+s.land*3;
+  const production=s.retired?5:s.office?26:s.occupation.includes('장사')?19:s.occupation.includes('글')?13:s.occupation.includes('돌봄')?9:s.occupation.includes('품팔이')?13+s.land*2:12+s.land*3;
   const helpFromFamily=life.age>=12?Math.min(3,Math.max(0,labor.hands-1))*2:0;
   const hardship=life.year<=s.hardshipUntil?.55:1;
   // The century shifts risk and opportunities in gameplay, not in historical wage units.
