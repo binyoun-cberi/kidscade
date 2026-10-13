@@ -69,7 +69,9 @@ test('the editable net grid has touch-safe controls and does not mix with existi
  assert.match(main,/window\.CubeArchitectMath\.draftPlace/);
  assert.match(main,/window\.CubeArchitectMath\.draftReport/);
  assert.match(main,/const activeLayout=custom\?netDesignLayout:NET_LAYOUT/);
- assert.match(main,/if\(custom&&!checkNetDesign\(\)\)return;/);
+ assert.match(main,/const showOverlap=custom&&geometry\.reason==='overlap'/);
+ assert.match(main,/plane\.material\.color\.set\(0xff9999\)/);
+ assert.match(main,/if\(!geometry\.valid&&!showOverlap\)/);
  assert.match(main,/reportResult\('net-design',100,true\)/);
 });
 test('same-volume decision updates actual construction dimensions only when unlocked',()=>{
