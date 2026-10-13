@@ -1,3 +1,4 @@
+import { HISTORY_FIGURE_FACTS } from './history-live-figure-facts.mjs';
 const CORE_FACTS = [
   {
     "era": "선사",
@@ -1339,6 +1340,15 @@ for(let distance=1;distance<=8;distance++){
   }
 }
 
+// 새 인물은 기존 지식 뒤에 붙여서 진행 중인 방의 기존 문제 인덱스를 유지한다.
+const BASE_FACT_COUNT = CORE_FACTS.length;
+const knownFigures = new Set(CORE_FACTS.filter(f=>f.type==='인물').map(f=>f.term));
+for(const figure of HISTORY_FIGURE_FACTS){
+  if(knownFigures.has(figure.term))continue;
+  CORE_FACTS.push({...figure});
+  knownFigures.add(figure.term);
+}
+
 export const ERA_ORDER = Object.freeze(['선사','고조선','삼국','남북국','고려','조선 전기','조선 후기','개항기','대한제국','국권 피탈','일제강점기','광복 이후','6·25 전쟁']);
 const ERA_OPTIONS = [...ERA_ORDER];
 
@@ -1360,7 +1370,7 @@ function hashText(value) {
 
 function pickDistractors(index, field, count = 3) {
   const fact = CORE_FACTS[index];
-  const regular = CORE_FACTS.map((f,i)=>({f,i})).filter(x => !x.f.direct && x.i !== index);
+  const regular = CORE_FACTS.map((f,i)=>({f,i})).filter(x => !x.f.direct && x.i !== index && (index >= BASE_FACT_COUNT || x.i < BASE_FACT_COUNT));
   const eraPos = ERA_OPTIONS.indexOf(fact.era);
   const adjacentEras = [ERA_OPTIONS[eraPos-1],ERA_OPTIONS[eraPos+1]].filter(Boolean);
   const groups = [
@@ -1417,7 +1427,7 @@ const ERA_PROMPTS = [
 ];
 
 function wrongFactForOx(fact,index){
-  const all=CORE_FACTS.map((f,i)=>({f,i})).filter(x=>!x.f.direct&&x.i!==index&&x.f.term!==fact.term);
+  const all=CORE_FACTS.map((f,i)=>({f,i})).filter(x=>!x.f.direct&&x.i!==index&&x.f.term!==fact.term&&(index>=BASE_FACT_COUNT||x.i<BASE_FACT_COUNT));
   const groups=[
     all.filter(x=>x.f.era===fact.era&&x.f.type===fact.type),
     all.filter(x=>x.f.era===fact.era),
@@ -1468,7 +1478,7 @@ function distinctEraFacts(list,seed,count){
   return out;
 }
 function relationQuestions(fact,index){
-  const regular=CORE_FACTS.filter(x=>!x.direct);
+  const regular=CORE_FACTS.filter((x,i)=>!x.direct&&(index>=BASE_FACT_COUNT||i<BASE_FACT_COUNT));
   const sameEra=regular.filter(x=>x!==fact&&x.era===fact.era);
   const otherEra=regular.filter(x=>x.era!==fact.era);
   const out=[];
@@ -1605,10 +1615,10 @@ function takeUniqueFacts(source,count,used,random){
   return out;
 }
 
-export function balancedRandomFactIndexes(count=15,eras=ERA_ORDER,random=Math.random){
+export function balancedRandomFactIndexes(count=15,eras=ERA_ORDER,random=Math.random,factType=null){
   const selectedEras=normalizeEraSelection(eras);
   const wanted=Math.max(1,Math.min(Number(count)||15,40));
-  const eligible=CORE_FACTS.map((f,i)=>({f,i})).filter(x=>selectedEras.includes(x.f.era));
+  const eligible=CORE_FACTS.map((f,i)=>({f,i})).filter(x=>selectedEras.includes(x.f.era)&&(!factType||x.f.type===factType));
   if(!eligible.length)return [];
 
   const allErasSelected=selectedEras.length===ERA_ORDER.length&&ERA_ORDER.every(era=>selectedEras.includes(era));
@@ -1657,9 +1667,9 @@ export function balancedRandomFactIndexes(count=15,eras=ERA_ORDER,random=Math.ra
   return shuffledFactIndexes(picked,random).slice(0,wanted);
 }
 
-function chronologicalSourceFactIndexes(count = 15, eras = ERA_ORDER) {
+function chronologicalSourceFactIndexes(count = 15, eras = ERA_ORDER, factType = null) {
   const selectedEras=normalizeEraSelection(eras);
-  const eligible=CORE_FACTS.map((f,i)=>({f,i})).filter(x=>selectedEras.includes(x.f.era));
+  const eligible=CORE_FACTS.map((f,i)=>({f,i})).filter(x=>selectedEras.includes(x.f.era)&&(!factType||x.f.type===factType));
   const wanted=Math.max(1,Math.min(Number(count)||15,40));
   const buckets=new Map(selectedEras.map(era=>[era,eligible.filter(x=>x.f.era===era).map(x=>x.i)]));
   const uniqueTarget=Math.min(wanted,eligible.length),uniqueCounts=new Map(selectedEras.map(era=>[era,0]));
@@ -1697,6 +1707,7 @@ function chronologicalSourceFactIndexes(count = 15, eras = ERA_ORDER) {
 function candidatesForFact(factIndex,questionMode,position,random){
   const all=QUESTION_BANK.filter(q=>q.sourceFact===factIndex);
   const ox=all.filter(q=>q.family==='ox'),choice=all.filter(q=>q.family!=='ox');
+  if(questionMode==='people')return all.filter(q=>q.family==='identify');
   if(questionMode==='ox')return ox.length?ox:choice;
   if(questionMode==='mixed'){
     const useOx=position%2===1;
@@ -1705,15 +1716,21 @@ function candidatesForFact(factIndex,questionMode,position,random){
   return choice.length?choice:ox;
 }
 
+export function hasHistoricalFigures(eras = ERA_ORDER) {
+  const selected=normalizeEraSelection(eras);
+  return CORE_FACTS.some(f=>f.type==='인물'&&selected.includes(f.era));
+}
+
 export function pickHistoryQuestions(count = 15, random = Math.random, orderMode = 'random', questionMode = 'choice', eras = ERA_ORDER) {
   const selectedEras=normalizeEraSelection(eras);
   const wanted=Math.max(1,Math.min(Number(count)||15,40));
   let factIndexes;
 
+  const factType=questionMode==='people'?'인물':null;
   if (orderMode === 'chronological') {
-    factIndexes = chronologicalSourceFactIndexes(wanted,selectedEras);
+    factIndexes = chronologicalSourceFactIndexes(wanted,selectedEras,factType);
   } else {
-    factIndexes = balancedRandomFactIndexes(wanted,selectedEras,random);
+    factIndexes = balancedRandomFactIndexes(wanted,selectedEras,random,factType);
   }
 
   return factIndexes.map((factIndex,position) => {
@@ -1726,7 +1743,7 @@ export function pickHistoryQuestions(count = 15, random = Math.random, orderMode
 }
 
 export function chronologicalQuestionIndexes(count = 15, questionMode = 'choice', eras = ERA_ORDER) {
-  return chronologicalSourceFactIndexes(count,eras).map((factIndex,position)=>{
+  return chronologicalSourceFactIndexes(count,eras,questionMode==='people'?'인물':null).map((factIndex,position)=>{
     const candidates=candidatesForFact(factIndex,questionMode,position,Math.random).map(q=>QUESTION_BANK.indexOf(q));
     return candidates[(position*3+factIndex)%candidates.length];
   });
