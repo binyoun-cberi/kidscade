@@ -75,9 +75,11 @@ function make(life){
  const legal=P.legalStatus(life.birthYear,origin,life.year);
  const s={version:1,origin,originLabel:P.originLabel(life.birthYear,origin)===origin?info.label:P.originLabel(life.birthYear,origin),trade:info.trade,
   legal,role:'',duty:info.duty,serviceYears:0,burdens:[],memories:[],decisions:[],
+  publicOffice:origin==='공노비'?(dice(life.seed,1915)<.58?'중앙 관서':'지방 관아'):null,
   processedYear:life.year,queue:[],active:null,seen:[],followups:[],rank:0,royalClaim:false,
   freed:life.year>=1894&&isEnslaved(origin),monastic:false,inspector:false,inspectorUntil:null,complaints:0};
  if(origin==='노비 후손 가계'){s.freed=true;s.originLabel=info.label;}
+ if(origin==='공노비')s.originLabel=info.label+' · '+s.publicOffice+' 소속';
  if(isEnslaved(origin)&&life.birthYear>=1886){
   s.freed=true;s.originLabel='노비 출신 부모를 둔 양인 가계';
   s.trade='품팔이와 가족의 살림';
@@ -193,13 +195,13 @@ function troubleChoices(type){
 }
 function prepare(life,s){
  const j=J.ensure(life),age=life.age,origin=s.origin;
- if(life.year===1801&&origin==='공노비'&&!s.freed&&dice(life.seed,1801)<.58){
+ if(life.year===1801&&origin==='공노비'&&!s.freed&&s.publicOffice==='중앙 관서'){
   // 1801 affected major palace and central-office slave registers, not all
   // government and local bonded workers. This fictional branch is only a
   // scenario illustrating the reform's uneven reach.
   s.freed=true;s.legal='양인';
   s.trade='품팔이와 가족의 살림';
-  remember(life,s,'내노비·시노비 혁파의 영향이 이 집안에도 미쳤다. 관아에 남은 노비가 모두 같은 처지가 된 것은 아니었다.');
+  remember(life,s,'1801년 중앙 관서의 내노비·시노비가 해방되었다. 지방 관아나 사노비에 같은 조치가 일괄 적용된 것은 아니었다.');
  }
  if(life.year>=1894&&s.legal!=='법적 신분 구별 폐지'){
   s.legal='법적 신분 구별 폐지';
@@ -344,7 +346,7 @@ function summary(life){
  const s=ensure(life);if(!s)return null;
  const j=J.ensure(life);
  return {origin:s.origin,originLabel:s.originLabel,legal:P.legalStatus(life.birthYear,s.origin,life.year,s.freed),role:s.role||j.occupation,
-  trade:s.trade,duty:s.duty,freed:s.freed,rank:s.rank,
+  trade:s.trade,duty:s.duty,freed:s.freed,publicOffice:s.publicOffice,rank:s.rank,
   obligations:s.burdens.slice(-3),serviceYears:s.serviceYears,memories:s.memories.slice(-3),
   decisions:s.decisions.length,inspector:s.inspector,monastic:s.monastic};
 }
@@ -352,6 +354,8 @@ function hydrate(life,data){
  const s=ensure(life),old=data?.joseon5;
  if(!s||!old||old.version!==1)return s;
  if(!ORIGINS[old.origin])return s;
+ if(old.origin==='공노비'&&['중앙 관서','지방 관아'].includes(old.publicOffice))
+  s.publicOffice=old.publicOffice;
  for(const key of ['origin','role','trade','legal','duty','originLabel'])
   if(typeof old[key]==='string')s[key]=old[key].slice(0,90);
  for(const key of ['serviceYears','rank','processedYear','complaints','inspectorUntil'])
