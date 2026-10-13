@@ -396,8 +396,11 @@ function install(){
   oldSnapshot=L.prototype.snapshot,oldRestore=L.restore;
  L.prototype.tick=function(){
   if(!J.isJoseon(this))return oldTick.call(this);
+  // Even a life that ends in infancy has a real initial household granary.
+  // Otherwise the final ledger could show zero only until a save is restored.
+  V2.ensure(this);
   const year=this.year,ok=oldTick.call(this);
-  if(ok&&this.year!==year){if(this.alive)afterYear(this);else sync(this,ensure(this));}
+  if(ok&&this.year!==year){if(this.alive)afterYear(this);else sync(this,ensure(this));if(this.year<1900)J.recordEconomy(this);}
   return ok;
  };
  L.prototype.getChoice=function(){

@@ -112,7 +112,7 @@
     $('birthFather').textContent=(Joseon.inOldEra(life)?Joseon4.summary(life).people.find(r=>r.role==='father')?.name+' · ':'')+p.fatherAge+'세 · '+p.fatherJob;
     $('birthSiblings').textContent=p.siblings+'명';
     const setting=World8.ensure(life);
-    $('birthHome').textContent=Joseon.inOldEra(life)?'살림과 땅 · '+Joseon.summary(life).land+'단위 (게임용 지표)':setting.housing+' · '+setting.familyNote;
+    $('birthHome').textContent=Joseon.inOldEra(life)?'가꾸는 땅 '+Joseon.summary(life).economy.workedLand+'몫 · 소유한 땅 '+Joseon.summary(life).economy.ownedLand+'몫 · 빌려 가꾸는 땅 '+Joseon.summary(life).economy.leasedLand+'몫':setting.housing+' · '+setting.familyNote;
     $('birthContext').textContent=Joseon.inOldEra(life)?Joseon.era(life.year)+' · '+life.profile.city+' · '+Joseon.ensure(life).landmark:History.period(life)+' · '+setting.regionName+' · '+setting.neighborhood;
     $('birthEraNote').textContent=Joseon.inOldEra(life)?'이 인생에는 태어난 집안의 신분과 지역이 영향을 줍니다. 선택과 재난의 여파는 다음 해에도 남습니다.':life.birthYear===2026
       ? '어느 나라에서 태어날지는 우연이지만, 그곳의 환경은 저마다 다릅니다.'
@@ -121,14 +121,14 @@
   }
   function paintLifeRecord() {
     if(Joseon.inOldEra(life)){
-      const j=Joseon.summary(life),v2=Joseon2.summary(life),v3=Joseon3.summary(life),v4=Joseon4.summary(life),p=Joseon.ensure(life)&&life.profile,m=life.money;
+      const v2=Joseon2.summary(life),j=Joseon.summary(life),v3=Joseon3.summary(life),v4=Joseon4.summary(life),p=Joseon.ensure(life)&&life.profile,m=life.money,e=j.economy;
       const put=(id,value)=>{$(id).textContent=String(value);};
       put('v10HistoricalCount',Joseon.ensure(life).seen.length+'개 역사 사건');
       put('v10HistoryStatus',j.era+' · '+(Joseon.eventFor(life.year)?.title||j.region+'에서 살아가는 중'));
       put('v10HistoryEffects',[j.warMemory.length?'삶을 바꾼 사건 · '+j.warMemory.join(' · '):'고을의 생활이 이어지고 있습니다.',v2.lastMemory].filter(Boolean).join(' · '));
       put('v12EducationEra','배움 · '+j.school+' · 글공부 '+j.literacy+'단계');
-      put('v12WorkEra','생업 · '+j.occupation+' · '+j.status);
-      put('v12EconomyEra','집안 살림 · 가꾸는 땅 '+j.land+'몫 · 재산 '+j.capital+' · 곳간의 곡식 '+v2.grain);
+      put('v12WorkEra','생업 · '+j.occupation+' · '+j.status+' · '+e.labor);
+      put('v12EconomyEra','가꾸는 땅 '+e.workedLand+'몫(소유 '+e.ownedLand+' · 빌린 땅 '+e.leasedLand+') · 곡식 '+e.granary+' · '+e.condition);
       put('v12ChoicesCount','삶의 갈림길 '+(j.decisions+v2.decisions+v3.choices+v4.decisions)+'번 · 이주 '+j.relocations+'번 · 이웃을 도운 횟수 '+v2.helpGiven+'번');
       put('v13CareYears','한집에서 지내는 식구 '+(v4.atHome+1)+'명 · 부모님 돌봄 '+v4.careYears+'번');
       put('v13FamilyStatus',(v4.spouse?(v4.spouse.alive?'배우자 '+v4.spouse.name+'와 함께 지내는 중':'배우자 '+v4.spouse.name+'와 함께한 기억'):'집안의 생활을 이어가는 중')+' · 자녀 '+v4.children+'명 · 살아 계신 부모님 '+v4.parents+'명');
@@ -137,6 +137,7 @@
       put('profileMeta',life.gender+' · '+j.region+' · '+life.age+'세');
       put('profileFamily',j.status);
       put('netWorth',formatCredits(m.netWorth));$('netWorth').classList.toggle('negative',m.netWorth<0);
+      $('netWorthLabel').textContent='살림의 남은 몫';
       put('annualIncome',formatCredits(m.income));put('annualExpense',formatCredits(m.expense));
       put('annualBalance',formatCredits(m.lastBalance));$('annualBalance').classList.toggle('negative',m.lastBalance<0);
       put('employmentStatus',j.occupation);put('traitEducation',j.school);
@@ -144,7 +145,7 @@
       put('traitRegion',j.region+' · '+Joseon.ensure(life).landmark);
       put('countryContextText','출신 '+j.status+' · '+j.region+' · '+v2.regionWork+' · 이웃 관계 '+v2.community+'점');
       put('countrySourceNote','이야기 속 개인과 살림의 수치는 창작이며, 역사적 사건의 연도만 실제 기록을 따른다.');
-      put('officialContext','태어난 고을과 집안의 신분, 배운 일과 시대의 변화가 이 삶에 영향을 주었다.');
+      put('officialContext','땅의 소유 여부와 경작, 곡식, 가족의 일손, 빚을 따로 살핀다. 게임 속 살림 단위는 실제 화폐나 역사 통계가 아니다.');
       const people=$('v9PeopleList');people.replaceChildren();
       for(const member of v4.people.slice(0,11)){
         const item=document.createElement('li'),role=Joseon4.ROLES[member.role]||'가족';
@@ -152,7 +153,9 @@
         people.append(item);
       }
       put('v9PeopleCount','가족 '+v4.people.length+'명 중 '+v4.alive+'명 생존 · 함께 사는 식구 '+v4.atHome+'명');put('v9Hobby',v3.memories.at(-1)||'생업과 이웃 사이에서 남은 일상');
-      put('v9Loan','지금까지 모아 온 집안 재산 · '+j.capital);
+      put('v9Loan',e.debt?'갚아야 할 빚 '+e.debt+'몫 · '+(e.creditor||'빌려 쓴 몫')+' · '+e.why
+        :'손에 남은 살림 '+e.cash+'몫 · '+e.why);
+      put('v9Hobby',(v3.memories.at(-1)||'생업과 이웃 사이에서 남은 일상')+' · '+e.labor);
       const picture=Joseon3.paint($('lifeScene'),life)||Joseon.paint($('lifeScene'),life);
       if(!picture)Pixel.paint($('lifeScene'),life);
       put('sceneLabel',life.year+'년 '+v3.season+' · '+j.region+' '+v3.sceneLabel+' · '+j.occupation);
@@ -221,6 +224,7 @@
     $('profileName').textContent=p.name;
     $('profileMeta').textContent=life.gender+' · '+p.city+' · '+life.age+'세';
     $('profileFamily').textContent=p.child?'돌봄 중인 아이가 있어요':p.partner?'함께하는 동반자가 있어요':life.familyLevel;
+    $('netWorthLabel').textContent='순자산';
     $('netWorth').textContent=formatCredits(money.netWorth);
     $('netWorth').classList.toggle('negative',money.netWorth<0);
     $('annualIncome').textContent=formatCredits(money.income);
@@ -695,6 +699,10 @@
       oldLife&&Joseon2.summary(life).events?'살아가는 동안 '+Joseon2.summary(life).events+'가지 지역·시대 변화도 지나갔다.':'',
       oldLife&&Joseon3.summary(life).legacy?'마지막에는 '+Joseon3.summary(life).legacy+'의 시간을 보냈다.':'',
       oldLife&&Joseon4.summary(life).memories.length?'가족과 함께한 기억으로 '+Joseon4.summary(life).memories.slice(-2).join(' ') :'',
+      oldLife?(life.year>=1900?'조선에서 살던 시절에는 ':'')+
+        '경작한 땅 '+oldLife.economy.workedLand+'몫 중 자신의 땅 '+oldLife.economy.ownedLand+'몫, 빌려 가꾼 땅 '+oldLife.economy.leasedLand+'몫이었다. '+
+        (oldLife.economy.debt?'살림이 어려워 갚지 못한 빚 '+oldLife.economy.debt+'몫도 있었다.':'많이 모으지 못했어도 그해의 살림을 이어 갔다.'):'',
+      oldLife&&life.stats.bonds>=65?'돈의 많고 적음과 관계없이 곁을 지킨 사람과 함께한 시간이 있었다.':'',
       life.deathReason,
       !oldLife&&life.world?.educationLevel&&life.world.educationLevel!=='없음'
         ?'살면서 '+life.world.educationLevel+'의 시간을 보냈다.':'',
