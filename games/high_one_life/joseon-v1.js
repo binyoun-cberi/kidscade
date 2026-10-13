@@ -330,7 +330,7 @@ function yearly(life){
   s.capital=clamp(s.capital+income-expense,-120,600);
   // Lack of money alone is not a moral judgment or an automatic loss of happiness.
   if(s.capital<-25&&life.joseon2?.grain<8&&life.age%5===0)life.change({health:-2});
-  if(s.capital>180&&life.age%6===0)life.change({happiness:2});
+  // Owning wealth is not a proxy for happiness; relationships and lived choices have their own effects.
  }
  if(life.money){
   life.money.income=income*100;life.money.expense=expense*100;
