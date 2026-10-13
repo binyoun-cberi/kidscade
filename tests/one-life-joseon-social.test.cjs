@@ -104,7 +104,7 @@ test('local events include tribute, corvee, military service, corruption and coa
 test('post-reform people are legally free although ancestry and unfair treatment remain visible',()=>{
  const l=born(1897,21),s=V5.ensure(l);
  assert.equal(s.legal,'법적 신분 구별 폐지');
- const f=born(1700,25);putInSocialClass(f,'사노비');f.age=194;f.year=1894; // transition simulation test, not a valid chronological player age
+ const f=born(1870,25);putInSocialClass(f,'사노비');f.age=24;f.year=1894;
  V5.prepare(f,V5.ensure(f));
  assert.equal(V5.summary(f).legal,'법적 신분 구별 폐지');
  assert.ok(V5.ensure(f).freed);
