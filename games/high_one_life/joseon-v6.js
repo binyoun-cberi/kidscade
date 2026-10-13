@@ -345,7 +345,7 @@ function choose(life,index){
 }
 function summary(life){
  const s=ensure(life);if(!s)return null;
- const format=w=>w?({name:title(life,w.code,w.trained),code:w.code,trained:w.trained,years:Math.max(0,(w.ended||life.year)-w.started),
+ const format=w=>w?({name:title(life,w.code,w.trained),code:w.code,trained:w.trained,years:Math.max(0,(w.ended||Math.min(life.year,1900))-w.started),
   supply:CAREERS[w.code].supply+' '+w.resources[CAREERS[w.code].supplyKey],
   people:CAREERS[w.code].asset+' '+w.resources[CAREERS[w.code].assetKey],
   skills:w.quality,reputation:w.reputation,contacts:w.contacts.map(x=>x.name),stories:w.stories.slice(-2)}):null;
