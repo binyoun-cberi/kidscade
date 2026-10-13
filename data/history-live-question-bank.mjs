@@ -1698,12 +1698,13 @@ export function balancedRandomFactIndexes(count=15,eras=ERA_ORDER,random=Math.ra
       facts:shuffledFactIndexes(eligible.filter(x=>x.f.era===era).map(x=>x.i),random)
     })).filter(bucket=>bucket.facts.length);
     const eraOrder=shuffledFactIndexes(eraBuckets.map((_,i)=>i),random);
-    let cursor=0,stalled=0;
-    while(cursor<groupTarget&&eraBuckets.length&&stalled<eraBuckets.length){
+    let cursor=0,pickedInGroup=0,stalled=0;
+    while(pickedInGroup<groupTarget&&eraBuckets.length&&stalled<eraBuckets.length){
       const bucket=eraBuckets[eraOrder[cursor%eraOrder.length]];
+      cursor++;
       const next=bucket.facts.find(factIndex=>!used.has(factIndex));
-      if(next===undefined){stalled++;cursor++;continue;}
-      used.add(next);picked.push(next);cursor++;stalled=0;
+      if(next===undefined){stalled++;continue;}
+      used.add(next);picked.push(next);pickedInGroup++;stalled=0;
     }
   });
 
