@@ -152,10 +152,14 @@ function processYear(life){
  const r=REGIONAL[j.region]||REGIONAL['경기도'],age=life.age;
  // Small, explicitly invented food-resource ledger, separate from monetary history.
  if(age>=8){
-  let annual=r.grain+(j.occupation.includes('농사')?4:0)+(j.land>1?2:0)-(j.household*3);
-  if(life.year<=s.scarcityUntil)annual-=5;
-  // Grain is eaten, sold or spoils each year; it must not accumulate to a permanent cap.
-  s.grain=clamp(Math.round(s.grain*.88)+annual,0,120);
+  let annual=r.grain+(j.occupation.includes('농사')?4:0)+Math.min(12,Math.max(0,j.land)*2)-(j.household*2);
+  if(life.year<=s.scarcityUntil)annual-=7;
+  // Harvest, consumption and spoilage. Households with earnings can buy food at a cost;
+  // trade is not invented production, and reserves never become free in a shortage.
+  s.grain=clamp(Math.round(s.grain*.92)+annual,0,120);
+  if(s.grain<9&&j.capital>=8&&life.year>s.scarcityUntil){
+   j.capital-=6;s.grain=clamp(s.grain+12,0,120);
+  }
   if(s.grain<8&&age%3===0){life.change({health:-2,happiness:-2});record(life,s,'먹을 곡식이 부족해 품을 더 팔거나 지출을 줄여야 했다.','joseon2-memory');}
  }
  if(s.followups.length){
