@@ -120,6 +120,15 @@ function nearestNoteName(hz){
   const names=['도','도♯','레','레♯','미','파','파♯','솔','솔♯','라','라♯','시'];
   return names[(midi%12+12)%12];
 }
+// After voice calibration, 'do' is relative to the singer's chosen key.
+function relativeNoteName(hz){
+  if(!hz||!Number.isFinite(hz))return '--';
+  const offset=Math.round(hzToMidi(hz)-state.rootMidi);
+  const names=['도','도♯','레','레♯','미','파','파♯','솔','솔♯','라','라♯','시'];
+  const step=(offset%12+12)%12,octave=Math.floor(offset/12);
+  const prefix=octave>=2?'더 높은 ':octave===1?'높은 ':octave<0?'낮은 ':'';
+  return prefix+names[step];
+}
 function median(arr){
   if(!arr.length)return null;
   const a=arr.slice().sort((x,y)=>x-y),m=Math.floor(a.length/2);
@@ -585,7 +594,7 @@ function gameLoop(now){
 function updatePitchHud(){
   ui.micBadge.classList.toggle('voiced',state.voiced);
   if(state.voiced&&state.pitchHz){
-    ui.currentNote.textContent=nearestNoteName(state.pitchHz);
+    ui.currentNote.textContent=relativeNoteName(state.pitchHz);
     ui.currentHz.textContent=Math.round(state.pitchHz)+' Hz';
     ui.micText.textContent='목소리 감지 중';
   }else{
