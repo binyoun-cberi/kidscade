@@ -184,6 +184,7 @@ function adopt(life,code,{secondary=false}={}){
   if(s.career&&s.career.code!==code){
    s.career.ended=life.year;
    s.history.push({code:s.career.code,from:s.career.started,to:life.year});
+   if(s.secondary?.code===code)s.secondary=null;
   }
   s.career=work;
   const social=V5.ensure(life);
@@ -263,7 +264,7 @@ function careerEvent(life,s,work,secondary=false){
 function yearEnd(life,s){
  if(!s||!J.inOldEra(life)||!life.alive)return;
  for(const f of s.followups.filter(x=>x.year<=life.year)){
-  const text=(f.topic?f.topic+'의 일을 돌아보았다. ':'')+(FOLLOW[f.action]||'한때 택한 길이 인생의 다른 계절에도 이어졌다.');
+  const text=(f.topic?'그때 겪은 ‘'+f.topic+'’을 떠올렸다. ':'')+(FOLLOW[f.action]||'한때 택한 길이 인생의 다른 계절에도 이어졌다.');
   life.logEvent(text,'joseon6-followup');life.log.at(-1).causeId='joseon6:'+f.id;
   s.memories.push(text);
  }
