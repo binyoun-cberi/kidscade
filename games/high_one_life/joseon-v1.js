@@ -411,6 +411,13 @@ function hydrate(life,data){
   for(const k of ['lastCause','creditor'])if(typeof safe[k]==='string')book[k]=safe[k].slice(0,140);
   book.experiencedDebt=safe.experiencedDebt===true;
   book.recent=Array.isArray(safe.recent)?safe.recent.filter(x=>typeof x==='string').slice(-8).map(x=>x.slice(0,180)):[];
+ }else{
+  // Old saves have no borrowing history. Keep the old balance as the baseline
+  // instead of fabricating a fresh loan when the player resumes.
+  fresh.economy=null;
+  const book=economicBook(fresh);
+  book.previousCapital=fresh.capital;book.currentYear=life.year;
+  if(fresh.capital<0){book.creditor='오래전 빌려 쓴 몫';book.lastCause='이전부터 갚지 못한 빚';book.experiencedDebt=true;}
  }
  for(const k of ['seen','warMemory','memories','decisions','followups']){
   if(Array.isArray(old[k]))fresh[k]=old[k].slice(-40).filter(x=>x!==null&&['string','number','object'].includes(typeof x));
