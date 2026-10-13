@@ -543,21 +543,23 @@
     const entries=new Map();
     for(const entry of life.log){
       if(!notable.includes(entry.kind))continue;
-      const old=entries.get(entry.age);
-      if(!old||['decision','death'].includes(entry.kind))entries.set(entry.age,entry);
+      const sameYear=entries.get(entry.age)||[];
+      sameYear.push(entry);
+      entries.set(entry.age,sameYear);
     }
     for(let year=0;year<108;year++){
       const cell=document.createElement('button');cell.type='button';cell.className='age-cell';
       if(year<=life.age)cell.classList.add(year<7?'child':year<19?'teen':year<35?'young':year<65?'adult':'elder');
       if(year===life.age)cell.classList.add('now');
-      const entry=entries.get(year);
-      if(entry)cell.classList.add(['decision','reflection'].includes(entry.kind)?'landmark':'important');
+      const events=entries.get(year)||[];
+      if(events.length)cell.classList.add(events.some(entry=>['decision','reflection'].includes(entry.kind))?'landmark':'important');
       const future=year>life.age;
       cell.disabled=future;
-      cell.title=(life.birthYear+year)+'년 · '+year+'세'+(future?' · 아직 살아보지 않은 시간':entry?' · '+entry.text:'');
+      cell.title=(life.birthYear+year)+'년 · '+year+'세'+(future?' · 아직 살아보지 않은 시간':events.length?' · '+events.length+'가지 기록':'');
       cell.setAttribute('aria-label',cell.title);
       if(!future)cell.addEventListener('click',()=>{
-        $('yearDetail').textContent=year+'세 · '+(entry?.text||'특별한 기록이 없는 해. 평범한 하루들도 이 인생을 이루었어요.');
+        $('yearDetail').textContent=year+'세 · '+(events.length?events.map(x=>'• '+x.text).join('\n'):'특별한 기록이 없는 해. 평범한 하루들도 이 인생을 이루었어요.');
+        $('yearDetail').style.whiteSpace='pre-line';
       });
       board.append(cell);
     }
@@ -714,7 +716,9 @@
         const aftermath={'history-choice':'history-followup','era-choice':'era-followup','care13-choice':'care13-followup',
           'joseon-choice':'joseon-followup','joseon2-choice':'joseon2-followup',
           'joseon3-choice':'joseon3-followup','joseon4-choice':'joseon4-followup'}[e.kind];
-        const after=life.log.find(x=>x.kind===aftermath&&x.year>=e.year+2&&x.year<=e.year+4);
+        // Only an explicitly linked outcome belongs to this choice. Older saves without
+        // cause identifiers show no follow-up rather than a misleading one.
+        const after=e.causeId?life.log.find(x=>x.kind===aftermath&&x.causeId===e.causeId):null;
         if(after){detail.textContent='그 뒤 '+after.age+'세 · '+after.text;copy.append(detail);}
       }
       item.append(age,copy);endChoices.append(item);
