@@ -213,6 +213,7 @@ let challengeShapeMode='cube',challengeTool='build',challengeSelected=null,chall
 let challengeTint='#ff7043',blueprintAngle='iso',blueprintModalOpen=false;
 let challengeBlocks=new Map(),challengeMeshes=[],challengePlane=null,challengeGhost=null,targetGhosts=[],missionIndex=0;
 let challengeYaw=0,challengePitch=0,challengeKeys={},challengeDifficulty='easy';
+let challengeEstimateDone=false,challengeEstimateMistakes=0;
 
 function makeChallengeShape(build){
   const map=new Map();
@@ -311,10 +312,32 @@ function updateChallengeStats(){
     target=projectionSet(mission.blocks,'top').size+
       projectionSet(mission.blocks,'front').size+projectionSet(mission.blocks,'side').size;
   }
-  $('placedCount').textContent=placed;$('targetCount').textContent=target;
+  $('placedCount').textContent=placed;$('targetCount').textContent=hard||challengeEstimateDone?target:'?';
   $('placedCount').parentElement.querySelector('span').textContent=hard?'내 투영 칸':'놓은 블록';
   $('targetCount').parentElement.querySelector('span').textContent=hard?'설계 투영 칸':'설계 규모';
   const maxY=Math.max(0,...Array.from(challengeBlocks.values()).map(m=>m.userData.cy+1));$('heightCount').textContent=maxY;
+}
+function checkChallengeEstimate(){
+  const answer=$('challengeEstimate').value.trim(),guess=Number(answer);
+  const target=currentChallengeMission().blocks.length;
+  if(!answer||!Number.isInteger(guess)||guess<0){$('challengeMathFeedback').textContent='먼저 블록 수를 예상해 적어 보자.';return false}
+  const layers=window.CubeArchitectMath.layeredCounts(currentChallengeMission().blocks);
+  const layerHint=layers.map(o=>o.height+'층 '+o.count+'개').join(' + ');
+  if(guess===target){
+    challengeEstimateDone=true;
+    $('challengeMathFeedback').textContent='정확해! '+layerHint+' = 모두 '+target+'개. 층마다 나누어 세어 볼 수 있어.';
+    updateChallengeStats();return true;
+  }
+  challengeEstimateMistakes++;
+  $('challengeMathFeedback').textContent=challengeEstimateMistakes<2?
+    '아직 달라. 위에서 본 모양과 각 층의 높이를 비교해 보자.':
+    '층별 힌트: '+layerHint+'. 다시 더해 보자.';
+  return false;
+}
+function resetChallengeEstimate(){
+  challengeEstimateDone=false;challengeEstimateMistakes=0;
+  $('challengeEstimate').value='';
+  $('challengeMathFeedback').textContent='위·앞·옆 모습을 보고 필요한 블록 수를 먼저 예상해 보자.';
 }
 function setChallengeTool(tool){
   challengeTool=tool;challengeSelectedElement=0;updateChallengeEditor();drawChallengeSelection();
@@ -566,6 +589,8 @@ function initChallenge(){
   challengeGhost=new THREE.Mesh(blockGeo,new THREE.MeshBasicMaterial({color:0x5a67f2,transparent:true,opacity:.3,depthWrite:false}));challengeGhost.visible=false;scene.add(challengeGhost);
   challengeBlocks=new Map();challengeMeshes=[];targetGhosts=[];challengeSelected=null;challengeShapeMode='cube';challengeTool='build';challengeSelectedElement=0;
   if(restorationSession)seedRestorationChallenge();
+  resetChallengeEstimate();
+  $('challengeEstimateCheck').onclick=checkChallengeEstimate;
   $('blueprintView').value='iso';blueprintAngle='iso';updateChallengeEditor();
   updateChallengeDifficultyUI();drawBlueprint();
   if(restorationSession){
@@ -581,9 +606,9 @@ function initChallenge(){
   }else{
     $('mobileNext').textContent='다음';
     $('actionNext').textContent='다음 미션';
-    $('actionNext').onclick=()=>{missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();drawBlueprint()};
+    $('actionNext').onclick=()=>{missionIndex=(missionIndex+1)%activeChallengeMissions().length;clearChallenge();resetChallengeEstimate();drawBlueprint()};
   }
-  $('clearChallenge').onclick=clearChallenge;$('hintChallenge').onclick=()=>{$('blueprintView').value='top';blueprintAngle='top';drawBlueprint();toast('윗면도를 열었어요. '+currentChallengeMission().tip)};
+  $('clearChallenge').onclick=()=>{clearChallenge();resetChallengeEstimate();updateChallengeStats()};$('hintChallenge').onclick=()=>{$('blueprintView').value='top';blueprintAngle='top';drawBlueprint();toast('윗면도를 열었어요. '+currentChallengeMission().tip)};
   $('blueprintView').onchange=e=>{blueprintAngle=e.target.value;drawBlueprint()};
   $('blueprintZoom').onclick=()=>toggleBlueprintModal(true);
   $('blueprintClose').onclick=()=>toggleBlueprintModal(false);
@@ -684,6 +709,13 @@ function checkChallenge(){
     restorationScore=Math.round(common/Math.max(1,outer.length)*100);
   }
   const shownScore=restorationScore===null?match.score:restorationScore;
+  if(!hard&&!challengeEstimateDone){
+    const targetCount=currentChallengeMission().blocks.length;
+    $('challengeMathFeedback').textContent='정답 확인: '+targetCount+'개. 층별로 더하면 '+
+      window.CubeArchitectMath.layeredCounts(currentChallengeMission().blocks).map(r=>r.count).join(' + ')+
+      ' = '+targetCount+'개야. 다음에는 먼저 예상해 보자.';
+    challengeEstimateDone=true;updateChallengeStats();
+  }
   $('resultCard').classList.remove('hidden');$('resultScore').textContent=shownScore+'%';
   if(!match.user.keys.size){
     $('resultText').textContent='아직 건축한 블록이 없어요. 설계도를 보고 첫 직육면체부터 만들어 보세요.';
