@@ -71,7 +71,7 @@ function make(life){
  const legal=life.year>=1894?'법적 신분 구별 폐지':isEnslaved(origin)?'천인':'양인';
  const s={version:1,origin,originLabel:info.label,trade:info.trade,
   legal,role:'',duty:info.duty,serviceYears:0,burdens:[],memories:[],decisions:[],
-  processedYear:life.year,queue:[],active:null,seen:[],rank:0,royalClaim:false,
+  processedYear:life.year,queue:[],active:null,seen:[],followups:[],rank:0,royalClaim:false,
   freed:life.year>=1894&&isEnslaved(origin),monastic:false,inspector:false,complaints:0};
  if(s.freed){s.originLabel='옛 '+info.label;s.trade='품팔이와 가족의 살림';}
  // Historical origin sets starting conditions only, never reapplies them to
@@ -225,10 +225,48 @@ function prepare(life,s){
  if(s.rank>=2&&!s.inspector&&age>=29&&age<=55&&age%13===3&&dice(life.seed,life.year+1791)<.045)
   offer(life,s,'inspector','어사로 고을의 일을 살필 기회',troubleChoices('inspector'));
 }
+const LATER={
+ fish:'지난번 출항에서 겪은 물때와 바람을 기억하며 다음 조업을 준비했다.',
+ repairboat:'그때 고친 배와 그물이 이후의 일에 보탬이 되었다.',
+ inn:'밥과 잠자리를 내주었던 손님이 다시 주막을 찾았다.',
+ travelers:'주막에서 들은 먼 고을의 소식이 새로운 사람과 이야기할 때 도움이 되었다.',
+ craft:'그때 만든 물건이 계속 쓰이며 손기술을 인정받았다.',
+ specialstudy:'꾸준히 익힌 학문과 기술이 관청의 업무를 이해하는 데 도움이 되었다.',
+ service:'관청에서 맡은 일을 마치고 다음 기록과 일을 준비했다.',
+ scripture:'사찰에서 배운 글과 수행의 일과가 오래 남았다.',
+ templeaid:'지난날 도움을 주었던 마을 사람을 다시 만났다.',
+ military:'군역을 겪은 뒤에도 생업과 집안의 빈자리를 다시 채워야 했다.',
+ payservice:'그때의 군역과 비용 부담은 다음 계절의 살림에도 영향을 주었다.',
+ arrange:'군역을 대신할 길을 구했던 일이 집안 사람들의 기억에 남았다.',
+ tribute:'공납과 세금에 쓴 물품을 마련하느라 한 해의 살림을 다시 정리했다.',
+ sharetribute:'함께 공물을 마련했던 이웃과 이후에도 품앗이를 이어 갔다.',
+ replace:'납부할 물품을 알아보며 고을의 제도와 사람들을 더 알게 되었다.',
+ labor:'공사와 노역에 나갔던 사이 미처 끝내지 못한 생업을 돌아보았다.',
+ familylabor:'일손을 나누었던 가족이 서로의 수고를 기억하고 있었다.',
+ appeal:'관아의 부당한 부담을 알렸지만 고을의 변화는 더딜 수밖에 없었다.',
+ witness:'이웃과 나눴던 증언이 고을에서 다시 이야기되었다.',
+ survive:'살림을 지키려 조심했던 그때를 돌아보았다.',
+ flee:'피란 뒤에도 고향의 집과 생업을 다시 꾸려야 했다.',
+ warn:'위험에 대비하자고 모였던 이웃과 소식을 주고받았다.',
+ hide:'숨겨 둔 물건을 살피며 돌아온 일상을 정리했다.',
+ inspect:'어사로 살폈던 고을의 백성들이 이후 어떤 일을 겪었는지 생각했다.',
+ reform:'고을의 부당한 관행을 바로잡는 일은 하루에 끝나지 않았다.',
+ hear:'사정을 들었던 사람에게서 이후의 소식이 전해졌다.',
+ freedom:'속량의 길을 알아보았던 일은 이후의 생계와 관계에도 영향을 주었다.',
+ throne:'왕위에 오른 뒤 나라의 일과 가족의 책임이 더 무겁게 다가왔다.'
+};
 function yearEnd(life,s){
  const j=J.ensure(life);
  s.processedYear=life.year;
  if(!life.alive||!J.inOldEra(life))return;
+ for(const follow of s.followups.filter(x=>x.year<=life.year)){
+  const text=LATER[follow.action]||'그 무렵 택했던 일을 몇 해 뒤 다시 떠올렸다.';
+  life.logEvent(text,'joseon5-followup');
+  life.log.at(-1).causeId='joseon5:'+follow.id;
+  s.memories.push(text);
+ }
+ s.memories=s.memories.slice(-28);
+ s.followups=s.followups.filter(x=>x.year>life.year);
  prepare(life,s);
  if(!s.monastic&&s.role==='승려')s.monastic=true;
  if(s.monastic&&life.age%7===0&&life.age>20)remember(life,s,'사찰에서 공부와 노동, 공양을 나누며 한 해를 보냈다.');
@@ -274,6 +312,7 @@ function choose(life,index){
  const id='joseon5:'+q.id;
  life.logEvent(q.title+' — '+x.label,'joseon5-choice');life.log.at(-1).causeId=id;
  if(s.decisions.length<60)s.decisions.push({id:q.id,year:life.year,type:q.type,action:a});
+ s.followups.push({id:q.id,year:life.year+3,action:a});s.followups=s.followups.slice(-38);
  s.burdens=s.burdens.slice(-18);
  if(before>j.capital&&x.cost>0&&j.capital<0&&before>=0)
   remember(life,s,'그 일에 드는 부담을 감당하려고 빚을 지게 되었다.');
@@ -315,6 +354,10 @@ function hydrate(life,data){
    effects:Object.fromEntries(Object.entries(x.effects||{}).filter(([k,v])=>['health','happiness','wealth','bonds','knowledge'].includes(k)&&Number.isFinite(v))),
    cost:clamp(Number(x.cost)||0,0,40),grain:clamp(Number(x.grain)||0,0,40)}))});
  s.queue=Array.isArray(old.queue)?old.queue.filter(valid).slice(-7).map(clean):[];
+ s.followups=Array.isArray(old.followups)?old.followups.filter(x=>x&&
+  typeof x.id==='string'&&/^\\d{4}-[a-z]+$/.test(x.id)&&
+  Number.isInteger(x.year)&&x.year>life.year&&x.year<=life.year+6&&
+  typeof x.action==='string').slice(-38).map(x=>({id:x.id.slice(0,80),year:x.year,action:x.action.slice(0,40)})):[];
  if(valid(old.active)&&data?.pending==='joseon5:'+old.active.id&&life.alive&&J.inOldEra(life)){
   s.active=clean(old.active);life.pending='joseon5:'+s.active.id;
  }
