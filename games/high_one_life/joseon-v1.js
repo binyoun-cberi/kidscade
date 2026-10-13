@@ -156,7 +156,7 @@ function seedState(life){
 }
 function sync(life,s){
  if(life.year>=1900)return; // The later-life handoff must not undo modern career and family changes.
- life.familyLevel=s.family+' · '+(life.year>=1894?'옛 '+s.birthStatus+' 출신':s.status+' 집안');
+ life.familyLevel=s.family+' · '+(life.year>=1894?'옛 '+s.birthStatus+' 출신':life.birthYear<1600&&s.birthStatus==='중인'?'관아 실무·기술직 가계':s.status+' 집안');
  life.career=s.occupation;
  life.profile.city=s.region;
  life.profile.settlement=s.settlement;
@@ -184,7 +184,7 @@ function ensure(life){
   const names=NAMES[life.gender]||NAMES.남자;
   life.profile.name=names[Math.floor(roll(life.seed,1413)*names.length)];
   if(life.age===0&&!life.log.some(e=>e.kind==='joseon-birth')){
-   life.logEvent(s.region+'의 '+(life.birthYear>=1894?'옛 '+s.birthStatus+' 가계':s.status+' 집안')+'에서 태어났다. '+s.landmark+'이 가까운 고을이다.','joseon-birth');
+   life.logEvent(s.region+'의 '+(life.birthYear>=1894?'옛 '+s.birthStatus+' 가계':life.birthYear<1600&&s.birthStatus==='중인'?'관청 실무·기술직 가계':s.status+' 집안')+'에서 태어났다. '+s.landmark+'이 가까운 고을이다.','joseon-birth');
    life.logEvent('신분과 집안 사정이 앞으로 만날 기회에 영향을 미친다. 하지만 삶의 모든 일이 정해진 것은 아니다.','joseon-life');
   }
  }
@@ -222,7 +222,10 @@ function promptFor(life,s){
  if(kind==='vocation'&&social?.trade)return {title:'어떤 일을 하며 살아갈까?',description:social.originLabel+' · '+social.trade+'을 접하며 자랐다. 같은 일을 이어 갈 수도, 다른 길을 찾을 수도 있다.',options:[
   opt('집안에서 해 온 일을 이어 간다',social.trade+'의 어려움과 솜씨를 익힌다','workTrade',{knowledge:3,bonds:3}),
   opt('장터나 다른 고을의 일을 배운다','낯선 사람과 새로운 일을 만난다','trade',{knowledge:3,bonds:2}),
-  opt('농사와 가족 돌봄을 이어 간다','집안에 필요한 일을 먼저 챙긴다','farm',{bonds:5,health:-1})]};
+  opt((life.joseon5&&!['역관 가계','의관 가계','서리 가계','관청 장인'].includes(social.origin)&&['몰락 양반','소작 농가','자작 농가','상인 가계','어부 가계','백정'].includes(social.origin))?'사찰에 들어가 배움을 이어 간다':'농사와 가족 돌봄을 이어 간다',
+   '생업과 자신의 처지에 따라 길이 달라진다.',
+   (life.joseon5&&!['역관 가계','의관 가계','서리 가계','관청 장인'].includes(social.origin)&&['몰락 양반','소작 농가','자작 농가','상인 가계','어부 가계','백정'].includes(social.origin))?'templeJoin':'farm',
+   {bonds:5,health:-1})]};
  if(kind==='vocation')return {title:'어떤 일로 살아갈까?',description:s.region+'의 생업과 집안의 처지를 생각한다.',options:[
   opt('농사와 땅을 돌본다','곡식과 날씨에 생활이 달려 있다','farm',{wealth:3}),
   opt('장터에서 물건을 팔거나 기술을 익힌다','수공업·장시에서 새로운 인연을 만난다','trade',{knowledge:3,bonds:3}),
@@ -324,14 +327,14 @@ function applyChoice(life,index){
  if(act==='workTrade'&&life.joseon5){
   const social=life.joseon5;s.occupation=social.trade;
   const map={'어부 가계':'어부','주막 가계':life.gender==='여자'?'주모':'주막을 꾸리는 사람',
-   '역관 가계':'역관','의관 가계':'의관','서리 가계':'서리','도공 가계':'도공',
+   '역관 가계':'통역과 외국어를 익히는 사람','의관 가계':'의술을 배우는 사람','서리 가계':'관아 기록 일을 배우는 사람','도공 가계':'도공',
    '대장장이 가계':'대장장이','목수 가계':'목수','보부상 가계':'보부상',
    '상인 가계':'상인','수군 가계':'수군','사찰 주변 가계':'사찰을 돕는 사람',
    '백정':'백정의 생업을 잇는 장인'};
   social.role=map[social.origin]||social.trade;s.capital+=3;
   note(life,s,'집안에서 보고 익힌 '+social.trade+'을 생업으로 삼았다.','joseon-career');
  }
- if(act==='templeJoin'&&life.joseon5){life.joseon5.monastic=true;life.joseon5.role='승려';s.occupation='사찰의 수행과 노동';note(life,s,'출가하여 사찰의 규율 아래 불경을 배우고 일손을 보탰다.','joseon-career');}
+ if(act==='templeJoin'&&life.joseon5){life.joseon5.monastic=true;life.joseon5.role=life.gender==='여자'?'비구니':'승려';s.occupation='사찰의 수행과 노동';note(life,s,'출가하여 사찰의 규율 아래 불경을 배우고 일손을 보탰다.','joseon-career');}
  if(['serve','servileSkill','petitionRelease','servileMarry','servileKin','servileHope'].includes(act)){
   if(act==='serve')s.occupation=life.joseon5?.trade||'예속된 노동';
   if(act==='servileSkill')s.literacy+=1;
