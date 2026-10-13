@@ -139,10 +139,20 @@ function catchUp(life,s){
   addChild(life,s,life.year-ordinal*3);
  }
  const modernChild=known.find(x=>x.role==='자녀'&&x.alive);
- if(modern&&(life.profile.child||modernChild)&&!s.people.some(x=>x.role==='child')&&s.people.length<12){
-  addChild(life,s,modernChild?.birthYear??life.year);
-  const child=s.people.find(x=>x.role==='child');
-  if(child&&modernChild)child.name=String(modernChild.name||child.name).slice(0,24);
+ const livingChild=s.people.find(x=>x.role==='child'&&x.alive);
+ if(modern&&modernChild&&livingChild){
+  modernChild.name=livingChild.name;modernChild.birthYear=livingChild.birthYear;
+ }
+ if(modern&&(life.profile.child||modernChild)&&!livingChild&&s.people.length<12){
+  if(s.people.some(x=>x.id==='child-modern')){
+   // A deceased child must never be silently brought back to life.
+   life.profile.child=false;
+  }else{
+   const child=person(life,'child-modern','child',modernChild?.birthYear??life.year,modernChild?.sex==='남자'?'남자':'여자');
+   child.name=String(modernChild?.name||child.name).slice(0,24);
+   s.people.push(uniqueName(s.people,child));
+   remember(life,s,particle(child.name,'이','가')+' 가족이 되었다. 새로운 세대의 이야기가 시작되었다.','joseon4-family');
+  }
  }
  sync(life,s);
 }
