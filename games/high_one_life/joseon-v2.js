@@ -80,6 +80,15 @@ const option=(label,noteText,action,effects)=>({label,note:noteText,action,effec
 function prompt(life){
  const s=ensure(life),q=s?.active;if(!q)return null;
  const j=J.ensure(life),r=REGIONAL[j.region]||REGIONAL['경기도'];
+ const social=life.joseon5;
+ const bound=social&&['사노비','공노비'].includes(social.origin)&&!social.freed&&life.year<1894;
+ if(bound&&['regional','market'].includes(q.kind))
+  return {title:q.kind==='regional'?'예속된 처지에서 만난 고을의 일':'장터의 변화와 일터의 부담',
+   description:'주인이나 관아의 허락 없이 자유롭게 이주하거나 장사를 시작할 수 없다. 생활 속에서 가능한 길을 생각한다.',
+   options:[
+    option('함께 일하는 사람을 돕는다','일손과 관계를 나눈다','mutual',{bonds:5}),
+    option('맡은 일을 이어 간다','오늘 맡은 일을 마무리한다','steady',{health:-2}),
+    option('어려운 사정을 알리고 도움을 구한다','무리하지 않고 도움을 청한다','askHelp',{knowledge:3})]};
  if(q.kind==='famine')return {title:q.title+' · 집안의 곡식을 어떻게 할까?',description:j.region+'에 흉년이 들었다. 곳간에 곡식이 '+s.grain+'남았다. 어느 길을 택할까?',options:[
   option(s.grain?'남은 곡식을 아껴 쓴다':'끼니를 줄이며 버틴다','배고픔을 참고 다가올 계절을 대비한다','ration',{health:-3,happiness:-3}),
   s.grain>=20
