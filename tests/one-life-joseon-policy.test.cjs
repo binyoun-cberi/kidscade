@@ -78,7 +78,7 @@ test('legally free children may be born to slave-descended families after 1886',
  assert.equal(P.childStatus(1740,false,true),'양인');
  assert.equal(P.childStatus(1740,true,false),'천인');
  let descendants=0;
- for(let i=1;i<=3400;i++){const l=born(1890,891*i);if(V5.summary(l).origin==='노비 후손 가계')descendants++;}
+ for(let i=1;i<=3400;i++){const l=born(1890,891*i);if(V5.summary(l).origin==='노비 후손 가계'){descendants++;assert.equal(V5.summary(l).legal,'양인');assert.equal(V5.summary(l).freed,false,'born free should not be described as personally freed');}}
  assert.ok(descendants>0,'post-1886 legally free descendants must be represented');
 });
 test('1801 frees central-agency slaves but not every provincial office slave',()=>{
