@@ -84,6 +84,15 @@ test('historical age-map displays every entry; ending requires exact consequence
  assert.match(source,/e\.causeId\?life\.log\.find/);
  assert.doesNotMatch(source,/after=life\.log\.find\(x=>x\.kind===aftermath&&x\.year>=/);
 });
+test('saving and loading preserves the choice-to-outcome identifiers',()=>{
+ const l=advance(born(1450,31*8),1502,0);
+ const choice=l.log.find(x=>x.kind==='joseon4-choice'&&x.causeId);
+ assert.ok(choice,'missing family choice reference');
+ const restored=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));
+ assert.ok(restored.log.some(x=>x.kind==='joseon4-choice'&&x.causeId===choice.causeId));
+ const affected=restored.log.find(x=>x.kind==='joseon4-followup'&&x.causeId===choice.causeId);
+ if(affected)assert.match(affected.text,/날|곡식|살림|소식|일/);
+});
 test('historical biographies retain earlier chapters without inflating modern logs',()=>{
  const historical=born(1870,17),modern=born(1919,17);
  for(let i=0;i<275;i++){historical.logEvent('옛날 이야기 '+i,'joseon-memory');modern.logEvent('오늘 이야기 '+i,'world');}
@@ -102,6 +111,8 @@ test('360 varied lives remain solvable and preserve cause references across save
     assert.ok(family.people.every(x=>x.age>=0&&x.age<=115));
     if(l.alive&&l.year>=1900)assert.equal(l.joseon4.processedYear,l.year);
     assert.ok(l.log.every(x=>!x.causeId||typeof x.causeId==='string'));
+    const out=restored.log.filter(x=>x.causeId);
+    assert.ok(out.every(x=>l.log.some(e=>e.causeId===x.causeId&&e.text===x.text)));
    }
   }
  }
