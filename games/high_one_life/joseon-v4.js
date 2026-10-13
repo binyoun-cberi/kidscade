@@ -116,7 +116,10 @@ function sync(life,s){
  if(!j)return;
  const spouse=s.people.find(x=>x.role==='spouse');
  if(spouse&&!spouse.alive)j.married=false;
- if(life.year<1900)j.household=clamp(1+living(s,null,life.year).filter(x=>x.atHome!==false).length,1,8);
+ if(life.year<1900){
+  j.household=clamp(1+living(s,null,life.year).filter(x=>x.atHome!==false).length,1,8);
+  life.profile.child=living(s,'child',life.year).length>0;
+ }
 }
 function catchUp(life,s){
  const j=J.ensure(life),modern=life.year>=1900;
@@ -394,7 +397,7 @@ function install(){
  L.prototype.tick=function(){
   if(!J.isJoseon(this))return oldTick.call(this);
   const year=this.year,ok=oldTick.call(this);
-  if(ok&&this.year!==year&&this.alive)afterYear(this);
+  if(ok&&this.year!==year){if(this.alive)afterYear(this);else sync(this,ensure(this));}
   return ok;
  };
  L.prototype.getChoice=function(){
