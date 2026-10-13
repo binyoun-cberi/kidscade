@@ -64,8 +64,26 @@
   }
 
   function formulaFromCounts(composition) {
-    return Object.entries(composition || {}).filter(([, count]) => Number(count) > 0)
+    const counts = composition || {};
+    const knownRecipe = recipesBySignature.get(signature(counts));
+    if (knownRecipe) return knownRecipe.formula.replace(/[₀-₉]/g, digit => String('₀₁₂₃₄₅₆₇₈₉'.indexOf(digit)));
+    return Object.entries(counts).filter(([, count]) => Number(count) > 0)
       .map(([symbol, count]) => `${symbol}${Number(count) > 1 ? count : ''}`).join('');
+  }
+
+  function hintForComposition(target, tiles) {
+    const current = countTiles(tiles);
+    const missing = [];
+    const excess = [];
+    for (const [symbol, count] of Object.entries(target || {})) {
+      const difference = Number(count) - (current[symbol] || 0);
+      if (difference > 0) missing.push({ symbol, count: difference });
+    }
+    for (const [symbol, count] of Object.entries(current)) {
+      const difference = count - Number((target || {})[symbol] || 0);
+      if (difference > 0) excess.push({ symbol, count: difference });
+    }
+    return { missing, excess };
   }
 
   function normalizeSave(value) {
@@ -79,5 +97,5 @@
     };
   }
 
-  return Object.freeze({ ELEMENTS, RECIPES, MAX_TILES, elementBySymbol, recipeById, signature, countTiles, findRecipe, compositionLabel, formulaFromCounts, normalizeSave });
+  return Object.freeze({ ELEMENTS, RECIPES, MAX_TILES, elementBySymbol, recipeById, signature, countTiles, findRecipe, compositionLabel, formulaFromCounts, hintForComposition, normalizeSave });
 });
