@@ -334,8 +334,8 @@ export const HISTORY_HERITAGE_FACTS = Object.freeze([
   {
     "era": "조선 전기",
     "type": "문화유산",
-    "term": "경국대전",
-    "clue": "조선의 법과 제도를 종합하여 성종 때 완성한 법전이다."
+    "term": "용비어천가 원본",
+    "clue": "세종 때 조선 왕실의 선조들을 노래하며 한글을 사용해 간행한 책의 옛 판본이다."
   },
   {
     "era": "조선 전기",
@@ -400,8 +400,8 @@ export const HISTORY_HERITAGE_FACTS = Object.freeze([
   {
     "era": "조선 후기",
     "type": "문화유산",
-    "term": "대동여지도",
-    "clue": "김정호가 조선의 산과 강, 도로 등을 자세하게 표현해 만든 지도이다."
+    "term": "동국지도",
+    "clue": "조선 후기 정상기가 일정한 축척을 사용하여 제작한 우리나라 지도이다."
   },
   {
     "era": "조선 후기",
