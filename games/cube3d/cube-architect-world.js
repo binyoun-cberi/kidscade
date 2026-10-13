@@ -124,8 +124,8 @@ const RECIPES=[
 ];
 const GOALS=[
  {id:'wood',kind:'training',title:'첫날 · 원목 3개 채집',description:'나무를 바라보고 파괴를 길게 눌러 원목을 3개 모으세요.',need:3,progress:s=>s.harvestedWood||0},
- {id:'planks',kind:'training',title:'판자 제작',description:'가방(E)에서 원목을 판자로 가공해 보세요.',need:1,progress:s=>s.crafted?.planks||0},
- {id:'workbench',kind:'training',title:'제작대 설치',description:'판자 4개로 제작대를 만들고 가까운 땅에 설치하세요.',need:1,progress:s=>s.placed?.workbench||0},
+ {id:'planks',kind:'training',title:'판자 제작',description:'마법의 직육면체 제작대에서 원목을 판자로 바꿔 보세요.',need:1,progress:s=>s.crafted?.planks||0},
+ {id:'workbench',kind:'training',title:'마법의 제작대 발견',description:'시작 거점의 마법 제작대에 가서 만들기 화면을 열어 보세요.',need:1,progress:s=>Number(!!s.workbenchUsed||(s.placed?.workbench||0)>0)},
  {id:'woodPick',kind:'training',title:'나무 곡괭이 만들기',description:'제작대 가까이에서 막대와 나무 곡괭이를 만들어 보세요.',need:1,progress:s=>s.crafted?.woodPick||0},
  {id:'firstStone',kind:'training',title:'첫 돌 캐기',description:'나무 곡괭이를 고르고 돌 하나를 캐 보세요.',need:1,progress:s=>s.harvestedStone||0},
  {id:'shelter',kind:'training',title:'첫 거점 만들기',description:'판자나 흙으로 벽과 지붕을 만들고 그 안에 들어가 보세요.',need:1,
