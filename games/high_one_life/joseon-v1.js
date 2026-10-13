@@ -130,8 +130,11 @@ function seedState(life){
  // These are *fictional design weights*, not historically measured nationwide census shares.
  // Later periods give more room for families identifying as yangban and fewer
  // household origins under legal enslavement; the 1894 abolition is handled separately.
- const era=life.birthYear<1600?0:life.birthYear<1750?1:life.birthYear<1894?2:3;
- const weights=[[7,5,65,23],[11,7,59,23],[22,9,57,12],[24,10,60,6]][era];
+ const era=life.birthYear<1600?0:life.birthYear<1750?1:life.birthYear<1886?2:life.birthYear<1894?3:4;
+ // The 1886 abolition of hereditary slave status and the 1894 abolition
+ // of legal status distinctions apply to births, not a claim that social
+ // discrimination vanished. These are model weights, not a historical census.
+ const weights=[[7,5,65,23],[11,7,59,23],[22,9,57,12],[24,10,66,0],[24,10,66,0]][era];
  const regionWeights=[5,12,13,15,16,8,11,11,9];
  const pick=roll(life.seed,1400)*regionWeights.reduce((sum,n)=>sum+n,0);
  let rem=pick,regionIndex=0;
