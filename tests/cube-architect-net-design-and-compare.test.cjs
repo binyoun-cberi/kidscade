@@ -80,6 +80,8 @@ test('same-volume decision updates actual construction dimensions only when unlo
     assert.match(html,new RegExp('id="'+id+'"'));
  }
  assert.match(main,/function renderCuboidComparison\(dims\)/);
+ assert.match(main,/function cuboidComparisonPreview\(dims\)/);
+ assert.match(main,/card\.append\(title,cuboidComparisonPreview\(entry\.dimensions\),detail\)/);
  assert.match(main,/function answerCuboidComparison\(choice\)/);
  assert.match(main,/function applyCuboidComparison\(\)/);
  assert.match(main,/p\.alt\.dimensions\.some\(d=>d>survivalCuboidMax\(\)\)/);
