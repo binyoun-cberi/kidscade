@@ -66,7 +66,7 @@ test('all twelve teacher events actually become gameplay choices',()=>{
 });
 test('in midlife a player may keep work, retrain or maintain a second occupation',()=>{
  const l=free(born(1700,18),25);a.ok(V6.adopt(l,'smith'));
- l.year=1737;l.age=37;l.pending=null;V6.yearEnd(l,V6.ensure(l));const q=l.getChoice();
+ l.year=1737;l.age=37;l.pending=null;J.ensure(l).capital=-70;V6.yearEnd(l,V6.ensure(l));const q=l.getChoice();
  a.ok(q.options.some(x=>x.action.startsWith('side:')));
  a.ok(q.options.some(x=>x.action.startsWith('enter:')));
  a.ok(q.options.some(x=>x.action==='continue'));
