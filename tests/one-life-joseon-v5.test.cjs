@@ -31,8 +31,14 @@ test('Joseon born households and older children continue changing after 1900',()
  assert.equal(l.year,1920);assert.ok(l.alive);
  assert.equal(V4.ensure(l).processedYear,l.year);
  const family=V4.summary(l),child=family.people.find(p=>p.role==='child');
- assert.ok(child&&child.age>=16);
- assert.notEqual(child.work,'자라는 중');
+ assert.ok(child,'the family must remember its child even after an early death');
+ if(child.alive){
+  assert.ok(child.age>=16,'a surviving adult child must keep growing after 1900');
+  assert.notEqual(child.work,'자라는 중');
+ }else{
+  assert.ok(child.diedYear&&child.diedYear<=l.year,'a deceased child keeps its year of death');
+  assert.ok(l.log.some(e=>e.text.includes(child.name)&&e.text.includes('세상을 떠났다')),'bereavement is kept in the biography');
+ }
  assert.ok(family.atHome<=family.alive);
  const restored=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));
  assert.equal(restored.pending,l.pending);

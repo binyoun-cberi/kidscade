@@ -21,7 +21,7 @@ function roll(seed,salt){
 const REGIONS=[
  ['한양','도성의 거리와 저잣거리','도시'],['경기도','논밭 사이에 자리한 마을','농촌'],['충청도','밭과 논이 이어지는 마을','농촌'],
  ['전라도','넓은 논과 포구','농촌'],['경상도','산길과 바닷길','농촌'],['강원도','산자락의 마을','농촌'],
- ['황해도','넓은 들과 포구','농촌'],['평안도','북쪽으로 이어지는 장길','소도시'],['함경도','산골과 북쪽 변방','농촌']
+ ['황해도','넓은 들과 포구','농촌'],['평안도','북쪽으로 이어지는 장길','소도시'],['함경도','산골과 북쪽 변방','농촌'],['제주도','바람 센 섬과 포구','농촌']
 ];
 const STATUSES=['양반','중인','상민','천민'];
 const NAMES={
@@ -140,7 +140,7 @@ function seedState(life){
  // of legal status distinctions apply to births, not a claim that social
  // discrimination vanished. These are model weights, not a historical census.
  const weights=[[7,5,65,23],[11,7,59,23],[22,9,57,12],[24,10,66,0],[24,10,66,0]][era];
- const regionWeights=[5,12,13,15,16,8,11,11,9];
+ const regionWeights=[5,12,13,15,16,8,11,11,9,4];
  const pick=roll(life.seed,1400)*regionWeights.reduce((sum,n)=>sum+n,0);
  let rem=pick,regionIndex=0;
  while(regionIndex<regionWeights.length-1&&rem>=regionWeights[regionIndex])rem-=regionWeights[regionIndex++];

@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="./pixel-v2.css?v=2">
 <link rel="stylesheet" href="./joseon-book.css?v=1">
 <link rel="stylesheet" href="./mobile-reading-v2.css?v=1">
+<link rel="stylesheet" href="./joseon-v8-lineage.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -79,6 +80,7 @@
               <div><dt>아버지</dt><dd id="birthFather">—</dd></div>
               <div><dt>형제자매</dt><dd id="birthSiblings">—</dd></div>
             </dl>
+            <div id="birthLineage" class="joseon-lineage hidden" aria-label="집안과 본관"><strong>우리 집안</strong><p id="birthLineageText">—</p><small id="birthLineageNote">—</small></div>
             <div class="v8-birth-context">
   <strong>가족의 일상</strong><p id="birthHome">어떤 집에서 살아가게 될까요?</p>
   <p id="birthContext">같은 시대와 지역 안에서도 가정과 일상은 서로 다릅니다.</p>
@@ -131,6 +133,10 @@
             <p id="v13FamilyStatus">가족은 나와 함께 나이 들어 갑니다.</p>
             <p id="v13LifeMemories">오래전 일이 문득 생각나는 날도 있습니다.</p>
             <small>가족과 보낸 시간은 오래 남습니다.</small>
+          </section>
+          <section id="joseonVillagePanel" class="joseon-village-panel hidden" aria-label="이웃과 마을의 살림">
+            <h3>우리 마을과 이웃</h3><p id="villageHomeSummary">—</p>
+            <ul id="villageNeighbors" class="joseon-neighbors"></ul>
           </section>
           <a id="historySourceLink" class="history-source-link hidden" target="_blank" rel="noopener noreferrer" href="https://contents.history.go.kr/">이 시기의 역사 자료 보기</a>
           <div class="progress" aria-label="인생 시간의 흐름"><div id="lifeProgress"></div></div>
@@ -350,7 +356,10 @@
 <script src="./joseon-v5.js?v=4"></script>
 <script src="./joseon-v6.js?v=2"></script>
 <script src="./joseon-v7-life.js?v=1"></script>
+<script src="./joseon-v8-lineage.js?v=1"></script>
+<script src="./joseon-v9-village.js?v=1"></script>
+<script src="./colonial-daily-v2.js?v=1"></script>
 <script src="./joseon-pixel-v2.js?v=2"></script>
-<script src="./game.js?v=36"></script>
+<script src="./game.js?v=37"></script>
 </body>
 </html>

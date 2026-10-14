@@ -92,7 +92,8 @@ function addSpouse(life,s,marriageYear){
  const sex=life.gender==='남자'?'여자':'남자';
  const ageAtMarriage=clamp(18+Math.floor(hash(life.seed,690)*7),17,30);
  const spouse=person(life,'spouse','spouse',marriageYear-ageAtMarriage,sex);
- spouse.joinedYear=marriageYear;spouse.work='집안과 생업을 함께 돌봄';s.people.push(uniqueName(s.people,spouse));
+ spouse.joinedYear=marriageYear;spouse.work='집안과 생업을 함께 돌봄';
+ if(life.joseon8?.spouseSurname)spouse.name=life.joseon8.spouseSurname+spouse.name;s.people.push(uniqueName(s.people,spouse));
  if(marriageYear===life.year)
   remember(life,s,particle(spouse.name,'과','와')+' 혼인하고 한집에서 새로운 생활을 시작했다.','joseon4-family');
 }
@@ -100,6 +101,7 @@ function addChild(life,s,bornYear){
  if(s.people.filter(x=>x.role==='child').length>=6)return;
  const id='child-'+s.people.filter(x=>x.role==='child').length;
  const child=person(life,id,'child',bornYear,hash(life.seed,bornYear+456)<.50?'여자':'남자');
+ if(life.joseon8?.surname)child.name=life.joseon8.surname+child.name;
  const origin=life.joseon5?.origin;
  const bondedParent=['공노비','사노비'].includes(origin)&&!life.joseon5.freed;
  const motherBonded=life.gender==='여자'?bondedParent:bondedParent&&hash(life.seed,bornYear+307)<.7;
@@ -298,8 +300,12 @@ function afterYear(life){
    if(p.role==='child'&&years<=12&&hash(life.seed,year+yearNumber(p.id)+172)<.22)
     remember(life,s,particle(p.name,'이','가')+' 몸이 불편한 날을 보내 집안에서 번갈아 보살폈다.','joseon4-memory');
   }
-  const youngHardship=(troubled||p.wellbeing<42)&&years<16&&
-   hash(life.seed,year+yearNumber(p.id)+380)<(troubled?.025:.008);
+  // Family child survival is a fictional risk model, not a reconstructed infant-mortality rate.
+  // Unlike the old near-zero loss chance, infants face a meaningful but bounded
+  // risk, worsened by hunger or poor health. This never alters stored deaths.
+  const baseYoung=years<2?.045:years<6?.022:years<16?.008:0;
+  const youngHardship=years<16&&hash(life.seed,year+yearNumber(p.id)+380)<
+    (baseYoung+(troubled?.036:0)+(p.wellbeing<42?.025:0));
   if(youngHardship||years>=p.lifeYears+(p.wellbeing>85?3:0)){
    p.alive=false;p.diedYear=year;
    remember(life,s,particle(p.name,'은','는')+' 세상을 떠났다. 집안에 빈자리가 생겼다.','joseon4-memory');
