@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="./world-v7.css?v=1">
 <link rel="stylesheet" href="./world-v8.css?v=7">
 <link rel="stylesheet" href="./pixel-v2.css?v=2">
+<link rel="stylesheet" href="./joseon-book.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -61,13 +62,13 @@
       <p class="eyebrow">탄생의 순간</p>
       <p class="birth-heading">당신은 어디에서 태어날까요?</p>
       <div class="ticket">
-        <div class="ticket-top"><span>ONE LIFE / 0001</span><span>출생 기록</span></div>
+        <div class="ticket-top"><span id="birthTicketMark">ONE LIFE / 0001</span><span id="birthTicketKind">출생 기록</span></div>
         <div class="ticket-body">
           <div id="birthFlag" class="birth-flag" aria-hidden="true">🌐</div>
           <div id="birthCountry" class="birth-country" aria-live="polite">추첨 중…</div>
           <p id="birthDetail" class="birth-detail">어떤 삶이 기다리고 있을까요?</p>
-          <div id="birthCertificate" class="certificate hidden" aria-label="출생 신고서">
-            <div class="certificate-header"><strong>출생 신고서</strong><span>ONE LIFE / BIRTH RECORD</span></div>
+          <div id="birthCertificate" class="certificate hidden" aria-label="출생 기록">
+            <div class="certificate-header"><strong id="certificateTitle">출생 신고서</strong><span>ONE LIFE / BIRTH RECORD</span></div>
             <div class="certificate-name"><small>이름</small><strong id="birthName">—</strong><span id="birthPlace">—</span></div>
             <dl class="certificate-details">
               <div><dt>성별</dt><dd id="birthGender">—</dd></div>
@@ -82,6 +83,18 @@
   <p id="birthContext">같은 시대와 지역 안에서도 가정과 일상은 서로 다릅니다.</p>
   <p id="birthEraNote">태어난 해의 세상을 만나게 됩니다.</p>
 </div>
+<aside id="hopaDisplay" class="hopa-display hidden" aria-label="조선의 호패를 본뜬 집안의 표식">
+  <div class="hopa-copy">
+    <small>집안의 어른이 지니던 신분패</small><strong>호패 <span lang="ko">號牌</span></strong>
+    <p>나무패에는 집안 어른의 이름과 살던 고을을 새겼습니다.</p>
+    <details class="hopa-explain"><summary>호패란?</summary>
+      조선에서 열여섯 살 이상 남성의 신분을 확인하기 위해 쓰던 패입니다. 시행 시기와 재질은 달랐습니다. 이 그림은 당시 유물을 본뜬 예시이며, 실제 발급 기록은 아닙니다.
+    </details>
+  </div>
+  <div class="hopa-wood" aria-label="호패 모양의 나무패">
+    <b>號牌</b><span id="hopaHolder">—</span><span id="hopaTown">—</span><small id="hopaRole">집안 어른</small><span class="hopa-mark">記</span>
+  </div>
+</aside>
 <p class="certificate-disclaimer">이 집에서 당신의 이야기가 시작됩니다.</p>
           </div>
         </div>
@@ -202,6 +215,7 @@
         </article>
         <aside class="info">
           <div class="info-heading"><span>인생의 한 장면</span><span id="chapterNumber">01</span></div>
+          <div id="lifeHopa" class="life-hopa hidden" aria-label="이 인물의 호패"><span class="life-hopa-seal">號牌</span><div><strong id="lifeHopaName">—</strong><small id="lifeHopaTown">—</small></div></div>
           <div class="mini-passport">
             <span class="avatar-silhouette" aria-hidden="true">◉</span>
             <div><strong id="profileName">—</strong><small id="profileMeta">—</small><span id="profileFamily">—</span></div>
@@ -331,6 +345,6 @@
 <script src="./joseon-v5.js?v=3"></script>
 <script src="./joseon-v6.js?v=1"></script>
 <script src="./joseon-pixel-v2.js?v=2"></script>
-<script src="./game.js?v=34"></script>
+<script src="./game.js?v=35"></script>
 </body>
 </html>
