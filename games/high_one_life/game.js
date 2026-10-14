@@ -45,7 +45,38 @@
   let peerCache = null, lastPeerRenderedAge = -1, lastMapRenderedAge = -1;
   let storyTab='', peerAgeChoice=0, timelineVisible=22, playSpeed=1, nextDecision=false;
   const sdk = window.KidscadeGame || null;
-  const show = name => { stage = name; for (const id of views) $(id).classList.toggle('hidden',id!==name); window.scrollTo?.(0,0); };
+  const show = name => {
+    stage = name;
+    document.body.classList.toggle('joseon-book', name!=='intro' && !!life && Joseon.isJoseon(life));
+    for (const id of views) $(id).classList.toggle('hidden',id!==name);
+    window.scrollTo?.(0,0);
+  };
+  // 토지 수치는 역사적 면적·소유 비율이 아닌 이야기 속 자원이다.
+  // 이용자가 처음 만나는 문장에는 그 수치 대신 먹고사는 모습을 보여 준다.
+  const oldPlaces = {
+    '한양':'도성의 거리에는 장인과 장사꾼, 관청으로 향하는 사람이 오간다.',
+    '경기도':'논밭 사이에 마을이 있고, 장날이면 고을이 북적인다.',
+    '충청도':'마을을 둘러싼 논밭에서 철마다 농사일이 이어진다.',
+    '전라도':'넓은 논과 포구를 따라 곡식과 물건이 오간다.',
+    '경상도':'산길과 물길을 따라 마을과 장터가 이어진다.',
+    '강원도':'산기슭의 마을에서는 밭일과 나무하는 일이 바쁘다.',
+    '황해도':'들판 너머로 포구가 보이고, 장날이면 길이 분주하다.',
+    '평안도':'고을의 장과 북쪽으로 향하는 길에 낯선 소식이 오간다.',
+    '함경도':'산자락의 마을은 긴 겨울을 앞두고 땔감과 양식을 챙긴다.'
+  };
+  function oldPlace(life) {
+    return oldPlaces[Joseon.summary(life).region] || '고을마다 사는 모습과 생업은 저마다 다르다.';
+  }
+  function oldFarm(life) {
+    const j=Joseon.summary(life),e=j.economy;
+    if(!e.workedLand)return '일구는 논밭이 없어, '+j.occupation+'과 집안의 일손으로 살아간다.';
+    if(e.ownedLand>0&&e.leasedLand>0)return '집안에서 가진 논밭을 일구고, 남의 땅도 빌려 농사짓는다.';
+    if(e.ownedLand>0)return '집안에서 가진 논밭을 일구며 한 해의 살림을 꾸린다.';
+    return '남의 논밭을 빌려 농사짓고, 수확으로 살림을 꾸린다.';
+  }
+  function oldSeason(month) {
+    return month>=3&&month<=5?'봄':month>=6&&month<=8?'여름':month>=9&&month<=11?'가을':'겨울';
+  }
   const safeGet = key => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) { return null; } };
   const safeSet = (key,data) => { try { localStorage.setItem(key,JSON.stringify(data)); return true; } catch (_) { return false; } };
   const safeRemove = key => { try { localStorage.removeItem(key); } catch (_) {} };
@@ -80,8 +111,9 @@
     completed = false; paused = false; elapsed = 0;
     $('lifeStartBtn').classList.add('hidden');
     $('birthCountry').textContent = '출생 지역을 정하는 중…';
-    $('birthFlag').textContent = '🇰🇷';
-    $('birthDetail').textContent = birthYear+'년에 시작될 인생을 추첨합니다.';
+    $('birthFlag').textContent = Joseon.isJoseon(life)?'生':'🇰🇷';
+    $('birthDetail').textContent = Joseon.isJoseon(life)?birthYear+'년, 어느 집에 태어나게 될까요?':birthYear+'년에 시작될 인생을 추첨합니다.';
+    document.querySelector('.birth-heading').textContent=Joseon.isJoseon(life)?'조선의 어느 집, 한 아이가 태어납니다.':'당신은 어디에서 태어날까요?';
     show('birth');
     let loops = 0;
     const sample = [['한양','📜'],['경상도','📜'],['평안도','📜'],['함경도','📜'],['제주도','📜']];
@@ -91,7 +123,7 @@
       paint(sample[(loops*7)%sample.length]);
       if(loops >= 19) {
         clearInterval(roulette); roulette = null;
-        $('birthFlag').textContent='🇰🇷';
+        $('birthFlag').textContent=Joseon.isJoseon(life)?'生':'🇰🇷';
         $('birthCountry').textContent=History.place(life);
         $('birthDetail').textContent = life.gender + ' · ' + life.familyLevel + ' · ' + life.year + '년 출생';
         paintCertificate();
@@ -107,20 +139,41 @@
   function paintCertificate() {
     if(!life)return;
     const p=World2.enrich(life).profile;
+    const historical=Joseon.inOldEra(life);
+    const j=historical?Joseon.summary(life):null;
+    const parents=historical?Joseon4.summary(life).people:[];
+    const father=parents.find(person=>person.role==='father');
+    const mother=parents.find(person=>person.role==='mother');
     $('birthName').textContent=p.name;
-    $('birthPlace').textContent=History.place(life)+' · '+p.city+' ('+p.settlement+')';
+    $('birthPlace').textContent=historical
+      ?j.region+'의 어느 '+(j.settlement==='도시'?'도성 안 집':j.settlement==='소도시'?'고을':'마을')
+      :History.place(life)+' · '+p.city+' ('+p.settlement+')';
     $('birthGender').textContent=life.gender;
-    $('birthDate').textContent=life.birthYear+'년 '+p.birthMonth+'월 '+p.birthDay+'일';
-    $('birthFamily').textContent=life.familyLevel+(Joseon.inOldEra(life)&&Joseon5?' · '+Joseon5.summary(life).originLabel:'');
-    $('birthMother').textContent=(Joseon.inOldEra(life)?Joseon4.summary(life).people.find(r=>r.role==='mother')?.name+' · ':'')+p.motherAge+'세 · '+p.motherJob;
-    $('birthFather').textContent=(Joseon.inOldEra(life)?Joseon4.summary(life).people.find(r=>r.role==='father')?.name+' · ':'')+p.fatherAge+'세 · '+p.fatherJob;
+    $('birthDate').textContent=historical?life.birthYear+'년 · '+oldSeason(p.birthMonth)+' 무렵'
+      :life.birthYear+'년 '+p.birthMonth+'월 '+p.birthDay+'일';
+    $('birthFamily').textContent=life.familyLevel+(historical&&Joseon5?' · '+Joseon5.summary(life).originLabel:'');
+    $('birthMother').textContent=(mother?mother.name+' · ':'')+p.motherAge+'세 · '+p.motherJob;
+    $('birthFather').textContent=(father?father.name+' · ':'')+p.fatherAge+'세 · '+p.fatherJob;
     $('birthSiblings').textContent=p.siblings+'명';
     const setting=World8.ensure(life);
-    $('birthHome').textContent=Joseon.inOldEra(life)?'가꾸는 땅 '+Joseon.summary(life).economy.workedLand+'몫 · 소유한 땅 '+Joseon.summary(life).economy.ownedLand+'몫 · 빌려 가꾸는 땅 '+Joseon.summary(life).economy.leasedLand+'몫':setting.housing+' · '+setting.familyNote;
-    $('birthContext').textContent=Joseon.inOldEra(life)?Joseon.era(life.year)+' · '+life.profile.city+' · '+Joseon.ensure(life).landmark:History.period(life)+' · '+setting.regionName+' · '+setting.neighborhood;
-    $('birthEraNote').textContent=Joseon.inOldEra(life)?('이 가문의 생활과 의무 · '+(Joseon5?.summary(life)?.duty||'태어난 집안과 지역에 따라 길이 달라집니다.')+' · 직업과 출신 비율은 게임용 설정입니다.'):life.birthYear===2026
-      ? '어느 나라에서 태어날지는 우연이지만, 그곳의 환경은 저마다 다릅니다.'
-      : '그 시대의 한반도에서 이야기가 시작됩니다. 어떤 일들이 기다리고 있을까요?';
+    $('birthHome').textContent=historical?oldFarm(life):setting.housing+' · '+setting.familyNote;
+    $('birthContext').textContent=historical?oldPlace(life):History.period(life)+' · '+setting.regionName+' · '+setting.neighborhood;
+    $('birthEraNote').textContent=historical
+      ?'새로 태어난 아이를 위해 식구들이 부엌 불을 지피고 자리를 마련한다.'
+      :life.birthYear===2026
+        ?'어느 나라에서 태어날지는 우연이지만, 그곳의 환경은 저마다 다릅니다.'
+        :'그 시대의 한반도에서 이야기가 시작됩니다. 어떤 일들이 기다리고 있을까요?';
+    $('birthCountry').textContent=historical?'조선 · '+j.region:History.place(life);
+    $('certificateTitle').textContent=historical?'집안의 첫 기록':'출생 신고서';
+    $('birthTicketMark').textContent=historical?'朝鮮 · '+life.birthYear+'年':'ONE LIFE / 0001';
+    $('birthTicketKind').textContent=historical?'한 생의 첫 장':'출생 기록';
+    $('birthCertificate').setAttribute('aria-label',historical?'태어난 집의 기록':'출생 신고서');
+    $('hopaDisplay').classList.toggle('hidden',!historical);
+    if(historical){
+      $('hopaHolder').textContent=father?.name||'집안 어른';
+      $('hopaTown').textContent=j.region;
+      $('hopaRole').textContent='부친의 이름을 적은 모형';
+    }
     $('birthCertificate').classList.remove('hidden');
   }
   function paintLifeRecord() {
@@ -130,9 +183,9 @@
       put('v10HistoricalCount',Joseon.ensure(life).seen.length+'개 역사 사건');
       put('v10HistoryStatus',j.era+' · '+(Joseon.eventFor(life.year)?.title||j.region+'에서 살아가는 중'));
       put('v10HistoryEffects',[j.warMemory.length?'삶을 바꾼 사건 · '+j.warMemory.join(' · '):'고을의 생활이 이어지고 있습니다.',v2.lastMemory,social?.memories.at(-1)].filter(Boolean).join(' · '));
-      put('v12EducationEra','배움 · '+j.school+' · 글공부 '+j.literacy+'단계');
+      put('v12EducationEra','배움 · '+j.school+(j.literacy>=4?' · 글과 경전을 익혔다':j.literacy?' · 글자를 조금씩 익힌다':''));
       put('v12WorkEra','생업 · '+(jobs?.primary?.name||j.occupation)+(jobs?.secondary?' · 겸업 '+jobs.secondary.name:'')+' · '+(social?.originLabel||j.status)+' · '+e.labor);
-      put('v12EconomyEra','가꾸는 땅 '+e.workedLand+'몫(소유 '+e.ownedLand+' · 빌린 땅 '+e.leasedLand+') · 곡식 '+e.granary+' · '+e.condition);
+      put('v12EconomyEra',oldFarm(life)+' '+e.condition+'.');
       put('v12ChoicesCount','삶의 갈림길 '+(j.decisions+v2.decisions+v3.choices+v4.decisions+(social?.decisions||0)+(jobs?.decisions||0))+'번 · 이주 '+j.relocations+'번 · '+(social?.obligations?.at(-1)||'이웃을 도운 횟수 '+v2.helpGiven+'번'));
       if(social)put('v10HistoryStatus',j.era+' · '+social.originLabel+' · '+social.legal);
       put('v13CareYears','한집에서 지내는 식구 '+(v4.atHome+1)+'명 · 부모님 돌봄 '+v4.careYears+'번');
@@ -147,10 +200,10 @@
       put('annualBalance',formatCredits(m.lastBalance));$('annualBalance').classList.toggle('negative',m.lastBalance<0);
       put('employmentStatus',(jobs?.primary?.name||j.occupation)+(jobs?.secondary?' · 겸업 '+jobs.secondary.name:''));put('traitEducation',j.school);
       put('traitAptitude','생활의 경험과 배움');put('traitQualification',j.office?'과거 급제·관직 경험':j.literacy?'글과 셈의 배움':'생활 기술을 익히는 중');
-      put('traitRegion',j.region+' · '+Joseon.ensure(life).landmark);
-      put('countryContextText','출신 '+(social?.originLabel||j.status)+' · '+j.region+' · '+(social?.duty||v2.regionWork)+' · 이웃 관계 '+v2.community+'점');
-      put('countrySourceNote','역사적 제도와 대표 사건을 참고했지만 출생 신분·직업 발생 가중치와 개인의 결과는 게임용 창작값이다.');
-      put('officialContext','땅의 소유 여부와 경작, 곡식, 가족의 일손, 빚을 따로 살핀다. 게임 속 살림 단위는 실제 화폐나 역사 통계가 아니다.');
+      put('traitRegion',j.region+' · '+oldPlace(life));
+      put('countryContextText',(social?.originLabel||j.status)+'에서 태어났다. '+oldPlace(life));
+      put('countrySourceNote','한 고을에 살아도 집안마다 걸어가는 길은 달랐다.');
+      put('officialContext',oldFarm(life));
       const people=$('v9PeopleList');people.replaceChildren();
       for(const member of v4.people.slice(0,11)){
         const item=document.createElement('li'),role=Joseon4.ROLES[member.role]||'가족';
@@ -158,16 +211,19 @@
         people.append(item);
       }
       put('v9PeopleCount','가족 '+v4.people.length+'명 중 '+v4.alive+'명 생존 · 함께 사는 식구 '+v4.atHome+'명');put('v9Hobby',v3.memories.at(-1)||'생업과 이웃 사이에서 남은 일상');
-      put('v9Loan',e.debt?'갚아야 할 빚 '+e.debt+'몫 · '+(e.creditor||'빌려 쓴 몫')+' · '+e.why
-        :'손에 남은 살림 '+e.cash+'몫 · '+e.why);
-      put('v9Hobby',(jobs?.primary?jobs.primary.supply+' · '+jobs.primary.people+' · 숙련 '+jobs.primary.skills+' · 단골/제자 '+jobs.primary.contacts.length+'명':(social?.memories.at(-1)||v3.memories.at(-1)||'생업과 이웃 사이에서 남은 일상'))+' · '+e.labor);
+      put('v9Loan',e.debt?'이웃이나 친척에게 진 빚을 아직 다 갚지 못했다. '+e.why:'빚을 지지 않고 살림을 꾸려 가고 있다. '+e.why);
+      put('v9Hobby',jobs?.primary?jobs.primary.supply+'을 돌보며 '+jobs.primary.people+'과 인연을 이어 간다. '+e.labor:(social?.memories.at(-1)||v3.memories.at(-1)||'생업과 이웃 사이에서 남은 일상')+' · '+e.labor);
       const picture=window.OneLifeJoseonPixel2?.paint($('lifeScene'),life)||Joseon3.paint($('lifeScene'),life)||Joseon.paint($('lifeScene'),life);
       if(!picture)Pixel.paint($('lifeScene'),life);
-      put('sceneLabel',life.year+'년 '+v3.season+' · '+j.region+' '+v3.sceneLabel+' · '+(jobs?.primary?.name||j.occupation));
+      put('sceneLabel',life.year+'년 '+v3.season+' · '+j.region+'에서 '+v3.sceneLabel);
+      const hopaeShown=life.gender==='남자'&&life.age>=16&&life.year>=1413&&life.year<1897;
+      $('lifeHopa').classList.toggle('hidden',!hopaeShown);
+      if(hopaeShown){put('lifeHopaName',p.name);put('lifeHopaTown',j.region+' · 호패를 본뜬 기록');}
       const culture=JoseonCulture?.describe(life,{joseon:j,scene:v3.zone,role:jobs?.primary?.name||j.occupation});
       put('sceneCulture',culture?[culture.period+' · '+culture.clothing,culture.housing,culture.meal].join('  |  '):'');
       return;
     }
+    $('lifeHopa').classList.add('hidden');
     const p=World2.enrich(life).profile;
     const money=life.money;
     const personal=World7.ensure(life);
@@ -623,7 +679,7 @@
         const home=Joseon.summary(life),family=Joseon4.summary(life);
         $('storyBirthText').textContent=life.birthYear+'년, '+home.region+'의 '+(Joseon5?.summary(life)?.originLabel||Joseon.ensure(life).birthStatus+' 집안')+'에서 태어났다. '+
           family.people.filter(x=>x.role==='mother'||x.role==='father').map(x=>x.name+'('+Joseon4.ROLES[x.role]+')').join(', ')+'이 곁에 있었다.';
-        $('storyBirthNote').textContent=Joseon.ensure(life).landmark+'이 가까운 고을. '+(Joseon5?.summary(life)?.duty||'집안의 형편과 배울 기회는 모두 같지 않았다.');
+        $('storyBirthNote').textContent=oldPlace(life)+' '+oldFarm(life);
         return;
       }
       $('storyBirthText').textContent=History.period(life)+' · '+life.birthYear+'년 출생. '+World8.synopsis(life)+'. '+World8.ensure(life).familyNote+'.';
@@ -825,9 +881,10 @@
     storyTab='';peerAgeChoice=0;timelineVisible=22;playSpeed=1;nextDecision=false;refreshSpeedControls();
     peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
     $('birthCertificate').classList.add('hidden');
-    $('birthFlag').textContent=life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1];
+    $('birthFlag').textContent=Joseon.isJoseon(life)?'生':life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1];
     $('birthCountry').textContent=History.place(life);
     $('birthDetail').textContent=life.gender+' · '+life.familyLevel+' · '+life.birthYear+'년 출생';
+    document.querySelector('.birth-heading').textContent=Joseon.isJoseon(life)?'조선의 어느 집, 한 아이가 태어납니다.':'당신은 어디에서 태어날까요?';
     $('lifeStartBtn').classList.remove('hidden');
     paintCertificate();
     completed=false;paused=false;elapsed=0;
