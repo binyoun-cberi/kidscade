@@ -10,11 +10,14 @@ const api={
   ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,W,H);
   const j=window.OneLifeJoseon?.ensure?.(life)||life.joseon||{};
   const v=window.OneLifeJoseon2?.ensure?.(life)||life.joseon2||{};
+  const Culture=window.OneLifeJoseonCulture;
   const kind=window.OneLifeJoseon3?.zone?.(life)||'farm';
   const season=window.OneLifeJoseon3?.season?.(life)||'가을';
   const year=life.year||life.birthYear||1480,age=life.age||0;
   const origin=life.joseon5?.origin||j.birthStatus||life.familyLevel||'상민';
-  const elite=/양반|왕실|관직/.test(String(origin));
+  const elite=/양반|왕실|관직|대감|종친/.test(String(origin));
+  const home=Culture?.household(life,{joseon:j,origin,scene:kind,role:life.joseon6?.primary?.name||j.occupation})||{kind:elite?'tile':'thatch',roof:elite?'tile':'thatch'};
+  const wear=Culture?.wardrobe(year,origin,life.gender,life.joseon6?.primary?.name||j.occupation,life.age);
   const colors={
    봄:{sky:'#c8e4d9',mountain:'#93b5a8',hill:'#769b82',field:'#aac38f',leaf:'#56866b',gold:'#e2c574'},
    여름:{sky:'#b9ddd9',mountain:'#81a6a2',hill:'#658d75',field:'#91b977',leaf:'#477b5c',gold:'#e2c574'},
@@ -66,10 +69,10 @@ const api={
   // A compact Joseon house with real eaves, wooden posts, lattice and either thatch or tile.
   const hx=119,hy=119,hw=174,hh=76;
   px(hx-5,hy-4,hw+10,hh+8,'#65594b');
-  px(hx,hy,hw,hh,'#e6d5b4');
-  px(hx+8,hy+13,hw-16,4,'#d1bc95');
+  px(hx,hy,hw,hh,home.kind==='palace'?'#bd7658':'#e6d5b4');
+  px(hx+8,hy+13,hw-16,4,home.kind==='palace'?'#6c8c68':'#d1bc95');
   for(let x=hx+12;x<hx+hw-5;x+=48)px(x,hy+12,5,hh-10,'#866d50');
-  const tiled=elite&&Number(j.capital||0)>45;
+  const tiled=home.roof==='tile';
   if(tiled){
    px(hx-15,hy-20,hw+30,8,'#484f54');px(hx-10,hy-28,hw+20,8,'#4b5257');
    for(let x=hx-10;x<hx+hw+10;x+=12){px(x,hy-26,4,5,'#788185');px(x+4,hy-18,4,5,'#778084');}
@@ -115,7 +118,8 @@ const api={
     R(-3,-70,10,8,hair);R(-7,-68,4,5,'#bd9256');
    }
    // Short jeogori over a distinctly wider skirt/robe.
-   R(-10,-48,20,18,adultColor);R(-13,-45,6,12,adultColor);R(7,-45,6,12,adultColor);
+   const blouse=sex==='여자'&&wear?wear.jeogori:18;
+   R(-10,-48,20,blouse,adultColor);R(-13,-45,6,12,adultColor);R(7,-45,6,12,adultColor);
    R(-robe/2,-31,robe,25,child?childColor:adultColor);
    R(-robe/2,-20,robe,4,offset);R(-2,-47,4,14,'#eee0c4');
    if(elder){R(-robe/2-3,-30,4,22,'#8c8175');}
@@ -129,8 +133,8 @@ const api={
    // Small eyes only when the face can support them without clutter.
    R(-4,-59,2,2,'#403a36');R(3,-59,2,2,'#403a36');
   };
-  const adultTone=elite?'#536d86':/중인|기술|장인/.test(String(origin))?'#66866e':'#a87556';
-  const trim=elite?'#b9a16e':'#c6aa73';
+  const adultTone=wear?.color||(elite?'#536d86':/중인|기술|장인/.test(String(origin))?'#66866e':'#a87556');
+  const trim=wear?.accent||(elite?'#b9a16e':'#c6aa73');
   if(age<16){
    sprite(342,243,age,life.gender,'#d4b96f',adultTone,trim);
    sprite(286,243,Math.min(48,age+29),'여자','#d4b96f',elite?'#8c6a74':'#927366',trim);
