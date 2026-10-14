@@ -14,8 +14,8 @@ load('colonial-daily-v2.js','OneLifeColonialDaily');delete global.window;
 const born=(y,s=77)=>new Sim.Life(s,{birthYear:y,countryName:'대한민국'});
 function move(l,y,region){l.year=y;l.age=y-l.birthYear;l.alive=true;l.pending=null;J.ensure(l).region=region;return l;}
 function clearChoices(l){let guard=0;while(l.pending&&!l.pending.startsWith('joseonAnnals:')&&guard++<30){const p=l.getChoice();if(p)l.choose(0);else if(l.getReflection())l.reflect('');else assert.fail('Unknown pending '+l.pending);}assert.ok(guard<30);}
-test('seven primary records have individual canonical citations and no fabricated player facts',()=>{
- assert.equal(Annals.ARTICLES.length,7);
+test('19 primary records have individual canonical citations and no fabricated player facts',()=>{
+ assert.equal(Annals.ARTICLES.length,19);
  assert.equal(new Set(Annals.ARTICLES.map(a=>a.id)).size,7);
  for(const a of Annals.ARTICLES){
   assert.equal(a.url,'https://sillok.history.go.kr/id/'+a.id);
@@ -39,6 +39,40 @@ test('province and date controls prevent unrelated households receiving the arti
  hungry.year=1671;assert.equal(Annals.eligible(hungry,disaster),false);
  const baby=move(born(1670,7),1670,'전라도');
  assert.equal(Annals.eligible(baby,disaster),false);
+});
+
+test('new cases respect place and chronology across illness, maritime work, markets and famines',()=>{
+ const scenarios=[
+  ['kja_10303017_002',1497,'함경도','전라도'],
+  ['kka_11503021_001',1520,'전라도','평안도'],
+  ['kka_11908007_004',1524,'평안도','강원도'],
+  ['kpa_12302010_002',1645,'한양','경상도'],
+  ['wua_10107019_001',1725,'충청도','함경도'],
+  ['wva_10710008_002',1783,'전라도','평안도'],
+  ['kva_11505010_002',1791,'충청도','함경도']
+ ];
+ for(const [id,year,place,other] of scenarios){
+  const a=Annals.ARTICLES.find(x=>x.id===id);
+  assert.ok(a,id);
+  const adult=move(born(year-24,year+13),year,place);
+  assert.equal(Annals.eligible(adult,a),true,id+' in '+place);
+  J.ensure(adult).region=other;
+  assert.equal(Annals.eligible(adult,a),false,id+' outside '+place);
+  adult.year=year-1;
+  assert.equal(Annals.eligible(adult,a),false,id+' too early');
+ }
+});
+test('only an actual royal annals record can create its own source-linked choice',()=>{
+ const l=move(born(1473,314),1497,'함경도'),s=Annals.ensure(l);
+ Annals.yearly(l,s);clearChoices(l);
+ assert.match(l.pending,/^joseonAnnals:/);
+ const source=l.log.find(e=>e.kind==='joseonAnnals-fact');
+ assert.ok(source?.sourceUrl.endsWith('kja_10303017_002'));
+ assert.equal(l.choose(1),true);
+ const saved=JSON.parse(JSON.stringify(l.snapshot()));
+ const next=Sim.Life.restore(saved);
+ assert.equal(Annals.sourceFor(next).articleId,'kja_10303017_002');
+ assert.ok(Annals.ensure(next).decisions.some(d=>d.articleId==='kja_10303017_002'));
 });
 test('debates and memorials are not falsely described as automatically enacted law',()=>{
  const hunt=Annals.ARTICLES.find(a=>a.year===1439);
