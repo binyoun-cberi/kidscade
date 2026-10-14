@@ -46,7 +46,7 @@ function meal(life,opts={}){
  const j=opts.joseon||life.joseon||{},year=Number(life.year||life.birthYear||1480);
  const wealth=Number(j.capital||0),region=j.region||life.profile?.city||'';
  const choice=(array)=>array[Math.abs((Number(life.seed)||0)+year*7+Number(life.age||0)*13)%array.length];
- const grains=wealth<18?['조밥과 나물','보리와 콩을 섞어 지은 밥','묽은 조죽과 소금에 절인 무']:
+ const grains=wealth<18?['조밥과 나물','보리와 콩을 섞어 지은 밥','묽은 조죽과 소금에 절인 무나물']:
    ['콩을 섞은 밥과 된장국','조밥과 산나물','밥과 장국, 무나물'];
  const early=['소금에 절인 무를 한 접시 꺼냈다.','오이와 무를 담근 맑은 김치를 곁들였다.','장독에 두었던 흰 김치를 그릇에 덜었다.'];
  const middle=['무를 절인 김치를 꺼내 식구들과 나누었다.','나물과 장에 절인 채소를 곁들였다.','김치와 된장국을 작은 상에 올렸다.'];
