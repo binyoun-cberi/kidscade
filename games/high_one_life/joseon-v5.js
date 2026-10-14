@@ -16,7 +16,7 @@ function dice(seed,salt){
  x=Math.imul(x^(x>>>15),0x846ca68b);
  return ((x^(x>>>16))>>>0)/4294967296;
 }
-const coastal=new Set(['경상도','전라도','황해도']);
+const coastal=new Set(['경상도','전라도','황해도','제주도']);
 const border=new Set(['평안도','함경도']);
 const isEnslaved=origin=>['사노비','공노비'].includes(origin);
 const isRoyal=origin=>origin==='왕실 종친';
