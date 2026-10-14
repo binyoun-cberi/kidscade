@@ -27,6 +27,7 @@
   const Joseon8 = window.OneLifeJoseon8 || null;
   const Joseon9 = window.OneLifeJoseon9 || null;
   const Annals = window.OneLifeJoseonAnnals || null;
+  const Joseon11 = window.OneLifeJoseon11 || null;
   const ColonialLife = window.OneLifeColonialDaily || null;
   const History = window.OneLifeHistory;
   const Official=window.OneLifeOfficialStats||{countries:{}};
@@ -213,7 +214,7 @@
   }
   function paintLifeRecord() {
     if(Joseon.inOldEra(life)){
-      const lineage=Joseon8?.summary(life),village=Joseon9?.summary(life);
+      const lineage=Joseon8?.summary(life),village=Joseon9?.summary(life),late=Joseon11?.summary(life);
       const v2=Joseon2.summary(life),j=Joseon.summary(life),v3=Joseon3.summary(life),v4=Joseon4.summary(life),social=Joseon5?.summary(life),jobs=Joseon6?.summary(life),p=Joseon.ensure(life)&&life.profile,m=life.money,e=j.economy;
       const put=(id,value)=>{$(id).textContent=String(value);};
       const source=Annals?.sourceFor(life);
@@ -231,6 +232,19 @@
       $('joseonVillagePanel').classList.toggle('hidden',!village);
       if(village){
         put('villageHomeSummary','마을의 물 사정 '+(village.water<20?'몹시 부족':village.water<45?'빠듯함':'넉넉함')+' · 우리 집 가축: 소 '+village.animals.ox+'마리, 돼지 '+village.animals.pig+'마리, 닭 '+village.animals.chicken+'마리.');
+        const lateVisible=life.year>=1800&&life.year<1900&&!!late;
+        $('lateJoseonLedger').classList.toggle('hidden',!lateVisible);
+        if(lateVisible){
+          const fragments=[];
+          if(late.taxDebt)fragments.push('아직 갚지 못한 곡식과 세금이 있다.');
+          if(late.moves)fragments.push('어려운 때 피란하거나 살 곳을 찾은 적이 있다.');
+          if(late.solidarity)fragments.push('이웃과 서로 돕고 함께 의견을 낸 일이 있다.');
+          if(late.disputes)fragments.push('고을 사람들과 다투거나 어려운 일을 겪기도 했다.');
+          put('lateJoseonLedgerText',fragments.join(' ')||'집안의 살림을 꾸리며 이웃과 고을에서 살아간다.');
+          const data=Joseon11?.ensure(life),src=data?.lastSource;
+          $('lateJoseonSource').classList.toggle('hidden',!src);
+          if(src)$('lateJoseonSourceLink').href=src;
+        }
         const list=$('villageNeighbors');list.replaceChildren();
         for(const neighbor of village.neighbors){const li=document.createElement('li');
           li.textContent=neighbor.name+'네 · '+(neighbor.wealth<28?'형편이 어려운 집':neighbor.wealth>80?'살림이 넉넉한 집':'그럭저럭 살아가는 집')+' · '+(neighbor.trust>65?'가까운 이웃':neighbor.trust<34?'서먹한 사이':'인사를 나누는 사이');list.append(li);}
@@ -275,6 +289,7 @@
     }
     $('lifeHopa').classList.add('hidden');
     $('joseonVillagePanel').classList.add('hidden');
+    $('lateJoseonLedger').classList.add('hidden');
     $('annalsSourcePanel').classList.add('hidden');
     const p=World2.enrich(life).profile;
     const money=life.money;
@@ -396,8 +411,8 @@
     if(!life)return;
     if(Joseon.inOldEra(life)){
       const j=Joseon.summary(life),s=Joseon.ensure(life),allChoices=life.log
-        .filter(e=>['joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice'].includes(e.kind)).slice(-3);
-      const n=j.decisions+Joseon2.summary(life).decisions+Joseon3.summary(life).choices+Joseon4.summary(life).decisions+(Joseon5?.summary(life)?.decisions||0)+(Joseon7?.summary(life)?.decisions||0)+(Joseon9?.summary(life)?.decisions||0)+(Annals?.ensure(life)?.decisions.length||0);
+        .filter(e=>['joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice'].includes(e.kind)).slice(-3);
+      const n=j.decisions+Joseon2.summary(life).decisions+Joseon3.summary(life).choices+Joseon4.summary(life).decisions+(Joseon5?.summary(life)?.decisions||0)+(Joseon7?.summary(life)?.decisions||0)+(Joseon9?.summary(life)?.decisions||0)+(Annals?.ensure(life)?.decisions.length||0)+(Joseon11?.summary(life)?.decisions||0);
       $('careerChangeCount').textContent=n+'번의 선택';
       $('careerCurrent').textContent=j.occupation;
       const list=$('careerJourney');list.replaceChildren();
@@ -464,7 +479,7 @@
       child:!!life.profile.child,partner:!!life.profile.partner,
       housing:life.world8?.housing||'',
       roles:life.world6?.history?.map(x=>x.job)||[],
-      choices:life.log.filter(e=>['decision','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice'].includes(e.kind)).map(e=>({age:e.age,label:e.text}))};
+      choices:life.log.filter(e=>['decision','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice'].includes(e.kind)).map(e=>({age:e.age,label:e.text}))};
   }
   function showComparison(){
     const panel=$('endComparison'),rows=$('endComparisonRows');
@@ -532,7 +547,7 @@
       if (entry.kind === 'decision') li.className = 'is-decision';
       else if (entry.kind === 'decision-effect') li.className = 'is-choice-effect';
       else if (entry.kind === 'history') li.className = 'is-history';
-      else if (['history-choice','history-impact','history-followup','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon5-memory','joseon5-family','joseon6-choice','joseon6-followup','joseon6-memory','joseon7-followup','joseon9-followup','joseon7-choice','joseon9-choice','joseon-followup','joseon2-followup','joseon3-followup','joseon4-followup','joseon-memory','joseon2-memory','joseon3-memory','joseon4-memory','colonialDaily-choice','colonialDaily-followup','joseonAnnals-choice','joseonAnnals-followup','joseonAnnals-fact'].includes(entry.kind)) li.className = 'is-history-choice';
+      else if (['history-choice','history-impact','history-followup','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon5-memory','joseon5-family','joseon6-choice','joseon6-followup','joseon6-memory','joseon7-followup','joseon9-followup','joseon7-choice','joseon9-choice','joseon-followup','joseon2-followup','joseon3-followup','joseon4-followup','joseon-memory','joseon2-memory','joseon3-memory','joseon4-memory','colonialDaily-choice','colonialDaily-followup','joseonAnnals-choice','joseonAnnals-followup','joseonAnnals-fact','joseon11-choice','joseon11-followup','joseon11-memory'].includes(entry.kind)) li.className = 'is-history-choice';
       const age = document.createElement('b');
       age.textContent = entry.age + '세';
       const text = document.createElement('span');
@@ -670,7 +685,7 @@
     if(!board||!life || (!force && life.age===lastMapRenderedAge))return;
     lastMapRenderedAge=life.age;
     board.replaceChildren();
-    const notable=['decision','reflection','family','profession','world','safety','death','history','history-choice','history-impact','history-followup','era-choice','era-followup','care13-choice','care13-followup','care13-memory','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon-memory','joseon2-memory','joseon3-memory','joseon4-memory','joseon4-family','joseon-family','joseon6-choice','joseon6-followup','joseon6-memory','joseon7-followup','joseon9-followup','joseon7-choice','joseon9-choice','joseon-followup','joseon2-followup','joseon3-followup','joseon4-followup','colonialDaily-choice','colonialDaily-followup','joseonAnnals-choice','joseonAnnals-followup','joseonAnnals-fact'];
+    const notable=['decision','reflection','family','profession','world','safety','death','history','history-choice','history-impact','history-followup','era-choice','era-followup','care13-choice','care13-followup','care13-memory','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon-memory','joseon2-memory','joseon3-memory','joseon4-memory','joseon4-family','joseon-family','joseon6-choice','joseon6-followup','joseon6-memory','joseon7-followup','joseon9-followup','joseon7-choice','joseon9-choice','joseon-followup','joseon2-followup','joseon3-followup','joseon4-followup','colonialDaily-choice','colonialDaily-followup','joseonAnnals-choice','joseonAnnals-followup','joseonAnnals-fact','joseon11-choice','joseon11-followup','joseon11-memory'];
     const entries=new Map();
     for(const entry of life.log){
       if(!notable.includes(entry.kind))continue;
@@ -808,7 +823,7 @@
     completed=true;
     safeRemove(SAVE_KEY);
     const summary=life.summary();
-    const choiceLog=life.log.filter(e=>['decision','history-choice','era-choice','care13-choice','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice'].includes(e.kind));
+    const choiceLog=life.log.filter(e=>['decision','history-choice','era-choice','care13-choice','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice'].includes(e.kind));
     const careLife=World13.summary(life);
     const oldLife=Joseon.isJoseon(life)?Joseon.summary(life):null;
     const oldSocial=oldLife&&Joseon5?.summary(life);
@@ -854,10 +869,10 @@
       const effect=life.log.find(x=>x.kind==='decision-effect'&&x.age===e.age);
       const detail=document.createElement('small');detail.textContent=effect?.text||'그때는 무엇이 달라질지 몰랐다.';
       if(e.kind==='decision')copy.append(detail);
-      else if(['history-choice','era-choice','care13-choice','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice'].includes(e.kind)){
+      else if(['history-choice','era-choice','care13-choice','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice'].includes(e.kind)){
         const aftermath={'history-choice':'history-followup','era-choice':'era-followup','care13-choice':'care13-followup',
           'joseon-choice':'joseon-followup','joseon2-choice':'joseon2-followup',
-          'joseon3-choice':'joseon3-followup','joseon4-choice':'joseon4-followup','joseon5-choice':'joseon5-followup','joseon6-choice':'joseon6-followup','joseon7-choice':'joseon7-followup','joseon9-choice':'joseon9-followup','joseonAnnals-choice':'joseonAnnals-followup','colonialDaily-choice':'colonialDaily-followup'}[e.kind];
+          'joseon3-choice':'joseon3-followup','joseon4-choice':'joseon4-followup','joseon5-choice':'joseon5-followup','joseon6-choice':'joseon6-followup','joseon7-choice':'joseon7-followup','joseon9-choice':'joseon9-followup','joseonAnnals-choice':'joseonAnnals-followup','joseon11-choice':'joseon11-followup','colonialDaily-choice':'colonialDaily-followup'}[e.kind];
         // Only an explicitly linked outcome belongs to this choice. Older saves without
         // cause identifiers show no follow-up rather than a misleading one.
         const after=e.causeId?life.log.find(x=>x.kind===aftermath&&x.causeId===e.causeId):null;
@@ -867,8 +882,8 @@
     });
     showComparison();
     const list=$('endHighlights'); list.replaceChildren();
-    const highlights=[...life.log.filter(e=>['joseon4-family','joseon-family','milestone','decision','chain','world','safety','profession','history-choice','history-followup','era-choice','era-followup','care13-choice','care13-followup','care13-memory','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon-followup','joseon2-followup','joseon3-followup','joseon4-followup','joseon-memory','joseon2-memory','joseon3-memory','joseon4-memory','joseon5-choice','joseon5-followup','joseon5-memory','joseon6-choice','joseon6-followup','joseon6-memory','joseon7-followup','joseon9-followup','joseon7-choice','joseon9-choice','colonialDaily-choice','colonialDaily-followup','joseonAnnals-choice','joseonAnnals-followup','joseonAnnals-fact'].includes(e.kind))]
-      .filter(e=>['decision','chain','world','safety','profession','history-choice','history-followup','care13-choice','care13-followup','joseon-choice','joseon-followup','joseon-memory','joseon2-choice','joseon2-followup','joseon2-memory','joseon3-choice','joseon3-followup','joseon3-memory','joseon4-choice','joseon4-followup','joseon4-memory','joseon4-family','joseon5-choice','joseon5-memory','joseon5-family','joseon6-choice','joseon6-followup','joseon6-memory','joseon7-followup','joseon9-followup','joseon7-choice','joseon9-choice','joseon-family','colonialDaily-choice','colonialDaily-followup','joseonAnnals-choice','joseonAnnals-followup','joseonAnnals-fact'].includes(e.kind)||e.age<21)
+    const highlights=[...life.log.filter(e=>['joseon4-family','joseon-family','milestone','decision','chain','world','safety','profession','history-choice','history-followup','era-choice','era-followup','care13-choice','care13-followup','care13-memory','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon-followup','joseon2-followup','joseon3-followup','joseon4-followup','joseon-memory','joseon2-memory','joseon3-memory','joseon4-memory','joseon5-choice','joseon5-followup','joseon5-memory','joseon6-choice','joseon6-followup','joseon6-memory','joseon7-followup','joseon9-followup','joseon7-choice','joseon9-choice','colonialDaily-choice','colonialDaily-followup','joseonAnnals-choice','joseonAnnals-followup','joseonAnnals-fact','joseon11-choice','joseon11-followup','joseon11-memory'].includes(e.kind))]
+      .filter(e=>['decision','chain','world','safety','profession','history-choice','history-followup','care13-choice','care13-followup','joseon-choice','joseon-followup','joseon-memory','joseon2-choice','joseon2-followup','joseon2-memory','joseon3-choice','joseon3-followup','joseon3-memory','joseon4-choice','joseon4-followup','joseon4-memory','joseon4-family','joseon5-choice','joseon5-memory','joseon5-family','joseon6-choice','joseon6-followup','joseon6-memory','joseon7-followup','joseon9-followup','joseon7-choice','joseon9-choice','joseon-family','colonialDaily-choice','colonialDaily-followup','joseonAnnals-choice','joseonAnnals-followup','joseonAnnals-fact','joseon11-choice','joseon11-followup','joseon11-memory'].includes(e.kind)||e.age<21)
       .slice(-16);
     if(!highlights.length) highlights.push(life.log[0]);
     highlights.forEach(e=>{
