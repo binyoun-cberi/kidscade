@@ -1,0 +1,7 @@
+body.joseon-book .joseon-regional-ledger{margin:12px 0;padding:10px 13px;background:#f8efdb;border:1px solid #b49b73;color:#51402b}
+body.joseon-book .joseon-regional-ledger summary{font:700 14px/1.65 "Noto Serif KR",Batang,serif;cursor:pointer;overflow-wrap:anywhere}
+body.joseon-book .joseon-regional-ledger[open]{padding-bottom:14px}
+body.joseon-book .joseon-regional-ledger p{margin:6px 0 0;font-size:13px;line-height:1.75;word-break:keep-all;color:#59432c}
+body.joseon-book .joseon-regional-ledger a{display:inline-block;margin-top:10px;font-size:12px;color:#4d6247;text-decoration:underline;text-underline-offset:3px}
+body.joseon-book .joseon-regional-ledger small{display:block;font-size:11px;line-height:1.55;color:#695a45;margin-top:7px}
+@media(max-width:740px){body.joseon-book .joseon-regional-ledger{margin:10px 0;padding:9px 11px}body.joseon-book .joseon-regional-ledger p{font-size:13px;line-height:1.75}}
