@@ -22,7 +22,7 @@ const EVENTS=[
   op('마을 어른에게 중재를 청한다','양쪽 말을 듣고 물길을 정한다','원로들이 양쪽 집안의 사정을 듣고 길을 정했다.',{trust:3,knowledge:2})]),
  ev('oxBirth','livestock','외양간의 송아지','기르던 소가 새끼를 낳았다. 송아지는 아직 제대로 일어서지 못한다.',
   (l,j,s,v)=>v.animals.ox>0,[
-  op('송아지에게 여물을 마련한다','어미 소도 함께 돌본다','송아지가 자라 외양간이 한층 북적였다.',{chicken:1,grain:-2,health:-1}),
+  op('송아지에게 여물을 마련한다','어미 소도 함께 돌본다','송아지가 자라 외양간이 한층 북적였다.',{ox:1,grain:-2,health:-1}),
   op('이웃을 불러 함께 살핀다','경험 많은 사람의 지혜가 필요하다','송아지가 아플 때 이웃이 다시 도우러 왔다.',{trust:4,knowledge:2}),
   op('송아지를 팔 길을 알아본다','집안에 돈이 필요하다','송아지를 팔아 필요한 물건을 마련했다.',{capital:4})]),
  ev('sickOx','livestock','외양간의 병든 가축','기르던 짐승이 먹이를 거부한다. 다른 가축까지 아플까 걱정이다.',
@@ -201,7 +201,12 @@ function choose(l,index){
  if(Number.isFinite(d.water))s.water=clamp(s.water+d.water,0,100);
  if(Number.isFinite(d.trust)){s.trust=clamp(s.trust+d.trust,0,100);
   s.homes[0].trust=clamp(s.homes[0].trust+d.trust,0,100);}
- if(Number.isFinite(d.chicken))s.animals.chicken=clamp(s.animals.chicken+d.chicken,0,12);
+ for(const animal of ['ox','pig','chicken'])
+  if(Number.isFinite(d[animal]))s.animals[animal]=clamp(s.animals[animal]+d[animal],0,12);
+ if(d.chicken<0&&s.animals.chicken===0){
+  if(s.animals.pig>0)s.animals.pig--;
+  else if(s.animals.ox>0)s.animals.ox--;
+ }
  l.logEvent(e.title+' — '+o.label,'joseon9-choice');l.log.at(-1).causeId='joseon9:'+id;
  s.decisions.push({id,eventId:e.id,year:l.year,option:index});s.decisions=s.decisions.slice(-70);
  s.followups.push({id,year:l.year+2+(index%2),text:o.result});s.followups=s.followups.slice(-55);
