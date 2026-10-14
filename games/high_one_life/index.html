@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="./mobile-reading-v2.css?v=1">
 <link rel="stylesheet" href="./joseon-v8-lineage.css?v=1">
 <link rel="stylesheet" href="./joseon-annals.css?v=1">
+<link rel="stylesheet" href="./joseon-late-v11.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -143,6 +144,14 @@
           </section>
           <section id="joseonVillagePanel" class="joseon-village-panel hidden" aria-label="이웃과 마을의 살림">
             <h3>우리 마을과 이웃</h3><p id="villageHomeSummary">—</p>
+            <div id="lateJoseonLedger" class="late-joseon-ledger hidden">
+              <strong>고을에서 살아온 일</strong><p id="lateJoseonLedgerText">—</p>
+              <details id="lateJoseonSource" class="annals-source hidden">
+                <summary>이 일의 역사 자료</summary>
+                <a id="lateJoseonSourceLink" href="https://contents.history.go.kr/" target="_blank" rel="noopener noreferrer">역사 기록 읽기 ↗</a>
+                <small>역사적 배경을 참고한 이야기이며 이 인물의 개인사는 가상입니다.</small>
+              </details>
+            </div>
             <ul id="villageNeighbors" class="joseon-neighbors"></ul>
           </section>
           <a id="historySourceLink" class="history-source-link hidden" target="_blank" rel="noopener noreferrer" href="https://contents.history.go.kr/">이 시기의 역사 자료 보기</a>
@@ -366,8 +375,9 @@
 <script src="./joseon-v8-lineage.js?v=1"></script>
 <script src="./joseon-v9-village.js?v=1"></script>
 <script src="./joseon-annals-v10.js?v=1"></script>
+<script src="./joseon-v11-late-life.js?v=1"></script>
 <script src="./colonial-daily-v2.js?v=1"></script>
 <script src="./joseon-pixel-v2.js?v=2"></script>
-<script src="./game.js?v=38"></script>
+<script src="./game.js?v=39"></script>
 </body>
 </html>
