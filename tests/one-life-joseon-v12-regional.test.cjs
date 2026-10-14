@@ -34,7 +34,7 @@ function force(l,id,i=0){
  assert.equal(l.choose(i),true);
  return s;
 }
-test('25 new regional livelihood episodes have unique IDs, dated sources and three choices',()=>{
+test('25 new regional livelihood episodes have unique IDs, contextual references and three choices',()=>{
  assert.equal(V12.EVENTS.length,25);
  assert.equal(new Set(V12.EVENTS.map(e=>e.id)).size,25);
  for(const e of V12.EVENTS){
@@ -53,8 +53,9 @@ test('seagoing nets and boats are restricted to seafaring work',()=>{
  const state=V12.ensure(l),start=state.nets;force(l,'netRepair',0);
  assert.ok(state.nets>start);
  assert.ok(l.log.some(e=>e.kind==='joseon12-choice'&&e.sourceUrl===V12.SOURCES.occupations));
- V5.ensure(l).origin='소작 농가';J.ensure(l).occupation='농사';
- assert.equal(V12.eligible(l,fishing),false);
+ const inland=set(born(1660,994),1680,'강원도','소작 농가','남자');
+ J.ensure(inland).occupation='농사';
+ assert.equal(V12.eligible(inland,fishing),false);
 });
 test('Jeju female apprentices train first, unrelated regions and men do not dive',()=>{
  const l=set(born(1650,306),1672,'제주도','자작 농가','여자');
@@ -142,7 +143,7 @@ test('160 lifetimes spanning Joseon maintain working choices and legitimate snap
    const cloned=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));
    assert.equal(cloned.pending,l.pending);
    assert.deepEqual(V12.summary(cloned),V12.summary(l));
-   for(const d of V12.ensure(l).decisions){ids.add(d.eventId);decisions++}
+   for(const d of V12.ensure(l)?.decisions||[]){ids.add(d.eventId);decisions++}
   }
  }
  assert.ok(decisions>95,'livelihood choices too rare '+decisions);
