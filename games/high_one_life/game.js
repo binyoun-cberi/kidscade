@@ -167,6 +167,12 @@
     $('certificateTitle').textContent=historical?'집안의 첫 기록':'출생 신고서';
     $('birthTicketMark').textContent=historical?'朝鮮 · '+life.birthYear+'年':'ONE LIFE / 0001';
     $('birthTicketKind').textContent=historical?'한 생의 첫 장':'출생 기록';
+    $('birthTicketFoot').textContent=historical
+      ?'하나의 생이 시작되었다. 그 앞날은 누구도 알지 못한다.'
+      :'탄생은 우연입니다. 살아가는 이야기는 지금부터 시작됩니다.';
+    $('birthTagline').textContent=historical
+      ?'작은 울음소리가 집 안에 번진다.'
+      :'이 집에서 당신의 이야기가 시작됩니다.';
     $('birthCertificate').setAttribute('aria-label',historical?'태어난 집의 기록':'출생 신고서');
     $('hopaDisplay').classList.toggle('hidden',!(historical&&life.birthYear>=1413));
     if(historical){
