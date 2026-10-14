@@ -100,8 +100,8 @@ const api={
   // Age-shaped hanbok sprites; clothes and headwear signal age and social position.
   const sprite=(x,ground,personAge,sex,childColor,adultColor,offset)=>{
    const child=personAge<8,teen=personAge<16&&!child,elder=personAge>=62;
-   const s=child?0.72:teen?0.88:1;
-   const head=child?13:15,body=child?21:25,robe=child?22:32;
+   const s=personAge<3?0.54:personAge<8?0.66:personAge<13?0.78:teen?0.88:1;
+   const head=child?17:teen?16:15,body=child?21:25,robe=child?24:teen?28:32;
    const skin='#d5a47f',hair=elder?'#6d6460':'#34363a';
    const X=n=>Math.round(x+n*s),Y=n=>Math.round(ground+n*s),R=(a,b,c,d,col)=>px(X(a),Y(b),Math.max(2,Math.round(c*s)),Math.max(2,Math.round(d*s)),col);
    // Face and hair/head covering.
