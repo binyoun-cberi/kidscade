@@ -1,0 +1,7 @@
+body.joseon-book .annals-source{margin-top:14px;padding:10px 12px;border:1px solid #bda67d;background:#f8eed8;color:#42321f;border-radius:2px}
+body.joseon-book .annals-source summary{cursor:pointer;font:700 13px/1.65 "Noto Serif KR","Batang",serif;color:#62442d}
+body.joseon-book .annals-source[open]{padding-bottom:15px}
+body.joseon-book .annals-source p{font-size:12px;line-height:1.85;word-break:keep-all;overflow-wrap:anywhere;margin:10px 0;color:#50412c}
+body.joseon-book .annals-source a{font-size:12px;text-decoration:underline;text-underline-offset:3px;color:#4b604d;display:inline-block;margin:0 0 9px}
+body.joseon-book .annals-source small{display:block;font-size:11px;line-height:1.65;color:#6c604e}
+@media(max-width:780px){body.joseon-book .annals-source{max-width:100%;min-width:0}body.joseon-book .annals-source summary{white-space:normal;overflow-wrap:anywhere}}

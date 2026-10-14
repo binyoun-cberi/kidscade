@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="./joseon-book.css?v=1">
 <link rel="stylesheet" href="./mobile-reading-v2.css?v=1">
 <link rel="stylesheet" href="./joseon-v8-lineage.css?v=1">
+<link rel="stylesheet" href="./joseon-annals.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -127,6 +128,12 @@
               <p id="v12ChoicesCount">지금까지 내린 선택 0번</p>
             </div>
             <small>세상이 바뀔 때마다 삶에도 새로운 일이 찾아옵니다.</small>
+            <details id="annalsSourcePanel" class="annals-source hidden">
+              <summary>이 시절의 조선왕조실록 기록 보기</summary>
+              <p id="annalsSourceText">그때 조정에는 무슨 일이 기록되었을까?</p>
+              <a id="annalsSourceLink" href="https://sillok.history.go.kr/main/main.do" target="_blank" rel="noopener noreferrer">실록 기사 원문·국역 읽기 ↗</a>
+              <small>실록은 조정의 기록이며, 이 인물이 직접 겪은 사건이라는 뜻은 아닙니다.</small>
+            </details>
           </section>
           <section class="v13-care-strip" aria-label="가족과 건강의 장기 변화">
             <div class="stat-title">가족·건강·기억 <span id="v13CareYears">돌봄 기록 0년</span></div>
@@ -358,8 +365,9 @@
 <script src="./joseon-v7-life.js?v=1"></script>
 <script src="./joseon-v8-lineage.js?v=1"></script>
 <script src="./joseon-v9-village.js?v=1"></script>
+<script src="./joseon-annals-v10.js?v=1"></script>
 <script src="./colonial-daily-v2.js?v=1"></script>
 <script src="./joseon-pixel-v2.js?v=2"></script>
-<script src="./game.js?v=37"></script>
+<script src="./game.js?v=38"></script>
 </body>
 </html>
