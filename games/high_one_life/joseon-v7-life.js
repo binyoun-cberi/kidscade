@@ -14,7 +14,7 @@ const rnd=(seed,salt)=>{
  x=Math.imul(x^(x>>>16),0x7feb352d);x=Math.imul(x^(x>>>15),0x846ca68b);
  return ((x^(x>>>16))>>>0)/4294967296;
 };
-const coastal=new Set(['경상도','전라도','황해도','함경도','평안도']);
+const coastal=new Set(['경상도','전라도','황해도','함경도','평안도','제주도']);
 const mountain=new Set(['강원도','함경도','평안도','경상도']);
 const rural=s=>s.region!=='한양';
 const bonded=s=>['공노비','사노비'].includes(s.origin)&&!s.freed;
