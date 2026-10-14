@@ -84,7 +84,9 @@ test('older saves have no fabricated new debt when economy state is missing',()=
 });
 test('the lived household and biography show land, grain, debt, work and relationships',()=>{
  const source=fs.readFileSync(path.join(root,'game.js'),'utf8');
- assert.match(source,/빌린 땅/);
+ assert.match(source,/남의 땅도 빌려 농사짓는다|남의 논밭을 빌려 농사짓고/);
+ assert.match(source,/oldFarm\(life\)/);
+ assert.doesNotMatch(source,/경작한 땅 '\+.*몫/);
  assert.match(source,/e\.condition/);
  assert.match(source,/e\.debt/);
  assert.match(source,/life\.stats\.bonds>=65/);
