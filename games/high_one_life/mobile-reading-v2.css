@@ -1,0 +1,77 @@
+/* One Life: mobile reading, not two-column dashboard compression. */
+@media(max-width:780px){
+  .play-layout{display:flex!important;flex-direction:column;gap:14px;min-width:0}
+  .play-layout>.chronicle,
+  .play-layout>.info{width:100%;min-width:0;max-width:100%;order:initial!important}
+  .play-layout>.chronicle{order:0!important}
+  .play-layout>.info{
+    order:1!important;
+    display:block!important;
+    grid-template-columns:none!important;
+    padding:17px 16px;
+  }
+  .play-layout>.info>*{min-width:0;max-width:100%;width:auto}
+  .info .stats,.info .traits,.info .v9-living-people,
+  .info .v9-people-list,.info .v9-memory-caption{display:block;min-width:0;max-width:100%}
+  .info .stats>.stat,.info .traits>div{margin-bottom:13px}
+  .info .v9-people-list{list-style:none;padding:0;margin:10px 0}
+  .info .v9-people-list>li{
+    display:block!important;
+    padding:11px 12px;margin:0 0 8px;width:100%!important;
+    min-width:0;max-width:100%;
+    white-space:normal;word-break:keep-all;overflow-wrap:anywhere;
+    line-height:1.7;font-size:13px;
+  }
+  .info .v9-living-people{padding:15px;margin:14px 0}
+  .info .v9-memory-caption{white-space:normal;word-break:keep-all;overflow-wrap:anywhere;font-size:13px;line-height:1.75}
+  .info .stat-title{margin:18px 0 11px;display:block;clear:both}
+  .info .stat-title span{float:none;margin-left:8px}
+  .info .info-heading{display:flex;justify-content:space-between}
+  .chronicle>.v10-history-panel,
+  .chronicle>.v13-care-strip{
+    display:block!important;
+    min-width:0;width:100%;box-sizing:border-box;
+  }
+  .v10-history-panel>.stat-title,.v13-care-strip>.stat-title{
+    display:flex;align-items:baseline;justify-content:space-between;gap:10px
+  }
+  .v10-history-panel>.stat-title span,.v13-care-strip>.stat-title span{
+    float:none;white-space:normal;text-align:right
+  }
+  .v10-history-panel #v10HistoryStatus,.v10-history-panel #v10HistoryEffects{margin:9px 0}
+  .v12-era-ledger{
+    display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+    gap:7px;width:100%;min-width:0
+  }
+  .v12-era-ledger p{
+    display:block;width:100%;min-width:0;
+    white-space:normal;overflow-wrap:anywhere;word-break:keep-all;
+    font-size:13px!important;line-height:1.75!important;
+    padding:10px 12px;
+  }
+  .v13-care-strip>p{margin:10px 0;overflow-wrap:anywhere;word-break:keep-all;line-height:1.8}
+  .v8-tools-nav{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .v8-tools-nav button{font-size:12px;min-width:0}
+  .timeline li{min-width:0}
+  .timeline li span{word-break:keep-all;overflow-wrap:anywhere}
+}
+body.joseon-book .v10-history-panel,
+body.joseon-book .v13-care-strip{
+ background:#f1e5ca;border:1px solid #b8a17b;border-radius:2px;
+ color:#3b2e20;
+}
+body.joseon-book .v12-era-ledger p{
+ background:#f9f0dd;border:1px solid #c2ad84;border-radius:1px;
+ color:#3a2e20;
+}
+body.joseon-book .v13-care-strip p,
+body.joseon-book .v9-living-people p{color:#493725}
+body.joseon-book .v9-living-people{
+ background:#f1e3c6;border:1px solid #af9872;border-radius:2px
+}
+body.joseon-book .v9-people-list li{
+ background:#fbefd5;color:#382b1c;border:1px solid #bea57d;border-radius:1px
+}
+body.joseon-book .v9-living-people>small{color:#756143}
+body.joseon-book .scene-culture-note{font-size:12px;color:#564329;line-height:1.8}
+body.joseon-book .story-head h2{font-weight:800}
