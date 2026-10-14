@@ -211,7 +211,7 @@ function prepare(life,s){
   s.role='관료';s.inspector=false;s.inspectorUntil=null;j.occupation='관직 생활';
   remember(life,s,'어사의 임무를 마치고 원래의 관직으로 돌아왔다. 고을에서 본 일을 조정에 전했다.');
  }
- if([18,27,39,54].includes(age))offer(life,s,'living','올해 나의 생업',roleChoices(s,j,life));
+ if(age===18&&!s.role)offer(life,s,'living','집안에서 익힌 일을 이어 갈까',roleChoices(s,j,life));
  const duty=P.military(life.year,origin,life.gender);
  if([22,37,52].includes(age)&&duty.eligible&&duty.kind!=='reform')
   offer(life,s,duty.kind==='hopo'?'hopo':'military',duty.title,taxChoices('military',duty));

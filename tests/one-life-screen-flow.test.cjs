@@ -219,7 +219,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.match(get('sceneLabel').textContent,/봄|여름|가을|겨울/);
  assert.match(get('v12EconomyEra').textContent,/논밭|농사|살림/);
  assert.doesNotMatch(get('v12EconomyEra').textContent,/몫|게임용|설정/);
- assert.match(get('v13FamilyStatus').textContent,/부모님/);
+ assert.match(get('v13FamilyStatus').textContent,/식구|자녀|배우자/);
  assert.ok(get('v9PeopleList').children.length>=2);
  assert.match(get('countryContextText').textContent,/태어났다/);
  assert.equal(get('certificateTitle').textContent,'집안의 첫 기록');
@@ -228,6 +228,10 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.equal(get('hopaDisplay').classList.contains('hidden'),false);
  assert.equal(document.body.classList.contains('joseon-book'),true);
  assert.doesNotMatch(get('birthHome').textContent,/몫|게임용|설정/);
+ assert.match(get('birthHome').textContent,/전답|논밭/);
+ assert.match(get('v12EconomyEra').textContent,/전답|살림/);
+ assert.doesNotMatch(get('v12ChoicesCount').textContent,/\d+번|\d+단계|\d+점/);
+ assert.doesNotMatch(get('v12EducationEra').textContent,/\d+단계/);
  assert.doesNotMatch(get('birthEraNote').textContent,/게임용|설정/);
  assert.equal(get('birthDate').textContent.includes('월'),false,'조선 출생 장면에는 양력식 생일을 덧씌우지 않는다');
 });
