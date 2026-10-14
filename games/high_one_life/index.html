@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="./world-v8.css?v=7">
 <link rel="stylesheet" href="./pixel-v2.css?v=2">
 <link rel="stylesheet" href="./joseon-book.css?v=1">
+<link rel="stylesheet" href="./mobile-reading-v2.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -49,7 +50,7 @@
             <button type="button" data-era-year="1935" aria-pressed="false">1935년 일제강점기</button>
             <button type="button" data-era-year="1950" aria-pressed="false">1950년 한국전쟁기</button>
           </div>
-          <p id="eraHelp">1392년 조선부터 2026년 대한민국까지, 한반도 안에서 태어나는 인생을 살아봅니다. 전쟁과 사건의 발생·생애 결과는 역사 통계가 아닌 게임용 이야기 설정입니다.</p>
+          <p id="eraHelp">1392년 조선부터 오늘날까지, 어느 시대의 어느 집에서 삶이 시작될까요?</p>
         </div>
         <button id="drawBtn" class="primary" type="button">한반도의 어느 시대에서 시작될까? <span aria-hidden="true">↗</span></button>
         <button id="resumeBtn" class="secondary hidden" type="button">이어서 살아가기</button>
@@ -305,7 +306,11 @@
       <p class="eyebrow">시작하기 전에</p><h2 id="rulesTitle">게임 방법</h2>
       <p>1392년부터 2026년까지 태어날 해를 정하세요. 모든 인생은 한반도에서 시작하며, 시대와 지역에 따라 만나는 사건과 선택이 달라집니다. 시간은 저절로 흐르다가 중요한 순간에 멈춥니다.</p>
       <p>시대와 지역에 따라 배움과 생업, 전쟁과 사회 변화가 삶을 바꿉니다. 전쟁 시기에는 피란·포로·사망 등 무거운 결과가 나타날 수 있습니다. 그 결과의 발생 방식은 역사 통계가 아닌 게임용 이야기 설정입니다. 삶이 끝나면 지나온 시간을 다시 읽을 수 있습니다.</p>
-      <p class="rules-small"><strong>역사와 이야기의 구분</strong> — 역사적 사건의 연도와 내용은 공개 자료를 참고했습니다. 등장인물의 가족·교육·직업·건강·선택, 과거 출생·사망 확률과 경제 금액은 게임을 위해 구성한 이야기와 추정치입니다. 실제 개인이나 그 시대 사람들의 삶을 대표하지 않습니다.</p>
+      <details class="historical-method"><summary>자료 출처 및 제작 방식</summary>
+  조선 시대의 제도와 생활상은 국사편찬위원회와 한국민족문화대백과 자료를 참고했습니다. 인물과 가족의 일상, 개인별 가능성은 실제 호적이나 사망 통계를 그대로 재현한 것이 아닌 작품 속 이야기입니다.
+  <a target="_blank" rel="noopener noreferrer" href="https://encykorea.aks.ac.kr/Article/E0002187">결부법 자료</a>
+  <a target="_blank" rel="noopener noreferrer" href="https://encykorea.aks.ac.kr/Article/E0051904">조선의 생활상</a>
+</details>
       <button type="button" id="rulesOkay" class="primary">알겠어요</button>
     </div>
   </div>
@@ -339,12 +344,12 @@
 <script src="./joseon-history-policy.js?v=1"></script>
 <script src="./joseon-v1.js?v=7"></script>
 <script src="./joseon-v2.js?v=4"></script>
-<script src="./joseon-culture-v1.js?v=1"></script>
-<script src="./joseon-v3.js?v=5"></script>
+<script src="./joseon-culture-v1.js?v=2"></script>
+<script src="./joseon-v3.js?v=6"></script>
 <script src="./joseon-v4.js?v=5"></script>
-<script src="./joseon-v5.js?v=3"></script>
-<script src="./joseon-v6.js?v=1"></script>
+<script src="./joseon-v5.js?v=4"></script>
+<script src="./joseon-v6.js?v=2"></script>
 <script src="./joseon-pixel-v2.js?v=2"></script>
-<script src="./game.js?v=35"></script>
+<script src="./game.js?v=36"></script>
 </body>
 </html>
