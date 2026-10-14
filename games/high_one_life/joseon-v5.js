@@ -317,7 +317,7 @@ function choose(life,index){
   if(success<.22){s.freed=true;s.legal='양인';s.trade='품팔이와 가족의 살림';remember(life,s,'속량이 받아들여져 예속된 신분에서 벗어났다. 아직 생계와 차별의 어려움은 남아 있었다.');}
   else remember(life,s,'속량의 길을 알아보았지만 허락을 얻지 못했다. 배운 일과 인연은 남았다.');
  }
- if(a==='throne'){remember(life,s,'실제 왕위 계승은 역사에 기록된 군주의 몫이다. 왕실 친족의 자리에서 정국을 지켜보았다.');}
+ if(a==='throne'){remember(life,s,'왕위에 오를 자리는 먼 곳에 있었다. 그는 왕실 친족으로서 궁중의 소식과 조정의 변화를 지켜보았다.');}
  if(a==='courtstudy'||a==='courtduty')s.rank=Math.max(s.rank,1);
  if(['inspect','reform','hear'].includes(a)&&P.canInspect(s.origin,s.rank,j.office,s.role,life.year)){s.inspector=true;s.role='암행어사';s.inspectorUntil=life.year+3;j.occupation='어사로 감찰하는 임무';}
  if(a==='flee'){j.relocations++;j.hardshipUntil=Math.max(j.hardshipUntil,life.year+1);}
