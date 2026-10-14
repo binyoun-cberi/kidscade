@@ -31,7 +31,8 @@ const REGIONAL={
  '강원도':{work:'산림·밭농사와 약초',special:'mountain',grain:3,label:'산악과 고갯길'},
  '황해도':{work:'농업·서해 연안 장시',special:'farm',grain:6,label:'서해의 들녘'},
  '평안도':{work:'국경 장시·운송·농사',special:'border',grain:4,label:'국경을 잇는 길'},
- '함경도':{work:'밭농사·산림과 변경 교역',special:'border',grain:3,label:'변방의 산지'}
+ '함경도':{work:'밭농사·산림과 변경 교역',special:'border',grain:3,label:'변방의 산지'},
+ '제주도':{work:'밭농사·해산물 채취와 포구',special:'port',grain:4,label:'섬마을과 바닷길'}
 };
 const HISTORY=[
  {year:1418,title:'세종 즉위',detail:'세종이 왕위에 올랐다.',type:'court'},
