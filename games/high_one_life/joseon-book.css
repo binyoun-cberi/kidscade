@@ -232,3 +232,26 @@ body.joseon-book .end-highlights li {color:#34291c}
   body.joseon-book .hopa-wood {width:87px}
   body.joseon-book .birth-heading {font-size:24px}
 }
+/* 성인 남성에게만 보이는 인물별 호패 모형. 실제 발급 여부를 단정하지 않는다. */
+body.joseon-book .life-hopa {
+  display:flex;align-items:center;gap:12px;margin:14px 0 18px;padding:12px 14px;
+  background:linear-gradient(135deg,#b99464,#dfc69b 60%,#ac8356);
+  color:#312519;border:2px double #695035;box-shadow:2px 3px 0 #8c704a7b;
+}
+body.joseon-book .life-hopa .life-hopa-seal {
+  font:800 20px/1.3 "Noto Serif KR","Batang",serif;
+  writing-mode:vertical-rl;border:1px solid #715637;padding:6px 3px;
+}
+body.joseon-book .life-hopa strong {
+  display:block;font:800 18px/1.5 "Noto Serif KR","Batang",serif;color:#352719;
+}
+body.joseon-book .life-hopa small {display:block;font-size:11px;color:#5f452d;line-height:1.5}
+body.joseon-book .country-context>small:last-child,
+body.joseon-book .finance-panel {display:none}
+body.joseon-book .mini-passport {border-color:#a58b63;background:#f4e7ca}
+body.joseon-book .mini-passport strong,
+body.joseon-book .mini-passport small,
+body.joseon-book .mini-passport span {color:#33291d}
+@media(max-width:780px) {
+  body.joseon-book .life-hopa {grid-column:1 / -1;margin:4px 0 13px}
+}
