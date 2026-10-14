@@ -18,6 +18,7 @@
   const World13 = window.OneLifeWorld13;
   const Joseon = window.OneLifeJoseon;
   const Joseon2 = window.OneLifeJoseon2;
+  const JoseonCulture = window.OneLifeJoseonCulture;
   const Joseon3 = window.OneLifeJoseon3;
   const Joseon4 = window.OneLifeJoseon4;
   const Joseon5 = window.OneLifeJoseon5 || null;
@@ -163,6 +164,8 @@
       const picture=window.OneLifeJoseonPixel2?.paint($('lifeScene'),life)||Joseon3.paint($('lifeScene'),life)||Joseon.paint($('lifeScene'),life);
       if(!picture)Pixel.paint($('lifeScene'),life);
       put('sceneLabel',life.year+'년 '+v3.season+' · '+j.region+' '+v3.sceneLabel+' · '+(jobs?.primary?.name||j.occupation));
+      const culture=JoseonCulture?.describe(life,{joseon:j,scene:v3.zone,role:jobs?.primary?.name||j.occupation});
+      put('sceneCulture',culture?[culture.period+' · '+culture.clothing,culture.housing,culture.meal].join('  |  '):'');
       return;
     }
     const p=World2.enrich(life).profile;
