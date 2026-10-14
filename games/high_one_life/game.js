@@ -80,8 +80,8 @@
   function landAmount(units){
     const bu=Math.max(0,Math.round((Number(units)||0)*10));
     if(!bu)return '없음';
-    const gyeol=Math.floor(bu/100),remainder=bu%100;
-    return (gyeol?gyeol+'결 ':'')+(remainder?remainder+'부':'').trim();
+    const gyeol=(bu/100).toFixed(2).replace(/0+$/,'').replace(/\.$/,'');
+    return gyeol+'결';
   }
   function oldLandLedger(life){
     const j=Joseon.summary(life),e=j.economy;
