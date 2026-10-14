@@ -74,6 +74,23 @@
     if(e.ownedLand>0)return '집안에서 가진 논밭을 일구며 한 해의 살림을 꾸린다.';
     return '남의 논밭을 빌려 농사짓고, 수확으로 살림을 꾸린다.';
   }
+  // 1결 = 100부. 원본 s.land 값은 면적이 아닌 추상 자원이므로
+  // 통계로 오해되는 원래의 정수 '몫'을 직접 1결로 치환하지 않는다.
+  // 본 작품의 가구별 경작 규모를 위해 전답을 10부 단위로 별도 표시한다.
+  function landAmount(units){
+    const bu=Math.max(0,Math.round((Number(units)||0)*10));
+    if(!bu)return '없음';
+    const gyeol=Math.floor(bu/100),remainder=bu%100;
+    return (gyeol?gyeol+'결 ':'')+(remainder?remainder+'부':'').trim();
+  }
+  function oldLandLedger(life){
+    const j=Joseon.summary(life),e=j.economy;
+    if(!e.workedLand)return '일구는 전답 없음';
+    const pieces=['일구는 전답 '+landAmount(e.workedLand)];
+    if(e.ownedLand)pieces.push('집안 소유 '+landAmount(e.ownedLand));
+    if(e.leasedLand)pieces.push('빌린 전답 '+landAmount(e.leasedLand));
+    return pieces.join(' · ');
+  }
   function oldSeason(month) {
     return month>=3&&month<=5?'봄':month>=6&&month<=8?'여름':month>=9&&month<=11?'가을':'겨울';
   }
@@ -156,7 +173,7 @@
     $('birthFather').textContent=(father?father.name+' · ':'')+p.fatherAge+'세 · '+p.fatherJob;
     $('birthSiblings').textContent=p.siblings+'명';
     const setting=World8.ensure(life);
-    $('birthHome').textContent=historical?oldFarm(life):setting.housing+' · '+setting.familyNote;
+    $('birthHome').textContent=historical?oldFarm(life)+' '+oldLandLedger(life)+'.':setting.housing+' · '+setting.familyNote;
     $('birthContext').textContent=historical?oldPlace(life):History.period(life)+' · '+setting.regionName+' · '+setting.neighborhood;
     $('birthEraNote').textContent=historical
       ?'새로 태어난 아이를 위해 식구들이 부엌 불을 지피고 자리를 마련한다.'
@@ -186,16 +203,16 @@
     if(Joseon.inOldEra(life)){
       const v2=Joseon2.summary(life),j=Joseon.summary(life),v3=Joseon3.summary(life),v4=Joseon4.summary(life),social=Joseon5?.summary(life),jobs=Joseon6?.summary(life),p=Joseon.ensure(life)&&life.profile,m=life.money,e=j.economy;
       const put=(id,value)=>{$(id).textContent=String(value);};
-      put('v10HistoricalCount',Joseon.ensure(life).seen.length+'개 역사 사건');
+      put('v10HistoricalCount',Joseon.ensure(life).seen.length?Joseon.ensure(life).seen.length+'가지 큰일을 겪음':'고을의 하루');
       put('v10HistoryStatus',j.era+' · '+(Joseon.eventFor(life.year)?.title||j.region+'에서 살아가는 중'));
       put('v10HistoryEffects',[j.warMemory.length?'삶을 바꾼 사건 · '+j.warMemory.join(' · '):'고을의 생활이 이어지고 있습니다.',v2.lastMemory,social?.memories.at(-1)].filter(Boolean).join(' · '));
-      put('v12EducationEra','배움 · '+j.school+(j.literacy>=4?' · 글과 경전을 익혔다':j.literacy?' · 글자를 조금씩 익힌다':''));
-      put('v12WorkEra','생업 · '+(jobs?.primary?.name||j.occupation)+(jobs?.secondary?' · 겸업 '+jobs.secondary.name:'')+' · '+(social?.originLabel||j.status)+' · '+e.labor);
-      put('v12EconomyEra',oldFarm(life)+' '+e.condition+'.');
-      put('v12ChoicesCount','삶의 갈림길 '+(j.decisions+v2.decisions+v3.choices+v4.decisions+(social?.decisions||0)+(jobs?.decisions||0))+'번 · 이주 '+j.relocations+'번 · '+(social?.obligations?.at(-1)||'이웃을 도운 횟수 '+v2.helpGiven+'번'));
+      put('v12EducationEra',j.literacy>=4?'글과 경전을 읽을 수 있다.':j.literacy?'글자를 조금씩 익혀 간다.':'집안에서 필요한 일을 배우며 지낸다.');
+      put('v12WorkEra',(jobs?.primary?.name||j.occupation)+' 일을 하며 살아간다.'+(jobs?.secondary?' 틈틈이 '+jobs.secondary.name+'의 일도 돕는다.':''));
+      put('v12EconomyEra',oldLandLedger(life)+'. '+e.condition+'.');
+      put('v12ChoicesCount',social?.obligations?.at(-1)||'집안과 고을의 일이 하루하루 이어지고 있다.');
       if(social)put('v10HistoryStatus',j.era+' · '+social.originLabel+' · '+social.legal);
-      put('v13CareYears','한집에서 지내는 식구 '+(v4.atHome+1)+'명 · 부모님 돌봄 '+v4.careYears+'번');
-      put('v13FamilyStatus',(v4.spouse?(v4.spouse.alive?'배우자 '+v4.spouse.name+'와 함께 지내는 중':'배우자 '+v4.spouse.name+'와 함께한 기억'):'집안의 생활을 이어가는 중')+' · 자녀 '+v4.children+'명 · 살아 계신 부모님 '+v4.parents+'명');
+      put('v13CareYears','한집에서 지내는 식구 '+(v4.atHome+1)+'명');
+      put('v13FamilyStatus',(v4.spouse?(v4.spouse.alive?'배우자 '+v4.spouse.name+'와 함께 지낸다.':'배우자 '+v4.spouse.name+'를 그리워한다.'):'식구들과 살림을 이어 간다.')+' 자녀 '+v4.children+'명.');
       put('v13LifeMemories',[...j.memories.slice(-1),...v3.memories.slice(-1),...v4.memories.slice(-2),...(jobs?.memories||[]).slice(-1)].join(' · ')||'세월이 지나며 이야기들이 남습니다.');
       put('nameHeadline',p.name+' · '+j.region);put('profileName',p.name);
       put('profileMeta',life.gender+' · '+j.region+' · '+life.age+'세');
@@ -213,12 +230,13 @@
       const people=$('v9PeopleList');people.replaceChildren();
       for(const member of v4.people.slice(0,11)){
         const item=document.createElement('li'),role=Joseon4.ROLES[member.role]||'가족';
-        item.textContent=role+' '+member.name+' · '+member.age+'세 · '+(member.alive?member.work+(member.atHome?' · 한집 거주':' · 따로 거주'):member.diedYear+'년 별세')+(member.role==='child'&&member.legal?' · 법적 처지 '+member.legal:'')+' · '+member.trait+' 성격';
+        const person=role+' '+member.name+' ('+member.age+'세)';
+        item.textContent=person+' — '+(member.alive?(member.atHome?'한집에서 ':'따로 살며 ')+member.work:(member.diedYear+'년에 세상을 떠났다.'));
         people.append(item);
       }
       put('v9PeopleCount','가족 '+v4.people.length+'명 중 '+v4.alive+'명 생존 · 함께 사는 식구 '+v4.atHome+'명');put('v9Hobby',v3.memories.at(-1)||'생업과 이웃 사이에서 남은 일상');
       put('v9Loan',e.debt?'이웃이나 친척에게 진 빚을 아직 다 갚지 못했다. '+e.why:'빚을 지지 않고 살림을 꾸려 가고 있다. '+e.why);
-      put('v9Hobby',jobs?.primary?jobs.primary.supply+'을 돌보며 '+jobs.primary.people+'과 인연을 이어 간다. '+e.labor:(social?.memories.at(-1)||v3.memories.at(-1)||'생업과 이웃 사이에서 남은 일상')+' · '+e.labor);
+      put('v9Hobby',jobs?.primary?jobs.primary.name+' 일을 오랫동안 익히며 사람들과 인연을 맺었다.':(social?.memories.at(-1)||v3.memories.at(-1)||'식구들과 고을의 하루를 보냈다.'));
       const picture=window.OneLifeJoseonPixel2?.paint($('lifeScene'),life)||Joseon3.paint($('lifeScene'),life)||Joseon.paint($('lifeScene'),life);
       if(!picture)Pixel.paint($('lifeScene'),life);
       put('sceneLabel',life.year+'년 '+v3.season+' · '+j.region+'에서 '+v3.sceneLabel);
@@ -551,7 +569,18 @@
         const moneyDelta=(life.money?.netWorth??before.netWorth)-(before.netWorth??life.money?.netWorth??0);
         if(moneyDelta)changes.push('살림 '+(moneyDelta>0?'+':'')+formatCredits(moneyDelta));
         if(life.career!==before.career)changes.push('진로 '+life.career);
-        const effectText=changes.length?'이후 달라진 점 · '+changes.join(' · '):'당장은 눈에 띄는 변화가 없었다.';
+        let effectText=changes.length?'이후 달라진 점 · '+changes.join(' · '):'당장은 눈에 띄는 변화가 없었다.';
+        if(Joseon.inOldEra(life)){
+          const lines=[];
+          if(life.stats.health<before.stats.health)lines.push('몸이 조금 고단해졌다');
+          if(life.stats.health>before.stats.health)lines.push('쉬어 갈 힘을 되찾았다');
+          if(life.stats.bonds>before.stats.bonds)lines.push('곁에 함께하는 사람이 늘었다');
+          if(life.stats.knowledge>before.stats.knowledge)lines.push('전에 모르던 일을 하나 더 배웠다');
+          if(moneyDelta<0)lines.push('집안 살림에는 다소 부담이 남았다');
+          if(moneyDelta>0)lines.push('집안 살림에 작은 여유가 생겼다');
+          if(life.career!==before.career)lines.push('새로운 생업을 시작했다');
+          effectText=lines.length?lines.slice(0,2).join('. ')+'.':'그날의 일은 마음 한편에 남았다.';
+        }
         life.logEvent(effectText,'decision-effect');
         save(); elapsed=0; lastTick=performance.now(); render();
       });
@@ -644,7 +673,7 @@
       $('survivalChart').classList.add('hidden');
       $('survivalActual').setAttribute('d','');$('survivalOther').setAttribute('d','');
       $('survivalSummary').textContent='이 사람의 시대에 해당하는 개인별 생존 기록은 확인할 수 없다.';
-      $('v8CountryStats').textContent='조선의 삶과 사망 시기는 게임의 이야기 규칙으로 전개된다. 현대 세계은행의 생존 통계를 적용하지 않는다.';
+      $('v8CountryStats').textContent='이 시대의 삶은 사람마다 달랐고, 남겨진 기록도 고르지 않다.';
       return;
     }
     $('survivalChart').classList.remove('hidden');
