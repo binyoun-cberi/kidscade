@@ -43,18 +43,19 @@ function household(life,opts={}){
  return {kind:'thatched-yard',roof:'thatch',label:'마당에 살림도구를 둔 초가집',yard:true};
 }
 function meal(life,opts={}){
- const j=opts.joseon||life.joseon||{},year=Number(life.year||life.birthYear||1480),capital=Number(j.capital||0);
- const region=j.region||life.profile?.city||'';
- let text=capital<18
-  ?'살림이 빠듯한 집은 보리·조·콩을 섞은 밥이나 죽에 나물과 저장한 채소를 곁들여 끼니를 이었다.'
-  :'수확과 살림 형편에 따라 쌀·보리·조·콩을 섞고 나물, 장, 소금에 절인 채소를 곁들였다.';
- if(year<1610)text+=' 고추가 들어오기 전이라 붉은 고춧가루 김치는 아직 밥상에 오르지 않았다.';
- else if(year<1720)text+=' 고추는 전해졌지만 김치 양념에 널리 쓰이기 전이었다.';
- else if(year<1763)text+=' 고추 양념을 쓴 조리법이 나타나기 시작했지만 집집마다 쓰임은 달랐다.';
- else text+=' 고추 양념은 차츰 퍼졌지만 집집마다 재료와 맛은 달랐다.';
- if(year>=1763&&['경상도','전라도','제주도'].includes(region))text+=' 남쪽 일부 고을에서는 고구마 재배가 퍼지기 시작했다.';
- if(year>=1824&&['함경도','강원도','평안도'].includes(region))text+=' 북쪽과 동쪽 고을에는 감자가 들어와 구황 작물로 퍼지기 시작했다.';
- return text;
+ const j=opts.joseon||life.joseon||{},year=Number(life.year||life.birthYear||1480);
+ const wealth=Number(j.capital||0),region=j.region||life.profile?.city||'';
+ const choice=(array)=>array[Math.abs((Number(life.seed)||0)+year*7+Number(life.age||0)*13)%array.length];
+ const grains=wealth<18?['조밥과 나물','보리와 콩을 섞어 지은 밥','묽은 조죽과 소금에 절인 무']:
+   ['콩을 섞은 밥과 된장국','조밥과 산나물','밥과 장국, 무나물'];
+ const early=['소금에 절인 무를 한 접시 꺼냈다.','오이와 무를 담근 맑은 김치를 곁들였다.','장독에 두었던 흰 김치를 그릇에 덜었다.'];
+ const middle=['무를 절인 김치를 꺼내 식구들과 나누었다.','나물과 장에 절인 채소를 곁들였다.','김치와 된장국을 작은 상에 올렸다.'];
+ const late=['김치를 꺼내 밥상에 놓았다.','무김치와 나물로 저녁상을 차렸다.','된장국과 절인 채소를 곁들였다.'];
+ const dish=choice(grains),side=choice(year<1600?early:year<1750?middle:late);
+ let seasonal='';
+ if(year>=1763&&['경상도','전라도'].includes(region)&&((year+life.seed)%4===0))seasonal=' 아랫고을에서 가져온 고구마를 나누어 먹었다.';
+ else if(year>=1824&&['함경도','강원도','평안도'].includes(region)&&((year+life.seed)%4===1))seasonal=' 겨울을 앞두고 감자를 삶아 먹었다.';
+ return dish+'을 먹었다. '+side+seasonal;
 }
 function describe(life,opts={}){
  const j=opts.joseon||life.joseon||{},origin=opts.origin||life.joseon5?.origin||j.birthStatus||life.familyLevel||'상민';
@@ -66,8 +67,8 @@ function describe(life,opts={}){
 }
 function memoryNote(life,opts={}){
  const age=Number(life.age||0),d=describe(life,opts);
- if(age===6||age===32||age===68)return '살던 곳은 '+d.housing+'였다. '+d.meal;
- if(age===11||age===23||age===49||age===77)return '그해에는 '+d.period+'의 '+d.clothing+' 차림으로 하루를 보냈다. '+d.meal;
+ if(age===6||age===32||age===68)return '마당을 지나 부엌에 들렀다. '+d.meal;
+ if(age===11||age===23||age===49||age===77)return '그해엔 '+d.clothing+' 차림으로 바깥일을 다녔다. '+d.meal;
  return d.meal;
 }
 const api=Object.freeze({period,wardrobe,household,meal,describe,memoryNote});
