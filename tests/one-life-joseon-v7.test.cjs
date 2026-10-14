@@ -38,9 +38,9 @@ test('dated institutions cannot occur before they existed',()=>{
  const j=J.ensure(after);j.literacy=3;after.gender='남자';
  V5.ensure(after).origin='서리 가계';
  assert.equal(V7.eligible(after,V7.EVENTS.find(x=>x.id==='seowon')),true);
- const lady=setAge(birth(1780),25);lady.gender='여자';
+ const lady=setAge(birth(1750),25);lady.gender='여자';
  assert.equal(V7.eligible(lady,V7.EVENTS.find(x=>x.id==='gache')),true);
- const post=setAge(birth(1790),25);post.gender='여자';
+ const post=setAge(birth(1765),25);post.gender='여자';
  assert.equal(V7.eligible(post,V7.EVENTS.find(x=>x.id==='gache')),false);
  assert.equal(V7.eligible(post,V7.EVENTS.find(x=>x.id==='gacheBan')),true);
 });
