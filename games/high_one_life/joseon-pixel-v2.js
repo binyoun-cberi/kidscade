@@ -69,8 +69,8 @@ const api={
   // A compact Joseon house with real eaves, wooden posts, lattice and either thatch or tile.
   const hx=119,hy=119,hw=174,hh=76;
   px(hx-5,hy-4,hw+10,hh+8,'#65594b');
-  px(hx,hy,hw,hh,'#e6d5b4');
-  px(hx+8,hy+13,hw-16,4,'#d1bc95');
+  px(hx,hy,hw,hh,home.kind==='palace'?'#bd7658':'#e6d5b4');
+  px(hx+8,hy+13,hw-16,4,home.kind==='palace'?'#6c8c68':'#d1bc95');
   for(let x=hx+12;x<hx+hw-5;x+=48)px(x,hy+12,5,hh-10,'#866d50');
   const tiled=home.roof==='tile';
   if(tiled){
@@ -114,7 +114,6 @@ const api={
     R(-head/2-7,-68,head+14,4,elite?'#292d31':'#54493f');
     R(-3,-79,6,12,elite?'#292d31':'#51473f');
     if(elite){R(-4,-83,8,5,'#30363a');}
-    }else if(!child&&sex==='남자'){R(-head/2-5,-67,head+10,3,'#54493f');
    }else if(!child&&sex==='여자'){
     R(-3,-70,10,8,hair);R(-7,-68,4,5,'#bd9256');
    }
@@ -134,8 +133,8 @@ const api={
    // Small eyes only when the face can support them without clutter.
    R(-4,-59,2,2,'#403a36');R(3,-59,2,2,'#403a36');
   };
-  const adultTone=elite?'#536d86':/중인|기술|장인/.test(String(origin))?'#66866e':'#a87556';
-  const trim=elite?'#b9a16e':'#c6aa73';
+  const adultTone=wear?.color||(elite?'#536d86':/중인|기술|장인/.test(String(origin))?'#66866e':'#a87556');
+  const trim=wear?.accent||(elite?'#b9a16e':'#c6aa73');
   if(age<16){
    sprite(342,243,age,life.gender,'#d4b96f',adultTone,trim);
    sprite(286,243,Math.min(48,age+29),'여자','#d4b96f',elite?'#8c6a74':'#927366',trim);
