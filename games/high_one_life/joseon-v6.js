@@ -282,7 +282,11 @@ function yearEnd(life,s){
    }
   }
  }
- if([25,37,49].includes(life.age)&&!s.active)pathway(life,s);
+ // Work changes arise from genuine household hardship or absence of a settled trade,
+ // not simply because a birthday has passed.
+ const j=J.ensure(life);
+ const needsNewPath=!s.career||(j.capital<-25&&!j.retired)||(j.hardshipUntil>=life.year&&j.hardshipUntil>0);
+ if([25,37,49].includes(life.age)&&!s.active&&needsNewPath)pathway(life,s);
  // Alternate between primary and secondary on eligible years, never create
  // more than one career-specific choice in a calendar year.
  const side=!!s.secondary&&life.age%8>=4;
