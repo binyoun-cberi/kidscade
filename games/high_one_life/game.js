@@ -146,7 +146,7 @@
     const mother=parents.find(person=>person.role==='mother');
     $('birthName').textContent=p.name;
     $('birthPlace').textContent=historical
-      ?j.region+'의 어느 '+(j.settlement==='도시'?'도성 안 집':j.settlement==='소도시'?'고을':'마을')
+      ?j.region+'의 어느 '+(Joseon.ensure(life).settlement==='도시'?'도성 안 집':Joseon.ensure(life).settlement==='소도시'?'고을':'마을')
       :History.place(life)+' · '+p.city+' ('+p.settlement+')';
     $('birthGender').textContent=life.gender;
     $('birthDate').textContent=historical?life.birthYear+'년 · '+oldSeason(p.birthMonth)+' 무렵'
@@ -168,7 +168,7 @@
     $('birthTicketMark').textContent=historical?'朝鮮 · '+life.birthYear+'年':'ONE LIFE / 0001';
     $('birthTicketKind').textContent=historical?'한 생의 첫 장':'출생 기록';
     $('birthCertificate').setAttribute('aria-label',historical?'태어난 집의 기록':'출생 신고서');
-    $('hopaDisplay').classList.toggle('hidden',!historical);
+    $('hopaDisplay').classList.toggle('hidden',!(historical&&life.birthYear>=1413));
     if(historical){
       $('hopaHolder').textContent=father?.name||'집안 어른';
       $('hopaTown').textContent=j.region;
