@@ -1,0 +1,6 @@
+body.joseon-book .late-joseon-ledger {margin:10px 0 13px;padding:12px 14px;border:1px solid #b49b73;background:#faf0d9;color:#473820}
+body.joseon-book .late-joseon-ledger strong {font-family:"Noto Serif KR",Batang,serif;font-weight:750;font-size:15px}
+body.joseon-book .late-joseon-ledger p {margin:5px 0;font-size:13px;line-height:1.75;color:#55442c;overflow-wrap:anywhere;word-break:keep-all}
+body.joseon-book .late-joseon-ledger .annals-source {margin:8px 0 0;padding:9px 10px}
+body.joseon-book .late-joseon-ledger .annals-source summary {font-size:12px}
+@media(max-width:780px) {body.joseon-book .late-joseon-ledger {padding:10px 12px}body.joseon-book .late-joseon-ledger p{font-size:13px}}
