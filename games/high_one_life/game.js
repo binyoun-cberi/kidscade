@@ -771,8 +771,8 @@
       oldLife&&Joseon3.summary(life).legacy?'마지막에는 '+Joseon3.summary(life).legacy+'의 시간을 보냈다.':'',
       oldLife&&Joseon4.summary(life).memories.length?'가족과 함께한 기억으로 '+Joseon4.summary(life).memories.slice(-2).join(' ') :'',
       oldLife?(life.year>=1900?'조선에서 살던 시절에는 ':'')+
-        '경작한 땅 '+oldLife.economy.workedLand+'몫 중 자신의 땅 '+oldLife.economy.ownedLand+'몫, 빌려 가꾼 땅 '+oldLife.economy.leasedLand+'몫이었다. '+
-        (oldLife.economy.debt?'살림이 어려워 갚지 못한 빚 '+oldLife.economy.debt+'몫도 있었다.':'많이 모으지 못했어도 그해의 살림을 이어 갔다.'):'',
+        oldFarm(life)+' '+
+        (oldLife.economy.debt?'빚이 남아 있어 식구들의 살림은 더욱 빠듯했다.':'크고 작은 어려움 속에서도 살림은 이어졌다.'):'',
       oldLife&&life.stats.bonds>=65?'돈의 많고 적음과 관계없이 곁을 지킨 사람과 함께한 시간이 있었다.':'',
       life.deathReason,
       !oldLife&&life.world?.educationLevel&&life.world.educationLevel!=='없음'
