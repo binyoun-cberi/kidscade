@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="./joseon-v8-lineage.css?v=1">
 <link rel="stylesheet" href="./joseon-annals.css?v=1">
 <link rel="stylesheet" href="./joseon-late-v11.css?v=1">
+<link rel="stylesheet" href="./joseon-regional-v12.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -152,6 +153,14 @@
                 <small>역사적 배경을 참고한 이야기이며 이 인물의 개인사는 가상입니다.</small>
               </details>
             </div>
+            <details id="joseonRegionalLedger" class="joseon-regional-ledger hidden">
+              <summary>이 고을의 생업과 도구 보기</summary>
+              <p id="regionalWorkType">—</p>
+              <p id="regionalTools">—</p>
+              <p id="regionalConnection">—</p>
+              <a id="regionalSourceLink" class="hidden" href="https://encykorea.aks.ac.kr/" target="_blank" rel="noopener noreferrer">관련 역사 자료 읽기 ↗</a>
+              <small>도구와 숙련도는 개인의 가상 기록이며 역사 통계를 의미하지 않습니다.</small>
+            </details>
             <ul id="villageNeighbors" class="joseon-neighbors"></ul>
           </section>
           <a id="historySourceLink" class="history-source-link hidden" target="_blank" rel="noopener noreferrer" href="https://contents.history.go.kr/">이 시기의 역사 자료 보기</a>
@@ -376,8 +385,9 @@
 <script src="./joseon-v9-village.js?v=1"></script>
 <script src="./joseon-annals-v10.js?v=1"></script>
 <script src="./joseon-v11-late-life.js?v=1"></script>
+<script src="./joseon-v12-regional.js?v=1"></script>
 <script src="./colonial-daily-v2.js?v=1"></script>
 <script src="./joseon-pixel-v2.js?v=2"></script>
-<script src="./game.js?v=39"></script>
+<script src="./game.js?v=40"></script>
 </body>
 </html>
