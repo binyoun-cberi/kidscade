@@ -113,7 +113,7 @@
     $('birthCountry').textContent = '출생 지역을 정하는 중…';
     $('birthFlag').textContent = Joseon.isJoseon(life)?'生':'🇰🇷';
     $('birthDetail').textContent = Joseon.isJoseon(life)?birthYear+'년, 어느 집에 태어나게 될까요?':birthYear+'년에 시작될 인생을 추첨합니다.';
-    document.querySelector('.birth-heading').textContent=Joseon.isJoseon(life)?'조선의 어느 집, 한 아이가 태어납니다.':'당신은 어디에서 태어날까요?';
+    $('birthHeading').textContent=Joseon.isJoseon(life)?'조선의 어느 집, 한 아이가 태어납니다.':'당신은 어디에서 태어날까요?';
     show('birth');
     let loops = 0;
     const sample = [['한양','📜'],['경상도','📜'],['평안도','📜'],['함경도','📜'],['제주도','📜']];
@@ -884,7 +884,7 @@
     $('birthFlag').textContent=Joseon.isJoseon(life)?'生':life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1];
     $('birthCountry').textContent=History.place(life);
     $('birthDetail').textContent=life.gender+' · '+life.familyLevel+' · '+life.birthYear+'년 출생';
-    document.querySelector('.birth-heading').textContent=Joseon.isJoseon(life)?'조선의 어느 집, 한 아이가 태어납니다.':'당신은 어디에서 태어날까요?';
+    $('birthHeading').textContent=Joseon.isJoseon(life)?'조선의 어느 집, 한 아이가 태어납니다.':'당신은 어디에서 태어날까요?';
     $('lifeStartBtn').classList.remove('hidden');
     paintCertificate();
     completed=false;paused=false;elapsed=0;
