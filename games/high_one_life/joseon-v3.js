@@ -3,10 +3,10 @@
  * Load after joseon-v1 / joseon-v2; modern lives are left untouched.
  */
 (function(root,factory){
- const api=factory(root?.OneLifeSim,root?.OneLifeJoseon,root?.OneLifeJoseon2);
+ const api=factory(root?.OneLifeSim,root?.OneLifeJoseon,root?.OneLifeJoseon2,root?.OneLifeJoseonCulture);
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.OneLifeJoseon3=api;
-})(typeof window!=='undefined'?window:null,function(Sim,J,V2){
+})(typeof window!=='undefined'?window:null,function(Sim,J,V2,Culture){
 'use strict';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const hash=(seed,salt)=>{
@@ -127,7 +127,8 @@ function livedMoment(life,s){
  const stories=DAILY[r],line=stories[Math.floor(hash(life.seed,life.age*73+809)*stories.length)];
  const lead=life.age<15?'어린 시절, ':life.age>=62?'나이가 들어, ':'그해 '+se+'에, ';
  const troubled=life.year<=j.hardshipUntil||life.year<=V2.ensure(life).scarcityUntil;
- log(life,s,lead+(troubled?'살림이 여의치 않았지만 ':'')+line,'joseon3-memory');
+ const lived=Culture?.memoryNote(life,{joseon:j,scene:r,role:j.occupation});
+ log(life,s,lead+(troubled?'살림이 여의치 않았지만 ':'')+line+(lived?' '+lived:''),'joseon3-memory');
 }
 function offer(life,s,kind){
  const id=kind+'-'+life.year;
