@@ -21,9 +21,10 @@ const SOURCES=Object.freeze({
  byeongin:'https://contents.history.go.kr/front/kc/printViewPopup.do?levelId=kc_i302620',
  shinmi:'https://contents.history.go.kr/front/km/view.do?levelId=km_014_0070_0010_0020_0020',
  opening:'https://contents.history.go.kr/front/ta/view.do?levelId=ta_h31_0070_0010_0020',
+ imo:'https://contents.history.go.kr/mobile/kc/view.do?code=kc_age_40&levelId=kc_n400200',
+ donghak:'https://contents.history.go.kr/front/hm/view.do?levelId=hm_117_0040&tabId=01&treeId=020107',
  gapshin:'https://contents.history.go.kr/front/hm/print.do?levelId=hm_116_0100&tabId=03&treeId=010701&whereStr=',
- gabo:'https://contents.history.go.kr/front/hm/print.do?levelId=hm_133_0010',
- donghak:'https://db.history.go.kr/modern/level.do?levelId=prc_1862_02'
+ gabo:'https://contents.history.go.kr/front/hm/print.do?levelId=hm_133_0010'
 });
 const southern=['경상도','전라도','충청도'];
 const coastal=['경기도','황해도','전라도','경상도','충청도'];
@@ -113,7 +114,7 @@ const EVENTS=[
    O('익숙한 고을 장터를 지킨다','오래된 단골과 거래한다','고향의 단골이 다시 찾아와 안부를 물었다.',{trust:3,capital:1},'stay')
   ]),
  E('imosoldier1882',[1882,1882],['한양','경기도'],'도성 군인들의 불만',
-  '한양에서 군인들에게 줄 곡식과 품삯 문제가 커져 소란이 났다는 말이 돌고 있다.',SOURCES.opening,[
+  '한양에서 군인들에게 줄 곡식과 품삯 문제가 커져 소란이 났다는 말이 돌고 있다.',SOURCES.imo,[
    O('도성에 있는 가족에게 편지를 보낸다','소식을 먼저 확인한다','도성의 집안은 혼란이 가라앉은 뒤 편지를 보내왔다.',{bonds:4,capital:-2},'kin'),
    O('시장 문을 닫고 일단 지낸다','큰길의 소란을 피한다','장사할 날이 줄어 살림에 부담이 남았다.',{capital:-4,health:1},'quiet'),
    O('사람들이 다친 곳에 먹을 것을 보낸다','사람들의 안부부터 살핀다','도움을 받은 사람들이 그날을 잊지 않았다.',{grain:-3,bonds:4},'care')
@@ -125,7 +126,7 @@ const EVENTS=[
    O('멀리 사는 친척에게 안부를 묻는다','사라진 사람을 걱정한다','먼 곳으로 떠난 친척에게서 소식이 전해졌다.',{capital:-2,bonds:4},'family')
   ]),
  E('donghak1894',[1894,1894],['전라도','충청도','경상도'],'동학 농민군이 모이다',
-  '고부에서 시작된 항의가 여러 고을로 퍼졌다. 농민들이 탐관오리와 부당한 세금을 바로잡자며 모인다.',SOURCES.jinju,[
+  '고부에서 시작된 항의가 여러 고을로 퍼졌다. 농민들이 탐관오리와 부당한 세금을 바로잡자며 모인다.',SOURCES.donghak,[
    O('식구를 안전한 곳에 머무르게 한다','전투에 휘말리지 않도록 한다','전쟁이 지나간 뒤에도 집안사람들의 안부가 가장 큰 걱정이었다.',{capital:-4,bonds:5},'protect'),
    O('농민군과 주변 고을의 소식을 듣는다','무슨 요구를 하는지 알아본다','그해 여러 고을의 사람들이 서로 다른 뜻을 나눴다.',{knowledge:4,trust:1},'learn'),
    O('굶주린 이웃에게 곡식을 건넨다','사람을 먼저 살핀다','도움을 건넸던 이웃과 전란 뒤에도 만났다.',{grain:-4,bonds:5},'aid')
