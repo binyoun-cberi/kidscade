@@ -171,8 +171,25 @@ const ARTICLES=Object.freeze([
   ])
 ]);
 const byId=new Map(ARTICLES.map(a=>[a.id,a]));
+const grownArticle=new Set(['kda_10508005_002','kka_11503021_001','wua_10107019_001']);
+function sceneFor(l,a){
+ const origin=V5?.summary(l)?.origin||'',job=J.summary(l).occupation||'';
+ const bonded=/사노비|공노비/.test(origin);
+ const nearSea=/어부|수군|뱃사공|선원|조운/.test(origin+' '+job);
+ if(a.id==='kda_10508005_002'&&bonded)
+  return '주인집에서 오래된 노비 문권을 꺼냈다. 누구의 문서가 옳은지 관아에서 다툰다는 말이 들린다.';
+ if(a.id==='kka_11503021_001'&&/장사|장인|상인|보부상/.test(origin+' '+job))
+  return '장날 내놓을 물건을 챙긴다. 조정에서는 장사 때문에 농사일을 놓는 사람이 많다며 말이 오간다.';
+ if((a.id==='kda_12710025_001'||a.id==='kga_10109010_002')&&nearSea)
+  return '함께 바닷길에 나선 사람의 소식이 끊겼다. 바람이 거세진 뒤 포구에서는 돌아올 배만 기다린다.';
+ if(a.id==='kpa_12302010_002'&&bonded)
+  return '한양에 병이 돌고 있다. 병막이 있어도 모든 아픈 사람에게 도움이 닿는 것은 아니라는 말을 듣는다.';
+ if(a.id==='wua_10107019_001'&&J.summary(l).economy?.leasedLand>0)
+  return '남의 논을 빌려 부치는데 비가 오지 않는다. 곡식을 거둘지조차 걱정스러운 때 군포를 마련할 일도 남았다.';
+ return a.scene;
+}
 function eligible(life,a){
- if(!J?.inOldEra(life)||!life.alive||life.year!==a.year||life.age<11)return false;
+ if(!J?.inOldEra(life)||!life.alive||life.year!==a.year||life.age<(grownArticle.has(a.id)?16:11))return false;
  const region=J.summary(life).region;
  return !a.regions||a.regions.includes(region);
 }
@@ -187,7 +204,7 @@ function promote(l,s){
 }
 function prompt(l){
  const s=ensure(l),a=byId.get(s?.active?.articleId);
- return a?{title:a.title,description:a.scene,options:a.options.map(o=>({label:o.label,note:o.note,action:o.label}))}:null;
+ return a?{title:a.title,description:sceneFor(l,a),options:a.options.map(o=>({label:o.label,note:o.note,action:o.label}))}:null;
 }
 function yearly(l,s){
  if(!s||!J.inOldEra(l)||!l.alive||s.processedYear>=l.year)return;
@@ -200,7 +217,7 @@ function yearly(l,s){
   if(!eligible(l,a)||s.seen.includes(a.id))continue;
   s.seen.push(a.id);s.lastArticleId=a.id;
   s.queue.push({id:l.year+'-'+a.id,articleId:a.id,year:l.year});
-  l.logEvent(a.scene,'joseonAnnals-fact');
+  l.logEvent(sceneFor(l,a),'joseonAnnals-fact');
   l.log.at(-1).sourceUrl=a.url;
   l.log.at(-1).recordId=a.id;
  }
@@ -226,7 +243,7 @@ function choose(l,index){
 function sourceFor(l){
  const s=ensure(l);if(!s)return null;
  const a=byId.get(s.lastArticleId);
- return a?{year:a.year,title:a.title,sourceTitle:a.sourceTitle,url:a.url,fact:a.fact,articleId:a.id}:null;
+ return a&&l.year<=a.year+2?{year:a.year,title:a.title,sourceTitle:a.sourceTitle,url:a.url,fact:a.fact,articleId:a.id}:null;
 }
 function hydrate(l,data){
  const s=ensure(l),o=data?.joseonAnnals;if(!s||!o||o.version!==1)return s;
