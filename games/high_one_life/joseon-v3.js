@@ -17,7 +17,7 @@ const hash=(seed,salt)=>{
 };
 const SEASONS=['봄','여름','가을','겨울'];
 const ageScenes=new Set([6,11,17,23,32,40,49,57,68,77]);
-const CHOICE_AGES={12:'apprentice',27:'livelihood',41:'household',55:'neighbors',69:'legacy'};
+const CHOICE_AGES={10:'winter',12:'apprentice',21:'kinship',27:'livelihood',31:'harvest',41:'household',46:'illness',51:'neighborsHelp',55:'neighbors',63:'inheritance',69:'legacy'};
 function season(life){return SEASONS[Math.floor(hash(life.seed,life.year+380)*4)];}
 function zone(life){
  const j=J.ensure(life);
@@ -65,6 +65,54 @@ const SEASON_DETAIL={
  겨울:'불을 지피고 먹을거리를 아끼는 겨울'
 };
 const EVENTS={
+ winter:{
+  title:'겨울나기를 앞둔 집안',
+  options:[
+   ['땔감을 미리 마련한다','일손이 더 들지만 추위를 견딜 준비를 한다','heat',{health:-1,knowledge:2}],
+   ['이웃과 필요한 물건을 바꾼다','서로 모자란 물건을 구해 겨울을 난다','exchange',{bonds:3,wealth:-2}],
+   ['헌 옷과 이불을 손질한다','식구들이 쓰던 옷가지를 고쳐 쓴다','mend',{knowledge:3,health:1}]
+  ]
+ },
+ kinship:{
+  title:'가까운 사람의 부탁',
+  options:[
+   ['바쁜 집안일을 거들어 준다','시간을 내어 가족의 일을 나눈다','kinhelp',{bonds:6,health:-2}],
+   ['장날에 함께 나갈 약속을 한다','길동무가 생기고 고을 소식을 듣는다','marketvisit',{bonds:4,knowledge:2}],
+   ['내가 맡은 일을 마저 한다','부탁은 미루고 오늘의 생업을 마친다','ownwork',{wealth:2,health:-1}]
+  ]
+ },
+ harvest:{
+  title:'수확을 마친 뒤의 걱정',
+  options:[
+   ['내년 봄에 쓸 씨앗을 남겨 둔다','먹을 몫을 조금 아껴 다음 농사를 대비한다','seed',{wealth:-3,knowledge:2}],
+   ['먼저 이웃의 형편을 살핀다','양식을 나누거나 품앗이할 일을 찾는다','mutual',{bonds:6,wealth:-2}],
+   ['해진 도구와 곳간을 손질한다','헛되이 잃는 곡식이 없도록 살핀다','mend',{knowledge:3,health:-2}]
+  ]
+ },
+ illness:{
+  title:'집안 사람이 앓아눕다',
+  options:[
+   ['곁을 지키며 물과 죽을 챙긴다','몸은 고되지만 아픈 사람을 돌본다','nurse',{bonds:7,health:-2}],
+   ['약재를 구할 길을 수소문한다','먼 길을 가거나 도움을 구해야 한다','remedy',{knowledge:3,wealth:-4}],
+   ['이웃에게 일손을 부탁한다','간호와 생업을 함께 이어 갈 방법을 찾는다','askkin',{bonds:4,wealth:-2}]
+  ]
+ },
+ neighborsHelp:{
+  title:'마을에 손이 필요한 날',
+  options:[
+   ['논둑과 물길을 함께 고친다','몇 날 힘을 모아야 다음 농사에 도움이 된다','waterway',{bonds:4,health:-2}],
+   ['홀로 지내는 어른을 찾아뵙는다','일손과 먹을거리가 필요한지 살핀다','visit',{bonds:7,health:-1}],
+   ['내 집에 남은 일을 먼저 마친다','바쁜 집안 사정도 외면할 수 없다','ownwork',{wealth:3,health:-1}]
+  ]
+ },
+ inheritance:{
+  title:'나이가 들며 남은 걱정',
+  options:[
+   ['젊은 식구에게 손에 익은 일을 가르친다','하던 생업이 다음 사람에게 이어진다','handdown',{bonds:5,knowledge:3}],
+   ['식구들과 재산과 빚을 의논한다','살림의 남은 일을 숨김없이 정리한다','settle',{bonds:4,knowledge:2}],
+   ['잠시 생업을 내려놓고 몸을 돌본다','힘이 닿는 만큼 일을 줄인다','rest',{health:5,wealth:-2}]
+  ]
+ },
  apprentice:{
   title:'집안에서 배울 것',
   options:[
@@ -74,11 +122,11 @@ const EVENTS={
   ]
  },
  livelihood:{
-  title:'생업을 바꾸어 볼까?',
+  title:'익숙한 생업에도 새로운 고민이 생겼다',
   options:[
-   ['작은 밭과 도구를 가꾼다','돈과 시간을 들여 자급할 바탕을 만든다','field',{wealth:-4,health:-2}],
-   ['다른 고을 장터에 물건을 내본다','익숙하지 않은 길에서 기회를 찾는다','route',{knowledge:4,wealth:-5}],
-   ['오래 익힌 기술을 살려 일한다','현실적인 생계를 택하며 손끝의 기술을 쌓는다','craft',{knowledge:5,bonds:2}]
+   ['논밭을 좀 더 정성껏 돌본다','쓸 수 있는 땅과 농기구를 살펴 수확을 준비한다','field',{wealth:-4,health:-2}],
+   ['장날에 남는 물건을 내다 판다','고을 장터에서 거래를 하되 본래 생업도 이어 간다','route',{knowledge:4,wealth:-2}],
+   ['지금의 솜씨를 더 깊이 익힌다','익숙한 일을 계속하며 손끝의 기술을 가다듬는다','craft',{knowledge:5,bonds:2}]
   ]
  },
  household:{
@@ -161,6 +209,21 @@ function prompt(life){
     :{label,note,action,effects})};
 }
 const OUTCOMES={
+ heat:'겨우내 모아 두었던 땔감 덕분에 추운 날을 견딜 수 있었다.',
+ exchange:'서로 물건을 바꾸던 이웃과 다시 마주쳤다.',
+ mend:'고쳐 두었던 물건을 오래도록 쓸 수 있었다.',
+ kinhelp:'바쁜 날 일손을 보탰던 식구가 그 일을 기억하고 있었다.',
+ marketvisit:'장날 함께 길을 걸었던 이웃과 다시 소식을 나누었다.',
+ ownwork:'서두르던 집안일이 마무리되어 잠시 한숨을 돌렸다.',
+ seed:'아껴 둔 씨앗을 꺼내 봄밭에 뿌렸다.',
+ mutual:'힘든 철에 서로 도왔던 이웃이 다시 찾아왔다.',
+ nurse:'앓아누웠던 집안 사람이 조금씩 기운을 차렸다.',
+ remedy:'약재를 구하느라 만난 사람과 소식이 이어졌다.',
+ askkin:'일손을 보탰던 이웃에게 고마운 마음이 남았다.',
+ waterway:'힘을 모아 고친 물길이 다음 해 농사에 도움이 되었다.',
+ visit:'찾아뵈었던 집안 어른과 다시 안부를 나누었다.',
+ handdown:'젊은 식구가 배운 일을 제 손으로 해내는 모습을 보았다.',
+ settle:'살림을 의논하던 식구들이 서로의 걱정을 조금 더 알게 되었다.',
  hands:'집안에서 익힌 손기술이 바쁜 날에 도움이 되었다.',
  letters:'틈틈이 글공부를 이어 간 경험이 장부나 서책을 읽을 때 도움이 되었다.',
  skill:'이웃에게 배운 솜씨로 생활에 필요한 물건을 손질할 수 있었다.',
@@ -187,7 +250,7 @@ function choose(life,index){
  if(a==='letters'){j.literacy+=1;j.studyYears+=2;j.school='일과 글공부를 병행함';j.capital-=5;}
  if(a==='skill'){s.skill+=2;s.craft+=1;s.kinship+=4;}
  if(a==='field'){j.land+=1;w.grain=clamp(w.grain+12,0,200);j.capital-=6;}
- if(a==='route'){j.occupation='장사·수공업';j.relocations+=1;s.skill+=1;j.capital+=7;}
+ if(a==='route'){s.skill+=1;j.capital+=7;}
  if(a==='craft'){s.craft+=2;s.skill+=1;j.capital+=5;}
  if(a==='store'){w.grain=clamp(w.grain+20,0,200);j.capital-=9;}
  if(a==='repair'){s.skill+=1;j.capital-=5;w.grain=clamp(w.grain+4,0,200);}
@@ -199,6 +262,20 @@ function choose(life,index){
  if(a==='inherit'){s.legacy='가족에게 생업을 전함';j.retired=true;s.kinship+=6;}
  if(a==='mentor'){s.legacy='이웃에게 기술을 전함';s.skill+=1;s.kinship+=8;}
  if(a==='memory'){s.legacy='지난날의 이야기를 남김';j.literacy+=1;s.kinship+=2;}
+ if(a==='heat'){j.capital-=3;s.skill+=1;life.change({health:2});}
+ if(a==='exchange'){j.capital-=2;w.community=clamp(w.community+3,0,100);}
+ if(a==='mend'){s.skill+=1;j.capital-=2;w.grain=clamp(w.grain+4,0,200);}
+ if(a==='kinhelp'||a==='nurse'){s.kinship+=5;j.capital-=2;}
+ if(a==='marketvisit'){s.kinship+=3;w.community=clamp(w.community+3,0,100);}
+ if(a==='ownwork'){j.capital+=4;s.skill+=1;}
+ if(a==='seed'){w.grain=clamp(w.grain+9,0,200);j.capital-=3;}
+ if(a==='mutual'){s.kinship+=5;w.community=clamp(w.community+8,0,100);}
+ if(a==='remedy'){j.capital-=4;life.change({bonds:2});}
+ if(a==='askkin'){s.kinship+=2;w.community=clamp(w.community+4,0,100);}
+ if(a==='waterway'){s.skill+=1;w.community=clamp(w.community+5,0,100);}
+ if(a==='visit'){s.kinship+=5;w.community=clamp(w.community+3,0,100);}
+ if(a==='handdown'){s.kinship+=4;s.skill+=1;}
+ if(a==='settle'){s.kinship+=3;}
  s.kinship=clamp(s.kinship,0,100);j.capital=clamp(j.capital,-120,600);
  if(life.money)life.money.netWorth=Math.round(j.capital*100);
  const id=s.active.id;
@@ -220,8 +297,8 @@ function afterYear(life){
  for(const event of s.followups.filter(e=>e.year<=life.year)){
   log(life,s,event.text,'joseon3-followup');if(event.id)life.log.at(-1).causeId='joseon3:'+event.id;
   if(event.action==='store'){w.grain=clamp(w.grain+8,0,200);}
-  if(['route','craft','field','hands'].includes(event.action))j.capital=clamp(j.capital+5,-120,600);
-  if(['share','shareLabor','teach','mentor','work'].includes(event.action)){s.kinship=clamp(s.kinship+5,0,100);life.change({bonds:2});}
+  if(['route','craft','field','hands','seed','ownwork','mend'].includes(event.action))j.capital=clamp(j.capital+5,-120,600);
+  if(['share','shareLabor','teach','mentor','work','kinhelp','mutual','nurse','askkin','visit','handdown'].includes(event.action)){s.kinship=clamp(s.kinship+5,0,100);life.change({bonds:2});}
  }
  s.followups=s.followups.filter(e=>e.year>life.year);
  livedMoment(life,s);
