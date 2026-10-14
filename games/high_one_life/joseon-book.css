@@ -255,3 +255,7 @@ body.joseon-book .mini-passport span {color:#33291d}
 @media(max-width:780px) {
   body.joseon-book .life-hopa {grid-column:1 / -1;margin:4px 0 13px}
 }
+body.joseon-book .birth>.footnote,
+body.joseon-book .end-finance {display:none}
+body.joseon-book .end>.footnote {color:#67533a}
+body.joseon-book .end-divider {border-color:#a18b68;color:#624b32}
