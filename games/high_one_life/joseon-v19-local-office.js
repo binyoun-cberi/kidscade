@@ -288,10 +288,10 @@ function hydrate(l,data){
  const ooff=o.office;
  if(ooff&&typeof ooff.name==='string'&&ooff.region===region(l)&&Number.isInteger(ooff.from)&&ooff.from<=l.year){
   s.office={name:ooff.name.slice(0,22),region:ooff.region,from:ooff.from,through:clip(Number(ooff.through)||l.year,ooff.from,l.year+12),
-   integrity:clip(Number.isFinite(Number(ooff.integrity))?Number(ooff.integrity):40,0,100),
-   patronage:clip(Number.isFinite(Number(ooff.patronage))?Number(ooff.patronage):40,0,100),
-   clerks:clip(Number.isFinite(Number(ooff.clerks))?Number(ooff.clerks):30,0,100),
-   levy:clip(Number.isFinite(Number(ooff.levy))?Number(ooff.levy):30,0,100),
+   integrity:clip(Number.isFinite(ooff.integrity)?ooff.integrity:40,0,100),
+   patronage:clip(Number.isFinite(ooff.patronage)?ooff.patronage:40,0,100),
+   clerks:clip(Number.isFinite(ooff.clerks)?ooff.clerks:30,0,100),
+   levy:clip(Number.isFinite(ooff.levy)?ooff.levy:30,0,100),
    reason:String(ooff.reason||'').slice(0,50)};
  }
  s.turnovers=clip(Number(o.turnovers)||1,0,120);
