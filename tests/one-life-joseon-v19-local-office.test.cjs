@@ -131,7 +131,7 @@ test('144 varied lives resolve their choices and retain identical v19 state afte
    assert.ok(guard<850);
    const cp=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));
    assert.deepEqual(V19.summary(cp),V19.summary(l));
-   choices+=V19.summary(l).decisions;
+   choices+=V19.summary(l)?.decisions||0;
   }
  assert.ok(choices>15,'not enough governance events: '+choices);
 });
