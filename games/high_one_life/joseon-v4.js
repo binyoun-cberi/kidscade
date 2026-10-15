@@ -173,6 +173,7 @@ function ensure(life){
  return life.joseon4;
 }
 function enqueue(life,s,kind,p){
+ if(life.joseon14?.captivity?.status==='held')return;
  const id=life.year+'-'+kind+'-'+p.id;
  if(s.decisions.some(x=>x.id===id)||s.active?.id===id||s.queue.some(x=>x.id===id))return;
  if(s.queue.length>=8)return;
