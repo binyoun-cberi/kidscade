@@ -109,7 +109,7 @@
     life.world=w;
     p.familyIncome=Math.round(p.familyIncome*ppp);
     life.stats.knowledge=clamp(Math.round(life.stats.knowledge* (.64+.30*schoolIndex)+roll(seed,42)*10),8,85);
-    life.logEvent('태어난 마을에서 어떤 일을 배우고 누구를 만나게 될지는 아직 아무도 모른다.','context');
+    life.logEvent('태어난 곳에서 어떤 일을 배우고 누구를 만나게 될지는 아직 아무도 모른다.','context');
     return w;
   }
   function childEvents(life){
