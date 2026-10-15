@@ -341,7 +341,7 @@ function continueAsHeir(parent,id){
  l.log.at(-1).ancestorName=parent.profile.name;
  l.pending=null;
  // The register module loads after this module and is optional for old saves.
- if(typeof window!=='undefined')window.OneLifeGenealogyV15?.inherit(parent,id,l);
+ Sim.Life.prototype.__genealogy15Inherit?.(parent,id,l);
  return l;
 }
 function hydrate(l,data){
