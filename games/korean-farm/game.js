@@ -112,19 +112,19 @@ function buildFields(){
     const rice=plot.kind==='rice';
     const group=new THREE.Group();group.position.set(plot.x,0,plot.z);scene.add(group);
     const bed=addRect(plot.w,.20,plot.d,rice?0x92764f:0x836544,0,.085,0,1,group);
+    let waterMesh=null;
     if(rice){
-      addRect(plot.w-.18,.035,plot.d-.18,0x6daebf,0,.205,0,.68,group);
+      waterMesh=addRect(plot.w-.18,.035,plot.d-.18,0x6daebf,0,.205,0,.68,group);
       addRect(plot.w+.2,.26,.13,0x8d9f5d,0,.185,-plot.d/2,1,group);
       addRect(plot.w+.2,.26,.13,0x8d9f5d,0,.185,plot.d/2,1,group);
     }else{
       for(let row=-1;row<=1;row++)addRect(plot.w-.35,.09,.5,0x715036,0,.25,row*.95,1,group);
     }
     const target=new THREE.Mesh(new THREE.PlaneGeometry(plot.w,plot.d),new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}));
-    target.rotation.x=-Math.PI/2;target.position.y=.40;target.userData.plotId=plot.id;group.add(target);plotHits.push(target);
+    target.rotation.x=-Math.PI/2;target.position.y=.4;target.userData.plotId=plot.id;group.add(target);plotHits.push(target);
     const cropLayer=new THREE.Group();group.add(cropLayer);
-    plotMeshes.set(plot.id,{group,cropLayer,target,plot});
-    // When the asset finishes loading, its geometry replaces placeholders.
-    drawCrops(plot.id);
+    plotMeshes.set(plot.id,{group,cropLayer,target,plot,bed,waterMesh,stage:null,generation:0});
+    syncFieldVisual(plot.id,true);
   }
 }
 function clearGroup(group){for(const child of [...group.children])group.remove(child)}
@@ -134,18 +134,36 @@ function fallbackCrop(kind){
     new THREE.MeshStandardMaterial({color,roughness:1}));
   mesh.position.y=kind==='corn'?.64:.18;root.add(mesh);return root;
 }
+function syncFieldVisual(id,force=false){
+  const field=fieldById(state,id),record=plotMeshes.get(id);
+  if(!field||!record)return;
+  if(record.waterMesh){
+    record.waterMesh.visible=field.waterDepthCm>.1;
+    record.waterMesh.position.y=.195+field.waterDepthCm*.014;
+    record.waterMesh.material.opacity=Math.min(.85,.18+field.waterDepthCm*.105);
+  }
+  record.bed.material.color.setHex(field.tilled?0x755b41:0x9b805b);
+  if(field.kind!=='rice')record.bed.material.color.setHex(field.moisture<.25?0x957551:0x72543c);
+  const stage=visualStage(field);
+  if(force||stage!==record.stage){
+    record.stage=stage;
+    drawCrops(id);
+  }
+}
 async function drawCrops(id){
-  const plot=plotById(id),record=plotMeshes.get(id);if(!record)return;
-  const stage=plotStage(state,id);
-  const generation=(record.generation||0)+1;record.generation=generation;
+  const plot=plotById(id),record=plotMeshes.get(id),field=fieldById(state,id);
+  if(!record||!field)return;
+  const stage=visualStage(field),generation=++record.generation;
+  if(stage===0){clearGroup(record.cropLayer);plotOrigins.set(id,'경작 중인 작물 없음');return}
   const resource=plot.kind==='rice'?await loadRiceStage(stage):
     {object:await loadModel(plot.kind),origin:'공용 Kenney GLB'};
   if(disposed||record.generation!==generation)return;
   clearGroup(record.cropLayer);
   plotOrigins.set(id,resource.object?resource.origin:'임시 모형');
   const crop=resource.object||fallbackCrop(plot.kind);
-  const cols=plot.kind==='rice'?3:3,rows=plot.kind==='rice'?3:2;
+  const cols=3,rows=plot.kind==='rice'?3:2;
   for(let x=0;x<cols;x++)for(let z=0;z<rows;z++){
+    // Static copies are sufficient for the first farming loop; source GLB is cached.
     const model=crop.clone(true);
     model.position.x+=(x-(cols-1)/2)*(plot.w/(cols+.3));
     model.position.z+=(z-(rows-1)/2)*(plot.d/(rows+.3));
@@ -153,7 +171,22 @@ async function drawCrops(id){
     model.rotation.y=(x*3+z)*.36;
     record.cropLayer.add(model);
   }
-  if(state.selected===id)updateInspector();
+  if(state.selected===id&&!$('inspector').classList.contains('hidden'))updateInspector();
+}
+function animateFarmAction(plot,color=0xf4e0a4){
+  if(!plot)return;
+  const mesh=new THREE.Mesh(new THREE.RingGeometry(.42,.58,24),new THREE.MeshBasicMaterial({
+    color,transparent:true,opacity:.88,side:THREE.DoubleSide,depthWrite:false
+  }));
+  mesh.rotation.x=-Math.PI/2;mesh.position.set(plot.x,.44,plot.z);scene.add(mesh);
+  farmFx.push({mesh,remaining:.72});
+}
+function animateEffects(dt){
+  for(let i=farmFx.length-1;i>=0;i--){
+    const fx=farmFx[i];fx.remaining-=dt;fx.mesh.scale.multiplyScalar(1+dt*2.2);
+    fx.mesh.material.opacity=Math.max(0,fx.remaining/.72)*.75;
+    if(fx.remaining<=0){scene.remove(fx.mesh);fx.mesh.geometry.dispose();fx.mesh.material.dispose();farmFx.splice(i,1)}
+  }
 }
 function addFarmSigns(){
   // Road signs and farming landmarks are geometric placeholders in PR 1.
@@ -249,6 +282,7 @@ function render(now){
   if(disposed)return;raf=requestAnimationFrame(render);
   const dt=last?Math.min(.07,(now-last)/1000):0;last=now;
   if(!paused&&!loading)move(dt,now/1000);
+  animateEffects(dt||.016);
   refreshCamera(dt||.016);renderer.render(scene,camera);
 }
 function canvasPosition(e){
