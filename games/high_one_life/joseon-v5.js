@@ -53,6 +53,8 @@ function weighted(seed,salt,items){
 }
 function originFor(life,j){
  const seed=life.seed;
+ const selected=life.birthSetup?.origin;
+ if(selected&&Object.prototype.hasOwnProperty.call(ORIGINS,selected))return selected;
  if(j.birthStatus==='천민')return weighted(seed,1901,[['사노비',68],['공노비',32]]);
  if(j.birthStatus==='양반'){
   // Even a royal lineage is not an automatic king. Only a later conditional
