@@ -306,13 +306,17 @@
           if(aftermath.source)link.href=aftermath.source;
         }
         const list=$('villageNeighbors');list.replaceChildren();
-        for(const neighbor of village.neighbors){const li=document.createElement('li');
+        for(const neighbor of (livingAbroad?[]:village.neighbors)){const li=document.createElement('li');
           li.textContent=neighbor.name+'네 · '+(neighbor.wealth<28?'형편이 어려운 집':neighbor.wealth>80?'살림이 넉넉한 집':'그럭저럭 살아가는 집')+' · '+(neighbor.trust>65?'가까운 이웃':neighbor.trust<34?'서먹한 사이':'인사를 나누는 사이');list.append(li);}
       }
       put('v12ChoicesCount',social?.obligations?.at(-1)||'집안과 고을의 일이 하루하루 이어지고 있다.');
       if(social)put('v10HistoryStatus',j.era+' · '+social.originLabel+' · '+social.legal);
-      put('v13CareYears','한집에서 지내는 식구 '+(v4.atHome+1)+'명'+(lineage?' · '+lineage.clan:''));
-      put('v13FamilyStatus',(v4.spouse?(v4.spouse.alive?'배우자 '+v4.spouse.name+'와 함께 지낸다.':'배우자 '+v4.spouse.name+'를 그리워한다.'):'식구들과 살림을 이어 간다.')+' 자녀 '+v4.children+'명.');
+      put('v13CareYears',aftermath?.captivity?.status==='held'?
+        '고향의 가족과 떨어져 지내는 중':
+        '한집에서 지내는 식구 '+(v4.atHome+1)+'명'+(lineage?' · '+lineage.clan:''));
+      put('v13FamilyStatus',aftermath?.captivity?.status==='held'?
+        '고향에 남은 배우자와 가족의 소식을 기다린다. 가족이 있는 곳과 포로 생활 중인 곳은 다르다.':
+        (v4.spouse?(v4.spouse.alive?'배우자 '+v4.spouse.name+'와 함께 지낸다.':'배우자 '+v4.spouse.name+'를 그리워한다.'):'식구들과 살림을 이어 간다.')+' 자녀 '+v4.children+'명.');
       put('v13LifeMemories',[...j.memories.slice(-1),...v3.memories.slice(-1),...v4.memories.slice(-2),...(jobs?.memories||[]).slice(-1)].join(' · ')||'세월이 지나며 이야기들이 남습니다.');
       put('nameHeadline',p.name+' · '+j.region);put('profileName',p.name);
       put('profileMeta',life.gender+' · '+j.region+' · '+life.age+'세');
@@ -838,7 +842,11 @@
     paintLifeRecord();
     paintArc();
     $('placeFlag').textContent=life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1];
-    $('placeName').textContent=History.place(life);
+    const captiveHere=Joseon14?.summary(life)?.captivity;
+    $('placeName').textContent=captiveHere?.status==='held'?
+      (captiveHere.realm==='japan'?'일본에서 포로로 지내는 중':'후금·청에서 포로로 지내는 중')+
+      ' · 고향 '+Joseon.summary(life).region:
+      History.place(life);
     $('currentYear').textContent=life.year+'년';
     $('historyContext').textContent=Joseon.inOldEra(life)?Joseon2.summary(life).ruler+' 재위 · '+Joseon.era(life.year)+' · '+life.year+'년':life.birthYear===2026
       ? '2026년, 새로운 인생이 시작됐다.'
