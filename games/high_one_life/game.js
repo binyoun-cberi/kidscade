@@ -234,7 +234,10 @@
       put('v12EconomyEra',oldLandLedger(life)+'. '+e.condition+'.');
       $('joseonVillagePanel').classList.toggle('hidden',!village);
       if(village){
-        put('villageHomeSummary','마을의 물 사정 '+(village.water<20?'몹시 부족':village.water<45?'빠듯함':'넉넉함')+' · 우리 집 가축: 소 '+village.animals.ox+'마리, 돼지 '+village.animals.pig+'마리, 닭 '+village.animals.chicken+'마리.');
+        const livingAbroad=aftermath?.captivity?.status==='held';
+        put('villageHomeSummary',livingAbroad?
+          '고향의 가족과 마을에 대한 기억이다. 지금은 먼 타향에 머물러 국내 농사와 장시의 일을 직접 할 수 없다.':
+          '마을의 물 사정 '+(village.water<20?'몹시 부족':village.water<45?'빠듯함':'넉넉함')+' · 우리 집 가축: 소 '+village.animals.ox+'마리, 돼지 '+village.animals.pig+'마리, 닭 '+village.animals.chicken+'마리.');
         const lateVisible=life.year>=1800&&life.year<1900&&!!late;
         $('lateJoseonLedger').classList.toggle('hidden',!lateVisible);
         if(lateVisible){
@@ -248,7 +251,7 @@
           $('lateJoseonSource').classList.toggle('hidden',!src);
           if(src)$('lateJoseonSourceLink').href=src;
         }
-        $('joseonRegionalLedger').classList.toggle('hidden',!regional);
+        $('joseonRegionalLedger').classList.toggle('hidden',!regional||livingAbroad);
         if(regional){
           put('regionalWorkType',regional.work+' · 여러 해 익힌 솜씨가 남는다.');
           let tools='재료 '+regional.materials+' · 만들거나 모은 물건 '+regional.goods+' · 거래 인연 '+regional.customers;
