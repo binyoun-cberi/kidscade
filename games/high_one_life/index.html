@@ -23,7 +23,7 @@
 <link rel="stylesheet" href="./joseon-regional-v12.css?v=1">
 <link rel="stylesheet" href="./joseon-war-v13.css?v=1">
 <link rel="stylesheet" href="./joseon-captivity-v14.css?v=1">
-<link rel="stylesheet" href="./joseon-genealogy-v15.css?v=1">
+<link rel="stylesheet" href="./joseon-genealogy-v15.css?v=2">
 </head>
 <body>
 <div class="app" id="app">
@@ -368,7 +368,13 @@
         <button type="button" id="genealogyClose" aria-label="족보 닫기">닫기 ×</button>
       </header>
       <p class="genealogy-disclaimer">실제 역사 인물의 족보가 아니라, 이 게임에서 함께 살아온 가상의 가족 기록입니다. 인물 이름을 눌러 삶을 살펴보세요.</p>
-      <div id="genealogyGenerations" class="genealogy-generations" aria-label="세대별 가계도"></div>
+      <div class="genealogy-treebar">
+        <p id="genealogyBranchCount">부모와 자녀의 연결을 보여 줍니다.</p>
+        <button id="genealogyExpandAll" type="button">모든 가지 펼치기</button>
+      </div>
+      <div class="genealogy-tree-scroll" tabindex="0" aria-label="좌우로 이동해 보는 가족 가계도">
+        <div id="genealogyGenerations" class="genealogy-generations" aria-label="부모에서 자녀로 뻗는 가계도"></div>
+      </div>
       <section id="genealogyPersonDetail" class="genealogy-person-detail" aria-live="polite">
         <h3 id="genealogyDetailName">인물을 골라 보세요</h3>
         <p id="genealogyDetailLife">—</p>
@@ -435,9 +441,9 @@
 <script src="./joseon-v12-regional.js?v=2"></script>
 <script src="./joseon-v13-war-recovery.js?v=2"></script>
 <script src="./joseon-v14-captivity-generations.js?v=4"></script>
-<script src="./joseon-v15-genealogy.js?v=1"></script>
+<script src="./joseon-v15-genealogy.js?v=2"></script>
 <script src="./colonial-daily-v2.js?v=1"></script>
 <script src="./joseon-pixel-v2.js?v=2"></script>
-<script src="./game.js?v=45"></script>
+<script src="./game.js?v=46"></script>
 </body>
 </html>

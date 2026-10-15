@@ -916,33 +916,86 @@
     const children=data.nodes.filter(x=>x.motherId===n.id||x.fatherId===n.id);
     if(children.length)kin.push('자녀 '+children.map(x=>x.name).join(', '));
     $('genealogyDetailRelations').textContent=kin.length?kin.join(' · '):'현재 남아 있는 기록에는 연결된 가족관계가 더 없습니다.';
-    $('genealogyDetailStory').textContent=n.work?'살아온 일 · '+n.work:'이 인물의 생업 기록은 아직 없습니다.';
+    const branch=data.branches.find(b=>b.id===n.branchId||b.id===n.id);
+    $('genealogyDetailStory').textContent=(n.simulated?
+      '본줄기가 아닌 '+(branch?.label||'방계 집안')+'의 후손으로, 이 인생을 직접 플레이하지 않아 간략하게 구성된 가상 기록입니다. ':
+      branch?'다른 살림을 꾸린 '+branch.label+'의 기록입니다. ':'')+
+      (n.work?'살아온 일 · '+n.work:'자세한 생업 기록은 아직 없습니다.');
   }
+  let genealogyFolded=new Set();
   function drawGenealogy(){
     const data=Genealogy?.summary(life);if(!data)return;
     $('genealogyClan').textContent=data.clan+' · '+data.residence+' · '+data.nodes.length+'명의 인물 기록';
-    const root=$('genealogyGenerations');root.replaceChildren();
-    const generations=[...new Set(data.nodes.map(x=>x.generation))].sort((a,b)=>a-b);
-    for(const g of generations){
-      const section=document.createElement('section');section.className='genealogy-generation';
-      const heading=document.createElement('h3');heading.textContent=g===0?'윗대의 가족':g+'대 · '+(g===data.generation?'현재 이어가는 세대':'가족의 기록');
-      const people=document.createElement('div');people.className='genealogy-members';
-      for(const person of data.nodes.filter(x=>x.generation===g)){
-        const button=document.createElement('button');button.type='button';
-        button.className='genealogy-person'+(person.id===data.selfId?' genealogy-self':'')+(!person.alive?' genealogy-deceased':'');
-        button.dataset.genealogyId=person.id;button.setAttribute('aria-pressed','false');
-        const name=document.createElement('strong');name.textContent=person.name;
-        const time=document.createElement('span');time.textContent=person.birthYear+'년생'+(person.diedYear?' ~ '+person.diedYear+'년':'');
-        const badge=document.createElement('small');badge.textContent=person.id===data.selfId?'지금의 주인공':
-          person.missing?'소식을 기다리는 중':
-          person.returned?'귀환한 사람':
-          person.role==='spouse'?'배우자로 이어진 인연':
-          !person.alive?'고인이 된 가족':'기록에 남은 가족';
-        button.append(name,time,badge);
-        button.addEventListener('click',()=>showGenealogyPerson(data,person.id));
-        people.append(button);
+    $('genealogyBranchCount').textContent=data.branches.length?
+      '따로 살림을 이은 집안 '+data.branches.length+'갈래 · 이름을 누르면 인물의 삶을 볼 수 있어요.':
+      '부모·형제·자녀가 연결되어 있습니다. 자녀의 인생을 이어 가면 다른 형제의 가지도 자랍니다.';
+    const area=$('genealogyGenerations');area.replaceChildren();
+    const people=data.nodes,idMap=new Map(people.map(p=>[p.id,p])),displayed=new Set();
+    const sorted=group=>group.sort((a,b)=>a.birthYear-b.birthYear||a.id.localeCompare(b.id));
+    const makeCard=person=>{
+      const button=document.createElement('button');button.type='button';
+      button.className='genealogy-person'+(person.id===data.selfId?' genealogy-self':'')+
+        (!person.alive?' genealogy-deceased':'')+(person.simulated?' genealogy-simulated':'');
+      button.dataset.genealogyId=person.id;button.setAttribute('aria-pressed','false');
+      const name=document.createElement('strong');name.textContent=person.name;
+      const years=document.createElement('span');years.textContent=person.birthYear+'년생'+
+        (person.diedYear?' ~ '+person.diedYear+'년':'');
+      const tag=document.createElement('small');
+      const branch=data.branches.find(b=>b.id===person.id);
+      tag.textContent=person.id===data.selfId?'지금의 주인공':
+        branch?branch.label:person.simulated?'방계의 가상 인물':
+        person.missing?'소식을 기다리는 중':person.returned?'귀환 기록':
+        person.role==='spouse'?'배우자':'가족 기록';
+      button.append(name,years,tag);
+      button.addEventListener('click',()=>showGenealogyPerson(data,person.id));
+      return button;
+    };
+    const renderBranch=(person,depth=0)=>{
+      if(!person||displayed.has(person.id)||depth>18)return null;
+      displayed.add(person.id);
+      const root=document.createElement('section');root.className='genealogy-family-branch';
+      const adults=document.createElement('div');adults.className='genealogy-pair';
+      adults.append(makeCard(person));
+      const partner=idMap.get(person.partnerId);
+      if(partner&&!displayed.has(partner.id)){
+        displayed.add(partner.id);
+        const symbol=document.createElement('span');symbol.className='genealogy-union';symbol.textContent='─';
+        adults.append(symbol,makeCard(partner));
       }
-      section.append(heading,people);root.append(section);
+      root.append(adults);
+      const offspring=sorted(people.filter(kid=>!displayed.has(kid.id)&&(
+        kid.motherId===person.id||kid.fatherId===person.id||
+        (partner&&(kid.motherId===partner.id||kid.fatherId===partner.id)))));
+      if(offspring.length){
+        const toggle=document.createElement('button');toggle.type='button';toggle.className='genealogy-fold';
+        const count=offspring.length;
+        const updateFold=()=>{
+          const closed=genealogyFolded.has(person.id);
+          toggle.textContent=closed?'후손 '+count+'명 펼치기 ＋':'후손 '+count+'명 접기 −';
+          toggle.setAttribute('aria-expanded',String(!closed));
+          group.hidden=closed;
+        };
+        const group=document.createElement('div');group.className='genealogy-fork';
+        for(const child of offspring){
+          const sub=renderBranch(child,depth+1);
+          if(sub)group.append(sub);
+        }
+        toggle.addEventListener('click',()=>{
+          if(genealogyFolded.has(person.id))genealogyFolded.delete(person.id);
+          else genealogyFolded.add(person.id);
+          updateFold();
+        });
+        root.append(toggle,group);updateFold();
+      }
+      return root;
+    };
+    // A union is rendered once even when both parents appear as independent
+    // records. Only actual parent links determine the fork, never surname.
+    const roots=sorted(people.filter(p=>!idMap.has(p.motherId)&&!idMap.has(p.fatherId)));
+    for(const person of [...roots,...sorted(people.slice())]){
+      if(displayed.has(person.id))continue;
+      const part=renderBranch(person);
+      if(part)area.append(part);
     }
     showGenealogyPerson(data,genealogySelected||data.selfId);
   }
@@ -951,7 +1004,7 @@
     genealogyPreviousRunning=stage==='play'&&!paused&&!life.pending;
     genealogyOpener=document.activeElement;
     if(stage==='play'){paused=true;updatePause();}
-    genealogySelected=null;drawGenealogy();
+    genealogySelected=null;genealogyFolded=new Set();drawGenealogy();
     $('genealogyModal').classList.remove('hidden');
     $('genealogyClose').focus();
   }
@@ -1133,6 +1186,7 @@
   $('againBtn').addEventListener('click',()=>{replayBasis=null;life=null;show('intro');refreshResume();draw();});
   $('openGenealogyBtn').addEventListener('click',openGenealogy);
   $('endGenealogyBtn').addEventListener('click',openGenealogy);
+  $('genealogyExpandAll').addEventListener('click',()=>{genealogyFolded.clear();drawGenealogy();});
   $('genealogyClose').addEventListener('click',closeGenealogy);
   $('genealogyBackdrop').addEventListener('click',closeGenealogy);
   $('heirContinueBtn').addEventListener('click',()=>{
