@@ -7,6 +7,12 @@ const Sim=require(path.join(root,'engine.js'));
 global.window={OneLifeSim:Sim};
 const load=(file,key)=>{const m=require(path.join(root,file));if(key)window[key]=m;return m;};
 const W2=load('world-v2.js','OneLifeWorld2');
+for(const [filename,key] of [
+ ['world-v3.js','OneLifeWorld3'],['world-v4.js','OneLifeWorld4'],
+ ['world-v5.js','OneLifeWorld5'],['careers-v6.js','OneLifeCareers6'],
+ ['events-v6.js','OneLifeEvents6'],['world-v6.js','OneLifeWorld6'],
+ ['world-v7.js','OneLifeWorld7'],['world-v8.js','OneLifeWorld8']])load(filename,key);
+const World9=load('world-v9.js','OneLifeWorld9');
 load('joseon-history-policy.js','OneLifeJoseonPolicy');
 const J=load('joseon-v1.js','OneLifeJoseon');
 load('joseon-v2.js','OneLifeJoseon2');
@@ -14,7 +20,6 @@ load('joseon-v3.js','OneLifeJoseon3');
 const V4=load('joseon-v4.js','OneLifeJoseon4');
 const V5=load('joseon-v5.js','OneLifeJoseon5');
 const V8=load('joseon-v8-lineage.js','OneLifeJoseon8');
-const World9=load('world-v9.js','OneLifeWorld9');
 delete global.window;
 const born=(year,setup,seed=11223)=>new Sim.Life(seed,{birthYear:year,countryName:'대한민국',birthSetup:setup});
 
