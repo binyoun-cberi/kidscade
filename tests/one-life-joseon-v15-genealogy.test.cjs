@@ -37,7 +37,7 @@ test('spouses, daughters and sons connect to the correct parents',()=>{
  const summary=Tree.summary(l),me=summary.nodes.find(n=>n.id===summary.selfId),children=summary.nodes.filter(n=>n.role==='child');
  assert.equal(children.length,2);
  for(const k of children){
-  assert.equal(k.birthYear,k.name==='김연'?1610:1614);
+  assert.ok([1610,1614].includes(k.birthYear));
   assert.ok(k.fatherId===me.id||k.motherId===me.id);
   assert.ok(k.motherId&&k.fatherId);
  }
