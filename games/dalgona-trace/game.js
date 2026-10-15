@@ -156,7 +156,7 @@
     if(game.pointerId!==event.pointerId||game.phase!=='playing')return;
     if(event.cancelable)event.preventDefault();
     const before=game.state,point=toPoint(event);
-    if(game.traceDirection===null&&game.state.progress<2){
+    if(game.traceDirection===null&&game.state.progress<Math.min(40,game.trace.total/10)){
       const direction=engine.directionFor(game.trace,game.traceReverse,point);
       if(direction){
         game.traceDirection=direction;
