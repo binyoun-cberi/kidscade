@@ -28,3 +28,29 @@ button:focus-visible{outline:3px solid #d18d34;outline-offset:3px}
 @media(max-height:480px){#objective{display:none}#joystick{bottom:72px}#bottomBar button,#bottomBar .tool{min-height:40px}#bottomBar span{font-size:16px}.inspector{bottom:67px;max-height:calc(100% - 122px)}}
 @media(hover:none) and (pointer:coarse){#joystick{display:block}}
 @media(prefers-reduced-motion:reduce){.spinner{animation:none}*,*:before,*:after{transition:none!important}}
+
+/* PR 2: integrated farming interactions and crop health HUD. */
+.field-metrics{display:grid;gap:8px;margin:12px 0 4px}
+.metric-row{display:grid;gap:4px}
+.metric-label{display:flex;justify-content:space-between;gap:12px;font-size:11px;color:#627363}
+.metric-label strong{color:#3b6248;font-size:11px}
+.metric-track{height:6px;overflow:hidden;border-radius:99px;background:#e7e8d8}
+.metric-track i{display:block;height:100%;background:#8faf73;border-radius:99px}
+.metric-row:nth-child(4) .metric-track i{background:#c7a264}
+.farm-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:9px}
+.farm-actions button{min-height:36px;padding:6px 4px;border-radius:9px;border:1px solid #c7d7c5;background:#edf4e7;color:#365d41;font-size:11px;font-weight:750}
+.farm-actions button:hover:not(:disabled){background:#d7e9cd;border-color:#85b487}
+.farm-actions button.special{background:#e5b853;color:#382f1e;border-color:#c6a04b}
+.farm-actions button.active{background:#5d9d99;color:#fff;border-color:#5d9d99}
+.farm-actions button:disabled{cursor:default;opacity:.42}
+.approach-btn{width:100%;min-height:35px;background:#fffdf4;border:1px solid #9db99f;color:#4a7753;border-radius:9px;font-size:11px;font-weight:700}
+.farm-bag{display:grid;gap:12px}.bag-note{margin:0!important}
+.bag-items{display:grid;gap:7px}.bag-item{display:flex;gap:12px;align-items:center;justify-content:space-between;background:#f3f5eb;border:1px solid #e3e8d8;border-radius:10px;padding:8px 10px}
+.bag-item span{flex:1;font-size:13px;font-weight:650;color:#3d5a42}.bag-item strong{font-size:12px;white-space:nowrap}
+.bag-item button{border:1px solid #b5cbb1;border-radius:7px;color:#41634a;background:#fff;padding:6px 9px;font-size:11px}
+.bag-item button:disabled{opacity:.4}.sell-btn{border:0;background:#477b59;color:#fff;padding:13px;border-radius:10px;font-weight:750}
+.sell-btn:disabled{background:#b7c6b8}
+#bottomBar{max-width:calc(100vw - 18px);overflow-x:auto;scrollbar-width:none}
+#bottomBar::-webkit-scrollbar{display:none}
+@media(max-width:920px){.season #moneyLabel{display:inline}.season #energyLabel{display:none}}
+@media(max-width:700px){.season #moneyLabel{font-size:10px;padding-left:5px}.metric-row{gap:2px}.field-metrics{gap:5px}.farm-actions button{min-height:30px;font-size:10px}}
