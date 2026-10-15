@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import {loadModel,loadRiceStage,assetReport,FARM_MODELS} from './assets.js';
+import {createFarmerAnimator} from './animation/farmer-animator.js';
+import {FieldEffects} from './animation/field-effects.js';
 import {FIELD_DEFS,plotById,distanceToPlot} from './world.mjs';
 import {createFarmState,restoreFarmState,CROPS,calendar,fieldById,visualStage,fieldCondition,applyFarmAction,advanceFarmDay,sellAllProduce,buyFarmSupply} from './farming/farm-sim.mjs';
 
@@ -7,7 +9,7 @@ const $=id=>document.getElementById(id);
 const SAVE_KEY=window.KidscadeGame?.storageKey?.('korean_farm','farm')||'kidscade_game_v1:korean_farm:farm';
 const bounds=21.7;
 const state=loadSave();
-let scene,renderer,camera,raycaster,ground,farmer,farmerAvatar;
+let scene,renderer,camera,raycaster,ground,farmer,farmerAvatar,farmerAnimator,fieldEffects,activeFarmImpact=null;
 let last=0,raf=0,paused=false,disposed=false,loading=true,noticeTimer=0;
 let camTarget=new THREE.Vector3(state.player.x,0,state.player.z);
 let moveGoal=null;
@@ -19,7 +21,7 @@ const plotMeshes=new Map(),plotHits=[],plotOrigins=new Map(),visited=new Set(sta
 const obstacles=[{x:10.1,z:-13,w:6,d:5},{x:18,z:-12,w:3.6,d:3.5}];
 const models=new Map();
 const actions={till:'괭이질',plant:'심기',water:'물주기',gate:'물꼬',weed:'김매기',fertilize:'거름주기',harvest:'수확'};
-const farmFx=[];
+
 const formatWon=n=>Math.max(0,Math.round(n)).toLocaleString('ko-KR')+'원';
 
 function loadSave(){
@@ -58,13 +60,15 @@ function init3D(){
   renderer=new THREE.WebGLRenderer({canvas:$('farm'),antialias:true,powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
   renderer.outputColorSpace=THREE.SRGBColorSpace;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.06;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   scene=new THREE.Scene();scene.background=new THREE.Color(0xbedcd5);
   scene.fog=new THREE.Fog(0xbedcd5,46,98);
   camera=new THREE.OrthographicCamera(-12,12,8,-8,.1,160);
   raycaster=new THREE.Raycaster();
-  scene.add(new THREE.HemisphereLight(0xfff5e2,0x6c9879,2.15));
-  const sun=new THREE.DirectionalLight(0xfff0c9,2.45);sun.position.set(-14,26,-10);
+  scene.add(new THREE.HemisphereLight(0xfff5e2,0x6c9879,1.25));
+  const sun=new THREE.DirectionalLight(0xfff0c9,1.65);sun.position.set(-14,26,-10);
   sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
   sun.shadow.camera.left=-29;sun.shadow.camera.right=29;sun.shadow.camera.top=29;sun.shadow.camera.bottom=-29;
   sun.shadow.bias=-.00025;scene.add(sun);
@@ -96,16 +100,11 @@ function init3D(){
   for(let i=0;i<6;i++)addRect(3,.16,.26,0xba9871,-17.5,.23,7.5+i*.4);
   buildFields();
   farmer=new THREE.Group();farmer.position.set(state.player.x,0,state.player.z);scene.add(farmer);
-  farmerAvatar=makeFallbackFarmer();farmer.add(farmerAvatar);
+  farmerAnimator=createFarmerAnimator();
+  farmerAvatar=farmerAnimator.root;farmer.add(farmerAvatar);
+  fieldEffects=new FieldEffects(scene);
   camera.position.set(16,20,20);resize();
   window.addEventListener('resize',resize);
-}
-function makeFallbackFarmer(){
-  const g=new THREE.Group();
-  const body=addRect(.52,.77,.32,0x5b7ea1,0,.93,0,1,g);
-  const legs=addRect(.41,.48,.28,0x4b5d52,0,.3,0,1,g);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(.26,12,8),new THREE.MeshStandardMaterial({color:0xe6b78d}));
-  head.position.y=1.52;g.add(head);return g;
 }
 function buildFields(){
   for(const plot of FIELD_DEFS){
@@ -173,19 +172,19 @@ async function drawCrops(id){
   }
   if(state.selected===id&&!$('inspector').classList.contains('hidden'))updateInspector();
 }
-function animateFarmAction(plot,color=0xf4e0a4){
-  if(!plot)return;
-  const mesh=new THREE.Mesh(new THREE.RingGeometry(.42,.58,24),new THREE.MeshBasicMaterial({
-    color,transparent:true,opacity:.88,side:THREE.DoubleSide,depthWrite:false
-  }));
-  mesh.rotation.x=-Math.PI/2;mesh.position.set(plot.x,.44,plot.z);scene.add(mesh);
-  farmFx.push({mesh,remaining:.72});
-}
-function animateEffects(dt){
-  for(let i=farmFx.length-1;i>=0;i--){
-    const fx=farmFx[i];fx.remaining-=dt;fx.mesh.scale.multiplyScalar(1+dt*2.2);
-    fx.mesh.material.opacity=Math.max(0,fx.remaining/.72)*.75;
-    if(fx.remaining<=0){scene.remove(fx.mesh);fx.mesh.geometry.dispose();fx.mesh.material.dispose();farmFx.splice(i,1)}
+function updateEnvironmentAnimation(dt,elapsed){
+  fieldEffects?.update(dt);
+  for(const record of plotMeshes.values()){
+    const f=fieldById(state,record.plot.id);
+    if(record.waterMesh?.visible){
+      record.waterMesh.position.y=.195+f.waterDepthCm*.014+Math.sin(elapsed*2.7+record.plot.x)*.005;
+    }
+    if(!f?.planted)continue;
+    const swaying=Math.min(1,Math.max(.2,f.growth))*.045;
+    record.cropLayer.children.forEach((plant,i)=>{
+      plant.rotation.z=Math.sin(elapsed*1.8+i*.61+record.plot.x*.2)*swaying;
+      plant.rotation.x=Math.sin(elapsed*1.5+i*.43+record.plot.z*.22)*swaying*.7;
+    });
   }
 }
 function addFarmSigns(){
@@ -223,9 +222,6 @@ async function populate(){
   const trees=[[-20,-18],[-15,-19],[-8,-18],[0,-20],[5,-19],[19,-20],[-21,17],[-12,18],[-4,20],[6,19],[19,19],[-21,3]];
   trees.forEach(([x,z],i)=>jobs.push(placeModel(i%4===0?'pine':'tree',x,z,i*.73)));
   [[-3,-14],[-2,-16],[20,1],[18,5]].forEach(([x,z],i)=>jobs.push(placeModel('treeFall',x,z,i*.5)));
-  jobs.push(loadModel('farmer').then(o=>{
-    if(!o||disposed)return;farmer.clear();farmerAvatar=o;farmer.add(farmerAvatar);models.set('farmer','loaded');
-  }));
   await Promise.allSettled(jobs);
 }
 function resize(){
@@ -246,6 +242,7 @@ function isBlocked(x,z){
   return obstacles.some(q=>Math.abs(x-q.x)<q.w/2+.45&&Math.abs(z-q.z)<q.d/2+.45);
 }
 function move(dt,elapsed){
+  if(farmerAnimator?.busy)return false;
   let vx=0,vz=0;
   if(keys.has('w')||keys.has('arrowup'))vz-=1;
   if(keys.has('s')||keys.has('arrowdown'))vz+=1;
@@ -275,18 +272,25 @@ function move(dt,elapsed){
     moving=true;
     farmer.rotation.y=Math.atan2(vx,-vz);
   }
-  farmer.position.set(state.player.x,moving?Math.abs(Math.sin(elapsed*9))*.045:0,state.player.z);
-  if(farmerAvatar)farmerAvatar.rotation.z=moving?Math.sin(elapsed*11)*.022:0;
+  farmer.position.set(state.player.x,0,state.player.z);
   if(!$('inspector').classList.contains('hidden')){
     const plot=plotById(state.selected);
     if(plot)$('approachBtn').classList.toggle('hidden',distanceToPlot(state.player,plot)<=5);
   }
+  return moving;
 }
 function render(now){
   if(disposed)return;raf=requestAnimationFrame(render);
   const dt=last?Math.min(.07,(now-last)/1000):0;last=now;
-  if(!paused&&!loading)move(dt,now/1000);
-  animateEffects(dt||.016);
+  const moving=!paused&&!loading?move(dt,now/1000):false;
+  if(!paused&&!loading){
+    const feedback=farmerAnimator?.update(dt||.016,{moving,time:now/1000});
+    if(feedback?.impact&&activeFarmImpact){
+      fieldEffects?.emit(activeFarmImpact.action,activeFarmImpact.plot);
+      activeFarmImpact=null;
+    }
+    updateEnvironmentAnimation(dt||.016,now/1000);
+  }
   refreshCamera(dt||.016);renderer.render(scene,camera);
 }
 function canvasPosition(e){
@@ -388,7 +392,12 @@ function doFarmAction(action){
   const result=applyFarmAction(state,plot.id,action);
   toast(result.message);
   if(!result.ok)return;
-  animateFarmAction(plot,action==='water'||action==='gate'?0x84d3ee:action==='harvest'?0xe4bd5d:0xb5e5a0);
+  // A completed farming action triggers a distinct full-body gesture. The field
+  // responds immediately; soil, water or harvest particles appear on impact.
+  moveGoal=null;
+  farmer.rotation.y=Math.atan2(plot.x-state.player.x,-(plot.z-state.player.z));
+  if(farmerAnimator?.trigger(action))activeFarmImpact={plot,action};
+  else fieldEffects?.emit(action,plot);
   syncFieldVisual(plot.id);
   refreshHud();updateInspector();refreshObjective();save(true);
   if(action==='harvest'&&state.stats.harvests===1)
@@ -536,7 +545,7 @@ function bindControls(){
   stick.addEventListener('pointerup',resetStick);stick.addEventListener('pointercancel',resetStick);
   window.addEventListener('pagehide',()=>save(true));
   window.KidscadeGame?.registerPauseHandlers?.({pause:()=>paused=true,resume:()=>paused=false});
-  window.KidscadeGame?.registerCleanup?.(()=>{save(true);disposed=true;cancelAnimationFrame(raf);renderer?.dispose()});
+  window.KidscadeGame?.registerCleanup?.(()=>{save(true);disposed=true;cancelAnimationFrame(raf);fieldEffects?.clear();renderer?.dispose()});
 }
 async function main(){
   init3D();ground=new THREE.Plane(new THREE.Vector3(0,1,0),-.15);
