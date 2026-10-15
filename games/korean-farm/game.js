@@ -215,8 +215,13 @@ function move(dt,elapsed){
   if(keys.has('a')||keys.has('arrowleft'))vx-=1;
   if(keys.has('d')||keys.has('arrowright'))vx+=1;
   vx+=joystick.x;vz+=joystick.y;
-  if(vx||vz)moveGoal=null;
-  if(!vx&&!vz&&moveGoal){
+  if(vx||vz){
+    moveGoal=null;
+    // Camera-relative movement remains intuitive after orbiting.
+    const screenX=vx,screenZ=vz,a=state.camera.angle;
+    vx=screenX*Math.cos(a)+screenZ*Math.sin(a);
+    vz=-screenX*Math.sin(a)+screenZ*Math.cos(a);
+  }else if(moveGoal){
     const dx=moveGoal.x-state.player.x,dz=moveGoal.z-state.player.z,d=Math.hypot(dx,dz);
     if(d<.28)moveGoal=null;
     else{vx=dx/d;vz=dz/d}
