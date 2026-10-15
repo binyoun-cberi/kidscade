@@ -31,6 +31,7 @@
   const Joseon12 = window.OneLifeJoseon12 || null;
   const Joseon13 = window.OneLifeJoseon13 || null;
   const Joseon14 = window.OneLifeJoseon14 || null;
+  const Joseon18 = window.OneLifeJoseon18 || null;
   const Genealogy = window.OneLifeGenealogyV15 || null;
   const BranchSwitch = window.OneLifeBranchSwitchV17 || null;
   const ColonialLife = window.OneLifeColonialDaily || null;
@@ -219,7 +220,7 @@
   }
   function paintLifeRecord() {
     if(Joseon.inOldEra(life)){
-      const lineage=Joseon8?.summary(life),village=Joseon9?.summary(life),late=Joseon11?.summary(life),regional=Joseon12?.summary(life),wartime=Joseon13?.summary(life),aftermath=Joseon14?.summary(life);
+      const lineage=Joseon8?.summary(life),village=Joseon9?.summary(life),late=Joseon11?.summary(life),regional=Joseon12?.summary(life),wartime=Joseon13?.summary(life),aftermath=Joseon14?.summary(life),samjeong=Joseon18?.summary(life);
       const v2=Joseon2.summary(life),j=Joseon.summary(life),v3=Joseon3.summary(life),v4=Joseon4.summary(life),social=Joseon5?.summary(life),jobs=Joseon6?.summary(life),p=Joseon.ensure(life)&&life.profile,m=life.money,e=j.economy;
       const put=(id,value)=>{$(id).textContent=String(value);};
       const source=Annals?.sourceFor(life);
@@ -242,6 +243,26 @@
         put('villageHomeSummary',livingAbroad?
           '고향의 가족과 마을에 대한 기억이다. 지금은 먼 타향에 머물러 국내 농사와 장시의 일을 직접 할 수 없다.':
           '마을의 물 사정 '+(village.water<20?'몹시 부족':village.water<45?'빠듯함':'넉넉함')+' · 우리 집 가축: 소 '+village.animals.ox+'마리, 돼지 '+village.animals.pig+'마리, 닭 '+village.animals.chicken+'마리.');
+        const fiscalVisible=life.year>=1800&&life.year<=1894&&!!samjeong&&!livingAbroad;
+        $('samjeongLedger').classList.toggle('hidden',!fiscalVisible);
+        if(fiscalVisible){
+          const burden=v=>v>=15?'여러 해 쌓인 부담':v>=5?'부담이 남아 있음':v>0?'일부 부담이 남음':'특별히 기록된 부담 없음';
+          put('samjeongLand','전정 · '+burden(samjeong.land));
+          put('samjeongMilitary','군정 · '+burden(samjeong.military));
+          put('samjeongGrain','환정 · '+burden(samjeong.grain));
+          put('samjeongPoliticalContext',life.year<1862?
+            '세도정치 시대의 중앙 인사와 지방 재정 문제가 고을마다 다르게 영향을 주었다.':
+            '1862년 임술민란과 삼정 개선 논의 이후에도 고을의 징수 관행이 곧바로 바뀐 것은 아니다.');
+          put('samjeongResistance',[
+            samjeong.proof?'남겨 둔 장부와 증언이 있다.':'',
+            samjeong.complaints?'부당한 징수에 탄원하거나 의견을 낸 일이 있다.':'',
+            samjeong.integrity?'부당한 지시를 거절하거나 장부를 조사한 기억이 있다.':'',
+            samjeong.corruption?'관청의 부정한 관행에 얽혔던 흔적이 있다.':'',
+            samjeong.anger?'이웃과 집안에 억울함이 쌓여 있다.':''
+          ].filter(Boolean).join(' ')||'이 가계의 삼정 관련 기록이 쌓이면 여기에 나타납니다.');
+          const src=$('samjeongSource');src.classList.toggle('hidden',!samjeong.lastSource);
+          if(samjeong.lastSource)src.href=samjeong.lastSource;
+        }
         const lateVisible=life.year>=1800&&life.year<1900&&!!late;
         $('lateJoseonLedger').classList.toggle('hidden',!lateVisible);
         if(lateVisible){
@@ -371,6 +392,7 @@
     $('lifeHopa').classList.add('hidden');
     $('joseonVillagePanel').classList.add('hidden');
     $('lateJoseonLedger').classList.add('hidden');
+    $('samjeongLedger').classList.add('hidden');
     $('joseonRegionalLedger').classList.add('hidden');
     $('joseonWarRecord').classList.add('hidden');
     $('joseonCaptivityRecord').classList.add('hidden');
@@ -497,7 +519,7 @@
     if(!life)return;
     if(Joseon.inOldEra(life)){
       const j=Joseon.summary(life),s=Joseon.ensure(life),allChoices=life.log
-        .filter(e=>['joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice'].includes(e.kind)).slice(-3);
+        .filter(e=>['joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice','joseon18-choice'].includes(e.kind)).slice(-3);
       const n=j.decisions+Joseon2.summary(life).decisions+Joseon3.summary(life).choices+Joseon4.summary(life).decisions+(Joseon5?.summary(life)?.decisions||0)+(Joseon7?.summary(life)?.decisions||0)+(Joseon9?.summary(life)?.decisions||0)+(Annals?.ensure(life)?.decisions.length||0)+(Joseon11?.summary(life)?.decisions||0)+(Joseon12?.summary(life)?.decisions||0)+(Joseon13?.summary(life)?.decisions||0)+(Joseon14?.summary(life)?.decisions||0);
       $('careerChangeCount').textContent=n+'번의 선택';
       $('careerCurrent').textContent=j.occupation;
@@ -1070,6 +1092,9 @@
       oldJobs?.secondary?'틈틈이 '+oldJobs.secondary.name+'의 일도 함께 했다.':'',
       oldJobs?.primary?.stories?.length?'기억에 남는 생업의 일은 '+oldJobs.primary.stories.slice(-2).join(' ') :'',
       oldLife&&oldLife.warMemory.length?'삶에 영향을 준 사건은 '+oldLife.warMemory.join(', ')+'이었다.':'',
+      oldLife&&Joseon18?.summary(life)?.decisions?
+        '토지세·군포·환곡과 관아의 문제를 겪으며 '+Joseon18.summary(life).decisions+'번의 선택을 했다. '+
+        (Joseon18.summary(life).complaints?'억울함을 호소한 집안의 기록도 남았다. ':''):'',
       oldLife&&Joseon14?.summary(life)?.captivity?
         (Joseon14.summary(life).captivity.status==='returned'?
          '고향을 떠나 있던 세월 끝에 돌아와 새로 일과 가족의 생활을 꾸렸다. ':

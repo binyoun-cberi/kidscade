@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="./joseon-regional-v12.css?v=1">
 <link rel="stylesheet" href="./joseon-war-v13.css?v=1">
 <link rel="stylesheet" href="./joseon-captivity-v14.css?v=1">
+<link rel="stylesheet" href="./joseon-samjeong-v18.css?v=1">
 <link rel="stylesheet" href="./joseon-genealogy-v15.css?v=2">
 </head>
 <body>
@@ -148,6 +149,18 @@
           </section>
           <section id="joseonVillagePanel" class="joseon-village-panel hidden" aria-label="이웃과 마을의 살림">
             <h3>우리 마을과 이웃</h3><p id="villageHomeSummary">—</p>
+            <details id="samjeongLedger" class="samjeong-ledger hidden">
+              <summary>삼정의 문란과 우리 집의 장부</summary>
+              <p id="samjeongPoliticalContext">—</p>
+              <div class="samjeong-categories" aria-label="세 가지 징수 문제">
+                <span id="samjeongLand">전정 · 부담 없음</span>
+                <span id="samjeongMilitary">군정 · 부담 없음</span>
+                <span id="samjeongGrain">환정 · 부담 없음</span>
+              </div>
+              <p id="samjeongResistance">—</p>
+              <a id="samjeongSource" class="hidden" href="https://encykorea.aks.ac.kr/Article/E0026799" target="_blank" rel="noopener noreferrer">삼정의 역사 자료 읽기 ↗</a>
+              <small>이 가계의 장부 수치와 개별 선택의 결과는 실제 조세액이나 역사 기록이 아닌 게임의 가상 상태입니다.</small>
+            </details>
             <div id="lateJoseonLedger" class="late-joseon-ledger hidden">
               <strong>고을에서 살아온 일</strong><p id="lateJoseonLedgerText">—</p>
               <details id="lateJoseonSource" class="annals-source hidden">
@@ -447,8 +460,9 @@
 <script src="./joseon-v14-captivity-generations.js?v=4"></script>
 <script src="./joseon-v15-genealogy.js?v=2"></script>
 <script src="./joseon-v17-branch-switch.js?v=1"></script>
+<script src="./joseon-v18-sedo-samjeong.js?v=1"></script>
 <script src="./colonial-daily-v2.js?v=1"></script>
 <script src="./joseon-pixel-v2.js?v=2"></script>
-<script src="./game.js?v=47"></script>
+<script src="./game.js?v=48"></script>
 </body>
 </html>

@@ -1,0 +1,8 @@
+body.joseon-book .samjeong-ledger{margin:12px 0;border:1px solid #af9670;background:#fbf3e5;border-radius:8px;padding:12px;color:#443522}
+body.joseon-book .samjeong-ledger>summary{cursor:pointer;font:700 15px/1.6 "Noto Serif KR",Batang,serif}
+body.joseon-book .samjeong-ledger p{font-size:13px;line-height:1.75;margin:10px 0;word-break:keep-all}
+body.joseon-book .samjeong-categories{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0}
+body.joseon-book .samjeong-categories span{background:#f0e4cf;border:1px solid #d2bea0;border-radius:7px;padding:9px 6px;text-align:center;font-size:11px;line-height:1.5;color:#5c4225}
+body.joseon-book .samjeong-ledger a{color:#416852;font-size:12px;text-decoration:underline;text-underline-offset:3px}
+body.joseon-book .samjeong-ledger small{display:block;color:#765f42;font-size:11px;line-height:1.6;margin-top:9px}
+@media(max-width:680px){body.joseon-book .samjeong-categories{grid-template-columns:1fr}body.joseon-book .samjeong-categories span{text-align:left;padding:7px 12px}}

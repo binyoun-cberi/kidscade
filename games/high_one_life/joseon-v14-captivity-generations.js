@@ -340,6 +340,7 @@ function continueAsHeir(parent,id){
  l.logEvent('부모 '+parent.profile.name+'의 삶이 끝났다. '+heir.name+'의 시점에서 집안의 살림과 기억을 이어 간다.','joseon14-generations');
  l.log.at(-1).ancestorName=parent.profile.name;
  l.pending=null;
+ Sim.Life.prototype.__joseon18Carry?.(parent,l);
  // The register module loads after this module and is optional for old saves.
  Sim.Life.prototype.__genealogy15Inherit?.(parent,id,l);
  return l;
