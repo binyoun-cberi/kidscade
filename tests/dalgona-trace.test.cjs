@@ -142,7 +142,7 @@ test('release has a crack cost, regrab starts near the traced tip and time never
 test('layout and shared game SDK bind actual pointer handlers and HUD',()=>{
   assert.match(HTML,/data-game-id="dalgona_trace"/);
   assert.match(HTML,/\.\/trace\.js\?v=2/);
-  assert.match(HTML,/\.\/game\.js\?v=2/);
+  assert.match(HTML,/\.\/game\.js\?v=3/);
   assert.match(HTML,/coin-gold\.png/);
   assert.match(UI,/addEventListener\('pointerdown',pointerDown\)/);
   assert.match(UI,/addEventListener\('pointermove',pointerMove\)/);
@@ -164,4 +164,12 @@ test('layout and shared game SDK bind actual pointer handlers and HUD',()=>{
   assert.equal(catalog.games.some(x=>x.id==='dalgona_trace'),false);
   const survivalRules=require('../games/squid-survival/rules.js');
   assert.equal(survivalRules.ROUNDS.find(x=>x.id==='dalgona').src,'../dalgona-trace/index.html');
+});
+
+test('six practice choices, random survival outline and change-shape affordance are wired',()=>{
+  assert.match(HTML,/id="shapeSelect"/);
+  for(let stage=1;stage<=6;stage++)assert.match(HTML,new RegExp('value="'+stage+'"'));
+  assert.match(UI,/randomShapeStage/);
+  assert.match(UI,/SURVIVAL_MODE\|\|selected==='random'/);
+  assert.match(UI,/chooseShapeBtn/);
 });
