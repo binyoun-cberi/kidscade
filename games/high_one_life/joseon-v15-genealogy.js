@@ -66,7 +66,7 @@ function sync(l){
   const rel=l.gender==='여자'?{motherId:selfId,fatherId:spouseId}:{fatherId:selfId,motherId:spouseId};
   put(p,idFor(s,'child:'+p.id,gen+1),'child',gen+1,rel);
  }
- s.clan=V8?.summary(l)?.clan||s.clan||'본관 미상';
+ s.clan=clan?.clan||s.clan||'본관 미상';
  s.residence=J.summary(l).region;
  s.nodes=s.nodes.slice(-140);
  return s;
