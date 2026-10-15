@@ -97,7 +97,7 @@ function advanceBranches(l,s){
    const salt=numberOf(person.id);
    if(!person.married&&hash(s.familySeed,salt+11)>.68)return;
    const yearOfUnion=person.birthYear+22+Math.floor(hash(s.familySeed,salt+31)*7);
-   if(yearOfUnion>current)return;
+   if(yearOfUnion>current||(person.diedYear&&person.diedYear<yearOfUnion))return;
    let partnerId=person.partnerId&&s.nodes.some(n=>n.id===person.partnerId)?person.partnerId:null;
    if(!partnerId){
     partnerId=idFor(s,'side-partner:'+person.id,person.generation);
@@ -117,7 +117,7 @@ function advanceBranches(l,s){
    const max=depth===0?2:1;
    for(let ordinal=0;ordinal<max;ordinal++){
     const born=person.birthYear+25+ordinal*4+Math.floor(hash(s.familySeed,salt+80+ordinal)*3);
-    if(born>current||born>1897||s.nodes.length>=135)continue;
+    if(born>current||born>1897||s.nodes.length>=135||(person.diedYear&&born>person.diedYear))continue;
     const id=idFor(s,'side-child:'+person.id+':'+ordinal,person.generation+1);
     let child=s.nodes.find(n=>n.id===id);
     if(!child){
