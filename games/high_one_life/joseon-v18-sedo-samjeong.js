@@ -45,7 +45,7 @@ const EVENTS=[
   '이미 세상을 떠난 사람의 이름이 군포 장부에서 지워지지 않아 납부를 요구한다. 이를 백골징포라고 불렀다.',SRC.system,[
    O('사망 기록과 친척의 증언을 낸다','조사와 면제를 요구한다','사망한 사람의 이름을 장부에서 지우려 애썼다.',{proof:4,complaints:1,anger:2},'record'),
    O('우선 군포를 마련해 낸다','가족의 다른 지출을 미룬다','내지 않아도 될 군포를 마련한 기억이 오래 남았다.',{military:4,capital:-4,anger:1},'pay'),
-   O('이웃과 함께 관아에 탄원한다','다른 집도 같은 일을 겪었다','억울한 군포를 호소하는 집들이 서로 알게 됐다.',{trust:4,complaints:1,anger:3},'petition')],(l,j,v)=>V4.summary(l).people.some(p=>p.diedYear||!p.alive)),
+   O('이웃과 함께 관아에 탄원한다','다른 집도 같은 일을 겪었다','억울한 군포를 호소하는 집들이 서로 알게 됐다.',{trust:4,complaints:1,anger:3},'petition')],(l,j,v)=>V4.summary(l).people.some(p=>p.sex==='남자'&&(p.diedYear||!p.alive))),
  E('militaryChild','군정',1800,1869,'아직 어린 자녀의 이름에 군포가 붙다',
   '군역을 지기 어려운 어린 남자아이를 장정으로 적어 군포를 요구한다. 황구첨정의 폐단이다.',SRC.system,[
    O('아이의 나이를 증명한다','출생과 나이를 아는 사람을 모은다','아직 어린 아이라고 여러 번 설명해야 했다.',{proof:4,knowledge:1,complaints:1},'record'),
@@ -65,7 +65,7 @@ const EVENTS=[
   '이미 군역 연령을 지났다는 사람이 장부에는 여전히 장정으로 적혀 있다.',SRC.system,[
    O('나이와 가족의 증언을 확인한다','나이와 군역 기록을 대조한다','연로한 식구의 군포를 면해 달라 호소했다.',{proof:4,complaints:1},'record'),
    O('군포를 내고 불화를 피한다','가족의 곡식이 줄어든다','노인을 돌보며 군포도 마련해야 했다.',{military:3,grain:-4,bonds:1},'pay'),
-   O('이웃의 억울한 사례를 모은다','수령에게 여러 집의 사정을 전한다','연로한 이들의 사정이 한데 모였다.',{anger:3,trust:3,complaints:1},'organize')],(l,j,v)=>l.age>=47||V4.summary(l).people.some(p=>p.role==='father'&&p.alive&&p.age>=60)),
+   O('이웃의 억울한 사례를 모은다','수령에게 여러 집의 사정을 전한다','연로한 이들의 사정이 한데 모였다.',{anger:3,trust:3,complaints:1},'organize')],(l,j,v)=>l.age>=60||V4.summary(l).people.some(p=>p.role==='father'&&p.alive&&p.age>=60)),
  E('grainForced','환정',1800,1869,'바라지 않은 환곡을 나누어 주다',
   '곡식을 빌리겠다고 하지 않은 집에도 환곡이 배정됐다. 가을이 오면 이자와 함께 갚으라고 한다.',SRC.system,[
    O('왜 빌려야 하는지 확인한다','장부의 배정 사유를 묻는다','집안에 필요하지 않은 곡식이 왜 배정됐는지 따졌다.',{proof:2,complaints:1,grainDebt:1},'record'),
