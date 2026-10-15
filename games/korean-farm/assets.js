@@ -10,7 +10,7 @@ const SURVIVAL=BASE+'game/3d/survival/kenney-survival-kit/';
 const COZY=BASE+'more assets/cozyfarmbystyloo new/GLB/';
 export const FARM_MODELS=Object.freeze({
   farmer:{url:BASE+'game/characters/people/character-male-a.glb',height:1.7},
-  farmhouse:{url:BASE+'quaternius_cc0-house-1085.glb',height:5.4},
+  farmhouse:{url:BASE+'game/3d/city/kenney-city-kit-suburban/building-type-a.glb',height:5.0},
   barn:{url:COZY+'barnlvl1.glb',height:3.3},
   well:{url:BASE+'quaternius_cc0-well-1471.glb',height:1.8},
   tree:{url:NATURE+'tree-default.glb',height:3.0},
