@@ -15,7 +15,8 @@ export function cropFallbackHex(kind,stage,meshName=''){
   const palette=CROP_COLOR_PALETTES[kind]||CROP_COLOR_PALETTES.rice;
   const i=Math.min(3,Math.max(0,Math.round(Number(stage)||1)-1));
   const name=String(meshName).toLowerCase();
-  if(/soil|dirt|root|earth/.test(name))return 0x86674a;
+  if(/soil|dirt|earth/.test(name))return 0x86674a;
+  if(/root|carrot_body|tuber/.test(name))return kind==='carrot'?0xd8793e:0x86674a;
   if(/grain|ear|ricehead|seed|panicle/.test(name))return i===3?0xe4c067:0xbac86d;
   return palette[i];
 }
@@ -36,7 +37,7 @@ export function scanSceneColors(root){
   });
   return summary;
 }
-export function repairRiceColors(root,stage){
+export function repairCropColors(root,kind,stage){
   let repainted=0;
   root?.traverse?.(mesh=>{
     if(!mesh.isMesh)return;
@@ -44,7 +45,7 @@ export function repairRiceColors(root,stage){
     const next=mats.map(mat=>{
       if(!isNeutralUntextured(mat))return mat;
       const clone=mat.clone();
-      clone.color.setHex(cropFallbackHex('rice',stage,mesh.name+' '+(mat.name||'')));
+      clone.color.setHex(cropFallbackHex(kind,stage,mesh.name+' '+(mat.name||'')));
       clone.needsUpdate=true;repainted++;
       return clone;
     });
@@ -52,3 +53,6 @@ export function repairRiceColors(root,stage){
   });
   return repainted;
 }
+
+// Kept for existing rice-specific QA and compatibility with PR 2 imports.
+export function repairRiceColors(root,stage){return repairCropColors(root,'rice',stage)}
