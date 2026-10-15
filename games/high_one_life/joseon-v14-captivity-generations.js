@@ -100,7 +100,7 @@ function capture(l,realm=eraFor(l)){
 function reunion(l,s,route='쇄환'){
  const c=s.captivity;if(!c||c.status!=='held')return false;
  c.status='returned';c.returnedYear=l.year;c.route=route;s.recoverYears=0;
- l.logEvent('오랜 세월이 지나 고향으로 돌아왔다. '+route+'을(를) 통해 귀환했지만 잃은 시간은 돌아오지 않았다.','joseon14-return');
+ l.logEvent('오랜 세월이 지나 고향으로 돌아왔다. 귀환의 길은 쉽지 않았고, 떠나 있던 시간은 돌아오지 않았다.','joseon14-return');
  return true;
 }
 function opportunity(l,s){
