@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {loadModel,loadRiceStage,assetReport,FARM_MODELS} from './assets.js';
-import {FIELD_DEFS,RICE_STAGES,makeFarmState,validateFarmState,plotById,plotStage,setPreviewStage,distanceToPlot} from './world.mjs';
+import {FIELD_DEFS,plotById,distanceToPlot} from './world.mjs';
+import {createFarmState,restoreFarmState,CROPS,calendar,fieldById,visualStage,fieldCondition,applyFarmAction,advanceFarmDay,sellAllProduce} from './farming/farm-sim.mjs';
 
 const $=id=>document.getElementById(id);
 const SAVE_KEY=window.KidscadeGame?.storageKey?.('korean_farm','farm')||'kidscade_game_v1:korean_farm:farm';
@@ -17,12 +18,15 @@ let pinchDistance=0,downPosition=null;
 const plotMeshes=new Map(),plotHits=[],plotOrigins=new Map(),visited=new Set(state.seenPlots||[]);
 const obstacles=[{x:10.1,z:-13,w:6,d:5},{x:18,z:-12,w:3.6,d:3.5}];
 const models=new Map();
+const actions={till:'괭이질',plant:'심기',water:'물주기',gate:'물꼬',weed:'김매기',fertilize:'거름주기',harvest:'수확'};
+const farmFx=[];
+const formatWon=n=>Math.max(0,Math.round(n)).toLocaleString('ko-KR')+'원';
 
 function loadSave(){
   try{
     const raw=window.KidscadeStorage?.getJson?.(SAVE_KEY,null)??JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
-    return validateFarmState(raw);
-  }catch{return makeFarmState()}
+    return restoreFarmState(raw);
+  }catch{return createFarmState()}
 }
 function save(silent=false){
   try{
