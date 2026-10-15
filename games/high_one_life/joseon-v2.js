@@ -159,6 +159,7 @@ const FAMINE=new Set([1670,1671,1695,1696]);
 function processYear(life){
  const s=ensure(life),j=J.ensure(life);if(!s||!life.alive||!J.inOldEra(life)||s.processedYear>=life.year)return false;
  s.processedYear=life.year;
+ if(life.joseon14?.captivity?.status==='held')return false;
  const r=REGIONAL[j.region]||REGIONAL['경기도'],age=life.age;
  // Small, explicitly invented food-resource ledger, separate from monetary history.
  if(age>=8){
