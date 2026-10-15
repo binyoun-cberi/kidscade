@@ -460,12 +460,29 @@ function help(){
 }
 function showQa(){
   const list=document.createElement('div');list.className='qa-list';
-  const explanation=document.createElement('p');explanation.textContent='이 목록은 파일 로드 성공 여부를 확인하는 도구예요. 모델의 색·크기·동작을 사람이 직접 확인해야 최종 검수로 인정해요.';list.append(explanation);
+  const explanation=document.createElement('p');
+  explanation.textContent='로드 성공과 정상 색칠은 다를 수 있어요. 모델의 텍스처·정점색·재질색을 자동 진단하고, 중성색 벼 재질만 제한적으로 보정해요. 실제 화면 확인은 여전히 필요해요.';
+  list.append(explanation);
+  const actorNote=document.createElement('div');actorNote.className='qa-entry';
+  const actorTitle=document.createElement('strong');actorTitle.textContent='농부 캐릭터 · 절차적 관절 모델';
+  const actorText=document.createElement('small');actorText.textContent='피부·머리카락·의상·장화·밀짚모자 색상을 개별 재질로 지정했으며, 농사 동작 7종을 적용했어요.';
+  actorNote.append(actorTitle,actorText);list.append(actorNote);
   for(const [name,record] of assetReport){
     const e=document.createElement('div');e.className='qa-entry';
     const b=document.createElement('strong');b.textContent=(record.status==='loaded'?'로드 성공 · ':'로드 실패 · ')+record.kind;
     const s=document.createElement('small');s.textContent=name.replace('../../assets/','assets/');
-    e.append(b,s);if(record.message){const w=document.createElement('div');w.className='qa-warn';w.textContent=record.message;e.append(w)}
+    e.append(b,s);
+    if(record.colors){
+      const c=record.colors,info=document.createElement('small');
+      info.textContent='메시 '+c.meshes+'개 · 재질 '+c.materials+'개 · 텍스처 '+c.textured+' · 정점색 '+c.vertexColor+' · 직접색 '+c.painted+' · 중성 무텍스처 '+c.neutralUntextured+' · 자동 보정 '+(record.repainted||0);
+      e.append(info);
+      if(c.missingMaterial||c.neutralUntextured>(record.repainted||0)){
+        const warn=document.createElement('div');warn.className='qa-warn';
+        warn.textContent='확인 필요: 색 정보가 부족할 수 있는 재질 '+Math.max(0,c.neutralUntextured-(record.repainted||0))+'개';
+        e.append(warn);
+      }
+    }
+    if(record.message){const w=document.createElement('div');w.className='qa-warn';w.textContent=record.message;e.append(w)}
     list.append(e);
   }
   for(const [id,origin] of plotOrigins){
