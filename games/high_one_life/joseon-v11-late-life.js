@@ -192,6 +192,7 @@ function prompt(l){
 function yearly(l,s){
  if(!s||!isJoseonYear(l)||s.processedYear>=l.year)return;
  s.processedYear=l.year;
+ if(l.joseon14?.captivity?.status==='held')return;
  const j=J.ensure(l),v=V2.ensure(l),village=V9.ensure(l);
  for(const f of s.followups.filter(f=>f.year<=l.year)){
   l.logEvent(f.text,'joseon11-followup');l.log.at(-1).causeId='joseon11:'+f.id;
