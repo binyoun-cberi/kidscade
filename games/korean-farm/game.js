@@ -501,12 +501,13 @@ function bindControls(){
   $('closeInspect').onclick=()=>$('inspector').classList.add('hidden');
   $('modalClose').onclick=()=>$('modal').classList.add('hidden');
   $('modal').addEventListener('click',e=>{if(e.target===$('modal'))$('modal').classList.add('hidden')});
-  $('stageButtons').addEventListener('click',e=>{
-    const btn=e.target.closest('button[data-stage]');if(!btn)return;
-    if(setPreviewStage(state,state.selected,Number(btn.dataset.stage))){
-      updateInspector();drawCrops(state.selected);save(true);
-    }
+  $('actionButtons').addEventListener('click',e=>{
+    const button=e.target.closest('button[data-action]');
+    if(button&&!button.disabled)doFarmAction(button.dataset.action);
   });
+  $('approachBtn').onclick=goToSelectedField;
+  $('sleepBtn').onclick=sleepFarmDay;
+  $('bagBtn').onclick=openBag;
   const stick=$('joystick'),knob=stick.querySelector('.joystick-knob');
   const resetStick=()=>{joystick.x=0;joystick.y=0;joystick.id=null;knob.style.transform='translate(0,0)'};
   const readStick=e=>{
@@ -525,12 +526,12 @@ function bindControls(){
 async function main(){
   init3D();ground=new THREE.Plane(new THREE.Vector3(0,1,0),-.15);
   bindControls();
-  $('progressText').textContent='살펴본 논 '+visited.size+' / 4';$('progressBar').style.width=visited.size/4*100+'%';
+  refreshHud();refreshObjective();updateInspector();
   raf=requestAnimationFrame(render);
   await populate();
   loading=false;$('loading').classList.add('hidden');
-  window.KidscadeGame?.start?.({source:'farm-prototype'});
-  if(visited.size===0)toast('WASD 또는 왼쪽 조이스틱으로 움직여 보세요.');
+  window.KidscadeGame?.start?.({source:'farm-simulation-pr2'});
+  if(!state.stats.harvests)toast('논을 선택해 작물을 살펴보고, 네 번째 논에서 첫 수확을 해 보세요.');
 }
 main().catch(e=>{
   $('loadingText').textContent='농장을 불러오지 못했어요. 다시 열어 주세요.';
