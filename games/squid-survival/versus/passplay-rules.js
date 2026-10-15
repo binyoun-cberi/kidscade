@@ -25,7 +25,9 @@ function createGame(round,player,seed,now,attempt=0){
   seed:seedAt(seed,round,player,attempt),trace:null,traceReverse:null,traceDirection:null,traceState:null,map:null,body:null,
   previewUntil:0,question:null,answer:null,events:0};
  if(id==='dalgona'){
-   game.trace={...T.buildTrace(1),timeLimitMs:LIMITS[id]};
+   // Draw one random shape for the match; both players must trace the same outline.
+   const shapeStage=1+seedAt(seed,round,0,attempt)%T.SHAPES.length;
+   game.trace={...T.buildTrace(shapeStage),timeLimitMs:LIMITS[id]};
    game.traceReverse=T.reversed(game.trace);
    game.traceState=T.createState(game.trace);
  }else if(id==='bridge'){
@@ -41,6 +43,10 @@ function createGame(round,player,seed,now,attempt=0){
    game.question=M.mathQuestion(M.random(game.seed));
  }else{
    game.body=M.create(id,game.seed);
+   if(id==='tug'){
+     const shared=M.create('tug',seedAt(seed,round,0,attempt));
+     game.body.tugPeriod=shared.tugPeriod;game.body.tugOffset=shared.tugOffset;
+   }
    game.body.limit=game.limit;
    M.start(game.body,now);
  }
@@ -169,7 +175,7 @@ function input(state,action,value,now){
  if(g.id==='dalgona'){
    if(action==='trace-start')g.traceState=T.begin(g.trace,g.traceState,value,now).state;
    else if(action==='trace-move'){
-     if(g.traceDirection===null&&g.traceState.active&&g.traceState.progress<2){
+     if(g.traceDirection===null&&g.traceState.active&&g.traceState.progress<Math.min(40,g.trace.total/10)){
        const direction=T.directionFor(g.trace,g.traceReverse,value);
        if(direction){
          g.traceDirection=direction;

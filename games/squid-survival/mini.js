@@ -195,7 +195,7 @@ function drawTug(s,now,w,h){
  for(let i=0;i<3;i++)character(w*(.22+i*.11)+offset,y+14,Math.min(100,h*.31),'#6fd5b3',now,true);
  for(let i=0;i<3;i++)character(w*(.66+i*.10)+offset,y+14,Math.min(100,h*.31),'#d98787',now,true,true);
  rect(mid+offset-4,y-34,8,54,'#fa777f',2);
- const barWidth=Math.min(w*.73,530),bx=(w-barWidth)/2,by=h*.13,needle=(s.elapsed%1000)/1000;
+ const barWidth=Math.min(w*.73,530),bx=(w-barWidth)/2,by=h*.13,needle=rules.tugPosition(s);
  rect(bx-8,by-8,barWidth+16,43,'#0c2328',8);
  rect(bx,by,barWidth,24,'#cd947c',5);rect(bx+barWidth*.40,by,barWidth*.20,24,'#91ffbd',4);
  rect(bx+barWidth*needle-4,by-12,8,48,'#fff8db',3);

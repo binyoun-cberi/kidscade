@@ -37,7 +37,10 @@ function follow(g,clock,act){
      act('hold',g.body.signal==='green',t);
    }
  }else if(g.id==='tug'){
-   for(let t=clock+500;t<clock+22000;t+=1000)act('tap',null,t);
+   for(let cycle=0;cycle<12;cycle++){
+      const at=clock+Math.round((cycle+.5)*g.body.tugPeriod-g.body.tugOffset);
+      if(at>clock)act('tap',null,at);
+    }
  }else if(g.id==='marbles'){
    for(let j=0;j<5;j++)act('choose',g.body.questions[j].answer,clock+1000+j*800);
  }else if(g.id==='final'){
@@ -251,4 +254,25 @@ test('idempotent after turns, illegal actions and early round skips are ignored'
  s=E.tick(s,47000);assert.equal(s.phase,'handoff');
  assert.equal(E.input(s,'trace-start',{x:0,y:0},55000),s);
  assert.equal(E.advanceRound(s),s);
+});
+
+test('dalgona varies across matches and stays identical for both players',()=>{
+  const seen=new Set();
+  for(let seed=1;seed<=150;seed++){
+    const a=E.createGame(0,0,seed,100),b=E.createGame(0,1,seed,100);
+    assert.equal(a.trace.shape,b.trace.shape,'different shapes for seed '+seed);
+    assert.equal(a.trace.total,b.trace.total);
+    seen.add(a.trace.shape);
+  }
+  assert.equal(seen.size,T.SHAPES.length);
+});
+test('two-player tug rhythm is fair within a match and varied between matches',()=>{
+  const periods=new Set();
+  for(let seed=1;seed<=90;seed++){
+    const a=E.createGame(3,0,seed,100),b=E.createGame(3,1,seed,100);
+    assert.equal(a.body.tugPeriod,b.body.tugPeriod);
+    assert.equal(a.body.tugOffset,b.body.tugOffset);
+    periods.add(a.body.tugPeriod);
+  }
+  assert.ok(periods.size>=40);
 });

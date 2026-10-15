@@ -84,7 +84,7 @@ test('every practice page uses upgraded game design, accessible progress and cor
    const html=fs.readFileSync(path.join(dir,mode,'index.html'),'utf8');
    assert.match(html,new RegExp('data-mode="'+mode+'"'));
    assert.match(html,/mini\.css\?v=4/);
-   assert.match(html,/mini\.js\?v=4/);
+   assert.match(html,/mini\.js\?v=5/);
    assert.match(html,/role="progressbar"/);
    assert.match(html,/class="personal-best"/);
  }

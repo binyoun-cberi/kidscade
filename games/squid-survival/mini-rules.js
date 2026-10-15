@@ -12,11 +12,17 @@ const MODES=Object.freeze({
   final:{id:'final',name:'꼴뚜기 결승전',hint:'기억 → 타이밍 → 수학의 세 시험을 통과하세요.',limit:65000}
 });
 const SYMBOLS=Object.freeze(['▲','●','■','★']);
-function random(seed){let x=(seed>>>0)||123456789;return function(){x^=x<<13;x^=x>>>17;x^=x<<5;return(x>>>0)/4294967296;};}
+function random(seed){
+  // Mix short/sequential seeds before xorshift; otherwise early draws are almost identical.
+  let x=((seed>>>0)^0x9e3779b9)>>>0;
+  x=Math.imul(x^(x>>>16),0x85ebca6b)>>>0;
+  x=Math.imul(x^(x>>>13),0xc2b2ae35)>>>0;
+  x=(x^(x>>>16))>>>0;
+  if(!x)x=123456789;
+  return function(){x^=x<<13;x^=x>>>17;x^=x<<5;return(x>>>0)/4294967296;};
+}
 function between(r,min,max){return min+Math.floor(r()*(max-min+1));}
-function marbleQuestion(r,index){
-  const types=['odd','even','greater','less','odd'];
-  const type=types[index%types.length];
+function marbleQuestion(r,index,type=['odd','even','greater','less','odd'][index%5]){
   for(let tries=0;tries<200;tries++){
     const left=between(r,2,12),right=between(r,2,12);
     if(left===right)continue;
@@ -44,18 +50,30 @@ function mathQuestion(r){
   for(let i=options.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[options[i],options[j]]=[options[j],options[i]];}
   return{prompt:a+' + '+b+' = ?',options,answer};
 }
+// Share each rhythm's clock with the game renderer so the hit zone never drifts.
+function randomStep(s,min,max){
+  s.signalSeed=(Math.imul(s.signalSeed,1664525)+1013904223)>>>0;
+  return min+Math.floor(s.signalSeed/4294967296*(max-min+1));
+}
+function tugPosition(s){
+  return ((s.elapsed+(s.tugOffset||0))%(s.tugPeriod||1000))/(s.tugPeriod||1000);
+}
 function create(mode,seed=1507){
   if(!MODES[mode])throw Error('Unsupported game: '+mode);
   const r=random(seed),s={
     mode,seed:seed>>>0,status:'ready',startedAt:null,at:0,elapsed:0,
     limit:MODES[mode].limit,score:0,reason:'',events:0
   };
-  if(mode==='redlight')Object.assign(s,{signal:'green',signalSince:0,signalEnds:between(r,1900,3000),held:false,progress:0,
+  if(mode==='redlight')Object.assign(s,{signal:'green',signalSince:0,signalEnds:between(r,1900,3000),signalSeed:(seed^0x9e3779b9)>>>0,held:false,progress:0,
     nextGreen:between(r,1900,3100),nextRed:between(r,1000,1650)});
-  if(mode==='tug')Object.assign(s,{rope:29,fatigue:0,combo:0,lastTap:-9999,pulls:0,perfect:0});
-  if(mode==='marbles')Object.assign(s,{questionIndex:0,correct:0,misses:0,questions:Array.from({length:5},(_,i)=>marbleQuestion(r,i))});
+  if(mode==='tug')Object.assign(s,{rope:29,fatigue:0,combo:0,lastTap:-9999,pulls:0,perfect:0,tugPeriod:between(r,870,1150),tugOffset:between(r,0,80)});
+  if(mode==='marbles'){
+    const order=['odd','even','greater','less','odd'];
+    for(let i=order.length-1;i>0;i--){const j=between(r,0,i);[order[i],order[j]]=[order[j],order[i]];}
+    Object.assign(s,{questionIndex:0,correct:0,misses:0,questions:order.map((type,i)=>marbleQuestion(r,i,type))});
+  }
   if(mode==='final')Object.assign(s,{part:'preview',previewEnds:3800,sequence:Array.from({length:4},()=>SYMBOLS[between(r,0,3)]),
-    entered:0,timingHits:0,timingMisses:0,lastHit:-9999,math:mathQuestion(r)});
+    entered:0,timingHits:0,timingMisses:0,lastHit:-9999,timingPeriod:between(r,1190,1690),timingOffset:between(r,0,140),math:mathQuestion(r)});
   return s;
 }
 function finish(s,success,reason=''){
@@ -70,7 +88,7 @@ function start(s,now){
   if(s.status!=='ready')return s;
   s.status='playing';s.startedAt=now;s.at=now;return s;
 }
-function timingPosition(s){const phase=((s.elapsed%1450)+1450)%1450/1450;return phase<=.5?phase*2:(1-phase)*2;}
+function timingPosition(s){const period=s.timingPeriod||1450,phase=(((s.elapsed+(s.timingOffset||0))%period)+period)%period/period;return phase<=.5?phase*2:(1-phase)*2;}
 function advance(s,now){
   if(s.status!=='playing')return s;
   let dt=Math.max(0,Math.min(500,now-s.at));
@@ -80,9 +98,9 @@ function advance(s,now){
     let loops=0;
     while(s.elapsed>=s.signalEnds&&loops++<10){
       const when=s.signalEnds;
-      if(s.signal==='green'){s.signal='warning';s.signalEnds=when+470;}
-      else if(s.signal==='warning'){s.signal='red';s.signalEnds=when+s.nextRed;}
-      else{s.signal='green';s.signalEnds=when+s.nextGreen;}
+      if(s.signal==='green'){s.signal='warning';s.signalEnds=when+randomStep(s,400,620);}
+      else if(s.signal==='warning'){s.signal='red';s.nextRed=randomStep(s,1000,1700);s.signalEnds=when+s.nextRed;}
+      else{s.signal='green';s.nextGreen=randomStep(s,1900,3300);s.signalEnds=when+s.nextGreen;}
       s.signalSince=when;
     }
     // Movement is controlled ONLY by the player's actual held input.
@@ -113,7 +131,7 @@ function act(s,action,value,now){
     s.lastTap=s.elapsed;s.pulls++;s.events++;
     if(delta<260){s.fatigue+=24;s.rope-=8;s.combo=0;}
     else {
-      const phase=(s.elapsed%1000)/1000,dist=Math.abs(phase-.5);
+      const phase=tugPosition(s),dist=Math.abs(phase-.5);
       if(dist<=.10){s.rope+=15;s.combo++;s.perfect++;}
       else if(dist<=.21){s.rope+=7;s.combo=0;}
       else{s.rope-=6;s.fatigue+=13;s.combo=0;}
@@ -150,5 +168,5 @@ function act(s,action,value,now){
   }
   return s;
 }
-return Object.freeze({MODES,SYMBOLS,create,start,advance,act,finish,timingPosition,marbleQuestion,mathQuestion,random});
+return Object.freeze({MODES,SYMBOLS,create,start,advance,act,finish,timingPosition,marbleQuestion,mathQuestion,random,tugPosition});
 });

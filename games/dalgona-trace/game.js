@@ -3,6 +3,12 @@
   const $=id=>document.getElementById(id);
   const engine=window.DalgonaTrace;
   const SURVIVAL_MODE=typeof window.location?.search==='string'&&new URLSearchParams(window.location.search).get('survival')==='1'&&window.parent!==window;
+  const randomShapeStage=()=>{
+    const pick=new Uint32Array(1);
+    if(globalThis.crypto?.getRandomValues)crypto.getRandomValues(pick);
+    else pick[0]=Math.floor(Math.random()*4294967296);
+    return 1+pick[0]%engine.SHAPES.length;
+  };
   const el={
     board:$('board'),wrap:$('boardWrap'),intro:$('intro'),result:$('result'),help:$('help'),
     shape:$('shapeName'),hint:$('hintText'),desc:$('stageDescription'),stage:$('stageText'),
@@ -79,7 +85,8 @@
   }
   function start(){
     sdk('start',{mode:'dalgona-trace'});
-    play('start');stageStart(1);
+    const selected=$('shapeSelect')?.value||'random';
+    play('start');stageStart(SURVIVAL_MODE||selected==='random'?randomShapeStage():Number(selected));
   }
   function outcome(success){
     if(game.phase==='cleared'||game.phase==='failed')return;
@@ -149,7 +156,7 @@
     if(game.pointerId!==event.pointerId||game.phase!=='playing')return;
     if(event.cancelable)event.preventDefault();
     const before=game.state,point=toPoint(event);
-    if(game.traceDirection===null&&game.state.progress<2){
+    if(game.traceDirection===null&&game.state.progress<Math.min(40,game.trace.total/10)){
       const direction=engine.directionFor(game.trace,game.traceReverse,point);
       if(direction){
         game.traceDirection=direction;
@@ -260,7 +267,9 @@
   $('startBtn').addEventListener('click',start);
   el.continue.addEventListener('click',()=>{if(SURVIVAL_MODE)return;play('start');stageStart(game.phase==='cleared'?game.stage+1:game.stage);});
   el.retry.addEventListener('click',()=>{if(SURVIVAL_MODE||!game.trace)return;play('retry');stageStart(game.stage);});
-  if(SURVIVAL_MODE)el.retry.hidden=true;
+  $('chooseShapeBtn').addEventListener('click',()=>{if(SURVIVAL_MODE)return;game.phase='intro';
+    el.result.classList.add('hidden');el.intro.classList.remove('hidden');});
+  if(SURVIVAL_MODE){el.retry.hidden=true;$('chooseShapeBtn').hidden=true;}
   $('helpBtn').addEventListener('click',()=>{el.help.classList.remove('hidden');});
   $('closeHelpBtn').addEventListener('click',()=>{el.help.classList.add('hidden');});
   el.sound.addEventListener('click',()=>{game.soundOn=!game.soundOn;el.sound.textContent=game.soundOn?'♪':'×';el.sound.setAttribute('aria-label',game.soundOn?'소리 끄기':'소리 켜기');});

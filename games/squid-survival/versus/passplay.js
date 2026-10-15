@@ -148,7 +148,7 @@ function controlUpdate(){
 function nowDetails(){
  const g=state.game,b=g?.body;
  if(!g)return '';
- if(g.id==='dalgona')return '모양 완성 '+Math.round(E.percentage(g)*100)+'% · 금 '+Math.round(g.traceState.crack)+'%';
+ if(g.id==='dalgona')return g.trace.name+' · 완성 '+Math.round(E.percentage(g)*100)+'% · 금 '+Math.round(g.traceState.crack)+'%';
  if(g.id==='bridge')return g.phase==='preview'?'정답 길을 기억하는 시간':'현재 '+g.step+' / '+(g.map.path.length-1)+'칸';
  if(g.id==='redlight')return b.signal==='green'?(b.held?'달리는 중 · 버튼 누름':'초록불 · 버튼을 누르면 출발'):b.signal==='warning'?(b.held?'노란불 · 아직 달리는 중! 손을 떼세요':'노란불 · 손을 떼서 정지 중'):(b.held?'빨간불 · 아직 달리는 중!':'빨간불 · 정지 성공');
  if(g.id==='tug')return '힘 '+Math.round(b.rope)+'% · 피로 '+Math.round(b.fatigue)+'%';
@@ -170,6 +170,7 @@ function renderHUD(){
  const pid=playing?g.player:state.active??0;
  el.arena.dataset.player=String(pid);el.chipCurrent.textContent=(pid+1)+'P 차례';
  el.status.textContent=playing?'도전 중':'다음 선수 대기';
+ el.board.dataset.shape=playing&&g.id==='dalgona'?g.trace.shape:'';
  el.detail.textContent=playing?nowDetails():'문제와 이전 기록은 전달 중 비공개';
  el.instruction.textContent=playing?lesson[g.id]:'한 사람이 화면 전체를 사용합니다.';
  el.keyHint.textContent=playing?shortKeyHelp(g.id,g.body?.part):'스마트폰·태블릿·PC 모두 번갈아 플레이';
@@ -228,7 +229,7 @@ function redlight(g){
  text(b.held?'현재 달리는 중':'현재 멈춘 상태',W*.55,H-25,16,b.held?'#ffd29a':'#b5f5d4');
 }
 function tug(g){
- bg('#463b35');const b=g.body,marker=b.elapsed%1000/1000;
+ bg('#463b35');const b=g.body,marker=M.tugPosition(b);
  text('초록 구간에서 줄을 당기세요!',W/2,30,22,'#ffe8c0');
  rect(45,69,430,34,'#dd9e85',8);rect(45+430*.40,69,430*.2,34,'#8ff7b9',3);
  rect(45+430*marker-5,59,10,55,'#fffbea',3);
