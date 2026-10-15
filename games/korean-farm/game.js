@@ -507,6 +507,17 @@ function bindControls(){
   });
   $('approachBtn').onclick=goToSelectedField;
   $('sleepBtn').onclick=sleepFarmDay;
+  $('guideRice').onclick=()=>{
+    state.selected='rice-4';goToSelectedField();updateInspector();
+    $('inspector').classList.remove('hidden');
+  };
+  $('nearFieldBtn').onclick=()=>{
+    let selected=null,best=6;
+    for(const plot of FIELD_DEFS){const dist=distanceToPlot(state.player,plot);
+      if(dist<best){best=dist;selected=plot}}
+    if(selected)chooseField(selected.id);else toast('논밭 가까이에서 살펴보기를 눌러 주세요.');
+  };
+
   $('bagBtn').onclick=openBag;
   const stick=$('joystick'),knob=stick.querySelector('.joystick-knob');
   const resetStick=()=>{joystick.x=0;joystick.y=0;joystick.id=null;knob.style.transform='translate(0,0)'};
