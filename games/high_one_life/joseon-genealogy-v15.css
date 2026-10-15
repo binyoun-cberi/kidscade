@@ -1,0 +1,30 @@
+.genealogy-open,.genealogy-end-open{border:1px solid #a47c4e!important;background:#efe0bc!important;color:#54391d!important;font-weight:750!important;box-shadow:inset 0 1px #fff5df}
+.genealogy-end-open{width:100%;margin:10px 0 18px;padding:13px}
+.genealogy-modal{position:fixed;inset:0;z-index:2200;display:flex;align-items:center;justify-content:center;padding:18px}
+.genealogy-modal.hidden{display:none}
+.genealogy-backdrop{position:absolute;inset:0;background:rgba(20,22,20,.78)}
+.genealogy-paper{position:relative;width:min(940px,100%);max-height:calc(100vh - 36px);overflow:auto;overscroll-behavior:contain;background:#f9f1df;border:2px solid #ab8657;border-radius:11px;padding:23px 24px;color:#433321;box-shadow:0 12px 48px rgba(0,0,0,.35)}
+.genealogy-header{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;border-bottom:2px solid #bfa684;padding-bottom:13px}
+.genealogy-header small{font-size:12px;color:#876b44}
+.genealogy-header h2{font:750 27px/1.35 "Noto Serif KR",Batang,serif;margin:1px 0}
+.genealogy-header p{font-size:13px;margin:2px 0;color:#715536}
+.genealogy-header button{flex-shrink:0;color:#563d22;border:1px solid #bca17b;border-radius:8px;background:#fff8ed;min-height:38px;padding:7px 11px;cursor:pointer}
+.genealogy-disclaimer,.genealogy-footnote{font-size:12px;color:#75634b;line-height:1.7;margin:14px 0}
+.genealogy-generations{display:flex;flex-direction:column;align-items:stretch;gap:0;padding:4px 0}
+.genealogy-generation{position:relative;display:flex;flex-direction:column;align-items:center;padding:12px 0}
+.genealogy-generation+.genealogy-generation:before{content:"";position:absolute;top:-6px;height:18px;border-left:2px solid #bda17b}
+.genealogy-generation h3{font:700 13px/1.5 "Noto Serif KR",Batang,serif;color:#79603c;margin:0 0 11px;background:#e9ddc3;border-radius:100px;padding:4px 17px}
+.genealogy-members{width:100%;display:flex;align-items:stretch;justify-content:center;flex-wrap:wrap;gap:9px}
+.genealogy-person{display:flex;flex-direction:column;gap:4px;align-items:center;min-width:132px;max-width:200px;padding:12px 11px;border:1px solid #bea887;border-radius:9px;background:#fffaf0;color:#4a3823;cursor:pointer;text-align:center}
+.genealogy-person strong{font-size:15px;line-height:1.5;word-break:keep-all}
+.genealogy-person span{font-size:11px;color:#7c694f}
+.genealogy-person small{font-size:11px;color:#7c694f;line-height:1.4}
+.genealogy-person[aria-pressed="true"]{outline:3px solid #937b51;background:#f0dec0;outline-offset:1px}
+.genealogy-person.genealogy-self{border:2px solid #83623b;background:#f4e5c7}
+.genealogy-person.genealogy-deceased{border-style:dashed}
+.genealogy-person:focus-visible,.genealogy-header button:focus-visible{outline:3px solid #467e63;outline-offset:3px}
+.genealogy-person-detail{border:1px solid #bca17b;border-radius:8px;background:#fffaf1;padding:14px 17px;margin-top:16px}
+.genealogy-person-detail h3{font:700 20px/1.45 "Noto Serif KR",Batang,serif;margin:0 0 8px}
+.genealogy-person-detail p{font-size:13px;line-height:1.7;word-break:keep-all;margin:6px 0}
+@media(max-width:680px){.genealogy-modal{padding:0}.genealogy-paper{width:100%;max-height:100dvh;height:100dvh;border-radius:0;border:0;padding:18px 12px 30px}.genealogy-header h2{font-size:24px}.genealogy-members{gap:7px}.genealogy-person{min-width:calc(50% - 8px);max-width:calc(50% - 8px);padding:10px 7px}.genealogy-person strong{font-size:14px}}
+@media(prefers-reduced-motion:reduce){.genealogy-person,.genealogy-paper{scroll-behavior:auto}}
