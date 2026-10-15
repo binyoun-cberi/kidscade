@@ -12,7 +12,15 @@ const MODES=Object.freeze({
   final:{id:'final',name:'꼴뚜기 결승전',hint:'기억 → 타이밍 → 수학의 세 시험을 통과하세요.',limit:65000}
 });
 const SYMBOLS=Object.freeze(['▲','●','■','★']);
-function random(seed){let x=(seed>>>0)||123456789;return function(){x^=x<<13;x^=x>>>17;x^=x<<5;return(x>>>0)/4294967296;};}
+function random(seed){
+  // Mix short/sequential seeds before xorshift; otherwise early draws are almost identical.
+  let x=((seed>>>0)^0x9e3779b9)>>>0;
+  x=Math.imul(x^(x>>>16),0x85ebca6b)>>>0;
+  x=Math.imul(x^(x>>>13),0xc2b2ae35)>>>0;
+  x=(x^(x>>>16))>>>0;
+  if(!x)x=123456789;
+  return function(){x^=x<<13;x^=x>>>17;x^=x<<5;return(x>>>0)/4294967296;};
+}
 function between(r,min,max){return min+Math.floor(r()*(max-min+1));}
 function marbleQuestion(r,index,type=['odd','even','greater','less','odd'][index%5]){
   for(let tries=0;tries<200;tries++){
