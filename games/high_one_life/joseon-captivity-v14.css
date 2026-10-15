@@ -1,0 +1,13 @@
+body.joseon-book .joseon-captivity-record{margin:12px 0;padding:12px 14px;border:1px solid #ab987d;background:#fbf1df;color:#473d30}
+body.joseon-book .joseon-captivity-record summary{font:750 15px/1.55 "Noto Serif KR",Batang,serif;cursor:pointer;word-break:keep-all}
+body.joseon-book .joseon-captivity-record p{margin:8px 0;font-size:13px;line-height:1.75;word-break:keep-all;overflow-wrap:anywhere}
+body.joseon-book .joseon-captivity-record a{display:inline-block;color:#3b5b4f;font-size:12px;margin:6px 0;text-decoration:underline;text-underline-offset:3px}
+body.joseon-book .joseon-captivity-record small{display:block;font-size:11px;line-height:1.65;color:#6b5a45}
+.heir-controls{margin:20px 0 14px;padding:18px;border:1px solid var(--line,#b7a58d);border-radius:12px;background:var(--card,#fcf7ec);display:flex;flex-direction:column;gap:9px}
+.heir-controls.hidden{display:none}
+.heir-controls strong{font-size:18px}
+.heir-controls p{font-size:14px;line-height:1.7;margin:0}
+.heir-controls label{font-size:13px;font-weight:700}
+.heir-controls select{max-width:100%;min-height:44px;padding:10px;border-radius:8px;border:1px solid #b5a58f;background:var(--paper,#fff)}
+.heir-controls button{min-height:44px;align-self:flex-start}
+@media(max-width:780px){body.joseon-book .joseon-captivity-record{padding:11px 12px}.heir-controls{padding:14px}.heir-controls button{align-self:stretch;width:100%}}
