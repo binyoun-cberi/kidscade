@@ -163,6 +163,16 @@ function switchTo(l,id){
  Tree.sync(other);
  return other;
 }
+function carryToSuccessor(parent,successor){
+ if(!parent||!successor||!J?.isJoseon(parent)||!J.isJoseon(successor))return false;
+ const old=get(parent),book=Tree.summary(successor),id=book.selfId;
+ const states={...old.states,[Tree.summary(parent).selfId]:stripped(parent)};
+ delete states[id];
+ const order=[...old.order.filter(k=>k!==id),Tree.summary(parent).selfId];
+ while(order.length>MAX_STATES){const stale=order.shift();delete states[stale];}
+ successor.branchSwitch17={version:1,currentId:id,states,order,lastYear:successor.year};
+ return true;
+}
 function hydrate(l,data){
  if(!l||!J?.isJoseon(l))return null;
  const r=get(l),src=data?.branchSwitch17;
@@ -201,5 +211,5 @@ function install(){
  return true;
 }
 install();
-return Object.freeze({get,options,switchTo,hydrate,install});
+return Object.freeze({get,options,switchTo,carryToSuccessor,hydrate,install});
 });
