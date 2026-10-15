@@ -89,6 +89,21 @@ function ensure(l){
 }
 const isOld=l=>J?.inOldEra(l)&&l.alive&&l.year<=1715;
 function canCapture(l){return !!eraFor(l)&&l.age>=9&&l.age<=64&&isOld(l);}
+function suspendDomestic(l){
+ // Local court, fields, markets, family ceremonies and village decisions cannot
+ // be actively chosen from Japan or beyond the northern frontier.
+ const modules=['joseon','joseon2','joseon3','joseon4','joseon5',
+  'joseon6','joseon7','joseon9','joseonAnnals','joseon11','joseon12','joseon13'];
+ for(const key of modules){
+  const st=l[key];if(!st)continue;
+  if('active' in st)st.active=null;
+  if('deferred' in st)st.deferred=null;
+  if(Array.isArray(st.queue))st.queue=[];
+  if(Array.isArray(st.pending))st.pending=[];
+ }
+ if(l.pending && !(typeof l.pending==='string'&&l.pending.startsWith('joseon14:')))
+  l.pending=null;
+}
 function capture(l,realm=eraFor(l)){
  if(!realm||!canCapture(l)||ensure(l).captivity)return false;
  const s=ensure(l);
@@ -112,6 +127,7 @@ function capture(l,realm=eraFor(l)){
   if(map[key]&&l[map[key]]?.active)l[map[key]].active=null;
   l.pending=null;
  }
+ suspendDomestic(l);
  l.logEvent('전란 중에 붙잡혀 고향과 멀리 떨어진 곳으로 끌려갔다. 언제 돌아올지 알 수 없었다.','joseon14-captivity');
  l.log.at(-1).sourceUrl=realm==='japan'?SOURCES.japanese:SOURCES.manchu;
  return true;
@@ -149,7 +165,9 @@ function yearly(l,s){
  }
  s.followups=s.followups.filter(f=>f.year>l.year);
  const c=s.captivity;
- if(!c&&canCapture(l)&&hash(l.seed,l.year*57+172)<.10)capture(l);
+ if(!c&&canCapture(l)&&hash(l.seed,l.year*57+172)<.10){
+  if(capture(l))add(l,s,'captivityWork');
+ }
  if(c?.status==='held'){
   c.years++;
   // No annual all-or-nothing death or mental diagnosis.
@@ -245,7 +263,9 @@ function summary(l){
 }
 function heirs(l){
  if(!J?.isJoseon(l)||l.alive||!V4?.summary)return [];
- return V4.summary(l).people.filter(p=>p.role==='child'&&p.alive&&p.age>=12&&p.age<=100)
+ // This successor system still uses Joseon family modules. A child born in
+ // 1898 or later must not be passed into an incompatible Joseon initializer.
+ return V4.summary(l).people.filter(p=>p.role==='child'&&p.alive&&p.age>=12&&p.age<=100&&p.birthYear>=1392&&p.birthYear<=1897)
   .map(p=>({id:p.id,name:p.name,age:p.age,gender:V4.ensure(l).people.find(x=>x.id===p.id)?.sex||'남자',birthYear:l.year-p.age}));
 }
 function targetLegalStatus(parent,personId){
@@ -349,6 +369,7 @@ function hydrate(l,data){
    region:String(a.region||'').slice(0,25),trade:String(a.trade||'').slice(0,70),war:!!a.war,
    skills:clip(Number(a.skills)||0,0,40),notes:clip(Number(a.notes)||0,0,40)})):[];
  s.lastSource=Object.values(SOURCES).includes(o.lastSource)?o.lastSource:null;
+ if(s.captivity?.status==='held')suspendDomestic(l);
  return s;
 }
 function install(){
@@ -356,6 +377,22 @@ function install(){
  const L=Sim.Life,pt=L.prototype.tick,pc=L.prototype.choose,pg=L.prototype.getChoice,pr=L.prototype.reflect,ps=L.prototype.snapshot,restore=L.restore;
  L.prototype.tick=function(){
   if(!J.inOldEra(this)||this.year>1715)return pt.call(this);
+  const state=ensure(this);
+  if(state.captivity?.status==='held'){
+   // Do not call the outer Joseon wrappers: their domestic annual events,
+   // markets, farms and celebrations cannot take place during captivity.
+   suspendDomestic(this);
+   const previousYear=this.year,logSize=this.log.length;
+   const ok=Sim.advanceCoreYear(this);
+   if(ok&&this.year!==previousYear){
+    // The core life-cycle supplies aging and mortality, but its modern
+    // school / career moments are not valid scenes for captives.
+    this.log=this.log.filter((entry,i)=>i<logSize||entry.kind!=='milestone');
+    if(this.pending)this.pending=null;
+    if(this.alive)yearly(this,state);
+   }
+   return ok;
+  }
   const before=this.year,ok=pt.call(this);
   if(ok&&this.alive&&this.year!==before)yearly(this,ensure(this));
   return ok;
