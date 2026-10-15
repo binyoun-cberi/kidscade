@@ -28,7 +28,8 @@
     <h2>작물을 돌보는 하루</h2>
     <p>논을 살펴보고, 수확하고, 다음 농사를 준비해 보세요.</p>
     <div class="objective-progress"><span id="progressBar"></span></div>
-    <small id="progressText">살펴본 논 0 / 4</small>
+    <small id="progressText">첫 농사 0 / 3</small>
+    <button id="guideRice" type="button" class="guide-rice">첫 수확할 논으로 가기 →</button>
   </aside>
   <aside id="inspector" class="inspector hidden" aria-live="polite">
     <div class="inspector-title"><div><small id="fieldKind">논 살펴보기</small><h2 id="fieldName">첫 번째 논</h2></div><button id="closeInspect" class="close" aria-label="정보 창 닫기" type="button">×</button></div>
@@ -51,7 +52,7 @@
     <div class="field-footer"><span id="assetOrigin">에셋 확인 중</span></div>
   </aside>
   <nav id="bottomBar" aria-label="농장 도구">
-    <div class="tool active"><span>◎</span><b>살펴보기</b></div>
+    <button id="nearFieldBtn" class="tool active" type="button"><span>◎</span><b>살펴보기</b></button>
     <button id="focusFarm" type="button"><span>⌂</span><b>집으로</b></button>
     <button id="sleepBtn" type="button"><span>☾</span><b>하루 보내기</b></button>
     <button id="bagBtn" type="button"><span>▤</span><b>수확물·판매</b></button>
