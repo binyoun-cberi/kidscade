@@ -6,7 +6,7 @@
 })(typeof window!=='undefined'?window:null,function(Sim,J,V4,V8,V13,V14){
 'use strict';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-const ROLES={self:'본인',mother:'어머니',father:'아버지',sibling:'형제자매',spouse:'배우자',child:'자녀',descendant:'방계 후손'};
+const ROLES={self:'본인',mother:'어머니',father:'아버지',sibling:'형제자매',spouse:'배우자',child:'자녀',descendant:'방계 후손',ancestor:'윗대 조상'};
 const hash=(seed,salt)=>{let x=(seed^Math.imul(salt+97,0x9e3779b9))>>>0;x=Math.imul(x^(x>>>16),0x7feb352d);x=Math.imul(x^(x>>>15),0x846ca68b);return ((x^(x>>>16))>>>0)/4294967296;};
 const numberOf=id=>[...id].reduce((sum,ch)=>sum*31+ch.charCodeAt(0)>>>0,0);
 const MEN=['준','호','석','민','근','영','도','수','찬','현'];
@@ -16,7 +16,7 @@ const FAMILY_NAMES=['김','이','박','정','최','윤','강','한','신','권']
 const validId=x=>typeof x==='string'&&/^g[0-9]{1,2}-(?:self|[0-9]{1,4})$/.test(x);
 function ensure(l){
  if(!J?.isJoseon(l))return null;
- if(!l.genealogy15)l.genealogy15={version:1,selfId:'g1-self',generation:1,refs:{self:'g1-self'},next:0,nodes:[],branches:[],clan:'',residence:''};
+ if(!l.genealogy15)l.genealogy15={version:1,selfId:'g1-self',generation:1,refs:{self:'g1-self'},next:0,familySeed:l.seed,nodes:[],branches:[],clan:'',residence:''};
  return l.genealogy15;
 }
 function idFor(s,key,gen){
@@ -95,16 +95,16 @@ function advanceBranches(l,s){
    if(depth>1||s.nodes.length>=135||person.birthYear+23>current||person.birthYear>=1890)return;
    if(person.diedYear&&person.diedYear<person.birthYear+23)return;
    const salt=numberOf(person.id);
-   if(!person.married&&hash(l.seed,salt+11)>.68)return;
-   const yearOfUnion=person.birthYear+22+Math.floor(hash(l.seed,salt+31)*7);
+   if(!person.married&&hash(s.familySeed,salt+11)>.68)return;
+   const yearOfUnion=person.birthYear+22+Math.floor(hash(s.familySeed,salt+31)*7);
    if(yearOfUnion>current)return;
    let partnerId=person.partnerId&&s.nodes.some(n=>n.id===person.partnerId)?person.partnerId:null;
    if(!partnerId){
     partnerId=idFor(s,'side-partner:'+person.id,person.generation);
     const gender=person.sex==='여자'?'남자':'여자';
-    const surname=FAMILY_NAMES[Math.floor(hash(l.seed,salt+33)*FAMILY_NAMES.length)];
-    const syllable=(gender==='여자'?WOMEN:MEN)[Math.floor(hash(l.seed,salt+34)*10)];
-    update(s,partnerId,{name:surname+syllable,birthYear:person.birthYear+Math.floor(hash(l.seed,salt+45)*7)-3,
+    const surname=FAMILY_NAMES[Math.floor(hash(s.familySeed,salt+33)*FAMILY_NAMES.length)];
+    const syllable=(gender==='여자'?WOMEN:MEN)[Math.floor(hash(s.familySeed,salt+34)*10)];
+    update(s,partnerId,{name:surname+syllable,birthYear:person.birthYear+Math.floor(hash(s.familySeed,salt+45)*7)-3,
      sex:gender,generation:person.generation,role:'spouse',partnerId:person.id,
      work:'가상의 방계 가족',simulated:true,branchId:branch.id,sideDepth:depth,alive:true,
      diedYear:null,lastSeen:current});
@@ -116,14 +116,14 @@ function advanceBranches(l,s){
    const surname=names?.slice(0,1)||'김';
    const max=depth===0?2:1;
    for(let ordinal=0;ordinal<max;ordinal++){
-    const born=person.birthYear+25+ordinal*4+Math.floor(hash(l.seed,salt+80+ordinal)*3);
+    const born=person.birthYear+25+ordinal*4+Math.floor(hash(s.familySeed,salt+80+ordinal)*3);
     if(born>current||born>1897||s.nodes.length>=135)continue;
     const id=idFor(s,'side-child:'+person.id+':'+ordinal,person.generation+1);
     let child=s.nodes.find(n=>n.id===id);
     if(!child){
-     const male=hash(l.seed,salt+97+ordinal)>.48;
+     const male=hash(s.familySeed,salt+97+ordinal)>.48;
      const pool=male?MEN:WOMEN;
-     const name=surname+pool[Math.floor(hash(l.seed,salt+125+ordinal)*pool.length)];
+     const name=surname+pool[Math.floor(hash(s.familySeed,salt+125+ordinal)*pool.length)];
      child=update(s,id,{name,birthYear:born,sex:male?'남자':'여자',
       generation:person.generation+1,role:'descendant',
       fatherId:person.sex==='남자'?person.id:spouse.id,
@@ -131,7 +131,7 @@ function advanceBranches(l,s){
       work:'방계 가족의 가상 생활',simulated:true,branchId:branch.id,
       sideDepth:depth+1,alive:true,diedYear:null,lastSeen:current});
     }
-    const lifetime=57+Math.floor(hash(l.seed,numberOf(id)+144)*29);
+    const lifetime=57+Math.floor(hash(s.familySeed,numberOf(id)+144)*29);
     if(current>=born+lifetime){child.alive=false;child.diedYear=born+lifetime;}
     else{child.alive=true;child.diedYear=null;}
     child.lastSeen=current;
@@ -146,6 +146,7 @@ function inherit(parent,heirId,successor){
  if(!childId||!successor||!J.isJoseon(successor))return null;
  const child=p.nodes.find(n=>n.id===childId);if(!child)return null;
  const archive=JSON.parse(JSON.stringify(p));
+ archive.familySeed=p.familySeed;
  archive.generation=child.generation;archive.selfId=childId;
  archive.refs={self:childId};
  archive.branches=Array.isArray(archive.branches)?archive.branches:[];
@@ -165,7 +166,7 @@ function inherit(parent,heirId,successor){
   if(id)archive.refs['sibling:sibling-of-'+sibling.id]=id;
  }
  const ancestor=archive.nodes.find(n=>n.id===p.selfId);
- if(ancestor){ancestor.alive=false;ancestor.diedYear=parent.year;ancestor.lastSeen=parent.year;}
+ if(ancestor){ancestor.alive=false;ancestor.role='ancestor';ancestor.diedYear=parent.year;ancestor.lastSeen=parent.year;}
  successor.genealogy15=archive;
  return sync(successor);
 }
@@ -182,6 +183,7 @@ function hydrate(l,data){
  s.selfId=validId(old.selfId)?old.selfId:'g1-self';
  s.generation=clamp(Number(old.generation)||1,1,18);
  s.next=clamp(Number(old.next)||0,0,5000);
+ s.familySeed=Number.isInteger(old.familySeed)?old.familySeed>>>0:l.seed;
  s.refs={self:s.selfId};
  const raw=Array.isArray(old.nodes)?old.nodes.slice(0,140):[];
  const ids=new Set();
