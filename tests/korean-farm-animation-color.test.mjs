@@ -74,6 +74,18 @@ test('material inspection and palette correction isolate only neutral rice mater
   assert.equal(leaf.material[1],green,'Existing green material preserved');
   assert.equal(leaf.material[2],textured,'Textured material preserved');
 });
+test('original carrot and corn models cover all four growth stages',()=>{
+  const code=src('assets.js'),game=src('game.js');
+  assert.match(code,/export async function loadFarmCropStage/);
+  assert.match(code,/Carrot_/);
+  assert.match(code,/crops-corn-stage-/);
+  assert.match(game,/loadFarmCropStage\(plot\.kind,stage\)/);
+  for(let stage=1;stage<=4;stage++){
+    assert.ok(existsSync(resolve(root,'assets/game/crops/FBX',`Carrot_${stage}.fbx`)));
+    const letter=['a','b','c','d'][stage-1];
+    assert.ok(existsSync(resolve(root,'assets/game/3d/nature/kenney-nature-kit',`crops-corn-stage-${letter}.glb`)));
+  }
+});
 test('rendering code activates articulated actor and visual impact effects',()=>{
   const game=src('game.js'),assets=src('assets.js'),actor=src('animation/farmer-animator.js');
   const effects=src('animation/field-effects.js');
