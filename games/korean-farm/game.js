@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {loadModel,loadRiceStage,assetReport,FARM_MODELS} from './assets.js';
+import {loadModel,loadFarmCropStage,assetReport,FARM_MODELS} from './assets.js';
 import {createFarmerAnimator} from './animation/farmer-animator.js';
 import {FieldEffects} from './animation/field-effects.js';
 import {FIELD_DEFS,plotById,distanceToPlot} from './world.mjs';
@@ -154,8 +154,7 @@ async function drawCrops(id){
   if(!record||!field)return;
   const stage=visualStage(field),generation=++record.generation;
   if(stage===0){clearGroup(record.cropLayer);plotOrigins.set(id,'경작 중인 작물 없음');return}
-  const resource=plot.kind==='rice'?await loadRiceStage(stage):
-    {object:await loadModel(plot.kind),origin:'공용 Kenney GLB'};
+  const resource=await loadFarmCropStage(plot.kind,stage);
   if(disposed||record.generation!==generation)return;
   clearGroup(record.cropLayer);
   plotOrigins.set(id,resource.object?resource.origin:'임시 모형');
