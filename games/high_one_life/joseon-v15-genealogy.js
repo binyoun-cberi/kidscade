@@ -24,6 +24,7 @@ function update(s,id,v){
 }
 function sync(l){
  const s=ensure(l);if(!s)return null;
+ const clan=V8?.summary(l);
  const fam=V4.ensure(l).people.filter(p=>p.birthYear<=l.year);
  const gen=s.generation,selfId=s.selfId;
  const missing=V13?.ensure(l)?.missing||[];
