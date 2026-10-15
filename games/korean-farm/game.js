@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {loadModel,loadRiceStage,assetReport,FARM_MODELS} from './assets.js';
 import {FIELD_DEFS,plotById,distanceToPlot} from './world.mjs';
-import {createFarmState,restoreFarmState,CROPS,calendar,fieldById,visualStage,fieldCondition,applyFarmAction,advanceFarmDay,sellAllProduce} from './farming/farm-sim.mjs';
+import {createFarmState,restoreFarmState,CROPS,calendar,fieldById,visualStage,fieldCondition,applyFarmAction,advanceFarmDay,sellAllProduce,buyFarmSupply} from './farming/farm-sim.mjs';
 
 const $=id=>document.getElementById(id);
 const SAVE_KEY=window.KidscadeGame?.storageKey?.('korean_farm','farm')||'kidscade_game_v1:korean_farm:farm';
@@ -306,25 +306,134 @@ function chooseField(id){
   state.selected=id;
   if(plot.kind==='rice'){
     visited.add(id);state.seenPlots=[...visited];state.visits=visited.size;
-    $('progressText').textContent='살펴본 논 '+visited.size+' / 4';
-    $('progressBar').style.width=visited.size/4*100+'%';
     if(visited.size===4)window.KidscadeGame?.milestone?.('farm_preview_inspected',{value:4,uniqueKey:'four-rice-fields'});
   }
-  if(distanceToPlot(state.player,plot)>5)toast('선택한 논이 멀어요. 길을 따라 가까이 이동할 수도 있어요.');
-  updateInspector();$('inspector').classList.remove('hidden');save(true);
+  if(distanceToPlot(state.player,plot)>5)toast('논밭을 선택했어요. 농사 도구를 사용하려면 가까이 이동해 주세요.');
+  updateInspector();$('inspector').classList.remove('hidden');refreshObjective();save(true);
+}
+function refreshHud(){
+  const c=calendar(state.day);
+  const weatherLabels={sunny:['☀','맑음'],cloudy:['☁','흐림'],rain:['☂','비'],storm:['☔','강한 비']};
+  const w=weatherLabels[state.weather]||weatherLabels.sunny;
+  $('weatherIcon').textContent=w[0];
+  $('dayLabel').textContent=c.season+' '+c.seasonDay+'일 · '+w[1];
+  $('energyLabel').textContent='기운 '+Math.round(state.energy);
+  $('moneyLabel').textContent=formatWon(state.money);
+}
+function refreshObjective(){
+  const steps=[visited.size>=1,state.stats.harvests>=1,state.stats.sales>=1];
+  const done=steps.filter(Boolean).length;
+  $('progressBar').style.width=done/3*100+'%';
+  $('progressText').textContent='첫 논 살펴보기 · 수확 · 판매 '+done+' / 3';
+  const target=$('objective').querySelector('p');
+  target.textContent=done===3?'첫 수확과 판매를 마쳤어요! 이제 원하는 작물을 기르며 농장을 꾸려 보세요.':
+    !steps[0]?'논을 눌러 작물의 상태를 살펴보세요.':
+    !steps[1]?'네 번째 논에는 익은 벼가 있어요. 가까이 가서 수확해 보세요.':'가방에서 첫 수확물을 팔아 보세요.';
+}
+function progressBarRow(label,value,description){
+  const div=document.createElement('div');div.className='metric-row';
+  const name=document.createElement('div');name.className='metric-label';
+  const title=document.createElement('span');title.textContent=label;
+  const count=document.createElement('strong');count.textContent=description;
+  name.append(title,count);
+  const track=document.createElement('div');track.className='metric-track';
+  const fill=document.createElement('i');fill.style.width=Math.round(Math.min(1,Math.max(0,value))*100)+'%';
+  track.append(fill);div.append(name,track);return div;
 }
 function updateInspector(){
+  const plot=plotById(state.selected),f=fieldById(state,state.selected);
+  if(!plot||!f)return;
+  $('fieldKind').textContent=f.kind==='rice'?'물대는 논':'마른 밭';
+  $('fieldName').textContent=plot.label;
+  $('fieldStatus').textContent=fieldCondition(f);
+  $('fieldInfo').textContent=f.planted?
+    CROPS[f.crop].name+' · '+Math.round(f.growth*100)+'% 자람'+(f.kind==='rice'?' · 논물 '+f.waterDepthCm.toFixed(1)+'cm'+(f.gateOpen?' (물꼬 열림)':' (물꼬 닫힘)'):''):
+    (f.tilled?'땅을 갈아 놓았어요. 다음 작물을 심을 수 있어요.':'수확을 마친 땅이에요. 괭이질로 다시 준비해 보세요.');
+  const metrics=$('fieldMetrics');metrics.replaceChildren();
+  metrics.append(
+    progressBarRow('성장',f.growth,f.planted?Math.round(f.growth*100)+'%':'작물 없음'),
+    progressBarRow('흙의 수분',f.moisture,Math.round(f.moisture*100)+'%'),
+    progressBarRow('양분',f.nitrogen,Math.round(f.nitrogen*100)+'%'),
+    progressBarRow('잡초',f.weeds,Math.round(f.weeds*100)+'%'),
+    progressBarRow('건강',f.health,Math.round(f.health*100)+'%')
+  );
+  for(const btn of $('actionButtons').querySelectorAll('button[data-action]')){
+    const a=btn.dataset.action;
+    btn.classList.toggle('special',a==='harvest'&&f.planted&&f.growth>=.999);
+    btn.classList.toggle('active',a==='gate'&&f.gateOpen);
+    btn.hidden=(a==='water'&&f.kind==='rice')||(a==='gate'&&f.kind!=='rice');
+    btn.disabled=(a==='till'&&f.planted)||(a==='plant'&&(f.planted||!f.tilled||!state.inventory[{rice:'seedRice',carrot:'seedCarrot',corn:'seedCorn'}[f.crop]]))||
+      (a==='harvest'&&(!f.planted||f.growth<.999))||(a==='fertilize'&&!state.inventory.fertilizer);
+    if(a==='gate')btn.textContent=f.gateOpen?'물꼬 닫기':'물꼬 열기';
+    if(a==='plant')btn.textContent=f.kind==='rice'?'모내기':'씨앗 심기';
+  }
+  const far=distanceToPlot(state.player,plot)>5;
+  $('approachBtn').classList.toggle('hidden',!far);
+  $('assetOrigin').textContent='3D 모델: '+(plotOrigins.get(plot.id)||'모델을 불러오는 중');
+}
+function goToSelectedField(){
   const p=plotById(state.selected);if(!p)return;
-  $('fieldKind').textContent=p.kind==='rice'?'논 살펴보기':'텃밭 살펴보기';
-  $('fieldName').textContent=p.label;
-  $('stagePanel').classList.toggle('hidden',p.kind!=='rice');
-  if(p.kind==='rice'){
-    const st=plotStage(state,p.id),detail=RICE_STAGES[st-1];
-    $('fieldInfo').textContent=detail.name+' · '+detail.detail;
-    $('stageLabel').textContent=st+' / 4';
-    $('stageButtons').querySelectorAll('button').forEach(el=>el.classList.toggle('active',Number(el.dataset.stage)===st));
-  }else $('fieldInfo').textContent=p.kind==='carrot'?'당근의 잎과 뿌리를 살펴볼 수 있어요.':'옥수수의 높은 줄기와 이삭을 살펴볼 수 있어요.';
-  $('assetOrigin').textContent='현재 표시: '+(plotOrigins.get(p.id)||'모델을 불러오는 중');
+  const dz=p.z-state.player.z,dx=p.x-state.player.x,dist=Math.hypot(dx,dz)||1;
+  moveGoal={x:p.x-dx/dist*(Math.min(p.w,p.d)/2+1),z:p.z-dz/dist*(Math.min(p.w,p.d)/2+1)};
+  toast(p.label+' 쪽으로 걸어갑니다.');
+}
+function doFarmAction(action){
+  const plot=plotById(state.selected);
+  if(!plot)return;
+  if(distanceToPlot(state.player,plot)>5){goToSelectedField();return}
+  const result=applyFarmAction(state,plot.id,action);
+  toast(result.message);
+  if(!result.ok)return;
+  animateFarmAction(plot,action==='water'||action==='gate'?0x84d3ee:action==='harvest'?0xe4bd5d:0xb5e5a0);
+  syncFieldVisual(plot.id);
+  refreshHud();updateInspector();refreshObjective();save(true);
+  if(action==='harvest'&&state.stats.harvests===1)
+    window.KidscadeGame?.milestone?.('first_harvest',{value:result.quantity,uniqueKey:'first_harvest'});
+}
+function sleepFarmDay(){
+  if(distanceToPlot(state.player,{x:0,z:9,w:6,d:5})>6){
+    // Day advancement stays intentionally accessible on mobile while the starter house
+    // is still a visual-only scene prop; do not trap the player behind collision.
+  }
+  const report=advanceFarmDay(state);
+  for(const plot of FIELD_DEFS)syncFieldVisual(plot.id);
+  refreshHud();refreshObjective();
+  if(!$('inspector').classList.contains('hidden'))updateInspector();
+  toast(report.message);save(true);
+  if(state.day===2)window.KidscadeGame?.milestone?.('first_farm_day',{uniqueKey:'day-two',value:2});
+}
+function openBag(){
+  const el=document.createElement('div');el.className='farm-bag';
+  const stock=document.createElement('div');stock.className='bag-items';
+  const names={rice:'쌀',carrot:'당근',corn:'옥수수',seedRice:'볍씨·모',seedCarrot:'당근 씨앗',seedCorn:'옥수수 씨앗',fertilizer:'퇴비'};
+  const prices={seedRice:100,seedCarrot:60,seedCorn:80,fertilizer:130};
+  for(const [key,label] of Object.entries(names)){
+    const row=document.createElement('div');row.className='bag-item';
+    const name=document.createElement('span');name.textContent=label;
+    const quantity=document.createElement('strong');quantity.textContent='× '+(state.inventory[key]||0);
+    row.append(name,quantity);
+    if(prices[key]){
+      const button=document.createElement('button');button.type='button';
+      button.textContent='구매 '+formatWon(prices[key]);button.disabled=state.money<prices[key];
+      button.onclick=()=>{
+        const result=buyFarmSupply(state,key,1);
+        toast(result.message);refreshHud();save(true);openBag();
+      };
+      row.append(button);
+    }
+    stock.append(row);
+  }
+  const note=document.createElement('p');note.className='bag-note';
+  note.textContent='수확물은 이곳에서 판매하고, 씨앗과 퇴비를 구입할 수 있어요. 시장 가격은 첫 버전의 고정값이에요.';
+  const sale=document.createElement('button');sale.className='sell-btn';sale.type='button';
+  const total=Object.keys(CROPS).reduce((acc,key)=>acc+state.inventory[key]*CROPS[key].price,0);
+  sale.textContent='수확물 모두 판매 · '+formatWon(total);sale.disabled=total===0;
+  sale.onclick=()=>{
+    const result=sellAllProduce(state);toast(result.message);refreshHud();refreshObjective();save(true);openBag();
+    if(result.ok&&state.stats.sales===1)window.KidscadeGame?.milestone?.('first_crop_sale',{uniqueKey:'first_sale',value:result.total});
+  };
+  el.append(note,stock,sale);
+  showModal('농장 창고와 장터',el);
 }
 function showModal(title,inner){
   $('modalTitle').textContent=title;$('modalContents').replaceChildren();
@@ -333,7 +442,7 @@ function showModal(title,inner){
   $('modal').classList.remove('hidden');
 }
 function help(){
-  const info=document.createElement('div');info.innerHTML='<p><b>PC</b> · WASD 또는 방향키로 이동합니다. 바닥을 클릭하면 그곳으로 걸어가요. 논을 클릭하면 벼 성장 단계를 살펴볼 수 있어요.</p><p><b>카메라</b> · 마우스 휠로 확대·축소, Q/E 또는 회전 버튼으로 시점을 돌려요.</p><p><b>휴대폰·태블릿</b> · 왼쪽 조이스틱으로 이동하고 손가락으로 논을 선택해요. 두 손가락으로 확대·축소할 수 있어요.</p><p><b>참고</b> · 현재는 3D 농장/성장 모델 검수용 첫 번째 시제품이에요. 파종·물 관리·판매 시스템은 아직 구현하지 않았어요.</p>';
+  const info=document.createElement('div');info.innerHTML='<p><b>PC</b> · WASD 또는 방향키로 이동합니다. 바닥을 클릭하면 그곳으로 걸어가요. 논을 클릭하면 벼 성장 단계를 살펴볼 수 있어요.</p><p><b>카메라</b> · 마우스 휠로 확대·축소, Q/E 또는 회전 버튼으로 시점을 돌려요.</p><p><b>휴대폰·태블릿</b> · 왼쪽 조이스틱으로 이동하고 손가락으로 논을 선택해요. 두 손가락으로 확대·축소할 수 있어요.</p><p><b>농사</b> · 논밭을 선택한 뒤 가까이 이동해 괭이질, 모내기, 물주기, 물꼬 관리, 거름주기, 수확을 할 수 있어요. 하루 보내기로 작물을 성장시키고, 수확물·판매 메뉴에서 거래해요.</p><p><b>참고</b> · 벼 생육과 날씨는 교육용 간략 계산 모델이에요. 실제 농업 통계에 맞춘 정밀 보정은 추후 진행합니다.</p>';
   showModal('솔내리에서 움직이는 법',info);
 }
 function showQa(){
