@@ -48,6 +48,7 @@
       <div class="meter-panel"><div class="meter-title"><span>굳어가는 정도</span><b id="stuckText">0%</b></div><div class="meter-track stuck"><span id="stuckFill"></span></div><small>너무 천천히 긁거나 오래 멈추면 굳어요.</small></div>
       <div class="instruction" id="instruction"><span class="instruction-dot"></span><span id="instructionText">밝게 표시된 출발점부터 시작하세요.</span></div>
       <button type="button" id="retryBtn" class="retry">↻ 현재 모양 다시 도전</button>
+      <button type="button" id="chooseShapeBtn" class="retry choose-shape">다른 모양 선택</button>
     </aside>
   </main>
   <footer class="bottom">정확도 + 속도 + 완주 시간으로 점수를 계산해요. 도전 중 손을 떼면 작은 금이 생깁니다.</footer>
@@ -63,6 +64,14 @@
       <div><b>02</b><span>선 안에서 일정한 속도로 그려요.</span></div>
       <div><b>03</b><span>끝까지 돌아오면 성공! 다음 모양은 더 어려워요.</span></div>
     </div>
+    <label class="shape-picker" for="shapeSelect">연습할 달고나 모양
+      <select id="shapeSelect">
+        <option value="random">무작위 출제</option>
+        <option value="1">원</option><option value="2">세모</option>
+        <option value="3">별</option><option value="4">하트</option>
+        <option value="5">꽃</option><option value="6">우산</option>
+      </select>
+    </label>
     <button id="startBtn" class="primary" type="button">달고나 만들기 →</button>
     <small>모바일에서는 세로 화면으로도 즐길 수 있어요.</small>
   </section>
@@ -88,6 +97,6 @@
 </div>
 <script src="../../kidscade-game-sdk.js" data-game-id="dalgona_trace" data-title="달고나 게임" data-shell="true" data-orientation="any"></script>
 <script src="./trace.js?v=2"></script>
-<script src="./game.js?v=2"></script>
+<script src="./game.js?v=3"></script>
 </body>
 </html>
