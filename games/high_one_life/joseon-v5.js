@@ -276,7 +276,7 @@ const LATER={
 function yearEnd(life,s){
  const j=J.ensure(life);
  s.processedYear=life.year;
- if(!life.alive||!J.inOldEra(life))return;
+ if(!life.alive||!J.inOldEra(life)||life.joseon14?.captivity?.status==='held')return;
  for(const follow of s.followups.filter(x=>x.year<=life.year)){
   const text=LATER[follow.action]||'그 무렵 택했던 일을 몇 해 뒤 다시 떠올렸다.';
   life.logEvent(text,'joseon5-followup');

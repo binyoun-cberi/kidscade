@@ -209,6 +209,7 @@ function prompt(l){
 function yearly(l,s){
  if(!s||!J.inOldEra(l)||!l.alive||s.processedYear>=l.year)return;
  s.processedYear=l.year;
+ if(l.joseon14?.captivity?.status==='held')return;
  for(const f of s.followups.filter(f=>f.year<=l.year)){
   l.logEvent(f.text,'joseonAnnals-followup');l.log.at(-1).causeId='joseonAnnals:'+f.id;
  }

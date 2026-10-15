@@ -241,6 +241,7 @@ function reunite(l,s,entry){
 function yearly(l,s){
  if(!s||!l.alive||!J.inOldEra(l)||s.processedYear>=l.year)return;
  s.processedYear=l.year;
+ if(l.joseon14?.captivity?.status==='held')return;
  const j=J.ensure(l),v=V2.ensure(l),village=V9.ensure(l);
  for(const m of s.missing){
   const raw=V4.ensure(l).people.find(p=>p.id===m.personId);

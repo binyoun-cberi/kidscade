@@ -244,6 +244,7 @@ function promote(life,s){
 function yearly(life,s){
  if(!s||!J.inOldEra(life)||!life.alive||s.processedYear===life.year)return;
  s.processedYear=life.year;
+ if(life.joseon14?.captivity?.status==='held')return;
  for(const f of s.followups.filter(x=>x.year<=life.year)){
   life.logEvent(f.text,'joseon7-followup');
   life.log.at(-1).causeId='joseon7:'+f.id;

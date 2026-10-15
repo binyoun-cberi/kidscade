@@ -262,7 +262,7 @@ function careerEvent(life,s,work,secondary=false){
  offer(life,s,id,event[0],event[1],choices,'career',work.code,at);
 }
 function yearEnd(life,s){
- if(!s||!J.inOldEra(life)||!life.alive)return;
+ if(!s||!J.inOldEra(life)||!life.alive||life.joseon14?.captivity?.status==='held')return;
  for(const f of s.followups.filter(x=>x.year<=life.year)){
   const text=(f.topic?'그때 겪은 ‘'+f.topic+'’을 떠올렸다. ':'')+(FOLLOW[f.action]||'한때 택한 길이 인생의 다른 계절에도 이어졌다.');
   life.logEvent(text,'joseon6-followup');life.log.at(-1).causeId='joseon6:'+f.id;

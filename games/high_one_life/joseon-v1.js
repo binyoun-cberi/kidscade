@@ -412,6 +412,13 @@ function yearly(life){
  const s=ensure(life);
  if(!s||!life.alive||life.pending)return false;
  life.age++;life.year++;s.processedYear=life.year;
+ // The captive is abroad; the home village cannot generate personal income,
+ // local farm scenes or Korean battlefield choices during detention.
+ if(life.joseon14?.captivity?.status==='held'){
+  if(life.age>=108||life.stats.health===0||life.rand()<(life.age<50?.003:life.age<75?.012:.08))
+   life.finish('타향에서 긴 삶을 마쳤다.');
+  return true;
+ }
  if(life.focus==='learning'&&life.age>=8&&life.age<70){s.literacy+=life.age%4===0?1:0;life.change({knowledge:1});}
  if(life.focus==='people')life.change({bonds:1});
  if(life.focus==='health')life.change({health:1});

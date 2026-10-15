@@ -196,6 +196,7 @@ function dynamic(l,e){
 function yearly(l,s){
  if(!s||!l.alive||!J.inOldEra(l)||s.processedYear>=l.year)return;
  s.processedYear=l.year;
+ if(l.joseon14?.captivity?.status==='held')return;
  for(const f of s.followups.filter(x=>x.year<=l.year)){
   l.logEvent(f.text,'joseon12-followup');l.log.at(-1).causeId='joseon12:'+f.id;
   s.memories.push(f.text);

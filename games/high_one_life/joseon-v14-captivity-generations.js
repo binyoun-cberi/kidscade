@@ -11,13 +11,17 @@
 const clip=(x,a,b)=>Math.max(a,Math.min(b,x));
 const hash=(seed,salt)=>{let n=(seed^Math.imul(salt+1,0x9e3779b9))>>>0;n=Math.imul(n^(n>>>16),0x7feb352d);n=Math.imul(n^(n>>>15),0x846ca68b);return ((n^(n>>>16))>>>0)/4294967296};
 const SOURCES=Object.freeze({
- japanese:'https://contents.history.go.kr/front/nh/print.do?levelId=nh_029_0020_0040_0030_0020_0020',
+ japanese:'https://encykorea.aks.ac.kr/Article/E0073566',
  manchu:'https://encykorea.aks.ac.kr/Article/E0076452',
- manchuDetail:'https://contents.history.go.kr/mobile/nh/view.do?levelId=nh_029_0030_0030_0060_0030',
+ manchuDetail:'https://encykorea.aks.ac.kr/Article/E0023151',
  after:'https://contents.history.go.kr/data/pdf/nh/nh_029_0020.pdf'
 });
-const SOUTH=new Set(['경상도','전라도','충청도','경기도','한양']);
-const NORTH=new Set(['평안도','황해도','경기도','한양']);
+const WAR_FOOTPRINT_1592=new Set(['경상도','전라도','충청도','경기도','한양','강원도','황해도','평안도','함경도']);
+const WAR_FOOTPRINT_1597=new Set(['경상도','전라도','충청도']);
+const NORTHERN_1627=new Set(['평안도','황해도']);
+const CAPITAL_1636=new Set(['경기도','한양','황해도']);
+const JAPAN_CONTACT_YEARS=new Set([1599,1600,1605,1607,1617,1624,1636,1643]);
+const MAJOR_JAPAN_ENVOYS=new Set([1605,1607,1617,1624]);
 const EVENT=(id,title,scene,opts)=>({id,title,scene,options:opts});
 const OPT=(label,note,after,delta={},action='care')=>({label,note,after,delta,action});
 const EPISODES=[
@@ -69,9 +73,11 @@ const EPISODES=[
 const byId=new Map(EPISODES.map(e=>[e.id,e]));
 function eraFor(l){
  const r=J.summary(l).region;
- if((l.year>=1592&&l.year<=1598)&&SOUTH.has(r))return 'japan';
- if((l.year===1627||l.year===1628)&&NORTH.has(r))return 'laterJin';
- if((l.year===1636||l.year===1637)&&NORTH.has(r))return 'qing';
+ if(l.year>=1592&&l.year<=1593&&WAR_FOOTPRINT_1592.has(r))return 'japan';
+ if(l.year>=1594&&l.year<=1596&&WAR_FOOTPRINT_1597.has(r))return 'japan';
+ if(l.year>=1597&&l.year<=1598&&WAR_FOOTPRINT_1597.has(r))return 'japan';
+ if(l.year===1627&&NORTHERN_1627.has(r))return 'laterJin';
+ if((l.year===1636||l.year===1637)&&CAPITAL_1636.has(r))return 'qing';
  return null;
 }
 function ensure(l){
@@ -89,10 +95,23 @@ function capture(l,realm=eraFor(l)){
  s.captivity={realm,from:l.year,place:realm==='japan'?'일본':'후금·청의 지배 아래',years:0,
   status:'held',contacts:0,work:V5?.summary(l)?.trade||'낯선 곳에서 맡은 일',returnedYear:null,
   route:null,attempts:0};
- if(hash(l.seed,l.year*31+9)<.45)s.body.pain=2;
- if(hash(l.seed,l.year*31+10)<.23)s.body.movement='오래 걸을 때 다리가 아픔';
- if(hash(l.seed,l.year*31+11)<.15)s.body.hearing='큰 소리를 구별하기 어려움';
- s.experience.sleep=3;s.experience.vigilance=3;
+ if(hash(l.seed,l.year*31+9)<.38)s.body.pain=2;
+ if(hash(l.seed,l.year*31+10)<.20)s.body.movement='오래 걸을 때 다리가 아픔';
+ if(hash(l.seed,l.year*31+11)<.12)s.body.hearing='큰 소리를 구별하기 어려움';
+ // These are optional fictional responses, never universal captive diagnoses.
+ s.experience.sleep=hash(l.seed,l.year*31+12)<.37?3:0;
+ s.experience.vigilance=hash(l.seed,l.year*31+13)<.34?3:0;
+ // A home-country choice started in the capture year is not a believable
+ // overseas scene. Discard only the unfinished choice; preserve its history.
+ if(typeof l.pending==='string'&&l.pending.startsWith('joseon')){
+  const key=l.pending.split(':')[0];
+  const map={joseon:'joseon',joseon2:'joseon2',joseon3:'joseon3',
+   joseon4:'joseon4',joseon5:'joseon5',joseon6:'joseon6',
+   joseon7:'joseon7',joseon9:'joseon9',joseonAnnals:'joseonAnnals',
+   joseon11:'joseon11',joseon12:'joseon12',joseon13:'joseon13'};
+  if(map[key]&&l[map[key]]?.active)l[map[key]].active=null;
+  l.pending=null;
+ }
  l.logEvent('전란 중에 붙잡혀 고향과 멀리 떨어진 곳으로 끌려갔다. 언제 돌아올지 알 수 없었다.','joseon14-captivity');
  l.log.at(-1).sourceUrl=realm==='japan'?SOURCES.japanese:SOURCES.manchu;
  return true;
@@ -105,11 +124,18 @@ function reunion(l,s,route='쇄환'){
 }
 function opportunity(l,s){
  const c=s.captivity;if(!c||c.status!=='held')return false;
- return c.realm==='japan'?(l.year>=1600&&l.year<=1630):(l.year>=1628&&l.year<=1662);
+ // Japan: documented return diplomacy in 1605, 1607, 1617 and 1624;
+ // some earlier Tsushima exchanges and much smaller later returns.
+ return c.realm==='japan'?JAPAN_CONTACT_YEARS.has(l.year):
+  c.realm==='laterJin'?(l.year>=1628&&l.year<=1650):(l.year>=1637&&l.year<=1662);
 }
 function add(l,s,id){
- if(s.queue.some(q=>q.id===id)||s.active?.id===id||s.seen.includes(id))return;
- s.seen.push(id);s.queue.push({id,eventId:id,year:l.year});s.queue=s.queue.slice(-3);
+ const repeat=id==='ransomOpportunity';
+ const actualId=repeat?l.year+'-'+id:id;
+ if(s.queue.some(q=>q.id===actualId)||s.active?.id===actualId||(!repeat&&s.seen.includes(id)))return;
+ if(repeat&&s.decisions.some(d=>d.eventId===id&&d.year>=l.year-2))return;
+ if(!repeat)s.seen.push(id);
+ s.queue.push({id:actualId,eventId:id,year:l.year});s.queue=s.queue.slice(-3);
 }
 function promote(l,s){
  if(!s||s.active||l.pending||!l.alive||!J.inOldEra(l)||!s.queue.length)return;
@@ -128,9 +154,11 @@ function yearly(l,s){
   c.years++;
   // No annual all-or-nothing death or mental diagnosis.
   if(l.year%3===0){s.experience.sleep=clip(s.experience.sleep+1,0,12);s.body.pain=clip(s.body.pain+1,0,12);}
-  if(l.age>=12&&l.age%2===0){
-   if(opportunity(l,s)&&hash(l.seed,l.year*47+17)<.55)add(l,s,'ransomOpportunity');
-   else add(l,s,['captivityWork','captivityLetters','captivityInjury','captivityNews'][Math.floor(hash(l.seed,l.year*23+4)*4)]);
+  if(l.age>=12){
+   if(opportunity(l,s)&&hash(l.seed,l.year*47+17)<(MAJOR_JAPAN_ENVOYS.has(l.year)||c.realm!=='japan'?.82:.31))
+    add(l,s,'ransomOpportunity');
+   else if(l.age%2===0)
+    add(l,s,['captivityWork','captivityLetters','captivityInjury','captivityNews'][Math.floor(hash(l.seed,l.year*23+4)*4)]);
   }
  }else if(c?.status==='returned'){
   s.recoverYears++;
@@ -155,8 +183,16 @@ function prompt(l){
  if(!e)return null;
  let description=e.scene;
  if(e.id==='ransomOpportunity'){
-  description=s.captivity?.realm==='japan'?'일본에 끌려온 조선인을 돌려보내는 교섭과 사절에 관한 말이 들린다. 그러나 모든 사람의 귀환이 보장되지는 않는다.':
-    '후금·청에 끌려온 사람의 속환에 관한 이야기가 들린다. 몸값을 마련하기 어려운 집도 있다.';
+  description=s.captivity?.realm==='japan'?
+    (MAJOR_JAPAN_ENVOYS.has(l.year)?
+      l.year+'년, 조선으로 돌아갈 사람을 찾는 교섭과 사절이 왔다는 말이 들린다. 모든 사람이 돌아가는 것은 아니다.':
+      '대마도나 외교 사절을 통해 조선인 일부가 귀환한다는 소식이 들린다. 가능성은 크지 않다.'):
+    '후금·청에 끌려온 사람의 속환 소식이 들린다. 나라에서 몸값을 마련하는 공속과 가족이 개별적으로 치르는 사속은 형편이 다르다.';
+ }
+ if(e.id==='homeStigma'){
+  description=s.captivity?.realm==='qing'&&l.gender==='여자'?
+    '청에서 돌아온 여성을 두고 정절을 의심하는 부당한 말과 혼인 갈등이 생기기도 했다. 고을과 가족마다 반응은 다르며 피해자의 잘못은 아니다.':
+    '전란 뒤 돌아온 이들을 두고 배척하는 사람이 있지만, 반갑게 맞이하거나 일손을 나누는 이도 있다. 포로가 된 것은 그 사람의 잘못이 아니다.';
  }
  return {title:e.title,description,options:e.options.map(o=>({label:o.label,note:o.note,action:o.label}))};
 }
@@ -182,11 +218,14 @@ function choose(l,index){
  if(e.id==='ransomOpportunity'){
   const c=s.captivity;c.attempts++;
   // Opportunity, never guaranteed. Route depends on historical captor/context.
-  const chance=index===0?.65:index===1?.48:.15;
+  const chance=c.realm==='japan'?
+    (MAJOR_JAPAN_ENVOYS.has(l.year)?[.34,.24,.07][index]:[.12,.08,.03][index]):
+    [ .38,.29,.06 ][index];
   if(hash(l.seed,l.year*83+index*41+c.attempts*3)<chance)
    reunion(l,s,c.realm==='japan'?'쇄환':'속환');
   else l.logEvent('귀향할 길을 알아보았지만 이번에는 고향으로 돌아갈 수 없었다.','joseon14-captivity');
  }
+ // Stigma belongs to the society's response, not the survivor's morality.
  if(e.id==='homeStigma'&&index!==0)s.stigma=clip(s.stigma+1,0,20);
  if(l.money&&l.year<1900)l.money.netWorth=j.capital*100;
  l.logEvent(e.title+' — '+op.label,'joseon14-choice');l.log.at(-1).causeId='joseon14:'+id;
