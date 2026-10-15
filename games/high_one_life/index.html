@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="./joseon-regional-v12.css?v=1">
 <link rel="stylesheet" href="./joseon-war-v13.css?v=1">
 <link rel="stylesheet" href="./joseon-captivity-v14.css?v=1">
+<link rel="stylesheet" href="./joseon-genealogy-v15.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -212,6 +213,7 @@
             <p class="focus-hint">올해는 어디에 시간을 쓸까요? 선택한 방향은 조금씩 삶에 쌓입니다.</p>
           </div>
           <nav class="v8-tools-nav" aria-label="이 인생의 정보 보기">
+            <button type="button" id="openGenealogyBtn" class="genealogy-open hidden">우리 집 족보 펼치기</button>
             <button type="button" data-story-tab="birth" aria-pressed="false">출생 기록</button>
             <button type="button" data-story-tab="years" aria-pressed="false">인생 지도</button>
             <button type="button" data-story-tab="stats" aria-pressed="false">생존·통계</button>
@@ -346,6 +348,7 @@
       </div>
       <div class="end-divider"><span>삶에 남은 장면들</span></div>
       <ol id="endHighlights" class="end-highlights"></ol>
+      <button type="button" id="endGenealogyBtn" class="genealogy-end-open hidden">우리 집 족보 펼쳐 보기</button>
       <div id="heirControls" class="heir-controls hidden">
         <strong>한 가문의 다음 이야기</strong>
         <p>자녀의 시점에서 같은 해부터 삶을 이어 갈 수 있어요. 집안의 살림과 기술, 기억 일부가 이어지지만 운명은 정해지지 않습니다.</p>
@@ -357,6 +360,24 @@
       <p class="footnote">어떤 삶을 살았든, 그 시간은 그 사람만의 이야기였습니다.</p>
     </section>
   </main>
+  <div id="genealogyModal" class="genealogy-modal hidden" role="dialog" aria-modal="true" aria-labelledby="genealogyTitle">
+    <div class="genealogy-backdrop" id="genealogyBackdrop"></div>
+    <section class="genealogy-paper">
+      <header class="genealogy-header">
+        <div><small>집안의 사람들을 잇는 기록</small><h2 id="genealogyTitle">우리 집 족보</h2><p id="genealogyClan">—</p></div>
+        <button type="button" id="genealogyClose" aria-label="족보 닫기">닫기 ×</button>
+      </header>
+      <p class="genealogy-disclaimer">실제 역사 인물의 족보가 아니라, 이 게임에서 함께 살아온 가상의 가족 기록입니다. 인물 이름을 눌러 삶을 살펴보세요.</p>
+      <div id="genealogyGenerations" class="genealogy-generations" aria-label="세대별 가계도"></div>
+      <section id="genealogyPersonDetail" class="genealogy-person-detail" aria-live="polite">
+        <h3 id="genealogyDetailName">인물을 골라 보세요</h3>
+        <p id="genealogyDetailLife">—</p>
+        <p id="genealogyDetailRelations">—</p>
+        <p id="genealogyDetailStory">—</p>
+      </section>
+      <p class="genealogy-footnote">성별에 관계없이 가족을 보여 줍니다. 오래전 기록이 없는 조상은 이름을 지어 넣지 않았습니다.</p>
+    </section>
+  </div>
   <div id="rules" class="rules hidden" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
     <div class="rules-backdrop" data-close="rules"></div>
     <div class="rules-content"><button id="rulesClose" class="rule-close" type="button" aria-label="닫기">×</button>
@@ -413,9 +434,10 @@
 <script src="./joseon-v11-late-life.js?v=2"></script>
 <script src="./joseon-v12-regional.js?v=2"></script>
 <script src="./joseon-v13-war-recovery.js?v=2"></script>
-<script src="./joseon-v14-captivity-generations.js?v=3"></script>
+<script src="./joseon-v14-captivity-generations.js?v=4"></script>
+<script src="./joseon-v15-genealogy.js?v=1"></script>
 <script src="./colonial-daily-v2.js?v=1"></script>
 <script src="./joseon-pixel-v2.js?v=2"></script>
-<script src="./game.js?v=44"></script>
+<script src="./game.js?v=45"></script>
 </body>
 </html>
