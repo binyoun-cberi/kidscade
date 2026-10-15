@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
+import {scanSceneColors,repairRiceColors} from './animation/color-audit.mjs';
 
 // Paths remain in the shared library. Nothing is duplicated in this game directory.
 const BASE='../../assets/';
@@ -30,7 +31,7 @@ function source(url,kind='glb'){
   if(!cache.has(url)){
     cache.set(url,new Promise(resolve=>{
       const loader=kind==='fbx'?fbxLoader:gltfLoader;
-      loader.load(url,result=>{assetReport.set(url,{status:'loaded',kind});resolve(kind==='fbx'?result:result.scene)},
+      loader.load(url,result=>{const root=kind==='fbx'?result:result.scene;assetReport.set(url,{status:'loaded',kind,colors:scanSceneColors(root),repainted:0});resolve(root)},
         undefined,e=>{assetReport.set(url,{status:'failed',kind,message:String(e?.message||e).slice(0,140)});resolve(null)});
     }));
   }
@@ -48,8 +49,12 @@ export function normalise(object,height=1){
     if(!node.isMesh)return;
     node.castShadow=true;node.receiveShadow=true;
     if(node.isSkinnedMesh)node.frustumCulled=false;
+    // Clone materials before altering side or fallback colors. Cached GLTF/FBX sources
+    // remain intact and a single plot cannot recolor all other model instances.
     const mats=Array.isArray(node.material)?node.material:[node.material];
-    mats.forEach(m=>{if(m&&'side'in m&&m.side===THREE.FrontSide)m.side=THREE.DoubleSide});
+    const own=mats.map(m=>m?.clone?m.clone():m);
+    own.forEach(m=>{if(m&&'side'in m&&m.side===THREE.FrontSide)m.side=THREE.DoubleSide});
+    node.material=Array.isArray(node.material)?own:own[0];
   });
   return object;
 }
@@ -79,8 +84,20 @@ export async function loadRiceStage(stage){
   const n=Math.max(1,Math.min(4,Math.round(stage)));
   const fbxUrl=BASE+'game/crops/FBX/Rice_'+n+'.fbx';
   const fbx=await source(fbxUrl,'fbx');
-  if(fbx)return {object:normalise(cloneSource(fbx),[.28,.48,.76,1.07][n-1]),origin:'FBX (성장 단계 원본)'};
+  if(fbx){
+    const object=normalise(cloneSource(fbx),[.28,.48,.76,1.07][n-1]);
+    const fixed=repairRiceColors(object,n);
+    const info=assetReport.get(fbxUrl);
+    if(info)info.repainted=Math.max(info.repainted||0,fixed);
+    return {object,origin:fixed?'FBX 원본 · 색상 보완 '+fixed+'곳':'FBX 성장 단계 원본'};
+  }
   const glb=await source(FARM_MODELS.riceFallback.url);
-  if(glb)return {object:normalise(cloneSource(glb),[.28,.48,.76,1.07][n-1]),origin:'GLB 대체 모델'};
-  return {object:handmadeRice(n),origin:'임시 모형'};
+  if(glb){
+    const object=normalise(cloneSource(glb),[.28,.48,.76,1.07][n-1]);
+    const fixed=repairRiceColors(object,n);
+    const info=assetReport.get(FARM_MODELS.riceFallback.url);
+    if(info)info.repainted=Math.max(info.repainted||0,fixed);
+    return {object,origin:fixed?'GLB 대체 · 색상 보완':'GLB 대체 모델'};
+  }
+  return {object:handmadeRice(n),origin:'색상 지정 임시 모델'};
 }
