@@ -46,7 +46,7 @@ test('offers living relatives but excludes current life, spouses, minors and mis
  assert.ok(choose.some(x=>now.branches.some(b=>b.id===x.id)));
  assert.ok(!choose.some(x=>x.id===now.selfId));
  assert.ok(!choose.some(x=>now.nodes.find(n=>n.id===x.id)?.role==='spouse'));
- const sibling=now.nodes.find(n=>now.branches.some(b=>b.id===n.id));
+ const sibling=Tree.ensure(l).nodes.find(n=>now.branches.some(b=>b.id===n.id));
  sibling.missing=true;
  assert.ok(!Switch.options(l).some(x=>x.id===sibling.id));
  sibling.missing=false;sibling.alive=false;
