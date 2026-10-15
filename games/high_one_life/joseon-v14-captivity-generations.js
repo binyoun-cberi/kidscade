@@ -209,8 +209,8 @@ function prompt(l){
  }
  if(e.id==='homeStigma'){
   description=s.captivity?.realm==='qing'&&l.gender==='여자'?
-    '청에서 돌아온 여성을 두고 정절을 의심하는 부당한 말과 혼인 갈등이 생기기도 했다. 고을과 가족마다 반응은 다르며 피해자의 잘못은 아니다.':
-    '전란 뒤 돌아온 이들을 두고 배척하는 사람이 있지만, 반갑게 맞이하거나 일손을 나누는 이도 있다. 포로가 된 것은 그 사람의 잘못이 아니다.';
+    '청에서 돌아왔다는 이유로 정절을 의심하는 말이 등 뒤에서 들려온다. 집안사람들은 그 말을 들으면서도 어떻게 맞서야 할지 몰라 서로의 얼굴을 살핀다.':
+    '돌아온 이를 반기는 이웃도 있지만 낯을 돌리는 사람도 있다. 오랜만에 고향집 문턱을 넘으며 사람들의 눈길이 마음에 걸린다.';
  }
  return {title:e.title,description,options:e.options.map(o=>({label:o.label,note:o.note,action:o.label}))};
 }
