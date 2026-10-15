@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
-import {scanSceneColors,repairRiceColors} from './animation/color-audit.mjs';
+import {scanSceneColors,repairRiceColors,repairCropColors} from './animation/color-audit.mjs';
 
 // Paths remain in the shared library. Nothing is duplicated in this game directory.
 const BASE='../../assets/';
@@ -100,4 +100,33 @@ export async function loadRiceStage(stage){
     return {object,origin:fixed?'GLB 대체 · 색상 보완':'GLB 대체 모델'};
   }
   return {object:handmadeRice(n),origin:'색상 지정 임시 모델'};
+}
+
+// Farm-specific crop stages: the original PR 2 loaded full-size vegetables at every
+// growth stage. Reuse existing Carrot_1..4 FBX and Kenney corn stage A..D instead.
+export async function loadFarmCropStage(kind,stage){
+  const n=Math.max(1,Math.min(4,Math.round(Number(stage)||1)));
+  if(kind==='rice')return loadRiceStage(n);
+  if(!['carrot','corn'].includes(kind))return {object:null,origin:'알 수 없는 작물'};
+  const fbx=kind==='carrot';
+  const url=fbx
+    ?BASE+'game/crops/FBX/Carrot_'+n+'.fbx'
+    :NATURE+'crops-corn-stage-'+['a','b','c','d'][n-1]+'.glb';
+  const targetHeights=kind==='carrot'?[.19,.31,.43,.65]:[.23,.57,1.08,1.75];
+  const object=await source(url,fbx?'fbx':'glb');
+  if(object){
+    const crop=normalise(cloneSource(object),targetHeights[n-1]);
+    const fixed=repairCropColors(crop,kind,n);
+    const info=assetReport.get(url);if(info)info.repainted=Math.max(info.repainted||0,fixed);
+    return {object:crop,origin:(fbx?'Quaternius FBX':'Kenney GLB')+' '+n+'단계'+(fixed?' · 색 보완 '+fixed+'곳':'')};
+  }
+  const fallbackUrl=FARM_MODELS[kind].url;
+  const fallback=await source(fallbackUrl);
+  if(fallback){
+    const crop=normalise(cloneSource(fallback),targetHeights[n-1]);
+    const fixed=repairCropColors(crop,kind,n);
+    const info=assetReport.get(fallbackUrl);if(info)info.repainted=Math.max(info.repainted||0,fixed);
+    return {object:crop,origin:'공용 GLB 대체'+(fixed?' · 색 보완':'')};
+  }
+  return {object:null,origin:'작물 임시 모형'};
 }
