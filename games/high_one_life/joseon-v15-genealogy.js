@@ -156,7 +156,7 @@ function inherit(parent,heirId,successor){
   if(person.id===heirId)continue;
   const personId=p.refs['child:'+person.id];if(!personId)continue;
   if(!archive.branches.some(b=>b.id===personId))
-   archive.branches.push({id:personId,label:(i+1)+'째 '+(person.sex==='여자'?'딸':'아들')+'의 집안',openedYear:parent.year});
+   archive.branches.push({id:personId,label:([ '첫째','둘째','셋째','넷째','다섯째','여섯째'][i]||((i+1)+'번째'))+' '+(person.sex==='여자'?'딸':'아들')+'의 집안',openedYear:parent.year});
  }
  const spouse=V4.ensure(parent).people.find(x=>x.role==='spouse');
  archive.refs[parent.gender==='여자'?'mother':'father']=p.selfId;
