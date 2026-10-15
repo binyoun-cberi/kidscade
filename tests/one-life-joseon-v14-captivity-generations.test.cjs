@@ -171,7 +171,7 @@ test('an overseas captive does not receive domestic farming, village or war choi
  assert.ok(loops<80);
  assert.ok(l.year>=1606);
  assert.equal(V14.summary(l).captivity.status,'held');
- assert.equal(J.ensure(l).capital,starting,'captive should not collect annual hometown income');
+ assert.ok(J.ensure(l).capital<=starting,'captive should not collect annual hometown income; sending messages may cost money');
  assert.ok(!l.log.some(x=>x.year>=1598&&x.kind==='joseon9-choice'),
    'no local neighbor work overseas');
 });
