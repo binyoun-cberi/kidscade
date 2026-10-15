@@ -820,7 +820,7 @@
           effectText=lines.length?lines.slice(0,2).join('. ')+'.':'그날의 일은 마음 한편에 남았다.';
         }
         life.logEvent(effectText,'decision-effect');
-        save(); elapsed=0; lastTick=performance.now(); render();
+        save(); elapsed=0; lastTick=performance.now(); render(); offerNewbornName();
       });
       target.append(btn);
     });
