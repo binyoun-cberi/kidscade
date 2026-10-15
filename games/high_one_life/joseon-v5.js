@@ -165,7 +165,7 @@ function taxChoices(type,duty){
  if(type==='military')return [
   option(duty.kind==='hopo'?'집안의 호포를 마련한다':duty.kind==='service'?'지정된 군무를 맡는다':'군포 부담을 감당한다','payservice',duty.note||'군사와 나라의 의무가 생업을 흔든다.',{health:-2},duty.cost),
   option('군무나 납부 부담을 집안과 의논한다','arrange','다른 사람과 의논하지만 비용이 든다.',{bonds:2},duty.cost+2),
-  option('형편을 알리고 부담을 줄여 달라 청한다','petition','요구가 받아들여진다는 보장은 없다.',{knowledge:2,bonds:1})];
+  option('형편을 알리고 부담을 줄여 달라 청한다','petition','수령이 사정을 들어줄지는 알 수 없다.',{knowledge:2,bonds:1})];
  if(type==='tribute')return [
   option('그 고을에 정해진 세금을 마련한다','tribute','납세 방식은 지역별 제도와 형편에 따라 다르다.',{health:-1},3,0),
   option('이웃과 필요한 몫을 함께 마련한다','sharetribute','함께 힘을 모으지만 서로 부담을 나눈다.',{bonds:5},2,3),
@@ -201,7 +201,7 @@ function prepare(life,s){
   // scenario illustrating the reform's uneven reach.
   s.freed=true;s.legal='양인';
   s.trade='품팔이와 가족의 살림';
-  remember(life,s,'1801년 중앙 관서의 내노비·시노비가 해방되었다. 지방 관아나 사노비에 같은 조치가 일괄 적용된 것은 아니었다.');
+  remember(life,s,'1801년 중앙 관서의 내노비·시노비가 해방되었다. 그러나 지방 관아와 사가의 노비들은 여전히 다른 처지에 놓여 있었다.');
  }
  if(life.year>=1894&&s.legal!=='법적 신분 구별 폐지'){
   s.legal='법적 신분 구별 폐지';
@@ -238,7 +238,7 @@ function prepare(life,s){
    option('친족과 백성의 사정을 듣는다','hearRoyal','왕위와 거리를 두고 신분의 책임을 헤아린다.',{bonds:4})]);
  if(j.office&&s.rank>=2&&age===42&&dice(life.seed,1909)<.06){
   s.rank=4;s.role='대신';j.occupation='조정의 대신';
-  remember(life,s,'벼슬길에서 중요한 직책을 맡아 조정의 일을 헤아리게 되었다. 그러나 모든 대신이 나라의 정치를 마음대로 움직일 수 있는 것은 아니었다.');
+  remember(life,s,'벼슬길에서 중요한 직책을 맡아 조정의 일을 헤아리게 되었다. 큰일을 맡을수록 조정 안의 다툼과 임금의 뜻을 살피는 날이 많아졌다.');
  }
  if(P.canInspect(origin,s.rank,j.office,s.role,life.year)&&!s.inspector&&age>=29&&age<=55&&age%13===3&&dice(life.seed,life.year+1791)<.045)
   offer(life,s,'inspector','어사로 고을의 일을 살필 기회',troubleChoices('inspector'));
