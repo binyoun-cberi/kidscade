@@ -1320,7 +1320,7 @@
   $('v9TimelineMore').addEventListener('click',()=>{timelineVisible=Math.min(760,timelineVisible+60);paintTimeline();});
   $('drawBtn').addEventListener('click',draw);
   $('lifeStartBtn').addEventListener('click',()=>startLife());
-  $('againBtn').addEventListener('click',()=>{replayBasis=null;life=null;show('intro');refreshResume();draw();});
+  $('againBtn').addEventListener('click',()=>{replayBasis=null;life=null;show('intro');refreshResume();updateBirthChoices();});
   $('openGenealogyBtn').addEventListener('click',openGenealogy);
   $('endGenealogyBtn').addEventListener('click',openGenealogy);
   $('genealogyExpandAll').addEventListener('click',()=>{genealogyFolded.clear();drawGenealogy();});
