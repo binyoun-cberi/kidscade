@@ -174,6 +174,7 @@ const TEST_FILES = [
   "tests/juice-maker-farm.test.cjs",
   "tests/korean-farm-prototype.test.mjs",
   "tests/korean-farm-simulation.test.mjs",
+  "tests/korean-farm-animation-color.test.mjs",
   "tests/main-architecture.test.cjs"
 ];
 

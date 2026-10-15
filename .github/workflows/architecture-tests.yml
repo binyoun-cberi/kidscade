@@ -149,6 +149,18 @@ jobs:
           path: ${{ runner.temp }}/gigacity-visual-audit/
           if-no-files-found: ignore
           retention-days: 7
+      - name: Korean Farm real-browser desktop and mobile playthrough
+        run: node tests/korean-farm-browser-audit.cjs
+        env:
+          KIDSCADE_FARM_AUDIT_OUT: ${{ runner.temp }}/korean-farm-browser-audit
+      - name: Upload Korean Farm playthrough screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: korean-farm-browser-audit
+          path: ${{ runner.temp }}/korean-farm-browser-audit/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Visual audit of 3D Chibi WALK/RUN and mobile controls
         run: npm run test:chibi:visual
         env:
