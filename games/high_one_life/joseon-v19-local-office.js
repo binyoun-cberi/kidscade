@@ -154,6 +154,7 @@ function yearly(l,s){
  if(s.audit.state==='none'&&s.petitions+ledger.complaints>=2&&l.year%4===1&&
   rnd(s.familySeed,l.year*27+nameHash(region(l))+22)<clip(.12+s.proof*.012+(90-s.office.patronage)*.002,0,.48)){
   s.audit={state:'rumor',since:l.year,checked:0,outcome:'',reports:s.audit.reports};
+  queue(l,s,BYID.get('unknownTraveler'));
  }
  if(s.audit.state==='rumor'&&l.year>s.audit.since){
   s.audit.state='investigating';
