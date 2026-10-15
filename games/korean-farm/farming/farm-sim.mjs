@@ -196,6 +196,16 @@ export function advanceFarmDay(state){
   return {ok:true,previousDay:previous,newDay:state.day,weather:state.weather,changes,
     message:c.season+' '+c.seasonDay+'일 아침이에요. '+(state.weather==='rain'?'밤새 비가 내려 논밭이 촉촉해요.':state.weather==='storm'?'거센 비가 지나갔어요.':'새로운 하루가 시작됐어요.')};
 }
+
+export const SUPPLY_PRICES=Object.freeze({seedRice:100,seedCarrot:60,seedCorn:80,fertilizer:130});
+export function buyFarmSupply(state,key,count=1){
+  if(!Object.hasOwn(SUPPLY_PRICES,key))return {ok:false,message:'그 물건은 이 장터에서 팔지 않아요.'};
+  if(!Number.isInteger(count)||count<1||count>99)return {ok:false,message:'구매 수량을 확인해 주세요.'};
+  const price=SUPPLY_PRICES[key]*count;
+  if(state.money<price)return {ok:false,message:'돈이 부족해요. 수확물을 판매해 보세요.'};
+  state.money-=price;state.inventory[key]=(state.inventory[key]||0)+count;
+  return {ok:true,count,cost:price,message:'농자재를 '+price.toLocaleString('ko-KR')+'원에 구입했어요.'};
+}
 export function sellAllProduce(state){
   const sold={},total=Object.keys(CROPS).reduce((sum,k)=>{
     const count=state.inventory[k]||0;if(count>0)sold[k]=count;
