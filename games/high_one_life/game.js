@@ -440,7 +440,7 @@
     if(livedEra){
       $('v10HistoricalCount').textContent=livedEra.facts+'개 역사 사건 · '+livedEra.impacts+'개 영향 기록';
       $('v10HistoryStatus').textContent=livedEra.period+
-        (livedEra.event?' · '+livedEra.event.title:' · 고을과 집안의 일상이 이어진다');
+        (livedEra.event?' · '+livedEra.event.title:' · 그해도 집안의 일상은 이어진다');
       const marks=[...livedEra.memories];
       if(livedEra.schoolInterrupted)marks.push('학업을 이어 가기 어려웠던 경험');
       if(livedEra.moved)marks.push('거주지 이동 '+livedEra.moved+'회');
