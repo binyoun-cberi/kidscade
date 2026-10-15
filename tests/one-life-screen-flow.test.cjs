@@ -7,6 +7,7 @@ const root=path.join(__dirname,'..','games','high_one_life');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const code=fs.readFileSync(path.join(root,'game.js'),'utf8');
 const Sim=require(path.join(root,'engine.js'));
+const Identity=require(path.join(root,'identity-v20.js'));
 global.window={OneLifeSim:Sim};
 const World=require(path.join(root,'world-v2.js'));
 const Scene=require(path.join(root,'pixel-scene.js'));
@@ -64,7 +65,7 @@ const Joseon6=require(path.join(root,'joseon-v6.js'));
 delete global.window;
 const makeElement=(tag='div')=>{
  const listeners={}; const classes=new Set();
- const elem={tagName:tag.toUpperCase(),textContent:'',innerText:'',disabled:false,style:{},
+ const elem={tagName:tag.toUpperCase(),textContent:'',innerText:'',value:'',disabled:false,style:{},
   children:[],dataset:{},attributes:{},scrollTop:0,scrollHeight:2000,clientHeight:200,
   classList:{add:(key)=>classes.add(key),remove:(key)=>classes.delete(key),
     contains:(key)=>classes.has(key),toggle:(key,on)=>{if(on===undefined)on=!classes.has(key);if(on)classes.add(key);else classes.delete(key);return on;}},
@@ -96,7 +97,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  const StableSim={...Sim,Life:class extends Sim.Life{
   constructor(seed,options){super(seed===undefined?911:seed,options);}
  }};
- const window={OneLifeSim:StableSim,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeWorld6:World6,OneLifeWorld7:World7,OneLifeWorld8:World8,OneLifeCareers6:Careers6,OneLifeEvents6:Events6,OneLifeScene:Scene,OneLifeScenes6:Scenes6,OneLifeScenes8:Scenes8,OneLifeHistory:History,OneLifeWorld9:World9,OneLifeWorld10:World10,OneLifeWorld12:World12,OneLifeWorld13:World13,OneLifeJoseon:Joseon,OneLifeJoseon2:Joseon2,OneLifeJoseon3:Joseon3,OneLifeJoseon4:Joseon4,OneLifeJoseon5:Joseon5,OneLifeJoseon6:Joseon6,KidscadeGame:sdk,
+ const window={OneLifeSim:StableSim,OneLifeIdentity20:Identity,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeWorld6:World6,OneLifeWorld7:World7,OneLifeWorld8:World8,OneLifeCareers6:Careers6,OneLifeEvents6:Events6,OneLifeScene:Scene,OneLifeScenes6:Scenes6,OneLifeScenes8:Scenes8,OneLifeHistory:History,OneLifeWorld9:World9,OneLifeWorld10:World10,OneLifeWorld12:World12,OneLifeWorld13:World13,OneLifeJoseon:Joseon,OneLifeJoseon2:Joseon2,OneLifeJoseon3:Joseon3,OneLifeJoseon4:Joseon4,OneLifeJoseon5:Joseon5,OneLifeJoseon6:Joseon6,KidscadeGame:sdk,
   scrollTo(){},addEventListener(){}};
  new Function('window','document','localStorage','performance','setInterval','clearInterval',
   code)(window,document,localStorage,{now:()=>now},
