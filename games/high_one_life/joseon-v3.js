@@ -290,6 +290,7 @@ function choose(life,index){
 function afterYear(life){
  const s=ensure(life);if(!s||!J.inOldEra(life)||!life.alive||s.processedYear===life.year)return;
  s.processedYear=life.year;
+ if(life.joseon14?.captivity?.status==='held')return;
  const j=J.ensure(life),w=V2.ensure(life);
  if(life.age>=13&&life.age<=70&&s.skill>=2&&life.age%6===0){
   const bonus=Math.min(4,Math.floor(s.skill/2));j.capital=clamp(j.capital+bonus,-120,600);
