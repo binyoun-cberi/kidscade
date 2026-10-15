@@ -11,7 +11,8 @@ load('joseon-v5.js','OneLifeJoseon5');load('joseon-v6.js','OneLifeJoseon6');
 load('joseon-v7-life.js','OneLifeJoseon7');load('joseon-v8-lineage.js','OneLifeJoseon8');
 load('joseon-v9-village.js','OneLifeJoseon9');load('joseon-annals-v10.js','OneLifeJoseonAnnals');
 load('joseon-v11-late-life.js','OneLifeJoseon11');load('joseon-v12-regional.js','OneLifeJoseon12');
-load('joseon-v13-war-recovery.js','OneLifeJoseon13');
+const V13=load('joseon-v13-war-recovery.js','OneLifeJoseon13');
+const loadWarMissing=l=>V13.ensure(l).missing;
 const V14=load('joseon-v14-captivity-generations.js','OneLifeJoseon14');
 const Tree=load('joseon-v15-genealogy.js','OneLifeGenealogyV15');
 const Switch=load('joseon-v17-branch-switch.js','OneLifeBranchSwitchV17');
@@ -46,10 +47,13 @@ test('offers living relatives but excludes current life, spouses, minors and mis
  assert.ok(choose.some(x=>now.branches.some(b=>b.id===x.id)));
  assert.ok(!choose.some(x=>x.id===now.selfId));
  assert.ok(!choose.some(x=>now.nodes.find(n=>n.id===x.id)?.role==='spouse'));
- const sibling=Tree.ensure(l).nodes.find(n=>now.branches.some(b=>b.id===n.id));
- sibling.missing=true;
+ const sibling=now.nodes.find(n=>now.branches.some(b=>b.id===n.id));
+ const raw=V4.ensure(l).people.find(p=>p.role==='sibling'&&p.name===sibling.name);
+ assert.ok(raw);
+ const war=loadWarMissing(l);
+ war.push({personId:raw.id,name:raw.name,year:l.year,status:'missing',era:'hiran'});
  assert.ok(!Switch.options(l).some(x=>x.id===sibling.id));
- sibling.missing=false;sibling.alive=false;
+ war.pop();raw.alive=false;raw.diedYear=l.year;
  assert.ok(!Switch.options(l).some(x=>x.id===sibling.id));
 });
 test('switching to a side relative retains identity, current year and a copy of the family register',()=>{
