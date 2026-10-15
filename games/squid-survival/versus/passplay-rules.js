@@ -175,7 +175,7 @@ function input(state,action,value,now){
  if(g.id==='dalgona'){
    if(action==='trace-start')g.traceState=T.begin(g.trace,g.traceState,value,now).state;
    else if(action==='trace-move'){
-     if(g.traceDirection===null&&g.traceState.active&&g.traceState.progress<2){
+     if(g.traceDirection===null&&g.traceState.active&&g.traceState.progress<Math.min(40,g.trace.total/10)){
        const direction=T.directionFor(g.trace,g.traceReverse,value);
        if(direction){
          g.traceDirection=direction;
