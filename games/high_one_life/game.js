@@ -3,6 +3,7 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const Sim = window.OneLifeSim;
+  const Identity=window.OneLifeIdentity20;
   if (!Sim) throw new Error('OneLifeSim engine not loaded');
   const World2 = window.OneLifeWorld2;
   const Pixel = window.OneLifeScenes8 || window.OneLifeScenes6 || window.OneLifeScene;
@@ -57,6 +58,65 @@
   let completed = false, ruleWasRunning = false, replayBasis = null;
   let peerCache = null, lastPeerRenderedAge = -1, lastMapRenderedAge = -1;
   let storyTab='', peerAgeChoice=0, timelineVisible=22, playSpeed=1, nextDecision=false;
+  let namingChild=null,wasPausedBeforeNaming=false;
+  function updateBirthChoices(){
+    const year=Number($('birthYearInput').value);
+    const historical=Number.isInteger(year)&&year<1894;
+    const originGroup=$('birthOriginGroup'),familyGroup=$('birthFamilyGroup'),select=$('birthOriginInput');
+    const previous=select.value;
+    originGroup.classList.toggle('hidden',!historical);
+    familyGroup.classList.toggle('hidden',historical);
+    select.replaceChildren();
+    const add=(value,label)=>{const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);};
+    add('','우연에 맡기기');
+    if(historical){
+      for(const origin of Identity.SOCIAL_CHOICES){
+        if(Identity.validOrigin(year,origin))add(origin,origin);
+      }
+    }
+    select.value=historical&&Identity.validOrigin(year,previous)?previous:'';
+    $('birthIdentityHelp').textContent=historical
+      ? (year<1886?'왕실 종친·양반·중인·상민·노비·백정 등 집안의 출발점을 정합니다.':'이 시기에는 세습 노비 신분으로 태어나는 선택은 할 수 없습니다.')
+      :'1894년 이후 법적 신분 대신 집안의 경제적 형편을 정합니다.';
+    $('birthIdentityError').classList.add('hidden');
+  }
+  function newbornCandidate(){
+    return Identity?.newborn(life,
+      Joseon.isJoseon(life)?Joseon4.ensure(life).people:null,
+      !Joseon.isJoseon(life)?World9.ensure(life).people:null)||null;
+  }
+  function offerNewbornName(){
+    if(stage!=='play'||!life?.alive||namingChild)return false;
+    const found=newbornCandidate();if(!found)return false;
+    namingChild=found;wasPausedBeforeNaming=paused;paused=true;updatePause();
+    $('newbornDescription').textContent=found.historical
+      ?life.year+'년, 집안에 '+(found.child.sex==='여자'?'딸':'아들')+'이 태어났다. 어떤 이름으로 불러 줄까?'
+      :life.year+'년, 아이가 가족의 품에 안겼다. 어떤 이름을 지어 줄까?';
+    const surname=found.historical?Joseon8?.ensure(life)?.surname||'':'';
+    $('newbornNameHint').textContent=found.historical
+      ?'이름만 적으면 집안의 성씨 '+surname+'가 앞에 붙습니다. 성과 이름을 모두 적어도 됩니다. 기본 이름: '+found.child.name
+      :'이름은 가족의 기억에 오래 남습니다. 기본 이름: '+found.child.name;
+    $('newbornNameInput').value='';$('newbornNameInput').placeholder=found.child.name;
+    $('newbornNameError').classList.add('hidden');
+    $('newbornModal').classList.remove('hidden');
+    $('newbornNameInput').focus();
+    save();return true;
+  }
+  function finishNewbornName(automatic){
+    if(!namingChild||!life)return;
+    const name=$('newbornNameInput').value.trim();
+    if(!automatic&&(!name||!Identity.cleanName(name))){
+      $('newbornNameError').textContent='한글 또는 영문으로 이름을 적어 주세요.';
+      $('newbornNameError').classList.remove('hidden');return;
+    }
+    const surname=namingChild.historical?Joseon8?.ensure(life)?.surname||'':'';
+    if(!Identity.rename(life,namingChild,automatic?'':name,surname))return;
+    if(namingChild.historical)Genealogy?.sync?.(life);
+    namingChild=null;
+    $('newbornModal').classList.add('hidden');
+    paused=wasPausedBeforeNaming;lastTick=performance.now();
+    updatePause();render();save();
+  }
   const sdk = window.KidscadeGame || null;
   const show = name => {
     stage = name;
@@ -130,8 +190,16 @@
     const desired=Number($('birthYearInput').value);
     const birthYear=Number.isInteger(desired)&&desired>=1392&&desired<=2026?desired:2026;
     $('birthYearInput').value=String(birthYear);
+    updateBirthChoices();
+    const chosenName=$('birthNameInput').value.trim();
+    if(chosenName&&!Identity.cleanName(chosenName)){
+      $('birthIdentityError').textContent='이름은 한글 또는 영문으로 20자 이내로 적어 주세요.';
+      $('birthIdentityError').classList.remove('hidden');$('birthNameInput').focus();return;
+    }
     const countryName='대한민국';
-    life = new Sim.Life(undefined,{birthYear,countryName});
+    const birthSetup={name:chosenName,gender:$('birthGenderInput').value,
+      origin:$('birthOriginInput').value,familyLevel:$('birthFamilyInput').value};
+    life = new Sim.Life(undefined,{birthYear,countryName,birthSetup});
     World8.ensure(life);if(Joseon.isJoseon(life)){Joseon.ensure(life);Joseon8?.ensure(life);Joseon9?.ensure(life);}
     else {World8.moment(life);World10.ensure(life);}History.contextualize(life);
     storyTab='';peerAgeChoice=0;timelineVisible=22;
@@ -752,7 +820,7 @@
           effectText=lines.length?lines.slice(0,2).join('. ')+'.':'그날의 일은 마음 한편에 남았다.';
         }
         life.logEvent(effectText,'decision-effect');
-        save(); elapsed=0; lastTick=performance.now(); render();
+        save(); elapsed=0; lastTick=performance.now(); render(); offerNewbornName();
       });
       target.append(btn);
     });
@@ -1076,6 +1144,7 @@
     show('play');
     render();renderStoryPanel();
     sdk?.start?.({mode:'one-life',country:life.country[0]});
+    if(fromSave)offerNewbornName();
     save();
   }
   function rememberLife() {
@@ -1194,6 +1263,7 @@
     if(!life.alive) return finish();
     if(nextDecision&&life.pending){nextDecision=false;playSpeed=1;refreshSpeedControls();}
     render();
+    offerNewbornName();
     // Each year may have several linked events: save complete year boundaries.
     save();
   }
@@ -1225,7 +1295,17 @@
   document.querySelectorAll('[data-era-year]').forEach(btn=>btn.addEventListener('click',()=>{
     $('birthYearInput').value=btn.dataset.eraYear;
     document.querySelectorAll('[data-era-year]').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
+    updateBirthChoices();
   }));
+  $('birthYearInput').addEventListener('change',updateBirthChoices);
+  $('birthRandomBtn').addEventListener('click',()=>{
+    $('birthNameInput').value='';$('birthGenderInput').value='';
+    $('birthOriginInput').value='';$('birthFamilyInput').value='';
+    $('birthIdentityError').classList.add('hidden');
+  });
+  $('newbornNameConfirm').addEventListener('click',()=>finishNewbornName(false));
+  $('newbornNameRandom').addEventListener('click',()=>finishNewbornName(true));
+  $('newbornNameInput').addEventListener('keydown',e=>{if(e.key==='Enter')finishNewbornName(false);});
   document.querySelectorAll('[data-life-speed]').forEach(button=>button.addEventListener('click',()=>{
     const n=Number(button.dataset.lifeSpeed);
     if(![1,2,4,8].includes(n))return;
@@ -1240,7 +1320,7 @@
   $('v9TimelineMore').addEventListener('click',()=>{timelineVisible=Math.min(760,timelineVisible+60);paintTimeline();});
   $('drawBtn').addEventListener('click',draw);
   $('lifeStartBtn').addEventListener('click',()=>startLife());
-  $('againBtn').addEventListener('click',()=>{replayBasis=null;life=null;show('intro');refreshResume();draw();});
+  $('againBtn').addEventListener('click',()=>{replayBasis=null;life=null;show('intro');refreshResume();updateBirthChoices();});
   $('openGenealogyBtn').addEventListener('click',openGenealogy);
   $('endGenealogyBtn').addEventListener('click',openGenealogy);
   $('genealogyExpandAll').addEventListener('click',()=>{genealogyFolded.clear();drawGenealogy();});
@@ -1275,7 +1355,7 @@
     if(!life||life.alive)return;
     const snapshot=captureEnding(life);
     replayBasis=snapshot;
-    life=new Sim.Life(snapshot.seed,{birthYear:snapshot.birthYear,countryName:'대한민국'});
+    life=new Sim.Life(snapshot.seed,{birthYear:snapshot.birthYear,countryName:'대한민국',birthSetup:life.birthSetup});
     World8.ensure(life);if(Joseon.isJoseon(life))Joseon.ensure(life);else {World8.moment(life);World10.ensure(life);}History.contextualize(life);
     storyTab='';peerAgeChoice=0;timelineVisible=22;playSpeed=1;nextDecision=false;refreshSpeedControls();
     peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
@@ -1332,5 +1412,5 @@
   sdk?.registerPauseHandlers?.({pause:()=>{paused=true;updatePause();save();},resume:()=>{if(life?.pending)return;paused=false;lastTick=performance.now();updatePause();}});
   const heartbeat=setInterval(loop,90);
   sdk?.registerCleanup?.(()=>{save();clearInterval(heartbeat);if(roulette)clearInterval(roulette);});
-  refreshResume();show('intro');
+  updateBirthChoices();refreshResume();show('intro');
 })();

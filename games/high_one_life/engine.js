@@ -6,6 +6,8 @@
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
   const clamp = value => Math.max(0, Math.min(100, Math.round(value)));
+  const Identity=typeof module!=='undefined'&&module.exports
+    ?require('./identity-v20.js'):(typeof window!=='undefined'?window.OneLifeIdentity20:null);
   // Offline official indicator snapshot, refreshed by a separate source-audited job.
   // Country-level observations are historical; no future events are presented as data.
   const Official=typeof module!=='undefined'&&module.exports
@@ -169,6 +171,8 @@
   class Life {
     constructor(seed, options={}) {
       this.birthYear=Number.isInteger(options?.birthYear)&&options.birthYear>=1392&&options.birthYear<=2026?options.birthYear:2026;
+      this.birthSetup=Identity?.normalizeBirth(this.birthYear,options?.birthSetup)||{name:'',gender:'',origin:'',familyLevel:''};
+      this.namedChildIds=[];
       this.seed = Number.isFinite(seed) ? (seed >>> 0) : (((Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0));
       this.rng = this.seed || 0x9e3779b9;
       this.age = 0;
@@ -180,7 +184,9 @@
       const birthSexRatio=measured(this.country,'sexRatioBirth',this.birthYear);
       const femaleShare=birthSexRatio>0.9&&birthSexRatio<1.3?1/(1+birthSexRatio):0.49;
       this.gender=this.rand()<femaleShare?'여자':'남자';
+      if(this.birthSetup.gender)this.gender=this.birthSetup.gender;
       this.familyLevel = this.rand() < 0.24 ? '빠듯한 형편' : this.rand() < 0.32 ? '여유 있는 형편' : '평범한 형편';
+      if(this.birthSetup.familyLevel)this.familyLevel=this.birthSetup.familyLevel;
       const wealthBase = this.familyLevel === '여유 있는 형편' ? 65 : this.familyLevel === '빠듯한 형편' ? 28 : 46;
       this.stats = {health:clamp(55+this.country[4]*22+this.rand()*16-10),
         happiness:clamp(48+this.rand()*28),knowledge:clamp(30+this.rand()*22),
@@ -324,7 +330,7 @@
     }
     snapshot() {
       return {version:1,seed:this.seed,rng:this.rng,birthYear:this.birthYear,age:this.age,year:this.year,country:this.country[0],
-        gender:this.gender,familyLevel:this.familyLevel,stats:{...this.stats},career:this.career,focus:this.focus,reflections:this.reflections.map(e=>({...e})),
+        gender:this.gender,familyLevel:this.familyLevel,birthSetup:{...this.birthSetup},namedChildIds:[...this.namedChildIds],stats:{...this.stats},career:this.career,focus:this.focus,reflections:this.reflections.map(e=>({...e})),
         log:this.log.map(e=>({...e})),seen:[...this.seen],pending:this.pending,
         alive:this.alive,deathReason:this.deathReason};
     }
@@ -332,7 +338,8 @@
       if(!data||data.version!==1 || !Number.isInteger(data.age) || data.age<0 || data.age>108) return null;
       // Old v1 saves omit birthYear: those are always 2026 births.
       const birthYear=Number.isInteger(data.birthYear)&&data.birthYear>=1392&&data.birthYear<=2026?data.birthYear:2026;
-      const life=new Life(data.seed,{birthYear});
+      const life=new Life(data.seed,{birthYear,birthSetup:data.birthSetup});
+      life.namedChildIds=Array.isArray(data.namedChildIds)?data.namedChildIds.filter(x=>typeof x==='string'&&/^[jm]:[a-zA-Z0-9_-]{1,48}$/.test(x)).slice(-80):[];
       const country=COUNTRIES.find(c=>c[0]===data.country);
       if(!country || !data.stats || !Array.isArray(data.log) || !Array.isArray(data.seen)) return null;
       life.rng = Number(data.rng)>>>0;

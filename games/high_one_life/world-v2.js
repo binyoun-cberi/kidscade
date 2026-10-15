@@ -97,7 +97,7 @@
     const community=between(seed,11,0,99);
     const place=cities[community % cities.length];
     const familyAsset=life.familyLevel==='여유 있는 형편'?1.8:life.familyLevel==='빠듯한 형편'?.37:1;
-    const p={name:historic?namesHistoric[between(seed,1,0,namesHistoric.length-1)]:row[between(seed,1,0,row.length-1)],city:place,
+    const p={name:life.birthSetup?.name||(historic?namesHistoric[between(seed,1,0,namesHistoric.length-1)]:row[between(seed,1,0,row.length-1)]),city:place,
       birthMonth:between(seed,2,1,12),birthDay:between(seed,3,1,28),
       motherAge:between(seed,4,22,41),fatherAge:between(seed,5,23,48),
       motherJob:historic?jobsHistoric[between(seed,6,0,jobsHistoric.length-1)]:FAMILY_JOBS[between(seed,6,0,FAMILY_JOBS.length-1)],

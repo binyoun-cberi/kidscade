@@ -146,9 +146,10 @@ function seedState(life){
  while(regionIndex<regionWeights.length-1&&rem>=regionWeights[regionIndex])rem-=regionWeights[regionIndex++];
  const r=REGIONS[regionIndex];
  const n=roll(life.seed,1401)*100;
- const status=n<weights[0]?'양반':n<weights[0]+weights[1]?'중인':n<weights[0]+weights[1]+weights[2]?'상민':'천민';
- const family=(status==='양반'&&roll(life.seed,1402)<.67)||roll(life.seed,1403)<.10?'여유 있는 형편'
-    :(status==='천민'||roll(life.seed,1404)<.24?'빠듯한 형편':'평범한 형편');
+ const status=life.birthSetup?.origin?({'왕실 종친':'양반','양반':'양반','중인':'중인','상민':'상민','사노비':'천민','공노비':'천민','백정':'상민'}[life.birthSetup.origin]||'상민'):
+   n<weights[0]?'양반':n<weights[0]+weights[1]?'중인':n<weights[0]+weights[1]+weights[2]?'상민':'천민';
+ const family=life.birthSetup?.familyLevel||((status==='양반'&&roll(life.seed,1402)<.67)||roll(life.seed,1403)<.10?'여유 있는 형편'
+    :(status==='천민'||roll(life.seed,1404)<.24?'빠듯한 형편':'평범한 형편'));
  const home=status==='양반'?'집안 살림과 글공부':status==='중인'?'관아의 기록과 기술을 배우는 일':status==='천민'?'예속된 집안의 일과 노동':'농사와 집안일';
  const land=status==='양반'?2+Math.floor(roll(life.seed,1405)*5):status==='상민'?Math.floor(roll(life.seed,1405)*3):0;
  return {version:1,region:r[0],landmark:r[1],settlement:r[2],birthStatus:status,
@@ -187,7 +188,7 @@ function ensure(life){
  let s=life.joseon;
  if(!s){s=seedState(life);life.joseon=s;
   const names=NAMES[life.gender]||NAMES.남자;
-  life.profile.name=names[Math.floor(roll(life.seed,1413)*names.length)];
+  life.profile.name=life.birthSetup?.name||names[Math.floor(roll(life.seed,1413)*names.length)];
   if(life.age===0&&!life.log.some(e=>e.kind==='joseon-birth')){
    life.logEvent(s.region+'의 '+(life.birthYear>=1894?'옛 '+s.birthStatus+' 가계':life.birthYear<1600&&s.birthStatus==='중인'?'관청 실무·기술직 가계':s.status+' 집안')+'에서 태어났다. '+s.landmark+'이 가까운 고을이다.','joseon-birth');
    life.logEvent('고을에서는 집안의 이름과 가진 논밭에 따라 사람들이 서로를 대하는 눈빛도 달랐다.','joseon-life');

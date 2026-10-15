@@ -26,6 +26,7 @@
 <link rel="stylesheet" href="./joseon-samjeong-v18.css?v=1">
 <link rel="stylesheet" href="./joseon-office-v19.css?v=1">
 <link rel="stylesheet" href="./joseon-genealogy-v15.css?v=2">
+<link rel="stylesheet" href="./identity-v20.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -40,7 +41,7 @@
       <div class="intro-copy">
         <p class="eyebrow">시대는 달라도, 한 사람의 삶</p>
         <h1>한반도의 어느 시대,<br><em>단 하나의 인생.</em></h1>
-        <p class="lead">어느 시대의 한반도에서 태어날지는 고를 수 없습니다.<br>하지만 당신의 삶에는 당신만의 선택이 있습니다.</p>
+        <p class="lead">태어날 시대와 이름을 직접 정해도 좋습니다. 우연에 맡기면 예상하지 못한 삶이 펼쳐집니다.</p>
         
         <div class="historical-picker" aria-label="한국사의 출생 연도와 지역">
           <label for="birthYearInput">태어날 연도</label>
@@ -59,8 +60,28 @@
             <button type="button" data-era-year="1935" aria-pressed="false">1935년 일제강점기</button>
             <button type="button" data-era-year="1950" aria-pressed="false">1950년 한국전쟁기</button>
           </div>
-          <p id="eraHelp">1392년 조선부터 오늘날까지, 어느 시대의 어느 집에서 삶이 시작될까요?</p>
+          <p id="eraHelp">1392년부터 2026년까지, 태어날 해를 골라 보세요.</p>
         </div>
+        <section class="birth-customization" aria-labelledby="birthCustomTitle">
+          <h2 id="birthCustomTitle">나의 첫 기록</h2>
+          <p>원하는 항목만 고르세요. 비워 두면 삶이 시작될 때 우연히 정해집니다.</p>
+          <div class="birth-custom-grid">
+            <label for="birthNameInput">이름
+              <input id="birthNameInput" type="text" maxlength="20" autocomplete="off" placeholder="이름을 적거나 비워 두세요">
+            </label>
+            <label for="birthGenderInput">성별
+              <select id="birthGenderInput"><option value="">우연에 맡기기</option><option value="남자">남자</option><option value="여자">여자</option></select>
+            </label>
+            <label for="birthOriginInput" id="birthOriginGroup">신분과 집안
+              <select id="birthOriginInput"><option value="">우연에 맡기기</option></select>
+            </label>
+            <label for="birthFamilyInput" id="birthFamilyGroup" class="hidden">가정 형편
+              <select id="birthFamilyInput"><option value="">우연에 맡기기</option><option value="빠듯한 형편">빠듯한 형편</option><option value="평범한 형편">평범한 형편</option><option value="여유 있는 형편">여유 있는 형편</option></select>
+            </label>
+          </div>
+          <p id="birthIdentityError" class="birth-custom-error hidden" role="alert"></p>
+          <div class="birth-custom-controls"><button id="birthRandomBtn" type="button">나머지는 우연에 맡기기</button><small id="birthIdentityHelp">당시의 신분과 집안은 태어난 시대에 맞게 표시됩니다.</small></div>
+        </section>
         <button id="drawBtn" class="primary" type="button">한반도의 어느 시대에서 시작될까? <span aria-hidden="true">↗</span></button>
         <button id="resumeBtn" class="secondary hidden" type="button">이어서 살아가기</button>
         <p class="footnote">시간은 흘러가고, 중요한 순간마다 당신이 길을 고릅니다.</p>
@@ -416,11 +437,27 @@
       <p class="genealogy-footnote">아들과 딸, 형제자매의 가지가 함께 이어집니다. 이름이 전해지지 않은 사람은 빈자리로 남겨 두었습니다.</p>
     </section>
   </div>
+  <div id="newbornModal" class="newborn-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="newbornTitle">
+    <section class="newborn-sheet">
+      <p class="eyebrow">집안에 찾아온 새 생명</p>
+      <h2 id="newbornTitle">아기의 이름을 지어 주세요</h2>
+      <p id="newbornDescription">아이의 울음소리가 집안에 번집니다.</p>
+      <label for="newbornNameInput" class="newborn-name-field">아이의 이름
+        <input id="newbornNameInput" type="text" maxlength="20" autocomplete="off" placeholder="이름을 입력하세요">
+      </label>
+      <p id="newbornNameHint">이름은 족보와 인생 기록에도 남습니다.</p>
+      <p id="newbornNameError" class="birth-custom-error hidden" role="alert"></p>
+      <div class="newborn-choices">
+        <button type="button" class="primary" id="newbornNameConfirm">이 이름으로 짓기</button>
+        <button type="button" class="secondary" id="newbornNameRandom">원래 지어진 이름 사용</button>
+      </div>
+    </section>
+  </div>
   <div id="rules" class="rules hidden" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
     <div class="rules-backdrop" data-close="rules"></div>
     <div class="rules-content"><button id="rulesClose" class="rule-close" type="button" aria-label="닫기">×</button>
       <p class="eyebrow">시작하기 전에</p><h2 id="rulesTitle">게임 방법</h2>
-      <p>1392년부터 2026년까지 태어날 해를 정하세요. 모든 인생은 한반도에서 시작하며, 시대와 지역에 따라 만나는 사건과 선택이 달라집니다. 시간은 저절로 흐르다가 중요한 순간에 멈춥니다.</p>
+      <p>1392년부터 2026년까지 태어날 해를 정하세요. 이름·성별·신분(조선 시대) 또는 가정 형편도 직접 선택하거나 우연에 맡길 수 있습니다. 모든 인생은 한반도에서 시작하며, 시대와 지역에 따라 만나는 사건과 선택이 달라집니다. 시간은 저절로 흐르다가 중요한 순간에 멈춥니다.</p>
       <p>시대와 지역에 따라 배움과 생업, 전쟁과 사회 변화가 삶을 바꿉니다. 전쟁 시기에는 피란·포로·사망 등 무거운 결과가 나타날 수 있습니다. 삶이 끝나면 지나온 시간을 다시 읽을 수 있습니다.</p>
       <details class="historical-method"><summary>자료 출처 및 제작 방식</summary>
   <p>조선 시대의 제도와 생활상은 국사편찬위원회와 한국민족문화대백과 자료를 참고했습니다. 역사적 사건의 연대와 배경은 자료를 따르되, 이 작품의 인물·족보·수령 이름·부임 시기·감찰 결과·개인의 삶은 창작입니다.</p>
@@ -435,8 +472,9 @@
 <script src="../../kidscade-storage.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_one_life" data-title="단 하나의 인생" data-shell="false" data-pauseable="true" data-orientation="any"></script>
 <script src="./official-data.js?v=202610111530"></script>
-<script src="./engine.js?v=10"></script>
-<script src="./world-v2.js?v=9"></script>
+<script src="./identity-v20.js?v=1"></script>
+<script src="./engine.js?v=11"></script>
+<script src="./world-v2.js?v=10"></script>
 <script src="./pixel-scene.js?v=3"></script>
 <script src="./world-v3.js?v=8"></script>
 <script src="./world-v4.js?v=2"></script>
@@ -459,15 +497,15 @@
 <script src="./world-v12.js?v=2"></script>
 <script src="./world-v13.js?v=2"></script>
 <script src="./joseon-history-policy.js?v=1"></script>
-<script src="./joseon-v1.js?v=9"></script>
+<script src="./joseon-v1.js?v=11"></script>
 <script src="./joseon-v2.js?v=5"></script>
 <script src="./joseon-culture-v1.js?v=2"></script>
 <script src="./joseon-v3.js?v=7"></script>
 <script src="./joseon-v4.js?v=6"></script>
-<script src="./joseon-v5.js?v=6"></script>
+<script src="./joseon-v5.js?v=7"></script>
 <script src="./joseon-v6.js?v=3"></script>
 <script src="./joseon-v7-life.js?v=2"></script>
-<script src="./joseon-v8-lineage.js?v=1"></script>
+<script src="./joseon-v8-lineage.js?v=2"></script>
 <script src="./joseon-v9-village.js?v=2"></script>
 <script src="./joseon-annals-v10.js?v=2"></script>
 <script src="./joseon-v11-late-life.js?v=2"></script>
@@ -480,6 +518,6 @@
 <script src="./joseon-v19-local-office.js?v=2"></script>
 <script src="./colonial-daily-v2.js?v=1"></script>
 <script src="./joseon-pixel-v2.js?v=2"></script>
-<script src="./game.js?v=51"></script>
+<script src="./game.js?v=53"></script>
 </body>
 </html>
