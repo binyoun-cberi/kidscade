@@ -32,6 +32,7 @@
   const Joseon13 = window.OneLifeJoseon13 || null;
   const Joseon14 = window.OneLifeJoseon14 || null;
   const Joseon18 = window.OneLifeJoseon18 || null;
+  const Joseon19 = window.OneLifeJoseon19 || null;
   const Genealogy = window.OneLifeGenealogyV15 || null;
   const BranchSwitch = window.OneLifeBranchSwitchV17 || null;
   const ColonialLife = window.OneLifeColonialDaily || null;
@@ -220,7 +221,7 @@
   }
   function paintLifeRecord() {
     if(Joseon.inOldEra(life)){
-      const lineage=Joseon8?.summary(life),village=Joseon9?.summary(life),late=Joseon11?.summary(life),regional=Joseon12?.summary(life),wartime=Joseon13?.summary(life),aftermath=Joseon14?.summary(life),samjeong=Joseon18?.summary(life);
+      const lineage=Joseon8?.summary(life),village=Joseon9?.summary(life),late=Joseon11?.summary(life),regional=Joseon12?.summary(life),wartime=Joseon13?.summary(life),aftermath=Joseon14?.summary(life),samjeong=Joseon18?.summary(life),localOffice=Joseon19?.summary(life);
       const v2=Joseon2.summary(life),j=Joseon.summary(life),v3=Joseon3.summary(life),v4=Joseon4.summary(life),social=Joseon5?.summary(life),jobs=Joseon6?.summary(life),p=Joseon.ensure(life)&&life.profile,m=life.money,e=j.economy;
       const put=(id,value)=>{$(id).textContent=String(value);};
       const source=Annals?.sourceFor(life);
@@ -243,6 +244,23 @@
         put('villageHomeSummary',livingAbroad?
           '고향의 가족과 마을에 대한 기억이다. 지금은 먼 타향에 머물러 국내 농사와 장시의 일을 직접 할 수 없다.':
           '마을의 물 사정 '+(village.water<20?'몹시 부족':village.water<45?'빠듯함':'넉넉함')+' · 우리 집 가축: 소 '+village.animals.ox+'마리, 돼지 '+village.animals.pig+'마리, 닭 '+village.animals.chicken+'마리.');
+        const officeVisible=life.year>=1800&&life.year<=1869&&!!localOffice&&!livingAbroad;
+        $('localOfficePanel').classList.toggle('hidden',!officeVisible);
+        if(officeVisible){
+          put('localOfficeName',localOffice.name+' 수령 · '+localOffice.from+'년 부임 · '+localOffice.region);
+          put('localOfficeConduct','관아 평판: '+localOffice.reputation);
+          put('localOfficeTax','추가 징수: '+(localOffice.levy>=62?'부담이 큰 편':localOffice.levy>=38?'일부 부담이 있음':'비교적 적은 편'));
+          put('localOfficeClerks','아전의 관행: '+(localOffice.clerks>=62?'쉽게 바뀌지 않음':'조정할 여지가 있음'));
+          put('localOfficePatronage','중앙의 후원 관계는 관아의 판단에 영향을 줄 수 있습니다. 수령이 교체되더라도 기존 문서는 남아 있습니다.');
+          put('localOfficeAudit',localOffice.audit.state==='investigating'?'감찰이 진행 중입니다. 문서와 주민 증언을 살피는 단계입니다.':
+            localOffice.audit.state==='rumor'?'어사나 감찰에 관한 소문이 있지만 아직 확인된 것은 없습니다.':
+            localOffice.audit.state==='reported'?'감찰 보고: '+localOffice.audit.outcome:
+            '현재 확인된 감찰 진행 기록은 없습니다.');
+          put('localOfficeHistory','지금까지 수령 교체 '+Math.max(0,localOffice.turnovers-1)+'회 · 탄원 '+localOffice.petitions+'건(가상 사건 기록) · 인생 선택 '+localOffice.decisions+'회');
+          const link=$('localOfficeSource');
+          link.classList.toggle('hidden',!localOffice.lastSource);
+          if(localOffice.lastSource)link.href=localOffice.lastSource;
+        }
         const fiscalVisible=life.year>=1800&&life.year<=1894&&!!samjeong&&!livingAbroad;
         $('samjeongLedger').classList.toggle('hidden',!fiscalVisible);
         if(fiscalVisible){
@@ -393,6 +411,7 @@
     $('joseonVillagePanel').classList.add('hidden');
     $('lateJoseonLedger').classList.add('hidden');
     $('samjeongLedger').classList.add('hidden');
+    $('localOfficePanel').classList.add('hidden');
     $('joseonRegionalLedger').classList.add('hidden');
     $('joseonWarRecord').classList.add('hidden');
     $('joseonCaptivityRecord').classList.add('hidden');
@@ -519,7 +538,7 @@
     if(!life)return;
     if(Joseon.inOldEra(life)){
       const j=Joseon.summary(life),s=Joseon.ensure(life),allChoices=life.log
-        .filter(e=>['joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice','joseon18-choice'].includes(e.kind)).slice(-3);
+        .filter(e=>['joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice','joseon18-choice','joseon19-choice'].includes(e.kind)).slice(-3);
       const n=j.decisions+Joseon2.summary(life).decisions+Joseon3.summary(life).choices+Joseon4.summary(life).decisions+(Joseon5?.summary(life)?.decisions||0)+(Joseon7?.summary(life)?.decisions||0)+(Joseon9?.summary(life)?.decisions||0)+(Annals?.ensure(life)?.decisions.length||0)+(Joseon11?.summary(life)?.decisions||0)+(Joseon12?.summary(life)?.decisions||0)+(Joseon13?.summary(life)?.decisions||0)+(Joseon14?.summary(life)?.decisions||0);
       $('careerChangeCount').textContent=n+'번의 선택';
       $('careerCurrent').textContent=j.occupation;
@@ -1092,6 +1111,8 @@
       oldJobs?.secondary?'틈틈이 '+oldJobs.secondary.name+'의 일도 함께 했다.':'',
       oldJobs?.primary?.stories?.length?'기억에 남는 생업의 일은 '+oldJobs.primary.stories.slice(-2).join(' ') :'',
       oldLife&&oldLife.warMemory.length?'삶에 영향을 준 사건은 '+oldLife.warMemory.join(', ')+'이었다.':'',
+      oldLife&&Joseon19?.summary(life)?.decisions?
+        '고을 수령과 관아의 일에 '+Joseon19.summary(life).decisions+'번 관여하고, 여러 번 달라지는 징수와 감찰을 지켜보았다.':'',
       oldLife&&Joseon18?.summary(life)?.decisions?
         '토지세·군포·환곡과 관아의 문제를 겪으며 '+Joseon18.summary(life).decisions+'번의 선택을 했다. '+
         (Joseon18.summary(life).complaints?'억울함을 호소한 집안의 기록도 남았다. ':''):'',
