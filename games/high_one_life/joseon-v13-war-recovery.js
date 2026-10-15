@@ -114,6 +114,12 @@ const EVENTS=[
   O('피란민들의 말을 모아 듣는다','돌아갈 길을 찾는다','피란민이 전하는 소식이 가족의 기억으로 남았다.',{trust:3,knowledge:3},'separate'),
   O('집터를 지키며 편지를 기다린다','돌아올 자리를 남긴다','소식을 기다리며 한동안 저녁마다 문밖을 바라보았다.',{grain:-1,bonds:4},'separate')
  ],(l,j,s)=>availableKin(l).length>0&&!hasMissing(s)),
+ E('ransom1628',[1628,1638],null,'서북 전란 뒤 사라진 가족의 소식',
+ '서북의 전란 중 소식이 끊긴 사람이 포로가 되었다는 소문이 들려온다. 살아 있는지부터 알아보아야 한다.',SOURCES.ransom,[
+  O('장시를 오가는 사람에게 안부를 부탁한다','인편과 소식에 비용이 든다','실종된 식구의 이름을 여러 사람에게 전해 주었다.',{capital:-3,knowledge:3},'trace'),
+  O('친척들과 몸값을 마련할 방법을 찾는다','가족에게 큰 부담이 될 수 있다','식구들은 오랫동안 돈과 곡식 마련을 의논했다.',{capital:-6,bonds:3},'ransom'),
+  O('돌아올 집터와 먹을 것을 챙겨 둔다','돌아오기를 기다린다','오랜 기다림 속에서도 집을 지키며 지냈다.',{grain:-2,repair:1},'wait')
+ ],(l,j,s)=>s.missing.some(x=>x.status==='missing'&&x.era==='hiran'&&x.year<=l.year-1)),
  E('byeongja1636',[1636,1636],SIEGE,'청군이 한양을 향해 내려오다',
  '한양과 경기도의 길이 급해졌다. 산성으로 피하는 사람과 집에 남는 사람이 뒤섞인다.',SOURCES.byeongja,[
   O('식구와 피란할 길을 찾는다','남겨 두고 가는 살림이 걱정된다','피란했다가 돌아와 잃어버린 살림을 헤아렸다.',{capital:-6,grain:-3,damage:3,moves:1},'evacuate'),
@@ -129,8 +135,8 @@ const EVENTS=[
   O('피란길에 함께 있던 식구를 찾는다','멀리 떠난 사람을 수소문한다','이웃과 함께 실종자의 이름을 알아보던 날이 남았다.',{capital:-3,bonds:3,damage:1},'separateIfKin'),
   O('남겨진 사람의 끼니를 마련한다','돌아온 피란민부터 돌본다','힘겨운 날에 도왔던 사람들이 훗날 찾아왔다.',{grain:-4,trust:5,damage:1},'aid'),
   O('가족의 집터와 곡식을 지킨다','앞으로 살아갈 살림부터 생각한다','무너진 집터를 다시 일으킬 날을 기다렸다.',{grain:-2,repair:1,damage:2},'secure')]),
- E('ransom1638',[1638,1662],null,'끌려간 가족의 속환 소식',
- '전란 중 소식이 끊긴 가족을 돈이나 물건을 치르고 데려올 길이 있다는 말을 들었다. 그 길은 쉽지 않다.',SOURCES.ransom,[
+ E('ransom1638',[1638,1662],null,'포로로 잡혔을지도 모르는 가족의 속환 소식',
+ '행방을 알 수 없는 가족이 포로가 됐을 수도 있다는 말을 들었다. 속환할 길을 알아보지만 실제로 붙잡혔는지조차 분명치 않다.',SOURCES.ransom,[
   O('몸값을 마련할 길을 알아본다','집안의 돈과 이웃의 도움을 모은다','돌아올 가족을 위해 살림을 모았던 날을 잊지 못했다.',{capital:-8,trust:1},'ransom'),
   O('먼 고을의 친척에게 힘을 빌린다','인편과 상인을 통해 안부를 알아본다','친척과 소식을 나누며 오랫동안 기다렸다.',{capital:-4,bonds:3},'trace'),
   O('편지와 고향의 소식을 전한다','당장은 큰돈을 마련하기 어렵다','고향의 집터를 지키며 다시 만나기를 기다렸다.',{bonds:3,repair:1},'wait')
@@ -158,7 +164,7 @@ const EVENTS=[
   O('그 사람의 잘못이 아니라 말한다','어려움을 겪은 이의 편에 선다','오래도록 그 말을 기억하며 이웃과 함께 지냈다.',{trust:3,bonds:4,knowledge:2},'care'),
   O('집안의 생계를 먼저 돕는다','생활을 다시 꾸릴 일손을 보탠다','돌아온 사람이 일터를 찾을 때 도움을 주었다.',{grain:-2,bonds:4,trust:2},'aid'),
   O('험담을 멈춰 달라 부탁한다','마을 사람과 부딪힐 수 있다','이웃과 긴 이야기를 나누며 그동안의 상처를 알게 됐다.',{trust:-1,bonds:5},'care')
- ],(l,j,s)=>s.missing.some(x=>x.status==='returned')||s.scar>=2),
+ ],(l,j,s)=>s.missing.some(x=>x.status==='returned')),
  E('hiranWarTax',[1638,1648],null,'전란 뒤 줄어든 일손과 세금',
  '전란이 지나도 관아에 내는 곡식과 부역은 남았다. 집안에는 밭일할 사람마저 부족하다.',SOURCES.byeongja,[
   O('집안 형편을 관아에 알린다','전란에 사라진 일손을 설명한다','문서를 가지고 관아에 갔던 일을 오래 기억했다.',{knowledge:3,capital:-1},'petition'),
@@ -229,7 +235,7 @@ function reunite(l,s,entry){
  if(!raw?.alive){entry.status='unresolved';return false;}
  entry.status='returned';entry.returnYear=l.year;entry.welcomed=false;
  raw.atHome=entry.atHome;
- l.logEvent(entry.name+'이(가) 오랜 이별 끝에 살아 돌아왔다.','joseon13-family');
+ l.logEvent(V4.particle(entry.name,'이','가')+' 오랜 이별 끝에 살아 돌아왔다.','joseon13-family');
  return true;
 }
 function yearly(l,s){
@@ -281,6 +287,7 @@ function choose(l,index){
  for(const k of ['damage','fields','repair','moves'])if(Number.isFinite(d[k]))
   s[k]=clamp(s[k]+d[k],0,k==='damage'||k==='fields'?20:100);
  if(s.damage>0||s.fields>0)s.scar++;
+ if(Number.isFinite(d.moves)&&d.moves>0)j.relocations+=d.moves;
  if(op.special==='separate'||op.special==='separateIfKin'){
   if(availableKin(l).length){
    relatives(l,s);s.damage=clamp(s.damage+1,0,20);
