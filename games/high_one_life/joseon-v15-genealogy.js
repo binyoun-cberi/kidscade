@@ -131,6 +131,7 @@ function install(){
   const data=snapshot.call(this);if(J.isJoseon(this))data.genealogy15=JSON.parse(JSON.stringify(sync(this)));return data;
  };
  L.restore=function(data){const l=restore.call(this,data);if(l&&J.isJoseon(l))hydrate(l,data);return l;};
+ Object.defineProperty(L.prototype,'__genealogy15Inherit',{value:inherit});
  Object.defineProperty(L.prototype,'__genealogy15',{value:true});return true;
 }
 install();
