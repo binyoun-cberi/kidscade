@@ -217,11 +217,13 @@ test('captive years bypass domestic annual states rather than hiding their alrea
  assert.equal(V14.capture(l),true);
  const baseline={village:village.processedYear,region:regional.processedYear,war:war.processedYear,
    family:family.processedYear,capital:J.ensure(l).capital};
- let advanced=0;
+ let advanced=0,expectedCapital=baseline.capital;
  for(let i=0;i<6&&l.alive;i++){
   while(l.pending){
    const choice=l.getChoice();assert.ok(choice);
    assert.ok(String(l.pending).startsWith('joseon14:'));
+   const chapter=V14.EPISODES.find(e=>e.id===V14.ensure(l).active.eventId);
+   expectedCapital=Math.max(-120,Math.min(600,expectedCapital+(chapter?.options[2]?.delta?.capital||0)));
    assert.equal(l.choose(2),true);
   }
   const old=l.year;
@@ -234,7 +236,7 @@ test('captive years bypass domestic annual states rather than hiding their alrea
  assert.equal(regional.processedYear,baseline.region);
  assert.equal(war.processedYear,baseline.war);
  assert.equal(family.processedYear,baseline.family);
- assert.equal(J.ensure(l).capital,baseline.capital);
+ assert.equal(J.ensure(l).capital,expectedCapital,'capital may change by captive choices, not hometown annual income');
  assert.equal(V14.ensure(l).processedYear,l.year);
 });
 test('restoring older abroad saves clears stale local decisions but preserves captive story',()=>{
