@@ -95,7 +95,7 @@ test('missing relative refers to existing living family and is not misreported d
 test('return or continued search is deterministic, never a fabricated confirmed death',()=>{
  let returning=null;
  for(let seed=1;seed<=150;seed++){
-  const l=at(born(1608,seed*71),1636,'경기도');
+  const l=at(born(1608,seed*71),1637,'경기도');
   const s=force(l,'ganghwa1637',0);
   if(!s.missing.length)continue;
   at(l,1638,'경기도');l.pending=null;
