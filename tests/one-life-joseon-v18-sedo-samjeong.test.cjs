@@ -51,7 +51,7 @@ test('land misassessment raises separate tax exposure and preserves written evid
 test('dead-person military levy is recognized as a burden on surviving relatives',()=>{
  const l=at(born(1800,16),1841),f=V4.ensure(l);
  const p=f.people.find(p=>p.role==='father');
- p.alive=false;p.diedYear=1840;
+ p.alive=false;p.sex='남자';p.diedYear=1840;
  const s=V18.ensure(l);force(l,'militaryDead',1);
  assert.ok(s.militaryDebt>0);
  assert.ok(l.log.some(e=>e.kind==='joseon18-choice'));
@@ -66,6 +66,8 @@ test('underage military levy can involve the household’s male child',()=>{
 test('separate mandatory-granary debt accumulates and affects household after several years',()=>{
  const l=at(born(1800,18),1839),s=V18.ensure(l);force(l,'grainForced',1);
  assert.ok(s.grainDebt>=5);
+ force(l,'grainPhantom',1);
+ assert.ok(s.grainDebt>=7);
  const previous=J.ensure(l).capital,priorGrain=V2.ensure(l).grain;
  at(l,1840);s.processedYear=1839;
  V18.yearly(l,s);
