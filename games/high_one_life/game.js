@@ -232,7 +232,7 @@
       }
       put('v10HistoricalCount',Joseon.ensure(life).seen.length?Joseon.ensure(life).seen.length+'가지 큰일을 겪음':'고을의 하루');
       put('v10HistoryStatus',j.era+' · '+(Joseon.eventFor(life.year)?.title||j.region+'에서 살아가는 중'));
-      put('v10HistoryEffects',[j.warMemory.length?'삶을 바꾼 사건 · '+j.warMemory.join(' · '):'고을의 생활이 이어지고 있습니다.',v2.lastMemory,social?.memories.at(-1)].filter(Boolean).join(' · '));
+      put('v10HistoryEffects',[j.warMemory.length?'삶을 바꾼 사건 · '+j.warMemory.join(' · '):'고을에서는 오늘도 저마다의 살림을 이어 간다.',v2.lastMemory,social?.memories.at(-1)].filter(Boolean).join(' · '));
       put('v12EducationEra',j.literacy>=4?'글과 경전을 읽을 수 있다.':j.literacy?'글자를 조금씩 익혀 간다.':'집안에서 필요한 일을 배우며 지낸다.');
       put('v12WorkEra',aftermath?.captivity?.status==='held'?
         '타향에서 포로로 지내며 주어진 일과 하루를 견디고 있다.':
@@ -251,12 +251,12 @@
           put('localOfficeConduct','관아 평판: '+localOffice.reputation);
           put('localOfficeTax','추가 징수: '+(localOffice.levy>=62?'부담이 큰 편':localOffice.levy>=38?'일부 부담이 있음':'비교적 적은 편'));
           put('localOfficeClerks','아전의 관행: '+(localOffice.clerks>=62?'쉽게 바뀌지 않음':'조정할 여지가 있음'));
-          put('localOfficePatronage','중앙의 후원 관계는 관아의 판단에 영향을 줄 수 있습니다. 수령이 교체되더라도 기존 문서는 남아 있습니다.');
-          put('localOfficeAudit',localOffice.audit.state==='investigating'?'감찰이 진행 중입니다. 문서와 주민 증언을 살피는 단계입니다.':
-            localOffice.audit.state==='rumor'?'어사나 감찰에 관한 소문이 있지만 아직 확인된 것은 없습니다.':
+          put('localOfficePatronage','새 수령이 부임해도 중앙의 권세가와 아전들이 얽힌 사정은 한순간에 사라지지 않는다.');
+          put('localOfficeAudit',localOffice.audit.state==='investigating'?'관리들이 장부를 펼치고 백성들의 사정을 듣고 있다.':
+            localOffice.audit.state==='rumor'?'어사가 고을을 살핀다는 소문이 장터에 돌고 있다.':
             localOffice.audit.state==='reported'?'감찰 보고: '+localOffice.audit.outcome:
-            '현재 확인된 감찰 진행 기록은 없습니다.');
-          put('localOfficeHistory','지금까지 수령 교체 '+Math.max(0,localOffice.turnovers-1)+'회 · 탄원 '+localOffice.petitions+'건(가상 사건 기록) · 인생 선택 '+localOffice.decisions+'회');
+            '아직 감찰이 내려왔다는 소식은 들리지 않는다.');
+          put('localOfficeHistory','이 집안이 겪은 수령 교체 '+Math.max(0,localOffice.turnovers-1)+'차례 · '+(localOffice.petitions?'탄원과 호소의 기록이 남아 있다.':'아직 집안에서 올린 탄원 기록이 없다.'));
           const link=$('localOfficeSource');
           link.classList.toggle('hidden',!localOffice.lastSource);
           if(localOffice.lastSource)link.href=localOffice.lastSource;
@@ -277,7 +277,7 @@
             samjeong.integrity?'부당한 지시를 거절하거나 장부를 조사한 기억이 있다.':'',
             samjeong.corruption?'관청의 부정한 관행에 얽혔던 흔적이 있다.':'',
             samjeong.anger?'이웃과 집안에 억울함이 쌓여 있다.':''
-          ].filter(Boolean).join(' ')||'이 가계의 삼정 관련 기록이 쌓이면 여기에 나타납니다.');
+          ].filter(Boolean).join(' ')||'아직 이 집안의 장부에는 별다른 사연이 적혀 있지 않다.');
           const src=$('samjeongSource');src.classList.toggle('hidden',!samjeong.lastSource);
           if(samjeong.lastSource)src.href=samjeong.lastSource;
         }
@@ -403,7 +403,7 @@
       if(hopaeShown){put('lifeHopaName',p.name);put('lifeHopaTown',j.region+' · 호패를 본뜬 기록');}
       const culture=JoseonCulture?.describe(life,{joseon:j,scene:v3.zone,role:jobs?.primary?.name||j.occupation});
       put('sceneCulture',aftermath?.captivity?.status==='held'?
-        '포로로 지내는 곳의 생활은 고향의 집·농사 풍경과 다르다. 이 장면의 인물은 가상의 역사 인물이다.':
+        '낯선 사람들과 낯선 지붕 아래에서 하루를 보낸다. 고향의 집과 논밭은 멀리 있다.':
         culture?[culture.period+' · '+culture.clothing,culture.housing,culture.meal].join('  |  '):'');
       return;
     }
@@ -440,15 +440,15 @@
     if(livedEra){
       $('v10HistoricalCount').textContent=livedEra.facts+'개 역사 사건 · '+livedEra.impacts+'개 영향 기록';
       $('v10HistoryStatus').textContent=livedEra.period+
-        (livedEra.event?' · '+livedEra.event.title:' · 현재 해에 등록된 별도 역사 사건은 없음');
+        (livedEra.event?' · '+livedEra.event.title:' · 그해도 집안의 일상은 이어진다');
       const marks=[...livedEra.memories];
       if(livedEra.schoolInterrupted)marks.push('학업을 이어 가기 어려웠던 경험');
       if(livedEra.moved)marks.push('거주지 이동 '+livedEra.moved+'회');
       $('v10HistoryEffects').textContent=marks.length?'살면서 겪은 일 · '+marks.join(' · '):
         '아직 특별히 남은 기억은 없습니다.';
     }else{
-      $('v10HistoricalCount').textContent='한국 역사 모드가 아님';
-      $('v10HistoryStatus').textContent='이 지역의 역사 효과는 아직 별도 모델로 제공되지 않습니다.';
+      $('v10HistoricalCount').textContent='살아가는 시대의 기록';
+      $('v10HistoryStatus').textContent='이곳에서도 세월이 흐르고 사람들의 생활은 달라진다.';
       $('v10HistoryEffects').textContent='세상이 바뀌는 동안 이 사람의 하루도 조금씩 달라지고 있다.';
     }
     if(periodLife){
@@ -963,24 +963,24 @@
     $('genealogySwitchBtn').classList.toggle('hidden',!swappable);
     $('genealogySwitchBtn').disabled=!swappable;
     $('genealogySwitchHint').textContent=n.id===data.selfId?
-      '지금 살고 있는 인생이야.':
+      '지금 살아가는 인물이다.':
       swappable?
-        '이 인물의 시점으로 전환할 수 있어. 원래 인생의 기록은 따로 보관되며, 다시 돌아올 수 있어.':
-        !n.alive?'세상을 떠난 가족의 삶으로는 전환할 수 없어.':
-        n.missing?'행방을 알 수 없는 인물은 귀환·생존을 확인한 뒤 선택할 수 있어.':
-        '아직 나이가 어리거나 시대가 맞지 않아 인생을 전환할 수 없어.';
+        '이 식구의 삶을 이어 볼 수 있다. 지금까지 살아온 인생으로도 다시 돌아올 수 있다.':
+        !n.alive?'세상을 떠난 식구의 삶으로는 갈아탈 수 없다.':
+        n.missing?'소식이 끊긴 식구는 살아 돌아왔다는 소식을 기다려야 한다.':
+        '지금은 이 식구의 삶을 이어 볼 수 없다.';
     $('genealogyDetailStory').textContent=(n.simulated?
-      '본줄기가 아닌 '+(branch?.label||'방계 집안')+'의 후손으로, 이 인생을 직접 플레이하지 않아 간략하게 구성된 가상 기록입니다. ':
-      branch?'다른 살림을 꾸린 '+branch.label+'의 기록입니다. ':'')+
-      (n.work?'살아온 일 · '+n.work:'자세한 생업 기록은 아직 없습니다.');
+      '본가에서 갈라져 나온 '+(branch?.label||'방계 집안')+'의 후손이다. 집안을 떠나 살아온 세월은 자세히 전해지지 않는다. ':
+      branch?'다른 살림을 꾸린 '+branch.label+'의 집안 사람이다. ':'')+
+      (n.work?'살아온 일 · '+n.work:'어떤 일로 생계를 꾸렸는지는 전해지지 않는다.');
   }
   let genealogyFolded=new Set();
   function drawGenealogy(){
     const data=Genealogy?.summary(life);if(!data)return;
     $('genealogyClan').textContent=data.clan+' · '+data.residence+' · '+data.nodes.length+'명의 인물 기록';
     $('genealogyBranchCount').textContent=data.branches.length?
-      '따로 살림을 이은 집안 '+data.branches.length+'갈래 · 이름을 누르면 인물의 삶을 볼 수 있어요.':
-      '부모·형제·자녀가 연결되어 있습니다. 자녀의 인생을 이어 가면 다른 형제의 가지도 자랍니다.';
+      '따로 살림을 이은 집안 '+data.branches.length+'갈래 · 이름을 누르면 살아온 이야기를 읽을 수 있다.':
+      '부모와 자녀, 형제자매의 인연이 가지처럼 이어진다.';
     const area=$('genealogyGenerations');area.replaceChildren();
     const people=data.nodes,idMap=new Map(people.map(p=>[p.id,p])),displayed=new Set();
     const sorted=group=>group.sort((a,b)=>a.birthYear-b.birthYear||a.id.localeCompare(b.id));
@@ -995,7 +995,7 @@
       const tag=document.createElement('small');
       const branch=data.branches.find(b=>b.id===person.id);
       tag.textContent=person.id===data.selfId?'지금의 주인공':
-        branch?branch.label:person.simulated?'방계의 가상 인물':
+        branch?branch.label:person.simulated?'방계의 후손':
         person.missing?'소식을 기다리는 중':person.returned?'귀환 기록':
         person.role==='spouse'?'배우자':'가족 기록';
       button.append(name,years,tag);

@@ -121,7 +121,7 @@ const EVENTS=[
    O('식구의 안전과 끼니를 먼저 지킨다','싸움이 있는 곳을 피한다','고을이 어수선한 동안 가족과 서로를 돌보았다.',{grain:-3,bonds:4,anger:-1},'shelter')
   ],(l,j,v)=>['경상도','전라도','충청도','제주도','경기도','황해도','평안도'].includes(j.region)),
  E('reform1862','개혁',1862,1862,'삼정이정청에서 대책을 논하다',
-  '조정에서 삼정의 문란을 바로잡으려 기구를 세우고 각지의 의견을 모은다는 소식이 들린다. 곧바로 세금이 사라지는 것은 아니다.',SRC.reforms,[
+  '조정에서 삼정의 문란을 바로잡으려 기구를 세우고 각지의 의견을 모은다는 소식이 들린다. 그 소식이 고을에 이르자 사람들은 올해 낼 곡식부터 걱정했다.',SRC.reforms,[
    O('우리 집의 잘못된 징수를 적어 보낸다','피해를 설명하는 문서를 마련한다','세금의 잘못을 알렸지만 당장 처리됐다는 소식은 없었다.',{proof:3,complaints:1,knowledge:2},'petition'),
    O('이웃과 개선책을 논의한다','곡식과 군포의 부담을 나누어 살핀다','동네에서 무엇을 먼저 고칠지 이야기했다.',{trust:4,anger:-1,knowledge:2},'discuss'),
    O('변화를 기다리며 생업을 잇는다','큰 제도 변화가 곧바로 닿지는 않는다','조정의 방과 실제 고을의 형편에는 차이가 있었다.',{grain:1,bonds:1},'wait')]),
@@ -180,7 +180,7 @@ function prompt(l){
   description+=' 이전에 묵인하거나 손댄 장부도 조사 대상이 될 수 있다.';
  const official=l.joseon19?.office;
  if(official&&['전정','군정','환정','관아'].includes(event.category))
-  description+=' 이 고을의 수령과 이서의 징수 관행에 따라 해결될 기회가 달라질 수 있다.';
+  description+=' 관아 장부는 아전들의 손에 있고, 수령의 한마디에 일이 달라질 수도 있다.';
  return {title:event.title,description,
   options:event.options.map(o=>({label:o.label,note:o.note,action:o.label}))};
 }

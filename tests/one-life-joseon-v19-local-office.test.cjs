@@ -94,6 +94,14 @@ test('a save restores governor name, term, audit state and personal choices',()=
  assert.deepEqual(V19.summary(cp),V19.summary(l));
  assert.deepEqual(cp.snapshot().joseon19,l.snapshot().joseon19);
 });
+test('save and reload preserve zero levy and other zero-value office traits',()=>{
+ const l=at(born(1810,1777),1853),s=V19.ensure(l);
+ s.office.levy=0;s.office.integrity=0;s.office.patronage=0;s.office.clerks=0;
+ const cp=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));
+ const office=V19.ensure(cp).office;
+ for(const k of ['levy','integrity','patronage','clerks'])assert.equal(office[k],0,k);
+});
+
 test('older saves with no local-office module rebuild cleanly',()=>{
  const l=at(born(1810,1109),1855),snap=l.snapshot();delete snap.joseon19;
  const cp=Sim.Life.restore(JSON.parse(JSON.stringify(snap)));
@@ -123,7 +131,7 @@ test('144 varied lives resolve their choices and retain identical v19 state afte
    assert.ok(guard<850);
    const cp=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));
    assert.deepEqual(V19.summary(cp),V19.summary(l));
-   choices+=V19.summary(l).decisions;
+   choices+=V19.summary(l)?.decisions||0;
   }
  assert.ok(choices>15,'not enough governance events: '+choices);
 });

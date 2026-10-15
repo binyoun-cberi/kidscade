@@ -42,7 +42,7 @@ test('53 condition-tagged branching families, five contextual gates and fast con
  const script=fs.readFileSync(path.join(dir,'game.js'),'utf8');
  const html=fs.readFileSync(path.join(dir,'index.html'),'utf8');
  assert.match(script,/const YEAR_MS = 260/);
- assert.match(html,/world-v4\.js\?v=1/);
+ assert.match(html,/world-v4\.js\?v=\d+/);
  assert.match(html,/sameBirthBtn/);
  assert.match(html,/endComparisonRows/);
  assert.doesNotMatch(html,/data-speed=|data-duration=/);

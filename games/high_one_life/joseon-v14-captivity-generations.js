@@ -49,7 +49,7 @@ const EPISODES=[
   OPT('식구에게 있었던 일을 천천히 이야기한다','말을 꺼내기 어려운 기억도 있다','오래 기다렸던 식구와 한 번에 모든 말을 나누지는 않았다.',{bonds:5,trust:2,resilience:2},'talk'),
   OPT('작은 살림부터 다시 정리한다','먹고잘 자리를 먼저 마련한다','함께 지낼 방을 꾸미며 매일의 생활이 시작됐다.',{capital:-3,repair:2,access:1},'work'),
   OPT('낯익은 이웃부터 찾아간다','예전의 관계가 그대로일 필요는 없다','서로 달라진 얼굴을 알아보며 천천히 인사를 나눴다.',{trust:5,contacts:1},'neighbor')]),
- EVENT('homeSenses','다시 들려오는 발소리','평범한 소리에도 전란의 일이 떠오르곤 한다. 잠을 설친 밤도 있지만 늘 그런 것은 아니다.',[
+ EVENT('homeSenses','다시 들려오는 발소리','평범한 소리에도 전란의 일이 떠오르곤 한다. 어떤 날은 잠을 설쳤고, 어떤 날은 새벽까지 평온했다.',[
   OPT('편안한 잠자리를 바꾸어 본다','조용한 밤을 위한 방법을 찾아본다','잠을 설친 밤에도 다시 쉬는 방법을 찾아 갔다.',{sleep:3,resilience:3},'rest'),
   OPT('믿을 만한 사람에게 어려움을 전한다','말을 들어 줄 사람을 찾는다','마음을 나눌 수 있는 사람과 오래 이야기를 했다.',{sleep:1,resilience:4,bonds:3},'talk'),
   OPT('익숙한 손일과 일상을 조금씩 이어 간다','좋은 날과 힘든 날이 섞일 수 있다','힘든 기억이 있어도 삶은 여러 모습으로 계속되었다.',{skill:2,resilience:2},'work')]),
@@ -66,7 +66,7 @@ const EPISODES=[
   OPT('멀리 지낸 식구에게 안부를 전한다','가족이 떨어져 살아도 인연은 이어질 수 있다','자주 만나지 못하더라도 안부를 전할 수 있었다.',{contacts:2,bonds:3},'message'),
   OPT('옛날의 일보다 오늘의 밥상을 챙긴다','하루하루의 생활을 함께한다','식구들과 함께 밥을 먹는 시간이 다시 쌓였다.',{grain:-2,bonds:4},'care')]),
  EVENT('heirLearn','다음 세대에게 전하는 손기술','어린 식구가 전쟁 전후의 이야기를 묻는다. 도자기 굽는 일이나 논밭을 일구는 방법을 배울 수도 있다.',[
-  OPT('아이에게 몸으로 익힌 기술을 보여 준다','무엇을 배울지는 아이가 정할 수 있다','집안의 기술이 다음 세대의 선택지가 되었다.',{skill:2,bonds:3,heritageSkill:2},'teach'),
+  OPT('아이에게 몸으로 익힌 기술을 보여 준다','무엇을 배울지는 아이가 정할 수 있다','아이는 어른의 손짓을 따라 하며 조금씩 일을 배워 갔다.',{skill:2,bonds:3,heritageSkill:2},'teach'),
   OPT('전쟁 뒤 다시 일어선 일을 이야기한다','힘들었던 일만이 전부는 아니다','집안의 오래된 이야기가 사람들의 기억에 남았다.',{bonds:3,heritageMemory:2},'story'),
   OPT('집안의 장부와 도구를 정리해 둔다','다음 세대에게 남길 살림을 준비한다','남겨 둔 장부와 도구가 훗날 쓰일 수 있었다.',{capital:-1,heritageSkill:1,heritageGoods:2},'prepare')])
 ];
@@ -203,14 +203,14 @@ function prompt(l){
  if(e.id==='ransomOpportunity'){
   description=s.captivity?.realm==='japan'?
     (MAJOR_JAPAN_ENVOYS.has(l.year)?
-      l.year+'년, 조선으로 돌아갈 사람을 찾는 교섭과 사절이 왔다는 말이 들린다. 모든 사람이 돌아가는 것은 아니다.':
+      l.year+'년, 조선으로 돌아갈 사람을 찾는 교섭과 사절이 왔다는 말이 들린다. 돌아갈 사람들의 이름이 불릴 때마다 사람들은 숨을 죽였다.':
       '대마도나 외교 사절을 통해 조선인 일부가 귀환한다는 소식이 들린다. 가능성은 크지 않다.'):
     '후금·청에 끌려온 사람의 속환 소식이 들린다. 나라에서 몸값을 마련하는 공속과 가족이 개별적으로 치르는 사속은 형편이 다르다.';
  }
  if(e.id==='homeStigma'){
   description=s.captivity?.realm==='qing'&&l.gender==='여자'?
-    '청에서 돌아온 여성을 두고 정절을 의심하는 부당한 말과 혼인 갈등이 생기기도 했다. 고을과 가족마다 반응은 다르며 피해자의 잘못은 아니다.':
-    '전란 뒤 돌아온 이들을 두고 배척하는 사람이 있지만, 반갑게 맞이하거나 일손을 나누는 이도 있다. 포로가 된 것은 그 사람의 잘못이 아니다.';
+    '청에서 돌아왔다는 이유로 정절을 의심하는 말이 등 뒤에서 들려온다. 집안사람들은 그 말을 들으면서도 어떻게 맞서야 할지 몰라 서로의 얼굴을 살핀다.':
+    '돌아온 이를 반기는 이웃도 있지만 낯을 돌리는 사람도 있다. 오랜만에 고향집 문턱을 넘으며 사람들의 눈길이 마음에 걸린다.';
  }
  return {title:e.title,description,options:e.options.map(o=>({label:o.label,note:o.note,action:o.label}))};
 }
@@ -265,8 +265,9 @@ function heirs(l){
  if(!J?.isJoseon(l)||l.alive||!V4?.summary)return [];
  // This successor system still uses Joseon family modules. A child born in
  // 1898 or later must not be passed into an incompatible Joseon initializer.
- return V4.summary(l).people.filter(p=>p.role==='child'&&p.alive&&p.age>=12&&p.age<=100&&p.birthYear>=1392&&p.birthYear<=1897)
-  .map(p=>({id:p.id,name:p.name,age:p.age,gender:V4.ensure(l).people.find(x=>x.id===p.id)?.sex||'남자',birthYear:l.year-p.age}));
+ return V4.ensure(l).people.filter(p=>p.role==='child'&&p.alive&&p.birthYear<=l.year&&
+   l.year-p.birthYear>=12&&l.year-p.birthYear<=100&&p.birthYear>=1392&&p.birthYear<=1897)
+  .map(p=>({id:p.id,name:p.name,age:l.year-p.birthYear,gender:p.sex||'남자',birthYear:p.birthYear}));
 }
 function targetLegalStatus(parent,personId){
  const p=V4.ensure(parent).people.find(p=>p.id===personId);

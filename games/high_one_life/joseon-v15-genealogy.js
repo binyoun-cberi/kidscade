@@ -106,7 +106,7 @@ function advanceBranches(l,s){
     const syllable=(gender==='여자'?WOMEN:MEN)[Math.floor(hash(s.familySeed,salt+34)*10)];
     update(s,partnerId,{name:surname+syllable,birthYear:person.birthYear+Math.floor(hash(s.familySeed,salt+45)*7)-3,
      sex:gender,generation:person.generation,role:'spouse',partnerId:person.id,
-     work:'가상의 방계 가족',simulated:true,branchId:branch.id,sideDepth:depth,alive:true,
+     work:'방계 집안의 사람',simulated:true,branchId:branch.id,sideDepth:depth,alive:true,
      diedYear:null,lastSeen:current});
     person.partnerId=partnerId;
    }
@@ -128,7 +128,7 @@ function advanceBranches(l,s){
       generation:person.generation+1,role:'descendant',
       fatherId:person.sex==='남자'?person.id:spouse.id,
       motherId:person.sex==='여자'?person.id:spouse.id,
-      work:'방계 가족의 가상 생활',simulated:true,branchId:branch.id,
+      work:'방계 집안의 살림',simulated:true,branchId:branch.id,
       sideDepth:depth+1,alive:true,diedYear:null,lastSeen:current});
     }
     const lifetime=57+Math.floor(hash(s.familySeed,numberOf(id)+144)*29);
