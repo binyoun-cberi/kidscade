@@ -1,0 +1,20 @@
+/* Chosen birth and newborn naming, responsive with the paper-like life UI. */
+.birth-customization{margin:18px 0 20px;padding:18px 19px;border:1px solid #c5dad0;border-radius:12px;background:#fffdf8;box-shadow:0 9px 26px #93b9ab20}
+.birth-customization>h2{font-size:17px;margin:0 0 7px;letter-spacing:-.03em;color:#234b49}
+.birth-customization>p{font-size:12px;color:#597572;line-height:1.7;margin:0 0 13px}
+.birth-custom-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.birth-custom-grid>label,.newborn-name-field{display:grid;gap:6px;font-size:12px;font-weight:750;color:#456b67}
+.birth-custom-grid input,.birth-custom-grid select,.newborn-name-field input{width:100%;min-width:0;border:1px solid #b8d3cc;background:#fff;border-radius:9px;padding:12px 11px;min-height:45px;font:inherit;font-size:14px;color:#263e41}
+.birth-custom-grid input:focus,.birth-custom-grid select:focus,.newborn-name-field input:focus{outline:2px solid #56b2a4;outline-offset:1px}
+.birth-custom-controls{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.birth-custom-controls button{border:1px solid #9ebfba;background:#f0f8f4;color:#255c57;border-radius:8px;padding:9px 12px;font-size:12px;font-weight:700}
+.birth-custom-controls small{color:#597572;line-height:1.6;flex:1 1 200px}
+.birth-custom-error{color:#a53627!important;font-weight:750;font-size:12px;margin:9px 0!important}
+.newborn-overlay{position:fixed;inset:0;z-index:1700;background:#12252bd9;display:grid;place-items:center;padding:16px}
+.newborn-sheet{width:min(100%,440px);max-height:90svh;overflow:auto;border:1px solid #d5c19d;border-radius:14px;background:#fff9ee;box-shadow:0 25px 75px #071a235e;padding:27px;color:#293d40}
+.newborn-sheet .eyebrow{font-size:11px}.newborn-sheet h2{margin:8px 0 13px;font-size:28px;letter-spacing:-.06em;color:#304947}
+.newborn-sheet>p{font-size:14px;line-height:1.8;color:#58716d;word-break:keep-all}
+.newborn-name-field{margin:18px 0}
+.newborn-choices{display:flex;gap:8px;flex-wrap:wrap}
+.newborn-choices button{flex:1 1 165px;margin:0;justify-content:center;min-height:48px}
+@media(max-width:680px){.birth-customization{padding:14px}.birth-custom-grid{grid-template-columns:1fr}.newborn-sheet{padding:22px 17px}.newborn-sheet h2{font-size:23px}}
