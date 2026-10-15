@@ -54,3 +54,7 @@ button:focus-visible{outline:3px solid #d18d34;outline-offset:3px}
 #bottomBar::-webkit-scrollbar{display:none}
 @media(max-width:920px){.season #moneyLabel{display:inline}.season #energyLabel{display:none}}
 @media(max-width:700px){.season #moneyLabel{font-size:10px;padding-left:5px}.metric-row{gap:2px}.field-metrics{gap:5px}.farm-actions button{min-height:30px;font-size:10px}}
+
+.guide-rice{display:block;width:100%;margin-top:10px;min-height:35px;border:1px solid #a9c29c;border-radius:9px;background:#e9f1da;color:#3a6746;font-size:11px;font-weight:750}
+.guide-rice:hover{background:#dcebbd}
+@media(max-width:700px){.guide-rice{min-height:28px;font-size:10px;margin-top:6px}}
