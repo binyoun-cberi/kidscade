@@ -144,6 +144,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  for(let n=0;n<1600&&!document.result;n++){
   now+=100;
   beat();
+  if(!get('newbornModal').classList.contains('hidden'))get('newbornNameRandom').click();
   const age=Number(get('currentAge').textContent);
   if(age<18)sawChildhood=true;
   if(age>=25)sawWork=true;
@@ -181,6 +182,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  let changedDecisions=0;
  for(let n=0;n<1800&&!document.result;n++){
    now+=100;beat();
+   if(!get('newbornModal').classList.contains('hidden'))get('newbornNameRandom').click();
    if(!get('decision').classList.contains('hidden')){
      const choices=get('choiceOptions').children.filter(x=>x.tagName==='BUTTON');
      assert.ok(choices.length>0);
