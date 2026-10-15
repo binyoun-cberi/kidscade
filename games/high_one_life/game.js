@@ -31,6 +31,7 @@
   const Joseon12 = window.OneLifeJoseon12 || null;
   const Joseon13 = window.OneLifeJoseon13 || null;
   const Joseon14 = window.OneLifeJoseon14 || null;
+  const Genealogy = window.OneLifeGenealogyV15 || null;
   const ColonialLife = window.OneLifeColonialDaily || null;
   const History = window.OneLifeHistory;
   const Official=window.OneLifeOfficialStats||{countries:{}};
@@ -854,6 +855,7 @@
   }
   function render() {
     if (!life) return;
+    $('openGenealogyBtn').classList.toggle('hidden',!Genealogy||!Joseon.isJoseon(life));
     paintLifeRecord();
     paintArc();
     $('placeFlag').textContent=life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1];
@@ -889,6 +891,78 @@
     document.querySelectorAll('[data-focus]').forEach(btn=>btn.setAttribute('aria-pressed',String(btn.dataset.focus===life.focus)));
     showDecision();
     updatePause();
+  }
+  let genealogyPreviousRunning=false,genealogySelected=null,genealogyOpener=null;
+  function showGenealogyPerson(data,id){
+    const n=data.nodes.find(p=>p.id===id)||data.nodes.find(p=>p.id===data.selfId);
+    if(!n)return;
+    genealogySelected=n.id;
+    document.querySelectorAll('.genealogy-person').forEach(button=>
+      button.setAttribute('aria-pressed',String(button.dataset.genealogyId===n.id)));
+    const find=id=>data.nodes.find(p=>p.id===id)?.name||'기록 없음';
+    const yearLabel=n.birthYear+'년생'+(n.diedYear?' · '+n.diedYear+'년 별세':'');
+    const now=n.id===data.selfId;
+    const status=n.missing?'전란 중 소식이 끊겨 생사를 확인하지 못함':
+      n.returned?'전란 중 헤어졌다가 귀환한 기록이 있음':
+      !n.alive?'세상을 떠남':
+      n.lastSeen===life.year?'이 해의 기록에서 생존':
+      n.lastSeen+'년까지 생존한 것으로 기록됨. 이후의 행적은 아직 없음';
+    $('genealogyDetailName').textContent=n.name+(now?' · 현재 인생':'');
+    $('genealogyDetailLife').textContent=yearLabel+' · '+(Genealogy.ROLES[n.role]||'가족')+' · '+status;
+    const kin=[];
+    if(n.motherId)kin.push('어머니 '+find(n.motherId));
+    if(n.fatherId)kin.push('아버지 '+find(n.fatherId));
+    if(n.partnerId)kin.push('배우자 '+find(n.partnerId));
+    const children=data.nodes.filter(x=>x.motherId===n.id||x.fatherId===n.id);
+    if(children.length)kin.push('자녀 '+children.map(x=>x.name).join(', '));
+    $('genealogyDetailRelations').textContent=kin.length?kin.join(' · '):'현재 남아 있는 기록에는 연결된 가족관계가 더 없습니다.';
+    $('genealogyDetailStory').textContent=n.work?'살아온 일 · '+n.work:'이 인물의 생업 기록은 아직 없습니다.';
+  }
+  function drawGenealogy(){
+    const data=Genealogy?.summary(life);if(!data)return;
+    $('genealogyClan').textContent=data.clan+' · '+data.residence+' · '+data.nodes.length+'명의 인물 기록';
+    const root=$('genealogyGenerations');root.replaceChildren();
+    const generations=[...new Set(data.nodes.map(x=>x.generation))].sort((a,b)=>a-b);
+    for(const g of generations){
+      const section=document.createElement('section');section.className='genealogy-generation';
+      const heading=document.createElement('h3');heading.textContent=g===0?'윗대의 가족':g+'대 · '+(g===data.generation?'현재 이어가는 세대':'가족의 기록');
+      const people=document.createElement('div');people.className='genealogy-members';
+      for(const person of data.nodes.filter(x=>x.generation===g)){
+        const button=document.createElement('button');button.type='button';
+        button.className='genealogy-person'+(person.id===data.selfId?' genealogy-self':'')+(!person.alive?' genealogy-deceased':'');
+        button.dataset.genealogyId=person.id;button.setAttribute('aria-pressed','false');
+        const name=document.createElement('strong');name.textContent=person.name;
+        const time=document.createElement('span');time.textContent=person.birthYear+'년생'+(person.diedYear?' ~ '+person.diedYear+'년':'');
+        const badge=document.createElement('small');badge.textContent=person.id===data.selfId?'지금의 주인공':
+          person.missing?'소식을 기다리는 중':
+          person.returned?'귀환한 사람':
+          person.role==='spouse'?'배우자로 이어진 인연':
+          !person.alive?'고인이 된 가족':'기록에 남은 가족';
+        button.append(name,time,badge);
+        button.addEventListener('click',()=>showGenealogyPerson(data,person.id));
+        people.append(button);
+      }
+      section.append(heading,people);root.append(section);
+    }
+    showGenealogyPerson(data,genealogySelected||data.selfId);
+  }
+  function openGenealogy(){
+    if(!life||!Genealogy||!Joseon.isJoseon(life))return;
+    genealogyPreviousRunning=stage==='play'&&!paused&&!life.pending;
+    genealogyOpener=document.activeElement;
+    if(stage==='play'){paused=true;updatePause();}
+    genealogySelected=null;drawGenealogy();
+    $('genealogyModal').classList.remove('hidden');
+    $('genealogyClose').focus();
+  }
+  function closeGenealogy(){
+    if($('genealogyModal').classList.contains('hidden'))return;
+    $('genealogyModal').classList.add('hidden');
+    if(genealogyPreviousRunning&&stage==='play'&&life?.alive&&!life.pending){
+      paused=false;lastTick=performance.now();updatePause();
+    }
+    genealogyPreviousRunning=false;
+    genealogyOpener?.focus?.();genealogyOpener=null;
   }
   function startLife(fromSave=false) {
     if (!life) return;
@@ -958,6 +1032,7 @@
       !oldLife&&careLife.memories.length?'마지막까지 떠오른 기억은 '+careLife.memories.slice(-2).join(', ')+'였다.':''
     ].filter(Boolean);
     $('endStory').textContent=chapters.join(' ');
+    $('endGenealogyBtn').classList.toggle('hidden',!Genealogy||!Joseon.isJoseon(life));
     const heirs=Joseon14?.heirs(life)||[];
     $('heirControls').classList.toggle('hidden',!heirs.length);
     const picker=$('heirSelect');picker.replaceChildren();
@@ -1056,6 +1131,10 @@
   $('drawBtn').addEventListener('click',draw);
   $('lifeStartBtn').addEventListener('click',()=>startLife());
   $('againBtn').addEventListener('click',()=>{replayBasis=null;life=null;show('intro');refreshResume();draw();});
+  $('openGenealogyBtn').addEventListener('click',openGenealogy);
+  $('endGenealogyBtn').addEventListener('click',openGenealogy);
+  $('genealogyClose').addEventListener('click',closeGenealogy);
+  $('genealogyBackdrop').addEventListener('click',closeGenealogy);
   $('heirContinueBtn').addEventListener('click',()=>{
     if(!life||life.alive||!Joseon14)return;
     const successor=Joseon14.continueAsHeir(life,$('heirSelect').value);
@@ -1105,6 +1184,16 @@
     save();render();
   }));
   document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&!$('genealogyModal').classList.contains('hidden')){
+      e.preventDefault();closeGenealogy();return;
+    }
+    if(e.key==='Tab'&&!$('genealogyModal').classList.contains('hidden')){
+      const focusables=[...$('genealogyModal').querySelectorAll('button:not(:disabled)')];
+      const first=focusables[0],last=focusables.at(-1);
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
+      return;
+    }
     if(e.key==='Escape' && !$('rules').classList.contains('hidden')) closeRules();
     else if(e.code==='Space' && stage==='play' && $('rules').classList.contains('hidden') && !life?.pending){
       if(e.target===document.body){e.preventDefault();togglePause();}
