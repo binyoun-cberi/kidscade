@@ -17,7 +17,7 @@ export const FIELD_DEFS = Object.freeze([
 const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
 export function makeFarmState(){
   return {version:SAVE_VERSION,selected:'rice-1',player:{x:0,z:9},camera:{zoom:23,angle:.78},
-    plots:FIELD_DEFS.map(({id,stage})=>({id,stage})),visits:0};
+    plots:FIELD_DEFS.map(({id,stage})=>({id,stage})),seenPlots:[],visits:0};
 }
 export function validateFarmState(raw){
   const base=makeFarmState();
@@ -29,7 +29,8 @@ export function validateFarmState(raw){
   for(const axis of ['x','z'])if(Number.isFinite(raw.player?.[axis]))base.player[axis]=clamp(raw.player[axis],-21.5,21.5);
   if(Number.isFinite(raw.camera?.zoom))base.camera.zoom=clamp(raw.camera.zoom,15,36);
   if(Number.isFinite(raw.camera?.angle))base.camera.angle=clamp(raw.camera.angle,-Math.PI*4,Math.PI*4);
-  base.visits=clamp(Number.isFinite(raw.visits)?Math.round(raw.visits):0,0,999999);
+  base.seenPlots=[...new Set((Array.isArray(raw.seenPlots)?raw.seenPlots:[]).filter(id=>FIELD_DEFS.some(d=>d.kind==='rice'&&d.id===id)))];
+  base.visits=base.seenPlots.length;
   return base;
 }
 export function plotById(id){return FIELD_DEFS.find(p=>p.id===id)||null;}
