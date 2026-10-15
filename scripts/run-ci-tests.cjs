@@ -172,6 +172,7 @@ const TEST_FILES = [
   "tests/world-v3-survival-pets.test.cjs",
   "tests/seed-world-meta.test.cjs",
   "tests/juice-maker-farm.test.cjs",
+  "tests/korean-farm-prototype.test.mjs",
   "tests/main-architecture.test.cjs"
 ];
 

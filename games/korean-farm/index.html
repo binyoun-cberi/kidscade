@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#eef3e6">
+<title>논두렁 너머 · 솔내리 | 키즈케이드</title>
+<link rel="stylesheet" href="./style.css">
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+<script src="../../kidscade-storage.js"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="korean_farm" data-title="논두렁 너머" data-shell="true" data-pauseable="true" data-orientation="landscape"></script>
+</head>
+<body>
+<div id="app">
+  <canvas id="farm" tabindex="0" aria-label="솔내리 3D 농장. 방향키 또는 WASD로 이동합니다."></canvas>
+  <div id="vignette" aria-hidden="true"></div>
+  <header id="topbar">
+    <div class="identity"><span class="identity-symbol" aria-hidden="true">田</span><div><b>논두렁 너머</b><small>솔내리 · 첫 번째 농장</small></div></div>
+    <div class="season"><span class="sunny" aria-hidden="true">☀</span><span>봄 · 맑음</span><small>3D 농장 시험판</small></div>
+    <div class="header-actions">
+      <button id="zoomOut" class="round" type="button" aria-label="지도 축소">−</button>
+      <button id="zoomIn" class="round" type="button" aria-label="지도 확대">+</button>
+      <button id="help" class="round" type="button" aria-label="조작 안내">?</button>
+    </div>
+  </header>
+  <aside id="objective">
+    <div class="eyebrow">첫 번째 농장 체험</div>
+    <h2>솔내리를 걸어 보세요</h2>
+    <p>논 네 구역을 살펴보며 벼의 성장 모습을 비교해 보세요.</p>
+    <div class="objective-progress"><span id="progressBar"></span></div>
+    <small id="progressText">살펴본 논 0 / 4</small>
+  </aside>
+  <aside id="inspector" class="inspector hidden" aria-live="polite">
+    <div class="inspector-title"><div><small id="fieldKind">논 살펴보기</small><h2 id="fieldName">첫 번째 논</h2></div><button id="closeInspect" class="close" aria-label="정보 창 닫기" type="button">×</button></div>
+    <div id="fieldInfo" class="field-info"></div>
+    <div id="stagePanel" class="stage-panel">
+      <div class="stage-heading"><span>벼 성장 미리보기</span><strong id="stageLabel">1 / 4</strong></div>
+      <div id="stageButtons" class="stage-buttons" role="group" aria-label="벼 성장 단계">
+        <button type="button" data-stage="1">모</button>
+        <button type="button" data-stage="2">새끼치기</button>
+        <button type="button" data-stage="3">이삭 준비</button>
+        <button type="button" data-stage="4">익은 벼</button>
+      </div>
+      <p class="disclaimer">성장 단계 비교 기능입니다. 실제 농사·날씨 계산은 다음 개발 단계에 연결합니다.</p>
+    </div>
+    <div class="field-footer"><span id="assetOrigin">에셋 확인 중</span></div>
+  </aside>
+  <nav id="bottomBar" aria-label="농장 도구">
+    <div class="tool active"><span>◎</span><b>살펴보기</b></div>
+    <button id="focusFarm" type="button"><span>⌂</span><b>집으로</b></button>
+    <button id="turnLeft" type="button"><span>↶</span><b>시점 회전</b></button>
+    <button id="qaBtn" type="button"><span>▦</span><b>에셋 검수</b></button>
+    <button id="saveBtn" type="button"><span>▣</span><b>저장</b></button>
+  </nav>
+  <div id="joystick" aria-label="가상 이동 조이스틱"><div class="joystick-knob"></div></div>
+  <div id="notification" role="status" aria-live="polite"></div>
+  <div id="loading"><div class="loading-panel"><div class="spinner" aria-hidden="true"></div><h1>솔내리로 가는 길</h1><p id="loadingText">농장 풍경을 준비하고 있어요.</p></div></div>
+  <section id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-body">
+      <button id="modalClose" class="close" type="button" aria-label="닫기">×</button>
+      <h2 id="modalTitle">솔내리에서 움직이는 법</h2>
+      <div id="modalContents"></div>
+    </div>
+  </section>
+</div>
+<script type="module" src="./game.js"></script>
+</body>
+</html>
