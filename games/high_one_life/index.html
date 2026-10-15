@@ -22,6 +22,7 @@
 <link rel="stylesheet" href="./joseon-late-v11.css?v=1">
 <link rel="stylesheet" href="./joseon-regional-v12.css?v=1">
 <link rel="stylesheet" href="./joseon-war-v13.css?v=1">
+<link rel="stylesheet" href="./joseon-captivity-v14.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -169,6 +170,15 @@
               <p id="warRecoveryMemory">—</p>
               <a id="warHistorySource" class="hidden" href="https://contents.history.go.kr/" target="_blank" rel="noopener noreferrer">관련 역사 자료 읽기 ↗</a>
               <small>전쟁의 연대와 지역은 역사 자료를 참고했고, 이 인물의 사연과 자원 값은 창작된 이야기입니다.</small>
+            </details>
+            <details id="joseonCaptivityRecord" class="joseon-captivity-record hidden">
+              <summary>포로 생활과 귀환 이후의 기록</summary>
+              <p id="captivityChapter">—</p>
+              <p id="captivityBody">—</p>
+              <p id="captivityMind">—</p>
+              <p id="captivityAncestry">—</p>
+              <a id="captivitySource" class="hidden" target="_blank" rel="noopener noreferrer" href="https://contents.history.go.kr/">이 시절의 역사 자료 읽기 ↗</a>
+              <small>신체·마음의 변화는 가상 인물의 경험을 나타내며, 현대적 질환 진단이나 장애인의 삶에 대한 평가가 아닙니다.</small>
             </details>
             <ul id="villageNeighbors" class="joseon-neighbors"></ul>
           </section>
@@ -336,6 +346,13 @@
       </div>
       <div class="end-divider"><span>삶에 남은 장면들</span></div>
       <ol id="endHighlights" class="end-highlights"></ol>
+      <div id="heirControls" class="heir-controls hidden">
+        <strong>한 가문의 다음 이야기</strong>
+        <p>자녀의 시점에서 같은 해부터 삶을 이어 갈 수 있어요. 집안의 살림과 기술, 기억 일부가 이어지지만 운명은 정해지지 않습니다.</p>
+        <label for="heirSelect">삶을 이어 갈 자녀</label>
+        <select id="heirSelect"></select>
+        <button type="button" id="heirContinueBtn" class="secondary">이 자녀의 삶 이어가기 →</button>
+      </div>
       <div class="end-actions"><button id="againBtn" class="primary" type="button">다른 인생으로 태어나기 <span aria-hidden="true">↗</span></button><button id="sameBirthBtn" class="secondary" type="button">같은 출생, 다른 선택으로 살아보기</button><span id="livesCount" class="footnote"></span></div>
       <p class="footnote">어떤 삶을 살았든, 그 시간은 그 사람만의 이야기였습니다.</p>
     </section>
@@ -396,8 +413,9 @@
 <script src="./joseon-v11-late-life.js?v=1"></script>
 <script src="./joseon-v12-regional.js?v=1"></script>
 <script src="./joseon-v13-war-recovery.js?v=1"></script>
+<script src="./joseon-v14-captivity-generations.js?v=1"></script>
 <script src="./colonial-daily-v2.js?v=1"></script>
 <script src="./joseon-pixel-v2.js?v=2"></script>
-<script src="./game.js?v=41"></script>
+<script src="./game.js?v=42"></script>
 </body>
 </html>
