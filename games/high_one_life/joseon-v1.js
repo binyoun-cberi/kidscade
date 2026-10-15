@@ -190,7 +190,7 @@ function ensure(life){
   life.profile.name=names[Math.floor(roll(life.seed,1413)*names.length)];
   if(life.age===0&&!life.log.some(e=>e.kind==='joseon-birth')){
    life.logEvent(s.region+'의 '+(life.birthYear>=1894?'옛 '+s.birthStatus+' 가계':life.birthYear<1600&&s.birthStatus==='중인'?'관청 실무·기술직 가계':s.status+' 집안')+'에서 태어났다. '+s.landmark+'이 가까운 고을이다.','joseon-birth');
-   life.logEvent('신분과 집안 사정이 앞으로 만날 기회에 영향을 미친다. 하지만 삶의 모든 일이 정해진 것은 아니다.','joseon-life');
+   life.logEvent('고을에서는 집안의 이름과 가진 논밭에 따라 사람들이 서로를 대하는 눈빛도 달랐다.','joseon-life');
   }
  }
  economicBook(s);
@@ -216,7 +216,7 @@ function promptFor(life,s){
   opt('맡겨진 일터의 노동을 이어 간다','매일의 노동으로 집안과 몸을 버틴다','serve',{health:-3,bonds:2}),
   opt('일하는 틈에 기술을 배운다','사람들과 일을 배우며 다른 가능성을 찾는다','servileSkill',{knowledge:5,health:-1}),
   opt('속량을 청할 방법을 알아본다','허락과 비용이 필요하며 실패할 수도 있다','petitionRelease',{knowledge:4,wealth:-4})]};
- if(kind==='vocation'&&royal)return {title:'왕실 친족의 앞날',description:'왕실 사람이라고 모두 왕이 되는 것은 아니다. 예법과 정치에서의 거리를 생각한다.',options:[
+ if(kind==='vocation'&&royal)return {title:'왕실 친족의 앞날',description:'궁궐과 인연이 있는 집안에서 자랐다. 집안 어른들은 조정의 소식을 들을 때마다 목소리를 낮췄다.',options:[
   opt('왕실의 교육과 예법을 익힌다','글공부와 예법을 함께 배운다','courtStudy',{knowledge:6}),
   opt('무예와 궁중의 일을 배운다','왕실에서 맡을 수 있는 일을 알아본다','courtGuard',{knowledge:3,health:-2}),
   opt('권력과 거리를 두고 지낸다','정치적 위험을 피하고 일상의 일을 찾는다','courtQuiet',{bonds:3,happiness:2})]};
@@ -239,11 +239,11 @@ function promptFor(life,s){
   opt('함께 지낼 허락을 청한다','허락을 얻지 못할 수도 있지만 관계를 지키려 한다','servileMarry',{bonds:4}),
   opt('함께 일하는 이들과 서로 돕는다','일상 속에서 서로의 어려움을 나눈다','servileKin',{bonds:6}),
   opt('자유로운 살림을 꿈꾸며 길을 모색한다','당장 벗어날 수 없더라도 정보를 모은다','servileHope',{knowledge:4})]};
- if(kind==='marriage'&&royal)return {title:'왕실의 혼인과 관계',description:'왕실 혼인은 정치와 집안의 허락을 떠나기 어렵다.',options:[
+ if(kind==='marriage'&&royal)return {title:'왕실의 혼인과 관계',description:'왕실과 인연을 맺으려는 집안들이 혼담에 촉각을 세운다. 혼사는 쉽게 정해지지 않는다.',options:[
   opt('집안이 정한 혼인을 받아들인다','왕실과 가문의 책임을 감수한다','royalMarriage',{bonds:3}),
   opt('혼인을 서두르지 않고 공부를 한다','정치적 결정을 미루고 배움을 쌓는다','royalKin',{knowledge:4}),
   opt('궁중과 거리를 두며 친족과 지낸다','친족과의 관계를 우선한다','royalQuiet',{happiness:3})]};
- if(kind==='marriage')return {title:'혼인과 집안의 일',description:'당시에는 혼인에 집안의 뜻과 처지가 크게 작용했다. 자신의 형편에서 관계를 이어 갈 길을 생각한다.',options:[
+ if(kind==='marriage')return {title:'혼인과 집안의 일',description:'집안 어른들이 혼사 이야기를 꺼냈다. 살림을 꾸리려면 식구들의 뜻과 마련할 물건을 함께 헤아려야 한다.',options:[
   opt('혼인을 준비한다','가족 사이의 약속과 비용이 따른다','marry',{bonds:6,wealth:-5}),
   opt('지금은 가족과 함께 지낸다','집안의 생업과 돌봄을 이어 간다','kin',{bonds:4,wealth:4}),
   opt('새 거처에서 홀로 생업을 꾸린다','홀로 서는 기쁨과 어려움이 함께한다','independent',{happiness:4,health:-2})]};
@@ -261,7 +261,7 @@ function promptFor(life,s){
     opt('잡과에 필요한 공부를 한다','역학·의학 등 전문 지식을 배우며 시험을 준비한다','technical',{knowledge:6,wealth:-6}),
     opt('관청의 실무를 이어 간다','기록과 셈을 익혀 맡은 일을 지킨다','scribe',{knowledge:3,wealth:3}),
     opt('장터에서 기술을 써 본다','배운 솜씨를 생업에 보탠다','trade',{wealth:4})]};
-  return {title:'배움과 일의 길',description:life.gender==='여자'?'여성에게 관직 시험의 문은 닫혀 있었지만 글과 기술을 익히는 길까지 없었던 것은 아니다.':'출신 신분과 처지에 따라 관직 시험에 접근하기 어려웠다.',options:[
+  return {title:'배움과 일의 길',description:life.gender==='여자'?'관직에 나아갈 길은 막혀 있다. 그래도 글과 셈, 손기술을 가르쳐 줄 이를 찾을 수는 있다.':'과거를 준비할 형편이 되지 않는다. 집안의 생업을 잇거나 다른 솜씨를 배울 길을 살핀다.',options:[
    opt('배운 글과 셈을 생업에 쓴다','기록과 셈이 도움이 되는 일을 한다','scribe',{knowledge:4,wealth:4}),
    opt('기술과 장사로 살림을 넓힌다','장시에서 기술·물건을 다룬다','trade',{wealth:6}),
    opt('아이들과 이웃에게 배움을 나눈다','집안이나 마을에서 가르친다','teach',{bonds:7})]};
@@ -286,7 +286,7 @@ function promptFor(life,s){
   opt('하던 일을 후대에 조금씩 맡긴다','가족에게 생업을 전한다','retire',{health:4,bonds:4}),
   opt('계속 일하며 살림을 유지한다','생활은 유지되지만 몸이 고될 수 있다','continue',{wealth:5,health:-4}),
   opt('아이와 이웃에게 기술을 알려 준다','배운 것과 기억을 남긴다','mentor',{knowledge:4,bonds:7})]};
- if(kind==='war')return {title:s.active.title+' · 갈림길',description:'전란으로 가족과 생업이 위험해졌다. 피란과 잔류 모두 안전을 보장하지 않으며, 포로가 되거나 목숨을 잃는 일도 생길 수 있다.',options:[
+ if(kind==='war')return {title:s.active.title+' · 갈림길',description:'전란이 고을 가까이 밀려왔다. 피란길도 험하다 하고, 집을 지키겠다는 사람들의 얼굴에도 두려움이 어렸다.',options:[
   opt('가족과 함께 피란을 떠난다','살림을 두고 떠나지만 위험을 줄일 길을 찾는다','flee',{health:3,wealth:-8}),
   opt('고향에 남아 살림을 지킨다','터전을 지키려 하지만 전란의 위험을 감수한다','stay',{wealth:2,health:-8}),
   opt('이웃과 함께 피란처를 마련한다','짐과 피란길을 나누며 서로를 돕는다','together',{bonds:8,wealth:-5})]};
