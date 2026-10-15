@@ -341,6 +341,7 @@ function continueAsHeir(parent,id){
  l.log.at(-1).ancestorName=parent.profile.name;
  l.pending=null;
  Sim.Life.prototype.__joseon18Carry?.(parent,l);
+ Sim.Life.prototype.__joseon19Carry?.(parent,l);
  // The register module loads after this module and is optional for old saves.
  Sim.Life.prototype.__genealogy15Inherit?.(parent,id,l);
  return l;
