@@ -265,8 +265,9 @@ function heirs(l){
  if(!J?.isJoseon(l)||l.alive||!V4?.summary)return [];
  // This successor system still uses Joseon family modules. A child born in
  // 1898 or later must not be passed into an incompatible Joseon initializer.
- return V4.summary(l).people.filter(p=>p.role==='child'&&p.alive&&p.age>=12&&p.age<=100&&p.birthYear>=1392&&p.birthYear<=1897)
-  .map(p=>({id:p.id,name:p.name,age:p.age,gender:V4.ensure(l).people.find(x=>x.id===p.id)?.sex||'남자',birthYear:l.year-p.age}));
+ return V4.ensure(l).people.filter(p=>p.role==='child'&&p.alive&&p.birthYear<=l.year&&
+   l.year-p.birthYear>=12&&l.year-p.birthYear<=100&&p.birthYear>=1392&&p.birthYear<=1897)
+  .map(p=>({id:p.id,name:p.name,age:l.year-p.birthYear,gender:p.sex||'남자',birthYear:p.birthYear}));
 }
 function targetLegalStatus(parent,personId){
  const p=V4.ensure(parent).people.find(p=>p.id===personId);
