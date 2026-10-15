@@ -96,7 +96,8 @@ export function createFarmerAnimator(){
       const pose=motionPose(active,active?actionProgress(active,elapsed):0,{moving:moving&&!active,time});
       body.rotation.x=pose.bodyLean;body.rotation.z=pose.bodyTilt;
       body.rotation.y=pose.bodyYaw;
-      root.position.y=-pose.crouch+(moving&&!active?Math.abs(Math.sin(time*9))*.035:Math.sin(time*1.8)*.009);
+      root.position.y=-pose.crouch*.16+(moving&&!active?Math.abs(Math.sin(time*9))*.035:Math.sin(time*1.8)*.009);
+      body.position.y=.80-pose.crouch*.38;
       head.rotation.x=pose.headTilt;
       shoulders.left.rotation.x=pose.leftArm;
       shoulders.right.rotation.x=pose.rightArm;
