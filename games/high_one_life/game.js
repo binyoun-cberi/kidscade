@@ -230,7 +230,9 @@
       put('v10HistoryStatus',j.era+' · '+(Joseon.eventFor(life.year)?.title||j.region+'에서 살아가는 중'));
       put('v10HistoryEffects',[j.warMemory.length?'삶을 바꾼 사건 · '+j.warMemory.join(' · '):'고을의 생활이 이어지고 있습니다.',v2.lastMemory,social?.memories.at(-1)].filter(Boolean).join(' · '));
       put('v12EducationEra',j.literacy>=4?'글과 경전을 읽을 수 있다.':j.literacy?'글자를 조금씩 익혀 간다.':'집안에서 필요한 일을 배우며 지낸다.');
-      put('v12WorkEra',(jobs?.primary?.name||j.occupation)+' 일을 하며 살아간다.'+(jobs?.secondary?' 틈틈이 '+jobs.secondary.name+'의 일도 돕는다.':''));
+      put('v12WorkEra',aftermath?.captivity?.status==='held'?
+        '타향에서 포로로 지내며 주어진 일과 하루를 견디고 있다.':
+        (jobs?.primary?.name||j.occupation)+' 일을 하며 살아간다.'+(jobs?.secondary?' 틈틈이 '+jobs.secondary.name+'의 일도 돕는다.':''));
       put('v12EconomyEra',oldLandLedger(life)+'. '+e.condition+'.');
       $('joseonVillagePanel').classList.toggle('hidden',!village);
       if(village){
@@ -265,7 +267,7 @@
           if(regional.source)link.href=regional.source;
         }
         const warVisible=!!wartime&&(wartime.decisions>0||wartime.damage>0||wartime.missing.length>0||wartime.returned.length>0);
-        $('joseonWarRecord').classList.toggle('hidden',!warVisible);
+        $('joseonWarRecord').classList.toggle('hidden',!warVisible||livingAbroad);
         if(warVisible){
           const notes=[];
           if(wartime.damage)notes.push('고쳐야 할 집터의 흔적이 남아 있다.');
@@ -325,30 +327,43 @@
       $('netWorthLabel').textContent='살림의 남은 몫';
       put('annualIncome',formatCredits(m.income));put('annualExpense',formatCredits(m.expense));
       put('annualBalance',formatCredits(m.lastBalance));$('annualBalance').classList.toggle('negative',m.lastBalance<0);
-      put('employmentStatus',(jobs?.primary?.name||j.occupation)+(jobs?.secondary?' · 겸업 '+jobs.secondary.name:''));put('traitEducation',j.school);
+      put('employmentStatus',aftermath?.captivity?.status==='held'?'타향에서 주어진 일을 하며 지내는 중':
+        (jobs?.primary?.name||j.occupation)+(jobs?.secondary?' · 겸업 '+jobs.secondary.name:''));put('traitEducation',j.school);
       put('traitAptitude','생활의 경험과 배움');put('traitQualification',j.office?'과거 급제·관직 경험':j.literacy?'글과 셈의 배움':'생활 기술을 익히는 중');
-      put('traitRegion',j.region+' · '+oldPlace(life));
+      put('traitRegion',aftermath?.captivity?.status==='held'?
+        '타향에서 포로 생활 중 · 고향 '+j.region:j.region+' · '+oldPlace(life));
       put('countryContextText',(social?.originLabel||j.status)+'에서 태어났다. '+oldPlace(life));
       put('countrySourceNote','한 고을에 살아도 집안마다 걸어가는 길은 달랐다.');
-      put('officialContext',oldFarm(life));
+      put('officialContext',aftermath?.captivity?.status==='held'?
+        '고향의 농사와 장시를 직접 돌볼 수 없는 때다. 타향에서 주어진 일과 살아갈 방법을 찾는다.':
+        oldFarm(life));
       const people=$('v9PeopleList');people.replaceChildren();
       for(const member of v4.people.slice(0,11)){
         const item=document.createElement('li'),role=Joseon4.ROLES[member.role]||'가족';
         const person=role+' '+member.name+' ('+member.age+'세)';
-        item.textContent=person+' — '+(member.alive?(member.atHome?'한집에서 ':'따로 살며 ')+member.work:(member.diedYear+'년에 세상을 떠났다.'));
+        item.textContent=person+' — '+(member.alive?
+          (aftermath?.captivity?.status==='held'?'고향의 가족 · ':
+            (member.atHome?'한집에서 ':'따로 살며 '))+member.work:
+          member.diedYear+'년에 세상을 떠났다.');
         people.append(item);
       }
-      put('v9PeopleCount','가족 '+v4.people.length+'명 중 '+v4.alive+'명 생존 · 함께 사는 식구 '+v4.atHome+'명');put('v9Hobby',v3.memories.at(-1)||'생업과 이웃 사이에서 남은 일상');
+      put('v9PeopleCount',aftermath?.captivity?.status==='held'?
+        '고향의 가족 '+v4.people.length+'명 중 '+v4.alive+'명 생존':
+        '가족 '+v4.people.length+'명 중 '+v4.alive+'명 생존 · 함께 사는 식구 '+v4.atHome+'명');put('v9Hobby',v3.memories.at(-1)||'생업과 이웃 사이에서 남은 일상');
       put('v9Loan',e.debt?'이웃이나 친척에게 진 빚을 아직 다 갚지 못했다. '+e.why:'빚을 지지 않고 살림을 꾸려 가고 있다. '+e.why);
       put('v9Hobby',jobs?.primary?jobs.primary.name+' 일을 오랫동안 익히며 사람들과 인연을 맺었다.':(social?.memories.at(-1)||v3.memories.at(-1)||'식구들과 고을의 하루를 보냈다.'));
       const picture=window.OneLifeJoseonPixel2?.paint($('lifeScene'),life)||Joseon3.paint($('lifeScene'),life)||Joseon.paint($('lifeScene'),life);
       if(!picture)Pixel.paint($('lifeScene'),life);
-      put('sceneLabel',life.year+'년 '+v3.season+' · '+j.region+'에서 '+v3.sceneLabel);
-      const hopaeShown=life.gender==='남자'&&life.age>=16&&life.year>=1413&&life.year<1897;
+      put('sceneLabel',aftermath?.captivity?.status==='held'?
+        life.year+'년 · 타향에서 보내는 하루 · 고향은 '+j.region:
+        life.year+'년 '+v3.season+' · '+j.region+'에서 '+v3.sceneLabel);
+      const hopaeShown=aftermath?.captivity?.status!=='held'&&life.gender==='남자'&&life.age>=16&&life.year>=1413&&life.year<1897;
       $('lifeHopa').classList.toggle('hidden',!hopaeShown);
       if(hopaeShown){put('lifeHopaName',p.name);put('lifeHopaTown',j.region+' · 호패를 본뜬 기록');}
       const culture=JoseonCulture?.describe(life,{joseon:j,scene:v3.zone,role:jobs?.primary?.name||j.occupation});
-      put('sceneCulture',culture?[culture.period+' · '+culture.clothing,culture.housing,culture.meal].join('  |  '):'');
+      put('sceneCulture',aftermath?.captivity?.status==='held'?
+        '포로로 지내는 곳의 생활은 고향의 집·농사 풍경과 다르다. 이 장면의 인물은 가상의 역사 인물이다.':
+        culture?[culture.period+' · '+culture.clothing,culture.housing,culture.meal].join('  |  '):'');
       return;
     }
     $('lifeHopa').classList.add('hidden');

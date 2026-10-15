@@ -171,7 +171,7 @@ test('an overseas captive does not receive domestic farming, village or war choi
  assert.ok(loops<80);
  assert.ok(l.year>=1606);
  assert.equal(V14.summary(l).captivity.status,'held');
- assert.equal(J.ensure(l).capital,starting,'captive should not collect annual hometown income');
+ assert.ok(J.ensure(l).capital<=starting,'captive should not collect annual hometown income; sending messages may cost money');
  assert.ok(!l.log.some(x=>x.year>=1598&&x.kind==='joseon9-choice'),
    'no local neighbor work overseas');
 });
@@ -210,6 +210,65 @@ test('Japanese repatriation can be retried at later verified missions if the fir
      (s.decisions.length>0&&V14.opportunity(l,s)),
      'repeat opportunity stays possible rather than permanently seen');
  assert.ok(!s.seen.includes('ransomOpportunity'));
+});
+test('captive years bypass domestic annual states rather than hiding their already-produced events',()=>{
+ const l=at(born(1570,431),1597,'경상도');
+ const village=V9.ensure(l),regional=V12.ensure(l),war=V13.ensure(l),family=V4.ensure(l);
+ assert.equal(V14.capture(l),true);
+ const baseline={village:village.processedYear,region:regional.processedYear,war:war.processedYear,
+   family:family.processedYear,capital:J.ensure(l).capital};
+ let advanced=0,expectedCapital=baseline.capital;
+ for(let i=0;i<6&&l.alive;i++){
+  while(l.pending){
+   const choice=l.getChoice();assert.ok(choice);
+   assert.ok(String(l.pending).startsWith('joseon14:'));
+   const chapter=V14.EPISODES.find(e=>e.id===V14.ensure(l).active.eventId);
+   expectedCapital=Math.max(-120,Math.min(600,expectedCapital+(chapter?.options[2]?.delta?.capital||0)));
+   assert.equal(l.choose(2),true);
+  }
+  const old=l.year;
+  assert.equal(l.tick(),true);
+  assert.equal(l.year,old+1);
+  advanced++;
+ }
+ assert.equal(advanced,6);
+ assert.equal(village.processedYear,baseline.village);
+ assert.equal(regional.processedYear,baseline.region);
+ assert.equal(war.processedYear,baseline.war);
+ assert.equal(family.processedYear,baseline.family);
+ assert.equal(J.ensure(l).capital,expectedCapital,'capital may change by captive choices, not hometown annual income');
+ assert.equal(V14.ensure(l).processedYear,l.year);
+});
+test('restoring older abroad saves clears stale local decisions but preserves captive story',()=>{
+ const l=at(born(1570,572),1597,'전라도'),state=V14.ensure(l);
+ V14.capture(l);state.active=null;l.pending=null;
+ const saved=l.snapshot();
+ saved.pending='joseon12:1597-packTravel';
+ saved.joseon12.active={id:'1597-packTravel',eventId:'packTravel',year:1597};
+ const restored=Sim.Life.restore(JSON.parse(JSON.stringify(saved)));
+ assert.ok(restored);
+ assert.equal(V14.ensure(restored).captivity.status,'held');
+ assert.equal(restored.pending,null);
+ assert.equal(V12.ensure(restored).active,null);
+ assert.equal(restored.tick(),true);
+ assert.equal(restored.year,1598);
+});
+test('saving new historical choices retains cause links after reload',()=>{
+ const l=at(born(1570,652),1597,'경상도');
+ V14.capture(l);
+ force(l,'captivityWork',1);
+ const original=l.log.findLast(q=>q.kind==='joseon14-choice');
+ assert.ok(original.causeId);
+ const cp=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));
+ assert.equal(cp.log.findLast(q=>q.kind==='joseon14-choice')?.causeId,original.causeId);
+});
+test('a successor born after the Joseon initializer period is safely not selectable yet',()=>{
+ const l=at(born(1875,912),1925,'경상도'),f=V4.ensure(l);
+ const parent=f.people[0];
+ f.people.push({...parent,id:'child-0',name:'최미',role:'child',sex:'여자',birthYear:1900,alive:true,atHome:false});
+ l.finish('삶을 마쳤다.');
+ assert.equal(V14.heirs(l).length,0);
+ assert.equal(V14.continueAsHeir(l,'child-0'),null);
 });
 test('old saves without captivity can restore and still play',()=>{
  const l=at(born(1575,701),1600,'충청도');
