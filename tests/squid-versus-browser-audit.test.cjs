@@ -104,7 +104,9 @@ async function browserAudit(){
    const coords=await evaluate(`(()=>{
      const c=document.getElementById('board'),r=c.getBoundingClientRect();
      const k=Math.min(r.width/520,r.height/340),ox=(r.width-520*k)/2,oy=(r.height-340*k)/2;
-     const t=DalgonaTrace.buildTrace(1),track=innerWidth<500||innerWidth>1100?DalgonaTrace.reversed(t):t,
+     const shape=c.dataset.shape,stage=1+DalgonaTrace.SHAPES.findIndex(item=>item.id===shape);
+      if(stage<1)throw Error('Current dalgona shape is missing');
+      const t=DalgonaTrace.buildTrace(stage),track=innerWidth<500||innerWidth>1100?DalgonaTrace.reversed(t):t,
        start=DalgonaTrace.sampleAt(track,0),next=DalgonaTrace.sampleAt(track,8);
      const map=p=>({x:Math.round(r.x+ox+(102+p.x*.79)*k),y:Math.round(r.y+oy+(12+p.y*.79)*k)});
      return [map(start),map(next)];
@@ -139,3 +141,4 @@ test('pass-and-play uses one full-size playable canvas and handoff on iPhone, ta
  if(!CHROME){t.skip('Chrome not installed');return;}
  const stats=await browserAudit();for(const a of stats)console.log('Passplay browser audit: '+JSON.stringify(a));
 },{timeout:150000});
+ 
