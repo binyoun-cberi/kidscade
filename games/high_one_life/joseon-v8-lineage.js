@@ -38,7 +38,14 @@ function cleanGiven(name,surname){
  return n.startsWith(surname)?n.slice(surname.length):n;
 }
 function make(life){
- const j=J.ensure(life),c=pick(life.seed,j.region),maternal=pick(life.seed,j.region,22,bonLabel(c));
+ const j=J.ensure(life),custom=life.birthSetup?.name||'';
+ const first=custom&&/^[가-힣]/.test(custom)?custom[0]:'';
+ const clans=first?CLANS.filter(c=>c[0]===first):[];
+ const chosen=pick(life.seed,j.region);
+ const sameRegion=clans.filter(c=>c[2]===j.region);
+ const c=clans.length?(sameRegion.length?sameRegion:clans)[Math.floor(hash(life.seed,1011)*((sameRegion.length?sameRegion:clans).length))]:
+   first?[first,'본관 미상',j.region]:chosen;
+ const maternal=pick(life.seed,j.region,22,bonLabel(c));
  const spouse=pick(life.seed,j.region,47,bonLabel(c));
  return {version:1,surname:c[0],bon:c[1],seat:bonLabel(c),residence:j.region,
   motherSeat:bonLabel(maternal),motherSurname:maternal[0],spouseSeat:bonLabel(spouse),
@@ -48,7 +55,7 @@ function make(life){
 function decorate(life,s){
  if(life.year>=1900||!s)return;
  const given=s.givenName||cleanGiven(life.profile.name,s.surname);
- const personName=s.surname+given;
+ const personName=life.birthSetup?.name||s.surname+given;
  if(life.profile.name!==personName)life.profile.name=personName;
  const state=V4.ensure(life);
  if(!state)return;
