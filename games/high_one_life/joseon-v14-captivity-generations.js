@@ -285,7 +285,12 @@ function continueAsHeir(parent,id){
  // A successor continues from the exact year when the parent dies. No time travel.
  const j=J.ensure(l);j.region=oldJ.region;j.capital=clip(Math.floor(oldJ.capital*.65),-120,600);
  j.birthStatus=targetLegalStatus(parent,heir.id);
- if(parent.joseon8)l.joseon8=JSON.parse(JSON.stringify(parent.joseon8));
+ if(parent.joseon8){
+  l.joseon8=JSON.parse(JSON.stringify(parent.joseon8));
+  const surname=l.joseon8.surname||'';
+  l.joseon8.givenName=heir.name.startsWith(surname)?heir.name.slice(surname.length):heir.name;
+  l.joseon8.generation=clamp((Number(l.joseon8.generation)||1)+1,1,18);
+ }
  j.land=clip(Math.floor(oldJ.land*.6),0,30);
  j.literacy=clip(Math.max(j.literacy,Math.floor(oldJ.literacy*.4)),0,30);
  const granary=V2.ensure(l);granary.grain=clip(Math.floor(oldV2.grain*.6),0,200);
@@ -335,6 +340,8 @@ function continueAsHeir(parent,id){
  l.logEvent('부모 '+parent.profile.name+'의 삶이 끝났다. '+heir.name+'의 시점에서 집안의 살림과 기억을 이어 간다.','joseon14-generations');
  l.log.at(-1).ancestorName=parent.profile.name;
  l.pending=null;
+ // The register module loads after this module and is optional for old saves.
+ Sim.Life.prototype.__genealogy15Inherit?.(parent,id,l);
  return l;
 }
 function hydrate(l,data){
