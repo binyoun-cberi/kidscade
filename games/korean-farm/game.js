@@ -277,6 +277,10 @@ function move(dt,elapsed){
   }
   farmer.position.set(state.player.x,moving?Math.abs(Math.sin(elapsed*9))*.045:0,state.player.z);
   if(farmerAvatar)farmerAvatar.rotation.z=moving?Math.sin(elapsed*11)*.022:0;
+  if(!$('inspector').classList.contains('hidden')){
+    const plot=plotById(state.selected);
+    if(plot)$('approachBtn').classList.toggle('hidden',distanceToPlot(state.player,plot)<=5);
+  }
 }
 function render(now){
   if(disposed)return;raf=requestAnimationFrame(render);
