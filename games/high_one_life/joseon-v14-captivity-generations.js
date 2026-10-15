@@ -209,22 +209,37 @@ function heirs(l){
  return V4.summary(l).people.filter(p=>p.role==='child'&&p.alive&&p.age>=12&&p.age<=100)
   .map(p=>({id:p.id,name:p.name,age:p.age,gender:V4.ensure(l).people.find(x=>x.id===p.id)?.sex||'남자',birthYear:l.year-p.age}));
 }
+function targetLegalStatus(parent,personId){
+ const p=V4.ensure(parent).people.find(p=>p.id===personId);
+ if(p?.legal==='천인')return '천민';
+ return J.ensure(parent).birthStatus==='양반'?'양반':'상민';
+}
 function continueAsHeir(parent,id){
  const heir=heirs(parent).find(p=>p.id===id);
  if(!heir)return null;
  const old=ensure(parent),oldJ=J.ensure(parent),oldV2=V2.ensure(parent),oldV4=V4.ensure(parent);
  const newSeed=(parent.seed^Math.imul(heir.birthYear,1664525)^heir.name.split('').reduce((v,c)=>v+c.charCodeAt(0),0))>>>0;
  const l=new Sim.Life(newSeed,{birthYear:heir.birthYear,countryName:'대한민국'});
- J.ensure(l);V5.ensure(l);V4.ensure(l);
- l.gender=heir.gender;l.profile.name=heir.name;
+ J.ensure(l);V5.ensure(l);
+ l.gender=heir.gender;V4.ensure(l);l.profile.name=heir.name;
  l.year=parent.year;l.age=l.year-l.birthYear;
  // A successor continues from the exact year when the parent dies. No time travel.
  const j=J.ensure(l);j.region=oldJ.region;j.capital=clip(Math.floor(oldJ.capital*.65),-120,600);
+ j.birthStatus=targetLegalStatus(parent,heir.id);
+ if(parent.joseon8)l.joseon8=JSON.parse(JSON.stringify(parent.joseon8));
  j.land=clip(Math.floor(oldJ.land*.6),0,30);
  j.literacy=clip(Math.max(j.literacy,Math.floor(oldJ.literacy*.4)),0,30);
  const granary=V2.ensure(l);granary.grain=clip(Math.floor(oldV2.grain*.6),0,200);
  const childFamily=V4.ensure(l);childFamily.processedYear=l.year;
  const target=oldV4.people.find(p=>p.id===heir.id);
+ if(!target)return null;
+ // Preserve actual siblings from the previous parent's family, not newly
+ // generated strangers with unrelated names.
+ childFamily.people=childFamily.people.filter(p=>p.role!=='sibling');
+ for(const sibling of oldV4.people.filter(p=>p.role==='child'&&p.id!==heir.id&&p.birthYear<=l.year).slice(0,6)){
+  childFamily.people.push({...sibling,id:'sibling-of-'+sibling.id,role:'sibling',joinedYear:null});
+ }
+ l.profile.siblings=childFamily.people.filter(p=>p.role==='sibling').length;
  const mother=childFamily.people.find(p=>p.role==='mother'),father=childFamily.people.find(p=>p.role==='father');
  const parentRole=parent.gender==='여자'?mother:father;
  if(parentRole){
@@ -238,8 +253,14 @@ function continueAsHeir(parent,id){
   otherRole.diedYear=other.diedYear;otherRole.atHome=other.atHome;
  }
  const oldSocial=V5.ensure(parent),newSocial=V5.ensure(l);
- newSocial.origin=oldSocial.origin;newSocial.trade=oldSocial.trade;
+ newSocial.origin=oldSocial.origin;newSocial.originLabel=oldSocial.originLabel;
+ newSocial.trade=oldSocial.trade;newSocial.duty=oldSocial.duty;
  newSocial.publicOffice=oldSocial.publicOffice;newSocial.freed=oldSocial.freed;
+ const oldWar=V13.ensure(parent),newWar=V13.ensure(l);
+ newWar.damage=clip(Math.floor(oldWar.damage*.55),0,20);
+ newWar.fields=clip(Math.floor(oldWar.fields*.55),0,20);
+ newWar.repair=clip(Math.floor(oldWar.repair*.5),0,100);
+ newWar.processedYear=l.year;
  // Inherit no mental diagnosis or deterministic disability: changed material and
  // social circumstances and the family story, not a 'trauma gene'.
  const hs=ensure(l);
