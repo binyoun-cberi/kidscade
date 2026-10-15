@@ -90,6 +90,7 @@ test('return is a possibility, not an automatic result of the peace treaty',()=>
 });
 test('heir must be a real living child with a valid age, female children may inherit',()=>{
  const l=at(born(1590,789),1640,'전라도'),f=V4.ensure(l),p=f.people.find(x=>x.role==='sibling');
+ l.gender='남자';
  const child={...p,id:'child-0',role:'child',name:'김연',sex:'여자',birthYear:1611,atHome:true,alive:true,legal:'양인',married:false,diedYear:null};
  f.people.push(child);l.profile.name='김정';
  l.finish('오랜 세월 끝에 삶을 마쳤다.');
