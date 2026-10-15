@@ -173,6 +173,7 @@ const TEST_FILES = [
   "tests/seed-world-meta.test.cjs",
   "tests/juice-maker-farm.test.cjs",
   "tests/korean-farm-prototype.test.mjs",
+  "tests/korean-farm-simulation.test.mjs",
   "tests/main-architecture.test.cjs"
 ];
 
