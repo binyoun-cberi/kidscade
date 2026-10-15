@@ -122,6 +122,26 @@ test('family economy, property damage and useful skills inherit without a determ
  assert.equal(V14.ensure(next).body.movement,'');
  assert.equal(Sim.Life.restore(JSON.parse(JSON.stringify(next.snapshot()))).joseon14.familyLine.length,1);
 });
+test('three successive generations preserve ancestry without copied injuries',()=>{
+ const a=at(born(1570,713),1620,'전라도'),f=V4.ensure(a);
+ const template=f.people.find(p=>p.role==='sibling')||f.people.find(p=>p.role==='mother');
+ f.people.push({...template,id:'child-0',role:'child',name:'이선',birthYear:1591,sex:'여자',alive:true,atHome:true,legal:'양인',diedYear:null});
+ V14.ensure(a).body.movement='걸을 때 불편함';
+ V14.ensure(a).heritage.skills=8;
+ a.finish('삶을 마쳤다.');
+ const second=V14.continueAsHeir(a,'child-0');
+ assert.ok(second);assert.equal(second.year,1620);
+ const f2=V4.ensure(second);
+ f2.people.push({...f2.people[0],id:'child-0',role:'child',name:'이연',sex:'남자',birthYear:1602,alive:true,atHome:true,legal:'양인',diedYear:null});
+ second.year=1630;second.age=second.year-second.birthYear;
+ second.finish('삶을 마쳤다.');
+ const third=V14.continueAsHeir(second,'child-0');
+ assert.ok(third);assert.equal(third.year,1630);
+ assert.equal(V14.summary(third).familyLine.length,2);
+ assert.deepEqual(V14.summary(third).familyLine.map(v=>v.name),[a.profile.name,'이선']);
+ assert.equal(V14.summary(third).body.movement,'');
+ assert.equal(Sim.Life.restore(JSON.parse(JSON.stringify(third.snapshot()))).joseon14.familyLine.length,2);
+});
 test('old saves without captivity can restore and still play',()=>{
  const l=at(born(1575,701),1600,'충청도');
  const saved=l.snapshot();delete saved.joseon14;
