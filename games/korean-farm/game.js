@@ -126,7 +126,21 @@ function buildFields(){
     syncFieldVisual(plot.id,true);
   }
 }
-function clearGroup(group){for(const child of [...group.children])group.remove(child)}
+function clearGroup(group){
+  // Geometry and textures belong to cached shared assets. Only private, cloned
+  // materials from normalise() are disposed when crop stages are replaced.
+  const materials=new Set();
+  for(const child of [...group.children]){
+    child.traverse?.(mesh=>{
+      if(!mesh.isMesh)return;
+      for(const mat of Array.isArray(mesh.material)?mesh.material:[mesh.material]){
+        if(mat)materials.add(mat);
+      }
+    });
+    group.remove(child);
+  }
+  for(const material of materials)material.dispose?.();
+}
 function fallbackCrop(kind){
   const root=new THREE.Group(),color=kind==='corn'?0x53983d:0x5d9d52;
   const mesh=new THREE.Mesh(new THREE.ConeGeometry(kind==='corn'?.13:.09,kind==='corn'?1.25:.35,6),
