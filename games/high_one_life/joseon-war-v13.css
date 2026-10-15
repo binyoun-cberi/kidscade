@@ -1,0 +1,7 @@
+body.joseon-book .joseon-war-record{margin:13px 0;padding:12px 14px;background:#f7edda;border:1px solid #b59a79;color:#493727}
+body.joseon-book .joseon-war-record summary{font:750 15px/1.55 "Noto Serif KR",Batang,serif;cursor:pointer;word-break:keep-all}
+body.joseon-book .joseon-war-record[open]{padding-bottom:16px}
+body.joseon-book .joseon-war-record p{font-size:13px;line-height:1.8;margin:7px 0;color:#59432e;word-break:keep-all;overflow-wrap:anywhere}
+body.joseon-book .joseon-war-record a{color:#4b6453;text-underline-offset:3px;text-decoration:underline;display:inline-block;font-size:12px;margin:6px 0}
+body.joseon-book .joseon-war-record small{display:block;font-size:11px;color:#73634f;line-height:1.55;margin-top:6px}
+@media(max-width:780px){body.joseon-book .joseon-war-record{padding:11px 12px}body.joseon-book .joseon-war-record p{font-size:13px;line-height:1.75}}
