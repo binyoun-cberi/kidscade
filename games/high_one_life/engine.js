@@ -353,5 +353,11 @@
       return life;
     }
   }
-  return Object.freeze({Life,COUNTRIES,CHOICES,EVENTS,REFLECTION_AGES,FOCUS,stages,birthWeight,BIRTH_COUNTS_2025});
+  // A wrapped historical module may need ordinary passage of time without
+  // dispatching other domestically scoped annual modules (e.g. while captive).
+  // Keep this reference to the unwrapped Life.tick. It preserves the common
+  // ageing and mortality model without inventing a second mortality curve.
+  const advanceCoreYear=Life.prototype.tick;
+  return Object.freeze({Life,COUNTRIES,CHOICES,EVENTS,REFLECTION_AGES,FOCUS,stages,birthWeight,BIRTH_COUNTS_2025,
+    advanceCoreYear(life){return advanceCoreYear.call(life);}});
 });
