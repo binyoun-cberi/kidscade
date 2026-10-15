@@ -9,7 +9,7 @@ export function isNeutralUntextured(material){
   if(!material?.color||material.map||material.vertexColors||material.alphaMap)return false;
   const c=material.color,values=[c.r,c.g,c.b];
   if(!values.every(Number.isFinite))return false;
-  return Math.min(...values)>.67&&Math.max(...values)-Math.min(...values)<.09;
+  return Math.min(...values)>.34&&Math.max(...values)-Math.min(...values)<.09;
 }
 export function cropFallbackHex(kind,stage,meshName=''){
   const palette=CROP_COLOR_PALETTES[kind]||CROP_COLOR_PALETTES.rice;
