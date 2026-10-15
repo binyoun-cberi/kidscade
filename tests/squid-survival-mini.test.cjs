@@ -14,8 +14,8 @@ test('four real challenge modes have visible standalone pages and separate SDK i
     const html=fs.readFileSync(path.join(DIR,mode,'index.html'),'utf8');
     assert.match(html,new RegExp('data-game-id="'+map[mode]+'"'));
     assert.match(html,new RegExp('data-mode="'+mode+'"'));
-    assert.match(html,/mini-rules\.js\?v=2/);
-    assert.match(html,/mini\.js\?v=4/);
+    assert.match(html,/mini-rules\.js\?v=3/);
+    assert.match(html,/mini\.js\?v=5/);
     assert.match(html,/id="choices"/);
     assert.match(html,/id="scene"/);
   }
@@ -108,7 +108,10 @@ test('releasing during yellow actually stops player through red; pressing green 
 test('timed pulls consistently beat the opponent, while repeated spam leads to defeat',()=>{
   for(let seed=1;seed<=100;seed++){
     const s=R.create('tug',seed);R.start(s,0);
-    for(let time=500;time<10000&&s.status==='playing';time+=1000)R.act(s,'pull',null,time);
+    for(let cycle=0;cycle<12&&s.status==='playing';cycle++){
+       const time=Math.round((cycle+.5)*s.tugPeriod-s.tugOffset);
+       if(time>0)R.act(s,'pull',null,time);
+     }
     assert.equal(s.status,'cleared','tug seed '+seed);
     assert.ok(s.perfect>=4);
   }
@@ -160,7 +163,13 @@ test('wrong final memory, three missed rhythms, wrong math, timeout all fail',()
   assert.equal(memory.status,'failed');
   const timing=R.create('final',1);R.start(timing,0);R.advance(timing,3900);
   for(let i=0;i<4;i++)R.act(timing,'symbol',timing.sequence[i],4000+i*90);
-  for(let i=0;i<3;i++)R.act(timing,'hit',null,4400+i*1450);
+  let misses=0,last=-1000;
+   for(let t=4400;t<15000&&timing.status==='playing';t+=20){
+     if(t-last>420&&R.timingPosition({...timing,elapsed:t})<.18){
+       R.act(timing,'hit',null,t);last=t;misses++;
+     }
+   }
+   assert.equal(misses,3);
   assert.equal(timing.status,'failed');
   const arithmetic=R.create('final',3);R.start(arithmetic,0);R.advance(arithmetic,3900);
   for(let i=0;i<4;i++)R.act(arithmetic,'symbol',arithmetic.sequence[i],4000+i*90);
@@ -169,4 +178,29 @@ test('wrong final memory, three missed rhythms, wrong math, timeout all fail',()
   R.act(arithmetic,'answer',arithmetic.math.options.find(x=>x!==arithmetic.math.answer),21000);
   assert.equal(arithmetic.status,'failed');
   for(const mode of MODES){const s=R.create(mode,1);R.start(s,0);R.advance(s,s.limit+1);assert.equal(s.status,'failed');}
+});
+
+test('each replay changes signals, tug cadence, marble order and final timing',()=>{
+  const signals=new Set(),tugPeriods=new Set(),finalPeriods=new Set(),orders=new Set();
+  for(let seed=1;seed<=100;seed++){
+    const red=R.create('redlight',seed);R.start(red,0);
+    R.advance(red,red.signalEnds+1);
+    const warning=red.signalEnds;
+    R.advance(red,warning+1);
+    const redEnd=red.signalEnds;
+    R.advance(red,redEnd+1);
+    signals.add([warning,redEnd,red.signalEnds].join(','));
+    tugPeriods.add(R.create('tug',seed).tugPeriod);
+    finalPeriods.add(R.create('final',seed).timingPeriod);
+    orders.add(R.create('marbles',seed).questions.map(x=>x.type).join(','));
+  }
+  assert.ok(signals.size>75);assert.ok(tugPeriods.size>50);
+  assert.ok(finalPeriods.size>50);assert.ok(orders.size>10);
+  for(let seed=1;seed<=30;seed++){
+    const tug=R.create('tug',seed);
+    for(const phase of [.1,.5,.9]){
+      tug.elapsed=tug.tugPeriod*phase-tug.tugOffset;
+      assert.ok(Math.abs(R.tugPosition(tug)-phase)<1e-9);
+    }
+  }
 });
