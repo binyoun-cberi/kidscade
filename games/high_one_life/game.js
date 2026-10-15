@@ -32,6 +32,7 @@
   const Joseon13 = window.OneLifeJoseon13 || null;
   const Joseon14 = window.OneLifeJoseon14 || null;
   const Genealogy = window.OneLifeGenealogyV15 || null;
+  const BranchSwitch = window.OneLifeBranchSwitchV17 || null;
   const ColonialLife = window.OneLifeColonialDaily || null;
   const History = window.OneLifeHistory;
   const Official=window.OneLifeOfficialStats||{countries:{}};
@@ -917,6 +918,16 @@
     if(children.length)kin.push('자녀 '+children.map(x=>x.name).join(', '));
     $('genealogyDetailRelations').textContent=kin.length?kin.join(' · '):'현재 남아 있는 기록에는 연결된 가족관계가 더 없습니다.';
     const branch=data.branches.find(b=>b.id===n.branchId||b.id===n.id);
+    const swappable=BranchSwitch?.options(life).some(p=>p.id===n.id)||false;
+    $('genealogySwitchBtn').classList.toggle('hidden',!swappable);
+    $('genealogySwitchBtn').disabled=!swappable;
+    $('genealogySwitchHint').textContent=n.id===data.selfId?
+      '지금 살고 있는 인생이야.':
+      swappable?
+        '이 인물의 시점으로 전환할 수 있어. 원래 인생의 기록은 따로 보관되며, 다시 돌아올 수 있어.':
+        !n.alive?'세상을 떠난 가족의 삶으로는 전환할 수 없어.':
+        n.missing?'행방을 알 수 없는 인물은 귀환·생존을 확인한 뒤 선택할 수 있어.':
+        '아직 나이가 어리거나 시대가 맞지 않아 인생을 전환할 수 없어.';
     $('genealogyDetailStory').textContent=(n.simulated?
       '본줄기가 아닌 '+(branch?.label||'방계 집안')+'의 후손으로, 이 인생을 직접 플레이하지 않아 간략하게 구성된 가상 기록입니다. ':
       branch?'다른 살림을 꾸린 '+branch.label+'의 기록입니다. ':'')+
@@ -1187,12 +1198,26 @@
   $('openGenealogyBtn').addEventListener('click',openGenealogy);
   $('endGenealogyBtn').addEventListener('click',openGenealogy);
   $('genealogyExpandAll').addEventListener('click',()=>{genealogyFolded.clear();drawGenealogy();});
+  $('genealogySwitchBtn').addEventListener('click',()=>{
+    if(!BranchSwitch||!life||!genealogySelected)return;
+    const switched=BranchSwitch.switchTo(life,genealogySelected);
+    if(!switched)return;
+    genealogyPreviousRunning=false;
+    closeGenealogy();
+    life=switched;replayBasis=null;completed=false;
+    storyTab='';timelineVisible=22;peerAgeChoice=0;
+    playSpeed=1;nextDecision=false;paused=false;elapsed=0;
+    peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
+    World8.ensure(life);History.contextualize(life);
+    refreshSpeedControls();startLife();
+  });
   $('genealogyClose').addEventListener('click',closeGenealogy);
   $('genealogyBackdrop').addEventListener('click',closeGenealogy);
   $('heirContinueBtn').addEventListener('click',()=>{
     if(!life||life.alive||!Joseon14)return;
     const successor=Joseon14.continueAsHeir(life,$('heirSelect').value);
     if(!successor)return;
+    BranchSwitch?.carryToSuccessor(life,successor);
     life=successor;replayBasis=null;completed=false;
     storyTab='';timelineVisible=22;peerAgeChoice=0;
     playSpeed=1;nextDecision=false;paused=false;elapsed=0;
