@@ -174,6 +174,7 @@ function prompt(l){const s=ensure(l),e=BY_ID.get(s?.active?.eventId);
 function yearly(l,s){
  if(!s||!J.inOldEra(l)||!l.alive||s.processedYear>=l.year)return;
  s.processedYear=l.year;
+ if(l.joseon14?.captivity?.status==='held')return;
  const dry=rng(l.seed,l.year*17)<.13;s.water=clamp(s.water+(dry?-11:3),0,100);
  for(const h of s.homes)h.wealth=clamp(h.wealth+Math.floor(rng(l.seed,l.year+h.field*19)*7)-3,0,120);
  for(const f of s.followups.filter(f=>f.year<=l.year)){
