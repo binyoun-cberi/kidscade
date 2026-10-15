@@ -26,7 +26,7 @@ const EVENTS=[
   '전임 수령이 떠나고 새 수령이 부임했다. 관아의 부과 방식이 달라질지는 아직 알 수 없다.',[
   choice('고을 사람들이 겪은 일을 전한다','새 수령에게 납부 장부와 사정을 알린다','새 수령이 말을 들었지만 모든 문제를 곧장 해결하지는 못했다.',{proof:2,petitions:1,confidence:1},'petition'),
   choice('행정이 어떻게 달라지는지 지켜본다','새 수령의 실제 행동을 보고 판단한다','수령이 바뀐 뒤의 징수 방식을 살펴보았다.',{knowledge:2,confidence:1},'watch'),
-  choice('이웃과 함께 공동 요구를 준비한다','주민들의 사정을 모아 본다','새 수령에게 함께 전할 말을 정리했다.',{petition:2,solidarity:2,anger:1},'organize')]),
+  choice('이웃과 함께 공동 요구를 준비한다','주민들의 사정을 모아 본다','새 수령에게 함께 전할 말을 정리했다.',{petitions:2,solidarity:2,anger:1},'organize')],(l,s)=>s.office.from===l.year),
  event('clerkNetwork','새 수령 아래에도 남은 아전들',
   '수령은 바뀌었어도 관아의 장부를 다루는 이서들의 관행은 쉽게 바뀌지 않는다.',[
   choice('바뀌지 않은 장부를 확인한다','이전 관아에서 잘못 적었던 내용을 찾는다','오래된 장부와 새로운 지시의 차이를 살펴보았다.',{proof:3,petitions:1},'record'),
