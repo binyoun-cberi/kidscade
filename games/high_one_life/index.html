@@ -24,6 +24,7 @@
 <link rel="stylesheet" href="./joseon-war-v13.css?v=1">
 <link rel="stylesheet" href="./joseon-captivity-v14.css?v=1">
 <link rel="stylesheet" href="./joseon-samjeong-v18.css?v=1">
+<link rel="stylesheet" href="./joseon-office-v19.css?v=1">
 <link rel="stylesheet" href="./joseon-genealogy-v15.css?v=2">
 </head>
 <body>
@@ -149,6 +150,20 @@
           </section>
           <section id="joseonVillagePanel" class="joseon-village-panel hidden" aria-label="이웃과 마을의 살림">
             <h3>우리 마을과 이웃</h3><p id="villageHomeSummary">—</p>
+            <details id="localOfficePanel" class="local-office-panel hidden">
+              <summary>우리 고을 수령과 관아 살펴보기</summary>
+              <p id="localOfficeName">—</p>
+              <div class="local-office-details">
+                <span id="localOfficeConduct">—</span>
+                <span id="localOfficeTax">—</span>
+                <span id="localOfficeClerks">—</span>
+              </div>
+              <p id="localOfficePatronage">—</p>
+              <p id="localOfficeAudit">—</p>
+              <p id="localOfficeHistory">—</p>
+              <a id="localOfficeSource" class="hidden" href="https://contents.history.go.kr/" target="_blank" rel="noopener noreferrer">관아·감찰 역사 자료 보기 ↗</a>
+              <small>여기에 등장하는 수령 이름·부임 시기·관리 성향·감찰 결과는 게임의 가상 기록입니다. 역사적 수령 명부나 확정된 관직 인사 자료가 아닙니다.</small>
+            </details>
             <details id="samjeongLedger" class="samjeong-ledger hidden">
               <summary>삼정의 문란과 우리 집의 장부</summary>
               <p id="samjeongPoliticalContext">—</p>
@@ -457,12 +472,13 @@
 <script src="./joseon-v11-late-life.js?v=2"></script>
 <script src="./joseon-v12-regional.js?v=2"></script>
 <script src="./joseon-v13-war-recovery.js?v=2"></script>
-<script src="./joseon-v14-captivity-generations.js?v=4"></script>
+<script src="./joseon-v14-captivity-generations.js?v=5"></script>
 <script src="./joseon-v15-genealogy.js?v=2"></script>
 <script src="./joseon-v17-branch-switch.js?v=1"></script>
-<script src="./joseon-v18-sedo-samjeong.js?v=1"></script>
+<script src="./joseon-v18-sedo-samjeong.js?v=2"></script>
+<script src="./joseon-v19-local-office.js?v=1"></script>
 <script src="./colonial-daily-v2.js?v=1"></script>
 <script src="./joseon-pixel-v2.js?v=2"></script>
-<script src="./game.js?v=48"></script>
+<script src="./game.js?v=49"></script>
 </body>
 </html>

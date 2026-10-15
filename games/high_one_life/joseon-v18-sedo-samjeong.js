@@ -153,7 +153,10 @@ function fits(l,e,s){
 function rank(l,e,s){
  const categoryGap=s.decisions.slice(-3).some(x=>x.category===e.category)?.5:0;
  const power=elite(l)?(e.category==='관아'?-.35:.14):0;
- return hash(l.seed,l.year*43+e.id.split('').reduce((n,c)=>n+c.charCodeAt(0),0))+categoryGap+power;
+ const office=l.joseon19?.office;
+ const policy=office&&['전정','군정','환정'].includes(e.category)?
+   (office.levy>=60?-.16:office.integrity>=70?.16:0):0;
+ return hash(l.seed,l.year*43+e.id.split('').reduce((n,c)=>n+c.charCodeAt(0),0))+categoryGap+power+policy;
 }
 function enqueue(l,s,e){
  if(s.seen.includes(e.id)||s.queue.some(q=>q.eventId===e.id)||s.active?.eventId===e.id)return;
@@ -175,6 +178,9 @@ function prompt(l){
    ' 사는 고을과 집안마다 경험은 다르다. 직접 피해를 겪지 않은 사람도 이웃의 이야기를 듣는다.');
  }else if(event.id==='officeAudit'&&s.corruption>=3)
   description+=' 이전에 묵인하거나 손댄 장부도 조사 대상이 될 수 있다.';
+ const official=l.joseon19?.office;
+ if(official&&['전정','군정','환정','관아'].includes(event.category))
+  description+=' 이 고을의 수령과 이서의 징수 관행에 따라 해결될 기회가 달라질 수 있다.';
  return {title:event.title,description,
   options:event.options.map(o=>({label:o.label,note:o.note,action:o.label}))};
 }
@@ -243,6 +249,13 @@ function choose(l,index){
   l.logEvent('제출한 자료의 일부가 인정되어 장부의 부담을 조금 덜었다. 모두가 같은 결과를 얻지는 못했다.','joseon18-memory');
  }
  if(l.money&&l.year<1900)l.money.netWorth=j.capital*100;
+ const office=l.joseon19;
+ if(office&&office.office&&['전정','군정','환정','관아'].includes(e.category)){
+  if(d.anger>0)office.anger=clip(office.anger+Math.min(3,d.anger),0,60);
+  if(d.proof>0)office.proof=clip(office.proof+Math.min(3,d.proof),0,100);
+  if(d.complaints>0)office.petitions=clip(office.petitions+Math.min(2,d.complaints),0,100);
+  if(d.corruption>0)office.corruption=clip(office.corruption+Math.min(3,d.corruption),0,100);
+ }
  const qid=s.active.id;
  l.logEvent(e.title+' — '+choice.label,'joseon18-choice');
  l.log.at(-1).causeId='joseon18:'+qid;

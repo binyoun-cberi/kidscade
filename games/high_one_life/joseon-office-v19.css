@@ -1,0 +1,8 @@
+body.joseon-book .local-office-panel{margin:12px 0;border:1px solid #9c8b70;border-radius:8px;background:#f8f0de;padding:12px 13px;color:#453624}
+body.joseon-book .local-office-panel>summary{cursor:pointer;font:750 15px/1.6 "Noto Serif KR",Batang,serif;word-break:keep-all}
+body.joseon-book .local-office-panel p{font-size:13px;line-height:1.7;margin:8px 0;word-break:keep-all}
+body.joseon-book .local-office-details{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0}
+body.joseon-book .local-office-details span{background:#ece2cf;border:1px solid #d2c1a6;border-radius:6px;padding:8px 6px;text-align:center;color:#59432a;font-size:11px;line-height:1.5}
+body.joseon-book .local-office-panel small{display:block;color:#79634c;line-height:1.65;font-size:11px;margin-top:8px}
+body.joseon-book .local-office-panel a{font-size:12px;color:#315948;text-decoration:underline;text-underline-offset:2px}
+@media(max-width:680px){body.joseon-book .local-office-details{grid-template-columns:1fr}body.joseon-book .local-office-details span{text-align:left;padding:7px 10px}}
