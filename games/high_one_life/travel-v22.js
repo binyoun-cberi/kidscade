@@ -102,6 +102,12 @@ function move(l,route){
   until:route==='ming'?l.year+2:['jurchen','qingMarket'].includes(route)?l.year+1:null};
  s.movements.push({year:l.year,place:r.place,reason:r.reason,route,action:'출발'});
  s.movements=s.movements.slice(-24);s.yearsAbroad=0;s.source=SOURCES[route];
+ // Seasonal border journeys need a real local decision without inventing
+ // a two-year residence: take it before next year's return.
+ if(['jurchen','qingMarket'].includes(route)){
+  s.pending={type:'abroad',id:'border-'+l.year,year:l.year,route};
+  l.pending='travel22:'+s.pending.id;
+ }
  l.logEvent(route==='ming'?'사행을 따라 명나라로 향했다. 고향에서 멀어지는 길 위에 올랐다.':route==='jurchen'?'두만강 변경으로 물건을 거래하러 나섰다.':route==='qingMarket'?'책문의 교역길을 따라 짐과 문서를 챙겨 나섰다.':'하와이로 향하는 배에 올랐다. 가족과 고향의 모습이 점점 멀어졌다.','travel22-depart');
  return true;
 }
@@ -181,6 +187,7 @@ function summary(l){
  const captive=captivityResidence(l),r=captive||s.residence;
  return {birthplace:s.birthplace,residence:{...r},yearsAbroad:captive?l.year-captive.since:s.yearsAbroad,
   letters:s.letters,earnings:s.earnings,relationships:s.relationships,
+  captivityTies:captive?{...(l.joseon14?.overseas||{})}:null,
   movements:s.movements.map(q=>({...q})),source:captive?(r.region==='일본'?SOURCES.japan:SOURCES.qing):s.source,
   fictional:true};
 }
