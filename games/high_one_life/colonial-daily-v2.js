@@ -160,6 +160,7 @@ function hydrate(l,data){const s=ensure(l),o=data?.colonialDaily;if(!s||!o||o.ve
  s.queue=Array.isArray(o.queue)?o.queue.map(clean).filter(Boolean).slice(-2):[];
  s.active=clean(o.active);
  if(!l.alive||!isPeriod(l)||data?.pending!=='colonialDaily:'+s.active?.id)s.active=null;
+ else l.pending='colonialDaily:'+s.active.id;
  s.decisions=Array.isArray(o.decisions)?o.decisions.filter(x=>x&&typeof x.id==='string'&&Number.isInteger(x.year)).slice(-40):[];
  s.followups=Array.isArray(o.followups)?o.followups.filter(x=>x&&typeof x.id==='string'&&typeof x.text==='string'&&Number.isInteger(x.year)&&x.year>l.year).slice(-25):[];
  return s;
