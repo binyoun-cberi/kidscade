@@ -18,6 +18,7 @@ const TEST_FILES = [
   "tests/one-life-colonial-coverage-v21.test.cjs",
   "tests/one-life-travel-v22.test.cjs",
   "tests/one-life-captivity-border-v23.test.cjs",
+  "tests/one-life-biography-audit-v24.test.cjs",
   "tests/one-life-narrative-tone.test.cjs",
   "tests/one-life-joseon-policy.test.cjs",
   "tests/one-life-joseon-careers.test.cjs",
