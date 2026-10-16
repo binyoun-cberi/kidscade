@@ -975,6 +975,8 @@
       $('travel22Place').textContent=abroad?residence.place:'고향에서 다시 일상을 이어 간다.';
       $('travel22Reason').textContent=abroad?'떠나온 까닭 · '+residence.reason+' · 고향 '+journey.birthplace:'태어난 고향 · '+journey.birthplace;
       $('travel22Memory').textContent=abroad&&residence.route==='hawaii'?'편지 '+journey.letters+'통 · 함께한 이웃의 기억 '+journey.relationships+' · 살림의 기록 '+journey.earnings:
+        abroad&&residence.route==='captivity'&&journey.captivityTies?'타향의 일손 '+(journey.captivityTies.workplace||0)+' · 현지 인연 '+(journey.captivityTies.localTies||0)+' · 익힌 말 '+(journey.captivityTies.language||0)+' · 고향 소식 '+(journey.captivityTies.homeNews||0):
+        abroad&&['jurchen','qingMarket'].includes(residence.route)?'물건과 말을 서로 나누며 변경의 하루를 보낸다. 돌아갈 길과 집안의 안부도 함께 챙긴다.':
         abroad&&residence.route==='ming'?'사행 중 맡은 일과 돌아갈 길을 살핀다.':
         abroad?'돌아갈 길을 헤아리며 고향의 소식을 기다린다.':'먼 곳에서 보낸 시간이 집안의 기억으로 남았다.';
       const list=$('travel22Moves');list.replaceChildren();
