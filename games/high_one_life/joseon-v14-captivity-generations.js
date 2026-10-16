@@ -152,6 +152,8 @@ function reunion(l,s,route='쇄환'){
  const c=s.captivity;if(!c||c.status!=='held')return false;
  c.status='returned';c.returnedYear=l.year;c.route=route;s.recoverYears=0;
  l.logEvent('오랜 세월이 지나 고향으로 돌아왔다. 귀환의 길은 쉽지 않았고, 떠나 있던 시간은 돌아오지 않았다.','joseon14-return');
+ if((s.overseas?.localTies||0)>0||(s.overseas?.homeNews||0)>0)
+  l.logEvent('타향에서 알게 된 사람과 멀리 떨어져 기다려 온 가족의 이름도 함께 기억했다.','joseon14-return');
  return true;
 }
 function opportunity(l,s){
