@@ -12,7 +12,7 @@
 'use strict';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const isJoseon=life=>!!life&&life.country?.[0]==='대한민국'&&life.birthYear>=1392&&life.birthYear<=1897;
-const inOldEra=life=>isJoseon(life)&&life.year<1900;
+const inOldEra=life=>isJoseon(life)&&life.year<1900&&!life.travel22?.residence?.abroad;
 function roll(seed,salt){
  let x=(seed^Math.imul(salt+1,0x9e3779b9))>>>0;
  x=Math.imul(x^(x>>>16),0x7feb352d);x=Math.imul(x^(x>>>15),0x846ca68b);
