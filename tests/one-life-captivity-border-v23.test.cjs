@@ -87,7 +87,7 @@ test('Qing book-gate exchange in late 17th century is NOT a prisoner journey',()
  const abroad=T.summary(l);
  assert.equal(abroad.residence.region,'청의 요동');
  assert.equal(abroad.residence.reason,'책문 사행·교역 동행');
- assert.equal(l.joseon14?.captivity?.status,'held'===l.joseon14?.captivity?.status? 'held':undefined);
+ assert.notEqual(l.joseon14?.captivity?.status,'held');
  const saved=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));
  assert.equal(saved.pending,l.pending);
  assert.equal(saved.getChoice().options.length,3);
@@ -105,7 +105,7 @@ test('historical coastal/border routes do not open for unrelated provinces or st
  assert.equal(T.eligible(c,'qingMarket'),false);
 });
 test('existing Ming and Hawaiian routes remain available on the same engine',()=>{
- const m=at(born(1420),1450,'평안도');J.ensure(m).literacy=4;
+ const m=at(born(1420),1450,'평안도');J.ensure(m).literacy=4;V5.ensure(m).origin='역관 가계';
  assert.equal(T.eligible(m,'ming'),true);
  const h=at(born(1880),1903,'경기도');
  assert.equal(T.eligible(h,'hawaii'),true);
