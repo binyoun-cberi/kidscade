@@ -113,6 +113,13 @@ async function main(){
  check('Six fields populated',visuals.crops.length===6&&visuals.crops.every(x=>x.count>0),visuals.crops);
  check('Shared 3D models loading',visuals.assets.filter(x=>x.status==='loaded').length>=10,visuals.assets);
  await screenshot('01-desktop-farm');
+ const walkFrom=await evaluate('window.__farmQA.state().player');
+ await send('Input.dispatchKeyEvent',{type:'keyDown',key:'d',code:'KeyD',windowsVirtualKeyCode:68});
+ await sleep(580);
+ await send('Input.dispatchKeyEvent',{type:'keyUp',key:'d',code:'KeyD',windowsVirtualKeyCode:68});
+ const walkTo=await evaluate('window.__farmQA.state().player');
+ check('Real keyboard movement changes 3D player position',Math.hypot(walkTo.x-walkFrom.x,walkTo.z-walkFrom.z)>.12,
+   {from:walkFrom,to:walkTo});
  const initial=await evaluate('window.__farmQA.state()');
  check('Ripe rice available',initial.fields.find(x=>x.id==='rice-4').growth===1);
  await evaluate('window.__farmQA.teleport(-8.65,-0.9)');
@@ -149,6 +156,16 @@ async function main(){
  await sleep(500);
  const mobile=await evaluate('({w:innerWidth,h:innerHeight,scroll:document.documentElement.scrollWidth,bar:document.querySelector("#bottomBar").getBoundingClientRect().width,bag:document.querySelector("#bagBtn").getBoundingClientRect().width,stick:getComputedStyle(document.querySelector("#joystick")).display})');
  check('Mobile portrait main controls fit',mobile.scroll<=mobile.w+5&&mobile.bar>0&&mobile.bag>0&&mobile.stick!=='none',mobile);
+ const buttons=await evaluate(`(()=>{const b=document.querySelector('#bottomBar').getBoundingClientRect();
+   return [...document.querySelectorAll('#bottomBar button')].map(el=>{
+     const r=el.getBoundingClientRect();return {label:el.textContent,visible:r.width>0&&r.height>0&&
+       r.left>=b.left-2&&r.right<=b.right+2&&r.bottom<=innerHeight};
+   });
+ })()`);
+ check('Every mobile tool is visible without horizontal scrolling',buttons.every(x=>x.visible),buttons);
+ const intro=await evaluate(`(()=>{const r=document.querySelector('#objective').getBoundingClientRect();
+   return {right:r.right,width:r.width,view:innerWidth}})()`);
+ check('Mobile onboarding leaves majority of game view unobscured',intro.width<innerWidth*.65,intro);
  await screenshot('04-mobile-portrait');
  await click('#bagBtn');await screenshot('05-mobile-inventory');
  const final=await evaluate('window.__farmQA.visuals()');report.assetSummary=final.assets;
