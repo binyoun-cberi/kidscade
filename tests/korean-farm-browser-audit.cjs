@@ -165,7 +165,7 @@ async function main(){
  check('Every mobile tool is visible without horizontal scrolling',buttons.every(x=>x.visible),buttons);
  const intro=await evaluate(`(()=>{const r=document.querySelector('#objective').getBoundingClientRect();
    return {right:r.right,width:r.width,view:innerWidth}})()`);
- check('Mobile onboarding leaves majority of game view unobscured',intro.width<innerWidth*.65,intro);
+ check('Mobile onboarding leaves majority of game view unobscured',intro.width<intro.view*.65,intro);
  await screenshot('04-mobile-portrait');
  const touchStart=await evaluate('window.__farmQA.state().player');
  const stick=await evaluate(`(()=>{const r=document.querySelector('#joystick').getBoundingClientRect();
