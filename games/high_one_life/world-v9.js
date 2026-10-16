@@ -11,6 +11,17 @@
 'use strict';
 const VERSION=9,MAX_PEOPLE=24,MAX_LOG=760,MAX_QUEUE=12;
 const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+// User-facing narration must choose the actual Korean particle, not print both.
+function fluentKorean(line){
+ return String(line).replace(/([가-힣]+)\((이|와|을|으)\)(가|과|를|로)/g,(all,word,part,tail)=>{
+  const final=(word.charCodeAt(word.length-1)-0xac00)%28;
+  if(part==='이'&&tail==='가')return word+(final?'이':'가');
+  if(part==='와'&&tail==='과')return word+(final?'과':'와');
+  if(part==='을'&&tail==='를')return word+(final?'을':'를');
+  if(part==='으'&&tail==='로')return word+(final&&final!==8?'으로':'로');
+  return all;
+ });
+}
 const roll=(life,salt)=>W4.roll(life,life.age,salt);
 const names={
  대한민국:{female:['지민','하윤','수연','소희','은서','영희'],male:['지훈','도현','민수','준호','성민','영수']},
@@ -83,11 +94,20 @@ function families(life,state){
   const age=life.year-p.birthYear;
   if(age<0)continue;
   if(p.role==='자녀'){
-   for(const [mark,a,name,school] of [
+   // Before mass schooling expanded, being six or twelve did not establish enrolment.
+   // Children learned in households, work, villages and sometimes a school.
+   const milestones=life.year<1970?[
+    ['school',6,'가족과 이웃에게 글과 생활을 배우기 시작','집안과 지역에서 배우는 중'],
+    ['middle',12,'살림과 생업을 익히며 앞으로 할 일을 생각','집안과 지역에서 배우는 중'],
+    ['graduate',18,'스스로 할 일과 배움을 이어 갈 길을 고민','진로와 생업을 찾는 중'],
+    ['adult',25,'스스로의 생활을 꾸리기 시작','성인기']
+   ]:[
+
     ['school',6,'학교에 입학','초등 재학'],['middle',12,'중등 과정을 시작','중등 재학'],
     ['graduate',18,'학교를 마치고 자신의 진로를 고민','교육·진로 탐색'],
     ['adult',25,'스스로의 생활을 꾸리기 시작','성인기']
-   ]){
+   ];
+   for(const [mark,a,name,school] of milestones){
     if(age===a&&!p.milestones.includes(mark)){
      p.school=school;
      markPerson(life,p,mark,p.name+'(이)가 '+a+'세가 되어 '+name+'했다.');
@@ -482,7 +502,7 @@ function install(){
  // The existing v1 chronology prunes at 100 entries. Keep the complete v9 lived
  // chronicle within a bounded payload; do not replace its original ordering.
  Life.prototype.logEvent=function(text,kind='life'){
-  this.log.push({age:this.age,year:this.year,text:String(text).slice(0,320),kind});
+  this.log.push({age:this.age,year:this.year,text:fluentKorean(text).slice(0,320),kind});
   if(this.log.length>MAX_LOG){
    const extra=this.log.length-MAX_LOG;
    this.log.splice(0,extra);
