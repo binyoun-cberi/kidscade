@@ -75,7 +75,7 @@ function move(life,state){
  const dest=p.settlement==='농촌'?'지역의 다른 마을':'다른 지역의 임시 거처';
  p.city=dest;p.settlement='소도시';state.moves++;
  tag(life,state,'거주지 이동');
- life.logEvent('가족과 상의해 '+before+'에서 '+dest+'(으)로 생활 터전을 옮겼다.','history-impact');
+ life.logEvent('가족과 상의해 '+before+'에서 '+dest+'로 생활 터전을 옮겼다.','history-impact');
  return true;
 }
 function school(life,state){
