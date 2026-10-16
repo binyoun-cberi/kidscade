@@ -1,0 +1,12 @@
+/* A quiet, legible journey ledger inside the existing life chronicle. */
+.travel22-panel{margin:12px 0 17px;padding:16px 18px;border:1px solid #b8cfc6;border-radius:12px;background:linear-gradient(130deg,#f3fbf5,#fff6e7);color:#244541}
+.travel22-panel .stat-title{display:flex;justify-content:space-between;gap:8px;align-items:baseline;font-weight:800;margin:0 0 9px}
+.travel22-panel .stat-title span{font-size:12px;font-weight:600;color:#507a76}
+.travel22-panel p{font-size:13px;line-height:1.65;margin:7px 0;word-break:keep-all}
+.travel22-panel #travel22Place{font-size:17px;font-weight:800}
+.travel22-panel summary{font-weight:750;font-size:13px;cursor:pointer;padding:11px 0}
+.travel22-panel ul{padding:0;margin:0 0 8px;list-style:none}
+.travel22-panel li{font-size:12px;margin:5px 0;padding:8px 10px;border-left:3px solid #d1ae72;background:#fffdf7;line-height:1.6}
+.travel22-panel a{display:inline-block;font-size:12px;color:#24776f;text-decoration:underline;margin-top:6px}
+body.joseon-book .travel22-panel{background:#f5e8c9;color:#3b2d1e;border-color:#a9926c}
+@media(max-width:700px){.travel22-panel{padding:13px}.travel22-panel .stat-title{flex-wrap:wrap}}
