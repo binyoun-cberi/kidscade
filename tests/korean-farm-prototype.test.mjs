@@ -33,7 +33,7 @@ test('saves reject corruption, recover defaults, and preserve visited rice plots
   old.seenPlots=['rice-2','rice-2','corn-1','rice-3'];
   old.plots=[{id:'rice-1',stage:9},{id:'corn-1',stage:-3}];
   const restored=validateFarmState(old);
-  assert.equal(restored.player.x,0);
+  assert.equal(restored.player.x,makeFarmState().player.x);
   assert.equal(restored.player.z,-21.5);
   assert.equal(restored.camera.zoom,15);
   assert.deepEqual(restored.seenPlots,['rice-2','rice-3']);
