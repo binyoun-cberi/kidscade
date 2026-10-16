@@ -167,6 +167,16 @@ async function main(){
    return {right:r.right,width:r.width,view:innerWidth}})()`);
  check('Mobile onboarding leaves majority of game view unobscured',intro.width<innerWidth*.65,intro);
  await screenshot('04-mobile-portrait');
+ const touchStart=await evaluate('window.__farmQA.state().player');
+ const stick=await evaluate(`(()=>{const r=document.querySelector('#joystick').getBoundingClientRect();
+   return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);
+ await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:stick.x,y:stick.y,id:17}]});
+ await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:stick.x+25,y:stick.y-7,id:17}]});
+ await sleep(640);
+ await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ const touchEnd=await evaluate('window.__farmQA.state().player');
+ check('Real mobile virtual joystick moves player',Math.hypot(touchEnd.x-touchStart.x,touchEnd.z-touchStart.z)>.16,
+   {start:touchStart,end:touchEnd});
  await click('#bagBtn');await screenshot('05-mobile-inventory');
  const final=await evaluate('window.__farmQA.visuals()');report.assetSummary=final.assets;
  check('No page exceptions',errors.length===0,{errors});
