@@ -228,7 +228,9 @@
       if(this.age>=70 && this.rand()<.30) this.change({bonds:-1});
       if(this.age>=19 && this.age<=67 && this.rand()<.24) this.change({wealth:this.stats.knowledge>=60?2:1});
       if(this.age>=30 && this.rand()<.2) this.change({happiness:-1});
-      if(this.age===7) this.logEvent('학교와 친구들 사이에서 더 넓은 세상을 알아가기 시작했다.','milestone');
+      if(this.age===7) this.logEvent(this.year<1946
+        ?'일곱 살이 되었다. 집안 어른과 이웃에게서 글과 일을 배우며 세상을 알아 간다.'
+        :'학교와 친구들 사이에서 더 넓은 세상을 알아가기 시작했다.','milestone');
       if(this.age===19) this.logEvent('어른이 되어 스스로의 방향을 생각하기 시작했다.','milestone');
       if(this.age===65) this.logEvent('오랜 시간이 지나고 삶의 속도가 조금씩 바뀌었다.','milestone');
       if(this.age >= 2 && this.rand() < .36) {
