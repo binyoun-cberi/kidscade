@@ -25,7 +25,7 @@ test('twenty distinct colonial household scenes are dated, bounded, and offer th
  for(const id of ['landRegistry','riceExpansion','tenantPetition','students1929','languageSociety1942','laborNotices','draftNotice1944','liberationDay'])assert.ok(ids.has(id),id);
 });
 test('specific historical dates are offered even when the player age is not 1 modulo 4',()=>{
- for(const [year,bornYear,id] of [[1919,1900,'manse'],[1929,1910,'students1929'],[1945,1920,'liberationDay']]){
+ for(const [year,bornYear,id] of [[1919,1900,'manse'],[1929,1910,'students1929'],[1945,1921,'liberationDay']]){
   const l=at(born(bornYear),year),s=Colonial.ensure(l);
   assert.notEqual(l.age%4,1);
   Colonial.yearly(l,s);
