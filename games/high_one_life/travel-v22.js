@@ -10,7 +10,7 @@
 'use strict';
 const VERSION=1;
 const SOURCES=Object.freeze({
- ming:'https://contents.history.go.kr/',
+ ming:'https://encykorea.aks.ac.kr/Article/E0004940',
  hawaii:'https://theme.archives.go.kr/next/immigration/endoftheJoseonDynasty.do',
  japan:'https://contents.history.go.kr/',
  qing:'https://contents.history.go.kr/'
