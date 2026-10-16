@@ -27,6 +27,7 @@
 <link rel="stylesheet" href="./joseon-office-v19.css?v=1">
 <link rel="stylesheet" href="./joseon-genealogy-v15.css?v=2">
 <link rel="stylesheet" href="./identity-v20.css?v=1">
+<link rel="stylesheet" href="./travel-v22.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -145,6 +146,14 @@
         <article class="chronicle">
           <div class="chapter-line"><span id="lifeStage" class="chapter">유년기</span><span id="playStatus">인생이 흘러가는 중</span></div>
           <p id="historyContext" class="history-context">이 인생이 놓인 시대</p>
+          <section id="travel22Panel" class="travel22-panel hidden" aria-label="먼 곳으로 이어진 인생">
+            <div class="stat-title">먼 곳에서 살아가는 날들 <span id="travel22Status">고향에서</span></div>
+            <p id="travel22Place">—</p>
+            <p id="travel22Reason">—</p>
+            <p id="travel22Memory">—</p>
+            <details><summary>오간 길과 가족의 기록</summary><ul id="travel22Moves"></ul></details>
+            <a id="travel22Source" class="hidden" href="https://contents.history.go.kr/" target="_blank" rel="noopener noreferrer">이 시절의 역사 자료 읽기 ↗</a>
+          </section>
           <section id="v10HistoryPanel" class="v10-history-panel" aria-label="역사적 사건이 이 인생에 미치는 영향">
             <div class="stat-title">내가 살아온 시대 <span id="v10HistoricalCount">0개 역사 사건</span></div>
             <p id="v10HistoryStatus">그해 세상에서는 어떤 일이 있었을까?</p>
@@ -486,7 +495,7 @@
 <script src="./world-v8.js?v=3"></script>
 <script src="./scenes-v6.js?v=1"></script>
 <script src="./scenes-v8.js?v=1"></script>
-<script src="./history.js?v=2"></script>
+<script src="./history.js?v=3"></script>
 <script src="./world-v9.js?v=3"></script>
 <script src="./history-data-v10.js?v=2"></script>
 <script src="./history-stories-v10.js?v=3"></script>
@@ -497,7 +506,7 @@
 <script src="./world-v12.js?v=2"></script>
 <script src="./world-v13.js?v=2"></script>
 <script src="./joseon-history-policy.js?v=1"></script>
-<script src="./joseon-v1.js?v=11"></script>
+<script src="./joseon-v1.js?v=12"></script>
 <script src="./joseon-v2.js?v=5"></script>
 <script src="./joseon-culture-v1.js?v=2"></script>
 <script src="./joseon-v3.js?v=7"></script>
@@ -518,6 +527,7 @@
 <script src="./joseon-v19-local-office.js?v=2"></script>
 <script src="./colonial-daily-v2.js?v=2"></script>
 <script src="./joseon-pixel-v2.js?v=2"></script>
-<script src="./game.js?v=53"></script>
+<script src="./travel-v22.js?v=1"></script>
+<script src="./game.js?v=54"></script>
 </body>
 </html>
