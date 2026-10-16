@@ -173,13 +173,14 @@ async function drawCrops(id){
   clearGroup(record.cropLayer);
   plotOrigins.set(id,resource.object?resource.origin:'임시 모형');
   const crop=resource.object||fallbackCrop(plot.kind);
-  const cols=3,rows=plot.kind==='rice'?3:2;
+  const cols=plot.kind==='rice'?5:3,rows=plot.kind==='rice'?5:2;
   for(let x=0;x<cols;x++)for(let z=0;z<rows;z++){
     // Static copies are sufficient for the first farming loop; source GLB is cached.
     const model=crop.clone(true);
-    model.position.x+=(x-(cols-1)/2)*(plot.w/(cols+.3));
-    model.position.z+=(z-(rows-1)/2)*(plot.d/(rows+.3));
+    model.position.x+=(x-(cols-1)/2)*(plot.w/(cols+.35));
+    model.position.z+=(z-(rows-1)/2)*(plot.d/(rows+.35));
     model.position.y+=plot.kind==='rice'?.22:.26;
+    if(plot.kind==='rice')model.scale.multiplyScalar(1.12);
     model.rotation.y=(x*3+z)*.36;
     record.cropLayer.add(model);
   }
