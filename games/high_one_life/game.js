@@ -37,6 +37,7 @@
   const Genealogy = window.OneLifeGenealogyV15 || null;
   const BranchSwitch = window.OneLifeBranchSwitchV17 || null;
   const ColonialLife = window.OneLifeColonialDaily || null;
+  const Travel22 = window.OneLifeTravel22 || null;
   const History = window.OneLifeHistory;
   const Official=window.OneLifeOfficialStats||{countries:{}};
   const metric=(key)=>life?.birthYear===2026?Official.countries?.[life?.country?.[0]]?.[key]||null:null;
@@ -965,12 +966,28 @@
   }
   function render() {
     if (!life) return;
+    const journey=Travel22?.summary(life)||null;
+    const abroad=!!journey?.residence?.abroad;
+    $('travel22Panel').classList.toggle('hidden',!abroad&&!journey?.movements?.length);
+    if(journey&&(abroad||journey.movements.length)){
+      const residence=journey.residence;
+      $('travel22Status').textContent=abroad?'타향에서 '+journey.yearsAbroad+'년':'고향에 돌아온 뒤';
+      $('travel22Place').textContent=abroad?residence.place:'고향에서 다시 일상을 이어 간다.';
+      $('travel22Reason').textContent=abroad?'떠나온 까닭 · '+residence.reason+' · 고향 '+journey.birthplace:'태어난 고향 · '+journey.birthplace;
+      $('travel22Memory').textContent=abroad&&residence.route==='hawaii'?'편지 '+journey.letters+'통 · 함께한 이웃의 기억 '+journey.relationships+' · 살림의 기록 '+journey.earnings:
+        abroad&&residence.route==='ming'?'사행 중 맡은 일과 돌아갈 길을 살핀다.':
+        abroad?'돌아갈 길을 헤아리며 고향의 소식을 기다린다.':'먼 곳에서 보낸 시간이 집안의 기억으로 남았다.';
+      const list=$('travel22Moves');list.replaceChildren();
+      journey.movements.slice(-8).forEach(item=>{const li=document.createElement('li');li.textContent=item.year+'년 · '+item.action+' · '+item.place;list.append(li);});
+      const link=$('travel22Source');link.classList.toggle('hidden',!journey.source);
+      if(journey.source)link.href=journey.source;
+    }
     $('openGenealogyBtn').classList.toggle('hidden',!Genealogy||!Joseon.isJoseon(life));
     paintLifeRecord();
     paintArc();
     $('placeFlag').textContent=life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1];
     const captiveHere=Joseon14?.summary(life)?.captivity;
-    $('placeName').textContent=captiveHere?.status==='held'?
+    $('placeName').textContent=abroad?journey.residence.place:captiveHere?.status==='held'?
       (captiveHere.realm==='japan'?'일본에서 포로로 지내는 중':'후금·청에서 포로로 지내는 중')+
       ' · 고향 '+Joseon.summary(life).region:
       History.place(life);
@@ -978,13 +995,14 @@
     $('historyContext').textContent=Joseon.inOldEra(life)?Joseon2.summary(life).ruler+' 재위 · '+Joseon.era(life.year)+' · '+life.year+'년':life.birthYear===2026
       ? '2026년, 새로운 인생이 시작됐다.'
       : History.period(life)+' · '+life.year+'년의 세상';
+    if(abroad)$('historyContext').textContent=life.year+'년 · '+journey.residence.region+' · 고향 '+journey.birthplace+'에서 떠난 삶';
     const archive=(Joseon.inOldEra(life)?(Joseon.eventFor(life.year)||Joseon2.at(life.year)):null)||World10.readCurrent(life)||History.currentEvent(life),sourceLink=$('historySourceLink');
     sourceLink.classList.toggle('hidden',!archive);
     if(archive){sourceLink.href=archive.source;sourceLink.textContent=archive.year+'년 '+archive.title+' · 역사 자료';}
     $('currentAge').textContent=String(life.age);
     $('lifeStage').textContent=Sim.stages(life.age);
     $('chapterNumber').textContent=String(Math.floor(life.age/10)+1).padStart(2,'0');
-    $('traitCountry').textContent=History.place(life)+' · '+life.gender;
+    $('traitCountry').textContent=(abroad?journey.residence.region:History.place(life))+' · '+life.gender;
     $('traitFamily').textContent=life.familyLevel;
     $('traitCareer').textContent=life.career;
     $('storyTitle').textContent=life.getChoice()?.title || (Joseon.isJoseon(life)?(life.age<7?'집안의 첫 기억':life.age<20?'배워야 할 일들':life.age<40?'고을에서 살아가는 날들':life.age<65?'살림과 사람 사이에서':'지나온 계절들'):(life.age<6?'인생의 첫 장면':life.age<20?'세상을 배우는 날들':life.age<40?'나만의 길을 찾아서':life.age<65?'살아온 시간의 무게':'오늘이라는 선물'));
@@ -1207,6 +1225,7 @@
       !oldLife&&life.world?.educationLevel&&life.world.educationLevel!=='없음'
         ?'살면서 '+life.world.educationLevel+'의 시간을 보냈다.':'',
       life.career&&life.career!=='학생'?'마지막으로 기억되는 일은 '+life.career+'이었다.':'',
+      (Travel22?.summary(life)?.movements?.length?'고향을 떠났다가 다시 돌아오거나 타향에서 살아간 시간도 이 인생의 일부였다.':''),
       !oldLife&&careLife.careYears?'가족을 돌보며 보낸 시간도 '+careLife.careYears+'년이었다.':'',
       !oldLife&&careLife.memories.length?'마지막까지 떠오른 기억은 '+careLife.memories.slice(-2).join(', ')+'였다.':''
     ].filter(Boolean);
@@ -1242,8 +1261,8 @@
     });
     showComparison();
     const list=$('endHighlights'); list.replaceChildren();
-    const highlights=[...life.log.filter(e=>['joseon4-family','joseon-family','milestone','decision','chain','world','safety','profession','history-choice','history-followup','era-choice','era-followup','care13-choice','care13-followup','care13-memory','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon-followup','joseon2-followup','joseon3-followup','joseon4-followup','joseon-memory','joseon2-memory','joseon3-memory','joseon4-memory','joseon5-choice','joseon5-followup','joseon5-memory','joseon6-choice','joseon6-followup','joseon6-memory','joseon7-followup','joseon9-followup','joseon7-choice','joseon9-choice','colonialDaily-choice','colonialDaily-followup','joseonAnnals-choice','joseonAnnals-followup','joseonAnnals-fact','joseon11-choice','joseon11-followup','joseon11-memory','joseon12-choice','joseon12-followup','joseon12-memory','joseon13-choice','joseon13-followup','joseon13-family','joseon13-memory','joseon14-choice','joseon14-followup','joseon14-return','joseon14-captivity','joseon14-generations'].includes(e.kind))]
-      .filter(e=>['decision','chain','world','safety','profession','history-choice','history-followup','care13-choice','care13-followup','joseon-choice','joseon-followup','joseon-memory','joseon2-choice','joseon2-followup','joseon2-memory','joseon3-choice','joseon3-followup','joseon3-memory','joseon4-choice','joseon4-followup','joseon4-memory','joseon4-family','joseon5-choice','joseon5-memory','joseon5-family','joseon6-choice','joseon6-followup','joseon6-memory','joseon7-followup','joseon9-followup','joseon7-choice','joseon9-choice','joseon-family','colonialDaily-choice','colonialDaily-followup','joseonAnnals-choice','joseonAnnals-followup','joseonAnnals-fact','joseon11-choice','joseon11-followup','joseon11-memory','joseon12-choice','joseon12-followup','joseon12-memory','joseon13-choice','joseon13-followup','joseon13-family','joseon13-memory','joseon14-choice','joseon14-followup','joseon14-return','joseon14-captivity','joseon14-generations'].includes(e.kind)||e.age<21)
+    const highlights=[...life.log.filter(e=>['joseon4-family','joseon-family','milestone','decision','chain','world','safety','profession','history-choice','history-followup','era-choice','era-followup','care13-choice','care13-followup','care13-memory','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon-followup','joseon2-followup','joseon3-followup','joseon4-followup','joseon-memory','joseon2-memory','joseon3-memory','joseon4-memory','joseon5-choice','joseon5-followup','joseon5-memory','joseon6-choice','joseon6-followup','joseon6-memory','joseon7-followup','joseon9-followup','joseon7-choice','joseon9-choice','colonialDaily-choice','colonialDaily-followup','joseonAnnals-choice','joseonAnnals-followup','joseonAnnals-fact','joseon11-choice','joseon11-followup','joseon11-memory','joseon12-choice','joseon12-followup','joseon12-memory','joseon13-choice','joseon13-followup','joseon13-family','joseon13-memory','joseon14-choice','joseon14-followup','joseon14-return','joseon14-captivity','joseon14-generations','travel22-depart','travel22-return','travel22-choice','travel22-daily'].includes(e.kind))]
+      .filter(e=>['decision','chain','world','safety','profession','history-choice','history-followup','care13-choice','care13-followup','joseon-choice','joseon-followup','joseon-memory','joseon2-choice','joseon2-followup','joseon2-memory','joseon3-choice','joseon3-followup','joseon3-memory','joseon4-choice','joseon4-followup','joseon4-memory','joseon4-family','joseon5-choice','joseon5-memory','joseon5-family','joseon6-choice','joseon6-followup','joseon6-memory','joseon7-followup','joseon9-followup','joseon7-choice','joseon9-choice','joseon-family','colonialDaily-choice','colonialDaily-followup','joseonAnnals-choice','joseonAnnals-followup','joseonAnnals-fact','joseon11-choice','joseon11-followup','joseon11-memory','joseon12-choice','joseon12-followup','joseon12-memory','joseon13-choice','joseon13-followup','joseon13-family','joseon13-memory','joseon14-choice','joseon14-followup','joseon14-return','joseon14-captivity','joseon14-generations','travel22-depart','travel22-return','travel22-choice','travel22-daily'].includes(e.kind)||e.age<21)
       .slice(-16);
     if(!highlights.length) highlights.push(life.log[0]);
     highlights.forEach(e=>{
