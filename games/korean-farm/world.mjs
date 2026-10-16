@@ -16,7 +16,7 @@ export const FIELD_DEFS = Object.freeze([
 ]);
 const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
 export function makeFarmState(){
-  return {version:SAVE_VERSION,selected:'rice-1',player:{x:0,z:9},camera:{zoom:23,angle:.78},
+  return {version:SAVE_VERSION,selected:'rice-1',player:{x:-5,z:3},camera:{zoom:21,angle:.78},
     plots:FIELD_DEFS.map(({id,stage})=>({id,stage})),seenPlots:[],visits:0};
 }
 export function validateFarmState(raw){
