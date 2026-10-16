@@ -13,11 +13,15 @@ const SOURCES=Object.freeze({
  ming:'https://encykorea.aks.ac.kr/Article/E0004940',
  hawaii:'https://theme.archives.go.kr/next/immigration/endoftheJoseonDynasty.do',
  japan:'https://contents.history.go.kr/',
- qing:'https://contents.history.go.kr/'
+ qing:'https://encykorea.aks.ac.kr/Article/E0053680',
+ jurchen:'https://contents.history.go.kr/front/tg/print.do?levelId=tg_003_0800&treeId=&whereStr=',
+ qingMarket:'https://encykorea.aks.ac.kr/Article/E0053680'
 });
 const desc={
  ming:{place:'명나라로 향하는 사행길',region:'명나라',reason:'사행·수행',brief:'조정의 사신과 함께 명나라에 다녀올 길이 열렸다. 관청에서 맡긴 일과 길 위의 고단함을 생각해야 한다.'},
- hawaii:{place:'하와이의 사탕수수 농장',region:'하와이',reason:'모집 노동 이주',brief:'바다 건너 하와이의 농장에서 사람을 모집한다는 말이 들렸다. 먼 길과 계약된 노동을 감당해야 한다.'}
+ hawaii:{place:'하와이의 사탕수수 농장',region:'하와이',reason:'모집 노동 이주',brief:'바다 건너 하와이의 농장에서 사람을 모집한다는 말이 들렸다. 먼 길과 계약된 노동을 감당해야 한다.'},
+ jurchen:{place:'두만강 북쪽 변경 교역길',region:'여진 여러 집단의 활동 지역',reason:'북방 변경 교역·접촉',brief:'북쪽 변경의 장터에서 낯선 말을 쓰는 사람들과 물건을 바꾼다는 소식이 왔다. 길에는 경계와 단속도 있다.'},
+ qingMarket:{place:'청의 요동 책문 교역길',region:'청의 요동',reason:'책문 사행·교역 동행',brief:'책문 근처로 향하는 사행과 교역 행렬에 인편이 필요하다고 한다. 관의 통제와 길 위의 고단함도 살펴야 한다.'}
 };
 const hash=(seed,year,salt)=>{let x=((seed>>>0)^Math.imul(year+salt,0x9e3779b9))>>>0;x=Math.imul(x^(x>>>16),0x7feb352d);x=Math.imul(x^(x>>>15),0x846ca68b);return ((x^(x>>>16))>>>0)/4294967296;};
 const clean=(x,n=140)=>String(x||'').slice(0,n);
@@ -25,9 +29,12 @@ const isHome=l=>!l?.travel22?.residence?.abroad;
 function eligible(l,route){
  if(!l?.alive||l.country?.[0]!=='대한민국'||!isHome(l)||l.joseon14?.captivity?.status==='held')return false;
  if(route==='hawaii')return l.year>=1903&&l.year<=1905&&l.age>=16&&l.age<=48;
- if(route!=='ming'||!J?.isJoseon(l)||!J.inOldEra(l)||l.year<1420||l.year>1590||l.age<18||l.age>55)return false;
- const social=V5?.summary(l)||{};
+ if(!J?.isJoseon(l)||!J.inOldEra(l)||l.age<18||l.age>60)return false;
+ const social=V5?.summary(l)||{},region=J.summary(l)?.region;
  if(['사노비','공노비','백정'].includes(social.origin)&&!social.freed)return false;
+ if(route==='jurchen')return l.year>=1450&&l.year<=1590&&region==='함경도'&&['역관 가계','상인 가계','보부상 가계','서리 가계'].includes(social.origin);
+ if(route==='qingMarket')return l.year>=1660&&l.year<=1699&&region==='평안도'&&['역관 가계','상인 가계','보부상 가계','서리 가계'].includes(social.origin);
+ if(route!=='ming'||l.year<1420||l.year>1590||l.age>55)return false;
  return social.origin==='역관 가계'||social.rank>=1||J.ensure(l)?.literacy>=2;
 }
 function ensure(l){
@@ -43,10 +50,10 @@ function prompt(l){
  const q=s.pending;
  if(q.type==='invite'){
   const route=desc[q.route];if(!route)return null;
-  return {title:q.route==='ming'?'명나라에 다녀올 기회':'하와이에서 일할 사람을 찾다',
+  return {title:({ming:'명나라에 다녀올 기회',hawaii:'하와이에서 일할 사람을 찾다',jurchen:'북쪽 변경의 교역을 돕다',qingMarket:'책문으로 향하는 사람들'})[q.route],
    description:route.brief,options:[
-    {label:q.route==='ming'?'사행을 따라나선다':'계약 내용을 살피고 바다를 건넌다',
-     note:q.route==='ming'?'맡은 일을 마친 뒤 귀국해야 한다':'떠나면 집으로 돌아오는 일도 쉽지 않다'},
+    {label:q.route==='hawaii'?'계약 내용을 살피고 바다를 건넌다':q.route==='ming'?'사행을 따라나선다':'행렬의 허락을 받아 교역길에 동행한다',
+     note:q.route==='hawaii'?'떠나면 집으로 돌아오는 일도 쉽지 않다':'맡은 일을 마친 뒤 고향에 돌아갈 채비를 해야 한다'},
     {label:'가족과 의논하고 고향에 남는다',note:'이번에는 집안의 생활을 이어 간다'},
     {label:'이웃의 준비를 돕는다',note:'먼 곳에 가는 사람에게 작은 힘을 보탠다'}]};
  }
@@ -56,6 +63,9 @@ function prompt(l){
    options:[{label:'통역과 기록을 살핀다',note:'맡은 문서를 챙긴다'},
     {label:'현지 사람과 물건에 대해 묻는다',note:'낯선 생활을 배운다'},
     {label:'동행한 사람을 보살핀다',note:'길 위의 안전을 생각한다'}]};
+  if(['jurchen','qingMarket'].includes(s.residence.route))return {title:s.residence.route==='jurchen'?'변경 장터에서 보낸 하루':'책문 교역길에서 보낸 하루',
+   description:s.residence.route==='jurchen'?'말과 관습이 다른 사람들이 물건을 꺼내 놓고 서로의 뜻을 살핀다.':'사행과 상인들이 모인 곳에서 짐과 장부를 지키는 일이 중요하다.',
+   options:[{label:'거래할 물건과 수량을 확인한다',note:'서로 품목을 맞춘다'},{label:'동행한 이의 통역과 짐을 돕는다',note:'말을 다르게 쓰는 사람과 이야기한다'},{label:'돌아갈 길과 양식을 살핀다',note:'집에서 기다리는 사람을 생각한다'}]};
   return {title:'하와이의 하루',
    description:l.year<1910?'끝없는 사탕수수밭에서 긴 하루가 이어진다.':
     '동포들의 소식이 오가고, 고향에 편지를 보내는 사람도 있다. 먼 곳에서 살아갈 길을 다시 생각한다.',
@@ -76,23 +86,29 @@ function offer(l,route){
 }
 function maybeOffer(l){
  if(!l?.alive||l.pending||!isHome(l))return false;
- const routes=l.year>=1903&&l.year<=1905?['hawaii']:l.year>=1420&&l.year<=1590?['ming']:[];
+ const routes=l.year>=1903&&l.year<=1905?['hawaii']:l.year>=1660&&l.year<=1699?['qingMarket']:l.year>=1450&&l.year<=1590?['jurchen','ming']:l.year>=1420&&l.year<1450?['ming']:[];
  for(const route of routes){
   if(!eligible(l,route))continue;
   const s=ensure(l),id=route+':'+l.year;if(s.seen.includes(id))continue;
-  const chance=route==='hawaii'?.68:.19;
-  if(hash(l.seed,l.year,route==='ming'?119:120)<chance)return offer(l,route);
+  const chance=route==='hawaii'?.68:route==='ming'?.19:.16;
+  const salt=({ming:119,hawaii:120,jurchen:121,qingMarket:122})[route];
+  if(hash(l.seed,l.year,salt)<chance)return offer(l,route);
  }
  return false;
 }
 function move(l,route){
  const s=ensure(l),r=desc[route];if(!r||!isHome(l))return false;
  s.residence={abroad:true,place:r.place,region:r.region,reason:r.reason,route,since:l.year,
-  until:route==='ming'?l.year+2:null};
+  until:route==='ming'?l.year+2:['jurchen','qingMarket'].includes(route)?l.year+1:null};
  s.movements.push({year:l.year,place:r.place,reason:r.reason,route,action:'출발'});
  s.movements=s.movements.slice(-24);s.yearsAbroad=0;s.source=SOURCES[route];
- l.logEvent(route==='ming'?'사행을 따라 명나라로 향했다. 고향에서 멀어지는 길 위에 올랐다.':
-  '하와이로 향하는 배에 올랐다. 가족과 고향의 모습이 점점 멀어졌다.','travel22-depart');
+ // Seasonal border journeys need a real local decision without inventing
+ // a two-year residence: take it before next year's return.
+ if(['jurchen','qingMarket'].includes(route)){
+  s.pending={type:'abroad',id:'border-'+l.year,year:l.year,route};
+  l.pending='travel22:'+s.pending.id;
+ }
+ l.logEvent(route==='ming'?'사행을 따라 명나라로 향했다. 고향에서 멀어지는 길 위에 올랐다.':route==='jurchen'?'두만강 변경으로 물건을 거래하러 나섰다.':route==='qingMarket'?'책문의 교역길을 따라 짐과 문서를 챙겨 나섰다.':'하와이로 향하는 배에 올랐다. 가족과 고향의 모습이 점점 멀어졌다.','travel22-depart');
  return true;
 }
 function homecoming(l,why){
@@ -119,6 +135,10 @@ function choose(l,index){
    const text=['사행에 필요한 문서와 말을 정리했다.','말이 다른 사람들과 물건과 풍습을 이야기했다.','함께 먼 길에 오른 사람의 짐을 나누어 들었다.'][index];
    l.change(index===0?{knowledge:3}:index===1?{knowledge:2,bonds:2}:{health:1,bonds:3});
    l.logEvent(text,'travel22-choice');
+  }else if(['jurchen','qingMarket'].includes(s.residence.route)){
+   if(index===0){s.earnings=Math.min(160,s.earnings+2);l.change({knowledge:2,wealth:1});l.logEvent('거래할 물건의 수량과 값을 서로 확인했다.','travel22-choice');}
+   if(index===1){s.relationships=Math.min(100,s.relationships+2);l.change({knowledge:2,bonds:2});l.logEvent('동행한 사람과 말을 맞추며 짐을 나눠 옮겼다.','travel22-choice');}
+   if(index===2){s.letters=Math.min(100,s.letters+1);l.change({health:1,bonds:1});l.logEvent('돌아가는 길에 필요한 양식과 짐을 점검했다.','travel22-choice');}
   }else{
    if(index===0){s.earnings=Math.min(160,s.earnings+4);l.change({wealth:2,health:-2});l.logEvent('길고 고단한 노동을 마쳤다. 하루의 품삯에서 먹을 비용을 헤아렸다.','travel22-choice');}
    if(index===1){s.relationships=Math.min(100,s.relationships+3);l.change({knowledge:2,bonds:3});l.logEvent('다른 고향에서 온 이웃과 모여 말과 소식을 나누었다.','travel22-choice');}
@@ -137,7 +157,10 @@ function abroadYear(l,s){
  s.yearsAbroad=Math.max(0,l.year-s.residence.since);
  const r=s.residence.route;
  // Historical expatriates do not collect domestic Joseon taxes, farm income or Korean housing events.
- if(r==='ming'){
+ if(['jurchen','qingMarket'].includes(r)){
+  if(l.year>=s.residence.until){homecoming(l,'변경의 일을 마치고 돌아옴');return;}
+  l.logEvent('오가는 사람의 짐과 말을 살피며 낯선 장터의 하루를 보냈다.','travel22-daily');
+ }else if(r==='ming'){
   if(l.year>=s.residence.until){homecoming(l,'사행을 마치고 돌아옴');return;}
   l.logEvent('관청의 문서를 맡아 살피며 낯선 땅의 사람들과 하룻밤을 보냈다.','travel22-daily');
  }else if(r==='hawaii'){
@@ -164,6 +187,7 @@ function summary(l){
  const captive=captivityResidence(l),r=captive||s.residence;
  return {birthplace:s.birthplace,residence:{...r},yearsAbroad:captive?l.year-captive.since:s.yearsAbroad,
   letters:s.letters,earnings:s.earnings,relationships:s.relationships,
+  captivityTies:captive?{...(l.joseon14?.overseas||{})}:null,
   movements:s.movements.map(q=>({...q})),source:captive?(r.region==='일본'?SOURCES.japan:SOURCES.qing):s.source,
   fictional:true};
 }
@@ -171,17 +195,17 @@ function hydrate(l,data){
  const s=ensure(l),saved=data?.travel22;if(!s||!saved||saved.version!==VERSION)return s;
  const route=saved.residence?.route,year=saved.residence?.since;
  s.birthplace=clean(saved.birthplace,40)||s.birthplace;
- if(['ming','hawaii'].includes(route)&&saved.residence.abroad===true&&Number.isInteger(year)&&year>=l.birthYear&&year<=l.year&&
-    (route==='hawaii'?year>=1903&&year<=1905:year>=1420&&year<=1590)&&
-    (route!=='ming'||l.year<year+2)){
+ if(['ming','hawaii','jurchen','qingMarket'].includes(route)&&saved.residence.abroad===true&&Number.isInteger(year)&&year>=l.birthYear&&year<=l.year&&
+    (route==='hawaii'?year>=1903&&year<=1905:route==='ming'?year>=1420&&year<=1590:route==='jurchen'?year>=1450&&year<=1590:year>=1660&&year<=1699)&&
+    (!['ming','jurchen','qingMarket'].includes(route)||l.year<year+(route==='ming'?2:1))){
   const r=desc[route];
-  s.residence={abroad:true,place:r.place,region:r.region,reason:r.reason,route,since:year,until:route==='ming'?year+2:null};
+  s.residence={abroad:true,place:r.place,region:r.region,reason:r.reason,route,since:year,until:route==='ming'?year+2:['jurchen','qingMarket'].includes(route)?year+1:null};
   s.source=SOURCES[route];
  }else{s.residence={abroad:false,place:'고향',region:'한반도',reason:'',route:'home',since:l.year,until:null};s.source=null;}
- if(Array.isArray(saved.movements))s.movements=saved.movements.filter(q=>q&&Number.isInteger(q.year)&&q.year>=l.birthYear&&q.year<=l.year&&['ming','hawaii'].includes(q.route)&&['출발','귀환'].includes(q.action))
+ if(Array.isArray(saved.movements))s.movements=saved.movements.filter(q=>q&&Number.isInteger(q.year)&&q.year>=l.birthYear&&q.year<=l.year&&['ming','hawaii','jurchen','qingMarket'].includes(q.route)&&['출발','귀환'].includes(q.action))
   .slice(-24).map(q=>({year:q.year,place:clean(q.place,48),reason:clean(q.reason,48),route:q.route,action:q.action}));
- if(Array.isArray(saved.seen))s.seen=saved.seen.filter(q=>typeof q==='string'&&/^(ming|hawaii):\d{4}$/.test(q)).slice(-36);
- if(Array.isArray(saved.decisions))s.decisions=saved.decisions.filter(q=>q&&Number.isInteger(q.year)&&q.year>=l.birthYear&&q.year<=l.year&&['invite','abroad'].includes(q.kind)&&[0,1,2].includes(q.choice)).slice(-65).map(q=>({year:q.year,kind:q.kind,choice:q.choice,route:q.route==='hawaii'?'hawaii':'ming'}));
+ if(Array.isArray(saved.seen))s.seen=saved.seen.filter(q=>typeof q==='string'&&/^(ming|hawaii|jurchen|qingMarket):\d{4}$/.test(q)).slice(-36);
+ if(Array.isArray(saved.decisions))s.decisions=saved.decisions.filter(q=>q&&Number.isInteger(q.year)&&q.year>=l.birthYear&&q.year<=l.year&&['invite','abroad'].includes(q.kind)&&[0,1,2].includes(q.choice)).slice(-65).map(q=>({year:q.year,kind:q.kind,choice:q.choice,route:['ming','hawaii','jurchen','qingMarket'].includes(q.route)?q.route:'ming'}));
  for(const key of ['yearsAbroad','letters','earnings','relationships'])s[key]=Number.isInteger(saved[key])?Math.max(0,Math.min(160,saved[key])):0;
  const p=saved.pending;
  const permitted=p&&p.year===l.year&&typeof p.id==='string'&&p.id.length<60&&

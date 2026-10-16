@@ -41,6 +41,22 @@ const EPISODES=[
   OPT('소식을 전할 사람을 수소문한다','고향에 이름을 전할 기회를 찾는다','돌아갈 길을 알아보는 데 도움이 될 사람을 만났다.',{contacts:2,hope:3,knowledge:2},'news'),
   OPT('함께 끌려온 이의 안부도 챙긴다','다른 사람의 귀향을 돕는다','서로의 고향을 기억하던 동료가 소식을 전했다.',{contacts:3,bonds:3},'support'),
   OPT('돌아갈 기회를 기다리며 기술을 이어 간다','그곳의 생활이 곧 자유롭다는 뜻은 아니다','낯선 곳에서 배운 일로 하루하루를 살아갔다.',{skill:2,hope:1},'skill')]),
+ EVENT('japanWorkshop','바다 건너 일터의 손기술','이곳에서는 낯선 말과 도구를 배우며 일을 해야 한다. 기술을 쓴다고 귀향이 허락되는 것은 아니다.',[
+  OPT('작업 순서와 솜씨를 익힌다','손에 남은 감각을 살린다','일을 반복하며 낯선 솜씨도 익혀 갔다.',{skill:3,workplace:3,knowledge:2},'skill'),
+  OPT('함께 일하는 사람에게 말을 배운다','물건의 이름을 물어본다','서로 다른 말을 하는 사람과 천천히 뜻을 나눴다.',{localTies:3,language:2,bonds:2},'support'),
+  OPT('지친 동료와 일손을 나눈다','쉬어 갈 틈을 찾는다','함께 일하던 사람들과 서로를 돌보았다.',{contacts:3,health:1},'rest')]),
+ EVENT('japanFamilyTies','낯선 곳에서 남은 인연','함께 일하고 살던 사람들과 관계가 깊어지기도 한다. 고향에 남은 가족의 소식은 여전히 멀다.',[
+  OPT('가까운 이와 먹을 것을 나눈다','서로의 생활을 돌본다','나눠 먹은 밥이 낯선 날의 기억으로 남았다.',{localTies:4,bonds:3},'support'),
+  OPT('고향 가족의 이름을 적는다','집과 사람의 이름을 기억한다','오래된 이름을 다시 적어 두었다.',{homeNews:4,knowledge:2},'remember'),
+  OPT('귀환 사절에 전할 사람들의 이름을 모은다','동행할 사람들의 뜻을 듣는다','누군가는 떠나고 누군가는 남겠다는 사연을 나누었다.',{contacts:3,homeNews:2},'news')]),
+ EVENT('manchuLanguage','요동의 낯선 말과 살림','여진의 여러 집단과 후금·청의 사람들이 모두 같은 삶을 사는 것은 아니다. 이곳에서 만난 이들의 말을 익혀야 한다.',[
+  OPT('현지 사람들이 쓰는 말을 배운다','짧은 말과 물건 이름을 익힌다','서로 인사하고 물건을 가리키는 말을 배웠다.',{language:4,localTies:2,knowledge:2},'skill'),
+  OPT('같이 끌려온 사람의 일을 돕는다','함께 하루를 버틴다','같은 처지의 이웃과 일손을 나눴다.',{contacts:3,bonds:3},'support'),
+  OPT('집안의 이름과 주소를 정리한다','고향에 닿을 말을 남긴다','가족의 이름과 고을을 종이에 적었다.',{homeNews:3,knowledge:2},'remember')]),
+ EVENT('manchuRansomNames','속환을 기다리는 사람들','돌아갈 사람들의 이름이 오르내린다. 몸값을 마련할 여건과 사절을 통한 교섭은 집집마다 다르다.',[
+  OPT('사절에게 전할 이름을 확인한다','가족의 사정을 모은다','이름과 고을이 적힌 문서를 서로 대조해 보았다.',{homeNews:4,contacts:3},'petition'),
+  OPT('편지와 비용을 보낼 길을 알아본다','일이 뜻대로 되지 않을 수 있다','먼 곳에 소식을 전할 방법을 다시 물었다.',{contacts:2,knowledge:2},'ransom'),
+  OPT('남겨질 사람의 생활을 돕는다','함께 어려운 날을 넘긴다','돌아가지 못한 사람들과 필요한 것을 나누었다.',{localTies:3,bonds:3},'community')]),
  EVENT('ransomOpportunity','귀향을 알아볼 기회','고향으로 돌아갈 사람을 찾는다는 말이 들린다. 일본으로 끌려간 사람은 쇄환 교섭, 후금·청으로 끌려간 사람은 속환과 가족의 비용이 걸려 있다.',[
   OPT('귀환 사절과 소식을 확인한다','명단과 귀향 가능성을 알아본다','고향으로 돌아가거나, 돌아올 다른 기회를 기다렸다.',{hope:4,contacts:2},'petition'),
   OPT('고향 가족에게 비용 마련을 부탁한다','연락이나 몸값을 마련하기 어려울 수 있다','가족과 연락을 시도한 일이 훗날까지 남았다.',{capital:-6,hope:4},'ransom'),
@@ -84,7 +100,7 @@ function ensure(l){
  if(!J?.isJoseon(l))return null;
  if(!l.joseon14)l.joseon14={version:1,processedYear:l.year,queue:[],active:null,seen:[],decisions:[],followups:[],
   captivity:null,body:{movement:'',hearing:'',pain:0,access:0},experience:{sleep:0,vigilance:0,resilience:3},
-  stigma:0,trust:0,skills:0,contacts:0,heritage:{skills:0,goods:0,memories:0},familyLine:[],recoverYears:0,lastSource:null};
+  stigma:0,trust:0,skills:0,contacts:0,overseas:{workplace:0,localTies:0,language:0,homeNews:0},heritage:{skills:0,goods:0,memories:0},familyLine:[],recoverYears:0,lastSource:null};
  return l.joseon14;
 }
 const isOld=l=>J?.inOldEra(l)&&l.alive&&l.year<=1715;
@@ -136,6 +152,8 @@ function reunion(l,s,route='쇄환'){
  const c=s.captivity;if(!c||c.status!=='held')return false;
  c.status='returned';c.returnedYear=l.year;c.route=route;s.recoverYears=0;
  l.logEvent('오랜 세월이 지나 고향으로 돌아왔다. 귀환의 길은 쉽지 않았고, 떠나 있던 시간은 돌아오지 않았다.','joseon14-return');
+ if((s.overseas?.localTies||0)>0||(s.overseas?.homeNews||0)>0)
+  l.logEvent('타향에서 알게 된 사람과 멀리 떨어져 기다려 온 가족의 이름도 함께 기억했다.','joseon14-return');
  return true;
 }
 function opportunity(l,s){
@@ -175,8 +193,11 @@ function yearly(l,s){
   if(l.age>=12){
    if(opportunity(l,s)&&hash(l.seed,l.year*47+17)<(MAJOR_JAPAN_ENVOYS.has(l.year)||c.realm!=='japan'?.82:.31))
     add(l,s,'ransomOpportunity');
-   else if(l.age%2===0)
-    add(l,s,['captivityWork','captivityLetters','captivityInjury','captivityNews'][Math.floor(hash(l.seed,l.year*23+4)*4)]);
+   else if(l.age%2===0){
+    const special=c.realm==='japan'?['japanWorkshop','japanFamilyTies']:['manchuLanguage','manchuRansomNames'];
+    const pool=['captivityWork','captivityLetters','captivityInjury','captivityNews',...special].filter(id=>!s.seen.includes(id));
+    if(pool.length)add(l,s,pool[Math.floor(hash(l.seed,l.year*23+4)*pool.length)]);
+   }
   }
  }else if(c?.status==='returned'){
   s.recoverYears++;
@@ -207,6 +228,12 @@ function prompt(l){
       '대마도나 외교 사절을 통해 조선인 일부가 귀환한다는 소식이 들린다. 가능성은 크지 않다.'):
     '후금·청에 끌려온 사람의 속환 소식이 들린다. 나라에서 몸값을 마련하는 공속과 가족이 개별적으로 치르는 사속은 형편이 다르다.';
  }
+ if(e.id==='japanWorkshop'){
+  const trade=String(s.captivity?.work||'');
+  description=/도공|도자|가마/.test(trade)?
+   '가마와 흙을 다루던 솜씨를 알아본 사람이 일터로 데려갔다. 기술을 쓰게 되었다고 돌아갈 자유가 생긴 것은 아니다.':
+   '낯선 일터에서 일손을 보탠다. 언어와 기술이 다른 사람에게 배워 가며 하루를 보낸다.';
+ }
  if(e.id==='homeStigma'){
   description=s.captivity?.realm==='qing'&&l.gender==='여자'?
     '청에서 돌아왔다는 이유로 정절을 의심하는 말이 등 뒤에서 들려온다. 집안사람들은 그 말을 들으면서도 어떻게 맞서야 할지 몰라 서로의 얼굴을 살핀다.':
@@ -226,6 +253,8 @@ function choose(l,index){
  if(Number.isFinite(d.trust))v9.trust=clip(v9.trust+d.trust,0,100);
  if(Number.isFinite(d.skill)){s.skills=clip(s.skills+d.skill,0,40);v12.skill=clip(v12.skill+d.skill,0,40);}
  if(Number.isFinite(d.contacts))s.contacts=clip(s.contacts+d.contacts,0,40);
+ for(const key of ['workplace','localTies','language','homeNews'])
+  if(Number.isFinite(d[key]))s.overseas[key]=clip(s.overseas[key]+d[key],0,40);
  if(Number.isFinite(d.access))s.body.access=clip(s.body.access+d.access,0,40);
  if(Number.isFinite(d.mobility))s.body.access=clip(s.body.access+d.mobility,0,40);
  if(Number.isFinite(d.sleep))s.experience.sleep=clip(s.experience.sleep-d.sleep,0,12);
@@ -259,7 +288,7 @@ function summary(l){
  return {captivity:c?{realm:c.realm,status:c.status,from:c.from,years:c.years,returnedYear:c.returnedYear,route:c.route}:null,
   body:{...s.body},experience:{...s.experience},skills:s.skills,contacts:s.contacts,
   familyLine:s.familyLine.map(x=>({...x})),heritage:{...s.heritage},
-  recoverYears:s.recoverYears,decisions:s.decisions.length,source:s.lastSource};
+  recoverYears:s.recoverYears,overseas:{...s.overseas},decisions:s.decisions.length,source:s.lastSource};
 }
 function heirs(l){
  if(!J?.isJoseon(l)||l.alive||!V4?.summary)return [];
@@ -373,6 +402,7 @@ function hydrate(l,data){
  for(const k of ['sleep','vigilance'])s.experience[k]=clip(Number(o.experience?.[k])||0,0,12);
  s.experience.resilience=clip(Number(o.experience?.resilience)||3,0,40);
  for(const k of ['skills','contacts','stigma','trust','recoverYears'])s[k]=clip(Number(o[k])||0,0,100);
+ for(const key of ['workplace','localTies','language','homeNews'])s.overseas[key]=clip(Number(o.overseas?.[key])||0,0,40);
  for(const k of ['skills','goods','memories'])s.heritage[k]=clip(Number(o.heritage?.[k])||0,0,40);
  s.familyLine=Array.isArray(o.familyLine)?o.familyLine.filter(a=>a&&typeof a.name==='string'&&Number.isInteger(a.birthYear)&&a.birthYear<l.birthYear)
   .slice(-8).map(a=>({name:a.name.slice(0,35),birthYear:a.birthYear,diedYear:Math.floor(Number(a.diedYear)||a.birthYear),
