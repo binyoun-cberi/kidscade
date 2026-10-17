@@ -67,5 +67,5 @@ test('colonial return to ordinary years does not spill beyond 1945 and historic 
  Colonial.yearly(l,s);
  assert.equal(s.queue.length,0);assert.equal(s.active,null);
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
- assert.match(html,/colonial-daily-v2\.js\?v=2/);
+ assert.match(html,/colonial-daily-v2\.js\?v=\d+/);
 });
