@@ -491,6 +491,11 @@ function exitPlantingMode(){
   for(const def of FIELD_DEFS)if(def.kind==='rice'){
     const rec=plotMeshes.get(def.id);rec?.planting?.refresh(fieldById(state,def.id),-1,false);
   }
+  // Finishing 25 seedlings should not strand players on an empty scene:
+  // bring back the same field controls for water gates, care and next steps.
+  if($('modal').classList.contains('hidden')){
+    updateInspector();$('inspector').classList.remove('hidden');
+  }
 }
 function runSeedlingPlant(index=selectedSeedling){
   if(!plantingMode||farmFlow.busy)return;
