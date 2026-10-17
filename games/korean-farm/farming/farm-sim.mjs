@@ -65,7 +65,6 @@ export function restoreFarmState(raw){
     base.harvestCount=validNumber(saved.harvestCount,0,0,1000000)|0;
     // Old v2 saves without strip data remain fully tilled and ready to play.
     base.work=restoreFieldWork(saved.work,base);
-    if(!base.planted&&!base.tilled)base.work.tilled.fill(false);
     if(!base.planted)base.growth=0;
     return base;
   });
@@ -206,7 +205,7 @@ export function canWorkFieldStrip(state,id,action,index){
   if(!Array.isArray(done)||done[index])return {ok:false,message:'이미 작업한 구역이에요.'};
   if(action==='till'&&f.planted)return {ok:false,message:'작물이 자라는 땅은 갈 수 없어요.'};
   if(action==='water'&&f.kind==='rice')return {ok:false,message:'논은 물꼬를 이용해 물을 대 주세요.'};
-  if(action==='weed'&&f.weeds<.12)return {ok:false,message:'아직 뽑을 잡초가 없어요.'};
+  if(action==='weed'&&f.weeds<.12&&!f.work.weeded.some(Boolean))return {ok:false,message:'아직 뽑을 잡초가 없어요.'};
   if(action==='harvest'&&(!f.planted||f.growth<.999))
     return {ok:false,message:'이삭이 충분히 익은 뒤 수확해 주세요.'};
   return {ok:true};
