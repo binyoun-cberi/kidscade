@@ -432,6 +432,10 @@ function handleFarmFlowEvent(event){
       refreshHud();refreshObjective();save(true);
       if(event.action==='harvest'&&state.stats.harvests===1)
         window.KidscadeGame?.milestone?.('first_harvest',{value:result.quantity,uniqueKey:'first_harvest'});
+      if(event.action==='plant')
+        window.KidscadeGame?.milestone?.('first_sowing',{value:1,uniqueKey:'first_sowing'});
+      if(event.action==='gate')
+        window.KidscadeGame?.milestone?.('first_irrigation',{value:1,uniqueKey:'first_irrigation'});
     }
     refreshFarmControls();return;
   }
