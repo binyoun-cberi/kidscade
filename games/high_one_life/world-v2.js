@@ -133,8 +133,15 @@
     const arc=life.arc;
     const employed=age>=20 && !['학생','진로 탐색 중','아직 정해지지 않음'].includes(life.career);
     if(age===75 && m.retired!==true){
-      m.pension=round(Math.max(m.pension,m.income*(.12+.32*(life.world?.formalWorkAccess||.5))));
-      m.retired=true;life.logEvent('일을 정리하고 연금과 모은 돈으로 생활하기 시작했다.','money');
+      // The present-day universal pension model must not be projected into 1910–1950.
+      if(life.year>=1988){
+        m.pension=round(Math.max(m.pension,m.income*(.12+.32*(life.world?.formalWorkAccess||.5))));
+        life.logEvent('일을 정리하고 연금과 모은 돈으로 생활하기 시작했다.','money');
+      }else{
+        m.pension=0;
+        life.logEvent('오랫동안 하던 일을 줄이고 모아 둔 살림과 집안의 도움을 헤아리며 지내기 시작했다.','money');
+      }
+      m.retired=true;
     }
     let yearly=0;
     if(m.retired===true){

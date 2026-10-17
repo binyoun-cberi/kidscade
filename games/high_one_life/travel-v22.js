@@ -59,7 +59,7 @@ function prompt(l){
  }
  if(q.type==='abroad'){
   if(s.residence.route==='ming')return {title:'먼 나라에서 맡은 일',
-   description:'사행길에서 낮선 말과 관례를 듣는다. 곧 돌아갈 채비도 해야 한다.',
+   description:'사행길에서 낯선 말과 관례를 듣는다. 곧 돌아갈 채비도 해야 한다.',
    options:[{label:'통역과 기록을 살핀다',note:'맡은 문서를 챙긴다'},
     {label:'현지 사람과 물건에 대해 묻는다',note:'낯선 생활을 배운다'},
     {label:'동행한 사람을 보살핀다',note:'길 위의 안전을 생각한다'}]};

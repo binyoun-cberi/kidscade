@@ -245,8 +245,8 @@ function install(){
  const L=Sim.Life,pt=L.prototype.tick,pc=L.prototype.choose,pg=L.prototype.getChoice,pr=L.prototype.reflect,ps=L.prototype.snapshot,restore=L.restore;
  L.prototype.tick=function(){if(!J.inOldEra(this))return pt.call(this);
   const y=this.year,ok=pt.call(this);if(ok&&this.alive&&this.year!==y)yearly(this,ensure(this));return ok;};
- L.prototype.getChoice=function(){if(J.isJoseon(this)&&this.pending?.startsWith('joseon9:'))return prompt(this);return pg.call(this);};
- L.prototype.choose=function(i){if(J.isJoseon(this)&&this.pending?.startsWith('joseon9:'))return choose(this,i);
+ L.prototype.getChoice=function(){if(J.isJoseon(this)&&(typeof this.pending==='string'&&this.pending.startsWith('joseon9:')))return prompt(this);return pg.call(this);};
+ L.prototype.choose=function(i){if(J.isJoseon(this)&&(typeof this.pending==='string'&&this.pending.startsWith('joseon9:')))return choose(this,i);
   const ok=pc.call(this,i);if(ok&&J.inOldEra(this))promote(this,ensure(this));return ok;};
  L.prototype.reflect=function(t){const ok=pr.call(this,t);if(ok&&J.inOldEra(this))promote(this,ensure(this));return ok;};
  L.prototype.snapshot=function(){const s=ps.call(this);if(J.isJoseon(this))s.joseon9=JSON.parse(JSON.stringify(ensure(this)));return s;};
