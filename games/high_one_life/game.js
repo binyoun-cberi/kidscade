@@ -38,6 +38,7 @@
   const BranchSwitch = window.OneLifeBranchSwitchV17 || null;
   const ColonialLife = window.OneLifeColonialDaily || null;
   const Travel22 = window.OneLifeTravel22 || null;
+  const Life30 = window.OneLifeConsequences30 || null;
   const History = window.OneLifeHistory;
   const Official=window.OneLifeOfficialStats||{countries:{}};
   const metric=(key)=>life?.birthYear===2026?Official.countries?.[life?.country?.[0]]?.[key]||null:null;
@@ -603,6 +604,25 @@
       $('countrySourceNote').textContent='조선 시대에 태어나 이 시대까지 살아온 이야기다. 가족의 기억은 앞선 세월부터 이어진다.';
     }
   }
+  function paintLife30(){
+    const panel=$('life30Panel'),list=$('life30Records');
+    if(!panel||!list)return;
+    const record=Life30&&life&&Joseon.isJoseon(life)?Life30.summary(life):null;
+    const arcs=record?.arcs||[];
+    panel.classList.toggle('hidden',!arcs.length);
+    if(!arcs.length){list.replaceChildren();return;}
+    $('life30Count').textContent=(record.open||0)+'건 남음 · '+(record.resolved||0)+'건 마무리';
+    list.replaceChildren();
+    for(const a of arcs.slice(-8).reverse()){
+      const li=document.createElement('li'),name=document.createElement('strong'),
+        when=document.createElement('small'),body=document.createElement('p');
+      name.textContent=a.title;
+      const state=a.status==='resolved'?'마무리':a.status==='closed'?'이어지지 못함':'아직 남은 일';
+      when.textContent=a.year+'년 · '+a.personName+' · '+state;
+      body.textContent=a.outcome||a.evidence.join(' · ')||'이전에 했던 일이 아직 마음에 남아 있다.';
+      li.append(name,when,body);list.append(li);
+    }
+  }
   function paintArc() {
     if(!life)return;
     if(Joseon.inOldEra(life)){
@@ -986,6 +1006,7 @@
     }
     $('openGenealogyBtn').classList.toggle('hidden',!Genealogy||!Joseon.isJoseon(life));
     paintLifeRecord();
+    paintLife30();
     paintArc();
     $('placeFlag').textContent=life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1];
     const captiveHere=Joseon14?.summary(life)?.captivity;
