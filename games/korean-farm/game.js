@@ -517,6 +517,15 @@ function showQa(){
   const actorTitle=document.createElement('strong');actorTitle.textContent='농부 캐릭터 · 절차적 관절 모델';
   const actorText=document.createElement('small');actorText.textContent='피부·머리카락·의상·장화·밀짚모자 색상을 개별 재질로 지정했으며, 농사 동작 7종을 적용했어요.';
   actorNote.append(actorTitle,actorText);list.append(actorNote);
+  if(villageScene){
+    const entry=document.createElement('div');entry.className='qa-entry';
+    const heading=document.createElement('strong');heading.textContent='솔내리 농촌 풍경 · 로우폴리 현장 구성';
+    const detail=document.createElement('small');
+    const v=villageScene.stats;
+    detail.textContent='구역 '+v.areas+'곳 · 메쉬 '+v.meshes+'개 · 묶음 렌더링 '+v.instanced+'종 · 한글 안내판 '+v.signs+'개';
+    const note=document.createElement('small');note.textContent='농가·창고·장독대·고추 건조대·농수로·장터를 색상 지정 재질로 그렸어요. 실제 색감은 PC·모바일 캡처에서 다시 확인해 주세요.';
+    entry.append(heading,detail,note);list.append(entry);
+  }
   for(const [name,record] of assetReport){
     const e=document.createElement('div');e.className='qa-entry';
     const b=document.createElement('strong');b.textContent=(record.status==='loaded'?'로드 성공 · ':'로드 실패 · ')+record.kind;
