@@ -68,3 +68,20 @@ test('recently registered games carry release timestamps for the new-game rail',
     assert.ok(game?.addedAt, `${id}: addedAt missing`);
   }
 });
+
+test('Korean Farm appears in the public catalog with playable URL and artwork', () => {
+  const game = games.find(item => item.id === 'korean_farm');
+  assert.ok(game, '논두렁 너머 must be listed to appear on the homepage');
+  assert.equal(games.filter(item => item.id === 'korean_farm').length, 1);
+  assert.equal(game.title, '논두렁 너머');
+  assert.equal(game.href, 'games/korean-farm/index.html');
+  assert.equal(game.cover, 'assets/gate-image/korean_farm.svg');
+  assert.equal(game.genre, 'simulation');
+  assert.ok(game.addedAt, 'new-game discovery requires a release timestamp');
+  for (const link of [game.href, game.cover]) {
+    assert.equal(fs.existsSync(path.join(ROOT, link)), true, 'Missing published file: ' + link);
+  }
+  const html = fs.readFileSync(path.join(ROOT, game.href), 'utf8');
+  assert.match(html, /data-game-id="korean_farm"/);
+  assert.match(html, /논두렁 너머/);
+});
