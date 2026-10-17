@@ -44,6 +44,8 @@ export function createFieldWorkGrid(plot){
     for(let i=0;i<WORK_STRIPS;i++){
       const done=field?.work||{};
       furrows[i].visible=!field.planted&&!!done.tilled?.[i];
+      // Keep flooded paddies blue: freshly turned soil sits under the water sheet.
+      furrows[i].position.y=field.kind==='rice'&&field.waterDepthCm>.8?.17:.291;
       wetPatches[i].visible=!!done.watered?.[i]&&field.kind!=='rice';
       weedClumps[i].visible=(field.weeds>=.12||done.weeded?.some(Boolean))&&!done.weeded?.[i]&&!done.harvested?.[i];
       stubble[i].visible=!!done.harvested?.[i]&&field.planted;
