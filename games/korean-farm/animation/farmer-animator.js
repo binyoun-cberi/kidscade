@@ -77,6 +77,7 @@ export function createFarmerAnimator(){
     root,
     get busy(){return Boolean(currentAction)},
     get activeAction(){return currentAction},
+    get progress(){return currentAction?actionProgress(currentAction,elapsed):0},
     trigger(kind){
       if(!FARM_ACTION_MOTIONS[kind])return false;
       currentAction=kind;elapsed=0;emitted=false;setTool(FARM_ACTION_MOTIONS[kind].tool);
