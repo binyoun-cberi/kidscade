@@ -132,6 +132,24 @@ jobs:
             exit 1
           fi
           curl -fsS -H 'Cache-Control: no-cache' "https://kidscade.binyoun.workers.dev/home-v2.js?verify=${EXPECTED_BUILD}" -o /dev/null
+          # Korean Farm was previously merged but hidden because no catalog record existed.
+          # Verify the newly published lobby actually exposes its game entry and artwork.
+          curl -fsS -H 'Cache-Control: no-cache' "https://kidscade.binyoun.workers.dev/data/games.json?verify=${EXPECTED_BUILD}" -o /tmp/kidscade-games.json
+          node -e '
+            const fs = require("node:fs");
+            const catalog = JSON.parse(fs.readFileSync("/tmp/kidscade-games.json", "utf8"));
+            const game = catalog.games?.find(x => x.id === "korean_farm");
+            if (!game || game.title !== "논두렁 너머" ||
+                game.href !== "games/korean-farm/index.html" ||
+                game.cover !== "assets/gate-image/korean_farm.svg") {
+              console.error("Production Korean Farm entry missing or invalid");
+              process.exit(1);
+            }
+          '
+          curl -fsS "https://kidscade.binyoun.workers.dev/games/korean-farm/index.html?verify=${EXPECTED_BUILD}" -o /tmp/kidscade-korean-farm.html
+          grep -q 'data-game-id="korean_farm"' /tmp/kidscade-korean-farm.html
+          curl -fsS "https://kidscade.binyoun.workers.dev/assets/gate-image/korean_farm.svg?verify=${EXPECTED_BUILD}" -o /tmp/kidscade-korean-farm-cover.svg
+          grep -q '<svg' /tmp/kidscade-korean-farm-cover.svg
 
           # Confirm the actual deployed HTML references downloadable icon binaries.
           favicon_path="$(grep -oE '/favicon-[0-9a-f]{12}\.png' /tmp/kidscade-home.html | head -n 1)"
