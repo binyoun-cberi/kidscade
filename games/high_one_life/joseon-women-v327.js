@@ -84,8 +84,8 @@ function offer(l,key){
  if(key==='entry'&&jobs.length){
   const labels=jobs.map(k=>kinds[k].name);
   return {title:'관청의 여성 일꾼을 뽑는다는 소식',description:'관아에서 소속된 여인 가운데 일을 맡길 사람을 살핀다고 한다. 원하는 대로 직업을 고르는 처지는 아니며, 배치와 교육은 관청이 결정한다.',options:[
-   [labels[0]+'의 일을 익힐 길을 알아본다','후보가 되어도 실제 배치를 보장하지 않는다.'],
-   [jobs.length>1?labels[1]+'의 일을 익힐 길을 알아본다':'기존 일을 계속하며 기술을 익힌다','관아의 배치와 제약이 생활에 영향을 준다.'],
+   [labels[0]+'로 수련할 기회를 알아본다','후보가 되어도 실제 배치를 보장하지 않는다.'],
+   [jobs.length>1?labels[1]+'로 수련할 기회를 알아본다':'기존 일을 계속하며 기술을 익힌다','관아의 배치와 제약이 생활에 영향을 준다.'],
    ['현재 맡은 일을 이어 간다','이동과 근무의 자유는 소속과 신분에 따라 제한된다.']]};
  }
  if(key==='midwife'&&eligibleMidwife(l))return {title:'마을에서 출산을 돕는 일을 배울까',
