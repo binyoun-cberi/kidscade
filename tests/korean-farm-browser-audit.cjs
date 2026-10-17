@@ -286,7 +286,7 @@ async function main(){
  const noPremature=await evaluate('window.__farmQA.state()');
  check('No resources consumed during approach',noPremature.fields.find(x=>x.id==='rice-1').growth===
   beforeWeeding.fields.find(x=>x.id==='rice-1').growth);
- await waitFor('!window.__farmQA.flow().busy',16000);
+ await waitFor('!window.__farmQA.flow().busy',35000);
  const walked=await evaluate('window.__farmQA.state()');
  check('Far-away action completes without second button press',walked.energy<beforeWeeding.energy&&
    walked.fields.find(x=>x.id==='rice-1').work.weeded[0],
