@@ -15,7 +15,7 @@ const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
 function fluentKorean(line){
  return String(line).replace(/([가-힣]+)\((이|와|을|으)\)(가|과|를|로)/g,(all,word,part,tail)=>{
   const final=(word.charCodeAt(word.length-1)-0xac00)%28;
-  if(part==='이'&&tail==='가')return word+(final?'이':'가');
+  if(part==='이'&&tail==='가')return word+(final?'이가':'가');
   if(part==='와'&&tail==='과')return word+(final?'과':'와');
   if(part==='을'&&tail==='를')return word+(final?'을':'를');
   if(part==='으'&&tail==='로')return word+(final&&final!==8?'으로':'로');
