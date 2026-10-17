@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const root=path.resolve(__dirname,'../games/high_one_life');
 const Sim=require(path.join(root,'engine.js'));global.window={OneLifeSim:Sim};
 const load=(file,name)=>{const api=require(path.join(root,file));if(name)global.window[name]=api;return api;};
-load('world-v2.js','OneLifeWorld2');load('joseon-history-policy.js','OneLifeJoseonPolicy');
+const W2=load('world-v2.js','OneLifeWorld2');load('joseon-history-policy.js','OneLifeJoseonPolicy');
 const J=load('joseon-v1.js','OneLifeJoseon');load('joseon-v2.js','OneLifeJoseon2');
 load('joseon-v3.js','OneLifeJoseon3');load('joseon-v4.js','OneLifeJoseon4');
 load('joseon-v5.js','OneLifeJoseon5');load('joseon-v6.js','OneLifeJoseon6');
@@ -21,7 +21,7 @@ const V19=load('joseon-v19-local-office.js','OneLifeJoseon19');
 const C=load('colonial-daily-v2.js','OneLifeColonialDaily');
 load('travel-v22.js','OneLifeTravel22');
 delete global.window;
-const born=(year=1880,seed=437)=>new Sim.Life(seed,{birthYear:year,countryName:'대한민국'});
+const born=(year=1880,seed=437)=>{const l=new Sim.Life(seed,{birthYear:year,countryName:'대한민국'});W2.enrich(l);return l;};
 const at=(l,year)=>{l.year=year;l.age=year-l.birthYear;l.pending=null;return l;};
 function act(l,id,year,index=0){
  at(l,year);
