@@ -42,7 +42,7 @@ test('historical method keeps clear fiction and quantitative disclaimers outside
 
 test('new narrative asset versions prevent stale browser scripts', () => {
  const html = read('index.html');
- for(const asset of ['game.js?v=56', 'joseon-v19-local-office.js?v=2', 'joseon-v18-sedo-samjeong.js?v=3',
+ for(const asset of ['game.js?v=57', 'joseon-v19-local-office.js?v=2', 'joseon-v18-sedo-samjeong.js?v=3',
    'joseon-v1.js?v=13', 'joseon-v14-captivity-generations.js?v=10'])
    assert.ok(html.includes(asset), asset);
 });

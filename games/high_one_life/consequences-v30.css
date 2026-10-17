@@ -1,0 +1,12 @@
+
+.life30-panel{margin:18px 0 6px;border:1px solid #becfc5;background:#f7f8f3;border-radius:8px;color:#243d3d;overflow:hidden}
+.life30-panel>summary{padding:15px 17px;cursor:pointer;font-weight:800;font-size:15px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.life30-panel>summary:focus-visible{outline:3px solid #ac844b;outline-offset:-3px}
+.life30-panel>summary span{color:#617c73;font-size:12px;font-weight:600}
+.life30-help{margin:0 17px 11px;font-size:12px;line-height:1.6;color:#60736b;word-break:keep-all}
+.life30-records{margin:0;padding:0 16px 13px 34px}
+.life30-records li{border-top:1px solid #d9e2d9;padding:12px 0 13px;line-height:1.6;word-break:keep-all;font-size:13px}
+.life30-records li strong{display:block;font-size:14px;letter-spacing:-.025em;color:#2b4a42}
+.life30-records li small{display:block;margin-top:2px;color:#67796c;font-size:11px}
+.life30-records li p{margin:5px 0 0;color:#465f58;font-size:12.5px;line-height:1.7}
+@media(max-width:500px){.life30-panel>summary{font-size:14px;padding:13px}.life30-help{margin-left:13px;margin-right:13px}.life30-records{padding-right:12px}.life30-records li{font-size:12px}}

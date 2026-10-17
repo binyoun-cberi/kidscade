@@ -22,6 +22,7 @@ const TEST_FILES = [
   "tests/one-life-choice-consequences-v25.test.cjs",
   "tests/one-life-concrete-choices-v26.test.cjs",
   "tests/one-life-choice-invariants-v27.test.cjs",
+  "tests/one-life-consequences-v30.test.cjs",
   "tests/one-life-narrative-tone.test.cjs",
   "tests/one-life-joseon-policy.test.cjs",
   "tests/one-life-joseon-careers.test.cjs",
