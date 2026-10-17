@@ -246,7 +246,10 @@ function refreshCamera(dt){
   const framing=inspecting&&window.innerWidth>920?2.1:0;
   const aimX=camTarget.x+Math.cos(a)*framing,aimZ=camTarget.z-Math.sin(a)*framing;
   camera.position.set(aimX+Math.sin(a)*v*.83,v*.82,aimZ+Math.cos(a)*v*.83);
-  camera.lookAt(aimX,.5,aimZ);
+  // Raise the player into the unobstructed upper viewport while the phone's
+  // bottom inspector sheet is open; retain the normal angle during exploration.
+  const targetY=inspecting&&window.innerWidth<=700?-1.65:.5;
+  camera.lookAt(aimX,targetY,aimZ);
 }
 function isBlocked(x,z){
   return obstacles.some(q=>Math.abs(x-q.x)<q.w/2+.45&&Math.abs(z-q.z)<q.d/2+.45);
@@ -286,8 +289,9 @@ function refreshWorkStatus(){
 function render(now){
   if(disposed)return;raf=requestAnimationFrame(render);
   const dt=last?Math.min(.07,(now-last)/1000):0;last=now;
-  const moving=!paused&&!loading?move(dt,now/1000):false;
-  if(!paused&&!loading){
+  const overlayShown=!$('modal').classList.contains('hidden');
+  const moving=!paused&&!loading&&!overlayShown?move(dt,now/1000):false;
+  if(!paused&&!loading&&!overlayShown){
     farmer.rotation.y=rotateToward(farmer.rotation.y,farmerFacingTarget,dt||.016);
     const feedback=farmerAnimator?.update(dt||.016,{moving,time:now/1000});
     const event=farmFlow.tick(dt||.016,state.player,{
@@ -344,7 +348,7 @@ function refreshObjective(){
   const steps=[visited.size>=1,state.stats.harvests>=1,state.stats.sales>=1];
   const done=steps.filter(Boolean).length;
   $('progressBar').style.width=done/3*100+'%';
-  $('progressText').textContent='첫 논 살펴보기 · 수확 · 판매 '+done+' / 3';
+  $('progressText').textContent='첫 논 확인 → 수확 → 판매 · '+done+' / 3';
   $('objective').classList.toggle('complete',done===3);
   const target=$('objective').querySelector('p');
   target.textContent=done===3?'첫 수확과 판매를 마쳤어요! 이제 원하는 작물을 기르며 농장을 꾸려 보세요.':
@@ -608,8 +612,8 @@ function bindControls(){
     }
   });
   $('help').onclick=help;$('qaBtn').onclick=showQa;
-  $('focusFarm').onclick=()=>{if(farmFlow.busy&&!farmFlow.cancelApproach()){toast('작업이 끝나면 집으로 돌아갈 수 있어요.');return}
-    moveGoal={x:0,z:9};$('inspector').classList.add('hidden')};
+  $('focusFarm').onclick=()=>{if(farmFlow.busy&&!farmFlow.cancelApproach()){toast('작업이 끝나면 마을길로 돌아갈 수 있어요.');return}
+    moveGoal={x:0,z:9};$('inspector').classList.add('hidden');toast('마을길로 걸어가요.')};
   $('saveBtn').onclick=()=>save();
   $('closeInspect').onclick=()=>$('inspector').classList.add('hidden');
   $('modalClose').onclick=()=>$('modal').classList.add('hidden');
