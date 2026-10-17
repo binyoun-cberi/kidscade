@@ -140,9 +140,33 @@ async function main(){
  check('Real keyboard movement changes 3D player position',Math.hypot(walkTo.x-walkFrom.x,walkTo.z-walkFrom.z)>.12,
    {from:walkFrom,to:walkTo,duringKey});
  const facing=await evaluate('window.__farmQA.facing()');
- const heading=Math.atan2(walkTo.x-walkFrom.x,-(walkTo.z-walkFrom.z));
- const yawError=Math.abs(Math.atan2(Math.sin(facing.yaw-heading),Math.cos(facing.yaw-heading)));
- check('Farmer visibly faces actual walking direction',yawError<.18,{facing,heading,yawError});
+ // The eyes are on local -Z. After rotation about Y, world-facing is
+ // (-sin(yaw),-cos(yaw)). This dot-product must be positive and near 1.
+ // Comparing against farmerHeading() alone previously concealed a sign error.
+ const travelled={x:walkTo.x-walkFrom.x,z:walkTo.z-walkFrom.z};
+ const travelledLength=Math.hypot(travelled.x,travelled.z);
+ const worldFace={x:-Math.sin(facing.yaw),z:-Math.cos(facing.yaw)};
+ const facingDot=(worldFace.x*travelled.x+worldFace.z*travelled.z)/travelledLength;
+ check('Farmer eyes and chest actually point where the player walks',
+  facingDot>.96,{facing,travelled,worldFace,facingDot});
+ // Explicitly test the reverse key after a rightward walk: no moonwalking.
+ const reverseStart=await evaluate('window.__farmQA.state().player');
+ await evaluate('window.__farmQA.reverseOrigin=window.__farmQA.state().player');
+ await send('Input.dispatchKeyEvent',{type:'keyDown',key:'a',code:'KeyA',windowsVirtualKeyCode:65});
+ // Headless software WebGL can run at low FPS. Hold the key until the turn
+ // actually finishes and the feet begin travelling, rather than timing
+ // out during the deliberate turn-in-place animation.
+ await waitFor('Math.hypot(window.__farmQA.state().player.x-window.__farmQA.reverseOrigin.x,window.__farmQA.state().player.z-window.__farmQA.reverseOrigin.z)>.27',7000);
+ await sleep(320);
+ await send('Input.dispatchKeyEvent',{type:'keyUp',key:'a',code:'KeyA',windowsVirtualKeyCode:65});
+ const reverseEnd=await evaluate('window.__farmQA.state().player');
+ const reverseFace=await evaluate('window.__farmQA.facing()');
+ const reverseDelta={x:reverseEnd.x-reverseStart.x,z:reverseEnd.z-reverseStart.z};
+ const reverseLen=Math.hypot(reverseDelta.x,reverseDelta.z);
+ const reverseDot=(-Math.sin(reverseFace.yaw)*reverseDelta.x-
+  Math.cos(reverseFace.yaw)*reverseDelta.z)/Math.max(.00001,reverseLen);
+ check('Reverse direction turns the farmer before stepping backward',reverseLen>.12&&reverseDot>.94,
+  {reverseDelta,reverseFace,reverseDot});
  await click('#moreBtn');await click('#turnLeft');
  await sleep(420);
  const orbited=await evaluate('window.__farmQA.facing()');
