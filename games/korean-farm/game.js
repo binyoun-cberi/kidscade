@@ -259,7 +259,7 @@ function isBlocked(x,z){
 }
 function move(dt,elapsed){
   if(farmerAnimator?.busy)return false;
-  let vx=0,vz=0;
+  let vx=0,vz=0,goalDistance=null;
   if(keys.has('w')||keys.has('arrowup'))vz-=1;
   if(keys.has('s')||keys.has('arrowdown'))vz+=1;
   if(keys.has('a')||keys.has('arrowleft'))vx-=1;
@@ -274,13 +274,14 @@ function move(dt,elapsed){
   }else if(moveGoal){
     const dx=moveGoal.x-state.player.x,dz=moveGoal.z-state.player.z,d=Math.hypot(dx,dz);
     if(d<.28)moveGoal=null;
-    else{vx=dx/d;vz=dz/d}
+    else{vx=dx/d;vz=dz/d;goalDistance=d}
   }
   let moving=false;
   const d=Math.hypot(vx,vz);
   if(d>.01){
     vx/=Math.max(1,d);vz/=Math.max(1,d);
-    const velocity=4.7*dt;
+    // Clamp each automatic step to its remaining distance; never oscillate past a goal.
+    const velocity=goalDistance===null?4.7*dt:Math.min(4.7*dt,goalDistance);
     const x=Math.max(-bounds,Math.min(bounds,state.player.x+vx*velocity));
     const z=Math.max(-bounds,Math.min(bounds,state.player.z+vz*velocity));
     if(!isBlocked(x,state.player.z))state.player.x=x;
