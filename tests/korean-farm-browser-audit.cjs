@@ -146,6 +146,7 @@ async function main(){
  const walkTo=await evaluate('window.__farmQA.state().player');
  check('Real keyboard movement changes 3D player position',Math.hypot(walkTo.x-walkFrom.x,walkTo.z-walkFrom.z)>.12,
    {from:walkFrom,to:walkTo,duringKey});
+ await waitFor('Math.abs(Math.atan2(Math.sin(window.__farmQA.facing().target-window.__farmQA.facing().yaw),Math.cos(window.__farmQA.facing().target-window.__farmQA.facing().yaw)))<.11',7000);
  const facing=await evaluate('window.__farmQA.facing()');
  // The eyes are on local -Z. After rotation about Y, world-facing is
  // (-sin(yaw),-cos(yaw)). This dot-product must be positive and near 1.
