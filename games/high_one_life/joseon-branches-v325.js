@@ -129,12 +129,17 @@ function autoCareer(l,s){
 function startCareer(l,s,code){
  if(!eligibleJobs(l).includes(code))return false;
  s.career={code,started:l.year,skill:1,reputation:7,materials:4,workIndex:0};
- setJob(l,JOBS[code].name);
+ setJob(l,JOBS[code].name+'의 일을 배우는 사람');
  record(l,s,JOBS[code].name+'의 일을 배우기 시작했다. 만드는 물건과 만나게 될 사람이 이전과 달라졌다.');
  return true;
 }
-function queue(l,s,key){if(s.seen.includes(key)||s.queue.includes(key)||s.active===key)return false;
- s.queue.push(key);s.queue=s.queue.slice(-12);s.seen.push(key);s.seen=s.seen.slice(-80);return true;}
+function queue(l,s,key){
+ // Repeatable work assignments, a later debt crisis or a second prison release
+ // are new years of the same life, not forever-blocked by one old event key.
+ const repeatable=['careerTask','hardship','release'].includes(key);
+ if((!repeatable&&s.seen.includes(key))||s.queue.includes(key)||s.active===key)return false;
+ s.queue.push(key);s.queue=s.queue.slice(-12);s.seen.push(key);s.seen=s.seen.slice(-80);return true;
+}
 function plans(l,s){
  const d=debt(l),job=s.career&&JOBS[s.career.code],j=J.ensure(l);
  const map={
@@ -346,12 +351,21 @@ function resolve(l,index){
   const chance=[.10,.20,.47][index],bad=roll(l.seed,l.year*83+w.workIndex*23+index*29)<chance;
   const rawGain=index===0?2:index===1?3:bad?-8:5;
   const materialCost=index===1?2:index===2?3:1;
-  w.materials=clamp(w.materials-materialCost,0,40);
+  if(w.materials<materialCost){
+   // No work may be sold using materials that do not exist.
+   if(j.capital>=3){cash(-3);w.materials=clamp(w.materials+2,0,40);
+    record(l,s,'재료가 부족해 이번 일거리를 마치지 못했다. 번 돈 대신 재료를 사 두었다.');}
+   else{l.change({health:-2});record(l,s,'재료를 살 돈도 모자라 다른 집의 품일을 도우며 다시 일감을 기다렸다.');}
+   w.workIndex++;s.active=null;l.pending=null;s.decisions.push({key,year:oldYear,index,label:choice});
+   s.decisions=s.decisions.slice(-65);if(l.alive)promote(l);return true;
+  }
+  w.materials-=materialCost;
   cash(bad?-7:rawGain);l.change({knowledge:index===0?2:1,health:index===2?-3:-1});
   w.skill=clamp(w.skill+(bad?0:index===0?3:2),0,100);
   w.reputation=clamp(w.reputation+(bad?-6:index===0?2:3),0,100);
   const title=JOBS[w.code].tasks[w.workIndex][0];
   w.workIndex++;
+  if(w.skill>=8&&J.ensure(l).occupation.includes('배우는 사람'))setJob(l,JOBS[w.code].name);
   record(l,s,bad?title+' 일을 서두르다 물건이나 신뢰를 잃었다. 다시 일감을 구해야 한다.':
    title+' 일을 마치며 솜씨와 거래 경험을 쌓았다. 항상 같은 값을 받지는 않는다.');
  }else return false;
