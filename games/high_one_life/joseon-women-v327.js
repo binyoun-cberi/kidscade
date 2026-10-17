@@ -47,7 +47,9 @@ function roll(seed,salt){let x=(seed^Math.imul(salt+1,0x9e3779b9))>>>0;
  x=Math.imul(x^(x>>>16),0x7feb352d);x=Math.imul(x^(x>>>15),0x846ca68b);
  return ((x^(x>>>16))>>>0)/4294967296;}
 function female(l){return !!(l&&l.alive&&J?.isJoseon(l)&&J.inOldEra(l)&&l.gender==='여자'&&l.year<=1894);}
-function available(l){return female(l)&&W326?.accessible(l)&&!l.joseon14?.captivity?.status?.includes('held');}
+function available(l){return female(l)&&l.joseon14?.captivity?.status!=='held'&&
+ l.joseon325?.law?.kind!=='prison'&&l.joseon325?.law?.kind!=='exile'&&
+ !l.travel22?.residence?.abroad;}
 function family(l){const p=V4.summary(l).people,spouses=p.filter(x=>x.role==='spouse');
  return {living:spouses.some(x=>x.alive),bereaved:spouses.some(x=>!x.alive)&&!spouses.some(x=>x.alive),
   parentsLost:p.some(x=>['mother','father'].includes(x.role)&&!x.alive),children:p.filter(x=>x.role==='child'&&x.alive)};
