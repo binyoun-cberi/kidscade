@@ -27,6 +27,8 @@ function remember(l,arc,msg,kind='life30-memory'){
 }
 function record(l,eventId,option,actual){
  if(!valid(l)||!KINDS[eventId])return null;
+ // A family visit or holiday game is not the same act as sharing food.
+ if((eventId==='holiday'||eventId==='seollal')&&option!==2)return null;
  const s=ensure(l),id=l.year+'-'+eventId;
  if(s.arcs.some(a=>a.id===id))return null;
  const type=KINDS[eventId],person=personFor(l),v=V2.ensure(l),v9=V9.ensure(l);
