@@ -20,6 +20,7 @@ const hook=[
 "   player:{...state.player},saving:localStorage.getItem(SAVE_KEY)?.length||0}),",
 " teleport:(x,z)=>{state.player.x=x;state.player.z=z;farmer.position.set(x,0,z);camTarget.set(x,0,z);moveGoal=null;},",
 " select:id=>chooseField(id),",
+" flow:()=>({busy:farmFlow.busy,active:farmFlow.active}),",
 " visuals:()=>({renderer:!!renderer?.getContext(),size:[renderer.domElement.width,renderer.domElement.height],",
 "   actor:farmerAnimator.root.children.length,assets:[...assetReport].map(([url,a])=>({url,status:a.status,colors:a.colors,repainted:a.repainted||0})),",
 "   crops:[...plotMeshes].map(([id,r])=>({id,count:r.cropLayer.children.length}))})",
@@ -124,7 +125,13 @@ async function main(){
  check('Ripe rice available',initial.fields.find(x=>x.id==='rice-4').growth===1);
  await evaluate('window.__farmQA.teleport(-8.65,-0.9)');
  await evaluate('window.__farmQA.select("rice-4")');
- await click('#actionButtons [data-action="harvest"]');await sleep(450);
+ await click('#actionButtons [data-action="harvest"]');
+ const immediate=await evaluate('window.__farmQA.state()');
+ check('Harvest not applied before tool contact',immediate.inventory.rice===initial.inventory.rice&&
+   immediate.stats.harvests===initial.stats.harvests&&
+   Boolean(await evaluate('window.__farmQA.flow().busy')));
+ await waitFor('window.__farmQA.state().stats.harvests===1',6000);
+ await waitFor('!window.__farmQA.flow().busy',4000);
  const harvested=await evaluate('window.__farmQA.state()');
  check('Harvest produces inventory',harvested.inventory.rice>0&&harvested.stats.harvests===1,harvested.stats);
  await screenshot('02-harvest');
@@ -133,11 +140,14 @@ async function main(){
  check('Sell removes produce and pays money',sold.inventory.rice===0&&sold.money>initial.money&&sold.stats.sales===1);
  await click('#modalClose');
  await click('#actionButtons [data-action="till"]');
+ await waitFor('!window.__farmQA.flow().busy',5000);
  await click('#actionButtons [data-action="plant"]');
+ await waitFor('!window.__farmQA.flow().busy',5000);
  const planted=await evaluate('window.__farmQA.state()');
  check('Replant changes crop state and consumes seed',planted.fields.find(x=>x.id==='rice-4').planted&&
   planted.fields.find(x=>x.id==='rice-4').growth<.2&&planted.inventory.seedRice<initial.inventory.seedRice);
  await click('#actionButtons [data-action="gate"]');
+ await waitFor('!window.__farmQA.flow().busy',5000);
  const gated=await evaluate('window.__farmQA.state()');
  check('Open water gate increases water',gated.fields.find(x=>x.id==='rice-4').gate&&
   gated.fields.find(x=>x.id==='rice-4').water>initial.fields.find(x=>x.id==='rice-4').water);
@@ -146,6 +156,21 @@ async function main(){
  check('Day advances crop growth',morning.day===2&&
   morning.fields.find(x=>x.id==='rice-4').growth>planted.fields.find(x=>x.id==='rice-4').growth);
  await screenshot('03-replanted-paddy');
+ // Pressing a distant farm action once must walk to the field and perform it.
+ await evaluate('window.__farmQA.teleport(0,9)');
+ await evaluate('window.__farmQA.select("rice-1")');
+ const beforeWeeding=await evaluate('window.__farmQA.state()');
+ await click('#actionButtons [data-action="weed"]');
+ const approach=await evaluate('window.__farmQA.flow()');
+ check('One distant farm tap queues automatic approach',approach.busy&&approach.active.phase==='approach',
+  approach);
+ const noPremature=await evaluate('window.__farmQA.state()');
+ check('No resources consumed during approach',noPremature.fields.find(x=>x.id==='rice-1').growth===
+  beforeWeeding.fields.find(x=>x.id==='rice-1').growth);
+ await waitFor('!window.__farmQA.flow().busy',16000);
+ const walked=await evaluate('window.__farmQA.state()');
+ check('Far-away action completes without second button press',walked.energy<beforeWeeding.energy,
+  {start:beforeWeeding.player,end:walked.player,energy:walked.energy});
  await send('Page.reload',{ignoreCache:true});
  await waitFor('Boolean(window.__farmQA?.ready())',35000);
  const restored=await evaluate('window.__farmQA.state()');
