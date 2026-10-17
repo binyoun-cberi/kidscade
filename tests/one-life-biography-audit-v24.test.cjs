@@ -37,7 +37,7 @@ const W8=global.window.OneLifeWorld8,J=global.window.OneLifeJoseon,
  J8=global.window.OneLifeJoseon8,J9=global.window.OneLifeJoseon9,
  W10=global.window.OneLifeWorld10,History=global.window.OneLifeHistory,
  Travel=global.window.OneLifeTravel22;
-delete global.window;
+// Keep window bindings while the run executes: era-dependent modules consult them at runtime.
 const BIRTH_YEARS=[1392,1400,1450,1495,1550,1575,1590,1600,1620,1630,1660,1700,1750,1800,1830,1860,1875,1885,1892,1898,1903,1910,1919,1929,1935,1942,1945,1950,1975,2000,2026];
 const fragments=/\([이와을으]\)(?:가|과|를|로)|낮선|undefined|null|NaN|\[object Object\]/;
 function play(seed,birthYear,index){
