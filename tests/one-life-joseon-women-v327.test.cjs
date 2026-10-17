@@ -36,7 +36,8 @@ function office(l,kind='central'){
  social.freed=false;social.monastic=false;J.ensure(l).married=false;
 }
 function staged(l,key,index){
- const s=W.ensure(l);s.queue=[];s.active=key;l.pending='joseonWomen327:'+key;
+ const s=W.ensure(l);if(['entry','midwife','widowHome','estate'].includes(key)&&!s.seen.includes(key))s.seen.push(key);
+ s.queue=[];s.active=key;l.pending='joseonWomen327:'+key;
  const p=l.getChoice();a.ok(p,key);a.equal(p.options.length,3,key);
  for(const opt of p.options){a.ok(opt.label);a.ok(opt.note);}
  a.equal(l.choose(index),true,key);
@@ -148,7 +149,8 @@ test('estate requires a lost parent, documented evidence and years before a boun
  a.equal(W.summary(noEvidence).estate.status,'unresolved');
 });
 test('childbirth assistance only arises from an actual named newborn; no artificial births',()=>{
- const l=birth(1740,404,29);const f=V4.ensure(l);
+ const l=birth(1740,404,29);V5.ensure(l).origin='소작 농가';
+ J.ensure(l).occupation='농사';const f=V4.ensure(l);
  a.equal(W.offer(l,'childcare'),null);
  f.people.push({id:'child-test',role:'child',name:'아기',sex:'남자',
   birthYear:l.year,alive:true,atHome:true,relation:66,wellbeing:60,learning:0,
