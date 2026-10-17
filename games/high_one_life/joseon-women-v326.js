@@ -15,12 +15,12 @@ const ages={youth:15,family:22,work:27,property:37,legacy:54};
 function historical(l){return !!(l?.alive&&J?.isJoseon(l)&&J.inOldEra(l)&&l.gender==='여자'&&l.year<=1894);}
 function accessible(l){
  return historical(l)&&l.joseon14?.captivity?.status!=='held'&&
-  l.joseon325?.law?.kind!=='prison'&&l.joseon325?.law?.kind!=='exile'&&
+  !l.joseonWomen327?.serviceBound&&l.joseon325?.law?.kind!=='prison'&&l.joseon325?.law?.kind!=='exile'&&
   !l.travel22?.residence?.abroad;
 }
 function family(l){
  const people=V4?.summary(l)?.people||[];
- const spouse=people.find(p=>p.role==='spouse');
+ const spouse=people.find(p=>p.role==='spouse'&&p.alive)||people.find(p=>p.role==='spouse');
  const children=people.filter(p=>p.role==='child'&&p.alive);
  const parentDeath=people.some(p=>(p.role==='mother'||p.role==='father')&&!p.alive);
  return {spouse,married:!!spouse?.alive,bereaved:!!spouse&&!spouse.alive,children:children.length,parentDeath};
