@@ -5,7 +5,7 @@ import {FieldEffects} from './animation/field-effects.js';
 import {buildSolnaeriVillage} from './rendering/village-scene.js';
 import {VILLAGE_COLLIDERS} from './rendering/village-layout.mjs';
 import {createFarmActionFlow,actionContactPoint,actionApproachPoint} from './interactions/action-flow.mjs';
-import {cameraRelativeInput,farmerHeading,rotateToward,walkPlayer,LOOK_SPEED} from './interactions/navigation.mjs';
+import {cameraRelativeInput,farmerHeading,rotateToward,walkPlayer,shouldTurnBeforeWalk,LOOK_SPEED} from './interactions/navigation.mjs';
 import {FIELD_DEFS,plotById,distanceToPlot} from './world.mjs';
 import {createFarmState,restoreFarmState,CROPS,calendar,fieldById,visualStage,fieldCondition,applyFarmAction,canApplyFarmAction,advanceFarmDay,sellAllProduce,buyFarmSupply} from './farming/farm-sim.mjs';
 
@@ -266,9 +266,15 @@ function move(dt,elapsed){
     if(goalDistance<.28){moveGoal=null;goalDistance=null}
     else direction={x:dx/goalDistance,z:dz/goalDistance};
   }
+  // Face the travel direction BEFORE walking. A 180° reversal must turn
+  // in place briefly; otherwise forward input looks like walking backward.
+  const wantsMove=Math.hypot(direction.x,direction.z)>.05;
+  if(wantsMove){
+    farmerFacingTarget=farmerHeading(direction.x,direction.z);
+    if(shouldTurnBeforeWalk(farmer.rotation.y,farmerFacingTarget))return false;
+  }
   const result=walkPlayer(state.player,direction,dt,{goalDistance,bounds,obstacles});
   state.player.x=result.x;state.player.z=result.z;
-  if(result.moving)farmerFacingTarget=farmerHeading(direction.x,direction.z);
   farmer.position.set(state.player.x,0,state.player.z);
   if(!$('inspector').classList.contains('hidden')){
     const plot=plotById(state.selected);
