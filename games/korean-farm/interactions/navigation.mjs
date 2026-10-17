@@ -19,10 +19,22 @@ export function cameraRelativeInput(keys,stick,viewAngle){
   return {x:(horizontal*Math.cos(angle)+vertical*Math.sin(angle))*strength,
     z:(-horizontal*Math.sin(angle)+vertical*Math.cos(angle))*strength,active:true};
 }
-export function farmerHeading(x,z){return Math.atan2(x,-z)}
+// The farmer's eyes and toes face LOCAL -Z. In Three.js a positive Y rotation
+// sends local -Z toward WORLD -X (not +X). The old sign was reversed, which
+// made the character appear to moonwalk whenever walking sideways.
+export function farmerHeading(x,z){return Math.atan2(-x,-z)}
+export function facingDirection(yaw){
+  return {x:-Math.sin(yaw),z:-Math.cos(yaw)};
+}
+export function headingDifference(current,target){
+  return Math.atan2(Math.sin(target-current),Math.cos(target-current));
+}
+export function shouldTurnBeforeWalk(current,target,maxError=Math.PI*.43){
+  return Math.abs(headingDifference(current,target))>maxError;
+}
 export function rotateToward(current,target,dt,speed=TURN_SPEED){
   if(!Number.isFinite(target))return current;
-  const delta=Math.atan2(Math.sin(target-current),Math.cos(target-current));
+  const delta=headingDifference(current,target);
   return current+delta*(1-Math.exp(-speed*clamp(dt,0,.08)));
 }
 export function walkPlayer(position,direction,dt,{goalDistance=null,bounds=21.7,obstacles=[]}={}){
