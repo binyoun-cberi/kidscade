@@ -20,7 +20,7 @@ function accessible(l){
 }
 function family(l){
  const people=V4?.summary(l)?.people||[];
- const spouse=people.find(p=>p.role==='spouse');
+ const spouse=people.find(p=>p.role==='spouse'&&p.alive)||people.find(p=>p.role==='spouse');
  const children=people.filter(p=>p.role==='child'&&p.alive);
  const parentDeath=people.some(p=>(p.role==='mother'||p.role==='father')&&!p.alive);
  return {spouse,married:!!spouse?.alive,bereaved:!!spouse&&!spouse.alive,children:children.length,parentDeath};
