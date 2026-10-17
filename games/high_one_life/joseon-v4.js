@@ -38,13 +38,13 @@ function rememberedRelative(person,action){
   inherit:n+'에게 맡긴 생업이 다음 계절의 살림을 지탱했다.',
   sharework:withPerson+' 일손을 나누며 바쁜 철을 넘겼다.',
   gift:n+'에게 건넸던 작은 물건을 아직 간직하고 있었다.',
-  plan:withPerson+' 아껴 둔 곡식이 필요한 날에 쓰였다.',
+  plan:withPerson+' 의논했던 곡식과 돈의 쓰임새를 다시 헤아렸다.',
   kinwork:withPerson+' 함께 일을 해낸 날이 떠올랐다.',
   encourage:particle(n,'은','는')+' 그때 건넨 격려를 기억한다고 했다.',
   talk:withPerson+' 집안 살림을 의논했던 날이 생각났다.',
   remember:withPerson+' 지냈던 때가 떠올랐다.'
  };
- return person.alive?lines[action]||'함께 지낸 날이 떠올랐다.':'세상을 떠난 '+n+'의 목소리가 떠올랐다. '+(lines[action]||'');
+ return person.alive?lines[action]||'함께 지낸 날이 떠올랐다.':'세상을 떠난 '+withPerson+' 함께 지냈던 날을 떠올렸다. 다시 안부를 나눌 수 없어 그리웠다.';
 }
 
 function person(life,id,role,birthYear,sex){
@@ -252,7 +252,7 @@ const OUTCOMES={
  inherit:'가족과 나눈 일이 다음 계절의 살림에도 보탬이 되었다.',
  sharework:'서로의 일손을 도우면서 집안의 살림도 조금 나아졌다.',
  gift:'함께 보냈던 시간이 바쁜 날에 떠올랐다.',
- plan:'함께 의논해 모아 둔 곡식이 필요할 때 도움이 되었다.',
+ plan:'곡식과 돈을 어디에 쓸지 함께 의논했던 일을 돌아보았다.',
  kinwork:'일을 나누었던 형제자매와 다시 서로를 도왔다.',
  encourage:'형제자매에게 건넨 응원이 오래 기억되었다.',
  talk:'집안의 살림을 함께 의논한 일이 후회로 남지 않았다.',
@@ -280,9 +280,9 @@ function choose(life,index){
  if(a==='inherit'&&who){who.work='가족의 생업을 함께 이음';who.atHome=true;j.capital+=6;s.legacies++;}
  if(a==='sharework'){j.capital+=4;}
  if(a==='gift'){j.capital-=4;}
- if(a==='plan'){v.grain=clamp(v.grain+10,0,200);}
+ // Discussing a budget does not create food or income.
  if(a==='kinwork'){j.capital+=3;}
- if(a==='talk'){v.grain=clamp(v.grain+5,0,200);}
+
  if(who&&memory)memory.kinship=clamp(memory.kinship+3,0,100);
  j.capital=clamp(j.capital,-120,600);
  if(life.money)life.money.netWorth=modern?netBefore+(j.capital-capitalBefore)*100:j.capital*100;
@@ -302,9 +302,9 @@ function afterYear(life){
  const year=life.year,j=J.ensure(life),v=V2.ensure(life);
  for(const effect of s.followups.filter(x=>x.year<=year)){
   const relative=s.people.find(p=>p.id===effect.personId);
-  const sentence=relative?rememberedRelative(relative,effect.action):OUTCOMES[effect.action];
+  const sentence=relative?rememberedRelative(relative,effect.action):null;
   if(sentence){remember(life,s,sentence,'joseon4-followup');if(effect.id)life.log.at(-1).causeId='joseon4:'+effect.id;s.memories.push(sentence);s.memories=s.memories.slice(-20);}
-  if(year<1900&&['support','plan','inherit','talk'].includes(effect.action))v.grain=clamp(v.grain+3,0,200);
+
  }
  s.followups=s.followups.filter(x=>x.year>year);
  for(const p of s.people){

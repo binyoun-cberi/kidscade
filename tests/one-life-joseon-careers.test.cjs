@@ -118,3 +118,10 @@ test('failed work survives restore without a later success story',()=>{
  l.year=f.year;l.age=l.year-l.birthYear;l.pending=null;V6.yearEnd(l,V6.ensure(l));
  a.ok(l.log.some(e=>e.kind==='joseon6-followup'&&/되찾지는 못했다/.test(e.text)));
 });
+test('changing livelihood drops obsolete active and queued work without granting its reward',()=>{
+ const l=free(born(1600,48),25);l.gender='남자';a.ok(V6.adopt(l,'merchant'));
+ const s=V6.ensure(l),q={id:'1625-merchant-work',type:'career',code:'merchant',year:1625,title:'옛 장터의 일',choices:[{label:'거래한다',action:'trade'}]};
+ s.active=q;s.pending=[{...q,id:'1625-merchant-side'}];l.pending='joseon6:'+q.id;
+ a.ok(V6.adopt(l,'smith'));a.equal(s.active,null);a.equal(s.pending.length,0);a.equal(l.pending,null);
+ const restored=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));a.equal(V6.ensure(restored).career.code,'smith');a.equal(V6.ensure(restored).active,null);
+});

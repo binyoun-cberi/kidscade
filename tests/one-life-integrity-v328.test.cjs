@@ -68,3 +68,20 @@ test('royal girls learn household duties rather than receiving the military voca
  assert.ok(q.options.every(o=>o.action!=='courtGuard'));assert.ok(l.choose(q.options.findIndex(o=>o.action==='courtHousehold')));
  assert.match(j.occupation,/살림/);
 });
+test('budget conversations do not create grain, and deceased relatives never send later news',()=>{
+ const c=runtime(),l=birth(c,1580,'남자',17),V4=c.OneLifeJoseon4,J=c.OneLifeJoseon;
+ l.age=25;l.year=1605;const j=J.ensure(l);j.married=true;
+ const s=V4.ensure(l);s.processedYear=1604;V4.afterYear(l);
+ const spouse=s.people.find(p=>p.role==='spouse');assert.ok(spouse);
+ s.queue=[];s.active={id:'1605-spouse-budget',kind:'spouse',personId:spouse.id,year:1605};l.pending='joseon4:1605-spouse-budget';
+ const food=c.OneLifeJoseon2.ensure(l).grain;
+ assert.ok(V4.choose(l,2));assert.equal(c.OneLifeJoseon2.ensure(l).grain,food);
+ // The relative died before the already queued three-year followup.
+ spouse.alive=false;spouse.diedYear=1606;
+ s.followups=[{id:'old-journey',year:1608,personId:spouse.id,action:'journey'}];
+ l.year=1607;l.age=27;l.pending=null;s.active=null;s.processedYear=1607;
+ const restored=c.OneLifeSim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));assert.ok(restored);
+ restored.year=1608;restored.age=28;V4.afterYear(restored);
+ const record=restored.log.find(e=>e.causeId==='joseon4:old-journey');assert.ok(record);
+ assert.match(record.text,/세상을 떠난/);assert.doesNotMatch(record.text,/편지가 도착|소식이 왔다|기억한다고 했다/);
+});
