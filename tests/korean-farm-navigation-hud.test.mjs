@@ -77,6 +77,16 @@ test('turning rotates toward the shorter angle instead of snapping through 360 d
   assert.ok(half>0&&half<Math.PI/2);
   near(rotateToward(.2,.2,.02),.2);
 });
+test('long frames preserve walking distance instead of reducing travel speed',()=>{
+  let regular={x:0,z:0},slow={x:0,z:0};
+  for(let i=0;i<60;i++)regular=walkPlayer(regular,{x:1,z:0},1/60);
+  for(let i=0;i<5;i++)slow=walkPlayer(slow,{x:1,z:0},.2);
+  near(regular.x,4.7,.001);
+  near(slow.x,regular.x,.001);
+  const turned=rotateToward(0,Math.PI,.2);
+  assert.ok(turned>0&&turned<=Math.PI);
+  assert.ok(game.includes('Math.min(.20,(now-last)/1000)'), 'The rendering loop should preserve elapsed movement time');
+});
 test('colliding with walls never produces walking-in-place animation',()=>{
   const at={x:10.1,z:-13};
   const block=walkPlayer(at,{x:1,z:0},.016,{obstacles:VILLAGE_COLLIDERS});

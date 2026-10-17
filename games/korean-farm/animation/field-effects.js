@@ -32,7 +32,7 @@ export class FieldEffects{
     this.scene.add(group);this.effects.push({group,meshes,ring,life:0,duration:.95});
   }
   update(dt){
-    dt=Math.min(.075,Math.max(0,dt));
+    dt=Math.min(.20,Math.max(0,dt));
     for(let i=this.effects.length-1;i>=0;i--){
       const fx=this.effects[i];fx.life+=dt;
       const progress=clamp(fx.life/fx.duration),alpha=1-progress;

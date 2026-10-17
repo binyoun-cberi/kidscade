@@ -310,7 +310,7 @@ function refreshWorkStatus(){
 }
 function render(now){
   if(disposed)return;raf=requestAnimationFrame(render);
-  const dt=last?Math.min(.07,(now-last)/1000):0;last=now;
+  const dt=last?Math.min(.20,(now-last)/1000):0;last=now;
   const overlayShown=!$('modal').classList.contains('hidden');
   const moving=!paused&&!loading&&!overlayShown?move(dt,now/1000):false;
   if(!paused&&!loading&&!overlayShown){
@@ -490,6 +490,11 @@ function exitPlantingMode(){
   if(farmFlow.cancelApproach())moveGoal=null;
   for(const def of FIELD_DEFS)if(def.kind==='rice'){
     const rec=plotMeshes.get(def.id);rec?.planting?.refresh(fieldById(state,def.id),-1,false);
+  }
+  // Finishing 25 seedlings should not strand players on an empty scene:
+  // bring back the same field controls for water gates, care and next steps.
+  if($('modal').classList.contains('hidden')){
+    updateInspector();$('inspector').classList.remove('hidden');
   }
 }
 function runSeedlingPlant(index=selectedSeedling){
@@ -908,7 +913,7 @@ function bindControls(){
     joystick.x=dx*scale/max;joystick.y=dy*scale/max;
     knob.style.transform='translate('+dx*scale+'px,'+dy*scale+'px)';
   };
-  stick.addEventListener('pointerdown',e=>{e.preventDefault();joystick.id=e.pointerId;stick.setPointerCapture(e.pointerId);readStick(e)});
+  stick.addEventListener('pointerdown',e=>{e.preventDefault();$('inspector').classList.add('hidden');joystick.id=e.pointerId;stick.setPointerCapture(e.pointerId);readStick(e)});
   stick.addEventListener('pointermove',e=>{if(joystick.id===e.pointerId)readStick(e)});
   stick.addEventListener('pointerup',resetStick);stick.addEventListener('pointercancel',resetStick);
   window.addEventListener('pagehide',()=>save(true));

@@ -100,7 +100,7 @@ export function createFarmerAnimator(){
       return true;
     },
     update(dt,{moving=false,time=0}={}){
-      dt=Math.max(0,Math.min(.08,dt));
+      dt=Math.max(0,Math.min(.20,dt));
       let impact=null;
       if(currentAction){
         elapsed+=dt;
