@@ -434,7 +434,8 @@ function refreshPlantingHud(){
   $('seedlingSupplies').textContent='모종 '+state.inventory.seedRice+'묶음 · 기운 '+Math.round(state.energy);
   $('plantingHint').textContent=farmFlow.busy?'농부가 모를 심는 중이에요…':
     count===0?'밝은 칸을 선택하고 모를 심으세요.':'초록색 칸은 심었어요. 다음 빈 칸에 도전하세요.';
-  $('plantOne').disabled=farmFlow.busy||count===TRANSPLANT_COUNT||state.energy<1;
+  // Keep the held action button enabled during movement so touch release is never lost.
+  $('plantOne').disabled=count===TRANSPLANT_COUNT||state.energy<1;
   const grid=$('seedlingGrid');
   for(const el of grid.querySelectorAll('[data-cell]')){
     const i=Number(el.dataset.cell),filled=!!f.transplants?.[i];
