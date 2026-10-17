@@ -195,8 +195,10 @@ function install(){
   return ok;
  };
  L.prototype.getChoice=function(){
-  if(typeof this.pending==='string'&&this.pending.startsWith('joseonWomen326:'))
-   return choices(this,this.pending.slice('joseonWomen326:'.length));
+  if(typeof this.pending==='string'&&this.pending.startsWith('joseonWomen326:')){
+   const p=choices(this,this.pending.slice('joseonWomen326:'.length));
+   return p&&{...p,options:p.options.map(([label,note])=>({label,note,action:label}))};
+  }
   return prevPrompt.call(this);
  };
  L.prototype.choose=function(i){
