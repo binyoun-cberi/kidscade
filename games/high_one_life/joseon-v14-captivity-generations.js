@@ -250,6 +250,8 @@ function repatriationChance(c,s,index,year){
  const base=c.realm==='japan'?
   (MAJOR_JAPAN_ENVOYS.has(year)?[.34,.24,.07][index]:[.12,.08,.03][index]):
   [.38,.29,.06][index];
+ // Helping another captive must NEVER trigger one's own repatriation.
+ if(index===2)return 0;
  // Contacts improve access to information, never make return certain.
  const evidence=(s.contacts||0)+(s.overseas?.homeNews||0);
  return Math.min(.65,base+(index===2?0:Math.min(.09,evidence*.003)));
@@ -276,19 +278,28 @@ function choose(l,index){
  if(Number.isFinite(d.heritageMemory))s.heritage.memories=clip(s.heritage.memories+d.heritageMemory,0,40);
  if(Number.isFinite(d.heritageGoods))s.heritage.goods=clip(s.heritage.goods+d.heritageGoods,0,40);
  if(e.id==='ransomOpportunity'){
-  const c=s.captivity;c.attempts++;
-  // Opportunity, never guaranteed. Route depends on historical captor/context.
-  const chance=repatriationChance(c,s,index,l.year);
-  if(hash(l.seed,l.year*83+index*41+c.attempts*3)<chance)
-   reunion(l,s,c.realm==='japan'?'쇄환':'속환');
-  else l.logEvent('귀향할 길을 알아보았지만 이번에는 고향으로 돌아갈 수 없었다.','joseon14-captivity');
+  const c=s.captivity;
+  if(index===2){
+   // This is someone else's name on the list, not the player's own request.
+   l.logEvent('함께 끌려온 사람의 고향과 이름을 인편에 맡겼다. 본인의 귀향은 아직 결정되지 않았다.','joseon14-captivity');
+  }else{
+   c.attempts++;
+   // Opportunity, never guaranteed. Route depends on historical captor/context.
+   const chance=repatriationChance(c,s,index,l.year);
+   if(hash(l.seed,l.year*83+index*41+c.attempts*3)<chance)
+    reunion(l,s,c.realm==='japan'?'쇄환':'속환');
+   else l.logEvent('귀향할 길을 알아보았지만 이번에는 고향으로 돌아갈 수 없었다.','joseon14-captivity');
+  }
  }
  // Stigma belongs to the society's response, not the survivor's morality.
  // Protecting one's privacy or seeking work is not a reason to blame a returnee.
  // Stigma reflects other people's prejudice, not a penalty for a survivor's choice.
  if(e.id==='homeWork'&&index===1&&s.skills>=5){
-  s.heritage.skills=clip(s.heritage.skills+2,0,40);
-  l.logEvent('멀리서 익힌 솜씨를 자녀와 이웃에게 가르치며 일거리를 조금씩 다시 만들었다.','joseon14-family');
+  const hasChild=V4.summary(l)?.children>0;
+  if(hasChild)s.heritage.skills=clip(s.heritage.skills+2,0,40);
+  l.logEvent(hasChild?
+   '멀리서 익힌 솜씨를 자녀와 이웃에게 보여 주며 일거리를 조금씩 다시 만들었다.':
+   '멀리서 익힌 솜씨를 배우려는 이웃에게 보여 주며 일거리를 조금씩 다시 만들었다.','joseon14-family');
  }
  if(l.money&&l.year<1900)l.money.netWorth=j.capital*100;
  l.logEvent(e.title+' — '+op.label,'joseon14-choice');l.log.at(-1).causeId='joseon14:'+id;
