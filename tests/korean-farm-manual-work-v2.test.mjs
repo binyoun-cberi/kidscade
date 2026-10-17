@@ -41,7 +41,7 @@ test('hand-watering changes each vegetable bed, remembers five strips, resets ne
   assert.ok(field.moisture<moisture+.2,'one motion cannot water the entire plot');
   assert.equal(applyFarmStrip(state,field.id,'water',0).ok,false);
   for(let i=1;i<WORK_STRIPS;i++)assert.equal(applyFarmStrip(state,field.id,'water',i).ok,true);
-  assert.equal(field.moisture,Math.min(1,moisture+.37));
+  assert.ok(Math.abs(field.moisture-Math.min(1,moisture+.37))<1e-9);
   assert.equal(canWorkFieldStrip(state,'rice-1','water',0).ok,false);
   advanceFarmDay(state);
   assert.equal(completedWorkStrips(field,'water'),0);
