@@ -45,7 +45,7 @@ export function createFieldWorkGrid(plot){
       const done=field?.work||{};
       furrows[i].visible=!field.planted&&!!done.tilled?.[i];
       wetPatches[i].visible=!!done.watered?.[i]&&field.kind!=='rice';
-      weedClumps[i].visible=field.weeds>=.12&&!done.weeded?.[i]&&!done.harvested?.[i];
+      weedClumps[i].visible=(field.weeds>=.12||done.weeded?.some(Boolean))&&!done.weeded?.[i]&&!done.harvested?.[i];
       stubble[i].visible=!!done.harvested?.[i]&&field.planted;
       const key=action==='till'?'tilled':action==='water'?'watered':action==='weed'?'weeded':'harvested';
       markers[i].visible=Boolean(action)&&!done[key]?.[i];
