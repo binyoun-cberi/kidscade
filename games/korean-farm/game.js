@@ -513,7 +513,7 @@ function refreshFieldWorkHud(){
   if(!fieldWorkMode||!workAction)return;
   const f=fieldById(state,state.selected),plot=plotById(state.selected);
   if(!f||!plot)return;
-  const count=completedWorkStrips(f,workAction);
+  const count=workFinished?WORK_STRIPS:completedWorkStrips(f,workAction);
   const labels={till:['괭이질','갈아 놓은 땅'],water:['물주기','물을 준 땅'],
     weed:['김매기','잡초를 뽑은 땅'],harvest:['낫질·수확','거둔 땅']};
   $('workToolName').textContent=labels[workAction][0]+' · '+plot.label;
@@ -524,11 +524,11 @@ function refreshFieldWorkHud(){
   const check=index>=0?canWorkFieldStrip(state,plot.id,workAction,index):{ok:false,message:'이 작업을 모두 마쳤어요.'};
   $('workStripHint').textContent=farmFlow.busy?'농부가 '+(labels[workAction][0])+' 하는 중이에요…':
     !check.ok?check.message:'밝은 구역을 눌러 작업하거나 아래 버튼을 길게 눌러 이어 하세요.';
-  $('workOne').disabled=index<0||(!check.ok&&!farmFlow.busy);
+  $('workOne').disabled=workFinished||index<0||(!check.ok&&!farmFlow.busy);
   const done=workAction==='till'?'tilled':workAction==='water'?'watered':
     workAction==='weed'?'weeded':'harvested';
   for(const b of $('workStripGrid').querySelectorAll('button[data-strip]')){
-    const n=Number(b.dataset.strip),finished=!!f.work?.[done]?.[n];
+    const n=Number(b.dataset.strip),finished=workFinished||!!f.work?.[done]?.[n];
     const ready=!finished&&canWorkFieldStrip(state,plot.id,workAction,n).ok;
     b.classList.toggle('done',finished);
     b.classList.toggle('chosen',!finished&&n===selectedStrip);
@@ -579,7 +579,8 @@ function handleFarmFlowEvent(event){
   if(!plot)return;
   if(event.type==='start'){
     moveGoal=null;
-    const contact=event.cellIndex==null?plot:seedlingPosition(plot,event.cellIndex);
+    const contact=event.cellIndex==null?plot:event.action==='plant'?
+      seedlingPosition(plot,event.cellIndex):workStripPosition(plot,event.cellIndex);
     farmerFacingTarget=farmerHeading(contact.x-state.player.x,contact.z-state.player.z);
     if(!farmerAnimator?.trigger(event.action)){
       farmFlow.reset();toast('농기구를 사용할 수 없어요.');refreshFarmControls();
@@ -588,14 +589,22 @@ function handleFarmFlowEvent(event){
   }
   if(event.type==='impact'){
     // All crop, soil, inventory, and energy changes happen only at tool contact.
-    const result=event.action==='plant'&&event.cellIndex!=null?
-      plantSeedling(state,plot.id,event.cellIndex):applyFarmAction(state,plot.id,event.action);
+    const stripWork=event.cellIndex!=null&&PATCH_ACTIONS.includes(event.action);
+    const result=stripWork?applyFarmStrip(state,plot.id,event.action,event.cellIndex):
+      event.action==='plant'&&event.cellIndex!=null?
+        plantSeedling(state,plot.id,event.cellIndex):applyFarmAction(state,plot.id,event.action);
     toast(result.message);
     if(result.ok){
       fieldEffects?.emit(event.action,event.cellIndex==null?
-        actionContactPoint(plot,state.player):seedlingPosition(plot,event.cellIndex));
+        actionContactPoint(plot,state.player):event.action==='plant'?
+          seedlingPosition(plot,event.cellIndex):workStripPosition(plot,event.cellIndex));
       syncFieldVisual(plot.id);
-      if(event.cellIndex!=null){
+      if(stripWork){
+        selectedStrip=nextWorkStrip(fieldById(state,plot.id),event.action);
+        workFinished=Boolean(result.complete);
+        if(workFinished)workHeld=false;
+        refreshFieldWorkHud();
+      }else if(event.cellIndex!=null){
         selectedSeedling=nextEmptySeedling(fieldById(state,plot.id));
         if(result.complete)plantHeld=false;
         refreshPlantingHud();
@@ -612,6 +621,12 @@ function handleFarmFlowEvent(event){
   }
   if(event.type==='complete'){
     refreshFarmControls();
+    if(PATCH_ACTIONS.includes(event.action)&&event.cellIndex!=null&&fieldWorkMode){
+      if(workFinished){exitFieldWorkMode();toast(event.action==='harvest'?'다섯 구역 수확 완료! 수확물이 창고에 들어갔어요.':'다섯 구역 작업을 모두 마쳤어요.')}
+      else if(workHeld){runFieldStrip(nextWorkStrip(fieldById(state,plot.id),event.action))}
+      else refreshFieldWorkHud();
+      return;
+    }
     if(event.action==='plant'&&event.cellIndex!=null&&plantingMode){
       const f=fieldById(state,plot.id);
       if(f?.planted){exitPlantingMode();toast('모내기 완료! 논에 모 25포기가 자리를 잡았어요.')}
@@ -621,6 +636,10 @@ function handleFarmFlowEvent(event){
   }
 }
 function doFarmAction(action){
+  if(PATCH_ACTIONS.includes(action)){
+    if(farmFlow.busy){toast('먼저 하던 농사를 마쳐 주세요.');return}
+    enterFieldWorkMode(action);return;
+  }
   const selectedField=fieldById(state,state.selected);
   if(action==='plant'&&selectedField?.kind==='rice'){
     if(farmFlow.busy){toast('먼저 하던 농사를 마쳐 주세요.');return}
@@ -649,6 +668,7 @@ function sleepFarmDay(){
   for(const plot of FIELD_DEFS)syncFieldVisual(plot.id);
   refreshHud();refreshObjective();
   if(!$('inspector').classList.contains('hidden'))updateInspector();
+  if(fieldWorkMode)refreshFieldWorkHud();
   toast(report.message);save(true);
   if(state.day===2)window.KidscadeGame?.milestone?.('first_farm_day',{uniqueKey:'day-two',value:2});
 }
@@ -755,12 +775,14 @@ function bindControls(){
     if(key==='e')state.camera.angle+=Math.PI/6;
     if(key==='escape'){
       if(plantingMode)exitPlantingMode();
+      if(fieldWorkMode)exitFieldWorkMode();
       $('moreTools').classList.add('hidden');$('moreBtn').setAttribute('aria-expanded','false');
       keys.clear();
       if(farmFlow.cancelApproach()){moveGoal=null;toast('이동하던 농사 작업을 취소했어요.');refreshFarmControls()}
       $('modal').classList.add('hidden');$('inspector').classList.add('hidden')
     }
     if((key===' '||key==='enter')&&plantingMode&&!e.repeat){e.preventDefault();runSeedlingPlant()}
+    if((key===' '||key==='enter')&&fieldWorkMode&&!e.repeat){e.preventDefault();runFieldStrip()}
     if(key==='f'){let near=null,d=4;for(const p of FIELD_DEFS){const z=distanceToPlot(state.player,p);if(z<d){d=z;near=p}}if(near)chooseField(near.id)}
   });
   window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
@@ -815,6 +837,31 @@ function bindControls(){
     if(b&&!b.disabled)runSeedlingPlant(Number(b.dataset.cell));
   });
   $('exitPlanting').onclick=exitPlantingMode;
+  const stripGrid=$('workStripGrid');
+  for(let i=0;i<WORK_STRIPS;i++){
+    const b=document.createElement('button');b.type='button';b.dataset.strip=String(i);
+    b.textContent=String(i+1);b.setAttribute('aria-label',(i+1)+'번째 농사 구역');stripGrid.append(b);
+  }
+  stripGrid.addEventListener('click',e=>{
+    const b=e.target.closest('button[data-strip]');
+    if(b&&!b.disabled)runFieldStrip(Number(b.dataset.strip));
+  });
+  $('exitFieldWork').onclick=exitFieldWorkMode;
+  const workButton=$('workOne');
+  workButton.addEventListener('pointerdown',e=>{
+    if(e.button!==0||workButton.disabled)return;
+    e.preventDefault();workPointerAction=true;workHeld=true;
+    try{workButton.setPointerCapture(e.pointerId)}catch{}
+    runFieldStrip();
+  });
+  const stopWork=()=>{workHeld=false};
+  workButton.addEventListener('pointerup',stopWork);
+  workButton.addEventListener('pointercancel',stopWork);
+  window.addEventListener('pointerup',stopWork);
+  workButton.addEventListener('click',()=>{
+    if(workPointerAction){workPointerAction=false;return}
+    runFieldStrip();
+  });
   const plantButton=$('plantOne');
   plantButton.addEventListener('pointerdown',e=>{
     if(e.button!==0||plantButton.disabled)return;
@@ -864,7 +911,7 @@ function bindControls(){
   stick.addEventListener('pointerup',resetStick);stick.addEventListener('pointercancel',resetStick);
   window.addEventListener('pagehide',()=>save(true));
   window.KidscadeGame?.registerPauseHandlers?.({pause:()=>paused=true,resume:()=>paused=false});
-  window.KidscadeGame?.registerCleanup?.(()=>{farmFlow.reset();save(true);disposed=true;cancelAnimationFrame(raf);fieldEffects?.clear();for(const r of plotMeshes.values())r.planting?.dispose();villageScene?.dispose();renderer?.dispose()});
+  window.KidscadeGame?.registerCleanup?.(()=>{farmFlow.reset();save(true);disposed=true;cancelAnimationFrame(raf);fieldEffects?.clear();for(const r of plotMeshes.values()){r.planting?.dispose();r.work?.dispose()}villageScene?.dispose();renderer?.dispose()});
 }
 async function main(){
   init3D();ground=new THREE.Plane(new THREE.Vector3(0,1,0),-.15);
