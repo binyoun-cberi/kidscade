@@ -554,6 +554,8 @@ function exitFieldWorkMode(){
   $('fieldWorkHud').classList.add('hidden');
   if(farmFlow.cancelApproach())moveGoal=null;
   for(const p of FIELD_DEFS)plotMeshes.get(p.id)?.work?.refresh(fieldById(state,p.id));
+  if(!$('modal').classList.contains('hidden'))return;
+  updateInspector();$('inspector').classList.remove('hidden');
 }
 function runFieldStrip(index=selectedStrip){
   if(!fieldWorkMode||farmFlow.busy||!workAction)return;
