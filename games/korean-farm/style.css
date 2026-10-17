@@ -92,3 +92,14 @@ button:focus-visible{outline:3px solid #d18d34;outline-offset:3px}
   #joystick{bottom:78px}
   .inspector{bottom:76px}
 }
+
+/* A single feedback surface for approach, impact, and recovery. */
+.work-status{position:absolute;z-index:5;left:50%;bottom:max(96px,env(safe-area-inset-bottom) + 86px);transform:translateX(-50%);
+  display:flex;flex-direction:column;gap:7px;align-items:center;min-width:180px;max-width:min(280px,65vw);
+  padding:10px 16px;background:#fffaf0ef;border:1px solid #d8e4cc;border-radius:14px;
+  box-shadow:0 8px 23px #22392535;color:#355f41;pointer-events:none}
+#workTitle{font-size:12px;font-weight:700}
+.work-track{height:6px;width:100%;background:#dce8d8;overflow:hidden;border-radius:100px}
+.work-track i{height:100%;display:block;width:0;background:#669c66;transition:width .09s linear}
+@media(max-width:700px){.work-status{left:auto;right:10px;transform:none;bottom:max(115px,env(safe-area-inset-bottom) + 108px);min-width:145px;padding:7px 11px}
+  #workTitle{font-size:10px}}

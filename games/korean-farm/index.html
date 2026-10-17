@@ -61,6 +61,10 @@
     <button id="saveBtn" type="button"><span>▣</span><b>저장</b></button>
   </nav>
   <div id="joystick" aria-label="가상 이동 조이스틱"><div class="joystick-knob"></div></div>
+  <div id="workStatus" class="work-status hidden" aria-live="polite" role="status">
+    <span id="workTitle">작업하는 중</span>
+    <div class="work-track"><i id="workFill"></i></div>
+  </div>
   <div id="notification" role="status" aria-live="polite"></div>
   <div id="loading"><div class="loading-panel"><div class="spinner" aria-hidden="true"></div><h1>솔내리로 가는 길</h1><p id="loadingText">농장 풍경을 준비하고 있어요.</p></div></div>
   <section id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">

@@ -90,7 +90,9 @@ test('rendering code activates articulated actor and visual impact effects',()=>
   const game=src('game.js'),assets=src('assets.js'),actor=src('animation/farmer-animator.js');
   const effects=src('animation/field-effects.js');
   assert.match(game,/createFarmerAnimator\(\)/);
-  assert.match(game,/farmerAnimator\?\.trigger\(action\)/);
+  assert.match(game,/farmerAnimator\?\.trigger\(event\.action\)/);
+  assert.match(game,/farmFlow\.tick/);
+  assert.match(game,/applyFarmAction\(state,plot\.id,event\.action\)/);
   assert.match(game,/updateEnvironmentAnimation/);
   assert.match(game,/fieldEffects\?\.emit/);
   assert.match(assets,/repairRiceColors/);
