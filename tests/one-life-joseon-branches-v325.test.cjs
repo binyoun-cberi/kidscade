@@ -134,6 +134,32 @@ test('seven occupational paths each offer actual work, changing skill and cash',
   assert.equal(B.summary(restored).profession.skill,s.career.skill);
  }
 });
+test('multiple craft episodes and a second prison release are never blocked by an old key',()=>{
+ const l=create(1810,618,'도공 가계'),s=B.ensure(l);
+ assert.ok(B.startCareer(l,s,'potter'));
+ select(l,'careerTask',0);
+ const first=s.career.skill;
+ assert.ok(first>1);
+ select(l,'careerTask',0);
+ assert.equal(s.career.workIndex,2);
+ assert.ok(s.career.skill>first);
+ // A later conviction must not inherit the consumed release flag.
+ s.seen.push('release');
+ assert.ok(B.lockup(l,s,'prison',1,'고을 옥'));
+ l.year+=1;l.age+=1;l.pending=null;
+ assert.equal(B.queue(l,s,'release'),true);
+ assert.equal(s.queue.includes('release'),true);
+});
+test('a craft episode with no materials never grants an invented sale',()=>{
+ const l=create(1810,619,'목수 가계'),s=B.ensure(l);
+ assert.ok(B.startCareer(l,s,'carpenter'));
+ s.career.materials=0;J.ensure(l).capital=0;
+ const oldSkill=s.career.skill;
+ select(l,'careerTask',2);
+ assert.equal(s.career.skill,oldSkill);
+ assert.equal(s.career.materials,0);
+ assert.ok(s.stories.some(x=>/재료/.test(x.text)));
+});
 test('detention skips ordinary home economies and provides a releasable choice',()=>{
  const l=create(1810,744,'목수 가계'),s=B.ensure(l);
  const before=J.ensure(l).capital,year=l.year;
