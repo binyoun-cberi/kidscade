@@ -509,6 +509,67 @@ function runSeedlingPlant(index=selectedSeedling){
   keys.clear();moveGoal=req.phase==='approach'?req.goal:null;
   refreshPlantingHud();
 }
+function refreshFieldWorkHud(){
+  if(!fieldWorkMode||!workAction)return;
+  const f=fieldById(state,state.selected),plot=plotById(state.selected);
+  if(!f||!plot)return;
+  const count=completedWorkStrips(f,workAction);
+  const labels={till:['괭이질','갈아 놓은 땅'],water:['물주기','물을 준 땅'],
+    weed:['김매기','잡초를 뽑은 땅'],harvest:['낫질·수확','거둔 땅']};
+  $('workToolName').textContent=labels[workAction][0]+' · '+plot.label;
+  $('workStripProgress').textContent=count+' / '+WORK_STRIPS+'구역';
+  $('workStripFill').style.width=(count/WORK_STRIPS*100)+'%';
+  $('workStripEnergy').textContent='기운 '+Math.round(state.energy);
+  const index=nextWorkStrip(f,workAction,selectedStrip);
+  const check=index>=0?canWorkFieldStrip(state,plot.id,workAction,index):{ok:false,message:'이 작업을 모두 마쳤어요.'};
+  $('workStripHint').textContent=farmFlow.busy?'농부가 '+(labels[workAction][0])+' 하는 중이에요…':
+    !check.ok?check.message:'밝은 구역을 눌러 작업하거나 아래 버튼을 길게 눌러 이어 하세요.';
+  $('workOne').disabled=index<0||(!check.ok&&!farmFlow.busy);
+  const done=workAction==='till'?'tilled':workAction==='water'?'watered':
+    workAction==='weed'?'weeded':'harvested';
+  for(const b of $('workStripGrid').querySelectorAll('button[data-strip]')){
+    const n=Number(b.dataset.strip),finished=!!f.work?.[done]?.[n];
+    const ready=!finished&&canWorkFieldStrip(state,plot.id,workAction,n).ok;
+    b.classList.toggle('done',finished);
+    b.classList.toggle('chosen',!finished&&n===selectedStrip);
+    b.textContent=finished?'✓':String(n+1);
+    b.setAttribute('aria-label',(n+1)+'번째 구역 '+(finished?'완료':'남음'));
+    b.disabled=finished||farmFlow.busy||!ready;
+  }
+  plotMeshes.get(plot.id)?.work?.refresh(f,workAction,selectedStrip);
+}
+function enterFieldWorkMode(action){
+  const plot=plotById(state.selected),f=fieldById(state,state.selected);
+  if(!plot||!f||!PATCH_ACTIONS.includes(action)||farmFlow.busy)return;
+  const first=nextWorkStrip(f,action);
+  const check=first>=0?canWorkFieldStrip(state,plot.id,action,first):{ok:false,message:'이 작업은 이미 끝났어요.'};
+  if(!check.ok){toast(check.message);return}
+  fieldWorkMode=true;workAction=action;selectedStrip=first;workHeld=false;workFinished=false;
+  $('inspector').classList.add('hidden');$('fieldWorkHud').classList.remove('hidden');
+  $('moreTools').classList.add('hidden');refreshFieldWorkHud();
+  toast('농부가 선택한 구역으로 걸어가 도구를 사용할 거예요.');
+}
+function exitFieldWorkMode(){
+  workHeld=false;fieldWorkMode=false;workAction=null;workFinished=false;
+  $('fieldWorkHud').classList.add('hidden');
+  if(farmFlow.cancelApproach())moveGoal=null;
+  for(const p of FIELD_DEFS)plotMeshes.get(p.id)?.work?.refresh(fieldById(state,p.id));
+}
+function runFieldStrip(index=selectedStrip){
+  if(!fieldWorkMode||farmFlow.busy||!workAction)return;
+  const plot=plotById(state.selected),f=fieldById(state,state.selected);
+  if(!plot||!f)return;
+  const i=nextWorkStrip(f,workAction,index);
+  if(i<0){exitFieldWorkMode();return}
+  const can=canWorkFieldStrip(state,plot.id,workAction,i);
+  if(!can.ok){workHeld=false;toast(can.message);refreshFieldWorkHud();return}
+  selectedStrip=i;
+  const point=workStripPosition(plot,i);
+  const goal={x:point.x,z:point.z+.42};
+  const req=farmFlow.request({action:workAction,plot,position:state.player,goal,cellIndex:i});
+  if(req.type!=='queued')return;
+  keys.clear();moveGoal=req.phase==='approach'?req.goal:null;refreshFieldWorkHud();
+}
 function handleFarmFlowEvent(event){
   const plot=plotById(event.fieldId);
   if(event.type==='timeout'){
