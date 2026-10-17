@@ -15,7 +15,7 @@ const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=u
 const hook=[
 "window.__farmQA={",
 " ready:()=>!loading&&!disposed&&Boolean(renderer&&farmerAnimator),",
-" state:()=>({day:state.day,money:state.money,inventory:{...state.inventory},stats:{...state.stats},",
+" state:()=>({day:state.day,money:state.money,energy:state.energy,inventory:{...state.inventory},stats:{...state.stats},",
 "   fields:state.fields.map(f=>({id:f.id,growth:f.growth,planted:f.planted,water:f.waterDepthCm,gate:f.gateOpen})),",
 "   player:{...state.player},saving:localStorage.getItem(SAVE_KEY)?.length||0}),",
 " teleport:(x,z)=>{state.player.x=x;state.player.z=z;farmer.position.set(x,0,z);camTarget.set(x,0,z);moveGoal=null;},",
