@@ -913,7 +913,7 @@ function bindControls(){
     joystick.x=dx*scale/max;joystick.y=dy*scale/max;
     knob.style.transform='translate('+dx*scale+'px,'+dy*scale+'px)';
   };
-  stick.addEventListener('pointerdown',e=>{e.preventDefault();joystick.id=e.pointerId;stick.setPointerCapture(e.pointerId);readStick(e)});
+  stick.addEventListener('pointerdown',e=>{e.preventDefault();$('inspector').classList.add('hidden');joystick.id=e.pointerId;stick.setPointerCapture(e.pointerId);readStick(e)});
   stick.addEventListener('pointermove',e=>{if(joystick.id===e.pointerId)readStick(e)});
   stick.addEventListener('pointerup',resetStick);stick.addEventListener('pointercancel',resetStick);
   window.addEventListener('pagehide',()=>save(true));
