@@ -20,6 +20,7 @@ const TEST_FILES = [
   "tests/one-life-captivity-border-v23.test.cjs",
   "tests/one-life-biography-audit-v24.test.cjs",
   "tests/one-life-choice-consequences-v25.test.cjs",
+  "tests/one-life-concrete-choices-v26.test.cjs",
   "tests/one-life-narrative-tone.test.cjs",
   "tests/one-life-joseon-policy.test.cjs",
   "tests/one-life-joseon-careers.test.cjs",
