@@ -5,11 +5,13 @@ import {FieldEffects} from './animation/field-effects.js';
 import {buildSolnaeriVillage} from './rendering/village-scene.js';
 import {VILLAGE_COLLIDERS} from './rendering/village-layout.mjs';
 import {createRicePlantingGrid} from './rendering/rice-planting-grid.js';
+import {createFieldWorkGrid} from './rendering/field-work-grid.js';
+import {WORK_STRIPS,PATCH_ACTIONS,workStripPosition,nextWorkStrip,completedWorkStrips} from './farming/field-work.mjs';
 import {TRANSPLANT_COUNT,seedlingCount,seedlingPosition,nextEmptySeedling,canPlantSeedling,plantSeedling} from './farming/rice-transplant.mjs';
 import {createFarmActionFlow,actionContactPoint,actionApproachPoint} from './interactions/action-flow.mjs';
 import {cameraRelativeInput,farmerHeading,rotateToward,walkPlayer,shouldTurnBeforeWalk,LOOK_SPEED} from './interactions/navigation.mjs';
 import {FIELD_DEFS,plotById,distanceToPlot} from './world.mjs';
-import {createFarmState,restoreFarmState,CROPS,calendar,fieldById,visualStage,fieldCondition,applyFarmAction,canApplyFarmAction,advanceFarmDay,sellAllProduce,buyFarmSupply} from './farming/farm-sim.mjs';
+import {createFarmState,restoreFarmState,CROPS,calendar,fieldById,visualStage,fieldCondition,applyFarmAction,canApplyFarmAction,applyFarmStrip,canWorkFieldStrip,advanceFarmDay,sellAllProduce,buyFarmSupply} from './farming/farm-sim.mjs';
 
 const $=id=>document.getElementById(id);
 const SAVE_KEY=window.KidscadeGame?.storageKey?.('korean_farm','farm')||'kidscade_game_v1:korean_farm:farm';
@@ -24,11 +26,12 @@ const keys=new Set();
 const joystick={x:0,y:0,id:null};
 const pointers=new Map();
 let pinchDistance=0,downPosition=null;
-const plotMeshes=new Map(),plotHits=[],plantingHits=[],plotOrigins=new Map(),visited=new Set(state.seenPlots||[]);
+const plotMeshes=new Map(),plotHits=[],plantingHits=[],fieldWorkHits=[],plotOrigins=new Map(),visited=new Set(state.seenPlots||[]);
 const obstacles=VILLAGE_COLLIDERS;
 const models=new Map();
 const farmFlow=createFarmActionFlow();
 let plantingMode=false,selectedSeedling=0,plantHeld=false,plantPointerAction=false;
+let fieldWorkMode=false,workAction=null,selectedStrip=0,workHeld=false,workPointerAction=false,workFinished=false;
 const actions={till:'괭이질',plant:'심기',water:'물주기',gate:'물꼬',weed:'김매기',fertilize:'거름주기',harvest:'수확'};
 
 const formatWon=n=>Math.max(0,Math.round(n)).toLocaleString('ko-KR')+'원';
@@ -131,7 +134,8 @@ function buildFields(){
     const cropLayer=new THREE.Group();group.add(cropLayer);
     const planting=rice?createRicePlantingGrid(plot):null;
     if(planting){group.add(planting.group);plantingHits.push(...planting.targets)}
-    plotMeshes.set(plot.id,{group,cropLayer,planting,target,plot,bed,waterMesh,stage:null,generation:0});
+    const work=createFieldWorkGrid(plot);group.add(work.group);fieldWorkHits.push(...work.targets);
+    plotMeshes.set(plot.id,{group,cropLayer,planting,work,target,plot,bed,waterMesh,stage:null,generation:0});
     syncFieldVisual(plot.id,true);
   }
 }
@@ -167,6 +171,11 @@ function syncFieldVisual(id,force=false){
   record.bed.material.color.setHex(field.tilled?0x755b41:0x9b805b);
   if(field.kind!=='rice')record.bed.material.color.setHex(field.moisture<.25?0x957551:0x72543c);
   record.planting?.refresh(field,plantingMode&&state.selected===id?selectedSeedling:-1,plantingMode&&state.selected===id);
+  record.work?.refresh(field,fieldWorkMode&&state.selected===id?workAction:null,
+    fieldWorkMode&&state.selected===id?selectedStrip:-1);
+  record.cropLayer.children.forEach(plant=>{
+    if(plant.userData.stripIndex!=null)plant.visible=!field.work?.harvested?.[plant.userData.stripIndex];
+  });
   const stage=visualStage(field);
   if(force||stage!==record.stage){
     record.stage=stage;
@@ -183,7 +192,7 @@ async function drawCrops(id){
   clearGroup(record.cropLayer);
   plotOrigins.set(id,resource.object?resource.origin:'임시 모형');
   const crop=resource.object||fallbackCrop(plot.kind);
-  const cols=plot.kind==='rice'?5:3,rows=plot.kind==='rice'?5:2;
+  const cols=plot.kind==='rice'?5:3,rows=5;
   for(let x=0;x<cols;x++)for(let z=0;z<rows;z++){
     // Static copies are sufficient for the first farming loop; source GLB is cached.
     const model=crop.clone(true);
@@ -192,6 +201,7 @@ async function drawCrops(id){
     model.position.y+=plot.kind==='rice'?.22:.26;
     if(plot.kind==='rice')model.scale.multiplyScalar(1.12);
     model.rotation.y=(x*3+z)*.36;
+    model.userData.stripIndex=z;model.visible=!field.work?.harvested?.[z];
     record.cropLayer.add(model);
   }
   if(state.selected===id&&!$('inspector').classList.contains('hidden'))updateInspector();
@@ -321,6 +331,12 @@ function canvasPosition(e){
 }
 function inspectAt(e){
   raycaster.setFromCamera(canvasPosition(e),camera);
+  if(fieldWorkMode){
+    const strips=raycaster.intersectObjects(fieldWorkHits,false)
+      .filter(h=>h.object.userData.plotId===state.selected);
+    if(strips.length){runFieldStrip(strips[0].object.userData.stripIndex);return}
+    toast('지금 작업 중인 논밭의 표시된 구역을 선택해 주세요.');return;
+  }
   if(plantingMode){
     const cells=raycaster.intersectObjects(plantingHits,false).filter(h=>h.object.userData.plotId===state.selected);
     if(cells.length){runSeedlingPlant(cells[0].object.userData.cellIndex);return}
@@ -344,6 +360,7 @@ function inspectAt(e){
 function chooseField(id){
   const plot=plotById(id);if(!plot)return;
   if(plantingMode)exitPlantingMode();
+  if(fieldWorkMode)exitFieldWorkMode();
   if(farmFlow.busy){toast('지금 하던 작업을 먼저 마쳐 주세요.');return}
   state.selected=id;
   if(plot.kind==='rice'){
@@ -409,6 +426,10 @@ function updateInspector(){
     btn.hidden=(a==='water'&&f.kind==='rice')||(a==='gate'&&f.kind!=='rice');
     btn.disabled=farmFlow.busy||(a==='till'&&f.planted)||(a==='plant'&&(f.planted||!f.tilled||!(f.kind==='rice'&&seedlingCount(f)>0)&&!state.inventory[{rice:'seedRice',carrot:'seedCarrot',corn:'seedCorn'}[f.crop]]))||
       (a==='harvest'&&(!f.planted||f.growth<.999))||(a==='fertilize'&&!state.inventory.fertilizer);
+    if(PATCH_ACTIONS.includes(a)){
+      const next=nextWorkStrip(f,a);
+      btn.disabled=farmFlow.busy||next<0||!canWorkFieldStrip(state,plot.id,a,next).ok;
+    }
     if(a==='gate')btn.textContent=f.gateOpen?'물꼬 닫기':'물꼬 열기';
     if(a==='plant')btn.textContent=f.kind==='rice'?'🌱 모내기 시작':'씨앗 심기';
   }
