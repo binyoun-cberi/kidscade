@@ -105,7 +105,7 @@ const EVENTS=[
   opt('식구의 생계를 먼저 돌본다','당장 먹고사는 일을 살핀다','장터에 다녀와도 소작료 이야기는 그치지 않았다.',{wealth:2,happiness:-1})]},
  {id:'students1929',start:1929,end:1929,age:12,maxAge:35,title:'광주에서 시작된 학생들의 외침',
   desc:'광주에서 학생들이 차별에 항의했다는 소식이 다른 고을에도 닿는다. 집집마다 자녀와 친척의 안부를 걱정한다.',options:[
-  opt('학교에 다니는 친척의 안부를 묻는다','인편과 편지를 기다린다','먼 곳에서 무사하다는 소식을 들었다.',{bonds:4,knowledge:2}),
+  opt('멀리 사는 친척의 안부를 묻는다','인편과 편지를 기다린다','안부를 묻는 편지를 보냈지만 답장이 언제 올지는 알 수 없었다.',{bonds:4,knowledge:2}),
   opt('거리에서 들린 요구를 기록한다','말을 옮길 때 조심한다','학생들이 전한 말을 잊지 않으려 적어 두었다.',{knowledge:4}),
   opt('가족과 함께 상황을 지켜본다','검거와 단속이 걱정된다','어른들이 늦게까지 학생들의 이야기를 나누었다.',{bonds:3,health:-1})]},
  {id:'marketDepression',start:1930,end:1935,age:16,title:'장터의 손님이 줄다',
@@ -150,7 +150,7 @@ const EVENTS=[
   opt('단속을 피해 식구를 챙긴다','누군가 다칠까 염려된다','그날 식구들은 집에 모여 무사함을 확인했다.',{bonds:4})]},
  {id:'independence',start:1920,end:1936,age:16,title:'국경 너머의 독립운동 소식',
   desc:'만주와 국경 지방에서 독립운동에 참여한 사람의 소문이 들려온다.',options:[
-  opt('먼 곳에 간 친척의 안부를 묻는다','편지와 인편을 기다린다','먼 고을에서 친척의 안부가 전해졌다.',{bonds:4,knowledge:2}),
+  opt('먼 곳에 간 친척의 안부를 묻는다','편지와 인편을 기다린다','멀리 있는 친척에게 안부를 물을 길을 찾았다.',{bonds:4,knowledge:2}),
   opt('사람들이 읽는 글을 함께 본다','검열과 단속을 피해야 한다','당시 읽었던 글귀가 오래 마음에 남았다.',{knowledge:4}),
   opt('마을의 생업을 이어 간다','집안이 버틸 수 있도록 한다','바쁜 가운데에도 먼 곳의 소식은 계속 들어왔다.',{wealth:2})]},
  {id:'press',start:1920,end:1936,age:12,title:'신문에 실리지 못한 이야기',
@@ -176,20 +176,26 @@ const EVENTS=[
  {id:'mobilization',start:1939,end:1945,age:17,title:'먼 일터로 가라는 명령',
   desc:'전쟁을 위한 인력 동원이 확대된다. 집안의 젊은이가 먼 일터로 떠날 수 있다.',options:[
   opt('떠나는 가족에게 먹을 것을 챙긴다','돌아올 날을 기약하기 어렵다','멀리 떠난 사람을 기다리는 날이 길어졌다.',{wealth:-3,bonds:4}),
-  opt('떠난 이에게 편지를 쓴다','소식이 닿기를 바란다','편지가 닿았다는 소식에 잠시 마음을 놓았다.',{knowledge:2,bonds:4}),
+  opt('떠난 이에게 편지를 쓴다','소식이 닿기를 바란다','편지를 쓰고도 답장이 올지는 알 수 없어 오래 기다렸다.',{knowledge:2,bonds:4}),
   opt('남은 가족의 살림을 맡는다','갑자기 빈 일손을 대신한다','한 사람이 떠난 집안의 일은 남은 식구가 나누었다.',{health:-3,bonds:3})]},
  {id:'clothes',start:1910,end:1945,age:10,title:'거리에서 바뀌는 차림',
   desc:'한복 차림 사이로 양복과 모자, 안경을 쓴 사람이 오간다.',options:[
   opt('안경을 쓴 이에게 글을 읽어 달라 한다','글을 읽는 일을 돕는다','처음 본 안경이 오래 기억에 남았다.',{knowledge:3}),
   opt('가족의 옷을 기워 입는다','새것을 살 여유가 없다','기워 입은 옷이 오랫동안 집안 살림을 지탱했다.',{wealth:2}),
-  opt('거리의 새로운 차림을 구경한다','옷과 머리 모양의 변화를 본다','도성에서 본 옷차림을 가족에게 이야기했다.',{knowledge:2,happiness:2})]}
+  opt('거리의 새로운 차림을 구경한다','옷과 머리 모양의 변화를 본다','장터에서 본 옷차림을 가족에게 이야기했다.',{knowledge:2,happiness:2})]}
 ];
 function isPeriod(l){return l.country?.[0]==='대한민국'&&l.year>=1910&&l.year<=1945}
 function ensure(l){if(!l||l.country?.[0]!=='대한민국')return null;
  const s=l.colonialDaily||(l.colonialDaily={version:1,processedYear:l.birthYear,seen:[],active:null,queue:[],decisions:[],followups:[],threads:thread(),lastTopic:''});
  if(!s.threads)s.threads=thread();return s;
 }
-function eligible(l,e){return isPeriod(l)&&l.alive&&l.age>=e.age&&
+function eligible(l,e){
+ // A village's tenancy and irrigation disputes should not be assigned to
+ // every city household as if it owned or worked rice paddies.
+ if(['landRegistry','riceExpansion','tenantPetition'].includes(e.id)&&
+    l.profile?.settlement&&l.profile.settlement!=='농촌'&&
+    !/농업|소작|농사|농민/.test(String(l.profile?.motherJob||'')+' '+String(l.profile?.fatherJob||'')))return false;
+ return isPeriod(l)&&l.alive&&l.age>=e.age&&
  (e.maxAge===undefined||l.age<=e.maxAge)&&(!e.gender||l.gender===e.gender)&&
  l.year>=e.start&&l.year<=e.end}
 function promote(l,s){if(s&&!s.active&&!l.pending&&l.alive&&s.queue.length){
