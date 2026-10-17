@@ -101,7 +101,29 @@ function success(state,field,message,extra={}){
   state.minute=minmax(state.minute+20,420,1320);
   return {ok:true,message,fieldId:field?.id||null,...extra};
 }
+// Validation is shared by the UI and impact moment. Never charge a cost while
+// walking to a plot, and recheck when the tool actually touches its target.
+export function canApplyFarmAction(state,id,action){
+  const f=fieldById(state,id);
+  if(!f)return {ok:false,message:'농사짓는 구역을 선택해 주세요.'};
+  if(!Object.hasOwn(energyCost,action))return {ok:false,message:'아직 사용할 수 없는 도구예요.'};
+  if(state.energy<energyCost[action])return {ok:false,message:'오늘은 많이 일했어요. 집에서 쉬어 주세요.'};
+  if(action==='till'&&f.planted)return {ok:false,message:'작물이 자라는 동안은 땅을 갈 수 없어요.'};
+  if(action==='plant'){
+    if(f.planted)return {ok:false,message:'이미 작물이 심어져 있어요.'};
+    if(!f.tilled)return {ok:false,message:'먼저 괭이로 땅을 갈아 주세요.'};
+    if(!state.inventory[seedKey[f.crop]])return {ok:false,message:'씨앗이 부족해요. 장터에서 씨앗을 구입해 주세요.'};
+  }
+  if(action==='water'&&f.kind==='rice')return {ok:false,message:'논은 물꼬를 열어 물을 관리해요.'};
+  if(action==='gate'&&f.kind!=='rice')return {ok:false,message:'물꼬는 논에서만 조절할 수 있어요.'};
+  if(action==='fertilize'&&!state.inventory.fertilizer)return {ok:false,message:'퇴비가 다 떨어졌어요.'};
+  if(action==='harvest'&&(!f.planted||f.growth<.999))
+    return {ok:false,message:'아직 익지 않았어요. 생육 상태를 살펴보세요.'};
+  return {ok:true};
+}
 export function applyFarmAction(state,id,action){
+  const validity=canApplyFarmAction(state,id,action);
+  if(!validity.ok)return validity;
   const field=fieldById(state,id);
   if(!field)return {ok:false,message:'농사짓는 구역을 선택해 주세요.'};
   if(!Object.hasOwn(energyCost,action))return {ok:false,message:'아직 사용할 수 없는 도구예요.'};
