@@ -9,10 +9,20 @@ function scene(life){
  const home=away?{kind:'small-thatch',roof:'thatch',label:'타향의 임시 거처'}:root.OneLifeJoseonCulture?.household(life,{joseon:j,origin,scene:kind,role:j.occupation});
  const missing=new Set((life.joseon13?.missing||[]).filter(p=>p.status==='missing').map(p=>p.personId));
  const family=away?[]:(root.OneLifeJoseon4?.ensure?.(life)?.people||life.joseon4?.people||[]).filter(p=>p.alive&&p.atHome!==false&&!p.missing&&!missing.has(p.id)&&p.birthYear<=year);
- const people=[{id:'self',name:life.profile?.name||'나',age:Math.max(0,life.age||0),sex:life.gender,self:true},...family.map(p=>({id:p.id,name:p.name,age:Math.max(0,year-p.birthYear),sex:p.sex,self:false}))];
+ const people=[{id:'self',name:life.profile?.name||'나',age:Math.max(0,life.age||0),sex:life.gender,self:true},...family.map(p=>({id:p.id,name:p.name,age:Math.max(0,year-p.birthYear),sex:p.sex,role:p.role,self:false}))];
  return {kind,home,people,away,householdCount:people.length};
 }
-const api={scene,
+function layout(plan){
+ // Shared ground coordinates: yard 220..444 in a port, 110..444 elsewhere.
+ // A person's feet determine depth; distant people are smaller than foreground people.
+ const places=[[342,239],[238,219],[420,225],[286,239],[386,245]];
+ return plan.people.slice(0,5).map((p,i)=>{
+  const [x,ground]=places[i],depth=.54+(ground-216)*.006;
+  const ageScale=p.age<3?.54:p.age<8?.66:p.age<13?.78:p.age<16?.88:1;
+  return {...p,x,ground,depth,scale:ageScale*depth};
+ }).sort((a,b)=>a.ground-b.ground);
+}
+const api={scene,layout,
  paint(canvas,life){
   if(!canvas||!life)return false;
   const ctx=canvas.getContext('2d');if(!ctx)return false;
@@ -124,15 +134,17 @@ const api={scene,
    px(326,159,96,8,'#8e6648');px(332,167,6,26,'#705a43');px(407,167,6,26,'#705a43');
    for(let i=0;i<4;i++)px(336+i*18,148,14,10,i%2?'#bd7957':'#d7b46b');
   }else if(kind==='mountain'){
-   px(326,144,13,48,'#725f48');px(318,141,28,8,'#8f7753');px(332,136,7,8,'#a88d62');
+   // A woodpile at the forest edge, away from the family's walking space.
+   px(479,188,52,13,'#806345');for(let i=0;i<5;i++)px(482+i*10,185,7,5,'#b09568');
+   px(486,179,34,7,'#997c54');
   }
   // Age-shaped hanbok sprites; clothes and headwear signal age and social position.
-  const sprite=(x,ground,personAge,sex,childColor,adultColor,offset,self=false)=>{
+  const sprite=(x,ground,personAge,sex,childColor,adultColor,offset,self=false,depth=.68)=>{
    const personalWear=Culture?.wardrobe(year,origin,sex,self?j.occupation:'집안의 일',personAge,{duty:self&&(kind==='study'||kind==='port')});
    adultColor=personalWear?.color||adultColor;offset=personalWear?.accent||offset;
-   px(x-14,ground+3,28,4,'#b5a385');
+   px(x-14*depth,ground+2,28*depth,3,'#b5a385');
    const child=personAge<8,teen=personAge<16&&!child,elder=personAge>=62;
-   const s=personAge<3?0.54:personAge<8?0.66:personAge<13?0.78:teen?0.88:1;
+   const s=(personAge<3?0.54:personAge<8?0.66:personAge<13?0.78:teen?0.88:1)*depth;
    const head=child?17:teen?16:15,body=child?21:25,robe=child?24:teen?28:32;
    const skin='#d5a47f',hair=elder?'#6d6460':'#34363a';
    const X=n=>Math.round(x+n*s),Y=n=>Math.round(ground+n*s),R=(a,b,c,d,col)=>px(X(a),Y(b),Math.max(2,Math.round(c*s)),Math.max(2,Math.round(d*s)),col);
@@ -189,10 +201,9 @@ const api={scene,
   const trim=wear?.accent||(elite?'#b9a16e':'#c6aa73');
   // Draw only living, present household members, with their recorded ages and sex.
   // Keep a calm scene even for large households; the caption states the full count.
-  const places=[[342,240],[245,224],[407,231],[292,244],[382,248]];
-  plan.people.slice(0,5).map((p,i)=>({...p,x:places[i][0],ground:places[i][1]})).sort((a,b)=>a.ground-b.ground).forEach(p=>{
-   sprite(p.x,p.ground,p.age,p.sex,'#d4b96f',adultTone,trim,p.self);
-  });
+  for(const p of layout(plan)){
+   sprite(p.x,p.ground,p.age,p.sex,'#d4b96f',adultTone,trim,p.self,p.depth);
+  }
   // Shared palette bar and fine border echo the mint-and-warm UI without a heavy frame.
   px(0,0,600,3,'#6da99b');px(0,255,600,3,'#6da99b');
   return true;

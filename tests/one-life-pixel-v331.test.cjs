@@ -29,3 +29,11 @@ test('costume distinguishes family background, actual service and historical sil
  assert.equal(wear(1900,'상민','남자','수군',30,{duty:true}).style,'hanbok');
  assert.ok(wear(1500,'상민','여자','',30).jeogori>wear(1800,'상민','여자','',30).jeogori);
 });
+test('people share the yard perspective and remain clear of water, fields and each other',()=>{
+ const api=runtime(),l=life();l.zone='port';
+ l.joseon4.people=Array.from({length:8},(_,i)=>({id:'kin'+i,birthYear:1550,sex:i%2?'여자':'남자',alive:true,atHome:true}));
+ const placed=api.layout(api.scene(l));assert.equal(placed.length,5);
+ for(const p of placed){assert.ok(p.x-20*p.scale>=220);assert.ok(p.x+30*p.scale<=444);assert.ok(p.ground>=216&&p.ground+5*p.scale<255);assert.ok(83*p.scale<64);}
+ const adults=placed.filter(p=>p.age>=16);for(let i=1;i<adults.length;i++)assert.ok(adults[i].scale>=adults[i-1].scale);
+ for(let i=0;i<placed.length;i++)for(let j=i+1;j<placed.length;j++)assert.ok(Math.abs(placed[i].x-placed[j].x)>20*(placed[i].scale+placed[j].scale));
+});
