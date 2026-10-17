@@ -236,6 +236,11 @@ function promptFor(life,s){
   opt('농사와 땅을 돌본다','곡식과 날씨에 생활이 달려 있다','farm',{wealth:3}),
   opt('장터에서 물건을 팔거나 기술을 익힌다','수공업·장시에서 새로운 인연을 만난다','trade',{knowledge:3,bonds:3}),
   opt('집안일과 가족 돌봄을 맡는다','가까운 사람들의 살림을 지켜 간다','home',{bonds:7,health:-2})]};
+ if(kind==='marriage'&&life.gender==='여자'&&life.joseonWomen327?.serviceBound)
+  return {title:'관아의 일과 내 앞날',description:'관아에 소속되어 일을 맡고 있어 거처와 혼인을 마음대로 정하기 어렵다. 함께 일하는 이들과 앞으로의 생활을 생각한다.',options:[
+   opt('맡은 일과 배움을 이어 간다','소속에서 벗어나지는 못해도 경험을 쌓는다','womenServiceWork',{knowledge:4}),
+   opt('동료와 지내는 일을 의논한다','외로운 마음을 나누고 서로 돕는다','womenServicePeople',{bonds:5}),
+   opt('언젠가 살림을 꾸릴 길을 알아본다','허락과 거처를 생각한다. 곧바로 혼인하지는 않는다','womenServiceFuture',{knowledge:2,happiness:2})]};
  if(kind==='marriage'&&bound)return {title:'예속된 집안의 관계와 일상',description:'스스로 혼인과 거처를 정하기 어려운 처지다. 사람과의 관계도 주인이나 관아의 통제에 영향을 받는다.',options:[
   opt('함께 지낼 허락을 청한다','허락을 얻지 못할 수도 있지만 관계를 지키려 한다','servileMarry',{bonds:4}),
   opt('함께 일하는 이들과 서로 돕는다','일상 속에서 서로의 어려움을 나눈다','servileKin',{bonds:6}),
@@ -360,6 +365,7 @@ function applyChoice(life,index){
   if(act==='courtQuiet')s.occupation='왕실의 일에서 거리를 둔 삶';
   if(act==='royalMarriage'){s.married=true;s.capital-=8;note(life,s,'왕실과 가문의 허락을 받아 혼인했다.','joseon-family');}
  }
+ if(['womenServiceWork','womenServicePeople','womenServiceFuture'].includes(act))note(life,s,'관아에 매인 일과 앞으로의 살림을 생각하며 하루를 보냈다.','joseon-life');
  if(act==='trade'||act==='market'){s.occupation='장사·수공업';s.capital+=6;}
  if(act==='home'||act==='kin'||act==='care'){s.occupation='집안 살림과 돌봄';s.household=Math.min(8,s.household+1);s.parentsSupported=true;}
  if(act==='marry'){s.married=true;s.capital-=10;note(life,s,'혼인을 치르고 함께할 가족이 늘었다.','joseon-family');}
