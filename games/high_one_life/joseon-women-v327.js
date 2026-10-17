@@ -66,11 +66,11 @@ function note(l,s,text,kind='joseonWomen327-memory'){
 function money(l,n){const j=J.ensure(l);j.capital=clamp(j.capital+n,-120,600);
  if(l.money)l.money.netWorth=j.capital*100;}
 function eligibleOffice(l){
- if(!female(l)||l.age<15||l.age>18||l.year<1406||l.year>=1894)return [];
+ if(!female(l)||l.age<11||l.age>18||l.year<1406||l.year>=1894)return [];
  const soc=V5.ensure(l),f=family(l);
  if(f.living||soc.freed||soc.monastic||soc.origin!=='공노비'||W326?.summary(l)?.familyPath?.startsWith('사별'))return [];
- if(soc.publicOffice==='중앙 관서')return ['uinyeo','palace'];
- if(soc.publicOffice==='지방 관아')return ['courtArtist'];
+ if(soc.publicOffice==='중앙 관서')return l.age<=14?['uinyeo','palace']:['palace'];
+ if(soc.publicOffice==='지방 관아')return l.age>=13?['courtArtist']:[];
  return [];
 }
 function eligibleMidwife(l){const soc=V5.ensure(l),w=W326?.summary(l);
@@ -141,7 +141,7 @@ function yearly(l){
  for(const x of s.followups.filter(x=>x.year<=l.year))note(l,s,x.text);
  s.followups=s.followups.filter(x=>x.year>l.year);
  const f=family(l),p=eligibleOffice(l);
- if(!s.seen.includes('entry')&&p.length&&l.age>=16&&l.age<=18){s.seen.push('entry');put(l,s,'entry');}
+ if(!s.seen.includes('entry')&&p.length&&l.age>=12&&l.age<=18){s.seen.push('entry');put(l,s,'entry');}
  if(!s.profession&&!s.seen.includes('midwife')&&eligibleMidwife(l)&&l.age%3===0){
   s.seen.push('midwife');put(l,s,'midwife');
  }
