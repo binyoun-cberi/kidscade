@@ -41,6 +41,7 @@
   const Life30 = window.OneLifeConsequences30 || null;
   const Joseon325 = window.OneLifeJoseon325 || null;
   const JoseonWomen326 = window.OneLifeJoseonWomen326 || null;
+  const JoseonWomen327 = window.OneLifeJoseonWomen327 || null;
   const History = window.OneLifeHistory;
   const Official=window.OneLifeOfficialStats||{countries:{}};
   const metric=(key)=>life?.birthYear===2026?Official.countries?.[life?.country?.[0]]?.[key]||null:null;
@@ -631,17 +632,22 @@
     const panel=$('lifeWomen326Panel'),list=$('lifeWomen326Records');
     if(!panel||!list)return;
     const entry=JoseonWomen326&&life&&Joseon.isJoseon(life)?JoseonWomen326.summary(life):null;
-    const visible=!!entry&&entry.decisions>0;
+    const more=JoseonWomen327&&life&&Joseon.isJoseon(life)?JoseonWomen327.summary(life):null;
+    const count=(entry?.decisions||0)+(more?.decisions||0);
+    const visible=count>0;
     panel.classList.toggle('hidden',!visible);
     list.replaceChildren();
     if(!visible)return;
-    $('lifeWomen326Count').textContent=entry.decisions+'번의 갈림길';
+    $('lifeWomen326Count').textContent=count+'번의 갈림길';
     $('lifeWomen326Summary').textContent=[
-      '이어 온 일: '+entry.livelihood,
-      entry.familyPath?'가족과 이웃: '+entry.familyPath:'',
+      more?.profession?'지금 하는 일: '+more.profession+' · 익힌 솜씨 '+more.skill:'이어 온 일: '+entry.livelihood,
+      more?.serviceBound?'관아 소속으로 일하는 중':'',
+      more?.household?'살림: '+more.household:entry.familyPath?'가족과 이웃: '+entry.familyPath:'',
+      more?.estate?.status==='settled'?'옛 문서를 확인해 살림의 일부를 나누어 받았다.':
       entry.property?'옛 살림과 문서를 살핀 기록이 있다.':''
     ].filter(Boolean).join(' · ');
-    for(const r of entry.recent.slice().reverse()){
+    const records=[...(entry?.recent||[]),...(more?.recent||[])].sort((a,b)=>b.year-a.year).slice(0,12);
+    for(const r of records){
       const li=document.createElement('li'),date=document.createElement('small'),p=document.createElement('p');
       date.textContent=r.year+'년';p.textContent=r.text;li.append(date,p);list.append(li);
     }
