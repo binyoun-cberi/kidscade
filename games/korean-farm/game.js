@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import {loadModel,loadFarmCropStage,assetReport,FARM_MODELS} from './assets.js';
 import {createFarmerAnimator} from './animation/farmer-animator.js';
 import {FieldEffects} from './animation/field-effects.js';
+import {buildSolnaeriVillage} from './rendering/village-scene.js';
+import {VILLAGE_COLLIDERS} from './rendering/village-layout.mjs';
 import {createFarmActionFlow,actionContactPoint,actionApproachPoint} from './interactions/action-flow.mjs';
 import {FIELD_DEFS,plotById,distanceToPlot} from './world.mjs';
 import {createFarmState,restoreFarmState,CROPS,calendar,fieldById,visualStage,fieldCondition,applyFarmAction,canApplyFarmAction,advanceFarmDay,sellAllProduce,buyFarmSupply} from './farming/farm-sim.mjs';
@@ -10,7 +12,7 @@ const $=id=>document.getElementById(id);
 const SAVE_KEY=window.KidscadeGame?.storageKey?.('korean_farm','farm')||'kidscade_game_v1:korean_farm:farm';
 const bounds=21.7;
 const state=loadSave();
-let scene,renderer,camera,raycaster,ground,farmer,farmerAvatar,farmerAnimator,fieldEffects;
+let scene,renderer,camera,raycaster,ground,farmer,farmerAvatar,farmerAnimator,fieldEffects,villageScene=null;
 let last=0,raf=0,paused=false,disposed=false,loading=true,noticeTimer=0;
 let camTarget=new THREE.Vector3(state.player.x,0,state.player.z);
 let moveGoal=null;
@@ -19,7 +21,7 @@ const joystick={x:0,y:0,id:null};
 const pointers=new Map();
 let pinchDistance=0,downPosition=null;
 const plotMeshes=new Map(),plotHits=[],plotOrigins=new Map(),visited=new Set(state.seenPlots||[]);
-const obstacles=[{x:10.1,z:-13,w:6,d:5},{x:18,z:-12,w:3.6,d:3.5}];
+const obstacles=VILLAGE_COLLIDERS;
 const models=new Map();
 const farmFlow=createFarmActionFlow();
 const actions={till:'괭이질',plant:'심기',water:'물주기',gate:'물꼬',weed:'김매기',fertilize:'거름주기',harvest:'수확'};
@@ -92,15 +94,13 @@ function init3D(){
   addRect(11.9,.28,.38,0x9aaf73,-10.75,.13,1.4);
   addRect(.38,.28,9.25,0x9aaf73,-15.1,.13,-3.1);
   addRect(.38,.28,9.25,0x9aaf73,-6.45,.13,-3.1);
-  // Water gate at the connecting stream.
-  addRect(1.1,.5,.36,0x8b673c,-16.5,.35,-3.2);
-  addRect(.13,.85,.13,0xb89560,-16.8,.55,-3.2);
-  addRect(.13,.85,.13,0xb89560,-16.15,.55,-3.2);
+  // The timber gate is now part of the dedicated irrigation-village scene.
   // River and pond extensions add landscape depth without costly simulation.
   addRect(2.9,.05,3.7,0x6eacae,-17.5,.12,13.7);
   addRect(5,.045,3,0x76b4a5,15,.075,15.8);
   for(let i=0;i<6;i++)addRect(3,.16,.26,0xba9871,-17.5,.23,7.5+i*.4);
   buildFields();
+  villageScene=buildSolnaeriVillage(scene);
   farmer=new THREE.Group();farmer.position.set(state.player.x,0,state.player.z);scene.add(farmer);
   farmerAnimator=createFarmerAnimator();
   farmerAvatar=farmerAnimator.root;farmer.add(farmerAvatar);
@@ -203,19 +203,6 @@ function updateEnvironmentAnimation(dt,elapsed){
     });
   }
 }
-function addFarmSigns(){
-  // Road signs and farming landmarks are geometric placeholders in PR 1.
-  addRect(.12,1.15,.12,0x6e5338,2.2,.57,11.4);
-  addRect(1.85,.68,.08,0xe5d4ab,2.2,1.27,11.4);
-  const sign=labelTexture('솔내리 농장');const plane=new THREE.Mesh(new THREE.PlaneGeometry(1.72,.52),new THREE.MeshBasicMaterial({map:sign,transparent:true,side:THREE.DoubleSide}));
-  plane.position.set(2.2,1.26,11.49);scene.add(plane);
-}
-function labelTexture(text){
-  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=160;
-  const ctx=canvas.getContext('2d');ctx.fillStyle='#e8d9b3';ctx.fillRect(0,0,512,160);
-  ctx.fillStyle='#426148';ctx.textAlign='center';ctx.font='bold 65px sans-serif';ctx.fillText(text,256,108);
-  const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;return tex;
-}
 function fallbackStructure(kind){
   const root=new THREE.Group();
   const body=addRect(kind==='barn'?3:4,kind==='barn'?1.8:2.5,kind==='barn'?2.5:3.3,kind==='barn'?0x9f7455:0xe8d9b9,0,1.25,0,1,root);
@@ -230,9 +217,8 @@ async function placeModel(key,x,z,turn=0){
   models.set(key+'@'+x+','+z,model?'loaded':'fallback');
 }
 async function populate(){
-  addFarmSigns();
   const jobs=[
-    placeModel('farmhouse',10.1,-13,.6),placeModel('barn',18,-12,-.25),placeModel('well',1.6,-13,.4),
+    placeModel('well',1.6,-13,.4),
     placeModel('hoe',7.1,-9.8,-.8),placeModel('wateringCan',8,-9.8,0)
   ];
   const trees=[[-20,-18],[-15,-19],[-8,-18],[0,-20],[5,-19],[19,-20],[-21,17],[-12,18],[-4,20],[6,19],[19,19],[-21,3]];
@@ -531,6 +517,15 @@ function showQa(){
   const actorTitle=document.createElement('strong');actorTitle.textContent='농부 캐릭터 · 절차적 관절 모델';
   const actorText=document.createElement('small');actorText.textContent='피부·머리카락·의상·장화·밀짚모자 색상을 개별 재질로 지정했으며, 농사 동작 7종을 적용했어요.';
   actorNote.append(actorTitle,actorText);list.append(actorNote);
+  if(villageScene){
+    const entry=document.createElement('div');entry.className='qa-entry';
+    const heading=document.createElement('strong');heading.textContent='솔내리 농촌 풍경 · 로우폴리 현장 구성';
+    const detail=document.createElement('small');
+    const v=villageScene.stats;
+    detail.textContent='구역 '+v.areas+'곳 · 메쉬 '+v.meshes+'개 · 묶음 렌더링 '+v.instanced+'종 · 한글 안내판 '+v.signs+'개';
+    const note=document.createElement('small');note.textContent='농가·창고·장독대·고추 건조대·농수로·장터를 색상 지정 재질로 그렸어요. 실제 색감은 PC·모바일 캡처에서 다시 확인해 주세요.';
+    entry.append(heading,detail,note);list.append(entry);
+  }
   for(const [name,record] of assetReport){
     const e=document.createElement('div');e.className='qa-entry';
     const b=document.createElement('strong');b.textContent=(record.status==='loaded'?'로드 성공 · ':'로드 실패 · ')+record.kind;
@@ -634,7 +629,7 @@ function bindControls(){
   stick.addEventListener('pointerup',resetStick);stick.addEventListener('pointercancel',resetStick);
   window.addEventListener('pagehide',()=>save(true));
   window.KidscadeGame?.registerPauseHandlers?.({pause:()=>paused=true,resume:()=>paused=false});
-  window.KidscadeGame?.registerCleanup?.(()=>{farmFlow.reset();save(true);disposed=true;cancelAnimationFrame(raf);fieldEffects?.clear();renderer?.dispose()});
+  window.KidscadeGame?.registerCleanup?.(()=>{farmFlow.reset();save(true);disposed=true;cancelAnimationFrame(raf);fieldEffects?.clear();villageScene?.dispose();renderer?.dispose()});
 }
 async function main(){
   init3D();ground=new THREE.Plane(new THREE.Vector3(0,1,0),-.15);

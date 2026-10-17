@@ -184,6 +184,7 @@ const TEST_FILES = [
   "tests/korean-farm-simulation.test.mjs",
   "tests/korean-farm-animation-color.test.mjs",
   "tests/korean-farm-action-flow.test.mjs",
+  "tests/korean-farm-village-scene.test.mjs",
   "tests/main-architecture.test.cjs"
 ];
 
