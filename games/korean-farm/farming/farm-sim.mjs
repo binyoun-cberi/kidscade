@@ -1,5 +1,6 @@
 // Pure farming simulation for Korean Farm. No DOM, Three.js, network or wall-clock dependence.
 import {FIELD_DEFS,makeFarmState,validateFarmState} from '../world.mjs';
+import {normalizeSeedlings,fullSeedlings,emptySeedlings,seedlingCount} from './rice-transplant.mjs';
 export const FARM_SAVE_VERSION=2;
 export const DAYS_PER_SEASON=14;
 export const CROPS=Object.freeze({
@@ -13,7 +14,9 @@ const validNumber=(v,defaultValue,min,max)=>Number.isFinite(v)?minmax(v,min,max)
 function speciesForPlot(def){return def.kind==='rice'?'rice':def.kind==='carrot'?'carrot':'corn'}
 function createField(def){
   const rice=def.kind==='rice',growth=rice?[.13,.37,.66,1][def.stage-1]:def.kind==='carrot'?.83:.58;
-  return {id:def.id,kind:def.kind,crop:speciesForPlot(def),planted:true,growth,
+  const practice=def.id==='rice-1';
+  return {id:def.id,kind:def.kind,crop:speciesForPlot(def),planted:!practice,growth:practice?0:growth,
+    transplants:rice?(practice?emptySeedlings():fullSeedlings()):null,
     tilled:true,waterDepthCm:rice?3:0,gateOpen:false,
     moisture:rice?.85:.6,nitrogen:.74,weeds:.08,health:1,harvestCount:0};
 }
@@ -50,6 +53,7 @@ export function restoreFarmState(raw){
     if(!saved)return base;
     base.planted=saved.planted===true;
     base.tilled=saved.tilled===true;
+    if(def.kind==='rice')base.transplants=normalizeSeedlings(saved.transplants,base.planted);
     base.growth=validNumber(saved.growth,base.growth,0,1);
     base.waterDepthCm=def.kind==='rice'?validNumber(saved.waterDepthCm,base.waterDepthCm,0,10):0;
     base.gateOpen=def.kind==='rice'&&saved.gateOpen===true;
@@ -111,6 +115,7 @@ export function canApplyFarmAction(state,id,action){
   if(action==='till'&&f.planted)return {ok:false,message:'작물이 자라는 동안은 땅을 갈 수 없어요.'};
   if(action==='plant'){
     if(f.planted)return {ok:false,message:'이미 작물이 심어져 있어요.'};
+    if(f.kind==='rice'&&seedlingCount(f)>0)return {ok:false,message:'이 논은 한 포기씩 모내기하는 중이에요. 모내기 화면을 사용해 주세요.'};
     if(!f.tilled)return {ok:false,message:'먼저 괭이로 땅을 갈아 주세요.'};
     if(!state.inventory[seedKey[f.crop]])return {ok:false,message:'씨앗이 부족해요. 장터에서 씨앗을 구입해 주세요.'};
   }
@@ -134,6 +139,7 @@ export function applyFarmAction(state,id,action){
     return success(state,field,'흙을 고르게 갈아 씨앗을 심을 준비를 했어요.',{action});
   }
   if(action==='plant'){
+    if(field.kind==='rice')return {ok:false,message:'논은 모내기 화면에서 한 포기씩 심어 주세요.'};
     if(field.planted)return {ok:false,message:'이미 작물이 심어져 있어요.'};
     if(!field.tilled)return {ok:false,message:'먼저 괭이로 땅을 갈아 주세요.'};
     const species=field.crop,key=seedKey[species];
@@ -169,6 +175,7 @@ export function applyFarmAction(state,id,action){
     const quality=minmax(.55+field.health*.40+field.nitrogen*.15-field.weeds*.15,.45,1.15);
     const quantity=Math.max(1,Math.round(crop.baseYield*quality));
     state.inventory[crop.produce]+=quantity;field.planted=false;field.growth=0;
+    if(field.kind==='rice')field.transplants=emptySeedlings();
     field.tilled=false;field.weeds=minmax(field.weeds+.08,0,1);field.harvestCount++;
     state.stats.harvests++;
     return success(state,field,crop.name+' '+quantity+'개를 수확해 창고에 보관했어요.',{action,quantity,produce:crop.produce,quality});
