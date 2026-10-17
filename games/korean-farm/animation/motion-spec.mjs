@@ -6,7 +6,7 @@ export const FARM_ACTION_MOTIONS=Object.freeze({
   gate:{duration:.95,tool:'lever',impact:.54},
   weed:{duration:.97,tool:'hand',impact:.56},
   fertilize:{duration:1.0,tool:'fertilizer',impact:.52},
-  harvest:{duration:1.18,tool:'basket',impact:.60}
+  harvest:{duration:1.18,tool:'sickle',impact:.60}
 });
 const clamp=(v)=>Math.max(0,Math.min(1,Number.isFinite(v)?v:0));
 export function motionPose(kind,progress=0,{moving=false,time=0}={}){
@@ -72,12 +72,12 @@ export function motionPose(kind,progress=0,{moving=false,time=0}={}){
     base.rightElbow=-.65;
     base.crouch=.08*bump;
   }else if(kind==='harvest'){
-    base.bodyLean=.25+.27*bump;
-    base.leftArm=.6+.39*bump;
-    base.rightArm=.62+.4*bump;
-    base.leftElbow=-.4;base.rightElbow=-.67;
-    base.crouch=.13*bump;
-    base.toolTilt=.2+.45*bump;
+    base.bodyLean=.28+.43*bump;
+    base.leftArm=.55+.27*bump;
+    base.rightArm=.68+.53*bump+.18*stroke;
+    base.leftElbow=-.55;base.rightElbow=-.6;
+    base.crouch=.25*bump;
+    base.toolTilt=-.33+.95*bump;
   }
   base.headTilt=-base.bodyLean*.28;
   return base;
