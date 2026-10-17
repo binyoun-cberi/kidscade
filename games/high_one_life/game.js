@@ -1191,6 +1191,17 @@
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=oldJobs?.primary?.name||life.career;
     const firstPlace=History.place({...life,year:life.birthYear});
+    // End-of-life meaning comes from actions the player actually took, not
+    // from a random praise/penalty unrelated to their family history.
+    const colonial=life.colonialDaily;
+    const traces=colonial?.threads||{};
+    const carried=[];
+    if((traces.records||0)>=3)carried.push('남겨 둔 장부와 글이 뒤에 닥친 일을 이해할 때 도움이 되었다.');
+    if((traces.neighbors||0)>=3)carried.push('곤란한 때 서로 도왔던 이웃들의 이름을 기억했다.');
+    if((traces.learning||0)>=3)carried.push('어렵게 배운 글과 말이 오래도록 삶에 남았다.');
+    if((traces.provisions||0)>=3)carried.push('가족의 끼니와 살림을 위해 준비했던 일을 기억했다.');
+    if((traces.familyNews||0)>=3)carried.push('먼 곳에 있는 가족의 이름과 소식을 끝까지 놓지 않으려 했다.');
+    const colonialLegacy=colonial?.decisions?.length?carried.slice(0,3).join(' '):'';
     const chapters=[
       life.birthYear+'년, '+firstPlace+'에서 태어났다.',
       oldLife?'태어날 때는 '+(oldSocial?.originLabel||Joseon.ensure(life).birthStatus+' 집안')+'에서 자랐다. '+oldLife.region+'에서 '+oldLife.occupation+' 일을 하며 세월을 보냈다.':summary.story,
@@ -1223,6 +1234,7 @@
         oldFarm(life)+' '+
         (oldLife.economy.debt?'빚이 남아 있어 식구들의 살림은 더욱 빠듯했다.':'크고 작은 어려움 속에서도 살림은 이어졌다.'):'',
       oldLife&&life.stats.bonds>=65?'돈의 많고 적음과 관계없이 곁을 지킨 사람과 함께한 시간이 있었다.':'',
+      colonialLegacy,
       life.deathReason,
       !oldLife&&life.world?.educationLevel&&life.world.educationLevel!=='없음'
         ?'살면서 '+life.world.educationLevel+'의 시간을 보냈다.':'',
