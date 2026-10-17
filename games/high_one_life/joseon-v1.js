@@ -275,7 +275,11 @@ function promptFor(life,s){
   return {title:'배움과 일의 길',description:life.gender==='여자'?'관직에 나아갈 길은 막혀 있다. 그래도 글과 셈, 손기술을 가르쳐 줄 이를 찾을 수는 있다.':'과거를 준비할 형편이 되지 않는다. 집안의 생업을 잇거나 다른 솜씨를 배울 길을 살핀다.',options:[
    opt('배운 글과 셈을 생업에 쓴다','기록과 셈이 도움이 되는 일을 한다','scribe',{knowledge:4,wealth:4}),
    opt('기술과 장사로 살림을 넓힌다','장시에서 기술·물건을 다룬다','trade',{wealth:6}),
-   opt('아이들과 이웃에게 배움을 나눈다','집안이나 마을에서 가르친다','teach',{bonds:7})]};
+   life.gender==='여자'
+    ? (s.literacy>=2&&s.studyYears>=1
+      ?opt('집안 아이에게 배운 글을 알려 준다','집안에서의 가르침이며 서당 훈장이나 관직으로 이어지지는 않는다','homeTeaching',{bonds:5,knowledge:1})
+      :opt('집안에서 익힌 손일을 나눈다','글을 가르칠 배움이 없어도 생활의 솜씨를 함께 익힌다','familySkill',{bonds:5,knowledge:1}))
+    :opt('아이들과 이웃에게 배움을 나눈다','집안이나 마을에서 가르친다','teach',{bonds:7})]};
  }
  if(kind==='household'&&bound)return {title:'예속된 집안의 살림',description:'노비도 일부 재산이나 기술을 갖고 살 수 있지만, 주인이나 관아에 대한 의무가 삶을 제약한다.',options:[
   opt('맡은 일에 힘을 보탠다','정해진 일을 마치고 필요한 살림을 챙긴다','serve',{health:-3}),
@@ -345,7 +349,7 @@ function applyChoice(life,index){
   const map={'어부 가계':'어부','주막 가계':life.gender==='여자'?'주모':'주막을 꾸리는 사람',
    '역관 가계':'통역과 외국어를 익히는 사람','의관 가계':'의술을 배우는 사람','서리 가계':'관아 기록 일을 배우는 사람','도공 가계':'도공',
    '대장장이 가계':'대장장이','목수 가계':'목수','보부상 가계':'보부상',
-   '상인 가계':'상인','수군 가계':'수군','사찰 주변 가계':'사찰을 돕는 사람',
+   '상인 가계':'상인','수군 가계':life.gender==='남자'?'수군':'포구의 생업과 군역 가족의 살림','사찰 주변 가계':'사찰을 돕는 사람',
    '백정':'백정의 생업을 잇는 장인'};
   social.role=map[social.origin]||social.trade;s.capital+=3;
   note(life,s,'집안에서 보고 익힌 '+social.trade+'을 생업으로 삼았다.','joseon-career');
@@ -381,7 +385,13 @@ function applyChoice(life,index){
  if(act==='technical'){s.exams++;const chance=clamp(.10+s.studyYears*.035+s.literacy*.025,0,.35);
   if(roll(life.seed,life.year+901)<chance){s.occupation=life.joseon5?.origin==='역관 가계'?'역관':life.joseon5?.origin==='의관 가계'?'의관':'관청의 전문 기술직';if(life.joseon5)life.joseon5.role=s.occupation;s.capital+=24;note(life,s,'오래 준비한 전문 분야의 시험에 합격했다. 관청에서 맡을 일을 기다린다.','joseon-career');}
   else {s.literacy+=1;s.school='전문 기술을 익히는 중';note(life,s,'시험에서는 뜻을 이루지 못했지만 공부한 기술은 남았다.','joseon-career');}}
- if(act==='teach'||act==='mentor'){s.occupation='마을에서 글과 기술을 가르치는 일';s.school='가르치며 배우는 생활';}
+ if(act==='teach'||act==='mentor'){
+  if(life.gender==='여자'){
+   s.school=s.literacy>=2?'집안에서 배운 글을 나누는 생활':'집안의 손일을 나누는 생활';
+  }else{s.occupation='마을에서 글과 기술을 가르치는 일';s.school='가르치며 배우는 생활';}
+ }
+ if(act==='homeTeaching')s.school='집안 아이에게 글을 알려 주는 생활';
+ if(act==='familySkill')s.school='생활의 솜씨를 함께 익히는 중';
  if(act==='scribe'){s.occupation='글과 셈을 쓰는 생업';s.literacy+=1;}
  if(act==='practical'){s.occupation='농사와 집안 생업';s.capital+=4;}
  if(act==='land'){s.land+=1;s.capital-=12;s.occupation='농사';}

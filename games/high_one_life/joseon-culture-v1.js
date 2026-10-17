@@ -23,7 +23,7 @@ function wardrobe(year,origin='상민',sex='남자',role='',age=30){
  const jeogori=female?(p.id==='early'?22:p.id==='middle'?17:p.id==='late'?12:14):18;
  const hatSpan=elite?(p.id==='early'?14:p.id==='middle'?17:p.id==='late'?21:18):(p.id==='early'?10:p.id==='middle'?12:p.id==='late'?14:12);
  let label;
- if(child)label=p.id==='late'?'짧은 저고리와 치마를 입은 아이':'저고리와 치마를 입은 아이';
+ if(child)label=female?(p.id==='late'?'짧은 저고리와 치마를 입은 아이':'저고리와 치마를 입은 아이'):'저고리와 바지를 입은 아이';
  else if(female)label=p.id==='early'?'긴 저고리와 치마':p.id==='middle'?'넉넉한 저고리와 치마':p.id==='late'?'짧은 저고리와 치마':'전통옷과 개화기 옷차림';
  else label=elite?(p.id==='late'?'갓과 도포':'관모와 긴 포'):(role?'생업에 맞춘 수수한 일옷':'수수한 일옷과 쓰개');
  return {period:p.id,label,jeogori,hatSpan,hat:elite?'formal':'work',color:elite?palette.elite:palette.plain,accent:palette.accent};

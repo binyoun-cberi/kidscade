@@ -26,6 +26,7 @@ const TEST_FILES = [
   "tests/one-life-joseon-branches-v325.test.cjs",
   "tests/one-life-joseon-women-v326.test.cjs",
   "tests/one-life-joseon-women-v327.test.cjs",
+  "tests/one-life-integrity-v328.test.cjs",
   "tests/one-life-narrative-tone.test.cjs",
   "tests/one-life-joseon-policy.test.cjs",
   "tests/one-life-joseon-careers.test.cjs",

@@ -171,11 +171,29 @@ function ensure(life){
   s=life.joseon6={version:1,career:null,secondary:null,history:[],pending:[],active:null,followups:[],
    lastPromptYear:-1,seen:[],memories:[],decisions:0,processedYear:life.year};
  }
+ if(life.gender==='여자'){
+  const oldTeacher=[s.career,s.secondary].some(w=>w?.code==='teacher');
+  if(oldTeacher){
+   s.domesticTeaching=true;
+   if(s.career?.code==='teacher')s.career=null;
+   if(s.secondary?.code==='teacher')s.secondary=null;
+   if(/글 선생|가르치|훈장|서당/.test(J.ensure(life).occupation)){
+    J.ensure(life).occupation='집안의 글공부와 살림';
+    life.career=J.ensure(life).occupation;
+    V5.ensure(life).role=J.ensure(life).occupation;
+   }
+  }
+  s.pending=s.pending.filter(q=>q.code!=='teacher'&&!q.choices?.some(o=>/^(enter|side):teacher$/.test(o.action)));
+  if(s.active&&(s.active.code==='teacher'||s.active.choices?.some(o=>/^(enter|side):teacher$/.test(o.action)))){
+   if(life.pending==='joseon6:'+s.active.id)life.pending=null;
+   s.active=null;
+  }
+ }
  return s;
 }
 function adopt(life,code,{secondary=false}={}){
  const s=ensure(life),j=J.ensure(life);
- if(!s||!CAREERS[code]||!available(life)||life.age<14)return false;
+ if(!s||!CAREERS[code]||!available(life)||life.age<14||(code==='teacher'&&life.gender==='여자'))return false;
  if(secondary&&s.career?.code===code)return false;
  if(secondary&&s.career&&s.secondary&&s.secondary.code!==code)return false;
  const work=starter(life,code);
@@ -220,7 +238,7 @@ function pathway(life,s){
  const shuffled=fallback.map((code,i)=>({code,sort:roll(life.seed,life.year+i*41+761)}))
   .sort((a,b)=>a.sort-b.sort).map(o=>o.code);
  const options=[...preferred,...shuffled].filter(c=>
-  c!=='teacher'||j.studyYears>=1||life.stats.knowledge>=40);
+  c!=='teacher'||(life.gender==='남자'&&(j.studyYears>=1||life.stats.knowledge>=40)));
  const availableOptions=options.filter(c=>c!==s.career?.code&&c!==s.secondary?.code);
  const picks=availableOptions.slice(0,2);
  if(!picks.length)return;
@@ -394,8 +412,9 @@ function hydrate(life,data){
  s.pending=Array.isArray(old.pending)?old.pending.map(clean).filter(Boolean).slice(-4):[];
  s.active=clean(old.active);
  if(!life.alive||!J.inOldEra(life)||data?.pending!=='joseon6:'+s.active?.id)s.active=null;
+ s.domesticTeaching=old.domesticTeaching===true;
  s.followups=Array.isArray(old.followups)?old.followups.filter(x=>x&&typeof x.id==='string'&&Number.isInteger(x.year)&&x.year>life.year&&x.year<=life.year+4).slice(-40).map(x=>({id:x.id.slice(0,70),year:x.year,action:String(x.action||'').slice(0,30),topic:String(x.topic||'').slice(0,100)})):[];
- return s;
+ return ensure(life);
 }
 function install(){
  if(!Sim?.Life||!J?.isJoseon||!V2?.ensure||!V5?.ensure||Sim.Life.prototype.__joseon6)return false;
