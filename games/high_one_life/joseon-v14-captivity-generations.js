@@ -227,6 +227,9 @@ function prompt(l){
       l.year+'년, 조선으로 돌아갈 사람을 찾는 교섭과 사절이 왔다는 말이 들린다. 돌아갈 사람들의 이름이 불릴 때마다 사람들은 숨을 죽였다.':
       '대마도나 외교 사절을 통해 조선인 일부가 귀환한다는 소식이 들린다. 가능성은 크지 않다.'):
     '후금·청에 끌려온 사람의 속환 소식이 들린다. 나라에서 몸값을 마련하는 공속과 가족이 개별적으로 치르는 사속은 형편이 다르다.';
+  // Previous relationships make communication possible, not freedom certain.
+  if((s.contacts||0)+(s.overseas?.homeNews||0)>=6)
+   description+=' 오가던 사람에게 맡겨 둔 이름과 고향 주소를 다시 확인할 수 있다.';
  }
  if(e.id==='japanWorkshop'){
   const trade=String(s.captivity?.work||'');
@@ -234,6 +237,8 @@ function prompt(l){
    '가마와 흙을 다루던 솜씨를 알아본 사람이 일터로 데려갔다. 기술을 쓰게 되었다고 돌아갈 자유가 생긴 것은 아니다.':
    '낯선 일터에서 일손을 보탠다. 언어와 기술이 다른 사람에게 배워 가며 하루를 보낸다.';
  }
+ if(e.id==='homeWork'&&s.skills>=5)
+  description+=' 타향에서 어렵게 익힌 손기술이 있다. 그 솜씨를 고향에서 어떻게 이어 갈지 생각한다.';
  if(e.id==='homeStigma'){
   description=s.captivity?.realm==='qing'&&l.gender==='여자'?
     '청에서 돌아왔다는 이유로 정절을 의심하는 말이 등 뒤에서 들려온다. 집안사람들은 그 말을 들으면서도 어떻게 맞서야 할지 몰라 서로의 얼굴을 살핀다.':
@@ -265,15 +270,23 @@ function choose(l,index){
  if(e.id==='ransomOpportunity'){
   const c=s.captivity;c.attempts++;
   // Opportunity, never guaranteed. Route depends on historical captor/context.
-  const chance=c.realm==='japan'?
+  const base=c.realm==='japan'?
     (MAJOR_JAPAN_ENVOYS.has(l.year)?[.34,.24,.07][index]:[.12,.08,.03][index]):
-    [ .38,.29,.06 ][index];
+    [.38,.29,.06][index];
+  // Messages and contacts help a request reach a representative, but do not
+  // erase captivity or guarantee repatriation. No bonus for option 2 (staying).
+  const evidence=(s.contacts||0)+(s.overseas?.homeNews||0);
+  const chance=Math.min(.65,base+(index===2?0:Math.min(.09,evidence*.003)));
   if(hash(l.seed,l.year*83+index*41+c.attempts*3)<chance)
    reunion(l,s,c.realm==='japan'?'쇄환':'속환');
   else l.logEvent('귀향할 길을 알아보았지만 이번에는 고향으로 돌아갈 수 없었다.','joseon14-captivity');
  }
  // Stigma belongs to the society's response, not the survivor's morality.
  if(e.id==='homeStigma'&&index!==0)s.stigma=clip(s.stigma+1,0,20);
+ if(e.id==='homeWork'&&index===1&&s.skills>=5){
+  s.heritage.skills=clip(s.heritage.skills+2,0,40);
+  l.logEvent('멀리서 익힌 솜씨를 자녀와 이웃에게 가르치며 일거리를 조금씩 다시 만들었다.','joseon14-family');
+ }
  if(l.money&&l.year<1900)l.money.netWorth=j.capital*100;
  l.logEvent(e.title+' — '+op.label,'joseon14-choice');l.log.at(-1).causeId='joseon14:'+id;
  s.decisions.push({id,eventId:e.id,year:l.year,choice:index});
