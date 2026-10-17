@@ -36,7 +36,7 @@ test('v8 maintains fast game, four in-game panels, original choices and existing
  for(const file of ['world-v8.js','scenes-v8.js','world-v8.css'])assert.ok(h.includes(file),file);
  for(const id of ['birthHome','birthContext','storyTools','survivalChart','survivalActual','survivalOther','survivalDot','ageMap','peers'])
   assert.ok(h.includes('id="'+id+'"'),'Missing UI '+id);
- assert.match(g,/YEAR_MS = 260/);
+ assert.match(g,/YEAR_MS = 4000/);
  assert.equal((h.match(/data-story-tab=/g)||[]).length,4);
  assert.equal((h.match(/data-peer-age=/g)||[]).length,5);
  assert.match(h,/나이별 곡선은 게임에서 재구성한 값/);assert.match(h,/개인의 수명이나 사망 시기를 알려 주지는 않습니다/);

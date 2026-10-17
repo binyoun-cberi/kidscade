@@ -41,7 +41,7 @@ test('53 condition-tagged branching families, five contextual gates and fast con
  assert.ok(W4.EVENTS.every(e=>e.lines.length>=2 && Array.isArray(e.requires)));
  const script=fs.readFileSync(path.join(dir,'game.js'),'utf8');
  const html=fs.readFileSync(path.join(dir,'index.html'),'utf8');
- assert.match(script,/const YEAR_MS = 260/);
+ assert.match(script,/const YEAR_MS = 4000/);
  assert.match(html,/world-v4\.js\?v=\d+/);
  assert.match(html,/sameBirthBtn/);
  assert.match(html,/endComparisonRows/);

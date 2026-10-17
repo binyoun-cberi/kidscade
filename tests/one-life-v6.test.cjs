@@ -41,7 +41,7 @@ test('career catalogue offers 84 professions in twelve areas and 32 image scenes
  for(const file of ['careers-v6.js','events-v6.js','world-v6.js','scenes-v6.js','world-v6.css'])
   assert.ok(html.includes(file),file);
  for(const id of ['careerCurrent','careerJourney','careerChangeCount'])assert.ok(html.includes('id="'+id+'"'));
- assert.match(fs.readFileSync(path.join(dir,'game.js'),'utf8'),/const YEAR_MS = 260/);
+ assert.match(fs.readFileSync(path.join(dir,'game.js'),'utf8'),/const YEAR_MS = 4000/);
 });
 test('32 original pixel scenes draw different stage labels and visible props',()=>{
  const canvas={width:600,height:258};

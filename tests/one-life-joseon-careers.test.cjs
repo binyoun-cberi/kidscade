@@ -101,3 +101,20 @@ test('promoting a side trade to main work clears duplicate side occupation',()=>
  a.equal(V6.summary(l).primary.code,'inn');
  a.equal(V6.summary(l).secondary,null);
 });
+
+// A failed work decision must remain a failure after save/restore and its delayed memory.
+test('failed work survives restore without a later success story',()=>{
+ let l=free(born(1600,42),25);l.gender='남자';a.ok(V6.adopt(l,'merchant'));
+ const s=V6.ensure(l);s.career.resources.goods=2;
+ s.active={id:'1625-merchant-work',type:'career',code:'merchant',eventIndex:0,year:1625,title:'먼 장터의 거래',description:'물건을 팔러 간다.',choices:[0,1,2].map(()=>({label:'먼 장터로 간다',action:'risk'}))};l.pending='joseon6:1625-merchant-work';
+ // Select a deterministic failed risk using the real choice path.
+ let found=false;
+ for(let seed=1;seed<100&&!found;seed++){
+  const copy=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));copy.seed=seed;
+  a.ok(V6.choose(copy,0));if(V6.ensure(copy).followups.at(-1).failed){l=copy;found=true;}
+ }
+ a.ok(found);l=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));
+ const f=V6.ensure(l).followups.at(-1);a.equal(f.failed,true);
+ l.year=f.year;l.age=l.year-l.birthYear;l.pending=null;V6.yearEnd(l,V6.ensure(l));
+ a.ok(l.log.some(e=>e.kind==='joseon6-followup'&&/되찾지는 못했다/.test(e.text)));
+});

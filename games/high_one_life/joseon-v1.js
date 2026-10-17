@@ -210,7 +210,7 @@ function promptFor(life,s){
  const canExam=!royal&&!bound&&!social?.monastic&&life.gender==='남자'&&['양반','상민'].includes(s.birthStatus)&&life.year<1894;
  const opt=(label,noteText,action,effects={})=>({label,note:noteText,action,effects,text:label});
  if(kind==='school')return {title:'글을 배울 수 있을까?',description:(life.year>=1894?'옛 '+s.birthStatus+' 가계':' '+s.status+' 집안')+'에서 '+s.region+'의 하루를 살아간다. 무엇을 배울까?',options:[
-  opt('글을 배울 길을 찾아본다',s.status==='양반'?'가문의 글공부와 서당':'지역의 배움이나 가족·이웃의 가르침','study',{knowledge:6,wealth:-3}),
+  opt('글을 배울 길을 찾아본다',life.gender==='여자'?'집안에서 배울 기회를 알아본다':s.status==='양반'?'가문의 글공부와 서당':'지역의 배움이나 가족·이웃의 가르침','study',{knowledge:6,wealth:-3}),
   opt('집안의 일을 배우며 지낸다','생업을 일찍 익히고 가족을 돕는다','work',{bonds:4,wealth:4}),
   opt('일도 하며 틈틈이 글을 익힌다','시간은 적지만 두 길을 이어 간다','mixed',{knowledge:3,health:-2})]};
  if(kind==='vocation'&&life.gender==='여자'&&life.joseonWomen327?.serviceBound)
@@ -224,7 +224,7 @@ function promptFor(life,s){
   opt('속량을 청할 방법을 알아본다','허락과 비용이 필요하며 실패할 수도 있다','petitionRelease',{knowledge:4,wealth:-4})]};
  if(kind==='vocation'&&royal)return {title:'왕실 친족의 앞날',description:'궁궐과 인연이 있는 집안에서 자랐다. 집안 어른들은 조정의 소식을 들을 때마다 목소리를 낮췄다.',options:[
   opt('왕실의 교육과 예법을 익힌다','글공부와 예법을 함께 배운다','courtStudy',{knowledge:6}),
-  opt('무예와 궁중의 일을 배운다','왕실에서 맡을 수 있는 일을 알아본다','courtGuard',{knowledge:3,health:-2}),
+  life.gender==='여자'?opt('왕실 친족의 살림과 예법을 배운다','집안 행사와 살림을 맡는 어른에게 배운다','courtHousehold',{knowledge:3,bonds:2}):opt('무예와 궁중의 일을 배운다','왕실에서 맡을 수 있는 일을 알아본다','courtGuard',{knowledge:3,health:-2}),
   opt('권력과 거리를 두고 지낸다','정치적 위험을 피하고 일상의 일을 찾는다','courtQuiet',{bonds:3,happiness:2})]};
  if(kind==='vocation'&&social?.origin==='사찰 주변 가계')return {title:'집안의 생업과 사찰의 길',description:'사찰과 집안을 오가며 살아왔다. 어디에서 시간을 보낼까?',options:[
   opt('출가해 승려의 길을 걷는다','사찰의 규율·공부·노동을 받아들인다','templeJoin',{knowledge:4,health:-1}),
@@ -308,6 +308,12 @@ function promptFor(life,s){
  return null;
 }
 const FOLLOWUP={
+ courtHousehold:'집안 행사를 준비할 때 배워 둔 절차와 살림 솜씨를 썼다.',
+ courtStudy:'집안에서 익힌 글과 예법을 다시 살피며 지냈다.',
+ courtGuard:'배운 무예를 잊지 않으려 틈틈이 몸을 움직였다.',
+ courtQuiet:'조정의 일에 나서지 않고 집안의 하루를 꾸렸다.',
+ homeTeaching:'집안에서 함께 읽었던 글을 다시 펼쳐 보았다.',
+ familySkill:'집안일을 나눠 하면서 전에 알려 주었던 손일을 다시 함께 했다.',
  study:'서당과 집안에서 익힌 글자를 다시 펼쳐 보았다. 익숙한 문장이 하나둘 늘었다.',
  work:'어려서 배운 집안일이 이제는 몸에 배어 있었다.',
  mixed:'낮에 일을 하고 밤에 글자를 익히던 시절을 떠올렸다.',
@@ -340,7 +346,7 @@ function applyChoice(life,index){
  if(!s?.active||!p||!Number.isInteger(index)||index<0||index>=p.options.length)return false;
  const option=p.options[index],act=option.action,kind=s.active.kind;
  life.change(option.effects);
- if(act==='study'){s.studyYears+=3;s.literacy+=2;s.school='서당·가정에서 글공부 중';s.capital-=6;}
+ if(act==='study'){s.studyYears+=3;s.literacy+=2;s.school=life.gender==='여자'?'집안에서 글공부 중':'서당·가정에서 글공부 중';s.capital-=6;}
  if(act==='work'){s.occupation=s.birthStatus==='중인'?'관청 실무와 기술':'집안 생업';s.capital+=8;}
  if(act==='mixed'){s.studyYears+=1;s.literacy+=1;s.school='생업과 글공부를 함께 함';}
  if(act==='farm'){s.occupation='농사';s.land=Math.max(1,s.land);s.capital+=5;}
@@ -368,9 +374,10 @@ function applyChoice(life,index){
    else note(life,s,'혼인을 청했지만 허락을 얻기 어려웠다. 서로의 소식은 계속 주고받았다.','joseon-family');
   }
  }
- if(['courtStudy','courtGuard','courtQuiet','royalMarriage','royalKin','royalQuiet'].includes(act)){
+ if(['courtStudy','courtGuard','courtHousehold','courtQuiet','royalMarriage','royalKin','royalQuiet'].includes(act)){
   if(act==='courtStudy'){s.literacy+=2;s.school='왕실 친족의 글공부';}
-  if(act==='courtGuard')s.occupation='왕실의 무예와 직무';
+  if(act==='courtGuard')s.occupation=life.gender==='여자'?'왕실 친족의 살림':'왕실의 무예와 직무';
+  if(act==='courtHousehold')s.occupation='왕실 친족의 살림';
   if(act==='courtQuiet')s.occupation='왕실의 일에서 거리를 둔 삶';
   if(act==='royalMarriage'){s.married=true;s.capital-=8;note(life,s,'왕실과 가문의 허락을 받아 혼인했다.','joseon-family');}
  }
@@ -424,7 +431,7 @@ function applyChoice(life,index){
  s.decisions.push({id:s.active.id,year:life.year,age:life.age,kind,action:act});
  s.decisions=s.decisions.slice(-40);
  note(life,s,p.title+' — '+option.label,'joseon-choice');life.log.at(-1).causeId=causeId;
- s.followups.push({id:s.active.id,year:life.year+3,text:FOLLOWUP[act]||'그날의 결정은 집안의 살림에 작은 흔적을 남겼다.'});
+ if(FOLLOWUP[act])s.followups.push({id:s.active.id,year:life.year+3,text:FOLLOWUP[act]});
  s.followups=s.followups.slice(-20);
  s.active=null;life.pending=null;sync(life,s);
  if(diedInWar)life.finish('전란의 혼란 속에서 목숨을 잃었다.');
