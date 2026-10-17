@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {cameraRelativeInput,farmerHeading,rotateToward,walkPlayer} from '../games/korean-farm/interactions/navigation.mjs';
+import {cameraRelativeInput,farmerHeading,facingDirection,shouldTurnBeforeWalk,headingDifference,rotateToward,walkPlayer} from '../games/korean-farm/interactions/navigation.mjs';
 import {VILLAGE_COLLIDERS} from '../games/korean-farm/rendering/village-layout.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const html=fs.readFileSync(path.join(ROOT,'games/korean-farm/index.html'),'utf8');
@@ -42,13 +42,32 @@ test('joystick up/right matches keyboard without deadzone jitter',()=>{
   near(stick.z/Math.hypot(stick.x,stick.z),keys.z);
   assert.equal(cameraRelativeInput(new Set(),{x:.01,y:.02},0).active,false);
 });
-test('farmer heading faces the feet travel vector using face-forward negative z',()=>{
-  for(const [x,z,yaw] of [[0,-1,0],[1,0,Math.PI/2],[-1,0,-Math.PI/2],[0,1,Math.PI]]){
-    const got=farmerHeading(x,z);
-    near(Math.cos(got),Math.cos(yaw));
-    near(Math.sin(got),Math.sin(yaw));
+test('face models looking along local -Z must match world travel in 8 directions',()=>{
+  // This is independent of the heading implementation: Three.js Y rotation of
+  // local forward (0,0,-1) yields (-sin(yaw),0,-cos(yaw)).
+  for(const [x,z] of [[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1]]){
+    const yaw=farmerHeading(x,z);
+    const forward=facingDirection(yaw);
+    const alignment=(forward.x*x+forward.z*z)/Math.hypot(x,z);
+    assert.ok(alignment>.999999,'Farmer is moonwalking toward '+x+','+z+'; alignment='+alignment);
   }
+  near(farmerHeading(0,-1),0);
+  near(farmerHeading(1,0),-Math.PI/2);
+  near(farmerHeading(-1,0),Math.PI/2);
+  near(Math.cos(farmerHeading(0,1)),-1);
   assert.match(fs.readFileSync(path.join(ROOT,'games/korean-farm/animation/farmer-animator.js'),'utf8'),/\.065,-\.235/);
+});
+test('reversing direction rotates the farmer in place before walking',()=>{
+  assert.equal(shouldTurnBeforeWalk(0,Math.PI),true);
+  assert.equal(shouldTurnBeforeWalk(0,-Math.PI/2),true);
+  assert.equal(shouldTurnBeforeWalk(0,.2),false);
+  let current=0,goal=farmerHeading(0,1),frames=0;
+  while(shouldTurnBeforeWalk(current,goal)&&frames<90){
+    current=rotateToward(current,goal,1/60);frames++;
+  }
+  assert.ok(frames>0&&frames<45,'Turn-in-place must resolve promptly, frames='+frames);
+  assert.ok(Math.abs(headingDifference(current,goal))<=Math.PI*.43);
+  assert.match(game,/shouldTurnBeforeWalk\(farmer.rotation.y,farmerFacingTarget\)\)return false/);
 });
 test('turning rotates toward the shorter angle instead of snapping through 360 degrees',()=>{
   const current=3.09,target=-3.09;
