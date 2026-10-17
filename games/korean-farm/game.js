@@ -295,6 +295,16 @@ function move(dt,elapsed){
   }
   return moving;
 }
+function refreshWorkStatus(){
+  const job=farmFlow.active,root=$('workStatus');
+  if(!job){root.classList.add('hidden');return}
+  root.classList.remove('hidden');
+  const p=job.phase;
+  $('workTitle').textContent=p==='approach'?'논밭으로 걸어가는 중…':
+    (actions[job.action]||'농사')+(p==='ready'?' 준비 중…':' 하는 중…');
+  $('workFill').style.width=(p==='approach'?14:p==='ready'?28:
+    30+Math.round((farmerAnimator?.progress||0)*70))+'%';
+}
 function render(now){
   if(disposed)return;raf=requestAnimationFrame(render);
   const dt=last?Math.min(.07,(now-last)/1000):0;last=now;
@@ -305,6 +315,7 @@ function render(now){
       impact:Boolean(feedback?.impact),working:Boolean(feedback?.working)
     });
     if(event)handleFarmFlowEvent(event);
+    refreshWorkStatus();
     updateEnvironmentAnimation(dt||.016,now/1000);
   }
   refreshCamera(dt||.016);renderer.render(scene,camera);
