@@ -5,6 +5,7 @@ import {FieldEffects} from './animation/field-effects.js';
 import {buildSolnaeriVillage} from './rendering/village-scene.js';
 import {VILLAGE_COLLIDERS} from './rendering/village-layout.mjs';
 import {createFarmActionFlow,actionContactPoint,actionApproachPoint} from './interactions/action-flow.mjs';
+import {cameraRelativeInput,farmerHeading,rotateToward,walkPlayer,LOOK_SPEED} from './interactions/navigation.mjs';
 import {FIELD_DEFS,plotById,distanceToPlot} from './world.mjs';
 import {createFarmState,restoreFarmState,CROPS,calendar,fieldById,visualStage,fieldCondition,applyFarmAction,canApplyFarmAction,advanceFarmDay,sellAllProduce,buyFarmSupply} from './farming/farm-sim.mjs';
 
@@ -15,6 +16,7 @@ const state=loadSave();
 let scene,renderer,camera,raycaster,ground,farmer,farmerAvatar,farmerAnimator,fieldEffects,villageScene=null;
 let last=0,raf=0,paused=false,disposed=false,loading=true,noticeTimer=0;
 let camTarget=new THREE.Vector3(state.player.x,0,state.player.z);
+let viewAngle=state.camera.angle,farmerFacingTarget=0;
 let moveGoal=null;
 const keys=new Set();
 const joystick={x:0,y:0,id:null};
@@ -236,51 +238,43 @@ function resize(){
 function setZoom(v){state.camera.zoom=Math.max(15,Math.min(36,v));resize()}
 function refreshCamera(dt){
   camTarget.lerp(new THREE.Vector3(state.player.x,0,state.player.z),Math.min(1,dt*5));
-  const a=state.camera.angle,v=state.camera.zoom;
-  camera.position.set(camTarget.x+Math.sin(a)*v*.83,v*.82,camTarget.z+Math.cos(a)*v*.83);
-  camera.lookAt(camTarget.x,0,camTarget.z);
+  viewAngle=rotateToward(viewAngle,state.camera.angle,dt,LOOK_SPEED);
+  const a=viewAngle,v=state.camera.zoom;
+  // Keep the farmer visible to the left of the inspector on desktop, without
+  // changing touch target positions or walking direction.
+  const inspecting=!$('inspector').classList.contains('hidden');
+  const framing=inspecting&&window.innerWidth>920?2.1:0;
+  const aimX=camTarget.x+Math.cos(a)*framing,aimZ=camTarget.z-Math.sin(a)*framing;
+  camera.position.set(aimX+Math.sin(a)*v*.83,v*.82,aimZ+Math.cos(a)*v*.83);
+  // Raise the player into the unobstructed upper viewport while the phone's
+  // bottom inspector sheet is open; retain the normal angle during exploration.
+  const targetY=inspecting&&window.innerWidth<=700?-1.65:.5;
+  camera.lookAt(aimX,targetY,aimZ);
 }
 function isBlocked(x,z){
   return obstacles.some(q=>Math.abs(x-q.x)<q.w/2+.45&&Math.abs(z-q.z)<q.d/2+.45);
 }
 function move(dt,elapsed){
-  if(farmerAnimator?.busy)return false;
-  let vx=0,vz=0,goalDistance=null;
-  if(keys.has('w')||keys.has('arrowup'))vz-=1;
-  if(keys.has('s')||keys.has('arrowdown'))vz+=1;
-  if(keys.has('a')||keys.has('arrowleft'))vx-=1;
-  if(keys.has('d')||keys.has('arrowright'))vx+=1;
-  vx+=joystick.x;vz+=joystick.y;
-  if(vx||vz){
+  if(farmerAnimator?.busy||!$('modal').classList.contains('hidden'))return false;
+  const manual=cameraRelativeInput(keys,joystick,viewAngle);
+  let direction={x:manual.x,z:manual.z},goalDistance=null;
+  if(manual.active){
     moveGoal=null;
-    // Camera-relative movement remains intuitive after orbiting.
-    const screenX=vx,screenZ=vz,a=state.camera.angle;
-    vx=screenX*Math.cos(a)+screenZ*Math.sin(a);
-    vz=-screenX*Math.sin(a)+screenZ*Math.cos(a);
   }else if(moveGoal){
-    const dx=moveGoal.x-state.player.x,dz=moveGoal.z-state.player.z,d=Math.hypot(dx,dz);
-    if(d<.28)moveGoal=null;
-    else{vx=dx/d;vz=dz/d;goalDistance=d}
+    const dx=moveGoal.x-state.player.x,dz=moveGoal.z-state.player.z;
+    goalDistance=Math.hypot(dx,dz);
+    if(goalDistance<.28){moveGoal=null;goalDistance=null}
+    else direction={x:dx/goalDistance,z:dz/goalDistance};
   }
-  let moving=false;
-  const d=Math.hypot(vx,vz);
-  if(d>.01){
-    vx/=Math.max(1,d);vz/=Math.max(1,d);
-    // Clamp each automatic step to its remaining distance; never oscillate past a goal.
-    const velocity=goalDistance===null?4.7*dt:Math.min(4.7*dt,goalDistance);
-    const x=Math.max(-bounds,Math.min(bounds,state.player.x+vx*velocity));
-    const z=Math.max(-bounds,Math.min(bounds,state.player.z+vz*velocity));
-    if(!isBlocked(x,state.player.z))state.player.x=x;
-    if(!isBlocked(state.player.x,z))state.player.z=z;
-    moving=true;
-    farmer.rotation.y=Math.atan2(vx,-vz);
-  }
+  const result=walkPlayer(state.player,direction,dt,{goalDistance,bounds,obstacles});
+  state.player.x=result.x;state.player.z=result.z;
+  if(result.moving)farmerFacingTarget=farmerHeading(direction.x,direction.z);
   farmer.position.set(state.player.x,0,state.player.z);
   if(!$('inspector').classList.contains('hidden')){
     const plot=plotById(state.selected);
     if(plot)$('approachBtn').classList.toggle('hidden',distanceToPlot(state.player,plot)<=5);
   }
-  return moving;
+  return result.moving;
 }
 function refreshWorkStatus(){
   const job=farmFlow.active,root=$('workStatus');
@@ -295,8 +289,10 @@ function refreshWorkStatus(){
 function render(now){
   if(disposed)return;raf=requestAnimationFrame(render);
   const dt=last?Math.min(.07,(now-last)/1000):0;last=now;
-  const moving=!paused&&!loading?move(dt,now/1000):false;
-  if(!paused&&!loading){
+  const overlayShown=!$('modal').classList.contains('hidden');
+  const moving=!paused&&!loading&&!overlayShown?move(dt,now/1000):false;
+  if(!paused&&!loading&&!overlayShown){
+    farmer.rotation.y=rotateToward(farmer.rotation.y,farmerFacingTarget,dt||.016);
     const feedback=farmerAnimator?.update(dt||.016,{moving,time:now/1000});
     const event=farmFlow.tick(dt||.016,state.player,{
       impact:Boolean(feedback?.impact),working:Boolean(feedback?.working)
@@ -315,8 +311,10 @@ function inspectAt(e){
   raycaster.setFromCamera(canvasPosition(e),camera);
   const hits=raycaster.intersectObjects(plotHits,false);
   if(hits.length){
+    $('moreTools').classList.add('hidden');$('moreBtn').setAttribute('aria-expanded','false');
     chooseField(hits[0].object.userData.plotId);return;
   }
+  $('moreTools').classList.add('hidden');$('moreBtn').setAttribute('aria-expanded','false');
   const p=new THREE.Vector3();
   if(raycaster.ray.intersectPlane(ground,p)){
     const x=Math.max(-bounds,Math.min(bounds,p.x)),z=Math.max(-bounds,Math.min(bounds,p.z));
@@ -334,7 +332,7 @@ function chooseField(id){
     visited.add(id);state.seenPlots=[...visited];state.visits=visited.size;
     if(visited.size===4)window.KidscadeGame?.milestone?.('farm_preview_inspected',{value:4,uniqueKey:'four-rice-fields'});
   }
-  if(distanceToPlot(state.player,plot)>5)toast('논밭을 선택했어요. 농사 도구를 사용하려면 가까이 이동해 주세요.');
+  if(distanceToPlot(state.player,plot)>5)toast('논밭을 선택했어요. 작업 버튼을 누르면 자동으로 걸어가요.');
   updateInspector();$('inspector').classList.remove('hidden');refreshObjective();save(true);
 }
 function refreshHud(){
@@ -350,7 +348,8 @@ function refreshObjective(){
   const steps=[visited.size>=1,state.stats.harvests>=1,state.stats.sales>=1];
   const done=steps.filter(Boolean).length;
   $('progressBar').style.width=done/3*100+'%';
-  $('progressText').textContent='첫 논 살펴보기 · 수확 · 판매 '+done+' / 3';
+  $('progressText').textContent='첫 논 확인 → 수확 → 판매 · '+done+' / 3';
+  $('objective').classList.toggle('complete',done===3);
   const target=$('objective').querySelector('p');
   target.textContent=done===3?'첫 수확과 판매를 마쳤어요! 이제 원하는 작물을 기르며 농장을 꾸려 보세요.':
     !steps[0]?'논을 눌러 작물의 상태를 살펴보세요.':
@@ -416,7 +415,7 @@ function handleFarmFlowEvent(event){
   if(!plot)return;
   if(event.type==='start'){
     moveGoal=null;
-    farmer.rotation.y=Math.atan2(plot.x-state.player.x,-(plot.z-state.player.z));
+    farmerFacingTarget=farmerHeading(plot.x-state.player.x,plot.z-state.player.z);
     if(!farmerAnimator?.trigger(event.action)){
       farmFlow.reset();toast('농기구를 사용할 수 없어요.');refreshFarmControls();
     }
@@ -503,6 +502,7 @@ function openBag(){
   showModal('농장 창고와 장터',el);
 }
 function showModal(title,inner){
+  keys.clear();joystick.x=0;joystick.y=0;
   $('modalTitle').textContent=title;$('modalContents').replaceChildren();
   if(typeof inner==='string')$('modalContents').textContent=inner;
   else $('modalContents').append(inner);
@@ -556,7 +556,11 @@ function showQa(){
 }
 function bindControls(){
   window.addEventListener('keydown',e=>{
-    const key=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(key))e.preventDefault();
+    const key=e.key.toLowerCase();
+    // Do not drive a farmer while a dialog or text control has keyboard focus.
+    const target=e.target;
+    if(target?.closest?.('input,textarea,select,[contenteditable="true"]'))return;
+    if(!$('modal').classList.contains('hidden')&&key!=='escape')return;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(key))e.preventDefault();
     keys.add(key);
     if(farmFlow.busy&&farmFlow.active.phase==='approach'&&['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){
       farmFlow.cancelApproach();moveGoal=null;toast('직접 걷기를 시작해 농사 작업을 취소했어요.');refreshFarmControls();
@@ -565,6 +569,8 @@ function bindControls(){
     if(key==='q')state.camera.angle-=Math.PI/6;
     if(key==='e')state.camera.angle+=Math.PI/6;
     if(key==='escape'){
+      $('moreTools').classList.add('hidden');$('moreBtn').setAttribute('aria-expanded','false');
+      keys.clear();
       if(farmFlow.cancelApproach()){moveGoal=null;toast('이동하던 농사 작업을 취소했어요.');refreshFarmControls()}
       $('modal').classList.add('hidden');$('inspector').classList.add('hidden')
     }
@@ -593,10 +599,21 @@ function bindControls(){
   });
   $('farm').addEventListener('pointercancel',e=>{pointers.delete(e.pointerId);downPosition=null;pinchDistance=0});
   $('zoomIn').onclick=()=>setZoom(state.camera.zoom-2);$('zoomOut').onclick=()=>setZoom(state.camera.zoom+2);
-  $('turnLeft').onclick=()=>state.camera.angle+=Math.PI/4;
+  $('turnLeft').onclick=()=>state.camera.angle-=Math.PI/6;
+  $('turnRight').onclick=()=>state.camera.angle+=Math.PI/6;
+  $('moreBtn').onclick=()=>{
+    const hidden=$('moreTools').classList.toggle('hidden');
+    $('moreBtn').setAttribute('aria-expanded',String(!hidden));
+  };
+  $('moreTools').addEventListener('click',e=>{
+    if(e.target.closest('button')){
+      $('moreTools').classList.add('hidden');
+      $('moreBtn').setAttribute('aria-expanded','false');
+    }
+  });
   $('help').onclick=help;$('qaBtn').onclick=showQa;
-  $('focusFarm').onclick=()=>{if(farmFlow.busy&&!farmFlow.cancelApproach()){toast('작업이 끝나면 집으로 돌아갈 수 있어요.');return}
-    moveGoal={x:0,z:9};$('inspector').classList.add('hidden')};
+  $('focusFarm').onclick=()=>{if(farmFlow.busy&&!farmFlow.cancelApproach()){toast('작업이 끝나면 마을길로 돌아갈 수 있어요.');return}
+    moveGoal={x:0,z:9};$('inspector').classList.add('hidden');toast('마을길로 걸어가요.')};
   $('saveBtn').onclick=()=>save();
   $('closeInspect').onclick=()=>$('inspector').classList.add('hidden');
   $('modalClose').onclick=()=>$('modal').classList.add('hidden');

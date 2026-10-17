@@ -22,6 +22,9 @@ const hook=[
 " select:id=>chooseField(id),",
 " flow:()=>({busy:farmFlow.busy,active:farmFlow.active}),",
 " debug:()=>({paused,loading,actorBusy:farmerAnimator?.busy,keys:[...keys],raf,focus:document.activeElement?.id}),",
+" facing:()=>({yaw:farmer.rotation.y,target:farmerFacingTarget,viewAngle,zoom:state.camera.zoom,",
+"   actorScreen:(()=>{const v=new THREE.Vector3(state.player.x,1.6,state.player.z).project(camera);",
+"     return {x:(v.x+1)*innerWidth/2,y:(1-v.y)*innerHeight/2}})()}),",
 " visuals:()=>({renderer:!!renderer?.getContext(),size:[renderer.domElement.width,renderer.domElement.height],",
 "   actor:farmerAnimator.root.children.length,assets:[...assetReport].map(([url,a])=>({url,status:a.status,colors:a.colors,repainted:a.repainted||0})),",
 "   crops:[...plotMeshes].map(([id,r])=>({id,count:r.cropLayer.children.length})),",
@@ -136,6 +139,15 @@ async function main(){
  const walkTo=await evaluate('window.__farmQA.state().player');
  check('Real keyboard movement changes 3D player position',Math.hypot(walkTo.x-walkFrom.x,walkTo.z-walkFrom.z)>.12,
    {from:walkFrom,to:walkTo,duringKey});
+ const facing=await evaluate('window.__farmQA.facing()');
+ const heading=Math.atan2(walkTo.x-walkFrom.x,-(walkTo.z-walkFrom.z));
+ const yawError=Math.abs(Math.atan2(Math.sin(facing.yaw-heading),Math.cos(facing.yaw-heading)));
+ check('Farmer visibly faces actual walking direction',yawError<.18,{facing,heading,yawError});
+ await click('#moreBtn');await click('#turnLeft');
+ await sleep(420);
+ const orbited=await evaluate('window.__farmQA.facing()');
+ check('Camera orbit changes view smoothly',Math.abs(orbited.viewAngle-facing.viewAngle)>.2,
+  {before:facing,after:orbited});
  const initial=await evaluate('window.__farmQA.state()');
  check('Ripe rice available',initial.fields.find(x=>x.id==='rice-4').growth===1);
  await evaluate('window.__farmQA.teleport(-8.65,-0.9)');
@@ -217,7 +229,58 @@ async function main(){
  const touchEnd=await evaluate('window.__farmQA.state().player');
  check('Real mobile virtual joystick moves player',Math.hypot(touchEnd.x-touchStart.x,touchEnd.z-touchStart.z)>.16,
    {start:touchStart,end:touchEnd});
- await click('#bagBtn');await screenshot('05-mobile-inventory');
+ const visibleTools=await evaluate(`(()=>({main:document.querySelectorAll('#bottomBar button').length,
+   menuHidden:document.querySelector('#moreTools').classList.contains('hidden'),
+   panel:document.querySelector('#bottomBar').getBoundingClientRect().toJSON(),
+   header:document.querySelector('#topbar').getBoundingClientRect().toJSON()}))()`);
+ check('Mobile has four visible primary tools',visibleTools.main===4&&visibleTools.menuHidden,visibleTools);
+ await evaluate('window.__farmQA.select("rice-1")');
+ await sleep(480);
+ const sheet=await evaluate(`(()=>{
+   const ins=document.querySelector('#inspector'),obj=document.querySelector('#objective');
+   const r=ins.getBoundingClientRect(),o=obj.getBoundingClientRect();
+   const a=window.__farmQA.facing().actorScreen;
+   return {sheet:{left:r.left,top:r.top,bottom:r.bottom,width:r.width},
+     objective:getComputedStyle(obj).display,actor:a,screen:{w:innerWidth,h:innerHeight}};
+ })()`);
+ check('Mobile field inspection removes overlapping objective',sheet.objective==='none',sheet);
+ check('Field inspector fits phone and leaves actor above the sheet',
+  sheet.sheet.left>=-1&&sheet.sheet.bottom<=sheet.screen.h+1&&
+  sheet.actor.y<sheet.sheet.top+40,sheet);
+ await screenshot('05-mobile-field-inspector');
+ await click('#closeInspect');
+ await click('#moreBtn');
+ const menu=await evaluate(`(()=>{
+   const e=document.querySelector('#moreTools'),r=e.getBoundingClientRect();
+   return {open:!e.classList.contains('hidden'),left:r.left,right:r.right,bottom:r.bottom,height:r.height};
+ })()`);
+ check('More controls remain within mobile viewport',menu.open&&menu.left>=0&&
+   menu.right<=390&&menu.bottom<=844,menu);
+ await screenshot('06-mobile-advanced-controls');
+ await click('#moreBtn');
+ await click('#bagBtn');
+ const modalStart=await evaluate('window.__farmQA.state().player');
+ await send('Input.dispatchKeyEvent',{type:'keyDown',key:'d',code:'KeyD',windowsVirtualKeyCode:68});
+ await sleep(300);
+ await send('Input.dispatchKeyEvent',{type:'keyUp',key:'d',code:'KeyD',windowsVirtualKeyCode:68});
+ const modalEnd=await evaluate('window.__farmQA.state().player');
+ check('Inventory modal blocks unwanted movement',
+   Math.hypot(modalEnd.x-modalStart.x,modalEnd.z-modalStart.z)<.001,
+   {modalStart,modalEnd});
+ await screenshot('07-mobile-inventory');
+ await click('#modalClose');
+ await send('Emulation.setDeviceMetricsOverride',{width:844,height:390,deviceScaleFactor:1,mobile:true});
+ await sleep(280);
+ const landscape=await evaluate(`(()=>{
+   const r=document.querySelector('#bottomBar').getBoundingClientRect();
+   return {w:innerWidth,h:innerHeight,scroll:document.documentElement.scrollWidth,
+     toolbar:{left:r.left,right:r.right,bottom:r.bottom},buttons:[...document.querySelectorAll('#bottomBar button')].map(x=>x.getBoundingClientRect().toJSON())};
+ })()`);
+ check('Landscape phone retains four tappable controls',landscape.w>=840&&
+   landscape.scroll<=landscape.w+3&&landscape.buttons.every(b=>
+     b.width>=45&&b.height>=38&&b.right<=landscape.w&&b.bottom<=landscape.h),
+   landscape);
+ await screenshot('08-mobile-landscape');
  const final=await evaluate('window.__farmQA.visuals()');report.assetSummary=final.assets;
  check('No page exceptions',errors.length===0,{errors});
  const critical=network.filter(x=>/\/games\/korean-farm\/|\/assets\/vendor\/three|\/assets\/game\/crops\/FBX\/Rice_/.test(x.url));
