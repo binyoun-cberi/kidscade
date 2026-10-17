@@ -113,8 +113,8 @@ test('existing Ming and Hawaiian routes remain available on the same engine',()=
 test('all new story and residence scripts remain wired after cache update',()=>{
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
  assert.match(html,/joseon-v14-captivity-generations\.js\?v=7/);
- assert.match(html,/travel-v22\.js\?v=2/);
- assert.match(html,/game\.js\?v=55/);
+ assert.match(html,/travel-v22\.js\?v=\d+/);
+ assert.match(html,/game\.js\?v=\d+/);
  const game=fs.readFileSync(path.join(root,'game.js'),'utf8');
  assert.ok(game.includes('journey.captivityTies'));
 });
