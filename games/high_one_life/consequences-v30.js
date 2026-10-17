@@ -36,12 +36,12 @@ function record(l,eventId,option,actual){
  const hasGrain=(actual?.delta?.grain||0)<0;
  const arc={id,type,year:l.year,due:l.year+YEARS[type],eventId,option,
   status:'open',personId:person?.id||null,personName:person?.name||'이웃',
-  item:type==='aid'?(hasGrain?'곡식':'일손'):type==='tool'?(option===2?'손질한 농기구':'빌린 농기구'):
+  item:type==='aid'?(hasGrain?'곡식':'일손'):type==='tool'?(option===2?'손질한 농기구':'빌렸다 돌려준 농기구'):
    type==='ox'?(v9.animals.ox>0?'소':v9.animals.pig>0?'돼지':'닭'):'물꼬와 도랑',
   evidence:[],outcome:null};
  if(type==='aid')arc.evidence.push(hasGrain?'곡식을 나눴다는 기억':'함께 일을 도왔다는 기억');
  if(type==='water')arc.evidence.push(option===1?'윗논 주인과 생긴 다툼':'물 대는 차례를 둘러싼 약속');
- if(type==='tool')arc.evidence.push(option===0?'이웃에게 빌린 농기구':option===1?'품삯을 주고 빌린 농기구':'손질해 둔 집안 농기구');
+ if(type==='tool')arc.evidence.push(option===0?'이웃에게 빌렸다가 돌려준 농기구':option===1?'품삯을 주고 빌렸다 돌려준 농기구':'손질해 둔 집안 농기구');
  if(type==='ox')arc.evidence.push('가축을 돌본 방법과 상태');
  s.arcs.push(arc);s.arcs=s.arcs.slice(-32);
  if(person)s.people[person.id]??={id:person.id,name:person.name,present:true,leftYear:null};
@@ -119,12 +119,12 @@ function prompt(l){
   ]};
  if(arc.type==='tool'){
   const borrowed=arc.option!==2;
-  return {title:borrowed?'빌린 농기구를 돌려줄 때':'손질한 농기구가 다시 필요한 날',
-   description:borrowed?arc.year+'년에 빌려 쓴 '+arc.item+'를 돌려줄 때가 되었다. '+person+'네도 농사가 바빠 도구를 기다린다.':'몇 년 전 손질해 두었던 집안 농기구를 다시 꺼냈다. 날이 무뎌지고 자루가 헐거워졌다.',
+  return {title:borrowed?'전에 농기구를 빌렸던 이웃과 재회':'손질한 농기구가 다시 필요한 날',
+   description:borrowed?arc.year+'년에 '+person+'에게 괭이를 빌려 밭일을 마친 뒤 돌려주었다. 몇 년이 흐르고 다시 농사철이 되어 두 집이 도구를 손질할 일을 의논한다.':'몇 년 전 손질해 두었던 집안 농기구를 다시 꺼냈다. 날이 무뎌지고 자루가 헐거워졌다.',
    options:[
-    withOption(borrowed?'농기구를 닦아 약속한 사람에게 돌려준다':'농기구의 날과 자루를 다시 손질한다','도구와 약속을 지키는 데에는 시간과 손질할 일손이 필요하다.'),
-    withOption(borrowed?'품일을 하루 더 거들고 농기구를 돌려준다':'이웃과 서로의 도구를 손질하는 날을 잡는다','다른 집과 일손을 주고받을 수 있지만 그날 우리 집 일은 미뤄진다.'),
-    withOption(borrowed?'부러진 부분을 알리고 고쳐 줄 방법을 의논한다':'낡은 도구를 무리하게 쓰지 않고 교체할 길을 찾는다','도구를 당장 쓸 수 없게 되거나 새 재료가 필요할 수 있다.')
+    withOption(borrowed?'이웃집 농기구의 날과 자루를 함께 손질한다':'농기구의 날과 자루를 다시 손질한다','예전에 도구를 빌렸던 인연으로 함께 손질한다. 도구를 만든 것이 아니라 손보는 데 시간과 일손을 쓴다.'),
+    withOption(borrowed?'이웃의 밭일을 하루 거들고 내 도구를 손질한다':'이웃과 서로의 도구를 손질하는 날을 잡는다','다른 집과 일손을 주고받을 수 있지만 그날 우리 집 일은 미뤄진다.'),
+    withOption(borrowed?'도구가 낡은 까닭을 이야기하고 새 재료를 함께 알아본다':'낡은 도구를 무리하게 쓰지 않고 교체할 길을 찾는다','도구를 당장 쓸 수 없게 되거나 새 재료가 필요할 수 있다.')
    ]};
  }
  return {title:'그때 앓던 '+arc.item,description:arc.year+'년에 아팠던 '+arc.item+'의 먹이와 상태를 다시 살폈다. 예전에 돌본 방법이 참고는 되지만 반드시 회복하는 것은 아니다.',
@@ -154,10 +154,10 @@ function resolve(l,index){
    arc.outcome=paid?'도랑을 고칠 재료를 사고 이웃과 함께 물길을 정비했다.':'돈이 부족해 직접 도랑을 파느라 몸이 고단했다. 물길은 조금 나아졌다.';
   }else arc.outcome='물 대는 차례를 다투지 않고 다른 밭일을 했다. 부족한 물은 그대로였다.';
  }else if(arc.type==='tool'){
-  if(index===0)arc.outcome=arc.option===2?'낡은 농기구를 다시 손질했다. 새 도구가 생긴 것은 아니었다.':'빌린 농기구를 손질해 약속한 집에 돌려주었다.';
+  if(index===0)arc.outcome=arc.option===2?'낡은 농기구를 다시 손질했다. 새 도구가 생긴 것은 아니었다.':'전에 농기구를 빌렸던 이웃과 함께 도구를 손질했다. 새로운 도구가 생긴 것은 아니었다.';
   else if(index===1){l.change({health:-2});if(person)person.trust=clamp(person.trust+2,0,100);
    arc.outcome='이웃과 하루 일손을 나누며 농기구 문제를 마무리했다.';}
-  else{arc.outcome=arc.option===2?'고칠 수 없는 부분을 확인하고 새 재료를 구할 길을 찾았다.':'농기구의 파손을 숨기지 않고 이웃과 고칠 방법을 의논했다.';}
+  else{arc.outcome=arc.option===2?'고칠 수 없는 부분을 확인하고 새 재료를 구할 길을 찾았다.':'낡은 부분을 이웃과 확인하고 고칠 재료를 구할 길을 이야기했다.';}
  }else{
   if(index===0){if(v.grain>=2)v.grain-=2;else l.change({health:-2});}
   if(index===1&&person)person.trust=clamp(person.trust+2,0,100);
