@@ -36,7 +36,7 @@ test('national demographic references and educational proxy are clearly labeled'
  assert.match(read('world-v3.js'),/NOT published country rates/);
  assert.match(read('index.html'),/countrySourceNote/);
  assert.match(read('index.html'),/world-v3\.js/);
- assert.match(read('game.js'),/const YEAR_MS = 260/);
+ assert.match(read('game.js'),/const YEAR_MS = 4000/);
  assert.match(read('game.js'),/World4\.ensure\(life\)/);
  assert.doesNotMatch(read('index.html'),/data-speed=|data-duration=/);
 });

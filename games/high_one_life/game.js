@@ -55,7 +55,7 @@
   const SAVE_KEY = 'kidscade_one_life_save_v1';
   const RECORD_KEY = 'kidscade_one_life_history_v1';
   // About 20–30 seconds of automatic years, excluding choices.
-  const YEAR_MS = 260;
+  const YEAR_MS = 4000;
   const STAT_NAMES = [['health','건강'],['happiness','행복'],['knowledge','배움'],['bonds','인연'],['wealth','경제']];
   const views = ['intro','birth','play','end'];
   let life = null, paused = false, stage = 'intro';

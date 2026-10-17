@@ -45,7 +45,8 @@ function record(l,eventId,option,actual){
  if(type==='ox')arc.evidence.push('가축을 돌본 방법과 상태');
  s.arcs.push(arc);s.arcs=s.arcs.slice(-32);
  if(person)s.people[person.id]??={id:person.id,name:person.name,present:true,leftYear:null};
- remember(l,arc,label[type]+'을 기억해 두었다. 언젠가 같은 사람이나 물건을 다시 만날 수도 있다.');
+ // The choice itself is already recorded. Keep the later consequence in state,
+ // without adding a promise about a future encounter to the person's story.
  return arc;
 }
 function canOpen(l,arc){

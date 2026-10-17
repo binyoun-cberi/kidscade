@@ -59,3 +59,12 @@ test('child clothing distinguishes trousers and skirts; ending includes new modu
  assert.ok(c.OneLifeBiography328.isChoice({kind:'joseon325-choice'}));
  assert.match(c.OneLifeBiography328.recap({log:[{age:0,text:'태어났다',kind:'birth'}]}),/중간 기록이 남아 있지 않아/);
 });
+
+test('royal girls learn household duties rather than receiving the military vocation',()=>{
+ const c=runtime(),l=birth(c,1580),J=c.OneLifeJoseon;
+ l.age=15;l.year=1595;const j=J.ensure(l),s=c.OneLifeJoseon5.ensure(l);
+ s.origin='왕실 종친';j.active={kind:'vocation',id:'1595-vocation'};l.pending='joseon:1595-vocation';
+ const q=l.getChoice();assert.ok(q);assert.ok(q.options.some(o=>o.action==='courtHousehold'));
+ assert.ok(q.options.every(o=>o.action!=='courtGuard'));assert.ok(l.choose(q.options.findIndex(o=>o.action==='courtHousehold')));
+ assert.match(j.occupation,/살림/);
+});

@@ -28,8 +28,8 @@ const EPISODES={
  ['서당을 열 첫날','고을 아이들이 배우러 오지만 책이 넉넉하지 않다.',[['내 서책을 함께 읽게 한다','care'],['헌 서책을 구한다','invest'],['마을 어른에게 책을 부탁한다','cooperate']]],
  ['농번기의 빈자리','논밭에서 일해야 할 아이들이 서당에 나오지 못한다.',[['새벽에 글을 가르친다','adapt'],['농번기에는 쉬어 간다','rest'],['가족과 수업 시간을 상의한다','cooperate']]],
  ['읽지 못하는 학동','또래보다 글을 느리게 익히는 아이가 울먹인다.',[['한 글자씩 함께 익힌다','care'],['다른 가르침을 연구한다','study'],['배울 시간을 더 마련한다','mentor']]],
- ['서책을 태운 물난리','비가 새어 서당의 책 몇 권이 젖었다.',[['쓸 수 있는 책을 말린다','repair'],['새 책을 빌려 온다','invest'],['학동들과 낱장을 옮겨 적는다','mentor']]],
- ['훈장의 보수','학부모가 가르친 대가를 제때 마련하기 어렵다고 한다.',[['형편이 될 때까지 기다린다','care'],['곡식과 일손으로 받는다','adapt'],['마을에서 서당 살림을 의논한다','cooperate']]],
+ ['서책이 젖은 물난리','비가 새어 서당의 책 몇 권이 젖었다.',[['쓸 수 있는 책을 말린다','repair'],['새 책을 빌려 온다','invest'],['학동들과 낱장을 옮겨 적는다','mentor']]],
+ ['훈장의 보수','학동의 집에서 가르친 대가를 제때 마련하기 어렵다고 한다.',[['형편이 될 때까지 기다린다','care'],['곡식과 일손으로 받는다','adapt'],['마을에서 서당 살림을 의논한다','cooperate']]],
  ['말썽을 부린 제자','한 아이가 친구와 다투어 수업이 중단됐다.',[['두 아이의 말을 차례로 듣는다','care'],['서당의 약속을 다시 세운다','study'],['부모를 불러 함께 이야기한다','cooperate']]],
  ['먼 고을의 훈장 제안','다른 마을에서 더 많은 학동을 가르쳐 달라고 청한다.',[['고향 아이들을 계속 가르친다','care'],['먼 고을의 사정을 알아본다','risk'],['보조 훈장을 길러 본다','mentor']]],
  ['과거에 낙방한 제자','오래 가르친 제자가 낙담해 돌아왔다.',[['제자의 이야기를 들어 준다','care'],['다른 생업을 알아보도록 돕는다','adapt'],['함께 후배를 가르치자고 권한다','mentor']]],
@@ -282,7 +282,7 @@ function careerEvent(life,s,work,secondary=false){
 function yearEnd(life,s){
  if(!s||!J.inOldEra(life)||!life.alive||life.joseon14?.captivity?.status==='held')return;
  for(const f of s.followups.filter(x=>x.year<=life.year)){
-  const text=(f.topic?'그때 겪은 ‘'+f.topic+'’을 떠올렸다. ':'')+(FOLLOW[f.action]||'한때 택한 길이 인생의 다른 계절에도 이어졌다.');
+  const text=(f.topic?'그때 겪은 ‘'+f.topic+'’을 떠올렸다. ':'')+(f.failed?'그때 일을 마치지 못해 들인 품과 비용을 되찾지는 못했다.':FOLLOW[f.action]||'그 뒤에도 하던 일을 이어 가며 끼니와 살림을 마련했다.');
   life.logEvent(text,'joseon6-followup');life.log.at(-1).causeId='joseon6:'+f.id;
   s.memories.push(text);
  }
@@ -326,6 +326,7 @@ function updateWork(life,work,action,eventIndex){
  const rule=STANCES[action]||STANCES.care,j=J.ensure(life);
  const success=roll(life.seed,Math.imul(life.year+eventIndex*17,971)+action.length*41);
  const risk=action==='risk'&&success<.4;
+ const beforeStock=work.resources[supply];
  const canSpend=work.resources[supply]>=Math.abs(Math.min(0,rule.stock));
  const deltaCash=risk?-7:canSpend?rule.capital:-1;
  if(rule.stock<0&&canSpend)work.resources[supply]+=rule.stock;
@@ -336,14 +337,14 @@ function updateWork(life,work,action,eventIndex){
  j.capital=clamp(j.capital+deltaCash,-120,600);
  life.change({knowledge:rule.knowledge,bonds:rule.bonds,health:risk?-4:rule.health});
  if(life.year<1900){life.money.netWorth=j.capital*100;life.career=j.occupation;}
- return {success:!risk&&canSpend,deltaCash,needsMore:!canSpend,asset:work.resources[asset],supply:work.resources[supply]};
+ return {success:!risk&&canSpend,deltaCash,needsMore:!canSpend,asset:work.resources[asset],supply:work.resources[supply],deltaStock:work.resources[supply]-beforeStock};
 }
 function choose(life,index){
  const s=ensure(life),p=prompt(life),q=s?.active;
  if(!q||!p||!life.alive||!Number.isInteger(index)||index<0||index>=p.options.length)return false;
  const picked=p.options[index],action=picked.action,work=q.type==='career'?
   [s.career,s.secondary].find(x=>x?.code===q.code&&x.started<=q.year&&(!x.ended||x.ended>=q.year)):null;
- const eventTitle=q.title;
+ const eventTitle=q.title;let failed=false;
  if(q.type==='path'){
   if(action.startsWith('enter:'))adopt(life,action.slice(6));
   else if(action.startsWith('side:'))adopt(life,action.slice(5),{secondary:true});
@@ -354,6 +355,15 @@ function choose(life,index){
   }else life.change({bonds:2});
  }else if(work){
   const result=updateWork(life,work,action,q.eventIndex);
+  failed=!result.success;
+  if(result.success){
+   const cfg=CAREERS[work.code],parts=[];
+   if(result.deltaStock>0)parts.push(cfg.supply+'을 더 마련했다');
+   if(result.deltaStock<0)parts.push('가지고 있던 '+cfg.supply+' 일부를 써서 일을 마쳤다');
+   if(result.deltaCash<0)parts.push('비용을 치러 집안에 남은 돈은 줄었다');
+   if(result.deltaCash>0)parts.push('일을 마치고 받은 대가를 살림에 보탰다');
+   if(parts.length)remember(life,s,parts.join('. ')+'.');
+  }
   if(result.needsMore)remember(life,s,'필요한 '+CAREERS[work.code].supply+'이 부족해 계획한 일을 다 이루지 못했다.');
   if(action==='risk'&&!result.success)remember(life,s,'위험을 무릅썼지만 예상과 달리 손해를 겪었다.');
   if(result.success&&['mentor','care','cooperate','serve'].includes(action)){
@@ -368,7 +378,7 @@ function choose(life,index){
  }
  const id='joseon6:'+q.id;
  life.logEvent(eventTitle+' — '+picked.label,'joseon6-choice');life.log.at(-1).causeId=id;
- s.decisions++;s.followups.push({id:q.id,year:life.year+3,action:action.replace(/^enter:/,''),topic:eventTitle});s.followups=s.followups.slice(-40);
+ s.decisions++;s.followups.push({id:q.id,year:life.year+3,action:action.replace(/^enter:/,''),topic:eventTitle,failed});s.followups=s.followups.slice(-40);
  s.active=null;life.pending=null;promote(life,s);
  return true;
 }
@@ -413,7 +423,7 @@ function hydrate(life,data){
  s.active=clean(old.active);
  if(!life.alive||!J.inOldEra(life)||data?.pending!=='joseon6:'+s.active?.id)s.active=null;
  s.domesticTeaching=old.domesticTeaching===true;
- s.followups=Array.isArray(old.followups)?old.followups.filter(x=>x&&typeof x.id==='string'&&Number.isInteger(x.year)&&x.year>life.year&&x.year<=life.year+4).slice(-40).map(x=>({id:x.id.slice(0,70),year:x.year,action:String(x.action||'').slice(0,30),topic:String(x.topic||'').slice(0,100)})):[];
+ s.followups=Array.isArray(old.followups)?old.followups.filter(x=>x&&typeof x.id==='string'&&Number.isInteger(x.year)&&x.year>life.year&&x.year<=life.year+4).slice(-40).map(x=>({id:x.id.slice(0,70),year:x.year,action:String(x.action||'').slice(0,30),topic:String(x.topic||'').slice(0,100),failed:x.failed===true})):[];
  return ensure(life);
 }
 function install(){

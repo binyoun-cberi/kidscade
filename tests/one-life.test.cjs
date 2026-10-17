@@ -149,7 +149,7 @@ test('life screen exposes fast autoplay, annual focus, four peers, timeline and 
 
 test('single fast autoplay uses fixed year duration and retains pause and save',()=>{
   const script=read('game.js');
-  assert.match(script,/const YEAR_MS = 260/);
+  assert.match(script,/const YEAR_MS = 4000/);
   assert.match(script,/const yearMs=YEAR_MS;/);
   assert.doesNotMatch(script,/updateSpeed|MINUTES_PER_LIFE|durationMinutes|data-speed/);
   assert.match(script,/function togglePause/);

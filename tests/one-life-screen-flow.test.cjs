@@ -118,6 +118,8 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.ok(!get('play').classList.contains('hidden'));
  assert.ok(get('profileName').textContent.length>0);
  const ageBeforePause=Number(get('currentAge').textContent);
+ for(let i=0;i<15;i++){now+=250;beat();}
+ assert.equal(Number(get('currentAge').textContent),ageBeforePause,'1x must leave almost four seconds to read the opening year');
  get('pauseBtn').click();
  now+=2000;beat();
  assert.equal(Number(get('currentAge').textContent),ageBeforePause,'pause must freeze age progression');
@@ -141,8 +143,8 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.equal(get('peers').children.length,4);
  storyButtons.find(b=>b.dataset.storyTab==='peers').click();
  let sawMoney=false,sawDecision=false,sawChildhood=false,sawWork=false;
- for(let n=0;n<1600&&!document.result;n++){
-  now+=100;
+ for(let n=0;n<8000&&!document.result;n++){
+  now+=250;
   beat();
   if(!get('newbornModal').classList.contains('hidden'))get('newbornNameRandom').click();
   const age=Number(get('currentAge').textContent);
@@ -181,7 +183,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  get('lifeStartBtn').click();
  let changedDecisions=0;
  for(let n=0;n<1800&&!document.result;n++){
-   now+=100;beat();
+   now+=250;beat();
    if(!get('newbornModal').classList.contains('hidden'))get('newbornNameRandom').click();
    if(!get('decision').classList.contains('hidden')){
      const choices=get('choiceOptions').children.filter(x=>x.tagName==='BUTTON');
