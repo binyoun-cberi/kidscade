@@ -35,7 +35,10 @@ export function restoreFarmState(raw){
     // PR 1's editable rice preview stages become starting visual growth levels.
     current.fields.forEach(f=>{
       const oldPlot=old.plots.find(p=>p.id===f.id);
-      if(oldPlot&&f.kind==='rice')f.growth=[.13,.37,.66,1][oldPlot.stage-1];
+      if(oldPlot&&f.kind==='rice'){
+        f.growth=[.13,.37,.66,1][oldPlot.stage-1];
+        f.planted=true;f.transplants=fullSeedlings();
+      }
     });
     return current;
   }
