@@ -15,7 +15,8 @@ const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=u
 const hook=[
 "window.__farmQA={",
 " ready:()=>!loading&&!disposed&&Boolean(renderer&&farmerAnimator),",
-" clearSave:()=>localStorage.removeItem(SAVE_KEY),",
+" clearSave:()=>{localStorage.removeItem(SAVE_KEY);",
+"   window.addEventListener('pagehide',()=>localStorage.removeItem(SAVE_KEY),{once:true});},",
 " state:()=>({day:state.day,money:state.money,energy:state.energy,inventory:{...state.inventory},stats:{...state.stats},",
 "   fields:state.fields.map(f=>({id:f.id,growth:f.growth,planted:f.planted,water:f.waterDepthCm,gate:f.gateOpen,transplants:f.transplants,work:f.work,weeds:f.weeds,moisture:f.moisture})),",
 "   player:{...state.player},saving:localStorage.getItem(SAVE_KEY)?.length||0}),",
