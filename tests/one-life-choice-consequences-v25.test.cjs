@@ -103,6 +103,12 @@ test('captivity relationships change future chance without guaranteeing return',
  const manchu={realm:'qing'};
  assert.ok(V14.repatriationChance(manchu,s,0,1638)>V14.repatriationChance(manchu,{contacts:0,overseas:{homeNews:0}},0,1638));
 });
+test('the life-ending story remembers the choices that were actually made',()=>{
+ const game=fs.readFileSync(path.join(root,'game.js'),'utf8');
+ assert.ok(game.includes('const colonialLegacy=colonial?.decisions?.length'));
+ assert.ok(game.includes('남겨 둔 장부와 글이 뒤에 닥친 일을 이해할 때'));
+ assert.ok(game.includes('colonialLegacy,'));
+});
 test('portfolio audit of Joseon and colonial event options captures repetitions',()=>{
  const sets=[['village',V9.EVENTS],['lateJoseon',V11.EVENTS],['regional',V12.EVENTS],
  ['war',V13.EVENTS],['captivity',V14.EPISODES],['threeTaxes',V18.EVENTS],
