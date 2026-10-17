@@ -1,0 +1,49 @@
+name: Korean Farm public route smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/farm-live-smoke.yml"
+      - "data/games.json"
+      - "games/korean-farm/**"
+      - "assets/gate-image/korean_farm.svg"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  farm-public-route:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Inspect live catalog, game route, and cover
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://kidscade.binyoun.workers.dev'
+          for spec in 'data/games.json|catalog.json' 'games/korean-farm/index.html|game.html' 'assets/gate-image/korean_farm.svg|cover.svg'; do
+            route="${spec%%|*}"
+            file="${spec##*|}"
+            echo "[farm-route] GET /${route}"
+            curl -fsSL --max-time 15 -D "/tmp/${file}.headers" -o "/tmp/${file}" -w "HTTP: %{http_code}; effective: %{url_effective}; bytes: %{size_download}\n" "${base}/${route}?smoke=${GITHUB_RUN_ID}"
+            grep -i -E '^(HTTP/|content-type:|location:|cache-control:)' "/tmp/${file}.headers" || true
+          done
+          node <<'NODE'
+          const fs = require('node:fs');
+          const cat = JSON.parse(fs.readFileSync('/tmp/catalog.json','utf8'));
+          const game = cat.games.find(x => x.id === 'korean_farm');
+          console.log('[farm-route] catalog-entry', JSON.stringify(game || null));
+          const html = fs.readFileSync('/tmp/game.html','utf8');
+          console.log('[farm-route] game HTML bytes', html.length);
+          console.log('[farm-route] first chars', JSON.stringify(html.slice(0,480)));
+          console.log('[farm-route] SDK exact', html.includes('data-game-id="korean_farm"'));
+          console.log('[farm-route] title index', html.indexOf('논두렁 너머'));
+          console.log('[farm-route] HTML doctype index', html.toLowerCase().indexOf('<!doctype'));
+          const svg = fs.readFileSync('/tmp/cover.svg','utf8');
+          console.log('[farm-route] cover first chars', JSON.stringify(svg.slice(0,160)));
+          if (!game || game.title !== '논두렁 너머') process.exitCode = 1;
+          if (!html.includes('data-game-id="korean_farm"')) process.exitCode = 1;
+          if (!svg.includes('<svg')) process.exitCode = 1;
+          NODE
