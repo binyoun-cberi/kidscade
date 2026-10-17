@@ -1,6 +1,7 @@
 // Pure farming simulation for Korean Farm. No DOM, Three.js, network or wall-clock dependence.
 import {FIELD_DEFS,makeFarmState,validateFarmState} from '../world.mjs';
 import {normalizeSeedlings,fullSeedlings,emptySeedlings,seedlingCount} from './rice-transplant.mjs';
+import {WORK_STRIPS,PATCH_ENERGY,validWorkStrip,newFieldWork,restoreFieldWork,completedWorkStrips} from './field-work.mjs';
 export const FARM_SAVE_VERSION=2;
 export const DAYS_PER_SEASON=14;
 export const CROPS=Object.freeze({
@@ -17,7 +18,7 @@ function createField(def){
   const practice=def.id==='rice-1';
   return {id:def.id,kind:def.kind,crop:speciesForPlot(def),planted:!practice,growth:practice?0:growth,
     transplants:rice?(practice?emptySeedlings():fullSeedlings()):null,
-    tilled:true,waterDepthCm:rice?3:0,gateOpen:false,
+    tilled:true,work:newFieldWork(true),waterDepthCm:rice?3:0,gateOpen:false,
     moisture:rice?.85:.6,nitrogen:.74,weeds:.08,health:1,harvestCount:0};
 }
 export function createFarmState(){
@@ -62,6 +63,8 @@ export function restoreFarmState(raw){
     base.gateOpen=def.kind==='rice'&&saved.gateOpen===true;
     for(const key of ['moisture','nitrogen','weeds','health'])base[key]=validNumber(saved[key],base[key],0,1);
     base.harvestCount=validNumber(saved.harvestCount,0,0,1000000)|0;
+    // Old v2 saves without strip data remain fully tilled and ready to play.
+    base.work=restoreFieldWork(saved.work,base);
     if(!base.planted)base.growth=0;
     return base;
   });
@@ -138,7 +141,7 @@ export function applyFarmAction(state,id,action){
   if(state.energy<energyCost[action])return {ok:false,message:'오늘은 많이 일했어요. 집에서 쉬어 주세요.'};
   if(action==='till'){
     if(field.planted)return {ok:false,message:'작물이 자라는 동안은 땅을 갈 수 없어요.'};
-    field.tilled=true;field.weeds=minmax(field.weeds-.3,0,1);
+    field.tilled=true;field.work.tilled.fill(true);field.weeds=minmax(field.weeds-.3,0,1);
     return success(state,field,'흙을 고르게 갈아 씨앗을 심을 준비를 했어요.',{action});
   }
   if(action==='plant'){
@@ -149,6 +152,7 @@ export function applyFarmAction(state,id,action){
     if(!state.inventory[key])return {ok:false,message:'씨앗이 부족해요. 먼저 수확한 작물을 판매해 보세요.'};
     state.inventory[key]--;
     field.planted=true;field.growth=.025;field.health=1;field.weeds=.03;
+    field.work.watered.fill(false);field.work.weeded.fill(false);field.work.harvested.fill(false);
     return success(state,field,(species==='rice'?'어린 모를 논에 옮겨 심었어요.':CROPS[species].name+' 씨앗을 심었어요.'),{action});
   }
   if(action==='gate'){
@@ -160,11 +164,11 @@ export function applyFarmAction(state,id,action){
   }
   if(action==='water'){
     if(field.kind==='rice')return {ok:false,message:'논은 물꼬를 열어 물을 관리해요.'};
-    field.moisture=minmax(field.moisture+.37,0,1);
+    field.moisture=minmax(field.moisture+.37,0,1);field.work.watered.fill(true);
     return success(state,field,'물뿌리개로 밭을 적셨어요.',{action});
   }
   if(action==='weed'){
-    field.weeds=minmax(field.weeds-.42,0,1);
+    field.weeds=minmax(field.weeds-.42,0,1);field.work.weeded.fill(true);
     return success(state,field,'잡초를 제거해 농작물이 잘 자라도록 했어요.',{action});
   }
   if(action==='fertilize'){
@@ -174,15 +178,64 @@ export function applyFarmAction(state,id,action){
   }
   if(action==='harvest'){
     if(!field.planted||field.growth<.999)return {ok:false,message:'아직 익지 않았어요. 생육 상태를 살펴보세요.'};
-    const crop=CROPS[field.crop];
-    const quality=minmax(.55+field.health*.40+field.nitrogen*.15-field.weeds*.15,.45,1.15);
-    const quantity=Math.max(1,Math.round(crop.baseYield*quality));
-    state.inventory[crop.produce]+=quantity;field.planted=false;field.growth=0;
-    if(field.kind==='rice')field.transplants=emptySeedlings();
-    field.tilled=false;field.weeds=minmax(field.weeds+.08,0,1);field.harvestCount++;
-    state.stats.harvests++;
-    return success(state,field,crop.name+' '+quantity+'개를 수확해 창고에 보관했어요.',{action,quantity,produce:crop.produce,quality});
+    const result=grantHarvest(state,field);
+    return success(state,field,result.message,{action,quantity:result.quantity,produce:result.produce,quality:result.quality});
   }
+}
+// A crop enters the inventory only after all five strips are cut.
+// The old one-click API uses the same payout, preserving older tests/saves.
+function grantHarvest(state,field){
+  const crop=CROPS[field.crop];
+  const quality=minmax(.55+field.health*.40+field.nitrogen*.15-field.weeds*.15,.45,1.15);
+  const quantity=Math.max(1,Math.round(crop.baseYield*quality));
+  state.inventory[crop.produce]+=quantity;field.planted=false;field.growth=0;
+  if(field.kind==='rice')field.transplants=emptySeedlings();
+  field.tilled=false;field.weeds=minmax(field.weeds+.08,0,1);field.harvestCount++;
+  field.work=newFieldWork(false);
+  state.stats.harvests++;
+  return {quantity,produce:crop.produce,quality,
+    message:crop.name+' '+quantity+'개를 거두어 창고에 보관했어요.'};
+}
+export function canWorkFieldStrip(state,id,action,index){
+  const f=fieldById(state,id);
+  if(!f||!validWorkStrip(index)||!Object.hasOwn(PATCH_ENERGY,action))
+    return {ok:false,message:'작업할 구역을 선택해 주세요.'};
+  if(state.energy<PATCH_ENERGY[action])return {ok:false,message:'기운이 부족해요. 하루 쉬었다 다시 해 보세요.'};
+  const done=f.work?.[action==='till'?'tilled':action==='water'?'watered':action==='weed'?'weeded':'harvested'];
+  if(!Array.isArray(done)||done[index])return {ok:false,message:'이미 작업한 구역이에요.'};
+  if(action==='till'&&f.planted)return {ok:false,message:'작물이 자라는 땅은 갈 수 없어요.'};
+  if(action==='water'&&f.kind==='rice')return {ok:false,message:'논은 물꼬를 이용해 물을 대 주세요.'};
+  if(action==='weed'&&f.weeds<.12&&!f.work.weeded.some(Boolean))return {ok:false,message:'아직 뽑을 잡초가 없어요.'};
+  if(action==='harvest'&&(!f.planted||f.growth<.999))
+    return {ok:false,message:'이삭이 충분히 익은 뒤 수확해 주세요.'};
+  return {ok:true};
+}
+export function applyFarmStrip(state,id,action,index){
+  const check=canWorkFieldStrip(state,id,action,index);
+  if(!check.ok)return check;
+  const f=fieldById(state,id);
+  const work=f.work;
+  state.energy=minmax(state.energy-PATCH_ENERGY[action],0,100);
+  state.minute=minmax(state.minute+3,420,1320);
+  const key=action==='till'?'tilled':action==='water'?'watered':action==='weed'?'weeded':'harvested';
+  work[key][index]=true;
+  const count=completedWorkStrips(f,action);
+  let result=null;
+  if(action==='till'){
+    f.weeds=minmax(f.weeds-.06,0,1);
+    f.tilled=count===WORK_STRIPS;
+  }else if(action==='water'){
+    f.moisture=minmax(f.moisture+.074,0,1);
+  }else if(action==='weed'){
+    f.weeds=minmax(f.weeds-.084,0,1);
+  }else if(count===WORK_STRIPS){
+    result=grantHarvest(state,f);
+  }
+  const messages={till:'흙을 고르게 뒤집었어요.',water:'흙에 물이 스며들었어요.',
+    weed:'잡초를 뽑아냈어요.',harvest:'낫으로 익은 작물을 베었어요.'};
+  const complete=count===WORK_STRIPS;
+  return {ok:true,action,fieldId:id,index,count,total:WORK_STRIPS,complete,
+    ...result,message:result?.message||messages[action]+' '+count+' / '+WORK_STRIPS+'구역'};
 }
 export function advanceFarmDay(state){
   const previous=state.day;
@@ -193,6 +246,7 @@ export function advanceFarmDay(state){
   const changes=[];
   for(const f of state.fields){
     const before=visualStage(f),oldHealthy=f.health;
+    f.work.watered.fill(false);f.work.weeded.fill(false);
     if(f.kind==='rice'){
       // Shallow paddies lose water through drainage/evaporation; open gates refill them.
       const refill=f.gateOpen?2.6:0;

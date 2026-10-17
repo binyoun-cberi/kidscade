@@ -64,6 +64,19 @@
       <button id="plantOne" type="button" aria-label="선택한 자리에 모 심기">🌱 모 심기 <small>길게 눌러 이어 심기</small></button>
     </div>
   </section>
+  <section id="fieldWorkHud" class="fieldwork-hud hidden" aria-label="직접 농사짓기">
+    <div class="fieldwork-title">
+      <div><small id="workToolName">괭이질</small><strong id="workStripProgress">0 / 5구역</strong></div>
+      <button id="exitFieldWork" type="button" aria-label="도구 내려놓기">닫기 ×</button>
+    </div>
+    <div class="fieldwork-progress"><i id="workStripFill"></i></div>
+    <p id="workStripHint">논밭의 표시된 구역을 골라 직접 작업해 보세요.</p>
+    <div id="workStripGrid" class="fieldwork-strips" role="group" aria-label="다섯 작업 구역"></div>
+    <div class="fieldwork-footer">
+      <span id="workStripEnergy">기운 100</span>
+      <button id="workOne" type="button">이 구역 작업하기<small>길게 눌러 이어서</small></button>
+    </div>
+  </section>
   <nav id="bottomBar" aria-label="주요 농장 조작">
     <button id="nearFieldBtn" class="tool" type="button"><span aria-hidden="true">◎</span><b>논밭 살펴보기</b></button>
     <button id="bagBtn" class="tool" type="button"><span aria-hidden="true">▤</span><b>창고·판매</b></button>

@@ -278,3 +278,57 @@ button:focus-visible{outline:3px solid #d18d34;outline-offset:3px}
   .planting-bottom{margin-top:4px}
   #plantOne{min-height:38px}
 }
+
+/* V2: a compact, landscape-safe tool panel, consistent with rice planting. */
+#app:has(#fieldWorkHud:not(.hidden)) #objective,
+#app:has(#fieldWorkHud:not(.hidden)) #inspector{display:none}
+.fieldwork-hud{position:absolute;z-index:7;right:15px;top:98px;
+  width:268px;box-sizing:border-box;padding:14px;border:1px solid #d4c39d;
+  border-radius:17px;background:linear-gradient(150deg,#fff9e9f5,#e9f0ddf7);
+  color:#405940;box-shadow:0 12px 36px #283d2b48;backdrop-filter:blur(12px)}
+.fieldwork-title{display:flex;justify-content:space-between;gap:6px;align-items:center}
+.fieldwork-title small{display:block;color:#71845e;font-weight:700;font-size:11px}
+.fieldwork-title strong{font-size:17px}
+#exitFieldWork{border:1px solid #d0d5bd;background:#fffef7;border-radius:9px;
+  color:#516652;min-height:32px;padding:4px 8px;font-weight:750;font-size:11px}
+.fieldwork-progress{height:8px;background:#e3e5d7;border-radius:99px;overflow:hidden;margin-top:12px}
+.fieldwork-progress i{display:block;width:0;height:100%;
+  background:linear-gradient(90deg,#8aab61,#d9af5a);transition:width .17s}
+#workStripHint{margin:9px 0;font-size:11px;line-height:1.5;min-height:30px;color:#667968}
+.fieldwork-strips{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;
+  padding:8px;border-radius:12px;background:linear-gradient(160deg,#b8a585,#806747);
+  border:1px solid #b89c6c}
+.fieldwork-strips button{min-width:0;min-height:47px;border:1px dashed #e9debf;
+  border-radius:8px;background:#f5f1e426;color:white;font-size:13px;font-weight:800;
+  touch-action:manipulation;padding:2px}
+.fieldwork-strips button.chosen{background:#f3d58caa;border:2px solid #fff5cd;color:#392c17}
+.fieldwork-strips button.done{background:#d9eaca;border:1px solid #6b9b70;color:#2f6b41}
+.fieldwork-strips button:disabled{opacity:.65}
+.fieldwork-strips button.done:disabled{opacity:1}
+.fieldwork-footer{margin-top:10px;display:flex;gap:8px;align-items:center}
+#workStripEnergy{flex:1;font-size:11px;color:#6d7e68;font-weight:750}
+#workOne{min-height:52px;min-width:151px;padding:6px 9px;border-radius:11px;
+  border:1px solid #5d865c;background:#4f8660;color:#fff;font-size:12px;
+  font-weight:800;box-shadow:0 4px 0 #376044;touch-action:none;
+  user-select:none;-webkit-user-select:none}
+#workOne small{display:block;font-size:9px;font-weight:500;margin-top:3px}
+#workOne:disabled{background:#a5b2a1;box-shadow:none;opacity:.7}
+@media(max-width:700px){
+  .fieldwork-hud{top:max(66px,env(safe-area-inset-top) + 55px);right:7px;
+    width:min(223px,calc(100vw - 103px));padding:9px}
+  .fieldwork-title strong{font-size:14px}
+  #workStripHint{font-size:10px;min-height:24px;margin:5px 0}
+  .fieldwork-strips{padding:5px;gap:3px}
+  .fieldwork-strips button{min-height:34px;font-size:11px}
+  .fieldwork-progress{margin-top:7px;height:6px}
+  .fieldwork-footer{margin-top:7px;gap:4px}
+  #workOne{min-width:112px;min-height:43px;font-size:10px}
+  #workStripEnergy{font-size:9px}
+}
+@media(max-width:700px) and (max-height:540px){
+  .fieldwork-hud{top:43px;right:8px;width:200px;
+    max-height:calc(100dvh - 90px);overflow-y:auto}
+  #workStripHint{display:none}
+  .fieldwork-strips button{min-height:25px}
+  #workOne{min-height:34px}
+}

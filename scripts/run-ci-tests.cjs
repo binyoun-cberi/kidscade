@@ -189,6 +189,7 @@ const TEST_FILES = [
   "tests/korean-farm-village-scene.test.mjs",
   "tests/korean-farm-navigation-hud.test.mjs",
   "tests/korean-farm-rice-transplant.test.mjs",
+  "tests/korean-farm-manual-work-v2.test.mjs",
   "tests/main-architecture.test.cjs"
 ];
 
