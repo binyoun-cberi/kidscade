@@ -342,7 +342,11 @@ async function main(){
  await click('#exitPlanting');
  const touchStart=await evaluate('window.__farmQA.state().player');
  const stick=await evaluate(`(()=>{const r=document.querySelector('#joystick').getBoundingClientRect();
-   return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);
+   return {x:r.left+r.width/2,y:r.top+r.height/2,
+     front:document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.closest('#joystick')?.id||null,
+     inspector:!document.querySelector('#inspector').classList.contains('hidden')}})()`);
+ check('Joystick stays tappable above the restored mobile inspector',
+   stick.front==='joystick'&&stick.inspector,stick);
  await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:stick.x,y:stick.y,id:17}]});
  await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:stick.x+25,y:stick.y-7,id:17}]});
  await sleep(640);
