@@ -11,7 +11,7 @@ function period(year){
  if(y<=1897)return {id:'late',label:'조선 후기'};
  return {id:'transition',label:'대한제국·근대 전환기'};
 }
-function wardrobe(year,origin='상민',sex='남자',role='',age=30){
+function wardrobe(year,origin='상민',sex='남자',role='',age=30,context={}){
  const p=period(year),female=sex==='여자',child=Number(age)<15;
  const elite=/양반|왕실|관직|대감|종친/.test(String(origin))||/관직|어사|왕실/.test(String(role));
  const palette={
@@ -26,7 +26,21 @@ function wardrobe(year,origin='상민',sex='남자',role='',age=30){
  if(child)label=female?(p.id==='late'?'짧은 저고리와 치마를 입은 아이':'저고리와 치마를 입은 아이'):'저고리와 바지를 입은 아이';
  else if(female)label=p.id==='early'?'긴 저고리와 치마':p.id==='middle'?'넉넉한 저고리와 치마':p.id==='late'?'짧은 저고리와 치마':'전통옷과 개화기 옷차림';
  else label=elite?(p.id==='late'?'갓과 도포':'관모와 긴 포'):(role?'생업에 맞춘 수수한 일옷':'수수한 일옷과 쓰개');
- return {period:p.id,label,jeogori,hatSpan,hat:elite?'formal':'work',color:elite?palette.elite:palette.plain,accent:palette.accent};
+ // Occupation is personal: being born into a military or official family is not service.
+ const adult=!child&&Number(age)>=16,male=sex==='남자',job=String(role);
+ const official=adult&&male&&/관직 생활|관료|현감|군수|판서|암행어사/.test(job);
+ const military=adult&&male&&/^(수군|군인|군졸|포졸|군관|무관)$/.test(job);
+ let style='hanbok',headwear=child?'none':female?'hair':elite?'gat':'cloth';
+ let robe=false,color=elite?palette.elite:'#d2c5aa';
+ if(adult&&male&&elite){robe=true;label=p.id==='late'?'갓과 도포 차림':'쓰개와 긴 포 차림';}
+ if(official&&context.duty&&year<1895){style='official';headwear='samo';robe=true;color=year>=1884?'#3b4650':'#586575';label='단령과 사모를 갖춘 관복 차림';}
+ if(military&&context.duty&&year<1895){
+  style=year>=1800?'late-military':'cheollik';headwear=year>=1630?'jeonrip':'cloth';robe=true;color='#687c8b';
+  label=year>=1800?'전립·동달이·전복의 군복 차림':'허리에 주름을 잡은 철릭 차림';
+ }
+ if(child){headwear='none';robe=false;style='hanbok';}
+ if(female){headwear=child?'none':'hair';robe=false;}
+ return {period:p.id,label,jeogori,hatSpan,hat:elite?'formal':'work',headwear,style,robe,color,accent:palette.accent};
 }
 function household(life,opts={}){
  const j=opts.joseon||life.joseon||{},origin=opts.origin||life.joseon5?.origin||j.birthStatus||life.familyLevel||'상민';
@@ -61,7 +75,7 @@ function describe(life,opts={}){
  const j=opts.joseon||life.joseon||{},origin=opts.origin||life.joseon5?.origin||j.birthStatus||life.familyLevel||'상민';
  const role=opts.role||life.joseon6?.primary?.name||life.joseon5?.role||j.occupation||'';
  const scene=opts.scene||'farm',p=period(life.year||life.birthYear);
- const wear=wardrobe(life.year||life.birthYear,origin,life.gender,role,life.age);
+ const wear=wardrobe(life.year||life.birthYear,origin,life.gender,role,life.age,{duty:scene==='study'||scene==='port'});
  const home=household(life,{...opts,joseon:j,origin,role,scene});
  return {period:p.label,clothing:wear.label,housing:home.label,meal:meal(life,{...opts,joseon:j})};
 }

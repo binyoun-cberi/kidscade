@@ -1,7 +1,18 @@
 /* Joseon scene polish: crisp pixel forms, period silhouettes, and age-aware figures. */
 (function(root){
 'use strict';
-const api={
+function scene(life){
+ const j=root.OneLifeJoseon?.ensure?.(life)||life.joseon||{};
+ const away=life.joseon14?.captivity?.status==='held';
+ const kind=away?'away':root.OneLifeJoseon3?.zone?.(life)||'farm';
+ const year=life.year??life.birthYear,origin=life.joseon5?.origin||j.birthStatus||'상민';
+ const home=away?{kind:'small-thatch',roof:'thatch',label:'타향의 임시 거처'}:root.OneLifeJoseonCulture?.household(life,{joseon:j,origin,scene:kind,role:j.occupation});
+ const missing=new Set((life.joseon13?.missing||[]).filter(p=>p.status==='missing').map(p=>p.personId));
+ const family=away?[]:(root.OneLifeJoseon4?.ensure?.(life)?.people||life.joseon4?.people||[]).filter(p=>p.alive&&p.atHome!==false&&!p.missing&&!missing.has(p.id)&&p.birthYear<=year);
+ const people=[{id:'self',name:life.profile?.name||'나',age:Math.max(0,life.age||0),sex:life.gender,self:true},...family.map(p=>({id:p.id,name:p.name,age:Math.max(0,year-p.birthYear),sex:p.sex,self:false}))];
+ return {kind,home,people,away,householdCount:people.length};
+}
+const api={scene,
  paint(canvas,life){
   if(!canvas||!life)return false;
   const ctx=canvas.getContext('2d');if(!ctx)return false;
@@ -11,13 +22,14 @@ const api={
   const j=window.OneLifeJoseon?.ensure?.(life)||life.joseon||{};
   const v=window.OneLifeJoseon2?.ensure?.(life)||life.joseon2||{};
   const Culture=window.OneLifeJoseonCulture;
-  const kind=window.OneLifeJoseon3?.zone?.(life)||'farm';
+  const plan=scene(life),kind=plan.kind;
   const season=window.OneLifeJoseon3?.season?.(life)||'가을';
   const year=life.year||life.birthYear||1480,age=life.age||0;
   const origin=life.joseon5?.origin||j.birthStatus||life.familyLevel||'상민';
   const elite=/양반|왕실|관직|대감|종친/.test(String(origin));
-  const home=Culture?.household(life,{joseon:j,origin,scene:kind,role:life.joseon6?.primary?.name||j.occupation})||{kind:elite?'tile':'thatch',roof:elite?'tile':'thatch'};
+  const home=plan.home||{kind:elite?'tile':'thatch',roof:elite?'tile':'thatch'};
   const wear=Culture?.wardrobe(year,origin,life.gender,life.joseon6?.primary?.name||j.occupation,life.age);
+  canvas.setAttribute?.('aria-label',(home.label||'집')+' · '+(plan.away?'타향에 있는 주인공의 모습':plan.householdCount+'명의 식구 중 '+plan.people.slice(0,5).map(p=>p.name+' '+p.age+'세').join(', '))+' · 주인공은 금빛 표식');
   const colors={
    봄:{sky:'#c8e4d9',mountain:'#93b5a8',hill:'#769b82',field:'#aac38f',leaf:'#56866b',gold:'#e2c574'},
    여름:{sky:'#b9ddd9',mountain:'#81a6a2',hill:'#658d75',field:'#91b977',leaf:'#477b5c',gold:'#e2c574'},
@@ -54,20 +66,27 @@ const api={
   // Field furrows, rice bundles, and a small fence make the rural scene legible.
   if(kind==='farm'||kind==='mountain'){
    for(let row=0;row<3;row++){
-    const y=222+row*11;px(0,y,600,3,season==='겨울'?'#b7c3b9':'#9c865c');
-    for(let x=12+(row%2)*14;x<600;x+=36){
+    const y=222+row*11;px(0,y,106,3,season==='겨울'?'#b7c3b9':'#9c865c');
+    for(let x=12+(row%2)*14;x<106;x+=36){
      px(x,y-6,3,7,colors.leaf);if(season==='가을')px(x+3,y-5,4,4,colors.gold);
     }
    }
-   for(let x=376;x<590;x+=40){px(x,166,4,23,'#79694d');px(x-4,170,12,4,'#79694d');}
-   px(414,218,42,10,'#cfb56f');px(421,211,27,7,'#e0c77f');
+   // Fields stop at the yard; the family never stands on the furrows.
+   for(let row=0;row<3;row++){const y=222+row*11;px(455,y,145,3,'#9c865c');for(let x=466;x<600;x+=36)px(x,y-6,3,7,colors.leaf);}
+   for(let x=476;x<590;x+=40){px(x,166,4,23,'#79694d');px(x-4,170,12,4,'#79694d');}
+   px(503,218,42,10,'#cfb56f');px(510,211,27,7,'#e0c77f');
   }
   if(kind==='port'){
-   px(0,172,600,86,'#78aeb0');for(let y=183;y<256;y+=20)for(let x=12+(y%3)*24;x<590;x+=72)px(x,y,35,3,'#c0ded3');
-   px(52,205,118,10,'#745844');px(64,195,91,8,'#927253');px(113,130,5,65,'#5d5547');px(118,139,40,43,'#eadbb9');
+   px(0,205,220,53,'#78aeb0');for(let y=215;y<256;y+=20)for(let x=12+(y%3)*24;x<190;x+=72)px(x,y,35,3,'#c0ded3');
+   px(52,219,118,10,'#745844');px(64,209,91,8,'#927253');px(113,130,5,65,'#5d5547');px(118,139,40,43,'#eadbb9');
   }
   // A compact Joseon house with real eaves, wooden posts, lattice and either thatch or tile.
-  const hx=119,hy=119,hw=174,hh=76;
+  const hx=119,hy=119,hw=home.kind==='small-thatch'?132:174,hh=76;
+  px(110,204,334,50,season==='겨울'?'#e0ded0':'#d6c49f');
+  px(111,247,333,6,'#c4af88');
+  // Earthenware jars and stacked firewood belong beside the house.
+  for(let i=0;i<3;i++){px(130+i*15,205,12,11,'#76533e');px(132+i*15,202,8,4,'#5d4739');}
+  px(190,204,34,9,'#9b7851');for(let i=0;i<4;i++)px(192+i*8,204,3,8,'#c0a477');
   px(hx-5,hy-4,hw+10,hh+8,'#65594b');
   px(hx,hy,hw,hh,home.kind==='palace'?'#bd7658':'#e6d5b4');
   px(hx+8,hy+13,hw-16,4,home.kind==='palace'?'#6c8c68':'#d1bc95');
@@ -84,12 +103,19 @@ const api={
   }
   // Door and paper lattice windows.
   px(hx+20,hy+35,29,40,'#715943');px(hx+25,hy+40,19,35,'#9d8060');
-  for(const x of [hx+70,hx+117]){
+  for(const x of (hw<150?[hx+70]:[hx+70,hx+117])){
    px(x,hy+28,31,23,'#8b7153');px(x+3,hy+31,25,17,'#e9e2cc');
    px(x+14,hy+31,3,17,'#8b7153');px(x+3,hy+38,25,3,'#8b7153');
   }
+  if(home.kind==='estate'||home.kind==='palace'){
+   // A separate wing makes the courtyard home distinct from a single-room cottage.
+   px(365,140,102,55,home.kind==='palace'?'#bd7658':'#e6d5b4');
+   px(353,132,126,8,'#484f54');px(361,125,110,7,'#596168');
+   for(let x=375;x<463;x+=38){px(x,151,25,25,'#8b7153');px(x+3,154,19,19,'#e9e2cc');px(x+11,154,3,19,'#8b7153');}
+   px(363,195,108,6,'#806b51');
+  }
   // A short raised porch and stone stepping blocks.
-  px(hx+15,hy+74,146,6,'#806b51');for(let x=120;x<265;x+=28)px(x,hy+82,16,5,'#8f8065');
+  px(hx+15,hy+74,hw-28,6,'#806b51');for(let x=120;x<265;x+=28)px(x,hy+82,16,5,'#8f8065');
   if(kind==='study'){
    // Small seodang marker: open book and low writing desk.
    px(326,143,119,48,'#d7c29d');px(319,135,133,8,'#8d704e');px(342,153,87,5,'#795d43');
@@ -101,7 +127,10 @@ const api={
    px(326,144,13,48,'#725f48');px(318,141,28,8,'#8f7753');px(332,136,7,8,'#a88d62');
   }
   // Age-shaped hanbok sprites; clothes and headwear signal age and social position.
-  const sprite=(x,ground,personAge,sex,childColor,adultColor,offset)=>{
+  const sprite=(x,ground,personAge,sex,childColor,adultColor,offset,self=false)=>{
+   const personalWear=Culture?.wardrobe(year,origin,sex,self?j.occupation:'집안의 일',personAge,{duty:self&&(kind==='study'||kind==='port')});
+   adultColor=personalWear?.color||adultColor;offset=personalWear?.accent||offset;
+   px(x-14,ground+3,28,4,'#b5a385');
    const child=personAge<8,teen=personAge<16&&!child,elder=personAge>=62;
    const s=personAge<3?0.54:personAge<8?0.66:personAge<13?0.78:teen?0.88:1;
    const head=child?17:teen?16:15,body=child?21:25,robe=child?24:teen?28:32;
@@ -110,40 +139,60 @@ const api={
    // Face and hair/head covering.
    R(-head/2,-64,head,head,skin);R(-head/2,-67,head,6,hair);
    R(-head/2-1,-57,4,6,hair);R(head/2-3,-57,4,6,hair);
-   if(!child&&sex==='남자'){
-    R(-head/2-7,-68,head+14,4,elite?'#292d31':'#54493f');
-    R(-3,-79,6,12,elite?'#292d31':'#51473f');
-    if(elite){R(-4,-83,8,5,'#30363a');}
-   }else if(!child&&sex==='여자'){
-    R(-3,-70,10,8,hair);R(-7,-68,4,5,'#bd9256');
-   }
+   const headwear=personalWear?.headwear||(personAge>=16?(sex==='여자'?'hair':'cloth'):'none');
+   if(headwear==='samo'){
+    R(-9,-74,18,10,'#30353b');R(-20,-70,11,4,'#30353b');R(9,-70,11,4,'#30353b');
+   }else if(headwear==='gat'||headwear==='jeonrip'){
+    const span=personalWear?.hatSpan||14;
+    R(-span,-69,span*2,4,'#343b3e');R(-6,-80,12,11,'#3d4445');
+   }else if(headwear==='cloth'){R(-9,-68,18,5,'#b9ad91');R(8,-65,5,9,'#b9ad91');}
+   else if(headwear==='hair'){R(-3,-70,10,8,hair);R(-7,-68,4,5,'#9b7d50');}
    // Short jeogori over a distinctly wider skirt/robe.
-   const blouse=sex==='여자'&&wear?wear.jeogori:18;
+   const blouse=sex==='여자'&&personalWear?personalWear.jeogori:18;
    R(-10,-48,20,blouse,adultColor);R(-13,-45,6,12,adultColor);R(7,-45,6,12,adultColor);
-   R(-robe/2,-31,robe,25,child?childColor:adultColor);
-   R(-robe/2,-20,robe,4,offset);R(-2,-47,4,14,'#eee0c4');
+   if(personAge<3){R(-12,-40,24,34,'#e7dac0');R(-10,-30,20,4,offset);}
+   else if(sex==='여자'){const waist=-48+blouse-2;R(-robe/2+3,waist,robe-6,-6-waist,child?childColor:adultColor);R(-robe/2,waist+8,robe,-14-waist,child?childColor:adultColor);}
+   else {R(-12,-31,11,25,adultColor);R(2,-31,11,25,adultColor);}
+   if(sex==='여자'&&personAge>=3)R(-robe/2,-20,robe,4,offset);R(-2,-47,4,14,'#eee0c4');
    if(elder){R(-robe/2-3,-30,4,22,'#8c8175');}
+   if(personalWear?.robe){
+    R(-15,-45,30,38,adultColor);R(-19,-42,9,18,adultColor);R(10,-42,9,18,adultColor);
+    R(-2,-46,4,32,'#e4d9c3');
+    if(personalWear.style==='official'){
+     // Round collar, waist belt and lateral-wing hat; no invented rank badge.
+     R(-5,-47,10,5,'#e4d9c3');R(-15,-23,30,4,'#4a4035');
+    }else if(personalWear.style==='cheollik'){
+     R(-15,-30,30,3,'#4e5356');for(let n=-12;n<14;n+=5)R(n,-27,2,19,'#526779');
+    }else if(personalWear.style==='late-military'){
+     R(-11,-44,22,35,'#3f5057');R(-15,-27,30,4,'#b8a06d');
+    }
+   }
+   // A family member handles a household basket; young children keep their hands free.
+   if(!self&&personAge>=16){
+    R(8,-39,12,5,adultColor);R(17,-38,4,8,skin);
+    R(14,-29,15,12,'#b48c55');R(16,-33,11,4,'#765d40');
+   }else if(personAge>=3&&personAge<13){
+    R(-16,-39,9,5,adultColor);R(-19,-39,4,4,skin);
+   }
    // Arms, legs and small period-specific work props.
    R(-robe/2+2,-7,5,12,'#4f4944');R(robe/2-7,-7,5,12,'#4f4944');
-   if(kind==='farm'&&personAge>10){R(18,-46,3,36,'#765e43');R(13,-48,13,4,'#765e43');}
-   if(kind==='study'&&personAge>5){R(16,-48,16,12,'#eee7d5');R(29,-47,3,10,'#665443');}
-   if(kind==='market'){R(18,-36,12,14,'#b78854');R(19,-39,10,3,'#745c42');}
-   if(kind==='port'&&personAge>10){R(18,-42,3,28,'#6e5a43');R(12,-43,14,3,'#6e5a43');}
-   if(kind==='mountain'){R(-24,-50,5,32,'#785f41');R(-28,-53,12,4,'#8e7450');}
+   if(self&&kind==='farm'&&personAge>=16){R(18,-46,3,36,'#765e43');R(13,-48,13,4,'#765e43');}
+   if(self&&kind==='study'&&personAge>5){R(16,-48,16,12,'#eee7d5');R(29,-47,3,10,'#665443');}
+   if(self&&kind==='market'){R(18,-36,12,14,'#b78854');R(19,-39,10,3,'#745c42');}
+   if(self&&kind==='port'&&personAge>=16){R(18,-42,3,28,'#6e5a43');R(12,-43,14,3,'#6e5a43');}
+   if(self&&kind==='mountain'&&personAge>=16){R(-24,-50,5,32,'#785f41');R(-28,-53,12,4,'#8e7450');}
+   if(self){const top=-88*s;px(x-4,ground+top,8,4,'#c78e38');px(x-2,ground+top-3,4,10,'#eec978');}
    // Small eyes only when the face can support them without clutter.
    R(-4,-59,2,2,'#403a36');R(3,-59,2,2,'#403a36');
   };
   const adultTone=wear?.color||(elite?'#536d86':/중인|기술|장인/.test(String(origin))?'#66866e':'#a87556');
   const trim=wear?.accent||(elite?'#b9a16e':'#c6aa73');
-  if(age<16){
-   sprite(342,243,age,life.gender,'#d4b96f',adultTone,trim);
-   sprite(286,243,Math.min(48,age+29),'여자','#d4b96f',elite?'#8c6a74':'#927366',trim);
-   sprite(394,243,Math.min(50,age+37),'남자','#d4b96f',elite?'#506b82':'#86674f',trim);
-  }else{
-   sprite(357,243,age,life.gender,'#d4b96f',adultTone,trim);
-   if((j.married||j.children>0)&&age<90)sprite(410,243,Math.max(18,age-2),life.gender==='여자'?'남자':'여자','#d4b96f',elite?'#7b6b7b':'#6c8c7a',trim);
-   if(j.children>0&&age<90)sprite(306,243,Math.min(12,age-28),'여자','#d4b96f','#b47f5c',trim);
-  }
+  // Draw only living, present household members, with their recorded ages and sex.
+  // Keep a calm scene even for large households; the caption states the full count.
+  const places=[[342,240],[245,224],[407,231],[292,244],[382,248]];
+  plan.people.slice(0,5).map((p,i)=>({...p,x:places[i][0],ground:places[i][1]})).sort((a,b)=>a.ground-b.ground).forEach(p=>{
+   sprite(p.x,p.ground,p.age,p.sex,'#d4b96f',adultTone,trim,p.self);
+  });
   // Shared palette bar and fine border echo the mint-and-warm UI without a heavy frame.
   px(0,0,600,3,'#6da99b');px(0,255,600,3,'#6da99b');
   return true;
