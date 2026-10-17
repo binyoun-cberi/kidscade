@@ -27,11 +27,14 @@ export function createFarmActionFlow({interactionDistance=1.65,walkTimeout=18}={
   const flow={
     get active(){return active?{...active,goal:{...active.goal}}:null},
     get busy(){return active!==null},
-    request({action,plot,position}){
+    request({action,plot,position,goal:contactGoal=null,cellIndex=null}){
       if(active)return report('busy',{message:'지금 하던 작업을 마친 뒤 시도해 주세요.'});
       if(!plot||!position||!action)return report('invalid');
-      const distance=distanceToPlot(position,plot),goal=actionApproachPoint(plot,position);
-      active={fieldId:plot.id,action,phase:distance>interactionDistance?'approach':'ready',
+      const goal=contactGoal?{x:contactGoal.x,z:contactGoal.z}:actionApproachPoint(plot,position);
+      const distance=contactGoal?Math.hypot(position.x-goal.x,position.z-goal.z):
+        distanceToPlot(position,plot);
+      const range=contactGoal?.35:interactionDistance;
+      active={fieldId:plot.id,action,cellIndex,phase:distance>range?'approach':'ready',
         goal,elapsed:0,applied:false};
       return report('queued',{phase:active.phase,goal:{...goal},fieldId:plot.id});
     },
@@ -49,18 +52,18 @@ export function createFarmActionFlow({interactionDistance=1.65,walkTimeout=18}={
       }
       if(job.phase==='ready'){
         job.phase='animation';job.elapsed=0;
-        return report('start',{action:job.action,fieldId:job.fieldId});
+        return report('start',{action:job.action,fieldId:job.fieldId,cellIndex:job.cellIndex});
       }
       if(job.phase==='animation'){
         if(impact&&!job.applied){
           job.applied=true;job.phase='recovery';
-          return report('impact',{action:job.action,fieldId:job.fieldId});
+          return report('impact',{action:job.action,fieldId:job.fieldId,cellIndex:job.cellIndex});
         }
         return null;
       }
       if(job.phase==='recovery'&&!working){
         const completed=job;active=null;
-        return report('complete',{action:completed.action,fieldId:completed.fieldId});
+        return report('complete',{action:completed.action,fieldId:completed.fieldId,cellIndex:completed.cellIndex});
       }
       return null;
     },

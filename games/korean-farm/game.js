@@ -4,6 +4,8 @@ import {createFarmerAnimator} from './animation/farmer-animator.js';
 import {FieldEffects} from './animation/field-effects.js';
 import {buildSolnaeriVillage} from './rendering/village-scene.js';
 import {VILLAGE_COLLIDERS} from './rendering/village-layout.mjs';
+import {createRicePlantingGrid} from './rendering/rice-planting-grid.js';
+import {TRANSPLANT_COUNT,seedlingCount,seedlingPosition,nextEmptySeedling,canPlantSeedling,plantSeedling} from './farming/rice-transplant.mjs';
 import {createFarmActionFlow,actionContactPoint,actionApproachPoint} from './interactions/action-flow.mjs';
 import {cameraRelativeInput,farmerHeading,rotateToward,walkPlayer,shouldTurnBeforeWalk,LOOK_SPEED} from './interactions/navigation.mjs';
 import {FIELD_DEFS,plotById,distanceToPlot} from './world.mjs';
@@ -22,10 +24,11 @@ const keys=new Set();
 const joystick={x:0,y:0,id:null};
 const pointers=new Map();
 let pinchDistance=0,downPosition=null;
-const plotMeshes=new Map(),plotHits=[],plotOrigins=new Map(),visited=new Set(state.seenPlots||[]);
+const plotMeshes=new Map(),plotHits=[],plantingHits=[],plotOrigins=new Map(),visited=new Set(state.seenPlots||[]);
 const obstacles=VILLAGE_COLLIDERS;
 const models=new Map();
 const farmFlow=createFarmActionFlow();
+let plantingMode=false,selectedSeedling=0,plantHeld=false,plantPointerAction=false;
 const actions={till:'괭이질',plant:'심기',water:'물주기',gate:'물꼬',weed:'김매기',fertilize:'거름주기',harvest:'수확'};
 
 const formatWon=n=>Math.max(0,Math.round(n)).toLocaleString('ko-KR')+'원';
@@ -126,7 +129,9 @@ function buildFields(){
     const target=new THREE.Mesh(new THREE.PlaneGeometry(plot.w,plot.d),new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}));
     target.rotation.x=-Math.PI/2;target.position.y=.4;target.userData.plotId=plot.id;group.add(target);plotHits.push(target);
     const cropLayer=new THREE.Group();group.add(cropLayer);
-    plotMeshes.set(plot.id,{group,cropLayer,target,plot,bed,waterMesh,stage:null,generation:0});
+    const planting=rice?createRicePlantingGrid(plot):null;
+    if(planting){group.add(planting.group);plantingHits.push(...planting.targets)}
+    plotMeshes.set(plot.id,{group,cropLayer,planting,target,plot,bed,waterMesh,stage:null,generation:0});
     syncFieldVisual(plot.id,true);
   }
 }
@@ -161,6 +166,7 @@ function syncFieldVisual(id,force=false){
   }
   record.bed.material.color.setHex(field.tilled?0x755b41:0x9b805b);
   if(field.kind!=='rice')record.bed.material.color.setHex(field.moisture<.25?0x957551:0x72543c);
+  record.planting?.refresh(field,plantingMode&&state.selected===id?selectedSeedling:-1,plantingMode&&state.selected===id);
   const stage=visualStage(field);
   if(force||stage!==record.stage){
     record.stage=stage;
@@ -315,7 +321,12 @@ function canvasPosition(e){
 }
 function inspectAt(e){
   raycaster.setFromCamera(canvasPosition(e),camera);
+  if(plantingMode){
+    const cells=raycaster.intersectObjects(plantingHits,false).filter(h=>h.object.userData.plotId===state.selected);
+    if(cells.length){runSeedlingPlant(cells[0].object.userData.cellIndex);return}
+  }
   const hits=raycaster.intersectObjects(plotHits,false);
+  if(plantingMode){toast('모내기 중이에요. 논의 밝은 자리를 선택해 주세요.');return}
   if(hits.length){
     $('moreTools').classList.add('hidden');$('moreBtn').setAttribute('aria-expanded','false');
     chooseField(hits[0].object.userData.plotId);return;
@@ -332,6 +343,7 @@ function inspectAt(e){
 }
 function chooseField(id){
   const plot=plotById(id);if(!plot)return;
+  if(plantingMode)exitPlantingMode();
   if(farmFlow.busy){toast('지금 하던 작업을 먼저 마쳐 주세요.');return}
   state.selected=id;
   if(plot.kind==='rice'){
@@ -378,7 +390,8 @@ function updateInspector(){
   $('fieldName').textContent=plot.label;
   $('fieldStatus').textContent=farmFlow.busy?
     (farmFlow.active.phase==='approach'?'농부가 걸어가고 있어요':'농사 작업 중이에요'):fieldCondition(f);
-  $('fieldInfo').textContent=f.planted?
+  $('fieldInfo').textContent=f.kind==='rice'&&!f.planted&&seedlingCount(f)>0?
+    '모내기 '+seedlingCount(f)+' / 25포기 · 밝은 자리에 모를 꽂아 보세요.':f.planted?
     CROPS[f.crop].name+' · '+Math.round(f.growth*100)+'% 자람'+(f.kind==='rice'?' · 논물 '+f.waterDepthCm.toFixed(1)+'cm'+(f.gateOpen?' (물꼬 열림)':' (물꼬 닫힘)'):''):
     (f.tilled?'땅을 갈아 놓았어요. 다음 작물을 심을 수 있어요.':'수확을 마친 땅이에요. 괭이질로 다시 준비해 보세요.');
   const metrics=$('fieldMetrics');metrics.replaceChildren();
@@ -394,10 +407,10 @@ function updateInspector(){
     btn.classList.toggle('special',a==='harvest'&&f.planted&&f.growth>=.999);
     btn.classList.toggle('active',a==='gate'&&f.gateOpen);
     btn.hidden=(a==='water'&&f.kind==='rice')||(a==='gate'&&f.kind!=='rice');
-    btn.disabled=farmFlow.busy||(a==='till'&&f.planted)||(a==='plant'&&(f.planted||!f.tilled||!state.inventory[{rice:'seedRice',carrot:'seedCarrot',corn:'seedCorn'}[f.crop]]))||
+    btn.disabled=farmFlow.busy||(a==='till'&&f.planted)||(a==='plant'&&(f.planted||!f.tilled||!(f.kind==='rice'&&seedlingCount(f)>0)&&!state.inventory[{rice:'seedRice',carrot:'seedCarrot',corn:'seedCorn'}[f.crop]]))||
       (a==='harvest'&&(!f.planted||f.growth<.999))||(a==='fertilize'&&!state.inventory.fertilizer);
     if(a==='gate')btn.textContent=f.gateOpen?'물꼬 닫기':'물꼬 열기';
-    if(a==='plant')btn.textContent=f.kind==='rice'?'모내기':'씨앗 심기';
+    if(a==='plant')btn.textContent=f.kind==='rice'?'🌱 모내기 시작':'씨앗 심기';
   }
   const far=distanceToPlot(state.player,plot)>5;
   $('approachBtn').classList.toggle('hidden',!far);
@@ -412,6 +425,69 @@ function goToSelectedField(){
 function refreshFarmControls(){
   if(!$('inspector').classList.contains('hidden'))updateInspector();
 }
+function refreshPlantingHud(){
+  const f=fieldById(state,state.selected);
+  if(!f||!plantingMode)return;
+  const count=seedlingCount(f);
+  $('seedlingProgress').textContent='모내기 '+count+' / '+TRANSPLANT_COUNT;
+  $('seedlingFill').style.width=(count/TRANSPLANT_COUNT*100)+'%';
+  $('seedlingSupplies').textContent='모종 '+state.inventory.seedRice+'묶음 · 기운 '+Math.round(state.energy);
+  $('plantingHint').textContent=farmFlow.busy?'농부가 모를 심는 중이에요…':
+    count===0?'밝은 칸을 선택하고 모를 심으세요.':'초록색 칸은 심었어요. 다음 빈 칸에 도전하세요.';
+  // Keep the held action button enabled during movement so touch release is never lost.
+  $('plantOne').disabled=count===TRANSPLANT_COUNT||state.energy<1;
+  const grid=$('seedlingGrid');
+  for(const el of grid.querySelectorAll('[data-cell]')){
+    const i=Number(el.dataset.cell),filled=!!f.transplants?.[i];
+    el.classList.toggle('planted',filled);el.classList.toggle('chosen',!filled&&i===selectedSeedling);
+    el.textContent=filled?'🌱':'·';el.disabled=filled||farmFlow.busy;
+    el.setAttribute('aria-label',(i+1)+'번째 자리 '+(filled?'심음':'빈 자리'));
+  }
+  for(const def of FIELD_DEFS)if(def.kind==='rice'){
+    const record=plotMeshes.get(def.id);
+    record?.planting?.refresh(fieldById(state,def.id),selectedSeedling,
+      plantingMode&&def.id===state.selected);
+  }
+}
+function enterPlantingMode(){
+  const plot=plotById(state.selected),f=fieldById(state,state.selected);
+  if(!plot||f?.kind!=='rice')return;
+  if(f.planted||!f.tilled){toast('먼저 논의 상태를 확인하고 흙을 준비해 주세요.');return}
+  const first=nextEmptySeedling(f);
+  if(first<0){toast('모내기를 모두 마쳤어요.');return}
+  const result=canPlantSeedling(state,plot.id,first);
+  if(!result.ok){toast(result.message);return}
+  plantingMode=true;plantHeld=false;selectedSeedling=first;
+  $('inspector').classList.add('hidden');
+  $('plantingHud').classList.remove('hidden');
+  $('moreTools').classList.add('hidden');
+  refreshPlantingHud();
+  toast('모를 한 포기씩 심어요. 심기 버튼을 길게 누르면 계속 심어요.');
+}
+function exitPlantingMode(){
+  plantHeld=false;plantingMode=false;$('plantingHud').classList.add('hidden');
+  if(farmFlow.cancelApproach())moveGoal=null;
+  for(const def of FIELD_DEFS)if(def.kind==='rice'){
+    const rec=plotMeshes.get(def.id);rec?.planting?.refresh(fieldById(state,def.id),-1,false);
+  }
+}
+function runSeedlingPlant(index=selectedSeedling){
+  if(!plantingMode||farmFlow.busy)return;
+  const plot=plotById(state.selected),f=fieldById(state,state.selected);
+  if(!plot||!f||f.kind!=='rice')return;
+  const i=nextEmptySeedling(f,index);
+  if(i<0){exitPlantingMode();return}
+  const check=canPlantSeedling(state,plot.id,i);
+  if(!check.ok){plantHeld=false;toast(check.message);refreshPlantingHud();return}
+  selectedSeedling=i;
+  const point=seedlingPosition(plot,i);
+  // The farmer steps between seedlings and bends to the marked place.
+  const goal={x:point.x,z:point.z+.39};
+  const req=farmFlow.request({action:'plant',plot,position:state.player,goal,cellIndex:i});
+  if(req.type!=='queued')return;
+  keys.clear();moveGoal=req.phase==='approach'?req.goal:null;
+  refreshPlantingHud();
+}
 function handleFarmFlowEvent(event){
   const plot=plotById(event.fieldId);
   if(event.type==='timeout'){
@@ -421,7 +497,8 @@ function handleFarmFlowEvent(event){
   if(!plot)return;
   if(event.type==='start'){
     moveGoal=null;
-    farmerFacingTarget=farmerHeading(plot.x-state.player.x,plot.z-state.player.z);
+    const contact=event.cellIndex==null?plot:seedlingPosition(plot,event.cellIndex);
+    farmerFacingTarget=farmerHeading(contact.x-state.player.x,contact.z-state.player.z);
     if(!farmerAnimator?.trigger(event.action)){
       farmFlow.reset();toast('농기구를 사용할 수 없어요.');refreshFarmControls();
     }
@@ -429,11 +506,18 @@ function handleFarmFlowEvent(event){
   }
   if(event.type==='impact'){
     // All crop, soil, inventory, and energy changes happen only at tool contact.
-    const result=applyFarmAction(state,plot.id,event.action);
+    const result=event.action==='plant'&&event.cellIndex!=null?
+      plantSeedling(state,plot.id,event.cellIndex):applyFarmAction(state,plot.id,event.action);
     toast(result.message);
     if(result.ok){
-      fieldEffects?.emit(event.action,actionContactPoint(plot,state.player));
+      fieldEffects?.emit(event.action,event.cellIndex==null?
+        actionContactPoint(plot,state.player):seedlingPosition(plot,event.cellIndex));
       syncFieldVisual(plot.id);
+      if(event.cellIndex!=null){
+        selectedSeedling=nextEmptySeedling(fieldById(state,plot.id));
+        if(result.complete)plantHeld=false;
+        refreshPlantingHud();
+      }
       refreshHud();refreshObjective();save(true);
       if(event.action==='harvest'&&state.stats.harvests===1)
         window.KidscadeGame?.milestone?.('first_harvest',{value:result.quantity,uniqueKey:'first_harvest'});
@@ -444,9 +528,22 @@ function handleFarmFlowEvent(event){
     }
     refreshFarmControls();return;
   }
-  if(event.type==='complete')refreshFarmControls();
+  if(event.type==='complete'){
+    refreshFarmControls();
+    if(event.action==='plant'&&event.cellIndex!=null&&plantingMode){
+      const f=fieldById(state,plot.id);
+      if(f?.planted){exitPlantingMode();toast('모내기 완료! 논에 모 25포기가 자리를 잡았어요.')}
+      else if(plantHeld){runSeedlingPlant(nextEmptySeedling(f))}
+      else refreshPlantingHud();
+    }
+  }
 }
 function doFarmAction(action){
+  const selectedField=fieldById(state,state.selected);
+  if(action==='plant'&&selectedField?.kind==='rice'){
+    if(farmFlow.busy){toast('먼저 하던 농사를 마쳐 주세요.');return}
+    enterPlantingMode();return;
+  }
   const plot=plotById(state.selected);
   if(!plot)return;
   if(farmFlow.busy){toast('먼저 시작한 농사 작업을 마쳐 주세요.');return}
@@ -575,11 +672,13 @@ function bindControls(){
     if(key==='q')state.camera.angle-=Math.PI/6;
     if(key==='e')state.camera.angle+=Math.PI/6;
     if(key==='escape'){
+      if(plantingMode)exitPlantingMode();
       $('moreTools').classList.add('hidden');$('moreBtn').setAttribute('aria-expanded','false');
       keys.clear();
       if(farmFlow.cancelApproach()){moveGoal=null;toast('이동하던 농사 작업을 취소했어요.');refreshFarmControls()}
       $('modal').classList.add('hidden');$('inspector').classList.add('hidden')
     }
+    if((key===' '||key==='enter')&&plantingMode&&!e.repeat){e.preventDefault();runSeedlingPlant()}
     if(key==='f'){let near=null,d=4;for(const p of FIELD_DEFS){const z=distanceToPlot(state.player,p);if(z<d){d=z;near=p}}if(near)chooseField(near.id)}
   });
   window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
@@ -624,6 +723,31 @@ function bindControls(){
   $('closeInspect').onclick=()=>$('inspector').classList.add('hidden');
   $('modalClose').onclick=()=>$('modal').classList.add('hidden');
   $('modal').addEventListener('click',e=>{if(e.target===$('modal'))$('modal').classList.add('hidden')});
+  const grid=$('seedlingGrid');
+  for(let i=0;i<TRANSPLANT_COUNT;i++){
+    const b=document.createElement('button');b.type='button';b.dataset.cell=String(i);
+    b.setAttribute('aria-label',(i+1)+'번째 자리');b.textContent='·';grid.append(b);
+  }
+  grid.addEventListener('click',e=>{
+    const b=e.target.closest('button[data-cell]');
+    if(b&&!b.disabled)runSeedlingPlant(Number(b.dataset.cell));
+  });
+  $('exitPlanting').onclick=exitPlantingMode;
+  const plantButton=$('plantOne');
+  plantButton.addEventListener('pointerdown',e=>{
+    if(e.button!==0||plantButton.disabled)return;
+    e.preventDefault();plantPointerAction=true;plantHeld=true;
+    try{plantButton.setPointerCapture(e.pointerId)}catch{}
+    runSeedlingPlant();
+  });
+  const stopPlant=()=>{plantHeld=false};
+  plantButton.addEventListener('pointerup',stopPlant);
+  plantButton.addEventListener('pointercancel',stopPlant);
+  window.addEventListener('pointerup',stopPlant);
+  plantButton.addEventListener('click',()=>{
+    if(plantPointerAction){plantPointerAction=false;return}
+    runSeedlingPlant();
+  });
   $('actionButtons').addEventListener('click',e=>{
     const button=e.target.closest('button[data-action]');
     if(button&&!button.disabled)doFarmAction(button.dataset.action);
@@ -631,8 +755,10 @@ function bindControls(){
   $('approachBtn').onclick=goToSelectedField;
   $('sleepBtn').onclick=sleepFarmDay;
   $('guideRice').onclick=()=>{
-    state.selected='rice-4';goToSelectedField();updateInspector();
-    $('inspector').classList.remove('hidden');
+    chooseField('rice-1');
+    const f=fieldById(state,'rice-1');
+    if(!f.planted&&f.tilled)enterPlantingMode();
+    else{goToSelectedField();toast('이 논은 이미 모내기를 마쳤어요. 다른 논의 수확도 해 보세요.')}
   };
   $('nearFieldBtn').onclick=()=>{
     let selected=null,best=6;
@@ -656,7 +782,7 @@ function bindControls(){
   stick.addEventListener('pointerup',resetStick);stick.addEventListener('pointercancel',resetStick);
   window.addEventListener('pagehide',()=>save(true));
   window.KidscadeGame?.registerPauseHandlers?.({pause:()=>paused=true,resume:()=>paused=false});
-  window.KidscadeGame?.registerCleanup?.(()=>{farmFlow.reset();save(true);disposed=true;cancelAnimationFrame(raf);fieldEffects?.clear();villageScene?.dispose();renderer?.dispose()});
+  window.KidscadeGame?.registerCleanup?.(()=>{farmFlow.reset();save(true);disposed=true;cancelAnimationFrame(raf);fieldEffects?.clear();for(const r of plotMeshes.values())r.planting?.dispose();villageScene?.dispose();renderer?.dispose()});
 }
 async function main(){
   init3D();ground=new THREE.Plane(new THREE.Vector3(0,1,0),-.15);
@@ -666,7 +792,7 @@ async function main(){
   await populate();
   loading=false;$('loading').classList.add('hidden');
   window.KidscadeGame?.start?.({source:'farm-simulation-pr2'});
-  if(!state.stats.harvests)toast('논을 선택해 작물을 살펴보고, 네 번째 논에서 첫 수확을 해 보세요.');
+  if(!state.stats.harvests)toast('첫 번째 논에서 모내기를 체험하고, 네 번째 논에서는 익은 벼를 수확해 보세요.');
 }
 main().catch(e=>{
   $('loadingText').textContent='농장을 불러오지 못했어요. 다시 열어 주세요.';

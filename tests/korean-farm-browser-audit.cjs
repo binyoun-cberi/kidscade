@@ -16,10 +16,14 @@ const hook=[
 "window.__farmQA={",
 " ready:()=>!loading&&!disposed&&Boolean(renderer&&farmerAnimator),",
 " state:()=>({day:state.day,money:state.money,energy:state.energy,inventory:{...state.inventory},stats:{...state.stats},",
-"   fields:state.fields.map(f=>({id:f.id,growth:f.growth,planted:f.planted,water:f.waterDepthCm,gate:f.gateOpen})),",
+"   fields:state.fields.map(f=>({id:f.id,growth:f.growth,planted:f.planted,water:f.waterDepthCm,gate:f.gateOpen,transplants:f.transplants})),",
 "   player:{...state.player},saving:localStorage.getItem(SAVE_KEY)?.length||0}),",
 " teleport:(x,z)=>{state.player.x=x;state.player.z=z;farmer.position.set(x,0,z);camTarget.set(x,0,z);moveGoal=null;},",
 " select:id=>chooseField(id),",
+" plantMode:()=>({active:plantingMode,selectedSeedling,held:plantHeld}),",
+" finishPlanting:(id)=>{const f=fieldById(state,id);",
+"   for(let i=0;i<25;i++)if(f?.transplants&&!f.transplants[i])plantSeedling(state,id,i);",
+"   syncFieldVisual(id);save(true);return seedlingCount(f)},",
 " flow:()=>({busy:farmFlow.busy,active:farmFlow.active}),",
 " debug:()=>({paused,loading,actorBusy:farmerAnimator?.busy,keys:[...keys],raf,focus:document.activeElement?.id}),",
 " facing:()=>({yaw:farmer.rotation.y,target:farmerFacingTarget,viewAngle,zoom:state.camera.zoom,",
@@ -27,7 +31,7 @@ const hook=[
 "     return {x:(v.x+1)*innerWidth/2,y:(1-v.y)*innerHeight/2}})()}),",
 " visuals:()=>({renderer:!!renderer?.getContext(),size:[renderer.domElement.width,renderer.domElement.height],",
 "   actor:farmerAnimator.root.children.length,assets:[...assetReport].map(([url,a])=>({url,status:a.status,colors:a.colors,repainted:a.repainted||0})),",
-"   crops:[...plotMeshes].map(([id,r])=>({id,count:r.cropLayer.children.length})),",
+"   crops:[...plotMeshes].map(([id,r])=>({id,count:r.cropLayer.children.length,spots:r.planting?.targets?.length||0})),",
 "   village:villageScene?.stats||null,sceneryCount:villageScene?.root?.children?.length||0})",
 "};"
 ].join('\n');
@@ -116,7 +120,10 @@ async function main(){
  await sleep(600);
  const visuals=await evaluate('window.__farmQA.visuals()');
  check('WebGL scene and actor started',visuals.renderer&&visuals.size[0]>=800&&visuals.actor>0,visuals);
- check('Six fields populated',visuals.crops.length===6&&visuals.crops.every(x=>x.count>0),visuals.crops);
+ check('Six fields populated',visuals.crops.length===6&&
+   visuals.crops.every(x=>x.count>0||(x.id==='rice-1'&&x.spots===25)),visuals.crops);
+ check('First paddy is prepared for interactive rice planting',
+   (await evaluate('window.__farmQA.state()')).fields.find(f=>f.id==='rice-1').transplants.every(x=>!x));
  check('Shared 3D models loading',visuals.assets.filter(x=>x.status==='loaded').length>=10,visuals.assets);
  check('Korean village has seven detailed areas and enough decorative meshes',
    visuals.village?.areas===7&&visuals.village.meshes>180&&visuals.village.instanced>=1,
@@ -139,6 +146,7 @@ async function main(){
  const walkTo=await evaluate('window.__farmQA.state().player');
  check('Real keyboard movement changes 3D player position',Math.hypot(walkTo.x-walkFrom.x,walkTo.z-walkFrom.z)>.12,
    {from:walkFrom,to:walkTo,duringKey});
+ await waitFor('Math.abs(Math.atan2(Math.sin(window.__farmQA.facing().target-window.__farmQA.facing().yaw),Math.cos(window.__farmQA.facing().target-window.__farmQA.facing().yaw)))<.11',7000);
  const facing=await evaluate('window.__farmQA.facing()');
  // The eyes are on local -Z. After rotation about Y, world-facing is
  // (-sin(yaw),-cos(yaw)). This dot-product must be positive and near 1.
@@ -193,10 +201,37 @@ async function main(){
  await click('#actionButtons [data-action="till"]');
  await waitFor('!window.__farmQA.flow().busy',5000);
  await click('#actionButtons [data-action="plant"]');
+ const planting=await evaluate('window.__farmQA.plantMode()');
+ check('Plant action opens in-world planting mini game',planting.active&&
+   (await evaluate('document.querySelector("#seedlingGrid").children.length'))===25,planting);
+ await screenshot('02a-planting-hud-desktop');
+ await click('#seedlingGrid [data-cell="12"]');
+ const queued=await evaluate('window.__farmQA.state()');
+ check('Seedling does not appear until hand reaches the mud',
+   queued.fields.find(x=>x.id==='rice-4').transplants.every(x=>!x),queued.fields.find(x=>x.id==='rice-4'));
+ await waitFor('window.__farmQA.state().fields.find(x=>x.id==="rice-4").transplants[12]===true',12000);
  await waitFor('!window.__farmQA.flow().busy',5000);
+ const one=await evaluate('window.__farmQA.state()');
+ check('One tap plants only one rice clump',one.fields.find(x=>x.id==='rice-4').transplants.filter(Boolean).length===1&&
+   one.fields.find(x=>x.id==='rice-4').planted===false&&one.inventory.seedRice<initial.inventory.seedRice);
+ await screenshot('02b-one-seedling-desktop');
+ await click('#seedlingGrid [data-cell="13"]');
+ await waitFor('window.__farmQA.state().fields.find(x=>x.id==="rice-4").transplants[13]===true',12000);
+ await waitFor('!window.__farmQA.flow().busy',5000);
+ const two=await evaluate('window.__farmQA.state()');
+ check('Second tap uses same bundle and keeps the first planted',
+   two.fields.find(x=>x.id==='rice-4').transplants.filter(Boolean).length===2&&
+   two.inventory.seedRice===one.inventory.seedRice);
+ // Speed up only the remaining positions in browser regression; pure model
+ // tests verify all 25 seedling contacts individually.
+ check('Completing 25 spots yields the growing crop',
+   (await evaluate('window.__farmQA.finishPlanting("rice-4")'))===25);
+ await click('#exitPlanting');
+ await waitFor('window.__farmQA.state().fields.find(x=>x.id==="rice-4").planted===true');
  const planted=await evaluate('window.__farmQA.state()');
- check('Replant changes crop state and consumes seed',planted.fields.find(x=>x.id==='rice-4').planted&&
-  planted.fields.find(x=>x.id==='rice-4').growth<.2&&planted.inventory.seedRice<initial.inventory.seedRice);
+ check('Replant changes crop state and consumes seed',
+   planted.fields.find(x=>x.id==='rice-4').planted&&
+   planted.fields.find(x=>x.id==='rice-4').growth<.2&&planted.inventory.seedRice<initial.inventory.seedRice);
  await click('#actionButtons [data-action="gate"]');
  await waitFor('!window.__farmQA.flow().busy',5000);
  const gated=await evaluate('window.__farmQA.state()');
@@ -243,6 +278,19 @@ async function main(){
    return {right:r.right,width:r.width,view:innerWidth}})()`);
  check('Mobile onboarding leaves majority of game view unobscured',intro.width<intro.view*.65,intro);
  await screenshot('04-mobile-portrait');
+ await evaluate('window.__farmQA.select("rice-1")');
+ await click('#actionButtons [data-action="plant"]');
+ const portraitPlant=await evaluate(`(()=>{
+   const hud=document.querySelector('#plantingHud').getBoundingClientRect();
+   const grid=[...document.querySelectorAll('#seedlingGrid button')];
+   return {w:innerWidth,visible:!document.querySelector('#plantingHud').classList.contains('hidden'),
+     left:hud.left,right:hud.right,bottom:hud.bottom,rows:grid.length,cells:grid.map(e=>e.getBoundingClientRect().width)};
+ })()`);
+ check('Mobile planting HUD fits screen with 25 tappable cells',
+   portraitPlant.visible&&portraitPlant.rows===25&&portraitPlant.left>=0&&
+   portraitPlant.right<=portraitPlant.w&&Math.min(...portraitPlant.cells)>=23,portraitPlant);
+ await screenshot('04a-mobile-transplant-hud');
+ await click('#exitPlanting');
  const touchStart=await evaluate('window.__farmQA.state().player');
  const stick=await evaluate(`(()=>{const r=document.querySelector('#joystick').getBoundingClientRect();
    return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);

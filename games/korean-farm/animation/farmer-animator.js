@@ -27,9 +27,17 @@ function toolVariants(hand){
   const spout=cylinder(watering,.06,.09,.36,0x7ca5a0,-.15,-.22,-.1);spout.rotation.z=-1.15;
   const rim=new THREE.Mesh(new THREE.TorusGeometry(.16,.028,5,12,Math.PI*1.18),material(0xadc4b7));
   rim.position.set(.1,-.15,.04);rim.rotation.y=Math.PI/2;watering.add(rim);
-  const seed=make('seed');
-  box(seed,.25,.3,.17,0xc7a471,.12,-.3,0);
-  sphere(seed,.065,0x8c613b,.1,-.12,-.04);
+  const seed=make('seedling');
+  // Fingers carry a visible bundle of live seedlings, not a rectangular bag.
+  box(seed,.16,.04,.12,0x916c42,.10,-.34,-.08);
+  for(let n=0;n<5;n++){
+    const blade=box(seed,.026,.31,.025,n%2?0x65a75c:0x3c904f,
+      .03+n*.037,-.18,-.10-(n%2)*.026);
+    blade.rotation.z=(n-2)*.11;
+  }
+  const compost=make('fertilizer');
+  box(compost,.23,.28,.16,0xc4a26f,.10,-.28,-.02);
+  sphere(compost,.055,0x836441,.1,-.10,-.06);
   const basket=make('basket');
   cylinder(basket,.24,.16,.26,0xb58b58,.09,-.39,.01);
   const handle=new THREE.Mesh(new THREE.TorusGeometry(.19,.025,4,12,Math.PI),material(0x9e744b));

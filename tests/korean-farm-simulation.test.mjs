@@ -5,14 +5,16 @@ import {
   applyFarmAction,advanceFarmDay,sellAllProduce,buyFarmSupply,calendar,
   weatherForDay,CROPS
 } from '../games/korean-farm/farming/farm-sim.mjs';
+import {plantSeedling,seedlingCount} from '../games/korean-farm/farming/rice-transplant.mjs';
 
-test('farm v2 initializes a playable starter crop and stable calendar',()=>{
+test('farm v2 initializes a 25-slot practice paddy, ripe crop and stable calendar',()=>{
   const state=createFarmState();
   assert.equal(state.version,FARM_SAVE_VERSION);
   assert.equal(state.fields.length,6);
   assert.equal(state.money,4200);
   assert.equal(fieldById(state,'rice-4').growth,1);
-  assert.equal(visualStage(fieldById(state,'rice-1')),1);
+  assert.equal(visualStage(fieldById(state,'rice-1')),0);
+  assert.equal(seedlingCount(fieldById(state,'rice-1')),0);
   assert.equal(calendar(1).season,'봄');
   assert.equal(calendar(15).season,'여름');
   assert.equal(calendar(57).year,2);
@@ -30,7 +32,8 @@ test('complete farming loop: harvest, prepare soil, plant, grow, and sell',()=>{
   assert.equal(fieldById(state,'rice-4').planted,false);
   assert.equal(applyFarmAction(state,'rice-4','plant').ok,false);
   assert.equal(applyFarmAction(state,'rice-4','till').ok,true);
-  assert.equal(applyFarmAction(state,'rice-4','plant').ok,true);
+  for(let slot=0;slot<25;slot++)assert.equal(plantSeedling(state,'rice-4',slot).ok,true);
+  assert.equal(fieldById(state,'rice-4').planted,true);
   assert.equal(state.inventory.seedRice,7);
   for(let i=0;i<24;i++)advanceFarmDay(state);
   assert.equal(state.day,25);
@@ -102,6 +105,8 @@ test('prototype v1 saves migrate without resetting coordinates or rice stage',()
   assert.equal(state.player.x,3);
   assert.equal(state.camera.zoom,30);
   assert.equal(state.fields[0].growth,1);
+  assert.equal(state.fields[0].planted,true);
+  assert.equal(seedlingCount(state.fields[0]),25);
   assert.deepEqual(state.seenPlots,['rice-2']);
 });
 test('corrupt values cannot escape simulation limits',()=>{
