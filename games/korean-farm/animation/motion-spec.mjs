@@ -1,11 +1,11 @@
 // Pure, deterministic action poses. Rendering, skeletal meshes and assets are separate.
 export const FARM_ACTION_MOTIONS=Object.freeze({
   till:{duration:1.1,tool:'hoe',impact:.48},
-  plant:{duration:1.08,tool:'seed',impact:.58},
+  plant:{duration:.84,tool:'seedling',impact:.61},
   water:{duration:1.28,tool:'can',impact:.36},
   gate:{duration:.95,tool:'lever',impact:.54},
   weed:{duration:.97,tool:'hand',impact:.56},
-  fertilize:{duration:1.0,tool:'seed',impact:.52},
+  fertilize:{duration:1.0,tool:'fertilizer',impact:.52},
   harvest:{duration:1.18,tool:'basket',impact:.60}
 });
 const clamp=(v)=>Math.max(0,Math.min(1,Number.isFinite(v)?v:0));
@@ -33,7 +33,19 @@ export function motionPose(kind,progress=0,{moving=false,time=0}={}){
     base.leftElbow=-.6;base.rightElbow=-.32;
     base.crouch=.06+.1*bump;
     base.toolTilt=-.3+.8*stroke;
-  }else if(kind==='plant'||kind==='weed'){
+  }else if(kind==='plant'){
+    // A short planting stroke with an obvious crouch and hand-to-mud reach,
+    // rather than an upright waving motion.
+    base.bodyLean=.18+.68*bump;
+    base.leftArm=.24+.42*reach;
+    base.rightArm=.35+.90*reach;
+    base.leftElbow=-.56;
+    base.rightElbow=-.62;
+    base.leftKnee=.42*bump;
+    base.rightKnee=.92*bump;
+    base.crouch=.69*bump;
+    base.toolTilt=.30*bump;
+  }else if(kind==='weed'){
     base.bodyLean=.24+.39*bump;
     base.leftArm=.48+.48*reach;
     base.rightArm=.5+.65*reach;
