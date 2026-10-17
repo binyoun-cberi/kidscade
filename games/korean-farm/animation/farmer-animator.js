@@ -38,6 +38,14 @@ function toolVariants(hand){
   const compost=make('fertilizer');
   box(compost,.23,.28,.16,0xc4a26f,.10,-.28,-.02);
   sphere(compost,.055,0x836441,.1,-.10,-.06);
+  // Curved, steel-colored sickle with a wooden handle. The harvested row
+  // disappears only when this tool reaches its impact frame.
+  const sickle=make('sickle');
+  cylinder(sickle,.037,.044,.40,0x92683e,.13,-.31,-.06).rotation.z=.19;
+  const crescent=new THREE.Mesh(new THREE.TorusGeometry(.20,.027,6,18,Math.PI*1.30),material(0xbec9c8));
+  crescent.position.set(.23,-.48,-.06);crescent.rotation.z=-.48;sickle.add(crescent);
+  const sickleTip=box(sickle,.12,.027,.043,0xd6dedd,.06,-.59,-.06);
+  sickleTip.rotation.z=-.65;
   const basket=make('basket');
   cylinder(basket,.24,.16,.26,0xb58b58,.09,-.39,.01);
   const handle=new THREE.Mesh(new THREE.TorusGeometry(.19,.025,4,12,Math.PI),material(0x9e744b));
