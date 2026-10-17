@@ -94,10 +94,7 @@ function init3D(){
   addRect(11.9,.28,.38,0x9aaf73,-10.75,.13,1.4);
   addRect(.38,.28,9.25,0x9aaf73,-15.1,.13,-3.1);
   addRect(.38,.28,9.25,0x9aaf73,-6.45,.13,-3.1);
-  // Water gate at the connecting stream.
-  addRect(1.1,.5,.36,0x8b673c,-16.5,.35,-3.2);
-  addRect(.13,.85,.13,0xb89560,-16.8,.55,-3.2);
-  addRect(.13,.85,.13,0xb89560,-16.15,.55,-3.2);
+  // The timber gate is now part of the dedicated irrigation-village scene.
   // River and pond extensions add landscape depth without costly simulation.
   addRect(2.9,.05,3.7,0x6eacae,-17.5,.12,13.7);
   addRect(5,.045,3,0x76b4a5,15,.075,15.8);
