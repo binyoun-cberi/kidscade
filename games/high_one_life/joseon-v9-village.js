@@ -29,12 +29,12 @@ const EVENTS=[
   (l,j,s,v)=>v.animals.ox+v.animals.pig+v.animals.chicken>0,[
   op('아픈 짐승을 따로 두고 물과 볏짚을 마련한다','먹지 못하는 짐승이 다른 가축과 한데 있지 않게 돌본다. 며칠간 사료와 일손이 더 든다.','앓는 가축에게 먹이와 물을 가져다주었다. 회복할지는 알 수 없어 외양간을 계속 살폈다.',{grain:-3,health:-2}),
   op('병든 가축을 본 적 있는 이웃에게 증상을 보여 준다','어떤 먹이부터 피해야 하는지 물어본다. 이웃의 말이 반드시 치료법인 것은 아니다.','이웃에게 들은 돌봄 방법을 시험해 보았다. 상태가 나아지는지 여러 날 지켜보았다.',{trust:4,capital:-2}),
-  op('건강한 짐승을 다른 칸으로 옮기고 외양간을 치운다','병이 번질까 걱정되어 함께 두지 않는다. 옮기는 일과 잃을 수 있는 가축이 부담이다.','건강한 짐승을 따로 두었다. 앓는 짐승의 상태가 악화될 가능성은 여전히 남았다.',{chicken:-1,capital:-2})]),
+  op('건강한 짐승을 다른 칸으로 옮기고 외양간을 치운다','병이 번질까 걱정되어 함께 두지 않는다. 옮기는 일과 잃을 수 있는 가축이 부담이다.','건강한 짐승을 따로 두었다. 앓는 짐승의 상태가 악화될 가능성은 여전히 남았다.',{capital:-2,knowledge:1})]),
  ev('wildBoar','farm','멧돼지가 밭을 헤집다','밤새 멧돼지가 콩과 조를 심은 밭을 뒤집었다.',
   (l,j)=>j.region!=='한양',[
   op('무너진 울타리 자리에 말뚝과 나뭇가지를 보탠다','짐승이 들어온 틈을 막아 다음 피해를 줄이려 한다. 재료를 구하느라 비용과 곡식을 쓴다.','헤집힌 밭의 울타리를 다시 세웠다. 짐승이 다른 곳으로 돌아 들어올 위험도 남았다.',{capital:-3,grain:-2}),
   op('이웃과 날을 정해 밭 근처를 번갈아 살핀다','혼자 밤길에 나서기 위험해 여럿이 순번을 정한다. 잠과 일손을 더 써야 한다.','밭을 살피는 날을 이웃과 나눴다. 밤마다 혼자 산짐승을 마주칠 위험을 줄였다.',{trust:5,health:-2}),
-  op('관아에 콩밭 피해와 짐승이 다닌 자리를 알린다','마을 여러 집이 같은 피해를 봤는지 확인하고 순찰을 청한다. 지원이 꼭 나오는 것은 아니다.','피해를 본 밭과 발자국을 알렸다. 관아가 언제 대응할지는 알 수 없었다.',{knowledge:2,grain:-5})]),
+  op('관아에 콩밭 피해와 짐승이 다닌 자리를 알린다','마을 여러 집이 같은 피해를 봤는지 확인하고 순찰을 청한다. 지원이 꼭 나오는 것은 아니다.','피해를 본 밭과 발자국을 알렸다. 관아가 언제 대응할지는 알 수 없었다.',{knowledge:2,health:-1})]),
  ev('tigerHouse','danger','범이 민가에 내려온 밤','산기슭 집에서 고함소리가 들린다. 마당에 범이 나타났다고 한다.',
   (l,j)=>mountainous.has(j.region),[
   op('식구를 안채로 들이고 문과 창을 단단히 잠근다','범이 마당 가까이 왔다는 소리를 들었다. 밖에 있는 사람을 찾으러 나서기보다 먼저 가까운 식구를 들인다.','식구가 문 안에 모였는지 확인했다. 범이 지나갈 때까지 불을 켜고 기다렸다.',{bonds:4,health:1}),
@@ -204,10 +204,6 @@ function choose(l,index){
   s.homes[0].trust=clamp(s.homes[0].trust+d.trust,0,100);}
  for(const animal of ['ox','pig','chicken'])
   if(Number.isFinite(d[animal]))s.animals[animal]=clamp(s.animals[animal]+d[animal],0,12);
- if(d.chicken<0&&s.animals.chicken===0){
-  if(s.animals.pig>0)s.animals.pig--;
-  else if(s.animals.ox>0)s.animals.ox--;
- }
  l.logEvent(e.title+' — '+o.label,'joseon9-choice');l.log.at(-1).causeId='joseon9:'+id;
  s.decisions.push({id,eventId:e.id,year:l.year,option:index});s.decisions=s.decisions.slice(-70);
  s.followups.push({id,year:l.year+2+(index%2),text:o.result});s.followups=s.followups.slice(-55);
