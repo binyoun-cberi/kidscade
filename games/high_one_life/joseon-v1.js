@@ -213,6 +213,11 @@ function promptFor(life,s){
   opt('글을 배울 길을 찾아본다',s.status==='양반'?'가문의 글공부와 서당':'지역의 배움이나 가족·이웃의 가르침','study',{knowledge:6,wealth:-3}),
   opt('집안의 일을 배우며 지낸다','생업을 일찍 익히고 가족을 돕는다','work',{bonds:4,wealth:4}),
   opt('일도 하며 틈틈이 글을 익힌다','시간은 적지만 두 길을 이어 간다','mixed',{knowledge:3,health:-2})]};
+ if(kind==='vocation'&&life.gender==='여자'&&life.joseonWomen327?.serviceBound)
+  return {title:'관아의 일과 배움',description:'이른 나이에 관아의 일로 배치되었다. 맡은 일을 익히고 함께 일하는 사람에게 배우며 지낸다.',options:[
+   opt('일하는 방법을 더 익힌다','배운 만큼 일의 책임도 커진다','womenServiceWork',{knowledge:4}),
+   opt('선배에게 맡은 일을 묻는다','서로 돕고 배우는 일이 중요하다','womenServicePeople',{bonds:4}),
+   opt('궁핍한 집안에 안부를 전한다','멀리 있어도 가족과 연락을 이어 간다','womenServiceFuture',{bonds:3})]};
  if(kind==='vocation'&&bound)return {title:'정해진 일과 자유를 찾는 길',description:social.originLabel+'에서 태어났다. 주인이나 관아의 예속 아래 생업을 마음대로 선택하기 어렵다.',options:[
   opt('맡겨진 일터의 노동을 이어 간다','매일의 노동으로 집안과 몸을 버틴다','serve',{health:-3,bonds:2}),
   opt('일하는 틈에 기술을 배운다','사람들과 일을 배우며 다른 가능성을 찾는다','servileSkill',{knowledge:5,health:-1}),
