@@ -123,7 +123,7 @@ test('widowhood and remarriage preserve the deceased spouse and family history a
  a.deepEqual(W.summary(restored),W.summary(l));
 });
 test('estate requires a lost parent, documented evidence and years before a bounded settlement',()=>{
- const l=birth(1520,301,43);
+ const l=birth(1520,301,43);V5.ensure(l).origin='소작 농가';
  const mother=V4.ensure(l).people.find(p=>p.role==='mother');
  mother.alive=false;mother.diedYear=l.year-2;
  W326.ensure(l).property=2;
@@ -138,7 +138,7 @@ test('estate requires a lost parent, documented evidence and years before a boun
  a.ok(J.ensure(l).capital>cash);
  const blocked=birth(1780,303,43);W326.ensure(blocked).property=2;
  a.equal(W.offer(blocked,'estate'),null);
- const noEvidence=birth(1720,305,45);
+ const noEvidence=birth(1720,305,45);V5.ensure(noEvidence).origin='소작 농가';
  const father=V4.ensure(noEvidence).people.find(p=>p.role==='father');
  father.alive=false;father.diedYear=noEvidence.year-2;
  W326.ensure(noEvidence).property=1;
