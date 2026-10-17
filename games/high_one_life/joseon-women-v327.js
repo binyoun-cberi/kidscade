@@ -108,7 +108,10 @@ function offer(l,key){
    ['친정 식구와 거처를 의논한다','친족 사이 관계가 새 선택에 영향을 준다.'],
    ['새로운 혼담도 천천히 생각한다','재혼에는 지역과 가문의 관습에 따른 제약과 갈등이 따를 수 있다.']]};
  if(key==='remarriage'&&f.bereaved)return {title:'다시 혼인할지 결정하는 날',
-  description:'새로운 혼담이 오갔다. 상대와 가족의 뜻, 자녀를 돌보는 일, 주변의 시선을 함께 생각한다. 재혼이 법적으로 늘 불가능했던 것은 아니다.',options:[
+  description:'새로운 혼담이 오갔다. 상대와 가족의 뜻, 자녀를 돌보는 일, 주변의 시선을 함께 생각한다. '+
+   (l.year>=1477&&l.year<1894&&/문반 양반|무반 양반|몰락 양반|왕실 종친/.test(V5.ensure(l).origin)?
+   '사족 여성의 재혼은 사회적 비난과 자녀의 관직 진출 제한으로 이어질 수 있었다. 직접 혼인을 무효로 한 법은 아니었다.':
+   '재혼이 언제나 법적으로 무효였던 것은 아니지만 집안과 시대에 따라 제약이 달랐다.'),options:[
    ['사람을 만나 조건과 뜻을 확인해 혼인한다','혼인할 뜻이 맞는지 살피고 새로운 관계를 맺는다.'],
    ['혼인은 미루고 서로 알아 간다','당장의 혼인을 결정하지 않는다.'],
    ['혼인하지 않고 하던 일을 지킨다','혼인만이 생계를 이어 갈 길은 아니다.']]};
@@ -124,7 +127,7 @@ function offer(l,key){
    ['증인과 문서를 맞춰 작은 몫을 분배받는다','문서와 현물이 맞으면 일부 곡식이나 물건을 받을 수 있다.'],
    ['친척과 다시 협의하며 기다린다','갈등을 줄이되 살림의 분배가 미뤄진다.'],
    ['다툼을 그치고 지금 살림에 집중한다','해결되지 않은 몫이 남더라도 생업은 이어진다.']]};
- if(key==='childcare'&&f.children.length)return {title:'아이를 낳은 뒤의 몸조리와 돌봄',
+ if(key==='childcare'&&f.children.some(x=>x.age===0))return {title:'아이를 낳은 뒤의 몸조리와 돌봄',
   description:'새 아이가 태어난 집에서는 몸을 추스르는 시간과 일손이 필요하다. 이웃과 가족이 어떤 도움을 나눌까?',options:[
    ['가족에게 살림을 나눠 맡긴다','산후에 무리하지 않도록 곁에 있는 사람과 일을 나눈다.'],
    ['경험 많은 이에게 돌봄을 부탁한다','도움을 얻더라도 몸을 회복하는 속도는 저마다 다르다.'],
@@ -152,7 +155,7 @@ function yearly(l){
  if(f.bereaved&&W326?.summary(l)?.seen.includes('widow')&&!s.seen.includes('widowHome')&&l.age>=23){
   s.seen.push('widowHome');put(l,s,'widowHome');
  }
- if(s.remarriageDue&&l.year>=s.remarriageDue&&f.bereaved&&l.age<=55){
+ if(s.remarriageDue&&l.year>=s.remarriageDue&&f.bereaved&&l.age<=72){
   s.remarriageDue=0;put(l,s,'remarriage');
  }
  if(f.parentsLost&&W326?.summary(l)?.property&&!s.seen.includes('estate')&&l.age>=37){
@@ -213,6 +216,10 @@ function resolve(l,i){
  }else if(key==='remarriage'){
   if(i===0&&!s.serviceBound&&V4.remarry?.(l)){
    s.household='다시 혼인해 꾸린 살림';l.change({bonds:3});money(l,-7);
+   if(l.year>=1477&&l.year<1894&&/문반 양반|무반 양반|몰락 양반|왕실 종친/.test(soc.origin)){
+    s.household='재혼한 살림 · 자녀의 관직 진출에 제약이 있을 수 있음';
+    l.change({bonds:-2});
+   }
    msg='상대와 혼인하여 새 살림을 꾸렸다. 먼저 세상을 떠난 사람의 기억과 자녀의 인연은 남아 있다.';
   }else if(i===0)msg='새 혼인을 원했지만 집안과 처지를 정리하지 못해 혼사를 미뤘다.';
   else msg=i===1?'혼인을 결정하지 않고 서로의 사정을 더 알아보기로 했다.':'혼인을 하지 않고 익숙한 생업과 가족의 삶을 이어 가기로 했다.';
