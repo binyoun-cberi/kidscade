@@ -3,6 +3,7 @@ import {loadModel,loadFarmCropStage,assetReport,FARM_MODELS} from './assets.js';
 import {createFarmerAnimator} from './animation/farmer-animator.js';
 import {FieldEffects} from './animation/field-effects.js';
 import {buildSolnaeriVillage} from './rendering/village-scene.js';
+import {VILLAGE_COLLIDERS} from './rendering/village-layout.mjs';
 import {createFarmActionFlow,actionContactPoint,actionApproachPoint} from './interactions/action-flow.mjs';
 import {FIELD_DEFS,plotById,distanceToPlot} from './world.mjs';
 import {createFarmState,restoreFarmState,CROPS,calendar,fieldById,visualStage,fieldCondition,applyFarmAction,canApplyFarmAction,advanceFarmDay,sellAllProduce,buyFarmSupply} from './farming/farm-sim.mjs';
@@ -20,9 +21,7 @@ const joystick={x:0,y:0,id:null};
 const pointers=new Map();
 let pinchDistance=0,downPosition=null;
 const plotMeshes=new Map(),plotHits=[],plotOrigins=new Map(),visited=new Set(state.seenPlots||[]);
-const obstacles=[{x:10.1,z:-13,w:6,d:5},{x:18,z:-12,w:3.6,d:3.5},
-  {x:8.5,z:14,w:2.6,d:1.1},{x:12.1,z:14.2,w:1.4,d:1.0},
-  {x:14.55,z:-10.65,w:1.3,d:1.0}];
+const obstacles=VILLAGE_COLLIDERS;
 const models=new Map();
 const farmFlow=createFarmActionFlow();
 const actions={till:'괭이질',plant:'심기',water:'물주기',gate:'물꼬',weed:'김매기',fertilize:'거름주기',harvest:'수확'};
