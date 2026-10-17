@@ -311,11 +311,11 @@ function install(){
   return ok;
  };
  L.prototype.getChoice=function(){
-  if(J.isJoseon(this)&&this.pending?.startsWith('joseon7:'))return prompt(this);
+  if(J.isJoseon(this)&&(typeof this.pending==='string'&&this.pending.startsWith('joseon7:')))return prompt(this);
   return prevChoice.call(this);
  };
  L.prototype.choose=function(index){
-  if(J.isJoseon(this)&&this.pending?.startsWith('joseon7:'))return choose(this,index);
+  if(J.isJoseon(this)&&(typeof this.pending==='string'&&this.pending.startsWith('joseon7:')))return choose(this,index);
   const ok=prevChoose.call(this,index);
   if(ok&&J.inOldEra(this))promote(this,ensure(this));
   return ok;
