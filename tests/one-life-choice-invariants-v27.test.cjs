@@ -47,6 +47,16 @@ test('donating real grain reduces real household grain',()=>{
  invoke(l,V9,'joseon9','holiday',2);
  assert.equal(stock.grain,8);
 });
+test('declining a rice offering and opening a water gate never creates free grain',()=>{
+ const l=make(1600,354),stock=V2.ensure(l),s=V9.ensure(l);
+ stock.grain=10;
+ invoke(l,V9,'joseon9','temple',2);
+ assert.equal(stock.grain,10,'declining a gift cannot create rice');
+ const l2=make(1600,357),before=V2.ensure(l2).grain;
+ invoke(l2,V9,'joseon9','water',1);
+ assert.equal(V2.ensure(l2).grain,before,'water opened tonight is not a grain harvest');
+ assert.equal(s.decisions.at(-1).eventId,'temple');
+});
 test('landless nonfarmers do not own imaginary fields; midwife needs no spouse',()=>{
  const l=make(1600,355),j=J.ensure(l),s=V5.ensure(l);
  j.region='경기도';j.land=0;s.origin='어부 가계';s.trade='어부';
