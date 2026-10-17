@@ -49,7 +49,7 @@ function advance(l,age){
  W.ensure(l).processedYear=l.year-1;W.yearly(l);
 }
 test('government work requires bonded public-office origin, correct age and actual office',()=>{
- const central=birth(1600,23,16);office(central);
+ const central=birth(1600,23,12);office(central);
  a.deepEqual(W.eligibleOffice(central),['uinyeo','palace']);
  const local=birth(1600,32,16);office(local,'local');
  a.deepEqual(W.eligibleOffice(local),['courtArtist']);
@@ -65,7 +65,7 @@ test('government work requires bonded public-office origin, correct age and actu
 test('institutional female occupation takes training and does not create royal ranks or marriage',()=>{
  let selected=null;
  for(let seed=1;seed<=60&&!selected;seed++){
-  const l=birth(1600,seed,16);office(l);
+  const l=birth(1600,seed,12);office(l);
   staged(l,'entry',0);
   if(W.summary(l).profession)selected=l;
  }
