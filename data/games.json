@@ -2,6 +2,34 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "korean_farm",
+      "addedAt": "2026-10-17T18:40:00+09:00",
+      "title": "논두렁 너머",
+      "href": "games/korean-farm/index.html",
+      "category": "trivia",
+      "age": "low",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🌾",
+      "description": "한국 농촌 마을 솔내리에서 벼·당근·옥수수를 심고 키우는 3D 농사 시뮬레이션! 논의 물꼬를 조절하고 김을 매며 작물을 수확해 장터에 판매해요. 푸른 지붕 농가와 장독대, 논둑과 농수로를 둘러보며 농촌의 생활과 작물 생육을 경험할 수 있어요.",
+      "subject": "science",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 20,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true,
+      "cover": "assets/gate-image/korean_farm.svg"
+    },
+    {
       "id": "squid_survival",
       "addedAt": "2026-10-10T22:30:00+09:00",
       "title": "꼴뚜기 게임",
