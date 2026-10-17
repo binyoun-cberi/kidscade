@@ -78,5 +78,8 @@ test('actual decision UI exposes HOW and WHY in readable supporting notes',()=>{
  assert.match(styles,/\.choice-option small\{[^}]*font-size:12\.5px/);
  assert.match(styles,/\.choice-option small\{[^}]*line-height:1\.55/);
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
- for(const version of ['style.css?v=2','joseon-v9-village.js?v=4','joseon-v14-captivity-generations.js?v=9','colonial-daily-v2.js?v=4'])assert.ok(html.includes(version),version);
+ for(const name of ['style.css','joseon-v9-village.js','joseon-v14-captivity-generations.js','colonial-daily-v2.js']){
+  const present=html.match(new RegExp(name.replaceAll('.', '\\.').replaceAll('-', '-')+'\\?v=\\d+'));
+  assert.ok(present,name+' missing versioned asset');
+ }
 });

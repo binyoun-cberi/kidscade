@@ -11,27 +11,28 @@ const rng=(seed,salt)=>{let x=(seed^Math.imul(salt+1,0x9e3779b9))>>>0;x=Math.imu
 const coastal=new Set(['경상도','전라도','황해도','평안도','함경도','제주도']);
 const mountainous=new Set(['강원도','경상도','평안도','함경도']);
 const bonded=s=>['사노비','공노비'].includes(s.origin)&&!s.freed;
-const farmer=s=>/농가|양반|서리|노비/.test(s.origin);
+const farmer=s=>/농가|양반|서리|노비|소작|농사/.test(String(s.origin||'')+' '+String(s.trade||''));
+const hasField=(j,s)=>j.land>0||/소작 농가/.test(String(s.origin||''));
 const op=(label,note,result,delta={},risk=0)=>({label,note,result,delta,risk});
 const ev=(id,group,title,desc,condition,options,from=1392,until=1899)=>({id,group,title,desc,condition,options,from,until});
 const EVENTS=[
  ev('water','farm','윗논과 아랫논','가뭄에 윗논 주인이 물꼬를 막았다. 집안이 일구는 아랫논으로 오던 물이 줄었다.',
-  (l,j,s)=>j.region!=='한양'&&farmer(s),[
+  (l,j,s)=>j.region!=='한양'&&farmer(s)&&hasField(j,s),[
   op('윗논 주인에게 물꼬를 열어 줄 날짜를 청한다','물길을 막은 집을 찾아가 며칠씩 번갈아 물을 대자고 제안한다. 합의가 안 되면 아랫논의 모가 마를 수 있다.','윗논과 아랫논에서 물을 쓸 날짜를 정해 두었다. 다음 가뭄에도 약속을 지키는지가 중요해졌다.',{trust:6,water:4,bonds:3}),
-  op('사람이 없는 밤에 막힌 물꼬를 직접 튼다','당장은 우리 집안이 일구는 논에 물이 들어온다. 들키면 윗논과 다투고 이웃의 신뢰를 잃는다.','밤에 물꼬를 열어 논에 물을 댔지만 윗논 주인과 사이가 틀어졌다.',{trust:-9,water:7,grain:2}),
+  op('사람이 없는 밤에 막힌 물꼬를 직접 튼다','당장은 우리 집안이 일구는 논에 물이 들어온다. 들키면 윗논과 다투고 이웃의 신뢰를 잃는다.','밤에 물꼬를 열어 논에 물을 댔지만 윗논 주인과 사이가 틀어졌다.',{trust:-9,water:7}),
   op('마을 원로에게 두 논의 물길을 보여 주고 중재를 청한다','논의 위치를 함께 살피게 하여 한 집이 물을 독차지하지 않게 해 달라고 부탁한다.','원로들이 논둑에서 물길을 살펴보고 양쪽이 따를 차례를 이야기했다.',{trust:3,knowledge:2})]),
  ev('oxBirth','livestock','외양간의 송아지','기르던 소가 새끼를 낳았다. 송아지는 아직 제대로 일어서지 못한다.',
   (l,j,s,v)=>v.animals.ox>0,[
-  op('송아지가 젖을 먹는지 살피고 어미 소에게 여물을 더 준다','태어난 송아지가 일어서지 못한다. 외양간을 마르게 치우고 어미 소가 먹을 여물을 더 마련한다.','외양간을 정리하고 송아지에게 필요한 먹이를 챙겼다. 돌보는 동안 집안의 곡식은 줄었다.',{ox:1,grain:-2,health:-1}),
+  op('송아지가 젖을 먹는지 살피고 어미 소에게 여물을 더 준다','태어난 송아지가 일어서지 못한다. 외양간을 마르게 치우고 어미 소가 먹을 여물을 더 마련한다.','외양간을 정리하고 송아지에게 필요한 먹이를 챙겼다. 돌보는 동안 집안의 곡식은 줄었다.',{grain:-2,health:-1}),
   op('가축을 길러 본 이웃에게 새끼 상태를 보여 준다','숨과 걸음걸이를 살펴 달라 부탁한다. 이웃은 다시 도울 수 있으나 새끼의 건강을 장담하진 않는다.','경험 많은 이웃에게 먹이는 방법을 들었다. 다음에 비슷한 일이 생기면 물어볼 사람이 생겼다.',{trust:4,knowledge:2}),
-  op('송아지를 데려갈 상인에게 값을 물어본다','외양간을 더 늘릴 여유가 없다. 키우는 대신 팔면 당장의 살림돈을 마련할 수 있다.','송아지 값을 흥정하고 살림에 필요한 물건을 샀다. 키웠을 때의 이익은 얻지 못했다.',{capital:4})]),
+  op('상인에게 송아지를 팔고 그 값을 받는다','외양간을 더 늘릴 여유가 없다. 키우는 대신 팔면 당장의 살림돈을 마련할 수 있다.','송아지 값을 흥정하고 살림에 필요한 물건을 샀다. 키웠을 때의 이익은 얻지 못했다.',{capital:4})]),
  ev('sickOx','livestock','외양간의 병든 가축','기르던 짐승이 먹이를 거부한다. 다른 가축까지 아플까 걱정이다.',
   (l,j,s,v)=>v.animals.ox+v.animals.pig+v.animals.chicken>0,[
   op('아픈 짐승을 따로 두고 물과 볏짚을 마련한다','먹지 못하는 짐승이 다른 가축과 한데 있지 않게 돌본다. 며칠간 사료와 일손이 더 든다.','앓는 가축에게 먹이와 물을 가져다주었다. 회복할지는 알 수 없어 외양간을 계속 살폈다.',{grain:-3,health:-2}),
   op('병든 가축을 본 적 있는 이웃에게 증상을 보여 준다','어떤 먹이부터 피해야 하는지 물어본다. 이웃의 말이 반드시 치료법인 것은 아니다.','이웃에게 들은 돌봄 방법을 시험해 보았다. 상태가 나아지는지 여러 날 지켜보았다.',{trust:4,capital:-2}),
   op('건강한 짐승을 다른 칸으로 옮기고 외양간을 치운다','병이 번질까 걱정되어 함께 두지 않는다. 옮기는 일과 잃을 수 있는 가축이 부담이다.','건강한 짐승을 따로 두었다. 앓는 짐승의 상태가 악화될 가능성은 여전히 남았다.',{capital:-2,knowledge:1})]),
  ev('wildBoar','farm','멧돼지가 밭을 헤집다','밤새 멧돼지가 콩과 조를 심은 밭을 뒤집었다.',
-  (l,j)=>j.region!=='한양',[
+  (l,j,s)=>j.region!=='한양'&&hasField(j,s),[
   op('무너진 울타리 자리에 말뚝과 나뭇가지를 보탠다','짐승이 들어온 틈을 막아 다음 피해를 줄이려 한다. 재료를 구하느라 비용과 곡식을 쓴다.','헤집힌 밭의 울타리를 다시 세웠다. 짐승이 다른 곳으로 돌아 들어올 위험도 남았다.',{capital:-3,grain:-2}),
   op('이웃과 날을 정해 밭 근처를 번갈아 살핀다','혼자 밤길에 나서기 위험해 여럿이 순번을 정한다. 잠과 일손을 더 써야 한다.','밭을 살피는 날을 이웃과 나눴다. 밤마다 혼자 산짐승을 마주칠 위험을 줄였다.',{trust:5,health:-2}),
   op('관아에 콩밭 피해와 짐승이 다닌 자리를 알린다','마을 여러 집이 같은 피해를 봤는지 확인하고 순찰을 청한다. 지원이 꼭 나오는 것은 아니다.','피해를 본 밭과 발자국을 알렸다. 관아가 언제 대응할지는 알 수 없었다.',{knowledge:2,health:-1})]),
@@ -41,7 +42,7 @@ const EVENTS=[
   op('관아에 범이 나타난 집과 산길을 알려 포수 파견을 청한다','정확한 위치를 알려야 다른 사람이 같은 길을 피할 수 있다. 포수가 바로 오지는 않을 수 있다.','어느 산기슭에서 범을 봤는지 전했다. 사람들은 그 길의 통행을 조심했다.',{knowledge:3,trust:2}),
   op('이웃들과 횃불을 들고 마을 어귀에서 범을 막는다','범이 민가로 더 내려오지 않게 하려는 위험한 행동이다. 다치거나 목숨을 잃을 수도 있다.','횃불을 든 사람들이 마을 어귀에 모였다. 범을 쫓는 과정에서 목숨이 위험했던 밤으로 남았다.',{health:-8,trust:4},.04)]),
  ev('midwife','family','산파를 부른 밤','가까운 집안에서 산기가 시작되었다. 산파를 부르고 따뜻한 물을 마련해야 한다.',
-  (l,j,s,v,f)=>!!f.spouse||f.children>0,[
+  (l)=>l.age>=16&&l.age<=75,[
   op('산파가 쓸 따뜻한 물과 마른 천을 준비한다','가까운 집안에서 아이를 낳는 중이다. 산파가 필요로 할 물건을 챙기되 산모의 곁은 경험 있는 사람에게 맡긴다.','산파에게 따뜻한 물과 천을 건넸다. 출산이 끝난 뒤에도 산모에게 도움이 필요한지 물었다.',{bonds:5,capital:-2}),
   op('아이를 낳아 본 이웃에게 산파를 부를 길을 묻는다','혼자 방법을 짐작하지 않고 경험 있는 사람을 찾는다. 부를 사람을 만나기까지 시간이 걸릴 수 있다.','이웃에게 어느 집에 산파가 있는지 물었다. 사람을 부르러 갈 길을 알아냈다.',{trust:5,bonds:2}),
   op('산모 곁에서 불을 지키고 필요한 물건을 가져다준다','밤새 산파의 요청에 따라 물과 천을 옮긴다. 잠을 못 자 다음 날 일손이 줄 수 있다.','필요한 것을 나르며 밤을 지새웠다. 산모와 아기의 안부를 이후에도 물었다.',{health:-2,bonds:6})]),
@@ -69,12 +70,12 @@ const EVENTS=[
   (l)=>l.age>=16,[
   op('삼베와 도자기의 값을 따로 붙여 직접 흥정한다','만든 물건의 품과 재료값을 설명하며 장터 손님을 만난다. 팔리지 않으면 집으로 다시 가져와야 한다.','장터에서 물건마다 받을 값을 설명했다. 흥정에 쓴 시간만큼 새 물건을 만들 시간은 줄었다.',{capital:4,knowledge:2}),
   op('보부상에게 운송 품삯과 받을 돈을 미리 정한다','먼 고을로 물건을 보내되 길에서 없어지거나 값이 달라질 위험이 있다.','보부상과 보낼 물건의 수, 가져갈 품삯을 정했다. 값을 받는 일은 뒤에 확인해야 했다.',{capital:2,trust:3}),
-  op('큰 상인에게 외상 대신 받을 날짜를 적어 달라 한다','한꺼번에 많이 팔 수 있지만 돈을 늦게 받으면 집안 살림이 빠듯해질 수 있다.','큰 상인과 거래 날짜와 금액을 적었다. 약속한 돈을 제때 받을지는 알 수 없었다.',{capital:5,trust:-2})]),
+  op('큰 상인과 외상거래로 받을 날짜를 적어 둔다','한꺼번에 많이 팔 수 있지만 돈을 늦게 받으면 집안 살림이 빠듯해질 수 있다.','큰 상인과 거래 날짜와 금액을 적었다. 약속한 돈을 제때 받을지는 알 수 없었다.',{capital:5,trust:-2})]),
  ev('temple','religion','시주를 청하는 스님','문밖에 스님이 서 있다. 절에서는 곡식과 땔감이 필요하다고 한다.',
   ()=>true,[
   op('쌀 한 줌을 시주한다','집안의 곳간도 살핀다','스님이 다른 철에 안부를 전했다.',{grain:-2,bonds:3}),
   op('절의 땔감 나르는 일을 돕는다','힘은 들지만 손을 보탠다','절에서 일하던 이웃과 다시 만났다.',{health:-2,bonds:3}),
-  op('사정을 말씀드리고 돌려보낸다','살림을 먼저 지킨다','스님은 조용히 다음 집으로 향했다.',{grain:1})]),
+  op('시주할 곡식이 부족하다고 스님에게 설명한다','지금은 나눌 수 없어 집안의 양식을 남겨 둔다','스님에게 형편을 설명했다. 스님은 다음 집으로 향했다.',{})]),
  ev('shaman','religion','무당의 굿판','고을에 굿판이 벌어졌다. 장단과 기원 소리가 들린다.',
   ()=>true,[
   op('장단과 이야기를 듣는다','사람들이 모인 자리를 구경한다','굿판에서 들은 장단이 한동안 귀에 남았다.',{happiness:3,knowledge:2}),
@@ -168,8 +169,31 @@ function eligible(l,e,s=ensure(l)){
 function promote(l,s){if(!s?.active&&!l.pending&&l.alive&&s?.queue.length){
  s.active=s.queue.shift();l.pending='joseon9:'+s.active.id;
 }}
+function choiceFor(l,e,index){
+ // Feeding the poor cannot mint rice out of an empty granary.
+ // Offer real labor or transport as an alternative, preserving player agency.
+ const grain=V2.ensure(l)?.grain||0;
+ if(e.id==='holiday'&&index===2&&grain<2)
+  return op('송편을 나눌 곡식이 없어 이웃의 마당 일을 거든다',
+   '우리 집도 식량이 없어 나눌 수 없다. 대신 장작을 옮기고 마당을 치우는 일손을 보낸다.',
+   '가져갈 곡식은 없었지만 이웃집에 가서 장작을 옮겼다. 한나절 몸을 써야 했다.',
+   {health:-2,trust:3});
+ if(e.id==='seollal'&&index===2&&grain<1)
+  return op('떡국 재료 대신 물과 땔감을 길어다 준다',
+   '나눌 떡과 곡식이 없다. 물을 길어 오고 아궁이를 돌보는 일로 이웃을 돕는다.',
+   '떡을 나누지는 못했지만 이웃집에 물과 땔감을 가져다주었다.',
+   {health:-2,trust:3});
+ if(e.id==='temple'&&index===0&&grain<2)
+  return op('시주할 쌀이 없어 절의 빈 물통을 나른다',
+   '곳간이 비어 곡식을 낼 수 없다. 대신 절의 물통을 채우는 일을 하겠다고 전한다.',
+   '곡식을 내지는 못했지만 절에서 쓸 물통을 채웠다.',
+   {health:-1,bonds:2});
+ return e.options[index];
+}
 function prompt(l){const s=ensure(l),e=BY_ID.get(s?.active?.eventId);
- return !e?null:{title:e.title,description:e.desc,options:e.options.map(o=>({label:o.label,note:o.note,action:o.label}))};
+ return !e?null:{title:e.title,description:e.desc,options:e.options.map((o,i)=>{
+  const actual=choiceFor(l,e,i);return {label:actual.label,note:actual.note,action:actual.label};
+ })};
 }
 function yearly(l,s){
  if(!s||!J.inOldEra(l)||!l.alive||s.processedYear>=l.year)return;
@@ -194,7 +218,7 @@ function yearly(l,s){
 function choose(l,index){
  const s=ensure(l),e=BY_ID.get(s?.active?.eventId);
  if(!l.alive||!e||!Number.isInteger(index)||index<0||index>=3)return false;
- const o=e.options[index],d=o.delta,j=J.ensure(l),v=V2.ensure(l),id=s.active.id;
+ const o=choiceFor(l,e,index),d=o.delta,j=J.ensure(l),v=V2.ensure(l),id=s.active.id;
  const stats={};for(const k of ['health','happiness','knowledge','wealth','bonds'])if(Number.isFinite(d[k]))stats[k]=d[k];
  l.change(stats);
  if(Number.isFinite(d.capital))j.capital=clamp(j.capital+d.capital,-120,600);
@@ -204,6 +228,9 @@ function choose(l,index){
   s.homes[0].trust=clamp(s.homes[0].trust+d.trust,0,100);}
  for(const animal of ['ox','pig','chicken'])
   if(Number.isFinite(d[animal]))s.animals[animal]=clamp(s.animals[animal]+d[animal],0,12);
+ // The calf is already born at the beginning of the event: keeping it
+ // after either care option adds an animal; selling it does not.
+ if(e.id==='oxBirth'&&index!==2)s.animals.ox=clamp(s.animals.ox+1,0,12);
  l.logEvent(e.title+' — '+o.label,'joseon9-choice');l.log.at(-1).causeId='joseon9:'+id;
  s.decisions.push({id,eventId:e.id,year:l.year,option:index});s.decisions=s.decisions.slice(-70);
  s.followups.push({id,year:l.year+2+(index%2),text:o.result});s.followups=s.followups.slice(-55);
@@ -250,5 +277,5 @@ function install(){
  Object.defineProperty(L.prototype,'__joseon9',{value:true});return true;
 }
 install();
-return Object.freeze({EVENTS,ensure,eligible,yearly,choose,prompt,summary,install});
+return Object.freeze({EVENTS,ensure,eligible,choiceFor,yearly,choose,prompt,summary,install});
 });
