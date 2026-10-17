@@ -21,6 +21,7 @@ const hook=[
 " teleport:(x,z)=>{state.player.x=x;state.player.z=z;farmer.position.set(x,0,z);camTarget.set(x,0,z);moveGoal=null;},",
 " select:id=>chooseField(id),",
 " flow:()=>({busy:farmFlow.busy,active:farmFlow.active}),",
+" debug:()=>({paused,loading,actorBusy:farmerAnimator?.busy,keys:[...keys],raf,focus:document.activeElement?.id}),",
 " visuals:()=>({renderer:!!renderer?.getContext(),size:[renderer.domElement.width,renderer.domElement.height],",
 "   actor:farmerAnimator.root.children.length,assets:[...assetReport].map(([url,a])=>({url,status:a.status,colors:a.colors,repainted:a.repainted||0})),",
 "   crops:[...plotMeshes].map(([id,r])=>({id,count:r.cropLayer.children.length}))})",
@@ -115,12 +116,14 @@ async function main(){
  check('Shared 3D models loading',visuals.assets.filter(x=>x.status==='loaded').length>=10,visuals.assets);
  await screenshot('01-desktop-farm');
  const walkFrom=await evaluate('window.__farmQA.state().player');
+ await evaluate('document.querySelector("#farm").focus()');
  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'d',code:'KeyD',windowsVirtualKeyCode:68});
  await sleep(580);
+ const duringKey=await evaluate('window.__farmQA.debug()');
  await send('Input.dispatchKeyEvent',{type:'keyUp',key:'d',code:'KeyD',windowsVirtualKeyCode:68});
  const walkTo=await evaluate('window.__farmQA.state().player');
  check('Real keyboard movement changes 3D player position',Math.hypot(walkTo.x-walkFrom.x,walkTo.z-walkFrom.z)>.12,
-   {from:walkFrom,to:walkTo});
+   {from:walkFrom,to:walkTo,duringKey});
  const initial=await evaluate('window.__farmQA.state()');
  check('Ripe rice available',initial.fields.find(x=>x.id==='rice-4').growth===1);
  await evaluate('window.__farmQA.teleport(-8.65,-0.9)');
