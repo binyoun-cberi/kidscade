@@ -151,8 +151,13 @@ async function main(){
   facingDot>.96,{facing,travelled,worldFace,facingDot});
  // Explicitly test the reverse key after a rightward walk: no moonwalking.
  const reverseStart=await evaluate('window.__farmQA.state().player');
+ await evaluate('window.__farmQA.reverseOrigin=window.__farmQA.state().player');
  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'a',code:'KeyA',windowsVirtualKeyCode:65});
- await sleep(640);
+ // Headless software WebGL can run at low FPS. Hold the key until the turn
+ // actually finishes and the feet begin travelling, rather than timing
+ // out during the deliberate turn-in-place animation.
+ await waitFor('Math.hypot(window.__farmQA.state().player.x-window.__farmQA.reverseOrigin.x,window.__farmQA.state().player.z-window.__farmQA.reverseOrigin.z)>.27',7000);
+ await sleep(320);
  await send('Input.dispatchKeyEvent',{type:'keyUp',key:'a',code:'KeyA',windowsVirtualKeyCode:65});
  const reverseEnd=await evaluate('window.__farmQA.state().player');
  const reverseFace=await evaluate('window.__farmQA.facing()');
