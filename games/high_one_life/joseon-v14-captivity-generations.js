@@ -346,7 +346,7 @@ function continueAsHeir(parent,id){
   l.joseon8=JSON.parse(JSON.stringify(parent.joseon8));
   const surname=l.joseon8.surname||'';
   l.joseon8.givenName=heir.name.startsWith(surname)?heir.name.slice(surname.length):heir.name;
-  l.joseon8.generation=clamp((Number(l.joseon8.generation)||1)+1,1,18);
+  l.joseon8.generation=clip((Number(l.joseon8.generation)||1)+1,1,18);
  }
  j.land=clip(Math.floor(oldJ.land*.6),0,30);
  j.literacy=clip(Math.max(j.literacy,Math.floor(oldJ.literacy*.4)),0,30);

@@ -43,7 +43,7 @@ const ORIGINS={
  '대장장이 가계':{label:'대장장이 가계',trade:'쇠를 달구는 대장간',duty:'쇠와 숯, 농기구 제작'},
  '목수 가계':{label:'목수 가계',trade:'목재와 집짓기',duty:'집과 배, 나무 손질'},
  '사찰 주변 가계':{label:'사찰과 인연이 있는 가계',trade:'사찰의 살림과 배움',duty:'사찰의 일과 속세의 집안일'},
- '수군 가계':{label:'수군의 일을 겪은 가계',trade:'수군과 해안 방비',duty:'바닷길과 해안 방비'}
+ '수군 가계':{label:'수군 역을 지던 가족이 있는 집안',trade:'수군과 해안 방비',duty:'바닷길과 해안 방비'}
 };
 function weighted(seed,salt,items){
  const sum=items.reduce((n,entry)=>n+entry[1],0);
@@ -99,7 +99,16 @@ function make(life){
 }
 function ensure(life){
  if(!J?.isJoseon(life))return null;
- return life.joseon5||(life.joseon5=make(life));
+ const s=life.joseon5||(life.joseon5=make(life));
+ if(s.origin==='수군 가계')s.originLabel=ORIGINS[s.origin].label;
+ if(life.gender==='여자'&&s.origin==='수군 가계'){
+  s.trade='가족의 살림과 포구의 생업';
+  if(s.role==='수군')s.role='포구의 생업과 군역 가족의 살림';
+  const j=J.ensure(life);
+  if(/수군|해안 방비/.test(j.occupation))j.occupation='포구의 생업과 군역 가족의 살림';
+  if(/수군|해안 방비/.test(life.career))life.career=j.occupation;
+ }
+ return s;
 }
 function remember(life,s,text,kind='joseon5-memory'){
  life.logEvent(text,kind);s.memories.push(text);s.memories=s.memories.slice(-28);
@@ -154,7 +163,11 @@ function roleChoices(s,j,life){
   option('가죽과 고기 손질 기술을 이어 간다','craft','편견 속에서도 일의 숙련을 쌓는다.',{knowledge:3}),
   option('일에 필요한 물건을 장터에 내놓는다','market','거래처를 구하며 차별을 견뎌야 한다.',{bonds:3}),
   option('서로 도울 이웃을 찾는다','partnership','어려운 일을 함께 해나갈 관계를 만든다.',{bonds:5})];
- if(s.role==='수군'||s.origin==='수군 가계')return [
+ if(life.gender==='여자'&&s.origin==='수군 가계')return [
+  option('군역에 나간 가족의 소식을 알아본다','home','인편을 통해 안부를 전한다.',{bonds:4}),
+  option('포구에서 생업을 돕는다','work','가족의 끼니와 살림을 마련한다.',{knowledge:2,health:-1}),
+  option('이웃과 살림의 일손을 나눈다','mutual','군역을 맡는 가족과 집안의 생업은 구분된다.',{bonds:5})];
+ if(life.gender==='남자'&&(s.role==='수군'||s.origin==='수군 가계'))return [
   option('해안 경비와 훈련을 맡는다','guard','군무로 생업을 비울 때가 있다.',{health:-2,knowledge:2}),
   option('배와 창고를 수선한다','repairboat','군영의 일손을 보탠다.',{knowledge:3},2),
   option('가족에게 소식을 전한다','home','멀리 있어도 집안의 안부를 챙긴다.',{bonds:4})];

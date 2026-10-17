@@ -441,7 +441,7 @@ function install(){
   oldReflect=L.prototype.reflect,oldSnapshot=L.prototype.snapshot,oldRestore=L.restore;
  L.prototype.tick=function(){
   const s=ensure(this);
-  if(s?.law.kind!=='free')return detainedTick(this);
+  if(s && s.law.kind!=='free')return detainedTick(this);
   const year=this.year,ok=oldTick.call(this);
   if(ok&&this.alive&&this.year!==year)yearly(this);
   return ok;

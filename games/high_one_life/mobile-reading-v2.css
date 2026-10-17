@@ -75,3 +75,16 @@ body.joseon-book .v9-people-list li{
 body.joseon-book .v9-living-people>small{color:#756143}
 body.joseon-book .scene-culture-note{font-size:12px;color:#564329;line-height:1.8}
 body.joseon-book .story-head h2{font-weight:800}
+
+/* Keep the active decision ahead of the archive and reserve reading space. */
+#decision{scroll-margin-top:20px;margin-bottom:20px}
+#endStory>p{margin:0 0 1em;line-height:1.85;word-break:keep-all;overflow-wrap:anywhere}
+@media(max-width:780px){
+ #birthCountry{font-size:clamp(25px,6vw,40px);line-height:1.35;word-break:keep-all;overflow-wrap:anywhere}
+ .v8-tools-nav{grid-template-columns:repeat(3,minmax(0,1fr));margin-block:12px}
+ .v8-tools-nav button{padding:10px 7px;min-height:44px}
+ #decision{padding:18px 16px;margin-top:14px}
+ #decision h3{font-size:23px;line-height:1.4}
+ .choice-option{min-height:60px}
+ #endStory{font-size:16px;line-height:1.85}
+}

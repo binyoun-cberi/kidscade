@@ -442,12 +442,12 @@ function install(){
   if(J.isJoseon(this)&&typeof this.pending==='string'&&this.pending.startsWith('joseon4:'))
    return choose(this,index);
   const result=oldChoose.call(this,index);
-  if(result&&J.isJoseon(this))promote(this,ensure(this));
+  if(result&&J.isJoseon(this)){const s=ensure(this);catchUp(this,s);sync(this,s);promote(this,s);}
   return result;
  };
  L.prototype.reflect=function(text){
   const result=oldReflect.call(this,text);
-  if(result&&J.isJoseon(this))promote(this,ensure(this));
+  if(result&&J.isJoseon(this)){const s=ensure(this);catchUp(this,s);sync(this,s);promote(this,s);}
   return result;
  };
  L.prototype.snapshot=function(){

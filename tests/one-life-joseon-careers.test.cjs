@@ -56,7 +56,7 @@ test('a career decision remains linked to its exact followup after saving',()=>{
  a.ok(l.log.some(e=>e.kind==='joseon6-followup'&&e.causeId===chosen.causeId));
 });
 test('all twelve teacher events actually become gameplay choices',()=>{
- const l=free(born(1600,88),25),s=V6.ensure(l);a.ok(V6.adopt(l,'teacher'));const w=s.career;
+ const l=free(born(1600,88),25);l.gender='남자';const s=V6.ensure(l);a.ok(V6.adopt(l,'teacher'));const w=s.career;
  for(let i=0;i<12;i++){
   l.year=w.started+2+4*i;l.age=l.year-l.birthYear;l.pending=null;s.active=null;s.pending=[];
   V6.careerEvent(l,s,w);const q=l.getChoice();a.equal(q.title,V6.EPISODES.teacher[i][0]);

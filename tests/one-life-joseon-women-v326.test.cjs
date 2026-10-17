@@ -127,7 +127,7 @@ test('browser script order and female life panel are wired',()=>{
  const html=fs.readFileSync(path.join(dir,'index.html'),'utf8'),
   game=fs.readFileSync(path.join(dir,'game.js'),'utf8');
  assert.ok(html.indexOf('joseon-branches-v325.js')<html.indexOf('joseon-women-v326.js'));
- assert.ok(html.indexOf('joseon-women-v326.js')<html.indexOf('game.js?v=60'));
+ assert.ok(html.indexOf('joseon-women-v326.js')<html.indexOf('game.js?v=61'));
  for(const id of ['lifeWomen326Panel','lifeWomen326Summary','lifeWomen326Records','lifeWomen326Count'])
   assert.ok(html.includes('id="'+id+'"'));
  assert.match(game,/paintJoseonWomen326\(\)/);
