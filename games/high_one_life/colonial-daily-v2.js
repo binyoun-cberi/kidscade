@@ -10,6 +10,76 @@
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const hash=(seed,salt)=>{let x=(seed^Math.imul(salt+1,0x9e3779b9))>>>0;x=Math.imul(x^(x>>>16),0x7feb352d);x=Math.imul(x^(x>>>15),0x846ca68b);return ((x^(x>>>16))>>>0)/4294967296;};
 const opt=(label,note,result,effect={})=>({label,note,result,effect});
+// These are personal traces of choices, not historical participation scores.
+// Keep the three strands distinct so a previous choice can change a later scene.
+const ARC={
+ landRegistry:[{records:3},{neighbors:3,records:1},{provisions:2}],
+ nightLearning:[{learning:3},{learning:1,neighbors:2},{provisions:2}],
+ riceExpansion:[{records:2,provisions:-1},{neighbors:2,records:1},{provisions:3}],
+ tenantPetition:[{records:2},{neighbors:3,records:1},{provisions:2}],
+ students1929:[{familyNews:2},{records:2},{provisions:1,familyNews:1}],
+ marketDepression:[{provisions:3},{neighbors:3},{records:1,provisions:2}],
+ languagePressure:[{learning:2,records:1},{learning:1,neighbors:2},{familyNews:2}],
+ languageSociety1942:[{learning:2,records:2},{familyNews:2,neighbors:1},{records:1,provisions:1}],
+ laborNotices:[{familyNews:3},{provisions:3},{neighbors:3,familyNews:1}],
+ draftNotice1944:[{familyNews:2},{neighbors:3},{provisions:3}],
+ liberationDay:[{records:2},{familyNews:3},{provisions:2}],
+ police:[{provisions:1},{neighbors:2},{records:2}],
+ manse:[{familyNews:2},{neighbors:2,familyNews:1},{provisions:2}],
+ independence:[{familyNews:3},{learning:2},{provisions:3}],
+ press:[{neighbors:1,records:1},{learning:2},{provisions:1,familyNews:1}],
+ shrine:[{familyNews:2},{records:1},{provisions:2}],
+ name:[{familyNews:2},{records:1},{provisions:2,familyNews:1}],
+ requisition:[{provisions:2},{neighbors:3,provisions:-1},{records:2}],
+ mobilization:[{provisions:1,familyNews:1},{familyNews:3},{provisions:3}],
+ clothes:[{learning:2},{provisions:2},{learning:1}]
+};
+const TOPIC={
+ landRegistry:'land',riceExpansion:'land',tenantPetition:'land',marketDepression:'work',requisition:'work',
+ nightLearning:'learning',press:'learning',languagePressure:'learning',languageSociety1942:'learning',
+ police:'authority',manse:'authority',students1929:'authority',independence:'authority',shrine:'authority',name:'authority',
+ laborNotices:'separation',mobilization:'separation',draftNotice1944:'separation',liberationDay:'separation',
+ clothes:'home'
+};
+const thread=()=>({records:0,neighbors:0,learning:0,provisions:0,familyNews:0});
+function traces(l,e,s){
+ const x=s.threads;
+ if(e.id==='riceExpansion'&&x.records>=2)
+  return '앞서 땅의 경계와 신고 내역을 적어 둔 장부가 있다. 이번 부담을 헤아릴 때 그 기록을 다시 펼칠 수 있다.';
+ if(e.id==='tenantPetition'&&x.neighbors>=2)
+  return '전에 곡식과 신고를 함께 살피던 이웃들도 이번 일을 걱정한다. 혼자 이야기할 때와는 다를 수 있다.';
+ if(e.id==='languageSociety1942'&&x.learning>=2)
+  return '예전에 배운 글과 적어 둔 낱말들이 남아 있다. 그 종이를 어떻게 지킬지 생각해야 한다.';
+ if(e.id==='liberationDay'&&x.familyNews>=2)
+  return '오랫동안 연락할 길을 찾으며 적어 둔 이름과 주소가 있다. 아직 돌아오지 못한 사람들의 소식을 더듬는다.';
+ if(e.id==='mobilization'&&x.familyNews>=2)
+  return '앞서 멀리 떠난 가족에게 소식을 보내려고 적어 둔 주소가 있다. 또다시 먼 일터 이야기가 들려온다.';
+ if(e.id==='requisition'&&x.provisions>=3)
+  return '전에 아껴 둔 곡식과 집안 살림이 조금 남아 있다. 이번 명령 앞에서 무엇을 지킬지 고민한다.';
+ if(e.id==='press'&&x.learning>=2)
+  return '글을 배울 기회를 겨우 얻었다. 신문에서 지워진 자리를 보니 적힌 글보다 빠진 말이 더 궁금하다.';
+ return '';
+}
+const RESULT_MEMORY={
+ records:'당시 적어 둔 글과 장부를 버리지 않아, 뒤에도 그 내용을 다시 확인할 수 있었다.',
+ neighbors:'도움을 주고받던 이웃에게 안부를 전할 수 있었다.',
+ learning:'예전에 익힌 글과 표현이 나중에 다른 소식을 읽는 데 보탬이 되었다.',
+ provisions:'그때 아끼거나 마련한 살림이 뒤의 어려운 날에 작은 힘이 되었다.',
+ familyNews:'전해 들은 이름과 주소를 잊지 않고 기억했다.'
+};
+function consequence(l,s,e,index){
+ const d=ARC[e.id]?.[index]||{},old={...s.threads};
+ for(const [k,v] of Object.entries(d))s.threads[k]=clamp((s.threads[k]||0)+v,0,12);
+ s.lastTopic=TOPIC[e.id]||'home';
+ // A continuing branch is based on the earlier action, not on a moral score.
+ if(e.id==='riceExpansion'&&old.records>=2&&index===0)l.change({wealth:1,knowledge:1});
+ if(e.id==='tenantPetition'&&old.neighbors>=2&&index===1)l.change({bonds:2});
+ if(e.id==='languageSociety1942'&&old.learning>=2&&index===0)l.change({knowledge:1});
+ if(e.id==='requisition'&&old.provisions>=3&&index===0)l.change({wealth:1});
+ if(e.id==='liberationDay'&&old.familyNews>=2&&index===1)l.change({knowledge:2});
+ const top=Object.entries(d).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1])[0]?.[0];
+ return {key:top||null,text:top?RESULT_MEMORY[top]:'그해 내린 선택이 이후의 집안 살림에도 영향을 주었다.'};
+}
 const EVENTS=[
 // Each event portrays a possible household experience, not automatic participation.
 // Date anchors: National Institute of Korean History (contents.history.go.kr).
@@ -116,7 +186,8 @@ const EVENTS=[
 ];
 function isPeriod(l){return l.country?.[0]==='대한민국'&&l.year>=1910&&l.year<=1945}
 function ensure(l){if(!l||l.country?.[0]!=='대한민국')return null;
- return l.colonialDaily||(l.colonialDaily={version:1,processedYear:l.birthYear,seen:[],active:null,queue:[],decisions:[],followups:[]});
+ const s=l.colonialDaily||(l.colonialDaily={version:1,processedYear:l.birthYear,seen:[],active:null,queue:[],decisions:[],followups:[],threads:thread(),lastTopic:''});
+ if(!s.threads)s.threads=thread();return s;
 }
 function eligible(l,e){return isPeriod(l)&&l.alive&&l.age>=e.age&&
  (e.maxAge===undefined||l.age<=e.maxAge)&&(!e.gender||l.gender===e.gender)&&
@@ -137,19 +208,24 @@ function yearly(l,s){
  const keyMoment=pool.filter(e=>e.start===e.end&&[1919,1929,1945].includes(e.start));
  if((l.age%4===1||keyMoment.length)&&pool.length&&s.queue.length<2){
   const candidates=keyMoment.length?keyMoment:pool;
-  candidates.sort((a,b)=>hash(l.seed,l.year+a.id.length*73)-hash(l.seed,l.year+b.id.length*73));
+  // Repeatedly asking about the same subject can feel like the previous
+  // answer was ignored. Favor a fresh topic, except on fixed historical dates.
+  candidates.sort((a,b)=>
+   (hash(l.seed,l.year+a.id.length*73)+(TOPIC[a.id]===s.lastTopic?.28:0))-
+   (hash(l.seed,l.year+b.id.length*73)+(TOPIC[b.id]===s.lastTopic?.28:0)));
   const e=candidates[0];s.seen.push(e.id);s.queue.push({id:l.year+'-'+e.id,eventId:e.id,year:l.year});
  }
  promote(l,s);
 }
 function prompt(l){const s=ensure(l),e=EVENTS.find(e=>e.id===s?.active?.eventId);return e?{
- title:e.title,description:e.desc,options:e.options.map(o=>({label:o.label,note:o.note,action:o.label}))}:null}
+ title:e.title,description:e.desc+(traces(l,e,s)?' '+traces(l,e,s):''),options:e.options.map(o=>({label:o.label,note:o.note,action:o.label}))}:null}
 function choose(l,index){const s=ensure(l),e=EVENTS.find(e=>e.id===s?.active?.eventId);
  if(!l.alive||!e||!Number.isInteger(index)||index<0||index>2)return false;
  const o=e.options[index],id=s.active.id;
- l.change(o.effect);l.logEvent(e.title+' — '+o.label,'colonialDaily-choice');l.log.at(-1).causeId='colonialDaily:'+id;
- s.decisions.push({id,eventId:e.id,year:l.year,option:index});
- s.followups.push({id,year:l.year+2,text:o.result});
+ l.change(o.effect);const memory=consequence(l,s,e,index);
+ l.logEvent(e.title+' — '+o.label,'colonialDaily-choice');l.log.at(-1).causeId='colonialDaily:'+id;
+ s.decisions.push({id,eventId:e.id,year:l.year,option:index,trace:memory.key});
+ s.followups.push({id,year:l.year+2,text:o.result+' '+memory.text});
  s.active=null;l.pending=null;promote(l,s);return true;
 }
 function hydrate(l,data){const s=ensure(l),o=data?.colonialDaily;if(!s||!o||o.version!==1)return s;
@@ -163,6 +239,9 @@ function hydrate(l,data){const s=ensure(l),o=data?.colonialDaily;if(!s||!o||o.ve
  else l.pending='colonialDaily:'+s.active.id;
  s.decisions=Array.isArray(o.decisions)?o.decisions.filter(x=>x&&typeof x.id==='string'&&Number.isInteger(x.year)).slice(-40):[];
  s.followups=Array.isArray(o.followups)?o.followups.filter(x=>x&&typeof x.id==='string'&&typeof x.text==='string'&&Number.isInteger(x.year)&&x.year>l.year).slice(-25):[];
+ s.threads=thread();
+ for(const k of Object.keys(s.threads))if(Number.isInteger(o.threads?.[k]))s.threads[k]=clamp(o.threads[k],0,12);
+ s.lastTopic=Object.values(TOPIC).includes(o.lastTopic)?o.lastTopic:'';
  return s;
 }
 function install(){if(!Sim?.Life||Sim.Life.prototype.__colonialDaily)return false;
@@ -178,5 +257,5 @@ function install(){if(!Sim?.Life||Sim.Life.prototype.__colonialDaily)return fals
  Object.defineProperty(L.prototype,'__colonialDaily',{value:true});return true;
 }
 install();
-return Object.freeze({EVENTS,ensure,eligible,prompt,choose,yearly,install});
+return Object.freeze({EVENTS,ARC,TOPIC,ensure,eligible,prompt,choose,yearly,install});
 });
