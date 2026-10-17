@@ -105,8 +105,8 @@ jobs:
           EXPECTED_BUILD: ${{ github.sha }}
         shell: bash
         run: |
-          set -euxo pipefail
-          echo '[live-check] Begin production smoke for Korean Farm'
+          set -euo pipefail
+          echo '[live-check] Checking published Korean Farm catalog, game, and artwork'
           verified=0
           for attempt in $(seq 1 12); do
             version_json="$(curl -fsS -H 'Cache-Control: no-cache' "https://kidscade.binyoun.workers.dev/kidscade-version.json?verify=${EXPECTED_BUILD}" || true)"
@@ -147,7 +147,7 @@ jobs:
               process.exit(1);
             }
           '
-          curl -fsS "https://kidscade.binyoun.workers.dev/games/korean-farm/index.html?verify=${EXPECTED_BUILD}" -o /tmp/kidscade-korean-farm.html
+          curl -fsSL "https://kidscade.binyoun.workers.dev/games/korean-farm/index.html?verify=${EXPECTED_BUILD}" -o /tmp/kidscade-korean-farm.html
           grep -q 'data-game-id="korean_farm"' /tmp/kidscade-korean-farm.html
           curl -fsS "https://kidscade.binyoun.workers.dev/assets/gate-image/korean_farm.svg?verify=${EXPECTED_BUILD}" -o /tmp/kidscade-korean-farm-cover.svg
           grep -q '<svg' /tmp/kidscade-korean-farm-cover.svg
