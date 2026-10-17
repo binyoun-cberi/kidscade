@@ -105,7 +105,8 @@ jobs:
           EXPECTED_BUILD: ${{ github.sha }}
         shell: bash
         run: |
-          set -euo pipefail
+          set -euxo pipefail
+          echo '[live-check] Begin production smoke for Korean Farm'
           verified=0
           for attempt in $(seq 1 12); do
             version_json="$(curl -fsS -H 'Cache-Control: no-cache' "https://kidscade.binyoun.workers.dev/kidscade-version.json?verify=${EXPECTED_BUILD}" || true)"
