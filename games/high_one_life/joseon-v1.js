@@ -534,7 +534,11 @@ function summary(life){
 }
 function hydrate(life,data){
  if(!isJoseon(life))return null;
+ const keptName=typeof life.profile?.name==='string'?life.profile.name:'';
  const fresh=ensure(life),old=data?.joseon;
+ // Joseon-born lives that cross 1900 must keep the surname already saved by v2.
+ // Initializing the old family model may otherwise replace a full name with a given name.
+ if(keptName)life.profile.name=keptName;
  if(!old||old.version!==1)return fresh;
  // Only take an allow-listed state; do not trust arbitrary saved object keys.
  for(const k of ['region','landmark','settlement','birthStatus','status','family','occupation','school'])
