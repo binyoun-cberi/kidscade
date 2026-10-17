@@ -15,7 +15,7 @@ const ages={youth:15,family:22,work:27,property:37,legacy:54};
 function historical(l){return !!(l?.alive&&J?.isJoseon(l)&&J.inOldEra(l)&&l.gender==='여자'&&l.year<=1894);}
 function accessible(l){
  return historical(l)&&l.joseon14?.captivity?.status!=='held'&&
-  l.joseon325?.law?.kind!=='prison'&&l.joseon325?.law?.kind!=='exile'&&
+  !l.joseonWomen327?.serviceBound&&l.joseon325?.law?.kind!=='prison'&&l.joseon325?.law?.kind!=='exile'&&
   !l.travel22?.residence?.abroad;
 }
 function family(l){
