@@ -246,6 +246,14 @@ function prompt(l){
  }
  return {title:e.title,description,options:e.options.map(o=>({label:o.label,note:o.note,action:o.label}))};
 }
+function repatriationChance(c,s,index,year){
+ const base=c.realm==='japan'?
+  (MAJOR_JAPAN_ENVOYS.has(year)?[.34,.24,.07][index]:[.12,.08,.03][index]):
+  [.38,.29,.06][index];
+ // Contacts improve access to information, never make return certain.
+ const evidence=(s.contacts||0)+(s.overseas?.homeNews||0);
+ return Math.min(.65,base+(index===2?0:Math.min(.09,evidence*.003)));
+}
 function choose(l,index){
  const s=ensure(l),e=byId.get(s?.active?.eventId);
  if(!e||!l.alive||!Number.isInteger(index)||index<0||index>=e.options.length)return false;
@@ -270,13 +278,7 @@ function choose(l,index){
  if(e.id==='ransomOpportunity'){
   const c=s.captivity;c.attempts++;
   // Opportunity, never guaranteed. Route depends on historical captor/context.
-  const base=c.realm==='japan'?
-    (MAJOR_JAPAN_ENVOYS.has(l.year)?[.34,.24,.07][index]:[.12,.08,.03][index]):
-    [.38,.29,.06][index];
-  // Messages and contacts help a request reach a representative, but do not
-  // erase captivity or guarantee repatriation. No bonus for option 2 (staying).
-  const evidence=(s.contacts||0)+(s.overseas?.homeNews||0);
-  const chance=Math.min(.65,base+(index===2?0:Math.min(.09,evidence*.003)));
+  const chance=repatriationChance(c,s,index,l.year);
   if(hash(l.seed,l.year*83+index*41+c.attempts*3)<chance)
    reunion(l,s,c.realm==='japan'?'쇄환':'속환');
   else l.logEvent('귀향할 길을 알아보았지만 이번에는 고향으로 돌아갈 수 없었다.','joseon14-captivity');
@@ -464,5 +466,5 @@ function install(){
  Object.defineProperty(L.prototype,'__joseon14',{value:true});return true;
 }
 install();
-return Object.freeze({EPISODES,SOURCES,ensure,eraFor,canCapture,capture,reunion,opportunity,yearly,choose,prompt,summary,heirs,continueAsHeir,hydrate,install});
+return Object.freeze({EPISODES,SOURCES,ensure,eraFor,canCapture,capture,reunion,opportunity,repatriationChance,yearly,choose,prompt,summary,heirs,continueAsHeir,hydrate,install});
 });
