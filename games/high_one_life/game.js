@@ -40,6 +40,7 @@
   const Travel22 = window.OneLifeTravel22 || null;
   const Life30 = window.OneLifeConsequences30 || null;
   const Joseon325 = window.OneLifeJoseon325 || null;
+  const JoseonWomen326 = window.OneLifeJoseonWomen326 || null;
   const History = window.OneLifeHistory;
   const Official=window.OneLifeOfficialStats||{countries:{}};
   const metric=(key)=>life?.birthYear===2026?Official.countries?.[life?.country?.[0]]?.[key]||null:null;
@@ -626,6 +627,25 @@
       date.textContent=r.year+'년';p.textContent=r.text;li.append(date,p);records.append(li);
     }
   }
+  function paintJoseonWomen326(){
+    const panel=$('lifeWomen326Panel'),list=$('lifeWomen326Records');
+    if(!panel||!list)return;
+    const entry=JoseonWomen326&&life&&Joseon.isJoseon(life)?JoseonWomen326.summary(life):null;
+    const visible=!!entry&&entry.decisions>0;
+    panel.classList.toggle('hidden',!visible);
+    list.replaceChildren();
+    if(!visible)return;
+    $('lifeWomen326Count').textContent=entry.decisions+'번의 갈림길';
+    $('lifeWomen326Summary').textContent=[
+      '이어 온 일: '+entry.livelihood,
+      entry.familyPath?'가족과 이웃: '+entry.familyPath:'',
+      entry.property?'옛 살림과 문서를 살핀 기록이 있다.':''
+    ].filter(Boolean).join(' · ');
+    for(const r of entry.recent.slice().reverse()){
+      const li=document.createElement('li'),date=document.createElement('small'),p=document.createElement('p');
+      date.textContent=r.year+'년';p.textContent=r.text;li.append(date,p);list.append(li);
+    }
+  }
   function paintLife30(){
     const panel=$('life30Panel'),list=$('life30Records');
     if(!panel||!list)return;
@@ -1030,6 +1050,7 @@
     paintLifeRecord();
     paintLife30();
     paintJoseon325();
+    paintJoseonWomen326();
     paintArc();
     $('placeFlag').textContent=life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1];
     const captiveHere=Joseon14?.summary(life)?.captivity;

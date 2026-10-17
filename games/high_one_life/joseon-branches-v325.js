@@ -112,7 +112,7 @@ function eligibleJobs(l){if(!oldEra(l)||l.age<16||l.age>63||!eligibleClass(l))re
   if(l.year<c.years[0]||l.year>c.years[1]||s.law.kind!=='free')return false;
   if(code==='potter')return /도공|관청 장인/.test(origin+' '+job);
   if(code==='carpenter')return /목수|관청 장인/.test(origin+' '+job);
-  if(code==='constable')return /무반|수군|서리|포졸|군교/.test(origin+' '+job);
+  if(code==='constable')return l.gender==='남자'&&/무반|수군|서리|포졸|군교/.test(origin+' '+job);
   if(code==='lacquer')return /도공|목수|관청 장인|대장장이|상인/.test(origin+' '+job);
   if(code==='painter')return /양반|장인|목수|도공|상인/.test(origin+' '+job)||l.stats.knowledge>=57;
   if(code==='poet')return l.stats.knowledge>=57&&/양반|서리|역관|상인|목수/.test(origin+' '+job);
