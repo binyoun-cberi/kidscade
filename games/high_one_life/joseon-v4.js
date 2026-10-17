@@ -97,6 +97,22 @@ function addSpouse(life,s,marriageYear){
  if(marriageYear===life.year)
   remember(life,s,particle(spouse.name,'과','와')+' 혼인하고 한집에서 새로운 생활을 시작했다.','joseon4-family');
 }
+// Remarriage is an explicit choice only: it never follows automatically from widowhood.
+function remarry(life){
+ if(!life||!J.isJoseon(life)||life.gender!=='여자'||life.year>=1894)return false;
+ const s=ensure(life);
+ if(s.people.some(p=>p.role==='spouse'&&p.alive)||
+    !s.people.some(p=>p.role==='spouse'&&!p.alive)||s.people.length>=12)return false;
+ const ordinal=s.people.filter(p=>p.role==='spouse').length+1;
+ const id='spouse-remarried-'+ordinal;
+ const spouse=person(life,id,'spouse',life.year-20-Math.floor(hash(life.seed,life.year+891)*11),'남자');
+ spouse.joinedYear=life.year;spouse.work='새 살림에서 생업을 함께 돌봄';
+ s.people.push(uniqueName(s.people,spouse));
+ const j=J.ensure(life);j.married=true;life.profile.partner=true;
+ remember(life,s,spouse.name+'과 다시 혼인해 새 살림을 꾸렸다. 먼저 떠난 가족의 기억도 남아 있었다.','joseon4-family');
+ sync(life,s);
+ return true;
+}
 function addChild(life,s,bornYear){
  if(s.people.filter(x=>x.role==='child').length>=6)return;
  const id='child-'+s.people.filter(x=>x.role==='child').length;
@@ -122,7 +138,7 @@ function remember(life,s,message,kind='joseon4-family'){
 function sync(life,s){
  const j=J.ensure(life);
  if(!j)return;
- const spouse=s.people.find(x=>x.role==='spouse');
+ const spouse=s.people.find(x=>x.role==='spouse'&&x.alive)||s.people.find(x=>x.role==='spouse');
  if(spouse&&!spouse.alive)j.married=false;
  if(life.year<1900){
   j.household=clamp(1+living(s,null,life.year).filter(x=>x.atHome!==false).length,1,8);
@@ -448,5 +464,5 @@ function install(){
  return true;
 }
 install();
-return Object.freeze({install,ensure,summary,age,prompt,choose,afterYear,ROLES,particle});
+return Object.freeze({install,ensure,summary,remarry,age,prompt,choose,afterYear,ROLES,particle});
 });
