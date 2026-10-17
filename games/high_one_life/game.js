@@ -39,6 +39,7 @@
   const ColonialLife = window.OneLifeColonialDaily || null;
   const Travel22 = window.OneLifeTravel22 || null;
   const Life30 = window.OneLifeConsequences30 || null;
+  const Joseon325 = window.OneLifeJoseon325 || null;
   const History = window.OneLifeHistory;
   const Official=window.OneLifeOfficialStats||{countries:{}};
   const metric=(key)=>life?.birthYear===2026?Official.countries?.[life?.country?.[0]]?.[key]||null:null;
@@ -604,6 +605,27 @@
       $('countrySourceNote').textContent='조선 시대에 태어나 이 시대까지 살아온 이야기다. 가족의 기억은 앞선 세월부터 이어진다.';
     }
   }
+  function paintJoseon325(){
+    const panel=$('life325Panel'),records=$('life325Records');
+    if(!panel||!records)return;
+    const entry=Joseon325&&life&&Joseon.isJoseon(life)?Joseon325.summary(life):null;
+    const visible=!!entry&&(entry.decisions>0||entry.law.kind!=='free'||entry.profession);
+    panel.classList.toggle('hidden',!visible);
+    records.replaceChildren();
+    if(!visible)return;
+    $('life325Count').textContent=entry.decisions+'번의 갈림길';
+    const law=entry.law.kind==='exile'?'유배 중 · '+entry.law.place:
+      entry.law.kind==='prison'?'구금 중':'';
+    $('life325Summary').textContent=[
+      entry.residence!=='고향'?'살아가는 곳: '+entry.residence:'',
+      entry.profession?entry.profession.name+' · 익힌 솜씨 '+entry.profession.skill:'',
+      law
+    ].filter(Boolean).join(' · ')||'지금의 생업과 인연을 이어 가고 있어요.';
+    for(const r of entry.recent.slice().reverse()){
+      const li=document.createElement('li'),date=document.createElement('small'),p=document.createElement('p');
+      date.textContent=r.year+'년';p.textContent=r.text;li.append(date,p);records.append(li);
+    }
+  }
   function paintLife30(){
     const panel=$('life30Panel'),list=$('life30Records');
     if(!panel||!list)return;
@@ -627,8 +649,8 @@
     if(!life)return;
     if(Joseon.inOldEra(life)){
       const j=Joseon.summary(life),s=Joseon.ensure(life),allChoices=life.log
-        .filter(e=>['joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice','joseon18-choice','joseon19-choice'].includes(e.kind)).slice(-3);
-      const n=j.decisions+Joseon2.summary(life).decisions+Joseon3.summary(life).choices+Joseon4.summary(life).decisions+(Joseon5?.summary(life)?.decisions||0)+(Joseon7?.summary(life)?.decisions||0)+(Joseon9?.summary(life)?.decisions||0)+(Annals?.ensure(life)?.decisions.length||0)+(Joseon11?.summary(life)?.decisions||0)+(Joseon12?.summary(life)?.decisions||0)+(Joseon13?.summary(life)?.decisions||0)+(Joseon14?.summary(life)?.decisions||0);
+        .filter(e=>['joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice','joseon18-choice','joseon19-choice','joseon325-choice'].includes(e.kind)).slice(-3);
+      const n=j.decisions+Joseon2.summary(life).decisions+Joseon3.summary(life).choices+Joseon4.summary(life).decisions+(Joseon5?.summary(life)?.decisions||0)+(Joseon7?.summary(life)?.decisions||0)+(Joseon9?.summary(life)?.decisions||0)+(Annals?.ensure(life)?.decisions.length||0)+(Joseon11?.summary(life)?.decisions||0)+(Joseon12?.summary(life)?.decisions||0)+(Joseon13?.summary(life)?.decisions||0)+(Joseon14?.summary(life)?.decisions||0)+(Joseon325?.summary(life)?.decisions||0);
       $('careerChangeCount').textContent=n+'번의 선택';
       $('careerCurrent').textContent=j.occupation;
       const list=$('careerJourney');list.replaceChildren();
@@ -1007,6 +1029,7 @@
     $('openGenealogyBtn').classList.toggle('hidden',!Genealogy||!Joseon.isJoseon(life));
     paintLifeRecord();
     paintLife30();
+    paintJoseon325();
     paintArc();
     $('placeFlag').textContent=life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1];
     const captiveHere=Joseon14?.summary(life)?.captivity;
