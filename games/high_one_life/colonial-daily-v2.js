@@ -231,7 +231,9 @@ function choose(l,index){const s=ensure(l),e=EVENTS.find(e=>e.id===s?.active?.ev
  l.change(o.effect);const memory=consequence(l,s,e,index);
  l.logEvent(e.title+' — '+o.label,'colonialDaily-choice');l.log.at(-1).causeId='colonialDaily:'+id;
  s.decisions.push({id,eventId:e.id,year:l.year,option:index,trace:memory.key});
- s.followups.push({id,year:l.year+2,text:o.result+' '+memory.text});
+ // Each remembered consequence names the actual action and what remained unresolved;
+ // do not append the same generic 'good deed' sentence to unrelated stories.
+ s.followups.push({id,year:l.year+2,text:o.result});
  s.active=null;l.pending=null;promote(l,s);return true;
 }
 function hydrate(l,data){const s=ensure(l),o=data?.colonialDaily;if(!s||!o||o.version!==1)return s;
