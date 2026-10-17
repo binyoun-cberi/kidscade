@@ -32,7 +32,7 @@ function born(year=1700,seed=109,gender='여자',age=24){
 }
 function year(l,age){
  l.age=age;l.year=l.birthYear+age;l.pending=null;
- W.ensure(l).processedYear=l.year-1;W.yearly(l);
+ const w=W.ensure(l);if(w){w.processedYear=l.year-1;W.yearly(l);}
 }
 function chooseWomen(l,index=0){
  assert.match(String(l.pending),/^joseonWomen326:/);
