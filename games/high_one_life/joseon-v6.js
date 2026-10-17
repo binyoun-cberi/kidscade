@@ -191,6 +191,14 @@ function ensure(life){
  }
  return s;
 }
+function pruneCareerChoices(life,s){
+ const valid=q=>q.type!=='career'||[s.career,s.secondary].some(w=>w&&w.code===q.code&&w.started<=q.year&&!w.ended);
+ s.pending=s.pending.filter(valid);
+ if(s.active&&!valid(s.active)){
+  if(life.pending==='joseon6:'+s.active.id)life.pending=null;
+  s.active=null;
+ }
+}
 function adopt(life,code,{secondary=false}={}){
  const s=ensure(life),j=J.ensure(life);
  if(!s||!CAREERS[code]||!available(life)||life.age<14||(code==='teacher'&&life.gender==='여자'))return false;
@@ -212,6 +220,7 @@ function adopt(life,code,{secondary=false}={}){
   j.occupation=social.role;
   if(life.year<1900)life.career=j.occupation;
  }
+ pruneCareerChoices(life,s);
  remember(life,s,(secondary?'틈틈이 ':'')+title(life,code,work.trained)+'의 길을 시작했다. 생업을 꾸리는 일은 매해 같지 않았다.');
  return true;
 }
@@ -228,6 +237,7 @@ function offer(life,s,id,titleText,description,choices,type,code=null,eventIndex
  promote(life,s);
 }
 function promote(life,s){
+ if(s)pruneCareerChoices(life,s);
  if(!s||s.active||life.pending||!life.alive||!J.inOldEra(life)||!s.pending.length)return;
  s.active=s.pending.shift();life.pending='joseon6:'+s.active.id;
 }
@@ -424,6 +434,7 @@ function hydrate(life,data){
  if(!life.alive||!J.inOldEra(life)||data?.pending!=='joseon6:'+s.active?.id)s.active=null;
  s.domesticTeaching=old.domesticTeaching===true;
  s.followups=Array.isArray(old.followups)?old.followups.filter(x=>x&&typeof x.id==='string'&&Number.isInteger(x.year)&&x.year>life.year&&x.year<=life.year+4).slice(-40).map(x=>({id:x.id.slice(0,70),year:x.year,action:String(x.action||'').slice(0,30),topic:String(x.topic||'').slice(0,100),failed:x.failed===true})):[];
+ pruneCareerChoices(life,s);
  return ensure(life);
 }
 function install(){
