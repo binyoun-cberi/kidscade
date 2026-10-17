@@ -24,7 +24,8 @@ const hook=[
 " debug:()=>({paused,loading,actorBusy:farmerAnimator?.busy,keys:[...keys],raf,focus:document.activeElement?.id}),",
 " visuals:()=>({renderer:!!renderer?.getContext(),size:[renderer.domElement.width,renderer.domElement.height],",
 "   actor:farmerAnimator.root.children.length,assets:[...assetReport].map(([url,a])=>({url,status:a.status,colors:a.colors,repainted:a.repainted||0})),",
-"   crops:[...plotMeshes].map(([id,r])=>({id,count:r.cropLayer.children.length}))})",
+"   crops:[...plotMeshes].map(([id,r])=>({id,count:r.cropLayer.children.length})),",
+"   village:villageScene?.stats||null,sceneryCount:villageScene?.root?.children?.length||0})",
 "};"
 ].join('\n');
 const server=http.createServer((req,res)=>{
@@ -114,7 +115,18 @@ async function main(){
  check('WebGL scene and actor started',visuals.renderer&&visuals.size[0]>=800&&visuals.actor>0,visuals);
  check('Six fields populated',visuals.crops.length===6&&visuals.crops.every(x=>x.count>0),visuals.crops);
  check('Shared 3D models loading',visuals.assets.filter(x=>x.status==='loaded').length>=10,visuals.assets);
+ check('Korean village has seven detailed areas and enough decorative meshes',
+   visuals.village?.areas===7&&visuals.village.meshes>180&&visuals.village.instanced>=1,
+   visuals.village);
  await screenshot('01-desktop-farm');
+ await evaluate('window.__farmQA.teleport(10.25,-8.1)');
+ await sleep(550);
+ await screenshot('01b-farmhouse-courtyard');
+ await evaluate('window.__farmQA.teleport(7.6,11.4)');
+ await sleep(550);
+ await screenshot('01c-village-market');
+ await evaluate('window.__farmQA.teleport(-5,3)');
+ await sleep(420);
  const walkFrom=await evaluate('window.__farmQA.state().player');
  await evaluate('document.querySelector("#farm").focus()');
  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'d',code:'KeyD',windowsVirtualKeyCode:68});
