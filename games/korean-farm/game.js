@@ -310,7 +310,7 @@ function refreshWorkStatus(){
 }
 function render(now){
   if(disposed)return;raf=requestAnimationFrame(render);
-  const dt=last?Math.min(.07,(now-last)/1000):0;last=now;
+  const dt=last?Math.min(.20,(now-last)/1000):0;last=now;
   const overlayShown=!$('modal').classList.contains('hidden');
   const moving=!paused&&!loading&&!overlayShown?move(dt,now/1000):false;
   if(!paused&&!loading&&!overlayShown){
