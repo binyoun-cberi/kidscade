@@ -85,7 +85,7 @@ test('long frames preserve walking distance instead of reducing travel speed',()
   near(slow.x,regular.x,.001);
   const turned=rotateToward(0,Math.PI,.2);
   assert.ok(turned>0&&turned<=Math.PI);
-  assert.match(game,/Math\\.min\\(\\.20,\\(now-last\\)\\/1000\\)/);
+  assert.ok(game.includes('Math.min(.20,(now-last)/1000)'), 'The rendering loop should preserve elapsed movement time');
 });
 test('colliding with walls never produces walking-in-place animation',()=>{
   const at={x:10.1,z:-13};
