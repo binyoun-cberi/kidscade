@@ -284,7 +284,8 @@ function choose(l,index){
   else l.logEvent('귀향할 길을 알아보았지만 이번에는 고향으로 돌아갈 수 없었다.','joseon14-captivity');
  }
  // Stigma belongs to the society's response, not the survivor's morality.
- if(e.id==='homeStigma'&&index!==0)s.stigma=clip(s.stigma+1,0,20);
+ // Protecting one's privacy or seeking work is not a reason to blame a returnee.
+ // Stigma reflects other people's prejudice, not a penalty for a survivor's choice.
  if(e.id==='homeWork'&&index===1&&s.skills>=5){
   s.heritage.skills=clip(s.heritage.skills+2,0,40);
   l.logEvent('멀리서 익힌 솜씨를 자녀와 이웃에게 가르치며 일거리를 조금씩 다시 만들었다.','joseon14-family');
