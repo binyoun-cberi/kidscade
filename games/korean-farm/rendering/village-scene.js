@@ -37,7 +37,7 @@ function gableRoof(group,{width,depth,height,rise,color,trim}){
   const half=width/2+.22,slant=Math.hypot(half,rise);
   for(const sign of [-1,1]){
     const plane=box(group,slant+.1,.13,depth+.62,color,sign*half*.5,height+rise*.5,0);
-    plane.rotation.z=sign*(Math.atan2(rise,half));
+    plane.rotation.z=-sign*Math.atan2(rise,half); // Both roof slopes rise toward the center ridge.
     // Metal roof seams read as corrugation at a distance.
     for(let z=-depth/2;z<=depth/2+.01;z+=.44){
       const rib=box(group,slant+.06,.026,.045,trim,sign*half*.5,height+rise*.5+.09,z,{shadow:false});
