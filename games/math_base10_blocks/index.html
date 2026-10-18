@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#173b31">
 <title>우리 동네 마트</title>
-<link rel="stylesheet" href="market-walk.css?v=12-playstyles">
+<link rel="stylesheet" href="market-walk.css?v=13-cashier-shift">
 <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
@@ -60,12 +60,12 @@
 <section class="checkoutPanel" id="checkoutPanel" aria-hidden="true">
   <div class="checkoutCard">
     <div class="checkoutHead">
-      <div><div class="eyebrow">SELF CHECKOUT</div><h2>직접 계산하기</h2><p id="checkoutGuide">카트의 상품을 하나씩 스캔하세요.</p></div>
+      <div><div class="eyebrow" id="checkoutEyebrow">SELF CHECKOUT</div><h2 id="checkoutTitle">직접 계산하기</h2><p id="checkoutGuide">카트의 상품을 하나씩 스캔하세요.</p><div class="cashierBanner hidden" id="cashierBanner" aria-live="polite"><span id="cashierAvatar">🧑</span><div><b id="cashierProgress"></b><small id="cashierLine"></small></div></div></div>
       <button id="closeCheckout" class="closeBtn" type="button" aria-label="계산대 닫기">×</button>
     </div>
     <div class="screenRow">
       <div><span>스캔</span><b id="scanStat">0 / 0</b></div>
-      <div><span>남은 식비</span><b id="checkoutMoney">0원</b></div>
+      <div><span id="checkoutBudgetLabel">남은 식비</span><b id="checkoutMoney">0원</b></div>
       <div><span>낸 돈</span><b id="checkoutPaid">-</b></div>
       <div class="accent"><span>거스름돈</span><b id="checkoutChange">?</b></div>
     </div>
@@ -80,7 +80,7 @@
         <div class="receipt" id="receipt"></div>
       </div>
       <div class="checkoutSection locked" id="paySection">
-        <div class="sectionTitle"><b>3. 현금 선택</b><span>총액보다 같거나 큰 금액</span></div>
+        <div class="sectionTitle"><b>3. 받은 돈 확인</b><span id="cashHint">총액보다 같거나 큰 금액</span></div>
         <div class="cashOptions" id="cashOptions"></div>
       </div>
       <div class="checkoutSection locked" id="changeSection">
@@ -129,6 +129,6 @@
   </div>
 </div>
 
-<script type="module" src="market-walk.js?v=22-playstyles"></script>
+<script type="module" src="market-walk.js?v=23-cashier-shift"></script>
 </body>
 </html>
