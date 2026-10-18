@@ -5,11 +5,11 @@ export function warehouseLimit(s){return 40*(s.warehouseLevel||1)}
 const safeInt=(n,f=0)=>Number.isFinite(n)?Math.max(0,Math.floor(n)):f;
 export function createRetail(products){
  const items={};for(const id of RETAIL_IDS){const p=products.find(p=>p.id===id);if(!p)continue;items[id]={shelf:2,warehouse:4,price:p.price,cost:Math.max(100,Math.round(p.price*.6/100)*100)}}
- return {cash:30000,items,capacity:8,expansionSpent:0,customers:0,revenue:0,costOfGoods:0,ordered:0,sold:0,warehouseLevel:1,unlocked:false,staff:false,staffExpense:0,staffPaidDay:0};
+ return {cash:30000,items,capacity:8,expansionSpent:0,customers:0,revenue:0,costOfGoods:0,ordered:0,sold:0,warehouseLevel:1,unlocked:false,staff:false,staffExpense:0,staffPaidDay:0,drawn:0,demand:{}};
 }
 export function normalizeRetail(raw,products){
  const s=createRetail(products);if(!raw||typeof raw!=='object')return s;
- s.capacity=raw.capacity===16?16:8;s.warehouseLevel=[2,3].includes(raw.warehouseLevel)?raw.warehouseLevel:1;s.unlocked=!!raw.unlocked&&s.capacity===16;s.staff=!!raw.staff;s.staffExpense=safeInt(raw.staffExpense);s.staffPaidDay=safeInt(raw.staffPaidDay);if(s.unlocked)for(const id of EXTRA_RETAIL_IDS){const p=products.find(p=>p.id===id);if(p)s.items[id]={shelf:0,warehouse:0,price:p.price,cost:Math.max(100,Math.round(p.price*.6/100)*100)}}
+ s.capacity=raw.capacity===16?16:8;s.warehouseLevel=[2,3].includes(raw.warehouseLevel)?raw.warehouseLevel:1;s.unlocked=!!raw.unlocked&&s.capacity===16;s.staff=!!raw.staff;s.staffExpense=safeInt(raw.staffExpense);s.staffPaidDay=safeInt(raw.staffPaidDay);s.drawn=safeInt(raw.drawn);s.demand=Object.fromEntries(Object.entries(raw.demand||{}).filter(([id])=>products.some(p=>p.id===id)).map(([id,n])=>[id,safeInt(n)]));if(s.unlocked)for(const id of EXTRA_RETAIL_IDS){const p=products.find(p=>p.id===id);if(p)s.items[id]={shelf:0,warehouse:0,price:p.price,cost:Math.max(100,Math.round(p.price*.6/100)*100)}}
  for(const k of ['cash','revenue','costOfGoods','ordered','sold','expansionSpent','customers'])s[k]=safeInt(raw[k],s[k]);
  for(const id of Object.keys(s.items)){const r=raw.items?.[id];if(!r)continue;const base=products.find(p=>p.id===id).price;s.items[id].shelf=Math.min(s.capacity,safeInt(r.shelf,2));s.items[id].warehouse=Math.min(warehouseLimit(s),safeInt(r.warehouse,s.items[id].warehouse));s.items[id].price=Math.max(Math.ceil(base*.8/100)*100,Math.min(Math.floor(base*1.4/100)*100,safeInt(r.price,base)))}
  return s;
@@ -40,3 +40,32 @@ export function reservedRetailBasket(s,products,reservations,random=Math.random)
  for(const basket of reservations)for(const id of basket)if(available.items[id])available.items[id].shelf=Math.max(0,available.items[id].shelf-1);
  return retailBasket(available,products,random);
 }
+
+export const RETAIL_PROFILES=[
+ {name:'아침 장보기',wants:['bread','banana','apple'],budget:12000,patience:120},
+ {name:'간식 장보기',wants:['donut','grapes','banana'],budget:15000,patience:100},
+ {name:'저녁 장보기',wants:['carrot','tomato','corn'],budget:18000,patience:140}
+];
+export function chooseRetailRestock(s,reservations=[]){
+ const reserved={};for(const basket of reservations)for(const id of basket)reserved[id]=(reserved[id]||0)+1;
+ return Object.keys(s.items).filter(id=>s.items[id].warehouse>0&&s.items[id].shelf<s.capacity).sort((a,b)=>{
+  const availableA=s.items[a].shelf-(reserved[a]||0),availableB=s.items[b].shelf-(reserved[b]||0);
+  return availableA-availableB||(s.demand?.[b]||0)-(s.demand?.[a]||0)||a.localeCompare(b);
+ })[0]||null;
+}
+export function ownerRetailDraw(s,margin,staffWage=0){
+ const amount=Math.min(s.cash,Math.floor(Math.max(0,margin-staffWage)*.3/100)*100);
+ s.cash-=amount;s.drawn=(s.drawn||0)+amount;return amount;
+}
+export function profileRetailBasket(s,products,reservations,profile,random=Math.random){
+ const available={...s,items:Object.fromEntries(Object.entries(s.items).map(([id,x])=>[id,{...x}]))};
+ for(const basket of reservations)for(const id of basket)if(available.items[id])available.items[id].shelf=Math.max(0,available.items[id].shelf-1);
+ const basket=[],count=2+Math.floor(random()*4);let budget=profile.budget;
+ for(let i=0;i<count;i++){
+  const choices=Object.keys(available.items).filter(id=>available.items[id].shelf>0&&available.items[id].price<=budget);if(!choices.length)break;
+  const preferred=choices.filter(id=>profile.wants.includes(id)),pool=preferred.length&&random()<.8?preferred:choices,id=pool[Math.floor(random()*pool.length)];
+  basket.push(id);available.items[id].shelf--;budget-=available.items[id].price;
+ }
+ return basket;
+}
+export function recordRetailDemand(s,profile){for(const id of profile.wants)if(!s.items[id]||s.items[id].shelf===0)s.demand[id]=(s.demand[id]||0)+1}
