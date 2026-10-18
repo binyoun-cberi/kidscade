@@ -609,6 +609,21 @@
       $('countrySourceNote').textContent='조선 시대에 태어나 이 시대까지 살아온 이야기다. 가족의 기억은 앞선 세월부터 이어진다.';
     }
   }
+  function paintPaths339(){
+    const panel=$('paths339Panel'),list=$('paths339Records');
+    if(!panel||!list)return;
+    const s=life?.paths339,projects=s?.projects||[];
+    panel.hidden=!projects.length;list.replaceChildren();
+    const titles={craft:'공방의 공동 작업',trade:'함께 맡은 거래',writing:'경험을 엮은 글',training:'다시 배우는 손기술',workgroup:'동료들과 나눈 일터의 이야기'};
+    for(const p of projects){
+      const li=document.createElement('li');
+      const status=p.status==='completed'?'마친 일':p.status==='archived'?'보관한 기록':p.stage===0?'의논 중':p.stage===1?'시간을 들이는 중':'마무리를 앞둔 일';
+      const person=s.contacts.find(c=>c.id===p.contactId);
+      li.textContent=p.started+'년부터 · '+titles[p.key]+' · '+status+(person?' · '+person.name+'와 함께한 기록':'');
+      list.append(li);
+    }
+    for(const w of s?.works||[]){const li=document.createElement('li');li.textContent=w.year+'년 · '+w.title+' · 남긴 필사본 '+w.copies+'부';list.append(li);}
+  }
   function paintJoseon325(){
     const panel=$('life325Panel'),records=$('life325Records');
     if(!panel||!records)return;
@@ -745,7 +760,7 @@
       child:!!life.profile.child,partner:!!life.profile.partner,
       housing:life.world8?.housing||'',
       roles:life.world6?.history?.map(x=>x.job)||[],
-      choices:life.log.filter(e=>['decision','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice'].includes(e.kind)).map(e=>({age:e.age,label:e.text}))};
+      choices:life.log.filter(e=>['decision','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice','joseon339-choice'].includes(e.kind)).map(e=>({age:e.age,label:e.text}))};
   }
   function showComparison(){
     const panel=$('endComparison'),rows=$('endComparisonRows');
@@ -813,7 +828,7 @@
       if (entry.kind === 'decision') li.className = 'is-decision';
       else if (entry.kind === 'decision-effect') li.className = 'is-choice-effect';
       else if (entry.kind === 'history') li.className = 'is-history';
-      else if (entry.kind?.startsWith('joseon338-'))li.className='is-history-choice';
+      else if (/^joseon33[89]-/.test(entry.kind||''))li.className='is-history-choice';
       else if (['history-choice','history-impact','history-followup','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon5-memory','joseon5-family','joseon6-choice','joseon6-followup','joseon6-memory','joseon7-followup','joseon9-followup','joseon7-choice','joseon9-choice','joseon-followup','joseon2-followup','joseon3-followup','joseon4-followup','joseon-memory','joseon2-memory','joseon3-memory','joseon4-memory','colonialDaily-choice','colonialDaily-followup','joseonAnnals-choice','joseonAnnals-followup','joseonAnnals-fact','joseon11-choice','joseon11-followup','joseon11-memory','joseon12-choice','joseon12-followup','joseon12-memory','joseon13-choice','joseon13-followup','joseon13-family','joseon13-memory','joseon14-choice','joseon14-followup','joseon14-return','joseon14-captivity','joseon14-generations'].includes(entry.kind)) li.className = 'is-history-choice';
       const age = document.createElement('b');
       age.textContent = entry.age + '세';
@@ -1085,6 +1100,7 @@
     $('openGenealogyBtn').classList.toggle('hidden',!Genealogy||!Joseon.isJoseon(life));
     paintLifeRecord();
     paintLife30();
+    paintPaths339();
     paintJoseon325();
     paintJoseonWomen326();
     paintArc();
@@ -1319,8 +1335,8 @@
       const effect=life.log.find(x=>x.kind==='decision-effect'&&x.age===e.age);
       const detail=document.createElement('small');detail.textContent=effect?.text||'그때는 무엇이 달라질지 몰랐다.';
       if(e.kind==='decision')copy.append(detail);
-      else if(['history-choice','era-choice','care13-choice','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice'].includes(e.kind)){
-        const aftermath={'history-choice':'history-followup','era-choice':'era-followup','care13-choice':'care13-followup',
+      else if(['history-choice','era-choice','care13-choice','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice','joseon339-choice'].includes(e.kind)){
+        const aftermath={'joseon339-choice':'joseon339-followup','history-choice':'history-followup','era-choice':'era-followup','care13-choice':'care13-followup',
           'joseon-choice':'joseon-followup','joseon2-choice':'joseon2-followup',
           'joseon3-choice':'joseon3-followup','joseon4-choice':'joseon4-followup','joseon5-choice':'joseon5-followup','joseon6-choice':'joseon6-followup','joseon7-choice':'joseon7-followup','joseon9-choice':'joseon9-followup','joseonAnnals-choice':'joseonAnnals-followup','joseon11-choice':'joseon11-followup','joseon12-choice':'joseon12-followup','joseon13-choice':'joseon13-followup','joseon14-choice':'joseon14-followup','colonialDaily-choice':'colonialDaily-followup'}[e.kind];
         // Only an explicitly linked outcome belongs to this choice. Older saves without
