@@ -438,7 +438,7 @@ async function buildStore(){
  ]);
  box([2,.8,1.05],[-3.3,.4,2.7],0x356a55);box([2,.1,1.1],[-3.3,.85,2.7],0x173b31);addCollider(-3.3,2.7,2,1.1);await addMarket('cash-register',.75,[-3.7,.9,2.7],Math.PI);interactable('checkout','셀프 계산대',-3.3,3.7,1.8);sign('계산대',[-3.3,1.8,2.7],.35,'#2f7d60');
  if(!state.hasCart)await addMarket('shopping-cart',1.05,[3.55,0,3.15],-.35);interactable('cartBay','카트 보관소',2.65,3.2,1.8);interactable('homeDoor','동네로 나가기',1.05,3.7,1.8);sign('밖으로',[1.05,2.46,4.27],.22,'#2f7d60');
- await buildMarketProducts();ensureRetail();renderRetailShelfSigns();box([.65,.45,.55],[1.9,.23,2.8],0xb78750);sign('납품 · 창고',[1.9,1.18,2.8],.18);interactable('retailSupply','납품 상자',1.9,2.8,1.1);if(state.hasCart)await spawnCart();if(state.held?.id)await showHeldModel(state.held.id);setSpawn('market');renderHud();
+ await buildMarketProducts();ensureRetail();renderRetailShelfSigns();box([.9,.12,.7],[3.85,.07,1.8],0x655341);box([.68,.42,.5],[3.85,.34,1.8],0xb78750);box([.08,.43,.51],[3.85,.34,1.8],0xe8d5a9);addCollider(3.85,1.8,.9,.7);sign('입고 · 창고',[3.85,1.12,1.8],.17);interactable('retailSupply','입고 · 창고',3.2,1.8,1.2);if(state.hasCart)await spawnCart();if(state.held?.id)await showHeldModel(state.held.id);setSpawn('market');renderHud();
 }
 
 async function buildTown(from='home'){
@@ -604,6 +604,7 @@ function workOffice(){
 function treatAtHospital(){if(!state.treatmentNeeded)return toast('지금은 꼭 치료가 필요한 상태가 아니에요.');const kind=state.injury||'sick',cost=HOSPITAL_COST[kind]||HOSPITAL_COST.sick;state.money-=cost;state.dailyExpense+=cost;state.condition=kind==='car'?clamp(state.condition+32,0,100):clamp(state.condition+24,0,100);state.dailyIncidents.push('🏥 '+(kind==='dog'?'강아지 물림':kind==='car'?'교통사고':'몸 상태')+' 치료비 '+fmt(cost)+'을 냈어요.');state.injury=null;state.treatmentNeeded=false;tone('good');renderHud();save();toast('치료를 받았어요. 진료비 '+fmt(cost)+'이 나갔어요.')}
 
 function productPlacement(p){
+ if(['produce','bakery'].includes(p.zone)){const f=retailFacing(p);return [f.x,f.y,f.z]}
  const zoneItems=PRODUCTS.filter(x=>x.zone===p.zone),i=zoneItems.indexOf(p);let key,index;
  if(p.zone==='produce'){key=i<4?'produceA':'produceB';index=i%4}else if(p.zone==='bakery'){key='bakery';index=i}else if(p.zone==='chilled'||p.zone==='protein'){key='chilled';index=p.zone==='protein'?i:i+2}else{key='island';index=p.zone==='pantry'?i:i+3}
  const b=marketDisplays[key],size=b.getSize(new THREE.Vector3()),surface=(marketDisplaySurfaces[key]??b.max.y)+.015;let x,z;
@@ -744,16 +745,33 @@ function clearRetailGuests(){
 function retailGuestNote(text){
  let el=document.getElementById('retailGuestNote');if(!el){el=document.createElement('div');el.id='retailGuestNote';el.style.cssText='position:fixed;top:88px;left:50%;transform:translateX(-50%);z-index:40;background:#fff8e9;color:#173b31;padding:12px 16px;border-radius:16px;max-width:85vw;box-shadow:0 4px 18px #0003';el.innerHTML='<span></span> <button type="button" style="padding:8px">근무 중단</button>';el.querySelector('button').onclick=()=>{clearRetailGuests();state.cashierShift=null;state.basket=[];state.scanned=new Set();state.phase='shopping';state.running=true;renderRetailShelfSigns();renderHud();save()};document.body.append(el)}el.querySelector('span').textContent=text;
 }
+
+function retailFixture(p){
+ if(p.zone==='produce'){const i=PRODUCTS.filter(x=>x.zone==='produce').indexOf(p);return {key:i<4?'produceA':'produceB',index:i%4,lanes:4}}
+ const i=PRODUCTS.filter(x=>x.zone==='bakery').indexOf(p);return {key:'bakery',index:Math.max(0,i),lanes:PRODUCTS.filter(x=>x.zone==='bakery').length};
+}
+function retailFacing(p){
+ const spec=retailFixture(p),b=marketDisplays[spec.key],width=(b.max.x-b.min.x)/spec.lanes;
+ return {x:b.min.x+width*(spec.index+.5),z:(b.min.z+b.max.z)/2,y:(marketDisplaySurfaces[spec.key]??b.max.y)+.015,width:width-.06,depth:b.max.z-b.min.z-.1,front:b.max.z+.035};
+}
+function retailSamples(count,width,depth,size){
+ const visible=Math.min(4,Math.max(0,count)),cols=visible>1?2:1,rows=Math.ceil(visible/cols),scale=Math.min(1,width/(cols*size*1.08),depth/(Math.max(1,rows)*size*1.08));
+ const gap=size*scale*1.08;
+ return Array.from({length:visible},(_,i)=>({x:(i%cols-(cols-1)/2)*gap,z:(Math.floor(i/cols)-(rows-1)/2)*gap,scale}));
+}
 function syncRetailProducts(){
  for(const copy of retailCopies)copy.removeFromParent();retailCopies=[];
  if(state.location!=='market'||!state.retail)return;
  for(const v of labelViews.filter(v=>v.kind==='market')){
   const item=state.retail.items[v.id];if(!item)continue;
-  const count=Math.max(0,item.shelf-(retailGuest?.picked[v.id]||0));v.root.visible=false;
-  for(let i=0;i<count;i++){const model=v.root.clone(true);model.visible=true;model.scale.multiplyScalar(.43);model.position.x+=(i%4-1.5)*.11;model.position.z+=(Math.floor(i/4)-1.5)*.11;world.add(model);retailCopies.push(model)}
-  v.label.innerHTML=productById(v.id).name+'<small>'+fmt(state.cashierShift?.active?item.price:discountedPrice(productById(v.id)))+' · '+(count?count+'개':'품절')+'</small>';
+  const p=productById(v.id),count=Math.max(0,item.shelf-(retailGuest?.picked[v.id]||0)),facing=retailFacing(p);v.root.visible=false;
+  for(const slot of retailSamples(count,facing.width,facing.depth,marketProductVisualSize(p))){
+   const model=v.root.clone(true);model.visible=true;model.scale.multiplyScalar(slot.scale);model.position.set(facing.x+slot.x,facing.y,facing.z+slot.z);world.add(model);retailCopies.push(model);
+  }
+  v.label.innerHTML=p.name+'<small>'+fmt(state.cashierShift?.active?item.price:discountedPrice(p))+' · '+(count?'재고 '+count+'개':'품절')+'</small>';
  }
 }
+
 async function beginRetailGuest(){
  if(retailGuest||state.phase==='retailWalk')return;
  state.phase='retailWalk';state.running=false;ui.checkout.classList.remove('show');ui.checkout.setAttribute('aria-hidden','true');renderHud();
@@ -764,7 +782,7 @@ async function beginRetailGuest(){
  root.position.set(1,0,4);world.add(root);
  const bag=box([.3,.25,.2],[.34,.63,.04],0xba8a52,.9,root);
  const stops=[...new Set(state.basket)].map(id=>({id,target:productById(id).pos}));stops.push({id:null,target:[-3.25,3.75]});
- retailGuest={root,bag,stops,index:0,path:null,waypoint:0,pause:0,picked:{},clock:0};
+ retailGuest={root,bag,stops,index:0,path:null,waypoint:0,pause:0,picked:{},clock:0,walkMixer:startModelAnimation(root,/walk/i)};
  playerPos.set(0,1.62,3.7);yaw=0;pitch=-.12;camera.position.copy(playerPos);camera.rotation.y=yaw;camera.rotation.x=pitch;
  renderRetailShelfSigns();
 }
@@ -772,14 +790,14 @@ function moveRetailActor(actor,dt){
  if(!actor.path||actor.waypoint>=actor.path.length)return true;
  const p=actor.path[actor.waypoint],dx=p[0]-actor.root.position.x,dz=p[1]-actor.root.position.z,d=Math.hypot(dx,dz),travel=dt*1.8;
  if(d<=travel){actor.root.position.x=p[0];actor.root.position.z=p[1];actor.waypoint++}else{actor.root.position.x+=dx/d*travel;actor.root.position.z+=dz/d*travel}
- actor.root.rotation.y=Math.atan2(dx,dz);actor.clock=(actor.clock||0)+dt;actor.root.position.y=Math.abs(Math.sin(actor.clock*9))*.018;
+ const targetAngle=Math.atan2(dx,dz),difference=Math.atan2(Math.sin(targetAngle-actor.root.rotation.y),Math.cos(targetAngle-actor.root.rotation.y));actor.root.rotation.y+=difference*Math.min(1,dt*12);actor.clock=(actor.clock||0)+dt;actor.root.position.y=0;actor.walkMixer?.update(dt);
  return actor.waypoint>=actor.path.length;
 }
 function updateRetailGuests(dt){
  for(let i=retailDepartures.length-1;i>=0;i--){const a=retailDepartures[i];if(moveRetailActor(a,dt)){a.root.removeFromParent();retailDepartures.splice(i,1)}}
  const g=retailGuest;if(!g||state.phase!=='retailWalk')return;
- if(g.pause>0){g.pause-=dt;g.root.rotation.z=Math.sin(g.pause*4)*.035;return}
- g.root.rotation.z=0;const stop=g.stops[g.index];
+ if(g.pause>0){g.pause-=dt;g.bag.rotation.z=Math.sin(Math.max(0,g.pause)/.8*Math.PI)*-.22;return}
+ g.root.rotation.z=0;g.bag.rotation.z=0;const stop=g.stops[g.index];
  if(!g.path){g.path=retailPath([g.root.position.x,g.root.position.z],stop.target,colliders);g.waypoint=0;
   if(!g.path){clearRetailGuests();state.cashierShift=null;state.basket=[];state.phase='shopping';state.running=true;renderRetailShelfSigns();renderHud();save();toast('통로가 막혀 손님이 이동하지 못했어요.',true);return}
   retailGuestNote(stop.id?state.cashierShift.current.name+' 손님이 '+productById(stop.id).name+'을 살펴봐요.':'손님이 계산대로 오고 있어요.');
@@ -817,14 +835,14 @@ function putRetailItem(){
 function returnRetailBox(){if(!retailCarry)return;clearRetailCarry();renderHud();toast('남은 상품을 창고에 돌려놓았어요.')}
 function animateRetailPlacement(p){
  const original=labelViews.find(v=>v.kind==='market'&&v.id===p.id)?.root;if(!original)return;
- const model=original.clone(true),target=original.position.clone();model.visible=true;world.add(model);const from=new THREE.Vector3(playerPos.x,.95,playerPos.z),started=performance.now();model.scale.multiplyScalar(.7);
+ const f=retailFacing(p),slots=retailSamples(state.retail.items[p.id].shelf,f.width,f.depth,marketProductVisualSize(p)),slot=slots[slots.length-1]||{x:0,z:0,scale:1};const model=original.clone(true),target=new THREE.Vector3(f.x+slot.x,f.y,f.z+slot.z);model.visible=true;world.add(model);const from=new THREE.Vector3(playerPos.x,.95,playerPos.z),started=performance.now();model.scale.multiplyScalar(slot.scale);
  function frame(now){if(state.location!=='market'){model.removeFromParent();return}const t=Math.min(1,(now-started)/260);model.position.lerpVectors(from,target,t);model.position.y+=Math.sin(t*Math.PI)*.22;if(t<1)requestAnimationFrame(frame);else model.removeFromParent()}requestAnimationFrame(frame);
 }
 let retailShelfSigns=[];
 function renderRetailShelfSigns(){syncRetailProducts();
  for(const v of retailShelfSigns){v.removeFromParent();v.material.map?.dispose();v.material.dispose()}retailShelfSigns=[];
  if(state.location!=='market'||!state.retail)return;
- for(const [id,x] of Object.entries(state.retail.items)){const p=productById(id);retailShelfSigns.push(sign(p.name+' '+Math.max(0,x.shelf-(retailGuest?.picked[id]||0))+'/'+state.retail.capacity,[p.pos[0],.72,p.pos[1]],.13,x.shelf?'#2f7d60':'#b94f4b'))}
+ for(const [id,x] of Object.entries(state.retail.items)){const p=productById(id);const f=retailFacing(p),count=Math.max(0,x.shelf-(retailGuest?.picked[id]||0));retailShelfSigns.push(sign(p.name+' · '+(count?count+'개':'품절'),[f.x,Math.max(.3,f.y-.10),f.front],Math.min(.115,f.width/4.1),count?'#2f7d60':'#b94f4b'))}
 }
 
 function ensureRetail(){if(!state.retail&&state.shop){const old=state.shop,items={};for(const [id,x]of Object.entries(old.stock||{}))items[id]={shelf:x.shelf,warehouse:x.back,price:productById(id)?.price};state.retail={cash:old.cash,capacity:old.capacity,revenue:old.sales,costOfGoods:old.sales,customers:old.customers,items}}state.retail=normalizeRetail(state.retail,PRODUCTS);delete state.shop;return state.retail}
