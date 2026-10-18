@@ -514,7 +514,9 @@ function yearly(life){
  for(const f of due){note(life,s,f.text,'joseon-followup');if(f.id)life.log.at(-1).causeId='joseon:'+f.id;}
  const event=eventFor(life.year);
  if(event&&!s.seen.includes(event.year)){
-  s.seen.push(event.year);note(life,s,event.year+'년 · '+event.title+' — '+event.detail,'history');
+  s.seen.push(event.year);
+  if(!life.log.some(e=>e.kind==='history'&&e.year===event.year&&e.text.startsWith(event.year+'년 · '+event.title+' — ')))
+   note(life,s,event.year+'년 · '+event.title+' — '+event.detail,'history');
   if(event.kind==='war'||event.kind==='borderWar'||event.kind==='unrest'){
    const borderRegion=event.year===1528?s.region==='평안도':
     (event.year===1406||event.year===1554)?s.region==='함경도':['평안도','함경도'].includes(s.region);

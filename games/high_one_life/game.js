@@ -43,6 +43,7 @@
   const JoseonWomen326 = window.OneLifeJoseonWomen326 || null;
   const JoseonWomen327 = window.OneLifeJoseonWomen327 || null;
   const History = window.OneLifeHistory;
+  const Calendar=window.OneLifeCalendar337;
   const Official=window.OneLifeOfficialStats||{countries:{}};
   const metric=(key)=>life?.birthYear===2026?Official.countries?.[life?.country?.[0]]?.[key]||null:null;
   const metricLabel=(key,label,unit='')=>{
@@ -206,7 +207,7 @@
       origin:$('birthOriginInput').value,familyLevel:$('birthFamilyInput').value};
     life = new Sim.Life(undefined,{birthYear,countryName,birthSetup});
     World8.ensure(life);if(Joseon.isJoseon(life)){Joseon.ensure(life);Joseon8?.ensure(life);Joseon9?.ensure(life);}
-    else {World8.moment(life);World10.ensure(life);}History.contextualize(life);
+    else {World8.moment(life);World10.ensure(life);}History.contextualize(life);Calendar?.record(life);
     storyTab='';peerAgeChoice=0;timelineVisible=22;
     replayBasis=null;
     peerCache = null;lastPeerRenderedAge = -1;lastMapRenderedAge = -1;
@@ -817,9 +818,36 @@
       const text = document.createElement('span');
       text.textContent = entry.text;
       li.append(age,text);
+      const fact=Calendar?.matchEntry(entry);
+      if(fact){
+        const source=document.createElement('a');source.href=fact.source;
+        source.target='_blank';source.rel='noopener noreferrer';source.className='calendar-source';
+        source.textContent='역사 자료 ↗';source.setAttribute('aria-label',fact.title+' 역사 자료');text.append(' ',source);
+      }
       timeline.append(li);
     }
     if(endWasNear || life.age<=3) timeline.scrollTop = timeline.scrollHeight;
+  }
+  function paintCalendar(){
+    if(!Calendar)return;
+    $('calendar337Year').textContent=life.year+'년';
+    const current=Calendar.forYear(life.year);
+    $('calendar337Empty').classList.toggle('hidden',current.length>0);
+    const row=(event,withYear)=>{
+      const li=document.createElement('li'),head=document.createElement('div');
+      const tag=document.createElement('small');tag.textContent=Calendar.CATEGORIES[event.category];
+      const title=document.createElement('strong');title.textContent=(withYear?event.year+'년 · ':'')+event.title;
+      head.append(tag,title);
+      const detail=document.createElement('p');detail.textContent=event.detail;
+      const link=document.createElement('a');link.href=event.source;link.target='_blank';link.rel='noopener noreferrer';
+      link.textContent='역사 자료 ↗';link.setAttribute('aria-label',event.title+' 역사 자료');
+      li.append(head,detail,link);return li;
+    };
+    $('calendar337Current').replaceChildren(...current.map(e=>row(e,false)));
+    const past=Calendar.events().filter(e=>e.year>=life.birthYear&&e.year<=life.year);
+    $('calendar337Past').replaceChildren(...past.map(e=>row(e,true)));
+    $('calendar337End').replaceChildren(...past.map(e=>row(e,true)));
+    if(!past.length){const li=document.createElement('li');li.textContent='이 시대의 기록이 아직 쌓이지 않았습니다.';$('calendar337Past').append(li);}
   }
   function paintStats() {
     const list = $('statList');
@@ -1068,6 +1096,9 @@
     $('historyContext').textContent=Joseon.inOldEra(life)?Joseon2.summary(life).ruler+' 재위 · '+Joseon.era(life.year)+' · '+life.year+'년':life.birthYear===2026
       ? '2026년, 새로운 인생이 시작됐다.'
       : History.period(life)+' · '+life.year+'년의 세상';
+    const reign=Calendar?.ruler(life.year);
+    if(reign)$('historyContext').textContent=reign+' · '+life.year+'년';
+    paintCalendar();
     if(abroad)$('historyContext').textContent=life.year+'년 · '+journey.residence.region+' · 고향 '+journey.birthplace+'에서 떠난 삶';
     const archive=(Joseon.inOldEra(life)?(Joseon.eventFor(life.year)||Joseon2.at(life.year)):null)||World10.readCurrent(life)||History.currentEvent(life),sourceLink=$('historySourceLink');
     sourceLink.classList.toggle('hidden',!archive);
@@ -1248,6 +1279,7 @@
   function finish() {
     if(completed || !life || life.alive) return;
     completed=true;
+    paintCalendar();
     safeRemove(SAVE_KEY);
     const summary=life.summary();
     const choiceLog=life.log.filter(window.OneLifeBiography328.isChoice);
@@ -1312,7 +1344,7 @@
   function stepYear() {
     if(!life || !life.alive || life.pending) return;
     life.tick();
-    History.contextualize(life);
+    History.contextualize(life);Calendar?.record(life);
     if(!life.alive) return finish();
     if(nextDecision&&life.pending){nextDecision=false;playSpeed=1;refreshSpeedControls();}
     render();
@@ -1391,7 +1423,7 @@
     storyTab='';timelineVisible=22;peerAgeChoice=0;
     playSpeed=1;nextDecision=false;paused=false;elapsed=0;
     peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
-    World8.ensure(life);History.contextualize(life);
+    World8.ensure(life);History.contextualize(life);Calendar?.record(life);
     refreshSpeedControls();startLife();
   });
   $('genealogyClose').addEventListener('click',closeGenealogy);
@@ -1405,7 +1437,7 @@
     storyTab='';timelineVisible=22;peerAgeChoice=0;
     playSpeed=1;nextDecision=false;paused=false;elapsed=0;
     peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
-    World8.ensure(life);History.contextualize(life);
+    World8.ensure(life);History.contextualize(life);Calendar?.record(life);
     refreshSpeedControls();startLife();
   });
   $('sameBirthBtn').addEventListener('click',()=>{
@@ -1413,7 +1445,7 @@
     const snapshot=captureEnding(life);
     replayBasis=snapshot;
     life=new Sim.Life(snapshot.seed,{birthYear:snapshot.birthYear,countryName:'대한민국',birthSetup:life.birthSetup});
-    World8.ensure(life);if(Joseon.isJoseon(life))Joseon.ensure(life);else {World8.moment(life);World10.ensure(life);}History.contextualize(life);
+    World8.ensure(life);if(Joseon.isJoseon(life))Joseon.ensure(life);else {World8.moment(life);World10.ensure(life);}History.contextualize(life);Calendar?.record(life);
     storyTab='';peerAgeChoice=0;timelineVisible=22;playSpeed=1;nextDecision=false;refreshSpeedControls();
     peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
     $('birthCertificate').classList.add('hidden');

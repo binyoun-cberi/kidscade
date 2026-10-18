@@ -206,7 +206,7 @@ test('400 historical female lives run through choices, saves and family-work sce
 test('browser ships historical module after v326 and combines its traces into one panel',()=>{
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8'),game=fs.readFileSync(path.join(root,'game.js'),'utf8');
  a.ok(html.indexOf('joseon-women-v326.js')<html.indexOf('joseon-women-v327.js'));
- a.ok(html.indexOf('joseon-women-v327.js')<html.indexOf('game.js?v=64'));
+ a.ok(html.indexOf('joseon-women-v327.js')<html.search(/game\.js\?v=\d+/));
  a.match(game,/OneLifeJoseonWomen327/);
  a.match(game,/more\.profession/);
 });
