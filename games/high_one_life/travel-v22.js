@@ -3,10 +3,10 @@
  * Historical anchors: National Institute of Korean History, National Archives of Korea.
  */
 (function(root,factory){
- const api=factory(root?.OneLifeSim,root?.OneLifeJoseon,root?.OneLifeJoseon5);
+ const api=factory(root?.OneLifeSim,root?.OneLifeJoseon,root?.OneLifeJoseon5,root);
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.OneLifeTravel22=api;
-})(typeof window!=='undefined'?window:null,function(Sim,J,V5){
+})(typeof window!=='undefined'?window:null,function(Sim,J,V5,root){
 'use strict';
 const VERSION=1;
 const SOURCES=Object.freeze({
@@ -154,6 +154,7 @@ function choose(l,index){
  return true;
 }
 function abroadYear(l,s){
+ if(root?.OneLifeDiaspora340?.ownsRoute(s.residence.route))return root.OneLifeDiaspora340.abroadYear(l,s);
  s.yearsAbroad=Math.max(0,l.year-s.residence.since);
  const r=s.residence.route;
  // Historical expatriates do not collect domestic Joseon taxes, farm income or Korean housing events.
@@ -195,17 +196,18 @@ function hydrate(l,data){
  const s=ensure(l),saved=data?.travel22;if(!s||!saved||saved.version!==VERSION)return s;
  const route=saved.residence?.route,year=saved.residence?.since;
  s.birthplace=clean(saved.birthplace,40)||s.birthplace;
- if(['ming','hawaii','jurchen','qingMarket'].includes(route)&&saved.residence.abroad===true&&Number.isInteger(year)&&year>=l.birthYear&&year<=l.year&&
+ if(root?.OneLifeDiaspora340?.ownsRoute(route)){root.OneLifeDiaspora340.restoreResidence(l,s,saved,data);}
+ else if(['ming','hawaii','jurchen','qingMarket'].includes(route)&&saved.residence.abroad===true&&Number.isInteger(year)&&year>=l.birthYear&&year<=l.year&&
     (route==='hawaii'?year>=1903&&year<=1905:route==='ming'?year>=1420&&year<=1590:route==='jurchen'?year>=1450&&year<=1590:year>=1660&&year<=1699)&&
     (!['ming','jurchen','qingMarket'].includes(route)||l.year<year+(route==='ming'?2:1))){
   const r=desc[route];
   s.residence={abroad:true,place:r.place,region:r.region,reason:r.reason,route,since:year,until:route==='ming'?year+2:['jurchen','qingMarket'].includes(route)?year+1:null};
   s.source=SOURCES[route];
  }else{s.residence={abroad:false,place:'고향',region:'한반도',reason:'',route:'home',since:l.year,until:null};s.source=null;}
- if(Array.isArray(saved.movements))s.movements=saved.movements.filter(q=>q&&Number.isInteger(q.year)&&q.year>=l.birthYear&&q.year<=l.year&&['ming','hawaii','jurchen','qingMarket'].includes(q.route)&&['출발','귀환'].includes(q.action))
+ if(Array.isArray(saved.movements))s.movements=saved.movements.filter(q=>q&&Number.isInteger(q.year)&&q.year>=l.birthYear&&q.year<=l.year&&(['ming','hawaii','jurchen','qingMarket'].includes(q.route)||root?.OneLifeDiaspora340?.ownsRoute(q.route))&&['출발','귀환'].includes(q.action))
   .slice(-24).map(q=>({year:q.year,place:clean(q.place,48),reason:clean(q.reason,48),route:q.route,action:q.action}));
  if(Array.isArray(saved.seen))s.seen=saved.seen.filter(q=>typeof q==='string'&&/^(ming|hawaii|jurchen|qingMarket):\d{4}$/.test(q)).slice(-36);
- if(Array.isArray(saved.decisions))s.decisions=saved.decisions.filter(q=>q&&Number.isInteger(q.year)&&q.year>=l.birthYear&&q.year<=l.year&&['invite','abroad'].includes(q.kind)&&[0,1,2].includes(q.choice)).slice(-65).map(q=>({year:q.year,kind:q.kind,choice:q.choice,route:['ming','hawaii','jurchen','qingMarket'].includes(q.route)?q.route:'ming'}));
+ if(Array.isArray(saved.decisions))s.decisions=saved.decisions.filter(q=>q&&Number.isInteger(q.year)&&q.year>=l.birthYear&&q.year<=l.year&&['invite','abroad'].includes(q.kind)&&[0,1,2].includes(q.choice)).slice(-65).map(q=>({year:q.year,kind:q.kind,choice:q.choice,route:(['ming','hawaii','jurchen','qingMarket'].includes(q.route)||root?.OneLifeDiaspora340?.ownsRoute(q.route))?q.route:'ming'}));
  for(const key of ['yearsAbroad','letters','earnings','relationships'])s[key]=Number.isInteger(saved[key])?Math.max(0,Math.min(160,saved[key])):0;
  const p=saved.pending;
  const permitted=p&&p.year===l.year&&typeof p.id==='string'&&p.id.length<60&&
