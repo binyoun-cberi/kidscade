@@ -204,7 +204,7 @@ function promote(life,s){
 function options(type,p){
  const op=(label,note,action,effects)=>({label,note,action,effects});
  if(type==='elders')return [
-  op('부모님 곁에서 일손을 돕는다','한 해의 생업에 시간을 나누어 쓴다','help',{bonds:7,health:-2}),
+  op('하던 일을 쉬고 일손을 보탠다','내 일을 비우고 다녀오는 만큼 벌이가 줄어든다','help',{bonds:7,health:-2}),
   op('곡식과 살림을 보탠다','비축한 곡식이나 재산을 나누어 드린다','support',{bonds:5,wealth:-5}),
   op('안부를 더 자주 살핀다','일을 멈추지 못하더라도 시간을 내어 함께한다','visit',{happiness:3,bonds:4})];
  if(type==='child-school')return [
@@ -232,15 +232,53 @@ const TITLES={
  spouse:'함께 살아가는 사람의 이야기',
  sibling:'형제자매의 부탁'
 };
+function familyContext(life,q,p){
+ const name=p.role==='father'?'아버지':p.role==='mother'?'어머니':p.name;
+ const n=particle(name,'은','는'),j=J.ensure(life);
+ const needs={
+  elders:n+' 나이가 들어 집안일을 한꺼번에 해내기 버겁다. 일손을 보탤지, 살림을 보낼지 생각해 보았다.',
+  'child-school':n+' 글과 셈을 배울 나이가 되었다. 집에서 가르칠 수 있는 것과 일터에서 배울 것을 헤아렸다.',
+  'child-grown':n+' 앞으로 맡을 일을 찾고 있다. 집안 일을 이어 갈 수도 있고 다른 고을로 나설 수도 있다.',
+  spouse:particle(p.name,'과','와')+' 다음 계절의 살림을 헤아렸다. '+(j.capital<18?'남은 돈이 넉넉하지 않아 쓸 곳을 가려야 했다.':'장터에서 마련할 물건과 집에서 할 일이 남아 있었다.'),
+  sibling:n+' 앞으로의 생업을 두고 이야기를 꺼냈다. 일손을 보태거나 집안 형편을 함께 헤아릴 수 있다.'
+ };
+ return needs[q.kind]||n+' 집안 소식을 전했다.';
+}
+function familyResult(who,action,e){
+ const n=who?.role==='father'?'아버지':who?.role==='mother'?'어머니':who?.name||'가족',withN=particle(n,'과','와');
+ const lines={
+  help:n+'의 집안일을 거들고 돌아왔다. 내 일을 비우고 다녀오는 동안 벌이는 줄었다.',
+  support:n+'에게 '+(e.grainSent?'비축한 곡식을 덜어 보냈다. 우리 집 곳간은 그만큼 비었다.':'살림에 쓰도록 돈을 보냈다.')+(e.grainSent&&e.cashSent?' 돈도 조금 보탰다.':''),
+  visit:n+'의 안부를 살폈다. 그동안 어떻게 지냈는지 이야기를 나누었다.',
+  teach:n+'에게 글자와 셈을 일러 주었다. 글공부에 쓸 돈도 따로 냈다.',
+  arrangeSchool:n+'의 글공부를 도울 사람을 알아보고 배울 비용을 냈다.',
+  work:n+'에게 집안에서 쓰는 도구를 건네고 일을 함께 해 보았다.',
+  listen:n+'에게 해 보고 싶은 일을 물었다. 서둘러 정하지 않고 이야기를 들었다.',
+  settle:n+'의 일할 자리를 고을에서 마련했다. 자리를 잡는 데 드는 돈을 보탰다.',
+  journey:n+'의 일자리를 다른 고을에서 찾았다. 함께 살던 집을 떠나 그곳에서 일하게 되었다.',
+  inherit:withN+' 집안의 일을 나누어 맡았다. 일손이 늘면서 벌이도 조금 나아졌다.',
+  sharework:withN+' 장터와 집안일을 나누어 맡았다. 일을 마치고 받은 돈을 살림에 보탰다.',
+  gift:n+'에게 줄 작은 물건을 마련했다. 값을 치르고 함께 시간을 보냈다.',
+  plan:withN+' 남은 곡식과 돈을 헤아리며 먼저 쓸 곳을 의논했다.',
+  kinwork:withN+' 일을 나누어 마쳤다. 받은 품삯을 살림에 보탰다.',
+  encourage:n+'의 생업 이야기를 듣고 잘해 보라고 격려했다.',
+  talk:withN+' 집안에서 필요한 돈과 물건을 짚어 보았다.',
+  remember:withN+' 함께 지내던 일을 떠올렸다.'
+ };
+ return lines[action]||'집안 소식을 들었다.';
+}
 function prompt(life){
  const s=ensure(life),q=s?.active;if(!q)return null;
  const p=s.people.find(x=>x.id===q.personId);
  if(!p?.alive){return {title:'가족을 기억하는 날',description:'집안의 소식을 돌아본다.',
   options:[{label:'지난날을 기억한다',note:'함께한 시간을 마음에 남긴다',action:'remember',effects:{bonds:1}}]};}
- return {title:TITLES[q.kind],description:particle(p.name,'은','는')+' '+age(p,life.year)+'세의 '+ROLES[p.role]+'다. '+p.trait+' 성격으로 '+p.work+'에 마음을 쓰고 있다.',
-  options:options(q.kind,p)};
+ const choices=options(q.kind,p),j=J.ensure(life),v=V2.ensure(life);
+ if(q.kind==='elders'&&v.grain<=0&&j.capital<=0)choices[1]={label:'형편을 설명하고 안부를 살핀다',note:'지금은 보낼 곡식과 돈이 없다.',action:'visit',effects:{bonds:4}};
+ if(q.kind==='child-school'&&j.literacy<1)choices[0]={label:'글을 아는 이에게 배움을 부탁한다',note:'가르침을 구하고 배울 비용을 낸다.',action:'arrangeSchool',effects:{knowledge:1,wealth:-3,bonds:5}};
+ return {title:TITLES[q.kind],description:familyContext(life,q,p),options:choices};
 }
 const OUTCOMES={
+ arrangeSchool:'아이의 글공부를 부탁했던 일을 돌아보았다.',
  help:'부모님과 함께 나누었던 일이 오래도록 기억에 남았다.',
  support:'살림을 나눴던 덕분에 어려운 계절을 서로 도울 수 있었다.',
  visit:'안부를 나누던 시간이 집안의 작은 위안이 되었다.',
@@ -265,14 +303,16 @@ function choose(life,index){
  life.change(selected.effects);
  const j=J.ensure(life),v=V2.ensure(life),memory=V3.ensure(life);
  const modern=life.year>=1900,netBefore=life.money?.netWorth??0,capitalBefore=j.capital;
+ const evidence={grainSent:0,cashSent:0};
  if(who){
   const relationDelta=['gift','visit','listen','teach','sharework','help','support','kinwork'].includes(a)?9:5;
   who.relation=clamp(who.relation+relationDelta,0,100);
   who.wellbeing=clamp(who.wellbeing+(['support','help','visit'].includes(a)?8:2),0,100);
  }
- if(a==='support'){j.capital-=9;if(v.grain>=7)v.grain-=7;s.careYears++;}
+ if(a==='support'){evidence.cashSent=Math.min(9,Math.max(0,j.capital));evidence.grainSent=Math.min(7,Math.max(0,v.grain));j.capital-=evidence.cashSent;v.grain-=evidence.grainSent;s.careYears++;}
+ if(a==='help')j.capital-=3;
  if(a==='help'||a==='visit')s.careYears++;
- if(a==='teach'&&who){who.learning+=3;j.capital-=5;}
+ if((a==='teach'||a==='arrangeSchool')&&who){who.learning+=3;j.capital-=5;}
  if(a==='work'&&who){who.work='집안의 생업을 배우는 중';who.learning++;}
  if(a==='listen'&&who){who.learning+=2;}
  if(a==='settle'&&who){who.work='마을에서 일하는 중';j.capital-=4;}
@@ -286,10 +326,11 @@ function choose(life,index){
  if(who&&memory)memory.kinship=clamp(memory.kinship+3,0,100);
  j.capital=clamp(j.capital,-120,600);
  if(life.money)life.money.netWorth=modern?netBefore+(j.capital-capitalBefore)*100:j.capital*100;
- s.decisions.push({id:q.id,kind:q.kind,personId:q.personId,year:life.year,action:a,label:selected.label});
+ s.decisions.push({id:q.id,kind:q.kind,personId:q.personId,year:life.year,action:a,label:selected.label,evidence});
  s.decisions=s.decisions.slice(-36);
- s.followups.push({id:q.id,year:life.year+3,personId:q.personId,action:a});s.followups=s.followups.slice(-24);
- remember(life,s,p.title+' — '+selected.label,'joseon4-choice');
+ if(['support','teach','arrangeSchool','work','settle','journey','inherit'].includes(a))s.followups.push({id:q.id,year:life.year+3,personId:q.personId,action:a,evidence});s.followups=s.followups.slice(-24);
+ remember(life,s,familyResult(who,a,evidence),'joseon4-choice');
+ life.log.at(-1).eventTitle=p.title;life.log.at(-1).choiceLabel=selected.label;
  life.log.at(-1).causeId='joseon4:'+q.id;
  s.active=null;life.pending=null;promote(life,s);
  return true;
@@ -302,7 +343,15 @@ function afterYear(life){
  const year=life.year,j=J.ensure(life),v=V2.ensure(life);
  for(const effect of s.followups.filter(x=>x.year<=year)){
   const relative=s.people.find(p=>p.id===effect.personId);
-  const sentence=relative?rememberedRelative(relative,effect.action):null;
+  let sentence=null;
+  if(relative){
+   if(!relative.alive)sentence=rememberedRelative(relative,'remember');
+   else if(effect.action==='support'&&effect.evidence)sentence=relative.name+'에게 '+(effect.evidence.grainSent?'곡식을':'돈을')+' 보냈던 일을 떠올렸다.';
+   else if(['teach','arrangeSchool'].includes(effect.action)&&relative.learning>0)sentence=relative.name+'의 글공부가 이어졌다. 전에 배운 글과 셈을 다시 익혔다.';
+   else if(effect.action==='journey'&&!relative.atHome)sentence=relative.name+'의 거처는 여전히 다른 고을에 있었다.';
+   else if(effect.action==='inherit'&&relative.atHome)sentence=particle(relative.name,'과','와')+' 여전히 집안의 일을 나누어 맡았다.';
+   else if(!effect.evidence)sentence=rememberedRelative(relative,effect.action);
+  }
   if(sentence){remember(life,s,sentence,'joseon4-followup');if(effect.id)life.log.at(-1).causeId='joseon4:'+effect.id;s.memories.push(sentence);s.memories=s.memories.slice(-20);}
 
  }
@@ -403,7 +452,7 @@ function hydrate(life,data){
  s.recent=Array.isArray(old.recent)?old.recent.filter(x=>typeof x==='string').slice(-12).map(x=>x.slice(0,220)):[];
  s.followups=Array.isArray(old.followups)?old.followups.filter(f=>f&&Number.isInteger(f.year)&&f.year>life.year&&
     typeof f.personId==='string'&&s.people.some(p=>p.id===f.personId)&&
-    typeof f.action==='string'&&OUTCOMES[f.action]).slice(-24).map(f=>({id:typeof f.id==='string'?f.id.slice(0,80):null,year:f.year,personId:f.personId,action:f.action})):[];
+    typeof f.action==='string'&&OUTCOMES[f.action]).slice(-24).map(f=>({id:typeof f.id==='string'?f.id.slice(0,80):null,year:f.year,personId:f.personId,action:f.action,evidence:f.evidence?{grainSent:clamp(Number(f.evidence.grainSent)||0,0,7),cashSent:clamp(Number(f.evidence.cashSent)||0,0,9)}:undefined})):[];
  s.memories=Array.isArray(old.memories)?old.memories.filter(x=>typeof x==='string').slice(-20).map(x=>x.slice(0,220)):[];
  const allowedKinds=new Set(Object.keys(TITLES));
  const valid=q=>q&&typeof q.id==='string'&&q.id.length<=80&&
@@ -412,7 +461,7 @@ function hydrate(life,data){
  const asQueue=q=>({id:q.id,kind:q.kind,personId:q.personId,year:q.year});
  s.queue=Array.isArray(old.queue)?old.queue.filter(valid).slice(-8).map(asQueue):[];
  s.decisions=Array.isArray(old.decisions)?old.decisions.filter(q=>valid(q)&&typeof q.action==='string').slice(-36).map(q=>({
-  ...asQueue(q),action:q.action.slice(0,40),label:String(q.label||'').slice(0,90)})):[];
+  ...asQueue(q),action:q.action.slice(0,40),label:String(q.label||'').slice(0,90),evidence:q.evidence?{grainSent:clamp(Number(q.evidence.grainSent)||0,0,7),cashSent:clamp(Number(q.evidence.cashSent)||0,0,9)}:undefined})):[];
  if(valid(old.active)&&data?.pending==='joseon4:'+old.active.id&&life.alive&&J.isJoseon(life)){
   s.active=asQueue(old.active);life.pending='joseon4:'+s.active.id;
  }

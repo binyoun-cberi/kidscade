@@ -30,7 +30,7 @@ test('human-voice copy appears in childhood, history, choices, and life recap',(
  assert.match(read('history-stories-v10.js'),/장부를 펼쳤다/);
  assert.match(read('history-effects-v10.js'),/그해 우리 가족은 어떻게 살아갈까/);
  assert.match(read('world-v13.js'),/요즘 쉬어도 피로가 쉽게 가시지 않는다/);
- assert.match(game,/const chapters=\[/);
+ assert.match(game,/const chapters=window\.OneLifeBiography328\.chapters/);
  assert.match(game,/chapters\.map\(text=>/);
  assert.match(game,/이번에는 어떻게 할까/);
 });

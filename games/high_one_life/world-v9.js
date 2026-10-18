@@ -451,7 +451,7 @@ function applyChoice(life,state,event,index){
   state.hobby=['축구','독서','그림','음악'][index];
   state.hobbySince=life.age;
   addMemory(state,'취미:'+state.hobby);
-  record(life,state,'hobby-start','어린 시절 '+state.hobby+'(을)를 즐기기 시작했다. 훗날에도 이 경험을 기억하게 될 것이다.','decision');
+  record(life,state,'hobby-start',state.hobby+'에 흥미를 붙였다.','decision');
  }else if(kind==='repair'){
   const cost=2400,finance=state.finance;
   if(index===0){

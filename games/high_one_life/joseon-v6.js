@@ -8,6 +8,8 @@
  if(root)root.OneLifeJoseon6=api;
 })(typeof window!=='undefined'?window:null,function(Sim,J,V2,V5){
 'use strict';
+const mark=(text,closed,open)=>{const n=String(text),c=n.charCodeAt(n.length-1)-44032;return n+(c>=0&&c<=11171&&c%28?closed:open);};
+const asRole=text=>{const n=String(text),c=n.charCodeAt(n.length-1)-44032;return n+(c>=0&&c<=11171&&c%28&&c%28!==8?'으로':'로');};
 const clamp=(x,min,max)=>Math.max(min,Math.min(max,x));
 const roll=(seed,n)=>{let x=(seed^Math.imul(n+1,0x9e3779b9))>>>0;x=Math.imul(x^(x>>>16),0x7feb352d);x=Math.imul(x^(x>>>15),0x846ca68b);return ((x^(x>>>16))>>>0)/4294967296;};
 // These are professional paths, not birth statuses. Other historical jobs continue
@@ -221,7 +223,7 @@ function adopt(life,code,{secondary=false}={}){
   if(life.year<1900)life.career=j.occupation;
  }
  pruneCareerChoices(life,s);
- remember(life,s,(secondary?'틈틈이 ':'')+title(life,code,work.trained)+'의 길을 시작했다. 생업을 꾸리는 일은 매해 같지 않았다.');
+ remember(life,s,(secondary?'하던 일 틈에 ':'')+asRole(title(life,code,work.trained))+' 일을 익히기 시작했다.');
  return true;
 }
 function discover(life){
@@ -286,7 +288,7 @@ function careerEvent(life,s,work,secondary=false){
  if(work.events>at)return;
  const event=EPISODES[work.code][at];
  work.events=at+1;
- const choices=event[2].map(([label,action])=>({label,action,note:'살림과 몸, 기술과 인연에 서로 다른 흔적을 남긴다.'}));
+ const choices=event[2].map(([label,action])=>({label,action,note:({invest:'돈을 들여 필요한 것을 마련한다.',repair:'손질할 비용과 품이 든다.',risk:'벌이를 늘릴 수 있지만 손해를 볼 수도 있다.',rest:'일을 쉬는 동안 벌이는 줄고 몸을 추스른다.',serve:'재료와 일손을 들여 대가를 받는다.',trade:'가진 물품을 내놓고 값을 받는다.',study:'비용과 시간을 들여 방법을 살핀다.',mentor:'가르칠 시간을 내어 일을 함께 한다.',cooperate:'다른 사람과 일손이나 물건을 나눈다.'})[action]||'시간과 품을 들여 사정을 살핀다.'}));
  offer(life,s,id,event[0],event[1],choices,'career',work.code,at);
 }
 function yearEnd(life,s){
@@ -349,12 +351,66 @@ function updateWork(life,work,action,eventIndex){
  if(life.year<1900){life.money.netWorth=j.capital*100;life.career=j.occupation;}
  return {success:!risk&&canSpend,deltaCash,needsMore:!canSpend,asset:work.resources[asset],supply:work.resources[supply],deltaStock:work.resources[supply]-beforeStock};
 }
+const WORK_SENTENCES={
+ '증세를 자세히 살펴본다':'이웃이 어디가 어떻게 아픈지 묻고 증세를 살폈다.',
+ '몸을 쉬게 돕는다':'아픈 이웃이 일을 쉬고 몸을 추스를 수 있도록 도왔다.',
+ '더 숙련된 의원을 찾아본다':'혼자 판단하지 않고 경험이 더 많은 의원에게 물었다.',
+ '다른 재료의 성질을 배운다':'구하기 어려운 약재와 다른 재료의 성질을 살폈다.',
+ '약재를 구하러 간다':'필요한 약재를 구해 돌아왔다.',
+ '사찰과 이웃에게 도움을 청한다':'사찰과 이웃에 사정을 전하고 약재를 구할 수 있는지 물었다.',
+ '쓸 수 있는 책을 말린다':'젖은 책을 펼쳐 말리고 다시 쓸 수 있는 낱장을 추렸다.',
+ '새 책을 빌려 온다':'젖은 책 대신 학동들과 볼 책을 빌려 왔다.',
+ '학동들과 낱장을 옮겨 적는다':'학동들과 남은 낱장을 나누어 글을 옮겨 적었다.',
+ '형편이 될 때까지 기다린다':'학동의 집에서 형편이 나아질 때까지 가르친 대가를 기다렸다.',
+ '곡식과 일손으로 받는다':'돈 대신 곡식과 일손으로 가르친 대가를 받았다.',
+ '마을에서 서당 살림을 의논한다':'마을 사람들과 서당을 꾸릴 비용을 의논했다.',
+ '몸을 돌보며 쉰다':'다친 손을 돌보며 대장간 일을 쉬었다.',
+ '다른 일꾼과 작업을 나눈다':'다친 손으로 감당하기 어려운 일을 다른 일꾼과 나누었다.',
+ '도구와 작업 방식을 손본다':'다시 다치지 않도록 도구와 일하는 방식을 손보았다.',
+
+ '내 서책을 함께 읽게 한다':'가지고 있던 서책을 펴 놓고 학동들과 함께 읽었다.',
+ '헌 서책을 구한다':'헌 서책을 구해 서당에 들여놓았다.',
+ '마을 어른에게 책을 부탁한다':'마을 어른에게 서책을 부탁해 함께 쓸 책을 마련했다.',
+ '새벽에 글을 가르친다':'학동들이 밭일에 나서기 전 새벽에 글을 가르쳤다.',
+ '농번기에는 쉬어 간다':'농번기에는 서당을 쉬었다. 학동들은 집안의 일손을 도왔다.',
+ '가족과 수업 시간을 상의한다':'학동들의 집과 글공부할 시간을 의논했다.',
+ '한 글자씩 함께 익힌다':'읽기 어려워하던 학동과 한 글자씩 짚어 읽었다.',
+ '다른 가르침을 연구한다':'학동이 막힌 대목을 살피며 가르치는 방법을 바꾸어 보았다.',
+ '배울 시간을 더 마련한다':'학동이 서두르지 않고 읽도록 곁에서 시간을 더 냈다.',
+ '사정을 듣고 기다린다':'길손의 사정을 듣고 외상값을 당장 받지 않았다.',
+ '지불할 날짜를 기록한다':'외상값과 갚기로 한 날을 장부에 적었다.',
+ '일손으로 대신할지 묻는다':'외상값 대신 주막의 일손을 보탤 수 있는지 물었다.',
+ '잠자리를 양보한다':'비에 젖은 길손에게 잠자리를 내주었다.',
+ '객실을 고쳐 자리를 늘린다':'길손들이 머물 자리를 늘리려고 방을 손보았다.',
+ '동네 집들과 나누어 묵게 한다':'이웃집에 사정을 전해 길손들이 나누어 묵도록 했다.',
+ '물때를 살핀 뒤 나선다':'물때와 바람을 살핀 뒤 배를 냈다.',
+ '노련한 어부와 함께 간다':'물길을 잘 아는 어부와 함께 배를 냈다.',
+ '그물을 손질하고 준비한다':'조업에 나서기 전에 그물을 손질했다.',
+ '그물을 손질한다':'고기가 빠져나가던 그물의 구멍을 기웠다.',
+ '새 그물을 구한다':'찢어진 그물 대신 쓸 새 그물을 구했다.',
+ '동료와 그물 수선법을 배운다':'동료에게 그물 기우는 법을 배웠다.',
+ '필요한 부분부터 고친다':'농민이 가져온 농기구의 망가진 부분부터 고쳤다.',
+ '쇠를 더 들여놓는다':'주문받은 물건에 쓸 쇠를 더 들여놓았다.',
+ '오래 쓰는 법을 연구한다':'농기구가 쉽게 망가지지 않도록 만드는 법을 살폈다.',
+ '급한 물건부터 만든다':'남은 재료를 헤아려 급한 물건부터 만들었다.',
+ '다른 장터에서 재료를 구한다':'재료를 구하려고 다른 장터까지 다녀왔다.',
+ '이웃 대장장이와 재료를 나눈다':'이웃 대장장이와 부족한 재료를 나누어 썼다.',
+ '시세를 알아본다':'장터를 돌아다니며 물건이 얼마에 팔리는지 살폈다.',
+ '조금씩 팔아 본다':'가져온 물건을 조금씩 내놓고 팔았다.',
+ '다른 장사꾼에게 묻는다':'다른 장사꾼에게 자리를 잡는 법을 물었다.',
+ '안전한 길을 택한다':'비에 젖은 고갯길을 피해 돌아갔다.',
+ '다른 상인과 함께 간다':'다른 상인들과 짐을 챙겨 함께 고개를 넘었다.',
+ '길을 재촉한다':'비가 내리는 고갯길을 서둘러 넘었다.',
+ '경험 많은 의원에게 묻는다':'혼자 판단하기 어려운 증세를 경험 많은 의원에게 물었다.',
+ '기록을 남기며 경과를 살핀다':'앓는 이의 증세를 적어 두고 날마다 달라지는지 살폈다.',
+ '환자 가족을 위로한다':'걱정하는 환자 가족의 이야기를 들었다.'
+};
 function choose(life,index){
  const s=ensure(life),p=prompt(life),q=s?.active;
  if(!q||!p||!life.alive||!Number.isInteger(index)||index<0||index>=p.options.length)return false;
  const picked=p.options[index],action=picked.action,work=q.type==='career'?
   [s.career,s.secondary].find(x=>x?.code===q.code&&x.started<=q.year&&(!x.ended||x.ended>=q.year)):null;
- const eventTitle=q.title;let failed=false;
+ const eventTitle=q.title;let failed=false;const sentences=[];
  if(q.type==='path'){
   if(action.startsWith('enter:'))adopt(life,action.slice(6));
   else if(action.startsWith('side:'))adopt(life,action.slice(5),{secondary:true});
@@ -367,15 +423,16 @@ function choose(life,index){
   const result=updateWork(life,work,action,q.eventIndex);
   failed=!result.success;
   if(result.success){
+   if(WORK_SENTENCES[picked.label])sentences.push(WORK_SENTENCES[picked.label]);
    const cfg=CAREERS[work.code],parts=[];
-   if(result.deltaStock>0)parts.push(cfg.supply+'을 더 마련했다');
-   if(result.deltaStock<0)parts.push('가지고 있던 '+cfg.supply+' 일부를 써서 일을 마쳤다');
+   if(result.deltaStock>0)parts.push(mark(cfg.supply,'을','를')+' 더 마련했다');
+   if(result.deltaStock<0)parts.push(work.code==='fisher'?'조업에 쓴 배와 그물을 다시 손볼 일이 남았다':'가지고 있던 '+cfg.supply+' 일부를 써서 일을 마쳤다');
    if(result.deltaCash<0)parts.push('비용을 치러 집안에 남은 돈은 줄었다');
    if(result.deltaCash>0)parts.push('일을 마치고 받은 대가를 살림에 보탰다');
-   if(parts.length)remember(life,s,parts.join('. ')+'.');
+   if(parts.length)sentences.push(parts.join('. ')+'.');
   }
-  if(result.needsMore)remember(life,s,'필요한 '+CAREERS[work.code].supply+'이 부족해 계획한 일을 다 이루지 못했다.');
-  if(action==='risk'&&!result.success)remember(life,s,'위험을 무릅썼지만 예상과 달리 손해를 겪었다.');
+  if(result.needsMore)sentences.push('필요한 '+mark(CAREERS[work.code].supply,'이','가')+' 부족해 하려던 일을 마치지 못했다.');
+  if(action==='risk'&&!result.success)sentences.push('벌이를 늘리려다 손해를 보았다. 들인 돈을 되찾지 못했다.');
   if(result.success&&['mentor','care','cooperate','serve'].includes(action)){
    const names=['복이','동수','진이','서운','막동','금례','칠복','덕이'];
    const name=names[Math.floor(roll(life.seed,life.year+67)*names.length)];
@@ -387,8 +444,10 @@ function choose(life,index){
   if(action==='mentor'&&work.code==='teacher')work.resources.pupils=clamp(work.resources.pupils+1,0,45);
  }
  const id='joseon6:'+q.id;
- life.logEvent(eventTitle+' — '+picked.label,'joseon6-choice');life.log.at(-1).causeId=id;
- s.decisions++;s.followups.push({id:q.id,year:life.year+3,action:action.replace(/^enter:/,''),topic:eventTitle,failed});s.followups=s.followups.slice(-40);
+ if(!sentences.length)sentences.push(q.type==='path'?(s.memories.at(-1)||'하던 일을 나누어 맡기로 했다.'):'일을 멈추고 하던 방법을 다시 살폈다.');
+ life.logEvent(sentences.join(' '),'joseon6-choice');life.log.at(-1).causeId=id;
+ life.log.at(-1).eventTitle=eventTitle;life.log.at(-1).choiceLabel=picked.label;
+ s.decisions++;if(FOLLOW[action]||failed)s.followups.push({id:q.id,year:life.year+3,action:action.replace(/^enter:/,''),topic:eventTitle,failed});s.followups=s.followups.slice(-40);
  s.active=null;life.pending=null;promote(life,s);
  return true;
 }

@@ -1251,7 +1251,6 @@
     safeRemove(SAVE_KEY);
     const summary=life.summary();
     const choiceLog=life.log.filter(window.OneLifeBiography328.isChoice);
-    const careLife=World13.summary(life);
     const oldLife=Joseon.isJoseon(life)?Joseon.summary(life):null;
     const oldSocial=oldLife&&Joseon5?.summary(life);
     const oldJobs=oldLife&&Joseon6?.summary(life);
@@ -1262,58 +1261,9 @@
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=oldJobs?.primary?.name||(!['아직 정해지지 않음','학생'].includes(life.career)?life.career:'살림과 일상');
     const firstPlace=History.place({...life,year:life.birthYear});
-    // End-of-life meaning comes from actions the player actually took, not
-    // from a random praise/penalty unrelated to their family history.
-    const colonial=life.colonialDaily;
-    const traces=colonial?.threads||{};
-    const carried=[];
-    if((traces.records||0)>=3)carried.push('남겨 둔 장부와 글이 뒤에 닥친 일을 이해할 때 도움이 되었다.');
-    if((traces.neighbors||0)>=3)carried.push('곤란한 때 서로 도왔던 이웃들의 이름을 기억했다.');
-    if((traces.learning||0)>=3)carried.push('어렵게 배운 글과 말이 오래도록 삶에 남았다.');
-    if((traces.provisions||0)>=3)carried.push('가족의 끼니와 살림을 위해 준비했던 일을 기억했다.');
-    if((traces.familyNews||0)>=3)carried.push('먼 곳에 있는 가족의 이름과 소식을 끝까지 놓지 않으려 했다.');
-    const colonialLegacy=colonial?.decisions?.length?carried.slice(0,3).join(' '):'';
-    const chapters=[
-      life.birthYear+'년, '+firstPlace+'에서 태어났다.',
-      oldLife?'태어날 때는 '+(oldSocial?.originLabel||Joseon.ensure(life).birthStatus+' 집안')+'에서 자랐다. '+oldLife.region+'에서 '+oldLife.occupation+' 일을 하며 세월을 보냈다.':window.OneLifeBiography328.recap(life),
-      oldSocial&&oldSocial.obligations.length?'사는 동안 '+oldSocial.obligations.slice(-2).join(', ')+' 같은 부담과 의무도 겪었다.':'',
-      oldSocial&&oldSocial.memories.length?'살면서 남은 일에는 '+oldSocial.memories.slice(-2).join(' ') :'',
-      oldJobs?.primary?'생업은 '+oldJobs.primary.name+'이었다. 마지막 생업 기록에는 '+oldJobs.primary.supply+' · '+oldJobs.primary.people+'이 남아 있다.'+(oldJobs.primary.contacts.length?' 그 일을 하며 인연을 맺은 사람은 '+oldJobs.primary.contacts.length+'명이었다.':''):'',
-      oldJobs?.secondary?'틈틈이 '+oldJobs.secondary.name+'의 일도 함께 했다.':'',
-      oldJobs?.primary?.stories?.length?'기억에 남는 생업의 일은 '+oldJobs.primary.stories.slice(-2).join(' ') :'',
-      oldLife&&oldLife.warMemory.length?'삶에 영향을 준 사건은 '+oldLife.warMemory.join(', ')+'이었다.':'',
-      oldLife&&Joseon19?.summary(life)?.decisions?
-        '고을 수령과 관아의 일에 '+Joseon19.summary(life).decisions+'번 관여하고, 여러 번 달라지는 징수와 감찰을 지켜보았다.':'',
-      oldLife&&Joseon18?.summary(life)?.decisions?
-        '토지세·군포·환곡과 관아의 문제를 겪으며 '+Joseon18.summary(life).decisions+'번의 선택을 했다. '+
-        (Joseon18.summary(life).complaints?'억울함을 호소한 집안의 기록도 남았다. ':''):'',
-      oldLife&&Joseon14?.summary(life)?.captivity?
-        (Joseon14.summary(life).captivity.status==='returned'?
-         '고향을 떠나 있던 세월 끝에 돌아와 새로 일과 가족의 생활을 꾸렸다. ':
-         '고향과 떨어진 곳에서 남은 세월을 지냈다. '):'',
-      oldLife&&Joseon14?.summary(life)?.familyLine?.length?
-        '앞세대에서 이어져 온 집안 이야기가 '+Joseon14.summary(life).familyLine.length+'대 남아 있다.':'',
-      oldLife&&Joseon13?.summary(life)?.decisions?
-        (Joseon13.summary(life).damage?'전란에 무너진 살림을 오래 돌보아야 했다. ':'')+
-        (Joseon13.summary(life).returned.length?'헤어진 가족과 다시 만난 날도 있었다. ':'')+
-        (Joseon13.summary(life).missing.length?'끝내 안부를 알지 못한 식구를 그리워했다.':''):'',
-      oldLife&&Joseon4.summary(life).spouse?'혼인하여 '+Joseon4.particle(Joseon4.summary(life).spouse.name,'과','와')+' 삶을 함께한 시절이 있었다.':'',
-      oldLife&&Joseon2.summary(life).events?'살아가는 동안 '+Joseon2.summary(life).events+'가지 지역·시대 변화도 지나갔다.':'',
-      oldLife&&Joseon3.summary(life).legacy?'마지막에는 '+Joseon3.summary(life).legacy+'의 시간을 보냈다.':'',
-      oldLife&&Joseon4.summary(life).memories.length?'가족과 함께한 기억으로 '+Joseon4.summary(life).memories.slice(-2).join(' ') :'',
-      oldLife?(life.year>=1900?'조선에서 살던 시절에는 ':'')+
-        oldFarm(life)+' '+
-        (oldLife.economy.debt?'빚이 남아 있어 식구들의 살림은 더욱 빠듯했다.':'크고 작은 어려움 속에서도 살림은 이어졌다.'):'',
-      oldLife&&life.stats.bonds>=65?'돈의 많고 적음과 관계없이 곁을 지킨 사람과 함께한 시간이 있었다.':'',
-      colonialLegacy,
-      life.deathReason,
-      !oldLife&&life.world?.educationLevel&&life.world.educationLevel!=='없음'
-        ?'살면서 '+life.world.educationLevel+'의 시간을 보냈다.':'',
-      life.career&&!['학생','아직 정해지지 않음'].includes(life.career)?'마지막으로 기억되는 일은 '+life.career+'이었다.':'',
-      (Travel22?.summary(life)?.movements?.length?'고향을 떠났다가 다시 돌아오거나 타향에서 살아간 시간도 이 인생의 일부였다.':''),
-      !oldLife&&careLife.careYears?'가족을 돌보며 보낸 시간도 '+careLife.careYears+'년이었다.':'',
-      !oldLife&&careLife.memories.length?'마지막까지 떠오른 기억은 '+careLife.memories.slice(-2).join(', ')+'였다.':''
-    ].filter(Boolean);
+    const chapters=window.OneLifeBiography328.chapters(life,{
+      place:firstPlace,origin:oldLife?(oldSocial?.originLabel||Joseon.ensure(life).birthStatus+' 집안'):''
+    });
     $('endStory').replaceChildren(...chapters.map(text=>{
       const p=document.createElement('p');p.textContent=text;return p;
     }));

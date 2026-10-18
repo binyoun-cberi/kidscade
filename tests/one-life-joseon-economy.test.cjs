@@ -89,7 +89,7 @@ test('the lived household and biography show land, grain, debt, work and relatio
  assert.doesNotMatch(source,/경작한 땅 '\+.*몫/);
  assert.match(source,/e\.condition/);
  assert.match(source,/e\.debt/);
- assert.match(source,/life\.stats\.bonds>=65/);
+ assert.doesNotMatch(source,/돈의 많고 적음과 관계없이 곁을 지킨 사람/);
  assert.doesNotMatch(source,/지금까지 모아 온 집안 재산/);
 });
 test('360 simulated lives preserve poverty, autonomy and chronology across eras',()=>{
