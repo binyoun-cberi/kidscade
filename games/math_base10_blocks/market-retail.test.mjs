@@ -57,3 +57,12 @@ test('legacy shop saves preserve cash stock and expanded capacity',async()=>{
  const ensure=new Function('state','PRODUCTS','productById','normalizeRetail',main.slice(a,b)+';return ensureRetail;')(state,products,id=>products.find(p=>p.id===id),api.normalizeRetail);
  const s=ensure();assert.equal(s.cash,17700);assert.equal(s.capacity,16);assert.equal(s.items.apple.shelf,7);assert.equal(s.items.apple.warehouse,9);assert.equal(s.revenue-s.costOfGoods,0);assert.equal(state.shop,undefined);assert.deepEqual(ensure(),s);
 });
+
+test('one-at-a-time restocking preserves unpacked warehouse stock',()=>{
+ const s=api.createRetail(products),item=s.items.apple,total=item.shelf+item.warehouse;
+ for(let i=0;i<4;i++){const before=item.shelf;assert.ok(api.restockRetail(s,'apple',1).ok);assert.equal(item.shelf,before+1);assert.equal(item.shelf+item.warehouse,total)}
+ assert.equal(api.restockRetail(s,'apple',1).ok,false);
+ assert.ok(api.orderRetail(s,'apple').ok);
+ const before=JSON.stringify(s);assert.equal(api.restockRetail(s,'apple',0).ok,false);assert.equal(JSON.stringify(s),before);
+ assert.deepEqual(api.normalizeRetail(JSON.parse(before),products),s);
+});
