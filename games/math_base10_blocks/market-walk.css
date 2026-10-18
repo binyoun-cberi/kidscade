@@ -67,3 +67,13 @@ body.lifeTown .locationChip{display:block}
   .chaseHud{top:94px;width:calc(100vw - 20px);min-width:0}
   .dayResultGrid,.weekResultGrid{grid-template-columns:repeat(2,1fr)}
 }
+
+/* Cashier shift: make the register feel like a small neighborhood store job. */
+.cashierBanner{display:flex;align-items:center;gap:10px;margin-top:10px;padding:9px 11px;border-radius:14px;background:#e8f2e5;border:1px solid #c8dec4}
+.cashierBanner>span{width:40px;height:40px;display:grid;place-items:center;border-radius:13px;background:#fffdf7;font-size:24px;flex:none}
+.cashierBanner b,.cashierBanner small{display:block}
+.cashierBanner b{font-size:12px}
+.cashierBanner small{font-size:9px;color:#5e7166;font-weight:800;margin-top:2px}
+.cashierShift .checkoutCard{border-top:6px solid #d18a52}
+.cashierShift .checkoutStep{color:#9b5b2c}
+@media(max-width:650px){.cashierBanner{padding:8px}.cashierBanner>span{width:36px;height:36px;font-size:21px}.cashierBanner b{font-size:15px}.cashierBanner small{font-size:13px}}
