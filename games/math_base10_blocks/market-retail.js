@@ -13,7 +13,7 @@ export function normalizeRetail(raw,products){
  return s;
 }
 export function orderRetail(s,id){const item=s.items[id];if(!item)return {ok:false,message:'취급하지 않는 상품이에요.'};const cost=item.cost*4;if(item.warehouse>36)return {ok:false,message:'창고가 가득 찼어요. 먼저 진열해 주세요.'};if(s.cash<cost)return {ok:false,message:'가게 운영비가 부족해요.'};s.cash-=cost;s.ordered+=cost;item.warehouse+=4;return {ok:true,message:'한 상자 4개가 입고됐어요.'}}
-export function restockRetail(s,id){const item=s.items[id];if(!item||!item.warehouse)return {ok:false,message:'창고에 상품이 없어요. 먼저 발주해 주세요.'};const n=Math.min(item.warehouse,s.capacity-item.shelf);if(n<=0)return {ok:false,message:'진열대가 가득 찼어요.'};item.warehouse-=n;item.shelf+=n;return {ok:true,message:n+'개를 진열했어요.'}}
+export function restockRetail(s,id,limit=Infinity){const item=s.items[id];if(!item||!item.warehouse)return {ok:false,message:'창고에 상품이 없어요. 먼저 발주해 주세요.'};const n=Math.min(item.warehouse,s.capacity-item.shelf,Math.max(0,Math.floor(limit)));if(n<=0)return {ok:false,message:'진열대가 가득 찼어요.'};item.warehouse-=n;item.shelf+=n;return {ok:true,message:n+'개를 진열했어요.'}}
 export function priceRetail(s,id,delta,products){const item=s.items[id],base=products.find(p=>p.id===id)?.price;if(!item||!base)return;item.price=Math.max(Math.ceil(base*.8/100)*100,Math.min(Math.floor(base*1.4/100)*100,item.price+delta))}
 export function retailBasket(s,products,random=Math.random){
  const remaining=Object.fromEntries(Object.entries(s.items).map(([id,x])=>[id,x.shelf])),basket=[],count=2+Math.floor(random()*4);
