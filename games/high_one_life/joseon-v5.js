@@ -93,7 +93,7 @@ function make(life){
   if(origin==='소작 농가')j.land=Math.max(1,j.land);
   if(origin==='어부 가계'||origin==='주막 가계')j.land=Math.min(j.land,1);
  }
- if(life.age===0)life.logEvent(s.originLabel+'에서 태어났다. '+(s.freed?'법적 노비제는 이미 폐지되었지만 가족의 처지는 쉽게 바뀌지 않았다.':info.duty+'이 집안의 생활과 가까웠다.'),'joseon5-family');
+ if(life.age===0)life.logEvent(s.originLabel+'에서 태어났다. '+(s.freed?'법적 노비제는 이미 폐지되었지만 가족의 처지는 쉽게 바뀌지 않았다.':''),'joseon5-family');
  if(life.money&&life.year<1900)life.money.netWorth=j.capital*100;
  return s;
 }
