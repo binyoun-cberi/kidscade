@@ -75,7 +75,9 @@ test('rebuild damages shelter and land while changing old granary, trust and cos
  assert.ok(s.repair>=4);
  const copy=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));
  assert.deepEqual(War.summary(copy),War.summary(l));
- copy.pending=null;copy.year=1602;copy.age=32;
+ copy.pending=null;copy.year=1603;copy.age=33;
+ // Repairs recur in years congruent to 1 modulo 3, while damage remains.
+ War.ensure(copy).damage=2;
  War.yearly(copy,War.ensure(copy));
  assert.ok(copy.log.some(e=>e.kind==='joseon13-followup'));
 });

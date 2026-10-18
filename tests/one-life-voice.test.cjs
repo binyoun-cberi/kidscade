@@ -19,9 +19,9 @@ test('ordinary player-facing narrative has no developer-aside appended to each e
  }
 });
 test('historical fiction and public data remain explicitly distinguished in one accessible place',()=>{
- assert.match(ui,/역사와 이야기의 구분/);
+ assert.match(ui,/자료 출처 및 제작 방식/);
  assert.match(ui,/세계은행/);
- assert.match(ui,/실제 개인이나 그 시대 사람들의 삶을 대표하지 않습니다/);
+ assert.match(ui,/개인의 삶은 창작입니다/);
  assert.match(ui,/나이별 곡선은 게임에서 재구성한 값/);
  assert.match(ui,/게임 속 금액/);
 });

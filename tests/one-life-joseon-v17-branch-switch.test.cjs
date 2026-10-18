@@ -108,7 +108,7 @@ test('separate branches can be switched repeatedly without reusing each other’
  assert.equal(Tree.summary(again).selfId,b);
 });
 test('switching a fictional descendant marks that exact person as played',()=>{
- const l=branchFamily(668),node=Tree.summary(l).nodes.find(p=>p.simulated&&p.birthYear<=l.year-12&&!p.diedYear);
+ const l=branchFamily(668),node=Tree.summary(l).nodes.find(p=>p.simulated&&p.role!=='spouse'&&p.birthYear<=l.year-12&&!p.diedYear);
  if(!node){return;}
  const next=Switch.switchTo(l,node.id);
  assert.ok(next);const changed=Tree.summary(next).nodes.find(p=>p.id===node.id);
@@ -118,9 +118,10 @@ test('switching a fictional descendant marks that exact person as played',()=>{
 test('switch does not work for someone deceased, unborn, or a time outside Joseon',()=>{
  const l=branchFamily(1949),tree=Tree.summary(l);
  const p=tree.nodes.find(n=>tree.branches.some(b=>b.id===n.id));
- p.alive=false;
+ const raw=V4.ensure(l).people.find(n=>n.name===p.name);assert.ok(raw);
+ raw.alive=false;raw.diedYear=l.year;
  assert.equal(Switch.switchTo(l,p.id),null);
- p.alive=true;
+ raw.alive=true;raw.diedYear=null;
  assert.equal(Switch.switchTo(l,'not-family'),null);
  l.year=1900;l.age=1900-l.birthYear;
  assert.equal(Switch.options(l).length,0);
