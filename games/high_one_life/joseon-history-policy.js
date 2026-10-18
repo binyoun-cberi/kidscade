@@ -17,13 +17,14 @@ const SOURCES=Object.freeze({
 });
 const REGIONAL_DAEDONG=Object.freeze({
  '경기도':1608,'강원도':1623,'충청도':1651,'전라도':1662,
- '경상도':1678,'황해도':1708,'함경도':1666
+ '경상도':1678,'황해도':1708
 });
 // Whole-province start years are simplified; Jeolla's coast received it in
 // 1658 and inland in 1662. Pyeongan used distinct fiscal arrangements.
 function tribute(year,region){
  if(year>=1894)return {kind:'land-reform',title:'갑오개혁 이후의 조세 변화',note:'지세와 납세 제도가 개편되었다.',source:SOURCES.tax};
  if(region==='한양')return {kind:'capital',title:'도성의 세금과 생업 부담',note:'도성의 호역·상업과 생업에 따른 부담은 지방의 공납과 같지 않았다.',source:SOURCES.tax};
+ if(region==='함경도'&&year>=1666)return {kind:'sangjeong',title:'함경도의 대동상정법',note:'함경도의 상정 공납 규정은 삼남 등의 대동미와 달랐다.',start:1666,source:'https://encykorea.aks.ac.kr/Article/E0014255'};
  if(region==='평안도')return {kind:'pyeongan',title:'평안도의 고유한 세금과 공역',note:'평안도는 전국 대동미 규칙을 그대로 적용할 수 없었다.',source:SOURCES.tax};
  const start=REGIONAL_DAEDONG[region];
  if(year>=(start??Infinity)){

@@ -29,7 +29,7 @@ test('Daedong begins in Gyeonggi in 1608, not in 1750',()=>{
  assert.equal(P.tribute(1665,'경기도').kind,'daedong');
 });
 test('province-specific Daedong chronology keeps inland Jeolla and Gyeongsang later',()=>{
- for(const [region,year] of [['강원도',1623],['충청도',1651],['전라도',1662],['함경도',1666],['경상도',1678],['황해도',1708]]){
+ for(const [region,year] of [['강원도',1623],['충청도',1651],['전라도',1662],['경상도',1678],['황해도',1708]]){
   assert.notEqual(P.tribute(year-1,region).kind,'daedong',region);
   assert.equal(P.tribute(year,region).kind,'daedong',region);
  }
@@ -158,3 +158,5 @@ test('script load order and policy provenance remain visible',()=>{
  assert.ok(html.indexOf('joseon-v1.js')<html.indexOf('joseon-v4.js'));
  assert.ok(P.SOURCES.tax.includes('encykorea.aks.ac.kr'));
 });
+
+test('Hamgyeong keeps its distinct 1666 sangjeong scheme',()=>{assert.notEqual(P.tribute(1665,'함경도').kind,'sangjeong');assert.equal(P.tribute(1666,'함경도').kind,'sangjeong');assert.notEqual(P.tribute(1750,'함경도').kind,'daedong');});

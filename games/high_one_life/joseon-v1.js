@@ -97,7 +97,7 @@ function economicView(life,s){
 }
 function handsLabel(l){return '일손 '+l.hands+'명 · 돌봄이 필요한 식구 '+l.dependents+'명';}
 function recordEconomy(life){
- const s=life.joseon;if(!s||life.year>=1900)return;
+ const s=life.joseon;if(!s||!life.alive||life.year>=1900)return;
  const e=economicBook(s),now=s.capital,was=e.previousCapital;
  const today=economicView(life,s);
  if(e.currentYear===life.year)return;
@@ -489,6 +489,7 @@ function yearly(life){
   if(life.year<1894&&s.status!=='천민'){
    if(levy?.kind==='daedong')expense+=Math.max(1,Math.round(s.land*1.2));
    else if(levy?.kind==='tribute')expense+=3;
+   else if(levy?.kind==='sangjeong')expense+=3;
    else if(levy?.kind==='pyeongan')expense+=2;
    else if(levy?.kind==='capital')expense+=2;
   }
@@ -536,9 +537,9 @@ function yearly(life){
   }else if(event.kind==='reform'){
    s.status='법적 신분제 폐지';note(life,s,'법에서 신분을 구분하던 제도가 폐지되었다. 그러나 오래된 차별은 곧바로 사라지지 않았다.','joseon-memory');
   }else if(event.kind==='tax'){
-   if(event.year===1608&&s.region==='경기도'||event.year===1750&&s.birthStatus==='상민'){
-    s.capital+=6;note(life,s,'새로운 조세 제도에 대한 소식이 집안의 부담을 다시 생각하게 했다.','joseon-memory');
-   }
+   if(event.year===1608&&s.region==='경기도')note(life,s,'공물을 마련하던 방식을 바꾸어 납부 장부를 살피게 되었다.','joseon-memory');
+   if(event.year===1750&&P?.military(life.year,life.joseon5?.origin||s.birthStatus,life.gender)?.kind==='gyunyeok')
+    note(life,s,'군포가 한 필로 줄었다는 소식을 듣고 이번에 낼 베를 헤아렸다.','joseon-memory');
   }else if(event.kind==='learning'){
    note(life,s,'새로운 학문과 기록에 관한 소식이 고을에 전해졌다.','joseon-memory');
   }

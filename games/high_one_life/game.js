@@ -44,6 +44,7 @@
   const JoseonWomen327 = window.OneLifeJoseonWomen327 || null;
   const History = window.OneLifeHistory;
   const Calendar=window.OneLifeCalendar337;
+  const HistoryLife=window.OneLifeHistoryLife338;
   const Official=window.OneLifeOfficialStats||{countries:{}};
   const metric=(key)=>life?.birthYear===2026?Official.countries?.[life?.country?.[0]]?.[key]||null:null;
   const metricLabel=(key,label,unit='')=>{
@@ -812,13 +813,14 @@
       if (entry.kind === 'decision') li.className = 'is-decision';
       else if (entry.kind === 'decision-effect') li.className = 'is-choice-effect';
       else if (entry.kind === 'history') li.className = 'is-history';
+      else if (entry.kind?.startsWith('joseon338-'))li.className='is-history-choice';
       else if (['history-choice','history-impact','history-followup','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon5-memory','joseon5-family','joseon6-choice','joseon6-followup','joseon6-memory','joseon7-followup','joseon9-followup','joseon7-choice','joseon9-choice','joseon-followup','joseon2-followup','joseon3-followup','joseon4-followup','joseon-memory','joseon2-memory','joseon3-memory','joseon4-memory','colonialDaily-choice','colonialDaily-followup','joseonAnnals-choice','joseonAnnals-followup','joseonAnnals-fact','joseon11-choice','joseon11-followup','joseon11-memory','joseon12-choice','joseon12-followup','joseon12-memory','joseon13-choice','joseon13-followup','joseon13-family','joseon13-memory','joseon14-choice','joseon14-followup','joseon14-return','joseon14-captivity','joseon14-generations'].includes(entry.kind)) li.className = 'is-history-choice';
       const age = document.createElement('b');
       age.textContent = entry.age + '세';
       const text = document.createElement('span');
       text.textContent = entry.text;
       li.append(age,text);
-      const fact=Calendar?.matchEntry(entry);
+      const fact=Calendar?.matchEntry(entry)||HistoryLife?.matchEntry(life,entry);
       if(fact){
         const source=document.createElement('a');source.href=fact.source;
         source.target='_blank';source.rel='noopener noreferrer';source.className='calendar-source';

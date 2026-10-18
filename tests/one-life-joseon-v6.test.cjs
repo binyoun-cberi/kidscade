@@ -41,16 +41,16 @@ test('family choice past 1900 changes only that decision cost, not the whole bal
  assert.ok(l.money.netWorth>700000);
  assert.equal(l.log.at(-1).causeId,'joseon4:audit-modern');
 });
-test('famine choices cannot share nonexistent grain, but can request help',()=>{
+test('famine choices cannot share nonexistent grain, but can borrow with a liability',()=>{
  const l=born(1670,17),s=V2.ensure(l);
  s.grain=0;s.active={id:'audit-famine',kind:'famine',title:'흉년',year:l.year};
  l.pending='joseon2:audit-famine';
  const prompt=l.getChoice();
- assert.ok(prompt.options.some(x=>x.action==='askHelp'));
+ assert.ok(prompt.options.some(x=>x.action==='borrow'));
  assert.ok(!prompt.options.some(x=>x.action==='share'));
- const before=s.community;
- assert.equal(l.choose(prompt.options.findIndex(x=>x.action==='askHelp')),true);
- assert.ok(s.community>before);
+ const before=s.grain;
+ assert.equal(l.choose(prompt.options.findIndex(x=>x.action==='borrow')),true);
+ assert.equal(s.grain,before+3);assert.equal(s.famineLoans.at(-1).remaining,4);
  assert.equal(l.log.at(-1).causeId,'joseon2:audit-famine');
  s.grain=20;s.active={id:'audit-share',kind:'famine',title:'흉년',year:l.year};l.pending='joseon2:audit-share';
  assert.ok(l.getChoice().options.some(x=>x.action==='share'));
