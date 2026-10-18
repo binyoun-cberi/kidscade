@@ -183,7 +183,8 @@ function processYear(life){
  const hit=at(life.year);
  if(hit&&!s.eventsSeen.includes(hit.year)){
   s.eventsSeen.push(hit.year);
-  record(life,s,hit.year+'년 · '+hit.title+' — '+hit.detail,'history');
+  if(!life.log.some(e=>e.kind==='history'&&e.year===hit.year&&e.text.startsWith(hit.year+'년 · '+hit.title+' — ')))
+   record(life,s,hit.year+'년 · '+hit.title+' — '+hit.detail,'history');
   if(hit.type==='famine'){
    const shock=age<6?8:18+(j.household*2);
    s.grain=clamp(s.grain-shock,0,200);

@@ -22,7 +22,8 @@ function processYear(life,s){
   if(s.factsSeen.includes(fact.id))continue;
   s.factsSeen.push(fact.id);
   if(s.factsSeen.length>MAX_FACTS)s.factsSeen.shift();
-  life.logEvent(fact.year+'년 · '+fact.title+' — '+fact.detail,'history');
+  if(!life.log.some(e=>e.kind==='history'&&e.year===fact.year&&e.text.startsWith(fact.year+'년 · '+fact.title+' — ')))
+   life.logEvent(fact.year+'년 · '+fact.title+' — '+fact.detail,'history');
   Effects.autoContext(life,s,fact);
  }
  // Scheduled consequences of past player choices, never attached to unrelated lives.

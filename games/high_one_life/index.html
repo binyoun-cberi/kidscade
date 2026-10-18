@@ -29,6 +29,7 @@
 <link rel="stylesheet" href="./joseon-genealogy-v15.css?v=2">
 <link rel="stylesheet" href="./identity-v20.css?v=1">
 <link rel="stylesheet" href="./travel-v22.css?v=1">
+<link rel="stylesheet" href="./history-calendar-v337.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -336,6 +337,15 @@
             <p id="choiceText"></p><div id="choiceOptions" class="choice-options"></div>
             <p class="choice-note">정답은 없습니다. 다른 선택은 다른 이야기를 만듭니다.</p>
           </div>
+          <section class="history-calendar" aria-labelledby="calendar337Title">
+            <div class="stat-title"><strong id="calendar337Title">올해, 나라에서는</strong><span id="calendar337Year"></span></div>
+            <p id="calendar337Empty" class="hidden">올해 연표에 실린 새 사건은 없습니다.</p>
+            <ul id="calendar337Current" class="calendar-events"></ul>
+            <details><summary>살아온 시대의 연표</summary>
+              <p class="calendar-note">나의 일상 곁에서 흘러간 역사입니다. 연도별로 살펴보세요.</p>
+              <ol id="calendar337Past" class="calendar-events calendar-past"></ol>
+            </details>
+          </section>
           <div class="v9-chronicle-tools"><span id="v9ChronicleCount">인생의 기록</span><button id="v9TimelineMore" type="button">이전 기록 더 보기</button></div>
           <ol id="timeline" class="timeline" aria-label="인생 연대기"></ol>
           <div id="waiting" class="waiting"><span class="pulse" aria-hidden="true"></span><span>시간이 흐르며 새로운 이야기가 펼쳐지고 있습니다.</span></div>
@@ -413,6 +423,7 @@
       <div class="end-summary"><div><span>태어난 곳</span><b id="endCountry">—</b></div><div><span>살아온 시간</span><b id="endAge">—</b></div><div><span>삶의 방향</span><b id="endCareer">—</b></div></div>
       <div class="end-finance">남겨진 살림 <strong id="endNetWorth">—</strong><span> · 게임 속 금액</span></div>
       <p id="endStory" class="end-story"></p>
+      <details class="history-calendar"><summary>이 삶과 함께 흘러간 역사</summary><ol id="calendar337End" class="calendar-events calendar-past"></ol></details>
       <div class="end-choice-review"><div class="end-divider">삶을 바꾼 갈림길</div><ol id="endChoices" class="end-highlights" aria-label="삶에서 내린 선택"></ol><p class="end-choice-note">어떤 선택은 오래 남았고, 어떤 일은 뜻밖에 찾아왔습니다.</p></div>
       <div id="endComparison" class="end-comparison hidden" aria-live="polite">
         <h3>같은 출생, 다른 선택</h3>
@@ -516,14 +527,14 @@
 <script src="./history-data-v10.js?v=2"></script>
 <script src="./history-stories-v10.js?v=3"></script>
 <script src="./history-effects-v10.js?v=5"></script>
-<script src="./world-v10.js?v=2"></script>
+<script src="./world-v10.js?v=3"></script>
 <script src="./history-choices-v11.js?v=2"></script>
 <script src="./era-policy-v12.js?v=2"></script>
 <script src="./world-v12.js?v=2"></script>
 <script src="./world-v13.js?v=2"></script>
 <script src="./joseon-history-policy.js?v=1"></script>
-<script src="./joseon-v1.js?v=15"></script>
-<script src="./joseon-v2.js?v=5"></script>
+<script src="./joseon-v1.js?v=16"></script>
+<script src="./joseon-v2.js?v=6"></script>
 <script src="./joseon-culture-v1.js?v=4"></script>
 <script src="./joseon-v3.js?v=7"></script>
 <script src="./joseon-v4.js?v=9"></script>
@@ -549,6 +560,7 @@
 <script src="./joseon-women-v326.js?v=1"></script>
 <script src="./joseon-women-v327.js?v=1"></script>
 <script src="./biography-v328.js?v=2"></script>
-<script src="./game.js?v=64"></script>
+<script src="./history-calendar-v337.js?v=1"></script>
+<script src="./game.js?v=65"></script>
 </body>
 </html>
