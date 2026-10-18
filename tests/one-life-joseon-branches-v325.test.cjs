@@ -175,7 +175,7 @@ test('detention skips ordinary home economies and provides a releasable choice',
 });
 test('browser integrates Joseon branch before drawing life and covers saved traces',()=>{
  const html=fs.readFileSync(path.join(dir,'index.html'),'utf8');
- const a=html.indexOf('consequences-v30.js?v=2'),b=html.indexOf('joseon-branches-v325.js?v=2'),c=html.indexOf('game.js?v=62');
+ const a=html.indexOf('consequences-v30.js?v=2'),b=html.indexOf('joseon-branches-v325.js?v=2'),c=html.indexOf('game.js?v=63');
  assert.ok(a>=0&&b>a&&c>b);
  for(const id of ['life325Panel','life325Summary','life325Records'])assert.ok(html.includes('id="'+id+'"'));
  const game=fs.readFileSync(path.join(dir,'game.js'),'utf8');
