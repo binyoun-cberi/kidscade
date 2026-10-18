@@ -43,6 +43,8 @@ test('four customer payments update store ledger and pay wages once',async()=>{
  const run=new Function(...Object.keys(args),next+actions+';return {nextCashierCustomer,scanItem,submitTotal,chooseCash,submitChange,finishCheckout};')(...Object.values(args));
  run.nextCashierCustomer();
  for(let n=0;n<4&&state.cashierShift;n++){state.basket.forEach((_,i)=>run.scanItem(i));ui.totalInput.value=String(cartTotal());run.submitTotal();run.chooseCash(state.cashierShift.current.tender);ui.changeInput.value=String(state.paid-cartTotal());run.submitChange();assert.equal(state.changeConfirmed,true);await run.finishCheckout()}
- assert.equal(state.cashierShift,null);assert.equal(state.workedDay,1);assert.equal(state.dailyIncome,12000);assert.equal(state.money,47000);assert.equal(state.inventory.length,0);assert.equal(state.basket.length,0);assert.ok(state.retail.sold>0);assert.equal(state.retail.cash,60000+state.retail.revenue);
+ assert.equal(state.cashierShift,null);assert.equal(state.workedDay,1);assert.equal(state.dailyIncome,12000);assert.equal(state.money,47000);assert.equal(state.inventory.length,0);assert.equal(state.basket.length,0);assert.ok(state.retail.sold>0);assert.equal(state.retail.cash,30000+state.retail.revenue);
  await run.finishCheckout();assert.equal(state.money,47000);
 });
+
+test('store expansion persists and raises shelf capacity without free upgrades',()=>{const s=api.createRetail(products);const before=s.cash;assert.equal(api.expandRetail(s).ok,true);assert.equal(s.cash,before-20000);assert.equal(s.capacity,16);assert.equal(s.expansionSpent,20000);const cash=s.cash;assert.equal(api.expandRetail(s).ok,false);assert.equal(s.cash,cash);s.items.apple.warehouse=20;api.restockRetail(s,'apple');assert.equal(s.items.apple.shelf,16);assert.equal(api.normalizeRetail(JSON.parse(JSON.stringify(s)),products).capacity,16)});
