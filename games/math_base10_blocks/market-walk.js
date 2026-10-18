@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {createRetail,normalizeRetail,orderRetail,restockRetail,priceRetail,retailBasket,sellRetail,expandRetail} from './market-retail.js?v=2';
+import {createRetail,normalizeRetail,orderRetail,restockRetail,priceRetail,retailBasket,sellRetail,expandRetail,warehouseLimit,upgradeWarehouse,unlockRetail,hireRetailStaff,payRetailStaff,reservedRetailBasket} from './market-retail.js?v=3';
 import {retailPath} from './market-customer-route.js?v=1';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
@@ -438,7 +438,7 @@ async function buildStore(){
  ]);
  box([2,.8,1.05],[-3.3,.4,2.7],0x356a55);box([2,.1,1.1],[-3.3,.85,2.7],0x173b31);addCollider(-3.3,2.7,2,1.1);await addMarket('cash-register',.75,[-3.7,.9,2.7],Math.PI);interactable('checkout','셀프 계산대',-3.3,3.7,1.8);sign('계산대',[-3.3,1.8,2.7],.35,'#2f7d60');
  if(!state.hasCart)await addMarket('shopping-cart',1.05,[3.55,0,3.15],-.35);interactable('cartBay','카트 보관소',2.65,3.2,1.8);interactable('homeDoor','동네로 나가기',1.05,3.7,1.8);sign('밖으로',[1.05,2.46,4.27],.22,'#2f7d60');
- await buildMarketProducts();ensureRetail();renderRetailShelfSigns();box([.65,.45,.55],[1.9,.23,2.8],0xb78750);sign('납품 · 창고',[1.9,1.18,2.8],.18);interactable('retailSupply','납품 상자',1.9,2.8,1.1);if(state.hasCart)await spawnCart();if(state.held?.id)await showHeldModel(state.held.id);setSpawn('market');renderHud();
+ ensureRetail();buildRetailExpansion();await buildMarketProducts();await buildRetailStaff();renderRetailShelfSigns();box([.9,.12,.7],[3.85,.07,1.8],0x655341);box([.68,.42,.5],[3.85,.34,1.8],0xb78750);box([.08,.43,.51],[3.85,.34,1.8],0xe8d5a9);addCollider(3.85,1.8,.9,.7);sign('입고 · 창고',[3.85,1.12,1.8],.17);interactable('retailSupply','입고 · 창고',3.2,1.8,1.2);if(state.hasCart)await spawnCart();if(state.held?.id)await showHeldModel(state.held.id);setSpawn('market');renderHud();
 }
 
 async function buildTown(from='home'){
@@ -604,6 +604,7 @@ function workOffice(){
 function treatAtHospital(){if(!state.treatmentNeeded)return toast('지금은 꼭 치료가 필요한 상태가 아니에요.');const kind=state.injury||'sick',cost=HOSPITAL_COST[kind]||HOSPITAL_COST.sick;state.money-=cost;state.dailyExpense+=cost;state.condition=kind==='car'?clamp(state.condition+32,0,100):clamp(state.condition+24,0,100);state.dailyIncidents.push('🏥 '+(kind==='dog'?'강아지 물림':kind==='car'?'교통사고':'몸 상태')+' 치료비 '+fmt(cost)+'을 냈어요.');state.injury=null;state.treatmentNeeded=false;tone('good');renderHud();save();toast('치료를 받았어요. 진료비 '+fmt(cost)+'이 나갔어요.')}
 
 function productPlacement(p){
+ if(['produce','bakery'].includes(p.zone)){const f=retailFacing(p);return [f.x,f.y,f.z]}
  const zoneItems=PRODUCTS.filter(x=>x.zone===p.zone),i=zoneItems.indexOf(p);let key,index;
  if(p.zone==='produce'){key=i<4?'produceA':'produceB';index=i%4}else if(p.zone==='bakery'){key='bakery';index=i}else if(p.zone==='chilled'||p.zone==='protein'){key='chilled';index=p.zone==='protein'?i:i+2}else{key='island';index=p.zone==='pantry'?i:i+3}
  const b=marketDisplays[key],size=b.getSize(new THREE.Vector3()),surface=(marketDisplaySurfaces[key]??b.max.y)+.015;let x,z;
@@ -736,60 +737,121 @@ function renderCarryControls(){
 }
 
 
-let retailGuest=null,retailGuestToken=0,retailDepartures=[],retailCopies=[];
+let retailGuest=null,retailGuests=[],retailGuestToken=0,retailDepartures=[],retailCopies=[],retailSpawnClock=0,retailSpawning=false,retailStaffClock=0,retailStaffModel=null;
 function clearRetailGuests(){
- retailGuestToken++;if(retailGuest)retailGuest.root.removeFromParent();retailGuest=null;
- for(const guest of retailDepartures)guest.root.removeFromParent();retailDepartures=[];document.getElementById('retailGuestNote')?.remove();
+ retailGuestToken++;for(const g of retailGuests)g.root.removeFromParent();retailGuests=[];retailGuest=null;retailSpawning=false;
+ for(const g of retailDepartures)g.root.removeFromParent();retailDepartures=[];document.getElementById('retailGuestNote')?.remove();
 }
+function pickedRetailCount(id){return retailGuests.reduce((n,g)=>n+(g.picked[id]||0),0)}
+
 function retailGuestNote(text){
  let el=document.getElementById('retailGuestNote');if(!el){el=document.createElement('div');el.id='retailGuestNote';el.style.cssText='position:fixed;top:88px;left:50%;transform:translateX(-50%);z-index:40;background:#fff8e9;color:#173b31;padding:12px 16px;border-radius:16px;max-width:85vw;box-shadow:0 4px 18px #0003';el.innerHTML='<span></span> <button type="button" style="padding:8px">근무 중단</button>';el.querySelector('button').onclick=()=>{clearRetailGuests();state.cashierShift=null;state.basket=[];state.scanned=new Set();state.phase='shopping';state.running=true;renderRetailShelfSigns();renderHud();save()};document.body.append(el)}el.querySelector('span').textContent=text;
+}
+
+
+async function buildRetailStaff(){
+ retailStaffModel=null;if(!state.retail?.staff)return;
+ const root=await fitted(MARKET+'character-employee.glb',1.55);root.position.set(3.1,0,1.8);world.add(root);retailStaffModel={root,path:null,waypoint:0,clock:0,walkMixer:startModelAnimation(root,/walk/i),product:null};sign('진열 직원',[0,1.85,0],.15,'#2f7d60',root);
+}
+function updateRetailStaff(dt){
+ const actor=retailStaffModel;if(!actor)return;retailStaffClock+=dt;
+ if(!actor.product&&retailStaffClock>=4){retailStaffClock=0;const id=Object.keys(state.retail.items).find(id=>state.retail.items[id].warehouse>0&&state.retail.items[id].shelf<state.retail.capacity);if(id){actor.product=id;actor.path=retailPath([actor.root.position.x,actor.root.position.z],productById(id).pos,colliders);actor.waypoint=0;if(!actor.path)actor.product=null}}
+ if(actor.product&&moveRetailActor(actor,dt)){const id=actor.product;actor.product=null;restockRetail(state.retail,id,1);animateRetailPlacement(productById(id),actor.root.position);renderRetailShelfSigns();save();if(state.cashierShift)state.cashierShift.stockClosed=false}
+}
+
+function buildRetailExpansion(){
+ const shop=state.retail;if(shop.capacity>=16){
+  box([1.25,.12,.65],[2,.68,1.25],0xc18d54);for(const x of [1.45,2.55])box([.08,.65,.55],[x,.325,1.25],0x536855);
+  addCollider(2,1.25,1.25,.65);marketDisplays.expansion=new THREE.Box3(new THREE.Vector3(1.375,0,.925),new THREE.Vector3(2.625,.74,1.575));marketDisplaySurfaces.expansion=.74;sign(shop.unlocked?'포도 · 옥수수':'추가 진열대',[2,1.45,1.25],.2);
+ }
+ for(let level=1;level<(shop.warehouseLevel||1);level++){box([.9,.08,.7],[3.85,.7+level*.45,1.8],0x536855);box([.6,.32,.45],[3.85,.9+level*.45,1.8],0xb78750)}
+}
+function retailFixture(p){
+ if(['grapes','corn'].includes(p.id)&&state.retail?.unlocked&&marketDisplays.expansion)return {key:'expansion',index:p.id==='grapes'?0:1,lanes:2};
+ if(p.zone==='produce'){const i=PRODUCTS.filter(x=>x.zone==='produce').indexOf(p);return {key:i<4?'produceA':'produceB',index:i%4,lanes:4}}
+ const i=PRODUCTS.filter(x=>x.zone==='bakery').indexOf(p);return {key:'bakery',index:Math.max(0,i),lanes:PRODUCTS.filter(x=>x.zone==='bakery').length};
+}
+function retailFacing(p){
+ const spec=retailFixture(p),b=marketDisplays[spec.key],width=(b.max.x-b.min.x)/spec.lanes;
+ return {x:b.min.x+width*(spec.index+.5),z:(b.min.z+b.max.z)/2,y:(marketDisplaySurfaces[spec.key]??b.max.y)+.015,width:width-.06,depth:b.max.z-b.min.z-.1,front:b.max.z+.035};
+}
+function retailSamples(count,width,depth,size){
+ const visible=Math.min(4,Math.max(0,count)),cols=visible>1?2:1,rows=Math.ceil(visible/cols),scale=Math.min(1,width/(cols*size*1.08),depth/(Math.max(1,rows)*size*1.08));
+ const gap=size*scale*1.08;
+ return Array.from({length:visible},(_,i)=>({x:(i%cols-(cols-1)/2)*gap,z:(Math.floor(i/cols)-(rows-1)/2)*gap,scale}));
 }
 function syncRetailProducts(){
  for(const copy of retailCopies)copy.removeFromParent();retailCopies=[];
  if(state.location!=='market'||!state.retail)return;
  for(const v of labelViews.filter(v=>v.kind==='market')){
   const item=state.retail.items[v.id];if(!item)continue;
-  const count=Math.max(0,item.shelf-(retailGuest?.picked[v.id]||0));v.root.visible=false;
-  for(let i=0;i<count;i++){const model=v.root.clone(true);model.visible=true;model.scale.multiplyScalar(.43);model.position.x+=(i%4-1.5)*.11;model.position.z+=(Math.floor(i/4)-1.5)*.11;world.add(model);retailCopies.push(model)}
-  v.label.innerHTML=productById(v.id).name+'<small>'+fmt(state.cashierShift?.active?item.price:discountedPrice(productById(v.id)))+' · '+(count?count+'개':'품절')+'</small>';
+  const p=productById(v.id),count=Math.max(0,item.shelf-(pickedRetailCount(v.id))),facing=retailFacing(p);v.root.visible=false;
+  for(const slot of retailSamples(count,facing.width,facing.depth,marketProductVisualSize(p))){
+   const model=v.root.clone(true);model.visible=true;model.scale.multiplyScalar(slot.scale);model.position.set(facing.x+slot.x,facing.y,facing.z+slot.z);world.add(model);retailCopies.push(model);
+  }
+  v.label.innerHTML=p.name+'<small>'+fmt(state.cashierShift?.active?item.price:discountedPrice(p))+' · '+(count?'재고 '+count+'개':'품절')+'</small>';
  }
 }
+
 async function beginRetailGuest(){
- if(retailGuest||state.phase==='retailWalk')return;
- state.phase='retailWalk';state.running=false;ui.checkout.classList.remove('show');ui.checkout.setAttribute('aria-hidden','true');renderHud();
- const token=++retailGuestToken,shift=state.cashierShift;retailGuestNote('손님이 들어오고 있어요.');
- const root=await fitted(CITY_PEOPLE_ASSETS[shift.served%8],1.55).catch(()=>null);
+ const shift=state.cashierShift;if(!shift||retailSpawning||retailGuests.length>=3||shift.spawned>=shift.target)return;
+ const basket=reservedRetailBasket(state.retail,PRODUCTS,retailGuests.map(g=>g.basket));if(!basket.length){shift.stockClosed=true;return}
+ retailSpawning=true;const token=retailGuestToken,number=shift.spawned,root=await fitted(CITY_PEOPLE_ASSETS[number%8],1.55).catch(()=>null);retailSpawning=false;
  if(token!==retailGuestToken||state.cashierShift!==shift)return;
- if(!root){state.phase='shopping';state.running=true;state.cashierShift=null;state.basket=[];document.getElementById('retailGuestNote')?.remove();renderHud();return toast('손님 모습을 불러오지 못했어요. 다시 영업을 시작해 주세요.',true)}
- root.position.set(1,0,4);world.add(root);
- const bag=box([.3,.25,.2],[.34,.63,.04],0xba8a52,.9,root);
- const stops=[...new Set(state.basket)].map(id=>({id,target:productById(id).pos}));stops.push({id:null,target:[-3.25,3.75]});
- retailGuest={root,bag,stops,index:0,path:null,waypoint:0,pause:0,picked:{},clock:0};
- playerPos.set(0,1.62,3.7);yaw=0;pitch=-.12;camera.position.copy(playerPos);camera.rotation.y=yaw;camera.rotation.x=pitch;
- renderRetailShelfSigns();
+ if(!root){shift.stockClosed=true;toast('손님 모습을 준비하지 못했어요.',true);return}
+ const customer=CASHIER_CUSTOMERS[number%CASHIER_CUSTOMERS.length],total=sum(basket.map(id=>state.retail.items[id].price)),tenders=[1000,5000,10000,20000,50000].filter(v=>v>=total);
+ root.position.set(1,0,4);world.add(root);const bag=box([.3,.25,.2],[.34,.63,.04],0xba8a52,.9,root);
+ const stops=[...new Set(basket)].map(id=>({id,target:productById(id).pos}));stops.push({id:null,target:[-3.25,3.75]});
+ retailGuests.push({root,bag,basket,customer:{...customer,arrived:true,tender:tenders[Math.floor(Math.random()*tenders.length)]},stops,index:0,path:null,waypoint:0,pause:0,picked:{},clock:0,queued:false,walkMixer:startModelAnimation(root,/walk/i)});
+ shift.spawned++;renderRetailShelfSigns();
 }
+function startRetailCustomers(){
+ const wage=payRetailStaff(state.retail,state.day);state.cashierShift={active:true,served:0,target:state.retail.unlocked?8:state.retail.capacity>=16?6:4,mistakes:0,revenue:0,margin:0,spawned:0,stockClosed:false,staffActive:wage.ok&&state.retail.staff};
+ state.workedDay=state.day;state.basket=[];state.phase='retailWalk';state.running=false;retailSpawnClock=0;retailStaffClock=0;save();renderHud();retailGuestNote(wage.ok?'영업을 시작했어요. 손님이 들어오고 있어요.':wage.message);beginRetailGuest();
+}
+function takeQueuedCustomer(){
+ if(retailGuest||!state.cashierShift)return;
+ const guest=retailGuests.find(g=>g.queued);if(!guest)return;
+ retailGuest=guest;state.basket=[...guest.basket];state.cashierShift.current=guest.customer;state.scanned=new Set();state.totalConfirmed=false;state.paid=0;state.changeConfirmed=false;
+ state.phase='shopping';document.getElementById('retailGuestNote')?.remove();openCheckout();
+}
+function endRetailDay(){
+ const shift=state.cashierShift;if(!shift)return;const pay=shift.served?Math.max(2000,shift.served*3000-shift.mistakes*600):0;
+ state.money+=pay;state.dailyIncome+=pay;state.workedDay=state.day;if(shift.served)state.weekStats.workDays=(state.weekStats.workDays||0)+1;state.hunger=clamp(state.hunger-10,0,100);state.condition=clamp(state.condition-4,5,100);
+ state.dailyIncidents.push('🧾 마트 손님 '+shift.served+'명을 응대하고 '+fmt(pay)+'을 받았어요.');
+ clearRetailGuests();state.cashierShift=null;state.basket=[];state.scanned=new Set();state.phase='shopping';state.running=true;ui.checkout.classList.remove('show');ui.checkout.setAttribute('aria-hidden','true');document.body.classList.remove('cashierShift');renderHud();save();renderRetailShelfSigns();
+ showRetailPrep('영업 완료 · 손님 '+shift.served+'명 · 매출 '+fmt(shift.revenue)+' · 판매 이익 '+fmt(shift.margin)+' · 내 일당 '+fmt(pay));
+}
+
 function moveRetailActor(actor,dt){
  if(!actor.path||actor.waypoint>=actor.path.length)return true;
  const p=actor.path[actor.waypoint],dx=p[0]-actor.root.position.x,dz=p[1]-actor.root.position.z,d=Math.hypot(dx,dz),travel=dt*1.8;
  if(d<=travel){actor.root.position.x=p[0];actor.root.position.z=p[1];actor.waypoint++}else{actor.root.position.x+=dx/d*travel;actor.root.position.z+=dz/d*travel}
- actor.root.rotation.y=Math.atan2(dx,dz);actor.clock=(actor.clock||0)+dt;actor.root.position.y=Math.abs(Math.sin(actor.clock*9))*.018;
+ const targetAngle=Math.atan2(dx,dz),difference=Math.atan2(Math.sin(targetAngle-actor.root.rotation.y),Math.cos(targetAngle-actor.root.rotation.y));actor.root.rotation.y+=difference*Math.min(1,dt*12);actor.clock=(actor.clock||0)+dt;actor.root.position.y=0;actor.walkMixer?.update(dt);
  return actor.waypoint>=actor.path.length;
 }
 function updateRetailGuests(dt){
- for(let i=retailDepartures.length-1;i>=0;i--){const a=retailDepartures[i];if(moveRetailActor(a,dt)){a.root.removeFromParent();retailDepartures.splice(i,1)}}
- const g=retailGuest;if(!g||state.phase!=='retailWalk')return;
- if(g.pause>0){g.pause-=dt;g.root.rotation.z=Math.sin(g.pause*4)*.035;return}
- g.root.rotation.z=0;const stop=g.stops[g.index];
- if(!g.path){g.path=retailPath([g.root.position.x,g.root.position.z],stop.target,colliders);g.waypoint=0;
-  if(!g.path){clearRetailGuests();state.cashierShift=null;state.basket=[];state.phase='shopping';state.running=true;renderRetailShelfSigns();renderHud();save();toast('통로가 막혀 손님이 이동하지 못했어요.',true);return}
-  retailGuestNote(stop.id?state.cashierShift.current.name+' 손님이 '+productById(stop.id).name+'을 살펴봐요.':'손님이 계산대로 오고 있어요.');
+ for(let i=retailDepartures.length-1;i>=0;i--){const actor=retailDepartures[i];if(moveRetailActor(actor,dt)){actor.root.removeFromParent();retailDepartures.splice(i,1)}}
+ const shift=state.cashierShift;if(!shift||!['retailWalk','checkout'].includes(state.phase))return;
+ retailSpawnClock-=dt;if(retailSpawnClock<=0&&retailGuests.length<3&&shift.spawned<shift.target&&!shift.stockClosed){retailSpawnClock=2;beginRetailGuest()}
+ for(const g of retailGuests){
+  if(g.queued)continue;
+  if(g.pause>0){g.pause-=dt;g.bag.rotation.z=Math.sin(Math.max(0,g.pause)/.8*Math.PI)*-.22;continue}
+  g.bag.rotation.z=0;const stop=g.stops[g.index];
+  if(!g.path){const queueSlot=retailGuests.filter(x=>x.queued).length;const target=stop.id?stop.target:[-3.25+queueSlot*.75,3.75];g.path=retailPath([g.root.position.x,g.root.position.z],target,colliders);g.waypoint=0;
+   if(!g.path){endRetailDay();toast('통로가 막혀 오늘 영업을 마쳤어요.',true);return}
+  }
+  if(!moveRetailActor(g,dt))continue;
+  if(stop.id){g.picked[stop.id]=g.basket.filter(id=>id===stop.id).length;g.bag.scale.y=1+Object.keys(g.picked).length*.1;g.pause=.8;g.index++;g.path=null;renderRetailShelfSigns()}
+  else{const slot=retailGuests.filter(x=>x.queued).length,target=[-3.25+slot*.75,3.75];if(Math.hypot(g.root.position.x-target[0],g.root.position.z-target[1])>.1){g.path=retailPath([g.root.position.x,g.root.position.z],target,colliders);g.waypoint=0}else{g.queued=true;g.root.rotation.y=Math.PI}}
  }
- if(!moveRetailActor(g,dt))return;
- if(stop.id){g.picked[stop.id]=state.basket.filter(id=>id===stop.id).length;g.bag.scale.y=1+Object.keys(g.picked).length*.1;g.pause=.8;g.index++;g.path=null;renderRetailShelfSigns();return}
- state.cashierShift.current.arrived=true;document.getElementById('retailGuestNote')?.remove();state.phase='shopping';openCheckout();
+ if(shift.staffActive)updateRetailStaff(dt);
+ if(!retailGuest){takeQueuedCustomer();if(!retailGuest){state.phase='retailWalk';retailGuestNote('장보는 손님 '+retailGuests.filter(g=>!g.queued).length+'명 · 계산 대기 '+retailGuests.filter(g=>g.queued).length+'명')}}
+ if(!retailGuests.length&&!retailSpawning&&(shift.spawned>=shift.target||shift.stockClosed))endRetailDay();
 }
+
 function departRetailGuest(){
- if(!retailGuest)return;const g=retailGuest;retailGuest=null;g.path=retailPath([g.root.position.x,g.root.position.z],[1,4],colliders);g.waypoint=0;g.root.rotation.z=0;
+ if(!retailGuest)return;const g=retailGuest;retailGuests=retailGuests.filter(x=>x!==g);for(const waiting of retailGuests)if(waiting.queued){waiting.queued=false;waiting.path=null}retailGuest=null;g.path=retailPath([g.root.position.x,g.root.position.z],[1,4],colliders);g.waypoint=0;g.root.rotation.z=0;
  if(g.path)retailDepartures.push(g);else g.root.removeFromParent();
 }
 
@@ -815,16 +877,16 @@ function putRetailItem(){
  renderRetailShelfSigns();renderHud();
 }
 function returnRetailBox(){if(!retailCarry)return;clearRetailCarry();renderHud();toast('남은 상품을 창고에 돌려놓았어요.')}
-function animateRetailPlacement(p){
+function animateRetailPlacement(p,origin=playerPos){
  const original=labelViews.find(v=>v.kind==='market'&&v.id===p.id)?.root;if(!original)return;
- const model=original.clone(true),target=original.position.clone();model.visible=true;world.add(model);const from=new THREE.Vector3(playerPos.x,.95,playerPos.z),started=performance.now();model.scale.multiplyScalar(.7);
+ const f=retailFacing(p),slots=retailSamples(state.retail.items[p.id].shelf,f.width,f.depth,marketProductVisualSize(p)),slot=slots[slots.length-1]||{x:0,z:0,scale:1};const model=original.clone(true),target=new THREE.Vector3(f.x+slot.x,f.y,f.z+slot.z);model.visible=true;world.add(model);const from=new THREE.Vector3(origin.x,.95,origin.z),started=performance.now();model.scale.multiplyScalar(slot.scale);
  function frame(now){if(state.location!=='market'){model.removeFromParent();return}const t=Math.min(1,(now-started)/260);model.position.lerpVectors(from,target,t);model.position.y+=Math.sin(t*Math.PI)*.22;if(t<1)requestAnimationFrame(frame);else model.removeFromParent()}requestAnimationFrame(frame);
 }
 let retailShelfSigns=[];
 function renderRetailShelfSigns(){syncRetailProducts();
  for(const v of retailShelfSigns){v.removeFromParent();v.material.map?.dispose();v.material.dispose()}retailShelfSigns=[];
  if(state.location!=='market'||!state.retail)return;
- for(const [id,x] of Object.entries(state.retail.items)){const p=productById(id);retailShelfSigns.push(sign(p.name+' '+Math.max(0,x.shelf-(retailGuest?.picked[id]||0))+'/'+state.retail.capacity,[p.pos[0],.72,p.pos[1]],.13,x.shelf?'#2f7d60':'#b94f4b'))}
+ for(const [id,x] of Object.entries(state.retail.items)){const p=productById(id);const f=retailFacing(p),count=Math.max(0,x.shelf-(pickedRetailCount(id)));retailShelfSigns.push(sign(p.name+' · '+(count?count+'개':'품절'),[f.x,Math.max(.3,f.y-.10),f.front],Math.min(.115,f.width/4.1),count?'#2f7d60':'#b94f4b'))}
 }
 
 function ensureRetail(){if(!state.retail&&state.shop){const old=state.shop,items={};for(const [id,x]of Object.entries(old.stock||{}))items[id]={shelf:x.shelf,warehouse:x.back,price:productById(id)?.price};state.retail={cash:old.cash,capacity:old.capacity,revenue:old.sales,costOfGoods:old.sales,customers:old.customers,items}}state.retail=normalizeRetail(state.retail,PRODUCTS);delete state.shop;return state.retail}
@@ -834,30 +896,34 @@ function showRetailPrep(summary=''){
  if(retailCarry)return toast('들고 있는 상자를 먼저 진열하거나 돌려놓아 주세요.');if(state.held||state.basket.length)return toast('장보던 상품을 먼저 정리해 주세요.');ensureRetail();state.phase='retailPrep';state.running=false;for(const key in keys)keys[key]=false;touch.active=false;touch.x=touch.y=0;
  retailPanel.classList.add('show');renderRetailPrep(summary);retailPanel.querySelector('[data-retail-close]').focus();
 }
+
+function renderRetailGrowth(){
+ const s=state.retail;return '<section class="retailNote" aria-label="가게 성장"><h3>가게 키우기</h3><p>진열대 → 창고 → 새 상품 → 직원 순서로 넓혀 보세요.</p><button data-warehouse '+(s.capacity<16||s.warehouseLevel>=3||s.cash<15000*s.warehouseLevel?'disabled':'')+'>창고 '+s.warehouseLevel+'단계 · '+(s.warehouseLevel>=3?'확장 완료':fmt(15000*s.warehouseLevel)+'에 확장')+'</button> <button data-unlock '+(s.capacity<16||s.warehouseLevel<2||s.unlocked||s.cash<10000?'disabled':'')+'>'+(s.unlocked?'포도 · 옥수수 취급 중':'새 상품 계약 · 10,000원')+'</button> <button data-hire '+(!s.unlocked||s.staff||s.cash<12000?'disabled':'')+'>'+(s.staff?'진열 직원 고용 완료':'진열 직원 고용 · 12,000원')+'</button><p>창고: 상품마다 '+warehouseLimit(s)+'개 · '+(s.staff?'직원 출근 급여 2,000원 / 하루':'직원은 진열을 도와요.')+'</p></section>';
+}
 function renderRetailPrep(summary=''){
  const s=state.retail,done=state.workedDay===state.day;
- retailPanel.innerHTML='<div class="checkoutCard retailCard"><div class="checkoutHead"><div><h2>우리 동네 마트 · 영업 준비</h2><p>운영비로 상품을 발주하고, 창고 물건을 진열한 뒤 손님을 맞아요.</p></div><button class="closeBtn" data-retail-close aria-label="영업 준비 닫기">×</button></div><div class="retailStats"><div>가게 운영비<b>'+fmt(s.cash)+'</b></div><div>누적 매출<b>'+fmt(s.revenue)+'</b></div><div>판매 이익<b>'+fmt(s.revenue-s.costOfGoods)+'</b></div><div>진열한 상품<b>'+retailStockCount()+'개</b></div></div><p class="retailNote" role="status">'+(summary||'가게 운영비와 내 생활비는 따로예요. 판매 이익은 매출에서 팔린 상품의 원가를 뺀 금액이에요.')+'</p><div class="retailProducts">'+Object.entries(s.items).map(([id,x])=>{const p=productById(id);return '<article class="retailProduct"><header><span>'+foodIcon(id)+'</span><div><b>'+p.name+'</b><small>원가 '+fmt(x.cost)+' · 기준가 '+fmt(p.price)+'</small></div></header><div class="retailShelf"><span>진열 '+x.shelf+'/'+s.capacity+'</span><meter min="0" max="'+s.capacity+'" value="'+x.shelf+'">'+x.shelf+'</meter><small>창고 '+x.warehouse+'개</small></div><div class="retailPrice"><button data-price="-100" data-id="'+id+'" aria-label="'+p.name+' 판매가 100원 내리기">−</button><b>'+fmt(x.price)+'</b><button data-price="100" data-id="'+id+'" aria-label="'+p.name+' 판매가 100원 올리기">＋</button></div><div class="retailActions"><button data-order="'+id+'" '+(s.cash<x.cost*4||x.warehouse>36?'disabled':'')+'>4개 발주 · '+fmt(x.cost*4)+'</button><button data-stock="'+id+'" '+(!x.warehouse||x.shelf>=s.capacity?'disabled':'')+'>상자 들기 · 최대 4개</button></div></article>'}).join('')+'</div><p class="retailNote">판매가는 기준가의 80~140% 안에서 정해요. 비싼 상품은 손님이 덜 고르고, 진열대가 빈 상품은 팔리지 않아요.</p><div class="checkoutFooter"><button data-expand-store '+(s.capacity>=16||s.cash<20000?'disabled':'')+'>'+(s.capacity>=16?'진열대 확장 완료':'진열대 확장 · 20,000원')+'</button><button data-retail-close>매장으로</button><button class="primary" data-open-store '+(done||!retailStockCount()?'disabled':'')+'>'+(done?'오늘 근무 완료':'영업 시작 · 손님 4명')+'</button></div></div>';
+ retailPanel.innerHTML='<div class="checkoutCard retailCard"><div class="checkoutHead"><div><h2>우리 동네 마트 · 영업 준비</h2><p>운영비로 상품을 발주하고, 창고 물건을 진열한 뒤 손님을 맞아요.</p></div><button class="closeBtn" data-retail-close aria-label="영업 준비 닫기">×</button></div><div class="retailStats"><div>가게 운영비<b>'+fmt(s.cash)+'</b></div><div>누적 매출<b>'+fmt(s.revenue)+'</b></div><div>직원 급여 제외 이익<b>'+fmt(s.revenue-s.costOfGoods-s.staffExpense)+'</b></div><div>진열한 상품<b>'+retailStockCount()+'개</b></div></div><p class="retailNote" role="status">'+(summary||'가게 운영비와 내 생활비는 따로예요. 판매 이익은 매출에서 팔린 상품의 원가를 뺀 금액이에요.')+'</p><div class="retailProducts">'+Object.entries(s.items).map(([id,x])=>{const p=productById(id);return '<article class="retailProduct"><header><span>'+foodIcon(id)+'</span><div><b>'+p.name+'</b><small>원가 '+fmt(x.cost)+' · 기준가 '+fmt(p.price)+'</small></div></header><div class="retailShelf"><span>진열 '+x.shelf+'/'+s.capacity+'</span><meter min="0" max="'+s.capacity+'" value="'+x.shelf+'">'+x.shelf+'</meter><small>창고 '+x.warehouse+' / '+warehouseLimit(s)+'개</small></div><div class="retailPrice"><button data-price="-100" data-id="'+id+'" aria-label="'+p.name+' 판매가 100원 내리기">−</button><b>'+fmt(x.price)+'</b><button data-price="100" data-id="'+id+'" aria-label="'+p.name+' 판매가 100원 올리기">＋</button></div><div class="retailActions"><button data-order="'+id+'" '+(s.cash<x.cost*4||x.warehouse>warehouseLimit(s)-4?'disabled':'')+'>4개 발주 · '+fmt(x.cost*4)+'</button><button data-stock="'+id+'" '+(!x.warehouse||x.shelf>=s.capacity?'disabled':'')+'>상자 들기 · 최대 4개</button></div></article>'}).join('')+'</div>'+renderRetailGrowth()+'<p class="retailNote">판매가는 기준가의 80~140% 안에서 정해요. 비싼 상품은 손님이 덜 고르고, 진열대가 빈 상품은 팔리지 않아요.</p><div class="checkoutFooter"><button data-expand-store '+(s.capacity>=16||s.cash<20000?'disabled':'')+'>'+(s.capacity>=16?'진열대 확장 완료':'진열대 확장 · 20,000원')+'</button><button data-retail-close>매장으로</button><button class="primary" data-open-store '+(done||!retailStockCount()?'disabled':'')+'>'+(done?'오늘 근무 완료':'영업 시작 · 최대 3명 동시 장보기')+'</button></div></div>';
 }
 function closeRetailPrep(){retailPanel.classList.remove('show');state.phase='shopping';state.running=true;renderHud();save();ui.interactBtn.focus()}
-retailPanel.addEventListener('click',e=>{
+retailPanel.addEventListener('click',async e=>{
  const b=e.target.closest('button');if(!b)return;
  if(b.hasAttribute('data-retail-close'))return closeRetailPrep();
  if(b.hasAttribute('data-open-store')){
   if(state.workedDay===state.day||!retailStockCount())return;
-  retailPanel.classList.remove('show');state.cashierShift={active:true,served:0,target:4,mistakes:0,revenue:0,margin:0};nextCashierCustomer();openCheckout();return
+  retailPanel.classList.remove('show');startRetailCustomers();return
  }
- let result;if(b.hasAttribute('data-expand-store'))result=expandRetail(state.retail);else if(b.dataset.order)result=orderRetail(state.retail,b.dataset.order);else if(b.dataset.stock)return takeRetailBox(b.dataset.stock);else if(b.dataset.price)priceRetail(state.retail,b.dataset.id,Number(b.dataset.price),PRODUCTS);else return;
- save();renderRetailPrep(result?.message||'판매가를 바꿨어요.');
+ let result;if(b.hasAttribute('data-warehouse'))result=upgradeWarehouse(state.retail);else if(b.hasAttribute('data-unlock'))result=unlockRetail(state.retail,PRODUCTS);else if(b.hasAttribute('data-hire'))result=hireRetailStaff(state.retail);else if(b.hasAttribute('data-expand-store'))result=expandRetail(state.retail);else if(b.dataset.order)result=orderRetail(state.retail,b.dataset.order);else if(b.dataset.stock)return takeRetailBox(b.dataset.stock);else if(b.dataset.price)priceRetail(state.retail,b.dataset.id,Number(b.dataset.price),PRODUCTS);else return;
+ save();if(result?.ok&&(b.hasAttribute('data-expand-store')||b.hasAttribute('data-warehouse')||b.hasAttribute('data-unlock')||b.hasAttribute('data-hire'))){await buildStore();showRetailPrep(result.message)}else renderRetailPrep(result?.message||'판매가를 바꿨어요.');
 });
 window.addEventListener('keydown',e=>{if(e.code==='Escape'&&retailCarry){e.preventDefault();returnRetailBox();return}if(e.code==='Escape'&&state.phase==='retailPrep'){e.preventDefault();closeRetailPrep()}});
 document.addEventListener('click',e=>{if(e.target.closest('[data-retail-put]'))putRetailItem();if(e.target.closest('[data-retail-jump]'))jumpToRetailShelf();if(e.target.closest('[data-retail-return]'))returnRetailBox();if(e.target.closest('[data-shop-open]')&&state.location==='market'&&state.phase!=='checkout'&&!state.basket.length)showRetailPrep()});
 function startCashierShift(){if(state.basket.length)return toast('카트에 담긴 물건을 먼저 계산하거나 비워 주세요.');showRetailPrep()}
 
-function openCheckout(){if(retailCarry)return toast('상품 상자를 먼저 진열하거나 돌려놓아 주세요.');if(state.location!=='market'||state.phase==='checkout')return;if(!state.basket.length){startCashierShift();return}if(state.cashierShift?.active&&!state.cashierShift.current.arrived){beginRetailGuest();return}state.phase='checkout';state.running=false;state.scanned=new Set();state.totalConfirmed=false;state.paid=0;state.changeConfirmed=false;ui.totalInput.value='';ui.changeInput.value='';ui.checkout.classList.add('show');ui.checkout.setAttribute('aria-hidden','false');renderCheckout();tone('scan')}
+function openCheckout(){if(retailCarry)return toast('상품 상자를 먼저 진열하거나 돌려놓아 주세요.');if(state.location!=='market'||state.phase==='checkout')return;if(!state.basket.length){startCashierShift();return}if(state.cashierShift?.active&&!state.cashierShift.current?.arrived)return;state.phase='checkout';state.running=false;state.scanned=new Set();state.totalConfirmed=false;state.paid=0;state.changeConfirmed=false;ui.totalInput.value='';ui.changeInput.value='';ui.checkout.classList.add('show');ui.checkout.setAttribute('aria-hidden','false');renderCheckout();tone('scan')}
 function closeCheckout(){if(state.phase!=='checkout')return;const leavingShift=!!state.cashierShift?.active;if(leavingShift){clearRetailGuests();state.cashierShift=null;state.basket=[];state.scanned=new Set();toast('계산대 근무를 마쳤어요. 오늘 근무 수당은 지급되지 않았어요.')}state.phase='shopping';state.running=true;renderRetailShelfSigns();ui.checkout.classList.remove('show');ui.checkout.setAttribute('aria-hidden','true');document.body.classList.remove('cashierShift');renderHud();save()}
 function checkoutStage(){return state.scanned.size<state.basket.length?'scan':!state.totalConfirmed?'total':!state.paid?'pay':'change'}
 function renderCheckoutStage(){const stage=checkoutStage(),shift=!!state.cashierShift?.active,ids=['scan','total','pay','change'];for(const id of ids)$('#'+id+'Section').classList.toggle('hidden',id!==stage);$('#checkoutStep').textContent=(ids.indexOf(stage)+1)+' / 4 · '+({scan:'상품 스캔',total:'총액 계산',pay:shift?'받은 돈 확인':'낼 돈 선택',change:'거스름돈 계산'}[stage]);ui.finishCheckout.classList.toggle('hidden',!state.changeConfirmed);ui.checkout.querySelector('.checkoutCard').scrollTop=0}
-function renderCheckout(){const all=state.scanned.size===state.basket.length,shift=state.cashierShift?.active?state.cashierShift:null;document.body.classList.toggle('cashierShift',!!shift);$('#checkoutEyebrow').textContent=shift?'오늘의 마트 알바':'SELF CHECKOUT';$('#checkoutTitle').textContent=shift?'계산대 근무':'직접 계산하기';$('#cashierBanner').classList.toggle('hidden',!shift);$('#cashTitle').textContent=shift?'3. 받은 돈 확인':'3. 낼 돈 선택';if(shift){$('#cashierAvatar').textContent=shift.current.emoji;$('#cashierProgress').textContent='손님 '+(shift.served+1)+' / '+shift.target+' · 대기 '+Math.max(0,shift.target-shift.served-1)+'명';$('#cashierLine').textContent=shift.current.name+' 손님: “'+shift.current.line+'” '+fmt(shift.current.tender)+'을 건넸어요.';$('#checkoutBudgetLabel').textContent='가게 운영비';$('#cashHint').textContent='손님이 건넨 금액과 같은 버튼을 눌러요.'}else{$('#checkoutBudgetLabel').textContent='남은 식비';$('#cashHint').textContent='총액보다 같거나 큰 금액'}ui.scanStat.textContent=state.scanned.size+' / '+state.basket.length;ui.checkoutMoney.textContent=shift?fmt(state.retail.cash):fmt(state.money);ui.checkoutPaid.textContent=state.paid?fmt(state.paid):'-';ui.checkoutChange.textContent=state.changeConfirmed?'✓':'?';ui.scanItems.innerHTML=state.basket.map((id,i)=>{const p=productById(id),scanned=state.scanned.has(i);return '<button class="scanItem '+(scanned?'scanned':'')+'" data-scan="'+i+'"><span><b>'+(scanned?'✓ ':'')+p.name+'</b><small>'+ZONES[p.zone].name+'</small></span><strong>'+fmt(discountedPrice(p))+'</strong></button>'}).join('');ui.receipt.innerHTML=[...state.scanned].sort((a,b)=>a-b).map(i=>{const p=productById(state.basket[i]);return '<div class="receiptLine"><span>'+p.name+'</span><b>'+fmt(discountedPrice(p))+'</b></div>'}).join('')||'<div class="receiptLine"><span>스캔한 상품이 여기에 표시돼요.</span></div>';ui.totalSection.classList.toggle('locked',!all);ui.paySection.classList.toggle('locked',!state.totalConfirmed);ui.changeSection.classList.toggle('locked',!state.paid);ui.checkoutGuide.textContent=!all?'상품을 하나씩 눌러 바코드를 스캔하세요.':!state.totalConfirmed?'가격을 모두 더해서 총액을 직접 입력하세요.':!state.paid?(shift?'손님이 건넨 현금을 확인하세요.':'낼 현금을 고르세요.'):(shift?'손님이 낸 돈에서 총액을 빼 거스름돈을 계산하세요.':'낸 돈에서 총액을 빼서 거스름돈을 직접 입력하세요.');if(state.totalConfirmed){const total=cartTotal(),opts=shift?[1000,5000,10000,20000,50000].filter(v=>v>=total):[10000,20000,30000,50000,state.money].filter(v=>v>=total&&v<=state.money);if(!shift&&total<=5000&&state.money>=5000)opts.unshift(5000);ui.cashOptions.innerHTML=[...new Set(opts)].slice(0,5).map(v=>'<button class="cashBtn '+(state.paid===v?'selected':'')+'" data-cash="'+v+'">'+fmt(v)+'</button>').join('')}else ui.cashOptions.innerHTML='<button class="cashBtn" disabled>총액을 먼저 맞혀 주세요</button>';ui.changeEquation.textContent=state.paid?state.paid.toLocaleString()+' − 총액 = ?':'낸 돈 − 총액 = ?';ui.finishCheckout.textContent=shift?'거스름돈 건네기':'결제하고 집으로';ui.backToShopping.textContent=shift?'근무 중단':'매장으로 돌아가기';ui.finishCheckout.disabled=!state.changeConfirmed;renderCheckoutStage()}
+function renderCheckout(){const all=state.scanned.size===state.basket.length,shift=state.cashierShift?.active?state.cashierShift:null;document.body.classList.toggle('cashierShift',!!shift);$('#checkoutEyebrow').textContent=shift?'오늘의 마트 알바':'SELF CHECKOUT';$('#checkoutTitle').textContent=shift?'계산대 근무':'직접 계산하기';$('#cashierBanner').classList.toggle('hidden',!shift);$('#cashTitle').textContent=shift?'3. 받은 돈 확인':'3. 낼 돈 선택';if(shift){$('#cashierAvatar').textContent=shift.current.emoji;$('#cashierProgress').textContent='손님 '+(shift.served+1)+' / '+shift.target+' · 계산 대기 '+retailGuests.filter(g=>g.queued&&g!==retailGuest).length+'명';$('#cashierLine').textContent=shift.current.name+' 손님: “'+shift.current.line+'” '+fmt(shift.current.tender)+'을 건넸어요.';$('#checkoutBudgetLabel').textContent='가게 운영비';$('#cashHint').textContent='손님이 건넨 금액과 같은 버튼을 눌러요.'}else{$('#checkoutBudgetLabel').textContent='남은 식비';$('#cashHint').textContent='총액보다 같거나 큰 금액'}ui.scanStat.textContent=state.scanned.size+' / '+state.basket.length;ui.checkoutMoney.textContent=shift?fmt(state.retail.cash):fmt(state.money);ui.checkoutPaid.textContent=state.paid?fmt(state.paid):'-';ui.checkoutChange.textContent=state.changeConfirmed?'✓':'?';ui.scanItems.innerHTML=state.basket.map((id,i)=>{const p=productById(id),scanned=state.scanned.has(i);return '<button class="scanItem '+(scanned?'scanned':'')+'" data-scan="'+i+'"><span><b>'+(scanned?'✓ ':'')+p.name+'</b><small>'+ZONES[p.zone].name+'</small></span><strong>'+fmt(discountedPrice(p))+'</strong></button>'}).join('');ui.receipt.innerHTML=[...state.scanned].sort((a,b)=>a-b).map(i=>{const p=productById(state.basket[i]);return '<div class="receiptLine"><span>'+p.name+'</span><b>'+fmt(discountedPrice(p))+'</b></div>'}).join('')||'<div class="receiptLine"><span>스캔한 상품이 여기에 표시돼요.</span></div>';ui.totalSection.classList.toggle('locked',!all);ui.paySection.classList.toggle('locked',!state.totalConfirmed);ui.changeSection.classList.toggle('locked',!state.paid);ui.checkoutGuide.textContent=!all?'상품을 하나씩 눌러 바코드를 스캔하세요.':!state.totalConfirmed?'가격을 모두 더해서 총액을 직접 입력하세요.':!state.paid?(shift?'손님이 건넨 현금을 확인하세요.':'낼 현금을 고르세요.'):(shift?'손님이 낸 돈에서 총액을 빼 거스름돈을 계산하세요.':'낸 돈에서 총액을 빼서 거스름돈을 직접 입력하세요.');if(state.totalConfirmed){const total=cartTotal(),opts=shift?[1000,5000,10000,20000,50000].filter(v=>v>=total):[10000,20000,30000,50000,state.money].filter(v=>v>=total&&v<=state.money);if(!shift&&total<=5000&&state.money>=5000)opts.unshift(5000);ui.cashOptions.innerHTML=[...new Set(opts)].slice(0,5).map(v=>'<button class="cashBtn '+(state.paid===v?'selected':'')+'" data-cash="'+v+'">'+fmt(v)+'</button>').join('')}else ui.cashOptions.innerHTML='<button class="cashBtn" disabled>총액을 먼저 맞혀 주세요</button>';ui.changeEquation.textContent=state.paid?state.paid.toLocaleString()+' − 총액 = ?':'낸 돈 − 총액 = ?';ui.finishCheckout.textContent=shift?'거스름돈 건네기':'결제하고 집으로';ui.backToShopping.textContent=shift?'근무 중단':'매장으로 돌아가기';ui.finishCheckout.disabled=!state.changeConfirmed;renderCheckoutStage()}
 function scanItem(i){if(state.phase!=='checkout'||state.scanned.has(i))return;state.scanned.add(i);tone('scan');renderCheckout()}
 function submitTotal(){if(state.scanned.size!==state.basket.length)return toast('상품을 먼저 모두 스캔해 주세요.',true);const v=Number(String(ui.totalInput.value).replace(/\D/g,'')),real=cartTotal();if(v!==real){state.checkoutMistakes++;if(state.cashierShift?.active)state.cashierShift.mistakes++;tone('bad');toast('같은 상품끼리 묶어 더한 뒤, 천 원과 백 원 자리를 나누어 확인해 보세요.',true);return}if(!state.cashierShift?.active&&real>state.money){tone('bad');toast('계산은 맞았지만 가진 식비보다 '+fmt(real-state.money)+' 많아요. 카트에서 물건을 빼 주세요.',true);closeCheckout();ui.cartPanel.classList.remove('hidden');return}state.totalConfirmed=true;ui.totalInput.blur();tone('good');renderCheckout();toast('총액이 맞아요!')}
 function chooseCash(v){if(!state.totalConfirmed||v<cartTotal())return;if(state.cashierShift?.active){if(v!==state.cashierShift.current.tender){state.cashierShift.mistakes++;state.checkoutMistakes++;tone('bad');toast('손님이 건넨 금액을 다시 확인해 주세요.',true);return}}else if(v>state.money)return;state.paid=v;state.changeConfirmed=false;ui.changeInput.value='';tone('cash');renderCheckout()}
@@ -866,16 +932,8 @@ async function finishCheckout(){
  if(!state.changeConfirmed)return;const total=cartTotal();
  if(state.cashierShift?.active){
   const shift=state.cashierShift,sale=sellRetail(state.retail,state.basket);if(!sale.ok)return toast('진열 재고를 확인하지 못했어요. 근무를 다시 시작해 주세요.',true);shift.revenue+=sale.revenue;shift.margin+=sale.margin;shift.served++;departRetailGuest();renderRetailShelfSigns();state.changeConfirmed=false;tone('good');
-  if(shift.served>=shift.target||!retailStockCount()){
-   const pay=Math.max(2000,shift.served*3000-shift.mistakes*600);
-   state.money+=pay;state.dailyIncome+=pay;state.weekStats.workDays=(state.weekStats.workDays||0)+1;state.workedDay=state.day;
-   state.hunger=clamp(state.hunger-10,0,100);state.condition=clamp(state.condition-4,5,100);
-   state.dailyIncidents.push('🧾 동네 마트 계산대에서 손님 '+shift.served+'명의 계산을 도와 '+fmt(pay)+'을 벌었어요.');
-   const served=shift.served;state.cashierShift=null;state.basket=[];state.scanned=new Set();state.phase='shopping';state.running=true;
-   ui.checkout.classList.remove('show');ui.checkout.setAttribute('aria-hidden','true');document.body.classList.remove('cashierShift');
-   renderHud();save();renderRetailShelfSigns();showRetailPrep('오늘 손님 '+served+'명 · 매출 '+fmt(shift.revenue)+' · 판매 이익 '+fmt(shift.margin)+' · 내 일당 '+fmt(pay)+(retailStockCount()?'':' · 상품이 모두 팔려 영업을 마쳤어요.'));return
-  }
-  save();nextCashierCustomer();state.phase='shopping';openCheckout();return
+  state.basket=[];state.scanned=new Set();ui.checkout.classList.remove('show');ui.checkout.setAttribute('aria-hidden','true');state.phase='retailWalk';save();renderHud();
+  if(!retailGuests.length&&shift.spawned>=shift.target)endRetailDay();else takeQueuedCustomer();return
  }
  state.money-=total;state.dailyExpense+=total;state.weekStats.spent+=total;for(const id of state.basket)state.inventory.push({uid:makeUid(id),id,age:0});state.basket=[];state.hasCart=false;state.held=null;state.scanned=new Set();state.phase='town';state.running=true;ui.checkout.classList.remove('show');ui.checkout.setAttribute('aria-hidden','true');ui.cartPanel.classList.add('hidden');tone('door');await buildTown('market');renderHud();save();toast('계산 완료! 장본 식품을 가지고 집으로 돌아가 보세요.')
 }
