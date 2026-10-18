@@ -491,6 +491,7 @@ function hydrate(life,data){
  s.pending=Array.isArray(old.pending)?old.pending.map(clean).filter(Boolean).slice(-4):[];
  s.active=clean(old.active);
  if(!life.alive||!J.inOldEra(life)||data?.pending!=='joseon6:'+s.active?.id)s.active=null;
+ if(s.active)life.pending='joseon6:'+s.active.id;
  s.domesticTeaching=old.domesticTeaching===true;
  s.followups=Array.isArray(old.followups)?old.followups.filter(x=>x&&typeof x.id==='string'&&Number.isInteger(x.year)&&x.year>life.year&&x.year<=life.year+4).slice(-40).map(x=>({id:x.id.slice(0,70),year:x.year,action:String(x.action||'').slice(0,30),topic:String(x.topic||'').slice(0,100),failed:x.failed===true})):[];
  pruneCareerChoices(life,s);

@@ -115,7 +115,8 @@ function householdFor(l,target,tree,source){
 function newPerspective(current,target,book){
  const now=current.year,seed=(current.seed^hash(target.id)^Math.imul(target.birthYear,1103515245))>>>0;
  const life=new Sim.Life(seed,{birthYear:target.birthYear,countryName:'대한민국'});
- life.year=now;life.age=now-target.birthYear;life.gender=target.sex;life.profile.name=target.name;
+ life.year=now;life.age=now-target.birthYear;life.gender=target.sex;
+ J.ensure(life);life.profile.name=target.name;
  life.pending=null;life.alive=true;
  const oldJ=J.ensure(current),j=J.ensure(life);
  j.region=oldJ.region;

@@ -129,7 +129,7 @@ test('one pending branch survives save and cannot duplicate at the same year',()
 });
 test('exact module ordering and accessible records on screen',()=>{
  const html=fs.readFileSync(path.join(dir,'index.html'),'utf8');
- const j=html.indexOf('joseon-v9-village.js?v=6'),c=html.indexOf('consequences-v30.js?v=2');
+ const j=html.search(/joseon-v9-village\.js\?v=\d+/),c=html.search(/consequences-v30\.js\?v=\d+/);
  const g=html.search(/game\.js\?v=\d+/);
  assert.ok(j>=0&&c>j&&g>c);
  for(const id of ['life30Panel','life30Count','life30Records'])assert.ok(html.includes('id="'+id+'"'));

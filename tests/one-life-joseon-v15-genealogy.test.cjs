@@ -114,7 +114,7 @@ test('UI includes both live and ending entry points and accessible detail dialog
  for(const id of ['openGenealogyBtn','endGenealogyBtn','genealogyModal','genealogyPersonDetail','genealogyGenerations','genealogyClose'])
   assert.ok(html.includes('id="'+id+'"'),id);
  assert.ok(html.includes('aria-modal="true"'));
- assert.ok(game.includes('Genealogy.summary(life)')&&game.includes('Genealogy.ROLES'));
+ assert.ok(/Genealogy\??\.summary\(life\)/.test(game)&&game.includes('Genealogy.ROLES'));
  assert.ok(game.includes("genealogyClose').addEventListener"));
 });
 test('120 simulated Joseon lives generate bounded valid genealogy and survive save',()=>{

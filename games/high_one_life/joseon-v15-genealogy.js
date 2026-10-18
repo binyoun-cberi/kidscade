@@ -25,7 +25,7 @@ function idFor(s,key,gen){
 }
 function update(s,id,v){
  let n=s.nodes.find(n=>n.id===id);
- if(!n){n={id};s.nodes.push(n);}
+ if(!n){n={id,motherId:null,fatherId:null,partnerId:null,legal:null,married:false,simulated:false,branchId:null,sideDepth:0,missing:false,returned:false};s.nodes.push(n);}
  Object.assign(n,v);return n;
 }
 function sync(l){
@@ -79,7 +79,7 @@ function sync(l){
  s.clan=clan?.clan||s.clan||'본관 미상';
  s.residence=J.summary(l).region;
  advanceBranches(l,s);
- s.nodes=s.nodes.slice(-140);
+ s.nodes=s.nodes.slice(-140).map(n=>({motherId:null,fatherId:null,partnerId:null,legal:null,married:false,simulated:false,branchId:null,sideDepth:0,missing:false,returned:false,...n}));
  return s;
 }
 function advanceBranches(l,s){

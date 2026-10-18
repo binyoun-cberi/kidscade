@@ -277,6 +277,7 @@ function hydrate(l,data){
  s.queue=Array.isArray(o.queue)?o.queue.map(safe).filter(Boolean).slice(-3):[];
  s.active=safe(o.active);
  if(!l.alive||!J.inOldEra(l)||data?.pending!=='joseon12:'+s.active?.id)s.active=null;
+ if(s.active)l.pending='joseon12:'+s.active.id;
  s.decisions=Array.isArray(o.decisions)?o.decisions.filter(x=>x&&byId.has(x.eventId)&&typeof x.id==='string'&&Number.isInteger(x.year)&&x.year<=l.year)
   .slice(-70).map(x=>({id:x.id.slice(0,72),eventId:x.eventId,year:x.year,choice:clamp(Number(x.choice)||0,0,2)})):[];
  s.followups=Array.isArray(o.followups)?o.followups.filter(x=>x&&typeof x.id==='string'&&typeof x.text==='string'&&Number.isInteger(x.year)&&x.year>l.year&&x.year<=l.year+5)

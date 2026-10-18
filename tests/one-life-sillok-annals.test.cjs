@@ -16,7 +16,7 @@ function move(l,y,region){l.year=y;l.age=y-l.birthYear;l.alive=true;l.pending=nu
 function clearChoices(l){let guard=0;while(l.pending&&!l.pending.startsWith('joseonAnnals:')&&guard++<30){const p=l.getChoice();if(p)l.choose(0);else if(l.getReflection())l.reflect('');else assert.fail('Unknown pending '+l.pending);}assert.ok(guard<30);}
 test('19 primary records have individual canonical citations and no fabricated player facts',()=>{
  assert.equal(Annals.ARTICLES.length,19);
- assert.equal(new Set(Annals.ARTICLES.map(a=>a.id)).size,7);
+ assert.equal(new Set(Annals.ARTICLES.map(a=>a.id)).size,19);
  for(const a of Annals.ARTICLES){
   assert.equal(a.url,'https://sillok.history.go.kr/id/'+a.id);
   assert.equal(a.year,+a.day.slice(0,4));

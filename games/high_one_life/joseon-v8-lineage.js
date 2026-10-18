@@ -52,6 +52,7 @@ function make(life){
   spouseSurname:spouse[0],givenName:cleanGiven(life.profile?.name,c[0]),
   generation:1,neighborsMet:0,ancestryNotes:[],updatedYear:life.year};
 }
+const FAMILY_NAMES_FOR_CHECK=/^[김이박정최윤강한신권심조임유장오서전황송홍]/;
 function decorate(life,s){
  if(life.year>=1900||!s)return;
  const given=s.givenName||cleanGiven(life.profile.name,s.surname);
@@ -65,7 +66,7 @@ function decorate(life,s){
   // Do not rename a character after it has entered the story: assign surnames
   // when a character is introduced. Older saves retain their established names.
   const hasHistory=life.age>0&&life.log.some(e=>e.text?.includes(p.name));
-  if(!hasHistory)p.name=surname+p.name;
+  if(!hasHistory&&!(p.name.length>=3&&FAMILY_NAMES_FOR_CHECK.test(p.name)))p.name=surname+p.name;
  }
 }
 function ensure(life){

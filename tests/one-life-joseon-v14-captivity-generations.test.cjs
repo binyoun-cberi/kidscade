@@ -191,8 +191,8 @@ test('Qing returnee woman faces historically specific stigma in description, not
  assert.equal(V14.reunion(l,state,'속환'),true);
  state.active={id:'1641-homeStigma',eventId:'homeStigma',year:1641};
  l.pending='joseon14:1641-homeStigma';
- assert.match(l.getChoice().description,/정절을 의심하는 부당한 말/);
- l.gender='남자';assert.doesNotMatch(l.getChoice().description,/정절을 의심하는 부당한 말/);
+ assert.match(l.getChoice().description,/돌아왔다는 이유로 정절을 의심하는 말/);
+ l.gender='남자';assert.doesNotMatch(l.getChoice().description,/돌아왔다는 이유로 정절을 의심하는 말/);
  assert.equal('diagnosis' in V14.summary(l),false);
 });
 test('Japanese repatriation can be retried at later verified missions if the first effort fails',()=>{

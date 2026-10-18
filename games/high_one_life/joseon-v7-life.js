@@ -295,7 +295,8 @@ function hydrate(life,data){
  s.queue=Array.isArray(old.queue)?old.queue.map(cleanQ).filter(Boolean).slice(-2):[];
  s.active=cleanQ(old.active);
  if(!life.alive||!J.inOldEra(life)||data?.pending!=='joseon7:'+s.active?.id)s.active=null;
- s.followups=Array.isArray(old.followups)?old.followups.filter(x=>x&&typeof x.id==='string'&&typeof x.text==='string'&&Number.isInteger(x.year)&&x.year>life.year&&x.year<=life.year+4)
+ if(s.active)life.pending='joseon7:'+s.active.id;
+ s.followups=Array.isArray(old.followups)?old.followups.filter(x=>x&&typeof x.id==='string'&&typeof x.text==='string'&&Number.isInteger(x.year)&&x.year>=life.birthYear&&x.year<=life.year+4)
   .slice(-60).map(x=>({id:x.id.slice(0,80),year:x.year,text:x.text.slice(0,240)})):[];
  for(const k of ['affection','friendship','care','stock','craft','hobby','community','grief'])s[k]=clamp(Number(old[k])||0,0,50);
  return s;

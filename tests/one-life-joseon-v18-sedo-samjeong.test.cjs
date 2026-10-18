@@ -180,7 +180,7 @@ test('160 varied life simulations finish pending choices, preserve persistent fi
    assert.ok(guard<790,'stuck in '+l.year+' with '+l.pending);
    const cp=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));
    assert.deepEqual(V18.summary(cp),V18.summary(l));
-   decisions+=V18.summary(l).decisions;
+   decisions+=V18.summary(l)?.decisions||0;
   }
  }
  assert.ok(decisions>10,'must appear during ordinary play: '+decisions);

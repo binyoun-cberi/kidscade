@@ -54,7 +54,7 @@ test('Jeju births and diving risks are reachable',()=>{
 });
 test('land-water choices alter neighborhood trust and persist as named consequences',()=>{
  const l=age(born(1600,77),23),v=V9.ensure(l);
- J.ensure(l).region='경기도';V5.ensure(l).origin='자작 농가';
+ J.ensure(l).region='경기도';J.ensure(l).land=3;V5.ensure(l).origin='자작 농가';
  const event=V9.EVENTS.find(e=>e.id==='water');assert.ok(V9.eligible(l,event));
  v.active={id:l.year+'-water',year:l.year,eventId:'water'};l.pending='joseon9:'+v.active.id;
  const trust=v.trust;assert.equal(l.getChoice().options.length,3);
@@ -86,6 +86,9 @@ test('colonial rules appear only in historically valid years and persist across 
  for(const e of events){
   const l=age(born(1910,715),24);
   l.year=e.start;l.age=Math.max(e.age,e.start-l.birthYear);
+  if(e.gender)l.gender=e.gender;
+  if(e.maxAge)l.age=Math.min(l.age,e.maxAge);
+  l.profile ||= {};l.profile.settlement='농촌';
   assert.equal(Colonial.eligible(l,e),true,e.id);
   l.year=e.start-1;assert.equal(Colonial.eligible(l,e),false,e.id);
  }
@@ -125,5 +128,5 @@ test('registered in correct script order and displayed on birth and mobile',()=>
  assert.ok(html.indexOf('joseon-v8-lineage.js')<html.indexOf('joseon-v9-village.js'));
  assert.ok(html.indexOf('joseon-v9-village.js')<html.indexOf('colonial-daily-v2.js'));
  assert.ok(html.includes('id="birthLineage"')&&html.includes('id="villageNeighbors"'));
- assert.match(game,/Joseon8\.summary/);assert.match(game,/Joseon9\.summary/);assert.match(game,/colonialDaily-choice/);
+ assert.match(game,/Joseon8\??\.summary/);assert.match(game,/Joseon9\??\.summary/);assert.match(game,/colonialDaily-choice/);
 });
