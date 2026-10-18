@@ -35,13 +35,14 @@ test('four customer payments update store ledger and pay wages once',async()=>{
  const ex=(a,b)=>{const i=main.indexOf(a),j=main.indexOf(b,i);assert.ok(i>=0&&j>i);return main.slice(i,j)};
  const next=ex('function nextCashierCustomer()','\n\n\nfunction renderCarryControls');
  const actions=ex('function scanItem(','\n\nfunction weekBalanceLabel');
- const state={phase:'checkout',running:false,day:1,workedDay:0,money:35000,dailyIncome:0,hunger:60,condition:80,weekStats:{workDays:0},dailyIncidents:[],inventory:[],retail:api.createRetail(products),cashierShift:{active:true,served:0,target:4,mistakes:0,revenue:0,margin:0},basket:[],scanned:new Set()};
+ const endDay=ex('function endRetailDay()','\n\nfunction moveRetailActor(');
+ const state={phase:'checkout',running:false,day:1,workedDay:0,money:35000,dailyIncome:0,hunger:60,condition:80,weekStats:{workDays:0},dailyIncidents:[],inventory:[],retail:api.createRetail(products),cashierShift:{active:true,served:0,target:4,mistakes:0,revenue:0,margin:0,spawned:4},basket:[],scanned:new Set()};
  for(const x of Object.values(state.retail.items))x.shelf=8;
  const ui={totalInput:{value:'',blur(){}},changeInput:{value:'',blur(){}},checkout:{classList:{remove(){}},setAttribute(){}},cartPanel:{classList:{add(){}}}};
  const cartTotal=()=>state.basket.reduce((n,id)=>n+state.retail.items[id].price,0);
  const stock=()=>Object.values(state.retail.items).reduce((n,x)=>n+x.shelf,0);
- const args={state,ui,PRODUCTS:products,CASHIER_CUSTOMERS:[{name:'손님',emoji:'🙂',line:'계산 부탁해요.'}],cartTotal,retailBasket:api.retailBasket,sellRetail:api.sellRetail,retailStockCount:stock,fmt:n=>n+'원',clamp:(n,a,b)=>Math.max(a,Math.min(b,n)),tone(){},toast(){},renderCheckout(){},renderHud(){},renderRetailShelfSigns(){},departRetailGuest(){},openCheckout(){state.phase='checkout'},save(){},showRetailPrep(){},document:{body:{classList:{remove(){}}}}};
- const run=new Function(...Object.keys(args),next+actions+';return {nextCashierCustomer,scanItem,submitTotal,chooseCash,submitChange,finishCheckout};')(...Object.values(args));
+ let run;const args={retailGuests:[1,2,3,4],clearRetailGuests(){args.retailGuests.length=0},takeQueuedCustomer(){run.nextCashierCustomer();state.phase='checkout'},state,ui,PRODUCTS:products,CASHIER_CUSTOMERS:[{name:'손님',emoji:'🙂',line:'계산 부탁해요.'}],cartTotal,retailBasket:api.retailBasket,sellRetail:api.sellRetail,retailStockCount:stock,fmt:n=>n+'원',clamp:(n,a,b)=>Math.max(a,Math.min(b,n)),tone(){},toast(){},renderCheckout(){},renderHud(){},renderRetailShelfSigns(){},departRetailGuest(){args.retailGuests.pop()},openCheckout(){state.phase='checkout'},save(){},showRetailPrep(){},document:{body:{classList:{remove(){}}}}};
+ run=new Function(...Object.keys(args),next+endDay+actions+';return {nextCashierCustomer,scanItem,submitTotal,chooseCash,submitChange,finishCheckout};')(...Object.values(args));
  run.nextCashierCustomer();
  for(let n=0;n<4&&state.cashierShift;n++){state.basket.forEach((_,i)=>run.scanItem(i));ui.totalInput.value=String(cartTotal());run.submitTotal();run.chooseCash(state.cashierShift.current.tender);ui.changeInput.value=String(state.paid-cartTotal());run.submitChange();assert.equal(state.changeConfirmed,true);await run.finishCheckout()}
  assert.equal(state.cashierShift,null);assert.equal(state.workedDay,1);assert.equal(state.dailyIncome,12000);assert.equal(state.money,47000);assert.equal(state.inventory.length,0);assert.equal(state.basket.length,0);assert.ok(state.retail.sold>0);assert.equal(state.retail.cash,30000+state.retail.revenue);
