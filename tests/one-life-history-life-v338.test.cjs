@@ -110,3 +110,56 @@ test('modern yearly finance never changes a dead life or appends a later money n
  const l=new Sim.Life(338,{birthYear:1950,countryName:'대한민국'});c.OneLifeWorld8.ensure(l);l.age=24;l.year=1974;l.finish('생을 마쳤다.');const stats=copy(l.stats),money=copy(l.money),n=l.log.length;
  c.OneLifeWorld2.financialYear(l);assert.deepEqual(copy(l.stats),stats);assert.deepEqual(copy(l.money),money);assert.equal(l.log.length,n);
 });
+
+test('opened-port work respects distinct regional opening dates and occupation',()=>{
+ assert.equal(H.eligibility(trader(life(1879,'여자','함경도')),'port'),false);
+ assert.equal(H.eligibility(trader(life(1880,'여자','함경도')),'port'),true);
+ assert.equal(H.eligibility(trader(life(1882,'남자','경기도')),'port'),false);
+ const l=trader(life(1883,'여자','경기도'));assert.equal(H.eligibility(l,'port'),true);
+ assert.equal(H.eligibility(farm(life(1883,'남자','경기도')),'port'),false);
+ assert.equal(H.eligibility(trader(life(1883,'남자','전라도')),'port'),false);
+ J.ensure(l).capital=10;const s=force(l,'port');l.choose(0);assert.equal(J.ensure(l).capital,8);
+ const r=Sim.Life.restore(copy(l.snapshot()));assert.deepEqual(copy(H.ensure(r)),copy(s));
+});
+test('map study costs money, matures into local route knowledge, and survives restore',()=>{
+ const l=trader(life(1861,'여자','한양'));J.ensure(l).capital=10;const s=force(l,'map');l.choose(0);
+ assert.equal(J.ensure(l).capital,8);assert.equal(s.routes.length,0);
+ l.year++;l.age++;H.settle(l,s);assert.equal(s.routes.length,1);assert.equal(s.routes[0].kind,'map');
+ const r=Sim.Life.restore(copy(l.snapshot()));assert.deepEqual(copy(H.ensure(r).routes),copy(s.routes));
+ const moved=trader(life(1861,'남자','한양'));J.ensure(moved).capital=10;const m=force(moved,'map');moved.choose(0);moved.year++;moved.age++;J.ensure(moved).region='함경도';H.settle(moved,m);assert.equal(m.routes.length,0);
+ const poor=trader(life(1861,'남자','한양'));J.ensure(poor).capital=0;const p=force(poor,'map');assert.match(poor.getChoice().options[0].label,/부족/);poor.choose(0);assert.equal(p.followups.length,0);assert.match(poor.log.at(-1).text,/지도/);assert.doesNotMatch(poor.log.at(-1).text,/밭/);
+});
+test('Hangul study leads to reading a newspaper, listening never grants writing proficiency',()=>{
+ const l=life(1896,'여자','한양',25);const s=force(l,'news');assert.equal(l.getChoice().options[0].action,'listen');l.choose(0);
+ l.year++;l.age++;H.settle(l,s);assert.equal(s.hangul,0);assert.match(l.log.at(-1).text,/들었던/);
+ const reader=life(1896,'여자','한양',25);H.ensure(reader).hangul=1;force(reader,'news');assert.equal(reader.getChoice().options[0].action,'read');
+ const restored=Sim.Life.restore(copy(reader.snapshot()));assert.deepEqual(copy(restored.getChoice()),copy(reader.getChoice()));restored.choose(0);restored.year++;restored.age++;H.settle(restored,H.ensure(restored));assert.match(restored.log.at(-1).text,/읽었던/);
+ assert.equal(H.eligibility(life(1895,'남자','한양'),'news'),false);assert.equal(H.eligibility(life(1900,'남자','한양'),'news'),false);assert.equal(H.eligibility(life(1896,'남자','함경도'),'news'),false);
+});
+test('actual prior local transport experience reduces later risk without guaranteeing profits',()=>{
+ let experiencedLoss=0,noviceLoss=0;
+ for(let seed=1;seed<=120;seed++)for(const experienced of [false,true]){
+  const l=trader(life(1899,'남자','경기도',40,seed));J.ensure(l).capital=10;const s=H.ensure(l);
+  if(experienced)s.routes.push({region:'경기도',year:1890,kind:'port'});
+  force(l,'rail');if(experienced)assert.match(l.getChoice().description,/경험/);l.choose(0);
+  l.year++;l.age++;H.settle(l,s);const loss=J.ensure(l).capital<10;
+  if(experienced)experiencedLoss+=loss;else noviceLoss+=loss;
+ }
+ assert.ok(experiencedLoss>0&&experiencedLoss<noviceLoss);assert.ok(noviceLoss<120);
+});
+test('a full queue defers unseen opportunities instead of marking discarded events as experienced',()=>{
+ const l=trader(life(1883,'여자','한양'));const s=H.ensure(l);s.queue=Array.from({length:4},(_,i)=>({id:'coin-'+i,key:'coin',year:l.year,title:'상평통보 유통 확대',source:'https://contents.history.go.kr/'}));l.pending='unrelated';
+ H.processYear(l);assert.equal(s.queue.length,4);assert.equal(s.seen.includes('port'),false);assert.equal(s.seen.includes('map'),false);
+});
+test('completed study and port work connect to later events across saved years',()=>{
+ let l=trader(life(1892,'여자','한양',25));J.ensure(l).capital=20;const s=force(l,'hangul');l.choose(0);
+ l.year=1894;l.age+=2;H.settle(l,s);assert.equal(s.hangul,1);
+ l=Sim.Life.restore(copy(l.snapshot()));l.pending=null;l.year=1896;l.age+=2;force(l,'news');assert.equal(l.getChoice().options[0].action,'read');l.choose(0);
+ l.year=1897;l.age++;H.settle(l,H.ensure(l));l.pending=null;force(l,'port');l.choose(0);
+ l.year=1898;l.age++;H.settle(l,H.ensure(l));
+ // A paid attempt is not sufficient: only a successfully settled trade leaves experience.
+ const completed=H.ensure(l).routes.some(r=>r.kind==='port');
+ l=Sim.Life.restore(copy(l.snapshot()));l.pending=null;l.year=1899;l.age++;force(l,'rail');
+ assert.equal(/経験|경험/.test(l.getChoice().description),completed);
+ const choice=l.getChoice();l.choose(0);const r=Sim.Life.restore(copy(l.snapshot()));assert.deepEqual(copy(H.ensure(r)),copy(H.ensure(l)));assert.ok(choice.source);
+});

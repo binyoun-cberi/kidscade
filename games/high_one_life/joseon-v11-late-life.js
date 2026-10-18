@@ -150,6 +150,7 @@ function ensure(l){
  return l.joseon11;
 }
 function fits(l,e){
+ if(e.id==='port1876'&&J.summary(l).region!=='경상도')return false;
  if(!isJoseonYear(l)||l.age<12||l.age>82||!regionIncludes(J.summary(l).region,e.regions))return false;
  if(l.year<e.years[0]||l.year>e.years[1])return false;
  return !e.gate||e.gate(l,J.summary(l),V5.summary(l));

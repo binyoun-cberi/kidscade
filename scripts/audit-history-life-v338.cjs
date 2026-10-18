@@ -3,7 +3,7 @@ const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),asse
 const dir=path.resolve(__dirname,'../games/high_one_life'),c={console};c.window=c;vm.createContext(c);
 for(const m of fs.readFileSync(dir+'/index.html','utf8').matchAll(/<script src="\.\/([^?" ]+)/g))if(m[1]!=='game.js')vm.runInContext(fs.readFileSync(dir+'/'+m[1],'utf8'),c,{filename:m[1]});
 const clone=x=>JSON.parse(JSON.stringify(x));let lives=0,restores=0,historyChoices=0;const topics={};
-for(const year of [1400,1485,1580,1650,1740,1880])for(const gender of ['남자','여자'])for(let seed=1;seed<=12;seed++){
+for(const year of [1400,1485,1580,1650,1740,1855,1870,1880])for(const gender of ['남자','여자'])for(let seed=1;seed<=12;seed++){
  let l=new c.OneLifeSim.Life(seed*137+year,{birthYear:year,countryName:'대한민국',birthSetup:{gender}});c.OneLifeWorld8.ensure(l);let guard=0;
  while(l.alive&&guard++<1100){
   if(l.pending){const prompt=l.getChoice();
