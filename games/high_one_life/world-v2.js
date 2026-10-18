@@ -111,6 +111,7 @@
     return life;
   }
   function financialYear(life){
+    if(life.alive===false)return;
     enrich(life);
     const m=life.money,p=life.profile,age=life.age;
     if(age<18)return;
@@ -232,7 +233,7 @@
       if(!this.alive||this.pending)return false;
       enrich(this);
       const result=tick.call(this);
-      if(result && this.age>=18)financialYear(this);
+      if(result && this.alive && this.age>=18)financialYear(this);
       if(this.alive && !this.pending && EXTRA_CHOICES.some(c=>c.age===this.age))this.pending='extra:'+this.age;
       return result;
     };

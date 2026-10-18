@@ -78,7 +78,7 @@ const severe=l=>l.joseon14?.captivity?.status==='held'||l.travel22?.residence?.a
 const oldEra=l=>l?.alive&&J?.isJoseon(l)&&J.inOldEra(l)&&l.year>=1392&&l.year<=1894&&!severe(l);
 const eligibleClass=l=>{const s=V5.ensure(l);return !s.monastic&&!['왕실 종친'].includes(s.origin)&&!(['사노비','공노비'].includes(s.origin)&&!s.freed);};
 const debt=l=>{const v18=l.year>=1800&&l.year<=1869?V18?.ensure(l):null;
- return {tax:V11?.ensure(l)?.taxDebt||0,grain:v18?.grainDebt||0,cash:Math.max(0,-J.ensure(l).capital),food:V2.ensure(l).grain};};
+ return {foodDebt:(V2.ensure(l).famineLoans||[]).filter(x=>x.remaining>0&&x.missed>=2).reduce((n,x)=>n+x.remaining,0),tax:V11?.ensure(l)?.taxDebt||0,grain:v18?.grainDebt||0,cash:Math.max(0,-J.ensure(l).capital),food:V2.ensure(l).grain};};
 function ensure(l){
  if(!J?.isJoseon(l))return null;
  if(!l.joseon325)l.joseon325={version:1,processedYear:l.year,stage:'home',residence:'고향',
@@ -95,9 +95,9 @@ function setJob(l,name){const j=J.ensure(l),soc=V5.ensure(l);
  j.occupation=name;soc.role=name;l.career=name;if(l.money)l.money.netWorth=j.capital*100;
 }
 function canDebt(l,s){const d=debt(l);
- return oldEra(l)&&l.year>=1800&&l.year<=1869&&l.age>=18&&l.age<=72&&s.stage==='home'&&
+ return oldEra(l)&&l.year>=1600&&l.year<=1869&&l.age>=18&&l.age<=72&&s.stage==='home'&&
   s.law.kind==='free'&&s.hardshipOffer<l.year-7&&
-  ((d.tax>=9||d.grain>=9)||(d.cash>=35&&d.food<9));}
+  (d.foodDebt>0||(l.year>=1800&&((d.tax>=9||d.grain>=9)||(d.cash>=35&&d.food<9))));}
 function canPolitics(l,s){const j=J.ensure(l),social=V5.ensure(l);
  return oldEra(l)&&l.year>=1575&&l.year<=1863&&l.age>=24&&l.age<=70&&
   s.law.kind==='free'&&s.politics.stage==='none'&&j.office&&social.rank>=1;}
@@ -143,10 +143,10 @@ function queue(l,s,key){
 function plans(l,s){
  const d=debt(l),job=s.career&&JOBS[s.career.code],j=J.ensure(l);
  const map={
- hardship:{title:'갚지 못한 곡식과 관아의 독촉',
-  description:'곳간에 '+d.food+'만큼 남아 있고 장부에 갚을 몫이 적혀 있다. 관아에 남은 환곡·세금의 기록을 확인하더라도 즉시 면제되는 것은 아니다. 식구들이 어떻게 살아갈지 정해야 한다.',
+ hardship:{title:d.foodDebt>0?'갚을 곡식과 다음 살림':'갚지 못한 곡식과 관아의 독촉',
+  description:d.foodDebt>0?'이웃에게 빌린 곡식을 여러 해 갚지 못했다. 곳간에는 '+d.food+'몫이 남고, 빌린 곡식 '+d.foodDebt+'몫을 갚아야 한다. 살던 곳에서 버틸지 다른 생업을 찾을지 식구들과 의논한다.':'곳간에 '+d.food+'만큼 남아 있고 장부에 갚을 몫이 적혀 있다. 관아에 남은 환곡·세금의 기록을 확인하더라도 즉시 면제되는 것은 아니다. 식구들이 어떻게 살아갈지 정해야 한다.',
   choices:[
-   ['남은 납부 기록을 모아 관아에 다시 따진다','마을의 증언과 장부를 맞춘다. 독촉이 당장 끝날지는 알 수 없다.'],
+   [d.foodDebt>0?'빌린 내역을 맞추고 이웃과 갚을 때를 다시 의논한다':'남은 납부 기록을 모아 관아에 다시 따진다','장부를 맞추어도 갚을 몫은 그대로 남는다.'],
    ['다른 고을로 떠나 품팔이로 생계를 잇는다','살던 집과 오래된 이웃을 떠나 일거리를 구한다. 빚은 저절로 없어지지 않는다.'],
    ['산골로 옮겨 밭을 일구며 살아간다','화전 경작에는 개간할 일손과 씨앗이 필요하고, 산림 이용을 둘러싼 규제나 갈등도 있다.']
   ]},
@@ -275,7 +275,7 @@ function resolve(l,index){
  const choice=plan.options[index].label,oldYear=l.year;
  if(key==='hardship'){
   s.hardshipOffer=l.year;
-  if(index===0){l.change({knowledge:2,health:-1});record(l,s,'환곡 납부 증빙을 모아 관아에 냈지만, 독촉은 당장 끝나지 않았다.');}
+  if(index===0){l.change({knowledge:2,health:-1});record(l,s,debt(l).foodDebt>0?'빌린 내역을 맞추고 이웃과 갚을 때를 다시 의논했다. 갚을 곡식은 그대로 남았다.':'환곡 납부 증빙을 모아 관아에 냈지만, 독촉은 당장 끝나지 않았다.');}
   if(index===1){
    s.stage='wanderer';s.residence='다른 고을';s.originalRegion=j.region;
    j.region=j.region==='강원도'?'경상도':'강원도';j.land=0;cash(-9);j.relocations++;

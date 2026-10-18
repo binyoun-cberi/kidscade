@@ -8,6 +8,7 @@ const TEST_FILES = [
   "tests/one-life-branches.test.cjs",
   "tests/one-life-captivity-border-v23.test.cjs",
   "tests/one-life-calendar-v337.test.cjs",
+  "tests/one-life-history-life-v338.test.cjs",
   "tests/one-life-choice-consequences-v25.test.cjs",
   "tests/one-life-choice-invariants-v27.test.cjs",
   "tests/one-life-colonial-coverage-v21.test.cjs",
