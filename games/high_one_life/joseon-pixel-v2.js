@@ -9,7 +9,7 @@ function scene(life){
  const home=away?{kind:'small-thatch',roof:'thatch',label:'타향의 임시 거처'}:root.OneLifeJoseonCulture?.household(life,{joseon:j,origin,scene:kind,role:j.occupation});
  const missing=new Set((life.joseon13?.missing||[]).filter(p=>p.status==='missing').map(p=>p.personId));
  const family=away?[]:(root.OneLifeJoseon4?.ensure?.(life)?.people||life.joseon4?.people||[]).filter(p=>p.alive&&p.atHome!==false&&!p.missing&&!missing.has(p.id)&&p.birthYear<=year);
- const people=[{id:'self',name:life.profile?.name||'나',age:Math.max(0,life.age||0),sex:life.gender,self:true},...family.map(p=>({id:p.id,name:p.name,age:Math.max(0,year-p.birthYear),sex:p.sex,role:p.role,self:false}))];
+ const people=[{id:'self',name:life.profile?.name||'나',age:Math.max(0,life.age||0),sex:life.gender,self:true},...family.map(p=>({id:p.id,name:p.name,age:Math.max(0,year-p.birthYear),sex:p.sex,role:p.role,work:p.work,self:false}))];
  return {kind,home,people,away,householdCount:people.length};
 }
 function layout(plan){
@@ -22,8 +22,25 @@ function layout(plan){
   return {...p,x,ground,depth,scale:ageScale*depth};
  }).sort((a,b)=>a.ground-b.ground);
 }
-const api={scene,layout,
- paint(canvas,life){
+function motion(person,plan,life,time=0){
+ const phase=((Math.floor(Math.max(0,Number(time)||0)/300)+(person.id==='self'?0:String(person.id).length))%6);
+ const job=String(person.self?life.joseon?.occupation:person.work||'');
+ let activity='carry';
+ if(person.age<3)activity='rest';
+ else if(person.age<13)activity='play';
+ else if(person.age>=68||plan.away)activity='rest';
+ else if(person.self&&plan.kind==='study'&&(life.joseon?.literacy||0)>0)activity='read';
+ else if(person.self&&plan.kind==='farm'&&/농|소작|밭/.test(job))activity='hoe';
+ else if(person.self&&plan.kind==='port'&&/어부|어업|고기잡/.test(job))activity='net';
+ else if(/관직|관료|군|포졸/.test(job))activity='walk';
+ const hand=[0,2,4,3,1,0][phase];
+ return {activity,phase,hand,lean:activity==='hoe'?[0,2,5,5,2,0][phase]:activity==='read'?1:0,
+  dx:activity==='walk'?[0,2,4,6,4,2][phase]:0,
+  leftFoot:activity==='walk'||activity==='play'?(phase%2?2:0):0,
+  rightFoot:activity==='walk'||activity==='play'?(phase%2?0:2):0};
+}
+const api={scene,layout,motion,
+ paint(canvas,life,options={}){
   if(!canvas||!life)return false;
   const ctx=canvas.getContext('2d');if(!ctx)return false;
   const W=600,H=258;
@@ -139,7 +156,7 @@ const api={scene,layout,
    px(486,179,34,7,'#997c54');
   }
   // Age-shaped hanbok sprites; clothes and headwear signal age and social position.
-  const sprite=(x,ground,personAge,sex,childColor,adultColor,offset,self=false,depth=.68)=>{
+  const sprite=(x,ground,personAge,sex,childColor,adultColor,offset,self=false,depth=.68,pose={activity:'rest',hand:0,lean:0,leftFoot:0,rightFoot:0})=>{
    const personalWear=Culture?.wardrobe(year,origin,sex,self?j.occupation:'집안의 일',personAge,{duty:self&&(kind==='study'||kind==='port')});
    adultColor=personalWear?.color||adultColor;offset=personalWear?.accent||offset;
    px(x-14*depth,ground+2,28*depth,3,'#b5a385');
@@ -147,7 +164,7 @@ const api={scene,layout,
    const s=(personAge<3?0.54:personAge<8?0.66:personAge<13?0.78:teen?0.88:1)*depth;
    const head=child?17:teen?16:15,body=child?21:25,robe=child?24:teen?28:32;
    const skin='#d5a47f',hair=elder?'#6d6460':'#34363a';
-   const X=n=>Math.round(x+n*s),Y=n=>Math.round(ground+n*s),R=(a,b,c,d,col)=>px(X(a),Y(b),Math.max(2,Math.round(c*s)),Math.max(2,Math.round(d*s)),col);
+   const X=n=>Math.round(x+n*s),Y=n=>Math.round(ground+n*s),R=(a,b,c,d,col)=>px(X(a+(b<-8?pose.lean:0)),Y(b),Math.max(2,Math.round(c*s)),Math.max(2,Math.round(d*s)),col);
    // Face and hair/head covering.
    R(-head/2,-64,head,head,skin);R(-head/2,-67,head,6,hair);
    R(-head/2-1,-57,4,6,hair);R(head/2-3,-57,4,6,hair);
@@ -179,20 +196,32 @@ const api={scene,layout,
      R(-11,-44,22,35,'#3f5057');R(-15,-27,30,4,'#b8a06d');
     }
    }
-   // A family member handles a household basket; young children keep their hands free.
-   if(!self&&personAge>=16){
-    R(8,-39,12,5,adultColor);R(17,-38,4,8,skin);
-    R(14,-29,15,12,'#b48c55');R(16,-33,11,4,'#765d40');
-   }else if(personAge>=3&&personAge<13){
-    R(-16,-39,9,5,adultColor);R(-19,-39,4,4,skin);
+   // Hands, tools and carried objects share the same pixel pose.
+   const h=pose.hand;
+   if(pose.activity==='carry'){
+    R(8,-39+h,12,5,adultColor);R(17,-38+h,4,8,skin);
+    R(14,-29+h,15,12,'#b48c55');R(16,-33+h,11,4,'#765d40');
+   }else if(pose.activity==='hoe'){
+    R(8,-36+h,15,5,adultColor);R(20,-35+h,4,5,skin);
+    for(let n=0;n<7;n++)R(21+n,-30+h+n*4,3,5,'#765e43');
+    R(24,-3+h,13,4,'#626259');
+   }else if(pose.activity==='read'){
+    R(8,-38,10,5,adultColor);R(15,-34,20,15,'#eee7d5');
+    R(24,-34,2,15,'#806e54');R(17,-31,5,1,'#ac9c81');R(26,-28,7,1,'#ac9c81');
+    if(pose.phase===2||pose.phase===3){R(24-h,-37,3+h,16,'#d9cbb1');R(16,-36,6,3,skin);}
+   }else if(pose.activity==='net'){
+    R(8,-39+h,13,5,adultColor);R(19,-37+h,4,5,skin);
+    for(let n=0;n<4;n++){R(20+n*4,-30+h,2,19,'#a2916b');R(20,-29+h+n*5,16,2,'#a2916b');}
+   }else if(pose.activity==='play'){
+    R(-17,-39-h,10,5,adultColor);R(-20,-39-h,4,4,skin);
+   }else if(pose.activity==='walk'){
+    R(-15,-39-h,6,10,adultColor);R(9,-39+h,6,10,adultColor);
+   }else if(pose.activity==='rest'&&personAge>=16){
+    R(8,-33,10,5,adultColor);R(15,-33,4,4,skin);
    }
-   // Arms, legs and small period-specific work props.
-   R(-robe/2+2,-7,5,12,'#4f4944');R(robe/2-7,-7,5,12,'#4f4944');
-   if(self&&kind==='farm'&&personAge>=16){R(18,-46,3,36,'#765e43');R(13,-48,13,4,'#765e43');}
-   if(self&&kind==='study'&&personAge>5){R(16,-48,16,12,'#eee7d5');R(29,-47,3,10,'#665443');}
-   if(self&&kind==='market'){R(18,-36,12,14,'#b78854');R(19,-39,10,3,'#745c42');}
-   if(self&&kind==='port'&&personAge>=16){R(18,-42,3,28,'#6e5a43');R(12,-43,14,3,'#6e5a43');}
-   if(self&&kind==='mountain'&&personAge>=16){R(-24,-50,5,32,'#785f41');R(-28,-53,12,4,'#8e7450');}
+   if(personAge>=3){
+    R(-robe/2+2,-7-pose.leftFoot,5,12,'#4f4944');R(robe/2-7,-7-pose.rightFoot,5,12,'#4f4944');
+   }
    if(self){const top=-88*s;px(x-4,ground+top,8,4,'#c78e38');px(x-2,ground+top-3,4,10,'#eec978');}
    // Small eyes only when the face can support them without clutter.
    R(-4,-59,2,2,'#403a36');R(3,-59,2,2,'#403a36');
@@ -202,7 +231,8 @@ const api={scene,layout,
   // Draw only living, present household members, with their recorded ages and sex.
   // Keep a calm scene even for large households; the caption states the full count.
   for(const p of layout(plan)){
-   sprite(p.x,p.ground,p.age,p.sex,'#d4b96f',adultTone,trim,p.self,p.depth);
+   const pose=motion(p,plan,life,options.time||0);
+   sprite((pose.activity==='hoe'?470:p.x)+pose.dx*p.depth,pose.activity==='hoe'?243:p.ground,p.age,p.sex,'#d4b96f',adultTone,trim,p.self,p.depth,pose);
   }
   // Shared palette bar and fine border echo the mint-and-warm UI without a heavy frame.
   px(0,0,600,3,'#6da99b');px(0,255,600,3,'#6da99b');

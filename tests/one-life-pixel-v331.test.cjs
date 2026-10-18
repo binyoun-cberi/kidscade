@@ -37,3 +37,18 @@ test('people share the yard perspective and remain clear of water, fields and ea
  const adults=placed.filter(p=>p.age>=16);for(let i=1;i<adults.length;i++)assert.ok(adults[i].scale>=adults[i-1].scale);
  for(let i=0;i<placed.length;i++)for(let j=i+1;j<placed.length;j++)assert.ok(Math.abs(placed[i].x-placed[j].x)>20*(placed[i].scale+placed[j].scale));
 });
+test('life actions follow age, literacy and livelihood, with stable feet and repeatable tool poses',()=>{
+ const api=runtime(),l=life();l.age=35;l.joseon.occupation='농사';const plan=api.scene(l),p=api.layout(plan).find(p=>p.self);
+ const frames=Array.from({length:6},(_,i)=>api.motion(p,plan,l,i*300));assert.ok(frames.every(f=>f.activity==='hoe'&&f.dx===0&&f.leftFoot===0&&f.rightFoot===0));assert.ok(new Set(frames.map(f=>f.lean)).size>1);
+ assert.deepEqual(api.motion(p,plan,l,0),api.motion(p,plan,l,1800));
+ assert.equal(api.motion({...p,age:1},plan,l,300).activity,'rest');assert.equal(api.motion({...p,age:8},plan,l,300).activity,'play');
+ assert.equal(api.motion({...p,age:75},plan,l,300).activity,'rest');
+ l.joseon.occupation='수군';assert.equal(api.motion(p,plan,l,300).activity,'walk');
+ l.joseon.occupation='어부';assert.equal(api.motion(p,{...plan,kind:'port'},l,300).activity,'net');
+ l.joseon.literacy=2;assert.equal(api.motion(p,{...plan,kind:'study'},l,300).activity,'read');
+});
+test('animation changes drawn poses without advancing age, relationships or supplies',()=>{
+ const api=runtime(),l=life();l.age=35;l.joseon.occupation='농사';const before=JSON.stringify(l),frames=[];
+ for(const time of [0,600,1200]){const rects=[];const ctx={fillStyle:'',clearRect(){},fillRect(...r){rects.push([...r,this.fillStyle]);}};api.paint({getContext:()=>ctx,setAttribute(){}},l,{time});frames.push(JSON.stringify(rects));}
+ assert.equal(JSON.stringify(l),before);assert.notEqual(frames[0],frames[1]);
+});

@@ -1370,11 +1370,15 @@
     // Each year may have several linked events: save complete year boundaries.
     save();
   }
+  let lastSceneFrame=0;
   function loop() {
     const now=performance.now();
     const delta=Math.max(0,Math.min(260,now-lastTick));
     lastTick=now;
     if(stage!=='play' || !life || !life.alive || life.pending || paused || document.hidden) return;
+    if(now-lastSceneFrame>=180&&Joseon.isJoseon(life)&&!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
+      window.OneLifeJoseonPixel2?.paint($('lifeScene'),life,{time:now});lastSceneFrame=now;
+    }
     elapsed+=delta*playSpeed;
     let count=0;
     const yearMs=YEAR_MS;
