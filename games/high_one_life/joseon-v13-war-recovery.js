@@ -214,8 +214,8 @@ function prompt(l){
   const relative=e.id==='hiranReturn'?s.missing.find(m=>m.status==='returned'&&!m.welcomed):s.missing.find(m=>m.status==='missing');
   if(relative)scene=relative.name+'의 소식이 전해졌다. '+e.scene;
  }
- if(e.id==='imjinRepair'||e.id==='hiranHouse')scene+=' 고쳐야 할 집의 피해가 아직 '+s.damage+'만큼 남아 있다.';
- return {title:e.title,description:scene,options:e.options.map(o=>({label:o.label,note:o.note,action:o.label}))};
+ if(e.id==='imjinRepair'||e.id==='hiranHouse')scene+=s.damage>=8?' 무너진 곳이 많아 한 번에 손보기 어렵다.':s.damage>0?' 아직 손보지 못한 곳이 남아 있다.':' 집은 지낼 수 있을 만큼 손본 상태다.';
+ return {title:e.title,description:scene,options:e.options.map(o=>(o.change?.grain<0&&V2.ensure(l).grain<=0&&['aid','care','supply'].includes(o.special))?{label:'곡식 대신 짐 나르는 일손을 보탠다',note:'나눌 곡식이 없어 몸으로 돕는다.',action:o.label}:({label:o.label,note:o.note,action:o.label}))};
 }
 function relatives(l,s){
  // No synthetic extra spouse/children. Choose actual adult relatives from the family module.
@@ -249,10 +249,7 @@ function yearly(l,s){
    l.logEvent(m.name+'의 생사를 확인하지 못한 채, 집안에 슬픔과 걱정이 남았다.','joseon13-family');
   }
  }
- for(const f of s.followups.filter(x=>x.year<=l.year)){
-  l.logEvent(f.text,'joseon13-followup');l.log.at(-1).causeId='joseon13:'+f.id;
-  s.memories.push(f.text);
- }
+ // Old pending prose is not evidence of a return or another meeting.
  s.followups=s.followups.filter(x=>x.year>l.year);s.memories=s.memories.slice(-22);
  // Scarred households gradually recover, or suffer persistent yearly costs.
  // These are fictional economy units, NOT measured reconstruction of damage.
@@ -265,16 +262,101 @@ function yearly(l,s){
  }
  if(s.repair>=3&&s.damage>0&&l.year%3===1){
   s.damage=clamp(s.damage-1,0,20);
+  l.logEvent('그동안 손본 집의 피해가 조금 줄었다.','joseon13-followup');
  }
  if(l.age>=10&&l.age<=74&&(l.year%3===0||[1592,1593,1597,1598,1599,1627,1636,1637,1638].includes(l.year))&&s.queue.length<2){
   const e=pick(l,s);if(e)offer(l,s,e);
  }
  promote(l,s);
 }
+const RESULTS={
+ "식구를 데리고 피란길에 오른다": "식구들과 짐을 꾸려 피란길에 올랐다.",
+ "이웃과 마을의 먹을 것을 챙긴다": "이웃과 피란 중에 먹을 것을 챙겼다.",
+ "군영에 물자를 옮긴다": "군영으로 물자를 날랐다. 짐을 지고 오가느라 몸이 고단했다.",
+ "가족과 먼 친척집으로 떠난다": "가족과 함께 먼 친척집을 향해 떠났다.",
+ "이웃의 짐을 나누어 짊어진다": "이웃의 피란 짐을 나누어 짊어졌다.",
+ "집안의 문서와 씨앗부터 챙긴다": "흩어질 살림 속에서 집안 문서와 씨앗을 골라 챙겼다.",
+ "가족을 모아 안전한 곳으로 피한다": "가족을 모아 싸움이 벌어진 곳에서 벗어났다.",
+ "병든 피란민에게 곡식을 나눈다": "병든 피란민에게 먹을 것을 건넸다.",
+ "지나가는 장정의 소식을 살핀다": "길을 지나가는 장정들에게 전쟁터로 간 친척의 행방을 물었다.",
+ "곡식과 짚신을 모아 건넨다": "마을에서 의병에게 보낼 곡식과 짚신을 모았다.",
+ "식구가 쓸 곡식부터 챙긴다": "남은 곡식을 헤아려 식구들이 먹을 몫부터 따로 두었다.",
+ "의병을 따라 나선다": "고을에서 모인 의병을 따라 나섰다.",
+ "군영으로 곡식을 나른다": "곡식을 짊어지고 군영까지 다녀왔다.",
+ "마을의 아이와 노인을 먼저 먹인다": "아이와 노인에게 줄 먹을 것을 먼저 마련했다.",
+ "관아에 곡식 부족을 알린다": "관아에 찾아가 고을의 곡식이 모자란 사정을 전했다. 구휼을 받았다는 답은 아직 없었다.",
+ "함께 다니던 사람에게 안부를 묻는다": "피란길에 함께 다니던 사람에게 식구의 행방을 물었다.",
+ "가족이 돌아올 자리를 남겨 둔다": "흩어진 가족이 찾아올 수 있도록 집에 자리를 남겨 두었다.",
+ "고을과 절을 찾아 소식을 남긴다": "고을과 절을 찾아다니며 식구의 이름과 머물 곳을 전했다.",
+ "가족을 이끌고 산길로 피한다": "가족과 산길로 몸을 피했다. 남겨 둔 살림까지 챙기지는 못했다.",
+ "미리 모은 곡식과 문서를 챙긴다": "가져갈 수 있는 곡식과 문서를 추려 묶었다.",
+ "이웃과 마을 입구를 지킨다": "이웃과 마을 입구에서 밤을 지켰다.",
+ "남쪽 포구의 배를 고치는 일을 돕는다": "남쪽 포구에서 망가진 배를 고치는 일손을 보탰다.",
+ "어린 식구와 떨어지지 않게 지낸다": "어린 식구를 곁에 두고 함께 피란길을 갔다.",
+ "해안의 군영에 군량을 보내 준다": "해안의 군영에 보낼 곡식을 마련하고 짐을 날랐다.",
+ "고향의 집터를 먼저 살핀다": "고향의 집터로 가서 무너진 곳과 남은 살림을 살폈다.",
+ "잃어버린 사람을 찾아다닌다": "사람들이 모인 곳을 돌며 헤어진 이의 행방을 물었다.",
+ "이웃과 남은 배와 그물을 손본다": "이웃과 남은 배와 그물을 펼쳐 놓고 고칠 곳부터 손봤다.",
+ "이웃과 집을 고쳐 세운다": "이웃과 품을 나누어 무너진 집을 손봤다.",
+ "남은 재목으로 작은 집부터 짓는다": "남은 재목을 모아 지낼 곳부터 고쳤다.",
+ "먼 장에서 목재와 기와를 구한다": "집을 고치는 데 쓸 목재와 기와를 구하러 먼 장까지 다녀왔다.",
+ "씨앗을 나눠 심는다": "이웃과 씨앗을 나누어 묵은 밭에 심었다.",
+ "일손을 얻어 땅을 고른다": "일손을 얻어 풀이 무성한 밭을 고르고 다시 부칠 준비를 했다.",
+ "우선 남의 땅을 부쳐 먹는다": "당장 부칠 수 있는 남의 땅을 구해 농사를 지었다.",
+ "아이에게 먹을 것을 나눈다": "전쟁으로 식구를 잃은 아이에게 먹을 것을 나누었다.",
+ "친척을 찾아볼 수 있게 돕는다": "아이의 친척을 찾으려고 고을 사람들에게 물었다.",
+ "마을에서 돌봄을 나누자고 한다": "아이를 번갈아 돌볼 수 있는지 이웃집들과 의논했다.",
+ "인편을 보내 만나 볼 길을 찾는다": "헤어진 가족의 행방을 알아보려고 인편을 보냈다.",
+ "친척과 함께 먼 고을을 알아본다": "친척과 함께 먼 고을에 식구의 소식을 물었다.",
+ "고향의 집과 농사부터 지킨다": "돌아올 가족을 기다리며 고향의 집과 농사를 돌봤다.",
+ "식구를 데리고 피란한다": "식구들과 짐을 꾸려 싸움이 난 고을을 떠났다.",
+ "마을의 곡식과 짐을 지킨다": "마을에 남은 곡식과 짐을 챙기며 이웃을 살폈다.",
+ "관군에게 길과 물자를 알려 준다": "관군에게 고을의 길과 물자를 구할 곳을 알려 주었다.",
+ "전란을 피한 사람에게 먹을 것을 나눈다": "전란을 피해 온 사람들에게 먹을 것을 건넸다.",
+ "먼 친척에게 안부를 전한다": "길을 오가는 사람에게 먼 친척의 안부를 묻는 편지를 맡겼다.",
+ "집안의 곡식과 씨앗을 아낀다": "집안에 남은 곡식과 씨앗을 헤아려 쓸 몫을 줄였다.",
+ "멀리 간 식구의 이름을 수소문한다": "멀리 흩어진 식구의 이름을 대며 행방을 물었다.",
+ "피란민들의 말을 모아 듣는다": "피란민들이 지나온 길과 본 사람들의 이야기를 들었다.",
+ "집터를 지키며 편지를 기다린다": "집터에 머물며 흩어진 식구의 소식을 기다렸다.",
+ "장시를 오가는 사람에게 안부를 부탁한다": "장시를 오가는 사람들에게 식구의 이름을 전하고 소식을 부탁했다.",
+ "친척들과 몸값을 마련할 방법을 찾는다": "친척들과 모을 수 있는 돈을 헤아리며 몸값을 마련할 길을 찾았다.",
+ "돌아올 집터와 먹을 것을 챙겨 둔다": "가족이 돌아오면 머물 집터와 먹을 것을 챙겼다.",
+ "식구와 피란할 길을 찾는다": "가져갈 짐을 추려 식구들과 피란길에 올랐다.",
+ "이웃과 산성 주변에 곡식을 나른다": "이웃과 산성 주변으로 곡식을 날랐다.",
+ "집안을 지키고 소식을 기다린다": "집에 남아 살림을 지키며 전쟁 소식을 기다렸다.",
+ "피란 온 가족에게 먹을 것을 나눈다": "고을로 피란 온 사람들에게 먹을 것을 나누었다.",
+ "산성에 보낼 군량을 모은다": "산성에 보낼 군량을 모으고 짐 나르는 일을 보탰다.",
+ "가족과 고을을 지키며 기다린다": "가족과 고을에 남아 하던 일을 이어 갔다.",
+ "피란길에 함께 있던 식구를 찾는다": "피란길에 함께 있던 식구를 찾아 수소문했다.",
+ "남겨진 사람의 끼니를 마련한다": "피란 뒤 남겨진 사람들에게 줄 끼니를 마련했다.",
+ "가족의 집터와 곡식을 지킨다": "식구가 돌아올 집터와 남은 곡식을 지켰다.",
+ "몸값을 마련할 길을 알아본다": "몸값을 모을 길을 찾으며 사람들에게 식구의 소식을 물었다.",
+ "먼 고을의 친척에게 힘을 빌린다": "먼 고을의 친척에게 식구를 찾는 일을 도와 달라고 청했다.",
+ "편지와 고향의 소식을 전한다": "인편에 편지와 고향의 소식을 맡겼다.",
+ "농사할 땅을 조금씩 되찾는다": "버려 두었던 땅을 조금씩 고르고 농사를 다시 준비했다.",
+ "품을 빌려 논두렁을 고친다": "이웃의 품을 얻어 무너진 논두렁을 손봤다.",
+ "집안의 먹을 것을 우선 마련한다": "농사 넓히는 일은 미루고 식구들이 먹을 곡식부터 구했다.",
+ "이웃과 기둥을 고쳐 세운다": "이웃과 무너진 기둥을 고쳐 세웠다.",
+ "작은 방부터 지어 식구를 들인다": "식구들이 머물 작은 방부터 손봤다.",
+ "먼 친척집에서 조금 더 머문다": "집을 고칠 재목을 모으는 동안 먼 친척집에 더 머물렀다.",
+ "돌아온 가족을 따뜻하게 맞는다": "살아 돌아온 식구를 맞고 함께 앉아 이야기를 들었다.",
+ "고생한 가족이 쉴 자리를 마련한다": "돌아온 가족이 당장 일을 나가지 않고 쉴 자리를 마련했다.",
+ "가족의 뜻을 듣고 앞날을 정한다": "돌아온 가족에게 앞으로 어떻게 지내고 싶은지 물었다.",
+ "그 사람의 잘못이 아니라 말한다": "끌려갔다 돌아온 일을 그 사람의 잘못으로 돌리지 말라고 했다.",
+ "집안의 생계를 먼저 돕는다": "돌아온 식구의 집안일과 끼니를 보탰다.",
+ "험담을 멈춰 달라 부탁한다": "돌아온 이를 두고 험담하던 사람들에게 그만해 달라고 말했다.",
+ "집안 형편을 관아에 알린다": "관아에 찾아가 전란으로 줄어든 일손과 집안 형편을 알렸다.",
+ "이웃과 번갈아 품을 낸다": "이웃과 번갈아 품을 내며 땅을 돌봤다.",
+ "장터에 일을 구하러 간다": "장터에서 품일을 구해 집안에 쓸 돈을 벌었다."
+};
 function choose(l,index){
  const s=ensure(l),e=byId.get(s?.active?.eventId);
  if(!e||!l.alive||!Number.isInteger(index)||index<0||index>=e.options.length)return false;
- const op=e.options[index],d=op.change||{},j=J.ensure(l),v=V2.ensure(l),village=V9.ensure(l),regional=V12?.ensure(l),id=s.active.id;
+ const op=e.options[index],d={...(op.change||{})},j=J.ensure(l),v=V2.ensure(l),village=V9.ensure(l),regional=V12?.ensure(l),id=s.active.id;
+ const before={grain:v.grain,capital:j.capital,damage:s.damage,fields:s.fields};
+ const emptyDonation=d.grain<0&&v.grain<=0&&['aid','care','supply'].includes(op.special);
+ if(op.special==='secure'&&d.grain>0)d.grain=0;
+ if(emptyDonation){d.grain=0;d.health=(d.health||0)-2;}
  const stats={};for(const k of ['health','happiness','bonds','knowledge','wealth'])if(Number.isFinite(d[k]))stats[k]=d[k];
  l.change(stats);
  if(Number.isFinite(d.capital))j.capital=clamp(j.capital+d.capital,-120,600);
@@ -285,8 +367,11 @@ function choose(l,index){
  }
  if(Number.isFinite(d.firewood)&&regional)regional.firewood=clamp(regional.firewood+d.firewood,0,40);
  if(Number.isFinite(d.contacts)&&regional)regional.customers=clamp(regional.customers+d.contacts,0,40);
- for(const k of ['damage','fields','repair','moves'])if(Number.isFinite(d[k]))
+ for(const k of ['damage','repair','moves'])if(Number.isFinite(d[k]))
   s[k]=clamp(s[k]+d[k],0,k==='damage'||k==='fields'?20:100);
+ if(d.damage>0)s.fields=clamp(s.fields+d.damage,0,20);
+ if(d.fields>0)s.fields=clamp(s.fields-d.fields,0,20);
+ if(d.repair>0&&op.special==='rebuild')s.damage=clamp(s.damage-Math.max(1,Math.floor(d.repair/2)),0,20);
  if(s.damage>0||s.fields>0)s.scar++;
  if(Number.isFinite(d.moves)&&d.moves>0)j.relocations+=d.moves;
  if(op.special==='separate'||op.special==='separateIfKin'){
@@ -306,17 +391,24 @@ function choose(l,index){
  }
  if(['aid','care','rebuild','tenant','supply'].includes(op.special))s.helped++;
  if(l.money&&l.year<1900)l.money.netWorth=j.capital*100;
- l.logEvent(e.title+' — '+op.label,'joseon13-choice');
- const logged=l.log.at(-1);logged.causeId='joseon13:'+id;logged.sourceUrl=e.source;
+ const fatal=!!(op.risk&&roll(l.seed,l.year*223+e.id.length*61+index*199)<op.risk);
+ const parts=[emptyDonation?'나눌 곡식이 없어 대신 짐을 나르고 일손을 보탰다.':RESULTS[op.label]];
+ if(fatal)parts.splice(0,parts.length,'그 일을 하던 중 전란에 휩쓸려 목숨을 잃었다.');
+ if(v.grain<before.grain)parts.push('그만큼 집안에 남은 곡식이 줄었다.');
+ if(j.capital<before.capital)parts.push('여비와 살림에 돈이 들었다.');
+ if(s.damage<before.damage)parts.push('무너진 집에서 고쳐 쓸 수 있는 부분이 늘었다.');
+ if(s.fields<before.fields)parts.push('묵었던 논밭을 다시 부칠 수 있게 되었다. 아직 수확을 거둔 것은 아니었다.');
+ l.logEvent(parts.filter(Boolean).join(' '),'joseon13-choice');
+ const logged=l.log.at(-1);logged.causeId='joseon13:'+id;logged.sourceUrl=e.source;logged.eventTitle=e.title;logged.choiceLabel=op.label;
  s.decisions.push({id,eventId:e.id,year:l.year,choice:index});
  s.decisions=s.decisions.slice(-80);
- s.followups.push({id,year:l.year+2+(index%2),text:op.after});
+ // Later returns and reconstruction are recorded when their state changes, not promised here.
  s.followups=s.followups.slice(-75);
  s.lastSource=e.source;
  const wartime=[1592,1597,1627,1636,1637].includes(l.year);
  if(wartime)s.warCount++;
  s.active=null;l.pending=null;
- if(op.risk&&roll(l.seed,l.year*223+e.id.length*61+index*199)<op.risk){
+ if(fatal){
   l.finish('전란 중 사람들을 돕거나 싸움에 나섰다가 목숨을 잃었다.');
  }else promote(l,s);
  return true;
@@ -384,5 +476,5 @@ function install(){
  Object.defineProperty(L.prototype,'__joseon13',{value:true});return true;
 }
 install();
-return Object.freeze({EVENTS,SOURCES,ensure,allowed,yearly,choose,prompt,summary,hydrate,install});
+return Object.freeze({EVENTS,RESULTS,SOURCES,ensure,allowed,yearly,choose,prompt,summary,hydrate,install});
 });

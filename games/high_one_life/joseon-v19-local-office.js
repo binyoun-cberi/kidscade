@@ -140,10 +140,7 @@ function yearly(l,s){
  // Inspectors are not automatically dispatched everywhere; these are fictional
  // opportunities shaped by grievance, documentary evidence and patronage.
  const o=s.office,ledger=V18.ensure(l);
- for(const f of s.followups.filter(x=>x.year<=l.year)){
-  l.logEvent(f.text,'joseon19-followup');l.log.at(-1).causeId='joseon19:'+f.id;
-  s.memories.push(f.text);
- }
+ // Legacy delayed copies are retired; audit outcomes below remain state-driven.
  s.followups=s.followups.filter(x=>x.year>l.year);
  if(l.year>o.through){
   const outgoing=o.name;
@@ -225,7 +222,9 @@ function prompt(l){
 function choose(l,index){
  const s=ensure(l),e=BYID.get(s.active?.eventId);
  if(!e||!Number.isInteger(index)||index<0||index>=e.options.length||!l.alive)return false;
- const op=e.options[index],d=op.delta,j=J.ensure(l),v=V2.ensure(l),vil=V9.ensure(l),ledger=V18.ensure(l);
+ const op=e.options[index],d={...op.delta},j=J.ensure(l),v=V2.ensure(l),vil=V9.ensure(l),ledger=V18.ensure(l);
+ const before={grain:v.grain,debt:ledger.landDebt+ledger.militaryDebt+ledger.grainDebt};
+ if(op.action==='mutual'&&d.grain>0)d.grain=0;
  const stats={};for(const k of ['health','happiness','knowledge','bonds','wealth'])
   if(Number.isFinite(d[k]))stats[k]=d[k];
  l.change(stats);
@@ -248,10 +247,12 @@ function choose(l,index){
  if(d.proof>0)ledger.proof=clip(ledger.proof+Math.min(2,d.proof),0,90);
  if(d.petitions>0)ledger.complaints=clip(ledger.complaints+d.petitions,0,90);
  const id=s.active.id;
- l.logEvent(e.title+' — '+op.label,'joseon19-choice');
- l.log.at(-1).causeId='joseon19:'+id;l.log.at(-1).sourceUrl=e.source;
+ const result=[op.follow];
+ if(ledger.landDebt+ledger.militaryDebt+ledger.grainDebt<before.debt)result.push('잘못 매겨진 부담 일부가 장부에서 줄었다.');
+ l.logEvent(result.join(' '),'joseon19-choice');
+ l.log.at(-1).causeId='joseon19:'+id;l.log.at(-1).sourceUrl=e.source;l.log.at(-1).eventTitle=e.title;l.log.at(-1).choiceLabel=op.label;
  s.decisions.push({id,eventId:e.id,year:l.year,choice:index,official:s.office.name});s.decisions=s.decisions.slice(-70);
- s.followups.push({id,year:l.year+2+index%2,text:op.follow});s.followups=s.followups.slice(-45);
+ // Inspections and levy changes have their own actual yearly outcomes.
  s.lastSource=e.source;
  s.active=null;l.pending=null;
  if(l.money&&l.year<1900)l.money.netWorth=j.capital*100;
