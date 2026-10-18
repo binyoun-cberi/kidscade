@@ -4,6 +4,34 @@ import {readFile} from 'node:fs/promises';
 const source=await readFile(new URL('./market-retail.js',import.meta.url),'utf8'),api=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 const main=await readFile(new URL('./market-walk.js',import.meta.url),'utf8');
 const products=[...api.RETAIL_IDS,...api.EXTRA_RETAIL_IDS].map((id,i)=>({id,price:900+i*400}));
+test('checkout serves queue join order rather than spawn order and waits for the head',()=>{
+ const code=main.slice(main.indexOf('function takeQueuedCustomer('),main.indexOf('function endRetailDay('));
+ const first={queueTicket:1,queued:true,basket:['apple'],customer:{name:'first'}},later={queueTicket:2,queued:true,basket:['bread'],customer:{name:'later'}};
+ const state={cashierShift:{active:true}},args={retailGuests:[later,first],retailGuest:null,retailCarry:null,state,document:{getElementById(){}},openCheckout(){}};
+ const take=new Function(...Object.keys(args),code+';return takeQueuedCustomer;')(...Object.values(args));take();assert.equal(state.cashierShift.current.name,'first');
+ first.queued=false;state.cashierShift.current=null;take();assert.equal(state.cashierShift.current,null);
+});
+test('queue compacts after a gap without resetting patience or serving customer',()=>{
+ const code=main.slice(main.indexOf('function retailQueueSlot('),main.indexOf('function updateRetailGuests('));
+ const active={queueTicket:1,queued:true},last={queueTicket:3,queued:true,path:[[1,1]],wait:40};
+ const run=new Function('retailGuests','retailGuest',code+';return {slot:retailQueueSlot,compact:compactRetailQueue};')([last,active],active);
+ assert.equal(run.slot(last),1);run.compact();assert.equal(last.queued,false);assert.equal(last.path,null);assert.equal(last.wait,40);assert.equal(active.queued,true);
+});
+test('actors stop before another person and can move away from an overlap',()=>{
+ const code=main.slice(main.indexOf('function moveRetailActor('),main.indexOf('function retailQueueSlot('));
+ const move=new Function('colliders','retailPath',code+';return moveRetailActor;')([],()=>null);
+ const root=(x,z)=>({position:{x,y:0,z},rotation:{y:0}}),blocker={root:root(.5,0)},actor={root:root(0,0),path:[[1,0]],waypoint:0};actor.neighbors=[actor,blocker];
+ for(let n=0;n<30;n++)move(actor,.05);assert.ok(Math.abs(actor.root.position.x-blocker.root.position.x)>=.48);
+ actor.root.position.x=.3;actor.path=[[-1,0]];move(actor,.05);assert.ok(actor.root.position.x<.3);
+});
+test('opposing shoppers detour and both reach their destinations',async()=>{
+ const {retailPath}=await import('./market-customer-route.js'),code=main.slice(main.indexOf('function moveRetailActor('),main.indexOf('function retailQueueSlot('));
+ const move=new Function('colliders','retailPath',code+';return moveRetailActor;')([],retailPath);
+ const actor=(x,goal)=>({root:{position:{x,y:0,z:0},rotation:{y:0}},path:retailPath([x,0],[goal,0],[]),waypoint:0});
+ const a=actor(-1,1),b=actor(1,-1);a.neighbors=b.neighbors=[a,b];
+ for(let n=0;n<600;n++){move(a,.05);move(b,.05)}
+ assert.ok(Math.hypot(a.root.position.x-1,a.root.position.z)<.1,JSON.stringify([a,b].map(x=>({p:x.root.position,path:x.path,w:x.waypoint}))));assert.ok(Math.hypot(b.root.position.x+1,b.root.position.z)<.1);
+});
 test('owner drawings transfer real cash and never pay out a loss',()=>{const s=api.createRetail(products),before=s.cash;assert.equal(api.ownerRetailDraw(s,10000,2000),2400);assert.equal(s.cash,before-2400);assert.equal(s.drawn,2400);assert.equal(api.ownerRetailDraw(s,1000,2000),0);s.cash=100;assert.equal(api.ownerRetailDraw(s,10000),100);assert.equal(s.cash,0)});
 test('employee picks a nearly empty reserved shelf ahead of the first product',()=>{const s=api.createRetail(products);s.items.apple.shelf=6;s.items.tomato.shelf=2;assert.equal(api.chooseRetailRestock(s,[['tomato','tomato']]),'tomato');s.items.tomato.warehouse=0;assert.notEqual(api.chooseRetailRestock(s,[['tomato']]),'tomato')});
 test('customer profiles respect budgets and record demand for unavailable goods',()=>{
