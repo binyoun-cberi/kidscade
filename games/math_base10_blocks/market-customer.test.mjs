@@ -18,11 +18,11 @@ test('blocked and disconnected stores fail without crossing fixtures',()=>{
 test('three customers shop concurrently and occupy distinct queue positions',async()=>{
  const src=await readFile(new URL('./market-walk.js',import.meta.url),'utf8'),a=src.indexOf('function moveRetailActor('),b=src.indexOf('function departRetailGuest(',a),code=src.slice(a,b);
  for(let run=0;run<30;run++){
-  const guests=Array.from({length:3},(_,i)=>({root:{position:{x:1,y:0,z:4-i*.6},rotation:{y:0,z:0},removeFromParent(){}},bag:{scale:{y:1},rotation:{z:0}},basket:['apple','bread'],stops:[{id:'apple',target:[-3,-2.5]},{id:'bread',target:[2,-2.5]},{id:null,target:[-3.25,3.75]}],index:0,path:null,waypoint:0,pause:0,picked:{},clock:0,queued:false}));
+  const guests=Array.from({length:3},(_,i)=>({root:{position:{x:1,y:0,z:4-i*.6},rotation:{y:0,z:0},removeFromParent(){}},bag:{scale:{y:1},rotation:{z:0}},basket:['apple','bread'],stops:[{id:'apple',target:[-3,-2.5]},{id:'bread',target:[2,-2.5]},{id:null,target:[-3.25,3.75]}],index:0,path:null,waypoint:0,pause:0,picked:{},clock:0,queued:false,wait:0,patience:10000,customer:{name:'손님'}}));
   const state={phase:'retailWalk',cashierShift:{spawned:3,target:3,staffActive:false}};let ready=0;
-  const vars={retailGuest:null,retailGuests:guests,retailDepartures:[],retailSpawnClock:0,retailSpawning:false,state,colliders:[{x:0,z:0,w:2,d:1},{x:-3.3,z:2.7,w:2,d:1.1},{x:2,z:1.25,w:1.25,d:.65}],retailPath,retailGuestNote(){},renderRetailShelfSigns(){},beginRetailGuest(){throw Error('unexpected spawn')},endRetailDay(){throw Error('unexpected end')},takeQueuedCustomer(){ready=guests.filter(g=>g.queued).length}};
+  const vars={retailGuest:null,retailGuests:guests,retailDepartures:[],retailSpawnClock:0,retailSpawning:false,state,colliders:[{x:0,z:0,w:2,d:1},{x:-3.3,z:2.7,w:2,d:1.1},{x:2,z:1.25,w:1.25,d:.65}],retailPath,retailGuestNote(){},toast(){},renderRetailShelfSigns(){},beginRetailGuest(){throw Error('unexpected spawn')},endRetailDay(){throw Error('unexpected end')},takeQueuedCustomer(){ready=guests.filter(g=>g.queued).length}};
   const tick=new Function(...Object.keys(vars),code+';return updateRetailGuests;')(...Object.values(vars));
-  for(let frame=0;frame<5000&&ready<3;frame++)tick(.05);
+  for(let frame=0;frame<5000&&ready<3;frame++){tick(.05);ready=guests.filter(g=>g.queued).length}
   assert.equal(ready,3);for(const g of guests)assert.deepEqual(g.picked,{apple:1,bread:1});
   for(let i=0;i<3;i++)for(let j=i+1;j<3;j++)assert.ok(Math.hypot(guests[i].root.position.x-guests[j].root.position.x,guests[i].root.position.z-guests[j].root.position.z)>=.64);
  }

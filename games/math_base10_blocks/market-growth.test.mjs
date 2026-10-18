@@ -35,7 +35,7 @@ test('hired staff walks to a shelf and transfers stock without buying new goods'
  const fn=main.slice(main.indexOf('function updateRetailStaff('),main.indexOf('function buildRetailExpansion('));
  const motion=main.slice(main.indexOf('function moveRetailActor('),main.indexOf('function updateRetailGuests('));
  const state={retail:a.createRetail(products),cashierShift:{stockClosed:true}},root={position:{x:3.1,y:0,z:1.8},rotation:{y:0}},actor={root,product:null,path:null,waypoint:0,clock:0};let placed=0;
- const args={state,retailStaffModel:actor,retailStaffClock:0,productById:id=>({id,pos:[-3,-2]}),colliders:[],retailPath,restockRetail:a.restockRetail,animateRetailPlacement(){placed++},renderRetailShelfSigns(){},save(){}};
+ const args={chooseRetailRestock:a.chooseRetailRestock,retailGuests:[],state,retailStaffModel:actor,retailStaffClock:0,productById:id=>({id,pos:[-3,-2]}),colliders:[],retailPath,restockRetail:a.restockRetail,animateRetailPlacement(){placed++},renderRetailShelfSigns(){},save(){}};
  const tick=new Function(...Object.keys(args),motion+fn+';return updateRetailStaff;')(...Object.values(args));for(let i=0;i<1000&&!placed;i++)tick(.05);
  assert.equal(placed,1);assert.equal(state.retail.items.apple.shelf,3);assert.equal(state.retail.items.apple.warehouse,3);assert.equal(state.cashierShift.stockClosed,false);assert.equal(state.retail.cash,30000);
 });
