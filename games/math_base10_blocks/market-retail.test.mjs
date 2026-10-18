@@ -36,6 +36,7 @@ test('four customer payments update store ledger and pay wages once',async()=>{
  const next=ex('function nextCashierCustomer()','\nfunction ensureRetail');
  const actions=ex('function scanItem(','\n\nfunction weekBalanceLabel');
  const state={phase:'checkout',running:false,day:1,workedDay:0,money:35000,dailyIncome:0,hunger:60,condition:80,weekStats:{workDays:0},dailyIncidents:[],inventory:[],retail:api.createRetail(products),cashierShift:{active:true,served:0,target:4,mistakes:0,revenue:0,margin:0},basket:[],scanned:new Set()};
+ for(const x of Object.values(state.retail.items))x.shelf=8;
  const ui={totalInput:{value:'',blur(){}},changeInput:{value:'',blur(){}},checkout:{classList:{remove(){}},setAttribute(){}},cartPanel:{classList:{add(){}}}};
  const cartTotal=()=>state.basket.reduce((n,id)=>n+state.retail.items[id].price,0);
  const stock=()=>Object.values(state.retail.items).reduce((n,x)=>n+x.shelf,0);
