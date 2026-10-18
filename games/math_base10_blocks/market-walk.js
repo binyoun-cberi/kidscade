@@ -828,7 +828,7 @@ function startRetailCustomers(){
 
 function takeQueuedCustomer(){
  if(retailGuest||!state.cashierShift||retailCarry)return;
- const guest=retailGuests.find(g=>g.queued);if(!guest)return;
+ const guest=retailGuests.filter(g=>g.queueTicket!==undefined).sort((a,b)=>a.queueTicket-b.queueTicket)[0];if(!guest?.queued)return;
  retailGuest=guest;state.basket=[...guest.basket];state.cashierShift.current=guest.customer;state.scanned=new Set();state.totalConfirmed=false;state.paid=0;state.changeConfirmed=false;
  state.phase='shopping';document.getElementById('retailGuestNote')?.remove();openCheckout();
 }
@@ -843,24 +843,41 @@ function endRetailDay(){
 function moveRetailActor(actor,dt){
  if(!actor.path||actor.waypoint>=actor.path.length)return true;
  const p=actor.path[actor.waypoint],dx=p[0]-actor.root.position.x,dz=p[1]-actor.root.position.z,d=Math.hypot(dx,dz),travel=dt*1.8;
+ const stride=Math.min(d,travel),nx=actor.root.position.x+(d?dx/d*stride:0),nz=actor.root.position.z+(d?dz/d*stride:0);
+ const others=(actor.neighbors||[]).filter(x=>x!==actor);
+ if(others.some(x=>{const q=x.root.position;return Math.hypot(nx-q.x,nz-q.z)<.48&&Math.hypot(nx-q.x,nz-q.z)<Math.hypot(actor.root.position.x-q.x,actor.root.position.z-q.z)-.00001})){
+  actor.blockedFor=(actor.blockedFor||0)+dt;
+  if(actor.blockedFor>.75){actor.blockedFor=0;const goal=actor.path.at(-1),from=[actor.root.position.x,actor.root.position.z],obstacles=[...colliders,...others.map(x=>({x:x.root.position.x,z:x.root.position.z,w:.6,d:.6}))];
+   // Opposing walkers choose opposite sides instead of repeatedly mirroring a detour.
+   const gx=goal[0]-from[0],gz=goal[1]-from[1],length=Math.hypot(gx,gz)||1;
+   for(const side of [1,-1]){const via=[from[0]-gz/length*.75*side,from[1]+gx/length*.75*side],out=retailPath(from,via,obstacles),back=retailPath(via,goal,obstacles);if(out&&back&&Math.hypot(out.at(-1)[0]-via[0],out.at(-1)[1]-via[1])<.3&&Math.hypot(back.at(-1)[0]-goal[0],back.at(-1)[1]-goal[1])<.3){actor.path=[...out,...back.slice(1)];actor.waypoint=0;break}}
+  }
+  return false;
+ }
+ actor.blockedFor=0;
  if(d<=travel){actor.root.position.x=p[0];actor.root.position.z=p[1];actor.waypoint++}else{actor.root.position.x+=dx/d*travel;actor.root.position.z+=dz/d*travel}
  const targetAngle=Math.atan2(dx,dz),difference=Math.atan2(Math.sin(targetAngle-actor.root.rotation.y),Math.cos(targetAngle-actor.root.rotation.y));actor.root.rotation.y+=difference*Math.min(1,dt*12);actor.clock=(actor.clock||0)+dt;actor.root.position.y=0;actor.walkMixer?.update(dt);
  return actor.waypoint>=actor.path.length;
 }
+function retailQueueSlot(guest){return retailGuests.filter(g=>g.queueTicket!==undefined&&g.queueTicket<guest.queueTicket).length}
+function compactRetailQueue(){for(const g of retailGuests)if(g.queueTicket!==undefined&&g!==retailGuest){g.queued=false;g.path=null}}
 function updateRetailGuests(dt){
+ const actors=[...retailGuests,...retailDepartures,...(typeof retailStaffModel!=='undefined'&&retailStaffModel?[retailStaffModel]:[])];for(const actor of actors)actor.neighbors=actors;
  for(let i=retailDepartures.length-1;i>=0;i--){const actor=retailDepartures[i];if(moveRetailActor(actor,dt)){actor.root.removeFromParent();retailDepartures.splice(i,1)}}
  const shift=state.cashierShift;if(!shift||!['retailWalk','checkout'].includes(state.phase))return;
  retailSpawnClock-=dt;if(retailSpawnClock<=0&&retailGuests.length<3&&shift.spawned<shift.target&&!shift.stockClosed){retailSpawnClock=2;beginRetailGuest()}
  for(const g of [...retailGuests]){
-  if(g.queued){if(g!==retailGuest){g.wait=(g.wait||0)+dt;if(g.wait>(g.patience||120)){g.root.removeFromParent();retailGuests=retailGuests.filter(x=>x!==g);renderRetailShelfSigns();toast(g.customer.name+' 손님이 다음에 오겠다고 했어요.')}}continue}
+  if(g.queueTicket!==undefined&&g!==retailGuest){g.wait=(g.wait||0)+dt;if(g.wait>(g.patience||120)){g.root.removeFromParent();retailGuests=retailGuests.filter(x=>x!==g);compactRetailQueue();renderRetailShelfSigns();toast(g.customer.name+' 손님이 다음에 오겠다고 했어요.');continue}}
+  if(g.queued)continue;
   if(g.pause>0){g.pause-=dt;g.bag.rotation.z=Math.sin(Math.max(0,g.pause)/.8*Math.PI)*-.22;continue}
   g.bag.rotation.z=0;const stop=g.stops[g.index];
-  if(!g.path){const queueSlot=retailGuests.filter(x=>x.queued).length;const target=stop.id?stop.target:[-3.25+queueSlot*.75,3.75];g.path=retailPath([g.root.position.x,g.root.position.z],target,colliders);g.waypoint=0;
-   if(!g.path){g.routeRetries=(g.routeRetries||0)+1;if(g.routeRetries<=2){g.pause=.8;continue}g.root.removeFromParent();retailGuests=retailGuests.filter(x=>x!==g);renderRetailShelfSigns();toast('한 손님이 이동하지 못해 돌아갔어요. 다른 손님은 계속 응대할 수 있어요.');continue}
+  if(!stop.id&&g.queueTicket===undefined)g.queueTicket=1+Math.max(0,...retailGuests.map(x=>x.queueTicket||0));
+  if(!g.path){const target=stop.id?stop.target:[-3.25+retailQueueSlot(g)*.75,3.75];g.path=retailPath([g.root.position.x,g.root.position.z],target,colliders);g.waypoint=0;
+   if(!g.path){g.routeRetries=(g.routeRetries||0)+1;if(g.routeRetries<=2){g.pause=.8;continue}g.root.removeFromParent();retailGuests=retailGuests.filter(x=>x!==g);compactRetailQueue();renderRetailShelfSigns();toast('한 손님이 이동하지 못해 돌아갔어요. 다른 손님은 계속 응대할 수 있어요.');continue}
   }
   if(!moveRetailActor(g,dt))continue;
   if(stop.id){g.picked[stop.id]=g.basket.filter(id=>id===stop.id).length;g.bag.scale.y=1+Object.keys(g.picked).length*.1;g.pause=.8;g.index++;g.path=null;renderRetailShelfSigns()}
-  else{const slot=retailGuests.filter(x=>x.queued).length,target=[-3.25+slot*.75,3.75];if(Math.hypot(g.root.position.x-target[0],g.root.position.z-target[1])>.1){g.path=retailPath([g.root.position.x,g.root.position.z],target,colliders);g.waypoint=0}else{g.queued=true;g.root.rotation.y=Math.PI}}
+  else{const target=[-3.25+retailQueueSlot(g)*.75,3.75];if(Math.hypot(g.root.position.x-target[0],g.root.position.z-target[1])>.1){g.path=retailPath([g.root.position.x,g.root.position.z],target,colliders);g.waypoint=0}else{g.queued=true;g.root.rotation.y=Math.PI}}
  }
  if(shift.staffActive)updateRetailStaff(dt);
  if(state.phase!=='checkout')retailGuestNote('영업 중 · 장보기 '+retailGuests.filter(g=>!g.queued).length+'명 · 계산 대기 '+retailGuests.filter(g=>g.queued).length+'명');
@@ -868,7 +885,7 @@ function updateRetailGuests(dt){
 }
 
 function departRetailGuest(){
- if(!retailGuest)return;const g=retailGuest;retailGuests=retailGuests.filter(x=>x!==g);for(const waiting of retailGuests)if(waiting.queued){waiting.queued=false;waiting.path=null}retailGuest=null;g.path=retailPath([g.root.position.x,g.root.position.z],[1,4],colliders);g.waypoint=0;g.root.rotation.z=0;
+ if(!retailGuest)return;const g=retailGuest;retailGuests=retailGuests.filter(x=>x!==g);retailGuest=null;compactRetailQueue();g.path=retailPath([g.root.position.x,g.root.position.z],[1,4],colliders);g.waypoint=0;g.root.rotation.z=0;
  if(g.path)retailDepartures.push(g);else g.root.removeFromParent();
 }
 
