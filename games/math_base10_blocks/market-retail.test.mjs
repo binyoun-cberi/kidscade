@@ -48,3 +48,11 @@ test('four customer payments update store ledger and pay wages once',async()=>{
 });
 
 test('store expansion persists and raises shelf capacity without free upgrades',()=>{const s=api.createRetail(products);const before=s.cash;assert.equal(api.expandRetail(s).ok,true);assert.equal(s.cash,before-20000);assert.equal(s.capacity,16);assert.equal(s.expansionSpent,20000);const cash=s.cash;assert.equal(api.expandRetail(s).ok,false);assert.equal(s.cash,cash);s.items.apple.warehouse=20;api.restockRetail(s,'apple');assert.equal(s.items.apple.shelf,16);assert.equal(api.normalizeRetail(JSON.parse(JSON.stringify(s)),products).capacity,16)});
+
+test('legacy shop saves preserve cash stock and expanded capacity',async()=>{
+ const main=await readFile(new URL('./market-walk.js',import.meta.url),'utf8');
+ const a=main.indexOf('function ensureRetail()'),b=main.indexOf('\nconst retailPanel',a);assert.ok(a>=0&&b>a);
+ const state={shop:{cash:17700,sales:3500,customers:2,capacity:16,stock:Object.fromEntries(products.map(p=>[p.id,{shelf:7,back:9}]))}};
+ const ensure=new Function('state','PRODUCTS','productById','normalizeRetail',main.slice(a,b)+';return ensureRetail;')(state,products,id=>products.find(p=>p.id===id),api.normalizeRetail);
+ const s=ensure();assert.equal(s.cash,17700);assert.equal(s.capacity,16);assert.equal(s.items.apple.shelf,7);assert.equal(s.items.apple.warehouse,9);assert.equal(s.revenue-s.costOfGoods,0);assert.equal(state.shop,undefined);assert.deepEqual(ensure(),s);
+});
