@@ -6,7 +6,9 @@ export const FARM_ACTION_MOTIONS=Object.freeze({
   gate:{duration:.95,tool:'lever',impact:.54},
   weed:{duration:.97,tool:'hand',impact:.56},
   fertilize:{duration:1.0,tool:'fertilizer',impact:.52},
-  harvest:{duration:1.18,tool:'sickle',impact:.60}
+  harvest:{duration:1.18,tool:'sickle',impact:.60},
+  scoop:{duration:1.05,tool:'shovel',impact:.56},
+  sleep:{duration:1.4,tool:'none',impact:.62}
 });
 const clamp=(v)=>Math.max(0,Math.min(1,Number.isFinite(v)?v:0));
 export function motionPose(kind,progress=0,{moving=false,time=0}={}){
@@ -26,7 +28,11 @@ export function motionPose(kind,progress=0,{moving=false,time=0}={}){
   const reach=Math.sin(Math.PI*Math.min(1,p*1.5));
   base.working=true;base.tool=def.tool;base.impact=p>=def.impact;
   base.leftLeg=0;base.rightLeg=0;base.leftKnee=0;base.rightKnee=0;
-  if(kind==='till'){
+  if(kind==='sleep'){
+    base.bodyLean=.05+.18*bump;base.bodyTilt=-.06*bump;base.leftArm=.25+.2*bump;base.rightArm=.22+.2*bump;base.crouch=.2*bump;
+  }else if(kind==='scoop'){
+    base.bodyLean=.22+.25*bump;base.leftArm=.45;base.rightArm=.72+stroke*.3;base.rightElbow=-.55;base.crouch=.09+.12*bump;base.toolTilt=-.35+Math.max(0,stroke)*.45;
+  }else if(kind==='till'){
     base.bodyLean=.14+.29*bump;
     base.leftArm=.32+stroke*.34;
     base.rightArm=.6+stroke*.67;
