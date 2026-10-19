@@ -1,6 +1,6 @@
 import {
-  WORLD, ISLANDS, SHIP_TYPES, SHIP_GUIDE, WAVES, UPGRADES, WEAPONS, createGame, startRun,
-  getWave, stepGame, takeUpgrade, issueOrder, togglePause, broadsideTarget, radarContacts, boardingThreat
+  WORLD, ISLANDS, SHIP_TYPES, SHIP_GUIDE, WAVES, UPGRADES, WEAPONS, DIFFICULTIES, createGame, startRun,
+  getWave, getTacticalObjective, stepGame, takeUpgrade, issueOrder, togglePause, broadsideTarget, radarContacts, boardingThreat
 } from './sim.mjs';
 
 const $ = id => document.getElementById(id);
@@ -75,7 +75,8 @@ function toast(message) {
 }
 
 function readRecord() {
-  try { return JSON.parse(localStorage.getItem('kidscade.yi_sun_sin.record') || 'null'); }
+  const key = game.difficulty === 'hard' ? 'kidscade.yi_sun_sin.record.hard' : 'kidscade.yi_sun_sin.record';
+  try { return JSON.parse(localStorage.getItem(key) || 'null'); }
   catch { return null; }
 }
 
@@ -83,7 +84,8 @@ function saveRecord() {
   try {
     const previous = readRecord();
     if (!previous || game.score > previous.score) {
-      localStorage.setItem('kidscade.yi_sun_sin.record', JSON.stringify({ score: game.score, seconds: game.seconds, date: new Date().toISOString() }));
+      const key = game.difficulty === 'hard' ? 'kidscade.yi_sun_sin.record.hard' : 'kidscade.yi_sun_sin.record';
+      localStorage.setItem(key, JSON.stringify({ score: game.score, seconds: game.seconds, date: new Date().toISOString() }));
     }
   } catch { /* Private browsing or disabled storage. */ }
 }
@@ -91,6 +93,7 @@ function saveRecord() {
 function showOverlay(mode) {
   overlay.classList.remove('hidden');
   $('howTo').style.display = mode === 'menu' ? '' : 'none';
+  $('difficultyPicker').hidden = mode !== 'menu';
   $('shipGuide').hidden = true;
   $('shipGuide').replaceChildren();
   $('historyNote').style.display = mode === 'menu' || mode === 'victory' ? '' : 'none';
@@ -105,7 +108,16 @@ function showOverlay(mode) {
     button.addEventListener('click', action);
     actions.appendChild(button);
   };
+  const secondary = (label, action) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'secondary-button';
+    button.textContent = label;
+    button.addEventListener('click', action);
+    actions.appendChild(button);
+  };
   if (mode === 'menu') {
+    selectDifficulty(game.difficulty);
     $('overlayEyebrow').textContent = '임진년 · 첫 번째 출전';
     $('overlayTitle').textContent = '옥포로 출전하다';
     $('overlayText').textContent = '1592년, 조선 수군이 적선을 향해 바다로 나섭니다. 적선을 내 배의 왼쪽이나 오른쪽에 두고 함포를 발사하세요.';
@@ -178,27 +190,38 @@ function showOverlay(mode) {
     actions.appendChild(restart);
   } else if (mode === 'victory') {
     saveRecord();
-    $('overlayEyebrow').textContent = '1592 · 옥포 해전 승리';
+    $('overlayEyebrow').textContent = `${DIFFICULTIES[game.difficulty].label} · 1592 옥포 해전 승리`;
     $('overlayTitle').textContent = '바다에 승전의 소식이 퍼지다';
     const best = readRecord();
-    $('overlayText').textContent = `격침 ${game.kills}척 · 전공 ${game.score.toLocaleString('ko-KR')} · 소요 ${formatTime(game.seconds)}${best ? ` · 최고 기록 ${best.score.toLocaleString('ko-KR')}` : ''}`;
+    const completed = game.tactical.completed.filter(Boolean).length;
+    $('overlayText').textContent = `격침 ${game.kills}척 · 전술 임무 ${completed}/3 · 전공 ${game.score.toLocaleString('ko-KR')} · 소요 ${formatTime(game.seconds)}${best ? ` · 최고 기록 ${best.score.toLocaleString('ko-KR')}` : ''}`;
     primary('다시 출전하기 →', restartRun);
+    secondary('다른 난이도로 출전', backToMenu);
   } else if (mode === 'defeat') {
     $('overlayEyebrow').textContent = '옥포 해전 · 출전 실패';
     $('overlayTitle').textContent = '기함이 전투를 이어갈 수 없습니다';
     $('overlayText').textContent = `격침 ${game.kills}척. 적선을 뱃머리가 아닌 판옥선의 좌우에 두고, 필요할 때 협선의 호위를 요청하세요.`;
     primary('다시 도전하기 →', restartRun);
+    secondary('난이도 다시 고르기', backToMenu);
   }
   requestAnimationFrame(() => actions.querySelector('button')?.focus());
 }
 
 function restartRun() {
-  game = createGame(Date.now() >>> 0);
+  game = createGame(Date.now() >>> 0, game.difficulty);
   oldMode = 'menu';
   joystick.active = false;
   resetJoystick();
   Object.assign(input, { forward: false, backward: false, left: false, right: false });
   beginRun();
+}
+
+function backToMenu() {
+  game = createGame(Date.now() >>> 0, game.difficulty);
+  oldMode = 'menu';
+  resetJoystick();
+  Object.assign(input, { forward: false, backward: false, left: false, right: false });
+  showOverlay('menu');
 }
 
 function beginRun() {
@@ -208,17 +231,33 @@ function beginRun() {
   canvas.focus();
 }
 
+function selectDifficulty(id) {
+  if (game.mode !== 'menu' || !DIFFICULTIES[id]) return;
+  game.difficulty = id;
+  for (const [difficulty, buttonId] of [['normal', 'normalDifficulty'], ['hard', 'hardDifficulty']]) {
+    const selected = difficulty === id;
+    $(buttonId).classList.toggle('selected', selected);
+    $(buttonId).setAttribute('aria-pressed', String(selected));
+  }
+}
+
 function syncHud() {
   const wave = getWave(game) || WAVES[WAVES.length - 1];
   const total = wave.ships.length;
   const destroyed = Math.min(total, game.spawned - game.enemies.length);
-  $('waveName').textContent = `제${game.waveIndex + 1}교전 · ${wave.name}`;
+  $('waveName').textContent = `${game.difficulty === 'hard' ? '어려움 · ' : ''}제${game.waveIndex + 1}교전 · ${wave.name}`;
   $('waveProgress').textContent = `${destroyed} / ${total}척 격침`;
   $('waveDots').querySelectorAll('i').forEach((dot, i) => dot.classList.toggle('active', i <= game.waveIndex));
   $('missionTitle').textContent = game.mode === 'victory' ? '옥포의 바다를 지켜냈습니다' : wave.name;
   $('missionText').textContent = wave.note;
   $('missionFill').style.width = `${destroyed / total * 100}%`;
   $('missionCounter').textContent = `적선 ${destroyed} / ${total}`;
+  const objective = getTacticalObjective(game);
+  const tacticStatus = $('tacticStatus');
+  tacticStatus.textContent = objective.completed
+    ? `✓ 전술 임무 완료 · ${objective.label} (수리 +22)`
+    : `전술 임무 · ${objective.label} ${Math.min(objective.target, Math.floor(objective.value))} / ${objective.target}${objective.unit || ''}`;
+  tacticStatus.classList.toggle('done', objective.completed);
   const hp = Math.max(0, Math.ceil(game.player.hp));
   $('hullText').textContent = `${hp} / ${game.player.maxHp}`;
   $('hullFill').style.width = `${hp / game.player.maxHp * 100}%`;
@@ -229,6 +268,12 @@ function syncHud() {
   const escort = game.allies[0];
   const messenger = game.allies.find(ally => ally.type === 'sahuseon');
   $('escortStatus').textContent = `${!escort || escort.dead ? '협선 격침' : `협선 ${Math.ceil(escort.hp)}/${escort.maxHp}`} · ${!messenger || messenger.dead ? '사후선 격침' : '사후선 정찰 중'}`;
+  const exposure = $('exposureWarning');
+  const exposed = game.mode === 'playing' && game.stationarySeconds >= 3;
+  exposure.hidden = !exposed;
+  if (exposed) exposure.textContent = game.stationarySeconds >= 6
+    ? '⚠ 정박 노출! 적의 집중 포격 · 전진하여 이탈하세요'
+    : `⚠ 기함 정박 · ${Math.ceil(6 - game.stationarySeconds)}초 뒤 적 집중 포격`;
   $('timer').textContent = formatTime(game.seconds);
   for (let side = 0; side < 2; side++) {
     const slot = side === 0 ? 'port' : 'starboard';
@@ -257,8 +302,8 @@ function syncHud() {
   const right = broadsideTarget(game.player,game.enemies,1,WEAPONS[game.arsenal.starboard].range * game.bonuses.range);
   const widestRange = Math.max(WEAPONS[game.arsenal.port].range, WEAPONS[game.arsenal.starboard].range) * game.bonuses.range;
   const boarding = boardingThreat(game);
-  $('battleTip').textContent = boarding ? `도선 위협 ${Math.round(boarding.boardingProgress * 100)}% · 적선과 거리를 벌리세요!` : !nearest ? '적선을 기다리는 중' : game.player.aimSteady < .58 ? '급선회 중 · 방향을 잡으면 포격합니다' : left || right ? `${left ? '좌현' : '우현'} 화포 사격 범위!` : Math.hypot(nearest.x-game.player.x,nearest.y-game.player.y)>widestRange ? '적선에 접근한 뒤 측면을 잡으세요' : '적선을 뱃머리가 아닌 좌우에 두세요';
-  $('battleTip').classList.toggle('is-boarding', !!boarding);
+  $('battleTip').textContent = boarding ? `도선 위협 ${Math.round(boarding.boardingProgress * 100)}% · 적선과 거리를 벌리세요!` : game.stationarySeconds >= 6 ? '정박 중에는 포격 피해 증가! W 또는 ↑로 항해하세요' : !nearest ? '적선을 기다리는 중' : game.player.aimSteady < .58 ? '급선회 중 · 방향을 잡으면 포격합니다' : left || right ? `${left ? '좌현' : '우현'} 화포 사격 범위!` : Math.hypot(nearest.x-game.player.x,nearest.y-game.player.y)>widestRange ? '적선에 접근한 뒤 측면을 잡으세요' : '적선을 뱃머리가 아닌 좌우에 두세요';
+  $('battleTip').classList.toggle('is-boarding', !!boarding || game.stationarySeconds >= 6);
 }
 
 function drawOcean(left, top, width, height) {
@@ -509,6 +554,34 @@ function drawShip(ship) {
   }
 }
 
+function drawShipNameplates() {
+  // Readable vessel types make the 1592 fleet easier to learn at a glance.
+  // Limit enemy tags to the nearest three so the final wave stays legible.
+  const nearbyEnemies = game.enemies.filter(ship => !ship.dead &&
+    Math.hypot(ship.x - game.player.x, ship.y - game.player.y) < 490)
+    .sort((a, b) => Math.hypot(a.x - game.player.x, a.y - game.player.y) -
+      Math.hypot(b.x - game.player.x, b.y - game.player.y)).slice(0, 3);
+  for (const ship of [game.player, ...game.allies.filter(ally => !ally.dead), ...nearbyEnemies]) {
+    if (ship.dead) continue;
+    const label = ship.id === 'flagship' ? '기함 · 판옥선' : game.difficulty === 'hard' && ship.team === 'japan'
+      ? `${SHIP_TYPES[ship.type].name} · ${ship.aiMode}` : SHIP_TYPES[ship.type].name;
+    const friendly = ship.team === 'joseon';
+    const radius = SHIP_TYPES[ship.type].radius;
+    const y = ship.y + radius * 1.5 + 16;
+    ctx.save();
+    ctx.font = '700 10px system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    const width = ctx.measureText(label).width + 16;
+    ctx.fillStyle = friendly ? '#092d37df' : '#4b2627e5';
+    ctx.strokeStyle = friendly ? '#a9dcc593' : '#e9aa899e';
+    ctx.lineWidth = 1;
+    ctx.beginPath();ctx.roundRect(ship.x - width / 2, y - 11, width, 18, 5);ctx.fill();ctx.stroke();
+    ctx.fillStyle = friendly ? '#e9f3cf' : '#ffdfb5';
+    ctx.fillText(label, ship.x, y + 2);
+    ctx.restore();
+  }
+}
+
 function drawBroadsideGuides() {
   if (game.mode !== 'playing' || game.player.dead) return;
   ctx.save();
@@ -578,6 +651,16 @@ function drawEffects() {
         ctx.beginPath();ctx.arc(Math.cos(a)*(8+travel),Math.sin(a)*(8+travel),heavy?4.8*(1-p)+1:3*(1-p)+1,0,Math.PI*2);ctx.fill();
         if(heavy){ctx.strokeStyle=`rgba(59,48,37,${.6*(1-p)})`;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(Math.cos(a)*travel,Math.sin(a)*travel);ctx.lineTo(Math.cos(a)*(travel+12),Math.sin(a)*(travel+12));ctx.stroke();}
       }
+    } else if (e.type === 'damage') {
+      ctx.font = '900 16px system-ui,sans-serif';
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = `rgba(12,31,42,${1-p})`;
+      ctx.fillStyle = e.friendly ? `rgba(255,145,118,${1-p})` : `rgba(255,228,146,${1-p})`;
+      const shift = (e.seed - .5) * 28;
+      const number = `−${e.amount}`;
+      ctx.strokeText(number, shift, -p * 28);
+      ctx.fillText(number, shift, -p * 28);
     } else if (e.type === 'muzzle') {
       ctx.fillStyle=`rgba(250,216,159,${.75*(1-p)})`;
       ctx.beginPath();ctx.arc(0,0,8+13*p,0,Math.PI*2);ctx.fill();
@@ -618,8 +701,10 @@ function drawOrders() {
 function drawRadar() {
   const compact = viewport.w < 800 || viewport.h < 540;
   const w = compact ? 94 : 116, h = compact ? 69 : 85;
-  const x = compact ? 12 : viewport.w - w - 21;
-  const y = compact ? Math.max(132, viewport.h - h - 146) : viewport.h - h - 25;
+  // The SDK's corner menu occupies the last ~75px at bottom-right.
+  // Keep the radar to its left, clear of the mobile helm and command row.
+  const x = viewport.w - w - (compact ? 91 : 101);
+  const y = compact ? Math.max(168, viewport.h - h - 130) : viewport.h - h - 25;
   ctx.fillStyle = '#092e3fdf';
   ctx.strokeStyle = '#bfdcdb65';ctx.lineWidth=1;
   ctx.beginPath();ctx.roundRect(x,y,w,h,10);ctx.fill();ctx.stroke();
@@ -637,7 +722,7 @@ function drawRadar() {
 
 function render() {
   const { w, h, dpr } = viewport;
-  const zoom = clamp(Math.min(w / 980, h / 620), .52, 1.2);
+  const zoom = clamp(Math.min(w / 850, h / 530), .58, 1.56);
   const smooth = game.mode === 'menu' ? 0.045 : 0.12;
   camera.x += (game.player.x - camera.x) * smooth;
   camera.y += (game.player.y - camera.y) * smooth;
@@ -657,6 +742,7 @@ function render() {
   for(const enemy of game.enemies) drawShip(enemy);
   for(const ally of game.allies) drawShip(ally);
   drawShip(game.player);
+  drawShipNameplates();
   drawBoarding();
   drawOrders();
   drawBroadsideGuides();
@@ -683,7 +769,7 @@ function runFrame(now) {
     const event=game.events.shift();
     if(event.kind==='fire') playSound(event.weapon === 'heavy' ? 'heavy' : 'fire');
     if(event.kind==='hit') playSound('hit');
-    if(['wave','signal','upgrade','victory','defeat','boss','boarding','boarded'].includes(event.kind)) toast(event.text);
+    if(['wave','signal','upgrade','victory','defeat','boss','boarding','boarded','objective'].includes(event.kind)) toast(event.text);
   }
   if(game.mode!==oldMode){
     oldMode=game.mode;
@@ -747,6 +833,8 @@ $('pauseBtn').addEventListener('click',switchPause);
 for (const [id, order] of [['signalBtn', 'rally'], ['focusBtn', 'focus'], ['guardBtn', 'guard']]) {
   $(id).addEventListener('click',()=>{if(issueOrder(game,order))playSound('confirm');});
 }
+$('normalDifficulty').addEventListener('click', () => selectDifficulty('normal'));
+$('hardDifficulty').addEventListener('click', () => selectDifficulty('hard'));
 $('soundBtn').addEventListener('click',()=>{muted=!muted;$('soundBtn').textContent=muted?'♩':'♫';$('soundBtn').setAttribute('aria-label',muted?'소리 켜기':'소리 끄기');});
 
 function resetJoystick(){
@@ -774,7 +862,7 @@ for(const name of ['pointerup','pointercancel','lostpointercapture']) $('touchPa
 // Visibility in automated QA only; does not alter the normal game's rules.
 if (new URLSearchParams(location.search).has('qa')) {
   window.__yiSunSinQA = Object.freeze({
-    snapshot: () => ({mode:game.mode,wave:game.waveIndex+1,kills:game.kills,score:game.score,playerHp:game.player.hp,enemies:game.enemies.length,spawned:game.spawned,arsenal:{...game.arsenal},order:game.signalOrder}),
+    snapshot: () => ({mode:game.mode,difficulty:game.difficulty,wave:game.waveIndex+1,kills:game.kills,score:game.score,playerHp:game.player.hp,enemies:game.enemies.length,spawned:game.spawned,arsenal:{...game.arsenal},order:game.signalOrder,enemyTactics:game.enemies.slice(0,4).map(e=>({type:e.type,mode:e.aiMode,target:e.aiTargetId}))}),
     start:()=>{if(game.mode==='menu')beginRun();},
     advanceWave:()=>{if(game.mode==='playing'){game.spawned=getWave(game).ships.length;game.enemies=[];game.shots=[];}},
     chooseFirst:()=>{if(game.mode==='upgrade')takeUpgrade(game,game.selected[0]);}
