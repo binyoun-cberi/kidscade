@@ -33,7 +33,7 @@ export const SHIP_GUIDE = Object.freeze([
   { type: 'kobaya', period: '옥포 · 일본 소형선', role: '빠른 정찰 · 교란', note: '재빠른 방향 전환과 약한 원거리 공격이 특징입니다. 小早는 고바야로 표기합니다.' },
   { type: 'sekibune', period: '옥포 · 일본 중형선', role: '측면 기동 · 도선 접근', note: '포격을 피하며 가까이 접근해 갑판으로 뛰어오르려 합니다.' },
   { type: 'atakebune', period: '옥포 · 일본 대형선', role: '중장갑 누각 · 대형 화포 · 도선', note: '느리지만 견고하며 다층 누각을 갖춘 적 지휘함으로 등장합니다.' },
-  { type: 'turtle', period: '사천 해전에서 등장 예정', role: '덮개로 보호된 돌격선', note: '옥포 전투에는 등장하지 않습니다. 덮개와 침입 방지 구조를 사용하며 철판 장갑 여부는 단정하지 않습니다.' }
+  { type: 'turtle', period: '사천 해전부터 출전', role: '덮개로 보호된 돌격선', note: '옥포에는 등장하지 않고 사천부터 자동으로 선봉 돌격합니다. 철판 장갑 여부는 확정된 사실로 단정하지 않습니다.' }
 ]);
 
 // Fictionalised loadouts: historical-style names describe the role of each gun,
@@ -52,12 +52,70 @@ export const WAVES = Object.freeze([
   { name: '옥포의 결전', note: '다층 누각의 아타케부네를 포함한 적선이 몰려옵니다. 협선을 지휘하며 화력을 집중하세요.', ships: ['kobaya', 'sekibune', 'atakebune', 'kobaya', 'sekibune', 'kobaya', 'sekibune', 'kobaya', 'kobaya', 'atakebune'], interval: 4.7 }
 ]);
 
+// Historical order and broad tactical situations follow the naval campaigns.
+// Combat strength, map scale, spawn timing and objectives remain arcade rules.
+// Keep Okpo's original waves as the default to preserve existing saved runs/tests.
+export const BATTLES = Object.freeze({
+  okpo: {
+    id: 'okpo', title: '옥포 해전', date: '1592 · 음력 5월 7일', chapter: 1,
+    summary: '첫 승전. 정박한 적선을 탐지하고 판옥선의 측면 화포로 격파하세요.',
+    history: '옥포의 승전 뒤 조선 수군은 합포와 적진포에서도 적선을 추격했습니다. 거북선은 아직 투입되지 않았습니다.',
+    victory: '옥포 앞바다의 적선을 물리쳤습니다.', islands: ISLANDS, waves: WAVES,
+    goals: [{ type: 'playerHits', label: '측면 함포 명중', target: 3 }, { type: 'sailed', label: '기함 기동', target: 260, unit: 'm' }, { type: 'orders', label: '함대 명령 실행', target: 2 }]
+  },
+  sacheon: {
+    id: 'sacheon', title: '사천 해전', date: '1592 · 음력 5월 29일', chapter: 2,
+    summary: '거북선 첫 실전. 포구에서 적선을 끌어낸 후 판옥선과 함께 협공하세요.',
+    history: '사천 해전은 거북선이 처음 실전에 등장한 해전입니다. 이순신은 이 전투에서 어깨에 부상을 입었습니다.',
+    victory: '사천의 적선을 물리치고 거북선의 위력을 확인했습니다.',
+    islands: [{ x: 330, y: 350, radius: 235, tint: 0 }, { x: 1940, y: 255, radius: 185, tint: 1 }, { x: 2000, y: 1250, radius: 245, tint: 2 }, { x: 410, y: 1230, radius: 140, tint: 1 }],
+    playerStart: { x: 930, y: 780, angle: 0.15 }, enemySpawn: { x: 1600, y: 770 }, turtle: true,
+    waves: [
+      { name: '사천 포구 유인', note: '먼저 움직여 적을 포구 밖으로 끌어내세요.', ships: ['kobaya', 'sekibune', 'kobaya', 'sekibune'], interval: 4.4 },
+      { name: '거북선의 돌격', note: '거북선이 적선으로 접근해 충돌 돌격을 시도합니다.', ships: ['sekibune', 'kobaya', 'sekibune', 'kobaya', 'sekibune', 'kobaya'], interval: 4.0 },
+      { name: '사천의 반격', note: '기함과 거북선의 공격을 집중해 마지막 적선을 제압하세요.', ships: ['atakebune', 'sekibune', 'kobaya', 'sekibune', 'kobaya', 'sekibune', 'kobaya'], interval: 4.3 }
+    ],
+    goals: [{ type: 'sailed', label: '적선 유인 항해', target: 220, unit: 'm' }, { type: 'turtleRams', label: '거북선 돌격 적중', target: 1 }, { type: 'playerHits', label: '측면 화포 지원', target: 4 }]
+  },
+  dangpo: {
+    id: 'dangpo', title: '당포 해전', date: '1592 · 음력 6월 2일', chapter: 3,
+    summary: '적 지휘선을 집중 공격해 항구의 적 함대를 무너뜨리세요.',
+    history: '당포에서는 거북선과 판옥선의 집중 공격으로 일본 지휘선이 격파되었습니다.',
+    victory: '당포의 지휘선을 포함한 적 함대를 격파했습니다.',
+    islands: [{ x: 370, y: 290, radius: 235, tint: 1 }, { x: 1960, y: 380, radius: 280, tint: 0 }, { x: 1950, y: 1260, radius: 190, tint: 2 }, { x: 370, y: 1180, radius: 160, tint: 1 }],
+    playerStart: { x: 960, y: 760, angle: 0.2 }, enemySpawn: { x: 1630, y: 690 }, turtle: true,
+    waves: [
+      { name: '당포 수색', note: '지휘선의 위치를 찾기 위해 적 경계선을 돌파하세요.', ships: ['kobaya', 'sekibune', 'kobaya', 'sekibune'], interval: 4.5 },
+      { name: '지휘선 집중 공격', note: '대형 적선을 우선 격파하세요. 2번 집중 명령이 유용합니다.', ships: ['sekibune', 'atakebune', 'sekibune', 'kobaya', 'sekibune', 'kobaya'], interval: 4.7 },
+      { name: '항구의 잔적', note: '남은 적의 도선 시도를 피하며 교전을 마무리하세요.', ships: ['kobaya', 'sekibune', 'kobaya', 'sekibune', 'kobaya', 'sekibune', 'kobaya'], interval: 4.2 }
+    ],
+    goals: [{ type: 'playerHits', label: '적 경계선 타격', target: 3 }, { type: 'commandSunk', label: '적 지휘선 격파', target: 1 }, { type: 'orders', label: '함대 지휘', target: 2 }]
+  },
+  danghangpo: {
+    id: 'danghangpo', title: '당항포 해전', date: '1592 · 음력 6월 5일', chapter: 4,
+    summary: '좁은 만의 퇴로를 감시하고 도주하는 적선을 차단하세요.',
+    history: '당항포에서는 이억기가 합류한 연합 함대가 포구의 적선을 공격했습니다. 적선과 아군 수는 플레이 규모에 맞춰 축소했습니다.',
+    victory: '당항포의 좁은 해역에서 적의 탈출을 막았습니다.',
+    islands: [{ x: 380, y: 220, radius: 280, tint: 1 }, { x: 850, y: 190, radius: 245, tint: 0 }, { x: 1520, y: 170, radius: 270, tint: 2 }, { x: 2120, y: 330, radius: 265, tint: 1 }, { x: 370, y: 1280, radius: 280, tint: 0 }, { x: 850, y: 1325, radius: 225, tint: 2 }, { x: 1580, y: 1330, radius: 250, tint: 1 }, { x: 2170, y: 1200, radius: 210, tint: 0 }],
+    playerStart: { x: 940, y: 790, angle: 0.3 }, enemySpawn: { x: 1640, y: 740 }, turtle: true, retreat: true,
+    waves: [
+      { name: '만 입구 봉쇄', note: '좁은 수로에서 적선의 퇴로를 차단하세요.', ships: ['kobaya', 'sekibune', 'kobaya', 'sekibune'], interval: 4.6 },
+      { name: '연합 함대 협공', note: '이억기의 지원 함대와 함께 적선을 협공하세요.', ships: ['sekibune', 'atakebune', 'kobaya', 'sekibune', 'kobaya'], interval: 4.4 },
+      { name: '도주선 추격', note: '손상된 적선이 오른쪽 바다로 달아납니다. 놓치지 마세요.', ships: ['kobaya', 'sekibune', 'kobaya', 'atakebune', 'sekibune', 'kobaya'], interval: 4.1 }
+    ],
+    goals: [{ type: 'sailed', label: '만 입구 진입', target: 260, unit: 'm' }, { type: 'orders', label: '연합 함대 명령', target: 1 }, { type: 'playerHits', label: '도주선 차단 포격', target: 4 }]
+  }
+});
+
+export const BATTLE_ORDER = Object.freeze(['okpo', 'sacheon', 'dangpo', 'danghangpo']);
+
 export const UPGRADES = Object.freeze([
   { id: 'cannon', icon: '砲', title: '화포 정비', text: '모든 함포 피해량 18% 증가' },
   { id: 'reload', icon: '⚙', title: '포수 숙련', text: '함포 재장전 시간 15% 감소' },
   { id: 'hull', icon: '⚒', title: '선체 수리', text: '판옥선 내구도 70 회복' },
   { id: 'escort', icon: '⚑', title: '협선 보강', text: '협선을 복구하거나 내구도 95 회복' },
   { id: 'sahuseon', icon: '目', title: '사후선 복구', text: '정찰·연락용 사후선을 복구' },
+  { id: 'turtle', icon: '龜', title: '거북선 수리', text: '거북선을 복구하거나 내구도 170 회복' },
   { id: 'rudder', icon: '↶', title: '노련한 키잡이', text: '선회 속도 14% 증가' },
   { id: 'range', icon: '◎', title: '거리 가늠', text: '함포 사거리 14% 증가' },
   ...['rapid', 'heavy', 'scatter', 'fire'].flatMap(weapon => [
@@ -96,24 +154,28 @@ export function makeShip(type, x, y, angle = 0, id = '') {
     aiMode: 'approach', aiTargetId: '',
     flank: 1, aimSteady: 1, turnRate: 0, burnRemaining: 0, burnDps: 0,
     tacticClock: 3.5, boardingRun: type === 'sekibune', boardingProgress: 0,
-    boardingTargetId: '', boardingCooldown: 0
+    boardingTargetId: '', boardingCooldown: 0, ramCooldown: 0
   };
 }
 
-export function createGame(seed = 1592, difficulty = 'normal') {
+export function createGame(seed = 1592, difficulty = 'normal', battleId = 'okpo') {
+  const battle = BATTLES[battleId] || BATTLES.okpo;
+  const origin = battle.playerStart || { x: 1160, y: 805, angle: -0.25 };
   const game = {
+    battleId: battle.id, battle, islands: battle.islands,
     difficulty: DIFFICULTIES[difficulty] ? difficulty : 'normal',
     seed: seed || 1592, mode: 'menu', seconds: 0, waveIndex: 0, spawned: 0,
     spawnClock: 0, kills: 0, hits: 0, shotsFired: 0, score: 0, selected: [],
     bonuses: { damage: 1, reload: 1, range: 1, turn: 1 },
     signalCooldown: 0, signalRemaining: 0, signalOrder: 'rally', focusTargetId: '',
     stationarySeconds: 0,
-    tactical: { playerHits: 0, sailed: 0, orders: 0, completed: [false, false, false] },
+    tactical: { playerHits: 0, sailed: 0, orders: 0, turtleRams: 0, commandSunk: 0, completed: [false, false, false] },
     arsenal: { port: 'standard', starboard: 'standard' },
     events: [], shots: [], effects: [],
-    enemies: [], player: makeShip('panokseon', 1160, 805, -0.25, 'flagship'),
-    allies: [makeShip('escort', 1080, 875, -0.25, 'escort-1'), makeShip('sahuseon', 1220, 935, -0.25, 'sahuseon-1')]
+    enemies: [], player: makeShip('panokseon', origin.x, origin.y, origin.angle, 'flagship'),
+    allies: [makeShip('escort', origin.x - 80, origin.y + 70, origin.angle, 'escort-1'), makeShip('sahuseon', origin.x + 60, origin.y + 130, origin.angle, 'sahuseon-1')]
   };
+  if (battle.turtle) game.allies.push(makeShip('turtle', origin.x - 180, origin.y + 120, origin.angle, 'turtle-1'));
   return game;
 }
 
@@ -122,22 +184,18 @@ export function startRun(game) {
   game.waveIndex = 0;
   game.spawned = 0;
   game.spawnClock = 1.2;
-  game.events.push({ kind: 'wave', text: game.difficulty === 'hard' ? '어려움 · 적선의 협공과 도선에 대비하세요!' : '첫 출전 · 옥포 앞바다' });
+  game.events.push({ kind: 'wave', text: `${game.battle.title} · ${game.difficulty === 'hard' ? '어려움 · 적선의 협공에 대비하세요!' : getWave(game).name}` });
   return game;
 }
 
 export function getWave(game) {
-  return WAVES[game.waveIndex] || null;
+  return game.battle.waves[game.waveIndex] || null;
 }
 
 export function getTacticalObjective(game) {
-  const goals = [
-    { label: '측면 함포 명중', value: game.tactical.playerHits, target: 3 },
-    { label: '기함 기동', value: Math.floor(game.tactical.sailed), target: 260, unit: 'm' },
-    { label: '함대 명령 실행', value: game.tactical.orders, target: 2 }
-  ];
-  const goal = goals[game.waveIndex] || goals[2];
-  return { ...goal, completed: game.tactical.completed[game.waveIndex] };
+  const goals = game.battle.goals;
+  const goal = goals[game.waveIndex] || goals[goals.length - 1];
+  return { ...goal, value: game.tactical[goal.type] || 0, completed: game.tactical.completed[game.waveIndex] };
 }
 
 function awardTacticalObjective(game) {
@@ -162,12 +220,15 @@ export function upgradeChoices(game) {
   const port = shuffled(UPGRADES.filter(o => o.slot === 'port' && game.arsenal.port !== o.weapon))[0];
   const starboard = shuffled(UPGRADES.filter(o => o.slot === 'starboard' && game.arsenal.starboard !== o.weapon))[0];
   const escort = game.allies[0];
+  const turtle = game.allies.find(ally => ally.type === 'turtle');
   const available = shuffled(UPGRADES.filter(o => !o.slot &&
     !(o.id === 'hull' && game.player.hp >= game.player.maxHp - 15) &&
     !(o.id === 'escort' && escort && !escort.dead && escort.hp >= escort.maxHp - 15) &&
-    !(o.id === 'sahuseon' && game.allies.some(ally => ally.type === 'sahuseon' && !ally.dead))));
+    !(o.id === 'sahuseon' && game.allies.some(ally => ally.type === 'sahuseon' && !ally.dead)) &&
+    !(o.id === 'turtle' && (!turtle || (!turtle.dead && turtle.hp >= turtle.maxHp - 15)))));
   const support = escort?.dead ? UPGRADES.find(o => o.id === 'escort') :
-    game.allies.some(ally => ally.type === 'sahuseon' && ally.dead) ? UPGRADES.find(o => o.id === 'sahuseon') : available[0];
+    game.allies.some(ally => ally.type === 'sahuseon' && ally.dead) ? UPGRADES.find(o => o.id === 'sahuseon') :
+    turtle?.dead ? UPGRADES.find(o => o.id === 'turtle') : available[0];
   return shuffled([port, starboard, support].filter(Boolean));
 }
 
@@ -199,13 +260,31 @@ export function takeUpgrade(game, id) {
       cap(game.player.x - behind.x * 100 + side.x * 90, 35, WORLD.width - 35),
       cap(game.player.y - behind.y * 100 + side.y * 90, 35, WORLD.height - 35), game.player.angle, 'sahuseon-1');
   }
+  if (id === 'turtle') {
+    const index = game.allies.findIndex(ally => ally.type === 'turtle');
+    if (index >= 0) {
+      const turtle = game.allies[index];
+      if (turtle.dead) game.allies[index] = makeShip('turtle',
+        cap(game.player.x - 135, 60, WORLD.width - 60),
+        cap(game.player.y + 125, 60, WORLD.height - 60), game.player.angle, 'turtle-1');
+      else turtle.hp = Math.min(turtle.maxHp, turtle.hp + 170);
+    }
+  }
   game.waveIndex++;
+  if (game.battleId === 'danghangpo' && game.waveIndex === 1 && !game.allies.some(ally => ally.id === 'eokgi-1')) {
+    game.allies.push(makeShip('panokseon',
+      cap(game.player.x - 120, 65, WORLD.width - 65),
+      cap(game.player.y + 155, 65, WORLD.height - 65), game.player.angle, 'eokgi-1'));
+    game.events.push({ kind: 'wave', text: '전라우수사 이억기의 지원 전선이 합류했습니다!' });
+  }
   game.spawned = 0;
   game.spawnClock = 1.6;
   game.stationarySeconds = 0;
   game.tactical.playerHits = 0;
   game.tactical.sailed = 0;
   game.tactical.orders = 0;
+  game.tactical.turtleRams = 0;
+  game.tactical.commandSunk = 0;
   game.selected = [];
   game.mode = 'playing';
   game.events.push({ kind: 'wave', text: `${game.waveIndex + 1}차 교전 · ${getWave(game).name}` });
@@ -262,7 +341,7 @@ function steer(ship, desiredAngle, throttle, dt, bonus = 1) {
 }
 
 function dodgeLand(game, ship, dt) {
-  for (const island of ISLANDS) {
+  for (const island of game.islands) {
     const dx = ship.x - island.x;
     const dy = ship.y - island.y;
     const d = Math.hypot(dx, dy) || 1;
@@ -293,6 +372,7 @@ function sink(game, ship) {
   addEffect(game, ship.x, ship.y, 'sink', 1.6);
   if (ship.team === 'japan') {
     game.kills++;
+    if (ship.type === 'atakebune') game.tactical.commandSunk++;
     const points = ship.type === 'atakebune' ? 250 : ship.type === 'sekibune' ? 130 : 80;
     game.score += Math.round(points * (game.difficulty === 'hard' ? 1.3 : 1));
     game.events.push({ kind: 'hit', text: `${SHIP_TYPES[ship.type].name} 격침` });
@@ -309,10 +389,20 @@ function spawnEnemy(game) {
   let x = 0, y = 0;
   const validSpawn = (sx, sy) =>
     Math.hypot(sx - game.player.x, sy - game.player.y) >= 375 &&
-    ISLANDS.every(island => Math.hypot(sx - island.x, sy - island.y) >= island.radius + 90);
+    game.islands.every(island => Math.hypot(sx - island.x, sy - island.y) >= island.radius + 90);
   let found = false;
+  // Ports have stable approach lanes; the Okpo scenario preserves its
+  // original surrounding spawns. Every position is checked against land.
+  if (game.battle.enemySpawn) {
+    for (let attempt = 0; attempt < 28; attempt++) {
+      const offset = (seededRandom(game) - .5) * 540;
+      const sx = cap(game.battle.enemySpawn.x + (seededRandom(game) - .5) * 220, 90, WORLD.width - 90);
+      const sy = cap(game.battle.enemySpawn.y + offset, 90, WORLD.height - 90);
+      if (validSpawn(sx, sy)) { x = sx; y = sy; found = true; break; }
+    }
+  }
   // Try alternating flanks first, but never clamp a spawn on top of a cornered player.
-  for (let attempt = 0; attempt < 48; attempt++) {
+  for (let attempt = 0; !found && attempt < 48; attempt++) {
     const theta = attempt < 24
       ? (game.spawned % 2 ? Math.PI : 0) + game.waveIndex * 0.85 + (seededRandom(game) - 0.5) * 1.8
       : seededRandom(game) * TAU;
@@ -468,7 +558,7 @@ function updateShots(game, dt) {
     const vx = shot.x - oldX, vy = shot.y - oldY;
     let firstHit = null;
     let hitTime = Infinity;
-    for (const island of ISLANDS) {
+    for (const island of game.islands) {
       const t = segmentCircleTime(oldX, oldY, vx, vy, island.x, island.y, island.radius * 0.92);
       if (t < hitTime) { hitTime = t; firstHit = null; }
     }
@@ -527,6 +617,30 @@ function controlPlayer(game, input, dt) {
 
 function controlEscort(game, escort, dt) {
   if (escort.dead) return;
+  if (escort.type === 'turtle') {
+    escort.ramCooldown = Math.max(0, escort.ramCooldown - dt);
+    const target = closest(escort, game.enemies, 740);
+    if (target) {
+      const angle = Math.atan2(target.x - escort.x, -(target.y - escort.y));
+      steer(escort, angle, 1, dt);
+      dodgeLand(game, escort, dt);
+      if (distance(escort, target) < SHIP_TYPES.turtle.radius + SHIP_TYPES[target.type].radius + 8 && escort.ramCooldown === 0) {
+        escort.ramCooldown = 8;
+        game.tactical.turtleRams++;
+        damageShip(game, target, 62);
+        damageShip(game, escort, 6);
+        if (target.hp <= 0) sink(game, target);
+        if (escort.hp <= 0) sink(game, escort);
+        addEffect(game, target.x, target.y, 'hit', .45);
+        game.events.push({ kind: 'hit', text: '거북선 돌격! 적선에 충격을 주었습니다.' });
+      }
+    } else {
+      const heading = Math.atan2(game.player.x - escort.x, -(game.player.y - escort.y));
+      steer(escort, heading, distance(escort, game.player) > 175 ? .8 : 0, dt);
+      dodgeLand(game, escort, dt);
+    }
+    return;
+  }
   const player = game.player;
   const side = right(player.angle), ahead = fwd(player.angle);
   const rallied = game.signalRemaining > 0 && game.signalOrder === 'rally';
@@ -556,7 +670,7 @@ function controlEscort(game, escort, dt) {
 // flanking lanes, boarders alternate approach and pinning, and heavy ships
 // hold their broadsides at standoff range. Steering stays in the same bounded
 // motion model as Normal, with no teleporting or omniscient firing.
-function hardManeuver(enemy, target, cfg, dist) {
+function hardManeuver(game, enemy, target, cfg, dist) {
   const targetForward = fwd(target.angle);
   const targetSide = right(target.angle);
   const leadTime = cap(dist / 570, .12, .8);
@@ -625,7 +739,7 @@ function hardManeuver(enemy, target, cfg, dist) {
     x: enemy.x + fwd(heading).x * lookahead,
     y: enemy.y + fwd(heading).y * lookahead
   };
-  for (const island of ISLANDS) {
+  for (const island of game.islands) {
     const danger = island.radius + cfg.radius + 34;
     if (distance(projected, island) < danger) {
       const outward = Math.atan2(enemy.x - island.x, -(enemy.y - island.y));
@@ -639,6 +753,19 @@ function hardManeuver(enemy, target, cfg, dist) {
 
 function controlEnemy(game, enemy, dt) {
   if (enemy.dead) return;
+  if (game.battle.retreat && game.waveIndex === game.battle.waves.length - 1 && enemy.hp < enemy.maxHp * .30) {
+    enemy.aiMode = '포구 탈출';
+    const exit = { x: WORLD.width + 75, y: 760 };
+    const heading = Math.atan2(exit.x - enemy.x, -(exit.y - enemy.y));
+    steer(enemy, heading, 1, dt);
+    dodgeLand(game, enemy, dt);
+    if (enemy.x > WORLD.width - 84) {
+      enemy.dead = true;
+      game.mode = 'defeat';
+      game.events.push({ kind: 'defeat', text: '당항포를 빠져나간 적선이 있습니다. 퇴로를 다시 봉쇄하세요.' });
+    }
+    return;
+  }
   // Boarding crews favor fighting ships; dispatch boats are not their primary objective.
   // A stationary flagship is an easy, obvious objective. Leaving it at anchor
   // should invite concentrated fire and boarding rather than a free auto-win.
@@ -697,7 +824,7 @@ function controlEnemy(game, enemy, dt) {
     heading = bearing + enemy.flank * 0.18;
   }
   if (hard && !finalFlagship) {
-    const maneuver = hardManeuver(enemy, target, cfg, d);
+    const maneuver = hardManeuver(game, enemy, target, cfg, d);
     heading = maneuver.heading;
     throttle = maneuver.throttle;
     enemy.aiMode = maneuver.mode;
@@ -746,6 +873,7 @@ export function stepGame(game, input = {}, dt = 1 / 60) {
   controlPlayer(game, input, dt);
   for (const ally of game.allies) controlEscort(game, ally, dt);
   for (const enemy of game.enemies) controlEnemy(game, enemy, dt);
+  if (game.mode === 'defeat') return game;
   fire(game.player, game.enemies, game, dt);
   for (const ally of game.allies) if (!ally.dead) fire(ally, game.enemies, game, dt);
   for (const enemy of game.enemies) if (!enemy.dead) fire(enemy, [game.player, ...game.allies], game, dt);
@@ -763,10 +891,10 @@ export function stepGame(game, input = {}, dt = 1 / 60) {
   }
   if (game.spawned === wave.ships.length && game.enemies.length === 0) {
     game.shots = [];
-    if (game.waveIndex === WAVES.length - 1) {
+    if (game.waveIndex === game.battle.waves.length - 1) {
       game.mode = 'victory';
       game.score += Math.round(game.player.hp * (game.difficulty === 'hard' ? 2.6 : 2));
-      game.events.push({ kind: 'victory', text: '옥포 앞바다의 적선을 물리쳤습니다.' });
+      game.events.push({ kind: 'victory', text: game.battle.victory });
     } else {
       game.mode = 'upgrade';
       game.selected = upgradeChoices(game).map(option => option.id);
