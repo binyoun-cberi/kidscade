@@ -120,8 +120,8 @@ function suspendDomestic(l){
  if(l.pending && !(typeof l.pending==='string'&&l.pending.startsWith('joseon14:')))
   l.pending=null;
 }
-function capture(l,realm=eraFor(l)){
- if(!realm||!canCapture(l)||ensure(l).captivity)return false;
+function capture(l,realm=eraFor(l),fromWarChoice=false){
+ if(!realm||!(fromWarChoice?isOld(l):canCapture(l))||ensure(l).captivity)return false;
  const s=ensure(l);
  s.captivity={realm,from:l.year,place:realm==='japan'?'일본':'후금·청의 지배 아래',years:0,
   status:'held',contacts:0,work:V5?.summary(l)?.trade||'낯선 곳에서 맡은 일',returnedYear:null,
@@ -437,6 +437,7 @@ function hydrate(l,data){
    skills:clip(Number(a.skills)||0,0,40),notes:clip(Number(a.notes)||0,0,40)})):[];
  s.lastSource=Object.values(SOURCES).includes(o.lastSource)?o.lastSource:null;
  if(s.captivity?.status==='held')suspendDomestic(l);
+ if(s.active)l.pending='joseon14:'+s.active.id;
  return s;
 }
 function install(){
@@ -475,8 +476,12 @@ function install(){
  L.prototype.reflect=function(t){const ok=pr.call(this,t);if(ok&&isOld(this))promote(this,ensure(this));return ok;};
  L.prototype.snapshot=function(){const data=ps.call(this);if(J.isJoseon(this))data.joseon14=JSON.parse(JSON.stringify(ensure(this)));return data;};
  L.restore=function(data){const life=restore.call(this,data);if(life&&J.isJoseon(life))hydrate(life,data);return life;};
+ Object.defineProperty(L.prototype,'__joseon14CaptureFromWar',{value:function(){
+  const realm=[1592,1597].includes(this.year)?'japan':this.year===1627?'laterJin':[1636,1637].includes(this.year)?'qing':null;
+  return realm?capture(this,realm,true):false;
+ }});
  Object.defineProperty(L.prototype,'__joseon14',{value:true});return true;
 }
 install();
-return Object.freeze({EPISODES,SOURCES,ensure,eraFor,canCapture,capture,reunion,opportunity,repatriationChance,yearly,choose,prompt,summary,heirs,continueAsHeir,hydrate,install});
+return Object.freeze({EPISODES,SOURCES,ensure,eraFor,canCapture,capture,suspendDomestic,reunion,opportunity,repatriationChance,yearly,choose,prompt,summary,heirs,continueAsHeir,hydrate,install});
 });

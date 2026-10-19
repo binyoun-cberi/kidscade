@@ -245,7 +245,7 @@ function resolve(l,i){
  }else return false;
  note(l,s,msg);
  s.decisions.push({year:l.year,key,index:i,label});s.decisions=s.decisions.slice(-50);
- s.followups.push({year:l.year+3,text:'몇 해 전 “'+label+'”을 택한 일을 떠올렸다. 그때의 사람과 일이 지금도 삶에 남아 있었다.'});
+ s.followups.push({year:l.year+3,text:'몇 해 전 “'+label+'” 쪽을 택했던 일이 떠올랐다.'});
  s.followups=s.followups.slice(-16);
  l.logEvent(p.title+' — '+label,'joseonWomen327-choice');
  s.active=null;l.pending=null;promote(l);

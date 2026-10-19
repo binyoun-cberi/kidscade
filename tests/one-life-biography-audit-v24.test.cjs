@@ -127,7 +127,7 @@ test('narration and historical behavior are guarded without modifying the player
  assert.ok(html.includes('world-v9.js?v=5'));
  assert.match(html,/world-v2\.js\?v=\d+/);
  assert.ok(html.includes('history-effects-v10.js?v=5'));
- assert.ok(html.includes('travel-v22.js?v=4'));
+ assert.ok(html.includes('travel-v22.js?v=5'));
  assert.ok(html.includes('diaspora-v340.js?v=3'));
  assert.ok(html.includes('collaboration-v341.js?v=2'));
 });

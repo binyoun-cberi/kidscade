@@ -316,6 +316,7 @@ function hydrate(l,data){
  s.memory=Array.isArray(o.memory)?o.memory.filter(x=>typeof x==='string').slice(-20).map(x=>x.slice(0,200)):[];
  s.memories=Array.isArray(o.memories)?o.memories.filter(x=>typeof x==='string').slice(-26).map(x=>x.slice(0,200)):[];
  s.lastSource=Object.values(SOURCES).includes(o.lastSource)?o.lastSource:null;
+ if(s.active)l.pending='joseon19:'+s.active.id;
  return s;
 }
 function install(){

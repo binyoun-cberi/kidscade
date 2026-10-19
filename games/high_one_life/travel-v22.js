@@ -248,6 +248,7 @@ function install(){
  L.prototype.choose=function(i){
   if(typeof this.pending==='string'&&this.pending.startsWith('travel22:'))return choose(this,i);
   const ok=originalChoice.call(this,i);
+  if(ok&&this.joseon14?.captivity?.status==='held')root?.OneLifeJoseon14?.suspendDomestic(this);
   if(ok&&this.alive&&!this.pending)maybeOffer(this);
   return ok;
  };
