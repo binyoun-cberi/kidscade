@@ -41,6 +41,7 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
 @media(max-width:640px){.solo-qitem>summary,.solo-run>summary{align-items:flex-start;flex-direction:column}.solo-history-list{max-height:65vh}}
 </style>
 <link rel="stylesheet" href="timebattle-ui-v2.css?v=1">
+<link rel="stylesheet" href="figure-sort.css?v=1">
 </head>
 <body>
 <div id="fxFlash" class="fx-flash"></div><div id="fxBurst" class="fx-burst" aria-hidden="true"></div><div id="fxToast" class="fx-toast" role="status" aria-live="polite"></div>
@@ -48,16 +49,45 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
   <div class="top"><div class="brand">KIDScade <b>LIVE</b></div><div class="top-actions"><span id="connectionState" class="connection-pill hidden"></span><button id="recoveryToggle" class="sound-toggle hidden" type="button" onclick="openRecoveryPanel()">학생 재접속</button><button id="soundToggle" class="sound-toggle" type="button" onclick="toggleSound()">🔊 효과음</button><button class="home homebtn" type="button" onclick="exitKidscade()">← 게임 목록</button></div></div>
 
   <main id="landing" class="card hero">
-    <span class="badge">초등 5·6학년 한국사 · 최대 26명</span>
+    <span class="badge">초등 5·6학년 한국사 · 실시간 대전과 혼자 놀이</span>
     <h1>역사<br><span style="color:var(--gold)">타임배틀</span></h1>
-    <p>교실 전체가 같은 문제를 보고, 빠르고 정확하게 답하는 실시간 한국사 퀴즈</p>
+    <p>친구들과 겨루는 한국사 퀴즈, 혼자 풀기, 인물 카드를 시대별로 모으기</p>
     <div id="serverStatus" class="sub" style="margin-top:12px">● LIVE 수업 서버 확인 중...</div>
     <div class="actions">
       <button class="big host" onclick="showSetup('host')">교사용 · 방 만들기</button>
       <button class="big join" onclick="showSetup('join')">학생용 · 코드로 입장</button>
       <button class="big solo" onclick="showSetup('solo')">혼자 연습 · 바로 시작</button>
+      <button class="big sort-landing" onclick="openFigureSort()">🗂️ 시대별 인물 모으기</button>
     </div>
   </main>
+
+  <section id="sortSetup" class="card hidden" style="max-width:860px;margin:18px auto">
+    <span class="sort-kicker">새로운 한국사 놀이</span>
+    <h2 style="font-size:clamp(28px,4vw,42px);margin:8px 0">시대별 인물 모으기</h2>
+    <p class="sort-lead">역사 인물 카드를 제자리에 모아 보세요. 손가락이나 마우스로 끌어다 놓을 수도 있고, 카드를 누른 뒤 시대 칸을 눌러도 돼요. 이 인물이 대표적으로 활약한 시기를 기준으로 나눠요.</p>
+    <h3>어느 시대부터 떠나 볼까요?</h3>
+    <div id="sortStages" class="sort-stage-picker" role="group" aria-label="시대 구간 선택"></div>
+    <div class="field" style="max-width:250px"><label for="sortCount">한 판에 모을 인물</label><select id="sortCount"><option value="6">6명 · 가볍게</option><option value="9" selected>9명 · 도전</option></select></div>
+    <div id="sortBest" class="tiny" aria-live="polite"></div>
+    <div class="sort-controls"><button id="sortStart" class="btn primary">인물 모으기 시작</button><button class="btn" onclick="showOnly('landing')">뒤로</button></div>
+  </section>
+
+  <section id="sortPlay" class="card hidden" aria-label="시대별 인물 모으기 게임">
+    <div class="sort-head"><div><span class="badge">인물 모으기</span><h2 id="sortStageTitle">시대 여행</h2></div><strong id="sortProgress">0 / 9명 배치</strong></div>
+    <div class="progress" aria-hidden="true"><i id="sortProgressBar"></i></div>
+    <div id="sortHint" class="sort-hint" role="status" aria-live="polite"></div>
+    <div class="sort-board">
+      <div class="sort-deck"><h3>인물 카드</h3><p>카드의 이름을 보고 알맞은 시대에 넣어 주세요.</p><div id="sortTray" class="sort-tray" role="group" tabindex="0" aria-label="카드를 이곳으로 되돌리기"></div></div>
+      <div id="sortBins" class="sort-bins" aria-label="시대별 인물 모으는 칸"></div>
+    </div>
+    <div class="sort-controls"><button id="sortSubmit" class="btn primary" disabled>모든 인물을 배치해 주세요</button><button id="sortUndo" class="btn" disabled>선택 카드 빼기</button><button id="sortBackSetup" class="btn">설정으로</button></div>
+  </section>
+
+  <section id="sortResult" class="card hidden" aria-label="인물 모으기 결과">
+    <div class="sort-results-summary"><span class="badge">시대 여행 결과</span><h2 id="sortResultScore"></h2><p id="sortResultSub"></p><div class="tiny">틀린 인물도 아래 설명을 읽고 다음에 다시 도전해 보세요.</div></div>
+    <div id="sortReview" class="sort-review"></div>
+    <div class="sort-controls"><button id="sortNextStage" class="btn primary">다음 시대 도전</button><button id="sortRestart" class="btn">이 시대 다시 하기</button><button class="btn" onclick="showOnly('landing')">게임 첫 화면</button></div>
+  </section>
 
   <section id="setup" class="card hidden" style="max-width:720px;margin:18px auto">
     <div id="hostSetup" class="hidden">
@@ -274,7 +304,8 @@ function applyRankMotion(players){
   }));
   players.forEach(p=>previousRanks.set(String(p.id),Number(p.rank)));
 }
-function showOnly(id){['landing','setup','lobby','roundSetup','game','reveal','checkpoint','finished'].forEach(x=>$(x)?.classList.toggle('hidden',x!==id))}
+function showOnly(id){['landing','sortSetup','sortPlay','sortResult','setup','lobby','roundSetup','game','reveal','checkpoint','finished'].forEach(x=>$(x)?.classList.toggle('hidden',x!==id))}
+function openFigureSort(){window.HistoryFigureSortUI?.openSetup()}
 function showSetup(which){showOnly('setup');$('hostSetup').classList.toggle('hidden',which!=='host');$('joinSetup').classList.toggle('hidden',which!=='join');$('soloSetup').classList.toggle('hidden',which!=='solo')}
 function toggleCheckpointCustom(){$('checkpointCustom').classList.toggle('hidden',$('checkpointMode').value!=='custom')}
 function toggleRoundCheckpointCustom(){$('roundCheckpointCustom').classList.toggle('hidden',$('roundCheckpointMode').value!=='custom')}
@@ -776,5 +807,6 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&session&&
   try{const s=JSON.parse(sessionStorage.getItem('kc-history-live-v1')||'null');if(s&&s.code&&s.token){session=s;startPolling()}}catch(e){}
 })();
 </script>
+<script type="module" src="figure-sort-ui.mjs?v=1"></script>
 </body>
 </html>
