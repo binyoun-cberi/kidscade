@@ -3,6 +3,7 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const Sim = window.OneLifeSim;
+  const Goryeo=window.OneLifeGoryeo343||{is:()=>false};
   const Identity=window.OneLifeIdentity20;
   if (!Sim) throw new Error('OneLifeSim engine not loaded');
   const World2 = window.OneLifeWorld2;
@@ -79,13 +80,13 @@
     const add=(value,label)=>{const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);};
     add('','우연에 맡기기');
     if(historical){
-      for(const origin of Identity.SOCIAL_CHOICES){
+      for(const origin of (year<1392?Identity.GORYEO_ORIGINS:Identity.SOCIAL_CHOICES)){
         if(Identity.validOrigin(year,origin))add(origin,origin);
       }
     }
     select.value=historical&&Identity.validOrigin(year,previous)?previous:'';
     $('birthIdentityHelp').textContent=historical
-      ? (year<1886?'왕실 종친·양반·중인·상민·노비·백정 등 집안의 출발점을 정합니다.':'이 시기에는 세습 노비 신분으로 태어나는 선택은 할 수 없습니다.')
+      ? (year<1392?'고려 후기의 관료·향리·농민·장인·사공·특수 행정구역 주민·노비 가구를 고릅니다.':year<1886?'왕실 종친·양반·중인·상민·노비·백정 등 집안의 출발점을 정합니다.':'이 시기에는 세습 노비 신분으로 태어나는 선택은 할 수 없습니다.')
       :'1894년 이후 법적 신분 대신 집안의 경제적 형편을 정합니다.';
     $('birthIdentityError').classList.add('hidden');
   }
@@ -95,7 +96,7 @@
       !Joseon.isJoseon(life)?World9.ensure(life).people:null)||null;
   }
   function offerNewbornName(){
-    if(stage!=='play'||!life?.alive||namingChild)return false;
+    if(Goryeo.is(life)||stage!=='play'||!life?.alive||namingChild)return false;
     const found=newbornCandidate();if(!found)return false;
     namingChild=found;wasPausedBeforeNaming=paused;paused=true;updatePause();
     $('newbornDescription').textContent=found.historical
@@ -129,6 +130,7 @@
   const sdk = window.KidscadeGame || null;
   const show = name => {
     stage = name;
+    document.body.classList.toggle('goryeo-book',name==='play'&&Goryeo.is(life));
     document.body.classList.toggle('joseon-book', name!=='intro' && !!life && Joseon.isJoseon(life));
     for (const id of views) $(id).classList.toggle('hidden',id!==name);
     window.scrollTo?.(0,0);
@@ -197,7 +199,7 @@
     roulette = null;
     playSpeed=1;nextDecision=false;refreshSpeedControls();
     const desired=Number($('birthYearInput').value);
-    const birthYear=Number.isInteger(desired)&&desired>=1392&&desired<=2026?desired:2026;
+    const birthYear=Number.isInteger(desired)&&desired>=1200&&desired<=2026?desired:2026;
     $('birthYearInput').value=String(birthYear);
     updateBirthChoices();
     const chosenName=$('birthNameInput').value.trim();
@@ -209,7 +211,7 @@
     const birthSetup={name:chosenName,gender:$('birthGenderInput').value,
       origin:$('birthOriginInput').value,familyLevel:$('birthFamilyInput').value};
     life = new Sim.Life(undefined,{birthYear,countryName,birthSetup});
-    World8.ensure(life);if(Joseon.isJoseon(life)){Joseon.ensure(life);Joseon8?.ensure(life);Joseon9?.ensure(life);}
+    World8.ensure(life);if(Goryeo.is(life))Goryeo.ensure(life);else if(Joseon.isJoseon(life)){Joseon.ensure(life);Joseon8?.ensure(life);Joseon9?.ensure(life);}
     else {World8.moment(life);World10.ensure(life);}History.contextualize(life);Calendar?.record(life);
     storyTab='';peerAgeChoice=0;timelineVisible=22;
     replayBasis=null;
@@ -218,19 +220,19 @@
     completed = false; paused = false; elapsed = 0;
     $('lifeStartBtn').classList.add('hidden');
     $('birthCountry').textContent = '출생 지역을 정하는 중…';
-    $('birthFlag').textContent = Joseon.isJoseon(life)?'生':'🇰🇷';
+    $('birthFlag').textContent = (Goryeo.is(life)||Joseon.isJoseon(life))?'生':'🇰🇷';
     $('birthDetail').textContent = Joseon.isJoseon(life)?birthYear+'년, 어느 집에 태어나게 될까요?':birthYear+'년에 시작될 인생을 추첨합니다.';
-    $('birthHeading').textContent=Joseon.isJoseon(life)?'조선의 어느 집, 한 아이가 태어납니다.':'당신은 어디에서 태어날까요?';
+    $('birthHeading').textContent=Goryeo.is(life)?'고려의 어느 집, 한 아이가 태어납니다.':Joseon.isJoseon(life)?'조선의 어느 집, 한 아이가 태어납니다.':'당신은 어디에서 태어날까요?';
     show('birth');
     let loops = 0;
-    const sample = [['한양','📜'],['경상도','📜'],['평안도','📜'],['함경도','📜'],['제주도','📜']];
+    const sample = Goryeo.is(life)?Goryeo.regions.map(region=>[region,'生']):[['한양','📜'],['경상도','📜'],['평안도','📜'],['함경도','📜'],['제주도','📜']];
     const paint = country => { $('birthFlag').textContent = country[1]; $('birthCountry').textContent = country[0]; };
     roulette = setInterval(() => {
       loops++;
       paint(sample[(loops*7)%sample.length]);
       if(loops >= 19) {
         clearInterval(roulette); roulette = null;
-        $('birthFlag').textContent=Joseon.isJoseon(life)?'生':'🇰🇷';
+        $('birthFlag').textContent=(Goryeo.is(life)||Joseon.isJoseon(life))?'生':'🇰🇷';
         $('birthCountry').textContent=History.place(life);
         $('birthDetail').textContent = life.gender + ' · ' + life.familyLevel + ' · ' + life.year + '년 출생';
         paintCertificate();
@@ -245,6 +247,7 @@
   };
   function paintCertificate() {
     if(!life)return;
+    if(Goryeo.is(life)){window.OneLifeGoryeoView343.certificate(life);return;}
     if(Joseon.isJoseon(life))Joseon8?.ensure(life);
     const p=World2.enrich(life).profile;
     const historical=Joseon.inOldEra(life);
@@ -1139,6 +1142,10 @@
   }
   function render() {
     if (!life) return;
+    if(Goryeo.is(life)){
+      window.OneLifeGoryeoView343.paint(life,{paused,choose:i=>{if(life.choose(i)){if(!life.alive)finish();else render();save();}},action:(kind,id,value)=>{Goryeo.action(life,kind,id,value);render();save();},pause:()=>{paused=!paused;lastTick=performance.now();render();},next:()=>{stepYear();}});
+      return;
+    }
     const journey=Travel22?.summary(life)||null;
     const abroad=!!journey?.residence?.abroad;
     $('travel22Panel').classList.toggle('hidden',!abroad&&!journey?.movements?.length);
@@ -1370,12 +1377,12 @@
     const count=rememberLife();
     $('endYears').textContent=life.birthYear+' — '+life.year;
     $('endCountry').textContent=(life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1])+' '+History.place({...life,year:life.birthYear})+' · '+life.profile.name+' ('+life.profile.city+')';
-    $('endNetWorth').textContent=formatCredits(life.money.netWorth);
+    $('endNetWorth').textContent=Goryeo.is(life)?Goryeo.ensure(life).grain+'몫':formatCredits(life.money.netWorth);
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=oldJobs?.primary?.name||(!['아직 정해지지 않음','학생'].includes(life.career)?life.career:'살림과 일상');
     const firstPlace=History.place({...life,year:life.birthYear});
     const chapters=window.OneLifeBiography328.chapters(life,{
-      place:firstPlace,origin:oldLife?(oldSocial?.originLabel||Joseon.ensure(life).birthStatus+' 집안'):''
+      place:firstPlace,origin:Goryeo.is(life)?Goryeo.ensure(life).origin:oldLife?(oldSocial?.originLabel||Joseon.ensure(life).birthStatus+' 집안'):''
     });
     $('endStory').replaceChildren(...chapters.map(text=>{
       const p=document.createElement('p');p.textContent=text;return p;
@@ -1526,14 +1533,14 @@
     const snapshot=captureEnding(life);
     replayBasis=snapshot;
     life=new Sim.Life(snapshot.seed,{birthYear:snapshot.birthYear,countryName:'대한민국',birthSetup:life.birthSetup});
-    World8.ensure(life);if(Joseon.isJoseon(life))Joseon.ensure(life);else {World8.moment(life);World10.ensure(life);}History.contextualize(life);Calendar?.record(life);
+    World8.ensure(life);if(Goryeo.is(life))Goryeo.ensure(life);else if(Joseon.isJoseon(life))Joseon.ensure(life);else {World8.moment(life);World10.ensure(life);}History.contextualize(life);Calendar?.record(life);
     storyTab='';peerAgeChoice=0;timelineVisible=22;playSpeed=1;nextDecision=false;refreshSpeedControls();
     peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
     $('birthCertificate').classList.add('hidden');
-    $('birthFlag').textContent=Joseon.isJoseon(life)?'生':life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1];
+    $('birthFlag').textContent=(Goryeo.is(life)||Joseon.isJoseon(life))?'生':life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1];
     $('birthCountry').textContent=History.place(life);
     $('birthDetail').textContent=life.gender+' · '+life.familyLevel+' · '+life.birthYear+'년 출생';
-    $('birthHeading').textContent=Joseon.isJoseon(life)?'조선의 어느 집, 한 아이가 태어납니다.':'당신은 어디에서 태어날까요?';
+    $('birthHeading').textContent=Goryeo.is(life)?'고려의 어느 집, 한 아이가 태어납니다.':Joseon.isJoseon(life)?'조선의 어느 집, 한 아이가 태어납니다.':'당신은 어디에서 태어날까요?';
     $('lifeStartBtn').classList.remove('hidden');
     paintCertificate();
     completed=false;paused=false;elapsed=0;

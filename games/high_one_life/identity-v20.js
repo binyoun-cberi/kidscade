@@ -10,6 +10,7 @@
   '사노비':'천민','공노비':'천민','백정':'상민'
  });
  const SOCIAL_CHOICES=Object.freeze(['왕실 종친','양반','중인','상민','사노비','공노비','백정']);
+ const GORYEO_ORIGINS=Object.freeze(['관료 가문','향리 가문','농민 가구','수공업 가구','나루의 사공 가구','향·부곡·소 주민','노비 가구']);
  const FAMILIES=Object.freeze(['빠듯한 형편','평범한 형편','여유 있는 형편']);
  function cleanName(value){
   if(typeof value!=='string')return '';
@@ -17,6 +18,7 @@
   return name.length<=20&&/^[가-힣A-Za-z]+(?: [가-힣A-Za-z]+)*$/.test(name)?name:'';
  }
  function validOrigin(year,origin){
+  if(Number.isInteger(year)&&year>=1200&&year<1392)return GORYEO_ORIGINS.includes(origin);
   return Number.isInteger(year)&&year>=1392&&year<1894&&
    SOCIAL_CHOICES.includes(origin)&&
    (year<1886||!['사노비','공노비'].includes(origin));
@@ -58,5 +60,5 @@
   }
   return true;
  }
- return Object.freeze({cleanName,normalizeBirth,validOrigin,originStatus,childName,newborn,rename,SOCIAL_CHOICES,FAMILIES});
+ return Object.freeze({cleanName,normalizeBirth,validOrigin,originStatus,childName,newborn,rename,SOCIAL_CHOICES,GORYEO_ORIGINS,FAMILIES});
 });

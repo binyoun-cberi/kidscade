@@ -49,7 +49,7 @@ test('1392 through 1897 births start on the Korean peninsula; modern births stay
  for(const y of [1900,1919,2026]){
   const l=born(y+11,y);assert.equal(l.birthYear,y);assert.equal(J.isJoseon(l),false);
  }
- const invalid=born(100,1391);assert.equal(invalid.birthYear,2026);
+ const invalid=born(100,1199);assert.equal(invalid.birthYear,2026);
 });
 test('age-specific Joseon education, livelihood and marriage choices change the household',()=>{
  const l=born(50231,1480);
@@ -104,7 +104,7 @@ test('an unanswered Joseon choice persists after save, without duplicating birth
 });
 test('the browser entry loads the Joseon rules after modern modules and before the controller',()=>{
  const html=fs.readFileSync(path.join(base,'index.html'),'utf8');
- assert.match(html,/min="1392" max="2026"/);
+ assert.match(html,/min="1200" max="2026"/);
  assert.ok(html.indexOf('world-v13.js')<html.indexOf('joseon-v1.js'));
  assert.ok(html.indexOf('joseon-v1.js')<html.indexOf('joseon-v2.js'));
  assert.ok(html.indexOf('joseon-v2.js')<html.indexOf('game.js'));
