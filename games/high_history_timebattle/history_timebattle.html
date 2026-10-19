@@ -715,12 +715,12 @@ function renderLobby(s){
 }
 function renderHeritagePhoto(id,media,showSource=false){
   const target=$(id);target.replaceChildren();target.classList.add('hidden');
-  if(!media||!/^\/games\/high_history_timebattle\/heritage-images\/[a-f0-9]{16}\.webp$/.test(media.src||''))return;
+  if(!media||media.license!=='공공누리 제1유형'||!/^\/games\/high_history_timebattle\/heritage-images\/[a-f0-9]{16}\.webp$/.test(media.src||''))return;
   const photo=document.createElement('img');photo.src=media.src;photo.alt='문화유산 사진';photo.loading='eager';photo.decoding='async';
   photo.onerror=()=>{if(photo.isConnected)target.classList.add('hidden')};
-  const credit=document.createElement('figcaption');credit.textContent='사진: 국가유산청';
-  if(showSource&&/^https:\/\/www\.khs\.go\.kr\/cha\/SearchImageOpenapi\.do\?/.test(media.sourceUrl||'')){
-    const link=document.createElement('a');link.href=media.sourceUrl;link.target='_blank';link.rel='noopener noreferrer';link.textContent=' · 원본 정보';credit.append(link);
+  const credit=document.createElement('figcaption');credit.textContent=media.credit;
+  if(showSource&&/^https:\/\/www\.heritage\.go\.kr\/heri\/cul\/imgHeritage\.do\?/.test(media.sourceUrl||'')){
+    const link=document.createElement('a');link.href=media.sourceUrl;link.target='_blank';link.rel='noopener noreferrer';link.textContent=' · 원본 사진과 이용 조건';credit.append(link);
   }
   target.append(photo,credit);target.classList.remove('hidden');
 }

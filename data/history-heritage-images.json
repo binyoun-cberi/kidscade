@@ -1,6 +1,6 @@
 {
   "source": "국가유산청 Open API",
-  "licenseReview": "pending",
+  "licenseReview": "published-photos-verified",
   "checkedAt": "2026-10-19T07:32:39.322Z",
   "records": [
     {
@@ -26,7 +26,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/monument/2022110915263302.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=23&ccbaCtcd=25&ccbaAsno=0000330000000",
-      "caption": "비래동고인돌"
+      "caption": "비래동고인돌",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=7022417&ccbaKdcd=23&ccbaCtcd=25&ccbaAsno=0000330000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "비파형 동검",
@@ -64,7 +67,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1612303.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=34&ccbaAsno=0002870000000",
-      "caption": "국보 백제 금동대향로-부여능산리출토백제금동대향로"
+      "caption": "국보 백제 금동대향로-부여능산리출토백제금동대향로",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1612303&ccbaKdcd=11&ccbaCtcd=34&ccbaAsno=0002870000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "첨성대",
@@ -77,7 +83,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1612759.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=37&ccbaAsno=0000310000000",
-      "caption": "경주 첨성대"
+      "caption": "경주 첨성대",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1612759&ccbaKdcd=11&ccbaCtcd=37&ccbaAsno=0000310000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "신라 금관",
@@ -107,7 +116,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1612705.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=37&ccbaAsno=0000240000000",
-      "caption": "멀리서 바라본 석굴암석굴"
+      "caption": "멀리서 바라본 석굴암석굴",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1612705&ccbaKdcd=11&ccbaCtcd=37&ccbaAsno=0000240000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "팔만대장경",
@@ -120,7 +132,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1612968.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=38&ccbaAsno=0000320000000",
-      "caption": "합천 해인사 대장경판"
+      "caption": "합천 해인사 대장경판",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1612968&ccbaKdcd=11&ccbaCtcd=38&ccbaAsno=0000320000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "고려청자",
@@ -141,7 +156,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/treasure/1615991.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=12&ccbaCtcd=31&ccbaAsno=0011320000000",
-      "caption": "이색서문"
+      "caption": "이색서문",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1615991&ccbaKdcd=12&ccbaCtcd=31&ccbaAsno=0011320000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "삼국사기",
@@ -154,7 +172,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/treasure/1621170.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=12&ccbaCtcd=37&ccbaAsno=0005250000000",
-      "caption": "삼국사기(三國史記)"
+      "caption": "삼국사기(三國史記)",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1621170&ccbaKdcd=12&ccbaCtcd=37&ccbaAsno=0005250000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "삼국유사",
@@ -167,7 +188,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1611952.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0003060000200",
-      "caption": "국보 삼국유사"
+      "caption": "국보 삼국유사",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1611952&ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0003060000200",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "경복궁",
@@ -180,7 +204,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/history_site/1624463.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0001170000000",
-      "caption": "경복궁 근정전 설경(2012.2.1 촬영, 문화재청)"
+      "caption": "경복궁 근정전 설경(2012.2.1 촬영, 문화재청)",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1624463&ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0001170000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "종묘",
@@ -193,7 +220,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/history_site/2021070809474700.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0001250000000",
-      "caption": "종묘_정전(겨울)"
+      "caption": "종묘_정전(겨울)",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=6415683&ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0001250000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "측우기",
@@ -206,7 +236,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/2020022717235400.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0003290000000",
-      "caption": "국보 공주 충청감영 측우기"
+      "caption": "국보 공주 충청감영 측우기",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=5778677&ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0003290000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "자격루",
@@ -219,7 +252,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1611777.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0002290000000",
-      "caption": "창경궁 자격루"
+      "caption": "창경궁 자격루",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1611777&ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0002290000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "앙부일구",
@@ -232,7 +268,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/treasure/1614079.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=12&ccbaCtcd=11&ccbaAsno=0008450000000",
-      "caption": "앙부일구(仰釜日晷)"
+      "caption": "앙부일구(仰釜日晷)",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1614079&ccbaKdcd=12&ccbaCtcd=11&ccbaAsno=0008450000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "경국대전",
@@ -245,7 +284,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/tangible_cult_prop/2023120713283200.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=21&ccbaCtcd=21&ccbaAsno=0002270000000",
-      "caption": "경국대전"
+      "caption": "경국대전",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=7582625&ccbaKdcd=21&ccbaCtcd=21&ccbaAsno=0002270000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "수원 화성",
@@ -279,7 +321,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/history_site/1624453.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0000320000000",
-      "caption": "서울 독립문/문화재청"
+      "caption": "서울 독립문/문화재청",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1624453&ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0000320000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "덧무늬 토기",
@@ -308,7 +353,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/treasure/1775217.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=12&ccbaCtcd=11&ccbaAsno=0018230000000",
-      "caption": "농경문 청동기"
+      "caption": "농경문 청동기",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1775217&ccbaKdcd=12&ccbaCtcd=11&ccbaAsno=0018230000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "잔무늬 거울",
@@ -325,7 +373,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1611602.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=34&ccbaAsno=0001460000000",
-      "caption": "전 논산 청동방울 일괄"
+      "caption": "전 논산 청동방울 일괄",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1611602&ccbaKdcd=11&ccbaCtcd=34&ccbaAsno=0001460000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "붉은 간 토기",
@@ -350,7 +401,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1612184.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=33&ccbaAsno=0002050000000",
-      "caption": "충주 고구려비"
+      "caption": "충주 고구려비",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1612184&ccbaKdcd=11&ccbaCtcd=33&ccbaAsno=0002050000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "안악 3호분",
@@ -401,7 +455,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1612256.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=34&ccbaAsno=0000840000000",
-      "caption": "서산 용현리 마애여래삼존상"
+      "caption": "서산 용현리 마애여래삼존상",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1612256&ccbaKdcd=11&ccbaCtcd=34&ccbaAsno=0000840000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "공주 공산성",
@@ -414,7 +471,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/history_site/1626433.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=13&ccbaCtcd=34&ccbaAsno=0000120000000",
-      "caption": "공주공산성 성벽"
+      "caption": "공주공산성 성벽",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1626433&ccbaKdcd=13&ccbaCtcd=34&ccbaAsno=0000120000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "무령왕릉 지석",
@@ -427,7 +487,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1612295.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=34&ccbaAsno=0001630000000",
-      "caption": "무령왕릉 지석"
+      "caption": "무령왕릉 지석",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1612295&ccbaKdcd=11&ccbaCtcd=34&ccbaAsno=0001630000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "천마도",
@@ -440,7 +503,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1611658.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=37&ccbaAsno=0002070000000",
-      "caption": "경주 천마총 장니 천마도"
+      "caption": "경주 천마총 장니 천마도",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1611658&ccbaKdcd=11&ccbaCtcd=37&ccbaAsno=0002070000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "천마총",
@@ -466,7 +532,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1612749.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=37&ccbaAsno=0000300000000",
-      "caption": "경주 분황사 모전석탑(감실 및 인왕상)"
+      "caption": "경주 분황사 모전석탑(감실 및 인왕상)",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1612749&ccbaKdcd=11&ccbaCtcd=37&ccbaAsno=0000300000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "황룡사 구층목탑터",
@@ -483,7 +552,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/history_site/1628369.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=13&ccbaCtcd=38&ccbaAsno=0003410000000",
-      "caption": "김해대성동고분군"
+      "caption": "김해대성동고분군",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1628369&ccbaKdcd=13&ccbaCtcd=38&ccbaAsno=0003410000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "금동미륵보살반가사유상",
@@ -504,7 +576,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1612744.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=37&ccbaAsno=0000290000000",
-      "caption": "성덕대왕신종"
+      "caption": "성덕대왕신종",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1612744&ccbaKdcd=11&ccbaCtcd=37&ccbaAsno=0000290000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "다보탑",
@@ -517,7 +592,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1612673.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=37&ccbaAsno=0000200000000",
-      "caption": "경주 불국사 다보탑"
+      "caption": "경주 불국사 다보탑",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1612673&ccbaKdcd=11&ccbaCtcd=37&ccbaAsno=0000200000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "석가탑",
@@ -547,7 +625,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1612827.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=37&ccbaAsno=0001120000000",
-      "caption": "경주 감은사지 동ㆍ서 삼층석탑"
+      "caption": "경주 감은사지 동ㆍ서 삼층석탑",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1612827&ccbaKdcd=11&ccbaCtcd=37&ccbaAsno=0001120000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "정혜공주 묘",
@@ -568,7 +649,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1612140.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=33&ccbaAsno=0000050000000",
-      "caption": "보은 법주사 쌍사자 석등"
+      "caption": "보은 법주사 쌍사자 석등",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1612140&ccbaKdcd=11&ccbaCtcd=33&ccbaAsno=0000050000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "화엄사 사사자 삼층석탑",
@@ -581,7 +665,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1612422.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=36&ccbaAsno=0000350000000",
-      "caption": "구례 화엄사 사사자 삼층석탑"
+      "caption": "구례 화엄사 사사자 삼층석탑",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1612422&ccbaKdcd=11&ccbaCtcd=36&ccbaAsno=0000350000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "청자 상감운학문 매병",
@@ -627,7 +714,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1612236.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=34&ccbaAsno=0000490000000",
-      "caption": "예산 수덕사 대웅전"
+      "caption": "예산 수덕사 대웅전",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1612236&ccbaKdcd=11&ccbaCtcd=34&ccbaAsno=0000490000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "봉정사 극락전",
@@ -657,7 +747,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1612072.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=51&ccbaAsno=0000480000100",
-      "caption": "평창 월정사 팔각 구층석탑"
+      "caption": "평창 월정사 팔각 구층석탑",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1612072&ccbaKdcd=11&ccbaCtcd=51&ccbaAsno=0000480000100",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "관촉사 석조미륵보살입상",
@@ -670,7 +763,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/2025032110005000.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=34&ccbaAsno=0003230000000",
-      "caption": "논산 관촉사 석조미륵보살입상(사진)_미륵보살입상 (촬영년도_2024년)"
+      "caption": "논산 관촉사 석조미륵보살입상(사진)_미륵보살입상 (촬영년도_2024년)",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=10001554&ccbaKdcd=11&ccbaCtcd=34&ccbaAsno=0003230000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "초조대장경",
@@ -683,7 +779,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1612043.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0002410000000",
-      "caption": "초조본 대반야바라밀다경 권249_표지및권수"
+      "caption": "초조본 대반야바라밀다경 권249_표지및권수",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1612043&ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0002410000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "고려 나전칠기 경함",
@@ -700,7 +799,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/2021042017434700.JPG",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0000010000000",
-      "caption": "서울 숭례문_성곽전경 (촬영년도 : 2015년)"
+      "caption": "서울 숭례문_성곽전경 (촬영년도 : 2015년)",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=6309894&ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0000010000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "한양도성",
@@ -713,7 +815,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/history_site/1624439.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0000100000000",
-      "caption": "서울 한양도성"
+      "caption": "서울 한양도성",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1624439&ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0000100000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "창덕궁",
@@ -739,7 +844,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/history_site/2021070809090100.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0001230000000",
-      "caption": "창경궁_전경"
+      "caption": "창경궁_전경",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=6415616&ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0001230000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "사직단",
@@ -752,7 +860,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/history_site/2021070609032201.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0001210000000",
-      "caption": "사직단"
+      "caption": "사직단",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=6412609&ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0001210000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "훈민정음 해례본",
@@ -781,7 +892,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/tangible_cult_prop/1641756.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=21&ccbaCtcd=38&ccbaAsno=0001600000000",
-      "caption": "삼강행실도"
+      "caption": "삼강행실도",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1641756&ccbaKdcd=21&ccbaCtcd=38&ccbaAsno=0001600000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "조선왕조실록",
@@ -794,7 +908,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/2019070113323400.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=31&ccbaAsno=0001510000500",
-      "caption": "국보 조선왕조실록 봉모당본"
+      "caption": "국보 조선왕조실록 봉모당본",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=5432828&ccbaKdcd=11&ccbaCtcd=31&ccbaAsno=0001510000500",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "세종실록지리지",
@@ -823,7 +940,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/tangible_cult_prop/2327377.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=21&ccbaCtcd=21&ccbaAsno=0000780000000",
-      "caption": "천상열차분야지도"
+      "caption": "천상열차분야지도",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=2327377&ccbaKdcd=21&ccbaCtcd=21&ccbaAsno=0000780000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "혼일강리역대국도지도",
@@ -844,7 +964,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/monument/1646138.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=23&ccbaCtcd=31&ccbaAsno=0000650000000",
-      "caption": "화성행궁지(봉수당)"
+      "caption": "화성행궁지(봉수당)",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1646138&ccbaKdcd=23&ccbaCtcd=31&ccbaAsno=0000650000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "백자 달항아리",
@@ -865,7 +988,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1611946.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0003030000000",
-      "caption": "국보 승정원일기-규장각에 보관된 승정원일기"
+      "caption": "국보 승정원일기-규장각에 보관된 승정원일기",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1611946&ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0003030000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "일성록",
@@ -878,7 +1004,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1611615.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0001530000000",
-      "caption": "일성록"
+      "caption": "일성록",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1611615&ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0001530000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "동의보감",
@@ -932,7 +1061,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1611690.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0002160000000",
-      "caption": "정선필 인왕제색도"
+      "caption": "정선필 인왕제색도",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1611690&ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0002160000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "세한도",
@@ -945,7 +1077,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/national_treasure/1611642.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0001800000000",
-      "caption": "김정희필 세한도"
+      "caption": "김정희필 세한도",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1611642&ccbaKdcd=11&ccbaCtcd=11&ccbaAsno=0001800000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "동궐도",
@@ -990,7 +1125,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/history_site/1624724.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0002130000000",
-      "caption": "우정총국"
+      "caption": "우정총국",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1624724&ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0002130000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "독립신문 창간호",
@@ -1011,7 +1149,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/history_site/1624581.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0001570000000",
-      "caption": "환구단"
+      "caption": "환구단",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1624581&ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0001570000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "황궁우",
@@ -1040,7 +1181,10 @@
       "rightsCode": "A",
       "sourceUrl": "https://www.khs.go.kr/unisearch/images/history_site/1624813.jpg",
       "sourceApi": "https://www.khs.go.kr/cha/SearchImageOpenapi.do?ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0002580000000",
-      "caption": "성당내부전경"
+      "caption": "성당내부전경",
+      "licenseType": "KOGL-1",
+      "licenseVerifiedUrl": "https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=1624813&ccbaKdcd=13&ccbaCtcd=11&ccbaAsno=0002580000000",
+      "licenseVerifiedAt": "2026-10-19T08:55:46.854Z"
     },
     {
       "term": "대한매일신보 창간호",
@@ -1114,5 +1258,7 @@
       "term": "새마을운동 기록물",
       "status": "unmatched"
     }
-  ]
+  ],
+  "licenseVerifiedAt": "2026-10-19T08:55:46.854Z",
+  "licenseVerifiedCount": 48
 }

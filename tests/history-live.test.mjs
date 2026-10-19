@@ -10,12 +10,16 @@ test('heritage photo quiz caches approved matches and keeps text fallback', () =
   const photos = Object.entries(HERITAGE_MEDIA);
   const questions = QUESTION_BANK.filter(q => q.family === 'heritage-identify');
   assert.ok(photos.length >= 40, 'cache should contain a useful selection of local images');
+  assert.equal(source.licenseReview, 'published-photos-verified');
+  assert.equal(source.licenseVerifiedCount, photos.length);
+  assert.ok(!Number.isNaN(Date.parse(source.licenseVerifiedAt)));
   assert.ok(questions.length > photos.length, 'questions without matching photos must remain playable');
   assert.ok(source.records.length >= questions.length, 'keep candidate and rejection provenance');
   for (const [term, media] of photos) {
     assert.match(media.src, /^\/games\/high_history_timebattle\/heritage-images\/[a-f0-9]{16}\.webp$/);
-    assert.match(media.sourceUrl, /^https:\/\/www\.khs\.go\.kr\/cha\/SearchImageOpenapi\.do\?/);
-    assert.equal(media.credit, '사진: 국가유산청');
+    assert.match(media.sourceUrl, /^https:\/\/www\.heritage\.go\.kr\/heri\/cul\/imgHeritage\.do\?ccimId=\d+&/);
+    assert.equal(media.license, '공공누리 제1유형');
+    assert.equal(media.credit, '사진: 국가유산청 · 공공누리 제1유형 (크기 조정)');
     const question = questions.find(q => q.o[q.a] === term);
     assert.ok(question, term + ' requires a playable question');
     assert.deepEqual(question.media, media);
@@ -24,6 +28,10 @@ test('heritage photo quiz caches approved matches and keeps text fallback', () =
     const record=source.records.find(r=>r.term===term);
     assert.equal(record?.status,'candidate');
     assert.equal(record?.rightsCode,'A');
+    assert.equal(record?.licenseType,'KOGL-1');
+    assert.equal(record?.licenseVerifiedUrl,media.sourceUrl);
+    assert.ok(!Number.isNaN(Date.parse(record.licenseVerifiedAt)));
+    assert.match(record?.sourceUrl||'', /^https:\/\/www\.khs\.go\.kr\/unisearch\/images\//);
   }
   assert.equal(questions.find(q=>q.o[q.a]==='불국사')?.media, undefined, 'a photo of Dabotap is not a photo of the temple');
   assert.equal(questions.find(q=>q.o[q.a]==='천마총')?.media, undefined, 'a photo of Cheonmado is not a photo of the tomb');
@@ -34,6 +42,8 @@ test('heritage photo quiz caches approved matches and keeps text fallback', () =
   assert.match(html,/function renderHeritagePhoto/);
   assert.match(html,/heritageQuestionPhoto/);
   assert.match(html,/heritageRevealPhoto/);
+  assert.match(html,/media\.license!=='공공누리 제1유형'/);
+  assert.match(html,/원본 사진과 이용 조건/);
   assert.match(html,/q\.media\?\{media:q\.media\}/);
   assert.match(room,/q\.media\?\{media:q\.media\}/);
   assert.match(legacy,/q\.media\?\{media:q\.media\}/);

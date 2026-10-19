@@ -113,7 +113,9 @@ async function allTerms(){
 async function main(){
   if(download){
     const report=JSON.parse(await readFile(catalogPath,'utf8'));
-    const selected=report.records.filter(x=>x.status==='candidate'&&matchingPhotos.has(x.term)&&x.rightsCode==='A');
+    const selected=report.records.filter(x=>x.status==='candidate'&&matchingPhotos.has(x.term)&&x.rightsCode==='A'&&x.licenseType==='KOGL-1'&&/^https:\/\/www\.heritage\.go\.kr\/heri\/cul\/imgHeritage\.do\?/.test(x.licenseVerifiedUrl||''));
+    const pending=report.records.filter(x=>x.status==='candidate'&&matchingPhotos.has(x.term)&&!selected.includes(x));
+    if(pending.length)console.warn('Skipped photos without individually verified KOGL-1 license: '+pending.map(x=>x.term).join(', '));
     await mkdir(assetsDir,{recursive:true});
     const media={};let done=0;
     for(const item of selected){
@@ -128,13 +130,13 @@ async function main(){
           await exec('convert',[temp,'-auto-orient','-resize','600x600>','-strip','-quality','68',converted],{timeout:35000});
           await rename(converted,dest);
         }
-        media[item.term]={src:'/games/high_history_timebattle/heritage-images/'+item.id+'.webp',credit:'사진: 국가유산청',sourceUrl:item.sourceApi};
+        media[item.term]={src:'/games/high_history_timebattle/heritage-images/'+item.id+'.webp',credit:'사진: 국가유산청 · 공공누리 제1유형 (크기 조정)',license:'공공누리 제1유형',sourceUrl:item.licenseVerifiedUrl};
         done++;
       }catch(error){console.error('Skipped '+item.term+': '+error.message)}
       finally{await Promise.all([rm(temp,{force:true}),rm(converted,{force:true})]);}
     }
     const manifestPath=join(root,'data/history-heritage-media.mjs');
-    await writeFile(manifestPath,'// Cached images selected from the KHS image API; see history-heritage-images.json for provenance.\n// imageNuri A is a source rights marker; confirm the applicable reuse terms before redistribution.\nexport const HERITAGE_MEDIA = Object.freeze('+JSON.stringify(media,null,2)+');\n');
+    await writeFile(manifestPath,'// National Heritage Service photographs; each original and KOGL-1 license verified on its source page.\n// See history-heritage-images.json for the original image URL and dated license evidence.\nexport const HERITAGE_MEDIA = Object.freeze('+JSON.stringify(media,null,2)+');\n');
     console.log(`Cached ${done}/${selected.length} heritage photos; wrote ${manifestPath}`);
     return;
   }
