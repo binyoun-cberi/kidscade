@@ -68,8 +68,8 @@
     return ['+', '−', '×', '÷'];
   }
 
-  function dimensions(grade, tier) {
-    if (grade === 1) return tier >= 3 ? 3 : 2;
+  function dimensions(grade, tier, mixed = false) {
+    if (grade === 1) return tier >= 3 || mixed ? 3 : 2;
     if (grade === 3 && tier >= 4) return 4;
     return 3;
   }
@@ -93,6 +93,31 @@
       lines.push({ cells, ops: operatorsByCol[col], target: evaluate(cells.map(i => numbers[i]), operatorsByCol[col]), axis: 'column', index: col });
     }
     return lines;
+  }
+
+  // 혼합계산은 여러 기호가 실제 한 수식에 함께 등장해야 한다.
+  // 2·3학년은 뒤에 오는 곱셈·나눗셈을 먼저 처리하는 문제도 포함한다.
+  function mixFeatures(lines) {
+    return {
+      addSub: lines.some(line => line.ops.includes('+') && line.ops.includes('−')),
+      mixed: lines.some(line => new Set(line.ops).size >= 2),
+      priority: lines.some(line => line.ops.some((op, i) => i > 0 && (op === '×' || op === '÷') && (line.ops[i - 1] === '+' || line.ops[i - 1] === '−'))),
+      division: lines.some(line => line.ops.includes('÷')),
+      divisionMixed: lines.some(line => line.ops.includes('÷') && new Set(line.ops).size >= 2)
+    };
+  }
+
+  function meetsMixGoal(grade, tier, mixed, lines) {
+    const goal = mixFeatures(lines);
+    if (grade === 1) return (!mixed && tier < 3) || goal.addSub;
+    if (grade === 2) {
+      if (tier === 1) return !mixed || goal.addSub;
+      return (!mixed && tier < 3) || goal.priority;
+    }
+    if (!goal.mixed) return false;
+    if (mixed && tier >= 3) return goal.priority && goal.divisionMixed;
+    if (!mixed && tier >= 5) return goal.priority && goal.division;
+    return (!mixed && tier < 3) || goal.priority;
   }
 
   function countSolutions(puzzle, maxSolutions = 2, partial = null) {
@@ -150,24 +175,25 @@
     return solutions;
   }
 
-  function createFallback(grade, tier, seed) {
+  function createFallback(grade, tier, seed, mixed) {
     const numbers = [2, 7, 3, 8];
     const lines = makeLines(numbers, 2, [['+'], ['+']], [['+'], ['+']]);
     const givens = [2, 7, 3, null];
-    return { grade, tier, seed, size: 2, solution: numbers, givens, bank: [8], lines, fallback: true };
+    return { grade, tier, seed, mixed, size: 2, solution: numbers, givens, bank: [8], lines, fallback: true };
   }
 
   function buildPuzzle(options = {}) {
     const grade = Math.min(3, Math.max(1, Number(options.grade) || 1));
     const tier = Math.min(5, Math.max(1, Number(options.tier) || 1));
     const seed = String(options.seed ?? `${grade}-${tier}-first`);
-    const random = randomGenerator(seed + ':' + grade + ':' + tier);
+    const mixed = options.mixed === true;
+    const random = randomGenerator(seed + ':' + grade + ':' + tier + ':' + mixed);
     const config = GRADE_CONFIG[grade];
-    const size = dimensions(grade, tier);
+    const size = dimensions(grade, tier, mixed);
     const pool = Array.from({ length: config.max }, (_, i) => i + 1);
     const allowed = getOptions(grade, tier);
     const intendedHidden = hiddenCount(grade, tier, size);
-    for (let attempt = 0; attempt < 200; attempt++) {
+    for (let attempt = 0; attempt < 500; attempt++) {
       const solution = shuffled(pool, random).slice(0, size * size);
       const horizontal = [];
       const vertical = [];
@@ -185,14 +211,15 @@
       }
       if (!valid) continue;
       const lines = makeLines(solution, size, horizontal, vertical);
+      if (!meetsMixGoal(grade, tier, mixed, lines)) continue;
       const blankCount = Math.max(2, intendedHidden - Math.floor(attempt / 44));
       const blankIndexes = shuffled(Array.from({ length: size * size }, (_, i) => i), random).slice(0, blankCount);
       const givens = solution.map((number, index) => blankIndexes.includes(index) ? null : number);
       const bank = shuffled(blankIndexes.map(i => solution[i]), random);
-      const puzzle = { grade, tier, seed, size, solution, givens, bank, lines };
+      const puzzle = { grade, tier, seed, mixed, size, solution, givens, bank, lines };
       if (countSolutions(puzzle, 2) === 1) return puzzle;
     }
-    return createFallback(grade, tier, seed);
+    return createFallback(grade, tier, seed, mixed);
   }
 
   function checkBoard(puzzle, placements) {
@@ -208,5 +235,5 @@
     return { complete, correct: complete && used.join(',') === remaining.join(',') && lineStates.every(Boolean), lines: lineStates };
   }
 
-  return { GRADE_CONFIG, evaluate, buildPuzzle, countSolutions, checkBoard, hashSeed, randomGenerator };
+  return { GRADE_CONFIG, evaluate, buildPuzzle, countSolutions, checkBoard, mixFeatures, hashSeed, randomGenerator };
 });
