@@ -30,6 +30,7 @@
 <link rel="stylesheet" href="./identity-v20.css?v=1">
 <link rel="stylesheet" href="./travel-v22.css?v=1">
 <link rel="stylesheet" href="./history-calendar-v337.css?v=1">
+<link rel="stylesheet" href="./household-v342.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -348,6 +349,15 @@
           </section>
           <details id="diaspora340Panel" class="history-calendar" hidden><summary>타향의 삶과 함께한 사람들</summary><ul id="diaspora340Records" class="calendar-events"></ul></details>
           <details id="collaboration341Panel" class="history-calendar" hidden><summary>그 시절 맡은 일과 남은 책임</summary><ul id="collaboration341Records" class="calendar-events"></ul></details>
+          <details id="household342Panel" class="history-calendar" hidden>
+            <summary>우리 집 살림</summary>
+            <p id="household342Status"></p>
+            <p>한 사람에게 한 해의 주된 일을 맡깁니다. 물건을 만드는 데에는 재료와 시간이 들며, 가족이 쉬고 싶어 할 수도 있습니다.</p>
+            <div id="household342Members" class="household-members"></div>
+            <div id="household342Actions" class="household-actions"></div>
+            <ul id="household342Stock" class="calendar-events"></ul>
+            <ul id="household342History" class="calendar-events"></ul>
+          </details>
           <details id="paths339Panel" class="history-calendar" hidden><summary>쌓아 온 일과 기록</summary><ul id="paths339Records" class="calendar-events"></ul></details>
           <div class="v9-chronicle-tools"><span id="v9ChronicleCount">인생의 기록</span><button id="v9TimelineMore" type="button">이전 기록 더 보기</button></div>
           <ol id="timeline" class="timeline" aria-label="인생 연대기"></ol>
@@ -568,6 +578,7 @@
 <script src="./life-paths-v339.js?v=2"></script>
 <script src="./diaspora-v340.js?v=3"></script>
 <script src="./collaboration-v341.js?v=2"></script>
-<script src="./game.js?v=69"></script>
+<script src="./household-v342.js?v=1"></script>
+<script src="./game.js?v=70"></script>
 </body>
 </html>
