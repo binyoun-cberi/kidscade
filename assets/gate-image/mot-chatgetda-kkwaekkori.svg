@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">못 찾겠다 꾀꼬리</title>
+  <desc id="desc">알록달록한 3D 도시 사이에서 모자를 쓴 친구를 찾는 놀이</desc>
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#b5edf5"/><stop offset="1" stop-color="#f2f3cf"/></linearGradient>
+    <linearGradient id="ground" x2="0" y2="1"><stop stop-color="#9bd7a2"/><stop offset="1" stop-color="#6aad85"/></linearGradient>
+    <linearGradient id="box" x2="0" y2="1"><stop stop-color="#fffcf0"/><stop offset="1" stop-color="#f1f9ec"/></linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="15" stdDeviation="14" flood-color="#3b7771" flood-opacity=".2"/></filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#sky)"/>
+  <circle cx="980" cy="99" r="61" fill="#fff5b6" opacity=".92"/>
+  <g opacity=".5" fill="#fff"><ellipse cx="122" cy="95" rx="103" ry="30"/><ellipse cx="207" cy="80" rx="83" ry="27"/><ellipse cx="708" cy="72" rx="91" ry="27"/></g>
+  <path d="M0 392L420 318 1200 390 1200 630H0Z" fill="url(#ground)"/>
+  <path d="M370 630L555 334 749 334 1050 630Z" fill="#e3dac3"/>
+  <path d="M535 630L611 334 676 334 809 630Z" fill="#aab6ae"/>
+  <g filter="url(#shadow)">
+    <path d="M42 270L175 227 311 273 311 470 42 470Z" fill="#ffbe96"/><path d="M42 270L175 203 311 273 180 341Z" fill="#dd8972"/>
+    <path d="M65 340H142V416H65Z" fill="#fff3c3"/><path d="M195 353H277V426H195Z" fill="#fff3c3"/><path d="M65 340H142M104 340V416M195 353H277M236 353V426" stroke="#bc927e" stroke-width="10"/>
+    <path d="M885 250L1042 202 1172 256V468H885Z" fill="#b8c9f2"/><path d="M885 250L1042 172 1172 256 1026 328Z" fill="#718fd1"/>
+    <rect x="921" y="335" width="74" height="93" rx="10" fill="#f9f5e6"/><rect x="1052" y="343" width="76" height="87" rx="10" fill="#fff6d1"/>
+    <rect x="398" y="270" width="165" height="150" rx="9" fill="#ffe2a4"/><path d="M381 269L479 215 573 269Z" fill="#c88764"/>
+    <rect x="435" y="328" width="92" height="83" rx="8" fill="#8fd2c4"/>
+  </g>
+  <g fill="#53966b" stroke="#4b825e" stroke-width="5"><path d="M344 400L294 349 364 320 434 366 398 421Z"/><path d="M807 380L760 332 824 294 889 343 866 406Z"/></g>
+  <g fill="#a77759"><rect x="352" y="388" width="14" height="75" rx="4"/><rect x="815" y="370" width="14" height="80" rx="4"/></g>
+  <g transform="translate(615 422)" filter="url(#shadow)">
+    <ellipse cx="0" cy="114" rx="79" ry="21" fill="#37646a" opacity=".2"/>
+    <path d="M-58 34Q-73 90 -45 108H47Q73 83 57 35Z" fill="#f4b85e"/>
+    <rect x="-52" y="82" width="37" height="46" rx="16" fill="#5e86c9"/><rect x="18" y="82" width="37" height="46" rx="16" fill="#5e86c9"/>
+    <circle cy="-19" r="63" fill="#e7ad89"/>
+    <path d="M-65 -24Q-64 -79 0 -86Q60 -80 65 -26Z" fill="#e25262"/>
+    <rect x="-75" y="-36" width="150" height="20" rx="10" fill="#c93d56"/>
+    <path d="M-18 -3Q-9 -13 0 -3M20 -3Q30 -13 39 -3" fill="none" stroke="#60453a" stroke-width="5" stroke-linecap="round"/>
+    <path d="M0 29Q15 41 31 26" fill="none" stroke="#9b5350" stroke-width="5" stroke-linecap="round"/>
+    <rect x="51" y="30" width="42" height="76" rx="11" fill="#65aee6"/><path d="M58 30V9M84 30V9" stroke="#e6f5ff" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <g filter="url(#shadow)"><rect x="78" y="39" width="650" height="190" rx="37" fill="url(#box)" stroke="#fff" stroke-width="5"/></g>
+  <g font-family="'Pretendard','Noto Sans KR',sans-serif" font-weight="900" fill="#24745b"><text x="111" y="113" font-size="32">🐤 와글와글 3D 숨은 친구 찾기</text><text x="109" y="191" font-size="68" letter-spacing="-4">못 찾겠다 꾀꼬리!</text></g>
+  <g transform="translate(770 65)"><circle cx="30" cy="30" r="48" fill="#fffefa" opacity=".96"/><path d="M52 50L80 83" stroke="#5b94b8" stroke-width="16" stroke-linecap="round"/><circle cx="26" cy="27" r="25" fill="none" stroke="#5b94b8" stroke-width="9"/><text x="12" y="40" font-family="sans-serif" font-size="30">?</text></g>
+  <g fill="#fff" opacity=".95"><circle cx="343" cy="193" r="8"/><circle cx="761" cy="253" r="11"/><circle cx="916" cy="140" r="8"/></g>
+</svg>

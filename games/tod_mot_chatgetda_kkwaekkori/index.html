@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#cdece6">
+  <title>못 찾겠다 꾀꼬리 | 키즈케이드</title>
+  <link rel="stylesheet" href="style.css?v=1">
+  <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+</head>
+<body>
+<main id="app">
+  <canvas id="town" aria-label="주민들이 산책하는 3차원 마을. 손가락이나 마우스로 움직이고 찾는 친구를 누르세요."></canvas>
+  <header class="topbar glass">
+    <div class="brand"><span class="bird" aria-hidden="true">🐤</span><div><b>못 찾겠다 꾀꼬리</b><small id="districtLabel">와글와글 마을</small></div></div>
+    <div class="headRight"><span id="progress" class="progress" aria-live="polite">찾은 친구 0 / 1</span><button id="menuBtn" class="circleButton" type="button" aria-label="마을 선택">☰</button></div>
+  </header>
+
+  <section class="mission glass" aria-label="찾을 사람">
+    <div class="missionTop"><div><small>오늘의 찾기</small><strong id="clueTitle">어떤 친구일까?</strong></div><button id="speakBtn" class="circleButton speak" type="button" aria-label="찾을 사람 안내 듣기">🔊</button></div>
+    <div class="lookRow" aria-hidden="true">
+      <div class="lookItem"><span id="hatIcon" class="lookIcon">🧢</span><b id="hatColor" class="lookSwatch"></b><small id="hatName">모자</small></div>
+      <span class="plus">+</span>
+      <div class="lookItem"><span class="lookIcon">🎒</span><b id="bagColor" class="lookSwatch"></b><small>가방</small></div>
+    </div>
+    <p id="clueText">사람들을 자세히 살펴봐요!</p>
+    <div class="missionActions"><button id="hintBtn" type="button">💡 힌트 보기</button><button id="resetViewBtn" type="button">⌂ 마을 전체</button></div>
+    <p id="hintText" class="hint" aria-live="polite"></p>
+  </section>
+
+  <aside class="cameraGuide glass" aria-label="조작 안내"><span>☝️ 친구 터치</span><span>✋ 화면 이동</span><span>🔍 두 손가락 확대</span></aside>
+  <div class="zoomControls glass" aria-label="화면 확대"><button id="zoomIn" type="button" aria-label="확대">+</button><button id="zoomOut" type="button" aria-label="축소">−</button></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <section id="start" class="overlay" aria-labelledby="startTitle">
+    <div class="startCard">
+      <span class="giantBird">🐤</span>
+      <p class="eyebrow">와글와글 숨은 친구 찾기</p>
+      <h1 id="startTitle">못 찾겠다 꾀꼬리!</h1>
+      <p class="intro">마을 사람들이 저마다 바쁘게 움직이고 있어요.<br>오늘은 어떤 친구를 찾아볼까요?</p>
+      <div class="stageList">
+        <button type="button" data-stage="small"><span class="stageEmoji">🏡</span><span><b>작은 마을</b><small>18명 중 1명 찾기 · 처음이라면 여기!</small></span><span class="chev">›</span></button>
+        <button type="button" data-stage="medium"><span class="stageEmoji">🏘️</span><span><b>북적북적 동네</b><small>45명 중 3명 찾기 · 이곳저곳 둘러보기</small></span><span class="chev">›</span></button>
+        <button type="button" data-stage="large"><span class="stageEmoji">🏙️</span><span><b>와글와글 대도시</b><small>84명 중 5명 찾기 · 도전!</small></span><span class="chev">›</span></button>
+      </div>
+      <p class="startFooter">서두르지 않아도 괜찮아요. 천천히 둘러보세요!</p>
+    </div>
+  </section>
+
+  <section id="finish" class="overlay hidden" aria-labelledby="finishTitle">
+    <div class="finishCard"><div class="trophy">🎉</div><h2 id="finishTitle">모두 찾았다!</h2><p id="finishText">마을 친구들을 전부 찾았어요!</p><div class="finishActions"><button id="againBtn" type="button">🔄 새로운 하루</button><button id="otherStageBtn" type="button">🏡 다른 마을</button></div></div>
+  </section>
+</main>
+<script src="../../kidscade-storage.js"></script>
+<script src="../../kidscade-game-sdk.js" data-game-id="tod_mot_chatgetda_kkwaekkori" data-title="못 찾겠다 꾀꼬리" data-shell="true" data-pauseable="true" data-orientation="landscape"></script>
+<script type="module" src="game.js?v=1"></script>
+</body>
+</html>
