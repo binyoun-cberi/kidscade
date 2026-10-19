@@ -316,9 +316,9 @@ export function sellAllProduce(state){
 }
 
 export const DELIVERY_ORDERS=Object.freeze([
-  Object.freeze({produce:'rice',count:5,reward:1800,description:'마을 식당에 햅쌀을 전해 주세요.'}),
-  Object.freeze({produce:'carrot',count:3,reward:750,description:'장터 반찬가게에서 당근을 기다려요.'}),
-  Object.freeze({produce:'corn',count:3,reward:1350,description:'마을 아이들에게 옥수수를 보내 주세요.'})
+  Object.freeze({produce:'rice',count:5,reward:1400,description:'마을 식당에 햅쌀을 전해 주세요.'}),
+  Object.freeze({produce:'carrot',count:3,reward:420,description:'장터 반찬가게에서 당근을 기다려요.'}),
+  Object.freeze({produce:'corn',count:3,reward:650,description:'마을 아이들에게 옥수수를 보내 주세요.'})
 ]);
 export function currentDeliveryOrder(state){
   return DELIVERY_ORDERS[Math.min(state.stats?.deliveries||0,DELIVERY_ORDERS.length)]||null;
