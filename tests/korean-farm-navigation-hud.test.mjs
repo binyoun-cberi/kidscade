@@ -61,13 +61,17 @@ test('reversing direction rotates the farmer in place before walking',()=>{
   assert.equal(shouldTurnBeforeWalk(0,Math.PI),true);
   assert.equal(shouldTurnBeforeWalk(0,-Math.PI/2),true);
   assert.equal(shouldTurnBeforeWalk(0,.2),false);
+  assert.equal(shouldTurnBeforeWalk(0,.3),true);
   let current=0,goal=farmerHeading(0,1),frames=0;
   while(shouldTurnBeforeWalk(current,goal)&&frames<90){
     current=rotateToward(current,goal,1/60);frames++;
   }
   assert.ok(frames>0&&frames<45,'Turn-in-place must resolve promptly, frames='+frames);
-  assert.ok(Math.abs(headingDifference(current,goal))<=Math.PI*.43);
+  assert.ok(Math.abs(headingDifference(current,goal))<=.25);
   assert.match(game,/shouldTurnBeforeWalk\(farmer.rotation.y,farmerFacingTarget\)\)return false/);
+  assert.match(game,/const stepX=result.x-state.player.x,stepZ=result.z-state.player.z/);
+  assert.match(game,/farmerFacingTarget=farmerHeading\(stepX,stepZ\)/);
+  assert.ok(game.indexOf('const result=walkPlayer(state.player,direction')<game.indexOf('const stepX=result.x-state.player.x'));
 });
 test('turning rotates toward the shorter angle instead of snapping through 360 degrees',()=>{
   const current=3.09,target=-3.09;
