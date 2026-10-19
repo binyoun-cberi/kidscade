@@ -700,3 +700,48 @@ body[data-counter="2"] .tray-panel{background:linear-gradient(#3c2b1edc,#241911e
  .collection-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.collection-card{min-height:70px}
 }
 @media(max-width:390px){.tray-actions button{font-size:8px;padding:5px 3px}.shop-close{font-size:10px;padding:8px}.upgrade-buy{width:102px;font-size:10px}}
+
+/* P4: each strike and commission leaves visible feedback. */
+.order-chain{display:flex;align-items:center;gap:7px;margin-top:5px;max-width:260px}
+.order-chain>span:first-child{color:#ffcc7b;font-size:9px;font-weight:850;white-space:nowrap}
+.chain-bar{flex:1;min-width:30px;height:5px;border-radius:20px;overflow:hidden;background:#20150f;box-shadow:inset 0 1px 3px #0008}
+.chain-bar span{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#f07829,#ffdf7b);transition:width .3s}
+.stat.timer b:after{content:"";display:none;width:var(--rushRemain,100%);height:3px;margin:2px auto 0;background:linear-gradient(90deg,#c75c32,#ffd17e);border-radius:8px;transition:width .2s}
+body[data-mode="rush"] .stat.timer b:after{display:block}
+.stat.timer b.danger:after{background:#ff4848}
+.hammer-hits{display:none;gap:9px;justify-content:center;align-items:center;min-height:25px;margin:-1px 0 5px}
+.hammer-hits.visible{display:flex}
+.hammer-hit-dot{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;font-size:18px;line-height:1;color:#8e7c6d;border:1px solid #544137;background:#2d211b}
+.hammer-hit-dot.perfect{background:#f7cf72;color:#4a2e15;border-color:#ffeaa9;box-shadow:0 0 12px #ffd87699;animation:hammerPipPop .23s both}
+.hammer-hit-dot.good{background:#8cb6a4;color:#152f2b;border-color:#b6e3d3;animation:hammerPipPop .23s both}
+.hammer-hit-dot.miss{color:#cd9c81;border-color:#795342;background:#3b2923}
+.craft-grade{position:absolute;left:10px;top:12px;z-index:6;opacity:0;transform:translateY(7px);border-radius:99px;padding:6px 11px;border:1px solid #c8ab76;background:#251913e6;color:#ffe4b2;font-size:13px;font-weight:950}
+.craft-grade.visible{opacity:1;transform:translateY(0);animation:gradeArrive .45s both}
+.craft-grade.masterpiece{color:#fff3b9;background:#8e5520ea;box-shadow:0 0 20px #ffd679aa;border-color:#ffe2a7}
+.craft-grade.fine{color:#c0f4e9;border-color:#8bd3bd;background:#305048eb}
+.craft-scene.hammer-perfect{animation:forgePerfectImpact .32s ease-out}
+.craft-scene.hammer-good{animation:forgeGoodImpact .22s ease-out}
+.craft-scene.hammer-miss{animation:forgeMissImpact .15s ease-out}
+.craft-scene[data-family="blade"]{--familyGlow:#b6efff}
+.craft-scene[data-family="guard"]{--familyGlow:#a5ffe0}
+.craft-scene[data-family="tool"]{--familyGlow:#ffac71}
+.craft-scene[data-family="royal"]{--familyGlow:#ffe890}
+.craft-scene[data-stage="done"] .craft-product{filter:drop-shadow(0 0 28px var(--familyGlow,#ffdc8c))}
+.craft-scene[data-stage="done"][data-grade="masterpiece"] .craft-product{animation:masterpieceReveal 1.1s ease-in-out infinite alternate}
+.craft-scene[data-stage="done"]:after{position:absolute;z-index:4;left:0;right:0;top:17%;text-align:center;font-size:45px;font-weight:900;white-space:pre;pointer-events:none;text-shadow:0 0 19px var(--familyGlow,#ffca7a);animation:commissionReveal 1.3s ease-out both}
+.craft-scene[data-stage="done"][data-family="blade"]:after{content:"✦       ╱       ✦";color:#c8efff}
+.craft-scene[data-stage="done"][data-family="guard"]:after{content:"◈         ◈";color:#a5ffe0}
+.craft-scene[data-stage="done"][data-family="tool"]:after{content:"✸         ✸";color:#ffbf7e}
+.craft-scene[data-stage="done"][data-family="royal"]:after{content:"✧    ✦    ✧";color:#ffe890}
+.craft-scene[data-stage="done"][data-grade="masterpiece"]{box-shadow:inset 0 -18px 44px #130b08a6,0 0 30px var(--familyGlow,#ffdc8c)}
+@keyframes hammerPipPop{0%{transform:scale(.4)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
+@keyframes forgePerfectImpact{0%,100%{filter:brightness(1)}40%{filter:brightness(1.9) saturate(1.6);transform:scale(1.01)}}
+@keyframes forgeGoodImpact{50%{filter:brightness(1.2)}}
+@keyframes forgeMissImpact{50%{transform:translateX(2px)}}
+@keyframes gradeArrive{0%{opacity:0;transform:translateY(12px) scale(.8)}70%{opacity:1;transform:translateY(-3px) scale(1.04)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes masterpieceReveal{from{transform:rotate(-2deg) scale(1.1)}to{transform:rotate(2deg) scale(1.23)}}
+@keyframes commissionReveal{0%{opacity:0;transform:scale(.5) rotate(-10deg)}45%{opacity:1}100%{opacity:.45;transform:scale(1.25) rotate(8deg)}}
+@media(max-width:520px){
+ .order-chain{gap:4px;margin-top:3px}.order-chain>span:first-child{font-size:8px;letter-spacing:-.04em}.chain-bar{min-width:18px}
+ .craft-grade{font-size:11px;padding:5px 8px}.craft-scene[data-stage="done"]:after{font-size:34px}
+}

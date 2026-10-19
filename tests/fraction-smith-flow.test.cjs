@@ -27,12 +27,12 @@ function node(id=''){
   return obj;
 }
 
-function mount(initialProgress=null){
+function mount(initialProgress=null,options={}){
   const nodes=new Map(),get=id=>{if(!nodes.has(id))nodes.set(id,node(id));return nodes.get(id)};
   const toolOps=['+','-','×','÷'],tools=toolOps.map(op=>{const n=node('tool-'+op);n.dataset.op=op;return n});
   const modes=['practice','rush','master'].map(mode=>{const n=node('mode-'+mode);n.dataset.mode=mode;return n});
   const slots=[get('#slotA'),get('#slotB')];slots.forEach((n,i)=>n.dataset.slot=String(i));
-  const pending=[],keys={};let now=1000,raf=0;
+  const pending=[],keys={},intervals=new Map();let now=1000,raf=0,intervalId=0;
   const document={body:node('body'),querySelector:get,querySelectorAll:selector=>selector==='.tool'?tools:selector==='[data-mode]'?modes:selector==='.slot'?slots:[],createElement:()=>node('created'),elementFromPoint:()=>null};
   const saved=new Map(),localStorage={getItem:key=>saved.get(key)||null,setItem:(key,value)=>saved.set(key,value)};
   if(initialProgress)saved.set(S.KEY,JSON.stringify(initialProgress));
@@ -41,10 +41,13 @@ function mount(initialProgress=null){
     reward:(...args)=>{const result=S.reward(...args);localStorage.setItem(S.KEY,JSON.stringify(result));return result},
     purchase:(...args)=>{const result=S.purchase(...args);if(result.ok)localStorage.setItem(S.KEY,JSON.stringify(result.progress));return result}
   };
-  const context={document,window:{FractionSmithMath:E,FractionSmithPuzzles:P,FractionSmithOrders:O,FractionSmithForge:F,FractionSmithProgress:progressService,FractionSmithAvatar:{ForgeAvatar:class{playForge(){}celebrate(){}}}},localStorage,Audio:class{play(){return Promise.resolve()}},performance:{now:()=>now},setTimeout:fn=>{pending.push(fn);return pending.length},clearTimeout:()=>{},setInterval:()=>1,clearInterval:()=>{},requestAnimationFrame:()=>++raf,cancelAnimationFrame:()=>{},addEventListener:(type,handler)=>{keys[type]=handler},console};
+  const puzzles=options.singleRush?{...P,create:mode=>P.create(mode==='rush'?'practice':mode)}:P;
+  const context={document,window:{FractionSmithMath:E,FractionSmithPuzzles:puzzles,FractionSmithOrders:O,FractionSmithForge:F,FractionSmithProgress:progressService,FractionSmithAvatar:{ForgeAvatar:class{playForge(){}celebrate(){}}}},localStorage,Audio:class{play(){return Promise.resolve()}},performance:{now:()=>now},setTimeout:fn=>{pending.push(fn);return pending.length},clearTimeout:()=>{},setInterval:fn=>{const id=++intervalId;intervals.set(id,fn);return id},clearInterval:id=>intervals.delete(id),requestAnimationFrame:()=>++raf,cancelAnimationFrame:()=>{},addEventListener:(type,handler)=>{keys[type]=handler},console};
   vm.runInNewContext(fs.readFileSync(path.join(dir,'game.js'),'utf8'),context,{filename:'game.js'});
-  const flush=()=>{let count=0;while(pending.length){if(count++>300)throw Error('Too many pending timers');pending.shift()();now+=150}};
-  return {get,tools,modes,flush,keys,saved,body:document.body};
+  const flush=()=>{let count=0;while(pending.length){if(count++>300)throw Error('Too many pending timers');pending.shift()()}};
+  const advance=ms=>{now+=ms};
+  const tick=ms=>{now+=ms;for(const run of intervals.values())run()};
+  return {get,tools,modes,flush,advance,tick,keys,saved,body:document.body};
 }
 
 test('Practice: commission → solve fraction → heat → hammer → quench → earn gold',()=>{
@@ -160,6 +163,56 @@ test('Counter upgrade increases awarded gold and new milestone announces a produ
   assert.match(sim.get('#craftTip').textContent,/정찰병의 창/);
   sim.get('#craftActionBtn').dispatch('click');
   assert.match(sim.get('#itemName').textContent,/정찰병의 창/);
+});
+
+function solveOneStep(sim){
+  const target=E.parse(sim.get('#targetValue').textContent);
+  const chips=sim.get('#materialTray').children.map(chip=>({node:chip,value:E.parse(chip.innerHTML.match(/piece-value">([^<]+)/)[1])}));
+  let answer=null;
+  for(let i=0;i<chips.length&&!answer;i++)for(let j=0;j<chips.length&&!answer;j++)if(i!==j)for(const op of toolOps()){
+    try{if(E.eq(E.apply(op,chips[i].value,chips[j].value),target)){answer={i,j,op};break}}catch(_){}
+  }
+  assert.ok(answer,'commission must be directly solvable in this test');
+  chips[answer.i].node.dispatch('click');chips[answer.j].node.dispatch('click');
+  sim.tools.find(t=>t.dataset.op===answer.op).dispatch('click');sim.flush();
+  assert.equal(sim.get('#craftModal').classList.contains('open'),true);
+}
+
+test('Three consecutive commissions grant a milestone bonus and reset the progress bar',()=>{
+  const sim=mount({gold:0,crafted:0,collection:{},upgrades:{furnace:2,hammer:0,counter:0}});
+  sim.modes[0].dispatch('click');
+  for(let order=1;order<=3;order++){
+    solveOneStep(sim);
+    assert.ok(['blade','tool','guard','royal'].includes(sim.get('#craftScene').dataset.family));
+    for(let i=0;i<2+3+1;i++)sim.get('#craftActionBtn').dispatch('click');
+    assert.equal(sim.get('#craftGrade').textContent,'⚒️ 튼튼한 제작품');
+    if(order===3){
+      assert.match(sim.get('#craftTip').textContent,/3연속 납품! 추가 \+25 G/);
+      assert.equal(JSON.parse(sim.saved.get(S.KEY)).gold,52*3+25);
+      assert.equal(sim.get('#chainFill').style.width,'0%');
+      assert.match(sim.get('#chainLabel').textContent,/연속 3회/);
+    }
+    sim.get('#craftActionBtn').dispatch('click');
+  }
+});
+
+test('Perfect rush crafting awards a masterpiece, feedback stars and three bonus seconds',()=>{
+  const sim=mount({gold:0,crafted:0,collection:{},upgrades:{furnace:2,hammer:0,counter:0}},{singleRush:true});
+  sim.modes[1].dispatch('click');sim.tick(18000);
+  assert.equal(sim.get('#timer').textContent,72);
+  solveOneStep(sim);
+  for(let i=0;i<2;i++)sim.get('#craftActionBtn').dispatch('click');
+  sim.advance(1125);
+  for(let i=0;i<3;i++)sim.get('#craftActionBtn').dispatch('click');
+  assert.equal(sim.get('#hammerHits').children.length,3);
+  assert.ok(sim.get('#hammerHits').children.every(pip=>pip.className.includes('perfect')));
+  assert.match(sim.get('#craftBurst').textContent,/완벽/);
+  sim.get('#craftActionBtn').dispatch('click');
+  assert.equal(sim.get('#timer').textContent,75);
+  assert.match(sim.get('#craftGrade').textContent,/명품 제작품/);
+  assert.equal(sim.get('#craftScene').dataset.grade,'masterpiece');
+  assert.match(sim.get('#craftTip').textContent,/\+3초/);
+  assert.equal(JSON.parse(sim.saved.get(S.KEY)).gold,80);
 });
 
 function toolOps(){return ['+','-','×','÷']}

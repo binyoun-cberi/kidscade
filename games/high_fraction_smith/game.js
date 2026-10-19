@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const E=window.FractionSmithMath,P=window.FractionSmithPuzzles,A=window.FractionSmithAvatar,O=window.FractionSmithOrders,F=window.FractionSmithForge,S=window.FractionSmithProgress;
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const el={order:$('#orderCount'),score:$('#score'),gold:$('#gold'),heat:$('#heat'),timer:$('#timer'),target:$('#targetValue'),meta:$('#orderMeta'),customer:$('#customerName'),customerIcon:$('#customerIcon'),item:$('#itemName'),request:$('#requestText'),material:$('#materialName'),tray:$('#materialTray'),slotA:$('#slotA'),slotB:$('#slotB'),anvil:$('#anvil'),op:$('#opBadge'),equation:$('#equationLine'),result:$('#resultPop'),toast:$('#toast'),ghost:$('#toolGhost'),fx:$('#fxLayer'),avatar:$('#avatarImg'),avatarFallback:$('#avatarFallback'),stageTool:$('#stageTool'),sound:$('#soundBtn'),hint:$('#hintBtn'),undo:$('#undoBtn'),restart:$('#restartBtn'),shopBtn:$('#shopBtn'),shop:$('#shopModal'),shopClose:$('#shopCloseBtn'),shopGold:$('#shopGold'),upgradeGrid:$('#upgradeGrid'),collectionGrid:$('#collectionGrid'),collectionCount:$('#collectionCount'),start:$('#startModal'),finish:$('#finishModal'),finishTitle:$('#finishTitle'),finishText:$('#finishText'),finishScore:$('#finishScore'),craft:$('#craftModal'),craftStep:$('#craftStep'),craftName:$('#craftOrderName'),craftTitle:$('#craftTitle'),craftInstruction:$('#craftInstruction'),craftScene:$('#craftScene'),craftProduct:$('#craftProduct'),craftBurst:$('#craftBurst'),craftMeter:$('#craftMeter'),craftFill:$('#craftMeterFill'),craftMarker:$('#craftTimingMarker'),craftStatus:$('#craftStatus'),craftAction:$('#craftActionBtn'),craftTip:$('#craftTip'),savedProgress:$('#savedProgress')};
+const el={order:$('#orderCount'),score:$('#score'),gold:$('#gold'),heat:$('#heat'),timer:$('#timer'),target:$('#targetValue'),meta:$('#orderMeta'),customer:$('#customerName'),customerIcon:$('#customerIcon'),item:$('#itemName'),request:$('#requestText'),chainLabel:$('#chainLabel'),chainFill:$('#chainFill'),material:$('#materialName'),tray:$('#materialTray'),slotA:$('#slotA'),slotB:$('#slotB'),anvil:$('#anvil'),op:$('#opBadge'),equation:$('#equationLine'),result:$('#resultPop'),toast:$('#toast'),ghost:$('#toolGhost'),fx:$('#fxLayer'),avatar:$('#avatarImg'),avatarFallback:$('#avatarFallback'),stageTool:$('#stageTool'),sound:$('#soundBtn'),hint:$('#hintBtn'),undo:$('#undoBtn'),restart:$('#restartBtn'),shopBtn:$('#shopBtn'),shop:$('#shopModal'),shopClose:$('#shopCloseBtn'),shopGold:$('#shopGold'),upgradeGrid:$('#upgradeGrid'),collectionGrid:$('#collectionGrid'),collectionCount:$('#collectionCount'),start:$('#startModal'),finish:$('#finishModal'),finishTitle:$('#finishTitle'),finishText:$('#finishText'),finishScore:$('#finishScore'),craft:$('#craftModal'),craftStep:$('#craftStep'),craftName:$('#craftOrderName'),craftTitle:$('#craftTitle'),craftInstruction:$('#craftInstruction'),craftScene:$('#craftScene'),craftProduct:$('#craftProduct'),craftGrade:$('#craftGrade'),craftBurst:$('#craftBurst'),craftMeter:$('#craftMeter'),craftFill:$('#craftMeterFill'),craftMarker:$('#craftTimingMarker'),hammerHits:$('#hammerHits'),craftStatus:$('#craftStatus'),craftAction:$('#craftActionBtn'),craftTip:$('#craftTip'),savedProgress:$('#savedProgress')};
 const AUDIO={
  select:'../../assets/audio/ui/kenney_interface/select_002.ogg',
  confirm:'../../assets/audio/ui/kenney_interface/confirmation_001.ogg',
@@ -49,8 +49,11 @@ function newPuzzle(){
 }
 function render(){
  document.body.dataset.heat=String(Math.max(1,state.heat));
+ document.body.dataset.mode=state.mode;
  for(const id of Object.keys(progress.upgrades))document.body.dataset[id]=String(progress.upgrades[id]);
  el.order.textContent=state.orders;el.score.textContent=state.score;el.gold.textContent=progress.gold+' G';el.heat.textContent='🔥'.repeat(Math.max(1,state.heat));renderTimer();
+ el.chainLabel.textContent='🔥 연속 '+state.combo+'회 · '+(3-state.combo%3)+'회 뒤 +25 G';
+ el.chainFill.style.width=(state.combo%3/3*100)+'%';
  el.tray.innerHTML='';
  for(const p of state.pieces.values()){
    if(state.slots.includes(p.id))continue;
@@ -106,6 +109,7 @@ function buyUpgrade(id){
 function renderTimer(){
  el.timer.textContent=state.mode==='rush'?Math.max(0,Math.ceil(state.time)):'∞';
  el.timer.classList.toggle('danger',state.mode==='rush'&&state.time<=10);
+ el.timer.style.setProperty('--rushRemain',state.mode==='rush'?Math.max(0,Math.min(100,state.time/90*100))+'%':'100%');
 }
 function putInSlot(id,index=null){
  if(state.busy||state.phase!=='math'||!state.pieces.has(id))return;
@@ -165,8 +169,21 @@ function forge(op){
 function beginCraft(){
  state.phase='craft';state.craft=F.create({furnaceLevel:progress.upgrades.furnace,hammerLevel:progress.upgrades.hammer});state.busy=false;state.craftStart=performance.now();
  el.craftName.textContent=state.commission.item.name;el.craftProduct.textContent=state.commission.item.icon;
+ el.craftScene.dataset.family=state.commission.item.family;el.craftScene.dataset.grade='';
+ el.craftGrade.textContent='';el.craftGrade.className='craft-grade';
  el.craftBurst.textContent='';el.craftTip.textContent='터치하거나 Space 키를 눌러 작업할 수 있어요.';
  el.craft.classList.add('open');updateCraft();el.craftAction.focus();
+}
+function renderHammerHits(){
+ el.hammerHits.innerHTML='';
+ const grades=state.craft?.hitGrades||[];
+ for(let i=0;i<3;i++){
+   const pip=document.createElement('span'),grade=grades[i]||'empty';
+   pip.className='hammer-hit-dot '+grade;
+   pip.textContent=grade==='perfect'?'★':grade==='good'?'✦':grade==='miss'?'·':'○';
+   el.hammerHits.appendChild(pip);
+ }
+ el.hammerHits.classList.toggle('visible',state.craft?.stage==='hammer'||state.craft?.stage==='quench');
 }
 let markerFrame=0;
 function stopMarker(){cancelAnimationFrame(markerFrame);markerFrame=0}
@@ -182,6 +199,7 @@ function updateCraft(){
  el.craftScene.style.setProperty('--forgeHeat',String(c.pumps/c.requiredPumps));
  el.craftMeter.style.setProperty('--hammerStart',String((.75-c.timingWindow/2)*100)+'%');
  el.craftMeter.style.setProperty('--hammerWidth',String(c.timingWindow*100)+'%');
+ renderHammerHits();
  stopMarker();
  if(c.stage==='heat'){
    el.craftStep.textContent='제작 1/3 · 가열';el.craftTitle.textContent='쇠에 뜨거운 생명을 불어넣어요';
@@ -204,33 +222,50 @@ function craftAction(){
  if(state.phase!=='craft')return;
  const before=state.craft.stage,timing=((performance.now()-state.craftStart)/1500)%1;
  F.act(state.craft,timing);
- if(before==='heat'){play('whoosh',.28);el.craftScene.classList.remove('pumped');void el.craftScene.offsetWidth;el.craftScene.classList.add('pumped')}
+ if(before==='heat'){
+   play('whoosh',.25+state.craft.pumps*.06);
+   el.craftBurst.textContent=state.craft.stage==='hammer'?'🔥 가열 성공!':state.craft.pumps===1?'🔥 불씨가 살아나요!':'🔥 더 뜨겁게!';
+   el.craftScene.classList.remove('pumped');void el.craftScene.offsetWidth;el.craftScene.classList.add('pumped');
+ }
  if(before==='hammer'){
-   play('impact',.45);avatar?.playForge('add',600);
-   el.craftBurst.textContent=Math.abs(timing-.75)<.10?'완벽한 타격! ✨':'쾅!';
-   el.craftScene.classList.remove('hammer-hit');void el.craftScene.offsetWidth;el.craftScene.classList.add('hammer-hit');
+   const grade=state.craft.lastHit.grade;
+   play('impact',grade==='perfect'?.65:grade==='good'?.48:.31);if(grade==='perfect')play('confirm',.2);
+   avatar?.playForge('add',600);
+   el.craftBurst.textContent=grade==='perfect'?'완벽! ★':grade==='good'?'좋아요! ✨':'조금 빗나갔어요!';
+   el.craftScene.classList.remove('hammer-hit','hammer-perfect','hammer-good','hammer-miss');void el.craftScene.offsetWidth;
+   el.craftScene.classList.add('hammer-hit','hammer-'+grade);
+   try{if(typeof navigator!=='undefined')navigator.vibrate?.(grade==='perfect'?35:grade==='good'?18:8)}catch(_){}
  }
  if(before==='quench'){play('confirm',.45);completeOrder();return}
- if(before!==state.craft.stage){state.craftStart=performance.now();el.craftBurst.textContent=''}
+ if(before!==state.craft.stage){state.craftStart=performance.now();if(before==='heat')el.craftBurst.textContent='망치질 준비!'}
  updateCraft();
 }
 function completeOrder(){
  if(state.phase!=='craft'||!state.craft.done)return;
- const perfect=state.strikes===state.puzzle.bestStrikes,quality=state.craft.quality;
+ const perfect=state.strikes===state.puzzle.bestStrikes,quality=state.craft.quality,rank=F.qualityRank(quality);
  state.phase='award';state.orders++;state.combo++;state.heat=Math.min(5,1+Math.floor(state.combo/2));
+ const streakBonus=state.combo%3===0?25:0,streakScore=streakBonus?120:0;
+ const bonusTime=state.mode==='rush'&&perfect&&rank.id==='masterpiece'?Math.min(3,Math.max(0,90-state.time)):0;
+ if(bonusTime)state.time+=bonusTime;
  const speed=state.mode==='rush'?Math.max(0,Math.round(state.time)):0;
- const gain=100+state.heat*15+(perfect?90:0)+Math.round(quality*.2)+(state.mode==='rush'?Math.min(50,speed):0);
- const baseEarned=30+state.puzzle.bestStrikes*10+Math.round(quality/5);
- const earned=Math.round(baseEarned*(1+progress.upgrades.counter*.15)),priorCrafted=progress.crafted;
+ const gain=100+state.heat*15+(perfect?90:0)+Math.round(quality*.2)+(state.mode==='rush'?Math.min(50,speed):0)+streakScore;
+ const baseEarned=30+state.puzzle.bestStrikes*10+Math.round(quality/5)+rank.goldBonus;
+ const earned=Math.round(baseEarned*(1+progress.upgrades.counter*.15))+streakBonus,priorCrafted=progress.crafted;
  state.score+=gain;progress=S.reward(progress,state.commission.item.id,earned);
  const newlyUnlocked=O.ITEMS.filter(item=>item.unlockAt>priorCrafted&&item.unlockAt<=progress.crafted);
- avatar?.celebrate();play(perfect?'woo':'yay',.45);saveBest();render();
- el.craftScene.dataset.stage='done';el.craftStep.textContent='주문 완성!';
- el.craftTitle.textContent='✨ '+state.commission.item.name+' 완성!';
- el.craftInstruction.textContent=state.commission.customer.name+' 님이 기뻐합니다. 정밀도 '+quality+'점 · '+state.strikes+'타 제작'+(newlyUnlocked.length?' · 새 손님이 찾아왔어요!':'');
- el.craftStatus.textContent='+'+earned+' G · +'+gain+'점'+(perfect?' · 최단 타격!':'');
+ avatar?.celebrate();play(rank.id==='masterpiece'?'fanfare':perfect?'woo':'yay',.45);saveBest();render();
+ el.craftScene.dataset.stage='done';el.craftScene.dataset.grade=rank.id;el.craftStep.textContent='주문 완성!';
+ el.craftBurst.textContent='';
+ el.craftGrade.textContent=rank.icon+' '+rank.label+' 제작품';el.craftGrade.className='craft-grade visible '+rank.id;
+ el.craftTitle.textContent=rank.icon+' '+rank.label+' · '+state.commission.item.name+' 완성!';
+ el.craftInstruction.textContent=state.commission.customer.name+' 님: “'+state.commission.item.reaction+'” · 정밀도 '+quality+'점 · '+state.strikes+'타';
+ el.craftStatus.textContent='+'+earned+' G · +'+gain+'점'+(perfect?' · 최단 타격!':'')+(rank.goldBonus?' · '+rank.label+' 보너스!':'');
  el.craftFill.style.width='100%';el.craftMeter.classList.remove('timing');el.craftAction.textContent=state.mode==='master'?'제작 결과 보기':'다음 주문 받기';
- el.craftTip.textContent=newlyUnlocked.length?'🔓 새 제작품 해금: '+newlyUnlocked.map(item=>item.icon+' '+item.name).join(', '):'공방 총 제작품 '+progress.crafted+'개 · 보유 '+progress.gold+' G';
+ const events=[];
+ if(newlyUnlocked.length)events.push('🔓 새 제작품: '+newlyUnlocked.map(item=>item.icon+' '+item.name).join(', '));
+ if(streakBonus)events.push('🔥 '+state.combo+'연속 납품! 추가 +25 G');
+ if(bonusTime)events.push('⏱️ 완벽한 러시 제작! +'+Math.round(bonusTime*10)/10+'초');
+ el.craftTip.textContent=events.length?events.join(' · '):'공방 총 제작품 '+progress.crafted+'개 · 보유 '+progress.gold+' G';
  stopMarker();
  if(state.mode==='rush'){
    const token=sequence;setTimeout(()=>{if(token===sequence&&state.phase==='award'&&state.running)advanceOrder()},1600);

@@ -5,14 +5,14 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
   const ITEMS=[
-    {id:'sword',name:'여행자의 철검',icon:'⚔️',material:'강철',request:'길을 떠나기 전에 튼튼한 검이 필요해요!',unlockAt:0,customer:0},
-    {id:'axe',name:'나무꾼의 도끼',icon:'🪓',material:'무쇠',request:'큰 나무도 거뜬히 벨 수 있게 부탁해요.',unlockAt:0,customer:1},
-    {id:'shield',name:'수호자의 방패',icon:'🛡️',material:'청동',request:'우리 마을을 지킬 단단한 방패를 만들어 주세요.',unlockAt:0,customer:2},
-    {id:'spear',name:'정찰병의 창',icon:'🔱',material:'강철',request:'먼 곳까지 닿는 길고 곧은 창이 필요해요.',unlockAt:2,customer:3},
-    {id:'helmet',name:'기사의 투구',icon:'🪖',material:'강철',request:'머리를 든든하게 지켜 줄 투구를 부탁해요.',unlockAt:4,customer:4},
-    {id:'dagger',name:'상인의 단검',icon:'🗡️',material:'무쇠',request:'여행길에 지닐 가벼운 단검을 만들어 주세요.',unlockAt:6,customer:5},
-    {id:'hammer',name:'목수의 쇠망치',icon:'🔨',material:'강철',request:'오래 쓸 수 있는 튼튼한 망치를 부탁해요.',unlockAt:9,customer:6},
-    {id:'crown',name:'왕실의 왕관',icon:'👑',material:'금속',request:'궁궐에 올릴 아름다운 왕관을 만들어 주세요.',unlockAt:12,customer:7}
+    {id:'sword',name:'여행자의 철검',icon:'⚔️',material:'강철',request:'길을 떠나기 전에 튼튼한 검이 필요해요!',family:'blade',reaction:'빛나는 칼날 덕분에 든든하겠어요!',unlockAt:0,customer:0},
+    {id:'axe',name:'나무꾼의 도끼',icon:'🪓',material:'무쇠',request:'큰 나무도 거뜬히 벨 수 있게 부탁해요.',family:'tool',reaction:'내일 장작패기가 벌써 기대되네요!',unlockAt:0,customer:1},
+    {id:'shield',name:'수호자의 방패',icon:'🛡️',material:'청동',request:'우리 마을을 지킬 단단한 방패를 만들어 주세요.',family:'guard',reaction:'이 방패라면 마을을 지킬 수 있겠어요!',unlockAt:0,customer:2},
+    {id:'spear',name:'정찰병의 창',icon:'🔱',material:'강철',request:'먼 곳까지 닿는 길고 곧은 창이 필요해요.',family:'blade',reaction:'창끝이 반짝여서 멀리서도 보이겠네요!',unlockAt:2,customer:3},
+    {id:'helmet',name:'기사의 투구',icon:'🪖',material:'강철',request:'머리를 든든하게 지켜 줄 투구를 부탁해요.',family:'guard',reaction:'투구가 꼭 맞아요! 고맙습니다!',unlockAt:4,customer:4},
+    {id:'dagger',name:'상인의 단검',icon:'🗡️',material:'무쇠',request:'여행길에 지닐 가벼운 단검을 만들어 주세요.',family:'blade',reaction:'작고 가벼워서 여행할 때 좋겠어요!',unlockAt:6,customer:5},
+    {id:'hammer',name:'목수의 쇠망치',icon:'🔨',material:'강철',request:'오래 쓸 수 있는 튼튼한 망치를 부탁해요.',family:'tool',reaction:'손잡이에 착 붙네요. 좋은 망치예요!',unlockAt:9,customer:6},
+    {id:'crown',name:'왕실의 왕관',icon:'👑',material:'금속',request:'궁궐에 올릴 아름다운 왕관을 만들어 주세요.',family:'royal',reaction:'전하께서 무척 기뻐하시겠군요!',unlockAt:12,customer:7}
   ];
   const CUSTOMERS=[
     {name:'여행자 루나',icon:'🧑‍🦰'},

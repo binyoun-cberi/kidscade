@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>프랙션 스미스</title>
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 <div class="game-shell">
@@ -66,7 +66,7 @@
 
     <section class="order-board" aria-live="polite">
       <span class="customer-portrait" id="customerIcon" aria-hidden="true">🧑‍🦰</span>
-      <div class="order-who"><span class="order-label" id="customerName">새 손님의 주문</span><strong id="itemName">여행자의 철검</strong><span id="requestText">검을 완성해 주세요!</span></div>
+      <div class="order-who"><span class="order-label" id="customerName">새 손님의 주문</span><strong id="itemName">여행자의 철검</strong><span id="requestText">검을 완성해 주세요!</span><div class="order-chain"><span id="chainLabel">🔥 3회 연속 납품하면 보너스!</span><span class="chain-bar"><span id="chainFill"></span></span></div></div>
       <div class="order-need"><span id="materialName">필요한 강철</span><strong id="targetValue">3/4</strong><small id="orderMeta">최단 1타</small></div>
     </section>
 
@@ -127,10 +127,12 @@
         <div class="craft-flames" aria-hidden="true"><i></i><i></i><i></i></div>
         <div class="craft-water" aria-hidden="true"><i></i><i></i><i></i></div>
         <div class="craft-product" id="craftProduct" aria-hidden="true">⚔️</div>
+        <div class="craft-grade" id="craftGrade" role="status" aria-live="polite"></div>
         <div class="craft-anvil" aria-hidden="true">⚒</div>
         <div class="craft-burst" id="craftBurst" aria-live="polite"></div>
       </div>
       <div class="craft-meter" id="craftMeter"><div class="craft-meter-fill" id="craftMeterFill"></div><div class="craft-timing-marker" id="craftTimingMarker"></div><div class="craft-timing-target"></div></div>
+      <div class="hammer-hits" id="hammerHits" aria-label="망치 타격 판정"></div>
       <div class="craft-status" id="craftStatus">🔥 가열 0/4</div>
       <button id="craftActionBtn" class="craft-primary">🌬️ 풀무 누르기</button>
       <small class="craft-tip" id="craftTip">터치하거나 Space 키를 눌러 작업할 수 있어요.</small>
@@ -179,10 +181,10 @@
 </div>
 <script src="fraction-engine.js?v=1"></script>
 <script src="puzzle-generator.js?v=2"></script>
-<script src="order-generator.js?v=2"></script>
-<script src="forge-minigame.js?v=2"></script>
+<script src="order-generator.js?v=3"></script>
+<script src="forge-minigame.js?v=3"></script>
 <script src="progress-store.js?v=2"></script>
 <script src="fraction-smith-avatar.js?v=1"></script>
-<script src="game.js?v=4"></script>
+<script src="game.js?v=5"></script>
 </body>
 </html>

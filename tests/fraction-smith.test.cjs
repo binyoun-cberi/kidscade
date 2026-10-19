@@ -69,6 +69,7 @@ test('New commissions and customers unlock at their intended milestones',()=>{
   assert.equal(O.create(0,'master',3).item.id,'shield');
   assert.equal(O.create(1,'master',3).item.id,'spear');
   assert.ok(O.ITEMS.every(item=>O.CUSTOMERS[item.customer]?.name));
+  assert.ok(O.ITEMS.every(item=>['blade','tool','guard','royal'].includes(item.family)&&item.reaction));
 });
 
 test('Crafting needs four bellows pumps, three hammer strikes and a quench',()=>{
@@ -104,6 +105,23 @@ test('Furnace upgrades reduce the pumps, while hammer upgrades widen the accurac
   assert.ok(improved.quality>basic.quality);
   assert.equal(F.create({furnaceLevel:99,hammerLevel:99}).requiredPumps,2);
   assert.equal(F.create({furnaceLevel:-1,hammerLevel:-1}).requiredPumps,4);
+});
+
+test('Hammer judges each hit and finished work earns clear quality ranks',()=>{
+  assert.equal(F.hitFeedback(.75,.30).grade,'perfect');
+  assert.equal(F.hitFeedback(.85,.30).grade,'good');
+  assert.equal(F.hitFeedback(.1,.30).grade,'miss');
+  assert.equal(F.hitFeedback(.92,.30).grade,'miss');
+  assert.equal(F.hitFeedback(.92,.46).grade,'good');
+  assert.equal(F.qualityRank(100).id,'masterpiece');
+  assert.equal(F.qualityRank(85).goldBonus,10);
+  assert.equal(F.qualityRank(60).goldBonus,0);
+  const work=F.create();for(let i=0;i<4;i++)F.act(work);
+  F.act(work,.75);F.act(work,.85);F.act(work,.1);
+  assert.deepEqual(work.hitGrades,['perfect','good','miss']);
+  F.act(work);
+  assert.equal(work.done,true);
+  assert.ok(work.quality<100&&work.quality>60);
 });
 
 test('Progress persistence is resilient when storage is unavailable',()=>{
@@ -158,6 +176,9 @@ test('Fraction Smith uses Kidscade avatar, audio and particle assets',()=>{
   assert.match(js,/kenney-particle-pack\/spark-0/);
   assert.match(html,/id="craftModal"/);
   assert.match(html,/id="shopModal"/);
+  assert.match(html,/id="craftGrade"/);
+  assert.match(html,/id="hammerHits"/);
+  assert.match(html,/id="chainFill"/);
   assert.match(html,/id="restartBtn"/);
   assert.match(js,/function restartOrder/);
   assert.match(js,/function beginCraft/);
@@ -183,5 +204,6 @@ test('Fraction Smith forge scene has immersive workshop layers and strike lighti
   assert.match(html,/class="wall-rack"/);
   assert.match(css,/\.forge-wall/);
   assert.match(css,/body\[data-heat="5"\] \.furnace-mouth/);
+  for(const family of ['blade','guard','tool','royal'])assert.match(css,new RegExp('data-family="'+family+'"'));
   assert.match(js,/classList\.add\('forge-hit'\)/);
 });
