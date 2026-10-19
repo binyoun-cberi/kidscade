@@ -26,9 +26,22 @@
   function inArchive(p){return p.x>=3.5 && p.x<=15.3 && p.z<=-39 && p.z>=-55.6;}
   function canMove(s,x,z){
     if(z>-37.4)return true; // The v2 rule owns the initial corridor.
-    if(z<-65.7)return false;
+    if(z<-65.7&&Math.abs(x)<=3.52)return false;
     const c=ensure(s);
     if(Math.abs(x)>15.25)return false;
+    // The two new annexes share the office/archive's back wall. One narrow
+    // doorway becomes traversable after its corresponding record is collected.
+    if(z< -55.5 && Math.abs(x)>3.52){
+      const side=x<0?'office':'archive',doorX=x<0?-9.35:9.35;
+      if(z< -70.55||Math.abs(x)<3.52)return false;
+      if(z> -56.04 && (!c.records[side]||Math.abs(x-doorX)>1.61))return false;
+      const wing=x<0?'west':'east';
+      const layout=s.expansion?.layouts?.[wing],relativeX=x-doorX;
+      if(Math.abs(z+62.1)<.36 &&
+        ((layout==='left'&&relativeX>-1.99)||(layout==='right'&&relativeX<1.99)))return false;
+      if(Math.abs(z+67.18)<.36 && (Math.abs(x-doorX)>1.28||!s.expansion?.solved?.[wing]))return false;
+      return true;
+    }
     if(Math.abs(x)>3.03) {
       if(z < -55.5 || z > -39.0)return false;
       if(Math.abs(x)<4.3 && (z<-49.0 || z>-44.2))return false;
@@ -69,6 +82,7 @@
     const c=ensure(s);
     if(s.stage!=='explore'||!both(s)||c.finalFixed||dist(p,FINAL_GATE)>2.6)return false;
     if(s.literacy && s.literacy.coreDone<5)return false;
+    if(s.expansion&&!s.expansion.fragments[s.expansion.required])return false;
     if(word!=='기억'){s.mistakes++;return false;}
     c.finalFixed=true;c.checkpoint=true;s.stage='final';return true;
   }
@@ -89,6 +103,8 @@
     if(both(s)&&!c.finalFixed&&dist(p,FINAL_GATE)<2.6)
       return s.literacy && s.literacy.coreDone<5
         ?{type:'coreNeeded',label:'핵심 오타 기록 복구 '+s.literacy.coreDone+'/5'}
+        :s.expansion&&!s.expansion.fragments[s.expansion.required]
+          ?{type:'sentenceNeeded',label:'새 열람실의 문장 봉인을 먼저 복구하세요'}
         :{type:'final',label:'중앙 기록실 봉인 풀기'};
     return null;
   }
@@ -98,6 +114,8 @@
     if(s.stage!=='explore')return '';
     if(!both(s))return '기록을 찾으세요 ('+(+c.records.office+ +c.records.archive)+'/2) · 서고는 시선으로 해독합니다';
     if(s.literacy&&s.literacy.coreDone<5)return '핵심 오타를 바로잡으세요 ('+s.literacy.coreDone+'/5)';
+    if(s.expansion&&!s.expansion.fragments[s.expansion.required])return (
+      s.expansion.required==='west'?'사무실':'서고')+' 뒤편 열람실에서 문장을 복구하세요';
     return '두 기록을 모았습니다. 복도 끝 중앙 기록실로 가세요';
   }
   function stepWatcher(s,dt,p,yaw,pitch){

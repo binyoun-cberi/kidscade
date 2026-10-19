@@ -8,7 +8,9 @@ const L = window.OtaLiteracy;
 const S = window.OtaSurfaces;
 const CG = window.OtaCalligrams;
 const RW = window.OtaRewrite;
-if (!R || !C3 || !G || !X || !L || !S || !CG || !RW) throw new Error('Ota chapter or guidance rules are missing');
+const EX = window.OtaExpansion;
+const AN = window.OtaAnomalies;
+if (!R || !C3 || !G || !X || !L || !S || !CG || !RW || !EX || !AN) throw new Error('Ota chapter or guidance rules are missing');
 const el = id => document.getElementById(id);
 const canvas = el('scene');
 const hud = { objective:el('objective'), stage:el('stage'), prompt:el('prompt'),
@@ -17,11 +19,22 @@ const hud = { objective:el('objective'), stage:el('stage'), prompt:el('prompt'),
   gaze:el('gazeWarning'), gazeFill:el('gazeFill'), gazeText:el('gazeText'),
   clue:el('clueStatus'), records:el('recordStatus'),help:el('help'),hintBox:el('hintBox'),
   corrector:el('correctorWarning'),correctorText:el('correctorText'),
-  literacy:el('literacyStatus'),pollution:el('pollutionFill') };
-const overlays = { intro:el('intro'), fix:el('fixPanel'), correction:el('correctionPanel'), rewrite:el('rewritePanel'), ending:el('ending') };
+  literacy:el('literacyStatus'),pollution:el('pollutionFill'),route:el('routeStatus'),
+  clock:el('runClock'),enemy:el('enemyWarning'),void:el('voidPulse') };
+const overlays = { intro:el('intro'), fix:el('fixPanel'), correction:el('correctionPanel'),
+  rewrite:el('rewritePanel'),sentence:el('sentencePanel'),ending:el('ending') };
+const visualAudit=new URLSearchParams(location.search).has('visual-audit');
+const speedCourse=EX.weeklyCourse();
+const run={mode:'story',seed:0,week:speedCourse.week,startedAt:0};
 const state = R.initialState();
-const literacy=L.create();state.literacy=literacy;
+const literacy=L.create(visualAudit?0:undefined);state.literacy=literacy;
 const rewrite=RW.create();state.rewrite=rewrite;
+const expansion=EX.create(literacy.seed);state.expansion=visualAudit?null:expansion;
+const anomalies=AN.create(literacy.seed);
+let activeSentence=null;
+const annexVisuals={};
+const anomalyVisuals={};
+let lastAnomalyWarning=null,missingWordNotice=false;
 const literacyMeshes=new Map();let activeCorrection=null;
 const repairEffects=[];
 const wayfindingSigns=[];
@@ -547,6 +560,7 @@ function scenery() {
   hauntedLabel('문이었던 것','#bba8b0','벽이었던 것',-2.70,1.82,-29.2,0,Math.PI/2,1.5,.55);
   hauntedLabel('벽이 아니다','#b5a5a9','벽이다',2.70,1.82,-29.2,0,-Math.PI/2,1.65,.55);
   buildChapterThreeRooms();
+  buildAnnexes();
   enemyGroup = new THREE.Group();scene.add(enemyGroup);
   // No ordinary monster model: the five-metre silhouette is entirely text.
   const body=[
@@ -574,7 +588,7 @@ function scenery() {
     m.userData={word,color,x,y};enemyGroup.add(m);correctorGlyphs.push(m);
   });
   enemyGroup.visible=false;
-  buildWordArchitecture();buildCalligrams();buildRewriteWorld();
+  buildWordArchitecture();buildCalligrams();buildRewriteWorld();buildAnomalyVisuals();
 }
 
 function buildChapterThreeRooms(){
@@ -583,7 +597,10 @@ function buildChapterThreeRooms(){
     box(12.3,.12,16.7,cx,-.12,-47.2,floorMat);
     box(12.3,.12,16.7,cx,3.27,-47.2,wallMat);
     box(.2,3.24,16.7,side*15.52,1.6,-47.2,wallMat);
-    for(const z of [-55.6,-38.85])box(12.3,3.2,.2,cx,1.6,z,wallMat);
+    box(12.3,3.2,.2,cx,1.6,-38.85,wallMat);
+    // An actual doorway now connects each old room to its new rear annex.
+    for(const dx of [-3.885,3.885])box(4.53,3.2,.2,cx+dx,1.6,-55.6,wallMat);
+    box(3.24,.55,.2,cx,2.94,-55.6,wallMat);
     wayfindingLabel(title,'#d6d0ba',cx,2.52,-55.47,0,0,3.5,.6);
     label(side<0?'사물은 거짓 이름을 가진다':'너무 오래 읽지 마라',
       '#b8c2cc',cx,1.68,-55.44,0,0,3.7,.50);
@@ -659,6 +676,84 @@ function buildChapterThreeRooms(){
   shelter.lookAt(0,1.6,-48);
   chapterVisual.anomaly=label('의자','#a3b1be',-7.2,1.38,-41,0,0,1.43,.66);
 }
+function buildAnnexes(){
+  for(const side of ['west','east']){
+    const spot=EX.WINGS[side],x=spot.x;
+    box(12.3,.13,15,x,-.13,-63.1,floorMat);
+    box(12.3,.12,15,x,3.27,-63.1,wallMat);
+    box(.2,3.2,15,x+(side==='west'?-6.16:6.16),1.6,-63.1,wallMat);
+    box(.2,3.2,15,x+(side==='west'?6.16:-6.16),1.6,-63.1,wallMat);
+    box(12.3,3.2,.2,x,1.6,-70.6,wallMat);
+    // The final fragment sits behind a second, sentence-powered door.
+    for(const dx of [-3.73,3.73])box(4.83,3.2,.2,x+dx,1.6,-67.18,wallMat);
+    box(2.63,.55,.2,x,2.94,-67.18,wallMat);
+    const entranceSeal=box(3.10,2.62,.16,x,1.31,-55.6,warnMat);
+    const entranceLabel=label('열람 금지','#a95d70',x,1.65,-55.44,0,0,2.0,.67);
+    const title=wayfindingLabel('미완성 열람실','#f0c9a3',x,2.62,-59.2,0,0,4.1,.66);
+    // Three actual floor plans: direct passage, left detour and right detour.
+    // Meshes toggle with the run seed and match the character collision rules.
+    const barriers={
+      left:box(7.9,3.1,.26,x+1.95,1.55,-62.1,wallMat),
+      right:box(7.9,3.1,.26,x-1.95,1.55,-62.1,wallMat)
+    };
+    const mazeWordLeft=label('막힌 문장','#c28a9b',x+1.95,1.78,-61.91,0,0,2.8,.77);
+    const mazeWordRight=label('막힌 문장','#c28a9b',x-1.95,1.78,-61.91,0,0,2.8,.77);
+    const routeMark=label('길을 찾아가세요','#e5bb91',x,2.15,-60.0,0,0,2.6,.55);
+    const heading=label('□ □ □ □ □','#e9b0a2',x,1.75,-64.92,0,0,3.6,.82);
+    const hint=label('문장을 만들어 다시 읽으세요','#bdb0b8',x,2.46,-64.85,0,0,3.9,.59);
+    const innerSeal=box(2.54,2.70,.16,x,1.36,-67.18,warnMat);
+    const innerLabel=label('봉인된 문장','#e07b91',x,1.75,-67.02,0,0,2.1,.65);
+    const fragment=label('기록 조각','#a9f2df',x,1.57,-69.0,0,0,1.88,.72);
+    const finished=label('문장이 현실이 되었다','#eacb8d',x,2.42,-66.4,0,0,3.25,.5);
+    const light=new THREE.PointLight(0xffd3a0,0,8,1.2);light.position.set(x,2.6,-65.0);scene.add(light);
+    const decor=[];
+    for(let i=0;i<7;i++){
+      const word=['글자','조각','순서','빈칸','기록','의미','문장'][i];
+      decor.push(label(word,i%2?'#998595':'#b4a5b1',x-4.6+i*1.5,.68+(i%3)*.55,-70.4,0,0,1.1,.48));
+    }
+    annexVisuals[side]={entranceSeal,entranceLabel,title,barriers,mazeWordLeft,mazeWordRight,
+      routeMark,heading,hint,innerSeal,innerLabel,fragment,finished,light,decor};
+  }
+  syncAnnexVisuals();
+}
+function syncAnnexVisuals(){
+  for(const side of ['west','east']){
+    const visual=annexVisuals[side],puzzle=EX.sentence(expansion,side);
+    if(!visual||!puzzle)continue;
+    const entry=EX.hasRecord(state,side),solved=expansion.solved[side];
+    const layout=expansion.layouts[side];
+    visual.entranceSeal.visible=!entry;visual.entranceLabel.visible=!entry;
+    visual.barriers.left.visible=layout==='left';visual.barriers.right.visible=layout==='right';
+    visual.mazeWordLeft.visible=layout==='left';visual.mazeWordRight.visible=layout==='right';
+    visual.routeMark.material=material(layout==='left'?'← 우회로':layout==='right'?'우회로 →':'앞으로 가세요','#e5bb91');
+    visual.innerSeal.visible=!solved;visual.innerLabel.visible=!solved;
+    visual.title.material=material(puzzle.title,side===expansion.required?'#f2cca0':'#b9cce0').clone();
+    visual.heading.material=material(solved?puzzle.parts.join(' '):'□ □ □ □ □',solved?'#a7f3d5':'#e9b0a2');
+    visual.fragment.visible=solved&&!expansion.fragments[side];
+    visual.finished.visible=solved;
+    visual.light.intensity=solved?2.5:0;
+  }
+  hud.route.hidden=state.stage!=='explore'&&state.stage!=='final';
+  const needed=expansion.required==='west'?'사무실':'서고';
+  hud.route.textContent=EX.complete(expansion)?'추가 기록 복구 완료 · 중앙 기록실로'
+    :'추가 기록: '+needed+' 뒤편 열람실 · '+(expansion.fragments.west+expansion.fragments.east)+'/2';
+}
+function buildAnomalyVisuals(){
+  const specs={
+    eraser:{words:['삭제','없음','■■■','지운다','공백','□'],color:'#9a9bb1'},
+    misreader:{words:['오독','아니다','틀림','거짓','다시 읽어','?'],color:'#dc8dba'}
+  };
+  for(const [kind,spec] of Object.entries(specs)){
+    const root=new THREE.Group(),glyphs=[];scene.add(root);
+    spec.words.forEach((word,i)=>{
+      const mesh=new THREE.Mesh(unitPlane,material(word,spec.color));
+      mesh.position.set((i%2?1:-1)*(.22+(i%3)*.19),.55+i*.46,.04+(i%3)*.02);
+      mesh.scale.set(1.0+(i%3)*.3,.42+(i%2)*.13,1);mesh.renderOrder=3;
+      root.add(mesh);glyphs.push(mesh);
+    });
+    root.visible=false;anomalyVisuals[kind]={root,glyphs};
+  }
+}
 function syncChapterVisuals(){
   const c=C3.ensure(state);
   if(c.officeFixed){
@@ -684,13 +779,24 @@ function syncChapterVisuals(){
     corridorMesh.visible=false;corridorWord.visible=false;
     shiftingWords.forEach(v=>{v.mesh.visible=false;});
   }
+  syncAnnexVisuals();
 }
 function saveChapterCheckpoint(){
+  if(run.mode==='speedrun')return;
   const data=C3.makeCheckpoint(state);
   if(!data)return;
   data.literacy=L.checkpoint(literacy);
   data.rewrite=RW.checkpoint(rewrite);
+  data.expansion=EX.checkpoint(expansion);
+  data.run={mode:'story',seed:run.seed};
   try{sessionStorage.setItem(CHECKPOINT_KEY,JSON.stringify(data));}catch(_){}
+}
+function clearLiteracyVisuals(){
+  for(const visual of literacyMeshes.values()){
+    scene.remove(visual.word);scene.remove(visual.hint);
+    visual.base.dispose();visual.hot.dispose();visual.hintMaterial.dispose();
+  }
+  literacyMeshes.clear();
 }
 function syncLiteracyVisuals(){
   const available=new Set(literacy.items.map(item=>item.uid));
@@ -769,10 +875,10 @@ function openCorrection(item){
   el('correctionTitle').textContent=q.wrong;
   el('correctionContext').textContent=q.context+' — 올바르게 고치세요.';
   el('correctionFeedback').textContent='틀려도 바로 위험해지지 않아요. 다시 생각해 보세요.';
-  const offset=(Number(item.uid.split('-').pop())||0)%4;
+  const options=L.shuffledChoices(q,literacy.seed,item.uid);
   el('correctionChoices').querySelectorAll('button').forEach((button,i)=>{
-    button.textContent=q.choices[(i+offset)%4];
-    button.dataset.answer=q.choices[(i+offset)%4];
+    button.textContent=options[i];
+    button.dataset.answer=options[i];
     button.disabled=false;
   });
   overlays.correction.classList.remove('closed');
@@ -782,22 +888,73 @@ function closeCorrection(){
   overlays.correction.classList.add('closed');
   activeCorrection=null;
 }
+function renderSentence(){
+  if(!activeSentence)return;
+  const side=activeSentence,puzzle=EX.sentence(expansion,side);
+  el('sentenceTitle').textContent=puzzle.title;
+  el('sentenceClue').textContent=puzzle.clue;
+  const used=new Set(expansion.assembled[side]);
+  const assembled=el('sentenceAssembled');assembled.replaceChildren();
+  if(!used.size)assembled.textContent='이곳에 문장이 만들어집니다.';
+  for(const index of expansion.assembled[side]){
+    const word=document.createElement('span');word.className='word-tile';
+    word.textContent=puzzle.parts[index];assembled.appendChild(word);
+  }
+  const tiles=el('sentenceTiles');tiles.replaceChildren();
+  for(const tile of EX.tiles(expansion,side)){
+    const button=document.createElement('button');button.type='button';button.className='word-tile';
+    button.textContent=tile.value;button.disabled=used.has(tile.id);
+    button.addEventListener('click',()=>{
+      EX.append(expansion,side,tile.id);renderSentence();tone(320+tile.id*70,.08,'sine',.024);
+    });
+    tiles.appendChild(button);
+  }
+  el('sentenceSubmit').disabled=used.size!==puzzle.parts.length;
+}
+function openSentence(side){
+  activeSentence=side;EX.clear(expansion,side);
+  el('sentenceFeedback').textContent='낱말을 누르는 순서가 문장의 순서가 됩니다.';
+  renderSentence();overlays.sentence.classList.remove('closed');
+  if(document.pointerLockElement===canvas)document.exitPointerLock?.();
+}
+function closeSentence(){overlays.sentence.classList.add('closed');activeSentence=null;}
+function submitSentence(){
+  if(!activeSentence)return;
+  const side=activeSentence,result=EX.submit(expansion,side);
+  if(!result.ok){
+    el('sentenceFeedback').textContent=result.reason==='incomplete'?'문장의 낱말을 모두 놓아 주세요.':result.hint||'다시 조립하세요.';
+    if(result.reason==='order'){AN.wrongAnswer(anomalies);tone(130,.24,'sawtooth',.027);}
+    return;
+  }
+  closeSentence();syncAnnexVisuals();saveChapterCheckpoint();
+  literacy.contamination=Math.max(0,literacy.contamination-12);
+  tone(432,.22,'triangle',.065);tone(655,.39,'sine',.058);
+  announce('완성한 문장이 현실에 남았습니다. 안쪽의 문이 열립니다.',false,4.3);
+  hud.objective.textContent=C3.objective(state);
+}
 function loadChapterCheckpoint(){
   try{const raw=sessionStorage.getItem(CHECKPOINT_KEY);return raw?JSON.parse(raw):null;}catch(_){return null;}
 }
 function respawnAtCheckpoint(){
   const data=loadChapterCheckpoint();
   if(!C3.restore(state,data))return false;
+  clearLiteracyVisuals();
   L.restore(literacy,data.literacy);
   RW.restore(rewrite,data.rewrite);
+  if(data.expansion)EX.restore(expansion,data.expansion);
+  else Object.assign(expansion,EX.create(literacy.seed));
+  if(!visualAudit)state.expansion=expansion;
+  run.seed=literacy.seed;run.mode='story';run.startedAt=Date.now();
+  Object.assign(anomalies,AN.create(literacy.seed));
   Object.assign(player,{x:C3.START.x,z:C3.START.z,yaw:0,pitch:0,moving:false});
-  failed=false;X.reset(corrector);soundPulse=0;closeCorrection();
+  failed=false;X.reset(corrector);soundPulse=0;closeCorrection();closeSentence();
   for(const fx of repairEffects){fx.shards.forEach(m=>scene.remove(m));scene.remove(fx.result);}
   repairEffects.length=0;apparitionAnchor=null;apparitionNumber=-1;
   overlays.ending.classList.add('closed');overlays.fix.classList.add('closed');
   document.body.classList.remove('hidden-in-locker');
   hud.objective.textContent=C3.objective(state);
   hud.stage.textContent='기록이 저장된 마지막 지점';
+  hud.clock.hidden=true;hud.help.hidden=false;
   hud.echo.classList.remove('show');hud.danger.style.opacity='0';
   chapterVisual.watcher.visible=true;chapterVisual.watcherText.visible=false;
   lastGlimpses=0;lastGazeAwake=false;hud.gaze.classList.remove('show');
@@ -821,6 +978,7 @@ function syncHintScope(){
   if(hintVisibleUntil>0&&elapsed>hintVisibleUntil)hideHint();
 }
 function showHint(){
+  if(run.mode==='speedrun')return;
   if(!started||failed||!overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed'))return;
   syncHintScope();
   hintLevel=Math.min(3,hintLevel+1);
@@ -852,6 +1010,45 @@ function audioStart() {
   } catch (_) {}
 }
 function shock() {tone(86,.46,'sawtooth',.095);tone(43,.72,'sine',.080);}
+function updateAnomalyVisuals(report){
+  const kind=report.kind,warning=report.phase==='warning';
+  for(const [type,view] of Object.entries(anomalyVisuals)){
+    const active=type===kind&&report.phase!=='dormant';
+    view.root.visible=active;
+    if(!active)continue;
+    const target=anomalies[type];
+    view.root.position.set(target.x,Math.sin(elapsed*2.2)*.08,target.z);
+    view.root.lookAt(camera.position.x,1.8,camera.position.z);
+    view.glyphs.forEach((mesh,i)=>{
+      mesh.position.x=(i%2?1:-1)*(.22+(i%3)*.19)+Math.sin(elapsed*(2.5+i*.83))* .075;
+      mesh.rotation.z=Math.sin(elapsed*1.2+i*1.7)*.06;
+      mesh.visible=!warning||i%2===0;
+    });
+  }
+  hud.enemy.classList.toggle('show',Boolean(kind)&&(warning||report.distance<8));
+  hud.enemy.textContent=!kind?'':kind==='eraser'
+    ?warning?'삭제자가 글자를 지우기 시작합니다':report.erasing?'글자가 사라지고 있습니다 · 조명을 켜거나 멀어지세요':'삭제자가 주변을 떠돕니다'
+    :warning?'오독자가 잘못 읽힌 이름을 찾아옵니다':report.looking?'오독자를 오래 바라보지 마세요':'오독자의 시선을 피하세요';
+  hud.void.style.opacity=kind==='eraser'&&report.erasing?String(.16+Math.max(0,1-report.distance/5)*.42)
+    :kind==='misreader'&&report.misreading?'.18':'0';
+  if(warning&&lastAnomalyWarning!==kind){
+    lastAnomalyWarning=kind;shock();
+    announce(kind==='eraser'?'삭제자가 깨어났습니다. 글자가 사라집니다!':'오독자가 나타났습니다. 시선을 오래 두지 마세요!',true,4);
+  }
+  if(!kind)lastAnomalyWarning=null;
+}
+function eraserConceals(item){
+  return !visualAudit&&anomalies.active==='eraser'&&anomalies.phase==='stalking'
+    &&!rewrite.lightOn&&R.distance(item,anomalies.eraser)<3.0;
+}
+function nearestVisibleError(p,range=2.35){
+  let found=null,best=range;
+  for(const item of literacy.items){
+    const d=R.distance(item,p);
+    if(d<best&&!eraserConceals(item)){best=d;found=item;}
+  }
+  return found;
+}
 function updateStage(stage,old) {
   if (stage === old) return;
   hud.objective.textContent=state.stage==='explore'||state.stage==='final'?C3.objective(state):R.objective(state);
@@ -907,7 +1104,7 @@ function updateStage(stage,old) {
 }
 function syncStage(before) {updateStage(state.stage,before);}
 function interact() {
-  if(!started || failed || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed')||!overlays.rewrite.classList.contains('closed')) return;
+  if(!started || failed || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed')||!overlays.rewrite.classList.contains('closed')||!overlays.sentence.classList.contains('closed')) return;
   const nearShelter=state.stage==='explore'&&R.distance(player,X.SHELTER)<1.7;
   if(corrector.hidden){
     flashLockerAt(player);X.leave(corrector);document.body.classList.remove('hidden-in-locker');
@@ -925,8 +1122,10 @@ function interact() {
   }
   const target=state.stage==='explore'?RW.target(rewrite,player):null;
   if(target){openRewrite(target.id);return;}
-  const nearbyError=state.stage==='explore'?L.nearest(literacy,player):null;
+  const nearbyError=state.stage==='explore'?nearestVisibleError(player):null;
+  const sideAction=state.stage==='explore'?EX.interaction(expansion,player):null;
   const action=R.getInteraction(state,player)||C3.interaction(state,player)
+    ||sideAction
     ||(nearbyError?{type:'literacy',label:'틀린 기록 교정',uid:nearbyError.uid}:null);
   if(!action) return;
   if(state.stage==='explore')soundPulse=1.35;
@@ -950,8 +1149,20 @@ function interact() {
   } else if(action.type==='literacy'){
     const item=literacy.items.find(i=>i.uid===action.uid);
     if(item)openCorrection(item);
+  } else if(action.type==='sentence'){
+    openSentence(action.side);
+  } else if(action.type==='fragment'){
+    if(EX.collect(expansion,action.side)){
+      syncAnnexVisuals();saveChapterCheckpoint();
+      tone(493,.18,'triangle',.044);tone(738,.28,'sine',.045);
+      announce(EX.complete(expansion)?'필요한 기록 조각을 되찾았습니다. 중앙 봉인으로 가세요.':
+        '숨겨진 기록 조각을 되찾았습니다.',false,4);
+      hud.objective.textContent=C3.objective(state);
+    }
   } else if(action.type==='coreNeeded'){
     announce('핵심 오타 기록을 '+(5-literacy.coreDone)+'개 더 고쳐야 합니다.',false,3.6);
+  } else if(action.type==='sentenceNeeded'){
+    announce((expansion.required==='west'?'사무실':'서고')+' 뒤편으로 가서 흩어진 문장을 복구하세요.',false,3.8);
   } else if(action.type==='archiveCipher'){
     announce('기록이 봉인되어 있습니다. 「사람」을 잠깐 읽고, 반드시 시선을 돌리세요.',false,4.2);
     tone(190,.20,'triangle',.035);
@@ -963,7 +1174,8 @@ function interact() {
       tone(530,.26,'triangle',.055);
       hud.objective.textContent=C3.objective(state);
       hud.records.textContent='기록 '+(+C3.ensure(state).records.office+ +C3.ensure(state).records.archive)+'/2';
-      hud.stage.textContent=C3.both(state)?'핵심 교정 '+literacy.coreDone+'/5 완료 후 중앙 기록실로':'다른 방에서도 기록을 찾으세요';
+      hud.stage.textContent=C3.both(state)?'핵심 교정 '+literacy.coreDone+'/5 · '+(expansion.required==='west'?'서쪽':'동쪽')+' 새 구역 복구':'다른 방에서도 기록을 찾으세요';
+      syncAnnexVisuals();
     }
   } else if(['repair','corridor','office','final'].includes(action.type)) {
     openPuzzle(action.type);
@@ -982,8 +1194,10 @@ function openPuzzle(type) {
     :'열고 닫아서 지나갈 수 있는 것은 무엇인가요?';
   const words=type==='office'?['의자','책상','벽']:type==='final'?['기억','거짓','공백']
     :corridor?['벽','통로','창문']:['벽','문','창문'];
+  // Route riddles no longer reward memorising a fixed answer-button index.
+  const options=EX.shuffle(words,run.seed^EX.hash('legacy-'+type));
   el('choices').querySelectorAll('button').forEach((button,i)=>{
-    button.dataset.word=words[i];button.textContent=words[i];
+    button.dataset.word=options[i];button.textContent=options[i];
   });
   el('fixFeedback').textContent='주변의 단어를 읽고, 잘못된 이름을 바로잡으세요.';
   overlays.fix.dataset.puzzle=type;
@@ -993,25 +1207,42 @@ function finish(won) {
   failed=true;
   if(document.pointerLockElement===canvas) document.exitPointerLock?.();
   overlays.ending.classList.remove('closed');
-  el('endingSub').textContent=won?'제0기록보관소 / 생존':'기록 파손 / 이름 없음';
+  const seconds=run.startedAt?(Date.now()-run.startedAt)/1000:state.time;
+  el('endingSub').textContent=won?(run.mode==='speedrun'?'주간 스피드런 / 완료':'제0기록보관소 / 생존'):'기록 파손 / 이름 없음';
   el('endingTitle').textContent=won?'당신의 이름이 남았습니다':'당신의 이름이 지워졌습니다';
   const failure=won?null:G.failure(state);
+  let speedText='';
+  if(won&&run.mode==='speedrun'&&!visualAudit){
+    const key='kidscade-ota-speedrun-'+run.week;
+    try{
+      const old=Number(localStorage.getItem(key))||Infinity;
+      if(seconds<old)localStorage.setItem(key,String(seconds));
+      speedText=' · '+(seconds<old?'이번 주 개인 최고 기록!':'이번 주 개인 최고 '+formatTime(old));
+    }catch(_){speedText='';}
+  }
   el('endingText').textContent=won
-    ? '기록 A·B와 핵심 오타 '+literacy.coreDone+'/5개를 복구했습니다. 학습 교정 '+literacy.corrected+'회 · 경과 '+Math.round(state.time)+'초'
-    : failure.title+' '+failure.detail;
-  el('respawn').hidden=!(!won&&Boolean(loadChapterCheckpoint()));
+    ?'기록 A·B · 핵심 오타 '+literacy.coreDone+'/5 · 문장 기록 '+(expansion.fragments.west+expansion.fragments.east)+'/2 · 교정 '+literacy.corrected+'회 · '+formatTime(seconds)+(expansion.bonus?' · 두 열람실 완전 복구!':'')+speedText
+    :failure.title+' '+failure.detail+(run.mode==='speedrun'?' · '+formatTime(seconds):'');
+  el('respawn').hidden=run.mode==='speedrun'||!(!won&&Boolean(loadChapterCheckpoint()));
   try {window.KidscadeGame?.result?.({scope:'stage',status:won?'completed':'failed',
-    outcome:won?'clear':'fail',id:'ota-prologue',score:won?Math.max(100,1000-Math.floor(state.time)*3-state.mistakes*80):0,
-    seconds:Math.round(state.time),mistakes:state.mistakes+literacy.mistakes,corrected:literacy.corrected});}catch(_){}
+    outcome:won?'clear':'fail',id:run.mode==='speedrun'?'ota-weekly-speedrun':'ota-prologue',
+    score:won?Math.max(100,1000-Math.floor(seconds)*3-state.mistakes*80+(expansion.bonus?250:0)):0,
+    seconds:Math.round(seconds),mistakes:state.mistakes+literacy.mistakes+expansion.attempts,
+    corrected:literacy.corrected,bonusRooms:expansion.bonus?2:0});}catch(_){}
+}
+function formatTime(seconds){
+  const sec=Math.max(0,Number(seconds)||0),minutes=Math.floor(sec/60);
+  return String(minutes).padStart(2,'0')+':'+String(Math.floor(sec%60)).padStart(2,'0')+'.'+String(Math.floor((sec%1)*10));
 }
 function updatePrompt() {
-  const nearbyError=state.stage==='explore'?L.nearest(literacy,player):null;
+  const nearbyError=state.stage==='explore'?nearestVisibleError(player):null;
   const namedSurface=state.stage==='explore'?RW.target(rewrite,player):null;
+  const sideAction=state.stage==='explore'?EX.interaction(expansion,player):null;
   currentInteraction=corrector.hidden?{type:'leaveCorrector',label:'은신처에서 나오기'}
     :state.stage==='explore'&&R.distance(player,X.SHELTER)<1.7
       ?{type:'hideCorrector',label:'어둠 속에 숨기'}
       :(namedSurface?{type:'rewrite',label:namedSurface.label,id:namedSurface.id}:null)
-        ||R.getInteraction(state,player)||C3.interaction(state,player)
+        ||R.getInteraction(state,player)||C3.interaction(state,player)||sideAction
         ||(nearbyError?{type:'literacy',label:'틀린 기록 교정',uid:nearbyError.uid}:null);
   hud.prompt.classList.toggle('show',!!currentInteraction&&!failed);
   hud.prompt.innerHTML=currentInteraction
@@ -1037,6 +1268,7 @@ function tryMove(dx,dz) {
 function update(dt) {
   elapsed+=dt;
   const before=state.stage;
+  let anomalyReport={caught:false,kind:null,phase:'dormant',distance:Infinity,erasing:false};
   let running=false;
   if(!state.hidden && !corrector.hidden && state.stage!=='won' && state.stage!=='lost') {
     const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)
@@ -1114,6 +1346,16 @@ function update(dt) {
     }
     if(!corrector.hidden&&!state.hidden)document.body.classList.remove('hidden-in-locker');
   }
+  if(!visualAudit){
+    anomalyReport=AN.step(anomalies,dt,player,{
+      stage:state.stage,hidden:state.hidden||corrector.hidden,lightOn:rewrite.lightOn,
+      passable:(x,z)=>RW.canMove(rewrite,x,z,(a,b)=>C3.canMove(state,a,b))
+    });
+    if(anomalyReport.caught){
+      state.stage='lost';state.lossReason=anomalyReport.kind;state.losses++;
+    }
+  }
+  updateAnomalyVisuals(anomalyReport);
   syncStage(before);
   if(messageEnd<elapsed)hud.message.classList.remove('show');
   if(state.stage==='explore'){
@@ -1124,7 +1366,7 @@ function update(dt) {
     }
   }
   const corruptorSource=state.monster.active?state.monster
-    :corrector.phase!=='dormant'?corrector:null;
+    :corrector.phase!=='dormant'?corrector:anomalyReport.kind?anomalies[anomalyReport.kind]:null;
   updateHauntedWords(elapsed,corruptorSource,state.stage==='final');
   updateRepairEffects(dt);
   if(state.stage==='explore'){
@@ -1138,9 +1380,9 @@ function update(dt) {
       word.position.y=1.62+beat*.025;
       word.material=literacy.contamination>=40&&beat>.75?hot:base;
       word.material.opacity=fade*emphasis;
-      word.visible=fade*emphasis>.04;
+      word.visible=fade*emphasis>.04&&!eraserConceals(item);
       word.lookAt(camera.position);
-      hint.visible=dist<4.7&&(!nearest||nearest.uid===item.uid);
+      hint.visible=dist<4.7&&(!nearest||nearest.uid===item.uid)&&!eraserConceals(item);
       hintMaterial.opacity=Math.min(1,(4.7-dist)/1.6);
       hint.lookAt(camera.position);
     }
@@ -1234,7 +1476,7 @@ function update(dt) {
   updateRewriteWorld(elapsed);updateWayfindingSigns();setCamera();updatePrompt();syncHintScope();
 }
 function look(dx,dy) {
-  if(state.hidden || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed')||!overlays.rewrite.classList.contains('closed'))return;
+  if(state.hidden || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed')||!overlays.rewrite.classList.contains('closed')||!overlays.sentence.classList.contains('closed'))return;
   player.yaw-=dx*.0036;
   player.pitch=Math.max(-.76,Math.min(.76,player.pitch-dy*.0031));
 }
@@ -1242,7 +1484,10 @@ function animate(now) {
   requestAnimationFrame(animate);
   const realDt=Math.min(.35,Math.max(0,(now-lastFrame)/1000||0));
   const dt=Math.min(.1,realDt);lastFrame=now;
-  if(started && !failed && document.visibilityState!=='hidden' && overlays.fix.classList.contains('closed')&&overlays.correction.classList.contains('closed')&&overlays.rewrite.classList.contains('closed')){
+  if(started&&!failed&&run.mode==='speedrun'){
+    hud.clock.textContent='기록 '+formatTime((Date.now()-run.startedAt)/1000)+' · '+run.week;
+  }
+  if(started && !failed && document.visibilityState!=='hidden' && overlays.fix.classList.contains('closed')&&overlays.correction.classList.contains('closed')&&overlays.rewrite.classList.contains('closed')&&overlays.sentence.classList.contains('closed')){
     // Hiding is a real-time wait; weak tablets must not require 20 seconds for 4.5 seconds of cover.
     // Chase movement remains bounded to short delta steps to prevent collision tunnelling.
     if(state.stage==='hiding')state.hidingSeconds+=Math.max(0,realDt-dt);
@@ -1257,24 +1502,49 @@ function resize() {
 window.addEventListener('resize',resize);
 document.addEventListener('visibilitychange',()=>{lastFrame=performance.now();});
 function begin() {
+  run.seed=visualAudit?0:run.mode==='speedrun'?speedCourse.seed:Math.floor(Math.random()*4294967296);
+  run.startedAt=Date.now();
+  clearLiteracyVisuals();
+  Object.assign(literacy,L.create(run.seed));
+  Object.assign(expansion,EX.create(run.seed));
+  Object.assign(anomalies,AN.create(run.seed));
+  state.expansion=visualAudit?null:expansion;
+  syncAnnexVisuals();
   overlays.intro.classList.add('closed');started=true;audioStart();
-  hud.help.hidden=false;syncHintScope();
+  hud.help.hidden=run.mode==='speedrun';hud.clock.hidden=run.mode!=='speedrun';syncHintScope();
   try{window.KidscadeGame?.start?.();}catch(_){}
-  announce('컴퓨터 기록부터 확인하세요.',false,3.2);
+  announce(run.mode==='speedrun'?'이번 주 기록에 도전합니다. 시간은 멈추지 않습니다.':'컴퓨터 기록부터 확인하세요.',false,3.2);
   if(!touchDevice)canvas.requestPointerLock?.().catch?.(()=>{});
 }
+function selectMode(mode){
+  run.mode=mode==='speedrun'?'speedrun':'story';
+  el('modeSelect').querySelectorAll('button').forEach(button=>{
+    const active=button.dataset.mode===run.mode;
+    button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));
+  });
+  el('resume').hidden=run.mode==='speedrun'||!loadChapterCheckpoint();
+  el('start').textContent=run.mode==='speedrun'?'이번 주 코스 시작':'새 기록 시작';
+  try{sessionStorage.setItem('kidscade-ota-mode',run.mode);}catch(_){}
+}
+el('modeSelect').querySelectorAll('button').forEach(button=>{
+  button.addEventListener('click',()=>selectMode(button.dataset.mode));
+});
+try{selectMode(sessionStorage.getItem('kidscade-ota-mode'));}catch(_){selectMode('story');}
 el('start').addEventListener('click',()=>{
   try{sessionStorage.removeItem(CHECKPOINT_KEY);}catch(_){}
   begin();
 });
-el('resume').hidden=!loadChapterCheckpoint();
-el('resume').addEventListener('click',()=>{begin();respawnAtCheckpoint();});
+el('resume').addEventListener('click',()=>{run.mode='story';begin();respawnAtCheckpoint();});
 el('replay').addEventListener('click',()=>{try{sessionStorage.removeItem(CHECKPOINT_KEY);}catch(_){}location.reload();});
 el('respawn').addEventListener('click',()=>{if(!respawnAtCheckpoint())location.reload();});
 el('mute').addEventListener('click',()=>{
   muted=!muted;el('mute').textContent=muted?'소리 꺼짐':'소리 켜짐';
 });
 document.addEventListener('keydown',e=>{
+  if(!overlays.sentence.classList.contains('closed')){
+    if(e.code==='Escape'){e.preventDefault();closeSentence();}
+    return;
+  }
   if(!overlays.rewrite.classList.contains('closed')){
     if(e.code==='Escape'){e.preventDefault();closeRewrite();}
     return;
@@ -1318,10 +1588,10 @@ function endStick(e) {
 }
 stick.addEventListener('pointerup',endStick);stick.addEventListener('pointercancel',endStick);
 el('action').addEventListener('click',interact);
-const run=el('run');
-run.addEventListener('pointerdown',e=>{mobileRun=true;run.setPointerCapture(e.pointerId);});
-run.addEventListener('pointerup',()=>{mobileRun=false;});
-run.addEventListener('pointercancel',()=>{mobileRun=false;});
+const runButton=el('run');
+runButton.addEventListener('pointerdown',e=>{mobileRun=true;runButton.setPointerCapture(e.pointerId);});
+runButton.addEventListener('pointerup',()=>{mobileRun=false;});
+runButton.addEventListener('pointercancel',()=>{mobileRun=false;});
 for(const choice of el('choices').querySelectorAll('button')) {
   choice.addEventListener('click',()=>{
     const before=state.stage;
@@ -1335,6 +1605,7 @@ for(const choice of el('choices').querySelectorAll('button')) {
       if(type==='office'){announce('벽이 책상으로 돌아왔습니다. 안쪽에서 기록을 찾으세요.',false,3.5);hud.stage.textContent='사무실 · 기록 A 탐색';}
       el('fixFeedback').textContent='주변의 기록을 기억하세요.';
     } else {
+      if(state.stage==='explore')AN.wrongAnswer(anomalies);
       el('fixFeedback').textContent=type==='office'?'틀렸어요. 이 방에서 사람이 옆에 앉아 있던 사물을 찾아보세요.'
         :type==='final'?'틀렸어요. 두 기록을 읽으며 잊힌 이름을 생각해 보세요.'
         :type==='corridor'?'틀렸어요. 두 장소를 이어 주는 길의 이름을 생각해 보세요.'
@@ -1346,6 +1617,10 @@ for(const choice of el('choices').querySelectorAll('button')) {
 el('rewriteForm').addEventListener('submit',e=>{e.preventDefault();submitRewrite();});
 el('rewriteCancel').addEventListener('click',closeRewrite);
 el('rewriteToggle').addEventListener('click',toggleRewrite);
+el('sentenceUndo').addEventListener('click',()=>{if(activeSentence){EX.undo(expansion,activeSentence);renderSentence();}});
+el('sentenceClear').addEventListener('click',()=>{if(activeSentence){EX.clear(expansion,activeSentence);renderSentence();}});
+el('sentenceSubmit').addEventListener('click',submitSentence);
+el('sentenceClose').addEventListener('click',closeSentence);
 el('correctionClose').addEventListener('click',closeCorrection);
 el('correctionChoices').querySelectorAll('button').forEach(button=>{
   button.addEventListener('click',()=>{
@@ -1354,6 +1629,7 @@ el('correctionChoices').querySelectorAll('button').forEach(button=>{
     if(!result.ok){
       if(result.reason==='wrong'){
         el('correctionFeedback').textContent=result.hint;
+        AN.wrongAnswer(anomalies);
         tone(180,.13,'triangle',.021);
       }else closeCorrection();
       updateLiteracyHud();
@@ -1367,12 +1643,18 @@ el('correctionChoices').querySelectorAll('button').forEach(button=>{
     tone(523,.22,'triangle',.048);tone(784,.28,'sine',.042);
     announce((result.item.kind==='core'?'핵심 기록 '+literacy.coreDone+'/5 복구! ':'오타 교정 성공! ')+result.question.explain,false,3.9,'learning');
     if(result.completed&&C3.both(state))
-      announce('핵심 기록 5개 복구 완료! 중앙 기록실로 이동하세요.',false,4.0);
+      announce(EX.complete(expansion)?'핵심 기록 복구 완료! 중앙 기록실로 이동하세요.':
+        '핵심 기록 복구 완료! '+(expansion.required==='west'?'사무실':'서고')+' 뒤편 새 열람실을 찾아가세요.',false,4.0);
     try{window.KidscadeGame?.milestone?.('ota_literacy_'+literacy.coreDone,{uniqueKey:'ota-literacy-'+literacy.coreDone});}catch(_){}
   });
 });
 window.OtaDebug = Object.freeze({
   snapshot:()=>({stage:state.stage,corridorFixed:state.corridorFixed,doorFixed:state.doorFixed,hidden:state.hidden,
+    run:{mode:run.mode,seed:run.seed,week:run.week,seconds:run.startedAt?Math.round((Date.now()-run.startedAt)/100)/10:0},
+    expansion:{required:expansion.required,rooms:{...expansion.rooms},layouts:{...expansion.layouts},
+      solved:{...expansion.solved},fragments:{...expansion.fragments},bonus:expansion.bonus},
+    anomalies:{active:anomalies.active,phase:anomalies.phase,encounters:anomalies.encounters,
+      eraser:{...anomalies.eraser},misreader:{...anomalies.misreader}},
     guidance:{scope:hintScope,level:hintLevel},chapter3:JSON.parse(JSON.stringify(C3.ensure(state))),echo:{...state.echo},monster:{...state.monster},
     corrector:{phase:corrector.phase,x:corrector.x,z:corrector.z,hidden:corrector.hidden,grace:corrector.grace},
     literacy:{coreDone:literacy.coreDone,corrected:literacy.corrected,contamination:literacy.contamination,awakened:literacy.awakened,items:literacy.items.map(i=>({uid:i.uid,x:i.x,z:i.z,bankIndex:i.bankIndex,kind:i.kind}))},

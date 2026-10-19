@@ -68,9 +68,14 @@
       '서고 오른쪽 뒤편에서 반짝이는 기록 B에 다가가 조사하세요.'
     ],
     finalGate:[
-      '기록 A·B와 핵심 오타 5개를 모두 복구해야 합니다.',
+      '기록 A·B와 핵심 오타 5개, 뒤편 열람실의 기록을 복구해야 합니다.',
       '사무실과 서고 사이의 중앙 복도 끝으로 가세요.',
       '붉은 「봉인」을 조사하세요. 사라진 이름의 답은 「기억」입니다.'
+    ],
+    annex:[
+      '기록을 모은 방의 뒤편에서 다른 열람실로 들어갈 수 있습니다.',
+      '떠 있는 「□ □ □ □ □」의 문장을 조사하고 낱말을 알맞은 순서로 놓으세요.',
+      '문장을 조립하면 안쪽 문이 열립니다. 열린 문 뒤의 「기록 조각」을 조사하세요.'
     ],
     final:[
       '중앙 기록실의 문이 열렸습니다.',
@@ -90,6 +95,7 @@
     if(s.stage==='final')return 'final';
     if(s.stage!=='explore')return defaultHints[s.stage]?s.stage:'console';
     const c=s.chapter3||{officeFixed:false,records:{office:false,archive:false},cipher:{fragments:0}};
+    if(p&&p.z< -55.6&&Math.abs(p.x)>3.5)return 'annex';
     if(c.records.office&&c.records.archive)return 'finalGate';
     if(p&&p.x>3.5&&p.x<15.3&&p.z< -39&&p.z> -55.6&&!c.records.archive)
       return c.cipher.fragments>=3?'archiveDeciphered':'archive';
@@ -98,6 +104,11 @@
     return 'hub';
   }
   function hints(s,p){
+    if(scope(s,p)==='finalGate'&&s.expansion&&!s.expansion.fragments[s.expansion.required]&&s.literacy?.coreDone>=5)return [
+      '중앙 기록실의 봉인에는 뒤편 열람실의 기록 조각이 더 필요합니다.',
+      (s.expansion.required==='west'?'사무실':'서고')+' 뒤편 문을 찾아 흩어진 문장을 조립하세요.',
+      '조립한 문장이 안쪽 문을 열면 「기록 조각」을 조사한 다음 돌아오세요.'
+    ];
     if(scope(s,p)==='finalGate'&&s.literacy&&s.literacy.coreDone<5)return [
       '기록 A·B는 찾았지만 핵심 오타 '+(5-s.literacy.coreDone)+'개가 남았습니다.',
       '복도·사무실·서고에서 「핵심 오타 · 조사」를 찾아 글자를 고치세요.',
@@ -108,6 +119,14 @@
   function hint(s,p,level){const h=hints(s,p);return h[Math.min(Math.max(0,(level|0)-1),h.length-1)];}
   function cue(stage){return firstCues[stage]||null;}
   function failure(s){
+    if(s.lossReason==='eraser')return {
+      title:'삭제자가 주변의 글자를 지웠습니다.',
+      detail:'삭제자가 다가오면 거리를 두세요. 조명을 켜면 삭제자가 힘을 잃습니다.'
+    };
+    if(s.lossReason==='misreader')return {
+      title:'오독자가 당신의 시선을 읽었습니다.',
+      detail:'오독자를 오래 바라보지 말고 고개를 돌리세요. 잘못된 문장은 다시 조립할 수 있습니다.'
+    };
     if(s.lossReason==='corrector')return {
       title:'교정자가 당신의 이름을 찾아냈습니다.',
       detail:'붉은 단어가 가까워지면 시선을 끊고 은신처로 이동하세요. 마지막 기록실에서는 「나」까지 달려야 합니다.'

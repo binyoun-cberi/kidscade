@@ -15,6 +15,7 @@ button:focus-visible{outline:3px solid #eab475;outline-offset:3px}
 #vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 35%,#0009 100%)}
 #danger{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse,transparent 36%,#b321324f 100%);transition:opacity .2s}
 #static{position:fixed;inset:0;pointer-events:none;opacity:0;background:repeating-linear-gradient(0deg,transparent 0 3px,#e6eef207 4px 5px);mix-blend-mode:screen}
+#voidPulse{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 55%,transparent 20%,#10121991 72%,#380515a6 100%);transition:opacity .55s;z-index:1}
 #top{position:fixed;top:max(16px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left));right:max(16px,env(safe-area-inset-right));display:flex;align-items:flex-start;gap:15px;justify-content:space-between;pointer-events:none}
 #brand{font-size:11px;letter-spacing:.24em;color:#99a3af;font-weight:900}
 #brand b{font-size:31px;color:#f2f3f5;letter-spacing:.15em;display:block;margin-top:4px}
@@ -22,6 +23,9 @@ button:focus-visible{outline:3px solid #eab475;outline-offset:3px}
 #mission small{display:block;color:#d1b58e;font-size:10px;letter-spacing:.16em;font-weight:800}
 #objective{font-size:clamp(12px,2vw,17px);font-weight:800;line-height:1.4;margin-top:3px}
 #stage{margin-top:6px;font-size:11px;color:#949da8}
+#routeStatus{margin-top:5px;color:#e8bc8e;font-size:11px;font-weight:800}
+#runClock{margin-top:7px;font-size:17px;letter-spacing:.07em;font-weight:900;color:#f7dab6;font-variant-numeric:tabular-nums}
+#runClock small{font-size:10px;color:#b7a9a1;letter-spacing:0;font-weight:600}
 #topControls{display:flex;flex-direction:column;align-items:flex-end;gap:7px;pointer-events:auto;flex-shrink:0}
 #mute,#help{pointer-events:auto;background:#0b111aca;border:1px solid #59636f88;border-radius:8px;font-size:13px;padding:8px 11px;min-height:36px}
 #help{border-color:#caa5789e;color:#f4d9b4;font-weight:850;transition:border-color .2s,background .2s}
@@ -98,6 +102,22 @@ border-radius:9px;padding:9px 13px;text-align:center;transition:opacity .2s}
 #correctionChoices button:focus-visible{outline:2px solid #efd29e}
 #correctionFeedback{min-height:24px;color:#dbabb5;font-size:13px;line-height:1.5}
 #correctionClose{width:100%;margin-top:8px;border:1px solid #5b505a;background:#19151c;border-radius:8px;padding:11px;font-weight:750}
+#sentencePanel .panel{width:min(580px,95vw);background:linear-gradient(155deg,#15151ded,#08090df8);border-color:#aa9274}
+#sentencePanel h2{color:#f0c999}
+#sentenceClue{color:#d8cabb;line-height:1.6;font-size:14px}
+#sentenceAssembled{display:flex;flex-wrap:wrap;gap:7px;min-height:65px;padding:11px;border:1px dashed #9f8465;border-radius:10px;background:#25221f7d;margin:10px 0}
+#sentenceTiles{display:flex;flex-wrap:wrap;gap:9px;margin:13px 0}
+.word-tile{min-height:44px;padding:10px 13px;border-radius:9px;border:1px solid #b99b79;background:#302a2b;color:#ffe9cc;font-weight:800}
+.word-tile[disabled]{opacity:.23;cursor:default}
+#sentenceActions{display:flex;flex-wrap:wrap;gap:8px}#sentenceActions button{flex:1;min-width:110px;border-radius:8px;border:1px solid #74655f;background:#24242b;min-height:45px;padding:8px}
+#sentenceActions #sentenceSubmit{background:#dbc094;color:#19120e;font-weight:900}
+#sentenceFeedback{color:#ebb8b0;min-height:24px;margin-top:10px;font-size:13px}
+#modeSelect{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0}
+#modeSelect button{background:#18212c;border:1px solid #536274;padding:12px;border-radius:10px;text-align:left;font-size:14px;font-weight:900}
+#modeSelect button.active{border-color:#e8bd84;background:#3d2f27;color:#ffe8c7}
+#modeSelect small{display:block;font-size:11px;font-weight:500;color:#c1b4ab;line-height:1.5;letter-spacing:0;margin-top:4px}
+#enemyWarning{position:fixed;z-index:4;left:50%;top:28%;transform:translateX(-50%);max-width:min(420px,85vw);text-align:center;color:#f8c1b1;font-weight:900;font-size:clamp(14px,2.3vw,21px);text-shadow:0 0 18px #f34b5a;pointer-events:none;opacity:0;transition:opacity .35s}
+#enemyWarning.show{opacity:1}
 @media(max-height:560px){#correctionPanel .panel{max-height:94vh;overflow:auto}#correctionChoices button{min-height:42px;padding:7px}}
 
 #correctorWarning{position:fixed;z-index:3;left:50%;bottom:clamp(148px,25vh,202px);transform:translateX(-50%);pointer-events:none;opacity:0;visibility:hidden;transition:opacity .4s;max-width:min(420px,83vw);text-align:center}
@@ -143,10 +163,10 @@ body.hidden-in-locker #lockerMask{display:block}
 </head>
 <body>
 <canvas id="scene" aria-label="글자로 이루어진 3D 기록보관소"></canvas>
-<div id="vignette"></div><div id="danger"></div><div id="static"></div>
+<div id="vignette"></div><div id="danger"></div><div id="static"></div><div id="voidPulse"></div><div id="enemyWarning" role="status"></div>
 <div id="correctorWarning" role="status" aria-live="off"><span id="correctorText"></span></div>
 <header id="top">
- <div><div id="brand">KIDSCADE / TYPE HORROR<b>오 타</b></div><div id="mission"><small>현재 기록</small><div id="objective">관리실 컴퓨터의 기록을 확인하세요</div><div id="recordStatus">기록 0/2</div><div id="literacyStatus" aria-live="off">핵심 교정 0/5 · 오염 0%<div id="pollutionTrack"><i id="pollutionFill"></i></div></div><div id="stage">제0기록보관소 · 02:17</div></div></div>
+ <div><div id="brand">KIDSCADE / TYPE HORROR<b>오 타</b></div><div id="mission"><small>현재 기록</small><div id="objective">관리실 컴퓨터의 기록을 확인하세요</div><div id="recordStatus">기록 0/2</div><div id="literacyStatus" aria-live="off">핵심 교정 0/5 · 오염 0%<div id="pollutionTrack"><i id="pollutionFill"></i></div></div><div id="routeStatus" hidden></div><div id="runClock" hidden></div><div id="stage">제0기록보관소 · 02:17</div></div></div>
  <div id="topControls"><button id="mute" type="button" aria-label="음소거 전환">소리 켜짐</button>
  <button id="help" type="button" aria-label="현재 구간 힌트 보기" hidden>힌트 <span aria-hidden="true">H</span></button></div>
 </header>
@@ -167,8 +187,18 @@ body.hidden-in-locker #lockerMask{display:block}
   <small>제0기록보관소 / 02:17</small><h1 id="introTitle">오 타</h1>
   <p>이곳의 모든 것은 이름으로 존재합니다.<br>잘못된 이름을 고쳐 자신의 이름을 지키세요.</p>
   <div class="note">사람이 아닌 것을 사람이라고 부르지 마십시오.<br>이름이 바뀌면, 존재도 바뀝니다.</div>
-  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사 · H 힌트<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면으로 시점 조절 · 조사/달리기/힌트 버튼<br>벽·바닥·천장·문은 반복되는 글자로 공간을 알려줍니다. 선명한 글자는 조사할 수 있는 물체입니다.<br>제2구역에서는 벽을 바라보고 이름을 「문」으로, 천장을 올려다보고 「조명」으로 바꿀 수 있습니다.<br>제2구역에서는 잘못된 단어를 조사해 맞춤법·받침을 고치세요. 오타를 방치하면 오염도가 올라가 교정자가 나타납니다.<br>교정자 등장 시 시야를 끊거나 숨으세요.<br>위험한 상황에서는 그때 필요한 행동을 알려줍니다. 막히면 힌트 버튼을 사용하세요.</div>
+  <div id="modeSelect" role="group" aria-label="플레이 모드 선택"><button class="active" type="button" data-mode="story" aria-pressed="true">새 기록 탐험<small>매번 바뀌는 방과 문제 · 중간 기록부터 계속하기</small></button><button type="button" data-mode="speedrun" aria-pressed="false">스피드런<small>이번 주 같은 코스 · 힌트와 중간 재시작 없이 기록 도전</small></button></div>
+  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사 · H 힌트<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면으로 시점 조절 · 조사/달리기/힌트 버튼<br>벽·바닥·천장·문은 반복되는 글자로 공간을 알려줍니다. 선명한 글자는 조사할 수 있는 물체입니다.<br>이름을 다시 쓰고, 흩어진 문장을 순서대로 조립해 사라진 공간을 되찾으세요.<br>오타가 쌓이면 교정자가, 글자가 지워지면 삭제자가, 기록을 잘못 읽으면 오독자가 나타납니다.<br>막히면 힌트 버튼을 사용하세요. 스피드런에서는 힌트를 사용할 수 없습니다.</div>
   <button class="primary" id="start" type="button">기록 시작</button><button class="primary" id="resume" type="button" hidden>마지막 기록부터</button>
+ </div>
+</section>
+<section class="overlay closed" id="sentencePanel" role="dialog" aria-modal="true" aria-labelledby="sentenceTitle">
+ <div class="panel"><small>미완성 문장 / 흩어진 기록</small><h2 id="sentenceTitle">문장을 다시 읽으세요</h2>
+  <p id="sentenceClue"></p><p>낱말을 올바른 순서대로 눌러 하나의 문장으로 만드세요.</p>
+  <div id="sentenceAssembled" role="status" aria-live="polite"></div>
+  <div id="sentenceTiles" role="group" aria-label="낱말 조각"></div>
+  <div id="sentenceActions"><button id="sentenceUndo" type="button">한 낱말 되돌리기</button><button id="sentenceClear" type="button">다시 조립</button><button id="sentenceSubmit" type="button">문장 복구</button><button id="sentenceClose" type="button">돌아가기</button></div>
+  <div id="sentenceFeedback" role="status" aria-live="polite"></div>
  </div>
 </section>
 <section class="overlay closed" id="fixPanel" role="dialog" aria-modal="true" aria-labelledby="fixTitle">
@@ -226,6 +256,8 @@ body.hidden-in-locker #lockerMask{display:block}
 <script src="surfaces.js"></script>
 <script src="calligrams.js"></script>
 <script src="rewrite.js"></script>
+<script src="expansion.js"></script>
+<script src="anomalies.js"></script>
 <script type="module" src="game.js"></script>
 </body>
 </html>
