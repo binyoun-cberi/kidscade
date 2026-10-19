@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+<title id="title">이순신 — 옥포 해전</title>
+<desc id="desc">깊은 푸른 바다 위 판옥선과 붉은 깃발의 적선이 대치하는 역사 해전 게임 이미지</desc>
+<defs>
+  <linearGradient id="water" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#153649"/><stop offset=".57" stop-color="#23788a"/><stop offset="1" stop-color="#062c44"/></linearGradient>
+  <linearGradient id="deck" x1="0" x2="1"><stop stop-color="#4d3326"/><stop offset=".48" stop-color="#bf9460"/><stop offset="1" stop-color="#66432e"/></linearGradient>
+  <radialGradient id="sun"><stop stop-color="#ffe2a2" stop-opacity=".3"/><stop offset="1" stop-color="#f6cf81" stop-opacity="0"/></radialGradient>
+  <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter>
+  <pattern id="foam" width="99" height="64" patternUnits="userSpaceOnUse" patternTransform="rotate(-12)"><path d="M8 38q17-10 34 0t33 1" fill="none" stroke="#b6e7df" stroke-opacity=".16" stroke-width="3"/></pattern>
+</defs>
+<rect width="960" height="540" fill="url(#water)"/>
+<circle cx="668" cy="158" r="330" fill="url(#sun)"/>
+<rect width="960" height="540" fill="url(#foam)"/>
+<path d="M0 0h266q45 36 27 89l-56 19-27 69-96 33L0 178Z" fill="#a0a47a" stroke="#c8cf9b" stroke-width="18" opacity=".64"/>
+<path d="M0 0h244q45 39 5 73l-60 35-34 56L0 146Z" fill="#446c59" opacity=".8"/>
+<g transform="translate(593 222) rotate(28)">
+  <ellipse cx="0" cy="18" rx="100" ry="154" fill="#051f2f" opacity=".6" filter="url(#shadow)"/>
+  <path d="M-68 75q-42 57-54 109M67 76q41 50 58 103" fill="none" stroke="#d3e8e7" stroke-width="10" opacity=".47" stroke-linecap="round"/>
+  <path d="M-75-105Q-36-151 0-166Q36-151 75-105L85 93Q0 147-85 93Z" fill="#523726" stroke="#e6bf7c" stroke-width="10"/>
+  <path d="M-64-100Q0-140 64-100L66 82Q0 113-66 82Z" fill="url(#deck)"/>
+  <path d="M-57-72H57M-63-36H63M-64 0H64M-62 37H62M-54 73H54" stroke="#efc992" stroke-width="6" opacity=".75"/>
+  <rect x="-46" y="-65" width="92" height="116" rx="8" fill="#60432c" stroke="#f0d39c" stroke-width="6"/>
+  <rect x="-29" y="-45" width="58" height="76" rx="4" fill="#a27c4e"/>
+  <path d="M-29-8H29M0-45V31" stroke="#57402c" stroke-width="4"/>
+  <g fill="#34332b" stroke="#e7d1a2" stroke-width="4">
+    <path d="M-75-50h-30v16h30Zm0 56h-30v16h30Zm0 55h-30v16h30Z"/>
+    <path d="M75-50h30v16H75Zm0 56h30v16H75Zm0 55h30v16H75Z"/>
+  </g>
+  <path d="M0-115V67" stroke="#ead39e" stroke-width="7"/>
+  <path d="M2-108L75-79 2-60Z" fill="#e9bb64" stroke="#f5dba0" stroke-width="4"/>
+  <circle cx="0" cy="10" r="23" fill="#f4dea3"/>
+  <path d="M0-7V26M-15 3H15M-12 17H12" stroke="#4f3b29" stroke-linecap="round" stroke-width="5"/>
+</g>
+<g transform="translate(798 405) rotate(-54) scale(.5)">
+  <path d="M-68 73q-32 38-52 85M66 73q31 38 52 85" fill="none" stroke="#e7ece2" stroke-width="11" opacity=".48"/>
+  <path d="M-66-92Q0-140 66-92L75 86Q0 133-75 86Z" fill="#7e4535" stroke="#d18b6a" stroke-width="10"/>
+  <rect x="-51" y="-73" width="102" height="147" fill="#a16852"/>
+  <path d="M0-105V58" stroke="#efbc94" stroke-width="8"/><path d="M0-100L62-69 0-44Z" fill="#c9504b"/>
+  <path d="M-45-30H45M-45 25H45" stroke="#634130" stroke-width="12"/>
+</g>
+<g fill="#ffdd99" opacity=".95"><circle cx="742" cy="187" r="8"/><circle cx="769" cy="169" r="5"/><circle cx="790" cy="157" r="3"/></g>
+<path d="M721 197l40-25m-13 30 43-30" stroke="#ffefc3" stroke-width="4" opacity=".8"/>
+<rect x="36" y="268" width="424" height="230" rx="20" fill="#082738" opacity=".88"/>
+<path d="M56 288H207" stroke="#e6bd7e" stroke-width="5"/>
+<text x="60" y="313" font-family="Georgia,serif" font-size="19" font-weight="bold" fill="#efd198" letter-spacing="3">1592  ·  BATTLE OF OKPO</text>
+<!-- Hand-drawn Hangul display lettering keeps the Korean title legible without external fonts. -->
+<g fill="none" stroke="#fff0d0" stroke-width="13" stroke-linejoin="round" stroke-linecap="square">
+  <circle cx="91" cy="368" r="23"/>
+  <path d="M146 331V408"/>
+  <path d="M197 346L223 326 249 346M194 370H252M223 371V382M200 392V409H252"/>
+  <path d="M295 353L316 329 337 353M348 329V380M296 392V409H353"/>
+</g>
+<text x="60" y="457" font-family="Georgia,serif" font-size="19" font-weight="bold" fill="#bad9db" letter-spacing="3">COMMAND THE JOSEON FLEET</text>
+</svg>
