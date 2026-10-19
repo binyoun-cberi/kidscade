@@ -26,9 +26,9 @@
    if(['birth','death'].includes(e.kind)||!Number.isFinite(e.age)||e.text.includes(' — '))return false;
    if((e.age===0&&/태어났다/.test(e.text))||/(한다|살핀다|돌본다|알아본다|이어 간다|될 것이다)\.?\s*$/.test(e.text))return false;
    if(/아직 정해지지 않음|작은 흔적|다른 계절에도 이어|그때 겪은|개발|플레이스홀더/.test(e.text))return false;
-   const textKey=e.age+':'+e.text,key=/^joseon(?:339|340)-followup$/.test(e.kind||'')?textKey:(e.causeId||textKey);if(seen.has(key)||seen.has(textKey))return false;seen.add(key);seen.add(textKey);return true;
+   const textKey=e.age+':'+e.text,key=/^joseon(?:339|340|341)-followup$/.test(e.kind||'')?textKey:(e.causeId||textKey);if(seen.has(key)||seen.has(textKey))return false;seen.add(key);seen.add(textKey);return true;
   }).sort((a,b)=>a.age-b.age);
-  const score=e=>(/^joseon(?:339|340)-followup$/.test(e.kind||'')?14:isChoice(e)?8:0)+(/세상을 떠났|혼인|태어났|돌아왔|피란|포로|급제/.test(e.text)?12:0);
+  const score=e=>(/^joseon(?:339|340|341)-followup$/.test(e.kind||'')?14:isChoice(e)?8:0)+(/세상을 떠났|혼인|태어났|돌아왔|피란|포로|급제/.test(e.text)?12:0);
   const selected=[];
   if(events.length){
    const first=events[0].age,last=events.at(-1).age;

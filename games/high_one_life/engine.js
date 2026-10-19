@@ -355,7 +355,7 @@
       const validLog=data.log.filter(e=>Number.isInteger(e.age)&&typeof e.text==='string');
       life.log=validLog.filter((e,index)=>index>=Math.max(0,validLog.length-760)||e.kind==='decision'||e.kind==='decision-effect')
         .map(e=>({age:e.age,year:birthYear+e.age,text:e.text.slice(0,160),kind:String(e.kind||'life'),
-          ...(typeof e.causeId==='string'&&/^joseon(?:Annals|(?:1[0-9]|[2-9]|338|339|340))?:[a-zA-Z0-9_-]{1,80}$/.test(e.causeId)?{causeId:e.causeId}:{})}));
+          ...(typeof e.causeId==='string'&&/^joseon(?:Annals|(?:1[0-9]|[2-9]|338|339|340|341))?:[a-zA-Z0-9_-]{1,80}$/.test(e.causeId)?{causeId:e.causeId}:{})}));
       life.seen=data.seen.filter(i=>Number.isInteger(i)&&i>=0&&i<EVENTS.length);
       life.pending=data.alive && (CHOICES.some(c=>c.age===data.pending) || (typeof data.pending==='string' && /^reflection:(5|15|30|50|70)$/.test(data.pending))) ? data.pending : null;
       life.alive=data.alive===true; life.deathReason=String(data.deathReason||'');

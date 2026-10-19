@@ -46,6 +46,7 @@
   const Calendar=window.OneLifeCalendar337;
   const HistoryLife=window.OneLifeHistoryLife338;
   const Diaspora=window.OneLifeDiaspora340;
+  const Collaboration=window.OneLifeCollaboration341;
   const Official=window.OneLifeOfficialStats||{countries:{}};
   const metric=(key)=>life?.birthYear===2026?Official.countries?.[life?.country?.[0]]?.[key]||null:null;
   const metricLabel=(key,label,unit='')=>{
@@ -617,6 +618,13 @@
       const li=document.createElement('li');li.textContent=h.year+'년 · '+h.text;list.append(li);
     }
   }
+  function paintCollaboration341(){
+    const panel=$('collaboration341Panel'),list=$('collaboration341Records');if(!panel||!list)return;
+    const s=life?.collaboration341;panel.hidden=!s?.history?.length;list.replaceChildren();
+    for(const h of (s?.history||[]).slice(-8).reverse()){
+      const li=document.createElement('li');li.textContent=h.year+'년 · '+h.text;list.append(li);
+    }
+  }
   function paintPaths339(){
     const panel=$('paths339Panel'),list=$('paths339Records');
     if(!panel||!list)return;
@@ -768,7 +776,7 @@
       child:!!life.profile.child,partner:!!life.profile.partner,
       housing:life.world8?.housing||'',
       roles:life.world6?.history?.map(x=>x.job)||[],
-      choices:life.log.filter(e=>['decision','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice','joseon339-choice','joseon340-choice'].includes(e.kind)).map(e=>({age:e.age,label:e.text}))};
+      choices:life.log.filter(e=>['decision','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice','joseon339-choice','joseon340-choice','joseon341-choice'].includes(e.kind)).map(e=>({age:e.age,label:e.text}))};
   }
   function showComparison(){
     const panel=$('endComparison'),rows=$('endComparisonRows');
@@ -836,14 +844,14 @@
       if (entry.kind === 'decision') li.className = 'is-decision';
       else if (entry.kind === 'decision-effect') li.className = 'is-choice-effect';
       else if (entry.kind === 'history') li.className = 'is-history';
-      else if (/^joseon(?:33[89]|340)-/.test(entry.kind||''))li.className='is-history-choice';
+      else if (/^joseon(?:33[89]|340|341)-/.test(entry.kind||''))li.className='is-history-choice';
       else if (['history-choice','history-impact','history-followup','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon5-memory','joseon5-family','joseon6-choice','joseon6-followup','joseon6-memory','joseon7-followup','joseon9-followup','joseon7-choice','joseon9-choice','joseon-followup','joseon2-followup','joseon3-followup','joseon4-followup','joseon-memory','joseon2-memory','joseon3-memory','joseon4-memory','colonialDaily-choice','colonialDaily-followup','joseonAnnals-choice','joseonAnnals-followup','joseonAnnals-fact','joseon11-choice','joseon11-followup','joseon11-memory','joseon12-choice','joseon12-followup','joseon12-memory','joseon13-choice','joseon13-followup','joseon13-family','joseon13-memory','joseon14-choice','joseon14-followup','joseon14-return','joseon14-captivity','joseon14-generations'].includes(entry.kind)) li.className = 'is-history-choice';
       const age = document.createElement('b');
       age.textContent = entry.age + '세';
       const text = document.createElement('span');
       text.textContent = entry.text;
       li.append(age,text);
-      const fact=Calendar?.matchEntry(entry)||HistoryLife?.matchEntry(life,entry)||Diaspora?.matchEntry(life,entry);
+      const fact=Calendar?.matchEntry(entry)||HistoryLife?.matchEntry(life,entry)||Diaspora?.matchEntry(life,entry)||Collaboration?.matchEntry(life,entry);
       if(fact){
         const source=document.createElement('a');source.href=fact.source;
         source.target='_blank';source.rel='noopener noreferrer';source.className='calendar-source';
@@ -1005,7 +1013,7 @@
     const notable=['decision','reflection','family','profession','world','safety','death','history','history-choice','history-impact','history-followup','era-choice','era-followup','care13-choice','care13-followup','care13-memory','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon-memory','joseon2-memory','joseon3-memory','joseon4-memory','joseon4-family','joseon-family','joseon6-choice','joseon6-followup','joseon6-memory','joseon7-followup','joseon9-followup','joseon7-choice','joseon9-choice','joseon-followup','joseon2-followup','joseon3-followup','joseon4-followup','colonialDaily-choice','colonialDaily-followup','joseonAnnals-choice','joseonAnnals-followup','joseonAnnals-fact','joseon11-choice','joseon11-followup','joseon11-memory','joseon12-choice','joseon12-followup','joseon12-memory','joseon13-choice','joseon13-followup','joseon13-family','joseon13-memory','joseon14-choice','joseon14-followup','joseon14-return','joseon14-captivity','joseon14-generations'];
     const entries=new Map();
     for(const entry of life.log){
-      if(!notable.includes(entry.kind))continue;
+      if(!notable.includes(entry.kind)&&!String(entry.kind).startsWith('joseon341-'))continue;
       const sameYear=entries.get(entry.age)||[];
       sameYear.push(entry);
       entries.set(entry.age,sameYear);
@@ -1110,6 +1118,7 @@
     paintLife30();
     paintPaths339();
     paintDiaspora340();
+    paintCollaboration341();
     paintJoseon325();
     paintJoseonWomen326();
     paintArc();
@@ -1344,8 +1353,8 @@
       const effect=life.log.find(x=>x.kind==='decision-effect'&&x.age===e.age);
       const detail=document.createElement('small');detail.textContent=effect?.text||'그때는 무엇이 달라질지 몰랐다.';
       if(e.kind==='decision')copy.append(detail);
-      else if(['history-choice','era-choice','care13-choice','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice','joseon339-choice','joseon340-choice'].includes(e.kind)){
-        const aftermath={'joseon340-choice':'joseon340-followup','joseon339-choice':'joseon339-followup','history-choice':'history-followup','era-choice':'era-followup','care13-choice':'care13-followup',
+      else if(['history-choice','era-choice','care13-choice','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice','joseon339-choice','joseon340-choice','joseon341-choice'].includes(e.kind)){
+        const aftermath={'joseon341-choice':'joseon341-followup','joseon340-choice':'joseon340-followup','joseon339-choice':'joseon339-followup','history-choice':'history-followup','era-choice':'era-followup','care13-choice':'care13-followup',
           'joseon-choice':'joseon-followup','joseon2-choice':'joseon2-followup',
           'joseon3-choice':'joseon3-followup','joseon4-choice':'joseon4-followup','joseon5-choice':'joseon5-followup','joseon6-choice':'joseon6-followup','joseon7-choice':'joseon7-followup','joseon9-choice':'joseon9-followup','joseonAnnals-choice':'joseonAnnals-followup','joseon11-choice':'joseon11-followup','joseon12-choice':'joseon12-followup','joseon13-choice':'joseon13-followup','joseon14-choice':'joseon14-followup','colonialDaily-choice':'colonialDaily-followup'}[e.kind];
         // Only an explicitly linked outcome belongs to this choice. Older saves without
