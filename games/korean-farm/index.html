@@ -47,7 +47,7 @@
         <button type="button" data-action="harvest">수확</button>
       </div>
       <button id="approachBtn" type="button" class="approach-btn">이 논밭으로 걸어가기</button>
-      <p class="disclaimer">멀리 있는 논밭도 작업 버튼을 누르면 농부가 자동으로 다가가요. 작물은 하루를 보내면 자랍니다.</p>
+      <p class="disclaimer">도구를 고른 뒤 논밭 구역을 눌러 작업해요. 장터에서 사고팔고, 집에서 자면 다음 날이 돼요.</p>
     </div>
     <div class="field-footer"><span id="assetOrigin">에셋 확인 중</span></div>
   </aside>
@@ -57,12 +57,8 @@
       <button id="exitPlanting" type="button" aria-label="모내기 화면 닫기">닫기 ×</button>
     </div>
     <div class="planting-progress"><i id="seedlingFill"></i></div>
-    <p id="plantingHint">논 위의 밝은 점이나 아래 칸을 누르고 모를 심어 보세요.</p>
-    <div class="planting-grid" id="seedlingGrid" role="group" aria-label="25포기 모내기 자리"></div>
-    <div class="planting-bottom">
-      <span class="planting-resource" id="seedlingSupplies">🌱 모종 8묶음 · 기운 100</span>
-      <button id="plantOne" type="button" aria-label="선택한 자리에 모 심기">🌱 모 심기 <small>길게 눌러 이어 심기</small></button>
-    </div>
+    <p id="plantingHint">논의 빈자리를 누르면 그 자리로 걸어가 모를 심어요.</p>
+    <div class="planting-bottom"><span class="planting-resource" id="seedlingSupplies">🌱 모종 8묶음 · 기운 100</span></div>
   </section>
   <section id="fieldWorkHud" class="fieldwork-hud hidden" aria-label="직접 농사짓기">
     <div class="fieldwork-title">
@@ -70,17 +66,13 @@
       <button id="exitFieldWork" type="button" aria-label="도구 내려놓기">닫기 ×</button>
     </div>
     <div class="fieldwork-progress"><i id="workStripFill"></i></div>
-    <p id="workStripHint">논밭의 표시된 구역을 골라 직접 작업해 보세요.</p>
-    <div id="workStripGrid" class="fieldwork-strips" role="group" aria-label="다섯 작업 구역"></div>
-    <div class="fieldwork-footer">
-      <span id="workStripEnergy">기운 100</span>
-      <button id="workOne" type="button">이 구역 작업하기<small>길게 눌러 이어서</small></button>
-    </div>
+    <p id="workStripHint">농부가 도구를 들면 논밭의 표시된 구역을 눌러 작업해요.</p>
+    <div class="fieldwork-footer"><span id="workStripEnergy">기운 100</span></div>
   </section>
   <nav id="bottomBar" aria-label="주요 농장 조작">
     <button id="nearFieldBtn" class="tool" type="button"><span aria-hidden="true">◎</span><b>논밭 살펴보기</b></button>
-    <button id="bagBtn" class="tool" type="button"><span aria-hidden="true">▤</span><b>창고·판매</b></button>
-    <button id="sleepBtn" class="tool" type="button"><span aria-hidden="true">☾</span><b>다음 날</b></button>
+    <button id="bagBtn" class="tool" type="button"><span aria-hidden="true">▤</span><b>장터 가기</b></button>
+    <button id="sleepBtn" class="tool" type="button"><span aria-hidden="true">☾</span><b>집에 가기</b></button>
     <button id="moreBtn" class="tool" type="button" aria-controls="moreTools" aria-expanded="false"><span aria-hidden="true">☷</span><b>더보기</b></button>
   </nav>
   <section id="moreTools" class="more-tools hidden" aria-label="추가 농장 조작">

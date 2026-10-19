@@ -111,17 +111,16 @@ test('five by five seedling positions are ordered and map back from ground coord
   assert.equal(seedlingPosition(plot,25),null);
   assert.equal(seedlingAtPoint(plot,{x:100,z:100}),-1);
 });
-test('game UI uses real sprite grid, one or held action and contact-time save',()=>{
+test('game UI transplants by clicking empty field spots and saves at tool contact',()=>{
   const game=fs.readFileSync(path.join(root,'games/korean-farm/game.js'),'utf8');
   const html=fs.readFileSync(path.join(root,'games/korean-farm/index.html'),'utf8');
   const scene=fs.readFileSync(path.join(root,'games/korean-farm/rendering/rice-planting-grid.js'),'utf8');
-  for(const tag of ['plantingHud','seedlingGrid','plantOne','seedlingProgress','exitPlanting'])
-    assert.match(html,new RegExp('id="'+tag+'"'));
+  for(const tag of ['plantingHud','seedlingProgress','exitPlanting'])assert.match(html,new RegExp('id="'+tag+'"'));
+  for(const tag of ['seedlingGrid','plantOne'])assert.doesNotMatch(html,new RegExp('id="'+tag+'"'));
   assert.match(game,/fieldEffects\?\.emit\(event\.action/);
   assert.match(game,/plantSeedling\(state,plot\.id,event\.cellIndex\)/);
-  assert.match(game,/runSeedlingPlant\(nextEmptySeedling\(f\)\)/);
-  assert.match(game,/plantButton\.addEventListener\('pointerdown'/);
-  assert.match(game,/plantButton\.addEventListener\('pointerup'/);
+  assert.match(game,/runSeedlingPlant\(cell\.userData\.cellIndex\)/);
   assert.match(scene,/RingGeometry/);
-  assert.match(scene,/ConeGeometry/);
+  assert.match(scene,/availableToPlant/);
+  assert.match(scene,/targets\[i\]\.visible=true/);
 });

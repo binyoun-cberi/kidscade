@@ -32,15 +32,15 @@ export function createRicePlantingGrid(plot){
     }
     group.add(seedling);shoots.push(seedling);
   }
-  function refresh(field,selected=-1,active=false){
+  function refresh(field,selected=-1,active=false,availableToPlant=false){
     const state=normalizeSeedlings(field?.transplants,field?.planted);
     for(let i=0;i<TRANSPLANT_COUNT;i++){
       const s=state[i];
-      rings[i].visible=active&&!s;
+      rings[i].visible=(active||availableToPlant)&&!s;
       rings[i].material=i===selected?chosenMat:ringMat;
       rings[i].scale.setScalar(i===selected?1.2:1);
       shoots[i].visible=s&&!field.planted;
-      targets[i].visible=false; // Invisible still raycast-able.
+      targets[i].visible=true; // Transparent material keeps empty spots clickable outside planting mode.
     }
   }
   return {group,targets,refresh,
