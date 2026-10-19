@@ -23,7 +23,7 @@ function createField(def){
 }
 export function createFarmState(){
   return {...makeFarmState(),version:FARM_SAVE_VERSION,day:1,minute:7*60,energy:100,
-    money:4200,weather:'sunny',inventory:{seedRice:8,seedCarrot:8,seedCorn:6,fertilizer:5,rice:0,carrot:0,corn:0},
+    money:4200,weather:'sunny',compostStock:24,inventory:{seedRice:8,seedCarrot:8,seedCorn:6,fertilizer:0,rice:0,carrot:0,corn:0},
     fields:FIELD_DEFS.map(createField),stats:{harvests:0,sales:0,earnings:0,deliveries:0},seenPlots:[]};
 }
 export function restoreFarmState(raw){
@@ -47,6 +47,7 @@ export function restoreFarmState(raw){
   current.day=validNumber(raw.day,1,1,100000)|0;
   current.minute=validNumber(raw.minute,420,420,1320)|0;
   current.energy=validNumber(raw.energy,100,0,100);
+  current.compostStock=validNumber(raw.compostStock,24,0,24)|0;
   current.money=validNumber(raw.money,4200,0,100000000)|0;
   current.weather=typeof raw.weather==='string'&&['sunny','cloudy','rain','storm'].includes(raw.weather)?raw.weather:weatherForDay(current.day);
   const inv=raw.inventory||{};
@@ -140,6 +141,7 @@ export function canApplyFarmAction(state,id,action){
   if(action==='water'&&f.kind==='rice')return {ok:false,message:'논은 물꼬를 열어 물을 관리해요.'};
   if(action==='gate'&&f.kind!=='rice')return {ok:false,message:'물꼬는 논에서만 조절할 수 있어요.'};
   if(action==='fertilize'&&!state.inventory.fertilizer)return {ok:false,message:'퇴비가 다 떨어졌어요.'};
+  if(action==='fertilize'&&!state.inventory.fertilizer)return {ok:false,message:'퇴비 주머니가 비었어요. 거름 더미에서 퇴비를 퍼 오세요.'};
   if(action==='harvest'&&(!f.planted||f.growth<.999))
     return {ok:false,message:'아직 익지 않았어요. 생육 상태를 살펴보세요.'};
   return {ok:true};
@@ -213,7 +215,7 @@ export function canWorkFieldStrip(state,id,action,index){
   if(!f||!validWorkStrip(index)||!Object.hasOwn(PATCH_ENERGY,action))
     return {ok:false,message:'작업할 구역을 선택해 주세요.'};
   if(state.energy<PATCH_ENERGY[action])return {ok:false,message:'기운이 부족해요. 하루 쉬었다 다시 해 보세요.'};
-  const done=f.work?.[action==='till'?'tilled':action==='water'?'watered':action==='weed'?'weeded':'harvested'];
+  const done=f.work?.[action==='till'?'tilled':action==='water'?'watered':action==='weed'?'weeded':action==='fertilize'?'fertilized':'harvested'];
   if(!Array.isArray(done)||done[index])return {ok:false,message:'이미 작업한 구역이에요.'};
   if(action==='till'&&f.planted)return {ok:false,message:'작물이 자라는 땅은 갈 수 없어요.'};
   if(action==='water'&&f.kind==='rice')return {ok:false,message:'논은 물꼬를 이용해 물을 대 주세요.'};
@@ -229,7 +231,7 @@ export function applyFarmStrip(state,id,action,index){
   const work=f.work;
   state.energy=minmax(state.energy-PATCH_ENERGY[action],0,100);
   state.minute=minmax(state.minute+3,420,1320);
-  const key=action==='till'?'tilled':action==='water'?'watered':action==='weed'?'weeded':'harvested';
+  const key=action==='till'?'tilled':action==='water'?'watered':action==='weed'?'weeded':action==='fertilize'?'fertilized':'harvested';
   work[key][index]=true;
   const count=completedWorkStrips(f,action);
   let result=null;
@@ -240,17 +242,28 @@ export function applyFarmStrip(state,id,action,index){
     f.moisture=minmax(f.moisture+.074,0,1);
   }else if(action==='weed'){
     f.weeds=minmax(f.weeds-.084,0,1);
+  }else if(action==='fertilize'){
+    state.inventory.fertilizer--;
+    f.nitrogen=minmax(f.nitrogen+.34/WORK_STRIPS,0,1);
   }else if(count===WORK_STRIPS){
     result=grantHarvest(state,f);
   }
   const messages={till:'흙을 고르게 뒤집었어요.',water:'흙에 물이 스며들었어요.',
-    weed:'잡초를 뽑아냈어요.',harvest:'낫으로 익은 작물을 베었어요.'};
+    weed:'잡초를 뽑아냈어요.',fertilize:'밭에 퇴비를 뿌렸어요.',harvest:'낫으로 익은 작물을 베었어요.'};
   const complete=count===WORK_STRIPS;
   return {ok:true,action,fieldId:id,index,count,total:WORK_STRIPS,complete,
     ...result,message:result?.message||messages[action]+' '+count+' / '+WORK_STRIPS+'구역'};
 }
+export function scoopCompost(state){
+  if((state.compostStock||0)<=0)return {ok:false,message:'거름 더미가 비었어요. 하루 뒤 다시 와 주세요.'};
+  if(state.inventory.fertilizer>=10)return {ok:false,message:'퇴비 주머니가 가득 찼어요. 밭에 뿌리고 다시 와 주세요.'};
+  if(state.energy<1)return {ok:false,message:'기운이 부족해요. 집에서 쉬어 주세요.'};
+  state.compostStock--;state.inventory.fertilizer++;state.energy=Math.max(0,state.energy-1);state.minute=Math.min(1320,state.minute+2);
+  return {ok:true,message:'거름 더미에서 퇴비 한 주머니를 퍼 왔어요.'};
+}
 export function advanceFarmDay(state){
   const previous=state.day;
+  state.compostStock=Math.min(24,(state.compostStock||0)+1);
   state.day++;
   state.minute=420;state.energy=100;state.weather=weatherForDay(state.day);
   const c=calendar(state.day);
@@ -258,7 +271,7 @@ export function advanceFarmDay(state){
   const changes=[];
   for(const f of state.fields){
     const before=visualStage(f),oldHealthy=f.health;
-    f.work.watered.fill(false);f.work.weeded.fill(false);
+    f.work.watered.fill(false);f.work.weeded.fill(false);f.work.fertilized.fill(false);
     if(f.kind==='rice'){
       // Shallow paddies lose water through drainage/evaporation; open gates refill them.
       const refill=f.gateOpen?2.6:0;
@@ -295,7 +308,7 @@ export function advanceFarmDay(state){
     message:c.season+' '+c.seasonDay+'일 아침이에요. '+(state.weather==='rain'?'밤새 비가 내려 논밭이 촉촉해요.':state.weather==='storm'?'거센 비가 지나갔어요.':'새로운 하루가 시작됐어요.')};
 }
 
-export const SUPPLY_PRICES=Object.freeze({seedRice:100,seedCarrot:60,seedCorn:80,fertilizer:130});
+export const SUPPLY_PRICES=Object.freeze({seedRice:100,seedCarrot:60,seedCorn:80});
 export function buyFarmSupply(state,key,count=1){
   if(!Object.hasOwn(SUPPLY_PRICES,key))return {ok:false,message:'그 물건은 이 장터에서 팔지 않아요.'};
   if(!Number.isInteger(count)||count<1||count>99)return {ok:false,message:'구매 수량을 확인해 주세요.'};
