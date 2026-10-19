@@ -215,6 +215,9 @@ test('roll and serving readiness have different signs', () => {
   assert.equal(api.slotCue(s).icon,'↻');
   Object.assign(s,{rollCount:3,totalCook:35,innerCook:22,burn:0});
   assert.equal(api.slotCue(s).icon,'✓');
+  s.finished=true;
+  assert.equal(api.slotCue(s).kind,'packed');
+  s.finished=false;
   s.burn=95;
   assert.equal(api.slotCue(s).kind,'burn');
 });

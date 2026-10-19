@@ -403,6 +403,7 @@
 .holeBtn{flex:none;width:44px;min-width:44px;height:44px;font-size:18px}
 .holeBtn.cue-roll{background:#ffe59c;border-color:#b97b28}
 .holeBtn.cue-serve{background:#b9f1c5;border-color:#328451}
+.holeBtn.cue-packed{background:#c9e9ff;border-color:#3d86b7}
 .holeBtn.cue-burn{background:#ffcdc3;border-color:#c34a38}
 .slotAssistToggle{position:absolute;right:11px;bottom:10px;z-index:7;padding:7px 11px;min-height:38px;border:2px solid #70462e;background:rgba(255,249,232,.94);border-radius:12px;font-size:12px;font-weight:950;box-shadow:0 3px 0 #70462e26}
 .panTabs{align-items:stretch;gap:6px;max-width:calc(100% - 18px)}
@@ -412,13 +413,14 @@
 .panTab.active .panStatus{color:#6b421d}
 .panMini{display:grid;grid-template-columns:repeat(4,6px);gap:2px;flex:0 0 auto}
 .panDot{width:6px;height:6px;border-radius:50%;background:#454b51;border:1px solid #b6aca0}
-.panDot.cue-cooking{background:#e3ad52}.panDot.cue-roll{background:#f6de75}.panDot.cue-serve{background:#71db91}.panDot.cue-burn{background:#f46e58}
+.panDot.cue-cooking{background:#e3ad52}.panDot.cue-roll{background:#f6de75}.panDot.cue-serve{background:#71db91}.panDot.cue-packed{background:#79baf4}.panDot.cue-burn{background:#f46e58}
 .stageCard.hasSpecial .panBadge{display:none}
 .orderCard{cursor:pointer;transition:border-color .12s,background .12s,transform .12s}
 .orderCard.active{border-color:#ef7147;background:#fff3dd;box-shadow:0 0 0 2px #ef714729}
 .orderCard:focus-visible,.panTab:focus-visible,.slotAssistToggle:focus-visible,.holeBtn:focus-visible{outline:3px solid #2888dc;outline-offset:2px}
 .orderPortrait{display:inline-flex;width:25px;height:25px;align-items:center;justify-content:center;background:#ffe1ab;border-radius:50%;margin-right:4px;font-size:17px;vertical-align:middle}
 .orderCard:not(.active){opacity:.83}
+.orders .orderCard.active{opacity:1}
 .orderCard.first:not(.active){border-color:#8e5a3b;background:#fffaf0;box-shadow:none}
 .orders .orderCard.active .orderNeed,.orders .orderCard:not(.active) .orderNeed{display:block}
 .deliveryToast{position:absolute;z-index:9;left:50%;top:48%;transform:translate(-50%,-50%);padding:14px 19px;border:3px solid #ad642f;border-radius:18px;background:#fff6d4;box-shadow:0 12px 30px #51321e59;color:#573120;text-align:center;font-size:20px;font-weight:1000;pointer-events:none;animation:deliveryPop 1.35s ease forwards}
@@ -979,8 +981,9 @@ function orderTags(o){
 
 function slotCue(s){
   if(!s||!s.unlocked)return {kind:'locked',icon:'🔒',label:'아직 잠김'};
+  if(s.finished)return {kind:'packed',icon:'✓',label:'접시에 담았어요'};
   if(s.burn>=82)return {kind:'burn',icon:'!',label:'정리하기'};
-  if(s.finished || (s.rollCount>=3&&isReady(s)))return {kind:'serve',icon:'✓',label:s.finished?'접시에 담음':'접시에 담기'};
+  if(s.rollCount>=3&&isReady(s))return {kind:'serve',icon:'✓',label:'접시에 담기'};
   if(s.batter && s.phaseCook>=7&&s.rollCount<3)return {kind:'roll',icon:'↻',label:'뒤집기'};
   if(s.batter)return {kind:'cooking',icon:'·',label:'익는 중'};
   return {kind:'empty',icon:'+',label:'반죽 넣기'};
@@ -999,7 +1002,7 @@ function updatePanIndicators(){
       mini.innerHTML=cues.map(c=>`<span class="panDot cue-${c.kind}"></span>`).join('');
     }
     const roll=cues.filter(c=>c.kind==='roll').length;
-    const serve=cues.filter(c=>c.kind==='serve').length;
+    const serve=cues.filter(c=>c.kind==='serve'||c.kind==='packed').length;
     status.textContent=`${count}구${roll?' · ↻'+roll:''}${serve?' · ✓'+serve:''}`;
   }
 }
@@ -1070,7 +1073,8 @@ function selectSlot(i){
 // A click acts on the food itself; no tool switching is needed.
 function tapSlot(i){
  if(!game.started||game.paused||!game.orders.length)return;
- const s=game.slots[i];if(!s||!s.unlocked||s.finished)return;
+ const s=game.slots[i];if(!s||!s.unlocked)return;
+ if(s.finished){setNotice('이미 접시에 담았어요! 다른 구를 눌러주세요.','good');return;}
  let o=activeOrder();
  if(s.orderId && s.orderId!==o.id){
    const original=game.orders.find(order=>order.id===s.orderId);
@@ -1583,8 +1587,8 @@ function renderFallbackPan(){
         for(let k=0;k<4;k++){ctx.beginPath();ctx.arc(x+(k%2?1:-1)*r*.24,y+(k<2?-1:1)*r*.19,r*.09,0,Math.PI*2);ctx.fill();}
       }
       const cue=slotCue(s);
-      if(cue.kind==='roll'||cue.kind==='serve'||cue.kind==='burn'){
-        ctx.strokeStyle=cue.kind==='roll'?'#ffce45':cue.kind==='serve'?'#7fe68f':'#f36e4e';ctx.lineWidth=5;
+      if(cue.kind==='roll'||cue.kind==='serve'||cue.kind==='packed'||cue.kind==='burn'){
+        ctx.strokeStyle=cue.kind==='roll'?'#ffce45':cue.kind==='serve'?'#7fe68f':cue.kind==='packed'?'#8fd0ff':'#f36e4e';ctx.lineWidth=5;
         ctx.beginPath();ctx.arc(x,y,r*.99,-Math.PI/2,-Math.PI/2+Math.PI*2*clamp(s.phaseCook/20,0,1));ctx.stroke();
         ctx.fillStyle='#fff9df';ctx.beginPath();ctx.arc(x+r*.46,y-r*.52,r*.3,0,Math.PI*2);ctx.fill();
         ctx.fillStyle='#49321f';ctx.font=`bold ${Math.round(r*.47)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(cue.icon,x+r*.46,y-r*.52);
@@ -1607,8 +1611,8 @@ function material(key,color,rough,metal){
 const cueMaterialCache={};
 function cueSprite(kind){
   if(cueMaterialCache[kind])return new THREE.Sprite(cueMaterialCache[kind]);
-  const symbols={roll:'↻',serve:'✓',burn:'!'};
-  const colors={roll:'#f8c849',serve:'#7ee79e',burn:'#fa8a73'};
+  const symbols={roll:'↻',serve:'✓',packed:'✓',burn:'!'};
+  const colors={roll:'#f8c849',serve:'#7ee79e',packed:'#8fd0ff',burn:'#fa8a73'};
   const badge=document.createElement('canvas');badge.width=128;badge.height=128;
   const ctx=badge.getContext('2d');
   ctx.fillStyle=colors[kind];ctx.beginPath();ctx.arc(64,64,53,0,Math.PI*2);ctx.fill();
@@ -1733,8 +1737,8 @@ function updateBallMesh(i){
     ash.position.set(pos.x,pos.y+.25,pos.z); ash.scale.y=.24; g.add(ash);
   }
   const cue=slotCue(s);
-  if(cue.kind==='roll'||cue.kind==='serve'||cue.kind==='burn'){
-    const color=cue.kind==='roll'?0xffcf54:cue.kind==='serve'?0x7de79d:0xff816d;
+  if(cue.kind==='roll'||cue.kind==='serve'||cue.kind==='packed'||cue.kind==='burn'){
+    const color=cue.kind==='roll'?0xffcf54:cue.kind==='serve'?0x7de79d:cue.kind==='packed'?0x8fd0ff:0xff816d;
     const glow = new THREE.Mesh(new THREE.TorusGeometry(.72,.055,8,42), material('cue'+cue.kind,color,.5,.05));
     glow.rotation.x=Math.PI/2;
     glow.position.set(pos.x,pos.y+.13,pos.z);
