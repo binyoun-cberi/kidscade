@@ -135,6 +135,7 @@ function buildWorldStations(){
     heap.position.set(x,y,z);heap.scale.y=.72;heap.castShadow=true;mound.add(heap);
   }
   addStation('compost','거름 더미',{x:4.2,y:.42,z:-11.35},{x:4.2,z:-10.35},[1.5,1.1,1.25]);
+  addRect(1.15,.045,.72,0x8d8067,9.9,.055,-10.02);
   addStation('home','집',{x:9.9,y:1.15,z:-10.82},{x:9.9,z:-10.05},[1.2,1.8,.55]);
 }
 function requestStation(key){
@@ -146,6 +147,8 @@ function requestStation(key){
 }
 function arriveAtStation(){
   const key=pendingStation;pendingStation=null;if(!key)return;
+  const station=worldStations.get(key);
+  if(station)farmerFacingTarget=farmerHeading(station.position.x-state.player.x,station.position.z-state.player.z);
   if(key==='market'){marketAccess=true;openBag();return}
   if(key==='compost'){
     if(state.inventory.fertilizer>=10||state.compostStock<=0){const result=scoopCompost(state);toast(result.message);refreshHud();save(true);return}
