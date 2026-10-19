@@ -2,6 +2,33 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "molecule_workshop",
+      "addedAt": "2026-10-14T00:12:51+09:00",
+      "title": "분자 공방: 원자 타일 연구소",
+      "href": "games/molecule_workshop/index.html",
+      "category": "trivia",
+      "age": "high",
+      "ages": [
+        "high"
+      ],
+      "icon": "🧪",
+      "description": "수소·산소·탄소 같은 원자 타일을 조합해 물과 여러 물질을 발견해요. 화학식에 필요한 원자 수를 맞추고 발견 도감을 채우는 과학 퍼즐이에요.",
+      "subject": "science",
+      "genre": "puzzle",
+      "difficulty": "easy",
+      "sessionMinutes": 10,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true,
+      "cover": "games/molecule_workshop/cover.svg"
+    },
+    {
       "id": "number_maze",
       "addedAt": "2026-10-19T16:00:00+09:00",
       "title": "수의 미궁",
