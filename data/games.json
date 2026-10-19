@@ -18,7 +18,7 @@
       "input": ["touch", "keyboard"],
       "qualityStatus": "standard",
       "classroom": true,
-      "cover": "assets/gate-image/yi_sun_sin.svg"
+      "cover": "assets/gate-image/yi_sun_sin_cover.webp"
     },
     {
       "id": "tod_mot_chatgetda_kkwaekkori",
@@ -32,7 +32,7 @@
         "low"
       ],
       "icon": "🐤",
-      "cover": "assets/gate-image/mot-chatgetda-kkwaekkori.svg",
+      "cover": "assets/gate-image/mot_chatgetda_kkwaekkori_cover.webp",
       "description": "주민들이 산책하고 자동차가 지나는 3D 마을에서 모자와 가방을 단서로 친구를 찾아요! 작은 마을·북적북적 동네·대도시를 골라 매번 달라지는 주민과 찾기 놀이를 즐겨요.",
       "subject": "thinking",
       "genre": "puzzle",
@@ -73,7 +73,7 @@
       ],
       "qualityStatus": "standard",
       "classroom": true,
-      "cover": "assets/gate-image/molecule_workshop.svg"
+      "cover": "assets/gate-image/molecule_workshop_cover.webp"
     },
     {
       "id": "number_maze",
@@ -97,7 +97,7 @@
       ],
       "qualityStatus": "standard",
       "classroom": true,
-      "cover": "assets/gate-image/number_maze.svg"
+      "cover": "assets/gate-image/number_maze_cover.webp"
     },
     {
       "id": "korean_farm",
@@ -125,7 +125,7 @@
       ],
       "qualityStatus": "standard",
       "classroom": true,
-      "cover": "assets/gate-image/korean_farm.svg"
+      "cover": "assets/gate-image/korean_farm_cover.webp"
     },
     {
       "id": "squid_survival",
@@ -961,7 +961,7 @@
       "category": "trivia",
       "age": "high",
       "icon": "🏫",
-      "cover": "assets/gate-image/nightshift horror.png",
+      "cover": "assets/gate-image/haunted_school_exorcist_cover.webp",
       "description": "1인칭 5분 생존 퇴마전! 처녀귀신·유키온나·달걀귀신·저승사자·늑대인간 중 최대 3마리가 동시에 출현합니다. 각자의 약점으로 퇴마해도 20~32초 뒤 다시 나타납니다. 복도의 균열·안개·경고음을 살피고 8회 이상 봉인하며 자정을 버티세요. 별도의 초보자 튜토리얼과 PC FPS 마우스 조작 지원.",
       "subject": "thinking",
       "genre": "action",
