@@ -156,6 +156,7 @@ test('compost is collected at the heap and applied strip by strip',()=>{
   assert.equal(state.inventory.fertilizer,0);
   assert.ok(field.nitrogen>initialNitrogen);
   assert.equal(applyFarmStrip(state,field.id,'fertilize',0).ok,false);
+  assert.equal(applyFarmStrip(state,field.id,'fertilize',1).ok,false);
   assert.equal(scoopCompost(state).ok,true);
   assert.equal(advanceFarmDay(state).ok,true);
   assert.equal(field.work.fertilized.every(Boolean),false);
