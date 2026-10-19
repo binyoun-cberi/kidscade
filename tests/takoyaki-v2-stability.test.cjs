@@ -11,10 +11,10 @@ const source = html.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1];
 
 function makeElement() {
   return {
-    style: {},
+    style: { setProperty() {} },
     textContent: '',
     className: '',
-    classList: { add() {}, remove() {} },
+    classList: { add() {}, remove() {}, toggle() {} },
     children: [],
     addEventListener() {},
     appendChild() {},
@@ -24,7 +24,7 @@ function makeElement() {
   };
 }
 
-function loadGame() {
+function loadGame(saved = null) {
   assert.ok(source, 'The game should have an inline module');
   const elements = new Map();
   const mockCtx = {
@@ -42,7 +42,7 @@ function loadGame() {
     console,
     Math,
     performance: { now: () => 20000 },
-    localStorage: { getItem: () => null, setItem() {} },
+    localStorage: { getItem: () => saved, setItem() {} },
     window: { devicePixelRatio: 1, addEventListener() {} },
     document: {
       addEventListener() {},
@@ -59,7 +59,7 @@ function loadGame() {
     .replace(/boot\(\);\s*\}\)\(\);/, [
       'globalThis.takoyakiTest = {',
       'game, emptySlot, updateOrders, scoreBall, getDayRank, initThree,',
-      'renderFallbackPan, fallbackHits',
+      'renderFallbackPan, fallbackHits, resetSlots, getCfg, activeHoles, selectPan, actionPack, loadProgress',
       '};',
       '})();'
     ].join('\n'));
@@ -93,14 +93,67 @@ test('daily rank measures cooking quality instead of lifetime points', () => {
   assert.equal(api.getDayRank(), '타코야키 명인');
 });
 
-test('2D fallback displays 12 visible pan positions without WebGL', () => {
+test('2D fallback shows only opened rows, without ghost holes', () => {
   const { api, stage } = loadGame();
-  api.game.slots = Array.from({ length: 12 }, (_, i) => api.emptySlot(i));
-  api.game.slots[0].unlocked = true;
+  api.resetSlots();
   assert.equal(api.initThree(), true);
   api.renderFallbackPan();
+  assert.equal(api.fallbackHits.length, 4);
+  api.game.day = 2;
+  api.resetSlots();
+  api.renderFallbackPan();
+  assert.equal(api.fallbackHits.length, 8);
+  api.game.day = 3;
+  api.resetSlots();
+  api.renderFallbackPan();
   assert.equal(api.fallbackHits.length, 12);
+  api.game.day = 4;
+  api.resetSlots();
+  api.game.activePan = 1;
+  api.renderFallbackPan();
+  assert.equal(api.fallbackHits.length, 4);
+  assert.ok(api.fallbackHits.every(hit => hit.i >= 12 && hit.i < 16));
   assert.ok(stage.width > 0 && stage.height > 0);
+});
+
+test('specialty shrimp and corn score better with the correct filling', () => {
+  const { api } = loadGame();
+  for (const filling of ['shrimp','corn']) {
+    const slot = api.emptySlot(12);
+    Object.assign(slot, {batter:true,oil:1,filling,totalCook:42,innerCook:34,shape:90,rollCount:3,sauce:1,mayo:1});
+    const order = {filling,crispy:false,extraOcto:false,sauce:1,mayo:1,katsu:0,aonori:0};
+    const matched = api.scoreBall(slot,order).score;
+    slot.filling = 'octopus';
+    const mismatched = api.scoreBall(slot,order).score;
+    assert.ok(matched > mismatched, `${filling} must match its special order`);
+  }
+});
+
+test('old one-by-one save data migrates to completed rows and keeps the special unlock', () => {
+  const { api: old } = loadGame(JSON.stringify({ unlockedHoles: 5 }));
+  assert.equal(old.game.maxUnlockedHoles, 8);
+  assert.equal(old.game.day, 2);
+  const { api: special } = loadGame(JSON.stringify({ unlockedHoles: 12, specialUnlocked: true }));
+  assert.equal(special.game.day, 4);
+  assert.equal(special.game.specialUnlocked, true);
+});
+
+test('orders cannot be fulfilled by the other pan even when its food is finished', () => {
+  const { api } = loadGame();
+  api.game.day = 4;
+  api.resetSlots();
+  const order = { pan:1, pieces:2, filling:'shrimp', maxWait:100, age:0, sauce:1, mayo:1, katsu:0, aonori:0 };
+  api.game.orders = [order];
+  const basic = api.game.slots[0];
+  const special = api.game.slots[12];
+  for (const slot of [basic,special]) Object.assign(slot, {
+    batter:true, oil:1, filling:'shrimp', finished:true, totalCook:42,
+    innerCook:34, shape:95, rollCount:3, sauce:1, mayo:1
+  });
+  api.actionPack();
+  assert.equal(api.game.orders.length, 1);
+  assert.equal(api.game.dayServed, 0);
+  assert.equal(api.game.slots[0].finished, true);
 });
 
 test('scene props and Three.js are owned by Kidscade', () => {

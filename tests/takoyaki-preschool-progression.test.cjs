@@ -15,15 +15,16 @@ test('takoyaki shop is available to preschool players',()=>{
   assert.equal(game.difficulty,'easy');
 });
 
-test('takoyaki shop unlocks exactly one hole from 1 through 12',()=>{
+test('takoyaki shop grows by four-hole rows, then unlocks a second recipe pan',()=>{
   const html = fs.readFileSync(gamePath,'utf8');
   const matches = [...html.matchAll(/\{day:(\d+), duration:\d+, holes:(\d+), queueMax:1/g)]
     .map(match=>({day:Number(match[1]),holes:Number(match[2])}));
-  assert.equal(matches.length,12);
-  for(let i=1;i<=12;i++){
-    assert.deepEqual(matches[i-1],{day:i,holes:i});
-  }
+  // The special pan is a fourth stage with its own four cooking positions.
+  assert.deepEqual(matches,[{day:1,holes:4},{day:2,holes:8},{day:3,holes:12}]);
+  assert.match(html,/\{day:4, duration:110, holes:12, specialHoles:4/);
   assert.match(html,/kidscade_takoyaki_holes_v1/);
   assert.match(html,/game\.dayServed >= 1/);
-  assert.match(html,/saveUnlockedHoles\(12\)/);
+  assert.match(html,/saveProgress\(12,true\)/);
+  assert.match(html,/type==='shrimp'\|\|type==='corn'/);
+  assert.match(html,/panTabs/);
 });
