@@ -29,7 +29,10 @@ test('legal inquiry is no earlier than 1948, not automatic conviction and not tr
  C.year(l,true);assert.equal(C.ensure(l).active,null);l.year=1947;l.age+=2;C.year(l);assert.equal(C.ensure(l).active,null);
  l.year=1948;l.age++;assert.equal(C.open(l,'inquiry','police'),true);let restored=L.restore(copy(l.snapshot()));assert.deepEqual(copy(restored.getChoice()),copy(l.getChoice()));restored.choose(0);assert.equal(C.ensure(restored).inquiry,'testified');assert.equal(restored.log.some(e=>/유죄|감옥에 갇/.test(e.text)),false);
  restored.year=1949;restored.age++;C.year(restored);assert.equal(C.ensure(restored).inquiryFollowed,true);assert.ok(restored.log.some(e=>e.kind==='joseon341-followup'&&e.causeId==='joseon341:1948-inquiry'));const length=restored.log.length;C.year(restored,true);assert.equal(restored.log.length,length);
- const harmless=life(1943);harmless.world.educationYears=4;offer(harmless,'clerk');harmless.choose(0);harmless.year=1945;harmless.age+=2;step(harmless,'reckoning','clerk',2);harmless.year=1948;harmless.age+=3;C.year(harmless);assert.equal(C.ensure(harmless).active,null);
+ const harmless=life(1943);harmless.world.educationYears=4;offer(harmless,'clerk');harmless.choose(0);harmless.year=1945;harmless.age+=2;
+ const cash=harmless.money.netWorth;assert.equal(C.open(harmless,'reckoning','clerk'),true);assert.doesNotMatch(harmless.getChoice().options[0].label,/피해|사과/);harmless.choose(0);
+ assert.equal(harmless.money.netWorth,cash);assert.equal(C.ensure(harmless).restitution,0);assert.doesNotMatch(harmless.log.at(-1).text,/피해를 입은|사과/);
+ harmless.year=1948;harmless.age+=3;C.year(harmless);assert.equal(C.ensure(harmless).active,null);
 });
 test('invalid choices are atomic; pending inquiry and acts survive JSON restore; forged path is rejected',()=>{
  let l=life(1939);offer(l,'police');let before=copy(l.snapshot());assert.equal(l.choose(4),false);assert.deepEqual(copy(l.snapshot()),before);l=L.restore(copy(l.snapshot()));assert.equal(l.getChoice().title,C.PATH.police.name+' 제안');l.choose(0);step(l,'practice','police',1);

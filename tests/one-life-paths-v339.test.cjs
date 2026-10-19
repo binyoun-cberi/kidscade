@@ -69,3 +69,8 @@ test('a career change at the year boundary clears an already promoted workplace 
  assert.equal(l.pending,'joseon339:'+p.id);c.OneLifeWorld6.career(l,'business',0,'가게를 시작해');H.ensure(l).processedYear=l.year-1;H.year(l);
  assert.equal(p.status,'archived');assert.notEqual(l.pending,'joseon339:'+p.id);assert.notEqual(H.ensure(l).active,p.id);
 });
+test('a named trading partner keeps natural Korean particles through prompts and saved records',()=>{
+ let l=life(1750,'남자');J.ensure(l).occupation='상인';S.ensure(l).role='장사';l.joseon6={career:{code:'merchant',started:l.year-6},pending:[],active:null,history:[],memories:[],seen:[],followups:[],decisions:0,processedYear:l.year};
+ let p=force(l,'trade');l.choose(0);assert.ok(l.log.some(e=>e.text.includes('만복과')));assert.ok(l.log.every(e=>!e.text.includes('만복와')));advance(l,p);assert.match(l.getChoice().description,/만복과/);
+ const q=copy(l.getChoice());l=L.restore(copy(l.snapshot()));assert.deepEqual(copy(l.getChoice()),q);
+});
