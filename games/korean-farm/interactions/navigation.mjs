@@ -29,7 +29,7 @@ export function facingDirection(yaw){
 export function headingDifference(current,target){
   return Math.atan2(Math.sin(target-current),Math.cos(target-current));
 }
-export function shouldTurnBeforeWalk(current,target,maxError=Math.PI*.43){
+export function shouldTurnBeforeWalk(current,target,maxError=.25){
   return Math.abs(headingDifference(current,target))>maxError;
 }
 export function rotateToward(current,target,dt,speed=TURN_SPEED){
