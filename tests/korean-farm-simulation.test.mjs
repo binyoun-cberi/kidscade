@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   FARM_SAVE_VERSION,createFarmState,restoreFarmState,fieldById,visualStage,
-  applyFarmAction,advanceFarmDay,sellAllProduce,buyFarmSupply,calendar,
+  applyFarmAction,applyFarmStrip,scoopCompost,advanceFarmDay,sellAllProduce,buyFarmSupply,calendar,
   weatherForDay,CROPS,fieldCareAdvice,currentDeliveryOrder,fulfillDeliveryOrder
 } from '../games/korean-farm/farming/farm-sim.mjs';
 import {plantSeedling,seedlingCount} from '../games/korean-farm/farming/rice-transplant.mjs';
@@ -57,7 +57,7 @@ test('paddy gate works and ordinary vegetable beds cannot use it',()=>{
   assert.ok(rice.waterDepthCm>morning);
   assert.ok(rice.waterDepthCm<=10);
 });
-test('field care consumes energy and fertilizer but never creates negative stock',()=>{
+test('field care consumes energy and compost must be collected before strip fertilizing',()=>{
   const state=createFarmState(),energy=state.energy;
   const f=fieldById(state,'carrot-1');
   f.moisture=.1;f.weeds=.8;
@@ -65,8 +65,13 @@ test('field care consumes energy and fertilizer but never creates negative stock
   assert.ok(f.moisture>.1);
   assert.equal(applyFarmAction(state,f.id,'weed').ok,true);
   assert.ok(f.weeds<.8);
-  assert.equal(applyFarmAction(state,f.id,'fertilize').ok,true);
-  assert.equal(state.inventory.fertilizer,4);
+  assert.equal(state.inventory.fertilizer,0);
+  assert.equal(scoopCompost(state).ok,true);
+  const nitrogen=f.nitrogen;
+  assert.equal(applyFarmStrip(state,f.id,'fertilize',0).ok,true);
+  assert.equal(f.nitrogen,nitrogen+.34/5);
+  assert.equal(state.inventory.fertilizer,0);
+  assert.equal(applyFarmStrip(state,f.id,'fertilize',1).ok,false);
   assert.ok(state.energy<energy);
   state.energy=0;
   assert.equal(applyFarmAction(state,f.id,'weed').ok,false);
