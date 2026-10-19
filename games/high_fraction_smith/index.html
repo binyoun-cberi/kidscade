@@ -4,15 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>프랙션 스미스</title>
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 <div class="game-shell">
   <header class="hud">
-    <div class="brand"><span class="brand-mark">⚒</span><div><strong>프랙션 스미스</strong><small>숫자를 두들겨 주문을 완성하라!</small></div></div>
+    <div class="brand"><span class="brand-mark">⚒</span><div><strong>프랙션 스미스</strong><small>불꽃의 공방 · 직접 만드는 분수 대장간</small></div></div>
     <div class="hud-stats">
       <div class="stat"><span>주문</span><b id="orderCount">0</b></div>
       <div class="stat"><span>점수</span><b id="score">0</b></div>
+      <div class="stat gold"><span>보유 골드</span><b id="gold">0 G</b></div>
       <div class="stat heat"><span>HEAT</span><b id="heat">🔥</b></div>
       <div class="stat timer"><span>시간</span><b id="timer">∞</b></div>
     </div>
@@ -64,9 +65,9 @@
     </div>
 
     <section class="order-board" aria-live="polite">
-      <span class="order-label">오늘의 주문</span>
-      <strong id="targetValue">3/4</strong>
-      <span id="orderMeta">기준 1타</span>
+      <span class="customer-portrait" id="customerIcon" aria-hidden="true">🧑‍🦰</span>
+      <div class="order-who"><span class="order-label" id="customerName">새 손님의 주문</span><strong id="itemName">여행자의 철검</strong><span id="requestText">검을 완성해 주세요!</span></div>
+      <div class="order-need"><span id="materialName">필요한 강철</span><strong id="targetValue">3/4</strong><small id="orderMeta">최단 1타</small></div>
     </section>
 
     <section class="work-zone">
@@ -105,8 +106,8 @@
 
     <section class="tray-panel">
       <div class="tray-head">
-        <div><b>숫자 재료함</b><small>두 조각을 모루에 올리고 공구로 내려치세요.</small></div>
-        <div class="tray-actions"><button id="hintBtn">💡 힌트</button><button id="undoBtn">↶ 되돌리기</button></div>
+        <div><b>재료를 다듬는 작업대</b><small>두 조각을 모루에 올리고 공구로 필요한 금속량을 만드세요.</small></div>
+        <div class="tray-actions"><button id="hintBtn">💡 힌트</button><button id="undoBtn">↶ 되돌리기</button><button id="restartBtn">⟳ 주문 다시</button></div>
       </div>
       <div class="material-tray" id="materialTray"></div>
     </section>
@@ -116,15 +117,36 @@
   <div class="tool-ghost" id="toolGhost" aria-hidden="true"></div>
   <div class="fx-layer" id="fxLayer" aria-hidden="true"></div>
 
+  <div class="modal" id="craftModal" role="dialog" aria-modal="true" aria-labelledby="craftTitle">
+    <div class="modal-card craft-card">
+      <div class="craft-topline"><span id="craftStep">제작 1/3 · 가열</span><span id="craftOrderName">여행자의 철검</span></div>
+      <h2 id="craftTitle">뜨거운 불꽃으로 쇠를 달궈요!</h2>
+      <p id="craftInstruction">풀무를 네 번 눌러 쇠를 충분히 가열해 보세요.</p>
+      <div class="craft-scene" id="craftScene" data-stage="heat">
+        <div class="craft-glow"></div>
+        <div class="craft-flames" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="craft-water" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="craft-product" id="craftProduct" aria-hidden="true">⚔️</div>
+        <div class="craft-anvil" aria-hidden="true">⚒</div>
+        <div class="craft-burst" id="craftBurst" aria-live="polite"></div>
+      </div>
+      <div class="craft-meter" id="craftMeter"><div class="craft-meter-fill" id="craftMeterFill"></div><div class="craft-timing-marker" id="craftTimingMarker"></div><div class="craft-timing-target"></div></div>
+      <div class="craft-status" id="craftStatus">🔥 가열 0/4</div>
+      <button id="craftActionBtn" class="craft-primary">🌬️ 풀무 누르기</button>
+      <small class="craft-tip" id="craftTip">터치하거나 Space 키를 눌러 작업할 수 있어요.</small>
+    </div>
+  </div>
+
   <div class="modal open" id="startModal">
     <div class="modal-card">
       <div class="modal-icon">⚒️</div>
       <h1>프랙션 스미스</h1>
-      <p>내 키즈케이드 아바타가 대장장이가 됩니다.<br>분수와 소수 조각을 조합해 주문값을 만들어 보세요.</p>
+      <p>손님의 주문에 맞춰 분수 재료를 다듬고, 직접 달구고 두들겨 무기와 도구를 완성해 보세요.</p>
+      <p class="saved-progress" id="savedProgress">공방에 오신 것을 환영해요!</p>
       <div class="mode-grid">
         <button data-mode="practice"><b>🛠 견습 대장간</b><span>시간 제한 없이 연습 · 힌트/되돌리기</span></button>
-        <button data-mode="rush"><b>🔥 60초 러시</b><span>연속 주문으로 HEAT를 올리는 아케이드</span></button>
-        <button data-mode="master"><b>👑 마스터 오더</b><span>3단계 제작 · 최단 타격 도전</span></button>
+        <button data-mode="rush"><b>🔥 90초 러시</b><span>연속 제작으로 HEAT를 올리는 아케이드</span></button>
+        <button data-mode="master"><b>👑 마스터 오더</b><span>실제로 3번 계산해야 하는 어려운 주문</span></button>
       </div>
       <small class="modal-tip">조각은 탭하거나 끌어서 올릴 수 있고, 공구는 탭하거나 모루로 끌어 내려칠 수 있어요.</small>
     </div>
@@ -141,8 +163,11 @@
   </div>
 </div>
 <script src="fraction-engine.js?v=1"></script>
-<script src="puzzle-generator.js?v=1"></script>
+<script src="puzzle-generator.js?v=2"></script>
+<script src="order-generator.js?v=1"></script>
+<script src="forge-minigame.js?v=1"></script>
+<script src="progress-store.js?v=1"></script>
 <script src="fraction-smith-avatar.js?v=1"></script>
-<script src="game.js?v=2"></script>
+<script src="game.js?v=3"></script>
 </body>
 </html>
