@@ -6,6 +6,8 @@ import {buildSolnaeriVillage} from './rendering/village-scene.js';
 import {VILLAGE_COLLIDERS} from './rendering/village-layout.mjs';
 import {createRicePlantingGrid} from './rendering/rice-planting-grid.js';
 import {createFieldWorkGrid} from './rendering/field-work-grid.js';
+import {createFieldStatusMarkers} from './rendering/field-status-markers.js';
+import {fieldStatusIndicators} from './farming/field-status.mjs';
 import {WORK_STRIPS,PATCH_ACTIONS,workStripPosition,nextWorkStrip,completedWorkStrips} from './farming/field-work.mjs';
 import {TRANSPLANT_COUNT,seedlingCount,seedlingPosition,nextEmptySeedling,canPlantSeedling,plantSeedling} from './farming/rice-transplant.mjs';
 import {createFarmActionFlow,actionContactPoint,actionApproachPoint} from './interactions/action-flow.mjs';
@@ -26,7 +28,7 @@ const keys=new Set();
 const joystick={x:0,y:0,id:null};
 const pointers=new Map();
 let pinchDistance=0,downPosition=null;
-const plotMeshes=new Map(),plotHits=[],plantingHits=[],fieldWorkHits=[],plotOrigins=new Map(),visited=new Set(state.seenPlots||[]);
+const plotMeshes=new Map(),plotHits=[],plantingHits=[],fieldWorkHits=[],gateHits=[],sluices=new Map(),plotOrigins=new Map(),visited=new Set(state.seenPlots||[]);
 const obstacles=VILLAGE_COLLIDERS;
 const models=new Map();
 const farmFlow=createFarmActionFlow();
@@ -135,9 +137,35 @@ function buildFields(){
     const planting=rice?createRicePlantingGrid(plot):null;
     if(planting){group.add(planting.group);plantingHits.push(...planting.targets)}
     const work=createFieldWorkGrid(plot);group.add(work.group);fieldWorkHits.push(...work.targets);
-    plotMeshes.set(plot.id,{group,cropLayer,planting,work,target,plot,bed,waterMesh,stage:null,generation:0});
+    const record={group,cropLayer,planting,work,target,plot,bed,waterMesh,stage:null,generation:0};
+    record.statusMarkers=createFieldStatusMarkers(plot);scene.add(record.statusMarkers.group);
+    if(rice)sluices.set(plot.id,createSluice(plot));
+    plotMeshes.set(plot.id,record);
     syncFieldVisual(plot.id,true);
   }
+}
+function createSluice(plot){
+  const position={x:plot.x,z:plot.z+plot.d/2+.28};
+  const stand={x:position.x,z:position.z};
+  const group=new THREE.Group();group.name='rice-field-sluice-'+plot.id;
+  group.position.set(position.x,0,position.z);scene.add(group);
+  for(const x of [-.38,.38]){
+    const post=rectMesh(.12,.88,.14,0x74563c);post.position.set(x,.46,0);post.castShadow=true;group.add(post);
+  }
+  const lintel=rectMesh(.96,.13,.16,0x9d774e);lintel.position.set(0,.9,0);group.add(lintel);
+  const board=rectMesh(.66,.52,.12,0x8a6744);board.position.set(0,.48,.03);board.castShadow=true;group.add(board);
+  const handle=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.52,8),
+    new THREE.MeshStandardMaterial({color:0xb69b69,roughness:.86}));
+  handle.rotation.z=Math.PI/2;handle.position.set(0,1.04,.08);group.add(handle);
+  const target=new THREE.Mesh(new THREE.BoxGeometry(1.15,1.35,.95),
+    new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}));
+  target.position.set(0,.7,0);target.userData.plotId=plot.id;group.add(target);gateHits.push(target);
+  return {group,board,position,stand};
+}
+function setSluiceVisual(plotId,open){
+  const sluice=sluices.get(plotId);if(!sluice)return;
+  sluice.board.rotation.x=open?-1.05:0;
+  sluice.board.material.color.setHex(open?0xb79255:0x8a6744);
 }
 function clearGroup(group){
   // Geometry and textures belong to cached shared assets. Only private, cloned
@@ -173,6 +201,8 @@ function syncFieldVisual(id,force=false){
   record.planting?.refresh(field,plantingMode&&state.selected===id?selectedSeedling:-1,plantingMode&&state.selected===id);
   record.work?.refresh(field,fieldWorkMode&&state.selected===id?workAction:null,
     fieldWorkMode&&state.selected===id?selectedStrip:-1);
+  record.statusMarkers?.update(fieldStatusIndicators(field));
+  if(field.kind==='rice')setSluiceVisual(id,field.gateOpen);
   record.cropLayer.children.forEach(plant=>{
     if(plant.userData.stripIndex!=null)plant.visible=!field.work?.harvested?.[plant.userData.stripIndex];
   });
@@ -344,8 +374,10 @@ function inspectAt(e){
     const cells=raycaster.intersectObjects(plantingHits,false).filter(h=>h.object.userData.plotId===state.selected);
     if(cells.length){runSeedlingPlant(cells[0].object.userData.cellIndex);return}
   }
-  const hits=raycaster.intersectObjects(plotHits,false);
   if(plantingMode){toast('모내기 중이에요. 논의 밝은 자리를 선택해 주세요.');return}
+  const gate=raycaster.intersectObjects(gateHits,false)[0];
+  if(gate){activateSluice(gate.object.userData.plotId);return}
+  const hits=raycaster.intersectObjects(plotHits,false);
   if(hits.length){
     $('moreTools').classList.add('hidden');$('moreBtn').setAttribute('aria-expanded','false');
     chooseField(hits[0].object.userData.plotId);return;
@@ -359,6 +391,21 @@ function inspectAt(e){
       if(!farmFlow.busy)moveGoal={x,z};
     }
   }
+}
+function activateSluice(id){
+  const plot=plotById(id),sluice=sluices.get(id);
+  if(!plot||!sluice)return;
+  if(farmFlow.busy){toast('먼저 하던 농사 작업을 마쳐 주세요.');return}
+  const check=canApplyFarmAction(state,id,'gate');
+  if(!check.ok){toast(check.message);return}
+  state.selected=id;
+  const request=farmFlow.request({action:'gate',plot,position:state.player,goal:sluice.stand});
+  if(request.type!=='queued'){toast(request.message||'물꼬를 만질 수 없어요.');return}
+  keys.clear();
+  if(request.phase==='approach'){
+    moveGoal=request.goal;toast(plot.label+' 물꼬까지 걸어가 열고 닫을게요.');
+  }else moveGoal=null;
+  refreshFarmControls();
 }
 function chooseField(id){
   const plot=plotById(id);if(!plot)return;
@@ -410,10 +457,11 @@ function updateInspector(){
   $('fieldName').textContent=plot.label;
   $('fieldStatus').textContent=farmFlow.busy?
     (farmFlow.active.phase==='approach'?'농부가 걸어가고 있어요':'농사 작업 중이에요'):fieldCondition(f);
-  $('fieldInfo').textContent=f.kind==='rice'&&!f.planted&&seedlingCount(f)>0?
+  $('fieldInfo').textContent=(f.kind==='rice'&&!f.planted&&seedlingCount(f)>0?
     '모내기 '+seedlingCount(f)+' / 25포기 · 밝은 자리에 모를 꽂아 보세요.':f.planted?
     CROPS[f.crop].name+' · '+Math.round(f.growth*100)+'% 자람'+(f.kind==='rice'?' · 논물 '+f.waterDepthCm.toFixed(1)+'cm'+(f.gateOpen?' (물꼬 열림)':' (물꼬 닫힘)'):''):
-    (f.tilled?'땅을 갈아 놓았어요. 다음 작물을 심을 수 있어요.':'수확을 마친 땅이에요. 괭이질로 다시 준비해 보세요.');
+    (f.tilled?'땅을 갈아 놓았어요. 다음 작물을 심을 수 있어요.':'수확을 마친 땅이에요. 괭이질로 다시 준비해 보세요.'))+
+    (f.kind==='rice'?' · 논 옆 나무 수문을 누르거나 가까이서 E를 눌러 물꼬를 조절해요.':'');
   $('fieldLearning').textContent=fieldCareAdvice(f);
   const metrics=$('fieldMetrics');metrics.replaceChildren();
   metrics.append(
@@ -426,15 +474,13 @@ function updateInspector(){
   for(const btn of $('actionButtons').querySelectorAll('button[data-action]')){
     const a=btn.dataset.action;
     btn.classList.toggle('special',a==='harvest'&&f.planted&&f.growth>=.999);
-    btn.classList.toggle('active',a==='gate'&&f.gateOpen);
-    btn.hidden=(a==='water'&&f.kind==='rice')||(a==='gate'&&f.kind!=='rice');
+    btn.hidden=a==='gate'||(a==='water'&&f.kind==='rice');
     btn.disabled=farmFlow.busy||(a==='till'&&f.planted)||(a==='plant'&&(f.planted||!f.tilled||!(f.kind==='rice'&&seedlingCount(f)>0)&&!state.inventory[{rice:'seedRice',carrot:'seedCarrot',corn:'seedCorn'}[f.crop]]))||
       (a==='harvest'&&(!f.planted||f.growth<.999))||(a==='fertilize'&&!state.inventory.fertilizer);
     if(PATCH_ACTIONS.includes(a)){
       const next=nextWorkStrip(f,a);
       btn.disabled=farmFlow.busy||next<0||!canWorkFieldStrip(state,plot.id,a,next).ok;
     }
-    if(a==='gate')btn.textContent=f.gateOpen?'물꼬 닫기':'물꼬 열기';
     if(a==='plant')btn.textContent=f.kind==='rice'?'🌱 모내기 시작':'씨앗 심기';
   }
   const far=distanceToPlot(state.player,plot)>5;
@@ -590,8 +636,9 @@ function handleFarmFlowEvent(event){
   if(!plot)return;
   if(event.type==='start'){
     moveGoal=null;
-    const contact=event.cellIndex==null?plot:event.action==='plant'?
-      seedlingPosition(plot,event.cellIndex):workStripPosition(plot,event.cellIndex);
+    const contact=event.action==='gate'?sluices.get(plot.id)?.position:
+      event.cellIndex==null?plot:event.action==='plant'?
+        seedlingPosition(plot,event.cellIndex):workStripPosition(plot,event.cellIndex);
     farmerFacingTarget=farmerHeading(contact.x-state.player.x,contact.z-state.player.z);
     if(!farmerAnimator?.trigger(event.action)){
       farmFlow.reset();toast('농기구를 사용할 수 없어요.');refreshFarmControls();
@@ -606,8 +653,8 @@ function handleFarmFlowEvent(event){
         plantSeedling(state,plot.id,event.cellIndex):applyFarmAction(state,plot.id,event.action);
     toast(result.message);
     if(result.ok){
-      fieldEffects?.emit(event.action,event.cellIndex==null?
-        actionContactPoint(plot,state.player):event.action==='plant'?
+      fieldEffects?.emit(event.action,event.action==='gate'?sluices.get(plot.id)?.position:
+        event.cellIndex==null?actionContactPoint(plot,state.player):event.action==='plant'?
           seedlingPosition(plot,event.cellIndex):workStripPosition(plot,event.cellIndex));
       syncFieldVisual(plot.id);
       if(stripWork){
@@ -742,7 +789,7 @@ function showModal(title,inner){
   $('modal').classList.remove('hidden');
 }
 function help(){
-  const info=document.createElement('div');info.innerHTML='<p><b>PC</b> · WASD 또는 방향키로 이동합니다. 바닥을 클릭하면 그곳으로 걸어가요. 논을 클릭하면 벼 성장 단계를 살펴볼 수 있어요.</p><p><b>카메라</b> · 마우스 휠로 확대·축소, Q/E 또는 회전 버튼으로 시점을 돌려요.</p><p><b>휴대폰·태블릿</b> · 왼쪽 조이스틱으로 이동하고 손가락으로 논을 선택해요. 두 손가락으로 확대·축소할 수 있어요.</p><p><b>농사</b> · 논밭을 선택한 뒤 가까이 이동해 괭이질, 모내기, 물주기, 물꼬 관리, 거름주기, 수확을 할 수 있어요. 하루 보내기로 작물을 성장시키고, 수확물·판매 메뉴에서 거래해요.</p><p><b>참고</b> · 벼 생육과 날씨는 교육용 간략 계산 모델이에요. 실제 농업 통계에 맞춘 정밀 보정은 추후 진행합니다.</p>';
+  const info=document.createElement('div');info.innerHTML='<p><b>PC</b> · WASD 또는 방향키로 이동합니다. 바닥을 클릭하면 그곳으로 걸어가요. 논을 클릭하면 벼 성장 단계를 살펴볼 수 있어요.</p><p><b>카메라</b> · 마우스 휠로 확대·축소, Q/E 또는 회전 버튼으로 시점을 돌려요.</p><p><b>휴대폰·태블릿</b> · 왼쪽 조이스틱으로 이동하고 손가락으로 논을 선택해요. 두 손가락으로 확대·축소할 수 있어요.</p><p><b>농사</b> · 논 위 작은 원 표식으로 물·양분·잡초·수확 상태를 살펴보세요. 논 옆 나무 수문을 누르거나 가까이서 E를 눌러 물꼬를 열고 닫아요. 그 밖의 작업은 논밭을 선택해 진행해요. 하루 보내기로 작물을 성장시키고 수확물을 거래해요.</p><p><b>참고</b> · 벼 생육과 날씨는 교육용 간략 계산 모델이에요. 실제 농업 통계에 맞춘 정밀 보정은 추후 진행합니다.</p>';
   showModal('솔내리에서 움직이는 법',info);
 }
 function showQa(){
@@ -800,7 +847,12 @@ function bindControls(){
     }
     if(e.repeat)return;
     if(key==='q')state.camera.angle-=Math.PI/6;
-    if(key==='e')state.camera.angle+=Math.PI/6;
+    if(key==='e'){
+      let nearest=null,best=1.7;
+      for(const [id,sluice] of sluices){const d=Math.hypot(state.player.x-sluice.position.x,state.player.z-sluice.position.z);
+        if(d<best){best=d;nearest=id}}
+      if(nearest)activateSluice(nearest);else state.camera.angle+=Math.PI/6;
+    }
     if(key==='escape'){
       if(plantingMode)exitPlantingMode();
       if(fieldWorkMode)exitFieldWorkMode();
@@ -939,7 +991,7 @@ function bindControls(){
   stick.addEventListener('pointerup',resetStick);stick.addEventListener('pointercancel',resetStick);
   window.addEventListener('pagehide',()=>save(true));
   window.KidscadeGame?.registerPauseHandlers?.({pause:()=>paused=true,resume:()=>paused=false});
-  window.KidscadeGame?.registerCleanup?.(()=>{farmFlow.reset();save(true);disposed=true;cancelAnimationFrame(raf);fieldEffects?.clear();for(const r of plotMeshes.values()){r.planting?.dispose();r.work?.dispose()}villageScene?.dispose();renderer?.dispose()});
+  window.KidscadeGame?.registerCleanup?.(()=>{farmFlow.reset();save(true);disposed=true;cancelAnimationFrame(raf);fieldEffects?.clear();for(const r of plotMeshes.values()){r.planting?.dispose();r.work?.dispose();r.statusMarkers?.dispose?.()}villageScene?.dispose();renderer?.dispose()});
 }
 async function main(){
   init3D();ground=new THREE.Plane(new THREE.Vector3(0,1,0),-.15);
