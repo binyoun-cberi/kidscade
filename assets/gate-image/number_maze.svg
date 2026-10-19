@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">수의 미궁</title>
+  <desc id="desc">빛나는 숫자 타일과 별이 있는 수학 십자 퍼즐 게임 대문 이미지</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#263c9d"/><stop offset=".57" stop-color="#6255c5"/><stop offset="1" stop-color="#3c8cbb"/></linearGradient>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#e5edff"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#0e215c" flood-opacity=".28"/></filter>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <circle cx="1020" cy="-30" r="300" fill="#9adbf2" opacity=".12"/><circle cx="140" cy="600" r="260" fill="#ad80f5" opacity=".18"/>
+  <g fill="#fff0aa" opacity=".85"><path d="M100 130l9 25 25 9-25 9-9 25-9-25-25-9 25-9z"/><path d="M1160 580l7 18 18 7-18 7-7 18-7-18-18-7 18-7z"/><circle cx="690" cy="115" r="5"/><circle cx="735" cy="640" r="7"/><circle cx="1100" cy="170" r="6"/></g>
+  <g filter="url(#shadow)" transform="translate(666 94) rotate(9 260 260)">
+    <rect x="0" y="0" width="510" height="532" rx="43" fill="#dce7ff" opacity=".22"/>
+    <rect x="20" y="20" width="470" height="494" rx="34" fill="#f6f8ff"/>
+    <g font-family="Arial,sans-serif" font-size="50" font-weight="900" text-anchor="middle" dominant-baseline="central">
+      <rect x="54" y="80" width="96" height="96" rx="21" fill="url(#tile)"/><rect x="198" y="80" width="96" height="96" rx="21" fill="#e1f9ed"/><rect x="342" y="80" width="96" height="96" rx="21" fill="#d7e6ff"/>
+      <text x="102" y="130" fill="#304ea8">7</text><text x="246" y="130" fill="#23876b">+</text><text x="390" y="130" fill="#304ea8">9</text>
+      <rect x="54" y="224" width="96" height="96" rx="21" fill="#e1f9ed"/><rect x="198" y="224" width="96" height="96" rx="21" fill="#fff3d6"/><rect x="342" y="224" width="96" height="96" rx="21" fill="#e1f9ed"/>
+      <text x="102" y="274" fill="#23876b">+</text><text x="246" y="274" fill="#c4952b">×</text><text x="390" y="274" fill="#23876b">−</text>
+      <rect x="54" y="368" width="96" height="96" rx="21" fill="url(#tile)"/><rect x="198" y="368" width="96" height="96" rx="21" fill="#e1f9ed"/><rect x="342" y="368" width="96" height="96" rx="21" fill="url(#tile)"/>
+      <text x="102" y="418" fill="#304ea8">3</text><text x="246" y="418" fill="#23876b">×</text><text x="390" y="418" fill="#304ea8">5</text>
+    </g>
+  </g>
+  <g font-family="Arial,'Noto Sans KR',sans-serif" fill="white">
+    <text x="78" y="285" font-size="38" font-weight="800" fill="#ffdd8a" letter-spacing="4">NUMBER MAZE</text>
+    <text x="68" y="395" font-size="101" font-weight="1000" letter-spacing="-6">수의 미궁</text>
+    <text x="76" y="457" font-size="30" font-weight="650" fill="#e8eeff">숫자를 놓고, 미궁을 풀어라!</text>
+    <g transform="translate(76 515)"><rect width="190" height="56" rx="28" fill="#ffe18e"/><text x="95" y="36" font-size="25" text-anchor="middle" font-weight="900" fill="#344276">초등 1~3학년</text></g>
+  </g>
+</svg>
