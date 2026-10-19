@@ -33,7 +33,7 @@ const hook=[
 "   if(!target)return false;scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);",
 "   const p=target.getWorldPosition(new THREE.Vector3()).project(camera),r=$('farm').getBoundingClientRect();",
 "   inspectAt({clientX:r.left+(p.x+1)*r.width/2,clientY:r.top+(1-p.y)*r.height/2});return true;},",
-" plantMode:()=>({active:plantingMode,selectedSeedling,held:plantHeld}),",
+" plantMode:()=>({active:plantingMode,selectedSeedling}),",
 " finishPlanting:(id)=>{const f=fieldById(state,id);",
 "   for(let i=0;i<25;i++)if(f?.transplants&&!f.transplants[i])plantSeedling(state,id,i);",
 "   syncFieldVisual(id);save(true);return seedlingCount(f)},",
