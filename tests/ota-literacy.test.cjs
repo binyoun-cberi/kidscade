@@ -9,7 +9,7 @@ const R=require('../games/high_ota_typographic_horror/rules.js');
 const X=require('../games/high_ota_typographic_horror/corrector.js');
 
 test('reviewed exercises have one uniquely correct spelling and useful feedback',()=>{
-  assert.ok(L.BANK.length>=50);
+  assert.ok(L.BANK.length>=80);
   const ids=new Set();
   const kinds=new Set();
   for(const q of L.BANK){
@@ -21,7 +21,7 @@ test('reviewed exercises have one uniquely correct spelling and useful feedback'
     assert.ok(q.context.includes('___'),q.id);
     assert.ok(q.explain.length>8,q.id);
   }
-  assert.deepEqual([...kinds].sort(),['맞춤법','문맥','받침','띄어쓰기'].sort());
+  assert.deepEqual([...kinds].sort(),L.KINDS.slice().sort());
 });
 test('unattended repeated misspellings awaken the Corrector without immediate failure',()=>{
   const s=L.create();
@@ -100,7 +100,7 @@ test('fresh runs vary all five core prompts without losing any curriculum area',
     signatures.add(ids.join(','));
     assert.equal(new Set(ids).size,5,'no duplicated core exercise');
     const kinds=new Set(s.items.map(i=>L.question(i).kind));
-    for(const kind of L.KINDS)assert.ok(kinds.has(kind),'missing '+kind);
+    for(const kind of L.CORE_KINDS)assert.ok(kinds.has(kind),'missing '+kind);
     assert.deepEqual(ids,L.create(seed).items.map(i=>i.bankIndex),'same seed is replayable');
   }
   assert.ok(signatures.size>=12,'different runs should not repeat the same five answers');

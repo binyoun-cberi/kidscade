@@ -11,7 +11,7 @@ const S=require('../games/high_ota_typographic_horror/surfaces.js');
 test('three distinct recognizable object shapes are constructed from Korean words',()=>{
   const models=CG.collection(),ids=models.map(o=>o.id);
   assert.equal(models.length,9);
-  assert.equal(new Set(ids).size,8);
+  assert.equal(new Set(ids).size,9);
   assert.equal(models.filter(o=>o.type==='door').length,5);
   assert.equal(models.filter(o=>o.type==='locker').length,3);
   assert.equal(models.filter(o=>o.type==='computer').length,1);
@@ -67,7 +67,7 @@ test('game hooks scene, hides old labels, animates physics-gated objects',()=>{
   assert.match(js,/buildWordArchitecture\(\);buildCalligrams\(\)/);
   assert.match(js,/updateCalligrams\(dt,threat\)/);
   assert.match(js,/flashLockerAt\(player\)/);
-  assert.match(js,/state\.doorFixed:C3\.ensure\(state\)\.finalFixed/);
+  assert.match(js,/obj\.gate==='rewriteDoor'\?rewrite\.doorMade:C3\.ensure\(state\)\.finalFixed/);
   assert.match(js,/if\(mode!==obj\.screenText\)/);
   assert.match(js,/const target=elapsed<obj\.swingUntil\?\.88:0/);
   assert.match(js,/if\(spec\.kind!=='door'\)makeArchitecturePlane\(spec\)/);
