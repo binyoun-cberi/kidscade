@@ -49,3 +49,14 @@ test('invalid selection is atomic and forged foreign residence is rejected',()=>
  const l=life(1966);force(l,'invite','germanyMine');const data=copy(l.snapshot());assert.equal(l.choose(-1),false);assert.deepEqual(copy(l.snapshot()),data);
  const bad=copy(departed('germanyMine',1966).snapshot());bad.travel22.residence.since=1940;bad.diaspora340.journeys[0].departed=1940;const r=L.restore(bad);assert.equal(T.ensure(r).residence.abroad,false);
 });
+test('a domestic participant is never asked to return from an invented foreign stay at liberation',()=>{
+ const l=life(1935,'여자');force(l,'orgInvite','domestic');l.choose(0);l.choose(0);D.ensure(l).org.status='suspended';l.year=1945;l.age+=10;D.year(l);
+ assert.equal(D.ensure(l).active.type,'liberation');assert.doesNotMatch(l.getChoice().description,/귀국|뱃길/);assert.ok(l.getChoice().options.every(o=>!o.label.includes('귀국')));
+ const cash=l.money.netWorth;l.choose(0);assert.equal(T.ensure(l).residence.abroad,false);assert.equal(l.money.netWorth,cash);assert.equal(D.ensure(l).org.status,'finished');
+});
+test('annual work narration identifies the actual workplace while preserving earnings and restored text',()=>{
+ for(const [key,year,gender,place] of [['germanyMine',1966,'남자',/탄광/],['germanyNurse',1966,'여자',/병동|환자/],['mexico',1905,'여자',/농장|에네켄/],['gulf',1975,'남자',/현장/]]){
+  const l=departed(key,year,gender);force(l,'work',key);l.choose(0);assert.match(l.log.findLast(e=>e.kind==='joseon340-choice').text,place);assert.equal(j(l).savings,key==='mexico'?1:5);
+  const r=L.restore(copy(l.snapshot()));assert.equal(r.log.at(-1).text,l.log.at(-1).text);
+ }
+});

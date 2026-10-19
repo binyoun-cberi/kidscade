@@ -5,6 +5,7 @@
 'use strict';
 const J=root?.OneLifeJoseon,Soc=root?.OneLifeJoseon5,W6=root?.OneLifeWorld6;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const withPerson=name=>name+((name.charCodeAt(name.length-1)-0xac00)%28?'과':'와');
 const keys=['craft','trade','writing','training','workgroup'];
 const names={craft:'함께 맡는 공방의 일',trade:'거래처와 나누어 맡는 장사',writing:'오래 적어 온 글을 엮는 일',training:'일을 마친 뒤 다시 배우기',workgroup:'동료들과 일터의 사정을 묻다'};
 const old=l=>l.year<1900&&J?.isJoseon(l);
@@ -47,7 +48,7 @@ function compatible(l,p){
 function contact(l,p){
  const s=ensure(l);let person=s.contacts.find(c=>c.id===p.contactId);
  if(!person){const index=keys.indexOf(p.key),name=(old(l)?(l.gender==='여자'?['연이','분이','옥이','순이','덕이']:['덕수','만복','길수','성길','복동']):(l.gender==='여자'?['정희','영숙','순자','미경','정숙']:['영호','정수','성호','민수','준호']))[index];person={id:'paths339-'+p.key+'-'+l.year,name,met:l.year,birthYear:l.year-30,present:true};s.contacts.push(person);p.contactId=person.id;
- log(l,p,(p.key==='writing'?'글을 함께 살펴보러 온 ':p.key==='training'?'함께 배우러 온 ':'일을 의논하러 만난 ')+name+'와 인사를 나누고 서로 할 수 있는 일을 이야기했다.');}
+ log(l,p,(p.key==='writing'?'글을 함께 살펴보러 온 ':p.key==='training'?'함께 배우러 온 ':'일을 의논하러 만난 ')+withPerson(name)+' 인사를 나누고 서로 할 수 있는 일을 이야기했다.');}
  return person;
 }
 function available(l,p){return compatible(l,p)&&p.status==='open'&&l.year>=p.due;}
@@ -55,17 +56,17 @@ function prompt(l){const s=ensure(l),p=s?.projects.find(p=>p.id===s.active);if(!
  const person=s.contacts.find(c=>c.id===p.contactId),who=person?.name||'함께할 사람';
  let description,labels,actions;
  if(p.stage===0){
-  description={craft:'여러 해 익힌 손기술로 주문을 맡아 왔다. 다른 일꾼과 공구와 납품 일을 나누자는 이야기가 나왔다. 재료를 살 돈과 맡을 일의 범위를 먼저 정해야 한다.',trade:'전에 맡은 거래를 바탕으로 물품과 운반 일을 나누어 맡자는 제안을 받았다. 큰돈을 한꺼번에 넣기보다 작은 물량부터 값을 맞춰 보려 한다.',writing:'틈틈이 적어 둔 일을 펼쳐 보니 겹치거나 빠진 대목이 많다. 직접 겪고 익힌 내용을 골라 한 권의 글로 엮어 보려 한다.',training:'하던 일을 하며 쌓은 경험은 있지만 새로 배워야 할 기술도 있다. 낮의 생업을 이어 가면서 저녁에 공구와 재료를 다루는 법을 배울 곳을 찾았다.',workgroup:'같은 일터에서 일하는 사람들과 품삯과 쉬는 시간을 이야기했다. 각자 겪은 일을 적어 서로의 사정이 얼마나 다른지 알아보려 한다.'}[p.key];
+  description={craft:'혼자 주문을 맡아 오다가 다른 일꾼과 공구를 함께 쓰고 납품도 나누어 하자는 이야기가 나왔다. 같이할 생각이라면 재료값을 누가 내고 무슨 일을 맡을지부터 정해야 한다.',trade:'전에 거래하던 곳에서 물건 마련과 운반을 나누어 맡아 보자고 한다. 우선 작은 물량으로 해 보고 값과 비용을 맞춰 볼 생각이다.',writing:'틈틈이 적어 둔 글을 펼쳤더니 같은 이야기를 여러 번 쓴 곳도, 기억이 흐릿한 곳도 있다. 직접 겪고 배운 일을 골라 한 권으로 묶어 볼까 한다.',training:'오래 해 온 일에도 아직 서툰 기술이 있다. 낮에는 일하고 저녁에는 공구와 재료 다루는 법을 배울 수 있는 곳을 찾았다.',workgroup:'같은 일터에서 일하는 사람들과 품삯과 쉬는 시간을 이야기했다. 각자 겪은 일을 적어 서로의 사정이 얼마나 다른지 알아보려 한다.'}[p.key];
   labels=['시간과 비용을 들여 함께 시작한다','당장은 하던 일을 이어 간다'];actions=['start','decline'];
  }else if(p.stage===1){
-  description={craft:who+'와 함께 맡을 주문의 수량과 재료값을 적었다. 작은 주문을 실제로 만들어 보고, 마감과 나누어 받을 품삯을 맞춰 볼 차례다.',trade:who+'와 거래 장부를 맞춰 보았다. 물건을 받을 곳과 운반비를 확인하고, 약속한 물량부터 보내려 한다.',writing:who+'가 적어 둔 글의 빠진 대목을 물었다. 기억이 분명한 일과 남에게 전해 들은 말을 구분해 원고를 고치려 한다.',training:who+'와 저녁마다 공구를 다루고 작은 물건을 손보는 연습을 했다. 배운 일을 실제로 해 보고 잘못된 부분을 다시 고칠 시간이 필요하다.',workgroup:who+'와 동료들이 적어 온 근무 시간과 품삯을 대조했다. 서로 동의한 내용을 정리해 일터의 책임자에게 함께 전할지 의논한다.'}[p.key];
+  description={craft:withPerson(who)+' 함께 맡을 주문의 수량과 재료값을 적었다. 작은 주문부터 함께 만들어 보며 납품 날짜와 품삯을 나눌 방법을 맞춰 보려 한다.',trade:withPerson(who)+' 거래 장부를 맞춰 보았다. 물건을 받을 곳과 운반비를 확인하고, 약속한 물량부터 보내려 한다.',writing:who+'에게 원고를 보여 주었더니 빠진 대목을 물어 왔다. 기억이 분명한 일과 전해 들은 말을 나누어 적으며 고치려 한다.',training:withPerson(who)+' 저녁마다 공구를 다루고 작은 물건을 손보는 연습을 했다. 아직 손에 익지 않은 작업은 몇 번 더 해 봐야 한다.',workgroup:withPerson(who)+' 동료들이 적어 온 근무 시간과 품삯을 대조했다. 서로 동의한 내용을 정리해 일터의 책임자에게 함께 전할지 의논한다.'}[p.key];
   labels=[p.key==='workgroup'?'동료의 동의를 구해 개선을 요청한다':'작은 일부터 해 보고 고칠 곳을 살핀다','더 진행하지 않고 지금까지의 기록을 보관한다'];actions=['continue','archive'];
  }else{
-  description={craft:who+'와 작은 주문을 마쳤다. 함께 쓴 공구와 재료값을 정리하고, 다음에 맡을 수량과 일을 나눌 방법을 다시 정하려 한다.',trade:who+'와 물건을 넘기고 받을 값과 운반비를 정산했다. 남은 장부를 다음 거래에서도 쓸 수 있게 정리하려 한다.',writing:'고친 원고를 한 차례 끝까지 읽었다. 글을 베껴 읽겠다는 사람이 있어 종이와 시간을 들여 한 부를 더 만들지 생각한다.',training:'작은 수리와 재료 다루기를 여러 번 연습했다. 배웠다는 사실만으로 일자리가 생기지는 않는다. 전에 하던 일과 새로 배운 기술을 살려 다른 일감을 알아볼 수 있다.',workgroup:'전에 전한 근무 시간과 품삯 내역에 대해 일터의 책임자에게 답을 들을 날이 되었다. 동료들과 함께 약속한 내용이 실제로 지켜지는지 확인하려 한다.'}[p.key];
+  description={craft:withPerson(who)+' 작은 주문을 마쳤다. 함께 쓴 공구와 재료값을 정리하고, 다음에 맡을 수량과 일을 나눌 방법을 다시 정하려 한다.',trade:withPerson(who)+' 물건을 넘기고 받을 값과 운반비를 정산했다. 남은 장부를 다음 거래에서도 쓸 수 있게 정리하려 한다.',writing:'고친 원고를 한 차례 끝까지 읽었다. 글을 베껴 읽겠다는 사람이 있어 종이와 시간을 들여 한 부를 더 만들지 생각한다.',training:'작은 물건을 고치고 재료를 다루는 일이 전보다 손에 익었다. 이제 배운 기술을 써 볼 만한 일감이 있는지 물어보려 한다.',workgroup:'전에 전한 근무 시간과 품삯 내역에 대해 일터의 책임자에게 답을 들을 날이 되었다. 동료들과 함께 약속한 내용이 실제로 지켜지는지 확인하려 한다.'}[p.key];
   labels=[p.key==='training'?'배운 기술로 수공업·수리 일감을 구한다':p.key==='writing'?'원고를 한 부 베껴 읽을 사람에게 건넨다':'장부와 약속을 확인하고 다음 일을 정한다','더 넓히지 않고 지금까지의 일을 정리한다'];actions=['finish','archive'];
  }
  const paid=money(l)>=expense(l);
- return {title:names[p.key],description,options:labels.map((label,i)=>({label:i===0&&!paid&&p.key!=='workgroup'?'비용이 부족해 준비한 내용을 보관한다':label,note:i===0&&p.key!=='workgroup'?'돈과 품이 든다. 결과는 다음 해에 다시 확인한다.':'당장 생업과 처지를 살핀다.',action:i===0&&!paid&&p.key!=='workgroup'?'archive':actions[i]}))};
+ return {title:names[p.key],description,options:labels.map((label,i)=>({label:i===0&&!paid&&p.key!=='workgroup'?'비용이 부족해 준비한 내용을 보관한다':label,note:i===0&&p.key!=='workgroup'?'비용을 내고 생업 틈틈이 시간을 쓴다.':'지금 하던 일을 계속한다.',action:i===0&&!paid&&p.key!=='workgroup'?'archive':actions[i]}))};
 }
 function close(l,p,text){p.status='archived';p.completed=l.year;const s=ensure(l);if(s.active===p.id)s.active=null;if(l.pending==='joseon339:'+p.id)l.pending=null;log(l,p,text,'followup');}
 function choose(l,i){
@@ -75,15 +76,15 @@ function choose(l,i){
  else {
   if(p.key!=='workgroup'&&!cost(l,expense(l)))return false;
   l.change({health:-1,knowledge:1});
-  if(action==='start'){const c=contact(l,p);p.job=occupation(l);p.region=region(l);p.stage=1;p.due=l.year+2;log(l,p,c.name+'와 시간을 맞춰 '+({craft:'재료와 공구를 살피고 맡을 주문을 적었다.',trade:'물량과 운반 비용을 적고 각자 맡을 일을 나누었다.',writing:'오래 적어 둔 내용을 펼쳐 직접 겪은 일부터 골랐다.',training:'공구를 다루는 기초부터 배우기 시작했다.',workgroup:'근무 시간과 품삯 내역을 서로 확인하기 시작했다.'})[p.key],'choice');}
+  if(action==='start'){const c=contact(l,p);p.job=occupation(l);p.region=region(l);p.stage=1;p.due=l.year+2;log(l,p,withPerson(c.name)+' 시간을 맞춰 '+({craft:'재료와 공구를 살피고 맡을 주문을 적었다.',trade:'물량과 운반 비용을 적고 각자 맡을 일을 나누었다.',writing:'오래 적어 둔 내용을 펼쳐 직접 겪은 일부터 골랐다.',training:'공구를 다루는 기초부터 배우기 시작했다.',workgroup:'근무 시간과 품삯 내역을 서로 확인하기 시작했다.'})[p.key],'choice');}
   else if(action==='continue'){p.stage=2;p.due=l.year+1;log(l,p,({craft:'작은 주문을 함께 만들며 재료가 모자란 곳과 잘못 만든 부분을 고쳤다.',trade:'약속한 물량을 마련하고 받을 값과 운반비를 장부에 적었다.',writing:'기억이 다른 대목을 다시 묻고 전해 들은 말에는 따로 표시했다.',training:'배운 공구로 작은 물건을 손보고 잘못된 부분을 다시 연습했다.',workgroup:'함께 뜻을 모은 동료들의 근무 내역을 정리해 책임자에게 개선을 요청했다.'})[p.key],'choice');}
   else {
    p.status='completed';p.completed=l.year;
    let text;
    if(p.key==='training'){
-    if(l.year>=1950&&l.year<=1953){p.status='archived';text='배운 기술을 적어 두었지만 전쟁 중에는 새 일자리를 구하지 못했다. 당장의 생계를 이어 갈 방법을 찾았다.';}
-    else if((l.seed+p.started)%5>=2&&W6?.career(l,'trades',0,'배운 기술로 일감을 구해'))text='배운 기술을 써 볼 일감을 구했다. 새 일터에서도 익숙하지 않은 작업부터 다시 배워야 했다.';
-    else {p.status='archived';text='배운 기술을 정리했지만 새 일감은 구하지 못했다. 하던 생업을 이어 갔다.';}
+    if(l.year>=1950&&l.year<=1953){p.status='archived';text='전쟁 통에 배운 기술을 써 볼 일자리를 찾지 못해, 우선 먹고살 일을 구해야 했다.';}
+    else if((l.seed+p.started)%5>=2&&W6?.career(l,'trades',0,'배운 기술로 일감을 구해'))text='배운 기술을 써 볼 일감을 얻었지만, 새 일터에서 서툰 작업은 물어 가며 다시 익혔다.';
+    else {p.status='archived';text='배운 기술로 일자리를 구해 봤지만 자리를 얻지 못해, 하던 일을 계속했다.';}
    }else if(['craft','trade'].includes(p.key)&&((l.joseon13?.fields||0)>0||l.year<=(l.joseon2?.scarcityUntil||0))){
     p.status='archived';text='전란과 먹을거리 부족으로 약속한 일감을 마치지 못했다. 들인 비용은 돌아오지 않았고, 진행한 내용만 장부에 남겼다.';
    }else if(p.key==='writing'){
@@ -91,8 +92,8 @@ function choose(l,i){
     text='원고를 한 권으로 엮고 한 부를 더 베껴 읽을 사람에게 건넸다. '+title+'이라는 글을 읽은 사람이 빠진 대목을 물어 왔다.';
    }else if(p.key==='workgroup'){
     const agreed=((l.seed+p.started)%5)>1;p.agreed=agreed;
-    text=agreed?'책임자가 쉬는 차례를 정해 보겠다고 답했다. 동료들과 번갈아 쉬는 시간을 확인했지만 품삯과 다른 요구까지 해결된 것은 아니었다.':'책임자에게 요구를 다시 전했지만 근무 조건은 바뀌지 않았다. 동료들과 적어 둔 내역을 보관하고 생계를 이어 갈 길을 의논했다.';
-   }else text=p.key==='craft'?'함께 쓰는 공구와 주문 장부를 정리했다. 공방에서 맡을 일을 나누어 이어 가기로 했다. 재료를 구할 때와 납품할 때도 서로 맡을 몫을 적어 두었다.':'물건 값과 비용을 맞춰 공동 거래 장부를 남겼다. 다음 거래도 각자 감당할 물량부터 나누어 맡기로 했다.';
+    text=agreed?'책임자가 쉬는 차례를 정해 보겠다고 답했다. 동료들과 번갈아 쉬는 시간을 확인했지만 품삯과 다른 요구까지 해결된 것은 아니었다.':'동료들과 근무 내역을 모아 다시 요구했지만 일터의 조건은 바뀌지 않았다.';
+   }else text=p.key==='craft'?'공구와 재료값을 정산하고 다음 주문도 나누어 맡기로 했다. 누가 재료를 구하고 물건을 납품할지 장부에 적어 두었다.':'물건 값에서 비용을 빼고 각자 받을 몫을 나눴다. 다음에도 감당할 수 있는 물량만큼 함께 거래하기로 했다.';
    if(p.status==='completed'){
     const career=l.joseon6?.career;
     if(p.key==='craft'&&career){career.practice=clamp((career.practice||0)+2,0,100);career.reputation=clamp((career.reputation||0)+3,0,100);}
@@ -120,7 +121,7 @@ function year(l){
   }
  }
  if([1894,1910,1945,1950,1953,1987,1997].includes(l.year)&&l.age>0&&s.projects.some(p=>p.stage>0)&&!s.transitions.includes(l.year)){
-  s.transitions.push(l.year);const p=s.projects.find(p=>p.stage>0);log(l,p,'시대가 달라지는 동안에도 전에 익힌 일과 적어 둔 장부는 남아 있었다. 새 살림에 그대로 쓸 수 있을지는 다시 살펴야 했다.');
+  s.transitions.push(l.year);const p=s.projects.find(p=>p.stage>0);log(l,p,'세상이 달라져 전에 하던 일을 그대로 이어 갈 수 있을지 걱정됐다. 함께 일하며 적어 둔 장부를 다시 펼쳐 보았다.');
  }
  if(awake(l)&&s.projects.filter(p=>p.status==='open').length<2){const key=candidates(l)[0];if(key){s.seen.push(key);s.projects.push({id:key+'-'+l.year,key,started:l.year,stage:0,due:l.year,status:'open',region:region(l),job:occupation(l),contactId:null,topic:occupation(l)});}}
  promote(l);
