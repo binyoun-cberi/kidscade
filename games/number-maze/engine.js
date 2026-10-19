@@ -77,7 +77,9 @@
   function hiddenCount(grade, tier, size) {
     if (size === 2) return Math.min(4, 2 + Math.floor(tier / 2));
     if (size === 4) return 7 + (tier >= 5 ? 1 : 0);
-    return Math.min(8, 3 + grade + Math.floor((tier - 1) / 2));
+    if (grade === 1) return 3 + Math.max(0, tier - 3);
+    if (grade === 2) return 2 + tier;
+    return 3 + tier;
   }
 
   function makeLines(numbers, size, operatorsByRow, operatorsByCol) {
