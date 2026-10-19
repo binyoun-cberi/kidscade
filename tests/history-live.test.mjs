@@ -579,8 +579,8 @@ test('timebattle v2 layout keeps teacher, solo and next-round quiz controls inta
   const html=fs.readFileSync(new URL('history_timebattle.html',base),'utf8');
   const css=fs.readFileSync(new URL('timebattle-ui-v2.css',base),'utf8');
   const js=fs.readFileSync(new URL('timebattle-ui-v2.js',base),'utf8');
-  assert.match(html,/timebattle-ui-v2\.css\?v=1/);
-  assert.match(html,/timebattle-ui-v2\.js\?v=1/);
+  assert.match(html,/timebattle-ui-v2\.css\?v=2/);
+  assert.match(html,/timebattle-ui-v2\.js\?v=2/);
   for (const id of ['hostSetup','soloSetup','roundSetup','questionMode','soloQuestionMode',
     'roundQuestionMode','hostEraPicker','soloEraPicker','roundEraPicker',
     'questionCount','soloQuestionCount','roundQuestionCount','checkpointCustom','roundCheckpointCustom']) {
