@@ -31,6 +31,7 @@
 <link rel="stylesheet" href="./travel-v22.css?v=1">
 <link rel="stylesheet" href="./history-calendar-v337.css?v=1">
 <link rel="stylesheet" href="./household-v342.css?v=1">
+<link rel="stylesheet" href="./goryeo-v343.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -50,11 +51,14 @@
         <div class="historical-picker" aria-label="한국사의 출생 연도와 지역">
           <label for="birthYearInput">태어날 연도</label>
           <div class="historical-picker-fields">
-            <input id="birthYearInput" type="number" min="1392" max="2026" step="1" value="2026" inputmode="numeric" aria-describedby="eraHelp">
+            <input id="birthYearInput" type="number" min="1200" max="2026" step="1" value="2026" inputmode="numeric" aria-describedby="eraHelp">
             <input id="birthLocation" type="hidden" value="korea" aria-label="출생 지역"><span class="korean-only-note">출생지는 한반도 안에서 정해집니다</span>
           </div>
           <div class="era-presets" role="group" aria-label="시대 바로 선택">
             <button type="button" data-era-year="2026" aria-pressed="true">2026년 대한민국</button>
+            <button type="button" data-era-year="1210" aria-pressed="false">1210년 고려 · 몽골 침입 전</button>
+            <button type="button" data-era-year="1270" aria-pressed="false">1270년 고려 · 원 간섭기</button>
+            <button type="button" data-era-year="1350" aria-pressed="false">1350년 고려 · 개혁과 전란</button>
             <button type="button" data-era-year="1480" aria-pressed="false">1480년 조선 전기</button>
             <button type="button" data-era-year="1580" aria-pressed="false">1580년 임진왜란 전</button>
             <button type="button" data-era-year="1618" aria-pressed="false">1618년 병자호란 전</button>
@@ -64,7 +68,7 @@
             <button type="button" data-era-year="1935" aria-pressed="false">1935년 일제강점기</button>
             <button type="button" data-era-year="1950" aria-pressed="false">1950년 한국전쟁기</button>
           </div>
-          <p id="eraHelp">1392년부터 2026년까지, 태어날 해를 골라 보세요.</p>
+          <p id="eraHelp">1200년부터 2026년까지, 태어날 해를 골라 보세요.</p>
         </div>
         <section class="birth-customization" aria-labelledby="birthCustomTitle">
           <h2 id="birthCustomTitle">나의 첫 기록</h2>
@@ -141,6 +145,7 @@
     </section>
 
     <section id="play" class="section play hidden">
+<div id="goryeoPlay" hidden></div>
       <div class="playing-top">
         <div class="place"><span id="placeFlag" class="place-flag" aria-hidden="true">🌐</span><div><span class="eyebrow">당신의 이야기</span><strong id="placeName">출생 시대와 지역</strong><span id="nameHeadline" class="name-headline">—</span></div></div>
         <div class="time"><span id="currentYear">2026년</span><strong><span id="currentAge">0</span><small>세</small></strong></div>
@@ -506,7 +511,7 @@
     <div class="rules-backdrop" data-close="rules"></div>
     <div class="rules-content"><button id="rulesClose" class="rule-close" type="button" aria-label="닫기">×</button>
       <p class="eyebrow">시작하기 전에</p><h2 id="rulesTitle">게임 방법</h2>
-      <p>1392년부터 2026년까지 태어날 해를 정하세요. 이름·성별·신분(조선 시대) 또는 가정 형편도 직접 선택하거나 우연에 맡길 수 있습니다. 모든 인생은 한반도에서 시작하며, 시대와 지역에 따라 만나는 사건과 선택이 달라집니다. 시간은 저절로 흐르다가 중요한 순간에 멈춥니다.</p>
+      <p>1200년부터 2026년까지 태어날 해를 정하세요. 이름·성별·집안의 출신(고려·조선 시대) 또는 가정 형편도 직접 선택하거나 우연에 맡길 수 있습니다. 모든 인생은 한반도에서 시작하며, 시대와 지역에 따라 만나는 사건과 선택이 달라집니다. 시간은 저절로 흐르다가 중요한 순간에 멈춥니다.</p>
       <p>시대와 지역에 따라 배움과 생업, 전쟁과 사회 변화가 삶을 바꿉니다. 전쟁 시기에는 피란·포로·사망 등 무거운 결과가 나타날 수 있습니다. 삶이 끝나면 지나온 시간을 다시 읽을 수 있습니다.</p>
       <details class="historical-method"><summary>자료 출처 및 제작 방식</summary>
   <p>조선 시대의 제도와 생활상은 국사편찬위원회와 한국민족문화대백과 자료를 참고했습니다. 역사적 사건의 연대와 배경은 자료를 따르되, 이 작품의 인물·족보·수령 이름·부임 시기·감찰 결과·개인의 삶은 창작입니다.</p>
@@ -521,8 +526,8 @@
 <script src="../../kidscade-storage.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_one_life" data-title="단 하나의 인생" data-shell="false" data-pauseable="true" data-orientation="any"></script>
 <script src="./official-data.js?v=202610111530"></script>
-<script src="./identity-v20.js?v=1"></script>
-<script src="./engine.js?v=16"></script>
+<script src="./identity-v20.js?v=2"></script>
+<script src="./engine.js?v=17"></script>
 <script src="./world-v2.js?v=12"></script>
 <script src="./pixel-scene.js?v=3"></script>
 <script src="./world-v3.js?v=8"></script>
@@ -535,7 +540,7 @@
 <script src="./world-v8.js?v=3"></script>
 <script src="./scenes-v6.js?v=1"></script>
 <script src="./scenes-v8.js?v=1"></script>
-<script src="./history.js?v=3"></script>
+<script src="./history.js?v=4"></script>
 <script src="./world-v9.js?v=5"></script>
 <script src="./history-data-v10.js?v=2"></script>
 <script src="./history-stories-v10.js?v=3"></script>
@@ -579,6 +584,8 @@
 <script src="./diaspora-v340.js?v=3"></script>
 <script src="./collaboration-v341.js?v=2"></script>
 <script src="./household-v342.js?v=3"></script>
-<script src="./game.js?v=71"></script>
+<script src="./goryeo-v343.js?v=1"></script>
+<script src="./goryeo-view-v343.js?v=1"></script>
+<script src="./game.js?v=72"></script>
 </body>
 </html>

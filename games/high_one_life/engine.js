@@ -170,7 +170,7 @@
   const stages = age => age < 7 ? '유년기' : age < 19 ? '성장기' : age < 31 ? '청년기' : age < 61 ? '성인기' : '노년기';
   class Life {
     constructor(seed, options={}) {
-      this.birthYear=Number.isInteger(options?.birthYear)&&options.birthYear>=1392&&options.birthYear<=2026?options.birthYear:2026;
+      this.birthYear=Number.isInteger(options?.birthYear)&&options.birthYear>=1200&&options.birthYear<=2026?options.birthYear:2026;
       this.birthSetup=Identity?.normalizeBirth(this.birthYear,options?.birthSetup)||{name:'',gender:'',origin:'',familyLevel:''};
       this.namedChildIds=[];
       this.seed = Number.isFinite(seed) ? (seed >>> 0) : (((Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0));
@@ -207,7 +207,7 @@
       this.log.push({age:this.age,year:this.year,text,kind});
       // Historical biographies need their earlier chapters at the ending.
       // Keep modern-game limits unchanged.
-      const maxLog=this.country?.[0]==='대한민국'&&this.birthYear>=1392&&this.birthYear<=1897?420:100;
+      const maxLog=this.country?.[0]==='대한민국'&&this.birthYear>=1200&&this.birthYear<=1897?420:100;
       if(this.log.length>maxLog){
         const cutoff=this.log.length-maxLog;
         this.log=this.log.filter((entry,index)=>index>=cutoff||entry.kind==='decision'||entry.kind==='decision-effect');
@@ -339,7 +339,7 @@
     static restore(data) {
       if(!data||data.version!==1 || !Number.isInteger(data.age) || data.age<0 || data.age>108) return null;
       // Old v1 saves omit birthYear: those are always 2026 births.
-      const birthYear=Number.isInteger(data.birthYear)&&data.birthYear>=1392&&data.birthYear<=2026?data.birthYear:2026;
+      const birthYear=Number.isInteger(data.birthYear)&&data.birthYear>=1200&&data.birthYear<=2026?data.birthYear:2026;
       const life=new Life(data.seed,{birthYear,birthSetup:data.birthSetup});
       life.namedChildIds=Array.isArray(data.namedChildIds)?data.namedChildIds.filter(x=>typeof x==='string'&&/^[jm]:[a-zA-Z0-9_-]{1,48}$/.test(x)).slice(-80):[];
       const country=COUNTRIES.find(c=>c[0]===data.country);

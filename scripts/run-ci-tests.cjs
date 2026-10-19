@@ -4,6 +4,7 @@
 const { spawnSync } = require('node:child_process');
 
 const TEST_FILES = [
+  "tests/one-life-goryeo-v343.test.cjs",
   "tests/one-life-collaboration-v341.test.cjs",
   "tests/one-life-diaspora-v340.test.cjs",
   "tests/one-life-paths-v339.test.cjs",
