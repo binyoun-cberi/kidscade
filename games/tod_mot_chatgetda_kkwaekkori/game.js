@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { STAGES, COLORS, BLOCK_PITCH, makeTown, getBlockCenter, getRoutePosition, movePeople, getClue } from './sim.mjs';
+import { STAGES, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, getBlockCenter, getRoutePosition, movePeople, getClue } from './sim.mjs?v=2';
 
 const $ = id => document.getElementById(id);
 const ROOT = '../../assets/game/';
@@ -12,6 +12,13 @@ const MODEL = {
   bench: `${ROOT}3d/interiors/kenney-furniture-kit/bench.glb`,
   cars: [ `${ROOT}3d/vehicles/kenney-car-kit/sedan.glb`, `${ROOT}3d/vehicles/kenney-car-kit/taxi.glb`, `${ROOT}3d/vehicles/kenney-car-kit/van.glb` ],
   people: ['female','male'].flatMap(type => 'abcdef'.split('').map(letter => `${ROOT}characters/people/character-${type}-${letter}.glb`))
+};
+const CITY = `${ROOT}3d/city/poly-pizza-city-pack/`;
+const STREET = `${ROOT}3d/city/kenney-city-kit-roads/`;
+const FOOD = `${ROOT}3d/food/ultimate-food-pack/`;
+const DISTRICT_MODELS = {
+  market:['building-red-corner','pizza-corner'], bakery:['pizza-corner','building-red'],
+  school:['building-green'], home:['brown-building'], plaza:['big-building']
 };
 const loader = new GLTFLoader();
 const modelCache = new Map();
@@ -39,6 +46,19 @@ const pointerPositions = new Map();
 const citizenMeshes = new Map();
 const cars = [];
 const mixers = [];
+const occluders = [];
+const citizenAssets = new Map();
+let seeThrough = false, previewActor = null, previewMixer = null;
+const previewCanvas = $('targetPreview');
+const previewRenderer = new THREE.WebGLRenderer({canvas:previewCanvas,antialias:true,alpha:true});
+previewRenderer.setPixelRatio(Math.min(devicePixelRatio||1,1.55));
+previewRenderer.outputColorSpace=THREE.SRGBColorSpace;
+const previewScene=new THREE.Scene();
+previewScene.add(new THREE.HemisphereLight(0xfffce9,0x7eaf9d,2.4));
+const previewSun=new THREE.DirectionalLight(0xfff0ce,2.6);previewSun.position.set(-3,5,6);previewScene.add(previewSun);
+const previewCamera=new THREE.PerspectiveCamera(33,1,.1,30);
+previewCamera.position.set(1.7,1.5,3.6);previewCamera.lookAt(0,.72,0);
+
 const SAVE_KEY = window.KidscadeGame?.storageKey?.('tod_mot_chatgetda_kkwaekkori','session') || 'kidscade_game_v1:tod_mot_chatgetda_kkwaekkori:session';
 
 function loadGLB(url) {
@@ -48,19 +68,22 @@ function loadGLB(url) {
 function owned(mesh) {mesh.userData.procedural = true;return mesh}
 function disposeProcedural(root) {
   root.traverse?.(object => {
-    if(!object.isMesh||!object.userData.procedural)return;
+    if(!object.isMesh)return;
+    if(object.userData.ownedMaterial){for(const m of Array.isArray(object.material)?object.material:[object.material])m.dispose();}
+    if(!object.userData.procedural)return;
     object.geometry.dispose();
     if(Array.isArray(object.material))object.material.forEach(material=>material.dispose());
     else object.material?.dispose();
   });
 }
-function normalizedModel(gltf, longest = 2.5) {
+function normalizedModel(gltf, longest = 2.5, footprint = null) {
   if (!gltf) return null;
   const object = cloneSkeleton(gltf.scene);
   object.updateMatrixWorld(true);
   let box = new THREE.Box3().setFromObject(object);
   const dimension = box.getSize(new THREE.Vector3());
-  object.scale.multiplyScalar(longest / (Math.max(dimension.x,dimension.y,dimension.z) || 1));
+  const scale=footprint ? Math.min(footprint/Math.max(dimension.x,dimension.z),longest/Math.max(.001,dimension.y)) : longest/(Math.max(dimension.x,dimension.y,dimension.z)||1);
+  object.scale.multiplyScalar(scale);
   object.updateMatrixWorld(true);
   box = new THREE.Box3().setFromObject(object);
   const center = box.getCenter(new THREE.Vector3());
@@ -71,11 +94,14 @@ function modelIn(group, url, longest, fallback, parent, revision) {
   group.add(fallback);
   loadGLB(url).then(gltf => {
     if (!gltf || worldSerial !== revision || !parent.parent) return;
-    const model = normalizedModel(gltf,longest);
+    const model = normalizedModel(gltf,longest,group.userData.footprint);
     if (!model) return;
     group.remove(fallback);
     disposeProcedural(fallback);
     group.add(model);
+    if(group.userData.occluder)registerOccluder(model);
+    const source=citizenMeshes.get(getTarget()?.id);
+    if(source&&(source.holder===parent||source.holder===parent.parent))refreshPreview();
   });
 }
 function cube(x,y,z,color) {return owned(new THREE.Mesh(new THREE.BoxGeometry(x,y,z),flat(color)));}
@@ -99,17 +125,18 @@ function treeFallback() {
   addPart(g,owned(new THREE.Mesh(new THREE.ConeGeometry(.56,1.1,7),flat(0x5ca16b))),0,1.03,0);
   return g;
 }
-function placeObject(url, center, longest, fallback, revision) {
+function placeObject(url, center, longest, fallback, revision, footprint = null, occluder = false) {
   const pivot = new THREE.Group();
   pivot.position.set(center.x,0,center.z);
   scenery.add(pivot);
+  pivot.userData.footprint=footprint;pivot.userData.occluder=occluder;
   modelIn(pivot,url,longest,fallback,pivot,revision);
   return pivot;
 }
 function generateWorld() {
   for(const group of [scenery,citizens,movingCars,marker])disposeProcedural(group);
   scenery.clear();citizens.clear();movingCars.clear();marker.clear();citizenMeshes.clear();cars.length=0;
-  mixers.length=0;
+  mixers.length=0;occluders.length=0;citizenAssets.clear();clearPreview();
   if (!town) return;
   const revision=++worldSerial;
   const {cols,rows}=town.config;
@@ -118,33 +145,53 @@ function generateWorld() {
   // Lane ribbons are deliberately between blocks; residents always walk on the inner sidewalk.
   for (let col=0;col<cols-1;col++) {
     const x=(col+.5-(cols-1)/2)*BLOCK_PITCH;
-    addPart(scenery,cube(.65,.028,depth,colors.road),x,.003,0);
+    addPart(scenery,cube(1.35,.028,depth,colors.road),x,.003,0);
   }
   for (let row=0;row<rows-1;row++) {
     const z=(row+.5-(rows-1)/2)*BLOCK_PITCH;
-    addPart(scenery,cube(width,.028,.65,colors.road),0,.007,z);
+    addPart(scenery,cube(width,.028,1.35,colors.road),0,.007,z);
   }
   for (let i=0;i<town.blocks.length;i++) {
     const block=town.blocks[i],center=getBlockCenter(block,town.config);
-    const parcel=addPart(scenery,cube(4.53,.035,4.53,block.kind==='park'?0xa6c987:colors.concrete),center.x,.03,center.z);
+    const parcel=addPart(scenery,cube(3.75,.035,3.75,block.kind==='park'?0xa6c987:colors.concrete),center.x,.03,center.z);
     parcel.userData.block=block.id;
-    if(block.kind==='park'||block.kind==='plaza') {
-      addPart(scenery,cube(2.05,.05,.9,block.kind==='park'?0xe7d5ac:0xdabf9c),center.x,.073,center.z);
-      const tree=placeObject(MODEL.parkTree,{x:center.x-1,z:center.z-.7},1.55,treeFallback(),revision);tree.rotation.y=i*.9;
-      const bench=placeObject(MODEL.bench,{x:center.x+.75,z:center.z+.35},1.02,cube(.92,.3,.45,0x977452),revision);bench.rotation.y=i*.55;
-      if(block.kind==='plaza')addPart(scenery,ball(.35,0x7ec4d7),center.x,.4,center.z);
+    // A 2.6-wide building envelope leaves the 1.88 sidewalk loop clear.
+    const local=(url,x,z,size,footprint=null,blocksView=false)=>placeObject(url,{x:center.x+x,z:center.z+z},size,treeFallback(),revision,footprint,blocksView);
+    if(block.kind==='park') {
+      addPart(scenery,cube(2.8,.06,2.8,0x8fbd75),center.x,.08,center.z);
+      local(MODEL.parkTree,-.8,-.7,1.6,.9,true);
+      local(`${CITY}flower-pot.glb`,.8,-.8,.55,.5);
+      local(MODEL.bench,.45,.65,1.1);
+      local(`${CITY}bicycle.glb`,-.7,.7,.9);
     } else {
-      const fallback=buildingFallback(block);
-      const style=MODEL.buildings[(i+(block.kind==='bakery'?3:block.kind==='school'?6:0))%MODEL.buildings.length];
-      const shop=placeObject(style,center,block.kind==='school'?2.9:2.55,fallback,revision);
-      shop.rotation.y=(i%4)*Math.PI/2;
-      if(i%2===0) {
-        const corner={x:center.x+1.1,z:center.z-1.1};
-        const tree=placeObject(MODEL.shopTree,corner,1.23,treeFallback(),revision);
-        tree.rotation.y=i;
+      const variants=DISTRICT_MODELS[block.kind];
+      const url=town.stageName==='small'&&block.kind==='home' ? MODEL.buildings[i%MODEL.buildings.length] : `${CITY}${variants[Math.floor(i/6)%variants.length]}.glb`;
+      const height=block.kind==='plaza'?4.6:block.kind==='home'?3.3:2.7;
+      const building=placeObject(url,center,height,buildingFallback(block),revision,2.6,true);
+      building.rotation.y=(i%4)*Math.PI/2;
+      // Distinct, low storefront details sit inside each parcel, never in the pedestrian loop.
+      if(block.kind==='market'||block.kind==='bakery') {
+        local(`${FOOD}${block.kind==='bakery'?'bread':'apple-green'}.glb`,-.7,1.1,.35);
+        local(`${CITY}flower-pot.glb`,.9,1.08,.45);
+        addPart(scenery,cube(1.5,.10,.50,0xe7bd85),center.x,.57,center.z+1.10);
+      } else if(block.kind==='school') {
+        local(`${CITY}bicycle.glb`,1.05,1.02,.75);
+        local(`${CITY}planter-and-bushes.glb`,-.75,1.08,.85);
+      } else if(block.kind==='home') {
+        local(`${CITY}mailbox.glb`,1.08,1.05,.6);
+        local(`${ROOT}3d/city/kenney-city-kit-suburban/planter.glb`,-.9,1.08,.65);
+      } else {
+        local(`${CITY}bus-stop.glb`,.25,1.05,.9);
+        local(`${CITY}bus-stop-sign.glb`,-1.08,1.05,.7);
       }
     }
+    // Street lamps and zebra crossings give the connected streets a human scale.
+    if(block.col<cols-1&&block.row<rows-1){
+      local(`${STREET}light-curved.glb`,2.3,1.35,1.65);
+      for(let stripe=0;stripe<4;stripe++)addPart(scenery,cube(.19,.025,1.1,0xfff7e6),center.x+1.98+stripe*.27,.05,center.z+2.6);
+    }
   }
+
   for(const person of town.people) {
     const holder=new THREE.Group();
     const body=new THREE.Group();
@@ -166,6 +213,7 @@ function generateWorld() {
   const markerRing=owned(new THREE.Mesh(new THREE.TorusGeometry(.47,.042,8,32),new THREE.MeshBasicMaterial({color:0xffcc57,transparent:true,opacity:.93,depthTest:false})));
   markerRing.rotation.x=-Math.PI/2;markerRing.renderOrder=10;markerRing.name='hint-ring';markerRing.visible=false;marker.add(markerRing);
   positionEverything(0);
+  refreshPreview();
 }
 
 function makeCitizenAppearance(person,body,appearance,revision) {
@@ -182,29 +230,75 @@ function makeCitizenAppearance(person,body,appearance,revision) {
     addPart(fallback,cube(.16,.10,.21,0x5d5a60),side*.12,.071,.04);
   }
   body.add(fallback);
-  // Reuse the town's actual animated-capable people GLBs; the colorful hat/bag stay on top.
+  // One complete character asset: no fixed hats or backpacks intersecting the model.
   loadGLB(MODEL.people[person.modelVariant]).then(gltf=>{
     if(!gltf||worldSerial!==revision||!body.parent)return;
-    const model=normalizedModel(gltf,1.1);
+    const model=normalizedModel(gltf,1.35,1.1);
     if(model){
       body.remove(fallback);disposeProcedural(fallback);body.add(model);
-      const clip=gltf.animations?.find(animation=>/walk/i.test(animation.name));
-      if(clip){const mixer=new THREE.AnimationMixer(model);mixer.clipAction(clip).play();mixers.push({mixer,person})}
+      const clipName=ACTIVITIES.find(a=>a.id===person.activity).clip;
+      const clip=gltf.animations?.find(animation=>animation.name===clipName);
+      if(clip){const mixer=new THREE.AnimationMixer(model);mixer.clipAction(clip).play();mixers.push({mixer,person});}
+      citizenAssets.set(person.id,gltf);
+      if(getTarget()?.id===person.id)refreshPreview();
     }
   });
-  const hatColor=COLORS[person.hatColor].hex;
-  const bagColor=COLORS[person.bagColor].hex;
-  if(person.hatStyle===2) {
-    addPart(appearance,owned(new THREE.Mesh(new THREE.ConeGeometry(.25,.33,10),flat(hatColor))),0,1.25,0);
-    addPart(appearance,ball(.095,0xfff6e4),0,1.44,0);
-  } else {
-    const crown=addPart(appearance,ball(.268,hatColor),0,1.185,0);
-    crown.scale.set(1,.48,1);
-    if(person.hatStyle===0)addPart(appearance,cube(.31,.045,.22,hatColor),0,1.13,.22);
-    else addPart(appearance,cylinder(.33,.33,.055,hatColor,16),0,1.13,0);
+  const prop=new THREE.Group();prop.name='activity-prop';appearance.add(prop);
+  if(person.activity==='read') {
+    const book=addPart(prop,cube(.40,.055,.27,0xee976a),0,.72,.30);book.rotation.x=-.25;
+    addPart(book,cube(.35,.018,.24,0xfff6dd),0,.037,0);
+  } else if(person.activity==='snack') {
+    prop.position.set(-.25,.72,.21);
+    const fallback=ball(.10,0xffc9cb);
+    modelIn(prop,`${FOOD}ice-cream.glb`,.36,fallback,body.parent,revision);
+  } else if(person.activity==='shop') {
+    prop.position.set(-.33,.34,.12);
+    const bag=cube(.28,.32,.23,0xe7b876);bag.position.y=.16;
+    prop.add(bag);addPart(prop,cube(.20,.05,.05,0x967858),0,.35,0);
+  } else if(person.activity==='ball') {
+    prop.position.set(0,.25,.48);
+    modelIn(prop,`${ROOT}platformer/props/ball.glb`,.32,ball(.16,0xf2b341),body.parent,revision);
+  } else if(person.activity==='sit') {
+    const bench=new THREE.Group();bench.position.set(0,0,-.08);appearance.add(bench);
+    modelIn(bench,MODEL.bench,.9,cube(.85,.4,.4,0x977452),body.parent,revision);
   }
-  addPart(appearance,cube(.32,.44,.20,bagColor),0,.55,-.25);
-  for(const side of [-1,1])addPart(appearance,cube(.045,.44,.045,0xffffff),side*.12,.61,-.26);
+}
+
+function clearPreview(){
+  if(previewActor){disposeProcedural(previewActor);previewScene.remove(previewActor);}
+  previewMixer?.stopAllAction();previewMixer=null;previewActor=null;
+}
+function refreshPreview(){
+  clearPreview();
+  const source=citizenMeshes.get(getTarget()?.id);
+  if(!source)return;
+  // Clone the complete resident, including their actual prop/bench, into an independent scene.
+  previewActor=cloneSkeleton(source.holder);
+  previewActor.position.set(0,0,0);previewActor.rotation.set(0,-.3,0);previewScene.add(previewActor);
+  // Procedural geometry/material must not be shared with a disposable preview.
+  previewActor.traverse(o=>{if(o.isMesh&&o.userData.procedural){o.geometry=o.geometry.clone();o.material=o.material.clone();}});
+  const gltf=citizenAssets.get(source.person.id);
+  const clip=gltf?.animations.find(a=>a.name===ACTIVITIES.find(a=>a.id===source.person.activity).clip);
+  if(clip){previewMixer=new THREE.AnimationMixer(previewActor.children[0].children[0]);previewMixer.clipAction(clip).play();}
+}
+function registerOccluder(root){
+  root.traverse(o=>{
+    if(!o.isMesh)return;
+    o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone();
+    o.userData.ownedMaterial=true;
+    occluders.push(o);
+  });
+  applyVisibility();
+}
+function applyVisibility(){
+  for(const mesh of occluders)for(const mat of Array.isArray(mesh.material)?mesh.material:[mesh.material]){
+    mat.transparent=seeThrough;mat.opacity=seeThrough?.16:1;mat.depthWrite=!seeThrough;
+  }
+}
+function animateActivity(actor,person,now){
+  const prop=actor.getObjectByName('activity-prop');
+  if(prop&&person.activity==='ball')prop.position.y=.22+Math.abs(Math.sin(person.elapsed*3))*.45;
+  if(prop&&person.activity==='snack')prop.rotation.z=Math.sin(person.elapsed*1.5)*.12;
 }
 
 function positionEverything(dt) {
@@ -217,8 +311,8 @@ function positionEverything(dt) {
     mesh.holder.position.set(pos.x,0.08,pos.z);
     const eps=.012*p.direction,next=getRoutePosition({...p,progress:p.progress+eps},town.config);
     mesh.holder.rotation.y=Math.atan2(next.x-pos.x,next.z-pos.z);
-    mesh.body.position.y=p.action==='walk'?Math.abs(Math.sin(performance.now()*.006+p.modelVariant))*0.022:0;
-    mesh.body.rotation.z=p.action==='wave'?Math.sin(performance.now()*.008)*.06:0;
+    if(p.activity!=='walk')mesh.holder.rotation.y=0;
+    animateActivity(mesh.holder,p);
   }
   for(const car of cars) {
     car.phase=(car.phase+dt*car.speed/car.width)%1;
@@ -238,11 +332,8 @@ function setClue(){
   const clue=getClue(getTarget());
   if(!clue)return;
   $('clueTitle').textContent=clue.title;
-  $('clueText').textContent='같은 모자와 가방을 찾아봐!';
-  $('hatName').textContent=clue.hatShape==='beanie'?'털모자':clue.hatShape==='brim'?'벙거지':'모자';
-  $('hatIcon').textContent=clue.hatShape==='brim'?'👒':clue.hatShape==='beanie'?'🧶':'🧢';
-  $('hatColor').style.background=clue.hat.hex;
-  $('bagColor').style.background=clue.bag.hex;
+  $('clueText').textContent='얼굴과 옷, 하고 있는 일을 함께 살펴봐!';
+  refreshPreview();
   $('progress').textContent=`찾은 친구 ${found.length} / ${town.config.targets}`;
   $('hintText').textContent='';hintLevel=0;
 }
@@ -282,6 +373,7 @@ function showToast(message){
 }
 function pick(clientX,clientY) {
   if(!active)return;
+  scene.updateMatrixWorld(true);
   const rect=canvas.getBoundingClientRect();
   let nearest=null,best=31*31;
   for(const person of town.people){
@@ -293,7 +385,13 @@ function pick(clientX,clientY) {
     const x=rect.left+(projected.x+1)*rect.width/2;
     const y=rect.top+(1-projected.y)*rect.height/2;
     const distance=(x-clientX)**2+(y-clientY)**2;
-    if(distance<best){best=distance;nearest=person}
+    if(distance<best){
+      // A hidden resident cannot be selected through an opaque building.
+      const point=holder.position.clone().add(new THREE.Vector3(0,1.04,0));
+      const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(projected.x,projected.y),camera);
+      const obstruction=seeThrough?null:ray.intersectObjects(occluders,false)[0];
+      if(!obstruction||obstruction.distance>ray.ray.origin.distanceTo(point)-.15){best=distance;nearest=person;}
+    }
   }
   if(!nearest)return;
   if(nearest.id!==town.order[currentTarget]){
@@ -345,9 +443,12 @@ function resize(){
   camera.left=-viewSize*aspect/2;camera.right=viewSize*aspect/2;
   camera.top=viewSize/2;camera.bottom=-viewSize/2;
   camera.updateProjectionMatrix();renderer.setSize(width,height,false);
+  const previewRect=previewCanvas.getBoundingClientRect();
+  previewRenderer.setSize(Math.max(1,previewRect.width),Math.max(1,previewRect.height),false);
+  previewCamera.aspect=Math.max(1,previewRect.width)/Math.max(1,previewRect.height);previewCamera.updateProjectionMatrix();
   updateCamera();
 }
-function resetView(){if(!town)return;cameraLook.set(0,0,0);viewSize=initialViewSize;resize()}
+function resetView(){if(!town)return;cameraOffset.set(11,17,20);cameraLook.set(0,0,0);viewSize=initialViewSize;resize()}
 function zoom(factor){
   if(!town)return;
   viewSize=THREE.MathUtils.clamp(viewSize*factor,7,Math.max(initialViewSize*1.25,11));resize();
@@ -393,6 +494,13 @@ function releasePointer(event,canceled=false){
 canvas.addEventListener('pointerup',event=>releasePointer(event));
 canvas.addEventListener('pointercancel',event=>releasePointer(event,true));
 canvas.addEventListener('wheel',event=>{event.preventDefault();zoom(event.deltaY>0?1.11:.9)},{passive:false});
+let previewDrag=null;
+previewCanvas.addEventListener('pointerdown',event=>{previewDrag=event.clientX;previewCanvas.setPointerCapture(event.pointerId);});
+previewCanvas.addEventListener('pointermove',event=>{if(previewDrag===null||!previewActor)return;previewActor.rotation.y+=(event.clientX-previewDrag)*.018;previewDrag=event.clientX;});
+for(const event of ['pointerup','pointercancel'])previewCanvas.addEventListener(event,()=>{previewDrag=null;});
+$('rotateLeft').addEventListener('click',()=>{cameraOffset.applyAxisAngle(new THREE.Vector3(0,1,0),Math.PI/2);updateCamera();});
+$('rotateRight').addEventListener('click',()=>{cameraOffset.applyAxisAngle(new THREE.Vector3(0,1,0),-Math.PI/2);updateCamera();});
+$('seeThrough').addEventListener('click',()=>{seeThrough=!seeThrough;$('seeThrough').setAttribute('aria-pressed',String(seeThrough));applyVisibility();});
 $('zoomIn').addEventListener('click',()=>zoom(.82));
 $('zoomOut').addEventListener('click',()=>zoom(1.22));
 $('resetViewBtn').addEventListener('click',resetView);
@@ -409,9 +517,12 @@ function animate(now){
   const dt=Math.min(.05,Math.max(0,(now-lastFrame)/1000));lastFrame=now;
   if(town&&$('start').classList.contains('hidden')&&active){
     positionEverything(dt);
-    for(const entry of mixers){entry.mixer.timeScale=entry.person.action==='walk'?1:0;entry.mixer.update(dt)}
+    for(const entry of mixers)entry.mixer.setTime(entry.person.elapsed);
+    const target=getTarget();
+    if(previewActor&&target){animateActivity(previewActor,target);previewMixer?.setTime(target.elapsed);}
   }
   renderer.render(scene,camera);
+  previewRenderer.render(previewScene,previewCamera);
 }
 updateCamera();resize();requestAnimationFrame(animate);
 // Resuming is safe because the seed reconstructs all resident appearances and target order.

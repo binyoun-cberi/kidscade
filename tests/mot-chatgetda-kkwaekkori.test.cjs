@@ -26,7 +26,7 @@ test('game loads local Three.js and has touch controls, audio clues, and hints',
   assert.match(html,/three-r160\/three\.module\.js/);
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/data-game-id="tod_mot_chatgetda_kkwaekkori"/);
-  for(const id of ['town','hatIcon','bagColor','hintBtn','zoomIn','zoomOut','finish','start']) assert.match(html,new RegExp(`id="${id}"`));
+  for(const id of ['town','targetPreview','rotateLeft','rotateRight','seeThrough','hintBtn','zoomIn','zoomOut','finish','start']) assert.match(html,new RegExp(`id="${id}"`));
   for(const control of ['pointerdown','pointermove','pointerup','pointercancel','wheel','speechSynthesis','localStorage','GLTFLoader','SkeletonUtils']) assert.ok(code.includes(control),control);
   assert.match(css,/touch-action:none/);
 });
@@ -70,4 +70,15 @@ test('residents stay on visible sidewalk routes during life simulation',async()=
 test('only known repository GLB paths are referenced',()=>{
   for(const part of ['kenney-city-kit-suburban/building-type-', 'kenney-nature-kit/tree-default.glb', 'character-', 'kenney-car-kit/sedan.glb']) assert.ok(code.includes(part),part);
   assert.doesNotMatch(code,/https?:\/\//);
+});
+
+
+test('activity clues stay unique and the district types are present in every stage',async()=>{
+  const {makeTown,STAGES,personIsDiscoverable}=await simPromise;
+  for(const stage of Object.keys(STAGES))for(let seed=1;seed<=100;seed++){
+    const town=makeTown(stage,seed);
+    assert.equal(new Set(town.blocks.map(b=>b.kind)).size,6);
+    assert.equal(new Set(town.people.map(p=>`${p.modelVariant}:${p.activity}`)).size,town.people.length);
+    for(const id of town.order)assert.ok(personIsDiscoverable(town,id));
+  }
 });

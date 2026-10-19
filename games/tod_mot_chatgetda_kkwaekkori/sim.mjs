@@ -17,6 +17,15 @@ export const COLORS = Object.freeze([
   { name: '분홍', hex: '#ee93b4' }
 ]);
 export const HATS = Object.freeze([{ name: '모자', shape: 'cap' }, { name: '벙거지', shape: 'brim' }, { name: '털모자', shape: 'beanie' }]);
+export const ACTIVITIES = Object.freeze([
+  {id:'walk',name:'산책하는',clip:'walk'},
+  {id:'read',name:'책을 읽는',clip:'holding-both'},
+  {id:'snack',name:'아이스크림을 먹는',clip:'holding-right'},
+  {id:'ball',name:'공놀이하는',clip:'idle'},
+  {id:'wave',name:'손을 흔드는',clip:'interact-right'},
+  {id:'shop',name:'장을 보는',clip:'holding-right'},
+  {id:'sit',name:'벤치에서 쉬는',clip:'sit'}
+]);
 const DISTRICTS = Object.freeze([
   { name: '알록달록 시장', kind: 'market' },
   { name: '햇살 공원', kind: 'park' },
@@ -73,7 +82,7 @@ export function makeTown(stageName = 'small', seed = 1) {
   const blocks = [];
   for (let row = 0; row < config.rows; row++) {
     for (let col = 0; col < config.cols; col++) {
-      const district = DISTRICTS[(col + row * 3 + Math.floor(random() * 3)) % DISTRICTS.length];
+      const district = DISTRICTS[(col + row * config.cols) % DISTRICTS.length];
       blocks.push({ id: `b${row}-${col}`, col, row, ...district });
     }
   }
@@ -87,6 +96,7 @@ export function makeTown(stageName = 'small', seed = 1) {
     }
   }
   const appearance = shuffled(looks, random);
+  const roles = shuffled(Array.from({length:84},(_,i)=>({modelVariant:i%12,activity:ACTIVITIES[Math.floor(i/12)].id})),random);
   const people = Array.from({ length: config.residents }, (_, index) => {
     const block = blocks[index % blocks.length];
     const clothingColor = Math.floor(random() * COLORS.length);
@@ -97,14 +107,16 @@ export function makeTown(stageName = 'small', seed = 1) {
       clothingColor,
       skin: Math.floor(random() * 4),
       hair: Math.floor(random() * 4),
-      progress: random() * 4,
+      progress: ((Math.floor(index / blocks.length) + .5) * 4 / Math.ceil(config.residents / blocks.length)) % 4,
       speed: 0.035 + random() * 0.065,
       direction: random() < 0.5 ? -1 : 1,
       pause: random() * 1.8,
       stopCount: 0,
       pausedAction: 'look',
-      action: 'walk',
-      modelVariant: index % 12
+      action: roles[index].activity,
+      activity: roles[index].activity,
+      elapsed: 0,
+      modelVariant: roles[index].modelVariant
     };
   });
   const order = shuffled(people.map(p => p.id), random).slice(0, config.targets);
@@ -114,40 +126,27 @@ export function makeTown(stageName = 'small', seed = 1) {
 export function movePeople(town, deltaSeconds) {
   const dt = Math.min(0.1, Math.max(0, Number(deltaSeconds) || 0));
   for (const person of town.people) {
-    if (person.pause > 0) {
-      person.pause = Math.max(0, person.pause - dt);
-      person.action = person.pausedAction;
-      continue;
-    }
-    const before = person.progress;
-    person.progress = ((before + person.direction * person.speed * dt) % 4 + 4) % 4;
-    person.action = 'walk';
-    // Stop at street corners occasionally for believable little daily routines.
-    if (Math.floor(before * 4) !== Math.floor(person.progress * 4)) {
-      const n = person.stopCount++ + person.modelVariant * 3 + Math.floor(person.progress * 100);
-      if (n % 4 === 0) {
-        person.pause = .9 + (n % 5) * .45;
-        person.pausedAction = n % 3 === 0 ? 'wave' : n % 3 === 1 ? 'chat' : 'look';
-      }
-      if (n % 11 === 0) person.direction *= -1;
+    person.elapsed += dt;
+    person.action = person.activity;
+    if (person.activity === 'walk') {
+      person.progress = ((person.progress + person.direction * person.speed * dt) % 4 + 4) % 4;
     }
   }
 }
 
 export function getClue(person) {
   if (!person) return null;
-  const hat = COLORS[person.hatColor];
-  const bag = COLORS[person.bagColor];
+  const activity = ACTIVITIES.find(a=>a.id===person.activity);
   return {
-    title: `${hat.name} ${HATS[person.hatStyle].name}와 ${bag.name} 가방`,
-    subtitle: `${hat.name} ${HATS[person.hatStyle].name}를 쓰고 ${bag.name} 가방을 멘 친구를 찾아줘!`,
+    title: `${activity.name} 친구`,
+    subtitle: `그림 속 친구와 똑같이 ${activity.name} 친구를 찾아줘!`,
     place: `${person.block.name} 근처에 있어요.`,
-    hat, bag, hatShape: HATS[person.hatStyle].shape
+    hat: COLORS[person.hatColor], bag: COLORS[person.bagColor], hatShape: HATS[person.hatStyle].shape
   };
 }
 
 export function personIsDiscoverable(town, personId) {
   const person = town.people.find(p => p.id === personId);
   if (!person) return false;
-  return town.people.filter(p => p.hatStyle === person.hatStyle && p.hatColor === person.hatColor && p.bagColor === person.bagColor).length === 1;
+  return town.people.filter(p => p.modelVariant === person.modelVariant && p.activity === person.activity).length === 1;
 }
