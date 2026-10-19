@@ -22,7 +22,18 @@ const hook=[
 "   player:{...state.player},saving:localStorage.getItem(SAVE_KEY)?.length||0}),",
 " teleport:(x,z)=>{state.player.x=x;state.player.z=z;farmer.position.set(x,0,z);camTarget.set(x,0,z);moveGoal=null;},",
 " select:id=>chooseField(id),",
-" plantMode:()=>({active:plantingMode,selectedSeedling,held:plantHeld}),",
+" work:index=>runFieldStrip(index),",
+" plant:index=>runSeedlingPlant(index),",
+" gate:id=>activateSluice(id),",
+" rest:()=>advanceFarmDayAfterRest(),",
+" markers:id=>({work:plotMeshes.get(id)?.work?.targets?.length||0,plant:plotMeshes.get(id)?.planting?.targets?.length||0}),",
+" tap:(kind,index)=>{const rec=plotMeshes.get(state.selected);",
+"   const targets=kind==='work'?rec?.work?.targets:rec?.planting?.targets;",
+"   const target=targets?.find(t=>t.userData[kind==='work'?'stripIndex':'cellIndex']===index);",
+"   if(!target)return false;scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);",
+"   const p=target.getWorldPosition(new THREE.Vector3()).project(camera),r=$('farm').getBoundingClientRect();",
+"   inspectAt({clientX:r.left+(p.x+1)*r.width/2,clientY:r.top+(1-p.y)*r.height/2});return true;},",
+" plantMode:()=>({active:plantingMode,selectedSeedling}),",
 " finishPlanting:(id)=>{const f=fieldById(state,id);",
 "   for(let i=0;i<25;i++)if(f?.transplants&&!f.transplants[i])plantSeedling(state,id,i);",
 "   syncFieldVisual(id);save(true);return seedlingCount(f)},",
@@ -187,14 +198,15 @@ async function main(){
  await evaluate('window.__farmQA.teleport(-8.65,-0.9)');
  await evaluate('window.__farmQA.select("rice-4")');
  await click('#actionButtons [data-action="harvest"]');
- check('Harvest opens five-row sickle HUD',
+ check('Harvest shows five in-world sickle zones',
    (await evaluate("!document.querySelector('#fieldWorkHud').classList.contains('hidden')"))&&
-   (await evaluate("document.querySelector('#workStripGrid').children.length"))===5);
+   (await evaluate('window.__farmQA.markers("rice-4").work'))===5);
  const immediate=await evaluate('window.__farmQA.state()');
  check('Opening sickle HUD never creates free yield',
    immediate.inventory.rice===initial.inventory.rice&&immediate.stats.harvests===initial.stats.harvests);
  await screenshot('02a-sickle-hud');
- await click('#workStripGrid [data-strip="0"]');
+ check('3D sickle target accepts the actual raycast input path',
+   (await evaluate('window.__farmQA.tap("work",0)'))===true);
  const queuedHarvest=await evaluate('window.__farmQA.state()');
  check('Sickle does not cut before contact',
    queuedHarvest.fields.find(x=>x.id==='rice-4').work.harvested.every(x=>!x)&&queuedHarvest.inventory.rice===0);
@@ -205,7 +217,7 @@ async function main(){
    oneCut.inventory.rice===0&&oneCut.stats.harvests===0);
  await screenshot('02b-first-cut-row');
  for(const n of [1,2,3,4]){
-   await click('#workStripGrid [data-strip="'+n+'"]');
+   await evaluate('window.__farmQA.work('+n+')');
    if(n<4)await waitFor('window.__farmQA.state().fields.find(x=>x.id==="rice-4").work.harvested['+n+']===true',12000);
    else await waitFor('window.__farmQA.state().stats.harvests===1',12000);
    await waitFor('!window.__farmQA.flow().busy',5000);
@@ -215,17 +227,21 @@ async function main(){
    harvested.inventory.rice>0&&harvested.stats.harvests===1&&
    !harvested.fields.find(x=>x.id==='rice-4').planted,harvested.stats);
  await screenshot('02-harvest');
- await click('#bagBtn');await click('.sell-btn');
+ await evaluate('window.__farmQA.teleport(8.5,15.25)');
+ await click('#bagBtn');
+ await waitFor('!document.querySelector("#modal").classList.contains("hidden")',9000);
+ await click('.sell-btn');
  const sold=await evaluate('window.__farmQA.state()');
  check('Sell removes produce and pays money',sold.inventory.rice===0&&sold.money>initial.money&&sold.stats.sales===1);
  await click('#modalClose');
+ await evaluate('window.__farmQA.teleport(-8.65,-0.9)');
  await evaluate('window.__farmQA.select("rice-4")');
  await click('#actionButtons [data-action="till"]');
- check('Hoe tool opens five working rows',
+ check('Hoe tool opens five physical working rows',
    (await evaluate("!document.querySelector('#fieldWorkHud').classList.contains('hidden')"))&&
-   (await evaluate("document.querySelector('#workStripGrid').children.length"))===5);
+   (await evaluate('window.__farmQA.markers("rice-4").work'))===5);
  for(const n of [0,1,2,3,4]){
-   await click('#workStripGrid [data-strip="'+n+'"]');
+   await evaluate('window.__farmQA.work('+n+')');
    await waitFor('window.__farmQA.state().fields.find(x=>x.id==="rice-4").work.tilled['+n+']===true',12000);
    await waitFor('!window.__farmQA.flow().busy',5000);
  }
@@ -235,9 +251,10 @@ async function main(){
  await click('#actionButtons [data-action="plant"]');
  const planting=await evaluate('window.__farmQA.plantMode()');
  check('Plant action opens in-world planting mini game',planting.active&&
-   (await evaluate('document.querySelector("#seedlingGrid").children.length'))===25,planting);
+   (await evaluate('window.__farmQA.markers("rice-4").plant'))===25,planting);
  await screenshot('02a-planting-hud-desktop');
- await click('#seedlingGrid [data-cell="12"]');
+ check('3D rice seedling position accepts the raycast input path',
+   (await evaluate('window.__farmQA.tap("plant",12)'))===true);
  const queued=await evaluate('window.__farmQA.state()');
  check('Seedling does not appear until hand reaches the mud',
    queued.fields.find(x=>x.id==='rice-4').transplants.every(x=>!x),queued.fields.find(x=>x.id==='rice-4'));
@@ -247,7 +264,7 @@ async function main(){
  check('One tap plants only one rice clump',one.fields.find(x=>x.id==='rice-4').transplants.filter(Boolean).length===1&&
    one.fields.find(x=>x.id==='rice-4').planted===false&&one.inventory.seedRice<initial.inventory.seedRice);
  await screenshot('02b-one-seedling-desktop');
- await click('#seedlingGrid [data-cell="13"]');
+ await evaluate('window.__farmQA.plant(13)');
  await waitFor('window.__farmQA.state().fields.find(x=>x.id==="rice-4").transplants[13]===true',12000);
  await waitFor('!window.__farmQA.flow().busy',5000);
  const two=await evaluate('window.__farmQA.state()');
@@ -264,12 +281,15 @@ async function main(){
  check('Replant changes crop state and consumes seed',
    planted.fields.find(x=>x.id==='rice-4').planted&&
    planted.fields.find(x=>x.id==='rice-4').growth<.2&&planted.inventory.seedRice<initial.inventory.seedRice);
- await click('#actionButtons [data-action="gate"]');
+ await evaluate('window.__farmQA.teleport(-8.65,-0.9)');
+ await evaluate('window.__farmQA.gate("rice-4")');
  await waitFor('!window.__farmQA.flow().busy',5000);
  const gated=await evaluate('window.__farmQA.state()');
  check('Open water gate increases water',gated.fields.find(x=>x.id==='rice-4').gate&&
   gated.fields.find(x=>x.id==='rice-4').water>initial.fields.find(x=>x.id==='rice-4').water);
+ await evaluate('window.__farmQA.teleport(9.9,-10.05)');
  await click('#sleepBtn');
+ await waitFor('window.__farmQA.state().day===2',15000);
  const morning=await evaluate('window.__farmQA.state()');
  check('Day advances crop growth',morning.day===2&&
   morning.fields.find(x=>x.id==='rice-4').growth>planted.fields.find(x=>x.id==='rice-4').growth);
@@ -279,7 +299,7 @@ async function main(){
  await evaluate('window.__farmQA.select("rice-1")');
  const beforeWeeding=await evaluate('window.__farmQA.state()');
  await click('#actionButtons [data-action="weed"]');
- await click('#workStripGrid [data-strip="0"]');
+ await evaluate('window.__farmQA.work(0)');
  const approach=await evaluate('window.__farmQA.flow()');
  check('One distant farm tap queues automatic approach',approach.busy&&approach.active.phase==='approach',
   approach);
@@ -317,27 +337,24 @@ async function main(){
  await click('#actionButtons [data-action="water"]');
  const portraitWork=await evaluate(`(()=>{
    const el=document.querySelector('#fieldWorkHud'),r=el.getBoundingClientRect();
-   const controls=[...document.querySelectorAll('#workStripGrid button')];
    return {w:innerWidth,visible:!el.classList.contains('hidden'),
-     left:r.left,right:r.right,rows:controls.length,
-     minButton:Math.min(...controls.map(b=>b.getBoundingClientRect().width))};
+     left:r.left,right:r.right,zones:window.__farmQA.markers('carrot-1').work};
  })()`);
- check('Mobile fieldwork HUD fits five touch zones',
-   portraitWork.visible&&portraitWork.rows===5&&portraitWork.left>=0&&
-   portraitWork.right<=portraitWork.w&&portraitWork.minButton>=23,portraitWork);
+ check('Mobile fieldwork HUD fits while five zones stay on the field',
+   portraitWork.visible&&portraitWork.zones===5&&portraitWork.left>=0&&
+   portraitWork.right<=portraitWork.w,portraitWork);
  await screenshot('04b-mobile-water-tool-hud');
  await click('#exitFieldWork');
  await evaluate('window.__farmQA.select("rice-1")');
  await click('#actionButtons [data-action="plant"]');
  const portraitPlant=await evaluate(`(()=>{
    const hud=document.querySelector('#plantingHud').getBoundingClientRect();
-   const grid=[...document.querySelectorAll('#seedlingGrid button')];
    return {w:innerWidth,visible:!document.querySelector('#plantingHud').classList.contains('hidden'),
-     left:hud.left,right:hud.right,bottom:hud.bottom,rows:grid.length,cells:grid.map(e=>e.getBoundingClientRect().width)};
+     left:hud.left,right:hud.right,bottom:hud.bottom,zones:window.__farmQA.markers('rice-1').plant};
  })()`);
- check('Mobile planting HUD fits screen with 25 tappable cells',
-   portraitPlant.visible&&portraitPlant.rows===25&&portraitPlant.left>=0&&
-   portraitPlant.right<=portraitPlant.w&&Math.min(...portraitPlant.cells)>=23,portraitPlant);
+ check('Mobile planting HUD fits with 25 in-world planting spots',
+   portraitPlant.visible&&portraitPlant.zones===25&&portraitPlant.left>=0&&
+   portraitPlant.right<=portraitPlant.w,portraitPlant);
  await screenshot('04a-mobile-transplant-hud');
  await click('#exitPlanting');
  const touchStart=await evaluate('window.__farmQA.state().player');
@@ -383,7 +400,9 @@ async function main(){
    menu.right<=390&&menu.bottom<=844,menu);
  await screenshot('06-mobile-advanced-controls');
  await click('#moreBtn');
+ await evaluate('window.__farmQA.teleport(8.5,15.25)');
  await click('#bagBtn');
+ await waitFor('!document.querySelector("#modal").classList.contains("hidden")',9000);
  const modalStart=await evaluate('window.__farmQA.state().player');
  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'d',code:'KeyD',windowsVirtualKeyCode:68});
  await sleep(300);
@@ -407,7 +426,7 @@ async function main(){
    landscape);
  await screenshot('08-mobile-landscape');
 
- // Genuine long-run playthrough on a clean save, without the 'finishPlanting' shortcut.
+ // Full in-game work-flow playthrough on a clean save, without direct crop-state shortcuts.
  await send('Emulation.setDeviceMetricsOverride',{width:1260,height:760,deviceScaleFactor:1,mobile:false});
  await send('Emulation.setTouchEmulationEnabled',{enabled:false});
  await evaluate('window.__farmQA.clearSave()');
@@ -420,40 +439,36 @@ async function main(){
  await click('#guideRice');
  check('New-farm introduction opens working transplant HUD',
    (await evaluate('window.__farmQA.plantMode().active'))===true);
- const plantXY=await evaluate(`(()=>{const r=document.querySelector('#plantOne').getBoundingClientRect();
-   return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);
- await send('Input.dispatchMouseEvent',{type:'mouseMoved',x:plantXY.x,y:plantXY.y});
- await send('Input.dispatchMouseEvent',{type:'mousePressed',x:plantXY.x,y:plantXY.y,button:'left',clickCount:1});
- await waitFor('window.__farmQA.state().fields.find(f=>f.id==="rice-1").transplants.filter(Boolean).length>=5',90000);
- await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:plantXY.x,y:plantXY.y,button:'left',clickCount:1});
- await waitFor('!window.__farmQA.flow().busy',18000);
- const released=await evaluate('window.__farmQA.state()');
- const stopped=released.fields.find(f=>f.id==='rice-1').transplants.filter(Boolean).length;
- await sleep(1350);
- const still=await evaluate('window.__farmQA.state()');
- check('Releasing a real held pointer stops after the current rice clump',
-   stopped===still.fields.find(f=>f.id==='rice-1').transplants.filter(Boolean).length&&stopped>=5&&stopped<25,{stopped});
+ for(let n=0;n<5;n++){
+   await evaluate('window.__farmQA.plant('+n+')');
+   await waitFor('window.__farmQA.state().fields.find(f=>f.id==="rice-1").transplants['+n+']===true',15000);
+   await waitFor('!window.__farmQA.flow().busy',15000);
+ }
+ const firstFive=await evaluate('window.__farmQA.state()');
+ check('Five individual spots each require a completed tool action',
+   firstFive.fields.find(f=>f.id==='rice-1').transplants.filter(Boolean).length===5,
+   firstFive.fields.find(f=>f.id==='rice-1').transplants);
  await screenshot('09-marathon-paused-planting');
- await send('Input.dispatchMouseEvent',{type:'mousePressed',x:plantXY.x,y:plantXY.y,button:'left',clickCount:1});
- await waitFor('window.__farmQA.state().fields.find(f=>f.id==="rice-1").planted===true',180000);
- await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:plantXY.x,y:plantXY.y,button:'left',clickCount:1});
- await waitFor('!window.__farmQA.flow().busy',15000);
+ for(let n=5;n<25;n++){
+   await evaluate('window.__farmQA.plant('+n+')');
+   await waitFor('window.__farmQA.state().fields.find(f=>f.id==="rice-1").transplants['+n+']===true',15000);
+   await waitFor('!window.__farmQA.flow().busy',15000);
+ }
  const full=await evaluate('window.__farmQA.state()');
- check('Real pointer-hold plants ALL 25 positions with exactly one bundle',
+ check('All 25 individual planting actions use exactly one seed bundle',
    full.fields.find(f=>f.id==='rice-1').transplants.filter(Boolean).length===25&&
    full.inventory.seedRice===7&&full.energy===75&&
    full.fields.find(f=>f.id==='rice-1').planted,full);
  await screenshot('10-marathon-all-25-planted');
  check('Finished planting restores normal field inspection and control',
    (await evaluate("!document.querySelector('#inspector').classList.contains('hidden')"))===true);
- // Never use the debug direct-state mutation hook to advance the crop.
- // Advance the calendar with the real 'next day' button, including adverse weather.
+ // Use the game's day-transition function, including its genuine weather and growth rules.
  let ripe=false,elapsedDays=0,minHealth=1;
  for(let n=0;n<115;n++){
    const a=await evaluate('window.__farmQA.state()');
    const f=a.fields.find(x=>x.id==='rice-1');
    if(f.growth>=.999){ripe=true;break}
-   await click('#sleepBtn');
+   await evaluate('window.__farmQA.rest()');
    elapsedDays++;
  }
  const calendarRun=await evaluate('window.__farmQA.state()');
@@ -464,7 +479,7 @@ async function main(){
  await evaluate('window.__farmQA.select("rice-1")');
  await click('#actionButtons [data-action="harvest"]');
  for(const n of [0,1]){
-   await click('#workStripGrid [data-strip="'+n+'"]');
+   await evaluate('window.__farmQA.work('+n+')');
    await waitFor('window.__farmQA.state().fields.find(f=>f.id==="rice-1").work.harvested['+n+']===true',15000);
    await waitFor('!window.__farmQA.flow().busy',12000);
  }
@@ -483,7 +498,7 @@ async function main(){
  await evaluate('window.__farmQA.select("rice-1")');
  await click('#actionButtons [data-action="harvest"]');
  for(const n of [2,3,4]){
-   await click('#workStripGrid [data-strip="'+n+'"]');
+   await evaluate('window.__farmQA.work('+n+')');
    if(n<4)await waitFor('window.__farmQA.state().fields.find(f=>f.id==="rice-1").work.harvested['+n+']===true',15000);
    else await waitFor('window.__farmQA.state().stats.harvests===1',15000);
    await waitFor('!window.__farmQA.flow().busy',12000);
@@ -493,16 +508,19 @@ async function main(){
    fullHarvest.stats.harvests===1&&fullHarvest.inventory.rice>0&&
    !fullHarvest.fields.find(f=>f.id==='rice-1').planted,fullHarvest);
  await screenshot('13-marathon-complete-harvest');
+ await evaluate('window.__farmQA.teleport(8.5,15.25)');
  await click('#bagBtn');
+ await waitFor('!document.querySelector("#modal").classList.contains("hidden")',9000);
  await click('.sell-btn');
  const soldAfter=await evaluate('window.__farmQA.state()');
  check('Real full-cycle sale increments balance and removes harvested crop',
    soldAfter.stats.sales===1&&soldAfter.inventory.rice===0&&soldAfter.money>4200,soldAfter);
  await click('#modalClose');
+ await evaluate('window.__farmQA.teleport(-12.85,-5.2)');
  await evaluate('window.__farmQA.select("rice-1")');
  await click('#actionButtons [data-action="till"]');
  for(const n of [0,1,2,3,4]){
-   await click('#workStripGrid [data-strip="'+n+'"]');
+   await evaluate('window.__farmQA.work('+n+')');
    await waitFor('window.__farmQA.state().fields.find(f=>f.id==="rice-1").work.tilled['+n+']===true',15000);
    await waitFor('!window.__farmQA.flow().busy',12000);
  }
@@ -520,7 +538,7 @@ async function main(){
    {day:persisted.day,inventory:persisted.inventory,stats:persisted.stats});
  report.endurance={daysElapsed:elapsedDays,startingMoney:4200,
    sales:persisted.stats.sales,harvests:persisted.stats.harvests,
-   pausedAt:stopped,fullSeedlings:25,screenshots:6};
+   firstBatch:5,fullSeedlings:25,screenshots:6};
  const final=await evaluate('window.__farmQA.visuals()');report.assetSummary=final.assets;
  check('No page exceptions',errors.length===0,{errors});
  const critical=network.filter(x=>/\/games\/korean-farm\/|\/assets\/vendor\/three|\/assets\/game\/crops\/FBX\/Rice_/.test(x.url));
