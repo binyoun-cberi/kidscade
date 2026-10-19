@@ -11,8 +11,8 @@ import {isNeutralUntextured,cropFallbackHex,scanSceneColors,repairRiceColors}
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const src=(p)=>readFileSync(resolve(root,'games/korean-farm',p),'utf8');
 
-test('all seven farming actions have distinctive tool and stable motion',()=>{
-  const actions=['till','plant','water','gate','weed','fertilize','harvest'];
+test('all nine farming actions have distinctive tool and stable motion',()=>{
+  const actions=['till','plant','water','gate','weed','fertilize','harvest','scoop','sleep'];
   assert.deepEqual(Object.keys(FARM_ACTION_MOTIONS),actions);
   const poses=new Map();
   for(const action of actions){
