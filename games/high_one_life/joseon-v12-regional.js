@@ -151,7 +151,7 @@ const EVENTS=[
   O('집안일을 대신해 준다','며칠간 일손을 내어 준다','{neighbor}네와 서로 일손을 빌려 주게 되었다.',{health:-3,trust:5})],SOURCES.occupations),
  E('villageWell','community','우물가에 모인 두 마을 사람들',
  '가뭄에 우물의 물이 줄었다. 이웃 마을에서도 물을 길으러 오겠다고 한다.',(l,j,o,s,k)=>j.region!=='한양',[
-  O('물을 길을 차례를 정한다','두 마을 사정을 함께 듣는다','{neighbor}네와 물 길으러 오는 날을 정했다.',{trust:6,water:3,knowledge:2}),
+  O('물을 길어 올 차례를 정한다','두 마을 사정을 함께 듣는다','{neighbor}네와 물 길으러 오는 날을 정했다.',{trust:6,water:3,knowledge:2}),
   O('우물을 함께 손본다','힘이 들지만 물길을 넓혀 본다','함께 우물을 손보던 마을 사람들과 다시 만났다.',{water:6,health:-3,trust:4}),
   O('우리 집부터 물을 가져온다','다툼이 생길 수 있다','마을 사람들이 물 차례를 두고 언성을 높였다.',{water:4,trust:-6})],SOURCES.occupations),
  E('livestockShare','community','이웃집에서 소를 빌려 달라 한다',

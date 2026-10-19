@@ -190,7 +190,7 @@ function ensure(life){
   const names=NAMES[life.gender]||NAMES.남자;
   life.profile.name=life.birthSetup?.name||names[Math.floor(roll(life.seed,1413)*names.length)];
   if(life.age===0&&!life.log.some(e=>e.kind==='joseon-birth')){
-   life.logEvent(s.region+'의 '+(life.birthYear>=1894?'옛 '+s.birthStatus+' 가계':life.birthYear<1600&&s.birthStatus==='중인'?'관청 실무·기술직 가계':s.status+' 집안')+'에서 태어났다. '+s.landmark+'이 가까운 고을이다.','joseon-birth');
+   life.logEvent(s.region+'의 '+(life.birthYear>=1894?'옛 '+s.birthStatus+' 가계':life.birthYear<1600&&s.birthStatus==='중인'?'관청 실무·기술직 가계':s.status+' 집안')+'에서 태어났다. '+s.landmark+((s.landmark.charCodeAt(s.landmark.length-1)-0xac00)%28?'이':'가')+' 가까운 고을이다.','joseon-birth');
    life.logEvent('고을에서는 집안의 이름과 가진 논밭에 따라 사람들이 서로를 대하는 눈빛도 달랐다.','joseon-life');
   }
  }
@@ -408,7 +408,7 @@ function applyChoice(life,index){
  if(act==='flee'){s.relocations++;s.land=Math.max(0,s.land-1);s.capital-=22;s.hardshipUntil=Math.max(s.hardshipUntil,life.year+2);}
  if(act==='stay'){s.capital-=11;s.hardshipUntil=Math.max(s.hardshipUntil,life.year+3);}
  if(act==='together'){s.capital-=13;s.relocations++;s.household=Math.min(8,s.household+1);s.hardshipUntil=Math.max(s.hardshipUntil,life.year+2);}
- let diedInWar=false;
+ let diedInWar=false,captureOutcome=null;
  if(kind==='war'){
   const eventYear=Number(String(s.active?.id||'').split('-')[0]);
   const border=s.active?.title?.includes('여진')===true;
@@ -420,8 +420,7 @@ function applyChoice(life,index){
   if(outcome<captureChance){
    life.change({health:-10,happiness:-12,bonds:-8,wealth:-12});
    s.capital-=20;s.hardshipUntil=Math.max(s.hardshipUntil,life.year+4);
-   note(life,s,imjin?'전쟁 중 포로로 끌려가 가족과 떨어져 지냈다. 포로가 된 조선인 가운데에는 끝내 돌아오지 못한 사람도 있었다.':'북방 충돌 중 포로가 되어 가족과 고향에서 떨어져 지냈다. 언제 돌아올 수 있을지 알 수 없었다.','joseon-memory');
-   s.followups.push({id:s.active.id,year:life.year+3,text:'여러 해가 흐른 뒤 고향으로 돌아올 길을 찾았다. 돌아온 뒤에도 헤어진 가족과 잃은 살림의 흔적은 오래 남았다.'});
+   captureOutcome={imjin,id:s.active.id};
   }else if(outcome<captureChance+deathChance){
    diedInWar=true;
   }
@@ -434,6 +433,16 @@ function applyChoice(life,index){
  if(FOLLOWUP[act])s.followups.push({id:s.active.id,year:life.year+3,text:FOLLOWUP[act]});
  s.followups=s.followups.slice(-20);
  s.active=null;life.pending=null;sync(life,s);
+ if(captureOutcome){
+  if(typeof life.__joseon14CaptureFromWar==='function'){
+   // Capture must change the actual residence/life path, never just the prose.
+   if(!life.__joseon14CaptureFromWar())note(life,s,'전란 중 붙잡힐 뻔해 몸을 피했다. 달아나는 길에 짐을 잃고 몸을 다쳤다.','joseon-memory');
+  }else{
+   // Standalone legacy engine: retain its old summary when v14 is not loaded.
+   note(life,s,captureOutcome.imjin?'전쟁 중 포로로 끌려가 가족과 떨어져 지냈다. 포로가 된 조선인 가운데에는 끝내 돌아오지 못한 사람도 있었다.':'북방 충돌 중 포로가 되어 가족과 고향에서 떨어져 지냈다. 언제 돌아올 수 있을지 알 수 없었다.','joseon-memory');
+   s.followups.push({id:captureOutcome.id,year:life.year+3,text:'여러 해가 흐른 뒤 고향으로 돌아올 길을 찾았다. 돌아온 뒤에도 헤어진 가족과 잃은 살림의 흔적은 오래 남았다.'});
+  }
+ }
  if(diedInWar)life.finish('전란의 혼란 속에서 목숨을 잃었다.');
  return true;
 }

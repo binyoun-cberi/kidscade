@@ -149,6 +149,7 @@ function action(l,key,arg){
 }
 function hydrate(l,d){if(!l)return;const o=d?.household342;if(!o||o.version!==1)return;if(!enabled(l)&&l.country?.[0]==='대한민국')l.household342={version:1,plans:{},skills:{},fatigue:{}};const fresh=ensure(l);if(!fresh)return;
  const finite=(v,a,b,f=0)=>Number.isFinite(v)?clamp(v,a,b):f;
+ fresh.crop=null;
  fresh.processedYear=finite(o.processedYear,l.birthYear,l.year,l.year);fresh.pocket=finite(o.pocket,0,500);fresh.trust=finite(o.trust,0,100,60);
  for(const k of ['kin','faith','strict'])fresh[k]=finite(o[k],0,1000);
  fresh.crisis=o.crisis&&typeof o.crisis.target==='string'?{target:o.crisis.target}:null;fresh.contracts=Array.isArray(o.contracts)?o.contracts.filter(x=>x&&typeof x.id==='string'&&Number.isInteger(x.year)&&x.year<=l.year&&['bound','freed','ended'].includes(x.status)).slice(-12).map(x=>({...x,name:String(x.name||'가족').slice(0,24),origin:String(x.origin||'상민').slice(0,30)})):[];

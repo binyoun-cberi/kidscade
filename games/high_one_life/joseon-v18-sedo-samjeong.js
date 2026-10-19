@@ -311,6 +311,7 @@ function hydrate(l,data){
  s.year1862=o.year1862===true;
  s.notes=Array.isArray(o.notes)?o.notes.filter(x=>typeof x==='string').slice(-20).map(x=>x.slice(0,220)):[];
  s.lastSource=Object.values(SRC).includes(o.lastSource)?o.lastSource:null;
+ if(s.active)l.pending='joseon18:'+s.active.id;
  return s;
 }
 function install(){
