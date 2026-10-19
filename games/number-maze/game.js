@@ -12,17 +12,17 @@
     ['🏛️', '잊힌 공식의 유적', '적은 단서로 해결'],
     ['🏰', '무한의 성', '최고의 수학 탐험가']
   ];
-  const MODE_NAMES = { adventure: '모험 모드', free: '자유 퍼즐', daily: '오늘의 퍼즐', endless: '무한 도전' };
+  const MODE_NAMES = { adventure: '모험 모드', free: '자유 퍼즐', daily: '오늘의 퍼즐', endless: '무한 도전', mixed: '혼합계산 도전' };
   const GRADE_NOTES = { 1: '한 자리 수의 덧셈과 뺄셈부터 차근차근', 2: '두 자리 수와 곱셈으로 한 단계 더', 3: '곱셈과 나눗셈을 함께 활용하는 도전' };
   const initialProgress = () => ({
-    grade: 1, freeTier: 2, chapters: {}, best: {}, daily: {}, endlessBest: {}, settings: { largeText: false, reducedMotion: false }
+    grade: 1, freeTier: 2, chapters: {}, best: {}, daily: {}, endlessBest: {}, mixedBest: {}, settings: { largeText: false, reducedMotion: false }
   });
   function loadStore() {
     try {
       const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
       if (!raw || typeof raw !== 'object') return initialProgress();
       const defaults = initialProgress();
-      return { ...defaults, ...raw, chapters: raw.chapters || {}, best: raw.best || {}, daily: raw.daily || {}, endlessBest: raw.endlessBest || {}, settings: { ...defaults.settings, ...raw.settings } };
+      return { ...defaults, ...raw, chapters: raw.chapters || {}, best: raw.best || {}, daily: raw.daily || {}, endlessBest: raw.endlessBest || {}, mixedBest: raw.mixedBest || {}, settings: { ...defaults.settings, ...raw.settings } };
     } catch { return initialProgress(); }
   }
   const saved = loadStore();
@@ -30,7 +30,7 @@
     view: 'home', grade: [1, 2, 3].includes(saved.grade) ? saved.grade : 1,
     freeTier: Math.max(1, Math.min(5, Number(saved.freeTier) || 2)),
     world: 0, mode: null, stage: 1, seed: '', puzzle: null, placements: [], selected: null,
-    history: [], mistakes: 0, hints: 0, revealMistakes: false, startedAt: 0,
+    history: [], mistakes: 0, hints: 0, revealMistakes: false, showRule: false, startedAt: 0,
     run: 1, runScore: 0, outcome: '', lastScore: 0, lastStars: 0,
     settings: saved.settings, progress: saved, settingsFrom: 'home'
   };
@@ -74,7 +74,7 @@
   function currentTier() {
     if (state.mode === 'adventure') return Math.min(5, Math.floor((state.stage - 1) / 20) + 1);
     if (state.mode === 'free') return state.freeTier;
-    if (state.mode === 'endless') return Math.min(5, 1 + Math.floor((state.run - 1) / 3));
+    if (state.mode === 'endless' || state.mode === 'mixed') return Math.min(5, 1 + Math.floor((state.run - 1) / 3));
     const dayNumber = Math.floor(new Date(today() + 'T12:00:00').getTime() / 86400000);
     return (dayNumber % 5) + 1;
   }
@@ -86,9 +86,9 @@
     const tier = restore?.tier || currentTier();
     state.seed = seedOverride || (mode === 'adventure' ? `adventure-${state.grade}-${stage}` :
       mode === 'daily' ? `daily-${today()}-${state.grade}` :
-      mode === 'endless' ? `endless-${state.grade}-${state.run}-${Date.now()}` :
+      mode === 'endless' || mode === 'mixed' ? `${mode}-${state.grade}-${state.run}-${Date.now()}` :
       `free-${state.grade}-${Date.now()}-${Math.random()}`);
-    state.puzzle = Engine.buildPuzzle({ grade: state.grade, tier, seed: state.seed });
+    state.puzzle = Engine.buildPuzzle({ grade: state.grade, tier, seed: state.seed, mixed: mode === 'mixed' });
     state.placements = Array(state.puzzle.solution.length).fill(null);
     if (restore && Array.isArray(restore.placements) && restore.placements.length === state.placements.length) {
       const used = new Set();
@@ -103,6 +103,7 @@
     state.mistakes = restore?.mistakes || 0;
     state.hints = restore?.hints || 0;
     state.revealMistakes = false;
+    state.showRule = false;
     state.startedAt = Date.now() - (restore?.elapsed || 0) * 1000;
     state.view = 'play';
     state.outcome = '';
@@ -193,6 +194,7 @@
       state.progress.daily[key] = Math.max(state.progress.daily[key] || 0, state.lastStars);
     }
     if (state.mode === 'endless') state.progress.endlessBest[state.grade] = Math.max(state.progress.endlessBest[state.grade] || 0, state.runScore);
+    if (state.mode === 'mixed') state.progress.mixedBest[state.grade] = Math.max(state.progress.mixedBest[state.grade] || 0, state.run);
     state.progress.best[state.grade] = Math.max(state.progress.best[state.grade] || 0, state.lastScore);
     saveSession();
     callSdk('score', state.lastScore);
@@ -208,10 +210,10 @@
   }
   function next() {
     if (state.mode === 'adventure') return start('adventure', Math.min(120, state.stage + 1));
-    if (state.mode === 'endless') {
+    if (state.mode === 'endless' || state.mode === 'mixed') {
       const nextRun = state.run + 1, totalScore = state.runScore;
       // 난도와 생성 시드를 다음 연속 도전 단계에 맞춘다.
-      start('endless', 1, `endless-${state.grade}-${nextRun}-${Date.now()}`, { run: nextRun, runScore: totalScore });
+      start(state.mode, 1, `${state.mode}-${state.grade}-${nextRun}-${Date.now()}`, { run: nextRun, runScore: totalScore });
       return;
     }
     if (state.mode === 'daily') return goHome();
@@ -239,7 +241,7 @@
     return `${header()}<main class="home-layout"><div>
       <section class="intro card"><div class="eyebrow">NUMBER MAZE · GRADE ${grade}</div><h2>빈칸 속 숫자를 찾으면<br>미궁의 길이 열려요!</h2><p>가로와 세로의 수식이 모두 맞도록 숫자를 놓아보세요. 한 문제씩, 내 속도로!</p><button class="primary-btn" data-action="adventure">✨ ${completed ? '모험 이어하기' : '모험 시작하기'} →</button></section>
       <div class="stat-row"><div class="stat"><span>⭐ 해결한 단계</span><strong>${completed} / 120</strong></div><div class="stat"><span>🏆 최고 점수</span><strong>${state.progress.best[grade] || 0}</strong></div><div class="stat"><span>🔥 무한 도전 기록</span><strong>${state.progress.endlessBest[grade] || 0}</strong></div></div>
-      <div class="mode-grid"><button class="mode-card" data-action="adventure"><div class="mode-icon">🗺️</div><strong>모험 모드</strong><span>여섯 구역을 지나며 미궁의 비밀을 풀어요.</span></button><button class="mode-card" data-action="free"><div class="mode-icon">🧩</div><strong>자유 퍼즐</strong><span>좋아하는 난이도로 새 문제를 계속 풀어요.</span></button><button class="mode-card" data-action="daily"><div class="mode-icon">📅</div><strong>오늘의 퍼즐</strong><span>매일 같은 날짜에 새로운 퍼즐이 찾아와요.</span></button><button class="mode-card" data-action="endless"><div class="mode-icon">♾️</div><strong>무한 도전</strong><span>세 번의 실수 전에 얼마나 멀리 갈 수 있을까요?</span></button></div>
+      <div class="mode-grid"><button class="mode-card" data-action="adventure"><div class="mode-icon">🗺️</div><strong>모험 모드</strong><span>여섯 구역을 지나며 미궁의 비밀을 풀어요.</span></button><button class="mode-card" data-action="free"><div class="mode-icon">🧩</div><strong>자유 퍼즐</strong><span>좋아하는 난이도로 새 문제를 계속 풀어요.</span></button><button class="mode-card" data-action="daily"><div class="mode-icon">📅</div><strong>오늘의 퍼즐</strong><span>매일 같은 날짜에 새로운 퍼즐이 찾아와요.</span></button><button class="mode-card" data-action="endless"><div class="mode-icon">♾️</div><strong>무한 도전</strong><span>세 번의 실수 전에 얼마나 멀리 갈 수 있을까요?</span></button><button class="mode-card mixed-mode" data-action="mixed"><div class="mode-icon">🧠</div><strong>혼합계산 도전</strong><span>덧셈·뺄셈부터 사칙연산까지! 3문제마다 한 단계 어려워져요. 최고 ${state.progress.mixedBest[grade] || 0}문제</span></button></div>
     </div><div><section class="card sidebar-section"><div class="section-title"><h3>내 수학 여행</h3><small>언제든 바꿀 수 있어요</small></div><div class="grade-group">${[1, 2, 3].map(g => `<button type="button" class="grade-btn ${grade === g ? 'active' : ''}" data-action="grade" data-grade="${g}" aria-pressed="${grade === g}">${g}학년</button>`).join('')}</div><p class="grade-note">${GRADE_NOTES[grade]}</p>
       ${session ? `<button type="button" class="secondary-btn" style="width:100%;margin-top:13px" data-action="resume">↩ 풀던 퍼즐 이어하기 (${session.grade}학년)</button>` : ''}
       <div class="section-title" style="margin-top:25px"><h3>자유 퍼즐 난이도</h3></div><div class="grade-group">${[1,2,3,4,5].map(t => `<button type="button" class="grade-btn ${state.freeTier === t ? 'active' : ''}" data-action="tier" data-tier="${t}" aria-label="난이도 ${t}" aria-pressed="${state.freeTier === t}">${t}</button>`).join('')}</div><p class="grade-note">1은 가볍게 시작, 5는 깊이 생각하는 문제예요.</p></section>
@@ -281,27 +283,41 @@
     return `<div class="board-grid" style="--columns:${n * 2 + 1}" role="group" aria-label="교차 수식 퍼즐판">${pieces.join('')}</div>`;
   }
 
+  function mixedLesson() {
+    const grade = state.grade, tier = currentTier();
+    if (grade === 1 || (grade === 2 && tier === 1)) {
+      return { title: '덧셈·뺄셈은 왼쪽부터', expression: '9 − 4 + 2 = 7', steps: '① 9 − 4 = 5  →  ② 5 + 2 = 7', summary: '같은 우선순위라면 왼쪽에서 오른쪽으로 차례대로 계산해요.' };
+    }
+    if (grade === 2) {
+      return { title: '곱셈을 덧셈·뺄셈보다 먼저', expression: '4 + 3 × 2 = 10', steps: '① 3 × 2 = 6  →  ② 4 + 6 = 10', summary: '앞에 더하기가 있더라도 곱하기를 먼저 계산해요.' };
+    }
+    return { title: '곱셈·나눗셈을 먼저', expression: '18 ÷ 3 + 4 × 2 = 14', steps: '① 18 ÷ 3 = 6  →  ② 4 × 2 = 8  →  ③ 6 + 8 = 14', summary: '곱셈과 나눗셈을 먼저 계산하고, 같은 순위끼리는 왼쪽부터 풀어요.' };
+  }
+
   function renderPlay() {
     const p = state.puzzle, grade = state.grade;
     const filled = p.givens.filter(x => x != null).length + state.placements.filter(x => x != null).length;
     const used = p.bank.length - remaining().length;
     const chapter = Math.min(5, Math.floor((state.stage - 1) / 20));
+    const mix = Engine.mixFeatures(p.lines);
+    const lesson = mixedLesson();
+    const needsRule = state.mode === 'mixed' || mix.priority || mix.divisionMixed || mix.addSub;
     const bank = p.bank.map(value => {
       const disabled = state.placements.includes(value);
       return `<button type="button" class="number-tile ${state.selected === value ? 'selected' : ''} ${disabled ? 'used' : ''}" data-action="number" data-number="${value}" draggable="${!disabled}" ${disabled ? 'disabled' : ''} aria-pressed="${state.selected === value}" aria-label="숫자 ${value}">${value}</button>`;
     }).join('');
-    return `${header()}<main class="play-layout"><section class="card game-card"><div class="play-header"><div><div class="eyebrow">${grade}학년 · ${MODE_NAMES[state.mode]}</div><h2>${state.mode === 'adventure' ? `${WORLDS[chapter][0]} ${WORLDS[chapter][1]} · ${state.stage}단계` : state.mode === 'endless' ? `연속 ${state.run}번째 퍼즐` : state.mode === 'daily' ? `${today()}의 문제` : `난이도 ${currentTier()} 퍼즐`}</h2></div><div class="timer" data-timer>${formatTime(elapsed())}</div></div>
-      <div class="hint-row" style="justify-content:center"><span class="badge">난이도 ${currentTier()} / 5</span><span class="badge green">${filled} / ${p.solution.length}칸</span>${state.hints ? `<span class="badge gold">힌트 ${state.hints}회</span>` : ''}</div>
+    return `${header()}<main class="play-layout"><section class="card game-card"><div class="play-header"><div><div class="eyebrow">${grade}학년 · ${MODE_NAMES[state.mode]}</div><h2>${state.mode === 'adventure' ? `${WORLDS[chapter][0]} ${WORLDS[chapter][1]} · ${state.stage}단계` : state.mode === 'endless' || state.mode === 'mixed' ? `연속 ${state.run}번째 퍼즐` : state.mode === 'daily' ? `${today()}의 문제` : `난이도 ${currentTier()} 퍼즐`}</h2></div><div class="timer" data-timer>${formatTime(elapsed())}</div></div>
+      <div class="hint-row" style="justify-content:center"><span class="badge">난이도 ${currentTier()} / 5</span><span class="badge green">${filled} / ${p.solution.length}칸</span>${needsRule ? `<span class="badge gold">🧠 혼합계산</span>` : ''}${state.hints ? `<span class="badge gold">힌트 ${state.hints}회</span>` : ''}</div>
       <p class="game-instructions">아래 숫자를 누른 다음 빈칸을 골라요. 가로세로 수식이 모두 맞으면 성공!</p><div class="board-wrap">${makeBoard()}</div><div class="bank-label">↓ 이 숫자들을 빈칸에 놓아보세요</div><div class="bank" aria-label="남은 숫자 목록">${bank}</div>
       <div class="board-actions"><div class="left"><button type="button" class="small-btn" data-action="undo" ${state.history.length ? '' : 'disabled'}>↶ 되돌리기</button><button type="button" class="small-btn" data-action="hint">💡 힌트</button></div><button type="button" class="primary-btn" data-action="submit">✓ 정답 확인</button></div>
-    </section><aside class="play-side"><section class="card side-card"><h3>🔍 수수께끼의 단서</h3><p>${grade === 1 ? '덧셈과 뺄셈을 거꾸로 생각하면 빈칸이 보여요.' : grade === 2 ? '몇을 더하거나 곱하면 결과가 될지 생각해 보세요.' : '곱셈과 나눗셈을 먼저 계산하는 것을 기억하세요.'}</p><div class="progress-track"><div class="progress-fill" style="width:${Math.floor(filled / p.solution.length * 100)}%"></div></div><div class="hint-row"><span class="badge">남은 숫자 ${p.bank.length - used}개</span>${state.mode === 'endless' ? `<span class="badge gold">실수 ${state.mistakes} / 3</span>` : ''}</div><span class="key-tip">키보드: Tab으로 이동 · Enter로 선택 · Ctrl+Z로 되돌리기</span></section><section class="card side-card"><h3>🌟 이렇게 풀어봐요</h3><ul><li>빈칸이 하나 남은 수식부터 살펴보세요.</li><li>가로와 세로에서 모두 맞는 수를 찾아요.</li><li>급하게 하지 않아도 괜찮아요.</li></ul><button type="button" class="secondary-btn" data-action="home">다른 모드 선택</button></section></aside></main>`;
+    </section><aside class="play-side">${needsRule ? `<section class="card side-card lesson-card"><h3>🧠 계산 순서 연습</h3><p>${lesson.title}</p><button type="button" class="secondary-btn lesson-toggle" data-action="rule" aria-expanded="${state.showRule}">${state.showRule ? '예제 접기 ▲' : '예제로 이해하기 ▼'}</button>${state.showRule ? `<div class="lesson-example"><strong>${lesson.expression}</strong><p>${lesson.steps}</p><small>${lesson.summary}</small></div>` : ''}</section>` : ''}<section class="card side-card"><h3>🔍 수수께끼의 단서</h3><p>${grade === 1 ? '덧셈과 뺄셈을 거꾸로 생각하면 빈칸이 보여요.' : grade === 2 ? '몇을 더하거나 곱하면 결과가 될지 생각해 보세요.' : '곱셈과 나눗셈을 먼저 계산하는 것을 기억하세요.'}</p><div class="progress-track"><div class="progress-fill" style="width:${Math.floor(filled / p.solution.length * 100)}%"></div></div><div class="hint-row"><span class="badge">남은 숫자 ${p.bank.length - used}개</span>${state.mode === 'endless' ? `<span class="badge gold">실수 ${state.mistakes} / 3</span>` : ''}</div><span class="key-tip">키보드: Tab으로 이동 · Enter로 선택 · Ctrl+Z로 되돌리기</span></section><section class="card side-card"><h3>🌟 이렇게 풀어봐요</h3><ul><li>빈칸이 하나 남은 수식부터 살펴보세요.</li><li>가로와 세로에서 모두 맞는 수를 찾아요.</li><li>급하게 하지 않아도 괜찮아요.</li></ul><button type="button" class="secondary-btn" data-action="home">다른 모드 선택</button></section></aside></main>`;
   }
 
   function renderResult() {
     const success = state.outcome === 'win';
     const isFinal = state.mode === 'adventure' && state.stage >= 120;
     const stars = success ? '⭐'.repeat(state.lastStars) + '☆'.repeat(3 - state.lastStars) : '🌧️';
-    return `${header()}<main class="card result-card"><div class="result-emoji">${success ? '🎉' : '🧩'}</div><div class="eyebrow">${MODE_NAMES[state.mode]}</div><h2>${success ? '수식을 모두 완성했어요!' : '이번 도전은 여기까지!'}</h2><div style="font-size:29px;letter-spacing:3px">${stars}</div><p>${success ? '가로와 세로를 함께 생각하는 멋진 풀이였어요.' : '괜찮아요. 어떤 수식부터 풀지 다시 생각해 보세요.'}</p><div class="result-stats"><div class="result-stat"><span>풀이 시간</span><strong>${formatTime(elapsed())}</strong></div><div class="result-stat"><span>${state.mode === 'endless' ? '누적 점수' : '획득 점수'}</span><strong>${state.mode === 'endless' ? state.runScore : state.lastScore}</strong></div><div class="result-stat"><span>사용한 힌트</span><strong>${state.hints}</strong></div></div><div class="result-actions"><button class="secondary-btn" data-action="home">🏠 모드 선택</button><button class="secondary-btn" data-action="retry">↻ 다시 풀기</button>${success && !isFinal ? `<button class="primary-btn" data-action="next">${state.mode === 'daily' ? '완료하기' : '다음 퍼즐 →'}</button>` : ''}</div></main>`;
+    return `${header()}<main class="card result-card"><div class="result-emoji">${success ? '🎉' : '🧩'}</div><div class="eyebrow">${MODE_NAMES[state.mode]}</div><h2>${success ? '수식을 모두 완성했어요!' : '이번 도전은 여기까지!'}</h2><div style="font-size:29px;letter-spacing:3px">${stars}</div><p>${success ? '가로와 세로를 함께 생각하는 멋진 풀이였어요.' : '괜찮아요. 어떤 수식부터 풀지 다시 생각해 보세요.'}</p><div class="result-stats"><div class="result-stat"><span>풀이 시간</span><strong>${formatTime(elapsed())}</strong></div><div class="result-stat"><span>${state.mode === 'endless' || state.mode === 'mixed' ? '누적 점수' : '획득 점수'}</span><strong>${state.mode === 'endless' || state.mode === 'mixed' ? state.runScore : state.lastScore}</strong></div><div class="result-stat"><span>사용한 힌트</span><strong>${state.hints}</strong></div></div><div class="result-actions"><button class="secondary-btn" data-action="home">🏠 모드 선택</button><button class="secondary-btn" data-action="retry">↻ 다시 풀기</button>${success && !isFinal ? `<button class="primary-btn" data-action="next">${state.mode === 'daily' ? '완료하기' : '다음 퍼즐 →'}</button>` : ''}</div></main>`;
   }
   function renderSettings() {
     return `${header()}<main class="card result-card" style="max-width:460px;text-align:left"><h2>⚙️ 게임 설정</h2><p>눈과 손이 편안한 방식으로 조절해요.</p><section class="settings-panel"><label for="largeText">큰 숫자로 보기 <input id="largeText" type="checkbox" data-setting="largeText" ${state.settings.largeText ? 'checked' : ''}></label><label for="reducedMotion">움직임 줄이기 <input id="reducedMotion" type="checkbox" data-setting="reducedMotion" ${state.settings.reducedMotion ? 'checked' : ''}></label></section><button class="primary-btn" data-action="settings-back">돌아가기</button></main>`;
@@ -320,15 +336,16 @@
     else if (action === 'world') { state.world = Number(button.dataset.world); render(); }
     else if (action === 'stage') start('adventure', Number(button.dataset.stage));
     else if (action === 'adventure') start('adventure', unlocked());
-    else if (['free', 'daily', 'endless'].includes(action)) start(action);
+    else if (['free', 'daily', 'endless', 'mixed'].includes(action)) start(action);
     else if (action === 'resume') resume();
     else if (action === 'number') chooseNumber(Number(button.dataset.number));
     else if (action === 'slot') chooseSlot(Number(button.dataset.index));
     else if (action === 'undo') undo();
     else if (action === 'hint') hint();
+    else if (action === 'rule') { state.showRule = !state.showRule; render(); }
     else if (action === 'submit') submit();
     else if (action === 'next') next();
-    else if (action === 'retry') start(state.mode, state.stage, state.seed);
+    else if (action === 'retry') start(state.mode, state.stage, state.seed, { run: state.run, runScore: state.runScore - (state.outcome === 'win' ? state.lastScore : 0), tier: currentTier() });
     else if (action === 'home') goHome();
     else if (action === 'settings') { state.settingsFrom = state.view; state.view = 'settings'; render(); }
     else if (action === 'settings-back') { state.view = state.settingsFrom; render(); }
