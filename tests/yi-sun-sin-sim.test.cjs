@@ -325,3 +325,86 @@ test('맵 모서리에서도 적선이 적절한 거리에서 출현하고 전�
     assert.notEqual(game.mode, 'playing', `씨앗 ${seed}: 끝나지 않는 교전`);
   }
 });
+
+test('일곱 함종의 임무가 구별되고 거북선은 옥포 전투에 등장하지 않는다', async () => {
+  const { SHIP_TYPES, SHIP_GUIDE, WAVES } = await simPromise;
+  assert.equal(SHIP_GUIDE.length, 7);
+  for (const entry of SHIP_GUIDE) assert.ok(SHIP_TYPES[entry.type]);
+  assert.ok(SHIP_TYPES.panokseon.boardingDamageTaken < 1);
+  assert.ok(SHIP_TYPES.turtle.boardingDamageTaken < SHIP_TYPES.panokseon.boardingDamageTaken);
+  assert.equal(SHIP_TYPES.sahuseon.volley, 0, '사후선은 무장 공격선이 아니다');
+  assert.ok(SHIP_TYPES.kobaya.speed > SHIP_TYPES.sekibune.speed);
+  assert.ok(SHIP_TYPES.sekibune.speed > SHIP_TYPES.atakebune.speed);
+  assert.ok(WAVES.every(wave => !wave.ships.includes('turtle')));
+});
+
+test('사후선은 총을 쏘지 않고 멀리 있는 적을 미니 레이더에 보고한다', async () => {
+  const { createGame, startRun, makeShip, stepGame, radarContacts } = await simPromise;
+  const game = createGame(33);
+  startRun(game);
+  game.spawnClock = 999;
+  const remote = makeShip('kobaya', game.player.x + 790, game.player.y, 0, 'remote');
+  game.enemies = [remote];
+  assert.ok(radarContacts(game).includes(remote), '사후선의 먼 정찰 범위');
+  game.allies[1].dead = true;
+  assert.ok(!radarContacts(game).includes(remote), '사후선 격침으로 레이더 시야 상실');
+  game.allies[1].dead = false;
+  game.allies[1].reload = [0, 0];
+  game.player.reload = [999, 999];
+  game.allies[0].reload = [999, 999];
+  remote.reload = [999, 999];
+  stepGame(game, {}, .05);
+  assert.equal(game.shotsFired, 0, '사후선은 정찰만 하고 화포를 발사하지 않음');
+});
+
+test('세키부네의 도선은 접근 예고 후 발동하며 판옥선의 높은 갑판이 피해를 막는다', async () => {
+  const { createGame, startRun, makeShip, stepGame, boardingThreat, SHIP_TYPES } = await simPromise;
+  const game = createGame(52);
+  startRun(game);
+  game.spawnClock = 999;
+  game.player.reload = [999, 999];
+  for (const ally of game.allies) ally.reload = [999, 999];
+  const boarder = makeShip('sekibune', game.player.x + 55, game.player.y, 0, 'boarder');
+  boarder.reload = [999, 999];
+  game.enemies = [boarder];
+  stepGame(game, {}, .05);
+  assert.ok(boardingThreat(game));
+  assert.ok(game.events.some(event => event.kind === 'boarding'));
+  for (let i = 0; i < 32; i++) stepGame(game, {}, .05);
+  assert.ok(game.events.some(event => event.kind === 'boarded'), '도선 완료 사건');
+  const damage = game.player.maxHp - game.player.hp;
+  assert.ok(Math.abs(damage - SHIP_TYPES.sekibune.boardingDamage * SHIP_TYPES.panokseon.boardingDamageTaken) < .01, `도선 피해 ${damage}`);
+});
+
+test('적선과 거리를 벌리면 도선 진행이 해제되며 재시도에 대기시간이 있다', async () => {
+  const { createGame, startRun, makeShip, stepGame, boardingThreat } = await simPromise;
+  const game = createGame(53);
+  startRun(game);
+  game.spawnClock = 999;
+  game.player.reload = [999, 999];
+  for (const ally of game.allies) ally.reload = [999, 999];
+  const enemy = makeShip('sekibune', game.player.x + 56, game.player.y, 0, 'boarder');
+  enemy.reload = [999, 999];
+  game.enemies = [enemy];
+  for (let i = 0; i < 9; i++) stepGame(game, {}, .05);
+  assert.ok(boardingThreat(game));
+  game.player.x -= 450;
+  for (let i = 0; i < 20; i++) stepGame(game, {}, .05);
+  assert.equal(boardingThreat(game), null);
+  assert.equal(enemy.boardingProgress, 0);
+});
+
+test('사후선 격침 후 교전 강화에서 정찰선을 복구한다', async () => {
+  const { createGame, startRun, stepGame, takeUpgrade, getWave } = await simPromise;
+  const game = createGame(61);
+  startRun(game);
+  game.allies[1].dead = true;
+  game.allies[1].hp = 0;
+  game.spawned = getWave(game).ships.length;
+  game.spawnClock = 999;
+  stepGame(game, {}, .016);
+  assert.ok(game.selected.includes('sahuseon'));
+  assert.equal(takeUpgrade(game, 'sahuseon'), true);
+  assert.equal(game.allies[1].type, 'sahuseon');
+  assert.equal(game.allies[1].dead, false);
+});

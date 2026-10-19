@@ -1,6 +1,6 @@
 import {
-  WORLD, ISLANDS, SHIP_TYPES, WAVES, UPGRADES, WEAPONS, createGame, startRun,
-  getWave, stepGame, takeUpgrade, issueOrder, togglePause, broadsideTarget
+  WORLD, ISLANDS, SHIP_TYPES, SHIP_GUIDE, WAVES, UPGRADES, WEAPONS, createGame, startRun,
+  getWave, stepGame, takeUpgrade, issueOrder, togglePause, broadsideTarget, radarContacts, boardingThreat
 } from './sim.mjs';
 
 const $ = id => document.getElementById(id);
@@ -91,6 +91,8 @@ function saveRecord() {
 function showOverlay(mode) {
   overlay.classList.remove('hidden');
   $('howTo').style.display = mode === 'menu' ? '' : 'none';
+  $('shipGuide').hidden = true;
+  $('shipGuide').replaceChildren();
   $('historyNote').style.display = mode === 'menu' || mode === 'victory' ? '' : 'none';
   $('dialogEmblem').textContent = mode === 'victory' ? '勝' : mode === 'defeat' ? '再' : mode === 'upgrade' ? '備' : '水';
   const actions = $('dialogActions');
@@ -108,6 +110,29 @@ function showOverlay(mode) {
     $('overlayTitle').textContent = '옥포로 출전하다';
     $('overlayText').textContent = '1592년, 조선 수군이 적선을 향해 바다로 나섭니다. 적선을 내 배의 왼쪽이나 오른쪽에 두고 함포를 발사하세요.';
     primary('옥포로 출전하기 →', () => { beginRun(); playSound('confirm'); });
+    const guideButton = document.createElement('button');
+    guideButton.type = 'button';
+    guideButton.className = 'secondary-button';
+    guideButton.textContent = '함선 일람 펼치기 · 조선 / 일본';
+    guideButton.addEventListener('click', () => {
+      const guide = $('shipGuide');
+      guide.hidden = !guide.hidden;
+      guideButton.textContent = guide.hidden ? '함선 일람 펼치기 · 조선 / 일본' : '함선 일람 접기';
+      if (guide.childElementCount) return;
+      for (const ship of SHIP_GUIDE) {
+        const entry = document.createElement('article');
+        entry.className = `guide-entry ${SHIP_TYPES[ship.type].side}`;
+        const name = document.createElement('strong');
+        const role = document.createElement('span');
+        const note = document.createElement('small');
+        name.textContent = SHIP_TYPES[ship.type].name;
+        role.textContent = `${ship.period} · ${ship.role}`;
+        note.textContent = ship.note;
+        entry.append(name, role, note);
+        guide.appendChild(entry);
+      }
+    });
+    actions.appendChild(guideButton);
   } else if (mode === 'upgrade') {
     $('overlayEyebrow').textContent = `${game.waveIndex + 1}차 교전 마침 · 출전 준비`;
     $('overlayTitle').textContent = '함선을 정비할 시간';
@@ -202,7 +227,8 @@ function syncHud() {
   $('killCount').textContent = game.kills;
   $('scoreCount').textContent = game.score.toLocaleString('ko-KR');
   const escort = game.allies[0];
-  $('escortStatus').textContent = !escort || escort.dead ? '협선 · 격침 (교전 후 충원 가능)' : `협선 · 내구도 ${Math.ceil(escort.hp)} / ${escort.maxHp}`;
+  const messenger = game.allies.find(ally => ally.type === 'sahuseon');
+  $('escortStatus').textContent = `${!escort || escort.dead ? '협선 격침' : `협선 ${Math.ceil(escort.hp)}/${escort.maxHp}`} · ${!messenger || messenger.dead ? '사후선 격침' : '사후선 정찰 중'}`;
   $('timer').textContent = formatTime(game.seconds);
   for (let side = 0; side < 2; side++) {
     const slot = side === 0 ? 'port' : 'starboard';
@@ -215,7 +241,7 @@ function syncHud() {
     fill.style.width = `${clamp(1 - remaining / totalReload, 0, 1) * 100}%`;
     label.textContent = remaining <= 0 ? '발사 준비' : `${remaining.toFixed(1)}초`;
   }
-  const escortAlive = game.allies.some(ship => !ship.dead);
+  const escortAlive = game.allies.some(ship => ship.type === 'escort' && !ship.dead);
   for (const [order, id, labelId, key, action] of [
     ['rally', 'signalBtn', 'signalLabel', '1', '속사'],
     ['focus', 'focusBtn', 'focusLabel', '2', '집중'],
@@ -230,7 +256,9 @@ function syncHud() {
   const left = broadsideTarget(game.player,game.enemies,-1,WEAPONS[game.arsenal.port].range * game.bonuses.range);
   const right = broadsideTarget(game.player,game.enemies,1,WEAPONS[game.arsenal.starboard].range * game.bonuses.range);
   const widestRange = Math.max(WEAPONS[game.arsenal.port].range, WEAPONS[game.arsenal.starboard].range) * game.bonuses.range;
-  $('battleTip').textContent = !nearest ? '적선을 기다리는 중' : game.player.aimSteady < .58 ? '급선회 중 · 방향을 잡으면 포격합니다' : left || right ? `${left ? '좌현' : '우현'} 화포 사격 범위!` : Math.hypot(nearest.x-game.player.x,nearest.y-game.player.y)>widestRange ? '적선에 접근한 뒤 측면을 잡으세요' : '적선을 뱃머리가 아닌 좌우에 두세요';
+  const boarding = boardingThreat(game);
+  $('battleTip').textContent = boarding ? `도선 위협 ${Math.round(boarding.boardingProgress * 100)}% · 적선과 거리를 벌리세요!` : !nearest ? '적선을 기다리는 중' : game.player.aimSteady < .58 ? '급선회 중 · 방향을 잡으면 포격합니다' : left || right ? `${left ? '좌현' : '우현'} 화포 사격 범위!` : Math.hypot(nearest.x-game.player.x,nearest.y-game.player.y)>widestRange ? '적선에 접근한 뒤 측면을 잡으세요' : '적선을 뱃머리가 아닌 좌우에 두세요';
+  $('battleTip').classList.toggle('is-boarding', !!boarding);
 }
 
 function drawOcean(left, top, width, height) {
@@ -335,12 +363,28 @@ function drawShip(ship) {
   ctx.strokeStyle = friendly ? '#edca84' : '#cb8b6e';
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(-r * .8, r * .92);
-  ctx.lineTo(-r * .86, -r * .55);
-  ctx.quadraticCurveTo(-r * .56, -r * 1.34, 0, -r * 1.48);
-  ctx.quadraticCurveTo(r * .56, -r * 1.34, r * .86, -r * .55);
-  ctx.lineTo(r * .8, r * .92);
-  ctx.quadraticCurveTo(0, r * 1.18, -r * .8, r * .92);
+  if (ship.type === 'panokseon' || ship.type === 'turtle') {
+    // Broad, nearly squared fighting platform: a recognizable panokseon profile.
+    ctx.moveTo(-r * .91, r * .98);
+    ctx.lineTo(-r * .98, -r * .99);
+    ctx.quadraticCurveTo(0, -r * 1.22, r * .98, -r * .99);
+    ctx.lineTo(r * .91, r * .98);
+    ctx.quadraticCurveTo(0, r * 1.16, -r * .91, r * .98);
+  } else if (ship.type === 'sahuseon' || ship.type === 'kobaya') {
+    ctx.moveTo(-r * .47, r * 1.12);
+    ctx.lineTo(-r * .62, -r * .45);
+    ctx.quadraticCurveTo(-r * .45, -r * 1.55, 0, -r * 1.64);
+    ctx.quadraticCurveTo(r * .45, -r * 1.55, r * .62, -r * .45);
+    ctx.lineTo(r * .47, r * 1.12);
+    ctx.quadraticCurveTo(0, r * 1.26, -r * .47, r * 1.12);
+  } else {
+    ctx.moveTo(-r * .8, r * .92);
+    ctx.lineTo(-r * .86, -r * .55);
+    ctx.quadraticCurveTo(-r * .56, -r * (ship.type === 'sekibune' ? 1.65 : 1.34), 0, -r * (ship.type === 'sekibune' ? 1.72 : 1.48));
+    ctx.quadraticCurveTo(r * .56, -r * (ship.type === 'sekibune' ? 1.65 : 1.34), r * .86, -r * .55);
+    ctx.lineTo(r * .8, r * .92);
+    ctx.quadraticCurveTo(0, r * 1.18, -r * .8, r * .92);
+  }
   ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.fillStyle = friendly ? '#ad8456' : '#8d5a48';
   ctx.fillRect(-r * .64, -r * .73, r * 1.28, r * 1.42);
@@ -349,10 +393,36 @@ function drawShip(ship) {
     const y = i * r * .31;
     ctx.beginPath();ctx.moveTo(-r * .61, y);ctx.lineTo(r * .61, y);ctx.stroke();
   }
-  ctx.fillStyle = friendly ? '#65503a' : '#48312d';
-  ctx.fillRect(-r * .49, -r * .35, r * .98, r * .65);
-  ctx.strokeStyle = friendly ? '#e0c58c' : '#b98369';
-  ctx.strokeRect(-r * .49, -r * .35, r * .98, r * .65);
+  if (ship.type !== 'kobaya' && ship.type !== 'sahuseon') {
+    ctx.fillStyle = friendly ? '#65503a' : '#48312d';
+    ctx.fillRect(-r * .49, -r * .35, r * .98, r * .65);
+    ctx.strokeStyle = friendly ? '#e0c58c' : '#b98369';
+    ctx.strokeRect(-r * .49, -r * .35, r * .98, r * .65);
+  }
+  if (ship.type === 'panokseon') {
+    // Two separated working levels and raised battlements, rather than a flat deck.
+    ctx.fillStyle = '#d4aa72';
+    ctx.fillRect(-r * .8, -r * .76, r * 1.6, r * .18);
+    ctx.fillRect(-r * .8, r * .64, r * 1.6, r * .18);
+    ctx.fillStyle = '#e4c496';
+    for (const side of [-1, 1]) {
+      ctx.fillRect(side < 0 ? -r * .99 : r * .78, -r * .69, r * .21, r * 1.32);
+      for (let y = -1; y <= 1; y++) {
+        ctx.fillStyle = '#704e31';
+        ctx.fillRect(side < 0 ? -r * 1.06 : r * .78, y * r * .35 - 2, r * .28, 4);
+      }
+    }
+    ctx.fillStyle = '#463e30';ctx.fillRect(-r * .44, -r * .38, r * .88, r * .74);
+    ctx.strokeStyle = '#eccb99';ctx.lineWidth = 2;ctx.strokeRect(-r * .44, -r * .38, r * .88, r * .74);
+  } else if (ship.type === 'turtle') {
+    ctx.fillStyle = '#55685d';
+    ctx.beginPath();ctx.ellipse(0, 0, r * .81, r * 1.04, 0, 0, Math.PI*2);ctx.fill();
+    ctx.strokeStyle = '#c7b88b';ctx.lineWidth = 1.5;
+    for (let y = -2; y <= 2; y++) {
+      ctx.beginPath();ctx.moveTo(-r*.7,y*r*.34);ctx.lineTo(r*.7,y*r*.34);ctx.stroke();
+      ctx.fillStyle = '#d9ccab';ctx.beginPath();ctx.arc(0,y*r*.35,2.2,0,Math.PI*2);ctx.fill();
+    }
+  }
   if (ship.type === 'atakebune') {
     // The high, tiered fighting deck makes the largest enemy readable at game zoom.
     ctx.fillStyle = '#b47552';
@@ -370,6 +440,12 @@ function drawShip(ship) {
   } else if (ship.type === 'kobaya') {
     ctx.strokeStyle = '#dba180';
     ctx.beginPath();ctx.moveTo(-r*.55,r*.48);ctx.lineTo(r*.55,-r*.48);ctx.stroke();
+  } else if (ship.type === 'sahuseon') {
+    // Open messenger boat with visible benches and oars, without gunports.
+    ctx.strokeStyle = '#f7d99e';ctx.lineWidth = 2;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();ctx.moveTo(-r*.49,i*r*.51);ctx.lineTo(r*.49,i*r*.51);ctx.stroke();
+    }
   }
   // Deck rails and visible planking help distinguish the wooden vessels at
   // the game's far zoom without depending on large external textures.
@@ -378,10 +454,14 @@ function drawShip(ship) {
   for (const side of [-1, 1]) {
     ctx.beginPath();ctx.moveTo(side*r*.67,-r*.65);ctx.lineTo(side*r*.65,r*.72);ctx.stroke();
   }
-  ctx.fillStyle = '#302d2a';
-  for (const side of [-1, 1]) {
-    for (let i = -1; i <= 1; i++) {
-      ctx.fillRect(side < 0 ? -r - 6 : r - 2, i * r * .42 - 3, 9, 6);
+  if (ship.type !== 'sahuseon') {
+    ctx.fillStyle = '#302d2a';
+    for (const side of [-1, 1]) {
+      const slots = ship.type === 'kobaya' ? 1 : ship.type === 'sekibune' || ship.type === 'escort' ? 2 : 3;
+      for (let i = 0; i < slots; i++) {
+        const y = (i - (slots - 1) / 2) * r * .42;
+        ctx.fillRect(side < 0 ? -r - 6 : r - 2, y - 3, 9, 6);
+      }
     }
   }
   ctx.fillStyle = friendly ? '#f3d69c' : '#d68e70';
@@ -460,11 +540,33 @@ function drawShots() {
   }
 }
 
+function drawBoarding() {
+  for (const enemy of game.enemies) {
+    if (enemy.boardingProgress <= 0 || !enemy.boardingTargetId) continue;
+    const target = [game.player, ...game.allies].find(ship => ship.id === enemy.boardingTargetId && !ship.dead);
+    if (!target) continue;
+    ctx.save();
+    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = '#f5a17fee';
+    ctx.lineWidth = 3;
+    const a = Math.atan2(target.y - enemy.y, target.x - enemy.x);
+    const gap = SHIP_TYPES[enemy.type].radius * .7;
+    ctx.beginPath();ctx.moveTo(enemy.x + Math.cos(a)*gap,enemy.y + Math.sin(a)*gap);
+    ctx.lineTo(target.x - Math.cos(a)*SHIP_TYPES[target.type].radius*.7,target.y - Math.sin(a)*SHIP_TYPES[target.type].radius*.7);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = '#782e26ee';ctx.lineWidth = 6;
+    ctx.beginPath();ctx.arc(enemy.x,enemy.y,SHIP_TYPES[enemy.type].radius*1.65,-Math.PI/2,3*Math.PI/2);ctx.stroke();
+    ctx.strokeStyle = '#ffc178';
+    ctx.beginPath();ctx.arc(enemy.x,enemy.y,SHIP_TYPES[enemy.type].radius*1.65,-Math.PI/2,-Math.PI/2+Math.PI*2*clamp(enemy.boardingProgress,0,1));ctx.stroke();
+    ctx.restore();
+  }
+}
+
 function drawEffects() {
   for (const e of game.effects) {
     const p = clamp(e.age / e.duration, 0, 1);
     ctx.save();ctx.translate(e.x,e.y);
-    if (['splash','impact','heavy-impact'].includes(e.type)) {
+    if (['splash','impact','heavy-impact','boarding'].includes(e.type)) {
       const heavy = e.type === 'heavy-impact', hit = e.type !== 'splash';
       ctx.strokeStyle = hit ? `rgba(248,193,112,${1-p})` : `rgba(200,245,241,${.8*(1-p)})`;
       ctx.lineWidth = heavy ? 5.2*(1-p)+1 : 2.6;
@@ -528,8 +630,8 @@ function drawRadar() {
     ctx.beginPath();ctx.arc(x+9+(ship.x/WORLD.width)*(w-18),y+9+(ship.y/WORLD.height)*(h-18),radius,0,Math.PI*2);ctx.fill();
   };
   for(const island of ISLANDS) dot(island,'#6c9277',island.radius/75);
-  for(const enemy of game.enemies) dot(enemy,enemy.type==='atakebune'?'#ffd491':'#e88e72',enemy.type==='atakebune'?4.3:2.6);
-  for(const ally of game.allies) if(!ally.dead) dot(ally,'#b7e2cf',3);
+  for(const enemy of radarContacts(game)) dot(enemy,enemy.type==='atakebune'?'#ffd491':'#e88e72',enemy.type==='atakebune'?4.3:2.6);
+  for(const ally of game.allies) if(!ally.dead) dot(ally,ally.type==='sahuseon'?'#8fe7f8':'#b7e2cf',ally.type==='sahuseon'?2:3);
   dot(game.player,'#f8d78f',4);
 }
 
@@ -555,6 +657,7 @@ function render() {
   for(const enemy of game.enemies) drawShip(enemy);
   for(const ally of game.allies) drawShip(ally);
   drawShip(game.player);
+  drawBoarding();
   drawOrders();
   drawBroadsideGuides();
   drawShots();
@@ -580,7 +683,7 @@ function runFrame(now) {
     const event=game.events.shift();
     if(event.kind==='fire') playSound(event.weapon === 'heavy' ? 'heavy' : 'fire');
     if(event.kind==='hit') playSound('hit');
-    if(['wave','signal','upgrade','victory','defeat','boss'].includes(event.kind)) toast(event.text);
+    if(['wave','signal','upgrade','victory','defeat','boss','boarding','boarded'].includes(event.kind)) toast(event.text);
   }
   if(game.mode!==oldMode){
     oldMode=game.mode;
