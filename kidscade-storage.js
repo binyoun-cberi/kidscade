@@ -81,6 +81,7 @@
     bridgeScribbleHelpSeen: 'kidscade_bridge_scribble_help_v2',
     speakJjoayoProgress: 'kidscade_speak_jjoayo_progress_v1',
     fractionSmithBest: 'kidscade_fraction_smith_best_v1',
+    fractionSmithProgress: 'kidscade_fraction_smith_progress_v2',
     mafiaPassPlaySave: 'kidscade_mafia_passplay_v1',
     cubeArchitectWorldSave: 'kidscade_cube_architect_world_v1',
     // Preserve the exact physical keys previously used by the Cube Architect world saves.
