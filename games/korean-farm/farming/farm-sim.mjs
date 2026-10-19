@@ -218,6 +218,7 @@ export function canWorkFieldStrip(state,id,action,index){
   const done=f.work?.[action==='till'?'tilled':action==='water'?'watered':action==='weed'?'weeded':action==='fertilize'?'fertilized':'harvested'];
   if(!Array.isArray(done)||done[index])return {ok:false,message:'이미 작업한 구역이에요.'};
   if(action==='till'&&f.planted)return {ok:false,message:'작물이 자라는 땅은 갈 수 없어요.'};
+  if(action==='fertilize'&&!state.inventory.fertilizer)return {ok:false,message:'퇴비 주머니가 비었어요. 거름 더미에서 퇴비를 퍼 오세요.'};
   if(action==='water'&&f.kind==='rice')return {ok:false,message:'논은 물꼬를 이용해 물을 대 주세요.'};
   if(action==='weed'&&f.weeds<.12&&!f.work.weeded.some(Boolean))return {ok:false,message:'아직 뽑을 잡초가 없어요.'};
   if(action==='harvest'&&(!f.planted||f.growth<.999))
