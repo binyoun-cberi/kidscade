@@ -1,13 +1,10 @@
 name: Korean Farm public route smoke
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Deploy Kidscade to Cloudflare"]
+    types: [completed]
     branches: [main]
-    paths:
-      - ".github/workflows/farm-live-smoke.yml"
-      - "data/games.json"
-      - "games/korean-farm/**"
-      - "assets/gate-image/korean_farm.svg"
   workflow_dispatch:
 
 permissions:
@@ -15,6 +12,7 @@ permissions:
 
 jobs:
   farm-public-route:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
@@ -23,7 +21,7 @@ jobs:
         run: |
           set -euo pipefail
           base='https://kidscade.binyoun.workers.dev'
-          for spec in 'data/games.json|catalog.json' 'games/korean-farm/index.html|game.html' 'assets/gate-image/korean_farm.svg|cover.svg'; do
+          for spec in 'data/games.json|catalog.json' 'games/korean-farm/index.html|game.html' 'assets/gate-image/korean_farm_cover.webp|cover.webp'; do
             route="${spec%%|*}"
             file="${spec##*|}"
             echo "[farm-route] GET /${route}"
@@ -41,9 +39,10 @@ jobs:
           console.log('[farm-route] SDK exact', html.includes('data-game-id="korean_farm"'));
           console.log('[farm-route] title index', html.indexOf('논두렁 너머'));
           console.log('[farm-route] HTML doctype index', html.toLowerCase().indexOf('<!doctype'));
-          const svg = fs.readFileSync('/tmp/cover.svg','utf8');
-          console.log('[farm-route] cover first chars', JSON.stringify(svg.slice(0,160)));
-          if (!game || game.title !== '논두렁 너머') process.exitCode = 1;
+          const cover = fs.readFileSync('/tmp/cover.webp');
+          const validWebp = cover.length >= 12 && cover.toString('ascii', 0, 4) === 'RIFF' && cover.toString('ascii', 8, 12) === 'WEBP';
+          console.log('[farm-route] cover bytes', cover.length, 'valid WebP:', validWebp);
+          if (!game || game.title !== '논두렁 너머' || game.cover !== 'assets/gate-image/korean_farm_cover.webp') process.exitCode = 1;
           if (!html.includes('data-game-id="korean_farm"')) process.exitCode = 1;
-          if (!svg.includes('<svg')) process.exitCode = 1;
+          if (!validWebp) process.exitCode = 1;
           NODE
