@@ -132,6 +132,7 @@ const TEST_FILES = [
   "tests/wordchain.test.mjs",
   "tests/wordchain-realtime-v2.test.mjs",
   "tests/history-live.test.mjs",
+  "tests/history-figure-sort.test.mjs",
   "tests/rhythm-dash-v11.test.cjs",
   "tests/alien-pizza-dx2.test.cjs",
   "tests/fraction-smith.test.cjs",
