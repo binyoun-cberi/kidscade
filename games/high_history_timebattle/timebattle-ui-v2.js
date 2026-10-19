@@ -8,7 +8,8 @@
     mixed:{title:'객관식 + OX',detail:'두 가지 유형 번갈아'},
     people:{title:'역사 인물',detail:'업적을 보고 이름 맞히기'},
     heritage:{title:'문화유산',detail:'특징을 보고 이름 맞히기'},
-    'choice-short':{title:'직접 답하기',detail:'객관식 + 주관식 섞기'}
+    'choice-short':{title:'직접 답하기',detail:'객관식 + 주관식 섞기'},
+    'figure-sort':{title:'시대별 인물 모으기',detail:'인물 카드를 시대별로 끌어다 놓기'}
   };
   const SETTINGS=[
     {section:'hostSetup',mode:'questionMode',era:'hostEraPicker',order:'orderMode',count:'questionCount',custom:['checkpointMode','checkpointCustom'],preset:true},
@@ -116,6 +117,15 @@
     for(const {section,select,buttons,eraFold,advanced} of panels){
       const selected=select.value;
       for(const button of buttons)button.setAttribute('aria-pressed',String(button.dataset.mode===selected));
+      if(section.section==='soloSetup'){
+        const sorting=selected==='figure-sort';
+        byId('soloSetup').classList.toggle('sort-mode-selected',sorting);
+        byId('sortSoloOptions')?.classList.toggle('hidden',!sorting);
+        byId('soloModeIntro').textContent=sorting
+          ?'인물 카드를 알맞은 시대에 모으는 놀이예요. 시대 구간과 카드 수를 고른 뒤 시작해요.'
+          :'방 코드 없이 바로 시작해요. 정답과 해설을 확인한 뒤 원하는 때 다음 문제로 넘어갈 수 있어요.';
+        if(sorting)window.HistoryFigureSortUI?.renderStages();
+      }
       if(eraFold){
         const chosen=[...byId(section.era).querySelectorAll('input[type="checkbox"]:checked')].map(input=>input.value);
         const total=byId(section.era).querySelectorAll('input[type="checkbox"]').length;

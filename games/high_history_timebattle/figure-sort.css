@@ -1,6 +1,9 @@
-.actions{grid-template-columns:repeat(4,minmax(0,1fr));max-width:1100px}
-.sort-landing{background:linear-gradient(135deg,#70d7f2,#a6f1d1);color:#073b47}
-.sort-kicker{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#9fc7e7;font-weight:900}
+#sortSoloOptions{background:#0a2139;border:1px solid #385e84;border-radius:18px;padding:16px;margin:12px 0 20px}
+#sortSoloOptions h3{margin:10px 0 0}
+#soloSetup.sort-mode-selected .setup-essentials,
+#soloSetup.sort-mode-selected .setup-details,
+#soloSetup.sort-mode-selected .solo-nickname-field,
+#soloSetup.sort-mode-selected #soloHistoryActions{display:none}
 .sort-lead{color:#c9dbef;line-height:1.55;margin:10px 0 20px}
 .sort-stage-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:15px 0}
 .sort-stage{border:2px solid #365c83;border-radius:17px;background:#092139;color:white;padding:16px;text-align:left;display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:center;min-height:100px}
@@ -36,7 +39,6 @@
 .sort-review-card.incorrect .sort-result-indicator{background:#a4515c}
 .sort-review-card strong{font-size:19px}.sort-review-era{color:#ffe087;font-weight:850;margin-top:3px}
 .sort-review-card p{font-size:14px;line-height:1.55;margin:8px 0 0;color:#bfd1e5}
-@media(max-width:840px){.actions{grid-template-columns:repeat(2,minmax(0,1fr))}.sort-board{grid-template-columns:1fr}.sort-tray{min-height:105px}.sort-bin{min-height:95px}.sort-review{grid-template-columns:1fr}}
-@media(max-width:580px){.actions{grid-template-columns:1fr}}
+@media(max-width:840px){.sort-board{grid-template-columns:1fr}.sort-tray{min-height:105px}.sort-bin{min-height:95px}.sort-review{grid-template-columns:1fr}}
 @media(max-width:580px){.sort-stage-picker{grid-template-columns:1fr}.sort-stage{min-height:82px;padding:12px}.sort-controls{display:grid;grid-template-columns:1fr 1fr}.sort-controls .btn:first-child{grid-column:1/-1}.sort-bin{padding:10px}.sort-bin-heading strong{font-size:16px}.sort-deck{padding:12px}}
 @media(prefers-reduced-motion:reduce){.sort-bin{transition:none}}

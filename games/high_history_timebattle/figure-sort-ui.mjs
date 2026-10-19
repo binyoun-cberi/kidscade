@@ -18,9 +18,12 @@ function renderStages(){
   $('sortBest').textContent=Number.isFinite(best)?`이 구간 최고 기록 ${best}점`:'아직 기록이 없어요.';
 }
 
-function openSetup(){
+function backToSolo(){
+  cleanupDrag();
   game=null;
-  window.showOnly('sortSetup');
+  window.showSetup('solo');
+  $('soloQuestionMode').value='figure-sort';
+  $('soloQuestionMode').dispatchEvent(new Event('change',{bubbles:true}));
   renderStages();
 }
 
@@ -184,14 +187,14 @@ function init(){
   play.addEventListener('pointermove',onPointerMove);
   play.addEventListener('pointerup',onPointerUp);
   play.addEventListener('pointercancel',cleanupDrag);
-  $('sortStart').addEventListener('click',()=>start());
   $('sortUndo').addEventListener('click',returnSelected);
   $('sortSubmit').addEventListener('click',grade);
   $('sortRestart').addEventListener('click',()=>start());
   $('sortNextStage').addEventListener('click',()=>{stageIndex=(stageIndex+1)%FIGURE_SORT_STAGES.length;start()});
-  $('sortBackSetup').addEventListener('click',openSetup);
+  $('sortBackSetup').addEventListener('click',backToSolo);
+  $('sortResultBackSetup').addEventListener('click',backToSolo);
   renderStages();
 }
 
-window.HistoryFigureSortUI={openSetup};
+window.HistoryFigureSortUI={start,renderStages,backToSolo};
 init();

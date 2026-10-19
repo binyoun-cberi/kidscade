@@ -43,19 +43,38 @@ test('invalid stage, card count, or too little data fails clearly',()=>{
   assert.throws(()=>makeFigureSortRound([],0,6),/Not enough/);
 });
 
-test('mode is linked from the game and supports drag, touch and tap fallback',()=>{
+test('figure sort is a solo practice question type with drag, touch and tap fallback',()=>{
   const html=readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html',import.meta.url),'utf8');
   const js=readFileSync(new URL('../games/high_history_timebattle/figure-sort-ui.mjs',import.meta.url),'utf8');
   const css=readFileSync(new URL('../games/high_history_timebattle/figure-sort.css',import.meta.url),'utf8');
-  assert.match(html,/onclick="openFigureSort\(\)"/);
+  const enhancement=readFileSync(new URL('../games/high_history_timebattle/timebattle-ui-v2.js',import.meta.url),'utf8');
+  const soloModes=html.match(/<select id="soloQuestionMode">([\s\S]*?)<\/select>/)?.[1];
+  const hostModes=html.match(/<select id="questionMode">([\s\S]*?)<\/select>/)?.[1];
+  const roundModes=html.match(/<select id="roundQuestionMode">([\s\S]*?)<\/select>/)?.[1];
+  assert.match(soloModes,/option value="figure-sort">시대별 인물 모으기/);
+  assert.doesNotMatch(hostModes,/figure-sort/);
+  assert.doesNotMatch(roundModes,/figure-sort/);
+  assert.doesNotMatch(html,/id="sortSetup"|onclick="openFigureSort\(\)"|id="sortStart"/);
+  assert.match(html,/id="sortSoloOptions" class="hidden"/);
+  assert.match(html,/id="sortStages"/);
+  assert.match(html,/id="sortCount"/);
   assert.match(html,/id="sortPlay"/);
   assert.match(html,/id="sortTray"/);
   assert.match(html,/id="sortSubmit"/);
-  assert.match(html,/figure-sort-ui\.mjs\?v=1/);
+  assert.match(html,/if\(\$\('soloQuestionMode'\)\.value==='figure-sort'\)/);
+  assert.match(html,/HistoryFigureSortUI\.start\(\)/);
+  assert.match(html,/figure-sort-ui\.mjs\?v=2/);
+  assert.match(enhancement,/figure-sort':\{title:'시대별 인물 모으기'/);
+  assert.match(enhancement,/sort-mode-selected/);
+  assert.match(enhancement,/sortSoloOptions/);
+  assert.match(js,/function backToSolo\(/);
+  assert.match(js,/sortResultBackSetup/);
+  assert.match(js,/HistoryFigureSortUI=\{start,renderStages,backToSolo\}/);
   assert.match(js,/pointerdown/);
   assert.match(js,/pointermove/);
   assert.match(js,/pointerup/);
   assert.match(js,/function placeSelected/);
   assert.match(js,/function onPlayKey/);
   assert.match(css,/touch-action:none/);
+  assert.match(css,/#soloSetup\.sort-mode-selected \.setup-essentials/);
 });
