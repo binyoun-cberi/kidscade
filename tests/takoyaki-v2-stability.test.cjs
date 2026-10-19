@@ -15,9 +15,11 @@ function makeElement() {
     textContent: '',
     className: '',
     classList: { add() {}, remove() {}, toggle() {} },
+    dataset: {},
     children: [],
+    appendChild(child) { this.children.push(child); },
+    remove() {},
     addEventListener() {},
-    appendChild() {},
     setAttribute() {},
     querySelector() { return null; },
     getBoundingClientRect() { return { width: 800, height: 600 }; },
@@ -41,6 +43,7 @@ function loadGame(saved = null) {
   const context = {
     console,
     Math,
+    setTimeout() {},
     performance: { now: () => 20000 },
     localStorage: { getItem: () => saved, setItem() {} },
     window: { devicePixelRatio: 1, addEventListener() {} },
@@ -59,7 +62,8 @@ function loadGame(saved = null) {
     .replace(/boot\(\);\s*\}\)\(\);/, [
       'globalThis.takoyakiTest = {',
       'game, emptySlot, updateOrders, scoreBall, getDayRank, initThree,',
-      'renderFallbackPan, fallbackHits, resetSlots, getCfg, activeHoles, selectPan, actionPack, loadProgress',
+      'renderFallbackPan, fallbackHits, resetSlots, getCfg, activeHoles, selectPan, actionPack, loadProgress,',
+      'activeOrder, selectOrder, orderReadyCount, slotCue, updateCooking, updateOrdersUI, tapSlot, endDay',
       '};',
       '})();'
     ].join('\n'));
@@ -154,6 +158,94 @@ test('orders cannot be fulfilled by the other pan even when its food is finished
   assert.equal(api.game.orders.length, 1);
   assert.equal(api.game.dayServed, 0);
   assert.equal(api.game.slots[0].finished, true);
+});
+
+test('two simultaneous customers keep separate takoyaki and can be selected', () => {
+  const { api } = loadGame();
+  api.game.day = 3;
+  api.resetSlots();
+  const a={id:'guest-a',type:'basic',pan:0,pieces:2,filling:'octopus',sauce:1,mayo:0,katsu:0,aonori:0,maxWait:100,age:0};
+  const b={id:'guest-b',type:'mayo',pan:0,pieces:2,filling:'octopus',sauce:0,mayo:1,katsu:0,aonori:0,maxWait:100,age:0};
+  api.game.orders=[a,b];
+  api.game.activeOrderId='guest-a';
+  assert.equal(api.getCfg().queueMax,2);
+  assert.equal(api.activeOrder(),a);
+  api.game.slots[0].orderId=a.id;
+  api.game.slots[0].finished=true;
+  api.game.slots[1].orderId=b.id;
+  api.game.slots[1].finished=true;
+  assert.equal(api.orderReadyCount(a.id),1);
+  assert.equal(api.orderReadyCount(b.id),1);
+  api.selectOrder(b.id);
+  assert.equal(api.activeOrder(),b);
+  assert.equal(api.orderReadyCount(b.id),1);
+});
+
+test('a tap assigns food to the selected customer and serving preserves the other order', () => {
+  const { api } = loadGame();
+  api.game.day=3;
+  api.resetSlots();
+  api.game.started=true;
+  const a={id:'a',type:'basic',pan:0,pieces:1,filling:'octopus',sauce:1,mayo:0,katsu:0,aonori:0,maxWait:100,age:0,customer:'👦'};
+  const b={id:'b',type:'mayo',pan:0,pieces:1,filling:'octopus',sauce:0,mayo:1,katsu:0,aonori:0,maxWait:100,age:0,customer:'👧'};
+  api.game.orders=[a,b];
+  api.game.activeOrderId=a.id;
+  api.tapSlot(0);
+  assert.equal(api.game.slots[0].orderId,a.id);
+  api.selectOrder(b.id);
+  api.tapSlot(1);
+  assert.equal(api.game.slots[1].orderId,b.id);
+  api.selectOrder(a.id);
+  const slot=api.game.slots[0];
+  Object.assign(slot,{oil:1,batter:true,totalCook:42,innerCook:34,shape:95,burn:0,rollCount:3,sauce:1,finished:true});
+  api.actionPack();
+  assert.deepEqual(api.game.orders.map(o=>o.id),['b']);
+  assert.equal(api.game.slots[0].batter,false);
+  assert.equal(api.game.slots[1].orderId,b.id);
+  assert.equal(api.game.slots[1].batter,true);
+  assert.equal(api.activeOrder(),b);
+});
+
+test('roll and serving readiness have different signs', () => {
+  const { api } = loadGame();
+  const s=api.emptySlot(0);
+  s.unlocked=true;
+  assert.equal(api.slotCue(s).kind,'empty');
+  Object.assign(s,{batter:true,phaseCook:8,rollCount:1});
+  assert.equal(api.slotCue(s).icon,'↻');
+  Object.assign(s,{rollCount:3,totalCook:35,innerCook:22,burn:0});
+  assert.equal(api.slotCue(s).icon,'✓');
+  s.burn=95;
+  assert.equal(api.slotCue(s).kind,'burn');
+});
+
+test('inactive second pan rests while the current pan heats', () => {
+  const { api } = loadGame();
+  api.game.day=4;
+  api.resetSlots();
+  const main=api.game.slots[0], special=api.game.slots[12];
+  main.batter=true;special.batter=true;
+  api.game.started=true;api.game.paused=false;api.game.activePan=0;
+  api.updateCooking(5);
+  assert.ok(main.totalCook>0);
+  assert.equal(special.totalCook,0);
+  api.game.activePan=1;
+  const mainBefore=main.totalCook;
+  api.updateCooking(5);
+  assert.equal(main.totalCook,mainBefore);
+  assert.ok(special.totalCook>0);
+});
+
+test('a preschool child may close the shop after serving one order', () => {
+  const { api, elements } = loadGame();
+  api.game.day=1;
+  api.game.started=true;
+  api.game.paused=false;
+  api.game.dayServed=1;
+  api.endDay();
+  assert.equal(api.game.paused,true);
+  assert.match(elements.get('resultTitle').textContent,/8구 해금/);
+  assert.equal(elements.get('finishDayBtn').hidden,true);
 });
 
 test('scene props and Three.js are owned by Kidscade', () => {
