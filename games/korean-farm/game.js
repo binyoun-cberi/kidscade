@@ -353,7 +353,7 @@ function move(dt,elapsed){
   const manual=cameraRelativeInput(keys,joystick,viewAngle);
   let direction={x:manual.x,z:manual.z},goalDistance=null;
   if(manual.active){
-    moveGoal=null;
+    moveGoal=null;if(pendingStation)pendingStation=null;
   }else if(moveGoal){
     const dx=moveGoal.x-state.player.x,dz=moveGoal.z-state.player.z;
     goalDistance=Math.hypot(dx,dz);
