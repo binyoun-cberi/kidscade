@@ -3,7 +3,7 @@ import {WORK_STRIPS,workStripPosition} from '../farming/field-work.mjs';
 // Ground-level changes remain visible after the tool touches each strip.
 export function createFieldWorkGrid(plot){
   const group=new THREE.Group();group.name='field-work-'+plot.id;
-  const targets=[],furrows=[],wetPatches=[],weedClumps=[],stubble=[],markers=[];
+  const targets=[],furrows=[],wetPatches=[],weedClumps=[],stubble=[],markers=[],fertilizerPatches=[];
   const soilGeo=new THREE.BoxGeometry(plot.w-.28,.018,plot.d/WORK_STRIPS-.11);
   const waterGeo=new THREE.PlaneGeometry(plot.w-.32,plot.d/WORK_STRIPS-.09);
   const ringGeo=new THREE.RingGeometry(.18,.24,20);
@@ -14,6 +14,7 @@ export function createFieldWorkGrid(plot){
   const chosenMat=new THREE.MeshBasicMaterial({color:0xf5cd69,transparent:true,opacity:1,side:THREE.DoubleSide,depthWrite:false});
   const weedMat=new THREE.MeshStandardMaterial({color:0x4f843b,roughness:1});
   const strawMat=new THREE.MeshStandardMaterial({color:0xb89e59,roughness:1});
+  const compostMat=new THREE.MeshStandardMaterial({color:0x80613b,roughness:1});
   for(let i=0;i<WORK_STRIPS;i++){
     const point=workStripPosition(plot,i),z=point.z-plot.z;
     const target=new THREE.Mesh(new THREE.PlaneGeometry(plot.w-.18,plot.d/WORK_STRIPS-.045),
@@ -39,6 +40,9 @@ export function createFieldWorkGrid(plot){
       tip.scale.set(1,.5,1);tip.position.set(x,.03,k%2?.07:-.08);cut.add(tip);
     }
     group.add(weeds,cut);weedClumps.push(weeds);stubble.push(cut);
+    const compost=new THREE.Group();compost.position.set(0,.33,z);
+    for(let n=0;n<5;n++){const grain=new THREE.Mesh(new THREE.IcosahedronGeometry(.055,0),compostMat);grain.position.set((n-2)*.16,.02,n%2?.07:-.07);compost.add(grain)}
+    group.add(compost);fertilizerPatches.push(compost);
   }
   function refresh(field,action=null,selected=-1){
     for(let i=0;i<WORK_STRIPS;i++){
@@ -49,7 +53,8 @@ export function createFieldWorkGrid(plot){
       wetPatches[i].visible=!!done.watered?.[i]&&field.kind!=='rice';
       weedClumps[i].visible=(field.weeds>=.12||done.weeded?.some(Boolean))&&!done.weeded?.[i]&&!done.harvested?.[i];
       stubble[i].visible=!!done.harvested?.[i]&&field.planted;
-      const key=action==='till'?'tilled':action==='water'?'watered':action==='weed'?'weeded':'harvested';
+      fertilizerPatches[i].visible=!!done.fertilized?.[i];
+      const key=action==='till'?'tilled':action==='water'?'watered':action==='weed'?'weeded':action==='fertilize'?'fertilized':'harvested';
       markers[i].visible=Boolean(action)&&!done[key]?.[i];
       markers[i].material=i===selected?chosenMat:markerMat;
       markers[i].scale.setScalar(i===selected?1.65:1.12);
@@ -58,7 +63,7 @@ export function createFieldWorkGrid(plot){
   function dispose(){
     for(const target of targets){target.geometry.dispose();target.material.dispose()}
     for(const geo of [soilGeo,waterGeo,ringGeo,stalkGeo])geo.dispose();
-    for(const mat of [dirtMat,wetMat,markerMat,chosenMat,weedMat,strawMat])mat.dispose();
+    for(const mat of [dirtMat,wetMat,markerMat,chosenMat,weedMat,strawMat,compostMat])mat.dispose();
     group.parent?.remove(group);
   }
   return {group,targets,refresh,dispose};
