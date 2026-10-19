@@ -11,12 +11,25 @@ export const ISLANDS = Object.freeze([
 ]);
 
 export const SHIP_TYPES = Object.freeze({
-  panokseon: { name: '판옥선', side: 'joseon', hp: 360, radius: 27, speed: 185, acceleration: 185, turn: 2.35, reload: 2.0, range: 455, damage: 26, volley: 2 },
-  escort: { name: '협선', side: 'joseon', hp: 135, radius: 18, speed: 185, acceleration: 200, turn: 2.8, reload: 3.0, range: 350, damage: 12, volley: 1 },
-  kobaya: { name: '고바야', side: 'japan', hp: 54, radius: 16, speed: 143, acceleration: 175, turn: 2.75, reload: 3.0, range: 210, damage: 9, volley: 1 },
-  sekibune: { name: '세키부네', side: 'japan', hp: 95, radius: 22, speed: 111, acceleration: 145, turn: 2.3, reload: 2.85, range: 285, damage: 14, volley: 1 },
-  atakebune: { name: '아타케부네', side: 'japan', hp: 164, radius: 31, speed: 83, acceleration: 115, turn: 1.65, reload: 3.2, range: 315, damage: 19, volley: 2 }
+  panokseon: { name: '판옥선', side: 'joseon', hp: 360, radius: 27, speed: 185, acceleration: 185, turn: 2.35, reload: 2.0, range: 455, damage: 26, volley: 2, boardingDamageTaken: .52 },
+  escort: { name: '협선', side: 'joseon', hp: 135, radius: 18, speed: 185, acceleration: 200, turn: 2.8, reload: 3.0, range: 350, damage: 12, volley: 1, scoutRange: 680 },
+  sahuseon: { name: '사후선', side: 'joseon', hp: 72, radius: 12, speed: 208, acceleration: 225, turn: 3.1, reload: 0, range: 0, damage: 0, volley: 0, scoutRange: 880 },
+  kobaya: { name: '고바야', side: 'japan', hp: 54, radius: 16, speed: 161, acceleration: 190, turn: 2.95, reload: 3.0, range: 210, damage: 9, volley: 1 },
+  sekibune: { name: '세키부네', side: 'japan', hp: 95, radius: 22, speed: 119, acceleration: 155, turn: 2.3, reload: 2.85, range: 285, damage: 14, volley: 1, boardingDamage: 24, boardingTime: 1.35 },
+  atakebune: { name: '아타케부네', side: 'japan', hp: 175, radius: 31, speed: 83, acceleration: 115, turn: 1.65, reload: 3.2, range: 315, damage: 19, volley: 2, boardingDamage: 34, boardingTime: 1.8 },
+  // First deployed at Sacheon; intentionally unavailable in the Okpo waves.
+  turtle: { name: '거북선', side: 'joseon', hp: 400, radius: 30, speed: 158, acceleration: 160, turn: 2.15, reload: 2.35, range: 430, damage: 31, volley: 2, boardingDamageTaken: .18 }
 });
+
+export const SHIP_GUIDE = Object.freeze([
+  { type: 'panokseon', period: '옥포 · 아군 주력', role: '높은 전투 갑판 · 좌우 화포', note: '격군을 아래층에 보호하고 높은 갑판에서 포격합니다. 적의 도선 피해를 줄입니다.' },
+  { type: 'escort', period: '옥포 · 아군 호위', role: '정찰 · 연락 · 경무장 호위', note: '멀리 나타난 적선을 레이더에 알리고 기함 지휘에 호응합니다.' },
+  { type: 'sahuseon', period: '옥포 · 아군 부속정', role: '연락 · 정찰 · 비무장', note: '적선 발견 범위를 넓히지만 화포를 발사하지 않습니다. 격침되면 정비 때 복구할 수 있습니다.' },
+  { type: 'kobaya', period: '옥포 · 일본 소형선', role: '빠른 정찰 · 교란', note: '재빠른 방향 전환과 약한 원거리 공격이 특징입니다. 小早는 고바야로 표기합니다.' },
+  { type: 'sekibune', period: '옥포 · 일본 중형선', role: '측면 기동 · 도선 접근', note: '포격을 피하며 가까이 접근해 갑판으로 뛰어오르려 합니다.' },
+  { type: 'atakebune', period: '옥포 · 일본 대형선', role: '중장갑 누각 · 대형 화포 · 도선', note: '느리지만 견고하며 다층 누각을 갖춘 적 지휘함으로 등장합니다.' },
+  { type: 'turtle', period: '사천 해전에서 등장 예정', role: '덮개로 보호된 돌격선', note: '옥포 전투에는 등장하지 않습니다. 덮개와 침입 방지 구조를 사용하며 철판 장갑 여부는 단정하지 않습니다.' }
+]);
 
 // Fictionalised loadouts: historical-style names describe the role of each gun,
 // while the numbers and special effects are arcade rules, not period statistics.
@@ -30,8 +43,8 @@ export const WEAPONS = Object.freeze({
 
 export const WAVES = Object.freeze([
   { name: '옥포 앞바다', note: '적은 정면에서도 다가옵니다. 판옥선의 좌우 함포로 맞서세요.', ships: ['kobaya', 'sekibune', 'kobaya', 'kobaya', 'sekibune'], interval: 4 },
-  { name: '적의 반격', note: '적선이 양쪽으로 흩어져 포위합니다. 선회하며 사거리를 지키세요.', ships: ['sekibune', 'kobaya', 'kobaya', 'sekibune', 'kobaya', 'sekibune', 'kobaya', 'sekibune'], interval: 3.7 },
-  { name: '옥포의 결전', note: '대형 적선이 포진했습니다. 협선을 지키며 화력을 집중하세요.', ships: ['kobaya', 'sekibune', 'atakebune', 'kobaya', 'sekibune', 'kobaya', 'sekibune', 'kobaya', 'kobaya', 'atakebune'], interval: 4.7 }
+  { name: '적의 반격', note: '세키부네가 측면으로 다가와 도선을 노립니다. 거리를 벌리며 사격하세요.', ships: ['sekibune', 'kobaya', 'kobaya', 'sekibune', 'kobaya', 'sekibune', 'kobaya', 'sekibune'], interval: 3.7 },
+  { name: '옥포의 결전', note: '다층 누각의 아타케부네가 나타났습니다. 협선과 사후선을 지키며 화력을 집중하세요.', ships: ['kobaya', 'sekibune', 'atakebune', 'kobaya', 'sekibune', 'kobaya', 'sekibune', 'kobaya', 'kobaya', 'atakebune'], interval: 4.7 }
 ]);
 
 export const UPGRADES = Object.freeze([
@@ -39,6 +52,7 @@ export const UPGRADES = Object.freeze([
   { id: 'reload', icon: '⚙', title: '포수 숙련', text: '함포 재장전 시간 15% 감소' },
   { id: 'hull', icon: '⚒', title: '선체 수리', text: '판옥선 내구도 70 회복' },
   { id: 'escort', icon: '⚑', title: '협선 보강', text: '협선을 복구하거나 내구도 95 회복' },
+  { id: 'sahuseon', icon: '目', title: '사후선 복구', text: '정찰·연락용 사후선을 복구' },
   { id: 'rudder', icon: '↶', title: '노련한 키잡이', text: '선회 속도 14% 증가' },
   { id: 'range', icon: '◎', title: '거리 가늠', text: '함포 사거리 14% 증가' },
   ...['rapid', 'heavy', 'scatter', 'fire'].flatMap(weapon => [
@@ -75,7 +89,8 @@ export function makeShip(type, x, y, angle = 0, id = '') {
     id, type, team: spec.side, x, y, angle, speed: 0, hp: spec.hp, maxHp: spec.hp,
     reload: [0, 0], hitCooldown: 0, dead: false, targetId: '', wakeClock: 0,
     flank: 1, aimSteady: 1, turnRate: 0, burnRemaining: 0, burnDps: 0,
-    tacticClock: 3.5
+    tacticClock: 3.5, boardingRun: type === 'sekibune', boardingProgress: 0,
+    boardingTargetId: '', boardingCooldown: 0
   };
 }
 
@@ -88,7 +103,7 @@ export function createGame(seed = 1592) {
     arsenal: { port: 'standard', starboard: 'standard' },
     events: [], shots: [], effects: [],
     enemies: [], player: makeShip('panokseon', 1160, 805, -0.25, 'flagship'),
-    allies: [makeShip('escort', 1080, 875, -0.25, 'escort-1')]
+    allies: [makeShip('escort', 1080, 875, -0.25, 'escort-1'), makeShip('sahuseon', 1220, 935, -0.25, 'sahuseon-1')]
   };
   return game;
 }
@@ -120,8 +135,10 @@ export function upgradeChoices(game) {
   const escort = game.allies[0];
   const available = shuffled(UPGRADES.filter(o => !o.slot &&
     !(o.id === 'hull' && game.player.hp >= game.player.maxHp - 15) &&
-    !(o.id === 'escort' && escort && !escort.dead && escort.hp >= escort.maxHp - 15)));
-  const support = escort?.dead ? UPGRADES.find(o => o.id === 'escort') : available[0];
+    !(o.id === 'escort' && escort && !escort.dead && escort.hp >= escort.maxHp - 15) &&
+    !(o.id === 'sahuseon' && game.allies.some(ally => ally.type === 'sahuseon' && !ally.dead))));
+  const support = escort?.dead ? UPGRADES.find(o => o.id === 'escort') :
+    game.allies.some(ally => ally.type === 'sahuseon' && ally.dead) ? UPGRADES.find(o => o.id === 'sahuseon') : available[0];
   return shuffled([port, starboard, support].filter(Boolean));
 }
 
@@ -147,6 +164,12 @@ export function takeUpgrade(game, id) {
         game.player.angle, 'escort-1');
     } else if (escort) escort.hp = Math.min(escort.maxHp, escort.hp + 95);
   }
+  if (id === 'sahuseon') {
+    const behind = fwd(game.player.angle), side = right(game.player.angle);
+    game.allies[1] = makeShip('sahuseon',
+      cap(game.player.x - behind.x * 100 + side.x * 90, 35, WORLD.width - 35),
+      cap(game.player.y - behind.y * 100 + side.y * 90, 35, WORLD.height - 35), game.player.angle, 'sahuseon-1');
+  }
   game.waveIndex++;
   game.spawned = 0;
   game.spawnClock = 1.6;
@@ -161,7 +184,7 @@ export function issueSignal(game) {
 }
 
 export function issueOrder(game, order) {
-  if (!['rally', 'focus', 'guard'].includes(order) || game.mode !== 'playing' || game.signalCooldown > 0 || !game.allies.some(ship => !ship.dead)) return false;
+  if (!['rally', 'focus', 'guard'].includes(order) || game.mode !== 'playing' || game.signalCooldown > 0 || !game.allies.some(ship => ship.type === 'escort' && !ship.dead)) return false;
   if (order === 'focus') {
     const priority = game.enemies.filter(ship => !ship.dead).sort((a, b) =>
       (b.type === 'atakebune') - (a.type === 'atakebune') || distance(a, game.player) - distance(b, game.player))[0];
@@ -314,8 +337,21 @@ export function broadsideTarget(ship, targets, side, range = SHIP_TYPES[ship.typ
   return preferred || selected;
 }
 
+export function radarContacts(game) {
+  return game.enemies.filter(enemy => !enemy.dead && (
+    distance(enemy, game.player) < 390 || game.allies.some(ally =>
+      !ally.dead && distance(enemy, ally) < (SHIP_TYPES[ally.type].scoutRange || 0))
+  ));
+}
+
+export function boardingThreat(game) {
+  return game.enemies.filter(enemy => !enemy.dead && enemy.boardingProgress > 0 &&
+    enemy.boardingTargetId === game.player.id).sort((a, b) => b.boardingProgress - a.boardingProgress)[0] || null;
+}
+
 function fire(ship, targets, game, dt) {
   const cfg = SHIP_TYPES[ship.type];
+  if (!cfg.volley || !cfg.range) return; // Sahu boats carry dispatches, not cannons.
   const improved = ship.id === 'flagship' ? game.bonuses : { reload: 1, range: 1, damage: 1 };
   const rallied = game.signalRemaining > 0 && game.signalOrder === 'rally';
   const focused = game.signalRemaining > 0 && game.signalOrder === 'focus';
@@ -376,7 +412,7 @@ function segmentCircleTime(x0, y0, dx, dy, x, y, radius) {
 
 function damageShip(game, target, amount) {
   const guarding = target.id === 'flagship' && game.signalRemaining > 0 && game.signalOrder === 'guard' &&
-    game.allies.some(ally => !ally.dead && distance(ally, target) <= 185);
+    game.allies.some(ally => ally.type === 'escort' && !ally.dead && distance(ally, target) <= 185);
   target.hp -= guarding ? amount * .64 : amount;
 }
 
@@ -446,16 +482,19 @@ function controlEscort(game, escort, dt) {
   const side = right(player.angle), ahead = fwd(player.angle);
   const rallied = game.signalRemaining > 0 && game.signalOrder === 'rally';
   const guarding = game.signalRemaining > 0 && game.signalOrder === 'guard';
+  const messenger = escort.type === 'sahuseon';
+  const offset = messenger ? 115 : guarding ? -65 : rallied ? -100 : -145;
+  const trail = messenger ? 135 : guarding ? 45 : 92;
   const waypoint = {
-    x: player.x + side.x * (guarding ? -65 : rallied ? -100 : -145) - ahead.x * (guarding ? 45 : 92),
-    y: player.y + side.y * (guarding ? -65 : rallied ? -100 : -145) - ahead.y * (guarding ? 45 : 92)
+    x: player.x + side.x * offset - ahead.x * trail,
+    y: player.y + side.y * offset - ahead.y * trail
   };
   const focused = game.signalRemaining > 0 && game.signalOrder === 'focus';
   const target = focused ? game.enemies.find(enemy => enemy.id === game.focusTargetId && !enemy.dead) || closest(escort, game.enemies, 550) : closest(escort, game.enemies, 430);
   const formationDistance = distance(escort, waypoint);
   let heading = Math.atan2(waypoint.x - escort.x, -(waypoint.y - escort.y));
   let throttle = formationDistance > 80 ? 1 : 0.15;
-  if (!guarding && target && (focused || formationDistance < (rallied ? 105 : 180))) {
+  if (!messenger && !guarding && target && (focused || formationDistance < (rallied ? 105 : 180))) {
     const bearing = Math.atan2(target.x - escort.x, -(target.y - escort.y));
     heading = bearing - Math.PI / 2;
     throttle = focused ? 1 : rallied ? .32 : .5;
@@ -466,7 +505,8 @@ function controlEscort(game, escort, dt) {
 
 function controlEnemy(game, enemy, dt) {
   if (enemy.dead) return;
-  const target = closest(enemy, [game.player, ...game.allies]);
+  // Boarding crews favor fighting ships; dispatch boats are not their primary objective.
+  const target = closest(enemy, [game.player, ...game.allies.filter(ally => ally.type !== 'sahuseon')]) || game.player;
   if (!target) return;
   const cfg = SHIP_TYPES[enemy.type];
   const d = distance(enemy, target);
@@ -477,11 +517,22 @@ function controlEnemy(game, enemy, dt) {
   enemy.tacticClock -= dt;
   if (enemy.tacticClock <= 0) {
     if (enemy.type === 'kobaya') enemy.flank *= -1; // Feint to the opposite side.
-    enemy.tacticClock = enemy.type === 'kobaya' ? 3.2 : 5.5;
+    if (cfg.boardingDamage) enemy.boardingRun = !enemy.boardingRun;
+    enemy.tacticClock = enemy.type === 'kobaya' ? 3.2 : enemy.type === 'sekibune' ? 6.8 : 8.5;
   }
   let heading = bearing;
   let throttle = 1;
-  if (d < preferred * 0.52) {
+  const boardingRange = cfg.radius + SHIP_TYPES[target.type].radius + 26;
+  const finalFlagship = enemy.type === 'atakebune' && game.enemies.length === 1 &&
+    game.spawned === getWave(game)?.ships.length;
+  if (finalFlagship && d > boardingRange + 35) {
+    // A lone flagship must close the final duel rather than orbit forever.
+    heading = bearing;
+    throttle = 1;
+  } else if (cfg.boardingDamage && enemy.boardingRun && d < (enemy.type === 'sekibune' ? 295 : 205)) {
+    heading = bearing; // Close to grappling distance instead of taking a broadside arc.
+    throttle = d < boardingRange + 5 ? 0 : d < boardingRange + 42 ? .3 : .88;
+  } else if (d < preferred * 0.52) {
     heading = bearing + Math.PI + enemy.flank * 0.3; // disengage before ramming
   } else if (enemy.type === 'kobaya' && d < preferred + 80) {
     heading = bearing + enemy.flank * 1.05; // Fast boats make repeated darting passes.
@@ -506,11 +557,25 @@ function controlEnemy(game, enemy, dt) {
   }
   steer(enemy, heading, throttle, dt);
   dodgeLand(game, enemy, dt);
-  if (d < cfg.radius + SHIP_TYPES[target.type].radius + 4 && enemy.hitCooldown <= 0) {
-    damageShip(game, target, enemy.type === 'atakebune' ? 18 : 7);
-    enemy.hitCooldown = 1.1;
-    addEffect(game, target.x, target.y, 'impact', 0.6);
-    if (target.hp <= 0) sink(game, target);
+  enemy.boardingCooldown = Math.max(0, enemy.boardingCooldown - dt);
+  const inReach = cfg.boardingDamage && distance(enemy, target) <= boardingRange;
+  if (inReach && enemy.boardingCooldown <= 0) {
+    if (enemy.boardingTargetId !== target.id || enemy.boardingProgress === 0) {
+      enemy.boardingTargetId = target.id;
+      if (target.id === 'flagship') game.events.push({ kind: 'boarding', text: `${cfg.name} 접근! 키를 돌려 도선을 막으세요.` });
+    }
+    enemy.boardingProgress += dt / cfg.boardingTime;
+    if (enemy.boardingProgress >= 1) {
+      damageShip(game, target, cfg.boardingDamage * (SHIP_TYPES[target.type].boardingDamageTaken ?? 1));
+      enemy.boardingProgress = 0;
+      enemy.boardingCooldown = 3;
+      addEffect(game, target.x, target.y, 'boarding', 0.8);
+      if (target.id === 'flagship') game.events.push({ kind: 'boarded', text: '적 도선 시도! 높은 판옥선 갑판이 피해를 줄였습니다.' });
+      if (target.hp <= 0) sink(game, target);
+    }
+  } else {
+    enemy.boardingProgress = Math.max(0, enemy.boardingProgress - dt * 2.3);
+    if (enemy.boardingProgress === 0) enemy.boardingTargetId = '';
   }
 }
 
