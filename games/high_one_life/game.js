@@ -625,6 +625,50 @@
       const li=document.createElement('li');li.textContent=h.year+'년 · '+h.text;list.append(li);
     }
   }
+  function paintHousehold342(){
+    const H=window.OneLifeHousehold342,panel=$('household342Panel');
+    if(!panel)return;panel.hidden=!H?.enabled(life);if(panel.hidden)return;
+    const s=H.ensure(life),people=H.members(life),busy=!!life.pending||!life.alive;
+    const box=$('household342Members'),actions=$('household342Actions'),stock=$('household342Stock'),history=$('household342History');
+    box.replaceChildren();actions.replaceChildren();stock.replaceChildren();history.replaceChildren();
+    const manager=people.find(p=>p.id===H.manager(life));
+    $('household342Status').textContent='살림을 맡은 사람 · '+(manager?.name||'함께 의논할 어른이 없음')+' · '+(life.age<18?'내가 모은 푼돈 '+s.pocket+' · 가족의 믿음 '+s.trust:'살림 여유 '+Math.max(0,Joseon.ensure(life).capital))+(H.away(life)?' · 집을 떠나 있는 중':'');
+    function run(fn){if(busy)return;paused=true;updatePause();if(fn()){save();render();}else{$('household342Status').textContent+=' · 지금은 비용·일손·조건이 맞지 않습니다.';}}
+    function button(parent,label,fn,disabled=false){const b=document.createElement('button');b.type='button';b.textContent=label;b.disabled=busy||disabled;b.addEventListener('click',()=>run(fn));parent.append(b);return b;}
+    for(const p of people){
+      const row=document.createElement('div');row.className='household-person';
+      const title=document.createElement('p'),plan=s.plans[p.id],sk=H.book(life,p);
+      title.textContent=p.name+' · '+H.roles[p.role]+' · '+(life.year-p.birthYear)+'세 · '+(p.atHome===false?'다른 곳에 거주':plan?H.tasks[plan.task]+(plan.recipe?' / '+H.recipes[plan.recipe].name:''):'평소의 일상')+' · 손기술 '+sk.craft+' · 피로 '+(s.fatigue[p.id]||0)+(p.id!=='self'?' · 관계 '+p.relation:'');row.append(title);
+      if((H.canManage(life)||p.id==='self')&&!H.away(life)){
+        const select=document.createElement('select');select.setAttribute('aria-label',p.name+'의 할 일');
+        for(const t of H.workOptions(life,p)){const o=document.createElement('option');o.value=t;o.textContent=H.tasks[t];select.append(o);}
+        const recipe=document.createElement('select');recipe.setAttribute('aria-label',p.name+'의 만들 물건');
+        for(const [key,r] of Object.entries(H.recipes)){const o=document.createElement('option');o.value=key;o.textContent=r.name+' · 재료 '+r.cost+' · 손기술 '+r.skill+' · '+r.years+'년';o.disabled=sk.craft<r.skill;recipe.append(o);}
+        recipe.hidden=true;select.addEventListener('change',()=>{recipe.hidden=select.value!=='craft';});
+        const label=document.createElement('label'),force=document.createElement('input');force.type='checkbox';label.append(force,document.createTextNode('뜻과 달라도 재촉하기'));label.hidden=p.id==='self';
+        row.append(select,recipe,label);
+        const assigned=plan?.year===life.year||(plan?.task==='craft'&&plan.remaining>0);
+        if(plan?.task==='craft'&&plan.remaining>0)button(row,'제작 멈추고 쉬기 · 재료값 반환 없음',()=>H.action(life,'pause',p.id),!H.canManage(life));
+        button(row,'이번 해 맡기기',()=>H.assign(life,p.id,select.value,recipe.value,force.checked),assigned);
+        if(p.id!=='self'&&life.year-p.birthYear>=18)button(row,'부재 중 살림 맡길 사람',()=>H.action(life,'manager',p.id),!H.canManage(life));
+        button(row,'손기술 함께 익히기 · 재료 1',()=>H.action(life,'practice',p.id),assigned||life.year-p.birthYear<12||!H.canManage(life));
+      }
+      box.append(row);
+    }
+    if(life.age>=6&&life.age<18){for(const [k,label] of [['errand','이웃 심부름'],['gather','먹을 것 채집'],['sweet','엿 사 먹기 · 푼돈 1'],['trinket','작은 물건 사기 · 푼돈 2'],['save','돈 모아 두기'],['steal','집안 물건 몰래 팔기']])button(actions,label,()=>H.action(life,k),s.used.includes(life.year+':child'));}
+    if(H.canManage(life)){
+      if(Joseon.ensure(life).office||/군관|군인|수군/.test(Joseon.ensure(life).occupation))button(actions,'먼 고을에서 맡은 일 돌보기 · 2년',()=>H.action(life,'dispatch'));
+      for(const [k,label] of [['donate','절에 시주 · 살림 2'],['ritual','의례 함께 준비 · 살림 2'],['kin','명절에 친척 방문 · 살림 2'],['strict','자녀에게 예법을 엄하게 요구']])button(actions,label,()=>H.action(life,k),s.used.includes(life.year+':social'));
+      button(actions,'밭 일부에 목화 심기 · 살림 3',()=>H.action(life,'crop','cotton'),!!s.crop);
+      if(life.year>=1700)button(actions,'인삼밭 돌보기 · 살림 3 / 4년',()=>H.action(life,'crop','ginseng'),!!s.crop);
+    }
+    if(H.inCrisis(life)){for(const p of people.filter(p=>p.id==='self'||p.role==='child'))button(actions,(p.id==='self'?'나':p.name)+'에 대한 자매 제안 살피기',()=>H.action(life,'crisis',p.id));}
+    for(const contract of s.contracts.filter(x=>x.status==='bound'&&x.id!=='self'))button(actions,contract.name+'의 속량을 의논 · 살림 12',()=>H.action(life,'redeem',contract.id),!H.canManage(life));
+    if(H.away(life)&&life.age>=18){for(const t of ['care','study','wage'])button(actions,'편지로 의논 · '+H.tasks[t]+' / 살림 1',()=>H.action(life,'letter',t),s.used.includes(life.year+':letter'));}
+    if(s.crop){const li=document.createElement('li');li.textContent=s.crop.name+' · '+s.crop.due+'년 수확을 기다리는 중';stock.append(li);}
+    for(const item of s.stock){const li=document.createElement('li');li.textContent=(item.raw?'보관한 목화솜':H.recipes[item.recipe].name)+' · '+item.year+'년 마련 ';if(!item.raw&&H.canManage(life)){button(li,'장에 내다 팔기',()=>H.action(life,'sell',item.id),s.used.includes(life.year+':market'));button(li,'집에서 쓰기',()=>H.action(life,'keep',item.id),s.used.includes(life.year+':market'));}stock.append(li);}
+    for(const h of s.history.slice(-8).reverse()){const li=document.createElement('li');li.textContent=h.year+'년 · '+h.text;history.append(li);}
+  }
   function paintPaths339(){
     const panel=$('paths339Panel'),list=$('paths339Records');
     if(!panel||!list)return;
@@ -1116,6 +1160,7 @@
     $('openGenealogyBtn').classList.toggle('hidden',!Genealogy||!Joseon.isJoseon(life));
     paintLifeRecord();
     paintLife30();
+    paintHousehold342();
     paintPaths339();
     paintDiaspora340();
     paintCollaboration341();
@@ -1499,6 +1544,7 @@
     if(!restored || !restored.alive){refreshResume();return;}
     life=restored;timelineVisible=22;playSpeed=1;nextDecision=false;refreshSpeedControls();World9.ensure(life);World8.ensure(life);replayBasis=safeGet(SAVE_KEY)?.replayBasis||null;completed=false;peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;startLife(true);
   });
+  $('household342Panel')?.addEventListener('toggle',()=>{if($('household342Panel').open&&stage==='play'){paused=true;updatePause();}});
   $('pauseBtn').addEventListener('click',togglePause);
   document.querySelectorAll('[data-story-tab]').forEach(button=>button.addEventListener('click',()=>{
     storyTab=storyTab===button.dataset.storyTab?'':button.dataset.storyTab;
