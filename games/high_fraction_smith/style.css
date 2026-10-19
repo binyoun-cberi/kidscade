@@ -587,3 +587,161 @@ body[data-heat="4"] .furnace-mouth{filter:brightness(1.15) saturate(1.12);box-sh
 body[data-heat="5"] .furnace-mouth{filter:brightness(1.22) saturate(1.18);box-shadow:inset 0 0 18px rgba(0,0,0,.5),0 0 56px rgba(255,119,27,.66),0 0 120px rgba(255,69,7,.31)}
 body[data-heat="4"] .ambient-embers i,
 body[data-heat="5"] .ambient-embers i{animation-duration:3.8s}
+
+/* Fraction Smith 2.0 — a commission becomes a tangible crafted object. */
+.stat.gold b{color:#ffdb78}
+.order-board{width:min(600px,100%);justify-content:flex-start;gap:14px;padding:11px 17px}
+.customer-portrait{flex:0 0 48px;width:48px;height:48px;display:grid;place-items:center;font-size:29px;border-radius:14px;border:1px solid #926342;background:linear-gradient(145deg,#754a31,#34221a);box-shadow:inset 0 1px #ffffff20}
+.order-who{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.order-who strong{font-size:17px;color:#ffe3a9;line-height:1.25}
+.order-who #requestText{color:#d4bba7;font-size:10px;line-height:1.3}
+.order-need{display:flex;flex-direction:column;align-items:center;min-width:104px;border-left:1px solid #8e63457a;padding-left:12px}
+.order-need>span,.order-need small{font-size:10px;color:#e1c2a3}
+.order-need strong{font-size:32px;line-height:1.12;color:#ffe9a8;font-variant-numeric:tabular-nums}
+.saved-progress{background:#493223;border:1px solid #785032;border-radius:9px;padding:7px;margin:8px auto 0!important;color:#ffd38b!important}
+.piece-visual.multi{gap:3px;height:7px}
+.piece-visual.multi i.whole{flex:1;min-width:9px;background:#ffd574}
+.piece-visual.multi .partial{flex:1;min-width:12px;background:linear-gradient(90deg,#ffd574 var(--fill),#513729 var(--fill));border-radius:3px}
+.piece.decimal .piece-visual.multi{background:transparent;overflow:visible}
+.piece.decimal .piece-visual.multi:after{display:none}
+.tray-actions button:disabled{opacity:.35;cursor:not-allowed}
+.craft-card{width:min(535px,96vw);padding:21px;background:radial-gradient(ellipse at 50% 60%,#483022,#211711 75%);border-color:#b27648;box-shadow:0 28px 80px #000d,0 0 45px #c85f2138}
+.craft-topline{display:flex;justify-content:space-between;gap:10px;color:#f6c988;font-size:12px;font-weight:900;letter-spacing:.03em}
+.craft-topline span:last-child{color:#e7d2bd;font-size:11px}
+.craft-card h2{font-size:21px;color:#fff0cc;margin:15px 0 4px}
+.craft-card p{margin:4px 0 14px;min-height:20px}
+.craft-scene{height:196px;position:relative;overflow:hidden;border-radius:19px;border:2px solid #6e4835;background:radial-gradient(ellipse at 50% 68%,#8b4726 0%,#39251b 35%,#1b1715 76%),repeating-linear-gradient(90deg,#5c3829 0 30px,#492c20 30px 34px);box-shadow:inset 0 -18px 44px #130b08a6,0 10px 20px #0b0807a8;isolation:isolate}
+.craft-scene:before{content:"";position:absolute;bottom:15px;left:22%;width:56%;height:21px;background:#211714;border-radius:50%;filter:blur(9px)}
+.craft-glow{position:absolute;inset:15% 20%;background:radial-gradient(ellipse,#ff9e343d 12%,transparent 69%);filter:blur(14px);animation:forgeGlow 1.2s infinite alternate}
+.craft-flames{position:absolute;bottom:35px;left:23%;width:54%;height:105px;display:flex;justify-content:space-around;align-items:end;opacity:0;transition:opacity .35s}
+.craft-flames i{width:19%;height:75%;border-radius:60% 30% 45% 45%;background:linear-gradient(0deg,#f0411d 4%,#ff9e38 45%,#ffe6a1 90%);filter:drop-shadow(0 0 11px #ff7d24);transform-origin:bottom;animation:craftFlame .6s ease-in-out infinite alternate}
+.craft-flames i:nth-child(2){height:100%;animation-delay:-.25s}.craft-flames i:nth-child(3){height:62%;animation-delay:-.41s}
+.craft-scene[data-stage="heat"] .craft-flames{opacity:calc(.18 + var(--forgeHeat,0) * .72)}
+.craft-water{position:absolute;bottom:14px;left:19%;width:62%;height:66px;border:7px solid #768b97;border-top:10px solid #c4d6dd;border-radius:18px 18px 42% 42%;background:linear-gradient(#89d8dc,#37859b 32%,#1e5369 90%);box-shadow:inset 0 3px 9px #d4ffffad,0 7px 13px #0008;opacity:0;transition:opacity .2s}
+.craft-water i{position:absolute;top:12px;width:30%;height:10px;border-top:3px solid #d3fbff85;border-radius:50%;animation:craftRipple 1.2s ease-in-out infinite alternate}
+.craft-water i:nth-child(1){left:9%}.craft-water i:nth-child(2){left:37%;animation-delay:-.3s}.craft-water i:nth-child(3){left:65%;animation-delay:-.6s}
+.craft-scene[data-stage="quench"] .craft-water,.craft-scene[data-stage="done"] .craft-water{opacity:1}
+.craft-product{position:absolute;inset:20px 0 38px;display:grid;place-items:center;font-size:92px;line-height:1;filter:drop-shadow(0 4px 2px #fff3a660) drop-shadow(0 15px 13px #000b);transform:rotate(-18deg);z-index:2;transition:transform .35s,filter .35s}
+.craft-anvil{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:200px;height:29px;border-radius:50% 50% 15% 15%;font-size:22px;color:#a5adb2;background:linear-gradient(#c4cbd0,#626d73 43%,#3b464a);box-shadow:0 12px 8px #0009;z-index:1}
+.craft-scene[data-stage="heat"] .craft-product{filter:drop-shadow(0 0 20px #ff8b23) sepia(.35) saturate(2.3)}
+.craft-scene[data-stage="quench"] .craft-product{filter:drop-shadow(0 0 20px #c1f4ff)}
+.craft-scene[data-stage="done"] .craft-product{transform:rotate(0) scale(1.16);filter:drop-shadow(0 0 25px #ffec99)}
+.craft-burst{position:absolute;z-index:4;top:18px;right:15px;color:#fff3ad;text-shadow:0 0 15px #ff982f;font-size:20px;font-weight:1000}
+.craft-scene.pumped .craft-glow{animation:craftPump .23s ease-out}
+.craft-scene.hammer-hit .craft-product{animation:craftHit .28s ease-out}
+.craft-meter{height:17px;border:2px solid #70503a;border-radius:999px;position:relative;margin:14px 5px 8px;background:#211a16;overflow:hidden}
+.craft-meter-fill{height:100%;width:0%;background:linear-gradient(90deg,#d64c24,#ff9a40,#ffe6a0);transition:width .18s ease;border-radius:999px}
+.craft-timing-marker,.craft-timing-target{display:none}
+.craft-meter.timing .craft-meter-fill{display:none}
+.craft-meter.timing .craft-timing-target{display:block;position:absolute;left:64%;width:22%;height:100%;background:#f0cc5a75;box-shadow:0 0 13px #ffdb70}
+.craft-meter.timing .craft-timing-marker{display:block;position:absolute;width:5px;height:100%;background:#fff;border-radius:4px;box-shadow:0 0 7px #fff;z-index:2;transform:translateX(-50%)}
+.craft-status{font-size:15px;font-weight:900;color:#ffde96;min-height:23px;margin-bottom:10px}
+.craft-primary{width:100%;min-height:55px;border:1px solid #ffd688;border-radius:14px;color:#382216;font-size:18px;font-weight:1000;cursor:pointer;background:linear-gradient(#ffe39b,#eeac54);box-shadow:0 4px 0 #7b4826,0 10px 20px #0008}
+.craft-primary:active{transform:translateY(3px);box-shadow:0 1px 0 #7b4826}
+.craft-primary:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.craft-tip{display:block;color:#b8a496;margin-top:12px;font-size:11px}
+@keyframes craftPump{50%{opacity:1;transform:scale(1.25)}}
+@keyframes craftHit{30%{transform:translateY(9px) rotate(-28deg) scale(.97)}75%{transform:translateY(0) rotate(-13deg)}}
+@keyframes craftFlame{from{transform:scaleY(.75) rotate(-9deg)}to{transform:scaleY(1.15) rotate(8deg)}}
+@keyframes craftRipple{to{transform:scaleX(1.2);opacity:.5}}
+@media(max-width:700px){
+ .order-board{min-width:0;width:100%;gap:8px;padding:7px 9px}
+ .customer-portrait{flex-basis:39px;width:39px;height:39px;font-size:23px}
+ .order-who strong{font-size:14px}.order-who #requestText{font-size:9px}
+ .order-need{min-width:77px;padding-left:7px}.order-need strong{font-size:24px}.order-need>span,.order-need small{font-size:9px}
+ .tray-actions button{font-size:9px;padding:5px 6px}
+ .craft-scene{height:170px}.craft-product{font-size:80px}
+ .craft-card{padding:16px}.craft-card h2{font-size:18px}
+}
+@media(max-width:520px){
+ .hud{gap:4px;padding:6px}.brand-mark{display:none}.brand strong{font-size:13px}
+ .hud-stats{gap:3px}.stat{min-width:38px;padding:5px 3px}.stat.heat{display:none}.stat.gold{min-width:54px}
+ .sound-btn{width:30px;height:32px;font-size:14px}
+ .order-who #requestText{display:none}
+}
+
+/* P3: a workshop that visibly grows as the player reinvests commissions. */
+.tray-actions .shop-open{border-color:#c68a4c;background:linear-gradient(#7a472a,#482b21);color:#ffe1a3;box-shadow:inset 0 1px #ffce8740}
+.tray-actions .shop-open:hover:not(:disabled){background:#91552d}
+body[data-furnace="1"] .furnace-mouth,body[data-furnace="2"] .furnace-mouth{border-color:#ffaf57;box-shadow:inset 0 0 23px #0009,0 0 52px #ff8c2d92}
+body[data-furnace="2"] .furnace-shell{filter:drop-shadow(0 0 13px #ffba5066)}
+body[data-hammer="1"] .tool.add,body[data-hammer="2"] .tool.add{border-color:#ffe0a2;box-shadow:0 0 18px #f8c36d66,inset 0 1px #fff5}
+body[data-hammer="2"] .tool.add .tool-art{filter:drop-shadow(0 0 8px #ffedac)}
+body[data-counter="1"] .tray-panel,body[data-counter="2"] .tray-panel{border-color:#ae8750;box-shadow:0 0 20px #ffe08228}
+body[data-counter="2"] .tray-panel{background:linear-gradient(#3c2b1edc,#241911ec)}
+.craft-meter.timing .craft-timing-target{left:var(--hammerStart,60%);width:var(--hammerWidth,30%)}
+.shop-card{width:min(845px,96vw);max-height:min(850px,92dvh);overflow-y:auto;text-align:left;padding:22px 24px;overscroll-behavior:contain}
+.shop-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.shop-heading h2{margin:4px 0 0;font-size:24px;color:#ffdda0}
+.shop-close{flex:0 0 auto;border:1px solid #876849;border-radius:10px;background:#34251d;color:#f5d8ae;padding:10px;font-size:12px;font-weight:800;cursor:pointer}
+.shop-close:hover{background:#543623}
+.shop-card>p{margin:8px 0 12px}
+.shop-wallet{padding:11px 16px;border:1px solid #9e6733;border-radius:13px;background:linear-gradient(95deg,#4b301e,#2e221d);display:flex;align-items:center;justify-content:space-between;gap:10px;color:#d9bea1;font-size:12px;font-weight:700}
+.shop-wallet strong{font-size:22px;color:#ffdd86;font-variant-numeric:tabular-nums}
+.upgrade-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0 19px}
+.upgrade-card{min-height:151px;display:flex;flex-direction:column;gap:8px;border:1px solid #72513b;border-radius:14px;background:linear-gradient(155deg,#443020,#2c221e);padding:14px}
+.upgrade-card strong{font-size:16px;color:#ffe1ad}.upgrade-card small{font-size:11px;line-height:1.5;color:#d1b49d;flex:1}
+.upgrade-buy{width:100%;border:1px solid #e6ae65;border-radius:9px;background:linear-gradient(#f2c67a,#cb844a);color:#342016;font-size:12px;font-weight:900;padding:10px 4px;cursor:pointer}
+.upgrade-buy:disabled{background:#514033;color:#a79480;border-color:#755b45;cursor:default}
+.upgrade-buy:focus-visible,.shop-close:focus-visible,.shop-open:focus-visible{outline:3px solid #fff1bd;outline-offset:3px}
+.collection-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 10px}
+.collection-heading h3{font-size:16px;margin:0;color:#f2cc8d}.collection-heading span{font-size:12px;color:#d9bd97}
+.collection-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.collection-card{position:relative;display:flex;flex-direction:column;gap:6px;min-height:85px;padding:12px;border:1px solid #706044;border-radius:12px;background:#3c2a20}
+.collection-card strong{font-size:12px;color:#ffdaa0}.collection-card small{font-size:10px;color:#c7ae94}
+.collection-card.locked{background:#241f1d;border-style:dashed;border-color:#554b42}.collection-card.locked strong{color:#9e9388}
+.collection-made{position:absolute;right:7px;bottom:6px;color:#9de4b0;font-size:9px;font-weight:900}
+.shop-footnote{display:block;font-size:10px;color:#bca18b;margin-top:13px;line-height:1.5}
+@media(max-width:700px){
+ .tray-head{align-items:stretch;flex-wrap:wrap}.tray-actions{justify-content:space-between;width:100%;gap:4px}.tray-actions button{flex:1;white-space:nowrap}
+ .shop-card{padding:15px;max-height:94dvh}.shop-heading h2{font-size:20px}
+ .upgrade-grid{grid-template-columns:1fr;gap:7px}.upgrade-card{min-height:0;display:grid;grid-template-columns:1fr auto;align-items:center;padding:10px;gap:3px 8px}
+ .upgrade-card strong{grid-column:1;font-size:14px}.upgrade-card small{grid-column:1;grid-row:2;font-size:10px}.upgrade-buy{grid-column:2;grid-row:1/span 2;padding:9px;width:126px}
+ .collection-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.collection-card{min-height:70px}
+}
+@media(max-width:390px){.tray-actions button{font-size:8px;padding:5px 3px}.shop-close{font-size:10px;padding:8px}.upgrade-buy{width:102px;font-size:10px}}
+
+/* P4: each strike and commission leaves visible feedback. */
+.order-chain{display:flex;align-items:center;gap:7px;margin-top:5px;max-width:260px}
+.order-chain>span:first-child{color:#ffcc7b;font-size:9px;font-weight:850;white-space:nowrap}
+.chain-bar{flex:1;min-width:30px;height:5px;border-radius:20px;overflow:hidden;background:#20150f;box-shadow:inset 0 1px 3px #0008}
+.chain-bar span{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#f07829,#ffdf7b);transition:width .3s}
+.stat.timer b:after{content:"";display:none;width:var(--rushRemain,100%);height:3px;margin:2px auto 0;background:linear-gradient(90deg,#c75c32,#ffd17e);border-radius:8px;transition:width .2s}
+body[data-mode="rush"] .stat.timer b:after{display:block}
+.stat.timer b.danger:after{background:#ff4848}
+.hammer-hits{display:none;gap:9px;justify-content:center;align-items:center;min-height:25px;margin:-1px 0 5px}
+.hammer-hits.visible{display:flex}
+.hammer-hit-dot{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;font-size:18px;line-height:1;color:#8e7c6d;border:1px solid #544137;background:#2d211b}
+.hammer-hit-dot.perfect{background:#f7cf72;color:#4a2e15;border-color:#ffeaa9;box-shadow:0 0 12px #ffd87699;animation:hammerPipPop .23s both}
+.hammer-hit-dot.good{background:#8cb6a4;color:#152f2b;border-color:#b6e3d3;animation:hammerPipPop .23s both}
+.hammer-hit-dot.miss{color:#cd9c81;border-color:#795342;background:#3b2923}
+.craft-grade{position:absolute;left:10px;top:12px;z-index:6;opacity:0;transform:translateY(7px);border-radius:99px;padding:6px 11px;border:1px solid #c8ab76;background:#251913e6;color:#ffe4b2;font-size:13px;font-weight:950}
+.craft-grade.visible{opacity:1;transform:translateY(0);animation:gradeArrive .45s both}
+.craft-grade.masterpiece{color:#fff3b9;background:#8e5520ea;box-shadow:0 0 20px #ffd679aa;border-color:#ffe2a7}
+.craft-grade.fine{color:#c0f4e9;border-color:#8bd3bd;background:#305048eb}
+.craft-scene.hammer-perfect{animation:forgePerfectImpact .32s ease-out}
+.craft-scene.hammer-good{animation:forgeGoodImpact .22s ease-out}
+.craft-scene.hammer-miss{animation:forgeMissImpact .15s ease-out}
+.craft-scene[data-family="blade"]{--familyGlow:#b6efff}
+.craft-scene[data-family="guard"]{--familyGlow:#a5ffe0}
+.craft-scene[data-family="tool"]{--familyGlow:#ffac71}
+.craft-scene[data-family="royal"]{--familyGlow:#ffe890}
+.craft-scene[data-stage="done"] .craft-product{filter:drop-shadow(0 0 28px var(--familyGlow,#ffdc8c))}
+.craft-scene[data-stage="done"][data-grade="masterpiece"] .craft-product{animation:masterpieceReveal 1.1s ease-in-out infinite alternate}
+.craft-scene[data-stage="done"]:after{position:absolute;z-index:4;left:0;right:0;top:17%;text-align:center;font-size:45px;font-weight:900;white-space:pre;pointer-events:none;text-shadow:0 0 19px var(--familyGlow,#ffca7a);animation:commissionReveal 1.3s ease-out both}
+.craft-scene[data-stage="done"][data-family="blade"]:after{content:"✦       ╱       ✦";color:#c8efff}
+.craft-scene[data-stage="done"][data-family="guard"]:after{content:"◈         ◈";color:#a5ffe0}
+.craft-scene[data-stage="done"][data-family="tool"]:after{content:"✸         ✸";color:#ffbf7e}
+.craft-scene[data-stage="done"][data-family="royal"]:after{content:"✧    ✦    ✧";color:#ffe890}
+.craft-scene[data-stage="done"][data-grade="masterpiece"]{box-shadow:inset 0 -18px 44px #130b08a6,0 0 30px var(--familyGlow,#ffdc8c)}
+@keyframes hammerPipPop{0%{transform:scale(.4)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
+@keyframes forgePerfectImpact{0%,100%{filter:brightness(1)}40%{filter:brightness(1.9) saturate(1.6);transform:scale(1.01)}}
+@keyframes forgeGoodImpact{50%{filter:brightness(1.2)}}
+@keyframes forgeMissImpact{50%{transform:translateX(2px)}}
+@keyframes gradeArrive{0%{opacity:0;transform:translateY(12px) scale(.8)}70%{opacity:1;transform:translateY(-3px) scale(1.04)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes masterpieceReveal{from{transform:rotate(-2deg) scale(1.1)}to{transform:rotate(2deg) scale(1.23)}}
+@keyframes commissionReveal{0%{opacity:0;transform:scale(.5) rotate(-10deg)}45%{opacity:1}100%{opacity:.45;transform:scale(1.25) rotate(8deg)}}
+@media(max-width:520px){
+ .order-chain{gap:4px;margin-top:3px}.order-chain>span:first-child{font-size:8px;letter-spacing:-.04em}.chain-bar{min-width:18px}
+ .craft-grade{font-size:11px;padding:5px 8px}.craft-scene[data-stage="done"]:after{font-size:34px}
+}

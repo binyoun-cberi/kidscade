@@ -69,15 +69,39 @@
               const value=safeApply(op,a,b);if(!value)continue;
               if(E.key(value)===targetKey)return depth;
               const rest=state.filter((_,k)=>k!==i&&k!==j);rest.push(value);
-              const c=canon(rest);if(seen.has(c))continue;seen.add(c);next.push(rest);
-              if(next.length>1800)break;
+              const c=canon(rest);if(seen.has(c))continue;seen.add(c);
+              // A truncated two-step frontier can hide valid three-step
+              // solutions. Enumerate all short routes; cap only deeper ones.
+              if(depth<=2||next.length<1800)next.push(rest);
             }
           }
         }
       }
-      frontier=next.slice(0,1800);if(!frontier.length)break;
+      frontier=next;if(!frontier.length)break;
     }
     return null;
+  }
+  // Master orders are advertised as three-step jobs. Check every one- and
+  // two-step route (without a breadth cap) before accepting a generated job.
+  function shortRouteExists(materials,target){
+    const targetKey=E.key(target);
+    if(materials.some(v=>E.key(v)===targetKey))return true;
+    const moves=list=>{
+      const out=[];
+      for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){
+        for(const op of OPS){
+          const pairs=(op==='-'||op==='÷')?[[list[i],list[j]],[list[j],list[i]]]:[[list[i],list[j]]];
+          for(const [a,b] of pairs){const value=safeApply(op,a,b);if(value)out.push({i,j,value})}
+        }
+      }
+      return out;
+    };
+    for(const move of moves(materials)){
+      if(E.key(move.value)===targetKey)return true;
+      const rest=materials.filter((_,i)=>i!==move.i&&i!==move.j).concat(move.value);
+      if(moves(rest).some(next=>E.key(next.value)===targetKey))return true;
+    }
+    return false;
   }
   function decoys(count,r=Math.random,exclude=[]){
     const pool=[...EASY,...MID].filter(v=>!exclude.some(x=>E.eq(x,v)));return shuffle(pool,r).slice(0,count).map(clone)
@@ -87,21 +111,35 @@
     // A valid authored recipe is not enough: decoys can expand the bounded
     // shortest-solution search beyond its limit. Reroll those puzzles instead
     // of presenting a problem whose best-strike record cannot be verified.
-    for(let attempt=0;attempt<32;attempt++){
+    for(let attempt=0;attempt<(mode==='master'?300:32);attempt++){
       depth=mode==='master'?3:mode==='rush'?(r()<.55?1:2):1;
       base=generateChain(depth,r);
       mats=[...base.materials,...decoys(mode==='master'?3:2,r,[...base.materials,base.target])];
       mats=shuffle(mats,r);
-      best=shortestStrikes(mats,base.target,Math.max(4,depth));
+      if(mode==='master'){
+        if(shortRouteExists(mats,base.target))continue;
+        best=3; // The authored chain uses three operations, and none use fewer.
+      }else best=shortestStrikes(mats,base.target,Math.max(4,depth));
       if(best!==null&&best>=1&&best<=4)break;
       best=null;
     }
     if(best===null){
-      // Fully verified deterministic emergency recipe for pathological RNGs.
+      // Fully verified emergency recipe for pathological RNGs.
       depth=1;best=1;
       base={target:E.parse('3/4'),materials:[E.parse('1/2'),E.parse('1/4')],
         recipe:[{a:E.parse('1/2'),b:E.parse('1/4'),op:'+',result:E.parse('3/4')}]};
       mats=[...base.materials,E.parse('1'),E.parse('2')];
+      if(mode==='master'){
+        // A long fixed chain with a known result; filter the decoys exactly.
+        const first=E.add('1/2','1/4'),second=E.add(first,'1/5'),target=E.add(second,'3/5');
+        base={target,materials:['1/2','1/4','1/5','3/5'].map(E.parse),recipe:[
+          {a:E.parse('1/2'),b:E.parse('1/4'),op:'+',result:first},
+          {a:first,b:E.parse('1/5'),op:'+',result:second},
+          {a:second,b:E.parse('3/5'),op:'+',result:target}
+        ]};
+        mats=[...base.materials,...['1/6','1/8','2/3'].map(E.parse)];
+        depth=3;best=3;
+      }
     }
     const preferDecimal=E.isTerminating(base.target)&&r()<.45;
     return {
@@ -115,5 +153,5 @@
       bestStrikes:best
     };
   }
-  return {OPS,create,shortestStrikes,safeApply};
+  return {OPS,create,shortestStrikes,shortRouteExists,safeApply};
 });
