@@ -182,6 +182,7 @@ const TEST_FILES = [
   "tests/ecopolis.test.cjs",
   "tests/animal-face-search.test.cjs",
   "tests/mot-chatgetda-kkwaekkori.test.cjs",
+  "tests/kkwaekkori-journeys.test.cjs",
   "tests/high-twelve-island.test.cjs",
   "tests/traditional-play-yard.test.cjs",
   "tests/bridge-builder.test.cjs",

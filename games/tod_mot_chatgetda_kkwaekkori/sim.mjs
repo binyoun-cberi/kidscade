@@ -1,5 +1,6 @@
 // Seeded, renderer-independent town activities and fair observation puzzles.
-export const WORLD_VERSION = 3;
+import {stepBakeryTrips} from './journeys.mjs?v=4';
+export const WORLD_VERSION = 4;
 export const BLOCK_PITCH = 7;
 export const STAGES = Object.freeze({
   small: { label: '작은 마을', cols: 3, rows: 2, residents: 18, targets: 1 },
@@ -41,6 +42,7 @@ function shuffled(input,random){const a=[...input];for(let i=a.length-1;i>0;i--)
 export function getBlockCenter(block,stage){const c=typeof stage==='string'?STAGES[stage]:stage;return {x:(block.col-(c.cols-1)/2)*BLOCK_PITCH,z:(block.row-(c.rows-1)/2)*BLOCK_PITCH};}
 export function signature(p){return `${p.modelVariant}:${p.activity}:${p.propVariant}`;}
 export function getRoutePosition(person,stage){
+  if(person.trip)return {x:person.trip.x,z:person.trip.z};
   const c=getBlockCenter(person.block,stage);
   // Separate activity bays in front of every building, with room for bodies and props.
   const motion=person.activity==='deliver'&&!person.found ? Math.sin(person.elapsed*.8)*.16:0;
@@ -89,11 +91,13 @@ export function selectTargets(town,eligibleIds,previous=[]){
 export function movePeople(town,deltaSeconds){
   const dt=Math.min(.1,Math.max(0,Number(deltaSeconds)||0));town.time+=dt;
   for(const p of town.people){
-    p.elapsed+=dt;if(p.reserved||p.found||p.elapsed<p.routineAt)continue;
+    p.elapsed+=dt;if(p.reserved||p.found||p.trip||p.elapsed<p.routineAt)continue;
     const list=p.block.activities,next=list[(list.indexOf(p.activity)+1)%list.length];
-    if(!town.people.some(q=>q.id!==p.id&&signature(q)===signature({...p,activity:next}))){p.activity=next;p.action=next;}
+    if(!town.people.some(q=>q.id!==p.id&&(signature(q)===signature({...p,activity:next})||
+      (q.trip&&q.modelVariant===p.modelVariant&&q.propVariant===p.propVariant&&['browse','deliver','eat'].includes(next))))){p.activity=next;p.action=next;}
     p.routineAt=p.elapsed+20+(p.slot%3)*4;
   }
+  stepBakeryTrips(town,dt);
 }
 export function getClue(person,difficulty='easy'){
   if(!person)return null;const a=ACTIVITIES.find(a=>a.id===person.activity),prop=a.props[person.propVariant];

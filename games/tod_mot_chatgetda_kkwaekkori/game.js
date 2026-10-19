@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { STAGES, DIFFICULTIES, WORLD_VERSION, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue } from './sim.mjs?v=3';
+import { STAGES, DIFFICULTIES, WORLD_VERSION, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue } from './sim.mjs?v=4';
+import {setupBakeryTrips,getCitizenClip,getCitizenVisualKey} from './journeys.mjs?v=4';
 
 const $ = id => document.getElementById(id);
 const ROOT = '../../assets/game/';
@@ -51,8 +52,9 @@ const occluders = [];
 const citizenAssets = new Map();
 const readyAssets = new Map();
 const loweredBuildings = new Map();
-let loading=false, celebration=null, roundPrevious=[];
+let loading=false, exploring=false, celebration=null, roundPrevious=[];
 const recentLooks=[];
+let servingBread=null;
 let seeThrough = false, previewActor = null, previewMixer = null;
 const previewCanvas = $('targetPreview');
 const previewRenderer = new THREE.WebGLRenderer({canvas:previewCanvas,antialias:true,alpha:true});
@@ -146,7 +148,7 @@ function placeObject(url, center, longest, fallback, revision, footprint = null,
 function generateWorld() {
   for(const group of [scenery,citizens,movingCars,marker])disposeProcedural(group);
   scenery.clear();citizens.clear();movingCars.clear();marker.clear();citizenMeshes.clear();cars.length=0;
-  mixers.length=0;occluders.length=0;citizenAssets.clear();loweredBuildings.clear();clearPreview();
+  mixers.length=0;occluders.length=0;citizenAssets.clear();loweredBuildings.clear();servingBread=null;clearPreview();
   if (!town) return;
   const revision=++worldSerial;
   const {cols,rows}=town.config;
@@ -210,7 +212,24 @@ function generateWorld() {
     // Street lamps and zebra crossings give the connected streets a human scale.
     if(block.col<cols-1&&block.row<rows-1){
       local(`${STREET}light-curved.glb`,2.3,1.35,1.65);
-      for(let stripe=0;stripe<4;stripe++)addPart(scenery,cube(.19,.025,1.1,0xfff7e6),center.x+1.98+stripe*.27,.05,center.z+2.6);
+      for(let stripe=0;stripe<5;stripe++)addPart(scenery,cube(.18,.025,.75,0xfff7e6),center.x+2.98+stripe*.26,.05,center.z+2.75);
+    }
+  }
+  if(town.trips?.people.length){
+    const {bakeryCenter:b,seats}=town.trips;
+    addPart(scenery,cube(.7,.64,.42,0xb58255),b.x+2.2,.36,b.z+.72);
+    addPart(scenery,cube(.78,.06,.48,0xf0cf95),b.x+2.2,.71,b.z+.72);
+    servingBread=new THREE.Group();servingBread.position.set(b.x+2.2,.76,b.z+.72);scenery.add(servingBread);
+    for(let i=0;i<3;i++){
+      const item=new THREE.Group();item.name=`bread-${i}`;servingBread.add(item);
+      modelIn(item,BREADS[i],.33,cube(.28,.12,.20,0xc48d55),servingBread,revision);
+    }
+    for(const seat of seats){
+      const table=new THREE.Group();table.position.set(seat.x,0,seat.z-.65);scenery.add(table);
+      addPart(table,cylinder(.36,.36,.08,0xe3b877,16),0,.69,0);
+      addPart(table,cylinder(.075,.09,.65,0x9b7852),0,.33,0);
+      // A clear approach at the outer edge leaves trees, benches and existing residents alone.
+      addPart(scenery,cube(.5,.023,2.4,0xc9d7ad),seat.x+(seat.id==='west'?-.85:.85),.06,seat.z+1.0);
     }
   }
 
@@ -220,7 +239,7 @@ function generateWorld() {
     const appearance=new THREE.Group();
     holder.add(body,appearance);
     citizens.add(holder);
-    citizenMeshes.set(person.id,{holder,body,appearance,person,activity:person.activity});
+    citizenMeshes.set(person.id,{holder,body,appearance,person,activity:getCitizenVisualKey(person)});
     makeCitizenAppearance(person,body,appearance,revision);
   }
   if(rows>1) {
@@ -265,17 +284,34 @@ function makeCitizenAppearance(person,body,appearance,revision) {
     const model=normalizedModel(gltf,1.35,1.8);
     if(model){
       body.remove(fallback);disposeProcedural(fallback);body.add(model);
-      const clipName=ACTIVITIES.find(a=>a.id===person.activity).clip;
+      const clipName=getCitizenClip(person,ACTIVITIES);
       const clip=gltf.animations?.find(animation=>animation.name===clipName);
-      if(clip){const mixer=new THREE.AnimationMixer(model);mixer.clipAction(clip).play();mixers.push({mixer,person,clipName});}
+      if(clip){const entry={mixer:new THREE.AnimationMixer(model),person,clipName};playCitizenClip(entry,gltf,person);mixers.push(entry);}
       citizenAssets.set(person.id,gltf);
       if(getTarget()?.id===person.id)refreshPreview();
     }
   });
   buildActivityProps(person,appearance,revision);
 }
+function playCitizenClip(entry,gltf,person){
+  const clipName=getCitizenClip(person,ACTIVITIES),clip=gltf.animations.find(a=>a.name===clipName);
+  if(!clip)return;
+  entry.mixer.stopAllAction();entry.clipName=clipName;
+  const carrying=person.trip?person.trip.carrying:person.activity==='deliver';
+  const hold=gltf.animations.find(a=>a.name==='holding-both');
+  if(clipName==='walk'&&carrying&&hold){
+    // Keep walking legs/root, but use the real holding pose for both arms.
+    if(!entry.carryClips){
+      const walk=clip.clone(),arms=hold.clone();
+      walk.tracks=walk.tracks.filter(t=>!/arm-|hand/i.test(t.name));
+      arms.tracks=arms.tracks.filter(t=>/arm-|hand/i.test(t.name));entry.carryClips=[walk,arms];
+    }
+    for(const layer of entry.carryClips)entry.mixer.clipAction(layer).play();
+  }else entry.mixer.clipAction(clip).play();
+}
 function buildActivityProps(person,appearance,revision){
   disposeProcedural(appearance);appearance.clear();
+  if(person.trip&&!person.trip.carrying)return;
   const prop=new THREE.Group();prop.name='activity-prop';appearance.add(prop);
   const color=COLORS[person.propVariant].hex;
   if(person.activity==='read'||person.activity==='map'){
@@ -322,8 +358,7 @@ function refreshPreview(){
   // Procedural geometry/material must not be shared with a disposable preview.
   previewActor.traverse(o=>{if(o.isMesh&&o.userData.procedural){o.geometry=o.geometry.clone();o.material=o.material.clone();}});
   const gltf=citizenAssets.get(source.person.id);
-  const clip=gltf?.animations.find(a=>a.name===ACTIVITIES.find(a=>a.id===source.person.activity).clip);
-  if(clip){previewMixer=new THREE.AnimationMixer(previewActor.children[0].children[0]);previewMixer.clipAction(clip).play();}
+  if(gltf){previewMixer=new THREE.AnimationMixer(previewActor.children[0].children[0]);playCitizenClip({mixer:previewMixer},gltf,source.person);}
 }
 function registerOccluder(root){
   root.traverse(o=>{
@@ -345,6 +380,11 @@ function animateActivity(actor,person,now){
   if(prop&&person.activity==='eat'){prop.position.y=.82+Math.sin(person.elapsed*1.5)*.13;prop.rotation.z=Math.sin(person.elapsed*1.5)*.12;}
   if(prop&&person.activity==='wave'){prop.rotation.z=Math.sin(person.elapsed*5)*.35;}
   if(prop&&person.activity==='browse')prop.rotation.y=Math.sin(person.elapsed)*.18;
+  if(prop&&person.trip?.stage==='pickup'){
+    // The bread starts over the counter, then moves into the same holder used while walking.
+    const progress=1-person.trip.timer/.9;
+    prop.position.set(0,.68+progress*.06,.73-progress*.37);prop.rotation.y=0;
+  }
 }
 
 function positionEverything(dt) {
@@ -353,19 +393,22 @@ function positionEverything(dt) {
   for(const p of town.people) {
     const mesh=citizenMeshes.get(p.id);
     if(!mesh)continue;
-    if(mesh.activity!==p.activity){
-      mesh.activity=p.activity;buildActivityProps(p,mesh.appearance,worldSerial);
+    const visualKey=getCitizenVisualKey(p);
+    if(mesh.activity!==visualKey){
+      mesh.activity=visualKey;buildActivityProps(p,mesh.appearance,worldSerial);
       const entry=mixers.find(e=>e.person.id===p.id),gltf=citizenAssets.get(p.id);
-      const clipName=ACTIVITIES.find(a=>a.id===p.activity).clip;
-      const clip=gltf?.animations.find(a=>a.name===clipName);
-      if(entry&&clip){entry.mixer.stopAllAction();entry.mixer.clipAction(clip).play();entry.clipName=clipName;}
+      if(entry&&gltf)playCitizenClip(entry,gltf,p);
     }
     const pos=getRoutePosition(p,town.config);
     mesh.holder.position.set(pos.x,0.08,pos.z);
-    mesh.holder.rotation.y=0;
+    mesh.holder.rotation.y=p.trip?.yaw||0;
     if(celebration?.id===p.id){mesh.body.rotation.z=Math.sin(p.elapsed*12)*.07;}
     else mesh.body.rotation.z=0;
     animateActivity(mesh.holder,p);
+  }
+  if(servingBread){
+    const customer=town.people.find(p=>p.id===town.trips.counterOwner);
+    for(let i=0;i<3;i++)servingBread.children[i].visible=!!customer&&!customer.trip.carrying&&customer.propVariant===i;
   }
   for(const car of cars) {
     if(car.bus){
@@ -409,11 +452,11 @@ function announceClue(){
   }else showToast(clue.subtitle);
 }
 function getSeed(){return (Date.now() + Math.floor(Math.random()*999999))>>>0}
-async function startTown(stage,seed=getSeed(),restored=[],difficulty=$('difficulty').value,previous=null) {
+async function startTown(stage,seed=getSeed(),restored=[],difficulty=$('difficulty').value,previous=null,justExplore=false) {
   if(!STAGES[stage]||loading)return;
-  loading=true;active=false;celebration=null;
+  loading=true;active=false;exploring=false;celebration=null;
   $('startStatus').textContent='친구들이 외출 준비를 하고 있어요…';
-  document.querySelectorAll('[data-stage],#quickStart').forEach(b=>b.disabled=true);
+  document.querySelectorAll('[data-stage],#quickStart,#exploreStart').forEach(b=>b.disabled=true);
   try {
   town=makeTown(stage,seed,difficulty,false);
   // Only fully loaded models/props with the required pose may become a clue.
@@ -430,22 +473,34 @@ async function startTown(stage,seed=getSeed(),restored=[],difficulty=$('difficul
   if(!town.order.length){$('startStatus').textContent='친구들을 불러오지 못했어요. 잠시 후 다시 골라 주세요.';return;}
   found=[];for(const id of town.order){if(!restored.includes(id))break;found.push(id);}
   for(const person of town.people)person.found=found.includes(person.id);
+  const tripModels=MODEL.people.map((url,i)=>['walk','idle','holding-both','holding-right'].every(name=>readyAssets.get(url)?.animations?.some(a=>a.name===name))?i:-1).filter(i=>i>=0);
+  const tripProps=BREADS.map((url,i)=>readyAssets.get(url)?i:-1).filter(i=>i>=0);
+  setupBakeryTrips(town,block=>getBlockCenter(block,town.config),tripModels,tripProps);
   currentTarget=found.length;
   active=currentTarget<town.order.length;
   initialViewSize=0;
   cameraLook.set(0,0,0);
   $('districtLabel').textContent=`${town.config.label} · ${DIFFICULTIES[town.difficulty].name}`;
   $('difficulty').value=town.difficulty;
+  document.querySelector('.mission').classList.remove('hidden');
   $('start').classList.add('hidden');$('finish').classList.add('hidden');
   resize();resetView();generateWorld();
   // Start close enough to distinguish a face. The whole-town button remains available.
   const first=getBlockCenter(town.blocks[0],town.config);cameraLook.set(first.x,0,first.z+1);
   viewSize=Math.min(13.5,Math.max(8,canvas.getBoundingClientRect().height*.025));resize();
-  if(active){setClue();save();}
+  if(justExplore)enterExploration();
+  else if(active){setClue();save();}
   else finishRound();
   $('startStatus').textContent='';
   }catch(error){$('start').classList.remove('hidden');$('startStatus').textContent='마을을 준비하지 못했어요. 다시 골라 주세요.';console.error(error);}
-  finally{loading=false;document.querySelectorAll('[data-stage],#quickStart').forEach(b=>b.disabled=false);}
+  finally{loading=false;document.querySelectorAll('[data-stage],#quickStart,#exploreStart').forEach(b=>b.disabled=false);}
+}
+function enterExploration(){
+  exploring=true;active=false;$('finish').classList.add('hidden');
+  document.querySelector('.mission').classList.add('hidden');
+  $('progress').textContent='동네 구경 중';
+  $('districtLabel').textContent=`${town.config.label} · 동네 구경`;
+  showToast(town.trips?.people.length?'빵집 손님이 어디로 가는지 따라가 볼까?':'친구들이 무엇을 하는지 둘러볼까?');
 }
 function save(){
   if(!town)return;
@@ -458,11 +513,11 @@ function showToast(message){
   lastToast=setTimeout(()=>$('toast').classList.remove('show'),2200);
 }
 function pick(clientX,clientY) {
-  if(!active||celebration)return;
+  if((!active&&!exploring)||celebration)return;
   scene.updateMatrixWorld(true);
   const rect=canvas.getBoundingClientRect();
   let nearest=null,best=31*31;
-  for(const person of town.people){
+  for(const person of active?town.people:[]){
     if(found.includes(person.id))continue;
     const holder=citizenMeshes.get(person.id)?.holder;
     if(!holder)continue;
@@ -607,6 +662,8 @@ $('speakBtn').addEventListener('click',announceClue);
 $('menuBtn').addEventListener('click',()=>{$('finish').classList.add('hidden');$('start').classList.remove('hidden')});
 document.querySelectorAll('[data-stage]').forEach(button=>button.addEventListener('click',()=>startTown(button.dataset.stage)));
 $('quickStart').addEventListener('click',()=>startTown('small',getSeed(),[],'easy'));
+$('exploreStart').addEventListener('click',()=>startTown('small',getSeed(),[],'easy',null,true));
+$('exploreBtn').addEventListener('click',enterExploration);
 $('againBtn').addEventListener('click',()=>startTown(town.stageName,getSeed(),[],town.difficulty));
 $('otherStageBtn').addEventListener('click',()=>{$('finish').classList.add('hidden');$('start').classList.remove('hidden')});
 window.addEventListener('resize',resize);
@@ -614,7 +671,7 @@ window.addEventListener('resize',resize);
 function animate(now){
   requestAnimationFrame(animate);
   const dt=Math.min(.05,Math.max(0,(now-lastFrame)/1000));lastFrame=now;
-  if(town&&$('start').classList.contains('hidden')&&active){
+  if(town&&$('start').classList.contains('hidden')&&(active||exploring)){
     positionEverything(dt);
     for(const entry of mixers)entry.mixer.setTime(entry.person.elapsed);
     const target=getTarget();
