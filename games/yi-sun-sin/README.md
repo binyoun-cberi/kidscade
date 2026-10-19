@@ -15,6 +15,7 @@
 - `sim.mjs`: 결정론적 함선 이동, 적 AI, 좌우 함포 판정, 충돌, 웨이브·강화·승패 처리. DOM과 독립.
 - `game.js`: Canvas 묘화, 화면 정보, 키보드·터치 조작, 소리, 기록.
 - `style.css` 및 `index.html`: PC와 모바일 레이아웃.
+- Kidscade 게임 SDK `start/result/pause/resume` 이벤트를 연동해 출전 기록과 런 업적을 정식 집계한다.
 - `../../tests/yi-sun-sin-sim.test.cjs`: Node 기본 테스트 러너로 실행하는 단위 테스트.
 
 ## 역사 범위

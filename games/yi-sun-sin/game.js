@@ -107,7 +107,7 @@ function showOverlay(mode) {
     $('overlayEyebrow').textContent = '임진년 · 첫 번째 출전';
     $('overlayTitle').textContent = '옥포로 출전하다';
     $('overlayText').textContent = '1592년, 조선 수군이 적선을 향해 바다로 나섭니다. 기함을 조종하고 아군과 함께 적의 함대를 물리치세요.';
-    primary('옥포로 출전하기 →', () => { startRun(game); overlay.classList.add('hidden'); canvas.focus(); playSound('confirm'); });
+    primary('옥포로 출전하기 →', () => { beginRun(); playSound('confirm'); });
   } else if (mode === 'upgrade') {
     $('overlayEyebrow').textContent = `${game.waveIndex + 1}차 교전 마침 · 출전 준비`;
     $('overlayTitle').textContent = '함선을 정비할 시간';
@@ -144,7 +144,7 @@ function showOverlay(mode) {
     $('overlayEyebrow').textContent = '전투 잠시 멈춤';
     $('overlayTitle').textContent = '잠시 숨을 고르세요';
     $('overlayText').textContent = '화면을 다시 열면 멈춘 순간부터 전투가 이어집니다.';
-    primary('전투 이어하기 →', () => { togglePause(game); overlay.classList.add('hidden'); canvas.focus(); });
+    primary('전투 이어하기 →', switchPause);
     const restart = document.createElement('button');
     restart.type = 'button';
     restart.className = 'secondary-button';
@@ -173,7 +173,12 @@ function restartRun() {
   joystick.active = false;
   resetJoystick();
   Object.assign(input, { forward: false, backward: false, left: false, right: false });
+  beginRun();
+}
+
+function beginRun() {
   startRun(game);
+  window.KidscadeGame?.start?.({ source: 'yi-sun-sin-okpo' });
   overlay.classList.add('hidden');
   canvas.focus();
 }
@@ -480,6 +485,12 @@ function runFrame(now) {
   }
   if(game.mode!==oldMode){
     oldMode=game.mode;
+    if(game.mode==='victory'||game.mode==='defeat'){
+      window.KidscadeGame?.result?.({
+        scope:'run', status:'completed', outcome:game.mode==='victory'?'win':'loss',
+        score:game.score, kills:game.kills, wave:game.waveIndex+1
+      });
+    }
     if(['upgrade','paused','victory','defeat'].includes(game.mode)) showOverlay(game.mode);
   }
   if(performance.now()>toastUntil) $('toast').classList.remove('visible');
@@ -506,13 +517,25 @@ window.addEventListener('keyup', event => { if(keys[event.code]) {input[keys[eve
 window.addEventListener('blur', () => {Object.keys(input).forEach(k=>input[k]=false);if(game.mode==='playing') switchPause();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden && game.mode==='playing')switchPause();});
 
-function switchPause(){
-  if(!['playing','paused'].includes(game.mode))return;
+function setPaused(paused){
+  if(paused&&game.mode!=='playing')return;
+  if(!paused&&game.mode!=='paused')return;
   togglePause(game);
-  if(game.mode==='playing')overlay.classList.add('hidden');
+  if(game.mode==='playing'){overlay.classList.add('hidden');canvas.focus();}
   else showOverlay('paused');
   oldMode=game.mode;
 }
+function switchPause(){
+  if(!['playing','paused'].includes(game.mode))return;
+  if(game.mode==='playing'){
+    if(window.KidscadeGame?.pause)window.KidscadeGame.pause({source:'yi-sun-sin-controls'});
+    else setPaused(true);
+  }else{
+    if(window.KidscadeGame?.resume)window.KidscadeGame.resume({source:'yi-sun-sin-controls'});
+    else setPaused(false);
+  }
+}
+window.KidscadeGame?.registerPauseHandlers?.({pause:()=>setPaused(true),resume:()=>setPaused(false)});
 $('pauseBtn').addEventListener('click',switchPause);
 $('signalBtn').addEventListener('click',()=>{if(issueSignal(game))playSound('confirm');});
 $('soundBtn').addEventListener('click',()=>{muted=!muted;$('soundBtn').textContent=muted?'♩':'♫';$('soundBtn').setAttribute('aria-label',muted?'소리 켜기':'소리 끄기');});
@@ -543,7 +566,7 @@ for(const name of ['pointerup','pointercancel','lostpointercapture']) $('touchPa
 if (new URLSearchParams(location.search).has('qa')) {
   window.__yiSunSinQA = Object.freeze({
     snapshot: () => ({mode:game.mode,wave:game.waveIndex+1,kills:game.kills,score:game.score,playerHp:game.player.hp,enemies:game.enemies.length,spawned:game.spawned}),
-    start:()=>{if(game.mode==='menu'){startRun(game);overlay.classList.add('hidden');}},
+    start:()=>{if(game.mode==='menu')beginRun();},
     advanceWave:()=>{if(game.mode==='playing'){game.spawned=getWave(game).ships.length;game.enemies=[];game.shots=[];}},
     chooseFirst:()=>{if(game.mode==='upgrade')takeUpgrade(game,game.selected[0]);}
   });
