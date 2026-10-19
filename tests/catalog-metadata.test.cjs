@@ -75,7 +75,7 @@ test('Korean Farm appears in the public catalog with playable URL and artwork', 
   assert.equal(games.filter(item => item.id === 'korean_farm').length, 1);
   assert.equal(game.title, '논두렁 너머');
   assert.equal(game.href, 'games/korean-farm/index.html');
-  assert.equal(game.cover, 'assets/gate-image/korean_farm.svg');
+  assert.equal(game.cover, 'assets/gate-image/korean_farm_cover.webp');
   assert.equal(game.genre, 'simulation');
   assert.ok(game.addedAt, 'new-game discovery requires a release timestamp');
   for (const link of [game.href, game.cover]) {
