@@ -282,14 +282,17 @@ function move(dt,elapsed){
     if(goalDistance<.28){moveGoal=null;goalDistance=null}
     else direction={x:dx/goalDistance,z:dz/goalDistance};
   }
-  // Face the travel direction BEFORE walking. A 180° reversal must turn
-  // in place briefly; otherwise forward input looks like walking backward.
-  const wantsMove=Math.hypot(direction.x,direction.z)>.05;
-  if(wantsMove){
-    farmerFacingTarget=farmerHeading(direction.x,direction.z);
+  // Resolve collisions first, then face the direction the farmer can actually
+  // travel. Sliding along a wall can differ from the requested diagonal input.
+  const result=walkPlayer(state.player,direction,dt,{goalDistance,bounds,obstacles});
+  const stepX=result.x-state.player.x,stepZ=result.z-state.player.z;
+  const travelled=Math.hypot(stepX,stepZ);
+  if(travelled>.001){
+    farmerFacingTarget=farmerHeading(stepX,stepZ);
+    // Wait until the body is nearly aligned; a broad angle makes the farmer
+    // visibly sidestep or walk backward during sharp turns.
     if(shouldTurnBeforeWalk(farmer.rotation.y,farmerFacingTarget))return false;
   }
-  const result=walkPlayer(state.player,direction,dt,{goalDistance,bounds,obstacles});
   state.player.x=result.x;state.player.z=result.z;
   farmer.position.set(state.player.x,0,state.player.z);
   if(!$('inspector').classList.contains('hidden')){
