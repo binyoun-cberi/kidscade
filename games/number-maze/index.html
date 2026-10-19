@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#3041a4">
+  <meta name="description" content="숫자를 놓아 가로세로 수식을 완성하는 키즈케이드 수학 퍼즐. 초등 1~3학년 맞춤 문제부터 사칙연산 혼합계산 도전까지.">
+  <meta property="og:title" content="수의 미궁 | 키즈케이드">
+  <meta property="og:description" content="가로세로 숫자 교차 퍼즐로 수의 규칙을 발견해 보세요. 덧셈·뺄셈부터 곱셈·나눗셈 혼합계산까지 단계별로 즐겨요.">
+  <title>수의 미궁 | 키즈케이드</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../../kidscade-game-sdk.js" data-game-id="number_maze" data-title="수의 미궁" data-shell="true" data-orientation="portrait" data-mute="false"></script>
+  <script src="engine.js" defer></script>
+  <script src="game.js" defer></script>
+</head>
+<body>
+  <div class="ambient ambient-left" aria-hidden="true"></div>
+  <div class="ambient ambient-right" aria-hidden="true"></div>
+  <div id="app" class="app" aria-live="polite">
+    <noscript>
+      <main class="card" style="padding:26px;max-width:600px;margin:50px auto">
+        <h1>🧩 수의 미궁</h1>
+        <p>빈칸에 숫자를 놓아 가로 수식과 세로 수식이 동시에 맞도록 만드는 수학 교차 퍼즐이에요.</p>
+        <ol>
+          <li>초등 1·2·3학년 중 내 수준을 선택해요.</li>
+          <li>모험, 자유 퍼즐, 오늘의 퍼즐, 무한 도전, 혼합계산 도전 중 하나를 골라요.</li>
+          <li>아래 숫자를 골라 빈칸에 놓고, 가로세로 계산 결과를 확인해요.</li>
+        </ol>
+        <p>게임을 실행하려면 브라우저에서 JavaScript를 사용하도록 설정해 주세요.</p>
+      </main>
+    </noscript>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

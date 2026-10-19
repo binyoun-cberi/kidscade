@@ -2,6 +2,30 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "number_maze",
+      "addedAt": "2026-10-19T16:00:00+09:00",
+      "title": "수의 미궁",
+      "href": "games/number-maze/index.html",
+      "category": "math",
+      "age": "low",
+      "icon": "🧩",
+      "description": "가로세로 수식을 완성하는 초등 1~3학년 수학 퍼즐! 모험 120단계·자유 퍼즐·오늘의 문제·무한 도전에서 숫자를 놓고 논리력과 연산 감각을 길러요.",
+      "subject": "math",
+      "genre": "puzzle",
+      "difficulty": "medium",
+      "sessionMinutes": 8,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true,
+      "cover": "assets/gate-image/number_maze.svg"
+    },
+    {
       "id": "korean_farm",
       "addedAt": "2026-10-17T18:40:00+09:00",
       "title": "논두렁 너머",

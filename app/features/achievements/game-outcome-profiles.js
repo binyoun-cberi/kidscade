@@ -143,7 +143,7 @@
       'high_history_match','magic_scale','korea_puzzle','laser_angle','code_breaker','sudoku',
       'high_fraction_smith','polygon_area','tod_puzzle_time','tod_puzzle_bobble','toddler_monkey_vines',
       'toddler_penguin_ice_pop','toddler_color_stack','toddler_three_friends_set','high_bridge_builder',
-      'low_pattern_lock','school_tower','hero_english'
+      'low_pattern_lock','school_tower','hero_english','number_maze'
     ]),
     shift:Object.freeze([
       'job_nail_artist','job_takoyaki_simulator','job_steak_master','job_bogle_bunsik',
