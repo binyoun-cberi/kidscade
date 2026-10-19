@@ -2,6 +2,25 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "yi_sun_sin",
+      "addedAt": "2026-10-19T14:40:00+09:00",
+      "title": "이순신",
+      "href": "games/yi-sun-sin/index.html",
+      "category": "trivia",
+      "age": "high",
+      "icon": "⚓",
+      "description": "임진왜란 첫 승전인 옥포 해전을 배경으로 판옥선을 직접 조종해요. 배의 좌우에 적을 두면 함포가 자동으로 발사되고, 조선 수군과 함께 세 차례 교전을 치르며 화포와 선체를 강화하는 해상 액션 게임입니다. 실제 역사를 바탕으로 전투를 재구성했어요.",
+      "subject": "social",
+      "genre": "action",
+      "difficulty": "medium",
+      "sessionMinutes": 5,
+      "players": ["solo"],
+      "input": ["touch", "keyboard"],
+      "qualityStatus": "standard",
+      "classroom": true,
+      "cover": "assets/gate-image/yi_sun_sin.svg"
+    },
+    {
       "id": "tod_mot_chatgetda_kkwaekkori",
       "addedAt": "2026-10-19T16:00:00+09:00",
       "title": "못 찾겠다 꾀꼬리",
