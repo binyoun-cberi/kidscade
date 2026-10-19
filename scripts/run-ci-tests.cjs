@@ -180,6 +180,7 @@ const TEST_FILES = [
   "tests/dalgona-trace.test.cjs",
   "tests/squid-memory-bridge-assets.test.cjs",
   "tests/ecopolis.test.cjs",
+  "tests/animal-face-search.test.cjs",
   "tests/mot-chatgetda-kkwaekkori.test.cjs",
   "tests/high-twelve-island.test.cjs",
   "tests/traditional-play-yard.test.cjs",

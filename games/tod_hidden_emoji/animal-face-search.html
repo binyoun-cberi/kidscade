@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>동물 얼굴 숨은그림찾기</title>
+<link rel="stylesheet" href="animal-face-search.css?v=2">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div>
+        <h1>동물 얼굴 숨은그림찾기</h1>
+        <p>숨어 있는 동물 친구들을 찾아보세요</p>
+      </div>
+    </div>
+    <div class="top-stats">
+      <a class="ghost-btn" style="display:inline-flex;align-items:center;text-decoration:none" href="신나는 이모지 숨은그림찾기.html">← 이모지 놀이</a>
+      <div class="stat"><small>단계</small><b id="stageLabel">1 / 12</b></div>
+      <div class="stat"><small>시간</small><b id="timeLabel">0.0초</b></div>
+      <div class="stat"><small>실수</small><b id="missLabel">0</b></div>
+      <button class="ghost-btn" id="soundBtn" type="button">소리 켜짐</button>
+    </div>
+  </header>
+
+  <main class="game-layout">
+    <section class="scene-panel">
+      <div id="scene" class="scene theme-meadow" aria-label="숨은 동물 찾기 놀이판">
+        <div class="scene-sky"></div>
+        <div class="scene-ground"></div>
+        <div id="decorLayer" class="decor-layer" aria-hidden="true"></div>
+        <div id="animalLayer" class="animal-layer"></div>
+        <button id="hintBtn" class="hint-btn" type="button">힌트</button>
+        <div id="sceneMessage" class="scene-message">동물 얼굴을 찾아 눌러보세요.</div>
+      </div>
+    </section>
+    <aside class="mission-panel">
+      <div class="mission-head">
+        <div>
+          <small class="eyebrow">찾아야 할 동물</small>
+          <h2 id="stageName">초원 친구들</h2>
+        </div>
+        <div class="found-count"><b id="foundCount">0</b><span>/</span><b id="targetCount">3</b></div>
+      </div>
+      <div id="targetList" class="target-list"></div>
+      <div class="guide-card">
+        <b>찾는 방법</b>
+        <p>목록의 얼굴과 같은 동물을 놀이판에서 찾아 눌러주세요. 찾은 동물은 선명하게 표시됩니다.</p>
+      </div>
+      <div class="action-row">
+        <button id="restartBtn" class="secondary-btn" type="button">이 단계 다시하기</button>
+        <button id="nextBtn" class="primary-btn" type="button" hidden>다음 단계</button>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<div id="startOverlay" class="overlay show">
+  <div class="start-card">
+    <div class="sample-faces" id="sampleFaces" aria-hidden="true"></div>
+    <small class="eyebrow">KIDSCADE 관찰 놀이</small>
+    <h2>동물 친구들이<br>놀이판에 숨어 있어요</h2>
+    <p>동물 얼굴을 잘 살펴보고 같은 친구를 찾아보세요. 단계가 올라갈수록 조금 더 작고 자연스럽게 숨어요.</p>
+    <button id="startBtn" class="primary-btn big" type="button">찾기 시작</button>
+  </div>
+</div>
+<div id="resultOverlay" class="overlay">
+  <div class="result-card">
+    <small class="eyebrow">모든 단계 완료</small>
+    <h2>동물 찾기 성공</h2>
+    <div class="result-grid">
+      <div><small>총 시간</small><b id="finalTime">0.0초</b></div>
+      <div><small>총 실수</small><b id="finalMisses">0</b></div>
+    </div>
+    <button id="playAgainBtn" class="primary-btn big" type="button">처음부터 다시</button>
+  </div>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="../../audio-manager.js"></script>
+<script src="animal-face-search.js?v=2"></script>
+</body>
+</html>
