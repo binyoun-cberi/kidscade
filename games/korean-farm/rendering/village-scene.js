@@ -169,12 +169,8 @@ function waterside(root){
     }
     if(i%3===0)cylinder(g,.13,.19,.19,0xa7a79a,-16.23,.11,z,7);
   }
-  // A wooden sluice gate echoes the actual rice field irrigation action.
-  const gate=grouping(g,'timber-irrigation-gate',-17.5,-3.2);
-  for(const x of [-.48,.48])box(gate,.11,1.10,.10,0x74563c,x,.61,0);
-  box(gate,1.13,.13,.12,0xa17a50,0,1.12,0);
-  box(gate,.86,.44,.09,0x876644,0,.48,0);
-  cylinder(gate,.05,.05,.4,0xb5a479,.0,1.30,0).rotation.z=Math.PI/2;
+  // The interactive sluices sit on each paddy edge; keep this ditch clear so
+  // the player does not see a decorative gate floating in the water channel.
   // Stones on the far bank, leaving the existing wooden crossing untouched.
   for(let i=0;i<12;i++){
     let x=-20.1+Math.sin(i*7)*.23,z=-13+i*2.26;

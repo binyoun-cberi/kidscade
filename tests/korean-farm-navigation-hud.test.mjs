@@ -5,6 +5,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {cameraRelativeInput,farmerHeading,facingDirection,shouldTurnBeforeWalk,headingDifference,rotateToward,walkPlayer} from '../games/korean-farm/interactions/navigation.mjs';
 import {VILLAGE_COLLIDERS} from '../games/korean-farm/rendering/village-layout.mjs';
+import {fieldStatusIndicators} from '../games/korean-farm/farming/field-status.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const html=fs.readFileSync(path.join(ROOT,'games/korean-farm/index.html'),'utf8');
 const game=fs.readFileSync(path.join(ROOT,'games/korean-farm/game.js'),'utf8');
@@ -125,4 +126,26 @@ test('keyboard actions do not run while dialog is visible or text input has focu
   assert.match(game,/target\?\.closest\?\.\('input,textarea,select,\[contenteditable="true"\]'\)/);
   assert.match(game,/if\(!\$\('modal'\)\.classList\.contains\('hidden'\)&&key!=='escape'\)return/);
   assert.match(game,/keys\.clear\(\);joystick\.x=0;joystick\.y=0;/);
+});
+
+test('field status rings prioritize urgent care and harvest without opening the inspector',()=>{
+  const healthy={kind:'rice',planted:true,growth:.4,waterDepthCm:2.2,nitrogen:.34,weeds:.38,health:.55};
+  assert.deepEqual(fieldStatusIndicators(healthy),[]);
+  const mild=fieldStatusIndicators({...healthy,waterDepthCm:1.1});
+  const urgent=fieldStatusIndicators({...healthy,waterDepthCm:0});
+  assert.equal(mild[0].id,'dry');
+  assert.ok(mild[0].urgency>0&&mild[0].urgency<1);
+  assert.equal(urgent[0].urgency,1);
+  const ripe=fieldStatusIndicators({...healthy,growth:1,waterDepthCm:2.2});
+  assert.equal(ripe[0].id,'harvest');
+  assert.equal(ripe[0].icon,'🌾');
+});
+test('rice sluices are interactive in-world objects with no gate action button',()=>{
+  assert.doesNotMatch(html,/data-action="gate"/);
+  assert.match(game,/raycaster\.intersectObjects\(gateHits,false\)/);
+  assert.match(game,/function activateSluice\(id\)/);
+  assert.match(game,/farmFlow\.request\(\{action:'gate',plot,position:state\.player,goal:sluice\.stand\}\)/);
+  assert.match(game,/if\(nearest\)activateSluice\(nearest\)/);
+  const village=fs.readFileSync(path.join(ROOT,'games/korean-farm/rendering/village-scene.js'),'utf8');
+  assert.doesNotMatch(village,/timber-irrigation-gate/);
 });
