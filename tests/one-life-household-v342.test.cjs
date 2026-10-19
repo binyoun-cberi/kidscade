@@ -64,3 +64,16 @@ test('a paid unfinished craft can be stopped to rest without refund or duplicate
 test('domestic official absence delegates work and letters, then returns without a foreign migration',()=>{
  const l=life(),p=relative(l);J.ensure(l).office=true;assert.equal(H.action(l,'manager',p.id),true);assert.equal(H.action(l,'dispatch'),true);assert.equal(H.away(l),true);assert.equal(H.manager(l),p.id);assert.equal(l.travel22?.residence?.abroad||false,false);assert.equal(H.action(l,'letter','care'),true);next(l);next(l);assert.equal(H.away(l),false);assert.equal(H.ensure(l).trip,null);
 });
+test('household dialogue uses the right particle for a named relative',()=>{
+ for(const [name,joined] of [['분이','분이와'],['만복','만복과']]){
+  const l=life(),p=relative(l);p.name=name;assert.equal(H.action(l,'manager',p.id),true);assert.match(H.ensure(l).history.at(-1).text,new RegExp(joined+' 집을 비울'));
+ }
+});
+test('first study without money does not invent earlier lessons, and exhaustion does not invent lost work',()=>{
+ const l=life();H.assign(l,'self','study');J.ensure(l).capital=0;next(l);assert.match(H.ensure(l).history.at(-1).text,/새로 배우지 못/);assert.doesNotMatch(H.ensure(l).history.at(-1).text,/전에 배운/);
+ const w=life(),p=relative(w);H.assign(w,p.id,'wage','straw',true);H.ensure(w).fatigue[p.id]=80;next(w);const line=H.ensure(w).history.find(h=>/마치지 못/.test(h.text));assert.match(line.text,/몸이 지쳐/);assert.doesNotMatch(line.text,/일감도 끊겨|흉년/);
+});
+test('letter arrival does not invent a reply and crafting ends without tutorial narration',()=>{
+ const l=life(),p=relative(l);l.travel22={residence:{abroad:true}};H.action(l,'letter','care');l.rand=()=>.9;next(l);const line=H.ensure(l).history.find(h=>/편지가 닿았다/.test(h.text));assert.ok(line);assert.doesNotMatch(line.text,/답이 왔다|답장/);
+ const w=life();H.assign(w,'self','craft');next(w);assert.match(H.ensure(w).history.at(-1).text,/짚 바구니를 다 만들었다/);assert.doesNotMatch(H.ensure(w).history.at(-1).text,/정할 수 있다/);
+});
