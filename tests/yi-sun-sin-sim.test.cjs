@@ -4,9 +4,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const simPromise = import('../games/yi-sun-sin/sim.mjs');
 
-test('역사 캠페인 네 전장은 연대순으로 구성되고 각각 독립된 지도와 공세를 제공한다', async () => {
+test('역사 캠페인 여덟 전장은 연대순으로 구성되고 각각 독립된 지도와 공세를 제공한다', async () => {
   const { BATTLES, BATTLE_ORDER, createGame, getWave, startRun, stepGame, SHIP_TYPES } = await simPromise;
-  assert.deepEqual(BATTLE_ORDER, ['okpo', 'sacheon', 'dangpo', 'danghangpo']);
+  assert.deepEqual(BATTLE_ORDER, ['okpo', 'sacheon', 'dangpo', 'danghangpo', 'hansando', 'busanpo', 'myeongnyang', 'noryang']);
   for (const id of BATTLE_ORDER) {
     const game = createGame(1592, 'normal', id);
     assert.equal(game.battleId, id);
@@ -104,6 +104,85 @@ test('당항포 2차 교전에 이억기의 지원 판옥선이 합류하고 도
   assert.ok(game.events.some(event => event.text.includes('퇴로')));
 });
 
+test('한산도 학익진의 좌우 판옥선이 출전하고 날개 함포 명중이 임무에 반영된다', async () => {
+  const { createGame, startRun, stepGame, makeShip } = await simPromise;
+  const game = createGame(162, 'normal', 'hansando');
+  startRun(game);
+  assert.deepEqual(game.allies.filter(a => a.id.startsWith('wing-')).map(a => a.id), ['wing-left', 'wing-right']);
+  assert.equal(game.allies.filter(a => a.type === 'turtle').length, 1);
+  game.spawnClock = 999;
+  const target = makeShip('atakebune', 1380, 760, 0, 'target');
+  target.reload = [999, 999];
+  game.enemies.push(target);
+  game.shots.push({ x: target.x - 50, y: target.y, vx: 475, vy: 0, traveled: 0,
+    range: 400, damage: 12, sourceId: 'wing-left', team: 'joseon', radius: 5 });
+  for (let frame = 0; frame < 3; frame++) stepGame(game, {}, .05);
+  assert.ok(game.tactical.wingHits > 0);
+});
+
+test('부산포는 해안 포격을 받고 마지막 교전 후 서쪽 외해로 철수해야 승리한다', async () => {
+  const { createGame, startRun, stepGame, takeUpgrade, getWave } = await simPromise;
+  const game = createGame(163, 'normal', 'busanpo');
+  startRun(game);
+  game.spawnClock = 999;
+  game.player.x = 1230;
+  game.player.y = 730;
+  for (let frame = 0; frame < 180; frame++) stepGame(game, { throttle: 0 }, .05);
+  assert.ok(game.events.some(event => event.text.includes('해안 포격')), '연안 포대가 실제 포격을 시작');
+  for (let phase = 0; phase < 3; phase++) {
+    game.spawned = getWave(game).ships.length;
+    game.enemies = [];
+    stepGame(game, {}, .016);
+    if (phase < 2) takeUpgrade(game, game.selected[0]);
+  }
+  assert.equal(game.mode, 'playing', '적을 다 격파한 즉시 승리하지 않음');
+  assert.equal(game.withdrawal, true);
+  game.player.x = 520;
+  stepGame(game, {}, .016);
+  assert.equal(game.mode, 'victory');
+  assert.equal(game.tactical.withdrawn, 1);
+});
+
+test('명량에서는 거북선 없이 조류가 모든 함선을 밀고 일정 시간 뒤 흐름이 바뀐다', async () => {
+  const { createGame, startRun, stepGame, makeShip } = await simPromise;
+  const game = createGame(164, 'normal', 'myeongnyang');
+  startRun(game);
+  assert.equal(game.allies.some(a => a.type === 'turtle'), false);
+  game.spawnClock = 999;
+  const enemy = makeShip('kobaya', 1450, 760, 0, 'current-target');
+  enemy.reload = [999, 999];
+  game.enemies.push(enemy);
+  game.player.reload = [999, 999];
+  game.allies.forEach(a => a.reload = [999, 999]);
+  const before = game.player.x;
+  stepGame(game, {}, .05);
+  assert.ok(game.player.x > before, '기함이 동쪽으로 밀림');
+  for (let i = 0; i < 480; i++) stepGame(game, { forward: true }, .05);
+  assert.equal(game.tideDirection, -1);
+  assert.ok(game.events.some(event => event.text.includes('조류 역전')));
+});
+
+test('노량의 두 번째 교전에는 명나라 지원선이 합류하고 마지막 해전에 도주를 저지한다', async () => {
+  const { createGame, startRun, stepGame, takeUpgrade, getWave, makeShip, WORLD } = await simPromise;
+  const game = createGame(165, 'normal', 'noryang');
+  startRun(game);
+  assert.equal(game.battle.night, true);
+  assert.equal(game.allies.some(a => a.type === 'ming'), false);
+  game.spawned = getWave(game).ships.length;
+  stepGame(game, {}, .016);
+  takeUpgrade(game, game.selected[0]);
+  assert.equal(game.allies.filter(a => a.type === 'ming').length, 1);
+  game.waveIndex = 2;
+  game.spawnClock = 999;
+  game.player.reload = [999, 999];
+  game.allies.forEach(a => a.reload = [999, 999]);
+  const fleeing = makeShip('kobaya', WORLD.width - 89, 760, Math.PI / 2, 'retreat-test');
+  fleeing.hp = 10; fleeing.speed = 161; fleeing.reload = [999, 999];
+  game.enemies = [fleeing];
+  for (let i = 0; i < 20 && game.mode === 'playing'; i++) stepGame(game, {}, .05);
+  assert.equal(game.mode, 'defeat');
+});
+
 test('각 역사 전장은 세 교전을 완료하면 해당 해전의 승리 기록을 남긴다', async () => {
   const { createGame, startRun, stepGame, takeUpgrade, getWave, BATTLE_ORDER } = await simPromise;
   for (const id of BATTLE_ORDER) {
@@ -113,6 +192,7 @@ test('각 역사 전장은 세 교전을 완료하면 해당 해전의 승리 �
       game.spawned = getWave(game).ships.length;
       game.enemies = [];
       stepGame(game, {}, .016);
+      if (game.withdrawal) { game.player.x = game.battle.withdraw.x - 10; stepGame(game, {}, .016); }
       if (phase < 2) {
         assert.equal(game.mode, 'upgrade');
         assert.equal(takeUpgrade(game, game.selected[0]), true);
@@ -125,7 +205,7 @@ test('각 역사 전장은 세 교전을 완료하면 해당 해전의 승리 �
 
 test('신규 역사 전장들은 보통·어려움 모두 전투가 종료되고 전술 플레이로 이길 수 있다', async () => {
   const { createGame, startRun, stepGame, takeUpgrade, issueOrder } = await simPromise;
-  for (const id of ['sacheon', 'dangpo', 'danghangpo']) {
+  for (const id of ['sacheon', 'dangpo', 'danghangpo', 'hansando', 'busanpo', 'myeongnyang', 'noryang']) {
     for (const difficulty of ['normal', 'hard']) {
       let victories = 0;
       for (let seed = 1; seed <= 16; seed++) {
@@ -134,6 +214,10 @@ test('신규 역사 전장들은 보통·어려움 모두 전투가 종료되고
         for (let frame = 0; frame < 7200 && ['playing', 'upgrade'].includes(game.mode); frame++) {
           if (game.mode === 'upgrade') {
             takeUpgrade(game, game.selected.includes('hull') ? 'hull' : game.selected[0]);
+            continue;
+          }
+          if (game.withdrawal) {
+            stepGame(game, { aimAngle: -Math.PI / 2, throttle: 1 }, 1 / 30);
             continue;
           }
           if (game.signalCooldown <= 0 && game.enemies.length) issueOrder(game, game.player.hp < 170 ? 'guard' : 'rally');
@@ -475,9 +559,9 @@ test('맵 모서리에서도 적선이 적절한 거리에서 출현하고 전�
   }
 });
 
-test('일곱 함종의 임무가 구별되고 거북선은 옥포 전투에 등장하지 않는다', async () => {
+test('여덟 함종의 임무가 구별되고 거북선은 옥포 전투에 등장하지 않는다', async () => {
   const { SHIP_TYPES, SHIP_GUIDE, WAVES } = await simPromise;
-  assert.equal(SHIP_GUIDE.length, 7);
+  assert.equal(SHIP_GUIDE.length, 8);
   for (const entry of SHIP_GUIDE) assert.ok(SHIP_TYPES[entry.type]);
   assert.ok(SHIP_TYPES.panokseon.boardingDamageTaken < 1);
   assert.ok(SHIP_TYPES.turtle.boardingDamageTaken < SHIP_TYPES.panokseon.boardingDamageTaken);
