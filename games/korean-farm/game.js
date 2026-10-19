@@ -11,7 +11,7 @@ import {TRANSPLANT_COUNT,seedlingCount,seedlingPosition,nextEmptySeedling,canPla
 import {createFarmActionFlow,actionContactPoint,actionApproachPoint} from './interactions/action-flow.mjs';
 import {cameraRelativeInput,farmerHeading,rotateToward,walkPlayer,shouldTurnBeforeWalk,LOOK_SPEED} from './interactions/navigation.mjs';
 import {FIELD_DEFS,plotById,distanceToPlot} from './world.mjs';
-import {createFarmState,restoreFarmState,CROPS,calendar,fieldById,visualStage,fieldCondition,applyFarmAction,canApplyFarmAction,applyFarmStrip,canWorkFieldStrip,advanceFarmDay,sellAllProduce,buyFarmSupply} from './farming/farm-sim.mjs';
+import {createFarmState,restoreFarmState,CROPS,calendar,fieldById,visualStage,fieldCondition,fieldCareAdvice,applyFarmAction,canApplyFarmAction,applyFarmStrip,canWorkFieldStrip,advanceFarmDay,sellAllProduce,buyFarmSupply,currentDeliveryOrder,fulfillDeliveryOrder} from './farming/farm-sim.mjs';
 
 const $=id=>document.getElementById(id);
 const SAVE_KEY=window.KidscadeGame?.storageKey?.('korean_farm','farm')||'kidscade_game_v1:korean_farm:farm';
@@ -411,6 +411,7 @@ function updateInspector(){
     '모내기 '+seedlingCount(f)+' / 25포기 · 밝은 자리에 모를 꽂아 보세요.':f.planted?
     CROPS[f.crop].name+' · '+Math.round(f.growth*100)+'% 자람'+(f.kind==='rice'?' · 논물 '+f.waterDepthCm.toFixed(1)+'cm'+(f.gateOpen?' (물꼬 열림)':' (물꼬 닫힘)'):''):
     (f.tilled?'땅을 갈아 놓았어요. 다음 작물을 심을 수 있어요.':'수확을 마친 땅이에요. 괭이질로 다시 준비해 보세요.');
+  $('fieldLearning').textContent=fieldCareAdvice(f);
   const metrics=$('fieldMetrics');metrics.replaceChildren();
   metrics.append(
     progressBarRow('성장',f.growth,f.planted?Math.round(f.growth*100)+'%':'작물 없음'),
@@ -701,8 +702,25 @@ function openBag(){
     }
     stock.append(row);
   }
+  const order=currentDeliveryOrder(state);
+  const delivery=document.createElement('section');delivery.className='delivery-card';
+  const deliveryTitle=document.createElement('strong');deliveryTitle.textContent='마을의 부탁';
+  const deliveryText=document.createElement('p');
+  const deliveryBtn=document.createElement('button');deliveryBtn.type='button';
+  if(order){
+    deliveryText.textContent=order.description+' ('+CROPS[order.produce].name+' '+order.count+'개 · 보상 '+formatWon(order.reward)+')';
+    deliveryBtn.textContent='납품하기';deliveryBtn.disabled=(state.inventory[order.produce]||0)<order.count;
+    deliveryBtn.onclick=()=>{
+      const result=fulfillDeliveryOrder(state);toast(result.message);refreshHud();refreshObjective();save(true);openBag();
+      if(result.ok&&state.stats.deliveries===1)window.KidscadeGame?.milestone?.('first_village_delivery',{uniqueKey:'first_delivery',value:result.reward});
+    };
+  }else{
+    deliveryText.textContent='마을에서 부탁한 농산물을 모두 전했어요. 솔내리 사람들이 고마워해요.';
+    deliveryBtn.textContent='모든 부탁 완료';deliveryBtn.disabled=true;
+  }
+  delivery.append(deliveryTitle,deliveryText,deliveryBtn);
   const note=document.createElement('p');note.className='bag-note';
-  note.textContent='수확물은 이곳에서 판매하고, 씨앗과 퇴비를 구입할 수 있어요. 시장 가격은 첫 버전의 고정값이에요.';
+  note.textContent='수확물은 판매하거나 마을 부탁에 사용할 수 있어요. 씨앗과 퇴비를 구입할 수 있고, 판매 가격은 고정되어 있어요.';
   const sale=document.createElement('button');sale.className='sell-btn';sale.type='button';
   const total=Object.keys(CROPS).reduce((acc,key)=>acc+state.inventory[key]*CROPS[key].price,0);
   sale.textContent='수확물 모두 판매 · '+formatWon(total);sale.disabled=total===0;
@@ -710,7 +728,7 @@ function openBag(){
     const result=sellAllProduce(state);toast(result.message);refreshHud();refreshObjective();save(true);openBag();
     if(result.ok&&state.stats.sales===1)window.KidscadeGame?.milestone?.('first_crop_sale',{uniqueKey:'first_sale',value:result.total});
   };
-  el.append(note,stock,sale);
+  el.append(delivery,note,stock,sale);
   showModal('농장 창고와 장터',el);
 }
 function showModal(title,inner){

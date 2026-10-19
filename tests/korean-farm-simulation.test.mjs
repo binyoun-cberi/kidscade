@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   FARM_SAVE_VERSION,createFarmState,restoreFarmState,fieldById,visualStage,
   applyFarmAction,advanceFarmDay,sellAllProduce,buyFarmSupply,calendar,
-  weatherForDay,CROPS
+  weatherForDay,CROPS,fieldCareAdvice,currentDeliveryOrder,fulfillDeliveryOrder
 } from '../games/korean-farm/farming/farm-sim.mjs';
 import {plantSeedling,seedlingCount} from '../games/korean-farm/farming/rice-transplant.mjs';
 
@@ -123,4 +123,33 @@ test('corrupt values cannot escape simulation limits',()=>{
   assert.equal(state.inventory.seedRice,0);
   assert.equal(state.inventory.rice,0);
   assert.equal(state.money,4200);
+});
+
+test('care advice explains the same water, nutrition and weed thresholds used by growth simulation',()=>{
+  const state=createFarmState(),rice=fieldById(state,'rice-1'),carrot=fieldById(state,'carrot-1');
+  rice.planted=true;rice.waterDepthCm=.5;
+  assert.match(fieldCareAdvice(rice),/물이 부족/);
+  rice.waterDepthCm=8;
+  assert.match(fieldCareAdvice(rice),/너무 깊/);
+  carrot.nitrogen=.1;
+  assert.match(fieldCareAdvice(carrot),/양분이 부족/);
+  carrot.nitrogen=.8;carrot.weeds=.8;
+  assert.match(fieldCareAdvice(carrot),/잡초가 많/);
+});
+test('three village delivery requests consume produce, reward money and persist completion count',()=>{
+  const state=createFarmState();
+  const first=currentDeliveryOrder(state);
+  assert.equal(first.produce,'rice');
+  assert.equal(fulfillDeliveryOrder(state).ok,false);
+  state.inventory.rice=5;
+  const money=state.money;
+  assert.equal(fulfillDeliveryOrder(state).ok,true);
+  assert.equal(state.inventory.rice,0);
+  assert.equal(state.money,money+first.reward);
+  assert.equal(currentDeliveryOrder(state).produce,'carrot');
+  state.inventory.carrot=3;assert.equal(fulfillDeliveryOrder(state).ok,true);
+  state.inventory.corn=3;assert.equal(fulfillDeliveryOrder(state).ok,true);
+  assert.equal(currentDeliveryOrder(state),null);
+  const restored=restoreFarmState(JSON.parse(JSON.stringify(state)));
+  assert.equal(restored.stats.deliveries,3);
 });

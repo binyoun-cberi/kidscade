@@ -332,3 +332,9 @@ button:focus-visible{outline:3px solid #d18d34;outline-offset:3px}
   .fieldwork-strips button{min-height:25px}
   #workOne{min-height:34px}
 }
+
+.field-learning{margin:10px 0 12px;padding:9px 10px;border-left:3px solid #78a66e;border-radius:0 9px 9px 0;background:#edf4e7;color:#46644a;font-size:11px;line-height:1.6}
+.delivery-card{display:grid;gap:7px;margin:4px 0 12px;padding:13px;border:1px solid #c8ddbd;border-radius:14px;background:linear-gradient(135deg,#f0f6e9,#fffaf0)}
+.delivery-card strong{color:#385d42;font-size:14px}.delivery-card p{margin:0;color:#5e705e;font-size:12px;line-height:1.55}
+.delivery-card button{justify-self:start;min-height:38px;padding:7px 14px;border:0;border-radius:10px;background:#568762;color:#fff;font-weight:750}
+.delivery-card button:disabled{background:#b8c4b4;color:#f8faf5;cursor:default}

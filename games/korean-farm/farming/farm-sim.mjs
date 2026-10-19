@@ -24,7 +24,7 @@ function createField(def){
 export function createFarmState(){
   return {...makeFarmState(),version:FARM_SAVE_VERSION,day:1,minute:7*60,energy:100,
     money:4200,weather:'sunny',inventory:{seedRice:8,seedCarrot:8,seedCorn:6,fertilizer:5,rice:0,carrot:0,corn:0},
-    fields:FIELD_DEFS.map(createField),stats:{harvests:0,sales:0,earnings:0},seenPlots:[]};
+    fields:FIELD_DEFS.map(createField),stats:{harvests:0,sales:0,earnings:0,deliveries:0},seenPlots:[]};
 }
 export function restoreFarmState(raw){
   if(!raw||typeof raw!=='object')return createFarmState();
@@ -103,6 +103,18 @@ export function fieldCondition(field){
   if(field.nitrogen<.23)return '양분이 부족해요';
   if(field.weeds>.55)return '잡초가 많아요';
   return '잘 자라고 있어요';
+}
+export function fieldCareAdvice(field){
+  if(!field)return '논밭을 선택하면 작물 돌보는 법을 볼 수 있어요.';
+  if(!field.planted)return '밭이 비어 있어요. 논은 모내기, 밭은 괭이질 뒤 씨앗 심기로 새 작물을 시작해요.';
+  if(field.kind==='rice'&&field.waterDepthCm<1)return '논물이 1cm보다 얕아요. 물꼬를 열어 보충해요. 물이 부족하면 벼의 생장과 건강이 나빠질 수 있어요.';
+  if(field.kind==='rice'&&field.waterDepthCm>7)return '논물이 7cm보다 깊어요. 물꼬를 닫아 수위를 낮춰요. 너무 깊은 물은 벼의 생장을 늦출 수 있어요.';
+  if(field.kind!=='rice'&&field.moisture<.28)return '흙이 말랐어요. 물을 주면 수분 부족으로 느려진 생장을 도울 수 있어요.';
+  if(field.kind!=='rice'&&field.moisture>.95)return '흙이 지나치게 젖었어요. 오늘은 물을 더 주지 말고 상태를 살펴보세요.';
+  if(field.nitrogen<.18)return '흙의 양분이 부족해요. 퇴비를 주면 작물이 양분 부족으로 받는 부담을 줄일 수 있어요.';
+  if(field.weeds>.53)return '잡초가 많아요. 김매기로 잡초를 줄이면 작물이 받는 부담이 줄어요.';
+  if(field.growth>=.999)return '수확할 때예요. 다섯 구역을 모두 베면 수확물이 창고에 들어와요.';
+  return '현재 물·양분·잡초 상태는 생장 기준 안에 있어요. 하루를 보내고 작물 변화를 살펴보세요.';
 }
 const seedKey={rice:'seedRice',carrot:'seedCarrot',corn:'seedCorn'};
 const energyCost={till:8,plant:5,water:4,gate:2,weed:5,fertilize:4,harvest:7};
@@ -301,4 +313,25 @@ export function sellAllProduce(state){
   for(const key of Object.keys(CROPS))state.inventory[key]=0;
   state.money+=total;state.stats.sales++;state.stats.earnings+=total;
   return {ok:true,sold,total,message:'수확물을 '+total.toLocaleString('ko-KR')+'원에 판매했어요.'};
+}
+
+export const DELIVERY_ORDERS=Object.freeze([
+  Object.freeze({produce:'rice',count:5,reward:1400,description:'마을 식당에 햅쌀을 전해 주세요.'}),
+  Object.freeze({produce:'carrot',count:3,reward:420,description:'장터 반찬가게에서 당근을 기다려요.'}),
+  Object.freeze({produce:'corn',count:3,reward:650,description:'마을 아이들에게 옥수수를 보내 주세요.'})
+]);
+export function currentDeliveryOrder(state){
+  return DELIVERY_ORDERS[Math.min(state.stats?.deliveries||0,DELIVERY_ORDERS.length)]||null;
+}
+export function fulfillDeliveryOrder(state){
+  const order=currentDeliveryOrder(state);
+  if(!order)return {ok:false,complete:true,message:'마을 납품 부탁을 모두 마쳤어요.'};
+  const available=state.inventory[order.produce]||0;
+  if(available<order.count)return {ok:false,order,available,message:order.description+' '+order.count+'개가 필요해요. 현재 '+available+'개 있어요.'};
+  state.inventory[order.produce]-=order.count;
+  state.money+=order.reward;
+  state.stats.deliveries=(state.stats.deliveries||0)+1;
+  return {ok:true,order,available:available-order.count,reward:order.reward,
+    complete:state.stats.deliveries>=DELIVERY_ORDERS.length,
+    message:order.description+' 납품을 마쳤어요. 보상 '+order.reward.toLocaleString('ko-KR')+'원을 받았어요.'};
 }
