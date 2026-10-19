@@ -27,7 +27,7 @@ function eligible(l,key){if(!base(l)||!home(l)||!ownsRoute(key))return false;con
  if(key==='china')return l.year>=1919&&l.stats.health>=30;
  return true;
 }
-function orgEligible(l,key){if(!base(l)||!ORGS[key]||ensure(l).org?.status==='active')return false;const o=ORGS[key],r=T.ensure(l).residence;
+function orgEligible(l,key){if(!base(l)||!ORGS[key]||ensure(l).org?.status==='active'||l.collaboration341?.role?.status==='active')return false;const o=ORGS[key],r=T.ensure(l).residence;
  if(l.year<o.start||l.year>o.end||l.age>65)return false;
  if(key==='domestic')return !r.abroad;
  if(key==='diaspora')return r.abroad&&['hawaii','mexico'].includes(r.route);
