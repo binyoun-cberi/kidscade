@@ -46,14 +46,14 @@ test('natural land can be converted into managed production sites', () => {
   assert.match(js, /간돌도끼\+숲→벌목장/);
 });
 
-test('catalog and game shell are cache-bumped to v14', () => {
+test('catalog and game shell are cache-bumped to v15', () => {
   const html = read('index.html');
   const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/games.json'), 'utf8'));
   const entry = data.games.find(g => g.id === 'high_human_history_cards');
   assert.ok(entry);
-  assert.match(html, /style\.css\?v=14/);
-  assert.match(html, /game\.js\?v=14/);
-  assert.ok(entry.href.endsWith('?v=14'));
+  assert.match(html, /style\.css\?v=15/);
+  assert.match(html, /game\.js\?v=15/);
+  assert.ok(entry.href.endsWith('?v=15'));
 });
 
 test('v12 living nature depletes, recovers and changes exploration pressure', () => {
@@ -167,4 +167,15 @@ test('all recipe inputs and outputs reference defined cards', () => {
   for (const m of rBlock[1].matchAll(/\['([^']+)','([^']+)',\d+,\d+,\[\['([^']+)',\d+\]\]/g)) refs.push(m[1], m[2], m[3]);
   for (const m of sameBlock[1].matchAll(/^\s*(\w+):\{need:\d+,out:'([^']+)'/gm)) refs.push(m[1], m[2]);
   assert.deepEqual([...new Set(refs.filter(x => !cards.has(x)))], []);
+});
+
+test('card layout is scrollable and combinations preview before drop', () => {
+  const html=read('index.html'),css=read('style.css'),js=read('game.js');
+  assert.match(html, /id="boardViewport"/);
+  assert.match(html, /id="craftPreview"/);
+  assert.match(css, /\.boardViewport\{[^}]*overflow-x:auto/);
+  assert.match(js, /function updateCraftPreview\(/);
+  assert.match(js, /updateCraftPreview\(c,findTarget\(c\)\)/);
+  assert.match(js, /function tidy\(\)[\s\S]*?board\.style\.width=/);
+  assert.doesNotThrow(() => new Function(js));
 });
