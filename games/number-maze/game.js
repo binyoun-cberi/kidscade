@@ -198,7 +198,7 @@
     state.progress.best[state.grade] = Math.max(state.progress.best[state.grade] || 0, state.lastScore);
     saveSession();
     callSdk('score', state.lastScore);
-    callSdk('result', { scope: state.mode === 'adventure' ? 'stage' : 'match', status: 'completed', outcome: 'clear', id: state.mode === 'adventure' ? `maze-${state.grade}-${state.stage}` : state.mode, score: state.lastScore, grade: state.grade, hints: state.hints });
+    callSdk('result', { scope: 'stage', status: 'completed', outcome: 'clear', id: state.mode === 'adventure' ? `maze-${state.grade}-${state.stage}` : `${state.mode}-${state.grade}-${state.mode === 'mixed' ? state.run : state.seed}`, score: state.lastScore, grade: state.grade, hints: state.hints });
     render();
   }
   function loss() {
