@@ -1,6 +1,6 @@
 import {
   WORLD, ISLANDS, SHIP_TYPES, WAVES, UPGRADES, createGame, startRun,
-  getWave, stepGame, takeUpgrade, issueSignal, togglePause
+  getWave, stepGame, takeUpgrade, issueSignal, togglePause, broadsideTarget
 } from './sim.mjs';
 
 const $ = id => document.getElementById(id);
@@ -106,7 +106,7 @@ function showOverlay(mode) {
   if (mode === 'menu') {
     $('overlayEyebrow').textContent = '임진년 · 첫 번째 출전';
     $('overlayTitle').textContent = '옥포로 출전하다';
-    $('overlayText').textContent = '1592년, 조선 수군이 적선을 향해 바다로 나섭니다. 기함을 조종하고 아군과 함께 적의 함대를 물리치세요.';
+    $('overlayText').textContent = '1592년, 조선 수군이 적선을 향해 바다로 나섭니다. 적선을 내 배의 왼쪽이나 오른쪽에 두고 함포를 발사하세요.';
     primary('옥포로 출전하기 →', () => { beginRun(); playSound('confirm'); });
   } else if (mode === 'upgrade') {
     $('overlayEyebrow').textContent = `${game.waveIndex + 1}차 교전 마침 · 출전 준비`;
@@ -161,7 +161,7 @@ function showOverlay(mode) {
   } else if (mode === 'defeat') {
     $('overlayEyebrow').textContent = '옥포 해전 · 출전 실패';
     $('overlayTitle').textContent = '기함이 전투를 이어갈 수 없습니다';
-    $('overlayText').textContent = `격침 ${game.kills}척. 다시 도전할 때는 적선의 선수를 피하고 좌우 함포의 사거리를 유지해 보세요.`;
+    $('overlayText').textContent = `격침 ${game.kills}척. 적선을 뱃머리가 아닌 판옥선의 좌우에 두고, 필요할 때 협선의 호위를 요청하세요.`;
     primary('다시 도전하기 →', restartRun);
   }
   requestAnimationFrame(() => actions.querySelector('button')?.focus());
@@ -201,17 +201,24 @@ function syncHud() {
   $('hullFill').style.background = hp < game.player.maxHp * .28 ? 'linear-gradient(90deg,#cf654d,#efaa75)' : hp < game.player.maxHp * .55 ? 'linear-gradient(90deg,#b39c50,#f4d481)' : '';
   $('killCount').textContent = game.kills;
   $('scoreCount').textContent = game.score.toLocaleString('ko-KR');
+  const escort = game.allies[0];
+  $('escortStatus').textContent = !escort || escort.dead ? '협선 · 격침 (교전 후 충원 가능)' : `협선 · 내구도 ${Math.ceil(escort.hp)} / ${escort.maxHp}`;
   $('timer').textContent = formatTime(game.seconds);
   for (let side = 0; side < 2; side++) {
     const fill = $(side === 0 ? 'portReload' : 'starboardReload');
     const label = $(side === 0 ? 'portLabel' : 'starboardLabel');
     const remaining = game.player.reload[side];
-    const totalReload = SHIP_TYPES.panokseon.reload * game.bonuses.reload;
+    const totalReload = SHIP_TYPES.panokseon.reload * game.bonuses.reload * (game.signalRemaining > 0 ? .7 : 1);
     fill.style.width = `${clamp(1 - remaining / totalReload, 0, 1) * 100}%`;
     label.textContent = remaining <= 0 ? '발사 준비' : `${remaining.toFixed(1)}초`;
   }
-  $('signalBtn').disabled = game.mode !== 'playing' || game.signalCooldown > 0;
-  $('signalLabel').textContent = game.signalRemaining > 0 ? '집결 중!' : game.signalCooldown > 0 ? `${Math.ceil(game.signalCooldown)}초 후` : 'Space · 준비';
+  const escortAlive = game.allies.some(ship => !ship.dead);
+  $('signalBtn').disabled = game.mode !== 'playing' || game.signalCooldown > 0 || !escortAlive;
+  $('signalLabel').textContent = !escortAlive ? '협선 격침' : game.signalRemaining > 0 ? '연합 포격 중!' : game.signalCooldown > 0 ? `${Math.ceil(game.signalCooldown)}초 후` : 'Space · 준비';
+  const nearest = game.enemies.reduce((best, enemy) => !best || Math.hypot(enemy.x-game.player.x,enemy.y-game.player.y)<Math.hypot(best.x-game.player.x,best.y-game.player.y) ? enemy : best, null);
+  const left = broadsideTarget(game.player,game.enemies,-1,SHIP_TYPES.panokseon.range * game.bonuses.range);
+  const right = broadsideTarget(game.player,game.enemies,1,SHIP_TYPES.panokseon.range * game.bonuses.range);
+  $('battleTip').textContent = !nearest ? '적선을 기다리는 중' : game.player.aimSteady < .58 ? '급선회 중 · 방향을 잡으면 포격합니다' : left || right ? `${left ? '좌현' : '우현'} 화포 사격 범위!` : Math.hypot(nearest.x-game.player.x,nearest.y-game.player.y)>SHIP_TYPES.panokseon.range*game.bonuses.range ? '적선에 접근한 뒤 측면을 잡으세요' : '적선을 뱃머리가 아닌 좌우에 두세요';
 }
 
 function drawOcean(left, top, width, height) {
@@ -334,6 +341,21 @@ function drawShip(ship) {
   ctx.fillRect(-r * .49, -r * .35, r * .98, r * .65);
   ctx.strokeStyle = friendly ? '#e0c58c' : '#b98369';
   ctx.strokeRect(-r * .49, -r * .35, r * .98, r * .65);
+  if (ship.type === 'atakebune') {
+    // The high, tiered fighting deck makes the largest enemy readable at game zoom.
+    ctx.fillStyle = '#b47552';
+    ctx.fillRect(-r * .62, -r * .62, r * 1.24, r * .42);
+    ctx.fillRect(-r * .53, r * .36, r * 1.06, r * .27);
+    ctx.fillStyle = '#6f3934';
+    ctx.fillRect(-r * .42, -r * .55, r * .84, r * .18);
+    ctx.fillRect(-r * .35, r * .4, r * .7, r * .12);
+    ctx.strokeStyle = '#f0bc888c';
+    ctx.strokeRect(-r * .62, -r * .62, r * 1.24, r * .42);
+  } else if (ship.type === 'sekibune') {
+    ctx.fillStyle = '#b86b54';
+    ctx.fillRect(-r * .44, -r * .48, r * .88, r * .12);
+    ctx.fillRect(-r * .44, r * .31, r * .88, r * .12);
+  }
   ctx.fillStyle = '#302d2a';
   for (const side of [-1, 1]) {
     for (let i = -1; i <= 1; i++) {
@@ -373,6 +395,23 @@ function drawShip(ship) {
     ctx.beginPath();ctx.arc(ship.x, ship.y, r * 1.85, 0, Math.PI * 2);ctx.stroke();
     ctx.restore();
   }
+}
+
+function drawBroadsideGuides() {
+  if (game.mode !== 'playing' || game.player.dead) return;
+  ctx.save();
+  ctx.translate(game.player.x, game.player.y);
+  ctx.rotate(game.player.angle);
+  for (const side of [-1, 1]) {
+    const active = game.player.aimSteady >= .58 && !!broadsideTarget(game.player, game.enemies, side, SHIP_TYPES.panokseon.range * game.bonuses.range);
+    const center = side === 1 ? 0 : Math.PI;
+    ctx.beginPath();
+    ctx.arc(0, 0, 61, center - 0.73, center + 0.73);
+    ctx.strokeStyle = active ? '#ffe5a9e8' : '#e7d6a45c';
+    ctx.lineWidth = active ? 4.5 : 2;
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 function drawShots() {
@@ -416,9 +455,10 @@ function drawEffects() {
 }
 
 function drawRadar() {
-  if (viewport.w < 800 || viewport.h < 540) return;
-  const w = 116, h = 85;
-  const x = viewport.w - w - 21, y = viewport.h - h - 25;
+  const compact = viewport.w < 800 || viewport.h < 540;
+  const w = compact ? 94 : 116, h = compact ? 69 : 85;
+  const x = compact ? 12 : viewport.w - w - 21;
+  const y = compact ? Math.max(132, viewport.h - h - 146) : viewport.h - h - 25;
   ctx.fillStyle = '#092e3fdf';
   ctx.strokeStyle = '#bfdcdb65';ctx.lineWidth=1;
   ctx.beginPath();ctx.roundRect(x,y,w,h,10);ctx.fill();ctx.stroke();
@@ -429,7 +469,7 @@ function drawRadar() {
     ctx.beginPath();ctx.arc(x+9+(ship.x/WORLD.width)*(w-18),y+9+(ship.y/WORLD.height)*(h-18),radius,0,Math.PI*2);ctx.fill();
   };
   for(const island of ISLANDS) dot(island,'#6c9277',island.radius/75);
-  for(const enemy of game.enemies) dot(enemy,'#e88e72',2.6);
+  for(const enemy of game.enemies) dot(enemy,enemy.type==='atakebune'?'#ffd491':'#e88e72',enemy.type==='atakebune'?4.3:2.6);
   for(const ally of game.allies) if(!ally.dead) dot(ally,'#b7e2cf',3);
   dot(game.player,'#f8d78f',4);
 }
@@ -456,6 +496,7 @@ function render() {
   for(const enemy of game.enemies) drawShip(enemy);
   for(const ally of game.allies) drawShip(ally);
   drawShip(game.player);
+  drawBroadsideGuides();
   drawShots();
   drawEffects();
   ctx.restore();
@@ -469,11 +510,9 @@ function runFrame(now) {
   if (game.mode === 'playing') {
     const desired = { ...input };
     if(joystick.active) {
-      const magnitude = Math.hypot(joystick.x,joystick.y);
-      if (magnitude > .22) {
-        desired.aimAngle=Math.atan2(joystick.x,-joystick.y);
-        desired.throttle=clamp(magnitude,.4,1);
-      }
+      // Stick X is a relative rudder (same as A/D); stick Y is throttle (W/S).
+      desired.turn=Math.abs(joystick.x) > .15 ? joystick.x : 0;
+      desired.throttle=Math.abs(joystick.y) > .15 ? -joystick.y : 0;
     }
     stepGame(game, desired, dt);
   }
@@ -481,7 +520,7 @@ function runFrame(now) {
     const event=game.events.shift();
     if(event.kind==='fire') playSound('fire');
     if(event.kind==='hit') playSound('hit');
-    if(['wave','signal','upgrade','victory','defeat'].includes(event.kind)) toast(event.text);
+    if(['wave','signal','upgrade','victory','defeat','boss'].includes(event.kind)) toast(event.text);
   }
   if(game.mode!==oldMode){
     oldMode=game.mode;
