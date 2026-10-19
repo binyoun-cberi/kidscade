@@ -128,7 +128,7 @@ test('corrupt values cannot escape simulation limits',()=>{
 test('care advice explains the same water, nutrition and weed thresholds used by growth simulation',()=>{
   const state=createFarmState(),rice=fieldById(state,'rice-1'),carrot=fieldById(state,'carrot-1');
   rice.planted=true;rice.waterDepthCm=.5;
-  assert.match(fieldCareAdvice(rice),/물 부족/);
+  assert.match(fieldCareAdvice(rice),/물이 부족/);
   rice.waterDepthCm=8;
   assert.match(fieldCareAdvice(rice),/너무 깊/);
   carrot.nitrogen=.1;
