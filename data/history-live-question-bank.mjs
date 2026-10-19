@@ -1,5 +1,6 @@
 import { HISTORY_FIGURE_FACTS } from './history-live-figure-facts.mjs';
 import { HISTORY_HERITAGE_FACTS } from './history-live-heritage-facts.mjs';
+import { HERITAGE_MEDIA } from './history-heritage-media.mjs';
 const CORE_FACTS = [
   {
     "era": "선사",
@@ -1611,7 +1612,8 @@ function buildBank() {
       id:`heritage-${index}`,era:fact.era,difficulty:2,
       q:`문화유산 이름 맞히기\n${fact.clue}\n이 문화유산의 이름은 무엇일까요?`,
       o:[fact.term,...distractors],a:0,
-      e:`${fact.term}: ${fact.clue}`,sourceFact:index,family:'heritage-identify'
+      e:`${fact.term}: ${fact.clue}`,sourceFact:index,family:'heritage-identify',
+      ...(HERITAGE_MEDIA[fact.term]?{media:HERITAGE_MEDIA[fact.term]}:{})
     });
   });
   return out;

@@ -137,7 +137,8 @@ export function snapshot(state, auth, now) {
       eras:state.eras, scoreMode:state.scoreMode, round:state.round, roundId:state.roundId }, players };
   const { q, display } = question(state);
   if (q && ['question','reveal','finished'].includes(state.status)) out.question = {number:state.qi+1,total:state.questionCount,
-    difficulty:q.difficulty,prompt:q.q,options:display.options,kind:q.family==='ox'?'ox':'choice'};
+    difficulty:q.difficulty,prompt:q.q,options:display.options,kind:q.family==='ox'?'ox':'choice',
+    ...(q.media?{media:q.media}:{})};
   if (q && state.status === 'reveal') {
     const answers = Object.values(state.answers), counts = q.o.map(() => 0);
     for (const a of answers) counts[a.optionIndex]++;

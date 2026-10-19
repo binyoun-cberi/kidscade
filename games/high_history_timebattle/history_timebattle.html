@@ -38,6 +38,11 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
 .solo-answer.correct{color:#6ee7b7}.solo-answer.wrong{color:#ff9aa5}.solo-answer.timeout{color:#ffd75e}
 .solo-run-body{padding:0 12px 12px}.solo-history-list{max-height:70vh;overflow:auto;padding-right:2px}
 .solo-empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed #31506f;border-radius:14px}
+.heritage-photo{width:min(100%,550px);margin:-3px auto 20px;padding:12px;border-radius:19px;background:#071a30;border:1px solid #41678d;text-align:center}
+.heritage-photo img{display:block;max-width:100%;width:auto;height:auto;max-height:260px;object-fit:contain;margin:0 auto;border-radius:10px}
+.heritage-photo figcaption{margin-top:9px;font-size:12px;line-height:1.5;color:#b6cce3}
+.heritage-photo a{color:#a9d8ff;text-underline-offset:3px}
+@media(max-width:640px){.heritage-photo{padding:8px;margin-top:-8px}.heritage-photo img{max-height:200px}}
 @media(max-width:640px){.solo-qitem>summary,.solo-run>summary{align-items:flex-start;flex-direction:column}.solo-history-list{max-height:65vh}}
 </style>
 <link rel="stylesheet" href="timebattle-ui-v2.css?v=2">
@@ -187,6 +192,7 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
       <div id="timer" class="timer">12</div>
     </div>
     <div id="question" class="question"></div>
+    <div id="heritageQuestionPhoto" class="heritage-photo hidden" aria-label="문화유산 사진"></div>
     <div id="answers" class="answers"></div>
     <div id="submitted" class="notice hidden">답을 보냈어요! 결과를 기다려 주세요.</div>
     <div id="hostProgress" class="hidden">
@@ -200,6 +206,7 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
       <div class="card">
         <div class="qhead"><div><span id="revealEra" class="era"></span><div id="revealNum" class="tiny"></div></div><div id="myScore" class="score"></div></div>
         <div id="comboChip" class="combo-chip hidden"></div><div id="revealQuestion" class="question"></div>
+        <div id="heritageRevealPhoto" class="heritage-photo hidden" aria-label="문화유산 사진과 출처"></div>
         <div id="revealAnswers" class="answers"></div>
         <div id="explanation" class="explain"></div>
         <div id="hostNext" class="toolbar hidden"><button id="nextQuestionBtn" class="btn primary" onclick="hostNext()">다음 문제</button></div>
@@ -569,7 +576,7 @@ function soloState(status){
   const q=soloGame.questions[soloGame.index],number=soloGame.index+1;
   const player={id:'solo',nickname:session.nickname,score:soloGame.score,streak:soloGame.streak,rank:1,answered:Boolean(soloGame.last),online:true};
   const isShort=q.soloKind==='short';
-  const state={room:{status,questionNumber:number,questionCount:soloGame.questions.length,secondsPerQuestion:soloGame.seconds,deadlineAt:new Date(soloGame.deadlineAt).toISOString(),serverNow:new Date().toISOString(),checkpoints:[],questionMode:soloGame.settings.questionMode},players:[player],question:{number,total:soloGame.questions.length,difficulty:q.difficulty,prompt:q.q,options:isShort?[]:q.o,kind:isShort?'short':q.family==='ox'?'ox':'choice',...(status==='reveal'?{era:q.era}:{})}};
+  const state={room:{status,questionNumber:number,questionCount:soloGame.questions.length,secondsPerQuestion:soloGame.seconds,deadlineAt:new Date(soloGame.deadlineAt).toISOString(),serverNow:new Date().toISOString(),checkpoints:[],questionMode:soloGame.settings.questionMode},players:[player],question:{number,total:soloGame.questions.length,difficulty:q.difficulty,prompt:q.q,options:isShort?[]:q.o,kind:isShort?'short':q.family==='ox'?'ox':'choice',...(q.media?{media:q.media}:{}),...(status==='reveal'?{era:q.era}:{})}};
   if(status==='reveal'){
     const stats=isShort?[]:Array.from({length:q.o.length},()=>0); if(!isShort&&soloGame.last?.option>=0)stats[soloGame.last.option]=1;
     state.reveal={answerIndex:isShort?-1:q.a,answerText:isShort?(q.shortAnswer||q.o[q.a]||''):'',era:q.era,explanation:q.e,optionStats:stats,answeredCount:soloGame.last?1:0,correctCount:soloGame.last?.correct?1:0};
@@ -706,10 +713,22 @@ function renderLobby(s){
   $('hostLobbyButtons').classList.toggle('hidden',session.role!=='host');$('studentWait').classList.toggle('hidden',session.role!=='player');
   $('roster').innerHTML=s.players.map(p=>'<span class="pill '+(p.online?'':'off')+'">'+esc(p.nickname)+'</span>').join('');
 }
+function renderHeritagePhoto(id,media,showSource=false){
+  const target=$(id);target.replaceChildren();target.classList.add('hidden');
+  if(!media||!/^\/games\/high_history_timebattle\/heritage-images\/[a-f0-9]{16}\.webp$/.test(media.src||''))return;
+  const photo=document.createElement('img');photo.src=media.src;photo.alt='문화유산 사진';photo.loading='eager';photo.decoding='async';
+  photo.onerror=()=>{if(photo.isConnected)target.classList.add('hidden')};
+  const credit=document.createElement('figcaption');credit.textContent='사진: 국가유산청';
+  if(showSource&&/^https:\/\/www\.khs\.go\.kr\/cha\/SearchImageOpenapi\.do\?/.test(media.sourceUrl||'')){
+    const link=document.createElement('a');link.href=media.sourceUrl;link.target='_blank';link.rel='noopener noreferrer';link.textContent=' · 원본 정보';credit.append(link);
+  }
+  target.append(photo,credit);target.classList.remove('hidden');
+}
 function renderQuestion(s){
   showOnly('game');const q=s.question;const fxKey='q:'+String(s.room.round||0)+':'+String(q.number);fxOnce(fxKey,()=>{playSfx('ui.open',{volume:.24,rate:1.05});animateQuestion()});
   const typeName={people:'인물 이름 맞히기',heritage:'문화유산 맞히기',ox:'OX 문제',mixed:'한국사 혼합 문제','choice-short':'한국사 주관식'};
   $('qEra').textContent=typeName[s.room.questionMode]||'한국사 퀴즈';$('qNum').textContent=(session.role==='solo'?'':('제 '+Number(s.room.round||1)+'판 · '))+q.number+' / '+q.total;$('question').textContent=q.prompt;$('submitted').classList.add('hidden');
+  renderHeritagePhoto('heritageQuestionPhoto',q.media);
   $('hostProgress').classList.toggle('hidden',session.role!=='host');
   const n=s.players.filter(p=>p.answered).length;$('answeredCount').textContent=n;$('totalCount').textContent=s.players.length;$('answerBar').style.width=(s.players.length?n/s.players.length*100:0)+'%';
   const self=s.players.find(p=>p.id===session.playerId),alreadySubmitted=session.role==='solo'?Boolean(soloGame?.last):(Boolean(self?.answered)||answeredFor===s.room.questionNumber);
@@ -741,6 +760,7 @@ function renderReveal(s){
   });
   $('nextQuestionBtn').textContent=session.role==='solo'?'다음 문제로':'다음 문제';
   $('revealEra').textContent=r.era||q.era||'시대 확인';$('revealNum').textContent=(session.role==='solo'?'':('제 '+Number(s.room.round||1)+'판 · '))+q.number+' / '+q.total;$('revealQuestion').textContent=q.prompt;
+  renderHeritagePhoto('heritageRevealPhoto',q.media,true);
   const shortReveal=session.role==='solo'&&q.kind==='short';$('revealAnswers').classList.toggle('ox',q.kind==='ox');$('revealAnswers').classList.toggle('short',shortReveal);
   if(shortReveal){const mine=soloGame?.last?.inputText||'미응답',ok=Boolean(soloGame?.last?.correct);$('revealAnswers').innerHTML='<div class="short-reveal '+(ok?'good':'bad')+'"><div>내 답 · <b>'+esc(mine)+'</b></div><div>정답 · <b>'+esc(r.answerText||'')+'</b></div></div>'}
   else $('revealAnswers').innerHTML=q.options.map((o,i)=>'<div class="answer '+(i===r.answerIndex?'correct':'wrong')+' '+(i===r.answerIndex?'fx-correct':((i===lastChosenOption&&i!==r.answerIndex)?'fx-wrong':''))+'">'+esc(o)+(session.role==='solo'?'':' <small>('+r.optionStats[i]+'명)</small>')+'</div>').join('');

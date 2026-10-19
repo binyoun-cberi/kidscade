@@ -3,6 +3,41 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { QUESTIONS, MAX_PLAYERS } from '../worker/history-live.mjs';
 import { QUESTION_BANK, CORE_HISTORY_FACTS, QUESTION_BANK_SIZE, ERA_ORDER, normalizeEraSelection, pickHistoryQuestions, chronologicalQuestionIndexes, hasHistoricalFigures, hasHistoricalHeritage, isHeritageFact } from '../data/history-live-question-bank.mjs';
+import { HERITAGE_MEDIA } from '../data/history-heritage-media.mjs';
+
+test('heritage photo quiz caches approved matches and keeps text fallback', () => {
+  const source = JSON.parse(fs.readFileSync(new URL('../data/history-heritage-images.json', import.meta.url), 'utf8'));
+  const photos = Object.entries(HERITAGE_MEDIA);
+  const questions = QUESTION_BANK.filter(q => q.family === 'heritage-identify');
+  assert.ok(photos.length >= 40, 'cache should contain a useful selection of local images');
+  assert.ok(questions.length > photos.length, 'questions without matching photos must remain playable');
+  assert.ok(source.records.length >= questions.length, 'keep candidate and rejection provenance');
+  for (const [term, media] of photos) {
+    assert.match(media.src, /^\/games\/high_history_timebattle\/heritage-images\/[a-f0-9]{16}\.webp$/);
+    assert.match(media.sourceUrl, /^https:\/\/www\.khs\.go\.kr\/cha\/SearchImageOpenapi\.do\?/);
+    assert.equal(media.credit, '사진: 국가유산청');
+    const question = questions.find(q => q.o[q.a] === term);
+    assert.ok(question, term + ' requires a playable question');
+    assert.deepEqual(question.media, media);
+    const absolutePath = new URL('..' + media.src, import.meta.url);
+    assert.ok(fs.statSync(absolutePath).size > 1500, term + ' must be locally cached');
+    const record=source.records.find(r=>r.term===term);
+    assert.equal(record?.status,'candidate');
+    assert.equal(record?.rightsCode,'A');
+  }
+  assert.equal(questions.find(q=>q.o[q.a]==='불국사')?.media, undefined, 'a photo of Dabotap is not a photo of the temple');
+  assert.equal(questions.find(q=>q.o[q.a]==='천마총')?.media, undefined, 'a photo of Cheonmado is not a photo of the tomb');
+  assert.ok(questions.some(q=>!q.media), 'unmatched heritage clues should stay text-only');
+  const html=fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html',import.meta.url),'utf8');
+  const room=fs.readFileSync(new URL('../worker/history-room-model.mjs',import.meta.url),'utf8');
+  const legacy=fs.readFileSync(new URL('../worker/history-live.mjs',import.meta.url),'utf8');
+  assert.match(html,/function renderHeritagePhoto/);
+  assert.match(html,/heritageQuestionPhoto/);
+  assert.match(html,/heritageRevealPhoto/);
+  assert.match(html,/q\.media\?\{media:q\.media\}/);
+  assert.match(room,/q\.media\?\{media:q\.media\}/);
+  assert.match(legacy,/q\.media\?\{media:q\.media\}/);
+});
 
 test('history live supports a full classroom', () => {
   assert.equal(MAX_PLAYERS, 26);
