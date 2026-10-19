@@ -5,7 +5,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {createFarmState,restoreFarmState,fieldById,applyFarmStrip,
-  canWorkFieldStrip,advanceFarmDay,applyFarmAction} from '../games/korean-farm/farming/farm-sim.mjs';
+  canWorkFieldStrip,advanceFarmDay,applyFarmAction,scoopCompost} from '../games/korean-farm/farming/farm-sim.mjs';
 import {WORK_STRIPS,nextWorkStrip,workStripPosition,completedWorkStrips}
   from '../games/korean-farm/farming/field-work.mjs';
 import {FIELD_DEFS} from '../games/korean-farm/world.mjs';
@@ -124,16 +124,39 @@ test('world positions stay inside plot, controls and visible rows are wired',()=
     }
   }
   const game=src('game.js'),html=src('index.html'),view=src('rendering/field-work-grid.js');
-  for(const token of ['fieldWorkHud','workStripGrid','workOne','workStripFill','exitFieldWork'])
-    assert.match(html,new RegExp('id="'+token+'"'));
+  for(const token of ['fieldWorkHud','workStripFill','exitFieldWork'])assert.match(html,new RegExp('id="'+token+'"'));
+  for(const token of ['workStripGrid','workOne','seedlingGrid','plantOne'])assert.doesNotMatch(html,new RegExp('id="'+token+'"'));
   assert.match(game,/applyFarmStrip\(state,plot\.id,event\.action,event\.cellIndex\)/);
   assert.match(game,/fieldWorkHits/);
   assert.match(game,/runFieldStrip/);
   assert.match(view,/weedClumps/);
   assert.match(view,/furrows/);
   assert.match(view,/stubble/);
+  assert.match(view,/fertilizerPatches/);
+  assert.match(game,/requestStation\('market'\)/);
+  assert.match(game,/requestStation\('home'\)/);
+  assert.match(game,/scoopCompost\(state\)/);
+  assert.match(game,/runSeedlingPlant\(cell\.userData\.cellIndex\)/);
   assert.match(src('animation/farmer-animator.js'),/const sickle=make\('sickle'\)/);
+  assert.match(src('animation/farmer-animator.js'),/const shovel=make\('shovel'\)/);
   for(const p of ['game.js','rendering/field-work-grid.js','farming/farm-sim.mjs','farming/field-work.mjs']){
     execFileSync(process.execPath,['--check',path.join(repo,'games/korean-farm',p)],{stdio:'pipe'});
   }
+});
+
+
+test('compost is collected at the heap and applied strip by strip',()=>{
+  const state=createFarmState(),field=fieldById(state,'carrot-1');
+  assert.equal(state.inventory.fertilizer,0);
+  assert.equal(scoopCompost(state).ok,true);
+  assert.equal(state.inventory.fertilizer,1);
+  const initialNitrogen=field.nitrogen;
+  assert.equal(applyFarmStrip(state,field.id,'fertilize',0).ok,true);
+  assert.equal(field.work.fertilized[0],true);
+  assert.equal(state.inventory.fertilizer,0);
+  assert.ok(field.nitrogen>initialNitrogen);
+  assert.equal(applyFarmStrip(state,field.id,'fertilize',0).ok,false);
+  assert.equal(scoopCompost(state).ok,true);
+  assert.equal(advanceFarmDay(state).ok,true);
+  assert.equal(field.work.fertilized.every(Boolean),false);
 });
