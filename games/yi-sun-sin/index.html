@@ -35,6 +35,7 @@
       <div class="health-track" id="hullProgress" role="progressbar" aria-label="선체 내구도" aria-valuemin="0" aria-valuemax="360" aria-valuenow="360"><span id="hullFill"></span></div>
       <div class="ship-stats"><span>격침 <b id="killCount">0</b>척</span><span>전공 <b id="scoreCount">0</b></span></div>
       <div class="escort-status" id="escortStatus">협선 · 호위 준비</div>
+      <div class="exposure-warning" id="exposureWarning" role="status" aria-live="off" hidden></div>
     </section>
 
     <aside class="mission-panel" aria-label="전투 목표">
@@ -43,6 +44,7 @@
       <p id="missionText">배의 좌우를 적에게 향하게 하여 함포를 발사하세요.</p>
       <div class="mission-progress"><i id="missionFill"></i></div>
       <span id="missionCounter">적선 0 / 5</span>
+      <div class="tactic-status" id="tacticStatus">전술 임무 · 측면 함포 명중 0 / 3</div>
     </aside>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -68,6 +70,10 @@
         <div class="dialog-emblem" id="dialogEmblem" aria-hidden="true">水</div>
         <h1 id="overlayTitle">옥포로 출전하다</h1>
         <p id="overlayText">1592년, 조선 수군이 적선을 향해 바다로 나섭니다. 기함을 조종하고 아군과 함께 적의 함대를 물리치세요.</p>
+        <div id="difficultyPicker" class="difficulty-picker" role="group" aria-label="전투 난이도 선택">
+          <button id="normalDifficulty" class="difficulty-choice selected" type="button" aria-pressed="true"><b>보통</b><small>기본 함대 전술 · 처음 도전</small></button>
+          <button id="hardDifficulty" class="difficulty-choice" type="button" aria-pressed="false"><b>어려움</b><small>적선 협공 AI · 전공 30% 추가</small></button>
+        </div>
         <div class="how-to" id="howTo"><div><span>01</span> W·S로 전후진, A·D로 좌우 선회해요. 모바일에서도 조이스틱으로 같은 방식으로 움직여요.</div><div><span>02</span> 적을 <b>배의 왼쪽 또는 오른쪽</b>에 두고 <b>선회를 멈추면</b> 자동 포격해요. 급선회 중에는 포격할 수 없어요.</div><div><span>03</span> <b>세키부네가 가까이 오면 도선을 시도</b>합니다. 거리를 벌리세요. 높은 갑판의 판옥선은 접근전 피해를 줄입니다.</div><div><span>04</span> 협선은 호위·정찰, 사후선은 연락·정찰을 맡습니다. <b>1 집결 · 2 집중 · 3 엄호</b>로 협선에 명령하세요. 교전 후 화포·지원선을 보강할 수 있어요.</div></div>
         <section id="shipGuide" class="ship-guide" aria-label="조선과 일본의 함선 일람" hidden></section>
         <div class="dialog-actions" id="dialogActions"><button id="startBtn" class="primary-button" type="button">옥포로 출전하기 <span aria-hidden="true">→</span></button></div>
