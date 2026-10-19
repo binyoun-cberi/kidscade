@@ -305,10 +305,13 @@ test('Halloween horror rail follows season and respects catalog readiness and ag
   const horror=railAt('2026-10-10');
   assert.ok(horror);
   assert.equal(horror.title,'🎃 공포');
+  const haunted=catalog.find(game => game.id === 'high_haunted_school_exorcist');
+  assert.equal(haunted?.qualityStatus,'standard');
   assert.deepEqual(horror.games.map(game => game.id),[
     'high_folklore_night_guard',
     'high_ota_typographic_horror',
     'high_midnight_diner',
+    'high_haunted_school_exorcist',
     'high_quarantine_17',
     'math_tower_defense'
   ]);
