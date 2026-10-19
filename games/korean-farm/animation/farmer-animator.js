@@ -50,6 +50,9 @@ function toolVariants(hand){
   cylinder(basket,.24,.16,.26,0xb58b58,.09,-.39,.01);
   const handle=new THREE.Mesh(new THREE.TorusGeometry(.19,.025,4,12,Math.PI),material(0x9e744b));
   handle.position.set(.09,-.26,.01);basket.add(handle);
+  const shovel=make('shovel');
+  cylinder(shovel,.028,.035,.72,0x886846,.12,-.27,-.06).rotation.z=-.32;
+  const scoop=box(shovel,.2,.045,.16,0xaaa699,.24,-.6,-.06);scoop.rotation.z=-.2;
   const lever=make('lever');
   cylinder(lever,.035,.04,.55,0x977450,.1,-.29,-.04).rotation.z=-.3;
   sphere(lever,.07,0x6d8968,.18,-.03,-.04);
