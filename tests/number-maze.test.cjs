@@ -41,3 +41,33 @@ test('같은 씨앗은 같은 퍼즐을 만들고 다른 씨앗은 대체로 다
   assert.deepEqual(first, Engine.buildPuzzle({ grade: 3, tier: 3, seed: '2026-10-19' }));
   assert.notDeepEqual(first.solution, Engine.buildPuzzle({ grade: 3, tier: 3, seed: '2026-10-20' }).solution);
 });
+
+test('혼합계산 1~3학년 × 5단계는 실제 혼합 수식과 유일해를 보장한다', () => {
+  for (let grade = 1; grade <= 3; grade++) {
+    for (let tier = 1; tier <= 5; tier++) {
+      for (let seed = 0; seed < 50; seed++) {
+        const puzzle = Engine.buildPuzzle({ grade, tier, seed: `mix-${seed}`, mixed: true });
+        const flags = Engine.mixFeatures(puzzle.lines);
+        assert.equal(puzzle.mixed, true);
+        assert.equal(puzzle.fallback, undefined, `폴백: ${grade}/${tier}/${seed}`);
+        assert.equal(Engine.countSolutions(puzzle, 2), 1, `중복해: ${grade}/${tier}/${seed}`);
+        assert.equal(flags.mixed, true);
+        if (grade === 1 || grade === 2 && tier === 1) assert.equal(flags.addSub, true);
+        if (grade === 2 && tier >= 2 || grade === 3) assert.equal(flags.priority, true);
+        if (grade === 3 && tier >= 3) assert.equal(flags.divisionMixed, true);
+        for (const line of puzzle.lines) assert.equal(Engine.evaluate(line.cells.map(i => puzzle.solution[i]), line.ops), line.target);
+      }
+    }
+  }
+});
+
+test('일반 모험 후반에는 학년별 혼합계산이 포함된다', () => {
+  for (let grade = 1; grade <= 3; grade++) {
+    const puzzle = Engine.buildPuzzle({ grade, tier: 5, seed: 'mixed-in-adventure' });
+    const features = Engine.mixFeatures(puzzle.lines);
+    if (grade === 1) assert.equal(features.addSub, true);
+    if (grade >= 2) assert.equal(features.priority, true);
+    if (grade === 3) assert.equal(features.division, true);
+    assert.equal(Engine.countSolutions(puzzle, 2), 1);
+  }
+});
