@@ -2,6 +2,34 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "tod_mot_chatgetda_kkwaekkori",
+      "addedAt": "2026-10-19T16:00:00+09:00",
+      "title": "못 찾겠다 꾀꼬리",
+      "href": "games/tod_mot_chatgetda_kkwaekkori/index.html?v=1",
+      "category": "trivia",
+      "age": "toddler",
+      "ages": [
+        "toddler",
+        "low"
+      ],
+      "icon": "🐤",
+      "cover": "assets/gate-image/mot-chatgetda-kkwaekkori.svg",
+      "description": "주민들이 산책하고 자동차가 지나는 3D 마을에서 모자와 가방을 단서로 친구를 찾아요! 작은 마을·북적북적 동네·대도시를 골라 매번 달라지는 주민과 찾기 놀이를 즐겨요.",
+      "subject": "thinking",
+      "genre": "puzzle",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "korean_farm",
       "addedAt": "2026-10-17T18:40:00+09:00",
       "title": "논두렁 너머",
