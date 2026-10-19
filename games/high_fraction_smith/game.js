@@ -44,8 +44,7 @@ function newPuzzle(){
 }
 function render(){
  document.body.dataset.heat=String(Math.max(1,state.heat));
- el.order.textContent=state.orders;el.score.textContent=state.score;el.gold.textContent=progress.gold+' G';el.heat.textContent='🔥'.repeat(Math.max(1,state.heat));el.timer.textContent=state.mode==='rush'?Math.max(0,Math.ceil(state.time)):'∞';
- el.timer.classList.toggle('danger',state.mode==='rush'&&state.time<=10);
+ el.order.textContent=state.orders;el.score.textContent=state.score;el.gold.textContent=progress.gold+' G';el.heat.textContent='🔥'.repeat(Math.max(1,state.heat));renderTimer();
  el.tray.innerHTML='';
  for(const p of state.pieces.values()){
    if(state.slots.includes(p.id))continue;
@@ -56,6 +55,10 @@ function render(){
  });
  if(state.slots[0]&&state.slots[1]){const a=state.pieces.get(state.slots[0]),b=state.pieces.get(state.slots[1]);el.equation.textContent=pieceDisplay(a)+'  ?  '+pieceDisplay(b)+'  =  ?'}else el.equation.textContent='재료 두 개를 모루에 올려요';
  el.undo.disabled=state.phase!=='math'||state.history.length===0;el.restart.disabled=state.phase!=='math';el.hint.disabled=state.phase!=='math';
+}
+function renderTimer(){
+ el.timer.textContent=state.mode==='rush'?Math.max(0,Math.ceil(state.time)):'∞';
+ el.timer.classList.toggle('danger',state.mode==='rush'&&state.time<=10);
 }
 function putInSlot(id,index=null){
  if(state.busy||state.phase!=='math'||!state.pieces.has(id))return;
@@ -205,7 +208,7 @@ function start(mode){
  sequence++;stopMarker();clearInterval(state.timerId);
  state={...state,mode,phase:'math',puzzle:null,commission:null,craft:null,pieces:new Map(),slots:[null,null],score:0,combo:0,heat:1,orders:0,strikes:0,time:mode==='rush'?90:0,running:true,busy:false,history:[],resultSeq:0,timerId:0};
  el.start.classList.remove('open');el.finish.classList.remove('open');el.craft.classList.remove('open');newPuzzle();
- if(mode==='rush'){let last=performance.now();state.timerId=setInterval(()=>{const now=performance.now();state.time-=Math.max(0,(now-last)/1000);last=now;if(state.time<=0){state.time=0;render();finish('러시 종료!','완성한 주문 '+state.orders+'개 · 최고 HEAT '+state.heat,'🔥')}else render()},200)}
+ if(mode==='rush'){let last=performance.now();state.timerId=setInterval(()=>{const now=performance.now();state.time-=Math.max(0,(now-last)/1000);last=now;if(state.time<=0){state.time=0;renderTimer();finish('러시 종료!','완성한 주문 '+state.orders+'개 · 최고 HEAT '+state.heat,'🔥')}else renderTimer()},200)}
 }
 function finish(title,text,icon='⚒️'){if(!state.running)return;sequence++;state.phase='finish';state.running=false;state.busy=false;stopMarker();clearInterval(state.timerId);el.craft.classList.remove('open');saveBest();play('fanfare',.42);$('#finishIcon').textContent=icon;el.finishTitle.textContent=title;el.finishText.textContent=text;el.finishScore.textContent=state.score+'점 · '+progress.gold+' G 보유';el.finish.classList.add('open')}
 $$('[data-mode]').forEach(b=>b.addEventListener('click',()=>start(b.dataset.mode)));el.hint.addEventListener('click',hint);el.undo.addEventListener('click',undo);el.restart.addEventListener('click',restartOrder);el.craftAction.addEventListener('click',craftAction);
