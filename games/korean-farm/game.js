@@ -564,9 +564,10 @@ function refreshPlantingHud(){
   $('plantingHint').textContent=farmFlow.busy?'농부가 모를 심는 중이에요…':
     count===0?'논의 빈자리를 눌러 모를 심으세요.':'빈자리를 눌러 다음 모를 심으세요.';
   for(const def of FIELD_DEFS)if(def.kind==='rice'){
-    const record=plotMeshes.get(def.id);
-    record?.planting?.refresh(fieldById(state,def.id),selectedSeedling,
-      plantingMode&&def.id===state.selected,!fieldById(state,def.id).planted&&fieldById(state,def.id).tilled&&state.inventory.seedRice>0);
+    const record=plotMeshes.get(def.id),field=fieldById(state,def.id);
+    const active=plantingMode&&def.id===state.selected;
+    record?.planting?.refresh(field,active?selectedSeedling:-1,active,
+      !field.planted&&field.tilled&&state.inventory.seedRice>0);
   }
 }
 function enterPlantingMode(){
