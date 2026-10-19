@@ -117,6 +117,7 @@ function showOverlay(mode) {
   $('shipGuide').hidden = true;
   $('shipGuide').replaceChildren();
   $('historyNote').style.display = mode === 'menu' || mode === 'victory' ? '' : 'none';
+  $('historyNote').textContent = `${game.battle.history} 날짜는 음력 기준이며, 함선 규모·세부 지형·해류 수치는 게임에 맞게 재구성했습니다.`;
   $('dialogEmblem').textContent = mode === 'victory' ? '勝' : mode === 'defeat' ? '再' : mode === 'upgrade' ? '備' : '水';
   const actions = $('dialogActions');
   actions.replaceChildren();
@@ -160,7 +161,6 @@ function showOverlay(mode) {
     $('overlayEyebrow').textContent = game.battle.date;
     $('overlayTitle').textContent = `${game.battle.title}에 출전하다`;
     $('overlayText').textContent = game.battle.summary;
-    $('historyNote').textContent = `${game.battle.history} 날짜는 음력 기준이며, 병력 규모·함선 성능·세부 지형은 게임에 맞게 재구성했습니다.`;
     primary(`${game.battle.title} 출전하기 →`, () => { beginRun(); playSound('confirm'); });
     const guideButton = document.createElement('button');
     guideButton.type = 'button';
@@ -236,6 +236,7 @@ function showOverlay(mode) {
     const best = readRecord();
     const completed = game.tactical.completed.filter(Boolean).length;
     $('overlayText').textContent = `격침 ${game.kills}척 · 전술 임무 ${completed}/3 · 전공 ${game.score.toLocaleString('ko-KR')} · 소요 ${formatTime(game.seconds)}${best ? ` · 최고 기록 ${best.score.toLocaleString('ko-KR')}` : ''}`;
+    if (game.battleId === 'noryang') $('overlayTitle').textContent = '마지막 승전, 바다에 남은 이름';
     const next = BATTLE_ORDER[BATTLE_ORDER.indexOf(game.battleId) + 1];
     if (next) primary(`다음 장 · ${BATTLES[next].title} →`, () => selectBattle(next));
     else primary('마지막 전장 다시 출전 →', restartRun);
@@ -243,7 +244,7 @@ function showOverlay(mode) {
   } else if (mode === 'defeat') {
     $('overlayEyebrow').textContent = `${game.battle.title} · 출전 실패`;
     $('overlayTitle').textContent = '기함이 전투를 이어갈 수 없습니다';
-    $('overlayText').textContent = game.battle.retreat ? '손상된 적선이 포구에서 빠져나갔거나 기함이 격침되었습니다. 좁은 수로의 퇴로를 먼저 막아 보세요.' : `격침 ${game.kills}척. 적선을 뱃머리가 아닌 판옥선의 좌우에 두고, 필요할 때 협선의 호위를 요청하세요.`;
+    $('overlayText').textContent = game.battle.retreat ? '적선이 퇴로를 빠져나갔거나 기함이 격침되었습니다. 탈출로를 먼저 봉쇄하고 기함을 보호하세요.' : `격침 ${game.kills}척. 적선을 뱃머리가 아닌 판옥선의 좌우에 두고, 필요할 때 협선의 호위를 요청하세요.`;
     primary('다시 도전하기 →', restartRun);
     secondary('난이도 다시 고르기', backToMenu);
   }
@@ -300,12 +301,12 @@ function syncHud() {
   const destroyed = Math.min(total, game.spawned - game.enemies.length);
   $('battleName').textContent = game.battle.title;
   $('waveName').textContent = `${game.difficulty === 'hard' ? '어려움 · ' : ''}${game.battle.chapter}장 ${game.waveIndex + 1}/3 · ${wave.name}`;
-  $('waveProgress').textContent = `${destroyed} / ${total}척 격침`;
+  $('waveProgress').textContent = game.withdrawal ? '서쪽 외해로 철수하세요!' : `${destroyed} / ${total}척 격침`;
   $('waveDots').querySelectorAll('i').forEach((dot, i) => dot.classList.toggle('active', i <= game.waveIndex));
-  $('missionTitle').textContent = game.mode === 'victory' ? `${game.battle.title} 승전!` : wave.name;
-  $('missionText').textContent = wave.note;
-  $('missionFill').style.width = `${destroyed / total * 100}%`;
-  $('missionCounter').textContent = `적선 ${destroyed} / ${total}`;
+  $('missionTitle').textContent = game.mode === 'victory' ? `${game.battle.title} 승전!` : game.withdrawal ? '부산포 함대 철수' : wave.name;
+  $('missionText').textContent = game.withdrawal ? '항구 타격을 마쳤습니다. 지도 왼쪽의 청록색 안전 해역으로 이동하세요.' : wave.note;
+  $('missionFill').style.width = `${game.withdrawal ? Math.min(100, Math.max(0, (WORLD.width - game.player.x) / (WORLD.width - game.battle.withdraw.x) * 100)) : destroyed / total * 100}%`;
+  $('missionCounter').textContent = game.withdrawal ? `안전 해역까지 ${Math.max(0, Math.ceil(game.player.x - game.battle.withdraw.x))}m` : `적선 ${destroyed} / ${total}`;
   const objective = getTacticalObjective(game);
   const tacticStatus = $('tacticStatus');
   tacticStatus.textContent = objective.completed
@@ -323,6 +324,13 @@ function syncHud() {
   const messenger = game.allies.find(ally => ally.type === 'sahuseon');
   const turtle = game.allies.find(ally => ally.type === 'turtle');
   $('escortStatus').textContent = `${!escort || escort.dead ? '협선 격침' : `협선 ${Math.ceil(escort.hp)}/${escort.maxHp}`} · ${!messenger || messenger.dead ? '사후선 격침' : '사후선 정찰 중'}${turtle ? ` · 거북선 ${turtle.dead ? '격침' : Math.ceil(turtle.hp) + '/' + turtle.maxHp}` : ''}`;
+  const condition = $('seaCondition');
+  condition.hidden = !(game.battle.current || game.battle.shoreBattery || game.battle.night || game.battle.formation);
+  if (game.battle.current) condition.textContent = `↔ 울돌목 조류: ${game.tideDirection > 0 ? '동쪽 →' : '← 서쪽'} · ${Math.ceil(game.battle.current.period - game.tideClock)}초 뒤 반전`;
+  else if (game.withdrawal) condition.textContent = '↢ 부산포 철수 지시 · 서쪽 안전 해역으로';
+  else if (game.battle.shoreBattery) condition.textContent = '⚠ 부산포 해안 포대 · 접근 시 포격';
+  else if (game.battle.night) condition.textContent = `☾ 야간 교전 · ${game.allies.some(a => a.id === 'ming-1') ? '조·명 연합 작전' : '명나라 지원 대기'}`;
+  else if (game.battle.formation) condition.textContent = `鶴 학익진 날개 전선 · ${game.allies.filter(a => a.id.startsWith('wing-') && !a.dead).length}/2척`;
   const exposure = $('exposureWarning');
   const exposed = game.mode === 'playing' && game.stationarySeconds >= 3;
   exposure.hidden = !exposed;
@@ -357,15 +365,15 @@ function syncHud() {
   const right = broadsideTarget(game.player,game.enemies,1,WEAPONS[game.arsenal.starboard].range * game.bonuses.range);
   const widestRange = Math.max(WEAPONS[game.arsenal.port].range, WEAPONS[game.arsenal.starboard].range) * game.bonuses.range;
   const boarding = boardingThreat(game);
-  $('battleTip').textContent = boarding ? `도선 위협 ${Math.round(boarding.boardingProgress * 100)}% · 적선과 거리를 벌리세요!` : game.stationarySeconds >= 6 ? '정박 중에는 포격 피해 증가! W 또는 ↑로 항해하세요' : !nearest ? '적선을 기다리는 중' : game.player.aimSteady < .58 ? '급선회 중 · 방향을 잡으면 포격합니다' : left || right ? `${left ? '좌현' : '우현'} 화포 사격 범위!` : Math.hypot(nearest.x-game.player.x,nearest.y-game.player.y)>widestRange ? '적선에 접근한 뒤 측면을 잡으세요' : '적선을 뱃머리가 아닌 좌우에 두세요';
+  $('battleTip').textContent = game.withdrawal ? '부산포 공격 완료 · 서쪽 안전 해역으로 철수!' : boarding ? `도선 위협 ${Math.round(boarding.boardingProgress * 100)}% · 적선과 거리를 벌리세요!` : game.stationarySeconds >= 6 ? '정박 중에는 포격 피해 증가! W 또는 ↑로 항해하세요' : !nearest ? '적선을 기다리는 중' : game.player.aimSteady < .58 ? '급선회 중 · 방향을 잡으면 포격합니다' : left || right ? `${left ? '좌현' : '우현'} 화포 사격 범위!` : Math.hypot(nearest.x-game.player.x,nearest.y-game.player.y)>widestRange ? '적선에 접근한 뒤 측면을 잡으세요' : '적선을 뱃머리가 아닌 좌우에 두세요';
   $('battleTip').classList.toggle('is-boarding', !!boarding || game.stationarySeconds >= 6);
 }
 
 function drawOcean(left, top, width, height) {
   const grad = ctx.createLinearGradient(left, top, left + width, top + height);
-  grad.addColorStop(0, '#144960');
-  grad.addColorStop(0.52, '#1b6075');
-  grad.addColorStop(1, '#123f59');
+  grad.addColorStop(0, game.battle.night ? '#071a31' : '#144960');
+  grad.addColorStop(0.52, game.battle.night ? '#12304b' : '#1b6075');
+  grad.addColorStop(1, game.battle.night ? '#061524' : '#123f59');
   ctx.fillStyle = grad;
   ctx.fillRect(left, top, width, height);
   ctx.lineWidth = 1.35;
@@ -376,7 +384,7 @@ function drawOcean(left, top, width, height) {
       const shift = Math.sin((x + y) * 0.006 + elapsed * 0.48) * 15;
       const dx = x + shift;
       const dy = y + Math.cos(x * 0.01 + elapsed * 0.8) * 8;
-      const shimmer = 0.07 + Math.abs(noise(x * 0.01 + y * 0.03)) * 0.09;
+      const shimmer = (game.battle.night ? .025 : .07) + Math.abs(noise(x * 0.01 + y * 0.03)) * (game.battle.night ? .035 : .09);
       ctx.strokeStyle = `rgba(175,227,224,${shimmer})`;
       ctx.beginPath();
       ctx.moveTo(dx - 23, dy);
@@ -384,6 +392,42 @@ function drawOcean(left, top, width, height) {
       ctx.quadraticCurveTo(dx + 17, dy + 5, dx + 29, dy - 1);
       ctx.stroke();
     }
+  }
+}
+
+function drawBattleFeatures() {
+  if (game.battle.current) {
+    const water = game.battle.current;
+    ctx.save();
+    ctx.strokeStyle = '#99ecf3a3';
+    ctx.fillStyle = '#d9ffffc8';
+    ctx.lineWidth = 2.5;
+    const offset = elapsed * water.speed * .45 * game.tideDirection;
+    for (let y = water.yMin + 68; y < water.yMax; y += 115) {
+      for (let x = water.xMin + 90; x < water.xMax; x += 165) {
+        const px = x + ((offset % 165 + 165) % 165) - 82;
+        ctx.beginPath();ctx.moveTo(px - game.tideDirection * 35, y);ctx.lineTo(px + game.tideDirection * 22, y);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(px + game.tideDirection * 22, y);ctx.lineTo(px + game.tideDirection * 12, y - 6);
+        ctx.lineTo(px + game.tideDirection * 12, y + 6);ctx.closePath();ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+  if (game.battle.shoreBattery) {
+    const { x, y } = game.battle.shoreBattery;
+    ctx.save();
+    ctx.strokeStyle = '#f8b67f';ctx.fillStyle = '#763b2e';ctx.lineWidth = 3;
+    ctx.beginPath();ctx.arc(x,y,25,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.fillStyle = '#ffe5ac';ctx.font = 'bold 14px system-ui';ctx.textAlign = 'center';ctx.fillText('砲',x,y+5);
+    ctx.restore();
+  }
+  if (game.withdrawal) {
+    const x = game.battle.withdraw.x;
+    ctx.save();ctx.fillStyle = '#4de6d11c';ctx.fillRect(0,0,x,WORLD.height);
+    ctx.setLineDash([15,10]);ctx.lineWidth = 4;ctx.strokeStyle = '#8eeed6';
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,WORLD.height);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle = '#bffff0';ctx.font = 'bold 19px system-ui';ctx.textAlign = 'center';ctx.fillText('↤ 안전 해역',x/2,800);
+    ctx.restore();
   }
 }
 
@@ -463,7 +507,7 @@ function drawShip(ship) {
   ctx.strokeStyle = friendly ? '#edca84' : '#cb8b6e';
   ctx.lineWidth = 3;
   ctx.beginPath();
-  if (ship.type === 'panokseon' || ship.type === 'turtle') {
+  if (ship.type === 'panokseon' || ship.type === 'turtle' || ship.type === 'ming') {
     // Broad, nearly squared fighting platform: a recognizable panokseon profile.
     ctx.moveTo(-r * .91, r * .98);
     ctx.lineTo(-r * .98, -r * .99);
@@ -522,6 +566,11 @@ function drawShip(ship) {
       ctx.beginPath();ctx.moveTo(-r*.7,y*r*.34);ctx.lineTo(r*.7,y*r*.34);ctx.stroke();
       ctx.fillStyle = '#d9ccab';ctx.beginPath();ctx.arc(0,y*r*.35,2.2,0,Math.PI*2);ctx.fill();
     }
+  } else if (ship.type === 'ming') {
+    ctx.fillStyle = '#86634a';ctx.fillRect(-r*.5,-r*.72,r,r*1.25);
+    ctx.fillStyle = '#bd8a5b';ctx.fillRect(-r*.62,-r*.22,r*1.24,r*.25);
+    ctx.strokeStyle = '#e6bd8c';ctx.lineWidth = 2;
+    ctx.beginPath();ctx.moveTo(-r*.42,-r*.76);ctx.lineTo(0,-r*1.16);ctx.lineTo(r*.42,-r*.76);ctx.stroke();
   }
   if (ship.type === 'atakebune') {
     // The high, tiered fighting deck makes the largest enemy readable at game zoom.
@@ -582,6 +631,12 @@ function drawShip(ship) {
     ctx.strokeStyle = '#f4d38a80';
     ctx.beginPath();ctx.arc(0, 1, r * .45, 0, Math.PI * 2);ctx.stroke();
   }
+  if (game.battle.night) {
+    ctx.shadowColor = friendly ? '#ffd38c' : '#ff9771';ctx.shadowBlur = 17;
+    ctx.fillStyle = friendly ? '#ffe9ab' : '#f9a380';
+    ctx.beginPath();ctx.arc(-r*.52,r*.25,3.7,0,Math.PI*2);ctx.arc(r*.52,r*.25,3.7,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur = 0;
+  }
   if (ship.burnRemaining > 0) {
     for (let i = 0; i < 4; i++) {
       const pulse = Math.sin(elapsed * 13 + i * 2.3 + ship.x) * 3;
@@ -618,7 +673,7 @@ function drawShipNameplates() {
       Math.hypot(b.x - game.player.x, b.y - game.player.y)).slice(0, 3);
   for (const ship of [game.player, ...game.allies.filter(ally => !ally.dead), ...nearbyEnemies]) {
     if (ship.dead) continue;
-    const label = ship.id === 'flagship' ? '기함 · 판옥선' : ship.id === 'eokgi-1' ? '이억기 · 지원 판옥선' : ship.type === 'turtle' ? '거북선 · 돌격' : game.difficulty === 'hard' && ship.team === 'japan'
+    const label = ship.id === 'flagship' ? '기함 · 판옥선' : ship.id === 'eokgi-1' ? '이억기 · 지원 판옥선' : ship.id.startsWith('wing-') ? `학익진 · ${ship.id === 'wing-left' ? '좌익' : '우익'}` : ship.type === 'ming' ? '진린 · 명나라 전선' : ship.type === 'turtle' ? '거북선 · 돌격' : game.difficulty === 'hard' && ship.team === 'japan'
       ? `${SHIP_TYPES[ship.type].name} · ${ship.aiMode}` : SHIP_TYPES[ship.type].name;
     const friendly = ship.team === 'joseon';
     const radius = SHIP_TYPES[ship.type].radius;
@@ -793,6 +848,7 @@ function render() {
   const left=camera.x-halfW,top=camera.y-halfH;
   drawOcean(left,top,halfW*2,halfH*2);
   drawIslands();
+  drawBattleFeatures();
   for(const ship of [game.player,...game.allies,...game.enemies]) drawWake(ship);
   for(const enemy of game.enemies) drawShip(enemy);
   for(const ally of game.allies) drawShip(ally);
@@ -917,7 +973,7 @@ for(const name of ['pointerup','pointercancel','lostpointercapture']) $('touchPa
 // Visibility in automated QA only; does not alter the normal game's rules.
 if (new URLSearchParams(location.search).has('qa')) {
   window.__yiSunSinQA = Object.freeze({
-    snapshot: () => ({mode:game.mode,difficulty:game.difficulty,wave:game.waveIndex+1,kills:game.kills,score:game.score,playerHp:game.player.hp,enemies:game.enemies.length,spawned:game.spawned,arsenal:{...game.arsenal},order:game.signalOrder,enemyTactics:game.enemies.slice(0,4).map(e=>({type:e.type,mode:e.aiMode,target:e.aiTargetId}))}),
+    snapshot: () => ({mode:game.mode,battleId:game.battleId,withdrawal:game.withdrawal,tideDirection:game.tideDirection,difficulty:game.difficulty,wave:game.waveIndex+1,kills:game.kills,score:game.score,playerHp:game.player.hp,enemies:game.enemies.length,spawned:game.spawned,arsenal:{...game.arsenal},order:game.signalOrder,enemyTactics:game.enemies.slice(0,4).map(e=>({type:e.type,mode:e.aiMode,target:e.aiTargetId}))}),
     start:()=>{if(game.mode==='menu')beginRun();},
     advanceWave:()=>{if(game.mode==='playing'){game.spawned=getWave(game).ships.length;game.enemies=[];game.shots=[];}},
     chooseFirst:()=>{if(game.mode==='upgrade')takeUpgrade(game,game.selected[0]);}
