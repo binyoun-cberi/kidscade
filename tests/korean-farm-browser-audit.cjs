@@ -234,6 +234,7 @@ async function main(){
  const sold=await evaluate('window.__farmQA.state()');
  check('Sell removes produce and pays money',sold.inventory.rice===0&&sold.money>initial.money&&sold.stats.sales===1);
  await click('#modalClose');
+ await evaluate('window.__farmQA.teleport(-8.65,-0.9)');
  await evaluate('window.__farmQA.select("rice-4")');
  await click('#actionButtons [data-action="till"]');
  check('Hoe tool opens five physical working rows',
@@ -515,6 +516,7 @@ async function main(){
  check('Real full-cycle sale increments balance and removes harvested crop',
    soldAfter.stats.sales===1&&soldAfter.inventory.rice===0&&soldAfter.money>4200,soldAfter);
  await click('#modalClose');
+ await evaluate('window.__farmQA.teleport(-12.85,-5.2)');
  await evaluate('window.__farmQA.select("rice-1")');
  await click('#actionButtons [data-action="till"]');
  for(const n of [0,1,2,3,4]){
