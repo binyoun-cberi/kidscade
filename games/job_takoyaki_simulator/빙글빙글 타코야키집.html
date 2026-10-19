@@ -451,8 +451,10 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script>
+<script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 (function(){
 'use strict';
 
@@ -510,6 +512,7 @@ const game = {
   dayStart:0,
   lastTime:0,
   dayScore:0,
+  dayQualitySum:0,
   totalScore:0,
   served:0,
   dayServed:0,
@@ -615,6 +618,7 @@ function startDay(){
   game.dayStart = now();
   game.lastTime = now();
   game.dayScore = 0;
+  game.dayQualitySum = 0;
   game.dayServed = 0;
   game.combo = 0;
   game.fire = 1;
@@ -638,7 +642,7 @@ function startDay(){
 
 function endDay(){
   game.paused = true;
-  const rank = getRank(game.totalScore);
+  const rank = getDayRank();
   const passed = game.dayServed >= 1;
   elems.dayScoreText.textContent = game.dayScore.toString();
   elems.dayServedText.textContent = game.dayServed.toString();
@@ -669,11 +673,13 @@ function endDay(){
   elems.resultModal.classList.add('show');
 }
 
-function getRank(score){
-  if(score>=9000) return '명물가게';
-  if(score>=5500) return '인기';
-  if(score>=2500) return '좋음';
-  return '보통';
+function getDayRank(){
+  if(!game.dayServed) return '연습 중';
+  const average = game.dayQualitySum / game.dayServed;
+  if(average >= 122) return '타코야키 명인';
+  if(average >= 100) return '인기 가게';
+  if(average >= 80) return '맛있는 가게';
+  return '차근차근 연습 중';
 }
 
 function setNotice(text, type){
@@ -996,6 +1002,7 @@ function actionPack(){
   game.bestCombo = Math.max(game.bestCombo, game.combo);
   final = Math.max(0, final);
   game.dayScore += final; game.totalScore += final; game.served++; game.dayServed++;
+  game.dayQualitySum += avg;
   chosen.forEach(x=>{
     const idx = x.i;
     const unlocked = game.slots[idx].unlocked;
@@ -1040,16 +1047,15 @@ function updateCooking(dt){
 
 function updateOrders(dt){
   if(game.paused || !game.started) return;
-  // Orders wait while the player cooks.
-  if(false){
-    const lost = game.orders.shift();
-    game.combo = 0;
-    game.dayScore = Math.max(0, game.dayScore-80);
-    game.totalScore = Math.max(0, game.totalScore-80);
-    setNotice(`${ORDER_NAMES[lost.type]} 손님이 기다리다 떠났습니다.`, 'bad');
-    playSound('bad');
-    updateOrdersUI();
-  }
+  // The preschool mode deliberately has no failed orders. Waiting still ages
+  // correctly, so speed bonuses decline instead of remaining at their maximum.
+  game.orders.forEach(o=>{
+    o.age += dt;
+    if(o.age >= o.maxWait && !o.waitedLong){
+      o.waitedLong = true;
+      setNotice('손님이 오래 기다리고 있어요. 천천히 완성해도 괜찮아요!', 'warn');
+    }
+  });
   if(now()>=game.nextOrderAt){
     addOrder(false);
     scheduleNextOrder();
@@ -1070,7 +1076,7 @@ function updateUI(force){
   elems.scoreText.textContent = game.totalScore.toString();
   elems.servedText.textContent = game.served.toString();
   elems.comboText.textContent = game.combo.toString();
-  elems.rankText.textContent = getRank(game.totalScore);
+  elems.rankText.textContent = getDayRank();
   const until = Math.max(0, game.nextOrderAt-now());
   elems.nextOrderText.textContent = game.orders.length>=getCfg().queueMax ? '대기열 가득' : `다음 주문 ${Math.ceil(until)}초`;
   updateOrdersUI(!!force);
@@ -1139,24 +1145,32 @@ function setFire(v){ game.fire=v; updateFireUI(); playSound('click'); }
 function showHelp(){ alert('빈 구를 누르면 재료가 자동으로 들어가요. 초록색 구는 다시 눌러 뒤집고, 다 익은 구를 누르면 접시에 담겨요. 주문 하나를 완성하면 다음 구가 하나씩 열립니다.'); }
 
 // ----- Three.js -----
-let scene, camera, renderer, raycaster, pointer;
+let scene, camera, renderer, raycaster, pointer, fallbackCtx;
 let panGroup, ballGroups=[];
 const slotPositions=[];
-const canvas = $('stage');
+let canvas = $('stage');
 const matCache = {};
+const fallbackHits = [];
+const sushiAssets = '../../assets/game/3d/interiors/modular-sushi-restaurant-kit/';
 
 function initThree(){
-  if(!window.THREE){
-    setNotice('3D 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해주세요.', 'bad');
-    return false;
+  try{
+    const context = canvas.getContext('webgl2',{alpha:false,antialias:true}) || canvas.getContext('webgl',{alpha:false,antialias:true});
+    if(!context) return initFallbackPan();
+    renderer = new THREE.WebGLRenderer({canvas, context, antialias:true, alpha:false, powerPreference:'low-power'});
+  }catch(error){
+    console.warn('타코야키집: 3D 화면을 시작하지 못해 2D로 전환합니다.',error);
+    return initFallbackPan();
   }
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xffe7b2);
+  scene.background = new THREE.Color(0xffe8c5);
   camera = new THREE.PerspectiveCamera(42, 1, .1, 100);
-  camera.position.set(0,7.2,9.2);
-  camera.lookAt(0,0,0);
-  renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+  camera.position.set(0,8.4,10.7);
+  camera.lookAt(0,0,.12);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.24;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   raycaster = new THREE.Raycaster();
@@ -1173,24 +1187,143 @@ function initThree(){
   warm.position.set(0,1.5,2.8);
   scene.add(warm);
 
-  const tableGeo = new THREE.BoxGeometry(9.4,.35,6.4);
-  const table = new THREE.Mesh(tableGeo, material('table',0x9d5a34,.55,.42));
+  const tableGeo = new THREE.BoxGeometry(11.4,.35,8.2);
+  const table = new THREE.Mesh(tableGeo, material('table',0xa9643d,.78,.02));
   table.position.set(0,-.46,0);
   table.receiveShadow=true;
   scene.add(table);
-  const backGeo = new THREE.BoxGeometry(9.8,2.4,.2);
-  const back = new THREE.Mesh(backGeo, material('back',0xffd18b,.8,.18));
-  back.position.set(0,.75,-3.05);
+  const backGeo = new THREE.BoxGeometry(11.6,2.8,.2);
+  const back = new THREE.Mesh(backGeo, material('back',0xf2bc79,.9,.02));
+  back.position.set(0,.85,-4.05);
   back.receiveShadow=true;
   scene.add(back);
 
   panGroup = new THREE.Group();
   scene.add(panGroup);
   createPanObjects();
+  loadKitchenProps();
   resizeThree();
   window.addEventListener('resize', resizeThree);
   canvas.addEventListener('pointerdown', onCanvasPointer);
   return true;
+}
+
+// These are existing CC0 models from Kidscade's modular sushi restaurant kit.
+// Failure to load a prop must never prevent cooking.
+function loadKitchenProps(){
+  const loader = new GLTFLoader();
+  const specs = [
+    ['plate.glb',1.55,0,.01,3.42,0],
+    ['bottles.glb',.95,-4.72,-.04,-2.45,.25],
+    ['bowl.glb',.85,-4.65,-.04,1.36,0],
+    ['chopping-board.glb',1.25,4.55,-.04,1.14,-.16],
+    ['tentacle.glb',.65,4.42,.03,1.17,-.3],
+    ['chukaman-steamer.glb',.95,4.66,-.04,-2.35,.18]
+  ];
+  specs.forEach(([file,size,x,y,z,turn])=>{
+    loader.load(sushiAssets+file,gltf=>{
+      if(!scene) return;
+      const prop=gltf.scene;
+      const box=new THREE.Box3().setFromObject(prop);
+      const dims=box.getSize(new THREE.Vector3());
+      const extent=Math.max(dims.x,dims.y,dims.z);
+      if(!Number.isFinite(extent)||extent<=0) return;
+      const scale=size/extent;
+      const center=box.getCenter(new THREE.Vector3());
+      prop.scale.setScalar(scale);
+      prop.position.set(x-center.x*scale,y-box.min.y*scale,z-center.z*scale);
+      prop.rotation.y=turn;
+      prop.traverse(obj=>{
+        if(!obj.isMesh) return;
+        obj.castShadow=true;
+        obj.receiveShadow=true;
+      });
+      scene.add(prop);
+    },undefined,()=>{ /* The procedural kitchen remains playable offline. */ });
+  });
+}
+
+function initFallbackPan(){
+  // A WebGL context may have been created before renderer initialization
+  // failed. Replace that canvas so a 2D context is always available.
+  if(!canvas.getContext('2d')){
+    const replacement=document.createElement('canvas');
+    replacement.id='stage';
+    replacement.setAttribute('aria-label','타코야키 조리판');
+    canvas.replaceWith(replacement);
+    canvas=replacement;
+  }
+  fallbackCtx=canvas.getContext('2d');
+  if(!fallbackCtx){
+    setNotice('화면을 표시하기 어려워요. 아래 숫자 구를 눌러 계속 조리할 수 있어요.', 'warn');
+    return false;
+  }
+  resizeFallbackPan();
+  window.addEventListener('resize',resizeFallbackPan);
+  canvas.addEventListener('pointerdown',onCanvasPointer);
+  setNotice('가벼운 조리판으로 시작해요. 팬의 구를 눌러 요리해요!', 'good');
+  return true;
+}
+
+function resizeFallbackPan(){
+  if(!fallbackCtx) return;
+  const rect=canvas.getBoundingClientRect();
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  canvas.width=Math.max(1,Math.round(rect.width*dpr));
+  canvas.height=Math.max(1,Math.round(rect.height*dpr));
+  fallbackCtx.setTransform(dpr,0,0,dpr,0,0);
+}
+
+function renderFallbackPan(){
+  if(!fallbackCtx) return;
+  const ctx=fallbackCtx;
+  const w=canvas.clientWidth,h=canvas.clientHeight;
+  const panW=Math.min(w*.85,860),panH=Math.min(h*.69,560);
+  const left=(w-panW)/2,top=(h-panH)/2;
+  const r=Math.min(panW/5.2,panH/4.05)*.43;
+  ctx.clearRect(0,0,w,h);
+  const bg=ctx.createLinearGradient(0,0,0,h);
+  bg.addColorStop(0,'#ffeecb');bg.addColorStop(1,'#efb979');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='#a76440';ctx.fillRect(0,h*.86,w,h*.14);
+  ctx.shadowColor='rgba(67,36,20,.26)';ctx.shadowBlur=22;ctx.shadowOffsetY=10;
+  ctx.fillStyle='#31363d';ctx.beginPath();ctx.roundRect(left,top,panW,panH,28);ctx.fill();
+  ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+  ctx.strokeStyle='#646a6f';ctx.lineWidth=7;ctx.stroke();
+  ctx.fillStyle='#171b22';ctx.beginPath();ctx.roundRect(left+16,top+15,panW-32,panH-30,18);ctx.fill();
+  fallbackHits.length=0;
+  for(let i=0;i<12;i++){
+    const s=game.slots[i];if(!s)continue;
+    const row=Math.floor(i/4),col=i%4;
+    const x=left+panW*(.16+col*.225), y=top+panH*(.2+row*.3);
+    fallbackHits.push({i,x,y,r:r*1.25});
+    ctx.beginPath();ctx.arc(x,y,r*1.26,0,Math.PI*2);
+    ctx.fillStyle=s.unlocked?'#070a0e':'#3b3b3b';ctx.fill();
+    ctx.lineWidth=5;ctx.strokeStyle=s.unlocked?'#626a70':'#625c59';ctx.stroke();
+    if(!s.unlocked){
+      ctx.fillStyle='#8d8c87';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`${Math.round(r*.54)}px sans-serif`;ctx.fillText('🔒',x,y);
+      continue;
+    }
+    if(s.batter){
+      const color='#'+cookColor(s).toString(16).padStart(6,'0');
+      const ball=ctx.createRadialGradient(x-r*.25,y-r*.34,r*.04,x,y,r*.96);
+      ball.addColorStop(0,'#fff2c9');ball.addColorStop(.75,color);ball.addColorStop(1,s.burn>50?'#46261d':'#bb6e32');
+      ctx.fillStyle=ball;ctx.beginPath();ctx.ellipse(x,y,r*.87,r*(s.rollCount===0?.48:.87),0,0,Math.PI*2);ctx.fill();
+      if(s.rollCount>=2 && (s.sauce||s.mayo||s.katsu||s.aonori)){
+        ctx.lineWidth=Math.max(3,r*.12);
+        if(s.sauce){ctx.strokeStyle='#6d2418';ctx.beginPath();ctx.moveTo(x-r*.55,y-r*.13);ctx.quadraticCurveTo(x,y+r*.48,x+r*.55,y-r*.18);ctx.stroke();}
+        if(s.mayo){ctx.strokeStyle='#fff6d9';ctx.beginPath();ctx.moveTo(x-r*.45,y+r*.19);ctx.quadraticCurveTo(x,y-r*.4,x+r*.48,y+r*.12);ctx.stroke();}
+        if(s.aonori){ctx.fillStyle='#20733b';ctx.beginPath();ctx.arc(x+r*.12,y-r*.21,r*.12,0,Math.PI*2);ctx.fill();}
+      }
+      if(s.phaseCook>=7&&!s.finished){
+        ctx.strokeStyle=s.burn>35?'#f36e4e':'#b8f17e';ctx.lineWidth=5;
+        ctx.beginPath();ctx.arc(x,y,r*.99,-Math.PI/2,-Math.PI/2+Math.PI*2*clamp(s.phaseCook/20,0,1));ctx.stroke();
+      }
+    }else if(s.oil){
+      ctx.fillStyle='rgba(255,221,117,.45)';ctx.beginPath();ctx.arc(x,y,r*.65,0,Math.PI*2);ctx.fill();
+    }
+    if(game.selected===i){ctx.strokeStyle='#65c6ff';ctx.lineWidth=4;ctx.beginPath();ctx.arc(x,y,r*1.33,0,Math.PI*2);ctx.stroke();}
+  }
 }
 
 function material(key,color,rough,metal){
@@ -1202,7 +1335,7 @@ function material(key,color,rough,metal){
 }
 
 function createPanObjects(){
-  if(!panGroup || !window.THREE) return;
+  if(!panGroup || !renderer) return;
   clearGroup(panGroup);
   slotPositions.length=0;
   ballGroups=[];
@@ -1247,13 +1380,14 @@ function createPanObjects(){
 }
 
 function updateAllBallMeshes(){
-  if(!window.THREE || !panGroup) return;
+  if(!renderer || !panGroup) return;
   game.slots.forEach((s,i)=>updateBallMesh(i));
 }
 
 function clearGroup(g){
   while(g.children.length){
-    const c=g.children.pop();
+    const c=g.children[g.children.length-1];
+    g.remove(c);
     c.traverse?.(o=>{
       if(o.geometry) o.geometry.dispose?.();
       if(o.material){
@@ -1268,6 +1402,13 @@ function updateBallMesh(i){
   const s=game.slots[i];
   const g=ballGroups[i];
   if(!g || !slotPositions[i]) return;
+  const visualKey = [
+    s.unlocked,s.oil,s.batter,s.filling,s.extraOcto,s.rollCount,
+    Math.round(s.shape/8),Math.round(s.burn/5),cookColor(s),
+    s.sauce,s.mayo,s.katsu,s.aonori,s.finished
+  ].join('|');
+  if(g.userData.visualKey===visualKey) return;
+  g.userData.visualKey=visualKey;
   clearGroup(g);
   g.userData.slotIndex=i;
   const pos=slotPositions[i];
@@ -1366,6 +1507,13 @@ function resizeThree(){
 }
 
 function onCanvasPointer(ev){
+  if(fallbackCtx){
+    const rect=canvas.getBoundingClientRect();
+    const x=ev.clientX-rect.left,y=ev.clientY-rect.top;
+    const hit=fallbackHits.find(p=>Math.hypot(x-p.x,y-p.y)<=p.r);
+    if(hit) tapSlot(hit.i);
+    return;
+  }
   if(!raycaster || !camera) return;
   const rect = canvas.getBoundingClientRect();
   pointer.x = ((ev.clientX-rect.left)/rect.width)*2-1;
@@ -1383,6 +1531,10 @@ function onCanvasPointer(ev){
 }
 
 function renderThree(t){
+  if(fallbackCtx){
+    if(t-lastFallbackAt>.05){renderFallbackPan();lastFallbackAt=t;}
+    return;
+  }
   if(!renderer) return;
   if(game.dirtyVisual || Math.floor(t*4)!==Math.floor((t-.016)*4)){
     updateAllBallMeshes();
@@ -1484,11 +1636,12 @@ function bindControls(){
   });
 }
 
+let lastUIAt=0,lastFallbackAt=0;
 function loop(){
   requestAnimationFrame(loop);
   const t=now();
   if(document.hidden){game.dayStart+=t-game.lastTime;game.nextOrderAt+=t-game.lastTime;game.lastTime=t;return;}
-  const dt=clamp(t-game.lastTime,0,.08); game.lastTime=t;
+  const dt=clamp(t-game.lastTime,0,.25); game.lastTime=t;
   if(game.started && !game.paused){
     updateCooking(dt);
     updateOrders(dt);
@@ -1497,7 +1650,7 @@ function loop(){
       game.messageTimer -= dt;
       if(game.messageTimer<=0){ elems.notice.className = 'notice'; }
     }
-    updateUI(false);
+    if(t-lastUIAt>.10){updateUI(false);lastUIAt=t;}
   }
   renderThree(t);
 }
