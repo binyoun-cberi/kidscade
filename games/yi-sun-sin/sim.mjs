@@ -18,10 +18,20 @@ export const SHIP_TYPES = Object.freeze({
   atakebune: { name: '아타케부네', side: 'japan', hp: 164, radius: 31, speed: 83, acceleration: 115, turn: 1.65, reload: 3.2, range: 315, damage: 19, volley: 2 }
 });
 
+// Fictionalised loadouts: historical-style names describe the role of each gun,
+// while the numbers and special effects are arcade rules, not period statistics.
+export const WEAPONS = Object.freeze({
+  standard: { name: '기본 화포', damage: 26, volley: 2, reload: 2, range: 455, speed: 475, spread: .1, burn: 0, burnTime: 0 },
+  rapid: { name: '속사 화포', damage: 17, volley: 2, reload: 1.15, range: 390, speed: 510, spread: .14, burn: 0, burnTime: 0 },
+  heavy: { name: '대형 총통', damage: 68, volley: 1, reload: 2.85, range: 490, speed: 445, spread: .055, burn: 0, burnTime: 0 },
+  scatter: { name: '근접 산탄', damage: 15, volley: 4, reload: 2.3, range: 310, speed: 455, spread: .34, burn: 0, burnTime: 0 },
+  fire: { name: '화염탄', damage: 19, volley: 2, reload: 2.65, range: 420, speed: 465, spread: .12, burn: 7, burnTime: 2.8 }
+});
+
 export const WAVES = Object.freeze([
   { name: '옥포 앞바다', note: '적은 정면에서도 다가옵니다. 판옥선의 좌우 함포로 맞서세요.', ships: ['kobaya', 'sekibune', 'kobaya', 'kobaya', 'sekibune'], interval: 4 },
   { name: '적의 반격', note: '적선이 양쪽으로 흩어져 포위합니다. 선회하며 사거리를 지키세요.', ships: ['sekibune', 'kobaya', 'kobaya', 'sekibune', 'kobaya', 'sekibune', 'kobaya', 'sekibune'], interval: 3.7 },
-  { name: '옥포의 결전', note: '대형 적선이 포진했습니다. 협선을 지키며 화력을 집중하세요.', ships: ['kobaya', 'sekibune', 'atakebune', 'kobaya', 'sekibune', 'kobaya', 'sekibune', 'kobaya', 'kobaya', 'atakebune'], interval: 3.5 }
+  { name: '옥포의 결전', note: '대형 적선이 포진했습니다. 협선을 지키며 화력을 집중하세요.', ships: ['kobaya', 'sekibune', 'atakebune', 'kobaya', 'sekibune', 'kobaya', 'sekibune', 'kobaya', 'kobaya', 'atakebune'], interval: 4.7 }
 ]);
 
 export const UPGRADES = Object.freeze([
@@ -30,7 +40,11 @@ export const UPGRADES = Object.freeze([
   { id: 'hull', icon: '⚒', title: '선체 수리', text: '판옥선 내구도 70 회복' },
   { id: 'escort', icon: '⚑', title: '협선 보강', text: '협선을 복구하거나 내구도 95 회복' },
   { id: 'rudder', icon: '↶', title: '노련한 키잡이', text: '선회 속도 14% 증가' },
-  { id: 'range', icon: '◎', title: '거리 가늠', text: '함포 사거리 14% 증가' }
+  { id: 'range', icon: '◎', title: '거리 가늠', text: '함포 사거리 14% 증가' },
+  ...['rapid', 'heavy', 'scatter', 'fire'].flatMap(weapon => [
+    { id: `port_${weapon}`, icon: '左', title: `좌현 · ${WEAPONS[weapon].name}`, text: weapon === 'rapid' ? '장전이 빠른 화포로 교체' : weapon === 'heavy' ? '강력한 한 발로 적선을 공격' : weapon === 'scatter' ? '가까운 적선에 여러 발을 발사' : '적선에 불을 붙여 지속 피해', slot: 'port', weapon },
+    { id: `starboard_${weapon}`, icon: '右', title: `우현 · ${WEAPONS[weapon].name}`, text: weapon === 'rapid' ? '장전이 빠른 화포로 교체' : weapon === 'heavy' ? '강력한 한 발로 적선을 공격' : weapon === 'scatter' ? '가까운 적선에 여러 발을 발사' : '적선에 불을 붙여 지속 피해', slot: 'starboard', weapon }
+  ])
 ]);
 
 const TAU = Math.PI * 2;
@@ -60,7 +74,8 @@ export function makeShip(type, x, y, angle = 0, id = '') {
   return {
     id, type, team: spec.side, x, y, angle, speed: 0, hp: spec.hp, maxHp: spec.hp,
     reload: [0, 0], hitCooldown: 0, dead: false, targetId: '', wakeClock: 0,
-    flank: 1, aimSteady: 1, turnRate: 0
+    flank: 1, aimSteady: 1, turnRate: 0, burnRemaining: 0, burnDps: 0,
+    tacticClock: 3.5
   };
 }
 
@@ -69,7 +84,9 @@ export function createGame(seed = 1592) {
     seed: seed || 1592, mode: 'menu', seconds: 0, waveIndex: 0, spawned: 0,
     spawnClock: 0, kills: 0, hits: 0, shotsFired: 0, score: 0, selected: [],
     bonuses: { damage: 1, reload: 1, range: 1, turn: 1 },
-    signalCooldown: 0, signalRemaining: 0, events: [], shots: [], effects: [],
+    signalCooldown: 0, signalRemaining: 0, signalOrder: 'rally', focusTargetId: '',
+    arsenal: { port: 'standard', starboard: 'standard' },
+    events: [], shots: [], effects: [],
     enemies: [], player: makeShip('panokseon', 1160, 805, -0.25, 'flagship'),
     allies: [makeShip('escort', 1080, 875, -0.25, 'escort-1')]
   };
@@ -90,28 +107,36 @@ export function getWave(game) {
 }
 
 export function upgradeChoices(game) {
-  const options = [...UPGRADES];
-  for (let i = options.length - 1; i > 0; i--) {
-    const j = Math.floor(seededRandom(game) * (i + 1));
-    [options[i], options[j]] = [options[j], options[i]];
-  }
+  const shuffled = options => {
+    const result = [...options];
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(seededRandom(game) * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+  };
+  const port = shuffled(UPGRADES.filter(o => o.slot === 'port' && game.arsenal.port !== o.weapon))[0];
+  const starboard = shuffled(UPGRADES.filter(o => o.slot === 'starboard' && game.arsenal.starboard !== o.weapon))[0];
   const escort = game.allies[0];
-  const available = options.filter(o =>
+  const available = shuffled(UPGRADES.filter(o => !o.slot &&
     !(o.id === 'hull' && game.player.hp >= game.player.maxHp - 15) &&
-    !(o.id === 'escort' && escort && !escort.dead && escort.hp >= escort.maxHp - 15));
-  if (escort?.dead) {
-    return [UPGRADES.find(o => o.id === 'escort'), ...available.filter(o => o.id !== 'escort').slice(0, 2)];
-  }
-  return available.slice(0, 3);
+    !(o.id === 'escort' && escort && !escort.dead && escort.hp >= escort.maxHp - 15)));
+  const support = escort?.dead ? UPGRADES.find(o => o.id === 'escort') : available[0];
+  return shuffled([port, starboard, support].filter(Boolean));
 }
 
 export function takeUpgrade(game, id) {
   if (game.mode !== 'upgrade' || !game.selected.includes(id)) return false;
+  // The crews patch ordinary damage between engagements; the hull upgrade adds
+  // a further, meaningful repair instead of becoming a compulsory pick.
+  game.player.hp = Math.min(game.player.maxHp, game.player.hp + 75);
   if (id === 'cannon') game.bonuses.damage *= 1.18;
   if (id === 'reload') game.bonuses.reload *= 0.85;
   if (id === 'range') game.bonuses.range *= 1.14;
   if (id === 'rudder') game.bonuses.turn *= 1.14;
   if (id === 'hull') game.player.hp = Math.min(game.player.maxHp, game.player.hp + 70);
+  const weaponUpgrade = UPGRADES.find(option => option.id === id && option.slot);
+  if (weaponUpgrade) game.arsenal[weaponUpgrade.slot] = weaponUpgrade.weapon;
   if (id === 'escort') {
     const escort = game.allies[0];
     if (escort?.dead) {
@@ -132,10 +157,21 @@ export function takeUpgrade(game, id) {
 }
 
 export function issueSignal(game) {
-  if (game.mode !== 'playing' || game.signalCooldown > 0 || !game.allies.some(ship => !ship.dead)) return false;
+  return issueOrder(game, 'rally');
+}
+
+export function issueOrder(game, order) {
+  if (!['rally', 'focus', 'guard'].includes(order) || game.mode !== 'playing' || game.signalCooldown > 0 || !game.allies.some(ship => !ship.dead)) return false;
+  if (order === 'focus') {
+    const priority = game.enemies.filter(ship => !ship.dead).sort((a, b) =>
+      (b.type === 'atakebune') - (a.type === 'atakebune') || distance(a, game.player) - distance(b, game.player))[0];
+    if (!priority) return false;
+    game.focusTargetId = priority.id;
+  } else game.focusTargetId = '';
   game.signalCooldown = 24;
   game.signalRemaining = 8;
-  game.events.push({ kind: 'signal', text: '호위 집결! 기함과 협선이 함께 속사합니다.' });
+  game.signalOrder = order;
+  game.events.push({ kind: 'signal', text: order === 'rally' ? '호위 집결! 기함과 협선이 함께 속사합니다.' : order === 'focus' ? '집중 공격! 지정 적선을 함께 공격합니다.' : '기함 엄호! 협선이 가까이서 적의 공격을 막습니다.' });
   return true;
 }
 
@@ -245,6 +281,7 @@ function spawnEnemy(game) {
   const angle = Math.atan2(game.player.x - x, -(game.player.y - y));
   const ship = makeShip(type, x, y, angle, `enemy-${game.waveIndex}-${game.spawned}`);
   ship.flank = game.spawned % 2 ? -1 : 1;
+  ship.tacticClock = 2.8 + seededRandom(game) * 2.2;
   game.enemies.push(ship);
   game.spawned++;
   game.events.push({ kind: type === 'atakebune' ? 'boss' : 'spawn', text: type === 'atakebune' ? '대형 적선 출현! 측면 포격을 집중하세요.' : `적선 발견 · ${SHIP_TYPES[type].name}` });
@@ -260,54 +297,66 @@ function closest(ship, ships, range = Infinity) {
   return result;
 }
 
-export function broadsideTarget(ship, targets, side, range = SHIP_TYPES[ship.type].range) {
+export function broadsideTarget(ship, targets, side, range = SHIP_TYPES[ship.type].range, preferredId = '') {
   const lateral = right(ship.angle);
-  let selected = null, closestDistance = range;
+  let selected = null, preferred = null, closestDistance = range;
   for (const target of targets) {
     if (target.dead) continue;
     const dx = target.x - ship.x;
     const dy = target.y - ship.y;
     const d = Math.hypot(dx, dy);
-    if (d < 1 || d >= closestDistance) continue;
+    if (d < 1 || d >= range) continue;
     // Fire only when the target lies in a 100-degree broadside cone.
     if ((dx * lateral.x + dy * lateral.y) * side / d < 0.64) continue;
-    selected = target;
-    closestDistance = d;
+    if (target.id === preferredId) preferred = target;
+    if (d < closestDistance) { selected = target; closestDistance = d; }
   }
-  return selected;
+  return preferred || selected;
 }
 
 function fire(ship, targets, game, dt) {
   const cfg = SHIP_TYPES[ship.type];
   const improved = ship.id === 'flagship' ? game.bonuses : { reload: 1, range: 1, damage: 1 };
-  const reloadBonus = game.signalRemaining > 0 ? ship.id === 'escort-1' ? 0.55 : ship.id === 'flagship' ? 0.7 : 1 : 1;
-  const range = cfg.range * improved.range;
+  const rallied = game.signalRemaining > 0 && game.signalOrder === 'rally';
+  const focused = game.signalRemaining > 0 && game.signalOrder === 'focus';
+  const reloadBonus = rallied ? ship.id === 'escort-1' ? .55 : ship.id === 'flagship' ? .7 : 1 : focused && ship.id === 'escort-1' ? .8 : 1;
   for (let i = 0; i < 2; i++) {
     ship.reload[i] = Math.max(0, ship.reload[i] - dt);
     if (ship.reload[i] > 0) continue;
     if (ship.id === 'flagship' && ship.aimSteady < 0.58) continue;
     const side = i === 0 ? -1 : 1;
-    const target = broadsideTarget(ship, targets, side, range);
+    const weapon = ship.id === 'flagship' ? WEAPONS[game.arsenal[i === 0 ? 'port' : 'starboard']] || WEAPONS.standard : null;
+    const range = (weapon?.range ?? cfg.range) * improved.range;
+    const target = broadsideTarget(ship, targets, side, range, focused ? game.focusTargetId : '');
     if (!target) continue;
-    ship.reload[i] = cfg.reload * improved.reload * reloadBonus;
+    // Coordinated Japanese broadsides are dangerous, but a lone player should
+    // still have a readable interval to turn and escape between salvos.
+    ship.reload[i] = (weapon?.reload ?? cfg.reload) * improved.reload * reloadBonus * (ship.team === 'japan' ? 1.45 : 1);
     const lateral = right(ship.angle);
     const forward = fwd(ship.angle);
-    for (let ball = 0; ball < cfg.volley; ball++) {
-      const offset = (ball - (cfg.volley - 1) / 2) * 15;
+    const volley = weapon?.volley ?? cfg.volley;
+    for (let ball = 0; ball < volley; ball++) {
+      const offset = (ball - (volley - 1) / 2) * 13;
       const sx = ship.x + lateral.x * side * cfg.radius * 0.9 + forward.x * offset;
       const sy = ship.y + lateral.y * side * cfg.radius * 0.9 + forward.y * offset;
-      const flight = distance({ x: sx, y: sy }, target) / 475;
+      const speed = weapon?.speed ?? 475;
+      const flight = distance({ x: sx, y: sy }, target) / speed;
       const leadX = target.x + fwd(target.angle).x * target.speed * flight * 0.68;
       const leadY = target.y + fwd(target.angle).y * target.speed * flight * 0.68;
       const baseAngle = Math.atan2(leadY - sy, leadX - sx);
-      const spread = (seededRandom(game) - 0.5) * 0.1;
+      const spread = weapon?.name === WEAPONS.scatter.name
+        ? (ball - (volley - 1) / 2) * .115 + (seededRandom(game) - .5) * .06
+        : (seededRandom(game) - .5) * (weapon?.spread ?? .1);
       const angle = baseAngle + spread;
-      game.shots.push({ x: sx, y: sy, vx: Math.cos(angle) * 475, vy: Math.sin(angle) * 475,
-        traveled: 0, range, damage: cfg.damage * improved.damage, team: ship.team, radius: 5 });
+      game.shots.push({ x: sx, y: sy, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+        traveled: 0, range, damage: (weapon?.damage ?? cfg.damage) * improved.damage,
+        team: ship.team, radius: weapon === WEAPONS.heavy ? 7.5 : 5,
+        weapon: weapon ? game.arsenal[i === 0 ? 'port' : 'starboard'] : 'standard',
+        burn: weapon?.burn ?? 0, burnTime: weapon?.burnTime ?? 0 });
       game.shotsFired++;
     }
     addEffect(game, ship.x + lateral.x * side * cfg.radius, ship.y + lateral.y * side * cfg.radius, 'muzzle', 0.32);
-    game.events.push({ kind: 'fire', text: ship.id === 'flagship' ? '함포 발사' : '' });
+    game.events.push({ kind: 'fire', weapon: weapon === WEAPONS.heavy ? 'heavy' : 'standard', text: ship.id === 'flagship' ? '함포 발사' : '' });
   }
   if (game.shots.length > 220) game.shots.splice(0, game.shots.length - 220);
 }
@@ -323,6 +372,12 @@ function segmentCircleTime(x0, y0, dx, dy, x, y, radius) {
   if (discriminant < 0) return Infinity;
   const t = (-b - Math.sqrt(discriminant)) / (2 * a);
   return t >= 0 && t <= 1 ? t : Infinity;
+}
+
+function damageShip(game, target, amount) {
+  const guarding = target.id === 'flagship' && game.signalRemaining > 0 && game.signalOrder === 'guard' &&
+    game.allies.some(ally => !ally.dead && distance(ally, target) <= 185);
+  target.hp -= guarding ? amount * .64 : amount;
 }
 
 function updateShots(game, dt) {
@@ -350,9 +405,13 @@ function updateShots(game, dt) {
       shot.x = oldX + vx * hitTime;
       shot.y = oldY + vy * hitTime;
       if (firstHit) {
-        firstHit.hp -= shot.damage;
-      if (shot.team === 'joseon') game.hits++;
-        addEffect(game, firstHit.x, firstHit.y, 'impact', 0.62);
+        damageShip(game, firstHit, shot.damage);
+        if (shot.burn && firstHit.team === 'japan') {
+          firstHit.burnRemaining = Math.max(firstHit.burnRemaining, shot.burnTime);
+          firstHit.burnDps = Math.max(firstHit.burnDps, shot.burn);
+        }
+        if (shot.team === 'joseon') game.hits++;
+        addEffect(game, firstHit.x, firstHit.y, shot.weapon === 'heavy' ? 'heavy-impact' : 'impact', shot.weapon === 'heavy' ? .88 : .62);
         if (firstHit.hp <= 0) sink(game, firstHit);
       } else addEffect(game, shot.x, shot.y, 'splash', 0.65);
     }
@@ -385,19 +444,21 @@ function controlEscort(game, escort, dt) {
   if (escort.dead) return;
   const player = game.player;
   const side = right(player.angle), ahead = fwd(player.angle);
-  const rallied = game.signalRemaining > 0;
+  const rallied = game.signalRemaining > 0 && game.signalOrder === 'rally';
+  const guarding = game.signalRemaining > 0 && game.signalOrder === 'guard';
   const waypoint = {
-    x: player.x + side.x * (rallied ? -100 : -145) - ahead.x * 92,
-    y: player.y + side.y * (rallied ? -100 : -145) - ahead.y * 92
+    x: player.x + side.x * (guarding ? -65 : rallied ? -100 : -145) - ahead.x * (guarding ? 45 : 92),
+    y: player.y + side.y * (guarding ? -65 : rallied ? -100 : -145) - ahead.y * (guarding ? 45 : 92)
   };
-  const target = closest(escort, game.enemies, 430);
+  const focused = game.signalRemaining > 0 && game.signalOrder === 'focus';
+  const target = focused ? game.enemies.find(enemy => enemy.id === game.focusTargetId && !enemy.dead) || closest(escort, game.enemies, 550) : closest(escort, game.enemies, 430);
   const formationDistance = distance(escort, waypoint);
   let heading = Math.atan2(waypoint.x - escort.x, -(waypoint.y - escort.y));
   let throttle = formationDistance > 80 ? 1 : 0.15;
-  if (target && formationDistance < (rallied ? 105 : 180)) {
+  if (!guarding && target && (focused || formationDistance < (rallied ? 105 : 180))) {
     const bearing = Math.atan2(target.x - escort.x, -(target.y - escort.y));
     heading = bearing - Math.PI / 2;
-    throttle = rallied ? 0.32 : 0.5;
+    throttle = focused ? 1 : rallied ? .32 : .5;
   }
   steer(escort, heading, throttle, dt);
   dodgeLand(game, escort, dt);
@@ -413,10 +474,21 @@ function controlEnemy(game, enemy, dt) {
   const dy = target.y - enemy.y;
   const bearing = Math.atan2(dx, -dy);
   const preferred = cfg.range * (enemy.type === 'kobaya' ? 0.77 : 0.84);
+  enemy.tacticClock -= dt;
+  if (enemy.tacticClock <= 0) {
+    if (enemy.type === 'kobaya') enemy.flank *= -1; // Feint to the opposite side.
+    enemy.tacticClock = enemy.type === 'kobaya' ? 3.2 : 5.5;
+  }
   let heading = bearing;
   let throttle = 1;
   if (d < preferred * 0.52) {
     heading = bearing + Math.PI + enemy.flank * 0.3; // disengage before ramming
+  } else if (enemy.type === 'kobaya' && d < preferred + 80) {
+    heading = bearing + enemy.flank * 1.05; // Fast boats make repeated darting passes.
+    throttle = .82;
+  } else if (enemy.type === 'sekibune' && d > preferred + 95) {
+    heading = bearing + enemy.flank * .45; // Medium boats approach from the wings.
+    throttle = .9;
   } else if (d < preferred + 95) {
     const towardPort = bearing + Math.PI / 2;
     const towardStarboard = bearing - Math.PI / 2;
@@ -435,7 +507,7 @@ function controlEnemy(game, enemy, dt) {
   steer(enemy, heading, throttle, dt);
   dodgeLand(game, enemy, dt);
   if (d < cfg.radius + SHIP_TYPES[target.type].radius + 4 && enemy.hitCooldown <= 0) {
-    target.hp -= enemy.type === 'atakebune' ? 18 : 7;
+    damageShip(game, target, enemy.type === 'atakebune' ? 18 : 7);
     enemy.hitCooldown = 1.1;
     addEffect(game, target.x, target.y, 'impact', 0.6);
     if (target.hp <= 0) sink(game, target);
@@ -450,6 +522,13 @@ export function stepGame(game, input = {}, dt = 1 / 60) {
   game.signalRemaining = Math.max(0, game.signalRemaining - dt);
   for (const effect of game.effects) effect.age += dt;
   game.effects = game.effects.filter(effect => effect.age < effect.duration);
+  for (const enemy of game.enemies) {
+    if (enemy.dead || enemy.burnRemaining <= 0) continue;
+    const burnedTime = Math.min(dt, enemy.burnRemaining);
+    enemy.burnRemaining = Math.max(0, enemy.burnRemaining - dt);
+    enemy.hp -= burnedTime * enemy.burnDps;
+    if (enemy.hp <= 0) sink(game, enemy);
+  }
   controlPlayer(game, input, dt);
   for (const ally of game.allies) controlEscort(game, ally, dt);
   for (const enemy of game.enemies) controlEnemy(game, enemy, dt);

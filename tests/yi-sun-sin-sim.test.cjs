@@ -114,16 +114,20 @@ test('집결 명령은 재사용 대기시간을 지킨다', async () => {
   assert.ok(game.signalRemaining === 0);
 });
 
-test('세 차례 실제 전투와 두 번의 강화 선택을 거쳐 승리할 수 있다', async () => {
-  const { createGame, startRun, stepGame, takeUpgrade, WAVES } = await simPromise;
+test('세 차례 실제 전투에서 지휘 신호와 두 번의 강화를 활용해 승리할 수 있다', async () => {
+  const { createGame, startRun, stepGame, takeUpgrade, issueOrder, WAVES } = await simPromise;
   const game = createGame(1);
   startRun(game);
   let upgrades = 0;
+  let orders = 0;
   for (let i = 0; i < 240 * 30 && ['playing', 'upgrade'].includes(game.mode); i++) {
     if (game.mode === 'upgrade') {
       upgrades++;
       assert.equal(takeUpgrade(game, game.selected.includes('hull') ? 'hull' : game.selected[0]), true);
       continue;
+    }
+    if (game.signalCooldown <= 0 && game.enemies.length > 0) {
+      if (issueOrder(game, game.player.hp < 170 ? 'guard' : 'rally')) orders++;
     }
     const enemy = game.enemies[0];
     if (enemy) {
@@ -134,7 +138,90 @@ test('세 차례 실제 전투와 두 번의 강화 선택을 거쳐 승리할 �
   }
   assert.equal(game.mode, 'victory');
   assert.equal(upgrades, 2);
+  assert.ok(orders >= 2, '실제 교전에서 지휘 신호를 여러 번 사용해야 한다');
   assert.equal(game.kills, WAVES.reduce((sum, wave) => sum + wave.ships.length, 0));
+});
+
+test('교전 정비는 좌현·우현 개별 무장과 지원 중 세 가지 선택을 제공한다', async () => {
+  const { createGame, startRun, stepGame, takeUpgrade, getWave, UPGRADES, WEAPONS } = await simPromise;
+  const game = createGame(102);
+  startRun(game);
+  game.player.hp = 190;
+  game.spawned = getWave(game).ships.length;
+  stepGame(game, {}, .016);
+  assert.equal(game.mode, 'upgrade');
+  const selected = game.selected.map(id => UPGRADES.find(option => option.id === id));
+  assert.equal(selected.length, 3);
+  assert.ok(selected.some(option => option.slot === 'port'));
+  assert.ok(selected.some(option => option.slot === 'starboard'));
+  assert.ok(selected.some(option => !option.slot));
+  const port = selected.find(option => option.slot === 'port');
+  assert.ok(WEAPONS[port.weapon]);
+  assert.equal(takeUpgrade(game, port.id), true);
+  assert.equal(game.arsenal.port, port.weapon);
+  assert.equal(game.arsenal.starboard, 'standard');
+  assert.equal(game.player.hp, 265, '교전 사이 기초 수리가 적용된다');
+});
+
+test('강화한 대형 총통은 해당 현에만 무거운 포탄 한 발을 발사한다', async () => {
+  const { createGame, startRun, stepGame, makeShip, WEAPONS } = await simPromise;
+  const game = createGame(12);
+  startRun(game);
+  game.spawnClock = 999;
+  game.arsenal.starboard = 'heavy';
+  game.enemies = [makeShip('atakebune', game.player.x + 175, game.player.y, 0, 'dummy')];
+  stepGame(game, {}, 1 / 60);
+  const heavyShots = game.shots.filter(shot => shot.weapon === 'heavy');
+  assert.equal(heavyShots.length, WEAPONS.heavy.volley);
+  assert.ok(heavyShots[0].damage > WEAPONS.standard.damage);
+  assert.ok(heavyShots[0].radius > 5);
+  assert.equal(game.arsenal.port, 'standard');
+});
+
+test('집중 공격은 큰 적선을 우선 지정하고 측면 목표 선택에도 반영된다', async () => {
+  const { createGame, startRun, makeShip, issueOrder, broadsideTarget } = await simPromise;
+  const game = createGame(19);
+  startRun(game);
+  const small = makeShip('kobaya', game.player.x + 130, game.player.y, 0, 'small');
+  const boss = makeShip('atakebune', game.player.x + 210, game.player.y, 0, 'boss');
+  game.enemies = [small, boss];
+  assert.equal(issueOrder(game, 'focus'), true);
+  assert.equal(game.focusTargetId, 'boss');
+  assert.equal(broadsideTarget(game.player, game.enemies, 1, 455, game.focusTargetId)?.id, 'boss');
+  assert.equal(issueOrder(game, 'guard'), false, '함대 명령은 재사용 대기시간을 공유한다');
+});
+
+test('엄호 명령은 협선이 가까이 있을 때 기함이 받는 포탄 피해를 줄인다', async () => {
+  const { createGame, startRun, stepGame, issueOrder } = await simPromise;
+  const regular = createGame(21), guarded = createGame(21);
+  for (const game of [regular, guarded]) {
+    startRun(game);
+    game.spawnClock = 999;
+    game.shots.push({ x: game.player.x - 45, y: game.player.y, vx: 475, vy: 0, traveled: 0, range: 600, damage: 50, team: 'japan', radius: 5 });
+  }
+  assert.equal(issueOrder(guarded, 'guard'), true);
+  stepGame(regular, {}, .05);
+  stepGame(guarded, {}, .05);
+  assert.ok(guarded.player.hp > regular.player.hp);
+  assert.ok(guarded.player.hp < guarded.player.maxHp);
+});
+
+test('화염탄에 맞은 적선은 이후에도 불타며 체력이 감소한다', async () => {
+  const { createGame, startRun, makeShip, stepGame } = await simPromise;
+  const game = createGame(36);
+  startRun(game);
+  game.spawnClock = 999;
+  game.player.reload = [999, 999];
+  game.allies[0].reload = [999, 999];
+  const enemy = makeShip('atakebune', game.player.x + 135, game.player.y, 0, 'burning');
+  game.enemies = [enemy];
+  game.shots.push({ x: enemy.x - 50, y: enemy.y, vx: 475, vy: 0, traveled: 0, range: 400, damage: 12, team: 'joseon', radius: 5, weapon: 'fire', burn: 7, burnTime: 2.8 });
+  for (let i = 0; i < 3 && enemy.burnRemaining <= 0; i++) stepGame(game, {}, .05);
+  assert.ok(enemy.burnRemaining > 0);
+  const hpAfterImpact = enemy.hp;
+  game.shots = [];
+  stepGame(game, {}, .05);
+  assert.ok(enemy.hp < hpAfterImpact);
 });
 
 test('기함이 침몰하면 패배하며 정지 중에는 시간이 흐르지 않는다', async () => {

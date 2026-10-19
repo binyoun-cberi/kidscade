@@ -42,19 +42,23 @@
       <h2 id="missionTitle">옥포의 바다를 지켜라</h2>
       <p id="missionText">배의 좌우를 적에게 향하게 하여 함포를 발사하세요.</p>
       <div class="mission-progress"><i id="missionFill"></i></div>
-      <span id="missionCounter">적선 0 / 4</span>
+      <span id="missionCounter">적선 0 / 5</span>
     </aside>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <div id="battleTip" class="battle-tip" role="status" aria-live="off">적선을 기다리는 중</div>
     <div class="bottom-hud">
-      <div class="cannon-status"><span>좌현 화포</span><div class="reload-track"><i id="portReload"></i></div><b id="portLabel">준비</b></div>
+      <div class="cannon-status"><span id="portWeaponName">좌현 · 기본 화포</span><div class="reload-track"><i id="portReload"></i></div><b id="portLabel">준비</b></div>
       <div class="bottom-divider"></div>
-      <button id="signalBtn" class="signal-btn" type="button" aria-label="협선 호위 집결 명령"><span class="signal-mark">⚑</span><span><b>호위 집결</b><small id="signalLabel">Space · 준비</small></span></button>
+      <div class="command-group" role="group" aria-label="협선 지휘 명령">
+        <button id="signalBtn" class="signal-btn" type="button" aria-label="1번 호위 집결, 아군 포격 속도 상승"><span class="signal-mark">⚑</span><span><b>집결</b><small id="signalLabel">1 · 준비</small></span></button>
+        <button id="focusBtn" class="signal-btn" type="button" aria-label="2번 집중 공격, 대형 적선 우선 공격"><span class="signal-mark">◎</span><span><b>집중</b><small id="focusLabel">2 · 준비</small></span></button>
+        <button id="guardBtn" class="signal-btn" type="button" aria-label="3번 기함 엄호, 받는 피해 감소"><span class="signal-mark">盾</span><span><b>엄호</b><small id="guardLabel">3 · 준비</small></span></button>
+      </div>
       <div class="bottom-divider"></div>
-      <div class="cannon-status"><span>우현 화포</span><div class="reload-track"><i id="starboardReload"></i></div><b id="starboardLabel">준비</b></div>
+      <div class="cannon-status"><span id="starboardWeaponName">우현 · 기본 화포</span><div class="reload-track"><i id="starboardReload"></i></div><b id="starboardLabel">준비</b></div>
     </div>
-    <div class="key-hint"><kbd>W</kbd> 전진 <kbd>S</kbd> 후진 <kbd>A</kbd><kbd>D</kbd> 좌우 선회 <span>·</span> 적을 내 배 좌우에 두면 자동 포격</div>
+    <div class="key-hint"><kbd>W</kbd><kbd>S</kbd> 전후진 <kbd>A</kbd><kbd>D</kbd> 선회 <span>·</span> <kbd>1</kbd> 집결 <kbd>2</kbd> 집중 <kbd>3</kbd> 엄호 <span>·</span> 적이 좌우에 오면 자동 포격</div>
 
     <div id="touchPad" class="touch-pad" role="group" aria-label="배 조종. 위아래로 전진과 후진, 좌우로 선회하는 가상 조이스틱"><span class="pad-forward" aria-hidden="true">전진</span><span class="pad-turn" aria-hidden="true">선회</span><div id="touchKnob" class="touch-knob"></div></div>
 
@@ -64,7 +68,7 @@
         <div class="dialog-emblem" id="dialogEmblem" aria-hidden="true">水</div>
         <h1 id="overlayTitle">옥포로 출전하다</h1>
         <p id="overlayText">1592년, 조선 수군이 적선을 향해 바다로 나섭니다. 기함을 조종하고 아군과 함께 적의 함대를 물리치세요.</p>
-        <div class="how-to" id="howTo"><div><span>01</span> W·S로 전후진, A·D로 좌우 선회해요. 모바일에서는 조이스틱을 같은 방향으로 움직여요.</div><div><span>02</span> 적을 <b>내 배의 왼쪽 또는 오른쪽</b>에 두고 <b>선회를 멈추면</b> 함포가 자동 발사돼요. 급선회 중에는 포격할 수 없어요.</div><div><span>03</span> Space로 협선을 집결시키면 두 배의 포격이 빨라져요. 교전 후에는 기함을 강화하세요.</div></div>
+        <div class="how-to" id="howTo"><div><span>01</span> W·S로 전후진, A·D로 좌우 선회해요. 모바일에서도 조이스틱으로 같은 방식으로 움직여요.</div><div><span>02</span> 적을 <b>배의 왼쪽 또는 오른쪽</b>에 두고 <b>선회를 멈추면</b> 자동 포격해요. 급선회 중에는 포격할 수 없어요.</div><div><span>03</span> <b>1 집결</b>은 속사, <b>2 집중</b>은 적선 지정, <b>3 엄호</b>는 피해 감소예요. 세 명령은 대기시간을 함께 사용해요.</div><div><span>04</span> 교전 후에는 <b>좌현·우현 화포를 다르게 바꾸거나</b> 기함과 협선을 보강할 수 있어요.</div></div>
         <div class="dialog-actions" id="dialogActions"><button id="startBtn" class="primary-button" type="button">옥포로 출전하기 <span aria-hidden="true">→</span></button></div>
         <p class="historical-note" id="historyNote">실제 옥포 해전을 바탕으로 한 창작 게임입니다. 함선 수와 교전 방식은 플레이를 위해 재구성했습니다.</p>
       </div>

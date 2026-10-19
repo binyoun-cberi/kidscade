@@ -1,6 +1,6 @@
 import {
-  WORLD, ISLANDS, SHIP_TYPES, WAVES, UPGRADES, createGame, startRun,
-  getWave, stepGame, takeUpgrade, issueSignal, togglePause, broadsideTarget
+  WORLD, ISLANDS, SHIP_TYPES, WAVES, UPGRADES, WEAPONS, createGame, startRun,
+  getWave, stepGame, takeUpgrade, issueOrder, togglePause, broadsideTarget
 } from './sim.mjs';
 
 const $ = id => document.getElementById(id);
@@ -40,20 +40,20 @@ function noise(seed) {
 function playSound(kind) {
   if (muted) return;
   const now = performance.now();
-  if (kind === 'fire' && now - lastSound < 120) return;
-  if (kind === 'fire') lastSound = now;
+  if (['fire', 'heavy'].includes(kind) && now - lastSound < 120) return;
+  if (['fire', 'heavy'].includes(kind)) lastSound = now;
   try {
     audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
     const t = audioCtx.currentTime;
     const oscillator = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    oscillator.type = kind === 'fire' ? 'sawtooth' : kind === 'hit' ? 'triangle' : 'sine';
-    const start = kind === 'fire' ? 150 : kind === 'hit' ? 220 : 560;
+    oscillator.type = ['fire', 'heavy'].includes(kind) ? 'sawtooth' : kind === 'hit' ? 'triangle' : 'sine';
+    const start = kind === 'heavy' ? 88 : kind === 'fire' ? 150 : kind === 'hit' ? 220 : 560;
     oscillator.frequency.setValueAtTime(start, t);
-    oscillator.frequency.exponentialRampToValueAtTime(kind === 'fire' ? 42 : 120, t + 0.18);
+    oscillator.frequency.exponentialRampToValueAtTime(kind === 'heavy' ? 30 : kind === 'fire' ? 42 : 120, t + 0.18);
     gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(kind === 'fire' ? 0.065 : 0.04, t + 0.018);
+    gain.gain.exponentialRampToValueAtTime(kind === 'heavy' ? .085 : kind === 'fire' ? .065 : .04, t + 0.018);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.23);
     oscillator.connect(gain).connect(audioCtx.destination);
     oscillator.start(t);
@@ -111,7 +111,7 @@ function showOverlay(mode) {
   } else if (mode === 'upgrade') {
     $('overlayEyebrow').textContent = `${game.waveIndex + 1}차 교전 마침 · 출전 준비`;
     $('overlayTitle').textContent = '함선을 정비할 시간';
-    $('overlayText').textContent = '다음 교전 전에 한 가지 보강을 선택하세요. 선택한 강화는 이번 출전이 끝날 때까지 유지됩니다.';
+    $('overlayText').textContent = '좌현·우현 무장을 바꾸거나 아군을 보강하세요. 선택한 강화는 이번 출전 동안 유지됩니다.';
     const choices = document.createElement('div');
     choices.className = 'upgrade-list';
     for (const id of game.selected) {
@@ -205,20 +205,32 @@ function syncHud() {
   $('escortStatus').textContent = !escort || escort.dead ? '협선 · 격침 (교전 후 충원 가능)' : `협선 · 내구도 ${Math.ceil(escort.hp)} / ${escort.maxHp}`;
   $('timer').textContent = formatTime(game.seconds);
   for (let side = 0; side < 2; side++) {
+    const slot = side === 0 ? 'port' : 'starboard';
+    const weapon = WEAPONS[game.arsenal[slot]] || WEAPONS.standard;
+    $(side === 0 ? 'portWeaponName' : 'starboardWeaponName').textContent = `${side === 0 ? '좌현' : '우현'} · ${weapon.name}`;
     const fill = $(side === 0 ? 'portReload' : 'starboardReload');
     const label = $(side === 0 ? 'portLabel' : 'starboardLabel');
     const remaining = game.player.reload[side];
-    const totalReload = SHIP_TYPES.panokseon.reload * game.bonuses.reload * (game.signalRemaining > 0 ? .7 : 1);
+    const totalReload = weapon.reload * game.bonuses.reload * (game.signalRemaining > 0 && game.signalOrder === 'rally' ? .7 : 1);
     fill.style.width = `${clamp(1 - remaining / totalReload, 0, 1) * 100}%`;
     label.textContent = remaining <= 0 ? '발사 준비' : `${remaining.toFixed(1)}초`;
   }
   const escortAlive = game.allies.some(ship => !ship.dead);
-  $('signalBtn').disabled = game.mode !== 'playing' || game.signalCooldown > 0 || !escortAlive;
-  $('signalLabel').textContent = !escortAlive ? '협선 격침' : game.signalRemaining > 0 ? '연합 포격 중!' : game.signalCooldown > 0 ? `${Math.ceil(game.signalCooldown)}초 후` : 'Space · 준비';
+  for (const [order, id, labelId, key, action] of [
+    ['rally', 'signalBtn', 'signalLabel', '1', '속사'],
+    ['focus', 'focusBtn', 'focusLabel', '2', '집중'],
+    ['guard', 'guardBtn', 'guardLabel', '3', '엄호']
+  ]) {
+    const active = game.signalRemaining > 0 && game.signalOrder === order;
+    $(id).classList.toggle('is-active', active);
+    $(id).disabled = game.mode !== 'playing' || game.signalCooldown > 0 || !escortAlive || (order === 'focus' && game.enemies.length === 0);
+    $(labelId).textContent = !escortAlive ? '협선 격침' : active ? `${action} 중!` : game.signalCooldown > 0 ? `${Math.ceil(game.signalCooldown)}초` : `${key} · 준비`;
+  }
   const nearest = game.enemies.reduce((best, enemy) => !best || Math.hypot(enemy.x-game.player.x,enemy.y-game.player.y)<Math.hypot(best.x-game.player.x,best.y-game.player.y) ? enemy : best, null);
-  const left = broadsideTarget(game.player,game.enemies,-1,SHIP_TYPES.panokseon.range * game.bonuses.range);
-  const right = broadsideTarget(game.player,game.enemies,1,SHIP_TYPES.panokseon.range * game.bonuses.range);
-  $('battleTip').textContent = !nearest ? '적선을 기다리는 중' : game.player.aimSteady < .58 ? '급선회 중 · 방향을 잡으면 포격합니다' : left || right ? `${left ? '좌현' : '우현'} 화포 사격 범위!` : Math.hypot(nearest.x-game.player.x,nearest.y-game.player.y)>SHIP_TYPES.panokseon.range*game.bonuses.range ? '적선에 접근한 뒤 측면을 잡으세요' : '적선을 뱃머리가 아닌 좌우에 두세요';
+  const left = broadsideTarget(game.player,game.enemies,-1,WEAPONS[game.arsenal.port].range * game.bonuses.range);
+  const right = broadsideTarget(game.player,game.enemies,1,WEAPONS[game.arsenal.starboard].range * game.bonuses.range);
+  const widestRange = Math.max(WEAPONS[game.arsenal.port].range, WEAPONS[game.arsenal.starboard].range) * game.bonuses.range;
+  $('battleTip').textContent = !nearest ? '적선을 기다리는 중' : game.player.aimSteady < .58 ? '급선회 중 · 방향을 잡으면 포격합니다' : left || right ? `${left ? '좌현' : '우현'} 화포 사격 범위!` : Math.hypot(nearest.x-game.player.x,nearest.y-game.player.y)>widestRange ? '적선에 접근한 뒤 측면을 잡으세요' : '적선을 뱃머리가 아닌 좌우에 두세요';
 }
 
 function drawOcean(left, top, width, height) {
@@ -355,6 +367,16 @@ function drawShip(ship) {
     ctx.fillStyle = '#b86b54';
     ctx.fillRect(-r * .44, -r * .48, r * .88, r * .12);
     ctx.fillRect(-r * .44, r * .31, r * .88, r * .12);
+  } else if (ship.type === 'kobaya') {
+    ctx.strokeStyle = '#dba180';
+    ctx.beginPath();ctx.moveTo(-r*.55,r*.48);ctx.lineTo(r*.55,-r*.48);ctx.stroke();
+  }
+  // Deck rails and visible planking help distinguish the wooden vessels at
+  // the game's far zoom without depending on large external textures.
+  ctx.strokeStyle = friendly ? '#f5dcaa91' : '#e6a48186';
+  ctx.lineWidth = 1.3;
+  for (const side of [-1, 1]) {
+    ctx.beginPath();ctx.moveTo(side*r*.67,-r*.65);ctx.lineTo(side*r*.65,r*.72);ctx.stroke();
   }
   ctx.fillStyle = '#302d2a';
   for (const side of [-1, 1]) {
@@ -380,6 +402,16 @@ function drawShip(ship) {
     ctx.strokeStyle = '#f4d38a80';
     ctx.beginPath();ctx.arc(0, 1, r * .45, 0, Math.PI * 2);ctx.stroke();
   }
+  if (ship.burnRemaining > 0) {
+    for (let i = 0; i < 4; i++) {
+      const pulse = Math.sin(elapsed * 13 + i * 2.3 + ship.x) * 3;
+      const fx = (i - 1.5) * r * .32;
+      const fy = Math.cos(i * 3.4 + elapsed * 3) * r * .32;
+      ctx.fillStyle = i % 2 ? '#ffd27abf' : '#eb663ee0';
+      ctx.beginPath();ctx.ellipse(fx,fy-5-pulse,3.5,8+Math.abs(pulse),0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#173c3e80';ctx.beginPath();ctx.arc(fx+3,fy-16-pulse,6,0,Math.PI*2);ctx.fill();
+    }
+  }
   ctx.restore();
 
   if (ship.hp < ship.maxHp) {
@@ -403,7 +435,8 @@ function drawBroadsideGuides() {
   ctx.translate(game.player.x, game.player.y);
   ctx.rotate(game.player.angle);
   for (const side of [-1, 1]) {
-    const active = game.player.aimSteady >= .58 && !!broadsideTarget(game.player, game.enemies, side, SHIP_TYPES.panokseon.range * game.bonuses.range);
+    const weapon = WEAPONS[game.arsenal[side < 0 ? 'port' : 'starboard']];
+    const active = game.player.aimSteady >= .58 && !!broadsideTarget(game.player, game.enemies, side, weapon.range * game.bonuses.range);
     const center = side === 1 ? 0 : Math.PI;
     ctx.beginPath();
     ctx.arc(0, 0, 61, center - 0.73, center + 0.73);
@@ -417,10 +450,10 @@ function drawBroadsideGuides() {
 function drawShots() {
   for (const shot of game.shots) {
     const friendly = shot.team === 'joseon';
-    ctx.strokeStyle = friendly ? '#ffdb91ac' : '#ff907c98';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = shot.weapon === 'fire' ? '#ff8241d6' : shot.weapon === 'heavy' ? '#ffe3a5e0' : friendly ? '#ffdb91ac' : '#ff907c98';
+    ctx.lineWidth = shot.weapon === 'heavy' ? 5 : 3;
     ctx.beginPath();ctx.moveTo(shot.x,shot.y);ctx.lineTo(shot.x - shot.vx * .025,shot.y - shot.vy * .025);ctx.stroke();
-    ctx.fillStyle = friendly ? '#ffe3ad' : '#ffc3a6';
+    ctx.fillStyle = shot.weapon === 'fire' ? '#ffb36f' : friendly ? '#ffe3ad' : '#ffc3a6';
     ctx.beginPath();ctx.arc(shot.x,shot.y,shot.radius,0,Math.PI * 2);ctx.fill();
     ctx.fillStyle = '#fffdf0';
     ctx.beginPath();ctx.arc(shot.x - 1,shot.y - 1,1.8,0,Math.PI * 2);ctx.fill();
@@ -431,14 +464,17 @@ function drawEffects() {
   for (const e of game.effects) {
     const p = clamp(e.age / e.duration, 0, 1);
     ctx.save();ctx.translate(e.x,e.y);
-    if (e.type === 'splash' || e.type === 'impact') {
-      ctx.strokeStyle = e.type === 'impact' ? `rgba(248,193,112,${1-p})` : `rgba(200,245,241,${.8*(1-p)})`;
-      ctx.lineWidth = 2.6;
-      ctx.beginPath();ctx.arc(0,0,5+35*p,0,Math.PI*2);ctx.stroke();
-      for (let i=0;i<5;i++) {
-        const a=i*Math.PI*2/5+e.seed*4;
-        ctx.fillStyle=e.type==='impact'?`rgba(251,185,107,${1-p})`:`rgba(215,247,245,${1-p})`;
-        ctx.beginPath();ctx.arc(Math.cos(a)*(8+25*p),Math.sin(a)*(8+25*p),3*(1-p)+1,0,Math.PI*2);ctx.fill();
+    if (['splash','impact','heavy-impact'].includes(e.type)) {
+      const heavy = e.type === 'heavy-impact', hit = e.type !== 'splash';
+      ctx.strokeStyle = hit ? `rgba(248,193,112,${1-p})` : `rgba(200,245,241,${.8*(1-p)})`;
+      ctx.lineWidth = heavy ? 5.2*(1-p)+1 : 2.6;
+      ctx.beginPath();ctx.arc(0,0,(heavy?9:5)+(heavy?60:35)*p,0,Math.PI*2);ctx.stroke();
+      for (let i=0;i<(heavy?12:5);i++) {
+        const a=i*Math.PI*2/(heavy?12:5)+e.seed*4;
+        ctx.fillStyle=hit?`rgba(251,185,107,${1-p})`:`rgba(215,247,245,${1-p})`;
+        const travel = (heavy?44:25)*p;
+        ctx.beginPath();ctx.arc(Math.cos(a)*(8+travel),Math.sin(a)*(8+travel),heavy?4.8*(1-p)+1:3*(1-p)+1,0,Math.PI*2);ctx.fill();
+        if(heavy){ctx.strokeStyle=`rgba(59,48,37,${.6*(1-p)})`;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(Math.cos(a)*travel,Math.sin(a)*travel);ctx.lineTo(Math.cos(a)*(travel+12),Math.sin(a)*(travel+12));ctx.stroke();}
       }
     } else if (e.type === 'muzzle') {
       ctx.fillStyle=`rgba(250,216,159,${.75*(1-p)})`;
@@ -449,6 +485,29 @@ function drawEffects() {
       for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(0,0,13+p*55+i*9,0,Math.PI*2);ctx.stroke();}
       ctx.fillStyle=`rgba(55,48,36,${.7*(1-p)})`;
       for(let i=0;i<6;i++){let a=i*Math.PI/3+e.seed*5;ctx.fillRect(Math.cos(a)*p*33-4,Math.sin(a)*p*33-4,8,8);}
+      ctx.fillStyle=`rgba(37,47,39,${.4*(1-p)})`;
+      ctx.beginPath();ctx.ellipse(0,-22-18*p,21+14*p,9+8*p,0,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function drawOrders() {
+  if (game.mode !== 'playing' || game.signalRemaining <= 0) return;
+  const blink = .65 + .22 * Math.sin(elapsed * 6);
+  if (game.signalOrder === 'focus') {
+    const target = game.enemies.find(enemy => enemy.id === game.focusTargetId && !enemy.dead);
+    if (!target) return;
+    ctx.save();ctx.strokeStyle=`rgba(255,211,123,${blink})`;ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(target.x,target.y,SHIP_TYPES[target.type].radius*1.85,0,Math.PI*2);ctx.stroke();
+    for(let i=0;i<4;i++){const a=i*Math.PI/2;const r=SHIP_TYPES[target.type].radius*2;ctx.beginPath();ctx.moveTo(target.x+Math.cos(a)*r,target.y+Math.sin(a)*r);ctx.lineTo(target.x+Math.cos(a)*(r+15),target.y+Math.sin(a)*(r+15));ctx.stroke();}
+    ctx.restore();
+  } else {
+    const guarding = game.signalOrder === 'guard';
+    ctx.save();ctx.strokeStyle=guarding?`rgba(140,231,215,${blink})`:`rgba(253,222,151,${blink})`;ctx.lineWidth=2.5;
+    for(const ship of [game.player,...game.allies]){
+      if(ship.dead)continue;
+      ctx.beginPath();ctx.arc(ship.x,ship.y,SHIP_TYPES[ship.type].radius*(guarding?2.2:1.9)+Math.sin(elapsed*4)*3,0,Math.PI*2);ctx.stroke();
     }
     ctx.restore();
   }
@@ -496,6 +555,7 @@ function render() {
   for(const enemy of game.enemies) drawShip(enemy);
   for(const ally of game.allies) drawShip(ally);
   drawShip(game.player);
+  drawOrders();
   drawBroadsideGuides();
   drawShots();
   drawEffects();
@@ -518,7 +578,7 @@ function runFrame(now) {
   }
   while (game.events.length) {
     const event=game.events.shift();
-    if(event.kind==='fire') playSound('fire');
+    if(event.kind==='fire') playSound(event.weapon === 'heavy' ? 'heavy' : 'fire');
     if(event.kind==='hit') playSound('hit');
     if(['wave','signal','upgrade','victory','defeat','boss'].includes(event.kind)) toast(event.text);
   }
@@ -545,7 +605,12 @@ window.addEventListener('keydown', event => {
   if(action){input[action]=true;event.preventDefault();}
   if(event.code==='Space'){
     event.preventDefault();
-    if(!event.repeat && issueSignal(game)) playSound('confirm');
+    if(!event.repeat && issueOrder(game,'rally')) playSound('confirm');
+  }
+  const command = { Digit1: 'rally', Digit2: 'focus', Digit3: 'guard', Numpad1: 'rally', Numpad2: 'focus', Numpad3: 'guard' }[event.code];
+  if(command){
+    event.preventDefault();
+    if(!event.repeat && issueOrder(game,command)) playSound('confirm');
   }
   if(event.code==='Escape' || event.code==='KeyP'){
     event.preventDefault();
@@ -576,7 +641,9 @@ function switchPause(){
 }
 window.KidscadeGame?.registerPauseHandlers?.({pause:()=>setPaused(true),resume:()=>setPaused(false)});
 $('pauseBtn').addEventListener('click',switchPause);
-$('signalBtn').addEventListener('click',()=>{if(issueSignal(game))playSound('confirm');});
+for (const [id, order] of [['signalBtn', 'rally'], ['focusBtn', 'focus'], ['guardBtn', 'guard']]) {
+  $(id).addEventListener('click',()=>{if(issueOrder(game,order))playSound('confirm');});
+}
 $('soundBtn').addEventListener('click',()=>{muted=!muted;$('soundBtn').textContent=muted?'♩':'♫';$('soundBtn').setAttribute('aria-label',muted?'소리 켜기':'소리 끄기');});
 
 function resetJoystick(){
@@ -604,7 +671,7 @@ for(const name of ['pointerup','pointercancel','lostpointercapture']) $('touchPa
 // Visibility in automated QA only; does not alter the normal game's rules.
 if (new URLSearchParams(location.search).has('qa')) {
   window.__yiSunSinQA = Object.freeze({
-    snapshot: () => ({mode:game.mode,wave:game.waveIndex+1,kills:game.kills,score:game.score,playerHp:game.player.hp,enemies:game.enemies.length,spawned:game.spawned}),
+    snapshot: () => ({mode:game.mode,wave:game.waveIndex+1,kills:game.kills,score:game.score,playerHp:game.player.hp,enemies:game.enemies.length,spawned:game.spawned,arsenal:{...game.arsenal},order:game.signalOrder}),
     start:()=>{if(game.mode==='menu')beginRun();},
     advanceWave:()=>{if(game.mode==='playing'){game.spawned=getWave(game).ships.length;game.enemies=[];game.shots=[];}},
     chooseFirst:()=>{if(game.mode==='upgrade')takeUpgrade(game,game.selected[0]);}
