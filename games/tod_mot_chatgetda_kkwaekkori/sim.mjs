@@ -1,152 +1,107 @@
-// Seeded town life and fair hidden-character rounds. This module has no rendering dependency.
-export const BLOCK_PITCH = 5.2;
+// Seeded, renderer-independent town activities and fair observation puzzles.
+export const WORLD_VERSION = 3;
+export const BLOCK_PITCH = 7;
 export const STAGES = Object.freeze({
   small: { label: '작은 마을', cols: 3, rows: 2, residents: 18, targets: 1 },
   medium: { label: '북적북적 동네', cols: 5, rows: 3, residents: 45, targets: 3 },
   large: { label: '와글와글 대도시', cols: 7, rows: 4, residents: 84, targets: 5 }
 });
-
+export const DIFFICULTIES = Object.freeze({
+  easy: {name:'똑같은 친구',description:'그림과 같은 친구를 찾아요'},
+  normal: {name:'자세히 보기',description:'옷과 하고 있는 일을 함께 봐요'},
+  hard: {name:'꼼꼼히 찾기',description:'손에 든 물건까지 비교해요'}
+});
 export const COLORS = Object.freeze([
-  { name: '빨간', hex: '#ee5963' },
-  { name: '주황', hex: '#f49a47' },
-  { name: '노란', hex: '#f4cc4e' },
-  { name: '초록', hex: '#62b77f' },
-  { name: '하늘색', hex: '#67bfe7' },
-  { name: '파란', hex: '#5b83d5' },
-  { name: '보라', hex: '#a78bdd' },
-  { name: '분홍', hex: '#ee93b4' }
+  { name:'빨간',hex:'#ee5963' },{ name:'노란',hex:'#f4cc4e' },{ name:'파란',hex:'#5b83d5' }
 ]);
-export const HATS = Object.freeze([{ name: '모자', shape: 'cap' }, { name: '벙거지', shape: 'brim' }, { name: '털모자', shape: 'beanie' }]);
 export const ACTIVITIES = Object.freeze([
-  {id:'walk',name:'산책하는',clip:'walk'},
-  {id:'read',name:'책을 읽는',clip:'holding-both'},
-  {id:'snack',name:'아이스크림을 먹는',clip:'holding-right'},
-  {id:'ball',name:'공놀이하는',clip:'idle'},
-  {id:'wave',name:'손을 흔드는',clip:'interact-right'},
-  {id:'shop',name:'장을 보는',clip:'holding-right'},
-  {id:'sit',name:'벤치에서 쉬는',clip:'sit'}
+  {id:'browse',name:'빵을 고르는',clip:'holding-both',props:['식빵','크루아상','도넛']},
+  {id:'deliver',name:'빵을 배달하는',clip:'walk',props:['식빵','크루아상','도넛']},
+  {id:'eat',name:'빵을 먹는',clip:'holding-right',props:['식빵','크루아상','도넛']},
+  {id:'read',name:'책을 읽는',clip:'holding-both',props:['빨간 책','노란 책','파란 책']},
+  {id:'ball',name:'공놀이하는',clip:'idle',props:['빨간 공','노란 공','파란 공']},
+  {id:'sit',name:'벤치에서 쉬는',clip:'sit',props:['빨간 방석','노란 방석','파란 방석']},
+  {id:'wait',name:'버스를 기다리는',clip:'idle',props:['빨간 가방','노란 가방','파란 가방']},
+  {id:'wave',name:'손을 흔드는',clip:'interact-right',props:['빨간 손수건','노란 손수건','파란 손수건']},
+  {id:'map',name:'지도를 보는',clip:'holding-both',props:['빨간 지도','노란 지도','파란 지도']}
 ]);
-const DISTRICTS = Object.freeze([
-  { name: '알록달록 시장', kind: 'market' },
-  { name: '햇살 공원', kind: 'park' },
-  { name: '다정한 주택가', kind: 'home' },
-  { name: '달콤한 빵집', kind: 'bakery' },
-  { name: '학교 앞 거리', kind: 'school' },
-  { name: '꽃피는 광장', kind: 'plaza' }
+export const DISTRICTS = Object.freeze([
+  {name:'달콤한 빵집',kind:'bakery',activities:['browse','deliver','eat']},
+  {name:'햇살 공원',kind:'park',activities:['read','ball','sit']},
+  {name:'와글와글 정류장',kind:'stop',activities:['wait','wave','map']},
+  {name:'알록달록 시장',kind:'market',activities:['browse','deliver','eat']},
+  {name:'다정한 주택가',kind:'home',activities:['read','wave','sit']},
+  {name:'학교 앞 거리',kind:'school',activities:['read','ball','wait']}
 ]);
-
 export function createRng(seed) {
-  let state = (Number(seed) >>> 0) || 1;
-  return () => {
-    state += 0x6D2B79F5;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+  let state=(Number(seed)>>>0)||1;
+  return ()=>{state+=0x6D2B79F5;let t=state;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};
 }
-
-function shuffled(input, random) {
-  const values = [...input];
-  for (let i = values.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [values[i], values[j]] = [values[j], values[i]];
-  }
-  return values;
+function shuffled(input,random){const a=[...input];for(let i=a.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+export function getBlockCenter(block,stage){const c=typeof stage==='string'?STAGES[stage]:stage;return {x:(block.col-(c.cols-1)/2)*BLOCK_PITCH,z:(block.row-(c.rows-1)/2)*BLOCK_PITCH};}
+export function signature(p){return `${p.modelVariant}:${p.activity}:${p.propVariant}`;}
+export function getRoutePosition(person,stage){
+  const c=getBlockCenter(person.block,stage);
+  // Separate activity bays in front of every building, with room for bodies and props.
+  const motion=person.activity==='deliver'&&!person.found ? Math.sin(person.elapsed*.8)*.16:0;
+  return {x:c.x+(person.slot-1)*1.55+motion,z:c.z+2.15};
 }
-
-export function getBlockCenter(block, stage) {
-  const config = typeof stage === 'string' ? STAGES[stage] : stage;
-  return {
-    x: (block.col - (config.cols - 1) / 2) * BLOCK_PITCH,
-    z: (block.row - (config.rows - 1) / 2) * BLOCK_PITCH
-  };
-}
-
-export function getRoutePosition(person, stage) {
-  const center = getBlockCenter(person.block, stage);
-  const progress = ((person.progress % 4) + 4) % 4;
-  const side = Math.floor(progress);
-  const t = progress - side;
-  // A sidewalk loop stays outside the buildings but inside the block.
-  const corners = [[-1.88, -1.88], [1.88, -1.88], [1.88, 1.88], [-1.88, 1.88]];
-  const first = corners[side];
-  const last = corners[(side + 1) % 4];
-  return { x: center.x + first[0] + (last[0] - first[0]) * t, z: center.z + first[1] + (last[1] - first[1]) * t };
-}
-
-export function makeTown(stageName = 'small', seed = 1) {
-  const config = STAGES[stageName];
-  if (!config) throw new Error(`알 수 없는 마을 크기: ${stageName}`);
-  const random = createRng(seed);
-  const blocks = [];
-  for (let row = 0; row < config.rows; row++) {
-    for (let col = 0; col < config.cols; col++) {
-      const district = DISTRICTS[(col + row * config.cols) % DISTRICTS.length];
-      blocks.push({ id: `b${row}-${col}`, col, row, ...district });
-    }
-  }
-  // Distinct hat-style, hat-color, and bag-color combinations prevent impossible clues.
-  const looks = [];
-  for (let hatStyle = 0; hatStyle < HATS.length; hatStyle++) {
-    for (let hatColor = 0; hatColor < COLORS.length; hatColor++) {
-      for (let bagColor = 0; bagColor < COLORS.length; bagColor++) {
-        looks.push({ hatStyle, hatColor, bagColor });
-      }
-    }
-  }
-  const appearance = shuffled(looks, random);
-  const roles = shuffled(Array.from({length:84},(_,i)=>({modelVariant:i%12,activity:ACTIVITIES[Math.floor(i/12)].id})),random);
-  const people = Array.from({ length: config.residents }, (_, index) => {
-    const block = blocks[index % blocks.length];
-    const clothingColor = Math.floor(random() * COLORS.length);
-    return {
-      id: `person-${index}`,
-      block,
-      ...appearance[index],
-      clothingColor,
-      skin: Math.floor(random() * 4),
-      hair: Math.floor(random() * 4),
-      progress: ((Math.floor(index / blocks.length) + .5) * 4 / Math.ceil(config.residents / blocks.length)) % 4,
-      speed: 0.035 + random() * 0.065,
-      direction: random() < 0.5 ? -1 : 1,
-      pause: random() * 1.8,
-      stopCount: 0,
-      pausedAction: 'look',
-      action: roles[index].activity,
-      activity: roles[index].activity,
-      elapsed: 0,
-      modelVariant: roles[index].modelVariant
-    };
+export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=true){
+  const config=STAGES[stageName];if(!config)throw new Error(`알 수 없는 마을 크기: ${stageName}`);
+  if(!DIFFICULTIES[difficulty])difficulty='easy';
+  const random=createRng(seed),blocks=[],used=new Set();
+  for(let row=0;row<config.rows;row++)for(let col=0;col<config.cols;col++)blocks.push({id:`b${row}-${col}`,col,row,...DISTRICTS[(col+row*config.cols)%6]});
+  const people=Array.from({length:config.residents},(_,i)=>{
+    const block=blocks[i%blocks.length],slot=Math.floor(i/blocks.length),activity=block.activities[slot%3];
+    const choices=shuffled(Array.from({length:36},(_,n)=>({modelVariant:n%12,propVariant:Math.floor(n/12)})),random);
+    const look=choices.find(v=>!used.has(signature({...v,activity})));
+    const person={id:`person-${i}`,block,slot,...look,activity,action:activity,elapsed:0,routineAt:18+random()*14,reserved:false,found:false};
+    used.add(signature(person));return person;
   });
-  const order = shuffled(people.map(p => p.id), random).slice(0, config.targets);
-  return { stageName, config, seed, blocks, people, order };
+  const town={stageName,config,seed,difficulty,blocks,people,order:[],time:0};
+  if(autoSelect)selectTargets(town,people.map(p=>p.id));return town;
 }
-
-export function movePeople(town, deltaSeconds) {
-  const dt = Math.min(0.1, Math.max(0, Number(deltaSeconds) || 0));
-  for (const person of town.people) {
-    person.elapsed += dt;
-    person.action = person.activity;
-    if (person.activity === 'walk') {
-      person.progress = ((person.progress + person.direction * person.speed * dt) % 4 + 4) % 4;
+export function selectTargets(town,eligibleIds,previous=[]){
+  const eligible=new Set(eligibleIds),random=createRng(town.seed^0x51fa77);
+  const pool=shuffled(town.people.filter(p=>eligible.has(p.id)&&(town.difficulty!=='hard'||town.people.some(q=>q.id!==p.id&&q.activity===p.activity))),random),order=[];
+  const recent=new Set(previous),kinds=new Set();
+  while(order.length<town.config.targets&&pool.length){
+    let index=pool.findIndex(p=>!recent.has(signature(p))&&!kinds.has(p.block.kind)&&!order.some(id=>town.people.find(q=>q.id===id).activity===p.activity));
+    if(index<0)index=0;
+    const [person]=pool.splice(index,1);order.push(person.id);kinds.add(person.block.kind);
+  }
+  town.order=order;for(const p of town.people)p.reserved=order.includes(p.id);
+  if(town.difficulty!=='easy')for(const id of order){
+    const target=town.people.find(p=>p.id===id);
+    const candidates=town.people.filter(p=>!p.reserved&&!p.foilFor&&p.id!==id&&(town.difficulty==='hard'?p.activity===target.activity:p.activity!==target.activity));
+    let assigned=false;
+    for(const foil of candidates){
+      for(const propVariant of [(target.propVariant+1)%3,(target.propVariant+2)%3]){
+        const look={...foil,modelVariant:target.modelVariant,propVariant};
+        if(town.people.some(p=>p.id!==foil.id&&signature(p)===signature(look)))continue;
+        Object.assign(foil,{modelVariant:target.modelVariant,propVariant,foilFor:id,reserved:true});assigned=true;break;
+      }
+      if(assigned)break;
     }
   }
+  return order;
 }
-
-export function getClue(person) {
-  if (!person) return null;
-  const activity = ACTIVITIES.find(a=>a.id===person.activity);
-  return {
-    title: `${activity.name} 친구`,
-    subtitle: `그림 속 친구와 똑같이 ${activity.name} 친구를 찾아줘!`,
-    place: `${person.block.name} 근처에 있어요.`,
-    hat: COLORS[person.hatColor], bag: COLORS[person.bagColor], hatShape: HATS[person.hatStyle].shape
-  };
+export function movePeople(town,deltaSeconds){
+  const dt=Math.min(.1,Math.max(0,Number(deltaSeconds)||0));town.time+=dt;
+  for(const p of town.people){
+    p.elapsed+=dt;if(p.reserved||p.found||p.elapsed<p.routineAt)continue;
+    const list=p.block.activities,next=list[(list.indexOf(p.activity)+1)%list.length];
+    if(!town.people.some(q=>q.id!==p.id&&signature(q)===signature({...p,activity:next}))){p.activity=next;p.action=next;}
+    p.routineAt=p.elapsed+20+(p.slot%3)*4;
+  }
 }
-
-export function personIsDiscoverable(town, personId) {
-  const person = town.people.find(p => p.id === personId);
-  if (!person) return false;
-  return town.people.filter(p => p.modelVariant === person.modelVariant && p.activity === person.activity).length === 1;
+export function getClue(person,difficulty='easy'){
+  if(!person)return null;const a=ACTIVITIES.find(a=>a.id===person.activity),prop=a.props[person.propVariant];
+  return {title:difficulty==='hard'?`${prop} · ${a.name} 친구`:`${a.name} 친구`,subtitle:`${a.name} 친구를 찾아줘! ${prop}도 확인해 봐.`,place:`${person.block.name} 근처에 있어요.`,prop};
 }
+export function getComparison(target,picked){
+  if(target.modelVariant!==picked.modelVariant)return '하고 있는 일은 비슷할까? 얼굴과 옷도 살펴봐!';
+  if(target.activity!==picked.activity)return '옷이 같은 친구네! 무엇을 하고 있는지도 살펴봐!';
+  return '아주 비슷하네! 손에 든 물건의 모양과 색도 살펴봐!';
+}
+export function personIsDiscoverable(town,id){const p=town.people.find(p=>p.id===id);return !!p&&town.people.filter(q=>signature(q)===signature(p)).length===1;}

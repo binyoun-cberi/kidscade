@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { STAGES, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, getBlockCenter, getRoutePosition, movePeople, getClue } from './sim.mjs?v=2';
+import { STAGES, DIFFICULTIES, WORLD_VERSION, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue } from './sim.mjs?v=3';
 
 const $ = id => document.getElementById(id);
 const ROOT = '../../assets/game/';
@@ -9,13 +9,14 @@ const MODEL = {
   buildings: ['a','b','c','d','f','g','h','i','k','m','n','p'].map(name => `${ROOT}3d/city/kenney-city-kit-suburban/building-type-${name}.glb`),
   parkTree: `${ROOT}3d/nature/kenney-nature-kit/tree-default.glb`,
   shopTree: `${ROOT}3d/city/kenney-city-kit-suburban/tree-small.glb`,
-  bench: `${ROOT}3d/interiors/kenney-furniture-kit/bench.glb`,
+  bench: `${ROOT}3d/city/poly-pizza-city-pack/bench.glb`,
   cars: [ `${ROOT}3d/vehicles/kenney-car-kit/sedan.glb`, `${ROOT}3d/vehicles/kenney-car-kit/taxi.glb`, `${ROOT}3d/vehicles/kenney-car-kit/van.glb` ],
   people: ['female','male'].flatMap(type => 'abcdef'.split('').map(letter => `${ROOT}characters/people/character-${type}-${letter}.glb`))
 };
 const CITY = `${ROOT}3d/city/poly-pizza-city-pack/`;
 const STREET = `${ROOT}3d/city/kenney-city-kit-roads/`;
 const FOOD = `${ROOT}3d/food/ultimate-food-pack/`;
+const BREADS=['bread','croissant','donut'].map(name=>`${FOOD}${name}.glb`);
 const DISTRICT_MODELS = {
   market:['building-red-corner','pizza-corner'], bakery:['pizza-corner','building-red'],
   school:['building-green'], home:['brown-building'], plaza:['big-building']
@@ -48,6 +49,10 @@ const cars = [];
 const mixers = [];
 const occluders = [];
 const citizenAssets = new Map();
+const readyAssets = new Map();
+const loweredBuildings = new Map();
+let loading=false, celebration=null, roundPrevious=[];
+const recentLooks=[];
 let seeThrough = false, previewActor = null, previewMixer = null;
 const previewCanvas = $('targetPreview');
 const previewRenderer = new THREE.WebGLRenderer({canvas:previewCanvas,antialias:true,alpha:true});
@@ -62,7 +67,12 @@ previewCamera.position.set(1.7,1.5,3.6);previewCamera.lookAt(0,.72,0);
 const SAVE_KEY = window.KidscadeGame?.storageKey?.('tod_mot_chatgetda_kkwaekkori','session') || 'kidscade_game_v1:tod_mot_chatgetda_kkwaekkori:session';
 
 function loadGLB(url) {
-  if (!modelCache.has(url)) modelCache.set(url,new Promise(resolve => loader.load(url, resolve, undefined, () => resolve(null))));
+  if (!modelCache.has(url)) modelCache.set(url,new Promise(resolve => {
+    let settled=false;
+    const finish=value=>{if(settled)return;settled=true;clearTimeout(timeout);resolve(value);};
+    const timeout=setTimeout(()=>finish(null),20000);
+    loader.load(url,finish,undefined,()=>finish(null));
+  }));
   return modelCache.get(url);
 }
 function owned(mesh) {mesh.userData.procedural = true;return mesh}
@@ -93,7 +103,7 @@ function normalizedModel(gltf, longest = 2.5, footprint = null) {
 function modelIn(group, url, longest, fallback, parent, revision) {
   group.add(fallback);
   loadGLB(url).then(gltf => {
-    if (!gltf || worldSerial !== revision || !parent.parent) return;
+    if (!gltf || worldSerial !== revision || !parent.parent || !group.parent) return;
     const model = normalizedModel(gltf,longest,group.userData.footprint);
     if (!model) return;
     group.remove(fallback);
@@ -136,7 +146,7 @@ function placeObject(url, center, longest, fallback, revision, footprint = null,
 function generateWorld() {
   for(const group of [scenery,citizens,movingCars,marker])disposeProcedural(group);
   scenery.clear();citizens.clear();movingCars.clear();marker.clear();citizenMeshes.clear();cars.length=0;
-  mixers.length=0;occluders.length=0;citizenAssets.clear();clearPreview();
+  mixers.length=0;occluders.length=0;citizenAssets.clear();loweredBuildings.clear();clearPreview();
   if (!town) return;
   const revision=++worldSerial;
   const {cols,rows}=town.config;
@@ -153,7 +163,7 @@ function generateWorld() {
   }
   for (let i=0;i<town.blocks.length;i++) {
     const block=town.blocks[i],center=getBlockCenter(block,town.config);
-    const parcel=addPart(scenery,cube(3.75,.035,3.75,block.kind==='park'?0xa6c987:colors.concrete),center.x,.03,center.z);
+    const parcel=addPart(scenery,cube(5.6,.035,5.6,block.kind==='park'?0xa6c987:colors.concrete),center.x,.03,center.z);
     parcel.userData.block=block.id;
     // A 2.6-wide building envelope leaves the 1.88 sidewalk loop clear.
     const local=(url,x,z,size,footprint=null,blocksView=false)=>placeObject(url,{x:center.x+x,z:center.z+z},size,treeFallback(),revision,footprint,blocksView);
@@ -163,17 +173,29 @@ function generateWorld() {
       local(`${CITY}flower-pot.glb`,.8,-.8,.55,.5);
       local(MODEL.bench,.45,.65,1.1);
       local(`${CITY}bicycle.glb`,-.7,.7,.9);
+    } else if(block.kind==='stop') {
+      local(`${CITY}bus-stop.glb`,0,-.35,2.25,2.6,true);
+      local(`${CITY}bus-stop-sign.glb`,-1.7,-.1,1.25);
+      local(`${CITY}trash-can.glb`,1.8,-.1,.65);
+      addPart(scenery,cube(4.7,.025,.18,0xf6d16c),center.x,.07,center.z+2.72);
     } else {
       const variants=DISTRICT_MODELS[block.kind];
       const url=town.stageName==='small'&&block.kind==='home' ? MODEL.buildings[i%MODEL.buildings.length] : `${CITY}${variants[Math.floor(i/6)%variants.length]}.glb`;
       const height=block.kind==='plaza'?4.6:block.kind==='home'?3.3:2.7;
-      const building=placeObject(url,center,height,buildingFallback(block),revision,2.6,true);
-      building.rotation.y=(i%4)*Math.PI/2;
+      const building=placeObject(url,{x:center.x-.95,z:center.z-.25},height,buildingFallback(block),revision,1.65,true);
+      building.rotation.y=0;
+      const neighbor=block.kind==='home'?MODEL.buildings[(i+3)%MODEL.buildings.length]:`${CITY}${variants[(Math.floor(i/6)+1)%variants.length]}.glb`;
+      placeObject(neighbor,{x:center.x+1.05,z:center.z-.25},Math.min(height,2.8),buildingFallback(block),revision,1.7,true);
       // Distinct, low storefront details sit inside each parcel, never in the pedestrian loop.
       if(block.kind==='market'||block.kind==='bakery') {
-        local(`${FOOD}${block.kind==='bakery'?'bread':'apple-green'}.glb`,-.7,1.1,.35);
-        local(`${CITY}flower-pot.glb`,.9,1.08,.45);
-        addPart(scenery,cube(1.5,.10,.50,0xe7bd85),center.x,.57,center.z+1.10);
+        // A stocked counter belongs to the storefront, clear of all activity bays.
+        const counter=new THREE.Group();counter.position.set(center.x,.62,center.z+1.35);scenery.add(counter);
+        addPart(counter,cube(2.35,.14,.44,0xe7bd85),0,0,0);
+        for(let bread=0;bread<3;bread++){
+          const tray=new THREE.Group();tray.position.set((bread-1)*.7,.08,0);counter.add(tray);
+          modelIn(tray,BREADS[bread],.3,cube(.25,.12,.18,0xc48d55),counter,revision);
+        }
+        local(`${CITY}flower-pot.glb`,2,-.6,.65);
       } else if(block.kind==='school') {
         local(`${CITY}bicycle.glb`,1.05,1.02,.75);
         local(`${CITY}planter-and-bushes.glb`,-.75,1.08,.85);
@@ -198,7 +220,7 @@ function generateWorld() {
     const appearance=new THREE.Group();
     holder.add(body,appearance);
     citizens.add(holder);
-    citizenMeshes.set(person.id,{holder,body,appearance,person});
+    citizenMeshes.set(person.id,{holder,body,appearance,person,activity:person.activity});
     makeCitizenAppearance(person,body,appearance,revision);
   }
   if(rows>1) {
@@ -209,17 +231,24 @@ function generateWorld() {
       const z=(-((rows-1)/2)+.5)*BLOCK_PITCH;
       cars.push({holder,z,phase:i*.33,direction:i%2?-1:1,speed:.9+i*.16,width});
     }
+    const stop=town.blocks.find(b=>b.kind==='stop');
+    if(stop){
+      const c=getBlockCenter(stop,town.config),holder=new THREE.Group();movingCars.add(holder);
+      modelIn(holder,`${CITY}bus.glb`,2.5,cube(2.3,.75,.85,0xf0cc65),holder,revision);
+      cars.push({holder,z:c.z+3.5,stopX:c.x,phase:0,bus:true,width});
+    }
   }
   const markerRing=owned(new THREE.Mesh(new THREE.TorusGeometry(.47,.042,8,32),new THREE.MeshBasicMaterial({color:0xffcc57,transparent:true,opacity:.93,depthTest:false})));
   markerRing.rotation.x=-Math.PI/2;markerRing.renderOrder=10;markerRing.name='hint-ring';markerRing.visible=false;marker.add(markerRing);
   positionEverything(0);
+  for(const p of town.people)if(p.found)addFoundMarker(citizenMeshes.get(p.id).holder);
   refreshPreview();
 }
 
 function makeCitizenAppearance(person,body,appearance,revision) {
-  const shirt=COLORS[person.clothingColor].hex;
-  const skin=[0xffd1a7,0xe7ac81,0xc98c69,0x8a624e][person.skin];
-  const hair=[0x47352c,0x302b36,0x775039,0xbaa16b][person.hair];
+  const shirt=COLORS[person.modelVariant%3].hex;
+  const skin=[0xffd1a7,0xe7ac81,0xc98c69,0x8a624e][person.modelVariant%4];
+  const hair=[0x47352c,0x302b36,0x775039,0xbaa16b][person.modelVariant%4];
   const fallback=new THREE.Group();
   addPart(fallback,ball(.25,skin),0,.91,0);
   addPart(fallback,ball(.245,hair),0,1.075,-.03).scale.set(1,.32,1);
@@ -233,34 +262,49 @@ function makeCitizenAppearance(person,body,appearance,revision) {
   // One complete character asset: no fixed hats or backpacks intersecting the model.
   loadGLB(MODEL.people[person.modelVariant]).then(gltf=>{
     if(!gltf||worldSerial!==revision||!body.parent)return;
-    const model=normalizedModel(gltf,1.35,1.1);
+    const model=normalizedModel(gltf,1.35,1.8);
     if(model){
       body.remove(fallback);disposeProcedural(fallback);body.add(model);
       const clipName=ACTIVITIES.find(a=>a.id===person.activity).clip;
       const clip=gltf.animations?.find(animation=>animation.name===clipName);
-      if(clip){const mixer=new THREE.AnimationMixer(model);mixer.clipAction(clip).play();mixers.push({mixer,person});}
+      if(clip){const mixer=new THREE.AnimationMixer(model);mixer.clipAction(clip).play();mixers.push({mixer,person,clipName});}
       citizenAssets.set(person.id,gltf);
       if(getTarget()?.id===person.id)refreshPreview();
     }
   });
+  buildActivityProps(person,appearance,revision);
+}
+function buildActivityProps(person,appearance,revision){
+  disposeProcedural(appearance);appearance.clear();
   const prop=new THREE.Group();prop.name='activity-prop';appearance.add(prop);
-  if(person.activity==='read') {
-    const book=addPart(prop,cube(.40,.055,.27,0xee976a),0,.72,.30);book.rotation.x=-.25;
-    addPart(book,cube(.35,.018,.24,0xfff6dd),0,.037,0);
-  } else if(person.activity==='snack') {
-    prop.position.set(-.25,.72,.21);
-    const fallback=ball(.10,0xffc9cb);
-    modelIn(prop,`${FOOD}ice-cream.glb`,.36,fallback,body.parent,revision);
-  } else if(person.activity==='shop') {
-    prop.position.set(-.33,.34,.12);
-    const bag=cube(.28,.32,.23,0xe7b876);bag.position.y=.16;
-    prop.add(bag);addPart(prop,cube(.20,.05,.05,0x967858),0,.35,0);
+  const color=COLORS[person.propVariant].hex;
+  if(person.activity==='read'||person.activity==='map'){
+    prop.position.set(0,.74,.34);
+    const book=addPart(prop,cube(.42,.055,.29,color),0,0,0);book.rotation.x=-.25;
+    addPart(book,cube(.37,.018,.26,0xfff6dd),0,.037,0);
+    if(person.activity==='map'){
+      addPart(book,cube(.025,.02,.23,0x79b3a6),-.09,.053,0);
+      addPart(book,cube(.30,.02,.025,0x79b3a6),0,.053,.03);
+    }
+  } else if(['browse','deliver','eat'].includes(person.activity)){
+    prop.position.set(person.activity==='eat'?-.26:0,.74,.36);
+    if(person.activity==='deliver')addPart(prop,cube(.56,.045,.35,0xf4e3bf),0,-.02,0);
+    modelIn(prop,BREADS[person.propVariant],.33,cube(.26,.14,.2,0xc48d55),appearance,revision);
   } else if(person.activity==='ball') {
-    prop.position.set(0,.25,.48);
-    modelIn(prop,`${ROOT}platformer/props/ball.glb`,.32,ball(.16,0xf2b341),body.parent,revision);
+    prop.position.set(0,.25,.38);prop.add(ball(.17,color));
+    addPart(prop,cube(.25,.035,.04,0xfff9e5),0,.14,0);
   } else if(person.activity==='sit') {
     const bench=new THREE.Group();bench.position.set(0,0,-.08);appearance.add(bench);
-    modelIn(bench,MODEL.bench,.9,cube(.85,.4,.4,0x977452),body.parent,revision);
+    modelIn(bench,MODEL.bench,1.05,cube(1,.4,.4,0x977452),appearance,revision);
+    addPart(prop,cube(.48,.065,.32,color),0,.43,.02);
+  } else if(person.activity==='wait'){
+    prop.position.set(-.37,0,.12);
+    addPart(prop,cube(.28,.37,.23,color),0,.20,0);
+    const handle=owned(new THREE.Mesh(new THREE.TorusGeometry(.075,.018,6,12),flat(color)));
+    addPart(prop,handle,0,.43,0);
+  } else if(person.activity==='wave'){
+    prop.position.set(-.34,1.03,.06);
+    addPart(prop,cube(.25,.23,.025,color),0,0,0);
   }
 }
 
@@ -292,13 +336,15 @@ function registerOccluder(root){
 }
 function applyVisibility(){
   for(const mesh of occluders)for(const mat of Array.isArray(mesh.material)?mesh.material:[mesh.material]){
-    mat.transparent=seeThrough;mat.opacity=seeThrough?.16:1;mat.depthWrite=!seeThrough;
+    mat.transparent=seeThrough;mat.opacity=seeThrough ? .16 : 1;mat.depthWrite=!seeThrough;
   }
 }
 function animateActivity(actor,person,now){
   const prop=actor.getObjectByName('activity-prop');
-  if(prop&&person.activity==='ball')prop.position.y=.22+Math.abs(Math.sin(person.elapsed*3))*.45;
-  if(prop&&person.activity==='snack')prop.rotation.z=Math.sin(person.elapsed*1.5)*.12;
+  if(prop&&person.activity==='ball')prop.position.y=.22+Math.abs(Math.sin(person.elapsed*3))*(celebration?.id===person.id ? .65 : .45);
+  if(prop&&person.activity==='eat'){prop.position.y=.82+Math.sin(person.elapsed*1.5)*.13;prop.rotation.z=Math.sin(person.elapsed*1.5)*.12;}
+  if(prop&&person.activity==='wave'){prop.rotation.z=Math.sin(person.elapsed*5)*.35;}
+  if(prop&&person.activity==='browse')prop.rotation.y=Math.sin(person.elapsed)*.18;
 }
 
 function positionEverything(dt) {
@@ -307,18 +353,32 @@ function positionEverything(dt) {
   for(const p of town.people) {
     const mesh=citizenMeshes.get(p.id);
     if(!mesh)continue;
+    if(mesh.activity!==p.activity){
+      mesh.activity=p.activity;buildActivityProps(p,mesh.appearance,worldSerial);
+      const entry=mixers.find(e=>e.person.id===p.id),gltf=citizenAssets.get(p.id);
+      const clipName=ACTIVITIES.find(a=>a.id===p.activity).clip;
+      const clip=gltf?.animations.find(a=>a.name===clipName);
+      if(entry&&clip){entry.mixer.stopAllAction();entry.mixer.clipAction(clip).play();entry.clipName=clipName;}
+    }
     const pos=getRoutePosition(p,town.config);
     mesh.holder.position.set(pos.x,0.08,pos.z);
-    const eps=.012*p.direction,next=getRoutePosition({...p,progress:p.progress+eps},town.config);
-    mesh.holder.rotation.y=Math.atan2(next.x-pos.x,next.z-pos.z);
-    if(p.activity!=='walk')mesh.holder.rotation.y=0;
+    mesh.holder.rotation.y=0;
+    if(celebration?.id===p.id){mesh.body.rotation.z=Math.sin(p.elapsed*12)*.07;}
+    else mesh.body.rotation.z=0;
     animateActivity(mesh.holder,p);
   }
   for(const car of cars) {
+    if(car.bus){
+      car.phase=(car.phase+dt)%40;
+      const entry=-car.width/2-2,exit=car.width/2+2;
+      const x=car.phase<10 ? entry+(car.stopX-entry)*car.phase/10:car.phase<20?car.stopX:car.stopX+(exit-car.stopX)*(car.phase-20)/20;
+      car.holder.position.set(x,.10,car.z);car.holder.rotation.y=Math.PI/2;continue;
+    }
     car.phase=(car.phase+dt*car.speed/car.width)%1;
     car.holder.position.set((car.phase-.5)*car.width*car.direction,.10,car.z);
     car.holder.rotation.y=car.direction>0?Math.PI/2:-Math.PI/2;
   }
+  for(const [root,until] of loweredBuildings){if(performance.now()>until){root.scale.y=1;loweredBuildings.delete(root);}}
   const ring=marker.getObjectByName('hint-ring');
   if(ring){
     const target=getTarget();
@@ -329,16 +389,17 @@ function positionEverything(dt) {
 
 function getTarget(){return town?.people.find(p=>p.id===town.order[currentTarget])||null}
 function setClue(){
-  const clue=getClue(getTarget());
+  const clue=getClue(getTarget(),town.difficulty);
   if(!clue)return;
   $('clueTitle').textContent=clue.title;
-  $('clueText').textContent='얼굴과 옷, 하고 있는 일을 함께 살펴봐!';
+  $('clueText').textContent=DIFFICULTIES[town.difficulty].description;
   refreshPreview();
-  $('progress').textContent=`찾은 친구 ${found.length} / ${town.config.targets}`;
+  $('progress').textContent=`찾은 친구 ${found.length} / ${town.order.length}`;
+  $('foundStamps').textContent='🌟'.repeat(found.length);
   $('hintText').textContent='';hintLevel=0;
 }
 function announceClue(){
-  const clue=getClue(getTarget());
+  const clue=getClue(getTarget(),town.difficulty);
   if(!clue)return;
   if('speechSynthesis' in window){
     speechSynthesis.cancel();
@@ -348,22 +409,47 @@ function announceClue(){
   }else showToast(clue.subtitle);
 }
 function getSeed(){return (Date.now() + Math.floor(Math.random()*999999))>>>0}
-function startTown(stage,seed=getSeed(),restored=[]) {
-  if(!STAGES[stage])return;
-  town=makeTown(stage,seed);found=[...new Set(restored.filter(id=>town.order.includes(id)))];
+async function startTown(stage,seed=getSeed(),restored=[],difficulty=$('difficulty').value,previous=null) {
+  if(!STAGES[stage]||loading)return;
+  loading=true;active=false;celebration=null;
+  $('startStatus').textContent='친구들이 외출 준비를 하고 있어요…';
+  document.querySelectorAll('[data-stage],#quickStart').forEach(b=>b.disabled=true);
+  try {
+  town=makeTown(stage,seed,difficulty,false);
+  // Only fully loaded models/props with the required pose may become a clue.
+  const urls=[...MODEL.people,...BREADS,MODEL.bench];
+  for(const url of urls)if(readyAssets.has(url)&&!readyAssets.get(url))modelCache.delete(url);
+  const loaded=await Promise.all(urls.map(loadGLB));
+  urls.forEach((url,i)=>readyAssets.set(url,loaded[i]));
+  const eligible=town.people.filter(person=>{
+    const gltf=readyAssets.get(MODEL.people[person.modelVariant]),a=ACTIVITIES.find(a=>a.id===person.activity);
+    return gltf?.animations?.some(c=>c.name===a.clip)&&(!['browse','deliver','eat'].includes(person.activity)||readyAssets.get(BREADS[person.propVariant]))&&(person.activity!=='sit'||readyAssets.get(MODEL.bench));
+  }).map(p=>p.id);
+  roundPrevious=previous||[...recentLooks];
+  selectTargets(town,eligible,roundPrevious);
+  if(!town.order.length){$('startStatus').textContent='친구들을 불러오지 못했어요. 잠시 후 다시 골라 주세요.';return;}
+  found=[];for(const id of town.order){if(!restored.includes(id))break;found.push(id);}
+  for(const person of town.people)person.found=found.includes(person.id);
   currentTarget=found.length;
-  active=currentTarget<town.config.targets;
+  active=currentTarget<town.order.length;
   initialViewSize=0;
   cameraLook.set(0,0,0);
-  $('districtLabel').textContent=town.config.label;
+  $('districtLabel').textContent=`${town.config.label} · ${DIFFICULTIES[town.difficulty].name}`;
+  $('difficulty').value=town.difficulty;
   $('start').classList.add('hidden');$('finish').classList.add('hidden');
   resize();resetView();generateWorld();
+  // Start close enough to distinguish a face. The whole-town button remains available.
+  const first=getBlockCenter(town.blocks[0],town.config);cameraLook.set(first.x,0,first.z+1);
+  viewSize=Math.min(13.5,Math.max(8,canvas.getBoundingClientRect().height*.025));resize();
   if(active){setClue();save();}
   else finishRound();
+  $('startStatus').textContent='';
+  }catch(error){$('start').classList.remove('hidden');$('startStatus').textContent='마을을 준비하지 못했어요. 다시 골라 주세요.';console.error(error);}
+  finally{loading=false;document.querySelectorAll('[data-stage],#quickStart').forEach(b=>b.disabled=false);}
 }
 function save(){
   if(!town)return;
-  try{localStorage.setItem(SAVE_KEY,JSON.stringify({stage:town.stageName,seed:town.seed,found,updatedAt:Date.now()}))}catch(_){}
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:WORLD_VERSION,stage:town.stageName,seed:town.seed,difficulty:town.difficulty,previous:roundPrevious,found,complete:found.length>=town.order.length,updatedAt:Date.now()}))}catch(_){}
 }
 function showToast(message){
   $('toast').textContent=message;
@@ -372,7 +458,7 @@ function showToast(message){
   lastToast=setTimeout(()=>$('toast').classList.remove('show'),2200);
 }
 function pick(clientX,clientY) {
-  if(!active)return;
+  if(!active||celebration)return;
   scene.updateMatrixWorld(true);
   const rect=canvas.getBoundingClientRect();
   let nearest=null,best=31*31;
@@ -393,39 +479,51 @@ function pick(clientX,clientY) {
       if(!obstruction||obstruction.distance>ray.ray.origin.distanceTo(point)-.15){best=distance;nearest=person;}
     }
   }
-  if(!nearest)return;
+  if(!nearest){
+    const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((clientX-rect.left)/rect.width*2-1,1-(clientY-rect.top)/rect.height*2),camera);
+    const hit=ray.intersectObjects(occluders,false)[0];
+    if(hit){let root=hit.object;while(root.parent&&!root.userData.occluder)root=root.parent;if(root.userData.occluder){root.scale.y=.18;loweredBuildings.set(root,performance.now()+6000);showToast('건물을 잠깐 낮췄어요. 뒤쪽도 살펴봐!');}}
+    return;
+  }
   if(nearest.id!==town.order[currentTarget]){
-    showToast('앗, 이 친구는 아니에요! 다시 찾아볼까요?');
+    showToast(getComparison(getTarget(),nearest));
     try{window.KidscadeGame?.sound?.('click')}catch(_){}
     return;
   }
-  found.push(nearest.id);currentTarget++;
+  nearest.found=true;found.push(nearest.id);
+  recentLooks.push(signature(nearest));if(recentLooks.length>20)recentLooks.shift();
+  celebration={id:nearest.id,remaining:1.4};addFoundMarker(citizenMeshes.get(nearest.id).holder);
+  $('foundStamps').textContent='🌟'.repeat(found.length);
+  $('progress').textContent=`찾은 친구 ${found.length} / ${town.order.length}`;
   showToast('🎉 찾았다! 정말 잘했어!');
   try{window.KidscadeGame?.sound?.('success');window.KidscadeGame?.milestone?.('person_found',{found:found.length,stage:town.stageName})}catch(_){}
-  if(currentTarget>=town.config.targets){finishRound()}
-  else setClue();
   save();
+}
+function addFoundMarker(holder){
+  if(holder.getObjectByName('found-marker'))return;
+  const ring=owned(new THREE.Mesh(new THREE.TorusGeometry(.37,.035,6,24),flat(0xf2cb53)));
+  ring.name='found-marker';ring.rotation.x=-Math.PI/2;ring.position.y=.03;holder.add(ring);
 }
 function finishRound(){
   active=false;
   if(!town)return;
   $('finishTitle').textContent='못 찾겠다 꾀꼬리? 다 찾았다!';
-  $('finishText').textContent=`${town.config.label}에서 친구 ${town.config.targets}명을 전부 찾았어요. 대단해요!`;
+  $('finishText').textContent=`${town.config.label}에서 친구 ${town.order.length}명을 전부 찾았어요. 대단해요!`;
   $('finish').classList.remove('hidden');
-  $('progress').textContent=`찾은 친구 ${town.config.targets} / ${town.config.targets}`;
-  try{window.KidscadeGame?.gameOver?.({success:true,score:town.config.targets,stage:town.stageName})}catch(_){}
+  $('progress').textContent=`찾은 친구 ${town.order.length} / ${town.order.length}`;
+  try{window.KidscadeGame?.gameOver?.({success:true,score:town.order.length,stage:town.stageName})}catch(_){}
   save();
 }
 function hint(){
-  if(!active)return;
+  if(!active||celebration)return;
   hintLevel=Math.min(3,hintLevel+1);
   const person=getTarget();
   if(!person)return;
   if(hintLevel===1)$('hintText').textContent=`📍 ${getClue(person).place}`;
   else if(hintLevel===2){
     $('hintText').textContent='👀 친구가 있는 거리로 화면을 옮겼어요.';
-    const center=getBlockCenter(person.block,town.config);cameraLook.x=center.x;cameraLook.z=center.z;
-    viewSize=Math.max(9,Math.min(viewSize,12));resize();updateCamera();
+    const center=getBlockCenter(person.block,town.config);cameraLook.x=center.x;cameraLook.z=center.z+1;
+    viewSize=10;resize();updateCamera();
   }else $('hintText').textContent='✨ 반짝이는 동그라미를 살펴봐요!';
   try{window.KidscadeGame?.sound?.('click')}catch(_){}
 }
@@ -508,7 +606,8 @@ $('hintBtn').addEventListener('click',hint);
 $('speakBtn').addEventListener('click',announceClue);
 $('menuBtn').addEventListener('click',()=>{$('finish').classList.add('hidden');$('start').classList.remove('hidden')});
 document.querySelectorAll('[data-stage]').forEach(button=>button.addEventListener('click',()=>startTown(button.dataset.stage)));
-$('againBtn').addEventListener('click',()=>startTown(town.stageName));
+$('quickStart').addEventListener('click',()=>startTown('small',getSeed(),[],'easy'));
+$('againBtn').addEventListener('click',()=>startTown(town.stageName,getSeed(),[],town.difficulty));
 $('otherStageBtn').addEventListener('click',()=>{$('finish').classList.add('hidden');$('start').classList.remove('hidden')});
 window.addEventListener('resize',resize);
 
@@ -520,6 +619,10 @@ function animate(now){
     for(const entry of mixers)entry.mixer.setTime(entry.person.elapsed);
     const target=getTarget();
     if(previewActor&&target){animateActivity(previewActor,target);previewMixer?.setTime(target.elapsed);}
+    if(celebration){
+      celebration.remaining-=dt;
+      if(celebration.remaining<=0){celebration=null;currentTarget=found.length;if(currentTarget>=town.order.length)finishRound();else setClue();}
+    }
   }
   renderer.render(scene,camera);
   previewRenderer.render(previewScene,previewCamera);
@@ -528,11 +631,11 @@ updateCamera();resize();requestAnimationFrame(animate);
 // Resuming is safe because the seed reconstructs all resident appearances and target order.
 try{
   const saved=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
-  if(saved?.stage&&STAGES[saved.stage]&&Number.isFinite(saved.seed)&&Array.isArray(saved.found)&&saved.found.length<STAGES[saved.stage].targets){
+  if(saved?.version===WORLD_VERSION&&!saved.complete&&saved?.stage&&STAGES[saved.stage]&&Number.isFinite(saved.seed)&&Array.isArray(saved.found)&&saved.found.length<STAGES[saved.stage].targets){
     const resume=document.createElement('button');resume.type='button';resume.className='resumeButton';
     resume.textContent='↩ 이어서 찾기';
     resume.style.cssText='border:0;border-radius:13px;padding:12px;background:#dff3e4;color:#347453;font-weight:900;margin-top:12px;';
-    resume.addEventListener('click',()=>startTown(saved.stage,saved.seed,saved.found));
+    resume.addEventListener('click',()=>startTown(saved.stage,saved.seed,saved.found,saved.difficulty,saved.previous||[]));
     document.querySelector('.stageList').after(resume);
   }
 }catch(_){}

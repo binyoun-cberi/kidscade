@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#cdece6">
   <title>못 찾겠다 꾀꼬리 | 키즈케이드</title>
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=3">
   <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
@@ -21,6 +21,7 @@
     <canvas id="targetPreview" aria-label="찾을 친구의 실제 모습과 동작" role="img"></canvas>
     <small class="previewCaption">이 모습 그대로 찾아봐! · 끌어서 돌려 보기</small>
     <p id="clueText">사람들을 자세히 살펴봐요!</p>
+    <div id="foundStamps" class="foundStamps" aria-label="찾은 친구 도장"></div>
     <div class="missionActions"><button id="hintBtn" type="button">💡 힌트 보기</button><button id="resetViewBtn" type="button">⌂ 마을 전체</button></div>
     <p id="hintText" class="hint" aria-live="polite"></p>
   </section>
@@ -34,12 +35,18 @@
       <span class="giantBird">🐤</span>
       <p class="eyebrow">와글와글 숨은 친구 찾기</p>
       <h1 id="startTitle">못 찾겠다 꾀꼬리!</h1>
-      <p class="intro">마을 사람들이 저마다 바쁘게 움직이고 있어요.<br>오늘은 어떤 친구를 찾아볼까요?</p>
+      <p class="intro">빵집에서, 공원에서, 정류장에서!<br>그림 속 친구를 찾아볼까요?</p>
+      <button id="quickStart" class="quickStart" type="button">🐤 바로 찾기</button>
+      <details class="playOptions"><summary>마을 크기와 찾기 방법 고르기</summary>
+      <label class="difficultyLabel" for="difficulty">찾기 방법</label>
+      <select id="difficulty"><option value="easy">똑같은 친구 · 그림 보고 찾기</option><option value="normal">자세히 보기 · 하는 일도 비교</option><option value="hard">꼼꼼히 찾기 · 물건까지 비교</option></select>
       <div class="stageList">
         <button type="button" data-stage="small"><span class="stageEmoji">🏡</span><span><b>작은 마을</b><small>18명 중 1명 찾기 · 처음이라면 여기!</small></span><span class="chev">›</span></button>
         <button type="button" data-stage="medium"><span class="stageEmoji">🏘️</span><span><b>북적북적 동네</b><small>45명 중 3명 찾기 · 이곳저곳 둘러보기</small></span><span class="chev">›</span></button>
         <button type="button" data-stage="large"><span class="stageEmoji">🏙️</span><span><b>와글와글 대도시</b><small>84명 중 5명 찾기 · 도전!</small></span><span class="chev">›</span></button>
       </div>
+      </details>
+      <p id="startStatus" role="status" aria-live="polite"></p>
       <p class="startFooter">서두르지 않아도 괜찮아요. 천천히 둘러보세요!</p>
     </div>
   </section>
@@ -50,6 +57,6 @@
 </main>
 <script src="../../kidscade-storage.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="tod_mot_chatgetda_kkwaekkori" data-title="못 찾겠다 꾀꼬리" data-shell="true" data-pauseable="true" data-orientation="landscape"></script>
-<script type="module" src="game.js?v=2"></script>
+<script type="module" src="game.js?v=3"></script>
 </body>
 </html>

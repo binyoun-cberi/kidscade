@@ -47,7 +47,7 @@ test('one day is seeded and every sought resident has unambiguous appearance',as
   for(const stage of Object.keys(STAGES))for(let seed=1;seed<=75;seed++) {
     const a=makeTown(stage,seed),b=makeTown(stage,seed);
     assert.deepEqual(a.order,b.order);
-    assert.deepEqual(a.people.map(p=>[p.hatStyle,p.hatColor,p.bagColor]),b.people.map(p=>[p.hatStyle,p.hatColor,p.bagColor]));
+    assert.deepEqual(a.people.map(p=>[p.modelVariant,p.activity,p.propVariant]),b.people.map(p=>[p.modelVariant,p.activity,p.propVariant]));
     for(const id of a.order){
       assert.ok(personIsDiscoverable(a,id));
       assert.ok(getClue(a.people.find(p=>p.id===id)).subtitle.length>5);
@@ -62,8 +62,8 @@ test('residents stay on visible sidewalk routes during life simulation',async()=
     for(const person of town.people){
       const at=getRoutePosition(person,town.config),center=getBlockCenter(person.block,town.config);
       assert.ok(Number.isFinite(at.x)&&Number.isFinite(at.z));
-      assert.ok(Math.abs(at.x-center.x)<=1.881 && Math.abs(at.z-center.z)<=1.881);
-      assert.ok(person.pause>=0);
+      assert.ok(Math.abs(at.x-center.x)<=1.72 && Math.abs(at.z-center.z)<=2.151);
+      assert.ok(person.elapsed>=0);
     }
   }
 });
@@ -78,7 +78,42 @@ test('activity clues stay unique and the district types are present in every sta
   for(const stage of Object.keys(STAGES))for(let seed=1;seed<=100;seed++){
     const town=makeTown(stage,seed);
     assert.equal(new Set(town.blocks.map(b=>b.kind)).size,6);
-    assert.equal(new Set(town.people.map(p=>`${p.modelVariant}:${p.activity}`)).size,town.people.length);
+    assert.equal(new Set(town.people.map(p=>`${p.modelVariant}:${p.activity}:${p.propVariant}`)).size,town.people.length);
     for(const id of town.order)assert.ok(personIsDiscoverable(town,id));
+  }
+});
+
+test('all nine scenes exist and reserved clues stay unchanged while neighbors change activities',async()=>{
+  const {makeTown,movePeople,signature,personIsDiscoverable}=await simPromise;
+  for(const size of ['small','medium','large'])for(const difficulty of ['easy','normal','hard'])for(let seed=1;seed<=12;seed++){
+    const town=makeTown(size,seed,difficulty);
+    assert.equal(new Set(town.people.map(p=>p.activity)).size,9);
+    const targets=town.order.map(id=>town.people.find(p=>p.id===id));
+    const before=targets.map(signature),background=town.people.filter(p=>!p.reserved).map(p=>[p.id,p.activity]);
+    for(let tick=0;tick<650;tick++)movePeople(town,.1);
+    assert.deepEqual(targets.map(signature),before);
+    for(const p of targets)assert.ok(personIsDiscoverable(town,p.id));
+    assert.ok(background.some(([id,activity])=>town.people.find(p=>p.id===id).activity!==activity));
+  }
+});
+
+test('eligibility filtering never makes an unavailable character the answer',async()=>{
+  const {makeTown,selectTargets}=await simPromise;
+  const town=makeTown('large',77,'hard',false);
+  const eligible=town.people.filter(p=>p.modelVariant<3).map(p=>p.id);
+  selectTargets(town,eligible);
+  assert.ok(town.order.length>0);
+  assert.ok(town.order.every(id=>eligible.includes(id)));
+  const empty=makeTown('small',22,'easy',false);selectTargets(empty,[]);assert.deepEqual(empty.order,[]);
+});
+
+test('hard clues include a visible prop and near-matches differ in a meaningful attribute',async()=>{
+  const {makeTown,getClue}=await simPromise;
+  for(let seed=1;seed<=100;seed++){
+    const town=makeTown('large',seed,'hard');
+    for(const id of town.order){const target=town.people.find(p=>p.id===id);assert.ok(getClue(target,'hard').title.includes(getClue(target).prop));}
+    const foils=town.people.filter(p=>p.foilFor);
+    assert.ok(foils.length>0);
+    for(const foil of foils){const target=town.people.find(p=>p.id===foil.foilFor);assert.equal(foil.modelVariant,target.modelVariant);assert.equal(foil.activity,target.activity);assert.notEqual(foil.propVariant,target.propVariant);}
   }
 });
