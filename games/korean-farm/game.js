@@ -9,9 +9,9 @@ import {createFieldWorkGrid} from './rendering/field-work-grid.js';
 import {createFieldStatusMarkers} from './rendering/field-status-markers.js';
 import {fieldStatusIndicators} from './farming/field-status.mjs';
 import {WORK_STRIPS,PATCH_ACTIONS,workStripPosition,nextWorkStrip,completedWorkStrips} from './farming/field-work.mjs';
-import {TRANSPLANT_COUNT,seedlingCount,seedlingPosition,nextEmptySeedling,canPlantSeedling,plantSeedling} from './farming/rice-transplant.mjs';
+import {TRANSPLANT_COUNT,seedlingCount,seedlingPosition,seedlingAtPoint,nextEmptySeedling,canPlantSeedling,plantSeedling} from './farming/rice-transplant.mjs';
 import {createFarmActionFlow,actionContactPoint,actionApproachPoint} from './interactions/action-flow.mjs';
-import {cameraRelativeInput,farmerHeading,rotateToward,walkPlayer,shouldTurnBeforeWalk,LOOK_SPEED} from './interactions/navigation.mjs';
+import {cameraRelativeInput,farmerHeading,rotateToward,walkPlayer,shouldTurnBeforeWalk,nearestWalkablePoint,planNavigationRoute,LOOK_SPEED} from './interactions/navigation.mjs';
 import {FIELD_DEFS,plotById,distanceToPlot} from './world.mjs';
 import {createFarmState,restoreFarmState,CROPS,calendar,fieldById,visualStage,fieldCondition,fieldCareAdvice,applyFarmAction,canApplyFarmAction,applyFarmStrip,canWorkFieldStrip,scoopCompost,advanceFarmDay,sellAllProduce,buyFarmSupply,currentDeliveryOrder,fulfillDeliveryOrder} from './farming/farm-sim.mjs';
 
@@ -23,7 +23,7 @@ let scene,renderer,camera,raycaster,ground,farmer,farmerAvatar,farmerAnimator,fi
 let last=0,raf=0,paused=false,disposed=false,loading=true,noticeTimer=0;
 let camTarget=new THREE.Vector3(state.player.x,0,state.player.z);
 let viewAngle=state.camera.angle,farmerFacingTarget=0;
-let moveGoal=null;
+let moveGoal=null,moveRoute=[],navigationStall=0;
 const keys=new Set();
 const joystick={x:0,y:0,id:null};
 const pointers=new Map();
@@ -37,6 +37,18 @@ let fieldWorkMode=false,workAction=null,selectedStrip=0,workFinished=false;
 const worldHits=[],worldStations=new Map();
 let pendingStation=null,worldAction=null,marketAccess=false;
 const actions={till:'괭이질',plant:'심기',water:'물주기',gate:'물꼬',weed:'김매기',fertilize:'거름주기',harvest:'수확'};
+
+function clearMovement(){moveGoal=null;moveRoute=[];navigationStall=0}
+function queueMovement(destination){
+  const route=planNavigationRoute(state.player,destination,obstacles,bounds);
+  if(!route){
+    clearMovement();pendingStation=null;farmFlow.cancelApproach();
+    toast('이동할 수 있는 길을 찾지 못했어요. 다른 곳에서 다시 시도해 주세요.');
+    return false;
+  }
+  clearMovement();moveGoal=route.shift();moveRoute=route;
+  return true;
+}
 
 const formatWon=n=>Math.max(0,Math.round(n)).toLocaleString('ko-KR')+'원';
 
@@ -142,8 +154,8 @@ function requestStation(key){
   const station=worldStations.get(key);if(!station)return;
   if(farmFlow.busy||farmerAnimator?.busy){toast('하던 작업을 마친 뒤 이동해 주세요.');return}
   pendingStation=key;keys.clear();
-  if(Math.hypot(state.player.x-station.stand.x,state.player.z-station.stand.z)<.42){moveGoal=null;arriveAtStation();return}
-  moveGoal={x:station.stand.x,z:station.stand.z};toast(station.target.userData.label+'으로 걸어가요.');
+  if(Math.hypot(state.player.x-station.stand.x,state.player.z-station.stand.z)<.42){clearMovement();arriveAtStation();return}
+  if(queueMovement(station.stand))toast(station.target.userData.label+'으로 걸어가요.');
 }
 function arriveAtStation(){
   const key=pendingStation;pendingStation=null;if(!key)return;
@@ -353,16 +365,28 @@ function move(dt,elapsed){
   const manual=cameraRelativeInput(keys,joystick,viewAngle);
   let direction={x:manual.x,z:manual.z},goalDistance=null;
   if(manual.active){
-    moveGoal=null;if(pendingStation)pendingStation=null;
+    clearMovement();if(pendingStation)pendingStation=null;
   }else if(moveGoal){
     const dx=moveGoal.x-state.player.x,dz=moveGoal.z-state.player.z;
     goalDistance=Math.hypot(dx,dz);
-    if(goalDistance<.34){moveGoal=null;goalDistance=null;if(pendingStation)arriveAtStation()}
+    if(goalDistance<.34){
+      if(moveRoute.length){moveGoal=moveRoute.shift();navigationStall=0}
+      else{clearMovement();if(pendingStation)arriveAtStation()}
+      return false;
+    }
     else direction={x:dx/goalDistance,z:dz/goalDistance};
   }
   // Resolve collisions first, then face the direction the farmer can actually
   // travel. Sliding along a wall can differ from the requested diagonal input.
   const result=walkPlayer(state.player,direction,dt,{goalDistance,bounds,obstacles});
+  if(moveGoal&&result.blocked){
+    navigationStall+=dt;
+    if(navigationStall>1.8){
+      clearMovement();pendingStation=null;farmFlow.cancelApproach();
+      toast('길이 막혀 이동을 멈췄어요. 다른 곳에서 다시 시도해 주세요.');
+      refreshFarmControls();return false;
+    }
+  }else navigationStall=0;
   const stepX=result.x-state.player.x,stepZ=result.z-state.player.z;
   const travelled=Math.hypot(stepX,stepZ);
   if(travelled>.001){
@@ -430,7 +454,18 @@ function inspectAt(e){
       return;
     }
   }
-  if(plantingMode){toast('모내기 중이에요. 논의 빈자리를 눌러 주세요.');return}
+  if(plantingMode){
+    // Tiny visual rings are hard to hit on a phone. Let the entire selected
+    // paddy accept a tap and resolve it to the nearest of the 25 positions.
+    const plot=plotById(state.selected),point=new THREE.Vector3();
+    const plantingPlane=new THREE.Plane(new THREE.Vector3(0,1,0),-.29);
+    if(plot&&raycaster.ray.intersectPlane(plantingPlane,point)&&
+       Math.abs(point.x-plot.x)<=plot.w/2&&Math.abs(point.z-plot.z)<=plot.d/2){
+      const index=seedlingAtPoint(plot,point);
+      if(index>=0){runSeedlingPlant(index);return}
+    }
+    toast('모내기 중이에요. 논의 빈자리를 눌러 주세요.');return;
+  }
   const stationHit=raycaster.intersectObjects(worldHits,false)[0];
   if(stationHit){requestStation(stationHit.object.userData.worldStation);return}
   const gate=raycaster.intersectObjects(gateHits,false)[0];
@@ -446,7 +481,7 @@ function inspectAt(e){
     const x=Math.max(-bounds,Math.min(bounds,p.x)),z=Math.max(-bounds,Math.min(bounds,p.z));
     if(!isBlocked(x,z)){
       if(farmFlow.cancelApproach())toast('이동하던 농사 작업을 취소했어요.');
-      if(!farmFlow.busy)moveGoal={x,z};
+      if(!farmFlow.busy)queueMovement({x,z});
     }
   }
 }
@@ -461,8 +496,8 @@ function activateSluice(id){
   if(request.type!=='queued'){toast(request.message||'물꼬를 만질 수 없어요.');return}
   keys.clear();
   if(request.phase==='approach'){
-    moveGoal=request.goal;toast(plot.label+' 물꼬까지 걸어가 열고 닫을게요.');
-  }else moveGoal=null;
+    if(queueMovement(request.goal))toast(plot.label+' 물꼬까지 걸어가 열고 닫을게요.');
+  }else clearMovement();
   refreshFarmControls();
 }
 function chooseField(id){
@@ -496,7 +531,7 @@ function refreshObjective(){
   const target=$('objective').querySelector('p');
   target.textContent=done===3?'첫 수확과 판매를 마쳤어요! 이제 원하는 작물을 기르며 농장을 꾸려 보세요.':
     !steps[0]?'논을 눌러 작물의 상태를 살펴보세요.':
-    !steps[1]?'네 번째 논에는 익은 벼가 있어요. 가까이 가서 수확해 보세요.':'가방에서 첫 수확물을 팔아 보세요.';
+    !steps[1]?'네 번째 논에는 익은 벼가 있어요. 가까이 가서 수확해 보세요.':'장터에 가서 첫 수확물을 팔아 보세요.';
 }
 function progressBarRow(label,value,description){
   const div=document.createElement('div');div.className='metric-row';
@@ -548,8 +583,7 @@ function updateInspector(){
 function goToSelectedField(){
   const p=plotById(state.selected);if(!p)return;
   if(farmFlow.busy){toast('지금 하던 작업을 마친 뒤 이동할 수 있어요.');return}
-  moveGoal=actionApproachPoint(p,state.player);
-  toast(p.label+' 쪽으로 걸어갑니다.');
+  if(queueMovement(actionApproachPoint(p,state.player)))toast(p.label+' 쪽으로 걸어갑니다.');
 }
 function refreshFarmControls(){
   if(!$('inspector').classList.contains('hidden'))updateInspector();
@@ -587,7 +621,7 @@ function enterPlantingMode(){
 }
 function exitPlantingMode(){
   plantingMode=false;$('plantingHud').classList.add('hidden');
-  if(farmFlow.cancelApproach())moveGoal=null;
+  if(farmFlow.cancelApproach())clearMovement();
   for(const def of FIELD_DEFS)if(def.kind==='rice'){
     const f=fieldById(state,def.id);const rec=plotMeshes.get(def.id);rec?.planting?.refresh(f,-1,false,!f.planted&&f.tilled&&state.inventory.seedRice>0);
   }
@@ -611,7 +645,7 @@ function runSeedlingPlant(index=selectedSeedling){
   const goal={x:point.x,z:point.z+.39};
   const req=farmFlow.request({action:'plant',plot,position:state.player,goal,cellIndex:i});
   if(req.type!=='queued')return;
-  keys.clear();moveGoal=req.phase==='approach'?req.goal:null;
+  keys.clear();if(req.phase==='approach')queueMovement(req.goal);else clearMovement();
   refreshPlantingHud();
 }
 function refreshFieldWorkHud(){
@@ -645,7 +679,7 @@ function enterFieldWorkMode(action){
 function exitFieldWorkMode(){
   fieldWorkMode=false;workAction=null;workFinished=false;
   $('fieldWorkHud').classList.add('hidden');
-  if(farmFlow.cancelApproach())moveGoal=null;
+  if(farmFlow.cancelApproach())clearMovement();
   for(const p of FIELD_DEFS)plotMeshes.get(p.id)?.work?.refresh(fieldById(state,p.id));
   if(!$('modal').classList.contains('hidden'))return;
   updateInspector();$('inspector').classList.remove('hidden');
@@ -663,17 +697,17 @@ function runFieldStrip(index=selectedStrip){
   const goal={x:point.x,z:point.z+.42};
   const req=farmFlow.request({action:workAction,plot,position:state.player,goal,cellIndex:i});
   if(req.type!=='queued')return;
-  keys.clear();moveGoal=req.phase==='approach'?req.goal:null;refreshFieldWorkHud();
+  keys.clear();if(req.phase==='approach')queueMovement(req.goal);else clearMovement();refreshFieldWorkHud();
 }
 function handleFarmFlowEvent(event){
   const plot=plotById(event.fieldId);
   if(event.type==='timeout'){
-    moveGoal=null;toast('길을 찾지 못했어요. 가까이에서 다시 시도해 주세요.');
+    clearMovement();toast('길을 찾지 못했어요. 가까이에서 다시 시도해 주세요.');
     refreshFarmControls();return;
   }
   if(!plot)return;
   if(event.type==='start'){
-    moveGoal=null;
+    clearMovement();
     const contact=event.action==='gate'?sluices.get(plot.id)?.position:
       event.cellIndex==null?plot:event.action==='plant'?
         seedlingPosition(plot,event.cellIndex):workStripPosition(plot,event.cellIndex);
@@ -747,8 +781,8 @@ function doFarmAction(action){
   if(request.type!=='queued'){toast(request.message||'지금은 작업할 수 없어요.');return}
   keys.clear();
   if(request.phase==='approach'){
-    moveGoal=request.goal;toast(plot.label+'에 다가가 '+(actions[action]||'농사 작업')+'를 시작할게요.');
-  }else moveGoal=null;
+    if(queueMovement(request.goal))toast(plot.label+'에 다가가 '+(actions[action]||'농사 작업')+'를 시작할게요.');
+  }else clearMovement();
   refreshFarmControls();
 }
 function advanceFarmDayAfterRest(){
@@ -802,7 +836,7 @@ function openBag(){
   }
   delivery.append(deliveryTitle,deliveryText,deliveryBtn);
   const note=document.createElement('p');note.className='bag-note';
-  note.textContent='수확물은 판매하거나 마을 부탁에 사용할 수 있어요. 씨앗과 퇴비를 구입할 수 있고, 판매 가격은 고정되어 있어요.';
+  note.textContent='수확물은 판매하거나 마을 부탁에 사용할 수 있어요. 씨앗은 장터에서 사고, 퇴비는 집 옆 거름 더미에서 직접 퍼 와요. 판매 가격은 고정되어 있어요.';
   const sale=document.createElement('button');sale.className='sell-btn';sale.type='button';
   const total=Object.keys(CROPS).reduce((acc,key)=>acc+state.inventory[key]*CROPS[key].price,0);
   sale.textContent='수확물 모두 판매 · '+formatWon(total);sale.disabled=total===0;
@@ -821,7 +855,7 @@ function showModal(title,inner){
   $('modal').classList.remove('hidden');
 }
 function help(){
-  const info=document.createElement('div');info.innerHTML='<p><b>PC</b> · WASD 또는 방향키로 이동합니다. 바닥을 클릭하면 그곳으로 걸어가요. 논을 클릭하면 벼 성장 단계를 살펴볼 수 있어요.</p><p><b>카메라</b> · 마우스 휠로 확대·축소, Q/E 또는 회전 버튼으로 시점을 돌려요.</p><p><b>휴대폰·태블릿</b> · 왼쪽 조이스틱으로 이동하고 손가락으로 논을 선택해요. 두 손가락으로 확대·축소할 수 있어요.</p><p><b>농사</b> · 논 위 작은 원 표식으로 물·양분·잡초·수확 상태를 살펴보세요. 논 옆 나무 수문을 누르거나 가까이서 E를 눌러 물꼬를 열고 닫아요. 그 밖의 작업은 논밭을 선택해 진행해요. 하루 보내기로 작물을 성장시키고 수확물을 거래해요.</p><p><b>참고</b> · 벼 생육과 날씨는 교육용 간략 계산 모델이에요. 실제 농업 통계에 맞춘 정밀 보정은 추후 진행합니다.</p>';
+  const info=document.createElement('div');info.innerHTML='<p><b>PC</b> · WASD 또는 방향키로 이동합니다. 바닥을 클릭하면 그곳으로 걸어가요. 논을 클릭하면 벼 성장 단계를 살펴볼 수 있어요.</p><p><b>카메라</b> · 마우스 휠로 확대·축소, Q/E 또는 회전 버튼으로 시점을 돌려요.</p><p><b>휴대폰·태블릿</b> · 왼쪽 조이스틱으로 이동하고 손가락으로 논을 선택해요. 두 손가락으로 확대·축소할 수 있어요.</p><p><b>농사</b> · 논 위 작은 원 표식으로 물·양분·잡초·수확 상태를 살펴보세요. 모내기는 논의 빈자리를 누르거나 스페이스·엔터로 진행할 수 있어요. 논 옆 나무 수문을 누르거나 가까이서 E를 눌러 물꼬를 조절해요. 장터에서 거래하고 집에 가서 쉬면 다음 날이 돼요.</p><p><b>참고</b> · 벼 생육과 날씨는 교육용 간략 계산 모델이에요. 실제 농업 통계에 맞춘 정밀 보정은 추후 진행합니다.</p>';
   showModal('솔내리에서 움직이는 법',info);
 }
 function showQa(){
@@ -875,7 +909,7 @@ function bindControls(){
     if(!$('modal').classList.contains('hidden')&&key!=='escape')return;if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(key))e.preventDefault();
     keys.add(key);
     if(farmFlow.busy&&farmFlow.active.phase==='approach'&&['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){
-      farmFlow.cancelApproach();moveGoal=null;toast('직접 걷기를 시작해 농사 작업을 취소했어요.');refreshFarmControls();
+      farmFlow.cancelApproach();clearMovement();toast('직접 걷기를 시작해 농사 작업을 취소했어요.');refreshFarmControls();
     }
     if(e.repeat)return;
     if(key==='q')state.camera.angle-=Math.PI/6;
@@ -892,7 +926,7 @@ function bindControls(){
       if(fieldWorkMode)exitFieldWorkMode();
       $('moreTools').classList.add('hidden');$('moreBtn').setAttribute('aria-expanded','false');
       keys.clear();
-      if(farmFlow.cancelApproach()){moveGoal=null;toast('이동하던 농사 작업을 취소했어요.');refreshFarmControls()}
+      if(farmFlow.cancelApproach()){clearMovement();toast('이동하던 농사 작업을 취소했어요.');refreshFarmControls()}
       $('modal').classList.add('hidden');$('inspector').classList.add('hidden')
     }
     if((key===' '||key==='enter')&&plantingMode&&!e.repeat){e.preventDefault();runSeedlingPlant()}
@@ -936,7 +970,7 @@ function bindControls(){
   });
   $('help').onclick=help;$('qaBtn').onclick=showQa;
   $('focusFarm').onclick=()=>{if(farmFlow.busy&&!farmFlow.cancelApproach()){toast('작업이 끝나면 마을길로 돌아갈 수 있어요.');return}
-    moveGoal={x:0,z:9};$('inspector').classList.add('hidden');toast('마을길로 걸어가요.')};
+    if(queueMovement({x:0,z:9})){ $('inspector').classList.add('hidden');toast('마을길로 걸어가요.') }};
   $('saveBtn').onclick=()=>save();
   $('closeInspect').onclick=()=>$('inspector').classList.add('hidden');
   $('modalClose').onclick=()=>$('modal').classList.add('hidden');
@@ -966,7 +1000,7 @@ function bindControls(){
   const stick=$('joystick'),knob=stick.querySelector('.joystick-knob');
   const resetStick=()=>{joystick.x=0;joystick.y=0;joystick.id=null;knob.style.transform='translate(0,0)'};
   const readStick=e=>{
-    if(farmFlow.cancelApproach()){moveGoal=null;toast('직접 이동해 농사 작업을 취소했어요.');refreshFarmControls()}
+    if(farmFlow.cancelApproach()){clearMovement();toast('직접 이동해 농사 작업을 취소했어요.');refreshFarmControls()}
     const r=stick.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
     const dist=Math.max(1,Math.hypot(dx,dy)),max=r.width*.34,scale=Math.min(1,max/dist);
     joystick.x=dx*scale/max;joystick.y=dy*scale/max;
@@ -980,6 +1014,9 @@ function bindControls(){
   window.KidscadeGame?.registerCleanup?.(()=>{farmFlow.reset();save(true);disposed=true;cancelAnimationFrame(raf);fieldEffects?.clear();for(const r of plotMeshes.values()){r.planting?.dispose();r.work?.dispose();r.statusMarkers?.dispose?.()}villageScene?.dispose();renderer?.dispose()});
 }
 async function main(){
+  const safeStart=nearestWalkablePoint(state.player,obstacles,bounds);
+  if(safeStart){state.player.x=safeStart.x;state.player.z=safeStart.z;camTarget.set(safeStart.x,0,safeStart.z)}
+  else{state.player.x=-5;state.player.z=3;camTarget.set(-5,0,3)}
   init3D();ground=new THREE.Plane(new THREE.Vector3(0,1,0),-.15);
   bindControls();
   refreshHud();refreshObjective();updateInspector();
@@ -990,6 +1027,15 @@ async function main(){
   if(!state.stats.harvests)toast('첫 번째 논에서 모내기를 체험하고, 네 번째 논에서는 익은 벼를 수확해 보세요.');
 }
 main().catch(e=>{
-  $('loadingText').textContent='농장을 불러오지 못했어요. 다시 열어 주세요.';
+  const webgl=/webgl|webglrenderer|context/i.test(String(e?.message||e));
+  $('loading').classList.add('failed');
+  $('loadingTitle').textContent=webgl?'3D 화면을 시작할 수 없어요':'농장을 불러오지 못했어요';
+  $('loadingText').textContent=webgl?'이 브라우저에서 3D 그래픽 기능을 사용할 수 없어요.':'농장 자료를 불러오는 중 문제가 생겼어요.';
+  $('loadingDetail').textContent=webgl?
+    '브라우저의 하드웨어 가속을 확인하거나 다른 브라우저에서 열어 보세요. 학교 기기나 원격 브라우저에서는 3D 기능이 제한될 수 있어요.':
+    '인터넷 연결을 확인하고 다시 시도해 주세요. 이미 저장한 농사 기록은 그대로 유지돼요.';
+  $('loadingDetail').classList.remove('hidden');
+  $('retryLoad').classList.remove('hidden');
+  $('retryLoad').onclick=()=>window.location.reload();
   console.error('[Korean Farm]',e);
 });
