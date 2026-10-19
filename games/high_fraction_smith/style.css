@@ -659,3 +659,44 @@ body[data-heat="5"] .ambient-embers i{animation-duration:3.8s}
  .sound-btn{width:30px;height:32px;font-size:14px}
  .order-who #requestText{display:none}
 }
+
+/* P3: a workshop that visibly grows as the player reinvests commissions. */
+.tray-actions .shop-open{border-color:#c68a4c;background:linear-gradient(#7a472a,#482b21);color:#ffe1a3;box-shadow:inset 0 1px #ffce8740}
+.tray-actions .shop-open:hover:not(:disabled){background:#91552d}
+body[data-furnace="1"] .furnace-mouth,body[data-furnace="2"] .furnace-mouth{border-color:#ffaf57;box-shadow:inset 0 0 23px #0009,0 0 52px #ff8c2d92}
+body[data-furnace="2"] .furnace-shell{filter:drop-shadow(0 0 13px #ffba5066)}
+body[data-hammer="1"] .tool.add,body[data-hammer="2"] .tool.add{border-color:#ffe0a2;box-shadow:0 0 18px #f8c36d66,inset 0 1px #fff5}
+body[data-hammer="2"] .tool.add .tool-art{filter:drop-shadow(0 0 8px #ffedac)}
+body[data-counter="1"] .tray-panel,body[data-counter="2"] .tray-panel{border-color:#ae8750;box-shadow:0 0 20px #ffe08228}
+body[data-counter="2"] .tray-panel{background:linear-gradient(#3c2b1edc,#241911ec)}
+.craft-meter.timing .craft-timing-target{left:var(--hammerStart,60%);width:var(--hammerWidth,30%)}
+.shop-card{width:min(845px,96vw);max-height:min(850px,92dvh);overflow-y:auto;text-align:left;padding:22px 24px;overscroll-behavior:contain}
+.shop-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.shop-heading h2{margin:4px 0 0;font-size:24px;color:#ffdda0}
+.shop-close{flex:0 0 auto;border:1px solid #876849;border-radius:10px;background:#34251d;color:#f5d8ae;padding:10px;font-size:12px;font-weight:800;cursor:pointer}
+.shop-close:hover{background:#543623}
+.shop-card>p{margin:8px 0 12px}
+.shop-wallet{padding:11px 16px;border:1px solid #9e6733;border-radius:13px;background:linear-gradient(95deg,#4b301e,#2e221d);display:flex;align-items:center;justify-content:space-between;gap:10px;color:#d9bea1;font-size:12px;font-weight:700}
+.shop-wallet strong{font-size:22px;color:#ffdd86;font-variant-numeric:tabular-nums}
+.upgrade-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0 19px}
+.upgrade-card{min-height:151px;display:flex;flex-direction:column;gap:8px;border:1px solid #72513b;border-radius:14px;background:linear-gradient(155deg,#443020,#2c221e);padding:14px}
+.upgrade-card strong{font-size:16px;color:#ffe1ad}.upgrade-card small{font-size:11px;line-height:1.5;color:#d1b49d;flex:1}
+.upgrade-buy{width:100%;border:1px solid #e6ae65;border-radius:9px;background:linear-gradient(#f2c67a,#cb844a);color:#342016;font-size:12px;font-weight:900;padding:10px 4px;cursor:pointer}
+.upgrade-buy:disabled{background:#514033;color:#a79480;border-color:#755b45;cursor:default}
+.upgrade-buy:focus-visible,.shop-close:focus-visible,.shop-open:focus-visible{outline:3px solid #fff1bd;outline-offset:3px}
+.collection-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 10px}
+.collection-heading h3{font-size:16px;margin:0;color:#f2cc8d}.collection-heading span{font-size:12px;color:#d9bd97}
+.collection-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.collection-card{position:relative;display:flex;flex-direction:column;gap:6px;min-height:85px;padding:12px;border:1px solid #706044;border-radius:12px;background:#3c2a20}
+.collection-card strong{font-size:12px;color:#ffdaa0}.collection-card small{font-size:10px;color:#c7ae94}
+.collection-card.locked{background:#241f1d;border-style:dashed;border-color:#554b42}.collection-card.locked strong{color:#9e9388}
+.collection-made{position:absolute;right:7px;bottom:6px;color:#9de4b0;font-size:9px;font-weight:900}
+.shop-footnote{display:block;font-size:10px;color:#bca18b;margin-top:13px;line-height:1.5}
+@media(max-width:700px){
+ .tray-head{align-items:stretch;flex-wrap:wrap}.tray-actions{justify-content:space-between;width:100%;gap:4px}.tray-actions button{flex:1;white-space:nowrap}
+ .shop-card{padding:15px;max-height:94dvh}.shop-heading h2{font-size:20px}
+ .upgrade-grid{grid-template-columns:1fr;gap:7px}.upgrade-card{min-height:0;display:grid;grid-template-columns:1fr auto;align-items:center;padding:10px;gap:3px 8px}
+ .upgrade-card strong{grid-column:1;font-size:14px}.upgrade-card small{grid-column:1;grid-row:2;font-size:10px}.upgrade-buy{grid-column:2;grid-row:1/span 2;padding:9px;width:126px}
+ .collection-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.collection-card{min-height:70px}
+}
+@media(max-width:390px){.tray-actions button{font-size:8px;padding:5px 3px}.shop-close{font-size:10px;padding:8px}.upgrade-buy{width:102px;font-size:10px}}

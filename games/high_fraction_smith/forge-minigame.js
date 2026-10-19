@@ -4,15 +4,19 @@
   root.FractionSmithForge=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  function create(){return {stage:'heat',pumps:0,hits:0,accuracy:0,quality:0,done:false}}
+  const level=v=>Number.isSafeInteger(v)?Math.min(2,Math.max(0,v)):0;
+  function create(options={}){
+    return {stage:'heat',pumps:0,requiredPumps:4-level(options.furnaceLevel),hits:0,
+      timingWindow:.30+level(options.hammerLevel)*.08,accuracy:0,quality:0,done:false};
+  }
   function act(session,timing=.5){
     if(session.done)return session;
     if(session.stage==='heat'){
       session.pumps++;
-      if(session.pumps>=4)session.stage='hammer';
+      if(session.pumps>=session.requiredPumps)session.stage='hammer';
     }else if(session.stage==='hammer'){
       // A moving mark at 0.75 is the centre of the hammer's sweet spot.
-      const closeness=Math.max(0,1-Math.abs(timing-.75)/.30);
+      const closeness=Math.max(0,1-Math.abs(timing-.75)/session.timingWindow);
       session.accuracy+=closeness;
       session.hits++;
       if(session.hits>=3)session.stage='quench';

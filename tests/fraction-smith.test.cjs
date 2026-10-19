@@ -56,6 +56,21 @@ test('Commission descriptions tie the math goal to an item and a customer',()=>{
   assert.equal(O.create(2).item.id,'shield');
 });
 
+test('New commissions and customers unlock at their intended milestones',()=>{
+  assert.equal(O.ITEMS.length,8);
+  assert.equal(O.CUSTOMERS.length,8);
+  assert.equal(O.unlockedItems(0).length,3);
+  assert.equal(O.unlockedItems(2).length,4);
+  assert.equal(O.unlockedItems(4).length,5);
+  assert.equal(O.unlockedItems(12).length,8);
+  assert.equal(O.create(2,'practice',2).item.id,'spear');
+  assert.equal(O.create(4,'practice',4).item.id,'helmet');
+  assert.equal(O.create(12,'practice',12).item.id,'crown');
+  assert.equal(O.create(0,'master',3).item.id,'shield');
+  assert.equal(O.create(1,'master',3).item.id,'spear');
+  assert.ok(O.ITEMS.every(item=>O.CUSTOMERS[item.customer]?.name));
+});
+
 test('Crafting needs four bellows pumps, three hammer strikes and a quench',()=>{
   const session=F.create();
   for(let i=0;i<4;i++)F.act(session);
@@ -74,6 +89,23 @@ test('Crafting needs four bellows pumps, three hammer strikes and a quench',()=>
   assert.ok(novice.quality<100&&novice.quality>=60);
 });
 
+test('Furnace upgrades reduce the pumps, while hammer upgrades widen the accuracy window',()=>{
+  const levelOne=F.create({furnaceLevel:1,hammerLevel:1});
+  for(let i=0;i<2;i++)F.act(levelOne);
+  assert.equal(levelOne.stage,'heat');
+  F.act(levelOne);
+  assert.equal(levelOne.stage,'hammer');
+  const basic=F.create(),improved=F.create({hammerLevel:2,furnaceLevel:2});
+  assert.equal(improved.requiredPumps,2);
+  for(let i=0;i<4;i++)F.act(basic);
+  for(let i=0;i<2;i++)F.act(improved);
+  for(let i=0;i<3;i++){F.act(basic,.5);F.act(improved,.5)}
+  F.act(basic);F.act(improved);
+  assert.ok(improved.quality>basic.quality);
+  assert.equal(F.create({furnaceLevel:99,hammerLevel:99}).requiredPumps,2);
+  assert.equal(F.create({furnaceLevel:-1,hammerLevel:-1}).requiredPumps,4);
+});
+
 test('Progress persistence is resilient when storage is unavailable',()=>{
   const initial=S.load();
   assert.equal(initial.gold,0);
@@ -81,6 +113,35 @@ test('Progress persistence is resilient when storage is unavailable',()=>{
   assert.equal(after.gold,65);
   assert.equal(after.crafted,1);
   assert.equal(after.collection.sword,1);
+});
+
+test('Progress migrates existing saves and purchases cannot overspend or exceed max level',()=>{
+  const prior=globalThis.localStorage;
+  const saved=new Map();
+  globalThis.localStorage={getItem:key=>saved.get(key)||null,setItem:(key,value)=>saved.set(key,value)};
+  try{
+    saved.set(S.KEY,JSON.stringify({gold:500,crafted:5,collection:{sword:2,axe:1}}));
+    const migrated=S.load();
+    assert.equal(migrated.upgrades.furnace,0);
+    assert.equal(migrated.collection.sword,2);
+    assert.equal(migrated.collection.helmet,0);
+    const first=S.purchase(migrated,'furnace');
+    assert.equal(first.ok,true);assert.equal(first.cost,80);
+    assert.equal(first.progress.gold,420);
+    assert.equal(S.load().upgrades.furnace,1);
+    const second=S.purchase(first.progress,'furnace');
+    assert.equal(second.ok,true);
+    assert.equal(second.progress.gold,240);
+    const max=S.purchase(second.progress,'furnace');
+    assert.equal(max.ok,false);assert.equal(max.reason,'max');
+    assert.equal(max.progress.gold,240);
+    const costly=S.purchase(second.progress,'counter');
+    assert.equal(costly.ok,true);
+    const insufficient=S.purchase(costly.progress,'counter');
+    assert.equal(insufficient.ok,false);assert.equal(insufficient.reason,'gold');
+    assert.equal(S.upgradeCost(costly.progress,'counter'),250);
+    assert.equal(S.purchase(costly.progress,'nonexistent').ok,false);
+  }finally{if(prior===undefined)delete globalThis.localStorage;else globalThis.localStorage=prior}
 });
 
 test('Fraction Smith uses Kidscade avatar, audio and particle assets',()=>{
@@ -96,6 +157,7 @@ test('Fraction Smith uses Kidscade avatar, audio and particle assets',()=>{
   assert.match(js,/impact-heavy-01\.mp3/);
   assert.match(js,/kenney-particle-pack\/spark-0/);
   assert.match(html,/id="craftModal"/);
+  assert.match(html,/id="shopModal"/);
   assert.match(html,/id="restartBtn"/);
   assert.match(js,/function restartOrder/);
   assert.match(js,/function beginCraft/);

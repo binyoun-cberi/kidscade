@@ -27,7 +27,7 @@ function node(id=''){
   return obj;
 }
 
-function mount(){
+function mount(initialProgress=null){
   const nodes=new Map(),get=id=>{if(!nodes.has(id))nodes.set(id,node(id));return nodes.get(id)};
   const toolOps=['+','-','×','÷'],tools=toolOps.map(op=>{const n=node('tool-'+op);n.dataset.op=op;return n});
   const modes=['practice','rush','master'].map(mode=>{const n=node('mode-'+mode);n.dataset.mode=mode;return n});
@@ -35,10 +35,16 @@ function mount(){
   const pending=[],keys={};let now=1000,raf=0;
   const document={body:node('body'),querySelector:get,querySelectorAll:selector=>selector==='.tool'?tools:selector==='[data-mode]'?modes:selector==='.slot'?slots:[],createElement:()=>node('created'),elementFromPoint:()=>null};
   const saved=new Map(),localStorage={getItem:key=>saved.get(key)||null,setItem:(key,value)=>saved.set(key,value)};
-  const context={document,window:{FractionSmithMath:E,FractionSmithPuzzles:P,FractionSmithOrders:O,FractionSmithForge:F,FractionSmithProgress:S,FractionSmithAvatar:{ForgeAvatar:class{playForge(){}celebrate(){}}}},localStorage,Audio:class{play(){return Promise.resolve()}},performance:{now:()=>now},setTimeout:fn=>{pending.push(fn);return pending.length},clearTimeout:()=>{},setInterval:()=>1,clearInterval:()=>{},requestAnimationFrame:()=>++raf,cancelAnimationFrame:()=>{},addEventListener:(type,handler)=>{keys[type]=handler},console};
+  if(initialProgress)saved.set(S.KEY,JSON.stringify(initialProgress));
+  const progressService={...S,
+    load:()=>JSON.parse(localStorage.getItem(S.KEY)||JSON.stringify({gold:0,crafted:0,collection:{},upgrades:{furnace:0,hammer:0,counter:0}})),
+    reward:(...args)=>{const result=S.reward(...args);localStorage.setItem(S.KEY,JSON.stringify(result));return result},
+    purchase:(...args)=>{const result=S.purchase(...args);if(result.ok)localStorage.setItem(S.KEY,JSON.stringify(result.progress));return result}
+  };
+  const context={document,window:{FractionSmithMath:E,FractionSmithPuzzles:P,FractionSmithOrders:O,FractionSmithForge:F,FractionSmithProgress:progressService,FractionSmithAvatar:{ForgeAvatar:class{playForge(){}celebrate(){}}}},localStorage,Audio:class{play(){return Promise.resolve()}},performance:{now:()=>now},setTimeout:fn=>{pending.push(fn);return pending.length},clearTimeout:()=>{},setInterval:()=>1,clearInterval:()=>{},requestAnimationFrame:()=>++raf,cancelAnimationFrame:()=>{},addEventListener:(type,handler)=>{keys[type]=handler},console};
   vm.runInNewContext(fs.readFileSync(path.join(dir,'game.js'),'utf8'),context,{filename:'game.js'});
   const flush=()=>{let count=0;while(pending.length){if(count++>300)throw Error('Too many pending timers');pending.shift()();now+=150}};
-  return {get,tools,modes,flush,keys,saved};
+  return {get,tools,modes,flush,keys,saved,body:document.body};
 }
 
 test('Practice: commission → solve fraction → heat → hammer → quench → earn gold',()=>{
@@ -92,6 +98,68 @@ test('Rush and master keep visible recovery controls, and master has a real 3-st
   sim.modes[2].dispatch('click');
   assert.match(sim.get('#orderMeta').textContent,/최단 3타/);
   assert.equal(sim.get('#restartBtn').disabled,false);
+});
+
+test('Shop buys a furnace upgrade, saves gold and shortens the following craft loop',()=>{
+  const sim=mount({gold:500,crafted:2,collection:{sword:1,axe:1},upgrades:{furnace:0,hammer:0,counter:0}});
+  sim.modes[0].dispatch('click');
+  assert.match(sim.get('#itemName').textContent,/창/,'newly unlocked spear should appear as the next commission');
+  sim.get('#shopBtn').dispatch('click');
+  assert.equal(sim.get('#shopModal').classList.contains('open'),true);
+  assert.equal(sim.get('#collectionGrid').children.length,8);
+  assert.equal(sim.get('#collectionCount').textContent,'4/8종 해금');
+  const firstUpgrade=sim.get('#upgradeGrid').children[0].children[2];
+  assert.equal(firstUpgrade.disabled,false);
+  firstUpgrade.dispatch('click');
+  assert.equal(sim.get('#shopGold').textContent,'420 G');
+  assert.equal(sim.body.dataset.furnace,'1');
+  assert.equal(JSON.parse(sim.saved.get(S.KEY)).upgrades.furnace,1);
+  sim.keys.keydown({key:'Escape',code:'Escape',repeat:false,preventDefault(){}});
+  assert.equal(sim.get('#shopModal').classList.contains('open'),false);
+  assert.equal(sim.get('#shopBtn').disabled,false);
+  const target=E.parse(sim.get('#targetValue').textContent);
+  const chips=sim.get('#materialTray').children.map(chip=>({node:chip,value:E.parse(chip.innerHTML.match(/piece-value">([^<]+)/)[1])}));
+  let answer=null;
+  for(let i=0;i<chips.length;i++)for(let j=0;j<chips.length;j++)if(i!==j)for(const op of toolOps()){
+    try{if(E.eq(E.apply(op,chips[i].value,chips[j].value),target))answer={i,j,op}}catch(_){}
+  }
+  assert.ok(answer);
+  chips[answer.i].node.dispatch('click');chips[answer.j].node.dispatch('click');
+  sim.tools.find(t=>t.dataset.op===answer.op).dispatch('click');sim.flush();
+  assert.match(sim.get('#craftStatus').textContent,/0\/3/);
+  for(let i=0;i<3;i++)sim.get('#craftActionBtn').dispatch('click');
+  assert.match(sim.get('#craftStep').textContent,/망치질/);
+});
+
+test('Rush disables shopping but retains collected gold and upgrades',()=>{
+  const sim=mount({gold:120,crafted:6,collection:{sword:2},upgrades:{furnace:2,hammer:1,counter:0}});
+  sim.modes[1].dispatch('click');
+  assert.equal(sim.get('#shopBtn').disabled,true);
+  sim.get('#shopBtn').dispatch('click');
+  assert.equal(sim.get('#shopModal').classList.contains('open'),false);
+  assert.equal(sim.body.dataset.furnace,'2');
+});
+
+test('Counter upgrade increases awarded gold and new milestone announces a product',()=>{
+  const sim=mount({gold:0,crafted:1,collection:{sword:1},upgrades:{furnace:2,hammer:0,counter:2}});
+  sim.modes[0].dispatch('click');
+  const strikes=Number(sim.get('#orderMeta').textContent.match(/최단 (\d+)타/)[1]);
+  const target=E.parse(sim.get('#targetValue').textContent);
+  const chips=sim.get('#materialTray').children.map(chip=>({node:chip,value:E.parse(chip.innerHTML.match(/piece-value">([^<]+)/)[1])}));
+  let answer=null;
+  for(let i=0;i<chips.length;i++)for(let j=0;j<chips.length;j++)if(i!==j)for(const op of toolOps()){
+    try{if(E.eq(E.apply(op,chips[i].value,chips[j].value),target))answer={i,j,op}}catch(_){}
+  }
+  assert.ok(answer);
+  chips[answer.i].node.dispatch('click');chips[answer.j].node.dispatch('click');
+  sim.tools.find(t=>t.dataset.op===answer.op).dispatch('click');sim.flush();
+  for(let i=0;i<2+3+1;i++)sim.get('#craftActionBtn').dispatch('click');
+  const quality=Number(sim.get('#craftInstruction').textContent.match(/정밀도 (\d+)점/)[1]);
+  const expected=Math.round((30+strikes*10+Math.round(quality/5))*1.3);
+  assert.equal(JSON.parse(sim.saved.get(S.KEY)).gold,expected);
+  assert.match(sim.get('#craftTip').textContent,/정찰병의 창/);
+  sim.get('#craftActionBtn').dispatch('click');
+  assert.match(sim.get('#itemName').textContent,/정찰병의 창/);
 });
 
 function toolOps(){return ['+','-','×','÷']}

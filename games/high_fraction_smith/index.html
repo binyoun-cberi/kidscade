@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>프랙션 스미스</title>
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 <div class="game-shell">
@@ -107,7 +107,7 @@
     <section class="tray-panel">
       <div class="tray-head">
         <div><b>재료를 다듬는 작업대</b><small>두 조각을 모루에 올리고 공구로 필요한 금속량을 만드세요.</small></div>
-        <div class="tray-actions"><button id="hintBtn">💡 힌트</button><button id="undoBtn">↶ 되돌리기</button><button id="restartBtn">⟳ 주문 다시</button></div>
+        <div class="tray-actions"><button id="shopBtn" class="shop-open">🏪 공방 강화</button><button id="hintBtn">💡 힌트</button><button id="undoBtn">↶ 되돌리기</button><button id="restartBtn">⟳ 주문 다시</button></div>
       </div>
       <div class="material-tray" id="materialTray"></div>
     </section>
@@ -137,11 +137,26 @@
     </div>
   </div>
 
+  <div class="modal" id="shopModal" role="dialog" aria-modal="true" aria-labelledby="shopTitle">
+    <div class="modal-card shop-card">
+      <div class="shop-heading">
+        <div><span class="craft-topline">금빛 모루 상점</span><h2 id="shopTitle">🏪 공방 강화</h2></div>
+        <button id="shopCloseBtn" class="shop-close">작업대로 돌아가기 ✕</button>
+      </div>
+      <p>주문으로 번 골드를 투자하면 제작이 더 쉬워지고 보상도 늘어납니다.</p>
+      <div class="shop-wallet">보유 골드 <strong id="shopGold">0 G</strong></div>
+      <div class="upgrade-grid" id="upgradeGrid"></div>
+      <div class="collection-heading"><h3>📖 제작품 도감</h3><span id="collectionCount">3/8종 해금</span></div>
+      <div class="collection-grid" id="collectionGrid"></div>
+      <small class="shop-footnote">새 제작품은 누적 완성 수에 따라 열립니다. 강화는 모든 모드에 유지되며, 러시 중에는 공방을 열 수 없어요.</small>
+    </div>
+  </div>
+
   <div class="modal open" id="startModal">
     <div class="modal-card">
       <div class="modal-icon">⚒️</div>
       <h1>프랙션 스미스</h1>
-      <p>손님의 주문에 맞춰 분수 재료를 다듬고, 직접 달구고 두들겨 무기와 도구를 완성해 보세요.</p>
+      <p>손님의 주문에 맞춰 분수 재료를 다듬고 무기와 도구를 완성해 보세요. 골드를 모아 공방을 강화하고 새로운 제작품 8종을 해금할 수 있어요!</p>
       <p class="saved-progress" id="savedProgress">공방에 오신 것을 환영해요!</p>
       <div class="mode-grid">
         <button data-mode="practice"><b>🛠 견습 대장간</b><span>시간 제한 없이 연습 · 힌트/되돌리기</span></button>
@@ -164,10 +179,10 @@
 </div>
 <script src="fraction-engine.js?v=1"></script>
 <script src="puzzle-generator.js?v=2"></script>
-<script src="order-generator.js?v=1"></script>
-<script src="forge-minigame.js?v=1"></script>
-<script src="progress-store.js?v=1"></script>
+<script src="order-generator.js?v=2"></script>
+<script src="forge-minigame.js?v=2"></script>
+<script src="progress-store.js?v=2"></script>
 <script src="fraction-smith-avatar.js?v=1"></script>
-<script src="game.js?v=3"></script>
+<script src="game.js?v=4"></script>
 </body>
 </html>
