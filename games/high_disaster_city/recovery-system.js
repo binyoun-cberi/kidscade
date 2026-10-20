@@ -2,7 +2,7 @@
 'use strict';
 const DC=root.DisasterCity=root.DisasterCity||{},D=DC.DATA;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-function ensure(sim){const s=sim.state;if(!s.recovery)s.recovery={debris:[],recovered:0};return s.recovery}
+function ensure(sim){const s=sim.state;if(!s.recovery)s.recovery={debris:[],recovered:0,construction:[]};if(!Array.isArray(s.recovery.construction))s.recovery.construction=[];return s.recovery}
 function markFlooded(sim,slotIndex,depth){
  const slot=sim.state.slots[slotIndex];if(!slot?.building)return;
  const b=slot.building;b.condition='flooded';b.recovery=Math.min(b.recovery??1,clamp(1-depth,.08,.72));
@@ -24,8 +24,16 @@ function nearbyCells(sim,slot){
 }
 function markDestroyed(sim,slot,old,cause){
  const r=ensure(sim);r.debris=r.debris.filter(d=>d.slotIndex!==slot.i);
+ r.construction=r.construction.filter(job=>job.slotIndex!==slot.i);
  r.debris.push({x:slot.x,slotIndex:slot.i,kind:old.id,cause:cause||'collapse',age:0});if(r.debris.length>18)r.debris.shift();
  for(const c of nearbyCells(sim,slot))c.debris=clamp((c.debris||0)+.32,0,1)
+}
+function hasRubble(sim,slot){return ensure(sim).debris.some(d=>d.slotIndex===slot.i)}
+function cancelConstruction(sim,slot){const r=ensure(sim);r.construction=r.construction.filter(job=>job.slotIndex!==slot.i)}
+function beginReconstruction(sim,slot,buildingId,cause){
+ const r=ensure(sim);cancelConstruction(sim,slot);
+ r.construction.push({slotIndex:slot.i,x:slot.x,buildingId,cause:cause||'collapse',elapsed:0,total:7.3});
+ return true
 }
 function clearSite(sim,slot){
  const r=ensure(sim);r.debris=r.debris.filter(d=>d.slotIndex!==slot.i);
@@ -51,6 +59,8 @@ function update(sim,dt){
  }
  for(const d of r.debris)d.age+=dt;
  r.debris=r.debris.filter(d=>d.age<95&&sim.state.slots[d.slotIndex]&&!sim.state.slots[d.slotIndex].building);
+ for(const job of r.construction)job.elapsed+=dt;
+ r.construction=r.construction.filter(job=>job.elapsed<job.total&&sim.state.slots[job.slotIndex]?.building?.id===job.buildingId);
 }
 function efficiency(building){
  if(!building)return 0;
@@ -66,5 +76,5 @@ function summary(sim){
  let flooded=0,damaged=0;for(const slot of sim.state.slots){if(slot.building?.condition==='flooded')flooded++;else if(slot.building?.condition==='damaged')damaged++}
  return{flooded,damaged,debris:ensure(sim).debris.length}
 }
-DC.Recovery={ensure,markFlooded,markDamaged,markDestroyed,clearSite,update,efficiency,repair,summary};
+DC.Recovery={ensure,markFlooded,markDamaged,markDestroyed,hasRubble,cancelConstruction,beginReconstruction,clearSite,update,efficiency,repair,summary};
 })(window);
