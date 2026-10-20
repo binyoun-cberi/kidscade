@@ -379,6 +379,38 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await ensureStage('won','complete two-room chapter and recover name');
   await screenshot('18-victory.png','desktop');
 
+  // The extended maze is another *real* chapter. Audit mode starts at its entrance
+  // without touching player records, then uses actual movement and collision.
+  await send('Page.navigate',{url:origin+'/games/high_ota_typographic_horror/index.html?visual-audit=maze'});
+  for(let i=0;i<110;i++){if((await snap())?.stage==='console')break;await sleep(85);}
+  await evalPage("document.getElementById('start').click()");
+  await ensureStage('maze','direct chapter-4 browser QA');
+  await sleep(340);
+  const mazeStart=await snap();
+  report.maze={initial:mazeStart.maze,heading:mazeStart.player.yaw};
+  assert.ok(await evalPage("document.getElementById('mazeHUD').getBoundingClientRect().width>150"),
+    'the exploration map is visible on desktop');
+  const openAhead=await evalPage("(()=>{const p=window.OtaDebug.snapshot().player,m=window.OtaMaze.create(window.OtaDebug.snapshot().maze.seed);return window.OtaMaze.canMove(m,p.x-Math.sin(p.yaw)*2.5,p.z-Math.cos(p.yaw)*2.5)})()");
+  assert.equal(openAhead,true,'the entrance must face an open passage');
+  await screenshot('19-chapter4-entrance.png','desktop');
+  await move('KeyW',1050,true);
+  const mazeStep=await snap();
+  assert.ok(Math.hypot(mazeStep.player.x-mazeStart.player.x,mazeStep.player.z-mazeStart.player.z)>1.0,
+    'actual keyboard input navigates the three-dimensional maze');
+  await key('KeyH',true);await key('KeyH',false);
+  await key('KeyH',true);await key('KeyH',false);
+  assert.ok(/동쪽|서쪽|북쪽|남쪽/.test(await evalPage("document.getElementById('hintBody').textContent")),
+    'second-level compass hint is available inside the maze');
+  await screenshot('20-chapter4-moving.png','desktop');
+  await sleep(19100);
+  const mazeThreat=await snap();
+  report.maze.threat=mazeThreat.maze.hunter;
+  assert.ok(['warning','chase'].includes(mazeThreat.maze.hunter.phase),
+    'a real pathfinding pursuer spawns after an audible grace period');
+  assert.equal(await evalPage("document.getElementById('correctorWarning').classList.contains('show')"),true,
+    'the pursuer gets a visible warning');
+  await screenshot('21-chapter4-threat.png','desktop');
+
   await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:5});
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:2,mobile:true});
   await send('Page.navigate',{url:origin+'/games/high_ota_typographic_horror/index.html?mobile-audit=1'});
@@ -416,6 +448,19 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   report.mobileMove={before:before.player,after:after.player,deltaZ:after.player.z-before.player.z};
   assert.ok(after.player.z<before.player.z-.3,'Mobile joystick must move forward');
   await screenshot('15-mobile-after-joystick.png','mobile');
+  await send('Page.navigate',{url:origin+'/games/high_ota_typographic_horror/index.html?visual-audit=maze'});
+  for(let i=0;i<95;i++){if((await snap())?.stage==='console')break;await sleep(85);}
+  await evalPage("document.getElementById('start').click()");
+  await ensureStage('maze','touch-size chapter-4 map QA');
+  await sleep(240);
+  report.maze.mobileLayout=await evalPage("(()=>{const r=id=>document.getElementById(id).getBoundingClientRect();const map=r('mazeHUD'),top=r('topControls'),mission=r('mission');return {map:{top:map.top,right:map.right,bottom:map.bottom,left:map.left},controlsBottom:top.bottom,missionRight:mission.right,viewport:innerWidth}})()");
+  assert.ok(report.maze.mobileLayout.map.right<=report.maze.mobileLayout.viewport,
+    'mobile maze minimap must stay on screen');
+  assert.ok(report.maze.mobileLayout.map.top>=report.maze.mobileLayout.controlsBottom,
+    'mobile maze minimap must not overlap the navigation controls');
+  assert.ok(report.maze.mobileLayout.map.left>report.maze.mobileLayout.missionRight,
+    'mobile maze minimap must not obscure the mission text');
+  await screenshot('22-chapter4-mobile.png','mobile');
   assert.deepEqual(report.errors,[],'Browser errors must be empty');
   console.log('OTA BROWSER AUDIT '+JSON.stringify(report,null,2));
   fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');
