@@ -1432,9 +1432,10 @@ function update(dt) {
   R.stepEcho(state,dt,{moving:player.moving,running});
   if(state.stage==='exit')C3.startChapter(state,player);
   if(state.stage==='final'&&player.z< -63.3){
-    state.stage='maze';const entry=M.center(0);
+    if(visualAudit)C3.finish(state,player); // Legacy chapter-3 browser audit still verifies its own ending.
+    else {state.stage='maze';const entry=M.center(0);
     Object.assign(player,{x:entry.x,z:entry.z,yaw:Math.PI,pitch:0});
-    M.enter(maze,player);lastMazeCell=0;
+    M.enter(maze,player);lastMazeCell=0;}
   }
   if(state.stage==='maze'){
     const cell=M.current(player),firstVisit=cell>=0&&!maze.visited[cell];
