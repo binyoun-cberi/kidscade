@@ -343,3 +343,41 @@ button:focus-visible{outline:3px solid #d18d34;outline-offset:3px}
 .delivery-card strong{color:#385d42;font-size:14px}.delivery-card p{margin:0;color:#5e705e;font-size:12px;line-height:1.55}
 .delivery-card button{justify-self:start;min-height:38px;padding:7px 14px;border:0;border-radius:10px;background:#568762;color:#fff;font-weight:750}
 .delivery-card button:disabled{background:#b8c4b4;color:#f8faf5;cursor:default}
+
+/* 2.0 first-play slice: the farm stays visible until more information is asked for. */
+#qaBtn[hidden]{display:none!important}
+.field-details{margin-top:10px;border-top:1px solid #dce5d7;padding-top:10px}
+.field-details summary{list-style:none;cursor:pointer;color:#547c5c;font-size:12px;font-weight:800;
+  padding:9px 12px;background:#edf4e7;border-radius:10px;min-height:34px}
+.field-details summary::-webkit-details-marker{display:none}
+.field-details summary:after{content:'⌄';float:right;font-size:16px;line-height:12px}
+.field-details[open] summary:after{content:'⌃'}
+.inspector{max-height:calc(100% - 192px);width:min(306px,calc(100vw - 32px))}
+.inspector-title h2{margin-bottom:8px}
+.stage-panel{margin-top:9px;padding-top:10px}
+.farm-actions button{min-height:42px}
+#objective.complete{border-color:#b6d6ad}
+#objective.complete .objective-progress{display:none}
+.farm-upgrades{display:grid;gap:8px;margin-bottom:10px}
+.farm-upgrade{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;padding:10px;
+  background:#f5f3e9;border:1px solid #e2dfcc;border-radius:11px}
+.farm-upgrade strong{font-size:13px;color:#3e634a}
+.farm-upgrade p{margin:4px 0 0;font-size:11px;line-height:1.4;color:#6b766a}
+.farm-upgrade button{border:0;border-radius:8px;background:#4f8760;color:#fff;font-size:11px;font-weight:800;
+  padding:9px 12px;min-width:76px;min-height:38px}
+.farm-upgrade button:disabled{background:#d2d8cb;color:#6b766a;cursor:default}
+.day-report{display:grid;gap:12px}
+.day-report .day-weather{background:#edf5e9;padding:12px;border-radius:12px;font-size:14px;color:#355d43}
+.day-report ul{margin:2px 0 4px;padding-left:19px}
+.day-report button{background:#518760;color:#fff;border:0;padding:12px;border-radius:11px;font-weight:800}
+@media(max-width:700px){
+  .inspector{max-height:min(43dvh,350px);padding:10px}
+  .field-details{margin-top:7px;padding-top:6px}
+  .field-details summary{font-size:11px;min-height:29px;padding:7px 9px}
+  .field-learning{font-size:10px;margin:7px 0}
+  .inspector-title h2{margin-bottom:3px}
+  .farm-actions button{min-height:38px}
+  .inspector .field-info{max-height:42px;overflow:auto}
+  #notification{top:58px;max-width:calc(100vw - 190px)}
+  #app:has(.inspector:not(.hidden)) #notification{left:auto;right:7px;transform:none}
+}
