@@ -57,15 +57,63 @@ test('Disaster City is registered in the game catalog',()=>{
  const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
  const item=catalog.games.find(g=>g.id==='high_disaster_city');
  assert.ok(item);
- assert.equal(item.href,'games/high_disaster_city/index.html?v=11');
+ assert.equal(item.href,'games/high_disaster_city/index.html?v=12');
  assert.equal(item.title,'이머전시티');
  assert.equal(item.age,'high');
 });
 
 test('Disaster City renderer declares citizen movement targets locally',()=>{
  const renderer=fs.readFileSync(path.join(game,'renderer.js'),'utf8');
- assert.match(renderer,/const\\s+targets\\s*=\\s*\\[D\\.TOWN_X/);
- assert.doesNotMatch(renderer,/lastCitizenTime\\s*=\\s*s\\.time\\s*,\\s*targets\\s*=/);
+ assert.match(renderer,/const\s+targets\s*=\s*\[D\.TOWN_X/);
+ assert.doesNotMatch(renderer,/lastCitizenTime\s*=\s*s\.time\s*,\s*targets\s*=/);
+});
+
+test('Disaster City uses real tracked 2D art for facilities and response traffic',()=>{
+ const vm=require('node:vm'),context={window:{},console};
+ context.window.window=context.window;
+ vm.createContext(context);
+ for(const file of ['game-data.js','renderer.js'])vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
+ const DC=context.window.DisasterCity;
+ for(const [key,src] of Object.entries(DC.DATA.ASSETS)){
+  assert.ok(fs.existsSync(path.resolve(game,src)),key+' asset is missing: '+src);
+ }
+ for(const key of ['fireTruck','ambulance','evacBus','tractor','waterTruck','repairTruck','supplyVan','awningRed','clock','fence']){
+  assert.ok(DC.DATA.ASSETS[key],key+' should be connected to the asset catalog');
+ }
+ const renderer=Object.create(DC.Renderer.prototype);
+ renderer.serviceVehicles=[];
+ renderer.launchVehicle({vehicle:'fireTruck',side:'left'},10);
+ renderer.launchVehicle({vehicle:'waterTruck',x:1100},10);
+ renderer.launchVehicle({vehicle:'unknown'},10);
+ assert.equal(renderer.serviceVehicles.length,2);
+ assert.ok(renderer.serviceVehicles[0].to<DC.DATA.TOWN_X);
+ assert.equal(renderer.serviceVehicles[1].to,1100);
+ const drawings=[];
+ renderer.img=(key,...args)=>{drawings.push({key,args});return true};
+ renderer.images={fireTruck:{naturalWidth:44,naturalHeight:21},waterTruck:{naturalWidth:65,naturalHeight:24}};
+ renderer.ctx={beginPath(){},moveTo(){},lineTo(){},fill(){}};
+ renderer.traffic({mode:'playing',time:12});
+ assert.ok(drawings.some(d=>d.key==='carBlue'));
+ assert.ok(drawings.some(d=>d.key==='fireTruck'));
+ assert.ok(drawings.some(d=>d.key==='waterTruck'));
+});
+
+test('Disaster City action effects identify their response vehicles',()=>{
+ const vm=require('node:vm'),context={console,performance:{now:()=>0},window:{}};
+ context.window.window=context.window;
+ vm.createContext(context);
+ for(const file of ['game-data.js','field-system.js','recovery-system.js','population-system.js','sim-core.js','disaster-system.js'])vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
+ const sim=new context.window.DisasterCity.Simulation();
+ sim.start({seed:33});sim.state.money=500;
+ sim.state.hand=[{id:'ration',uid:700}];sim.state.deck=[];sim.state.discard=[];
+ assert.equal(sim.playAction(700),true);
+ assert.equal(sim.drainSignals().find(e=>e.kind==='supply').data.vehicle,'supplyVan');
+ sim.state.disasters=[{type:'blizzard',side:'right',energy:80,progress:.3,blockPause:0}];
+ sim.state.hand=[{id:'snowplow',uid:701}];
+ assert.equal(sim.playAction(701),true);
+ const response=sim.drainSignals().find(e=>e.kind==='response');
+ assert.equal(response.data.vehicle,'tractor');
+ assert.equal(response.data.side,'right');
 });
 
 test('Disaster City core simulation supports upgrades, deck cleanup and spatial defense',()=>{
@@ -278,6 +326,13 @@ test('Disaster City survives a long deterministic stress simulation without inva
   sim.state.money=Math.max(sim.state.money,500);
   sim.state.food=Math.max(sim.state.food,100);
   sim.state.stability=Math.max(sim.state.stability,80);
+  // In real play the player chooses a reward after each wave. Leaving the
+  // choice open deliberately pauses new spawns, so make those choices here.
+  if(sim.state.rewardChoices.length){
+   const choice=sim.state.rewardChoices[0];
+   sim.acceptReward(choice.kind==='cleanup'?'cleanup':choice.id);
+  }
+  if(sim.state.cleanupChoices.length)sim.removeRewardCard(sim.state.cleanupChoices[0]);
   sim.update(1/30);
   maxConcurrent=Math.max(maxConcurrent,sim.state.disasters.length);
   assert.ok(Number.isFinite(sim.state.money));

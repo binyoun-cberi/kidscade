@@ -95,25 +95,25 @@ class Simulation{
  playAction(uid){
   const s=this.state,def=this.cardDef(uid);if(!this.actionUsable(def))return false;s.money-=def.cost;
   if(def.action==='fireBrigade'){
-   const d=this.matchingDisaster('wildfire'),bonus=1+this.buildingCount('reservoir',d.side)*.12;DC.Field?.fireBrigade?.(this,d);d.energy=Math.max(0,d.energy-18*bonus);this.emit('response','소방대가 가장 거센 불길을 집중 진압했습니다.');
+   const d=this.matchingDisaster('wildfire'),bonus=1+this.buildingCount('reservoir',d.side)*.12;DC.Field?.fireBrigade?.(this,d);d.energy=Math.max(0,d.energy-18*bonus);this.emit('response','소방대가 가장 거센 불길을 집중 진압했습니다.',{vehicle:'fireTruck',side:d.side});
   }else if(def.action==='firebreak'){
    const d=this.matchingDisaster('wildfire'),col=DC.Field?.firebreak?.(this,d);d.energy=Math.max(0,d.energy-6);d.blockPause=Math.max(d.blockPause||0,2.4);this.emit('response','방화선을 만들어 불길의 연료 경로를 끊었습니다.',{col});
   }else if(def.action==='sandbags'){
    const d=this.matchingDisaster('flood'),col=DC.Field?.sandbags?.(this,d);d.energy=Math.max(0,d.energy-8);d.blockPause=Math.max(d.blockPause||0,2.1);this.emit('response','모래주머니 임시 장벽을 설치했습니다.',{col});
   }else if(def.action==='emergencyDrain'){
-   const d=this.matchingDisaster('flood'),count=DC.Field?.emergencyDrain?.(this,d)||0;d.energy=Math.max(0,d.energy-10);d.blockPause=Math.max(d.blockPause||0,1.2);this.emit('response','침수 지역 '+count+'칸을 긴급 배수했습니다.');
+   const d=this.matchingDisaster('flood'),count=DC.Field?.emergencyDrain?.(this,d)||0;d.energy=Math.max(0,d.energy-10);d.blockPause=Math.max(d.blockPause||0,1.2);this.emit('response','침수 지역 '+count+'칸을 긴급 배수했습니다.',{vehicle:'waterTruck',side:d.side});
   }else if(def.action==='stormPrep'){
    const d=this.matchingDisaster('typhoon');d.energy=Math.max(0,d.energy-24);d.progress=Math.max(0,d.progress-.10);d.blockPause=Math.max(d.blockPause||0,2.8);this.emit('response','창문과 지붕을 보강해 강풍 피해를 줄였습니다.');
   }else if(def.action==='waterDistribution'){
-   const d=this.matchingDisaster('heatwave');d.energy=Math.max(0,d.energy-27);s.food+=8;s.stability=Math.min(100,s.stability+1.5);this.emit('response','급수 지원으로 폭염 피해를 낮췄습니다.');
+   const d=this.matchingDisaster('heatwave');d.energy=Math.max(0,d.energy-27);s.food+=8;s.stability=Math.min(100,s.stability+1.5);this.emit('response','급수 지원으로 폭염 피해를 낮췄습니다.',{vehicle:'waterTruck',side:d.side});
   }else if(def.action==='snowplow'){
-   const d=this.matchingDisaster('blizzard');d.energy=Math.max(0,d.energy-20);d.progress=Math.max(0,d.progress-.13);d.blockPause=Math.max(d.blockPause||0,2.2);this.emit('response','제설차가 눈길을 열어 폭설 전선을 밀어냈습니다.');
+   const d=this.matchingDisaster('blizzard');d.energy=Math.max(0,d.energy-20);d.progress=Math.max(0,d.progress-.13);d.blockPause=Math.max(d.blockPause||0,2.2);this.emit('response','제설차가 눈길을 열어 폭설 전선을 밀어냈습니다.',{vehicle:'tractor',side:d.side});
   }else if(def.action==='evacuation'){
-   const d=this.matchingDisaster('earthquake');if(d){d.energy=Math.max(0,d.energy-18);d.blockPause=Math.max(d.blockPause||0,4)}DC.Population?.emergency?.(this,15);s.stability=Math.min(100,s.stability+1);this.emit('response','긴급 대피 명령을 내려 15초 동안 주민 이동을 빠르게 했습니다.');
+   const d=this.matchingDisaster('earthquake');if(d){d.energy=Math.max(0,d.energy-18);d.blockPause=Math.max(d.blockPause||0,4)}DC.Population?.emergency?.(this,15);s.stability=Math.min(100,s.stability+1);this.emit('response','긴급 대피 명령을 내려 15초 동안 주민 이동을 빠르게 했습니다.',{vehicle:d?'ambulance':'evacBus',side:d?.side||s.disasters[0]?.side});
   }else if(def.action==='repair'){
    const damaged=this.repairTarget();
-   if(damaged){const isBlockingLevee=damaged.building.id==='levee'&&this.state.disasters.some(d=>d.type==='flood'&&d.blockedSlot===damaged.i),amount=isBlockingLevee?72:52;damaged.building.hp=Math.min(damaged.building.maxHp,damaged.building.hp+amount);DC.Recovery?.repair?.(this,damaged);this.emit('repair',(isBlockingLevee?'홍수를 막는 ':'')+D.BUILDINGS[damaged.building.id].name+' 긴급 수리',{x:damaged.x})}
-  }else if(def.action==='ration'){s.food+=12;this.emit('supply','비상 식량 +12')}
+   if(damaged){const isBlockingLevee=damaged.building.id==='levee'&&this.state.disasters.some(d=>d.type==='flood'&&d.blockedSlot===damaged.i),amount=isBlockingLevee?72:52;damaged.building.hp=Math.min(damaged.building.maxHp,damaged.building.hp+amount);DC.Recovery?.repair?.(this,damaged);this.emit('repair',(isBlockingLevee?'홍수를 막는 ':'')+D.BUILDINGS[damaged.building.id].name+' 긴급 수리',{x:damaged.x,vehicle:'repairTruck'})}
+  }else if(def.action==='ration'){s.food+=12;this.emit('supply','비상 식량 +12',{vehicle:'supplyVan'})}
   s.stats.cardsPlayed++;this.discardCard(uid);return true
  }
  refreshHand(){
