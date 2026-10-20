@@ -57,7 +57,7 @@ test('Disaster City is registered in the game catalog',()=>{
  const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
  const item=catalog.games.find(g=>g.id==='high_disaster_city');
  assert.ok(item);
- assert.equal(item.href,'games/high_disaster_city/index.html?v=13');
+ assert.equal(item.href,'games/high_disaster_city/index.html?v=14');
  assert.equal(item.title,'이머전시티');
  assert.equal(item.age,'high');
 });
@@ -266,6 +266,59 @@ test('Disaster City renderer paints residual damage and uses tracked repair-site
  assert.ok(images.filter(k=>k==='rock').length>=2,'wreckage should reuse existing rock assets');
  assert.ok(images.includes('roadBarrier'),'repair-site animation should use actual barrier art');
  assert.ok(images.includes('citizen'),'repair-site animation should show a worker');
+});
+
+test('Disaster City rebuilds collapsed sites in stages without delaying game mechanics',()=>{
+ const vm=require('node:vm'),context={console,performance:{now:()=>0},window:{}};
+ context.window.window=context.window;vm.createContext(context);
+ for(const file of ['game-data.js','field-system.js','recovery-system.js','population-system.js','sim-core.js','disaster-system.js'])vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
+ const DC=context.window.DisasterCity,sim=new DC.Simulation();sim.start({seed:2030});
+ sim.state.money=9999;sim.state.next.in=999;
+ const left=sim.state.slots[0];left.building={id:'house',hp:100,maxHp:100,level:1};
+ sim.damageBuilding(0,120,'wildfire');
+ sim.state.hand=[{id:'house',uid:9030}];sim.state.deck=[];sim.state.discard=[];
+ sim.selectCard(9030);assert.equal(sim.placeSelected(0),true);
+ assert.equal(left.building.id,'house','construction must not delay its gameplay effects');
+ assert.equal(sim.capacity(),20,'a home under construction must already count toward housing capacity');
+ assert.equal(sim.state.recovery.debris.length,0,'the job owns the former rubble display');
+ const job=sim.state.recovery.construction[0];
+ assert.equal(job.buildingId,'house');assert.equal(job.cause,'wildfire');
+ const start=sim.drainSignals().find(e=>e.data?.construction);
+ assert.equal(start.data.vehicle,'repairTruck');
+ sim.update(2.1);assert.ok(job.elapsed>=2.1&&job.elapsed<3.45,'the rubble-cleaning phase should be reached');
+ sim.state.slots[1].building={id:'market',hp:95,maxHp:95,level:1};
+ sim.damageBuilding(1,140,'earthquake');
+ sim.state.hand=[{id:'farm',uid:9031}];sim.selectCard(9031);assert.equal(sim.placeSelected(1),true);
+ assert.equal(sim.state.recovery.construction.length,2,'multiple ruins can be rebuilt independently');
+ sim.state.hand=[{id:'market',uid:9032}];sim.selectCard(9032);assert.equal(sim.placeSelected(0),true);
+ assert.equal(sim.state.recovery.construction.some(j=>j.slotIndex===0),false,'replacing a building mid-construction must cancel its old animation');
+ assert.equal(sim.state.recovery.construction.length,1);
+ sim.damageBuilding(1,200,'typhoon');
+ assert.equal(sim.state.recovery.construction.length,0,'repeated destruction must not leave phantom construction');
+ assert.equal(sim.state.recovery.debris.filter(d=>d.slotIndex===1).length,1);
+ sim.state.hand=[{id:'house',uid:9033}];sim.selectCard(9033);assert.equal(sim.placeSelected(1),true);
+ assert.equal(sim.state.recovery.construction.length,1);
+ sim.state.disasters=[];sim.update(7.4);
+ assert.equal(sim.state.recovery.construction.length,0,'construction visuals must finish automatically');
+ assert.equal(sim.state.slots[1].building.id,'house');
+ sim.reset();assert.equal(sim.state.recovery.construction.length,0,'restart must not retain old construction sites');
+});
+
+test('Disaster City staged reconstruction renders arrival, clearing, framing and reveal',()=>{
+ const vm=require('node:vm'),context={window:{},console};context.window.window=context.window;vm.createContext(context);
+ for(const file of ['game-data.js','renderer.js'])vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
+ const DC=context.window.DisasterCity,r=Object.create(DC.Renderer.prototype),calls=[];
+ r.ctx={save(){},restore(){},beginPath(){},rect(){},clip(){},fillRect(){},moveTo(){},lineTo(){},stroke(){},fillText(){}};
+ r.img=key=>{calls.push('image:'+key);return true};r.rubblePile=()=>calls.push('rubble');r.drawBuilding=()=>calls.push('building');r.buildingScars=()=>{};
+ const slot={i:2,x:340,building:{id:'house',hp:100,maxHp:100,level:1}},s={time:60};
+ const draw=t=>{calls.length=0;r.reconstruction(slot,slot.building,{elapsed:t,total:7.3,cause:'earthquake'},s);return calls.slice()};
+ assert.ok(draw(.4).includes('rubble'),'truck approach should preserve the wreckage');
+ assert.ok(draw(2.5).includes('image:citizenWalk'),'debris clearance should show a worker');
+ assert.ok(draw(5.2).includes('image:roofGray'),'frame-building should place building materials');
+ assert.ok(draw(6.5).includes('building'),'final stage should reveal the real building');
+ assert.ok(draw(2.5).includes('image:roadBarrier'),'construction sites must have visible traffic barriers');
+ r.serviceVehicles=[];r.launchVehicle({vehicle:'repairTruck',x:340,construction:true},15);
+ assert.ok(r.serviceVehicles[0].travel<4.3,'rebuild truck must arrive before debris clearance begins');
 });
 
 test('Disaster City floods end naturally and urgent repair prioritizes the blocking levee',()=>{
