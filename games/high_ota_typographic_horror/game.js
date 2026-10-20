@@ -10,7 +10,8 @@ const CG = window.OtaCalligrams;
 const RW = window.OtaRewrite;
 const EX = window.OtaExpansion;
 const AN = window.OtaAnomalies;
-if (!R || !C3 || !G || !X || !L || !S || !CG || !RW || !EX || !AN) throw new Error('Ota chapter or guidance rules are missing');
+const M = window.OtaMaze;
+if (!R || !C3 || !G || !X || !L || !S || !CG || !RW || !EX || !AN || !M) throw new Error('Ota chapter or guidance rules are missing');
 const el = id => document.getElementById(id);
 const canvas = el('scene');
 const hud = { objective:el('objective'), stage:el('stage'), prompt:el('prompt'),
@@ -31,6 +32,7 @@ const literacy=L.create(visualAudit?0:undefined);state.literacy=literacy;
 const rewrite=RW.create();state.rewrite=rewrite;
 const expansion=EX.create(literacy.seed);state.expansion=visualAudit?null:expansion;
 const anomalies=AN.create(literacy.seed);
+let maze=M.create(literacy.seed),mazeGroup=null,mazeVisuals=null,activeMazeStation=-1,lastMazeCell=-1;
 let activeSentence=null;
 const annexVisuals={};
 const anomalyVisuals={};
@@ -738,6 +740,117 @@ function syncAnnexVisuals(){
   hud.route.textContent=EX.complete(expansion)?'추가 기록 복구 완료 · 중앙 기록실로'
     :'추가 기록: '+needed+' 뒤편 열람실 · '+(expansion.fragments.west+expansion.fragments.east)+'/2';
 }
+
+function mazeObjective(){
+  const count=maze.solved.filter(Boolean).length;
+  return count===3?'찢어진 색인을 모두 복구했습니다. 출구에 적힌 「나」를 찾으세요.'
+    :'끝없이 이어지는 통로에서 잘못된 색인 세 조각을 고치세요 ('+count+'/3)';
+}
+function buildMazeWorld(){
+  if(mazeGroup){
+    scene.remove(mazeGroup);
+    mazeGroup.traverse(object=>{
+      if(object.userData.mazeOwned){
+        object.geometry?.dispose?.();object.material?.dispose?.();
+      }
+    });
+  }
+  const group=new THREE.Group();mazeGroup=group;scene.add(group);
+  const edgeLength=M.CELL,height=3.22,wallGeometry=new THREE.BoxGeometry(edgeLength,height,.18);
+  const wallMaterial=new THREE.MeshBasicMaterial({map:surfaceAtlas('wall'),transparent:true,
+    opacity:.53,side:THREE.DoubleSide,depthWrite:true});
+  const barriers=[];
+  for(let i=0;i<M.COUNT;i++){
+    const p=M.center(i),r=M.cell(i);
+    if(r.row===0)barriers.push([p.x,p.z+edgeLength/2,0]);
+    if(r.col===0)barriers.push([p.x-edgeLength/2,p.z,Math.PI/2]);
+    if(!(maze.links[i]&2))barriers.push([p.x+edgeLength/2,p.z,Math.PI/2]);
+    if(!(maze.links[i]&4))barriers.push([p.x,p.z-edgeLength/2,0]);
+  }
+  const walls=new THREE.InstancedMesh(wallGeometry,wallMaterial,barriers.length);
+  const object=new THREE.Object3D();
+  barriers.forEach(([x,z,rotation],i)=>{
+    object.position.set(x,height/2-.05,z);object.rotation.set(0,rotation,0);
+    object.updateMatrix();walls.setMatrixAt(i,object.matrix);
+  });
+  walls.instanceMatrix.needsUpdate=true;walls.userData.mazeOwned=true;group.add(walls);
+  const extent=M.SIZE*M.CELL,centerZ=(M.center(0).z+M.center(M.COUNT-1).z)/2;
+  const floorTexture=surfaceAtlas('floor').clone();
+  floorTexture.repeat.set(M.SIZE*1.5,M.SIZE*1.5);floorTexture.needsUpdate=true;
+  const floorMaterial=new THREE.MeshBasicMaterial({map:floorTexture,transparent:true,
+    side:THREE.DoubleSide,opacity:.20,depthWrite:false});
+  for(const ceiling of [false,true]){
+    const floor=new THREE.Mesh(new THREE.PlaneGeometry(extent,extent),floorMaterial);
+    floor.rotation.x=Math.PI/2;floor.position.set(0,ceiling?3.2:-.03,centerZ);
+    floor.userData.mazeOwned=true;group.add(floor);
+  }
+  const marker=(word,color,position,size=2.1)=>{
+    const mesh=new THREE.Mesh(unitPlane,material(word,color));
+    mesh.position.set(position.x,1.72,position.z);mesh.scale.set(size,.7,1);
+    mesh.renderOrder=3;group.add(mesh);return mesh;
+  };
+  const stations=maze.stations.map((loc,i)=>marker(maze.words[i].wrong,'#ed8495',M.center(loc),1.9));
+  const exit=marker('나','#aaf1d7',M.center(maze.exit),2.4);
+  // Sparse landmarks make a location recognizable without disclosing the correct route.
+  const landmarks=[];
+  const words=['반납','미등록','잘못된 서가','비밀','폐기','색인','돌아가는 길'];
+  for(let i=0;i<M.COUNT;i++){
+    const branches=[1,2,4,8].filter(bit=>maze.links[i]&bit).length;
+    if(branches!==1||i%4!==0||i===0||maze.stations.includes(i)||i===maze.exit)continue;
+    landmarks.push(marker(words[(i+maze.seed)%words.length],'#8b909d',M.center(i),2.05));
+    if(landmarks.length>=14)break;
+  }
+  mazeVisuals={stations,exit,landmarks};
+  group.visible=state.stage==='maze';
+  syncMazeVisuals();
+}
+function drawMazeMap(){
+  const canvas=el('mazeMap');if(!canvas)return;
+  const ctx=canvas.getContext('2d');if(!ctx)return;
+  const width=canvas.width,size=width/M.SIZE,margin=2;
+  ctx.fillStyle='#06090d';ctx.fillRect(0,0,width,width);
+  for(let i=0;i<M.COUNT;i++){
+    if(!maze.visited[i])continue;
+    const at=M.cell(i),x=at.col*size,y=at.row*size;
+    ctx.fillStyle='#4c5965';ctx.fillRect(x+margin,y+margin,size-margin*2,size-margin*2);
+    const edges=maze.links[i];
+    if(edges&2)ctx.fillRect(x+size-margin,y+size*.32,margin*2,size*.36);
+    if(edges&4)ctx.fillRect(x+size*.32,y+size-margin,size*.36,margin*2);
+    if(edges&8)ctx.fillRect(x-margin,y+size*.32,margin*2,size*.36);
+    if(edges&1)ctx.fillRect(x+size*.32,y-margin,size*.36,margin*2);
+  }
+  const here=M.current(player);
+  if(here>=0){
+    const at=M.cell(here);
+    ctx.fillStyle='#6aead0';ctx.beginPath();
+    ctx.arc((at.col+.5)*size,(at.row+.5)*size,Math.max(3,size*.34),0,Math.PI*2);ctx.fill();
+  }
+}
+function syncMazeVisuals(){
+  if(!mazeVisuals)return;
+  mazeGroup.visible=state.stage==='maze';
+  el('mazeHUD').hidden=state.stage!=='maze';
+  el('mazeProgress').textContent='찢어진 색인 '+maze.solved.filter(Boolean).length+'/3';
+  mazeVisuals.stations.forEach((marker,i)=>marker.visible=!maze.solved[i]);
+  mazeVisuals.exit.material=material(maze.solved.every(Boolean)?'나':'□',
+    maze.solved.every(Boolean)?'#aaf1d7':'#ad7181');
+  drawMazeMap();
+}
+function openMazeWord(station){
+  activeMazeStation=station;
+  const word=maze.words[station],options=word.choices;
+  el('fixTitle').textContent='찢어진 색인 '+(station+1)+'/3';
+  el('redWord').textContent=word.wrong;
+  el('fixQuestion').textContent=word.clue+' · 올바른 표현을 찾으세요.';
+  el('choices').querySelectorAll('button').forEach((button,i)=>{
+    button.dataset.word=options[(i+(maze.seed%3)+station)%3];
+    button.textContent=button.dataset.word;
+  });
+  el('fixFeedback').textContent='기록을 고치면 미로의 출구에 한 걸음 가까워집니다.';
+  overlays.fix.dataset.puzzle='maze';overlays.fix.classList.remove('closed');
+  if(document.pointerLockElement===canvas)document.exitPointerLock?.();
+}
+
 function buildAnomalyVisuals(){
   const specs={
     eraser:{words:['삭제','없음','■■■','지운다','공백','□'],color:'#9a9bb1'},
@@ -788,6 +901,8 @@ function saveChapterCheckpoint(){
   data.literacy=L.checkpoint(literacy);
   data.rewrite=RW.checkpoint(rewrite);
   data.expansion=EX.checkpoint(expansion);
+  data.inMaze=state.stage==='maze';
+  if(data.inMaze){data.maze=M.snapshot(maze);data.mazePosition={x:player.x,z:player.z};}
   data.run={mode:'story',seed:run.seed};
   try{sessionStorage.setItem(CHECKPOINT_KEY,JSON.stringify(data));}catch(_){}
 }
@@ -947,30 +1062,39 @@ function respawnAtCheckpoint(){
   run.seed=literacy.seed;run.mode='story';run.startedAt=Date.now();
   Object.assign(anomalies,AN.create(literacy.seed));
   Object.assign(player,{x:C3.START.x,z:C3.START.z,yaw:0,pitch:0,moving:false});
+  maze=M.create(run.seed);if(data.inMaze&&M.restore(maze,data.maze)){
+    state.stage='maze';const origin=M.center(0);
+    const saved=data.mazePosition;
+    player.x=saved&&M.canMove(maze,saved.x,saved.z)?saved.x:origin.x;
+    player.z=saved&&M.canMove(maze,saved.x,saved.z)?saved.z:origin.z;
+  }
+  buildMazeWorld();
   failed=false;X.reset(corrector);soundPulse=0;closeCorrection();closeSentence();
   for(const fx of repairEffects){fx.shards.forEach(m=>scene.remove(m));scene.remove(fx.result);}
   repairEffects.length=0;apparitionAnchor=null;apparitionNumber=-1;
   overlays.ending.classList.add('closed');overlays.fix.classList.add('closed');
   document.body.classList.remove('hidden-in-locker');
-  hud.objective.textContent=C3.objective(state);
-  hud.stage.textContent='기록이 저장된 마지막 지점';
+  hud.objective.textContent=state.stage==='maze'?mazeObjective():C3.objective(state);
+  hud.stage.textContent=state.stage==='maze'?'제3구역 · 뒤틀린 색인 미로':'기록이 저장된 마지막 지점';
   hud.clock.hidden=true;hud.help.hidden=false;
   hud.echo.classList.remove('show');hud.danger.style.opacity='0';
   chapterVisual.watcher.visible=true;chapterVisual.watcherText.visible=false;
   lastGlimpses=0;lastGazeAwake=false;hud.gaze.classList.remove('show');
   hintScope='';hintLevel=0;hideHint();
-  syncChapterVisuals();syncLiteracyVisuals();updateLiteracyHud();
-  announce('기록이 복원되었습니다. 핵심 교정 '+literacy.coreDone+'/5',false,3);
+  syncChapterVisuals();syncLiteracyVisuals();updateLiteracyHud();syncMazeVisuals();
+  if(state.stage==='maze'){hud.route.hidden=true;hud.literacy.classList.remove('show');}
+  announce(state.stage==='maze'?'미로의 마지막 기록으로 돌아왔습니다.':'기록이 복원되었습니다. 핵심 교정 '+literacy.coreDone+'/5',false,3);
   return true;
 }
 
 scenery();
+buildMazeWorld();
 
 function hideHint(){
   hintVisibleUntil=0;hud.hintBox.classList.remove('show');
 }
 function syncHintScope(){
-  const key=G.scope(state,player);
+  const key=state.stage==='maze'?'maze:'+maze.solved.join(''):G.scope(state,player);
   if(key!==hintScope){
     hintScope=key;hintLevel=0;hintScopeSince=elapsed;hideHint();
   }
@@ -983,7 +1107,7 @@ function showHint(){
   syncHintScope();
   hintLevel=Math.min(3,hintLevel+1);
   el('hintLevel').textContent='도움말 '+hintLevel+'/3';
-  el('hintBody').textContent=G.hint(state,player,hintLevel);
+  el('hintBody').textContent=state.stage==='maze'?M.hint(maze,player,hintLevel):G.hint(state,player,hintLevel);
   hintVisibleUntil=elapsed+11;
   hud.hintBox.classList.add('show');
   hud.help.classList.remove('suggested');
@@ -1051,7 +1175,7 @@ function nearestVisibleError(p,range=2.35){
 }
 function updateStage(stage,old) {
   if (stage === old) return;
-  hud.objective.textContent=state.stage==='explore'||state.stage==='final'?C3.objective(state):R.objective(state);
+  hud.objective.textContent=state.stage==='maze'?mazeObjective():state.stage==='explore'||state.stage==='final'?C3.objective(state):R.objective(state);
   if(stage==='chase') {
     monsterReveal=true;personWord.visible=false;monsterWord.visible=true;
     shock();announce('도망쳐! 달려서 사물함에 숨으세요.',true,4.4);
@@ -1096,6 +1220,12 @@ function updateStage(stage,old) {
     saveChapterCheckpoint();
     announce('뒤에서 이름을 지우고 있어요! 「나」를 향해 달리세요.',true,4.5);
     hud.stage.textContent='기록 0 · 당신의 이름';
+  } else if(stage==='maze'){
+    X.reset(corrector);chapterVisual.watcher.visible=false;
+    hud.route.hidden=true;hud.literacy.classList.remove('show');
+    syncMazeVisuals();saveChapterCheckpoint();
+    announce('복도가 끝나지 않습니다. 흩어진 색인 세 조각을 찾아야 탈출할 수 있습니다.',false,5);
+    hud.stage.textContent='제3구역 · 뒤틀린 색인 미로';
   } else if(stage==='lost') {
     finish(false);
   } else if(stage==='won') {
@@ -1105,6 +1235,15 @@ function updateStage(stage,old) {
 function syncStage(before) {updateStage(state.stage,before);}
 function interact() {
   if(!started || failed || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed')||!overlays.rewrite.classList.contains('closed')||!overlays.sentence.classList.contains('closed')) return;
+  if(state.stage==='maze'){
+    const action=M.action(maze,player);
+    if(!action)return;
+    if(action.type==='mazeWord'){openMazeWord(action.station);return;}
+    if(action.type==='mazeLocked'){announce('색인 세 조각을 모두 고쳐야 출구가 열립니다.',true,3);return;}
+    if(action.type==='mazeExit'){
+      const before=state.stage;state.stage='won';syncStage(before);return;
+    }
+  }
   const nearShelter=state.stage==='explore'&&R.distance(player,X.SHELTER)<1.7;
   if(corrector.hidden){
     flashLockerAt(player);X.leave(corrector);document.body.classList.remove('hidden-in-locker');
@@ -1221,13 +1360,13 @@ function finish(won) {
     }catch(_){speedText='';}
   }
   el('endingText').textContent=won
-    ?'기록 A·B · 핵심 오타 '+literacy.coreDone+'/5 · 문장 기록 '+(expansion.fragments.west+expansion.fragments.east)+'/2 · 교정 '+literacy.corrected+'회 · '+formatTime(seconds)+(expansion.bonus?' · 두 열람실 완전 복구!':'')+speedText
+    ?'기록 A·B · 핵심 오타 '+literacy.coreDone+'/5 · 색인 미로 '+maze.solved.filter(Boolean).length+'/3 · 문장 기록 '+(expansion.fragments.west+expansion.fragments.east)+'/2 · 교정 '+literacy.corrected+'회 · '+formatTime(seconds)+(expansion.bonus?' · 두 열람실 완전 복구!':'')+speedText
     :failure.title+' '+failure.detail+(run.mode==='speedrun'?' · '+formatTime(seconds):'');
   el('respawn').hidden=run.mode==='speedrun'||!(!won&&Boolean(loadChapterCheckpoint()));
   try {window.KidscadeGame?.result?.({scope:'stage',status:won?'completed':'failed',
     outcome:won?'clear':'fail',id:run.mode==='speedrun'?'ota-weekly-speedrun':'ota-prologue',
     score:won?Math.max(100,1000-Math.floor(seconds)*3-state.mistakes*80+(expansion.bonus?250:0)):0,
-    seconds:Math.round(seconds),mistakes:state.mistakes+literacy.mistakes+expansion.attempts,
+    seconds:Math.round(seconds),mistakes:state.mistakes+literacy.mistakes+expansion.attempts+maze.wrong,
     corrected:literacy.corrected,bonusRooms:expansion.bonus?2:0});}catch(_){}
 }
 function formatTime(seconds){
@@ -1237,13 +1376,14 @@ function formatTime(seconds){
 function updatePrompt() {
   const nearbyError=state.stage==='explore'?nearestVisibleError(player):null;
   const namedSurface=state.stage==='explore'?RW.target(rewrite,player):null;
+  const mazeAction=state.stage==='maze'?M.action(maze,player):null;
   const sideAction=state.stage==='explore'?EX.interaction(expansion,player):null;
-  currentInteraction=corrector.hidden?{type:'leaveCorrector',label:'은신처에서 나오기'}
+  currentInteraction=mazeAction || (corrector.hidden?{type:'leaveCorrector',label:'은신처에서 나오기'}
     :state.stage==='explore'&&R.distance(player,X.SHELTER)<1.7
       ?{type:'hideCorrector',label:'어둠 속에 숨기'}
       :(namedSurface?{type:'rewrite',label:namedSurface.label,id:namedSurface.id}:null)
         ||R.getInteraction(state,player)||C3.interaction(state,player)||sideAction
-        ||(nearbyError?{type:'literacy',label:'틀린 기록 교정',uid:nearbyError.uid}:null);
+        ||(nearbyError?{type:'literacy',label:'틀린 기록 교정',uid:nearbyError.uid}:null));
   hud.prompt.classList.toggle('show',!!currentInteraction&&!failed);
   hud.prompt.innerHTML=currentInteraction
     ? '<strong>E</strong> / 조사 — '+currentInteraction.label : '';
@@ -1258,7 +1398,7 @@ function tryMove(dx,dz) {
   const steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dz))/.12));
   for(let i=0;i<steps;i++){
     const nx=player.x+dx/steps,nz=player.z+dz/steps;
-    const pass=(x,z)=>z< -37.4
+    const pass=(x,z)=>state.stage==='maze'?M.canMove(maze,x,z):z< -37.4
       ?RW.canMove(rewrite,x,z,(a,b)=>C3.canMove(state,a,b))
       :R.canMove(state,x,z);
     if(pass(nx,player.z))player.x=nx;
@@ -1291,7 +1431,18 @@ function update(dt) {
   R.stepEnemy(state,dt,player);
   R.stepEcho(state,dt,{moving:player.moving,running});
   if(state.stage==='exit')C3.startChapter(state,player);
-  if(state.stage==='final')C3.finish(state,player);
+  if(state.stage==='final'&&player.z< -63.3){
+    state.stage='maze';const entry=M.center(0);
+    Object.assign(player,{x:entry.x,z:entry.z,yaw:Math.PI,pitch:0});
+    M.enter(maze,player);lastMazeCell=0;
+  }
+  if(state.stage==='maze'){
+    const cell=M.current(player),firstVisit=cell>=0&&!maze.visited[cell];
+    M.enter(maze,player);
+    if(cell!==lastMazeCell){lastMazeCell=cell;drawMazeMap();
+      if(firstVisit&&cell%13===5){tone(93,.19,'triangle',.014);announce('어딘가에서 종이 넘기는 소리가 들립니다.',false,2);}
+      if(run.mode==='story'&&cell>=0&&cell%3===0)saveChapterCheckpoint();}
+  }
   if(state.stage==='explore'){
     const gaze=C3.stepWatcher(state,dt,player,player.yaw,player.pitch);
     if(gaze.awake && !lastGazeAwake){shock();announce('읽지 마. 뛰어!',true,3);}
@@ -1473,7 +1624,12 @@ function update(dt) {
     :distance<7?'지직… 단어가 바뀌고 있습니다':'멀리서 글자가 지워지고 있습니다';
   if(hud.correctorText.textContent!==signal)hud.correctorText.textContent=signal;
   updateWordArchitecture(elapsed,threat);updateCalligrams(dt,threat);
-  updateRewriteWorld(elapsed);updateWayfindingSigns();setCamera();updatePrompt();syncHintScope();
+  updateRewriteWorld(elapsed);updateWayfindingSigns();setCamera();
+  if(state.stage==='maze'&&mazeVisuals){
+    for(const marker of [...mazeVisuals.stations,...mazeVisuals.landmarks])if(marker.visible){marker.lookAt(camera.position);marker.position.y=1.68+Math.sin(elapsed*1.7)*.04;}
+    mazeVisuals.exit.lookAt(camera.position);
+  }
+  updatePrompt();syncHintScope();
 }
 function look(dx,dy) {
   if(state.hidden || !overlays.fix.classList.contains('closed')||!overlays.correction.classList.contains('closed')||!overlays.rewrite.classList.contains('closed')||!overlays.sentence.classList.contains('closed'))return;
@@ -1508,6 +1664,7 @@ function begin() {
   Object.assign(literacy,L.create(run.seed));
   Object.assign(expansion,EX.create(run.seed));
   Object.assign(anomalies,AN.create(run.seed));
+  maze=M.create(run.seed);buildMazeWorld();
   state.expansion=visualAudit?null:expansion;
   syncAnnexVisuals();
   overlays.intro.classList.add('closed');started=true;audioStart();
@@ -1596,17 +1753,25 @@ for(const choice of el('choices').querySelectorAll('button')) {
   choice.addEventListener('click',()=>{
     const before=state.stage;
     const type=overlays.fix.dataset.puzzle;
-    const correct=type==='corridor'?R.repairCorridor(state,choice.dataset.word,player)
+    const correct=type==='maze'?M.solve(maze,activeMazeStation,choice.dataset.word)
+      :type==='corridor'?R.repairCorridor(state,choice.dataset.word,player)
       :type==='office'?C3.repairOffice(state,choice.dataset.word,player)
       :type==='final'?C3.repairFinal(state,choice.dataset.word,player)
       :R.repairDoor(state,choice.dataset.word,player);
     if(correct) {
-      overlays.fix.classList.add('closed');syncStage(before);syncChapterVisuals();saveChapterCheckpoint();
+      overlays.fix.classList.add('closed');syncStage(before);syncChapterVisuals();
+      if(type==='maze'){
+        syncMazeVisuals();hud.objective.textContent=mazeObjective();
+        tone(520,.22,'triangle',.05);
+        announce('찢어진 색인 복구 '+maze.solved.filter(Boolean).length+'/3! 남은 길을 찾아보세요.',false,3.5);
+      }
+      saveChapterCheckpoint();
       if(type==='office'){announce('벽이 책상으로 돌아왔습니다. 안쪽에서 기록을 찾으세요.',false,3.5);hud.stage.textContent='사무실 · 기록 A 탐색';}
       el('fixFeedback').textContent='주변의 기록을 기억하세요.';
     } else {
       if(state.stage==='explore')AN.wrongAnswer(anomalies);
-      el('fixFeedback').textContent=type==='office'?'틀렸어요. 이 방에서 사람이 옆에 앉아 있던 사물을 찾아보세요.'
+      el('fixFeedback').textContent=type==='maze'?'틀렸어요. 잘못 적힌 단어의 표준 표기를 다시 생각해 보세요.'
+        :type==='office'?'틀렸어요. 이 방에서 사람이 옆에 앉아 있던 사물을 찾아보세요.'
         :type==='final'?'틀렸어요. 두 기록을 읽으며 잊힌 이름을 생각해 보세요.'
         :type==='corridor'?'틀렸어요. 두 장소를 이어 주는 길의 이름을 생각해 보세요.'
         :'틀렸어요. 열고 닫아 지나갈 수 있는 것은 무엇일까요?';
@@ -1651,6 +1816,7 @@ el('correctionChoices').querySelectorAll('button').forEach(button=>{
 window.OtaDebug = Object.freeze({
   snapshot:()=>({stage:state.stage,corridorFixed:state.corridorFixed,doorFixed:state.doorFixed,hidden:state.hidden,
     run:{mode:run.mode,seed:run.seed,week:run.week,seconds:run.startedAt?Math.round((Date.now()-run.startedAt)/100)/10:0},
+    maze:{size:M.SIZE,seed:maze.seed,minSteps:maze.minSteps,stations:[...maze.stations],exit:maze.exit,solved:[...maze.solved],visited:maze.visited.filter(Boolean).length},
     expansion:{required:expansion.required,rooms:{...expansion.rooms},layouts:{...expansion.layouts},
       solved:{...expansion.solved},fragments:{...expansion.fragments},bonus:expansion.bonus},
     anomalies:{active:anomalies.active,phase:anomalies.phase,encounters:anomalies.encounters,
