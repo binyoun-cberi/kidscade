@@ -61,7 +61,9 @@ class Renderer{
  facility(x,style,b){
   const c=this.ctx,colors={pump:'#528ca0',reservoir:'#74bbd6',shelter:'#546c80',cooling:'#80ccdd',snow:'#6f8490'};
   const base=style==='shelter'?'buildingDark':style==='cooling'?'buildingBase':'buildingGray';
-  this.img(base,x-39,D.GROUND_Y-73,78,73);
+  if(!this.img(base,x-39,D.GROUND_Y-73,78,73)){
+   c.fillStyle=style==='cooling'?'#d7eaf0':'#82929b';c.fillRect(x-39,D.GROUND_Y-73,78,73);
+  }
   c.fillStyle=colors[style]||'#8196a2';c.fillRect(x-39,D.GROUND_Y-75,78,9);
   this.img('roofGray',x-43,D.GROUND_Y-86,86,19);
   this.img('door',x-12,D.GROUND_Y-44,24,44);
@@ -107,7 +109,9 @@ class Renderer{
   c.save();c.fillStyle='#173449dd';c.beginPath();c.arc(x,y,15,0,Math.PI*2);c.fill();c.fillStyle='#fff';c.font='900 16px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(b.condition==='flooded'?'💧':'🔧',x,y+1);c.restore()
  }
  townHall(){const c=this.ctx,x=D.TOWN_X;
-  this.img('buildingBase',x-55,D.GROUND_Y-108,110,108);
+  if(!this.img('buildingBase',x-55,D.GROUND_Y-108,110,108)){
+   c.fillStyle='#e7d1a8';c.fillRect(x-55,D.GROUND_Y-108,110,108);
+  }
   c.fillStyle='#384e5a';c.beginPath();c.moveTo(x-66,D.GROUND_Y-108);c.lineTo(x,D.GROUND_Y-151);c.lineTo(x+66,D.GROUND_Y-108);c.fill();
   this.img('roofGray',x-47,D.GROUND_Y-135,94,26);
   this.img('door',x-13,D.GROUND_Y-51,26,51);
