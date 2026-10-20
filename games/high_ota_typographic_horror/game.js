@@ -747,7 +747,7 @@ function syncAnnexVisuals(){
 function mazeObjective(){
   const count=maze.solved.filter(Boolean).length;
   return count===3?'찢어진 색인을 모두 복구했습니다. 출구에 적힌 「나」를 찾으세요.'
-    :'끝없이 이어지는 통로에서 잘못된 색인 세 조각을 고치세요 ('+count+'/3)';
+    :'미로에서 잘못된 색인 세 조각을 찾아 고치세요 ('+count+'/3)';
 }
 function buildMazeWorld(){
   if(mazeGroup){
@@ -764,7 +764,7 @@ function buildMazeWorld(){
   const wallColors=['#cfdae3','#b8c5df','#dbb9c3','#c6d2bd'];
   const barrierZones=Array.from({length:4},()=>[]);
   for(let i=0;i<M.COUNT;i++){
-    const p=M.center(i),r=M.cell(i),zone=(r.row>=6?2:0)+(r.col>=6?1:0);
+    const p=M.center(i),r=M.cell(i),zone=(r.row>=Math.floor(M.SIZE/2)?2:0)+(r.col>=Math.floor(M.SIZE/2)?1:0);
     if(r.row===0)barrierZones[zone].push([p.x,p.z+edgeLength/2,0]);
     if(r.col===0)barrierZones[zone].push([p.x-edgeLength/2,p.z,Math.PI/2]);
     if(!(maze.links[i]&2))barrierZones[zone].push([p.x+edgeLength/2,p.z,Math.PI/2]);
@@ -803,7 +803,7 @@ function buildMazeWorld(){
   // Sparse landmarks make a location recognizable without disclosing the correct route.
   const landmarks=[];
   const districtNames=['분실물 서고','찢긴 문장','폐기된 이름','반송 통로'];
-  [28,37,118,146].forEach((at,i)=>{
+  [M.SIZE+2,2*M.SIZE+(M.SIZE-3),(M.SIZE-3)*M.SIZE+2,(M.SIZE-2)*M.SIZE+(M.SIZE-3)].forEach((at,i)=>{
     if(!maze.stations.includes(at)&&maze.exit!==at)
       landmarks.push(marker(districtNames[i],['#b9d8e5','#bdc5ed','#d9a7b6','#b9d8b5'][i],M.center(at),2.8));
   });
@@ -832,6 +832,18 @@ function drawMazeMap(){
     if(edges&4)ctx.fillRect(x+size*.32,y+size-margin,size*.36,margin*2);
     if(edges&8)ctx.fillRect(x-margin,y+size*.32,margin*2,size*.36);
     if(edges&1)ctx.fillRect(x+size*.32,y-margin,size*.36,margin*2);
+  }
+  // Revisited records stay marked on the map without revealing unexplored passages.
+  maze.stations.forEach((station,i)=>{
+    if(!maze.visited[station])return;
+    const at=M.cell(station);
+    ctx.fillStyle=maze.solved[i]?'#85a99d':'#f3b66b';
+    ctx.fillRect((at.col+.28)*size,(at.row+.28)*size,size*.44,size*.44);
+  });
+  if(maze.visited[maze.exit]){
+    const at=M.cell(maze.exit);
+    ctx.fillStyle='#d6a9df';
+    ctx.fillRect((at.col+.28)*size,(at.row+.28)*size,size*.44,size*.44);
   }
   const here=M.current(player);
   if(here>=0){
@@ -1087,7 +1099,7 @@ function respawnAtCheckpoint(){
   Object.assign(player,{x:C3.START.x,z:C3.START.z,yaw:0,pitch:0,moving:false});
   maze=M.create(run.seed);if(data.inMaze&&M.restore(maze,data.maze)){
     state.stage='maze';const origin=M.center(0);
-    const saved=data.mazePosition;
+    const saved=data.maze?.v===2?data.mazePosition:null;
     player.x=saved&&M.canMove(maze,saved.x,saved.z)?saved.x:origin.x;
     player.z=saved&&M.canMove(maze,saved.x,saved.z)?saved.z:origin.z;
     player.yaw=M.facing(maze,M.current(player));
@@ -1466,7 +1478,7 @@ function update(dt) {
     const cell=M.current(player),firstVisit=cell>=0&&!maze.visited[cell];
     M.enter(maze,player);
     if(cell!==lastMazeCell){lastMazeCell=cell;drawMazeMap();
-      if(firstVisit&&cell%13===5){tone(93,.19,'triangle',.014);announce('어딘가에서 종이 넘기는 소리가 들립니다.',false,2);}
+      if(firstVisit&&cell%M.SIZE===Math.floor(M.SIZE/2)){tone(93,.19,'triangle',.014);announce('어딘가에서 종이 넘기는 소리가 들립니다.',false,2);}
       if(run.mode==='story'&&cell>=0)saveChapterCheckpoint();}
     const encounter=M.stepHunter(maze,mazeHunter,dt,player);
     if(encounter.phase!==lastMazeHunterPhase){
