@@ -24,7 +24,9 @@ const hud = { objective:el('objective'), stage:el('stage'), prompt:el('prompt'),
   clock:el('runClock'),enemy:el('enemyWarning'),void:el('voidPulse') };
 const overlays = { intro:el('intro'), fix:el('fixPanel'), correction:el('correctionPanel'),
   rewrite:el('rewritePanel'),sentence:el('sentencePanel'),ending:el('ending') };
-const visualAudit=new URLSearchParams(location.search).has('visual-audit');
+const auditQuery=new URLSearchParams(location.search);
+const visualAudit=auditQuery.has('visual-audit');
+const mazeVisualAudit=auditQuery.get('visual-audit')==='maze';
 const speedCourse=EX.weeklyCourse();
 const run={mode:'story',seed:0,week:speedCourse.week,startedAt:0};
 const state = R.initialState();
@@ -32,7 +34,8 @@ const literacy=L.create(visualAudit?0:undefined);state.literacy=literacy;
 const rewrite=RW.create();state.rewrite=rewrite;
 const expansion=EX.create(literacy.seed);state.expansion=visualAudit?null:expansion;
 const anomalies=AN.create(literacy.seed);
-let maze=M.create(literacy.seed),mazeGroup=null,mazeVisuals=null,activeMazeStation=-1,lastMazeCell=-1;
+let maze=M.create(literacy.seed),mazeHunter=M.createHunter(maze),mazeGroup=null,mazeVisuals=null;
+let activeMazeStation=-1,lastMazeCell=-1,lastMazeHunterPhase='quiet';
 let activeSentence=null;
 const annexVisuals={};
 const anomalyVisuals={};
@@ -757,23 +760,29 @@ function buildMazeWorld(){
   }
   const group=new THREE.Group();mazeGroup=group;scene.add(group);
   const edgeLength=M.CELL,height=3.22,wallGeometry=new THREE.BoxGeometry(edgeLength,height,.18);
-  const wallMaterial=new THREE.MeshBasicMaterial({map:surfaceAtlas('wall'),transparent:true,
-    opacity:.53,side:THREE.DoubleSide,depthWrite:true});
-  const barriers=[];
+  // Four recognizable districts give the labyrinth landmarks beyond identical "벽" corridors.
+  const wallColors=['#cfdae3','#b8c5df','#dbb9c3','#c6d2bd'];
+  const barrierZones=Array.from({length:4},()=>[]);
   for(let i=0;i<M.COUNT;i++){
-    const p=M.center(i),r=M.cell(i);
-    if(r.row===0)barriers.push([p.x,p.z+edgeLength/2,0]);
-    if(r.col===0)barriers.push([p.x-edgeLength/2,p.z,Math.PI/2]);
-    if(!(maze.links[i]&2))barriers.push([p.x+edgeLength/2,p.z,Math.PI/2]);
-    if(!(maze.links[i]&4))barriers.push([p.x,p.z-edgeLength/2,0]);
+    const p=M.center(i),r=M.cell(i),zone=(r.row>=6?2:0)+(r.col>=6?1:0);
+    if(r.row===0)barrierZones[zone].push([p.x,p.z+edgeLength/2,0]);
+    if(r.col===0)barrierZones[zone].push([p.x-edgeLength/2,p.z,Math.PI/2]);
+    if(!(maze.links[i]&2))barrierZones[zone].push([p.x+edgeLength/2,p.z,Math.PI/2]);
+    if(!(maze.links[i]&4))barrierZones[zone].push([p.x,p.z-edgeLength/2,0]);
   }
-  const walls=new THREE.InstancedMesh(wallGeometry,wallMaterial,barriers.length);
+  const wallMap=surfaceAtlas('wall');
   const object=new THREE.Object3D();
-  barriers.forEach(([x,z,rotation],i)=>{
-    object.position.set(x,height/2-.05,z);object.rotation.set(0,rotation,0);
-    object.updateMatrix();walls.setMatrixAt(i,object.matrix);
+  barrierZones.forEach((barriers,zone)=>{
+    if(!barriers.length)return;
+    const wallMaterial=new THREE.MeshBasicMaterial({map:wallMap,color:wallColors[zone],
+      transparent:true,opacity:.70,side:THREE.DoubleSide,depthWrite:true});
+    const walls=new THREE.InstancedMesh(wallGeometry,wallMaterial,barriers.length);
+    barriers.forEach(([x,z,rotation],i)=>{
+      object.position.set(x,height/2-.05,z);object.rotation.set(0,rotation,0);
+      object.updateMatrix();walls.setMatrixAt(i,object.matrix);
+    });
+    walls.instanceMatrix.needsUpdate=true;walls.userData.mazeOwned=true;group.add(walls);
   });
-  walls.instanceMatrix.needsUpdate=true;walls.userData.mazeOwned=true;group.add(walls);
   const extent=M.SIZE*M.CELL,centerZ=(M.center(0).z+M.center(M.COUNT-1).z)/2;
   const floorTexture=surfaceAtlas('floor').clone();
   floorTexture.repeat.set(M.SIZE*1.5,M.SIZE*1.5);floorTexture.needsUpdate=true;
@@ -793,12 +802,17 @@ function buildMazeWorld(){
   const exit=marker('나','#aaf1d7',M.center(maze.exit),2.4);
   // Sparse landmarks make a location recognizable without disclosing the correct route.
   const landmarks=[];
+  const districtNames=['분실물 서고','찢긴 문장','폐기된 이름','반송 통로'];
+  [28,37,118,146].forEach((at,i)=>{
+    if(!maze.stations.includes(at)&&maze.exit!==at)
+      landmarks.push(marker(districtNames[i],['#b9d8e5','#bdc5ed','#d9a7b6','#b9d8b5'][i],M.center(at),2.8));
+  });
   const words=['반납','미등록','잘못된 서가','비밀','폐기','색인','돌아가는 길'];
   for(let i=0;i<M.COUNT;i++){
     const branches=[1,2,4,8].filter(bit=>maze.links[i]&bit).length;
     if(branches!==1||i%4!==0||i===0||maze.stations.includes(i)||i===maze.exit)continue;
-    landmarks.push(marker(words[(i+maze.seed)%words.length],'#8b909d',M.center(i),2.05));
-    if(landmarks.length>=14)break;
+    landmarks.push(marker(words[(i+maze.seed)%words.length],'#a6a6b4',M.center(i),2.05));
+    if(landmarks.length>=22)break;
   }
   mazeVisuals={stations,exit,landmarks};
   group.visible=state.stage==='maze';
@@ -1067,7 +1081,9 @@ function respawnAtCheckpoint(){
     const saved=data.mazePosition;
     player.x=saved&&M.canMove(maze,saved.x,saved.z)?saved.x:origin.x;
     player.z=saved&&M.canMove(maze,saved.x,saved.z)?saved.z:origin.z;
+    player.yaw=M.facing(maze,M.current(player));
   }
+  mazeHunter=M.createHunter(maze);lastMazeHunterPhase='quiet';lastMazeCell=-1;
   buildMazeWorld();
   failed=false;X.reset(corrector);soundPulse=0;closeCorrection();closeSentence();
   for(const fx of repairEffects){fx.shards.forEach(m=>scene.remove(m));scene.remove(fx.result);}
@@ -1363,7 +1379,7 @@ function finish(won) {
     ?'기록 A·B · 핵심 오타 '+literacy.coreDone+'/5 · 색인 미로 '+maze.solved.filter(Boolean).length+'/3 · 문장 기록 '+(expansion.fragments.west+expansion.fragments.east)+'/2 · 교정 '+literacy.corrected+'회 · '+formatTime(seconds)+(expansion.bonus?' · 두 열람실 완전 복구!':'')+speedText
     :failure.title+' '+failure.detail+(run.mode==='speedrun'?' · '+formatTime(seconds):'');
   el('respawn').hidden=run.mode==='speedrun'||!(!won&&Boolean(loadChapterCheckpoint()));
-  try {window.KidscadeGame?.result?.({scope:'stage',status:won?'completed':'failed',
+  if(!visualAudit)try {window.KidscadeGame?.result?.({scope:'stage',status:won?'completed':'failed',
     outcome:won?'clear':'fail',id:run.mode==='speedrun'?'ota-weekly-speedrun':'ota-prologue',
     score:won?Math.max(100,1000-Math.floor(seconds)*3-state.mistakes*80+(expansion.bonus?250:0)):0,
     seconds:Math.round(seconds),mistakes:state.mistakes+literacy.mistakes+expansion.attempts+maze.wrong,
@@ -1434,7 +1450,7 @@ function update(dt) {
   if(state.stage==='final'&&player.z< -63.3){
     if(visualAudit)C3.finish(state,player); // Legacy chapter-3 browser audit still verifies its own ending.
     else {state.stage='maze';const entry=M.center(0);
-    Object.assign(player,{x:entry.x,z:entry.z,yaw:Math.PI,pitch:0});
+    Object.assign(player,{x:entry.x,z:entry.z,yaw:M.entryYaw(maze),pitch:0});
     M.enter(maze,player);lastMazeCell=0;}
   }
   if(state.stage==='maze'){
@@ -1442,7 +1458,26 @@ function update(dt) {
     M.enter(maze,player);
     if(cell!==lastMazeCell){lastMazeCell=cell;drawMazeMap();
       if(firstVisit&&cell%13===5){tone(93,.19,'triangle',.014);announce('어딘가에서 종이 넘기는 소리가 들립니다.',false,2);}
-      if(run.mode==='story'&&cell>=0&&cell%3===0)saveChapterCheckpoint();}
+      if(run.mode==='story'&&cell>=0)saveChapterCheckpoint();}
+    const encounter=M.stepHunter(maze,mazeHunter,dt,player);
+    if(encounter.phase!==lastMazeHunterPhase){
+      if(encounter.phase==='warning'){
+        tone(84,.46,'sawtooth',.035);
+        announce('멀리서 글자가 지워지는 소리가 들립니다. 교정자가 길을 찾아옵니다.',true,3.5);
+      }else if(encounter.phase==='chase'){
+        tone(57,.35,'sawtooth',.048);
+        announce('교정자가 미로를 따라오고 있습니다! 다른 통로로 벗어나세요.',true,3.5);
+      }
+      lastMazeHunterPhase=encounter.phase;
+    }
+    if(encounter.caught){
+      // Keep restored records: a jump scare sends the reader to a known safe room.
+      const shelter=M.nearestSafeCell(maze,player),safe=M.center(shelter);
+      Object.assign(player,{x:safe.x,z:safe.z,yaw:M.facing(maze,shelter),pitch:0,moving:false});
+      M.enter(maze,player);lastMazeCell=shelter;
+      drawMazeMap();saveChapterCheckpoint();shock();
+      announce('이름이 지워질 뻔했습니다. 마지막으로 읽은 곳에서 다시 길을 찾으세요.',true,4);
+    }
   }
   if(state.stage==='explore'){
     const gaze=C3.stepWatcher(state,dt,player,player.yaw,player.pitch);
@@ -1570,7 +1605,9 @@ function update(dt) {
   }
   const prologue=state.monster.active;
   const stalking=corrector.phase!=='dormant'&&!failed;
-  const threat=prologue?state.monster:stalking?corrector:null;
+  const mazeThreat=state.stage==='maze'&&
+    (mazeHunter.phase==='warning'||mazeHunter.phase==='chase')?mazeHunter:null;
+  const threat=prologue?state.monster:stalking?corrector:mazeThreat;
   const distance=threat?R.distance(player,threat):Infinity;
   // Non-lethal silhouette: careful students can still experience the horror.
   // This is a scripted echo, not an omniscient second monster.
@@ -1614,10 +1651,13 @@ function update(dt) {
     hud.danger.style.opacity=echoActive?String(.18+state.echo.alert/155):'0';
     hud.noise.style.opacity=echoActive?String(.18+state.echo.alert/270):state.stage==='hiding'?'0.07':'0';
   }
-  const approaching=stalking&&!corrector.hidden&&distance<11;
-  hud.corrector.classList.toggle('show',approaching||corrector.hidden||mirage);
-  hud.corrector.classList.toggle('alert',approaching&&distance<4.1);
-  const signal=mirage?'교정자의 잔상입니다. 아직 추격하지 않습니다'
+  const approaching=(stalking&&!corrector.hidden||mazeThreat)&&distance<11;
+  hud.corrector.classList.toggle('show',Boolean(approaching||mazeThreat||corrector.hidden||mirage));
+  hud.corrector.classList.toggle('alert',Boolean(approaching&&distance<4.1));
+  const signal=mazeThreat?(mazeHunter.phase==='warning'
+    ?'미로 저편에서 글자가 지워지고 있습니다'
+    :distance<7?'교정자가 바로 근처입니다! 갈림길로 도망치세요':'교정자가 통로를 따라 추격 중입니다')
+    :mirage?'교정자의 잔상입니다. 아직 추격하지 않습니다'
     :corrector.hidden?'숨은 상태 · 소리가 멀어질 때까지 기다리세요'
     :corrector.phase==='final'?'뒤에서 이름을 지우고 있습니다 — 앞으로 이동!'
     :corrector.phase==='chase'?'교정자가 찾았습니다 — 시야를 벗어나세요'
@@ -1665,12 +1705,19 @@ function begin() {
   Object.assign(literacy,L.create(run.seed));
   Object.assign(expansion,EX.create(run.seed));
   Object.assign(anomalies,AN.create(run.seed));
-  maze=M.create(run.seed);buildMazeWorld();
+  maze=M.create(run.seed);mazeHunter=M.createHunter(maze);
+  lastMazeHunterPhase='quiet';lastMazeCell=-1;buildMazeWorld();
   state.expansion=visualAudit?null:expansion;
   syncAnnexVisuals();
   overlays.intro.classList.add('closed');started=true;audioStart();
+  if(mazeVisualAudit){
+    // A no-score browser QA entry into the *real* chapter, keeping normal play untouched.
+    const from=state.stage,entry=M.center(0);
+    state.stage='maze';Object.assign(player,{x:entry.x,z:entry.z,yaw:M.entryYaw(maze),pitch:0});
+    M.enter(maze,player);lastMazeCell=0;updateStage('maze',from);
+  }
   hud.help.hidden=run.mode==='speedrun';hud.clock.hidden=run.mode!=='speedrun';syncHintScope();
-  try{window.KidscadeGame?.start?.();}catch(_){}
+  if(!visualAudit)try{window.KidscadeGame?.start?.();}catch(_){}
   announce(run.mode==='speedrun'?'이번 주 기록에 도전합니다. 시간은 멈추지 않습니다.':'컴퓨터 기록부터 확인하세요.',false,3.2);
   if(!touchDevice)canvas.requestPointerLock?.().catch?.(()=>{});
 }
@@ -1817,7 +1864,8 @@ el('correctionChoices').querySelectorAll('button').forEach(button=>{
 window.OtaDebug = Object.freeze({
   snapshot:()=>({stage:state.stage,corridorFixed:state.corridorFixed,doorFixed:state.doorFixed,hidden:state.hidden,
     run:{mode:run.mode,seed:run.seed,week:run.week,seconds:run.startedAt?Math.round((Date.now()-run.startedAt)/100)/10:0},
-    maze:{size:M.SIZE,seed:maze.seed,minSteps:maze.minSteps,stations:[...maze.stations],exit:maze.exit,solved:[...maze.solved],visited:maze.visited.filter(Boolean).length},
+    maze:{size:M.SIZE,seed:maze.seed,minSteps:maze.minSteps,stations:[...maze.stations],exit:maze.exit,solved:[...maze.solved],visited:maze.visited.filter(Boolean).length,
+      hunter:{phase:mazeHunter.phase,x:mazeHunter.x,z:mazeHunter.z,caught:mazeHunter.caught,encounters:mazeHunter.encounters}},
     expansion:{required:expansion.required,rooms:{...expansion.rooms},layouts:{...expansion.layouts},
       solved:{...expansion.solved},fragments:{...expansion.fragments},bonus:expansion.bonus},
     anomalies:{active:anomalies.active,phase:anomalies.phase,encounters:anomalies.encounters,
