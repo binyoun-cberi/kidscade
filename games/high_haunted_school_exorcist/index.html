@@ -54,6 +54,8 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
    remains visible through the clear center while the edges close in. */
 #captureScene{--capture-ink:150,104,171;--capture-shadow:#130b23;position:absolute;inset:0;z-index:11;overflow:hidden;pointer-events:none;visibility:hidden;opacity:0;transition:opacity .14s;background:radial-gradient(ellipse at 50% 47%,transparent 12%,rgba(var(--capture-ink),.19) 42%,var(--capture-shadow) 112%)}
 #captureScene.active{visibility:visible;opacity:1}
+#captureScene::before,#captureScene::after{z-index:0}
+.capture-ring,.capture-mark,.capture-panel{z-index:1}
 #captureScene::before{content:"";position:absolute;inset:-18%;background:radial-gradient(ellipse at 50% 48%,transparent 20%,rgba(var(--capture-ink),.40) 63%,#020309e8 98%);transform:scale(1.25);animation:capture-close 1.8s ease-in both}
 #captureScene::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#020308e0,transparent 31%,transparent 72%,#020308b3);animation:capture-fall 1.8s ease-out both}
 .capture-ring{position:absolute;left:50%;top:44%;width:min(83vmin,680px);aspect-ratio:1;transform:translate(-50%,-50%) scale(.7);border:2px solid rgba(var(--capture-ink),.45);border-radius:50%;box-shadow:0 0 75px rgba(var(--capture-ink),.35),inset 0 0 35px rgba(var(--capture-ink),.36);animation:capture-ring 1.8s ease-out both}
