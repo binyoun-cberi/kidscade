@@ -3,6 +3,7 @@ import {
   getWave, getEscapeLimit, getRebuildSite, canRebuildHere, getTacticalObjective, stepGame, takeUpgrade, issueOrder, issueSpecial, restoreCampaign, isBattleUnlocked,
   togglePause, broadsideTarget, radarContacts, boardingThreat
 } from './sim.mjs';
+import { CAMPAIGN_INTROS } from './campaign-intros.mjs';
 
 const $ = id => document.getElementById(id);
 const canvas = $('sea');
@@ -109,11 +110,130 @@ function recordKey() {
   return `kidscade.yi_sun_sin.record${game.battleId === 'okpo' ? '' : `.${game.battleId}`}${suffix}`;
 }
 
+function renderCampaignMap() {
+  const markers = $('mapMarkers');
+  const chapters = $('mapChapterList');
+  markers.replaceChildren();
+  chapters.replaceChildren();
+  for (const id of BATTLE_ORDER) {
+    const battle = BATTLES[id];
+    const intro = CAMPAIGN_INTROS[id];
+    const unlocked = isUnlocked(id);
+    const cleared = campaign.completed.includes(id);
+    const selected = game.battleId === id;
+    const state = !unlocked ? '미개방' : cleared ? '승전 완료' : '출전 가능';
+    const marker = document.createElement('button');
+    marker.type = 'button';
+    marker.className = `map-marker${cleared ? ' cleared' : ''}${!unlocked ? ' locked' : ''}${selected ? ' selected' : ''}`;
+    marker.style.left = `${intro.x}%`;
+    marker.style.top = `${intro.y}%`;
+    marker.textContent = String(battle.chapter).padStart(2, '0');
+    marker.title = `${battle.title} · ${intro.place} · ${state}`;
+    marker.setAttribute('aria-label', `${battle.chapter}장 ${battle.title}, ${intro.place}, ${state}`);
+    marker.addEventListener('click', () => chooseMapBattle(id));
+    marker.addEventListener('focus', () => showMapDetail(id));
+    markers.appendChild(marker);
+
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = `map-chapter${cleared ? ' cleared' : ''}${!unlocked ? ' locked' : ''}${selected ? ' selected' : ''}`;
+    row.setAttribute('aria-label', `${battle.chapter}장 ${battle.title}, ${state}`);
+    const number = document.createElement('span');
+    number.className = 'map-chapter-num';
+    number.textContent = String(battle.chapter).padStart(2, '0');
+    const caption = document.createElement('span');
+    caption.className = 'map-chapter-caption';
+    const name = document.createElement('b');
+    const subtitle = document.createElement('small');
+    name.textContent = battle.title;
+    subtitle.textContent = intro.place;
+    caption.append(name, subtitle);
+    const indicator = document.createElement('span');
+    indicator.className = 'map-chapter-state';
+    indicator.textContent = !unlocked ? '🔒' : cleared ? '✓' : '→';
+    row.append(number, caption, indicator);
+    row.addEventListener('click', () => chooseMapBattle(id));
+    row.addEventListener('focus', () => showMapDetail(id));
+    chapters.appendChild(row);
+  }
+  showMapDetail(game.battleId);
+  selectDifficulty(game.difficulty);
+  $('mapStartBtn').disabled = !isUnlocked(game.battleId);
+  $('mapStartBtn').textContent = `${game.battle.title} 기록 읽고 출전 →`;
+}
+
+function showMapDetail(id) {
+  const battle = BATTLES[id];
+  if (!battle) return;
+  const intro = CAMPAIGN_INTROS[id];
+  const panel = $('mapSelected');
+  panel.replaceChildren();
+  const heading = document.createElement('strong');
+  const note = document.createElement('p');
+  heading.textContent = `${battle.chapter}장 · ${battle.title} · ${battle.date}`;
+  note.textContent = isUnlocked(id) ? intro.lead : '앞 전장의 승전 기록을 남기면 이 전장이 열립니다.';
+  panel.append(heading, note);
+}
+
+function chooseMapBattle(id) {
+  if (!isUnlocked(id)) { showMapDetail(id); playSound('hit'); return; }
+  selectBattle(id);
+}
+
+function showCinematic() {
+  if (!isUnlocked(game.battleId)) return;
+  const intro = CAMPAIGN_INTROS[game.battleId];
+  $('campaignScreen').hidden = true;
+  $('dialogCard').hidden = true;
+  $('cinematicScreen').hidden = false;
+  overlay.classList.remove('hidden');
+  overlay.setAttribute('aria-labelledby', 'cinematicTitle');
+  $('cinematicChapter').textContent = `${game.battle.chapter}장 · ${intro.era}`;
+  $('cinematicCaveat').textContent = intro.caveat;
+  $('cinematicSource').href = intro.source;
+  const crawl = $('crawlContent');
+  crawl.classList.remove('running');
+  crawl.replaceChildren();
+  const add = (tag, className, content) => {
+    const node = document.createElement(tag);
+    node.className = className;
+    node.textContent = content;
+    crawl.appendChild(node);
+  };
+  add('span', 'crawl-prelude', '一 · 七年海戰');
+  add('h1', 'crawl-title', game.battle.title);
+  add('p', 'crawl-date', `${game.battle.date}  ·  ${intro.place}`);
+  add('p', 'crawl-lead', intro.lead);
+  add('p', 'crawl-story', intro.story);
+  add('span', 'crawl-record-label', intro.diaryDate);
+  if (intro.diaryQuote) add('blockquote', 'crawl-quote', `“${intro.diaryQuote}”`);
+  add('p', 'crawl-diary', intro.diary);
+  add('p', 'crawl-final', '기함의 닻을 올릴 때가 왔다.');
+  // The heading is reused for the dialog's accessible name even when the text
+  // inside the moving crawl changes between chapters.
+  crawl.querySelector('h1').id = 'cinematicTitle';
+  void crawl.offsetWidth; // restart animation even when the same battle is selected twice
+  crawl.classList.add('running');
+  $('cinematicSkip').textContent = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? '출전하기 →' : '연출 건너뛰고 출전 →';
+  requestAnimationFrame(() => $('cinematicSkip').focus());
+}
+
+function leaveCinematic() {
+  $('crawlContent').classList.remove('running');
+  $('cinematicScreen').hidden = true;
+}
+
 function showOverlay(mode) {
   overlay.classList.remove('hidden');
-  $('howTo').style.display = mode === 'menu' ? '' : 'none';
-  $('battlePicker').hidden = mode !== 'menu';
-  $('difficultyPicker').hidden = mode !== 'menu';
+  leaveCinematic();
+  $('campaignScreen').hidden = mode !== 'menu';
+  $('dialogCard').hidden = mode === 'menu';
+  overlay.setAttribute('aria-labelledby', mode === 'menu' ? 'atlasTitle' : 'overlayTitle');
+  if (mode === 'menu') {
+    renderCampaignMap();
+    requestAnimationFrame(() => $('mapStartBtn').focus());
+    return;
+  }
   $('shipGuide').hidden = true;
   $('shipGuide').replaceChildren();
   $('historyNote').style.display = mode === 'menu' || mode === 'victory' ? '' : 'none';
@@ -137,55 +257,7 @@ function showOverlay(mode) {
     button.addEventListener('click', action);
     actions.appendChild(button);
   };
-  if (mode === 'menu') {
-    selectDifficulty(game.difficulty);
-    const picker = $('battlePicker');
-    picker.replaceChildren();
-    for (const id of BATTLE_ORDER) {
-      const battle = BATTLES[id];
-      const item = document.createElement('button');
-      const unlocked = isUnlocked(id);
-      item.type = 'button';
-      item.className = `battle-choice${game.battleId === id ? ' selected' : ''}`;
-      item.disabled = !unlocked;
-      item.setAttribute('aria-pressed', String(game.battleId === id));
-      const title = document.createElement('b'), date = document.createElement('small'), state = document.createElement('span');
-      title.textContent = `${battle.chapter}장 · ${battle.title}`;
-      date.textContent = battle.date;
-      state.className = 'battle-state';
-      state.textContent = !unlocked ? '🔒 앞 전장을 먼저 승리하세요' : campaign.completed.includes(id) ? '✓ 승전 기록' : game.battleId === id ? '출전 준비' : '출전 가능';
-      item.append(title, date, state);
-      item.addEventListener('click', () => selectBattle(id));
-      picker.appendChild(item);
-    }
-    $('overlayEyebrow').textContent = game.battle.date;
-    $('overlayTitle').textContent = `${game.battle.title}에 출전하다`;
-    $('overlayText').textContent = game.battle.summary;
-    primary(`${game.battle.title} 출전하기 →`, () => { beginRun(); playSound('confirm'); });
-    const guideButton = document.createElement('button');
-    guideButton.type = 'button';
-    guideButton.className = 'secondary-button';
-    guideButton.textContent = '함선 일람 펼치기 · 조선 / 일본';
-    guideButton.addEventListener('click', () => {
-      const guide = $('shipGuide');
-      guide.hidden = !guide.hidden;
-      guideButton.textContent = guide.hidden ? '함선 일람 펼치기 · 조선 / 일본' : '함선 일람 접기';
-      if (guide.childElementCount) return;
-      for (const ship of SHIP_GUIDE) {
-        const entry = document.createElement('article');
-        entry.className = `guide-entry ${SHIP_TYPES[ship.type].side}`;
-        const name = document.createElement('strong');
-        const role = document.createElement('span');
-        const note = document.createElement('small');
-        name.textContent = SHIP_TYPES[ship.type].name;
-        role.textContent = `${ship.period} · ${ship.role}`;
-        note.textContent = ship.note;
-        entry.append(name, role, note);
-        guide.appendChild(entry);
-      }
-    });
-    actions.appendChild(guideButton);
-  } else if (mode === 'upgrade') {
+  if (mode === 'upgrade') {
     $('overlayEyebrow').textContent = `${game.waveIndex + 1}차 교전 마침 · 출전 준비`;
     $('overlayTitle').textContent = '함선을 정비할 시간';
     $('overlayText').textContent = '좌현·우현 무장을 바꾸거나 아군을 보강하세요. 선택한 강화는 이번 출전 동안 유지됩니다.';
@@ -274,11 +346,13 @@ function selectBattle(id) {
   oldMode = 'menu';
   resetJoystick();
   Object.assign(input, { forward: false, backward: false, left: false, right: false });
-  showOverlay('menu');
+  showCinematic();
   playSound('confirm');
 }
 
 function beginRun() {
+  if (game.mode !== 'menu') return;
+  leaveCinematic();
   startRun(game);
   window.KidscadeGame?.start?.({ source: `yi-sun-sin-${game.battleId}` });
   overlay.classList.add('hidden');
@@ -1038,6 +1112,30 @@ for (const [id, order] of [['signalBtn', 'rally'], ['focusBtn', 'focus'], ['guar
 $('specialBtn').addEventListener('click',()=>{if(issueSpecial(game))playSound('confirm');});
 $('normalDifficulty').addEventListener('click', () => selectDifficulty('normal'));
 $('hardDifficulty').addEventListener('click', () => selectDifficulty('hard'));
+$('mapStartBtn').addEventListener('click', () => { showCinematic(); playSound('confirm'); });
+$('cinematicSkip').addEventListener('click', () => { beginRun(); playSound('confirm'); });
+$('cinematicBack').addEventListener('click', backToMenu);
+$('crawlContent').addEventListener('animationend', event => {
+  if (event.target === $('crawlContent') && event.animationName === 'historyCrawl' && !$('cinematicScreen').hidden && game.mode === 'menu') beginRun();
+});
+$('shipGuideBtn').addEventListener('click', () => {
+  const guide = $('shipGuide');
+  guide.hidden = !guide.hidden;
+  $('shipGuideBtn').textContent = guide.hidden ? '조선·일본 함선 도감 보기' : '함선 도감 접기';
+  if (guide.childElementCount) return;
+  for (const ship of SHIP_GUIDE) {
+    const entry = document.createElement('article');
+    entry.className = `guide-entry ${SHIP_TYPES[ship.type].side}`;
+    const name = document.createElement('strong');
+    const role = document.createElement('span');
+    const note = document.createElement('small');
+    name.textContent = SHIP_TYPES[ship.type].name;
+    role.textContent = `${ship.period} · ${ship.role}`;
+    note.textContent = ship.note;
+    entry.append(name, role, note);
+    guide.appendChild(entry);
+  }
+});
 $('soundBtn').addEventListener('click',()=>{muted=!muted;$('soundBtn').textContent=muted?'♩':'♫';$('soundBtn').setAttribute('aria-label',muted?'소리 켜기':'소리 끄기');});
 
 function resetJoystick(){
