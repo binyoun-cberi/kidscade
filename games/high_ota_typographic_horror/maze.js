@@ -135,6 +135,81 @@
     if(answer!==maze.words[station].answer){maze.wrong++;return false;}
     maze.solved[station]=true;return true;
   }
+  function facing(maze,at){
+    const links=maze.links[at];
+    if(links&4)return 0; // south, toward decreasing world z
+    if(links&2)return -Math.PI/2; // east, toward increasing world x
+    if(links&1)return Math.PI; // north, toward increasing world z
+    if(links&8)return Math.PI/2; // west, toward decreasing world x
+    throw new Error('The maze cell has no open route');
+  }
+  function entryYaw(maze){return facing(maze,0);}
+  function nearestSafeCell(maze,p){
+    const from=current(p),start=from<0?0:from;
+    const distancesTo=distances(maze.links,start);
+    return [0,...maze.stations.filter((_,i)=>maze.solved[i])]
+      .sort((a,b)=>distancesTo[a]-distancesTo[b])[0];
+  }
+  function createHunter(maze){
+    const origin=center(maze.exit);
+    return {phase:'quiet',timer:0,x:origin.x,z:origin.z,caught:0,encounters:0};
+  }
+  function spawnHunter(maze,hunter,p){
+    const from=current(p);
+    if(from<0)return false;
+    const hops=distances(maze.links,from);
+    const options=Array.from({length:COUNT},(_,i)=>i)
+      .filter(i=>hops[i]>=7&&hops[i]<=12&&!maze.stations.includes(i)&&i!==maze.exit);
+    if(!options.length)return false;
+    // Known rooms are preferred: distant erased letters seem to reappear behind the player.
+    options.sort((a,b)=>Number(maze.visited[b])-Number(maze.visited[a])||hops[b]-hops[a]||a-b);
+    const at=center(options[(maze.seed+hunter.encounters)%Math.min(options.length,5)]);
+    hunter.x=at.x;hunter.z=at.z;hunter.phase='warning';hunter.timer=0;
+    hunter.encounters++;return true;
+  }
+  function stepHunter(maze,hunter,dt,p){
+    dt=Math.max(0,Math.min(.1,Number(dt)||0));
+    hunter.timer+=dt;
+    if(hunter.phase==='quiet'&&hunter.timer>=16)spawnHunter(maze,hunter,p);
+    if(hunter.phase==='cooldown'&&hunter.timer>=16){
+      if(!spawnHunter(maze,hunter,p))hunter.timer=0;
+    }
+    if(hunter.phase==='warning'&&hunter.timer>=3){
+      hunter.phase='chase';hunter.timer=0;
+    }
+    if(hunter.phase==='chase'){
+      if(hunter.timer>=24){
+        hunter.phase='cooldown';hunter.timer=0;
+      }else{
+        const here=current(hunter),target=current(p);
+        if(here>=0&&target>=0){
+          const route=distances(maze.links,target),goal=route[here]===0?{x:p.x,z:p.z}:null;
+          let destination=goal;
+          if(!destination)for(let dir=0;dir<4;dir++){
+            const next=neighbor(here,dir);
+            if(next>=0&&(maze.links[here]&DIRECTIONS[dir][2])&&route[next]===route[here]-1){
+              destination=center(next);break;
+            }
+          }
+          if(destination){
+            const dx=destination.x-hunter.x,dz=destination.z-hunter.z;
+            const length=Math.hypot(dx,dz);
+            if(length>.001){
+              const stride=Math.min(length,dt*2.24);
+              const nx=hunter.x+dx/length*stride,nz=hunter.z+dz/length*stride;
+              if(canMove(maze,nx,nz)){hunter.x=nx;hunter.z=nz;}
+            }
+          }
+        }
+      }
+    }
+    const distance=Math.hypot(hunter.x-p.x,hunter.z-p.z);
+    const caught=hunter.phase==='chase'&&distance<1.15&&hunter.timer>2;
+    if(caught){
+      hunter.caught++;hunter.phase='cooldown';hunter.timer=0;
+    }
+    return {phase:hunter.phase,distance,caught,position:{x:hunter.x,z:hunter.z}};
+  }
   function hint(maze,p,level=1){
     const targetIndex=maze.solved.findIndex(v=>!v),goal=targetIndex<0?maze.exit:maze.stations[targetIndex];
     const here=current(p),goalPos=center(goal);
@@ -142,7 +217,7 @@
     if(level===1)return '찢어진 색인 '+maze.solved.filter(Boolean).length+'/3 · 아직 가 보지 않은 갈림길을 찾아보세요.';
     if(level===2){
       const dx=goalPos.x-p.x,dz=goalPos.z-p.z;
-      return '찾아야 할 기록은 대략 '+(Math.abs(dx)>Math.abs(dz)?(dx>0?'동쪽':'서쪽'):(dz>0?'남쪽':'북쪽'))+'에 있습니다.';
+      return '찾아야 할 기록은 대략 '+(Math.abs(dx)>Math.abs(dz)?(dx>0?'동쪽':'서쪽'):(dz>0?'북쪽':'남쪽'))+'에 있습니다.';
     }
     const next=distances(maze.links,goal),currentDist=next[here];
     for(let dir=0;dir<4;dir++){
@@ -160,5 +235,6 @@
     maze.visited[0]=true;maze.wrong=Math.max(0,Math.min(999,Number(data.wrong)||0));return true;
   }
   return Object.freeze({SIZE,CELL,COUNT,WORDS,center,cell,neighbor,distances,
-    create,current,canMove,enter,action,solve,hint,snapshot,restore});
+    create,current,canMove,enter,action,solve,hint,snapshot,restore,
+    facing,entryYaw,nearestSafeCell,createHunter,stepHunter});
 });
