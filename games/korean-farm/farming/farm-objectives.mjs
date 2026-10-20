@@ -2,7 +2,7 @@
 // This is intentionally separate from the renderer so save state determines
 // the same objective after a reload.
 import {FIELD_DEFS} from '../world.mjs';
-import {fieldCondition,basketCount,currentDeliveryOrder} from './farm-sim.mjs';
+import {fieldCondition,basketCount,currentDeliveryOrder,seasonalFestival,CROPS} from './farm-sim.mjs';
 
 const steps=['inspect','harvest','sell','upgrade'];
 
@@ -24,9 +24,16 @@ export function nextFarmObjective(state,inspected=(state.seenPlots||[]).length){
   }
   const fields=FIELD_DEFS.map(def=>({def,field:state.fields.find(f=>f.id===def.id)}))
     .filter(item=>item.field);
+  const festival=seasonalFestival(state);
+  if(festival.open&&!festival.completed&&(state.cargo?.[festival.produce]||0)>=festival.count)
+    return {title:festival.title+'에 참여해요',description:'싣고 온 '+CROPS[festival.produce].name+'을 소담이에게 건네주세요.',
+      label:'행사 장소로 가기',kind:'festival',completed:4,total:4};
   const ripe=fields.find(({field})=>field.planted&&field.growth>=.999);
   if(ripe)return {title:'익은 작물을 거둬요',description:ripe.def.label+'에서 수확할 수 있어요.',label:'수확하러 가기',kind:'field',target:ripe.def.id,completed:4,total:4};
   const stock=['rice','carrot','corn'].reduce((sum,k)=>sum+(state.inventory[k]||0),0);
+  if(festival.open&&!festival.completed&&(state.inventory?.[festival.produce]||0)>=festival.count&&!basketCount(state))
+    return {title:festival.title+' 준비하기',description:CROPS[festival.produce].name+' '+festival.count+'개를 창고에서 싣고 소담이에게 전해주세요.',
+      label:'창고로 가기',kind:'barn',completed:4,total:4};
   if(basketCount(state)>0){
     const order=currentDeliveryOrder(state);
     if(order&&(state.cargo[order.produce]||0)>=order.count)

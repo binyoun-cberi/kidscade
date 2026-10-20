@@ -5,13 +5,14 @@ import {
   applyFarmStrip,workEnergyCost,advanceFarmDay,fulfillDeliveryOrder,currentDeliveryOrder,
   purchaseFarmUpgrade,BASKET_CAPACITY,basketCount,loadHarvestBasket,unloadHarvestBasket,
   sellBasketProduce,fulfillBasketDeliveryOrder,setSluiceOpening,scoopCompostBatch,restUntilFarmNeedsAttention,
-  CART_CAPACITY,cargoCapacity,toggleFarmCart
+  CART_CAPACITY,cargoCapacity,toggleFarmCart,seasonalFestival,fulfillSeasonalFestival,
+  tomorrowForecast,weatherForDay,calendar
 } from '../games/korean-farm/farming/farm-sim.mjs';
 import {greetNeighbor,neighborAdvice} from '../games/korean-farm/farming/village-people.mjs';
 import {nextFarmObjective} from '../games/korean-farm/farming/farm-objectives.mjs';
 import {sampleStroke,uniqueStrokeTargets} from '../games/korean-farm/interactions/work-gesture.mjs';
 
-test('V2 saves migrate to V5 without losing field work, money, seedlings or produce',()=>{
+test('V2 saves migrate to V6 without losing field work, money, seedlings or produce',()=>{
   const original=createFarmState();
   original.money=5771;original.inventory.rice=9;original.fields[0].transplants[5]=true;
   original.fields[3].work.harvested[0]=true;original.day=8;
@@ -29,7 +30,7 @@ test('V2 saves migrate to V5 without losing field work, money, seedlings or prod
   assert.equal(restored.transport.cartAttached,false);
 });
 
-test('V3 to V5 migration preserves open gates and full barn inventory without duplicate cargo',()=>{
+test('V3 to V6 migration preserves open gates and full barn inventory without duplicate cargo',()=>{
   const original=createFarmState();original.inventory.rice=13;
   original.fields[0].gateOpen=true;original.fields[0].gateLevel=2;
   const older=structuredClone(original);older.version=3;delete older.cargo;
@@ -46,11 +47,76 @@ test('V4 save migrates carried basket without inventing a cart or duplicating pr
   const legacy=structuredClone(s);legacy.version=4;delete legacy.transport;delete legacy.village;
   delete legacy.upgrades.cart;
   const restored=restoreFarmState(legacy);
-  assert.equal(restored.version,5);
+  assert.equal(restored.version,FARM_SAVE_VERSION);
   assert.equal(restored.inventory.rice,11);
   assert.equal(restored.cargo.rice,17);
   assert.equal(cargoCapacity(restored),20);
   assert.equal(restored.upgrades.cart,false);
+});
+
+test('V5 saves keep a purchased handcart and villager friendship during festival migration',()=>{
+  const state=createFarmState();state.day=40;state.upgrades.cart=true;
+  state.transport.cartAttached=true;state.cargo.rice=35;
+  state.village={lastTalkDay:39,friendship:4,giftReceived:true};
+  const legacy=structuredClone(state);legacy.version=5;delete legacy.festival;delete legacy.stats.festivals;
+  const restored=restoreFarmState(legacy);
+  assert.equal(restored.version,FARM_SAVE_VERSION);
+  assert.equal(restored.transport.cartAttached,true);
+  assert.equal(restored.cargo.rice,35);
+  assert.equal(restored.village.friendship,4);
+  assert.equal(restored.festival.completedKey,'');
+  assert.equal(restored.stats.festivals,0);
+});
+
+test('all four seasonal gatherings have seven-day windows and distinct materials',()=>{
+  const state=createFarmState();
+  for(const [day,season,produce] of [[7,'봄','carrot'],[21,'여름','corn'],[35,'가을','rice'],[49,'겨울','carrot']]){
+    state.day=day;
+    const open=seasonalFestival(state);
+    assert.equal(open.season,season);
+    assert.equal(open.produce,produce);
+    assert.equal(open.open,true);
+    assert.equal(open.daysLeft,7);
+    state.day=day+6;assert.equal(seasonalFestival(state).open,true);
+    state.day=day+7;assert.equal(seasonalFestival(state).open,false);
+  }
+  state.day=63;assert.equal(seasonalFestival(state).key,'2:봄');
+});
+
+test('a gathering requires physical cargo, pays once, grants seeds and survives reload',()=>{
+  const state=createFarmState();
+  assert.equal(fulfillSeasonalFestival(state).ok,false,'not open yet');
+  state.day=7;
+  assert.equal(fulfillSeasonalFestival(state).ok,false,'empty basket');
+  state.inventory.carrot=10;loadHarvestBasket(state,'carrot',5);
+  const initial={money:state.money,seeds:state.inventory.seedRice,inventory:state.inventory.carrot};
+  const first=fulfillSeasonalFestival(state);
+  assert.equal(first.ok,true);
+  assert.equal(state.cargo.carrot,2);
+  assert.equal(state.inventory.carrot,initial.inventory);
+  assert.equal(state.money,initial.money+first.reward);
+  assert.equal(state.inventory.seedRice,initial.seeds+first.seedCount);
+  assert.equal(state.stats.festivals,1);
+  assert.equal(fulfillSeasonalFestival(state).ok,false,'no infinite pay');
+  const reload=restoreFarmState(structuredClone(state));
+  assert.equal(seasonalFestival(reload).completed,true);
+  assert.equal(fulfillSeasonalFestival(reload).ok,false);
+  reload.day=21;
+  assert.equal(seasonalFestival(reload).completed,false);
+  assert.equal(fulfillSeasonalFestival(reload).ok,false,'summer asks for corn');
+});
+
+test('weather forecast matches deterministic next day and rest stops at a festival opening',()=>{
+  const state=createFarmState();
+  for(const day of [1,2,10,35,55,100]){
+    state.day=day;
+    assert.equal(tomorrowForecast(state).weather,weatherForDay(day+1));
+    assert.equal(tomorrowForecast(state).season,calendar(day+1).season);
+  }
+  state.day=6;
+  const report=restUntilFarmNeedsAttention(state,4);
+  assert.equal(report.newDay,7);
+  assert.equal(report.festival?.type,'opens');
 });
 
 test('handcart must be purchased, keeps cargo conserved through loading, saving and unloading',()=>{

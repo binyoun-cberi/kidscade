@@ -20,6 +20,7 @@ const hook=[
 " state:()=>({day:state.day,money:state.money,energy:state.energy,inventory:{...state.inventory},stats:{...state.stats},",
 "   upgrades:{...state.upgrades},market:{...state.market},cargo:{...state.cargo},",
 "   transport:{...state.transport},village:{...state.village},",
+"   festival:{...state.festival},",
 "   fields:state.fields.map(f=>({id:f.id,growth:f.growth,planted:f.planted,water:f.waterDepthCm,gate:f.gateOpen,gateLevel:f.gateLevel,transplants:f.transplants,work:f.work,weeds:f.weeds,moisture:f.moisture})),",
 "   player:{...state.player},saving:localStorage.getItem(SAVE_KEY)?.length||0}),",
 " teleport:(x,z)=>{state.player.x=x;state.player.z=z;farmer.position.set(x,0,z);camTarget.set(x,0,z);clearMovement();pendingStation=null;},",
@@ -29,6 +30,9 @@ const hook=[
 " gate:id=>activateSluice(id),",
 " gateLevel:(id,level)=>activateSluice(id,level),",
 " rest:()=>advanceFarmDayAfterRest(),",
+" festivalSetup:()=>{state.day=7;state.weather=weatherForDay(7);state.inventory.carrot=4;",
+"   villagePeople?.setFestival(seasonalFestival(state));farmWeather?.setWeather(state.weather);refreshHud();refreshObjective();save(true);},",
+" weatherPreview:type=>{farmWeather?.setWeather(type);return {visible:farmWeather?.rain.visible,sky:scene.background.getHexString()};},",
 " markers:id=>({work:plotMeshes.get(id)?.work?.targets?.length||0,plant:plotMeshes.get(id)?.planting?.targets?.length||0}),",
 " tap:(kind,index)=>{const rec=plotMeshes.get(state.selected);",
 "   const targets=kind==='work'?rec?.work?.targets:rec?.planting?.targets;",
@@ -152,7 +156,12 @@ async function main(){
  check('Korean village has seven detailed areas and enough decorative meshes',
    visuals.village?.areas===7&&visuals.village.meshes>180&&visuals.village.instanced>=1,
    visuals.village);
- check('Two visible, individually modeled Korean village residents',visuals.people?.people===2,visuals.people);
+ check('Three visible, individually modeled Korean village residents',visuals.people?.people===3,visuals.people);
+ await click('#forecastBtn');
+ check('Forecast is accessible before sleeping and contains actionable guidance',
+   (await evaluate('document.querySelector("#modalTitle").textContent'))==='솔내리 날씨와 마을 소식'&&
+   (await evaluate('document.querySelector(".forecast-panel").textContent.includes("내일")')));
+ await click('#modalClose');
  await screenshot('01-desktop-farm');
  await evaluate('window.__farmQA.teleport(10.25,-8.1)');
  await sleep(550);
@@ -160,6 +169,19 @@ async function main(){
  await evaluate('window.__farmQA.teleport(7.6,11.4)');
  await sleep(550);
  await screenshot('01c-village-market');
+ const rainy=await evaluate('window.__farmQA.weatherPreview("storm")');
+ const sunny=await evaluate('window.__farmQA.weatherPreview("sunny")');
+ check('Rain and sun switch a single weather particle layer and change the sky',
+   rainy.visible===true&&sunny.visible===false&&rainy.sky!==sunny.sky,{rainy,sunny});
+ await evaluate('window.__farmQA.weatherPreview(window.__farmQA.state().day===1?"sunny":"cloudy")');
+ await evaluate('window.__farmQA.teleport(-1.1,14.3)');
+ check('Seasonal event coordinator can be tapped in the 3D village',
+   (await evaluate('window.__farmQA.person("festival")'))===true);
+ await waitFor('document.querySelector("#modalTitle").textContent.includes("계절 행사")',8000);
+ check('First season announces a future gathering without giving free rewards',
+   (await evaluate('document.querySelector(".festival-status").textContent.includes("후에 열려요")')));
+ await screenshot('01d-festival-preview');
+ await click('#modalClose');
  await evaluate('window.__farmQA.teleport(-5,3)');
  await sleep(420);
  const walkFrom=await evaluate('window.__farmQA.state().player');
@@ -617,6 +639,37 @@ async function main(){
    persisted.fields.find(f=>f.id==='rice-1').work.tilled.every(Boolean)&&
    !persisted.fields.find(f=>f.id==='rice-1').planted,
    {day:persisted.day,inventory:persisted.inventory,stats:persisted.stats});
+ // Inject a fixture of legitimately harvested carrots into the barn. The
+ // actual pickup, travel interaction and payout remain the real game UI.
+ await evaluate('window.__farmQA.festivalSetup()');
+ check('Festival opening shows a visible timed HUD notice',
+   (await evaluate('!document.querySelector("#festivalNotice").classList.contains("hidden")')));
+ await evaluate('window.__farmQA.teleport(18,-9.5)');
+ await click('#barnBtn');
+ await waitFor('document.querySelector("#modalTitle").textContent.includes("창고")',9000);
+ await evaluate(`[...document.querySelectorAll('.bag-item')].find(e=>e.textContent.includes('당근')).querySelector('button').click()`);
+ await click('#modalClose');
+ await evaluate('window.__farmQA.teleport(-1.1,14.3)');
+ await click('#festivalBtn');
+ await waitFor('document.querySelector("#modalTitle").textContent.includes("계절 행사")',9000);
+ check('Carried festival goods enable an in-person event delivery',
+   (await evaluate('document.querySelector(".festival-order button").disabled'))===false);
+ await screenshot('15-seasonal-festival');
+ const beforeFestival=await evaluate('window.__farmQA.state()');
+ await click('.festival-order button');
+ const afterFestival=await evaluate('window.__farmQA.state()');
+ check('Seasonal festival consumes cargo exactly once and pays the player',
+   afterFestival.stats.festivals===1&&afterFestival.cargo.carrot===beforeFestival.cargo.carrot-3&&
+   afterFestival.money===beforeFestival.money+720&&afterFestival.inventory.seedRice===beforeFestival.inventory.seedRice+2,
+   {before:beforeFestival,after:afterFestival});
+ check('Seasonal delivery locks to prevent an infinite reward exploit',
+   (await evaluate('document.querySelector(".festival-order button").disabled'))===true&&
+   (await evaluate('document.querySelector("#festivalNotice").classList.contains("hidden")')));
+ await click('#modalClose');
+ await send('Page.reload',{ignoreCache:true});
+ await waitFor('Boolean(window.__farmQA?.ready())',35000);
+ check('Festival completion survives browser reload',
+   (await evaluate('window.__farmQA.state().stats.festivals===1 && window.__farmQA.state().festival.completedKey==="1:봄"')));
  report.endurance={daysElapsed:elapsedDays,startingMoney:4200,
    sales:persisted.stats.sales,harvests:persisted.stats.harvests,
    firstBatch:5,fullSeedlings:25,screenshots:6};

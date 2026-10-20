@@ -2,7 +2,7 @@
 import {FIELD_DEFS,makeFarmState,validateFarmState} from '../world.mjs';
 import {normalizeSeedlings,fullSeedlings,emptySeedlings,seedlingCount} from './rice-transplant.mjs';
 import {WORK_STRIPS,PATCH_ENERGY,validWorkStrip,newFieldWork,restoreFieldWork,completedWorkStrips} from './field-work.mjs';
-export const FARM_SAVE_VERSION=5;
+export const FARM_SAVE_VERSION=6;
 export const BASKET_CAPACITY=20;
 export const CART_CAPACITY=60;
 export const DAYS_PER_SEASON=14;
@@ -12,6 +12,16 @@ export const CROPS=Object.freeze({
   corn:Object.freeze({name:'옥수수',seed:'corn',produce:'corn',days:8,baseYield:4,growthPerDay:.15,price:190})
 });
 export const SEASONS=Object.freeze(['봄','여름','가을','겨울']);
+export const SEASONAL_FESTIVALS=Object.freeze({
+  '봄':Object.freeze({title:'봄 모종 나눔',produce:'carrot',count:3,reward:720,seed:'seedRice',seedCount:2,
+    story:'봄맞이 모종 나눔에 당근을 가져다주면 이웃들이 볍씨를 나눠 줘요.'}),
+  '여름':Object.freeze({title:'여름 새참 잔치',produce:'corn',count:2,reward:820,seed:'seedCarrot',seedCount:3,
+    story:'더운 날 함께 일한 마을 사람들에게 옥수수 새참을 대접해요.'}),
+  '가을':Object.freeze({title:'가을 추수 잔치',produce:'rice',count:5,reward:1650,seed:'seedCorn',seedCount:2,
+    story:'추수를 마친 마을 사람들이 함께 먹을 쌀을 모으고 있어요.'}),
+  '겨울':Object.freeze({title:'겨울 이웃 나눔',produce:'carrot',count:3,reward:900,seed:'seedRice',seedCount:3,
+    story:'겨울에 자라는 작물은 적어요. 미리 저장한 당근으로 이웃을 도와요.'})
+});
 export const FARM_UPGRADES=Object.freeze({
   sickle:Object.freeze({name:'잘 드는 낫',price:900,description:'수확 손실을 줄여 수확량이 2개 늘어나고 낫질에 기운이 덜 들어요.'}),
   hoe:Object.freeze({name:'가벼운 괭이',price:1100,description:'괭이질에 쓰는 기운이 절반으로 줄어요.'}),
@@ -33,8 +43,8 @@ export function createFarmState(){
   return {...makeFarmState(),version:FARM_SAVE_VERSION,day:1,minute:7*60,energy:100,
     money:4200,weather:'sunny',compostStock:24,inventory:{seedRice:8,seedCarrot:8,seedCorn:6,fertilizer:0,rice:0,carrot:0,corn:0},
     fields:FIELD_DEFS.map(createField),cargo:{rice:0,carrot:0,corn:0},transport:{cartAttached:false},
-    village:{lastTalkDay:0,friendship:0,giftReceived:false},
-    stats:{harvests:0,sales:0,earnings:0,deliveries:0},
+    village:{lastTalkDay:0,friendship:0,giftReceived:false},festival:{completedKey:''},
+    stats:{harvests:0,sales:0,earnings:0,deliveries:0,festivals:0},
     upgrades:{sickle:false,hoe:false,channel:false,cart:false},market:{lastRepeatDay:0},seenPlots:[]};
 }
 export function restoreFarmState(raw){
@@ -54,8 +64,8 @@ export function restoreFarmState(raw){
     });
     return current;
   }
-  // V2–V4 saves retain their soil, 25 seedlings, harvest strips, cash and crops.
-  if(![2,3,4,FARM_SAVE_VERSION].includes(raw.version)||!Array.isArray(raw.fields))return current;
+  // V2–V5 saves retain their soil, seedlings, harvest strips, cash and crops.
+  if(![2,3,4,5,FARM_SAVE_VERSION].includes(raw.version)||!Array.isArray(raw.fields))return current;
   current.day=validNumber(raw.day,1,1,100000)|0;
   current.minute=validNumber(raw.minute,420,420,1320)|0;
   current.energy=validNumber(raw.energy,100,0,100);
@@ -95,6 +105,10 @@ export function restoreFarmState(raw){
     current.village.friendship=validNumber(raw.village?.friendship,0,0,5)|0;
     current.village.giftReceived=raw.village?.giftReceived===true;
   }
+  if(raw.version>=6){
+    const key=raw.festival?.completedKey;
+    current.festival.completedKey=typeof key==='string'&&/^\d{1,5}:(봄|여름|가을|겨울)$/.test(key)?key:'';
+  }
   if(raw.version>=4)for(const crop of Object.keys(CROPS))
     current.cargo[crop]=validNumber(raw.cargo?.[crop],0,0,CART_CAPACITY)|0;
   // Treat invalid/overfilled imported baskets conservatively: overflow returns to storage.
@@ -130,6 +144,34 @@ export function calendar(day){
   const index=(Math.max(1,day)-1)%56;
   return {year:Math.floor((Math.max(1,day)-1)/56)+1,season:SEASONS[Math.floor(index/DAYS_PER_SEASON)],
     seasonDay:index%DAYS_PER_SEASON+1};
+}
+export function seasonalFestival(state){
+  const c=calendar(state.day),details=SEASONAL_FESTIVALS[c.season];
+  const key=c.year+':'+c.season;
+  return {...details,key,season:c.season,startsIn:Math.max(0,7-c.seasonDay),daysLeft:Math.max(0,14-c.seasonDay),
+    open:c.seasonDay>=7&&c.seasonDay<=13,completed:state.festival?.completedKey===key};
+}
+export function fulfillSeasonalFestival(state){
+  const event=seasonalFestival(state);
+  if(event.completed)return {ok:false,message:'이번 계절의 마을 행사는 이미 도왔어요.'};
+  if(!event.open)return {ok:false,message:event.startsIn?'행사는 '+event.startsIn+'일 후에 열려요.':'이번 계절의 행사는 끝났어요.'};
+  if((state.cargo?.[event.produce]||0)<event.count)
+    return {ok:false,event,message:CROPS[event.produce].name+' '+event.count+'개를 창고에서 싣고 와야 해요.'};
+  state.cargo[event.produce]-=event.count;
+  state.money+=event.reward;
+  state.inventory[event.seed]=(state.inventory[event.seed]||0)+event.seedCount;
+  state.festival={completedKey:event.key};
+  state.stats.festivals=(state.stats.festivals||0)+1;
+  return {ok:true,event,reward:event.reward,seed:event.seed,seedCount:event.seedCount,
+    message:event.title+'에 참여했어요! '+event.reward.toLocaleString('ko-KR')+'원과 씨앗 '+event.seedCount+'묶음을 받았어요.'};
+}
+export function tomorrowForecast(state){
+  const weather=weatherForDay(state.day+1),c=calendar(state.day+1);
+  const advice={sunny:'비가 오지 않아요. 밭의 수분과 논물을 살펴보세요.',
+    cloudy:'구름이 많아요. 논밭의 상태를 평소처럼 확인해요.',
+    rain:'비가 예보됐어요. 밭의 물주기를 줄이고 논 수위를 살펴보세요.',
+    storm:'큰비가 예보됐어요! 수문을 줄여 열거나 닫고 논물이 넘치지 않게 대비하세요.'};
+  return {weather,season:c.season,seasonDay:c.seasonDay,advice:advice[weather]};
 }
 export function fieldById(state,id){return state.fields.find(f=>f.id===id)||null}
 export function visualStage(field){
@@ -332,6 +374,8 @@ export function advanceFarmDay(state){
   state.day++;
   state.minute=420;state.energy=100;state.weather=weatherForDay(state.day);
   const c=calendar(state.day);
+  const festival=c.seasonDay===7?{type:'opens',...seasonalFestival(state)}:
+    c.seasonDay===14?{type:'closes',...seasonalFestival(state)}:null;
   const rain=state.weather==='storm'?.36:state.weather==='rain'?.23:0;
   const changes=[];
   for(const f of state.fields){
@@ -370,7 +414,7 @@ export function advanceFarmDay(state){
     if(f.growth>=.999&&before!==4)changes.push({fieldId:f.id,ready:true});
     if(oldHealthy>=.45&&f.health<.45)changes.push({fieldId:f.id,warning:true});
   }
-  return {ok:true,previousDay:previous,newDay:state.day,weather:state.weather,changes,
+  return {ok:true,previousDay:previous,newDay:state.day,weather:state.weather,changes,festival,
     message:c.season+' '+c.seasonDay+'일 아침이에요. '+(state.weather==='rain'?'밤새 비가 내려 논밭이 촉촉해요.':state.weather==='storm'?'거센 비가 지나갔어요.':'새로운 하루가 시작됐어요.')};
 }
 const needsImmediateCare=state=>state.fields.some(f=>{
@@ -386,7 +430,7 @@ export function restUntilFarmNeedsAttention(state,maxDays=4){
   let latest;
   for(let i=0;i<limit;i++){
     latest=advanceFarmDay(state);changes.push(...latest.changes);
-    if(latest.changes.length||needsImmediateCare(state))break;
+    if(latest.changes.length||latest.festival?.type==='opens'||state.weather==='storm'||needsImmediateCare(state))break;
   }
   return {...latest,previousDay:start,daysPassed:state.day-start,changes,
     message:state.day-start===1?latest.message:

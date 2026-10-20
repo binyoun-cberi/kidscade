@@ -9,6 +9,7 @@ import {createFieldWorkGrid} from './rendering/field-work-grid.js';
 import {createFieldStatusMarkers} from './rendering/field-status-markers.js';
 import {createHarvestCargo} from './rendering/harvest-cargo.js';
 import {createVillagePeople} from './rendering/village-people.js';
+import {createFarmWeather} from './rendering/farm-weather.js';
 import {greetNeighbor} from './farming/village-people.mjs';
 import {fieldStatusIndicators} from './farming/field-status.mjs';
 import {nextFarmObjective} from './farming/farm-objectives.mjs';
@@ -18,13 +19,13 @@ import {createFarmActionFlow,actionContactPoint,actionApproachPoint} from './int
 import {sampleStroke,uniqueStrokeTargets} from './interactions/work-gesture.mjs';
 import {cameraRelativeInput,farmerHeading,rotateToward,walkPlayer,shouldTurnBeforeWalk,nearestWalkablePoint,planNavigationRoute,LOOK_SPEED} from './interactions/navigation.mjs';
 import {FIELD_DEFS,plotById,distanceToPlot} from './world.mjs';
-import {createFarmState,restoreFarmState,CROPS,FARM_UPGRADES,purchaseFarmUpgrade,calendar,fieldById,visualStage,fieldCondition,fieldCareAdvice,applyFarmAction,canApplyFarmAction,setSluiceOpening,applyFarmStrip,canWorkFieldStrip,scoopCompostBatch,advanceFarmDay,restUntilFarmNeedsAttention,basketCount,cargoCapacity,toggleFarmCart,loadHarvestBasket,unloadHarvestBasket,sellBasketProduce,buyFarmSupply,currentDeliveryOrder,fulfillBasketDeliveryOrder} from './farming/farm-sim.mjs';
+import {createFarmState,restoreFarmState,CROPS,FARM_UPGRADES,purchaseFarmUpgrade,calendar,fieldById,visualStage,fieldCondition,fieldCareAdvice,applyFarmAction,canApplyFarmAction,setSluiceOpening,applyFarmStrip,canWorkFieldStrip,scoopCompostBatch,advanceFarmDay,restUntilFarmNeedsAttention,basketCount,cargoCapacity,toggleFarmCart,loadHarvestBasket,unloadHarvestBasket,sellBasketProduce,buyFarmSupply,currentDeliveryOrder,fulfillBasketDeliveryOrder,seasonalFestival,fulfillSeasonalFestival,tomorrowForecast} from './farming/farm-sim.mjs';
 
 const $=id=>document.getElementById(id);
 const SAVE_KEY=window.KidscadeGame?.storageKey?.('korean_farm','farm')||'kidscade_game_v1:korean_farm:farm';
 const bounds=21.7;
 const state=loadSave();
-let scene,renderer,camera,raycaster,ground,farmer,farmerAvatar,farmerAnimator,fieldEffects,villageScene=null,villagePeople=null,harvestCargo=null;
+let scene,renderer,camera,raycaster,ground,farmer,farmerAvatar,farmerAnimator,fieldEffects,villageScene=null,villagePeople=null,harvestCargo=null,farmWeather=null;
 let last=0,raf=0,paused=false,disposed=false,loading=true,noticeTimer=0;
 let camTarget=new THREE.Vector3(state.player.x,0,state.player.z);
 let viewAngle=state.camera.angle,farmerFacingTarget=0;
@@ -119,6 +120,7 @@ function init3D(){
   sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
   sun.shadow.camera.left=-29;sun.shadow.camera.right=29;sun.shadow.camera.top=29;sun.shadow.camera.bottom=-29;
   sun.shadow.bias=-.00025;scene.add(sun);
+  farmWeather=createFarmWeather(scene,sun);farmWeather.setWeather(state.weather);
   addRect(48,.28,48,0x8fba74,0,-.14,0);
   // Countryside lane, stream and dikes. Thin mesh overlays keep selection reliable.
   addRect(47,.04,3.15,0xc5ad85,0,.045,10.3);
@@ -145,6 +147,7 @@ function init3D(){
   buildFields();
   villageScene=buildSolnaeriVillage(scene);
   villagePeople=createVillagePeople(scene);
+  villagePeople.setFestival(seasonalFestival(state));
   buildWorldStations();
   farmer=new THREE.Group();farmer.position.set(state.player.x,0,state.player.z);scene.add(farmer);
   farmerAnimator=createFarmerAnimator();
@@ -173,6 +176,7 @@ function buildWorldStations(){
   scene.add(merchantHit);worldHits.push(merchantHit);
   addStation('barn','농산물 창고',{x:18,y:1.1,z:-10.4},{x:18,z:-9.5},[2.9,2.1,1.35]);
   addStation('neighbor','영수 할아버지',{x:2.8,y:1.5,z:13.4},{x:2.8,z:12.45},[1.9,3,1.45]);
+  addStation('festival','행사 도우미 소담',{x:-1.1,y:1.5,z:15.4},{x:-1.1,z:14.3},[1.75,3,1.2]);
   const mound=new THREE.Group();mound.position.set(4.2,0,-11.35);scene.add(mound);
   for(const [x,y,z,s] of [[-.25,.22,0,.42],[.12,.28,-.06,.48],[.37,.18,.08,.34]]){
     const heap=new THREE.Mesh(new THREE.IcosahedronGeometry(s,1),new THREE.MeshStandardMaterial({color:0x745336,roughness:1}));
@@ -198,6 +202,7 @@ function arriveAtStation(){
   if(key==='market'){marketAccess=true;openBag();return}
   if(key==='barn'){openBarn();return}
   if(key==='neighbor'){openNeighbor();return}
+  if(key==='festival'){openSeasonFestival();return}
   if(key==='compost'){
     if(state.inventory.fertilizer>=10||state.compostStock<=0){const result=scoopCompostBatch(state);toast(result.message);refreshHud();save(true);return}
     worldAction='scoop';if(!farmerAnimator?.trigger('scoop')){worldAction=null;toast('삽을 사용할 수 없어요.')}
@@ -475,6 +480,7 @@ function render(now){
     refreshWorkStatus();
     updateEnvironmentAnimation(dt||.016,now/1000);
     villagePeople?.update(dt||.016,now/1000,state.player);
+    farmWeather?.update(dt||.016,state.player);
   }
   refreshCamera(dt||.016);renderer.render(scene,camera);
 }
@@ -616,6 +622,9 @@ function refreshHud(){
   $('dayLabel').textContent=c.season+' '+c.seasonDay+'일 · '+w[1];
   $('energyLabel').textContent='기운 '+Math.round(state.energy);
   $('moneyLabel').textContent=formatWon(state.money);
+  const festival=seasonalFestival(state);
+  $('festivalNotice').classList.toggle('hidden',!festival.open||festival.completed);
+  $('festivalNotice').textContent='🎏 '+festival.title+' · '+festival.daysLeft+'일 남음';
 }
 function refreshObjective(){
   const goal=nextFarmObjective(state,visited.size);
@@ -887,6 +896,9 @@ function doFarmAction(action){
 function offerRestChoices(){
   const root=document.createElement('div');root.className='rest-choices';
   const intro=document.createElement('p');intro.textContent='집에 돌아왔어요. 다음 날까지 쉴까요, 논밭에 변화가 생길 때까지 쉴까요?';root.append(intro);
+  const forecast=tomorrowForecast(state),forecastBox=document.createElement('p');
+  forecastBox.className='farm-forecast';forecastBox.textContent='📅 내일 '+forecast.season+' '+forecast.seasonDay+'일 · '+weatherName(forecast.weather)+' — '+forecast.advice;
+  root.append(forecastBox);
   for(const [mode,label,description] of [
     ['tomorrow','하루 쉬고 일어나기','하룻밤을 보내고 작물 상태를 확인해요.'],
     ['attention','작물에 변화가 있을 때까지','최대 4일, 성장 단계가 바뀌거나 돌봄이 필요하면 일어나요.']]){
@@ -904,6 +916,8 @@ function offerRestChoices(){
 function advanceFarmDayAfterRest(mode='tomorrow'){
   if(farmFlow.busy){toast('농사 작업을 마친 다음 하루를 보내 주세요.');return}
   const report=mode==='attention'?restUntilFarmNeedsAttention(state):advanceFarmDay(state);
+  villagePeople?.setFestival(seasonalFestival(state));
+  farmWeather?.setWeather(state.weather);
   for(const plot of FIELD_DEFS)syncFieldVisual(plot.id);
   refreshHud();refreshObjective();
   if(!$('inspector').classList.contains('hidden'))updateInspector();
@@ -919,6 +933,22 @@ function showMorningReport(report){
   summary.textContent=c.year+'년 '+c.season+' '+c.seasonDay+'일 · '+weather[state.weather]+
     ((report.daysPassed||1)>1?' · '+report.daysPassed+'일 경과':'');root.append(summary);
   const message=document.createElement('p');message.textContent=report.message;root.append(message);
+  if(state.weather==='storm'||state.weather==='rain'){
+    const impact=document.createElement('p');impact.className='farm-weather-impact';
+    impact.textContent=state.weather==='storm'?'⚠️ 강한 비로 논물이 불어나고 잡초가 빨리 자랐어요. 수문과 물 높이를 확인하세요.':
+      '🌧️ 비가 내려 토양이 촉촉해졌어요. 오늘의 물주기가 필요한지 먼저 살펴보세요.';
+    root.append(impact);
+  }
+  if(report.festival?.type==='opens'||seasonalFestival(state).open&&!seasonalFestival(state).completed){
+    const festival=seasonalFestival(state),notice=document.createElement('section');notice.className='festival-day-note';
+    notice.textContent='🎏 '+festival.title+' 진행 중! '+CROPS[festival.produce].name+' '+festival.count+'개를 싣고 마을길의 소담이를 찾아가 보세요. ('+festival.daysLeft+'일 남음)';
+    const visit=document.createElement('button');visit.type='button';visit.textContent='행사 장소로 가기 →';
+    visit.onclick=()=>{$('modal').classList.add('hidden');requestStation('festival')};notice.append(visit);root.append(notice);
+  }
+  if(report.festival?.type==='closes'){
+    const missed=document.createElement('p');missed.className='farm-weather-impact';
+    missed.textContent='이번 계절의 마을 행사가 끝났어요. 다음 계절 7일에 새로운 행사가 열려요.';root.append(missed);
+  }
   const changed=report.changes.filter(item=>item.ready||item.warning||item.to>item.from);
   if(changed.length){
     const heading=document.createElement('strong');heading.textContent='밤사이 논밭에서 생긴 일';root.append(heading);
@@ -930,9 +960,27 @@ function showMorningReport(report){
   }
   const goal=nextFarmObjective(state,visited.size),next=document.createElement('p');
   next.textContent='오늘의 목표: '+goal.description;root.append(next);
+  const tomorrow=document.createElement('p');tomorrow.className='farm-forecast';
+  const forecast=tomorrowForecast(state);tomorrow.textContent='내일 예보 · '+weatherName(forecast.weather)+' — '+forecast.advice;root.append(tomorrow);
   const button=document.createElement('button');button.type='button';button.textContent='농사 시작하기';
   button.onclick=()=>$('modal').classList.add('hidden');root.append(button);
   showModal('새로운 아침',root);
+}
+function weatherName(weather){
+  return {sunny:'☀️ 맑음',cloudy:'☁️ 흐림',rain:'🌧️ 비',storm:'⛈️ 강한 비'}[weather]||'맑음';
+}
+function openForecast(){
+  const forecast=tomorrowForecast(state),festival=seasonalFestival(state);
+  const root=document.createElement('div');root.className='forecast-panel';
+  const today=document.createElement('p');today.textContent='오늘 · '+weatherName(state.weather);
+  const next=document.createElement('p');next.className='farm-forecast';
+  next.textContent='내일 · '+forecast.season+' '+forecast.seasonDay+'일 · '+weatherName(forecast.weather)+'\n'+forecast.advice;
+  const day=document.createElement('p');day.textContent=festival.completed?'이번 계절의 마을 행사를 이미 도왔어요.':
+    festival.open?festival.title+'가 열렸어요. 남은 기간 '+festival.daysLeft+'일.':
+    festival.startsIn?festival.title+'까지 '+festival.startsIn+'일 남았어요.':'다음 계절 7일에 새로운 행사가 열려요.';
+  const button=document.createElement('button');button.type='button';button.textContent='소담이에게 마을 행사 물어보기 →';
+  button.onclick=()=>{$('modal').classList.add('hidden');requestStation('festival')};
+  root.append(today,next,day,button);showModal('솔내리 날씨와 마을 소식',root);
 }
 function openBarn(){
   const el=document.createElement('div');el.className='farm-bag';
@@ -1013,6 +1061,35 @@ function openNeighbor(){
   }else description.textContent='오늘은 마을 부탁을 모두 마쳤구나! 다음 날 다시 찾아오렴.';
   if(!order)request.append(description);
   root.append(request);showModal('솔내리 이웃 이야기',root);
+}
+function openSeasonFestival(){
+  const event=seasonalFestival(state),root=document.createElement('div');root.className='festival-dialogue';
+  const intro=document.createElement('section');intro.className='festival-intro';
+  const header=document.createElement('strong');header.textContent='🎏 '+event.title+' · 마을 행사 도우미 소담';
+  const story=document.createElement('p');story.textContent=event.story;
+  intro.append(header,story);root.append(intro);
+  const status=document.createElement('p');status.className='festival-status';
+  if(event.completed)status.textContent='이번 계절의 나눔을 마쳤어요. 다음 계절 장날에도 놀러 오세요!';
+  else if(!event.open)status.textContent=event.startsIn?'행사는 '+event.startsIn+'일 후에 열려요. 필요한 물건을 미리 모아 두세요.':'이번 계절의 마을 행사는 끝났어요.';
+  else status.textContent='행사가 열려 있어요! 앞으로 '+event.daysLeft+'일 안에 도착해 주세요.';
+  root.append(status);
+  const order=document.createElement('section');order.className='festival-order';
+  const amount=document.createElement('strong');amount.textContent=CROPS[event.produce].name+' '+event.count+'개 직접 가져오기';
+  const available=document.createElement('p');available.textContent='가져온 수확물 '+(state.cargo[event.produce]||0)+' / '+event.count+'개 · 보상 '+formatWon(event.reward)+' + 씨앗 '+event.seedCount+'묶음';
+  const deliver=document.createElement('button');deliver.type='button';deliver.textContent='소담이에게 수확물 건네기';
+  deliver.disabled=!event.open||event.completed||(state.cargo[event.produce]||0)<event.count;
+  deliver.onclick=()=>{
+    const result=fulfillSeasonalFestival(state);toast(result.message);
+    if(result.ok){refreshCargoVisual();refreshHud();refreshObjective();save(true)}
+    openSeasonFestival();
+  };
+  order.append(amount,available,deliver);
+  if(!event.completed){
+    const barn=document.createElement('button');barn.type='button';barn.className='barn-link';
+    barn.textContent='창고에서 '+CROPS[event.produce].name+' 준비하기 →';
+    barn.onclick=()=>{$('modal').classList.add('hidden');requestStation('barn')};order.append(barn);
+  }
+  root.append(order);showModal('솔내리의 계절 행사',root);
 }
 function openBag(){
   if(!marketAccess){toast('장터 판매대까지 걸어가 주세요.');return}
@@ -1098,7 +1175,7 @@ function showModal(title,inner){
   $('modal').classList.remove('hidden');
 }
 function help(){
-  const info=document.createElement('div');info.innerHTML='<p><b>PC</b> · WASD 또는 방향키로 이동합니다. 바닥을 클릭하면 그곳으로 걸어가요. 논을 클릭하면 작물 상태를 볼 수 있어요.</p><p><b>카메라</b> · 마우스 휠로 확대·축소, Q/E 또는 회전 버튼으로 시점을 돌려요.</p><p><b>휴대폰·태블릿</b> · 왼쪽 조이스틱으로 이동하고 손가락으로 논을 선택해요. 두 손가락으로 확대·축소해요.</p><p><b>농사</b> · 논의 작은 원으로 물·양분·잡초·수확 상태를 살펴보세요. 모내기는 빈자리를 누르거나 스페이스·엔터로 진행해요. 수문을 위로 끌면 물이 많이 흐르고 아래로 끌면 닫혀요.</p><p><b>수확물</b> · 창고에서 바구니에 싣고 장터로 가져가요. 첫 판매 뒤 손수레를 사면 창고에서 끌고 나와 60개까지 옮길 수 있어요. 손수레는 천천히 움직여요.</p><p><b>마을 사람</b> · 마을길의 영수 할아버지를 눌러 농사 이야기를 듣고, 수확물을 직접 전달해 보세요. 날마다 인사를 나누면 작은 선물도 받을 수 있어요.</p><p><b>참고</b> · 벼 생육과 날씨는 교육용 간략 계산 모델이에요.</p>';
+  const info=document.createElement('div');info.innerHTML='<p><b>PC</b> · WASD 또는 방향키로 이동합니다. 바닥을 클릭하면 그곳으로 걸어가요. 논을 클릭하면 작물 상태를 볼 수 있어요.</p><p><b>카메라</b> · 마우스 휠로 확대·축소, Q/E 또는 회전 버튼으로 시점을 돌려요.</p><p><b>휴대폰·태블릿</b> · 왼쪽 조이스틱으로 이동하고 손가락으로 논을 선택해요. 두 손가락으로 확대·축소해요.</p><p><b>농사</b> · 논의 작은 원으로 물·양분·잡초·수확 상태를 살펴보세요. 모내기는 빈자리를 누르거나 스페이스·엔터로 진행해요. 수문을 위로 끌면 물이 많이 흐르고 아래로 끌면 닫혀요.</p><p><b>날씨</b> · 위쪽의 예보 버튼으로 다음 날 날씨를 확인해요. 비가 많이 올 때는 논 수문을 닫아 넘침에 대비하세요.</p><p><b>수확물</b> · 창고에서 바구니에 싣고 장터로 가져가요. 첫 판매 뒤 손수레를 사면 창고에서 끌고 나와 60개까지 옮길 수 있어요. 손수레는 천천히 움직여요.</p><p><b>마을 사람</b> · 영수 할아버지에게 납품하고 소담이의 계절 행사에도 참여해 보세요. 매 계절 7~13일에 행사가 열리고, 가져온 수확물로 이웃을 도울 수 있어요.</p><p><b>참고</b> · 벼 생육과 날씨는 교육용 간략 계산 모델이에요.</p>';
   showModal('솔내리에서 움직이는 법',info);
 }
 function showQa(){
@@ -1260,7 +1337,7 @@ function bindControls(){
   $('sleepBtn').onclick=()=>requestStation('home');
   $('guideRice').onclick=()=>{
     const goal=nextFarmObjective(state,visited.size);
-    if(['market','barn','home','neighbor'].includes(goal.kind))requestStation(goal.kind);
+    if(['market','barn','home','neighbor','festival'].includes(goal.kind))requestStation(goal.kind);
     else if(goal.kind==='field'){
       chooseField(goal.target);
       if(goal.title!=='논밭을 둘러봐요')goToSelectedField();
@@ -1274,6 +1351,9 @@ function bindControls(){
   };
 
   $('neighborBtn').onclick=()=>requestStation('neighbor');
+  $('festivalBtn').onclick=()=>requestStation('festival');
+  $('festivalNotice').onclick=()=>requestStation('festival');
+  $('forecastBtn').onclick=openForecast;
   $('bagBtn').onclick=()=>requestStation('market');
   $('barnBtn').onclick=()=>requestStation('barn');
   const stick=$('joystick'),knob=stick.querySelector('.joystick-knob');
@@ -1290,7 +1370,7 @@ function bindControls(){
   stick.addEventListener('pointerup',resetStick);stick.addEventListener('pointercancel',resetStick);
   window.addEventListener('pagehide',()=>save(true));
   window.KidscadeGame?.registerPauseHandlers?.({pause:()=>paused=true,resume:()=>paused=false});
-  window.KidscadeGame?.registerCleanup?.(()=>{clearGesture();farmFlow.reset();save(true);disposed=true;cancelAnimationFrame(raf);fieldEffects?.clear();harvestCargo?.dispose();villagePeople?.dispose();for(const r of plotMeshes.values()){r.planting?.dispose();r.work?.dispose();r.statusMarkers?.dispose?.()}villageScene?.dispose();renderer?.dispose()});
+  window.KidscadeGame?.registerCleanup?.(()=>{clearGesture();farmFlow.reset();save(true);disposed=true;cancelAnimationFrame(raf);fieldEffects?.clear();harvestCargo?.dispose();villagePeople?.dispose();farmWeather?.dispose();for(const r of plotMeshes.values()){r.planting?.dispose();r.work?.dispose();r.statusMarkers?.dispose?.()}villageScene?.dispose();renderer?.dispose()});
 }
 async function main(){
   const safeStart=nearestWalkablePoint(state.player,obstacles,bounds);
