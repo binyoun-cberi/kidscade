@@ -19,7 +19,7 @@ import {createFarmActionFlow,actionContactPoint,actionApproachPoint} from './int
 import {sampleStroke,uniqueStrokeTargets} from './interactions/work-gesture.mjs';
 import {cameraRelativeInput,farmerHeading,rotateToward,walkPlayer,shouldTurnBeforeWalk,nearestWalkablePoint,planNavigationRoute,LOOK_SPEED} from './interactions/navigation.mjs';
 import {FIELD_DEFS,plotById,distanceToPlot} from './world.mjs';
-import {createFarmState,restoreFarmState,CROPS,FARM_UPGRADES,purchaseFarmUpgrade,calendar,fieldById,visualStage,fieldCondition,fieldCareAdvice,applyFarmAction,canApplyFarmAction,setSluiceOpening,applyFarmStrip,canWorkFieldStrip,scoopCompostBatch,advanceFarmDay,restUntilFarmNeedsAttention,basketCount,cargoCapacity,toggleFarmCart,loadHarvestBasket,unloadHarvestBasket,sellBasketProduce,buyFarmSupply,currentDeliveryOrder,fulfillBasketDeliveryOrder,seasonalFestival,fulfillSeasonalFestival,tomorrowForecast} from './farming/farm-sim.mjs';
+import {createFarmState,restoreFarmState,CROPS,FARM_UPGRADES,purchaseFarmUpgrade,calendar,weatherForDay,fieldById,visualStage,fieldCondition,fieldCareAdvice,applyFarmAction,canApplyFarmAction,setSluiceOpening,applyFarmStrip,canWorkFieldStrip,scoopCompostBatch,advanceFarmDay,restUntilFarmNeedsAttention,basketCount,cargoCapacity,toggleFarmCart,loadHarvestBasket,unloadHarvestBasket,sellBasketProduce,buyFarmSupply,currentDeliveryOrder,fulfillBasketDeliveryOrder,seasonalFestival,fulfillSeasonalFestival,tomorrowForecast} from './farming/farm-sim.mjs';
 
 const $=id=>document.getElementById(id);
 const SAVE_KEY=window.KidscadeGame?.storageKey?.('korean_farm','farm')||'kidscade_game_v1:korean_farm:farm';
