@@ -2,7 +2,8 @@
 import {FIELD_DEFS,makeFarmState,validateFarmState} from '../world.mjs';
 import {normalizeSeedlings,fullSeedlings,emptySeedlings,seedlingCount} from './rice-transplant.mjs';
 import {WORK_STRIPS,PATCH_ENERGY,validWorkStrip,newFieldWork,restoreFieldWork,completedWorkStrips} from './field-work.mjs';
-export const FARM_SAVE_VERSION=3;
+export const FARM_SAVE_VERSION=4;
+export const BASKET_CAPACITY=20;
 export const DAYS_PER_SEASON=14;
 export const CROPS=Object.freeze({
   rice:Object.freeze({name:'벼',seed:'rice',produce:'rice',days:14,baseYield:7,growthPerDay:.087,price:240}),
@@ -23,13 +24,14 @@ function createField(def){
   const practice=def.id==='rice-1';
   return {id:def.id,kind:def.kind,crop:speciesForPlot(def),planted:!practice,growth:practice?0:growth,
     transplants:rice?(practice?emptySeedlings():fullSeedlings()):null,
-    tilled:true,work:newFieldWork(true),waterDepthCm:rice?3:0,gateOpen:false,
+    tilled:true,work:newFieldWork(true),waterDepthCm:rice?3:0,gateOpen:false,gateLevel:0,
     moisture:rice?.85:.6,nitrogen:.74,weeds:.08,health:1,harvestCount:0};
 }
 export function createFarmState(){
   return {...makeFarmState(),version:FARM_SAVE_VERSION,day:1,minute:7*60,energy:100,
     money:4200,weather:'sunny',compostStock:24,inventory:{seedRice:8,seedCarrot:8,seedCorn:6,fertilizer:0,rice:0,carrot:0,corn:0},
-    fields:FIELD_DEFS.map(createField),stats:{harvests:0,sales:0,earnings:0,deliveries:0},
+    fields:FIELD_DEFS.map(createField),cargo:{rice:0,carrot:0,corn:0},
+    stats:{harvests:0,sales:0,earnings:0,deliveries:0},
     upgrades:{sickle:false,hoe:false,channel:false},market:{lastRepeatDay:0},seenPlots:[]};
 }
 export function restoreFarmState(raw){
@@ -49,8 +51,8 @@ export function restoreFarmState(raw){
     });
     return current;
   }
-  // V2 farm saves retain every field, seedling, tool strip and coin on V3.
-  if(![2,FARM_SAVE_VERSION].includes(raw.version)||!Array.isArray(raw.fields))return current;
+  // V2/V3 saves retain their soil, 25 seedlings, harvest strips, cash and crops.
+  if(![2,3,FARM_SAVE_VERSION].includes(raw.version)||!Array.isArray(raw.fields))return current;
   current.day=validNumber(raw.day,1,1,100000)|0;
   current.minute=validNumber(raw.minute,420,420,1320)|0;
   current.energy=validNumber(raw.energy,100,0,100);
@@ -69,6 +71,9 @@ export function restoreFarmState(raw){
     base.growth=validNumber(saved.growth,base.growth,0,1);
     base.waterDepthCm=def.kind==='rice'?validNumber(saved.waterDepthCm,base.waterDepthCm,0,10):0;
     base.gateOpen=def.kind==='rice'&&saved.gateOpen===true;
+    base.gateLevel=def.kind==='rice'?(raw.version>=4?
+      validNumber(saved.gateLevel,base.gateOpen?2:0,0,2)|0:(base.gateOpen?2:0)):0;
+    base.gateOpen=base.gateLevel>0;
     for(const key of ['moisture','nitrogen','weeds','health'])base[key]=validNumber(saved[key],base[key],0,1);
     base.harvestCount=validNumber(saved.harvestCount,0,0,1000000)|0;
     // Old v2 saves without strip data remain fully tilled and ready to play.
@@ -77,9 +82,18 @@ export function restoreFarmState(raw){
     return base;
   });
   for(const k of Object.keys(current.stats))current.stats[k]=validNumber(raw.stats?.[k],0,0,100000000)|0;
-  if(raw.version===FARM_SAVE_VERSION){
+  if(raw.version>=3){
     for(const key of Object.keys(FARM_UPGRADES))current.upgrades[key]=raw.upgrades?.[key]===true;
     current.market.lastRepeatDay=validNumber(raw.market?.lastRepeatDay,0,0,current.day)|0;
+  }
+  if(raw.version>=4)for(const crop of Object.keys(CROPS))
+    current.cargo[crop]=validNumber(raw.cargo?.[crop],0,0,BASKET_CAPACITY)|0;
+  // Treat invalid/overfilled imported baskets conservatively: overflow returns to storage.
+  let room=BASKET_CAPACITY;
+  for(const crop of Object.keys(CROPS)){
+    const count=Math.min(room,current.cargo[crop]);
+    current.inventory[crop]+=current.cargo[crop]-count;
+    current.cargo[crop]=count;room-=count;
   }
   return current;
 }
@@ -166,6 +180,19 @@ export function canApplyFarmAction(state,id,action){
     return {ok:false,message:'아직 익지 않았어요. 생육 상태를 살펴보세요.'};
   return {ok:true};
 }
+export function setSluiceOpening(state,id,level){
+  const f=fieldById(state,id);
+  if(!f||f.kind!=='rice'||!Number.isInteger(level)||level<0||level>2)
+    return {ok:false,message:'논의 물꼬 위치를 다시 확인해 주세요.'};
+  if((f.gateLevel??(f.gateOpen?2:0))===level)
+    return {ok:false,message:'이미 물꼬가 그 위치에 있어요.'};
+  const valid=canApplyFarmAction(state,id,'gate');
+  if(!valid.ok)return valid;
+  f.gateLevel=level;f.gateOpen=level>0;
+  f.waterDepthCm=minmax(f.waterDepthCm+(level===2?1.2:level===1?.6:-.6),0,10);
+  f.moisture=minmax(f.moisture+(level===2?.04:level===1?.02:-.02),0,1);
+  return success(state,f,['수문을 완전히 닫았어요.','수문을 반쯤 열어 물을 천천히 대요.','수문을 활짝 열어 논에 물을 대요.'][level],{action:'gate',gateLevel:level});
+}
 export function applyFarmAction(state,id,action){
   const validity=canApplyFarmAction(state,id,action);
   if(!validity.ok)return validity;
@@ -190,11 +217,7 @@ export function applyFarmAction(state,id,action){
     return success(state,field,(species==='rice'?'어린 모를 논에 옮겨 심었어요.':CROPS[species].name+' 씨앗을 심었어요.'),{action});
   }
   if(action==='gate'){
-    if(field.kind!=='rice')return {ok:false,message:'물꼬는 논에서만 조절할 수 있어요.'};
-    field.gateOpen=!field.gateOpen;
-    field.waterDepthCm=minmax(field.waterDepthCm+(field.gateOpen?1.2:-.6),0,10);
-    field.moisture=minmax(field.moisture+(field.gateOpen?.04:-.02),0,1);
-    return success(state,field,field.gateOpen?'물꼬를 열었어요. 농수로의 물이 논으로 들어옵니다.':'물꼬를 닫았어요. 시간이 지나면 물이 줄어들 수 있어요.',{action});
+    return setSluiceOpening(state,id,field.gateOpen?0:2);
   }
   if(action==='water'){
     if(field.kind==='rice')return {ok:false,message:'논은 물꼬를 열어 물을 관리해요.'};
@@ -282,11 +305,17 @@ export function workEnergyCost(state,action){
   return base;
 }
 export function scoopCompost(state){
+  return scoopCompostBatch(state,1);
+}
+export function scoopCompostBatch(state,requested=5){
   if((state.compostStock||0)<=0)return {ok:false,message:'거름 더미가 비었어요. 하루 뒤 다시 와 주세요.'};
   if(state.inventory.fertilizer>=10)return {ok:false,message:'퇴비 주머니가 가득 찼어요. 밭에 뿌리고 다시 와 주세요.'};
   if(state.energy<1)return {ok:false,message:'기운이 부족해요. 집에서 쉬어 주세요.'};
-  state.compostStock--;state.inventory.fertilizer++;state.energy=Math.max(0,state.energy-1);state.minute=Math.min(1320,state.minute+2);
-  return {ok:true,message:'거름 더미에서 퇴비 한 주머니를 퍼 왔어요.'};
+  const amount=Math.min(5,Math.max(1,Number.isFinite(requested)?Math.floor(requested):5),
+    state.compostStock,10-state.inventory.fertilizer,Math.floor(state.energy));
+  state.compostStock-=amount;state.inventory.fertilizer+=amount;
+  state.energy-=amount;state.minute=Math.min(1320,state.minute+amount*2);
+  return {ok:true,amount,message:'삽으로 퇴비 '+amount+'주머니를 퍼 담았어요. 밭으로 가져가 뿌려 보세요.'};
 }
 export function advanceFarmDay(state){
   const previous=state.day;
@@ -301,7 +330,7 @@ export function advanceFarmDay(state){
     f.work.watered.fill(false);f.work.weeded.fill(false);f.work.fertilized.fill(false);
     if(f.kind==='rice'){
       // Shallow paddies lose water through drainage/evaporation; open gates refill them.
-      const refill=f.gateOpen?2.6:0;
+      const refill=(f.gateLevel??(f.gateOpen?2:0))*1.3;
       const evaporation=(c.season==='여름'?1.65:1.25)-(state.upgrades?.channel?.5:0);
       f.waterDepthCm=minmax(f.waterDepthCm+rain*5+refill-evaporation,0,10);
       f.moisture=minmax(.35+f.waterDepthCm*.08+rain*.45,0,1);
@@ -334,6 +363,55 @@ export function advanceFarmDay(state){
   }
   return {ok:true,previousDay:previous,newDay:state.day,weather:state.weather,changes,
     message:c.season+' '+c.seasonDay+'일 아침이에요. '+(state.weather==='rain'?'밤새 비가 내려 논밭이 촉촉해요.':state.weather==='storm'?'거센 비가 지나갔어요.':'새로운 하루가 시작됐어요.')};
+}
+const needsImmediateCare=state=>state.fields.some(f=>{
+  if(!f.planted)return false;
+  return f.growth>=.999||f.health<.5||f.nitrogen<.2||f.weeds>.55||
+    (f.kind==='rice'?(f.waterDepthCm<1||f.waterDepthCm>7):f.moisture<.25);
+});
+// Sleeping several days is always player-initiated, stops at the first new crop
+// stage or care warning, and simulates every intermediate night in sequence.
+export function restUntilFarmNeedsAttention(state,maxDays=4){
+  const limit=Number.isInteger(maxDays)?Math.max(1,Math.min(4,maxDays)):4;
+  const start=state.day,changes=[];
+  let latest;
+  for(let i=0;i<limit;i++){
+    latest=advanceFarmDay(state);changes.push(...latest.changes);
+    if(latest.changes.length||needsImmediateCare(state))break;
+  }
+  return {...latest,previousDay:start,daysPassed:state.day-start,changes,
+    message:state.day-start===1?latest.message:
+      (state.day-start)+'일 동안 쉬고 '+latest.message};
+}
+
+export function basketCount(state){return Object.keys(CROPS).reduce((sum,k)=>sum+(state.cargo?.[k]||0),0)}
+export function loadHarvestBasket(state,crop,requested=BASKET_CAPACITY){
+  if(!Object.hasOwn(CROPS,crop))return {ok:false,message:'바구니에 담을 작물을 골라 주세요.'};
+  if(!Number.isInteger(requested)||requested<1)return {ok:false,message:'담을 수량을 확인해 주세요.'};
+  const available=state.inventory[crop]||0;
+  const amount=Math.min(requested,available,BASKET_CAPACITY-basketCount(state));
+  if(amount<=0)return {ok:false,message:available?'바구니가 가득 찼어요. 장터에 다녀오세요.':'창고에 그 작물이 없어요.'};
+  state.inventory[crop]-=amount;state.cargo[crop]+=amount;
+  return {ok:true,crop,amount,message:CROPS[crop].name+' '+amount+'개를 창고에서 바구니에 담았어요.'};
+}
+export function unloadHarvestBasket(state){
+  const amount=basketCount(state);
+  if(!amount)return {ok:false,message:'바구니가 비어 있어요.'};
+  for(const crop of Object.keys(CROPS)){
+    state.inventory[crop]+=state.cargo[crop];state.cargo[crop]=0;
+  }
+  return {ok:true,amount,message:'바구니의 작물 '+amount+'개를 창고에 도로 내려놓았어요.'};
+}
+export function sellBasketProduce(state){
+  const sold={},total=Object.keys(CROPS).reduce((sum,crop)=>{
+    const count=state.cargo[crop]||0;
+    if(count>0)sold[crop]=count;
+    return sum+count*CROPS[crop].price;
+  },0);
+  if(!total)return {ok:false,total:0,message:'바구니가 비었어요. 창고에서 작물을 실어 오세요.'};
+  for(const crop of Object.keys(CROPS))state.cargo[crop]=0;
+  state.money+=total;state.stats.sales++;state.stats.earnings+=total;
+  return {ok:true,sold,total,message:'가져온 수확물을 '+total.toLocaleString('ko-KR')+'원에 팔았어요.'};
 }
 
 export const SUPPLY_PRICES=Object.freeze({seedRice:100,seedCarrot:60,seedCorn:80});
@@ -372,12 +450,12 @@ export function currentDeliveryOrder(state){
   if(state.market?.lastRepeatDay===state.day)return null;
   return REPEAT_DELIVERY_ORDERS[(state.day+completed-DELIVERY_ORDERS.length)%REPEAT_DELIVERY_ORDERS.length];
 }
-export function fulfillDeliveryOrder(state){
+function fulfillDeliveryOrderFrom(state,stock){
   const order=currentDeliveryOrder(state);
   if(!order)return {ok:false,complete:true,message:'오늘의 마을 부탁은 마쳤어요. 내일 새로운 부탁이 와요.'};
-  const available=state.inventory[order.produce]||0;
+  const available=stock[order.produce]||0;
   if(available<order.count)return {ok:false,order,available,message:order.description+' '+order.count+'개가 필요해요. 현재 '+available+'개 있어요.'};
-  state.inventory[order.produce]-=order.count;
+  stock[order.produce]-=order.count;
   state.money+=order.reward;
   state.stats.deliveries=(state.stats.deliveries||0)+1;
   if(state.stats.deliveries>=DELIVERY_ORDERS.length)state.market.lastRepeatDay=state.day;
@@ -385,3 +463,5 @@ export function fulfillDeliveryOrder(state){
     complete:state.stats.deliveries>=DELIVERY_ORDERS.length,
     message:order.description+' 납품을 마쳤어요. 보상 '+order.reward.toLocaleString('ko-KR')+'원을 받았어요.'};
 }
+export function fulfillDeliveryOrder(state){return fulfillDeliveryOrderFrom(state,state.inventory)}
+export function fulfillBasketDeliveryOrder(state){return fulfillDeliveryOrderFrom(state,state.cargo)}
