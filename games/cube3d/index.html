@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#9bd8ff">
 <title>큐브 아키텍트 | Kidscade</title>
-<link rel="stylesheet" href="./cube-architect.css?v=20261007-homestead2&furnishing=1&math=20261013-2">
+<link rel="stylesheet" href="./cube-architect.css?v=20261007-homestead2&furnishing=1&math=20261013-2&netview=20261020">
 <link rel="stylesheet" href="./cube-architect-ui.css?v=20261006-experience1&magic=20261012">
 <link rel="stylesheet" href="./cube-architect-cuboid-puzzle.css?v=20261006-2">
 <script src="../../kidscade-storage.js?v=20260929-cube-architect-5"></script>
@@ -201,7 +201,11 @@
         <button id="netDesignCheck" type="button">접힐지 검사</button>
       </div>
     </section>
-    <div id="netDecorateInstructions" class="panel-sub"><b>1.</b> 붙일 그림을 고르고 <b>2.</b> 오른쪽 3D 정육면체의 면을 클릭하세요. 같은 크기의 정사각형 여섯 개가 접혀요.</div>
+    <div id="netDecorateInstructions" class="panel-sub"><b>1.</b> 붙일 그림을 고르고 <b>2.</b> 오른쪽 3D 정육면체의 면을 클릭하세요. 밑면은 “밑면 보기”를 누르거나 위아래로 돌려서 붙일 수 있어요.</div>
+    <div class="net-view-actions" role="group" aria-label="정육면체 시점">
+      <button id="netViewBottom" type="button">밑면 보기</button>
+      <button id="netViewReset" type="button">처음 시점</button>
+    </div>
     <div id="stickerPalette"></div>
     <div class="hint-box" id="selectedFace">그림을 고른 뒤 직육면체의 면을 클릭해 보세요.</div>
     <div id="netQuizCard" class="hidden">
@@ -443,7 +447,7 @@
 <script src="./cube-architect-camp.js?v=20261006-survival-camp2&magic=20261012"></script>
 <script src="./cube-architect-experience.js?v=20261006-experience1"></script>
 <script src="./cube-architect-math.js?v=20261013-geometry2"></script>
-<script src="./cube-architect.js?v=20261007-homestead4&furnishing=1&magic=20261012&math=20261013-2"></script>
+<script src="./cube-architect.js?v=20261007-homestead4&furnishing=1&magic=20261012&math=20261013-2&netview=20261020"></script>
 <script src="./cube-architect-cuboid-puzzle.js?v=20261006-2"></script>
 <script>
 (()=>{

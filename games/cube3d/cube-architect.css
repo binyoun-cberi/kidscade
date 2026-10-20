@@ -708,3 +708,7 @@ linear-gradient(145deg,#a8ddff 0%,#ddf5e3 52%,#fff3c7 100%)}
 .cuboid-compare-preview{display:block;width:100%;height:90px;margin:2px auto 4px;
   background:linear-gradient(#f2f7fd,#ffffff);border-radius:7px}
 @media(max-width:650px){.cuboid-compare-preview{height:69px}}
+
+.net-view-actions{display:flex;gap:7px;margin:8px 0}
+.net-view-actions button{flex:1;border:1px solid #c4cce9;border-radius:10px;background:#eef0ff;color:#354278;padding:10px;font-weight:800;cursor:pointer}
+.net-view-actions button:focus-visible{outline:3px solid #5967ee;outline-offset:2px}
