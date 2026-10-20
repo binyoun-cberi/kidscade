@@ -57,7 +57,7 @@ test('Disaster City is registered in the game catalog',()=>{
  const catalog=JSON.parse(fs.readFileSync(path.join(root,'data','games.json'),'utf8'));
  const item=catalog.games.find(g=>g.id==='high_disaster_city');
  assert.ok(item);
- assert.equal(item.href,'games/high_disaster_city/index.html?v=12');
+ assert.equal(item.href,'games/high_disaster_city/index.html?v=13');
  assert.equal(item.title,'이머전시티');
  assert.equal(item.age,'high');
 });
@@ -209,6 +209,63 @@ test('Disaster City recovery penalties and shelter evacuation are connected',()=
 
  DC.Population.emergency(sim,15);
  assert.ok(sim.state.evacuation.boostUntil>=sim.state.time+15);
+});
+
+test('Disaster City damage leaves cause-specific scars, rubble and repair traces that recover',()=>{
+ const vm=require('node:vm'),context={console,performance:{now:()=>0},window:{}};
+ context.window.window=context.window;vm.createContext(context);
+ for(const file of ['game-data.js','field-system.js','recovery-system.js','population-system.js','sim-core.js','disaster-system.js']){
+  vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
+ }
+ const DC=context.window.DisasterCity,sim=new DC.Simulation();sim.start({seed:929});sim.state.money=9999;
+ const slot=sim.state.slots[0];slot.building={id:'house',hp:100,maxHp:100,level:1};
+ sim.damageBuilding(0,32,'wildfire');
+ assert.equal(slot.building.visualDamage.kind,'fire');
+ assert.ok(slot.building.visualDamage.strength>.3);
+ assert.equal(slot.building.condition,'damaged');
+ DC.Recovery.repair(sim,slot);
+ assert.equal(slot.building.visualDamage,undefined,'repair must remove the scorch overlay');
+ DC.Recovery.markFlooded(sim,0,.75);
+ assert.equal(slot.building.visualDamage.kind,'flood');
+ assert.equal(slot.building.condition,'flooded');
+ const floodScars=slot.building.visualDamage.strength;
+ sim.state.disasters=[];DC.Recovery.update(sim,22);
+ assert.equal(slot.building.condition,'normal');
+ assert.ok(slot.building.visualDamage.strength<floodScars,'flood residue should fade as the town recovers');
+ sim.damageBuilding(0,200,'earthquake');
+ assert.equal(slot.building,null);
+ assert.equal(sim.state.recovery.debris[0].cause,'earthquake');
+ const col=DC.Field.slotCol(slot),near=DC.Field.cellsInRadius(sim.state.field,col,DC.Field.slotRow(),1);
+ assert.ok(near.some(c=>c.debris>.25),'collapsed building must leave road debris in nearby field cells');
+ sim.state.hand=[{id:'house',uid:9009}];sim.state.deck=[];sim.state.discard=[];
+ sim.selectCard(9009);assert.equal(sim.placeSelected(0),true);
+ assert.equal(sim.state.recovery.debris.length,0,'rebuilding must remove old rubble');
+ assert.ok(near.every(c=>c.debris<.33),'rebuilding must clean nearby debris');
+ slot.building.hp-=40;DC.Recovery.markDamaged(sim,0,'earthquake');
+ assert.equal(slot.building.visualDamage.kind,'quake');
+ sim.state.hand=[{id:'repair',uid:9010}];
+ assert.equal(sim.playAction(9010),true);
+ assert.ok(sim.state.effects.some(e=>e.type==='roadwork'&&e.x===slot.x));
+ assert.equal(slot.building.visualDamage,undefined,'repair action must visually remove building damage');
+ DC.Recovery.markDestroyed(sim,slot,{id:'house'},'typhoon');slot.building=null;
+ DC.Recovery.update(sim,96);
+ assert.equal(sim.state.recovery.debris.length,0,'abandoned rubble must eventually decay');
+});
+
+test('Disaster City renderer paints residual damage and uses tracked repair-site assets',()=>{
+ const vm=require('node:vm'),context={window:{},console};context.window.window=context.window;vm.createContext(context);
+ for(const file of ['game-data.js','renderer.js'])vm.runInContext(fs.readFileSync(path.join(game,file),'utf8'),context,{filename:file});
+ const DC=context.window.DisasterCity,r=Object.create(DC.Renderer.prototype),images=[],paints=[];
+ r.img=(key)=>{images.push(key);return true};
+ r.ctx={save(){},restore(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},fill(){},fillRect(...args){paints.push(args)}};
+ for(const kind of ['fire','flood','quake','storm'])r.buildingScars({x:250},{id:'house',visualDamage:{kind,strength:.8}});
+ r.roadDamage({field:{cols:24,rows:5,cells:[{c:2,r:2,burned:.7,silt:.6,debris:.5}]}});
+ r.rubble({slots:[{i:0,building:null}],recovery:{debris:[{slotIndex:0,x:250,cause:'wildfire',age:10}]}});
+ r.effects({time:4,effects:[{type:'roadwork',x:250,life:3,maxLife:4.6}]});
+ assert.ok(paints.length>10,'damage states must render real canvas geometry');
+ assert.ok(images.filter(k=>k==='rock').length>=2,'wreckage should reuse existing rock assets');
+ assert.ok(images.includes('roadBarrier'),'repair-site animation should use actual barrier art');
+ assert.ok(images.includes('citizen'),'repair-site animation should show a worker');
 });
 
 test('Disaster City floods end naturally and urgent repair prioritizes the blocking levee',()=>{
