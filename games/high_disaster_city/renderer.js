@@ -138,15 +138,41 @@ class Renderer{
    }
   }c.restore()
  }
+ rubblePile(d,fade=1){
+  const c=this.ctx,g=D.GROUND_Y;c.save();c.globalAlpha=fade;
+  c.fillStyle=d.cause==='wildfire'?'#342b2a':'#615a53';c.fillRect(d.x-35,g-10,70,10);
+  c.fillStyle=d.cause==='wildfire'?'#45312d':'#7a7166';for(let i=0;i<7;i++){const xx=d.x-31+i*10,h=5+(i*7%19);c.fillRect(xx,g-10-h,11,h)}
+  this.img('rock',d.x-35,g-32,34,29,false,fade);this.img('rock',d.x+5,g-25,30,24,true,fade);
+  c.strokeStyle='#392d2a';c.lineWidth=4;c.beginPath();c.moveTo(d.x-22,g-25);c.lineTo(d.x+11,g-51);c.moveTo(d.x-2,g-15);c.lineTo(d.x+27,g-40);c.stroke();c.restore()
+ }
  rubble(s){
-  const debris=s.recovery?.debris;if(!debris?.length)return;const c=this.ctx,g=D.GROUND_Y;
-  c.save();for(const d of debris){if(s.slots[d.slotIndex]?.building)continue;
-   const fade=clamp((95-d.age)/17,0,1);c.globalAlpha=fade;
-   c.fillStyle=d.cause==='wildfire'?'#342b2a':'#615a53';c.fillRect(d.x-35,g-10,70,10);
-   c.fillStyle=d.cause==='wildfire'?'#45312d':'#7a7166';for(let i=0;i<7;i++){const xx=d.x-31+i*10,h=5+(i*7%19);c.fillRect(xx,g-10-h,11,h)}
-   this.img('rock',d.x-35,g-32,34,29,false,fade);this.img('rock',d.x+5,g-25,30,24,true,fade);
-   c.strokeStyle='#392d2a';c.lineWidth=4;c.beginPath();c.moveTo(d.x-22,g-25);c.lineTo(d.x+11,g-51);c.moveTo(d.x-2,g-15);c.lineTo(d.x+27,g-40);c.stroke();
-  }c.restore()
+  for(const d of s.recovery?.debris||[]){if(s.slots[d.slotIndex]?.building)continue;this.rubblePile(d,clamp((95-d.age)/17,0,1))}
+ }
+ reconstruction(slot,b,job,s){
+  const c=this.ctx,x=slot.x,g=D.GROUND_Y,t=clamp(job.elapsed,0,job.total),clean=clamp((t-1.7)/1.8,0,1),build=clamp((t-3.45)/2.35,0,1),reveal=clamp((t-5.8)/1.5,0,1);
+  c.save();
+  if(t<3.5){this.rubblePile({x,cause:job.cause},1-clean);
+   if(clean>.03&&clean<.99){this.img('smoke1',x-32,g-69+clean*18,64,49,false,.35*(1-clean));c.fillStyle='#b3a28c';for(let i=0;i<5;i++)c.fillRect(x-30+i*13,g-34-17*clean-i%3*5,4,4)}
+  }
+  if(t>=3.45){
+   c.fillStyle='#786b60';c.fillRect(x-39,g-4,78,5);
+   c.fillStyle='#d6b78d';c.fillRect(x-34,g-6-76*build,68,76*build);
+   c.strokeStyle='#906c44';c.lineWidth=4;
+   for(const xx of [x-34,x+34]){c.beginPath();c.moveTo(xx,g-3);c.lineTo(xx,g-3-86*build);c.stroke()}
+   for(const fraction of [.35,.72,1])if(build>=fraction*.35){const yy=g-3-80*fraction*build;c.beginPath();c.moveTo(x-35,yy);c.lineTo(x+35,yy);c.stroke()}
+   if(build>.65)this.img('roofGray',x-39,g-87*build,78,18,false,.95);
+  }
+  if(reveal>0){
+   c.save();c.beginPath();c.rect(x-44,g-152*reveal,88,152*reveal+2);c.clip();this.drawBuilding(slot,b);this.buildingScars(slot,b);c.restore()
+  }
+  if(t<6.7){
+   this.img('roadBarrier',x-44,g+1,34,20);this.img('roadBarrier',x+12,g+1,34,20);
+   if(t>1.4){const pace=Math.sin(s.time*7)*2;this.img('citizenWalk',x-13+pace,g-31,26,33,false,.95)}
+   this.img('fence',x-39,g-15,78,15,false,.65)
+  }
+  const labels=t<1.7?'복구차 도착':t<3.45?'잔해 정리':t<5.8?'재건 공사':'완공 중';
+  if(t<6.9){c.fillStyle='#263f4bdc';c.fillRect(x-38,g-150,76,21);c.fillStyle='#fff2d3';c.font='900 12px system-ui';c.textAlign='center';c.fillText(labels,x,g-135)}
+  c.restore();return true
  }
  conditionBadge(slot){
   const b=slot.building;if(!b||!b.condition||b.condition==='normal')return;const c=this.ctx,x=slot.x,y=D.GROUND_Y-116;
@@ -183,7 +209,7 @@ class Renderer{
   if(!types.includes(data.vehicle))return;
   const destination=Number.isFinite(data.x)?data.x:data.side==='left'?230:data.side==='right'?1210:D.TOWN_X;
   const to=clamp(destination,90,D.W-90),from=to<D.TOWN_X?D.TOWN_X+65:D.TOWN_X-65;
-  this.serviceVehicles.push({key:data.vehicle,from,to,start:time});
+  this.serviceVehicles.push({key:data.vehicle,from,to,start:time,travel:data.construction?1.65:4.3,lifetime:data.construction?5.7:7});
   if(this.serviceVehicles.length>5)this.serviceVehicles.shift()
  }
  traffic(s){
@@ -193,9 +219,9 @@ class Renderer{
   const period=D.W+280,carA=(s.time*31+130)%period-80,carB=D.W+80-(s.time*25+670)%period;
   this.img('carBlue',carA,roadY+5,59,27);
   this.img('carYellow',carB,roadY+7,54,24,true);
-  this.serviceVehicles=this.serviceVehicles.filter(v=>s.time>=v.start-.01&&s.time-v.start<7);
+  this.serviceVehicles=this.serviceVehicles.filter(v=>s.time>=v.start-.01&&s.time-v.start<(v.lifetime||7));
   for(const [i,v] of this.serviceVehicles.entries()){
-   const p=clamp((s.time-v.start)/4.3,0,1),ease=1-(1-p)*(1-p),x=v.from+(v.to-v.from)*ease;
+   const p=clamp((s.time-v.start)/(v.travel||4.3),0,1),ease=1-(1-p)*(1-p),x=v.from+(v.to-v.from)*ease;
    const source=this.images[v.key],w=source?clamp(source.naturalWidth*1.65,44,112):72;
    const h=source?clamp(source.naturalHeight*1.65,24,44):31;
    this.img(v.key,x-w/2,roadY+(i%2)*2,w,h,v.to<v.from);
@@ -270,7 +296,7 @@ class Renderer{
  render(s){
   const c=this.ctx,t=this.worldTransform();c.setTransform(this.view.dpr,0,0,this.view.dpr,0,0);c.fillStyle='#11293d';c.fillRect(0,0,this.view.w,this.view.h);c.save();c.translate(t.ox,t.oy);c.scale(t.scale,t.scale);c.imageSmoothingEnabled=false;
   const quake=(s.disasters||[]).find(d=>d.type==='earthquake');if(quake)c.translate(Math.sin(s.time*46)*3.5*(quake.strength||1),Math.cos(s.time*39)*1.8);
-  this.background(s);this.roadDamage(s);this.slots(s);for(const slot of s.slots)if(slot.building){this.drawBuilding(slot,slot.building);this.buildingScars(slot,slot.building);this.conditionBadge(slot)}this.rubble(s);this.townHall();this.citizens(s);this.fieldHazards(s);this.traffic(s);
+  this.background(s);this.roadDamage(s);this.slots(s);for(const slot of s.slots)if(slot.building){const job=s.recovery?.construction?.find(j=>j.slotIndex===slot.i&&j.buildingId===slot.building.id);if(job)this.reconstruction(slot,slot.building,job,s);else{this.drawBuilding(slot,slot.building);this.buildingScars(slot,slot.building);this.conditionBadge(slot)}}this.rubble(s);this.townHall();this.citizens(s);this.fieldHazards(s);this.traffic(s);
   const disasters=(s.disasters||[]).slice();for(const d of disasters){if(d.type==='wildfire'||d.type==='flood')continue;else if(d.type==='typhoon')this.typhoon(s,d);else if(d.type==='heatwave')this.heatwave(s,d);else if(d.type==='blizzard')this.blizzard(s,d);else if(d.type==='earthquake')this.earthquake(s,d)}this.effects(s);c.restore()
  }
 }
