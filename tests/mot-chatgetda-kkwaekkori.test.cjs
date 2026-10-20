@@ -62,7 +62,7 @@ test('residents stay on visible sidewalk routes during life simulation',async()=
     for(const person of town.people){
       const at=getRoutePosition(person,town.config),center=getBlockCenter(person.block,town.config);
       assert.ok(Number.isFinite(at.x)&&Number.isFinite(at.z));
-      assert.ok(Math.abs(at.x)<=town.config.cols*7/2 && Math.abs(at.z)<=town.config.rows*7/2);
+      assert.ok(Math.abs(at.x)<=town.config.cols*8.5/2+2 && Math.abs(at.z)<=town.config.rows*8.5/2+2);
       assert.ok(Number.isFinite(person.heading));
       assert.ok(person.elapsed>=0);
     }
@@ -131,10 +131,27 @@ test('hard clues include a visible prop and near-matches differ in a meaningful 
    for(const p of town.people){
     const at=getRoutePosition(p,town.config);assert.ok(Number.isFinite(at.x)&&Number.isFinite(at.z));
     if(Math.hypot(at.x-initial.get(p.id).x,at.z-initial.get(p.id).z)>3)travelled=true;
-    if(!p.moving){const key=p.block.id+':'+p.slot;assert.ok(!occupied.has(key));occupied.add(key);}
+    if(!p.moving&&!p.riding){const key=p.block.id+':'+p.slot;assert.ok(!occupied.has(key));occupied.add(key);}
    }
   }
   assert.ok(travelled);assert.deepEqual(targets.map(signature),looks);
   for(const p of targets){assert.ok(personIsDiscoverable(town,p.id));assert.deepEqual(getRoutePosition(p,town.config),initial.get(p.id));}
+ }
+ });
+
+ test('connected walking paths support shop service and actual bus trips without crossing buildings',async()=>{
+ const {makeTown,movePeople,getBlockCenter,getWalkNetwork}=await simPromise;
+ for(const stage of ['small','medium','large']){
+  const town=makeTown(stage,41,'normal'),net=getWalkNetwork(town.config),visited=new Set([0]),pending=[0];
+  for(let i=0;i<pending.length;i++)for(const next of net.links[pending[i]])if(!visited.has(next)){visited.add(next);pending.push(next);}
+  assert.equal(visited.size,net.nodes.length);
+  for(let tick=0;tick<6000;tick++){
+   movePeople(town,.1);
+   for(const p of town.people.filter(p=>!p.riding))for(const b of town.blocks.filter(b=>!['park','stop'].includes(b.kind))){
+    const c=getBlockCenter(b,town.config);assert.ok(!(Math.abs(p.position.x-c.x)<1.9&&Math.abs(p.position.z-c.z+.25)<1.1),'walk must avoid building footprint');
+   }
+  }
+  assert.ok(town.people.some(p=>p.completedPurchases),'a customer receives bread');
+  assert.ok(town.people.some(p=>p.completedRides),'a passenger boards and alights');
  }
  });
