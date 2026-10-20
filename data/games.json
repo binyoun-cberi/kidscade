@@ -2,6 +2,34 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "daily_english",
+      "addedAt": "2026-10-20T15:00:00+09:00",
+      "title": "하루 한 입 영어",
+      "href": "games/daily_english/index.html",
+      "category": "lang",
+      "age": "low",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🥐",
+      "cover": "assets/gate-image/daily_english_cover.webp",
+      "description": "빵집·학교·공원을 산책하며 배우는 18개 생활 영어 레슨! 매일 채워지는 에너지와 연속 학습 콤보, 무료 오답 복습으로 하루 한 입씩 성장해요.",
+      "subject": "language",
+      "genre": "quiz",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": false
+    },
+    {
       "id": "dialect_tour",
       "addedAt": "2026-10-20T09:48:10+09:00",
       "title": "말맛 전국일주",
