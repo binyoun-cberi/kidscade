@@ -1112,10 +1112,12 @@ function initNet(){
   setVisible('netPanel',true);$('actionCheck').classList.remove('hidden');$('actionNext').classList.remove('hidden');
   foldNonce++;foldPieces=[];netDesignLayout=Array(6).fill(null);netDesignSelected=0;netDesignHistory=[];netDesignChecked=false;netQuizMode='decorate';netQuiz=null;netQuizAnswered=0;netQuizCorrect=0;netQuizChoice=null;netQuizRevealed=false;
   chooseNetVariant();
-  cleanScene(0xfff5dc);netQuizProof=null;camera.position.set(5,4.2,6);camera.lookAt(0,0,0);makeOrbit(new THREE.Vector3(0,0,0));orbit.minDistance=4;orbit.maxDistance=10;
+  cleanScene(0xfff5dc);netQuizProof=null;camera.position.set(5,4.2,6);camera.lookAt(0,0,0);makeOrbit(new THREE.Vector3(0,0,0));orbit.minDistance=4;orbit.maxDistance=10;orbit.maxPolarAngle=Math.PI-.12;
   netTarget=shuffle(symbols);netAssigned=['','','','','',''];selectedSymbol=netTarget[0];buildNetBoard();buildPalette();
   netBox=new THREE.Mesh(new THREE.BoxGeometry(2.2,2.2,2.2),netAssigned.map(s=>symbolMaterial(s,'#ffffff')));netBox.castShadow=true;netBox.receiveShadow=true;netBox.userData.netbox=true;scene.add(netBox);
-  const floor=new THREE.Mesh(new THREE.CircleGeometry(4.5,64),new THREE.MeshStandardMaterial({color:0xf0dfb7,roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-1.15;floor.receiveShadow=true;scene.add(floor);
+  // Keep the cube floating: a platform here hides the bottom face.
+  $('netViewBottom').onclick=()=>setNetView(true);
+  $('netViewReset').onclick=()=>setNetView(false);
   $('actionCheck').onclick=checkNet;
   $('actionNext').onclick=()=>netQuizMode==='design'?resetNetDesign(false):netQuizMode==='decorate'?initNet():nextNetQuiz();
   $('foldNet').onclick=foldPreview;
@@ -1132,6 +1134,11 @@ function initNet(){
   ['netDecorateInstructions','stickerPalette','selectedFace'].forEach(id=>$(id).classList.remove('hidden'));
   $('netQuizCard').classList.add('hidden');
   $('resultCard').classList.add('hidden');showTutorial('net');
+}
+function setNetView(bottom){
+  if(mode!=='net'||!orbit)return;
+  camera.position.set(5,bottom?-4.2:4.2,6);
+  orbit.syncFromCamera();
 }
 function buildNetBoard(){
   const variant=NET_VARIANTS[netVariantIndex],board=$('netBoard');
@@ -7559,7 +7566,7 @@ function tutorialSteps(kind){
   if(kind==='net')return[
     {title:'전개도 연구실 사용법',text:'정육면체 전개도를 보고 그림을 3D 정육면체의 면에 붙인 다음 접어 확인해 봐요.',do:'한 단계씩 직접 해 봐요.'},
     {title:'1. 붙일 그림 고르기',target:'#stickerPalette',text:'아래 그림 중 하나를 먼저 선택합니다.',do:'그림 하나를 눌러 보세요.',wait:'net-sticker'},
-    {title:'2. 3D 면에 붙이기',target:'#gameCanvas',text:'오른쪽 3D 정육면체를 돌려 보고 원하는 면을 클릭하세요.',do:'선택한 그림이 실제 면에 붙어야 다음으로 넘어갑니다.',wait:'net-assign'},
+    {title:'2. 3D 면에 붙이기',target:'#gameCanvas',text:'오른쪽 3D 정육면체를 돌려 보고 원하는 면을 클릭하세요. 밑면은 “밑면 보기”를 누르면 보여요.',do:'선택한 그림이 실제 면에 붙어야 다음으로 넘어갑니다.',wait:'net-assign'},
     {title:'3. 접어 보기',target:'#foldNet',text:'전개도가 실제로 어떻게 접히는지 애니메이션으로 확인할 수 있어요.',do:'“접어 보기”를 눌러 확인해 보세요.'},
     {title:'4. 다른 수학 활동',target:'[data-net-mode="face"]',text:'면 관계, 모서리, 꼭짓점 탭은 기본 그림 배치에 익숙해진 뒤 도전하면 됩니다.',do:'처음 하는 학생은 “그림 배치”부터 시작하세요.'},
     {title:'5. 검사와 다음',target:'#actionCheck',text:'검사하기로 답을 확인하고, 다음 버튼으로 새 전개도로 바꿉니다.',do:'상단 튜토리얼 버튼으로 언제든 다시 볼 수 있어요.'}
