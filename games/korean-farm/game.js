@@ -164,8 +164,15 @@ function buildWorldStations(){
     scene.add(target);worldHits.push(target);worldStations.set(key,{target,position,stand});
   };
   addStation('market','장터',{x:8.5,y:1.05,z:14},{x:8.5,z:15.25},[2.8,2.1,1.45]);
+  // The shopkeeper is a real alternate hit target for the SAME market. A tap
+  // on the resident or the sign must work; the character is not just scenery.
+  const merchantHit=new THREE.Mesh(new THREE.BoxGeometry(1.3,3,.95),
+    new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
+  merchantHit.position.set(9.8,1.5,15.3);
+  merchantHit.userData.worldStation='market';merchantHit.userData.label='순옥 아주머니';
+  scene.add(merchantHit);worldHits.push(merchantHit);
   addStation('barn','농산물 창고',{x:18,y:1.1,z:-10.4},{x:18,z:-9.5},[2.9,2.1,1.35]);
-  addStation('neighbor','영수 할아버지',{x:2.8,y:1.1,z:13.4},{x:2.8,z:12.45},[1.7,2.1,1.25]);
+  addStation('neighbor','영수 할아버지',{x:2.8,y:1.5,z:13.4},{x:2.8,z:12.45},[1.9,3,1.45]);
   const mound=new THREE.Group();mound.position.set(4.2,0,-11.35);scene.add(mound);
   for(const [x,y,z,s] of [[-.25,.22,0,.42],[.12,.28,-.06,.48],[.37,.18,.08,.34]]){
     const heap=new THREE.Mesh(new THREE.IcosahedronGeometry(s,1),new THREE.MeshStandardMaterial({color:0x745336,roughness:1}));

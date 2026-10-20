@@ -36,6 +36,11 @@ const hook=[
 "   if(!target)return false;scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);",
 "   const p=target.getWorldPosition(new THREE.Vector3()).project(camera),r=$('farm').getBoundingClientRect();",
 "   inspectAt({clientX:r.left+(p.x+1)*r.width/2,clientY:r.top+(1-p.y)*r.height/2});return true;},",
+" person:key=>{const obj=worldHits.find(o=>o.userData.worldStation===key&&",
+"   (key!=='market'||o.userData.label==='순옥 아주머니'));if(!obj)return false;",
+"   scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);",
+"   const p=obj.getWorldPosition(new THREE.Vector3()).project(camera),r=$('farm').getBoundingClientRect();",
+"   inspectAt({clientX:r.left+(p.x+1)*r.width/2,clientY:r.top+(1-p.y)*r.height/2});return true;},",
 " plantMode:()=>({active:plantingMode,selectedSeedling}),",
 " finishPlanting:(id)=>{const f=fieldById(state,id);",
 "   for(let i=0;i<25;i++)if(f?.transplants&&!f.transplants[i])plantSeedling(state,id,i);",
@@ -247,7 +252,9 @@ async function main(){
    loaded.inventory.rice===0&&loaded.stats.sales===0,loaded.cargo);
  await click('#modalClose');
  await evaluate('window.__farmQA.teleport(2.8,12.45)');
- await click('#neighborBtn');
+ await sleep(200);
+ check('3D resident can be tapped in the world, not only via toolbar',
+   (await evaluate('window.__farmQA.person("neighbor")'))===true);
  await waitFor('document.querySelector("#modalTitle").textContent.includes("이웃")',9000);
  const beforeDelivery=await evaluate('window.__farmQA.state()');
  check('Visiting an actual village resident starts one daily conversation',
@@ -262,7 +269,9 @@ async function main(){
    afterDelivery.inventory.rice===0,afterDelivery);
  await click('#modalClose');
  await evaluate('window.__farmQA.teleport(8.5,15.25)');
- await click('#bagBtn');
+ await sleep(200);
+ check('3D shopkeeper is an actual market interaction target',
+   (await evaluate('window.__farmQA.person("market")'))===true);
  await waitFor('!document.querySelector("#modal").classList.contains("hidden")',9000);
  await click('.sell-btn');
  const sold=await evaluate('window.__farmQA.state()');

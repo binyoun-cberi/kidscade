@@ -166,6 +166,8 @@ test('farm HUD has five primary buttons plus accessible village neighbor in menu
   assert.match(game,/!overlayShown\?move/);
   assert.match(game,/farmerFacingTarget=farmerHeading/);
   assert.doesNotMatch(game,/moving=true;\s*farmer\.rotation\.y=Math\.atan2/);
+  assert.match(game,/merchantHit\.userData\.worldStation='market'/);
+  assert.match(game,/addStation\('neighbor','영수 할아버지'/);
 });
 test('keyboard actions do not run while dialog is visible or text input has focus',()=>{
   assert.match(game,/target\?\.closest\?\.\('input,textarea,select,\[contenteditable="true"\]'\)/);
