@@ -388,7 +388,9 @@ async function main(){
    menuHidden:document.querySelector('#moreTools').classList.contains('hidden'),
    panel:document.querySelector('#bottomBar').getBoundingClientRect().toJSON(),
    header:document.querySelector('#topbar').getBoundingClientRect().toJSON()}))()`);
- check('Mobile has four visible primary tools',visibleTools.main===4&&visibleTools.menuHidden,visibleTools);
+ check('Mobile has five visible primary tools without horizontal overflow',
+   visibleTools.main===5&&visibleTools.menuHidden&&visibleTools.panel.left>=0&&
+   visibleTools.panel.right<=visibleTools.header.right+8,visibleTools);
  await evaluate('window.__farmQA.select("rice-1")');
  await sleep(480);
  const sheet=await evaluate(`(()=>{
