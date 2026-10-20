@@ -4,9 +4,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const simPromise = import('../games/yi-sun-sin/sim.mjs');
 
-test('역사 캠페인 열 전장은 연대순으로 구성되고 각각 독립된 지도와 공세를 제공한다', async () => {
+test('역사 캠페인 열한 전장은 연대순으로 구성되고 각각 독립된 지도와 공세를 제공한다', async () => {
   const { BATTLES, BATTLE_ORDER, createGame, getWave, startRun, stepGame, SHIP_TYPES } = await simPromise;
-  assert.deepEqual(BATTLE_ORDER, ['okpo', 'sacheon', 'dangpo', 'danghangpo', 'yulpo', 'hansando', 'angolpo', 'busanpo', 'myeongnyang', 'noryang']);
+  assert.deepEqual(BATTLE_ORDER, ['okpo', 'sacheon', 'dangpo', 'danghangpo', 'yulpo', 'hansando', 'angolpo', 'busanpo', 'hoeryeongpo', 'myeongnyang', 'noryang']);
   for (const id of BATTLE_ORDER) {
     const game = createGame(1592, 'normal', id);
     assert.equal(game.battleId, id);
@@ -187,16 +187,22 @@ test('안골포는 얕은 수심을 지키며 교대 포격을 지휘하고 이�
   assert.ok(game.allies.some(ally => ally.id === 'eokgi-1'));
 });
 
-test('기존 8장 승전 기록을 새 열 장 캠페인으로 옮겨도 진행과 기록은 보존된다', async () => {
+test('기존 8장·10장 승전 기록을 새 열한 장 캠페인으로 옮겨도 진행과 기록은 보존된다', async () => {
   const { BATTLE_ORDER, restoreCampaign, isBattleUnlocked } = await simPromise;
   const saved = restoreCampaign({ completed: ['okpo', 'sacheon', 'dangpo', 'danghangpo', 'hansando'] });
-  assert.equal(saved.version, 2);
+  assert.equal(saved.version, 3);
   assert.ok(saved.completed.includes('hansando'));
   for (const id of ['yulpo', 'hansando', 'angolpo', 'busanpo'])
     assert.equal(isBattleUnlocked(saved, id), true, id);
   assert.equal(isBattleUnlocked(saved, 'myeongnyang'), false);
   const veteran = restoreCampaign({ completed: ['okpo', 'sacheon', 'dangpo', 'danghangpo', 'hansando', 'busanpo', 'myeongnyang', 'noryang'] });
   assert.ok(BATTLE_ORDER.every(id => isBattleUnlocked(veteran, id)), '기존 전체 클리어는 새 전장도 자유 출전');
+  const oldTen = restoreCampaign({ version: 2, completed: ['okpo', 'sacheon', 'dangpo', 'danghangpo', 'yulpo', 'hansando', 'angolpo', 'busanpo'], unlocked: [] });
+  assert.equal(isBattleUnlocked(oldTen, 'hoeryeongpo'), true);
+  assert.equal(isBattleUnlocked(oldTen, 'myeongnyang'), true, '10장 버전에서 부산포 다음에 명량으로 진입 가능했던 권한 보전');
+  const clearedMyeongnyang = restoreCampaign({ version: 2, completed: [...oldTen.completed, 'myeongnyang'], unlocked: [] });
+  assert.equal(isBattleUnlocked(clearedMyeongnyang, 'noryang'), true);
+  assert.equal(isBattleUnlocked(clearedMyeongnyang, 'hoeryeongpo'), true);
   const newcomer = restoreCampaign(null);
   assert.equal(isBattleUnlocked(newcomer, 'okpo'), true);
   assert.equal(isBattleUnlocked(newcomer, 'yulpo'), false);
@@ -236,6 +242,115 @@ test('부산포는 해안 포격을 받고 마지막 교전 후 서쪽 외해로
   stepGame(game, {}, .016);
   assert.equal(game.mode, 'victory');
   assert.equal(game.tactical.withdrawn, 1);
+});
+
+test('부산포 일제 포격은 두 척 이상의 아군 지원 함대가 출전하고 명령 뒤 포격한다', async () => {
+  const { createGame, startRun, stepGame, issueSpecial, makeShip } = await simPromise;
+  const game = createGame(292, 'normal', 'busanpo');
+  assert.equal(game.allies.filter(a => a.id.startsWith('fleet-')).length, 2);
+  assert.equal(game.battle.shoreBatteries.length, 2);
+  assert.equal(game.battle.waves[1].ships.length, 9);
+  startRun(game);
+  game.spawnClock = 999;
+  assert.equal(issueSpecial(game), false, '적선이 없으면 명령 불가');
+  const target = makeShip('atakebune', game.player.x + 460, game.player.y, 0, 'harbor-command');
+  target.speed = 0;
+  target.reload = [999, 999];
+  game.enemies.push(target);
+  assert.equal(issueSpecial(game), true);
+  assert.equal(issueSpecial(game), false, '명령 전개 중 중복 발동 방지');
+  for (let i = 0; i < 50; i++) stepGame(game, {}, .05);
+  assert.equal(game.special.state, 'active');
+  assert.equal(game.tactical.fleetSalvos, 1);
+  assert.ok(game.shots.some(s => s.sourceId.startsWith('fleet-')), '명령에 의한 실제 지원 함포 발사');
+  assert.ok(game.events.some(e => e.text.includes('일제 포격')));
+});
+
+test('회령포 수군 재건은 집결지에서 명령을 유지해야 단계별 아군과 선체가 회복된다', async () => {
+  const { createGame, startRun, stepGame, takeUpgrade, getWave, getRebuildSite, canRebuildHere, issueSpecial } = await simPromise;
+  const game = createGame(293, 'normal', 'hoeryeongpo');
+  startRun(game);
+  assert.equal(game.battle.turtle, undefined, '칠천량 패전 후 거북선 동행을 강제하지 않음');
+  assert.equal(game.allies.filter(a => a.type === 'turtle').length, 0);
+  assert.ok(game.allies[0].hp < game.allies[0].maxHp, '피해 입은 지원선으로 출발');
+  game.spawned = getWave(game).ships.length;
+  game.enemies = [];
+  stepGame(game, {}, .05);
+  assert.equal(game.mode, 'playing', '적을 모두 제거해도 수군 재건 전에는 다음 장면으로 넘어가지 않음');
+  assert.equal(issueSpecial(game), false, '집결지 밖에서는 수습 명령 불가');
+  const site = getRebuildSite(game);
+  game.player.x = site.x;
+  game.player.y = site.y;
+  assert.equal(canRebuildHere(game), true);
+  assert.equal(issueSpecial(game), true);
+  assert.equal(issueSpecial(game), false, '수습 연속 실행 방지');
+  game.player.x += 260;
+  stepGame(game, {}, .05);
+  assert.equal(game.special.state, 'ready', '집결 원을 벗어나면 수습이 취소됨');
+  game.player.x = site.x;
+  game.special.cooldown = 0;
+  assert.equal(issueSpecial(game), true);
+  for (let i = 0; i < 70; i++) stepGame(game, {}, .05);
+  assert.equal(game.tactical.recovered, 1);
+  assert.ok(game.allies.some(a => a.id === 'recovered-1'));
+  assert.equal(game.mode, 'upgrade');
+  assert.equal(takeUpgrade(game, game.selected[0]), true);
+  for (let phase = 1; phase < 3; phase++) {
+    const next = getRebuildSite(game);
+    game.player.x = next.x; game.player.y = next.y; game.player.speed = 0;
+    game.spawnClock = 999;
+    game.spawned = getWave(game).ships.length;
+    game.enemies = [];
+    assert.equal(issueSpecial(game), true);
+    for (let frame = 0; frame < 100 && game.tactical.recovered <= phase; frame++) stepGame(game, {}, .05);
+    assert.equal(game.tactical.recovered, phase + 1);
+    if (phase < 2) assert.equal(takeUpgrade(game, game.selected[0]), true);
+  }
+  assert.equal(game.mode, 'victory');
+  assert.equal(game.allies.filter(a => a.id.startsWith('recovered-')).length, 3);
+  assert.ok(game.tactical.completed.every(Boolean));
+});
+
+test('회령포 어려움은 집결지를 더 오래 지켜야 하고 초기 피해를 잃지 않는다', async () => {
+  const { createGame, startRun, stepGame, issueSpecial, getRebuildSite } = await simPromise;
+  const game = createGame(294, 'hard', 'hoeryeongpo');
+  startRun(game);
+  game.spawnClock = 999;
+  const site = getRebuildSite(game);
+  game.player.x = site.x; game.player.y = site.y;
+  game.player.reload = [999, 999];
+  assert.equal(issueSpecial(game), true);
+  for (let i = 0; i < 58; i++) stepGame(game, {}, .05);
+  assert.equal(game.tactical.recovered, 0, '보통보다 긴 수습 요구');
+  for (let i = 0; i < 22; i++) stepGame(game, {}, .05);
+  assert.equal(game.tactical.recovered, 1);
+});
+
+test('회령포의 모든 수습 지점까지 기함이 지도 안에서 직접 항해할 수 있다', async () => {
+  const { createGame, startRun, stepGame, getRebuildSite, issueSpecial, takeUpgrade, getWave, WORLD } = await simPromise;
+  const game = createGame(295, 'normal', 'hoeryeongpo');
+  startRun(game);
+  for (let stage = 0; stage < 3; stage++) {
+    const site = getRebuildSite(game);
+    game.spawnClock = 999;
+    game.spawned = getWave(game).ships.length;
+    game.enemies = [];
+    let approached = false;
+    for (let frame = 0; frame < 550; frame++) {
+      const d = Math.hypot(site.x - game.player.x, site.y - game.player.y);
+      if (d < game.battle.rebuild.radius - 20) { approached = true; break; }
+      const aimAngle = Math.atan2(site.x - game.player.x, -(site.y - game.player.y));
+      stepGame(game, { aimAngle, throttle: 1 }, .05);
+      assert.ok(game.player.x > 0 && game.player.x < WORLD.width && game.player.y > 0 && game.player.y < WORLD.height);
+    }
+    assert.equal(approached, true, `집결지 ${stage + 1}: 항해로 표시 원까지 접근`);
+    game.player.speed = 0;
+    assert.equal(issueSpecial(game), true);
+    for (let frame = 0; frame < 85 && game.tactical.recovered <= stage; frame++) stepGame(game, {}, .05);
+    assert.equal(game.tactical.recovered, stage + 1);
+    if (stage < 2) assert.equal(takeUpgrade(game, game.selected[0]), true);
+  }
+  assert.equal(game.mode, 'victory');
 });
 
 test('명량에서는 거북선 없이 조류가 모든 함선을 밀고 일정 시간 뒤 흐름이 바뀐다', async () => {
@@ -279,13 +394,19 @@ test('노량의 두 번째 교전에는 명나라 지원선이 합류하고 마�
 });
 
 test('각 역사 전장은 세 교전을 완료하면 해당 해전의 승리 기록을 남긴다', async () => {
-  const { createGame, startRun, stepGame, takeUpgrade, getWave, BATTLE_ORDER } = await simPromise;
+  const { createGame, startRun, stepGame, takeUpgrade, issueSpecial, getRebuildSite, getWave, BATTLE_ORDER } = await simPromise;
   for (const id of BATTLE_ORDER) {
     const game = createGame(161, 'hard', id);
     startRun(game);
     for (let phase = 0; phase < 3; phase++) {
       game.spawned = getWave(game).ships.length;
       game.enemies = [];
+      if (game.battle.rebuild) {
+        const site = getRebuildSite(game);
+        game.player.x = site.x; game.player.y = site.y; game.player.speed = 0;
+        assert.equal(issueSpecial(game), true);
+        for (let frame = 0; frame < 85 && game.tactical.recovered <= phase; frame++) stepGame(game, {}, .05);
+      }
       stepGame(game, {}, .016);
       if (game.withdrawal) { game.player.x = game.battle.withdraw.x - 10; stepGame(game, {}, .016); }
       if (phase < 2) {
