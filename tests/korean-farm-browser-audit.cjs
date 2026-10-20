@@ -694,7 +694,7 @@ async function main(){
  const activityDone=await evaluate('window.__farmQA.state()');
  check('Spring planting mini-activity grants a one-time reward',
    activityDone.stats.festivalActivities===1&&activityDone.money===afterFestival.money+120&&
-   (await evaluate('document.querySelector(".festival-activity-progress").textContent.includes("완료")')))&&
+   (await evaluate('document.querySelector(".festival-activity-progress").textContent.includes("완료")'))&&
    (await evaluate('document.querySelector("#festivalNotice").classList.contains("hidden")')));
  await click('#modalClose');
  await send('Page.reload',{ignoreCache:true});
