@@ -320,7 +320,8 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
     await sleep(1150);
   }
   assert.equal(await evalPage("document.getElementById('gazeText').textContent.includes('해독 완료')"),true);
-  assert.ok((await snap()).chapter3.watcher.focus<report.watcherGaze.focus+2,'looking away reduces focus');
+  assert.ok((await snap()).chapter3.watcher.focus<c.watcher.focus,
+    'watcher focus decreases after the final glance is broken');
   await interact();
   assert.equal((await snap()).chapter3.records.archive,true,'second record only after three glimpses');
   await screenshot('16-archive-record.png','desktop');
