@@ -15,7 +15,7 @@ function chooseMode(input){
   if(input.atWar)return"WAR";
   if(input.turn<input.personality.warTurn&&input.hasExpansion)return"EXPAND";
   if(!input.hasTarget)return input.hasExpansion?"EXPAND":"HOLD";
-  if(input.powerRatio<input.personality.recoverRatio)return"RECOVER";
+  if(input.powerRatio<input.personality.recoverRatio)return input.hasExpansion?"EXPAND":"RECOVER";
   return"PREPARE_WAR";
 }
 function shouldLaunch(input){
