@@ -29,7 +29,7 @@ const $=id=>document.getElementById(id);
 const ui={
  menu:$('menuScreen'),game:$('gameScreen'),tutorial:$('tutorial'),handoff:$('handoffOverlay'),success:$('successOverlay'),
  grid:$('levelGrid'),progress:$('progressText'),stars:$('starText'),continue:$('continueBtn'),
- badge:$('levelBadge'),title:$('levelTitle'),counter:$('levelCounter'),ownerAvatar:$('ownerAvatar'),ownerLabel:$('ownerLabel'),phase:$('phaseText'),attempt:$('attemptBadge'),candidate:$('candidateBadge'),
+ badge:$('levelBadge'),title:$('levelTitle'),counter:$('levelCounter'),ownerAvatar:$('ownerAvatar'),ownerLabel:$('ownerLabel'),phase:$('phaseText'),attempt:$('attemptBadge'),candidate:$('candidateBadge'),candidatePanel:$('candidatePanel'),candidateGallery:$('candidateGallery'),candidateGuide:$('candidateGuide'),
  mission:$('missionText'),chips:$('logicChips'),clues:$('clueList'),feedback:$('feedbackCard'),
  board:$('board'),wrap:$('boardWrap'),trace:$('trace'),traceShadow:$('traceShadow'),toast:$('toast'),
  algorithm:$('algorithmText'),moves:$('moveCount'),undo:$('undoBtn'),reset:$('resetBtn'),clueBtn:$('clueBtn'),submit:$('submitBtn'),tip:$('releaseTip'),
@@ -37,10 +37,10 @@ const ui={
 };
 
 let save=loadSave();
-let state={mode:'menu',levelIndex:Math.max(0,Math.min(LEVELS.length-1,(save.unlocked||1)-1)),level:null,path:[],positions:[],dragging:false,pointerId:null,attempts:0,extraClues:0,freePattern:null,lastToast:0,sessionStarted:false,bank:[],candidates:[],revealed:[],available:[],target:null,cursor:null};
+let state={mode:'menu',levelIndex:Math.max(0,Math.min(LEVELS.length-1,(save.unlocked||1)-1)),level:null,path:[],positions:[],dragging:false,pointerId:null,attempts:0,extraClues:0,freePattern:null,lastToast:0,sessionStarted:false,bank:[],candidates:[],revealed:[],available:[],target:null,cursor:null,selectedKey:null,tried:new Set()};
 
-function loadSave(){try{const v=window.KidscadeStorage?.getJson?.(SAVE_KEY,null);if(v&&typeof v==='object')return normalizeSave(v)}catch(_){}try{const v=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(v)return normalizeSave(v)}catch(_){}return{unlocked:1,stars:{},tutorialSeen:false}}
-function normalizeSave(v){return{unlocked:Math.max(1,Math.min(LEVELS.length,Number(v.unlocked)||1)),stars:v.stars&&typeof v.stars==='object'?v.stars:{},tutorialSeen:!!v.tutorialSeen}}
+function loadSave(){try{const v=window.KidscadeStorage?.getJson?.(SAVE_KEY,null);if(v&&typeof v==='object')return normalizeSave(v)}catch(_){}try{const v=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(v)return normalizeSave(v)}catch(_){}return{unlocked:1,stars:{},tutorialSeen:false,guideV6:false}}
+function normalizeSave(v){return{unlocked:Math.max(1,Math.min(LEVELS.length,Number(v.unlocked)||1)),stars:v.stars&&typeof v.stars==='object'?v.stars:{},tutorialSeen:!!v.tutorialSeen,guideV6:!!v.guideV6}}
 function persist(){try{if(window.KidscadeStorage?.setJson){window.KidscadeStorage.setJson(SAVE_KEY,save);return}}catch(_){}try{localStorage.setItem(SAVE_KEY,JSON.stringify(save))}catch(_){}}
 function sound(name){try{window.KidscadeGame?.sound?.(name)}catch(_){}}
 function sdkStart(){try{window.KidscadeGame?.start?.({mode:'pattern-deduction',levels:LEVELS.length})}catch(_){}}
@@ -63,14 +63,14 @@ function renderMenu(){
 function showMenu(){state.mode='menu';state.dragging=false;ui.success.classList.add('hidden');ui.handoff.classList.add('hidden');ui.game.classList.add('hidden');ui.menu.classList.remove('hidden');renderMenu()}
 
 function startLevel(index){
- state.mode='campaign';state.levelIndex=index;state.level=LEVELS[index];state.path=[];state.attempts=0;state.extraClues=0;state.cursor=null;
+ state.mode='campaign';state.levelIndex=index;state.level=LEVELS[index];state.path=[];state.attempts=0;state.extraClues=0;state.cursor=null;state.selectedKey=null;state.tried=new Set();
  if(!state.sessionStarted){state.sessionStarted=true;sdkStart()}
  ui.menu.classList.add('hidden');ui.success.classList.add('hidden');ui.handoff.classList.add('hidden');ui.game.classList.remove('hidden');ui.savePattern.classList.add('hidden');ui.clueBtn.classList.remove('hidden');ui.submit.classList.remove('hidden');ui.tip.classList.remove('hidden');
- setupLevelUi();buildBoard();prepareDeduction(state.level);renderPlayerPath();ui.feedback.classList.add('hidden');ui.phase.textContent='단서를 조합해 후보를 줄여 보세요';
+ setupLevelUi();buildBoard();prepareDeduction(state.level);renderPlayerPath();ui.feedback.classList.add('hidden');ui.phase.textContent='모양을 눌러 단서와 비교해 봐!';
 }
 function setupLevelUi(){
- const l=state.level;ui.badge.textContent=l.chapter;ui.badge.style.color=l.chapter.includes('선택')?'var(--pink)':l.chapter.includes('반복')||l.chapter.includes('종합')?'var(--amber)':'var(--cyan)';
- ui.title.textContent=l.owner+'의 패턴';ui.counter.textContent=l.id+' / '+LEVELS.length;ui.ownerAvatar.textContent=l.avatar;ui.ownerLabel.textContent=l.owner+'의 휴대폰';ui.attempt.textContent='도전 1';ui.mission.textContent=l.mission;
+ const l=state.level;ui.badge.textContent=l.id<=2?'처음 도전':l.id<=6?'모양 탐정':l.id<=12?'추리 고수':'패턴 마스터';ui.badge.style.color=l.id<=6?'var(--cyan)':l.id<=12?'var(--pink)':'var(--amber)';
+ ui.title.textContent=l.owner+'의 패턴';ui.counter.textContent=l.id+' / '+LEVELS.length;ui.ownerAvatar.textContent=l.avatar;ui.ownerLabel.textContent=l.owner+'의 휴대폰';ui.attempt.textContent='도전 1';ui.mission.textContent='아래 모양을 눌러 보고, 단서와 맞는 패턴을 찾아 봐!';
 }
 
 function analyze(path,cols){
@@ -158,14 +158,11 @@ function generateBank(level){
    }
    if(item)add(item.path,item.structure);
  }
- return [...map.values()];
+ return shuffle([...map.values()],rng);
 }
 function descriptor(kind,index=null){return{id:index==null?kind:kind+':'+index,kind,index}}
 function cluePool(level){
- const base=['points','diagonals','turns','startType','endType','straight','corners','center','firstDir','lastDir','startExact','endExact','sequenceCount'];
- if(level.chapter.includes('선택'))base.splice(3,0,'choiceCount');
- if(level.chapter.includes('반복')||level.chapter.includes('종합'))base.splice(3,0,'repeatCount','repeatUnit');
- if(level.chapter.includes('종합'))base.splice(3,0,'choiceCount');
+ const base=['points','diagonals','turns','startType','endType','straight','corners','center','firstDir','lastDir','startExact','endExact'];
  const pool=base.map(k=>descriptor(k));
  for(let i=1;i<level.solution.length-1;i++)pool.push(descriptor('nodeAt',i));
  for(let i=0;i<level.solution.length-1;i++)pool.push(descriptor('dirAt',i));
@@ -180,7 +177,7 @@ function clueValue(desc,cand,level){
 function clueText(desc,target,level){
  const v=clueValue(desc,target,level);
  switch(desc.kind){
-   case'points':return'찍는 점은 모두 '+v+'개';case'diagonals':return'대각선 이동은 '+v+'번';case'turns':return'이동 방향이 바뀌는 순간은 '+v+'번';case'startType':return'시작점은 '+v+'에 있음';case'endType':return'마지막 점은 '+v+'에 있음';case'straight':return'가로·세로 이동은 '+v+'번';case'corners':return'모서리 점을 '+v+'개 사용함';case'center':return v?'한가운데 점을 지나감':'한가운데 점은 지나지 않음';case'firstDir':return'첫 이동 방향은 '+v;case'lastDir':return'마지막 이동 방향은 '+v;case'startExact':return'시작점은 '+locationName(v,level.grid[0]);case'endExact':return'마지막 점은 '+locationName(v,level.grid[0]);case'sequenceCount':return'순차 명령을 '+v+'회 사용함';case'choiceCount':return'선택 구조를 '+v+'회 사용함';case'repeatCount':return'반복 블록을 '+v+'회 실행함';case'repeatUnit':return v+'동작짜리 명령 묶음을 반복함';case'nodeAt':return(desc.index+1)+'번째로 찍는 점은 '+locationName(v,level.grid[0]);case'dirAt':return(desc.index+1)+'번째 이동 방향은 '+v;default:return'숨은 단서';
+   case'points':return'이어지는 점은 '+v+'개';case'diagonals':return'비스듬한 선은 '+v+'개';case'turns':return'방향을 바꾸는 곳은 '+v+'번';case'startType':return'시작점은 '+v+'에 있음';case'endType':return'마지막 점은 '+v+'에 있음';case'straight':return'가로·세로 이동은 '+v+'번';case'corners':return'모서리 점을 '+v+'개 사용함';case'center':return v?'한가운데 점을 지나감':'한가운데 점은 지나지 않음';case'firstDir':return'첫 이동 방향은 '+v;case'lastDir':return'마지막 이동 방향은 '+v;case'startExact':return'시작점은 '+locationName(v,level.grid[0]);case'endExact':return'마지막 점은 '+locationName(v,level.grid[0]);case'sequenceCount':return'순차 명령을 '+v+'회 사용함';case'choiceCount':return'선택 구조를 '+v+'회 사용함';case'repeatCount':return'반복 블록을 '+v+'회 실행함';case'repeatUnit':return v+'동작짜리 명령 묶음을 반복함';case'nodeAt':return(desc.index+1)+'번째로 찍는 점은 '+locationName(v,level.grid[0]);case'dirAt':return(desc.index+1)+'번째 이동 방향은 '+v;default:return'숨은 단서';
  }
 }
 function filterByClue(list,desc,target,level){const wanted=clueValue(desc,target,level);return list.filter(c=>clueValue(desc,c,level)===wanted)}
@@ -206,42 +203,83 @@ function chooseBalancedClue(list,pool,target,level,desired=12,minRemaining=4){
  return best;
 }
 function prepareDeduction(level){
- state.bank=generateBank(level);state.target=state.bank.find(c=>samePath(c.path,level.solution))||{path:[...level.solution],structure:{...level.structure}};
+ state.bank=generateBank(level);
+ state.target=state.bank.find(c=>samePath(c.path,level.solution))||{path:[...level.solution],structure:{...level.structure}};
  state.candidates=[...state.bank];state.revealed=[];state.available=cluePool(level);
- const addKind=kind=>{const d=state.available.find(x=>x.kind===kind);if(d)applyClue(d)};
- addKind('points');
- if(level.chapter.includes('기초'))addKind('sequenceCount');
- if(level.chapter.includes('선택')){addKind('choiceCount');addKind('sequenceCount')}
- if(level.chapter.includes('반복')||level.chapter.includes('종합'))addKind('repeatCount');
- if(level.chapter.includes('반복'))addKind('repeatUnit');
- while(state.candidates.length>20&&state.revealed.length<5){
-   const d=chooseBalancedClue(state.candidates,state.available,state.target,level,12,4);if(!d)break;applyClue(d);
+ const points=state.available.find(x=>x.kind==='points');if(points)applyClue(points);
+ // Start with a manageable number of visible choices instead of a wall of text.
+ const limit=level.id<=2?4:level.id<=6?6:level.id<=12?8:10;
+ while(state.candidates.length>limit&&state.revealed.length<11){
+   const current=state.candidates.length;
+   const options=state.available.map(d=>({d,count:filterByClue(state.candidates,d,state.target,level).length}))
+     .filter(x=>x.count>=2&&x.count<current)
+     .sort((a,b)=>Math.abs(a.count-limit)-Math.abs(b.count-limit));
+   const next=options[0]?.d||chooseBestClue(state.candidates,state.available,state.target,level,true);
+   if(!next)break;
+   applyClue(next);
  }
- renderClues();renderStructureChips();updateCandidateBadge();
+ renderClues();
 }
-function applyClue(desc){state.revealed.push(desc);state.available=state.available.filter(d=>d.id!==desc.id);state.candidates=filterByClue(state.candidates,desc,state.target,state.level)}
-function renderStructureChips(){
- const shown=new Set(state.revealed.map(d=>d.kind)),s=state.target.structure||{},items=[];
- if(shown.has('sequenceCount'))items.push('<span class="logic-chip seq">순차 <b>'+s.sequence+'회</b></span>');
- if(shown.has('choiceCount'))items.push('<span class="logic-chip choice">선택 <b>'+s.choice+'회</b></span>');
- if(shown.has('repeatCount'))items.push('<span class="logic-chip repeat">반복 <b>'+s.repeat+'회</b></span>');
- ui.chips.innerHTML=items.join('');
+function applyClue(desc){
+ state.revealed.push(desc);state.available=state.available.filter(d=>d.id!==desc.id);
+ state.candidates=filterByClue(state.candidates,desc,state.target,state.level);
 }
+function renderStructureChips(){ui.chips.innerHTML=''}
 function renderClues(){
  ui.clues.innerHTML=state.revealed.map((d,i)=>'<div class="clue-item"><span>'+(i+1)+'</span><b>'+clueText(d,state.target,state.level)+'</b></div>').join('');
- ui.clueBtn.disabled=state.candidates.length<=1||!state.available.length;ui.clueBtn.textContent=state.candidates.length<=1?'후보가 1개예요':'🔎 단서 하나 더';
- renderStructureChips();updateCandidateBadge();
+ ui.clueBtn.disabled=state.candidates.length<=1||!state.available.length;
+ ui.clueBtn.textContent=state.candidates.length<=1?'마지막 모양 발견!':'💡 힌트 보기';
+ if(state.selectedKey&&!state.candidates.some(c=>pathKey(c.path)===state.selectedKey)){
+   state.selectedKey=null;state.path=[];state.cursor=null;renderPlayerPath();
+ }
+ if(state.mode==='campaign')ui.attempt.textContent='도전 '+(state.attempts+1)+' · '+'★'.repeat(rating());
+ updateCandidateBadge();renderCandidates();
 }
-function updateCandidateBadge(){ui.candidate.textContent='후보 '+state.candidates.length+'개';ui.candidate.classList.toggle('one',state.candidates.length===1)}
-
+function updateCandidateBadge(){
+ ui.candidate.textContent='남은 모양 '+state.candidates.length+'개';
+ ui.candidate.classList.toggle('one',state.candidates.length===1);
+}
+function candidateSvg(path,cols){
+ const pad=12,side=80,step=(side-pad*2)/(cols-1);
+ const xy=i=>[pad+(i%cols)*step,pad+Math.floor(i/cols)*step];
+ const all=Array.from({length:cols*cols},(_,i)=>xy(i));
+ const line=path.map(i=>xy(i).join(',')).join(' ');
+ const circles=all.map(([x,y])=>'<circle cx="'+x+'" cy="'+y+'" r="3.7" fill="#607d98"/>').join('');
+ const ends=path.map((i,j)=>{const [x,y]=xy(i);return '<circle cx="'+x+'" cy="'+y+'" r="'+(j===0?5.6:3.4)+'" fill="'+(j===0?'#a0ffd0':'#e6fbff')+'"/>'}).join('');
+ return '<svg viewBox="0 0 80 80" role="img" aria-label="패턴 모양"><polyline points="'+line+'" fill="none" stroke="#5ce1e6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>'+circles+ends+'</svg>';
+}
+function renderCandidates(){
+ if(state.mode==='free-create'){ui.candidatePanel.classList.add('hidden');return}
+ ui.candidatePanel.classList.remove('hidden');
+ const count=state.candidates.length;
+ ui.candidateGuide.textContent=count===1?'이 모양을 눌러서 열어 봐!':'모양을 눌러 크게 보고, 옆으로 넘겨 봐 →';
+ ui.candidateGallery.innerHTML='';
+ const cols=state.level.grid[0];
+ state.candidates.forEach((candidate,index)=>{
+   const key=pathKey(candidate.path),selected=key===state.selectedKey;
+   const button=document.createElement('button');
+   button.type='button';button.className='candidate-option'+(selected?' selected':'');
+   button.setAttribute('aria-pressed',String(selected));
+   button.setAttribute('aria-label',(index+1)+'번 후보 패턴 선택, 점 '+candidate.path.length+'개');
+   button.innerHTML='<span class="candidate-number">모양 '+(index+1)+'</span>'+candidateSvg(candidate.path,cols)+'<span class="candidate-points">점 '+candidate.path.length+'개</span>';
+   button.addEventListener('click',()=>{
+     state.path=[...candidate.path];state.cursor=candidate.path[candidate.path.length-1];
+     state.selectedKey=key;renderPlayerPath();
+     ui.candidateGallery.querySelectorAll('.candidate-option').forEach(b=>{const on=b===button;b.classList.toggle('selected',on);b.setAttribute('aria-pressed',String(on))});
+     ui.phase.textContent='좋아! 단서와 맞는지 보고 잠금을 풀어 봐';
+     toast((index+1)+'번 모양을 골랐어!');ui.wrap.scrollIntoView?.({behavior:'smooth',block:'center'});
+   });
+   ui.candidateGallery.appendChild(button);
+ });
+}
 function freeCreate(){
- state.mode='free-create';state.level={id:99,chapter:'친구 문제',owner:'나',avatar:'😎',grid:[4,4],solution:[],structure:{sequence:0,choice:0,repeat:0,unit:0},mission:'4개 이상의 점을 이어 비밀 패턴을 만드세요.'};state.path=[];state.freePattern=null;state.attempts=0;state.extraClues=0;state.cursor=null;
- ui.menu.classList.add('hidden');ui.game.classList.remove('hidden');ui.success.classList.add('hidden');ui.handoff.classList.add('hidden');ui.badge.textContent='출제';ui.badge.style.color='var(--green)';ui.title.textContent='내 비밀 패턴';ui.counter.textContent='FREE';ui.ownerAvatar.textContent='😎';ui.ownerLabel.textContent='내 휴대폰';ui.phase.textContent='친구가 못 보게 패턴을 만드세요';ui.attempt.textContent='출제 중';ui.candidate.textContent='정답 만들기';ui.candidate.classList.remove('one');ui.mission.textContent=state.level.mission;ui.chips.innerHTML='';ui.clues.innerHTML='';ui.feedback.classList.add('hidden');ui.savePattern.classList.remove('hidden');ui.savePattern.disabled=true;ui.clueBtn.classList.add('hidden');ui.submit.classList.add('hidden');ui.tip.textContent='패턴을 만든 뒤 “이 패턴을 비밀 문제로 내기”를 누르세요.';buildBoard();renderPlayerPath();
+ state.mode='free-create';state.level={id:99,chapter:'친구 문제',owner:'나',avatar:'😎',grid:[4,4],solution:[],structure:{sequence:0,choice:0,repeat:0,unit:0},mission:'4개 이상의 점을 이어 비밀 패턴을 만드세요.'};state.path=[];state.freePattern=null;state.attempts=0;state.extraClues=0;state.cursor=null;state.selectedKey=null;state.tried=new Set();
+ ui.menu.classList.add('hidden');ui.game.classList.remove('hidden');ui.success.classList.add('hidden');ui.handoff.classList.add('hidden');ui.badge.textContent='출제';ui.badge.style.color='var(--green)';ui.title.textContent='내 비밀 패턴';ui.counter.textContent='FREE';ui.ownerAvatar.textContent='😎';ui.ownerLabel.textContent='내 휴대폰';ui.phase.textContent='친구가 못 보게 패턴을 만드세요';ui.attempt.textContent='출제 중';ui.candidate.textContent='정답 만들기';ui.candidate.classList.remove('one');ui.mission.textContent=state.level.mission;ui.chips.innerHTML='';ui.clues.innerHTML='';ui.feedback.classList.add('hidden');ui.candidatePanel.classList.add('hidden');ui.savePattern.classList.remove('hidden');ui.savePattern.disabled=true;ui.clueBtn.classList.add('hidden');ui.submit.classList.add('hidden');ui.tip.textContent='패턴을 만든 뒤 “이 패턴을 비밀 문제로 내기”를 누르세요.';buildBoard();renderPlayerPath();
 }
 function beginFreeHandoff(){if(state.path.length<4)return;state.freePattern=[...state.path];ui.handoff.classList.remove('hidden')}
 function beginFreeVerify(){
- const sol=[...state.freePattern],structure=deriveStructure(sol,4);state.mode='free-verify';state.level={id:1001,chapter:'친구 추리',owner:'친구',avatar:'🕵️',grid:[4,4],solution:sol,structure,mission:'친구가 만든 정답은 끝까지 숨겨져 있어요. 단서와 후보 수만 보고 맞혀 보세요.'};state.path=[];state.attempts=0;state.extraClues=0;state.cursor=null;
- ui.handoff.classList.add('hidden');ui.badge.textContent='친구 추리';ui.badge.style.color='var(--green)';ui.title.textContent='친구의 비밀 패턴';ui.ownerAvatar.textContent='🕵️';ui.ownerLabel.textContent='친구의 휴대폰';ui.phase.textContent='정답은 안 보여요. 단서만 보고 추리!';ui.attempt.textContent='도전 1';ui.mission.textContent=state.level.mission;ui.savePattern.classList.add('hidden');ui.clueBtn.classList.remove('hidden');ui.submit.classList.remove('hidden');ui.tip.textContent='예상 패턴을 수정한 뒤 제출하세요.';buildBoard();prepareDeduction(state.level);renderPlayerPath();ui.feedback.classList.add('hidden');
+ const sol=[...state.freePattern],structure=deriveStructure(sol,4);state.mode='free-verify';state.level={id:1001,chapter:'친구 추리',owner:'친구',avatar:'🕵️',grid:[4,4],solution:sol,structure,mission:'친구가 만든 정답은 끝까지 숨겨져 있어요. 단서와 후보 수만 보고 맞혀 보세요.'};state.path=[];state.attempts=0;state.extraClues=0;state.cursor=null;state.selectedKey=null;state.tried=new Set();
+ ui.handoff.classList.add('hidden');ui.badge.textContent='친구 추리';ui.badge.style.color='var(--green)';ui.title.textContent='친구의 비밀 패턴';ui.ownerAvatar.textContent='🕵️';ui.ownerLabel.textContent='친구의 휴대폰';ui.phase.textContent='정답은 안 보여요. 단서만 보고 추리!';ui.attempt.textContent='도전 1';ui.mission.textContent='아래 모양 중 친구가 만든 비밀 패턴을 찾아 봐!';ui.savePattern.classList.add('hidden');ui.clueBtn.classList.remove('hidden');ui.submit.classList.remove('hidden');ui.tip.textContent='모양을 고르거나 직접 그린 다음 잠금을 풀어 봐.';buildBoard();prepareDeduction(state.level);renderPlayerPath();ui.feedback.classList.add('hidden');
 }
 
 function buildBoard(){
@@ -253,20 +291,20 @@ function updateNodes(){ui.board.querySelectorAll('.node').forEach(n=>{const idx=
 function pointsString(path){return path.map(i=>state.positions[i].x+','+state.positions[i].y).join(' ')}
 function drawPath(path){const pts=pointsString(path);ui.trace.setAttribute('points',pts);ui.traceShadow.setAttribute('points',pts);updateNodes()}
 function renderPlayerPath(){
- drawPath(state.path);ui.moves.textContent=state.path.length+'개 점';ui.algorithm.textContent=state.path.length?directionsText(state.path):(state.mode==='free-create'?'첫 점을 골라 비밀 패턴을 만드세요.':'단서를 읽고 시작점을 골라 보세요.');
+ drawPath(state.path);ui.moves.textContent=state.path.length+'개 점';ui.algorithm.textContent=state.path.length?directionsText(state.path):(state.mode==='free-create'?'첫 점을 골라 비밀 패턴을 만드세요.':'위에서 모양을 고르거나 직접 선을 그려 봐.');
  ui.submit.disabled=state.path.length<2;if(state.mode==='free-create')ui.savePattern.disabled=state.path.length<4;
 }
 function directions(path){const out=[];for(let i=1;i<path.length;i++){const a=state.positions[path[i-1]],b=state.positions[path[i]],dr=Math.sign(b.r-a.r),dc=Math.sign(b.c-a.c);out.push(dirSymbol(dr,dc))}return out}
 function directionsText(path){const d=directions(path);return d.length?d.join(' '):'시작'}
 function alignedStep(a,b){const A=state.positions[a],B=state.positions[b],dr=B.r-A.r,dc=B.c-A.c;if(!dr&&!dc)return null;if(!(dr===0||dc===0||Math.abs(dr)===Math.abs(dc)))return null;return{sr:Math.sign(dr),sc:Math.sign(dc),steps:Math.max(Math.abs(dr),Math.abs(dc))}}
 function appendToward(idx){
- if(idx==null||idx<0||idx>=state.positions.length)return false;if(!state.path.length){state.path.push(idx);state.cursor=idx;sound('click');renderPlayerPath();return true}
+ if(idx==null||idx<0||idx>=state.positions.length)return false;state.selectedKey=null;ui.candidateGallery.querySelectorAll('.candidate-option').forEach(b=>{b.classList.remove('selected');b.setAttribute('aria-pressed','false')});if(!state.path.length){state.path.push(idx);state.cursor=idx;sound('click');renderPlayerPath();return true}
  const last=state.path[state.path.length-1];if(idx===last)return true;if(state.path.includes(idx))return false;const step=alignedStep(last,idx);if(!step)return false;const A=state.positions[last],cols=state.level.grid[0];let r=A.r,c=A.c,added=false;
  for(let k=0;k<step.steps;k++){r+=step.sr;c+=step.sc;const j=r*cols+c;if(state.path.includes(j))return added;state.path.push(j);state.cursor=j;added=true}
  if(added){sound('click');renderPlayerPath()}return added;
 }
-function undo(){if(!state.path.length)return;state.path.pop();state.cursor=state.path[state.path.length-1]??null;sound('click');renderPlayerPath()}
-function resetPath(){state.path=[];state.cursor=null;sound('click');renderPlayerPath();toast(state.mode==='free-create'?'새 비밀 패턴을 만들어 보세요.':'새 예상 패턴을 그려 보세요.')}
+function undo(){if(!state.path.length)return;state.selectedKey=null;state.path.pop();state.cursor=state.path[state.path.length-1]??null;sound('click');renderPlayerPath()}
+function resetPath(){state.path=[];state.cursor=null;state.selectedKey=null;sound('click');renderPlayerPath();toast(state.mode==='free-create'?'새 비밀 패턴을 만들어 보세요.':'새 예상 패턴을 그려 보세요.')}
 function toast(msg){ui.toast.textContent=msg;ui.toast.classList.add('show');clearTimeout(state.lastToast);state.lastToast=setTimeout(()=>ui.toast.classList.remove('show'),1600)}
 
 function comparison(guess,target,cols){
@@ -275,20 +313,33 @@ function comparison(guess,target,cols){
  for(let i=1;i<limit;i++)if(guess[i-1]===target[i-1]&&guess[i]===target[i])sameEdges++;
  return{pointsDelta:ga.points-ta.points,diagDelta:ga.diagonals-ta.diagonals,sameOrder,sameEdges,start:guess[0]===target[0],end:guess[guess.length-1]===target[target.length-1]};
 }
-function feedbackKey(f){return[f.pointsDelta,f.diagDelta,f.sameOrder,f.sameEdges,f.start?1:0,f.end?1:0].join('|')}
 function filterByFeedback(list,guess,target,cols){
- const wanted=feedbackKey(comparison(guess,target,cols));
- return list.filter(c=>feedbackKey(comparison(guess,c.path,cols))===wanted);
+ const rest=list.filter(c=>!samePath(c.path,guess));
+ if(rest.length<=1)return{candidates:rest,tip:'틀린 모양 하나를 지웠어!'};
+ const actual=comparison(guess,target,cols);
+ const checks=[
+   {value:f=>f.start,text:v=>'첫 점이 '+(v?'같아!':'달라!')},
+   {value:f=>f.end,text:v=>'끝 점이 '+(v?'같아!':'달라!')},
+   {value:f=>f.diagDelta,text:v=>'비스듬한 선이 '+(v===0?'같은 개수야':Math.abs(v)+'개 '+(v>0?'더 많아':'더 적어'))},
+   {value:f=>f.sameOrder,text:v=>'순서가 같은 점이 '+v+'개야'},
+   {value:f=>f.sameEdges,text:v=>'똑같이 이어진 선이 '+v+'개야'}
+ ];
+ const choices=checks.map(check=>{
+   const value=check.value(actual);
+   const candidates=rest.filter(c=>check.value(comparison(guess,c.path,cols))===value);
+   return{candidates,tip:check.text(value)};
+ }).filter(c=>c.candidates.length>=2&&c.candidates.length<rest.length);
+ choices.sort((a,b)=>Math.abs(a.candidates.length-Math.ceil(rest.length/2))-Math.abs(b.candidates.length-Math.ceil(rest.length/2)));
+ return choices[0]||{candidates:rest,tip:'방금 골랐던 모양은 정답이 아니야'};
 }
-function signedText(delta,unit){if(delta===0)return unit+' 정확';return delta<0?unit+' '+Math.abs(delta)+' 부족':unit+' '+delta+' 많음'}
-function showFeedback(guess){
- const c=comparison(guess,state.level.solution,state.level.grid[0]),items=[signedText(c.pointsDelta,'점'),signedText(c.diagDelta,'대각선'),'같은 순서의 점 '+c.sameOrder+'개','같은 선분 '+c.sameEdges+'개','시작점 '+(c.start?'일치':'불일치'),'끝점 '+(c.end?'일치':'불일치')];
- ui.feedback.innerHTML='<strong>도전 '+state.attempts+' 비교</strong><div>'+items.map(v=>'<span>'+v+'</span>').join('')+'</div>';ui.feedback.classList.remove('hidden');
+function showFeedback(tip){
+ ui.feedback.innerHTML='<strong>아깝다! 다른 모양을 찾아보자.</strong><div><span>'+tip+'</span></div>';
+ ui.feedback.classList.remove('hidden');
 }
 function finishAttempt(){
  if(state.mode==='free-create'||state.path.length<2)return;const guess=[...state.path],target=state.level.solution;if(samePath(guess,target)){complete();return}
- state.attempts++;sound('wrong');navigator.vibrate?.([45,25,45]);showFeedback(guess);state.candidates=filterByFeedback(state.candidates,guess,target,state.level.grid[0]);if(!state.candidates.some(c=>samePath(c.path,target)))state.candidates.unshift(state.target);
- ui.wrap.classList.add('failed');ui.attempt.textContent='도전 '+(state.attempts+1);ui.phase.textContent='오답 정보로 후보가 더 줄었어요';updateCandidateBadge();renderClues();toast('후보가 '+state.candidates.length+'개로 줄었어요.');
+ state.attempts++;state.tried.add(pathKey(guess));sound('wrong');navigator.vibrate?.([45,25,45]);const result=filterByFeedback(state.candidates,guess,target,state.level.grid[0]);showFeedback(result.tip);state.candidates=result.candidates;if(!state.candidates.some(c=>samePath(c.path,target)))state.candidates.unshift(state.target);
+ ui.wrap.classList.add('failed');ui.attempt.textContent='도전 '+(state.attempts+1);ui.phase.textContent='괜찮아! 틀린 모양이 사라졌어';state.selectedKey=null;renderClues();toast('남은 모양 '+state.candidates.length+'개! 다시 골라 봐.');
  setTimeout(()=>{ui.wrap.classList.remove('failed');state.path=[];state.cursor=null;renderPlayerPath()},520);
 }
 function revealClue(){
@@ -303,19 +354,19 @@ function revealClue(){
    if(score<bestScore){d=clue;bestScore=score}
  }
  if(!d)d=chooseBestClue(state.candidates,state.available,state.target,state.level,true);
- if(!d)return;state.extraClues++;applyClue(d);sound('click');renderClues();ui.phase.textContent='새 단서로 후보를 더 좁혔어요';toast('후보가 '+state.candidates.length+'개로 줄었어요.');
+ if(!d)return;state.extraClues++;applyClue(d);sound('click');renderClues();ui.phase.textContent='힌트를 보고 남은 모양을 살펴봐';toast('남은 모양 '+state.candidates.length+'개!');
 }
-function rating(){const cost=state.attempts+state.extraClues;if(cost<=1)return 3;if(cost<=4)return 2;return 1}
+function rating(){const cost=state.attempts+state.extraClues;if(cost===0)return 3;if(cost<=2)return 2;return 1}
 function answerSummary(l){const a=analyze(l.solution,l.grid[0]);return directionsText(l.solution)+' · '+a.points+'점 · 대각선 '+a.diagonals+'번'}
 function complete(){
  sound('correct');navigator.vibrate?.([35,35,70]);
  if(state.mode==='campaign'){
    const l=state.level,r=rating();save.stars[l.id]=Math.max(Number(save.stars[l.id])||0,r);if(l.id<LEVELS.length)save.unlocked=Math.max(save.unlocked,l.id+1);persist();sdkScore();
    ui.resultEye.textContent=l.owner+'의 비밀 패턴 발견';ui.resultTitle.textContent=l.id===LEVELS.length?'패턴 락 마스터!':'잠금 해제!';ui.earned.textContent='★'.repeat(r)+'☆'.repeat(3-r);
-   ui.resultMsg.textContent=state.attempts===0?'후보를 논리적으로 줄여 첫 예상에 맞혔어요!':'정답을 본 적 없이 단서와 비교 정보만으로 패턴을 찾아냈어요.';
-   ui.resultAlg.textContent=answerSummary(l);ui.concept.textContent='순차·선택·반복은 실제 비밀 알고리즘의 구조이고, 단서는 그 구조와 경로의 특징을 조금씩 공개합니다.';ui.next.textContent=l.id===LEVELS.length?'처음 화면으로':'다음 사람';sdkStageClear(l.id,'campaign');
+   ui.resultMsg.textContent=state.attempts===0?'우와! 첫 도전에 비밀 패턴을 찾았어!':'틀려도 포기하지 않고 단서를 비교해서 찾았어!';
+   ui.resultAlg.textContent=answerSummary(l);ui.concept.textContent='시작점, 선의 방향, 점의 순서를 잘 살피면 비슷한 모양도 구별할 수 있어!';ui.next.textContent=l.id===LEVELS.length?'처음 화면으로':'다음 사람';sdkStageClear(l.id,'campaign');
  }else{
-   ui.resultEye.textContent='친구의 비밀 패턴 발견';ui.resultTitle.textContent='친구 패턴 해제!';ui.earned.textContent='🔓';ui.resultMsg.textContent='정답을 직접 보지 않고 자동 생성된 후보와 단서만으로 맞혔어요.';ui.resultAlg.textContent=answerSummary(state.level);ui.concept.textContent='친구가 만든 패턴도 게임이 특징을 분석하고 가짜 후보를 생성해 하나의 추리 문제로 바꿉니다.';ui.next.textContent='새 패턴 내기';sdkStageClear('friend','friend');
+   ui.resultEye.textContent='친구의 비밀 패턴 발견';ui.resultTitle.textContent='친구 패턴 해제!';ui.earned.textContent='🔓';ui.resultMsg.textContent='친구의 비밀 패턴을 찾아냈어!';ui.resultAlg.textContent=answerSummary(state.level);ui.concept.textContent='다른 패턴을 만들어서 친구와 역할을 바꿔 보자!';ui.next.textContent='새 패턴 내기';sdkStageClear('friend','friend');
  }
  ui.success.classList.remove('hidden');burst();
 }
@@ -346,7 +397,7 @@ function keyboardDraw(dr,dc){const cols=state.level.grid[0],rows=state.level.gri
 $('continueBtn').addEventListener('click',()=>startLevel(state.levelIndex));
 $('freeBtn').addEventListener('click',freeCreate);
 $('helpBtn').addEventListener('click',()=>ui.tutorial.classList.remove('hidden'));
-$('tutorialCloseBtn').addEventListener('click',()=>{save.tutorialSeen=true;persist();ui.tutorial.classList.add('hidden')});
+$('tutorialCloseBtn').addEventListener('click',()=>{save.tutorialSeen=true;save.guideV6=true;persist();ui.tutorial.classList.add('hidden')});
 $('backBtn').addEventListener('click',showMenu);
 $('undoBtn').addEventListener('click',undo);
 $('resetBtn').addEventListener('click',resetPath);
@@ -359,5 +410,5 @@ $('nextBtn').addEventListener('click',()=>{ui.success.classList.add('hidden');if
 addEventListener('blur',()=>{state.dragging=false;state.pointerId=null});
 
 function updateClock(){const d=new Date(),h=String(d.getHours()).padStart(2,'0'),m=String(d.getMinutes()).padStart(2,'0');$('clock').textContent=h+':'+m}
-updateClock();setInterval(updateClock,30000);renderMenu();if(!save.tutorialSeen)ui.tutorial.classList.remove('hidden');
+updateClock();setInterval(updateClock,30000);renderMenu();if(!save.guideV6)ui.tutorial.classList.remove('hidden');
 })();
