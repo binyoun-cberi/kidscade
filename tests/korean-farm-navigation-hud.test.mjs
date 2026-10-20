@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {cameraRelativeInput,farmerHeading,facingDirection,shouldTurnBeforeWalk,headingDifference,rotateToward,walkPlayer} from '../games/korean-farm/interactions/navigation.mjs';
+import {cameraRelativeInput,farmerHeading,facingDirection,shouldTurnBeforeWalk,headingDifference,rotateToward,walkPlayer,nearestWalkablePoint,planNavigationRoute} from '../games/korean-farm/interactions/navigation.mjs';
 import {VILLAGE_COLLIDERS} from '../games/korean-farm/rendering/village-layout.mjs';
 import {fieldStatusIndicators} from '../games/korean-farm/farming/field-status.mjs';
+import {FIELD_DEFS} from '../games/korean-farm/world.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const html=fs.readFileSync(path.join(ROOT,'games/korean-farm/index.html'),'utf8');
 const game=fs.readFileSync(path.join(ROOT,'games/korean-farm/game.js'),'utf8');
@@ -106,6 +107,44 @@ test('click-to-walk auto motion clamps the last frame without overshooting',()=>
   near(result.x,.11);
   near(result.z,0);
   assert.ok(result.moving);
+});
+test('waypoint navigation reaches village services from every field and another service',()=>{
+  const market={x:8.5,z:15.25},home={x:9.9,z:-10.05},compost={x:4.2,z:-10.35};
+  const starts=[...FIELD_DEFS.map(p=>({x:p.x,z:p.z+p.d/2+1})),market,home,compost,{x:-5,z:3}];
+  for(const from of starts)for(const destination of [market,home,compost]){
+    const route=planNavigationRoute(from,destination,VILLAGE_COLLIDERS);
+    assert.ok(route?.length, `No route from ${JSON.stringify(from)} to ${JSON.stringify(destination)}`);
+    let position={...from},point=0;
+    for(let frame=0;frame<3600&&point<route.length;frame++){
+      const waypoint=route[point],distance=Math.hypot(waypoint.x-position.x,waypoint.z-position.z);
+      if(distance<.34){point++;continue}
+      position=walkPlayer(position,{x:(waypoint.x-position.x)/distance,z:(waypoint.z-position.z)/distance},
+        1/30,{goalDistance:distance,bounds:21.7,obstacles:VILLAGE_COLLIDERS});
+    }
+    assert.equal(point,route.length,
+      `Route blocked from ${JSON.stringify(from)} to ${JSON.stringify(destination)}: ${JSON.stringify({route,position})}`);
+  }
+});
+test('trapped saved position is recovered and unreachable destinations fail safely',()=>{
+  const homeCollider=VILLAGE_COLLIDERS.find(p=>Math.hypot(p.x-9.9,p.z+10.82)<5);
+  assert.ok(homeCollider,'Home collider should exist');
+  const position={x:homeCollider.x,z:homeCollider.z};
+  const rescued=nearestWalkablePoint(position,VILLAGE_COLLIDERS);
+  assert.ok(rescued&&Math.hypot(position.x-rescued.x,position.z-rescued.z)>.1);
+  assert.ok(!VILLAGE_COLLIDERS.some(o=>Math.abs(rescued.x-o.x)<o.w/2+.45&&Math.abs(rescued.z-o.z)<o.d/2+.45));
+  assert.equal(planNavigationRoute({x:-5,z:3},position,VILLAGE_COLLIDERS),null);
+  assert.equal(planNavigationRoute(position,{x:0,z:9},VILLAGE_COLLIDERS),null);
+  assert.match(game,/if\(navigationStall>1\.8\)/);
+  assert.match(game,/nearestWalkablePoint\(state\.player,obstacles,bounds\)/);
+});
+test('rice planting supports touch anywhere on the chosen paddy and WebGL errors explain recovery',()=>{
+  assert.match(game,/raycaster\.ray\.intersectPlane\(plantingPlane,point\)/);
+  assert.match(game,/seedlingAtPoint\(plot,point\)/);
+  assert.match(html,/id="loadingDetail"/);
+  assert.match(html,/id="retryLoad"/);
+  assert.match(game,/\$\('loading'\)\.classList\.add\('failed'\)/);
+  assert.match(game,/브라우저의 하드웨어 가속/);
+  assert.match(css,/#loading\.failed \.spinner\{display:none\}/);
 });
 test('farm HUD has four primary buttons, optional tools and proper mobile-safe sheet',()=>{
   const tools=html.match(/<nav id="bottomBar"[^>]*>([\s\S]*?)<\/nav>/)?.[1]||'';

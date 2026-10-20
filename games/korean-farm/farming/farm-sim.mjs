@@ -140,7 +140,6 @@ export function canApplyFarmAction(state,id,action){
   }
   if(action==='water'&&f.kind==='rice')return {ok:false,message:'논은 물꼬를 열어 물을 관리해요.'};
   if(action==='gate'&&f.kind!=='rice')return {ok:false,message:'물꼬는 논에서만 조절할 수 있어요.'};
-  if(action==='fertilize'&&!state.inventory.fertilizer)return {ok:false,message:'퇴비가 다 떨어졌어요.'};
   if(action==='fertilize'&&!state.inventory.fertilizer)return {ok:false,message:'퇴비 주머니가 비었어요. 거름 더미에서 퇴비를 퍼 오세요.'};
   if(action==='harvest'&&(!f.planted||f.growth<.999))
     return {ok:false,message:'아직 익지 않았어요. 생육 상태를 살펴보세요.'};
