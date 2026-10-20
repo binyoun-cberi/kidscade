@@ -75,7 +75,7 @@
       let exit=0;
       for(let i=1;i<COUNT;i++)if(fromStart[i]>fromStart[exit])exit=i;
       const ranked=Array.from({length:COUNT},(_,i)=>i)
-        .filter(i=>i!==0&&i!==exit).sort((a,b)=>fromStart[b]-fromStart[a]+(rng()-.5)*.01);
+        .filter(i=>i!==0&&i!==exit).sort((a,b)=>fromStart[b]-fromStart[a]||a-b);
       const stations=[];
       for(const i of ranked){
         if(stations.every(v=>distances(links,v)[i]>=19)&&fromStart[i]>=18)stations.push(i);
