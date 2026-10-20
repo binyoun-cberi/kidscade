@@ -31,10 +31,56 @@
     ['다음에 또 만나', [['morning','아침','🌅'],['night','밤','🌙'],['tomorrow','내일','📅']], 'See you tomorrow.', '내일 만나요.', '친구와 내일 다시 만나기로 했어요.', 'See you tomorrow.', ['Good morning!','Good night!']]
   ];
   const lessons = rows.map((r,i) => ({ id:'lesson-'+(i+1), index:i, zone:Math.floor(i/6), title:r[0], words:r[1].map(([en,ko,icon])=>({en,ko,icon})), sentence:r[2], translation:r[3], dialogue:r[4], response:r[5], distractors:r[6] }));
+  const bank=typeof window==='undefined'?require('./arcade-bank.js'):window.DailyEnglishArcadeBank;
+  if(!bank||!Array.isArray(bank.engWords)||!Array.isArray(bank.engSentences)) throw new Error('English arcade bank is missing');
+  const expanded=[
+    ['engWords',0,.18,'사람과 생활','👨‍👩‍👧','사람과 일상을 이야기해요.'],
+    ['engWords',.18,.36,'먹고 마시기','🍎','맛있는 것들을 영어로 표현해요.'],
+    ['engWords',.36,.56,'세상과 자연','🌿','주변의 자연과 사물을 발견해요.'],
+    ['engWords',.56,.78,'학교와 하루','🏫','학교와 하루의 활동을 알아봐요.'],
+    ['engWords',.78,1,'시간·날씨·표현','🌤️','시간과 기분을 영어로 전해요.'],
+    ['engSentences',0,.52,'문장 첫걸음','💬','단어를 이어서 한 문장을 완성해요.'],
+    ['engSentences',.52,1,'문장 탐험','🚀','더 긴 문장도 자신 있게 이야기해요.']
+  ];
+  expanded.forEach(([source,from,to,name,icon,story],zi)=>{
+    const items=bank[source],start=Math.round(items.length*from),end=Math.round(items.length*to);
+    const zoneIndex=zones.length;
+    zones.push({name,icon,color:'#75a8d0',friend:'토리',animal:'rabbit',story,advanced:true});
+    for(let offset=start;offset<end;offset+=8){
+      // Short final packs reuse a few expressions from the previous pack so
+      // every lesson still has eight questions and remains compatible with saves.
+      const upper=Math.min(end,offset+8),lower=Math.max(start,upper-8);
+      const entries=items.slice(lower,upper).map((item,i)=>({en:item.word,ko:item.desc,icon:source==='engWords'?'📘':'💬',key:`${source}:${lower+i}`,source}));
+      const index=lessons.length;
+      lessons.push({id:'lesson-'+(index+1),index,zone:zoneIndex,title:`${name} ${Math.floor((offset-start)/8)+1}`,words:entries.slice(0,3),sentence:entries[0].en,translation:entries[0].ko,entries,advanced:true});
+    }
+  });
   const shuffle = (a, random=Math.random) => { const b=[...a]; for(let i=b.length-1;i>0;i--){ const j=Math.floor(random()*(i+1)); [b[i],b[j]]=[b[j],b[i]]; } return b; };
+  const allWords=[...bank.engWords,...bank.engSentences];
+  function expansionQuestions(lesson,random){
+    const pickOptions=(answer,field,source)=>{
+      const choices=[answer],pool=shuffle(bank[source].map(x=>x[field]),random);
+      for(const value of pool){if(choices.length>=4)break;if(value!==answer&&!choices.includes(value))choices.push(value);}
+      return shuffle(choices,random);
+    };
+    return lesson.entries.map((item,i)=>{
+      const sentence=item.source==='engSentences';
+      const explain=`${item.en} · ${item.ko}`;
+      const base={legacyKey:item.key,explain};
+      if(sentence&&i%2===0){
+        const answer=item.en.replace(/[.,!?]/g,'').trim();
+        return {...base,kind:'order',prompt:'단어를 눌러 영어 문장을 완성해요.',display:item.ko,answer,tokens:shuffle(answer.split(/\s+/),random)};
+      }
+      if(!sentence&&i%4===2&&/^[a-z]+$/i.test(item.en))return {...base,kind:'spell',prompt:'글자를 눌러 영어 단어를 완성해요.',display:item.ko,answer:item.en,tokens:shuffle(item.en.split(''),random)};
+      if(i%3===1)return {...base,kind:'listen',prompt:'소리를 듣고 알맞은 뜻을 골라요.',speech:item.en,answer:item.ko,options:pickOptions(item.ko,'desc',item.source)};
+      if(i%3===0)return {...base,kind:'choice',prompt:'영어 표현의 뜻을 찾아요.',display:item.en,answer:item.ko,options:pickOptions(item.ko,'desc',item.source)};
+      return {...base,kind:'choice',prompt:'알맞은 영어 표현을 골라요.',display:item.ko,answer:item.en,options:pickOptions(item.en,'word',item.source)};
+    });
+  }
   function questions(index, random=Math.random) {
     const l=lessons[index];
     if(!l) return [];
+    if(l.advanced)return expansionQuestions(l,random);
     const [a,b,c]=l.words;
     const pick=(word,reverse=false)=>({kind:'choice',prompt:reverse?'이 영어는 무슨 뜻일까요?':'알맞은 영어를 골라요.',display:reverse?word.en:word.ko,icon:word.icon,answer:reverse?word.ko:word.en,options:shuffle(l.words.map(w=>reverse?w.ko:w.en),random),explain:`${word.en} · ${word.ko}`});
     return [
@@ -46,5 +92,15 @@
       {...pick(c),prompt:'마지막 심부름! 이 물건이나 표현을 찾아요.'}
     ];
   }
-  return {zones,lessons,questions,shuffle};
+  function itemFromKey(key){
+    const match=/^(engWords|engSentences):(\d+)$/.exec(key||'');
+    if(!match)return null;
+    const raw=bank[match[1]][Number(match[2])];
+    return raw?{en:raw.word,ko:raw.desc,key,source:match[1]}:null;
+  }
+  function reviewQuestions(keys,random=Math.random){
+    const entries=[...new Set(keys)].map(itemFromKey).filter(Boolean).slice(0,8);
+    return entries.length===8?expansionQuestions({entries},random):[];
+  }
+  return {zones,lessons,questions,shuffle,reviewQuestions,itemFromKey,originalLessonCount:rows.length,arcadeItemCount:allWords.length};
 });

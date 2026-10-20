@@ -1,0 +1,25 @@
+/* The expanded English journey, shared progress, and free arcade. */
+.expanded-zone summary{display:flex;align-items:center;gap:14px;cursor:pointer;list-style:none;padding:0 2px;min-height:70px}
+.expanded-zone summary::-webkit-details-marker{display:none}
+.expanded-zone summary .zone-head{flex:1;min-width:0;margin:0}
+.expanded-zone summary .zone-count{font-size:12px;color:#52687b;font-weight:800;white-space:nowrap;border-radius:99px;background:#e9f3fc;padding:7px 10px}
+.expanded-zone summary::after{content:'⌄';font-size:20px;color:#5b758f;transition:transform .15s}
+.expanded-zone[open] summary::after{transform:rotate(180deg)}
+.expanded-zone:not([open]) .lesson-list{display:none}
+.expanded-zone .lesson-list{max-height:520px;overflow-y:auto;overscroll-behavior:contain;padding:6px 2px 10px}
+.aside-card #legacy-review,.aside-card #memory-start,.aside-card #listening-start{display:block;width:100%;margin-top:10px}
+.aside-card button:disabled{opacity:.52;cursor:not-allowed}
+.world-link{display:block;margin-top:15px;text-align:center;color:#2764a0;text-decoration:underline;text-underline-offset:4px;font-weight:800}
+.arcade-panel{max-width:720px;margin:32px auto 70px;padding:30px;background:#fff;border:1px solid #e3e9ec;border-radius:27px;box-shadow:0 18px 60px #233e4b14;text-align:center}
+.arcade-panel h1{margin:12px 0}
+#arcade-status{margin-bottom:25px;color:#4e6673;line-height:1.7;min-height:36px}
+.memory-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.memory-card{min-height:91px;padding:8px;border:2px solid #dfebf0;border-radius:15px;background:#e8f4fb;color:#315a77;font-size:18px;font-weight:850;overflow-wrap:anywhere}
+.memory-card.shown{background:#fff9e5;color:#34444b;border-color:#e8cc7b;font-size:15px}
+.memory-card:disabled{opacity:.65}
+.listen-arcade{display:block;border:none;background:#e2f2fb;color:#245b8c;padding:18px 30px;border-radius:17px;font-size:20px;font-weight:800;margin:0 auto 20px;cursor:pointer}
+.arcade-choice{display:block;width:100%;margin:10px 0;padding:14px;border:2px solid #dfe9ee;background:#fff;border-radius:15px;color:#243a4b;font-size:16px;font-weight:800;cursor:pointer}
+.arcade-choice.correct{border-color:#58b889;background:#e7fff1}
+.arcade-celebration{font-size:90px;padding:28px 0}
+#arcade-next{margin:25px auto 0}
+@media(max-width:600px){.expanded-zone summary{gap:6px}.expanded-zone summary .zone-count{font-size:10px;padding:5px 6px}.arcade-panel{margin:16px 0 45px;padding:18px}.memory-grid{gap:6px}.memory-card{min-height:74px;font-size:15px;padding:5px}.memory-card.shown{font-size:12px}}

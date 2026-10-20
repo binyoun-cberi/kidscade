@@ -17,8 +17,10 @@ const url=pathToFileURL(path.resolve(__dirname,'../games/daily_english/index.htm
     await page.clock.install({time:new Date('2026-10-20T06:00:00Z')});
     await page.goto(url);await page.evaluate(()=>{localStorage.clear();});await page.reload();
     await page.screenshot({path:path.join(out,'desktop.png'),fullPage:true});
-    assert.equal(await page.locator('.lesson-button').count(),18);
-    assert.equal(await page.locator('.lesson-button:disabled').count(),17);
+    const count=await page.evaluate(()=>DailyEnglishContent.lessons.length);
+    assert.ok(count>110);
+    assert.equal(await page.locator('.lesson-button').count(),count);
+    assert.equal(await page.locator('.lesson-button:disabled').count(),count-1);
     const read=()=>page.evaluate(k=>JSON.parse(localStorage.getItem(k)),KEY);
     async function solve(wrongFirst=false){
       await page.locator('#begin').click();
@@ -50,6 +52,16 @@ const url=pathToFileURL(path.resolve(__dirname,'../games/daily_english/index.htm
       if(i===5){assert.equal((await read()).energy,0);assert.match(await page.locator('#continue').textContent(),/연습/);}
     }
     let s=await read();assert.equal(s.streak,3);assert.equal(s.stickers.length,6);
+    await page.clock.setFixedTime(new Date('2026-10-23T06:00:00Z'));await page.reload();
+    await page.locator('#continue').click();assert.equal(await solve(),8);
+    s=await read();assert.equal(s.completed.length,19);
+    assert.equal(await page.evaluate(()=>{const p=JSON.parse(localStorage.getItem('languageArcadeLearningV2'));return Object.keys(p.items).some(k=>k.startsWith('engWords:'));}),true);
+    await page.locator('#memory-start').click();await page.locator('#arcade').waitFor({state:'visible'});
+    await page.screenshot({path:path.join(out,'memory.png'),fullPage:true});
+    await page.locator('#arcade-back').click();
+    await page.locator('#listening-start').click();await page.locator('#arcade').waitFor({state:'visible'});
+    await page.screenshot({path:path.join(out,'listening.png'),fullPage:true});
+    await page.locator('#arcade-back').click();
     // Reload keeps a paid entry and an unanswered session intact.
     await page.evaluate(k=>{const E=DailyEnglishEngine,s=E.fresh();s.energy=5;localStorage.setItem(k,JSON.stringify(s));},KEY);
     await page.reload();await page.locator('#continue').click();await page.reload();assert.equal((await read()).energy,0);
@@ -60,6 +72,6 @@ const url=pathToFileURL(path.resolve(__dirname,'../games/daily_english/index.htm
     await page.locator('#continue').click();await page.locator('#begin').click();await page.screenshot({path:path.join(out,'mobile-question.png'),fullPage:true});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     assert.deepEqual(errors,[]);
-    console.log('PASS: 18 lessons / 144 questions, three daily budgets, reload, energy exhaustion, free practice, streak, desktop/mobile. Screenshots: '+out);
+    console.log('PASS: 18 starter lessons, first expansion lesson, legacy mastery, free arcade, three daily budgets, reload, energy exhaustion, streak, desktop/mobile. Screenshots: '+out);
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
