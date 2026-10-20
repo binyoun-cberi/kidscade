@@ -625,8 +625,10 @@ function refreshHud(){
   $('energyLabel').textContent='기운 '+Math.round(state.energy);
   $('moneyLabel').textContent=formatWon(state.money);
   const festival=seasonalFestival(state);
-  $('festivalNotice').classList.toggle('hidden',!festival.open||festival.completed);
-  $('festivalNotice').textContent='🎏 '+festival.title+' · '+festival.daysLeft+'일 남음';
+  const activity=festivalActivity(state);
+  $('festivalNotice').classList.toggle('hidden',!festival.open||activity.completed);
+  $('festivalNotice').textContent=festival.completed?'🎏 '+festival.title+' · 체험 놀이 참여하기':
+    '🎏 '+festival.title+' · '+festival.daysLeft+'일 남음';
 }
 function refreshObjective(){
   const goal=nextFarmObjective(state,visited.size);

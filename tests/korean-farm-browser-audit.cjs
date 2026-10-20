@@ -676,7 +676,7 @@ async function main(){
    {before:beforeFestival,after:afterFestival});
  check('Seasonal delivery locks to prevent an infinite reward exploit',
    (await evaluate('document.querySelector(".festival-order button").disabled'))===true&&
-   (await evaluate('document.querySelector("#festivalNotice").classList.contains("hidden")')));
+   (await evaluate('!document.querySelector("#festivalNotice").classList.contains("hidden")')));
  await click('#modalClose');
  await sleep(320);
  const cheered=await evaluate('window.__farmQA.visuals()');
@@ -694,7 +694,8 @@ async function main(){
  const activityDone=await evaluate('window.__farmQA.state()');
  check('Spring planting mini-activity grants a one-time reward',
    activityDone.stats.festivalActivities===1&&activityDone.money===afterFestival.money+120&&
-   (await evaluate('document.querySelector(".festival-activity-progress").textContent.includes("완료")')));
+   (await evaluate('document.querySelector(".festival-activity-progress").textContent.includes("완료")')))&&
+   (await evaluate('document.querySelector("#festivalNotice").classList.contains("hidden")')));
  await click('#modalClose');
  await send('Page.reload',{ignoreCache:true});
  await waitFor('Boolean(window.__farmQA?.ready())',35000);
