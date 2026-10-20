@@ -65,3 +65,41 @@
 .clue-item:last-child{border-color:rgba(255,214,107,.26);background:rgba(255,214,107,.08)}
 @media(max-height:760px){.deduction-controls button{min-height:34px}.owner-badges{gap:2px}}
 
+
+/* Pattern Lock v6: visible choices, simple clues, scrollable play */
+.game-screen{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.game-screen>*{flex-shrink:0}
+.game-screen .board-wrap{width:min(100%,320px);margin:8px auto;border-radius:24px}
+.game-screen .node{width:50px;height:50px;margin:-25px 0 0 -25px}
+.game-screen .clue-panel{max-height:none;overflow:visible;margin-bottom:7px}
+.game-screen .clue-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.game-screen .clue-item{padding:6px 7px;min-height:32px;align-items:center}
+.game-screen .clue-item b{font-size:11px}
+.game-screen .candidate-panel{width:min(100%,430px);margin:3px auto 4px;padding:9px 10px 8px;border-radius:17px;background:linear-gradient(180deg,rgba(52,95,125,.26),rgba(17,39,61,.75));border:1px solid rgba(92,225,230,.2)}
+.candidate-head{display:flex;align-items:center;justify-content:space-between;gap:7px;margin-bottom:6px}
+.candidate-head strong{font-size:13px;color:#efffff}
+.candidate-head span{font-size:10px;font-weight:800;color:#b7cbde;text-align:right}
+.candidate-gallery{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 3px 9px;scrollbar-width:thin;scrollbar-color:rgba(92,225,230,.45) transparent}
+.candidate-option{flex:0 0 103px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:116px;padding:6px 5px;border-radius:14px;border:2px solid rgba(255,255,255,.12);background:#142b44;color:#edfaff;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
+.candidate-option svg{display:block;width:75px;height:75px;overflow:visible}
+.candidate-option .candidate-number{font-size:10px;font-weight:1000}
+.candidate-option .candidate-points{font-size:9px;font-weight:800;color:#a7c3d8}
+.candidate-option:hover,.candidate-option:focus-visible{border-color:#a3f4f5}
+.candidate-option.selected{border-color:var(--amber);background:#344457;box-shadow:0 0 0 2px rgba(255,214,107,.18),0 6px 20px rgba(0,0,0,.2);transform:translateY(-2px)}
+.candidate-option.selected .candidate-number{color:var(--amber)}
+.game-screen .algorithm-panel{margin:5px auto}
+.game-screen .release-tip{display:block;margin:6px auto 0}
+.simple-steps{display:grid;gap:8px;padding:14px}
+.simple-steps p{margin:0!important;line-height:1.5!important;font-size:14px!important}
+@media(max-height:760px){
+ .game-screen{padding-top:43px}
+ .game-screen .board-wrap{width:min(100%,285px)}
+ .game-screen .clue-panel{max-height:none}
+ .game-screen .clue-item b{font-size:10px}
+}
+@media(max-width:390px){
+ .game-screen .clue-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .candidate-option{flex-basis:96px}
+ .candidate-head span{font-size:9px}
+ .game-screen .board-wrap{width:min(100%,290px)}
+}
