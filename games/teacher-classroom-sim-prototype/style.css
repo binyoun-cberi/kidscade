@@ -303,3 +303,73 @@ code{display:block;padding:10px;border-radius:10px;background:#edf2f7;color:#405
 @media (orientation:landscape) and (min-width:761px) and (max-height:520px){
   #dayStrip{left:calc(50% - 10px)}
 }
+
+/* Classroom HUD: a quiet center, teaching on the left, care on the right. */
+:root{--hud-ink:#f5f4eb;--hud-muted:#b9ccce;--hud-panel:rgba(21,43,49,.93);--hud-line:rgba(196,224,217,.22);--hud-gold:#f5d58a}
+button{cursor:pointer;touch-action:manipulation}button:focus-visible{outline:3px solid #f5d58a;outline-offset:3px}
+#hud{left:20px;right:20px;gap:0;grid-template-columns:1fr 150px 1fr;background:var(--hud-panel);border:1px solid var(--hud-line);border-radius:18px;overflow:hidden;box-shadow:0 8px 22px #10292e30}
+#hud>div{background:none;box-shadow:none;border:0;border-radius:0;padding:12px 18px;min-height:58px;backdrop-filter:none}
+#hud .clock{border-left:1px solid var(--hud-line);border-right:1px solid var(--hud-line)}
+.phase small,.clock small,.classState small{color:var(--hud-muted);font-size:11px}.phase strong,.classState strong{font-size:17px}.clock strong{color:var(--hud-gold)}
+#dayStrip{top:83px;background:var(--hud-panel);border-color:var(--hud-line)}
+#dayStrip span{min-width:56px;height:38px}#dayStrip span.active{background:#e8d5a1;color:#30453e}
+#rosterToggle{left:20px;top:85px;min-height:38px;padding:8px 12px;background:#f4f1df;color:#294c4c;border-color:#d5dfcc;font-size:12px}
+#campaignStatus{right:66px;top:84px;width:220px;max-width:25vw;background:var(--hud-panel);border-color:var(--hud-line);display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:11px}
+#campaignStatus strong{font-size:16px;grid-row:1/3}#campaignStatus small{grid-column:1/3;color:var(--hud-muted);font-size:10px}
+#dailyBrief{position:absolute;left:20px;top:142px;z-index:18;width:250px;padding:14px 16px;border:1px solid var(--hud-line);border-radius:16px;background:var(--hud-panel);pointer-events:none}
+#dailyBrief small,#dailyBrief strong,#dailyBrief span{display:block}#dailyBrief small{font-size:10px;color:var(--hud-gold);margin-bottom:5px}#dailyBrief strong{font-size:17px}#dailyBrief span{font-size:12px;color:var(--hud-muted);line-height:1.6;margin-top:7px}
+#instructionPanel{top:auto;bottom:174px;left:20px;width:250px;background:var(--hud-panel);border-color:var(--hud-line);padding:14px;gap:9px;max-height:none;overflow:visible}
+#instructionPanel strong{font-size:13px}#instructionPanel>span{font-size:11px;display:block}#instructionPanel .instructionPercent{font-size:20px}.instructionTrack{height:5px}.instructionStage span{font-size:10px}.instructionBudget{font-size:11px;line-height:1.5}
+#attentionPanel,#studentDetail{position:absolute;z-index:28;padding:14px;border:1px solid var(--hud-line);border-radius:16px;background:var(--hud-panel);box-shadow:0 8px 24px #10292e30;color:var(--hud-ink)}
+#attentionPanel{right:20px;top:155px;width:230px}#attentionPanel>small{display:block;margin-top:10px;font-size:10px;line-height:1.5;color:var(--hud-muted)}
+.panelHeading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.panelHeading strong{font-size:13px}.panelHeading>span{color:var(--hud-gold);font-size:12px}
+.attentionItem{width:100%;display:grid;grid-template-columns:45px 1fr 12px;gap:6px;align-items:center;text-align:left;background:#ffffff0b;color:var(--hud-ink);border:1px solid #ffffff14;border-left:3px solid #e4bd67;border-radius:10px;padding:10px;margin-bottom:6px;font-size:12px}.attentionItem span{font-size:11px;color:#e7ded0}.attentionItem i{font-size:20px;font-style:normal;color:var(--hud-muted)}.attentionItem.danger{border-left-color:#f59183}.attentionItem.question{border-left-color:#c9b3ee}.attentionItem:hover{background:#ffffff18}
+.allCalm{display:grid;gap:6px;padding:12px 0}.allCalm b{font-size:13px;color:#b6dec7}.allCalm span{font-size:11px;color:var(--hud-muted)}
+#studentDetail{left:20px;top:142px;width:285px;max-height:calc(100dvh - 300px);overflow:auto}#studentDetail p{font-size:12px;line-height:1.65;color:var(--hud-muted);margin:10px 0}#detailNeed{color:var(--hud-ink)!important}#closeDetail{width:30px;height:30px;border:0;border-radius:8px;background:#ffffff15;color:white;font-size:22px}
+.subjectRow{display:grid;grid-template-columns:48px 1fr 32px;align-items:center;gap:7px;margin:8px 0;font-size:11px}.subjectRow meter{width:100%;height:9px;accent-color:#a4cfb4}.subjectRow b{font-variant-numeric:tabular-nums;text-align:right;color:var(--hud-gold)}
+#app:has(#studentDetail:not(.hidden)) #dailyBrief,#app:has(#studentDetail:not(.hidden)) #instructionPanel{visibility:hidden}
+#studentStrip{top:132px;left:20px;width:540px;max-height:calc(100dvh - 310px);background:var(--hud-panel)}.studentChip{font-family:inherit;text-align:left;cursor:pointer}.studentChip .meters{width:100%}
+#guide{bottom:25px;max-width:460px;background:#f7f2e3;color:#263f40;border:1px solid #fff8}.statusBubble{max-width:210px;font-size:11px;line-height:1.4}.statusBubble.question{font-size:16px}
+#helpButton{top:84px;right:20px}#soundButton{top:128px;right:20px}
+#actionButton.ready{animation:none;outline:3px solid #fff2be80;outline-offset:4px}#actionButton{border-radius:22px;background:#f0d295;color:#30443d}#actionButton strong{padding:0 8px;text-align:center}
+#toast{max-width:calc(100vw - 30px);white-space:normal;text-align:center;line-height:1.5}
+.dayReflection{padding:14px;background:#edf4ec;border:1px solid #d5e4d2;border-radius:12px;margin:12px 0}.dayReflection strong{font-size:13px}.dayReflection p{font-size:12px;margin:7px 0}
+#careDialog .card h2{font-size:24px;margin-top:15px}#careWords{font-size:20px;color:#294e4b;font-weight:800}#careChoices{display:grid;gap:9px;margin:16px 0}#careChoices button{padding:14px;text-align:left;border:1px solid #ccdcd4;border-radius:13px;background:#edf4ed;color:#29483e}#careChoices button:hover{background:#dcebdd}#careChoices b,#careChoices span{display:block}#careChoices b{font-size:14px}#careChoices span{font-size:12px;line-height:1.5;color:#597365;margin-top:5px}#cancelCare{width:100%;min-height:40px;border:0;border-radius:10px;background:#edf1f5;color:#526a7b}
+@media(max-width:1000px){
+ #dailyBrief{width:210px}#campaignStatus{width:180px;font-size:10px}#campaignStatus small{font-size:9px}#dayStrip span{min-width:43px}#instructionPanel{width:220px}#attentionPanel{width:200px}
+}
+@media(max-width:760px){
+ #hud{left:8px;right:8px;grid-template-columns:1fr 105px 1fr}#hud>div{padding:9px;min-height:52px}.phase strong,.classState strong{font-size:12px}.phase small,.clock small,.classState small{font-size:9px}#dayStrip{top:74px}#dayStrip span{min-width:33px;height:30px}#dayStrip span b{font-size:8px}#dayStrip span i{font-size:11px}
+ #rosterToggle{top:76px;left:8px;min-height:32px;padding:6px;font-size:10px}#campaignStatus{top:116px;right:8px;width:165px;max-width:44vw;padding:6px}#helpButton{top:76px;right:8px}#soundButton{top:76px;right:50px}
+ #dailyBrief{display:none}#attentionPanel{right:8px;top:181px;width:165px;padding:10px}#attentionPanel>small{display:none}.attentionItem{grid-template-columns:34px 1fr 8px;padding:8px 5px;font-size:11px}.attentionItem span{font-size:10px}
+ #instructionPanel{left:8px;bottom:155px;width:190px;padding:10px;gap:6px}#instructionPanel>span{font-size:10px}.instructionBudget{font-size:10px}#studentStrip{top:120px;left:8px;width:calc(100vw - 16px);max-height:calc(100dvh - 280px)}#studentDetail{top:120px;left:8px;width:min(285px,calc(100vw - 16px));max-height:calc(100dvh - 275px)}
+ #guide{bottom:14px;max-height:85px;width:calc(100vw - 265px);min-width:95px}#guide span{font-size:10px}
+}
+@media(orientation:landscape) and (max-height:600px){
+ #dailyBrief{display:none}#hud{top:8px}#hud>div{min-height:48px;padding:7px 12px}.clock strong{font-size:21px}#dayStrip{top:68px}#dayStrip span{height:30px}
+ #rosterToggle{top:70px;left:12px;min-height:32px}#campaignStatus{right:98px;top:69px;width:178px;padding:6px;max-width:24vw}#campaignStatus small{display:none}#helpButton{top:70px;right:12px}#soundButton{top:70px;right:54px}
+ #instructionPanel{top:118px;bottom:auto;left:12px;width:210px;max-height:calc(100dvh - 265px);overflow:auto;padding:9px;gap:5px}#instructionPanel>span{display:none}#instructionPanel .instructionPercent{font-size:16px}.instructionBudget{font-size:10px;padding:4px}.instructionStage{padding:3px}.instructionStage span{font-size:9px}
+ #attentionPanel{top:118px;right:12px;width:185px;padding:10px;max-height:calc(100dvh - 235px);overflow:auto}#attentionPanel>small{display:none}.attentionItem{padding:7px;margin-bottom:4px}.panelHeading{margin-bottom:6px}.allCalm{padding:4px 0}
+ #studentDetail{top:114px;left:12px;max-height:calc(100dvh - 145px);width:285px}#studentStrip{top:112px;left:12px;width:min(500px,calc(100vw - 230px));max-height:calc(100dvh - 145px)}#guide{display:none}
+ #joystick{width:106px;height:106px;bottom:12px}#actionButton{width:122px;height:72px;bottom:18px}#toast{bottom:18%;font-size:11px}
+}
+@media(orientation:landscape) and (max-height:400px){
+ #instructionPanel{left:135px;width:220px;max-height:calc(100dvh - 135px)}#attentionPanel{width:165px;max-height:calc(100dvh - 220px)}#campaignStatus{display:none}#dayStrip span{min-width:34px}.instructionBudget{font-size:9px}.instructionStages{display:none}#studentDetail{left:135px;width:260px}#studentStrip{left:135px;width:calc(100vw - 330px)}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.introBrief{padding:12px 14px;border-radius:12px;background:#e8f0e5;color:#355c48!important;font-weight:700}.primary:disabled{opacity:.55;cursor:wait}
+@media(orientation:portrait) and (max-width:760px){
+ #dayStrip{top:116px;left:8px;right:8px;transform:none;max-width:none;justify-content:center}
+ #campaignStatus{top:164px;left:8px;right:auto;width:190px;max-width:52vw}
+ #attentionPanel{top:233px}#studentDetail{top:164px}
+ #app:has(#studentDetail:not(.hidden)) #campaignStatus{visibility:hidden}
+}
+#actionButton{bottom:max(70px,calc(env(safe-area-inset-bottom) + 60px))}
+#soundButton{font-size:11px;font-weight:800}#dayStrip span i{font-size:12px;font-weight:900;display:grid;place-items:center;min-width:20px;min-height:20px;border:1px solid currentColor;border-radius:6px}
+body:has(#careDialog:not(.hidden)) #kidscade-game-shell{visibility:hidden}
+@media(orientation:landscape) and (max-height:600px){
+ #actionButton{bottom:62px}#attentionPanel{max-height:calc(100dvh - 260px)}
+}
+.studentWorldLabel{z-index:12}.statusBubble{z-index:13}.actionFeedback{z-index:14}
+#actionButton strong{font-size:11px;line-height:1.3;word-break:keep-all}
+@media(orientation:portrait) and (max-width:760px){#guide{display:none}}

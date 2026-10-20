@@ -81,7 +81,7 @@ test('120 seconds of active class produce intermittent ambience, not a wall of s
 test('school game wires audio to interactions, movement, and persistent mute',()=>{
   const html=source('index.html'),js=source('school-day-game.js'),css=source('style.css');
   assert.match(html,/id="soundButton"/);
-  assert.match(html,/school-day-game\.js\?v=76/);
+  assert.match(html,/school-day-game\.js\?v=\d+/);
   assert.match(js,/SOUND_PREF_KEY='kidscade_teacher_sound_muted_v1'/);
   assert.match(js,/soundscape\.play\('question'\)/);
   assert.match(js,/soundscape\.play\('answer'\)/);
