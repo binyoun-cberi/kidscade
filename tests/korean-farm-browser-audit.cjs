@@ -18,14 +18,15 @@ const hook=[
 " clearSave:()=>{localStorage.removeItem(SAVE_KEY);",
 "   window.addEventListener('pagehide',()=>localStorage.removeItem(SAVE_KEY),{once:true});},",
 " state:()=>({day:state.day,money:state.money,energy:state.energy,inventory:{...state.inventory},stats:{...state.stats},",
-"   upgrades:{...state.upgrades},market:{...state.market},",
-"   fields:state.fields.map(f=>({id:f.id,growth:f.growth,planted:f.planted,water:f.waterDepthCm,gate:f.gateOpen,transplants:f.transplants,work:f.work,weeds:f.weeds,moisture:f.moisture})),",
+"   upgrades:{...state.upgrades},market:{...state.market},cargo:{...state.cargo},",
+"   fields:state.fields.map(f=>({id:f.id,growth:f.growth,planted:f.planted,water:f.waterDepthCm,gate:f.gateOpen,gateLevel:f.gateLevel,transplants:f.transplants,work:f.work,weeds:f.weeds,moisture:f.moisture})),",
 "   player:{...state.player},saving:localStorage.getItem(SAVE_KEY)?.length||0}),",
 " teleport:(x,z)=>{state.player.x=x;state.player.z=z;farmer.position.set(x,0,z);camTarget.set(x,0,z);clearMovement();pendingStation=null;},",
 " select:id=>chooseField(id),",
 " work:index=>runFieldStrip(index),",
 " plant:index=>runSeedlingPlant(index),",
 " gate:id=>activateSluice(id),",
+" gateLevel:(id,level)=>activateSluice(id,level),",
 " rest:()=>advanceFarmDayAfterRest(),",
 " markers:id=>({work:plotMeshes.get(id)?.work?.targets?.length||0,plant:plotMeshes.get(id)?.planting?.targets?.length||0}),",
 " tap:(kind,index)=>{const rec=plotMeshes.get(state.selected);",
@@ -152,9 +153,13 @@ async function main(){
  await evaluate('window.__farmQA.teleport(-5,3)');
  await sleep(420);
  const walkFrom=await evaluate('window.__farmQA.state().player');
+ await evaluate('window.__farmQA.forwardOrigin=window.__farmQA.state().player');
  await evaluate('document.querySelector("#farm").focus()');
  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'d',code:'KeyD',windowsVirtualKeyCode:68});
- await sleep(580);
+ // Low-FPS software WebGL may spend the first 580ms turning in place. Keep
+ // the key pressed until the intended forward walking truly starts.
+ await waitFor('Math.hypot(window.__farmQA.state().player.x-window.__farmQA.forwardOrigin.x,window.__farmQA.state().player.z-window.__farmQA.forwardOrigin.z)>.18',7000);
+ await sleep(230);
  const duringKey=await evaluate('window.__farmQA.debug()');
  await send('Input.dispatchKeyEvent',{type:'keyUp',key:'d',code:'KeyD',windowsVirtualKeyCode:68});
  const walkTo=await evaluate('window.__farmQA.state().player');
@@ -228,12 +233,20 @@ async function main(){
    harvested.inventory.rice>0&&harvested.stats.harvests===1&&
    !harvested.fields.find(x=>x.id==='rice-4').planted,harvested.stats);
  await screenshot('02-harvest');
+ await evaluate('window.__farmQA.teleport(18,-9.5)');
+ await click('#barnBtn');
+ await waitFor('document.querySelector("#modalTitle").textContent.includes("창고")',9000);
+ await click('.bag-item button');
+ const loaded=await evaluate('window.__farmQA.state()');
+ check('Barn physically moves harvest into carried basket',loaded.cargo.rice>0&&
+   loaded.inventory.rice===0&&loaded.stats.sales===0,loaded.cargo);
+ await click('#modalClose');
  await evaluate('window.__farmQA.teleport(8.5,15.25)');
  await click('#bagBtn');
  await waitFor('!document.querySelector("#modal").classList.contains("hidden")',9000);
  await click('.sell-btn');
  const sold=await evaluate('window.__farmQA.state()');
- check('Sell removes produce and pays money',sold.inventory.rice===0&&sold.money>initial.money&&sold.stats.sales===1);
+ check('Market only sells crops carried from the barn',sold.inventory.rice===0&&sold.cargo.rice===0&&sold.money>initial.money&&sold.stats.sales===1);
  await click('#modalClose');
  await evaluate('window.__farmQA.teleport(-8.65,-0.9)');
  await evaluate('window.__farmQA.select("rice-4")');
@@ -290,6 +303,8 @@ async function main(){
   gated.fields.find(x=>x.id==='rice-4').water>initial.fields.find(x=>x.id==='rice-4').water);
  await evaluate('window.__farmQA.teleport(9.9,-10.05)');
  await click('#sleepBtn');
+ await waitFor('document.querySelector("#modalTitle").textContent.includes("쉬어가기")',8000);
+ await click('.rest-option');
  await waitFor('window.__farmQA.state().day===2',15000);
  await click('#modalClose');
  const morning=await evaluate('window.__farmQA.state()');
@@ -377,7 +392,9 @@ async function main(){
    menuHidden:document.querySelector('#moreTools').classList.contains('hidden'),
    panel:document.querySelector('#bottomBar').getBoundingClientRect().toJSON(),
    header:document.querySelector('#topbar').getBoundingClientRect().toJSON()}))()`);
- check('Mobile has four visible primary tools',visibleTools.main===4&&visibleTools.menuHidden,visibleTools);
+ check('Mobile has five visible primary tools without horizontal overflow',
+   visibleTools.main===5&&visibleTools.menuHidden&&visibleTools.panel.left>=0&&
+   visibleTools.panel.right<=visibleTools.header.right+8,visibleTools);
  await evaluate('window.__farmQA.select("rice-1")');
  await sleep(480);
  const sheet=await evaluate(`(()=>{
@@ -422,7 +439,7 @@ async function main(){
    return {w:innerWidth,h:innerHeight,scroll:document.documentElement.scrollWidth,
      toolbar:{left:r.left,right:r.right,bottom:r.bottom},buttons:[...document.querySelectorAll('#bottomBar button')].map(x=>x.getBoundingClientRect().toJSON())};
  })()`);
- check('Landscape phone retains four tappable controls',landscape.w>=840&&
+ check('Landscape phone retains five tappable controls',landscape.w>=840&&landscape.buttons.length===5&&
    landscape.scroll<=landscape.w+3&&landscape.buttons.every(b=>
      b.width>=45&&b.height>=38&&b.right<=landscape.w&&b.bottom<=landscape.h),
    landscape);
@@ -512,13 +529,21 @@ async function main(){
    fullHarvest.stats.harvests===1&&fullHarvest.inventory.rice>0&&
    !fullHarvest.fields.find(f=>f.id==='rice-1').planted,fullHarvest);
  await screenshot('13-marathon-complete-harvest');
+ await evaluate('window.__farmQA.teleport(18,-9.5)');
+ await click('#barnBtn');
+ await waitFor('document.querySelector("#modalTitle").textContent.includes("창고")',9000);
+ await click('.bag-item button');
+ const longHaul=await evaluate('window.__farmQA.state()');
+ check('Full-cycle rice must enter the carried basket before a market sale',
+   longHaul.cargo.rice>0&&longHaul.inventory.rice===0,longHaul);
+ await click('#modalClose');
  await evaluate('window.__farmQA.teleport(8.5,15.25)');
  await click('#bagBtn');
  await waitFor('!document.querySelector("#modal").classList.contains("hidden")',9000);
  await click('.sell-btn');
  const soldAfter=await evaluate('window.__farmQA.state()');
  check('Real full-cycle sale increments balance and removes harvested crop',
-   soldAfter.stats.sales===1&&soldAfter.inventory.rice===0&&soldAfter.money>4200,soldAfter);
+   soldAfter.stats.sales===1&&soldAfter.inventory.rice===0&&soldAfter.cargo.rice===0&&soldAfter.money>4200,soldAfter);
  const preUpgrade=await evaluate('window.__farmQA.state()');
  await click('.farm-upgrade button:not(:disabled)');
  const upgraded=await evaluate('window.__farmQA.state()');

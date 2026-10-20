@@ -135,7 +135,7 @@ test('world positions stay inside plot, controls and visible rows are wired',()=
   assert.match(view,/fertilizerPatches/);
   assert.match(game,/requestStation\('market'\)/);
   assert.match(game,/requestStation\('home'\)/);
-  assert.match(game,/scoopCompost\(state\)/);
+  assert.match(game,/scoopCompostBatch\(state\)/);
   assert.match(game,/runSeedlingPlant\(cell\.userData\.cellIndex\)/);
   assert.match(src('animation/farmer-animator.js'),/const sickle=make\('sickle'\)/);
   assert.match(src('animation/farmer-animator.js'),/const shovel=make\('shovel'\)/);

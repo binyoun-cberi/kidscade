@@ -109,9 +109,9 @@ test('click-to-walk auto motion clamps the last frame without overshooting',()=>
   assert.ok(result.moving);
 });
 test('waypoint navigation reaches village services from every field and another service',()=>{
-  const market={x:8.5,z:15.25},home={x:9.9,z:-10.05},compost={x:4.2,z:-10.35};
-  const starts=[...FIELD_DEFS.map(p=>({x:p.x,z:p.z+p.d/2+1})),market,home,compost,{x:-5,z:3}];
-  for(const from of starts)for(const destination of [market,home,compost]){
+  const market={x:8.5,z:15.25},home={x:9.9,z:-10.05},compost={x:4.2,z:-10.35},barn={x:18,z:-9.5};
+  const starts=[...FIELD_DEFS.map(p=>({x:p.x,z:p.z+p.d/2+1})),market,home,compost,barn,{x:-5,z:3}];
+  for(const from of starts)for(const destination of [market,home,compost,barn]){
     const route=planNavigationRoute(from,destination,VILLAGE_COLLIDERS);
     assert.ok(route?.length, `No route from ${JSON.stringify(from)} to ${JSON.stringify(destination)}`);
     let position={...from},point=0;
@@ -146,10 +146,10 @@ test('rice planting supports touch anywhere on the chosen paddy and WebGL errors
   assert.match(game,/브라우저의 하드웨어 가속/);
   assert.match(css,/#loading\.failed \.spinner\{display:none\}/);
 });
-test('farm HUD has four primary buttons, optional tools and proper mobile-safe sheet',()=>{
+test('farm HUD has five primary buttons including the barn and mobile-safe sheet',()=>{
   const tools=html.match(/<nav id="bottomBar"[^>]*>([\s\S]*?)<\/nav>/)?.[1]||'';
-  assert.equal([...tools.matchAll(/<button\b/g)].length,4);
-  for(const id of ['nearFieldBtn','bagBtn','sleepBtn','moreBtn','moreTools','turnLeft','turnRight','saveBtn','qaBtn','focusFarm']){
+  assert.equal([...tools.matchAll(/<button\b/g)].length,5);
+  for(const id of ['nearFieldBtn','barnBtn','bagBtn','sleepBtn','moreBtn','moreTools','turnLeft','turnRight','saveBtn','qaBtn','focusFarm']){
     assert.match(html,new RegExp('id="'+id+'"'));
   }
   assert.match(html,/aria-expanded="false"/);
@@ -182,7 +182,8 @@ test('field status rings prioritize urgent care and harvest without opening the 
 test('rice sluices are interactive in-world objects with no gate action button',()=>{
   assert.doesNotMatch(html,/data-action="gate"/);
   assert.match(game,/raycaster\.intersectObjects\(gateHits,false\)/);
-  assert.match(game,/function activateSluice\(id\)/);
+  assert.match(game,/function activateSluice\(id,desiredLevel=null\)/);
+  assert.match(game,/setSluiceOpening\(state,plot\.id,gateTargets\.get\(plot\.id\)\)/);
   assert.match(game,/farmFlow\.request\(\{action:'gate',plot,position:state\.player,goal:sluice\.stand\}\)/);
   assert.match(game,/if\(nearest\)activateSluice\(nearest\)/);
   const village=fs.readFileSync(path.join(ROOT,'games/korean-farm/rendering/village-scene.js'),'utf8');

@@ -16,7 +16,7 @@ import {createFarmActionFlow,actionContactPoint,actionApproachPoint} from './int
 import {sampleStroke,uniqueStrokeTargets} from './interactions/work-gesture.mjs';
 import {cameraRelativeInput,farmerHeading,rotateToward,walkPlayer,shouldTurnBeforeWalk,nearestWalkablePoint,planNavigationRoute,LOOK_SPEED} from './interactions/navigation.mjs';
 import {FIELD_DEFS,plotById,distanceToPlot} from './world.mjs';
-import {createFarmState,restoreFarmState,CROPS,FARM_UPGRADES,purchaseFarmUpgrade,calendar,fieldById,visualStage,fieldCondition,fieldCareAdvice,applyFarmAction,canApplyFarmAction,applyFarmStrip,canWorkFieldStrip,scoopCompost,advanceFarmDay,sellAllProduce,buyFarmSupply,currentDeliveryOrder,fulfillDeliveryOrder} from './farming/farm-sim.mjs';
+import {createFarmState,restoreFarmState,CROPS,FARM_UPGRADES,BASKET_CAPACITY,purchaseFarmUpgrade,calendar,fieldById,visualStage,fieldCondition,fieldCareAdvice,applyFarmAction,canApplyFarmAction,setSluiceOpening,applyFarmStrip,canWorkFieldStrip,scoopCompostBatch,advanceFarmDay,restUntilFarmNeedsAttention,basketCount,loadHarvestBasket,unloadHarvestBasket,sellBasketProduce,buyFarmSupply,currentDeliveryOrder,fulfillBasketDeliveryOrder} from './farming/farm-sim.mjs';
 
 const $=id=>document.getElementById(id);
 const SAVE_KEY=window.KidscadeGame?.storageKey?.('korean_farm','farm')||'kidscade_game_v1:korean_farm:farm';
@@ -30,7 +30,7 @@ let moveGoal=null,moveRoute=[],navigationStall=0;
 const keys=new Set();
 const joystick={x:0,y:0,id:null};
 const pointers=new Map();
-let pinchDistance=0,downPosition=null,dragPath=[],gestureQueue=[],gestureTimer=0;
+let pinchDistance=0,downPosition=null,dragPath=[],gestureQueue=[],gestureTimer=0,gateDrag=null;
 const plotMeshes=new Map(),plotHits=[],plantingHits=[],fieldWorkHits=[],gateHits=[],sluices=new Map(),plotOrigins=new Map(),visited=new Set(state.seenPlots||[]);
 const obstacles=VILLAGE_COLLIDERS;
 const models=new Map();
@@ -39,6 +39,8 @@ let plantingMode=false,selectedSeedling=0;
 let fieldWorkMode=false,workAction=null,selectedStrip=0,workFinished=false;
 const worldHits=[],worldStations=new Map();
 let pendingStation=null,worldAction=null,marketAccess=false;
+let restMode='tomorrow';
+const gateTargets=new Map();
 const actions={till:'괭이질',plant:'심기',water:'물주기',gate:'물꼬',weed:'김매기',fertilize:'거름주기',harvest:'수확'};
 
 function clearMovement(){moveGoal=null;moveRoute=[];navigationStall=0}
@@ -46,7 +48,7 @@ function clearGesture(){gestureQueue=[];clearTimeout(gestureTimer);gestureTimer=
 function queueMovement(destination){
   const route=planNavigationRoute(state.player,destination,obstacles,bounds);
   if(!route){
-    clearMovement();pendingStation=null;harvestCargo?.setCarrying(state.inventory,false);farmFlow.cancelApproach();
+    clearMovement();pendingStation=null;farmFlow.cancelApproach();
     toast('이동할 수 있는 길을 찾지 못했어요. 다른 곳에서 다시 시도해 주세요.');
     return false;
   }
@@ -55,6 +57,11 @@ function queueMovement(destination){
 }
 
 const formatWon=n=>Math.max(0,Math.round(n)).toLocaleString('ko-KR')+'원';
+function refreshCargoVisual(){
+  harvestCargo?.setStorage(state.inventory);
+  harvestCargo?.setCarrying(state.cargo);
+  harvestCargo?.setCompost(state.inventory.fertilizer);
+}
 
 function loadSave(){
   try{
@@ -134,7 +141,7 @@ function init3D(){
   farmerAnimator=createFarmerAnimator();
   farmerAnimator.setUpgrades(state.upgrades);
   farmerAvatar=farmerAnimator.root;farmer.add(farmerAvatar);
-  harvestCargo=createHarvestCargo(scene,farmer);harvestCargo.setStorage(state.inventory);
+  harvestCargo=createHarvestCargo(scene,farmer);refreshCargoVisual();
   for(const plot of FIELD_DEFS)harvestCargo.setField(plot,fieldById(state,plot.id));
   fieldEffects=new FieldEffects(scene);
   camera.position.set(16,20,20);resize();
@@ -148,6 +155,7 @@ function buildWorldStations(){
     scene.add(target);worldHits.push(target);worldStations.set(key,{target,position,stand});
   };
   addStation('market','장터',{x:8.5,y:1.05,z:14},{x:8.5,z:15.25},[2.8,2.1,1.45]);
+  addStation('barn','농산물 창고',{x:18,y:1.1,z:-10.4},{x:18,z:-9.5},[2.9,2.1,1.35]);
   const mound=new THREE.Group();mound.position.set(4.2,0,-11.35);scene.add(mound);
   for(const [x,y,z,s] of [[-.25,.22,0,.42],[.12,.28,-.06,.48],[.37,.18,.08,.34]]){
     const heap=new THREE.Mesh(new THREE.IcosahedronGeometry(s,1),new THREE.MeshStandardMaterial({color:0x745336,roughness:1}));
@@ -161,28 +169,29 @@ function requestStation(key){
   const station=worldStations.get(key);if(!station)return;
   if(farmFlow.busy||farmerAnimator?.busy){toast('하던 작업을 마친 뒤 이동해 주세요.');return}
   pendingStation=key;keys.clear();
-  harvestCargo?.setCarrying(state.inventory,key==='market');
+  refreshCargoVisual();
   if(Math.hypot(state.player.x-station.stand.x,state.player.z-station.stand.z)<.42){clearMovement();arriveAtStation();return}
   if(queueMovement(station.stand))toast(station.target.userData.label+'으로 걸어가요.');
 }
 function arriveAtStation(){
   const key=pendingStation;pendingStation=null;if(!key)return;
-  harvestCargo?.setCarrying(state.inventory,false);
+  refreshCargoVisual();
   const station=worldStations.get(key);
   if(station)farmerFacingTarget=farmerHeading(station.position.x-state.player.x,station.position.z-state.player.z);
   if(key==='market'){marketAccess=true;openBag();return}
+  if(key==='barn'){openBarn();return}
   if(key==='compost'){
-    if(state.inventory.fertilizer>=10||state.compostStock<=0){const result=scoopCompost(state);toast(result.message);refreshHud();save(true);return}
+    if(state.inventory.fertilizer>=10||state.compostStock<=0){const result=scoopCompostBatch(state);toast(result.message);refreshHud();save(true);return}
     worldAction='scoop';if(!farmerAnimator?.trigger('scoop')){worldAction=null;toast('삽을 사용할 수 없어요.')}
   }else if(key==='home'){
-    worldAction='sleep';if(!farmerAnimator?.trigger('sleep')){worldAction=null;toast('지금은 쉴 수 없어요.')}
+    offerRestChoices();
   }
 }
 function handleWorldAnimation(feedback){
   if(!worldAction)return;
   if(feedback?.impact===worldAction){
-    if(worldAction==='scoop'){const result=scoopCompost(state);toast(result.message);refreshHud();save(true)}
-    else if(worldAction==='sleep')advanceFarmDayAfterRest();
+    if(worldAction==='scoop'){const result=scoopCompostBatch(state);toast(result.message);refreshHud();refreshCargoVisual();save(true)}
+    else if(worldAction==='sleep')advanceFarmDayAfterRest(restMode);
   }
   if(!feedback?.working)worldAction=null;
 }
@@ -225,15 +234,21 @@ function createSluice(plot){
   const handle=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.52,8),
     new THREE.MeshStandardMaterial({color:0xb69b69,roughness:.86}));
   handle.rotation.z=Math.PI/2;handle.position.set(0,1.04,.08);group.add(handle);
+  const stream=rectMesh(.54,.025,.8,0x8ad3d0,.72);
+  stream.position.set(0,.245,.38);stream.visible=false;group.add(stream);
   const target=new THREE.Mesh(new THREE.BoxGeometry(1.15,1.35,.95),
     new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}));
   target.position.set(0,.7,0);target.userData.plotId=plot.id;group.add(target);gateHits.push(target);
-  return {group,board,position,stand};
+  return {group,board,handle,stream,position,stand};
 }
-function setSluiceVisual(plotId,open){
+function setSluiceVisual(plotId,opening){
   const sluice=sluices.get(plotId);if(!sluice)return;
-  sluice.board.rotation.x=open?-1.05:0;
-  sluice.board.material.color.setHex(state.upgrades?.channel?(open?0x71a9a7:0x6694a1):(open?0xb79255:0x8a6744));
+  const level=typeof opening==='number'?opening:(opening?2:0);
+  sluice.board.rotation.x=-.52*level;
+  sluice.handle.position.y=1.04+level*.11;
+  sluice.stream.visible=level>0;
+  sluice.stream.scale.x=level===1?.60:1;
+  sluice.board.material.color.setHex(state.upgrades?.channel?(level?0x71a9a7:0x6694a1):(level?0xb79255:0x8a6744));
 }
 function clearGroup(group){
   // Geometry and textures belong to cached shared assets. Only private, cloned
@@ -272,7 +287,7 @@ function syncFieldVisual(id,force=false){
     fieldWorkMode&&state.selected===id?selectedStrip:-1);
   record.statusMarkers?.update(fieldStatusIndicators(field));
   harvestCargo?.setField(record.plot,field);
-  if(field.kind==='rice')setSluiceVisual(id,field.gateOpen);
+  if(field.kind==='rice')setSluiceVisual(id,field.gateLevel??(field.gateOpen?2:0));
   record.cropLayer.children.forEach(plant=>{
     if(plant.userData.stripIndex!=null)plant.visible=!field.work?.harvested?.[plant.userData.stripIndex];
   });
@@ -375,7 +390,7 @@ function move(dt,elapsed){
   const manual=cameraRelativeInput(keys,joystick,viewAngle);
   let direction={x:manual.x,z:manual.z},goalDistance=null;
   if(manual.active){
-    clearMovement();if(pendingStation){pendingStation=null;harvestCargo?.setCarrying(state.inventory,false)}
+    clearMovement();if(pendingStation){pendingStation=null}
   }else if(moveGoal){
     const dx=moveGoal.x-state.player.x,dz=moveGoal.z-state.player.z;
     goalDistance=Math.hypot(dx,dz);
@@ -392,7 +407,7 @@ function move(dt,elapsed){
   if(moveGoal&&result.blocked){
     navigationStall+=dt;
     if(navigationStall>1.8){
-      clearMovement();pendingStation=null;harvestCargo?.setCarrying(state.inventory,false);farmFlow.cancelApproach();
+      clearMovement();pendingStation=null;farmFlow.cancelApproach();
       toast('길이 막혀 이동을 멈췄어요. 다른 곳에서 다시 시도해 주세요.');
       refreshFarmControls();return false;
     }
@@ -537,18 +552,24 @@ function startGesture(indices){
   gestureQueue=indices.map(index=>({mode,index}));
   if(!farmFlow.busy)continueGesture();
 }
-function activateSluice(id){
+function activateSluice(id,desiredLevel=null){
   const plot=plotById(id),sluice=sluices.get(id);
   if(!plot||!sluice)return;
   if(farmFlow.busy){toast('먼저 하던 농사 작업을 마쳐 주세요.');return}
+  const current=fieldById(state,id);
+  if(desiredLevel!=null&&desiredLevel===(current.gateLevel??(current.gateOpen?2:0))){
+    toast('물꼬가 이미 그 위치에 있어요.');setSluiceVisual(id,desiredLevel);return;
+  }
   const check=canApplyFarmAction(state,id,'gate');
   if(!check.ok){toast(check.message);return}
+  gateTargets.clear();
+  if(desiredLevel!=null)gateTargets.set(id,desiredLevel);
   state.selected=id;
   const request=farmFlow.request({action:'gate',plot,position:state.player,goal:sluice.stand});
   if(request.type!=='queued'){toast(request.message||'물꼬를 만질 수 없어요.');return}
   keys.clear();
   if(request.phase==='approach'){
-    if(queueMovement(request.goal))toast(plot.label+' 물꼬까지 걸어가 열고 닫을게요.');
+    if(queueMovement(request.goal))toast(plot.label+' 수문으로 걸어가 물길을 조절해요.');
   }else clearMovement();
   refreshFarmControls();
 }
@@ -605,7 +626,7 @@ function updateInspector(){
     '모내기 '+seedlingCount(f)+' / 25포기 · 밝은 자리에 모를 꽂아 보세요.':f.planted?
     CROPS[f.crop].name+' · '+Math.round(f.growth*100)+'% 자람'+(f.kind==='rice'?' · 논물 '+f.waterDepthCm.toFixed(1)+'cm'+(f.gateOpen?' (물꼬 열림)':' (물꼬 닫힘)'):''):
     (f.tilled?'땅을 갈아 놓았어요. 다음 작물을 심을 수 있어요.':'수확을 마친 땅이에요. 괭이질로 다시 준비해 보세요.'))+
-    (f.kind==='rice'?' · 논 옆 나무 수문을 누르거나 가까이서 E를 눌러 물꼬를 조절해요.':'');
+    (f.kind==='rice'?' · 수문을 위아래로 끌어 물길을 조절해요(닫기·반쯤·활짝). 누르거나 E를 눌러도 작동해요.':'');
   $('fieldLearning').textContent=fieldCareAdvice(f);
   const metrics=$('fieldMetrics');metrics.replaceChildren();
   metrics.append(
@@ -773,16 +794,19 @@ function handleFarmFlowEvent(event){
   if(event.type==='impact'){
     // All crop, soil, inventory, and energy changes happen only at tool contact.
     const stripWork=event.cellIndex!=null&&PATCH_ACTIONS.includes(event.action);
-    const result=stripWork?applyFarmStrip(state,plot.id,event.action,event.cellIndex):
+    const result=event.action==='gate'&&gateTargets.has(plot.id)?
+      setSluiceOpening(state,plot.id,gateTargets.get(plot.id)):
+      stripWork?applyFarmStrip(state,plot.id,event.action,event.cellIndex):
       event.action==='plant'&&event.cellIndex!=null?
         plantSeedling(state,plot.id,event.cellIndex):applyFarmAction(state,plot.id,event.action);
+    if(event.action==='gate')gateTargets.delete(plot.id);
     toast(result.message);
     if(result.ok){
       fieldEffects?.emit(event.action,event.action==='gate'?sluices.get(plot.id)?.position:
         event.cellIndex==null?actionContactPoint(plot,state.player):event.action==='plant'?
           seedlingPosition(plot,event.cellIndex):workStripPosition(plot,event.cellIndex));
       syncFieldVisual(plot.id);
-      if(event.action==='harvest')harvestCargo?.setStorage(state.inventory);
+      if(event.action==='harvest'||event.action==='fertilize')refreshCargoVisual();
       if(stripWork){
         selectedStrip=nextWorkStrip(fieldById(state,plot.id),event.action);
         workFinished=Boolean(result.complete);
@@ -839,22 +863,40 @@ function doFarmAction(action){
   }else clearMovement();
   refreshFarmControls();
 }
-function advanceFarmDayAfterRest(){
+function offerRestChoices(){
+  const root=document.createElement('div');root.className='rest-choices';
+  const intro=document.createElement('p');intro.textContent='집에 돌아왔어요. 다음 날까지 쉴까요, 논밭에 변화가 생길 때까지 쉴까요?';root.append(intro);
+  for(const [mode,label,description] of [
+    ['tomorrow','하루 쉬고 일어나기','하룻밤을 보내고 작물 상태를 확인해요.'],
+    ['attention','작물에 변화가 있을 때까지','최대 4일, 성장 단계가 바뀌거나 돌봄이 필요하면 일어나요.']]){
+    const button=document.createElement('button');button.type='button';button.className='rest-option';
+    button.innerHTML='<strong></strong><small></small>';
+    button.querySelector('strong').textContent=label;button.querySelector('small').textContent=description;
+    button.onclick=()=>{
+      $('modal').classList.add('hidden');restMode=mode;worldAction='sleep';
+      if(!farmerAnimator?.trigger('sleep')){worldAction=null;toast('지금은 쉴 수 없어요.')}
+    };
+    root.append(button);
+  }
+  showModal('농가에서 쉬어가기',root);
+}
+function advanceFarmDayAfterRest(mode='tomorrow'){
   if(farmFlow.busy){toast('농사 작업을 마친 다음 하루를 보내 주세요.');return}
-  const report=advanceFarmDay(state);
+  const report=mode==='attention'?restUntilFarmNeedsAttention(state):advanceFarmDay(state);
   for(const plot of FIELD_DEFS)syncFieldVisual(plot.id);
   refreshHud();refreshObjective();
   if(!$('inspector').classList.contains('hidden'))updateInspector();
   if(fieldWorkMode)refreshFieldWorkHud();
   toast(report.message);save(true);
   showMorningReport(report);
-  if(state.day===2)window.KidscadeGame?.milestone?.('first_farm_day',{uniqueKey:'day-two',value:2});
+  if(state.day>=2)window.KidscadeGame?.milestone?.('first_farm_day',{uniqueKey:'day-two',value:2});
 }
 function showMorningReport(report){
   const c=calendar(state.day),root=document.createElement('div');root.className='day-report';
   const summary=document.createElement('div');summary.className='day-weather';
   const weather={sunny:'☀️ 맑음',cloudy:'☁️ 흐림',rain:'🌧️ 비',storm:'⛈️ 강한 비'};
-  summary.textContent=c.year+'년 '+c.season+' '+c.seasonDay+'일 · '+weather[state.weather];root.append(summary);
+  summary.textContent=c.year+'년 '+c.season+' '+c.seasonDay+'일 · '+weather[state.weather]+
+    ((report.daysPassed||1)>1?' · '+report.daysPassed+'일 경과':'');root.append(summary);
   const message=document.createElement('p');message.textContent=report.message;root.append(message);
   const changed=report.changes.filter(item=>item.ready||item.warning||item.to>item.from);
   if(changed.length){
@@ -871,6 +913,29 @@ function showMorningReport(report){
   button.onclick=()=>$('modal').classList.add('hidden');root.append(button);
   showModal('새로운 아침',root);
 }
+function openBarn(){
+  const el=document.createElement('div');el.className='farm-bag';
+  const count=basketCount(state),heading=document.createElement('p');
+  heading.className='bag-note';heading.textContent='바구니 '+count+' / '+BASKET_CAPACITY+'개 · 농작물을 담고 장터까지 직접 걸어가요.';el.append(heading);
+  const section=document.createElement('div');section.className='bag-items';
+  for(const [crop,info] of Object.entries(CROPS)){
+    const row=document.createElement('div');row.className='bag-item';
+    const name=document.createElement('span');name.textContent=info.name+' · 창고 '+state.inventory[crop]+'개';
+    const loaded=document.createElement('strong');loaded.textContent='바구니 '+state.cargo[crop]+'개';
+    const button=document.createElement('button');button.type='button';button.textContent='바구니에 담기';
+    button.disabled=state.inventory[crop]===0||count>=BASKET_CAPACITY;
+    button.onclick=()=>{
+      const result=loadHarvestBasket(state,crop);toast(result.message);refreshCargoVisual();refreshObjective();save(true);openBarn();
+    };row.append(name,loaded,button);section.append(row);
+  }
+  const unload=document.createElement('button');unload.type='button';unload.textContent='바구니를 창고에 내려놓기';
+  unload.disabled=count===0;
+  unload.onclick=()=>{const result=unloadHarvestBasket(state);toast(result.message);refreshCargoVisual();refreshObjective();save(true);openBarn()};
+  const market=document.createElement('button');market.type='button';market.className='sell-btn';
+  market.textContent='장터로 가져가기 →';market.disabled=count===0;
+  market.onclick=()=>{$('modal').classList.add('hidden');requestStation('market')};
+  el.append(section,unload,market);showModal('농산물 창고 · 바구니 싣기',el);
+}
 function openBag(){
   if(!marketAccess){toast('장터 판매대까지 걸어가 주세요.');return}
   if(farmFlow.busy){toast('농사 작업을 마친 뒤 창고를 열어 주세요.');return}
@@ -881,7 +946,7 @@ function openBag(){
   for(const [key,label] of Object.entries(names)){
     const row=document.createElement('div');row.className='bag-item';
     const name=document.createElement('span');name.textContent=label;
-    const quantity=document.createElement('strong');quantity.textContent='× '+(state.inventory[key]||0);
+    const quantity=document.createElement('strong');quantity.textContent='× '+(Object.hasOwn(CROPS,key)?state.cargo[key]:state.inventory[key]);
     row.append(name,quantity);
     if(prices[key]){
       const button=document.createElement('button');button.type='button';
@@ -901,9 +966,9 @@ function openBag(){
   const deliveryBtn=document.createElement('button');deliveryBtn.type='button';
   if(order){
     deliveryText.textContent=order.description+' ('+CROPS[order.produce].name+' '+order.count+'개 · 보상 '+formatWon(order.reward)+')';
-    deliveryBtn.textContent='납품하기';deliveryBtn.disabled=(state.inventory[order.produce]||0)<order.count;
+    deliveryBtn.textContent='바구니에서 납품';deliveryBtn.disabled=(state.cargo[order.produce]||0)<order.count;
     deliveryBtn.onclick=()=>{
-      const result=fulfillDeliveryOrder(state);toast(result.message);harvestCargo?.setStorage(state.inventory);refreshHud();refreshObjective();save(true);openBag();
+      const result=fulfillBasketDeliveryOrder(state);toast(result.message);refreshCargoVisual();refreshHud();refreshObjective();save(true);openBag();
       if(result.ok&&state.stats.deliveries===1)window.KidscadeGame?.milestone?.('first_village_delivery',{uniqueKey:'first_delivery',value:result.reward});
     };
   }else{
@@ -912,12 +977,12 @@ function openBag(){
   }
   delivery.append(deliveryTitle,deliveryText,deliveryBtn);
   const note=document.createElement('p');note.className='bag-note';
-  note.textContent='수확물을 마을 부탁에 쓰거나 판매하세요. 판 돈으로 농기구와 수로를 개선할 수 있어요.';
+  note.textContent='바구니에 담아 가져온 작물만 팔거나 납품할 수 있어요. 창고에 남은 것은 안전하게 보관돼요.';
   const sale=document.createElement('button');sale.className='sell-btn';sale.type='button';
-  const total=Object.keys(CROPS).reduce((acc,key)=>acc+state.inventory[key]*CROPS[key].price,0);
-  sale.textContent='수확물 모두 판매 · '+formatWon(total);sale.disabled=total===0;
+  const total=Object.keys(CROPS).reduce((acc,key)=>acc+state.cargo[key]*CROPS[key].price,0);
+  sale.textContent='가져온 수확물 판매 · '+formatWon(total);sale.disabled=total===0;
   sale.onclick=()=>{
-    const result=sellAllProduce(state);toast(result.message);harvestCargo?.setStorage(state.inventory);refreshHud();refreshObjective();save(true);openBag();
+    const result=sellBasketProduce(state);toast(result.message);refreshCargoVisual();refreshHud();refreshObjective();save(true);openBag();
     if(result.ok&&state.stats.sales===1)window.KidscadeGame?.milestone?.('first_crop_sale',{uniqueKey:'first_sale',value:result.total});
   };
   const upgrades=document.createElement('section');upgrades.className='farm-upgrades';
@@ -941,6 +1006,12 @@ function openBag(){
     };
     row.append(info,button);upgrades.append(row);
   }
+  if(basketCount(state)===0){
+    const goBarn=document.createElement('button');goBarn.type='button';goBarn.className='barn-link';
+    goBarn.textContent='바구니가 비었어요 · 창고에서 수확물 가져오기 →';
+    goBarn.onclick=()=>{$('modal').classList.add('hidden');requestStation('barn')};
+    el.append(goBarn);
+  }
   el.append(delivery,stock,sale,note,upgrades);
   showModal('솔내리 장터 · 판매와 농기구',el);
 }
@@ -952,7 +1023,7 @@ function showModal(title,inner){
   $('modal').classList.remove('hidden');
 }
 function help(){
-  const info=document.createElement('div');info.innerHTML='<p><b>PC</b> · WASD 또는 방향키로 이동합니다. 바닥을 클릭하면 그곳으로 걸어가요. 논을 클릭하면 벼 성장 단계를 살펴볼 수 있어요.</p><p><b>카메라</b> · 마우스 휠로 확대·축소, Q/E 또는 회전 버튼으로 시점을 돌려요.</p><p><b>휴대폰·태블릿</b> · 왼쪽 조이스틱으로 이동하고 손가락으로 논을 선택해요. 두 손가락으로 확대·축소할 수 있어요.</p><p><b>농사</b> · 논 위 작은 원 표식으로 물·양분·잡초·수확 상태를 살펴보세요. 모내기는 논의 빈자리를 누르거나 스페이스·엔터로 진행할 수 있어요. 논 옆 나무 수문을 누르거나 가까이서 E를 눌러 물꼬를 조절해요. 장터에서 거래하고 집에 가서 쉬면 다음 날이 돼요.</p><p><b>참고</b> · 벼 생육과 날씨는 교육용 간략 계산 모델이에요. 실제 농업 통계에 맞춘 정밀 보정은 추후 진행합니다.</p>';
+  const info=document.createElement('div');info.innerHTML='<p><b>PC</b> · WASD 또는 방향키로 이동합니다. 바닥을 클릭하면 그곳으로 걸어가요. 논을 클릭하면 벼 성장 단계를 살펴볼 수 있어요.</p><p><b>카메라</b> · 마우스 휠로 확대·축소, Q/E 또는 회전 버튼으로 시점을 돌려요.</p><p><b>휴대폰·태블릿</b> · 왼쪽 조이스틱으로 이동하고 손가락으로 논을 선택해요. 두 손가락으로 확대·축소할 수 있어요.</p><p><b>농사</b> · 논 위 작은 원 표식으로 물·양분·잡초·수확 상태를 살펴보세요. 모내기는 논의 빈자리를 누르거나 스페이스·엔터로 진행해요. 수문을 위로 끌면 물이 많이 흐르고 아래로 끌면 닫혀요. 짧게 누르면 3단계로 바뀌어요.</p><p><b>수확물</b> · 논밭에서 수확한 뒤 창고에서 바구니에 실어 장터로 가져가요. 거름 더미에 가면 삽으로 퇴비를 여러 주머니 담을 수 있어요. 집에서는 하루 쉬기나 변화가 있을 때까지 쉬기를 선택해요.</p><p><b>참고</b> · 벼 생육과 날씨는 교육용 간략 계산 모델이에요. 실제 농업 통계에 맞춘 정밀 보정은 추후 진행합니다.</p>';
   showModal('솔내리에서 움직이는 법',info);
 }
 function showQa(){
@@ -1035,14 +1106,27 @@ function bindControls(){
   $('farm').addEventListener('wheel',e=>{e.preventDefault();setZoom(state.camera.zoom+(e.deltaY>0?2:-2))},{passive:false});
   $('farm').addEventListener('pointerdown',e=>{
     pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if(pointers.size===1){downPosition={x:e.clientX,y:e.clientY,id:e.pointerId};dragPath=[{x:e.clientX,y:e.clientY}]}
-    else{downPosition=null;dragPath=[];const pts=[...pointers.values()];pinchDistance=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)}
+    if(pointers.size===1){
+      downPosition={x:e.clientX,y:e.clientY,id:e.pointerId};dragPath=[{x:e.clientX,y:e.clientY}];
+      if(!fieldWorkMode&&!plantingMode){
+        raycaster.setFromCamera(canvasPosition(e),camera);
+        const hit=raycaster.intersectObjects(gateHits,false)[0];
+        if(hit)gateDrag={id:e.pointerId,plotId:hit.object.userData.plotId,startY:e.clientY};
+      }
+    }else{
+      if(gateDrag){const f=fieldById(state,gateDrag.plotId);setSluiceVisual(gateDrag.plotId,f.gateLevel);gateDrag=null}
+      downPosition=null;dragPath=[];const pts=[...pointers.values()];pinchDistance=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)
+    }
   });
   $('farm').addEventListener('pointermove',e=>{
     if(!pointers.has(e.pointerId))return;
     pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(pointers.size===1&&downPosition?.id===e.pointerId&&dragPath.length<110)
       dragPath.push({x:e.clientX,y:e.clientY});
+    if(gateDrag?.id===e.pointerId){
+      const delta=gateDrag.startY-e.clientY;
+      if(Math.abs(delta)>15)setSluiceVisual(gateDrag.plotId,delta>0?2:0);
+    }
     if(pointers.size>=2){const pts=[...pointers.values()],dist=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
       if(pinchDistance)setZoom(state.camera.zoom+(pinchDistance-dist)*.035);
       pinchDistance=dist;downPosition=null;dragPath=[];
@@ -1050,7 +1134,14 @@ function bindControls(){
   });
   $('farm').addEventListener('pointerup',e=>{
     pointers.delete(e.pointerId);if(!pointers.size)pinchDistance=0;
-    if(downPosition?.id===e.pointerId){
+    if(gateDrag?.id===e.pointerId){
+      const target=gateDrag.plotId,delta=gateDrag.startY-e.clientY;
+      const f=fieldById(state,target);
+      setSluiceVisual(target,f.gateLevel);
+      activateSluice(target,Math.abs(delta)>15?(delta>0?2:0):
+        ((f.gateLevel??(f.gateOpen?2:0))+1)%3);
+      gateDrag=null;
+    }else if(downPosition?.id===e.pointerId){
       if(Math.hypot(e.clientX-downPosition.x,e.clientY-downPosition.y)<13)inspectAt(e);
       else if(fieldWorkMode||plantingMode){
         dragPath.push({x:e.clientX,y:e.clientY});startGesture(harvestSwipeTargets(dragPath));
@@ -1058,7 +1149,10 @@ function bindControls(){
     }
     downPosition=null;dragPath=[];
   });
-  $('farm').addEventListener('pointercancel',e=>{pointers.delete(e.pointerId);downPosition=null;dragPath=[];pinchDistance=0});
+  $('farm').addEventListener('pointercancel',e=>{
+    pointers.delete(e.pointerId);downPosition=null;dragPath=[];pinchDistance=0;
+    if(gateDrag?.id===e.pointerId){const f=fieldById(state,gateDrag.plotId);setSluiceVisual(gateDrag.plotId,f.gateLevel);gateDrag=null}
+  });
   $('zoomIn').onclick=()=>setZoom(state.camera.zoom-2);$('zoomOut').onclick=()=>setZoom(state.camera.zoom+2);
   $('turnLeft').onclick=()=>state.camera.angle-=Math.PI/6;
   $('turnRight').onclick=()=>state.camera.angle+=Math.PI/6;
@@ -1091,7 +1185,7 @@ function bindControls(){
   $('sleepBtn').onclick=()=>requestStation('home');
   $('guideRice').onclick=()=>{
     const goal=nextFarmObjective(state,visited.size);
-    if(goal.kind==='market'||goal.kind==='home')requestStation(goal.kind);
+    if(['market','barn','home'].includes(goal.kind))requestStation(goal.kind);
     else if(goal.kind==='field'){
       chooseField(goal.target);
       if(goal.title!=='논밭을 둘러봐요')goToSelectedField();
@@ -1105,6 +1199,7 @@ function bindControls(){
   };
 
   $('bagBtn').onclick=()=>requestStation('market');
+  $('barnBtn').onclick=()=>requestStation('barn');
   const stick=$('joystick'),knob=stick.querySelector('.joystick-knob');
   const resetStick=()=>{joystick.x=0;joystick.y=0;joystick.id=null;knob.style.transform='translate(0,0)'};
   const readStick=e=>{
