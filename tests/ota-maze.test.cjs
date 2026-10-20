@@ -74,4 +74,44 @@ test('maze is wired to game startup, movement, hints and the existing completion
   assert.match(game,/type==='maze'\?M\.solve/);
   assert.match(game,/type==='mazeExit'/);
   assert.match(game,/state\.stage==='maze'\?M\.hint/);
+  assert.match(game,/M\.stepHunter\(maze,mazeHunter,dt,player\)/);
+});
+test('maze entry faces an open corridor; hints consistently distinguish north and south',()=>{
+  for(let seed=0;seed<320;seed++){
+    const maze=M.create(seed),start=M.center(0),yaw=M.entryYaw(maze);
+    assert.ok(M.canMove(maze,start.x-Math.sin(yaw)*M.CELL*.6,
+      start.z-Math.cos(yaw)*M.CELL*.6),'entry must not look at a sealed wall');
+    for(let station=0;station<3;station++){
+      const goal=M.center(maze.stations[station]),dx=goal.x-start.x,dz=goal.z-start.z;
+      const direction=Math.abs(dx)>Math.abs(dz)?(dx>0?'동쪽':'서쪽'):(dz>0?'북쪽':'남쪽');
+      assert.match(M.hint(maze,start,2),new RegExp(direction),'2nd hint must use world-z orientation');
+      maze.solved[station]=true;
+    }
+  }
+});
+
+test('pathfinding hunter enters only through open maze walls, catches fairly, preserves solved stations',()=>{
+  let collisions=0,catches=0,warnings=0;
+  for(let seed=0;seed<90;seed++){
+    const maze=M.create(seed),hunter=M.createHunter(maze),player=M.center(0);
+    assert.equal(hunter.phase,'quiet');
+    maze.solved[0]=true;
+    const saved=M.snapshot(maze);
+    for(let frame=0;frame<480;frame++){
+      const report=M.stepHunter(maze,hunter,.1,player);
+      if(report.phase==='warning')warnings++;
+      if(!M.canMove(maze,hunter.x,hunter.z))collisions++;
+      if(report.caught){
+        catches++;
+        const shelter=M.nearestSafeCell(maze,player);
+        assert.ok(shelter===0||maze.stations.includes(shelter));
+        assert.equal(maze.solved[0],true,'capture never undoes a corrected word');
+        assert.deepEqual(M.snapshot(maze),saved,'capture never erases explored rooms');
+        break;
+      }
+    }
+  }
+  assert.equal(collisions,0);
+  assert.equal(catches,90,'stationary player should eventually be caught');
+  assert.ok(warnings>=90,'every hunt has an audible warning phase');
 });
