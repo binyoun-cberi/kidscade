@@ -114,10 +114,10 @@ test('pulling a handcart slows walking but keeps heading and collision rules',()
   assert.ok(pulling.z>0&&pulling.z<walking.z);
   near(pulling.z/walking.z,.78);
 });
-test('waypoint navigation reaches village services from every field and another service',()=>{
-  const market={x:8.5,z:15.25},home={x:9.9,z:-10.05},compost={x:4.2,z:-10.35},barn={x:18,z:-9.5},neighbor={x:2.8,z:12.45};
-  const starts=[...FIELD_DEFS.map(p=>({x:p.x,z:p.z+p.d/2+1})),market,home,compost,barn,neighbor,{x:-5,z:3}];
-  for(const from of starts)for(const destination of [market,home,compost,barn,neighbor]){
+test('waypoint navigation reaches village services and the seasonal event from every field',()=>{
+  const market={x:8.5,z:15.25},home={x:9.9,z:-10.05},compost={x:4.2,z:-10.35},barn={x:18,z:-9.5},neighbor={x:2.8,z:12.45},festival={x:-1.1,z:14.3};
+  const starts=[...FIELD_DEFS.map(p=>({x:p.x,z:p.z+p.d/2+1})),market,home,compost,barn,neighbor,festival,{x:-5,z:3}];
+  for(const from of starts)for(const destination of [market,home,compost,barn,neighbor,festival]){
     const route=planNavigationRoute(from,destination,VILLAGE_COLLIDERS);
     assert.ok(route?.length, `No route from ${JSON.stringify(from)} to ${JSON.stringify(destination)}`);
     let position={...from},point=0;

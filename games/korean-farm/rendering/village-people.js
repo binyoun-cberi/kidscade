@@ -32,14 +32,18 @@ function person(parent,name,x,z,{shirt,skirt,skin,hat,apron=false}){
 function label(root,name){
   const canvas=document.createElement('canvas');canvas.width=256;canvas.height=84;
   const ctx=canvas.getContext('2d');
-  ctx.fillStyle='#fff6de';ctx.beginPath();ctx.roundRect(8,5,240,72,30);ctx.fill();
-  ctx.strokeStyle='#76926a';ctx.lineWidth=5;ctx.stroke();
-  ctx.fillStyle='#3d6148';ctx.font='bold 33px sans-serif';ctx.textAlign='center';
-  ctx.fillText(name,128,53);
   const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+  const setText=value=>{
+    ctx.clearRect(0,0,256,84);
+    ctx.fillStyle='#fff6de';ctx.beginPath();ctx.roundRect(8,5,240,72,30);ctx.fill();
+    ctx.strokeStyle='#76926a';ctx.lineWidth=5;ctx.stroke();
+    ctx.fillStyle='#3d6148';ctx.font='bold 30px sans-serif';ctx.textAlign='center';
+    ctx.fillText(value,128,53,220);texture.needsUpdate=true;
+  };
+  setText(name);
   const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false}));
   sprite.position.set(0,2.48,0);sprite.scale.set(1.65,.54,1);root.add(sprite);
-  return {sprite,texture};
+  return {sprite,texture,setText};
 }
 export function createVillagePeople(scene){
   const root=new THREE.Group();root.name='solnaeri-villagers';scene.add(root);
@@ -47,7 +51,31 @@ export function createVillagePeople(scene){
     {shirt:0x7a9e79,skirt:0x394b70,skin:0xe2b78c,hat:0xb59668,apron:true});
   const neighbor=person(root,'영수 할아버지 · 이웃',2.8,13.4,
     {shirt:0x8b755a,skirt:0x495f57,skin:0xd7aa84,hat:0x9fbd8a});
+  const festivalHost=person(root,'소담이 · 마을 행사',-1.1,15.4,
+    {shirt:0xb76765,skirt:0x486c6d,skin:0xe6b990,hat:0xc3aa65,apron:true});
   const merchantLabel=label(merchant.root,'장터 순옥'),neighborLabel=label(neighbor.root,'이웃 영수');
+  const festivalLabel=label(festivalHost.root,'마을 행사 · 소담');
+  const booth=new THREE.Group();booth.position.set(-1.1,0,16.55);root.add(booth);
+  const mat=color=>new THREE.MeshStandardMaterial({color,roughness:.9});
+  const boothMats=[mat(0x9a6348),mat(0xecc579),mat(0xd77665),mat(0x9ac9ad)];
+  const plank=(w,h,d,x,y,z,idx)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),boothMats[idx]);
+    o.position.set(x,y,z);o.castShadow=true;booth.add(o);return o};
+  plank(2.4,.27,.65,0,.68,0,0);
+  for(const x of [-1.07,1.07])plank(.10,2.6,.12,x,1.65,.15,0);
+  plank(2.4,.12,.7,0,2.92,.15,1);
+  const flags=[];
+  for(let i=0;i<7;i++){
+    const flag=plank(.24,.26,.05,-.9+i*.3,2.75,.52,i%2?2:3);flag.rotation.z=i%2?.16:-.16;flags.push(flag);
+  }
+  let currentFestivalLabel='';
+  const setFestival=event=>{
+    if(!event)return;
+    const text=event.open?'행사 · '+event.title:event.startsIn?'소담 · '+event.startsIn+'일 후':'다음 장날 준비';
+    if(text===currentFestivalLabel)return;
+    currentFestivalLabel=text;booth.userData.open=event.open;
+    festivalLabel.setText(text);
+    for(const flag of flags)flag.visible=event.open;
+  };
   // Shopkeeper remains behind the stand; neighbor walks a short, predictable
   // stretch of open lane and comes back to the same interaction marker.
   const tick=(dt,elapsed,farmerPosition)=>{
@@ -65,13 +93,17 @@ export function createVillagePeople(scene){
     if(Math.hypot(farmerPosition.x-neighbor.root.position.x,farmerPosition.z-neighbor.root.position.z)<3){
       neighbor.rightArm.rotation.z=-.75+Math.sin(elapsed*4)*.12;
     }else neighbor.rightArm.rotation.z=-.1;
+    const nearHost=Math.hypot(farmerPosition.x+1.1,farmerPosition.z-15.4)<4;
+    festivalLabel.sprite.visible=Math.hypot(farmerPosition.x+1.1,farmerPosition.z-15.4)<9;
+    festivalHost.rightArm.rotation.z=nearHost?-.8+Math.sin(elapsed*3)*.18:-.16;
     // No per-frame geometry allocation, physics collision, or texture downloads.
   };
-  return {root,stats:{people:2},update:tick,dispose(){
+  return {root,stats:{people:3},update:tick,setFestival,dispose(){
     root.parent?.remove(root);
     root.traverse(obj=>{if(obj.isMesh)obj.geometry?.dispose?.()});
-    for(const p of [merchant,neighbor])for(const mat of p.mats)mat.dispose();
-    for(const item of [merchantLabel,neighborLabel]){item.texture.dispose();item.sprite.material.dispose()}
+    for(const p of [merchant,neighbor,festivalHost])for(const material of p.mats)material.dispose();
+    for(const material of boothMats)material.dispose();
+    for(const item of [merchantLabel,neighborLabel,festivalLabel]){item.texture.dispose();item.sprite.material.dispose()}
     root.clear();
   }};
 }

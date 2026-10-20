@@ -122,6 +122,7 @@
   $('check').onclick=()=>{const q=state.active.deck[state.active.index];submit(selection.map(i=>q.tokens[i]).join(q.kind==='spell'?'':' '));};
   $('next').onclick=()=>change(()=>{const result=E.advance(state);if(result)finish(result);else renderQuestion();});
   $('result-home').onclick=()=>{notice('');home();};
+  $('brand-home').onclick=()=>{if(!window.KidscadeGame?.exit?.())window.location.assign('../../index.html');};
   function updateSound(){$('sound').textContent=sound?'소리 켜짐 ♪':'소리 꺼짐';$('sound').setAttribute('aria-pressed',sound);}
   $('sound').onclick=()=>{sound=!sound;stopSpeech();try{localStorage.setItem(SOUND_KEY,sound?'on':'off');}catch(_){}updateSound();};
   document.addEventListener('keydown',e=>{if(e.repeat||view!=='lesson'||!state.active||!$('intro').hidden)return;if(e.key==='Enter'){e.preventDefault();if(state.active.feedback!==null)$('next').click();else if(!$('check').hidden&&!$('check').disabled)$('check').click();}else if(/^[1-9]$/.test(e.key)&&!['spell','order'].includes(state.active.deck[state.active.index].kind)){const b=$('answers').children[Number(e.key)-1];if(b&&!b.disabled)b.click();}});

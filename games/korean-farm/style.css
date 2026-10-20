@@ -399,8 +399,31 @@ button:focus-visible{outline:3px solid #d18d34;outline-offset:3px}
 .neighbor-friendship{margin:0;text-align:right;color:#a46843;font-size:12px;font-weight:800}
 .neighbor-stock{font-weight:800;color:#47704f!important}
 .neighbor-dialogue .request-barn{background:#d8e7d3;color:#365b42}
+.festival-notice{position:absolute;z-index:5;top:82px;right:16px;max-width:265px;
+  padding:9px 13px;border:1px solid #e8c77b;border-radius:999px;background:#fff5d7f5;
+  box-shadow:0 6px 20px #574b2d2b;color:#755127;font-size:12px;font-weight:800;
+  white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.festival-notice:hover{background:#ffe4a7}
+.farm-forecast,.farm-weather-impact{padding:11px 13px;margin:4px 0!important;border-radius:12px;
+  white-space:pre-line;background:#e9f2ee;color:#325e63!important;font-size:12px;line-height:1.65}
+.farm-weather-impact{background:#fff2d8;color:#795a2c!important}
+.festival-day-note{display:grid;gap:8px;padding:12px;border:1px solid #e8ce92;border-radius:13px;
+  background:#fff6de;color:#73572c;font-size:13px;line-height:1.6}
+.festival-intro{background:#fff1d5;border-radius:14px;padding:13px}
+.festival-intro strong{font-size:15px;color:#855c2d}
+.festival-intro p{margin:6px 0 0}
+.festival-dialogue,.festival-order,.forecast-panel{display:grid;gap:10px}
+.festival-status{padding:9px 11px;margin:0!important;border-radius:9px;background:#ebf3e6;color:#436d4c!important}
+.festival-order{padding:13px;border:1px solid #d8dabe;border-radius:12px}
+.festival-order strong{color:#3e6848}
+.festival-order p{margin:0}
+.festival-order button,.forecast-panel button{min-height:41px;border:0;border-radius:11px;
+  padding:10px 13px;background:#51845e;color:white;font-weight:800}
+.festival-order button:disabled{background:#bec9b7;cursor:default}
+.festival-order button.barn-link{color:#3c684b;background:#e8f3e2;border:1px solid #c3d4bc}
 @media(max-width:350px){#bottomBar button,#bottomBar .tool{min-width:49px;padding:3px 3px}#bottomBar b{font-size:8px}}
 @media(max-width:700px){
+  .festival-notice{top:103px;right:8px;max-width:max(112px,calc(100vw - 245px));font-size:10px;padding:7px 9px}
   .cargo-badge{top:63px;left:auto;right:9px;transform:none;font-size:10px;padding:5px 9px}
   .cart-choice{grid-template-columns:1fr;gap:7px}.cart-choice button{grid-column:1;grid-row:auto}
   .inspector{max-height:min(43dvh,350px);padding:10px}
