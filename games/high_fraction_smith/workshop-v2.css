@@ -1,0 +1,222 @@
+/* The workshop is a single playable room. Crafting never blocks it with a dialog. */
+.smith-v2{--oak:#513323;--oak-light:#835333;--brass:#f0ba67;--paper:#f3dcba;--iron:#cad5d8}
+.smith-v2 .game-shell{min-height:100dvh;height:100dvh;background:#21150e}
+.smith-v2 .hud{height:66px;flex-basis:66px;background:#35241b;border-bottom:3px solid #795339;box-shadow:0 4px 0 #120b07b0}
+.smith-v2 .brand strong{font-family:Georgia,"Noto Serif KR",serif;font-size:21px;letter-spacing:.02em}
+.smith-v2 .brand small{font-size:12px;color:#e0bd8a}
+.smith-v2 .stat{background:#201811;border-color:#7c5638;min-width:80px}
+.smith-v2 .stat span{font-size:10px;color:#e3b984}.smith-v2 .stat b{font-size:19px}
+.smith-v2 .forge-room{grid-template-rows:auto minmax(360px,1fr) auto auto;gap:12px;padding:14px 16px 16px;overflow:hidden;background:radial-gradient(ellipse at 52% 42%,#4e2d1d85,transparent 62%),#20130f}
+.smith-v2 .forge-wall{background:linear-gradient(#4a2f20,#302014 60%,#25170e)}
+.smith-v2 .forge-wall:before{opacity:.52;background:linear-gradient(90deg,transparent 0 47%,#1e130b5c 48% 52%,transparent 53%) 0 0/120px 64px,linear-gradient(#f6bb6947 1px,transparent 1px) 0 0/100% 64px}
+.smith-v2 .forge-bg .forge-vignette{opacity:.3}
+.smith-v2 .forge-decor.decor-right{opacity:.24;transform:scale(.82);transform-origin:right top;pointer-events:none}
+.smith-v2 .forge-decor.decor-left{opacity:.82;transform:scale(.72);transform-origin:left bottom;pointer-events:none}
+.smith-v2 .order-board{position:relative;z-index:2;display:grid;grid-template-columns:minmax(0,2fr) minmax(125px,.6fr) minmax(170px,1fr);width:min(1210px,100%);max-width:1210px;min-width:0;gap:18px;padding:12px 22px;background:linear-gradient(110deg,#63452f,#3a271e);border:2px solid #b78550;border-radius:14px;box-shadow:0 5px 0 #17100b,0 12px 25px #0b06057a;align-items:center}
+.smith-v2 .order-board .customer-portrait{display:none}
+.smith-v2 .order-who{min-width:0}.smith-v2 .order-who strong{font-size:23px;color:#fff2c9}.smith-v2 .order-label{font-size:12px;color:#fad09a}
+.smith-v2 .order-who{display:flex;align-items:center;gap:12px}
+.smith-v2 .order-copy{min-width:0;display:flex;flex-direction:column;gap:3px}
+.smith-v2 .order-art{flex:0 0 72px;height:80px;border:1px solid #c89c61;background:radial-gradient(#af784466,#37241b);border-radius:8px;display:grid;place-items:center}
+.smith-v2 .order-art .smith-item-svg{max-height:74px;max-width:65px}
+.smith-v2 .target-metal-bar{display:block;margin:2px 0 3px;max-width:140px}
+.smith-v2 .target-metal-bar .metal-bars{justify-content:flex-start;width:100%}
+.smith-v2 .target-metal-bar .metal-unit{height:11px}
+.smith-v2 .order-who #requestText{font-size:12px;color:#f3decc}
+.smith-v2 .order-need{border-left:1px solid #ae8150;padding-left:14px}
+.smith-v2 .order-need strong{font-size:32px;color:#ffdd91}
+.smith-v2 .order-need span,.smith-v2 .order-need small{font-size:12px}
+.smith-v2 .blueprint-progress{border-left:1px solid #ae8150;padding-left:16px;min-width:0;color:#ffe0aa}
+.smith-v2 .blueprint-progress>strong{font-size:12px;letter-spacing:.08em;color:#f6c882}
+.smith-v2 .blueprint-parts{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}
+.smith-v2 .blueprint-parts span{font-size:12px;line-height:1.35;border:1px solid #987047;border-radius:6px;color:#d2b79b;padding:6px 8px;background:#291e17}
+.smith-v2 .blueprint-parts span.active{color:#2c1d11;background:#ffd08a;border-color:#ffdb9e;font-weight:900}
+.smith-v2 .blueprint-parts span.done{color:#c3ebcc;background:#30533d;border-color:#6db18b}
+.smith-v2 .work-zone{z-index:2;max-width:1240px;width:100%;min-height:360px;display:grid;grid-template-columns:minmax(128px,.20fr) minmax(360px,1fr) minmax(185px,.27fr);gap:12px;align-items:stretch;margin:0 auto}
+.smith-v2 .avatar-bay{align-items:center;justify-content:flex-end;padding-bottom:55px;min-height:0}
+.smith-v2 .avatar-stage{width:150px;height:220px;min-height:0}
+.smith-v2 .avatar-stage img{max-height:210px}.smith-v2 .avatar-fallback{font-size:74px}
+.smith-v2 .avatar-caption{font-size:11px;color:#ffe0aa;text-shadow:0 2px 2px #120904}
+.smith-v2 .anvil-zone{display:flex;flex-direction:column;min-height:0;height:auto;align-items:stretch;justify-content:stretch;background:linear-gradient(180deg,#69442aef,#352216f7);border:3px solid #ad794b;border-radius:16px;padding:14px 18px 12px;box-shadow:inset 0 3px #ce9a6140,0 7px 0 #170e09,0 14px 22px #0b0706aa}
+.smith-v2 .active-blueprint{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px 12px;padding-bottom:8px;border-bottom:2px dashed #b18152;color:#fce4bf}
+.smith-v2 .active-blueprint .blueprint-caption{display:inline-flex;background:#f4c87b;color:#342014;padding:4px 8px;border-radius:5px;font-weight:1000;font-size:11px}
+.smith-v2 .active-blueprint strong{font-size:20px;line-height:1.25}.smith-v2 .active-blueprint small{font-size:12px;color:#f3cda2}
+.smith-v2 .math-bench{display:flex;flex-direction:column;align-items:center;justify-content:space-between;flex:1;min-height:0;gap:4px;padding-top:5px}
+.smith-v2 .equation-line{position:static;top:auto;margin:4px auto;padding:6px 14px;min-width:0;width:fit-content;max-width:100%;font-size:15px;border-color:#ba8650;background:#24160e;color:#ffe2a5}
+.smith-v2 .anvil{flex:1;min-height:135px;max-height:240px;width:min(490px,100%);margin:0 auto}
+.smith-v2 .slot{top:8%;width:38%;height:80px;border-color:#f2c783;color:#fde2b5;background:#281910e0;border-radius:12px}
+.smith-v2 .slot:first-of-type{left:2%}.smith-v2 .slot:nth-of-type(2){right:2%}
+.smith-v2 .slot.filled{background:#725239;border-color:#f5cb79;box-shadow:0 3px 0 #362013}
+.smith-v2 .slot>span{font-size:16px}
+.smith-v2 .op-badge{top:21%;z-index:7;left:50%;border:2px solid #e4af6b;background:#29201b}
+.smith-v2 .anvil-top{bottom:25px;left:22%;right:17%;height:42px}.smith-v2 .anvil-body{bottom:3px;height:44px}.smith-v2 .anvil-foot{bottom:0}
+.smith-v2 .slot .piece{padding:5px;width:calc(100% - 8px);height:calc(100% - 8px);display:flex;flex-direction:column;gap:5px;justify-content:center}
+.smith-v2 .slot .piece-value{font-size:23px}
+.smith-v2 .slot .metal-bars{display:flex}
+.smith-v2 .cut-station{width:100%;padding:9px 12px;border-radius:9px;border:1px solid #9b6f43;background:#26190ed9;display:grid;grid-template-columns:1fr auto;gap:5px 12px}
+.smith-v2 .cut-station{position:relative;isolation:isolate}
+.smith-v2 .cut-station:after{content:"";position:absolute;left:6%;right:6%;top:43%;height:3px;z-index:2;pointer-events:none;background:linear-gradient(90deg,transparent,#fff5c2,#b1e4f2,transparent);filter:drop-shadow(0 0 6px #f7ab63);transform:scaleX(0);opacity:0}
+.smith-v2 .cut-station.cutting:after{animation:smithSlice .42s ease-out}
+.smith-v2 .cut-heading strong{font-size:14px;color:#ffe0a6}.smith-v2 .cut-heading small{display:block;font-size:11px;color:#d9b89a;line-height:1.4}
+.smith-v2 .cut-preview{align-self:center;min-height:23px;min-width:125px;display:flex;justify-content:center}
+.smith-v2 .cut-controls{display:flex;gap:6px;grid-column:1/-1}
+.smith-v2 .cut-controls button{cursor:pointer;flex:1;min-height:35px;font-size:12px;border-radius:7px;color:#ffebcb;border:1px solid #ac825c;background:#68462e;font-weight:850}
+.smith-v2 .cut-controls button:disabled{opacity:.4;cursor:not-allowed}.smith-v2 .cut-controls button:not(:disabled):hover{background:#aa7244;color:#fff}
+.smith-v2 .metal-bars{display:flex;gap:5px;min-width:35px;width:min(100%,160px);align-items:center;justify-content:center}
+.smith-v2 .metal-unit{display:block;position:relative;height:19px;min-width:24px;flex:1;max-width:165px;overflow:hidden;border:2px solid #263940;border-radius:4px;background:repeating-linear-gradient(90deg,#2d3c3f,#2d3c3f calc(100% / var(--divisions) - 2px),#cfd3cd calc(100% / var(--divisions) - 2px),#cfd3cd calc(100% / var(--divisions)));box-shadow:inset 0 0 5px #020608a3}
+.smith-v2 .metal-filled{display:block;height:100%;background:linear-gradient(180deg,#effaff,#9dafba 46%,#516c7b);box-shadow:inset 0 3px #fff8;transition:width .22s}
+.smith-v2 .cut-preview .metal-unit{border-color:#d8a45f}
+.smith-v2 .piece{flex:0 0 120px;height:78px;border:2px solid #9d744d;background:linear-gradient(160deg,#6c4a33,#362318);box-shadow:0 4px 0 #1d1109,inset 0 1px #edba80;color:#fff9e8;gap:7px}
+.smith-v2 .piece .piece-value{font-size:23px}
+.smith-v2 .piece .metal-bars{width:90%;min-width:75px}
+.smith-v2 .piece .metal-unit{height:17px}
+.smith-v2 .piece:hover{border-color:#ffe0a4;transform:translateY(-2px)}
+.smith-v2 .customer-bay{display:flex;flex-direction:column;align-items:center;gap:9px;justify-content:flex-end;padding:12px 9px;background:linear-gradient(180deg,#46301ecf,#2f1c13f2);border:2px solid #93643d;border-radius:15px;box-shadow:0 7px 0 #120b08;position:relative}
+.smith-v2 .bay-label{align-self:flex-start;font-weight:1000;color:#ffe1ad;font-size:14px;border-bottom:2px solid #b88550;padding:2px 6px 7px;width:100%}
+.smith-v2 .visitor-sprite{height:145px;max-width:90%;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 7px 3px #0d0605);transition:transform .3s}
+.smith-v2 .visitor-sprite{image-rendering:pixelated}
+.smith-v2 .customer-bay.pleased .visitor-sprite{animation:smithNod .6s ease}
+.smith-v2 .customer-speech{position:relative;font-size:12px;line-height:1.5;text-align:center;color:#fff0d6;border:1px solid #dba86e;background:#6b472a;padding:8px 9px;min-height:52px;border-radius:10px;width:100%;font-weight:750}
+.smith-v2 .delivery-plinth{height:64px;width:100%;background:linear-gradient(#ac7447,#50331e);border:3px solid #bd8b53;border-radius:9px;display:grid;place-items:center;position:relative}
+.smith-v2 .delivery-placeholder{font-size:11px;color:#ffe1b4;text-align:center;max-width:95%}
+.smith-v2 .delivery-art{position:absolute;inset:-28px 0 -2px;display:none;place-items:center;cursor:grab}
+.smith-v2 .delivery-art .smith-item-svg{height:92px;width:100%;max-width:130px}
+.smith-v2 .customer-bay.ready .delivery-art{display:grid}.smith-v2 .customer-bay.ready .delivery-placeholder{display:none}
+.smith-v2 .deliver-btn{width:100%;min-height:45px;padding:7px;border-radius:9px;background:#f0ba67;color:#392414;border:2px solid #ffe0a6;font-size:14px;font-weight:1000;cursor:pointer}
+.smith-v2 .deliver-btn:disabled{background:#664b37;color:#baaa96;border-color:#765b45;cursor:not-allowed}
+.smith-v2 .tool-rack{position:relative;z-index:2;max-width:1210px;width:100%;grid-template-columns:repeat(4,1fr);gap:9px}
+.smith-v2 .tool{height:60px;grid-template-columns:42px 30px 1fr;background:linear-gradient(#765037,#49311e);border:2px solid #bd8956;box-shadow:0 4px 0 #20140d;color:#fff3d6}
+.smith-v2 .smith-tool-svg{height:38px;width:38px;overflow:visible;filter:drop-shadow(1px 3px 2px #100b07)}
+.smith-v2 .smith-tool-svg .wood{fill:#b8814e;stroke:#f1bf75;stroke-width:2}
+.smith-v2 .smith-tool-svg .steel{fill:#92aeb7;stroke:#e7faff;stroke-width:2.5;stroke-linejoin:round}
+.smith-v2 .smith-tool-svg .glint{fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round}
+.smith-v2 .tool-ghost{background:none;box-shadow:none}
+.smith-v2 .held-stage-tool .smith-tool-svg{width:40px;height:40px}
+.smith-v2 .tool b{font-size:28px}.smith-v2 .tool small{font-size:13px;color:#ffdfae}
+.smith-v2 .tray-panel{position:relative;z-index:2;max-width:1210px;background:#37251ae8;border:2px solid #94633c;border-radius:12px;padding:10px 14px}
+.smith-v2 .tray-head b{font-size:15px;color:#ffdfab}.smith-v2 .tray-head small{display:block;font-size:11px;color:#e5c8a6}
+.smith-v2 .tray-actions button{font-size:12px;min-height:34px;color:#ffefd7;border-color:#ae8058;background:#4b3325}
+.smith-v2 .material-tray{min-height:83px;padding:3px 2px 5px;gap:10px}
+.smith-v2 .workshop-craft{position:relative;inset:auto;z-index:2;padding:8px 0 0;background:transparent;backdrop-filter:none;flex:1;min-height:0;align-items:stretch}
+.smith-v2 .workshop-craft.open{display:flex;flex-direction:column}
+.smith-v2 .workshop-craft .craft-card{box-shadow:none;border:0;padding:0;background:transparent;border-radius:0;width:100%;max-width:none;display:flex;flex-direction:column;justify-content:center}
+.smith-v2 .workshop-craft .craft-card h2{font-size:17px;margin:4px 0 2px}
+.smith-v2 .workshop-craft .craft-card p{font-size:12px;margin:2px 0 7px;min-height:0}
+.smith-v2 .workshop-craft .craft-scene{height:clamp(100px,20vh,188px);background:radial-gradient(ellipse at 50% 70%,#b35d288a,transparent 56%),linear-gradient(#442e1d,#24180e);border:2px solid #af8455;border-radius:9px}
+.smith-v2 .workshop-craft .craft-product{inset:0;display:flex;align-items:center;justify-content:center;transform:none}
+.smith-v2 .smith-item-svg{width:100%;height:100%;max-width:220px;overflow:visible;filter:drop-shadow(0 6px 4px #130b08)}
+.smith-v2 .smith-item-svg .piece-primary{fill:#bccdd4;stroke:#e9f6f9;stroke-width:3;stroke-linejoin:round}
+.smith-v2 .smith-item-svg .piece-secondary{fill:#b58a51;stroke:#fce0a8;stroke-width:3;stroke-linejoin:round}
+.smith-v2 .smith-item-svg .item-art .piece-primary{transform:scaleY(var(--primary-size,1));transform-origin:center center;transform-box:fill-box}
+.smith-v2 .smith-item-svg .item-art .piece-secondary{transform:scaleX(var(--secondary-size,1));transform-origin:center center;transform-box:fill-box}
+.smith-v2 .smith-item-svg .etched{fill:none;stroke:#f7ffff8c;stroke-width:3;stroke-linecap:round}
+.smith-v2 .smith-item-svg .gem{fill:#62bece;stroke:#ddffff;stroke-width:3}
+.smith-v2 .smith-item-svg .item-shadow{fill:#150c0990}
+.smith-v2 .smith-item-svg .forge-ingot{fill:#b7cbd1;stroke:#f5e4c2;stroke-width:4;opacity:0}
+.smith-v2 .workshop-craft .craft-scene[data-stage="heat"] .forge-ingot{opacity:1;fill:#ea7438;filter:drop-shadow(0 0 12px #ff9c31)}
+.smith-v2 .workshop-craft .craft-scene[data-stage="hammer"] .forge-ingot{opacity:.36;transform:scaleX(.9);transform-origin:center}
+.smith-v2 .workshop-craft .craft-scene[data-stage="heat"] .item-art{opacity:0}
+.smith-v2 .workshop-craft .craft-scene[data-stage="hammer"] .item-art{clip-path:inset(var(--forgeReveal,100%) 0 0 0);transition:clip-path .2s}
+.smith-v2 .smith-item-svg[data-built="0"] .piece-secondary{opacity:.2}
+.smith-v2 .smith-item-svg[data-built="1"] .piece-secondary{opacity:.28}
+.smith-v2 .smith-item-svg[data-built="2"] .piece-secondary{opacity:1}
+.smith-v2 .craft-scene[data-stage="heat"] .smith-item-svg{filter:drop-shadow(0 0 12px #ff7b31) sepia(.34)}
+.smith-v2 .craft-scene[data-stage="done"] .smith-item-svg{filter:drop-shadow(0 0 15px #e3d9b6)}
+.smith-v2 .workshop-craft .craft-meter{margin:7px 2px 4px;height:13px}
+.smith-v2 .workshop-craft .craft-status{font-size:13px;margin-bottom:4px}
+.smith-v2 .craft-stations{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.smith-v2 .craft-station{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:57px;border-radius:8px;border:2px solid #8b653c;background:linear-gradient(#60442d,#322218);color:#f7d4a5;cursor:pointer;font-size:12px}
+.smith-v2 .craft-station .station-art{height:22px;width:48px;display:block;position:relative}
+.smith-v2 .heat-art:before{content:"";display:block;width:32px;height:19px;margin:auto;border:3px solid #5a5550;border-radius:50% 50% 4px 4px;background:linear-gradient(#ffcd63,#e85123);box-shadow:0 0 8px #f97c2c}
+.smith-v2 .hammer-art:before{content:"";display:block;width:31px;height:13px;background:linear-gradient(#dfeaf1,#71808b);border-radius:2px;transform:rotate(-25deg);margin:1px auto;box-shadow:7px 8px 0 -4px #b98b58}
+.smith-v2 .quench-art:before{content:"";display:block;width:35px;height:17px;border:3px solid #a6bdc0;border-top:5px solid #d4edf0;border-radius:3px 3px 12px 12px;background:#3c899d;margin:3px auto}
+.smith-v2 .craft-station.active{background:#a7682d;border-color:#ffdc91;color:#fff8e8;box-shadow:0 0 0 2px #ffbe5a35}
+.smith-v2 .craft-station:disabled{opacity:.48;cursor:not-allowed}
+.smith-v2 .workshop-craft .craft-primary{min-height:38px;font-size:13px;margin-top:5px;background:#f4c779;border-radius:8px}
+.smith-v2 .workshop-craft .craft-tip{font-size:10px;margin-top:4px}
+.smith-v2[data-phase="craft"] .math-bench,.smith-v2[data-phase="part-reveal"] .math-bench,.smith-v2[data-phase="deliver"] .math-bench,.smith-v2[data-phase="award"] .math-bench{display:none}
+.smith-v2[data-phase="math"] .workshop-craft,.smith-v2[data-phase="shop"] .workshop-craft{display:none}
+.smith-v2[data-phase="craft"] .tool-rack,.smith-v2[data-phase="part-reveal"] .tool-rack,.smith-v2[data-phase="deliver"] .tool-rack,.smith-v2[data-phase="award"] .tool-rack{opacity:.35;pointer-events:none}
+.smith-v2 .shop-card{width:min(940px,95vw)}
+.smith-v2 #startModal{overflow-y:auto;align-items:safe center}
+.smith-v2 .start-card{width:min(850px,96vw);padding:21px 24px 19px;background:linear-gradient(155deg,#4b3022,#211813 65%);border:2px solid #b18054;box-shadow:0 30px 80px #090403df,inset 0 2px #e7b87b48}
+.smith-v2 .start-hero{min-height:190px;display:flex;align-items:center;justify-content:space-evenly;gap:10px;position:relative;overflow:hidden;border-radius:16px;border:1px solid #ae7848;background:radial-gradient(ellipse at center,#c37a36a3,transparent 62%),repeating-linear-gradient(90deg,#42291d 0 75px,#4d3021 75px 78px)}
+.smith-v2 .start-hero:after{content:"";position:absolute;bottom:0;left:0;width:100%;height:8px;background:repeating-linear-gradient(90deg,#a77848 0 55px,#6f4a30 55px 60px)}
+.smith-v2 .start-relic{flex:0 0 auto;width:98px;height:118px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(5px 9px 4px #1a0e0b);transform:rotate(-18deg)}
+.smith-v2 .relic-right{transform:rotate(14deg)}
+.smith-v2 .start-title-block{flex:1;min-width:0;z-index:1;text-shadow:0 3px 4px #2c150b;text-align:center}
+.smith-v2 .start-title-block h1{margin:10px 0;font-size:clamp(31px,5vw,54px);letter-spacing:.035em;line-height:1.15;color:#fff2d4;font-family:Georgia,'Noto Serif KR',serif}
+.smith-v2 .start-title-block strong{font-size:17px;color:#ffe1a5}
+.smith-v2 .start-eyebrow{display:block;font-size:11px;font-weight:900;letter-spacing:.12em;color:#f7d2a7}
+.smith-v2 .start-card .start-lead{font-size:14px;color:#fae8cb;margin:16px auto 11px;max-width:700px}
+.smith-v2 .start-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:0 0 13px;background:#211810;border:1px solid #785638;padding:6px;border-radius:10px}
+.smith-v2 .start-flow span{font-size:12px;color:#f3d4a7;white-space:nowrap;font-weight:750}
+.smith-v2 .start-flow b{color:#ffd687;margin-right:5px;font-family:Georgia,serif}
+.smith-v2 .start-card .mode-grid{margin:12px 0 9px;gap:10px}
+.smith-v2 .start-card .mode-grid button{min-height:130px;display:flex;flex-direction:column;justify-content:center;gap:7px;background:linear-gradient(#674327,#342317);border:2px solid #a4764e;border-radius:11px;padding:13px;box-shadow:0 4px #160d09;text-align:left}
+.smith-v2 .start-card .mode-grid button:hover,.smith-v2 .start-card .mode-grid button:focus-visible{background:#84502c;border-color:#ffce8e}
+.smith-v2 .start-card .mode-grid b{font-size:17px;margin:0;color:#fff0ca}
+.smith-v2 .start-card .mode-grid span{font-size:12px;line-height:1.4;color:#eed4b6}
+.smith-v2 .start-card .mode-grid em{font-style:normal;font-size:11px;font-weight:900;color:#f4c178}
+.smith-v2 .start-card .saved-progress{font-size:11px;padding:0;margin:0}
+.smith-v2 .start-card .modal-tip{font-size:11px;line-height:1.5;display:block;color:#d3b493}
+.smith-v2 .cut-station,.smith-v2 .delivery-plinth{background-image:linear-gradient(#281d15e8,#261a15dc),url('../../assets/game/2d/platformer-art/expansions/request/metal-center.png');background-size:auto,48px 48px}
+.smith-v2 .collection-card{position:relative;min-height:125px;padding-right:50px}
+.smith-v2 .collection-card .shop-product-art{position:absolute;right:5px;top:6px;width:50px;height:78px;display:grid;place-items:center;pointer-events:none}
+.smith-v2 .collection-card .shop-product-art .smith-item-svg{height:75px;max-width:46px}
+.smith-v2 .collection-card img,.smith-v2 .shop-sprite{width:45px;height:45px;object-fit:contain;image-rendering:pixelated}
+.smith-v2[data-furnace="1"] .furnace-mouth,.smith-v2[data-furnace="2"] .furnace-mouth{box-shadow:0 0 25px #ff883b}
+.smith-v2[data-furnace="2"] .furnace-mouth{box-shadow:0 0 40px #ffad36,inset 0 0 12px #ffbf60}
+.smith-v2[data-hammer="1"] .anvil-top,.smith-v2[data-hammer="2"] .anvil-top{filter:drop-shadow(0 0 7px #f4d6b1)}
+.smith-v2[data-hammer="2"] .anvil-top{filter:drop-shadow(0 0 12px #fbe3c0)}
+.smith-v2[data-counter="1"] .delivery-plinth,.smith-v2[data-counter="2"] .delivery-plinth{border-color:#f2d092}
+.smith-v2[data-counter="2"] .delivery-plinth{box-shadow:0 0 12px #ffdd8d75}
+@keyframes smithNod{35%{transform:translateY(-6px) rotate(3deg)}65%{transform:translateY(2px) rotate(-2deg)}}
+@keyframes smithSlice{10%{opacity:1;transform:scaleX(.1)}48%{opacity:1;transform:scaleX(1)}100%{opacity:0;transform:scaleX(1)}}
+@media(max-width:960px){
+  .smith-v2 .work-zone{grid-template-columns:110px minmax(330px,1fr) 160px;gap:7px}
+  .smith-v2 .forge-room{padding:10px;gap:9px}
+  .smith-v2 .customer-bay{padding:8px 6px}.smith-v2 .visitor-sprite{height:115px}
+  .smith-v2 .order-board{padding:10px;gap:9px}.smith-v2 .blueprint-progress{padding-left:9px}
+  .smith-v2 .avatar-stage{width:110px;height:170px}
+  .smith-v2 .cut-preview{min-width:85px}.smith-v2 .cut-controls button{font-size:11px}
+}
+@media(max-width:720px){
+  html:has(.smith-v2),body.smith-v2{height:auto;min-height:100%;overflow:auto}
+  .smith-v2 .game-shell{height:auto;min-height:100dvh}
+  .smith-v2 .hud{height:auto;flex-basis:auto;min-height:65px;flex-wrap:wrap;gap:5px 8px}
+  .smith-v2 .brand{flex:1;min-width:210px}.smith-v2 .brand small{display:block;font-size:10px}.smith-v2 .brand strong{font-size:17px}
+  .smith-v2 .hud-stats{order:3;margin:0;flex:1 0 100%;justify-content:space-between;gap:4px}
+  .smith-v2 .stat{min-width:0;flex:1;padding:4px 2px}.smith-v2 .stat.heat{min-width:65px}.smith-v2 .stat span{font-size:9px}.smith-v2 .stat b{font-size:15px}
+  .smith-v2 .forge-room{overflow:visible;display:flex;flex-direction:column;gap:10px;padding:8px}
+  .smith-v2 .forge-decor{display:none}
+  .smith-v2 .order-board{grid-template-columns:1fr auto;gap:6px;padding:9px 11px;width:100%}
+  .smith-v2 .order-who strong{font-size:19px}.smith-v2 .order-who #requestText{font-size:11px}.smith-v2 .order-need strong{font-size:24px}
+  .smith-v2 .order-art{flex-basis:48px;height:64px}.smith-v2 .order-art .smith-item-svg{max-width:44px;max-height:59px}
+  .smith-v2 .blueprint-progress{grid-column:1/-1;border-left:0;border-top:1px solid #b58d59;padding:6px 0 0}
+  .smith-v2 .blueprint-parts span{font-size:11px;padding:4px 6px}
+  .smith-v2 .work-zone{min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .smith-v2 .anvil-zone{grid-column:1/-1;grid-row:1;padding:11px;min-height:375px}
+  .smith-v2 .math-bench{min-height:280px}.smith-v2 .anvil{max-height:none;min-height:130px}
+  .smith-v2 .avatar-bay{grid-column:1;grid-row:2;min-height:125px;padding:3px 0 8px;background:#49301ef2;border:2px solid #94633c;border-radius:12px}
+  .smith-v2 .avatar-stage{width:110px;height:130px}.smith-v2 .avatar-stage img{height:100%;max-height:127px}.smith-v2 .avatar-caption{font-size:10px}
+  .smith-v2 .customer-bay{grid-column:2;grid-row:2;gap:4px;justify-content:center;min-height:130px}
+  .smith-v2 .bay-label{font-size:12px}.smith-v2 .visitor-sprite{height:65px}.smith-v2 .customer-speech{font-size:11px;padding:5px;min-height:0}
+  .smith-v2 .delivery-plinth{height:43px}.smith-v2 .deliver-btn{min-height:43px;font-size:12px}
+  .smith-v2 .tool-rack{grid-template-columns:repeat(4,1fr);gap:4px}
+  .smith-v2 .tool{height:68px;padding:5px 2px;grid-template-columns:1fr;grid-template-rows:auto auto;justify-items:center;gap:0}
+  .smith-v2 .tool-art{display:none}.smith-v2 .tool b{font-size:27px}.smith-v2 .tool small{font-size:9px;text-align:center;white-space:nowrap}
+  .smith-v2 .tray-head{display:flex;flex-direction:column;align-items:stretch;gap:7px}
+  .smith-v2 .tray-head small{font-size:11px;margin:0}.smith-v2 .tray-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+  .smith-v2 .tray-actions button{min-height:42px;font-size:10px;padding:3px}
+  .smith-v2 .piece{flex-basis:94px;height:70px}.smith-v2 .piece .piece-value{font-size:20px}
+  .smith-v2 .workshop-craft .craft-scene{height:170px}
+  .smith-v2 .workshop-craft .craft-station{min-height:62px}
+  .smith-v2 .start-card{padding:12px}.smith-v2 .start-hero{min-height:145px}.smith-v2 .start-relic{width:55px;height:88px}
+  .smith-v2 .start-title-block h1{font-size:30px}.smith-v2 .start-eyebrow{font-size:9px}.smith-v2 .start-title-block strong{font-size:12px}
+  .smith-v2 .start-flow{grid-template-columns:repeat(2,1fr)}.smith-v2 .start-flow span{font-size:10px}
+  .smith-v2 .start-card .mode-grid{grid-template-columns:1fr;gap:6px}.smith-v2 .start-card .mode-grid button{min-height:75px;padding:9px;gap:2px}
+  .smith-v2 .start-card .mode-grid b{font-size:14px}.smith-v2 .start-card .mode-grid span{font-size:10px}.smith-v2 .start-card .mode-grid em{font-size:10px}
+}
+@media(max-width:370px){.smith-v2 .cut-station{grid-template-columns:1fr}.smith-v2 .cut-preview{justify-content:flex-start}.smith-v2 .cut-controls{grid-column:1}.smith-v2 .cut-controls button{font-size:10px;padding:4px 2px}}
+@media(prefers-reduced-motion:reduce){.smith-v2 .smith-item-svg,.smith-v2 .visitor-sprite{animation:none!important}}

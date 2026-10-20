@@ -12,6 +12,8 @@ const P=require(path.join(dir,'puzzle-generator.js'));
 const O=require(path.join(dir,'order-generator.js'));
 const F=require(path.join(dir,'forge-minigame.js'));
 const S=require(path.join(dir,'progress-store.js'));
+const M=require(path.join(dir,'metal-workbench.js'));
+const V=require(path.join(dir,'workshop-art.js'));
 
 function node(id=''){
   const listeners=new Map(),classes=new Set(),obj={id,dataset:{},style:{setProperty(key,value){this[key]=value}},children:[],disabled:false,_listeners:listeners};
@@ -32,8 +34,10 @@ function mount(initialProgress=null,options={}){
   const toolOps=['+','-','×','÷'],tools=toolOps.map(op=>{const n=node('tool-'+op);n.dataset.op=op;return n});
   const modes=['practice','rush','master'].map(mode=>{const n=node('mode-'+mode);n.dataset.mode=mode;return n});
   const slots=[get('#slotA'),get('#slotB')];slots.forEach((n,i)=>n.dataset.slot=String(i));
+  const cuts=[2,3,4].map(parts=>{const n=node('cut-'+parts);n.dataset.cut=String(parts);return n});
+  const stations=['heat','hammer','quench'].map(stage=>{const n=node('station-'+stage);n.dataset.station=stage;return n});
   const pending=[],keys={},intervals=new Map();let now=1000,raf=0,intervalId=0;
-  const document={body:node('body'),querySelector:get,querySelectorAll:selector=>selector==='.tool'?tools:selector==='[data-mode]'?modes:selector==='.slot'?slots:[],createElement:()=>node('created'),elementFromPoint:()=>null};
+  const document={body:node('body'),querySelector:get,querySelectorAll:selector=>selector==='.tool'?tools:selector==='[data-mode]'?modes:selector==='.slot'?slots:selector==='[data-cut]'?cuts:selector==='[data-station]'?stations:[],createElement:()=>node('created'),elementFromPoint:()=>null};
   const saved=new Map(),localStorage={getItem:key=>saved.get(key)||null,setItem:(key,value)=>saved.set(key,value)};
   if(initialProgress)saved.set(S.KEY,JSON.stringify(initialProgress));
   const progressService={...S,
@@ -42,17 +46,19 @@ function mount(initialProgress=null,options={}){
     purchase:(...args)=>{const result=S.purchase(...args);if(result.ok)localStorage.setItem(S.KEY,JSON.stringify(result.progress));return result}
   };
   const puzzles=options.singleRush?{...P,create:mode=>P.create(mode==='rush'?'practice':mode)}:P;
-  const context={document,window:{FractionSmithMath:E,FractionSmithPuzzles:puzzles,FractionSmithOrders:O,FractionSmithForge:F,FractionSmithProgress:progressService,FractionSmithAvatar:{ForgeAvatar:class{playForge(){}celebrate(){}}}},localStorage,Audio:class{play(){return Promise.resolve()}},performance:{now:()=>now},setTimeout:fn=>{pending.push(fn);return pending.length},clearTimeout:()=>{},setInterval:fn=>{const id=++intervalId;intervals.set(id,fn);return id},clearInterval:id=>intervals.delete(id),requestAnimationFrame:()=>++raf,cancelAnimationFrame:()=>{},addEventListener:(type,handler)=>{keys[type]=handler},console};
+  const context={document,window:{FractionSmithMath:E,FractionSmithPuzzles:puzzles,FractionSmithOrders:O,FractionSmithForge:F,FractionSmithProgress:progressService,FractionSmithMetal:M,FractionSmithArt:V,FractionSmithAvatar:{ForgeAvatar:class{playForge(){}celebrate(){}}}},localStorage,Audio:class{play(){return Promise.resolve()}},performance:{now:()=>now},setTimeout:fn=>{pending.push(fn);return pending.length},clearTimeout:()=>{},setInterval:fn=>{const id=++intervalId;intervals.set(id,fn);return id},clearInterval:id=>intervals.delete(id),requestAnimationFrame:()=>++raf,cancelAnimationFrame:()=>{},addEventListener:(type,handler)=>{keys[type]=handler},console};
   vm.runInNewContext(fs.readFileSync(path.join(dir,'game.js'),'utf8'),context,{filename:'game.js'});
   const flush=()=>{let count=0;while(pending.length){if(count++>300)throw Error('Too many pending timers');pending.shift()()}};
   const advance=ms=>{now+=ms};
   const tick=ms=>{now+=ms;for(const run of intervals.values())run()};
-  return {get,tools,modes,flush,advance,tick,keys,saved,body:document.body};
+  return {get,tools,modes,cuts,stations,flush,advance,tick,keys,saved,body:document.body};
 }
 
-test('Practice: commission → solve fraction → heat → hammer → quench → earn gold',()=>{
+test('Practice: two physical parts → active forge stations → hand over item → earn gold',()=>{
   const sim=mount();sim.modes[0].dispatch('click');sim.flush();
   assert.match(sim.get('#itemName').textContent,/검/);
+  assert.equal(sim.get('#partName').textContent,'칼날');
+  assert.match(sim.get('#orderArt').innerHTML,/<svg/);
   const target=E.parse(sim.get('#targetValue').textContent);
   const chips=sim.get('#materialTray').children.map(chip=>({node:chip,value:E.parse(chip.innerHTML.match(/piece-value">([^<]+)/)[1])}));
   let answer=null;
@@ -64,11 +70,23 @@ test('Practice: commission → solve fraction → heat → hammer → quench →
   sim.tools.find(tool=>tool.dataset.op===answer.op).dispatch('click');sim.flush();
   assert.equal(sim.get('#craftModal').classList.contains('open'),true);
   assert.match(sim.get('#craftStep').textContent,/가열/);
-  for(let i=0;i<4;i++)sim.get('#craftActionBtn').dispatch('click');
-  assert.match(sim.get('#craftStep').textContent,/망치질/);
   for(let i=0;i<3;i++)sim.get('#craftActionBtn').dispatch('click');
+  assert.match(sim.get('#craftStep').textContent,/망치질/);
+  for(let i=0;i<2;i++)sim.get('#craftActionBtn').dispatch('click');
   assert.match(sim.get('#craftStep').textContent,/담금질/);
   sim.get('#craftActionBtn').dispatch('click');
+  assert.match(sim.get('#craftTitle').textContent,/칼날/);
+  assert.equal(sim.get('#gold').textContent,'0 G','a single part must not award gold');
+  sim.get('#craftActionBtn').dispatch('click');
+  assert.equal(sim.get('#partName').textContent,'손잡이');
+  assert.match(sim.get('#blueprintParts').innerHTML,/칼날 · [\d/]+/,'finished part measurements should remain visible');
+  solveOneStep(sim);
+  for(let i=0;i<2+2+1;i++)sim.get('#craftActionBtn').dispatch('click');
+  assert.equal(sim.body.dataset.phase,'deliver');
+  assert.equal(sim.get('#deliverBtn').disabled,false);
+  assert.match(sim.get('#deliveryArt').innerHTML,/smith-item-svg/);
+  assert.match(sim.get('#craftStatus').textContent,/금속 [\d/]+ \+ [\d/]+/);
+  sim.get('#deliverBtn').dispatch('click');
   assert.match(sim.get('#craftTitle').textContent,/완성/);
   assert.ok(Number(sim.get('#gold').textContent.replace(/\D/g,''))>0);
   sim.get('#craftActionBtn').dispatch('click');
@@ -99,8 +117,33 @@ test('Rush and master keep visible recovery controls, and master has a real 3-st
   assert.equal(sim.get('#orderCount').textContent,0);
   assert.equal(sim.get('#materialTray').children.length,chips.length);
   sim.modes[2].dispatch('click');
-  assert.match(sim.get('#orderMeta').textContent,/최단 3타/);
+  assert.match(sim.get('#orderMeta').textContent,/최단 3번 가공/);
   assert.equal(sim.get('#restartBtn').disabled,false);
+});
+
+test('Cut station creates real fraction ingots, updates the ruler, and Undo restores the original',()=>{
+  const sim=mount();sim.modes[0].dispatch('click');
+  const original=sim.get('#materialTray').children;
+  const first=original[0];
+  const originalValue=E.parse(first.innerHTML.match(/piece-value">([^<]+)/)[1]);
+  assert.match(first.innerHTML,/metal-bars/);
+  first.dispatch('click');
+  assert.match(sim.get('#cutStatus').textContent,/선택한 금속/);
+  assert.equal(sim.cuts[0].disabled,false);
+  const result=M.cut(originalValue,2);
+  sim.cuts[0].dispatch('click');
+  assert.equal(sim.get('#materialTray').children.length,original.length+1);
+  const values=sim.get('#materialTray').children.map(p=>p.innerHTML.match(/piece-value">([^<]+)/)[1]);
+  assert.ok(values.includes(E.toFraction(result.left)));
+  assert.ok(values.includes(E.toFraction(result.right)));
+  assert.equal(sim.get('#cutStation').classList.contains('cutting'),true);
+  assert.equal(sim.get('#undoBtn').disabled,false);
+  sim.get('#undoBtn').dispatch('click');
+  assert.equal(sim.get('#cutStation').classList.contains('cutting'),true);
+  assert.equal(sim.get('#materialTray').children.length,original.length-1,'restored piece is back in the first slot');
+  assert.match(sim.get('#slotA').innerHTML,new RegExp(E.toFraction(originalValue).replace('/','\\/')));
+  sim.flush();
+  assert.equal(sim.get('#cutStation').classList.contains('cutting'),false);
 });
 
 test('Shop buys a furnace upgrade, saves gold and shortens the following craft loop',()=>{
@@ -129,8 +172,8 @@ test('Shop buys a furnace upgrade, saves gold and shortens the following craft l
   assert.ok(answer);
   chips[answer.i].node.dispatch('click');chips[answer.j].node.dispatch('click');
   sim.tools.find(t=>t.dataset.op===answer.op).dispatch('click');sim.flush();
-  assert.match(sim.get('#craftStatus').textContent,/0\/3/);
-  for(let i=0;i<3;i++)sim.get('#craftActionBtn').dispatch('click');
+  assert.match(sim.get('#craftStatus').textContent,/0\/2/);
+  for(let i=0;i<2;i++)sim.get('#craftActionBtn').dispatch('click');
   assert.match(sim.get('#craftStep').textContent,/망치질/);
 });
 
@@ -146,19 +189,17 @@ test('Rush disables shopping but retains collected gold and upgrades',()=>{
 test('Counter upgrade increases awarded gold and new milestone announces a product',()=>{
   const sim=mount({gold:0,crafted:1,collection:{sword:1},upgrades:{furnace:2,hammer:0,counter:2}});
   sim.modes[0].dispatch('click');
-  const strikes=Number(sim.get('#orderMeta').textContent.match(/최단 (\d+)타/)[1]);
-  const target=E.parse(sim.get('#targetValue').textContent);
-  const chips=sim.get('#materialTray').children.map(chip=>({node:chip,value:E.parse(chip.innerHTML.match(/piece-value">([^<]+)/)[1])}));
-  let answer=null;
-  for(let i=0;i<chips.length;i++)for(let j=0;j<chips.length;j++)if(i!==j)for(const op of toolOps()){
-    try{if(E.eq(E.apply(op,chips[i].value,chips[j].value),target))answer={i,j,op}}catch(_){}
+  let totalBest=0;
+  for(let part=0;part<2;part++){
+    totalBest+=Number(sim.get('#orderMeta').textContent.match(/최단 (\d+)번 가공/)[1]);
+    solveOneStep(sim);
+    for(let i=0;i<1+2+1;i++)sim.get('#craftActionBtn').dispatch('click');
+    if(part===0)sim.get('#craftActionBtn').dispatch('click');
   }
-  assert.ok(answer);
-  chips[answer.i].node.dispatch('click');chips[answer.j].node.dispatch('click');
-  sim.tools.find(t=>t.dataset.op===answer.op).dispatch('click');sim.flush();
-  for(let i=0;i<2+3+1;i++)sim.get('#craftActionBtn').dispatch('click');
+  assert.equal(sim.body.dataset.phase,'deliver');
+  sim.get('#deliverBtn').dispatch('click');
   const quality=Number(sim.get('#craftInstruction').textContent.match(/정밀도 (\d+)점/)[1]);
-  const expected=Math.round((30+strikes*10+Math.round(quality/5))*1.3);
+  const expected=Math.round((30+totalBest*10+Math.round(quality/5))*1.3);
   assert.equal(JSON.parse(sim.saved.get(S.KEY)).gold,expected);
   assert.match(sim.get('#craftTip').textContent,/정찰병의 창/);
   sim.get('#craftActionBtn').dispatch('click');
@@ -182,13 +223,18 @@ test('Three consecutive commissions grant a milestone bonus and reset the progre
   const sim=mount({gold:0,crafted:0,collection:{},upgrades:{furnace:2,hammer:0,counter:0}});
   sim.modes[0].dispatch('click');
   for(let order=1;order<=3;order++){
-    solveOneStep(sim);
-    assert.ok(['blade','tool','guard','royal'].includes(sim.get('#craftScene').dataset.family));
-    for(let i=0;i<2+3+1;i++)sim.get('#craftActionBtn').dispatch('click');
+    for(let part=0;part<2;part++){
+      solveOneStep(sim);
+      assert.ok(['blade','tool','guard','royal'].includes(sim.get('#craftScene').dataset.family));
+      for(let i=0;i<1+2+1;i++)sim.get('#craftActionBtn').dispatch('click');
+      if(part===0)sim.get('#craftActionBtn').dispatch('click');
+    }
+    assert.equal(Number(sim.get('#gold').textContent.replace(/\D/g,'')),(order-1)*62,'gold is credited only after delivery');
+    sim.get('#deliverBtn').dispatch('click');
     assert.equal(sim.get('#craftGrade').textContent,'⚒️ 튼튼한 제작품');
     if(order===3){
       assert.match(sim.get('#craftTip').textContent,/3연속 납품! 추가 \+25 G/);
-      assert.equal(JSON.parse(sim.saved.get(S.KEY)).gold,52*3+25);
+      assert.equal(JSON.parse(sim.saved.get(S.KEY)).gold,62*3+25);
       assert.equal(sim.get('#chainFill').style.width,'0%');
       assert.match(sim.get('#chainLabel').textContent,/연속 3회/);
     }
@@ -201,13 +247,15 @@ test('Perfect rush crafting awards a masterpiece, feedback stars and three bonus
   sim.modes[1].dispatch('click');sim.tick(18000);
   assert.equal(sim.get('#timer').textContent,72);
   solveOneStep(sim);
-  for(let i=0;i<2;i++)sim.get('#craftActionBtn').dispatch('click');
+  sim.get('#craftActionBtn').dispatch('click');
   sim.advance(1125);
-  for(let i=0;i<3;i++)sim.get('#craftActionBtn').dispatch('click');
-  assert.equal(sim.get('#hammerHits').children.length,3);
+  for(let i=0;i<2;i++)sim.get('#craftActionBtn').dispatch('click');
+  assert.equal(sim.get('#hammerHits').children.length,2);
   assert.ok(sim.get('#hammerHits').children.every(pip=>pip.className.includes('perfect')));
   assert.match(sim.get('#craftBurst').textContent,/완벽/);
   sim.get('#craftActionBtn').dispatch('click');
+  assert.equal(sim.body.dataset.phase,'deliver');
+  sim.get('#deliverBtn').dispatch('click');
   assert.equal(sim.get('#timer').textContent,75);
   assert.match(sim.get('#craftGrade').textContent,/명품 제작품/);
   assert.equal(sim.get('#craftScene').dataset.grade,'masterpiece');
