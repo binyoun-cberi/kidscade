@@ -116,6 +116,12 @@ border-radius:9px;padding:9px 13px;text-align:center;transition:opacity .2s}
 #modeSelect button{background:#18212c;border:1px solid #536274;padding:12px;border-radius:10px;text-align:left;font-size:14px;font-weight:900}
 #modeSelect button.active{border-color:#e8bd84;background:#3d2f27;color:#ffe8c7}
 #modeSelect small{display:block;font-size:11px;font-weight:500;color:#c1b4ab;line-height:1.5;letter-spacing:0;margin-top:4px}
+#mazeHUD{position:fixed;right:max(16px,env(safe-area-inset-right));top:126px;z-index:3;width:190px;padding:10px;background:#0a121bdc;border:1px solid #c1a08082;border-radius:11px;box-shadow:0 8px 23px #000a;pointer-events:none}
+#mazeHUD[hidden]{display:none}
+#mazeHUD strong{display:block;color:#f1d0a1;font-size:12px;margin-bottom:6px}
+#mazeMap{display:block;width:100%;aspect-ratio:1;image-rendering:crisp-edges;border-radius:5px;background:#05090e}
+#mazeHUD small{display:block;color:#9db0ba;font-size:10px;line-height:1.4;margin-top:6px}
+@media(max-width:650px){#mazeHUD{top:116px;right:10px;width:136px;padding:7px}#mazeHUD strong{font-size:10px}#mazeHUD small{font-size:9px}}
 #enemyWarning{position:fixed;z-index:4;left:50%;top:28%;transform:translateX(-50%);max-width:min(420px,85vw);text-align:center;color:#f8c1b1;font-weight:900;font-size:clamp(14px,2.3vw,21px);text-shadow:0 0 18px #f34b5a;pointer-events:none;opacity:0;transition:opacity .35s}
 #enemyWarning.show{opacity:1}
 @media(max-height:560px){#correctionPanel .panel{max-height:94vh;overflow:auto}#correctionChoices button{min-height:42px;padding:7px}}
@@ -188,7 +194,7 @@ body.hidden-in-locker #lockerMask{display:block}
   <p>이곳의 모든 것은 이름으로 존재합니다.<br>잘못된 이름을 고쳐 자신의 이름을 지키세요.</p>
   <div class="note">사람이 아닌 것을 사람이라고 부르지 마십시오.<br>이름이 바뀌면, 존재도 바뀝니다.</div>
   <div id="modeSelect" role="group" aria-label="플레이 모드 선택"><button class="active" type="button" data-mode="story" aria-pressed="true">새 기록 탐험<small>매번 바뀌는 방과 문제 · 중간 기록부터 계속하기</small></button><button type="button" data-mode="speedrun" aria-pressed="false">스피드런<small>이번 주 같은 코스 · 힌트와 중간 재시작 없이 기록 도전</small></button></div>
-  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사 · H 힌트<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면으로 시점 조절 · 조사/달리기/힌트 버튼<br>벽·바닥·천장·문은 반복되는 글자로 공간을 알려줍니다. 선명한 글자는 조사할 수 있는 물체입니다.<br>이름을 다시 쓰고, 흩어진 문장을 순서대로 조립해 사라진 공간을 되찾으세요.<br>오타가 쌓이면 교정자가, 글자가 지워지면 삭제자가, 기록을 잘못 읽으면 오독자가 나타납니다.<br>막히면 힌트 버튼을 사용하세요. 스피드런에서는 힌트를 사용할 수 없습니다.</div>
+  <div class="rules">PC: WASD 이동 · Shift 달리기 · 마우스 시점 · E 조사 · H 힌트<br>모바일: 왼쪽 이동 패드 · 오른쪽 화면으로 시점 조절 · 조사/달리기/힌트 버튼<br>벽·바닥·천장·문은 반복되는 글자로 공간을 알려줍니다. 선명한 글자는 조사할 수 있는 물체입니다.<br>이름을 다시 쓰고, 흩어진 문장을 순서대로 조립해 사라진 공간을 되찾으세요.<br>마지막 기록실 너머에는 매번 달라지는 색인 미로가 기다립니다. 세 조각을 찾아 출구를 여세요.<br>오타가 쌓이면 교정자가, 글자가 지워지면 삭제자가, 기록을 잘못 읽으면 오독자가 나타납니다.<br>막히면 힌트 버튼을 사용하세요. 스피드런에서는 힌트를 사용할 수 없습니다.</div>
   <button class="primary" id="start" type="button">기록 시작</button><button class="primary" id="resume" type="button" hidden>마지막 기록부터</button>
  </div>
 </section>
@@ -240,6 +246,7 @@ body.hidden-in-locker #lockerMask{display:block}
   <button id="correctionClose" type="button">주변을 다시 살펴보기</button>
  </div>
 </section>
+<aside id="mazeHUD" hidden aria-label="탐색한 구역의 지도"><strong id="mazeProgress">찢어진 색인 0/3</strong><canvas id="mazeMap" width="182" height="182" aria-label="지나간 길만 나타나는 미로 지도"></canvas><small>청록색 점이 현재 위치 · 지나온 길만 보입니다</small></aside>
 <section class="overlay closed" id="ending" role="dialog" aria-modal="true" aria-labelledby="endingTitle">
  <div class="panel">
   <small id="endingSub">기록 종료</small><h2 id="endingTitle">당신은 살아남았습니다</h2>
@@ -258,6 +265,7 @@ body.hidden-in-locker #lockerMask{display:block}
 <script src="rewrite.js"></script>
 <script src="expansion.js"></script>
 <script src="anomalies.js"></script>
+<script src="maze.js"></script>
 <script type="module" src="game.js"></script>
 </body>
 </html>
