@@ -112,7 +112,7 @@ test('first maiden encounter is a safe rehearsal and teaches before the chase',(
   assert.match(js,/if\(maiden\.charge>=1\.8\)beginMaidenHunt\(\)/);
   assert.match(js,/maidenPhase='hunt';maiden\.charge=0;ghostWaiting=6/);
   assert.match(js,/ghostWaiting=10/);
-  assert.match(js,/lastMistake='처녀귀신/);
+  assert.match(js,/beginCapture\('maiden',maiden,'처녀귀신/);
   assert.match(js,/생명이 모두 소진됐어요/);
 });
 
@@ -376,11 +376,12 @@ function simulateExtraAnomaly(mode){
     "const ui={reticle:{classList:{toggle(){}},style:{}}},SCHOOL={guard:{x:-24.2,z:0}};",
     "const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z),clearGhostSight=()=>true,canWalk=()=>true,routePlan=(a,b)=>[{x:a.x,z:a.z},{x:b.x,z:b.z}];",
     "const alerts=[];function sfx(){}function showLesson(){}function showToast(t){alerts.push(t)}function finish(ok){ended=true;}",
-    "function setStage(n){stage=n;}"
+    "function setStage(n){stage=n;}",
+    "function beginCapture(){hp--;invulnerable=4;return true;}"
   ];
   const execution=[
     "const budget=mode==='wolf'?300:mode==='bell'?120:mode==='eggAway'||mode==='eggStare'?100:760;",
-    "for(let i=0;i<budget;i++){elapsed+=.05;invulnerable=Math.max(0,invulnerable-.05);updateNewEncounters(.05);if((stage!==6&&mode.startsWith('egg'))||(mode==='wolf'&&encounter.wolf.ready)||(mode==='yuki'&&hp<3))break;}",
+    "for(let i=0;i<budget;i++){elapsed+=.05;invulnerable=Math.max(0,invulnerable-.05);updateNewEncounters(.05);if((stage!==6&&mode.startsWith('egg'))||(mode==='wolf'&&encounter.wolf.ready)||(mode==='yuki'&&hp<3)||(mode==='eggStare'&&hp<3))break;}",
     "return {stage,hp,eggCharge:encounter.eggCharge,bellCount:encounter.bellCount,bellWindow:encounter.bellWindow,wolfReady:encounter.wolf.ready,wolfTime:encounter.wolf.lureTime,alerts};"
   ];
   return new Function('mode',[...definitions,js.slice(js.indexOf('function playerLookDirection(){'),js.indexOf('function gazingAtGhost(){')),js.slice(start,end),...execution].join('\n'))(mode);
@@ -467,7 +468,7 @@ test('first-person camera sits precisely at the character eye and respects pitch
   const torch={position:{set(){}},intensity:0},torchTarget={position:{set(){}}};
   const code=src.replaceAll('viewYaw','view.yaw').replaceAll('viewPitch','view.pitch');
   const update=new Function('player','view','camera','torch','torchTarget','flashOn','power',
-    'FIRST_PERSON_EYE_HEIGHT',code+'return updateCamera;')(
+    'FIRST_PERSON_EYE_HEIGHT','let captureSequence=null;'+code+'return updateCamera;')(
     player,view,camera,torch,torchTarget,true,100,1.62);
   for(const yaw of [0,Math.PI/2,-Math.PI/2,Math.PI,.72])
     for(const pitch of [-.65,0,.65]){
@@ -494,7 +495,7 @@ test('camera stays eye-locked while moving, and the avatar turns when the view t
   const torch={position:{set(){}},intensity:0},torchTarget={position:{set(){}}};
   const source=(js.slice(begin,cam)+look+js.slice(cam,end)).replaceAll('viewYaw','view.yaw').replaceAll('viewPitch','view.pitch');
   const impl=new Function('keys','joy','player','view','canWalk','invulnerable','elapsed','camera',
-    'torch','torchTarget','flashOn','power','FIRST_PERSON_EYE_HEIGHT',source+
+    'torch','torchTarget','flashOn','power','FIRST_PERSON_EYE_HEIGHT','let captureSequence=null;'+source+
     'return {updatePlayer,updateCamera};')(keys,joy,player,view,()=>true,0,0,camera,
     torch,torchTarget,true,100,1.62);
   for(const command of ['w','a','s','d','w+d','idle']){
@@ -830,7 +831,7 @@ test('wolf lure speaker cannot be triggered through the 5-1 classroom wall',()=>
 test('normal survival starts apart from the teaching route and preserves a 5-minute objective',()=>{
   for(const fragment of [
     'const SURVIVAL_SECONDS=300,SURVIVAL_REQUIRED_SEALS=8',
-    "reset('survival')", "reset('tutorial')", "if(tutorialMode){updateGhost(dt);updateNewEncounters(dt);updateNavigation(dt);}",
+    "reset('survival')", "reset('tutorial')", "if(!captureSequence){updateNewEncounters(dt);updateNavigation(dt);}",
     'updateSurvival(dt)', "finish(survivalKills>=SURVIVAL_REQUIRED_SEALS)"
   ])assert.ok(js.includes(fragment),fragment);
   assert.match(js,/if\(!tutorialMode\)\{ui\.lesson\.classList\.add\('hidden'\);return;\}/);
@@ -954,4 +955,92 @@ test('untextured ghosts are recolored but supplied PBR maps remain intact',()=>{
   assert.match(js,/if\(copy\.map\|\|!copy\.color\)return copy/);
   assert.match(js,/geo\.setAttribute\('color'/);
   assert.match(js,/copy\.vertexColors=true/);
+});
+
+test('caught-by-ghost sequence holds position for a first-person reveal before respawning',()=>{
+  for(const id of ['captureScene','captureMark','captureName','captureTitle','captureLine','captureLife'])
+    assert.ok(html.includes('id="'+id+'"'),'missing capture UI '+id);
+  assert.match(js,/const CAPTURE_SCENES=Object\.freeze\(/);
+  for(const kind of ['maiden','egg','yuki','reaper','wolf'])
+    assert.match(js,new RegExp(kind+":\\{mark:"));
+  assert.match(js,/function beginCapture\(kind,actor,reason,resetToStage=null\)/);
+  assert.match(js,/duration:1\.8/);
+  assert.match(js,/function updateCapture\(dt\)/);
+  assert.match(js,/if\(captureSequence\)\{\s*updateCapture\(dt\)/);
+  assert.match(js,/if\(hp<=0\)\{finish\(false\);return;\}/);
+  assert.match(js,/function clearCapture\(\)/);
+  assert.match(js,/clearCapture\(\);\s*tutorialMode=/);
+  assert.match(js,/if\(!started\|\|paused\|\|ended\|\|captureSequence\)return/);
+  assert.match(html,/#captureScene\[data-kind="yuki"\]/);
+  assert.match(html,/@media\(prefers-reduced-motion:reduce\)/);
+});
+test('survival grabs and tutorial attacks use a ghost-specific capture, without premature relocation',()=>{
+  for(const token of [
+    "{kind:k,actor:g.actor}",
+    "beginCapture('maiden',maiden",
+    "{kind:'yuki',actor:yuki}",
+    "{kind:'egg',actor:egg}",
+    "{kind:'wolf',actor:w}",
+    "const kind=stalker?.kind"
+  ])assert.ok(js.includes(token),token);
+  const survivalHit=js.slice(js.indexOf('if(!hidingLocker&&d<1.22'),js.indexOf('function sealSurvivalGhost'));
+  assert.match(survivalHit,/if\(takeAnomalyHit\(/);
+  assert.doesNotMatch(survivalHit,/other\.actor\.x=p\.x/);
+  const captureEnd=js.slice(js.indexOf('function completeCapture()'),js.indexOf('function updateCapture(dt)'));
+  assert.match(captureEnd,/other\.actor\.x=p\.x/);
+  assert.match(captureEnd,/if\(hp<=0\)\{finish\(false\);return;\}/);
+});
+
+test('grab runtime defers teleport until camera beat ends, then restores actor scale',()=>{
+  const begin=js.indexOf('function clearCapture(){');
+  const end=js.indexOf('function takeAnomalyHit(',begin);
+  const source=js.slice(begin,end);
+  const active=new Set(),notes=[];
+  const ui={
+    captureScene:{dataset:{},classList:{add(k){active.add(k)},remove(k){active.delete(k)}},
+      style:{setProperty(){},removeProperty(){}},setAttribute(){}},
+    captureMark:{textContent:''},captureName:{textContent:''},
+    captureTitle:{textContent:''},captureLine:{textContent:''},
+    captureLife:{textContent:''},knob:{style:{transform:''}}
+  };
+  const actor={x:2.3,z:3.3,root:{position:{x:2.3,z:3.3},rotation:{y:0},
+    scale:{value:1,clone(){return{value:this.value}},copy(v){this.value=v.value;return this},
+      multiplyScalar(v){this.value*=v;return this}}}};
+  const rig=new Function('ui','actor','notes',`
+    const window={matchMedia:()=>({matches:false})},document={exitPointerLock(){}};
+    const CAPTURE_SCENES={maiden:{mark:'눈',title:'잡힘',line:'가까이',sound:'sfx_scream_01.mp3'}};
+    const HORROR_NAMES={maiden:'처녀귀신'};
+    const keys=new Set(['w']),joy={x:1,y:0},bgm={volume:.09};
+    const SCHOOL={guard:{x:-24,z:0}},SURVIVAL_SPAWNS=[],survivalGhosts=[];
+    const player={x:2,z:3,yaw:0},tutorialMode=false;
+    let hp=3,invulnerable=0,started=true,ended=false,hidingLocker=null;
+    let viewYaw=0,viewPitch=0,lastMistake='',captureSequence=null;
+    function leaveLocker(){}
+    function sfx(){}function updateHud(){}
+    function showToast(t){notes.push(t)}
+    function finish(ok){ended=true}
+    function canWalk(){return true}
+    function dist(a,b){return Math.hypot(a.x-b.x,a.z-b.z)}
+    function setStage(){}function showLesson(){}function updateNavigation(){}
+    ${source}
+    return {beginCapture,updateCapture,clearCapture,state:()=>({
+      hp,invulnerable,ended,x:player.x,z:player.z,active:!!captureSequence,
+      scale:actor.root.scale.value,volume:bgm.volume
+    })};
+  `)(ui,actor,notes);
+  assert.equal(rig.beginCapture('maiden',actor,'시선을 유지하세요'),true);
+  assert.deepEqual([rig.state().x,rig.state().z],[2,3],'do not instantly teleport on contact');
+  assert.equal(rig.state().hp,2);
+  assert.equal(active.has('active'),true);
+  rig.updateCapture(.9);
+  assert.equal(rig.state().active,true);
+  assert.equal(rig.state().x,2);
+  assert.ok(rig.state().scale>1);
+  rig.updateCapture(.9);
+  assert.equal(rig.state().active,false);
+  assert.deepEqual([rig.state().x,rig.state().z],[-24,0]);
+  assert.equal(rig.state().scale,1);
+  assert.equal(rig.state().volume,.09);
+  assert.equal(active.has('active'),false);
+  assert.ok(notes.some(x=>x.includes('생명 2개')));
 });
