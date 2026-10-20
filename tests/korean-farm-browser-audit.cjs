@@ -153,9 +153,13 @@ async function main(){
  await evaluate('window.__farmQA.teleport(-5,3)');
  await sleep(420);
  const walkFrom=await evaluate('window.__farmQA.state().player');
+ await evaluate('window.__farmQA.forwardOrigin=window.__farmQA.state().player');
  await evaluate('document.querySelector("#farm").focus()');
  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'d',code:'KeyD',windowsVirtualKeyCode:68});
- await sleep(580);
+ // Low-FPS software WebGL may spend the first 580ms turning in place. Keep
+ // the key pressed until the intended forward walking truly starts.
+ await waitFor('Math.hypot(window.__farmQA.state().player.x-window.__farmQA.forwardOrigin.x,window.__farmQA.state().player.z-window.__farmQA.forwardOrigin.z)>.18',7000);
+ await sleep(230);
  const duringKey=await evaluate('window.__farmQA.debug()');
  await send('Input.dispatchKeyEvent',{type:'keyUp',key:'d',code:'KeyD',windowsVirtualKeyCode:68});
  const walkTo=await evaluate('window.__farmQA.state().player');
