@@ -35,6 +35,15 @@ test('Home V2 popular ranking follows weekly plays before total plays', () => {
   assert.deepEqual(ranked.slice(0,3).map(game => game.id), ['quick','together','featured']);
 });
 
+test('Home V2 excludes games with zero plays this week even if they were popular before', () => {
+  const ranked = home.rankPopular(games, { games: {
+    featured:{ weeklyPlays:0, totalPlays:900 },
+    quick:{ weeklyPlays:1, totalPlays:3 },
+    together:{ weeklyPlays:0, totalPlays:100 }
+  } }, 'high');
+  assert.deepEqual(ranked.map(game => game.id), ['quick']);
+});
+
 test('Home V2 recommendation rewards unseen games and preference affinity', () => {
   const ranked = home.recommendGames(games, {
     age:'high',
@@ -132,7 +141,7 @@ test('recommended home no longer duplicates the all-games CTA already handled by
 });
 
 
-test('Home V2 keeps the leading cards diverse across overlapping rails when enough games exist', () => {
+test('Home V2 keeps discovery rail leaders diverse, excluding the factual popular ranking', () => {
   const pool = Array.from({length:24}, (_,index) => ({
     id:`overlap-${index}`,
     title:`겹침 ${index}`,
@@ -150,8 +159,30 @@ test('Home V2 keeps the leading cards diverse across overlapping rails when enou
     popularGames:pool.slice(0,12),
     recommendedGames:pool.slice(0,18)
   });
-  const leadIds = rails.flatMap(rail => rail.games.slice(0,3).map(game => game.id));
+  const leadIds = rails.filter(rail => rail.key !== 'popular').flatMap(rail => rail.games.slice(0,3).map(game => game.id));
   assert.equal(new Set(leadIds).size, leadIds.length);
+});
+
+test('Home V2 preserves the exact popular top 12 even when OTA appears in new and horror rails', () => {
+  const ranked = [
+    { id:'high_seed_volleyball', title:'배구', age:'high' },
+    { id:'high_ota_typographic_horror', title:'오타', age:'high' },
+    { id:'high_folklore_night_guard', title:'야간 경비', age:'high' },
+    ...Array.from({ length:17 }, (_, i) => ({ id:`popular-${i}`, title:`인기 ${i}`, age:'high' }))
+  ];
+  const rails = home.railDefinitions(ranked, {
+    age:'high',
+    dateKey:'2026-10-20',
+    heroId:'high_ota_typographic_horror',
+    recentGames:[ranked[1]],
+    newGames:[ranked[1], ranked[0]],
+    popularGames:ranked,
+    recommendedGames:[]
+  });
+  assert.ok(rails.find(rail => rail.key === 'halloween-horror')?.games.some(game => game.id === ranked[1].id));
+  const popular = rails.find(rail => rail.key === 'popular');
+  assert.equal(popular.showPlayCount, true);
+  assert.deepEqual(popular.games.map(game => game.id), ranked.slice(0, 12).map(game => game.id));
 });
 
 

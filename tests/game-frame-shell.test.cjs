@@ -36,3 +36,12 @@ test('common game frame silences child and shared audio before iframe disposal',
   assert.match(source, /silenceFrameAudio\(refs\.iframe, 'reset'\)/);
   assert.match(source, /silenceFrameAudio\(refs\.iframe, 'reload'\)/);
 });
+
+test('game frame reports actual readiness and returns failed active sessions through the common close path', () => {
+  assert.match(source, /kidscade:game-frame-playing/);
+  assert.match(source, /kidscade:game-stage-cancel/);
+  const lobby = fs.readFileSync(path.resolve(__dirname, '../index_base.html'), 'utf8');
+  assert.match(lobby, /playReadyTime/);
+  assert.match(lobby, /addEventListener\('kidscade:game-frame-playing'/);
+  assert.match(lobby, /addEventListener\('kidscade:game-stage-cancel'/);
+});

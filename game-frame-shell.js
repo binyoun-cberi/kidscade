@@ -279,6 +279,7 @@
       iframe.classList.remove('kc-game-frame-hidden');
       hideStage();
       attachRuntimeGuard(iframe);
+      root.document?.dispatchEvent?.(new CustomEvent('kidscade:game-frame-playing'));
     };
     iframe.onerror = () => {
       if (status === 'loading') showError({ code:'LOAD_ERROR' });
@@ -328,6 +329,12 @@
   }
 
   function cancel() {
+    if (current?.activated && root?.document) {
+      // A failed load may already have activated a session; complete the same
+      // cleanup path as the lobby close button instead of leaving it stuck.
+      root.document.dispatchEvent(new CustomEvent('kidscade:game-stage-cancel'));
+      return true;
+    }
     const refs = dom();
     reset();
     refs.modal?.classList.add('hidden');

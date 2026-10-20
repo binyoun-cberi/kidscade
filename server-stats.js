@@ -3,12 +3,37 @@
 
   const API_ROOT = '/api/stats';
   const CACHE_TTL_MS = 5 * 60 * 1000;
+  const VISIBLE_STATS_REFRESH_MS = 2 * 60 * 1000;
+  const PLAY_QUEUE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+  const PLAY_RETRY_MS = 20 * 1000;
+  const MAX_PLAY_QUEUE = 200;
+  const STANDALONE_MODE = document.currentScript?.dataset?.kcStandalone === '1';
   const STYLE_ID = 'kidscade-server-stats-style';
   let currentStats = null;
   let booted = false;
+  let playQueue = null;
+  let playFlush = null;
+  let playRetryTimer = 0;
+  const acknowledgedPlayIds = new Set();
 
   function storage() {
-    return window.KidscadeStorage || null;
+    if (window.KidscadeStorage) return window.KidscadeStorage;
+    // Standalone game pages do not load the lobby storage module. Persist the
+    // same queue key so a later lobby visit can retry their unacknowledged plays.
+    const keys = {
+      statsPendingPlays:'kidscade_stats_pending_plays_v1',
+      serverStatsCache:'kidscade_stats_cache_v1'
+    };
+    return {
+      getJson(name, fallback) {
+        try { return JSON.parse(localStorage.getItem(keys[name]) || 'null') ?? fallback; }
+        catch (_) { return fallback; }
+      },
+      setJson(name, value) {
+        try { localStorage.setItem(keys[name], JSON.stringify(value)); return true; }
+        catch (_) { return false; }
+      }
+    };
   }
 
   function getKstWeekKey(input = new Date()) {
@@ -391,6 +416,9 @@
     renderSiteStats(stats);
     renderPopularRankings(stats);
     renderGameStats(stats);
+    document.dispatchEvent(new CustomEvent('kidscade:server-stats-updated', {
+      detail: { weekKey:stats.weekKey }
+    }));
   }
 
   function readCache() {
@@ -439,31 +467,142 @@
     if (cached) render(cached.data);
     if (!force && cached && Date.now() - Number(cached.fetchedAt || 0) < CACHE_TTL_MS) return cached.data;
     try {
-      const response = await fetch(API_ROOT, { credentials: 'same-origin' });
+      const response = await fetch(API_ROOT, { credentials: 'same-origin', cache: 'no-store' });
       if (!response.ok) return cached?.data || null;
       const data = await response.json();
-      if (data?.ok) { saveCache(data); render(data); }
+      if (data?.ok) {
+        data.games = data.games || {};
+        // A cached GET must not undo a more recent acknowledged POST.
+        if (currentStats?.ok && currentStats.weekKey === data.weekKey) {
+          for (const [id, current] of Object.entries(currentStats.games || {})) {
+            const incoming = data.games?.[id];
+            if (!incoming) { data.games[id] = current; continue; }
+            incoming.weeklyPlays = Math.max(Number(incoming.weeklyPlays || 0), Number(current.weeklyPlays || 0));
+            incoming.totalPlays = Math.max(Number(incoming.totalPlays || 0), Number(current.totalPlays || 0));
+          }
+        }
+        saveCache(data);
+        render(data);
+      }
       return data;
     } catch (_) { return cached?.data || null; }
   }
 
-  async function recordPlay(gameId, seconds) {
+  function pendingPlays() {
+    if (playQueue) return playQueue;
+    const stored = storage()?.getJson('statsPendingPlays', []);
+    const now = Date.now();
+    playQueue = (Array.isArray(stored) ? stored : []).filter(item =>
+      item && /^[a-z0-9_-]{1,80}$/i.test(item.gameId) &&
+      /^[0-9a-f-]{36}$/i.test(item.eventId) &&
+      Number(item.seconds) >= 30 &&
+      Number(item.queuedAt) > now - PLAY_QUEUE_TTL_MS &&
+      Number(item.queuedAt) <= now + 60 * 1000
+    ).slice(-MAX_PLAY_QUEUE);
+    return playQueue;
+  }
+
+  function persistPlays() {
+    try {
+      const store = storage();
+      const queue = pendingPlays();
+      // Other open tabs may have enqueued sessions since this tab last read
+      // localStorage. Preserve their records when acknowledging our own.
+      const shared = store?.getJson('statsPendingPlays', []);
+      if (Array.isArray(shared)) {
+        for (const item of shared) {
+          if (!item?.eventId || acknowledgedPlayIds.has(item.eventId) ||
+              queue.some(entry => entry.eventId === item.eventId)) continue;
+          if (/^[a-z0-9_-]{1,80}$/i.test(item.gameId) &&
+              Number(item.queuedAt) > Date.now() - PLAY_QUEUE_TTL_MS) queue.push(item);
+        }
+      }
+      if (queue.length > MAX_PLAY_QUEUE) queue.splice(0, queue.length - MAX_PLAY_QUEUE);
+      store?.setJson('statsPendingPlays', queue);
+    }
+    catch (error) { console.warn('[KidscadeServerStats] pending-play persistence unavailable:', error); }
+  }
+
+  function schedulePlayRetry() {
+    if (playRetryTimer || !pendingPlays().length) return;
+    playRetryTimer = setTimeout(() => {
+      playRetryTimer = 0;
+      flushPending();
+    }, PLAY_RETRY_MS);
+  }
+
+  function applyPlayResult(id, result) {
+    if (!result?.ok || !result.game) return;
+    const base = currentStats?.ok && currentStats.weekKey === result.weekKey ? currentStats :
+      (readCache()?.data || { ok: true, weekKey:result.weekKey, site:{ weeklyVisitors:0, totalVisitors:0 }, games:{}, popular:[] });
+    base.games = { ...(base.games || {}), [id]: result.game };
+    base.weekKey = result.weekKey || base.weekKey;
+    saveCache(base);
+    if (booted) render(base);
+    else currentStats = base;
+  }
+
+  function flushPending(options = {}) {
+    if (options.unloading) {
+      if (typeof navigator === 'undefined' || typeof navigator.sendBeacon !== 'function') return null;
+      for (const item of pendingPlays()) {
+        const body = new Blob([JSON.stringify({
+          gameId:item.gameId, seconds:item.seconds, eventId:item.eventId
+        })], { type:'application/json' });
+        navigator.sendBeacon(`${API_ROOT}/play`, body);
+      }
+      // Keep the queue until a response is acknowledged; the Worker deduplicates beacons.
+      return null;
+    }
+    if (playFlush) return playFlush;
+    playFlush = (async () => {
+      while (pendingPlays().length) {
+        const item = pendingPlays()[0];
+        try {
+          const result = await requestJson(`${API_ROOT}/play`, {
+            method:'POST', keepalive:true,
+            body:JSON.stringify({ gameId:item.gameId, seconds:item.seconds, eventId:item.eventId })
+          });
+          if (!result?.ok) throw new Error('stats-play-not-acknowledged');
+          playQueue.shift();
+          acknowledgedPlayIds.add(item.eventId);
+          persistPlays();
+          if (acknowledgedPlayIds.size > 250) acknowledgedPlayIds.delete(acknowledgedPlayIds.values().next().value);
+          applyPlayResult(item.gameId, result);
+        } catch (error) {
+          // Newly deployed games may briefly 404 while the Worker catalog cache
+          // expires. Retry those, but stop retrying a removed game after 15 min.
+          const status = String(error?.message || '');
+          if (/stats-http-400/.test(status) ||
+              (/stats-http-404/.test(status) && Date.now() - item.queuedAt > 15 * 60 * 1000)) {
+            playQueue.shift();
+            acknowledgedPlayIds.add(item.eventId);
+            persistPlays();
+            console.warn('[KidscadeServerStats] rejected play:', item.gameId, error);
+            continue;
+          }
+          schedulePlayRetry();
+          break;
+        }
+      }
+    })().finally(() => { playFlush = null; });
+    return playFlush;
+  }
+
+  function recordPlay(gameId, seconds, eventId = makeClientId()) {
     const id = String(gameId || '');
     const duration = Math.floor(Number(seconds || 0));
-    if (!/^[a-z0-9_-]{1,80}$/i.test(id) || duration < 30) return null;
-    try {
-      const result = await requestJson(`${API_ROOT}/play`, { method: 'POST', keepalive: true, body: JSON.stringify({ gameId: id, seconds: duration }) });
-      if (result?.ok && result.game) {
-        const base = currentStats?.ok ? currentStats : (readCache()?.data || { ok: true, weekKey: result.weekKey, site: { weeklyVisitors: 0, totalVisitors: 0 }, games: {}, popular: [] });
-        base.games = { ...(base.games || {}), [id]: result.game };
-        base.weekKey = result.weekKey || base.weekKey;
-        currentStats = base;
-        saveCache(base);
-        renderPopularRankings(base);
-        renderGameStats(base);
-      }
-      return result;
-    } catch (_) { return null; }
+    const sessionId = String(eventId || '');
+    if (!/^[a-z0-9_-]{1,80}$/i.test(id) || duration < 30 || duration > 8 * 60 * 60 ||
+        !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(sessionId)) return Promise.resolve(null);
+    if (acknowledgedPlayIds.has(sessionId)) return Promise.resolve(null);
+    const queue = pendingPlays();
+    if (!queue.some(item => item.eventId === sessionId)) {
+      queue.push({ gameId:id, seconds:duration, eventId:sessionId, queuedAt:Date.now() });
+      if (queue.length > MAX_PLAY_QUEUE) queue.shift();
+      persistPlays();
+    }
+    return flushPending();
   }
 
   async function boot() {
@@ -485,6 +624,14 @@
     if (cached) render(cached.data);
     await recordWeeklyVisit();
     await loadStats(false);
+    flushPending();
+    window.addEventListener('online', () => flushPending());
+    setInterval(() => {
+      if (document.visibilityState !== 'hidden') loadStats(true);
+    }, VISIBLE_STATS_REFRESH_MS);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') flushPending();
+    });
     document.addEventListener('kidscade:dashboard-rendered', () => {
       syncStatsPlacement();
       if (currentStats?.ok) renderPopularRankings(currentStats);
@@ -505,6 +652,15 @@
     tick();
   }
 
-  window.KidscadeServerStats = Object.freeze({ load: loadStats, recordPlay, recordVisit: recordWeeklyVisit, render, get current() { return currentStats; } });
-  waitForApp();
+  window.KidscadeServerStats = Object.freeze({ load: loadStats, recordPlay, flushPending, recordVisit: recordWeeklyVisit, render, get current() { return currentStats; } });
+  if (STANDALONE_MODE) {
+    // No lobby markup exists here; only the reliable play queue is needed.
+    flushPending();
+    window.addEventListener('online', () => flushPending());
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') flushPending();
+    });
+  } else {
+    waitForApp();
+  }
 })();

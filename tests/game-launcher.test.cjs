@@ -71,6 +71,7 @@ test('open creates a catalog-driven session, remembers the game and opens the if
   assert.equal(session.id, 'demo');
   assert.equal(session.category, 'lang');
   assert.equal(session.href, 'catalog-demo.html');
+  assert.match(session.playEventId, /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i);
   assert.equal(remembered, 'demo');
   assert.match(modalPayload.titleText, /카탈로그 데모/);
   assert.deepEqual(sounds, ['open']);
@@ -174,9 +175,10 @@ test('close always clears stale session state even when reward persistence throw
   const result = launcher.close({
     now: () => 61000,
     minRewardPlaySec: 30,
-    getSession: () => ({ id: 'demo', category: 'math', startedAt: 1000 }),
+    getSession: () => ({ id: 'demo', category: 'math', startedAt: 1000, playEventId:'session-demo' }),
     closeModal: () => calls.push('modal-close'),
     checkpointPlayTime: () => calls.push('checkpoint'),
+    recordPlay: (session, seconds) => calls.push(['analytics', session.playEventId, seconds]),
     addCoins: () => { throw new Error('storage failed'); },
     showToast: () => calls.push('toast'),
     resetSession: () => calls.push('reset'),
@@ -186,6 +188,7 @@ test('close always clears stale session state even when reward persistence throw
 
   assert.equal(result.handled, true);
   assert.ok(result.error instanceof Error);
+  assert.ok(calls.some(call => Array.isArray(call) && call[0] === 'analytics' && call[2] === 60));
   assert.deepEqual(calls.slice(-3), ['reset', 'badges', 'after-close']);
 });
 

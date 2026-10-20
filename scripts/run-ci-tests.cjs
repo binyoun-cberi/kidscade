@@ -199,6 +199,7 @@ const TEST_FILES = [
   "tests/story-builder-spelling.test.cjs",
   "tests/story-builder-flow.test.cjs",
   "tests/server-stats-worker.test.mjs",
+  "tests/server-stats-client.test.cjs",
   "tests/stats-rankings.test.cjs",
   "tests/storage.test.cjs",
   "tests/game-classification.test.cjs","tests/catalog-metadata.test.cjs","tests/catalog-discovery.test.cjs","tests/game-sdk.test.cjs","tests/game-frame-shell.test.cjs","tests/game-sdk-adoption.test.cjs","tests/source-owned-integrations.test.cjs",
