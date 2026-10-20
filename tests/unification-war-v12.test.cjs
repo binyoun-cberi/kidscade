@@ -112,7 +112,8 @@ test('국가 AI는 방어·전쟁·회복·전쟁준비 상태를 구분한다',
   assert.equal(mode({ passive:true }), 'HOLD');
   assert.equal(mode({ threat:true }), 'DEFEND');
   assert.equal(mode({ atWar:true }), 'WAR');
-  assert.equal(mode({ powerRatio:0.5 }), 'RECOVER');
+  assert.equal(mode({ powerRatio:0.5, hasExpansion:false }), 'RECOVER');
+  assert.equal(mode({ powerRatio:0.5, hasExpansion:true }), 'EXPAND');
   assert.equal(mode({}), 'PREPARE_WAR');
   assert.equal(w.UnificationWarAIStrategy.shouldLaunch({
     personality:p, powerRatio:1.3, preparedPower:600, targetDefense:400
@@ -141,5 +142,5 @@ test('v12 핵심 플레이 UI가 소스에 남아 있다', () => {
     'function openHistoryEvent',
     'function openCityProjects'
   ]) assert.ok(html.includes(token), token);
-  assert.match(catalog, /games\/high_history_map\/index\.html\?v=25/);
+  assert.match(catalog, /games\/high_history_map\/index\.html\?v=26/);
 });

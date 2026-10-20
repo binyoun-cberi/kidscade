@@ -43,7 +43,26 @@ function reinforcementAmount(type,missionId){
   return base;
 }
 
+// Forecasts and resolution use exactly the same casualty model.
+function combatOutcome(atk,def,attackers,defenders,ranged){
+  var won=atk>def,ownLoss,enemyLoss;
+  if(ranged){ownLoss=Math.max(.02,Math.min(.18,def/Math.max(atk,1)*.055));enemyLoss=Math.max(.12,Math.min(.62,atk/Math.max(def,1)*.36));}
+  else if(won){ownLoss=Math.max(.12,Math.min(.66,def/Math.max(atk,1)*.44));enemyLoss=1;}
+  else{ownLoss=Math.max(.25,Math.min(.82,def/Math.max(atk,1)*.34));enemyLoss=Math.max(.10,Math.min(.60,atk/Math.max(def,1)*.43));}
+  return {won:ranged?false:won,attackers:Math.max(0,Math.round(attackers*(1-ownLoss))),defenders:Math.max(0,Math.round(defenders*(1-enemyLoss)))};
+}
+function combatRange(atk,def,attackers,defenders,ranged){
+  var a=[],d=[];
+  function sample(x,y){var r=combatOutcome(x,y,attackers,defenders,ranged);a.push(attackers-r.attackers);d.push(defenders-r.defenders);}
+  [.93,1.07].forEach(function(x){[.93,1.07].forEach(function(y){sample(atk*x,def*y);});});
+  // Crossing the win/loss boundary changes the casualty formula discontinuously.
+  var low=Math.max(atk*.93,def*.93),high=Math.min(atk*1.07,def*1.07);
+  if(!ranged&&low<=high){[low,high].forEach(function(p){sample(p,p);sample(p*(1+1e-10),p);});}
+  return {ownMin:Math.min.apply(null,a),ownMax:Math.max.apply(null,a),enemyMin:Math.min.apply(null,d),enemyMax:Math.max.apply(null,d)};
+}
 global.UnificationWarWarfare={
+  combatOutcome:combatOutcome,
+  combatRange:combatRange,
   MISSIONS:MISSIONS,
   mission:mission,
   attackMultiplier:attackMultiplier,
