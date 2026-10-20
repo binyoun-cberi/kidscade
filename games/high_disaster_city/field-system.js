@@ -9,7 +9,7 @@ function elevation(c,r){
  return .12+Math.abs(r-mid)*.035+Math.abs(c-center)*.0015;
 }
 function makeCell(c,r){
- return{c,r,elevation:elevation(c,r),water:0,moisture:.22,fire:0,heat:0,fuel:.72,burned:0,snow:0,debris:0};
+ return{c,r,elevation:elevation(c,r),water:0,moisture:.22,fire:0,heat:0,fuel:.72,burned:0,snow:0,debris:0,silt:0};
 }
 function createState(){
  const cells=[];for(let r=0;r<C.rows;r++)for(let c=0;c<C.cols;c++)cells.push(makeCell(c,r));
@@ -182,9 +182,13 @@ function updateWildfire(sim,d,dt){
 function ambient(sim,dt){
  const f=ensure(sim);
  for(const x of f.cells){
+  if(x.water>.24)x.silt=clamp(Math.max(x.silt||0,x.water*.62),0,.9);
   x.water=Math.max(0,x.water-(C.ambientDrain||.006)*dt);
   if(!sim.state.disasters.some(d=>d.type==='wildfire')){x.fire=Math.max(0,x.fire-.16*dt);x.heat=Math.max(0,x.heat-.12*dt)}
   x.moisture=clamp(x.moisture+(x.water>.05?.02:.002)*dt,0,1);
+  x.debris=Math.max(0,(x.debris||0)-dt*.0025);
+  x.silt=Math.max(0,(x.silt||0)-dt*.0018);
+  x.burned=Math.max(0,x.burned-dt*.00075);
  }
  for(const b of f.tempBarriers)b.life-=dt;
  f.tempBarriers=f.tempBarriers.filter(x=>x.hp>0&&x.life>0);
