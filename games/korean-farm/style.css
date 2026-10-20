@@ -436,3 +436,14 @@ button:focus-visible{outline:3px solid #d18d34;outline-offset:3px}
   #notification{top:58px;max-width:calc(100vw - 190px)}
   #app:has(.inspector:not(.hidden)) #notification{left:auto;right:7px;transform:none}
 }
+
+/* Festival hands-on game: flexible buttons remain fully usable on mobile. */
+.festival-activity{margin-top:14px;padding:14px;border:1px solid #c9d8bc;border-radius:14px;background:#f4f8ec}
+.festival-activity>strong{display:block;color:#37563d;font-size:1rem}
+.festival-activity p{margin:9px 0;line-height:1.55}
+.festival-activity-progress{font-weight:700;color:#53714c}
+.festival-activity-prompt{font-weight:700}
+.festival-activity-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(142px,1fr));gap:8px}
+.festival-activity-choices button{min-height:48px;white-space:normal;padding:10px 8px;border-radius:10px;border:1px solid #9caf8c;background:#fffef8;color:#314937;font-size:.91rem;font-weight:650;cursor:pointer}
+.festival-activity-choices button:disabled{opacity:.52;cursor:default;background:#e4eadc}
+.neighbor-routine{font-size:.9rem;color:#476a56}

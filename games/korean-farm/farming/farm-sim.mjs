@@ -2,7 +2,7 @@
 import {FIELD_DEFS,makeFarmState,validateFarmState} from '../world.mjs';
 import {normalizeSeedlings,fullSeedlings,emptySeedlings,seedlingCount} from './rice-transplant.mjs';
 import {WORK_STRIPS,PATCH_ENERGY,validWorkStrip,newFieldWork,restoreFieldWork,completedWorkStrips} from './field-work.mjs';
-export const FARM_SAVE_VERSION=6;
+export const FARM_SAVE_VERSION=7;
 export const BASKET_CAPACITY=20;
 export const CART_CAPACITY=60;
 export const DAYS_PER_SEASON=14;
@@ -43,8 +43,8 @@ export function createFarmState(){
   return {...makeFarmState(),version:FARM_SAVE_VERSION,day:1,minute:7*60,energy:100,
     money:4200,weather:'sunny',compostStock:24,inventory:{seedRice:8,seedCarrot:8,seedCorn:6,fertilizer:0,rice:0,carrot:0,corn:0},
     fields:FIELD_DEFS.map(createField),cargo:{rice:0,carrot:0,corn:0},transport:{cartAttached:false},
-    village:{lastTalkDay:0,friendship:0,giftReceived:false},festival:{completedKey:''},
-    stats:{harvests:0,sales:0,earnings:0,deliveries:0,festivals:0},
+    village:{lastTalkDay:0,friendship:0,giftReceived:false},festival:{completedKey:'',activityKey:'',activityDoneKey:'',activitySteps:[]},
+    stats:{harvests:0,sales:0,earnings:0,deliveries:0,festivals:0,festivalActivities:0},
     upgrades:{sickle:false,hoe:false,channel:false,cart:false},market:{lastRepeatDay:0},seenPlots:[]};
 }
 export function restoreFarmState(raw){
@@ -65,7 +65,7 @@ export function restoreFarmState(raw){
     return current;
   }
   // V2–V5 saves retain their soil, seedlings, harvest strips, cash and crops.
-  if(![2,3,4,5,FARM_SAVE_VERSION].includes(raw.version)||!Array.isArray(raw.fields))return current;
+  if(![2,3,4,5,6,FARM_SAVE_VERSION].includes(raw.version)||!Array.isArray(raw.fields))return current;
   current.day=validNumber(raw.day,1,1,100000)|0;
   current.minute=validNumber(raw.minute,420,420,1320)|0;
   current.energy=validNumber(raw.energy,100,0,100);
@@ -108,6 +108,16 @@ export function restoreFarmState(raw){
   if(raw.version>=6){
     const key=raw.festival?.completedKey;
     current.festival.completedKey=typeof key==='string'&&/^\d{1,5}:(봄|여름|가을|겨울)$/.test(key)?key:'';
+  }
+  if(raw.version>=7){
+    const festivalKey=/^\d{1,5}:(봄|여름|가을|겨울)$/;
+    const done=raw.festival?.activityDoneKey;
+    const key=raw.festival?.activityKey;
+    current.festival.activityDoneKey=typeof done==='string'&&festivalKey.test(done)?done:'';
+    current.festival.activityKey=typeof key==='string'&&festivalKey.test(key)?key:'';
+    const choices=raw.festival?.activitySteps;
+    current.festival.activitySteps=Array.isArray(choices)?choices.filter(x=>typeof x==='string'&&/^[a-z0-9]{1,16}$/.test(x)).slice(0,5):[];
+    current.stats.festivalActivities=validNumber(raw.stats?.festivalActivities,0,0,100000)|0;
   }
   if(raw.version>=4)for(const crop of Object.keys(CROPS))
     current.cargo[crop]=validNumber(raw.cargo?.[crop],0,0,CART_CAPACITY)|0;
@@ -160,7 +170,7 @@ export function fulfillSeasonalFestival(state){
   state.cargo[event.produce]-=event.count;
   state.money+=event.reward;
   state.inventory[event.seed]=(state.inventory[event.seed]||0)+event.seedCount;
-  state.festival={completedKey:event.key};
+  state.festival={...state.festival,completedKey:event.key};
   state.stats.festivals=(state.stats.festivals||0)+1;
   return {ok:true,event,reward:event.reward,seed:event.seed,seedCount:event.seedCount,
     message:event.title+'에 참여했어요! '+event.reward.toLocaleString('ko-KR')+'원과 씨앗 '+event.seedCount+'묶음을 받았어요.'};
