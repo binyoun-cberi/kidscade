@@ -66,6 +66,7 @@ class Simulation{
    slot.building={...old,level:nextLevel,maxHp,hp:Math.max(Math.round(maxHp*.72),Math.round(maxHp*ratio))};s.stats.upgraded++;this.emit('build',def.name+' '+nextLevel+'단계 강화!',{x:slot.x});
   }else{
    if(old){s.stats.replaced++;this.emit('replace',D.BUILDINGS[old.id].name+'을(를) '+def.name+'으로 교체',{x:slot.x})}
+   DC.Recovery?.clearSite?.(this,slot);
    slot.building={id:def.id,hp:def.hp,maxHp:def.hp,level:1,placedAt:s.time};s.stats.placed++;if(!old)this.emit('build',def.name+' 건설 완료',{x:slot.x});
   }
   s.stats.cardsPlayed++;this.discardCard(uid);
@@ -112,7 +113,7 @@ class Simulation{
    const d=this.matchingDisaster('earthquake');if(d){d.energy=Math.max(0,d.energy-18);d.blockPause=Math.max(d.blockPause||0,4)}DC.Population?.emergency?.(this,15);s.stability=Math.min(100,s.stability+1);this.emit('response','긴급 대피 명령을 내려 15초 동안 주민 이동을 빠르게 했습니다.',{vehicle:d?'ambulance':'evacBus',side:d?.side||s.disasters[0]?.side});
   }else if(def.action==='repair'){
    const damaged=this.repairTarget();
-   if(damaged){const isBlockingLevee=damaged.building.id==='levee'&&this.state.disasters.some(d=>d.type==='flood'&&d.blockedSlot===damaged.i),amount=isBlockingLevee?72:52;damaged.building.hp=Math.min(damaged.building.maxHp,damaged.building.hp+amount);DC.Recovery?.repair?.(this,damaged);this.emit('repair',(isBlockingLevee?'홍수를 막는 ':'')+D.BUILDINGS[damaged.building.id].name+' 긴급 수리',{x:damaged.x,vehicle:'repairTruck'})}
+   if(damaged){const isBlockingLevee=damaged.building.id==='levee'&&this.state.disasters.some(d=>d.type==='flood'&&d.blockedSlot===damaged.i),amount=isBlockingLevee?72:52;damaged.building.hp=Math.min(damaged.building.maxHp,damaged.building.hp+amount);DC.Recovery?.repair?.(this,damaged);s.effects.push({type:'roadwork',x:damaged.x,life:4.6,maxLife:4.6});this.emit('repair',(isBlockingLevee?'홍수를 막는 ':'')+D.BUILDINGS[damaged.building.id].name+' 긴급 수리',{x:damaged.x,vehicle:'repairTruck'})}
   }else if(def.action==='ration'){s.food+=12;this.emit('supply','비상 식량 +12',{vehicle:'supplyVan'})}
   s.stats.cardsPlayed++;this.discardCard(uid);return true
  }
@@ -120,10 +121,10 @@ class Simulation{
   const s=this.state;if(s.refreshCooldown>0||s.hand.length===0)return false;for(const c of s.hand)s.discard.push(c.id);s.hand.length=0;s.selectedUid=null;s.refreshCooldown=12;this.drawToFive();this.emit('shuffle','손패를 새로 받았습니다.');return true
  }
  damageBuilding(slotIndex,amount,cause){
-  const s=this.state,slot=s.slots[slotIndex];if(!slot?.building)return false;slot.building.hp-=amount;if(slot.building.hp>0){DC.Recovery?.markDamaged?.(this,slotIndex);return false}
+  const s=this.state,slot=s.slots[slotIndex];if(!slot?.building)return false;slot.building.hp-=amount;if(slot.building.hp>0){DC.Recovery?.markDamaged?.(this,slotIndex,cause);return false}
   const old=slot.building,def=D.BUILDINGS[old.id];slot.building=null;s.stats.lost++;s.stability=Math.max(0,s.stability-(old.id==='house'?7:5));
   if(old.id==='house')s.population=Math.max(1,s.population-2*(old.level||1));
-  DC.Recovery?.markDestroyed?.(this,slot,old);s.effects.push({type:'ruin',x:slot.x,life:2.8,maxLife:2.8});this.emit('damage',def.name+'이(가) 무너졌습니다.',{x:slot.x,cause});return true
+  DC.Recovery?.markDestroyed?.(this,slot,old,cause);s.effects.push({type:'ruin',x:slot.x,life:2.8,maxLife:2.8});this.emit('damage',def.name+'이(가) 무너졌습니다.',{x:slot.x,cause});return true
  }
  makeRewards(){
   const pool=D.REWARD_POOL.slice(),out=[],nextType=this.state.next?.type,counters=(D.COUNTERS?.[nextType]||[]).filter(id=>pool.includes(id));
