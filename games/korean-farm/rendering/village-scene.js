@@ -117,13 +117,10 @@ function yard(root){
     const pod=box(rack,.09,.055,.16,i%5===0?0xd66d36:palette.redPepper,x,.77,z,{shadow:false});
     pod.rotation.y=(i%5)*.38;
   }
-  // Tub and handcart: small recognizable everyday courtyard props.
+  // The tub stays here; the handcart is now a genuine transport object whose
+  // location and wheel rotation are controlled by the carrying renderer.
   cylinder(root,.50,.41,.30,0x4e8195,7.2,.19,-9.0,12);
   cylinder(root,.43,.43,.02,0x87b9bf,7.2,.35,-9.0,12);
-  const cart=grouping(root,'wheelbarrow',16.8,-8.1,-.3);
-  box(cart,1.1,.19,.63,0x668667,0,.48,0);
-  cylinder(cart,.28,.28,.12,0x48504a,-.42,.26,-.44,10).rotation.x=Math.PI/2;
-  for(const x of [-.34,.34])box(cart,.07,.08,1.21,0x866545,x,.40,.62);
   // Split rail fences only along the exterior; do not block path to fields.
   for(const x of [7.1,8.25,9.4,10.55,11.7])
     box(root,.1,.67,.12,0xb29a76,x,.36,-16.8);

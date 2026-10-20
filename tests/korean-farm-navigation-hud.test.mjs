@@ -108,10 +108,16 @@ test('click-to-walk auto motion clamps the last frame without overshooting',()=>
   near(result.z,0);
   assert.ok(result.moving);
 });
+test('pulling a handcart slows walking but keeps heading and collision rules',()=>{
+  const walking=walkPlayer({x:0,z:0},{x:0,z:1},.12);
+  const pulling=walkPlayer({x:0,z:0},{x:0,z:1},.12,{speedMultiplier:.78});
+  assert.ok(pulling.z>0&&pulling.z<walking.z);
+  near(pulling.z/walking.z,.78);
+});
 test('waypoint navigation reaches village services from every field and another service',()=>{
-  const market={x:8.5,z:15.25},home={x:9.9,z:-10.05},compost={x:4.2,z:-10.35},barn={x:18,z:-9.5};
-  const starts=[...FIELD_DEFS.map(p=>({x:p.x,z:p.z+p.d/2+1})),market,home,compost,barn,{x:-5,z:3}];
-  for(const from of starts)for(const destination of [market,home,compost,barn]){
+  const market={x:8.5,z:15.25},home={x:9.9,z:-10.05},compost={x:4.2,z:-10.35},barn={x:18,z:-9.5},neighbor={x:2.8,z:12.45};
+  const starts=[...FIELD_DEFS.map(p=>({x:p.x,z:p.z+p.d/2+1})),market,home,compost,barn,neighbor,{x:-5,z:3}];
+  for(const from of starts)for(const destination of [market,home,compost,barn,neighbor]){
     const route=planNavigationRoute(from,destination,VILLAGE_COLLIDERS);
     assert.ok(route?.length, `No route from ${JSON.stringify(from)} to ${JSON.stringify(destination)}`);
     let position={...from},point=0;
@@ -146,10 +152,10 @@ test('rice planting supports touch anywhere on the chosen paddy and WebGL errors
   assert.match(game,/브라우저의 하드웨어 가속/);
   assert.match(css,/#loading\.failed \.spinner\{display:none\}/);
 });
-test('farm HUD has five primary buttons including the barn and mobile-safe sheet',()=>{
+test('farm HUD has five primary buttons plus accessible village neighbor in menu',()=>{
   const tools=html.match(/<nav id="bottomBar"[^>]*>([\s\S]*?)<\/nav>/)?.[1]||'';
   assert.equal([...tools.matchAll(/<button\b/g)].length,5);
-  for(const id of ['nearFieldBtn','barnBtn','bagBtn','sleepBtn','moreBtn','moreTools','turnLeft','turnRight','saveBtn','qaBtn','focusFarm']){
+  for(const id of ['nearFieldBtn','barnBtn','bagBtn','sleepBtn','moreBtn','moreTools','turnLeft','turnRight','saveBtn','qaBtn','focusFarm','neighborBtn','cargoBadge']){
     assert.match(html,new RegExp('id="'+id+'"'));
   }
   assert.match(html,/aria-expanded="false"/);
@@ -160,6 +166,8 @@ test('farm HUD has five primary buttons including the barn and mobile-safe sheet
   assert.match(game,/!overlayShown\?move/);
   assert.match(game,/farmerFacingTarget=farmerHeading/);
   assert.doesNotMatch(game,/moving=true;\s*farmer\.rotation\.y=Math\.atan2/);
+  assert.match(game,/merchantHit\.userData\.worldStation='market'/);
+  assert.match(game,/addStation\('neighbor','영수 할아버지'/);
 });
 test('keyboard actions do not run while dialog is visible or text input has focus',()=>{
   assert.match(game,/target\?\.closest\?\.\('input,textarea,select,\[contenteditable="true"\]'\)/);

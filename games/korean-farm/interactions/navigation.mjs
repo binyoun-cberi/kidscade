@@ -37,10 +37,10 @@ export function rotateToward(current,target,dt,speed=TURN_SPEED){
   const delta=headingDifference(current,target);
   return current+delta*(1-Math.exp(-speed*clamp(dt,0,.20)));
 }
-export function walkPlayer(position,direction,dt,{goalDistance=null,bounds=21.7,obstacles=[]}={}){
+export function walkPlayer(position,direction,dt,{goalDistance=null,bounds=21.7,obstacles=[],speedMultiplier=1}={}){
   const mag=Math.hypot(direction.x,direction.z);
   if(mag<.05)return {x:position.x,z:position.z,moving:false,blocked:false};
-  const dist=Math.min(goalDistance===null?Infinity:goalDistance,MOVE_SPEED*clamp(dt,0,.20)*Math.min(1,mag));
+  const dist=Math.min(goalDistance===null?Infinity:goalDistance,MOVE_SPEED*clamp(dt,0,.20)*Math.min(1,mag)*clamp(speedMultiplier,.1,1));
   const sx=direction.x/mag*dist,sz=direction.z/mag*dist;
   const collides=(x,z)=>obstacles.some(o=>Math.abs(x-o.x)<o.w/2+.45&&Math.abs(z-o.z)<o.d/2+.45);
   let x=position.x,z=position.z;

@@ -2,7 +2,7 @@
 // This is intentionally separate from the renderer so save state determines
 // the same objective after a reload.
 import {FIELD_DEFS} from '../world.mjs';
-import {fieldCondition,basketCount} from './farm-sim.mjs';
+import {fieldCondition,basketCount,currentDeliveryOrder} from './farm-sim.mjs';
 
 const steps=['inspect','harvest','sell','upgrade'];
 
@@ -27,7 +27,12 @@ export function nextFarmObjective(state,inspected=(state.seenPlots||[]).length){
   const ripe=fields.find(({field})=>field.planted&&field.growth>=.999);
   if(ripe)return {title:'익은 작물을 거둬요',description:ripe.def.label+'에서 수확할 수 있어요.',label:'수확하러 가기',kind:'field',target:ripe.def.id,completed:4,total:4};
   const stock=['rice','carrot','corn'].reduce((sum,k)=>sum+(state.inventory[k]||0),0);
-  if(basketCount(state)>0)return {title:'수확물을 장터로 가져가요',description:'바구니에 실은 작물을 장터에서 팔거나 납품해 보세요.',label:'장터로 가기',kind:'market',completed:4,total:4};
+  if(basketCount(state)>0){
+    const order=currentDeliveryOrder(state);
+    if(order&&(state.cargo[order.produce]||0)>=order.count)
+      return {title:'이웃의 부탁을 전해요',description:'영수 할아버지에게 부탁받은 수확물을 직접 가져다주세요.',label:'이웃 만나러 가기',kind:'neighbor',completed:4,total:4};
+    return {title:'수확물을 장터로 가져가요',description:'가져온 작물을 장터에서 팔거나 마을 이웃에게 전달해 보세요.',label:'장터로 가기',kind:'market',completed:4,total:4};
+  }
   if(stock>0)return {title:'창고에서 수확물을 실어요',description:'창고에 작물이 '+stock+'개 있어요. 바구니에 담아 장터로 가져가 보세요.',label:'창고로 가기',kind:'barn',completed:4,total:4};
   if(state.energy<20)return {title:'오늘은 푹 쉬어요',description:'기운이 부족해요. 집으로 돌아가 내일을 준비하세요.',label:'집으로 가기',kind:'home',completed:4,total:4};
   const urgent=fields.find(({field})=>field.planted&&fieldCondition(field)!=='잘 자라고 있어요');

@@ -19,6 +19,7 @@ const hook=[
 "   window.addEventListener('pagehide',()=>localStorage.removeItem(SAVE_KEY),{once:true});},",
 " state:()=>({day:state.day,money:state.money,energy:state.energy,inventory:{...state.inventory},stats:{...state.stats},",
 "   upgrades:{...state.upgrades},market:{...state.market},cargo:{...state.cargo},",
+"   transport:{...state.transport},village:{...state.village},",
 "   fields:state.fields.map(f=>({id:f.id,growth:f.growth,planted:f.planted,water:f.waterDepthCm,gate:f.gateOpen,gateLevel:f.gateLevel,transplants:f.transplants,work:f.work,weeds:f.weeds,moisture:f.moisture})),",
 "   player:{...state.player},saving:localStorage.getItem(SAVE_KEY)?.length||0}),",
 " teleport:(x,z)=>{state.player.x=x;state.player.z=z;farmer.position.set(x,0,z);camTarget.set(x,0,z);clearMovement();pendingStation=null;},",
@@ -35,6 +36,11 @@ const hook=[
 "   if(!target)return false;scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);",
 "   const p=target.getWorldPosition(new THREE.Vector3()).project(camera),r=$('farm').getBoundingClientRect();",
 "   inspectAt({clientX:r.left+(p.x+1)*r.width/2,clientY:r.top+(1-p.y)*r.height/2});return true;},",
+" person:key=>{const obj=worldHits.find(o=>o.userData.worldStation===key&&",
+"   (key!=='market'||o.userData.label==='순옥 아주머니'));if(!obj)return false;",
+"   scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);",
+"   const p=obj.getWorldPosition(new THREE.Vector3()).project(camera),r=$('farm').getBoundingClientRect();",
+"   inspectAt({clientX:r.left+(p.x+1)*r.width/2,clientY:r.top+(1-p.y)*r.height/2});return true;},",
 " plantMode:()=>({active:plantingMode,selectedSeedling}),",
 " finishPlanting:(id)=>{const f=fieldById(state,id);",
 "   for(let i=0;i<25;i++)if(f?.transplants&&!f.transplants[i])plantSeedling(state,id,i);",
@@ -47,7 +53,10 @@ const hook=[
 " visuals:()=>({renderer:!!renderer?.getContext(),size:[renderer.domElement.width,renderer.domElement.height],",
 "   actor:farmerAnimator.root.children.length,assets:[...assetReport].map(([url,a])=>({url,status:a.status,colors:a.colors,repainted:a.repainted||0})),",
 "   crops:[...plotMeshes].map(([id,r])=>({id,count:r.cropLayer.children.length,spots:r.planting?.targets?.length||0})),",
-"   village:villageScene?.stats||null,sceneryCount:villageScene?.root?.children?.length||0})",
+"   village:villageScene?.stats||null,people:villagePeople?.stats||null,",
+"   handcart:{visible:scene.getObjectByName('farm-working-handcart')?.visible,",
+"      following:scene.getObjectByName('farm-working-handcart')?.parent===farmer},",
+"   sceneryCount:villageScene?.root?.children?.length||0})",
 "};"
 ].join('\n');
 const server=http.createServer((req,res)=>{
@@ -143,6 +152,7 @@ async function main(){
  check('Korean village has seven detailed areas and enough decorative meshes',
    visuals.village?.areas===7&&visuals.village.meshes>180&&visuals.village.instanced>=1,
    visuals.village);
+ check('Two visible, individually modeled Korean village residents',visuals.people?.people===2,visuals.people);
  await screenshot('01-desktop-farm');
  await evaluate('window.__farmQA.teleport(10.25,-8.1)');
  await sleep(550);
@@ -241,8 +251,27 @@ async function main(){
  check('Barn physically moves harvest into carried basket',loaded.cargo.rice>0&&
    loaded.inventory.rice===0&&loaded.stats.sales===0,loaded.cargo);
  await click('#modalClose');
+ await evaluate('window.__farmQA.teleport(2.8,12.45)');
+ await sleep(200);
+ check('3D resident can be tapped in the world, not only via toolbar',
+   (await evaluate('window.__farmQA.person("neighbor")'))===true);
+ await waitFor('document.querySelector("#modalTitle").textContent.includes("이웃")',9000);
+ const beforeDelivery=await evaluate('window.__farmQA.state()');
+ check('Visiting an actual village resident starts one daily conversation',
+   beforeDelivery.village.friendship===1&&beforeDelivery.stats.deliveries===0,beforeDelivery.village);
+ check('Resident asks for real harvested produce instead of remote checkout',
+   (await evaluate('document.querySelector(".neighbor-dialogue .delivery-card button").disabled'))===false);
+ await screenshot('02c-village-neighbor');
+ await click('.neighbor-dialogue .delivery-card button');
+ const afterDelivery=await evaluate('window.__farmQA.state()');
+ check('In-person delivery pays once and consumes only carried rice',
+   afterDelivery.stats.deliveries===1&&afterDelivery.cargo.rice===loaded.cargo.rice-5&&
+   afterDelivery.inventory.rice===0,afterDelivery);
+ await click('#modalClose');
  await evaluate('window.__farmQA.teleport(8.5,15.25)');
- await click('#bagBtn');
+ await sleep(200);
+ check('3D shopkeeper is an actual market interaction target',
+   (await evaluate('window.__farmQA.person("market")'))===true);
  await waitFor('!document.querySelector("#modal").classList.contains("hidden")',9000);
  await click('.sell-btn');
  const sold=await evaluate('window.__farmQA.state()');
@@ -550,6 +579,23 @@ async function main(){
  check('First sale unlocks a persistable tool upgrade with actual coin cost',
    Object.values(upgraded.upgrades).some(Boolean)&&upgraded.money<preUpgrade.money,
    {before:preUpgrade.money,after:upgraded.money,upgrades:upgraded.upgrades});
+ await evaluate(`[...document.querySelectorAll('.farm-upgrade')].find(x=>x.textContent.includes('농장 손수레')).querySelector('button').click()`);
+ const cartBought=await evaluate('window.__farmQA.state()');
+ check('Market unlocks an actual 60-item farm handcart after first sale',
+   cartBought.upgrades.cart&&!cartBought.transport.cartAttached,cartBought.upgrades);
+ await click('#modalClose');
+ await evaluate('window.__farmQA.teleport(18,-9.5)');
+ await click('#barnBtn');
+ await waitFor('!document.querySelector("#modal").classList.contains("hidden")',9000);
+ await click('.cart-choice button');
+ const connected=await evaluate('window.__farmQA.state()');
+ const cartVisual=await evaluate('window.__farmQA.visuals().handcart');
+ check('Hitching the handcart moves the actual 3D cart behind the farmer',
+   connected.transport.cartAttached&&cartVisual.visible&&cartVisual.following,cartVisual);
+ await click('.cart-choice button');
+ check('Empty cart can be parked again without losing ownership',
+   (await evaluate('window.__farmQA.state()')).upgrades.cart===true&&
+   (await evaluate('window.__farmQA.state()')).transport.cartAttached===false);
  await click('#modalClose');
  await evaluate('window.__farmQA.teleport(-12.85,-5.2)');
  await evaluate('window.__farmQA.select("rice-1")');
