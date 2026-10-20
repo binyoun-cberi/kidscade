@@ -1,14 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  createFarmState,restoreFarmState,FARM_SAVE_VERSION,FARM_UPGRADES,fieldById,
+  createFarmState,restoreFarmState,FARM_SAVE_VERSION,FARM_UPGRADES,CROPS,fieldById,
   applyFarmStrip,workEnergyCost,advanceFarmDay,fulfillDeliveryOrder,currentDeliveryOrder,
-  purchaseFarmUpgrade
+  purchaseFarmUpgrade,BASKET_CAPACITY,basketCount,loadHarvestBasket,unloadHarvestBasket,
+  sellBasketProduce,fulfillBasketDeliveryOrder,setSluiceOpening,scoopCompostBatch,restUntilFarmNeedsAttention
 } from '../games/korean-farm/farming/farm-sim.mjs';
 import {nextFarmObjective} from '../games/korean-farm/farming/farm-objectives.mjs';
 import {sampleStroke,uniqueStrokeTargets} from '../games/korean-farm/interactions/work-gesture.mjs';
 
-test('V2 saves migrate to V3 without losing field work, money, seedlings or produce',()=>{
+test('V2 saves migrate to V4 without losing field work, money, seedlings or produce',()=>{
   const original=createFarmState();
   original.money=5771;original.inventory.rice=9;original.fields[0].transplants[5]=true;
   original.fields[3].work.harvested[0]=true;original.day=8;
@@ -22,6 +23,84 @@ test('V2 saves migrate to V3 without losing field work, money, seedlings or prod
   assert.equal(restored.fields[0].transplants[5],true);
   assert.equal(restored.fields[3].work.harvested[0],true);
   assert.deepEqual(restored.upgrades,{sickle:false,hoe:false,channel:false});
+  assert.deepEqual(restored.cargo,{rice:0,carrot:0,corn:0});
+});
+
+test('V3 to V4 migration preserves open gates and full barn inventory without duplicate cargo',()=>{
+  const original=createFarmState();original.inventory.rice=13;
+  original.fields[0].gateOpen=true;original.fields[0].gateLevel=2;
+  const older=structuredClone(original);older.version=3;delete older.cargo;
+  older.fields.forEach(field=>delete field.gateLevel);
+  const loaded=restoreFarmState(older);
+  assert.equal(loaded.version,4);
+  assert.equal(fieldById(loaded,'rice-1').gateLevel,2);
+  assert.equal(loaded.inventory.rice,13);
+  assert.equal(basketCount(loaded),0);
+});
+
+test('a physical harvest basket cannot sell warehouse stock remotely or overflow on trips',()=>{
+  const state=createFarmState();state.inventory.rice=30;state.inventory.carrot=7;
+  assert.equal(sellBasketProduce(state).ok,false);
+  assert.equal(state.inventory.rice,30);
+  assert.equal(loadHarvestBasket(state,'rice').amount,BASKET_CAPACITY);
+  assert.equal(loadHarvestBasket(state,'carrot').ok,false);
+  assert.equal(basketCount(state),20);
+  const saved=restoreFarmState(structuredClone(state));
+  assert.equal(saved.cargo.rice,20);
+  assert.equal(saved.inventory.rice,10);
+  assert.equal(sellBasketProduce(saved).ok,true);
+  assert.equal(saved.money,4200+20*CROPS.rice.price);
+  assert.equal(saved.inventory.rice,10);
+  assert.equal(saved.cargo.rice,0);
+  assert.equal(loadHarvestBasket(saved,'carrot').amount,7);
+  assert.equal(unloadHarvestBasket(saved).ok,true);
+  assert.equal(saved.inventory.carrot,7);
+  assert.equal(basketCount(saved),0);
+});
+
+test('village deliveries consume carried crops only and preserve unsold stock',()=>{
+  const state=createFarmState();state.inventory.rice=12;
+  assert.equal(fulfillBasketDeliveryOrder(state).ok,false);
+  loadHarvestBasket(state,'rice',7);
+  assert.equal(fulfillBasketDeliveryOrder(state).ok,true);
+  assert.equal(state.cargo.rice,2);
+  assert.equal(state.inventory.rice,5);
+  assert.equal(state.stats.deliveries,1);
+});
+
+test('water gate has three physical levels and restored saves preserve the chosen opening',()=>{
+  const state=createFarmState();const f=fieldById(state,'rice-1');
+  assert.equal(setSluiceOpening(state,'carrot-1',2).ok,false);
+  assert.equal(setSluiceOpening(state,'rice-1',1).ok,true);
+  assert.equal(f.gateOpen,true);assert.equal(f.gateLevel,1);
+  assert.equal(setSluiceOpening(state,'rice-1',1).ok,false);
+  const half=restoreFarmState(structuredClone(state));
+  assert.equal(fieldById(half,'rice-1').gateLevel,1);
+  advanceFarmDay(half);
+  assert.ok(fieldById(half,'rice-1').waterDepthCm>0);
+  assert.equal(setSluiceOpening(half,'rice-1',0).ok,true);
+  assert.equal(fieldById(half,'rice-1').gateOpen,false);
+});
+
+test('one shovel action gathers five compost charges within energy and bag caps',()=>{
+  const state=createFarmState();
+  assert.equal(scoopCompostBatch(state).amount,5);
+  assert.equal(state.inventory.fertilizer,5);
+  assert.equal(state.compostStock,19);
+  state.energy=2;
+  assert.equal(scoopCompostBatch(state).amount,2);
+  assert.equal(scoopCompostBatch(state).ok,false);
+});
+
+test('rest until attention stops after a care need or growth change, never skipping more than 4 days',()=>{
+  const state=createFarmState();
+  const report=restUntilFarmNeedsAttention(state);
+  assert.ok(report.daysPassed>=1&&report.daysPassed<=4);
+  assert.equal(state.day,report.newDay);
+  const old=state.day;
+  const next=restUntilFarmNeedsAttention(state,99);
+  assert.ok(state.day-old>=1&&state.day-old<=4);
+  assert.equal(next.previousDay,old);
 });
 
 test('first sale unlocks meaningful upgrades that persist and affect farming',()=>{
@@ -75,7 +154,8 @@ test('first-play guidance advances into a contextual daily task after an upgrade
   const state=createFarmState();
   assert.equal(nextFarmObjective(state).kind,'field');
   state.seenPlots=['rice-1'];assert.equal(nextFarmObjective(state).target,'rice-4');
-  state.stats.harvests=1;assert.equal(nextFarmObjective(state).kind,'market');
+  state.stats.harvests=1;assert.equal(nextFarmObjective(state).kind,'barn');
+  state.cargo.rice=3;assert.equal(nextFarmObjective(state).kind,'market');
   state.stats.sales=1;assert.match(nextFarmObjective(state).title,/농기구/);
   state.upgrades.sickle=true;
   assert.equal(nextFarmObjective(state).intro,undefined);
