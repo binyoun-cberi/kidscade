@@ -1,5 +1,5 @@
 // Seeded, renderer-independent town activities and fair observation puzzles.
-export const WORLD_VERSION = 3;
+export const WORLD_VERSION = 4;
 export const BLOCK_PITCH = 7;
 export const STAGES = Object.freeze({
   small: { label: '작은 마을', cols: 3, rows: 2, residents: 18, targets: 1 },
@@ -16,7 +16,7 @@ export const COLORS = Object.freeze([
 ]);
 export const ACTIVITIES = Object.freeze([
   {id:'browse',name:'빵을 고르는',clip:'holding-both',props:['식빵','크루아상','도넛']},
-  {id:'deliver',name:'빵을 배달하는',clip:'walk',props:['식빵','크루아상','도넛']},
+  {id:'deliver',name:'빵을 배달하는',clip:'holding-both',props:['식빵','크루아상','도넛']},
   {id:'eat',name:'빵을 먹는',clip:'holding-right',props:['식빵','크루아상','도넛']},
   {id:'read',name:'책을 읽는',clip:'holding-both',props:['빨간 책','노란 책','파란 책']},
   {id:'ball',name:'공놀이하는',clip:'idle',props:['빨간 공','노란 공','파란 공']},
@@ -42,20 +42,38 @@ export function getBlockCenter(block,stage){const c=typeof stage==='string'?STAG
 export function signature(p){return `${p.modelVariant}:${p.activity}:${p.propVariant}`;}
 export function getRoutePosition(person,stage){
   const c=getBlockCenter(person.block,stage);
-  // Separate activity bays in front of every building, with room for bodies and props.
-  const motion=person.activity==='deliver'&&!person.found ? Math.sin(person.elapsed*.8)*.16:0;
-  return {x:c.x+(person.slot-1)*1.55+motion,z:c.z+2.15};
+  if(person.position)return {...person.position};
+  return activityPosition(person.block,person.slot,stage);
 }
+function activityPosition(block,slot,stage){
+  const c=getBlockCenter(block,stage);
+  const bays=[[-2.15,1.65],[-.75,2.05],[.75,2.05],[2.15,1.65],[-2.15,-1.55],[2.15,-1.55]];
+  const [x,z]=bays[slot%bays.length];
+  return {x:c.x+x,z:c.z+z};
+}
+// Routes use the front promenade and the north-south street edges, never building interiors.
+function journey(person,destination,slot,stage){
+  const from=getBlockCenter(person.block,stage),to=getBlockCenter(destination,stage);
+  const end=activityPosition(destination,slot,stage),start=person.position;
+  const edge=from.x+(start.x<from.x?-2.75:2.75);
+  const targetEdge=to.x+(end.x<to.x?-2.75:2.75);
+  return [{x:edge,z:start.z},{x:edge,z:from.z+2.75},
+    {x:edge,z:to.z+2.75},{x:targetEdge,z:to.z+2.75},
+    {x:targetEdge,z:end.z},end];
+}
+
 export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=true){
   const config=STAGES[stageName];if(!config)throw new Error(`알 수 없는 마을 크기: ${stageName}`);
   if(!DIFFICULTIES[difficulty])difficulty='easy';
   const random=createRng(seed),blocks=[],used=new Set();
   for(let row=0;row<config.rows;row++)for(let col=0;col<config.cols;col++)blocks.push({id:`b${row}-${col}`,col,row,...DISTRICTS[(col+row*config.cols)%6]});
   const people=Array.from({length:config.residents},(_,i)=>{
-    const block=blocks[i%blocks.length],slot=Math.floor(i/blocks.length),activity=block.activities[slot%3];
+    const allocation=blocks.flatMap((block,index)=>Array.from({length:[4,3,3,4,2,2][index%6]},(_,slot)=>({block,slot})));
+    const {block,slot}=allocation[i%allocation.length],activity=block.activities[slot%3];
     const choices=shuffled(Array.from({length:36},(_,n)=>({modelVariant:n%12,propVariant:Math.floor(n/12)})),random);
     const look=choices.find(v=>!used.has(signature({...v,activity})));
     const person={id:`person-${i}`,block,slot,...look,activity,action:activity,elapsed:0,routineAt:18+random()*14,reserved:false,found:false};
+    person.position=activityPosition(block,slot,config);person.heading=slot%2?-.35:.35;person.moving=false;
     used.add(signature(person));return person;
   });
   const town={stageName,config,seed,difficulty,blocks,people,order:[],time:0};
@@ -89,10 +107,37 @@ export function selectTargets(town,eligibleIds,previous=[]){
 export function movePeople(town,deltaSeconds){
   const dt=Math.min(.1,Math.max(0,Number(deltaSeconds)||0));town.time+=dt;
   for(const p of town.people){
-    p.elapsed+=dt;if(p.reserved||p.found||p.elapsed<p.routineAt)continue;
-    const list=p.block.activities,next=list[(list.indexOf(p.activity)+1)%list.length];
-    if(!town.people.some(q=>q.id!==p.id&&signature(q)===signature({...p,activity:next}))){p.activity=next;p.action=next;}
-    p.routineAt=p.elapsed+20+(p.slot%3)*4;
+    p.elapsed+=dt;
+    if(p.reserved||p.found)continue;
+    if(p.moving){
+      let budget=dt*(.65+(Number(p.id.split('-')[1])%4)*.06);
+      while(budget>0&&p.route.length){
+        const next=p.route[0],dx=next.x-p.position.x,dz=next.z-p.position.z,d=Math.hypot(dx,dz);
+        if(d>.001)p.heading=Math.atan2(dx,dz);
+        if(d<=budget){p.position={...next};p.route.shift();budget-=d;}
+        else{p.position.x+=dx/d*budget;p.position.z+=dz/d*budget;budget=0;}
+      }
+      if(!p.route.length){
+        p.moving=false;p.block=p.destination;p.slot=p.destinationSlot;
+        p.heading=p.slot%2?-.35:.35;
+        const list=p.block.activities;
+        const next=list[(p.slot+Math.floor(town.time/20))%list.length];
+        if(!town.people.some(q=>q.id!==p.id&&signature(q)===signature({...p,activity:next})))p.activity=next;
+        p.action=p.activity;p.routineAt=p.elapsed+14+(p.slot%4)*5;
+      }
+      continue;
+    }
+    if(p.elapsed<p.routineAt)continue;
+    const index=town.blocks.findIndex(b=>b.id===p.block.id);
+    let chosen=null;
+    for(let n=1;n<=town.blocks.length&&!chosen;n++){
+      const block=town.blocks[(index+n)%town.blocks.length];
+      for(let slot=0;slot<6;slot++){
+        if(!town.people.some(q=>q.id!==p.id&&((q.block.id===block.id&&q.slot===slot)||(q.moving&&q.destination.id===block.id&&q.destinationSlot===slot)))){chosen={block,slot};break;}
+      }
+    }
+    if(chosen){p.destination=chosen.block;p.destinationSlot=chosen.slot;p.route=journey(p,chosen.block,chosen.slot,town.config);p.moving=true;}
+    else p.routineAt=p.elapsed+5;
   }
 }
 export function getClue(person,difficulty='easy'){

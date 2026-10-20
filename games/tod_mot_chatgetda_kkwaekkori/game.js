@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { STAGES, DIFFICULTIES, WORLD_VERSION, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue } from './sim.mjs?v=3';
+import { STAGES, DIFFICULTIES, WORLD_VERSION, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue } from './sim.mjs?v=4';
 
 const $ = id => document.getElementById(id);
 const ROOT = '../../assets/game/';
@@ -89,6 +89,8 @@ function disposeProcedural(root) {
 function normalizedModel(gltf, longest = 2.5, footprint = null) {
   if (!gltf) return null;
   const object = cloneSkeleton(gltf.scene);
+  const rest=gltf.animations?.find(a=>a.name==='static');
+  if(rest){const pose=new THREE.AnimationMixer(object);pose.clipAction(rest).play();pose.update(0);}
   object.updateMatrixWorld(true);
   let box = new THREE.Box3().setFromObject(object);
   const dimension = box.getSize(new THREE.Vector3());
@@ -151,7 +153,24 @@ function generateWorld() {
   const revision=++worldSerial;
   const {cols,rows}=town.config;
   const width=cols*BLOCK_PITCH+1,depth=rows*BLOCK_PITCH+1;
-  const base=cube(width,.25,depth,0x8fbd93);base.position.y=-.17;scenery.add(base);
+  const base=cube(width+100,.25,depth+100,0x8fbd93);base.position.y=-.17;scenery.add(base);
+  // A continuous landscape surrounds every camera angle, rather than an exposed board edge.
+  for(let i=0;i<56;i++){
+    const side=i%4,t=Math.floor(i/4)/13;
+    const x=side<2?(t-.5)*(width+18):(side===2?-1:1)*(width/2+5+(i%3)*2);
+    const z=side>=2?(t-.5)*(depth+18):(side===0?-1:1)*(depth/2+5+(i%3)*2);
+    placeObject(MODEL.parkTree,{x,z},2.4+(i%4)*.35,treeFallback(),revision,1.6);
+    if(town.stageName==='large'&&i%2===0){
+      placeObject(MODEL.buildings[i%MODEL.buildings.length],{x:x*1.24,z:z*1.24},4+(i%3),buildingFallback({col:i,row:0}),revision,3.2);
+    }
+  }
+  // Planted verges soften the parcel edges while keeping the promenade clear.
+  for(const block of town.blocks){
+    const c=getBlockCenter(block,town.config);
+    for(const side of [-1,1]){
+      addPart(scenery,cube(.35,.12,3.6,0x729f69),c.x+side*2.55,.06,c.z-.35);
+    }
+  }
   // Lane ribbons are deliberately between blocks; residents always walk on the inner sidewalk.
   for (let col=0;col<cols-1;col++) {
     const x=(col+.5-(cols-1)/2)*BLOCK_PITCH;
@@ -245,6 +264,15 @@ function generateWorld() {
   refreshPreview();
 }
 
+// Character clips only key the joints involved in an action. Fill untouched joints
+// from the exported static pose so walking never inherits a seated bind pose.
+function citizenClip(gltf,name){
+  const clip=gltf?.animations?.find(a=>a.name===name);
+  if(!clip)return null;
+  const keyed=new Set(clip.tracks.map(t=>t.name));
+  const rest=gltf.animations.find(a=>a.name==='static');
+  return new THREE.AnimationClip(name,clip.duration,[...(rest?.tracks||[]).filter(t=>!keyed.has(t.name)),...clip.tracks]);
+}
 function makeCitizenAppearance(person,body,appearance,revision) {
   const shirt=COLORS[person.modelVariant%3].hex;
   const skin=[0xffd1a7,0xe7ac81,0xc98c69,0x8a624e][person.modelVariant%4];
@@ -266,7 +294,7 @@ function makeCitizenAppearance(person,body,appearance,revision) {
     if(model){
       body.remove(fallback);disposeProcedural(fallback);body.add(model);
       const clipName=ACTIVITIES.find(a=>a.id===person.activity).clip;
-      const clip=gltf.animations?.find(animation=>animation.name===clipName);
+      const clip=citizenClip(gltf,clipName);
       if(clip){const mixer=new THREE.AnimationMixer(model);mixer.clipAction(clip).play();mixers.push({mixer,person,clipName});}
       citizenAssets.set(person.id,gltf);
       if(getTarget()?.id===person.id)refreshPreview();
@@ -322,7 +350,7 @@ function refreshPreview(){
   // Procedural geometry/material must not be shared with a disposable preview.
   previewActor.traverse(o=>{if(o.isMesh&&o.userData.procedural){o.geometry=o.geometry.clone();o.material=o.material.clone();}});
   const gltf=citizenAssets.get(source.person.id);
-  const clip=gltf?.animations.find(a=>a.name===ACTIVITIES.find(a=>a.id===source.person.activity).clip);
+  const clip=citizenClip(gltf,ACTIVITIES.find(a=>a.id===source.person.activity).clip);
   if(clip){previewMixer=new THREE.AnimationMixer(previewActor.children[0].children[0]);previewMixer.clipAction(clip).play();}
 }
 function registerOccluder(root){
@@ -353,16 +381,19 @@ function positionEverything(dt) {
   for(const p of town.people) {
     const mesh=citizenMeshes.get(p.id);
     if(!mesh)continue;
-    if(mesh.activity!==p.activity){
-      mesh.activity=p.activity;buildActivityProps(p,mesh.appearance,worldSerial);
+    const visualActivity=p.moving?'walking':p.activity;
+    if(mesh.activity!==visualActivity){
+      mesh.activity=visualActivity;buildActivityProps(p,mesh.appearance,worldSerial);
       const entry=mixers.find(e=>e.person.id===p.id),gltf=citizenAssets.get(p.id);
-      const clipName=ACTIVITIES.find(a=>a.id===p.activity).clip;
-      const clip=gltf?.animations.find(a=>a.name===clipName);
+      const clipName=p.moving?'walk':ACTIVITIES.find(a=>a.id===p.activity).clip;
+      const clip=citizenClip(gltf,clipName);
       if(entry&&clip){entry.mixer.stopAllAction();entry.mixer.clipAction(clip).play();entry.clipName=clipName;}
     }
     const pos=getRoutePosition(p,town.config);
     mesh.holder.position.set(pos.x,0.08,pos.z);
-    mesh.holder.rotation.y=0;
+    const turn=Math.atan2(Math.sin(p.heading-mesh.holder.rotation.y),Math.cos(p.heading-mesh.holder.rotation.y));
+    mesh.holder.rotation.y+=turn*Math.min(1,dt*9);
+    mesh.appearance.visible=!p.moving;
     if(celebration?.id===p.id){mesh.body.rotation.z=Math.sin(p.elapsed*12)*.07;}
     else mesh.body.rotation.z=0;
     animateActivity(mesh.holder,p);
@@ -636,6 +667,6 @@ try{
     resume.textContent='↩ 이어서 찾기';
     resume.style.cssText='border:0;border-radius:13px;padding:12px;background:#dff3e4;color:#347453;font-weight:900;margin-top:12px;';
     resume.addEventListener('click',()=>startTown(saved.stage,saved.seed,saved.found,saved.difficulty,saved.previous||[]));
-    document.querySelector('.stageList').after(resume);
+    $('quickStart').after(resume);
   }
 }catch(_){}

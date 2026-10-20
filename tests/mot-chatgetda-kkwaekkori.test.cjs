@@ -62,7 +62,8 @@ test('residents stay on visible sidewalk routes during life simulation',async()=
     for(const person of town.people){
       const at=getRoutePosition(person,town.config),center=getBlockCenter(person.block,town.config);
       assert.ok(Number.isFinite(at.x)&&Number.isFinite(at.z));
-      assert.ok(Math.abs(at.x-center.x)<=1.72 && Math.abs(at.z-center.z)<=2.151);
+      assert.ok(Math.abs(at.x)<=town.config.cols*7/2 && Math.abs(at.z)<=town.config.rows*7/2);
+      assert.ok(Number.isFinite(person.heading));
       assert.ok(person.elapsed>=0);
     }
   }
@@ -117,3 +118,23 @@ test('hard clues include a visible prop and near-matches differ in a meaningful 
     for(const foil of foils){const target=town.people.find(p=>p.id===foil.foilFor);assert.equal(foil.modelVariant,target.modelVariant);assert.equal(foil.activity,target.activity);assert.notEqual(foil.propVariant,target.propVariant);}
   }
 });
+
+
+ test('residents travel between places while answers stay observable',async()=>{
+ const {makeTown,movePeople,getRoutePosition,signature,personIsDiscoverable}=await simPromise;
+ for(const stage of ['small','medium','large'])for(const difficulty of ['easy','normal','hard'])for(let seed=1;seed<=20;seed++){
+  const town=makeTown(stage,seed,difficulty),initial=new Map(town.people.map(p=>[p.id,getRoutePosition(p,town.config)]));
+  const targets=town.order.map(id=>town.people.find(p=>p.id===id)),looks=targets.map(signature);
+  let travelled=false;
+  for(let tick=0;tick<1800;tick++){
+   movePeople(town,.1);const occupied=new Set();
+   for(const p of town.people){
+    const at=getRoutePosition(p,town.config);assert.ok(Number.isFinite(at.x)&&Number.isFinite(at.z));
+    if(Math.hypot(at.x-initial.get(p.id).x,at.z-initial.get(p.id).z)>3)travelled=true;
+    if(!p.moving){const key=p.block.id+':'+p.slot;assert.ok(!occupied.has(key));occupied.add(key);}
+   }
+  }
+  assert.ok(travelled);assert.deepEqual(targets.map(signature),looks);
+  for(const p of targets){assert.ok(personIsDiscoverable(town,p.id));assert.deepEqual(getRoutePosition(p,town.config),initial.get(p.id));}
+ }
+ });
