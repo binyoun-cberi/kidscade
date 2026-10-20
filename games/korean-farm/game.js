@@ -647,7 +647,7 @@ function refreshPlantingHud(){
   $('seedlingFill').style.width=(count/TRANSPLANT_COUNT*100)+'%';
   $('seedlingSupplies').textContent='모종 '+state.inventory.seedRice+'묶음 · 기운 '+Math.round(state.energy);
   $('plantingHint').textContent=farmFlow.busy?'농부가 모를 심는 중이에요…':
-    count===0?'논의 빈자리를 눌러 모를 심으세요.':'빈자리를 눌러 다음 모를 심으세요.';
+    count===0?'빈자리를 누르거나 한 줄을 쓸어 모를 심어 보세요.':'다음 빈자리를 누르거나 손가락으로 쓸어 보세요.';
   for(const def of FIELD_DEFS)if(def.kind==='rice'){
     const record=plotMeshes.get(def.id),field=fieldById(state,def.id);
     const active=plantingMode&&def.id===state.selected;
@@ -668,7 +668,7 @@ function enterPlantingMode(){
   $('plantingHud').classList.remove('hidden');
   $('moreTools').classList.add('hidden');
   refreshPlantingHud();
-  toast('논의 빈자리를 눌러 한 포기씩 심어요.');
+  toast('논의 빈자리를 누르거나 한 줄을 쓸어 모를 심어요.');
 }
 function exitPlantingMode(){
   clearGesture();
@@ -714,7 +714,7 @@ function refreshFieldWorkHud(){
   const index=nextWorkStrip(f,workAction,selectedStrip);
   const check=index>=0?canWorkFieldStrip(state,plot.id,workAction,index):{ok:false,message:'이 작업을 모두 마쳤어요.'};
   $('workStripHint').textContent=farmFlow.busy?'농부가 '+(labels[workAction][0])+' 하는 중이에요…':
-    !check.ok?check.message:'도구를 들었어요. 논밭의 밝은 구역을 눌러 작업하세요.';
+    !check.ok?check.message:'밝은 구역을 누르거나 논밭을 한 줄로 쓸어 작업하세요.';
   plotMeshes.get(plot.id)?.work?.refresh(f,workAction,selectedStrip);
 }
 function enterFieldWorkMode(action){
@@ -726,7 +726,7 @@ function enterFieldWorkMode(action){
   fieldWorkMode=true;workAction=action;selectedStrip=first;workFinished=false;
   $('inspector').classList.add('hidden');$('fieldWorkHud').classList.remove('hidden');
   $('moreTools').classList.add('hidden');refreshFieldWorkHud();
-  toast('도구를 골랐어요. 논밭의 밝은 구역을 눌러 작업하세요.');
+  toast('밝은 구역을 누르거나 한 줄로 쓸어 작업하세요.');
 }
 function exitFieldWorkMode(){
   clearGesture();
