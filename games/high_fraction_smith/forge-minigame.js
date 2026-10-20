@@ -16,7 +16,9 @@
     return {id:'standard',label:'튼튼한',icon:'⚒️',goldBonus:0};
   }
   function create(options={}){
-    return {stage:'heat',pumps:0,requiredPumps:4-level(options.furnaceLevel),hits:0,hitGrades:[],
+    const basePumps=Number.isSafeInteger(options.basePumps)?Math.max(2,Math.min(5,options.basePumps)):4;
+    const requiredHits=Number.isSafeInteger(options.hammerCount)?Math.max(1,Math.min(3,options.hammerCount)):3;
+    return {stage:'heat',pumps:0,requiredPumps:Math.max(1,basePumps-level(options.furnaceLevel)),requiredHits,hits:0,hitGrades:[],
       timingWindow:.30+level(options.hammerLevel)*.08,accuracy:0,lastHit:null,quality:0,done:false};
   }
   function act(session,timing=.5){
@@ -30,10 +32,10 @@
       session.accuracy+=session.lastHit.accuracy;
       session.hitGrades.push(session.lastHit.grade);
       session.hits++;
-      if(session.hits>=3)session.stage='quench';
+      if(session.hits>=session.requiredHits)session.stage='quench';
     }else if(session.stage==='quench'){
       session.stage='done';session.done=true;
-      session.quality=Math.round(60+40*session.accuracy/3);
+      session.quality=Math.round(60+40*session.accuracy/session.requiredHits);
     }
     return session;
   }
