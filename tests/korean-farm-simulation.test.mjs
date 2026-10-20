@@ -93,7 +93,7 @@ test('save roundtrip persists farm, stock, water, and season across reload',()=>
   advanceFarmDay(state);
   state.player={x:7,z:2};state.seenPlots=['rice-1'];state.visits=1;
   const next=restoreFarmState(JSON.parse(JSON.stringify(state)));
-  assert.equal(next.version,2);
+  assert.equal(next.version,FARM_SAVE_VERSION);
   assert.equal(next.fields.length,6);
   assert.equal(next.day,2);
   assert.equal(next.fields[0].gateOpen,true);
@@ -106,7 +106,7 @@ test('prototype v1 saves migrate without resetting coordinates or rice stage',()
   const old={version:1,plots:[{id:'rice-1',stage:4}],player:{x:3,z:2},
     camera:{zoom:30,angle:.8},selected:'rice-1',seenPlots:['rice-2']};
   const state=restoreFarmState(old);
-  assert.equal(state.version,2);
+  assert.equal(state.version,FARM_SAVE_VERSION);
   assert.equal(state.player.x,3);
   assert.equal(state.camera.zoom,30);
   assert.equal(state.fields[0].growth,1);

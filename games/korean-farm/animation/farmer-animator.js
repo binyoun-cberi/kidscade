@@ -21,6 +21,7 @@ function toolVariants(hand){
   const hoe=make('hoe');
   cylinder(hoe,.035,.04,.72,0x866342,.11,-.27,-.08).rotation.z=-.32;
   const blade=box(hoe,.28,.07,.18,0x89949a,.23,-.59,-.08);blade.rotation.z=.27;
+  hoe.userData.upgradeBlade=blade;
   const watering=make('can');
   cylinder(watering,.21,.19,.32,0x7ca5a0,.10,-.32,-.02);
   cylinder(watering,.08,.09,.065,0xb7d1c1,.1,-.15,-.02);
@@ -44,6 +45,7 @@ function toolVariants(hand){
   cylinder(sickle,.037,.044,.40,0x92683e,.13,-.31,-.06).rotation.z=.19;
   const crescent=new THREE.Mesh(new THREE.TorusGeometry(.20,.027,6,18,Math.PI*1.30),material(0xbec9c8));
   crescent.position.set(.23,-.48,-.06);crescent.rotation.z=-.48;sickle.add(crescent);
+  sickle.userData.upgradeBlade=crescent;
   const sickleTip=box(sickle,.12,.027,.043,0xd6dedd,.06,-.59,-.06);
   sickleTip.rotation.z=-.65;
   const basket=make('basket');
@@ -94,6 +96,10 @@ export function createFarmerAnimator(){
   const setTool=kind=>{for(const [name,obj] of tools)obj.visible=name===kind};
   return {
     root,
+    setUpgrades(upgrades){
+      tools.get('hoe').userData.upgradeBlade.material.color.setHex(upgrades?.hoe?0xe5bf68:0x89949a);
+      tools.get('sickle').userData.upgradeBlade.material.color.setHex(upgrades?.sickle?0xe6ca78:0xbec9c8);
+    },
     get busy(){return Boolean(currentAction)},
     get activeAction(){return currentAction},
     get progress(){return currentAction?actionProgress(currentAction,elapsed):0},
