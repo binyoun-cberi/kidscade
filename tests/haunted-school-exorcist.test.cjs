@@ -112,7 +112,7 @@ test('first maiden encounter is a safe rehearsal and teaches before the chase',(
   assert.match(js,/if\(maiden\.charge>=1\.8\)beginMaidenHunt\(\)/);
   assert.match(js,/maidenPhase='hunt';maiden\.charge=0;ghostWaiting=6/);
   assert.match(js,/ghostWaiting=10/);
-  assert.match(js,/lastMistake='처녀귀신/);
+  assert.match(js,/beginCapture\('maiden',maiden,'처녀귀신/);
   assert.match(js,/생명이 모두 소진됐어요/);
 });
 
@@ -381,7 +381,7 @@ function simulateExtraAnomaly(mode){
   ];
   const execution=[
     "const budget=mode==='wolf'?300:mode==='bell'?120:mode==='eggAway'||mode==='eggStare'?100:760;",
-    "for(let i=0;i<budget;i++){elapsed+=.05;invulnerable=Math.max(0,invulnerable-.05);updateNewEncounters(.05);if((stage!==6&&mode.startsWith('egg'))||(mode==='wolf'&&encounter.wolf.ready)||(mode==='yuki'&&hp<3))break;}",
+    "for(let i=0;i<budget;i++){elapsed+=.05;invulnerable=Math.max(0,invulnerable-.05);updateNewEncounters(.05);if((stage!==6&&mode.startsWith('egg'))||(mode==='wolf'&&encounter.wolf.ready)||(mode==='yuki'&&hp<3)||(mode==='eggStare'&&hp<3))break;}",
     "return {stage,hp,eggCharge:encounter.eggCharge,bellCount:encounter.bellCount,bellWindow:encounter.bellWindow,wolfReady:encounter.wolf.ready,wolfTime:encounter.wolf.lureTime,alerts};"
   ];
   return new Function('mode',[...definitions,js.slice(js.indexOf('function playerLookDirection(){'),js.indexOf('function gazingAtGhost(){')),js.slice(start,end),...execution].join('\n'))(mode);
