@@ -340,7 +340,7 @@
         weekly: Number(byId?.[game.id]?.weeklyPlays || 0),
         total: Number(byId?.[game.id]?.totalPlays || 0)
       }))
-      .filter(entry => entry.weekly > 0 || entry.total > 0)
+      .filter(entry => entry.weekly > 0)
       .sort((a, b) => b.weekly - a.weekly || b.total - a.total || String(a.game.title).localeCompare(String(b.game.title), 'ko'))
       .slice(0, limit)
       .map(entry => entry.game);
@@ -484,7 +484,9 @@
       note:'이번 주 KIDSCADE에서 자주 플레이한 게임이에요.',
       games:popular,
       showPlayCount:true
-    }, { leadCount:3 });
+    // Popular is a factual ranking: prior placement in New/Horror/Recent
+    // must never reorder or drop a highly played game.
+    }, { preserveOrder:true, leadCount:3 });
 
     if (recommended.length) addRail({
       key:'recommended',

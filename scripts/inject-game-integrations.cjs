@@ -7,6 +7,8 @@ const TOUCH_GUARD_SRC = '/touch-interaction-guard.js?v=20260919-1';
 const AUDIO_MANAGER_SRC = '/audio-manager.js?v=20260917-1';
 const AUDIO_HOOKS_SRC = '/game-audio-hooks.js?v=20260917-2';
 const AUDIO_EXTRA_HOOKS_SRC = '/game-audio-hooks-extra.js?v=20260920-2';
+const STATS_RUNTIME_SRC = '/server-stats.js?v=20261020-1';
+const STANDALONE_STATS_SRC = '/app/platform/standalone-play-stats.js?v=20261020-2';
 const AUDIO_HOOK_TITLES = new Set([
   '인내의 탑',
   '멍멍 곱셈 러너',
@@ -101,6 +103,7 @@ function injectAudioRuntimeIntoCatalogGames() {
   let managerInjected = 0;
   let hooksInjected = 0;
   let extraHooksInjected = 0;
+  let standaloneStatsInjected = 0;
   for (const [relativeHtml, games] of targets) {
     const file = path.join(dist, relativeHtml);
     if (!fs.existsSync(file)) throw new Error(`Catalog audio target does not exist: ${relativeHtml}`);
@@ -135,13 +138,29 @@ function injectAudioRuntimeIntoCatalogGames() {
       changed = true;
     }
 
+    // Direct game URLs do not pass through the lobby launcher. Add an independent
+    // tracker; it intentionally does nothing when the game runs in an iframe.
+    const standaloneId = String(games[0]?.id || '');
+    if (/^[a-z0-9_-]{1,80}$/i.test(standaloneId)) {
+      if (!hasScriptFile(html, 'server-stats.js')) {
+        html = injectDocumentEndScript(html, `<script src="${STATS_RUNTIME_SRC}" data-kc-standalone="1"></script>`);
+        changed = true;
+      }
+      if (!hasScriptFile(html, 'standalone-play-stats.js')) {
+        html = injectDocumentEndScript(html, `<script src="${STANDALONE_STATS_SRC}" data-game-id="${standaloneId}"></script>`);
+        standaloneStatsInjected += 1;
+        changed = true;
+      }
+    }
+
     if (changed) fs.writeFileSync(file, html, 'utf8');
   }
 
-  return { games: targets.size, touchGuardInjected, managerInjected, hooksInjected, extraHooksInjected };
+  return { games: targets.size, touchGuardInjected, managerInjected, hooksInjected, extraHooksInjected, standaloneStatsInjected };
 }
 
 const audioRuntime = injectAudioRuntimeIntoCatalogGames();
 
 console.log(`[game-integrations] Touch long-press guard checked ${audioRuntime.games} catalog games; injected ${audioRuntime.touchGuardInjected}.`);
 console.log(`[game-integrations] Audio manager checked ${audioRuntime.games} catalog games; injected ${audioRuntime.managerInjected}, enhanced hooks ${audioRuntime.hooksInjected}, extra hooks ${audioRuntime.extraHooksInjected}.`);
+console.log(`[game-integrations] Standalone play counters injected into ${audioRuntime.standaloneStatsInjected} game pages.`);

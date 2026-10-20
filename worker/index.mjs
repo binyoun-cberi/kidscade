@@ -222,11 +222,15 @@ async function recordPlay(request, env) {
 
   const gameId = String(body?.gameId || '');
   const seconds = Math.floor(Number(body?.seconds || 0));
+  const eventId = String(body?.eventId || '');
   if (!isValidGameId(gameId)) {
     return json({ ok: false, error: 'invalid_game_id' }, 400, { 'cache-control': 'no-store' });
   }
   if (!Number.isFinite(seconds) || seconds < 30 || seconds > 8 * 60 * 60) {
     return json({ ok: false, error: 'invalid_play_duration' }, 400, { 'cache-control': 'no-store' });
+  }
+  if (eventId && !isValidClientId(eventId)) {
+    return json({ ok:false, error:'invalid_play_event_id' }, 400, { 'cache-control':'no-store' });
   }
 
   const catalogIds = await getCatalogIds(env, request);
@@ -236,7 +240,7 @@ async function recordPlay(request, env) {
 
   const weekKey = getKstWeekKey();
   const now = new Date().toISOString();
-  await env.DB.prepare(`
+  const incrementSql = `
     INSERT INTO game_counters (
       game_id, total_plays, current_week_key, current_week_plays, updated_at
     ) VALUES (?, 1, ?, 1, ?)
@@ -249,7 +253,34 @@ async function recordPlay(request, env) {
       END,
       current_week_key = excluded.current_week_key,
       updated_at = excluded.updated_at
-  `).bind(gameId, weekKey, now).run();
+  `;
+
+  let counted = true;
+  if (eventId) {
+    // D1 batch executes these statements in one transaction. A repeated ID
+    // sees counted=1 and cannot increment, even if an earlier response was lost.
+    const batch = await env.DB.batch([
+      env.DB.prepare(`
+        INSERT OR IGNORE INTO game_play_events (event_id, game_id, counted, created_at)
+        VALUES (?, ?, 0, ?)
+      `).bind(eventId, gameId, now),
+      env.DB.prepare(incrementSql.replace('VALUES (?, 1, ?, 1, ?)', `
+        SELECT ?, 1, ?, 1, ?
+        WHERE EXISTS (
+          SELECT 1 FROM game_play_events
+          WHERE event_id = ? AND game_id = ? AND counted = 0
+        )
+      `)).bind(gameId, weekKey, now, eventId, gameId),
+      env.DB.prepare(`
+        UPDATE game_play_events SET counted = 1
+        WHERE event_id = ? AND game_id = ? AND counted = 0
+      `).bind(eventId, gameId)
+    ]);
+    counted = Number(batch?.[1]?.meta?.changes || 0) > 0;
+  } else {
+    // Cached pre-update clients still use the original two-field payload.
+    await env.DB.prepare(incrementSql).bind(gameId, weekKey, now).run();
+  }
 
   const row = await env.DB.prepare(`
     SELECT total_plays, current_week_key, current_week_plays
@@ -259,6 +290,7 @@ async function recordPlay(request, env) {
 
   return json({
     ok: true,
+    counted,
     weekKey,
     gameId,
     game: {

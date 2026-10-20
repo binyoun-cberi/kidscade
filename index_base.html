@@ -2271,9 +2271,30 @@
             const MIN_REWARD_PLAY_SEC = 30;
             let playStartTime = 0;
             let playCheckpointTime = 0;
+            let playReadyTime = 0;
+            let activePlayEventId = '';
+            let activeGameTitle = '';
+            let playSessionReported = false;
+
+            function enqueueEligiblePlay(now = Date.now()) {
+                const seconds = playReadyTime > 0 ? Math.floor((now - playReadyTime) / 1000) : 0;
+                if (playSessionReported || !activeGameId || !activePlayEventId || seconds < MIN_REWARD_PLAY_SEC) return false;
+                const record = window.KidscadeServerStats?.recordPlay;
+                if (typeof record !== 'function') return false;
+                try {
+                    // The stats client persists the event before attempting the network request.
+                    record(activeGameId, seconds, activePlayEventId);
+                    playSessionReported = true;
+                    return true;
+                } catch (error) {
+                    console.warn('[Kidscade] play count enqueue failed:', error);
+                    return false;
+                }
+            }
 
             function checkpointPlayTime(now = Date.now()) {
                 if (playStartTime <= 0 || playCheckpointTime <= 0) return 0;
+                enqueueEligiblePlay(now);
                 const deltaSec = Math.floor((now - playCheckpointTime) / 1000);
                 if (deltaSec <= 0) return 0;
                 playCheckpointTime += deltaSec * 1000;
@@ -2294,10 +2315,19 @@
 
             // 게임이 열린 동안 주기적으로 저장해서 브라우저/TV가 갑자기 종료돼도 손실을 줄입니다.
             setInterval(() => checkpointPlayTime(), 5000);
-            window.addEventListener('pagehide', () => checkpointPlayTime());
-            window.addEventListener('beforeunload', () => checkpointPlayTime());
+            window.addEventListener('pagehide', () => {
+                checkpointPlayTime();
+                window.KidscadeServerStats?.flushPending?.({ unloading:true });
+            });
+            window.addEventListener('beforeunload', () => {
+                checkpointPlayTime();
+                window.KidscadeServerStats?.flushPending?.({ unloading:true });
+            });
             document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'hidden') checkpointPlayTime();
+                if (document.visibilityState === 'hidden') {
+                    checkpointPlayTime();
+                    window.KidscadeServerStats?.flushPending?.({ unloading:true });
+                }
             });
 
             window.KidscadePlaytime?.render?.();
@@ -2323,13 +2353,19 @@
                 startSession: (session) => {
                     playStartTime = session.startedAt;
                     playCheckpointTime = session.startedAt;
+                    playReadyTime = 0;
                     activeGameId = session.id;
                     activeGameCategory = session.category || 'all';
+                    activeGameTitle = session.title || '';
+                    activePlayEventId = session.playEventId || '';
+                    playSessionReported = false;
                 },
                 getSession: () => ({
                     id: activeGameId,
                     category: activeGameCategory,
-                    startedAt: playStartTime
+                    title: activeGameTitle,
+                    startedAt: playStartTime,
+                    playEventId: activePlayEventId
                 }),
                 remember: (id) => {
                     if (window.KidscadeDashboard?.remember?.(id)) return true;
@@ -2350,6 +2386,9 @@
                     if (opened) return;
                     const session = onStart?.();
                     document.getElementById('modal-title-text').innerText = startedTitle?.(session) || titleText;
+                    gameIframe.addEventListener('load', () => {
+                        document.dispatchEvent(new CustomEvent('kidscade:game-frame-playing'));
+                    }, { once:true });
                     gameIframe.src = href;
                     gameModal.classList.remove('hidden');
                     document.body.style.overflow = 'hidden';
@@ -2361,6 +2400,7 @@
                     document.body.style.overflow = 'auto';
                 },
                 checkpointPlayTime: (at) => checkpointPlayTime(at),
+                recordPlay: () => enqueueEligiblePlay(),
                 addCoins: (amount, reason) => addCoins(amount, reason),
                 addSproutPower: (amount, reason) => window.KidscadeSproutPower?.earn?.(amount, reason),
                 updateMission: (category, id) => updateMissionProgress(category, id),
@@ -2373,8 +2413,12 @@
                 resetSession: () => {
                     playStartTime = 0;
                     playCheckpointTime = 0;
+                    playReadyTime = 0;
                     activeGameId = null;
                     activeGameCategory = 'all';
+                    activeGameTitle = '';
+                    activePlayEventId = '';
+                    playSessionReported = false;
                 },
                 syncBadges: () => syncBadgesAndProfile(),
                 afterClose: (detail) => {
@@ -2395,6 +2439,12 @@
             }
 
             closeModalBtn.addEventListener('click', () => {
+                window.KidscadeGameLauncher.close(gameLauncherBridge);
+            });
+            document.addEventListener('kidscade:game-frame-playing', () => {
+                if (activeGameId && !playReadyTime) playReadyTime = Date.now();
+            });
+            document.addEventListener('kidscade:game-stage-cancel', () => {
                 window.KidscadeGameLauncher.close(gameLauncherBridge);
             });
             window.addEventListener('message', (event) => {

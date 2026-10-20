@@ -8,6 +8,17 @@
 
   const DEFAULT_MIN_REWARD_SECONDS = 30;
 
+  function makePlayEventId() {
+    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+    const bytes = new Uint8Array(16);
+    if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(bytes);
+    else for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+
   function finiteNumber(value, fallback = 0) {
     const number = Number(value);
     return Number.isFinite(number) ? number : fallback;
@@ -103,7 +114,7 @@
 
       const startedAt = finiteNumber(bridge.now?.(), Date.now());
 
-      activatedSession = { id: gameId, category, title, href, startedAt };
+      activatedSession = { id: gameId, category, title, href, startedAt, playEventId: makePlayEventId() };
       bridge.startSession?.(activatedSession);
       bridge.remember?.(gameId);
       bridge.updateModalTitle?.(`진행 중: ${title}`);
@@ -163,9 +174,14 @@
       }
 
       sessionSec = Math.max(0, Math.floor((closedAt - finiteNumber(session.startedAt)) / 1000));
+      reward = calculateReward(sessionSec, bridge.minRewardPlaySec);
+      // Analytics must be independent of rewards, mission writes, and local storage.
+      if (reward.eligible) {
+        try { bridge.recordPlay?.(session, reward.sessionSec); }
+        catch (statsError) { console.warn('[KidscadeGameLauncher] stats enqueue failed:', statsError); }
+      }
       bridge.checkpointPlayTime?.(closedAt);
 
-      reward = calculateReward(sessionSec, bridge.minRewardPlaySec);
       if (reward.eligible) {
         bridge.addCoins?.(reward.rewardSeeds, `게임 도전 · ${reward.durationText}`);
         bridge.addSproutPower?.(reward.rewardPower, `게임 도전 · ${session.title} · ${reward.durationText}`);
@@ -186,8 +202,6 @@
           } catch (activityError) {
             console.warn('[KidscadeGameLauncher] local activity write failed:', activityError);
           }
-          try { window.KidscadeServerStats?.recordPlay?.(session.id, reward.sessionSec); }
-          catch (statsError) { console.warn('[KidscadeGameLauncher] server stats failed:', statsError); }
           try {
             window.KidscadeProfileHistory?.recordSession?.({
               id: session.id,
