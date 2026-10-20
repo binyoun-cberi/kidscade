@@ -2,6 +2,27 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "dialect_tour",
+      "addedAt": "2026-10-20T09:48:10+09:00",
+      "title": "말맛 전국일주",
+      "href": "games/dialect_tour/index.html",
+      "category": "korean",
+      "age": "low",
+      "ages": ["toddler", "low", "high"],
+      "icon": "🧳",
+      "cover": "assets/gate-image/dialect_tour_cover.webp",
+      "description": "강원·충청·전라·경상·제주를 여행하며 사투리의 뜻을 맞혀요. 그림 고르기, 시장 심부름, 듣기 문제와 전국 번개 도전까지!",
+      "scoreKey": "dialectTourBestScore",
+      "subject": "korean",
+      "genre": "quiz",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": ["solo"],
+      "input": ["touch", "keyboard"],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "yi_sun_sin",
       "addedAt": "2026-10-19T14:40:00+09:00",
       "title": "이순신",
