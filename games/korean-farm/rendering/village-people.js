@@ -3,6 +3,7 @@
 // are decorative, wander within a small plaza, and have no hidden colliders.
 import * as THREE from 'three';
 import {FESTIVAL_GUESTS,FESTIVAL_THEMES,festivalSceneState} from './festival-ambience.mjs';
+import {villageRoutine} from './village-routines.mjs';
 
 function person(parent,name,x,z,{shirt,skirt,skin,hat,apron=false}){
   const root=new THREE.Group();root.name=name;root.position.set(x,0,z);parent.add(root);
@@ -54,6 +55,12 @@ export function createVillagePeople(scene){
     {shirt:0x8b755a,skirt:0x495f57,skin:0xd7aa84,hat:0x9fbd8a});
   const festivalHost=person(root,'소담이 · 마을 행사',-1.1,15.4,
     {shirt:0xb76765,skirt:0x486c6d,skin:0xe6b990,hat:0xc3aa65,apron:true});
+  // Two unobtrusive passersby keep the lanes lived-in even outside festival week.
+  // They have no colliders and no interactive targets.
+  const passers=[
+    person(root,'길을 걷는 농부',-3.8,10.1,{shirt:0x7b996b,skirt:0x596f66,skin:0xd8a780,hat:0xa69a67}),
+    person(root,'산책하는 이웃',5.4,11.2,{shirt:0xbf947f,skirt:0x647b9a,skin:0xe5b995,hat:0xb69a73})
+  ];
   const merchantLabel=label(merchant.root,'장터 순옥'),neighborLabel=label(neighbor.root,'이웃 영수');
   const festivalLabel=label(festivalHost.root,'마을 행사 · 소담');
   const booth=new THREE.Group();booth.position.set(-1.1,0,16.55);root.add(booth);
@@ -130,7 +137,7 @@ export function createVillagePeople(scene){
   const confetti=new THREE.Points(confettiGeometry,confettiMaterial);confetti.name='solnaeri-festival-cheers';
   confetti.frustumCulled=false;confetti.visible=false;festivalSquare.add(confetti);
   let celebrationStart=null,celebrationPending=false;
-  const stats={people:3,visitors:FESTIVAL_GUESTS.length,activeVisitors:0,season:'봄',festivalOpen:false,completed:false};
+  const stats={people:3,passersby:2,visitors:FESTIVAL_GUESTS.length,activeVisitors:0,season:'봄',festivalOpen:false,completed:false,routines:{}};
   let currentFestivalLabel='';
   const setFestival=event=>{
     if(!event)return;
@@ -162,14 +169,30 @@ export function createVillagePeople(scene){
   };
   // Shopkeeper remains behind the stand; neighbor walks a short, predictable
   // stretch of open lane and comes back to the same interaction marker.
-  const tick=(dt,elapsed,farmerPosition)=>{
+  const tick=(dt,elapsed,farmerPosition,minute=420)=>{
+    const merchantTask=villageRoutine('market',minute),neighborTask=villageRoutine('neighbor',minute),
+      festivalTask=villageRoutine('festival',minute);
+    stats.routines={market:merchantTask.label,neighbor:neighborTask.label,festival:festivalTask.label};
+    const blend=Math.min(1,dt*2);
+    for(const [actor,task] of [[merchant,merchantTask],[neighbor,neighborTask],[festivalHost,festivalTask]]){
+      actor.root.position.x+=(task.x-actor.root.position.x)*blend;
+      actor.root.position.z+=(task.z-actor.root.position.z)*blend;
+    }
+    for(let i=0;i<passers.length;i++){
+      const actor=passers[i],t=elapsed*.42+i*2.9;
+      actor.root.position.x=(i===0?-3.8:5.4)+Math.sin(t)*1.15;
+      actor.root.position.z=(i===0?10.1:11.2)+Math.cos(t*.65)*.45;
+      actor.root.rotation.y=Math.cos(t)>=0?-.55:.55;
+      actor.leftLeg.rotation.x=Math.sin(t*3)*.24;
+      actor.rightLeg.rotation.x=-actor.leftLeg.rotation.x;
+      actor.leftArm.rotation.x=-actor.leftLeg.rotation.x*.55;
+      actor.rightArm.rotation.x=actor.leftLeg.rotation.x*.55;
+    }
     const nearMerchant=Math.hypot(farmerPosition.x-9.8,farmerPosition.z-15.3)<3.2;
     merchantLabel.sprite.visible=Math.hypot(farmerPosition.x-9.8,farmerPosition.z-15.3)<8;
-    merchant.rightArm.rotation.z=nearMerchant?-.8+Math.sin(elapsed*5)*.22:-.20;
+    merchant.rightArm.rotation.z=nearMerchant?-.8+Math.sin(elapsed*5)*.22:merchantTask.gesture==='stock'?-.42+Math.sin(elapsed*2)*.20:-.20;
     merchant.leftArm.rotation.z=.18;
-    const phase=Math.sin(elapsed*.53),stride=Math.cos(elapsed*.53);
-    neighbor.root.position.x=2.8+phase*.46;
-    neighbor.root.position.z=13.4+Math.sin(elapsed*.53+.3)*.24;
+    const stride=Math.cos(elapsed*.53);
     neighborLabel.sprite.visible=Math.hypot(farmerPosition.x-neighbor.root.position.x,farmerPosition.z-neighbor.root.position.z)<8;
     neighbor.root.rotation.y=stride<0?-.35:.35;
     neighbor.leftLeg.rotation.x=stride*.20;neighbor.rightLeg.rotation.x=-stride*.20;
@@ -179,7 +202,7 @@ export function createVillagePeople(scene){
     }else neighbor.rightArm.rotation.z=-.1;
     const nearHost=Math.hypot(farmerPosition.x+1.1,farmerPosition.z-15.4)<4;
     festivalLabel.sprite.visible=Math.hypot(farmerPosition.x+1.1,farmerPosition.z-15.4)<9;
-    festivalHost.rightArm.rotation.z=nearHost||stats.festivalOpen?-.8+Math.sin(elapsed*3)*.18:-.16;
+    festivalHost.rightArm.rotation.z=nearHost||stats.festivalOpen?-.8+Math.sin(elapsed*3)*.18:festivalTask.gesture==='sweep'?-.43+Math.sin(elapsed*2)*.2:-.16;
     if(stats.festivalOpen){
       for(const guest of guests){
         const t=elapsed*(guest.role==='skip'?2.6:1.3)+guest.phase;
@@ -218,7 +241,7 @@ export function createVillagePeople(scene){
   return {root,stats,update:tick,setFestival,celebrate,dispose(){
     root.parent?.remove(root);
     root.traverse(obj=>{if(obj.isMesh)obj.geometry?.dispose?.()});
-    for(const p of [merchant,neighbor,festivalHost,...guests])for(const material of p.mats)material.dispose();
+    for(const p of [merchant,neighbor,festivalHost,...guests,...passers])for(const material of p.mats)material.dispose();
     for(const material of boothMats)material.dispose();
     for(const material of seasonMats)material.dispose();
     confettiGeometry.dispose();confettiMaterial.dispose();

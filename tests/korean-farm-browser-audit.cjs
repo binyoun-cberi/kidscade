@@ -684,10 +684,24 @@ async function main(){
    cheered.people?.completed===true&&cheered.festival?.thanks===true&&cheered.festival?.cheers===true,
    {people:cheered.people,festival:cheered.festival});
  await screenshot('15b-festival-thanks');
+ // Exercise the new hands-on Spring activity through actual modal button clicks.
+ await click('#festivalBtn');
+ await waitFor('document.querySelector(".festival-activity-choices button")!==null',4000);
+ const steps=['물이 있는 논','두둑이 있는 당근밭','키 큰 옥수수밭'];
+ for(const word of steps){
+   await evaluate(`[...document.querySelectorAll('.festival-activity-choices button')].find(b=>b.textContent.includes(${JSON.stringify(word)})).click()`);
+ }
+ const activityDone=await evaluate('window.__farmQA.state()');
+ check('Spring planting mini-activity grants a one-time reward',
+   activityDone.stats.festivalActivities===1&&activityDone.money===afterFestival.money+120&&
+   (await evaluate('document.querySelector(".festival-activity-progress").textContent.includes("완료")')));
+ await click('#modalClose');
  await send('Page.reload',{ignoreCache:true});
  await waitFor('Boolean(window.__farmQA?.ready())',35000);
  check('Festival completion survives browser reload',
    (await evaluate('window.__farmQA.state().stats.festivals===1 && window.__farmQA.state().festival.completedKey==="1:봄"')));
+ check('Spring activity reward and completion survive reload without extra payment',
+   (await evaluate('window.__farmQA.state().stats.festivalActivities===1 && window.__farmQA.state().festival.activityDoneKey==="1:봄"')));
  check('Celebration reward display persists without replaying one-time confetti',
    (await evaluate('window.__farmQA.visuals().festival.thanks'))===true&&
    (await evaluate('window.__farmQA.visuals().festival.cheers'))===false);

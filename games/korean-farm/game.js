@@ -11,6 +11,8 @@ import {createHarvestCargo} from './rendering/harvest-cargo.js';
 import {createVillagePeople} from './rendering/village-people.js';
 import {createFarmWeather} from './rendering/farm-weather.js';
 import {greetNeighbor} from './farming/village-people.mjs';
+import {festivalActivity,playFestivalActivity} from './farming/festival-activities.mjs';
+import {villageRoutine,villageClock} from './rendering/village-routines.mjs';
 import {fieldStatusIndicators} from './farming/field-status.mjs';
 import {nextFarmObjective} from './farming/farm-objectives.mjs';
 import {WORK_STRIPS,PATCH_ACTIONS,workStripPosition,nextWorkStrip,completedWorkStrips} from './farming/field-work.mjs';
@@ -479,7 +481,7 @@ function render(now){
     if(event)handleFarmFlowEvent(event);
     refreshWorkStatus();
     updateEnvironmentAnimation(dt||.016,now/1000);
-    villagePeople?.update(dt||.016,now/1000,state.player);
+    villagePeople?.update(dt||.016,now/1000,state.player,state.minute);
     farmWeather?.update(dt||.016,state.player);
   }
   refreshCamera(dt||.016);renderer.render(scene,camera);
@@ -619,7 +621,7 @@ function refreshHud(){
   const weatherLabels={sunny:['☀','맑음'],cloudy:['☁','흐림'],rain:['☂','비'],storm:['☔','강한 비']};
   const w=weatherLabels[state.weather]||weatherLabels.sunny;
   $('weatherIcon').textContent=w[0];
-  $('dayLabel').textContent=c.season+' '+c.seasonDay+'일 · '+w[1];
+  $('dayLabel').textContent=c.season+' '+c.seasonDay+'일 · '+w[1]+' · '+villageClock(state.minute);
   $('energyLabel').textContent='기운 '+Math.round(state.energy);
   $('moneyLabel').textContent=formatWon(state.money);
   const festival=seasonalFestival(state);
@@ -1036,7 +1038,9 @@ function openNeighbor(){
   const friendship=document.createElement('p');friendship.className='neighbor-friendship';
   friendship.textContent='우리 사이 '+ '♥'.repeat(conversation.friendship)+'♡'.repeat(5-conversation.friendship)+
     (conversation.gift?' · 당근 씨앗 2봉지를 받았어요!':'');
-  root.append(portrait,tip,friendship);
+  const whereabouts=document.createElement('p');whereabouts.className='neighbor-routine';
+  whereabouts.textContent='지금 할아버지는 '+villageRoutine('neighbor',state.minute).label+'이에요.';
+  root.append(portrait,tip,friendship,whereabouts);
   const order=currentDeliveryOrder(state);
   const request=document.createElement('section');request.className='delivery-card';
   const title=document.createElement('strong');title.textContent='할아버지의 마을 부탁';request.append(title);
@@ -1067,7 +1071,10 @@ function openSeasonFestival(){
   const intro=document.createElement('section');intro.className='festival-intro';
   const header=document.createElement('strong');header.textContent='🎏 '+event.title+' · 마을 행사 도우미 소담';
   const story=document.createElement('p');story.textContent=event.story;
-  intro.append(header,story);root.append(intro);
+  intro.append(header,story);
+  const routine=document.createElement('p');routine.className='neighbor-routine';
+  routine.textContent='소담의 하루 · '+villageRoutine('festival',state.minute).label;
+  intro.append(routine);root.append(intro);
   const status=document.createElement('p');status.className='festival-status';
   if(event.completed)status.textContent='이번 계절의 나눔을 마쳤어요. 다음 계절 장날에도 놀러 오세요!';
   else if(!event.open)status.textContent=event.startsIn?'행사는 '+event.startsIn+'일 후에 열려요. 필요한 물건을 미리 모아 두세요.':'이번 계절의 마을 행사는 끝났어요.';
@@ -1093,7 +1100,41 @@ function openSeasonFestival(){
     barn.textContent='창고에서 '+CROPS[event.produce].name+' 준비하기 →';
     barn.onclick=()=>{$('modal').classList.add('hidden');requestStation('barn')};order.append(barn);
   }
-  root.append(order);showModal('솔내리의 계절 행사',root);
+  root.append(order);
+  const experience=festivalActivity(state),activityBox=document.createElement('section');
+  activityBox.className='festival-activity';
+  const activityTitle=document.createElement('strong');activityTitle.textContent='마을 체험 · '+experience.title;
+  const activityDescription=document.createElement('p');
+  activityDescription.textContent=experience.instructions+' · 체험 완료 보상 120원 (계절당 한 번)';
+  activityBox.append(activityTitle,activityDescription);
+  const progress=document.createElement('p');progress.className='festival-activity-progress';
+  progress.textContent=experience.completed?'체험 완료! 다음 계절에 다시 참여해요.':
+    '진행 '+experience.progress+' / '+experience.total;
+  activityBox.append(progress);
+  if(!experience.delivered||!experience.open){
+    const hint=document.createElement('p');
+    hint.textContent=experience.delivered?'이번 계절 행사가 열릴 때 체험할 수 있어요.':
+      '수확물을 직접 납품한 다음 체험 활동을 시작할 수 있어요.';
+    activityBox.append(hint);
+  }else if(!experience.completed){
+    const prompt=document.createElement('p');prompt.className='festival-activity-prompt';
+    prompt.textContent=experience.prompt;activityBox.append(prompt);
+    const choices=document.createElement('div');choices.className='festival-activity-choices';
+    for(const option of experience.options){
+      const button=document.createElement('button');button.type='button';
+      button.textContent=option.label+(option.used?' · '+option.used+'번 완료':'');
+      button.disabled=option.disabled;
+      button.onclick=()=>{
+        const result=playFestivalActivity(state,option.id);toast(result.message);
+        if(result.ok){refreshHud();save(true)}
+        if(result.completed){villagePeople?.celebrate()}
+        openSeasonFestival();
+      };
+      choices.append(button);
+    }
+    activityBox.append(choices);
+  }
+  root.append(activityBox);showModal('솔내리의 계절 행사',root);
 }
 function openBag(){
   if(!marketAccess){toast('장터 판매대까지 걸어가 주세요.');return}
