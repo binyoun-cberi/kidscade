@@ -266,7 +266,8 @@
   });
   document.addEventListener('keydown',event => {
     if ($('play-screen').hidden || event.altKey || event.ctrlKey || event.metaKey) return;
-    if (event.key === 'Enter' && state.answered) { event.preventDefault(); nextQuestion(); return; }
+    // 다음 버튼에 초점이 있을 때는 브라우저의 기본 Enter 클릭만 처리해 중복 진행을 막습니다.
+    if (event.key === 'Enter' && state.answered && document.activeElement?.tagName !== 'BUTTON') { event.preventDefault(); nextQuestion(); return; }
     if (!state.answered && /^[1-4]$/.test(event.key) && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)) {
       const choice = state.choices[Number(event.key)-1];
       if (choice) { event.preventDefault(); answerQuestion(choice); }
