@@ -4,7 +4,7 @@ const DC=root.DisasterCity=root.DisasterCity||{},D=DC.DATA;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 class Renderer{
  constructor(canvas){
-  this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false});this.images={};this.ready=false;this.view={w:1,h:1,dpr:1};this.agents=[];this.lastCitizenTime=0;this.resize=this.resize.bind(this);
+  this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false});this.images={};this.ready=false;this.view={w:1,h:1,dpr:1};this.agents=[];this.serviceVehicles=[];this.lastCitizenTime=0;this.resize=this.resize.bind(this);
   addEventListener('resize',this.resize);root.visualViewport?.addEventListener('resize',this.resize);this.resize();
  }
  async load(){
@@ -28,36 +28,167 @@ class Renderer{
   c.fillStyle='#6f8f72';c.beginPath();c.moveTo(0,360);for(let x=0;x<=D.W;x+=120)c.lineTo(x,320+Math.sin(x*.012)*24);c.lineTo(D.W,450);c.lineTo(0,450);c.fill();
   c.fillStyle='#628c58';c.fillRect(0,D.GROUND_Y,D.W,D.H-D.GROUND_Y);c.fillStyle='#355d41';c.fillRect(0,D.GROUND_Y+34,D.W,D.H-D.GROUND_Y-34);
   for(let x=0;x<D.W;x+=64)if(this.images.grass)this.img('grass',x,D.GROUND_Y-2,64,64,false,.44);
-  c.fillStyle='#9b7951';c.fillRect(0,D.GROUND_Y+20,D.W,18);c.fillStyle='#c4a26f';for(let x=0;x<D.W;x+=42)c.fillRect(x,D.GROUND_Y+23,26,5);this.drawEdgeScenery()
+  c.fillStyle='#8e7660';c.fillRect(0,D.GROUND_Y+20,D.W,58);
+  c.fillStyle='#b5a48a';c.fillRect(0,D.GROUND_Y+20,D.W,4);c.fillRect(0,D.GROUND_Y+74,D.W,4);
+  c.fillStyle='#e5cba3';for(let x=18;x<D.W;x+=84)c.fillRect(x,D.GROUND_Y+47,38,3);
+  this.drawEdgeScenery()
  }
  drawEdgeScenery(){
   const c=this.ctx;for(const side of ['left','right']){const dir=side==='left'?1:-1,base=side==='left'?14:D.W-14;for(let i=0;i<5;i++){const x=base+dir*i*20;c.fillStyle='#365d3a';c.fillRect(x-3,D.GROUND_Y-83-i%2*9,7,83);c.fillStyle='#4e7e48';c.beginPath();c.arc(x,D.GROUND_Y-88-i%2*9,24,0,Math.PI*2);c.fill()}}
-  c.fillStyle='#547b8e';c.fillRect(0,D.GROUND_Y+52,95,12);c.fillRect(D.W-95,D.GROUND_Y+52,95,12)
+  c.fillStyle='#547b8e';c.fillRect(0,D.GROUND_Y+84,95,12);c.fillRect(D.W-95,D.GROUND_Y+84,95,12);
+  for(const x of [132,655,788,1309])this.img('streetLight',x,D.GROUND_Y+8,10,43)
  }
  levelBadge(x,y,level){if((level||1)<=1)return;const c=this.ctx;c.fillStyle='#213f53dd';c.fillRect(x-15,y,30,16);c.fillStyle='#ffe18a';c.font='900 10px system-ui';c.textAlign='center';c.fillText('Lv.'+level,x,y+12)}
  compositeHouse(x,style,b){
   const c=this.ctx,w=82,h=86,baseKey=style==='fire'?'buildingDark':style==='market'?'buildingGray':'buildingBase',roof=style==='market'?'roofYellow':style==='fire'?'roofRed':'roofGray';
-  if(!this.img(baseKey,x-w/2,D.GROUND_Y-h,w,h)){c.fillStyle='#e7d6b4';c.fillRect(x-w/2,D.GROUND_Y-h,w,h)}this.img(roof,x-w/2-2,D.GROUND_Y-h-20,w+4,30);
-  if(style==='fire'){c.fillStyle='#d34d42';c.fillRect(x-23,D.GROUND_Y-45,46,34);c.fillStyle='#fff';c.font='900 20px system-ui';c.textAlign='center';c.fillText('✚',x,D.GROUND_Y-54)}
-  else if(style==='market'){c.fillStyle='#c95f45';c.fillRect(x-35,D.GROUND_Y-55,70,12);c.fillStyle='#fff5cf';for(let i=0;i<5;i++)c.fillRect(x-34+i*14,D.GROUND_Y-55,7,12)}
-  else this.img('window',x-15,D.GROUND_Y-53,30,30);this.hpBar(x,D.GROUND_Y-h-28,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-h-49,b.level)
+  if(!this.img(baseKey,x-w/2,D.GROUND_Y-h,w,h)){c.fillStyle='#e7d6b4';c.fillRect(x-w/2,D.GROUND_Y-h,w,h)}
+  this.img(roof,x-w/2-2,D.GROUND_Y-h-20,w+4,30);
+  this.img('door',x-13,D.GROUND_Y-45,26,45);
+  this.img('window',x-35,D.GROUND_Y-65,24,27);
+  this.img(style==='fire'?'windowOpen':'window',x+11,D.GROUND_Y-65,24,27);
+  if(style==='house')this.img('chimney',x+22,D.GROUND_Y-h-37,23,28);
+  if(style==='market'){
+   this.img('awningRed',x-39,D.GROUND_Y-54,78,24);
+   this.img('marketSign',x+10,D.GROUND_Y-h-35,25,25);
+  }else if(style==='fire'){
+   c.fillStyle='#b8463a';c.fillRect(x-25,D.GROUND_Y-46,50,46);
+   c.fillStyle='#e8b9a7';for(let r=0;r<3;r++)c.fillRect(x-21,D.GROUND_Y-40+r*12,42,2);
+   c.fillStyle='#a52f2d';c.fillRect(x-27,D.GROUND_Y-h-26,54,22);
+   c.fillStyle='#fff';c.font='900 15px system-ui';c.textAlign='center';c.fillText('소방서',x,D.GROUND_Y-h-10);
+  }
+  this.hpBar(x,D.GROUND_Y-h-40,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-h-61,b.level)
+ }
+ facility(x,style,b){
+  const c=this.ctx,colors={pump:'#528ca0',reservoir:'#74bbd6',shelter:'#546c80',cooling:'#80ccdd',snow:'#6f8490'};
+  const base=style==='shelter'?'buildingDark':style==='cooling'?'buildingBase':'buildingGray';
+  if(!this.img(base,x-39,D.GROUND_Y-73,78,73)){
+   c.fillStyle=style==='cooling'?'#d7eaf0':'#82929b';c.fillRect(x-39,D.GROUND_Y-73,78,73);
+  }
+  c.fillStyle=colors[style]||'#8196a2';c.fillRect(x-39,D.GROUND_Y-75,78,9);
+  this.img('roofGray',x-43,D.GROUND_Y-86,86,19);
+  this.img('door',x-12,D.GROUND_Y-44,24,44);
+  this.img('window',x-34,D.GROUND_Y-60,21,23);this.img('window',x+13,D.GROUND_Y-60,21,23);
+  if(style==='shelter'){
+   c.fillStyle='#47545c';c.beginPath();c.moveTo(x-45,D.GROUND_Y-73);c.lineTo(x,D.GROUND_Y-105);c.lineTo(x+45,D.GROUND_Y-73);c.fill();
+   c.fillStyle='#f6f4de';c.fillRect(x-32,D.GROUND_Y-36,17,4);c.fillRect(x+15,D.GROUND_Y-36,17,4);
+  }
+  const names={pump:'배수펌프',reservoir:'저수조',shelter:'대피소',cooling:'쉼터',snow:'제설기지'};
+  c.fillStyle='#173b50';c.fillRect(x-33,D.GROUND_Y-112,66,25);
+  c.fillStyle='#f2f9fc';c.font='900 13px system-ui';c.textAlign='center';c.fillText(names[style],x,D.GROUND_Y-95);
+  if(style==='pump'){
+   c.strokeStyle='#467180';c.lineWidth=8;c.beginPath();c.arc(x+34,D.GROUND_Y-28,16,-Math.PI/2,Math.PI/2);c.stroke();
+   c.fillStyle='#2b5165';c.beginPath();c.arc(x-25,D.GROUND_Y-24,13,0,Math.PI*2);c.fill();
+   c.fillStyle='#9fd1dc';c.beginPath();c.arc(x-25,D.GROUND_Y-24,6,0,Math.PI*2);c.fill();
+  }
+  if(style==='cooling'){
+   this.img('awningGreen',x-39,D.GROUND_Y-47,78,21);
+   c.fillStyle='#5bb4ce';c.fillRect(x+20,D.GROUND_Y-30,8,29);
+  }
+  if(style==='snow'){
+   c.fillStyle='#405763';c.fillRect(x-28,D.GROUND_Y-46,56,46);
+   c.strokeStyle='#c2d6dc';c.lineWidth=3;for(let i=1;i<=3;i++){c.beginPath();c.moveTo(x-25,D.GROUND_Y-46+i*10);c.lineTo(x+25,D.GROUND_Y-46+i*10);c.stroke()}
+   this.img('tractor',x-25,D.GROUND_Y-24,45,28);
+  }
+  if(style==='reservoir'){
+   c.fillStyle='#a5d9df';c.fillRect(x-31,D.GROUND_Y-135,62,26);
+   c.fillStyle='#568b9b';c.fillRect(x-35,D.GROUND_Y-138,70,8);
+   c.fillStyle='#d9f7ff';c.fillRect(x-5,D.GROUND_Y-130,10,16);
+  }
+  this.hpBar(x,D.GROUND_Y-(style==='reservoir'?152:126),b.hp,b.maxHp);
+  this.levelBadge(x,D.GROUND_Y-(style==='reservoir'?174:148),b.level)
  }
  hpBar(x,y,hp,maxHp){if(hp>=maxHp*.985)return;const c=this.ctx,p=clamp(hp/maxHp,0,1);c.fillStyle='#173449cc';c.fillRect(x-28,y,56,7);c.fillStyle=p>.55?'#66b267':p>.28?'#e6a74c':'#d54d4d';c.fillRect(x-27,y+1,54*p,5)}
  drawBuilding(slot,b){
   const c=this.ctx,x=slot.x,def=D.BUILDINGS[b.id],style=def.style;if(['house','market','fire'].includes(style)){this.compositeHouse(x,style,b);return}
-  if(style==='farm'){c.fillStyle='#85633f';c.fillRect(x-38,D.GROUND_Y-18,76,18);for(let i=-30;i<=30;i+=12){c.fillStyle='#e2b949';c.fillRect(x+i,D.GROUND_Y-51-(i%3),4,32);c.fillStyle='#74a852';c.fillRect(x+i-5,D.GROUND_Y-38,14,4)}this.hpBar(x,D.GROUND_Y-63,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-82,b.level);return}
-  if(style==='levee'){c.fillStyle='#79756c';for(let r=0;r<3;r++)for(let i=0;i<4;i++){c.fillStyle=(r+i)%2?'#8f897e':'#6f6c64';c.fillRect(x-44+i*22+(r%2)*7,D.GROUND_Y-21-r*15,21,14)}this.hpBar(x,D.GROUND_Y-76,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-96,b.level);return}
-  if(style==='pump'){c.fillStyle='#50616a';c.fillRect(x-34,D.GROUND_Y-58,68,58);c.fillStyle='#78a6b5';c.fillRect(x-24,D.GROUND_Y-48,34,28);c.strokeStyle='#31505f';c.lineWidth=8;c.beginPath();c.arc(x+16,D.GROUND_Y-26,20,-Math.PI/2,Math.PI/2);c.stroke();this.hpBar(x,D.GROUND_Y-74,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-94,b.level);return}
-  if(style==='reservoir'){c.fillStyle='#d7e2dd';c.fillRect(x-31,D.GROUND_Y-68,62,68);c.fillStyle='#5b8e9e';c.fillRect(x-35,D.GROUND_Y-73,70,10);c.fillStyle='#6db6cf';c.fillRect(x-4,D.GROUND_Y-47,8,22);this.hpBar(x,D.GROUND_Y-86,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-106,b.level);return}
-  if(style==='shelter'){c.fillStyle='#78858d';c.fillRect(x-37,D.GROUND_Y-64,74,64);c.fillStyle='#4b5963';c.beginPath();c.moveTo(x-44,D.GROUND_Y-64);c.lineTo(x,D.GROUND_Y-88);c.lineTo(x+44,D.GROUND_Y-64);c.fill();c.fillStyle='#eef5f7';c.font='900 24px system-ui';c.textAlign='center';c.fillText('⬟',x,D.GROUND_Y-29);this.hpBar(x,D.GROUND_Y-101,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-121,b.level);return}
-  if(style==='cooling'){c.fillStyle='#d7eef2';c.fillRect(x-36,D.GROUND_Y-62,72,62);c.fillStyle='#78b9cb';c.fillRect(x-40,D.GROUND_Y-67,80,10);c.fillStyle='#287a96';c.font='900 25px system-ui';c.textAlign='center';c.fillText('❄',x,D.GROUND_Y-27);this.hpBar(x,D.GROUND_Y-82,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-102,b.level);return}
-  if(style==='snow'){c.fillStyle='#566976';c.fillRect(x-38,D.GROUND_Y-54,76,54);c.fillStyle='#d9eef4';c.fillRect(x-31,D.GROUND_Y-46,42,28);c.fillStyle='#f3c653';c.fillRect(x+10,D.GROUND_Y-35,22,8);c.fillStyle='#e9f5f8';c.font='900 18px system-ui';c.textAlign='center';c.fillText('✣',x-9,D.GROUND_Y-25);this.hpBar(x,D.GROUND_Y-70,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-90,b.level);return}
+  if(style==='farm'){c.fillStyle='#85633f';c.fillRect(x-38,D.GROUND_Y-18,76,18);for(let i=-30;i<=30;i+=12){c.fillStyle='#e2b949';c.fillRect(x+i,D.GROUND_Y-51-(i%3),4,32);c.fillStyle='#74a852';c.fillRect(x+i-5,D.GROUND_Y-38,14,4)}this.img('fence',x-42,D.GROUND_Y-35,84,35);this.hpBar(x,D.GROUND_Y-63,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-82,b.level);return}
+  if(style==='levee'){c.fillStyle='#79756c';for(let r=0;r<3;r++)for(let i=0;i<4;i++){c.fillStyle=(r+i)%2?'#8f897e':'#6f6c64';c.fillRect(x-44+i*22+(r%2)*7,D.GROUND_Y-21-r*15,21,14)}this.img('rock',x-43,D.GROUND_Y-61,33,32);this.img('rock',x+12,D.GROUND_Y-55,29,26);this.hpBar(x,D.GROUND_Y-76,b.hp,b.maxHp);this.levelBadge(x,D.GROUND_Y-96,b.level);return}
+  if(['pump','reservoir','shelter','cooling','snow'].includes(style)){this.facility(x,style,b);return}
+ }
+ buildingScars(slot,b){
+  const damage=b.visualDamage;if(!damage||damage.strength<.035)return;
+  const c=this.ctx,x=slot.x,g=D.GROUND_Y,p=clamp(damage.strength,0,1),style=D.BUILDINGS[b.id]?.style;
+  const width=style==='levee'?43:style==='farm'?38:37,top=style==='farm'?g-45:g-72;
+  c.save();
+  if(damage.kind==='flood'){
+   const high=10+p*28;c.globalAlpha=.26+p*.39;c.fillStyle='#705d48';c.fillRect(x-width,g-high,width*2,high);
+   c.fillStyle='#c3a582';for(let i=0;i<5;i++)c.fillRect(x-width+4+i*(width*.4),g-high+2+(i%3)*4,7,3);
+   c.strokeStyle='#b4d9d4';c.lineWidth=2;c.beginPath();c.moveTo(x-width,g-high+1);c.lineTo(x+width,g-high+1);c.stroke();
+  }else if(damage.kind==='fire'){
+   c.globalAlpha=.24+p*.52;c.fillStyle='#241c21';
+   for(let i=0;i<7;i++){const xx=x-width+(i*17)%(width*2-8),h=9+p*(17+(i%3)*11);c.fillRect(xx,top+6+(i%3)*4,9,h)}
+   c.globalAlpha=.26+p*.35;this.img('smoke1',x-23,top-26,48,45,false,c.globalAlpha);
+  }else if(damage.kind==='quake'){
+   c.globalAlpha=.42+p*.48;c.lineWidth=1.5+p*1.5;c.strokeStyle='#342e30';
+   for(let i=0;i<2;i++){const xx=x+(i?15:-22);c.beginPath();c.moveTo(xx,top+4);c.lineTo(xx+7,top+24);c.lineTo(xx-2,top+35);c.lineTo(xx+9,g-9);c.stroke()}
+  }else{
+   c.globalAlpha=.32+p*.43;c.fillStyle='#413b35';c.fillRect(x-width,top+2,width*2,4+p*5);
+   c.strokeStyle='#645247';c.lineWidth=2;for(let i=0;i<3;i++){c.beginPath();c.moveTo(x-width+4+i*24,top+3);c.lineTo(x-width+15+i*24,top+16+i*3);c.stroke()}
+  }
+  c.restore()
+ }
+ roadDamage(s){
+  const f=s.field;if(!f?.cells?.length)return;const c=this.ctx,cw=D.W/(f.cols||24),mid=Math.floor((f.rows||5)/2),y=D.GROUND_Y+27;
+  c.save();for(const cell of f.cells){if(cell.r!==mid)continue;
+   const x=cell.c*cw,burn=cell.burned||0,silt=cell.silt||0,debris=cell.debris||0;
+   if(burn>.015){c.globalAlpha=clamp(burn*.60,.09,.6);c.fillStyle='#302c2a';c.fillRect(x+3,y+5,cw-6,23)}
+   if(silt>.02){c.globalAlpha=clamp(silt*.72,.1,.63);c.fillStyle='#927655';c.fillRect(x+4,y+33,cw-8,11);c.fillRect(x+10,y+13,cw-20,3)}
+   if(debris>.02){c.globalAlpha=clamp(.17+debris*.63,.17,.8);c.strokeStyle='#443c35';c.lineWidth=1+debris*2;
+    c.beginPath();c.moveTo(x+cw*.23,y+5);c.lineTo(x+cw*.38,y+16);c.lineTo(x+cw*.27,y+28);c.lineTo(x+cw*.55,y+40);c.stroke();
+    c.fillStyle='#524940';for(let i=0;i<3;i++)c.fillRect(x+9+i*13,y+28+(i%2)*5,6+debris*5,3+debris*4)
+   }
+  }c.restore()
+ }
+ rubblePile(d,fade=1){
+  const c=this.ctx,g=D.GROUND_Y;c.save();c.globalAlpha=fade;
+  c.fillStyle=d.cause==='wildfire'?'#342b2a':'#615a53';c.fillRect(d.x-35,g-10,70,10);
+  c.fillStyle=d.cause==='wildfire'?'#45312d':'#7a7166';for(let i=0;i<7;i++){const xx=d.x-31+i*10,h=5+(i*7%19);c.fillRect(xx,g-10-h,11,h)}
+  this.img('rock',d.x-35,g-32,34,29,false,fade);this.img('rock',d.x+5,g-25,30,24,true,fade);
+  c.strokeStyle='#392d2a';c.lineWidth=4;c.beginPath();c.moveTo(d.x-22,g-25);c.lineTo(d.x+11,g-51);c.moveTo(d.x-2,g-15);c.lineTo(d.x+27,g-40);c.stroke();c.restore()
+ }
+ rubble(s){
+  for(const d of s.recovery?.debris||[]){if(s.slots[d.slotIndex]?.building)continue;this.rubblePile(d,clamp((95-d.age)/17,0,1))}
+ }
+ reconstruction(slot,b,job,s){
+  const c=this.ctx,x=slot.x,g=D.GROUND_Y,t=clamp(job.elapsed,0,job.total),clean=clamp((t-1.7)/1.8,0,1),build=clamp((t-3.45)/2.35,0,1),reveal=clamp((t-5.8)/1.5,0,1);
+  c.save();
+  if(t<3.5){this.rubblePile({x,cause:job.cause},1-clean);
+   if(clean>.03&&clean<.99){this.img('smoke1',x-32,g-69+clean*18,64,49,false,.35*(1-clean));c.fillStyle='#b3a28c';for(let i=0;i<5;i++)c.fillRect(x-30+i*13,g-34-17*clean-i%3*5,4,4)}
+  }
+  if(t>=3.45){
+   c.fillStyle='#786b60';c.fillRect(x-39,g-4,78,5);
+   c.fillStyle='#d6b78d';c.fillRect(x-34,g-6-76*build,68,76*build);
+   c.strokeStyle='#906c44';c.lineWidth=4;
+   for(const xx of [x-34,x+34]){c.beginPath();c.moveTo(xx,g-3);c.lineTo(xx,g-3-86*build);c.stroke()}
+   for(const fraction of [.35,.72,1])if(build>=fraction*.35){const yy=g-3-80*fraction*build;c.beginPath();c.moveTo(x-35,yy);c.lineTo(x+35,yy);c.stroke()}
+   if(build>.65)this.img('roofGray',x-39,g-87*build,78,18,false,.95);
+  }
+  if(reveal>0){
+   c.save();c.beginPath();c.rect(x-44,g-152*reveal,88,152*reveal+2);c.clip();this.drawBuilding(slot,b);this.buildingScars(slot,b);c.restore()
+  }
+  if(t<6.7){
+   this.img('roadBarrier',x-44,g+1,34,20);this.img('roadBarrier',x+12,g+1,34,20);
+   if(t>1.4){const pace=Math.sin(s.time*7)*2;this.img('citizenWalk',x-13+pace,g-31,26,33,false,.95)}
+   this.img('fence',x-39,g-15,78,15,false,.65)
+  }
+  const labels=t<1.7?'복구차 도착':t<3.45?'잔해 정리':t<5.8?'재건 공사':'완공 중';
+  if(t<6.9){c.fillStyle='#263f4bdc';c.fillRect(x-38,g-150,76,21);c.fillStyle='#fff2d3';c.font='900 12px system-ui';c.textAlign='center';c.fillText(labels,x,g-135)}
+  c.restore();return true
  }
  conditionBadge(slot){
   const b=slot.building;if(!b||!b.condition||b.condition==='normal')return;const c=this.ctx,x=slot.x,y=D.GROUND_Y-116;
   c.save();c.fillStyle='#173449dd';c.beginPath();c.arc(x,y,15,0,Math.PI*2);c.fill();c.fillStyle='#fff';c.font='900 16px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(b.condition==='flooded'?'💧':'🔧',x,y+1);c.restore()
  }
- townHall(){const c=this.ctx,x=D.TOWN_X;c.fillStyle='#e7d1a8';c.fillRect(x-55,D.GROUND_Y-108,110,108);c.fillStyle='#384e5a';c.beginPath();c.moveTo(x-66,D.GROUND_Y-108);c.lineTo(x,D.GROUND_Y-151);c.lineTo(x+66,D.GROUND_Y-108);c.fill();c.fillStyle='#f5edd7';c.fillRect(x-12,D.GROUND_Y-52,24,52);c.fillStyle='#b44e43';c.fillRect(x-34,D.GROUND_Y-91,68,20);c.fillStyle='#fff3d8';c.font='900 13px system-ui';c.textAlign='center';c.fillText('마을회관',x,D.GROUND_Y-76)}
+ townHall(){const c=this.ctx,x=D.TOWN_X;
+  if(!this.img('buildingBase',x-55,D.GROUND_Y-108,110,108)){
+   c.fillStyle='#e7d1a8';c.fillRect(x-55,D.GROUND_Y-108,110,108);
+  }
+  c.fillStyle='#384e5a';c.beginPath();c.moveTo(x-66,D.GROUND_Y-108);c.lineTo(x,D.GROUND_Y-151);c.lineTo(x+66,D.GROUND_Y-108);c.fill();
+  this.img('roofGray',x-47,D.GROUND_Y-135,94,26);
+  this.img('door',x-13,D.GROUND_Y-51,26,51);
+  this.img('window',x-46,D.GROUND_Y-65,28,29);this.img('window',x+18,D.GROUND_Y-65,28,29);
+  this.img('clock',x-15,D.GROUND_Y-131,30,30);
+  c.fillStyle='#b44e43';c.fillRect(x-37,D.GROUND_Y-92,74,20);c.fillStyle='#fff3d8';c.font='900 13px system-ui';c.textAlign='center';c.fillText('마을회관',x,D.GROUND_Y-77)
+ }
  frontX(d){return d.side==='left'?70+d.progress*650:1370-d.progress*650}
  ensureAgents(s){
   const count=Math.min(16,Math.max(5,Math.round(s.population/4)));while(this.agents.length<count){const i=this.agents.length,x=300+(i*109)%820;this.agents.push({x,target:D.TOWN_X,wait:(i%4)*.35,seed:i*17+3,dir:1})}if(this.agents.length>count)this.agents.length=count
@@ -70,6 +201,31 @@ class Renderer{
    const dx=a.target-a.x,speed=fleeing?118:38;if(Math.abs(dx)>3){a.dir=Math.sign(dx);a.x+=a.dir*Math.min(Math.abs(dx),speed*dt)}
    const y=D.GROUND_Y+8+(i%3)*4,bob=Math.sin(s.time*(fleeing?9:5)+i)*2,key=fleeing?'citizenWalk':i%3===0?'adventurer':i%3===1?'citizen':'citizenWalk',flip=a.dir<0;
    if(!this.img(key,a.x-14,y-34+bob,28,34,flip)){c.fillStyle='#f0c59b';c.beginPath();c.arc(a.x,y-24,7,0,Math.PI*2);c.fill();c.fillStyle='#436c82';c.fillRect(a.x-7,y-17,14,20)}
+  }
+ }
+ launchVehicle(data,time){
+  if(!data||!Number.isFinite(time))return;
+  const types=['fireTruck','ambulance','evacBus','tractor','waterTruck','repairTruck','supplyVan'];
+  if(!types.includes(data.vehicle))return;
+  const destination=Number.isFinite(data.x)?data.x:data.side==='left'?230:data.side==='right'?1210:D.TOWN_X;
+  const to=clamp(destination,90,D.W-90),from=to<D.TOWN_X?D.TOWN_X+65:D.TOWN_X-65;
+  this.serviceVehicles.push({key:data.vehicle,from,to,start:time,travel:data.construction?1.65:4.3,lifetime:data.construction?5.7:7});
+  if(this.serviceVehicles.length>5)this.serviceVehicles.shift()
+ }
+ traffic(s){
+  if(s.mode==='ready')return;
+  const roadY=D.GROUND_Y+29;
+  // A little ordinary traffic makes the city feel lived in without covering the building slots.
+  const period=D.W+280,carA=(s.time*31+130)%period-80,carB=D.W+80-(s.time*25+670)%period;
+  this.img('carBlue',carA,roadY+5,59,27);
+  this.img('carYellow',carB,roadY+7,54,24,true);
+  this.serviceVehicles=this.serviceVehicles.filter(v=>s.time>=v.start-.01&&s.time-v.start<(v.lifetime||7));
+  for(const [i,v] of this.serviceVehicles.entries()){
+   const p=clamp((s.time-v.start)/(v.travel||4.3),0,1),ease=1-(1-p)*(1-p),x=v.from+(v.to-v.from)*ease;
+   const source=this.images[v.key],w=source?clamp(source.naturalWidth*1.65,44,112):72;
+   const h=source?clamp(source.naturalHeight*1.65,24,44):31;
+   this.img(v.key,x-w/2,roadY+(i%2)*2,w,h,v.to<v.from);
+   if(v.key==='tractor'&&p>.15){const c=this.ctx;c.fillStyle='#dfeef5';c.beginPath();c.moveTo(x+(v.to<v.from?-w*.50:w*.50),roadY+19);c.lineTo(x+(v.to<v.from?-w*.65:w*.65),roadY+29);c.lineTo(x+(v.to<v.from?-w*.50:w*.50),roadY+29);c.fill()}
   }
  }
  fieldHazards(s){
@@ -91,7 +247,7 @@ class Renderer{
   }
   c.globalAlpha=1;
   for(const col of f.firebreaks||[]){const x=col*cw+cw*.5;c.fillStyle='#3e3428cc';c.fillRect(x-5,D.GROUND_Y-54,10,76);c.fillStyle='#d0b17a';c.fillRect(x-2,D.GROUND_Y-54,4,76)}
-  for(const b of f.tempBarriers||[]){const x=b.col*cw+cw*.5,p=clamp(b.hp/42,0,1);c.globalAlpha=.55+.4*p;c.fillStyle='#b99a67';for(let i=0;i<5;i++)c.fillRect(x-28+i*12,D.GROUND_Y-15-(i%2)*7,11,8)}
+  for(const b of f.tempBarriers||[]){const x=b.col*cw+cw*.5,p=clamp(b.hp/42,0,1);c.globalAlpha=.55+.4*p;c.fillStyle='#b99a67';for(let i=0;i<5;i++)c.fillRect(x-28+i*12,D.GROUND_Y-15-(i%2)*7,11,8);this.img('roadBarrier',x-22,D.GROUND_Y-24,44,17,false,c.globalAlpha)}
   c.restore();c.globalAlpha=1
  }
  wildfire(s,d){
@@ -122,7 +278,16 @@ class Renderer{
  earthquake(s,d){
   const c=this.ctx,p=d.strength||1;c.save();c.strokeStyle='#654c3dcc';c.lineWidth=3;for(let i=0;i<5;i++){const x=520+i*105,y=D.GROUND_Y+25;c.beginPath();c.moveTo(x,y);c.lineTo(x+12,y+12);c.lineTo(x-5,y+24);c.lineTo(x+14,y+39);c.stroke()}c.fillStyle='#58483c';c.font='900 '+Math.round(30+Math.min(16,p*6))+'px system-ui';c.textAlign='center';c.fillText('⚡',D.TOWN_X,D.GROUND_Y+72);c.restore()
  }
- effects(s){const c=this.ctx;for(const e of s.effects){if(e.type==='ruin'){const p=e.life/e.maxLife;c.globalAlpha=clamp(p,0,1);c.fillStyle='#58493d';for(let i=0;i<8;i++){const xx=e.x-30+i*9,yy=D.GROUND_Y-8-Math.sin(i*4.4)*10-(1-p)*25;c.fillRect(xx,yy,7,7)}c.globalAlpha=1}}}
+ effects(s){const c=this.ctx;for(const e of s.effects){if(e.type==='ruin'){const p=e.life/e.maxLife;c.save();c.globalAlpha=clamp(p,0,1);c.fillStyle='#58493d';for(let i=0;i<8;i++){const xx=e.x-30+i*9,yy=D.GROUND_Y-8-Math.sin(i*4.4)*10-(1-p)*25;c.fillRect(xx,yy,7,7)}c.restore()}
+  else if(e.type==='roadwork'){
+   const p=clamp(e.life/e.maxLife,0,1),y=D.GROUND_Y+31;c.save();c.globalAlpha=clamp(p*2,0,1);
+   this.img('roadBarrier',e.x-44,y+20,37,24,false,c.globalAlpha);this.img('roadBarrier',e.x+8,y+20,37,24,false,c.globalAlpha);
+   for(const side of [-1,1]){const x=e.x+side*29;c.fillStyle='#e78639';c.beginPath();c.moveTo(x,y+15);c.lineTo(x-6,y+32);c.lineTo(x+6,y+32);c.fill();c.fillStyle='#f7e5c0';c.fillRect(x-4,y+24,8,3)}
+   this.img('citizen',e.x-14,y-16,28,34,false,c.globalAlpha);
+   c.fillStyle='#ffe59d';for(let i=0;i<4;i++){const sway=Math.sin(s.time*9+i)*3;c.fillRect(e.x-11+i*8+sway,y+9+(i%2)*4,3,3)}
+   c.restore()
+  }
+ }}
  slots(s){
   const c=this.ctx;if(!s.selectedUid)return;const selected=s.hand.find(x=>x.uid===s.selectedUid),card=selected&&D.CARDS[selected.id];if(!card||card.kind!=='build')return;
   for(const slot of s.slots){let mark='+',stroke='#ffe36bcc',fill='#fff3a9cc';if(slot.building){if(slot.building.id===card.building){if((slot.building.level||1)>=3){mark='MAX';stroke='#ce635fcc';fill='#ffd2cacc'}else{mark='↑';stroke='#78d18bcc';fill='#c8ffd2dd'}}else{mark='↺';stroke='#7ec9e5cc';fill='#d7f4ffdd'}}
@@ -131,7 +296,7 @@ class Renderer{
  render(s){
   const c=this.ctx,t=this.worldTransform();c.setTransform(this.view.dpr,0,0,this.view.dpr,0,0);c.fillStyle='#11293d';c.fillRect(0,0,this.view.w,this.view.h);c.save();c.translate(t.ox,t.oy);c.scale(t.scale,t.scale);c.imageSmoothingEnabled=false;
   const quake=(s.disasters||[]).find(d=>d.type==='earthquake');if(quake)c.translate(Math.sin(s.time*46)*3.5*(quake.strength||1),Math.cos(s.time*39)*1.8);
-  this.background(s);this.slots(s);for(const slot of s.slots)if(slot.building){this.drawBuilding(slot,slot.building);this.conditionBadge(slot)}this.townHall();this.citizens(s);this.fieldHazards(s);
+  this.background(s);this.roadDamage(s);this.slots(s);for(const slot of s.slots)if(slot.building){const job=s.recovery?.construction?.find(j=>j.slotIndex===slot.i&&j.buildingId===slot.building.id);if(job)this.reconstruction(slot,slot.building,job,s);else{this.drawBuilding(slot,slot.building);this.buildingScars(slot,slot.building);this.conditionBadge(slot)}}this.rubble(s);this.townHall();this.citizens(s);this.fieldHazards(s);this.traffic(s);
   const disasters=(s.disasters||[]).slice();for(const d of disasters){if(d.type==='wildfire'||d.type==='flood')continue;else if(d.type==='typhoon')this.typhoon(s,d);else if(d.type==='heatwave')this.heatwave(s,d);else if(d.type==='blizzard')this.blizzard(s,d);else if(d.type==='earthquake')this.earthquake(s,d)}this.effects(s);c.restore()
  }
 }

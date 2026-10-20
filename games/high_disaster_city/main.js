@@ -3,7 +3,7 @@
 const DC=root.DisasterCity,D=DC.DATA,sim=new DC.Simulation(),renderer=new DC.Renderer(document.getElementById('gameCanvas'));
 const sfx=(key,opts={})=>{try{root.KidscadeAudio?.play?.(key,opts)?.catch?.(()=>{})}catch(_){}};
 const ui=new DC.UI({
- start(tutorial){sim.start({tutorial});renderer.agents=[];renderer.lastCitizenTime=0;ui.startDone();sfx('collect.coin_pickup',{volume:.24,cooldownMs:100});},
+ start(tutorial){sim.start({tutorial});renderer.agents=[];renderer.serviceVehicles=[];renderer.lastCitizenTime=0;ui.startDone();sfx('collect.coin_pickup',{volume:.24,cooldownMs:100});},
  refresh(){if(sim.refreshHand())sfx('collect.coin_drop',{volume:.20,cooldownMs:120});},
  pause(){sim.togglePause();},
  sound(){const a=root.KidscadeAudio;if(!a)return;const muted=!a.getSettings().muted;a.setMuted(muted);ui.soundState();if(!muted)sfx('collect.coin_pickup',{volume:.20,cooldownMs:100})},
@@ -19,6 +19,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&sim.state.
 function handleSignals(){
  for(const ev of sim.drainSignals()){
   if(ev.message)ui.showToast(ev.message);
+  if(ev.data?.vehicle)renderer.launchVehicle(ev.data,sim.state.time);
   if(ev.kind==='warning'||ev.kind==='damage'||ev.kind==='quake')sfx('combat.impact_heavy',{volume:ev.kind==='warning'?.24:ev.kind==='quake'?.28:.18,cooldownMs:260});
   else if(ev.kind==='clear')sfx('success.cheer_yay',{volume:.27,cooldownMs:500});
   else if(ev.kind==='gameover')sfx('failure.fail_sting',{volume:.35,cooldownMs:900});
