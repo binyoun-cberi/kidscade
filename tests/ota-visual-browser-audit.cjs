@@ -453,12 +453,13 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   await evalPage("document.getElementById('start').click()");
   await ensureStage('maze','touch-size chapter-4 map QA');
   await sleep(240);
-  report.maze.mobileLayout=await evalPage("(()=>{const r=id=>document.getElementById(id).getBoundingClientRect();const map=r('mazeHUD'),top=r('topControls'),mission=r('mission');return {map:{top:map.top,right:map.right,bottom:map.bottom,left:map.left},controlsBottom:top.bottom,missionRight:mission.right,viewport:innerWidth}})()");
+  report.maze.mobileLayout=await evalPage("(()=>{const r=id=>document.getElementById(id).getBoundingClientRect();const map=r('mazeHUD'),top=r('topControls'),mission=r('mission');return {map:{top:map.top,right:map.right,bottom:map.bottom,left:map.left},controlsBottom:top.bottom,mission:{top:mission.top,bottom:mission.bottom,right:mission.right,left:mission.left},viewport:innerWidth}})()");
   assert.ok(report.maze.mobileLayout.map.right<=report.maze.mobileLayout.viewport,
     'mobile maze minimap must stay on screen');
   assert.ok(report.maze.mobileLayout.map.top>=report.maze.mobileLayout.controlsBottom,
     'mobile maze minimap must not overlap the navigation controls');
-  assert.ok(report.maze.mobileLayout.map.left>report.maze.mobileLayout.missionRight,
+  assert.ok(report.maze.mobileLayout.map.top>=report.maze.mobileLayout.mission.bottom||
+    report.maze.mobileLayout.map.left>=report.maze.mobileLayout.mission.right,
     'mobile maze minimap must not obscure the mission text');
   await screenshot('22-chapter4-mobile.png','mobile');
   assert.deepEqual(report.errors,[],'Browser errors must be empty');
