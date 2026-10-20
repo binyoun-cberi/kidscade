@@ -4,12 +4,14 @@ import {
   createFarmState,restoreFarmState,FARM_SAVE_VERSION,FARM_UPGRADES,CROPS,fieldById,
   applyFarmStrip,workEnergyCost,advanceFarmDay,fulfillDeliveryOrder,currentDeliveryOrder,
   purchaseFarmUpgrade,BASKET_CAPACITY,basketCount,loadHarvestBasket,unloadHarvestBasket,
-  sellBasketProduce,fulfillBasketDeliveryOrder,setSluiceOpening,scoopCompostBatch,restUntilFarmNeedsAttention
+  sellBasketProduce,fulfillBasketDeliveryOrder,setSluiceOpening,scoopCompostBatch,restUntilFarmNeedsAttention,
+  CART_CAPACITY,cargoCapacity,toggleFarmCart
 } from '../games/korean-farm/farming/farm-sim.mjs';
+import {greetNeighbor,neighborAdvice} from '../games/korean-farm/farming/village-people.mjs';
 import {nextFarmObjective} from '../games/korean-farm/farming/farm-objectives.mjs';
 import {sampleStroke,uniqueStrokeTargets} from '../games/korean-farm/interactions/work-gesture.mjs';
 
-test('V2 saves migrate to V4 without losing field work, money, seedlings or produce',()=>{
+test('V2 saves migrate to V5 without losing field work, money, seedlings or produce',()=>{
   const original=createFarmState();
   original.money=5771;original.inventory.rice=9;original.fields[0].transplants[5]=true;
   original.fields[3].work.harvested[0]=true;original.day=8;
@@ -22,20 +24,87 @@ test('V2 saves migrate to V4 without losing field work, money, seedlings or prod
   assert.equal(restored.day,8);
   assert.equal(restored.fields[0].transplants[5],true);
   assert.equal(restored.fields[3].work.harvested[0],true);
-  assert.deepEqual(restored.upgrades,{sickle:false,hoe:false,channel:false});
+  assert.deepEqual(restored.upgrades,{sickle:false,hoe:false,channel:false,cart:false});
   assert.deepEqual(restored.cargo,{rice:0,carrot:0,corn:0});
+  assert.equal(restored.transport.cartAttached,false);
 });
 
-test('V3 to V4 migration preserves open gates and full barn inventory without duplicate cargo',()=>{
+test('V3 to V5 migration preserves open gates and full barn inventory without duplicate cargo',()=>{
   const original=createFarmState();original.inventory.rice=13;
   original.fields[0].gateOpen=true;original.fields[0].gateLevel=2;
   const older=structuredClone(original);older.version=3;delete older.cargo;
   older.fields.forEach(field=>delete field.gateLevel);
   const loaded=restoreFarmState(older);
-  assert.equal(loaded.version,4);
+  assert.equal(loaded.version,FARM_SAVE_VERSION);
   assert.equal(fieldById(loaded,'rice-1').gateLevel,2);
   assert.equal(loaded.inventory.rice,13);
   assert.equal(basketCount(loaded),0);
+});
+
+test('V4 save migrates carried basket without inventing a cart or duplicating produce',()=>{
+  const s=createFarmState();s.inventory.rice=28;loadHarvestBasket(s,'rice',17);
+  const legacy=structuredClone(s);legacy.version=4;delete legacy.transport;delete legacy.village;
+  delete legacy.upgrades.cart;
+  const restored=restoreFarmState(legacy);
+  assert.equal(restored.version,5);
+  assert.equal(restored.inventory.rice,11);
+  assert.equal(restored.cargo.rice,17);
+  assert.equal(cargoCapacity(restored),20);
+  assert.equal(restored.upgrades.cart,false);
+});
+
+test('handcart must be purchased, keeps cargo conserved through loading, saving and unloading',()=>{
+  const s=createFarmState();s.inventory.rice=93;
+  assert.equal(toggleFarmCart(s).ok,false);
+  s.stats.sales=1;
+  assert.equal(purchaseFarmUpgrade(s,'cart').ok,true);
+  assert.equal(toggleFarmCart(s).attached,true);
+  assert.equal(cargoCapacity(s),CART_CAPACITY);
+  assert.equal(loadHarvestBasket(s,'rice').amount,CART_CAPACITY);
+  assert.equal(s.inventory.rice,33);
+  assert.equal(toggleFarmCart(s).ok,false,'loaded cart cannot disappear');
+  assert.equal(loadHarvestBasket(s,'rice').ok,false,'cart refuses overflow');
+  const reload=restoreFarmState(structuredClone(s));
+  assert.equal(reload.transport.cartAttached,true);
+  assert.equal(reload.cargo.rice,60);
+  assert.equal(unloadHarvestBasket(reload).ok,true);
+  assert.equal(reload.inventory.rice,93);
+  assert.equal(basketCount(reload),0);
+  assert.equal(toggleFarmCart(reload).attached,false);
+  assert.equal(cargoCapacity(reload),BASKET_CAPACITY);
+});
+
+test('malformed imported cart state returns over-limit stock safely to the shed',()=>{
+  const s=createFarmState();
+  s.upgrades.cart=true;s.transport.cartAttached=true;
+  s.cargo.rice=60;s.cargo.carrot=52;s.cargo.corn=45;
+  const result=restoreFarmState(structuredClone(s));
+  assert.equal(basketCount(result),60);
+  assert.equal(result.inventory.carrot,52);
+  assert.equal(result.inventory.corn,45);
+  assert.equal(result.inventory.rice+result.cargo.rice,60);
+  s.upgrades.cart=false;
+  const invalid=restoreFarmState(structuredClone(s));
+  assert.equal(invalid.transport.cartAttached,false);
+  assert.equal(basketCount(invalid),20);
+});
+
+test('neighbor remembers one greeting a day and gives exactly one friendship gift',()=>{
+  const s=createFarmState();
+  const start=s.inventory.seedCarrot;
+  assert.match(neighborAdvice(s),/봄|논밭/);
+  const first=greetNeighbor(s);assert.equal(first.friendship,1);
+  assert.equal(greetNeighbor(s).friendship,1);
+  advanceFarmDay(s);assert.equal(greetNeighbor(s).friendship,2);
+  advanceFarmDay(s);const third=greetNeighbor(s);
+  assert.equal(third.friendship,3);assert.equal(third.gift,2);
+  assert.equal(s.inventory.seedCarrot,start+2);
+  const reloaded=restoreFarmState(structuredClone(s));
+  assert.equal(greetNeighbor(reloaded).gift,0);
+  advanceFarmDay(reloaded);
+  assert.equal(greetNeighbor(reloaded).gift,0);
+  assert.equal(reloaded.village.friendship,4);
+  assert.equal(reloaded.inventory.seedCarrot,start+2);
 });
 
 test('a physical harvest basket cannot sell warehouse stock remotely or overflow on trips',()=>{

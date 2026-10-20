@@ -2,8 +2,9 @@
 import {FIELD_DEFS,makeFarmState,validateFarmState} from '../world.mjs';
 import {normalizeSeedlings,fullSeedlings,emptySeedlings,seedlingCount} from './rice-transplant.mjs';
 import {WORK_STRIPS,PATCH_ENERGY,validWorkStrip,newFieldWork,restoreFieldWork,completedWorkStrips} from './field-work.mjs';
-export const FARM_SAVE_VERSION=4;
+export const FARM_SAVE_VERSION=5;
 export const BASKET_CAPACITY=20;
+export const CART_CAPACITY=60;
 export const DAYS_PER_SEASON=14;
 export const CROPS=Object.freeze({
   rice:Object.freeze({name:'벼',seed:'rice',produce:'rice',days:14,baseYield:7,growthPerDay:.087,price:240}),
@@ -14,7 +15,8 @@ export const SEASONS=Object.freeze(['봄','여름','가을','겨울']);
 export const FARM_UPGRADES=Object.freeze({
   sickle:Object.freeze({name:'잘 드는 낫',price:900,description:'수확 손실을 줄여 수확량이 2개 늘어나고 낫질에 기운이 덜 들어요.'}),
   hoe:Object.freeze({name:'가벼운 괭이',price:1100,description:'괭이질에 쓰는 기운이 절반으로 줄어요.'}),
-  channel:Object.freeze({name:'논 수로 정비',price:2200,description:'논의 물이 덜 빠져 가뭄에 대비하기 쉬워져요.'})
+  channel:Object.freeze({name:'논 수로 정비',price:2200,description:'논의 물이 덜 빠져 가뭄에 대비하기 쉬워져요.'}),
+  cart:Object.freeze({name:'농장 손수레',price:900,description:'창고에서 손수레를 끌면 한 번에 60개를 싣고 장터까지 옮길 수 있어요. 대신 걷는 속도는 느려져요.'})
 });
 const minmax=(v,min,max)=>Math.max(min,Math.min(max,v));
 const validNumber=(v,defaultValue,min,max)=>Number.isFinite(v)?minmax(v,min,max):defaultValue;
@@ -30,9 +32,10 @@ function createField(def){
 export function createFarmState(){
   return {...makeFarmState(),version:FARM_SAVE_VERSION,day:1,minute:7*60,energy:100,
     money:4200,weather:'sunny',compostStock:24,inventory:{seedRice:8,seedCarrot:8,seedCorn:6,fertilizer:0,rice:0,carrot:0,corn:0},
-    fields:FIELD_DEFS.map(createField),cargo:{rice:0,carrot:0,corn:0},
+    fields:FIELD_DEFS.map(createField),cargo:{rice:0,carrot:0,corn:0},transport:{cartAttached:false},
+    village:{lastTalkDay:0,friendship:0,giftReceived:false},
     stats:{harvests:0,sales:0,earnings:0,deliveries:0},
-    upgrades:{sickle:false,hoe:false,channel:false},market:{lastRepeatDay:0},seenPlots:[]};
+    upgrades:{sickle:false,hoe:false,channel:false,cart:false},market:{lastRepeatDay:0},seenPlots:[]};
 }
 export function restoreFarmState(raw){
   if(!raw||typeof raw!=='object')return createFarmState();
@@ -51,8 +54,8 @@ export function restoreFarmState(raw){
     });
     return current;
   }
-  // V2/V3 saves retain their soil, 25 seedlings, harvest strips, cash and crops.
-  if(![2,3,FARM_SAVE_VERSION].includes(raw.version)||!Array.isArray(raw.fields))return current;
+  // V2–V4 saves retain their soil, 25 seedlings, harvest strips, cash and crops.
+  if(![2,3,4,FARM_SAVE_VERSION].includes(raw.version)||!Array.isArray(raw.fields))return current;
   current.day=validNumber(raw.day,1,1,100000)|0;
   current.minute=validNumber(raw.minute,420,420,1320)|0;
   current.energy=validNumber(raw.energy,100,0,100);
@@ -86,10 +89,16 @@ export function restoreFarmState(raw){
     for(const key of Object.keys(FARM_UPGRADES))current.upgrades[key]=raw.upgrades?.[key]===true;
     current.market.lastRepeatDay=validNumber(raw.market?.lastRepeatDay,0,0,current.day)|0;
   }
+  if(raw.version>=5)current.transport.cartAttached=current.upgrades.cart&&raw.transport?.cartAttached===true;
+  if(raw.version>=5){
+    current.village.lastTalkDay=validNumber(raw.village?.lastTalkDay,0,0,current.day)|0;
+    current.village.friendship=validNumber(raw.village?.friendship,0,0,5)|0;
+    current.village.giftReceived=raw.village?.giftReceived===true;
+  }
   if(raw.version>=4)for(const crop of Object.keys(CROPS))
-    current.cargo[crop]=validNumber(raw.cargo?.[crop],0,0,BASKET_CAPACITY)|0;
+    current.cargo[crop]=validNumber(raw.cargo?.[crop],0,0,CART_CAPACITY)|0;
   // Treat invalid/overfilled imported baskets conservatively: overflow returns to storage.
-  let room=BASKET_CAPACITY;
+  let room=cargoCapacity(current);
   for(const crop of Object.keys(CROPS)){
     const count=Math.min(room,current.cargo[crop]);
     current.inventory[crop]+=current.cargo[crop]-count;
@@ -385,14 +394,24 @@ export function restUntilFarmNeedsAttention(state,maxDays=4){
 }
 
 export function basketCount(state){return Object.keys(CROPS).reduce((sum,k)=>sum+(state.cargo?.[k]||0),0)}
-export function loadHarvestBasket(state,crop,requested=BASKET_CAPACITY){
+export function cargoCapacity(state){return state.upgrades?.cart&&state.transport?.cartAttached?CART_CAPACITY:BASKET_CAPACITY}
+export function toggleFarmCart(state){
+  if(!state.upgrades?.cart)return {ok:false,message:'장터에서 손수레를 먼저 마련해 주세요.'};
+  if(!state.transport)state.transport={cartAttached:false};
+  if(state.transport.cartAttached&&basketCount(state)>0)return {ok:false,message:'손수레에 작물이 실려 있어요. 창고에 먼저 내려놓고 분리해 주세요.'};
+  state.transport.cartAttached=!state.transport.cartAttached;
+  return {ok:true,attached:state.transport.cartAttached,message:state.transport.cartAttached?
+    '농부가 손수레 손잡이를 잡았어요. 한 번에 60개까지 실을 수 있어요.':
+    '손수레를 창고 앞에 세워 두었어요. 이제 바구니를 들고 움직여요.'};
+}
+export function loadHarvestBasket(state,crop,requested=cargoCapacity(state)){
   if(!Object.hasOwn(CROPS,crop))return {ok:false,message:'바구니에 담을 작물을 골라 주세요.'};
   if(!Number.isInteger(requested)||requested<1)return {ok:false,message:'담을 수량을 확인해 주세요.'};
   const available=state.inventory[crop]||0;
-  const amount=Math.min(requested,available,BASKET_CAPACITY-basketCount(state));
-  if(amount<=0)return {ok:false,message:available?'바구니가 가득 찼어요. 장터에 다녀오세요.':'창고에 그 작물이 없어요.'};
+  const amount=Math.min(requested,available,cargoCapacity(state)-basketCount(state));
+  if(amount<=0)return {ok:false,message:available?'실을 곳이 가득 찼어요. 장터에 다녀오세요.':'창고에 그 작물이 없어요.'};
   state.inventory[crop]-=amount;state.cargo[crop]+=amount;
-  return {ok:true,crop,amount,message:CROPS[crop].name+' '+amount+'개를 창고에서 바구니에 담았어요.'};
+  return {ok:true,crop,amount,message:CROPS[crop].name+' '+amount+'개를 창고에서 '+(state.transport?.cartAttached?'손수레에':'바구니에')+' 담았어요.'};
 }
 export function unloadHarvestBasket(state){
   const amount=basketCount(state);
