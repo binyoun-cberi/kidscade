@@ -18,6 +18,7 @@ const hook=[
 " clearSave:()=>{localStorage.removeItem(SAVE_KEY);",
 "   window.addEventListener('pagehide',()=>localStorage.removeItem(SAVE_KEY),{once:true});},",
 " state:()=>({day:state.day,money:state.money,energy:state.energy,inventory:{...state.inventory},stats:{...state.stats},",
+"   upgrades:{...state.upgrades},market:{...state.market},",
 "   fields:state.fields.map(f=>({id:f.id,growth:f.growth,planted:f.planted,water:f.waterDepthCm,gate:f.gateOpen,transplants:f.transplants,work:f.work,weeds:f.weeds,moisture:f.moisture})),",
 "   player:{...state.player},saving:localStorage.getItem(SAVE_KEY)?.length||0}),",
 " teleport:(x,z)=>{state.player.x=x;state.player.z=z;farmer.position.set(x,0,z);camTarget.set(x,0,z);clearMovement();pendingStation=null;},",
@@ -290,6 +291,7 @@ async function main(){
  await evaluate('window.__farmQA.teleport(9.9,-10.05)');
  await click('#sleepBtn');
  await waitFor('window.__farmQA.state().day===2',15000);
+ await click('#modalClose');
  const morning=await evaluate('window.__farmQA.state()');
  check('Day advances crop growth',morning.day===2&&
   morning.fields.find(x=>x.id==='rice-4').growth>planted.fields.find(x=>x.id==='rice-4').growth);
@@ -437,7 +439,8 @@ async function main(){
    fresh.day===1&&fresh.inventory.seedRice===8&&fresh.energy===100&&
    fresh.fields.find(f=>f.id==='rice-1').transplants.every(v=>!v),fresh);
  await click('#guideRice');
- check('New-farm introduction opens working transplant HUD',
+ await click('#actionButtons [data-action="plant"]');
+ check('New-farm guidance leads to a playable in-world transplant HUD',
    (await evaluate('window.__farmQA.plantMode().active'))===true);
  for(let n=0;n<5;n++){
    await evaluate('window.__farmQA.plant('+n+')');
@@ -469,6 +472,7 @@ async function main(){
    const f=a.fields.find(x=>x.id==='rice-1');
    if(f.growth>=.999){ripe=true;break}
    await evaluate('window.__farmQA.rest()');
+   await click('#modalClose');
    elapsedDays++;
  }
  const calendarRun=await evaluate('window.__farmQA.state()');
@@ -515,6 +519,12 @@ async function main(){
  const soldAfter=await evaluate('window.__farmQA.state()');
  check('Real full-cycle sale increments balance and removes harvested crop',
    soldAfter.stats.sales===1&&soldAfter.inventory.rice===0&&soldAfter.money>4200,soldAfter);
+ const preUpgrade=await evaluate('window.__farmQA.state()');
+ await click('.farm-upgrade button:not(:disabled)');
+ const upgraded=await evaluate('window.__farmQA.state()');
+ check('First sale unlocks a persistable tool upgrade with actual coin cost',
+   Object.values(upgraded.upgrades).some(Boolean)&&upgraded.money<preUpgrade.money,
+   {before:preUpgrade.money,after:upgraded.money,upgrades:upgraded.upgrades});
  await click('#modalClose');
  await evaluate('window.__farmQA.teleport(-12.85,-5.2)');
  await evaluate('window.__farmQA.select("rice-1")');
