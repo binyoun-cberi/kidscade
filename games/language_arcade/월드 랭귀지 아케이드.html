@@ -89,9 +89,14 @@ function renderWeek(p){const days=['일','월','화','수','목','금','토'],no
 function renderHome(){
  const p=loadProgress();setTheme(null);renderWeek(p);
  $('courseGrid').innerHTML=Object.values(COURSES).map(c=>{const cp=courseProgress(p,c.id),due=dueItems(p,c).length;return '<button class="course-card" data-course="'+c.id+'"><span class="course-xp">'+cp.xp+' XP</span><span class="flag">'+c.flag+'</span><h3>'+c.name+'</h3><p>'+c.label+' · '+completedLessons(cp)+'개 레슨 완료'+(due?'<br>🧠 복습 '+due+'개 대기':'')+'</p></button>'}).join('');
- document.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>openCourse(b.dataset.course));show('home')
+  const englishCard=document.querySelector('[data-course="en"]');
+  if(englishCard){englishCard.querySelector('h3').textContent='하루 한 입 영어 ↗';englishCard.querySelector('p').textContent='입문부터 영문장까지 하나의 영어 학습 길에서 이어가요.';}
+  document.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>openCourse(b.dataset.course));show('home')
 }
 function openCourse(id){
+  // English has moved to the unified daily journey. Preserve this origin's
+  // languageArcadeLearningV2 save for the new game to read without deleting it.
+  if(id==='en'){location.assign('../daily_english/index.html');return;}
  state.course=COURSES[id];setTheme(state.course);const p=loadProgress(),cp=courseProgress(p,id),units=buildUnits(state.course);
  $('courseFlag').textContent=state.course.flag;$('courseTitle').textContent=state.course.name;$('courseSub').textContent=state.course.label+' 학습 길';
  $('courseXp').textContent=cp.xp+' XP';$('dueCount').textContent=dueItems(p,state.course).length;$('weekCount').textContent=Math.min(7,last7Count(p))+' / 3';

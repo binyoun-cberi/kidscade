@@ -5,9 +5,20 @@ const C=require('../games/daily_english/content.js');
 const NOW=Date.parse('2026-10-20T14:59:00Z'); // 23:59 in Korea
 function complete(s,now=NOW){let result;while(s.active){const a=s.active;E.answer(s,a.deck[a.index].answer,now);result=E.advance(s,now);}return result;}
 test('18 lessons contain solvable vocabulary, listening, spelling, order and conversation exercises',()=>{
-  assert.equal(C.lessons.length,18);assert.equal(C.zones.length,3);
-  for(const l of C.lessons){const deck=C.questions(l.index);assert.equal(deck.length,8);assert.equal(new Set(l.words.map(w=>w.en)).size,3);
+  assert.equal(C.originalLessonCount,18);assert.equal(C.zones.slice(0,3).length,3);
+  for(const l of C.lessons.slice(0,18)){const deck=C.questions(l.index);assert.equal(deck.length,8);assert.equal(new Set(l.words.map(w=>w.en)).size,3);
     for(const q of deck){if(q.options){assert.ok(q.options.includes(q.answer));assert.equal(new Set(q.options).size,q.options.length);}else{const expected=q.answer.split(q.kind==='spell'?'':' ').sort();assert.deepEqual([...q.tokens].sort(),expected);}}
+  }
+});
+test('all 776 original English arcade entries join seven additional regions without losing the starter 18',()=>{
+  assert.equal(C.arcadeItemCount,776);assert.equal(C.zones.length,10);assert.ok(C.lessons.length>110);
+  assert.equal(new Set(C.lessons.filter(x=>x.advanced).flatMap(l=>l.entries.map(x=>x.key))).size,776);
+  for(const l of C.lessons.slice(18)){
+    const deck=C.questions(l.index);assert.equal(deck.length,8);
+    for(const q of deck){assert.ok(q.legacyKey);assert.ok(q.answer);assert.ok(q.prompt);
+      if(q.options){assert.ok(q.options.includes(q.answer));assert.equal(new Set(q.options).size,q.options.length);}
+      else assert.deepEqual([...q.tokens].sort(),q.answer.split(q.kind==='spell'?'':' ').sort());
+    }
   }
 });
 test('perfect day permits exactly six new lessons, including the sixth at zero energy',()=>{
@@ -34,6 +45,16 @@ test('midnight during a lesson turns that reservation into practice without cons
 });
 test('all 18 lessons unlock in sequence over three days, and mastered review costs no energy',()=>{
   const s=E.fresh(NOW);for(let i=0;i<18;i++){const now=NOW+Math.floor(i/6)*86400000;assert.equal(E.start(s,i,C.questions(i),now),true);complete(s,now);}assert.equal(s.completed.length,18);assert.equal(s.streak,3);assert.equal(s.stickers.length,6);assert.equal(E.start(s,0,C.questions(0),NOW+2*86400000),true);complete(s,NOW+2*86400000);assert.equal(s.energy,0);assert.equal(s.completed.length,18);
+});
+test('the expansion starts after lesson 18 and keeps beginner souvenirs unchanged',()=>{
+  const s=E.fresh(NOW);
+  for(let i=0;i<19;i++){
+    const now=NOW+Math.floor(i/6)*86400000;
+    assert.equal(E.start(s,i,C.questions(i),now),true);complete(s,now);
+  }
+  assert.equal(s.completed.length,19);assert.deepEqual(s.stickers,[3,6,9,12,15,18]);
+  const restored=E.load(JSON.parse(JSON.stringify(s)),NOW+3*86400000);
+  assert.equal(restored.completed.length,19);
 });
 test('corrupt and invalid saves cannot unlock future lessons or crash question validation',()=>{
   const s=E.load({version:1,energy:-9,completed:[0,2,90],streak:NaN,active:{lesson:0,deck:Array(8).fill({kind:'choice',prompt:'?',answer:'a',options:{}})}},NOW);assert.equal(s.energy,0);assert.deepEqual(s.completed,[0]);assert.equal(s.active,null);assert.equal(E.start(s,5,C.questions(5),NOW),false);assert.equal(E.start(s,-1,C.questions(0),NOW),false);
