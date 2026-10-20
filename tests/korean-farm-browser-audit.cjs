@@ -435,7 +435,7 @@ async function main(){
    return {w:innerWidth,h:innerHeight,scroll:document.documentElement.scrollWidth,
      toolbar:{left:r.left,right:r.right,bottom:r.bottom},buttons:[...document.querySelectorAll('#bottomBar button')].map(x=>x.getBoundingClientRect().toJSON())};
  })()`);
- check('Landscape phone retains four tappable controls',landscape.w>=840&&
+ check('Landscape phone retains five tappable controls',landscape.w>=840&&landscape.buttons.length===5&&
    landscape.scroll<=landscape.w+3&&landscape.buttons.every(b=>
      b.width>=45&&b.height>=38&&b.right<=landscape.w&&b.bottom<=landscape.h),
    landscape);
@@ -525,13 +525,21 @@ async function main(){
    fullHarvest.stats.harvests===1&&fullHarvest.inventory.rice>0&&
    !fullHarvest.fields.find(f=>f.id==='rice-1').planted,fullHarvest);
  await screenshot('13-marathon-complete-harvest');
+ await evaluate('window.__farmQA.teleport(18,-9.5)');
+ await click('#barnBtn');
+ await waitFor('document.querySelector("#modalTitle").textContent.includes("창고")',9000);
+ await click('.bag-item button');
+ const longHaul=await evaluate('window.__farmQA.state()');
+ check('Full-cycle rice must enter the carried basket before a market sale',
+   longHaul.cargo.rice>0&&longHaul.inventory.rice===0,longHaul);
+ await click('#modalClose');
  await evaluate('window.__farmQA.teleport(8.5,15.25)');
  await click('#bagBtn');
  await waitFor('!document.querySelector("#modal").classList.contains("hidden")',9000);
  await click('.sell-btn');
  const soldAfter=await evaluate('window.__farmQA.state()');
  check('Real full-cycle sale increments balance and removes harvested crop',
-   soldAfter.stats.sales===1&&soldAfter.inventory.rice===0&&soldAfter.money>4200,soldAfter);
+   soldAfter.stats.sales===1&&soldAfter.inventory.rice===0&&soldAfter.cargo.rice===0&&soldAfter.money>4200,soldAfter);
  const preUpgrade=await evaluate('window.__farmQA.state()');
  await click('.farm-upgrade button:not(:disabled)');
  const upgraded=await evaluate('window.__farmQA.state()');
