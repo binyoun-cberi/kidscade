@@ -50,6 +50,35 @@ header{position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px;ali
 #hauntCaption{position:absolute;left:50%;top:21%;z-index:6;transform:translateX(-50%);max-width:min(470px,82vw);padding:7px 13px;color:#f7d8e9;font-weight:800;font-size:13px;letter-spacing:.02em;text-align:center;text-shadow:0 2px 12px #120612;opacity:0;transition:opacity .25s;pointer-events:none}
 #hauntCaption.show{opacity:1}
 @media(prefers-reduced-motion:reduce){#hauntCaption{transition:none}#hauntVeil{will-change:auto}}
+/* A grab is a short first-person event, not an instant teleport. The 3D captor
+   remains visible through the clear center while the edges close in. */
+#captureScene{--capture-ink:150,104,171;--capture-shadow:#130b23;position:absolute;inset:0;z-index:11;overflow:hidden;pointer-events:none;visibility:hidden;opacity:0;transition:opacity .14s;background:radial-gradient(ellipse at 50% 47%,transparent 12%,rgba(var(--capture-ink),.19) 42%,var(--capture-shadow) 112%)}
+#captureScene.active{visibility:visible;opacity:1}
+#captureScene::before{content:"";position:absolute;inset:-18%;background:radial-gradient(ellipse at 50% 48%,transparent 20%,rgba(var(--capture-ink),.40) 63%,#020309e8 98%);transform:scale(1.25);animation:capture-close 1.8s ease-in both}
+#captureScene::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#020308e0,transparent 31%,transparent 72%,#020308b3);animation:capture-fall 1.8s ease-out both}
+.capture-ring{position:absolute;left:50%;top:44%;width:min(83vmin,680px);aspect-ratio:1;transform:translate(-50%,-50%) scale(.7);border:2px solid rgba(var(--capture-ink),.45);border-radius:50%;box-shadow:0 0 75px rgba(var(--capture-ink),.35),inset 0 0 35px rgba(var(--capture-ink),.36);animation:capture-ring 1.8s ease-out both}
+.capture-mark{position:absolute;top:13%;left:50%;transform:translate(-50%,-16px);width:90%;text-align:center;font-size:clamp(18px,3vw,29px);font-weight:950;letter-spacing:.24em;color:#fff;text-shadow:0 3px 18px rgba(var(--capture-ink),.95);animation:capture-mark 1.8s ease-out both}
+.capture-panel{position:absolute;left:50%;bottom:clamp(27px,9vh,95px);width:min(570px,89vw);transform:translate(-50%,18px);padding:17px 20px 15px;border:1px solid rgba(var(--capture-ink),.65);border-radius:14px;background:linear-gradient(135deg,#080d18e8,#160f1eea);box-shadow:0 15px 55px #000d,0 0 38px rgba(var(--capture-ink),.3);text-align:center;color:#f7f6fa;animation:capture-panel 1.8s ease-out both}
+.capture-panel .capture-name{font-size:12px;font-weight:850;letter-spacing:.15em;color:#e5c4e8}
+.capture-panel strong{display:block;font-size:clamp(18px,3vw,26px);letter-spacing:-.025em;margin:6px 0}
+.capture-panel p{margin:0 0 9px;line-height:1.45;font-size:clamp(12px,2vw,14px);color:#dfe4ef}
+.capture-panel .capture-life{display:inline-block;padding:5px 11px;border-radius:99px;background:#ffffff16;font-weight:850;font-size:12px;color:#fbe6e9}
+#captureScene[data-kind="maiden"]{--capture-ink:187,148,222;--capture-shadow:#140f25}
+#captureScene[data-kind="egg"]{--capture-ink:186,192,198;--capture-shadow:#12141a}
+#captureScene[data-kind="yuki"]{--capture-ink:107,210,241;--capture-shadow:#071e2d}
+#captureScene[data-kind="reaper"]{--capture-ink:132,128,201;--capture-shadow:#0a0a20}
+#captureScene[data-kind="wolf"]{--capture-ink:237,89,85;--capture-shadow:#23080a}
+#captureScene[data-kind="unknown"]{--capture-ink:178,134,170;--capture-shadow:#170d19}
+#captureScene[data-kind="yuki"] .capture-ring{border-style:dashed;box-shadow:0 0 65px #7ed8eb8f,inset 0 0 32px #c6faff77}
+#captureScene[data-kind="wolf"] .capture-ring{border-radius:36% 55% 46% 63%;border-width:5px;transform:translate(-50%,-50%) rotate(-15deg)}
+#captureScene[data-kind="egg"] .capture-ring{border-radius:44% 54% 57% 45%;filter:blur(7px)}
+#captureScene[data-kind="reaper"] .capture-ring{border-style:double;border-width:8px}
+@keyframes capture-close{0%{transform:scale(1.35);opacity:.18}28%{opacity:1}69%{transform:scale(.89)}100%{transform:scale(.66);opacity:1}}
+@keyframes capture-ring{0%{opacity:0;transform:translate(-50%,-50%) scale(.68)}20%{opacity:.95}72%{transform:translate(-50%,-50%) scale(1.13);opacity:.9}100%{transform:translate(-50%,-50%) scale(1.2);opacity:0}}
+@keyframes capture-fall{0%,55%{opacity:.2}100%{opacity:1}}
+@keyframes capture-mark{0%{opacity:0;transform:translate(-50%,-18px)}20%,75%{opacity:1;transform:translate(-50%,0)}100%{opacity:.6}}
+@keyframes capture-panel{0%{opacity:0;transform:translate(-50%,18px)}20%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:1}}
+@media(prefers-reduced-motion:reduce){#captureScene,#captureScene::before,#captureScene::after,.capture-ring,.capture-mark,.capture-panel{transition:none!important;animation:none!important}#captureScene::before{transform:scale(.93)}.capture-ring{transform:translate(-50%,-50%)}.capture-panel{transform:translate(-50%,0)}.capture-mark{transform:translate(-50%,0)}}
 .controls{position:absolute;bottom:20px;right:22px;display:flex;align-items:flex-end;gap:13px}
 #joystick{position:absolute;bottom:26px;left:27px;width:116px;height:116px;border:2px solid #a1ced069;border-radius:50%;background:#10293498;touch-action:none;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 30px #7ba0a019}
 #knob{width:48px;height:48px;border-radius:50%;background:#a7dbdf8c;border:2px solid #d4eeedb9;box-shadow:0 0 24px #6fd2d94b;pointer-events:none}
@@ -158,6 +187,17 @@ padding:11px 18px;border:1px solid #99c6d8;border-radius:10px;background:#183344
 <div id="lesson" class="hidden" role="status" aria-live="polite"><strong id="lessonTitle"></strong><p id="lessonText"></p></div>
 <div id="hauntVeil" aria-hidden="true"></div>
 <div id="hauntCaption" role="status" aria-live="polite"></div>
+<div id="captureScene" aria-hidden="true">
+  <div class="capture-ring" aria-hidden="true"></div>
+  <div class="capture-mark" id="captureMark"></div>
+  <div class="capture-panel" role="status" aria-live="assertive">
+    <div class="capture-name" id="captureName"></div>
+    <strong id="captureTitle"></strong>
+    <p id="captureLine"></p>
+    <span class="capture-life" id="captureLife"></span>
+  </div>
+</div>
+
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="gaze" class="hidden"><span id="gazeLabel">처녀귀신 관찰 진행</span><div class="track"><i id="gazeValue"></i></div></div>
 <div id="joystick" aria-label="가상 이동 스틱"><div id="knob"></div></div>
@@ -206,6 +246,6 @@ padding:11px 18px;border:1px solid #99c6d8;border-radius:10px;background:#183344
   </div>
 </section>
 <script src="../../kidscade-game-sdk.js" data-game-id="high_haunted_school_exorcist" data-title="괴담 학교 퇴마" data-shell="true" data-pauseable="true" data-orientation="landscape"></script>
-<script type="module" src="./game.js?v=17-omen"></script>
+<script type="module" src="./game.js?v=18-capture"></script>
 </body>
 </html>
