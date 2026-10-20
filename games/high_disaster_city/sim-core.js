@@ -10,7 +10,7 @@ class Simulation{
  reset(){
   this.state={mode:'ready',paused:false,tutorial:false,tutorialStep:0,time:0,seed:1,money:320,food:28,population:14,stability:100,maxPopulation:14,
    slots:D.SLOT_X.map((x,i)=>({i,x,building:null})),deck:[],discard:[],hand:[],selectedUid:null,refreshCooldown:0,economyClock:0,growthClock:0,hungerClock:0,
-   disasters:[],field:DC.Field?.createState?.()||null,recovery:{debris:[],recovered:0},evacuation:{groups:[],boostUntil:0,evacuatedTotal:0,stranded:0,sheltered:0},next:{side:'left',type:'wildfire',in:24,visible:true},lastSide:'right',lastType:null,typeStreak:0,rewardChoices:[],cleanupChoices:[],rewardBacklog:0,effects:[],signals:[],
+   disasters:[],field:DC.Field?.createState?.()||null,recovery:{debris:[],recovered:0,construction:[]},evacuation:{groups:[],boostUntil:0,evacuatedTotal:0,stranded:0,sheltered:0},next:{side:'left',type:'wildfire',in:24,visible:true},lastSide:'right',lastType:null,typeStreak:0,rewardChoices:[],cleanupChoices:[],rewardBacklog:0,effects:[],signals:[],
    stats:{resolved:0,lost:0,placed:0,replaced:0,upgraded:0,cardsPlayed:0,removed:0}};
  }
  on(fn){this.listeners.push(fn)}
@@ -59,15 +59,18 @@ class Simulation{
  }
  canPlace(uid,slotIndex){const cost=this.placementCost(uid,slotIndex);return Number.isFinite(cost)&&this.canAfford(cost)}
  placeSelected(slotIndex){
-  const s=this.state,uid=s.selectedUid;if(!this.canPlace(uid,slotIndex))return false;const c=this.cardDef(uid),def=D.BUILDINGS[c.building],slot=s.slots[slotIndex],cost=this.placementCost(uid,slotIndex),old=slot.building;
+  const s=this.state,uid=s.selectedUid;if(!this.canPlace(uid,slotIndex))return false;const c=this.cardDef(uid),def=D.BUILDINGS[c.building],slot=s.slots[slotIndex],cost=this.placementCost(uid,slotIndex),old=slot.building,ruin=!old&&s.recovery?.debris?.find(d=>d.slotIndex===slot.i);
   s.money-=cost;
   if(old&&old.id===def.id){
    const nextLevel=(old.level||1)+1,ratio=clamp(old.hp/old.maxHp,0,1),maxHp=Math.round(def.hp*(1+.32*(nextLevel-1)));
    slot.building={...old,level:nextLevel,maxHp,hp:Math.max(Math.round(maxHp*.72),Math.round(maxHp*ratio))};s.stats.upgraded++;this.emit('build',def.name+' '+nextLevel+'단계 강화!',{x:slot.x});
   }else{
    if(old){s.stats.replaced++;this.emit('replace',D.BUILDINGS[old.id].name+'을(를) '+def.name+'으로 교체',{x:slot.x})}
+   DC.Recovery?.cancelConstruction?.(this,slot);
    DC.Recovery?.clearSite?.(this,slot);
-   slot.building={id:def.id,hp:def.hp,maxHp:def.hp,level:1,placedAt:s.time};s.stats.placed++;if(!old)this.emit('build',def.name+' 건설 완료',{x:slot.x});
+   slot.building={id:def.id,hp:def.hp,maxHp:def.hp,level:1,placedAt:s.time};s.stats.placed++;
+   if(ruin){DC.Recovery?.beginReconstruction?.(this,slot,def.id,ruin.cause);this.emit('build',def.name+' 재건 공사 시작',{x:slot.x,vehicle:'repairTruck',construction:true})}
+   else if(!old)this.emit('build',def.name+' 건설 완료',{x:slot.x});
   }
   s.stats.cardsPlayed++;this.discardCard(uid);
   if(s.tutorial&&s.tutorialStep===1){s.tutorialStep=2;this.emit('tip','좋아요. 이제 좌우 경고를 보면서 도시를 키우세요.')}
