@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#fff3df">
+  <meta name="description" content="전국의 우리말을 만나는 사투리 탐험 퀴즈. 듣고, 고르고, 시장 심부름을 하며 배워요.">
+  <title>말맛 전국일주 | 키즈케이드</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../../kidscade-game-sdk.js" data-game-id="dialect_tour" data-title="말맛 전국일주" data-shell="true" data-orientation="any"></script>
+  <script defer src="questions.js"></script>
+  <script defer src="game.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">게임 화면으로 건너뛰기</a>
+  <div class="ambient" aria-hidden="true"><span>☁</span><span>✳</span><span>☁</span><span>✺</span></div>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-seal" aria-hidden="true">🧳</span><div><strong>말맛 전국일주</strong><small>우리말 탐험 여행</small></div></div>
+      <div class="top-actions"><button id="sound-toggle" class="icon-button" type="button" aria-label="소리 끄기" title="소리 켜고 끄기">🔊</button><button id="home-button" class="icon-button" type="button" aria-label="첫 화면으로" title="첫 화면">⌂</button></div>
+    </header>
+    <main id="main">
+      <section id="start-screen" class="screen" aria-labelledby="intro-title">
+        <div class="hero">
+          <div class="hero-copy"><span class="eyebrow">전국 말맛 도장깨기 · 국어 퀴즈</span><h1 id="intro-title">다른 말투,<br><em>통하는 마음!</em></h1><p>산골 장터부터 제주 바닷가까지! 지역 친구들의 말을 듣고 뜻을 맞혀 보세요.</p><div class="hero-sticker"><span>🗺️</span> 문제를 풀면 여행 도장이 쿵!</div></div>
+          <div class="hero-art" aria-hidden="true"><div class="sun">☀️</div><div class="hill hill-back"></div><div class="hill hill-front"></div><div class="cart cart-left">🌽</div><div class="cart cart-right">🍊</div><div class="hero-traveler">🧒</div><div class="bubble bubble-left">오이소!</div><div class="bubble bubble-right">혼저!</div><div class="trail">● · ● · ●</div></div>
+        </div>
+        <div class="section-head"><h2>어떤 여행을 떠날까요?</h2><span>언제든 다시 고를 수 있어요</span></div>
+        <div class="mode-grid" id="mode-grid">
+          <button class="mode-card selected" type="button" data-mode="explore" aria-pressed="true"><span class="mode-emoji">🎒</span><strong>말맛 여행</strong><span>뜻 맞히고 심부름하며<br>천천히 배우기</span><b>추천</b></button>
+          <button class="mode-card" type="button" data-mode="picture" aria-pressed="false"><span class="mode-emoji">🧩</span><strong>그림 놀이</strong><span>그림과 쉬운 보기로<br>차근차근 풀기</span><b>유아·저학년</b></button>
+          <button class="mode-card" type="button" data-mode="challenge" aria-pressed="false"><span class="mode-emoji">⚡</span><strong>번개 도전</strong><span>문제마다 20초!<br>전국 실력 뽐내기</span><b>도전</b></button>
+        </div>
+        <div class="section-head route-head"><h2>여행 지역</h2><span>한 곳 또는 전국을 선택해요</span></div>
+        <div class="region-grid" id="region-grid" role="group" aria-label="여행할 지역"></div>
+        <div class="start-footer"><div class="passport" id="passport-summary"><span aria-hidden="true">📒</span><div><strong>나의 여행 여권</strong><small>첫 도장을 기다리고 있어요</small></div></div><button id="start-button" class="primary-button" type="button">전국 여행 출발 <span aria-hidden="true">➜</span></button></div>
+        <p class="source-intro">지역어는 여러 지역에서 함께 쓰이기도 해요. 이 게임은 서로 다른 말투를 존중하며 배우는 여행이에요.</p>
+      </section>
+
+      <section id="play-screen" class="screen" hidden aria-labelledby="question-word">
+        <div class="play-top"><div class="route-label"><span id="region-emblem">🍊</span><div><small id="region-place">제주 · 바람 부는 섬</small><strong id="kind-label">말맛 해독</strong></div></div><div class="score-pill"><small>모은 점수</small><strong id="score-value">0</strong></div></div>
+        <div class="progress-row"><span id="round-label">1 / 10 문제</span><div class="progress-track" role="progressbar" id="progress-bar" aria-label="문제 진행률" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0"><div id="progress-fill"></div></div><span id="timer-label" class="timer-label" hidden>20초</span></div>
+        <div class="game-scene" id="game-scene"><div class="scene-hills" aria-hidden="true"></div><span class="scene-prop left" aria-hidden="true">🏡</span><span class="scene-prop right" aria-hidden="true">🌳</span><div class="character" aria-hidden="true"><span id="character-emoji">👵</span></div><div class="dialogue" id="dialogue-box"><small id="speaker-label">동네 주민</small><h2 id="question-word">지슬</h2><button id="speak-button" type="button" class="listen-button">🔊 말 들어보기</button></div></div>
+        <div class="question-panel"><div class="question-heading"><div><span id="question-type" class="question-type">💬 뜻 찾기</span><h3 id="question-prompt">이 말은 무슨 뜻일까요?</h3></div><span class="answer-hint" id="answer-hint">정답을 눌러요</span></div><div id="answers" class="answers" role="group" aria-label="정답 선택"></div><div id="basket" class="basket" hidden aria-live="polite">🧺 <span>장바구니가 비어 있어요</span></div><div id="feedback" class="feedback" hidden aria-live="polite"><div class="feedback-main"><span id="feedback-icon">🌟</span><div><strong id="feedback-title">정답이에요!</strong><p id="feedback-text">우리말 풀이</p></div></div><div class="feedback-bottom"><a id="source-link" href="#" target="_blank" rel="noopener noreferrer">표현 자료 살펴보기 ↗</a><button id="next-button" class="next-button" type="button">다음 문제 →</button></div></div></div>
+        <p class="keyboard-hint">키보드 1~4번으로 고르고, Enter로 다음 문제로 넘어갈 수 있어요.</p>
+      </section>
+
+      <section id="result-screen" class="screen" hidden aria-labelledby="result-title"><div class="result-panel"><div class="result-medal" id="result-medal">🏅</div><span class="eyebrow" id="result-region">전국 여행 완료</span><h2 id="result-title">여행 완료!</h2><p id="result-message">다른 지역의 말도 조금씩 알게 됐어요.</p><div class="result-score"><strong id="final-score">0</strong><span>점</span></div><div class="result-grid"><div><strong id="correct-count">0 / 10</strong><small>맞힌 문제</small></div><div><strong id="best-score">0</strong><small>최고 점수</small></div><div><strong id="stamp-count">0</strong><small>모은 도장</small></div></div><div class="result-actions"><button id="again-button" class="primary-button" type="button">다른 문제로 또 여행 ↻</button><button id="change-button" class="secondary-button" type="button">지역 바꾸기</button></div></div></section>
+    </main>
+    <footer class="footer">KIDSCADE · 우리말을 함께 배우는 즐거운 여행 <span>지역어 자료: 국립국어원 · 제주어 교육 자료 등</span></footer>
+  </div>
+</body>
+</html>
