@@ -29,6 +29,9 @@ export function createHarvestCargo(scene,farmer){
   const store=new THREE.Group();store.position.set(17.1,0,-8.35);scene.add(store);
   const basket=new THREE.Group();basket.position.set(.35,1.02,.25);farmer.add(basket);
   mesh(basket,new THREE.CylinderGeometry(.29,.22,.24,10),materials.basket,0,0,0);
+  const compostPouch=new THREE.Group();compostPouch.position.set(-.3,.8,.21);farmer.add(compostPouch);
+  mesh(compostPouch,new THREE.SphereGeometry(.19,8,7),materials.sack,0,0,0).scale.set(1.1,1,.8);
+  mesh(compostPouch,new THREE.ConeGeometry(.13,.19,6),materials.tie,0,.18,0);
   const fieldBundles=new Map();
   const rebuild=(parent,keys,limit)=>{
     for(const child of [...parent.children]){
@@ -45,8 +48,8 @@ export function createHarvestCargo(scene,farmer){
     const keys=counts(inventory);
     rebuild(store,keys.flatMap(k=>Array(Math.min(3,Math.ceil(inventory[k]/5))).fill(k)),7);
   };
-  const setCarrying=(inventory,walking)=>{
-    basket.visible=Boolean(walking&&counts(inventory).length);
+  const setCarrying=(inventory)=>{
+    basket.visible=Boolean(counts(inventory).length);
     if(!basket.visible)return;
     // Basket walls remain while crops change; contents are keyed by stock.
     for(const child of [...basket.children].slice(1)){
@@ -68,9 +71,9 @@ export function createHarvestCargo(scene,farmer){
       bundle(layer,plot.x+plot.w/2+.14,plot.z+row*.46);
     }
   };
-  return {setStorage,setCarrying,setField,dispose(){
-    store.parent?.remove(store);basket.parent?.remove(basket);
-    for(const group of [store,basket,...fieldBundles.values()]){
+  return {setStorage,setCarrying,setCompost(amount){compostPouch.visible=amount>0},setField,dispose(){
+    store.parent?.remove(store);basket.parent?.remove(basket);compostPouch.parent?.remove(compostPouch);
+    for(const group of [store,basket,compostPouch,...fieldBundles.values()]){
       group.parent?.remove(group);
       group.traverse(item=>item.geometry?.dispose?.());group.clear();
     }
