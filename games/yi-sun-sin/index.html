@@ -53,15 +53,16 @@
     <div class="bottom-hud">
       <div class="cannon-status"><span id="portWeaponName">좌현 · 기본 화포</span><div class="reload-track"><i id="portReload"></i></div><b id="portLabel">준비</b></div>
       <div class="bottom-divider"></div>
-      <div class="command-group" role="group" aria-label="협선 지휘 명령">
+      <div class="command-group" role="group" aria-label="함대 지휘 명령">
         <button id="signalBtn" class="signal-btn" type="button" aria-label="1번 호위 집결, 아군 포격 속도 상승"><span class="signal-mark">⚑</span><span><b>집결</b><small id="signalLabel">1 · 준비</small></span></button>
         <button id="focusBtn" class="signal-btn" type="button" aria-label="2번 집중 공격, 대형 적선 우선 공격"><span class="signal-mark">◎</span><span><b>집중</b><small id="focusLabel">2 · 준비</small></span></button>
         <button id="guardBtn" class="signal-btn" type="button" aria-label="3번 기함 엄호, 받는 피해 감소"><span class="signal-mark">盾</span><span><b>엄호</b><small id="guardLabel">3 · 준비</small></span></button>
+        <button id="specialBtn" class="signal-btn special-btn" type="button" aria-label="4번 전장 특수 명령" hidden><span class="signal-mark">⚔</span><span><b id="specialTitle">전술</b><small id="specialLabel">4 · 준비</small></span></button>
       </div>
       <div class="bottom-divider"></div>
       <div class="cannon-status"><span id="starboardWeaponName">우현 · 기본 화포</span><div class="reload-track"><i id="starboardReload"></i></div><b id="starboardLabel">준비</b></div>
     </div>
-    <div class="key-hint"><kbd>W</kbd><kbd>S</kbd> 전후진 <kbd>A</kbd><kbd>D</kbd> 선회 <span>·</span> <kbd>1</kbd> 집결 <kbd>2</kbd> 집중 <kbd>3</kbd> 엄호 <span>·</span> 적이 좌우에 오면 자동 포격</div>
+    <div class="key-hint"><kbd>W</kbd><kbd>S</kbd> 전후진 <kbd>A</kbd><kbd>D</kbd> 선회 <span>·</span> <kbd>1</kbd> 집결 <kbd>2</kbd> 집중 <kbd>3</kbd> 엄호 <kbd>4</kbd> 전장 전술 <span>·</span> 좌우 자동 포격</div>
 
     <div id="touchPad" class="touch-pad" role="group" aria-label="배 조종. 위아래로 전진과 후진, 좌우로 선회하는 가상 조이스틱"><span class="pad-forward" aria-hidden="true">전진</span><span class="pad-turn" aria-hidden="true">선회</span><div id="touchKnob" class="touch-knob"></div></div>
 
@@ -76,7 +77,7 @@
           <button id="normalDifficulty" class="difficulty-choice selected" type="button" aria-pressed="true"><b>보통</b><small>기본 함대 전술 · 처음 도전</small></button>
           <button id="hardDifficulty" class="difficulty-choice" type="button" aria-pressed="false"><b>어려움</b><small>적선 협공 AI · 전공 30% 추가</small></button>
         </div>
-        <div class="how-to" id="howTo"><div><span>01</span> W·S로 전후진, A·D로 좌우 선회해요. 모바일에서도 조이스틱으로 같은 방식으로 움직여요.</div><div><span>02</span> 적을 <b>배의 왼쪽 또는 오른쪽</b>에 두고 <b>선회를 멈추면</b> 자동 포격해요. 급선회 중에는 포격할 수 없어요.</div><div><span>03</span> <b>세키부네가 가까이 오면 도선을 시도</b>합니다. 거리를 벌리세요. 높은 갑판의 판옥선은 접근전 피해를 줄입니다.</div><div><span>04</span> 협선은 호위·정찰, 사후선은 연락·정찰을 맡습니다. <b>1 집결 · 2 집중 · 3 엄호</b>로 협선에 명령하세요. 교전 후 화포·지원선을 보강할 수 있어요.</div></div>
+        <div class="how-to" id="howTo"><div><span>01</span> W·S로 전후진, A·D로 좌우 선회해요. 모바일에서도 조이스틱으로 같은 방식으로 움직여요.</div><div><span>02</span> 적을 <b>배의 왼쪽 또는 오른쪽</b>에 두고 <b>선회를 멈추면</b> 자동 포격해요. 급선회 중에는 포격할 수 없어요.</div><div><span>03</span> <b>세키부네가 가까이 오면 도선을 시도</b>합니다. 거리를 벌리세요. 높은 갑판의 판옥선은 접근전 피해를 줄입니다.</div><div><span>04</span> <b>1 집결 · 2 집중 · 3 엄호</b>로 협선을 지휘해요. 율포·한산도·안골포에서는 <b>4 전장 전술</b>을 직접 사용해요.</div></div>
         <section id="shipGuide" class="ship-guide" aria-label="조선과 일본의 함선 일람" hidden></section>
         <div class="dialog-actions" id="dialogActions"><button id="startBtn" class="primary-button" type="button">옥포로 출전하기 <span aria-hidden="true">→</span></button></div>
         <p class="historical-note" id="historyNote">실제 임진왜란 해전을 바탕으로 한 역사 캠페인입니다. 날짜는 음력 기준이며 함선 수·배치·화포 성능은 게임에 맞게 재구성했습니다.</p>

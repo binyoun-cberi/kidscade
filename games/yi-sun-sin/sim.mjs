@@ -107,22 +107,52 @@ export const BATTLES = Object.freeze({
     ],
     goals: [{ type: 'sailed', label: '만 입구 진입', target: 260, unit: 'm' }, { type: 'orders', label: '연합 함대 명령', target: 1 }, { type: 'playerHits', label: '도주선 차단 포격', target: 4 }]
   },
+  yulpo: {
+    id: 'yulpo', title: '율포 해전', date: '1592 · 음력 6월 7일', chapter: 5,
+    summary: '역풍을 이겨내고 율포에서 부산 쪽으로 달아나는 적선을 추격하세요.',
+    history: '율포에서는 일본 대선 5척과 중선 2척의 도주를 발견해 역풍에도 노를 저으며 추격했습니다. 전장에 등장하는 함선 수와 도주 조건은 게임에 맞춘 재구성입니다.',
+    victory: '거센 역풍을 이겨내고 율포의 도주선을 추격해 물리쳤습니다.',
+    islands: [{ x: 270, y: 260, radius: 180, tint: 0 }, { x: 2030, y: 215, radius: 165, tint: 1 }, { x: 2080, y: 1270, radius: 160, tint: 2 }, { x: 350, y: 1270, radius: 170, tint: 0 }],
+    playerStart: { x: 880, y: 770, angle: Math.PI / 2 }, enemySpawn: { x: 1550, y: 760 }, turtle: true,
+    special: 'oars', pursuit: { escapeX: WORLD.width - 75, escapeLimit: 3, hardEscapeLimit: 2 },
+    waves: [
+      { name: '율포의 도주선', note: '적선을 발견했습니다. 4번 노 젓기를 사용해 추격을 시작하세요.', ships: ['kobaya', 'sekibune', 'kobaya', 'sekibune'], interval: 4.5 },
+      { name: '역풍 속 추격', note: '손상된 적선은 부산 쪽으로 달아납니다. 노 젓기 가속을 활용하세요.', ships: ['kobaya', 'sekibune', 'kobaya', 'sekibune', 'kobaya'], interval: 4.2 },
+      { name: '마지막 차단', note: '달아나는 적선을 놓치지 않도록 항로를 막고 측면 포격하세요.', ships: ['sekibune', 'kobaya', 'sekibune', 'kobaya', 'sekibune', 'kobaya'], interval: 4.0 }
+    ],
+    goals: [{ type: 'sailed', label: '추격 항해', target: 220, unit: 'm' }, { type: 'oarDistance', label: '노 젓기 가속 항해', target: 100, unit: 'm' }, { type: 'playerHits', label: '퇴로 차단 포격', target: 3 }]
+  },
   hansando: {
-    id: 'hansando', title: '한산도 대첩', date: '1592 · 음력 7월 8일', chapter: 5,
-    summary: '적의 주력을 넓은 바다로 유인해 좌우 판옥선이 펼치는 학익진으로 포위하세요.',
+    id: 'hansando', title: '한산도 대첩', date: '1592 · 음력 7월 8일', chapter: 6,
+    summary: '적의 주력을 넓은 바다로 유인한 뒤 4번 명령으로 직접 학익진을 펼치세요.',
     history: '한산도에서 이순신·이억기·원균의 연합 함대가 와키사카의 주력과 싸웠습니다. 학익진을 펼쳐 적을 격파했습니다.',
     victory: '한산 앞바다의 학익진이 적 주력 함대를 무너뜨렸습니다.',
     islands: [{ x: 270, y: 240, radius: 175, tint: 0 }, { x: 2000, y: 160, radius: 125, tint: 1 }, { x: 2050, y: 1320, radius: 185, tint: 2 }],
-    playerStart: { x: 780, y: 760, angle: .4 }, enemySpawn: { x: 1690, y: 760 }, formation: 'crane', turtle: true,
+    playerStart: { x: 780, y: 760, angle: .4 }, enemySpawn: { x: 1690, y: 760 }, formation: 'crane', special: 'crane', turtle: true,
     waves: [
-      { name: '적의 주력 유인', note: '적을 섬 밖으로 끌어내세요. 날개 함대가 기함 좌우에 펼쳐집니다.', ships: ['kobaya', 'sekibune', 'kobaya', 'sekibune', 'kobaya'], interval: 4.2 },
-      { name: '학익진 전개', note: '학익진의 좌우 판옥선이 적선을 측면에서 공격하도록 유도하세요.', ships: ['sekibune', 'atakebune', 'kobaya', 'sekibune', 'sekibune', 'kobaya', 'sekibune'], interval: 4.0 },
+      { name: '적의 주력 유인', note: '기함으로 항해해 적을 넓은 바다로 끌어낸 다음 4번 학익진을 지휘하세요.', ships: ['kobaya', 'sekibune', 'kobaya', 'sekibune', 'kobaya'], interval: 4.2 },
+      { name: '학익진 전개', note: '좌우 날개가 진형을 갖출 때까지 버티고 측면 포격을 유도하세요.', ships: ['sekibune', 'atakebune', 'kobaya', 'sekibune', 'sekibune', 'kobaya', 'sekibune'], interval: 4.0 },
       { name: '한산의 결전', note: '적 지휘선을 포함한 주력 함대를 좌우에서 협공하세요.', ships: ['atakebune', 'sekibune', 'kobaya', 'sekibune', 'atakebune', 'sekibune', 'kobaya', 'sekibune'], interval: 4.4 }
     ],
     goals: [{ type: 'sailed', label: '주력 유인 기동', target: 270, unit: 'm' }, { type: 'wingHits', label: '학익진 날개 함포 명중', target: 2 }, { type: 'commandSunk', label: '주력 지휘선 격파', target: 1 }]
   },
+  angolpo: {
+    id: 'angolpo', title: '안골포 해전', date: '1592 · 음력 7월 10일', chapter: 7,
+    summary: '얕은 포구에 머무는 적을 여러 함대가 번갈아 공격하는 포구 공략전입니다.',
+    history: '한산도 승리 뒤 안골포의 일본 주력대가 얕은 포구를 이용해 나오지 않자 조선 함대는 차례로 포구를 드나들며 공격했고 이억기 함대가 합세했습니다. 수심선과 포격 보정은 게임 규칙입니다.',
+    victory: '안골포의 얕은 포구에 자리 잡은 일본 주력을 연합 함대로 격파했습니다.',
+    islands: [{ x: 260, y: 220, radius: 185, tint: 0 }, { x: 1940, y: 180, radius: 320, tint: 1 }, { x: 2070, y: 1350, radius: 340, tint: 2 }, { x: 340, y: 1230, radius: 145, tint: 1 }],
+    playerStart: { x: 850, y: 760, angle: .3 }, enemySpawn: { x: 1620, y: 770 }, turtle: true,
+    special: 'rotation', harbor: { shallowX: 1810 },
+    waves: [
+      { name: '포구 밖 정찰', note: '얕은 수심선을 넘지 말고 적선을 포격 사거리 안에 두세요.', ships: ['kobaya', 'sekibune', 'sekibune', 'kobaya'], interval: 4.4 },
+      { name: '교대 포격', note: '4번 교대 포격 명령으로 아군을 번갈아 투입하세요.', ships: ['sekibune', 'atakebune', 'kobaya', 'sekibune', 'kobaya'], interval: 4.2 },
+      { name: '연합 함대 결전', note: '이억기의 지원 전선과 협공하며 포구의 지휘선을 격파하세요.', ships: ['atakebune', 'sekibune', 'kobaya', 'atakebune', 'sekibune', 'kobaya'], interval: 4.1 }
+    ],
+    goals: [{ type: 'playerHits', label: '포구 밖에서 포격', target: 3 }, { type: 'rotationOrders', label: '교대 포격 명령', target: 1 }, { type: 'commandSunk', label: '포구 지휘선 격파', target: 1 }]
+  },
   busanpo: {
-    id: 'busanpo', title: '부산포 해전', date: '1592 · 음력 9월 1일', chapter: 6,
+    id: 'busanpo', title: '부산포 해전', date: '1592 · 음력 9월 1일', chapter: 8,
     summary: '해안 포격을 피해 항구의 정박선을 격파하고 아군 함대를 안전하게 물리세요.',
     history: '조선 수군은 부산포에서 일본 선박을 다수 격파하고 돌아왔습니다. 항구나 성을 점령한 전투는 아닙니다.',
     victory: '부산포의 적선을 타격한 뒤 함대를 안전하게 철수했습니다.',
@@ -137,7 +167,7 @@ export const BATTLES = Object.freeze({
     goals: [{ type: 'playerHits', label: '항구 호위선 격파 지원', target: 3 }, { type: 'commandSunk', label: '정박 대형선 격파', target: 1 }, { type: 'withdrawn', label: '서쪽 외해로 안전 철수', target: 1 }]
   },
   myeongnyang: {
-    id: 'myeongnyang', title: '명량 대첩', date: '1597 · 음력 9월 16일', chapter: 7,
+    id: 'myeongnyang', title: '명량 대첩', date: '1597 · 음력 9월 16일', chapter: 9,
     summary: '압도적인 적에 맞서 울돌목의 좁은 수로와 반전하는 조류를 활용하세요.',
     history: '칠천량 패전 후 이순신은 소수의 조선 수군을 이끌고 명량의 좁은 해협에서 일본 함대를 물리쳤습니다. 함선 수는 축약했습니다.',
     victory: '거센 물살을 이겨내고 명량해협을 지켰습니다.',
@@ -151,7 +181,7 @@ export const BATTLES = Object.freeze({
     goals: [{ type: 'sailed', label: '울돌목 항해', target: 220, unit: 'm' }, { type: 'tideTurns', label: '조류 반전 활용', target: 1 }, { type: 'playerHits', label: '좁은 해협 측면 포격', target: 4 }]
   },
   noryang: {
-    id: 'noryang', title: '노량 해전', date: '1598 · 음력 11월 18~19일', chapter: 8,
+    id: 'noryang', title: '노량 해전', date: '1598 · 음력 11월 18~19일', chapter: 10,
     summary: '깊은 밤 진린의 명나라 수군과 연합해 일본군의 철수 함대를 저지하세요.',
     history: '노량에서 이순신과 진린의 조·명 연합 수군이 철수하는 일본 함대와 싸웠습니다. 이순신이 전사한 마지막 해전입니다.',
     victory: '조·명 연합 함대가 노량에서 마지막 승리를 거두었습니다. 이순신은 이 전투에서 전사했습니다.',
@@ -166,7 +196,27 @@ export const BATTLES = Object.freeze({
   }
 });
 
-export const BATTLE_ORDER = Object.freeze(['okpo', 'sacheon', 'dangpo', 'danghangpo', 'hansando', 'busanpo', 'myeongnyang', 'noryang']);
+export const BATTLE_ORDER = Object.freeze(['okpo', 'sacheon', 'dangpo', 'danghangpo', 'yulpo', 'hansando', 'angolpo', 'busanpo', 'myeongnyang', 'noryang']);
+const LEGACY_BATTLE_ORDER = Object.freeze(['okpo', 'sacheon', 'dangpo', 'danghangpo', 'hansando', 'busanpo', 'myeongnyang', 'noryang']);
+
+export function restoreCampaign(saved) {
+  const completed = [...new Set((Array.isArray(saved?.completed) ? saved.completed : []).filter(id => BATTLES[id]))];
+  const unlocked = [...new Set((Array.isArray(saved?.unlocked) ? saved.unlocked : []).filter(id => BATTLES[id]))];
+  // Existing v1 progress had an eight-stage route. Keep the highest stage and
+  // its next available stage reachable when inserting battles in the middle.
+  if (saved && !saved.version) {
+    const previous = LEGACY_BATTLE_ORDER.reduce((highest, id, index) => completed.includes(id) ? index : highest, -1);
+    const oldNext = LEGACY_BATTLE_ORDER[Math.min(previous + 1, LEGACY_BATTLE_ORDER.length - 1)];
+    const lastReachable = previous < 0 ? 0 : BATTLE_ORDER.indexOf(oldNext);
+    for (const id of BATTLE_ORDER.slice(0, lastReachable + 1)) if (!unlocked.includes(id)) unlocked.push(id);
+  }
+  return { version: 2, completed, unlocked };
+}
+
+export function isBattleUnlocked(campaign, id) {
+  const index = BATTLE_ORDER.indexOf(id);
+  return index >= 0 && (index === 0 || campaign.completed.includes(id) || campaign.unlocked?.includes(id) || campaign.completed.includes(BATTLE_ORDER[index - 1]));
+}
 
 export const UPGRADES = Object.freeze([
   { id: 'cannon', icon: '砲', title: '화포 정비', text: '모든 함포 피해량 18% 증가' },
@@ -227,8 +277,9 @@ export function createGame(seed = 1592, difficulty = 'normal', battleId = 'okpo'
     spawnClock: 0, kills: 0, hits: 0, shotsFired: 0, score: 0, selected: [],
     bonuses: { damage: 1, reload: 1, range: 1, turn: 1 },
     signalCooldown: 0, signalRemaining: 0, signalOrder: 'rally', focusTargetId: '',
+    special: { state: battle.special === 'crane' ? 'lure' : 'ready', cooldown: 0, remaining: 0, deployClock: 0, lastWarn: -100 },
     stationarySeconds: 0,
-    tactical: { playerHits: 0, sailed: 0, orders: 0, turtleRams: 0, commandSunk: 0, wingHits: 0, mingHits: 0, tideTurns: 0, withdrawn: 0, completed: [false, false, false] },
+    tactical: { playerHits: 0, sailed: 0, orders: 0, turtleRams: 0, commandSunk: 0, wingHits: 0, mingHits: 0, tideTurns: 0, withdrawn: 0, escaped: 0, oarDistance: 0, craneOrders: 0, rotationOrders: 0, completed: [false, false, false] },
     withdrawal: false, shoreClock: 5, tideDirection: 1, tideClock: 0,
     arsenal: { port: 'standard', starboard: 'standard' },
     events: [], shots: [], effects: [],
@@ -254,6 +305,11 @@ export function startRun(game) {
 
 export function getWave(game) {
   return game.battle.waves[game.waveIndex] || null;
+}
+
+export function getEscapeLimit(game) {
+  if (!game.battle.pursuit) return 0;
+  return game.difficulty === 'hard' ? game.battle.pursuit.hardEscapeLimit : game.battle.pursuit.escapeLimit;
 }
 
 export function getTacticalObjective(game) {
@@ -335,7 +391,7 @@ export function takeUpgrade(game, id) {
     }
   }
   game.waveIndex++;
-  if (game.battleId === 'danghangpo' && game.waveIndex === 1 && !game.allies.some(ally => ally.id === 'eokgi-1')) {
+  if (['danghangpo', 'angolpo'].includes(game.battleId) && game.waveIndex === 1 && !game.allies.some(ally => ally.id === 'eokgi-1')) {
     game.allies.push(makeShip('panokseon',
       cap(game.player.x - 120, 65, WORLD.width - 65),
       cap(game.player.y + 155, 65, WORLD.height - 65), game.player.angle, 'eokgi-1'));
@@ -359,6 +415,14 @@ export function takeUpgrade(game, id) {
   game.tactical.mingHits = 0;
   game.tactical.tideTurns = 0;
   game.tactical.withdrawn = 0;
+  game.tactical.oarDistance = 0;
+  game.tactical.rotationOrders = 0;
+  if (game.battle.special === 'crane') {
+    game.special.state = 'lure';
+    game.special.remaining = 0;
+    game.special.deployClock = 0;
+    game.special.cooldown = 0;
+  }
   game.selected = [];
   game.mode = 'playing';
   game.events.push({ kind: 'wave', text: `${game.waveIndex + 1}차 교전 · ${getWave(game).name}` });
@@ -385,12 +449,47 @@ export function issueOrder(game, order) {
   return true;
 }
 
+// 4 is a battle-specific order, separate from the standard escort orders.
+export function issueSpecial(game) {
+  const kind = game.battle.special;
+  if (game.mode !== 'playing' || !kind || game.special.cooldown > 0) return false;
+  if (kind === 'crane') {
+    if (!game.allies.some(ally => ally.id.startsWith('wing-') && !ally.dead)) return false;
+    const enemyLured = game.enemies.some(enemy => !enemy.dead && distance(enemy, game.player) <= 940);
+    if (game.tactical.sailed < 95 || !enemyLured) {
+      if (game.seconds - game.special.lastWarn >= 3) {
+        game.special.lastWarn = game.seconds;
+        game.events.push({ kind: 'signal', text: '아직 유인 중입니다. 기함을 항해해 적 주력이 따라오면 학익진을 펼치세요.' });
+      }
+      return false;
+    }
+    game.special.state = 'deploying';
+    game.special.deployClock = 5.5;
+    game.special.remaining = 18;
+    game.special.cooldown = 33;
+    game.events.push({ kind: 'signal', text: '학익진 전개 명령! 좌익과 우익이 적 함대를 둘러싸도록 기동합니다.' });
+  } else if (kind === 'oars') {
+    game.special.state = 'active';
+    game.special.remaining = 6;
+    game.special.cooldown = 21;
+    game.events.push({ kind: 'signal', text: '격군들이 힘차게 노를 젓습니다! 역풍 속 추격 속도가 빨라집니다.' });
+  } else if (kind === 'rotation') {
+    if (!game.enemies.some(enemy => !enemy.dead)) return false;
+    game.special.state = 'active';
+    game.special.remaining = 9;
+    game.special.cooldown = 26;
+    game.tactical.rotationOrders++;
+    game.events.push({ kind: 'signal', text: '교대 포격 명령! 아군 전선이 차례로 포구에 접근해 집중 사격합니다.' });
+  } else return false;
+  return true;
+}
+
 export function togglePause(game) {
   if (game.mode === 'playing') game.mode = 'paused';
   else if (game.mode === 'paused') game.mode = 'playing';
 }
 
-function steer(ship, desiredAngle, throttle, dt, bonus = 1) {
+function steer(ship, desiredAngle, throttle, dt, bonus = 1, speedBonus = 1) {
   const cfg = SHIP_TYPES[ship.type];
   const baseTurn = cfg.turn * bonus * (0.35 + 0.65 * cap(Math.abs(ship.speed) / 85, 0, 1));
   const beforeTurn = ship.angle;
@@ -400,10 +499,10 @@ function steer(ship, desiredAngle, throttle, dt, bonus = 1) {
     // The gun crews need a brief steady course; full-rudder circles cannot fire endlessly.
     ship.aimSteady = cap(ship.aimSteady + (ship.turnRate > 1.6 ? -2.8 : 1.8) * dt, 0, 1);
   }
-  const acceleration = throttle > 0 ? cfg.acceleration : throttle < 0 ? cfg.acceleration * 1.7 : 0;
+  const acceleration = throttle > 0 ? cfg.acceleration * speedBonus : throttle < 0 ? cfg.acceleration * 1.7 : 0;
   ship.speed += throttle * acceleration * dt;
   ship.speed *= Math.exp(-0.68 * dt);
-  ship.speed = cap(ship.speed, -cfg.speed * 0.25, cfg.speed);
+  ship.speed = cap(ship.speed, -cfg.speed * 0.25, cfg.speed * speedBonus);
   const direction = fwd(ship.angle);
   ship.x += direction.x * ship.speed * dt;
   ship.y += direction.y * ship.speed * dt;
@@ -551,10 +650,12 @@ export function boardingThreat(game) {
 function fire(ship, targets, game, dt) {
   const cfg = SHIP_TYPES[ship.type];
   if (!cfg.volley || !cfg.range) return; // Sahu boats carry dispatches, not cannons.
+  if (ship.id.startsWith('wing-') && game.special.state !== 'active') return;
   const improved = ship.id === 'flagship' ? game.bonuses : { reload: 1, range: 1, damage: 1 };
   const rallied = game.signalRemaining > 0 && game.signalOrder === 'rally';
   const focused = game.signalRemaining > 0 && game.signalOrder === 'focus';
-  const reloadBonus = rallied ? ship.id === 'escort-1' ? .55 : ship.id === 'flagship' ? .7 : 1 : focused && ship.id === 'escort-1' ? .8 : 1;
+  const rotationBonus = game.battle.special === 'rotation' && game.special.state === 'active' && ship.team === 'joseon' && ship.id !== 'flagship' ? .62 : 1;
+  const reloadBonus = (rallied ? ship.id === 'escort-1' ? .55 : ship.id === 'flagship' ? .7 : 1 : focused && ship.id === 'escort-1' ? .8 : 1) * rotationBonus;
   const exposedFlagship = ship.team === 'japan' && game.stationarySeconds >= 6;
   for (let i = 0; i < 2; i++) {
     ship.reload[i] = Math.max(0, ship.reload[i] - dt);
@@ -653,7 +754,7 @@ function updateShots(game, dt) {
         }
         if (shot.team === 'joseon') game.hits++;
         if (shot.sourceId === 'flagship' && firstHit.team === 'japan') game.tactical.playerHits++;
-        if ((shot.sourceId === 'wing-left' || shot.sourceId === 'wing-right') && firstHit.team === 'japan') game.tactical.wingHits++;
+        if ((shot.sourceId === 'wing-left' || shot.sourceId === 'wing-right') && firstHit.team === 'japan' && game.special.state === 'active') game.tactical.wingHits++;
         if (shot.sourceId === 'ming-1' && firstHit.team === 'japan') game.tactical.mingHits++;
         addEffect(game, firstHit.x, firstHit.y, shot.weapon === 'heavy' ? 'heavy-impact' : 'impact', shot.weapon === 'heavy' ? .88 : .62);
         addEffect(game, firstHit.x, firstHit.y - SHIP_TYPES[firstHit.type].radius - 9, 'damage', .85,
@@ -683,10 +784,13 @@ function controlPlayer(game, input, dt) {
     angle = ship.angle + turn * SHIP_TYPES.panokseon.turn * game.bonuses.turn * dt;
     throttle = Number.isFinite(input.throttle) ? cap(input.throttle, -1, 1) : (input.forward ? 1 : 0) - (input.backward ? 1 : 0);
   }
-  steer(ship, angle, throttle, dt, game.bonuses.turn);
+  const oarsActive = game.battle.special === 'oars' && game.special.state === 'active';
+  steer(ship, angle, throttle, dt, game.bonuses.turn, oarsActive ? 1.38 : 1);
   applyCurrent(game, ship, dt);
   dodgeLand(game, ship, dt);
-  game.tactical.sailed += Math.hypot(ship.x - previousX, ship.y - previousY);
+  const traveled = Math.hypot(ship.x - previousX, ship.y - previousY);
+  game.tactical.sailed += traveled;
+  if (oarsActive) game.tactical.oarDistance += traveled;
   game.stationarySeconds = Math.abs(ship.speed) < 32
     ? Math.min(30, game.stationarySeconds + dt)
     : Math.max(0, game.stationarySeconds - dt * 2.5);
@@ -703,10 +807,11 @@ function applyCurrent(game, ship, dt) {
 
 function controlWing(game, wing, dt) {
   const side = wing.id === 'wing-left' ? -1 : 1;
-  const target = closest(wing, game.enemies, 840);
+  const deployed = game.special.state === 'deploying' || game.special.state === 'active';
+  const target = deployed ? closest(wing, game.enemies, 900) : null;
   const lateral = right(game.player.angle);
   const anchor = target
-    ? { x: target.x + side * 235, y: target.y + side * 75 }
+    ? { x: target.x + side * 245, y: target.y + side * 85 }
     : { x: game.player.x + lateral.x * side * 210 - fwd(game.player.angle).x * 95,
         y: game.player.y + lateral.y * side * 210 - fwd(game.player.angle).y * 95 };
   const d = distance(wing, anchor);
@@ -757,7 +862,8 @@ function controlEscort(game, escort, dt) {
   const rallied = game.signalRemaining > 0 && game.signalOrder === 'rally';
   const guarding = game.signalRemaining > 0 && game.signalOrder === 'guard';
   const messenger = escort.type === 'sahuseon';
-  const offset = messenger ? 115 : escort.type === 'ming' ? 175 : guarding ? -65 : rallied ? -100 : -145;
+  const rotating = game.battle.special === 'rotation' && game.special.state === 'active';
+  const offset = messenger ? 115 : escort.type === 'ming' ? 175 : rotating ? (escort.id === 'eokgi-1' ? 240 : -225) : guarding ? -65 : rallied ? -100 : -145;
   const trail = messenger ? 135 : escort.type === 'ming' ? 145 : guarding ? 45 : 92;
   const waypoint = {
     x: player.x + side.x * offset - ahead.x * trail,
@@ -768,10 +874,10 @@ function controlEscort(game, escort, dt) {
   const formationDistance = distance(escort, waypoint);
   let heading = Math.atan2(waypoint.x - escort.x, -(waypoint.y - escort.y));
   let throttle = formationDistance > 80 ? 1 : 0.15;
-  if (!messenger && !guarding && target && (focused || formationDistance < (rallied ? 105 : 180))) {
+  if (!messenger && !guarding && target && (focused || rotating || formationDistance < (rallied ? 105 : 180))) {
     const bearing = Math.atan2(target.x - escort.x, -(target.y - escort.y));
     heading = bearing - Math.PI / 2;
-    throttle = focused ? 1 : rallied ? .32 : .5;
+    throttle = focused || rotating ? 1 : rallied ? .32 : .5;
   }
   steer(escort, heading, throttle, dt);
   applyCurrent(game, escort, dt);
@@ -882,6 +988,29 @@ function hardManeuver(game, enemy, target, cfg, dist) {
 
 function controlEnemy(game, enemy, dt) {
   if (enemy.dead) return;
+  if (game.battle.pursuit && enemy.hp < enemy.maxHp * (game.difficulty === 'hard' ? .48 : .36)) {
+    enemy.aiMode = '율포 탈출';
+    const exit = { x: WORLD.width + 75, y: cap(enemy.y, 300, 1200) };
+    const heading = Math.atan2(exit.x - enemy.x, -(exit.y - enemy.y));
+    steer(enemy, heading, 1, dt, 1, game.difficulty === 'hard' ? 1.09 : 1);
+    dodgeLand(game, enemy, dt);
+    if (enemy.x >= game.battle.pursuit.escapeX) {
+      enemy.dead = true;
+      game.tactical.escaped++;
+      game.events.push({ kind: 'signal', text: `적선이 부산 쪽으로 달아났습니다. (${game.tactical.escaped}/${getEscapeLimit(game)})` });
+      if (game.tactical.escaped >= getEscapeLimit(game)) {
+        game.mode = 'defeat';
+        game.events.push({ kind: 'defeat', text: '너무 많은 적선이 율포의 퇴로로 빠져나갔습니다.' });
+      }
+    }
+    return;
+  }
+  if (game.battle.harbor && enemy.hp >= enemy.maxHp * (game.difficulty === 'hard' ? .58 : .72) && distance(enemy, game.player) > 320) {
+    enemy.aiMode = '안골포 포구 방어';
+    steer(enemy, enemy.angle, 0, dt);
+    dodgeLand(game, enemy, dt);
+    return;
+  }
   if (game.battle.retreat && game.waveIndex === game.battle.waves.length - 1 && enemy.hp < enemy.maxHp * .30) {
     enemy.aiMode = '포구 탈출';
     const exit = { x: WORLD.width + 75, y: 760 };
@@ -1026,6 +1155,18 @@ export function stepGame(game, input = {}, dt = 1 / 60) {
   }
   game.signalCooldown = Math.max(0, game.signalCooldown - dt);
   game.signalRemaining = Math.max(0, game.signalRemaining - dt);
+  game.special.cooldown = Math.max(0, game.special.cooldown - dt);
+  if (game.special.state === 'deploying') {
+    game.special.deployClock = Math.max(0, game.special.deployClock - dt);
+    if (game.special.deployClock === 0) {
+      game.special.state = 'active';
+      game.tactical.craneOrders++;
+      game.events.push({ kind: 'signal', text: '학익진 완성! 좌우 판옥선이 적을 포위하며 포격합니다.' });
+    }
+  } else if (game.special.state === 'active') {
+    game.special.remaining = Math.max(0, game.special.remaining - dt);
+    if (game.special.remaining === 0) game.special.state = game.battle.special === 'crane' ? 'lure' : 'ready';
+  }
   for (const effect of game.effects) effect.age += dt;
   game.effects = game.effects.filter(effect => effect.age < effect.duration);
   for (const enemy of game.enemies) {
@@ -1036,6 +1177,14 @@ export function stepGame(game, input = {}, dt = 1 / 60) {
     if (enemy.hp <= 0) sink(game, enemy);
   }
   controlPlayer(game, input, dt);
+  if (game.battle.harbor && game.player.x > game.battle.harbor.shallowX) {
+    game.player.x = game.battle.harbor.shallowX;
+    game.player.speed = Math.min(game.player.speed, 35);
+    if (!game.harborWarned) {
+      game.harborWarned = true;
+      game.events.push({ kind: 'signal', text: '앞은 얕은 포구입니다! 판옥선은 수심선 밖에서 측면 포격하세요.' });
+    }
+  } else if (game.battle.harbor && game.player.x < game.battle.harbor.shallowX - 75) game.harborWarned = false;
   for (const ally of game.allies) controlEscort(game, ally, dt);
   for (const enemy of game.enemies) controlEnemy(game, enemy, dt);
   if (game.mode === 'defeat') return game;

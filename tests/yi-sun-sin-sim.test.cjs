@@ -4,9 +4,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const simPromise = import('../games/yi-sun-sin/sim.mjs');
 
-test('역사 캠페인 여덟 전장은 연대순으로 구성되고 각각 독립된 지도와 공세를 제공한다', async () => {
+test('역사 캠페인 열 전장은 연대순으로 구성되고 각각 독립된 지도와 공세를 제공한다', async () => {
   const { BATTLES, BATTLE_ORDER, createGame, getWave, startRun, stepGame, SHIP_TYPES } = await simPromise;
-  assert.deepEqual(BATTLE_ORDER, ['okpo', 'sacheon', 'dangpo', 'danghangpo', 'hansando', 'busanpo', 'myeongnyang', 'noryang']);
+  assert.deepEqual(BATTLE_ORDER, ['okpo', 'sacheon', 'dangpo', 'danghangpo', 'yulpo', 'hansando', 'angolpo', 'busanpo', 'myeongnyang', 'noryang']);
   for (const id of BATTLE_ORDER) {
     const game = createGame(1592, 'normal', id);
     assert.equal(game.battleId, id);
@@ -104,8 +104,8 @@ test('당항포 2차 교전에 이억기의 지원 판옥선이 합류하고 도
   assert.ok(game.events.some(event => event.text.includes('퇴로')));
 });
 
-test('한산도 학익진의 좌우 판옥선이 출전하고 날개 함포 명중이 임무에 반영된다', async () => {
-  const { createGame, startRun, stepGame, makeShip } = await simPromise;
+test('한산도 학익진은 적 유인 후 4번 직접 명령해야 날개가 포격한다', async () => {
+  const { createGame, startRun, stepGame, makeShip, issueSpecial } = await simPromise;
   const game = createGame(162, 'normal', 'hansando');
   startRun(game);
   assert.deepEqual(game.allies.filter(a => a.id.startsWith('wing-')).map(a => a.id), ['wing-left', 'wing-right']);
@@ -114,10 +114,105 @@ test('한산도 학익진의 좌우 판옥선이 출전하고 날개 함포 명�
   const target = makeShip('atakebune', 1380, 760, 0, 'target');
   target.reload = [999, 999];
   game.enemies.push(target);
+  assert.equal(issueSpecial(game), false, '유인하기 전에는 학익진을 펼칠 수 없음');
+  assert.equal(game.special.state, 'lure');
+  game.tactical.sailed = 140;
+  assert.equal(issueSpecial(game), true);
+  assert.equal(game.special.state, 'deploying');
+  for (let frame = 0; frame < 112; frame++) stepGame(game, {}, .05);
+  assert.equal(game.special.state, 'active');
+  assert.equal(game.tactical.craneOrders, 1);
   game.shots.push({ x: target.x - 50, y: target.y, vx: 475, vy: 0, traveled: 0,
     range: 400, damage: 12, sourceId: 'wing-left', team: 'joseon', radius: 5 });
   for (let frame = 0; frame < 3; frame++) stepGame(game, {}, .05);
   assert.ok(game.tactical.wingHits > 0);
+});
+
+test('율포의 노 젓기는 이동 속도를 높이고 피해 입은 도주선은 우측 퇴로로 달아난다', async () => {
+  const { createGame, startRun, stepGame, makeShip, issueSpecial, getEscapeLimit, WORLD } = await simPromise;
+  const sped = createGame(190, 'normal', 'yulpo');
+  const steady = createGame(190, 'normal', 'yulpo');
+  startRun(sped); startRun(steady);
+  for (const run of [sped, steady]) run.spawnClock = 999;
+  assert.equal(issueSpecial(sped), true);
+  for (let frame = 0; frame < 90; frame++) {
+    stepGame(sped, { forward: true }, .05);
+    stepGame(steady, { forward: true }, .05);
+  }
+  assert.ok(sped.tactical.oarDistance > 100);
+  assert.ok(sped.tactical.sailed > steady.tactical.sailed * 1.12, '노 젓기가 실제 거리 이점 제공');
+  const run = createGame(191, 'normal', 'yulpo');
+  startRun(run);
+  run.spawnClock = 999;
+  run.player.reload = [999, 999];
+  run.allies.forEach(a => a.reload = [999, 999]);
+  const ship = makeShip('kobaya', WORLD.width - 105, 760, Math.PI / 2, 'escape');
+  ship.hp = 10;
+  run.enemies = [ship];
+  for (let frame = 0; frame < 55; frame++) stepGame(run, {}, .05);
+  assert.equal(run.tactical.escaped, 1);
+  assert.ok(run.events.some(event => event.text.includes('달아났습니다')));
+  const hard = createGame(193, 'hard', 'yulpo');
+  assert.equal(getEscapeLimit(run), 3);
+  assert.equal(getEscapeLimit(hard), 2, '어려움에서는 적선을 두 척만 놓쳐도 패배');
+  startRun(hard);
+  hard.spawnClock = 999;
+  hard.player.reload = [999, 999];
+  hard.allies.forEach(a => a.reload = [999, 999]);
+  for (let escaping = 0; escaping < 2 && hard.mode === 'playing'; escaping++) {
+    const runner = makeShip('kobaya', WORLD.width - 100, 780, Math.PI / 2, `escape-${escaping}`);
+    runner.hp = 10;
+    hard.enemies = [runner];
+    for (let frame = 0; frame < 60 && hard.mode === 'playing' && !runner.dead; frame++) stepGame(hard, {}, .05);
+  }
+  assert.equal(hard.mode, 'defeat');
+});
+
+test('안골포는 얕은 수심을 지키며 교대 포격을 지휘하고 이억기 전선이 증원된다', async () => {
+  const { createGame, startRun, stepGame, makeShip, issueSpecial, takeUpgrade, getWave } = await simPromise;
+  const game = createGame(192, 'normal', 'angolpo');
+  startRun(game);
+  game.spawnClock = 999;
+  game.player.x = game.battle.harbor.shallowX + 15;
+  game.enemies.push(makeShip('sekibune', 1640, 760, 0, 'harbor-guard'));
+  assert.equal(issueSpecial(game), true);
+  assert.equal(game.tactical.rotationOrders, 1);
+  stepGame(game, {}, .05);
+  assert.ok(game.player.x <= game.battle.harbor.shallowX);
+  assert.ok(game.events.some(event => event.text.includes('얕은 포구')));
+  game.enemies = [];
+  game.spawned = getWave(game).ships.length;
+  stepGame(game, {}, .016);
+  assert.equal(takeUpgrade(game, game.selected[0]), true);
+  assert.ok(game.allies.some(ally => ally.id === 'eokgi-1'));
+});
+
+test('기존 8장 승전 기록을 새 열 장 캠페인으로 옮겨도 진행과 기록은 보존된다', async () => {
+  const { BATTLE_ORDER, restoreCampaign, isBattleUnlocked } = await simPromise;
+  const saved = restoreCampaign({ completed: ['okpo', 'sacheon', 'dangpo', 'danghangpo', 'hansando'] });
+  assert.equal(saved.version, 2);
+  assert.ok(saved.completed.includes('hansando'));
+  for (const id of ['yulpo', 'hansando', 'angolpo', 'busanpo'])
+    assert.equal(isBattleUnlocked(saved, id), true, id);
+  assert.equal(isBattleUnlocked(saved, 'myeongnyang'), false);
+  const veteran = restoreCampaign({ completed: ['okpo', 'sacheon', 'dangpo', 'danghangpo', 'hansando', 'busanpo', 'myeongnyang', 'noryang'] });
+  assert.ok(BATTLE_ORDER.every(id => isBattleUnlocked(veteran, id)), '기존 전체 클리어는 새 전장도 자유 출전');
+  const newcomer = restoreCampaign(null);
+  assert.equal(isBattleUnlocked(newcomer, 'okpo'), true);
+  assert.equal(isBattleUnlocked(newcomer, 'yulpo'), false);
+});
+
+test('해전 UI는 PC 4번 전술과 모바일 버튼을 함께 제공한다', async () => {
+  const { readFileSync } = require('node:fs');
+  const { join } = require('node:path');
+  const html = readFileSync(join(__dirname, '../games/yi-sun-sin/index.html'), 'utf8');
+  const js = readFileSync(join(__dirname, '../games/yi-sun-sin/game.js'), 'utf8');
+  const css = readFileSync(join(__dirname, '../games/yi-sun-sin/style.css'), 'utf8');
+  for (const id of ['specialBtn', 'specialTitle', 'specialLabel']) assert.ok(html.includes(`id="${id}"`), id);
+  assert.ok(js.includes("event.code==='Digit4'"), '키보드 4 연결');
+  assert.ok(js.includes("$('specialBtn').addEventListener('click'"), '터치/마우스 버튼 연결');
+  assert.ok(css.includes('.special-btn'), '추가 버튼에 별도 강조 스타일');
+  assert.ok(css.includes('.signal-btn[hidden]'), '비활성 전장에서는 추가 버튼 숨김');
 });
 
 test('부산포는 해안 포격을 받고 마지막 교전 후 서쪽 외해로 철수해야 승리한다', async () => {
@@ -204,8 +299,8 @@ test('각 역사 전장은 세 교전을 완료하면 해당 해전의 승리 �
 });
 
 test('신규 역사 전장들은 보통·어려움 모두 전투가 종료되고 전술 플레이로 이길 수 있다', async () => {
-  const { createGame, startRun, stepGame, takeUpgrade, issueOrder } = await simPromise;
-  for (const id of ['sacheon', 'dangpo', 'danghangpo', 'hansando', 'busanpo', 'myeongnyang', 'noryang']) {
+  const { createGame, startRun, stepGame, takeUpgrade, issueOrder, issueSpecial } = await simPromise;
+  for (const id of ['sacheon', 'dangpo', 'danghangpo', 'yulpo', 'hansando', 'angolpo', 'busanpo', 'myeongnyang', 'noryang']) {
     for (const difficulty of ['normal', 'hard']) {
       let victories = 0;
       for (let seed = 1; seed <= 16; seed++) {
@@ -221,6 +316,7 @@ test('신규 역사 전장들은 보통·어려움 모두 전투가 종료되고
             continue;
           }
           if (game.signalCooldown <= 0 && game.enemies.length) issueOrder(game, game.player.hp < 170 ? 'guard' : 'rally');
+          if (game.special.cooldown <= 0 && game.enemies.length) issueSpecial(game);
           const enemy = game.enemies[0];
           if (!enemy) stepGame(game, { forward: true }, 1 / 30);
           else {

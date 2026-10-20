@@ -1,6 +1,7 @@
 import {
   WORLD, SHIP_TYPES, SHIP_GUIDE, UPGRADES, WEAPONS, DIFFICULTIES, BATTLES, BATTLE_ORDER, createGame, startRun,
-  getWave, getTacticalObjective, stepGame, takeUpgrade, issueOrder, togglePause, broadsideTarget, radarContacts, boardingThreat
+  getWave, getEscapeLimit, getTacticalObjective, stepGame, takeUpgrade, issueOrder, issueSpecial, restoreCampaign, isBattleUnlocked,
+  togglePause, broadsideTarget, radarContacts, boardingThreat
 } from './sim.mjs';
 
 const $ = id => document.getElementById(id);
@@ -13,14 +14,13 @@ const clamp = (v, low, high) => Math.max(low, Math.min(high, v));
 const color = { hull: '#b68c54', trim: '#f0ca83', dark: '#4a3425' };
 let game = createGame();
 const CAMPAIGN_KEY = 'kidscade.yi_sun_sin.campaign.v1';
-const campaign = { completed: [] };
+let campaign = restoreCampaign(null);
 try {
   const saved = JSON.parse(localStorage.getItem(CAMPAIGN_KEY) || 'null');
-  if (Array.isArray(saved?.completed)) campaign.completed = saved.completed.filter(id => BATTLES[id]);
+  campaign = restoreCampaign(saved);
 } catch { /* Continue with in-session progress if storage is disabled. */ }
 function isUnlocked(id) {
-  const index = BATTLE_ORDER.indexOf(id);
-  return index === 0 || (index > 0 && campaign.completed.includes(BATTLE_ORDER[index - 1]));
+  return isBattleUnlocked(campaign, id);
 }
 function markBattleCleared() {
   if (!campaign.completed.includes(game.battleId)) campaign.completed.push(game.battleId);
@@ -301,12 +301,12 @@ function syncHud() {
   const destroyed = Math.min(total, game.spawned - game.enemies.length);
   $('battleName').textContent = game.battle.title;
   $('waveName').textContent = `${game.difficulty === 'hard' ? '어려움 · ' : ''}${game.battle.chapter}장 ${game.waveIndex + 1}/3 · ${wave.name}`;
-  $('waveProgress').textContent = game.withdrawal ? '서쪽 외해로 철수하세요!' : `${destroyed} / ${total}척 격침`;
+  $('waveProgress').textContent = game.withdrawal ? '서쪽 외해로 철수하세요!' : game.battle.pursuit ? `${destroyed} / ${total}척 차단` : `${destroyed} / ${total}척 격침`;
   $('waveDots').querySelectorAll('i').forEach((dot, i) => dot.classList.toggle('active', i <= game.waveIndex));
   $('missionTitle').textContent = game.mode === 'victory' ? `${game.battle.title} 승전!` : game.withdrawal ? '부산포 함대 철수' : wave.name;
   $('missionText').textContent = game.withdrawal ? '항구 타격을 마쳤습니다. 지도 왼쪽의 청록색 안전 해역으로 이동하세요.' : wave.note;
   $('missionFill').style.width = `${game.withdrawal ? Math.min(100, Math.max(0, (WORLD.width - game.player.x) / (WORLD.width - game.battle.withdraw.x) * 100)) : destroyed / total * 100}%`;
-  $('missionCounter').textContent = game.withdrawal ? `안전 해역까지 ${Math.max(0, Math.ceil(game.player.x - game.battle.withdraw.x))}m` : `적선 ${destroyed} / ${total}`;
+  $('missionCounter').textContent = game.withdrawal ? `안전 해역까지 ${Math.max(0, Math.ceil(game.player.x - game.battle.withdraw.x))}m` : game.battle.pursuit ? `적선 ${destroyed}/${total} · 도주 ${game.tactical.escaped}/${getEscapeLimit(game)}` : `적선 ${destroyed} / ${total}`;
   const objective = getTacticalObjective(game);
   const tacticStatus = $('tacticStatus');
   tacticStatus.textContent = objective.completed
@@ -325,12 +325,14 @@ function syncHud() {
   const turtle = game.allies.find(ally => ally.type === 'turtle');
   $('escortStatus').textContent = `${!escort || escort.dead ? '협선 격침' : `협선 ${Math.ceil(escort.hp)}/${escort.maxHp}`} · ${!messenger || messenger.dead ? '사후선 격침' : '사후선 정찰 중'}${turtle ? ` · 거북선 ${turtle.dead ? '격침' : Math.ceil(turtle.hp) + '/' + turtle.maxHp}` : ''}`;
   const condition = $('seaCondition');
-  condition.hidden = !(game.battle.current || game.battle.shoreBattery || game.battle.night || game.battle.formation);
+  condition.hidden = !(game.battle.current || game.battle.shoreBattery || game.battle.night || game.battle.formation || game.battle.pursuit || game.battle.harbor);
   if (game.battle.current) condition.textContent = `↔ 울돌목 조류: ${game.tideDirection > 0 ? '동쪽 →' : '← 서쪽'} · ${Math.ceil(game.battle.current.period - game.tideClock)}초 뒤 반전`;
   else if (game.withdrawal) condition.textContent = '↢ 부산포 철수 지시 · 서쪽 안전 해역으로';
   else if (game.battle.shoreBattery) condition.textContent = '⚠ 부산포 해안 포대 · 접근 시 포격';
   else if (game.battle.night) condition.textContent = `☾ 야간 교전 · ${game.allies.some(a => a.id === 'ming-1') ? '조·명 연합 작전' : '명나라 지원 대기'}`;
-  else if (game.battle.formation) condition.textContent = `鶴 학익진 날개 전선 · ${game.allies.filter(a => a.id.startsWith('wing-') && !a.dead).length}/2척`;
+  else if (game.battle.formation) condition.textContent = `鶴 학익진 · ${game.special.state === 'lure' ? '적 주력을 유인한 뒤 4번' : game.special.state === 'deploying' ? `진형 전개 ${Math.ceil(game.special.deployClock)}초` : `포위 포격 ${Math.ceil(game.special.remaining)}초`} · 날개 ${game.allies.filter(a => a.id.startsWith('wing-') && !a.dead).length}/2척`;
+  else if (game.battle.pursuit) condition.textContent = `➤ 율포 추격 · 역풍 속 노 젓기(4번) · 도주 ${game.tactical.escaped}/${getEscapeLimit(game)}`;
+  else if (game.battle.harbor) condition.textContent = '⚓ 안골포 포구 · 얕은 수심선 밖에서 4번 교대 포격';
   const exposure = $('exposureWarning');
   const exposed = game.mode === 'playing' && game.stationarySeconds >= 3;
   exposure.hidden = !exposed;
@@ -360,12 +362,23 @@ function syncHud() {
     $(id).disabled = game.mode !== 'playing' || game.signalCooldown > 0 || !escortAlive || (order === 'focus' && game.enemies.length === 0);
     $(labelId).textContent = !escortAlive ? '협선 격침' : active ? `${action} 중!` : game.signalCooldown > 0 ? `${Math.ceil(game.signalCooldown)}초` : `${key} · 준비`;
   }
+  const special = $('specialBtn');
+  const specialNames = { oars: '노 젓기', crane: '학익진', rotation: '교대 포격' };
+  special.hidden = !game.battle.special;
+  if (game.battle.special) {
+    $('specialTitle').textContent = specialNames[game.battle.special];
+    special.setAttribute('aria-label', `4번 특수 명령, ${specialNames[game.battle.special]}`);
+    const active = ['deploying', 'active'].includes(game.special.state);
+    special.classList.toggle('is-active', active);
+    special.disabled = game.mode !== 'playing' || game.special.cooldown > 0 || game.battle.special === 'crane' && !game.allies.some(a => a.id.startsWith('wing-') && !a.dead);
+    $('specialLabel').textContent = game.special.state === 'deploying' ? '전개 중' : game.special.state === 'active' ? '명령 수행 중' : game.special.cooldown > 0 ? `${Math.ceil(game.special.cooldown)}초` : '4 · 준비';
+  }
   const nearest = game.enemies.reduce((best, enemy) => !best || Math.hypot(enemy.x-game.player.x,enemy.y-game.player.y)<Math.hypot(best.x-game.player.x,best.y-game.player.y) ? enemy : best, null);
   const left = broadsideTarget(game.player,game.enemies,-1,WEAPONS[game.arsenal.port].range * game.bonuses.range);
   const right = broadsideTarget(game.player,game.enemies,1,WEAPONS[game.arsenal.starboard].range * game.bonuses.range);
   const widestRange = Math.max(WEAPONS[game.arsenal.port].range, WEAPONS[game.arsenal.starboard].range) * game.bonuses.range;
   const boarding = boardingThreat(game);
-  $('battleTip').textContent = game.withdrawal ? '부산포 공격 완료 · 서쪽 안전 해역으로 철수!' : boarding ? `도선 위협 ${Math.round(boarding.boardingProgress * 100)}% · 적선과 거리를 벌리세요!` : game.stationarySeconds >= 6 ? '정박 중에는 포격 피해 증가! W 또는 ↑로 항해하세요' : !nearest ? '적선을 기다리는 중' : game.player.aimSteady < .58 ? '급선회 중 · 방향을 잡으면 포격합니다' : left || right ? `${left ? '좌현' : '우현'} 화포 사격 범위!` : Math.hypot(nearest.x-game.player.x,nearest.y-game.player.y)>widestRange ? '적선에 접근한 뒤 측면을 잡으세요' : '적선을 뱃머리가 아닌 좌우에 두세요';
+  $('battleTip').textContent = game.withdrawal ? '부산포 공격 완료 · 서쪽 안전 해역으로 철수!' : boarding ? `도선 위협 ${Math.round(boarding.boardingProgress * 100)}% · 적선과 거리를 벌리세요!` : game.battle.formation && game.special.state === 'lure' && game.tactical.sailed < 95 ? '기함을 움직여 주력을 유인하세요 · 4번 학익진' : game.battle.formation && game.special.state === 'deploying' ? '학익진 전개 중 · 날개 함대의 기동을 엄호하세요' : game.battle.pursuit && game.tactical.escaped >= 2 ? `주의! 적선 ${game.tactical.escaped}척 도주 · 추격하세요` : game.stationarySeconds >= 6 ? '정박 중에는 포격 피해 증가! W 또는 ↑로 항해하세요' : !nearest ? '적선을 기다리는 중' : game.player.aimSteady < .58 ? '급선회 중 · 방향을 잡으면 포격합니다' : left || right ? `${left ? '좌현' : '우현'} 화포 사격 범위!` : Math.hypot(nearest.x-game.player.x,nearest.y-game.player.y)>widestRange ? '적선에 접근한 뒤 측면을 잡으세요' : '적선을 뱃머리가 아닌 좌우에 두세요';
   $('battleTip').classList.toggle('is-boarding', !!boarding || game.stationarySeconds >= 6);
 }
 
@@ -396,6 +409,33 @@ function drawOcean(left, top, width, height) {
 }
 
 function drawBattleFeatures() {
+  if (game.battle.harbor) {
+    const x = game.battle.harbor.shallowX;
+    ctx.save();
+    ctx.fillStyle = '#d4b46b15';ctx.fillRect(x,0,WORLD.width-x,WORLD.height);
+    ctx.setLineDash([17,10]);ctx.lineWidth = 3;ctx.strokeStyle = '#f6d78bad';
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,WORLD.height);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle = '#ffe9b4';ctx.font = 'bold 18px system-ui';ctx.textAlign = 'center';
+    ctx.fillText('⚠ 얕은 수심',x + 120,760);
+    ctx.restore();
+  }
+  if (game.battle.pursuit) {
+    ctx.save();
+    ctx.fillStyle = '#a1dce42a';ctx.fillRect(game.battle.pursuit.escapeX,0,WORLD.width-game.battle.pursuit.escapeX,WORLD.height);
+    ctx.setLineDash([10,10]);ctx.strokeStyle = '#f7a87ca0';ctx.lineWidth = 3;
+    ctx.beginPath();ctx.moveTo(game.battle.pursuit.escapeX,0);ctx.lineTo(game.battle.pursuit.escapeX,WORLD.height);ctx.stroke();ctx.setLineDash([]);
+    ctx.restore();
+  }
+  if (game.battle.formation && ['deploying','active'].includes(game.special.state)) {
+    const wings = game.allies.filter(a => a.id.startsWith('wing-') && !a.dead);
+    ctx.save();ctx.lineWidth = 3;ctx.setLineDash([12,11]);
+    ctx.strokeStyle = game.special.state === 'active' ? '#89efc9aa' : '#eadc99a0';
+    for (const wing of wings) {
+      ctx.beginPath();ctx.moveTo(game.player.x,game.player.y);ctx.lineTo(wing.x,wing.y);ctx.stroke();
+      ctx.beginPath();ctx.arc(wing.x,wing.y,48,0,Math.PI*2);ctx.stroke();
+    }
+    ctx.setLineDash([]);ctx.restore();
+  }
   if (game.battle.current) {
     const water = game.battle.current;
     ctx.save();
@@ -912,6 +952,10 @@ window.addEventListener('keydown', event => {
     event.preventDefault();
     if(!event.repeat && issueOrder(game,command)) playSound('confirm');
   }
+  if(event.code==='Digit4' || event.code==='Numpad4') {
+    event.preventDefault();
+    if(!event.repeat && issueSpecial(game)) playSound('confirm');
+  }
   if(event.code==='Escape' || event.code==='KeyP'){
     event.preventDefault();
     if(!event.repeat) switchPause();
@@ -944,6 +988,7 @@ $('pauseBtn').addEventListener('click',switchPause);
 for (const [id, order] of [['signalBtn', 'rally'], ['focusBtn', 'focus'], ['guardBtn', 'guard']]) {
   $(id).addEventListener('click',()=>{if(issueOrder(game,order))playSound('confirm');});
 }
+$('specialBtn').addEventListener('click',()=>{if(issueSpecial(game))playSound('confirm');});
 $('normalDifficulty').addEventListener('click', () => selectDifficulty('normal'));
 $('hardDifficulty').addEventListener('click', () => selectDifficulty('hard'));
 $('soundBtn').addEventListener('click',()=>{muted=!muted;$('soundBtn').textContent=muted?'♩':'♫';$('soundBtn').setAttribute('aria-label',muted?'소리 켜기':'소리 끄기');});
