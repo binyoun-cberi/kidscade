@@ -1888,6 +1888,13 @@ window.OtaDebug = Object.freeze({
       oversizedRepair:repairEffects.some(fx=>fx.result.visible&&fx.result.scale.x>Math.max(.2,R.distance(player,fx)*.38)),
       wayfinding:wayfindingSigns.map(mesh=>({word:mesh.userData.wayfindingWord,visible:mesh.visible}))},
     player:{x:player.x,z:player.z,yaw:player.yaw,pitch:player.pitch},mistakes:state.mistakes}),
+  // Deterministic pathfinding-clock drive only for no-score maze browser QA.
+  advanceMazeHunterForVisualAudit:(seconds)=>{
+    if(!mazeVisualAudit||!started||state.stage!=='maze')return false;
+    const frames=Math.max(0,Math.min(230,Math.ceil((Number(seconds)||0)/.1)));
+    for(let i=0;i<frames;i++)M.stepHunter(maze,mazeHunter,.1,player);
+    return true;
+  },
   // Browser QA may aim the camera to verify gaze rules, but cannot edit game progress.
   aimForVisualAudit:(yaw,pitch)=>{
     if(!new URLSearchParams(location.search).has('visual-audit'))return false;
