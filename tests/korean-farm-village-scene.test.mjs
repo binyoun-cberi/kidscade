@@ -7,10 +7,13 @@ import {execFileSync} from 'node:child_process';
 import {FIELD_DEFS,makeFarmState} from '../games/korean-farm/world.mjs';
 import {VILLAGE_LANDMARKS,VILLAGE_COLLIDERS,intersectsVillageCollision,plotLandscapeOverlap}
   from '../games/korean-farm/rendering/village-layout.mjs';
+import {FESTIVAL_GUESTS,FESTIVAL_THEMES,festivalSceneState}
+  from '../games/korean-farm/rendering/festival-ambience.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const FILES=['rendering/village-scene.js','rendering/village-layout.mjs','game.js'];
 const sceneFile=fs.readFileSync(path.join(ROOT,'games/korean-farm/rendering/village-scene.js'),'utf8');
 const gameFile=fs.readFileSync(path.join(ROOT,'games/korean-farm/game.js'),'utf8');
+const peopleFile=fs.readFileSync(path.join(ROOT,'games/korean-farm/rendering/village-people.js'),'utf8');
 
 test('Solnaeri has distinctive Korean village areas, not a duplicate suburban model',()=>{
   const landmarks=VILLAGE_LANDMARKS.map(x=>x.id);
@@ -59,4 +62,33 @@ test('village rendering reuses efficient instancing, color materials and cleanup
   assert.match(gameFile,/villageScene\?\.dispose\(\)/);
   for(const p of FILES)execFileSync(process.execPath,['--check',
     path.join(ROOT,'games/korean-farm',p)],{stdio:'pipe'});
+});
+test('four seasonal festivals activate a five-person crowd and unique market colors',()=>{
+  assert.equal(FESTIVAL_GUESTS.length,5);
+  assert.deepEqual(Object.keys(FESTIVAL_THEMES),['봄','여름','가을','겨울']);
+  const unique=new Set(Object.values(FESTIVAL_THEMES).map(t=>t.colors.join('-')));
+  assert.equal(unique.size,4,'each season should look different');
+  for(const season of Object.keys(FESTIVAL_THEMES)){
+    const upcoming=festivalSceneState({season,open:false});
+    const active=festivalSceneState({season,open:true,completed:false});
+    const finished=festivalSceneState({season,open:true,completed:true});
+    assert.equal(upcoming.visitors,0);
+    assert.equal(active.visitors,5);
+    assert.equal(active.completed,false);
+    assert.equal(finished.completed,true);
+  }
+  const placements=new Set();
+  for(const guest of FESTIVAL_GUESTS){
+    assert.ok(guest.x>=-6&&guest.x<=4&&guest.z>=15&&guest.z<=20,guest.name);
+    assert.ok(Math.hypot(guest.x+1.1,guest.z-14.3)>2.3,guest.name+' blocks coordinator');
+    assert.equal(intersectsVillageCollision(guest),false,guest.name+' overlaps a solid building');
+    assert.ok(!placements.has(guest.x+':'+guest.z),guest.name+' duplicated');
+    placements.add(guest.x+':'+guest.z);
+  }
+  assert.match(peopleFile,/solnaeri-festival-visitors/);
+  assert.match(peopleFile,/solnaeri-festival-harvest/);
+  assert.match(peopleFile,/solnaeri-festival-cheers/);
+  assert.match(peopleFile,/confettiGeometry\.dispose\(\)/);
+  assert.match(gameFile,/villagePeople\?\.celebrate\(\)/);
+  execFileSync(process.execPath,['--check',path.join(ROOT,'games/korean-farm/rendering/village-people.js')]);
 });

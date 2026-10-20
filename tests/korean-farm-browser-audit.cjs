@@ -58,6 +58,10 @@ const hook=[
 "   actor:farmerAnimator.root.children.length,assets:[...assetReport].map(([url,a])=>({url,status:a.status,colors:a.colors,repainted:a.repainted||0})),",
 "   crops:[...plotMeshes].map(([id,r])=>({id,count:r.cropLayer.children.length,spots:r.planting?.targets?.length||0})),",
 "   village:villageScene?.stats||null,people:villagePeople?.stats||null,",
+"   festival:{square:scene.getObjectByName('solnaeri-festival-square')?.visible,",
+"     guests:scene.getObjectByName('solnaeri-festival-visitors')?.visible,",
+"     thanks:scene.getObjectByName('solnaeri-festival-thanks')?.visible,",
+"     cheers:scene.getObjectByName('solnaeri-festival-cheers')?.visible},",
 "   handcart:{visible:scene.getObjectByName('farm-working-handcart')?.visible,",
 "      following:scene.getObjectByName('farm-working-handcart')?.parent===farmer},",
 "   sceneryCount:villageScene?.root?.children?.length||0})",
@@ -157,6 +161,9 @@ async function main(){
    visuals.village?.areas===7&&visuals.village.meshes>180&&visuals.village.instanced>=1,
    visuals.village);
  check('Three visible, individually modeled Korean village residents',visuals.people?.people===3,visuals.people);
+ check('Festival crowd is quiet before opening and five distinct guests are ready',
+   visuals.people?.visitors===5&&visuals.people?.activeVisitors===0&&visuals.festival?.square===false,
+   {people:visuals.people,festival:visuals.festival});
  await click('#forecastBtn');
  check('Forecast is accessible before sleeping and contains actionable guidance',
    (await evaluate('document.querySelector("#modalTitle").textContent'))==='솔내리 날씨와 마을 소식'&&
@@ -644,6 +651,11 @@ async function main(){
  await evaluate('window.__farmQA.festivalSetup()');
  check('Festival opening shows a visible timed HUD notice',
    (await evaluate('!document.querySelector("#festivalNotice").classList.contains("hidden")')));
+ const openVisuals=await evaluate('window.__farmQA.visuals()');
+ check('Village festival activates five animated visitors and seasonal decorations',
+   openVisuals.people?.activeVisitors===5&&openVisuals.people?.season==='봄'&&
+   openVisuals.festival?.square===true&&openVisuals.festival?.thanks===false,
+   {people:openVisuals.people,festival:openVisuals.festival});
  await evaluate('window.__farmQA.teleport(18,-9.5)');
  await click('#barnBtn');
  await waitFor('document.querySelector("#modalTitle").textContent.includes("창고")',9000);
@@ -666,10 +678,19 @@ async function main(){
    (await evaluate('document.querySelector(".festival-order button").disabled'))===true&&
    (await evaluate('document.querySelector("#festivalNotice").classList.contains("hidden")')));
  await click('#modalClose');
+ await sleep(320);
+ const cheered=await evaluate('window.__farmQA.visuals()');
+ check('Successful in-person delivery reveals gratitude display and temporary celebration',
+   cheered.people?.completed===true&&cheered.festival?.thanks===true&&cheered.festival?.cheers===true,
+   {people:cheered.people,festival:cheered.festival});
+ await screenshot('15b-festival-thanks');
  await send('Page.reload',{ignoreCache:true});
  await waitFor('Boolean(window.__farmQA?.ready())',35000);
  check('Festival completion survives browser reload',
    (await evaluate('window.__farmQA.state().stats.festivals===1 && window.__farmQA.state().festival.completedKey==="1:봄"')));
+ check('Celebration reward display persists without replaying one-time confetti',
+   (await evaluate('window.__farmQA.visuals().festival.thanks'))===true&&
+   (await evaluate('window.__farmQA.visuals().festival.cheers'))===false);
  report.endurance={daysElapsed:elapsedDays,startingMoney:4200,
    sales:persisted.stats.sales,harvests:persisted.stats.harvests,
    firstBatch:5,fullSeedlings:25,screenshots:6};

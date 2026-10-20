@@ -1,7 +1,8 @@
-// Two approachable rural characters, rendered from low-poly geometry rather
-// than unlicensed models. They are decorative until the player clicks their
-// nearby interaction hit box; there is no invisible wandering collision.
+// Three approachable residents and a festival crowd made from low-poly
+// geometry. Only the three residents have interaction markers; festive guests
+// are decorative, wander within a small plaza, and have no hidden colliders.
 import * as THREE from 'three';
+import {FESTIVAL_GUESTS,FESTIVAL_THEMES,festivalSceneState} from './festival-ambience.mjs';
 
 function person(parent,name,x,z,{shirt,skirt,skin,hat,apron=false}){
   const root=new THREE.Group();root.name=name;root.position.set(x,0,z);parent.add(root);
@@ -67,14 +68,97 @@ export function createVillagePeople(scene){
   for(let i=0;i<7;i++){
     const flag=plank(.24,.26,.05,-.9+i*.3,2.75,.52,i%2?2:3);flag.rotation.z=i%2?.16:-.16;flags.push(flag);
   }
+  // A small decorated square: seasonal lanterns, pennants, produce and local
+  // families. These use shared materials and never request extra game assets.
+  const festivalSquare=new THREE.Group();festivalSquare.name='solnaeri-festival-square';root.add(festivalSquare);
+  const seasonMats=[mat(0xeea9b5),mat(0xa4c995),mat(0xf5d28a),mat(0xe88742),mat(0x5f9c55)];
+  const make=(geometry,index,x,y,z,parent=festivalSquare)=>{
+    const mesh=new THREE.Mesh(geometry,seasonMats[index]);mesh.position.set(x,y,z);
+    mesh.castShadow=true;parent.add(mesh);return mesh;
+  };
+  const pennants=[];
+  for(let i=0;i<13;i++){
+    const x=-5.3+i*.72;
+    const flag=make(new THREE.ConeGeometry(.22,.44,3),i%3,x,2.85+Math.sin(i*.9)*.11,19);
+    flag.rotation.z=Math.PI;flag.rotation.y=Math.PI/6;pennants.push(flag);
+  }
+  const lanterns=[];
+  for(const [x,z] of [[-5.5,15],[-5.5,19.2],[3.6,15],[3.6,19.2]]){
+    const post=make(new THREE.CylinderGeometry(.055,.07,2.95,6),4,x,1.47,z);
+    post.castShadow=false;
+    const globe=make(new THREE.SphereGeometry(.28,9,6),lanterns.length%3,x,2.93,z);
+    globe.castShadow=false;lanterns.push(globe);
+  }
+  // The harvest display physically changes with the season, rather than only
+  // swapping HUD text. Repainted produce has leaf/ear accents on each item.
+  const produceDisplay=new THREE.Group();produceDisplay.name='solnaeri-festival-harvest';
+  produceDisplay.position.set(-1.1,0,16.55);festivalSquare.add(produceDisplay);
+  const produceItems=[];
+  for(let i=0;i<7;i++){
+    const x=-.85+(i%4)*.55,z=.08+Math.floor(i/4)*.3;
+    const produce=make(new THREE.SphereGeometry(.13,7,5),3,x,.91,z,produceDisplay);
+    const leaf=make(new THREE.ConeGeometry(.10,.20,5),4,x,1.07,z,produceDisplay);
+    produceItems.push({produce,leaf});
+  }
+  const guestGroup=new THREE.Group();guestGroup.name='solnaeri-festival-visitors';festivalSquare.add(guestGroup);
+  const guests=FESTIVAL_GUESTS.map((guest,i)=>{
+    const actor=person(guestGroup,guest.name,guest.x,guest.z,{shirt:guest.shirt,skirt:guest.skirt,
+      skin:i%2?0xe2b18a:0xc89472,hat:i%2?0xba9a73:0xc9b37b});
+    actor.root.scale.setScalar(guest.scale);
+    // Woven market basket carried by one visitor, using a third material.
+    if(guest.role==='browse'){
+      const basketMat=new THREE.MeshStandardMaterial({color:0xa4794c,roughness:1});
+      const basket=new THREE.Mesh(new THREE.CylinderGeometry(.22,.17,.25,8),basketMat);
+      basket.position.set(.39,.77,-.08);basket.castShadow=true;actor.root.add(basket);
+      actor.mats.push(basketMat);
+    }
+    return {...actor,...guest,phase:i*1.31};
+  });
+  const thankYou=new THREE.Group();thankYou.name='solnaeri-festival-thanks';
+  festivalSquare.add(thankYou);
+  for(const x of [-.78,.78]){
+    const rosette=make(new THREE.SphereGeometry(.24,8,6),2,-1.1+x,2.5,17.08,thankYou);
+    rosette.castShadow=false;
+    make(new THREE.BoxGeometry(.075,.46,.04),0,-1.1+x,2.19,17.08,thankYou);
+  }
+  const celebrationCount=56;
+  const positions=new Float32Array(celebrationCount*3),colors=new Float32Array(celebrationCount*3);
+  const confettiGeometry=new THREE.BufferGeometry();
+  confettiGeometry.setAttribute('position',new THREE.BufferAttribute(positions,3).setUsage(THREE.DynamicDrawUsage));
+  confettiGeometry.setAttribute('color',new THREE.BufferAttribute(colors,3));
+  const confettiMaterial=new THREE.PointsMaterial({size:.16,vertexColors:true,transparent:true,opacity:.9,depthWrite:false});
+  const confetti=new THREE.Points(confettiGeometry,confettiMaterial);confetti.name='solnaeri-festival-cheers';
+  confetti.frustumCulled=false;confetti.visible=false;festivalSquare.add(confetti);
+  let celebrationStart=null,celebrationPending=false;
+  const stats={people:3,visitors:FESTIVAL_GUESTS.length,activeVisitors:0,season:'봄',festivalOpen:false,completed:false};
   let currentFestivalLabel='';
   const setFestival=event=>{
     if(!event)return;
-    const text=event.open?'행사 · '+event.title:event.startsIn?'소담 · '+event.startsIn+'일 후':'다음 장날 준비';
-    if(text===currentFestivalLabel)return;
-    currentFestivalLabel=text;booth.userData.open=event.open;
-    festivalLabel.setText(text);
-    for(const flag of flags)flag.visible=event.open;
+    const display=festivalSceneState(event),theme=FESTIVAL_THEMES[display.season];
+    const text=display.completed?'소담 · 함께해서 고마워요!':
+      display.open?'행사 · '+event.title:event.startsIn?'소담 · '+event.startsIn+'일 후':'다음 장날 준비';
+    if(text!==currentFestivalLabel){currentFestivalLabel=text;festivalLabel.setText(text)}
+    booth.userData.open=display.open;
+    festivalSquare.visible=display.open;
+    thankYou.visible=display.completed;
+    stats.activeVisitors=display.visitors;
+    stats.festivalOpen=display.open;
+    stats.season=display.season;
+    stats.completed=display.completed;
+    for(const flag of flags)flag.visible=display.open;
+    for(let i=0;i<3;i++)seasonMats[i].color.setHex(theme.colors[i]);
+    seasonMats[3].color.setHex(theme.produce);seasonMats[4].color.setHex(theme.leaf);
+    // Corn sits in husks, rice shows golden ears; spring/winter display roots.
+    for(const item of produceItems){
+      const grain=display.season==='가을',corn=display.season==='여름';
+      item.produce.scale.set(grain ? .70 : corn ? .8 : 1,grain ? 1.35 : corn ? 1.55 : 1,1);
+      item.leaf.scale.set(grain ? .62 : 1,grain ? 1.25 : corn ? 1.6 : 1,1);
+    }
+    if(!display.open){confetti.visible=false;celebrationPending=false;celebrationStart=null}
+  };
+  const celebrate=()=>{
+    if(!stats.festivalOpen)return;
+    celebrationPending=true;celebrationStart=null;
   };
   // Shopkeeper remains behind the stand; neighbor walks a short, predictable
   // stretch of open lane and comes back to the same interaction marker.
@@ -95,14 +179,49 @@ export function createVillagePeople(scene){
     }else neighbor.rightArm.rotation.z=-.1;
     const nearHost=Math.hypot(farmerPosition.x+1.1,farmerPosition.z-15.4)<4;
     festivalLabel.sprite.visible=Math.hypot(farmerPosition.x+1.1,farmerPosition.z-15.4)<9;
-    festivalHost.rightArm.rotation.z=nearHost?-.8+Math.sin(elapsed*3)*.18:-.16;
+    festivalHost.rightArm.rotation.z=nearHost||stats.festivalOpen?-.8+Math.sin(elapsed*3)*.18:-.16;
+    if(stats.festivalOpen){
+      for(const guest of guests){
+        const t=elapsed*(guest.role==='skip'?2.6:1.3)+guest.phase;
+        guest.root.position.x=guest.x+Math.sin(t)*.20;
+        guest.root.position.z=guest.z+Math.cos(t*.71)*.12;
+        guest.root.rotation.y=Math.sin(t*.46)*.35+(guest.role==='browse'?-1.0:.1);
+        const clap=guest.role==='clap';
+        guest.leftArm.rotation.z=clap?-.85+Math.sin(t*4)*.32:-.16+Math.sin(t)*.10;
+        guest.rightArm.rotation.z=clap ? .85-Math.sin(t*4)*.32 :
+          guest.role==='wave' ? -1+Math.sin(t*2.3)*.24 : .15;
+        guest.leftLeg.rotation.x=guest.role==='skip'?Math.sin(t*2)*.38:Math.sin(t)*.08;
+        guest.rightLeg.rotation.x=guest.role==='skip'?-Math.sin(t*2)*.38:-Math.sin(t)*.08;
+        guest.root.position.y=guest.role==='skip'?Math.abs(Math.sin(t*1.7))*.085:0;
+      }
+      for(let i=0;i<pennants.length;i++)pennants[i].rotation.z=Math.PI+Math.sin(elapsed*2+i*.7)*.11;
+      for(let i=0;i<lanterns.length;i++)lanterns[i].position.y=2.93+Math.sin(elapsed*1.2+i)*.065;
+      if(celebrationPending){celebrationPending=false;celebrationStart=elapsed}
+      const age=celebrationStart===null?Infinity:elapsed-celebrationStart;
+      confetti.visible=age<6;
+      if(confetti.visible){
+        for(let i=0;i<celebrationCount;i++){
+          const wave=(i*0.61803398875)%1,angle=i*2.3999632297;
+          const radius=.5+((i*17)%31)/31*2.8;
+          positions[3*i]=-1.1+Math.cos(angle)*radius+Math.sin(age+i)*.10;
+          positions[3*i+1]=.6+((wave+age*(.13+.03*(i%3)))%1)*2.9;
+          positions[3*i+2]=16.65+Math.sin(angle)*radius;
+          const color=seasonMats[i%3].color;
+          colors[3*i]=color.r;colors[3*i+1]=color.g;colors[3*i+2]=color.b;
+        }
+        confettiGeometry.attributes.position.needsUpdate=true;
+        confettiGeometry.attributes.color.needsUpdate=true;
+      }
+    }
     // No per-frame geometry allocation, physics collision, or texture downloads.
   };
-  return {root,stats:{people:3},update:tick,setFestival,dispose(){
+  return {root,stats,update:tick,setFestival,celebrate,dispose(){
     root.parent?.remove(root);
     root.traverse(obj=>{if(obj.isMesh)obj.geometry?.dispose?.()});
-    for(const p of [merchant,neighbor,festivalHost])for(const material of p.mats)material.dispose();
+    for(const p of [merchant,neighbor,festivalHost,...guests])for(const material of p.mats)material.dispose();
     for(const material of boothMats)material.dispose();
+    for(const material of seasonMats)material.dispose();
+    confettiGeometry.dispose();confettiMaterial.dispose();
     for(const item of [merchantLabel,neighborLabel,festivalLabel]){item.texture.dispose();item.sprite.material.dispose()}
     root.clear();
   }};

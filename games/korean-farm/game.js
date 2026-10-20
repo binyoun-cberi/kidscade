@@ -1080,7 +1080,11 @@ function openSeasonFestival(){
   deliver.disabled=!event.open||event.completed||(state.cargo[event.produce]||0)<event.count;
   deliver.onclick=()=>{
     const result=fulfillSeasonalFestival(state);toast(result.message);
-    if(result.ok){refreshCargoVisual();refreshHud();refreshObjective();save(true)}
+    if(result.ok){
+      villagePeople?.setFestival(seasonalFestival(state));
+      villagePeople?.celebrate();
+      refreshCargoVisual();refreshHud();refreshObjective();save(true);
+    }
     openSeasonFestival();
   };
   order.append(amount,available,deliver);
