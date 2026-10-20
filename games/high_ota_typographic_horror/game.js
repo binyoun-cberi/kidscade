@@ -840,11 +840,20 @@ function drawMazeMap(){
     ctx.arc((at.col+.5)*size,(at.row+.5)*size,Math.max(3,size*.34),0,Math.PI*2);ctx.fill();
   }
 }
+function positionMazeHud(){
+  const panel=el('mazeHUD');
+  if(panel.hidden)return;
+  const mission=el('mission').getBoundingClientRect();
+  const controls=el('topControls').getBoundingClientRect();
+  const fallback=window.innerWidth<=650?116:126;
+  panel.style.top=Math.ceil(Math.max(fallback,mission.bottom+12,controls.bottom+12))+'px';
+}
 function syncMazeVisuals(){
   if(!mazeVisuals)return;
   mazeGroup.visible=state.stage==='maze';
   el('mazeHUD').hidden=state.stage!=='maze';
   el('mazeProgress').textContent='찢어진 색인 '+maze.solved.filter(Boolean).length+'/3';
+  positionMazeHud();
   mazeVisuals.stations.forEach((marker,i)=>marker.visible=!maze.solved[i]);
   mazeVisuals.exit.material=material(maze.solved.every(Boolean)?'나':'□',
     maze.solved.every(Boolean)?'#aaf1d7':'#ad7181');
@@ -1695,6 +1704,7 @@ function animate(now) {
 function resize() {
   const w=window.innerWidth,h=window.innerHeight;
   renderer.setSize(w,h,false);camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix();
+  positionMazeHud();
 }
 window.addEventListener('resize',resize);
 document.addEventListener('visibilitychange',()=>{lastFrame=performance.now();});
