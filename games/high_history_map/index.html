@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#101827">
 <title>통일전쟁</title>
+<link rel="stylesheet" href="./presentation.css?v=27">
 <style>
 :root{
   font-family:Pretendard,"Noto Sans KR","맑은 고딕",system-ui,sans-serif;
@@ -105,13 +106,20 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
           <g id="hexLayer"></g>
           <g id="borderLayer"></g>
           <g id="riverLayer"></g>
+          <g id="supplyLayer" aria-hidden="true"></g>
           <g id="pathLayer"></g>
           <g id="labelLayer"></g>
           <g id="cityLayer"></g>
           <g id="unitLayer"></g>
+          <g id="warEffects" aria-hidden="true"></g>
         </g>
       </svg>
       <canvas id="minimap" class="minimap" width="168" height="148" aria-label="전장 미니맵"></canvas>
+      <section id="warPlayback" class="war-playback hidden" aria-label="전황 재생">
+        <div class="war-playback-top"><b id="warEventTitle"></b><small id="warEventCount"></small></div>
+        <p id="warEventDetail" role="status" aria-live="polite"></p>
+        <button id="warSkip" type="button">건너뛰기 · Esc</button>
+      </section>
       <div id="movePreview" class="movePreview hidden"></div>
       <div id="toast" class="toast"></div>
       <div id="tutorial" class="tutorial hidden"><b id="tutorialTitle"></b><p id="tutorialText"></p><button id="tutorialNext" class="tiny" type="button">다음</button></div>
@@ -127,6 +135,7 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
     <div class="statusPill">선택 <b id="selectionText">없음</b></div>
     <button id="buildBtn" class="navBtn" type="button">🔨 시설</button>
     <button id="saveBtn" class="navBtn" type="button">💾 저장</button>
+    <button id="warSpeed" class="navBtn" type="button">연출 · 보통</button>
     <button id="focusNationBtn" class="navBtn" type="button">내 거점</button>
     <button id="resetViewBtn" class="navBtn" type="button">🧭 지도 맞춤</button>
   </footer>
@@ -163,6 +172,7 @@ button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed
 <script src="./ai/strategy.js?v=26"></script>
 <script src="./data/events.js?v=25"></script>
 <script src="./core/invariants.js?v=25"></script>
+<script src="./presentation.js?v=27"></script>
 <script>
 (function(){
 "use strict";
@@ -178,6 +188,7 @@ var SQRT3=Math.sqrt(3);
 var selectedNation="baekje";
 var state=null;
 var actionBus=null;
+var presentationCapture=null,presentationBusy=false,presentationPendingResult=null;
 var selectedTile=null;
 var selectedUnit=null;
 var reachable={};
@@ -527,7 +538,7 @@ function replenishGarrisons(owner){
 function initialState(player){
   var tiles=makeTiles();
   return {
-    version:12,player:player,turn:1,finished:false,engineRevision:0,nextUnitId:1,
+    version:12,warChronicle:[],player:player,turn:1,finished:false,engineRevision:0,nextUnitId:1,
     resources:{
       goguryeo:{food:36,money:34,manpower:28,authority:52},
       baekje:{food:38,money:36,manpower:26,authority:52},
@@ -579,12 +590,14 @@ function log(msg){
   if(state.feed.length>30)state.feed.shift();
 }
 function toast(msg){
+  if(presentationCapture){presentationCapture.toast=msg;return;}
   var e=document.getElementById("toast");e.textContent=msg;e.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(function(){e.classList.remove("show");},1600);
 }
 function migrateState(x){
   if(!x||typeof x!=="object")return null;
   if(x.version===11)x.version=12;
   if(x.version!==12)return null;
+  x.warChronicle=x.warChronicle||[];
   x.engineRevision=x.engineRevision||0;x.nextUnitId=x.nextUnitId||1;
   x.wars=x.wars||{};x.proxyWars=x.proxyWars||{sui:false,wa:false};x.aiStrategies=x.aiStrategies||{};
   x.cityProjects=x.cityProjects||{};x.cityUpgrades=x.cityUpgrades||{};
@@ -769,7 +782,71 @@ function ensureActionBus(){
   });
   return actionBus;
 }
-function applyAction(action,meta){return ensureActionBus().apply(action,meta||{});}
+function applyAction(action,meta){
+  if(presentationBusy&&!presentationCapture)return{ok:false,reason:"전황을 재생하고 있습니다. 건너뛰기 후 명령해 주세요."};
+  var unit=action.unitId&&unitById(action.unitId),before=unit?JSON.parse(JSON.stringify(unit)):null,t=action.target&&state.tiles[action.target];
+  var oldOwner=t&&t.owner,defender=t&&unit?enemyUnitAt(t.q,t.r,unit.owner):null,defBefore=t?garrisonAtTile(t)+(defender?defender.troops:0):0,route=null,supporters=[];
+  if(presentationCapture&&before&&t){
+    if(action.type==="move"){var reach=computeReachDetailed(unit);route=window.UnificationWarPathfinding.reconstruct(reach.previous,key(unit.q,unit.r),action.target).map(function(k){var p=state.tiles[k];return hexCenter(p.q,p.r);});}
+    if(action.type==="attack")state.units.forEach(function(a){if(a.owner===unit.owner&&a.id!==unit.id&&a.troops>=50&&hexDistance(a.q,a.r,t.q,t.r)===1&&((a.type==="archer"&&unit.type!=="archer")||(a.type==="cavalry"&&unit.type!=="cavalry"&&t.terrain==="plain")))supporters.push(hexCenter(a.q,a.r));});
+  }
+  var result=ensureActionBus().apply(action,meta||{});
+  if(result.ok){
+    var after=result.unitId&&unitById(result.unitId)||before&&unitById(before.id),dest=t||result.target&&state.tiles[result.target]||after&&tile(after.q,after.r);
+    var afterDef=dest?(enemyUnitAt(dest.q,dest.r,action.actor)||{}).troops||0:0;if(dest&&dest.owner!==action.actor)afterDef+=garrisonAtTile(dest);
+    var event={kind:action.type,owner:action.actor,unitId:before&&before.id,unitType:before&&before.type||action.unitType,from:before?hexCenter(before.q,before.r):dest?hexCenter(dest.q,dest.r):null,to:dest?hexCenter(dest.q,dest.r):null,target:dest?key(dest.q,dest.r):null,route:route,supporters:supporters,ranged:result.ranged,won:result.won,ownLoss:before?Math.max(0,before.troops-(after?after.troops:0)):0,enemyLoss:Math.max(0,defBefore-afterDef),city:t&&t.city&&oldOwner!==action.actor&&t.owner===action.actor?t.city:null,place:dest?(dest.city?CITIES[dest.city].name:dest.region):"",capital:!!(dest&&dest.city&&CITIES[dest.city].capital),faction:FACTIONS[action.actor]?FACTIONS[action.actor].name:"",color:FACTIONS[action.actor]?FACTIONS[action.actor].color:"#ffffff"};
+    if(["move","attack","retreat","recruit","build","split"].indexOf(action.type)>=0){recordWarChronicle(event);capturePresentationEvent(event);}
+  }
+  return result;
+}
+function recordWarChronicle(event){
+  if(!event.city&&event.kind!=="attack")return;
+  state.warChronicle=state.warChronicle||[];
+  state.warChronicle.push({turn:state.turn,date:dateText(),owner:event.owner,kind:event.kind,city:event.city,place:event.place,won:!!event.won,ownLoss:event.ownLoss,enemyLoss:event.enemyLoss});
+  if(state.warChronicle.length>120)state.warChronicle.shift();
+}
+function capturePresentationEvent(event){
+  if(!presentationCapture)return;
+  var base=presentationCapture.base;
+  event.relevant=event.owner===base.player||!!event.city&&base.tiles[event.target].owner===base.player||base.units.some(function(u){if(u.owner!==base.player)return false;var t=event.target&&base.tiles[event.target];return t&&hexDistance(u.q,u.r,t.q,t.r)<=5;});
+  if(event.relevant&&event.owner!==base.player&&event.kind==="attack")log(event.faction+" 군 · "+event.place+(event.city?" 점령":event.ranged?" 사격":" 교전")+" · 손실 "+event.ownLoss+"명 / 상대 손실 "+event.enemyLoss+"명");
+  event.priority=event.city?90:event.kind==="attack"?70:event.owner===base.player?50:10;
+  event.patch={units:state.units.map(function(u){return Object.assign({},u);}),target:event.target,tile:event.target?Object.assign({},state.tiles[event.target]):null,garrisons:Object.assign({},state.cityGarrisons),sieges:JSON.parse(JSON.stringify(state.sieges||{}))};
+  presentationCapture.events.push(event);
+}
+function applyPresentationPatch(view,event){
+  if(!event.patch)return;
+  view.units=event.patch.units;view.cityGarrisons=event.patch.garrisons;view.sieges=event.patch.sieges;
+  if(event.patch.target)view.tiles[event.patch.target]=event.patch.tile;
+}
+function renderPresentationMap(view){
+  var actual=state;state=view;
+  try{renderMap();document.getElementById("pathLayer").textContent='';}finally{state=actual;}
+}
+function focusPresentationEvent(event){
+  if(!event.to)return;
+  var svg=document.getElementById("mapSvg"),vb=svg.viewBox.baseVal,p=event.to;
+  // Keep nearby activity still; only pan when the action is outside the central map area.
+  var x=p[0]*cam.z+cam.x,y=p[1]*cam.z+cam.y;
+  if(x<vb.width*.15||x>vb.width*.85||y<vb.height*.15||y>vb.height*.85){cam.x=vb.width/2-p[0]*cam.z;cam.y=vb.height*.42-p[1]*cam.z;applyCamera();}
+}
+function presentAction(work,turn){
+  var effects=window.UnificationWarPresentation;
+  if(!effects){work();return;}
+  if(presentationBusy)return;
+  presentationBusy=true;presentationPendingResult=null;
+  var capture={base:JSON.parse(JSON.stringify(state)),events:[]},oldCam=Object.assign({},cam);
+  presentationCapture=capture;document.getElementById("toast").classList.remove("show");document.getElementById("app").classList.add("war-presenting");
+  try{work();}catch(err){presentationCapture=null;presentationBusy=false;document.getElementById("app").classList.remove("war-presenting");renderAll();throw err;}
+  presentationCapture=null;
+  if(turn){var clashes=capture.events.filter(function(e){return e.relevant&&e.kind==="attack";}).length,changes=capture.events.filter(function(e){return e.relevant&&e.city;}).length;capture.events.push({kind:"turn",place:dateText(),faction:state.finished?"전쟁 기록을 정리합니다.":"주변 교전 "+clashes+"회 · 거점 변화 "+changes+"곳 · 명령할 차례입니다.",relevant:true,priority:100});}
+  var view=capture.base;renderPresentationMap(view);
+  effects.play(capture.events,{turn:!!turn,focus:focusPresentationEvent,after:function(event){applyPresentationPatch(view,event);renderPresentationMap(view);}}).catch(function(err){console.error("[통일전쟁 연출]",err);}).finally(function(){
+    presentationBusy=false;cam=oldCam;document.getElementById("app").classList.remove("war-presenting");renderAll();
+    if(!capture.events.length&&capture.toast)toast(capture.toast);
+    if(presentationPendingResult){var reason=presentationPendingResult;presentationPendingResult=null;openResult(reason);}else if(turn&&!state.finished)maybeOpenHistoryEvent();
+  });
+}
 function svgEl(tag,attrs){
   var e=document.createElementNS("http://www.w3.org/2000/svg",tag);
   Object.keys(attrs||{}).forEach(function(k){e.setAttribute(k,attrs[k]);});
@@ -877,7 +954,7 @@ function drawFactionBorders(layer){
     });
   });
 }
-function renderAll(){renderHeader();renderMap();renderLeft();renderInfo();renderMinimap();applyCamera();}
+function renderAll(){if(presentationCapture||presentationBusy)return;renderHeader();renderMap();renderLeft();renderInfo();renderMinimap();applyCamera();}
 function renderHeader(){
   var r=resource(state.player),delta=incomeForecast(state.player);
   ["food","money","manpower","authority"].forEach(function(k){var label=document.getElementById(k+"Delta");if(label){label.textContent=(delta[k]>=0?"+":"")+delta[k]+"/턴";label.className="resourceDelta"+(delta[k]<0?" negative":"");label.title=k==="food"?"현재 생산·유지비 수지 (전투·자동 증원 제외) · 군량 유지비 "+delta.upkeep:"현재 생산·유지비 수지 (전투·자동 증원 제외)";}});
@@ -944,6 +1021,15 @@ function renderMap(){
     var xy=hexCenter(c.q,c.r),g=svgEl("g",{class:"cityGroup"}),fill=t.owner&&FACTIONS[t.owner]?FACTIONS[t.owner].color:"#75889a";
     g.appendChild(svgEl("circle",{cx:xy[0],cy:xy[1]-4,r:c.capital?10:8,fill:fill,class:"cityCore"}));
     var mark=svgEl("text",{x:xy[0],y:xy[1],class:"cityName"});mark.textContent=c.capital?"★":"●";g.appendChild(mark);
+    var flag=svgEl("path",{d:"M"+(xy[0]+10)+" "+(xy[1]-2)+" v-20 l12 4 -12 5",fill:fill,class:"war-city-flag"});g.appendChild(flag);
+    var siege=siegeForCity(id);
+    if(siege){
+      var pressure=clamp(siege.pressure,0,100),ring=svgEl("circle",{cx:xy[0],cy:xy[1]-4,r:16,class:"war-siege-ring"});
+      ring.setAttribute("stroke-dasharray",(pressure/100*100.5)+" 100.5");g.appendChild(ring);
+      if(pressure>=45)g.appendChild(svgEl("path",{d:"M"+(xy[0]-5)+" "+(xy[1]-12)+" l3 6 -4 3 5 7",class:"war-wall-damage"}));
+    }
+    var project=state.cityProjects&&state.cityProjects[id];
+    if(project){g.appendChild(svgEl("path",{d:"M"+(xy[0]-15)+" "+(xy[1]+4)+" v-19 h11 v19 m-11 -7 h11",stroke:"#f4cf87",fill:"none","stroke-width":1.2}));}
     var lo=c.label||[0,20],nameX=xy[0]+lo[0],nameY=xy[1]+lo[1];
     var name=svgEl("text",{x:nameX,y:nameY,class:"cityName"});name.textContent=c.name;g.appendChild(name);
     var sub=svgEl("text",{x:nameX,y:nameY+10,class:"citySub"});sub.textContent=c.capital?"수도 · Lv."+c.level:"Lv."+c.level;g.appendChild(sub);
@@ -956,12 +1042,23 @@ function renderMap(){
     g.setAttribute("data-unit-id",u.id);
     g.setAttribute("aria-label",f.name+" "+unitName(u.type)+" "+fmt(u.troops)+"명");
     g.appendChild(svgEl("circle",{cx:0,cy:0,r:8.5,fill:f.color,class:"unitRing"}));
-    var ic=svgEl("text",{x:0,y:7,class:"unitIcon"});ic.textContent=u.type==="cavalry"?"🐎":u.type==="archer"?"🏹":"🛡️";g.appendChild(ic);
+    if(window.UnificationWarPresentation){g.querySelector("circle").setAttribute("fill","transparent");window.UnificationWarPresentation.pawn(g,f.color,u.type);}
+    else{var ic=svgEl("text",{x:0,y:7,class:"unitIcon"});ic.textContent=u.type==="cavalry"?"🐎":u.type==="archer"?"🏹":"🛡️";g.appendChild(ic);}
     var ct=svgEl("text",{x:0,y:17,class:"unitCount"});ct.textContent=fmt(u.troops);g.appendChild(ct);
     g.addEventListener("click",function(e){if(performance.now()<suppressClickUntil)return;e.stopPropagation();var k=key(u.q,u.r),selected=selectedUnit&&unitById(selectedUnit);if(selected&&selected.owner===state.player&&selected.id!==u.id&&reachable[k])onTileClick(k);else selectUnit(u.id);});
     unitLayer.appendChild(g);
   });
+  drawSupplyStatus();
   renderPathPreview();
+}
+function drawSupplyStatus(){
+  var layer=document.getElementById("supplyLayer");if(!layer)return;layer.textContent="";if(presentationBusy)return;
+  state.units.forEach(function(u){if(u.owner!==state.player)return;var info=supplyInfoForUnit(u);if(info.key!=="isolated")return;var p=hexCenter(u.q,u.r);layer.appendChild(svgEl("circle",{cx:p[0],cy:p[1],r:14,class:"war-isolated"}));var mark=svgEl("text",{x:p[0]+12,y:p[1]-9,fill:"#ffaaa0","font-size":12,"font-weight":1000});mark.textContent="!";layer.appendChild(mark);});
+  var unit=selectedUnit&&unitById(selectedUnit);if(!unit||unit.owner!==state.player)return;
+  var costs=supplyMapFor(unit.owner),k=key(unit.q,unit.r);if(costs[k]==null)return;
+  var points=[hexCenter(unit.q,unit.r)],current=tile(unit.q,unit.r),guard=0;
+  while(costs[key(current.q,current.r)]>0&&guard++<80){var next=neighbors(current.q,current.r).filter(function(t){return t.owner===unit.owner&&costs[key(t.q,t.r)]!=null&&costs[key(t.q,t.r)]<costs[key(current.q,current.r)];}).sort(function(a,b){return costs[key(a.q,a.r)]-costs[key(b.q,b.r)];})[0];if(!next)break;points.push(hexCenter(next.q,next.r));current=next;}
+  if(points.length>1)layer.appendChild(svgEl("path",{d:points.map(function(p,i){return (i?"L":"M")+p[0]+" "+p[1];}).join(" "),class:"war-supply-path"}));
 }
 function renderPathPreview(){
   var layer=document.getElementById("pathLayer"),box=document.getElementById("movePreview");
@@ -1139,12 +1236,14 @@ function computeReachDetailed(u){
 }
 function computeReach(u){return computeReachDetailed(u).tiles;}
 function selectUnit(id){
+  if(presentationBusy)return;
   var u=unitById(id);if(!u)return;
   selectedUnit=id;selectedTile=key(u.q,u.r);hoveredTile=null;
   if(u.owner===state.player&&!u.moved){reachDetail=computeReachDetailed(u);reachable=reachDetail.tiles;}else{reachDetail=null;reachable={};}
   renderAll();
 }
 function onTileClick(k){
+  if(presentationBusy)return;
   var t=state.tiles[k];
   if(selectedUnit&&reachable[k]!=null){
     var u=unitById(selectedUnit);if(!u||u.moved)return;
@@ -1173,7 +1272,8 @@ function executeMoveCore(u,t,silent){
   }
   return u;
 }
-function moveUnit(u,t){
+function moveUnit(u,t){return presentAction(function(){moveUnitNow(u,t);},false);}
+function moveUnitNow(u,t){
   var target=key(t.q,t.r),result=applyAction({type:"move",actor:u.owner,unitId:u.id,target:target},{silent:false});
   if(!result.ok){toast(result.reason||"이동할 수 없습니다.");return;}
   selectedUnit=result.unitId;selectedTile=target;reachable={};
@@ -1376,7 +1476,8 @@ function openCombatPreview(attacker,dst){
   });
   document.getElementById("cancelCombat").addEventListener("click",closeModal);
 }
-function battle(attacker,dst){
+function battle(attacker,dst){return presentAction(function(){battleNow(attacker,dst);},false);}
+function battleNow(attacker,dst){
   var target=key(dst.q,dst.r),result=applyAction({type:"attack",actor:attacker.owner,unitId:attacker.id,target:target},{silent:false});
   if(!result.ok){toast(result.reason||"공격할 수 없습니다.");return;}
   selectedUnit=result.unitId;reachable={};selectedTile=target;
@@ -2010,6 +2111,7 @@ function openHistoryEvent(ev){
   });
 }
 function maybeOpenHistoryEvent(){
+  if(presentationBusy)return;
   var ev=nextHistoryEvent();if(ev)openHistoryEvent(ev);
 }
 function historyRecordText(){
@@ -2034,7 +2136,19 @@ function checkDefeat(){
   }
   return false;
 }
+function renderWarConclusion(){
+  var body=document.getElementById("modalBody"),map=document.getElementById("mapSvg").cloneNode(true);
+  map.removeAttribute("id");map.querySelectorAll("[id]").forEach(function(n){n.removeAttribute("id");});
+  var cameraGroup=map.querySelector("g");if(cameraGroup)cameraGroup.removeAttribute("transform");
+  var b=landBounds();map.setAttribute("viewBox",[b.minX-20,b.minY-20,b.maxX-b.minX+40,b.maxY-b.minY+40].join(" "));
+  map.setAttribute("class","war-result-map");map.setAttribute("aria-label","최종 영토 지도");map.style.pointerEvents="none";body.insertBefore(map,body.firstChild);
+  var stats=document.createElement("div");stats.className="war-result-stats";var record=state.battleStats[state.player]||{};
+  [[record.battles||0,"전투 참여"],[record.losses||0,"전투 손실"],[state.captured[state.player]||0,"적 도시 점령"]].forEach(function(item){var cell=document.createElement("div"),n=document.createElement("b"),label=document.createElement("small");n.textContent=fmt(item[0]);label.textContent=item[1];cell.append(n,label);stats.appendChild(cell);});body.insertBefore(stats,map.nextSibling);
+  var entries=(state.warChronicle||[]).filter(function(e){return e.owner===state.player;}).slice(-8);
+  if(entries.length){var list=document.createElement("ol");list.className="war-chronicle";entries.forEach(function(e){var item=document.createElement("li");item.textContent=e.date+" · "+e.place+(e.city?" 확보":e.won?" 전투 승리":" 교전")+" · 아군 손실 "+fmt(e.ownLoss)+"명";list.appendChild(item);});body.insertBefore(list,stats.nextSibling);}
+}
 function openResult(reason){
+  if(presentationBusy){presentationPendingResult=reason;return;}
   document.getElementById("modalEyebrow").textContent="캠페인 기록";
   var title=reason==="unification"?"삼국의 건국 수도를 모두 확보했습니다.":reason==="defeat"?"세력이 무너졌습니다.":"48턴의 역사가 끝났습니다.";
   document.getElementById("modalTitle").textContent=title;
@@ -2043,9 +2157,11 @@ function openResult(reason){
   var note=reason==="unification"?"국내성·위례성·금성을 모두 지배해 통일 조건을 달성했습니다.":reason==="defeat"?"다음에는 건국 수도와 후방 도시의 수비대를 함께 유지해 보세요.":"도시·영토·개발 시설·특산 자원·권위를 합산한 기록입니다.";
   var historyText=historyRecordText();
   document.getElementById("modalBody").innerHTML="<div class=\"countryCard\"><b>"+FACTIONS[state.player].name+"의 기록</b><p>"+note+"</p></div>"+(historyText?"<div class=\"countryCard\"><b>주요 역사 선택</b><p>"+historyText+"</p></div>":"")+"<button class=\"primary\" onclick=\"location.reload()\">처음 화면으로</button>";
+  renderWarConclusion();
   document.getElementById("modalOverlay").classList.remove("hidden");
 }
-function endTurn(){
+function endTurn(){if(!state||state.finished||presentationBusy)return;return presentAction(endTurnNow,true);}
+function endTurnNow(){
   if(!state||state.finished)return;
   selectedUnit=null;reachable={};
   ["goguryeo","baekje","silla","gaya","sui","wa"].forEach(function(o){if(o!==state.player)aiStep(o);});
@@ -2056,7 +2172,7 @@ function endTurn(){
   ["goguryeo","baekje","silla","gaya","sui","wa","tamna"].forEach(applyFieldReinforcement);
   advanceSieges();updateWarFatigue();
   state.units.forEach(function(u){u.moved=false;});
-  if(checkDefeat())return;
+  if(checkDefeat()){save(false);return;}
   if(ownsUnificationCapitals(state.player)){state.finished=true;renderAll();save(false);openResult("unification");return;}
   state.turn++;
   if(state.turn>MAX_TURNS){state.turn=MAX_TURNS;state.finished=true;renderAll();save(false);openResult("time");return;}
@@ -2231,9 +2347,10 @@ function bind(){
   document.getElementById("resetViewBtn").addEventListener("click",resetCamera);
   document.getElementById("closeModal").addEventListener("click",closeModal);
   document.getElementById("tutorialNext").addEventListener("click",function(){tutorialStep++;showTutorial();});
-  document.addEventListener("keydown",function(e){if(e.key==="Escape"){selectedUnit=null;reachable={};closeModal();renderAll();}if(e.key==="e"||e.key==="E")endTurn();});
+  document.addEventListener("keydown",function(e){if(presentationBusy){if(e.key==="Escape")window.UnificationWarPresentation.skip();return;}if(e.key==="Escape"){selectedUnit=null;reachable={};closeModal();renderAll();}if(e.key==="e"||e.key==="E")endTurn();});
   setupCamera();
   setupMinimap();
+  if(window.UnificationWarPresentation)window.UnificationWarPresentation.bind();
 }
 bind();initStart();
 })();
