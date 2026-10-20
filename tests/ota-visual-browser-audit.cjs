@@ -402,7 +402,10 @@ async function moveUntil(axis,target,stage,seconds=9,sprint=true) {
   assert.ok(/동쪽|서쪽|북쪽|남쪽/.test(await evalPage("document.getElementById('hintBody').textContent")),
     'second-level compass hint is available inside the maze');
   await screenshot('20-chapter4-moving.png','desktop');
-  await sleep(19100);
+  // Software-rendered Chrome can run far below real-time frame rate.
+  // Advance only the unscored audit hunter clock, then inspect a rendered frame.
+  assert.equal(await evalPage('window.OtaDebug.advanceMazeHunterForVisualAudit(18)'),true);
+  await sleep(1000);
   const mazeThreat=await snap();
   report.maze.threat=mazeThreat.maze.hunter;
   assert.ok(['warning','chase'].includes(mazeThreat.maze.hunter.phase),
