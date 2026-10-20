@@ -370,6 +370,14 @@ button:focus-visible{outline:3px solid #d18d34;outline-offset:3px}
 .day-report .day-weather{background:#edf5e9;padding:12px;border-radius:12px;font-size:14px;color:#355d43}
 .day-report ul{margin:2px 0 4px;padding-left:19px}
 .day-report button{background:#518760;color:#fff;border:0;padding:12px;border-radius:11px;font-weight:800}
+
+/* Rework 2.0: readable barn loading and two deliberate rest choices. */
+.rest-choices{display:grid;gap:10px}
+.rest-option{display:grid;gap:4px;text-align:left;border:1px solid #c7ddbf;background:#eff7ea;border-radius:12px;padding:14px;color:#315844}
+.rest-option strong{font-size:15px}.rest-option small{font-size:12px;color:#5b765f;line-height:1.55}
+.rest-option:hover{background:#dff0d8}
+.barn-link{width:100%;padding:12px;border:1px solid #c3d4bc;background:#e8f3e2;border-radius:11px;color:#3c684b;font-weight:750}
+@media(max-width:350px){#bottomBar button,#bottomBar .tool{min-width:49px;padding:3px 3px}#bottomBar b{font-size:8px}}
 @media(max-width:700px){
   .inspector{max-height:min(43dvh,350px);padding:10px}
   .field-details{margin-top:7px;padding-top:6px}
