@@ -4,8 +4,9 @@
 import * as THREE from 'three';
 import {FESTIVAL_GUESTS,FESTIVAL_THEMES,festivalSceneState} from './festival-ambience.mjs';
 import {villageRoutine} from './village-routines.mjs';
+import {PASSER_PATHS,moveNPC,createWaypointWalker,chorePose} from './npc-motion.mjs';
 
-function person(parent,name,x,z,{shirt,skirt,skin,hat,apron=false}){
+function person(parent,name,x,z,{shirt,skirt,skin,hat,apron=false,style='farmer'}){
   const root=new THREE.Group();root.name=name;root.position.set(x,0,z);parent.add(root);
   const material=(color)=>new THREE.MeshStandardMaterial({color,roughness:.96,flatShading:true});
   const mats=[material(shirt),material(skirt),material(skin),material(hat),material(0xf0e5c4),material(0x5d4939)];
@@ -16,6 +17,24 @@ function person(parent,name,x,z,{shirt,skirt,skin,hat,apron=false}){
   box(.49,.76,.31,0,0,1.12,0);
   if(apron)box(.42,.50,.04,4,0,1.0,-.19);
   const head=part(new THREE.SphereGeometry(.24,10,7),2,0,1.70,-.02);
+  // Facial features and role-based silhouettes make residents recognizable.
+  for(const ex of [-.09,.09]){
+    const eye=part(new THREE.SphereGeometry(.025,6,5),5,ex,1.74,-.246);
+    eye.castShadow=false;
+  }
+  const mouth=part(new THREE.BoxGeometry(.12,.022,.02),5,0,1.61,-.247);
+  mouth.castShadow=false;
+  if(style==='elder'){
+    part(new THREE.BoxGeometry(.27,.13,.08),4,0,1.56,-.23); // beard
+    part(new THREE.BoxGeometry(.47,.075,.20),5,0,1.94,-.02); // dark hatband
+  }else if(style==='merchant'){
+    part(new THREE.BoxGeometry(.43,.20,.15),5,0,1.85,.10); // hair
+    part(new THREE.BoxGeometry(.35,.14,.045),4,0,.94,-.21); // apron pocket
+  }else if(style==='organizer'){
+    part(new THREE.BoxGeometry(.52,.07,.07),4,0,1.36,-.19); // scarf
+    part(new THREE.BoxGeometry(.18,.07,.06),3,-.29,2.01,-.04); // ribbon
+  }
+
   part(new THREE.CylinderGeometry(.31,.38,.095,10),3,0,1.91,-.02);
   part(new THREE.CylinderGeometry(.22,.24,.17,10),3,0,2.04,-.02);
   const leftArm=new THREE.Group(),rightArm=new THREE.Group();
@@ -50,17 +69,42 @@ function label(root,name){
 export function createVillagePeople(scene){
   const root=new THREE.Group();root.name='solnaeri-villagers';scene.add(root);
   const merchant=person(root,'순옥 아주머니 · 장터',9.8,15.3,
-    {shirt:0x7a9e79,skirt:0x394b70,skin:0xe2b78c,hat:0xb59668,apron:true});
+    {shirt:0x7a9e79,skirt:0x394b70,skin:0xe2b78c,hat:0xb59668,apron:true,style:'merchant'});
   const neighbor=person(root,'영수 할아버지 · 이웃',2.8,13.4,
-    {shirt:0x8b755a,skirt:0x495f57,skin:0xd7aa84,hat:0x9fbd8a});
+    {shirt:0x8b755a,skirt:0x495f57,skin:0xd7aa84,hat:0x9fbd8a,style:'elder'});
   const festivalHost=person(root,'소담이 · 마을 행사',-1.1,15.4,
-    {shirt:0xb76765,skirt:0x486c6d,skin:0xe6b990,hat:0xc3aa65,apron:true});
+    {shirt:0xb76765,skirt:0x486c6d,skin:0xe6b990,hat:0xc3aa65,apron:true,style:'organizer'});
   // Two unobtrusive passersby keep the lanes lived-in even outside festival week.
   // They have no colliders and no interactive targets.
   const passers=[
     person(root,'길을 걷는 농부',-3.8,10.1,{shirt:0x7b996b,skirt:0x596f66,skin:0xd8a780,hat:0xa69a67}),
     person(root,'산책하는 이웃',5.4,11.2,{shirt:0xbf947f,skirt:0x647b9a,skin:0xe5b995,hat:0xb69a73})
   ];
+  merchant.root.scale.setScalar(1.03);
+  neighbor.root.scale.setScalar(.94);
+  festivalHost.root.scale.setScalar(.98);
+  // Tools are attached to residents, not simulated by swinging empty hands.
+  function tool(actor,kind){
+    const group=new THREE.Group();actor.rightArm.add(group);
+    const wood=new THREE.MeshStandardMaterial({color:0x94724d,roughness:1});
+    const weave=new THREE.MeshStandardMaterial({color:0xc1a16b,roughness:1});
+    const part=(geometry,material,x,y,z)=>{
+      const item=new THREE.Mesh(geometry,material);item.position.set(x,y,z);
+      item.castShadow=true;group.add(item);
+    };
+    if(kind==='broom'){
+      part(new THREE.CylinderGeometry(.025,.03,.91,6),wood,.08,-.45,0);
+      part(new THREE.ConeGeometry(.12,.26,7),weave,.08,-.89,0);
+    }else if(kind==='basket'){
+      part(new THREE.CylinderGeometry(.18,.15,.23,8),weave,.08,-.63,0);
+      part(new THREE.TorusGeometry(.15,.025,5,9,Math.PI),wood,.08,-.51,0);
+    }else{
+      part(new THREE.BoxGeometry(.23,.20,.17),weave,.09,-.58,0);
+      part(new THREE.BoxGeometry(.04,.20,.18),wood,.09,-.58,0);
+    }
+    group.visible=false;return {group,materials:[wood,weave]};
+  }
+  const props={market:tool(merchant,'basket'),neighbor:tool(neighbor,'broom'),festival:tool(festivalHost,'bundle')};
   const merchantLabel=label(merchant.root,'장터 순옥'),neighborLabel=label(neighbor.root,'이웃 영수');
   const festivalLabel=label(festivalHost.root,'마을 행사 · 소담');
   const booth=new THREE.Group();booth.position.set(-1.1,0,16.55);root.add(booth);
@@ -137,7 +181,40 @@ export function createVillagePeople(scene){
   const confetti=new THREE.Points(confettiGeometry,confettiMaterial);confetti.name='solnaeri-festival-cheers';
   confetti.frustumCulled=false;confetti.visible=false;festivalSquare.add(confetti);
   let celebrationStart=null,celebrationPending=false;
-  const stats={people:3,passersby:2,visitors:FESTIVAL_GUESTS.length,activeVisitors:0,season:'봄',festivalOpen:false,completed:false,routines:{}};
+  const walkers=PASSER_PATHS.map((points,i)=>createWaypointWalker(points,.94+i*.1));
+  const roleActors={market:merchant,neighbor,festival:festivalHost};
+  const traveled={market:0,neighbor:0,festival:0};
+  const locations={};
+  function animateResident(role,job,dt,elapsed){
+    const actor=roleActors[role],position=actor.root.position;
+    const step=moveNPC(position,job,dt,.82);
+    position.x=step.x;position.z=step.z;
+    traveled[role]+=step.distance;
+    if(step.moving){
+      actor.root.rotation.y=step.heading;
+      actor.root.rotation.x=0;
+      const walk=Math.sin(elapsed*7.6);
+      actor.leftLeg.rotation.x=walk*.27;
+      actor.rightLeg.rotation.x=-walk*.27;
+      actor.leftArm.rotation.x=-walk*.13;
+      actor.rightArm.rotation.x=walk*.13;
+      actor.leftArm.rotation.z=0;actor.rightArm.rotation.z=0;
+    }else{
+      const pose=chorePose(job.gesture,elapsed);
+      actor.leftLeg.rotation.x=0;actor.rightLeg.rotation.x=0;
+      actor.leftArm.rotation.x=0;actor.rightArm.rotation.x=0;
+      actor.leftArm.rotation.z=pose.left;actor.rightArm.rotation.z=pose.right;
+      actor.root.rotation.x=pose.lean;
+    }
+    props[role].group.visible=!step.moving&&(
+      role==='neighbor'?job.gesture==='sweep':
+      role==='market'?['sell','stock'].includes(job.gesture):
+      job.gesture==='stock');
+    locations[role]={x:position.x,z:position.z};
+    return step.moving;
+  }
+
+  const stats={people:3,passersby:2,visitors:FESTIVAL_GUESTS.length,activeVisitors:0,season:'봄',festivalOpen:false,completed:false,routines:{},movingResidents:0,walkingPassers:0,traveled:{},locations};
   let currentFestivalLabel='';
   const setFestival=event=>{
     if(!event)return;
@@ -170,39 +247,35 @@ export function createVillagePeople(scene){
   // Shopkeeper remains behind the stand; neighbor walks a short, predictable
   // stretch of open lane and comes back to the same interaction marker.
   const tick=(dt,elapsed,farmerPosition,minute=420)=>{
-    const merchantTask=villageRoutine('market',minute),neighborTask=villageRoutine('neighbor',minute),
-      festivalTask=villageRoutine('festival',minute);
-    stats.routines={market:merchantTask.label,neighbor:neighborTask.label,festival:festivalTask.label};
-    const blend=Math.min(1,dt*2);
-    for(const [actor,task] of [[merchant,merchantTask],[neighbor,neighborTask],[festivalHost,festivalTask]]){
-      actor.root.position.x+=(task.x-actor.root.position.x)*blend;
-      actor.root.position.z+=(task.z-actor.root.position.z)*blend;
-    }
+    const merchantJob=villageRoutine('market',minute);
+    const neighborJob=villageRoutine('neighbor',minute);
+    const hostJob=villageRoutine('festival',minute);
+    stats.routines={market:merchantJob.label,neighbor:neighborJob.label,festival:hostJob.label};
+    const walking=[
+      animateResident('market',merchantJob,dt,elapsed),
+      animateResident('neighbor',neighborJob,dt,elapsed),
+      animateResident('festival',hostJob,dt,elapsed)
+    ];
+    stats.movingResidents=walking.filter(Boolean).length;
     for(let i=0;i<passers.length;i++){
-      const actor=passers[i],t=elapsed*.42+i*2.9;
-      actor.root.position.x=(i===0?-3.8:5.4)+Math.sin(t)*1.15;
-      actor.root.position.z=(i===0?10.1:11.2)+Math.cos(t*.65)*.45;
-      actor.root.rotation.y=Math.cos(t)>=0?-.55:.55;
-      actor.leftLeg.rotation.x=Math.sin(t*3)*.24;
-      actor.rightLeg.rotation.x=-actor.leftLeg.rotation.x;
-      actor.leftArm.rotation.x=-actor.leftLeg.rotation.x*.55;
-      actor.rightArm.rotation.x=actor.leftLeg.rotation.x*.55;
+      const npc=passers[i],loc=walkers[i].update(dt);
+      npc.root.position.set(loc.x,0,loc.z);
+      npc.root.rotation.y=loc.heading;
+      const stride=loc.walking?Math.sin(elapsed*6.4+i)*.28:0;
+      npc.leftLeg.rotation.x=stride;npc.rightLeg.rotation.x=-stride;
+      npc.leftArm.rotation.x=-stride*.55;npc.rightArm.rotation.x=stride*.55;
     }
-    const nearMerchant=Math.hypot(farmerPosition.x-9.8,farmerPosition.z-15.3)<3.2;
-    merchantLabel.sprite.visible=Math.hypot(farmerPosition.x-9.8,farmerPosition.z-15.3)<8;
-    merchant.rightArm.rotation.z=nearMerchant?-.8+Math.sin(elapsed*5)*.22:merchantTask.gesture==='stock'?-.42+Math.sin(elapsed*2)*.20:-.20;
-    merchant.leftArm.rotation.z=.18;
-    const stride=Math.cos(elapsed*.53);
-    neighborLabel.sprite.visible=Math.hypot(farmerPosition.x-neighbor.root.position.x,farmerPosition.z-neighbor.root.position.z)<8;
-    neighbor.root.rotation.y=stride<0?-.35:.35;
-    neighbor.leftLeg.rotation.x=stride*.20;neighbor.rightLeg.rotation.x=-stride*.20;
-    neighbor.leftArm.rotation.x=-stride*.18;neighbor.rightArm.rotation.x=stride*.18;
-    if(Math.hypot(farmerPosition.x-neighbor.root.position.x,farmerPosition.z-neighbor.root.position.z)<3){
+    stats.walkingPassers=walkers.filter(w=>w.state.walking).length;
+    stats.traveled={...traveled,passer0:walkers[0].state.distance,passer1:walkers[1].state.distance};
+    merchantLabel.sprite.visible=Math.hypot(farmerPosition.x-locations.market.x,farmerPosition.z-locations.market.z)<8;
+    neighborLabel.sprite.visible=Math.hypot(farmerPosition.x-locations.neighbor.x,farmerPosition.z-locations.neighbor.z)<8;
+    festivalLabel.sprite.visible=Math.hypot(farmerPosition.x-locations.festival.x,farmerPosition.z-locations.festival.z)<9;
+    if(!walking[0]&&Math.hypot(farmerPosition.x-locations.market.x,farmerPosition.z-locations.market.z)<3.2)
+      merchant.rightArm.rotation.z=-.8+Math.sin(elapsed*5)*.13;
+    if(!walking[1]&&Math.hypot(farmerPosition.x-locations.neighbor.x,farmerPosition.z-locations.neighbor.z)<3)
       neighbor.rightArm.rotation.z=-.75+Math.sin(elapsed*4)*.12;
-    }else neighbor.rightArm.rotation.z=-.1;
-    const nearHost=Math.hypot(farmerPosition.x+1.1,farmerPosition.z-15.4)<4;
-    festivalLabel.sprite.visible=Math.hypot(farmerPosition.x+1.1,farmerPosition.z-15.4)<9;
-    festivalHost.rightArm.rotation.z=nearHost||stats.festivalOpen?-.8+Math.sin(elapsed*3)*.18:festivalTask.gesture==='sweep'?-.43+Math.sin(elapsed*2)*.2:-.16;
+    if(!walking[2]&&(stats.festivalOpen||Math.hypot(farmerPosition.x-locations.festival.x,farmerPosition.z-locations.festival.z)<4))
+      festivalHost.rightArm.rotation.z=-.8+Math.sin(elapsed*3)*.17;
     if(stats.festivalOpen){
       for(const guest of guests){
         const t=elapsed*(guest.role==='skip'?2.6:1.3)+guest.phase;
@@ -238,10 +311,11 @@ export function createVillagePeople(scene){
     }
     // No per-frame geometry allocation, physics collision, or texture downloads.
   };
-  return {root,stats,update:tick,setFestival,celebrate,dispose(){
+  return {root,stats,update:tick,setFestival,celebrate,npcLocations:()=>locations,dispose(){
     root.parent?.remove(root);
     root.traverse(obj=>{if(obj.isMesh)obj.geometry?.dispose?.()});
     for(const p of [merchant,neighbor,festivalHost,...guests,...passers])for(const material of p.mats)material.dispose();
+    for(const prop of Object.values(props))for(const mat of prop.materials)mat.dispose();
     for(const material of boothMats)material.dispose();
     for(const material of seasonMats)material.dispose();
     confettiGeometry.dispose();confettiMaterial.dispose();

@@ -7,6 +7,7 @@ import {execFileSync} from 'node:child_process';
 import {FIELD_DEFS,makeFarmState} from '../games/korean-farm/world.mjs';
 import {VILLAGE_LANDMARKS,VILLAGE_COLLIDERS,intersectsVillageCollision,plotLandscapeOverlap}
   from '../games/korean-farm/rendering/village-layout.mjs';
+import {PASSER_PATHS,moveNPC,createWaypointWalker,chorePose} from '../games/korean-farm/rendering/npc-motion.mjs';
 import {FESTIVAL_GUESTS,FESTIVAL_THEMES,festivalSceneState}
   from '../games/korean-farm/rendering/festival-ambience.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -91,4 +92,32 @@ test('four seasonal festivals activate a five-person crowd and unique market col
   assert.match(peopleFile,/confettiGeometry\.dispose\(\)/);
   assert.match(gameFile,/villagePeople\?\.celebrate\(\)/);
   execFileSync(process.execPath,['--check',path.join(ROOT,'games/korean-farm/rendering/village-people.js')]);
+});
+
+test('NPCs reach actual destinations and stop stepping while doing chores',()=>{
+  const origin={x:0,z:0},target={x:4,z:0};
+  let at=origin,distance=0,steps=0;
+  for(let n=0;n<35;n++){const next=moveNPC(at,target,.2,.8);distance+=next.distance;at=next;steps++}
+  assert.ok(distance>4-.05);
+  assert.equal(at.x,4);
+  assert.equal(moveNPC(at,target,.2,.8).moving,false);
+  assert.equal(chorePose('sweep',0).left!==chorePose('rest',0).left,true);
+  assert.equal(PASSER_PATHS.length,2);
+  for(const route of PASSER_PATHS){
+    for(const p of route)assert.equal(intersectsVillageCollision(p),false,'passer cannot enter a building');
+    const walker=createWaypointWalker(route,1.2);
+    let moved=0,paused=0;
+    for(let i=0;i<600;i++){
+      const before=walker.state.distance;
+      const snapshot=walker.update(.1);
+      moved+=snapshot.distance-before;
+      if(!snapshot.walking)paused++;
+      assert.equal(intersectsVillageCollision(snapshot),false,'passer waypoint segment intersects a building');
+    }
+    assert.ok(moved>6,'passes through multiple waypoints rather than rocking in place');
+    assert.ok(paused>10,'briefly rests at route stops');
+  }
+  assert.match(peopleFile,/npcLocations/);
+  assert.match(peopleFile,/animateResident/);
+  assert.match(gameFile,/station\.target\.position\.x=peoplePos\[role\]\.x/);
 });
