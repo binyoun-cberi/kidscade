@@ -30,11 +30,11 @@ function snapshot(){return {pieces:[...state.pieces.values()].map(p=>({id:p.id,v
 function restore(s){state.pieces=new Map(s.pieces.map(p=>[p.id,p]));state.slots=[...s.slots];state.strikes=s.strikes;render()}
 function drawBlueprint(){
  const parts=state.parts;
- el.blueprintParts.innerHTML=parts.map((part,i)=>'<span class="'+(i<state.partIndex?'done':i===state.partIndex?'active':'')+'">'+(i<state.partIndex?'✓ ':i===state.partIndex?'▸ ':'')+(i+1)+'. '+part.name+(state.partLengths[i]?' · '+E.toFraction(state.partLengths[i]):'')+'</span>').join('');
+ el.blueprintParts.innerHTML=parts.map((part,i)=>'<span class="'+(i<state.partIndex?'done':i===state.partIndex?'active':'')+'">'+(i<state.partIndex?'✓ ':i===state.partIndex?'▸ ':'')+(i+1)+'. '+part.name+' · '+(state.partLengths[i]?'완료 '+E.toFraction(state.partLengths[i]):state.mode==='master'?(part.measure||'맞춤 주문'):'목표 '+part.metal)+'</span>').join('');
  const part=parts[state.partIndex]||parts[0];
  el.partCaption.textContent='부품 '+(state.partIndex+1)+' / '+parts.length;
  el.partName.textContent=part.name;
- el.partInstruction.textContent=part.instruction;
+ el.partInstruction.textContent=part.instruction+' · 목표 금속 '+(part.measure||part.metal);
 }
 function newPuzzle(nextPart=false){
  sequence++;
@@ -49,12 +49,13 @@ function newPuzzle(nextPart=false){
    el.customerSpeech.textContent=state.commission.item.request;
    el.customerBay.classList.remove('ready','pleased');el.deliveryArt.innerHTML='';el.deliverBtn.disabled=true;
  }
- state.puzzle=P.create(state.mode);state.pieces=new Map(state.puzzle.materials.map(p=>[p.id,{...p}]));state.slots=[null,null];state.strikes=0;state.history=[];state.busy=false;
- state.phase='math';state.craft=null;el.craft.classList.remove('open');
  const part=state.parts[state.partIndex];
- el.material.textContent=part.name+' · '+state.commission.item.material;
+ state.puzzle=P.createFor(state.mode,part);part.measure=E.toFraction(state.puzzle.target);
+ state.pieces=new Map(state.puzzle.materials.map(p=>[p.id,{...p}]));state.slots=[null,null];state.strikes=0;state.history=[];state.busy=false;
+ state.phase='math';state.craft=null;el.craft.classList.remove('open');
+ el.material.textContent=part.name+' · '+state.commission.item.material+' '+part.measure;
  el.target.textContent=state.puzzle.targetDisplay;el.targetBar.innerHTML=M.markup(state.puzzle.target);
- el.meta.textContent='최단 '+state.puzzle.bestStrikes+'번 가공';el.op.textContent='?';el.equation.textContent='금속 두 개를 모루에 올려요';drawBlueprint();render();
+ el.meta.textContent='재단 포함 최단 '+state.puzzle.bestStrikes+'번 가공';el.op.textContent='?';el.equation.textContent='금속 두 개를 모루에 올려요';drawBlueprint();render();
  if(state.orders===0&&state.partIndex===0&&state.mode==='practice')toast('금속을 모루에 올려 붙이거나, 재단대에서 잘라 보세요!',2700)
 }
 function render(){
@@ -208,11 +209,12 @@ function forge(op){
  setTimeout(()=>{if(token===sequence&&!E.eq(value,state.puzzle.target))state.busy=false},cfg.duration+100)
 }
 function beginCraft(){
+ const part=state.parts[state.partIndex];
  state.phase='craft';state.craft=F.create({furnaceLevel:progress.upgrades.furnace,hammerLevel:progress.upgrades.hammer,
-   basePumps:state.partIndex===0?3:2,hammerCount:2});state.busy=false;state.craftStart=performance.now();
- el.craftName.textContent=state.parts[state.partIndex].name+' · '+state.commission.item.name;
+   basePumps:part.pumps,hammerCount:part.hits,technique:part.technique});state.busy=false;state.craftStart=performance.now();
+ el.craftName.textContent=part.name+' · '+state.commission.item.name;
  el.craftProduct.innerHTML=V.model(state.commission.item.id,state.partIndex,[...state.partLengths,state.puzzle.target]);
- el.craftScene.dataset.family=state.commission.item.family;el.craftScene.dataset.grade='';
+ el.craftScene.dataset.family=state.commission.item.family;el.craftScene.dataset.technique=part.technique;el.craftScene.dataset.grade='';
  el.craftGrade.textContent='';el.craftGrade.className='craft-grade';
  el.craftBurst.textContent='';el.craftTip.textContent='공방 장비를 직접 누르거나 Space 키로 작업할 수 있어요.';
  el.craft.classList.add('open');updateCraft();render();el.craftAction.focus();
@@ -232,7 +234,7 @@ let markerFrame=0;
 function stopMarker(){cancelAnimationFrame(markerFrame);markerFrame=0}
 function tickMarker(){
  if(state.phase!=='craft'||state.craft?.stage!=='hammer')return;
- const timing=((performance.now()-state.craftStart)/1500)%1;
+ const timing=((performance.now()-state.craftStart)/state.craft.hammerDuration)%1;
  el.craftMarker.style.left=(timing*100)+'%';
  markerFrame=requestAnimationFrame(tickMarker);
 }
@@ -241,7 +243,7 @@ function updateCraft(){
  el.craftScene.dataset.stage=c.stage;el.craftMeter.classList.toggle('timing',c.stage==='hammer');
  el.craftScene.style.setProperty('--forgeHeat',String(c.pumps/c.requiredPumps));
  el.craftScene.style.setProperty('--forgeReveal',c.stage==='heat'?'100%':c.stage==='hammer'?(100-c.hits/c.requiredHits*100)+'%':'0%');
- el.craftMeter.style.setProperty('--hammerStart',String((.75-c.timingWindow/2)*100)+'%');
+ el.craftMeter.style.setProperty('--hammerStart',String((c.timingCenter-c.timingWindow/2)*100)+'%');
  el.craftMeter.style.setProperty('--hammerWidth',String(c.timingWindow*100)+'%');
  renderHammerHits();
  stopMarker();
@@ -254,7 +256,7 @@ function updateCraft(){
    el.craftInstruction.textContent='왼쪽 화로 장비를 '+c.requiredPumps+'번 눌러 금속을 붉게 달궈요.';
    el.craftFill.style.width=(c.pumps/c.requiredPumps*100)+'%';el.craftStatus.textContent='🔥 가열 '+c.pumps+'/'+c.requiredPumps;el.craftAction.textContent='화로 달구기';
  }else if(c.stage==='hammer'){
-   el.craftStep.textContent='제작 2/3 · 망치질';el.craftTitle.textContent='지금이야! 달궈진 금속을 두드려요';
+   el.craftStep.textContent='제작 2/3 · '+state.parts[state.partIndex].action;el.craftTitle.textContent=state.parts[state.partIndex].action;
    el.craftInstruction.textContent='움직이는 표식이 노란 구간에 왔을 때 망치를 내려치세요.';
    el.craftFill.style.width='0%';el.craftStatus.textContent='🔨 망치질 '+c.hits+'/'+c.requiredHits;el.craftAction.textContent='망치 내려치기';
    if(!markerFrame)markerFrame=requestAnimationFrame(tickMarker);
@@ -270,7 +272,7 @@ function craftAction(){
  if(state.phase==='part-reveal'){state.partIndex++;newPuzzle(true);return}
  if(state.phase==='deliver'){awardOrder();return}
  if(state.phase!=='craft')return;
- const before=state.craft.stage,timing=((performance.now()-state.craftStart)/1500)%1;
+ const before=state.craft.stage,timing=((performance.now()-state.craftStart)/state.craft.hammerDuration)%1;
  F.act(state.craft,timing);
  if(before==='heat'){
    play('whoosh',.25+state.craft.pumps*.06);
@@ -284,6 +286,7 @@ function craftAction(){
    el.craftBurst.textContent=grade==='perfect'?'완벽! ★':grade==='good'?'좋아요! ✨':'조금 빗나갔어요!';
    el.craftScene.classList.remove('hammer-hit','hammer-perfect','hammer-good','hammer-miss');void el.craftScene.offsetWidth;
    el.craftScene.classList.add('hammer-hit','hammer-'+grade);
+   el.craftScene.style.setProperty('--forgeShape',String(state.craft.hits/state.craft.requiredHits));
    try{if(typeof navigator!=='undefined')navigator.vibrate?.(grade==='perfect'?35:grade==='good'?18:8)}catch(_){}
  }
  if(before==='quench'){play('confirm',.45);completePart();return}
