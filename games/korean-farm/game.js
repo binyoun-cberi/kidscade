@@ -27,8 +27,8 @@ const $=id=>document.getElementById(id);
 const SAVE_KEY=window.KidscadeGame?.storageKey?.('korean_farm','farm')||'kidscade_game_v1:korean_farm:farm';
 const bounds=21.7;
 const state=loadSave();
-let scene,renderer,camera,raycaster,ground,farmer,farmerAvatar,farmerAnimator,fieldEffects,villageScene=null,villagePeople=null,harvestCargo=null,farmWeather=null;
-let last=0,raf=0,paused=false,disposed=false,loading=true,noticeTimer=0;
+let scene,renderer,camera,raycaster,ground,farmer,farmerAvatar,farmerAnimator,fieldEffects,villageScene=null,villagePeople=null,harvestCargo=null,farmWeather=null,merchantNpcHit=null;
+let last=0,raf=0,paused=false,disposed=false,loading=true,noticeTimer=0,villageClockAccum=0,villageClockSaved=state.minute;
 let camTarget=new THREE.Vector3(state.player.x,0,state.player.z);
 let viewAngle=state.camera.angle,farmerFacingTarget=0;
 let moveGoal=null,moveRoute=[],navigationStall=0;
@@ -175,7 +175,7 @@ function buildWorldStations(){
     new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
   merchantHit.position.set(9.8,1.5,15.3);
   merchantHit.userData.worldStation='market';merchantHit.userData.label='순옥 아주머니';
-  scene.add(merchantHit);worldHits.push(merchantHit);
+  scene.add(merchantHit);worldHits.push(merchantHit);merchantNpcHit=merchantHit;
   addStation('barn','농산물 창고',{x:18,y:1.1,z:-10.4},{x:18,z:-9.5},[2.9,2.1,1.35]);
   addStation('neighbor','영수 할아버지',{x:2.8,y:1.5,z:13.4},{x:2.8,z:12.45},[1.9,3,1.45]);
   addStation('festival','행사 도우미 소담',{x:-1.1,y:1.5,z:15.4},{x:-1.1,z:14.3},[1.75,3,1.2]);
@@ -481,7 +481,30 @@ function render(now){
     if(event)handleFarmFlowEvent(event);
     refreshWorkStatus();
     updateEnvironmentAnimation(dt||.016,now/1000);
+    // Walking around the village now advances a gentle in-game clock.
+    // Crop growth remains controlled by sleep, not by animation frames.
+    villageClockAccum+=dt;
+    if(villageClockAccum>=3 && state.minute<1320){
+      const minutes=Math.floor(villageClockAccum/3);
+      villageClockAccum%=3;state.minute=Math.min(1320,state.minute+minutes);
+      const c=calendar(state.day),weatherName={sunny:'맑음',cloudy:'흐림',rain:'비',storm:'강한 비'};
+      $('dayLabel').textContent=c.season+' '+c.seasonDay+'일 · '+weatherName[state.weather]+' · '+villageClock(state.minute);
+      if(state.minute-villageClockSaved>=10){villageClockSaved=state.minute;save(true)}
+    }
     villagePeople?.update(dt||.016,now/1000,state.player,state.minute);
+    const peoplePos=villagePeople?.npcLocations();
+    if(peoplePos){
+      for(const role of ['neighbor','festival']){
+        const station=worldStations.get(role);
+        if(station&&peoplePos[role]){
+          station.target.position.x=peoplePos[role].x;station.target.position.z=peoplePos[role].z;
+          station.position.x=peoplePos[role].x;station.position.z=peoplePos[role].z;
+        }
+      }
+      if(merchantNpcHit&&peoplePos.market){
+        merchantNpcHit.position.x=peoplePos.market.x;merchantNpcHit.position.z=peoplePos.market.z;
+      }
+    }
     farmWeather?.update(dt||.016,state.player);
   }
   refreshCamera(dt||.016);renderer.render(scene,camera);
