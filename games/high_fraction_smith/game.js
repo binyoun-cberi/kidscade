@@ -214,7 +214,7 @@ function beginCraft(){
    basePumps:part.pumps,hammerCount:part.hits,technique:part.technique});state.busy=false;state.craftStart=performance.now();
  el.craftName.textContent=part.name+' · '+state.commission.item.name;
  el.craftProduct.innerHTML=V.model(state.commission.item.id,state.partIndex,[...state.partLengths,state.puzzle.target]);
- el.craftScene.dataset.family=state.commission.item.family;el.craftScene.dataset.technique=part.technique;el.craftScene.dataset.grade='';
+ el.craftScene.dataset.family=state.commission.item.family;el.craftScene.dataset.technique=part.technique;el.craftScene.dataset.grade='';el.craftScene.style.setProperty('--forgeShape','0');
  el.craftGrade.textContent='';el.craftGrade.className='craft-grade';
  el.craftBurst.textContent='';el.craftTip.textContent='공방 장비를 직접 누르거나 Space 키로 작업할 수 있어요.';
  el.craft.classList.add('open');updateCraft();render();el.craftAction.focus();
