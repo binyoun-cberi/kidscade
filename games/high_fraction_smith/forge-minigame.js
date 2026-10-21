@@ -18,7 +18,7 @@
   function create(options={}){
     const basePumps=Number.isSafeInteger(options.basePumps)?Math.max(2,Math.min(5,options.basePumps)):4;
     const requiredHits=Number.isSafeInteger(options.hammerCount)?Math.max(1,Math.min(3,options.hammerCount)):3;
-    const techniques={draw:{center:.74,duration:1500},fit:{center:.55,duration:1650},spread:{center:.60,duration:1850},bend:{center:.42,duration:1750},flatten:{center:.50,duration:1900},point:{center:.83,duration:1200},curve:{center:.40,duration:1800},square:{center:.65,duration:1500},ornament:{center:.72,duration:2100}};
+    const techniques={draw:{center:.74,duration:1500},fit:{center:.55,duration:1650},spread:{center:.60,duration:1850},bend:{center:.42,duration:1750},flatten:{center:.50,duration:1900},point:{center:.76,duration:1200},curve:{center:.40,duration:1800},square:{center:.65,duration:1500},ornament:{center:.72,duration:2100}};
     const technique=techniques[options.technique]||{center:.75,duration:1500};
     return {stage:'heat',pumps:0,requiredPumps:Math.max(1,basePumps-level(options.furnaceLevel)),requiredHits,hits:0,hitGrades:[],
       timingWindow:.30+level(options.hammerLevel)*.08,timingCenter:technique.center,hammerDuration:technique.duration,technique:options.technique||'standard',accuracy:0,lastHit:null,quality:0,done:false};
