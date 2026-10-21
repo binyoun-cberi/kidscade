@@ -161,6 +161,15 @@ async function main(){
    visuals.village?.areas===7&&visuals.village.meshes>180&&visuals.village.instanced>=1,
    visuals.village);
  check('Three visible, individually modeled Korean village residents',visuals.people?.people===3,visuals.people);
+ await sleep(1800);
+ const walkingVillage=await evaluate('window.__farmQA.visuals().people');
+ check('Village pedestrians travel along real streets rather than bob in place',
+   walkingVillage?.traveled?.passer0>.12&&walkingVillage?.traveled?.passer1>.12,
+   walkingVillage);
+ check('The three named NPCs report their actual locations for moving tap targets',
+   ['market','neighbor','festival'].every(role=>
+     Number.isFinite(walkingVillage?.locations?.[role]?.x)&&
+     Number.isFinite(walkingVillage?.locations?.[role]?.z)),walkingVillage);
  check('Festival crowd is quiet before opening and five distinct guests are ready',
    visuals.people?.visitors===5&&visuals.people?.activeVisitors===0&&visuals.festival?.square===false,
    {people:visuals.people,festival:visuals.festival});
