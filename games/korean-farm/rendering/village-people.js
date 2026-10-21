@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import {FESTIVAL_GUESTS,FESTIVAL_THEMES,festivalSceneState} from './festival-ambience.mjs';
 import {villageRoutine} from './village-routines.mjs';
-import {PASSER_PATHS,moveNPC,createWaypointWalker,chorePose} from './npc-motion.mjs';
+import {PASSER_PATHS,moveNPC,createWaypointWalker,chorePose,turnNPC,npcWalkPose} from './npc-motion.mjs';
 
 function person(parent,name,x,z,{shirt,skirt,skin,hat,apron=false,style='farmer'}){
   const root=new THREE.Group();root.name=name;root.position.set(x,0,z);parent.add(root);
@@ -191,13 +191,13 @@ export function createVillagePeople(scene){
     position.x=step.x;position.z=step.z;
     traveled[role]+=step.distance;
     if(step.moving){
-      actor.root.rotation.y=step.heading;
+      actor.root.rotation.y=turnNPC(actor.root.rotation.y,step.heading,dt);
       actor.root.rotation.x=0;
-      const walk=Math.sin(elapsed*7.6);
-      actor.leftLeg.rotation.x=walk*.27;
-      actor.rightLeg.rotation.x=-walk*.27;
-      actor.leftArm.rotation.x=-walk*.13;
-      actor.rightArm.rotation.x=walk*.13;
+      const gait=npcWalkPose(traveled[role],true);
+      actor.leftLeg.rotation.x=gait.leftLeg;
+      actor.rightLeg.rotation.x=gait.rightLeg;
+      actor.leftArm.rotation.x=gait.leftArm;
+      actor.rightArm.rotation.x=gait.rightArm;
       actor.leftArm.rotation.z=0;actor.rightArm.rotation.z=0;
     }else{
       const pose=chorePose(job.gesture,elapsed);
@@ -260,10 +260,10 @@ export function createVillagePeople(scene){
     for(let i=0;i<passers.length;i++){
       const npc=passers[i],loc=walkers[i].update(dt);
       npc.root.position.set(loc.x,0,loc.z);
-      npc.root.rotation.y=loc.heading;
-      const stride=loc.walking?Math.sin(elapsed*6.4+i)*.28:0;
-      npc.leftLeg.rotation.x=stride;npc.rightLeg.rotation.x=-stride;
-      npc.leftArm.rotation.x=-stride*.55;npc.rightArm.rotation.x=stride*.55;
+      if(loc.walking)npc.root.rotation.y=turnNPC(npc.root.rotation.y,loc.heading,dt);
+      const gait=npcWalkPose(loc.distance,loc.walking,i*1.1);
+      npc.leftLeg.rotation.x=gait.leftLeg;npc.rightLeg.rotation.x=gait.rightLeg;
+      npc.leftArm.rotation.x=gait.leftArm;npc.rightArm.rotation.x=gait.rightArm;
     }
     stats.walkingPassers=walkers.filter(w=>w.state.walking).length;
     stats.traveled={...traveled,passer0:walkers[0].state.distance,passer1:walkers[1].state.distance};
