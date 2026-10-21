@@ -103,6 +103,83 @@
     }
     return false;
   }
+
+  // Workbench moves include cutting one ingot into two. Master jobs must not
+  // have a one- or two-action shortcut through that tool.
+  function shortRouteWithCuts(materials,target){
+    const equals=v=>E.eq(v,target);
+    const legal=v=>v.n>=0&&E.nice(v,{maxAbs:8,maxDen:40,allowZero:true});
+    const cutPairs=v=>{
+      const result=[];
+      for(const parts of [2,3,4]){
+        const left=E.make(v.n,v.d*parts),right=E.make(v.n*(parts-1),v.d*parts);
+        if(E.nice(left,{maxAbs:8,maxDen:40,allowZero:false})&&E.nice(right,{maxAbs:8,maxDen:40,allowZero:false}))
+          result.push([left,right]);
+      }
+      return result;
+    };
+    const forge=(a,b,op)=>{
+      try{return op==='÷'&&b.n===0?null:(v=>legal(v)?v:null)(E.apply(op,a,b))}catch(_){return null}
+    };
+    if(materials.some(equals))return true;
+    for(let i=0;i<materials.length;i++){
+      const a=materials[i];
+      for(const pair of cutPairs(a)){
+        if(pair.some(equals))return true;
+        if(pair.some(v=>cutPairs(v).some(c=>c.some(equals))))return true;
+        const rest=materials.filter((_,j)=>j!==i),next=rest.concat(pair);
+        for(let x=0;x<next.length;x++)for(let y=0;y<next.length;y++){
+          if(x===y||(x<rest.length&&y<rest.length))continue;
+          for(const op of OPS){const result=forge(next[x],next[y],op);if(result&&equals(result))return true}
+        }
+      }
+      for(let j=0;j<materials.length;j++){
+        if(j===i)continue;
+        for(const op of OPS){
+          const result=forge(a,materials[j],op);
+          if(!result)continue;
+          if(equals(result)||cutPairs(result).some(pair=>pair.some(equals)))return true;
+        }
+      }
+    }
+    return false;
+  }
+  // Product blueprints determine beginner and rush target quantities. Every
+  // recipe is guaranteed executable with the actual in-game fraction limits.
+  function createFor(mode='practice',part={},r=Math.random){
+    if(mode==='master'){
+      // Master commissions are custom measurements rather than fixed beginner
+      // stock lengths. Keep only verified three-move jobs and prefer sizes near
+      // the named part's workshop specification.
+      const nominal=E.parse(part.metal||'3/4').n/E.parse(part.metal||'3/4').d;
+      let chosen=null,bestGap=Infinity;
+      for(let i=0;i<3;i++){
+        const q=create('master',r),size=q.target.n/q.target.d,gap=Math.abs(Math.log(Math.max(.1,size)/Math.max(.1,nominal)));
+        if(gap<bestGap){chosen=q;bestGap=gap}
+        if(gap<.28)break;
+      }
+      return chosen;
+    }
+    const target=E.parse(part.metal||'3/4'),op=part.method||'+';
+    let a,b;
+    if(op==='-'){b=E.parse('1/4');a=E.add(target,b)}
+    else if(op==='×'){a=E.mul(target,E.parse('2'));b=E.parse('1/2')}
+    else if(op==='÷'){a=E.div(target,E.parse('2'));b=E.parse('1/2')}
+    else {a=E.mul(target,E.parse('3/4'));b=E.mul(target,E.parse('1/4'))}
+    if(!E.nice(a,{maxAbs:8,maxDen:40,allowZero:false})||!E.nice(b,{maxAbs:8,maxDen:40,allowZero:false}))
+      throw Error('Invalid blueprint measurements: '+part.metal);
+    const used=[a,b,target],pool=shuffle([...EASY,...MID],r).filter(v=>!used.some(x=>E.eq(v,x)));
+    const materials=shuffle([a,b,...pool.slice(0,2)],r);
+    const preferDecimal=E.isTerminating(target)&&r()<.25;
+    return {
+      id:'fs-blueprint-'+Date.now().toString(36)+'-'+Math.floor(r()*1e6).toString(36),
+      target:clone(target),targetDisplay:E.display(target,preferDecimal?'decimal':'fraction'),
+      targetPrefer:preferDecimal?'decimal':'fraction',
+      materials:materials.map((v,i)=>({id:'m'+i,value:clone(v),prefer:E.isTerminating(v)&&r()<.24?'decimal':'fraction'})),
+      recipe:[{a:clone(a),b:clone(b),op,result:clone(target)}],authoredStrikes:1,bestStrikes:1,
+      method:op,blueprint:true
+    };
+  }
   function decoys(count,r=Math.random,exclude=[]){
     const pool=[...EASY,...MID].filter(v=>!exclude.some(x=>E.eq(x,v)));return shuffle(pool,r).slice(0,count).map(clone)
   }
@@ -117,7 +194,7 @@
       mats=[...base.materials,...decoys(mode==='master'?3:2,r,[...base.materials,base.target])];
       mats=shuffle(mats,r);
       if(mode==='master'){
-        if(shortRouteExists(mats,base.target))continue;
+        if(shortRouteExists(mats,base.target)||shortRouteWithCuts(mats,base.target))continue;
         best=3; // The authored chain uses three operations, and none use fewer.
       }else best=shortestStrikes(mats,base.target,Math.max(4,depth));
       if(best!==null&&best>=1&&best<=4)break;
@@ -153,5 +230,5 @@
       bestStrikes:best
     };
   }
-  return {OPS,create,shortestStrikes,shortRouteExists,safeApply};
+  return {OPS,create,createFor,shortestStrikes,shortRouteExists,shortRouteWithCuts,safeApply};
 });
