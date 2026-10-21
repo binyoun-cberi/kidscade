@@ -83,6 +83,14 @@
   }
   // Master orders are advertised as three-step jobs. Check every one- and
   // two-step route (without a breadth cap) before accepting a generated job.
+
+  function workApply(op,a,b){
+    try{
+      if(op==='÷'&&b.n===0)return null;
+      const v=E.apply(op,a,b);
+      return v.n>=0&&E.nice(v,{maxAbs:8,maxDen:40,allowZero:true})?v:null;
+    }catch(_){return null}
+  }
   function shortRouteExists(materials,target){
     const targetKey=E.key(target);
     if(materials.some(v=>E.key(v)===targetKey))return true;
@@ -91,7 +99,7 @@
       for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){
         for(const op of OPS){
           const pairs=(op==='-'||op==='÷')?[[list[i],list[j]],[list[j],list[i]]]:[[list[i],list[j]]];
-          for(const [a,b] of pairs){const value=safeApply(op,a,b);if(value)out.push({i,j,value})}
+          for(const [a,b] of pairs){const value=workApply(op,a,b);if(value)out.push({i,j,value})}
         }
       }
       return out;
