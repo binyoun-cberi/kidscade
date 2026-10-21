@@ -1,0 +1,42 @@
+name: Chat-assisted game quality audit
+
+# No paid AI API, repository secrets, deployment, issue writes or auto-merge.
+on:
+  pull_request:
+    paths:
+      - 'data/games.json'
+      - 'data/game-cover-overrides.json'
+      - 'scripts/chat-quality-report.cjs'
+      - 'tests/chat-quality-report.test.cjs'
+      - '.github/workflows/chat-quality-audit.yml'
+  workflow_dispatch:
+  schedule:
+    # Weekly Monday 09:23 Asia/Seoul (00:23 UTC), not continuous.
+    - cron: '23 0 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chat-quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-audit:
+    # Standard hosted runners are free for public repositories. Skip entirely if made private.
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout without retained credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run offline report tests
+        run: node --test tests/chat-quality-report.test.cjs
+      - name: Create read-only catalog report in the Actions summary
+        shell: bash
+        run: |
+          node scripts/chat-quality-report.cjs >> "$GITHUB_STEP_SUMMARY"
+          node scripts/chat-quality-report.cjs --json > /tmp/kidscade-chat-quality.json
+          node -e "const r=require('/tmp/kidscade-chat-quality.json'); console.log(JSON.stringify({enabled:r.enabledCount,missingEntries:r.missingEntryCount,missingCovers:r.missingCoverCount,rework:r.reworkCount}));"
