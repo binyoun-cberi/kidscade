@@ -173,7 +173,16 @@
     if(op==='-'){b=E.parse('1/4');a=E.add(target,b)}
     else if(op==='×'){a=E.mul(target,E.parse('2'));b=E.parse('1/2')}
     else if(op==='÷'){a=E.div(target,E.parse('2'));b=E.parse('1/2')}
-    else {a=E.mul(target,E.parse('3/4'));b=E.mul(target,E.parse('1/4'))}
+    else {
+      // Favor familiar fractions over multiplying a blueprint measurement by
+      // 3/4 (which creates needlessly awkward 15/16 + 5/16 for a 5/4 blade).
+      const portions=['1/2','3/4','1','1/4','1/6','1/8','1/3'].map(E.parse);
+      const options=portions.map(part=>({a:E.sub(target,part),b:part}))
+        .filter(p=>p.a.n>0&&E.nice(p.a,{maxAbs:8,maxDen:40,allowZero:false}))
+        .sort((x,y)=>Math.max(x.a.d,x.b.d)-Math.max(y.a.d,y.b.d));
+      if(options.length){a=options[0].a;b=options[0].b}
+      else {a=E.div(target,E.parse('2'));b=E.div(target,E.parse('2'))}
+    }
     if(!E.nice(a,{maxAbs:8,maxDen:40,allowZero:false})||!E.nice(b,{maxAbs:8,maxDen:40,allowZero:false}))
       throw Error('Invalid blueprint measurements: '+part.metal);
     const used=[a,b,target],pool=shuffle([...EASY,...MID],r).filter(v=>!used.some(x=>E.eq(v,x)));
