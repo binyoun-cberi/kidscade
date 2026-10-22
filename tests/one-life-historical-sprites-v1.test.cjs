@@ -222,3 +222,15 @@ test('traveling infant does not suddenly acquire an adult walking pose',()=>{
  l.age=8;l.year=l.birthYear+8;
  assert.equal(Historical.occupants(l,l.goryeo343)[0].activity,'walk');
 });
+
+
+test('historical comparison exposes real scenario differences without inventing changes',()=>{
+ const html=file('historical-comparison.html');
+ assert.match(html,/id="circumstance"/);
+ for(const v of ['home','refuge','away'])assert.ok(html.includes('value="'+v+'"'));
+ assert.match(html,/id="sampleRegion"/);
+ assert.match(html,/away:situation==='away'\?1:0/);
+ assert.match(html,/refuge:situation==='refuge'/);
+ assert.match(html,/상황·지역 선택은 고려 예시에만 적용됩니다/);
+ assert.doesNotMatch(html,/localStorage|sessionStorage|indexedDB|\.save\(/);
+});
