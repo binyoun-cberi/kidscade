@@ -62,7 +62,7 @@ test('historical glossary differentiates documentary units from fictional counte
  assert.match(game,/measurementGuide\.hidden=life\.year>=1900/);
  assert.ok(!html.includes('15말(평석)')&&!html.includes('섬 = 약 180L'));
  const source=read('goryeo-v343.js');
- assert.match(source,/grain:origin/,'original game's economy values are untouched');
+ assert.match(source,/grain:origin/,"original game economy values are untouched");
 });
 
 test('browser-style module loading activates the new compositor in a real scene',()=>{
@@ -122,9 +122,9 @@ test('developer comparison grid covers all nine cases without accessing saves',(
  assert.match(html,/for\(const age of ages\)for\(const place of conditions\)/);
  assert.match(html,/image-rendering:pixelated/);
  assert.ok(html.indexOf('sprite-composer-v1.js?v=2')<html.indexOf('pixel-scene.js?v=4'));
- assert.doesNotMatch(html,/localStorage|sessionStorage|fetch\\(|XMLHttpRequest|\\.save\\(/);
- assert.match(html,/year:1950\\+age/,'compare one person's consistent life years');
- assert.match(html,/OneLifeScene\\.paint\\(canvas,sample,\\{frame\\}\\)/,'preview changes pose without changing year');
+ assert.doesNotMatch(html,/localStorage|sessionStorage|fetch\(|XMLHttpRequest|\.save\(/);
+ assert.match(html,/year:1950\+age/,"compare one person's consistent life years");
+ assert.match(html,/OneLifeScene\.paint\(canvas,sample,\{frame\}\)/,'preview changes pose without changing year');
 });
 test('visual frame override changes only animation, never the displayed birth year',()=>{
  const vm=require('node:vm');

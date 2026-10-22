@@ -832,7 +832,8 @@
       child:!!life.profile.child,partner:!!life.profile.partner,
       housing:life.world8?.housing||'',
       roles:life.world6?.history?.map(x=>x.job)||[],
-      choices:life.log.filter(e=>['decision','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice','joseon339-choice','joseon340-choice','joseon341-choice'].includes(e.kind)).map(e=>({age:e.age,label:e.text}))};
+      choices:life.log.filter(window.OneLifeBiography328.isChoice)
+        .map(e=>({age:e.age,label:e.text,kind:e.kind}))};
   }
   function showComparison(){
     const panel=$('endComparison'),rows=$('endComparisonRows');
@@ -862,17 +863,19 @@
       if(before!==after)line.classList.add('changed');
       line.append(heading,left,icon,right);rows.append(line);
     }
-    const previousChoices=new Map(replayBasis.choices.map(d=>[d.age,d.label]));
-    const nowChoices=new Map(now.choices.map(d=>[d.age,d.label]));
-    for(const age of World4.GATES){
-      const a=previousChoices.get(age),b=nowChoices.get(age);
-      if(!a&&!b)continue;
+    // Group *all* decisions at each age, not just one entry per World4 gate.
+    // Goryeo and Joseon have additional choices outside the modern gate ages.
+    for(const entry of window.OneLifeEndingChoiceCompare.rows(replayBasis.choices,now.choices)){
       const line=document.createElement('div');line.className='counter-row';
-      if(a!==b)line.classList.add('changed');
-      const title=document.createElement('strong');title.textContent=age+'세 선택';
-      const before=document.createElement('span');before.textContent=a||'선택 이전에 삶을 마침';
-      const icon=document.createElement('span');icon.textContent='→';
-      const after=document.createElement('b');after.textContent=b||'선택 이전에 삶을 마침';
+      if(entry.changed)line.classList.add('changed');
+      const title=document.createElement('strong');
+      const multi=Math.max(entry.before.length,entry.after.length)>1;
+      title.textContent=entry.age+'세 선택'+(multi?' (이전 '+entry.before.length+'건 · 이번 '+entry.after.length+'건)':'');
+      const before=document.createElement('span');
+      before.textContent=window.OneLifeEndingChoiceCompare.readable(entry.before);
+      const icon=document.createElement('span');icon.textContent='→';icon.setAttribute('aria-hidden','true');
+      const after=document.createElement('b');
+      after.textContent=window.OneLifeEndingChoiceCompare.readable(entry.after);
       line.append(title,before,icon,after);rows.append(line);
     }
   }
