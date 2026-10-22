@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>단 하나의 인생 | 픽셀 비교 검수용</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:system-ui,"Noto Sans KR",sans-serif;background:#e8efea;color:#29423b;margin:0;padding:18px}
+main{max-width:1340px;margin:auto}
+h1{font-size:23px;margin:0 0 7px}
+p{line-height:1.65;max-width:95ch}
+header{margin-bottom:16px}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+button,input{font:inherit;min-height:40px}
+button{background:#255e56;color:white;border:0;border-radius:8px;padding:6px 14px;cursor:pointer}
+input{max-width:190px;border:1px solid #8aa79e;border-radius:7px;padding:6px}
+#matrix{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+figure{margin:0;padding:10px;border:1px solid #b4cdc2;border-radius:10px;background:#fffef9;min-width:0}
+figcaption{font-weight:700;margin-bottom:8px}
+canvas{width:100%;height:auto;aspect-ratio:600/258;image-rendering:pixelated;border-radius:5px;background:#cbd9cd}
+small{display:block;font-size:12px;color:#527067;margin-top:8px}
+aside{margin-top:20px;font-size:13px}
+@media(max-width:900px){#matrix{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:530px){#matrix{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>《단 하나의 인생》 픽셀 품질 비교실</h1>
+  <p>개발·검수용 9장 비교 시트입니다. 같은 시드의 주인공을 10·30·70세, 세 가지 가상 생활환경에 배치합니다.
+  실제 게임 저장 기록이 아닌 <strong>시각 검증을 위한 예제 인생</strong>이며, 이 페이지는 저장 데이터나 게임 통계를 변경하지 않습니다.</p>
+</header>
+<div class="controls">
+  <label for="sampleSeed">비교용 인물 시드</label>
+  <input id="sampleSeed" inputmode="numeric" type="number" value="72911">
+  <button id="render" type="button">9개 장면 다시 그리기</button>
+  <button id="frame" type="button">걷기·일하기 다음 프레임</button>
+</div>
+<section id="matrix" aria-label="나이 및 생활 환경별 픽셀 장면 비교"></section>
+<aside>
+  <p>검수 관점: 머리 모양·피부색·옷 색상 일관성, 어린이와 노년층의 서로 다른 실루엣,
+  인물 발과 지면의 접촉, 농기구의 손 부착, 건물·울타리와 캐릭터의 겹침, 모바일 축소 시 구별 가능성.
+  좌우의 생활환경은 동일 인물의 실제 이동 이력이 아니라 비교 조건입니다.</p>
+</aside>
+</main>
+<script src="./sprite-composer-v1.js?v=2"></script>
+<script src="./pixel-scene.js?v=4"></script>
+<script>
+(function(){
+ 'use strict';
+ const ages=[10,30,70],conditions=[
+  {id:'rural',title:'농촌 · 생활',settlement:'농촌',career:'학생'},
+  {id:'urban',title:'도시 · 생활',settlement:'도시',career:'회사원'},
+  {id:'farm',title:'농촌 · 농사',settlement:'농촌',career:'농부'}
+ ];
+ const matrix=document.getElementById('matrix');
+ let frame=0;
+ function draw(){
+  const raw=Number(document.getElementById('sampleSeed').value);
+  const seed=Number.isFinite(raw)?Math.trunc(raw):72911;
+  matrix.replaceChildren();
+  for(const age of ages)for(const place of conditions){
+    const figure=document.createElement('figure'),caption=document.createElement('figcaption');
+    caption.textContent=age+'세 · '+place.title;
+    const canvas=document.createElement('canvas');canvas.width=600;canvas.height=258;
+    canvas.setAttribute('aria-label',caption.textContent+' 장면');
+    const sample={
+      seed,year:2000+age+frame,age,career:place.id==='farm'&&age<16?'학생':place.career,
+      profile:{settlement:place.settlement,city:'예제 마을',partner:false,child:false},
+      world:{educationYears:age<19?6:12},arc:{}
+    };
+    window.OneLifeScene.paint(canvas,sample);
+    const note=document.createElement('small');
+    note.textContent=sample.career+' · '+sample.profile.settlement+' · 시드 '+seed;
+    figure.append(caption,canvas,note);matrix.append(figure);
+  }
+ }
+ document.getElementById('render').addEventListener('click',draw);
+ document.getElementById('frame').addEventListener('click',()=>{frame++;draw();});
+ draw();
+})();
+</script>
+</body>
+</html>
