@@ -64,12 +64,15 @@ function originFor(life,j){
  }
  if(j.birthStatus==='중인')return weighted(seed,1904,[['역관 가계',24],['의관 가계',18],['서리 가계',40],['관청 장인',18]]);
  // Children born after 1886 may have bonded parents but are not hereditary slaves.
- if(life.birthYear>=1886&&dice(seed,1906)<.07)return '노비 후손 가계';
+ if(!selected&&life.birthYear>=1886&&dice(seed,1906)<.07)return '노비 후손 가계';
  const weights=[['소작 농가',31],['자작 농가',29],['상인 가계',9],['보부상 가계',6],['주막 가계',3],
   ['도공 가계',4],['대장장이 가계',4],['목수 가계',4],['사찰 주변 가계',2],
   ['백정',1],['수군 가계',2]];
  if(coastal.has(j.region))weights.push(['어부 가계',9]);
  else weights.push(['어부 가계',1]);
+ // A player choosing an ordinary commoner household did not opt into the
+ // separately selectable Baekjeong origin or a randomly assigned slave lineage.
+ if(selected==='상민')return weighted(seed,1905,weights.filter(([name])=>name!=='백정'));
  return weighted(seed,1905,weights);
 }
 function make(life){
