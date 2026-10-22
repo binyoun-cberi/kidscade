@@ -1565,7 +1565,7 @@
     if(!life||life.alive)return;
     const snapshot=captureEnding(life);
     replayBasis=snapshot;
-    life=new Sim.Life(snapshot.seed,{birthYear:snapshot.birthYear,countryName:'대한민국',birthSetup:life.birthSetup});
+    life=new Sim.Life(snapshot.seed,{birthYear:snapshot.birthYear,countryName:snapshot.country,birthSetup:life.birthSetup});
     World8.ensure(life);if(Goryeo.is(life))Goryeo.ensure(life);else if(Joseon.isJoseon(life))Joseon.ensure(life);else {World8.moment(life);World10.ensure(life);}History.contextualize(life);Calendar?.record(life);
     storyTab='';peerAgeChoice=0;timelineVisible=22;playSpeed=1;nextDecision=false;refreshSpeedControls();
     peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
