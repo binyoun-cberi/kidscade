@@ -113,3 +113,34 @@ test('game avoids invented aftermath lines when a choice has no measurable chang
    }else life.tick();
  }
 });
+
+
+test('ending associates an effect only with its actual choice, not another choice at the same age',()=>{
+ const ui=c.OneLifeUIFlow,first={age:20,kind:'decision',text:'첫 선택'},second={age:20,kind:'decision',text:'두 번째 선택'};
+ const effect={age:20,kind:'decision-effect',text:'살림 +3'};
+ const log=[first,{age:20,kind:'event',text:'이후 다른 사건이 있었다'},second,effect];
+ assert.equal(ui.decisionAftermath(log,first),null);
+ assert.equal(ui.decisionAftermath(log,second),effect);
+ assert.equal(ui.decisionAftermath(log,{...second}),null,'detached choice must not steal an effect');
+ const linked={age:21,kind:'decision',causeId:'real-2'};
+ const later={age:24,kind:'decision-effect',causeId:'real-2',text:'증빙된 후속'};
+ assert.equal(ui.decisionAftermath([linked,later],linked),later);
+ const game=fs.readFileSync(dir+'/game.js','utf8');
+ assert.match(game,/UIFlow\.decisionAftermath\(life\.log,e\)/);
+ assert.doesNotMatch(game,/그때는 무엇이 달라질지 몰랐다/);
+});
+
+test('offline prose review catches vague generic AI-style phrases without editing narrative',()=>{
+ const style=require('../games/high_one_life/text-style-audit.cjs');
+ const findings=style.analyze('그날의 일은 마음 한편에 남았다.\n이웃이 가져간 곡식은 세 되였다.','fixture');
+ assert.equal(findings.length,1);
+ assert.equal(findings[0].line,1);
+ assert.equal(findings[0].file,'fixture');
+ const game=fs.readFileSync(dir+'/game.js','utf8');
+ for(const phrase of ['그날의 일은 마음 한편에 남았다','그때는 무엇이 달라질지 몰랐다',
+    '세월이 지나며 이야기들이 남습니다','식구들과 고을의 하루를 보냈다']){
+   assert.ok(!game.includes(phrase),'generic sentence must not reappear: '+phrase);
+ }
+ const inventory=style.scan();assert.ok(Array.isArray(inventory));
+ assert.ok(inventory.every(item=>!item.file.includes('..')),'inventory paths stay local');
+});
