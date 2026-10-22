@@ -1169,6 +1169,8 @@
   }
   function render() {
     if (!life) return;
+    const measurementGuide=$('historicalUnits');
+    if(measurementGuide)measurementGuide.hidden=life.year>=1900;
     if(Goryeo.is(life)){
       window.OneLifeGoryeoView343.paint(life,{paused,choose:i=>{if(life.choose(i)){if(!life.alive)finish();else render();save();}},action:(kind,id,value)=>{Goryeo.action(life,kind,id,value);render();save();},pause:()=>{paused=!paused;lastTick=performance.now();render();},next:()=>{stepYear();}});
       return;
