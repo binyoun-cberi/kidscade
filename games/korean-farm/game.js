@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import {loadModel,loadFarmCropStage,assetReport,FARM_MODELS} from './assets.js';
 import {createFarmerAnimator} from './animation/farmer-animator.js';
 import {FieldEffects} from './animation/field-effects.js';
+import {HarvestReward} from './animation/harvest-reward.js';
+import {cropGrowthScale} from './rendering/crop-presentation.mjs';
 import {buildSolnaeriVillage} from './rendering/village-scene.js';
 import {VILLAGE_COLLIDERS} from './rendering/village-layout.mjs';
 import {createRicePlantingGrid} from './rendering/rice-planting-grid.js';
@@ -27,7 +29,7 @@ const $=id=>document.getElementById(id);
 const SAVE_KEY=window.KidscadeGame?.storageKey?.('korean_farm','farm')||'kidscade_game_v1:korean_farm:farm';
 const bounds=21.7;
 const state=loadSave();
-let scene,renderer,camera,raycaster,ground,farmer,farmerAvatar,farmerAnimator,fieldEffects,villageScene=null,villagePeople=null,harvestCargo=null,farmWeather=null,merchantNpcHit=null;
+let scene,renderer,camera,raycaster,ground,farmer,farmerAvatar,farmerAnimator,fieldEffects,harvestReward=null,villageScene=null,villagePeople=null,harvestCargo=null,farmWeather=null,merchantNpcHit=null;
 let last=0,raf=0,paused=false,disposed=false,loading=true,noticeTimer=0,villageClockAccum=0,villageClockSaved=state.minute;
 let camTarget=new THREE.Vector3(state.player.x,0,state.player.z);
 let viewAngle=state.camera.angle,farmerFacingTarget=0;
@@ -158,6 +160,7 @@ function init3D(){
   harvestCargo=createHarvestCargo(scene,farmer);refreshCargoVisual();
   for(const plot of FIELD_DEFS)harvestCargo.setField(plot,fieldById(state,plot.id));
   fieldEffects=new FieldEffects(scene);
+  harvestReward=new HarvestReward(scene);
   camera.position.set(16,20,20);resize();
   window.addEventListener('resize',resize);
 }
@@ -320,6 +323,11 @@ function syncFieldVisual(id,force=false){
   if(force||stage!==record.stage){
     record.stage=stage;
     drawCrops(id);
+  }else{
+    const scale=cropGrowthScale(field.growth,stage);
+    for(const plant of record.cropLayer.children){
+      if(plant.userData.baseGrowthScale)plant.scale.copy(plant.userData.baseGrowthScale).multiplyScalar(scale);
+    }
   }
 }
 async function drawCrops(id){
@@ -340,6 +348,8 @@ async function drawCrops(id){
     model.position.z+=(z-(rows-1)/2)*(plot.d/(rows+.35));
     model.position.y+=plot.kind==='rice'?.22:.26;
     if(plot.kind==='rice')model.scale.multiplyScalar(1.12);
+    model.userData.baseGrowthScale=model.scale.clone();
+    model.scale.multiplyScalar(cropGrowthScale(field.growth,stage));
     model.rotation.y=(x*3+z)*.36;
     model.userData.stripIndex=z;model.visible=!field.work?.harvested?.[z];
     record.cropLayer.add(model);
@@ -348,6 +358,7 @@ async function drawCrops(id){
 }
 function updateEnvironmentAnimation(dt,elapsed){
   fieldEffects?.update(dt);
+  harvestReward?.update(dt);
   for(const record of plotMeshes.values()){
     const f=fieldById(state,record.plot.id);
     if(record.waterMesh?.visible){
@@ -863,6 +874,8 @@ function handleFarmFlowEvent(event){
         event.cellIndex==null?actionContactPoint(plot,state.player):event.action==='plant'?
           seedlingPosition(plot,event.cellIndex):workStripPosition(plot,event.cellIndex));
       syncFieldVisual(plot.id);
+      // Show the actual awarded produce only once all strips are harvested.
+      if(event.action==='harvest'&&result.quantity>0)harvestReward?.show(plot,result.produce,result.quantity);
       if(event.action==='harvest'||event.action==='fertilize')refreshCargoVisual();
       if(stripWork){
         selectedStrip=nextWorkStrip(fieldById(state,plot.id),event.action);
@@ -1440,7 +1453,7 @@ function bindControls(){
   stick.addEventListener('pointerup',resetStick);stick.addEventListener('pointercancel',resetStick);
   window.addEventListener('pagehide',()=>save(true));
   window.KidscadeGame?.registerPauseHandlers?.({pause:()=>paused=true,resume:()=>paused=false});
-  window.KidscadeGame?.registerCleanup?.(()=>{clearGesture();farmFlow.reset();save(true);disposed=true;cancelAnimationFrame(raf);fieldEffects?.clear();harvestCargo?.dispose();villagePeople?.dispose();farmWeather?.dispose();for(const r of plotMeshes.values()){r.planting?.dispose();r.work?.dispose();r.statusMarkers?.dispose?.()}villageScene?.dispose();renderer?.dispose()});
+  window.KidscadeGame?.registerCleanup?.(()=>{clearGesture();farmFlow.reset();save(true);disposed=true;cancelAnimationFrame(raf);fieldEffects?.clear();harvestReward?.dispose();harvestCargo?.dispose();villagePeople?.dispose();farmWeather?.dispose();for(const r of plotMeshes.values()){r.planting?.dispose();r.work?.dispose();r.statusMarkers?.dispose?.()}villageScene?.dispose();renderer?.dispose()});
 }
 async function main(){
   const safeStart=nearestWalkablePoint(state.player,obstacles,bounds);
