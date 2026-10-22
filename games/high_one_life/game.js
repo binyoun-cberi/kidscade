@@ -449,7 +449,7 @@
       put('v13FamilyStatus',aftermath?.captivity?.status==='held'?
         '고향에 남은 배우자와 가족의 소식을 기다린다. 가족이 있는 곳과 포로 생활 중인 곳은 다르다.':
         (v4.spouse?(v4.spouse.alive?'배우자 '+v4.spouse.name+'와 함께 지낸다.':'배우자 '+v4.spouse.name+'를 그리워한다.'):'식구들과 살림을 이어 간다.')+' 자녀 '+v4.children+'명.');
-      put('v13LifeMemories',[...j.memories.slice(-1),...v3.memories.slice(-1),...v4.memories.slice(-2),...(jobs?.memories||[]).slice(-1)].join(' · ')||'세월이 지나며 이야기들이 남습니다.');
+      put('v13LifeMemories',[...j.memories.slice(-1),...v3.memories.slice(-1),...v4.memories.slice(-2),...(jobs?.memories||[]).slice(-1)].join(' · ')||'남아 있는 기록이 없습니다.');
       put('nameHeadline',p.name+' · '+j.region);put('profileName',p.name);
       put('profileMeta',life.gender+' · '+j.region+' · '+life.age+'세');
       put('profileFamily',(social?.originLabel||j.status)+(social?.freed?' · 법적 예속에서 벗어남':''));
@@ -481,7 +481,7 @@
         '고향의 가족 '+v4.people.length+'명 중 '+v4.alive+'명 생존':
         '가족 '+v4.people.length+'명 중 '+v4.alive+'명 생존 · 함께 사는 식구 '+v4.atHome+'명');put('v9Hobby',v3.memories.at(-1)||'생업과 이웃 사이에서 남은 일상');
       put('v9Loan',e.debt?'이웃이나 친척에게 진 빚을 아직 다 갚지 못했다. '+e.why:'빚을 지지 않고 살림을 꾸려 가고 있다. '+e.why);
-      put('v9Hobby',jobs?.primary?jobs.primary.name+' 일을 오랫동안 익히며 사람들과 인연을 맺었다.':(social?.memories.at(-1)||v3.memories.at(-1)||'식구들과 고을의 하루를 보냈다.'));
+      put('v9Hobby',jobs?.primary?jobs.primary.name+' 일을 계속해 왔다.':(social?.memories.at(-1)||v3.memories.at(-1)||'아직 기록된 일이 없습니다.'));
       const picture=window.OneLifeJoseonPixel2?.paint($('lifeScene'),life)||Joseon3.paint($('lifeScene'),life)||Joseon.paint($('lifeScene'),life);
       if(!picture)Pixel.paint($('lifeScene'),life);
       put('sceneLabel',aftermath?.captivity?.status==='held'?
@@ -1418,9 +1418,12 @@
       const age=document.createElement('b');age.textContent=e.age+'세';
       const text=document.createElement('span');text.textContent=e.text;
       const copy=document.createElement('div');copy.append(text);
-      const effect=life.log.find(x=>x.kind==='decision-effect'&&x.age===e.age);
-      const detail=document.createElement('small');detail.textContent=effect?.text||'그때는 무엇이 달라질지 몰랐다.';
-      if(e.kind==='decision')copy.append(detail);
+      const effect=UIFlow.decisionAftermath(life.log,e);
+      if(effect){
+        const detail=document.createElement('small');
+        detail.textContent=effect.text;
+        copy.append(detail);
+      }
       else if(['history-choice','era-choice','care13-choice','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice','joseon339-choice','joseon340-choice','joseon341-choice'].includes(e.kind)){
         const aftermath={'joseon341-choice':'joseon341-followup','joseon340-choice':'joseon340-followup','joseon339-choice':'joseon339-followup','history-choice':'history-followup','era-choice':'era-followup','care13-choice':'care13-followup',
           'joseon-choice':'joseon-followup','joseon2-choice':'joseon2-followup',
