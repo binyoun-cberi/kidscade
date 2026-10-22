@@ -8,7 +8,9 @@ function certificate(l){const g=G.ensure(l),values={birthName:l.profile.name,bir
  $('birthCertificate').classList.remove('hidden');
  $('birthLineage').classList.add('hidden');$('hopaDisplay').classList.add('hidden');
 }
-function scene(canvas,l,g){const c=canvas.getContext('2d');canvas.width=720;canvas.height=220;c.fillStyle='#d7dfc6';c.fillRect(0,0,720,220);c.fillStyle='#93a28b';c.beginPath();c.moveTo(0,145);c.lineTo(120,30);c.lineTo(240,145);c.lineTo(390,47);c.lineTo(550,145);c.lineTo(660,63);c.lineTo(720,130);c.fill();c.fillStyle='#adbb8a';c.fillRect(0,140,720,80);
+function scene(canvas,l,g){const c=canvas.getContext('2d');canvas.width=720;canvas.height=220;c.imageSmoothingEnabled=false;
+ const historical=root.OneLifeHistoricalSpritesV1;
+ if(historical)return historical.scene(c,l,g,{phase:l.year%2});c.fillStyle='#d7dfc6';c.fillRect(0,0,720,220);c.fillStyle='#93a28b';c.beginPath();c.moveTo(0,145);c.lineTo(120,30);c.lineTo(240,145);c.lineTo(390,47);c.lineTo(550,145);c.lineTo(660,63);c.lineTo(720,130);c.fill();c.fillStyle='#adbb8a';c.fillRect(0,140,720,80);
  c.fillStyle='#79999c';c.fillRect(0,180,720,40);c.fillStyle='#e0cb9c';c.fillRect(200,161,400,34);
  for(let n=0;n<3;n++){const x=50+n*220;c.fillStyle='#e8d7ad';c.fillRect(x,116,120,54);c.fillStyle='#6c7366';c.beginPath();c.moveTo(x-18,118);c.lineTo(x+60,81);c.lineTo(x+138,118);c.fill();c.fillStyle='#725e47';c.fillRect(x+46,138,25,32);}
  if(g.refuge){c.fillStyle='#9b805b';c.beginPath();c.moveTo(285,179);c.lineTo(335,112);c.lineTo(385,179);c.fill();}
@@ -19,7 +21,8 @@ function paint(l,handlers){
  const g=G.ensure(l),host=$('goryeoPlay');host.hidden=false;host.replaceChildren();
  const head=el('header',undefined,'goryeo-head');head.append(el('span',l.year<1392?'高麗 · 고려 후기':'朝鮮 · 이어지는 삶','goryeo-kicker'),el('h1',l.profile.name+'의 한 생'),el('p',l.year+'년 · '+l.age+'세 · '+g.region+' · '+G.period(l)));host.append(head);
  const controls=el('div',undefined,'goryeo-controls');for(const [label,fn,disabled]of [[handlers.paused?'시간 이어가기':'잠시 멈추기',handlers.pause,false],['한 해 보내기',handlers.next,!!l.pending]]){const b=el('button',label);b.disabled=disabled;b.onclick=fn;controls.append(b);}controls.append(el('small',l.pending?'선택을 기다리고 있습니다.':handlers.paused?'시간이 멈춰 있습니다.':'시간이 흐르고 있습니다.'));host.append(controls);
- const canvas=el('canvas');canvas.setAttribute('aria-label',g.region+'의 마을과 식구들');canvas.setAttribute('role','img');scene(canvas,l,g);host.append(canvas);
+ const canvas=el('canvas');const visible=root.OneLifeHistoricalSpritesV1?.occupants(l,g);
+ canvas.setAttribute('aria-label',g.region+' · '+(g.away?'이동 중인 주인공':visible?visible.length+'명의 실제 등장인물':'마을 풍경'));canvas.setAttribute('role','img');scene(canvas,l,g);host.append(canvas);
  const state=el('div',undefined,'goryeo-resources');for(const [a,b]of [['건강',l.stats.health+' / 100'],['곡식',String(g.grain)],['옷감',g.cloth+'필'],['장터에 쓸 돈',String(g.pocket)]]){const box=el('div');box.append(el('small',a),el('strong',b));state.append(box);}host.append(state);
  const choice=l.getChoice();if(choice){const panel=el('section',undefined,'goryeo-decision');panel.setAttribute('aria-live','polite');panel.append(el('small','삶의 갈림길'),el('h2',choice.title),el('p',choice.description));choice.options.forEach((o,i)=>{const b=el('button',o.label);b.onclick=()=>handlers.choose(i);panel.append(b);});host.append(panel);}
  const grid=el('div',undefined,'goryeo-grid');const family=el('section');family.append(el('h2','함께 꾸리는 살림'),el('p',g.origin+' · '+(g.bound?'예속된 처지':g.job)+' · '+g.belief));if(g.away)family.append(el('p','집을 떠나 있는 중 · 남은 식구들이 생업을 맡습니다.'));
