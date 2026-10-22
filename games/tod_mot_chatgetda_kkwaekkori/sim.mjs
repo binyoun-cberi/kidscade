@@ -1,6 +1,6 @@
 // Seeded, renderer-independent town activities and fair observation puzzles.
-export const WORLD_VERSION = 3;
-export const BLOCK_PITCH = 7;
+export const WORLD_VERSION = 5;
+export const BLOCK_PITCH = 8.5;
 export const STAGES = Object.freeze({
   small: { label: '작은 마을', cols: 3, rows: 2, residents: 18, targets: 1 },
   medium: { label: '북적북적 동네', cols: 5, rows: 3, residents: 45, targets: 3 },
@@ -16,7 +16,7 @@ export const COLORS = Object.freeze([
 ]);
 export const ACTIVITIES = Object.freeze([
   {id:'browse',name:'빵을 고르는',clip:'holding-both',props:['식빵','크루아상','도넛']},
-  {id:'deliver',name:'빵을 배달하는',clip:'walk',props:['식빵','크루아상','도넛']},
+  {id:'deliver',name:'빵을 배달하는',clip:'holding-both',props:['식빵','크루아상','도넛']},
   {id:'eat',name:'빵을 먹는',clip:'holding-right',props:['식빵','크루아상','도넛']},
   {id:'read',name:'책을 읽는',clip:'holding-both',props:['빨간 책','노란 책','파란 책']},
   {id:'ball',name:'공놀이하는',clip:'idle',props:['빨간 공','노란 공','파란 공']},
@@ -38,27 +38,90 @@ export function createRng(seed) {
   return ()=>{state+=0x6D2B79F5;let t=state;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};
 }
 function shuffled(input,random){const a=[...input];for(let i=a.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-export function getBlockCenter(block,stage){const c=typeof stage==='string'?STAGES[stage]:stage;return {x:(block.col-(c.cols-1)/2)*BLOCK_PITCH,z:(block.row-(c.rows-1)/2)*BLOCK_PITCH};}
+export function getBlockCenter(block,stage){const c=typeof stage==='string'?STAGES[stage]:stage;return {x:(block.col-(c.cols-1)/2)*BLOCK_PITCH+[0,1.4,-.7,.8][block.row%4],z:(block.row-(c.rows-1)/2)*BLOCK_PITCH+[-.6,.5,0][block.col%3]};}
 export function signature(p){return `${p.modelVariant}:${p.activity}:${p.propVariant}`;}
 export function getRoutePosition(person,stage){
-  const c=getBlockCenter(person.block,stage);
-  // Separate activity bays in front of every building, with room for bodies and props.
-  const motion=person.activity==='deliver'&&!person.found ? Math.sin(person.elapsed*.8)*.16:0;
-  return {x:c.x+(person.slot-1)*1.55+motion,z:c.z+2.15};
+  if(person.position)return {...person.position};
+  return activityPosition(person.block,person.slot,stage);
 }
+function activityPosition(block,slot,stage){
+  const c=getBlockCenter(block,stage);
+  const bays=['bakery','market'].includes(block.kind)?[[-2.2,1.7],[-2.2,.4],[-2.2,-1],[2.2,1.7],[2.2,.4],[2.2,-1],[0,1.95]]:[[-2.15,1.65],[-.75,2.05],[.75,2.05],[2.15,1.65],[-2.15,-1.55],[2.15,-1.55]];
+  const [x,z]=block.kind==='stop'&&slot===6?[2.15,2.8]:bays[slot%bays.length];
+  return {x:c.x+x,z:c.z+z};
+}
+// One shared graph drives both visible paths and resident navigation.
+export function getWalkNetwork(stage){
+  const nodes=[],edges=[],links=[];
+  const connect=(a,b)=>{edges.push([a,b]);links[a].push(b);links[b].push(a);};
+  for(let row=0;row<stage.rows;row++)for(let col=0;col<stage.cols;col++){
+    const c=getBlockCenter({row,col},stage),base=nodes.length;
+    for(const [x,z] of [[-3.1,-3.1],[3.1,-3.1],[3.1,3.1],[-3.1,3.1]]){nodes.push({x:c.x+x,z:c.z+z});links.push([]);}
+    for(let i=0;i<4;i++)connect(base+i,base+(i+1)%4);
+    if(col)connect(base,base-4+1);
+    if(row)connect(base+1,base-stage.cols*4+2);
+  }
+  return {nodes,edges,links};
+}
+function journey(person,destination,slot,stage){
+  const net=getWalkNetwork(stage),start=person.position,end=activityPosition(destination,slot,stage);
+  const from=getBlockCenter(person.block,stage),to=getBlockCenter(destination,stage);
+  const corner=(block,pos,c)=>((block.row*stage.cols+block.col)*4)+(pos.x<c.x?(pos.z<c.z?0:3):(pos.z<c.z?1:2));
+  const first=corner(person.block,start,from),last=corner(destination,end,to),queue=[first],previous=new Map([[first,null]]);
+  for(let i=0;i<queue.length&&!previous.has(last);i++)for(const next of net.links[queue[i]])if(!previous.has(next)){previous.set(next,queue[i]);queue.push(next);}
+  const path=[];for(let at=last;at!==null;at=previous.get(at))path.unshift(net.nodes[at]);
+  return [{x:net.nodes[first].x,z:start.z},...path,{x:net.nodes[last].x,z:end.z},end];
+}
+function slotFree(town,block,slot,id){return !town.people.some(q=>q.id!==id&&((!q.moving&&!q.riding&&q.block.id===block.id&&q.slot===slot)||(q.moving&&q.destination.id===block.id&&q.destinationSlot===slot)));}
+function travel(town,p,block,slot){p.destination=block;p.destinationSlot=slot;p.route=journey(p,block,slot,town.config);p.moving=true;}
+function chooseActivity(town,p,activity){if(!town.people.some(q=>q.id!==p.id&&signature(q)===signature({...p,activity})))p.activity=activity;p.action=p.activity;}
+function updateShops(town){
+  for(const block of town.blocks.filter(b=>['bakery','market'].includes(b.kind))){
+    const line=town.people.filter(p=>!p.reserved&&!p.found&&!p.moving&&p.block.id===block.id&&p.shopState==='queued').sort((a,b)=>a.queuedAt-b.queuedAt||a.id.localeCompare(b.id));
+    const first=line[0];
+    if(first&&slotFree(town,block,6,first.id)){first.shopState='approaching';travel(town,first,block,6);}
+  }
+}
+
+function graphPath(net,first,last){
+  const queue=[first],previous=new Map([[first,null]]);
+  for(let i=0;i<queue.length&&!previous.has(last);i++)for(const next of net.links[queue[i]])if(!previous.has(next)){previous.set(next,queue[i]);queue.push(next);}
+  const path=[];for(let at=last;at!==null;at=previous.get(at))path.unshift({...net.nodes[at]});return path;
+}
+function advanceBus(town,dt){
+  const bus=town.bus;if(!bus)return;
+  if(bus.dwell>0){bus.dwell-=dt;if(bus.dwell>0)return;
+    const stops=town.blocks.filter(b=>b.kind==='stop'),net=getWalkNetwork(town.config),from=stops[bus.stopIndex];
+    bus.stopIndex=(bus.stopIndex+1)%stops.length;const to=stops[bus.stopIndex];
+    const first=(from.row*town.config.cols+from.col)*4+2,last=(to.row*town.config.cols+to.col)*4+2;
+    bus.route=first===last?[...graphPath(net,first,0),...graphPath(net,0,last).slice(1)]:graphPath(net,first,last);
+    bus.atStop=null;
+  }
+  let budget=dt*1.4;
+  while(budget>0&&bus.route.length){const next=bus.route[0],dx=next.x-bus.position.x,dz=next.z-bus.position.z,d=Math.hypot(dx,dz);
+    if(d>.001)bus.heading=Math.atan2(dx,dz);
+    if(d<=budget){bus.position={...next};bus.route.shift();budget-=d;}
+    else{bus.position.x+=dx/d*budget;bus.position.z+=dz/d*budget;budget=0;}
+  }
+  if(!bus.route.length){const stops=town.blocks.filter(b=>b.kind==='stop');bus.atStop=stops[bus.stopIndex].id;bus.dwell=18;bus.trips++;}
+}
+
 export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=true){
   const config=STAGES[stageName];if(!config)throw new Error(`알 수 없는 마을 크기: ${stageName}`);
   if(!DIFFICULTIES[difficulty])difficulty='easy';
   const random=createRng(seed),blocks=[],used=new Set();
   for(let row=0;row<config.rows;row++)for(let col=0;col<config.cols;col++)blocks.push({id:`b${row}-${col}`,col,row,...DISTRICTS[(col+row*config.cols)%6]});
   const people=Array.from({length:config.residents},(_,i)=>{
-    const block=blocks[i%blocks.length],slot=Math.floor(i/blocks.length),activity=block.activities[slot%3];
+    const allocation=blocks.flatMap((block,index)=>Array.from({length:[4,3,3,4,2,2][index%6]},(_,slot)=>({block,slot})));
+    const {block,slot}=allocation[i%allocation.length],activity=block.activities[slot%3];
     const choices=shuffled(Array.from({length:36},(_,n)=>({modelVariant:n%12,propVariant:Math.floor(n/12)})),random);
     const look=choices.find(v=>!used.has(signature({...v,activity})));
     const person={id:`person-${i}`,block,slot,...look,activity,action:activity,elapsed:0,routineAt:18+random()*14,reserved:false,found:false};
+    person.position=activityPosition(block,slot,config);person.heading=slot%2?-.35:.35;person.moving=false;
     used.add(signature(person));return person;
   });
-  const town={stageName,config,seed,difficulty,blocks,people,order:[],time:0};
+  const stop=blocks.find(b=>b.kind==='stop'),c=getBlockCenter(stop,config);
+  const town={stageName,config,seed,difficulty,blocks,people,order:[],time:0,bus:{position:{x:c.x+3.1,z:c.z+3.1},heading:0,atStop:stop.id,stopIndex:0,dwell:18,route:[],trips:0}};
   if(autoSelect)selectTargets(town,people.map(p=>p.id));return town;
 }
 export function selectTargets(town,eligibleIds,previous=[]){
@@ -87,13 +150,63 @@ export function selectTargets(town,eligibleIds,previous=[]){
   return order;
 }
 export function movePeople(town,deltaSeconds){
-  const dt=Math.min(.1,Math.max(0,Number(deltaSeconds)||0));town.time+=dt;
+  const dt=Math.min(.1,Math.max(0,Number(deltaSeconds)||0));town.time+=dt;advanceBus(town,dt);
   for(const p of town.people){
-    p.elapsed+=dt;if(p.reserved||p.found||p.elapsed<p.routineAt)continue;
-    const list=p.block.activities,next=list[(list.indexOf(p.activity)+1)%list.length];
-    if(!town.people.some(q=>q.id!==p.id&&signature(q)===signature({...p,activity:next}))){p.activity=next;p.action=next;}
-    p.routineAt=p.elapsed+20+(p.slot%3)*4;
+    p.elapsed+=dt;
+    if(p.reserved||p.found)continue;
+    if(p.riding){
+      if(town.bus.atStop&&town.bus.trips>p.boardedTrip){
+        const stop=town.blocks.find(b=>b.id===town.bus.atStop);const slot=Array.from({length:6},(_,i)=>i).find(i=>slotFree(town,stop,i,p.id));
+        const door=activityPosition(stop,6,town.config);
+        const busyDoor=town.people.some(q=>q.id!==p.id&&q.busAlighting&&Math.hypot(q.position.x-door.x,q.position.z-door.z)<1.1);
+        if(slot!==undefined&&!busyDoor){p.busAlighting=true;p.riding=false;p.boarding=false;p.block=stop;p.position=activityPosition(stop,6,town.config);travel(town,p,stop,slot);p.completedRides=(p.completedRides||0)+1;}
+      }
+      continue;
+    }
+    if(p.boarding&&!p.moving){
+      if(town.bus.atStop===p.block.id&&town.bus.dwell>0){p.riding=true;p.boardedTrip=town.bus.trips;}
+      continue;
+    }
+    if(!p.moving&&p.block.kind==='stop'&&p.activity==='wait'&&town.bus.atStop===p.block.id&&town.bus.dwell>8&&slotFree(town,p.block,6,p.id)){
+      p.boarding=true;travel(town,p,p.block,6);
+    }
+    if(!p.moving&&['bakery','market'].includes(p.block.kind)&&!p.shopState){p.shopState='queued';p.queuedAt=town.time;}
+    if(p.moving){
+      let budget=dt*(.65+(Number(p.id.split('-')[1])%4)*.06);
+      while(budget>0&&p.route.length){
+        const next=p.route[0],dx=next.x-p.position.x,dz=next.z-p.position.z,d=Math.hypot(dx,dz);
+        if(d>.001)p.heading=Math.atan2(dx,dz);
+        if(d<=budget){p.position={...next};p.route.shift();budget-=d;}
+        else{p.position.x+=dx/d*budget;p.position.z+=dz/d*budget;budget=0;}
+      }
+      if(!p.route.length){
+        p.moving=false;p.busAlighting=false;p.block=p.destination;p.slot=p.destinationSlot;
+        p.heading=p.slot%2?-.35:.35;
+        if(p.boarding){p.routineAt=p.elapsed+20;continue;}
+        if(p.shopState==='approaching'){p.shopState='serving';p.serviceUntil=p.elapsed+5;chooseActivity(town,p,'browse');}
+        else{p.shopState=null;const list=p.block.activities;chooseActivity(town,p,list[(p.slot+Math.floor(town.time/20))%list.length]);}
+        p.routineAt=p.elapsed+14+(p.slot%4)*5;
+      }
+      continue;
+    }
+    if(p.shopState==='queued')continue;
+    if(p.shopState==='serving'){
+      if(p.elapsed<p.serviceUntil)continue;
+      p.shopState='finished';chooseActivity(town,p,'deliver');p.routineAt=p.elapsed+3;p.completedPurchases=(p.completedPurchases||0)+1;
+    }
+    if(p.elapsed<p.routineAt)continue;
+    const index=town.blocks.findIndex(b=>b.id===p.block.id);
+    let chosen=null;
+    for(let n=1;n<=town.blocks.length&&!chosen;n++){
+      const block=town.blocks[(index+n)%town.blocks.length];
+      for(let slot=0;slot<6;slot++){
+        if(slotFree(town,block,slot,p.id)){chosen={block,slot};break;}
+      }
+    }
+    if(chosen){p.shopState=null;travel(town,p,chosen.block,chosen.slot);}
+    else p.routineAt=p.elapsed+5;
   }
+  updateShops(town);
 }
 export function getClue(person,difficulty='easy'){
   if(!person)return null;const a=ACTIVITIES.find(a=>a.id===person.activity),prop=a.props[person.propVariant];

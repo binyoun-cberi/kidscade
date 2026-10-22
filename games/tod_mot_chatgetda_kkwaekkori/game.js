@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { STAGES, DIFFICULTIES, WORLD_VERSION, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue } from './sim.mjs?v=3';
+import { STAGES, DIFFICULTIES, WORLD_VERSION, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getWalkNetwork, getRoutePosition, movePeople, getClue } from './sim.mjs?v=5';
 
 const $ = id => document.getElementById(id);
 const ROOT = '../../assets/game/';
@@ -89,6 +89,8 @@ function disposeProcedural(root) {
 function normalizedModel(gltf, longest = 2.5, footprint = null) {
   if (!gltf) return null;
   const object = cloneSkeleton(gltf.scene);
+  const rest=gltf.animations?.find(a=>a.name==='static');
+  if(rest){const pose=new THREE.AnimationMixer(object);pose.clipAction(rest).play();pose.update(0);}
   object.updateMatrixWorld(true);
   let box = new THREE.Box3().setFromObject(object);
   const dimension = box.getSize(new THREE.Vector3());
@@ -151,19 +153,36 @@ function generateWorld() {
   const revision=++worldSerial;
   const {cols,rows}=town.config;
   const width=cols*BLOCK_PITCH+1,depth=rows*BLOCK_PITCH+1;
-  const base=cube(width,.25,depth,0x8fbd93);base.position.y=-.17;scenery.add(base);
-  // Lane ribbons are deliberately between blocks; residents always walk on the inner sidewalk.
-  for (let col=0;col<cols-1;col++) {
-    const x=(col+.5-(cols-1)/2)*BLOCK_PITCH;
-    addPart(scenery,cube(1.35,.028,depth,colors.road),x,.003,0);
+  const base=cube(width+600,.25,depth+600,0x8fbd93);base.position.y=-.17;scenery.add(base);
+  // A continuous landscape surrounds every camera angle, rather than an exposed board edge.
+  for(let i=0;i<56;i++){
+    const side=i%4,t=Math.floor(i/4)/13;
+    const x=side<2?(t-.5)*(width+18):(side===2?-1:1)*(width/2+5+(i%3)*2);
+    const z=side>=2?(t-.5)*(depth+18):(side===0?-1:1)*(depth/2+5+(i%3)*2);
+    const treeUrl=i%3===0?`${ROOT}3d/nature/kenney-nature-kit/tree-tall.glb`:MODEL.parkTree;
+    placeObject(treeUrl,{x,z},2.4+(i%4)*.35,treeFallback(),revision,1.6);
+    const meadow=addPart(scenery,cylinder(2,2,.025,[0x9ac17f,0xa1c98b,0x86b780][i%3],12),x,-.01,z);meadow.scale.z=.7;
+    if(i%3===0)placeObject(MODEL.parkTree,{x:x+1.1,z:z+.8},1.6,treeFallback(),revision,.9);
+    if(town.stageName==='large'&&i%2===0){
+      placeObject(MODEL.buildings[i%MODEL.buildings.length],{x:x*1.24,z:z*1.24},4+(i%3),buildingFallback({col:i,row:0}),revision,3.2);
+    }
   }
-  for (let row=0;row<rows-1;row++) {
-    const z=(row+.5-(rows-1)/2)*BLOCK_PITCH;
-    addPart(scenery,cube(width,.028,1.35,colors.road),0,.007,z);
+  // Planted verges soften the parcel edges while keeping the promenade clear.
+  for(const block of town.blocks){
+    const c=getBlockCenter(block,town.config);
+    for(const side of [-1,1]){
+      addPart(scenery,cube(.35,.12,3.6,0x729f69),c.x+side*2.55,.06,c.z-.35);
+    }
+  }
+  const network=getWalkNetwork(town.config);
+  for(const [a,b] of network.edges){
+    const from=network.nodes[a],to=network.nodes[b],dx=to.x-from.x,dz=to.z-from.z;
+    const path=addPart(scenery,cube(1.15,.035,Math.hypot(dx,dz)+.1,0xd6c99e),(from.x+to.x)/2,.005,(from.z+to.z)/2);
+    path.rotation.y=Math.atan2(dx,dz);
   }
   for (let i=0;i<town.blocks.length;i++) {
     const block=town.blocks[i],center=getBlockCenter(block,town.config);
-    const parcel=addPart(scenery,cube(5.6,.035,5.6,block.kind==='park'?0xa6c987:colors.concrete),center.x,.03,center.z);
+    const parcel=addPart(scenery,cube(5.6,.035,5.6,['park','home','school'].includes(block.kind)?0xa6c987:colors.concrete),center.x,.03,center.z);
     parcel.userData.block=block.id;
     // A 2.6-wide building envelope leaves the 1.88 sidewalk loop clear.
     const local=(url,x,z,size,footprint=null,blocksView=false)=>placeObject(url,{x:center.x+x,z:center.z+z},size,treeFallback(),revision,footprint,blocksView);
@@ -180,12 +199,13 @@ function generateWorld() {
       addPart(scenery,cube(4.7,.025,.18,0xf6d16c),center.x,.07,center.z+2.72);
     } else {
       const variants=DISTRICT_MODELS[block.kind];
-      const url=town.stageName==='small'&&block.kind==='home' ? MODEL.buildings[i%MODEL.buildings.length] : `${CITY}${variants[Math.floor(i/6)%variants.length]}.glb`;
+      const single=town.stageName==='small'||['home','school'].includes(block.kind);
+      const url=town.stageName==='small' ? MODEL.buildings[i%MODEL.buildings.length] : `${CITY}${variants[Math.floor(i/6)%variants.length]}.glb`;
       const height=block.kind==='plaza'?4.6:block.kind==='home'?3.3:2.7;
-      const building=placeObject(url,{x:center.x-.95,z:center.z-.25},height,buildingFallback(block),revision,1.65,true);
+      const building=placeObject(url,{x:center.x+(single?0:-.95),z:center.z-.25},height,buildingFallback(block),revision,single?2.6:1.65,true);
       building.rotation.y=0;
       const neighbor=block.kind==='home'?MODEL.buildings[(i+3)%MODEL.buildings.length]:`${CITY}${variants[(Math.floor(i/6)+1)%variants.length]}.glb`;
-      placeObject(neighbor,{x:center.x+1.05,z:center.z-.25},Math.min(height,2.8),buildingFallback(block),revision,1.7,true);
+      if(!single)placeObject(neighbor,{x:center.x+1.05,z:center.z-.25},Math.min(height,2.8),buildingFallback(block),revision,1.7,true);
       // Distinct, low storefront details sit inside each parcel, never in the pedestrian loop.
       if(block.kind==='market'||block.kind==='bakery') {
         // A stocked counter belongs to the storefront, clear of all activity bays.
@@ -228,14 +248,15 @@ function generateWorld() {
       const holder=new THREE.Group();movingCars.add(holder);
       const fallback=cube(1.05,.38,.62,[0x4e99d2,0xebc25d,0xe17e85][i]);fallback.position.y=.23;
       modelIn(holder,MODEL.cars[i],1.25,fallback,holder,revision);
-      const z=(-((rows-1)/2)+.5)*BLOCK_PITCH;
+      const z=depth/2+1;
+      if(i===0)addPart(scenery,cube(width+8,.028,1.5,colors.road),0,.003,z);
       cars.push({holder,z,phase:i*.33,direction:i%2?-1:1,speed:.9+i*.16,width});
     }
     const stop=town.blocks.find(b=>b.kind==='stop');
     if(stop){
       const c=getBlockCenter(stop,town.config),holder=new THREE.Group();movingCars.add(holder);
-      modelIn(holder,`${CITY}bus.glb`,2.5,cube(2.3,.75,.85,0xf0cc65),holder,revision);
-      cars.push({holder,z:c.z+3.5,stopX:c.x,phase:0,bus:true,width});
+      modelIn(holder,`${CITY}bus.glb`,1.7,cube(1.5,.65,.7,0xf0cc65),holder,revision);
+      cars.push({holder,z:depth/2+1,stopX:c.x,phase:0,bus:true,width});
     }
   }
   const markerRing=owned(new THREE.Mesh(new THREE.TorusGeometry(.47,.042,8,32),new THREE.MeshBasicMaterial({color:0xffcc57,transparent:true,opacity:.93,depthTest:false})));
@@ -245,6 +266,18 @@ function generateWorld() {
   refreshPreview();
 }
 
+// Character clips only key the joints involved in an action. Fill untouched joints
+// from the exported static pose so walking never inherits a seated bind pose.
+function citizenClip(gltf,name,carry=false){
+  const clip=gltf?.animations?.find(a=>a.name===name);
+  if(!clip)return null;
+  const held=carry?gltf.animations.find(a=>a.name==='holding-both'):null;
+  const heldNames=new Set((held?.tracks||[]).map(t=>t.name));
+  const tracks=[...clip.tracks.filter(t=>!heldNames.has(t.name)),...(held?.tracks||[])];
+  const keyed=new Set(tracks.map(t=>t.name));
+  const rest=gltf.animations.find(a=>a.name==='static');
+  return new THREE.AnimationClip(name,clip.duration,[...(rest?.tracks||[]).filter(t=>!keyed.has(t.name)),...tracks]);
+}
 function makeCitizenAppearance(person,body,appearance,revision) {
   const shirt=COLORS[person.modelVariant%3].hex;
   const skin=[0xffd1a7,0xe7ac81,0xc98c69,0x8a624e][person.modelVariant%4];
@@ -266,7 +299,7 @@ function makeCitizenAppearance(person,body,appearance,revision) {
     if(model){
       body.remove(fallback);disposeProcedural(fallback);body.add(model);
       const clipName=ACTIVITIES.find(a=>a.id===person.activity).clip;
-      const clip=gltf.animations?.find(animation=>animation.name===clipName);
+      const clip=citizenClip(gltf,clipName);
       if(clip){const mixer=new THREE.AnimationMixer(model);mixer.clipAction(clip).play();mixers.push({mixer,person,clipName});}
       citizenAssets.set(person.id,gltf);
       if(getTarget()?.id===person.id)refreshPreview();
@@ -322,7 +355,7 @@ function refreshPreview(){
   // Procedural geometry/material must not be shared with a disposable preview.
   previewActor.traverse(o=>{if(o.isMesh&&o.userData.procedural){o.geometry=o.geometry.clone();o.material=o.material.clone();}});
   const gltf=citizenAssets.get(source.person.id);
-  const clip=gltf?.animations.find(a=>a.name===ACTIVITIES.find(a=>a.id===source.person.activity).clip);
+  const clip=citizenClip(gltf,ACTIVITIES.find(a=>a.id===source.person.activity).clip);
   if(clip){previewMixer=new THREE.AnimationMixer(previewActor.children[0].children[0]);previewMixer.clipAction(clip).play();}
 }
 function registerOccluder(root){
@@ -353,26 +386,28 @@ function positionEverything(dt) {
   for(const p of town.people) {
     const mesh=citizenMeshes.get(p.id);
     if(!mesh)continue;
-    if(mesh.activity!==p.activity){
-      mesh.activity=p.activity;buildActivityProps(p,mesh.appearance,worldSerial);
+    mesh.holder.visible=!p.riding;
+    const visualActivity=p.moving?'walking':p.shopState==='queued'||p.boarding?'queue':p.activity;
+    if(mesh.activity!==visualActivity){
+      mesh.activity=visualActivity;buildActivityProps(p,mesh.appearance,worldSerial);
       const entry=mixers.find(e=>e.person.id===p.id),gltf=citizenAssets.get(p.id);
-      const clipName=ACTIVITIES.find(a=>a.id===p.activity).clip;
-      const clip=gltf?.animations.find(a=>a.name===clipName);
+      const clipName=p.moving?'walk':(p.shopState==='queued'||p.boarding)?'idle':ACTIVITIES.find(a=>a.id===p.activity).clip;
+      const clip=citizenClip(gltf,clipName,p.moving&&p.activity==='deliver');
       if(entry&&clip){entry.mixer.stopAllAction();entry.mixer.clipAction(clip).play();entry.clipName=clipName;}
     }
     const pos=getRoutePosition(p,town.config);
     mesh.holder.position.set(pos.x,0.08,pos.z);
-    mesh.holder.rotation.y=0;
+    const turn=Math.atan2(Math.sin(p.heading-mesh.holder.rotation.y),Math.cos(p.heading-mesh.holder.rotation.y));
+    mesh.holder.rotation.y+=turn*Math.min(1,dt*9);
+    mesh.appearance.visible=(!p.moving||p.activity==='deliver')&&p.shopState!=='queued'&&!p.boarding;
     if(celebration?.id===p.id){mesh.body.rotation.z=Math.sin(p.elapsed*12)*.07;}
     else mesh.body.rotation.z=0;
     animateActivity(mesh.holder,p);
   }
   for(const car of cars) {
     if(car.bus){
-      car.phase=(car.phase+dt)%40;
-      const entry=-car.width/2-2,exit=car.width/2+2;
-      const x=car.phase<10 ? entry+(car.stopX-entry)*car.phase/10:car.phase<20?car.stopX:car.stopX+(exit-car.stopX)*(car.phase-20)/20;
-      car.holder.position.set(x,.10,car.z);car.holder.rotation.y=Math.PI/2;continue;
+      const bus=town.bus;
+      car.holder.position.set(bus.position.x,.10,bus.position.z);car.holder.rotation.y=bus.heading;continue;
     }
     car.phase=(car.phase+dt*car.speed/car.width)%1;
     car.holder.position.set((car.phase-.5)*car.width*car.direction,.10,car.z);
@@ -463,7 +498,7 @@ function pick(clientX,clientY) {
   const rect=canvas.getBoundingClientRect();
   let nearest=null,best=31*31;
   for(const person of town.people){
-    if(found.includes(person.id))continue;
+    if(found.includes(person.id)||person.riding)continue;
     const holder=citizenMeshes.get(person.id)?.holder;
     if(!holder)continue;
     const projected=holder.position.clone().add(new THREE.Vector3(0,1.04,0)).project(camera);
@@ -636,6 +671,6 @@ try{
     resume.textContent='↩ 이어서 찾기';
     resume.style.cssText='border:0;border-radius:13px;padding:12px;background:#dff3e4;color:#347453;font-weight:900;margin-top:12px;';
     resume.addEventListener('click',()=>startTown(saved.stage,saved.seed,saved.found,saved.difficulty,saved.previous||[]));
-    document.querySelector('.stageList').after(resume);
+    $('quickStart').after(resume);
   }
 }catch(_){}
