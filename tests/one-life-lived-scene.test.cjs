@@ -27,6 +27,8 @@ test('the lived scene, live stats and decisions precede secondary history',()=>{
     assert.equal(html.split('id="'+id+'"').length-1,1,'duplicate '+id);
   }
   assert.match(html,/lived-scene-v1\.css\?v=1/);
+  assert.ok(html.indexOf('class="v8-tools-nav"')>html.indexOf('id="decision"'),'the maps should follow the choice');
+  assert.ok(html.indexOf('class="v8-tools-nav"')<html.indexOf('id="travel22Panel"'),'map and comparisons should be available before the historical archive');
   const css=read('lived-scene-v1.css');
   assert.match(css,/\.life-vitals/);
   assert.match(css,/@media\(max-width:480px\)/);
