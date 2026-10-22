@@ -46,23 +46,20 @@ test('local scholar route differentiates first exam from office and persists yea
  assert.match(restored.career,/진사|글 선생/);
  assert.equal(restored.joseon344.choices.length,2);
 });
-test('magistrate may leave a Songdeok monument only after public evaluation; corruption creates scrutiny',()=>{
- const good=born(1740,'양반',18);good.age=30;good.year=1770;
- J.ensure(good).office=true;V5.ensure(good).rank=2;
- prompt(good,'magistrate');assert.equal(good.choose(0),true);
- assert.equal(Fate.ensure(good).magistrate,'benevolent');
- const copy1=Life.restore(copy(good.snapshot()));
- after(copy1,3);assert.equal(copy1.pending,'joseon344:magistrateAfter');
- assert.equal(copy1.choose(0),true);
- assert.ok(copy1.joseon344.scenes.some(x=>/송덕비|평가/.test(x.text)));
- const bad=born(1740,'양반',201);bad.age=30;bad.year=1770;
- J.ensure(bad).office=true;V5.ensure(bad).rank=2;
- prompt(bad,'magistrate');assert.equal(bad.choose(1),true);
- assert.equal(Fate.ensure(bad).magistrate,'abusive');assert.ok(Fate.ensure(bad).shame>0);
- const restored=Life.restore(copy(bad.snapshot()));
- after(restored,3);assert.equal(restored.pending,'joseon344:magistrateAfter');
- assert.equal(restored.choose(0),true);
- assert.ok(restored.joseon344.scenes.some(x=>/감찰|파직|징수|피해|논란|관직/.test(x.text)));
+test('magistrate now hears individual disputes rather than receiving an instant moral label',()=>{
+ const hearing=context.OneLifeMagistrate345;
+ const l=born(1740,'양반',18);l.age=30;l.year=1770;
+ J.ensure(l).office=true;V5.ensure(l).rank=2;
+ prompt(l,'magistrate');assert.equal(l.choose(0),true);
+ assert.equal(hearing.ensure(l).stage,'hearings');
+ assert.equal(hearing.ensure(l).caseIndex,0);
+ assert.equal(Fate.ensure(l).magistrate,'none');
+ l.year++;l.age++;assert.equal(hearing.schedule(l),true);
+ assert.equal(l.pending,'joseon345:case1');
+ assert.equal(l.getChoice().options.length,3);
+ assert.equal(l.choose(0),true);
+ assert.equal(hearing.ensure(l).caseIndex,1);
+ assert.equal(hearing.ensure(l).records.some(x=>/문서|증언|판결|살펴/.test(x.text)),true);
 });
 test('escaped slave stays legally bonded until documented manumission and can be caught',()=>{
  const l=born(1700,'사노비',97);l.age=19;l.year=1719;
