@@ -122,5 +122,23 @@ test('developer comparison grid covers all nine cases without accessing saves',(
  assert.match(html,/for\(const age of ages\)for\(const place of conditions\)/);
  assert.match(html,/image-rendering:pixelated/);
  assert.ok(html.indexOf('sprite-composer-v1.js?v=2')<html.indexOf('pixel-scene.js?v=4'));
- assert.doesNotMatch(html,/localStorage|sessionStorage|fetch\(|XMLHttpRequest|\.save\(/);
+ assert.doesNotMatch(html,/localStorage|sessionStorage|fetch\\(|XMLHttpRequest|\\.save\\(/);
+ assert.match(html,/year:1950\\+age/,'compare one person's consistent life years');
+ assert.match(html,/OneLifeScene\\.paint\\(canvas,sample,\\{frame\\}\\)/,'preview changes pose without changing year');
+});
+test('visual frame override changes only animation, never the displayed birth year',()=>{
+ const vm=require('node:vm');
+ const sandbox={window:{OneLifeSpriteComposerV1:Composer},module:{exports:{}},console};
+ vm.runInNewContext(read('pixel-scene.js'),sandbox);
+ const scene=sandbox.window.OneLifeScene;
+ const sample={seed:72911,age:30,year:1980,career:'농부',
+  profile:{settlement:'농촌',city:'예제 마을',partner:false,child:false},
+  world:{educationYears:12},arc:{}};
+ const start=JSON.stringify(sample);
+ const first=context(),second=context();
+ const canvas=ctx=>({width:600,height:258,getContext:()=>ctx});
+ scene.paint(canvas(first.ctx),sample,{frame:0});
+ scene.paint(canvas(second.ctx),sample,{frame:1});
+ assert.notDeepEqual(first.shapes,second.shapes,'arms or work tool should change with frame');
+ assert.equal(JSON.stringify(sample),start,'a visual preview must not change dates or saves');
 });
