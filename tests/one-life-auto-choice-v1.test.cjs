@@ -111,9 +111,22 @@ test('affordability stays ahead of life focus; unknown effect data is not guesse
   log:[],goryeo343:{grain:1,pocket:0},getReflection(){return null},
   getChoice(){return {title:'곡식을 나누는 일',options}}};
  assert.deepEqual(auto.eligibleIndices(life,options),[1,2]);
- assert.deepEqual(auto.preferredIndices(life,options,[1,2]),[1,2],
-  'one known effect cannot be compared with a missing effect');
- assert.ok([1,2].includes(auto.decide(life).index));
+ assert.deepEqual(auto.preferredIndices(life,options,[1,2]),[1],
+  'unspecified stat in explicit effects is zero, as in the simulation engine');
+ assert.equal(auto.decide(life).index,1);
+});
+
+test('decisions remain the same when save restoration prunes historical log entries',()=>{
+ const life={seed:33,year:1500,age:60,pending:'same-choice',alive:true,log:Array.from({length:950},(_,i)=>({age:i,text:'기록'})),focus:'balance',
+  getReflection(){return null},getChoice(){return {title:'같은 갈림길',options:[{}, {}, {}]}}};
+ const first=auto.decide(life);
+ life.log=life.log.slice(-760);
+ assert.deepEqual(auto.decide(life),first);
+});
+test('missing historical effect objects keep their ordinary choice order',()=>{
+ const life={focus:'work'};
+ const options=[{effects:{wealth:5}},{label:'모르는 선택'}];
+ assert.deepEqual(auto.preferredIndices(life,options,[0,1]),[0,1]);
 });
 
 test('automated and manual choices share verified consequence text',()=>{
