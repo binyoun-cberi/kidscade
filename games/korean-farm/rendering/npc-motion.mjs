@@ -11,14 +11,41 @@ export function moveNPC(position,target,dt,speed=1){
   return {x:position.x+x*k,z:position.z+z*k,moving:travelled>.00001,
     arrived:length-travelled<.035,heading:Math.atan2(-x,-z),distance:travelled};
 }
+// Smooth a facing change over several frames, taking the shortest turn.
+export function turnNPC(current,target,dt,maxRadiansPerSecond=4.5){
+  if(!Number.isFinite(current)||!Number.isFinite(target))return 0;
+  const delta=Math.atan2(Math.sin(target-current),Math.cos(target-current));
+  const maxStep=Math.max(0,Math.min(.2,Number.isFinite(dt)?dt:0))*maxRadiansPerSecond;
+  return current+Math.sign(delta)*Math.min(Math.abs(delta),maxStep);
+}
+
+// Walk cycles follow actual traveled distance, not wall-clock time. A stalled
+// resident must stop swinging its legs even when the render loop continues.
+export function npcWalkPose(distance,moving,phase=0){
+  // Keep truly idle joints at positive zero; no phantom motion or -0 values.
+  if(!moving)return {leftLeg:0,rightLeg:0,leftArm:0,rightArm:0};
+  const stride=Math.sin(distance*8.8+phase)*.28;
+  return {leftLeg:stride,rightLeg:-stride,leftArm:-stride*.55,rightArm:stride*.55};
+}
+
 export function createWaypointWalker(points,speed=1.08){
   const state={x:points[0].x,z:points[0].z,heading:0,index:1,rest:0,walking:false,distance:0};
+  const loopCloses=points.length>2 &&
+    points[0].x===points[points.length-1].x &&
+    points[0].z===points[points.length-1].z;
   return {state,update(dt){
-    if(state.rest>0){state.rest=Math.max(0,state.rest-dt);state.walking=false;return state}
+    if(state.rest>0){state.rest=Math.max(0,state.rest-Math.max(0,dt));state.walking=false;return state}
     const step=moveNPC(state,points[state.index],dt,speed);
     state.x=step.x;state.z=step.z;state.heading=step.heading;
     state.distance+=step.distance;state.walking=step.moving;
-    if(step.arrived){state.index=(state.index+1)%points.length;state.rest=1.3;state.walking=false}
+    if(step.arrived){
+      const reachedLast=state.index===points.length-1;
+      // A closed route already ends at the first waypoint: skip a duplicate
+      // zero-distance stop instead of waiting twice in the same position.
+      state.index=reachedLast&&loopCloses?1:(state.index+1)%points.length;
+      state.rest=reachedLast?1.25:.22;
+      state.walking=false;
+    }
     return state;
   }};
 }

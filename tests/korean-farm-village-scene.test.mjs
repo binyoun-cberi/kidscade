@@ -7,7 +7,7 @@ import {execFileSync} from 'node:child_process';
 import {FIELD_DEFS,makeFarmState} from '../games/korean-farm/world.mjs';
 import {VILLAGE_LANDMARKS,VILLAGE_COLLIDERS,intersectsVillageCollision,plotLandscapeOverlap}
   from '../games/korean-farm/rendering/village-layout.mjs';
-import {PASSER_PATHS,moveNPC,createWaypointWalker,chorePose} from '../games/korean-farm/rendering/npc-motion.mjs';
+import {PASSER_PATHS,moveNPC,createWaypointWalker,chorePose,turnNPC,npcWalkPose} from '../games/korean-farm/rendering/npc-motion.mjs';
 import {FESTIVAL_GUESTS,FESTIVAL_THEMES,festivalSceneState}
   from '../games/korean-farm/rendering/festival-ambience.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -120,4 +120,48 @@ test('NPCs reach actual destinations and stop stepping while doing chores',()=>{
   assert.match(peopleFile,/npcLocations/);
   assert.match(peopleFile,/animateResident/);
   assert.match(gameFile,/station\.target\.position\.x=peoplePos\[role\]\.x/);
+});
+
+test('NPCs turn along the shortest arc without snapping at waypoint corners',()=>{
+  const at=3.12,target=-3.12;
+  const turned=turnNPC(at,target,1/60,4.5);
+  assert.ok(turned>at&&turned-at<.08,'must rotate smoothly across the 180° seam');
+  let yaw=at;
+  for(let i=0;i<80;i++)yaw=turnNPC(yaw,target,1/60,4.5);
+  assert.ok(Math.abs(Math.atan2(Math.sin(target-yaw),Math.cos(target-yaw)))<.001);
+  assert.equal(turnNPC(0,Math.PI/2,0),0,'zero elapsed time cannot snap heading');
+  assert.match(peopleFile,/turnNPC\(actor\.root\.rotation\.y,step\.heading,dt\)/);
+  assert.match(peopleFile,/turnNPC\(npc\.root\.rotation\.y,loc\.heading,dt\)/);
+});
+
+test('villager walk poses follow actual traveled distance and stop during chores',()=>{
+  const moving=npcWalkPose(.27,true);
+  assert.ok(Math.abs(moving.leftLeg)>.01);
+  assert.deepEqual(npcWalkPose(.27,true),moving,'pose must not drift while stationary');
+  assert.deepEqual(npcWalkPose(.27,false),{leftLeg:0,rightLeg:0,leftArm:0,rightArm:0});
+  assert.ok(Math.abs(npcWalkPose(.65,true).leftLeg-moving.leftLeg)>.01);
+  assert.match(peopleFile,/npcWalkPose\(traveled\[role\],true\)/);
+  assert.match(peopleFile,/npcWalkPose\(loc\.distance,loc\.walking,i\*1\.1\)/);
+});
+
+test('passers do not pause twice at duplicated first and last waypoints',()=>{
+  for(const points of PASSER_PATHS){
+    const walker=createWaypointWalker(points,1.2);
+    let completed=false;
+    for(let i=0;i<1500;i++){
+      const before=walker.state.index;
+      const snapshot=walker.update(.1);
+      if(before===points.length-1&&snapshot.index===1){
+        completed=true;
+        assert.ok(Math.hypot(snapshot.x-points[0].x,snapshot.z-points[0].z)<.035);
+        assert.equal(snapshot.rest,1.25);
+        walker.update(1.25);
+        const beforeNextStep=snapshot.distance;
+        walker.update(.1);
+        assert.ok(snapshot.distance>beforeNextStep,'walk again rather than wait at the same point');
+        break;
+      }
+    }
+    assert.ok(completed,'the walker must finish a full closed route');
+  }
 });
