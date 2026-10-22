@@ -16,8 +16,8 @@ test('Goryeo summary uses actual surviving family and recorded abstract grain/la
  const now=era.capture({...life,goryeo343:{...life.goryeo343,grain:12}});
  const r=era.rows({country:'대한민국',family:'농가',age:60,career:'농사',eraSummary:a},
  {country:'대한민국',family:'농가',age:60,career:'농사',eraSummary:now},()=>{throw Error('modern currency must never be formatted');});
- assert.ok(r.some(x=>x[0]==='곡식 (게임 속 수치)'&&x[1]==='17'&&x[2]==='12'));
- assert.ok(r.some(x=>x[0]==='경작지 (게임 속 수치)'&&x[1]==='2'));
+ assert.ok(r.some(x=>x[0]==='곡식'&&x[1]==='17'&&x[2]==='12'));
+ assert.ok(r.some(x=>x[0]==='밭'&&x[1]==='2'));
  assert.ok(r.some(x=>x[0]==='가족·관계'&&x[1].includes('자녀 1명')));
  assert.ok(!r.some(x=>x[0]==='최종 순자산'||x[0]==='출생 주거'));
  assert.deepEqual(life,previous,'summarizing a life must not mutate it');
@@ -30,8 +30,8 @@ test('Joseon summary reads the actual capital and granary, not netWorth×100 as 
  assert.deepEqual(info.household,{partner:0,children:1});
  const rows=era.rows({birthYear:1620,eraSummary:info},
   {birthYear:1620,eraSummary:{...info,resources:{capital:7,grain:5}}});
- assert.ok(rows.some(x=>x[0]==='살림 밑천 (게임 속 수치)'&&x[1]==='-8'&&x[2]==='7'));
- assert.ok(rows.some(x=>x[0]==='곡식 (게임 속 수치)'&&x[1]==='0'&&x[2]==='5'));
+ assert.ok(rows.some(x=>x[0]==='살림 밑천'&&x[1]==='-8'&&x[2]==='7'));
+ assert.ok(rows.some(x=>x[0]==='곡식'&&x[1]==='0'&&x[2]==='5'));
  assert.ok(rows.every(x=>!x[0].includes('순자산')));
 });
 test('older saves missing era details show absent information, never fake inventory',()=>{
@@ -39,7 +39,7 @@ test('older saves missing era details show absent information, never fake invent
  netWorth:999,housing:'가족이 소유한 집',child:true,partner:true};
  const newer={...modernFields,eraSummary:era.capture({birthYear:1295,year:1330,goryeo343:{grain:9,pocket:1,land:0,people:[]}})};
  const rows=era.rows(modernFields,newer,()=>{throw Error('no credits in Goryeo');});
- assert.ok(rows.some(x=>x[0]==='곡식 (게임 속 수치)'&&x[1]==='기록 없음'&&x[2]==='9'));
+ assert.ok(rows.some(x=>x[0]==='곡식'&&x[1]==='기록 없음'&&x[2]==='9'));
  assert.ok(rows.some(x=>x[0]==='가족·관계'&&x[1]==='기록 없음'));
  assert.ok(rows.every(x=>x[0]!=='출생 주거'));
 });
@@ -55,8 +55,8 @@ test('modern lives retain standard housing, education, roles and formatted money
 });
 test('historical summary loads before controller and is exercised in the full smoke test',()=>{
  const html=read('index.html'),game=read('game.js');
- assert.ok(html.indexOf('ending-era-summary-v1.js?v=1')>0);
- assert.ok(html.indexOf('ending-era-summary-v1.js?v=1')<html.indexOf('game.js?v=76'));
+ assert.ok(html.indexOf('ending-era-summary-v1.js?v=2')>0);
+ assert.ok(html.indexOf('ending-era-summary-v1.js?v=2')<html.indexOf('game.js?v=77'));
  assert.match(game,/eraSummary:window\.OneLifeEndingEraV1\.capture\(life\)/);
  assert.match(game,/OneLifeEndingEraV1\.rows\(replayBasis,now,formatCredits\)/);
  const smoke=fs.readFileSync(path.join(__dirname,'one-life-screen-flow.test.cjs'),'utf8');
