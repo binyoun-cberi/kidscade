@@ -22,7 +22,9 @@ export function turnNPC(current,target,dt,maxRadiansPerSecond=4.5){
 // Walk cycles follow actual traveled distance, not wall-clock time. A stalled
 // resident must stop swinging its legs even when the render loop continues.
 export function npcWalkPose(distance,moving,phase=0){
-  const stride=moving?Math.sin(distance*8.8+phase)*.28:0;
+  // Keep truly idle joints at positive zero; no phantom motion or -0 values.
+  if(!moving)return {leftLeg:0,rightLeg:0,leftArm:0,rightArm:0};
+  const stride=Math.sin(distance*8.8+phase)*.28;
   return {leftLeg:stride,rightLeg:-stride,leftArm:-stride*.55,rightArm:stride*.55};
 }
 
