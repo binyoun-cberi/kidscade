@@ -908,9 +908,9 @@
   }
   function updatePause() {
     $('pauseBtn').textContent = paused ? '▶ 이어가기' : 'Ⅱ 일시정지';
-    $('pauseBtn').disabled = !!life?.pending || !life?.alive;
-    $('playStatus').textContent = life?.pending ? (autoChoiceMode?'다음 일을 고르는 중':'당신의 선택을 기다리는 중')
-      : paused ? '일시정지' : '인생이 흘러가는 중';
+    $('pauseBtn').disabled = !life?.alive;
+    $('playStatus').textContent = paused ? '일시정지' : life?.pending
+      ? (autoChoiceMode?'다음 일을 고르는 중':'당신의 선택을 기다리는 중') : '인생이 흘러가는 중';
   }
   function paintTimeline() {
     const timeline = $('timeline');
@@ -1528,7 +1528,7 @@
     if(Goryeo.is(life)&&stage==='play')render();
   }
   function togglePause() {
-    if(stage!=='play'||!life?.alive||life.pending) return;
+    if(stage!=='play'||!life?.alive) return;
     paused=!paused; lastTick=performance.now(); updatePause();
     if(paused) save();
   }
@@ -1657,7 +1657,7 @@
     if(document.hidden && stage==='play'){paused=true;updatePause();save();}
   });
   window.addEventListener('pagehide',save);
-  sdk?.registerPauseHandlers?.({pause:()=>{paused=true;updatePause();save();},resume:()=>{if(life?.pending)return;paused=false;lastTick=performance.now();updatePause();}});
+  sdk?.registerPauseHandlers?.({pause:()=>{paused=true;updatePause();save();},resume:()=>{if(stage!=='play'||!life?.alive)return;paused=false;lastTick=performance.now();updatePause();}});
   const heartbeat=setInterval(loop,90);
   sdk?.registerCleanup?.(()=>{save();clearInterval(heartbeat);if(roulette)clearInterval(roulette);});
   updateBirthChoices();refreshResume();show('intro');
