@@ -22,5 +22,22 @@
     return [life.birthYear,life.year,life.age,life.pending||marker,
       choice?.title||'',reflection||''].join('|');
   }
-  return Object.freeze({rouletteIndex,decisionKey});
+  // Only associate a visual aftermath with its own choice. Same-age matching
+  // is unsafe: a year may contain several unrelated decisions.
+  function decisionAftermath(log,choice){
+    if(!Array.isArray(log)||!choice||choice.kind!=='decision')return null;
+    const index=log.indexOf(choice);
+    if(index<0)return null;
+    if(choice.causeId){
+      const linked=log.find(item=>item.kind==='decision-effect'&&item.causeId===choice.causeId);
+      if(linked)return linked;
+    }
+    for(let i=index+1;i<log.length;i++){
+      const item=log[i];
+      if(item.age!==choice.age||item.kind==='decision'||/(?:-|:)choice$/.test(item.kind||''))break;
+      if(item.kind==='decision-effect'&&!item.causeId)return item;
+    }
+    return null;
+  }
+  return Object.freeze({rouletteIndex,decisionKey,decisionAftermath});
 });
