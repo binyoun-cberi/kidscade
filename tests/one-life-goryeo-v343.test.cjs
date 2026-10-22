@@ -158,3 +158,38 @@ test('no game source emits the deprecated abstract resource unit',()=>{
    .map(filename=>path.relative(dir,filename));
  assert.deepEqual(flagged,[],'replace misleading wording in these One Life game resources');
 });
+
+test('bonded Goryeo birth cannot immediately pick an unrestricted profession',()=>{
+ const l=make(1350,208,'노비 가구'),g=G.ensure(l);
+ l.age=13;l.year=1363;l.stats.health=100;
+ assert.equal(l.tick(),true);
+ assert.equal(l.age,14);
+ const prompt=l.getChoice();
+ assert.equal(g.bound,true);
+ assert.match(prompt.description,/예속/);
+ assert.equal(prompt.options.some(o=>['job:글과 셈','job:나루 일','job:삼베 짜기'].includes(o.effect)),false);
+ assert.ok(prompt.options.some(o=>o.effect==='skill'));
+ const restored=L.restore(copy(l.snapshot()));
+ assert.deepEqual(copy(restored.getChoice()),copy(prompt));
+ const skill=prompt.options.findIndex(o=>o.effect==='skill');
+ assert.equal(restored.choose(skill),true);
+ assert.equal(restored.goryeo343.bound,true);
+ assert.equal(restored.goryeo343.job,'아직 정해지지 않음');
+});
+test('after release a formerly bonded Goryeo character may choose an occupation, once',()=>{
+ const l=make(1350,208,'노비 가구'),g=G.ensure(l);
+ l.age=13;l.year=1363;l.stats.health=100;
+ l.tick();l.choose(0);
+ assert.ok(g.seen.includes('vocation'));
+ g.bound=false; // equivalent to a granted release after the petition event
+ l.tick();
+ const p=l.getChoice();
+ assert.ok(p,'a freed person should get a new livelihood choice');
+ assert.match(p.title,/예속에서 벗어난/);
+ assert.equal(g.choice.id,'free-vocation');
+ const revived=L.restore(copy(l.snapshot()));
+ assert.deepEqual(copy(revived.getChoice()),copy(p));
+ assert.equal(revived.choose(1),true);
+ assert.equal(revived.goryeo343.job,'삼베 짜기');
+ assert.equal(revived.goryeo343.seen.filter(x=>x==='free-vocation').length,1);
+});
