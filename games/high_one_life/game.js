@@ -938,6 +938,17 @@
     $('calendar337End').replaceChildren(...past.map(e=>row(e,true)));
     if(!past.length){const li=document.createElement('li');li.textContent='이 시대의 기록이 아직 쌓이지 않았습니다.';$('calendar337Past').append(li);}
   }
+  function paintMomentVitals(){
+    // Use the simulation's real values; no extra 'happiness' derived from
+    // fictional scene art or a guessed social comparison.
+    for(const [stat,id] of [
+      ['health','vitalHealth'],['happiness','vitalHappiness'],
+      ['knowledge','vitalKnowledge'],['bonds','vitalBonds']
+    ]){
+      const value=life.stats?.[stat];
+      $(id).textContent=Number.isFinite(value)?String(Math.round(value)):'—';
+    }
+  }
   function paintStats() {
     const list = $('statList');
     list.replaceChildren();
@@ -1221,6 +1232,7 @@
     $('lifeProgress').style.width=Math.min(100,life.age/105*100)+'%';
     paintTimeline();
     paintStats();
+    paintMomentVitals();
     paintPeers();
     if(storyTab==='years')paintAgeMap();
     if(storyTab==='stats')paintSurvival();
