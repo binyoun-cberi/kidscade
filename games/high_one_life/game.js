@@ -70,6 +70,7 @@
   let completed = false, ruleWasRunning = false, replayBasis = null;
   let peerCache = null, lastPeerRenderedAge = -1, lastMapRenderedAge = -1;
   let storyTab='', peerAgeChoice=0, timelineVisible=22, playSpeed=1, nextDecision=false;
+  let autoChoiceMode=false,lastAutoChoiceAt=0;
   let lastDecisionKey=null;
   let namingChild=null,wasPausedBeforeNaming=false;
   function updateBirthChoices(){
@@ -195,12 +196,12 @@
     $('resumeBtn').classList.toggle('hidden', !resume || !resume.alive);
   }
   function save() {
-    if (stage === 'play' && life?.alive) safeSet(SAVE_KEY, {life:life.snapshot(),replayBasis,at:Date.now()});
+    if (stage === 'play' && life?.alive) safeSet(SAVE_KEY, {life:life.snapshot(),replayBasis,autoChoiceMode,at:Date.now()});
   }
   function draw() {
     clearInterval(roulette);
     roulette = null;
-    playSpeed=1;nextDecision=false;lastDecisionKey=null;refreshSpeedControls();
+    playSpeed=1;nextDecision=false;autoChoiceMode=false;lastDecisionKey=null;refreshSpeedControls();
     const desired=Number($('birthYearInput').value);
     const birthYear=Number.isInteger(desired)&&desired>=1200&&desired<=2026?desired:2026;
     $('birthYearInput').value=String(birthYear);
@@ -884,11 +885,13 @@
       button.setAttribute('aria-pressed',String(Number(button.dataset.lifeSpeed)===playSpeed&&!nextDecision));
     });
     $('v9NextChoice').setAttribute('aria-pressed',String(nextDecision));
+    const autoButton=$('autoChoiceBtn');
+    if(autoButton){autoButton.setAttribute('aria-pressed',String(autoChoiceMode));autoButton.textContent=autoChoiceMode?'자동 선택 켬':'자동 선택 끔';}
   }
   function updatePause() {
     $('pauseBtn').textContent = paused ? '▶ 이어가기' : 'Ⅱ 일시정지';
     $('pauseBtn').disabled = !!life?.pending || !life?.alive;
-    $('playStatus').textContent = life?.pending ? '당신의 선택을 기다리는 중'
+    $('playStatus').textContent = life?.pending ? (autoChoiceMode?'다음 일을 고르는 중':'당신의 선택을 기다리는 중')
       : paused ? '일시정지' : '인생이 흘러가는 중';
   }
   function paintTimeline() {
@@ -985,7 +988,7 @@
       const btn=document.createElement('button');btn.type='button';btn.className='reflection-next';btn.textContent='계속 살아가기 →';
       btn.addEventListener('click',()=>{life.reflect(note.value);save();elapsed=0;lastTick=performance.now();render();});
       target.append(note,btn);
-      if(isNewDecision)$('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
+      if(isNewDecision&&!autoChoiceMode)$('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
       return;
     }
     if (!choice) return;
@@ -1031,7 +1034,7 @@
       target.append(btn);
     });
     // Repainting a still-open choice must not pull readers out of history.
-    if(isNewDecision)$('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
+    if(isNewDecision&&!autoChoiceMode)$('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
   }
   function peerView(peer){
     return {age:peer.age,alive:peer.alive,name:peer.profile?.name||'이름 없는 이웃',
@@ -1175,7 +1178,7 @@
     const measurementGuide=$('historicalUnits');
     if(measurementGuide)measurementGuide.hidden=life.year>=1900;
     if(Goryeo.is(life)){
-      window.OneLifeGoryeoView343.paint(life,{paused,choose:i=>{if(life.choose(i)){if(!life.alive)finish();else render();save();}},action:(kind,id,value)=>{Goryeo.action(life,kind,id,value);render();save();},pause:()=>{paused=!paused;lastTick=performance.now();render();},next:()=>{stepYear();}});
+      window.OneLifeGoryeoView343.paint(life,{paused,autoEnabled:autoChoiceMode,toggleAuto:toggleAutoChoice,choose:i=>{if(life.choose(i)){if(!life.alive)finish();else render();save();}},action:(kind,id,value)=>{Goryeo.action(life,kind,id,value);render();save();},pause:()=>{paused=!paused;lastTick=performance.now();render();},next:()=>{stepYear();}});
       return;
     }
     const journey=Travel22?.summary(life)||null;
@@ -1478,7 +1481,16 @@
     const now=performance.now();
     const delta=Math.max(0,Math.min(260,now-lastTick));
     lastTick=now;
-    if(stage!=='play' || !life || !life.alive || life.pending || paused || document.hidden) return;
+    if(stage!=='play'||!life||!life.alive||paused||document.hidden)return;
+    if(life.pending){
+      // A single decision per animation tick; no recursion through linked events.
+      if(autoChoiceMode&&now-lastAutoChoiceAt>=650&&!namingChild){
+        lastAutoChoiceAt=now;
+        const changed=window.OneLifeAutoChoiceV1.tick(life);
+        if(changed){elapsed=0;if(!life.alive)finish();else{render();offerNewbornName();save();}}
+      }
+      return;
+    }
     if(now-lastSceneFrame>=180&&Joseon.isJoseon(life)&&!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
       window.OneLifeJoseonPixel2?.paint($('lifeScene'),life,{time:now});lastSceneFrame=now;
     }
@@ -1490,6 +1502,12 @@
       stepYear();
       if(stage!=='play' || life.pending || !life.alive) {elapsed=0;break;}
     }
+  }
+  function toggleAutoChoice(){
+    autoChoiceMode=!autoChoiceMode;
+    lastAutoChoiceAt=performance.now()-350;
+    refreshSpeedControls();updatePause();save();
+    if(Goryeo.is(life)&&stage==='play')render();
   }
   function togglePause() {
     if(stage!=='play'||!life?.alive||life.pending) return;
@@ -1521,6 +1539,7 @@
     if(![1,2,4,8].includes(n))return;
     playSpeed=n;nextDecision=false;refreshSpeedControls();
   }));
+  $('autoChoiceBtn').addEventListener('click',toggleAutoChoice);
   $('v9NextChoice').addEventListener('click',()=>{
     if(!life?.alive||life.pending||stage!=='play')return;
     playSpeed=8;nextDecision=true;
@@ -1582,7 +1601,7 @@
   $('resumeBtn').addEventListener('click',()=>{
     const restored=currentSave();
     if(!restored || !restored.alive){refreshResume();return;}
-    life=restored;timelineVisible=22;playSpeed=1;nextDecision=false;refreshSpeedControls();World9.ensure(life);World8.ensure(life);replayBasis=safeGet(SAVE_KEY)?.replayBasis||null;completed=false;peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;startLife(true);
+    life=restored;timelineVisible=22;playSpeed=1;nextDecision=false;autoChoiceMode=safeGet(SAVE_KEY)?.autoChoiceMode===true;refreshSpeedControls();World9.ensure(life);World8.ensure(life);replayBasis=safeGet(SAVE_KEY)?.replayBasis||null;completed=false;peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;startLife(true);
   });
   $('household342Panel')?.addEventListener('toggle',()=>{if($('household342Panel').open&&stage==='play'){paused=true;updatePause();}});
   $('pauseBtn').addEventListener('click',togglePause);
