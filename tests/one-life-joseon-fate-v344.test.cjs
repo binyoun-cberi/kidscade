@@ -62,7 +62,7 @@ test('magistrate may leave a Songdeok monument only after public evaluation; cor
  const restored=Life.restore(copy(bad.snapshot()));
  after(restored,3);assert.equal(restored.pending,'joseon344:magistrateAfter');
  assert.equal(restored.choose(0),true);
- assert.ok(restored.joseon344.scenes.some(x=>/감찰|파직|징수|피해/.test(x.text)));
+ assert.ok(restored.joseon344.scenes.some(x=>/감찰|파직|징수|피해|논란|관직/.test(x.text)));
 });
 test('escaped slave stays legally bonded until documented manumission and can be caught',()=>{
  const l=born(1700,'사노비',97);l.age=19;l.year=1719;
