@@ -22,8 +22,8 @@ function paint(l,handlers){
  const head=el('header',undefined,'goryeo-head');head.append(el('span',l.year<1392?'高麗 · 고려 후기':'朝鮮 · 이어지는 삶','goryeo-kicker'),el('h1',l.profile.name+'의 한 생'),el('p',l.year+'년 · '+l.age+'세 · '+g.region+' · '+G.period(l)));host.append(head);
  const controls=el('div',undefined,'goryeo-controls');for(const [label,fn,disabled]of [[handlers.paused?'시간 이어가기':'잠시 멈추기',handlers.pause,false],['한 해 보내기',handlers.next,!!l.pending]]){const b=el('button',label);b.disabled=disabled;b.onclick=fn;controls.append(b);}controls.append(el('small',l.pending?'선택을 기다리고 있습니다.':handlers.paused?'시간이 멈춰 있습니다.':'시간이 흐르고 있습니다.'));host.append(controls);
  const canvas=el('canvas'),sprites=root.OneLifeHistoricalSpritesV1;
- const visible=sprites?.occupants(l,g),family=sprites?.familyAtHome(l,g)||[];
- const hiddenCount=Math.max(0,family.length-(visible?.filter(p=>!p.self).length||0));
+ const visible=sprites?.occupants(l,g),presentAtHome=sprites?.familyAtHome(l,g)||[];
+ const hiddenCount=Math.max(0,presentAtHome.length-(visible?.filter(p=>!p.self).length||0));
  const label=g.away?'이동 중인 주인공':visible?
    visible.length+'명의 실제 등장인물'+(hiddenCount?' · 화면 밖에 있는 식구 '+hiddenCount+'명':''):'마을 풍경';
  canvas.setAttribute('aria-label',g.region+' · '+label);
