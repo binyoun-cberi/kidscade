@@ -988,6 +988,34 @@
       track.append(bar); box.append(label,track); list.append(box);
     }
   }
+  function decisionState(){
+    return {stats:{...life.stats},netWorth:life.money?.netWorth,career:life.career};
+  }
+  function recordDecisionEffect(before){
+    const labels={health:'건강',happiness:'행복',knowledge:'배움',bonds:'인연',wealth:'살림'};
+    const changes=Object.entries(labels).flatMap(([key,label])=>{
+      const delta=(life.stats?.[key]||0)-(before.stats?.[key]||0);
+      return delta?[label+' '+(delta>0?'+':'')+delta]:[];
+    });
+    const moneyDelta=(life.money?.netWorth??before.netWorth)-(before.netWorth??life.money?.netWorth??0);
+    if(moneyDelta)changes.push('살림 '+(moneyDelta>0?'+':'')+formatCredits(moneyDelta));
+    if(life.career!==before.career)changes.push('진로 '+life.career);
+    let effectText=changes.length?'이후 달라진 점 · '+changes.join(' · '):'';
+    if(Joseon.inOldEra(life)){
+      const lines=[];
+      if(life.stats.health<before.stats.health)lines.push('몸이 조금 고단해졌다');
+      if(life.stats.health>before.stats.health)lines.push('쉬어 갈 힘을 되찾았다');
+      if(life.stats.bonds>before.stats.bonds)lines.push('사람들과의 관계에 조금 힘이 되었다');
+      if(life.stats.knowledge>before.stats.knowledge)lines.push('전에 모르던 일을 하나 더 배웠다');
+      if(moneyDelta<0)lines.push('집안 살림에는 다소 부담이 남았다');
+      if(moneyDelta>0)lines.push('집안 살림에 작은 여유가 생겼다');
+      if(life.career!==before.career)lines.push('새로운 생업을 시작했다');
+      effectText=lines.length?lines.slice(0,2).join('. ')+'.':'';
+    }
+    // The choice itself is already recorded. Avoid generic aftermath
+    // sentences when there is no verified immediate numerical change.
+    if(effectText)life.logEvent(effectText,'decision-effect');
+  }
   function showDecision() {
     const choice = life.getChoice();
     const reflection = life.getReflection();
@@ -1021,32 +1049,10 @@
       const arrow=document.createElement('i'); arrow.textContent='↗'; arrow.setAttribute('aria-hidden','true');
       wrap.append(title,note); btn.append(wrap,arrow);
       btn.addEventListener('click',()=>{
-        const before={stats:{...life.stats},netWorth:life.money?.netWorth,career:life.career};
+        const before=decisionState();
         if(!life?.choose(index)) return;
         if(!life.alive){finish();return;}
-        const labels={health:'건강',happiness:'행복',knowledge:'배움',bonds:'인연',wealth:'살림'};
-        const changes=Object.entries(labels).flatMap(([key,label])=>{
-          const delta=(life.stats?.[key]||0)-(before.stats?.[key]||0);
-          return delta?[label+' '+(delta>0?'+':'')+delta]:[];
-        });
-        const moneyDelta=(life.money?.netWorth??before.netWorth)-(before.netWorth??life.money?.netWorth??0);
-        if(moneyDelta)changes.push('살림 '+(moneyDelta>0?'+':'')+formatCredits(moneyDelta));
-        if(life.career!==before.career)changes.push('진로 '+life.career);
-        let effectText=changes.length?'이후 달라진 점 · '+changes.join(' · '):'';
-        if(Joseon.inOldEra(life)){
-          const lines=[];
-          if(life.stats.health<before.stats.health)lines.push('몸이 조금 고단해졌다');
-          if(life.stats.health>before.stats.health)lines.push('쉬어 갈 힘을 되찾았다');
-          if(life.stats.bonds>before.stats.bonds)lines.push('사람들과의 관계에 조금 힘이 되었다');
-          if(life.stats.knowledge>before.stats.knowledge)lines.push('전에 모르던 일을 하나 더 배웠다');
-          if(moneyDelta<0)lines.push('집안 살림에는 다소 부담이 남았다');
-          if(moneyDelta>0)lines.push('집안 살림에 작은 여유가 생겼다');
-          if(life.career!==before.career)lines.push('새로운 생업을 시작했다');
-          effectText=lines.length?lines.slice(0,2).join('. ')+'.':'';
-        }
-        // The choice itself is already recorded. Avoid generic aftermath
-        // sentences when there is no verified immediate numerical change.
-        if(effectText)life.logEvent(effectText,'decision-effect');
+        recordDecisionEffect(before);
         save(); elapsed=0; lastTick=performance.now(); render(); offerNewbornName();
       });
       target.append(btn);
@@ -1196,7 +1202,7 @@
     const measurementGuide=$('historicalUnits');
     if(measurementGuide)measurementGuide.hidden=life.year>=1900;
     if(Goryeo.is(life)){
-      window.OneLifeGoryeoView343.paint(life,{paused,autoEnabled:autoChoiceMode,toggleAuto:toggleAutoChoice,choose:i=>{if(life.choose(i)){if(!life.alive)finish();else render();save();}},action:(kind,id,value)=>{Goryeo.action(life,kind,id,value);render();save();},pause:()=>{paused=!paused;lastTick=performance.now();render();},next:()=>{stepYear();}});
+      window.OneLifeGoryeoView343.paint(life,{paused,autoEnabled:autoChoiceMode,toggleAuto:toggleAutoChoice,choose:i=>{const before=decisionState();if(life.choose(i)){if(!life.alive)finish();else{recordDecisionEffect(before);render();}save();}},action:(kind,id,value)=>{Goryeo.action(life,kind,id,value);render();save();},pause:()=>{paused=!paused;lastTick=performance.now();render();},next:()=>{stepYear();}});
       return;
     }
     const journey=Travel22?.summary(life)||null;
@@ -1504,8 +1510,17 @@
       // A single decision per animation tick; no recursion through linked events.
       if(autoChoiceMode&&now-lastAutoChoiceAt>=650&&!namingChild){
         lastAutoChoiceAt=now;
+        const action=window.OneLifeAutoChoiceV1.decide(life);
+        const before=action?.type==='choice'?decisionState():null;
         const changed=window.OneLifeAutoChoiceV1.tick(life);
-        if(changed){elapsed=0;if(!life.alive)finish();else{render();offerNewbornName();save();}}
+        if(changed){
+          elapsed=0;
+          if(!life.alive)finish();
+          else{
+            if(before)recordDecisionEffect(before);
+            render();offerNewbornName();save();
+          }
+        }
       }
       return;
     }
