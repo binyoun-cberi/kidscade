@@ -6,8 +6,9 @@
 })(typeof window!=='undefined'?window:null,function(){
   'use strict';
   const W=600,H=258;
+  const Composer=typeof window!=='undefined'?window.OneLifeSpriteComposerV1:null;
   const c={ink:'#283941',cloud:'#f0f1dd',sun:'#ffe09c',roof:'#cb796a',wall:'#e8d5b7',forest:'#548c77',road:'#677c80',accent:'#a46d50'};
-  function paint(canvas,life){
+  function paint(canvas,life,options={}){
     if(!canvas||!life)return '';
     if(canvas.width!==W)canvas.width=W;
     if(canvas.height!==H)canvas.height=H;
@@ -21,6 +22,9 @@
     const sky=night?'#b5bfd8':season===3?'#e2d3cc':'#b5d9dc';
     const floor=season===3?'#d3cbb5':'#81b69b';
     const isRural=p.settlement==='농촌';
+    // A workplace is shown only when the player's recorded occupation
+    // supports it. An illustrated garden does not add crops or income.
+    const farming=age>=16&&age<75&&/농사|농업|농부|농민|경작|소작/.test(life.career||'');
     const stage=age<7?'가정':age<19?(life.world?.educationYears===0&&age>=10?'지역과 생활':'학교')
       :age<27&&(life.career==='학생'||life.world?.educationLevel==='고등 교육·훈련 중')?'대학교'
       :age<65&&life.arc?.business?'가게와 사업장'
@@ -33,7 +37,8 @@
       fill(x,y+8,67,10,night?'#d3dced':c.cloud);
     }
     fill(495,19,season===3?21:28,season===3?21:28,night?'#fff6de':c.sun);
-    for(let x=0;x<W;x+=30){
+    if(Composer)Composer.distant(ctx,{rural:isRural,seed:life.seed,season});
+    else for(let x=0;x<W;x+=30){
       const h=21+(x*7%22);
       fill(x,138-h,33,h,isRural?'#9cbaa8':'#91abb3');
       fill(x+4,135-h,16,5,night?'#f4e8c9':'#c4d1d1');
@@ -85,6 +90,16 @@
     fill(0,216,W,42,c.road);
     for(let x=14;x<W;x+=82)fill(x,232,42,4,'#ecedd6');
     fill(0,212,W,4,'#d9d5ba');
+    if(isRural&&farming){
+      // Show a small worked patch by the protagonist, not an invented harvest.
+      fill(343,191,172,20,'#846a4a');
+      for(let i=0;i<6;i++){
+        const x=351+i*27;
+        fill(x,192,3,14,'#496d45');
+        fill(x-5,188,8,6,'#64915c');
+        fill(x+2,184,8,7,'#79a46a');
+      }
+    }
     // Pixel people share basic geometry but vary by life stage.
     const person=(x,y,scale,color,headColor)=>{
       const u=scale;
@@ -98,7 +113,14 @@
     };
     const baseX=292,baseY=217;
     const scale=age<6?1:age<13?1.25:1.55;
-    person(baseX,baseY,scale,age<20?'#4a818b':age>=65?'#856a8f':'#cb816c');
+    if(Composer)Composer.character(ctx,{x:baseX,feet:baseY,age,scale,identity:life.seed,
+      pose:isRural&&farming?'work':age>=65?'idle':life.career==='학생'?'walk':'idle',frame:options.frame??life.year%2});
+    else person(baseX,baseY,scale,age<20?'#4a818b':age>=65?'#856a8f':'#cb816c');
+    if(isRural&&farming&&!Composer){
+      // Keep the fallback art functional; composer tools follow the wrist.
+      fill(baseX+scale*8,baseY-scale*19,4,30,'#73583d');
+      fill(baseX+scale*7,baseY-scale*19,17,4,'#6b7370');
+    }
     if(age<16){
       // Do not invent two parents just because the protagonist is a child.
       // Decorate the age-appropriate place instead of adding unknown people.
@@ -121,6 +143,7 @@
         fill(baseX-60,baseY-37,4,10,'#536f53');
       }
     }
+    if(Composer)Composer.foreground(ctx,{rural:isRural,seed:life.seed});
     fill(8,8,190,24,'#19323cc9');
     ctx.fillStyle='#f9f0df';
     ctx.font='bold 13px sans-serif';

@@ -938,6 +938,17 @@
     $('calendar337End').replaceChildren(...past.map(e=>row(e,true)));
     if(!past.length){const li=document.createElement('li');li.textContent='이 시대의 기록이 아직 쌓이지 않았습니다.';$('calendar337Past').append(li);}
   }
+  function paintMomentVitals(){
+    // Use the simulation's real values; no extra 'happiness' derived from
+    // fictional scene art or a guessed social comparison.
+    for(const [stat,id] of [
+      ['health','vitalHealth'],['happiness','vitalHappiness'],
+      ['knowledge','vitalKnowledge'],['bonds','vitalBonds']
+    ]){
+      const value=life.stats?.[stat];
+      $(id).textContent=Number.isFinite(value)?String(Math.round(value)):'—';
+    }
+  }
   function paintStats() {
     const list = $('statList');
     list.replaceChildren();
@@ -1158,6 +1169,8 @@
   }
   function render() {
     if (!life) return;
+    const measurementGuide=$('historicalUnits');
+    if(measurementGuide)measurementGuide.hidden=life.year>=1900;
     if(Goryeo.is(life)){
       window.OneLifeGoryeoView343.paint(life,{paused,choose:i=>{if(life.choose(i)){if(!life.alive)finish();else render();save();}},action:(kind,id,value)=>{Goryeo.action(life,kind,id,value);render();save();},pause:()=>{paused=!paused;lastTick=performance.now();render();},next:()=>{stepYear();}});
       return;
@@ -1213,14 +1226,15 @@
     $('traitCountry').textContent=(abroad?journey.residence.region:History.place(life))+' · '+life.gender;
     $('traitFamily').textContent=life.familyLevel;
     $('traitCareer').textContent=life.career;
-    $('storyTitle').textContent=life.getChoice()?.title || (Joseon.isJoseon(life)?(life.age<7?'집안의 첫 기억':life.age<20?'배워야 할 일들':life.age<40?'고을에서 살아가는 날들':life.age<65?'살림과 사람 사이에서':'지나온 계절들'):(life.age<6?'인생의 첫 장면':life.age<20?'세상을 배우는 날들':life.age<40?'나만의 길을 찾아서':life.age<65?'살아온 시간의 무게':'오늘이라는 선물'));
+    $('storyTitle').textContent=life.getChoice()?.title || (Joseon.isJoseon(life)?(life.age<7?'어린 시절':life.age<20?'자라며 배우는 일':life.age<40?'청년기의 생업':life.age<65?'살림과 생업':'노년의 생활'):(life.age<6?'어린 시절':life.age<20?'자라며 겪은 일':life.age<40?'배움과 일터':life.age<65?'생업과 일상':'노년의 생활'));
     const current = life.log[life.log.length-1];
     $('storyCaption').textContent=life.getChoice()
-      ? '이번에는 어떻게 할까?'
-      : current?.text || '올해도 하루하루가 흘러간다.';
+      ? '아래에서 선택할 일을 확인하세요.'
+      : current?.text || '아직 올해 남겨진 기록이 없습니다.';
     $('lifeProgress').style.width=Math.min(100,life.age/105*100)+'%';
     paintTimeline();
     paintStats();
+    paintMomentVitals();
     paintPeers();
     if(storyTab==='years')paintAgeMap();
     if(storyTab==='stats')paintSurvival();

@@ -1,0 +1,48 @@
+/* One Life: put the lived moment ahead of the historical archive.
+   Source inspiration: readable hero scene, four vitals, then decisions. */
+#play .lived-moment{
+  margin:16px 0 12px;
+  padding:clamp(10px,2vw,18px);
+  border-radius:15px;
+  border:1px solid #b9d5cb;
+  background:linear-gradient(180deg,#e4f0e8,#f2f7f2);
+  color:#24443f;
+}
+#play .lived-moment-title{margin:0 0 10px;font-size:14px;font-weight:800;letter-spacing:-.025em}
+#play .lived-moment .pixel-frame{margin:0;border-radius:11px}
+#play .lived-moment .pixel-frame figcaption{font-size:13px;font-weight:650}
+#play .lived-moment .scene-culture-note{margin:0;padding:7px 13px 10px;font-size:11px;line-height:1.6}
+#play .life-vitals{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  margin:10px 0 12px;gap:7px;
+}
+#play .life-vitals>div{
+  min-width:0;display:flex;justify-content:space-between;align-items:center;
+  gap:5px;padding:9px 10px;background:#fffdf6;border:1px solid #d2e3d9;
+  border-radius:9px;font-variant-numeric:tabular-nums;
+}
+#play .life-vitals span{font-size:12px;color:#57716a}
+#play .life-vitals strong{font-size:17px;color:#1c4541}
+#play .lived-moment .progress{margin:12px 0 0;border-radius:5px;background:#c6d9d1;height:5px}
+#play .lived-moment .controls{margin:9px 0 0;padding:10px 0 0;border-top:1px solid #c9ded4}
+#play .lived-moment .controls-label{margin:0 0 7px;color:#3f5f57}
+#play .lived-moment .controls-label span{color:#55776d}
+#play .lived-moment .pause{min-height:42px}
+#play .lived-moment .v9-speed-controls button{min-height:42px}
+#play .lived-moment .hint{color:#517269;line-height:1.55;margin-bottom:0}
+#play .chronicle>.story-head{margin-top:17px;margin-bottom:12px}
+#play .chronicle>#decision:not(.hidden){margin-bottom:21px}
+#play .chronicle>.history-context{margin:8px 0 9px}
+@media(max-width:480px){
+  #play .lived-moment{margin:11px -6px 10px;padding:10px;border-radius:12px}
+  #play .life-vitals{gap:4px}
+  #play .life-vitals>div{flex-direction:column;align-items:flex-start;padding:7px 8px;gap:3px}
+  #play .life-vitals span{font-size:11px}
+  #play .life-vitals strong{font-size:16px}
+  #play .lived-moment .v9-speed-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+  #play .lived-moment .v9-speed-controls button{min-width:0;padding:6px 3px}
+  #play .lived-moment .v9-speed-controls #v9NextChoice{grid-column:1/-1;min-width:0}
+}
+@media(prefers-reduced-motion:reduce){
+  #play .lived-moment *,#play .lived-moment *::before,#play .lived-moment *::after{transition:none!important;animation:none!important}
+}

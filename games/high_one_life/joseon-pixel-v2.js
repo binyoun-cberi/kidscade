@@ -49,6 +49,7 @@ const api={scene,layout,motion,
   const j=window.OneLifeJoseon?.ensure?.(life)||life.joseon||{};
   const v=window.OneLifeJoseon2?.ensure?.(life)||life.joseon2||{};
   const Culture=window.OneLifeJoseonCulture;
+  const Historical=root.OneLifeHistoricalSpritesV1;
   const plan=scene(life),kind=plan.kind;
   const season=window.OneLifeJoseon3?.season?.(life)||'가을';
   const year=life.year||life.birthYear||1480,age=life.age||0;
@@ -170,14 +171,17 @@ const api={scene,layout,motion,
    }
   }
   // Age-shaped hanbok sprites; clothes and headwear signal age and social position.
-  const sprite=(x,ground,personAge,sex,childColor,adultColor,offset,self=false,depth=.68,pose={activity:'rest',hand:0,lean:0,leftFoot:0,rightFoot:0})=>{
+  const sprite=(x,ground,personAge,sex,childColor,adultColor,offset,self=false,depth=.68,pose={activity:'rest',hand:0,lean:0,leftFoot:0,rightFoot:0},personId='self')=>{
    const personalWear=Culture?.wardrobe(year,origin,sex,self?j.occupation:'집안의 일',personAge,{duty:self&&(kind==='study'||kind==='port')});
    adultColor=personalWear?.color||adultColor;offset=personalWear?.accent||offset;
    px(x-14*depth,ground+2,28*depth,3,'#b5a385');
    const child=personAge<8,teen=personAge<16&&!child,elder=personAge>=62;
    const s=(personAge<3?0.54:personAge<8?0.66:personAge<13?0.78:teen?0.88:1)*depth;
    const head=child?17:teen?16:15,body=child?21:25,robe=child?24:teen?28:32;
-   const skin='#d5a47f',hair=elder?'#6d6460':'#34363a';
+   // Each real person keeps a consistent face palette. Historical garments remain
+   // governed by the Joseon-specific wardrobe, not a modern sprite sheet.
+   const face=Historical?.appearance(life.seed,personId);
+   const skin=face?.skin||'#d5a47f',hair=elder?'#6d6460':face?.hair||'#34363a';
    const X=n=>Math.round(x+n*s),Y=n=>Math.round(ground+n*s),R=(a,b,c,d,col)=>px(X(a+(b<-8?pose.lean:0)),Y(b),Math.max(2,Math.round(c*s)),Math.max(2,Math.round(d*s)),col);
    // Face and hair/head covering.
    R(-head/2,-64,head,head,skin);R(-head/2,-67,head,6,hair);
@@ -248,7 +252,7 @@ const api={scene,layout,motion,
    const pose=motion(p,plan,life,options.time||0);
    // Keep feet at the stable recorded layout location during tool animation:
    // work must not teleport the protagonist to the far right of the scene.
-   sprite(p.x+pose.dx*p.depth,p.ground,p.age,p.sex,'#d4b96f',adultTone,trim,p.self,p.depth,pose);
+   sprite(p.x+pose.dx*p.depth,p.ground,p.age,p.sex,'#d4b96f',adultTone,trim,p.self,p.depth,pose,p.id);
   }
   // Shared palette bar and fine border echo the mint-and-warm UI without a heavy frame.
   px(0,0,600,3,'#6da99b');px(0,255,600,3,'#6da99b');
