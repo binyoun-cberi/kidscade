@@ -25,7 +25,7 @@ fs.mkdirSync(output,{recursive:true});
     const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];
     page.on('pageerror',e=>errors.push(e.message));
     page.on('response',r=>{if(r.status()>=400&&r.url().includes('/assets/game/'))errors.push(`${r.status()} ${r.url()}`);});
-    const instrument=async target=>target.route('**/game.js?v=3',route=>route.fulfill({contentType:'application/javascript',body:fs.readFileSync(game,'utf8')+`\nwindow.__audit={startTown,getTarget,scene,camera,citizenMeshes,get town(){return town},get celebration(){return celebration},get previewActor(){return previewActor}};`}));
+    const instrument=async target=>target.route('**/game.js?v=4',route=>route.fulfill({contentType:'application/javascript',body:fs.readFileSync(game,'utf8')+`\nwindow.__audit={startTown,getTarget,scene,camera,citizenMeshes,positionEverything,mixers,get town(){return town},get celebration(){return celebration},get previewActor(){return previewActor},get exploring(){return exploring}};`}));
     await instrument(page);
     const url=`http://127.0.0.1:${server.address().port}/games/tod_mot_chatgetda_kkwaekkori/`;
     await page.goto(url);await page.locator('#quickStart').click();
@@ -33,6 +33,29 @@ fs.mkdirSync(output,{recursive:true});
     assert.equal(await page.evaluate(()=>new Set(__audit.town.people.map(p=>p.activity)).size),9);
     assert.equal(await page.evaluate(()=>__audit.previewActor!==__audit.citizenMeshes.get(__audit.getTarget().id).holder),true);
     await page.screenshot({path:path.join(output,'desktop.png')});
+    const visitor=await page.evaluate(()=>__audit.town.trips.people[0]);
+    assert.ok(visitor,'small town has a walking bakery customer');
+    for(const stage of ['buy','pickup','toPark','eat','return']){
+      const state=await page.evaluate(({visitor,stage})=>{
+        const p=__audit.town.people.find(p=>p.id===visitor);
+        for(let tick=0;tick<3000&&p.trip.stage!==stage;tick++)__audit.positionEverything(.1);
+        return {stage:p.trip.stage,carrying:p.trip.carrying,x:p.trip.x,z:p.trip.z};
+      },{visitor,stage});
+      assert.equal(state.stage,stage);
+      assert.equal(state.carrying,['pickup','toPark','eat'].includes(stage));
+      const visual=await page.evaluate(visitor=>{
+        const p=__audit.town.people.find(p=>p.id===visitor),mesh=__audit.citizenMeshes.get(visitor),entry=__audit.mixers.find(e=>e.person.id===visitor);
+        return {props:mesh.appearance.children.length,layers:entry.mixer.stats.actions.inUse};
+      },visitor);
+      assert.equal(visual.props,['pickup','toPark','eat'].includes(stage)?1:0);
+      if(stage==='toPark')assert.equal(visual.layers,2,'walk legs and holding arms are animated together');
+      if(stage==='eat'||stage==='pickup')await page.screenshot({path:path.join(output,`journey-${stage}.png`)});
+    }
+    await page.evaluate(visitor=>{
+      const p=__audit.town.people.find(p=>p.id===visitor);
+      for(let tick=0;tick<3000&&p.trip.cycles===0;tick++)__audit.positionEverything(.1);
+    },visitor);
+    assert.ok(await page.evaluate(()=>__audit.town.trips.returned>0));
     await page.evaluate(()=>__audit.startTown('large',19,[],'hard'));
     const rounds=await page.evaluate(()=>__audit.town.order.length);assert.equal(rounds,5);
     for(let i=0;i<rounds;i++){
@@ -49,11 +72,17 @@ fs.mkdirSync(output,{recursive:true});
       assert.ok((await page.locator('#progress').textContent()).includes(`${i+1} / 5`));
     }
     assert.equal(await page.locator('#finish').isVisible(),true);
+    await page.locator('#exploreBtn').click();
+    assert.equal(await page.evaluate(()=>__audit.exploring),true);
+    assert.equal(await page.locator('.mission').isVisible(),false);
     await page.setViewportSize({width:844,height:390});
     await page.evaluate(()=>__audit.startTown('medium',7,[],'normal'));
     assert.equal(await page.locator('#hintBtn').isVisible(),true);
     await page.screenshot({path:path.join(output,'mobile.png')});
     assert.deepEqual(errors,[]);
+    await page.locator('#menuBtn').click();await page.locator('#exploreStart').click();
+    await page.locator('#start').waitFor({state:'hidden'});
+    assert.equal(await page.evaluate(()=>__audit.exploring&&__audit.town.stageName==='small'),true);
     const missing=await browser.newPage();await instrument(missing);
     await missing.route('**/character-male-f.glb',route=>route.abort());
     await missing.goto(url);await missing.locator('#quickStart').click();

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#cdece6">
   <title>못 찾겠다 꾀꼬리 | 키즈케이드</title>
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
   <script type="importmap">{"imports":{"three":"../../assets/vendor/three-r160/three.module.js","three/addons/":"../../assets/vendor/three-r160/addons/"}}</script>
 </head>
 <body>
@@ -35,8 +35,9 @@
       <span class="giantBird">🐤</span>
       <p class="eyebrow">와글와글 숨은 친구 찾기</p>
       <h1 id="startTitle">못 찾겠다 꾀꼬리!</h1>
-      <p class="intro">빵집에서, 공원에서, 정류장에서!<br>그림 속 친구를 찾아볼까요?</p>
+      <p class="intro">빵을 사서 공원으로 나들이 가요!<br>동네를 구경하며 그림 속 친구를 찾아볼까요?</p>
       <button id="quickStart" class="quickStart" type="button">🐤 바로 찾기</button>
+      <button id="exploreStart" class="resumeButton" type="button">👀 먼저 동네 구경하기</button>
       <details class="playOptions"><summary>마을 크기와 찾기 방법 고르기</summary>
       <label class="difficultyLabel" for="difficulty">찾기 방법</label>
       <select id="difficulty"><option value="easy">똑같은 친구 · 그림 보고 찾기</option><option value="normal">자세히 보기 · 하는 일도 비교</option><option value="hard">꼼꼼히 찾기 · 물건까지 비교</option></select>
@@ -52,11 +53,11 @@
   </section>
 
   <section id="finish" class="overlay hidden" aria-labelledby="finishTitle">
-    <div class="finishCard"><div class="trophy">🎉</div><h2 id="finishTitle">모두 찾았다!</h2><p id="finishText">마을 친구들을 전부 찾았어요!</p><div class="finishActions"><button id="againBtn" type="button">🔄 새로운 하루</button><button id="otherStageBtn" type="button">🏡 다른 마을</button></div></div>
+    <div class="finishCard"><div class="trophy">🎉</div><h2 id="finishTitle">모두 찾았다!</h2><p id="finishText">마을 친구들을 전부 찾았어요!</p><div class="finishActions"><button id="againBtn" type="button">🔄 새로운 하루</button><button id="otherStageBtn" type="button">🏡 다른 마을</button><button id="exploreBtn" type="button">👀 동네 더 구경하기</button></div></div>
   </section>
 </main>
 <script src="../../kidscade-storage.js"></script>
 <script src="../../kidscade-game-sdk.js" data-game-id="tod_mot_chatgetda_kkwaekkori" data-title="못 찾겠다 꾀꼬리" data-shell="true" data-pauseable="true" data-orientation="landscape"></script>
-<script type="module" src="game.js?v=3"></script>
+<script type="module" src="game.js?v=4"></script>
 </body>
 </html>
