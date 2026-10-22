@@ -52,3 +52,21 @@ test('animation changes drawn poses without advancing age, relationships or supp
  for(const time of [0,600,1200]){const rects=[];const ctx={fillStyle:'',clearRect(){},fillRect(...r){rects.push([...r,this.fillStyle]);}};api.paint({getContext:()=>ctx,setAttribute(){}},l,{time});frames.push(JSON.stringify(rects));}
  assert.equal(JSON.stringify(l),before);assert.notEqual(frames[0],frames[1]);
 });
+
+
+test('farmer is not teleported outside the family yard and has a visible planted workbed',()=>{
+ const api=runtime(),l=life();l.age=35;l.joseon.occupation='농사';
+ const plan=api.scene(l),farmer=api.layout(plan).find(p=>p.self);
+ assert.equal(api.motion(farmer,plan,l,0).activity,'hoe');
+ const rects=[],ctx={fillStyle:'',clearRect(){},fillRect(...r){rects.push([...r,this.fillStyle]);}};
+ assert.equal(api.paint({getContext:()=>ctx,setAttribute(){}},l,{time:300}),true);
+ // x coordinate 470 used to teleport the farmer's sprite to the far-right crop field.
+ const source=fs.readFileSync(path.resolve(__dirname,'../games/high_one_life/joseon-pixel-v2.js'),'utf8');
+ assert.doesNotMatch(source,/pose\.activity==='hoe'\?470:p\.x/);
+ assert.match(source,/const plotX=farmWorker\.x\+23/);
+ assert.match(source,/sprite\(p\.x\+pose\.dx\*p\.depth,p\.ground/);
+ assert.ok(rects.some(r=>r[0]===farmer.x+23&&r[2]===63&&r[3]===20),'workbed should be drawn beside the actual farmer');
+ const noFarm=life();noFarm.age=35;noFarm.joseon.occupation='어부';
+ const other=[];api.paint({getContext:()=>({fillStyle:'',clearRect(){},fillRect(...r){other.push(r);}}),setAttribute(){}},noFarm);
+ assert.ok(!other.some(r=>r[0]===farmer.x+23&&r[2]===63&&r[3]===20),'no fictitious vegetable plot for a non-farmer');
+});
