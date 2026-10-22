@@ -36,10 +36,13 @@ function options(args){
    const pieces=entry.split('='),role=pieces[0],model=pieces[1];
    if(pieces.length!==2||!Object.hasOwn(core.ROLES,role)||!/^[a-z0-9./:_+-]+$/i.test(model||''))
     throw Error('유효하지 않은 모델 지정: '+entry);
+   if(/cloud/i.test(model))throw Error('호스팅/클라우드 추론 모델은 사용할 수 없습니다: '+model);
    result.models[role]=model;
   }
  }
  if(![1,2].includes(result.rounds))throw Error('--rounds는 1 또는 2만 가능합니다.');
+ if(Object.values(result.models).some(name=>/cloud/i.test(name)))
+  throw Error('호스팅/클라우드 모델은 허용되지 않습니다.');
  if(new Set(Object.values(result.models)).size<2)
   throw Error('서로 다른 두 개 이상의 실제 모델을 지정해야 합니다.');
  if(result.images.length>3)throw Error('이미지는 최대 3장까지 지정할 수 있습니다.');
