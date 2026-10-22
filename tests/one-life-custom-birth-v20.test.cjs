@@ -111,3 +111,52 @@ test('start and birth controls are wired and loaded ahead of the engine',()=>{
  assert.ok(script.includes('offerNewbornName()'));
  assert.ok(script.includes('birthSetup:life.birthSetup'));
 });
+
+test('all selectable Joseon social origins produce matching family state and survive save/restore',()=>{
+ const expected={'왕실 종친':'양반','양반':'양반','중인':'중인','상민':'상민',
+  '사노비':'천민','공노비':'천민','백정':'상민'};
+ for(const [origin,status] of Object.entries(expected)){
+  const l=born(1580,{origin,gender:'남자'},15800+Object.keys(expected).indexOf(origin));
+  J.ensure(l);V5.ensure(l);
+  assert.equal(l.birthSetup.origin,origin);
+  assert.equal(J.ensure(l).birthStatus,status,origin);
+  assert.equal(V5.summary(l).origin,origin);
+  const r=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));
+  assert.equal(r.birthSetup.origin,origin);
+  assert.equal(J.ensure(r).birthStatus,status);
+  assert.equal(V5.summary(r).origin,origin);
+ }
+});
+test('selected Baekjeong follows its trade rather than default farming or unrestricted civil examination',()=>{
+ const b=born(1580,{origin:'백정',gender:'남자'},88);
+ const j=J.ensure(b);V5.ensure(b);
+ assert.equal(j.birthStatus,'상민','Baekjeong is not the same legal category as bonded slaves');
+ assert.equal(j.land,0,'do not grant unrelated farmland by default');
+ assert.match(j.occupation,/가죽|도축/);
+ assert.match(b.profile.fatherJob,/가죽|도축/);
+ b.age=24;b.year=1604;j.active={id:'origin-audit',kind:'examination',year:1604};b.pending='joseon:origin-audit';
+ const choice=b.getChoice();
+ assert.ok(choice&&choice.options.length>=2);
+ assert.equal(choice.options.some(o=>['exam','technical'].includes(o.action)),false,
+  'historically constrained origin must not directly enter elite examination');
+ const i=choice.options.findIndex(o=>o.action==='workTrade');
+ assert.ok(i>=0);
+ assert.equal(b.choose(i),true);
+ assert.match(J.ensure(b).occupation,/가죽|도축/);
+ assert.equal(J.ensure(b).office,false);
+});
+test('ordinary commoner, middle-ranking household and royal relative keep their distinct examination paths',()=>{
+ const cases=[
+  {origin:'상민',actions:['exam']},
+  {origin:'중인',actions:['technical']},
+  {origin:'왕실 종친',blocked:['exam','technical']}
+ ];
+ for(const spec of cases){
+  const l=born(1580,{origin:spec.origin,gender:'남자'},123);
+  const j=J.ensure(l);V5.ensure(l);j.active={id:'exam-audit',kind:'examination',year:1604};
+  l.year=1604;l.age=24;l.pending='joseon:exam-audit';
+  const actions=l.getChoice().options.map(o=>o.action);
+  if(spec.actions)for(const a of spec.actions)assert.ok(actions.includes(a),spec.origin+' '+a);
+  if(spec.blocked)for(const a of spec.blocked)assert.equal(actions.includes(a),false,spec.origin+' '+a);
+ }
+});
