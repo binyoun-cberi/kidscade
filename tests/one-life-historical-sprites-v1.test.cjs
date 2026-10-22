@@ -234,3 +234,49 @@ test('historical comparison exposes real scenario differences without inventing 
  assert.match(html,/상황·지역 선택은 고려 예시에만 적용됩니다/);
  assert.doesNotMatch(html,/localStorage|sessionStorage|indexedDB|\.save\(/);
 });
+
+
+test('crowded homes prioritize a real spouse and youngest children without fabricating people',()=>{
+ const life=clone(birth),g=life.goryeo343;
+ const year=life.year;
+ g.people=[
+   {id:'mother',role:'어머니',birthYear:year-61,alive:true,plan:'삼베 짜기'},
+   {id:'father',role:'아버지',birthYear:year-63,alive:true,plan:'농사'},
+   {id:'child-old',role:'자녀',birthYear:year-15,alive:true,plan:'배움'},
+   {id:'child-middle',role:'자녀',birthYear:year-9,alive:true,plan:'배움'},
+   {id:'spouse',role:'배우자',birthYear:year-28,alive:true,plan:'삼베 짜기'},
+   {id:'child-young',role:'자녀',birthYear:year,alive:true,plan:'돌봄'},
+   {id:'child-away',role:'자녀',birthYear:year-5,alive:true,atHome:false,plan:'돌봄'},
+   {id:'unborn',role:'자녀',birthYear:year+1,alive:true,plan:'돌봄'},
+   {id:'deceased',role:'자녀',birthYear:year-7,alive:false,plan:'휴식'}
+ ];
+ const original=JSON.stringify(life);
+ const atHome=Historical.familyAtHome(life,g);
+ assert.equal(atHome.length,6,'only living, already-born family members at home');
+ assert.deepEqual(Historical.occupants(life,g).map(p=>p.id),
+   ['self','spouse','child-young','child-middle','child-old']);
+ const frame=canvas(),summary=Historical.scene(frame.ctx,life,g);
+ assert.equal(summary.visiblePeople,5);
+ assert.equal(summary.offscreenFamily,2);
+ assert.equal(JSON.stringify(life),original,'visual selection cannot alter family data');
+ g.away=2;
+ assert.deepEqual(Historical.occupants(life,g).map(p=>p.id),['self']);
+ assert.equal(Historical.scene(canvas().ctx,life,g).offscreenFamily,0);
+});
+test('a passed-away protagonist does not occupy an imaginary spot in a crowded household',()=>{
+ const l=clone(birth);l.alive=false;
+ l.goryeo343.people=[
+  {id:'mother',role:'어머니',birthYear:l.year-58,alive:true,plan:'삼베 짜기'},
+  {id:'spouse',role:'배우자',birthYear:l.year-30,alive:true,plan:'휴식'}
+ ];
+ assert.deepEqual(Historical.occupants(l,l.goryeo343).map(p=>p.id),['spouse','mother']);
+ const summary=Historical.scene(canvas().ctx,l,l.goryeo343);
+ assert.equal(summary.visiblePeople,2);
+ assert.equal(summary.offscreenFamily,0);
+});
+test('Goryeo canvas accessible label acknowledges relatives beyond the five-person stage',()=>{
+ const source=file('goryeo-view-v343.js');
+ assert.match(source,/sprites\?\.familyAtHome\(l,g\)/);
+ assert.match(source,/화면 밖에 있는 식구/);
+ assert.match(source,/const hiddenCount=Math\.max\(0,family\.length/);
+});
