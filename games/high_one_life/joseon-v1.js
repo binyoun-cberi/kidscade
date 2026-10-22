@@ -150,8 +150,8 @@ function seedState(life){
    n<weights[0]?'양반':n<weights[0]+weights[1]?'중인':n<weights[0]+weights[1]+weights[2]?'상민':'천민';
  const family=life.birthSetup?.familyLevel||((status==='양반'&&roll(life.seed,1402)<.67)||roll(life.seed,1403)<.10?'여유 있는 형편'
     :(status==='천민'||roll(life.seed,1404)<.24?'빠듯한 형편':'평범한 형편'));
- const home=status==='양반'?'집안 살림과 글공부':status==='중인'?'관아의 기록과 기술을 배우는 일':status==='천민'?'예속된 집안의 일과 노동':'농사와 집안일';
- const land=status==='양반'?2+Math.floor(roll(life.seed,1405)*5):status==='상민'?Math.floor(roll(life.seed,1405)*3):0;
+ const home=life.birthSetup?.origin==='백정'?'도축과 가죽 손질을 잇는 집안':status==='양반'?'집안 살림과 글공부':status==='중인'?'관아의 기록과 기술을 배우는 일':status==='천민'?'예속된 집안의 일과 노동':'농사와 집안일';
+ const land=life.birthSetup?.origin==='백정'?0:status==='양반'?2+Math.floor(roll(life.seed,1405)*5):status==='상민'?Math.floor(roll(life.seed,1405)*3):0;
  return {version:1,region:r[0],landmark:r[1],settlement:r[2],birthStatus:status,
    status,family,land,capital:family==='여유 있는 형편'?155:family==='빠듯한 형편'?18:64,
    occupation:home,school:'집안일을 배우는 때',literacy:0,studyYears:0,exams:0,
@@ -166,8 +166,8 @@ function sync(life,s){
  life.career=s.occupation;
  life.profile.city=s.region;
  life.profile.settlement=s.settlement;
- life.profile.motherJob=s.birthStatus==='양반'?'집안 살림과 교육':s.birthStatus==='중인'?'집안 생업과 기록 보조':s.birthStatus==='천민'?'집안일과 고된 노동':'농사와 집안일';
- life.profile.fatherJob=s.birthStatus==='양반'?'가문 살림과 학문':s.birthStatus==='중인'?'관청 실무와 기술':s.birthStatus==='천민'?'종속된 노동':'농사와 장터 생업';
+ life.profile.motherJob=life.birthSetup?.origin==='백정'?'도축과 가죽 손질을 돕는 생업':s.birthStatus==='양반'?'집안 살림과 교육':s.birthStatus==='중인'?'집안 생업과 기록 보조':s.birthStatus==='천민'?'집안일과 고된 노동':'농사와 집안일';
+ life.profile.fatherJob=life.birthSetup?.origin==='백정'?'도축과 가죽 손질':s.birthStatus==='양반'?'가문 살림과 학문':s.birthStatus==='중인'?'관청 실무와 기술':s.birthStatus==='천민'?'종속된 노동':'농사와 장터 생업';
  life.profile.partner=s.married;life.profile.child=s.children>0;
  if(life.world){
   life.world.educationYears=s.studyYears;
@@ -204,10 +204,10 @@ function note(life,s,text,kind='joseon-life'){
 }
 function promptFor(life,s){
  if(!s.active)return null;
- const kind=s.active.kind,social=life.joseon5,origin=social?.origin||'';
- const bound=['사노비','공노비'].includes(origin)&&!social.freed&&life.year<1894;
+ const kind=s.active.kind,social=life.joseon5,origin=social?.origin||life.birthSetup?.origin||'';
+ const bound=['사노비','공노비'].includes(origin)&&!social?.freed&&life.year<1894;
  const royal=origin==='왕실 종친';
- const canExam=!royal&&!bound&&!social?.monastic&&life.gender==='남자'&&['양반','상민'].includes(s.birthStatus)&&life.year<1894;
+ const canExam=!royal&&!bound&&origin!=='백정'&&!social?.monastic&&life.gender==='남자'&&['양반','상민'].includes(s.birthStatus)&&life.year<1894;
  const opt=(label,noteText,action,effects={})=>({label,note:noteText,action,effects,text:label});
  if(kind==='school')return {title:'글을 배울 수 있을까?',description:(life.year>=1894?'옛 '+s.birthStatus+' 가계':' '+s.status+' 집안')+'에서 '+s.region+'의 하루를 살아간다. 무엇을 배울까?',options:[
   opt('글을 배울 길을 찾아본다',life.gender==='여자'?'집안에서 배울 기회를 알아본다':s.status==='양반'?'가문의 글공부와 서당':'지역의 배움이나 가족·이웃의 가르침','study',{knowledge:6,wealth:-3}),
@@ -218,7 +218,7 @@ function promptFor(life,s){
    opt('일하는 방법을 더 익힌다','배운 만큼 일의 책임도 커진다','womenServiceWork',{knowledge:4}),
    opt('선배에게 맡은 일을 묻는다','서로 돕고 배우는 일이 중요하다','womenServicePeople',{bonds:4}),
    opt('궁핍한 집안에 안부를 전한다','멀리 있어도 가족과 연락을 이어 간다','womenServiceFuture',{bonds:3})]};
- if(kind==='vocation'&&bound)return {title:'정해진 일과 자유를 찾는 길',description:social.originLabel+'에서 태어났다. 주인이나 관아의 예속 아래 생업을 마음대로 선택하기 어렵다.',options:[
+ if(kind==='vocation'&&bound)return {title:'정해진 일과 자유를 찾는 길',description:(social?.originLabel||origin+' 가계')+'에서 태어났다. 주인이나 관아의 예속 아래 생업을 마음대로 선택하기 어렵다.',options:[
   opt('맡겨진 일터의 노동을 이어 간다','매일의 노동으로 집안과 몸을 버틴다','serve',{health:-3,bonds:2}),
   opt('일하는 틈에 기술을 배운다','사람들과 일을 배우며 다른 가능성을 찾는다','servileSkill',{knowledge:5,health:-1}),
   opt('속량을 청할 방법을 알아본다','허락과 비용이 필요하며 실패할 수도 있다','petitionRelease',{knowledge:4,wealth:-4})]};
@@ -262,6 +262,10 @@ function promptFor(life,s){
   opt('지금 맡은 일과 공부를 이어 간다','지금의 처지에서 배움을 쌓는다','mixed',{knowledge:4}),
   opt('가족과 동료의 기술을 익힌다','살아가는 데 필요한 손기술을 배운다','servileSkill',{knowledge:3,bonds:2}),
   opt('관계와 일상에서 도움을 나눈다','주변 사람을 돕고 안부를 살핀다','servileKin',{bonds:5})]};
+ if(kind==='examination'&&origin==='백정'&&life.year<1894)return {title:'배움과 생업의 길',description:'법적으로 노비와는 달랐지만, 차별과 생업의 제약 때문에 관직으로 나아가기 어려웠다. 익힌 솜씨를 어떻게 이어 갈까?',options:[
+  opt('가죽과 고기 손질을 더 익힌다','집안에서 배운 기술을 발전시킨다','workTrade',{knowledge:5}),
+  opt('이웃과 함께 거래처를 찾아본다','차별을 겪으면서도 함께 살아갈 길을 찾는다','servileKin',{bonds:5}),
+  opt('글과 셈을 배우며 장부를 익힌다','배우는 기회가 생겨도 곧바로 과거에 응시할 수는 없다','mixed',{knowledge:4})]};
  if(kind==='examination'){
   if(canExam)return {title:'과거에 도전할까?',description:'글을 익혔더라도 과거에 급제하는 일은 쉽지 않다. 신분·성별·학습 기회도 응시를 좌우했다.',options:[
    opt('문과 시험을 준비한다',s.studyYears>=3?'글공부를 이어 왔지만 합격과 관직은 별개의 길이다.':'시험에 나갈 자격과 준비할 수 있는 형편은 달랐다.','exam',{knowledge:5,wealth:-7}),
