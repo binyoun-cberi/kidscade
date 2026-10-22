@@ -40,7 +40,7 @@
  }
  function householdText(value){
    if(!value)return '기록 없음';
-   return '기록된 생존 배우자 '+numberText(value.partner)+'명 · 자녀 '+numberText(value.children)+'명';
+   return '배우자 '+numberText(value.partner)+'명 · 자녀 '+numberText(value.children)+'명';
  }
  function rows(previous,current,formatCredits){
    const a=previous||{},b=current||{};
@@ -56,15 +56,15 @@
      output.push(['가족·관계',householdText(prior.household),householdText(now.household)]);
      if(era==='goryeo'){
        for(const [title,key] of [
-         ['곡식 (게임 속 수치)','grain'],
-         ['살림에 쓸 것 (게임 속 수치)','pocket'],
-         ['경작지 (게임 속 수치)','land']
-       ])output.push([title,numberText(prior.resources?.[key]),numberText(now.resources?.[key])]);
+         ['곡식','grain'],
+         ['장터 돈','pocket'],
+         ['밭','land']
+       ])output.push([title,numberText(prior.resources?.[key])==='기록 없음'?'기록 없음':numberText(prior.resources?.[key])+({grain:'말',pocket:'냥',land:'마지기',capital:'냥'}[key]),numberText(now.resources?.[key])==='기록 없음'?'기록 없음':numberText(now.resources?.[key])+({grain:'말',pocket:'냥',land:'마지기',capital:'냥'}[key])]);
      }else{
        for(const [title,key] of [
-         ['살림 밑천 (게임 속 수치)','capital'],
-         ['곡식 (게임 속 수치)','grain']
-       ])output.push([title,numberText(prior.resources?.[key]),numberText(now.resources?.[key])]);
+         ['살림 밑천','capital'],
+         ['곡식','grain']
+       ])output.push([title,numberText(prior.resources?.[key])==='기록 없음'?'기록 없음':numberText(prior.resources?.[key])+({grain:'말',pocket:'냥',land:'마지기',capital:'냥'}[key]),numberText(now.resources?.[key])==='기록 없음'?'기록 없음':numberText(now.resources?.[key])+({grain:'말',pocket:'냥',land:'마지기',capital:'냥'}[key])]);
      }
      return output;
    }
