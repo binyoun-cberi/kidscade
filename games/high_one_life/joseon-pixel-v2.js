@@ -155,6 +155,20 @@ const api={scene,layout,motion,
    px(479,188,52,13,'#806345');for(let i=0;i<5;i++)px(482+i*10,185,7,5,'#b09568');
    px(486,179,34,7,'#997c54');
   }
+  // Show a modest work plot where an actual farmer is working. The visual
+  // reflects the recorded occupation; it does not create produce or wealth.
+  const residents=layout(plan);
+  const farmWorker=kind==='farm'?residents.find(p=>p.self&&motion(p,plan,life,options.time||0).activity==='hoe'):null;
+  if(farmWorker){
+   const plotX=farmWorker.x+23,plotY=farmWorker.ground-6;
+   px(plotX,plotY,63,20,'#91734f');
+   px(plotX+2,plotY+3,58,3,'#644e3d');
+   for(let i=0;i<5;i++){
+    const x=plotX+7+i*11;
+    px(x,plotY-6,3,10,'#567b4f');
+    if(season!=='겨울'){px(x-4,plotY-8,5,4,'#719760');px(x+3,plotY-10,5,4,'#81a968');}
+   }
+  }
   // Age-shaped hanbok sprites; clothes and headwear signal age and social position.
   const sprite=(x,ground,personAge,sex,childColor,adultColor,offset,self=false,depth=.68,pose={activity:'rest',hand:0,lean:0,leftFoot:0,rightFoot:0})=>{
    const personalWear=Culture?.wardrobe(year,origin,sex,self?j.occupation:'집안의 일',personAge,{duty:self&&(kind==='study'||kind==='port')});
@@ -230,9 +244,11 @@ const api={scene,layout,motion,
   const trim=wear?.accent||(elite?'#b9a16e':'#c6aa73');
   // Draw only living, present household members, with their recorded ages and sex.
   // Keep a calm scene even for large households; the caption states the full count.
-  for(const p of layout(plan)){
+  for(const p of residents){
    const pose=motion(p,plan,life,options.time||0);
-   sprite((pose.activity==='hoe'?470:p.x)+pose.dx*p.depth,pose.activity==='hoe'?243:p.ground,p.age,p.sex,'#d4b96f',adultTone,trim,p.self,p.depth,pose);
+   // Keep feet at the stable recorded layout location during tool animation:
+   // work must not teleport the protagonist to the far right of the scene.
+   sprite(p.x+pose.dx*p.depth,p.ground,p.age,p.sex,'#d4b96f',adultTone,trim,p.self,p.depth,pose);
   }
   // Shared palette bar and fine border echo the mint-and-warm UI without a heavy frame.
   px(0,0,600,3,'#6da99b');px(0,255,600,3,'#6da99b');

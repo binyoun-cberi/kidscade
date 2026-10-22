@@ -3,6 +3,8 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const Sim = window.OneLifeSim;
+  const UIFlow=window.OneLifeUIFlow;
+  if(!UIFlow)throw new Error('One Life UI helpers missing');
   const Goryeo=window.OneLifeGoryeo343||{is:()=>false};
   const Identity=window.OneLifeIdentity20;
   if (!Sim) throw new Error('OneLifeSim engine not loaded');
@@ -68,6 +70,7 @@
   let completed = false, ruleWasRunning = false, replayBasis = null;
   let peerCache = null, lastPeerRenderedAge = -1, lastMapRenderedAge = -1;
   let storyTab='', peerAgeChoice=0, timelineVisible=22, playSpeed=1, nextDecision=false;
+  let lastDecisionKey=null;
   let namingChild=null,wasPausedBeforeNaming=false;
   function updateBirthChoices(){
     const year=Number($('birthYearInput').value);
@@ -159,7 +162,7 @@
     return '남의 논밭을 빌려 농사짓고, 수확으로 살림을 꾸린다.';
   }
   // 1결 = 100부. 원본 s.land 값은 면적이 아닌 추상 자원이므로
-  // 통계로 오해되는 원래의 정수 '몫'을 직접 1결로 치환하지 않는다.
+  // 통계로 오해되는 원래의 추상 수치을 직접 1결로 치환하지 않는다.
   // 본 작품의 가구별 경작 규모를 위해 전답을 10부 단위로 별도 표시한다.
   function landAmount(units){
     const bu=Math.max(0,Math.round((Number(units)||0)*10));
@@ -197,7 +200,7 @@
   function draw() {
     clearInterval(roulette);
     roulette = null;
-    playSpeed=1;nextDecision=false;refreshSpeedControls();
+    playSpeed=1;nextDecision=false;lastDecisionKey=null;refreshSpeedControls();
     const desired=Number($('birthYearInput').value);
     const birthYear=Number.isInteger(desired)&&desired>=1200&&desired<=2026?desired:2026;
     $('birthYearInput').value=String(birthYear);
@@ -227,19 +230,25 @@
     let loops = 0;
     const sample = Goryeo.is(life)?Goryeo.regions.map(region=>[region,'生']):[['한양','📜'],['경상도','📜'],['평안도','📜'],['함경도','📜'],['제주도','📜']];
     const paint = country => { $('birthFlag').textContent = country[1]; $('birthCountry').textContent = country[0]; };
-    roulette = setInterval(() => {
-      loops++;
-      paint(sample[(loops*7)%sample.length]);
-      if(loops >= 19) {
-        clearInterval(roulette); roulette = null;
-        $('birthFlag').textContent=(Goryeo.is(life)||Joseon.isJoseon(life))?'生':'🇰🇷';
-        $('birthCountry').textContent=History.place(life);
-        $('birthDetail').textContent = life.gender + ' · ' + life.familyLevel + ' · ' + life.year + '년 출생';
-        paintCertificate();
-        $('lifeStartBtn').classList.remove('hidden');
-        $('lifeStartBtn').focus();
-      }
-    }, 76);
+    const completeBirthReveal=()=>{
+      clearInterval(roulette);roulette=null;
+      $('birthFlag').textContent=(Goryeo.is(life)||Joseon.isJoseon(life))?'生':'🇰🇷';
+      $('birthCountry').textContent=History.place(life);
+      $('birthDetail').textContent=life.gender+' · '+life.familyLevel+' · '+life.year+'년 출생';
+      paintCertificate();
+      $('lifeStartBtn').classList.remove('hidden');
+      $('lifeStartBtn').focus();
+    };
+    // No flickering/moving roulette for visitors requesting reduced motion.
+    if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
+      completeBirthReveal();
+    }else{
+      roulette=setInterval(()=>{
+        loops++;
+        paint(sample[UIFlow.rouletteIndex(loops,sample.length)]);
+        if(loops>=19)completeBirthReveal();
+      },76);
+    }
   }
   const formatCredits = value => {
     const n=Math.round(Number(value)||0);
@@ -440,12 +449,12 @@
       put('v13FamilyStatus',aftermath?.captivity?.status==='held'?
         '고향에 남은 배우자와 가족의 소식을 기다린다. 가족이 있는 곳과 포로 생활 중인 곳은 다르다.':
         (v4.spouse?(v4.spouse.alive?'배우자 '+v4.spouse.name+'와 함께 지낸다.':'배우자 '+v4.spouse.name+'를 그리워한다.'):'식구들과 살림을 이어 간다.')+' 자녀 '+v4.children+'명.');
-      put('v13LifeMemories',[...j.memories.slice(-1),...v3.memories.slice(-1),...v4.memories.slice(-2),...(jobs?.memories||[]).slice(-1)].join(' · ')||'세월이 지나며 이야기들이 남습니다.');
+      put('v13LifeMemories',[...j.memories.slice(-1),...v3.memories.slice(-1),...v4.memories.slice(-2),...(jobs?.memories||[]).slice(-1)].join(' · ')||'남아 있는 기록이 없습니다.');
       put('nameHeadline',p.name+' · '+j.region);put('profileName',p.name);
       put('profileMeta',life.gender+' · '+j.region+' · '+life.age+'세');
       put('profileFamily',(social?.originLabel||j.status)+(social?.freed?' · 법적 예속에서 벗어남':''));
       put('netWorth',formatCredits(m.netWorth));$('netWorth').classList.toggle('negative',m.netWorth<0);
-      $('netWorthLabel').textContent='살림의 남은 몫';
+      $('netWorthLabel').textContent='남은 살림 자산';
       put('annualIncome',formatCredits(m.income));put('annualExpense',formatCredits(m.expense));
       put('annualBalance',formatCredits(m.lastBalance));$('annualBalance').classList.toggle('negative',m.lastBalance<0);
       put('employmentStatus',aftermath?.captivity?.status==='held'?'타향에서 주어진 일을 하며 지내는 중':
@@ -472,7 +481,7 @@
         '고향의 가족 '+v4.people.length+'명 중 '+v4.alive+'명 생존':
         '가족 '+v4.people.length+'명 중 '+v4.alive+'명 생존 · 함께 사는 식구 '+v4.atHome+'명');put('v9Hobby',v3.memories.at(-1)||'생업과 이웃 사이에서 남은 일상');
       put('v9Loan',e.debt?'이웃이나 친척에게 진 빚을 아직 다 갚지 못했다. '+e.why:'빚을 지지 않고 살림을 꾸려 가고 있다. '+e.why);
-      put('v9Hobby',jobs?.primary?jobs.primary.name+' 일을 오랫동안 익히며 사람들과 인연을 맺었다.':(social?.memories.at(-1)||v3.memories.at(-1)||'식구들과 고을의 하루를 보냈다.'));
+      put('v9Hobby',jobs?.primary?jobs.primary.name+' 일을 계속해 왔다.':(social?.memories.at(-1)||v3.memories.at(-1)||'아직 기록된 일이 없습니다.'));
       const picture=window.OneLifeJoseonPixel2?.paint($('lifeScene'),life)||Joseon3.paint($('lifeScene'),life)||Joseon.paint($('lifeScene'),life);
       if(!picture)Pixel.paint($('lifeScene'),life);
       put('sceneLabel',aftermath?.captivity?.status==='held'?
@@ -947,6 +956,9 @@
   function showDecision() {
     const choice = life.getChoice();
     const reflection = life.getReflection();
+    const decisionKey=UIFlow.decisionKey(life,choice,reflection);
+    const isNewDecision=decisionKey!==null&&decisionKey!==lastDecisionKey;
+    lastDecisionKey=decisionKey;
     $('decision').classList.toggle('hidden',!choice && !reflection);
     $('waiting').classList.toggle('hidden',!!choice || !!reflection);
     if(reflection) {
@@ -959,6 +971,7 @@
       const btn=document.createElement('button');btn.type='button';btn.className='reflection-next';btn.textContent='계속 살아가기 →';
       btn.addEventListener('click',()=>{life.reflect(note.value);save();elapsed=0;lastTick=performance.now();render();});
       target.append(note,btn);
+      if(isNewDecision)$('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
       return;
     }
     if (!choice) return;
@@ -984,7 +997,7 @@
         const moneyDelta=(life.money?.netWorth??before.netWorth)-(before.netWorth??life.money?.netWorth??0);
         if(moneyDelta)changes.push('살림 '+(moneyDelta>0?'+':'')+formatCredits(moneyDelta));
         if(life.career!==before.career)changes.push('진로 '+life.career);
-        let effectText=changes.length?'이후 달라진 점 · '+changes.join(' · '):'당장은 눈에 띄는 변화가 없었다.';
+        let effectText=changes.length?'이후 달라진 점 · '+changes.join(' · '):'';
         if(Joseon.inOldEra(life)){
           const lines=[];
           if(life.stats.health<before.stats.health)lines.push('몸이 조금 고단해졌다');
@@ -994,14 +1007,17 @@
           if(moneyDelta<0)lines.push('집안 살림에는 다소 부담이 남았다');
           if(moneyDelta>0)lines.push('집안 살림에 작은 여유가 생겼다');
           if(life.career!==before.career)lines.push('새로운 생업을 시작했다');
-          effectText=lines.length?lines.slice(0,2).join('. ')+'.':'그날의 일은 마음 한편에 남았다.';
+          effectText=lines.length?lines.slice(0,2).join('. ')+'.':'';
         }
-        life.logEvent(effectText,'decision-effect');
+        // The choice itself is already recorded. Avoid generic aftermath
+        // sentences when there is no verified immediate numerical change.
+        if(effectText)life.logEvent(effectText,'decision-effect');
         save(); elapsed=0; lastTick=performance.now(); render(); offerNewbornName();
       });
       target.append(btn);
     });
-    $('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
+    // Repainting a still-open choice must not pull readers out of history.
+    if(isNewDecision)$('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
   }
   function peerView(peer){
     return {age:peer.age,alive:peer.alive,name:peer.profile?.name||'이름 없는 이웃',
@@ -1377,7 +1393,7 @@
     const count=rememberLife();
     $('endYears').textContent=life.birthYear+' — '+life.year;
     $('endCountry').textContent=(life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1])+' '+History.place({...life,year:life.birthYear})+' · '+life.profile.name+' ('+life.profile.city+')';
-    $('endNetWorth').textContent=Goryeo.is(life)?Goryeo.ensure(life).grain+'몫':formatCredits(life.money.netWorth);
+    $('endNetWorth').textContent=Goryeo.is(life)?'곡식 '+Goryeo.ensure(life).grain:formatCredits(life.money.netWorth);
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=oldJobs?.primary?.name||(!['아직 정해지지 않음','학생'].includes(life.career)?life.career:'살림과 일상');
     const firstPlace=History.place({...life,year:life.birthYear});
@@ -1402,9 +1418,9 @@
       const age=document.createElement('b');age.textContent=e.age+'세';
       const text=document.createElement('span');text.textContent=e.text;
       const copy=document.createElement('div');copy.append(text);
-      const effect=life.log.find(x=>x.kind==='decision-effect'&&x.age===e.age);
-      const detail=document.createElement('small');detail.textContent=effect?.text||'그때는 무엇이 달라질지 몰랐다.';
-      if(e.kind==='decision')copy.append(detail);
+      const effect=UIFlow.decisionAftermath(life.log,e);
+      const detail=document.createElement('small');
+      if(effect){detail.textContent=effect.text;copy.append(detail);}
       else if(['history-choice','era-choice','care13-choice','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice','joseon339-choice','joseon340-choice','joseon341-choice'].includes(e.kind)){
         const aftermath={'joseon341-choice':'joseon341-followup','joseon340-choice':'joseon340-followup','joseon339-choice':'joseon339-followup','history-choice':'history-followup','era-choice':'era-followup','care13-choice':'care13-followup',
           'joseon-choice':'joseon-followup','joseon2-choice':'joseon2-followup',

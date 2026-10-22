@@ -53,3 +53,107 @@ test('cloth becomes garments or cotton quilts and can be sold only when actually
  assert.equal(G.action(l,'plan','mother','솜이불 만들기'),true);l.tick();assert.equal(g.quilts,1);assert.equal(g.cloth,4);while(l.pending)l.choose(0);
  const r=L.restore(copy(l.snapshot()));assert.equal(r.goryeo343.quilts,1);assert.equal(G.action(r,'sell','quilts'),true);
 });
+
+
+test('birth roulette visits all seven Goryeo regions instead of cycling at one index',()=>{
+ const ui=c.OneLifeUIFlow;assert.ok(ui,'UI helper should load before game.js');
+ const count=G.regions.length;assert.equal(count,7);
+ const indices=Array.from({length:count},(_,i)=>ui.rouletteIndex(i+1,count));
+ assert.equal(new Set(indices).size,count,'each region should appear during the first seven frames');
+ for(const n of [2,3,4,5,6,7,8,10,12,14,15]){
+  const indexes=Array.from({length:n},(_,i)=>ui.rouletteIndex(i,n));
+  assert.equal(new Set(indexes).size,n,'must cycle through '+n+' regions');
+  assert.ok(indexes.every(v=>Number.isInteger(v)&&v>=0&&v<n));
+ }
+ assert.equal(ui.rouletteIndex(1,0),0);
+ assert.equal(ui.rouletteIndex(NaN,7),0);
+});
+
+test('choice identity remains stable on redraw and changes for the next event',()=>{
+ const ui=c.OneLifeUIFlow;
+ const life={birthYear:1350,year:1370,age:20,pending:'one-life:market'};
+ const first={title:'가판대를 정리할까?',options:[{label:'판매'}]};
+ const next={title:'가판대를 정리할까?',options:[{label:'판매'}]};
+ assert.equal(ui.decisionKey(life,first,0),ui.decisionKey(life,next,0));
+ assert.notEqual(ui.decisionKey(life,first,0),
+   ui.decisionKey({...life,year:1371,age:21},first,0));
+ assert.notEqual(ui.decisionKey(life,first,0),
+   ui.decisionKey({...life,pending:'one-life:inventory'},first,0));
+ assert.equal(ui.decisionKey(life,null,null),null);
+ assert.ok(ui.decisionKey({...life,pending:'reflection:20'},null,20));
+});
+
+test('birth UI supports reduced motion and prevents repeated decision scrolling',()=>{
+ const html=fs.readFileSync(dir+'/index.html','utf8');
+ const game=fs.readFileSync(dir+'/game.js','utf8');
+ assert.match(html,/<script src="\.\/ui-flow\.js\?v=1"><\/script>/);
+ assert.ok(html.indexOf('ui-flow.js?v=1')<html.indexOf('game.js?v=73'));
+ assert.match(game,/UIFlow\.rouletteIndex\(loops,sample\.length\)/);
+ assert.doesNotMatch(game,/loops\*7\)%sample\.length/);
+ assert.match(game,/prefers-reduced-motion: reduce/);
+ assert.match(game,/if\(isNewDecision\)\$\('decision'\)\.scrollIntoView/);
+ assert.match(game,/lastDecisionKey=decisionKey/);
+});
+
+
+test('game avoids invented aftermath lines when a choice has no measurable change',()=>{
+ const code=fs.readFileSync(dir+'/game.js','utf8');
+ assert.doesNotMatch(code,/그날의 일은 마음 한편에 남았다/);
+ assert.doesNotMatch(code,/당장은 눈에 띄는 변화가 없었다/);
+ assert.match(code,/if\(effectText\)life\.logEvent\(effectText,'decision-effect'\)/);
+ // Choice systems must still retain their own genuine decision narration.
+ const life=make(1350,17);
+ for(let n=0;n<70&&life.alive;n++){
+   if(life.pending){
+     const q=life.getChoice();
+     if(q){const before=life.log.length;assert.equal(life.choose(0),true);
+       assert.ok(life.log.slice(before).some(e=>e.text),'choice narration must remain');}
+     else if(life.getReflection())life.reflect();
+     else throw Error('orphan pending choice');
+   }else life.tick();
+ }
+});
+
+
+test('ending associates an effect only with its actual choice, not another choice at the same age',()=>{
+ const ui=c.OneLifeUIFlow,first={age:20,kind:'decision',text:'첫 선택'},second={age:20,kind:'decision',text:'두 번째 선택'};
+ const effect={age:20,kind:'decision-effect',text:'살림 +3'};
+ const log=[first,{age:20,kind:'event',text:'이후 다른 사건이 있었다'},second,effect];
+ assert.equal(ui.decisionAftermath(log,first),null);
+ assert.equal(ui.decisionAftermath(log,second),effect);
+ assert.equal(ui.decisionAftermath(log,{...second}),null,'detached choice must not steal an effect');
+ const linked={age:21,kind:'decision',causeId:'real-2'};
+ const later={age:24,kind:'decision-effect',causeId:'real-2',text:'증빙된 후속'};
+ assert.equal(ui.decisionAftermath([linked,later],linked),later);
+ const game=fs.readFileSync(dir+'/game.js','utf8');
+ assert.match(game,/UIFlow\.decisionAftermath\(life\.log,e\)/);
+ assert.doesNotMatch(game,/그때는 무엇이 달라질지 몰랐다/);
+});
+
+test('offline prose review catches vague generic AI-style phrases without editing narrative',()=>{
+ const style=require('../games/high_one_life/text-style-audit.cjs');
+ const findings=style.analyze('그날의 일은 마음 한편에 남았다.\n이웃이 가져간 곡식은 세 되였다.','fixture');
+ assert.equal(findings.length,1);
+ assert.equal(findings[0].line,1);
+ assert.equal(findings[0].file,'fixture');
+ const game=fs.readFileSync(dir+'/game.js','utf8');
+ for(const phrase of ['그날의 일은 마음 한편에 남았다','그때는 무엇이 달라질지 몰랐다',
+    '세월이 지나며 이야기들이 남습니다','식구들과 고을의 하루를 보냈다']){
+   assert.ok(!game.includes(phrase),'generic sentence must not reappear: '+phrase);
+ }
+ const inventory=style.scan();assert.ok(Array.isArray(inventory));
+ assert.ok(inventory.every(item=>!item.file.includes('..')),'inventory paths stay local');
+});
+
+
+test('no game source emits the deprecated abstract resource unit',()=>{
+ const banned=String.fromCharCode(0xBAAB);
+ const walk=folder=>fs.readdirSync(folder,{withFileTypes:true}).flatMap(entry=>{
+  if(entry.name.startsWith('.')||entry.name==='node_modules')return [];
+  const filename=path.join(folder,entry.name);
+  return entry.isDirectory()?walk(filename):/\.(?:js|mjs|html|json)$/.test(entry.name)?[filename]:[];
+ });
+ const flagged=walk(dir).filter(filename=>fs.readFileSync(filename,'utf8').includes(banned))
+   .map(filename=>path.relative(dir,filename));
+ assert.deepEqual(flagged,[],'replace misleading wording in these One Life game resources');
+});

@@ -100,12 +100,26 @@
     const scale=age<6?1:age<13?1.25:1.55;
     person(baseX,baseY,scale,age<20?'#4a818b':age>=65?'#856a8f':'#cb816c');
     if(age<16){
-      person(baseX-53,baseY,1.55,'#657fa3');
-      person(baseX+53,baseY,1.55,'#ad7968');
+      // Do not invent two parents just because the protagonist is a child.
+      // Decorate the age-appropriate place instead of adding unknown people.
+      if(stage==='학교'){
+        fill(baseX-66,baseY-34,36,30,'#5a7d8a');
+        fill(baseX-61,baseY-30,26,21,'#e2c595');
+        fill(baseX-51,baseY-30,5,21,'#ab805b');
+      }else{
+        fill(baseX-64,baseY-15,36,10,'#8e765b');
+        fill(baseX-59,baseY-23,8,8,'#cf9c71');
+        fill(baseX-45,baseY-27,11,12,'#77a49a');
+      }
     }else{
       if(p.partner && age>=33 && age<90)person(baseX+65,baseY,1.45,'#5d8e85');
       if(p.child && age>=37 && age<=59)person(baseX-61,baseY,age<=45?1:1.25,'#d5b66b');
-      if(!p.partner && !p.child)person(baseX-60,baseY,1.4,'#65899a');
+      // A spouse, child, or friend must not be drawn from a guessed relationship.
+      if(!p.partner&&!p.child){
+        fill(baseX-72,baseY-16,27,12,'#987b58');
+        fill(baseX-66,baseY-28,15,14,'#6d9d78');
+        fill(baseX-60,baseY-37,4,10,'#536f53');
+      }
     }
     fill(8,8,190,24,'#19323cc9');
     ctx.fillStyle='#f9f0df';

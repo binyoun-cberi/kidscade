@@ -58,7 +58,7 @@ function choices(l,key){
    '집안에서 혼담이 오간다. 혼인 여부와 별개로 앞으로의 생업과 친척과의 인연을 생각한다.',
   options:[
    ['가족 간의 약속과 안부를 챙긴다','집안 간의 관계가 이어지지만 시간과 품이 든다.'],
-   ['배운 기술로 내 몫의 벌이를 마련한다','일거리를 얻더라도 혼인 여부가 저절로 바뀌지는 않는다.'],
+   ['배운 기술로 스스로 벌이를 마련한다','일거리를 얻더라도 혼인 여부가 저절로 바뀌지는 않는다.'],
    ['이웃과 품을 나누며 지낸다','어려울 때 부탁할 사람을 늘려 간다.']]};
  if(key==='work'){
   const skilled=s.craft>=2,writer=s.letters>=2;
@@ -74,8 +74,8 @@ function choices(l,key){
  if(key==='property')return {title:f.parentDeath?'친정의 남은 물건과 문서':'친정의 살림을 정리하는 날',
   description:(f.parentDeath?'세상을 떠난 가족이 남긴 물건과 문서를 어떻게 정리할지 집안에서 의논한다. ':
    '친정의 어른들이 오래된 장부와 집안 물건을 정리하려 한다. ')+
-   (late?'재산을 나누는 방식과 혼인한 딸의 몫에 관한 집안의 관행이 예전과 달라졌다.':
-    '딸도 재산을 나누어 받는 집안이 있었지만 실제 몫은 문서와 집안 사정에 달렸다.'),
+   (late?'재산을 나누는 방식과 혼인한 딸의 상속분에 관한 집안의 관행이 예전과 달라졌다.':
+    '딸도 재산을 나누어 받는 집안이 있었지만 실제로 얼마나 받을지는 문서와 집안 사정에 달렸다.'),
   options:[
    ['옛 문서와 증인을 찾아 권리를 확인한다','기록과 이웃의 증언을 살펴본다. 재산을 받는다고 확정되지는 않는다.'],
    ['다툼을 줄이도록 친척들과 상의한다','가족 사이에 오가는 말을 듣고 합의할 길을 찾는다.'],
@@ -137,7 +137,7 @@ function resolve(l,index){
   if(index===1){s.letters+=2;s.trade+=1;s.livelihood='편지와 장부 정리';gain(s.letters>=4?2:-1);l.change({knowledge:2});story='이웃의 글과 장부를 거들었다. 글을 쓸 때마다 그 뜻과 값을 다시 확인했다.';}
   if(index===2){s.care+=2;s.livelihood='마을의 돌봄과 약재';gain(-2);l.change({bonds:3,knowledge:2});story='가까운 집의 돌봄을 돕고 약재 쓰임을 익혔다. 아픈 이가 모두 낫는 것은 아니었다.';}
  }else if(key==='property'){
-  if(index===0){s.property=2;s.letters+=1;l.change({knowledge:3});story='문서와 증언을 대조해 집안 물건의 내력을 확인했다. 재산의 몫이 확정된 것은 아니었다.';}
+  if(index===0){s.property=2;s.letters+=1;l.change({knowledge:3});story='문서와 증언을 대조해 집안 물건의 내력을 확인했다. 재산 분배가 확정된 것은 아니었다.';}
   if(index===1){s.property=1;l.change({bonds:3});story='친척들의 말을 차례로 듣고 살림을 어떻게 나눌지 논의했다. 갈등이 모두 사라지지는 않았다.';}
   if(index===2){s.property=3;gain(-2);s.resources+=1;story='남은 물건이 상하지 않도록 정리했다. 물건을 지키는 일에도 돈과 일손이 들었다.';}
  }else if(key==='widow'){

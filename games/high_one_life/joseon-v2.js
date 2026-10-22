@@ -94,7 +94,7 @@ function prompt(life){
   option(s.grain?'남은 곡식을 아껴 쓴다':'끼니를 줄이며 버틴다','배고픔을 참고 다가올 계절을 대비한다','ration',{health:-3,happiness:-3}),
   s.grain>=20
     ?option('이웃과 곡식을 나눈다','곳간에서 곡식 20을 내어 이웃과 나눈다','share',{bonds:9,wealth:-5})
-    :option('갚을 몫을 정하고 이웃에게 곡식을 빌린다','곡식 세 몫을 받는다. 다음 해부터 원곡과 약속한 한 몫을 합해 네 몫을 갚아야 한다.','borrow',{bonds:1,health:-1}),
+    :option('갚을 곡식의 양을 정하고 이웃에게 곡식을 빌린다','곡식 3을 빌린다. 다음 해에는 이자를 포함해 곡식 4를 갚아야 한다.','borrow',{bonds:1,health:-1}),
   bound?option('주인집에 끼니 사정을 알리고 일손을 보탠다','허락 없이 고을을 떠나지 못하는 처지에서 먹을 것을 구한다.','foodLabor',{health:-2}):option('먹을 것을 찾아 다른 고을로 간다','옮겨 갈 비용과 위험을 감수한다','move',{health:2,wealth:-8})]};
  if(q.kind==='market')return {title:'장터의 규칙이 달라지는 날',description:'정조 때의 신해통공으로 한양 시장의 독점적인 영업 권리가 일부 제한되었다. '+r.label+'의 장사꾼들에게는 새로운 가능성과 갈등이 있다.',options:[
   option('새 장터의 거래를 시도한다','돈을 들여 새 거래처를 찾는다','openTrade',{knowledge:5,wealth:-4}),
@@ -133,13 +133,13 @@ function decide(life,index){
  if(a.action==='aid'){s.community=clamp(s.community+10,0,100);s.helpGiven++;}
  j.capital=clamp(j.capital,-120,600);
  if(life.money)life.money.netWorth=j.capital*100;
- const chosen=kind==='famine'?({ration:'남은 곡식을 끼니에 나누어 쓰고 먹는 양을 줄였다.',share:'곳간에서 곡식 스무 몫을 내어 이웃에게 건넸다.',borrow:'이웃에게 곡식을 빌렸다. 갚을 날짜와 이자를 정해 장부에 적었다.',foodLabor:'주인집에 끼니 사정을 알리고 일을 거들어 곡식 두 몫을 받았다.',move:'먹을거리를 찾아 길을 떠났다. 여비를 쓰고 다른 고을에서 먹을 곡식을 마련했다.'})[a.action]:p.title+' — '+a.label;
+ const chosen=kind==='famine'?({ration:'남은 곡식을 끼니에 나누어 쓰고 먹는 양을 줄였다.',share:'곳간에서 곡식 20을 내어 이웃에게 건넸다.',borrow:'이웃에게 곡식을 빌렸다. 갚을 날짜와 이자를 정해 장부에 적었다.',foodLabor:'주인집에 끼니 사정을 알리고 일을 거들어 곡식 2를 받았다.',move:'먹을거리를 찾아 길을 떠났다. 여비를 쓰고 다른 고을에서 먹을 곡식을 마련했다.'})[a.action]:p.title+' — '+a.label;
  record(life,s,chosen,'joseon2-choice');
  s.decisions.push({id:s.active.id,year:life.year,kind,action:a.action,label:a.label});
  s.decisions=s.decisions.slice(-40);
  const echoes={
   ration:'흉년 뒤에도 아껴 먹던 버릇이 남았다. 곳간의 곡식을 다시 헤아렸다.',
-  share:'곡식을 나누었던 이웃과 다시 만났다. 어려운 시절에 나눈 몫을 기억하고 있었다.',
+  share:'곡식을 나누었던 이웃과 다시 만났다. 어려운 시절에 나누었던 곡식을 기억하고 있었다.',
   askHelp:'그때 사정을 들어 준 이웃에게 고마운 마음을 전했다.',
   move:'낯선 고을에서 지내며 잃어버린 물건과 새로 얻은 인연을 헤아렸다.',
   openTrade:'새로 알게 된 상인이 다시 물건을 보러 찾아왔다.',
@@ -213,8 +213,8 @@ function processYear(life){
  for(const loan of s.famineLoans){
   if(loan.remaining<=0||loan.due>life.year)continue;
   const paid=Math.min(loan.remaining,Math.max(0,s.grain-3));s.grain-=paid;loan.remaining-=paid;
-  if(loan.remaining){loan.missed++;loan.due=life.year+1;record(life,s,paid?'빌렸던 곡식을 일부 갚았다. 남은 몫은 다음 수확 뒤에 갚기로 했다.':'끼니에 쓸 곡식도 빠듯해 빌린 곡식을 갚지 못했다. 갚을 몫은 그대로 남았다.','joseon2-memory');}
-  else record(life,s,'곳간에서 곡식을 내어 이웃에게 빌렸던 몫을 모두 갚았다.','joseon2-memory');
+  if(loan.remaining){loan.missed++;loan.due=life.year+1;record(life,s,paid?'빌렸던 곡식을 일부 갚았다. 남은 빚은 다음 수확 뒤에 갚기로 했다.':'끼니에 쓸 곡식도 빠듯해 빌린 곡식을 갚지 못했다. 갚아야 할 곡식은 그대로 남았다.','joseon2-memory');}
+  else record(life,s,'곳간에서 곡식을 내어 이웃에게 빌렸던 곡식을 모두 갚았다.','joseon2-memory');
  }
  s.famineLoans=s.famineLoans.filter(x=>x.remaining>0).slice(-8);
  // Region-specific, non-combat choices at three extra life milestones.
