@@ -40,6 +40,40 @@ test('automatic choice is optional, restored only from explicit opt-in, availabl
  assert.match(game,/if\(stage!=='play'\|\|!life\|\|!life\.alive\|\|paused\|\|document\.hidden\)return/);
  assert.match(game,/OneLifeAutoChoiceV1\.tick\(life\)/);
  assert.match(html,/id="autoChoiceBtn"[^>]*aria-pressed="false"/);
- assert.match(html,/auto-choice-v1\.js\?v=1/);
+ assert.match(html,/auto-choice-v1\.js\?v=2/);
  assert.match(goryeo,/handlers\.toggleAuto/);
+});
+
+test('historical autopilot prefers possible grain, market and capital choices',()=>{
+ const before={rng:928283,log:[{age:25,text:'해가 바뀌었다'}]};
+ const goryeo={seed:23,age:25,year:1325,alive:true,pending:'goryeo343:supplies',
+  ...before,goryeo343:{grain:2,pocket:1},
+  getReflection(){return null},
+  getChoice(){return {title:'곡식 나눔',options:[
+   {label:'곡식 열 말을 내놓기',delta:{grain:-10}},
+   {label:'그만큼은 어렵다',delta:{grain:0}},
+   {label:'지금은 도와줄 만큼 내기',delta:{grain:-1}}]};}};
+ const snapshot=JSON.stringify(goryeo.goryeo343);
+ for(let i=0;i<6;i++){const selected=auto.decide(goryeo);assert.ok([1,2].includes(selected.index));}
+ assert.equal(JSON.stringify(goryeo.goryeo343),snapshot);
+ assert.equal(goryeo.rng,before.rng);
+ const joseon={seed:23,age:25,year:1625,alive:true,pending:'joseon:market',
+  joseon:{capital:3},joseon2:{grain:1},log:[],
+  getReflection(){return null},
+  getChoice(){return {title:'장터',options:[
+   {label:'많이 사기',cost:10,grain:0},
+   {label:'곡식 많이 나누기',grain:5,cost:0},
+   {label:'그대로 돌아가기',cost:0,grain:0}]};}};
+ assert.equal(auto.decide(joseon).index,2);
+});
+test('historical costs do not break choices when resources are unknown or none affordable',()=>{
+ const life={seed:777,age:24,year:1380,alive:true,pending:'goryeo343:hard',
+  goryeo343:{grain:0,pocket:0},log:[],
+  getReflection(){return null},
+  getChoice(){return {title:'어려운 시절',options:[
+   {delta:{grain:-1}},{delta:{pocket:-5}}]};}};
+ const x=auto.decide(life);
+ assert.ok(x.index===0||x.index===1,'legacy no-affordable choice still resolves by ordinary rules');
+ assert.equal(auto.canAfford(life,{delta:{grain:-2}}),false);
+ assert.deepEqual(auto.eligibleIndices(life,[{delta:{pocket:-1}},{delta:{grain:0}}]),[1]);
 });
