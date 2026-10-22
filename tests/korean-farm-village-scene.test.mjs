@@ -188,3 +188,16 @@ test('visible work effects are attached to the neighbor and disposed when leavin
   assert.match(peopleFile,/dustGeometry\.dispose\(\)/);
   assert.match(peopleFile,/for\(const puff of dustPuffs\)puff\.material\.dispose\(\)/);
 });
+
+test('neighbor tends a real vegetable patch only while holding the hoe',()=>{
+  assert.match(peopleFile,/solnaeri-neighbor-garden-worksite/);
+  assert.match(peopleFile,/workPatch\.position\.set\(2\.14,0,13\.17\)/);
+  assert.match(peopleFile,/workPatch\.userData\.beingTended=tending/);
+  assert.match(peopleFile,/const tending=cue\.prop==='hoe'/);
+  assert.match(peopleFile,/updateGardenWork\(cue,elapsed\)/);
+  assert.match(peopleFile,/workSoilMat\.dispose\(\);workLeafMat\.dispose\(\)/);
+  assert.equal(intersectsVillageCollision({x:2.14,z:13.17}),false);
+  for(const field of FIELD_DEFS){
+    assert.equal(plotLandscapeOverlap(field,{x:2.14,z:13.17,w:1.1,d:.65}),false);
+  }
+});
