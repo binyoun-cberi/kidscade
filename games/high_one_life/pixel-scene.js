@@ -8,7 +8,7 @@
   const W=600,H=258;
   const Composer=typeof window!=='undefined'?window.OneLifeSpriteComposerV1:null;
   const c={ink:'#283941',cloud:'#f0f1dd',sun:'#ffe09c',roof:'#cb796a',wall:'#e8d5b7',forest:'#548c77',road:'#677c80',accent:'#a46d50'};
-  function paint(canvas,life){
+  function paint(canvas,life,options={}){
     if(!canvas||!life)return '';
     if(canvas.width!==W)canvas.width=W;
     if(canvas.height!==H)canvas.height=H;
@@ -114,7 +114,7 @@
     const baseX=292,baseY=217;
     const scale=age<6?1:age<13?1.25:1.55;
     if(Composer)Composer.character(ctx,{x:baseX,feet:baseY,age,scale,identity:life.seed,
-      pose:isRural&&farming?'work':age>=65?'idle':life.career==='학생'?'walk':'idle',frame:life.year%2});
+      pose:isRural&&farming?'work':age>=65?'idle':life.career==='학생'?'walk':'idle',frame:options.frame??life.year%2});
     else person(baseX,baseY,scale,age<20?'#4a818b':age>=65?'#856a8f':'#cb816c');
     if(isRural&&farming&&!Composer){
       // Keep the fallback art functional; composer tools follow the wrist.
