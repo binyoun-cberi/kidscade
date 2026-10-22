@@ -115,16 +115,23 @@ test('start and birth controls are wired and loaded ahead of the engine',()=>{
 test('all selectable Joseon social origins produce matching family state and survive save/restore',()=>{
  const expected={'왕실 종친':'양반','양반':'양반','중인':'중인','상민':'상민',
   '사노비':'천민','공노비':'천민','백정':'상민'};
+ const details={
+  양반:['문반 양반','무반 양반','몰락 양반'],
+  중인:['역관 가계','의관 가계','서리 가계','관청 장인'],
+  상민:['소작 농가','자작 농가','보부상 가계','상인 가계','어부 가계',
+   '주막 가계','도공 가계','대장장이 가계','목수 가계','사찰 주변 가계','수군 가계']
+ };
  for(const [origin,status] of Object.entries(expected)){
   const l=born(1580,{origin,gender:'남자'},15800+Object.keys(expected).indexOf(origin));
   J.ensure(l);V5.ensure(l);
   assert.equal(l.birthSetup.origin,origin);
   assert.equal(J.ensure(l).birthStatus,status,origin);
-  assert.equal(V5.summary(l).origin,origin);
+  const actual=V5.summary(l).origin;
+  assert.ok((details[origin]||[origin]).includes(actual),origin+' assigned '+actual);
   const r=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));
   assert.equal(r.birthSetup.origin,origin);
   assert.equal(J.ensure(r).birthStatus,status);
-  assert.equal(V5.summary(r).origin,origin);
+  assert.equal(V5.summary(r).origin,actual);
  }
 });
 test('selected Baekjeong follows its trade rather than default farming or unrestricted civil examination',()=>{
@@ -158,5 +165,16 @@ test('ordinary commoner, middle-ranking household and royal relative keep their 
   const actions=l.getChoice().options.map(o=>o.action);
   if(spec.actions)for(const a of spec.actions)assert.ok(actions.includes(a),spec.origin+' '+a);
   if(spec.blocked)for(const a of spec.blocked)assert.equal(actions.includes(a),false,spec.origin+' '+a);
+ }
+});
+
+test('explicit commoner origin never silently becomes Baekjeong or slave-lineage household',()=>{
+ for(const year of [1480,1700,1890]){
+  for(let seed=1;seed<=80;seed++){
+   const l=born(year,{origin:'상민'},seed);
+   const origin=V5.summary(l).origin;
+   assert.ok(!['백정','사노비','공노비','노비 후손 가계'].includes(origin),
+    year+' '+seed+' '+origin);
+  }
  }
 });
