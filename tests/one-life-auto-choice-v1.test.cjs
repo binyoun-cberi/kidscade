@@ -86,3 +86,32 @@ test('a paused pending choice can be resumed after the app becomes visible',()=>
  assert.match(game,/\$\('playStatus'\)\.textContent = paused \? '일시정지'/);
  assert.match(game,/if\(document\.hidden && stage==='play'\)\{paused=true;updatePause\(\);save\(\);\}/);
 });
+
+test('auto decisions favor the explicitly chosen direction without inventing effects',()=>{
+ const choice={title:'앞으로의 길',options:[
+  {label:'더 공부하기',effects:{knowledge:12,health:-2}},
+  {label:'몸을 돌보기',effects:{health:14,knowledge:1}},
+  {label:'일 시작하기',effects:{wealth:10,health:-5}}]};
+ const life={seed:2026,year:2046,age:20,pending:20,alive:true,focus:'health',log:[],
+  getReflection(){return null},getChoice(){return choice}};
+ const before=JSON.stringify(choice);
+ assert.equal(auto.decide(life).index,1);
+ life.focus='learning';assert.equal(auto.decide(life).index,0);
+ life.focus='work';assert.equal(auto.decide(life).index,2);
+ life.focus='balance';assert.ok([0,1,2].includes(auto.decide(life).index));
+ life.focus='people';assert.deepEqual(auto.preferredIndices(life,choice.options,[0,1,2]),[0,1,2]);
+ assert.equal(JSON.stringify(choice),before);
+});
+test('affordability stays ahead of life focus; unknown effect data is not guessed',()=>{
+ const options=[
+  {delta:{grain:-9},effects:{knowledge:20}},
+  {delta:{grain:0},effects:{knowledge:1}},
+  {delta:{grain:0},effects:{health:3}}];
+ const life={seed:3,year:1320,age:20,pending:'goryeo343:work',alive:true,focus:'learning',
+  log:[],goryeo343:{grain:1,pocket:0},getReflection(){return null},
+  getChoice(){return {title:'곡식을 나누는 일',options}}};
+ assert.deepEqual(auto.eligibleIndices(life,options),[1,2]);
+ assert.deepEqual(auto.preferredIndices(life,options,[1,2]),[1,2],
+  'one known effect cannot be compared with a missing effect');
+ assert.ok([1,2].includes(auto.decide(life).index));
+});
