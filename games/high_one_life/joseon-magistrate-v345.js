@@ -13,12 +13,12 @@
  const copy=x=>JSON.parse(JSON.stringify(x));
  const dice=Fate?.dice||(()=>.5);
  const CASES=Object.freeze([
-  {id:'field',title:'첫 송사 · 논밭의 경계',intro:'두 집이 같은 밭두렁을 자기 것이라고 주장한다. 오래된 문서와 이웃의 증언이 서로 다르다.',
+  {id:'field',title:'논밭의 경계',intro:'두 집이 같은 밭두렁을 자기 것이라고 주장한다. 오래된 문서와 이웃의 증언이 서로 다르다.',
    options:[
     ['옛 문서와 양쪽 증언을 다시 맞춰 본다','다툼을 풀 근거를 모으는 데 시간이 든다.','둘의 말을 함께 듣고 낡은 문서를 다시 펼쳤다.','공정', {fairness:10,trust:5,proof:6,favor:-3},-3],
     ['권세 있는 집이 가져온 문서를 그대로 인정한다','관아의 일은 빨리 끝나지만 다른 집은 억울해한다.','힘 있는 집의 주장대로 판정했다. 다른 집은 억울하다며 돌아갔다.','편파',{favor:9,corruption:6,resentment:10,trust:-7},8],
     ['밭을 공동으로 쓰도록 양쪽에 권한다','서로 양보해야 한다. 모두가 수긍하지는 않는다.','두 집이 경계를 다시 정하도록 의논 자리를 마련했다.','조정',{fairness:5,trust:5,relief:3},-2]]},
-  {id:'grain',title:'둘째 송사 · 갚지 못한 곡식',intro:'흉년 뒤 빌린 곡식을 돌려주지 못한 가족과 빚 문서를 든 부농이 관아에 찾아왔다.',
+  {id:'grain',title:'갚지 못한 곡식',intro:'흉년 뒤 빌린 곡식을 돌려주지 못한 가족과 빚 문서를 든 부농이 관아에 찾아왔다.',
    options:[
     ['빌린 양과 갚은 양을 장부로 확인한다','기록을 살피고 실제 빚만 인정한다.','빌린 곡식과 이미 갚은 양을 따져 과도한 청구를 가려 냈다.','공정',{fairness:8,proof:7,trust:6},-3],
     ['부농의 요구대로 곡식을 모두 내게 한다','권세가의 호감을 얻지만 끼니가 부족한 집이 생긴다.','빚 문서를 제대로 살피지 않고 곡식을 거두게 했다.','편파',{favor:8,corruption:5,resentment:11,trust:-8},7],
@@ -100,7 +100,7 @@
   const match=/^case([1-4])$/.exec(key);
   if(!match||s.caseIndex!==Number(match[1])-1||s.stage!=='hearings')return null;
   const scene=CASES[s.order[s.caseIndex]];if(!scene)return null;
-  return {title:scene.title,description:scene.intro,
+  return {title:'송사 '+(s.caseIndex+1)+'/4 · '+scene.title,description:scene.intro,
    options:scene.options.map(([label,note])=>({label,note}))};
  }
  function schedule(l){
