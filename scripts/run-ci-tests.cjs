@@ -22,6 +22,7 @@ const TEST_FILES = [
   "tests/one-life-replay-country-v1.test.cjs",
   "tests/one-life-ending-era-v1.test.cjs",
   "tests/one-life-auto-choice-v1.test.cjs",
+  "tests/one-life-historical-auto-play-qa.test.cjs",
   "tests/one-life-life-variety-v1.test.cjs",
   "tests/one-life-editorial-v1.test.cjs",
   "tests/one-life-choice-summary-v1.test.cjs",
