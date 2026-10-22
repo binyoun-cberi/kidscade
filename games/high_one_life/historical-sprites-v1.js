@@ -27,13 +27,25 @@
    if(!ctx||!Number.isFinite(x)||!Number.isFinite(y)||!(w>0&&h>0))return;
    ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));
  }
+ function activityFor(work,age,away=false){
+   if(away)return 'walk';
+   if(age<14||age>=68)return 'idle';
+   const label=String(work||'');
+   if(/농사|경작|밭일/.test(label))return 'farm';
+   if(/삼베|모시|길쌈|옷 짓기|솜이불/.test(label))return 'weave';
+   if(/나루|사공/.test(label))return 'river';
+   if(/바구니|장인|공예/.test(label))return 'craft';
+   if(/글과 셈|글공부|배움/.test(label))return 'read';
+   return 'idle';
+ }
  function actor(ctx,{x=350,feet=191,age=25,seed=0,id='self',status='plain',phase=0,activity='idle',scale=1}={}){
    const iden=appearance(seed,id),u=Math.max(1,Math.round(scale*2));
    const child=age<13,elder=age>=65,body=child?8:elder?11:13,head=child?8:9;
    const robe=status==='elite'?iden.fine:status==='bound'?'#837b69':iden.everyday;
    const R=(px,py,w,h,c)=>rect(ctx,x+px*u,feet+py*u,w*u,h*u,c);
    const step=activity==='walk'?(phase%2===0?1:-1):0;
-   const arm=activity==='work'&&age>=13?(phase%2===0?-2:1):0;
+   const working=['farm','weave','river','craft'].includes(activity)&&age>=14&&age<68;
+   const arm=working?(phase%2===0?-2:1):0;
    // Feet have the same ground anchor throughout every animation.
    R(-5,-1,11,1,'#806d56');
    R(-4+step,-6,3,5,'#55443d');R(2-step,-6,3,5,'#55443d');
@@ -49,10 +61,28 @@
      R(4,hairTop,2,6,status==='elite'?'#455463':'#a99980');
    }else if(iden.hairPart===1)R(-5,hairTop+3,2,4,iden.hair);
    R(-2,hairTop+head-3,1,1,'#332f2d');R(2,hairTop+head-3,1,1,'#332f2d');
-   if(activity==='work'&&age>=13){
-     // Small basket: prop follows the moving wrist; no economy changes.
-     R(7,-6-body+arm+3,4,4,'#a68354');
-     R(8,-6-body+arm+1,2,2,'#745c44');
+   if(working){
+     // Props are attached to the animated right wrist. These represent the
+     // recorded work, not new harvests, sales or physical inventory.
+     const py=-6-body+arm+3;
+     if(activity==='farm'){
+       R(7,py-8,1,15,'#806449');
+       R(6,py+5,8,2,'#72776b');
+     }else if(activity==='weave'){
+       R(7,py,9,1,'#a88d62');
+       R(7,py+4,9,1,'#a88d62');
+       for(let k=0;k<3;k++)R(8+k*3,py,1,7,'#d6c6a6');
+     }else if(activity==='river'){
+       R(7,py-1,2,9,'#836f50');
+       R(8,py+7,11,1,'#bdad81');
+       R(18,py+4,1,4,'#bdad81');
+     }else if(activity==='craft'){
+       R(7,py+1,7,6,'#a68354');
+       R(8,py-1,5,2,'#745c44');
+     }
+   }else if(activity==='read'&&age>=14){
+     R(7,-6-body+4,9,6,'#e4d4ad');
+     R(11,-6-body+4,1,6,'#917d60');
    }
    return Object.freeze({identity:iden,feet,x,ageBand:child?'child':elder?'elder':'adult',width:14*u,height:(9+body+head)*u});
  }
@@ -62,15 +92,14 @@
    const result=[];
    if(life.alive!==false)result.push({id:'self',age:Math.max(0,Number(life.age)||0),
        status:away?'travel':g.bound?'bound':/관료|향리/.test(String(g.origin))?'elite':'plain',
-       activity:away?'walk':/농사|길쌈|나루|바구니/.test(String(g.job))?'work':'idle',self:true});
+       activity:activityFor(g.job,Number(life.age)||0,away),self:true});
    if(!away)for(const p of g.people||[]){
      if(p.alive===false||p.missing||p.atHome===false||Number(p.birthYear)>year)continue;
      const age=year-Number(p.birthYear);
      if(!Number.isFinite(age)||age<0)continue;
      result.push({id:String(p.id??p.name),age,
        status:g.bound?'bound':/관료|향리/.test(String(g.origin))?'elite':'plain',
-       activity:/농사|삼베|모시|나루|바구니/.test(String(p.plan||''))?'work':'idle',
-       self:false});
+       activity:activityFor(p.plan,age),self:false});
    }
    return result.slice(0,5);
  }
@@ -134,5 +163,5 @@
    }
    return Object.freeze({visiblePeople:people.length,away,coast,year});
  }
- return Object.freeze({appearance,actor,occupants,scene});
+ return Object.freeze({appearance,activityFor,actor,occupants,scene});
 });
