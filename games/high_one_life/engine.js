@@ -180,7 +180,11 @@
       let pick = this.rand() * (this.birthYear===2026?totalBirthWeight:COUNTRIES.length);
       this.country = COUNTRIES[COUNTRIES.length-1];
       for (const c of COUNTRIES) { pick -= birthWeight(c,this.birthYear); if (pick < 0) { this.country = c; break; } }
-      if(options?.countryName==='대한민국'||this.birthYear<1900)this.country=COUNTRIES.find(c=>c[0]==='대한민국');
+      // Same-birth replays must preserve the actual country; historical Korean
+      // campaigns remain constrained to Korea as before.
+      const requestedCountry=COUNTRIES.find(c=>c[0]===options?.countryName);
+      if(this.birthYear<1900)this.country=COUNTRIES.find(c=>c[0]==='대한민국');
+      else if(requestedCountry)this.country=requestedCountry;
       const birthSexRatio=measured(this.country,'sexRatioBirth',this.birthYear);
       const femaleShare=birthSexRatio>0.9&&birthSexRatio<1.3?1/(1+birthSexRatio):0.49;
       this.gender=this.rand()<femaleShare?'여자':'남자';
