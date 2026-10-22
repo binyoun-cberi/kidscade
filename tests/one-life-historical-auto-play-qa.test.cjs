@@ -56,7 +56,13 @@ test('24 Goryeo and Joseon lives auto-play to endings with intact saved decision
    list.push(simulate(1420+(i*29)%440,seed,
      ['상민','중인','양반','사노비'][i%4]));
  }
- assert.ok(list.every(item=>item.choices+item.reflections>0));
+ // Some historically simulated children die before any age-gated dilemma.
+ // Do not invent a decision for a life that ended before childhood choices.
+ const decisionless=list.filter(item=>item.choices+item.reflections===0);
+ assert.ok(decisionless.every(item=>item.age<=10),
+   'an older life must not skip every choice: '+JSON.stringify(decisionless));
+ assert.ok(list.filter(item=>item.choices+item.reflections>0).length>=12,
+   'at least half the historical sample should reach a genuine choice');
  assert.ok(new Set(list.filter(item=>item.year<1392).map(item=>item.career+'|'+item.age+'|'+item.death)).size>=4,
    'Korean medieval life endings should not all be identical');
  assert.ok(new Set(list.filter(item=>item.year>=1392).map(item=>item.career+'|'+item.age+'|'+item.death)).size>=4,
