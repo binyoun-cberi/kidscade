@@ -799,7 +799,8 @@
       $('worldLatest').textContent=Joseon2.summary(life).lastMemory||s.warMemory.at(-1)||j.era+'의 하루';
       $('arcCount').textContent=n+'번의 선택';
       $('arcStatus').textContent='삶의 방향 · '+j.occupation+(Joseon3.summary(life).legacy?' · '+Joseon3.summary(life).legacy:'')+
-        (window.OneLifeFate344?.summary(life)?.title?' · '+window.OneLifeFate344.summary(life).title:'');
+        (window.OneLifeFate344?.summary(life)?.title?' · '+window.OneLifeFate344.summary(life).title:'')+
+        (window.OneLifeMagistrate345?.summary(life)?.label?' · '+window.OneLifeMagistrate345.summary(life).label:'');
       const tags=$('arcMilestones');tags.replaceChildren();
       for(const event of allChoices){
         const item=document.createElement('div');item.className='arc-milestone';
