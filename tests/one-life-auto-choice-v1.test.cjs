@@ -77,3 +77,12 @@ test('historical costs do not break choices when resources are unknown or none a
  assert.equal(auto.canAfford(life,{delta:{grain:-2}}),false);
  assert.deepEqual(auto.eligibleIndices(life,[{delta:{pocket:-1}},{delta:{grain:0}}]),[1]);
 });
+
+test('a paused pending choice can be resumed after the app becomes visible',()=>{
+ const game=file('game.js');
+ assert.match(game,/\$\('pauseBtn'\)\.disabled = !life\?\.alive;/);
+ assert.match(game,/function togglePause\(\) \{\s*if\(stage!=='play'\|\|!life\?\.alive\) return;/);
+ assert.match(game,/resume:\(\)=>\{if\(stage!=='play'\|\|!life\?\.alive\)return;paused=false;/);
+ assert.match(game,/\$\('playStatus'\)\.textContent = paused \? '일시정지'/);
+ assert.match(game,/if\(document\.hidden && stage==='play'\)\{paused=true;updatePause\(\);save\(\);\}/);
+});
