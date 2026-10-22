@@ -278,5 +278,5 @@ test('Goryeo canvas accessible label acknowledges relatives beyond the five-pers
  const source=file('goryeo-view-v343.js');
  assert.match(source,/sprites\?\.familyAtHome\(l,g\)/);
  assert.match(source,/화면 밖에 있는 식구/);
- assert.match(source,/const hiddenCount=Math\.max\(0,family\.length/);
+ assert.match(source,/const hiddenCount=Math\.max\(0,presentAtHome\.length/);
 });
