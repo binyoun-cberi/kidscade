@@ -70,7 +70,7 @@
  }
  function begin(l,index){
   const f=Fate.ensure(l),s=ensure(l),j=J.ensure(l),soc=V5.ensure(l);
-  if(!l.alive||l.pending!=='joseon344:magistrate'||f.active!=='magistrate'||
+  if(!l.alive||l.year>=1888||l.pending!=='joseon344:magistrate'||f.active!=='magistrate'||
    s.stage!=='idle'||![0,1,2].includes(index)||!j.office)return false;
   s.stage='hearings';s.order=selectCases(l);s.due=l.year+1;s.appointmentYear=l.year;
   j.occupation='고을 수령';l.career='고을 수령';soc.role='수령';
@@ -112,7 +112,7 @@
   return false;
  }
  function close(l,s){
-  const c=s.counters,j=J.ensure(l),social=V5.ensure(l),earned=s.records;
+  const c=s.counters,j=J.ensure(l),social=V5.ensure(l);
   const danger=clamp(.05+c.corruption*.012+c.resentment*.007+c.favor*.002-c.proof*.003,0,.92);
   const judged=dice(l.seed,l.year*73+198)<danger;
   const weight=c.fairness*.43+c.trust*.41+c.relief*.19+c.proof*.12-
@@ -225,7 +225,7 @@
    return ok;
   };
   L.prototype.getChoice=function(){
-   if(this.pending==='joseon344:magistrate'){
+   if(this.pending==='joseon344:magistrate'&&this.year<1888){
     return {title:'고을 수령으로 첫 부임',description:'관직을 맡아 백성의 송사를 처리하게 되었다. 몇 해 동안 내린 결정이 훗날의 평가를 바꿀 수 있다.',
      options:[
       {label:'백성의 억울한 사연을 먼저 듣는다',note:'시간을 들여 주민의 이야기를 살핀다.'},
@@ -238,7 +238,7 @@
    return oldPrompt.call(this);
   };
   L.prototype.choose=function(index){
-   if(this.pending==='joseon344:magistrate')return begin(this,index);
+   if(this.pending==='joseon344:magistrate'&&this.year<1888)return begin(this,index);
    if(typeof this.pending==='string'&&this.pending.startsWith('joseon345:')){
     const ok=resolve(this,index);if(ok&&this.alive)schedule(this);return ok;
    }
