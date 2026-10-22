@@ -199,6 +199,50 @@
             <p id="choiceText"></p><div id="choiceOptions" class="choice-options"></div>
             <p class="choice-note">정답은 없습니다. 다른 선택은 다른 이야기를 만듭니다.</p>
           </div>
+          <nav class="v8-tools-nav" aria-label="이 인생의 정보 보기">
+            <button type="button" id="openGenealogyBtn" class="genealogy-open hidden">우리 집 족보 펼치기</button>
+            <button type="button" data-story-tab="birth" aria-pressed="false">출생 기록</button>
+            <button type="button" data-story-tab="years" aria-pressed="false">인생 지도</button>
+            <button type="button" data-story-tab="stats" aria-pressed="false">생존·통계</button>
+            <button type="button" data-story-tab="peers" aria-pressed="false">다른 삶 4명</button>
+          </nav>
+          <section id="storyTools" class="v8-tool-panel hidden" aria-live="polite" aria-label="인생의 자세한 기록">
+            <div id="storyBirth" class="v8-tool-page hidden"><h3>태어난 곳과 가족의 이야기</h3>
+              <p id="storyBirthText"></p><p id="storyBirthNote" class="v8-fine"></p>
+            </div>
+            <div id="storyStats" class="v8-tool-page hidden">
+              <h3>이 출생 집단의 생존 곡선</h3>
+              <p class="v8-fine">현대 한국의 공개 통계를 참고한 비교 그래프입니다. 나이별 곡선은 게임에서 재구성한 값이며, 개인의 수명이나 사망 시기를 알려 주지는 않습니다.</p>
+              <svg id="survivalChart" viewBox="0 0 360 170" role="img" aria-label="0세부터 100세까지의 참고용 생존 곡선">
+                <path d="M38 12 V143 H348" stroke="#8aa5a0" fill="none" stroke-width="1"/>
+                <path id="survivalOther" d="" fill="none" stroke="#9caeab" stroke-width="2" stroke-dasharray="4 4"/>
+                <path id="survivalActual" d="" fill="none" stroke="#197f76" stroke-width="3"/>
+                <circle id="survivalDot" cx="38" cy="12" r="5" fill="#a36a50"/>
+                <text x="4" y="17" font-size="10">100%</text><text x="11" y="145" font-size="10">0%</text>
+                <text x="33" y="160" font-size="10">0세</text><text x="166" y="160" font-size="10">50세</text><text x="313" y="160" font-size="10">100세</text>
+              </svg>
+              <div class="v8-chart-key"><span>● 한국의 참고 곡선</span><span>┄ 연령 비교선</span></div>
+              <p id="survivalSummary"></p>
+              <p id="v8CountryStats" class="v8-country-stats"></p>
+              <p class="v8-fine">자료: <a href="https://data.worldbank.org/indicator/SP.DYN.LE00.IN" target="_blank" rel="noopener noreferrer">세계은행 기대수명 지표</a>. 실제 관측값이 없는 시대와 연령은 게임에서 추정한 값입니다.</p>
+            </div>
+            <div id="storyYears" class="v8-tool-page hidden"><h3>한 칸은 인생의 1년</h3>
+              <p class="v8-fine">한 칸이 인생의 1년입니다. 궁금한 해를 누르면 그때의 일이 보입니다.</p>
+              <div id="ageMap" class="age-map" role="group" aria-label="108년 인생 지도"></div>
+              <p id="yearDetail" class="v8-year-detail">돌아보고 싶은 해를 골라 보세요.</p>
+            </div>
+            <div id="storyPeers" class="v8-tool-page hidden"><h3>같은 해에 태어난 네 사람</h3>
+              <p class="v8-fine">같은 해에 태어난 네 사람. 사는 곳도, 가족도, 살아온 시간도 서로 다릅니다.</p>
+              <div class="v8-peer-ages" id="peerAgeChoices">
+                <button type="button" data-peer-age="0">현재</button>
+                <button type="button" data-peer-age="10">10세</button>
+                <button type="button" data-peer-age="20">20세</button>
+                <button type="button" data-peer-age="40">40세</button>
+                <button type="button" data-peer-age="60">60세</button>
+              </div>
+              <div id="peers" class="peers"></div>
+            </div>
+          </section>
           <section id="travel22Panel" class="travel22-panel hidden" aria-label="먼 곳으로 이어진 인생">
             <div class="stat-title">먼 곳에서 살아가는 날들 <span id="travel22Status">고향에서</span></div>
             <p id="travel22Place">—</p>
@@ -310,50 +354,6 @@
             </details>
           </section>
           <a id="historySourceLink" class="history-source-link hidden" target="_blank" rel="noopener noreferrer" href="https://contents.history.go.kr/">이 시기의 역사 자료 보기</a>
-          <nav class="v8-tools-nav" aria-label="이 인생의 정보 보기">
-            <button type="button" id="openGenealogyBtn" class="genealogy-open hidden">우리 집 족보 펼치기</button>
-            <button type="button" data-story-tab="birth" aria-pressed="false">출생 기록</button>
-            <button type="button" data-story-tab="years" aria-pressed="false">인생 지도</button>
-            <button type="button" data-story-tab="stats" aria-pressed="false">생존·통계</button>
-            <button type="button" data-story-tab="peers" aria-pressed="false">다른 삶 4명</button>
-          </nav>
-          <section id="storyTools" class="v8-tool-panel hidden" aria-live="polite" aria-label="인생의 자세한 기록">
-            <div id="storyBirth" class="v8-tool-page hidden"><h3>태어난 곳과 가족의 이야기</h3>
-              <p id="storyBirthText"></p><p id="storyBirthNote" class="v8-fine"></p>
-            </div>
-            <div id="storyStats" class="v8-tool-page hidden">
-              <h3>이 출생 집단의 생존 곡선</h3>
-              <p class="v8-fine">현대 한국의 공개 통계를 참고한 비교 그래프입니다. 나이별 곡선은 게임에서 재구성한 값이며, 개인의 수명이나 사망 시기를 알려 주지는 않습니다.</p>
-              <svg id="survivalChart" viewBox="0 0 360 170" role="img" aria-label="0세부터 100세까지의 참고용 생존 곡선">
-                <path d="M38 12 V143 H348" stroke="#8aa5a0" fill="none" stroke-width="1"/>
-                <path id="survivalOther" d="" fill="none" stroke="#9caeab" stroke-width="2" stroke-dasharray="4 4"/>
-                <path id="survivalActual" d="" fill="none" stroke="#197f76" stroke-width="3"/>
-                <circle id="survivalDot" cx="38" cy="12" r="5" fill="#a36a50"/>
-                <text x="4" y="17" font-size="10">100%</text><text x="11" y="145" font-size="10">0%</text>
-                <text x="33" y="160" font-size="10">0세</text><text x="166" y="160" font-size="10">50세</text><text x="313" y="160" font-size="10">100세</text>
-              </svg>
-              <div class="v8-chart-key"><span>● 한국의 참고 곡선</span><span>┄ 연령 비교선</span></div>
-              <p id="survivalSummary"></p>
-              <p id="v8CountryStats" class="v8-country-stats"></p>
-              <p class="v8-fine">자료: <a href="https://data.worldbank.org/indicator/SP.DYN.LE00.IN" target="_blank" rel="noopener noreferrer">세계은행 기대수명 지표</a>. 실제 관측값이 없는 시대와 연령은 게임에서 추정한 값입니다.</p>
-            </div>
-            <div id="storyYears" class="v8-tool-page hidden"><h3>한 칸은 인생의 1년</h3>
-              <p class="v8-fine">한 칸이 인생의 1년입니다. 궁금한 해를 누르면 그때의 일이 보입니다.</p>
-              <div id="ageMap" class="age-map" role="group" aria-label="108년 인생 지도"></div>
-              <p id="yearDetail" class="v8-year-detail">돌아보고 싶은 해를 골라 보세요.</p>
-            </div>
-            <div id="storyPeers" class="v8-tool-page hidden"><h3>같은 해에 태어난 네 사람</h3>
-              <p class="v8-fine">같은 해에 태어난 네 사람. 사는 곳도, 가족도, 살아온 시간도 서로 다릅니다.</p>
-              <div class="v8-peer-ages" id="peerAgeChoices">
-                <button type="button" data-peer-age="0">현재</button>
-                <button type="button" data-peer-age="10">10세</button>
-                <button type="button" data-peer-age="20">20세</button>
-                <button type="button" data-peer-age="40">40세</button>
-                <button type="button" data-peer-age="60">60세</button>
-              </div>
-              <div id="peers" class="peers"></div>
-            </div>
-          </section>
           <section class="history-calendar" aria-labelledby="calendar337Title">
             <div class="stat-title"><strong id="calendar337Title">올해, 나라에서는</strong><span id="calendar337Year"></span></div>
             <p id="calendar337Empty" class="hidden">올해 연표에 실린 새 사건은 없습니다.</p>
