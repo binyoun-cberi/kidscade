@@ -28,7 +28,7 @@ function analyze(source,filename=''){
 }
 function files(dir){
  return fs.readdirSync(dir,{withFileTypes:true}).flatMap(entry=>{
-  if(entry.name.startsWith('.')||entry.name==='node_modules')return [];
+  if(entry.name.startsWith('.')||entry.name==='node_modules'||entry.name==='text-style-audit.cjs')return [];
   const full=path.join(dir,entry.name);
   return entry.isDirectory()?files(full):/\.(?:js|mjs|html)$/.test(entry.name)?[full]:[];
  });
