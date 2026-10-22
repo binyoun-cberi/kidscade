@@ -105,7 +105,8 @@
  }
  function schedule(l){
   const s=ensure(l);
-  if(!s||!l.alive||l.pending||!J.inOldEra(l)||l.year>=1894)return false;
+  if(!s||!l.alive||l.pending||!J.inOldEra(l)||l.year>=1894||
+   Paths.ensure(l)?.law?.kind!=='free')return false;
   if(s.stage==='hearings'&&s.caseIndex<4&&l.year>=s.due){
    l.pending='joseon345:case'+(s.caseIndex+1);return true;}
   if(s.stage==='review'&&l.year>=s.due){l.pending='joseon345:review';return true;}
