@@ -53,3 +53,44 @@ test('cloth becomes garments or cotton quilts and can be sold only when actually
  assert.equal(G.action(l,'plan','mother','솜이불 만들기'),true);l.tick();assert.equal(g.quilts,1);assert.equal(g.cloth,4);while(l.pending)l.choose(0);
  const r=L.restore(copy(l.snapshot()));assert.equal(r.goryeo343.quilts,1);assert.equal(G.action(r,'sell','quilts'),true);
 });
+
+
+test('birth roulette visits all seven Goryeo regions instead of cycling at one index',()=>{
+ const ui=c.OneLifeUIFlow;assert.ok(ui,'UI helper should load before game.js');
+ const count=G.regions.length;assert.equal(count,7);
+ const indices=Array.from({length:count},(_,i)=>ui.rouletteIndex(i+1,count));
+ assert.equal(new Set(indices).size,count,'each region should appear during the first seven frames');
+ for(const n of [2,3,4,5,6,7,8,10,12,14,15]){
+  const indexes=Array.from({length:n},(_,i)=>ui.rouletteIndex(i,n));
+  assert.equal(new Set(indexes).size,n,'must cycle through '+n+' regions');
+  assert.ok(indexes.every(v=>Number.isInteger(v)&&v>=0&&v<n));
+ }
+ assert.equal(ui.rouletteIndex(1,0),0);
+ assert.equal(ui.rouletteIndex(NaN,7),0);
+});
+
+test('choice identity remains stable on redraw and changes for the next event',()=>{
+ const ui=c.OneLifeUIFlow;
+ const life={birthYear:1350,year:1370,age:20,pending:'one-life:market'};
+ const first={title:'가판대를 정리할까?',options:[{label:'판매'}]};
+ const next={title:'가판대를 정리할까?',options:[{label:'판매'}]};
+ assert.equal(ui.decisionKey(life,first,0),ui.decisionKey(life,next,0));
+ assert.notEqual(ui.decisionKey(life,first,0),
+   ui.decisionKey({...life,year:1371,age:21},first,0));
+ assert.notEqual(ui.decisionKey(life,first,0),
+   ui.decisionKey({...life,pending:'one-life:inventory'},first,0));
+ assert.equal(ui.decisionKey(life,null,null),null);
+ assert.ok(ui.decisionKey({...life,pending:'reflection:20'},null,20));
+});
+
+test('birth UI supports reduced motion and prevents repeated decision scrolling',()=>{
+ const html=fs.readFileSync(dir+'/index.html','utf8');
+ const game=fs.readFileSync(dir+'/game.js','utf8');
+ assert.match(html,/<script src="\.\/ui-flow\.js\?v=1"><\/script>/);
+ assert.ok(html.indexOf('ui-flow.js?v=1')<html.indexOf('game.js?v=73'));
+ assert.match(game,/UIFlow\.rouletteIndex\(loops,sample\.length\)/);
+ assert.doesNotMatch(game,/loops\*7\)%sample\.length/);
+ assert.match(game,/prefers-reduced-motion: reduce/);
+ assert.match(game,/if\(isNewDecision\)\$\('decision'\)\.scrollIntoView/);
+ assert.match(game,/lastDecisionKey=decisionKey/);
+});
