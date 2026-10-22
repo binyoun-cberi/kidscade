@@ -162,7 +162,7 @@
     return '남의 논밭을 빌려 농사짓고, 수확으로 살림을 꾸린다.';
   }
   // 1결 = 100부. 원본 s.land 값은 면적이 아닌 추상 자원이므로
-  // 통계로 오해되는 원래의 정수 '몫'을 직접 1결로 치환하지 않는다.
+  // 통계로 오해되는 원래의 추상 수치을 직접 1결로 치환하지 않는다.
   // 본 작품의 가구별 경작 규모를 위해 전답을 10부 단위로 별도 표시한다.
   function landAmount(units){
     const bu=Math.max(0,Math.round((Number(units)||0)*10));
@@ -454,7 +454,7 @@
       put('profileMeta',life.gender+' · '+j.region+' · '+life.age+'세');
       put('profileFamily',(social?.originLabel||j.status)+(social?.freed?' · 법적 예속에서 벗어남':''));
       put('netWorth',formatCredits(m.netWorth));$('netWorth').classList.toggle('negative',m.netWorth<0);
-      $('netWorthLabel').textContent='살림의 남은 몫';
+      $('netWorthLabel').textContent='남은 살림 자산';
       put('annualIncome',formatCredits(m.income));put('annualExpense',formatCredits(m.expense));
       put('annualBalance',formatCredits(m.lastBalance));$('annualBalance').classList.toggle('negative',m.lastBalance<0);
       put('employmentStatus',aftermath?.captivity?.status==='held'?'타향에서 주어진 일을 하며 지내는 중':
@@ -1393,7 +1393,7 @@
     const count=rememberLife();
     $('endYears').textContent=life.birthYear+' — '+life.year;
     $('endCountry').textContent=(life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1])+' '+History.place({...life,year:life.birthYear})+' · '+life.profile.name+' ('+life.profile.city+')';
-    $('endNetWorth').textContent=Goryeo.is(life)?Goryeo.ensure(life).grain+'몫':formatCredits(life.money.netWorth);
+    $('endNetWorth').textContent=Goryeo.is(life)?'곡식 '+Goryeo.ensure(life).grain:formatCredits(life.money.netWorth);
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=oldJobs?.primary?.name||(!['아직 정해지지 않음','학생'].includes(life.career)?life.career:'살림과 일상');
     const firstPlace=History.place({...life,year:life.birthYear});
