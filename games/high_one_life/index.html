@@ -32,6 +32,7 @@
 <link rel="stylesheet" href="./history-calendar-v337.css?v=1">
 <link rel="stylesheet" href="./household-v342.css?v=1">
 <link rel="stylesheet" href="./goryeo-v343.css?v=1">
+<link rel="stylesheet" href="./lived-scene-v1.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -154,6 +155,50 @@
         <article class="chronicle">
           <div class="chapter-line"><span id="lifeStage" class="chapter">유년기</span><span id="playStatus">인생이 흘러가는 중</span></div>
           <p id="historyContext" class="history-context">이 인생이 놓인 시대</p>
+          <section class="lived-moment" aria-label="지금 이 인물의 생활">
+            <h2 class="lived-moment-title">지금 살아가는 모습</h2>
+          <figure class="pixel-frame">
+            <canvas id="lifeScene" width="600" height="258" role="img" aria-label="나이와 삶의 환경에 따라 달라지는 픽셀아트 장면"></canvas>
+            <figcaption id="sceneLabel">당신의 생활 환경이 펼쳐집니다.</figcaption><p id="sceneCulture" class="scene-culture-note" aria-live="polite">시대에 따라 달라지는 복식과 살림을 살펴봅니다.</p>
+          </figure>
+
+            <div class="life-vitals" id="lifeVitals" aria-label="현재 인물의 네 가지 주요 상태">
+              <div><span>건강</span><strong id="vitalHealth">—</strong></div>
+              <div><span>행복</span><strong id="vitalHappiness">—</strong></div>
+              <div><span>배움</span><strong id="vitalKnowledge">—</strong></div>
+              <div><span>관계</span><strong id="vitalBonds">—</strong></div>
+            </div>
+          <div class="progress" aria-label="인생 시간의 흐름"><div id="lifeProgress"></div></div>
+          <div class="controls">
+            <div class="controls-label"><b>시간의 흐름</b><span>속도 조절</span></div>
+            <button id="pauseBtn" class="pause" type="button">Ⅱ 일시정지</button>
+            <div class="v9-speed-controls" role="group" aria-label="인생 진행 배속">
+              <button type="button" data-life-speed="1" aria-pressed="true">1배</button>
+              <button type="button" data-life-speed="2" aria-pressed="false">2배</button>
+              <button type="button" data-life-speed="4" aria-pressed="false">4배</button>
+              <button type="button" data-life-speed="8" aria-pressed="false">8배</button>
+              <button id="v9NextChoice" type="button">다음 선택까지</button>
+            </div>
+            <p class="hint">선택지가 나타나면 시간이 자동으로 멈춥니다. 화면을 닫거나 다른 앱으로 이동하면 일시정지됩니다.</p>
+          </div>
+          </section>
+          <div class="focus-block">
+            <div class="stat-title">올해의 생활 방향 <span>언제든 변경</span></div>
+            <div class="focus-grid" role="group" aria-label="올해의 생활 방향">
+              <button data-focus="balance" aria-pressed="true" type="button">균형</button>
+              <button data-focus="learning" type="button">배움</button>
+              <button data-focus="people" type="button">사람</button>
+              <button data-focus="health" type="button">건강</button>
+              <button data-focus="work" type="button">일</button>
+            </div>
+            <p class="focus-hint">올해는 어디에 시간을 쓸까요? 선택한 방향은 조금씩 삶에 쌓입니다.</p>
+          </div>
+          <div class="story-head"><div class="small-index">한 사람의 기록</div><h2 id="storyTitle">지금 이 순간의 삶</h2><p id="storyCaption">해가 바뀌고 새로운 일이 일어납니다.</p></div>
+          <div id="decision" class="decision hidden" aria-live="polite">
+            <span class="eyebrow decision-tag">중요한 선택</span><h3 id="choiceTitle">당신의 선택은?</h3>
+            <p id="choiceText"></p><div id="choiceOptions" class="choice-options"></div>
+            <p class="choice-note">정답은 없습니다. 다른 선택은 다른 이야기를 만듭니다.</p>
+          </div>
           <section id="travel22Panel" class="travel22-panel hidden" aria-label="먼 곳으로 이어진 인생">
             <div class="stat-title">먼 곳에서 살아가는 날들 <span id="travel22Status">고향에서</span></div>
             <p id="travel22Place">—</p>
@@ -265,34 +310,6 @@
             </details>
           </section>
           <a id="historySourceLink" class="history-source-link hidden" target="_blank" rel="noopener noreferrer" href="https://contents.history.go.kr/">이 시기의 역사 자료 보기</a>
-          <div class="progress" aria-label="인생 시간의 흐름"><div id="lifeProgress"></div></div>
-          <div class="controls">
-            <div class="controls-label"><b>시간의 흐름</b><span>속도 조절</span></div>
-            <button id="pauseBtn" class="pause" type="button">Ⅱ 일시정지</button>
-            <div class="v9-speed-controls" role="group" aria-label="인생 진행 배속">
-              <button type="button" data-life-speed="1" aria-pressed="true">1배</button>
-              <button type="button" data-life-speed="2" aria-pressed="false">2배</button>
-              <button type="button" data-life-speed="4" aria-pressed="false">4배</button>
-              <button type="button" data-life-speed="8" aria-pressed="false">8배</button>
-              <button id="v9NextChoice" type="button">다음 선택까지</button>
-            </div>
-            <p class="hint">선택지가 나타나면 시간이 자동으로 멈춥니다. 화면을 닫거나 다른 앱으로 이동하면 일시정지됩니다.</p>
-          </div>
-          <figure class="pixel-frame">
-            <canvas id="lifeScene" width="600" height="258" role="img" aria-label="나이와 삶의 환경에 따라 달라지는 픽셀아트 장면"></canvas>
-            <figcaption id="sceneLabel">당신의 생활 환경이 펼쳐집니다.</figcaption><p id="sceneCulture" class="scene-culture-note" aria-live="polite">시대에 따라 달라지는 복식과 살림을 살펴봅니다.</p>
-          </figure>
-          <div class="focus-block">
-            <div class="stat-title">올해의 생활 방향 <span>언제든 변경</span></div>
-            <div class="focus-grid" role="group" aria-label="올해의 생활 방향">
-              <button data-focus="balance" aria-pressed="true" type="button">균형</button>
-              <button data-focus="learning" type="button">배움</button>
-              <button data-focus="people" type="button">사람</button>
-              <button data-focus="health" type="button">건강</button>
-              <button data-focus="work" type="button">일</button>
-            </div>
-            <p class="focus-hint">올해는 어디에 시간을 쓸까요? 선택한 방향은 조금씩 삶에 쌓입니다.</p>
-          </div>
           <nav class="v8-tools-nav" aria-label="이 인생의 정보 보기">
             <button type="button" id="openGenealogyBtn" class="genealogy-open hidden">우리 집 족보 펼치기</button>
             <button type="button" data-story-tab="birth" aria-pressed="false">출생 기록</button>
@@ -337,12 +354,6 @@
               <div id="peers" class="peers"></div>
             </div>
           </section>
-          <div class="story-head"><div class="small-index">한 사람의 기록</div><h2 id="storyTitle">지금 이 순간의 삶</h2><p id="storyCaption">해가 바뀌고 새로운 일이 일어납니다.</p></div>
-          <div id="decision" class="decision hidden" aria-live="polite">
-            <span class="eyebrow decision-tag">중요한 선택</span><h3 id="choiceTitle">당신의 선택은?</h3>
-            <p id="choiceText"></p><div id="choiceOptions" class="choice-options"></div>
-            <p class="choice-note">정답은 없습니다. 다른 선택은 다른 이야기를 만듭니다.</p>
-          </div>
           <section class="history-calendar" aria-labelledby="calendar337Title">
             <div class="stat-title"><strong id="calendar337Title">올해, 나라에서는</strong><span id="calendar337Year"></span></div>
             <p id="calendar337Empty" class="hidden">올해 연표에 실린 새 사건은 없습니다.</p>
