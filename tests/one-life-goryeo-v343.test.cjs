@@ -94,3 +94,22 @@ test('birth UI supports reduced motion and prevents repeated decision scrolling'
  assert.match(game,/if\(isNewDecision\)\$\('decision'\)\.scrollIntoView/);
  assert.match(game,/lastDecisionKey=decisionKey/);
 });
+
+
+test('game avoids invented aftermath lines when a choice has no measurable change',()=>{
+ const code=fs.readFileSync(dir+'/game.js','utf8');
+ assert.doesNotMatch(code,/그날의 일은 마음 한편에 남았다/);
+ assert.doesNotMatch(code,/당장은 눈에 띄는 변화가 없었다/);
+ assert.match(code,/if\(effectText\)life\.logEvent\(effectText,'decision-effect'\)/);
+ // Choice systems must still retain their own genuine decision narration.
+ const life=make(1350,17);
+ for(let n=0;n<70&&life.alive;n++){
+   if(life.pending){
+     const q=life.getChoice();
+     if(q){const before=life.log.length;assert.equal(life.choose(0),true);
+       assert.ok(life.log.slice(before).some(e=>e.text),'choice narration must remain');}
+     else if(life.getReflection())life.reflect();
+     else throw Error('orphan pending choice');
+   }else life.tick();
+ }
+});
