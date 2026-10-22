@@ -14,7 +14,7 @@ function scene(canvas,l,g){const c=canvas.getContext('2d');canvas.width=720;canv
  c.fillStyle='#79999c';c.fillRect(0,180,720,40);c.fillStyle='#e0cb9c';c.fillRect(200,161,400,34);
  for(let n=0;n<3;n++){const x=50+n*220;c.fillStyle='#e8d7ad';c.fillRect(x,116,120,54);c.fillStyle='#6c7366';c.beginPath();c.moveTo(x-18,118);c.lineTo(x+60,81);c.lineTo(x+138,118);c.fill();c.fillStyle='#725e47';c.fillRect(x+46,138,25,32);}
  if(g.refuge){c.fillStyle='#9b805b';c.beginPath();c.moveTo(285,179);c.lineTo(335,112);c.lineTo(385,179);c.fill();}
- for(let i=0;i<4;i++){const x=245+i*36;c.fillStyle='#b69a75';c.fillRect(x,154,9,10);c.fillStyle=i===0?'#365e58':'#8a6658';c.fillRect(x-3,164,15,20);c.fillStyle='#423f36';c.fillRect(x,151,9,4);}
+ // Compatibility fallback shows landscape only; never fabricates relatives.
 
 }
 function paint(l,handlers){
