@@ -62,7 +62,7 @@ test('historical glossary differentiates documentary units from fictional counte
  assert.match(game,/measurementGuide\.hidden=life\.year>=1900/);
  assert.ok(!html.includes('15말(평석)')&&!html.includes('섬 = 약 180L'));
  const source=read('goryeo-v343.js');
- assert.match(source,/grain:origin/,'original game's economy values are untouched');
+ assert.match(source,/grain:origin/,"original game economy values are untouched");
 });
 
 test('browser-style module loading activates the new compositor in a real scene',()=>{
