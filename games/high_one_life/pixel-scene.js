@@ -6,6 +6,7 @@
 })(typeof window!=='undefined'?window:null,function(){
   'use strict';
   const W=600,H=258;
+  const Composer=typeof window!=='undefined'?window.OneLifeSpriteComposerV1:null;
   const c={ink:'#283941',cloud:'#f0f1dd',sun:'#ffe09c',roof:'#cb796a',wall:'#e8d5b7',forest:'#548c77',road:'#677c80',accent:'#a46d50'};
   function paint(canvas,life){
     if(!canvas||!life)return '';
@@ -36,7 +37,8 @@
       fill(x,y+8,67,10,night?'#d3dced':c.cloud);
     }
     fill(495,19,season===3?21:28,season===3?21:28,night?'#fff6de':c.sun);
-    for(let x=0;x<W;x+=30){
+    if(Composer)Composer.distant(ctx,{rural:isRural,seed:life.seed,season});
+    else for(let x=0;x<W;x+=30){
       const h=21+(x*7%22);
       fill(x,138-h,33,h,isRural?'#9cbaa8':'#91abb3');
       fill(x+4,135-h,16,5,night?'#f4e8c9':'#c4d1d1');
@@ -111,7 +113,9 @@
     };
     const baseX=292,baseY=217;
     const scale=age<6?1:age<13?1.25:1.55;
-    person(baseX,baseY,scale,age<20?'#4a818b':age>=65?'#856a8f':'#cb816c');
+    if(Composer)Composer.character(ctx,{x:baseX,feet:baseY,age,scale,identity:life.seed,
+      pose:isRural&&farming?'work':age>=65?'idle':life.career==='학생'?'walk':'idle',frame:life.year%2});
+    else person(baseX,baseY,scale,age<20?'#4a818b':age>=65?'#856a8f':'#cb816c');
     if(isRural&&farming){
       // A short hoe beside the hand, anchored to the on-screen work plot.
       fill(baseX+scale*8,baseY-scale*19,4,30,'#73583d');
@@ -139,6 +143,7 @@
         fill(baseX-60,baseY-37,4,10,'#536f53');
       }
     }
+    if(Composer)Composer.foreground(ctx,{rural:isRural,seed:life.seed});
     fill(8,8,190,24,'#19323cc9');
     ctx.fillStyle='#f9f0df';
     ctx.font='bold 13px sans-serif';
