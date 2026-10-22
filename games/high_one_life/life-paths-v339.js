@@ -93,7 +93,7 @@ function choose(l,i){
    }else if(p.key==='workgroup'){
     const agreed=((l.seed+p.started)%5)>1;p.agreed=agreed;
     text=agreed?'책임자가 쉬는 차례를 정해 보겠다고 답했다. 동료들과 번갈아 쉬는 시간을 확인했지만 품삯과 다른 요구까지 해결된 것은 아니었다.':'동료들과 근무 내역을 모아 다시 요구했지만 일터의 조건은 바뀌지 않았다.';
-   }else text=p.key==='craft'?'공구와 재료값을 정산하고 다음 주문도 나누어 맡기로 했다. 누가 재료를 구하고 물건을 납품할지 장부에 적어 두었다.':'물건 값에서 비용을 빼고 각자 받을 몫을 나눴다. 다음에도 감당할 수 있는 물량만큼 함께 거래하기로 했다.';
+   }else text=p.key==='craft'?'공구와 재료값을 정산하고 다음 주문도 나누어 맡기로 했다. 누가 재료를 구하고 물건을 납품할지 장부에 적어 두었다.':'물건 값에서 비용을 빼고 각자 받을 돈을 나눴다. 다음에도 감당할 수 있는 물량만큼 함께 거래하기로 했다.';
    if(p.status==='completed'){
     const career=l.joseon6?.career;
     if(p.key==='craft'&&career){career.practice=clamp((career.practice||0)+2,0,100);career.reputation=clamp((career.reputation||0)+3,0,100);}
