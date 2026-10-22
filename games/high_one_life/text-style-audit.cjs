@@ -3,7 +3,8 @@
 // Does not rewrite historical sources, change game data, or call any network API.
 const fs=require('node:fs'),path=require('node:path');
 const root=__dirname;
-const REVIEW_PHRASES=[
+// Historical-resource quantities should never use the deprecated invented UI unit.
+const REVIEW_PHRASES=[String.fromCharCode(0xBAAB),
   '그때는 무엇이 달라질지 몰랐다',
   '그날의 일은 마음 한편에 남았다',
   '세월이 지나며 이야기들이 남습니다',
