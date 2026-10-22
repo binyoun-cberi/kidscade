@@ -156,7 +156,7 @@ test('historical comparison allows work-specific review but never touches real s
   assert.ok(html.includes('<option value="'+job+'">'),job);
  }
  assert.match(html,/job:age<14\?'배움':chosenJob/);
- assert.match(html,/historical-sprites-v1\.js\?v=2/);
+ assert.match(html,/historical-sprites-v1\.js\?v=3/);
  assert.doesNotMatch(html,/localStorage|sessionStorage|indexedDB|XMLHttpRequest|fetch\(/);
  assert.equal(Historical.activityFor('학생',10),'idle');
 });
