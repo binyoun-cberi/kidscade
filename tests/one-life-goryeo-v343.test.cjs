@@ -92,7 +92,7 @@ test('birth UI supports reduced motion and prevents repeated decision scrolling'
  assert.match(game,/UIFlow\.rouletteIndex\(loops,sample\.length\)/);
  assert.doesNotMatch(game,/loops\*7\)%sample\.length/);
  assert.match(game,/prefers-reduced-motion: reduce/);
- assert.match(game,/if\(isNewDecision\)\$\('decision'\)\.scrollIntoView/);
+ assert.match(game,/if\(isNewDecision\&\&!autoChoiceMode\)\$\('decision'\)\.scrollIntoView/);
  assert.match(game,/lastDecisionKey=decisionKey/);
 });
 
