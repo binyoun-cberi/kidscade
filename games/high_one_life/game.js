@@ -832,6 +832,7 @@
       child:!!life.profile.child,partner:!!life.profile.partner,
       housing:life.world8?.housing||'',
       roles:life.world6?.history?.map(x=>x.job)||[],
+      eraSummary:window.OneLifeEndingEraV1.capture(life),
       choices:life.log.filter(window.OneLifeBiography328.isChoice)
         .map(e=>({age:e.age,label:e.text,kind:e.kind}))};
   }
@@ -841,19 +842,7 @@
     panel.classList.toggle('hidden',!replayBasis || replayBasis.seed!==life.seed);
     rows.replaceChildren();
     if(!replayBasis || replayBasis.seed!==life.seed)return;
-    const items=[
-      ['출생 시대와 지역',replayBasis.country,now.country],
-      ['가정환경',replayBasis.family,now.family],
-      ['출생 주거',replayBasis.housing||'미상',now.housing||'미상'],
-      ['살아온 기간',replayBasis.age+'세',now.age+'세'],
-      ['삶의 방향',replayBasis.career,now.career],
-      ['거쳐 온 직업',replayBasis.roles?.join(' → ')||'없음',now.roles?.join(' → ')||'없음'],
-      ['교육 경험',replayBasis.education,now.education],
-      ['자격 이력',replayBasis.qualification||'없음',now.qualification||'없음'],
-      ['최종 순자산',formatCredits(replayBasis.netWorth),formatCredits(now.netWorth)],
-      ['가족·관계',replayBasis.child?'아이 돌봄':replayBasis.partner?'동반자':'다양한 관계',
-        now.child?'아이 돌봄':now.partner?'동반자':'다양한 관계']
-    ];
+    const items=window.OneLifeEndingEraV1.rows(replayBasis,now,formatCredits);
     for(const [name,before,after] of items){
       const line=document.createElement('div');line.className='counter-row';
       const heading=document.createElement('strong');heading.textContent=name;
