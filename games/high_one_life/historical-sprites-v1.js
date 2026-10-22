@@ -89,22 +89,30 @@
    const top=feet-(age>=16&&status!=='travel'?10+body+head:8+body+head)*u;
    return Object.freeze({identity:iden,feet,x,top,ageBand:child?'child':elder?'elder':'adult',width:14*u,height:feet-top});
  }
+ function familyAtHome(life,g){
+   if(Number(g.away||0)>0)return [];
+   const year=Number(life.year??life.birthYear)||1300;
+   const priority=role=>role==='배우자'?0:role==='자녀'?1:
+       (role==='어머니'||role==='아버지')?2:3;
+   return (Array.isArray(g.people)?g.people:[]).map((p,index)=>({
+      p,index,age:year-Number(p.birthYear)
+   })).filter(({p,age})=>p&&p.alive!==false&&!p.missing&&
+      p.atHome!==false&&Number.isFinite(age)&&age>=0)
+     .sort((a,b)=>priority(a.p.role)-priority(b.p.role)||
+       (a.p.role==='자녀'?a.age-b.age:0)||a.index-b.index);
+ }
  function occupants(life,g){
-   const year=Number(life.year??life.birthYear) || 1300;
    const away=Number(g.away||0)>0,displaced=away||Boolean(g.refuge);
    const result=[];
    if(life.alive!==false)result.push({id:'self',age:Math.max(0,Number(life.age)||0),
        status:away?'travel':g.bound?'bound':/관료|향리/.test(String(g.origin))?'elite':'plain',
        activity:activityFor(g.job,Number(life.age)||0,displaced),self:true});
-   if(!away)for(const p of g.people||[]){
-     if(p.alive===false||p.missing||p.atHome===false||Number(p.birthYear)>year)continue;
-     const age=year-Number(p.birthYear);
-     if(!Number.isFinite(age)||age<0)continue;
+   for(const {p,age} of familyAtHome(life,g).slice(0,Math.max(0,5-result.length))){
      result.push({id:String(p.id??p.name),age,
        status:g.bound?'bound':/관료|향리/.test(String(g.origin))?'elite':'plain',
        activity:activityFor(p.plan,age,displaced),self:false});
    }
-   return result.slice(0,5);
+   return result;
  }
  function scene(ctx,life,g,{phase=0}={}){
    if(!ctx||!life||!g)return null;
@@ -174,7 +182,9 @@
      rect(ctx,base,206,95,3,'#816d54');
      for(let i=0;i<4;i++)rect(ctx,base+10+i*24,198,4,17,'#776148');
    }
-   return Object.freeze({visiblePeople:people.length,away,coast,year});
+   const presentFamily=familyAtHome(life,g).length;
+   const shownFamily=people.filter(p=>!p.self).length;
+   return Object.freeze({visiblePeople:people.length,offscreenFamily:Math.max(0,presentFamily-shownFamily),away,coast,year});
  }
- return Object.freeze({appearance,activityFor,actor,occupants,scene});
+ return Object.freeze({appearance,activityFor,actor,familyAtHome,occupants,scene});
 });
