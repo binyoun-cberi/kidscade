@@ -852,19 +852,30 @@
       if(before!==after)line.classList.add('changed');
       line.append(heading,left,icon,right);rows.append(line);
     }
-    // Group *all* decisions at each age, not just one entry per World4 gate.
-    // Goryeo and Joseon have additional choices outside the modern gate ages.
-    for(const entry of window.OneLifeEndingChoiceCompare.rows(replayBasis.choices,now.choices)){
-      const line=document.createElement('div');line.className='counter-row';
+    // Historical lives can have many choices per year: summarize changes and
+    // collapse only the unchanged, densely recorded years for phone readers.
+    const choiceCompare=window.OneLifeEndingChoiceCompare;
+    const choiceEntries=choiceCompare.rows(replayBasis.choices,now.choices);
+    if(choiceEntries.length){
+      const overview=document.createElement('p');
+      overview.className='counter-summary';
+      overview.textContent=choiceCompare.summaryText(choiceCompare.summary(replayBasis.choices,now.choices));
+      rows.append(overview);
+    }
+    for(const entry of choiceEntries){
+      const dense=Math.max(entry.before.length,entry.after.length)>2;
+      const line=document.createElement(dense?'details':'div');
+      line.className='counter-row'+(dense?' counter-details':'');
       if(entry.changed)line.classList.add('changed');
-      const title=document.createElement('strong');
+      if(dense)line.open=entry.changed;
+      const title=document.createElement(dense?'summary':'strong');
       const multi=Math.max(entry.before.length,entry.after.length)>1;
       title.textContent=entry.age+'세 선택'+(multi?' (이전 '+entry.before.length+'건 · 이번 '+entry.after.length+'건)':'');
       const before=document.createElement('span');
-      before.textContent=window.OneLifeEndingChoiceCompare.readable(entry.before);
+      before.textContent=choiceCompare.readable(entry.before);
       const icon=document.createElement('span');icon.textContent='→';icon.setAttribute('aria-hidden','true');
       const after=document.createElement('b');
-      after.textContent=window.OneLifeEndingChoiceCompare.readable(entry.after);
+      after.textContent=choiceCompare.readable(entry.after);
       line.append(title,before,icon,after);rows.append(line);
     }
   }
