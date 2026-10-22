@@ -111,6 +111,15 @@
   function offerNewbornName(){
     if(Goryeo.is(life)||stage!=='play'||!life?.alive||namingChild)return false;
     const found=newbornCandidate();if(!found)return false;
+    // In auto mode, use the family's existing suggested name instead of
+    // interrupting a hands-free playthrough with a naming dialog.
+    if(autoChoiceMode){
+      const surname=found.historical?Joseon8?.ensure(life)?.surname||'':'';
+      if(Identity.rename(life,found,'',surname)){
+        if(found.historical)Genealogy?.sync?.(life);
+        save();return false;
+      }
+    }
     namingChild=found;wasPausedBeforeNaming=paused;paused=true;updatePause();
     $('newbornDescription').textContent=found.historical
       ?life.year+'년, 집안에 '+(found.child.sex==='여자'?'딸':'아들')+'이 태어났다. 어떤 이름으로 불러 줄까?'
