@@ -34,8 +34,8 @@ test('village ledger and genealogy hide implementation terminology', () => {
 test('historical method keeps clear fiction and quantitative disclaimers outside in-life panels', () => {
  const html = read('index.html');
  assert.match(html, /<details class="historical-method">/);
- assert.match(html, /수령 이름·부임 시기·감찰 결과·개인의 삶은 창작/);
- assert.match(html, /장부의 수치와 살림의 금액은 당시 실제 세액이나 오늘날의 원화가 아닙니다/);
+ assert.match(html, /등장인물과 각자의 삶은 가상입니다/);
+ assert.match(html, /살림과 건강은 게임에서 사용하는 수치예요/);
  assert.ok(!html.includes('게임의 가상 상태입니다'));
  assert.ok(!html.includes('이 게임에서 함께 살아온 가상의 가족 기록'));
 });
