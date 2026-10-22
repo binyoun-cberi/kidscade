@@ -84,8 +84,23 @@ function everyday(l){
  const g=ensure(l);
  if(l.age>=6&&l.age<14&&!g.seen.includes('child')){prompt(l,'child','내 손으로 해 보고 싶은 일','아직 집안의 결정을 맡을 나이는 아니다. 잠깐의 심부름과 배움도 하루를 바꾼다.',[
   option('들에서 나물을 모은다','gather',{pocket:2,health:-1}),option('글자를 배우고 싶다고 청한다','learn',{knowledge:5,grain:-1}),option('집안일을 돕는다','none',{bonds:4}),option('장터에서 군것질을 산다','snack',{pocket:-1,happiness:4})]);return;}
- if(l.age>=14&&!g.seen.includes('vocation')){prompt(l,'vocation','어떤 일을 배울까?',g.bound?'예속된 처지라 거처와 일의 선택에 제약이 크다. 맡은 일에서 기술을 익힐 길을 찾는다.':'집안의 생업을 잇거나 다른 기술을 배울 수 있다.',[
-  option('농사와 물길을 배운다','job:농사',{knowledge:3}),option('삼베와 모시 짜는 일을 배운다','job:삼베 짜기',{knowledge:4,grain:-2}),option('글과 셈을 배운다','job:글과 셈',{knowledge:6,grain:-5}),option('나루에서 일하는 법을 배운다','job:나루 일',{health:2})]);return;}
+ if(l.age>=14&&!g.seen.includes('vocation')){
+  const choices=g.bound?[
+   option('맡은 농사일을 익힌다','job:농사',{knowledge:3}),
+   option('함께 일하는 이에게 기술을 배운다','skill',{knowledge:4}),
+   option('틈틈이 글과 셈을 배운다','learn',{knowledge:3,grain:-1})]:[
+   option('농사와 물길을 배운다','job:농사',{knowledge:3}),
+   option('삼베와 모시 짜는 일을 배운다','job:삼베 짜기',{knowledge:4,grain:-2}),
+   option('글과 셈을 배운다','job:글과 셈',{knowledge:6,grain:-5}),
+   option('나루에서 일하는 법을 배운다','job:나루 일',{health:2})];
+  prompt(l,'vocation','어떤 일을 배울까?',g.bound?'예속된 처지라 거처와 일의 선택에 제약이 크다. 맡은 일에서 기술을 익힐 길을 찾는다.':'집안의 생업을 잇거나 다른 기술을 배울 수 있다.',choices);return;
+ }
+ if(l.age>=14&&!g.bound&&g.origin==='노비 가구'&&g.seen.includes('vocation')&&!g.seen.includes('free-vocation')){
+  prompt(l,'free-vocation','예속에서 벗어난 뒤의 생업','새로운 일을 바로 시작하기는 어렵지만, 익힌 솜씨와 친족의 도움을 바탕으로 앞으로의 일을 고른다.',[
+   option('농사와 살림을 꾸린다','job:농사',{knowledge:2}),
+   option('천을 짜는 기술을 익힌다','job:삼베 짜기',{knowledge:3,grain:-2}),
+   option('나루에서 일할 길을 찾는다','job:나루 일',{knowledge:2})]);return;
+ }
  if(l.age>=20&&g.bound&&!g.seen.includes('marriage')){prompt(l,'marriage','예속된 처지에서의 혼인','거처와 혼인을 마음대로 정하기 어렵다. 함께 살 사람과 가족의 뜻을 나누고 허락을 구할지 생각한다.',[option('혼인을 허락해 달라고 청한다','marry-request',{grain:-2}),option('지금은 식구를 돌본다','none',{bonds:3})]);return;}
  if(l.age>=20&&!g.bound&&!g.seen.includes('marriage')){prompt(l,'marriage','혼담과 살림의 자리','혼인 뒤 누구의 집 가까이 살지 양쪽 가족과 의논한다. 집안 재산과 친족의 도움도 함께 살펴야 한다.',[
   option('배우자 집 가까이서 살림을 시작한다','marry-in',{bonds:5,grain:4}),option('내가 살던 곳에서 함께 산다','marry-home',{bonds:3,grain:-3}),option('지금은 혼인하지 않는다','none',{happiness:2})]);return;}
