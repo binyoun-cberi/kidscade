@@ -21,6 +21,9 @@
     const sky=night?'#b5bfd8':season===3?'#e2d3cc':'#b5d9dc';
     const floor=season===3?'#d3cbb5':'#81b69b';
     const isRural=p.settlement==='농촌';
+    // A workplace is shown only when the player's recorded occupation
+    // supports it. An illustrated garden does not add crops or income.
+    const farming=age>=16&&age<75&&/농사|농업|농부|농민|경작|소작/.test(life.career||'');
     const stage=age<7?'가정':age<19?(life.world?.educationYears===0&&age>=10?'지역과 생활':'학교')
       :age<27&&(life.career==='학생'||life.world?.educationLevel==='고등 교육·훈련 중')?'대학교'
       :age<65&&life.arc?.business?'가게와 사업장'
@@ -85,6 +88,16 @@
     fill(0,216,W,42,c.road);
     for(let x=14;x<W;x+=82)fill(x,232,42,4,'#ecedd6');
     fill(0,212,W,4,'#d9d5ba');
+    if(isRural&&farming){
+      // Show a small worked patch by the protagonist, not an invented harvest.
+      fill(343,191,172,20,'#846a4a');
+      for(let i=0;i<6;i++){
+        const x=351+i*27;
+        fill(x,192,3,14,'#496d45');
+        fill(x-5,188,8,6,'#64915c');
+        fill(x+2,184,8,7,'#79a46a');
+      }
+    }
     // Pixel people share basic geometry but vary by life stage.
     const person=(x,y,scale,color,headColor)=>{
       const u=scale;
@@ -99,6 +112,11 @@
     const baseX=292,baseY=217;
     const scale=age<6?1:age<13?1.25:1.55;
     person(baseX,baseY,scale,age<20?'#4a818b':age>=65?'#856a8f':'#cb816c');
+    if(isRural&&farming){
+      // A short hoe beside the hand, anchored to the on-screen work plot.
+      fill(baseX+scale*8,baseY-scale*19,4,30,'#73583d');
+      fill(baseX+scale*7,baseY-scale*19,17,4,'#6b7370');
+    }
     if(age<16){
       // Do not invent two parents just because the protagonist is a child.
       // Decorate the age-appropriate place instead of adding unknown people.
