@@ -26,10 +26,12 @@ small{display:block;margin-top:6px;color:#536d5e;line-height:1.6}
 <p>개발용 시각 검수입니다. 각 시대에 태어난 서로 다른 <strong>가상 인물</strong>을 10·30·70세와 두 생활환경에 배치했습니다. 실제 역사 인물의 초상이나 사료 복식의 정밀 복원은 아닙니다. 저장 데이터나 경제 수치를 변경하지 않습니다.</p>
 <fieldset><label for="seed">외형 시드</label><input id="seed" type="number" value="1729">
 <label for="occupation">고려의 일</label><select id="occupation"><option value="농사">농사</option><option value="삼베 짜기">삼베 짜기</option><option value="나루 일">나루 일</option><option value="바구니 만들기">바구니 만들기</option><option value="글과 셈">글과 셈</option></select>
+<label for="circumstance">고려의 생활 상황</label><select id="circumstance"><option value="home">평상시</option><option value="refuge">피란</option><option value="away">집을 떠남</option></select>
+<label for="sampleRegion">고려의 지역</label><select id="sampleRegion"><option value="충청 내륙">충청 내륙</option><option value="서남 해안">서남 해안</option></select>
 <button id="draw" type="button">다시 그리기</button><button id="frame" type="button">다음 동작 프레임</button></fieldset>
 <section aria-labelledby="goryeoTitle"><h2 id="goryeoTitle">고려 후기 — 덧깃옷·머리싸개 중심의 간략 표현</h2><div id="goryeoGrid" class="group"></div></section>
 <section aria-labelledby="joseonTitle"><h2 id="joseonTitle">조선 — 시대별 저고리·포·쓰개 규칙을 유지한 표현</h2><div id="joseonGrid" class="group"></div></section>
-<p>검수할 점: 같은 사람의 나이별 외형 연속성, 실제 가족만 등장하는지, 발 위치, 생업 도구와 손의 접촉, 계층에 따른 건물 차이, 서로 다른 시대의 옷이 섞이지 않는지, 모바일 가독성.</p>
+<p>검수할 점: 같은 사람의 나이별 외형 연속성, 실제 가족만 등장하는지, 발 위치, 생업 도구와 손의 접촉, 피란·집을 떠난 상황에 평상시 집과 도구가 남지 않는지, 나루 일의 물가 배치, 모바일 가독성. 상황·지역 선택은 고려 예시에만 적용됩니다.</p>
 </main>
 <script src="./historical-sprites-v1.js?v=2"></script>
 <script src="./joseon-culture-v1.js?v=4"></script>
@@ -51,14 +53,17 @@ small{display:block;margin-top:6px;color:#536d5e;line-height:1.6}
    const raw=Number(document.getElementById('seed').value);
    const seed=Number.isFinite(raw)?Math.trunc(raw):1729;
    const chosenJob=document.getElementById('occupation').value;
+   const situation=document.getElementById('circumstance').value;
+   const region=document.getElementById('sampleRegion').value;
    const gGrid=document.getElementById('goryeoGrid'),jGrid=document.getElementById('joseonGrid');
    gGrid.replaceChildren();jGrid.replaceChildren();
    for(const age of ages)for(const group of classes){
      const gLife={seed,birthYear:1250,year:1250+age,age,alive:true,profile:{name:'예제'},
        gender:'남자'};
-     const g={region:'충청 내륙',origin:group.elite?'관료 가문':'농민 가구',
-       job:age<14?'배움':chosenJob,bound:false,away:0,refuge:false,people:[]};
-     card(gGrid,age+'세 · '+group.name,(age<14?'배움':chosenJob)+' · 고려 후기 · 가족 생성 없음',
+     const g={region,origin:group.elite?'관료 가문':'농민 가구',
+       job:age<14?'배움':chosenJob,bound:false,away:situation==='away'?1:0,
+       refuge:situation==='refuge',people:[]};
+     card(gGrid,age+'세 · '+group.name,(age<14?'배움':chosenJob)+' · '+region+' · '+(situation==='refuge'?'피란':situation==='away'?'집을 떠남':'평상시')+' · 가상 예시',
        (canvas,ctx)=>window.OneLifeHistoricalSpritesV1.scene(ctx,gLife,g,{phase}),720,220);
      const life={seed,birthYear:1510,year:1510+age,age,alive:true,gender:'남자',
        familyLevel:group.name,
