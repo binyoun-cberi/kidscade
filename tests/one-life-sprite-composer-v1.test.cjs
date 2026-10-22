@@ -83,3 +83,44 @@ test('browser-style module loading activates the new compositor in a real scene'
  assert.ok(ctxState.shapes.some(shape=>shape[4]===avatar.hair),'seeded hairstyle should actually be painted');
  assert.ok(ctxState.shapes.some(shape=>shape[4]==='#816c4e'),'rural foreground should be painted');
 });
+
+
+test('10/30/70 comparison changes silhouette without changing actor identity',()=>{
+ const rows=[10,30,70].map(age=>{
+  const {ctx,shapes}=context();
+  const bounds=Composer.character(ctx,{identity:72911,age,scale:1.5,feet:217,x:292});
+  return {age,bounds,shapes};
+ });
+ assert.deepEqual(rows.map(r=>r.bounds.ageBand),['child','adult','elder']);
+ assert.ok(rows[0].bounds.height<rows[1].bounds.height,'child must be smaller than adult');
+ assert.ok(rows[2].bounds.height<rows[1].bounds.height,'elder should have a distinct silhouette');
+ assert.ok(rows.every(row=>JSON.stringify(row.bounds.identity)===JSON.stringify(rows[0].bounds.identity)));
+ assert.ok(rows[2].shapes.some(shape=>shape[4]==='#c4bbaa'),'elder should show graying hair');
+ assert.ok(!rows[1].shapes.some(shape=>shape[4]==='#c4bbaa'),'adult should not gain graying hair');
+ assert.ok(rows.every(row=>row.bounds.feet===217),'all ages stand on the same baseline');
+});
+test('the working hand holds exactly one hoe and children do not wield tools',()=>{
+ const work=context(),idle=context(),child=context();
+ Composer.character(work.ctx,{identity:82,age:30,pose:'work',frame:0,x:292,feet:217});
+ Composer.character(idle.ctx,{identity:82,age:30,pose:'idle',x:292,feet:217});
+ Composer.character(child.ctx,{identity:82,age:10,pose:'work',x:292,feet:217});
+ const isHandle=shape=>shape[4]==='#866b4d';
+ const isBlade=shape=>shape[4]==='#727d7b';
+ assert.equal(work.shapes.filter(isHandle).length,1);
+ assert.equal(work.shapes.filter(isBlade).length,1);
+ assert.ok(!idle.shapes.some(isHandle)&&!idle.shapes.some(isBlade));
+ assert.ok(!child.shapes.some(isHandle)&&!child.shapes.some(isBlade));
+ const render=read('pixel-scene.js');
+ assert.match(render,/if\(isRural&&farming&&!Composer\)/);
+});
+test('developer comparison grid covers all nine cases without accessing saves',()=>{
+ const html=read('sprite-comparison.html');
+ assert.match(html,/const ages=\[10,30,70\]/);
+ assert.match(html,/id:'rural'/);
+ assert.match(html,/id:'urban'/);
+ assert.match(html,/id:'farm'/);
+ assert.match(html,/for\(const age of ages\)for\(const place of conditions\)/);
+ assert.match(html,/image-rendering:pixelated/);
+ assert.ok(html.indexOf('sprite-composer-v1.js?v=2')<html.indexOf('pixel-scene.js?v=4'));
+ assert.doesNotMatch(html,/localStorage|sessionStorage|fetch\(|XMLHttpRequest|\.save\(/);
+});
