@@ -1200,7 +1200,7 @@
       "age": "job",
       "icon": "🏫",
       "cover": "assets/gate-image/teacher simulator.png",
-      "description": "15명의 학생이 앉아 필기하고 질문하는 3D 담임교사 시뮬레이터. 학생 질문에 답하거나 집중을 돕는 동안에도 수업 진도를 관리해야 합니다. 책상 간격과 자세, 모바일 UI를 개선했습니다. 8일 동안 네 번의 시험에서 모두 한 단계 성장시키세요.",
+      "description": "15명의 학생과 함께하는 3D 담임교사 시뮬레이터. 학생의 말을 듣고 격려·힌트·예시를 골라 지도하세요. 친분과 지도 기록이 다음 날로 이어지고, 관찰 기록에서 과목별 성장을 살펴볼 수 있어요. 8일 동안 우리 반 모두를 성장시키세요.",
       "subject": "career",
       "genre": "simulation",
       "difficulty": "medium",
