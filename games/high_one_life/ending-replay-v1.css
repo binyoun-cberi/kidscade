@@ -1,0 +1,40 @@
+/* Concise, keyboard-readable same-birth replay comparison on small screens. */
+.end-comparison-rows .counter-summary{
+  padding:10px 12px;
+  margin:8px 0;
+  border-radius:10px;
+  background:rgba(42,103,84,.08);
+  font-weight:700;
+  line-height:1.6;
+}
+.end-comparison-rows details.counter-details{
+  display:block;
+  padding:10px 12px;
+  border:1px solid rgba(56,91,74,.18);
+  border-radius:10px;
+  min-width:0;
+}
+.end-comparison-rows details.counter-details > summary{
+  cursor:pointer;
+  font-weight:700;
+  padding:4px 0;
+  line-height:1.5;
+}
+.end-comparison-rows details.counter-details > summary:focus-visible{
+  outline:2px solid #315d54;
+  outline-offset:3px;
+}
+.end-comparison-rows details.counter-details[open] > span,
+.end-comparison-rows details.counter-details[open] > b{
+  display:block;
+  overflow-wrap:anywhere;
+  margin-top:8px;
+  line-height:1.65;
+}
+.end-comparison-rows details.counter-details[open] > span[aria-hidden]{
+  display:none;
+}
+@media(max-width:600px){
+  .end-comparison-rows .counter-summary{font-size:.88rem}
+  .end-comparison-rows details.counter-details{padding:9px}
+}

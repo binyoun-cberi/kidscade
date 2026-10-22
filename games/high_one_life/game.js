@@ -70,6 +70,7 @@
   let completed = false, ruleWasRunning = false, replayBasis = null;
   let peerCache = null, lastPeerRenderedAge = -1, lastMapRenderedAge = -1;
   let storyTab='', peerAgeChoice=0, timelineVisible=22, playSpeed=1, nextDecision=false;
+  let autoChoiceMode=false,lastAutoChoiceAt=0;
   let lastDecisionKey=null;
   let namingChild=null,wasPausedBeforeNaming=false;
   function updateBirthChoices(){
@@ -77,6 +78,15 @@
     const historical=Number.isInteger(year)&&year<1894;
     const originGroup=$('birthOriginGroup'),familyGroup=$('birthFamilyGroup'),select=$('birthOriginInput');
     const previous=select.value;
+    const birthCountry=$('birthCountryInput'),previousCountry=birthCountry.value;
+    $('birthCountryGroup').classList.toggle('hidden',year<1900);
+    birthCountry.replaceChildren();
+    const allOption=document.createElement('option');allOption.value='';allOption.textContent='세상 어디든';birthCountry.append(allOption);
+    if(year>=1900)for(const country of Sim.COUNTRIES){
+      const option=document.createElement('option');
+      option.value=country[0];option.textContent=country[1]+' '+country[0];birthCountry.append(option);
+    }
+    birthCountry.value=year>=1900&&Sim.COUNTRIES.some(c=>c[0]===previousCountry)?previousCountry:'';
     originGroup.classList.toggle('hidden',!historical);
     familyGroup.classList.toggle('hidden',historical);
     select.replaceChildren();
@@ -101,6 +111,15 @@
   function offerNewbornName(){
     if(Goryeo.is(life)||stage!=='play'||!life?.alive||namingChild)return false;
     const found=newbornCandidate();if(!found)return false;
+    // In auto mode, use the family's existing suggested name instead of
+    // interrupting a hands-free playthrough with a naming dialog.
+    if(autoChoiceMode){
+      const surname=found.historical?Joseon8?.ensure(life)?.surname||'':'';
+      if(Identity.rename(life,found,'',surname)){
+        if(found.historical)Genealogy?.sync?.(life);
+        save();return false;
+      }
+    }
     namingChild=found;wasPausedBeforeNaming=paused;paused=true;updatePause();
     $('newbornDescription').textContent=found.historical
       ?life.year+'년, 집안에 '+(found.child.sex==='여자'?'딸':'아들')+'이 태어났다. 어떤 이름으로 불러 줄까?'
@@ -188,19 +207,19 @@
     const stored = safeGet(SAVE_KEY);
     if(!stored?.life)return null;
     const restored=Sim.Life.restore(stored.life);
-    return restored?.country?.[0]==='대한민국'?restored:null;
+    return restored||null;
   }
   function refreshResume() {
     const resume = currentSave();
     $('resumeBtn').classList.toggle('hidden', !resume || !resume.alive);
   }
   function save() {
-    if (stage === 'play' && life?.alive) safeSet(SAVE_KEY, {life:life.snapshot(),replayBasis,at:Date.now()});
+    if (stage === 'play' && life?.alive) safeSet(SAVE_KEY, {life:life.snapshot(),replayBasis,autoChoiceMode,at:Date.now()});
   }
   function draw() {
     clearInterval(roulette);
     roulette = null;
-    playSpeed=1;nextDecision=false;lastDecisionKey=null;refreshSpeedControls();
+    playSpeed=1;nextDecision=false;autoChoiceMode=false;lastDecisionKey=null;refreshSpeedControls();
     const desired=Number($('birthYearInput').value);
     const birthYear=Number.isInteger(desired)&&desired>=1200&&desired<=2026?desired:2026;
     $('birthYearInput').value=String(birthYear);
@@ -210,7 +229,7 @@
       $('birthIdentityError').textContent='이름은 한글 또는 영문으로 20자 이내로 적어 주세요.';
       $('birthIdentityError').classList.remove('hidden');$('birthNameInput').focus();return;
     }
-    const countryName='대한민국';
+    const countryName=birthYear<1900?'대한민국':$('birthCountryInput').value||undefined;
     const birthSetup={name:chosenName,gender:$('birthGenderInput').value,
       origin:$('birthOriginInput').value,familyLevel:$('birthFamilyInput').value};
     life = new Sim.Life(undefined,{birthYear,countryName,birthSetup});
@@ -228,11 +247,11 @@
     $('birthHeading').textContent=Goryeo.is(life)?'고려의 어느 집, 한 아이가 태어납니다.':Joseon.isJoseon(life)?'조선의 어느 집, 한 아이가 태어납니다.':'당신은 어디에서 태어날까요?';
     show('birth');
     let loops = 0;
-    const sample = Goryeo.is(life)?Goryeo.regions.map(region=>[region,'生']):[['한양','📜'],['경상도','📜'],['평안도','📜'],['함경도','📜'],['제주도','📜']];
+    const sample = Goryeo.is(life)?Goryeo.regions.map(region=>[region,'生']):Joseon.isJoseon(life)?[['한양','📜'],['경상도','📜'],['평안도','📜'],['함경도','📜'],['제주도','📜']]:Sim.COUNTRIES.map(country=>[country[0],country[1]]);
     const paint = country => { $('birthFlag').textContent = country[1]; $('birthCountry').textContent = country[0]; };
     const completeBirthReveal=()=>{
       clearInterval(roulette);roulette=null;
-      $('birthFlag').textContent=(Goryeo.is(life)||Joseon.isJoseon(life))?'生':'🇰🇷';
+      $('birthFlag').textContent=(Goryeo.is(life)||Joseon.isJoseon(life))?'生':life.country[1];
       $('birthCountry').textContent=History.place(life);
       $('birthDetail').textContent=life.gender+' · '+life.familyLevel+' · '+life.year+'년 출생';
       paintCertificate();
@@ -832,6 +851,7 @@
       child:!!life.profile.child,partner:!!life.profile.partner,
       housing:life.world8?.housing||'',
       roles:life.world6?.history?.map(x=>x.job)||[],
+      eraSummary:window.OneLifeEndingEraV1.capture(life),
       choices:life.log.filter(window.OneLifeBiography328.isChoice)
         .map(e=>({age:e.age,label:e.text,kind:e.kind}))};
   }
@@ -841,19 +861,7 @@
     panel.classList.toggle('hidden',!replayBasis || replayBasis.seed!==life.seed);
     rows.replaceChildren();
     if(!replayBasis || replayBasis.seed!==life.seed)return;
-    const items=[
-      ['출생 시대와 지역',replayBasis.country,now.country],
-      ['가정환경',replayBasis.family,now.family],
-      ['출생 주거',replayBasis.housing||'미상',now.housing||'미상'],
-      ['살아온 기간',replayBasis.age+'세',now.age+'세'],
-      ['삶의 방향',replayBasis.career,now.career],
-      ['거쳐 온 직업',replayBasis.roles?.join(' → ')||'없음',now.roles?.join(' → ')||'없음'],
-      ['교육 경험',replayBasis.education,now.education],
-      ['자격 이력',replayBasis.qualification||'없음',now.qualification||'없음'],
-      ['최종 순자산',formatCredits(replayBasis.netWorth),formatCredits(now.netWorth)],
-      ['가족·관계',replayBasis.child?'아이 돌봄':replayBasis.partner?'동반자':'다양한 관계',
-        now.child?'아이 돌봄':now.partner?'동반자':'다양한 관계']
-    ];
+    const items=window.OneLifeEndingEraV1.rows(replayBasis,now,formatCredits);
     for(const [name,before,after] of items){
       const line=document.createElement('div');line.className='counter-row';
       const heading=document.createElement('strong');heading.textContent=name;
@@ -863,19 +871,30 @@
       if(before!==after)line.classList.add('changed');
       line.append(heading,left,icon,right);rows.append(line);
     }
-    // Group *all* decisions at each age, not just one entry per World4 gate.
-    // Goryeo and Joseon have additional choices outside the modern gate ages.
-    for(const entry of window.OneLifeEndingChoiceCompare.rows(replayBasis.choices,now.choices)){
-      const line=document.createElement('div');line.className='counter-row';
+    // Historical lives can have many choices per year: summarize changes and
+    // collapse only the unchanged, densely recorded years for phone readers.
+    const choiceCompare=window.OneLifeEndingChoiceCompare;
+    const choiceEntries=choiceCompare.rows(replayBasis.choices,now.choices);
+    if(choiceEntries.length){
+      const overview=document.createElement('p');
+      overview.className='counter-summary';
+      overview.textContent=choiceCompare.summaryText(choiceCompare.summary(replayBasis.choices,now.choices));
+      rows.append(overview);
+    }
+    for(const entry of choiceEntries){
+      const dense=Math.max(entry.before.length,entry.after.length)>2;
+      const line=document.createElement(dense?'details':'div');
+      line.className='counter-row'+(dense?' counter-details':'');
       if(entry.changed)line.classList.add('changed');
-      const title=document.createElement('strong');
+      if(dense)line.open=entry.changed;
+      const title=document.createElement(dense?'summary':'strong');
       const multi=Math.max(entry.before.length,entry.after.length)>1;
       title.textContent=entry.age+'세 선택'+(multi?' (이전 '+entry.before.length+'건 · 이번 '+entry.after.length+'건)':'');
       const before=document.createElement('span');
-      before.textContent=window.OneLifeEndingChoiceCompare.readable(entry.before);
+      before.textContent=choiceCompare.readable(entry.before);
       const icon=document.createElement('span');icon.textContent='→';icon.setAttribute('aria-hidden','true');
       const after=document.createElement('b');
-      after.textContent=window.OneLifeEndingChoiceCompare.readable(entry.after);
+      after.textContent=choiceCompare.readable(entry.after);
       line.append(title,before,icon,after);rows.append(line);
     }
   }
@@ -884,12 +903,14 @@
       button.setAttribute('aria-pressed',String(Number(button.dataset.lifeSpeed)===playSpeed&&!nextDecision));
     });
     $('v9NextChoice').setAttribute('aria-pressed',String(nextDecision));
+    const autoButton=$('autoChoiceBtn');
+    if(autoButton){autoButton.setAttribute('aria-pressed',String(autoChoiceMode));autoButton.textContent=autoChoiceMode?'자동 선택 켬':'자동 선택 끔';}
   }
   function updatePause() {
     $('pauseBtn').textContent = paused ? '▶ 이어가기' : 'Ⅱ 일시정지';
-    $('pauseBtn').disabled = !!life?.pending || !life?.alive;
-    $('playStatus').textContent = life?.pending ? '당신의 선택을 기다리는 중'
-      : paused ? '일시정지' : '인생이 흘러가는 중';
+    $('pauseBtn').disabled = !life?.alive;
+    $('playStatus').textContent = paused ? '일시정지' : life?.pending
+      ? (autoChoiceMode?'다음 일을 고르는 중':'당신의 선택을 기다리는 중') : '인생이 흘러가는 중';
   }
   function paintTimeline() {
     const timeline = $('timeline');
@@ -967,6 +988,34 @@
       track.append(bar); box.append(label,track); list.append(box);
     }
   }
+  function decisionState(){
+    return {stats:{...life.stats},netWorth:life.money?.netWorth,career:life.career};
+  }
+  function recordDecisionEffect(before){
+    const labels={health:'건강',happiness:'행복',knowledge:'배움',bonds:'인연',wealth:'살림'};
+    const changes=Object.entries(labels).flatMap(([key,label])=>{
+      const delta=(life.stats?.[key]||0)-(before.stats?.[key]||0);
+      return delta?[label+' '+(delta>0?'+':'')+delta]:[];
+    });
+    const moneyDelta=(life.money?.netWorth??before.netWorth)-(before.netWorth??life.money?.netWorth??0);
+    if(moneyDelta)changes.push('살림 '+(moneyDelta>0?'+':'')+formatCredits(moneyDelta));
+    if(life.career!==before.career)changes.push('진로 '+life.career);
+    let effectText=changes.length?'이후 달라진 점 · '+changes.join(' · '):'';
+    if(Joseon.inOldEra(life)){
+      const lines=[];
+      if(life.stats.health<before.stats.health)lines.push('몸이 조금 고단해졌다');
+      if(life.stats.health>before.stats.health)lines.push('쉬어 갈 힘을 되찾았다');
+      if(life.stats.bonds>before.stats.bonds)lines.push('사람들과의 관계에 조금 힘이 되었다');
+      if(life.stats.knowledge>before.stats.knowledge)lines.push('전에 모르던 일을 하나 더 배웠다');
+      if(moneyDelta<0)lines.push('집안 살림에는 다소 부담이 남았다');
+      if(moneyDelta>0)lines.push('집안 살림에 작은 여유가 생겼다');
+      if(life.career!==before.career)lines.push('새로운 생업을 시작했다');
+      effectText=lines.length?lines.slice(0,2).join('. ')+'.':'';
+    }
+    // The choice itself is already recorded. Avoid generic aftermath
+    // sentences when there is no verified immediate numerical change.
+    if(effectText)life.logEvent(effectText,'decision-effect');
+  }
   function showDecision() {
     const choice = life.getChoice();
     const reflection = life.getReflection();
@@ -985,7 +1034,7 @@
       const btn=document.createElement('button');btn.type='button';btn.className='reflection-next';btn.textContent='계속 살아가기 →';
       btn.addEventListener('click',()=>{life.reflect(note.value);save();elapsed=0;lastTick=performance.now();render();});
       target.append(note,btn);
-      if(isNewDecision)$('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
+      if(isNewDecision&&!autoChoiceMode)$('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
       return;
     }
     if (!choice) return;
@@ -1000,38 +1049,16 @@
       const arrow=document.createElement('i'); arrow.textContent='↗'; arrow.setAttribute('aria-hidden','true');
       wrap.append(title,note); btn.append(wrap,arrow);
       btn.addEventListener('click',()=>{
-        const before={stats:{...life.stats},netWorth:life.money?.netWorth,career:life.career};
+        const before=decisionState();
         if(!life?.choose(index)) return;
         if(!life.alive){finish();return;}
-        const labels={health:'건강',happiness:'행복',knowledge:'배움',bonds:'인연',wealth:'살림'};
-        const changes=Object.entries(labels).flatMap(([key,label])=>{
-          const delta=(life.stats?.[key]||0)-(before.stats?.[key]||0);
-          return delta?[label+' '+(delta>0?'+':'')+delta]:[];
-        });
-        const moneyDelta=(life.money?.netWorth??before.netWorth)-(before.netWorth??life.money?.netWorth??0);
-        if(moneyDelta)changes.push('살림 '+(moneyDelta>0?'+':'')+formatCredits(moneyDelta));
-        if(life.career!==before.career)changes.push('진로 '+life.career);
-        let effectText=changes.length?'이후 달라진 점 · '+changes.join(' · '):'';
-        if(Joseon.inOldEra(life)){
-          const lines=[];
-          if(life.stats.health<before.stats.health)lines.push('몸이 조금 고단해졌다');
-          if(life.stats.health>before.stats.health)lines.push('쉬어 갈 힘을 되찾았다');
-          if(life.stats.bonds>before.stats.bonds)lines.push('사람들과의 관계에 조금 힘이 되었다');
-          if(life.stats.knowledge>before.stats.knowledge)lines.push('전에 모르던 일을 하나 더 배웠다');
-          if(moneyDelta<0)lines.push('집안 살림에는 다소 부담이 남았다');
-          if(moneyDelta>0)lines.push('집안 살림에 작은 여유가 생겼다');
-          if(life.career!==before.career)lines.push('새로운 생업을 시작했다');
-          effectText=lines.length?lines.slice(0,2).join('. ')+'.':'';
-        }
-        // The choice itself is already recorded. Avoid generic aftermath
-        // sentences when there is no verified immediate numerical change.
-        if(effectText)life.logEvent(effectText,'decision-effect');
+        recordDecisionEffect(before);
         save(); elapsed=0; lastTick=performance.now(); render(); offerNewbornName();
       });
       target.append(btn);
     });
     // Repainting a still-open choice must not pull readers out of history.
-    if(isNewDecision)$('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
+    if(isNewDecision&&!autoChoiceMode)$('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
   }
   function peerView(peer){
     return {age:peer.age,alive:peer.alive,name:peer.profile?.name||'이름 없는 이웃',
@@ -1045,7 +1072,7 @@
     lastPeerRenderedAge=life.age;
     if(!peerCache||peerCache.seed!==life.seed){
       peerCache={seed:life.seed,people:Array.from({length:4},(_,i)=>{
-        const peer=new Sim.Life((life.seed+Math.imul(i+1,2654435761))>>>0,{birthYear:life.birthYear,countryName:'대한민국'});
+        const peer=new Sim.Life((life.seed+Math.imul(i+1,2654435761))>>>0,{birthYear:life.birthYear,countryName:life.country[0]});
         World8.ensure(peer);if(Joseon.isJoseon(peer))Joseon.ensure(peer);else World8.moment(peer);History.contextualize(peer);
         return {life:peer,samples:[peerView(peer)]};
       })};
@@ -1175,7 +1202,7 @@
     const measurementGuide=$('historicalUnits');
     if(measurementGuide)measurementGuide.hidden=life.year>=1900;
     if(Goryeo.is(life)){
-      window.OneLifeGoryeoView343.paint(life,{paused,choose:i=>{if(life.choose(i)){if(!life.alive)finish();else render();save();}},action:(kind,id,value)=>{Goryeo.action(life,kind,id,value);render();save();},pause:()=>{paused=!paused;lastTick=performance.now();render();},next:()=>{stepYear();}});
+      window.OneLifeGoryeoView343.paint(life,{paused,autoEnabled:autoChoiceMode,toggleAuto:toggleAutoChoice,choose:i=>{const before=decisionState();if(life.choose(i)){if(!life.alive)finish();else{recordDecisionEffect(before);render();}save();}},action:(kind,id,value)=>{Goryeo.action(life,kind,id,value);render();save();},pause:()=>{paused=!paused;lastTick=performance.now();render();},next:()=>{stepYear();}});
       return;
     }
     const journey=Travel22?.summary(life)||null;
@@ -1410,7 +1437,7 @@
     const count=rememberLife();
     $('endYears').textContent=life.birthYear+' — '+life.year;
     $('endCountry').textContent=(life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1])+' '+History.place({...life,year:life.birthYear})+' · '+life.profile.name+' ('+life.profile.city+')';
-    $('endNetWorth').textContent=Goryeo.is(life)?'곡식 '+Goryeo.ensure(life).grain:formatCredits(life.money.netWorth);
+    $('endNetWorth').textContent=Goryeo.is(life)?'곡식 '+Goryeo.ensure(life).grain+'말':Joseon.inOldEra(life)?'살림 '+Joseon.ensure(life).capital+'냥':formatCredits(life.money.netWorth);
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=oldJobs?.primary?.name||(!['아직 정해지지 않음','학생'].includes(life.career)?life.career:'살림과 일상');
     const firstPlace=History.place({...life,year:life.birthYear});
@@ -1478,7 +1505,25 @@
     const now=performance.now();
     const delta=Math.max(0,Math.min(260,now-lastTick));
     lastTick=now;
-    if(stage!=='play' || !life || !life.alive || life.pending || paused || document.hidden) return;
+    if(stage!=='play'||!life||!life.alive||paused||document.hidden)return;
+    if(life.pending){
+      // A single decision per animation tick; no recursion through linked events.
+      if(autoChoiceMode&&now-lastAutoChoiceAt>=650&&!namingChild){
+        lastAutoChoiceAt=now;
+        const action=window.OneLifeAutoChoiceV1.decide(life);
+        const before=action?.type==='choice'?decisionState():null;
+        const changed=window.OneLifeAutoChoiceV1.tick(life);
+        if(changed){
+          elapsed=0;
+          if(!life.alive)finish();
+          else{
+            if(before)recordDecisionEffect(before);
+            render();offerNewbornName();save();
+          }
+        }
+      }
+      return;
+    }
     if(now-lastSceneFrame>=180&&Joseon.isJoseon(life)&&!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
       window.OneLifeJoseonPixel2?.paint($('lifeScene'),life,{time:now});lastSceneFrame=now;
     }
@@ -1491,8 +1536,14 @@
       if(stage!=='play' || life.pending || !life.alive) {elapsed=0;break;}
     }
   }
+  function toggleAutoChoice(){
+    autoChoiceMode=!autoChoiceMode;
+    lastAutoChoiceAt=performance.now()-350;
+    refreshSpeedControls();updatePause();save();
+    if(Goryeo.is(life)&&stage==='play')render();
+  }
   function togglePause() {
-    if(stage!=='play'||!life?.alive||life.pending) return;
+    if(stage!=='play'||!life?.alive) return;
     paused=!paused; lastTick=performance.now(); updatePause();
     if(paused) save();
   }
@@ -1510,7 +1561,7 @@
   $('birthYearInput').addEventListener('change',updateBirthChoices);
   $('birthRandomBtn').addEventListener('click',()=>{
     $('birthNameInput').value='';$('birthGenderInput').value='';
-    $('birthOriginInput').value='';$('birthFamilyInput').value='';
+    $('birthOriginInput').value='';$('birthFamilyInput').value='';$('birthCountryInput').value='';
     $('birthIdentityError').classList.add('hidden');
   });
   $('newbornNameConfirm').addEventListener('click',()=>finishNewbornName(false));
@@ -1521,6 +1572,7 @@
     if(![1,2,4,8].includes(n))return;
     playSpeed=n;nextDecision=false;refreshSpeedControls();
   }));
+  $('autoChoiceBtn').addEventListener('click',toggleAutoChoice);
   $('v9NextChoice').addEventListener('click',()=>{
     if(!life?.alive||life.pending||stage!=='play')return;
     playSpeed=8;nextDecision=true;
@@ -1565,7 +1617,7 @@
     if(!life||life.alive)return;
     const snapshot=captureEnding(life);
     replayBasis=snapshot;
-    life=new Sim.Life(snapshot.seed,{birthYear:snapshot.birthYear,countryName:'대한민국',birthSetup:life.birthSetup});
+    life=new Sim.Life(snapshot.seed,{birthYear:snapshot.birthYear,countryName:snapshot.country,birthSetup:life.birthSetup});
     World8.ensure(life);if(Goryeo.is(life))Goryeo.ensure(life);else if(Joseon.isJoseon(life))Joseon.ensure(life);else {World8.moment(life);World10.ensure(life);}History.contextualize(life);Calendar?.record(life);
     storyTab='';peerAgeChoice=0;timelineVisible=22;playSpeed=1;nextDecision=false;refreshSpeedControls();
     peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;
@@ -1582,7 +1634,7 @@
   $('resumeBtn').addEventListener('click',()=>{
     const restored=currentSave();
     if(!restored || !restored.alive){refreshResume();return;}
-    life=restored;timelineVisible=22;playSpeed=1;nextDecision=false;refreshSpeedControls();World9.ensure(life);World8.ensure(life);replayBasis=safeGet(SAVE_KEY)?.replayBasis||null;completed=false;peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;startLife(true);
+    life=restored;timelineVisible=22;playSpeed=1;nextDecision=false;autoChoiceMode=safeGet(SAVE_KEY)?.autoChoiceMode===true;refreshSpeedControls();World9.ensure(life);World8.ensure(life);replayBasis=safeGet(SAVE_KEY)?.replayBasis||null;completed=false;peerCache=null;lastPeerRenderedAge=-1;lastMapRenderedAge=-1;startLife(true);
   });
   $('household342Panel')?.addEventListener('toggle',()=>{if($('household342Panel').open&&stage==='play'){paused=true;updatePause();}});
   $('pauseBtn').addEventListener('click',togglePause);
@@ -1620,7 +1672,7 @@
     if(document.hidden && stage==='play'){paused=true;updatePause();save();}
   });
   window.addEventListener('pagehide',save);
-  sdk?.registerPauseHandlers?.({pause:()=>{paused=true;updatePause();save();},resume:()=>{if(life?.pending)return;paused=false;lastTick=performance.now();updatePause();}});
+  sdk?.registerPauseHandlers?.({pause:()=>{paused=true;updatePause();save();},resume:()=>{if(stage!=='play'||!life?.alive)return;paused=false;lastTick=performance.now();updatePause();}});
   const heartbeat=setInterval(loop,90);
   sdk?.registerCleanup?.(()=>{save();clearInterval(heartbeat);if(roulette)clearInterval(roulette);});
   updateBirthChoices();refreshResume();show('intro');

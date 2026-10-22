@@ -34,6 +34,7 @@
 <link rel="stylesheet" href="./goryeo-v343.css?v=1">
 <link rel="stylesheet" href="./lived-scene-v1.css?v=1">
 <link rel="stylesheet" href="./historical-units-v1.css?v=1">
+<link rel="stylesheet" href="./ending-replay-v1.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -47,17 +48,17 @@
       <div class="hero-art" aria-hidden="true"><span class="orbit orbit-a"></span><span class="orbit orbit-b"></span><span class="globe">◉</span></div>
       <div class="intro-copy">
         <p class="eyebrow">시대는 달라도, 한 사람의 삶</p>
-        <h1>한반도의 어느 시대,<br><em>단 하나의 인생.</em></h1>
+        <h1>어디에서 태어나든,<br><em>단 하나의 인생.</em></h1>
         <p class="lead">태어날 시대와 이름을 직접 정해도 좋습니다. 우연에 맡기면 예상하지 못한 삶이 펼쳐집니다.</p>
         
-        <div class="historical-picker" aria-label="한국사의 출생 연도와 지역">
+        <div class="historical-picker" aria-label="태어날 시대 선택">
           <label for="birthYearInput">태어날 연도</label>
           <div class="historical-picker-fields">
             <input id="birthYearInput" type="number" min="1200" max="2026" step="1" value="2026" inputmode="numeric" aria-describedby="eraHelp">
-            <input id="birthLocation" type="hidden" value="korea" aria-label="출생 지역"><span class="korean-only-note">출생지는 한반도 안에서 정해집니다</span>
+            <span class="korean-only-note">고려·조선은 한반도, 근현대는 세계 여러 나라</span>
           </div>
           <div class="era-presets" role="group" aria-label="시대 바로 선택">
-            <button type="button" data-era-year="2026" aria-pressed="true">2026년 대한민국</button>
+            <button type="button" data-era-year="2026" aria-pressed="true">2026년 · 세계</button>
             <button type="button" data-era-year="1210" aria-pressed="false">1210년 고려 · 몽골 침입 전</button>
             <button type="button" data-era-year="1270" aria-pressed="false">1270년 고려 · 원 간섭기</button>
             <button type="button" data-era-year="1350" aria-pressed="false">1350년 고려 · 개혁과 전란</button>
@@ -79,6 +80,9 @@
             <label for="birthNameInput">이름
               <input id="birthNameInput" type="text" maxlength="20" autocomplete="off" placeholder="이름을 적거나 비워 두세요">
             </label>
+            <label for="birthCountryInput" id="birthCountryGroup">태어날 나라
+              <select id="birthCountryInput"><option value="">세상 어디든</option></select>
+            </label>
             <label for="birthGenderInput">성별
               <select id="birthGenderInput"><option value="">우연에 맡기기</option><option value="남자">남자</option><option value="여자">여자</option></select>
             </label>
@@ -92,7 +96,7 @@
           <p id="birthIdentityError" class="birth-custom-error hidden" role="alert"></p>
           <div class="birth-custom-controls"><button id="birthRandomBtn" type="button">나머지는 우연에 맡기기</button><small id="birthIdentityHelp">당시의 신분과 집안은 태어난 시대에 맞게 표시됩니다.</small></div>
         </section>
-        <button id="drawBtn" class="primary" type="button">한반도의 어느 시대에서 시작될까? <span aria-hidden="true">↗</span></button>
+        <button id="drawBtn" class="primary" type="button">어떤 삶이 기다릴까? <span aria-hidden="true">↗</span></button>
         <button id="resumeBtn" class="secondary hidden" type="button">이어서 살아가기</button>
         <p class="footnote">시간은 흘러가고, 중요한 순간마다 당신이 길을 고릅니다.</p>
       </div>
@@ -143,23 +147,20 @@
         <div id="birthTicketFoot" class="ticket-bottom">탄생은 우연입니다. 살아가는 이야기는 지금부터 시작됩니다.</div>
       </div>
       <button id="lifeStartBtn" class="primary hidden" type="button">이 인생 살아보기 <span aria-hidden="true">→</span></button>
-      <p class="footnote">시대의 사건은 역사 기록을 따르지만, 당신이 만날 사람과 일상은 매번 달라집니다.</p>
+      <p class="footnote">같은 해에 태어나도 모두 다른 삶을 살아요.</p>
     </section>
 
     <section id="play" class="section play hidden">
 <div id="goryeoPlay" hidden></div>
       <details id="historicalUnits" class="historical-units" hidden>
-        <summary>옛날의 길이·곡식·토지 단위 알아보기</summary>
-        <p>이 안내는 역사 속 도량형을 배우기 위한 자료입니다. <strong>게임의 곡식·땅·돈 수치는 실제 되·말·섬이나 결로 환산한 값이 아닙니다.</strong></p>
+        <summary>옛날에는 어떻게 세었을까?</summary>
         <dl>
-          <div><dt>길이 — 푼·치·자·장</dt><dd>10푼 = 1치, 10치 = 1자, 10자 = 1장. 조선 전기에는 사용 목적에 따라 여러 종류의 자를 썼습니다.</dd></div>
-          <div><dt>용도별 자</dt><dd>조선 전기 추정치: 주척 약 20.6cm, 영조척 약 30.8cm, 황종척 약 34.5cm, 포백척 약 46.7cm. 현대의 일반적인 '한 자 ≈ 30.3cm'를 모든 시대에 적용하지 않습니다.</dd></div>
-          <div><dt>부피 — 홉·되·말</dt><dd>10홉 = 1되, 10되 = 1말. 실제 리터 환산값은 시대와 지역의 도량형 기준에 따라 달라졌습니다.</dd></div>
-          <div><dt>섬(석)</dt><dd>곡식을 세는 더 큰 단위입니다. 시대와 제도에 따라 기준이 달라 단일한 리터값으로 환산하지 않습니다.</dd></div>
-          <div><dt>토지 — 결·마지기</dt><dd>결은 수확과 토지 등급을 고려한 역사적 과세 단위로 실제 면적이 일정하지 않습니다. 마지기도 지역·재배 조건에 따라 넓이가 달랐습니다.</dd></div>
-          <div><dt>무게 — 돈·냥·근</dt><dd>돈·냥·근과 같은 단위를 썼지만 시대·용도별 중량 체계가 다를 수 있으므로 이 게임의 재화 수치와 동일시하지 않습니다.</dd></div>
+          <div><dt>곡식 한 말</dt><dd>곡식을 담아 세던 말이에요. 조금씩 담으면 되나 홉이라고도 했지요.</dd></div>
+          <div><dt>옷감 한 필</dt><dd>옷을 지을 천을 셀 때 쓰던 말이에요.</dd></div>
+          <div><dt>밭 한 마지기</dt><dd>볍씨를 뿌릴 만한 밭을 떠올려 보세요.</dd></div>
+          <div><dt>자와 치</dt><dd>옷감이나 나무의 길이를 재던 말이에요.</dd></div>
+          <div><dt>돈 한 냥</dt><dd>돈을 세던 옛말이에요. 이 게임에서는 살림의 크기를 쉽게 보여줘요.</dd></div>
         </dl>
-        <p class="historical-units-source">참고: <a href="https://encykorea.aks.ac.kr/Article/E0060270" target="_blank" rel="noopener noreferrer">한국민족문화대백과사전 「표준척」</a> · <a href="https://folkency.nfm.go.kr/kr/topic/detail/8452" target="_blank" rel="noopener noreferrer">국립민속박물관 「영조척」</a>. 역사 단위의 환산은 연구와 시기에 따라 차이가 있습니다.</p>
       </details>
       <div class="playing-top">
         <div class="place"><span id="placeFlag" class="place-flag" aria-hidden="true">🌐</span><div><span class="eyebrow">당신의 이야기</span><strong id="placeName">출생 시대와 지역</strong><span id="nameHeadline" class="name-headline">—</span></div></div>
@@ -192,8 +193,9 @@
               <button type="button" data-life-speed="4" aria-pressed="false">4배</button>
               <button type="button" data-life-speed="8" aria-pressed="false">8배</button>
               <button id="v9NextChoice" type="button">다음 선택까지</button>
+              <button id="autoChoiceBtn" type="button" aria-pressed="false">자동 선택 끔</button>
             </div>
-            <p class="hint">선택지가 나타나면 시간이 자동으로 멈춥니다. 화면을 닫거나 다른 앱으로 이동하면 일시정지됩니다.</p>
+            <p class="hint">자동 선택은 생활 방향을 참고해요. 언제든 끌 수 있어요.</p>
           </div>
           </section>
           <div class="focus-block">
@@ -536,11 +538,11 @@
     <div class="rules-backdrop" data-close="rules"></div>
     <div class="rules-content"><button id="rulesClose" class="rule-close" type="button" aria-label="닫기">×</button>
       <p class="eyebrow">시작하기 전에</p><h2 id="rulesTitle">게임 방법</h2>
-      <p>1200년부터 2026년까지 태어날 해를 정하세요. 이름·성별·집안의 출신(고려·조선 시대) 또는 가정 형편도 직접 선택하거나 우연에 맡길 수 있습니다. 모든 인생은 한반도에서 시작하며, 시대와 지역에 따라 만나는 사건과 선택이 달라집니다. 시간은 저절로 흐르다가 중요한 순간에 멈춥니다.</p>
+      <p>1200년부터 2026년까지 태어날 해를 정하세요. 이름·성별·집안의 출신(고려·조선 시대) 또는 가정 형편도 직접 선택하거나 우연에 맡길 수 있습니다. 고려·조선은 한반도에서, 그 뒤의 삶은 세계 여러 나라에서 시작할 수 있어요. 시간은 저절로 흐르다가 중요한 순간에 멈춥니다.</p>
       <p>시대와 지역에 따라 배움과 생업, 전쟁과 사회 변화가 삶을 바꿉니다. 전쟁 시기에는 피란·포로·사망 등 무거운 결과가 나타날 수 있습니다. 삶이 끝나면 지나온 시간을 다시 읽을 수 있습니다.</p>
       <details class="historical-method"><summary>자료 출처 및 제작 방식</summary>
-  <p>조선 시대의 제도와 생활상은 국사편찬위원회와 한국민족문화대백과 자료를 참고했습니다. 역사적 사건의 연대와 배경은 자료를 따르되, 이 작품의 인물·족보·수령 이름·부임 시기·감찰 결과·개인의 삶은 창작입니다.</p>
-  <p>장부의 수치와 살림의 금액은 당시 실제 세액이나 오늘날의 원화가 아닙니다. 특정인의 수명·건강·몸과 마음의 변화도 실제 통계나 의학적 진단을 나타내지 않습니다.</p>
+  <p>역사 속 사건을 바탕으로 이야기를 만들었어요. 등장인물과 각자의 삶은 가상입니다.</p>
+  <p>살림과 건강은 게임에서 사용하는 수치예요.</p>
   <a target="_blank" rel="noopener noreferrer" href="https://encykorea.aks.ac.kr/Article/E0002187">결부법 자료</a>
   <a target="_blank" rel="noopener noreferrer" href="https://encykorea.aks.ac.kr/Article/E0051904">조선의 생활상</a>
 </details>
@@ -612,9 +614,11 @@
 <script src="./collaboration-v341.js?v=2"></script>
 <script src="./household-v342.js?v=3"></script>
 <script src="./goryeo-v343.js?v=1"></script>
-<script src="./goryeo-view-v343.js?v=3"></script>
+<script src="./goryeo-view-v343.js?v=4"></script>
 <script src="./ui-flow.js?v=1"></script>
-<script src="./ending-choice-compare-v1.js?v=1"></script>
-<script src="./game.js?v=74"></script>
+<script src="./ending-choice-compare-v1.js?v=2"></script>
+<script src="./ending-era-summary-v1.js?v=2"></script>
+<script src="./auto-choice-v1.js?v=4"></script>
+<script src="./game.js?v=78"></script>
 </body>
 </html>

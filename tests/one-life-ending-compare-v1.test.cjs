@@ -65,7 +65,7 @@ test('generic biography choice kind recognizes Goryeo and newly added eras',()=>
  assert.match(game,/choices:life\.log\.filter\(window\.OneLifeBiography328\.isChoice\)/);
  assert.doesNotMatch(game,/const previousChoices=new Map\(/);
  assert.doesNotMatch(game,/for\(const age of World4\.GATES\)/);
- assert.match(game,/OneLifeEndingChoiceCompare\.rows\(replayBasis\.choices,now\.choices\)/);
+ assert.match(game,/choiceCompare\.rows\(replayBasis\.choices,now\.choices\)/);
 });
 test('bad data and old snapshots cannot erase valid decisions or throw',()=>{
  assert.deepEqual(compare.rows(undefined,null),[]);
@@ -77,7 +77,7 @@ test('bad data and old snapshots cannot erase valid decisions or throw',()=>{
 });
 test('comparator loads before game and the actual CI executes this regression test',()=>{
  const html=source('index.html'),runner=fs.readFileSync(path.join(__dirname,'../scripts/run-ci-tests.cjs'),'utf8');
- const helper='ending-choice-compare-v1.js?v=1',entry='game.js?v=74';
+ const helper='ending-choice-compare-v1.js?v=2',entry='game.js?v=78';
  assert.ok(html.includes(helper)&&html.includes(entry));
  assert.ok(html.indexOf(helper)<html.indexOf(entry));
  assert.ok(runner.includes('tests/one-life-ending-compare-v1.test.cjs'));

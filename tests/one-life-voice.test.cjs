@@ -21,7 +21,7 @@ test('ordinary player-facing narrative has no developer-aside appended to each e
 test('historical fiction and public data remain explicitly distinguished in one accessible place',()=>{
  assert.match(ui,/자료 출처 및 제작 방식/);
  assert.match(ui,/세계은행/);
- assert.match(ui,/개인의 삶은 창작입니다/);
+ assert.match(ui,/각자의 삶은 가상입니다/);
  assert.match(ui,/나이별 곡선은 게임에서 재구성한 값/);
  assert.match(ui,/게임 속 금액/);
 });
@@ -36,7 +36,7 @@ test('human-voice copy appears in childhood, history, choices, and life recap',(
  assert.doesNotMatch(game,/이번에는 어떻게 할까/);
 });
 test('all existing interactive IDs and script order remain intact',()=>{
- const ids=['birthYearInput','birthLocation','historySourceLink','v10HistoricalCount',
+ const ids=['birthYearInput','birthCountryInput','historySourceLink','v10HistoricalCount',
   'v12EconomyEra','v13FamilyStatus','endStory','endChoices'];
  for(const id of ids)assert.ok(ui.includes('id="'+id+'"'),id);
  const scripts=['world-v9.js','world-v10.js','world-v12.js','world-v13.js','game.js'];

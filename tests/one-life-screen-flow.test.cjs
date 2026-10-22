@@ -99,7 +99,9 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
   constructor(seed,options){super(seed===undefined?911:seed,options);}
  }};
  const window={OneLifeUIFlow:UIFlow,OneLifeBiography328:require(path.join(root,'biography-v328.js')),
- OneLifeEndingChoiceCompare:require(path.join(root,'ending-choice-compare-v1.js')),OneLifeSim:StableSim,OneLifeIdentity20:Identity,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeWorld6:World6,OneLifeWorld7:World7,OneLifeWorld8:World8,OneLifeCareers6:Careers6,OneLifeEvents6:Events6,OneLifeScene:Scene,OneLifeScenes6:Scenes6,OneLifeScenes8:Scenes8,OneLifeHistory:History,OneLifeWorld9:World9,OneLifeWorld10:World10,OneLifeWorld12:World12,OneLifeWorld13:World13,OneLifeJoseon:Joseon,OneLifeJoseon2:Joseon2,OneLifeJoseon3:Joseon3,OneLifeJoseon4:Joseon4,OneLifeJoseon5:Joseon5,OneLifeJoseon6:Joseon6,KidscadeGame:sdk,
+ OneLifeEndingChoiceCompare:require(path.join(root,'ending-choice-compare-v1.js')),
+ OneLifeEndingEraV1:require(path.join(root,'ending-era-summary-v1.js')),
+ OneLifeAutoChoiceV1:require(path.join(root,'auto-choice-v1.js')),OneLifeSim:StableSim,OneLifeIdentity20:Identity,OneLifeWorld2:World,OneLifeWorld3:World3,OneLifeWorld4:World4,OneLifeWorld5:World5,OneLifeWorld6:World6,OneLifeWorld7:World7,OneLifeWorld8:World8,OneLifeCareers6:Careers6,OneLifeEvents6:Events6,OneLifeScene:Scene,OneLifeScenes6:Scenes6,OneLifeScenes8:Scenes8,OneLifeHistory:History,OneLifeWorld9:World9,OneLifeWorld10:World10,OneLifeWorld12:World12,OneLifeWorld13:World13,OneLifeJoseon:Joseon,OneLifeJoseon2:Joseon2,OneLifeJoseon3:Joseon3,OneLifeJoseon4:Joseon4,OneLifeJoseon5:Joseon5,OneLifeJoseon6:Joseon6,KidscadeGame:sdk,
   scrollTo(){},addEventListener(){}};
  new Function('window','document','localStorage','performance','setInterval','clearInterval',
   code)(window,document,localStorage,{now:()=>now},
@@ -201,7 +203,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.ok(get('endComparisonRows').children.some(node=>node.classList.contains('changed')),'no changed outcome or choices');
  // The exact same controller must also support a birth in colonial-era Korea.
  get('birthYearInput').value='1919';
- get('birthLocation').value='korea';
+ get('birthCountryInput').value='대한민국';
  get('drawBtn').click();
  const historicDraw=[...intervals.values()].at(-1);
  for(let i=0;i<19;i++)historicDraw();
@@ -215,7 +217,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.match(get('countrySourceNote').textContent,/이 시기의 생활환경/);
  // Joseon births must open their own historical scene instead of modern stock scenery.
  get('birthYearInput').value='1580';
- get('birthLocation').value='korea';
+ get('birthCountryInput').value='대한민국';
  get('drawBtn').click();
  const joseonDraw=[...intervals.values()].at(-1);
  for(let i=0;i<19;i++)joseonDraw();
