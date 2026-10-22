@@ -34,6 +34,17 @@
    const affordable=all.filter(index=>canAfford(life,options[index]));
    return affordable.length?affordable:all;
  }
+ // Follow the player's chosen everyday direction only when the current
+ // options explicitly describe comparable effects. Historical dilemmas keep
+ // their own decision rules; no guessed effects or random rolls are added.
+ function preferredIndices(life,options,indices){
+   const stat={learning:'knowledge',people:'bonds',health:'health',work:'wealth'}[life.focus];
+   if(!stat||indices.length<2)return indices;
+   const known=indices.filter(i=>Number.isFinite(options[i]?.effects?.[stat]));
+   if(known.length<2)return indices;
+   const best=Math.max(...known.map(i=>options[i].effects[stat]));
+   return known.filter(i=>options[i].effects[stat]===best);
+ }
  function decide(life){
    if(!life||life.alive===false||!life.pending)return null;
    if(typeof life.getReflection==='function'&&life.getReflection())
@@ -43,8 +54,9 @@
    // Seed and the current dilemma change the chosen option. Never call life.rand():
    // the ordinary game's future random events must not be consumed for UI choices.
    const key=[life.seed,life.year,life.age,String(life.pending),
-     choice.title||'',life.log?.length??0].join('|');
-   const indices=eligibleIndices(life,choice.options);
+     choice.title||'',life.log?.length??0].join('|')+
+     (life.focus&&life.focus!=='balance'?'|'+life.focus:'');
+   const indices=preferredIndices(life,choice.options,eligibleIndices(life,choice.options));
    return {type:'choice',index:indices[hash(key)%indices.length]};
  }
  function tick(life){
@@ -53,5 +65,5 @@
    if(action.type==='reflection')return Boolean(life.reflect(''));
    return Boolean(life.choose(action.index));
  }
- return Object.freeze({decide,tick,hash,canAfford,eligibleIndices});
+ return Object.freeze({decide,tick,hash,canAfford,eligibleIndices,preferredIndices});
 });
