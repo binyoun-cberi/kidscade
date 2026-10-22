@@ -64,3 +64,22 @@ test('historical glossary differentiates documentary units from fictional counte
  const source=read('goryeo-v343.js');
  assert.match(source,/grain:origin/,'original game's economy values are untouched');
 });
+
+test('browser-style module loading activates the new compositor in a real scene',()=>{
+ const vm=require('node:vm'),ctxState=context();
+ const sandbox={window:{OneLifeSpriteComposerV1:Composer},module:{exports:{}},console};
+ vm.runInNewContext(read('pixel-scene.js'),sandbox,{filename:'pixel-scene.js'});
+ const scene=sandbox.window.OneLifeScene;
+ assert.ok(scene);
+ const player={
+   seed:72911,age:33,year:1991,career:'농부',
+   profile:{settlement:'농촌',city:'마을',partner:false,child:false},world:{educationYears:6},arc:{}
+ };
+ const original=JSON.stringify(player);
+ const canvas={width:600,height:258,getContext:()=>ctxState.ctx};
+ assert.ok(scene.paint(canvas,player));
+ assert.equal(JSON.stringify(player),original,'rendering must not mutate underlying life');
+ const avatar=Composer.appearance({seed:player.seed});
+ assert.ok(ctxState.shapes.some(shape=>shape[4]===avatar.hair),'seeded hairstyle should actually be painted');
+ assert.ok(ctxState.shapes.some(shape=>shape[4]==='#816c4e'),'rural foreground should be painted');
+});
