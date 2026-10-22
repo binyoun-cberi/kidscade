@@ -59,7 +59,7 @@ test('historic mode never borrows 2024-25 official rates as 1919 observations',(
 test('historical scene labels and years are selectable without replacing main game',()=>{
  const h=fs.readFileSync(path.join(root,'index.html'),'utf8');
  const c=fs.readFileSync(path.join(root,'game.js'),'utf8');
- for(const name of ['birthYearInput','birthLocation','birthEraNote','historyContext'])
+ for(const name of ['birthYearInput','birthCountryInput','birthEraNote','historyContext'])
   assert.ok(h.includes('id="'+name+'"'),name);
  assert.match(h,/min="1200" max="2026"/);
  assert.match(h,/data-era-year="1919"/);
