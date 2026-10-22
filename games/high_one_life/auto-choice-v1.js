@@ -40,10 +40,13 @@
  function preferredIndices(life,options,indices){
    const stat={learning:'knowledge',people:'bonds',health:'health',work:'wealth'}[life.focus];
    if(!stat||indices.length<2)return indices;
-   const known=indices.filter(i=>Number.isFinite(options[i]?.effects?.[stat]));
-   if(known.length<2)return indices;
-   const best=Math.max(...known.map(i=>options[i].effects[stat]));
-   return known.filter(i=>options[i].effects[stat]===best);
+   // A missing property within an explicit effects object means zero change
+   // in Life.change(). An absent effects object means the impact is unknown.
+   if(!indices.every(i=>options[i]?.effects&&typeof options[i].effects==='object'))return indices;
+   if(!indices.every(i=>options[i].effects[stat]===undefined||Number.isFinite(options[i].effects[stat])))return indices;
+   const effect=i=>options[i].effects[stat]??0;
+   const best=Math.max(...indices.map(effect));
+   return indices.filter(i=>effect(i)===best);
  }
  function decide(life){
    if(!life||life.alive===false||!life.pending)return null;
@@ -53,8 +56,10 @@
    if(!choice||!Array.isArray(choice.options)||!choice.options.length)return null;
    // Seed and the current dilemma change the chosen option. Never call life.rand():
    // the ordinary game's future random events must not be consumed for UI choices.
+   // Older save restoration prunes long logs; their length is not a stable
+   // identity for a pending decision. Year/pending/title stay fixed instead.
    const key=[life.seed,life.year,life.age,String(life.pending),
-     choice.title||'',life.log?.length??0].join('|')+
+     choice.title||''].join('|')+
      (life.focus&&life.focus!=='balance'?'|'+life.focus:'');
    const indices=preferredIndices(life,choice.options,eligibleIndices(life,choice.options));
    return {type:'choice',index:indices[hash(key)%indices.length]};
