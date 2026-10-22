@@ -94,7 +94,7 @@ function everyday(l){
  if(l.age>=8&&l.age%4===0){
   if(g.away){prompt(l,'letter-'+l.year,'멀리서 보내는 편지','집에서 소식이 왔다. 편지가 오가는 동안에도 식구들은 스스로 일을 정해야 한다.',[
    option('먹을 것과 돌봄을 먼저 챙기라고 부탁한다','letter-care',{bonds:3}),option('생업의 판단을 집안에 맡긴다','letter-trust',{bonds:4}),option('곡식을 보내 달라고 청한다','letter-grain',{grain:-4,pocket:2})]);return;}
-  if(l.age<14){prompt(l,'pocket-'+l.year,'내 몫의 작은 살림','장터에 가는 길에 잠깐 시간이 났다.',[
+  if(l.age<14){prompt(l,'pocket-'+l.year,'장터에서 쓸 것을 고르다','장터에 가는 길에 잠깐 시간이 났다.',[
    option('심부름을 하고 먹을거리를 받는다','gather',{pocket:2,bonds:1}),option('숲에서 먹을 것을 찾는다','gather',{pocket:1,health:-2}),option('군것질을 사 먹는다','snack',{pocket:-1,happiness:3}),option('배움에 시간을 쓴다','learn',{knowledge:3})]);return;}
   prompt(l,'household-'+l.year,'올해 집안의 힘을 어디에 쓸까?',g.bound?'마음대로 일을 바꾸기 어려워도 식구의 건강과 끼니를 살핀다.':'생업과 신앙, 친족의 일 사이에서 품과 곡식을 나눈다.',[
    option('생업의 기술을 더 익힌다','skill',{grain:-3,knowledge:3}),option('사찰에 곡식을 보시한다','donate',{grain:-4,happiness:3}),option('양쪽 친족을 찾아 돕는다','kin',{grain:-3,bonds:5}),
@@ -124,7 +124,7 @@ function annual(l){
  if(g.grain===0){l.change({health:-8,happiness:-4});if(l.age%3===0)log(l,'먹을 것이 모자라 끼니를 줄였다. 식구들이 버틸 방법을 의논했다.','life');}
  if(g.away){g.away--;if(!g.away)log(l,'먼 곳의 일을 마치고 가족에게 돌아왔다. 집안의 곡식과 식구들의 얼굴부터 살폈다.','return');}
  l.change({health:l.age>55?-2:l.age>40?-1:0});
- if(l.age%5===0)log(l,'올해 '+g.job+'과 식구들의 일로 곡식 '+g.lastIncome+'몫을 마련하고 살림에 '+expense+'몫을 썼다.','life');
+ if(l.age%5===0)log(l,'올해 '+g.job+'과 식구들의 일로 곡식을 '+g.lastIncome+'만큼 마련하고 그중 '+expense+'만큼 살림에 썼다.','life');
  sync(l);
 }
 function action(l,kind,id,value){
@@ -153,7 +153,7 @@ L.prototype.choose=function(index){
  if(!this.alive||!this.pending||!c||!Number.isInteger(index)||!c.options[index])return false;
  const o=c.options[index],d=o.delta;
  if(d.grain<0&&g.grain<-d.grain){log(this,'곡식이 모자라 '+o.label+'는 다음으로 미루었다.','choice');}
- else if(d.pocket<0&&g.pocket<-d.pocket){log(this,'쓸 수 있는 내 몫이 없어 장터 구경만 하고 돌아왔다.','choice');}
+ else if(d.pocket<0&&g.pocket<-d.pocket){log(this,'쓸 것이 없어 장터 구경만 하고 돌아왔다.','choice');}
  else {
   for(const key of ['grain','pocket'])g[key]=Math.max(0,g[key]+(d[key]||0));
   this.change(d);const e=o.effect;
