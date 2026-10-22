@@ -7,7 +7,7 @@ import {execFileSync} from 'node:child_process';
 import {FIELD_DEFS,makeFarmState} from '../games/korean-farm/world.mjs';
 import {VILLAGE_LANDMARKS,VILLAGE_COLLIDERS,intersectsVillageCollision,plotLandscapeOverlap}
   from '../games/korean-farm/rendering/village-layout.mjs';
-import {PASSER_PATHS,moveNPC,createWaypointWalker,chorePose,turnNPC,npcWalkPose} from '../games/korean-farm/rendering/npc-motion.mjs';
+import {PASSER_PATHS,moveNPC,createWaypointWalker,chorePose,turnNPC,npcWalkPose,residentChoreCue} from '../games/korean-farm/rendering/npc-motion.mjs';
 import {FESTIVAL_GUESTS,FESTIVAL_THEMES,festivalSceneState}
   from '../games/korean-farm/rendering/festival-ambience.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -163,5 +163,41 @@ test('passers do not pause twice at duplicated first and last waypoints',()=>{
       }
     }
     assert.ok(completed,'the walker must finish a full closed route');
+  }
+});
+
+test('villagers carry appropriate tools only during matching stationary chores',()=>{
+  const sweep=residentChoreCue('neighbor','sweep',false,.5);
+  assert.equal(sweep.prop,'broom');
+  assert.ok(sweep.dust>0&&sweep.dust<=.75);
+  assert.deepEqual(residentChoreCue('neighbor','sweep',true,.5),{prop:null,dust:0});
+  assert.deepEqual(residentChoreCue('neighbor','tend',false,2),{prop:'hoe',dust:0});
+  assert.deepEqual(residentChoreCue('neighbor','rest',false,2),{prop:null,dust:0});
+  assert.deepEqual(residentChoreCue('market','stock',false,2),{prop:'basket',dust:0});
+  assert.deepEqual(residentChoreCue('market','sell',false,2),{prop:'basket',dust:0});
+  assert.deepEqual(residentChoreCue('festival','stock',false,2),{prop:'bundle',dust:0});
+  assert.deepEqual(residentChoreCue('festival','wave',false,2),{prop:null,dust:0});
+  assert.ok(residentChoreCue('neighbor','sweep',false,Math.PI/3.2).dust<1e-12);
+});
+
+test('visible work effects are attached to the neighbor and disposed when leaving',()=>{
+  assert.match(peopleFile,/neighbor:\{broom:tool\(neighbor,'broom'\),hoe:tool\(neighbor,'hoe'\)\}/);
+  assert.match(peopleFile,/solnaeri-broom-ground-dust/);
+  assert.match(peopleFile,/residentChoreCue\(role,job\.gesture,step\.moving,elapsed\)/);
+  assert.match(peopleFile,/dustRoot\.visible=cue\.dust>\.04/);
+  assert.match(peopleFile,/dustGeometry\.dispose\(\)/);
+  assert.match(peopleFile,/for\(const puff of dustPuffs\)puff\.material\.dispose\(\)/);
+});
+
+test('neighbor tends a real vegetable patch only while holding the hoe',()=>{
+  assert.match(peopleFile,/solnaeri-neighbor-garden-worksite/);
+  assert.match(peopleFile,/workPatch\.position\.set\(2\.14,0,13\.17\)/);
+  assert.match(peopleFile,/workPatch\.userData\.beingTended=tending/);
+  assert.match(peopleFile,/const tending=cue\.prop==='hoe'/);
+  assert.match(peopleFile,/updateGardenWork\(cue,elapsed\)/);
+  assert.match(peopleFile,/workSoilMat\.dispose\(\);workLeafMat\.dispose\(\)/);
+  assert.equal(intersectsVillageCollision({x:2.14,z:13.17}),false);
+  for(const field of FIELD_DEFS){
+    assert.equal(plotLandscapeOverlap(field,{x:2.14,z:13.17,w:1.1,d:.65}),false);
   }
 });

@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import {FESTIVAL_GUESTS,FESTIVAL_THEMES,festivalSceneState} from './festival-ambience.mjs';
 import {villageRoutine} from './village-routines.mjs';
-import {PASSER_PATHS,moveNPC,createWaypointWalker,chorePose,turnNPC,npcWalkPose} from './npc-motion.mjs';
+import {PASSER_PATHS,moveNPC,createWaypointWalker,chorePose,turnNPC,npcWalkPose,residentChoreCue} from './npc-motion.mjs';
 
 function person(parent,name,x,z,{shirt,skirt,skin,hat,apron=false,style='farmer'}){
   const root=new THREE.Group();root.name=name;root.position.set(x,0,z);parent.add(root);
@@ -88,6 +88,7 @@ export function createVillagePeople(scene){
     const group=new THREE.Group();actor.rightArm.add(group);
     const wood=new THREE.MeshStandardMaterial({color:0x94724d,roughness:1});
     const weave=new THREE.MeshStandardMaterial({color:0xc1a16b,roughness:1});
+    const iron=new THREE.MeshStandardMaterial({color:0x7d827d,roughness:.85});
     const part=(geometry,material,x,y,z)=>{
       const item=new THREE.Mesh(geometry,material);item.position.set(x,y,z);
       item.castShadow=true;group.add(item);
@@ -95,6 +96,9 @@ export function createVillagePeople(scene){
     if(kind==='broom'){
       part(new THREE.CylinderGeometry(.025,.03,.91,6),wood,.08,-.45,0);
       part(new THREE.ConeGeometry(.12,.26,7),weave,.08,-.89,0);
+    }else if(kind==='hoe'){
+      part(new THREE.CylinderGeometry(.026,.033,.9,6),wood,.08,-.48,0);
+      part(new THREE.BoxGeometry(.37,.09,.14),iron,.08,-.90,-.02);
     }else if(kind==='basket'){
       part(new THREE.CylinderGeometry(.18,.15,.23,8),weave,.08,-.63,0);
       part(new THREE.TorusGeometry(.15,.025,5,9,Math.PI),wood,.08,-.51,0);
@@ -102,9 +106,59 @@ export function createVillagePeople(scene){
       part(new THREE.BoxGeometry(.23,.20,.17),weave,.09,-.58,0);
       part(new THREE.BoxGeometry(.04,.20,.18),wood,.09,-.58,0);
     }
-    group.visible=false;return {group,materials:[wood,weave]};
+    group.visible=false;return {group,materials:[wood,weave,iron]};
   }
-  const props={market:tool(merchant,'basket'),neighbor:tool(neighbor,'broom'),festival:tool(festivalHost,'bundle')};
+  const props={
+    market:{basket:tool(merchant,'basket')},
+    neighbor:{broom:tool(neighbor,'broom'),hoe:tool(neighbor,'hoe')},
+    festival:{bundle:tool(festivalHost,'bundle')}
+  };
+  // Sweep feedback is anchored to the road and reuses its geometry each frame.
+  // No textures, network requests, or particle allocations in the update loop.
+  const dustRoot=new THREE.Group();dustRoot.name='solnaeri-broom-ground-dust';root.add(dustRoot);
+  const dustGeometry=new THREE.SphereGeometry(1,7,5);
+  const dustPuffs=Array.from({length:5},(_,i)=>{
+    const material=new THREE.MeshBasicMaterial({
+      color:i%2?0xc2ae87:0xd9c49d,transparent:true,opacity:0,depthWrite:false
+    });
+    const mesh=new THREE.Mesh(dustGeometry,material);
+    mesh.castShadow=false;dustRoot.add(mesh);return mesh;
+  });
+  dustRoot.visible=false;
+  function updateSweepDust(cue,elapsed){
+    dustRoot.visible=cue.dust>.04;
+    if(!dustRoot.visible)return;
+    dustRoot.position.set(neighbor.root.position.x+.28,0,neighbor.root.position.z-.35);
+    for(let i=0;i<dustPuffs.length;i++){
+      const puff=dustPuffs[i],spread=i-2;
+      puff.position.set(spread*.14+Math.sin(elapsed*2+i)*.025,.10+Math.abs(spread)*.026,-.03+(i%2)*.10);
+      const size=.10+cue.dust*.11+(i%2)*.025;
+      puff.scale.set(size,.055,size*.75);
+      puff.material.opacity=cue.dust*(.11+(i%3)*.035);
+    }
+  }
+  // The neighbor has a physical garden bed to tend, rather than hoeing empty air.
+  // It is decoration only: outside every player field and with no colliders.
+  const workPatch=new THREE.Group();workPatch.name='solnaeri-neighbor-garden-worksite';
+  workPatch.position.set(2.14,0,13.17);root.add(workPatch);
+  const workSoilMat=new THREE.MeshStandardMaterial({color:0x74583c,roughness:1});
+  const workLeafMat=new THREE.MeshStandardMaterial({color:0x69964c,roughness:1,side:THREE.DoubleSide});
+  const soil=new THREE.Mesh(new THREE.CylinderGeometry(.55,.55,.045,12),workSoilMat);
+  soil.scale.z=.58;soil.position.y=.025;soil.receiveShadow=true;workPatch.add(soil);
+  const gardenShoots=[];
+  for(let i=0;i<7;i++){
+    const shoot=new THREE.Mesh(new THREE.ConeGeometry(.07,.25,5),workLeafMat);
+    shoot.position.set((i%4-1.5)*.22,.18,(Math.floor(i/4)-.5)*.22);
+    shoot.rotation.z=i%2?.18:-.18;workPatch.add(shoot);gardenShoots.push(shoot);
+  }
+  function updateGardenWork(cue,elapsed){
+    const tending=cue.prop==='hoe';
+    workPatch.userData.beingTended=tending;
+    for(let i=0;i<gardenShoots.length;i++){
+      const shoot=gardenShoots[i];
+      shoot.rotation.z=(i%2?.18:-.18)+(tending?Math.sin(elapsed*3.2+i*.8)*.13:0);
+    }
+  }
   const merchantLabel=label(merchant.root,'장터 순옥'),neighborLabel=label(neighbor.root,'이웃 영수');
   const festivalLabel=label(festivalHost.root,'마을 행사 · 소담');
   const booth=new THREE.Group();booth.position.set(-1.1,0,16.55);root.add(booth);
@@ -206,10 +260,11 @@ export function createVillagePeople(scene){
       actor.leftArm.rotation.z=pose.left;actor.rightArm.rotation.z=pose.right;
       actor.root.rotation.x=pose.lean;
     }
-    props[role].group.visible=!step.moving&&(
-      role==='neighbor'?job.gesture==='sweep':
-      role==='market'?['sell','stock'].includes(job.gesture):
-      job.gesture==='stock');
+    const cue=residentChoreCue(role,job.gesture,step.moving,elapsed);
+    for(const [kind,prop] of Object.entries(props[role])){
+      prop.group.visible=kind===cue.prop;
+    }
+    if(role==='neighbor'){updateSweepDust(cue,elapsed);updateGardenWork(cue,elapsed);}
     locations[role]={x:position.x,z:position.z};
     return step.moving;
   }
@@ -315,7 +370,9 @@ export function createVillagePeople(scene){
     root.parent?.remove(root);
     root.traverse(obj=>{if(obj.isMesh)obj.geometry?.dispose?.()});
     for(const p of [merchant,neighbor,festivalHost,...guests,...passers])for(const material of p.mats)material.dispose();
-    for(const prop of Object.values(props))for(const mat of prop.materials)mat.dispose();
+    for(const tools of Object.values(props))for(const prop of Object.values(tools))for(const mat of prop.materials)mat.dispose();
+    dustGeometry.dispose();for(const puff of dustPuffs)puff.material.dispose();
+    workSoilMat.dispose();workLeafMat.dispose();
     for(const material of boothMats)material.dispose();
     for(const material of seasonMats)material.dispose();
     confettiGeometry.dispose();confettiMaterial.dispose();

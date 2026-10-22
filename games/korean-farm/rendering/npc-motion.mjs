@@ -58,3 +58,18 @@ export function chorePose(gesture,t){
   if(gesture==='wave')return {left:0,right:-1+s*.19,lean:0};
   return {left:0,right:-.09,lean:0};
 }
+
+// Deterministic job-to-prop cues: decorative only, never alter farm state.
+export function residentChoreCue(role,gesture,walking,elapsed=0){
+  const hidden={prop:null,dust:0};
+  if(walking)return hidden;
+  if(role==='neighbor'&&gesture==='sweep'){
+    // Pulses coincide with the broom's side-to-side motion.
+    const swing=Math.sin(elapsed*3.2);
+    return {prop:'broom',dust:Math.max(0,swing)*.75};
+  }
+  if(role==='neighbor'&&gesture==='tend')return {prop:'hoe',dust:0};
+  if(role==='market'&&['sell','stock'].includes(gesture))return {prop:'basket',dust:0};
+  if(role==='festival'&&gesture==='stock')return {prop:'bundle',dust:0};
+  return hidden;
+}

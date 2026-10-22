@@ -5,6 +5,7 @@ import {resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {motionPose,actionProgress,FARM_ACTION_MOTIONS} from '../games/korean-farm/animation/motion-spec.mjs';
+import {cropGrowthScale,harvestRewardLabel} from '../games/korean-farm/rendering/crop-presentation.mjs';
 import {isNeutralUntextured,cropFallbackHex,scanSceneColors,repairRiceColors}
   from '../games/korean-farm/animation/color-audit.mjs';
 
@@ -107,4 +108,37 @@ test('rendering code activates articulated actor and visual impact effects',()=>
     assert.ok(existsSync(file),p);
     execFileSync(process.execPath,['--check',file],{stdio:'pipe'});
   }
+});
+
+test('growth displays interpolate within each of four model stages without modifying farming state',()=>{
+  assert.equal(cropGrowthScale(0,0),1);
+  assert.equal(cropGrowthScale(NaN,3),1);
+  for(const [stage,start,end] of [[1,0,.24],[2,.24,.49],[3,.49,.83],[4,.83,1]]){
+    const a=cropGrowthScale(start,stage),b=cropGrowthScale((start+end)/2,stage),c=cropGrowthScale(end,stage);
+    assert.ok(a<b&&b<c,'smooth growth inside stage '+stage);
+    assert.ok(a>=.8&&c<=1.05,'asset proportions remain recognizable');
+  }
+  assert.equal(cropGrowthScale(-100,1),cropGrowthScale(0,1));
+  assert.equal(cropGrowthScale(100,4),cropGrowthScale(1,4));
+  const game=src('game.js');
+  assert.match(game,/cropGrowthScale\(field\.growth,stage\)/);
+  assert.match(game,/model\.userData\.baseGrowthScale=model\.scale\.clone\(\)/);
+  assert.match(game,/plant\.scale\.copy\(plant\.userData\.baseGrowthScale\)\.multiplyScalar\(scale\)/);
+});
+
+test('harvest reward shows the actual final payout once rather than every cut strip',()=>{
+  assert.equal(harvestRewardLabel('rice',8),'벼 +8');
+  assert.equal(harvestRewardLabel('carrot',3),'당근 +3');
+  assert.equal(harvestRewardLabel('corn',4),'옥수수 +4');
+  assert.equal(harvestRewardLabel('rice',0),'');
+  assert.equal(harvestRewardLabel('rice',2.3),'');
+  assert.equal(harvestRewardLabel('unknown',7),'');
+  const game=src('game.js'),reward=src('animation/harvest-reward.js');
+  assert.match(game,/event\.action==='harvest'&&result\.quantity>0/);
+  assert.match(game,/harvestReward\?\.show\(plot,result\.produce,result\.quantity\)/);
+  assert.match(game,/harvestReward\?\.dispose\(\)/);
+  assert.match(reward,/new THREE\.CanvasTexture/);
+  assert.match(reward,/this\.sprite\.visible=false/);
+  assert.match(reward,/this\.texture\.dispose\(\)/);
+  execFileSync(process.execPath,['--check',resolve(root,'games/korean-farm/animation/harvest-reward.js')],{stdio:'pipe'});
 });
