@@ -34,12 +34,17 @@ function fileExistsInside(root, location) {
   catch (_) { return false; }
 }
 
-function buildReport(root = path.resolve(__dirname, '..')) {
+function buildReport(root = path.resolve(__dirname, '..'), selectedGameId = '') {
+  if (selectedGameId && !/^[a-z0-9_]+$/i.test(selectedGameId)) {
+    throw new Error('Invalid game ID. Only letters, digits and underscores are allowed.');
+  }
   const catalog = JSON.parse(fs.readFileSync(path.join(root, 'data/games.json'), 'utf8'));
   const overrides = readJsonIfPresent(path.join(root, 'data/game-cover-overrides.json'), {});
   const games = Array.isArray(catalog.games) ? catalog.games : [];
+  const chosen = selectedGameId ? games.filter(game => game.id === selectedGameId) : games;
+  if (selectedGameId && chosen.length === 0) throw new Error('Unknown game ID: ' + selectedGameId);
   const results = [];
-  for (const game of games) {
+  for (const game of chosen) {
     if (game.disabled) continue;
     const id = String(game.id || '');
     const title = String(game.title || id);
@@ -63,7 +68,8 @@ function buildReport(root = path.resolve(__dirname, '..')) {
   }
   results.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
   return {
-    gameCount: games.length,
+    selectedGameId: selectedGameId || null,
+    gameCount: chosen.length,
     enabledCount: results.length,
     missingEntryCount: results.filter(g => g.entryMissing).length,
     missingCoverCount: results.filter(g => g.coverMissing).length,
@@ -81,7 +87,7 @@ function escapeCell(value) {
 
 function toMarkdown(report) {
   const out = [
-    '# 키즈케이드 Chat 개발 품질 현황',
+    '# 키즈케이드 Chat 개발 품질 현황' + (report.selectedGameId ? ' — ' + escapeCell(report.selectedGameId) : ''),
     '',
     '> 외부 AI API, 네트워크 요청, Secrets 접근 없이 저장소 파일만 읽었습니다.',
     '> 이 보고서는 정적 카탈로그 점검이며 실제 플레이 재미·성능을 인증하지 않습니다.',
@@ -109,7 +115,11 @@ function toMarkdown(report) {
 }
 
 if (require.main === module) {
-  const report = buildReport();
+  const gameArg=process.argv.indexOf('--game');
+  if(gameArg>=0 && (!process.argv[gameArg+1] || process.argv[gameArg+1].startsWith('--'))) {
+    console.error('Usage: --game <game_id>');process.exit(2);
+  }
+  const report = buildReport(undefined, gameArg>=0 ? process.argv[gameArg+1] : '');
   process.stdout.write(process.argv.includes('--json')
     ? JSON.stringify(report, null, 2) + '\n'
     : toMarkdown(report));
