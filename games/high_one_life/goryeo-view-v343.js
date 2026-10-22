@@ -21,8 +21,13 @@ function paint(l,handlers){
  const g=G.ensure(l),host=$('goryeoPlay');host.hidden=false;host.replaceChildren();
  const head=el('header',undefined,'goryeo-head');head.append(el('span',l.year<1392?'高麗 · 고려 후기':'朝鮮 · 이어지는 삶','goryeo-kicker'),el('h1',l.profile.name+'의 한 생'),el('p',l.year+'년 · '+l.age+'세 · '+g.region+' · '+G.period(l)));host.append(head);
  const controls=el('div',undefined,'goryeo-controls');for(const [label,fn,disabled]of [[handlers.paused?'시간 이어가기':'잠시 멈추기',handlers.pause,false],['한 해 보내기',handlers.next,!!l.pending]]){const b=el('button',label);b.disabled=disabled;b.onclick=fn;controls.append(b);}controls.append(el('small',l.pending?'선택을 기다리고 있습니다.':handlers.paused?'시간이 멈춰 있습니다.':'시간이 흐르고 있습니다.'));host.append(controls);
- const canvas=el('canvas');const visible=root.OneLifeHistoricalSpritesV1?.occupants(l,g);
- canvas.setAttribute('aria-label',g.region+' · '+(g.away?'이동 중인 주인공':visible?visible.length+'명의 실제 등장인물':'마을 풍경'));canvas.setAttribute('role','img');scene(canvas,l,g);host.append(canvas);
+ const canvas=el('canvas'),sprites=root.OneLifeHistoricalSpritesV1;
+ const visible=sprites?.occupants(l,g),family=sprites?.familyAtHome(l,g)||[];
+ const hiddenCount=Math.max(0,family.length-(visible?.filter(p=>!p.self).length||0));
+ const label=g.away?'이동 중인 주인공':visible?
+   visible.length+'명의 실제 등장인물'+(hiddenCount?' · 화면 밖에 있는 식구 '+hiddenCount+'명':''):'마을 풍경';
+ canvas.setAttribute('aria-label',g.region+' · '+label);
+ canvas.setAttribute('role','img');scene(canvas,l,g);host.append(canvas);
  const state=el('div',undefined,'goryeo-resources');for(const [a,b]of [['건강',l.stats.health+' / 100'],['곡식',String(g.grain)],['옷감',g.cloth+'필'],['장터에 쓸 돈',String(g.pocket)]]){const box=el('div');box.append(el('small',a),el('strong',b));state.append(box);}host.append(state);
  const choice=l.getChoice();if(choice){const panel=el('section',undefined,'goryeo-decision');panel.setAttribute('aria-live','polite');panel.append(el('small','삶의 갈림길'),el('h2',choice.title),el('p',choice.description));choice.options.forEach((o,i)=>{const b=el('button',o.label);b.onclick=()=>handlers.choose(i);panel.append(b);});host.append(panel);}
  const grid=el('div',undefined,'goryeo-grid');const family=el('section');family.append(el('h2','함께 꾸리는 살림'),el('p',g.origin+' · '+(g.bound?'예속된 처지':g.job)+' · '+g.belief));if(g.away)family.append(el('p','집을 떠나 있는 중 · 남은 식구들이 생업을 맡습니다.'));
