@@ -148,3 +148,29 @@ test('large sample avoids near-universal capped stats and runaway adult finances
  assert.ok(finalDebt>20 && finalDebt<n*.55,'debt incidence unrealistic');
  assert.ok(totalAge/n>70 && totalAge/n<95,'life expectancy outside game target');
 });
+
+
+test('generic pixel life scene draws no invented parent, partner or companion',()=>{
+ const source=read('pixel-scene.js');
+ assert.doesNotMatch(source,/person\(baseX-53,baseY/);
+ assert.doesNotMatch(source,/person\(baseX-60,baseY/);
+ const paint=life=>{
+  const rects=[],ctx={fillStyle:'',fillRect(...r){rects.push(r);},fillText(){},
+    set imageSmoothingEnabled(v){this.smoothing=v;}};
+  const canvas={width:600,height:258,getContext:()=>ctx};
+  const before=JSON.stringify(life);
+  const scene=Pixels.paint(canvas,life);
+  assert.equal(JSON.stringify(life),before,'rendering must not modify an actual life');
+  assert.equal(ctx.smoothing,false);
+  return {scene,rects};
+ };
+ const baseLife={age:10,year:1930,career:'학생',
+   profile:{settlement:'도시',city:'서울',partner:false,child:false},
+   world:{educationYears:5},arc:{}};
+ const childhood=paint(baseLife);
+ assert.equal(childhood.scene,'학교');
+ const alone=paint({...baseLife,age:40,year:1960});
+ const partner=paint({...baseLife,age:40,year:1960,profile:{...baseLife.profile,partner:true}});
+ assert.ok(partner.rects.length>alone.rects.length,'a real partner adds a visible person');
+ assert.ok(childhood.rects.length>0&&alone.rects.length>0);
+});
