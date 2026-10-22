@@ -203,7 +203,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.ok(get('endComparisonRows').children.some(node=>node.classList.contains('changed')),'no changed outcome or choices');
  // The exact same controller must also support a birth in colonial-era Korea.
  get('birthYearInput').value='1919';
- get('birthLocation').value='korea';
+ get('birthCountryInput').value='대한민국';
  get('drawBtn').click();
  const historicDraw=[...intervals.values()].at(-1);
  for(let i=0;i<19;i++)historicDraw();
@@ -217,7 +217,7 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.match(get('countrySourceNote').textContent,/이 시기의 생활환경/);
  // Joseon births must open their own historical scene instead of modern stock scenery.
  get('birthYearInput').value='1580';
- get('birthLocation').value='korea';
+ get('birthCountryInput').value='대한민국';
  get('drawBtn').click();
  const joseonDraw=[...intervals.values()].at(-1);
  for(let i=0;i<19;i++)joseonDraw();
