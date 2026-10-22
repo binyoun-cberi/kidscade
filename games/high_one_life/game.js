@@ -997,7 +997,7 @@
         const moneyDelta=(life.money?.netWorth??before.netWorth)-(before.netWorth??life.money?.netWorth??0);
         if(moneyDelta)changes.push('살림 '+(moneyDelta>0?'+':'')+formatCredits(moneyDelta));
         if(life.career!==before.career)changes.push('진로 '+life.career);
-        let effectText=changes.length?'이후 달라진 점 · '+changes.join(' · '):'당장은 눈에 띄는 변화가 없었다.';
+        let effectText=changes.length?'이후 달라진 점 · '+changes.join(' · '):'';
         if(Joseon.inOldEra(life)){
           const lines=[];
           if(life.stats.health<before.stats.health)lines.push('몸이 조금 고단해졌다');
@@ -1007,9 +1007,11 @@
           if(moneyDelta<0)lines.push('집안 살림에는 다소 부담이 남았다');
           if(moneyDelta>0)lines.push('집안 살림에 작은 여유가 생겼다');
           if(life.career!==before.career)lines.push('새로운 생업을 시작했다');
-          effectText=lines.length?lines.slice(0,2).join('. ')+'.':'그날의 일은 마음 한편에 남았다.';
+          effectText=lines.length?lines.slice(0,2).join('. ')+'.':'';
         }
-        life.logEvent(effectText,'decision-effect');
+        // The choice itself is already recorded. Avoid generic aftermath
+        // sentences when there is no verified immediate numerical change.
+        if(effectText)life.logEvent(effectText,'decision-effect');
         save(); elapsed=0; lastTick=performance.now(); render(); offerNewbornName();
       });
       target.append(btn);
