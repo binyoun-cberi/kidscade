@@ -63,7 +63,7 @@ aside{margin-top:20px;font-size:13px}
   matrix.replaceChildren();
   for(const age of ages)for(const place of conditions){
     const figure=document.createElement('figure'),caption=document.createElement('figcaption');
-    caption.textContent=age+'세 · '+place.title;
+    caption.textContent=age+'세 · '+(place.id==='farm'&&age<16?'농촌 · 학생 (농사 도구 없음)':place.title);
     const canvas=document.createElement('canvas');canvas.width=600;canvas.height=258;
     canvas.setAttribute('aria-label',caption.textContent+' 장면');
     const sample={
