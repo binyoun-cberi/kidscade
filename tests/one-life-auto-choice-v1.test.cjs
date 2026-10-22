@@ -40,7 +40,7 @@ test('automatic choice is optional, restored only from explicit opt-in, availabl
  assert.match(game,/if\(stage!=='play'\|\|!life\|\|!life\.alive\|\|paused\|\|document\.hidden\)return/);
  assert.match(game,/OneLifeAutoChoiceV1\.tick\(life\)/);
  assert.match(html,/id="autoChoiceBtn"[^>]*aria-pressed="false"/);
- assert.match(html,/auto-choice-v1\.js\?v=2/);
+ assert.match(html,/auto-choice-v1\.js\?v=3/);
  assert.match(goryeo,/handlers\.toggleAuto/);
 });
 
