@@ -88,7 +88,7 @@ test('birth UI supports reduced motion and prevents repeated decision scrolling'
  const game=fs.readFileSync(dir+'/game.js','utf8');
  assert.match(html,/<script src="\.\/ui-flow\.js\?v=1"><\/script>/);
  assert.ok(html.indexOf('ui-flow.js?v=1')<html.indexOf('ending-choice-compare-v1.js?v=2'));
- assert.ok(html.indexOf('ending-choice-compare-v1.js?v=2')<html.indexOf('game.js?v=81'));
+ assert.ok(html.indexOf('ending-choice-compare-v1.js?v=2')<html.indexOf('game.js?v=82'));
  assert.match(game,/UIFlow\.rouletteIndex\(loops,sample\.length\)/);
  assert.doesNotMatch(game,/loops\*7\)%sample\.length/);
  assert.match(game,/prefers-reduced-motion: reduce/);
