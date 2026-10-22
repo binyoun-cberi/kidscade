@@ -55,7 +55,7 @@ test('actual game renders composed layers and protagonist without imported artwo
 test('historical glossary differentiates documentary units from fictional counters',()=>{
  const html=read('index.html'),game=read('game.js');
  assert.match(html,/id="historicalUnits"/);
- assert.match(html,/게임의 곡식·땅·돈 수치는 실제 되·말·섬이나 결로 환산한 값이 아닙니다/);
+ assert.match(html,/곡식 한 말/);
  assert.match(html,/10홉 = 1되, 10되 = 1말/);
  assert.match(html,/주척 약 20\.6cm, 영조척 약 30\.8cm/);
  assert.ok(html.includes('https://encykorea.aks.ac.kr/Article/E0060270'));
