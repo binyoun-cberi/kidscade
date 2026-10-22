@@ -17,3 +17,6 @@ node_modules/
 # OS/editor noise
 .DS_Store
 Thumbs.db
+
+# Local AI review transcripts (opt-in; do not commit source excerpts/screenshots)
+.local-ai-reviews/
