@@ -49,3 +49,25 @@ Never claim that a test passed unless the test actually ran successfully.
 Describe: defect before change, files changed, visible gameplay improvement,
 assets reused, tests actually run, limitations, and whether keys, billing,
 deployment, and student records were untouched. Never include credential values.
+
+
+## Optional independent AI review (manual, local, no hosted services)
+
+Only when the owner explicitly chooses actual independent-model comparison, use
+`node scripts/local-multi-ai-review.cjs` as an **opt-in local review tool**.
+It connects exclusively to an already running **Ollama on 127.0.0.1:11434**.
+It neither installs/pulls models nor calls a third-party hosted model/API.
+At least two different installed local models are required; the defaults
+use four distinct models and separate, unseen first-round contexts.
+A second round lets each reviewer see and challenge the other reports.
+
+- Do not describe the earlier single-Chat multi-role process as independent AI.
+- Never say an independent AI ran merely because local runner unit tests passed;
+  those tests use mocked model responses and are **not** AI reviews.
+- Reviewing pixel aesthetics requires an actual screenshot passed with --image
+  and a vision-capable local model. Without one, report it as unverified.
+- Do not schedule this runner in GitHub Actions or use external network endpoints.
+- Reports are local in .local-ai-reviews/ and ignored from git.
+- The local reviewers can suggest changes but **do not write game code, deploy,
+  approve, or merge**; implementation and tests remain separate reviewed work.
+- The paid/secret/security limits above remain fully in force.
