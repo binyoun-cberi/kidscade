@@ -88,18 +88,18 @@
  }
  function occupants(life,g){
    const year=Number(life.year??life.birthYear) || 1300;
-   const away=Number(g.away||0)>0;
+   const away=Number(g.away||0)>0,displaced=away||Boolean(g.refuge);
    const result=[];
    if(life.alive!==false)result.push({id:'self',age:Math.max(0,Number(life.age)||0),
        status:away?'travel':g.bound?'bound':/관료|향리/.test(String(g.origin))?'elite':'plain',
-       activity:activityFor(g.job,Number(life.age)||0,away),self:true});
+       activity:activityFor(g.job,Number(life.age)||0,displaced),self:true});
    if(!away)for(const p of g.people||[]){
      if(p.alive===false||p.missing||p.atHome===false||Number(p.birthYear)>year)continue;
      const age=year-Number(p.birthYear);
      if(!Number.isFinite(age)||age<0)continue;
      result.push({id:String(p.id??p.name),age,
        status:g.bound?'bound':/관료|향리/.test(String(g.origin))?'elite':'plain',
-       activity:activityFor(p.plan,age),self:false});
+       activity:activityFor(p.plan,age,displaced),self:false});
    }
    return result.slice(0,5);
  }
@@ -109,6 +109,8 @@
    const coast=/해안|탐라|강화/.test(String(g.region)),away=Number(g.away||0)>0;
    const temporary=away||Boolean(g.refuge);
    const mountain=g.refuge||/내륙|서북/.test(String(g.region));
+   const people=occupants(life,g);
+   const ferryWork=people.some(p=>p.activity==='river');
    // Sky, mountain silhouettes and coast — all hard-edged, no gradients/curves.
    rect(ctx,0,0,720,220,'#c4d5c6');
    for(let x=0;x<720;x+=24){
@@ -118,7 +120,8 @@
      rect(ctx,x,hill,24,157-hill,'#809d84');
    }
    rect(ctx,0,148,720,72,mountain?'#a1a98a':'#b5b98e');
-   if(coast){
+   if(coast||ferryWork){
+     // Inland ferry work needs an actual riverside, not a person rowing grass.
      rect(ctx,0,177,210,43,'#759ca0');
      for(let i=0;i<5;i++)rect(ctx,10+i*41,191+(i%2)*13,23,3,'#bcd1c1');
    }else{
@@ -145,7 +148,6 @@
      rect(ctx,55,146,135,20,'#9f8765');
      for(let row=0;row<9;row++)rect(ctx,61+row*6,102+row*5,123-row*12,5,'#baa079');
    }
-   const people=occupants(life,g);
    const places=[[330,195],[265,193],[405,193],[485,197],[220,198]];
    for(let i=0;i<people.length;i++){
      const p=people[i],[x,feet]=places[i],scale=p.age<12?.72:i===0?1:0.88;
