@@ -21,6 +21,7 @@ test('default multi-AI workflow requires different real local models',()=>{
  assert.throws(()=>cli.options(['--models','developer=same,gameplay=same,pixel=same,qa=same']),/서로 다른/);
  assert.throws(()=>cli.options(['--models','hacker=unknown']),/유효하지 않은/);
  assert.throws(()=>cli.options(['--rounds','3']),/rounds/);
+ assert.throws(()=>cli.options(['--models','pixel=gemma3:27b-cloud']),/클라우드/);
  assert.throws(()=>cli.options(['--image','a','--image','b','--image','c','--image','d']),/최대 3장/);
 });
 test('actual source is limited to exact allowlisted game and test files',t=>{
