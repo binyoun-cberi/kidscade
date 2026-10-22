@@ -78,6 +78,15 @@
     const historical=Number.isInteger(year)&&year<1894;
     const originGroup=$('birthOriginGroup'),familyGroup=$('birthFamilyGroup'),select=$('birthOriginInput');
     const previous=select.value;
+    const birthCountry=$('birthCountryInput'),previousCountry=birthCountry.value;
+    $('birthCountryGroup').classList.toggle('hidden',year<1900);
+    birthCountry.replaceChildren();
+    const allOption=document.createElement('option');allOption.value='';allOption.textContent='세상 어디든';birthCountry.append(allOption);
+    if(year>=1900)for(const country of Sim.COUNTRIES){
+      const option=document.createElement('option');
+      option.value=country[0];option.textContent=country[1]+' '+country[0];birthCountry.append(option);
+    }
+    birthCountry.value=year>=1900&&Sim.COUNTRIES.some(c=>c[0]===previousCountry)?previousCountry:'';
     originGroup.classList.toggle('hidden',!historical);
     familyGroup.classList.toggle('hidden',historical);
     select.replaceChildren();
@@ -189,7 +198,7 @@
     const stored = safeGet(SAVE_KEY);
     if(!stored?.life)return null;
     const restored=Sim.Life.restore(stored.life);
-    return restored?.country?.[0]==='대한민국'?restored:null;
+    return restored||null;
   }
   function refreshResume() {
     const resume = currentSave();
@@ -211,7 +220,7 @@
       $('birthIdentityError').textContent='이름은 한글 또는 영문으로 20자 이내로 적어 주세요.';
       $('birthIdentityError').classList.remove('hidden');$('birthNameInput').focus();return;
     }
-    const countryName='대한민국';
+    const countryName=birthYear<1900?'대한민국':$('birthCountryInput').value||undefined;
     const birthSetup={name:chosenName,gender:$('birthGenderInput').value,
       origin:$('birthOriginInput').value,familyLevel:$('birthFamilyInput').value};
     life = new Sim.Life(undefined,{birthYear,countryName,birthSetup});
@@ -229,11 +238,11 @@
     $('birthHeading').textContent=Goryeo.is(life)?'고려의 어느 집, 한 아이가 태어납니다.':Joseon.isJoseon(life)?'조선의 어느 집, 한 아이가 태어납니다.':'당신은 어디에서 태어날까요?';
     show('birth');
     let loops = 0;
-    const sample = Goryeo.is(life)?Goryeo.regions.map(region=>[region,'生']):[['한양','📜'],['경상도','📜'],['평안도','📜'],['함경도','📜'],['제주도','📜']];
+    const sample = Goryeo.is(life)?Goryeo.regions.map(region=>[region,'生']):Joseon.isJoseon(life)?[['한양','📜'],['경상도','📜'],['평안도','📜'],['함경도','📜'],['제주도','📜']]:Sim.COUNTRIES.map(country=>[country[0],country[1]]);
     const paint = country => { $('birthFlag').textContent = country[1]; $('birthCountry').textContent = country[0]; };
     const completeBirthReveal=()=>{
       clearInterval(roulette);roulette=null;
-      $('birthFlag').textContent=(Goryeo.is(life)||Joseon.isJoseon(life))?'生':'🇰🇷';
+      $('birthFlag').textContent=(Goryeo.is(life)||Joseon.isJoseon(life))?'生':life.country[1];
       $('birthCountry').textContent=History.place(life);
       $('birthDetail').textContent=life.gender+' · '+life.familyLevel+' · '+life.year+'년 출생';
       paintCertificate();
@@ -1048,7 +1057,7 @@
     lastPeerRenderedAge=life.age;
     if(!peerCache||peerCache.seed!==life.seed){
       peerCache={seed:life.seed,people:Array.from({length:4},(_,i)=>{
-        const peer=new Sim.Life((life.seed+Math.imul(i+1,2654435761))>>>0,{birthYear:life.birthYear,countryName:'대한민국'});
+        const peer=new Sim.Life((life.seed+Math.imul(i+1,2654435761))>>>0,{birthYear:life.birthYear,countryName:life.country[0]});
         World8.ensure(peer);if(Joseon.isJoseon(peer))Joseon.ensure(peer);else World8.moment(peer);History.contextualize(peer);
         return {life:peer,samples:[peerView(peer)]};
       })};
@@ -1413,7 +1422,7 @@
     const count=rememberLife();
     $('endYears').textContent=life.birthYear+' — '+life.year;
     $('endCountry').textContent=(life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1])+' '+History.place({...life,year:life.birthYear})+' · '+life.profile.name+' ('+life.profile.city+')';
-    $('endNetWorth').textContent=Goryeo.is(life)?'곡식 '+Goryeo.ensure(life).grain:formatCredits(life.money.netWorth);
+    $('endNetWorth').textContent=Goryeo.is(life)?'곡식 '+Goryeo.ensure(life).grain+'말':Joseon.inOldEra(life)?'살림 '+Joseon.ensure(life).capital+'냥':formatCredits(life.money.netWorth);
     $('endAge').textContent=summary.age+'년';
     $('endCareer').textContent=oldJobs?.primary?.name||(!['아직 정해지지 않음','학생'].includes(life.career)?life.career:'살림과 일상');
     const firstPlace=History.place({...life,year:life.birthYear});
@@ -1528,7 +1537,7 @@
   $('birthYearInput').addEventListener('change',updateBirthChoices);
   $('birthRandomBtn').addEventListener('click',()=>{
     $('birthNameInput').value='';$('birthGenderInput').value='';
-    $('birthOriginInput').value='';$('birthFamilyInput').value='';
+    $('birthOriginInput').value='';$('birthFamilyInput').value='';$('birthCountryInput').value='';
     $('birthIdentityError').classList.add('hidden');
   });
   $('newbornNameConfirm').addEventListener('click',()=>finishNewbornName(false));
