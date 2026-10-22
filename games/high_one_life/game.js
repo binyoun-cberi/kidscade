@@ -783,8 +783,8 @@
     if(!life)return;
     if(Joseon.inOldEra(life)){
       const j=Joseon.summary(life),s=Joseon.ensure(life),allChoices=life.log
-        .filter(e=>['joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice','joseon18-choice','joseon19-choice','joseon325-choice'].includes(e.kind)).slice(-3);
-      const n=j.decisions+Joseon2.summary(life).decisions+Joseon3.summary(life).choices+Joseon4.summary(life).decisions+(Joseon5?.summary(life)?.decisions||0)+(Joseon7?.summary(life)?.decisions||0)+(Joseon9?.summary(life)?.decisions||0)+(Annals?.ensure(life)?.decisions.length||0)+(Joseon11?.summary(life)?.decisions||0)+(Joseon12?.summary(life)?.decisions||0)+(Joseon13?.summary(life)?.decisions||0)+(Joseon14?.summary(life)?.decisions||0)+(Joseon325?.summary(life)?.decisions||0);
+        .filter(e=>['joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice','joseon18-choice','joseon19-choice','joseon325-choice','joseon344-choice'].includes(e.kind)).slice(-3);
+      const n=j.decisions+Joseon2.summary(life).decisions+Joseon3.summary(life).choices+Joseon4.summary(life).decisions+(Joseon5?.summary(life)?.decisions||0)+(Joseon7?.summary(life)?.decisions||0)+(Joseon9?.summary(life)?.decisions||0)+(Annals?.ensure(life)?.decisions.length||0)+(Joseon11?.summary(life)?.decisions||0)+(Joseon12?.summary(life)?.decisions||0)+(Joseon13?.summary(life)?.decisions||0)+(Joseon14?.summary(life)?.decisions||0)+(Joseon325?.summary(life)?.decisions||0)+(window.OneLifeFate344?.summary(life)?.decisions||0);
       $('careerChangeCount').textContent=n+'번의 선택';
       $('careerCurrent').textContent=j.occupation;
       const list=$('careerJourney');list.replaceChildren();
@@ -798,7 +798,8 @@
       $('worldEventCount').textContent=(s.seen.length+Joseon2.summary(life).events)+'개 역사 사건';
       $('worldLatest').textContent=Joseon2.summary(life).lastMemory||s.warMemory.at(-1)||j.era+'의 하루';
       $('arcCount').textContent=n+'번의 선택';
-      $('arcStatus').textContent='삶의 방향 · '+j.occupation+(Joseon3.summary(life).legacy?' · '+Joseon3.summary(life).legacy:'');
+      $('arcStatus').textContent='삶의 방향 · '+j.occupation+(Joseon3.summary(life).legacy?' · '+Joseon3.summary(life).legacy:'')+
+        (window.OneLifeFate344?.summary(life)?.title?' · '+window.OneLifeFate344.summary(life).title:'');
       const tags=$('arcMilestones');tags.replaceChildren();
       for(const event of allChoices){
         const item=document.createElement('div');item.className='arc-milestone';
