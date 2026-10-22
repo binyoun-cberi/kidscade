@@ -183,7 +183,7 @@ function taxChoices(type,duty){
   option('형편을 알리고 부담을 줄여 달라 청한다','petition','수령이 사정을 들어줄지는 알 수 없다.',{knowledge:2,bonds:1})];
  if(type==='tribute')return [
   option('그 고을에 정해진 세금을 마련한다','tribute','납세 방식은 지역별 제도와 형편에 따라 다르다.',{health:-1},3,0),
-  option('이웃과 필요한 몫을 함께 마련한다','sharetribute','함께 힘을 모으지만 서로 부담을 나눈다.',{bonds:5},2,3),
+  option('이웃과 필요한 세금을 함께 마련한다','sharetribute','함께 힘을 모으지만 서로 부담을 나눈다.',{bonds:5},2,3),
   option('납부 방식과 부담을 알아본다','replace','고을과 시기에 따라 납부 규정이 다르다.',{knowledge:3},5)];
  return [
   option('공사에 나가 품을 보탠다','labor','노역으로 집안일을 돌볼 시간이 줄어든다.',{health:-4}),
