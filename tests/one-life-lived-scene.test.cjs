@@ -60,3 +60,13 @@ test('scene detail is inferred from recorded state, never from a new person or p
   assert.doesNotMatch(source,/person\(baseX-60,baseY/);
   assert.ok(!source.includes('life.money.netWorth='),'visual effects cannot award money');
 });
+
+test('life-stage headings use concrete Korean instead of stock AI-sounding metaphors',()=>{
+  const game=read('game.js');
+  for(const phrase of ['오늘이라는 선물','살아온 시간의 무게','나만의 길을 찾아서','지나온 계절들']){
+    assert.ok(!game.includes(phrase),'remove vague title: '+phrase);
+  }
+  for(const phrase of ['청년기의 생업','생업과 일상','노년의 생활','아직 올해 남겨진 기록이 없습니다.']){
+    assert.ok(game.includes(phrase),'retain concrete life context: '+phrase);
+  }
+});
