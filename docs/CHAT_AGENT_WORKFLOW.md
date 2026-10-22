@@ -23,6 +23,9 @@ Chat에서 다음처럼 요청합니다.
 
 추가 지시가 없다면 한 번에 **게임 하나, 핵심 문제 하나**를 우선 수정합니다.
 기능 변경이 게임 기록이나 교실 사용에 영향을 주면 해당 회귀 테스트를 포함합니다.
+현재 예시는 **논두렁 너머** (`korean_farm`): 수정 대상은
+`games/korean-farm/**`와 해당 전용 테스트로 제한합니다.
+다음에는 사용자가 다른 게임을 지목하면 그때 대상 게임을 바꿉니다.
 
 ## 기존 도구 재사용
 
@@ -31,6 +34,8 @@ Chat에서 다음처럼 요청합니다.
 - `npm run build`: 배포용 산출물 생성(배포 자체는 실행하지 않음)
 - `node scripts/chat-quality-report.cjs`: 공개된 게임 목록과 파일 존재 여부만 읽는 품질 점검
 - `node scripts/chat-quality-report.cjs --json`: 동일 점검의 기계 판독 결과
+- `node scripts/chat-quality-report.cjs --game korean_farm`: 논두렁 너머 **한 게임만** 검사
+- `node scripts/chat-quality-report.cjs --game korean_farm --json`: 단일 게임 JSON 보고서
 - `node --test tests/chat-quality-report.test.cjs`: 점검 스크립트 자체 테스트
 
 기존 `.github/workflows/architecture-tests.yml`과 게임별 브라우저 워크플로가
@@ -42,7 +47,10 @@ Chat에서 다음처럼 요청합니다.
 매주 월요일 오전 9:23(한국 시간) 및 관련 PR 변경 시 작동합니다.
 Actions 실행 목록에서 **Chat-assisted game quality audit**를 열고
 `offline-audit`의 **Summary**를 확인하세요.
-워크플로를 수동 실행하는 것도 가능합니다.
+워크플로를 수동 실행할 때는 **Run workflow → game_id**에
+`korean_farm`을 입력하면 논두렁 너머만 검사합니다.
+빈칸이면 전체 게임을 확인합니다. 이 선택은 자동 코딩을 시작하는 버튼이
+아니라, 정적 품질 보고서의 대상을 제한하는 옵션입니다.
 
 추가 스토리지와 네트워크 비용을 피하기 위해 보고서 아티팩트를 업로드하지 않고,
 Actions의 요약에만 기록합니다. 외부 API와 원격 D1에는 접근하지 않습니다.
