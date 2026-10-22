@@ -239,6 +239,21 @@
   }else s.active=null;
   return s;
  }
+ function summary(l){
+  const s=ensure(l);if(!s)return null;
+  const old=Paths?.ensure(l);
+  const lifeStage=old?.law?.kind==='exile'?'유배 중인 인생':
+   old?.stage==='outlaw'?'산적 무리에 가담한 삶':
+   ['escaped','hiding'].includes(s.fugitive)?'도망 노비로 숨어 지내는 삶':
+   s.fugitive==='freed'?'속량을 거쳐 새 길을 찾는 삶':
+   s.magistrate==='abusive'?'탐관오리로 남은 수령 시절':
+   s.magistrate==='benevolent'&&(s.scenes||[]).some(x=>x.text.includes('송덕비'))?'송덕비가 세워진 수령':
+   s.magistrate==='benevolent'?'백성을 돌본 수령':
+   s.examination==='passed'?'진사의 향촌 생활':
+   s.lineage!=='none'?'족보를 둘러싼 신분의 갈등':'';
+  return {title:lifeStage,decisions:s.choices.length,latest:s.scenes.at(-1)?.text||'',
+   examination:s.examination,magistrate:s.magistrate,fugitive:s.fugitive,lineage:s.lineage};
+ }
  function install(){
   if(!Sim?.Life||!J?.isJoseon||!V5?.ensure||!Paths?.ensure||
    Sim.Life.prototype.__joseon344)return false;
@@ -265,5 +280,5 @@
   Object.defineProperty(L.prototype,'__joseon344',{value:true});return true;
  }
  install();
- return Object.freeze({ensure,eligible,plan,queue,advance,resolve,hydrate,install,names,steps,dice});
+ return Object.freeze({ensure,eligible,plan,queue,advance,resolve,hydrate,summary,install,names,steps,dice});
 });
