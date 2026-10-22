@@ -106,21 +106,21 @@ function recordEconomy(life){
  if(now<0)e.povertyYears++;
  const costs=today.costs||{};
  const title=costs.scarcity?'흉년과 줄어든 벌이'
-  :costs.rent>=Math.max(5,today.income/4)?'빌린 땅을 가꾸기 위해 내는 몫'
+  :costs.rent>=Math.max(5,today.income/4)?'빌린 땅의 소작료'
   :costs.subsistence>=today.income?'식구들이 먹고사는 데 필요한 지출'
   :costs.care>=5?'가족의 돌봄에 드는 비용'
   :costs.levies>0&&costs.levies>=today.income/5?'조세와 살림의 부담'
   :'벌이보다 많이 든 집안 살림';
  e.lastCause=today.debt?(now<(was??now)?title:'이전에 생긴 빚을 아직 갚지 못함'):
-  today.granary<8?'곳간의 먹을거리가 적음':today.cash<25?'벌이가 생겨도 남는 몫이 적음':'생업과 살림을 이어 감';
+  today.granary<8?'곳간의 먹을거리가 적음':today.cash<25?'벌어도 남는 돈이 적음':'생업과 살림을 이어 감';
  let message='';
  if(now<0&&(was??0)>=0){
-  e.experiencedDebt=true;e.creditor=e.creditor||'이웃과 친척에게 빌린 몫';
+  e.experiencedDebt=true;e.creditor=e.creditor||'이웃과 친척에게 빌린 돈';
   message='그해 벌이로는 살림을 감당하기 어려워 이웃이나 친척에게 빚을 지게 되었다. '+title+'이 컸다.';
  }else if(now>=0&&(was??0)<0){
   message='오래 남아 있던 빚을 모두 갚았다. 아직 넉넉하지는 않아도 마음의 짐 하나가 줄었다.';
  }else if(now<0&&(was??now)<0&&now-(was??now)>=12&&life.age%5===0){
-  message='살림을 아껴 빚의 일부를 덜었다. 갚아야 할 몫은 아직 남아 있다.';
+  message='살림을 아껴 빚의 일부를 덜었다. 갚아야 할 돈은 아직 남아 있다.';
  }else if(now<0&&e.povertyYears===5&&life.age>12){
   message='몇 해째 벌이보다 지출이 무거웠다. 식구들은 저마다 할 수 있는 일을 나누었다.';
  }
@@ -285,7 +285,7 @@ function promptFor(life,s){
   opt('맡은 일에 힘을 보탠다','정해진 일을 마치고 필요한 살림을 챙긴다','serve',{health:-3}),
   opt('가족과 동료의 일을 함께 나눈다','서로를 돕는 것이 살아갈 힘이 된다','servileKin',{bonds:7}),
   opt('속량을 청할 길을 알아본다','모은 돈과 관계를 바탕으로 허락을 구한다','petitionRelease',{knowledge:3,wealth:-3})]};
- if(kind==='household'&&s.capital<0)return {title:'빚이 남은 집안의 선택',description:'곡식과 땅, 갚지 못한 몫을 헤아린다. 당장 모든 빚을 갚을 방법은 없지만 각자의 길이 있다.',options:[
+ if(kind==='household'&&s.capital<0)return {title:'빚이 남은 집안의 선택',description:'곡식과 땅, 갚지 못한 빚을 헤아린다. 당장 모든 빚을 갚을 방법은 없지만 각자의 길이 있다.',options:[
   opt('남의 일을 거들어 빚을 조금 덜어 낸다','더 많은 품을 팔아 수입을 얻지만 몸이 고되다','wagework',{health:-4,wealth:4}),
   opt('이웃과 품앗이하며 버틴다','돈보다 서로의 일손과 신뢰를 나눈다','mutualAid',{bonds:7,knowledge:2}),
   opt('가족을 돌보는 일을 계속한다','지금은 빚을 갚기 어렵지만 돌봄을 포기하지 않는다','care',{bonds:8,wealth:-4})]};
@@ -320,8 +320,8 @@ const FOLLOWUP={
  farm:'가꾸던 논밭에서 첫 수확을 거두었지만, 다음 해 날씨는 여전히 알 수 없었다.',
  trade:'장터에 나가면서 알게 된 얼굴들이 조금씩 늘었다.',
  home:'집안의 끼니와 돌봄을 맡는 날이 늘었다.',
- kin:'함께 살던 식구들과 각자의 몫을 나누었다.',
- care:'집안 어른과 아이의 안부를 살피는 일이 하루의 중요한 몫이 되었다.',
+ kin:'함께 살던 식구들과 각자 쓸 물건을 나누었다.',
+ care:'집안 어른과 아이의 안부를 살피는 일이 하루의 중요한 일이 되었다.',
  marry:'혼인한 뒤 함께 의논해야 할 일이 생겼다.',
  independent:'새 거처에서 처음 보내는 계절은 낯설었다.',
  exam:'과거를 준비했던 밤들이 떠올랐다. 합격 여부와 별개로 익힌 글은 남았다.',
@@ -602,7 +602,7 @@ function hydrate(life,data){
   fresh.economy=null;
   const book=economicBook(fresh);
   book.previousCapital=fresh.capital;book.currentYear=life.year;
-  if(fresh.capital<0){book.creditor='오래전 빌려 쓴 몫';book.lastCause='이전부터 갚지 못한 빚';book.experiencedDebt=true;}
+  if(fresh.capital<0){book.creditor='오래전 빌린 돈';book.lastCause='이전부터 갚지 못한 빚';book.experiencedDebt=true;}
  }
  for(const k of ['seen','warMemory','memories','decisions','followups']){
   if(Array.isArray(old[k]))fresh[k]=old[k].slice(-40).filter(x=>x!==null&&['string','number','object'].includes(typeof x));
