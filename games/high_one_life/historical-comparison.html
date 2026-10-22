@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>단 하나의 인생 — 고려·조선 픽셀 비교실</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#e7eeea;color:#263f37;font-family:system-ui,"Noto Sans KR",sans-serif;padding:16px}
+main{max-width:1290px;margin:auto}h1{font-size:22px;margin:0 0 8px}h2{font-size:17px;margin:19px 0 10px}
+p{line-height:1.65;font-size:13px;max-width:100ch}
+fieldset{border:1px solid #b2c8bc;border-radius:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+input,button{font:inherit;min-height:40px;padding:5px 12px;border-radius:6px}
+button{border:0;background:#286256;color:white}
+.group{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+figure{margin:0;min-width:0;padding:10px;border:1px solid #b3c9bd;border-radius:10px;background:#fffdf7}
+figcaption{font-weight:700;font-size:14px;margin-bottom:9px}
+canvas{width:100%;height:auto;image-rendering:pixelated;background:#bfc9bf}
+small{display:block;margin-top:6px;color:#536d5e;line-height:1.6}
+@media(max-width:800px){.group{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:500px){.group{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<h1>고려·조선 픽셀 캐릭터 비교실</h1>
+<p>개발용 시각 검수입니다. 각 시대에 태어난 서로 다른 <strong>가상 인물</strong>을 10·30·70세와 두 생활환경에 배치했습니다. 실제 역사 인물의 초상이나 사료 복식의 정밀 복원은 아닙니다. 저장 데이터나 경제 수치를 변경하지 않습니다.</p>
+<fieldset><label for="seed">외형 시드</label><input id="seed" type="number" value="1729">
+<button id="draw" type="button">다시 그리기</button><button id="frame" type="button">다음 동작 프레임</button></fieldset>
+<section aria-labelledby="goryeoTitle"><h2 id="goryeoTitle">고려 후기 — 덧깃옷·머리싸개 중심의 간략 표현</h2><div id="goryeoGrid" class="group"></div></section>
+<section aria-labelledby="joseonTitle"><h2 id="joseonTitle">조선 — 시대별 저고리·포·쓰개 규칙을 유지한 표현</h2><div id="joseonGrid" class="group"></div></section>
+<p>검수할 점: 같은 사람의 나이별 외형 연속성, 실제 가족만 등장하는지, 발 위치, 생업 도구와 손의 접촉, 계층에 따른 건물 차이, 서로 다른 시대의 옷이 섞이지 않는지, 모바일 가독성.</p>
+</main>
+<script src="./historical-sprites-v1.js?v=1"></script>
+<script src="./joseon-culture-v1.js?v=4"></script>
+<script src="./joseon-pixel-v2.js?v=6"></script>
+<script>
+(function(){
+ 'use strict';
+ let phase=0;
+ const ages=[10,30,70],classes=[{name:'일반 가구',elite:false},{name:'관료 가문',elite:true}];
+ function card(parent,caption,meta,paint,width=600,height=258){
+   const f=document.createElement('figure'),label=document.createElement('figcaption'),
+         canvas=document.createElement('canvas'),small=document.createElement('small');
+   label.textContent=caption;small.textContent=meta;
+   canvas.width=width;canvas.height=height;canvas.setAttribute('aria-label',caption);
+   const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;paint(canvas,ctx);
+   f.append(label,canvas,small);parent.append(f);
+ }
+ function draw(){
+   const raw=Number(document.getElementById('seed').value);
+   const seed=Number.isFinite(raw)?Math.trunc(raw):1729;
+   const gGrid=document.getElementById('goryeoGrid'),jGrid=document.getElementById('joseonGrid');
+   gGrid.replaceChildren();jGrid.replaceChildren();
+   for(const age of ages)for(const group of classes){
+     const gLife={seed,birthYear:1250,year:1250+age,age,alive:true,profile:{name:'예제'},
+       gender:'남자'};
+     const g={region:'충청 내륙',origin:group.elite?'관료 가문':'농민 가구',
+       job:age<16?'배움':'농사',bound:false,away:0,refuge:false,people:[]};
+     card(gGrid,age+'세 · '+group.name,'고려 후기 · 화면 예시 · 가족 생성 없음',
+       (canvas,ctx)=>window.OneLifeHistoricalSpritesV1.scene(ctx,gLife,g,{phase}),720,220);
+     const life={seed,birthYear:1510,year:1510+age,age,alive:true,gender:'남자',
+       familyLevel:group.name,
+       profile:{name:'예제 인물',city:'충청 내륙'},
+       joseon:{birthStatus:group.elite?'문반 양반':'상민',occupation:age<16?'글공부':'농사',
+         capital:group.elite?48:8,land:group.elite?3:1},
+       joseon5:{origin:group.elite?'문반 양반':'상민'},
+       joseon4:{people:[]}};
+     card(jGrid,age+'세 · '+group.name,'조선 · 시대별 복식 규칙 · 가족 생성 없음',
+       (canvas)=>window.OneLifeJoseonPixel2.paint(canvas,life,{time:phase*300}));
+   }
+ }
+ document.getElementById('draw').addEventListener('click',draw);
+ document.getElementById('frame').addEventListener('click',()=>{phase=(phase+1)%6;draw();});
+ draw();
+})();
+</script>
+</body>
+</html>
