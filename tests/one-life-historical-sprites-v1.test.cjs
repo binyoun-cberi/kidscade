@@ -148,3 +148,15 @@ test('tools follow the wrist on both frames while the ground baseline stays fixe
   assert.equal(first.feet,second.feet);
  }
 });
+
+
+test('historical comparison allows work-specific review but never touches real saves',()=>{
+ const html=file('historical-comparison.html');
+ for(const job of ['농사','삼베 짜기','나루 일','바구니 만들기','글과 셈']){
+  assert.ok(html.includes('<option value="'+job+'">'),job);
+ }
+ assert.match(html,/job:age<14\?'배움':chosenJob/);
+ assert.match(html,/historical-sprites-v1\.js\?v=2/);
+ assert.doesNotMatch(html,/localStorage|sessionStorage|indexedDB|XMLHttpRequest|fetch\(/);
+ assert.equal(Historical.activityFor('학생',10),'idle');
+});
