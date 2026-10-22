@@ -3,7 +3,7 @@
 'use strict';
 const G=root.OneLifeGoryeo343,$=id=>document.getElementById(id);
 function el(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;}
-function certificate(l){const g=G.ensure(l),values={birthName:l.profile.name,birthPlace:g.region,birthGender:l.gender,birthDate:l.birthYear+'년 출생',birthFamily:l.familyLevel+' · '+g.origin,birthMother:'어머니 · 농사와 길쌈',birthFather:'아버지 · '+l.profile.fatherJob,birthSiblings:'집안의 식구들과 함께 자란다',birthHome:'곡식과 옷감을 마련하며 꾸리는 살림',birthContext:'고려 후기 · '+G.period(l),birthEraNote:'출신·지역·성별에 따라 배움과 생업의 여건이 다릅니다. 자원과 사건의 확률은 게임용으로 구성했습니다.',birthCountry:'고려의 한반도',certificateTitle:'고려에서 시작하는 한 생',birthTicketMark:'生',birthTicketKind:'고려 후기 출생 기록',birthTicketFoot:'1200–1391년 출생 · 가상의 인물',birthTagline:'전란과 변화 속에서도 한 집의 삶은 이어집니다.',birthHeading:'고려의 어느 집, 한 아이가 태어납니다.',birthFlag:'生'};
+function certificate(l){const g=G.ensure(l),values={birthName:l.profile.name,birthPlace:g.region,birthGender:l.gender,birthDate:l.birthYear+'년 출생',birthFamily:l.familyLevel+' · '+g.origin,birthMother:'어머니 · 농사와 길쌈',birthFather:'아버지 · '+l.profile.fatherJob,birthSiblings:'집안의 식구들과 함께 자란다',birthHome:'곡식을 거두고 옷감을 짓는 집',birthContext:'고려 후기 · '+G.period(l),birthEraNote:'어디에서 태어났느냐에 따라 살아가는 모습도 달랐지요.',birthCountry:'고려의 한반도',certificateTitle:'고려에서 시작하는 한 생',birthTicketMark:'生',birthTicketKind:'고려 후기 출생 기록',birthTicketFoot:'1200–1391년 출생 · 가상의 인물',birthTagline:'전란과 변화 속에서도 한 집의 삶은 이어집니다.',birthHeading:'고려의 어느 집, 한 아이가 태어납니다.',birthFlag:'生'};
  for(const [id,text]of Object.entries(values))if($(id))$(id).textContent=text;
  $('birthCertificate').classList.remove('hidden');
  $('birthLineage').classList.add('hidden');$('hopaDisplay').classList.add('hidden');
@@ -28,9 +28,9 @@ function paint(l,handlers){
    visible.length+'명의 실제 등장인물'+(hiddenCount?' · 화면 밖에 있는 식구 '+hiddenCount+'명':''):'마을 풍경';
  canvas.setAttribute('aria-label',g.region+' · '+label);
  canvas.setAttribute('role','img');scene(canvas,l,g);host.append(canvas);
- const state=el('div',undefined,'goryeo-resources');for(const [a,b]of [['건강',l.stats.health+' / 100'],['곡식',String(g.grain)],['옷감',g.cloth+'필'],['장터에 쓸 돈',String(g.pocket)]]){const box=el('div');box.append(el('small',a),el('strong',b));state.append(box);}host.append(state);
+ const state=el('div',undefined,'goryeo-resources');for(const [a,b]of [['건강',l.stats.health+' / 100'],['곡식',g.grain+'말'],['옷감',g.cloth+'필'],['장터 돈',g.pocket+'냥']]){const box=el('div');box.append(el('small',a),el('strong',b));state.append(box);}host.append(state);
  const choice=l.getChoice();if(choice){const panel=el('section',undefined,'goryeo-decision');panel.setAttribute('aria-live','polite');panel.append(el('small','삶의 갈림길'),el('h2',choice.title),el('p',choice.description));choice.options.forEach((o,i)=>{const b=el('button',o.label);b.onclick=()=>handlers.choose(i);panel.append(b);});host.append(panel);}
- const grid=el('div',undefined,'goryeo-grid');const family=el('section');family.append(el('h2','함께 꾸리는 살림'),el('p',g.origin+' · '+(g.bound?'예속된 처지':g.job)+' · '+g.belief));if(g.away)family.append(el('p','집을 떠나 있는 중 · 남은 식구들이 생업을 맡습니다.'));
+ const grid=el('div',undefined,'goryeo-grid');const family=el('section');family.append(el('h2','함께 꾸리는 살림'),el('p',g.origin+' · '+(g.bound?'예속된 처지':g.job)+' · '+g.belief));if(g.away)family.append(el('p','집을 떠났다. 남은 식구들이 살림을 꾸린다.'));
  for(const p of g.people){const row=el('div',undefined,'goryeo-person');row.append(el('strong',p.name),el('small',(l.year-p.birthYear)+'세 · '+(p.alive?'건강 '+Math.round(p.health):'세상을 떠남')));
   if(p.alive){const select=el('select');select.setAttribute('aria-label',p.name+'의 올해 일');const age=l.year-p.birthYear;
    for(const plan of G.plans){if(plan==='솜이불 만들기'&&!G.cottonAvailable(l))continue;if(age<14&&!['배움','돌봄','휴식'].includes(plan))continue;if(g.bound&&!['농사','돌봄','휴식'].includes(plan))continue;const o=el('option',plan);o.value=plan;select.append(o);}select.value=p.plan;select.disabled=l.age<14||age<6||!!g.away||!!l.pending;select.onchange=()=>handlers.action('plan',p.id,select.value);row.append(select);}
