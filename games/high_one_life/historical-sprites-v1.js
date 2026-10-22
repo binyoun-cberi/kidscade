@@ -28,7 +28,7 @@
    ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));
  }
  function activityFor(work,age,away=false){
-   if(away)return 'walk';
+   if(away)return age<3?'idle':'walk';
    if(age<14||age>=68)return 'idle';
    const label=String(work||'');
    if(/농사|경작|밭일/.test(label))return 'farm';
@@ -84,7 +84,10 @@
      R(7,-6-body+4,9,6,'#e4d4ad');
      R(11,-6-body+4,1,6,'#917d60');
    }
-   return Object.freeze({identity:iden,feet,x,ageBand:child?'child':elder?'elder':'adult',width:14*u,height:(9+body+head)*u});
+   // The top of the drawn hair/headwear, not an estimated nominal height.
+   // Markers and touch-free ornaments must use this measured sprite extent.
+   const top=feet-(age>=16&&status!=='travel'?10+body+head:8+body+head)*u;
+   return Object.freeze({identity:iden,feet,x,top,ageBand:child?'child':elder?'elder':'adult',width:14*u,height:feet-top});
  }
  function occupants(life,g){
    const year=Number(life.year??life.birthYear) || 1300;
@@ -128,6 +131,13 @@
      for(let i=0;i<8;i++)rect(ctx,10+i*43,180+(i%2)*9,30,4,'#87966c');
    }
    rect(ctx,184,174,352,36,'#c6ae86');
+   if(ferryWork){
+     // Extend a narrow water inlet toward the actual ferry worker at x=330.
+     // Keep its upper edge beneath the actor's feet (y≈195).
+     rect(ctx,206,208,185,12,'#759ca0');
+     rect(ctx,295,202,92,6,'#947653');
+     for(let i=0;i<4;i++)rect(ctx,300+i*22,202,4,13,'#6f624c');
+   }
    if(!temporary){
      const wealthy=/관료 가문|향리 가문/.test(String(g.origin));
      const houses=wealthy?2:1;
@@ -151,11 +161,12 @@
    const places=[[330,195],[265,193],[405,193],[485,197],[220,198]];
    for(let i=0;i<people.length;i++){
      const p=people[i],[x,feet]=places[i],scale=p.age<12?.72:i===0?1:0.88;
-     actor(ctx,{x,feet,age:p.age,id:p.id,seed:life.seed,status:p.status,
+     const drawn=actor(ctx,{x,feet,age:p.age,id:p.id,seed:life.seed,status:p.status,
        activity:p.activity,phase,scale});
      if(p.self){
-       rect(ctx,x-5,feet-75*scale,10,4,'#e3c47d');
-       rect(ctx,x-2,feet-78*scale,4,9,'#e6cf8e');
+       // Same gap above a child's and an elder's actual hairstyle.
+       rect(ctx,x-5,drawn.top-7,10,4,'#e3c47d');
+       rect(ctx,x-2,drawn.top-10,4,9,'#e6cf8e');
      }
    }
    // Foreground fencing is only on edges; actor silhouettes remain unobstructed.
