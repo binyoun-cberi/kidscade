@@ -160,3 +160,25 @@ test('historical comparison allows work-specific review but never touches real s
  assert.doesNotMatch(html,/localStorage|sessionStorage|indexedDB|XMLHttpRequest|fetch\(/);
  assert.equal(Historical.activityFor('학생',10),'idle');
 });
+
+
+test('an inland ferry worker receives a visible river, but ordinary farmers do not',()=>{
+ const farmer=clone(birth),farmFrame=canvas();
+ Historical.scene(farmFrame.ctx,farmer,farmer.goryeo343);
+ assert.ok(!farmFrame.shapes.some(r=>r[4]==='#759ca0'),'non-ferry inland life has no river strip');
+ const ferry=clone(birth);ferry.goryeo343.job='나루 일';
+ const before=JSON.stringify(ferry),ferryFrame=canvas();
+ const result=Historical.scene(ferryFrame.ctx,ferry,ferry.goryeo343);
+ assert.equal(result.coast,false,'a riverside is not automatically a coast');
+ assert.ok(ferryFrame.shapes.some(r=>r[4]==='#759ca0'),'ferry worker must stand near water');
+ assert.equal(JSON.stringify(ferry),before);
+});
+test('an actual Goryeo refuge pauses ordinary farm and ferry poses',()=>{
+ const displaced=clone(birth);displaced.goryeo343.refuge=true;
+ const group=Historical.occupants(displaced,displaced.goryeo343);
+ assert.ok(group.length>1,'family remains together in this refuge test');
+ assert.ok(group.every(p=>p.activity==='walk'),'refuge should not look like ordinary workplace activity');
+ const before=JSON.stringify(displaced);
+ Historical.scene(canvas().ctx,displaced,displaced.goryeo343);
+ assert.equal(JSON.stringify(displaced),before);
+});
