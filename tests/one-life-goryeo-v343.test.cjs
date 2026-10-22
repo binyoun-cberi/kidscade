@@ -144,3 +144,16 @@ test('offline prose review catches vague generic AI-style phrases without editin
  const inventory=style.scan();assert.ok(Array.isArray(inventory));
  assert.ok(inventory.every(item=>!item.file.includes('..')),'inventory paths stay local');
 });
+
+
+test('no game source emits the deprecated abstract resource unit',()=>{
+ const banned=String.fromCharCode(0xBAAB);
+ const walk=folder=>fs.readdirSync(folder,{withFileTypes:true}).flatMap(entry=>{
+  if(entry.name.startsWith('.')||entry.name==='node_modules')return [];
+  const filename=path.join(folder,entry.name);
+  return entry.isDirectory()?walk(filename):/\.(?:js|mjs|html|json)$/.test(entry.name)?[filename]:[];
+ });
+ const flagged=walk(dir).filter(filename=>fs.readFileSync(filename,'utf8').includes(banned))
+   .map(filename=>path.relative(dir,filename));
+ assert.deepEqual(flagged,[],'replace misleading wording in these One Life game resources');
+});
