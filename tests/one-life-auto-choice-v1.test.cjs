@@ -115,3 +115,27 @@ test('affordability stays ahead of life focus; unknown effect data is not guesse
   'one known effect cannot be compared with a missing effect');
  assert.ok([1,2].includes(auto.decide(life).index));
 });
+
+test('automated and manual choices share verified consequence text',()=>{
+ const source=file('game.js');
+ assert.match(source,/function decisionState\(\)\{/);
+ assert.match(source,/function recordDecisionEffect\(before\)\{/);
+ assert.match(source,/const before=action\?\.type==='choice'\?decisionState\(\):null;/);
+ assert.match(source,/if\(before\)recordDecisionEffect\(before\);/);
+ assert.match(source,/choose:i=>\{const before=decisionState\(\);/);
+ const mentions=source.match(/recordDecisionEffect\(before\)/g)||[];
+ assert.equal(mentions.length,4,'declaration plus modern manual, historical manual and auto call');
+ const begin=source.indexOf('  function recordDecisionEffect(before){');
+ const end=source.indexOf('\n  function showDecision()',begin);
+ const helper=source.slice(begin,end);
+ const context={stats:{health:60,happiness:45,knowledge:42,bonds:30},money:{netWorth:150},career:'학생',log:[],
+  logEvent(text,kind){this.log.push({text,kind})}};
+ const Joseon={inOldEra:()=>false};
+ const formatCredits=n=>n+'점';
+ const fn=new Function('life','Joseon','formatCredits',helper+'\nreturn recordDecisionEffect;')(context,Joseon,formatCredits);
+ fn({stats:{health:55,happiness:45,knowledge:42,bonds:30},netWorth:150,career:'학생'});
+ assert.deepEqual(context.log,[{text:'이후 달라진 점 · 건강 +5',kind:'decision-effect'}]);
+ const count=context.log.length;
+ fn({stats:{...context.stats},netWorth:context.money.netWorth,career:context.career});
+ assert.equal(context.log.length,count,'no invented aftermath when numbers do not change');
+});
