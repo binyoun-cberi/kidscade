@@ -137,6 +137,28 @@ export function createVillagePeople(scene){
       puff.material.opacity=cue.dust*(.11+(i%3)*.035);
     }
   }
+  // The neighbor has a physical garden bed to tend, rather than hoeing empty air.
+  // It is decoration only: outside every player field and with no colliders.
+  const workPatch=new THREE.Group();workPatch.name='solnaeri-neighbor-garden-worksite';
+  workPatch.position.set(2.14,0,13.17);root.add(workPatch);
+  const workSoilMat=new THREE.MeshStandardMaterial({color:0x74583c,roughness:1});
+  const workLeafMat=new THREE.MeshStandardMaterial({color:0x69964c,roughness:1,side:THREE.DoubleSide});
+  const soil=new THREE.Mesh(new THREE.CylinderGeometry(.55,.55,.045,12),workSoilMat);
+  soil.scale.z=.58;soil.position.y=.025;soil.receiveShadow=true;workPatch.add(soil);
+  const gardenShoots=[];
+  for(let i=0;i<7;i++){
+    const shoot=new THREE.Mesh(new THREE.ConeGeometry(.07,.25,5),workLeafMat);
+    shoot.position.set((i%4-1.5)*.22,.18,(Math.floor(i/4)-.5)*.22);
+    shoot.rotation.z=i%2?.18:-.18;workPatch.add(shoot);gardenShoots.push(shoot);
+  }
+  function updateGardenWork(cue,elapsed){
+    const tending=cue.prop==='hoe';
+    workPatch.userData.beingTended=tending;
+    for(let i=0;i<gardenShoots.length;i++){
+      const shoot=gardenShoots[i];
+      shoot.rotation.z=(i%2?.18:-.18)+(tending?Math.sin(elapsed*3.2+i*.8)*.13:0);
+    }
+  }
   const merchantLabel=label(merchant.root,'장터 순옥'),neighborLabel=label(neighbor.root,'이웃 영수');
   const festivalLabel=label(festivalHost.root,'마을 행사 · 소담');
   const booth=new THREE.Group();booth.position.set(-1.1,0,16.55);root.add(booth);
@@ -242,7 +264,7 @@ export function createVillagePeople(scene){
     for(const [kind,prop] of Object.entries(props[role])){
       prop.group.visible=kind===cue.prop;
     }
-    if(role==='neighbor')updateSweepDust(cue,elapsed);
+    if(role==='neighbor'){updateSweepDust(cue,elapsed);updateGardenWork(cue,elapsed);}
     locations[role]={x:position.x,z:position.z};
     return step.moving;
   }
@@ -350,6 +372,7 @@ export function createVillagePeople(scene){
     for(const p of [merchant,neighbor,festivalHost,...guests,...passers])for(const material of p.mats)material.dispose();
     for(const tools of Object.values(props))for(const prop of Object.values(tools))for(const mat of prop.materials)mat.dispose();
     dustGeometry.dispose();for(const puff of dustPuffs)puff.material.dispose();
+    workSoilMat.dispose();workLeafMat.dispose();
     for(const material of boothMats)material.dispose();
     for(const material of seasonMats)material.dispose();
     confettiGeometry.dispose();confettiMaterial.dispose();
