@@ -72,6 +72,13 @@ test('Goryeo condition affects shelters without generating people or changing th
  assert.ok(coast.shapes.some(x=>x[4]==='#759ca0'),'coastal environment has water');
  assert.ok(!rural.shapes.some(x=>x[4]==='#759ca0'));
  assert.equal(original.goryeo343.grain,22);
+ const refugeLife=clone(birth),refuge=canvas();
+ refugeLife.goryeo343.refuge=true;
+ const people=Historical.occupants(refugeLife,refugeLife.goryeo343);
+ const result=Historical.scene(refuge.ctx,refugeLife,refugeLife.goryeo343);
+ assert.equal(result.visiblePeople,people.length,'the family may still be together while taking refuge');
+ assert.ok(refuge.shapes.some(x=>x[4]==='#baa079'),'refuge should have a temporary shelter');
+ assert.ok(!refuge.shapes.some(x=>x[4]==='#d4bf9b'),'refuge must not pretend the household is still in its usual house');
 });
 test('Joseon scene keeps its existing period wardrobe while supplying seeded face identity',()=>{
  const ctx={};ctx.window=ctx;vm.createContext(ctx);
