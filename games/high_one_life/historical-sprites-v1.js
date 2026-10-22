@@ -78,6 +78,7 @@
    if(!ctx||!life||!g)return null;
    const year=Number(life.year||life.birthYear)||1300;
    const coast=/해안|탐라|강화/.test(String(g.region)),away=Number(g.away||0)>0;
+   const temporary=away||Boolean(g.refuge);
    const mountain=g.refuge||/내륙|서북/.test(String(g.region));
    // Sky, mountain silhouettes and coast — all hard-edged, no gradients/curves.
    rect(ctx,0,0,720,220,'#c4d5c6');
@@ -95,7 +96,7 @@
      for(let i=0;i<8;i++)rect(ctx,10+i*43,180+(i%2)*9,30,4,'#87966c');
    }
    rect(ctx,184,174,352,36,'#c6ae86');
-   if(!away){
+   if(!temporary){
      const wealthy=/관료 가문|향리 가문/.test(String(g.origin));
      const houses=wealthy?2:1;
      for(let i=0;i<houses;i++){
@@ -111,7 +112,7 @@
        rect(ctx,hx+81,hy+25,3,24,'#846d54');
      }
    }else{
-     // Temporary travel shelter only when the protagonist is away.
+     // Travel or recorded refuge: replace the normal home, never fake a settled house.
      rect(ctx,55,146,135,20,'#9f8765');
      for(let row=0;row<9;row++)rect(ctx,61+row*6,102+row*5,123-row*12,5,'#baa079');
    }
