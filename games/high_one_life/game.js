@@ -3,6 +3,8 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const Sim = window.OneLifeSim;
+  const UIFlow=window.OneLifeUIFlow;
+  if(!UIFlow)throw new Error('One Life UI helpers missing');
   const Goryeo=window.OneLifeGoryeo343||{is:()=>false};
   const Identity=window.OneLifeIdentity20;
   if (!Sim) throw new Error('OneLifeSim engine not loaded');
@@ -68,6 +70,7 @@
   let completed = false, ruleWasRunning = false, replayBasis = null;
   let peerCache = null, lastPeerRenderedAge = -1, lastMapRenderedAge = -1;
   let storyTab='', peerAgeChoice=0, timelineVisible=22, playSpeed=1, nextDecision=false;
+  let lastDecisionKey=null;
   let namingChild=null,wasPausedBeforeNaming=false;
   function updateBirthChoices(){
     const year=Number($('birthYearInput').value);
@@ -197,7 +200,7 @@
   function draw() {
     clearInterval(roulette);
     roulette = null;
-    playSpeed=1;nextDecision=false;refreshSpeedControls();
+    playSpeed=1;nextDecision=false;lastDecisionKey=null;refreshSpeedControls();
     const desired=Number($('birthYearInput').value);
     const birthYear=Number.isInteger(desired)&&desired>=1200&&desired<=2026?desired:2026;
     $('birthYearInput').value=String(birthYear);
@@ -227,19 +230,25 @@
     let loops = 0;
     const sample = Goryeo.is(life)?Goryeo.regions.map(region=>[region,'生']):[['한양','📜'],['경상도','📜'],['평안도','📜'],['함경도','📜'],['제주도','📜']];
     const paint = country => { $('birthFlag').textContent = country[1]; $('birthCountry').textContent = country[0]; };
-    roulette = setInterval(() => {
-      loops++;
-      paint(sample[(loops*7)%sample.length]);
-      if(loops >= 19) {
-        clearInterval(roulette); roulette = null;
-        $('birthFlag').textContent=(Goryeo.is(life)||Joseon.isJoseon(life))?'生':'🇰🇷';
-        $('birthCountry').textContent=History.place(life);
-        $('birthDetail').textContent = life.gender + ' · ' + life.familyLevel + ' · ' + life.year + '년 출생';
-        paintCertificate();
-        $('lifeStartBtn').classList.remove('hidden');
-        $('lifeStartBtn').focus();
-      }
-    }, 76);
+    const completeBirthReveal=()=>{
+      clearInterval(roulette);roulette=null;
+      $('birthFlag').textContent=(Goryeo.is(life)||Joseon.isJoseon(life))?'生':'🇰🇷';
+      $('birthCountry').textContent=History.place(life);
+      $('birthDetail').textContent=life.gender+' · '+life.familyLevel+' · '+life.year+'년 출생';
+      paintCertificate();
+      $('lifeStartBtn').classList.remove('hidden');
+      $('lifeStartBtn').focus();
+    };
+    // No flickering/moving roulette for visitors requesting reduced motion.
+    if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
+      completeBirthReveal();
+    }else{
+      roulette=setInterval(()=>{
+        loops++;
+        paint(sample[UIFlow.rouletteIndex(loops,sample.length)]);
+        if(loops>=19)completeBirthReveal();
+      },76);
+    }
   }
   const formatCredits = value => {
     const n=Math.round(Number(value)||0);
@@ -947,6 +956,9 @@
   function showDecision() {
     const choice = life.getChoice();
     const reflection = life.getReflection();
+    const decisionKey=UIFlow.decisionKey(life,choice,reflection);
+    const isNewDecision=decisionKey!==null&&decisionKey!==lastDecisionKey;
+    lastDecisionKey=decisionKey;
     $('decision').classList.toggle('hidden',!choice && !reflection);
     $('waiting').classList.toggle('hidden',!!choice || !!reflection);
     if(reflection) {
@@ -959,6 +971,7 @@
       const btn=document.createElement('button');btn.type='button';btn.className='reflection-next';btn.textContent='계속 살아가기 →';
       btn.addEventListener('click',()=>{life.reflect(note.value);save();elapsed=0;lastTick=performance.now();render();});
       target.append(note,btn);
+      if(isNewDecision)$('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
       return;
     }
     if (!choice) return;
@@ -1001,7 +1014,8 @@
       });
       target.append(btn);
     });
-    $('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
+    // Repainting a still-open choice must not pull readers out of history.
+    if(isNewDecision)$('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
   }
   function peerView(peer){
     return {age:peer.age,alive:peer.alive,name:peer.profile?.name||'이름 없는 이웃',
