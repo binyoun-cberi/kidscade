@@ -17,7 +17,9 @@ test('One Life v2 provides concrete birth profile, financial statement and pixel
   'lifeScene','sceneLabel','profileName','nameHeadline','netWorth','annualIncome','annualExpense',
   'annualBalance','employmentStatus','endNetWorth']) assert.ok(html.includes('id="'+id+'"'),id);
  assert.match(html,/world-v2\.js\?v=\d+/);
- assert.match(html,/pixel-scene\.js\?v=3/);
+ assert.match(html,/pixel-scene\.js\?v=4/);
+ assert.ok(html.indexOf('sprite-composer-v1.js?v=1')<html.indexOf('pixel-scene.js?v=4'));
+ assert.ok(read('sprite-composer-v1.js').includes('function character('));
  assert.match(html,/v2-style\.css/);
  assert.match(html,/light-theme\.css\?v=1/);
  assert.match(read('v2-style.css'),/@media\(max-width:440px\)/);
