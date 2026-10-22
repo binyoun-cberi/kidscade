@@ -48,14 +48,14 @@
       <div class="hero-art" aria-hidden="true"><span class="orbit orbit-a"></span><span class="orbit orbit-b"></span><span class="globe">◉</span></div>
       <div class="intro-copy">
         <p class="eyebrow">시대는 달라도, 한 사람의 삶</p>
-        <h1>한반도의 어느 시대,<br><em>단 하나의 인생.</em></h1>
+        <h1>어디에서 태어나든,<br><em>단 하나의 인생.</em></h1>
         <p class="lead">태어날 시대와 이름을 직접 정해도 좋습니다. 우연에 맡기면 예상하지 못한 삶이 펼쳐집니다.</p>
         
-        <div class="historical-picker" aria-label="한국사의 출생 연도와 지역">
+        <div class="historical-picker" aria-label="태어날 시대 선택">
           <label for="birthYearInput">태어날 연도</label>
           <div class="historical-picker-fields">
             <input id="birthYearInput" type="number" min="1200" max="2026" step="1" value="2026" inputmode="numeric" aria-describedby="eraHelp">
-            <input id="birthLocation" type="hidden" value="korea" aria-label="출생 지역"><span class="korean-only-note">출생지는 한반도 안에서 정해집니다</span>
+            <span class="korean-only-note">고려·조선은 한반도, 근현대는 세계 여러 나라</span>
           </div>
           <div class="era-presets" role="group" aria-label="시대 바로 선택">
             <button type="button" data-era-year="2026" aria-pressed="true">2026년 대한민국</button>
@@ -80,6 +80,9 @@
             <label for="birthNameInput">이름
               <input id="birthNameInput" type="text" maxlength="20" autocomplete="off" placeholder="이름을 적거나 비워 두세요">
             </label>
+            <label for="birthCountryInput" id="birthCountryGroup">태어날 나라
+              <select id="birthCountryInput"><option value="">세상 어디든</option></select>
+            </label>
             <label for="birthGenderInput">성별
               <select id="birthGenderInput"><option value="">우연에 맡기기</option><option value="남자">남자</option><option value="여자">여자</option></select>
             </label>
@@ -93,7 +96,7 @@
           <p id="birthIdentityError" class="birth-custom-error hidden" role="alert"></p>
           <div class="birth-custom-controls"><button id="birthRandomBtn" type="button">나머지는 우연에 맡기기</button><small id="birthIdentityHelp">당시의 신분과 집안은 태어난 시대에 맞게 표시됩니다.</small></div>
         </section>
-        <button id="drawBtn" class="primary" type="button">한반도의 어느 시대에서 시작될까? <span aria-hidden="true">↗</span></button>
+        <button id="drawBtn" class="primary" type="button">어떤 삶이 기다릴까? <span aria-hidden="true">↗</span></button>
         <button id="resumeBtn" class="secondary hidden" type="button">이어서 살아가기</button>
         <p class="footnote">시간은 흘러가고, 중요한 순간마다 당신이 길을 고릅니다.</p>
       </div>
