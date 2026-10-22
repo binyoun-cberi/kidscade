@@ -46,7 +46,7 @@ test('historical faces keep appearance through 10/30/70, but silhouettes and wor
  for(const age of [10,30,70]){
    const image=canvas();
    const a=Historical.actor(image.ctx,{seed:1729,id:'self',age,feet:196,x:330,
-       activity:'work',phase:age%2,scale:1});
+       activity:'craft',phase:age%2,scale:1});
    assert.deepEqual(a.identity,stable);
    assert.equal(a.feet,196);
    assert.ok(image.shapes.every(row=>row.every((v,i)=>i===4||Number.isInteger(v))));
@@ -57,9 +57,9 @@ test('historical faces keep appearance through 10/30/70, but silhouettes and wor
  assert.equal(young.ageBand,'child');assert.equal(grown.ageBand,'adult');assert.equal(older.ageBand,'elder');
  assert.ok(young.height<grown.height&&older.height<grown.height);
  const child=canvas(),adult=canvas();
- Historical.actor(child.ctx,{seed:1729,age:10,activity:'work'});
- Historical.actor(adult.ctx,{seed:1729,age:30,activity:'work'});
- assert.ok(!child.shapes.some(row=>row[4]==='#a68354'),'child cannot carry an adult work basket');
+ Historical.actor(child.ctx,{seed:1729,age:10,activity:'craft'});
+ Historical.actor(adult.ctx,{seed:1729,age:30,activity:'craft'});
+ assert.ok(!child.shapes.some(row=>row[4]==='#a68354'),'child cannot carry an adult craft basket');
  assert.equal(adult.shapes.filter(row=>row[4]==='#a68354').length,1);
 });
 test('Goryeo condition affects shelters without generating people or changing the economy',()=>{
@@ -111,4 +111,40 @@ test('historical composer precedes both renderers and never ships licensed exter
  assert.doesNotMatch(file('historical-sprites-v1.js'),/fetch\(|XMLHttpRequest|localStorage|sessionStorage|https?:\/\//);
  const css=file('goryeo-v343.css');
  assert.match(css,/#goryeoPlay canvas\{image-rendering:crisp-edges;image-rendering:pixelated/);
+});
+
+
+test('Goryeo recorded livelihood selects distinct tools and never gives children adult tools',()=>{
+ const jobs=[
+  ['농사','farm','#72776b'],['삼베 짜기','weave','#d6c6a6'],
+  ['모시 짜기','weave','#d6c6a6'],['나루 일','river','#bdad81'],
+  ['바구니 만들기','craft','#a68354'],['글과 셈','read','#e4d4ad']
+ ];
+ for(const [job,activity,color] of jobs){
+   assert.equal(Historical.activityFor(job,30),activity,job);
+   const image=canvas(),before=JSON.stringify(birth);
+   Historical.actor(image.ctx,{age:30,activity,seed:1729,id:'self',phase:1});
+   assert.ok(image.shapes.some(x=>x[4]===color),job+' has its own visible prop');
+   assert.equal(JSON.stringify(birth),before);
+ }
+ for(const age of [3,10,13,70,90]){
+  for(const [job] of jobs)assert.equal(Historical.activityFor(job,age),'idle');
+ }
+ assert.equal(Historical.activityFor('농사',30,true),'walk','away from home is walking, not farming');
+ assert.equal(Historical.activityFor('아직 정해지지 않음',30),'idle');
+ const l=clone(birth),people=Historical.occupants(l,l.goryeo343);
+ assert.equal(people[0].activity,'farm');
+ assert.equal(people[1].activity,'weave');
+ assert.equal(people[2].activity,'read');
+});
+test('tools follow the wrist on both frames while the ground baseline stays fixed',()=>{
+ for(const [activity,ink] of [['farm','#72776b'],['weave','#d6c6a6'],['river','#bdad81'],['craft','#a68354']]){
+  const a=canvas(),b=canvas();
+  const first=Historical.actor(a.ctx,{x:340,feet:192,age:35,activity,phase:0,seed:14});
+  const second=Historical.actor(b.ctx,{x:340,feet:192,age:35,activity,phase:1,seed:14});
+  const prop=shapes=>shapes.filter(x=>x[4]===ink).map(x=>x[1]);
+  assert.ok(prop(a.shapes).length>0&&prop(b.shapes).length>0,activity);
+  assert.notDeepEqual(prop(a.shapes),prop(b.shapes),'wrist-connected '+activity+' should move');
+  assert.equal(first.feet,second.feet);
+ }
 });
