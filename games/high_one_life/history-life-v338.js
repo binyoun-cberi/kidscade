@@ -65,7 +65,7 @@ function prompt(l){
   letter:'글자를 익힌 뒤, 다른 고을에 사는 '+(V4.ensure(l).people.find(p=>p.alive&&p.birthYear<=l.year&&p.atHome===false)?.name||'식구')+'에게 인편으로 보낼 안부를 직접 적어 보려 한다.',
   court:q.title+' 뒤 소속 관청에서 지난 업무와 납부 문서를 다시 정리하고 있다. 맡은 장부를 살펴 달라는 말을 들었다.',
   purge:q.title+' 뒤 조정의 인사와 상소 문서가 다시 거론된다. '+(tied(l)?'전에 함께 의견을 냈던 사람들의 이름이 있어 내 문서도 살펴야 한다.':'관직에서 맡았던 업무의 근거를 정리할 필요가 있다.'),
-  tax:q.title+'에 따라 우리 집이 내야 할 몫이 적힌 장부를 살핀다. 밭의 크기와 납부 내역을 확인해야 한다.',
+  tax:q.title+'에 따라 우리 집이 내야 할 세금이 적힌 장부를 살핀다. 밭의 크기와 납부 내역을 확인해야 한다.',
   hangul:'언문으로 말을 적는 사람에게서 글자 모양과 소리를 배우게 되었다. 일을 마친 뒤에도 연습할 시간을 내야 한다.',
   farmbook:'농서의 내용을 아는 사람에게 씨앗을 뿌리고 밭을 돌보는 방법을 들었다. 집안의 밭 한쪽에서 익숙한 방법과 비교해 볼 수 있다.',
   medicine:'함께 의술을 익히는 사람이 동의보감에 실린 처방을 보여 주었다. 약재와 쓰는 법을 대조하며 읽을 시간이 필요하다.',
@@ -79,7 +79,7 @@ function prompt(l){
  else if(q.key==='news')options=[opt(ensure(l).hangul>0?'전에 익힌 글자로 짧은 기사를 읽는다':'기사를 읽어 주는 사람에게 뜻을 묻는다','읽거나 들은 내용을 나중에 다시 확인한다.',ensure(l).hangul>0?'read':'listen'),opt('기사에 나온 소식을 이웃과 대조한다','들은 말을 모두 사실로 여기지 않고 서로 아는 일을 묻는다.','listen'),opt('일을 마치러 돌아간다','신문을 읽는 일은 다음으로 미룬다.','keep')];
  else if(q.key==='letter')options=[opt('안부를 직접 적어 인편에 맡긴다','종이와 전달할 품을 들인다. 답장이 올 때까지는 시간이 걸린다.','letter'),opt('전할 말을 인편에 부탁한다','직접 편지를 쓰지는 않고 식구의 안부를 묻는다.','message'),opt('이번에는 소식을 보내지 않는다','당장 맡은 일을 이어 간다.','keep')];
  else if(q.key==='court'||q.key==='purge')options=[opt('맡았던 장부와 문서의 근거를 정리한다','베껴 적고 대조하는 데 시간과 품이 든다.','proof'),opt('맡은 일의 사정을 글로 밝혀 낸다','관직에서 한 일에 근거를 붙인다. 정치적 연루가 있으면 조사를 받을 수도 있다.','petition'),opt('관직을 내려놓고 고향으로 돌아간다','벼슬의 수입과 관직을 잃고 생업을 다시 꾸려야 한다.','retire')];
- else if(q.key==='tax')options=[opt('지난 납부 내역과 새 장부를 대조한다','장부를 확인해도 세금이 자동으로 줄거나 빚이 사라지지는 않는다.','proof'),opt(seeded?'곡식 두 몫을 따로 두어 납부를 준비한다':'따로 둘 곡식이 없어 납부 시기를 물어본다','지금 쓸 수 있는 곡식이 줄어든다. 나중에 실제 납부할 몫에 보탠다.',seeded?'reserve':'ask'),opt('밭일을 이어 가며 정해진 몫을 마련한다','일손을 더 들이지만 당장 세금이 면제되는 것은 아니다.','work')];
+ else if(q.key==='tax')options=[opt('지난 납부 내역과 새 장부를 대조한다','장부를 확인해도 세금이 자동으로 줄거나 빚이 사라지지는 않는다.','proof'),opt(seeded?'곡식을 따로 덜어 납부를 준비한다':'따로 둘 곡식이 없어 납부 시기를 물어본다','지금 쓸 수 있는 곡식이 줄어든다. 나중에 실제 납부할 곡식에 보탠다.',seeded?'reserve':'ask'),opt('밭일을 이어 가며 정해진 세금을 마련한다','일손을 더 들이지만 당장 세금이 면제되는 것은 아니다.','work')];
  else if(q.key==='hangul')options=[opt('하루 일을 마친 뒤 글자 소리를 익힌다','일을 마친 뒤에도 글자를 읽고 쓰는 연습을 이어 간다.','learn'),opt('아는 글자를 따라 적으며 천천히 익힌다','여러 번 적어 보고 나중에 다시 읽어 본다.','copy'),opt('당장은 생업을 이어 간다','배우는 시간을 내지 못한다.','keep')];
  else if(q.key==='farmbook'||q.key==='crop')options=[opt(paid&&seeded?'밭 한쪽에만 시험해 본다':'씨앗과 여비가 부족해 재배하는 모습을 살핀다','시험에는 돈과 씨앗이 필요하다. 수확은 나중에 확인한다.',paid&&seeded?'plant':'observe'),opt('이웃의 재배법을 보고 물길부터 손본다','품이 들지만 새 종자를 얻거나 수확한 것은 아니다.','observe'),opt('올해는 익숙한 작물을 지킨다','기존 농사를 이어 간다.','keep')];
  else if(q.key==='medicine')options=[opt('처방과 약재를 대조하며 옮겨 적는다','읽고 익히는 데 품이 든다. 책을 읽었다고 병이 곧 낫지는 않는다.','learn'),opt('쓰는 약재를 선배와 함께 살핀다','약재의 이름과 쓰임을 확인한다.','copy'),opt('지금 맡은 돌봄과 일을 이어 간다','새 처방 공부는 미룬다.','keep')];
@@ -100,13 +100,13 @@ function choose(l,index){
  if(action==='petition'){l.change({knowledge:1,health:-1});text='맡은 일의 경위와 문서의 근거를 적어 관청에 냈다.';follow={type:'petition',due:l.year+1,risk:q.key==='purge'&&(tied(l)||V5.ensure(l).rank>=2)};}
  if(action==='letter'||action==='message'){const relative=V4.ensure(l).people.find(p=>p.alive&&p.birthYear<=l.year&&p.atHome===false);if(!relative)return false;cash(l,-Math.min(1,Math.max(0,j.capital)));l.change({health:-1});text=action==='letter'?relative.name+'에게 보낼 안부를 적어 인편에 맡겼다.':relative.name+'에게 전할 안부를 인편에 부탁했다.';follow={type:'letter',due:l.year+1,relativeId:relative.id};}
  if(action==='retire'){j.office=false;V5.ensure(l).rank=0;j.occupation='고향에서 생업을 꾸리는 전직 관리';V5.ensure(l).role=j.occupation;l.career=j.occupation;cash(l,-Math.min(3,Math.max(0,j.capital)));if(l.joseon325)l.joseon325.politics.stage='retired';text='관직을 내려놓고 고향으로 돌아갔다. 맡던 벼슬과 그 수입이 끊겼다.';}
- if(action==='reserve'){v.grain-=2;text='곡식 두 몫을 납부할 몫으로 따로 묶어 두었다. 끼니에 쓸 곳간의 곡식은 그만큼 줄었다.';follow={type:'reserve',due:l.year+1,amount:2,region:j.region};}
- if(action==='ask'){l.change({health:-1});text='따로 둘 곡식이 없어 관아에 납부 시기를 물었다. 내야 할 몫은 그대로 남았다.';}
+ if(action==='reserve'){v.grain-=2;text='세금으로 낼 곡식을 따로 묶어 두었다. 끼니에 쓸 곳간의 곡식은 그만큼 줄었다.';follow={type:'reserve',due:l.year+1,amount:2,region:j.region};}
+ if(action==='ask'){l.change({health:-1});text='따로 둘 곡식이 없어 관아에 납부 시기를 물었다. 내야 할 세금은 그대로 남았다.';}
  if(action==='work'){l.change({health:-2});text='밭에서 일하는 시간을 늘렸다. 정해진 납부 부담은 그대로였다.';}
  if(action==='learn'||action==='copy'){l.change({health:-1});text=q.key==='hangul'?'글자를 따라 적고 소리 내어 읽으며 저녁 시간을 보냈다.':'의서의 처방과 약재 이름을 대조해 종이에 옮겨 적었다.';follow={type:'study',due:l.year+2,topic:q.key};}
- if(action==='plant'){cash(l,-2);v.grain-=2;l.change({health:-2});text=q.key==='crop'?'씨줄기를 구해 밭 한쪽에 심었다. 여비와 씨앗 몫을 쓰고 물 빠짐을 살폈다.':'씨앗과 품을 들여 밭 한쪽에 배운 농법을 시험했다.';follow={type:'harvest',due:l.year+1,region:j.region,topic:q.key};}
+ if(action==='plant'){cash(l,-2);v.grain-=2;l.change({health:-2});text=q.key==='crop'?'씨줄기를 구해 밭 한쪽에 심었다. 여비와 씨앗을 쓰고 물 빠짐을 살폈다.':'씨앗과 품을 들여 밭 한쪽에 배운 농법을 시험했다.';follow={type:'harvest',due:l.year+1,region:j.region,topic:q.key};}
  if(action==='observe'){l.change({knowledge:1,health:-1});text=q.key==='map'?'지도를 가진 사람에게 고을과 나루의 위치를 물었다. 직접 길을 확인하러 떠나지는 않았다.':q.key==='rail'||q.key==='coin'||q.key==='port'?'거래하는 곳을 찾아가 길과 값을 물었다. 거래에 돈을 넣지는 않았다.':'이웃이 밭을 돌보는 모습을 보고 물길과 흙을 살폈다. 새 작물을 심지는 않았다.';}
- if(action==='trade'){cash(l,-2);l.change({health:-1});text=q.key==='port'?'운반비를 들여 개항장으로 보내는 물건을 맡았다. 받을 값과 인도할 곳을 적어 두었다.':q.key==='rail'?'여비와 운반 비용을 들여 역까지 물건을 실어 나르는 거래를 맡았다.':'비용을 들여 동전으로 값을 받는 거래를 맡고 받을 몫을 적었다.';follow={type:'trade',due:l.year+1,region:j.region,topic:q.key};}
+ if(action==='trade'){cash(l,-2);l.change({health:-1});text=q.key==='port'?'운반비를 들여 개항장으로 보내는 물건을 맡았다. 받을 값과 인도할 곳을 적어 두었다.':q.key==='rail'?'여비와 운반 비용을 들여 역까지 물건을 실어 나르는 거래를 맡았다.':'비용을 들여 동전으로 값을 받는 거래를 맡고 받을 돈을 적었다.';follow={type:'trade',due:l.year+1,region:j.region,topic:q.key};}
  if(action==='labor'){l.change({health:-2});const earned=cash(l,2);text='짐을 나르는 일을 마치고 품삯을 받았다. 무거운 짐을 지고 오가느라 어깨가 뻐근했다.';}
  if(action==='keep')text=({map:'지도를 살피는 일은 미루고 익숙한 길을 따라 물건을 날랐다.',news:'신문을 읽던 자리를 떠나 마치지 못한 일을 하러 돌아갔다.',port:'개항장으로 보내는 거래는 맡지 않고 기존 거래처와 일을 이어 갔다.',letter:'안부를 전하는 일은 미루고 맡은 생업을 이어 갔다.',hangul:'글 배우는 일은 미루고 당장 맡은 생업을 이어 갔다.',medicine:'새 처방을 옮겨 적는 일은 미루고 맡은 돌봄을 이어 갔다.',crop:'고구마 씨줄기를 사지 않고 익숙한 작물을 돌봤다.',farmbook:'새 농법을 시험하지 않고 하던 방식으로 밭을 돌봤다.',rail:'새 노선의 거래는 맡지 않고 기존의 운송 일을 이어 갔다.',coin:'동전으로 받는 새 거래는 맡지 않고 익숙한 거래처와 일을 이어 갔다.'})[q.key];
  log(l,q,text);s.decisions.push({...q,action,result:text,year:l.year});s.decisions=s.decisions.slice(-60);
