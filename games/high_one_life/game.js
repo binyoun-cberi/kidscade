@@ -1419,11 +1419,8 @@
       const text=document.createElement('span');text.textContent=e.text;
       const copy=document.createElement('div');copy.append(text);
       const effect=UIFlow.decisionAftermath(life.log,e);
-      if(effect){
-        const detail=document.createElement('small');
-        detail.textContent=effect.text;
-        copy.append(detail);
-      }
+      const detail=document.createElement('small');
+      if(effect){detail.textContent=effect.text;copy.append(detail);}
       else if(['history-choice','era-choice','care13-choice','joseon-choice','joseon2-choice','joseon3-choice','joseon4-choice','joseon5-choice','joseon6-choice','joseon7-choice','joseon9-choice','colonialDaily-choice','joseonAnnals-choice','joseon11-choice','joseon12-choice','joseon13-choice','joseon14-choice','joseon339-choice','joseon340-choice','joseon341-choice'].includes(e.kind)){
         const aftermath={'joseon341-choice':'joseon341-followup','joseon340-choice':'joseon340-followup','joseon339-choice':'joseon339-followup','history-choice':'history-followup','era-choice':'era-followup','care13-choice':'care13-followup',
           'joseon-choice':'joseon-followup','joseon2-choice':'joseon2-followup',
