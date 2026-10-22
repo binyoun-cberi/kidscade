@@ -182,3 +182,43 @@ test('an actual Goryeo refuge pauses ordinary farm and ferry poses',()=>{
  Historical.scene(canvas().ctx,displaced,displaced.goryeo343);
  assert.equal(JSON.stringify(displaced),before);
 });
+
+
+test('gold marker stays directly above the actual actor head at every age',()=>{
+ for(const age of [0,2,10,14,30,70,90]){
+  const life=clone(birth);life.age=age;life.year=life.birthYear+age;life.goryeo343.people=[];
+  const frame=canvas(),people=Historical.occupants(life,life.goryeo343);
+  assert.equal(people.length,1);
+  Historical.scene(frame.ctx,life,life.goryeo343);
+  const scale=age<12?.72:1;
+  const sample=Historical.actor(canvas().ctx,{x:330,feet:195,age,seed:life.seed,id:'self',scale});
+  const marker=frame.shapes.filter(r=>r[4]==='#e3c47d');
+  const stem=frame.shapes.filter(r=>r[4]==='#e6cf8e');
+  assert.equal(marker.length,1);
+  assert.equal(stem.length,1);
+  assert.deepEqual(marker[0].slice(0,4),[325,sample.top-7,10,4]);
+  assert.equal(stem[0][1]+stem[0][3],sample.top-1,
+    'gold marker cannot intrude through the hairstyle');
+ }
+});
+test('ferry inlet is visually near the central actor but below the feet',()=>{
+ const l=clone(birth);l.goryeo343.people=[];
+ l.goryeo343.job='나루 일';
+ const frame=canvas();
+ Historical.scene(frame.ctx,l,l.goryeo343);
+ const inlet=frame.shapes.filter(r=>r[4]==='#759ca0'&&r[0]===206&&r[2]===185);
+ assert.equal(inlet.length,1);
+ assert.ok(inlet[0][0]+inlet[0][2]>=330,'water reaches the protagonist x-position');
+ assert.ok(inlet[0][1]>195,'river begins below the feet');
+ const deck=frame.shapes.find(r=>r[4]==='#947653');
+ assert.ok(deck&&deck[0]<=330&&deck[0]+deck[2]>=330);
+ const before=JSON.stringify(l);
+ Historical.scene(canvas().ctx,l,l.goryeo343);
+ assert.equal(JSON.stringify(l),before);
+});
+test('traveling infant does not suddenly acquire an adult walking pose',()=>{
+ const l=clone(birth);l.age=2;l.year=l.birthYear+2;l.goryeo343.away=1;
+ assert.equal(Historical.occupants(l,l.goryeo343)[0].activity,'idle');
+ l.age=8;l.year=l.birthYear+8;
+ assert.equal(Historical.occupants(l,l.goryeo343)[0].activity,'walk');
+});
