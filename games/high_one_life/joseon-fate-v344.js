@@ -24,7 +24,7 @@
   const bound=['사노비','공노비'].includes(social.origin)&&!social.freed;
   const open= !bound&&social.origin!=='왕실 종친'&&!social.monastic;
   const options=[];
-  if(age(l)>=17&&age(l)<=34&&l.stats.knowledge>=38&&open&&
+  if(age(l)>=17&&age(l)<=34&&l.gender==='남자'&&l.stats.knowledge>=38&&open&&
     !j.office&&['양반','상민','중인'].includes(j.birthStatus))options.push('scholar');
   if(age(l)>=27&&age(l)<=65&&j.office&&open&&social.rank>=1)options.push('magistrate');
   if(age(l)>=16&&age(l)<=60&&bound)options.push('slave');
@@ -108,6 +108,10 @@
   const s=ensure(l);
   if(!s||!plan(l,key)||s.active===key||s.seen.includes(key))return false;
   s.seen.push(key);s.seen=s.seen.slice(-24);
+  if(key==='harvest'){
+   const store=V2.ensure(l);store.grain=Math.max(0,store.grain-4);
+   costs(l,-12);remember(l,s,'비바람과 흉년으로 수확이 줄었다. 곳간의 곡식과 살림돈이 줄어 앞으로를 의논해야 했다.');
+  }
   if(!l.pending&&!s.active){s.active=key;l.pending='joseon344:'+key;return true;}
   s.follow={key,due:l.year};return true;
  }
