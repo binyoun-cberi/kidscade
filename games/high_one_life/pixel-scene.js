@@ -116,8 +116,8 @@
     if(Composer)Composer.character(ctx,{x:baseX,feet:baseY,age,scale,identity:life.seed,
       pose:isRural&&farming?'work':age>=65?'idle':life.career==='학생'?'walk':'idle',frame:life.year%2});
     else person(baseX,baseY,scale,age<20?'#4a818b':age>=65?'#856a8f':'#cb816c');
-    if(isRural&&farming){
-      // A short hoe beside the hand, anchored to the on-screen work plot.
+    if(isRural&&farming&&!Composer){
+      // Keep the fallback art functional; composer tools follow the wrist.
       fill(baseX+scale*8,baseY-scale*19,4,30,'#73583d');
       fill(baseX+scale*7,baseY-scale*19,17,4,'#6b7370');
     }
