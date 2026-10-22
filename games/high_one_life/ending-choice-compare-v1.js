@@ -26,9 +26,23 @@
         changed:first.length!==second.length||first.some((choice,index)=>choice!==second[index])};
     });
   }
+  function summary(previous,current){
+    const entries=rows(previous,current);
+    const sum=list=>entries.reduce((total,entry)=>total+entry[list].length,0);
+    return Object.freeze({
+      before:sum('before'),after:sum('after'),
+      comparedAges:entries.length,
+      changedAges:entries.filter(entry=>entry.changed).length,
+      unchangedAges:entries.filter(entry=>!entry.changed).length
+    });
+  }
+  function summaryText(result){
+    return '이전 선택 '+result.before+'건 · 이번 선택 '+result.after+
+      '건 · 달라진 나이 '+result.changedAges+'곳';
+  }
   function readable(choices){
     return choices.length?choices.map((s,i)=>(choices.length>1?String(i+1)+'. ':'')+s).join(' / ')
       :'그 나이에 기록된 선택 없음';
   }
-  return Object.freeze({groupByAge,rows,readable});
+  return Object.freeze({groupByAge,rows,summary,summaryText,readable});
 });
