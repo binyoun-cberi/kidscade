@@ -67,11 +67,11 @@ aside{margin-top:20px;font-size:13px}
     const canvas=document.createElement('canvas');canvas.width=600;canvas.height=258;
     canvas.setAttribute('aria-label',caption.textContent+' 장면');
     const sample={
-      seed,year:2000+age+frame,age,career:place.id==='farm'&&age<16?'학생':place.career,
+      seed,year:1950+age,age,career:place.id==='farm'&&age<16?'학생':place.career,
       profile:{settlement:place.settlement,city:'예제 마을',partner:false,child:false},
       world:{educationYears:age<19?6:12},arc:{}
     };
-    window.OneLifeScene.paint(canvas,sample);
+    window.OneLifeScene.paint(canvas,sample,{frame});
     const note=document.createElement('small');
     note.textContent=sample.career+' · '+sample.profile.settlement+' · 시드 '+seed;
     figure.append(caption,canvas,note);matrix.append(figure);
