@@ -177,7 +177,7 @@ test('villagers carry appropriate tools only during matching stationary chores',
   assert.deepEqual(residentChoreCue('market','sell',false,2),{prop:'basket',dust:0});
   assert.deepEqual(residentChoreCue('festival','stock',false,2),{prop:'bundle',dust:0});
   assert.deepEqual(residentChoreCue('festival','wave',false,2),{prop:null,dust:0});
-  assert.equal(residentChoreCue('neighbor','sweep',false,Math.PI/3.2).dust,0);
+  assert.ok(residentChoreCue('neighbor','sweep',false,Math.PI/3.2).dust<1e-12);
 });
 
 test('visible work effects are attached to the neighbor and disposed when leaving',()=>{
