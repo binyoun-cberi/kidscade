@@ -28,29 +28,39 @@
  function character(ctx,{x=300,feet=217,age=25,scale=1.4,identity=0,pose='idle',frame=0}={}){
    if(!ctx)return null;
    const a=appearance({seed:identity}),unit=Math.max(1,Math.round(scale*2));
-   const child=age<13,elder=age>=65;
+   const toddler=age<6,child=age<13,teen=age<19,elder=age>=65;
+   const ageBand=toddler?'toddler':child?'child':teen?'teen':elder?'elder':'adult';
    const u=(v)=>v*unit;
    const px=(bx,by,bw,bh,c)=>rect(ctx,x+u(bx),feet+u(by),u(bw),u(bh),c);
-   const body=child?6:8,head=child?6:7;
+   const body=toddler?5:child?6:teen?7:elder?7:8;
+   const head=toddler?7:child?6:7;
+   const lean=elder?1:0;
    const stride=pose==='walk'?(frame%2===0?1:-1):0;
-   const arm=pose==='work'?(frame%2===0?-2:1):0;
+   const working=pose==='work'&&age>=13;
+   const arm=working?(frame%2===0?-2:1):0;
    // Drop shadow anchors all generations to the same ground baseline.
    px(-4,-1,9,1,'#536b61');
    px(-3+stride,-6,2,5,'#293b45');px(1-stride,-6,2,5,'#293b45');
    px(-3,-6,6,1,'#4c4a4a');
-   px(-4,-6-body,8,body,elder?'#7b7185':a.clothing);
-   px(-6,-5-body+arm,2,6,a.clothing);px(4,-5-body-arm,2,6,a.clothing);
+   px(-4+lean,-6-body,8,body,elder?'#7b7185':a.clothing);
+   px(-6+lean,-5-body+arm,2,6,a.clothing);px(4+lean,-5-body-arm,2,6,a.clothing);
    px(-3,-6-body-head,6,head,a.skin);
    const top=-6-body-head-1;
    if(a.haircut===0){px(-3,top,6,2,a.hair);px(-4,top+2,1,3,a.hair);}
    else if(a.haircut===1){px(-4,top,8,2,a.hair);px(-4,top+2,2,4,a.hair);}
    else if(a.haircut===2){px(-3,top,7,2,a.hair);px(3,top+2,1,4,a.hair);}
    else{px(-4,top,7,3,a.hair);}
-   if(elder){px(-4,top,4,1,'#c4bbaa');}
+   if(elder){px(-4,top,5,2,'#c4bbaa');px(2,top+2,2,1,'#b8b7af');}
+   if(working){
+     // Hoe starts at the moving right wrist, not an unrelated screen coordinate.
+     const gripX=6+lean,gripY=-4-body-arm;
+     px(gripX,gripY-5,1,12,'#866b4d');
+     px(gripX-1,gripY+5,6,2,'#727d7b');
+   }
    px(-2,top+head-3,1,1,'#28343a');px(1,top+head-3,1,1,'#28343a');
    if(a.face===1)px(0,top+head-1,1,1,'#9c614d');
    if(a.face===2)px(-1,top+head-1,2,1,'#70483c');
-   return Object.freeze({identity:a,feet,x,width:8*unit,height:(6+body+head+3)*unit});
+   return Object.freeze({identity:a,feet,x,ageBand,width:8*unit,height:(6+body+head+3)*unit});
  }
  function distant(ctx,{rural=false,seed=0,season=0}={}){
    // Rectangular 2px tiles, no subpixel anti-aliasing or network assets.
