@@ -130,6 +130,8 @@ function queue(l,s,e){
  s.seen.push(e.id);s.queue.push({id:l.year+'-'+e.id,eventId:e.id,year:l.year});s.queue=s.queue.slice(-4);
 }
 function promote(l,s){
+ // When the player is the local magistrate, avoid surfacing a second NPC ruler.
+ if(['hearings','review'].includes(l.joseon345?.stage))return;
  if(!s.active&&!l.pending&&l.alive&&J.inOldEra(l)&&s.queue.length){
   s.active=s.queue.shift();l.pending='joseon19:'+s.active.id;
  }
@@ -137,6 +139,8 @@ function promote(l,s){
 function yearly(l,s){
  if(!era(l)||!s||s.processedYear>=l.year)return;
  s.processedYear=l.year;
+ // The player's own trials and audit use the v345 ledger during their term.
+ if(['hearings','review'].includes(l.joseon345?.stage))return;
  // Inspectors are not automatically dispatched everywhere; these are fictional
  // opportunities shaped by grievance, documentary evidence and patronage.
  const o=s.office,ledger=V18.ensure(l);
