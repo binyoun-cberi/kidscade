@@ -150,17 +150,13 @@
     <section id="play" class="section play hidden">
 <div id="goryeoPlay" hidden></div>
       <details id="historicalUnits" class="historical-units" hidden>
-        <summary>옛날의 길이·곡식·토지 단위 알아보기</summary>
-        <p>이 안내는 역사 속 도량형을 배우기 위한 자료입니다. <strong>게임의 곡식·땅·돈 수치는 실제 되·말·섬이나 결로 환산한 값이 아닙니다.</strong></p>
+        <summary>옛날에는 어떻게 세었을까?</summary>
         <dl>
-          <div><dt>길이 — 푼·치·자·장</dt><dd>10푼 = 1치, 10치 = 1자, 10자 = 1장. 조선 전기에는 사용 목적에 따라 여러 종류의 자를 썼습니다.</dd></div>
-          <div><dt>용도별 자</dt><dd>조선 전기 추정치: 주척 약 20.6cm, 영조척 약 30.8cm, 황종척 약 34.5cm, 포백척 약 46.7cm. 현대의 일반적인 '한 자 ≈ 30.3cm'를 모든 시대에 적용하지 않습니다.</dd></div>
-          <div><dt>부피 — 홉·되·말</dt><dd>10홉 = 1되, 10되 = 1말. 실제 리터 환산값은 시대와 지역의 도량형 기준에 따라 달라졌습니다.</dd></div>
-          <div><dt>섬(석)</dt><dd>곡식을 세는 더 큰 단위입니다. 시대와 제도에 따라 기준이 달라 단일한 리터값으로 환산하지 않습니다.</dd></div>
-          <div><dt>토지 — 결·마지기</dt><dd>결은 수확과 토지 등급을 고려한 역사적 과세 단위로 실제 면적이 일정하지 않습니다. 마지기도 지역·재배 조건에 따라 넓이가 달랐습니다.</dd></div>
-          <div><dt>무게 — 돈·냥·근</dt><dd>돈·냥·근과 같은 단위를 썼지만 시대·용도별 중량 체계가 다를 수 있으므로 이 게임의 재화 수치와 동일시하지 않습니다.</dd></div>
+          <div><dt>곡식 한 말</dt><dd>곡식을 담아 세던 말이에요. 조금씩 담으면 되나 홉이라고도 했지요.</dd></div>
+          <div><dt>옷감 한 필</dt><dd>옷을 지을 천을 셀 때 쓰던 말이에요.</dd></div>
+          <div><dt>밭 한 마지기</dt><dd>볍씨를 뿌릴 만한 밭을 떠올려 보세요.</dd></div>
+          <div><dt>자와 치</dt><dd>옷감이나 나무의 길이를 재던 말이에요.</dd></div>
         </dl>
-        <p class="historical-units-source">참고: <a href="https://encykorea.aks.ac.kr/Article/E0060270" target="_blank" rel="noopener noreferrer">한국민족문화대백과사전 「표준척」</a> · <a href="https://folkency.nfm.go.kr/kr/topic/detail/8452" target="_blank" rel="noopener noreferrer">국립민속박물관 「영조척」</a>. 역사 단위의 환산은 연구와 시기에 따라 차이가 있습니다.</p>
       </details>
       <div class="playing-top">
         <div class="place"><span id="placeFlag" class="place-flag" aria-hidden="true">🌐</span><div><span class="eyebrow">당신의 이야기</span><strong id="placeName">출생 시대와 지역</strong><span id="nameHeadline" class="name-headline">—</span></div></div>
@@ -193,8 +189,9 @@
               <button type="button" data-life-speed="4" aria-pressed="false">4배</button>
               <button type="button" data-life-speed="8" aria-pressed="false">8배</button>
               <button id="v9NextChoice" type="button">다음 선택까지</button>
+              <button id="autoChoiceBtn" type="button" aria-pressed="false">자동 선택 끔</button>
             </div>
-            <p class="hint">선택지가 나타나면 시간이 자동으로 멈춥니다. 화면을 닫거나 다른 앱으로 이동하면 일시정지됩니다.</p>
+            <p class="hint">자동 선택을 켜면 알아서 골라요. 언제든 끌 수 있어요.</p>
           </div>
           </section>
           <div class="focus-block">
