@@ -102,4 +102,6 @@ test('historical composer precedes both renderers and never ships licensed exter
  assert.match(file('goryeo-view-v343.js'),/historical\.scene\(c,l,g/);
  assert.match(file('joseon-pixel-v2.js'),/Historical\?\.appearance\(life\.seed,personId\)/);
  assert.doesNotMatch(file('historical-sprites-v1.js'),/fetch\(|XMLHttpRequest|localStorage|sessionStorage|https?:\/\//);
+ const css=file('goryeo-v343.css');
+ assert.match(css,/#goryeoPlay canvas\{image-rendering:crisp-edges;image-rendering:pixelated/);
 });
