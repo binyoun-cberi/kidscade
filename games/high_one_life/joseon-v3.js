@@ -84,7 +84,7 @@ const EVENTS={
  harvest:{
   title:'수확을 마친 뒤의 걱정',
   options:[
-   ['내년 봄에 쓸 씨앗을 남겨 둔다','먹을 몫을 조금 아껴 다음 농사를 대비한다','seed',{wealth:-3,knowledge:2}],
+   ['내년 봄에 쓸 씨앗을 남겨 둔다','먹을 양식을 조금 아껴 다음 농사를 대비한다','seed',{wealth:-3,knowledge:2}],
    ['먼저 이웃의 형편을 살핀다','양식을 나누거나 품앗이할 일을 찾는다','mutual',{bonds:6,wealth:-2}],
    ['해진 도구와 곳간을 손질한다','헛되이 잃는 곡식이 없도록 살핀다','mend',{knowledge:3,health:-2}]
   ]
