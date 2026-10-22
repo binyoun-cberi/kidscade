@@ -191,7 +191,8 @@
     respected:'백성의 기억에 남은 수령',dismissed:'파직된 전직 수령',
     exile:'유배를 떠난 전직 수령',advanced:'다른 관직으로 옮긴 관리',
     ordinary:'임기를 마친 수령'}[s.judgment]||''):'';
-  return {label:text,hearings:s.caseIndex,ending:s.judgment,monument:s.monument};
+  return {label:text,hearings:s.caseIndex,decisions:s.caseIndex+(s.stage==='done'?1:0),
+   ending:s.judgment,monument:s.monument};
  }
  function hydrate(l,data){
   const s=ensure(l),old=data?.joseon345;if(!s||!old||old.version!==1)return s;
