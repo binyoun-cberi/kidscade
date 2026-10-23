@@ -129,13 +129,13 @@ const FOLLOW={
  care:'그때 사정을 들어주었던 사람이 다시 찾아와 안부를 전했다.',
  cooperate:'그날 함께 일했던 이웃과 다시 품과 소식을 나누었다.',
  mentor:'예전에 함께 배웠던 사람이 혼자서도 자기 일을 해 나간다는 소식을 들었다.',
- study:'그때 새로 익힌 방법이 다음 일을 판단하는 데 도움이 되었다.',
+ study:'배웠던 방법을 다시 써 보았다. 혼자 풀리지 않는 대목은 다른 사람에게 물었다.',
  invest:'마련해 둔 물건이 도움이 되기도 했지만 비용을 다시 살펴야 했다.',
  repair:'손질했던 도구와 공간이 한동안 쓰였다. 다음 수선이 필요할 때도 있었다.',
  serve:'그때 맡았던 일이 끝난 뒤에도 비슷한 일을 다시 부탁받았다.',
  trade:'거래로 알게 된 사람과 다시 마주쳤다. 벌이는 해마다 달랐다.',
- adapt:'일을 다르게 해 보았던 경험 덕에 그다음 변화에 대비할 수 있었다.',
- risk:'그때 감수했던 위험이 다음 계절의 일과 살림에도 흔적을 남겼다.',
+ adapt:'전에 바꿔 보았던 순서를 되짚었다. 계속 쓸 방법과 고칠 부분을 나누어 살폈다.',
+ risk:'큰 벌이를 바라며 일을 벌였던 해의 셈을 다시 해 보았다. 들어온 돈뿐 아니라 들인 비용도 헤아렸다.',
  cautious:'무리하지 않고 넘긴 날 덕분에 다음 일을 준비할 여유가 있었다.',
  rest:'쉼을 택했던 날을 떠올렸다. 일은 남았어도 몸과 가족을 살필 수 있었다.'
 };
@@ -294,7 +294,7 @@ function careerEvent(life,s,work,secondary=false){
 function yearEnd(life,s){
  if(!s||!J.inOldEra(life)||!life.alive||life.joseon14?.captivity?.status==='held')return;
  for(const f of s.followups.filter(x=>x.year<=life.year)){
-  const text=(f.topic?'그때 겪은 ‘'+f.topic+'’을 떠올렸다. ':'')+(f.failed?'그때 일을 마치지 못해 들인 품과 비용을 되찾지는 못했다.':FOLLOW[f.action]||'그 뒤에도 하던 일을 이어 가며 끼니와 살림을 마련했다.');
+  const text=f.failed?'미처 마치지 못했던 일에 들인 품과 돈을 다시 셈해 보았다. 그때 들인 비용을 되찾지는 못했다.':FOLLOW[f.action]||'하던 일을 나누어 맡으며 끼니와 살림을 마련했다.';
   life.logEvent(text,'joseon6-followup');life.log.at(-1).causeId='joseon6:'+f.id;
   s.memories.push(text);
  }

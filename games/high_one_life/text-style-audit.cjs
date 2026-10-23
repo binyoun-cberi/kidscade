@@ -13,7 +13,13 @@ const REVIEW_PHRASES=[String.fromCharCode(0xBAAB),
   '작은 흔적을 남겼다',
   '삶의 한 페이지를 장식했다',
   '새로운 가능성이 펼쳐졌다',
-  '인연을 맺었다'
+  '인연을 맺었다',
+  '그때 겪은 ‘',
+  '의 경험이 지금의 삶을 바라보는 데 영향을 주었다',
+  '배운 방법을 확인하고 경험을 쌓았다',
+  '아버지이 세상을 떠났다',
+  '어머니이 세상을 떠났다',
+  '삼베 짜기과'
 ];
 function analyze(source,filename=''){
  const findings=[];
