@@ -36,6 +36,7 @@
 <link rel="stylesheet" href="./historical-units-v1.css?v=1">
 <link rel="stylesheet" href="./ending-replay-v1.css?v=1">
 <link rel="stylesheet" href="./pixel-home-v1.css?v=1">
+<link rel="stylesheet" href="./life-ui-v2.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -507,6 +508,16 @@
       <div class="end-header"><span class="eyebrow">한 사람의 이야기</span><span class="end-icon" aria-hidden="true">✳</span></div>
       <h2>당신의 <em>단 하나의 인생.</em></h2>
       <p class="end-years" id="endYears">2026 — 2096</p>
+      <section class="end-farewell" aria-labelledby="endFarewellHeading" aria-live="polite">
+        <div class="end-farewell-heading">
+          <span class="end-farewell-mark" aria-hidden="true">✦</span>
+          <div><span class="end-farewell-kicker">THE LAST CHAPTER · 마지막 이야기</span>
+          <h3 id="endFarewellHeading">삶의 마지막 순간</h3></div>
+          <span id="endDeathYear" class="end-death-year">—</span>
+        </div>
+        <p id="endDeathReason" class="end-death-reason">어떻게 삶을 마쳤을까요?</p>
+        <p class="end-death-disclaimer">사망 원인은 게임 속 사건과 선택에 따른 설정이며, 실제 의료 기록이나 개인의 수명 예측이 아닙니다.</p>
+      </section>
       <div class="end-summary"><div><span>태어난 곳</span><b id="endCountry">—</b></div><div><span>살아온 시간</span><b id="endAge">—</b></div><div><span>삶의 방향</span><b id="endCareer">—</b></div></div>
       <div class="end-finance">남겨진 살림 <strong id="endNetWorth">—</strong><span> · 게임 속 금액</span></div>
       <p id="endStory" class="end-story"></p>
@@ -596,7 +607,7 @@
 <script src="../../kidscade-game-sdk.js" data-game-id="high_one_life" data-title="단 하나의 인생" data-shell="false" data-pauseable="true" data-orientation="any"></script>
 <script src="./official-data.js?v=202610111530"></script>
 <script src="./identity-v20.js?v=2"></script>
-<script src="./engine.js?v=18"></script>
+<script src="./engine.js?v=19"></script>
 <script src="./world-v2.js?v=12"></script>
 <script src="./sprite-composer-v1.js?v=1"></script>
 <script src="./historical-sprites-v1.js?v=3"></script>
@@ -669,7 +680,7 @@
 <script src="./ending-era-summary-v1.js?v=2"></script>
 <script src="./auto-choice-v1.js?v=4"></script>
 <script src="./pixel-home-v1.js?v=1"></script>
-<script src="./life-archive-v1.js?v=1"></script>
-<script src="./game.js?v=85"></script>
+<script src="./life-archive-v1.js?v=2"></script>
+<script src="./game.js?v=86"></script>
 </body>
 </html>
