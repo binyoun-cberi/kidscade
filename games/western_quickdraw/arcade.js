@@ -501,7 +501,7 @@ function loop(t){
 refreshRecords();requestAnimationFrame(loop);
 window.KidscadeWesternArcade=Object.freeze({
  modes:Object.keys(MODES),
- getState:()=>g?{mode,phase,points:g.points,lives:g.lives,ammo:g.ammo,combo:g.combo,multiplier:g.multiplier,elapsed:g.elapsed,spawned:g.objects.length,notesDone:g.notes.filter(n=>n.done).length,boost:g.boost,jumpY:g.jumpY,ropes:g.ropes.length,misses:g.misses}: {mode:null,phase:'menu'},
+ getState:()=>g?{mode,phase,points:g.points,lives:g.lives,ammo:g.ammo,combo:g.combo,multiplier:g.multiplier,elapsed:g.elapsed,spawned:g.objects.length,notesDone:g.notes.filter(n=>n.done).length,boost:g.boost,jumpY:g.jumpY,ropes:g.ropes.length,misses:g.misses,bonusPoints:g.bonusPoints,distance:g.distance,lassoMisses:g.lassoMisses,beatIndex:g.beatIndex,beatFlash:g.beatFlash,aim:{...g.aim},objects:g.objects.map(o=>({x:o.x,y:o.y,kind:o.kind})),obstacles:g.obstacles.map(o=>({x:o.x,w:o.w,kind:o.kind,hit:o.hit}))}: {mode:null,phase:'menu'},
  getBest:name=>best(name)
 });
 })();
