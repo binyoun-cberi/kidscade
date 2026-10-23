@@ -22,10 +22,50 @@ function force(l,id,i=0){
  const s=V19.ensure(l);s.active={id:l.year+'-'+id,eventId:id,year:l.year};l.pending='joseon19:'+s.active.id;
  assert.equal(l.getChoice().options.length,3);assert.equal(l.choose(i),true);return s;
 }
-test('12 events are unique, documented and have three genuine choices',()=>{
- assert.equal(V19.EVENTS.length,12);
- assert.equal(new Set(V19.EVENTS.map(e=>e.id)).size,12);
+test('13 events are unique, documented and have three genuine choices',()=>{
+ assert.equal(V19.EVENTS.length,13);
+ assert.equal(new Set(V19.EVENTS.map(e=>e.id)).size,13);
  for(const e of V19.EVENTS){assert.equal(e.options.length,3);assert.ok(e.source.startsWith('https://'));assert.ok(e.options.every(o=>o.label&&o.note&&o.follow));}
+});
+test('a saved tax discrepancy returns two years later and a fair office can correct the real ledger',()=>{
+ const l=at(born(1800,911),1832),s=V19.ensure(l),ledger=V18.ensure(l);
+ s.office.integrity=87;ledger.landDebt=11;
+ force(l,'clerkNetwork',0);
+ assert.equal(s.claims.length,1);
+ assert.equal(s.claims[0].due,1834);
+ const before=JSON.parse(JSON.stringify(l.snapshot()));
+ const cp=Sim.Life.restore(before);
+ assert.deepEqual(cp.snapshot().joseon19.claims,l.snapshot().joseon19.claims);
+ cp.pending=null;V19.ensure(cp).processedYear=1833;
+ at(cp,1834);V19.yearly(cp,V19.ensure(cp));
+ const prompt=cp.getChoice();
+ assert.match(prompt.description,/세곡 장부의 차이/);
+ assert.equal(cp.pending?.startsWith('joseon19:'),true);
+ const old=V18.ensure(cp).landDebt;
+ assert.equal(cp.choose(0),true);
+ assert.ok(V18.ensure(cp).landDebt<old,'a verified claim reduces a real tax debt');
+ assert.equal(V19.ensure(cp).claims.length,0);
+ assert.ok(cp.log.some(x=>/곡식 빚 일부를 장부에서 지우/.test(x.text)));
+});
+test('an unfair magistrate can reject the same evidence without granting fictional compensation',()=>{
+ const l=at(born(1800,921),1832),s=V19.ensure(l),ledger=V18.ensure(l);
+ s.office.integrity=12;ledger.grainDebt=9;
+ force(l,'levyRequest',0);
+ s.claims[0].due=1832;
+ s.active={id:'1832-savedEvidence',eventId:'savedEvidence',year:1832};
+ l.pending='joseon19:1832-savedEvidence';
+ assert.equal(l.choose(0),true);
+ assert.equal(ledger.grainDebt,9);
+ assert.equal(s.claims.length,0);
+});
+test('when documents are carried to the superior office they add audit evidence but do not guarantee an acquittal',()=>{
+ const l=at(born(1800,923),1835),s=V19.ensure(l),ledger=V18.ensure(l);
+ force(l,'corruptMagistrate',0);
+ s.claims[0].due=1835;s.active={id:'1835-savedEvidence',eventId:'savedEvidence',year:1835};
+ l.pending='joseon19:1835-savedEvidence';const old=s.audit.checked;
+ assert.equal(l.choose(1),true);
+ assert.ok(s.audit.checked>old);
+ assert.equal(ledger.landDebt>=0,true);
 });
 test('a district has one stable fictional magistrate until turnover',()=>{
  const l=at(born(1800,1201),1832),a=V19.summary(l),b=V19.summary(l);

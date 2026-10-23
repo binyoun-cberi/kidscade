@@ -104,12 +104,45 @@ function promote(l){
  }
  return false;
 }
+function livedFollowup(l,s,x){
+ if(typeof x.text==='string')return x.text; // Old save text is preserved.
+ const known={
+  youth:[
+   s.craft>=3?'베틀에 익숙해져 식구의 낡은 옷을 직접 기웠다.':'바느질 도구를 다시 꺼내어 익혔다.',
+   s.letters>=3?'이웃이 가져온 편지에서 보내는 사람의 이름을 읽어 주었다.':'배웠던 글자를 편지에서 다시 찾아보았다.',
+   '아픈 이웃을 찾아가 물과 먹을 것을 챙겼다. 병이 다 나았다고 할 수는 없었다.'],
+  family:[
+   '전에 안부를 전했던 친척에게서 답장이 왔다. 집안의 달라진 소식을 나누었다.',
+   '장날에 일손을 구한다는 이야기를 듣고 할 수 있는 일이 있는지 물어보았다.',
+   '품앗이했던 이웃과 다시 일손을 나누었다. 그날은 내 집의 일도 조금 늦어졌다.'],
+  work:[
+   s.craft>=4?'지난번 옷감을 팔던 장터에서 다시 손님을 만났다. 실값부터 따져 물건을 내놓았다.':'실과 옷감의 값을 따져 보았지만 이번 장에는 팔지 못했다.',
+   s.letters>=4?'이웃이 가져온 답장을 읽어 주었다. 모르는 글자는 다시 물어보았다.':'편지에서 읽지 못한 글자를 찾아 배웠다.',
+   '전에 돌보던 이웃을 다시 찾았다. 아픈 곳이 어떤지 묻고 쉬도록 도왔다.'],
+  property:[
+   s.property===2?'옛 문서를 찾아 두었지만 재산을 얼마나 나눌지는 아직 정해지지 않았다.':'친척과 물건의 내력을 다시 확인했다.',
+   '친척들과 살림을 어떻게 나눌지 다시 의논했다. 서로 생각이 다른 곳도 있었다.',
+   s.resources>0?'보관해 둔 살림 도구를 꺼내 생업에 쓸 수 있는지 살폈다.':'남은 살림을 다시 살펴보았다.'],
+  widow:[
+   '배우자를 떠나보낸 뒤에도 도구를 손질하며 생업을 이어 갔다.',
+   '친정과 시가에 거처를 어떻게 정할지 다시 물었다.',
+   '이웃과 일손을 나눠 남은 살림을 돌봤다.'],
+  legacy:[
+   '전에 솜씨를 가르쳤던 젊은 이가 찾아와 어려운 부분을 다시 물었다.',
+   s.letters>0?'식구가 오래전 편지를 찾아왔다. 이름과 사연을 함께 읽었다.':'오래전 있었던 일을 식구에게 들려주었다.',
+   '일을 나누어 맡은 식구와 올겨울에 필요한 물건과 일손을 다시 의논했다.']
+ };
+ return (known[x.key]||[])[x.choice]||'';
+}
 function yearly(l){
  const s=ensure(l);if(!s||s.processedYear>=l.year)return;
  s.processedYear=l.year;
  if(!accessible(l)||l.age<15)return;
  const f=family(l);
- for(const x of s.followups.filter(x=>x.year<=l.year))record(l,s,x.text);
+ for(const x of s.followups.filter(x=>x.year<=l.year)){
+  const event=livedFollowup(l,s,x);
+  if(event)record(l,s,event);
+ }
  s.followups=s.followups.filter(x=>x.year>l.year);
  if(f.bereaved&&!s.seen.includes('widow')&&l.age>=22)push(l,s,'widow');
  // No birth, pregnancy, marriage or property ownership is fabricated here.
@@ -151,7 +184,7 @@ function resolve(l,index){
   if(index===2){s.trade+=1;l.change({bonds:3});story='지키던 살림의 일을 가족과 이웃에게 나누어 맡겼다. 앞으로도 도울 일은 남았다.';}
  }
  record(l,s,story);
- s.followups.push({year:l.year+3,text:'그때 택한 일 — '+label+' — 이 뒤의 살림과 사람들 사이에도 흔적을 남겼다.'});
+ s.followups.push({year:l.year+3,key,choice:index});
  s.followups=s.followups.slice(-12);
  s.decisions.push({year:l.year,key,choice:index,label,married:f.married,children:f.children});
  s.decisions=s.decisions.slice(-36);
@@ -180,8 +213,9 @@ function hydrate(l,data){
  s.decisions=Array.isArray(o.decisions)?o.decisions.filter(x=>x&&PHASES.concat('widow').includes(x.key)&&x.year<=l.year).slice(-36):[];
  s.recent=Array.isArray(o.recent)?o.recent.filter(x=>x&&Number.isInteger(x.year)&&typeof x.text==='string').slice(-18)
    .map(x=>({year:x.year,text:x.text.slice(0,160)})):[];
- s.followups=Array.isArray(o.followups)?o.followups.filter(x=>x&&Number.isInteger(x.year)&&x.year>=l.year&&x.year<=l.year+10&&typeof x.text==='string').slice(-12)
-  .map(x=>({year:x.year,text:x.text.slice(0,160)})):[];
+ s.followups=Array.isArray(o.followups)?o.followups.filter(x=>x&&Number.isInteger(x.year)&&x.year>=l.year&&x.year<=l.year+10&&
+  (typeof x.text==='string'||(PHASES.concat('widow').includes(x.key)&&[0,1,2].includes(x.choice)))).slice(-12)
+  .map(x=>typeof x.text==='string'?{year:x.year,text:x.text.slice(0,160)}:{year:x.year,key:x.key,choice:x.choice}):[];
  return s;
 }
 function install(){

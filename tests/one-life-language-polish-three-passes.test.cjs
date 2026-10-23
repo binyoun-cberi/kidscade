@@ -4,8 +4,8 @@ const root=path.resolve(__dirname,'../games/high_one_life');
 const read=n=>fs.readFileSync(path.join(root,n),'utf8');
 const versions={
  'engine.js':18,'history-stories-v10.js':4,'joseon-v9-village.js':8,
- 'joseon-v14-captivity-generations.js':13,'joseon-v18-sedo-samjeong.js':5,
- 'joseon-v19-local-office.js':6,'colonial-daily-v2.js':5,
+ 'joseon-v14-captivity-generations.js':13,'joseon-v18-sedo-samjeong.js':6,
+ 'joseon-v19-local-office.js':7,'colonial-daily-v2.js':5,
  'joseon-branches-v325.js':4,'joseon-fate-v344.js':2,
  'joseon-magistrate-v345.js':2,'joseon-court-v346.js':2,
  'joseon-bonded-v346.js':2,'joseon-commoner-v346.js':2,
