@@ -69,6 +69,7 @@ const TEST_FILES = [
   "tests/one-life-language-polish-three-passes.test.cjs",
   "tests/one-life-pixel-home-v1.test.cjs",
   "tests/one-life-life-paths-audit-v1.test.cjs",
+  "tests/one-life-full-lives-cross-era-smoke-v1.test.cjs",
   "tests/one-life-narrative-v334.test.cjs",
   "tests/one-life-narrative-v335.test.cjs",
   "tests/one-life-official-stats.test.cjs",
