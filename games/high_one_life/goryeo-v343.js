@@ -64,7 +64,7 @@ const CHOICE_PROSE=Object.freeze({
  '사찰에 곡식을 보시한다':'집안의 곡식을 덜어 사찰에 보시했다.',
  '양쪽 친족을 찾아 돕는다':'양쪽 친족을 찾아가 필요한 일을 거들었다.',
  '목화씨와 재배법을 구해 시험한다':'목화씨와 재배법을 구해 시험 삼아 길러 보기 시작했다.',
- '곡식을 비축하고 쉰다':'곡식을 아껴 두고 몸을 쉬었다.'
+ '남은 곡식을 아끼고 쉰다':'곡식을 아껴 두고 몸을 쉬었다.'
 });
 function ensure(l){
  if(!is(l))return null;
@@ -89,7 +89,7 @@ function ensure(l){
 function sync(l){const g=l.goryeo343;l.profile.city=g.region;l.money.netWorth=g.grain;l.money.income=g.lastIncome;l.money.expense=g.lastExpense;l.career=g.job;}
 function period(l){return l.year<1231?'무신 집권기':l.year<1270?'몽골 침입기':l.year<1356?'원 간섭기':l.year<1392?'개혁과 전쟁':'조선 건국 이후';}
 function cottonAvailable(l){const g=ensure(l);return l.year>=1370&&(g.region==='경상 내륙'||l.year>=1390)&&g.cotton;}
-function option(label,effect,delta={}){return {label,effect,delta};}
+function option(label,effect,delta={},note){return note?{label,effect,delta,note}:{label,effect,delta};}
 function prompt(l,id,title,description,options){const g=ensure(l);g.choice={id,title,description,options};l.pending='goryeo343:'+id;}
 const facts=[
  [1231,'몽골군의 침입','몽골군이 고려를 침입했다. 전쟁은 여러 차례 이어졌다.','war'],
@@ -168,9 +168,10 @@ function everyday(l){
    option('먹을 것과 돌봄을 먼저 챙기라고 부탁한다','letter-care',{bonds:3}),option('생업의 판단을 집안에 맡긴다','letter-trust',{bonds:4}),option('곡식을 보내 달라고 청한다','letter-grain',{grain:-4,pocket:2})]);return;}
   if(l.age<14){prompt(l,'pocket-'+l.year,'장터에서 쓸 것을 고르다','장터에 가는 길에 잠깐 시간이 났다.',[
    option('심부름을 하고 먹을거리를 받는다','gather',{pocket:2,bonds:1}),option('숲에서 먹을 것을 찾는다','gather',{pocket:1,health:-2}),option('군것질을 사 먹는다','snack',{pocket:-1,happiness:3}),option('배움에 시간을 쓴다','learn',{knowledge:3})]);return;}
-  prompt(l,'household-'+l.year,'올해 집안의 힘을 어디에 쓸까?',g.bound?'마음대로 일을 바꾸기 어려워도 식구의 건강과 끼니를 살핀다.':'생업과 신앙, 친족의 일 사이에서 품과 곡식을 나눈다.',[
-   option('생업의 기술을 더 익힌다','skill',{grain:-3,knowledge:3}),option('사찰에 곡식을 보시한다','donate',{grain:-4,happiness:3}),option('양쪽 친족을 찾아 돕는다','kin',{grain:-3,bonds:5}),
-   ...(l.year>=1364&&g.region==='경상 내륙'&&!g.cotton?[option('목화씨와 재배법을 구해 시험한다','cotton',{grain:-6})]:[option('곡식을 비축하고 쉰다','rest',{health:4})])]);
+  const title=g.grain<4?'얼마 남지 않은 곡식을 앞에 두고':l.stats.health<45?'지친 몸으로 살림을 꾸리려면':g.bound?'맡은 일 틈에 낼 수 있는 시간':l.age>=60?'남은 힘을 어디에 보탤까?':'생업과 친족 사이에서';
+  prompt(l,'household-'+l.year,title,(g.bound?'맡은 일을 마음대로 바꿀 수는 없다. 남는 품으로 식구와 내 몸을 돌볼 길을 생각한다.':'배움을 잇고 싶은 마음도, 친족을 돕고 싶은 마음도 있다. 이번에는 어디에 품을 보탤지 생각한다.')+' 남은 곡식은 '+g.grain+'이다. 곡식이 모자란 일은 이번에 하지 못한다.',[
+   option('생업의 기술을 더 익힌다','skill',{grain:-3,knowledge:3},'곡식 3을 쓰고 배움을 늘린다.'),option('사찰에 곡식을 보시한다','donate',{grain:-4,happiness:3},'곡식 4를 내어 마음의 위안을 얻는다.'),option('양쪽 친족을 찾아 돕는다','kin',{grain:-3,bonds:5},'곡식 3을 나누고 친족과 가까워진다.'),
+   ...(l.year>=1364&&g.region==='경상 내륙'&&!g.cotton?[option('목화씨와 재배법을 구해 시험한다','cotton',{grain:-6},'곡식 6을 들여 시험한다. 목화를 거둘 수 있을지는 뒤에 알게 된다.')]:[option('남은 곡식을 아끼고 쉰다','rest',{health:4},'곡식을 쓰지 않고 몸을 회복한다. 곡식이 새로 늘지는 않는다.')])]);
  }
 }
 function annual(l){

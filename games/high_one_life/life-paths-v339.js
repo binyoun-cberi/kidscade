@@ -65,14 +65,20 @@ function prompt(l){const s=ensure(l),p=s?.projects.find(p=>p.id===s.active);if(!
   description={craft:withPerson(who)+' 작은 주문을 마쳤다. 함께 쓴 공구와 재료값을 정리하고, 다음에 맡을 수량과 일을 나눌 방법을 다시 정하려 한다.',trade:withPerson(who)+' 물건을 넘기고 받을 값과 운반비를 정산했다. 남은 장부를 다음 거래에서도 쓸 수 있게 정리하려 한다.',writing:'고친 원고를 한 차례 끝까지 읽었다. 글을 베껴 읽겠다는 사람이 있어 종이와 시간을 들여 한 부를 더 만들지 생각한다.',training:'작은 물건을 고치고 재료를 다루는 일이 전보다 손에 익었다. 이제 배운 기술을 써 볼 만한 일감이 있는지 물어보려 한다.',workgroup:'전에 전한 근무 시간과 품삯 내역에 대해 일터의 책임자에게 답을 들을 날이 되었다. 동료들과 함께 약속한 내용이 실제로 지켜지는지 확인하려 한다.'}[p.key];
   labels=[p.key==='training'?'배운 기술로 수공업·수리 일감을 구한다':p.key==='writing'?'원고를 한 부 베껴 읽을 사람에게 건넨다':'장부와 약속을 확인하고 다음 일을 정한다','더 넓히지 않고 지금까지의 일을 정리한다'];actions=['finish','archive'];
  }
- const paid=money(l)>=expense(l);
- return {title:names[p.key],description,options:labels.map((label,i)=>({label:i===0&&!paid&&p.key!=='workgroup'?'비용이 부족해 준비한 내용을 보관한다':label,note:i===0&&p.key!=='workgroup'?'비용을 내고 생업 틈틈이 시간을 쓴다.':'지금 하던 일을 계속한다.',action:i===0&&!paid&&p.key!=='workgroup'?'archive':actions[i]}))};
+ const paid=money(l)>=expense(l),needsMoney=p.key!=='workgroup';
+ const next={craft:'공방의 솜씨와 거래 신뢰를 쌓는다.',trade:'함께 거래할 곳을 늘려 간다.',writing:'원고를 고쳐 읽을 사람에게 건넨다.',training:'기술을 익혀 새 일감을 찾는다. 취업이 보장되지는 않는다.',workgroup:'동료들과 일터의 개선을 요청한다. 요구가 받아들여지지 않을 수도 있다.'}[p.key];
+ const effort=needsMoney?'비용을 내고 시간을 쓴다. 배움은 늘지만 몸은 조금 지친다. ':'시간을 들여 근무 내역을 살핀다. 배움은 늘지만 몸은 조금 지친다. ';
+ return {title:names[p.key],description,options:[
+  needsMoney&&!paid?{label:'지금은 미루고 내년에 다시 의논한다',note:'지금은 비용이 모자란다. 돈을 쓰지 않고 준비한 단계부터 내년에 다시 살핀다.',action:'defer'}:{label:labels[0],note:effort+next,action:actions[0]},
+  {label:labels[1],note:p.stage===0?'새 일은 시작하지 않는다. 비용을 쓰지 않고 지금의 생업을 이어 간다.':'이 일은 여기서 마친다. 이미 쓴 비용은 돌아오지 않지만 더 쓰지는 않는다.',action:actions[1]}
+ ]};
 }
 function close(l,p,text){p.status='archived';p.completed=l.year;const s=ensure(l);if(s.active===p.id)s.active=null;if(l.pending==='joseon339:'+p.id)l.pending=null;log(l,p,text,'followup');}
 function choose(l,i){
  const s=ensure(l),p=s?.projects.find(p=>p.id===s.active),q=prompt(l);if(!q||!Number.isInteger(i)||i<0||i>=q.options.length)return false;
  const action=q.options[i].action;
- if(['archive','decline'].includes(action)){close(l,p,action==='decline'?'새로 의논하던 일은 시작하지 않고 하던 생업을 이어 갔다.':'진행하던 일은 여기까지 정리하고, 적어 둔 내용과 남은 재료를 보관했다.');}
+ if(action==='defer'){p.due=l.year+1;log(l,p,'비용이 모자라 새로 돈을 쓰지는 않았다. 준비해 둔 일은 접지 않고, 이듬해 형편을 살펴 다시 의논하기로 했다.','choice');}
+ else if(['archive','decline'].includes(action)){close(l,p,action==='decline'?'새로 의논하던 일은 시작하지 않고 하던 생업을 이어 갔다.':'진행하던 일은 여기까지 정리하고, 적어 둔 내용과 남은 재료를 보관했다.');}
  else {
   if(p.key!=='workgroup'&&!cost(l,expense(l)))return false;
   l.change({health:-1,knowledge:1});

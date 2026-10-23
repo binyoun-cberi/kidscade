@@ -36,9 +36,9 @@
   const FAMILY_JOBS=['가게 직원','농업 종사자','택시 운전사','사무직','기술자','조리사','돌봄 노동자','자영업자','건설 노동자','병원 직원','교사','판매직'];
   const EXTRA_CHOICES=[
     {age:24,title:'첫걸음을 정해야 할 때',description:'어떤 일을 이어가며 살아갈까요?',options:[
-      {label:'안정적인 일자리를 찾아본다',note:'소득의 안정성',effects:{wealth:5,knowledge:2},career:'사무·서비스직',text:'꾸준한 일을 찾아 생활의 기반을 다졌다.',incomeFactor:1.03},
-      {label:'기술을 배우며 일한다',note:'미래 소득 잠재력',effects:{knowledge:10,wealth:-4},career:'기술직',text:'기술을 익히며 조금씩 전문가가 되어 갔다.',incomeFactor:1.16},
-      {label:'작은 사업을 시작한다',note:'위험과 가능성',effects:{wealth:-8,happiness:5},career:'자영업',text:'자신의 가게를 꾸리며 불확실한 도전을 시작했다.',incomeFactor:1.34}
+      {label:'안정적인 일자리를 찾아본다',note:'일정한 벌이를 얻으며 일에 필요한 것을 배운다',effects:{wealth:5,knowledge:2},career:'사무·서비스직',text:'꾸준한 일을 찾아 생활의 기반을 다졌다.',incomeFactor:1.03},
+      {label:'기술을 배우며 일한다',note:'당장 쓸 돈은 줄지만 기술을 익혀 앞으로의 벌이를 키운다',effects:{knowledge:10,wealth:-4},career:'기술직',text:'기술을 익히며 조금씩 전문가가 되어 갔다.',incomeFactor:1.16},
+      {label:'작은 사업을 시작한다',note:'시작할 돈을 들인다. 장사가 잘되면 벌이가 늘지만 손실도 감수한다',effects:{wealth:-8,happiness:5},career:'자영업',text:'자신의 가게를 꾸리며 불확실한 도전을 시작했다.',incomeFactor:1.34}
     ]},
     {age:33,title:'소중한 인연',description:'누군가와 함께하는 삶도, 혼자의 시간도 서로 다른 가치를 가집니다.',options:[
       {label:'오랜 연인과 삶을 함께한다',note:'관계의 변화와 공동생활',effects:{bonds:10,happiness:5},partner:true,text:'서로 의지하는 동반자와 삶을 함께하기로 했다.'},
