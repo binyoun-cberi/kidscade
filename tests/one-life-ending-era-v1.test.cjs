@@ -56,7 +56,7 @@ test('modern lives retain standard housing, education, roles and formatted money
 test('historical summary loads before controller and is exercised in the full smoke test',()=>{
  const html=read('index.html'),game=read('game.js');
  assert.ok(html.indexOf('ending-era-summary-v1.js?v=2')>0);
- assert.ok(html.indexOf('ending-era-summary-v1.js?v=2')<html.indexOf('game.js?v=82'));
+ assert.ok(html.indexOf('ending-era-summary-v1.js?v=2')<html.indexOf('game.js?v=83'));
  assert.match(game,/eraSummary:window\.OneLifeEndingEraV1\.capture\(life\)/);
  assert.match(game,/OneLifeEndingEraV1\.rows\(replayBasis,now,formatCredits\)/);
  const smoke=fs.readFileSync(path.join(__dirname,'one-life-screen-flow.test.cjs'),'utf8');
