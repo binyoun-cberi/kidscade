@@ -41,8 +41,8 @@ function menu(){
 }
 function resetState(key){
  const duration=MODES[key].duration;
- return {mode:key,elapsed:0,duration,points:0,combo:0,level:1,lives:3,ammo:6,maxAmmo:6,
-  multiplier:1,objects:[],spawnIn:0.6,feedback:'',feedbackTimer:0,
+ return {mode:key,elapsed:0,duration,points:0,combo:0,level:1,lives:key==='coins'?5:3,ammo:6,maxAmmo:6,
+  multiplier:1,objects:[],spawnIn:key==='coins'?2.8:0.6,feedback:'',feedbackTimer:0,
   obstacles:[],jumpY:0,jumpV:0,boost:0,boostTime:0,invincible:0,passed:0,distance:0,
   dropped:0,ropes:[],ropeCooldown:0,aim:{x:700,y:310},coinShots:0,
   notes:[],noteHits:0,misses:0,finished:false};
@@ -169,8 +169,8 @@ function stepHurdles(dt){
  else if(g.elapsed>=g.duration)finish(true,'목마와 함께 끝까지 달렸어요!');
 }
 function spawnCoin(){
- if(g.objects.length>=8)return;
- g.objects.push({x:random(100,800),y:Math.max(100,H*.25),vx:random(-95,95),vy:random(-200,-110),r:25});
+ if(g.objects.length>=6)return;
+ g.objects.push({x:random(100,800),y:Math.max(100,H*.25),vx:random(-95,95),vy:random(-220,-165),r:27});
 }
 function shotCoin(x,y){
  let target=null,distance=Infinity;
@@ -185,9 +185,9 @@ function shotCoin(x,y){
  message(chain?'동전 '+(chain+1)+'개 연쇄!':'톡! '+g.combo+'연속');
 }
 function stepCoins(dt){
- g.spawnIn-=dt;if(g.spawnIn<=0){spawnCoin();g.spawnIn=random(1.9,2.5)}
+ g.spawnIn-=dt;if(g.spawnIn<=0){spawnCoin();g.spawnIn=random(2.8,3.5)}
  for(const o of [...g.objects]){
-  o.vy+=260*dt;o.x+=o.vx*dt;o.y+=o.vy*dt;
+  o.vy+=195*dt;o.x+=o.vx*dt;o.y+=o.vy*dt;
   if(o.x<35){o.x=35;o.vx=Math.abs(o.vx)}
   if(o.x>865){o.x=865;o.vx=-Math.abs(o.vx)}
   if(o.y>H-145){g.objects.splice(g.objects.indexOf(o),1);g.lives--;g.combo=0;message('동전을 놓쳤어요!')}
@@ -218,7 +218,7 @@ function stepCattle(dt){
   r.remaining-=dt;
   if(r.remaining<=0){
    let hits=0;
-   for(const o of [...g.objects])if(Math.hypot(o.x-r.x,o.y-r.y)<o.r+33){g.objects.splice(g.objects.indexOf(o),1);hits++}
+   for(const o of [...g.objects])if(o.x>=70&&o.x<=850&&Math.hypot(o.x-r.x,o.y-r.y)<o.r+18){g.objects.splice(g.objects.indexOf(o),1);hits++}
    g.ropes.splice(g.ropes.indexOf(r),1);
    if(hits){g.combo++;score(hits*90*Math.min(5,g.combo)+(hits>1?hits*60:0));message(hits>1?hits+'마리 한꺼번에!':'잡았다! '+g.combo+'연속');sound('click')}
    else{g.combo=0;message('아쉽게 비껴갔어요. 조금 앞을 노려봐요!')}
