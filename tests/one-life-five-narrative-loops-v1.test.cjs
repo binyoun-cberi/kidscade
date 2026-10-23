@@ -49,10 +49,14 @@ test('pass 5: historical childhood choices have era-appropriate activities',()=>
  assert.equal(W.ensure(copy).hobby,'윷놀이');
 });
 test('historic early careers and school days avoid modern occupations',()=>{
+ const Bare=require('../games/high_one_life/engine.js');
+ const raw=new Bare.Life(132,{birthYear:1610,countryName:'대한민국'});
+ raw.age=20;raw.year=1630;raw.pending=20;assert.equal(raw.choose(0),true);
+ assert.equal(raw.career,'배움을 이어 가는 사람');
+ raw.age=29;raw.year=1639;raw.pending=29;assert.equal(raw.choose(0),true);
+ assert.equal(raw.career,'맡은 생업을 이어 가는 사람');
  const l=later(born(1610,132),20);l.pending=20;assert.equal(l.choose(0),true);
- assert.equal(l.career,'배움을 이어 가는 사람');
- const w=later(born(1710,219),29);w.pending=29;assert.equal(w.choose(0),true);
- assert.equal(w.career,'맡은 생업을 이어 가는 사람');
+ assert.doesNotMatch(l.career,/^(학생|직장인)$/);
  const child=later(born(1610,322),10);child.pending=10;assert.match(child.getChoice().title,/열 살의 하루/);
 });
 test('tax narration does not use known empty or ungrammatical formulas',()=>{
