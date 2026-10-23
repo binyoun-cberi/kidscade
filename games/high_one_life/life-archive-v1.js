@@ -29,8 +29,9 @@
   const name=text(details.name||life.profile?.name||life.birthSetup?.name,30);
   const origin=text(details.origin||life.birthSetup?.origin||life.familyLevel,80);
   const ending=text(details.ending,100);
+  const deathCause=text(details.deathCause||life.deathReason,150);
   return {at:Date.now(),country:nameOr(life.country?.[0],'대한민국'),birthYear,age,
-   name,origin,career,ending};
+   name,origin,career,ending,deathCause};
  }
  function nextCount(history,meta){
   const list=entries(history);
@@ -49,9 +50,11 @@
   const origin=text(item.origin,80);
   const career=text(item.career,80)||'살아온 이야기';
   const ending=text(item.ending,100);
+  const deathCause=text(item.deathCause,150);
   return {era:era(item.birthYear,where)+' · '+item.birthYear+'년 출생',
    title:(who?who+' · ':'')+career,
-   detail:where+' · '+item.age+'세까지'+(origin?' · '+origin:'')+(ending?' · '+ending:'')};
+   detail:where+' · '+item.age+'세에 삶을 마침'+(origin?' · '+origin:'')+(ending?' · '+ending:''),
+   death:deathCause||'사망 원인 기록 없음'};
  }
  return Object.freeze({entries,era,make,nextCount,countLabel,describe});
 });

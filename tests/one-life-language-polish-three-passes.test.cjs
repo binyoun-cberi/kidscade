@@ -3,13 +3,13 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const root=path.resolve(__dirname,'../games/high_one_life');
 const read=n=>fs.readFileSync(path.join(root,n),'utf8');
 const versions={
- 'engine.js':18,'history-stories-v10.js':4,'joseon-v9-village.js':8,
+ 'engine.js':19,'history-stories-v10.js':4,'joseon-v9-village.js':8,
  'joseon-v14-captivity-generations.js':13,'joseon-v18-sedo-samjeong.js':6,
  'joseon-v19-local-office.js':7,'colonial-daily-v2.js':5,
  'joseon-branches-v325.js':4,'joseon-fate-v344.js':3,
  'joseon-magistrate-v345.js':3,'joseon-court-v346.js':3,
  'joseon-bonded-v346.js':3,'joseon-commoner-v346.js':3,
- 'joseon-baekjeong-v346.js':3,'goryeo-v343.js':2,'game.js':85
+ 'joseon-baekjeong-v346.js':3,'goryeo-v343.js':2,'game.js':86
 };
 test('the 16 revised narration assets load exactly once with fresh versions',()=>{
  const html=read('index.html');

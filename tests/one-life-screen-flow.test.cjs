@@ -167,6 +167,10 @@ test('full controller smoke simulation displays birth registry, economy, canvas 
  assert.ok(sawChildhood&&sawWork&&sawMoney&&sawDecision);
  assert.equal(document.result.status,'completed');
  assert.ok(!get('end').classList.contains('hidden'));
+ assert.match(get('endDeathReason').textContent,/병|사고|건강|노년|노환|전란|삶|목숨/);
+ assert.match(get('endDeathYear').textContent,/년 · \d+세/);
+ const oldLives=JSON.parse(saved.get('kidscade_one_life_history_v1'));
+ assert.equal(oldLives[0].deathCause,get('endDeathReason').textContent);
  assert.match(get('endNetWorth').textContent,/점/);
  assert.ok(get('endHighlights').children.length>0);
  assert.ok(get('endCountry').textContent.length>0);
