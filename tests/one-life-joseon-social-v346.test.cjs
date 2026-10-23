@@ -49,12 +49,12 @@ function complete(kind,choices=[0,0,0,0],seed=315){
 test('all four social modules load and register before the controller',()=>{
  assert.equal(Core.categories.size,4);
  for(const kind of ['court','bonded','commoner','baekjeong'])assert.ok(Core.categories.has(kind));
- const core=html.indexOf('joseon-social-core-v346.js?v=1');
+ const core=html.indexOf('joseon-social-core-v346.js?v=2');
  assert.ok(core>0);
  for(const kind of ['court','bonded','commoner','baekjeong']){
-  const index=html.indexOf('joseon-'+kind+'-v346.js?v=2');
+  const index=html.indexOf('joseon-'+kind+'-v346.js?v=3');
   assert.ok(index>core);
-  assert.ok(index<html.indexOf('game.js?v=84'));
+  assert.ok(index<html.indexOf('game.js?v=85'));
  }
  const runner=fs.readFileSync(path.resolve(__dirname,'../scripts/run-ci-tests.cjs'),'utf8');
  assert.ok(runner.includes('tests/one-life-joseon-social-v346.test.cjs'));

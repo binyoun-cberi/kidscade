@@ -178,7 +178,7 @@
     (k.step==='ending'&&p.stage==='ending')||
     (k.step==='case'+(p.index+1)&&p.stage==='case')));
   if(valid)l.pending='joseon346:'+k.kind+':'+k.step;
-  else if(raw.startsWith('joseon346:')||l.pending?.startsWith('joseon346:'))l.pending=null;
+  else if(raw.startsWith('joseon346:')||(typeof l.pending==='string'&&l.pending.startsWith('joseon346:')))l.pending=null;
   return s;
  }
  function install(){

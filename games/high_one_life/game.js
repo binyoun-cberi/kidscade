@@ -61,6 +61,8 @@
   if (!World2 || !Pixel || !World3 || !World4 || !World5 || !World6 || !World7 || !World8 || !World9 || !World10 || !World12 || !World13 || !Joseon || !Joseon2 || !Joseon3 || !Joseon4 || !History) throw new Error('One Life world assets missing');
   const SAVE_KEY = 'kidscade_one_life_save_v1';
   const RECORD_KEY = 'kidscade_one_life_history_v1';
+  const COUNT_KEY = 'kidscade_one_life_history_total_v1';
+  const Archive = window.OneLifeArchive1;
   // About 20–30 seconds of automatic years, excluding choices.
   const YEAR_MS = 4000;
   const STAT_NAMES = [['health','건강'],['happiness','행복'],['knowledge','배움'],['bonds','인연'],['wealth','경제']];
@@ -213,26 +215,22 @@
     return restored||null;
   }
   function refreshHomeArchive() {
-    const records=safeGet(RECORD_KEY);
-    const items=Array.isArray(records)?records.filter(item=>
-      item&&Number.isInteger(item.age)&&item.age>=0&&item.age<=125&&
-      Number.isInteger(item.birthYear)&&item.birthYear>=1200&&item.birthYear<=2026):[];
+    const items=Archive.entries(safeGet(RECORD_KEY));
     const list=$('homeRecentLives');
     if(!list)return;
     list.replaceChildren();
-    $('homeLifeCount').textContent=items.length+'번의 인생';
+    $('homeLifeCount').textContent=Archive.countLabel(items,safeGet(COUNT_KEY));
     if(!items.length){
       const empty=document.createElement('p');empty.className='home-no-records';
       empty.textContent='아직 살아본 인생이 없어요. 첫 번째 이야기를 시작해 보세요.';
       list.append(empty);return;
     }
     for(const item of items.slice(0,3)){
+      const summary=Archive.describe(item);
       const card=document.createElement('article');card.className='home-life-card';
-      const era=document.createElement('small');
-      era.textContent=(item.birthYear<1392?'고려':item.birthYear<1894?'조선':item.birthYear<1945?'일제강점기':item.birthYear<1960?'현대사의 격동기':'근현대')+' · '+item.birthYear+'년 출생';
-      const title=document.createElement('strong');title.textContent=String(item.career||'살아온 이야기').slice(0,70);
-      const detail=document.createElement('span');
-      detail.textContent=String(item.country||'어느 곳')+' · '+item.age+'세까지 살아온 삶';
+      const era=document.createElement('small');era.textContent=summary.era;
+      const title=document.createElement('strong');title.textContent=summary.title;
+      const detail=document.createElement('span');detail.textContent=summary.detail;
       card.append(era,title,detail);list.append(card);
     }
   }
@@ -1448,12 +1446,13 @@
     if(fromSave)offerNewbornName();
     save();
   }
-  function rememberLife() {
-    const previous=safeGet(RECORD_KEY);
-    const history=Array.isArray(previous)?previous.filter(x=>x&&Number.isInteger(x.age)):[];
-    history.unshift({at:Date.now(),country:life.country[0],birthYear:life.birthYear,age:life.age,career:life.career});
+  function rememberLife(details) {
+    const history=Archive.entries(safeGet(RECORD_KEY));
+    const total=Archive.nextCount(history,safeGet(COUNT_KEY));
+    history.unshift(Archive.make(life,details));
     safeSet(RECORD_KEY,history.slice(0,20));
-    return history.length;
+    safeSet(COUNT_KEY,total);
+    return (total.minimum?'최소 ':'')+total.total;
   }
   function finish() {
     if(completed || !life || life.alive) return;
@@ -1465,12 +1464,18 @@
     const oldLife=Joseon.isJoseon(life)?Joseon.summary(life):null;
     const oldSocial=oldLife&&Joseon5?.summary(life);
     const oldJobs=oldLife&&Joseon6?.summary(life);
-    const count=rememberLife();
+    const fate=window.OneLifeFate344?.summary(life)?.title||'';
+    const social=window.OneLifeSocial346?.summary(life)?.label||'';
+    const actualCareer=!['아직 정해지지 않음','학생'].includes(life.career)?life.career:oldJobs?.primary?.name||'살림과 일상';
+    const count=rememberLife({career:actualCareer,
+      name:life.profile?.name||life.birthSetup?.name,
+      origin:Goryeo.is(life)?Goryeo.ensure(life).origin:oldSocial?.originLabel||life.familyLevel,
+      ending:fate||social});
     $('endYears').textContent=life.birthYear+' — '+life.year;
     $('endCountry').textContent=(life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1])+' '+History.place({...life,year:life.birthYear})+' · '+life.profile.name+' ('+life.profile.city+')';
     $('endNetWorth').textContent=Goryeo.is(life)?'곡식 '+Goryeo.ensure(life).grain+'말':Joseon.inOldEra(life)?'살림 '+Joseon.ensure(life).capital+'냥':formatCredits(life.money.netWorth);
     $('endAge').textContent=summary.age+'년';
-    $('endCareer').textContent=oldJobs?.primary?.name||(!['아직 정해지지 않음','학생'].includes(life.career)?life.career:'살림과 일상');
+    $('endCareer').textContent=actualCareer;
     const firstPlace=History.place({...life,year:life.birthYear});
     const chapters=window.OneLifeBiography328.chapters(life,{
       place:firstPlace,origin:Goryeo.is(life)?Goryeo.ensure(life).origin:oldLife?(oldSocial?.originLabel||Joseon.ensure(life).birthStatus+' 집안'):''
@@ -1516,7 +1521,7 @@
       const description=document.createElement('span');description.textContent=e.text;
       item.append(age,description);list.append(item);
     });
-    $('livesCount').textContent='지금까지 체험한 인생 '+count+'개';
+    $('livesCount').textContent='지금까지 체험한 인생 '+count+'번';
     show('end');
     sdk?.result?.({scope:'run',status:'completed',outcome:'clear',age:life.age,country:summary.country});
   }

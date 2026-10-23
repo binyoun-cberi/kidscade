@@ -38,7 +38,7 @@
   if(!J?.isJoseon(l))return null;
   if(!l.joseon344)l.joseon344={version:1,started:[],seen:[],active:null,follow:null,
    lastYear:l.year,choices:[],scenes:[],reputation:0,integrity:0,shame:0,
-   examination:'not_taken',magistrate:'none',fugitive:'none',lineage:'none'};
+   examination:'not_taken',magistrate:'none',memorial:'none',fugitive:'none',lineage:'none'};
   return l.joseon344;
  }
  function remember(l,s,text){
@@ -78,10 +78,11 @@
      ['글을 가르치고 이웃의 어려움을 돕는다','살림을 나누어 쓰며 새로운 관계를 만든다.']]}
   };
   const later={
-   scholarAfter:{title:s.examination==='passed'?'진사로서 마을에 남는 길':'시험을 마친 뒤의 길',
-    description:s.examination==='passed'?'소과에 합격해 진사라는 칭호를 얻었다. 하지만 진사가 곧 수령이나 고위 관료가 되는 것은 아니다.':'원하던 시험 결과를 얻지 못했다. 그래도 배운 글과 살아갈 길은 남았다.',
+   scholarAfter:{title:s.examination==='passed'?'진사로서 마을에 남는 길':s.examination==='failed'?'시험에 떨어진 뒤의 길':'글공부 뒤의 갈림길',
+    description:s.examination==='passed'?'소과에 급제해 진사라 불리게 되었다. 하지만 진사가 곧 수령이나 고위 관료가 되는 것은 아니다.':
+      s.examination==='failed'?'소과에 떨어졌다. 그렇다고 익힌 글과 살아갈 길까지 사라진 것은 아니다.':'과거시험에는 응시하지 않았다. 이제 배운 글을 어떻게 써 볼지 결정할 때다.',
     options:[['동네에서 글을 가르치며 살아간다','벼슬하지 않고 제자와 이웃을 만나며 지낸다.'],
-     ['더 큰 시험을 준비한다','합격을 보장할 수 없고 살림의 부담도 생긴다.'],
+     [s.examination==='passed'?'대과를 준비한다':s.examination==='failed'?'다음 소과를 준비한다':'처음 소과를 준비한다','합격을 보장할 수 없고 살림의 부담도 생긴다.'],
      ['집안의 농사와 생업을 맡는다','글을 읽는 시간을 줄이고 살림을 꾸린다.']]},
    magistrateAfter:{title:s.magistrate==='abusive'?'수령을 둘러싼 탄원과 조사':'수령이 떠나는 날',
     description:s.magistrate==='abusive'?'세금과 장부를 둘러싼 억울한 사연이 감사에게 전달되었다.':'부임 기간이 끝나자 주민들은 지난 일을 서로 다르게 기억한다.',
@@ -150,7 +151,8 @@
    if(index===0){career(l,s.examination==='passed'?'향촌에서 글을 가르치는 진사':'마을의 글 선생');s.reputation+=5;}
    else if(index===1){costs(l,-10);l.change({knowledge:4});career(l,'계속 과거를 준비하는 사람');}
    else {career(l,'농사와 글공부를 잇는 사람');costs(l,3);}
-   remember(l,s,'벼슬길 대신 고향에 머물며 살 길을 골랐다.');
+   remember(l,s,index===0?'제자를 가르치며 마을에 머물렀다.':
+      index===1?'다음 과거시험을 준비하며 책을 다시 펼쳤다.':'글공부를 줄이고 집안의 생업을 맡았다.');
   }else if(key==='magistrate'){
    s.magistrate=index===1?'abusive':index===0?'benevolent':'careful';
    if(index===1){costs(l,24);s.integrity-=5;s.shame+=9;remember(l,s,'거둔 곡식을 사사로이 써 백성의 부담을 키웠다.');}
@@ -166,11 +168,12 @@
      if(Paths?.lockup(l,Paths.ensure(l),'exile',2+Math.floor(dice(l.seed,l.year+99)*3),'강원도'))remember(l,s,'감찰 끝에 파직되어 유배지로 떠났다.');
     }else{j.office=false;career(l,'파직 후 고향에 돌아온 전직 수령');remember(l,s,'비리를 둘러싼 논란 끝에 관직에서 물러났다.');}
    }else if(s.magistrate==='benevolent'&&index!==2&&hit<.65){
-    s.reputation+=8;remember(l,s,'떠나는 날, 도움받았던 고을 사람들이 돈을 모아 송덕비를 세우겠다고 나섰다.');
+    s.reputation+=8;s.memorial='raised';
+    remember(l,s,'수령이 떠난 뒤 고을 사람들이 뜻을 모아 실제로 송덕비를 세웠다.');
    }else remember(l,s,'임기를 마쳤다. 고을 사람들의 평가는 서로 달랐고 송덕비가 자동으로 세워지지는 않았다.');
   }else if(key==='slave'){
    if(index===0){costs(l,-8);
-    if(dice(l.seed,l.year*61+21)<.28){soc.freed=true;s.fugitive='freed';remember(l,s,'상전 측에서 속량을 인정해 문서를 받았다. 생업은 다시 구해야 했다.');}
+    if(dice(l.seed,l.year*61+21)<.28){soc.freed=true;soc.legal='양인';s.fugitive='freed';career(l,'속량 뒤 생업을 찾는 사람');remember(l,s,'상전 측에서 속량을 인정해 문서를 받았다. 생업은 다시 구해야 했다.');}
     else remember(l,s,'속량을 청했지만 허락을 받지 못했다.');}
    if(index===1){s.fugitive='escaped';s.follow={key:'slaveAfter',due:l.year+2};costs(l,-4);
     career(l,'신분을 숨기고 떠돌며 일하는 사람');
@@ -179,7 +182,7 @@
   }else if(key==='slaveAfter'){
    const danger=dice(l.seed,l.year*37+index*19+120);
    if(index===1){costs(l,-12);
-    if(danger<.48){soc.freed=true;s.fugitive='freed';career(l,'속량 뒤 생업을 찾는 사람');remember(l,s,'속량을 인정하는 문서를 얻었다. 예전의 차별은 한꺼번에 사라지지 않았다.');}
+    if(danger<.48){soc.freed=true;soc.legal='양인';s.fugitive='freed';career(l,'속량 뒤 생업을 찾는 사람');remember(l,s,'속량을 인정하는 문서를 얻었다. 예전의 차별은 한꺼번에 사라지지 않았다.');}
     else remember(l,s,'속량을 청했지만 문서를 받지 못해 숨어 지내야 했다.');}
    else if(danger<(index===0?.20:.43)){s.fugitive='recaptured';career(l,soc.trade);costs(l,-5);
     remember(l,s,'추쇄에 붙잡혀 다시 예속된 노동을 하게 되었다.');}
@@ -223,6 +226,7 @@
   s.shame=clamp(Number(o.shame)||0,0,100);
   s.examination=['not_taken','passed','failed'].includes(o.examination)?o.examination:'not_taken';
   s.magistrate=['none','abusive','benevolent','careful'].includes(o.magistrate)?o.magistrate:'none';
+  s.memorial=o.memorial==='raised'?'raised':'none';
   s.fugitive=['none','escaped','freed','recaptured','hiding'].includes(o.fugitive)?o.fugitive:'none';
   s.lineage=['none','questioned','withdrawn','disputed','investigated'].includes(o.lineage)?o.lineage:'none';
   s.choices=Array.isArray(o.choices)?o.choices.filter(x=>x&&names.concat(steps).includes(x.key)&&
@@ -247,7 +251,7 @@
    ['escaped','hiding'].includes(s.fugitive)?'도망 노비로 숨어 지내는 삶':
    s.fugitive==='freed'?'속량을 거쳐 새 길을 찾는 삶':
    s.magistrate==='abusive'?'탐관오리로 남은 수령 시절':
-   s.magistrate==='benevolent'&&(s.scenes||[]).some(x=>x.text.includes('송덕비'))?'송덕비가 세워진 수령':
+   s.magistrate==='benevolent'&&s.memorial==='raised'?'송덕비가 세워진 수령':
    s.magistrate==='benevolent'?'백성을 돌본 수령':
    s.examination==='passed'?'진사의 향촌 생활':
    s.lineage!=='none'?'족보를 둘러싼 신분의 갈등':'';
