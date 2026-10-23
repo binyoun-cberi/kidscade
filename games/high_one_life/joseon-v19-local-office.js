@@ -24,7 +24,7 @@ const event=(id,title,scene,opts,gate=()=>true,source='economy')=>({id,title,sce
 const EVENTS=[
  event('newMagistrate','고을에 새 수령이 부임하다',
   '전임 수령이 떠나고 새 수령이 부임했다. 관아 앞이 붐비고, 사람들은 올해 거둘 세금이 달라질지 수군거린다.',[
-  choice('지난해 잘못 매겨진 세곡 내역을 적어 새 수령에게 낸다','고을 수령이 바뀌었다. 우리 집과 이웃이 실제로 낸 양을 장부와 대조해 낼 근거를 마련한다.','새 수령 앞에 지난해 납부한 곡식과 장부 차이를 적어 냈다. 당장 곡식을 돌려주지는 않았다.',{proof:2,petitions:1,confidence:1},'petition'),
+  choice('지난해 잘못 매겨진 세곡 내역을 적어 새 수령에게 낸다','고을 수령이 바뀌었다. 우리 집과 이웃이 실제로 낸 양을 장부와 대조해 낼 근거를 마련한다.','새 수령 앞에 지난해 납부한 곡식과 장부 차이를 보여 주며 다시 살펴 달라 청했다. 수령은 장부부터 확인하겠다고 했다.',{proof:2,petitions:1,confidence:1},'petition'),
   choice('새 수령이 처음 거두는 세곡의 명목과 수량을 확인한다','인사는 번듯했지만 어떤 수령인지는 아직 알 수 없다. 새로 거두는 곡식이 예전과 얼마나 다른지 살펴본다.','새 수령이 지시한 세목과 수량을 비교했다. 말보다 실제 납부 방식이 어떠한지 더 살폈다.',{knowledge:2,confidence:1},'watch'),
   choice('억울한 세금을 낸 이웃과 함께 탄원서를 묶는다','한 집의 말만 들리지 않을 수 있다. 각자 낸 액수를 확인해 이름과 요구를 한 장에 적는다.','이웃과 탄원서에 적을 사례를 모았다. 함께 나선 이름들이 관아에 알려질 위험도 생겼다.',{petitions:2,solidarity:2,anger:1},'organize')],(l,s)=>s.office.from===l.year),
  event('clerkNetwork','새 수령 아래에도 남은 아전들',
@@ -34,12 +34,12 @@ const EVENTS=[
   choice('이웃에게 낸 세금의 종류와 날짜를 물어 한 장에 모은다','집마다 낸 세금을 비교하면 여러 집에 같은 잘못이 있는지 알 수 있다. 다른 집의 동의 없이 이름을 적지 않는다.','서로 동의한 집의 납부 날짜와 양을 모았다. 공통으로 잘못 적힌 항목을 찾기 시작했다.',{solidarity:3,proof:3},'organize')]),
  event('levyRequest','수령의 추가 징수 요구',
   '아전이 집집마다 돈과 곡식을 더 내라고 전한다. 무슨 명목이냐 묻자 예부터 그래 왔다는 대답만 돌아온다.',[
-  choice('아전에게 추가로 걷는 세목과 관아 문서를 보여 달라 한다','무엇을 위해 더 내는지 알려 주지 않았다. 요구를 받은 날짜와 명목을 정확히 적어 둔다.','추가 징수의 명목을 묻고 답을 기록했다. 관아는 여전히 곡식을 더 내라 재촉했다.',{proof:2,petitions:1,anger:1},'record'),
+  choice('아전에게 추가로 걷는 세목과 관아 문서를 보여 달라 한다','무엇을 위해 더 내는지 알려 주지 않았다. 요구를 받은 날짜와 명목을 정확히 적어 둔다.','아전에게 어느 조항에 따라 더 걷는지 물었다. 아전은 납득할 답을 하지 못한 채 곡식부터 가져오라고 했다.',{proof:2,petitions:1,anger:1},'record'),
   choice('지금 낼 곡식을 덜어 놓고 다음 철 먹을 양을 줄인다','징수를 거절하면 당장 관아와 충돌한다. 먼저 내지만 남은 식구가 먹을 양식이 줄어든다.','곡식을 내고 곳간의 양을 다시 셌다. 다음 수확 전에 무엇을 줄일지 의논해야 했다.',{grain:-4,landDebt:2,anger:2},'pay'),
   choice('같은 요구를 받은 집들과 수량을 맞춰 감면을 청한다','여러 집이 낸 추가 곡식을 비교해 잘못된 부분을 말한다. 앞장선 사람을 관아가 눈여겨볼 수 있다.','이웃의 납부량을 모아 감면을 청했다. 관아가 받아들일지 알 수 없어 함께 기다렸다.',{solidarity:3,petitions:1,anger:2,retaliation:1},'petition')]),
  event('favorPressure','권세가의 이름을 앞세우는 사람들',
   '서울의 권세 있는 집안을 들먹이는 사람이 관아를 드나든다. 사람들은 어제 내린 결정이 오늘 뒤집힐까 봐 눈치를 본다.',[
-  choice('권세가의 부탁을 받은 사람과 요구 날짜를 적는다','말로만 떠도는 소문은 증거가 되기 어렵다. 누가 누가 무슨 부탁을 했는지 들은 말과 직접 본 일을 구분한다.','관아를 드나든 사람과 부탁의 내용을 적어 두었다. 모르는 부분은 확인되지 않았다고 표시했다.',{proof:3,integrity:1},'record'),
+  choice('권세가의 부탁을 받은 사람과 요구 날짜를 적는다','말로만 떠도는 소문은 증거가 되기 어렵다. 누가 무슨 부탁을 했는지 들은 말과 직접 본 일을 구분한다.','청탁하러 온 사람의 이름과 날짜를 적었다. 직접 본 일과 이웃에게 들은 말을 따로 구분했다.',{proof:3,integrity:1},'record'),
   choice('권세가의 청탁이 있는 자리에서 빠져나온다','그들의 부탁에 가담하지 않으려 한다. 대신 관계를 거절했다는 이유로 불이익을 받을 수도 있다.','청탁 이야기가 시작된 자리를 떠났다. 자리를 나왔지만 그 청탁이 어떻게 끝났는지는 알 길이 없었다.',{retaliation:1,confidence:1},'avoid'),
   choice('부당하게 뒤집힌 결정의 이유를 주민들과 물어본다','나 혼자 따지기 어렵다. 당사자의 동의를 얻어 함께 질문하지만 관아의 반감을 살 수 있다.','당사자의 설명을 듣고 관아에 이유를 물었다. 분명한 답을 얻지 못한 채 사람들이 사정을 나눴다.',{solidarity:3,petitions:1,anger:2},'petition')]),
  event('goodMagistrate','백성의 사정을 듣는 수령',
@@ -62,8 +62,8 @@ const EVENTS=[
  ],(l,s)=>/서리|아전|관료|수령|관리/.test(V5.summary(l).origin+' '+V5.summary(l).role)),
  event('petitionsBlocked','여러 번 올린 탄원이 돌아오다',
   '고을 사람들이 올린 탄원에 좀처럼 답이 오지 않는다. 관아 문턱을 여러 차례 드나든 이웃이 오늘도 빈손으로 돌아왔다.',[
-  choice('답이 없었던 탄원 날짜와 증언을 다시 대조한다','무엇이 반려됐는지 정확히 알아야 다음 요구를 고칠 수 있다. 종이와 인편에 시간이 든다.','돌아온 문서의 날짜와 빠진 증언을 확인했다. 다음에 제출할 내용을 정리할 수 있었다.',{proof:3,petitions:1},'record'),
-  choice('다른 고을 관청에 보낼 문서의 근거를 따로 모은다','같은 관아에만 내서는 답을 얻기 어렵다. 다른 경로를 쓰면 보복이나 비용이 뒤따를 수 있다.','상급 관청에 전할 문서를 정리했다. 전달됐는지까지 확인하려면 시간이 더 필요했다.',{contacts:2,petitions:1,retaliation:1},'appeal'),
+  choice('답이 없었던 탄원 날짜와 증언을 다시 대조한다','무엇이 반려됐는지 정확히 알아야 다음 요구를 고칠 수 있다. 종이와 인편에 시간이 든다.','돌아온 문서의 날짜와 빠진 증언을 확인했다. 빠진 증인을 찾아 다시 탄원할 준비를 했다.',{proof:3,petitions:1},'record'),
+  choice('다른 고을 관청에 보낼 문서의 근거를 따로 모은다','같은 관아에만 내서는 답을 얻기 어렵다. 다른 경로를 쓰면 보복이나 비용이 뒤따를 수 있다.','부당하게 거둔 세곡의 영수증 사본을 챙겨 상급 관청에 보낼 인편을 수소문했다.',{contacts:2,petitions:1,retaliation:1},'appeal'),
   choice('탄원을 잠시 멈추고 밀린 품일로 식량을 마련한다','관아를 오가는 동안 집안에 일할 사람이 없었다. 억울함을 남겨 둔 채 당장의 끼니를 구한다.','며칠 품을 팔아 곡식을 마련했다. 끝내 해결되지 않은 세금 문제는 마음에 남았다.',{anger:2,bonds:2,capital:1},'work')
  ],(l,s)=>s.petitions>=1),
  event('unknownTraveler','고을 사정을 묻는 낯선 나그네',
@@ -84,6 +84,12 @@ const EVENTS=[
   choice('구휼을 받지 못한 집을 찾아 부족한 곡식을 나눠 준다','조사가 끝나도 굶는 집은 남을 수 있다. 우리 집 곳간을 조금 덜어 당장 먹을 것을 건넨다.','아직 곡식이 없는 집에 먹을 것을 가져갔다. 관아의 처분과 별개로 그날의 끼니를 도왔다.',{solidarity:3,grain:-2},'mutual'),
   choice('새 수령에게 감찰 후에도 남은 세금 내역을 정리해 낸다','고쳐지지 않은 항목을 다시 제출해야 한다. 재차 탄원하면 시간과 힘이 더 든다.','수령에게 남은 징수 문제를 적어 전달했다. 언제 시정될지는 더 기다려야 했다.',{petitions:1,confidence:1},'petition')
  ],(l,s)=>s.audit.state==='reported','inspector'),
+ event('savedEvidence','예전에 모은 증거를 다시 꺼낼 날',
+  '몇 해 전 잘못된 징수를 따질 때 모아 둔 자료를 다시 펼쳤다. 이번에는 그 자료를 어디에 낼지 정해야 한다.',[
+  choice('영수증과 장부의 다른 수량을 수령에게 보여 준다','이전 기록을 직접 제시한다. 수령이 받아들이는지는 별개다.','수령 앞에 예전 영수증과 지금 장부를 함께 펼쳤다.',{petitions:1,proof:1,capital:-2},'evidence'),
+  choice('피해를 본 이웃과 함께 상급 관청에 호소한다','증언과 인편을 마련해야 한다. 아전의 눈 밖에 날 위험도 있다.','이웃과 함께 전할 증언을 추려 상급 관청에 올렸다.',{petitions:2,solidarity:2,retaliation:1,capital:-3},'appeal'),
+  choice('당장은 문서를 집에 보관하고 생업을 돌본다','위험은 피하지만 잘못된 징수가 저절로 바로잡히지는 않는다.','모아 두었던 문서를 집에 넣어 두었다. 고을의 세금 문제는 그대로 남았다.',{confidence:-1},'wait')
+ ],(l,s)=>s.claims?.some(c=>c.due<=l.year),'inspector'),
  event('patronageCost','권세가의 후원을 둘러싼 관직 인사',
   '서울의 권세가를 등에 업고 벼슬을 얻었다는 소문이 돌고 있다. 사람들은 새 수령이 누구의 뜻을 따르고, 그 대가를 누구에게 거둘지 걱정한다.',[
   choice('벼슬을 얻은 이와 징수가 늘어난 시기를 장부에 대조한다','권세가의 청탁이 세금에 영향을 줬다는 의혹을 사실과 구분하려 한다. 어느 해부터 달라졌는지 먼저 본다.','인사 뒤 달라진 세금의 항목을 적었다. 관직 거래가 실제 원인인지는 확인되지 않았다.',{knowledge:3,proof:2},'record'),
@@ -116,7 +122,7 @@ function ensure(l){
    audit:{state:'none',since:null,checked:0,outcome:'',reports:0},
    petitions:0,proof:0,solidarity:0,anger:0,confidence:45,retaliation:0,
    corruption:0,integrity:0,contacts:0,memories:[],memory:[],seen:[],queue:[],active:null,
-   decisions:[],followups:[],lastSource:null};
+   decisions:[],followups:[],claims:[],lastSource:null};
  }
  const s=l.joseon19;
  if(!s.office||s.office.region!==region(l))appoint(l,s,l.year,s.office?'다른 고을로 옮김':'첫 부임');
@@ -126,8 +132,9 @@ function fit(l,s,e){
  return era(l)&&l.age>=15&&l.age<=80&&e.gate(l,s)&&!s.seen.includes(e.id);
 }
 function queue(l,s,e){
- if(!e||s.queue.some(q=>q.eventId===e.id)||s.active?.eventId===e.id||s.seen.includes(e.id))return;
- s.seen.push(e.id);s.queue.push({id:l.year+'-'+e.id,eventId:e.id,year:l.year});s.queue=s.queue.slice(-4);
+ if(!e||s.queue.some(q=>q.eventId===e.id)||s.active?.eventId===e.id||
+   (e.id!=='savedEvidence'&&s.seen.includes(e.id)))return;
+ if(e.id!=='savedEvidence')s.seen.push(e.id);s.queue.push({id:l.year+'-'+e.id,eventId:e.id,year:l.year});s.queue=s.queue.slice(-4);
 }
 function promote(l,s){
  // When the player is the local magistrate, avoid surfacing a second NPC ruler.
@@ -146,6 +153,7 @@ function yearly(l,s){
  const o=s.office,ledger=V18.ensure(l);
  // Legacy delayed copies are retired; audit outcomes below remain state-driven.
  s.followups=s.followups.filter(x=>x.year>l.year);
+ if(s.claims?.some(c=>c.due<=l.year))queue(l,s,BYID.get('savedEvidence'));
  if(l.year>o.through){
   const outgoing=o.name;
   appoint(l,s,l.year,'임기 교체');
@@ -200,7 +208,7 @@ function yearly(l,s){
   s.anger=clip(s.anger+2,0,60);
   l.logEvent('고을의 징수 관행이 거세져 우리 집의 '+({landDebt:'전정',militaryDebt:'군정',grainDebt:'환정'}[chosen])+' 부담이 남았다.','joseon19-fiscal');
  }
- const pool=EVENTS.filter(e=>fit(l,s,e));
+ const pool=EVENTS.filter(e=>e.id!=='savedEvidence'&&fit(l,s,e));
  if(pool.length&&l.year%2===0&&s.queue.length<=1){
   const score=e=>{
    const base=rnd(s.familySeed,l.year*29+nameHash(e.id))+rnd(l.seed,l.year*23+nameHash(e.id))*.2;
@@ -217,6 +225,10 @@ function prompt(l){
  const s=ensure(l),e=BYID.get(s.active?.eventId);
  if(!e)return null;
  let intro=e.scene;
+ if(e.id==='savedEvidence'){
+  const file=s.claims.find(x=>x.due<=l.year);
+  if(file)intro='예전에 '+({clerkNetwork:'세곡 장부의 차이',levyRequest:'추가 징수의 근거',corruptMagistrate:'수령의 세곡 사용처',favorPressure:'권세가의 청탁',petitionsBlocked:'반려된 탄원',newMagistrate:'지난해 세곡 납부',patronageCost:'관직 인사와 세금',goodMagistrate:'세금과 장부'}[file.eventId]||'부당한 징수')+'를 확인하려고 모았던 자료를 꺼냈다. 이 자료를 가지고 무엇을 할까?';
+ }
  if(e.id==='corruptMagistrate'&&s.proof+V18.ensure(l).proof<4)
   intro+=' 소문의 진상을 아는 사람은 여전히 드물다.';
  if(e.id==='goodMagistrate'&&s.office.clerks>=65)
@@ -252,6 +264,31 @@ function choose(l,index){
  if(d.petitions>0)ledger.complaints=clip(ledger.complaints+d.petitions,0,90);
  const id=s.active.id;
  const result=[op.follow];
+ if(id==='savedEvidence'){
+  const claimIndex=s.claims.findIndex(c=>c.due<=l.year);
+  const file=claimIndex>=0?s.claims.splice(claimIndex,1)[0]:null;
+  if(file){
+   const ready=s.proof+ledger.proof>=6;
+   if(index===0&&ready&&s.office.integrity>=52){
+    const beforeDebt=ledger.landDebt+ledger.militaryDebt+ledger.grainDebt;
+    const part=['landDebt','militaryDebt','grainDebt'].find(k=>ledger[k]>0);
+    if(part)ledger[part]=clip(ledger[part]-2,0,70);
+    if(beforeDebt>ledger.landDebt+ledger.militaryDebt+ledger.grainDebt)
+     result.push('수령이 영수증을 확인한 뒤 잘못 더해진 곡식 빚 일부를 장부에서 지우게 했다.');
+    else result.push('수령은 자료가 맞다고 인정했지만 지금 바로 돌려받을 곡식은 없었다.');
+    s.confidence=clip(s.confidence+4,0,100);
+   }else if(index===0){
+    result.push('아전은 이전 장부를 다시 살피겠다며 문서를 받아 두었다. 세금은 아직 달라지지 않았다.');
+   }else if(index===1){
+    s.audit.checked=clip(s.audit.checked+(ready?2:1),0,20);
+    result.push('함께 이름을 올린 집들은 회신을 기다리기로 했다. 상급 관청이 조사할지는 아직 알 수 없었다.');
+   }
+  }
+ }else if(d.proof>0&&['record','petition','organize'].includes(op.action)&&
+   ['newMagistrate','clerkNetwork','levyRequest','favorPressure','corruptMagistrate','petitionsBlocked','patronageCost','goodMagistrate'].includes(e.id)&&s.claims.length<4){
+  s.claims.push({eventId:e.id,year:l.year,due:l.year+2});
+  result.push('자료를 간직했다. 훗날 새 수령이나 감찰이 조사에 나설 때 다시 내밀 수 있다.');
+ }
  if(ledger.landDebt+ledger.militaryDebt+ledger.grainDebt<before.debt)result.push('잘못 매겨진 부담 일부가 장부에서 줄었다.');
  l.logEvent(result.join(' '),'joseon19-choice');
  l.log.at(-1).causeId='joseon19:'+id;l.log.at(-1).sourceUrl=e.source;l.log.at(-1).eventTitle=e.title;l.log.at(-1).choiceLabel=op.label;
@@ -313,6 +350,11 @@ function hydrate(l,data){
  const clean=q=>({id:q.id.slice(0,65),eventId:q.eventId,year:q.year});
  s.queue=Array.isArray(o.queue)?o.queue.filter(valid).slice(-4).map(clean):[];
  s.active=valid(o.active)&&data?.pending==='joseon19:'+o.active.id&&l.alive&&J.inOldEra(l)?clean(o.active):null;
+  s.claims=Array.isArray(o.claims)?o.claims.filter(x=>x&&
+  ['newMagistrate','clerkNetwork','levyRequest','favorPressure','corruptMagistrate','petitionsBlocked','patronageCost','goodMagistrate'].includes(x.eventId)&&
+  Number.isInteger(x.year)&&x.year>=l.birthYear&&x.year<=l.year&&
+  Number.isInteger(x.due)&&x.due>=x.year&&x.due<=l.year+5).slice(-4)
+  .map(x=>({eventId:x.eventId,year:x.year,due:x.due})):[];
  s.decisions=Array.isArray(o.decisions)?o.decisions.filter(x=>valid(x)&&Number.isInteger(x.choice)&&x.choice>=0&&x.choice<3).slice(-70)
   .map(x=>({...clean(x),choice:x.choice,official:String(x.official||'').slice(0,22)})):[];
  s.followups=Array.isArray(o.followups)?o.followups.filter(x=>x&&typeof x.id==='string'&&typeof x.text==='string'&&Number.isInteger(x.year)&&x.year>l.year&&x.year<=l.year+5)
