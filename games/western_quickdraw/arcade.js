@@ -22,6 +22,19 @@ const FX={
 };
 const images={};for(const [name,url] of Object.entries(ASSETS)){const img=new Image();img.src=url;images[name]=img}
 const sounds={};let audioEnabled=true;
+let drumContext=null;
+function drumBeat(){
+ try{
+  const SoundContext=window.AudioContext||window.webkitAudioContext;
+  if(!SoundContext||!audioEnabled)return;
+  if(!drumContext)drumContext=new SoundContext();
+  if(drumContext.state==='suspended'){void drumContext.resume().catch(()=>{});return}
+  const at=drumContext.currentTime,osc=drumContext.createOscillator(),gain=drumContext.createGain();
+  osc.type='triangle';osc.frequency.setValueAtTime(120,at);osc.frequency.exponentialRampToValueAtTime(70,at+.075);
+  gain.gain.setValueAtTime(.04,at);gain.gain.exponentialRampToValueAtTime(.001,at+.09);
+  osc.connect(gain);gain.connect(drumContext.destination);osc.start(at);osc.stop(at+.1);
+ }catch(_){/* visual pulse remains available without audio */}
+}
 function sound(name){if(!audioEnabled)return;try{const audio=sounds[name]||(sounds[name]=new Audio(FX[name]));audio.pause();audio.currentTime=0;audio.volume=.17;void audio.play().catch(()=>{})}catch(_){}}
 function sdk(method,payload){try{window.KidscadeGame?.[method]?.(payload)}catch(_){}}
 function load(){try{const raw=JSON.parse(localStorage.getItem(STORAGE)||'null');if(raw&&typeof raw==='object'&&!Array.isArray(raw))return raw}catch(_){}return {}}
@@ -45,7 +58,7 @@ function resetState(key){
   multiplier:1,objects:[],spawnIn:key==='coins'?2.8:0.6,feedback:'',feedbackTimer:0,
   obstacles:[],jumpY:0,jumpV:0,boost:0,boostTime:0,invincible:0,passed:0,distance:0,
   dropped:0,ropes:[],ropeCooldown:0,aim:{x:700,y:310},coinShots:0,
-  notes:[],noteHits:0,misses:0,finished:false};
+  notes:[],noteHits:0,misses:0,lassoMisses:0,lassoMistakes:0,beatIndex:-1,beatFlash:0,beatLane:-1,finished:false};
 }
 function start(key){
  if(!MODES[key])return;
@@ -222,11 +235,15 @@ function stepCattle(dt){
    let hits=0;
    for(const o of [...g.objects])if(o.x>=70&&o.x<=850&&Math.hypot(o.x-r.x,o.y-r.y)<o.r+18){g.objects.splice(g.objects.indexOf(o),1);hits++}
    g.ropes.splice(g.ropes.indexOf(r),1);
-   if(hits){g.combo++;score(hits*90*Math.min(5,g.combo)+(hits>1?hits*60:0));message(hits>1?hits+'마리 한꺼번에!':'잡았다! '+g.combo+'연속');sound('click')}
-   else{g.combo=0;message('아쉽게 비껴갔어요. 조금 앞을 노려봐요!')}
+   if(hits){g.lassoMisses=0;g.combo++;score(hits*90*Math.min(5,g.combo)+(hits>1?hits*60:0));message(hits>1?hits+'마리 한꺼번에!':'잡았다! '+g.combo+'연속');sound('click')}
+   else{
+    g.combo=0;g.lassoMisses++;g.lassoMistakes++;
+    if(g.lassoMisses>=3){g.lives--;g.lassoMisses=0;message('올가미가 세 번 빗나갔어요! 남은 기회 '+g.lives)}
+    else message('아쉽게 비껴갔어요. 조금 앞을 노려봐요! ('+g.lassoMisses+'/3)')
+   }
   }
  }
- if(g.lives<=0)finish(false,'세 마리가 울타리를 넘어갔어요.');
+ if(g.lives<=0)finish(false,'소를 놓치거나 올가미를 세 번 빗맞혔어요. 조금 앞을 노려봐요.');
  else if(g.elapsed>=g.duration)finish(true,'우리의 소들을 잘 돌봤어요!');
 }
 function laneX(i){return 140+Math.round((i+.5)*620/4)}
@@ -238,11 +255,16 @@ function shotDisco(lane){
   const diff=Math.abs(n.due-g.elapsed);if(diff<delta){delta=diff;note=n}
  }
  if(!note){g.combo=0;g.misses++;message('박자를 놓쳤어요!');sound('lose');return}
- note.done=true;g.noteHits++;g.combo++;
+ note.done=true;g.noteHits++;g.combo++;g.beatLane=lane;g.beatFlash=.3;
  const perfect=delta<=.09;score((perfect?120:70)*g.multiplier+Math.min(12,g.combo)*5);
  message(perfect?'완벽한 박자!':'좋은 타이밍!');sound('click');
 }
 function stepDisco(dt){
+ g.beatFlash=Math.max(0,g.beatFlash-dt);
+ for(let i=g.beatIndex+1;i<g.notes.length;i++){
+  if(g.elapsed<g.notes[i].due)break;
+  g.beatIndex=i;drumBeat();
+ }
  for(const n of g.notes)if(!n.done&&g.elapsed>n.due+.22){n.done=true;g.combo=0;g.misses++}
  if(g.misses>=12)finish(false,'박자를 조금 놓쳤어요. 음악에 맞춰 다시 해봐요.');
  else if(g.notes.every(n=>n.done))finish(true,'마지막 박자까지 멋지게 연주했어요!');
@@ -417,7 +439,8 @@ function paintDisco(){
   const x=laneX(i);
   rect(x-65,135,130,lineY-110,'#efebe5');
   rect(x-65,lineY-5,130,8,'#b4ada3');
-  if(g.elapsed<g.duration*.5)text(['A','S','K','L'][i],x,lineY+52,32,'#7d776f');
+  text(['A','S','K','L'][i],x,lineY+52,32,g.elapsed<g.duration*.5?'#7d776f':'#c2b9ad');
+  if(g.beatLane===i&&g.beatFlash>0)rect(x-65,lineY-5,130,8,'#ae7458');
  }
  for(const n of g.notes){
   if(n.done)continue;
