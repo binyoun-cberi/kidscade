@@ -30,7 +30,8 @@ const names={
  미국:{female:['에마','올리비아','소피아','릴리'],male:['노아','제임스','리엄','올리버']}
 };
 const common={female:['미나','리아','사라','엘라'],male:['아민','다니엘','아담','레오']};
-const HOBBIES=['축구','그림','독서','음악','요리','체스','정원 가꾸기','사진'];
+const HOBBIES=['축구','그림','독서','음악','요리','체스','정원 가꾸기','사진','씨름','윷놀이','노래'];
+const historicalHobbies=['씨름','윷놀이','그림','노래'];
 function chooseName(life,salt,sex){
  const pool=(names[life.country[0]]||common)[sex]||common.female;
  const hash=((life.seed ^ Math.imul(salt+1,2654435761))>>>0);
@@ -341,7 +342,7 @@ const STORY_BANK=Object.freeze({
  ],
  history:[
   '어른들은 자신이 어릴 적 살던 집을 아직도 선명히 기억하고 있었다.',
-  '어제까지 익숙하던 일이 올해는 다른 방식으로 돌아갔다.',
+  '지난 장날과 달리 곡식값이 올라 가족과 필요한 물건부터 골라 사기로 했다.',
   '동네에 전해진 소식 때문에 저녁 밥상에서도 같은 이야기가 오갔다.',
   '배울 곳이 마땅치 않아 아는 사람에게 책을 빌렸다.',
   '생활용품을 아껴 쓰며 다음 계절을 준비했다.',
@@ -349,7 +350,7 @@ const STORY_BANK=Object.freeze({
   '가족이 겪은 일을 오래 기억하려고 이야기를 나누었다.',
   '일하는 방식이 조금씩 변하면서 새로 배워야 할 것이 생겼다.',
   '익숙한 동네 풍경이 시간과 함께 조금씩 달라졌다.',
-  '어른들이 들려준 지난 시절 이야기를 마음에 간직했다.'
+  '집안 어른이 살던 고을에서 겪었던 일을 들었다. 모르는 곳의 이름은 다시 물었다.'
  ]
 });
 function everydayStories(life,state,count){
@@ -424,6 +425,13 @@ function eventsForYear(life,state){
 }
 function prompt(choice,life){
  const state=ensure(life);
+ if(choice==='hobby'&&life.year<1900)return {age:life.age,title:'어린 날의 놀이와 솜씨',
+ description:'그 시절 주변에서 접할 만한 놀이와 솜씨 중 무엇을 익혀 볼까요?',options:[
+  {label:'씨름',note:'친구들과 힘과 균형을 겨뤄 본다'},
+  {label:'윷놀이',note:'가족이나 이웃과 윷을 던지며 논다'},
+  {label:'그림',note:'구할 수 있는 재료로 보고 느낀 것을 그린다'},
+  {label:'노래',note:'주변에서 들은 노래의 가락을 따라 부른다'}
+ ]};
  if(choice==='hobby')return {age:life.age,title:'오래도록 기억할 작은 취미',description:'어린 시절 무엇을 즐겨 볼까요?',options:[
   {label:'축구',note:'친구와 공을 차며 즐기는 시간'},
   {label:'독서',note:'이야기를 읽으며 상상하는 시간'},
@@ -448,7 +456,7 @@ function prompt(choice,life){
 function applyChoice(life,state,event,index){
  const kind=event.choice;
  if(kind==='hobby'){
-  state.hobby=['축구','독서','그림','음악'][index];
+  state.hobby=(life.year<1900?historicalHobbies:['축구','독서','그림','음악'])[index];
   state.hobbySince=life.age;
   addMemory(state,'취미:'+state.hobby);
   record(life,state,'hobby-start',state.hobby+'에 흥미를 붙였다.','decision');
