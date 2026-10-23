@@ -181,7 +181,7 @@
         setNotice((f.side===0?'파란':'주황')+' 대포 명중! '+state.points[f.side]+'점이에요.');
         if(state.points[f.side]>=3) {
           state.phase='finished';action='none';
-          sdk('result',{scope:'match',status:'completed',outcome:'win',score:state.points[f.side],winner:f.side===0?'blue':'orange',mode:state.mode});
+          sdk('result',{scope:'match',status:'completed',outcome:state.mode==='cpu'?(f.side===0?'win':'loss'):'win',score:state.points[f.side],winner:f.side===0?'blue':'orange',mode:state.mode});
           setNotice((f.side===0?'파란':'주황')+' 대포 승리! 다시 시작해서 한 판 더 해요.');
         }
       } else setNotice('이번 포탄은 빗나갔어요. 다음 차례!');
