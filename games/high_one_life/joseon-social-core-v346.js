@@ -68,12 +68,12 @@
   track(l,cfg.arrival);
   return true;
  }
- function key(l){
-  const p=l.pending;
+ function parseKey(p){
   if(typeof p!=='string')return null;
   const matched=/^joseon346:(court|bonded|commoner|baekjeong):(case[1-3]|ending)$/.exec(p);
   return matched?{kind:matched[1],step:matched[2]}:null;
  }
+ const key=l=>parseKey(l.pending);
  function prompt(l){
   const k=key(l),s=ensure(l),p=k&&s?.profiles[k.kind],cfg=k&&categories.get(k.kind);
   if(!k||!p||!cfg||s.active!==k.kind)return null;
@@ -153,7 +153,9 @@
    const old=saved.profiles?.[kind],cfg=categories.get(kind);
    if(!old||!['case','ending','done'].includes(old.stage))continue;
    const ix=old.index,ord=old.order;
-   if(!Number.isInteger(ix)||ix<0||ix>3||!Array.isArray(ord)||ord.length!==3||
+   if(!Number.isInteger(ix)||ix<0||ix>3||
+     (old.stage==='case'&&ix>=3)||(old.stage!=='case'&&ix!==3)||
+     !Array.isArray(ord)||ord.length!==3||
      new Set(ord).size!==3||ord.some(x=>!Number.isInteger(x)||x<0||x>=cfg.cases.length))continue;
    const m={};for(const key of Object.keys(cfg.initial))m[key]=Number.isFinite(old.meters?.[key])?
     clamp(old.meters[key],0,100):cfg.initial[key];
@@ -168,11 +170,15 @@
     outcome:typeof old.outcome==='string'&&Object.hasOwn(cfg.endings,old.outcome)?old.outcome:''};
    if(saved.active===kind&&old.stage!=='done')s.active=kind;
   }
-  const k=key(l),p=k&&s.profiles[k.kind];
-  if(k&&(!p||s.active!==k.kind||!(k.step==='ending'&&p.stage==='ending'||
-       k.step==='case'+(p.index+1)&&p.stage==='case'))){
-   l.pending=null;
-  }
+  // The legacy engine clears unfamiliar pending prefixes on restore.
+  // Restore only a known story key that matches the saved, validated phase.
+  const raw=typeof data?.pending==='string'?data.pending:'';
+  const k=parseKey(raw),p=k&&s.profiles[k.kind];
+  const valid=!!(k&&p&&s.active===k.kind&&(
+    (k.step==='ending'&&p.stage==='ending')||
+    (k.step==='case'+(p.index+1)&&p.stage==='case')));
+  if(valid)l.pending='joseon346:'+k.kind+':'+k.step;
+  else if(raw.startsWith('joseon346:')||l.pending?.startsWith('joseon346:'))l.pending=null;
   return s;
  }
  function install(){
