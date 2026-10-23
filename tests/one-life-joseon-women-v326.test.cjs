@@ -50,6 +50,21 @@ test('women receive meaningful youth, household, work, property and later-life c
  assert.match(s.livelihood,/옷감/);
  assert.equal(l.log.filter(x=>x.kind==='joseonWomen326-choice').length,5);
 });
+test('three-year callbacks describe the actual earlier choice, never generic traces',()=>{
+ const l=born(1700,293,'여자',14);
+ year(l,16);chooseWomen(l,1); // learned Hangul
+ const follow=W.ensure(l).followups;
+ assert.equal(follow.length,1);
+ assert.equal(follow[0].key,'youth');
+ assert.equal(follow[0].choice,1);
+ assert.equal(Object.hasOwn(follow[0],'text'),false);
+ const copy=Sim.Life.restore(JSON.parse(JSON.stringify(l.snapshot())));
+ assert.deepEqual(W.ensure(copy).followups,follow);
+ year(copy,19);
+ assert.equal(W.ensure(copy).followups.length,0);
+ assert.ok(copy.log.some(x=>/편지에서 보내는 사람의 이름을 읽어 주었다/.test(x.text)));
+ assert.ok(!copy.log.some(x=>/그때 택한 일|흔적을 남겼다/.test(x.text)));
+});
 test('spouse death opens widowhood choices but never resurrects or remarries automatically',()=>{
  const l=born(1720,32),j=J.ensure(l);
  j.married=true;V4.ensure(l).people.push({id:'spouse-test',role:'spouse',name:'배우자',birthYear:1718,sex:'남자',alive:false,diedYear:1751});
