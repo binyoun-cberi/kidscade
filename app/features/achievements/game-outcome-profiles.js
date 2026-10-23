@@ -109,6 +109,7 @@
 
   const GROUPS = Object.freeze({
     match:Object.freeze([
+      'western_quickdraw',
       'high_history_timebattle_live','low_bumper_roulette','low_pong_battle','high_pass_mafia',
       'high_seed_volleyball','high_seed_baseball','high_seed_fc_manager','high_top_king',
       'toddler_muk_jji_ppa','alkkagi_janggi','math_corner_clash','high_omok_arena',
