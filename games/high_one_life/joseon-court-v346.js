@@ -49,11 +49,15 @@
      soc.rank=Math.min(soc.rank,1);
      return {code:'exile',text:'조정에서 과거의 혐의를 문제 삼아 관직을 거두고 유배를 명했다.'};
     }
-    j.office=false;j.occupation='파직되어 향리로 돌아온 전직 관료';l.career=j.occupation;
-    return {code:'dismissed',text:'조정의 조사 뒤 관직에서 물러나게 됐다. 지난 인연이 다시 문제가 됐다.'};
+    const royal=soc.origin==='왕실 종친'&&!j.office;
+    j.office=false;j.occupation=royal?'궁중에서 멀어진 왕실 종친':'파직되어 향리로 돌아온 전직 관료';l.career=j.occupation;
+    return royal?{code:'dismissed',text:'왕실 친족이라는 신분은 남았지만 조정의 논의에서 물러나게 됐다.'}:
+      {code:'dismissed',text:'조정의 조사 뒤 관직에서 물러나게 됐다. 지난 인연이 다시 문제가 됐다.'};
    }
-   if(index===2){j.office=false;j.occupation='향리로 돌아간 전직 관료';l.career=j.occupation;
-    return {code:'retired',text:'벼슬에서 물러나 향리의 살림과 글공부를 이어 갔다.'};}
+   if(index===2){const hadOffice=!!j.office;j.office=false;
+    j.occupation=soc.origin==='왕실 종친'&&!hadOffice?'정치에서 거리를 둔 왕실 종친':'향리로 돌아간 전직 관료';l.career=j.occupation;
+    return {code:'retired',text:hadOffice?'벼슬에서 물러나 향리의 살림과 글공부를 이어 갔다.':
+      '궁중 정쟁과 거리를 두고 가족의 살림을 돌보며 지냈다.'};}
    if(m.influence>=48&&m.loyalty>=29&&risk<35){j.office=true;soc.rank=Math.max(2,soc.rank);
     j.occupation=soc.origin==='왕실 종친'?'조정에 자문하는 왕실 종친':'더 높은 관직을 맡은 관리';l.career=j.occupation;
     return {code:'advanced',text:'오랜 관계와 조정의 평가가 맞물려 정치적 입지가 커졌다. 왕실 사람이라도 왕위와는 거리가 멀었다.'};}
@@ -61,6 +65,6 @@
    return {code:'unsettled',text:'정국이 바뀔 때마다 평가도 달라졌다. 가까운 이들조차 모두 같은 편은 아니었다.'};
   },
   fallback:'조정에서 지난 일의 평가가 이어졌다.',
-  endings:{exile:'유배된 중앙 관료',dismissed:'파직된 대신',advanced:'중앙 정치의 실세',retired:'향촌에 물러난 왕족·관리',unsettled:'권세와 당쟁 사이의 인생'}
+  endings:{exile:'유배된 왕족·관리',dismissed:'정치에서 밀려난 왕족·관리',advanced:'중앙 정치의 실세',retired:'향촌에 물러난 왕족·관리',unsettled:'권세와 당쟁 사이의 인생'}
  });
 })(typeof window!=='undefined'?window:null);
