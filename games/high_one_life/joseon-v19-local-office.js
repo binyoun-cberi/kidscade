@@ -269,7 +269,8 @@ function choose(l,index){
   const file=claimIndex>=0?s.claims.splice(claimIndex,1)[0]:null;
   if(file){
    const ready=s.proof+ledger.proof>=6;
-   if(index===0&&ready&&s.office.integrity>=52){
+   const taxEvidence=['newMagistrate','clerkNetwork','levyRequest','petitionsBlocked','goodMagistrate'].includes(file.eventId);
+   if(index===0&&ready&&s.office.integrity>=52&&taxEvidence){
     const beforeDebt=ledger.landDebt+ledger.militaryDebt+ledger.grainDebt;
     const part=['landDebt','militaryDebt','grainDebt'].find(k=>ledger[k]>0);
     if(part)ledger[part]=clip(ledger[part]-2,0,70);
@@ -277,6 +278,9 @@ function choose(l,index){
      result.push('수령이 영수증을 확인한 뒤 잘못 더해진 곡식 빚 일부를 장부에서 지우게 했다.');
     else result.push('수령은 자료가 맞다고 인정했지만 지금 바로 돌려받을 곡식은 없었다.');
     s.confidence=clip(s.confidence+4,0,100);
+   }else if(index===0&&ready&&s.office.integrity>=52){
+    s.audit.checked=clip(s.audit.checked+2,0,20);
+    result.push('수령은 청탁과 징수의 관련성을 더 조사하겠다며 자료를 받아 두었다. 세금은 아직 달라지지 않았다.');
    }else if(index===0){
     result.push('아전은 이전 장부를 다시 살피겠다며 문서를 받아 두었다. 세금은 아직 달라지지 않았다.');
    }else if(index===1){
