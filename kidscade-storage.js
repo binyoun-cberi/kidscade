@@ -55,6 +55,7 @@
   const GAME_KEYS = Object.freeze({
     oneLifeSaveV1: 'kidscade_one_life_save_v1',
     oneLifeHistoryV1: 'kidscade_one_life_history_v1',
+    oneLifeHistoryTotalV1: 'kidscade_one_life_history_total_v1',
     aquariumSave: 'kidscade_aquarium_v1',
     byeokrandoSave: 'kidscade_byeokrando_v1',
     byeokrandoTutorialV2: 'kidscade_byeokrando_tutorial_v2',
