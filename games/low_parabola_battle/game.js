@@ -28,7 +28,10 @@
     cloud: '../../assets/game/2d/platformer-art/base/items/cloud1.png',
     star: '../../assets/game/2d/platformer-art/base/items/star.png',
     bomb: '../../assets/game/2d/platformer-art/base/items/bomb.png',
-    fireball: '../../assets/game/2d/platformer-art/base/items/fireball.png'
+    fireball: '../../assets/game/2d/platformer-art/base/items/fireball.png',
+    snow: '../../assets/game/2d/platformer-art/base/tiles/snow-center.png',
+    sand: '../../assets/game/2d/platformer-art/base/tiles/sand-center.png',
+    water: '../../assets/game/2d/platformer-art/base/tiles/liquid-water-top.png'
   };
   const sprites = {};
   Object.entries(IMAGES).forEach(([key, url]) => {
@@ -47,6 +50,8 @@
     recoil:[0,0], shake:0, movingPointer:null, celebration:0
   };
   const isBattle = () => state.mode !== 'practice';
+  const theme = () => isBattle()?'meadow':
+    ['meadow','meadow','rock','river','snow','desert'][state.stage];
   const knots = () => isBattle() ? state.battleKnots || BATTLE : STAGES[state.stage].knots;
   const tank = side => {
     const x = side === 0 ? 135 : 1050;
@@ -258,7 +263,16 @@
     },1150);
   }
   function drawSky() {
-    const sky=c.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#6ac1fa');sky.addColorStop(.78,'#d8f2ff');sky.addColorStop(1,'#e9f8f1');
+    const mood=theme();
+    const palettes={
+      meadow:['#6ac1fa','#d8f2ff','#e9f8f1'],
+      rock:['#78b6e7','#dee8f6','#edf2eb'],
+      river:['#63b9ea','#d2f2ff','#e3f9f6'],
+      snow:['#779fce','#c8e5fa','#f8fdff'],
+      desert:['#f59d7b','#f7cf9c','#ffedc5']
+    };
+    const colors=palettes[mood];
+    const sky=c.createLinearGradient(0,0,0,H);sky.addColorStop(0,colors[0]);sky.addColorStop(.78,colors[1]);sky.addColorStop(1,colors[2]);
     c.fillStyle=sky;c.fillRect(0,0,W,H);
     if(sprites.sky){c.save();c.globalAlpha=.16;c.drawImage(sprites.sky,0,90,W,330);c.restore();}
     c.fillStyle='#fff0a8';c.beginPath();c.arc(1035,128,50,0,TAU);c.fill();
@@ -282,10 +296,19 @@
     const k=knots();c.beginPath();c.moveTo(0,H);c.lineTo(0,P.terrainY(k,0));
     for(let x=5;x<=W;x+=5)c.lineTo(x,P.terrainY(k,x));
     c.lineTo(W,H);c.closePath();
-    const fill=c.createLinearGradient(0,390,0,H);fill.addColorStop(0,'#9d7951');fill.addColorStop(.4,'#876442');fill.addColorStop(1,'#544433');c.fillStyle=fill;c.fill();
-    c.save();c.strokeStyle='#7fb84f';c.lineWidth=14;c.lineJoin='round';c.beginPath();
+    const mood=theme();
+    const fills={
+      meadow:['#9d7951','#876442','#544433','#7fb84f','#c4e082'],
+      river:['#96714e','#846341','#514334','#78ae4b','#bde280'],
+      rock:['#938c80','#706e68','#414b52','#8e9980','#c5bd97'],
+      snow:['#bec7cb','#889caa','#516777','#e0f4fc','#ffffff'],
+      desert:['#d7a16c','#b17a4d','#79523a','#e9c27f','#f9e1aa']
+    };
+    const pal=fills[mood]; const fill=c.createLinearGradient(0,390,0,H);
+    fill.addColorStop(0,pal[0]);fill.addColorStop(.4,pal[1]);fill.addColorStop(1,pal[2]);c.fillStyle=fill;c.fill();
+    c.save();c.strokeStyle=pal[3];c.lineWidth=14;c.lineJoin='round';c.beginPath();
     for(let x=0;x<=W;x+=4){const y=P.terrainY(k,x);if(x===0)c.moveTo(x,y);else c.lineTo(x,y);}c.stroke();
-    c.strokeStyle='#c4e082';c.lineWidth=4;c.stroke();c.restore();
+    c.strokeStyle=pal[4];c.lineWidth=4;c.stroke();c.restore();
     for(let x=35;x<W;x+=73){
       const y=P.terrainY(k,x)+24;
       if(sprites.stone){c.save();c.globalAlpha=.35;c.drawImage(sprites.stone,x,y,24,24);c.restore();}
@@ -294,7 +317,8 @@
     for(let x=35;x<W;x+=55){
       if(Math.abs(x-135)<72||Math.abs(x-1050)<72||(!isBattle()&&Math.abs(x-goal().x)<65))continue;
       const y=P.terrainY(k,x);
-      const decoration=Math.round(x/55)%5===0?'rock':'bush';
+      const decoration=mood==='snow'?'snow':mood==='desert'?'sand':
+        mood==='rock'?'rock':Math.round(x/55)%5===0?'rock':'bush';
       if(sprites[decoration]){
         c.save();c.imageSmoothingEnabled=false;
         c.drawImage(sprites[decoration],x-17,y-28,34,29);c.restore();
@@ -305,6 +329,16 @@
         c.strokeStyle='#558642';c.lineWidth=2;c.beginPath();
         c.moveTo(x,y);c.lineTo(x-4,y-10);c.moveTo(x,y);c.lineTo(x+4,y-9);c.stroke();
       }
+    }
+    if(mood==='river'){
+      c.save();c.globalAlpha=.85;
+      for(let x=430;x<=645;x+=18){
+        const y=P.terrainY(k,x);
+        if(y<554)continue;
+        if(sprites.water){c.imageSmoothingEnabled=false;c.drawImage(sprites.water,x,y-10,24,16);}
+        else{c.strokeStyle='#88d9eb';c.lineWidth=3;c.beginPath();c.moveTo(x-8,y-7);c.lineTo(x+11,y-7);c.stroke();}
+      }
+      c.restore();
     }
     if(sprites.castle && state.mode==='practice' && state.stage>=3){
       const x=625,y=P.terrainY(k,x);
@@ -348,6 +382,23 @@
     c.fillStyle='#ef6c48';c.beginPath();c.arc(p.x,p.y,12,0,TAU);c.fill();
     c.fillStyle='#fff';c.beginPath();c.arc(p.x,p.y,4,0,TAU);c.fill();
     c.font='bold 16px system-ui';c.textAlign='center';c.fillStyle='#35506e';c.fillText('과녁',p.x,p.y-42);c.textAlign='left';
+  }
+  function drawPrediction() {
+    if(state.difficulty!=='easy'||!state.preview||state.phase!=='aim')return;
+    const route=state.preview.points;
+    if(!route||route.length<2)return;
+    const highest=route.reduce((best,point)=>point.y<best.y?point:best,route[0]);
+    if(highest.x>65&&highest.x<W-65&&highest.y>74){
+      c.save();c.fillStyle='#fffdf3';c.strokeStyle='#2a709e';c.lineWidth=3;
+      c.beginPath();c.arc(highest.x,highest.y,7,0,TAU);c.fill();c.stroke();
+      c.font='bold 14px system-ui';c.textAlign='center';c.fillStyle='#1b4c72';
+      c.fillText('가장 높은 곳',highest.x,highest.y-17);c.restore();
+    }
+    const landing=state.preview.point;
+    if(landing&&landing.x>=12&&landing.x<=W-12&&landing.y>60&&landing.y<H){
+      c.save();c.strokeStyle='#ffffff';c.lineWidth=3;
+      c.beginPath();c.arc(landing.x,landing.y,13,0,TAU);c.stroke();c.restore();
+    }
   }
   function drawTrail(points, color, width, dash, stride=4) {
     if(!points||points.length<2)return;
@@ -393,6 +444,7 @@
       drawTrail(state.previous[state.turn],'#ffed9c',3,[7,9],6);
       if(state.difficulty==='easy'&&state.preview)drawTrail(state.preview.points,'#ffffffda',3,[3,9],5);
     }
+    drawPrediction();
     if(!isBattle())drawTarget();
     drawTank(0);if(isBattle())drawTank(1);
     if(state.flight){
