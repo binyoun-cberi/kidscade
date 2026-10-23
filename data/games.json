@@ -2,6 +2,25 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "low_parabola_battle",
+      "addedAt": "2026-10-23T22:39:00+09:00",
+      "title": "포물선 대작전",
+      "href": "games/low_parabola_battle/index.html",
+      "category": "math",
+      "age": "low",
+      "ages": ["low", "high"],
+      "icon": "🎯",
+      "description": "각도와 세기를 조절해 포탄을 날려 보세요! 여섯 가지 지형에서 이전 발사 궤적을 비교하고, 컴퓨터 또는 친구와 포트리스형 대결도 즐겨요.",
+      "subject": "math",
+      "genre": "strategy",
+      "difficulty": "easy",
+      "sessionMinutes": 6,
+      "players": ["solo", "local2", "classroom"],
+      "input": ["touch", "keyboard"],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "daily_english",
       "addedAt": "2026-10-20T15:00:00+09:00",
       "title": "하루 한 입 영어",
