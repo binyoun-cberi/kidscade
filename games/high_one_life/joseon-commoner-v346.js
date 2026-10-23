@@ -24,7 +24,7 @@
     j.occupation='장터에서 물건을 파는 상인';l.career=j.occupation;
     return {code:'merchant',text:'오랜 거래와 물건의 품질을 인정받아 장사를 넓혔다. 양반 신분으로 바뀐 것은 아니었다.'};
    }
-   if(m.debt>=65||j.capital<0)return {code:'bankrupt',text:'빚이 늘어나 살림을 줄이고 이웃과 갚을 때를 다시 의논해야 했다.'};
+   if(m.debt>=65||(m.harvest<28&&m.debt>=38)||j.capital<0)return {code:'bankrupt',text:'빚이 늘어나 살림을 줄이고 이웃과 갚을 때를 다시 의논해야 했다.'};
    if(m.neighbors>=55&&index===0)return {code:'community',text:'이웃과 농사일을 나누며 작은 살림을 지켜 냈다.'};
    return {code:'stable',text:'해마다 수입은 달랐지만 가족의 끼니와 생업을 이어 갔다.'};
   }
