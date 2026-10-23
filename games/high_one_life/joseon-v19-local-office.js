@@ -264,7 +264,7 @@ function choose(l,index){
  if(d.petitions>0)ledger.complaints=clip(ledger.complaints+d.petitions,0,90);
  const id=s.active.id;
  const result=[op.follow];
- if(id==='savedEvidence'){
+ if(e.id==='savedEvidence'){
   const claimIndex=s.claims.findIndex(c=>c.due<=l.year);
   const file=claimIndex>=0?s.claims.splice(claimIndex,1)[0]:null;
   if(file){
