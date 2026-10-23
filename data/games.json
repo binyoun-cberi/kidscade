@@ -8,15 +8,54 @@
       "href": "games/low_parabola_battle/index.html",
       "category": "math",
       "age": "low",
-      "ages": ["low", "high"],
+      "ages": [
+        "low",
+        "high"
+      ],
       "icon": "🎯",
       "description": "각도와 세기를 조절해 포탄을 날려 보세요! 여섯 가지 지형에서 이전 발사 궤적을 비교하고, 컴퓨터 또는 친구와 포트리스형 대결도 즐겨요.",
       "subject": "math",
       "genre": "strategy",
       "difficulty": "easy",
       "sessionMinutes": 6,
-      "players": ["solo", "local2", "classroom"],
-      "input": ["touch", "keyboard"],
+      "players": [
+        "solo",
+        "local2",
+        "classroom"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
+      "id": "western_quickdraw",
+      "addedAt": "2026-10-23T22:27:00+09:00",
+      "title": "정오의 결투",
+      "href": "games/western_quickdraw/index.html",
+      "category": "trivia",
+      "age": "low",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🤠",
+      "cover": "assets/gate-image/western_quickdraw_cover.png",
+      "description": "준비, 기다려, 탕! 무작위 신호에 반응해 10명의 현상범을 물리치거나 친구와 한 기기에서 결투해요. 너무 일찍 누르면 실격! 반응속도를 기록해요.",
+      "subject": "thinking",
+      "genre": "action",
+      "difficulty": "easy",
+      "sessionMinutes": 3,
+      "players": [
+        "solo",
+        "local2"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
       "qualityStatus": "standard",
       "classroom": true
     },
@@ -55,7 +94,11 @@
       "href": "games/dialect_tour/index.html",
       "category": "korean",
       "age": "low",
-      "ages": ["toddler", "low", "high"],
+      "ages": [
+        "toddler",
+        "low",
+        "high"
+      ],
       "icon": "🧳",
       "cover": "assets/gate-image/dialect_tour_cover.webp",
       "description": "강원·충청·전라·경상·제주를 여행하며 사투리의 뜻을 맞혀요. 그림 고르기, 시장 심부름, 듣기 문제와 전국 번개 도전까지!",
@@ -64,8 +107,13 @@
       "genre": "quiz",
       "difficulty": "easy",
       "sessionMinutes": 5,
-      "players": ["solo"],
-      "input": ["touch", "keyboard"],
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
       "qualityStatus": "standard",
       "classroom": true
     },
@@ -82,8 +130,13 @@
       "genre": "action",
       "difficulty": "medium",
       "sessionMinutes": 5,
-      "players": ["solo"],
-      "input": ["touch", "keyboard"],
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
       "qualityStatus": "standard",
       "classroom": true,
       "cover": "assets/gate-image/yi_sun_sin_cover.webp"

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f3ed">
+<meta name="description" content="무작위 신호에 맞춰 빠르게 반응해요! 혼자 현상범에 도전하거나 한 기기에서 친구와 대결하는 서부 순발력 게임.">
+<title>정오의 결투 | 키즈케이드</title>
+<link rel="stylesheet" href="style.css">
+<script src="../../kidscade-game-sdk.js" data-game-id="western_quickdraw" data-title="정오의 결투" data-shell="true" data-orientation="any"></script>
+<script defer src="game.js"></script>
+</head>
+<body>
+<main id="app">
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <header id="hud" class="hidden" aria-live="polite">
+    <div class="score score-top"><small id="topName">현상범</small><strong id="topScore">0</strong><span id="topMarks" class="marks" aria-hidden="true"></span></div>
+    <div class="score score-bottom"><small id="bottomName">보안관</small><strong id="bottomScore">0</strong><span id="bottomMarks" class="marks" aria-hidden="true"></span></div>
+    <div id="centerSignal" aria-live="assertive" aria-atomic="true"></div>
+    <div id="roundInfo"></div>
+    <div id="reactionInfo" aria-live="polite"></div>
+    <button id="pauseButton" class="corner-button" type="button" aria-label="일시정지">Ⅱ</button>
+  </header>
+  <section id="menu" class="overlay">
+    <div class="panel">
+      <div class="eyebrow">KIDSCADE · WESTERN ARCADE</div>
+      <div class="hero" aria-hidden="true"><div class="sun"></div><div class="cowboy"><i class="hat"></i><i class="head"></i><i class="scarf"></i><i class="torso"></i><i class="arm l"></i><i class="arm r"></i><i class="leg l"></i><i class="leg r"></i></div></div>
+      <h1>정오의 결투</h1>
+      <p class="lead">서둘러도 안 돼요. 기다렸다가, <b>탕!</b></p>
+      <div class="modes" role="group" aria-label="게임 방식">
+        <button class="mode active" data-mode="solo" aria-pressed="true" type="button"><strong>현상범 도전</strong><span>10명의 상대와 승부!</span></button>
+        <button class="mode" data-mode="duo" aria-pressed="false" type="button"><strong>친구와 결투</strong><span>한 화면에서 둘이서</span></button>
+        <button class="mode" data-mode="practice" aria-pressed="false" type="button"><strong>순발력 연습</strong><span>최고 기록에 도전!</span></button>
+      </div>
+      <div id="soloOptions" class="options">
+        <label class="field">도전할 현상범 <select id="opponent"></select></label>
+        <label class="field">난이도 <select id="difficulty"><option value="easy">쉬움</option><option value="normal" selected>보통</option><option value="hard">어려움</option></select></label>
+      </div>
+      <div id="duoOptions" class="options hidden">
+        <label class="field">몇 승을 먼저 할까요? <select id="target"><option value="3">3승</option><option value="5" selected>5승</option><option value="9">9승</option></select></label>
+      </div>
+      <div id="practiceOptions" class="options hidden"><p>컴퓨터와 경쟁하지 않고 신호에 맞춰 내 반응속도를 측정해요.</p></div>
+      <p class="help" id="help">‘탕!’이 나왔을 때 누르세요. 너무 빨리 누르면 실격!<br>PC에서는 <kbd>스페이스</kbd>로 발사해요.</p>
+      <button id="startButton" class="main-button" type="button">결투 시작</button>
+      <div class="menu-footer"><button id="soundButton" class="plain-button" type="button" aria-pressed="false">소리 켜짐</button><span id="progressText">현상범 1/10</span></div>
+    </div>
+  </section>
+  <section id="result" class="overlay hidden" aria-live="polite">
+    <div class="panel result-panel">
+      <div class="eyebrow" id="resultEyebrow">결투 결과</div>
+      <h2 id="resultTitle">승부!</h2>
+      <p id="resultMessage"></p>
+      <div class="result-grid"><div><small>나의 반응</small><strong id="resultTime">—</strong></div><div><small>이번 경기</small><strong id="resultScore">0 : 0</strong></div></div>
+      <p id="resultRecord" class="record"></p>
+      <button id="continueButton" class="main-button" type="button">다시 도전</button>
+      <button id="resultHome" class="secondary-button" type="button">메뉴로</button>
+    </div>
+  </section>
+  <section id="pause" class="overlay hidden">
+    <div class="panel result-panel"><h2>잠깐 쉬어가요</h2><p>준비가 되면 다시 시작해요. 다음 신호는 새로 나와요.</p>
+      <button id="resumeButton" class="main-button" type="button">계속하기</button>
+      <button id="pauseHome" class="secondary-button" type="button">메뉴로</button>
+    </div>
+  </section>
+  <div id="instruction" class="hidden" aria-hidden="true"><span id="instructionTop">친구는 위쪽을 터치!</span><span id="instructionBottom">나는 아래쪽을 터치!</span></div>
+</main>
+</body>
+</html>
