@@ -9,6 +9,63 @@ const is=l=>!!l&&l.birthYear>=1200&&l.birthYear<1392;
 const copy=x=>JSON.parse(JSON.stringify(x));
 const num=(x,min,max,fallback)=>Number.isFinite(x)?Math.max(min,Math.min(max,x)):fallback;
 const log=(l,text,kind='life')=>l.logEvent(text,'goryeo-'+kind);
+const subject=name=>{const c=name.charCodeAt(name.length-1);return name+(c>=0xac00&&c<=0xd7a3&&(c-0xac00)%28?'이':'가');};
+function annualAccount(g,expense){
+ return '올해 집안에 들어온 곡식은 '+g.lastIncome+'말이었다. 끼니와 살림에 '+expense+'말을 썼다.';
+}
+const CHOICE_PROSE=Object.freeze({
+ '가족과 가까운 산골로 피한다':'가족과 가까운 산골로 몸을 피했다.',
+ '친척에게 몸을 의탁한다':'친척에게 의지해 피란할 자리를 구했다.',
+ '남아서 살림을 지킨다':'살던 곳에 남아 살림을 지키기로 했다.',
+ '가족과 내륙으로 피한다':'가족과 내륙으로 피란길에 올랐다.',
+ '남아서 운송 일을 맡는다':'떠나지 않고 관청이 요구한 운송 일을 맡았다.',
+ '당분간 몸을 숨긴다':'한동안 몸을 숨기며 바깥의 소식을 기다렸다.',
+ '배를 만드는 일에 나간다':'집을 떠나 배를 만드는 일에 동원되었다.',
+ '곡식을 내고 가족 곁에 남는다':'요구받은 곡식을 내고 가족 곁에 남았다.',
+ '친척과 부담을 나눈다':'친척과 곡식과 일손의 부담을 나누었다.',
+ '고향으로 돌아가 다시 일군다':'고향으로 돌아가 살림을 다시 일구기 시작했다.',
+ '지금 머무는 곳에 뿌리내린다':'피란해 머물던 곳에서 살림을 계속하기로 했다.',
+ '친족과 증인을 찾아 청원한다':'친족과 증인을 찾아 집안 사정을 관청에 청원했다.',
+ '집안 문서를 보관하며 기다린다':'집안 문서를 간수하며 관청의 처분을 기다렸다.',
+ '생업에 힘을 남겨 둔다':'관청 일을 알아보는 대신 당장의 생업에 품을 썼다.',
+ '일을 도우며 기술을 배운다':'종이와 책을 다루는 일을 도우며 기술을 배웠다.',
+ '집안 생업을 지킨다':'집안에서 해 오던 생업을 이어 갔다.',
+ '곡식을 보태 책 만드는 일을 후원한다':'가지고 있던 곡식을 덜어 책 만드는 일에 보탰다.',
+ '새 관청의 문서와 명령을 알아본다':'새 관청에서 내린 문서와 명령을 알아보았다.',
+ '양쪽 친족과 살림을 의논한다':'양쪽 친족과 앞으로의 살림을 의논했다.',
+ '하던 생업을 이어 간다':'나라가 바뀐 뒤에도 하던 생업을 이어 갔다.',
+ '들에서 나물을 모은다':'들에서 나물을 모으며 손으로 할 수 있는 일을 거들었다.',
+ '글자를 배우고 싶다고 청한다':'글자를 배우고 싶다고 집안 어른에게 청했다.',
+ '집안일을 돕는다':'집안에서 할 수 있는 일을 찾아 거들었다.',
+ '장터에서 군것질을 산다':'장터에서 군것질거리를 사 먹었다.',
+ '맡은 농사일을 익힌다':'맡겨진 농사일을 하며 손에 익혔다.',
+ '함께 일하는 이에게 기술을 배운다':'함께 일하는 이에게 서툰 대목을 물어 기술을 배웠다.',
+ '틈틈이 글과 셈을 배운다':'맡은 일을 하는 틈틈이 글과 셈을 배웠다.',
+ '농사와 물길을 배운다':'논밭을 돌보고 물길을 살피는 일을 배우기 시작했다.',
+ '삼베와 모시 짜는 일을 배운다':'삼베와 모시를 짜는 일을 배워 생업으로 삼았다.',
+ '글과 셈을 배운다':'글과 셈을 익히며 그 일로 살림을 꾸릴 길을 잡았다.',
+ '나루에서 일하는 법을 배운다':'나루에서 일하는 법을 배우며 생업을 시작했다.',
+ '농사와 살림을 꾸린다':'농사를 지으며 살림을 꾸릴 길을 정했다.',
+ '천을 짜는 기술을 익힌다':'천을 짜는 기술을 익혀 벌이를 꾸리기 시작했다.',
+ '나루에서 일할 길을 찾는다':'나루의 일을 생업으로 삼기로 했다.',
+ '혼인을 허락해 달라고 청한다':'함께 살고 싶은 뜻을 전하고 혼인을 허락해 달라고 청했다.',
+ '지금은 식구를 돌본다':'혼담을 서두르지 않고 식구들을 돌보았다.',
+ '배우자 집 가까이서 살림을 시작한다':'양쪽 집안과 의논해 배우자 집 가까이에 살기로 했다.',
+ '내가 살던 곳에서 함께 산다':'혼인 뒤에도 살던 곳에서 함께 살기로 했다.',
+ '지금은 혼인하지 않는다':'당장은 혼인하지 않고 지금의 생활을 이어 갔다.',
+ '먹을 것과 돌봄을 먼저 챙기라고 부탁한다':'집으로 소식을 보내 먹을 것과 식구 돌봄을 먼저 챙겨 달라고 부탁했다.',
+ '생업의 판단을 집안에 맡긴다':'멀리서 생업을 정하기 어려워 집에 남은 식구들의 판단에 맡겼다.',
+ '곡식을 보내 달라고 청한다':'집안에 곡식을 보내 달라고 청했다.',
+ '심부름을 하고 먹을거리를 받는다':'장터에서 심부름을 하고 먹을거리를 받았다.',
+ '숲에서 먹을 것을 찾는다':'숲에서 먹을 것을 찾아 모았다.',
+ '군것질을 사 먹는다':'모아 둔 돈으로 군것질거리를 사 먹었다.',
+ '배움에 시간을 쓴다':'장터에서 남은 시간을 배움에 썼다.',
+ '생업의 기술을 더 익힌다':'하던 생업에서 서툰 대목을 연습하며 솜씨를 익혔다.',
+ '사찰에 곡식을 보시한다':'집안의 곡식을 덜어 사찰에 보시했다.',
+ '양쪽 친족을 찾아 돕는다':'양쪽 친족을 찾아가 필요한 일을 거들었다.',
+ '목화씨와 재배법을 구해 시험한다':'목화씨와 재배법을 구해 시험 삼아 길러 보기 시작했다.',
+ '곡식을 비축하고 쉰다':'곡식을 아껴 두고 몸을 쉬었다.'
+});
 function ensure(l){
  if(!is(l))return null;
  if(l.goryeo343)return l.goryeo343;
@@ -120,7 +177,7 @@ function annual(l){
  const g=ensure(l);let income=0,expense=g.origin==='향·부곡·소 주민'?5:3;
  for(const p of g.people){if(!p.alive)continue;const age=l.year-p.birthYear;expense+=age<6?1:2;
   if(age>65)p.health=Math.max(0,p.health-3);
-  if(p.health<=0||(age>50&&l.rand()<(age-49)*.002)){p.alive=false;log(l,p.name+'이 세상을 떠났다. 함께 꾸리던 살림의 빈자리가 남았다.','family');continue;}
+  if(p.health<=0||(age>50&&l.rand()<(age-49)*.002)){p.alive=false;log(l,subject(p.name)+' 세상을 떠났다. 함께 꾸리던 살림에서 한 사람이 빠졌다.','family');continue;}
   if(age<6)continue;
   if(p.plan==='배움'){expense+=2;if(age>=14)g.skill+=.1;}
   else if(p.plan==='옷 짓기'||p.plan==='솜이불 만들기'){
@@ -139,7 +196,7 @@ function annual(l){
  if(g.grain===0){l.change({health:-8,happiness:-4});if(l.age%3===0)log(l,'먹을 것이 모자라 끼니를 줄였다. 식구들이 버틸 방법을 의논했다.','life');}
  if(g.away){g.away--;if(!g.away)log(l,'먼 곳의 일을 마치고 가족에게 돌아왔다. 집안의 곡식과 식구들의 얼굴부터 살폈다.','return');}
  l.change({health:l.age>55?-2:l.age>40?-1:0});
- if(l.age%5===0)log(l,'올해 '+g.job+'과 식구들의 일로 곡식을 '+g.lastIncome+'만큼 마련하고 그중 '+expense+'만큼 살림에 썼다.','life');
+ if(l.age%5===0)log(l,annualAccount(g,expense),'life');
  sync(l);
 }
 function action(l,kind,id,value){
@@ -167,7 +224,7 @@ L.prototype.choose=function(index){
  if(!is(this))return choose.call(this,index);const g=ensure(this),c=g.choice;
  if(!this.alive||!this.pending||!c||!Number.isInteger(index)||!c.options[index])return false;
  const o=c.options[index],d=o.delta;
- if(d.grain<0&&g.grain<-d.grain){log(this,'곡식이 모자라 '+o.label+'는 다음으로 미루었다.','choice');}
+ if(d.grain<0&&g.grain<-d.grain){log(this,'필요한 곡식이 모자라 그 일은 다음으로 미루었다.','choice');}
  else if(d.pocket<0&&g.pocket<-d.pocket){log(this,'쓸 것이 없어 장터 구경만 하고 돌아왔다.','choice');}
  else {
   for(const key of ['grain','pocket'])g[key]=Math.max(0,g[key]+(d[key]||0));
@@ -194,7 +251,7 @@ L.prototype.choose=function(index){
    if(this.rand()<.45){if(g.bound){g.bound=false;log(this,'증언과 문서가 받아들여져 예속에서 벗어났다. 이후의 생계는 스스로 꾸려야 했다.','followup');}else{g.land++;log(this,'청원이 받아들여져 집안의 경작권을 지켰다.','followup');}}
    else log(this,'청원은 받아들여지지 않았다. 문서를 거두어 돌아왔다.','followup');
   }
-  log(this,c.title+' — '+o.label,'choice');
+  log(this,CHOICE_PROSE[o.label]||'다음 일은 ‘'+o.label+'’ 쪽으로 정했다.','choice');
  }
  g.seen.push(c.id);g.choice=null;this.pending=null;sync(this);return true;
 };
@@ -221,5 +278,5 @@ L.restore=function(data){const l=restore.call(this,data);if(!is(l))return l;
  }
  sync(l);return l;
 };
-root.OneLifeGoryeo343=Object.freeze({is,ensure,period,action,cottonAvailable,regions,jobs,plans,facts});
+root.OneLifeGoryeo343=Object.freeze({is,ensure,period,action,cottonAvailable,regions,jobs,plans,facts,choiceProse:CHOICE_PROSE});
 })(window);

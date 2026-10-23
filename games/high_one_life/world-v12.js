@@ -26,9 +26,17 @@ function followup(s,life,item,choice){
  const years=choice===0?3:5;
  const id=item.id+'-'+choice,year=life.year+years;
  if(s.followups.some(x=>x.id===id)||s.followups.length>=10)return;
- const message=(choice===0?'당시에 새롭게 시도했던':'당시에 기존 생활을 지키려 했던')+
-   ' '+item.title+'의 경험이 지금의 삶을 바라보는 데 영향을 주었다.';
+ const message=recall(item,choice,life.year);
  s.followups.push({id,year,text:message});
+}
+function recall(item,index,year){
+ // The model stores a past decision, not a guaranteed later success. Recount
+ // that dated action instead of inventing an unspecified lifelong influence.
+ return year+'년의 일이었다. '+Choices.OUTCOMES[item.topic][index];
+}
+function followupText(event){
+ const match=/^(.*)-([01])$/.exec(event.id),item=match&&byId(match[1]);
+ return item?recall(item,Number(match[2]),event.year-(Number(match[2])===0?3:5)):event.text;
 }
 function apply(life,item,index){
  const s=ensure(life),offers=Choices.OPTIONS[item.topic];
@@ -87,8 +95,7 @@ function apply(life,item,index){
  if(topic==='civic')tag(s,'시대의 소식 이해하기');
  s.decisions.push({id:item.id,year,age:life.age,topic,index});
  s.decisions=s.decisions.slice(-90);
- const offered=offers[index];
- log(life,year+'년 '+item.title+' — '+offered[0]+'. '+offered[1],'era-choice');
+ log(life,Choices.OUTCOMES[topic][index],'era-choice');
  followup(s,life,item,index);
  return true;
 }
@@ -131,14 +138,15 @@ function afterYear(life){
  if(p&&s.lastEra!==p.era){
   s.lastEra=p.era;
   s.metrics.schoolBand=p.label;
-  log(life,'세상은 어느새 '+p.label+'로 접어들었다','era-context');
+  const last=p.label.charCodeAt(p.label.length-1),ending=last>=0xac00&&last<=0xd7a3?(last-0xac00)%28:0;
+  log(life,'세상은 어느새 '+p.label+(ending&&ending!==8?'으로':'로')+' 접어들었다.','era-context');
  }
  s.metrics.year=life.year;
  s.metrics.incomeLabel=p?.label||'그해의 살림';
  const due=s.followups.filter(f=>f.year<=life.year);
  s.followups=s.followups.filter(f=>f.year>life.year);
  for(const event of due){
-  log(life,event.text,'era-followup');
+  log(life,followupText(event),'era-followup');
   tag(s,'과거 선택의 장기 영향');
  }
  // At most one contextual choice every four calendar years, and only at safe ages.

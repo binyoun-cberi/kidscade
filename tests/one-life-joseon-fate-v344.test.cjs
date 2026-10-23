@@ -19,7 +19,7 @@ function prompt(l,key){assert.equal(Fate.queue(l,key),true,key);assert.equal(l.p
 function after(l,delta){l.age+=delta;l.year+=delta;Fate.advance(l);return l;}
 test('branch module loads after old Joseon paths and before the Goryeo handoff',()=>{
  assert.ok(html.indexOf('household-v342.js?v=3')<html.indexOf('joseon-fate-v344.js?v=4'));
- assert.ok(html.indexOf('joseon-fate-v344.js?v=4')<html.indexOf('goryeo-v343.js?v=2'));
+ assert.ok(html.indexOf('joseon-fate-v344.js?v=4')<html.indexOf('goryeo-v343.js?v=3'));
  assert.equal(typeof Fate.queue,'function');
  const runner=fs.readFileSync(path.resolve(__dirname,'../scripts/run-ci-tests.cjs'),'utf8');
  assert.ok(runner.includes('tests/one-life-joseon-fate-v344.test.cjs'));

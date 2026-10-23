@@ -43,6 +43,30 @@ const kinds=Object.freeze({
    ['소리의 장단부터 알려 준다','여럿이 함께 연습한다','익힌 가락을 옮겨 적는다']]
  ]}
 });
+// Each sentence describes only the selected work, not a fabricated cure,
+// successful delivery or promotion. Skill and cost rules remain below.
+const WORK_OUTCOMES=Object.freeze({
+ midwife:[
+  ['경험 많은 이를 불러 해산을 앞둔 이웃을 함께 도왔다.','산모 곁에서 쓸 따뜻한 물과 깨끗한 베를 마련했다.','도울 수 있는 식구들을 찾아 해산하는 집으로 일손을 모았다.'],
+  ['가족이 번갈아 산모 곁을 지키도록 돌볼 시간을 나누었다.','산모가 먹을 것과 몸을 누일 자리를 마련했다.','혼자 맡기 어려운 일을 이웃에게 나누어 부탁했다.'],
+  ['출산을 도우며 겪은 일과 서둘러 도움을 구해야 할 징후를 이야기했다.','함께 도왔던 일을 짚으며 어떤 때 손이 더 필요했는지 돌아보았다.','혼자 감당하기 어려울 때 누구를 부를 수 있는지 알려 주었다.']
+ ],
+ uinyeo:[
+  ['의서를 펼쳐 스승에게 들은 설명과 맞춰 보았다.','약재마다 이름을 확인하고 어떻게 보관해야 하는지 익혔다.','혼자 판단하기 어려운 대목을 선배 의녀에게 물었다.'],
+  ['환자가 말을 꺼낼 때까지 기다리며 불편한 곳을 차분히 물었다.','맡은 범위를 넘어서는 일은 상관에게 알리고 지시를 기다렸다.','배운 치료 방법을 다시 살피며 확인되지 않은 처치는 삼갔다.'],
+  ['장부와 약재 수량을 다시 맞춰 보고 차이 나는 부분을 보고했다.','다른 의녀와 보관함을 살피며 약재를 하나씩 확인했다.','부족한 약재와 수량을 적어 조달을 요청했다.']
+ ],
+ palace:[
+  ['손상된 천을 먼저 가려 내고 손질할 순서를 정했다.','동료와 남은 바느질과 손질을 나누어 맡았다.','궁중의 예법과 작업 순서를 다시 익히며 맡은 일을 살폈다.'],
+  ['맡은 일을 선배 궁녀에게 보여 주고 빠진 곳이 없는지 물었다.','동료와 쉴 수 있는 시간과 남은 일의 순서를 상의했다.','실수한 부분을 찾아 되짚으며 다시 고쳤다.'],
+  ['어린 궁녀에게 낯선 궁중 말을 하나씩 알려 주었다.','새로 맡은 일을 함께 살피며 모르는 부분을 짚어 주었다.','어린 궁녀의 이야기를 듣고 힘든 일이 있을 때 찾아오라고 일렀다.']
+ ],
+ courtArtist:[
+  ['동료의 소리와 발을 맞추며 어긋난 박자를 다시 연습했다.','연습에 쓸 악기를 살피며 손볼 곳을 확인했다.','잘되지 않는 대목을 선배에게 청해 거듭 배웠다.'],
+  ['행사에서 나설 순서와 자신이 맡은 부분을 확인했다.','다른 예인과 준비할 일을 나누어 맡았다.','몸에 무리가 가는 일을 상관에게 알리고 조정을 청했다.'],
+  ['낯선 곡조를 배우는 이에게 장단부터 천천히 알려 주었다.','여럿이 함께 소리를 내며 서로의 박자를 맞췄다.','배운 가락을 잊지 않도록 옮겨 적었다.']
+ ]
+});
 function roll(seed,salt){let x=(seed^Math.imul(salt+1,0x9e3779b9))>>>0;
  x=Math.imul(x^(x>>>16),0x7feb352d);x=Math.imul(x^(x>>>15),0x846ca68b);
  return ((x^(x>>>16))>>>0)/4294967296;}
@@ -196,7 +220,7 @@ function resolve(l,i){
   s.skill=clamp(s.skill+(i===0?3:2),0,100);s.contacts=clamp(s.contacts+(i===1?2:1),0,100);
   if(i===1)money(l,-2);
   l.change({knowledge:i===0?2:1,bonds:i===1?3:1,health:i===2?-2:0});
-  msg=t[0]+' 일을 마쳤다. '+(i===0?'배운 방법을 확인하고 경험을 쌓았다.':i===1?'동료와 품을 나누며 관계를 넓혔다.':'어려움을 돌아보며 다음 일을 준비했다.');
+  msg=WORK_OUTCOMES[s.profession][s.workDone][i];
   s.workDone++;s.workAt=l.year+4;
   if(s.skill>=6){J.ensure(l).occupation=kinds[s.profession].name;l.career=J.ensure(l).occupation;}
  }else if(key==='leave'){
@@ -304,5 +328,5 @@ function install(){
 }
 install();
 return Object.freeze({ensure,female,available,family,eligibleOffice,eligibleMidwife,offer,promote,yearly,resolve,
- summary,hydrate,install,kinds});
+ summary,hydrate,install,kinds,WORK_OUTCOMES});
 });
