@@ -21,8 +21,10 @@ test('writing can continue in exile, requires literacy, and leaves an actual com
  const b=c.OneLifeJoseon325.ensure(l);b.law.kind='exile';const p=force(l,'writing');assert.equal(l.choose(0),true);advance(l,p);l.choose(0);assert.equal(H.ensure(l).works.length,0);advance(l,p);l.choose(0);assert.equal(H.ensure(l).works.length,1);assert.equal(H.ensure(l).works[0].copies,2);assert.equal(b.law.kind,'exile');
  const unread=life();J.ensure(unread).literacy=0;H.ensure(unread);assert.ok(!H.candidates(unread).includes('writing'));
 });
-test('a declined or unaffordable project never creates contacts, manuscripts or negative costs',()=>{
- const l=artisan(life()),p=force(l,'craft');J.ensure(l).capital=0;const before=copy(l.stats);assert.equal(l.choose(-1),false);assert.deepEqual(copy(l.stats),before);assert.equal(l.choose(0),true);assert.equal(p.status,'archived');assert.equal(H.ensure(l).contacts.length,0);assert.equal(J.ensure(l).capital,0);
+test('an unaffordable project can be deferred without contacts, costs or invented progress',()=>{
+ const l=artisan(life()),p=force(l,'craft');J.ensure(l).capital=0;const before=copy(l.stats);assert.equal(l.choose(-1),false);assert.deepEqual(copy(l.stats),before);assert.equal(l.choose(0),true);assert.equal(p.status,'open');assert.equal(p.stage,0);assert.equal(p.due,l.year+1);assert.equal(l.pending,null);assert.equal(H.ensure(l).contacts.length,0);assert.equal(J.ensure(l).capital,0);
+ const restored=L.restore(copy(l.snapshot())),saved=H.ensure(restored).projects[0];assert.equal(saved.due,p.due);assert.equal(saved.status,'open');
+ J.ensure(restored).capital=4;advance(restored,saved);assert.equal(restored.getChoice().options[0].action,'start');assert.equal(restored.choose(0),true);assert.equal(saved.stage,1);assert.equal(J.ensure(restored).capital,2);
 });
 test('pending work, contacts and causal IDs restore identically at each stage',()=>{
  let l=artisan(life()),p=force(l,'craft');
@@ -73,4 +75,11 @@ test('a named trading partner keeps natural Korean particles through prompts and
  let l=life(1750,'남자');J.ensure(l).occupation='상인';S.ensure(l).role='장사';l.joseon6={career:{code:'merchant',started:l.year-6},pending:[],active:null,history:[],memories:[],seen:[],followups:[],decisions:0,processedYear:l.year};
  let p=force(l,'trade');l.choose(0);assert.ok(l.log.some(e=>e.text.includes('만복과')));assert.ok(l.log.every(e=>!e.text.includes('만복와')));advance(l,p);assert.match(l.getChoice().description,/만복과/);
  const q=copy(l.getChoice());l=L.restore(copy(l.snapshot()));assert.deepEqual(copy(l.getChoice()),q);
+});
+
+test('declining closes an unaffordable project while deferring an unfinished one preserves its stage',()=>{
+ const l=artisan(life()),p=force(l,'craft');J.ensure(l).capital=0;l.choose(1);assert.equal(p.status,'archived');
+ const active=artisan(life()),work=force(active,'craft');active.choose(0);advance(active,work);J.ensure(active).capital=0;
+ const q=active.getChoice();assert.equal(q.options[0].action,'defer');assert.match(q.options[1].note,/이미 쓴 비용은 돌아오지/);active.choose(0);assert.equal(work.stage,1);assert.equal(work.status,'open');
+ advance(active,work);active.choose(1);assert.equal(work.status,'archived');
 });
