@@ -11,13 +11,15 @@
   function terrainY(knots, x) {
     if (!Array.isArray(knots) || knots.length < 2) throw new Error('Terrain requires knots');
     if (x <= knots[0][0]) return knots[0][1];
-    for (let i = 1; i < knots.length; i += 1) {
-      if (x <= knots[i][0]) {
-        const [ax, ay] = knots[i - 1], [bx, by] = knots[i];
-        return ay + (by - ay) * (x - ax) / (bx - ax);
-      }
+    if (x >= knots[knots.length - 1][0]) return knots[knots.length - 1][1];
+    let low = 1, high = knots.length - 1;
+    while (low < high) {
+      const mid = (low + high) >> 1;
+      if (x <= knots[mid][0]) high = mid;
+      else low = mid + 1;
     }
-    return knots[knots.length - 1][1];
+    const [ax, ay] = knots[low - 1], [bx, by] = knots[low];
+    return ay + (by - ay) * (x - ax) / (bx - ax);
   }
   function launch(origin, angle, power, direction = 1, wind = 0) {
     const radians = clamp(angle, 5, 85) * Math.PI / 180;
@@ -60,6 +62,29 @@
     }
     return { kind: 'timeout', point: points[points.length - 1], points, time: maxTime };
   }
+  /** Deform only the battle landscape; the immutable practice terrain remains educational. */
+  function craterTerrain(knots, centerX, radius = 45, depth = 22) {
+    if (!Number.isFinite(centerX) || !Number.isFinite(radius) || !Number.isFinite(depth)) {
+      throw new TypeError('Crater parameters must be finite');
+    }
+    const r = clamp(radius, 8, 95), d = clamp(depth, 0, 55);
+    const x0 = knots[0][0], x1 = knots[knots.length - 1][0], spacing = 10;
+    // Regular samples prevent discontinuities at the original terrain knots.
+    const output = [];
+    for (let x = x0; x < x1; x += spacing) {
+      const distance = Math.abs(x - centerX);
+      const fraction = Math.min(1, distance / r);
+      const bowl = distance < r ? d * (1 + Math.cos(Math.PI * fraction)) / 2 : 0;
+      output.push([x, clamp(terrainY(knots, x) + bowl, 180, HEIGHT - 14)]);
+    }
+    output.push([x1, clamp(terrainY(knots, x1), 180, HEIGHT - 14)]);
+    return output;
+  }
+  function blastHits(point, target, radius) {
+    if (!point || !target || !Number.isFinite(radius)) return false;
+    return Math.hypot(point.x - target.x, point.y - target.y) <=
+      Math.max(0, radius) + (target.radius || 18);
+  }
   function shortestLandingDistance(shot, knots, target) {
     const hit = trace({ shot, knots, targets: [target] });
     return { ...hit, distance: hit.kind === 'target' ? 0 :
@@ -83,5 +108,5 @@
     };
   }
   return { WIDTH, HEIGHT, GRAVITY, STEP, clamp, terrainY, speedForPower, launch, at,
-    nearestHit, trace, shortestLandingDistance, chooseAiShot };
+    nearestHit, trace, craterTerrain, blastHits, shortestLandingDistance, chooseAiShot };
 });
