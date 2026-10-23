@@ -14,7 +14,7 @@ function context(baseline){const c={console};c.window=c;vm.createContext(c);
 }
 const prior=context(true),current=context(false),years=[1210,1270,1350,1580,1740,1880,1919,1950,1980,2026];
 function normalize(x,key=''){
- if(key==='text'||key==='message')return '<prose>';
+ if(key==='text'||key==='message'||key==='deathReason')return '<prose>';
  if(typeof x==='string'&&key==='memories')return '<memory>';
  if(Array.isArray(x))return x.map(e=>normalize(e,key));
  if(x&&typeof x==='object')return Object.fromEntries(Object.entries(x).map(([k,v])=>[k,normalize(v,k)]));return x;

@@ -49,6 +49,26 @@ test('all 20 modern choice accounts describe action rather than guaranteed succe
   assert.doesNotMatch(l.log.findLast(e=>e.kind==='era-choice').text,/ — |배울 수 있다/);
  }
 });
+test('history choices become past intentions in both the live log and the final biography',()=>{
+ const History=c.OneLifeHistoryEffects10;
+ for(const [label,expected] of Object.entries(History.ACTION_ACCOUNTS)){
+  const l=new L(24,{birthYear:1919,countryName:'대한민국'});l.age=27;l.year=1946;
+  const scenario=label.includes('세운다')?'transition':'financial-crisis';
+  const fact={id:scenario,scenario,year:l.year,title:'그해의 선택'};
+  const choiceIndex=label.includes('가족·이웃')?2:1;
+  assert.equal(History.apply(l,{decisions:[],tags:[],followups:[],hardship:0},fact,choiceIndex),true);
+  const event=l.log.findLast(e=>e.kind==='history-choice');assert.ok(event.text.includes(expected));
+  const paragraph=c.OneLifeBiography328.chapters({...l,alive:false,age:27,year:1946,deathReason:'갑작스러운 병을 앓은 뒤 세상을 떠났다.'}).join(' ');
+  const biographyAction=label.includes('세운다')?expected.replace(/기로 했다$/,'기로 한 것은'):expected;
+  assert.ok(paragraph.includes(biographyAction));assert.doesNotMatch(paragraph,/세운다\.|찾는다\./);
+ }
+});
+test('Joseon stochastic deaths use a concrete engine cause instead of generic wording',()=>{
+ const l=new L(28,{birthYear:1580,countryName:'대한민국'});J.ensure(l);l.age=54;l.year=1634;l.rand=()=>0;
+ assert.equal(J.yearly(l),true);assert.equal(l.alive,false);
+ assert.match(l.deathReason,/병|사고/);
+ assert.doesNotMatch(l.deathReason,/오랜 세월을 지나 한 사람의 삶이 끝났다/);
+});
 test('old saved era followups are recounted from their actual dated choice, without old malformed title prose',()=>{
  const l=new L(91,{birthYear:1919,countryName:'대한민국'});l.year=1939;l.age=20;l.pending=null;
  const s=W12.ensure(l);s.processedYear=1939;s.decisions=[{id:'colonial-books',index:0,year:1937,age:18,topic:'study'}];
