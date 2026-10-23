@@ -87,12 +87,8 @@
     setNotice('컴퓨터가 각도와 세기를 고르고 있어요.');
     window.setTimeout(() => {
       if(current!==generation || state.phase!=='aim' || state.turn!==1 || state.mode!=='cpu') return;
-      const answer=P.chooseAiShot({
-        origin:muzzle(1,45), direction:-1, wind:state.wind, knots:knots(), target:tank(0),
-        difficulty:state.difficulty
-      });
-      /* The muzzle moves with the angle; refine the solver around the computed aim. */
-      let best={ angle:answer.angle,power:answer.power,score:Infinity };
+      /* Search real shots with the angle-dependent muzzle, including terrain collisions. */
+      let best={ angle:45,power:75,score:Infinity };
       for(let a=5;a<=85;a+=2) {
         for(let p=20;p<=100;p+=2) {
           const shot=buildShot(1,a,p);
@@ -105,7 +101,7 @@
       state.power=P.clamp(Math.round(best.power+(Math.random()-.5)*miss*1.5),10,100);
       computePreview(); syncControls();
       window.setTimeout(() => {
-        if(current===generation && state.phase==='aim' && state.turn===1) fire();
+        if(current===generation && state.phase==='aim' && state.turn===1) fire(true);
       },550);
     },420);
   }
@@ -127,9 +123,9 @@
     setAim();
   }
   function openMenu(){generation+=1;state.phase='menu';state.flight=null;state.preview=null;$('startOverlay').classList.remove('hidden');syncControls();}
-  function fire() {
+  function fire(byAi=false) {
     if(state.phase!=='aim') return;
-    if(state.mode==='cpu' && state.turn===1 && !state.aiAllowed) {
+    if(state.mode==='cpu' && state.turn===1 && !byAi) {
       // Computer shots arrive only through planAi; a user cannot fire for the computer.
       return;
     }
