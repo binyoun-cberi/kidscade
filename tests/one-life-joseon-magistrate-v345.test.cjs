@@ -40,7 +40,7 @@ function run(seed,year=1720,choices=[0,0,0,0],reviewChoice=0){
 }
 test('six different courtroom dilemmas load after original fate arcs without duplicate prompt engines',()=>{
  assert.equal(M.CASES.length,6);
- assert.ok(html.indexOf('joseon-fate-v344.js?v=2')<html.indexOf('joseon-magistrate-v345.js?v=2'));
+ assert.ok(html.indexOf('joseon-fate-v344.js?v=3')<html.indexOf('joseon-magistrate-v345.js?v=2'));
  assert.ok(html.indexOf('joseon-magistrate-v345.js?v=2')<html.indexOf('goryeo-v343.js?v=2'));
  assert.ok(fs.readFileSync(path.resolve(__dirname,'../scripts/run-ci-tests.cjs'),'utf8')
   .includes('tests/one-life-joseon-magistrate-v345.test.cjs'));
