@@ -41,7 +41,7 @@
   const list=entries(history);
   const known=Number.isSafeInteger(meta?.total)&&meta.total>=list.length&&meta.total<100000000;
   const count=known?meta.total:list.length;
-  return (known?meta.minimum===true:list.length>=20?'최소 ':'')+count+'번의 인생';
+  return ((known?meta.minimum===true:list.length>=20)?'최소 ':'')+count+'번의 인생';
  }
  function describe(item){
   const where=text(item.country,60)||'어느 곳';
