@@ -17,6 +17,9 @@
     const chance=Math.min(.78,.09+m.documents*.006+m.savings*.003+m.family*.001);
     if(r<chance){soc.freed=true;soc.legal='양인';soc.role='속량되어 생업을 찾는 사람';
      j.status='속량된 양인';j.occupation='속량 뒤 생업을 찾는 사람';l.career=j.occupation;
+     if(l.money)l.money.employment=j.occupation;
+     if(l.joseon344?.fugitive==='escaped'||l.joseon344?.fugitive==='hiding')l.joseon344.fugitive='freed';
+     if(l.joseon344?.follow?.key==='slaveAfter')l.joseon344.follow=null;
      return {code:'freed',text:'문서를 확인받아 속량되었다. 자유를 얻은 뒤에도 먹고살 일과 사람들의 차가운 눈길이 걱정이었다.'};}
     return {code:'petition',text:'속량을 청했지만 이번에는 허락을 얻지 못했다.'};
    }
@@ -24,7 +27,9 @@
     const caught=r<Math.min(.78,.08+m.danger*.008);
     j.occupation=caught?'추쇄에 붙잡혀 다시 노동하는 노비':'신분을 숨기고 품을 파는 도망 노비';l.career=j.occupation;
     const fate=l.joseon344;
-    if(fate){fate.fugitive=caught?'recaptured':'escaped';if(!caught)fate.follow={key:'slaveAfter',due:l.year+2};}
+    if(fate){fate.fugitive=caught?'recaptured':'escaped';
+     if(!caught)fate.follow={key:'slaveAfter',due:l.year+2};
+     else if(fate.follow?.key==='slaveAfter')fate.follow=null;}
     return caught?{code:'recaptured',text:'다른 고을로 떠났으나 추쇄에 붙잡혀 다시 예속된 노동을 하게 되었다.'}:
      {code:'fugitive',text:'다른 고을로 도망쳤다. 아직 법적으로 예속에서 벗어난 것은 아니었다.'};}
    return m.skills>=42&&m.family>=50?
