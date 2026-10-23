@@ -156,7 +156,7 @@
   return outcome;
  }
  function resolve(l,index){
-  const s=ensure(l),prefix='joseon345:',key=l.pending?.startsWith(prefix)?l.pending.slice(prefix.length):'';
+  const s=ensure(l),prefix='joseon345:',key=typeof l.pending==='string'&&l.pending.startsWith(prefix)?l.pending.slice(prefix.length):'';
   const p=key&&plan(l,key);
   if(!l.alive||!p||![0,1,2].includes(index))return false;
   const label=p.options[index].label;
@@ -212,7 +212,7 @@
   const validCase=s.stage==='hearings'&&s.order.length===4&&key==='case'+(s.caseIndex+1)&&s.caseIndex<4;
   const validReview=s.stage==='review'&&key==='review';
   if(l.alive&&(validCase||validReview))l.pending='joseon345:'+key;
-  else if(l.pending?.startsWith('joseon345:'))l.pending=null;
+  else if(typeof l.pending==='string'&&l.pending.startsWith('joseon345:'))l.pending=null;
   if(['hearings','review'].includes(s.stage)&&s.order.length!==4){s.stage='idle';s.caseIndex=0;}
   return s;
  }
