@@ -231,7 +231,9 @@
       const era=document.createElement('small');era.textContent=summary.era;
       const title=document.createElement('strong');title.textContent=summary.title;
       const detail=document.createElement('span');detail.textContent=summary.detail;
-      card.append(era,title,detail);list.append(card);
+      const death=document.createElement('p');death.className='home-life-death';
+      death.textContent='마지막 이야기 · '+summary.death;
+      card.append(era,title,detail,death);list.append(card);
     }
   }
   function refreshResume() {
@@ -1467,10 +1469,14 @@
     const fate=window.OneLifeFate344?.summary(life)?.title||'';
     const social=window.OneLifeSocial346?.summary(life)?.label||'';
     const actualCareer=!['아직 정해지지 않음','학생'].includes(life.career)?life.career:oldJobs?.primary?.name||'살림과 일상';
+    const deathCause=typeof life.deathReason==='string'&&life.deathReason.trim()
+      ?life.deathReason.trim():'구체적인 사망 원인이 기록되지 않았습니다.';
     const count=rememberLife({career:actualCareer,
       name:life.profile?.name||life.birthSetup?.name,
       origin:Goryeo.is(life)?Goryeo.ensure(life).origin:oldSocial?.originLabel||life.familyLevel,
-      ending:fate||social});
+      ending:fate||social,deathCause});
+    $('endDeathYear').textContent=life.year+'년 · '+life.age+'세';
+    $('endDeathReason').textContent=deathCause;
     $('endYears').textContent=life.birthYear+' — '+life.year;
     $('endCountry').textContent=(life.country[0]==='대한민국'&&life.year<1945?'📜':life.country[1])+' '+History.place({...life,year:life.birthYear})+' · '+life.profile.name+' ('+life.profile.city+')';
     $('endNetWorth').textContent=Goryeo.is(life)?'곡식 '+Goryeo.ensure(life).grain+'말':Joseon.inOldEra(life)?'살림 '+Joseon.ensure(life).capital+'냥':formatCredits(life.money.netWorth);
