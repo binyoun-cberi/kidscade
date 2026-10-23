@@ -77,7 +77,7 @@ test('bad data and old snapshots cannot erase valid decisions or throw',()=>{
 });
 test('comparator loads before game and the actual CI executes this regression test',()=>{
  const html=source('index.html'),runner=fs.readFileSync(path.join(__dirname,'../scripts/run-ci-tests.cjs'),'utf8');
- const helper='ending-choice-compare-v1.js?v=2',entry='game.js?v=82';
+ const helper='ending-choice-compare-v1.js?v=2',entry='game.js?v=83';
  assert.ok(html.includes(helper)&&html.includes(entry));
  assert.ok(html.indexOf(helper)<html.indexOf(entry));
  assert.ok(runner.includes('tests/one-life-ending-compare-v1.test.cjs'));

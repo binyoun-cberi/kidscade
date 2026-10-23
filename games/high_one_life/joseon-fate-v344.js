@@ -52,8 +52,8 @@
  function plan(l,key){
   const s=ensure(l);if(!s)return null;
   const ordinary={
-   scholar:{title:'공부를 얼마나 이어 갈까?',description:'글을 배웠지만 시험에 합격하거나 벼슬을 얻는 것은 또 다른 일이다.',
-    options:[['소과를 준비한다','배운 내용을 시험해 본다. 합격해도 바로 관직을 얻지는 않는다.'],
+   scholar:{title:'글공부를 계속할까?',description:'글은 제법 익혔지만 과거 시험 앞에 서자 마음이 떨린다.',
+    options:[['소과 시험을 치러 본다','그동안 익힌 글을 시험해 본다. 급제하면 진사라 불리겠지만 곧바로 벼슬을 받는 것은 아니다.'],
      ['마을에서 글을 가르친다','자리를 크게 얻지 못해도 이웃에게 배움을 나눌 수 있다.'],
      ['농사와 글공부를 함께한다','당장의 생계를 지키면서 틈틈이 공부한다.']]},
    magistrate:{title:'고을을 맡아 어떤 수령으로 남을까?',description:'관직을 얻어도 사람들의 삶은 수령의 결정과 관아 장부에 따라 달라진다.',
@@ -74,7 +74,7 @@
      ['장사와 이웃 돕기를 이어 간다','신분을 꾸미지 않아도 유력한 상인으로 살 수 있다.']]},
    prodigal:{title:'재산을 물려받은 뒤 어떤 삶을 살까?',description:'넉넉한 집안이라도 낭비와 무리한 약속이 겹치면 재산을 잃는다.',
     options:[['잔치를 잇고 돈을 크게 쓴다','사람들은 모이지만 쌓인 빚은 남는다.'],
-     ['땅과 곳간을 살피며 살림을 지킨다','큰 명성을 얻지는 못해도 가족의 생활을 지킨다.'],
+     ['땅과 곳간을 살피며 살림을 지킨다','큰 명성을 얻지는 못해도 집안 살림을 지킨다.'],
      ['글을 가르치고 이웃의 어려움을 돕는다','살림을 나누어 쓰며 새로운 관계를 만든다.']]}
   };
   const later={
@@ -142,7 +142,7 @@
   if(key==='scholar'){
    if(index===0){const score=clamp(.13+j.studyYears*.035+j.literacy*.04+(l.stats.knowledge-40)*.004,.09,.72);
     s.examination=dice(l.seed,l.year*83+index+344)<score?'passed':'failed';
-    if(s.examination==='passed')remember(l,s,'소과의 진사시에 합격했다. 진사가 되었지만 곧바로 관직을 얻은 것은 아니었다.');
+    if(s.examination==='passed')remember(l,s,'소과 진사시에 급제했다. 벼슬은 없지만 사람들은 이제 진사라 불렀다.');
     else remember(l,s,'소과를 준비했으나 이번 시험에는 합격하지 못했다.');costs(l,-8);}
    else{ s.examination='not_taken';remember(l,s,index===1?'동네에서 아이와 이웃에게 글을 가르쳤다.':'집안의 생업과 글공부를 함께 이어 갔다.');}
    s.follow={key:'scholarAfter',due:l.year+2};
@@ -150,7 +150,7 @@
    if(index===0){career(l,s.examination==='passed'?'향촌에서 글을 가르치는 진사':'마을의 글 선생');s.reputation+=5;}
    else if(index===1){costs(l,-10);l.change({knowledge:4});career(l,'계속 과거를 준비하는 사람');}
    else {career(l,'농사와 글공부를 잇는 사람');costs(l,3);}
-   remember(l,s,'관직과 별개로 자신이 살고 싶은 향촌의 삶을 선택했다.');
+   remember(l,s,'벼슬길 대신 고향에 머물며 살 길을 골랐다.');
   }else if(key==='magistrate'){
    s.magistrate=index===1?'abusive':index===0?'benevolent':'careful';
    if(index===1){costs(l,24);s.integrity-=5;s.shame+=9;remember(l,s,'거둔 곡식을 사사로이 써 백성의 부담을 키웠다.');}
@@ -166,7 +166,7 @@
      if(Paths?.lockup(l,Paths.ensure(l),'exile',2+Math.floor(dice(l.seed,l.year+99)*3),'강원도'))remember(l,s,'감찰 끝에 파직되어 유배지로 떠났다.');
     }else{j.office=false;career(l,'파직 후 고향에 돌아온 전직 수령');remember(l,s,'비리를 둘러싼 논란 끝에 관직에서 물러났다.');}
    }else if(s.magistrate==='benevolent'&&index!==2&&hit<.65){
-    s.reputation+=8;remember(l,s,'임기를 마친 뒤 고을 사람들이 실제로 도움을 받은 일을 기억해 송덕비를 세우기로 했다.');
+    s.reputation+=8;remember(l,s,'떠나는 날, 도움받았던 고을 사람들이 돈을 모아 송덕비를 세우겠다고 나섰다.');
    }else remember(l,s,'임기를 마쳤다. 고을 사람들의 평가는 서로 달랐고 송덕비가 자동으로 세워지지는 않았다.');
   }else if(key==='slave'){
    if(index===0){costs(l,-8);
@@ -191,7 +191,7 @@
   }else if(key==='fortune'){
    if(index===0){costs(l,-40);s.reputation+=5;remember(l,s,'곡식을 내고 포상을 청했다. 받은 포상은 자동으로 양반의 법적 신분을 만드는 것이 아니었다.');}
    if(index===1){costs(l,-34);s.lineage='questioned';s.follow={key:'fortuneAfter',due:l.year+2};
-    remember(l,s,'돈을 주고 남의 족보에 이름을 올리려 했다. 문서의 진위를 확인받지 못했다.');}
+    remember(l,s,'돈을 건네고 다른 가문의 족보에 이름을 올렸다. 그러나 그 집안 사람들까지 모두 인정한 것은 아니었다.');}
    if(index===2){costs(l,-10);s.reputation+=6;career(l,'고을에서 알려진 상인');remember(l,s,'장사를 이어 가며 주변의 어려운 집을 도왔다. 신분을 꾸미지는 않았다.');}
   }else if(key==='fortuneAfter'){
    if(index===0){s.lineage='withdrawn';costs(l,-6);remember(l,s,'거짓 기록을 바로잡았다. 돈은 잃었지만 더 큰 법적 문제를 피하려 했다.');}

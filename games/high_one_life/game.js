@@ -99,7 +99,7 @@
     }
     select.value=historical&&Identity.validOrigin(year,previous)?previous:'';
     $('birthIdentityHelp').textContent=historical
-      ? (year<1392?'고려 후기의 관료·향리·농민·장인·사공·특수 행정구역 주민·노비 가구를 고릅니다.':year<1886?'왕실 종친·양반·중인·상민·노비·백정 등 집안의 출발점을 정합니다.':'이 시기에는 세습 노비 신분으로 태어나는 선택은 할 수 없습니다.')
+      ? (year<1392?'고려 시대에 태어날 집안을 골라 보세요. 관료나 향리 집안, 농민과 장인, 사공과 노비 집안 등에서 시작할 수 있어요.':year<1886?'왕실 종친부터 농사짓는 집안까지, 어떤 집에서 태어날지 골라 보세요.':'이 무렵에는 노비 신분을 세습하지 않게 됐어요. 다른 집안을 골라 보세요.')
       :'1894년 이후 법적 신분 대신 집안의 경제적 형편을 정합니다.';
     $('birthIdentityError').classList.add('hidden');
   }
@@ -181,7 +181,7 @@
     return '남의 논밭을 빌려 농사짓고, 수확으로 살림을 꾸린다.';
   }
   // 1결 = 100부. 원본 s.land 값은 면적이 아닌 추상 자원이므로
-  // 통계로 오해되는 원래의 추상 수치을 직접 1결로 치환하지 않는다.
+  // 추상 자원 값을 실제 토지 면적인 1결로 단순 환산하지 않는다.
   // 본 작품의 가구별 경작 규모를 위해 전답을 10부 단위로 별도 표시한다.
   function landAmount(units){
     const bu=Math.max(0,Math.round((Number(units)||0)*10));
@@ -837,7 +837,7 @@
     $('worldLatest').textContent=world.lastContext||'어떤 세계적 변화와 만남이 찾아올까요?';
     const choiceLog=life.log.filter(window.OneLifeBiography328.isChoice);
     $('arcCount').textContent=choiceLog.length+'번의 선택';
-    $('arcStatus').textContent=a.lastEvent || '아직 미래는 정해지지 않았어요.';
+    $('arcStatus').textContent=a.lastEvent || '앞으로 어떤 일이 일어날까요?';
     const box=$('arcMilestones');box.replaceChildren();
     for(const d of choiceLog.slice(-3)){
       const pill=document.createElement('div');pill.className='arc-milestone';
@@ -1032,7 +1032,7 @@
       $('choiceTitle').textContent=reflection+'세, 잠시 멈추어 돌아봅니다.';
       $('choiceText').textContent=prompts[reflection];
       const target=$('choiceOptions');target.replaceChildren();
-      const note=document.createElement('textarea');note.className='reflection-note';note.rows=2;note.maxLength=140;note.placeholder='생각을 한 줄로 남겨도 좋습니다 (선택 사항).';
+      const note=document.createElement('textarea');note.className='reflection-note';note.rows=2;note.maxLength=140;note.placeholder='오늘 마음에 남은 일을 적어 보세요. (적지 않아도 돼요)';
       note.setAttribute('aria-label','이 사람의 삶을 돌아보는 한 줄');
       const btn=document.createElement('button');btn.type='button';btn.className='reflection-next';btn.textContent='계속 살아가기 →';
       btn.addEventListener('click',()=>{life.reflect(note.value);save();elapsed=0;lastTick=performance.now();render();});
@@ -1262,7 +1262,7 @@
     $('storyTitle').textContent=life.getChoice()?.title || (Joseon.isJoseon(life)?(life.age<7?'어린 시절':life.age<20?'자라며 배우는 일':life.age<40?'청년기의 생업':life.age<65?'살림과 생업':'노년의 생활'):(life.age<6?'어린 시절':life.age<20?'자라며 겪은 일':life.age<40?'배움과 일터':life.age<65?'생업과 일상':'노년의 생활'));
     const current = life.log[life.log.length-1];
     $('storyCaption').textContent=life.getChoice()
-      ? '아래에서 선택할 일을 확인하세요.'
+      ? '아래에 나온 일을 읽고 골라 보세요.'
       : current?.text || '아직 올해 남겨진 기록이 없습니다.';
     $('lifeProgress').style.width=Math.min(100,life.age/105*100)+'%';
     paintTimeline();

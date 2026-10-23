@@ -81,7 +81,7 @@
   const label=['백성의 억울한 사연을 먼저 듣는다','관아의 장부와 오래된 문서를 먼저 살핀다','권세 있는 집안의 인사를 먼저 받는다'][index];
   f.choices.push({year:l.year,key:'magistrate',index,label});f.choices=f.choices.slice(-64);
   l.logEvent('고을 수령으로 부임하다 — '+label,'joseon344-choice');
-  log(l,s,'고을 수령으로 부임했다. 앞으로 몇 차례 송사를 처리한 기록이 임기 뒤의 평가에 영향을 미친다.');
+  log(l,s,'고을 수령으로 부임했다. 관아 앞에는 억울한 사정을 호소하는 사람들이 줄을 섰다.');
   return true;
  }
  function plan(l,key){
@@ -89,12 +89,12 @@
   if(key==='review'){
    const observations=s.counters.corruption>=22?'관아의 장부와 주민의 탄원이 어긋나고 있다.':
      s.counters.trust>=65?'주민들이 억울한 송사의 판결을 서로 이야기한다.':
-     '관아에서 처리한 송사에 대한 평가가 엇갈린다.';
-   return {title:'고을을 떠나기 전, 감사의 평가',description:observations+' 몇 해 동안의 기록과 증언을 살핀다.',
+     '관아에서 고을 사람들 사이에서도 판결을 두고 말이 많다.';
+   return {title:'떠나는 수령을 향한 평가',description:observations+' 몇 해 동안의 기록과 증언을 살핀다.',
     options:[
-     {label:'판결 기록과 증인을 있는 그대로 낸다',note:'좋은 일과 잘못을 함께 기록해 제출한다.'},
+     {label:'판결 기록과 증인을 있는 그대로 낸다',note:'잘한 일만 골라 내지 않고 그동안의 송사 기록을 모두 낸다.'},
      {label:'잘못된 판정을 바로잡고 피해를 돌본다',note:'늦었어도 구제에 필요한 곡식을 마련한다.'},
-     {label:'권세 있는 사람에게 평판을 부탁한다',note:'당장은 도움을 얻을 수 있지만 불리한 기록도 남는다.'}
+     {label:'권세 있는 대신에게 잘 봐 달라 부탁한다',note:'당장은 도움을 얻을 수 있지만 불리한 기록도 남는다.'}
     ]};
   }
   const match=/^case([1-4])$/.exec(key);
@@ -147,7 +147,7 @@
   }else{
    outcome='ordinary';j.office=false;
    j.occupation='임기를 마치고 향촌에서 지내는 전직 수령';l.career=j.occupation;
-   log(l,s,'임기를 마치고 고향으로 돌아왔다. 고을 사람들은 송사를 두고 서로 다른 기억을 남겼다.');
+   log(l,s,'임기를 마치고 고향으로 돌아왔다. 어떤 이는 수고했다며 인사했고, 어떤 이는 끝내 얼굴을 돌렸다.');
   }
   s.judgment=outcome;s.stage='done';
   const f=Fate.ensure(l);f.magistrate=c.corruption>=18?'abusive':settled?'benevolent':'careful';
@@ -171,9 +171,9 @@
    if(!selected)return false;
    counts(l,s,{...selected[4],cash:selected[5]});
    const echo=selected[3]==='편파'&&s.counters.resentment>=35
-     ?' 여러 집에서 억울함을 호소하는 소리가 커졌다.':
+     ?' 판결을 원망하는 사람들이 관아 앞에 몰려들었다.':
      selected[3]==='공정'&&s.counters.trust>=67
-     ?' 공정한 처분을 보았다는 이야기가 이웃 고을에도 전해졌다.':'';
+     ?' 공평한 판결이었다는 이야기가 이웃 고을까지 퍼졌다.':'';
    log(l,s,selected[2]+echo);
    l.logEvent(p.title+' — '+label,'joseon345-choice');
    s.caseIndex++;

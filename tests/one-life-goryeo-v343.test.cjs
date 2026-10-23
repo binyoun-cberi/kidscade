@@ -88,7 +88,7 @@ test('birth UI supports reduced motion and prevents repeated decision scrolling'
  const game=fs.readFileSync(dir+'/game.js','utf8');
  assert.match(html,/<script src="\.\/ui-flow\.js\?v=1"><\/script>/);
  assert.ok(html.indexOf('ui-flow.js?v=1')<html.indexOf('ending-choice-compare-v1.js?v=2'));
- assert.ok(html.indexOf('ending-choice-compare-v1.js?v=2')<html.indexOf('game.js?v=82'));
+ assert.ok(html.indexOf('ending-choice-compare-v1.js?v=2')<html.indexOf('game.js?v=83'));
  assert.match(game,/UIFlow\.rouletteIndex\(loops,sample\.length\)/);
  assert.doesNotMatch(game,/loops\*7\)%sample\.length/);
  assert.match(game,/prefers-reduced-motion: reduce/);
@@ -166,7 +166,7 @@ test('bonded Goryeo birth cannot immediately pick an unrestricted profession',()
  assert.equal(l.age,14);
  const prompt=l.getChoice();
  assert.equal(g.bound,true);
- assert.match(prompt.description,/예속/);
+ assert.match(prompt.description,/마음대로 일터를 떠날 수는 없/);
  assert.equal(prompt.options.some(o=>['job:글과 셈','job:나루 일','job:삼베 짜기'].includes(o.effect)),false);
  assert.ok(prompt.options.some(o=>o.effect==='skill'));
  const restored=L.restore(copy(l.snapshot()));

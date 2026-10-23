@@ -104,7 +104,7 @@
       {label:'사람들과 어울린다',note:'관계와 소통',effects:{bonds:12,happiness:5,knowledge:2},text:'새로운 사람을 만나며 세상을 배웠다.'}
     ]},
     {age:20,title:'세상으로 나아갈 시간',description:'모든 사람에게 똑같은 기회가 주어지지는 않습니다.',options:[
-      {label:'더 공부하기를 선택한다',note:'비용과 지식, 진로의 기회',effects:{knowledge:17,wealth:-9,happiness:-3},career:'학생',text:'배움의 시간을 조금 더 갖기로 했다.'},
+      {label:'공부를 조금 더 해 본다',note:'생활비가 들지만 새로운 길이 열릴 수도 있다.',effects:{knowledge:17,wealth:-9,happiness:-3},career:'학생',text:'배움의 시간을 조금 더 갖기로 했다.'},
       {label:'일을 시작한다',note:'자립과 경험',effects:{wealth:12,knowledge:5,health:-3},career:'일하는 사람',text:'직접 돈을 벌며 세상을 경험하기 시작했다.'},
       {label:'여러 일을 탐색한다',note:'행복과 가능성',effects:{happiness:11,knowledge:9,wealth:-5},career:'진로 탐색 중',text:'서두르지 않고 나에게 맞는 길을 찾아보았다.'}
     ]},
@@ -126,7 +126,7 @@
     {age:73,title:'남은 날들을 어떻게 보낼까요?',description:'더 많은 것을 이루는 것 말고도 삶을 채우는 방법이 있습니다.',options:[
       {label:'사람들과 시간을 보낸다',note:'관계와 행복',effects:{bonds:15,happiness:9},text:'오래된 인연과 새로운 친구들이 곁에 있었다.'},
       {label:'좋아하는 취미를 이어 간다',note:'행복과 건강',effects:{happiness:14,health:8},text:'하루하루 좋아하는 것을 놓지 않았다.'},
-      {label:'나의 이야기를 기록한다',note:'지식과 성찰',effects:{knowledge:10,happiness:8},text:'살아온 시간을 천천히 글로 남겼다.'}
+      {label:'살아온 이야기를 글로 남긴다',note:'지식과 성찰',effects:{knowledge:10,happiness:8},text:'살아온 시간을 천천히 글로 남겼다.'}
     ]}
   ];
   const EVENTS = [
@@ -139,7 +139,7 @@
     [17,45,'오랫동안 연락하지 못한 사람과 다시 만났다.',{bonds:9,happiness:4}],
     [20,52,'새로운 일을 배워 조금씩 실력이 늘었다.',{knowledge:8,wealth:3}],
     [21,65,'생활비가 올라 살림을 조심스럽게 꾸렸다.',{wealth:-8,happiness:-3}],
-    [22,55,'꾸준히 노력한 일이 좋은 결과를 가져왔다.',{wealth:8,happiness:6}],
+    [22,55,'오래 공들인 일이 마침내 결실을 맺었다.',{wealth:8,happiness:6}],
     [23,60,'몸이 좋지 않아 한동안 충분히 쉬어야 했다.',{health:-11,happiness:-3}],
     [25,70,'몸을 돌보는 새로운 습관을 시작했다.',{health:9,happiness:3}],
     [26,64,'동료에게 도움을 주고 고맙다는 말을 들었다.',{bonds:8,happiness:6}],

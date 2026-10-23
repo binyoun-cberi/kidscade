@@ -60,29 +60,29 @@ function historical(l){
  if(l.age<8)return false;
  const north=['개경 일대','강화','서북 내륙'].includes(g.region),coast=['서남 해안','탐라','강화'].includes(g.region);
  if(f[3]==='war'&&((l.year<1260&&g.region!=='탐라')||(l.year>1350&&north))){
-  prompt(l,'war-'+l.year,'전란 속에서 어디로 갈까?',g.region+'에도 전쟁의 소식이 닿았다. 피란에는 식량과 이동할 품이 필요하다.',[
+  prompt(l,'war-'+l.year,'전란 속에서 어디로 갈까?',g.region+'에도 전쟁의 소식이 닿았다. 집을 떠나려면 길에서 먹을 곡식부터 챙겨야 한다.',[
    option('가족과 가까운 산골로 피한다','refuge',{grain:-6,health:-3,bonds:4}),
    option('친척에게 몸을 의탁한다','kin-refuge',{grain:-4,bonds:3}),
    option('남아서 살림을 지킨다','stay',{grain:-8,health:-7})]);return true;
  }
- if(f[3]==='sambyeolcho'&&coast){prompt(l,'sambyeolcho','갈라진 명령 사이에서','군대와 관청의 명령이 엇갈린다. 어느 쪽을 택하든 가족의 안전이 걸린 문제다.',[
+ if(f[3]==='sambyeolcho'&&coast){prompt(l,'sambyeolcho','갈라진 명령 사이에서','군대와 관청의 명령이 엇갈린다. 어느 명령을 따라야 식구들을 지킬 수 있을지 마음이 복잡하다.',[
   option('가족과 내륙으로 피한다','inland',{grain:-8,bonds:3}),option('남아서 운송 일을 맡는다','transport',{grain:4,health:-8}),option('당분간 몸을 숨긴다','refuge',{grain:-6,health:-3})]);return true;}
- if(f[3]==='levy'&&coast&&l.age>=16&&l.age<=55){prompt(l,'levy-'+l.year,'배와 군량을 마련하라는 명령','해안의 가구에 물자와 노동을 요구한다. 먼 곳에 머무르면 집안일은 남은 가족이 맡는다.',[
+ if(f[3]==='levy'&&coast&&l.age>=16&&l.age<=55){prompt(l,'levy-'+l.year,'배와 군량을 마련하라는 명령','해안의 가구에 물자와 노동을 요구한다. 먼 곳으로 일을 나가면 집안일은 남은 식구들이 떠맡는다.',[
   option('배를 만드는 일에 나간다','away',{grain:5,health:-5}),option('곡식을 내고 가족 곁에 남는다','none',{grain:-10}),option('친척과 부담을 나눈다','kin',{grain:-5,bonds:3})]);return true;}
  if(f[3]==='peace'&&g.refuge){prompt(l,'return-'+l.year,'고향에 돌아갈까?','전쟁이 잦아들었다는 소식이 왔다. 집과 밭이 남아 있을지는 알 수 없다.',[
   option('고향으로 돌아가 다시 일군다','return',{grain:-4,health:-2}),option('지금 머무는 곳에 뿌리내린다','settle',{grain:-2,bonds:3})]);return true;}
- if(f[3]==='land'&&l.age>=16){prompt(l,'land-'+l.year,'토지와 신분을 적은 문서','관청의 조사가 집안에 어떤 영향을 줄지 살핀다. 문서와 증언을 모아도 원하는 판정이 보장되지는 않는다.',[
+ if(f[3]==='land'&&l.age>=16){prompt(l,'land-'+l.year,'토지와 신분을 적은 문서','관청의 조사가 집안에 어떤 영향을 줄지 살핀다. 문서와 증인을 모아도 관청이 우리 편을 들어줄지는 알 수 없다.',[
   option('친족과 증인을 찾아 청원한다','petition',{grain:-4,knowledge:3}),option('집안 문서를 보관하며 기다린다','none',{knowledge:2}),option('생업에 힘을 남겨 둔다','none',{grain:2})]);return true;}
  if(f[3]==='printing'&&l.age>=14&&(g.job==='글과 셈'||g.job.includes('짜기')||g.region==='충청 내륙')){
  prompt(l,'printing-'+l.year,'종이와 책을 다루는 일','사찰과 인연이 있는 사람이 종이 운반과 인쇄 보조 일을 소개했다. 판을 새기거나 활자를 다루는 기술은 오랜 배움이 필요하다.',[
   option('일을 도우며 기술을 배운다','printing',{grain:3,knowledge:5}),option('집안 생업을 지킨다','none',{grain:2}),option('곡식을 보태 책 만드는 일을 후원한다','donate',{grain:-4,bonds:3})]);return true;}
- if(f[3]==='transition'&&l.age>=8){prompt(l,'transition','고려에서 시작한 삶, 조선으로','새 왕조 아래서도 식구와 재산은 이어진다. 관청과 주변의 변화를 살피며 다음 해를 준비한다.',[
+ if(f[3]==='transition'&&l.age>=8){prompt(l,'transition','고려에서 시작한 삶, 조선으로','나라의 이름이 바뀌었다고 하루아침에 살림이 달라지지는 않았다. 새 관청의 소식을 들으며 다음 해를 맞았다.',[
   option('새 관청의 문서와 명령을 알아본다','none',{knowledge:4}),option('양쪽 친족과 살림을 의논한다','kin',{bonds:4}),option('하던 생업을 이어 간다','none',{grain:3})]);return true;}
  return false;
 }
 function everyday(l){
  const g=ensure(l);
- if(l.age>=6&&l.age<14&&!g.seen.includes('child')){prompt(l,'child','내 손으로 해 보고 싶은 일','아직 집안의 결정을 맡을 나이는 아니다. 잠깐의 심부름과 배움도 하루를 바꾼다.',[
+ if(l.age>=6&&l.age<14&&!g.seen.includes('child')){prompt(l,'child','내 손으로 해 보고 싶은 일','집안의 큰일은 어른들이 정하지만, 오늘만큼은 내 손으로 해 보고 싶은 일이 생겼다.',[
   option('들에서 나물을 모은다','gather',{pocket:2,health:-1}),option('글자를 배우고 싶다고 청한다','learn',{knowledge:5,grain:-1}),option('집안일을 돕는다','none',{bonds:4}),option('장터에서 군것질을 산다','snack',{pocket:-1,happiness:4})]);return;}
  if(l.age>=14&&!g.seen.includes('vocation')){
   const choices=g.bound?[
@@ -93,7 +93,7 @@ function everyday(l){
    option('삼베와 모시 짜는 일을 배운다','job:삼베 짜기',{knowledge:4,grain:-2}),
    option('글과 셈을 배운다','job:글과 셈',{knowledge:6,grain:-5}),
    option('나루에서 일하는 법을 배운다','job:나루 일',{health:2})];
-  prompt(l,'vocation','어떤 일을 배울까?',g.bound?'예속된 처지라 거처와 일의 선택에 제약이 크다. 맡은 일에서 기술을 익힐 길을 찾는다.':'집안의 생업을 잇거나 다른 기술을 배울 수 있다.',choices);return;
+  prompt(l,'vocation','어떤 일을 배울까?',g.bound?'마음대로 일터를 떠날 수는 없지만, 함께 일하는 사람에게 솜씨를 배울 기회는 있다.':'집안일을 잇는 길도 있고 새로운 솜씨를 배울 길도 있다.',choices);return;
  }
  if(l.age>=14&&!g.bound&&g.origin==='노비 가구'&&g.seen.includes('vocation')&&!g.seen.includes('free-vocation')){
   prompt(l,'free-vocation','예속에서 벗어난 뒤의 생업','새로운 일을 바로 시작하기는 어렵지만, 익힌 솜씨와 친족의 도움을 바탕으로 앞으로의 일을 고른다.',[
