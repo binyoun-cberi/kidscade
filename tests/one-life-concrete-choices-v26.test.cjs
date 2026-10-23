@@ -26,7 +26,7 @@ const targets=[
  ['captivity',V14.EPISODES,['captivityWork','captivityLetters','captivityNews','japanWorkshop','japanFamilyTies','manchuLanguage','manchuRansomNames','ransomOpportunity','homecoming','homeStigma','homeNewFamily']],
  ['localOffice',V19.EVENTS,V19.EVENTS.map(e=>e.id)]
 ];
-test('165 concrete choices: each says WHAT, WHY/RISK and WHAT REMAINS afterward',()=>{
+test('168 concrete choices: each says WHAT, WHY/RISK and WHAT REMAINS afterward',()=>{
  let cases=0;
  for(const [group,items,ids] of targets){
   const m=new Map(items.map(e=>[e.id,e]));
@@ -47,7 +47,7 @@ test('165 concrete choices: each says WHAT, WHY/RISK and WHAT REMAINS afterward'
   }
  }
  console.log('ONE_LIFE_CONCRETE_CHOICES='+JSON.stringify({episodes:targets.reduce((a,x)=>a+x[2].length,0),options:cases}));
- assert.equal(cases,165);
+ assert.equal(cases,168);
 });
 test('land records, medicine, neighbor aid and war letters state a specific action rather than moral intent',()=>{
  const one=(list,id,i)=>{const e=list.find(x=>x.id===id);return e.options[i]};
