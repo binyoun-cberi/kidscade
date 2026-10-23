@@ -31,7 +31,7 @@ test('scholars who skip an exam are not falsely described as failing it',()=>{
  assert.match(l.getChoice().options[1].label,/처음 소과/);
  assert.equal(l.choose(1),true);
  assert.match(l.career,/과거를 준비/);
- assert.match(l.log.at(-2).text,/다음 과거시험을 준비/);
+ assert.match(l.log.at(-2).text,/처음으로 소과에 응시하려고/);
  assert.ok(!l.log.some(e=>/벼슬길 대신 고향/.test(e.text)));
  const restored=Life.restore(clone(l.snapshot()));
  assert.equal(restored.joseon344.examination,'not_taken');
