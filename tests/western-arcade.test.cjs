@@ -103,13 +103,27 @@ test('hurdles jump through touch and keyboard, and movement earns distance point
 });
 test('coin click produces a real bounce and score',()=>{
  const h=playHarness();h.begin('coins');h.frame(4);
- h.pointer(450,125);assert.ok(h.state().points>0);assert.equal(h.state().lives,3);
+ h.pointer(450,125);assert.ok(h.state().points>0);assert.equal(h.state().lives,5);
 });
 test('cow lasso predicts motion and captures a cow after rope travel',()=>{
  const h=playHarness();h.begin('cattle');h.frame(32);
  assert.ok(h.state().spawned>0);
  h.pointer(198,321);assert.equal(h.state().ropes,1);h.frame(8);
  assert.ok(h.state().points>0,'predictive throw should catch the first moving cow');
+});
+test('coin juggling gives novices more than a few seconds to learn while remaining failable',()=>{
+ const h=playHarness();h.begin('coins');h.frame(220);
+ assert.equal(h.state().phase,'playing','newcomers should not fail in the first eleven seconds');
+ assert.ok(h.state().lives>0);
+ h.frame(400);
+ assert.equal(h.state().phase,'finish','unattended coins must eventually fall and end the game');
+});
+test('lasso cannot catch a cow before it enters the playable field',()=>{
+ const h=playHarness();h.begin('cattle');h.frame(13);
+ h.pointer(30,321);h.frame(8);
+ assert.equal(h.state().points,0,'no scoring for invisible cows beyond the left boundary');
+ h.frame(12);h.pointer(205,321);h.frame(8);
+ assert.ok(h.state().points>0,'leading a visible moving cow should capture it');
 });
 test('disco notes have distinct lanes, registered timing hits and 6-shot reload',()=>{
  const h=playHarness();h.begin('disco');h.frame(40);
