@@ -32,7 +32,7 @@ test('human-voice copy appears in childhood, history, choices, and life recap',(
  assert.match(read('world-v13.js'),/요즘 쉬어도 피로가 쉽게 가시지 않는다/);
  assert.match(game,/const chapters=window\.OneLifeBiography328\.chapters/);
  assert.match(game,/chapters\.map\(text=>/);
- assert.match(game,/아래에서 선택할 일을 확인하세요/);
+ assert.match(game,/아래에 나온 일을 읽고 골라 보세요/);
  assert.doesNotMatch(game,/이번에는 어떻게 할까/);
 });
 test('all existing interactive IDs and script order remain intact',()=>{
