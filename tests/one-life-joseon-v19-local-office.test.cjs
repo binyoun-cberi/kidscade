@@ -24,7 +24,7 @@ function force(l,id,i=0){
 }
 test('13 events are unique, documented and have three genuine choices',()=>{
  assert.equal(V19.EVENTS.length,13);
- assert.equal(new Set(V19.EVENTS.map(e=>e.id)).size,12);
+ assert.equal(new Set(V19.EVENTS.map(e=>e.id)).size,13);
  for(const e of V19.EVENTS){assert.equal(e.options.length,3);assert.ok(e.source.startsWith('https://'));assert.ok(e.options.every(o=>o.label&&o.note&&o.follow));}
 });
 test('a saved tax discrepancy returns two years later and a fair office can correct the real ledger',()=>{
