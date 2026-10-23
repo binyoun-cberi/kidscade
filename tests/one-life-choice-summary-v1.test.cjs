@@ -30,6 +30,6 @@ test('dense same-age decisions are keyboard-expandable, with changes opened by d
  assert.match(game,/overview\.textContent=choiceCompare\.summaryText\(choiceCompare\.summary\(/);
  assert.match(css,/focus-visible/);
  assert.match(css,/overflow-wrap:anywhere/);
- assert.ok(html.indexOf('ending-choice-compare-v1.js?v=2')<html.indexOf('game.js?v=86'));
+ assert.ok(html.indexOf('ending-choice-compare-v1.js?v=2')<html.indexOf('game.js?v=87'));
  assert.ok(html.includes('ending-replay-v1.css?v=1'));
 });

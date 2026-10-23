@@ -105,7 +105,7 @@ test('historical composer precedes both renderers and never ships licensed exter
  const at=name=>html.indexOf(name);
  assert.ok(at('historical-sprites-v1.js?v=3')>0);
  assert.ok(at('historical-sprites-v1.js?v=3')<at('joseon-pixel-v2.js?v=6'));
- assert.ok(at('historical-sprites-v1.js?v=3')<at('goryeo-view-v343.js?v=4'));
+ assert.ok(at('historical-sprites-v1.js?v=3')<at('goryeo-view-v343.js?v=5'));
  assert.match(file('goryeo-view-v343.js'),/historical\.scene\(c,l,g/);
  assert.match(file('joseon-pixel-v2.js'),/Historical\?\.appearance\(life\.seed,personId\)/);
  assert.doesNotMatch(file('historical-sprites-v1.js'),/fetch\(|XMLHttpRequest|localStorage|sessionStorage|https?:\/\//);

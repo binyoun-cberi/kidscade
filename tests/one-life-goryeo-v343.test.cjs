@@ -3,6 +3,32 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const dir=path.resolve(__dirname,'../games/high_one_life'),c={console};c.window=c;vm.createContext(c);
 for(const m of fs.readFileSync(dir+'/index.html','utf8').matchAll(/<script src="\.\/([^?" ]+)/g))if(!['game.js','goryeo-view-v343.js'].includes(m[1]))vm.runInContext(fs.readFileSync(dir+'/'+m[1],'utf8'),c,{filename:m[1]});
 const L=c.OneLifeSim.Life,G=c.OneLifeGoryeo343,copy=x=>JSON.parse(JSON.stringify(x));
+test('Goryeo reading view prioritizes the actual choice, preserves expanded records and keeps actions connected',()=>{
+ class Node{
+  constructor(tag){this.tagName=tag;this.children=[];this.className='';this.open=false;}
+  append(...nodes){this.children.push(...nodes);}
+  replaceChildren(){this.children=[];}
+  setAttribute(){}
+  getContext(){return {};}
+  querySelector(selector){const name=selector.slice(1);for(const n of this.children){if(n.className===name)return n;const found=n.querySelector(selector);if(found)return found;}return null;}
+ }
+ const host=new Node('div'),view={document:{getElementById:()=>host,createElement:tag=>new Node(tag)},OneLifeGoryeo343:G,OneLifeHistoricalSpritesV1:{scene(){},occupants:()=>[],familyAtHome:()=>[]}};
+ view.window=view;vm.createContext(view);vm.runInContext(fs.readFileSync(dir+'/goryeo-view-v343.js','utf8'),view);
+ const l=make();const before=JSON.stringify(l.snapshot());let chosen=-1;
+ const handlers={paused:true,autoEnabled:false,pause(){},next(){},toggleAuto(){},action(){},choose:i=>{chosen=i;}};
+ // Use an actual pending event, with player-visible requirements from the engine.
+ l.age=13;l.year=l.birthYear+13;l.tick();const expected=JSON.stringify(l.snapshot());
+ const q=l.getChoice();assert.ok(q);
+ view.OneLifeGoryeoView343.paint(l,handlers);
+ const panel=host.querySelector('.goryeo-decision'),details=host.querySelector('.goryeo-reading-details');
+ assert.ok(host.children.indexOf(panel)<host.children.findIndex(n=>n.tagName==='canvas'));
+ const buttons=panel.children.filter(n=>n.tagName==='button');assert.equal(buttons.length,q.options.length);
+ buttons[0].onclick();assert.equal(chosen,0);
+ if(q.options[0].note)assert.equal(buttons[0].querySelector('.goryeo-choice-note').textContent,q.options[0].note);
+ assert.equal(details.open,false);details.open=true;view.OneLifeGoryeoView343.paint(l,handlers);
+ assert.equal(host.querySelector('.goryeo-reading-details').open,true);
+ assert.equal(JSON.stringify(l.snapshot()),expected);assert.notEqual(before,expected);
+});
 function make(year=1350,seed=173,origin='농민 가구'){const l=new L(seed,{birthYear:year,countryName:'대한민국',birthSetup:{gender:'여자',origin}});G.ensure(l);return l;}
 function at(year,region='경상 내륙'){const l=make(year-20);l.year=year-1;l.age=19;l.goryeo343.region=region;l.stats.health=100;l.tick();return l;}
 test('late Goryeo birth boundaries and origins stay distinct from Joseon',()=>{
@@ -88,11 +114,12 @@ test('birth UI supports reduced motion and prevents repeated decision scrolling'
  const game=fs.readFileSync(dir+'/game.js','utf8');
  assert.match(html,/<script src="\.\/ui-flow\.js\?v=1"><\/script>/);
  assert.ok(html.indexOf('ui-flow.js?v=1')<html.indexOf('ending-choice-compare-v1.js?v=2'));
- assert.ok(html.indexOf('ending-choice-compare-v1.js?v=2')<html.indexOf('game.js?v=86'));
+ assert.ok(html.indexOf('ending-choice-compare-v1.js?v=2')<html.search(/game\.js\?v=\d+/));
  assert.match(game,/UIFlow\.rouletteIndex\(loops,sample\.length\)/);
  assert.doesNotMatch(game,/loops\*7\)%sample\.length/);
  assert.match(game,/prefers-reduced-motion: reduce/);
- assert.match(game,/if\(isNewDecision\&\&!autoChoiceMode\)\$\('decision'\)\.scrollIntoView/);
+ assert.match(game,/if\(isNewDecision\&\&!autoChoiceMode\)revealDecision\(\)/);
+ assert.match(game,/function revealDecision\(\)\{[\s\S]*?prefers-reduced-motion: reduce[\s\S]*?'auto':'smooth'/);
  assert.match(game,/lastDecisionKey=decisionKey/);
 });
 
