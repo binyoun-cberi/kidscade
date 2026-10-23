@@ -20,7 +20,15 @@
     sky: '../../assets/game/2d/platformer-art/base/backgrounds/bg.png',
     grass: '../../assets/game/2d/platformer-art/base/tiles/grass-center.png',
     stone: '../../assets/game/2d/platformer-art/base/tiles/stone.png',
-    castle: '../../assets/game/2d/platformer-art/base/tiles/castle.png'
+    castle: '../../assets/game/2d/platformer-art/base/tiles/castle.png',
+    bush: '../../assets/game/2d/platformer-art/base/items/bush.png',
+    rock: '../../assets/game/2d/platformer-art/base/items/rock.png',
+    flagBlue: '../../assets/game/2d/platformer-art/base/items/flag-blue.png',
+    flagRed: '../../assets/game/2d/platformer-art/base/items/flag-red.png',
+    cloud: '../../assets/game/2d/platformer-art/base/items/cloud1.png',
+    star: '../../assets/game/2d/platformer-art/base/items/star.png',
+    bomb: '../../assets/game/2d/platformer-art/base/items/bomb.png',
+    fireball: '../../assets/game/2d/platformer-art/base/items/fireball.png'
   };
   const sprites = {};
   Object.entries(IMAGES).forEach(([key, url]) => {
@@ -35,7 +43,8 @@
     points:[0,0], turn:0, phase:'menu', angle:45, power:70,
     aims:[{angle:45,power:70},{angle:45,power:70}], ammo:'basic',
     bursts:[2,2], battleKnots:null, previous:[null,null], preview:null, flight:null, explosion:null,
-    notice:'각도와 세기를 조절해서 노란 과녁을 맞혀 보세요!', lastFrame:0
+    notice:'각도와 세기를 조절해서 노란 과녁을 맞혀 보세요!', lastFrame:0,
+    recoil:[0,0], shake:0, movingPointer:null, celebration:0
   };
   const isBattle = () => state.mode !== 'practice';
   const knots = () => isBattle() ? state.battleKnots || BATTLE : STAGES[state.stage].knots;
@@ -56,6 +65,17 @@
     return P.launch(muzzle(side,angle), angle, power, side===0 ? 1 : -1, state.wind);
   }
   function setNotice(message) { state.notice=message; $('notice').textContent=message; }
+  function finishScreen(title, description, stars) {
+    $('finishTitle').textContent=title;
+    $('finishText').textContent=description;
+    $('finishStar').textContent=stars;
+    $('finishOverlay').classList.remove('hidden');
+    state.celebration=2.6;
+  }
+  function clearFinish() {
+    $('finishOverlay').classList.add('hidden');
+    state.celebration=0;
+  }
   function sdk(method,...args) { try { window.KidscadeGame?.[method]?.(...args); } catch (_) {} }
   function syncControls() {
     $('angle').value=String(state.angle); $('power').value=String(state.power);
@@ -129,11 +149,16 @@
     $('lastShot').textContent='각도와 세기를 한 가지씩 바꾸면 차이를 더 잘 알 수 있어요.';
     state.wind=state.windEnabled?[-24,22,30,-18,14,0][0]:0;
     $('startOverlay').classList.add('hidden');$('helpOverlay').classList.add('hidden');
+    clearFinish();state.recoil=[0,0];state.shake=0;state.movingPointer=null;state.lastFrame=0;
     sdk('start');
     setNotice('각도와 세기를 바꿔 첫 번째 포탄을 쏴 보세요!');
     setAim();
   }
-  function openMenu(){generation+=1;state.phase='menu';state.flight=null;state.preview=null;$('startOverlay').classList.remove('hidden');syncControls();}
+  function openMenu(){
+    generation+=1;state.phase='menu';state.flight=null;state.preview=null;
+    state.movingPointer=null;clearFinish();
+    $('startOverlay').classList.remove('hidden');syncControls();
+  }
   function fire(byAi=false) {
     if(state.phase!=='aim') return;
     if(state.mode==='cpu' && state.turn===1 && !byAi) {
@@ -149,6 +174,7 @@
     const result=P.trace({shot,knots:knots(),targets:[target(side)]});
     state.flight={shot,result,elapsed:0,side,angle:state.angle,power:state.power,ammo};
     state.shots+=1;
+    state.recoil[side]=1;
     setNotice((side===0?'파란':'주황')+' 포탄이 날아가요!');
     syncControls();
   }
@@ -178,6 +204,7 @@
     const struck=result.kind==='target'||blast;
     state.flight=null;state.phase='settle';
     state.explosion={x:result.point.x,y:result.point.y,age:0,hit:struck,radius:f.ammo==='burst'?79:50};
+    state.shake=struck?11:f.ammo==='burst'?7:4;
     state.previous[f.side]=result.points;
     if(isBattle() && result.kind==='ground' && result.point.x>=0 && result.point.x<=W){
       state.battleKnots=P.craterTerrain(state.battleKnots,result.point.x,
@@ -195,6 +222,8 @@
           state.phase='finished';action='none';
           sdk('result',{scope:'campaign',status:'completed',outcome:'clear',score:Math.max(100,1400-state.shots*60)});
           setNotice('모든 과녁 성공! '+state.shots+'번의 발사로 6단계를 완료했어요!');
+          finishScreen('포물선 명사수!',state.shots+'번의 발사로 6개 과녁을 전부 맞혔어요. 각도와 세기 조절에 성공했어요!',
+            state.shots<=12?'★ ★ ★':state.shots<=24?'★ ★ ☆':'★ ☆ ☆');
         } else {
           setNotice('명중! 다음은 '+STAGES[state.stage+1].name+'이에요.');
           action='advance';
@@ -213,6 +242,10 @@
           state.phase='finished';action='none';
           sdk('result',{scope:'match',status:'completed',outcome:state.mode==='cpu'?(f.side===0?'win':'loss'):'win',score:state.points[f.side],winner:f.side===0?'blue':'orange',mode:state.mode});
           setNotice((f.side===0?'파란':'주황')+' 대포 승리! 다시 시작해서 한 판 더 해요.');
+          finishScreen((f.side===0?'파란':'주황')+' 대포 승리!',
+            (state.mode==='cpu'&&f.side===1?'이번엔 컴퓨터가 먼저':'3점 먼저 획득!')+
+            ' 총 '+state.shots+'발을 발사했어요. 다시 도전해 봐요!',
+            '★ ★ ★');
         }
       } else setNotice('이번 포탄은 빗나갔어요. 다음 차례!');
       if(state.phase!=='finished')action='advance';
@@ -231,8 +264,13 @@
     c.fillStyle='#fff0a8';c.beginPath();c.arc(1035,128,50,0,TAU);c.fill();
     c.fillStyle='#ffffffbb';
     for(const [x,y,s] of [[175,162,1.2],[430,115,.9],[760,186,1.1],[995,215,.65]]){
-      c.beginPath();c.ellipse(x,y,s*58,s*19,0,0,TAU);c.ellipse(x-30*s,y+3*s,25*s,14*s,0,0,TAU);
-      c.ellipse(x+30*s,y+3*s,32*s,16*s,0,0,TAU);c.fill();
+      if(sprites.cloud){
+        c.save();c.globalAlpha=.83;c.imageSmoothingEnabled=false;
+        c.drawImage(sprites.cloud,x-56*s,y-29*s,112*s,52*s);c.restore();
+      }else{
+        c.beginPath();c.ellipse(x,y,s*58,s*19,0,0,TAU);c.ellipse(x-30*s,y+3*s,25*s,14*s,0,0,TAU);
+        c.ellipse(x+30*s,y+3*s,32*s,16*s,0,0,TAU);c.fill();
+      }
     }
     for(let layer=0;layer<2;layer++){
       c.fillStyle=layer===0?'#a5cfcb':'#7dbca3';c.beginPath();c.moveTo(0,H);
@@ -256,8 +294,17 @@
     for(let x=35;x<W;x+=55){
       if(Math.abs(x-135)<72||Math.abs(x-1050)<72||(!isBattle()&&Math.abs(x-goal().x)<65))continue;
       const y=P.terrainY(k,x);
-      if(sprites.grass){c.save();c.globalAlpha=.75;c.drawImage(sprites.grass,x-12,y-12,24,24);c.restore();}
-      else{c.strokeStyle='#558642';c.lineWidth=2;c.beginPath();c.moveTo(x,y);c.lineTo(x-4,y-10);c.moveTo(x,y);c.lineTo(x+4,y-9);c.stroke();}
+      const decoration=Math.round(x/55)%5===0?'rock':'bush';
+      if(sprites[decoration]){
+        c.save();c.imageSmoothingEnabled=false;
+        c.drawImage(sprites[decoration],x-17,y-28,34,29);c.restore();
+      }else if(sprites.grass){
+        c.save();c.globalAlpha=.75;c.imageSmoothingEnabled=false;
+        c.drawImage(sprites.grass,x-12,y-12,24,24);c.restore();
+      }else{
+        c.strokeStyle='#558642';c.lineWidth=2;c.beginPath();
+        c.moveTo(x,y);c.lineTo(x-4,y-10);c.moveTo(x,y);c.lineTo(x+4,y-9);c.stroke();
+      }
     }
     if(sprites.castle && state.mode==='practice' && state.stage>=3){
       const x=625,y=P.terrainY(k,x);
@@ -268,6 +315,8 @@
     const p=tank(side), col=side===0?['#298bd2','#16487c','#c7f0ff']:['#f59b49','#a54a27','#fff2cc'];
     const alpha=side===0||isBattle()?1:.95;
     c.save();c.translate(p.x,p.y);c.globalAlpha=alpha;
+    const kick=state.recoil[side]||0;
+    c.translate((side===0?-1:1)*kick*10,Math.sin(kick*Math.PI)*kick*3);
     c.fillStyle='#162d3d';c.beginPath();c.ellipse(0,20,43,15,0,0,TAU);c.fill();
     for(let x=-28;x<=28;x+=14){c.fillStyle='#8497a1';c.beginPath();c.arc(x,20,7,0,TAU);c.fill();c.fillStyle='#253b4b';c.beginPath();c.arc(x,20,3,0,TAU);c.fill();}
     const aiming=(state.turn===side&&state.phase!=='menu')?state.angle:45;
@@ -278,7 +327,14 @@
     c.fillStyle=col[1];c.beginPath();c.roundRect(-23,-12,46,24,11);c.fill();
     c.fillStyle=col[2];c.beginPath();c.arc(0,-6,7,0,TAU);c.fill();
     c.fillStyle='#ffffff99';c.fillRect(-22,7,39,3);
+    c.fillStyle='#e7f4ff';c.beginPath();c.arc(-8,-7,3,0,TAU);c.arc(8,-7,3,0,TAU);c.fill();
+    c.fillStyle='#172d4f';c.fillRect(-8,-8,2,2);c.fillRect(8,-8,2,2);
     c.restore();
+    const flag=side===0?'flagBlue':'flagRed';
+    if(sprites[flag]){
+      c.save();c.imageSmoothingEnabled=false;
+      c.drawImage(sprites[flag],p.x-20,p.y-83,35,39);c.restore();
+    }
     if(state.turn===side && (state.phase==='aim'||state.phase==='flight')){
       c.fillStyle='#fff';c.font='bold 15px system-ui';c.textAlign='center';
       c.fillText('▼',p.x,p.y-75);c.textAlign='left';
@@ -301,6 +357,12 @@
   }
   function drawProjectile(point, ammo) {
     const big=ammo==='burst';
+    const sprite=sprites[big?'bomb':'fireball'];
+    if(sprite){
+      c.save();c.imageSmoothingEnabled=false;
+      c.drawImage(sprite,point.x-(big?18:14),point.y-(big?18:14),big?36:28,big?36:28);c.restore();
+      return;
+    }
     c.save();c.shadowBlur=big?30:22;c.shadowColor=big?'#ff7466':'#ffd060';
     c.fillStyle=big?'#ffad83':'#fff5cf';c.beginPath();c.arc(point.x,point.y,big?14:10,0,TAU);c.fill();
     c.shadowBlur=0;c.fillStyle=big?'#c94a49':'#f99f43';c.beginPath();
@@ -313,10 +375,20 @@
     c.save();c.globalAlpha=alpha;c.strokeStyle=e.hit?'#ffeb80':'#ffd096';c.lineWidth=8;c.beginPath();c.arc(e.x,e.y,12+(e.radius||50)*e.age,0,TAU);c.stroke();
     for(let i=0;i<9;i++){const a=i*TAU/9;c.fillStyle=i%2?'#fff2b1':'#ff994f';c.beginPath();
       c.arc(e.x+Math.cos(a)*(20+78*e.age),e.y+Math.sin(a)*(20+78*e.age),Math.max(0,8-e.age*7),0,TAU);c.fill();}
+    if(e.hit&&sprites.star&&alpha>.2){
+      c.save();c.imageSmoothingEnabled=false;c.globalAlpha=alpha;
+      c.drawImage(sprites.star,e.x-20,e.y-60-e.age*55,40,40);c.restore();
+    }
     c.restore();
   }
   function render() {
-    c.clearRect(0,0,W,H);drawSky();drawTerrain();
+    c.clearRect(0,0,W,H);
+    c.save();
+    if(state.shake>0){
+      c.translate(Math.sin(state.shake*7)*state.shake*.55,
+        Math.cos(state.shake*9)*state.shake*.45);
+    }
+    drawSky();drawTerrain();
     if(state.difficulty!=='hard' && state.phase!=='menu'){
       drawTrail(state.previous[state.turn],'#ffed9c',3,[7,9],6);
       if(state.difficulty==='easy'&&state.preview)drawTrail(state.preview.points,'#ffffffda',3,[3,9],5);
@@ -331,12 +403,20 @@
       if(shown.length)drawTrail(shown,'#fff8d9',4,[],3);
     }
     drawExplosion();
+    c.restore();
+    if(state.celebration>0){
+      c.save();c.fillStyle='#fff7b4';c.textAlign='center';
+      c.font='900 22px system-ui';c.fillText('★  ★  ★',600,148);c.restore();
+    }
   }
   function frame(time) {
     const dt=state.lastFrame?Math.min(.05,(time-state.lastFrame)/1000):0;
     state.lastFrame=time;
     if(state.flight){state.flight.elapsed+=dt*1.35;if(state.flight.elapsed>=state.flight.result.time)finishFlight();}
     if(state.explosion)state.explosion.age+=dt;
+    state.shake=Math.max(0,state.shake-dt*38);
+    state.recoil=state.recoil.map(value=>Math.max(0,value-dt*4));
+    state.celebration=Math.max(0,state.celebration-dt);
     render();requestAnimationFrame(frame);
   }
   document.querySelectorAll('.mode').forEach(button=>button.addEventListener('click',()=>{
@@ -352,8 +432,45 @@
   $('start').addEventListener('click',startGame);
   $('reset').addEventListener('click',()=>{if(state.phase!=='menu')startGame();});
   $('menu').addEventListener('click',openMenu);
+  $('playAgain').addEventListener('click',startGame);
+  $('chooseMode').addEventListener('click',openMenu);
   $('help').addEventListener('click',()=>$('helpOverlay').classList.remove('hidden'));
   $('closeHelp').addEventListener('click',()=>$('helpOverlay').classList.add('hidden'));
+  // Direct manipulation: drag near the cannon to change angle, without firing.
+  // All pointer coordinates are converted to the fixed 1200 x 650 canvas space.
+  function canvasPoint(event) {
+    const rect=canvas.getBoundingClientRect();
+    if(!rect.width||!rect.height)return null;
+    return {x:(event.clientX-rect.left)*W/rect.width,y:(event.clientY-rect.top)*H/rect.height};
+  }
+  function pointerAim(event) {
+    if(state.phase!=='aim'||(state.mode==='cpu'&&state.turn===1))return false;
+    const point=canvasPoint(event), p=tank(state.turn);
+    if(!point)return false;
+    const forward=state.turn===0?point.x-p.x:p.x-point.x;
+    const vertical=p.y-7-point.y;
+    const angle=Math.atan2(vertical,Math.max(0.001,forward))*180/Math.PI;
+    if(forward<0||Math.abs(point.x-p.x)>390||Math.abs(point.y-p.y)>340)return false;
+    state.angle=Math.round(P.clamp(angle,5,85));
+    computePreview();syncControls();
+    return true;
+  }
+  canvas.addEventListener('pointerdown',event=>{
+    if(state.phase!=='aim'||(state.mode==='cpu'&&state.turn===1))return;
+    const point=canvasPoint(event),p=tank(state.turn);
+    if(!point||Math.hypot(point.x-p.x,point.y-p.y)>255)return;
+    state.movingPointer=event.pointerId;
+    canvas.setPointerCapture?.(event.pointerId);
+    pointerAim(event);
+  });
+  canvas.addEventListener('pointermove',event=>{
+    if(state.movingPointer!==null&&event.pointerId===state.movingPointer)pointerAim(event);
+  });
+  for(const type of ['pointerup','pointercancel','lostpointercapture']){
+    canvas.addEventListener(type,event=>{
+      if(state.movingPointer===event.pointerId)state.movingPointer=null;
+    });
+  }
   window.addEventListener('keydown',e=>{
     if(state.phase!=='aim'||(state.mode==='cpu'&&state.turn===1)||$('helpOverlay').classList.contains('hidden')===false)return;
     if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code))e.preventDefault();
