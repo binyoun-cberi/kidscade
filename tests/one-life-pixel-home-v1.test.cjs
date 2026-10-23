@@ -18,7 +18,7 @@ test('homepage replaces decorative circles with four historically distinct hand-
   assert.equal(html.split('data-home-scene="'+scene+'"').length-1,1,scene);
  }
  assert.equal((html.match(/class="home-era-card"/g)||[]).length,4);
- assert.equal((html.match(/data-era-year="(?:1270|1740|1919|2026)" aria-pressed=/g)||[]).length,4);
+ assert.equal((html.match(/class="home-era-card" data-era-year="(?:1270|1740|1919|2026)"/g)||[]).length,4);
  assert.ok(css.includes('image-rendering:pixelated'));
 });
 test('each character vignette paints distinct scenery and two figures without loading external pictures',()=>{
