@@ -52,7 +52,7 @@ test('all four social modules load and register before the controller',()=>{
  const core=html.indexOf('joseon-social-core-v346.js?v=1');
  assert.ok(core>0);
  for(const kind of ['court','bonded','commoner','baekjeong']){
-  const index=html.indexOf('joseon-'+kind+'-v346.js?v=1');
+  const index=html.indexOf('joseon-'+kind+'-v346.js?v=2');
   assert.ok(index>core);
   assert.ok(index<html.indexOf('game.js?v=83'));
  }
