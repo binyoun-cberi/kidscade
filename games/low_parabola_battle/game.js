@@ -33,11 +33,12 @@
   const state = {
     mode:'practice', difficulty:'normal', windEnabled:false, wind:0, stage:0, shots:0,
     points:[0,0], turn:0, phase:'menu', angle:45, power:70,
-    previous:[null,null], preview:null, flight:null, explosion:null,
+    aims:[{angle:45,power:70},{angle:45,power:70}], ammo:'basic',
+    bursts:[2,2], battleKnots:null, previous:[null,null], preview:null, flight:null, explosion:null,
     notice:'각도와 세기를 조절해서 노란 과녁을 맞혀 보세요!', lastFrame:0
   };
   const isBattle = () => state.mode !== 'practice';
-  const knots = () => isBattle() ? BATTLE : STAGES[state.stage].knots;
+  const knots = () => isBattle() ? state.battleKnots || BATTLE : STAGES[state.stage].knots;
   const tank = side => {
     const x = side === 0 ? 135 : 1050;
     return { x, y:P.terrainY(knots(),x)-24, radius:23 };
@@ -59,6 +60,10 @@
   function syncControls() {
     $('angle').value=String(state.angle); $('power').value=String(state.power);
     $('angleValue').textContent=state.angle+'°'; $('powerValue').textContent=String(state.power);
+    $('ammo').value=state.ammo;
+    $('ammo').disabled=state.phase!=='aim'||!isBattle()||(state.mode==='cpu'&&state.turn===1);
+    $('ammo').options[1].disabled=!isBattle()||state.bursts[state.turn]===0;
+    $('ammoCount').textContent=isBattle()?'펑펑탄 '+state.bursts[state.turn]+'발 남음':'연습에서는 기본탄 사용';
     const isAi=state.mode==='cpu' && state.turn===1;
     const locked=state.phase!=='aim' || isAi;
     $('angle').disabled=locked; $('power').disabled=locked; $('fire').disabled=locked;
@@ -99,6 +104,7 @@
       const miss=state.difficulty==='easy'?7:state.difficulty==='normal'?4:1;
       state.angle=P.clamp(Math.round(best.angle+(Math.random()-.5)*miss),5,85);
       state.power=P.clamp(Math.round(best.power+(Math.random()-.5)*miss*1.5),10,100);
+      state.ammo='basic';
       computePreview(); syncControls();
       window.setTimeout(() => {
         if(current===generation && state.phase==='aim' && state.turn===1) fire(true);
@@ -106,7 +112,9 @@
     },420);
   }
   function setAim() {
-    state.phase='aim'; state.angle=45; state.power=70; state.explosion=null;
+    const saved=state.aims[state.turn];
+    state.phase='aim'; state.angle=saved.angle; state.power=saved.power;
+    state.ammo='basic'; state.explosion=null;
     computePreview(); syncControls();
     if(state.mode==='cpu' && state.turn===1) planAi();
   }
@@ -115,7 +123,10 @@
     state.mode=document.querySelector('.mode.selected')?.dataset.mode||'practice';
     state.difficulty=$('difficulty').value;state.windEnabled=$('windOption').value==='on';
     state.stage=0;state.shots=0;state.points=[0,0];state.turn=0;
+    state.aims=[{angle:45,power:70},{angle:45,power:70}];
+    state.bursts=[2,2];state.battleKnots=BATTLE.map(([x,y])=>[x,y]);
     state.previous=[null,null];state.flight=null;state.explosion=null;
+    $('lastShot').textContent='각도와 세기를 한 가지씩 바꾸면 차이를 더 잘 알 수 있어요.';
     state.wind=state.windEnabled?[-24,22,30,-18,14,0][0]:0;
     $('startOverlay').classList.add('hidden');$('helpOverlay').classList.add('hidden');
     sdk('start');
@@ -131,19 +142,26 @@
     }
     state.phase='flight';state.preview=null;
     const side=state.turn;
+    const ammo=isBattle() && state.ammo==='burst' && state.bursts[side]>0 ? 'burst':'basic';
+    if(ammo==='burst')state.bursts[side]-=1;
+    state.aims[side]={angle:state.angle,power:state.power};
     const shot=buildShot(side,state.angle,state.power);
     const result=P.trace({shot,knots:knots(),targets:[target(side)]});
-    state.flight={shot,result,elapsed:0,side,angle:state.angle,power:state.power};
+    state.flight={shot,result,elapsed:0,side,angle:state.angle,power:state.power,ammo};
     state.shots+=1;
     setNotice((side===0?'파란':'주황')+' 포탄이 날아가요!');
     syncControls();
   }
-  function nextRound() {
+  function nextRound(advanced=false) {
     if(state.mode==='practice') {
       state.wind=state.windEnabled?[-24,22,30,-18,14,0][state.stage]:0;
-      state.previous=[null,null];
+      if(advanced){
+        state.previous=[null,null];
+        state.aims[0]={angle:45,power:70};
+        $('lastShot').textContent='새 지형에서는 출발 높이와 과녁 위치도 살펴보세요.';
+      }
       setAim();
-      setNotice(STAGES[state.stage].tip);
+      if(advanced)setNotice(STAGES[state.stage].tip);
     } else {
       state.turn=1-state.turn;setAim();
       if(state.turn===0)setNotice('상대의 발사를 봤나요? 이제 파란 대포 차례예요.');
@@ -152,10 +170,19 @@
   }
   function finishFlight() {
     if(!state.flight) return;
-    const f=state.flight, result=f.result, struck=result.kind==='target';
+    const f=state.flight, result=f.result;
+    const blast=isBattle() && f.ammo==='burst' && result.kind==='ground' &&
+      P.blastHits(result.point,tank(1-f.side),59);
+    const struck=result.kind==='target'||blast;
     state.flight=null;state.phase='settle';
-    state.explosion={x:result.point.x,y:result.point.y,age:0,hit:struck};
+    state.explosion={x:result.point.x,y:result.point.y,age:0,hit:struck,radius:f.ammo==='burst'?79:50};
     state.previous[f.side]=result.points;
+    if(isBattle() && result.kind==='ground' && result.point.x>=0 && result.point.x<=W){
+      state.battleKnots=P.craterTerrain(state.battleKnots,result.point.x,
+        f.ammo==='burst'?68:39,f.ammo==='burst'?33:17);
+    }
+    $('lastShot').textContent='지난 발사: '+f.angle+'° · 세기 '+f.power+
+      (f.ammo==='burst'?' · 펑펑탄':' · 기본탄')+' — '+(struck?'명중':'미스');
     const current=generation;
     let action='retry';
     if(state.mode==='practice') {
@@ -173,12 +200,13 @@
       } else {
         const delta=Math.round(result.point.x-goal().x);
         const guidance=Math.abs(delta)<32?'아주 가까워요!':delta<0?'과녁보다 짧게 떨어졌어요.':'과녁보다 멀리 떨어졌어요.';
-        setNotice(guidance+' 각도 또는 세기를 하나씩 바꿔 보세요.');
+        setNotice(guidance+' 이전 설정을 유지했으니 한 가지만 바꿔 보세요.');
       }
     } else {
       if(struck) {
         state.points[f.side]+=1;
-        setNotice((f.side===0?'파란':'주황')+' 대포 명중! '+state.points[f.side]+'점이에요.');
+        setNotice((f.ammo==='burst'&&blast?'펑펑탄 폭발! ':'')+
+          (f.side===0?'파란':'주황')+' 대포 명중! '+state.points[f.side]+'점이에요.');
         if(state.points[f.side]>=3) {
           state.phase='finished';action='none';
           sdk('result',{scope:'match',status:'completed',outcome:state.mode==='cpu'?(f.side===0?'win':'loss'):'win',score:state.points[f.side],winner:f.side===0?'blue':'orange',mode:state.mode});
@@ -191,7 +219,7 @@
     if(action!=='none')window.setTimeout(()=>{
       if(generation!==current || state.phase!=='settle')return;
       if(state.mode==='practice' && action==='advance')state.stage+=1;
-      nextRound();
+      nextRound(state.mode==='practice' && action==='advance');
     },1150);
   }
   function drawSky() {
@@ -269,15 +297,18 @@
     for(let i=0;i<points.length;i+=stride){const p=points[i];if(i===0)c.moveTo(p.x,p.y);else c.lineTo(p.x,p.y);}
     const tail=points[points.length-1];c.lineTo(tail.x,tail.y);c.stroke();c.restore();
   }
-  function drawProjectile(point) {
-    c.save();c.shadowBlur=22;c.shadowColor='#ffd060';c.fillStyle='#fff5cf';c.beginPath();c.arc(point.x,point.y,10,0,TAU);c.fill();
-    c.shadowBlur=0;c.fillStyle='#f99f43';c.beginPath();c.arc(point.x,point.y,6,0,TAU);c.fill();c.restore();
+  function drawProjectile(point, ammo) {
+    const big=ammo==='burst';
+    c.save();c.shadowBlur=big?30:22;c.shadowColor=big?'#ff7466':'#ffd060';
+    c.fillStyle=big?'#ffad83':'#fff5cf';c.beginPath();c.arc(point.x,point.y,big?14:10,0,TAU);c.fill();
+    c.shadowBlur=0;c.fillStyle=big?'#c94a49':'#f99f43';c.beginPath();
+    c.arc(point.x,point.y,big?8:6,0,TAU);c.fill();c.restore();
   }
   function drawExplosion() {
     if(!state.explosion)return;
     const e=state.explosion, alpha=Math.max(0,1-e.age/1);
     if(alpha<=0)return;
-    c.save();c.globalAlpha=alpha;c.strokeStyle=e.hit?'#ffeb80':'#ffd096';c.lineWidth=8;c.beginPath();c.arc(e.x,e.y,18+65*e.age,0,TAU);c.stroke();
+    c.save();c.globalAlpha=alpha;c.strokeStyle=e.hit?'#ffeb80':'#ffd096';c.lineWidth=8;c.beginPath();c.arc(e.x,e.y,12+(e.radius||50)*e.age,0,TAU);c.stroke();
     for(let i=0;i<9;i++){const a=i*TAU/9;c.fillStyle=i%2?'#fff2b1':'#ff994f';c.beginPath();
       c.arc(e.x+Math.cos(a)*(20+78*e.age),e.y+Math.sin(a)*(20+78*e.age),Math.max(0,8-e.age*7),0,TAU);c.fill();}
     c.restore();
@@ -293,7 +324,7 @@
     if(state.flight){
       const {shot,result,elapsed}=state.flight;
       const position=P.at(shot,Math.min(elapsed,result.time));
-      drawProjectile(position);
+      drawProjectile(position,state.flight.ammo);
       const shown=result.points.filter((_,i)=>i*P.STEP<=elapsed);
       if(shown.length)drawTrail(shown,'#fff8d9',4,[],3);
     }
@@ -310,6 +341,11 @@
     document.querySelectorAll('.mode').forEach(b=>b.classList.toggle('selected',b===button));
   }));
   $('angle').addEventListener('input',adjust);$('power').addEventListener('input',adjust);
+  $('ammo').addEventListener('change',()=>{
+    state.ammo=$('ammo').value;
+    if(state.ammo==='burst' && (!isBattle()||state.bursts[state.turn]===0))state.ammo='basic';
+    syncControls();
+  });
   $('fire').addEventListener('click',()=>{if(state.mode!=='cpu'||state.turn!==1)fire();});
   $('start').addEventListener('click',startGame);
   $('reset').addEventListener('click',()=>{if(state.phase!=='menu')startGame();});
