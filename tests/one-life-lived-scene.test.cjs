@@ -19,7 +19,7 @@ function renderScene(life){
 }
 test('the lived scene, live stats and decisions precede secondary history',()=>{
   const html=read('index.html');
-  const keys=['id="historyContext"','class="lived-moment"','id="lifeScene"','id="lifeVitals"','id="pauseBtn"','id="v9NextChoice"','id="decision"','id="v10HistoryPanel"','id="timeline"'];
+  const keys=['id="pauseBtn"','id="v9NextChoice"','id="historyContext"','id="decision"','class="lived-moment"','id="lifeScene"','id="lifeVitals"','id="timeline"','id="v10HistoryPanel"'];
   const indices=keys.map(k=>html.indexOf(k));
   assert.ok(indices.every(i=>i>=0),'all main reading elements should exist');
   assert.deepEqual([...indices].sort((a,b)=>a-b),indices,'actual life and choice should appear ahead of the archive');
