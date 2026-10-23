@@ -6,6 +6,25 @@
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
   const clamp = value => Math.max(0, Math.min(100, Math.round(value)));
+  // These are generated life-story events, not medically observed causes of death.
+  // Never guess an exact illness or invent a wartime death without a scripted event.
+  function deathEvent(life,roll=.5) {
+    const age=life.age,health=life.stats.health;
+    if(age>=108)return '오랜 세월을 살아 108세에 노환으로 세상을 떠났다.';
+    if(health===0)return '건강이 크게 나빠져 더는 회복하지 못하고 세상을 떠났다.';
+    if(age<=5)return '어린 나이에 갑작스러운 병을 앓다가 세상을 떠났다.';
+    if(age>=85)return health<40
+      ?'노년에 건강이 점점 쇠약해져 세상을 떠났다.'
+      :'노년에 병을 앓은 뒤 세상을 떠났다.';
+    if(health<27)return '건강이 오랫동안 나빠진 끝에 세상을 떠났다.';
+    if(age<16)return roll<.77
+      ?'어린 시절 갑작스러운 병을 앓다가 세상을 떠났다.'
+      :'뜻밖의 사고로 어린 나이에 세상을 떠났다.';
+    return roll<.78
+      ?'갑작스러운 병을 앓은 뒤 세상을 떠났다.'
+      :'예기치 못한 사고로 세상을 떠났다.';
+  }
+
   const Identity=typeof module!=='undefined'&&module.exports
     ?require('./identity-v20.js'):(typeof window!=='undefined'?window.OneLifeIdentity20:null);
   // Offline official indicator snapshot, refreshed by a separate source-audited job.
@@ -279,7 +298,9 @@
         : this.age < 80 ? .017 : this.age < 90 ? .048 : this.age < 100 ? .13 : .32);
       const healthRisk = this.stats.health<20?.035:this.stats.health<36?.009:0;
       if(this.age>=108 || this.stats.health===0 || this.rand()<ageRisk+healthRisk) {
-        this.finish(this.age>=108?'긴 세월 끝에 삶을 마쳤다.':'한 사람의 삶이 조용히 끝났다.');
+        // A concrete fictional final event is generated only when stochastic mortality
+        // actually occurs. Explicit wartime/legal endings from other modules are kept.
+        this.finish(deathEvent(this,this.rand()));
         return true;
       }
       const moment = CHOICES.find(c=>c.age===this.age);
@@ -371,6 +392,6 @@
   // Keep this reference to the unwrapped Life.tick. It preserves the common
   // ageing and mortality model without inventing a second mortality curve.
   const advanceCoreYear=Life.prototype.tick;
-  return Object.freeze({Life,COUNTRIES,CHOICES,EVENTS,REFLECTION_AGES,FOCUS,stages,birthWeight,BIRTH_COUNTS_2025,
+  return Object.freeze({Life,COUNTRIES,CHOICES,EVENTS,REFLECTION_AGES,FOCUS,stages,birthWeight,BIRTH_COUNTS_2025,deathEvent,
     advanceCoreYear(life){return advanceCoreYear.call(life);}});
 });
