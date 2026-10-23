@@ -9,7 +9,7 @@ const versions={
  'joseon-branches-v325.js':4,'joseon-fate-v344.js':2,
  'joseon-magistrate-v345.js':2,'joseon-court-v346.js':2,
  'joseon-bonded-v346.js':2,'joseon-commoner-v346.js':2,
- 'joseon-baekjeong-v346.js':2,'goryeo-v343.js':2,'game.js':83
+ 'joseon-baekjeong-v346.js':2,'goryeo-v343.js':2,'game.js':84
 };
 test('the 16 revised narration assets load exactly once with fresh versions',()=>{
  const html=read('index.html');

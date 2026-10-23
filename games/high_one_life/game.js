@@ -102,6 +102,9 @@
       ? (year<1392?'고려 시대에 태어날 집안을 골라 보세요. 관료나 향리 집안, 농민과 장인, 사공과 노비 집안 등에서 시작할 수 있어요.':year<1886?'왕실 종친부터 농사짓는 집안까지, 어떤 집에서 태어날지 골라 보세요.':'이 무렵에는 노비 신분을 세습하지 않게 됐어요. 다른 집안을 골라 보세요.')
       :'1894년 이후 법적 신분 대신 집안의 경제적 형편을 정합니다.';
     $('birthIdentityError').classList.add('hidden');
+    document.querySelectorAll('[data-era-year]').forEach(button=>{
+      button.setAttribute('aria-pressed',String(Number(button.dataset.eraYear)===year));
+    });
   }
   function newbornCandidate(){
     return Identity?.newborn(life,
@@ -209,9 +212,34 @@
     const restored=Sim.Life.restore(stored.life);
     return restored||null;
   }
+  function refreshHomeArchive() {
+    const records=safeGet(RECORD_KEY);
+    const items=Array.isArray(records)?records.filter(item=>
+      item&&Number.isInteger(item.age)&&item.age>=0&&item.age<=125&&
+      Number.isInteger(item.birthYear)&&item.birthYear>=1200&&item.birthYear<=2026):[];
+    const list=$('homeRecentLives');
+    if(!list)return;
+    list.replaceChildren();
+    $('homeLifeCount').textContent=items.length+'번의 인생';
+    if(!items.length){
+      const empty=document.createElement('p');empty.className='home-no-records';
+      empty.textContent='아직 살아본 인생이 없어요. 첫 번째 이야기를 시작해 보세요.';
+      list.append(empty);return;
+    }
+    for(const item of items.slice(0,3)){
+      const card=document.createElement('article');card.className='home-life-card';
+      const era=document.createElement('small');
+      era.textContent=(item.birthYear<1392?'고려':item.birthYear<1894?'조선':item.birthYear<1945?'일제강점기':item.birthYear<1960?'현대사의 격동기':'근현대')+' · '+item.birthYear+'년 출생';
+      const title=document.createElement('strong');title.textContent=String(item.career||'살아온 이야기').slice(0,70);
+      const detail=document.createElement('span');
+      detail.textContent=String(item.country||'어느 곳')+' · '+item.age+'세까지 살아온 삶';
+      card.append(era,title,detail);list.append(card);
+    }
+  }
   function refreshResume() {
     const resume = currentSave();
     $('resumeBtn').classList.toggle('hidden', !resume || !resume.alive);
+    refreshHomeArchive();
   }
   function save() {
     if (stage === 'play' && life?.alive) safeSet(SAVE_KEY, {life:life.snapshot(),replayBasis,autoChoiceMode,at:Date.now()});
@@ -1558,10 +1586,23 @@
   document.querySelector('[data-close="rules"]').addEventListener('click',closeRules);
   document.querySelectorAll('[data-era-year]').forEach(btn=>btn.addEventListener('click',()=>{
     $('birthYearInput').value=btn.dataset.eraYear;
-    document.querySelectorAll('[data-era-year]').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
     updateBirthChoices();
+    if(btn.closest('.home-gallery')){
+      $('birthOptionsDetails').open=true;
+      $('birthOptionsDetails').scrollIntoView?.({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+    }
   }));
+  $('openBirthOptions').addEventListener('click',()=>{
+    $('birthOptionsDetails').open=true;
+    $('birthOptionsDetails').scrollIntoView?.({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+    $('birthYearInput').focus({preventScroll:true});
+  });
   $('birthYearInput').addEventListener('change',updateBirthChoices);
+  $('birthYearInput').addEventListener('input',()=>{
+    const year=Number($('birthYearInput').value);
+    document.querySelectorAll('[data-era-year]').forEach(button=>
+      button.setAttribute('aria-pressed',String(Number(button.dataset.eraYear)===year)));
+  });
   $('birthRandomBtn').addEventListener('click',()=>{
     $('birthNameInput').value='';$('birthGenderInput').value='';
     $('birthOriginInput').value='';$('birthFamilyInput').value='';$('birthCountryInput').value='';

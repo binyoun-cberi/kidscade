@@ -35,6 +35,7 @@
 <link rel="stylesheet" href="./lived-scene-v1.css?v=1">
 <link rel="stylesheet" href="./historical-units-v1.css?v=1">
 <link rel="stylesheet" href="./ending-replay-v1.css?v=1">
+<link rel="stylesheet" href="./pixel-home-v1.css?v=1">
 </head>
 <body>
 <div class="app" id="app">
@@ -44,13 +45,51 @@
   </header>
 
   <main>
-    <section id="intro" class="intro section">
-      <div class="hero-art" aria-hidden="true"><span class="orbit orbit-a"></span><span class="orbit orbit-b"></span><span class="globe">◉</span></div>
-      <div class="intro-copy">
-        <p class="eyebrow">시대는 달라도, 한 사람의 삶</p>
-        <h1>어디에서 태어나든,<br><em>단 하나의 인생.</em></h1>
-        <p class="lead">태어날 시대와 이름을 직접 정해도 좋습니다. 우연에 맡기면 예상하지 못한 삶이 펼쳐집니다.</p>
-        
+    <section id="intro" class="intro section home-intro">
+      <div class="home-hero-main">
+        <div class="intro-copy home-intro-copy">
+          <p class="eyebrow home-eyebrow">ONE LIFE · 살아보지 못한 수많은 삶</p>
+          <h1>다른 시대, 다른 사람.<br><em>단 하나의 인생.</em></h1>
+          <p class="lead">어느 시대, 어떤 집안에서 태어날까요?<br>선택의 순간마다 전혀 다른 삶이 펼쳐집니다.</p>
+          <div class="home-primary-actions">
+            <button id="drawBtn" class="primary home-play" type="button">새로운 삶 시작하기 <span aria-hidden="true">↗</span></button>
+            <button id="resumeBtn" class="secondary hidden" type="button">이어서 살아가기 <span aria-hidden="true">→</span></button>
+          </div>
+          <button id="openBirthOptions" class="home-setup-link" type="button">시대·이름·집안 직접 고르기 <span aria-hidden="true">↓</span></button>
+          <p class="home-intro-hint">원하는 시대로 태어나도 좋고, 전부 우연에 맡겨도 좋아요.</p>
+          <div class="home-story-signpost"><span aria-hidden="true">✦</span><span>같은 시대에 태어나도 선택이 달라지면 이야기는 달라집니다.</span></div>
+        </div>
+        <div class="home-gallery" role="group" aria-label="시대별 픽셀 인물과 출생 연도 선택">
+          <div class="home-gallery-head"><span>FOUR AGES · 수많은 삶</span><span class="home-gallery-spark" aria-hidden="true">✦ · ✧ · ✦</span></div>
+          <div class="home-people-grid">
+          <button type="button" class="home-era-card" data-era-year="1270" aria-pressed="false" aria-label="1270년 고려에서 태어나기">
+            <span class="home-era-canvas-wrap"><canvas class="home-era-canvas" width="112" height="170" data-home-scene="goryeo" aria-hidden="true"></canvas></span>
+            <span class="home-era-name">고려<small>1270년</small></span>
+            <span class="home-era-description">농민과 관료, 저마다의 하루</span>
+          </button>
+          <button type="button" class="home-era-card" data-era-year="1740" aria-pressed="false" aria-label="1740년 조선에서 태어나기">
+            <span class="home-era-canvas-wrap"><canvas class="home-era-canvas" width="112" height="170" data-home-scene="joseon" aria-hidden="true"></canvas></span>
+            <span class="home-era-name">조선<small>1740년</small></span>
+            <span class="home-era-description">선비와 장인, 고을의 삶</span>
+          </button>
+          <button type="button" class="home-era-card" data-era-year="1919" aria-pressed="false" aria-label="1919년 일제강점기에서 태어나기">
+            <span class="home-era-canvas-wrap"><canvas class="home-era-canvas" width="112" height="170" data-home-scene="colonial" aria-hidden="true"></canvas></span>
+            <span class="home-era-name">일제강점기<small>1919년</small></span>
+            <span class="home-era-description">학생과 노동자, 격동의 시대</span>
+          </button>
+          <button type="button" class="home-era-card" data-era-year="2026" aria-pressed="true" aria-label="2026년 오늘에서 태어나기">
+            <span class="home-era-canvas-wrap"><canvas class="home-era-canvas" width="112" height="170" data-home-scene="modern" aria-hidden="true"></canvas></span>
+            <span class="home-era-name">오늘<small>2026년</small></span>
+            <span class="home-era-description">다양한 사람들의 현재</span>
+          </button>
+          </div>
+          <div class="home-gallery-caption"><span>한 장의 역사 속에, 서로 다른 인생들</span><span>PIXEL CHRONICLE / 1200—2026</span></div>
+        </div>
+      </div>
+      <div class="home-lower">
+        <details id="birthOptionsDetails" class="home-birth-options">
+          <summary><span class="home-option-index" aria-hidden="true">01</span><span><strong>출생 조건 직접 정하기</strong><small>시대·연도·나라·성별·신분·이름을 선택할 수 있어요.</small></span><span class="home-summary-arrow" aria-hidden="true">⌄</span></summary>
+          <div class="home-configuration">
         <div class="historical-picker" aria-label="태어날 시대 선택">
           <label for="birthYearInput">태어날 연도</label>
           <div class="historical-picker-fields">
@@ -96,11 +135,14 @@
           <p id="birthIdentityError" class="birth-custom-error hidden" role="alert"></p>
           <div class="birth-custom-controls"><button id="birthRandomBtn" type="button">나머지는 우연에 맡기기</button><small id="birthIdentityHelp">당시의 신분과 집안은 태어난 시대에 맞게 표시됩니다.</small></div>
         </section>
-        <button id="drawBtn" class="primary" type="button">어떤 삶이 기다릴까? <span aria-hidden="true">↗</span></button>
-        <button id="resumeBtn" class="secondary hidden" type="button">이어서 살아가기</button>
-        <p class="footnote">시간은 흘러가고, 중요한 순간마다 당신이 길을 고릅니다.</p>
+          </div>
+        </details>
+        <section class="home-history" aria-labelledby="homeHistoryTitle">
+          <div class="home-history-header"><div><span class="home-option-index" aria-hidden="true">02</span><h2 id="homeHistoryTitle">내가 살아본 인생들</h2><p>지난 인생도 모이면 나만의 작은 역사책이 됩니다.</p></div><span id="homeLifeCount" class="home-life-count">0번의 인생</span></div>
+          <div id="homeRecentLives" class="home-recent-lives" aria-live="polite"><p class="home-no-records">아직 살아본 인생이 없어요. 첫 번째 이야기를 시작해 보세요.</p></div>
+        </section>
       </div>
-      <div class="intro-foot"><span>01 / 탄생</span><span>02 / 성장</span><span>03 / 지나온 삶</span></div>
+      <div class="intro-foot"><span>01 / 탄생</span><span>02 / 성장과 선택</span><span>03 / 지난 삶</span></div>
     </section>
 
     <section id="birth" class="section birth hidden" aria-label="출생 추첨">
@@ -626,6 +668,7 @@
 <script src="./ending-choice-compare-v1.js?v=2"></script>
 <script src="./ending-era-summary-v1.js?v=2"></script>
 <script src="./auto-choice-v1.js?v=4"></script>
-<script src="./game.js?v=83"></script>
+<script src="./pixel-home-v1.js?v=1"></script>
+<script src="./game.js?v=84"></script>
 </body>
 </html>
