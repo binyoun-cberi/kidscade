@@ -84,7 +84,7 @@ test('blast damage respects radius and supports a nearby splash',()=>{
 test('every practice stage remains reachable in normal and windy conditions',()=>{
   const fs=require('node:fs'), path=require('node:path');
   const game=fs.readFileSync(path.join(__dirname,'../games/low_parabola_battle/game.js'),'utf8');
-  const st=game.match(/const STAGES = (\\[[\\s\\S]*?\\]);/);
+  const st=game.match(/const STAGES = (\[[\s\S]*?\]);/);
   assert.ok(st,'stage definition not found');
   const stages=Function('return '+st[1])();
   assert.equal(stages.length,6);
