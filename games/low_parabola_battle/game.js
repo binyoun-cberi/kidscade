@@ -163,7 +163,9 @@
       setAim();
       if(advanced)setNotice(STAGES[state.stage].tip);
     } else {
-      state.turn=1-state.turn;setAim();
+      state.turn=1-state.turn;
+      if(state.windEnabled)state.wind=[-24,22,30,-18,14,0][state.shots%6];
+      setAim();
       if(state.turn===0)setNotice('상대의 발사를 봤나요? 이제 파란 대포 차례예요.');
       else if(state.mode==='local2')setNotice('주황 대포 차례! 같은 기기에서 번갈아 조작하세요.');
     }
