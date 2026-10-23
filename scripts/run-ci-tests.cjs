@@ -17,6 +17,7 @@ const TEST_FILES = [
   "tests/one-life-household-v342.test.cjs",
   "tests/one-life-random-save-v342.test.cjs",
   "tests/one-life-biography-audit-v24.test.cjs",
+  "tests/one-life-biography-prose-v1.test.cjs",
   "tests/one-life-branches.test.cjs",
   "tests/one-life-captivity-border-v23.test.cjs",
   "tests/one-life-calendar-v337.test.cjs",
