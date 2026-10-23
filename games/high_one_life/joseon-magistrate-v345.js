@@ -89,7 +89,7 @@
   if(key==='review'){
    const observations=s.counters.corruption>=22?'관아의 장부와 주민의 탄원이 어긋나고 있다.':
      s.counters.trust>=65?'주민들이 억울한 송사의 판결을 서로 이야기한다.':
-     '관아에서 고을 사람들 사이에서도 판결을 두고 말이 많다.';
+     '고을에서는 지난 판결을 다시 살펴 달라는 사람이 찾아왔다.';
    return {title:'떠나는 수령을 향한 평가',description:observations+' 몇 해 동안의 기록과 증언을 살핀다.',
     options:[
      {label:'판결 기록과 증인을 있는 그대로 낸다',note:'잘한 일만 골라 내지 않고 그동안의 송사 기록을 모두 낸다.'},
@@ -151,6 +151,7 @@
   }
   s.judgment=outcome;s.stage='done';
   const f=Fate.ensure(l);f.magistrate=c.corruption>=18?'abusive':settled?'benevolent':'careful';
+  if(s.monument===true&&outcome==='monument')f.memorial='raised';
   f.follow=null;
   if(l.money)l.money.employment=l.career;
   return outcome;

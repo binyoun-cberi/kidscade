@@ -112,8 +112,8 @@
   };
   const totalBirthWeight = COUNTRIES.reduce((a,c)=>a+birthWeight(c),0);
     const CHOICES = [
-    {age:10,title:'학교가 끝난 오후',description:'가족과 친구들, 그리고 혼자만의 시간이 기다립니다.',options:[
-      {label:'궁금한 것을 배운다',note:'공부와 새로운 발견',effects:{knowledge:12,happiness:2,bonds:-2},text:'책과 새로운 질문이 어린 시절을 채웠다.'},
+    {age:10,title:'열 살의 하루',description:'태어난 시대에 따라 놀거나 배우고, 가족 일을 거들기도 합니다.',options:[
+      {label:'궁금한 것을 배운다',note:'공부와 새로운 발견',effects:{knowledge:12,happiness:2,bonds:-2},text:'어른에게 묻고 직접 해 보며 새로운 일을 배웠다.'},
       {label:'친구들과 마음껏 논다',note:'관계와 즐거움',effects:{bonds:13,happiness:8,knowledge:-3},text:'함께 웃던 장면들이 기억에 남았다.'},
       {label:'가족을 도우며 지낸다',note:'책임감과 유대',effects:{bonds:11,wealth:2,knowledge:2},text:'가족을 돕는 시간이 자연스러운 일상이 되었다.'}
     ]},
@@ -313,7 +313,14 @@
       if(!this.alive || !choice || !Number.isInteger(optionIndex) || !choice.options[optionIndex]) return false;
       const option=choice.options[optionIndex];
       this.change(option.effects);
-      if(option.career) this.career=option.career;
+      if(option.career){
+        // Generic 20th-century occupation labels must not turn a Joseon or Goryeo
+        // farmer into a modern employee or university student.
+        const historical=this.year<1945;
+        this.career=historical&&option.career==='학생'?'배움을 이어 가는 사람':
+          historical&&option.career==='직장인'?'맡은 생업을 이어 가는 사람':
+          historical&&option.career==='진로 탐색 중'?'생업을 찾아보는 사람':option.career;
+      }
       if(this.age===29 && this.career==='학생') this.career='전문 분야 종사자';
       this.logEvent(option.text,'decision');
       const chance = this.rand();
