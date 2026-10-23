@@ -406,7 +406,7 @@ function paintDisco(){
  const lineY=H*.74;
  const left=140,space=155;
  for(let i=0;i<4;i++){
-  const x=left+i*space;
+  const x=laneX(i);
   rect(x-65,135,130,lineY-110,'#efebe5');
   rect(x-65,lineY-5,130,8,'#b4ada3');
   if(g.elapsed<g.duration*.5)text(['A','S','K','L'][i],x,lineY+52,32,'#7d776f');
