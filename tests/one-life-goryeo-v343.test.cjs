@@ -166,7 +166,7 @@ test('bonded Goryeo birth cannot immediately pick an unrestricted profession',()
  assert.equal(l.age,14);
  const prompt=l.getChoice();
  assert.equal(g.bound,true);
- assert.match(prompt.description,/예속/);
+ assert.match(prompt.description,/마음대로 일터를 떠날 수는 없/);
  assert.equal(prompt.options.some(o=>['job:글과 셈','job:나루 일','job:삼베 짜기'].includes(o.effect)),false);
  assert.ok(prompt.options.some(o=>o.effect==='skill'));
  const restored=L.restore(copy(l.snapshot()));
