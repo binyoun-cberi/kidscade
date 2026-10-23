@@ -1,0 +1,98 @@
+/* One Life v2 — make the story and its ending more important than the dashboard. */
+#intro.home-intro{padding-top:clamp(20px,4vw,48px)}
+#intro.home-intro .home-hero-main{align-items:center}
+#intro.home-intro .home-intro-copy h1{line-height:1.18;max-width:15ch}
+#intro.home-intro .home-primary-actions{align-items:stretch}
+#intro.home-intro .home-primary-actions>button{margin:0;min-width:0}
+#intro.home-intro .home-intro-hint{margin-top:12px;max-width:50ch}
+#intro.home-intro .home-gallery{box-shadow:0 16px 42px #1d463327}
+#intro.home-intro .home-era-card[aria-pressed="true"]{background:#fffbea;border-color:#f8d879;box-shadow:0 0 0 3px #f8d87959}
+#intro.home-intro .home-era-card[aria-pressed="true"] .home-era-name{color:#184f48}
+#intro.home-intro .home-configuration{grid-template-columns:repeat(2,minmax(0,1fr))}
+#intro.home-intro .home-birth-options>summary:focus-visible{outline:3px solid #296b5d;outline-offset:-4px;border-radius:14px}
+#intro.home-intro .home-recent-lives{align-items:stretch}
+#intro.home-intro .home-life-card{background:#fff;border-color:#d4e6df;box-shadow:0 3px 12px #203f3010;display:flex;flex-direction:column;gap:3px}
+#intro.home-intro .home-life-card strong{font-size:15px;line-height:1.45}
+#intro.home-intro .home-life-card span{font-size:12px}
+#intro.home-intro .home-life-death{margin:auto 0 0;padding-top:10px;border-top:1px solid #dfece5;font-size:12px;line-height:1.65;color:#76514a;font-weight:600;word-break:keep-all;overflow-wrap:anywhere}
+
+/* In-game: the question is now above the illustration and secondary tools. */
+#play .chronicle{display:flex;flex-direction:column;gap:0}
+#play .chronicle>.chapter-line{order:-6}
+#play .chronicle>#historyContext{order:-5}
+#play .chronicle>.story-head{order:-4;margin:22px 0 14px}
+#play .chronicle>#decision{order:-3;margin:0 0 22px;padding:clamp(18px,2.5vw,27px);border-radius:15px;border:1px solid #dfbb84;box-shadow:0 9px 28px #956b3420}
+#play .chronicle>.lived-moment{order:-2}
+#play .chronicle>.focus-block{order:-1}
+#play .chronicle>.story-head h2{font-size:clamp(24px,2.8vw,32px);line-height:1.4;margin:5px 0 8px}
+#play .chronicle>#decision h3{font-size:clamp(20px,2.2vw,26px);line-height:1.45;margin:6px 0 10px}
+#play .chronicle>#decision .choice-options{gap:10px}
+#play .chronicle>#decision .choice-option{border-radius:10px;min-height:64px}
+#play .chronicle>.focus-block{border-color:#d5e4dc;margin:16px 0 22px}
+#play .chronicle>.lived-moment{min-width:0}
+#play .chronicle .v8-tools-nav{gap:6px}
+#play .chronicle .v8-tools-nav button{min-width:0;border-radius:8px}
+#play .chronicle>.story-head p{max-width:65ch}
+#play .chronicle .timeline{scrollbar-width:thin}
+
+/* Final screen: death cause is part of the biography, not buried in a log. */
+#end.end{width:min(850px,calc(100% - 36px));max-width:850px;padding:clamp(28px,5vw,66px) 0 95px}
+#end.end .end-header{gap:14px}
+#end.end h2{margin:17px 0 8px;line-height:1.2;font-size:clamp(33px,5vw,55px)}
+#end.end .end-years{margin:9px 0 24px;letter-spacing:.07em;color:#527b75;font-size:14px}
+.end-farewell{background:linear-gradient(135deg,#fffcf3,#edf5ef);color:#2c4542;border:1px solid #d4dccb;border-left:5px solid #9d7250;border-radius:15px;padding:clamp(18px,3vw,26px);margin:22px 0 24px;box-shadow:0 8px 24px #776e4d14}
+.end-farewell-heading{display:flex;align-items:center;gap:13px}
+.end-farewell-mark{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:#e8d8bf;color:#825c3f;font-size:24px;flex:0 0 42px}
+.end-farewell-heading>div{flex:1;min-width:0}
+.end-farewell-kicker{display:block;font-size:10px;letter-spacing:.095em;color:#8a6b4e;margin-bottom:5px;font-weight:800}
+.end-farewell h3{font-size:clamp(18px,2.2vw,23px);margin:0;color:#3c4840;letter-spacing:-.05em;line-height:1.35}
+.end-death-year{color:#59736c;font-size:12px;white-space:nowrap;font-weight:750}
+.end-death-reason{font-size:clamp(16px,2.1vw,20px);line-height:1.75;font-weight:760;letter-spacing:-.035em;word-break:keep-all;color:#3a4c48;margin:20px 0 12px}
+.end-death-disclaimer{font-size:11px;color:#6c8175;margin:0;line-height:1.7}
+#end.end .end-summary{background:#fff;border:1px solid #d5e5dc;border-radius:13px;padding:21px;gap:16px;box-shadow:0 4px 15px #375b4420}
+#end.end .end-summary b{overflow-wrap:anywhere;word-break:keep-all}
+#end.end .end-finance{margin:15px 0 0}
+#end.end .end-story{font-size:15px;line-height:1.9;max-width:75ch;margin:29px 0}
+#end.end .end-choice-review{padding-top:10px}
+#end.end .end-actions{gap:10px}
+#end.end .end-actions button{margin:0}
+body.joseon-book .end-farewell{background:linear-gradient(135deg,#f9edd3,#eadabd);border-color:#c4a87c;border-left-color:#945449;color:#35281c;border-radius:5px}
+body.joseon-book .end-farewell h3,body.joseon-book .end-death-reason{color:#362a1d}
+body.joseon-book .end-farewell-kicker,body.joseon-book .end-death-disclaimer{color:#735c43}
+body.joseon-book #end.end .end-summary{background:#f9eed7;border-color:#bfab88;border-radius:3px}
+@media(max-width:1080px){
+ #intro.home-intro .home-configuration{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:780px){
+ /* Critical: show the title and start button before the character gallery. */
+ #intro.home-intro .home-intro-copy{order:0;text-align:left}
+ #intro.home-intro .home-gallery{order:1}
+ #intro.home-intro .home-intro-copy h1{font-size:clamp(34px,7vw,47px)}
+ #intro.home-intro .home-story-signpost{display:none}
+ #intro.home-intro .home-lower{margin-top:20px}
+ #play .chronicle>.story-head{margin:12px 0}
+ #play .chronicle>#decision{padding:18px 15px}
+ #play .chronicle .v8-tools-nav button{min-height:44px}
+ #end.end .end-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #end.end .end-summary>div:last-child{grid-column:1/-1}
+}
+@media(max-width:480px){
+ #intro.home-intro .home-people-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ #intro.home-intro .home-era-description{display:block;font-size:10px;padding:3px 9px;min-height:0}
+ #intro.home-intro .home-era-name{display:flex;justify-content:space-between;font-size:13px;padding:10px 9px 2px}
+ #intro.home-intro .home-era-canvas{max-height:235px}
+ #intro.home-intro .home-gallery{padding:11px}
+ #intro.home-intro .home-gallery-head{padding:2px 3px 9px}
+ #intro.home-intro .home-primary-actions{grid-template-columns:1fr}
+ #intro.home-intro .home-lower{gap:15px}
+ .end-farewell{padding:16px;border-radius:12px}
+ .end-farewell-heading{flex-wrap:wrap}
+ .end-death-year{margin-left:55px}
+ #end.end .end-summary{padding:15px;gap:14px}
+ #end.end .end-actions{display:grid;gap:9px}
+ #end.end .end-actions button{width:100%;min-height:50px}
+ #end.end .end-actions>.footnote{margin-top:7px}
+}
+@media(prefers-reduced-motion:reduce){
+ #intro.home-intro .home-era-card{transition:none;transform:none}
+}
