@@ -49,7 +49,7 @@ function complete(kind,choices=[0,0,0,0],seed=315){
 test('all four social modules load and register before the controller',()=>{
  assert.equal(Core.categories.size,4);
  for(const kind of ['court','bonded','commoner','baekjeong'])assert.ok(Core.categories.has(kind));
- const core=html.indexOf('joseon-social-core-v346.js?v=1');
+ const core=html.indexOf('joseon-social-core-v346.js?v=2');
  assert.ok(core>0);
  for(const kind of ['court','bonded','commoner','baekjeong']){
   const index=html.indexOf('joseon-'+kind+'-v346.js?v=3');
