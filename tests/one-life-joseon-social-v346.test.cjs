@@ -84,9 +84,9 @@ test('a bonded person cannot appear in commoner or Baekjeong episodes',()=>{
  assert.equal(Core.enabled(l,'court'),false);
  const escaped=complete('bonded',[0,0,0,1],121);
  assert.equal(V5.ensure(escaped).freed,false);
- assert.equal(escaped.joseon346.profiles.bonded.outcome,'fugitive');
+ assert.ok(['fugitive','recaptured'].includes(escaped.joseon346.profiles.bonded.outcome));
  const f=escaped.joseon344;
- if(f)assert.equal(f.fugitive,'escaped');
+ if(f)assert.ok(['escaped','recaptured'].includes(f.fugitive));
 });
 test('documented manumission is an outcome, not automatic when someone asks',()=>{
  let freed=0,refused=0;
@@ -101,6 +101,19 @@ test('documented manumission is an outcome, not automatic when someone asks',()=
  }
  assert.ok(freed>0,'eligible documentation should sometimes be accepted');
  assert.ok(refused>0,'petition success cannot be guaranteed');
+});
+test('higher pursuit danger can result in recapture while legal status stays bonded',()=>{
+ let caught=0,hidden=0;
+ for(let seed=1;seed<=35;seed++){
+  const l=begin('bonded',seed);
+  l.joseon346.profiles.bonded.meters.danger=78;
+  for(const x of [1,1,1,1])step(l,x);
+  if(l.joseon346.profiles.bonded.outcome==='recaptured')caught++;
+  if(l.joseon346.profiles.bonded.outcome==='fugitive')hidden++;
+  assert.equal(V5.ensure(l).freed,false);
+ }
+ assert.ok(caught>0);
+ assert.ok(hidden>0);
 });
 test('commoner crises may lead to migration; earning money never automatically changes birth status',()=>{
  const a=begin('commoner',71);
