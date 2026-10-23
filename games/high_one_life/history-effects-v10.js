@@ -32,6 +32,10 @@ const OPTIONS=Object.freeze({
  pandemic:[c('가족과 안전한 생활·연락 방식을 정한다','건강과 일상 리듬을 살피며 관계 유지'),c('학교·일터의 바뀐 환경에 적응한다','배움과 일에 필요한 다른 방법 모색')],
  'pandemic-recovery':[c('변화한 생활과 관계를 돌본다','지나온 일을 돌아보고 필요한 도움을 살핌'),c('새로운 학습·근무 방식을 익힌다','생활에 맞는 기술과 일정을 마련함')]
 });
+const ACTION_ACCOUNTS=Object.freeze({
+ '가족과 생계를 위한 계획을 세운다':'가족과 생계를 위한 계획을 세우기로 했다',
+ '가족·이웃과 서로 도울 방법을 찾는다':'가족·이웃과 서로 도울 방법을 찾기로 했다'
+});
 const important=new Set(['colonial-school','rural-land','wartime-labor','liberation','war-start','war-years','armistice','industrial-choice','mobility','financial-crisis','pandemic']);
 function eligible(life,fact){
  if(!fact?.scenario||!OPTIONS[fact.scenario])return false;
@@ -192,7 +196,8 @@ function apply(life,state,fact,index){
  }
  state.decisions.push({id:fact.id,scenario:key,year,age:life.age,index:i});
  state.decisions=state.decisions.slice(-50);
- life.logEvent(fact.year+'년 '+fact.title+'. '+opts[i].label+'. '+notes.join(' ')+'','history-choice');
+ const action=ACTION_ACCOUNTS[opts[i].label]||opts[i].label;
+ life.logEvent(fact.year+'년 '+fact.title+'. '+action+'. '+notes.join(' ')+'','history-choice');
  return true;
 }
 function autoContext(life,state,fact){
@@ -208,5 +213,5 @@ function autoContext(life,state,fact){
   life.logEvent('어른들은 아이를 곁에 두고 하루를 조심스레 보냈다.','history-impact');
  }
 }
-return Object.freeze({OPTIONS,eligible,selectFact,prompt,apply,autoContext,important});
+return Object.freeze({OPTIONS,ACTION_ACCOUNTS,eligible,selectFact,prompt,apply,autoContext,important});
 });

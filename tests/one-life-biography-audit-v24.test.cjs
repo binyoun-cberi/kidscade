@@ -126,7 +126,7 @@ test('narration and historical behavior are guarded without modifying the player
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
  assert.ok(html.includes('world-v9.js?v=7'));
  assert.match(html,/world-v2\.js\?v=\d+/);
- assert.ok(html.includes('history-effects-v10.js?v=5'));
+ assert.ok(html.includes('history-effects-v10.js?v=6'));
  assert.ok(html.includes('travel-v22.js?v=5'));
  assert.ok(html.includes('diaspora-v340.js?v=3'));
  assert.ok(html.includes('collaboration-v341.js?v=2'));
