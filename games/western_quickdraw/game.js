@@ -115,8 +115,8 @@ function endMatch(){
  cancelTimers();state='finished';const won=scores[0]>=target;let newUnlock=false;
  if(mode==='solo'&&won){if(!saved.cleared.includes(opponent))saved.cleared.push(opponent);
  if(opponent+1===saved.unlocked&&saved.unlocked<10){saved.unlocked++;newUnlock=true}save()}
- sdk('result',{scope:'match',status:'completed',outcome:mode==='practice'?'completed':won?'win':'loss',
- score:mode==='practice'?Math.round(bestThisMatch||0):scores[0],scoreOptions:mode==='practice'?{unit:'ms',lowerIsBetter:true}:{unit:'승',higherIsBetter:true},
+ sdk('result',{scope:'match',status:'completed',outcome:mode==='practice'?'clear':won?'win':'loss',
+ ...(mode==='practice'?{}:{score:scores[0],scoreOptions:{unit:'승',higherIsBetter:true}}),
  mode,opponent:mode==='solo'?opponent:null,playerWins:scores[0],opponentWins:scores[1],bestReactionMs:bestThisMatch===null?null:Math.round(bestThisMatch)});
  $('resultEyebrow').textContent=mode==='practice'?'반응속도 기록':mode==='duo'?'친구와의 승부':'현상범 도전';
  $('resultTitle').textContent=mode==='practice'?'연습 완료!':won?'승리!':'다음에는 이겨봐요!';
@@ -199,8 +199,8 @@ function scenery(t){
  ctx.strokeStyle='#bcb9b3';ctx.lineWidth=2;
  ctx.beginPath();ctx.moveTo(W*.12,H*.37);ctx.lineTo(W*.43,H*.37);ctx.moveTo(W*.57,H*.77);ctx.lineTo(W*.88,H*.77);ctx.stroke();
  const cap=Math.min(W/330,H/700)*1.2;
- cowboy(W*.28,H*.29,Math.max(.62,Math.min(1.25,cap)),mode==='duo',1,t);
- cowboy(W*.72,H*.70,Math.max(.62,Math.min(1.25,cap)),false,0,t);
+ cowboy(W*(mode==='duo'?.5:.28),H*.29,Math.max(.62,Math.min(1.25,cap)),mode==='duo',1,t);
+ cowboy(W*(mode==='duo'?.5:.72),H*.70,Math.max(.62,Math.min(1.25,cap)),false,0,t);
  if(state==='bang'){const h=Math.sin(t*.045)*.5+.5;ctx.fillStyle='rgba(166,95,74,'+(h*.14)+')';ctx.fillRect(0,0,W,H)}
  if(state==='resolve'){ctx.strokeStyle='#d4cec1';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(W*.19,H*.51);ctx.lineTo(W*.81,H*.51);ctx.stroke()}
 }
