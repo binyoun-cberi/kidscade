@@ -54,7 +54,7 @@ test('all four social modules load and register before the controller',()=>{
  for(const kind of ['court','bonded','commoner','baekjeong']){
   const index=html.indexOf('joseon-'+kind+'-v346.js?v=3');
   assert.ok(index>core);
-  assert.ok(index<html.indexOf('game.js?v=86'));
+  assert.ok(index<html.indexOf('game.js?v=87'));
  }
  const runner=fs.readFileSync(path.resolve(__dirname,'../scripts/run-ci-tests.cjs'),'utf8');
  assert.ok(runner.includes('tests/one-life-joseon-social-v346.test.cjs'));

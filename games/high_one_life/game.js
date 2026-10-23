@@ -941,7 +941,7 @@
     $('pauseBtn').textContent = paused ? '▶ 이어가기' : 'Ⅱ 일시정지';
     $('pauseBtn').disabled = !life?.alive;
     $('playStatus').textContent = paused ? '일시정지' : life?.pending
-      ? (autoChoiceMode?'다음 일을 고르는 중':'당신의 선택을 기다리는 중') : '인생이 흘러가는 중';
+      ? (autoChoiceMode?'다음 일을 고르는 중':'당신의 선택을 기다리는 중') : (autoChoiceMode?'시간 흐름 · 자동 선택 켬':'인생이 흘러가는 중');
   }
   function paintTimeline() {
     const timeline = $('timeline');
@@ -1054,6 +1054,7 @@
     const isNewDecision=decisionKey!==null&&decisionKey!==lastDecisionKey;
     lastDecisionKey=decisionKey;
     $('decision').classList.toggle('hidden',!choice && !reflection);
+    $('storyHeadingBlock').classList.toggle('hidden',!!choice || !!reflection);
     $('waiting').classList.toggle('hidden',!!choice || !!reflection);
     if(reflection) {
       const prompts={5:'지금 가장 좋아하는 것은 무엇인가요?',15:'이 사람은 어떤 어른이 되고 싶었을까요?',30:'어릴 적에 꿈꾼 삶과 지금은 얼마나 다른가요?',50:'이 사람의 삶에서 가장 소중했던 것은 무엇일까요?',70:'지나온 시간을 돌아본다면 어떤 말을 남길까요?'};
@@ -1065,7 +1066,7 @@
       const btn=document.createElement('button');btn.type='button';btn.className='reflection-next';btn.textContent='계속 살아가기 →';
       btn.addEventListener('click',()=>{life.reflect(note.value);save();elapsed=0;lastTick=performance.now();render();});
       target.append(note,btn);
-      if(isNewDecision&&!autoChoiceMode)$('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
+      if(isNewDecision&&!autoChoiceMode)revealDecision();
       return;
     }
     if (!choice) return;
@@ -1089,7 +1090,10 @@
       target.append(btn);
     });
     // Repainting a still-open choice must not pull readers out of history.
-    if(isNewDecision&&!autoChoiceMode)$('decision').scrollIntoView({behavior:'smooth',block:'nearest'});
+    if(isNewDecision&&!autoChoiceMode)revealDecision();
+  }
+  function revealDecision(){
+    $('decision').scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'nearest'});
   }
   function peerView(peer){
     return {age:peer.age,alive:peer.alive,name:peer.profile?.name||'이름 없는 이웃',

@@ -56,13 +56,24 @@ test('new archive entries preserve death reason while older entries clearly say 
  assert.ok(js.includes('ending:fate||social,deathCause'));
  assert.ok(!js.includes('death.innerHTML'));
 });
-test('mobile launch action precedes era portraits, and decisions precede dashboard controls',()=>{
+test('mobile launch action precedes era portraits, and reading order follows the document',()=>{
  assert.match(css,/#intro\.home-intro \.home-intro-copy\{order:0/);
  assert.match(css,/#intro\.home-intro \.home-gallery\{order:1/);
  assert.match(css,/#intro\.home-intro \.home-people-grid\{grid-template-columns:repeat\(2/);
- assert.match(css,/#play \.chronicle>#decision\{order:-3/);
- assert.match(css,/#play \.chronicle>\.lived-moment\{order:-2/);
- assert.match(css,/#play \.chronicle>\.focus-block\{order:-1/);
+ assert.ok(html.indexOf('id="decision"')<html.indexOf('class="lived-moment"'));
+ assert.ok(html.indexOf('id="timeline"')<html.indexOf('class="life-archive"'));
+ assert.doesNotMatch(css,/#play[^{}]*\{order:-/);
  assert.match(css,/#end\.end \.end-summary/);
  assert.ok(css.includes('prefers-reduced-motion:reduce'));
+});
+test('the hidden homepage overrides its decorative display rule and controls stay unique',()=>{
+ assert.match(css,/#intro\.home-intro\.hidden\{display:none!important\}/);
+ const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);
+ assert.equal(new Set(ids).size,ids.length);
+ for(const id of ['pauseBtn','v9NextChoice','autoChoiceBtn','timeline','decision'])assert.equal(ids.filter(x=>x===id).length,1);
+ assert.ok(html.indexOf('id="pauseBtn"')<html.indexOf('id="decision"'));
+ assert.match(html,/<details class="life-play-settings">\s*<summary>배속·자동 선택 설정<\/summary>/);
+ assert.match(html,/<details class="life-archive">/);
+ assert.match(html,/<details class="life-profile-details">/);
+ assert.match(js,/\$\('storyHeadingBlock'\)\.classList\.toggle\('hidden',!!choice \|\| !!reflection\)/);
 });

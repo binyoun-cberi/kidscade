@@ -1,4 +1,5 @@
 /* One Life v2 — make the story and its ending more important than the dashboard. */
+#intro.home-intro.hidden{display:none!important}
 #intro.home-intro{padding-top:clamp(20px,4vw,48px)}
 #intro.home-intro .home-hero-main{align-items:center}
 #intro.home-intro .home-intro-copy h1{line-height:1.18;max-width:15ch}
@@ -16,24 +17,48 @@
 #intro.home-intro .home-life-card span{font-size:12px}
 #intro.home-intro .home-life-death{margin:auto 0 0;padding-top:10px;border-top:1px solid #dfece5;font-size:12px;line-height:1.65;color:#76514a;font-weight:600;word-break:keep-all;overflow-wrap:anywhere}
 
-/* In-game: the question is now above the illustration and secondary tools. */
+/* Reading order follows the DOM, including keyboard navigation. */
 #play .chronicle{display:flex;flex-direction:column;gap:0}
-#play .chronicle>.chapter-line{order:-6}
-#play .chronicle>#historyContext{order:-5}
-#play .chronicle>.story-head{order:-4;margin:22px 0 14px}
-#play .chronicle>#decision{order:-3;margin:0 0 22px;padding:clamp(18px,2.5vw,27px);border-radius:15px;border:1px solid #dfbb84;box-shadow:0 9px 28px #956b3420}
-#play .chronicle>.lived-moment{order:-2}
-#play .chronicle>.focus-block{order:-1}
+#play .chronicle>.story-head{margin:18px 0 14px}
 #play .chronicle>.story-head h2{font-size:clamp(24px,2.8vw,32px);line-height:1.4;margin:5px 0 8px}
+#play .chronicle>.story-head p{max-width:65ch}
+#play .chronicle>#decision{margin:12px 0 20px;padding:clamp(18px,2.5vw,27px);border-radius:14px;border:2px solid #b68b4e;background:#fffaf0;box-shadow:0 5px 18px #956b3414;scroll-margin-top:20px}
 #play .chronicle>#decision h3{font-size:clamp(20px,2.2vw,26px);line-height:1.45;margin:6px 0 10px}
 #play .chronicle>#decision .choice-options{gap:10px}
-#play .chronicle>#decision .choice-option{border-radius:10px;min-height:64px}
-#play .chronicle>.focus-block{border-color:#d5e4dc;margin:16px 0 22px}
+#play .chronicle>#decision .choice-option{border-radius:10px;min-height:60px;overflow-wrap:anywhere}
+#play .chronicle>.focus-block{border-color:#d5e4dc;margin:14px 0 18px}
 #play .chronicle>.lived-moment{min-width:0}
-#play .chronicle .v8-tools-nav{gap:6px}
-#play .chronicle .v8-tools-nav button{min-width:0;border-radius:8px}
-#play .chronicle>.story-head p{max-width:65ch}
-#play .chronicle .timeline{scrollbar-width:thin}
+#play .life-reading-controls{margin:12px 0 6px;padding:10px;background:#f2f7f3;border:1px solid #c2d8cc;border-radius:12px;color:#264c42}
+#play .life-main-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#play .life-main-controls>button{min-width:0;min-height:44px;margin:0;padding:10px 8px;border:1px solid #9eb9ac;border-radius:8px;background:#fff;color:#244c41;font-size:13px;font-weight:750}
+#play .life-main-controls>#v9NextChoice{background:#235e50;border-color:#235e50;color:#fff}
+#play .life-main-controls>#v9NextChoice[aria-pressed="true"]{background:#f3deb4;border-color:#9f7938;color:#493517}
+#play .life-play-settings>summary{font-size:12px;min-height:44px;padding:13px 4px;cursor:pointer;color:#3b6055}
+#play .life-play-settings .v9-speed-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+#play .life-play-settings .v9-speed-controls button{min-width:0;min-height:44px;padding:8px 4px}
+#play .life-play-settings #autoChoiceBtn{grid-column:1/-1}
+#play .life-play-settings .hint{color:#48665d;margin:10px 0 2px}
+#play .life-recent{margin:14px 0;padding:16px 0;border-block:1px solid #ccded2}
+#play .life-recent>h3{font-size:15px;margin:0 0 12px;color:#2a5146}
+#play .life-recent .timeline{min-height:100px;max-height:260px;scrollbar-width:thin}
+#play .life-archive,#play .life-profile-details{border:1px solid #c2d8cc;border-radius:10px;background:#f7faf6;color:#294e43;min-width:0}
+#play .life-archive>summary,#play .life-profile-details>summary{min-height:48px;padding:14px 12px;font-size:13px;font-weight:750;cursor:pointer;line-height:1.6;overflow-wrap:anywhere}
+#play .life-archive-content{padding:0 12px 16px;min-width:0}
+#play .life-profile-details[open]{padding:0 12px 12px}
+#play .life-profile-details[open]>summary{padding-inline:0}
+#play .life-archive .v8-tools-nav{gap:6px}
+#play .life-archive .v8-tools-nav button{min-width:0;min-height:44px;border-radius:8px}
+#play summary:focus-visible,#goryeoPlay summary:focus-visible{outline:3px solid #296b5d;outline-offset:2px}
+body.joseon-book #play .life-reading-controls,body.joseon-book #play .life-archive,body.joseon-book #play .life-profile-details{background:#f8efd9;border-color:#bfab88;color:#493723}
+body.joseon-book #play .life-recent{border-color:#bfab88}
+body.joseon-book #play .life-recent>h3{color:#493723}
+/* Consider the separate Goryeo view as a reading screen too. */
+#goryeoPlay .goryeo-decision{margin-top:16px}
+#goryeoPlay .goryeo-decision button{line-height:1.6;overflow-wrap:anywhere}
+#goryeoPlay .goryeo-choice-note{display:block;margin-top:6px;font-size:12px;line-height:1.65}
+#goryeoPlay .goryeo-reading-details{margin:16px 0;border:1px solid #bec9b6;border-radius:10px;background:#f7f5e9;padding:0 16px}
+#goryeoPlay .goryeo-reading-details>summary{min-height:48px;padding:14px 0;cursor:pointer;font-weight:750}
+#goryeoPlay .goryeo-reading-details .goryeo-grid{margin-top:12px}
 
 /* Final screen: death cause is part of the biography, not buried in a log. */
 #end.end{width:min(850px,calc(100% - 36px));max-width:850px;padding:clamp(28px,5vw,66px) 0 95px}

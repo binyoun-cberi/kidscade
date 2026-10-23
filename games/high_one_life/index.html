@@ -36,7 +36,7 @@
 <link rel="stylesheet" href="./historical-units-v1.css?v=1">
 <link rel="stylesheet" href="./ending-replay-v1.css?v=1">
 <link rel="stylesheet" href="./pixel-home-v1.css?v=1">
-<link rel="stylesheet" href="./life-ui-v2.css?v=1">
+<link rel="stylesheet" href="./life-ui-v2.css?v=2">
 </head>
 <body>
 <div class="app" id="app">
@@ -212,7 +212,30 @@
       <div class="play-layout">
         <article class="chronicle">
           <div class="chapter-line"><span id="lifeStage" class="chapter">유년기</span><span id="playStatus">인생이 흘러가는 중</span></div>
+          <div class="controls life-reading-controls" aria-label="시간 진행">
+            <div class="life-main-controls">
+              <button id="pauseBtn" class="pause" type="button">Ⅱ 일시정지</button>
+              <button id="v9NextChoice" type="button">다음 선택까지</button>
+            </div>
+            <details class="life-play-settings">
+              <summary>배속·자동 선택 설정</summary>
+              <div class="v9-speed-controls" role="group" aria-label="인생 진행 배속">
+                <button type="button" data-life-speed="1" aria-pressed="true">1배</button>
+                <button type="button" data-life-speed="2" aria-pressed="false">2배</button>
+                <button type="button" data-life-speed="4" aria-pressed="false">4배</button>
+                <button type="button" data-life-speed="8" aria-pressed="false">8배</button>
+                <button id="autoChoiceBtn" type="button" aria-pressed="false">자동 선택 끔</button>
+              </div>
+              <p class="hint">자동 선택은 생활 방향을 참고해요. 언제든 끌 수 있어요.</p>
+            </details>
+          </div>
           <p id="historyContext" class="history-context">이 인생이 놓인 시대</p>
+          <div id="storyHeadingBlock" class="story-head"><div class="small-index">한 사람의 기록</div><h2 id="storyTitle">지금 이 순간의 삶</h2><p id="storyCaption">해가 바뀌고 새로운 일이 일어납니다.</p></div>
+          <div id="decision" class="decision hidden" aria-live="polite">
+            <span class="eyebrow decision-tag">중요한 선택</span><h3 id="choiceTitle">당신의 선택은?</h3>
+            <p id="choiceText"></p><div id="choiceOptions" class="choice-options"></div>
+            <p class="choice-note">정답은 없습니다. 다른 선택은 다른 이야기를 만듭니다.</p>
+          </div>
           <section class="lived-moment" aria-label="지금 이 인물의 생활">
             <h2 class="lived-moment-title">지금 살아가는 모습</h2>
           <figure class="pixel-frame">
@@ -227,19 +250,13 @@
               <div><span>관계</span><strong id="vitalBonds">—</strong></div>
             </div>
           <div class="progress" aria-label="인생 시간의 흐름"><div id="lifeProgress"></div></div>
-          <div class="controls">
-            <div class="controls-label"><b>시간의 흐름</b><span>속도 조절</span></div>
-            <button id="pauseBtn" class="pause" type="button">Ⅱ 일시정지</button>
-            <div class="v9-speed-controls" role="group" aria-label="인생 진행 배속">
-              <button type="button" data-life-speed="1" aria-pressed="true">1배</button>
-              <button type="button" data-life-speed="2" aria-pressed="false">2배</button>
-              <button type="button" data-life-speed="4" aria-pressed="false">4배</button>
-              <button type="button" data-life-speed="8" aria-pressed="false">8배</button>
-              <button id="v9NextChoice" type="button">다음 선택까지</button>
-              <button id="autoChoiceBtn" type="button" aria-pressed="false">자동 선택 끔</button>
-            </div>
-            <p class="hint">자동 선택은 생활 방향을 참고해요. 언제든 끌 수 있어요.</p>
-          </div>
+
+          </section>
+          <section class="life-recent" aria-label="최근에 일어난 일">
+            <h3>최근에 일어난 일</h3>
+          <div class="v9-chronicle-tools"><span id="v9ChronicleCount">인생의 기록</span><button id="v9TimelineMore" type="button">이전 기록 더 보기</button></div>
+          <ol id="timeline" class="timeline" aria-label="인생 연대기"></ol>
+          <div id="waiting" class="waiting"><span class="pulse" aria-hidden="true"></span><span>시간이 흐르며 새로운 이야기가 펼쳐지고 있습니다.</span></div>
           </section>
           <div class="focus-block">
             <div class="stat-title">올해의 생활 방향 <span>언제든 변경</span></div>
@@ -252,12 +269,9 @@
             </div>
             <p class="focus-hint">올해는 어디에 시간을 쓸까요? 선택한 방향은 조금씩 삶에 쌓입니다.</p>
           </div>
-          <div class="story-head"><div class="small-index">한 사람의 기록</div><h2 id="storyTitle">지금 이 순간의 삶</h2><p id="storyCaption">해가 바뀌고 새로운 일이 일어납니다.</p></div>
-          <div id="decision" class="decision hidden" aria-live="polite">
-            <span class="eyebrow decision-tag">중요한 선택</span><h3 id="choiceTitle">당신의 선택은?</h3>
-            <p id="choiceText"></p><div id="choiceOptions" class="choice-options"></div>
-            <p class="choice-note">정답은 없습니다. 다른 선택은 다른 이야기를 만듭니다.</p>
-          </div>
+          <details class="life-archive">
+            <summary>시대·마을·가족의 자세한 기록</summary>
+            <div class="life-archive-content">
           <nav class="v8-tools-nav" aria-label="이 인생의 정보 보기">
             <button type="button" id="openGenealogyBtn" class="genealogy-open hidden">우리 집 족보 펼치기</button>
             <button type="button" data-story-tab="birth" aria-pressed="false">출생 기록</button>
@@ -434,9 +448,9 @@
             <ul id="household342History" class="calendar-events"></ul>
           </details>
           <details id="paths339Panel" class="history-calendar" hidden><summary>쌓아 온 일과 기록</summary><ul id="paths339Records" class="calendar-events"></ul></details>
-          <div class="v9-chronicle-tools"><span id="v9ChronicleCount">인생의 기록</span><button id="v9TimelineMore" type="button">이전 기록 더 보기</button></div>
-          <ol id="timeline" class="timeline" aria-label="인생 연대기"></ol>
-          <div id="waiting" class="waiting"><span class="pulse" aria-hidden="true"></span><span>시간이 흐르며 새로운 이야기가 펼쳐지고 있습니다.</span></div>
+
+            </div>
+          </details>
         </article>
         <aside class="info">
           <div class="info-heading"><span>인생의 한 장면</span><span id="chapterNumber">01</span></div>
@@ -445,6 +459,8 @@
             <span class="avatar-silhouette" aria-hidden="true">◉</span>
             <div><strong id="profileName">—</strong><small id="profileMeta">—</small><span id="profileFamily">—</span></div>
           </div>
+          <details class="life-profile-details">
+            <summary>인물·가족·살림 살펴보기</summary>
           <dl class="traits">
             <div><dt>태어난 곳</dt><dd id="traitCountry">—</dd></div>
             <div><dt>가정환경</dt><dd id="traitFamily">—</dd></div>
@@ -499,6 +515,7 @@
             <p id="arcStatus">아직 미래는 정해지지 않았어요.</p>
             <div id="arcMilestones" class="arc-milestones"></div>
           </div>
+          </details>
         </aside>
       </div>
 
@@ -674,13 +691,13 @@
 <script src="./joseon-commoner-v346.js?v=3"></script>
 <script src="./joseon-baekjeong-v346.js?v=3"></script>
 <script src="./goryeo-v343.js?v=2"></script>
-<script src="./goryeo-view-v343.js?v=4"></script>
+<script src="./goryeo-view-v343.js?v=5"></script>
 <script src="./ui-flow.js?v=1"></script>
 <script src="./ending-choice-compare-v1.js?v=2"></script>
 <script src="./ending-era-summary-v1.js?v=2"></script>
 <script src="./auto-choice-v1.js?v=4"></script>
 <script src="./pixel-home-v1.js?v=1"></script>
 <script src="./life-archive-v1.js?v=2"></script>
-<script src="./game.js?v=86"></script>
+<script src="./game.js?v=87"></script>
 </body>
 </html>
