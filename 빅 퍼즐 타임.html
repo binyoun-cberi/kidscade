@@ -94,14 +94,14 @@
       font-weight: 900;
     }
 
-    .life-row {
+    .rule-row {
       display: grid;
-      grid-template-columns: 1.1fr .9fr;
+      grid-template-columns: 1fr;
       gap: 8px;
       margin-bottom: 12px;
     }
 
-    .life-card {
+    .rule-card {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -111,21 +111,6 @@
       border-radius: 14px;
       padding: 10px 12px;
       min-height: 50px;
-    }
-
-    .heart-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-    }
-
-    .heart-icons {
-      color: #fecdd3;
-      text-shadow: 0 2px 0 rgba(127, 29, 29, .24);
-      font-size: clamp(19px, 3vw, 25px);
-      letter-spacing: 1px;
-      white-space: nowrap;
     }
 
     .life-main {
@@ -388,13 +373,13 @@
         order: -1;
       }
       .stat-box { min-height: 58px; }
-      .life-row {
+      .rule-row {
         grid-template-columns: 1fr;
       }
       .controls { grid-template-columns: repeat(3, 1fr); gap: 6px; }
       .bottom-row { gap: 6px; }
       .mode-btn, .plain-btn { font-size: 12px; padding-left: 4px; padding-right: 4px; }
-      .life-card {
+      .rule-card {
         min-height: 44px;
       }
     }
@@ -421,17 +406,8 @@
       </div>
     </section>
 
-    <section class="life-row" aria-label="하트와 이동 제한">
-      <div class="life-card">
-        <div class="heart-wrap">
-          <div id="heartDisplay" class="heart-icons">♥♥♥</div>
-          <div>
-            <div id="heartText" class="life-main">하트 3/3</div>
-            <div id="rechargeText" class="life-sub">가득 참</div>
-          </div>
-        </div>
-      </div>
-      <div class="life-card">
+    <section class="rule-row" aria-label="이동 횟수 제한">
+      <div class="rule-card">
         <div>
           <div class="life-main">이동 제한</div>
           <div id="limitDetail" class="life-sub">기준 -- + 여유 5</div>
@@ -476,21 +452,10 @@
 
       <div id="loseModal" class="overlay hidden">
         <div class="modal-card">
-          <div class="emoji">💔</div>
+          <div class="emoji">↻</div>
           <h2>실패!</h2>
           <p id="loseText">이동 횟수를 모두 사용했어요.</p>
-          <p id="loseHeartText" style="font-weight:1000;color:#be123c;"></p>
           <button id="loseRestartBtn" class="restart-button danger-button">다시 도전</button>
-        </div>
-      </div>
-
-      <div id="heartModal" class="overlay hidden">
-        <div class="modal-card">
-          <div class="emoji">⏳</div>
-          <h2>하트 충전 중</h2>
-          <p id="lockedHeartText">하트가 없어서 지금은 플레이할 수 없어요.</p>
-          <p id="lockedRechargeText" style="font-weight:1000;color:#0284c7;"></p>
-          <button id="lockedOkBtn" class="restart-button">확인</button>
         </div>
       </div>
 
@@ -502,8 +467,8 @@
           <ul class="info-list">
             <li><span>👆</span><span>빈 칸과 맞닿은 타일을 누르면 그 타일이 빈 칸으로 이동합니다.</span></li>
             <li><span>🔢</span><span>1부터 차례대로 정렬하고, 마지막 칸은 비워 두면 성공입니다.</span></li>
-            <li><span>🎯</span><span>시작할 때마다 다른 도전 퍼즐이 나오며, 도전 중 포기·새로고침·닫기는 포기로 처리됩니다.</span></li>
-            <li><span>💔</span><span>포기하거나 실패하면 하트가 1개 줄고, 하트는 5분마다 1개씩 회복됩니다. 힌트를 쓰면 기록 저장은 되지 않습니다.</span></li>
+            <li><span>🎯</span><span>시작할 때마다 새로운 도전 퍼즐이 나옵니다. 포기해도 바로 다시 시작할 수 있어요.</span></li>
+            <li><span>🔄</span><span>실패해도 횟수 제한 없이 다시 도전할 수 있어요. 힌트를 쓰면 최고 기록은 저장되지 않습니다.</span></li>
             <li><span>⌨️</span><span>컴퓨터에서는 방향키로도 움직일 수 있습니다.</span></li>
           </ul>
         </div>
@@ -537,12 +502,7 @@
     const restartBtn = document.getElementById('restartBtn');
     const loseModal = document.getElementById('loseModal');
     const loseText = document.getElementById('loseText');
-    const loseHeartText = document.getElementById('loseHeartText');
     const loseRestartBtn = document.getElementById('loseRestartBtn');
-    const heartModal = document.getElementById('heartModal');
-    const lockedHeartText = document.getElementById('lockedHeartText');
-    const lockedRechargeText = document.getElementById('lockedRechargeText');
-    const lockedOkBtn = document.getElementById('lockedOkBtn');
     const infoBtn = document.getElementById('infoBtn');
     const infoModal = document.getElementById('infoModal');
     const closeInfoBtn = document.getElementById('closeInfoBtn');
@@ -552,19 +512,14 @@
     const modeText = document.getElementById('modeText');
     const startDescription = document.getElementById('startDescription');
     const startRuleText = document.getElementById('startRuleText');
-    const heartDisplay = document.getElementById('heartDisplay');
-    const heartText = document.getElementById('heartText');
-    const rechargeText = document.getElementById('rechargeText');
     const limitDisplay = document.getElementById('limitDisplay');
     const limitDetail = document.getElementById('limitDetail');
 
-    const MAX_HEARTS = 3;
-    const HEART_REGEN_MS = 5 * 60 * 1000;
 
-    // 악용 방지용 도전 규칙
+    // 도전 퍼즐과 최고 기록 규칙
     // 1) 4×4가 10초 안에 끝나는 원인을 줄이기 위해 섞기 깊이를 크게 올립니다.
     // 2) 같은 날 같은 퍼즐을 외워서 깨는 일을 막기 위해 시작할 때마다 새 시드를 만듭니다.
-    // 3) 새로고침·닫기로 포기를 회피하는 일을 줄이기 위해 진행 중 도전을 localStorage에 표시합니다.
+    // 3) 진행 중 도전은 시드·힌트 기록에만 사용하며, 포기·새로고침 시 벌점은 없습니다.
     const CHALLENGE_VERSION = 'attempt_lock_v2';
     const RECORD_SALT = 'BPT_record_check_v2';
 
@@ -597,7 +552,6 @@
     let isPlaying = false;
     let startTime = 0;
     let timerInterval = null;
-    let heartInterval = null;
     let currentTimeMs = 0;
     let moveCount = 0;
     let minimumMoveCount = baselineMovesBySize[size];
@@ -611,10 +565,6 @@
     let solutionMoveMap = new Map();
     let hintCount = 0;
     let activeChallenge = null;
-    let heartState = {
-      hearts: MAX_HEARTS,
-      lastHeartAt: Date.now()
-    };
 
     function getTodayStamp() {
       const now = new Date();
@@ -691,23 +641,9 @@
       return mulberry32(xmur3(challengeSeed())());
     }
 
-    function heartStorageKey() {
-      return 'bigPuzzleHeartState_v1';
-    }
-
-    function resolveAbandonedAttempts() {
-      [4, 5, 6, 8, 9, 10].forEach(n => {
-        const key = activeAttemptKey(n);
-        const raw = localStorage.getItem(key);
-        if (!raw) return;
-        try {
-          const attempt = JSON.parse(raw);
-          if (attempt && attempt.completed !== true) {
-            consumeHeart();
-          }
-        } catch {}
-        localStorage.removeItem(key);
-      });
+    function clearAbandonedAttempts() {
+      // 이전 버전에서 남은 도전 기록만 정리하며, 포기·새로고침에는 벌점을 주지 않습니다.
+      [4, 5, 6, 8, 9, 10].forEach(n => localStorage.removeItem(activeAttemptKey(n)));
     }
 
     function solvedState(n = size) {
@@ -727,13 +663,6 @@
       const seconds = totalSeconds % 60;
       const centiseconds = Math.floor((ms % 1000) / 10);
       return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
-    }
-
-    function formatCountdown(ms) {
-      const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
-      const minutes = Math.floor(totalSeconds / 60);
-      const seconds = totalSeconds % 60;
-      return `${minutes}:${String(seconds).padStart(2, '0')}`;
     }
 
     function recordSignature(record) {
@@ -826,89 +755,6 @@
         loadBestRecord();
       }
       return isBetter;
-    }
-
-    function loadHeartState() {
-      const raw = localStorage.getItem(heartStorageKey());
-      if (!raw) {
-        heartState = { hearts: MAX_HEARTS, lastHeartAt: Date.now() };
-        saveHeartState();
-        return;
-      }
-      try {
-        const parsed = JSON.parse(raw);
-        const hearts = Number.isFinite(parsed.hearts) ? Math.max(0, Math.min(MAX_HEARTS, parsed.hearts)) : MAX_HEARTS;
-        const lastHeartAt = Number.isFinite(parsed.lastHeartAt) ? parsed.lastHeartAt : Date.now();
-        heartState = { hearts, lastHeartAt };
-      } catch {
-        heartState = { hearts: MAX_HEARTS, lastHeartAt: Date.now() };
-        saveHeartState();
-      }
-    }
-
-    function saveHeartState() {
-      localStorage.setItem(heartStorageKey(), JSON.stringify(heartState));
-    }
-
-    function syncHearts() {
-      const now = Date.now();
-      if (heartState.hearts < MAX_HEARTS) {
-        const gained = Math.floor((now - heartState.lastHeartAt) / HEART_REGEN_MS);
-        if (gained > 0) {
-          heartState.hearts = Math.min(MAX_HEARTS, heartState.hearts + gained);
-          if (heartState.hearts >= MAX_HEARTS) {
-            heartState.lastHeartAt = now;
-          } else {
-            heartState.lastHeartAt += gained * HEART_REGEN_MS;
-          }
-          saveHeartState();
-        }
-      }
-      updateHeartUI();
-    }
-
-    function getTimeUntilNextHeart() {
-      if (heartState.hearts >= MAX_HEARTS) return 0;
-      return Math.max(0, HEART_REGEN_MS - (Date.now() - heartState.lastHeartAt));
-    }
-
-    function updateHeartUI() {
-      const hearts = Math.max(0, Math.min(MAX_HEARTS, heartState.hearts));
-      heartDisplay.textContent = '♥'.repeat(hearts) + '♡'.repeat(MAX_HEARTS - hearts);
-      heartText.textContent = `하트 ${hearts}/${MAX_HEARTS}`;
-
-      if (hearts >= MAX_HEARTS) {
-        rechargeText.textContent = '가득 참';
-      } else {
-        rechargeText.textContent = `다음 하트 ${formatCountdown(getTimeUntilNextHeart())}`;
-      }
-
-      if (!isPlaying && !startOverlay.classList.contains('hidden')) {
-        startBtn.textContent = hearts <= 0 ? '하트 충전 중' : '게임 시작';
-      }
-
-      if (!heartModal.classList.contains('hidden')) {
-        lockedHeartText.textContent = hearts <= 0
-          ? '하트가 없어서 지금은 플레이할 수 없어요.'
-          : `하트가 ${hearts}개 충전됐어요.`;
-        lockedRechargeText.textContent = hearts <= 0
-          ? `다음 하트까지 ${formatCountdown(getTimeUntilNextHeart())}`
-          : '이제 다시 플레이할 수 있어요.';
-      }
-    }
-
-    function consumeHeart() {
-      syncHearts();
-      if (heartState.hearts <= 0) return false;
-
-      const now = Date.now();
-      if (heartState.hearts >= MAX_HEARTS) {
-        heartState.lastHeartAt = now;
-      }
-      heartState.hearts -= 1;
-      saveHeartState();
-      syncHearts();
-      return true;
     }
 
     function updateMoveRuleText() {
@@ -1051,6 +897,7 @@
     function resetForCurrentSize() {
       stopTimer();
       clearHint();
+      clearActiveChallenge();
       isPlaying = false;
       currentTimeMs = 0;
       moveCount = 0;
@@ -1064,10 +911,8 @@
       loadBestRecord();
       winModal.classList.add('hidden');
       loseModal.classList.add('hidden');
-      heartModal.classList.add('hidden');
       infoModal.classList.add('hidden');
       startOverlay.classList.remove('hidden');
-      syncHearts();
       updateActionButtons();
     }
 
@@ -1286,37 +1131,20 @@
       stopTimer();
       clearActiveChallenge();
       playTone('lose');
-      consumeHeart();
       updateActionButtons();
 
       loseText.textContent = reason === 'abandon'
-        ? '도전 중 포기·새로고침·닫기는 포기로 처리돼요. 다시 시작하면 새 퍼즐이 나옵니다.'
-        : `이동 제한 ${moveLimit}회를 모두 사용했어요.`;
-      if (heartState.hearts > 0) {
-        loseHeartText.textContent = `남은 하트 ${heartState.hearts}/${MAX_HEARTS}`;
-        loseRestartBtn.textContent = '다시 도전';
-      } else {
-        loseHeartText.textContent = `남은 하트 0/${MAX_HEARTS} · 다음 하트 ${formatCountdown(getTimeUntilNextHeart())}`;
-        loseRestartBtn.textContent = '하트 충전 기다리기';
-      }
+        ? '이번 도전은 여기서 끝났어요. 새 퍼즐로 바로 다시 도전할 수 있어요.'
+        : `이동 제한 ${moveLimit}회를 모두 사용했어요. 바로 다시 도전할 수 있어요.`;
+      loseRestartBtn.textContent = '다시 도전';
 
       loseModal.classList.remove('hidden');
       winModal.classList.add('hidden');
       startOverlay.classList.add('hidden');
     }
 
-    function canStartGame() {
-      syncHearts();
-      if (heartState.hearts <= 0) {
-        showHeartLocked();
-        return false;
-      }
-      return true;
-    }
-
     function startGame() {
       initAudio();
-      if (!canStartGame()) return;
 
       stopTimer();
       clearHint();
@@ -1331,23 +1159,12 @@
 
       winModal.classList.add('hidden');
       loseModal.classList.add('hidden');
-      heartModal.classList.add('hidden');
       infoModal.classList.add('hidden');
       startOverlay.classList.add('hidden');
 
       isPlaying = true;
       updateActionButtons();
       startTimer();
-    }
-
-    function showHeartLocked() {
-      syncHearts();
-      lockedHeartText.textContent = '하트가 없어서 지금은 플레이할 수 없어요.';
-      lockedRechargeText.textContent = `다음 하트까지 ${formatCountdown(getTimeUntilNextHeart())}`;
-      heartModal.classList.remove('hidden');
-      winModal.classList.add('hidden');
-      loseModal.classList.add('hidden');
-      infoModal.classList.add('hidden');
     }
 
     function clearHint() {
@@ -1451,14 +1268,7 @@
 
     startBtn.addEventListener('click', startGame);
     restartBtn.addEventListener('click', startGame);
-    loseRestartBtn.addEventListener('click', () => {
-      if (heartState.hearts <= 0) {
-        showHeartLocked();
-        return;
-      }
-      startGame();
-    });
-    lockedOkBtn.addEventListener('click', () => heartModal.classList.add('hidden'));
+    loseRestartBtn.addEventListener('click', startGame);
     shuffleBtn.addEventListener('click', () => {
       if (isPlaying) {
         failGame('abandon');
@@ -1482,10 +1292,7 @@
       renderBoard(false);
     });
 
-    loadHeartState();
-    syncHearts();
-    resolveAbandonedAttempts();
-    heartInterval = setInterval(syncHearts, 1000);
+    clearAbandonedAttempts();
     resetForCurrentSize();
   </script>
 </body>
