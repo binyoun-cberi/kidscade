@@ -55,6 +55,7 @@ function start(key){
   g.duration=g.notes[g.notes.length-1].due+1.2;
  }else if(key==='coins'){spawnCoin()}
  show('arcadeMenu',false);show('finishScreen',false);show('pauseScreen',false);show('session',true);
+ resize();
  $('gameName').textContent=MODES[key].title;
  $('actionBtn').classList.toggle('hidden',!['gallery','hurdles','cattle','disco'].includes(key));
  $('extraBtn').classList.toggle('hidden',key!=='hurdles');
@@ -444,7 +445,7 @@ function loop(t){
 refreshRecords();requestAnimationFrame(loop);
 window.KidscadeWesternArcade=Object.freeze({
  modes:Object.keys(MODES),
- getState:()=>g?{mode,phase,points:g.points,lives:g.lives,ammo:g.ammo,combo:g.combo,multiplier:g.multiplier,elapsed:g.elapsed,spawned:g.objects.length,notesDone:g.notes.filter(n=>n.done).length}: {mode:null,phase:'menu'},
+ getState:()=>g?{mode,phase,points:g.points,lives:g.lives,ammo:g.ammo,combo:g.combo,multiplier:g.multiplier,elapsed:g.elapsed,spawned:g.objects.length,notesDone:g.notes.filter(n=>n.done).length,boost:g.boost,jumpY:g.jumpY,ropes:g.ropes.length,misses:g.misses}: {mode:null,phase:'menu'},
  getBest:name=>best(name)
 });
 })();
