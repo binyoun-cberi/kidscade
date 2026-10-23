@@ -2,11 +2,11 @@
 const $=id=>document.getElementById(id);
 const canvas=$('playfield'),ctx=canvas.getContext('2d');
 const MODES={
- gallery:{title:'서부 사격장',duration:48,tip:'움직이는 표적을 맞히세요. 여섯 발을 모두 쓰고 장전하면 배수가 올라가요.'},
- hurdles:{title:'목마 허들',duration:45,tip:'장애물 앞에서 점프! 완벽 점프 세 번마다 부스터를 쓸 수 있어요.'},
- coins:{title:'동전 명사수',duration:45,tip:'동전이 땅에 닿지 않게 튕겨요. 가까운 동전을 연달아 맞히면 보너스!'},
- cattle:{title:'우당탕 소몰이',duration:45,tip:'소가 지나갈 곳을 미리 누르세요. 올가미가 도착할 때 잡혀요.'},
- disco:{title:'춤추는 카우보이',duration:27,tip:'박자에 맞춰 4칸을 누르세요. 총알 여섯 발을 모두 쓰고 장전!'}
+ gallery:{title:'서부 사격장',duration:48,tip:'움직이는 표적을 터치하세요. 6발 뒤 장전! PC는 방향키로 조준·Space 사격·R 장전.'},
+ hurdles:{title:'목마 허들',duration:45,tip:'장애물 앞에서 탭/Space로 점프! 완벽 점프 3번이면 부스터(B) 사용.'},
+ coins:{title:'동전 명사수',duration:45,tip:'동전을 탭해서 다시 튕겨 올려요. 5개를 놓치면 끝! PC는 방향키·Space.'},
+ cattle:{title:'우당탕 소몰이',duration:45,tip:'소가 도착할 곳을 미리 터치! 3번 빗맞히면 기회가 줄어요. PC는 방향키·Space.'},
+ disco:{title:'춤추는 카우보이',duration:27,tip:'박자에 맞춰 4줄을 터치! PC는 A·S·K·L, 6번 쏘면 R로 장전.'}
 };
 const STORAGE='kidscade-western-arcade-v1';
 const ASSETS={
@@ -23,6 +23,14 @@ const FX={
 const images={};for(const [name,url] of Object.entries(ASSETS)){const img=new Image();img.src=url;images[name]=img}
 const sounds={};let audioEnabled=true;
 let drumContext=null;
+function prepareDrum(){
+ try{
+  const SoundContext=window.AudioContext||window.webkitAudioContext;
+  if(!SoundContext||!audioEnabled)return;
+  if(!drumContext)drumContext=new SoundContext();
+  if(drumContext.state==='suspended')void drumContext.resume().catch(()=>{});
+ }catch(_){}
+}
 function drumBeat(){
  try{
   const SoundContext=window.AudioContext||window.webkitAudioContext;
@@ -63,6 +71,7 @@ function resetState(key){
 function start(key){
  if(!MODES[key])return;
  mode=key;phase='playing';show('session',true);resize();g=resetState(key);
+ if(audioEnabled&&mode==='disco')prepareDrum();
  g.aim={x:W*.5,y:Math.min(H*.6,H-150)};
  if(key==='disco'){
   for(let i=0;i<36;i++)g.notes.push({lane:Math.floor(Math.random()*4),due:2+i*.68,done:false});
@@ -70,6 +79,7 @@ function start(key){
  }else if(key==='coins'){spawnCoin()}
  show('arcadeMenu',false);show('finishScreen',false);show('pauseScreen',false);show('session',true);
  $('gameName').textContent=MODES[key].title;
+ canvas.setAttribute?.('aria-label',MODES[key].title+'. '+MODES[key].tip);
  $('actionBtn').classList.toggle('hidden',!['gallery','hurdles','cattle','disco'].includes(key));
  $('extraBtn').classList.toggle('hidden',key!=='hurdles');
  $('actionBtn').innerHTML=key==='hurdles'?'점프 <kbd>Space</kbd>':key==='cattle'?'올가미 <kbd>Space</kbd>':'장전 <kbd>R</kbd>';
@@ -328,6 +338,13 @@ window.addEventListener('keydown',e=>{
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pause()});
 window.addEventListener('blur',pause);
 document.querySelectorAll('[data-arcade]').forEach(b=>b.addEventListener('click',()=>start(b.dataset.arcade)));
+$('soundBtn').addEventListener('click',()=>{
+ audioEnabled=!audioEnabled;
+ $('soundBtn').textContent=audioEnabled?'♪':'×';
+ $('soundBtn').setAttribute?.('aria-label',audioEnabled?'소리 끄기':'소리 켜기');
+ $('soundBtn').setAttribute?.('aria-pressed',String(!audioEnabled));
+ if(audioEnabled&&mode==='disco')prepareDrum();
+});
 $('actionBtn').addEventListener('click',primaryAction);
 $('extraBtn').addEventListener('click',boost);
 $('pauseBtn').addEventListener('click',pause);
@@ -339,7 +356,14 @@ function resize(){
  const r=canvas.getBoundingClientRect(),ratio=window.devicePixelRatio||1;
  const dpr=Math.min(2,ratio);
  canvas.width=Math.max(1,Math.floor(r.width*dpr));canvas.height=Math.max(1,Math.floor(r.height*dpr));
+ const prevH=H;
  W=900;H=clamp(Math.floor(900*r.height/Math.max(1,r.width)),490,1700);
+ if(g&&prevH&&H!==prevH){
+  const ratio=H/prevH;
+  g.aim.y=clamp(g.aim.y*ratio,110,H-140);
+  if(['gallery','coins','cattle'].includes(mode))for(const o of g.objects)o.y*=ratio;
+  for(const rope of g.ropes)rope.y*=ratio;
+ }
 }
 window.addEventListener('resize',resize);resize();
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h)}
