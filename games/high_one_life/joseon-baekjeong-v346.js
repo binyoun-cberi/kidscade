@@ -16,9 +16,9 @@
    if(index===2){j.region=j.region==='전라도'?'경상도':'전라도';j.relocations++;
     j.occupation='다른 고을에서 일하는 가죽 장인';l.career=j.occupation;
     return {code:'move',text:'새 고을로 옮겨 다시 일을 시작했다. 차별의 벽이 모두 사라진 것은 아니었다.'};}
-   if(index===1&&m.allies>=42){j.occupation='이웃과 협력하는 가죽 장인';l.career=j.occupation;
+   if(index===1&&m.allies>=42&&m.barriers<75){j.occupation='이웃과 협력하는 가죽 장인';l.career=j.occupation;
     return {code:'community',text:'이웃과 뜻을 모아 더 나은 거래와 생활의 길을 찾았다. 아직 해결할 일도 남았다.'};}
-   if(index===0&&m.craft>=52&&m.trust>=35&&r<.8){
+   if(index===0&&m.craft>=52&&m.trust>=35&&m.barriers<=65&&r<.8){
     j.occupation='고을에 솜씨가 알려진 가죽 장인';l.career=j.occupation;
     return {code:'artisan',text:'만든 물건의 품질을 인정받으며 생업을 넓혔다. 신분 차별을 겪던 기억은 남았다.'};}
    return {code:'precarious',text:'가난과 편견 속에서도 가족과 함께 일을 지켰다.'};
