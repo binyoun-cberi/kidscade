@@ -57,3 +57,53 @@ test('AI returns a legal angle and power',()=>{
   assert.ok(result.angle>=5&&result.angle<=85);
   assert.ok(result.power>=10&&result.power<=100);
 });
+
+test('a crater deepens the center without raising or moving the original ground',()=>{
+  const before=[[0,520],[200,520],[400,500],[800,520],[1200,520]];
+  const copy=before.map(pair=>pair.slice());
+  const crater=P.craterTerrain(before,400,60,28);
+  assert.deepEqual(before,copy);
+  assert.ok(P.terrainY(crater,400)>P.terrainY(before,400)+25);
+  assert.equal(P.terrainY(crater,100),P.terrainY(before,100));
+  assert.equal(P.terrainY(crater,800),P.terrainY(before,800));
+  assert.ok(crater.every(([x,y],i)=>i===0||x>crater[i-1][0]));
+});
+test('repeated impacts deepen an existing crater but keep a legal ground surface',()=>{
+  let knots=[[0,520],[1200,520]];
+  for(let n=0;n<8;n++)knots=P.craterTerrain(knots,520,74,42);
+  assert.ok(P.terrainY(knots,520)<=P.HEIGHT-14);
+  const result=P.trace({shot:P.launch({x:220,y:440},45,75),knots});
+  assert.ok(['ground','out','target'].includes(result.kind));
+});
+test('blast damage respects radius and supports a nearby splash',()=>{
+  const opponent={x:700,y:489,radius:23};
+  assert.equal(P.blastHits({x:744,y:520},opponent,59),true);
+  assert.equal(P.blastHits({x:800,y:520},opponent,59),false);
+  assert.equal(P.blastHits(null,opponent,59),false);
+});
+test('every practice stage remains reachable in normal and windy conditions',()=>{
+  const fs=require('node:fs'), path=require('node:path');
+  const game=fs.readFileSync(path.join(__dirname,'../games/low_parabola_battle/game.js'),'utf8');
+  const st=game.match(/const STAGES = (\\[[\\s\\S]*?\\]);/);
+  assert.ok(st,'stage definition not found');
+  const stages=Function('return '+st[1])();
+  assert.equal(stages.length,6);
+  const winds=[-24,22,30,-18,14,0];
+  for(let i=0;i<stages.length;i++){
+    const stage=stages[i];
+    for(const wind of [0,winds[i]]){
+      let reached=false;
+      const goal={x:stage.goal,y:P.terrainY(stage.knots,stage.goal)-26,radius:29};
+      for(let angle=5;angle<=85&&!reached;angle+=2){
+        for(let power=20;power<=100;power+=2){
+          const radians=angle*Math.PI/180;
+          const origin={x:135+Math.cos(radians)*38,
+            y:P.terrainY(stage.knots,135)-31-Math.sin(radians)*38};
+          if(P.trace({shot:P.launch(origin,angle,power,1,wind),
+            knots:stage.knots,targets:[goal]}).kind==='target'){reached=true;break;}
+        }
+      }
+      assert.ok(reached,'unreachable stage '+(i+1)+' with wind '+wind);
+    }
+  }
+});
