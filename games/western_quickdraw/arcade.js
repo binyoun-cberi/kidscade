@@ -2,11 +2,11 @@
 const $=id=>document.getElementById(id);
 const canvas=$('playfield'),ctx=canvas.getContext('2d');
 const MODES={
- gallery:{title:'서부 사격장',duration:48,tip:'움직이는 표적을 맞히세요. 여섯 발을 모두 쓰고 장전하면 배수가 올라가요.'},
- hurdles:{title:'목마 허들',duration:45,tip:'장애물 앞에서 점프! 완벽 점프 세 번마다 부스터를 쓸 수 있어요.'},
- coins:{title:'동전 명사수',duration:45,tip:'동전이 땅에 닿지 않게 튕겨요. 가까운 동전을 연달아 맞히면 보너스!'},
- cattle:{title:'우당탕 소몰이',duration:45,tip:'소가 지나갈 곳을 미리 누르세요. 올가미가 도착할 때 잡혀요.'},
- disco:{title:'춤추는 카우보이',duration:27,tip:'박자에 맞춰 4칸을 누르세요. 총알 여섯 발을 모두 쓰고 장전!'}
+ gallery:{title:'서부 사격장',duration:48,tip:'움직이는 표적을 터치하세요. 6발 뒤 장전! PC는 방향키로 조준·Space 사격·R 장전.'},
+ hurdles:{title:'목마 허들',duration:45,tip:'장애물 앞에서 탭/Space로 점프! 완벽 점프 3번이면 부스터(B) 사용.'},
+ coins:{title:'동전 명사수',duration:45,tip:'동전을 탭해서 다시 튕겨 올려요. 5개를 놓치면 끝! PC는 방향키·Space.'},
+ cattle:{title:'우당탕 소몰이',duration:45,tip:'소가 도착할 곳을 미리 터치! 3번 빗맞히면 기회가 줄어요. PC는 방향키·Space.'},
+ disco:{title:'춤추는 카우보이',duration:27,tip:'박자에 맞춰 4줄을 터치! PC는 A·S·K·L, 6번 쏘면 R로 장전.'}
 };
 const STORAGE='kidscade-western-arcade-v1';
 const ASSETS={
@@ -22,6 +22,27 @@ const FX={
 };
 const images={};for(const [name,url] of Object.entries(ASSETS)){const img=new Image();img.src=url;images[name]=img}
 const sounds={};let audioEnabled=true;
+let drumContext=null;
+function prepareDrum(){
+ try{
+  const SoundContext=window.AudioContext||window.webkitAudioContext;
+  if(!SoundContext||!audioEnabled)return;
+  if(!drumContext)drumContext=new SoundContext();
+  if(drumContext.state==='suspended')void drumContext.resume().catch(()=>{});
+ }catch(_){}
+}
+function drumBeat(){
+ try{
+  const SoundContext=window.AudioContext||window.webkitAudioContext;
+  if(!SoundContext||!audioEnabled)return;
+  if(!drumContext)drumContext=new SoundContext();
+  if(drumContext.state==='suspended'){void drumContext.resume().catch(()=>{});return}
+  const at=drumContext.currentTime,osc=drumContext.createOscillator(),gain=drumContext.createGain();
+  osc.type='triangle';osc.frequency.setValueAtTime(120,at);osc.frequency.exponentialRampToValueAtTime(70,at+.075);
+  gain.gain.setValueAtTime(.04,at);gain.gain.exponentialRampToValueAtTime(.001,at+.09);
+  osc.connect(gain);gain.connect(drumContext.destination);osc.start(at);osc.stop(at+.1);
+ }catch(_){/* visual pulse remains available without audio */}
+}
 function sound(name){if(!audioEnabled)return;try{const audio=sounds[name]||(sounds[name]=new Audio(FX[name]));audio.pause();audio.currentTime=0;audio.volume=.17;void audio.play().catch(()=>{})}catch(_){}}
 function sdk(method,payload){try{window.KidscadeGame?.[method]?.(payload)}catch(_){}}
 function load(){try{const raw=JSON.parse(localStorage.getItem(STORAGE)||'null');if(raw&&typeof raw==='object'&&!Array.isArray(raw))return raw}catch(_){}return {}}
@@ -41,22 +62,24 @@ function menu(){
 }
 function resetState(key){
  const duration=MODES[key].duration;
- return {mode:key,elapsed:0,duration,points:0,combo:0,level:1,lives:key==='coins'?5:3,ammo:6,maxAmmo:6,
+ return {mode:key,elapsed:0,duration,points:0,combo:0,level:1,bonusPoints:0,lives:key==='coins'?5:3,ammo:6,maxAmmo:6,
   multiplier:1,objects:[],spawnIn:key==='coins'?2.8:0.6,feedback:'',feedbackTimer:0,
   obstacles:[],jumpY:0,jumpV:0,boost:0,boostTime:0,invincible:0,passed:0,distance:0,
   dropped:0,ropes:[],ropeCooldown:0,aim:{x:700,y:310},coinShots:0,
-  notes:[],noteHits:0,misses:0,finished:false};
+  notes:[],noteHits:0,misses:0,lassoMisses:0,lassoMistakes:0,beatIndex:-1,beatFlash:0,beatLane:-1,finished:false};
 }
 function start(key){
  if(!MODES[key])return;
- mode=key;phase='playing';g=resetState(key);
+ mode=key;phase='playing';show('session',true);resize();g=resetState(key);
+ if(audioEnabled&&mode==='disco')prepareDrum();
+ g.aim={x:W*.5,y:Math.min(H*.6,H-150)};
  if(key==='disco'){
   for(let i=0;i<36;i++)g.notes.push({lane:Math.floor(Math.random()*4),due:2+i*.68,done:false});
   g.duration=g.notes[g.notes.length-1].due+1.2;
  }else if(key==='coins'){spawnCoin()}
  show('arcadeMenu',false);show('finishScreen',false);show('pauseScreen',false);show('session',true);
- resize();
  $('gameName').textContent=MODES[key].title;
+ canvas.setAttribute?.('aria-label',MODES[key].title+'. '+MODES[key].tip);
  $('actionBtn').classList.toggle('hidden',!['gallery','hurdles','cattle','disco'].includes(key));
  $('extraBtn').classList.toggle('hidden',key!=='hurdles');
  $('actionBtn').innerHTML=key==='hurdles'?'점프 <kbd>Space</kbd>':key==='cattle'?'올가미 <kbd>Space</kbd>':'장전 <kbd>R</kbd>';
@@ -109,7 +132,7 @@ function spawnGallery(){
  const y=random(Math.max(170,H*.23),Math.max(190,H*.68));
  let x=random(100,800);
  for(let attempt=0;attempt<9&&g.objects.some(o=>Math.hypot(x-o.x,y-o.y)<110);attempt++)x=random(100,800);
- g.objects.push({id:random(0,99999),kind,x,y,r:kind==='bottle'?29:40,age:0,ttl:random(2.6,3.5)});
+ g.objects.push({id:random(0,99999),kind,x,y,vx:random(32,68)*(Math.random()<.5?-1:1),r:kind==='bottle'?29:40,age:0,ttl:random(2.6,3.5)});
 }
 function shotGallery(x,y){
  if(g.ammo<=0){message('총알이 없어요! 장전하세요.');return}
@@ -127,6 +150,8 @@ function stepGallery(dt){
  g.spawnIn-=dt;
  if(g.spawnIn<=0){spawnGallery();g.spawnIn=random(.9,1.35)*Math.max(.62,1-g.elapsed/125)}
  for(const o of [...g.objects]){
+  o.x+=o.vx*dt;
+  if(o.x<80||o.x>820){o.x=clamp(o.x,80,820);o.vx=-o.vx}
   o.age+=dt;
   if(o.age>=o.ttl){g.objects.splice(g.objects.indexOf(o),1);
    if(o.kind==='outlaw'){g.lives--;g.combo=0;message('놓친 표적! 남은 기회 '+g.lives)}
@@ -152,7 +177,7 @@ function stepHurdles(dt){
  g.boostTime=Math.max(0,g.boostTime-dt);g.invincible=Math.max(0,g.invincible-dt);
  g.jumpY=Math.max(0,g.jumpY+g.jumpV*dt);
  if(g.jumpY>0)g.jumpV-=1550*dt;else g.jumpV=0;
- g.distance+=dt*speed*.086;g.points=Math.floor(g.distance);
+ g.distance+=dt*speed*.086;g.points=Math.floor(g.distance)+g.bonusPoints;
  g.spawnIn-=dt;if(g.spawnIn<=0){spawnObstacle();g.spawnIn=random(1.5,2.15)}
  for(const ob of [...g.obstacles]){
   ob.x-=speed*dt;
@@ -161,7 +186,7 @@ function stepHurdles(dt){
    ob.hit=true;
    const required=ob.kind==='gap'?54:ob.kind==='dynamite'?100:72;
    if(g.jumpY<required&&g.invincible<=0){g.lives--;g.invincible=1.2;message('앗, 장애물! 기회 '+g.lives);sound('lose')}
-   else if(g.jumpY>=required&&g.boostTime<=0){g.boost=Math.min(6,g.boost+1);score(35);message('완벽 점프! 부스터 '+Math.min(g.boost,3)+'/3')}
+   else if(g.jumpY>=required&&g.boostTime<=0){g.boost=Math.min(6,g.boost+1);g.bonusPoints+=35;g.points+=35;message('완벽 점프! 부스터 '+Math.min(g.boost,3)+'/3')}
   }
   if(ob.x+ob.w<0)g.obstacles.splice(g.obstacles.indexOf(ob),1);
  }
@@ -192,7 +217,7 @@ function stepCoins(dt){
   if(o.x>865){o.x=865;o.vx=-Math.abs(o.vx)}
   if(o.y>H-145){g.objects.splice(g.objects.indexOf(o),1);g.lives--;g.combo=0;message('동전을 놓쳤어요!')}
  }
- if(g.lives<=0)finish(false,'동전이 세 번 떨어졌어요. 잘 보고 튕겨봐요.');
+ if(g.lives<=0)finish(false,'동전이 다섯 번 떨어졌어요. 잘 보고 튕겨봐요.');
  else if(g.elapsed>=g.duration)finish(true,'동전이 땅에 떨어지지 않게 잘 버텼어요!');
 }
 function spawnCow(){
@@ -220,11 +245,15 @@ function stepCattle(dt){
    let hits=0;
    for(const o of [...g.objects])if(o.x>=70&&o.x<=850&&Math.hypot(o.x-r.x,o.y-r.y)<o.r+18){g.objects.splice(g.objects.indexOf(o),1);hits++}
    g.ropes.splice(g.ropes.indexOf(r),1);
-   if(hits){g.combo++;score(hits*90*Math.min(5,g.combo)+(hits>1?hits*60:0));message(hits>1?hits+'마리 한꺼번에!':'잡았다! '+g.combo+'연속');sound('click')}
-   else{g.combo=0;message('아쉽게 비껴갔어요. 조금 앞을 노려봐요!')}
+   if(hits){g.lassoMisses=0;g.combo++;score(hits*90*Math.min(5,g.combo)+(hits>1?hits*60:0));message(hits>1?hits+'마리 한꺼번에!':'잡았다! '+g.combo+'연속');sound('click')}
+   else{
+    g.combo=0;g.lassoMisses++;g.lassoMistakes++;
+    if(g.lassoMisses>=3){g.lives--;g.lassoMisses=0;message('올가미가 세 번 빗나갔어요! 남은 기회 '+g.lives)}
+    else message('아쉽게 비껴갔어요. 조금 앞을 노려봐요! ('+g.lassoMisses+'/3)')
+   }
   }
  }
- if(g.lives<=0)finish(false,'세 마리가 울타리를 넘어갔어요.');
+ if(g.lives<=0)finish(false,'소를 놓치거나 올가미를 세 번 빗맞혔어요. 조금 앞을 노려봐요.');
  else if(g.elapsed>=g.duration)finish(true,'우리의 소들을 잘 돌봤어요!');
 }
 function laneX(i){return 140+Math.round((i+.5)*620/4)}
@@ -236,11 +265,16 @@ function shotDisco(lane){
   const diff=Math.abs(n.due-g.elapsed);if(diff<delta){delta=diff;note=n}
  }
  if(!note){g.combo=0;g.misses++;message('박자를 놓쳤어요!');sound('lose');return}
- note.done=true;g.noteHits++;g.combo++;
+ note.done=true;g.noteHits++;g.combo++;g.beatLane=lane;g.beatFlash=.3;
  const perfect=delta<=.09;score((perfect?120:70)*g.multiplier+Math.min(12,g.combo)*5);
  message(perfect?'완벽한 박자!':'좋은 타이밍!');sound('click');
 }
 function stepDisco(dt){
+ g.beatFlash=Math.max(0,g.beatFlash-dt);
+ for(let i=g.beatIndex+1;i<g.notes.length;i++){
+  if(g.elapsed<g.notes[i].due)break;
+  g.beatIndex=i;drumBeat();
+ }
  for(const n of g.notes)if(!n.done&&g.elapsed>n.due+.22){n.done=true;g.combo=0;g.misses++}
  if(g.misses>=12)finish(false,'박자를 조금 놓쳤어요. 음악에 맞춰 다시 해봐요.');
  else if(g.notes.every(n=>n.done))finish(true,'마지막 박자까지 멋지게 연주했어요!');
@@ -281,7 +315,7 @@ function primaryAction(){
  else if(mode==='cattle')throwLasso(g.aim.x,g.aim.y);
 }
 canvas.addEventListener('pointerdown',e=>{if(phase!=='playing')return;e.preventDefault();const p=pointerPosition(e);shootAt(p.x,p.y)},{passive:false});
-canvas.addEventListener('pointermove',e=>{if(phase==='playing'&&mode==='cattle')g.aim=pointerPosition(e)});
+canvas.addEventListener('pointermove',e=>{if(phase==='playing'&&['gallery','coins','cattle'].includes(mode))g.aim=pointerPosition(e)});
 window.addEventListener('keydown',e=>{
  if(phase!=='playing'||e.repeat||e.target?.closest?.('button,a'))return;
  const key=e.code;
@@ -304,6 +338,13 @@ window.addEventListener('keydown',e=>{
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pause()});
 window.addEventListener('blur',pause);
 document.querySelectorAll('[data-arcade]').forEach(b=>b.addEventListener('click',()=>start(b.dataset.arcade)));
+$('soundBtn').addEventListener('click',()=>{
+ audioEnabled=!audioEnabled;
+ $('soundBtn').textContent=audioEnabled?'♪':'×';
+ $('soundBtn').setAttribute?.('aria-label',audioEnabled?'소리 끄기':'소리 켜기');
+ $('soundBtn').setAttribute?.('aria-pressed',String(!audioEnabled));
+ if(audioEnabled&&mode==='disco')prepareDrum();
+});
 $('actionBtn').addEventListener('click',primaryAction);
 $('extraBtn').addEventListener('click',boost);
 $('pauseBtn').addEventListener('click',pause);
@@ -315,7 +356,14 @@ function resize(){
  const r=canvas.getBoundingClientRect(),ratio=window.devicePixelRatio||1;
  const dpr=Math.min(2,ratio);
  canvas.width=Math.max(1,Math.floor(r.width*dpr));canvas.height=Math.max(1,Math.floor(r.height*dpr));
+ const prevH=H;
  W=900;H=clamp(Math.floor(900*r.height/Math.max(1,r.width)),490,1700);
+ if(g&&prevH&&H!==prevH){
+  const ratio=H/prevH;
+  g.aim.y=clamp(g.aim.y*ratio,110,H-140);
+  if(['gallery','coins','cattle'].includes(mode))for(const o of g.objects)o.y*=ratio;
+  for(const rope of g.ropes)rope.y*=ratio;
+ }
 }
 window.addEventListener('resize',resize);resize();
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h)}
@@ -376,6 +424,12 @@ function paintHurdles(){
  text('완벽 점프 '+Math.min(g.boost,3)+'/3',440,H-114,21);
  if(g.boostTime>0)text('부스터!',450,H*.38,32,'#a65f4a');
 }
+function paintAim(){
+ const {x,y}=g.aim;
+ ctx.strokeStyle='#8b756b';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,22,0,Math.PI*2);ctx.stroke();
+ line(x-33,y,x-13,y,'#8b756b',2);line(x+13,y,x+33,y,'#8b756b',2);
+ line(x,y-33,x,y-13,'#8b756b',2);line(x,y+13,x,y+33,'#8b756b',2);
+}
 function paintCoins(){
  text('동전 명사수',450,Math.max(145,H*.17),31);
  g.objects.forEach(o=>{
@@ -409,7 +463,8 @@ function paintDisco(){
   const x=laneX(i);
   rect(x-65,135,130,lineY-110,'#efebe5');
   rect(x-65,lineY-5,130,8,'#b4ada3');
-  if(g.elapsed<g.duration*.5)text(['A','S','K','L'][i],x,lineY+52,32,'#7d776f');
+  text(['A','S','K','L'][i],x,lineY+52,32,g.elapsed<g.duration*.5?'#7d776f':'#c2b9ad');
+  if(g.beatLane===i&&g.beatFlash>0)rect(x-65,lineY-5,130,8,'#ae7458');
  }
  for(const n of g.notes){
   if(n.done)continue;
@@ -431,6 +486,7 @@ function draw(){
  else if(mode==='coins')paintCoins();
  else if(mode==='cattle')paintCattle();
  else if(mode==='disco')paintDisco();
+ if(['gallery','coins','cattle'].includes(mode))paintAim();
  if(g.feedbackTimer>0){
   rect(160,H*.34,580,62,'#fffdf8e8');
   text(g.feedback,450,H*.34+39,25,'#a3624d');
@@ -445,7 +501,7 @@ function loop(t){
 refreshRecords();requestAnimationFrame(loop);
 window.KidscadeWesternArcade=Object.freeze({
  modes:Object.keys(MODES),
- getState:()=>g?{mode,phase,points:g.points,lives:g.lives,ammo:g.ammo,combo:g.combo,multiplier:g.multiplier,elapsed:g.elapsed,spawned:g.objects.length,notesDone:g.notes.filter(n=>n.done).length,boost:g.boost,jumpY:g.jumpY,ropes:g.ropes.length,misses:g.misses}: {mode:null,phase:'menu'},
+ getState:()=>g?{mode,phase,points:g.points,lives:g.lives,ammo:g.ammo,combo:g.combo,multiplier:g.multiplier,elapsed:g.elapsed,spawned:g.objects.length,notesDone:g.notes.filter(n=>n.done).length,boost:g.boost,jumpY:g.jumpY,ropes:g.ropes.length,misses:g.misses,bonusPoints:g.bonusPoints,distance:g.distance,lassoMisses:g.lassoMisses,beatIndex:g.beatIndex,beatFlash:g.beatFlash,aim:{...g.aim},objects:g.objects.map(o=>({x:o.x,y:o.y,kind:o.kind})),obstacles:g.obstacles.map(o=>({x:o.x,w:o.w,kind:o.kind,hit:o.hit}))}: {mode:null,phase:'menu'},
  getBest:name=>best(name)
 });
 })();

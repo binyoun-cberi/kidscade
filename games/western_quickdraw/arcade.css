@@ -34,3 +34,7 @@ h1{font-weight:950;letter-spacing:-.06em;font-size:clamp(28px,6vw,42px);margin:7
 @media(max-width:430px){.overlay{padding:9px}.menu-card{padding:13px}.choices{gap:7px}.choice{min-height:104px;padding:10px}.choice strong{font-size:14px}.choice small,.choice .best{font-size:10px}.subtitle,.tip{font-size:12px}.hud-left,.hud-right{gap:6px}#gameName{font-size:14px}#points{font-size:16px}.hint{font-size:12px}}
 @media(max-height:610px){.menu-card{padding:12px}.choice{min-height:94px;padding:9px}.choices{gap:6px}.subtitle{margin:0 0 7px}.tip{margin:7px 0 0}.eyebrow{font-size:10px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+#soundBtn{pointer-events:auto;width:44px;height:44px;border:0;border-radius:50%;background:#e8e4db;color:#59524c;font-weight:950;font-size:19px}
+#soundBtn[aria-pressed="true"]{background:#d9d2c8;color:#817a70}
+@media(max-width:450px){#sessionHud{padding-left:10px;padding-right:10px}.hud-right{gap:3px}#soundBtn,#pauseBtn{width:42px;height:42px}#gameName{max-width:115px}}

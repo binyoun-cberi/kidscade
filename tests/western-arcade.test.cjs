@@ -8,7 +8,8 @@ const dir=path.join(ROOT,'games/western_quickdraw');
 const SRC=fs.readFileSync(path.join(dir,'arcade.js'),'utf8');
 const MODES=['gallery','hurdles','coins','cattle','disco'];
 
-function playHarness(){
+function playHarness({width=900,height=600}={}){
+ const viewport={width,height};
  let now=0,raf=[],serial=0;
  const elems=new Map(),listeners={},events=[],memory=new Map();
  function el(id){
@@ -19,7 +20,7 @@ function playHarness(){
    classList:{contains:v=>cls.has(v),add:v=>cls.add(v),remove:v=>cls.delete(v),
     toggle(v,on){if(on===undefined?!cls.has(v):on)cls.add(v);else cls.delete(v)}},
    addEventListener(name,fn){this.handlers[name]=fn},focus(){},closest(){return null},
-   getBoundingClientRect(){return {left:0,top:0,width:900,height:600}},
+   getBoundingClientRect(){return {left:0,top:0,width:viewport.width,height:viewport.height}},
    getContext(){return new Proxy({}, {get(){return ()=>{}}})}
   };
   elems.set(id,item);return item;
@@ -58,7 +59,8 @@ function playHarness(){
  }
  function key(code){const handler=listeners['window:keydown'];assert.equal(typeof handler,'function');handler({code,repeat:false,target:{closest(){return false}},preventDefault(){}})}
  function state(){return window.KidscadeWesternArcade.getState()}
- return {begin,click,frame,pointer,key,state,el,document,listeners,events,memory};
+ function resize(width,height){viewport.width=width;viewport.height=height;listeners['window:resize']()}
+ return {begin,click,frame,pointer,key,state,resize,el,document,listeners,events,memory};
 }
 test('arcade is reachable from existing duel page and references only available resources',()=>{
  assert.match(fs.readFileSync(path.join(dir,'index.html'),'utf8'),/href="arcade\.html"/);
@@ -148,4 +150,61 @@ test('visibility pause stops simulated game time until resumed',()=>{
  const before=h.state().elapsed;h.frame(6);
  assert.equal(h.state().elapsed,before);
  h.click('resumeBtn');h.frame(2);assert.ok(h.state().elapsed>before);
+});
+
+
+test('loop 1: first coin uses the live portrait viewport and rescales on rotation',()=>{
+ const h=playHarness({width:450,height:800});h.begin('coins');
+ assert.equal(h.state().objects.length,1);
+ assert.ok(Math.abs(h.state().objects[0].y-400)<1,'coin should start at 25% of actual logical height');
+ h.resize(900,600);
+ assert.ok(Math.abs(h.state().objects[0].y-150)<1,'coin should remain in corresponding visible location');
+});
+test('loop 1: gallery outlaw target actually moves and can still be hit',()=>{
+ const h=playHarness();h.begin('gallery');h.frame(14);
+ const a=h.state().objects.find(o=>o.kind==='outlaw');assert.ok(a);
+ h.frame(14);const b=h.state().objects.find(o=>o.kind==='outlaw');assert.ok(b);
+ assert.ok(Math.abs(a.x-b.x)>10,'outlaw target should move, not just expire');
+ h.pointer(b.x,b.y);assert.ok(h.state().points>0);
+});
+test('loop 1: a perfect hurdle jump bonus remains after later frames',()=>{
+ const h=playHarness();h.begin('hurdles');
+ let acquired=false;
+ for(let i=0;i<230;i++){
+  const g=h.state();
+  const obstacle=g.obstacles.find(o=>o.x>=285&&o.x<308&&!o.hit);
+  if(obstacle&&g.jumpY===0)h.key('Space');
+  h.frame();
+  if(h.state().bonusPoints>0){acquired=true;break}
+ }
+ assert.equal(acquired,true,'a well-timed jump should earn a bonus');
+ const bonus=h.state().bonusPoints;
+ h.frame(7);
+ assert.ok(h.state().bonusPoints>=bonus);
+ assert.ok(h.state().points>=Math.floor(h.state().distance)+bonus,'jump bonus must not be overwritten');
+});
+test('loop 2: three consecutive missed lassos cost one life',()=>{
+ const h=playHarness();h.begin('cattle');
+ for(let i=0;i<3;i++){h.pointer(840,300);h.frame(12)}
+ assert.equal(h.state().lives,2);
+ assert.equal(h.state().lassoMisses,0);
+});
+test('loop 2: rhythm notes trigger visible beats and feedback when hit',()=>{
+ const h=playHarness();h.begin('disco');h.frame(40);
+ assert.equal(h.state().beatIndex,0);
+ h.key('KeyK');
+ assert.ok(h.state().points>0);
+ assert.ok(h.state().beatFlash>0);
+ h.frame(9);
+ assert.equal(h.state().beatFlash,0);
+});
+test('loop 3: arcade exposes keyboard aiming and in-game mute control',()=>{
+ const html=fs.readFileSync(path.join(dir,'arcade.html'),'utf8');
+ assert.match(html,/id="soundBtn"/);
+ assert.match(SRC,/PC는 방향키로 조준/);
+ const h=playHarness();h.begin('gallery');
+ const before=h.state().aim.x;
+ h.key('ArrowLeft');assert.ok(h.state().aim.x<before);
+ h.click('soundBtn');assert.equal(h.el('soundBtn').textContent,'×');
+ h.click('soundBtn');assert.equal(h.el('soundBtn').textContent,'♪');
 });
