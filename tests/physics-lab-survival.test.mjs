@@ -59,3 +59,12 @@ test('survival stress never creates unbounded enemies or items',()=>{
  assert.equal(w.status,'playing');assert.ok(w.bots.length<=16);assert.ok(w.items.length<=45);
  assert.ok(w.bots.every(b=>Number.isFinite(b.x)&&Number.isFinite(b.vx)));
 });
+test('one heavy throw can hit two opponents in sequence for escalating reward',()=>{
+ const w=createWorld(1,'arcade');w.spawnTimer=999;w.crates=[];
+ w.bots=[enemy(610,305,5001),enemy(695,305,5002)];
+ const proto=w.items[0];
+ w.items=[{...proto,x:481,y:305,m:ITEMS.metal.mass,r:ITEMS.metal.radius,type:'metal',vx:0,vy:0}];
+ assert.equal(pickup(w),true);throwItem(w,900,305,1);ticks(w,70);
+ assert.equal(w.survivalHits,2);assert.equal(w.combo,2);
+ assert.equal(w.score,75,'first hit 25, second 50');
+});
