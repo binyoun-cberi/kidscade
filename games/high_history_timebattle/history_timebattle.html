@@ -260,6 +260,7 @@ function acceptLiveState(d){
   if(!session||d.room.code!==session.code)return;
   if(lastState?.room?.code===d.room.code&&Number(d.version)<Number(lastState.version))return;
   if(lastState?.room?.roundId&&lastState.room.roundId!==d.room.roundId){answeredFor=-1;lastChosenOption=-1;}
+  if(lastState?.room?.roundId!==d.room.roundId||lastState?.room?.questionNumber!==d.room.questionNumber)window.__historyShortDraft='';
   lastState=d;serverOffset=new Date(d.room.serverNow).getTime()-Date.now();
   $('recoveryToggle')?.classList.toggle('hidden',session.role!=='host'||!usesRealtime());
   if(!$('recoveryPanel')?.classList.contains('hidden'))renderRecoveryPlayers();
