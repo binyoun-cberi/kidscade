@@ -178,3 +178,30 @@ jobs:
           path: ${{ runner.temp }}/chibi-visual-audit/
           if-no-files-found: ignore
           retention-days: 7
+
+  kkwaekkori-browser-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Add Korean glyphs for readable screenshot review
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends fonts-noto-cjk
+          fc-cache -f
+      - name: Kkwaekkori real Chrome/WebGL playthrough
+        run: node tests/kkwaekkori-real-chrome-playthrough.cjs
+        env:
+          KIDSCADE_KKWA_AUDIT_OUT: ${{ runner.temp }}/kkwaekkori-real-play
+      - name: Upload Kkwaekkori desktop and mobile screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kkwaekkori-real-play
+          path: ${{ runner.temp }}/kkwaekkori-real-play/
+          if-no-files-found: ignore
+          retention-days: 7
+

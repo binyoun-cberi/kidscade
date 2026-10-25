@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { STAGES, DIFFICULTIES, WORLD_VERSION, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue } from './sim.mjs?v=3';
+import { STAGES, DIFFICULTIES, WORLD_VERSION, CHALLENGE, getChallengeSettings, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue } from './sim.mjs?v=4';
 
 const $ = id => document.getElementById(id);
 const ROOT = '../../assets/game/';
@@ -42,7 +42,7 @@ const cameraOffset = new THREE.Vector3(11,17,20);
 const scenery = new THREE.Group(), citizens = new THREE.Group(), movingCars = new THREE.Group(), marker = new THREE.Group();
 scene.add(scenery,citizens,movingCars,marker);
 let town = null, viewSize = 21, initialViewSize = 21, worldSerial = 0, currentTarget = 0, found = [], hintLevel = 0;
-let active = false, zoomTouchDist = 0, tapStart = null, lastFrame = performance.now(), lastToast = 0;
+let active = false, zoomTouchDist = 0, pinchCenter = null, tapStart = null, lastFrame = performance.now(), lastToast = 0;
 const pointerPositions = new Map();
 const citizenMeshes = new Map();
 const cars = [];
@@ -52,6 +52,7 @@ const citizenAssets = new Map();
 const readyAssets = new Map();
 const loweredBuildings = new Map();
 let loading=false, celebration=null, roundPrevious=[];
+let mode='explore',challengeLevel=1,timeRemaining=CHALLENGE.seconds,challengeBest=0,lastWrongClick=0;
 const recentLooks=[];
 let seeThrough = false, previewActor = null, previewMixer = null;
 const previewCanvas = $('targetPreview');
@@ -65,6 +66,37 @@ const previewCamera=new THREE.PerspectiveCamera(33,1,.1,30);
 previewCamera.position.set(1.7,1.5,3.6);previewCamera.lookAt(0,.72,0);
 
 const SAVE_KEY = window.KidscadeGame?.storageKey?.('tod_mot_chatgetda_kkwaekkori','session') || 'kidscade_game_v1:tod_mot_chatgetda_kkwaekkori:session';
+const BEST_KEY = window.KidscadeGame?.storageKey?.('tod_mot_chatgetda_kkwaekkori','arcade-best') || 'kidscade_game_v1:tod_mot_chatgetda_kkwaekkori:arcade-best';
+try{challengeBest=Math.max(0,Number(localStorage.getItem(BEST_KEY))||0)}catch(_){}
+function showChallengeHud(){
+  $('challengeHud').classList.toggle('hidden',mode!=='challenge');
+  $('progress').classList.toggle('hidden',mode==='challenge');
+  $('hintBtn').classList.toggle('hidden',mode==='challenge');
+  if(mode==='challenge'){
+    $('challengeStage').textContent=`${challengeLevel}단계 · ${town?.people.length||0}명`;
+    $('challengeBest').textContent=`최고 ${challengeBest}단계`;
+    $('challengeTimer').textContent=`${Math.ceil(timeRemaining)}초`;
+    $('challengeTimer').classList.toggle('urgent',timeRemaining<=5);
+  }
+}
+function finishChallenge(){
+  if(mode!=='challenge'||!active)return;
+  active=false;celebration=null;
+  $('finishTitle').textContent='연속 찾기 도전 완료!';
+  $('finishText').textContent=`${Math.max(0,challengeLevel-1)}단계 성공 · 최고 기록 ${challengeBest}단계! 다시 도전할까요?`;
+  $('finish').classList.remove('hidden');
+  try{window.KidscadeGame?.gameOver?.({success:false,score:Math.max(0,challengeLevel-1),stage:'challenge'})}catch(_){}
+}
+function completeChallengeStage(){
+  challengeBest=Math.max(challengeBest,challengeLevel);
+  try{localStorage.setItem(BEST_KEY,String(challengeBest))}catch(_){}
+  startChallenge(challengeLevel+1);
+}
+function startChallenge(level=1){
+  const settings=getChallengeSettings(level);
+  const difficulty=level>=9?'hard':level>=4?'normal':'easy';
+  return startTown(settings.stageName,getSeed(),[],difficulty,[],settings);
+}
 
 function loadGLB(url) {
   if (!modelCache.has(url)) modelCache.set(url,new Promise(resolve => {
@@ -100,12 +132,16 @@ function normalizedModel(gltf, longest = 2.5, footprint = null) {
   object.position.set(-center.x,-box.min.y,-center.z);
   return object;
 }
+function removeOccluder(root){
+  root.traverse(o=>{if(!o.isMesh)return;const i=occluders.indexOf(o);if(i>=0)occluders.splice(i,1);});
+}
 function modelIn(group, url, longest, fallback, parent, revision) {
   group.add(fallback);
   loadGLB(url).then(gltf => {
     if (!gltf || worldSerial !== revision || !parent.parent || !group.parent) return;
     const model = normalizedModel(gltf,longest,group.userData.footprint);
     if (!model) return;
+    if(group.userData.occluder)removeOccluder(fallback);
     group.remove(fallback);
     disposeProcedural(fallback);
     group.add(model);
@@ -123,10 +159,10 @@ function buildingFallback(block) {
   const g = new THREE.Group();
   const palette = [0xd7a58a,0x96b7d6,0xf6c875,0xa6bf97,0xe6aaaf];
   const color = palette[(block.col+block.row*2)%palette.length];
-  addPart(g,cube(2.1,1.5,2,color),0,.75,0);
-  const roof = addPart(g,owned(new THREE.Mesh(new THREE.ConeGeometry(1.54,.85,4),flat(0xba7a65))),0,1.9,0);
+  addPart(g,cube(1.62,1.5,1.62,color),0,.75,0);
+  const roof = addPart(g,owned(new THREE.Mesh(new THREE.ConeGeometry(1.06,.65,4),flat(0xba7a65))),0,1.81,0);
   roof.rotation.y = Math.PI/4;
-  addPart(g,cube(.65,.92,.12,0x765e54),0,.46,1.01);
+  addPart(g,cube(.46,.92,.12,0x765e54),0,.46,.83);
   return g;
 }
 function treeFallback() {
@@ -135,12 +171,30 @@ function treeFallback() {
   addPart(g,owned(new THREE.Mesh(new THREE.ConeGeometry(.56,1.1,7),flat(0x5ca16b))),0,1.03,0);
   return g;
 }
+function smallFallback(url){
+  if(/tree|bush|flower|planter/.test(url))return treeFallback();
+  const g=new THREE.Group();
+  if(/light-/.test(url)){
+    addPart(g,cylinder(.05,.07,1.4,0x748a79),0,.7,0);
+    addPart(g,ball(.17,0xffebaa),.15,1.35,0);
+  }else if(/bus-stop/.test(url)){
+    addPart(g,cube(.68,.09,.5,0x6c91a2),0,1.16,0);
+    for(const x of [-.27,.27])addPart(g,cube(.06,1.15,.07,0x69828b),x,.58,0);
+  }else if(/bicycle/.test(url)){
+    for(const x of [-.26,.26]){const wheel=owned(new THREE.Mesh(new THREE.TorusGeometry(.18,.035,6,12),flat(0x606f70)));wheel.position.set(x,.2,0);g.add(wheel);}
+    addPart(g,cube(.5,.035,.05,0x75a5b1),0,.34,0);
+  }else if(/mailbox/.test(url)){
+    addPart(g,cube(.34,.3,.25,0xe4a65b),0,.53,0);addPart(g,cube(.08,.5,.08,0x806b5e),0,.25,0);
+  }else{addPart(g,cylinder(.22,.23,.46,0x8da8a0),0,.23,0);}
+  return g;
+}
 function placeObject(url, center, longest, fallback, revision, footprint = null, occluder = false) {
   const pivot = new THREE.Group();
   pivot.position.set(center.x,0,center.z);
   scenery.add(pivot);
   pivot.userData.footprint=footprint;pivot.userData.occluder=occluder;
   modelIn(pivot,url,longest,fallback,pivot,revision);
+  if(occluder)registerOccluder(fallback);
   return pivot;
 }
 function generateWorld() {
@@ -166,7 +220,7 @@ function generateWorld() {
     const parcel=addPart(scenery,cube(5.6,.035,5.6,block.kind==='park'?0xa6c987:colors.concrete),center.x,.03,center.z);
     parcel.userData.block=block.id;
     // A 2.6-wide building envelope leaves the 1.88 sidewalk loop clear.
-    const local=(url,x,z,size,footprint=null,blocksView=false)=>placeObject(url,{x:center.x+x,z:center.z+z},size,treeFallback(),revision,footprint,blocksView);
+    const local=(url,x,z,size,footprint=null,blocksView=false)=>placeObject(url,{x:center.x+x,z:center.z+z},size,smallFallback(url),revision,footprint,blocksView);
     if(block.kind==='park') {
       addPart(scenery,cube(2.8,.06,2.8,0x8fbd75),center.x,.08,center.z);
       local(MODEL.parkTree,-.8,-.7,1.6,.9,true);
@@ -182,14 +236,14 @@ function generateWorld() {
       const variants=DISTRICT_MODELS[block.kind];
       const url=town.stageName==='small'&&block.kind==='home' ? MODEL.buildings[i%MODEL.buildings.length] : `${CITY}${variants[Math.floor(i/6)%variants.length]}.glb`;
       const height=block.kind==='plaza'?4.6:block.kind==='home'?3.3:2.7;
-      const building=placeObject(url,{x:center.x-.95,z:center.z-.25},height,buildingFallback(block),revision,1.65,true);
+      const building=placeObject(url,{x:center.x-.95,z:center.z-.45},height,buildingFallback(block),revision,1.65,true);
       building.rotation.y=0;
       const neighbor=block.kind==='home'?MODEL.buildings[(i+3)%MODEL.buildings.length]:`${CITY}${variants[(Math.floor(i/6)+1)%variants.length]}.glb`;
       placeObject(neighbor,{x:center.x+1.05,z:center.z-.25},Math.min(height,2.8),buildingFallback(block),revision,1.7,true);
       // Distinct, low storefront details sit inside each parcel, never in the pedestrian loop.
       if(block.kind==='market'||block.kind==='bakery') {
         // A stocked counter belongs to the storefront, clear of all activity bays.
-        const counter=new THREE.Group();counter.position.set(center.x,.62,center.z+1.35);scenery.add(counter);
+        const counter=new THREE.Group();counter.position.set(center.x,.62,center.z+.93);scenery.add(counter);
         addPart(counter,cube(2.35,.14,.44,0xe7bd85),0,0,0);
         for(let bread=0;bread<3;bread++){
           const tray=new THREE.Group();tray.position.set((bread-1)*.7,.08,0);counter.add(tray);
@@ -220,6 +274,7 @@ function generateWorld() {
     const appearance=new THREE.Group();
     holder.add(body,appearance);
     citizens.add(holder);
+    holder.userData.citizenId=person.id;
     citizenMeshes.set(person.id,{holder,body,appearance,person,activity:person.activity});
     makeCitizenAppearance(person,body,appearance,revision);
   }
@@ -228,7 +283,8 @@ function generateWorld() {
       const holder=new THREE.Group();movingCars.add(holder);
       const fallback=cube(1.05,.38,.62,[0x4e99d2,0xebc25d,0xe17e85][i]);fallback.position.y=.23;
       modelIn(holder,MODEL.cars[i],1.25,fallback,holder,revision);
-      const z=(-((rows-1)/2)+.5)*BLOCK_PITCH;
+      const roadRow=i%Math.max(1,rows-1);
+      const z=(roadRow+.5-(rows-1)/2)*BLOCK_PITCH+(i%2?.25:-.25);
       cars.push({holder,z,phase:i*.33,direction:i%2?-1:1,speed:.9+i*.16,width});
     }
     const stop=town.blocks.find(b=>b.kind==='stop');
@@ -361,10 +417,27 @@ function positionEverything(dt) {
       if(entry&&clip){entry.mixer.stopAllAction();entry.mixer.clipAction(clip).play();entry.clipName=clipName;}
     }
     const pos=getRoutePosition(p,town.config);
-    mesh.holder.position.set(pos.x,0.08,pos.z);
-    mesh.holder.rotation.y=0;
+    if(dt===0)mesh.holder.position.set(pos.x,.08,pos.z);
+    else mesh.holder.position.lerp(new THREE.Vector3(pos.x,.08,pos.z),1-Math.exp(-5*dt));
+    const walking=p.slot===1&&p.activity==='deliver';
+    const facing=walking?(Math.cos(p.elapsed*.47*(p.challengeSpeed||1)+p.phase)>=0?Math.PI/2:-Math.PI/2):0;
+    mesh.holder.rotation.y=THREE.MathUtils.lerp(mesh.holder.rotation.y,facing,dt===0?1:Math.min(1,dt*6));
     if(celebration?.id===p.id){mesh.body.rotation.z=Math.sin(p.elapsed*12)*.07;}
     else mesh.body.rotation.z=0;
+    if(mesh.catchBurst){
+      if(celebration?.id===p.id){
+        const elapsed=1.4-celebration.remaining;
+        mesh.catchBurst.children.forEach((spark,index)=>{
+          const angle=(index/mesh.catchBurst.children.length)*Math.PI*2;
+          spark.position.set(Math.cos(angle)*(.13+elapsed*.85),.72+elapsed*.6+Math.sin(index*3)*.06,Math.sin(angle)*(.13+elapsed*.65));
+          spark.scale.setScalar(Math.max(.02,1-elapsed/1.35));
+        });
+      }else{
+        disposeProcedural(mesh.catchBurst);
+        mesh.holder.remove(mesh.catchBurst);
+        mesh.catchBurst=null;
+      }
+    }
     animateActivity(mesh.holder,p);
   }
   for(const car of cars) {
@@ -383,7 +456,7 @@ function positionEverything(dt) {
   if(ring){
     const target=getTarget();
     ring.visible=active&&hintLevel>=3&&!!target;
-    if(target){const pos=getRoutePosition(target,town.config);ring.position.set(pos.x,.12+Math.sin(performance.now()*.005)*.045,pos.z)}
+    if(target){const pos=citizenMeshes.get(target.id)?.holder?.position;if(pos)ring.position.set(pos.x,.12+Math.sin(performance.now()*.005)*.045,pos.z)}
   }
 }
 
@@ -409,13 +482,16 @@ function announceClue(){
   }else showToast(clue.subtitle);
 }
 function getSeed(){return (Date.now() + Math.floor(Math.random()*999999))>>>0}
-async function startTown(stage,seed=getSeed(),restored=[],difficulty=$('difficulty').value,previous=null) {
+async function startTown(stage,seed=getSeed(),restored=[],difficulty=$('difficulty').value,previous=null,challenge=null) {
   if(!STAGES[stage]||loading)return;
   loading=true;active=false;celebration=null;
+  mode=challenge?'challenge':'explore';
+  if(challenge){challengeLevel=challenge.level;timeRemaining=challenge.seconds}
+  showChallengeHud();
   $('startStatus').textContent='친구들이 외출 준비를 하고 있어요…';
   document.querySelectorAll('[data-stage],#quickStart').forEach(b=>b.disabled=true);
   try {
-  town=makeTown(stage,seed,difficulty,false);
+  town=makeTown(stage,seed,difficulty,false,challenge);
   // Only fully loaded models/props with the required pose may become a clue.
   const urls=[...MODEL.people,...BREADS,MODEL.bench];
   for(const url of urls)if(readyAssets.has(url)&&!readyAssets.get(url))modelCache.delete(url);
@@ -434,13 +510,22 @@ async function startTown(stage,seed=getSeed(),restored=[],difficulty=$('difficul
   active=currentTarget<town.order.length;
   initialViewSize=0;
   cameraLook.set(0,0,0);
-  $('districtLabel').textContent=`${town.config.label} · ${DIFFICULTIES[town.difficulty].name}`;
+  $('districtLabel').textContent=mode==='challenge'? `연속 찾기 · ${challengeLevel}단계` : `${town.config.label} · ${DIFFICULTIES[town.difficulty].name}`;
+  showChallengeHud();
   $('difficulty').value=town.difficulty;
   $('start').classList.add('hidden');$('finish').classList.add('hidden');
+  // Building transparency is a temporary exploration tool, not a mode-wide setting.
+  // Reset on every new town to avoid ghostlike semi-transparent buildings.
+  seeThrough=false;
+  $('seeThrough').setAttribute('aria-pressed','false');
   resize();resetView();generateWorld();
   // Start close enough to distinguish a face. The whole-town button remains available.
-  const first=getBlockCenter(town.blocks[0],town.config);cameraLook.set(first.x,0,first.z+1);
-  viewSize=Math.min(13.5,Math.max(8,canvas.getBoundingClientRect().height*.025));resize();
+  // Timed search is only fair if the sought neighbor starts within view.
+  // Regular exploration still begins at the first district.
+  const first=getBlockCenter(challenge?getTarget().block:town.blocks[0],town.config);
+  cameraLook.set(first.x,0,first.z+1);
+  viewSize=challenge?Math.min(19,Math.max(14,canvas.getBoundingClientRect().height*.034)):Math.min(13.5,Math.max(8,canvas.getBoundingClientRect().height*.025));
+  resize();
   if(active){setClue();save();}
   else finishRound();
   $('startStatus').textContent='';
@@ -448,7 +533,7 @@ async function startTown(stage,seed=getSeed(),restored=[],difficulty=$('difficul
   finally{loading=false;document.querySelectorAll('[data-stage],#quickStart').forEach(b=>b.disabled=false);}
 }
 function save(){
-  if(!town)return;
+  if(!town||mode==='challenge')return;
   try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:WORLD_VERSION,stage:town.stageName,seed:town.seed,difficulty:town.difficulty,previous:roundPrevious,found,complete:found.length>=town.order.length,updatedAt:Date.now()}))}catch(_){}
 }
 function showToast(message){
@@ -458,41 +543,68 @@ function showToast(message){
   lastToast=setTimeout(()=>$('toast').classList.remove('show'),2200);
 }
 function pick(clientX,clientY) {
-  if(!active||celebration)return;
-  scene.updateMatrixWorld(true);
+  if(!active||celebration||loading)return;
+  scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);
   const rect=canvas.getBoundingClientRect();
-  let nearest=null,best=31*31;
-  for(const person of town.people){
-    if(found.includes(person.id))continue;
-    const holder=citizenMeshes.get(person.id)?.holder;
-    if(!holder)continue;
-    const projected=holder.position.clone().add(new THREE.Vector3(0,1.04,0)).project(camera);
-    if(projected.z< -1||projected.z>1)continue;
-    const x=rect.left+(projected.x+1)*rect.width/2;
-    const y=rect.top+(1-projected.y)*rect.height/2;
-    const distance=(x-clientX)**2+(y-clientY)**2;
-    if(distance<best){
-      // A hidden resident cannot be selected through an opaque building.
-      const point=holder.position.clone().add(new THREE.Vector3(0,1.04,0));
-      const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(projected.x,projected.y),camera);
-      const obstruction=seeThrough?null:ray.intersectObjects(occluders,false)[0];
-      if(!obstruction||obstruction.distance>ray.ray.origin.distanceTo(point)-.15){best=distance;nearest=person;}
+  const ndc=new THREE.Vector2((clientX-rect.left)/Math.max(1,rect.width)*2-1,1-(clientY-rect.top)/Math.max(1,rect.height)*2);
+  const ray=new THREE.Raycaster();ray.setFromCamera(ndc,camera);
+  const obstruction=seeThrough?null:ray.intersectObjects(occluders,false)[0];
+  let nearest=null;
+  // Pick the *visible surface* of the actual resident first.
+  // Screen-proximity remains a forgiving fallback for small touch targets.
+  for(const hit of ray.intersectObjects(citizens.children,true)){
+    if(obstruction&&obstruction.distance<hit.distance-.06)break;
+    let node=hit.object;
+    while(node&&node.parent!==citizens)node=node.parent;
+    const id=node?.userData?.citizenId;
+    if(id&&!found.includes(id)){nearest=town.people.find(p=>p.id===id);break;}
+  }
+  if(!nearest){
+    let best=35*35;
+    for(const person of town.people){
+      if(found.includes(person.id))continue;
+      const holder=citizenMeshes.get(person.id)?.holder;
+      if(!holder)continue;
+      for(const height of [.35,.77,1.1]){
+        const point=holder.position.clone().add(new THREE.Vector3(0,height,0));
+        const projected=point.clone().project(camera);
+        if(projected.z < -1||projected.z > 1)continue;
+        const x=rect.left+(projected.x+1)*rect.width/2;
+        const y=rect.top+(1-projected.y)*rect.height/2;
+        const distance=(x-clientX)**2+(y-clientY)**2;
+        if(distance>=best)continue;
+        if(obstruction&&obstruction.distance<ray.ray.origin.distanceTo(point)-.12)continue;
+        best=distance;nearest=person;
+      }
     }
   }
   if(!nearest){
-    const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((clientX-rect.left)/rect.width*2-1,1-(clientY-rect.top)/rect.height*2),camera);
-    const hit=ray.intersectObjects(occluders,false)[0];
+    const hit=obstruction||ray.intersectObjects(occluders,false)[0];
     if(hit){let root=hit.object;while(root.parent&&!root.userData.occluder)root=root.parent;if(root.userData.occluder){root.scale.y=.18;loweredBuildings.set(root,performance.now()+6000);showToast('건물을 잠깐 낮췄어요. 뒤쪽도 살펴봐!');}}
     return;
   }
   if(nearest.id!==town.order[currentTarget]){
-    showToast(getComparison(getTarget(),nearest));
+    if(mode==='challenge'){
+      if(performance.now()-lastWrongClick<350)return;
+      lastWrongClick=performance.now();
+      timeRemaining=Math.max(0,timeRemaining-CHALLENGE.wrongPenalty);
+      showChallengeHud();
+      showToast(`다른 친구예요! ${CHALLENGE.wrongPenalty}초가 줄었어요.`);
+      if(timeRemaining<=0)finishChallenge();
+    }else showToast(getComparison(getTarget(),nearest));
     try{window.KidscadeGame?.sound?.('click')}catch(_){}
     return;
   }
   nearest.found=true;found.push(nearest.id);
   recentLooks.push(signature(nearest));if(recentLooks.length>20)recentLooks.shift();
-  celebration={id:nearest.id,remaining:1.4};addFoundMarker(citizenMeshes.get(nearest.id).holder);
+  celebration={id:nearest.id,remaining:1.4};
+  const captured=citizenMeshes.get(nearest.id);
+  addFoundMarker(captured.holder);
+  // Original Critter Catchin' uses a visible capture-and-collect animation.
+  // A light 3D sparkle burst gives our scene the same immediate feedback.
+  const burst=new THREE.Group();burst.name='catch-burst';
+  for(let i=0;i<10;i++)burst.add(ball(.055,[0xffd761,0xffffff,0xf3947b][i%3]));
+  captured.holder.add(burst);captured.catchBurst=burst;
   $('foundStamps').textContent='🌟'.repeat(found.length);
   $('progress').textContent=`찾은 친구 ${found.length} / ${town.order.length}`;
   showToast('🎉 찾았다! 정말 잘했어!');
@@ -507,6 +619,7 @@ function addFoundMarker(holder){
 function finishRound(){
   active=false;
   if(!town)return;
+  if(mode==='challenge'){completeChallengeStage();return;}
   $('finishTitle').textContent='못 찾겠다 꾀꼬리? 다 찾았다!';
   $('finishText').textContent=`${town.config.label}에서 친구 ${town.order.length}명을 전부 찾았어요. 대단해요!`;
   $('finish').classList.remove('hidden');
@@ -515,7 +628,7 @@ function finishRound(){
   save();
 }
 function hint(){
-  if(!active||celebration)return;
+  if(!active||celebration||mode==='challenge')return;
   hintLevel=Math.min(3,hintLevel+1);
   const person=getTarget();
   if(!person)return;
@@ -547,21 +660,37 @@ function resize(){
   updateCamera();
 }
 function resetView(){if(!town)return;cameraOffset.set(11,17,20);cameraLook.set(0,0,0);viewSize=initialViewSize;resize()}
-function zoom(factor){
-  if(!town)return;
-  viewSize=THREE.MathUtils.clamp(viewSize*factor,7,Math.max(initialViewSize*1.25,11));resize();
-}
-function pan(dx,dy){
+function groundAt(clientX,clientY){
+  camera.updateMatrixWorld(true);
   const rect=canvas.getBoundingClientRect();
-  const right=new THREE.Vector3().setFromMatrixColumn(camera.matrix,0);
-  const up=new THREE.Vector3().setFromMatrixColumn(camera.matrix,1);
-  cameraLook.addScaledVector(right,-dx*viewSize/Math.max(1,rect.height));
-  cameraLook.addScaledVector(up,dy*viewSize/Math.max(1,rect.height));
+  const ndc=new THREE.Vector2((clientX-rect.left)/Math.max(1,rect.width)*2-1,1-(clientY-rect.top)/Math.max(1,rect.height)*2);
+  const ray=new THREE.Raycaster();ray.setFromCamera(ndc,camera);
+  return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),new THREE.Vector3());
+}
+function keepInsideTown(){
+  if(!town)return;
   cameraLook.y=0;
-  const limitX=(town.config.cols*BLOCK_PITCH)/2,limitZ=(town.config.rows*BLOCK_PITCH)/2;
+  const limitX=town.config.cols*BLOCK_PITCH/2,limitZ=town.config.rows*BLOCK_PITCH/2;
   cameraLook.x=THREE.MathUtils.clamp(cameraLook.x,-limitX,limitX);
   cameraLook.z=THREE.MathUtils.clamp(cameraLook.z,-limitZ,limitZ);
   updateCamera();
+}
+function zoom(factor,clientX=null,clientY=null){
+  if(!town)return;
+  const anchored=clientX!==null&&clientY!==null;
+  const before=anchored?groundAt(clientX,clientY):null;
+  viewSize=THREE.MathUtils.clamp(viewSize*factor,7,Math.max(initialViewSize*1.25,11));
+  resize();
+  const after=anchored?groundAt(clientX,clientY):null;
+  if(before&&after){cameraLook.add(before.sub(after));keepInsideTown();}
+}
+function pan(dx,dy){
+  if(!town)return;
+  const rect=canvas.getBoundingClientRect();
+  const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+  const before=groundAt(cx,cy),after=groundAt(cx+dx,cy+dy);
+  if(!before||!after)return;
+  cameraLook.add(before.sub(after));keepInsideTown();
 }
 canvas.addEventListener('pointerdown',event=>{
   canvas.setPointerCapture(event.pointerId);
@@ -574,24 +703,27 @@ canvas.addEventListener('pointermove',event=>{
   pointerPositions.set(event.pointerId,{x:event.clientX,y:event.clientY});
   if(pointerPositions.size===2){
     const [a,b]=[...pointerPositions.values()];const distance=Math.hypot(a.x-b.x,a.y-b.y);
-    if(zoomTouchDist)zoom(zoomTouchDist/distance);
-    zoomTouchDist=distance;if(tapStart)tapStart.moved=true;return;
+    const center={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+    if(pinchCenter)pan(center.x-pinchCenter.x,center.y-pinchCenter.y);
+    if(zoomTouchDist&&distance>0)zoom(zoomTouchDist/distance,center.x,center.y);
+    zoomTouchDist=distance;pinchCenter=center;
+    if(tapStart)tapStart.moved=true;return;
   }
   if(tapStart?.id===event.pointerId){
-    if(Math.hypot(event.clientX-tapStart.x,event.clientY-tapStart.y)>8)tapStart.moved=true;
+    if(Math.hypot(event.clientX-tapStart.x,event.clientY-tapStart.y)>(event.pointerType==='touch'?13:8))tapStart.moved=true;
     if(tapStart.moved&&town)pan(event.clientX-tapStart.lastX,event.clientY-tapStart.lastY);
     tapStart.lastX=event.clientX;tapStart.lastY=event.clientY;
   }
 });
 function releasePointer(event,canceled=false){
   const tap=!canceled&&pointerPositions.size===1&&tapStart?.id===event.pointerId&&!tapStart.moved;
-  pointerPositions.delete(event.pointerId);zoomTouchDist=0;
+  pointerPositions.delete(event.pointerId);zoomTouchDist=0;pinchCenter=null;
   if(tap)pick(event.clientX,event.clientY);
   if(event.pointerId===tapStart?.id)tapStart=null;
 }
 canvas.addEventListener('pointerup',event=>releasePointer(event));
 canvas.addEventListener('pointercancel',event=>releasePointer(event,true));
-canvas.addEventListener('wheel',event=>{event.preventDefault();zoom(event.deltaY>0?1.11:.9)},{passive:false});
+canvas.addEventListener('wheel',event=>{event.preventDefault();zoom(event.deltaY>0?1.11:.9,event.clientX,event.clientY)},{passive:false});
 let previewDrag=null;
 previewCanvas.addEventListener('pointerdown',event=>{previewDrag=event.clientX;previewCanvas.setPointerCapture(event.pointerId);});
 previewCanvas.addEventListener('pointermove',event=>{if(previewDrag===null||!previewActor)return;previewActor.rotation.y+=(event.clientX-previewDrag)*.018;previewDrag=event.clientX;});
@@ -604,23 +736,39 @@ $('zoomOut').addEventListener('click',()=>zoom(1.22));
 $('resetViewBtn').addEventListener('click',resetView);
 $('hintBtn').addEventListener('click',hint);
 $('speakBtn').addEventListener('click',announceClue);
+$('compactMission').addEventListener('click',()=>{
+  const compact=document.querySelector('.mission').classList.toggle('minimized');
+  $('compactMission').setAttribute('aria-pressed',String(compact));
+  $('compactMission').setAttribute('aria-label',compact?'찾기 카드 크게 보기':'찾기 카드 작게 보기');
+  $('compactMission').textContent=compact?'크게':'작게';
+  resize();
+});
 $('menuBtn').addEventListener('click',()=>{$('finish').classList.add('hidden');$('start').classList.remove('hidden')});
 document.querySelectorAll('[data-stage]').forEach(button=>button.addEventListener('click',()=>startTown(button.dataset.stage)));
 $('quickStart').addEventListener('click',()=>startTown('small',getSeed(),[],'easy'));
-$('againBtn').addEventListener('click',()=>startTown(town.stageName,getSeed(),[],town.difficulty));
+$('challengeStart').addEventListener('click',()=>startChallenge());
+$('againBtn').addEventListener('click',()=>mode==='challenge'?startChallenge():startTown(town.stageName,getSeed(),[],town.difficulty));
 $('otherStageBtn').addEventListener('click',()=>{$('finish').classList.add('hidden');$('start').classList.remove('hidden')});
 window.addEventListener('resize',resize);
 
 function animate(now){
   requestAnimationFrame(animate);
-  const dt=Math.min(.05,Math.max(0,(now-lastFrame)/1000));lastFrame=now;
+  // Wall-clock time must not slow down when large 3D towns run below 20 FPS.
+  // Scene updates are capped separately to avoid teleporting after inactive tabs.
+  const realDt=Math.max(0,(now-lastFrame)/1000);
+  const dt=Math.min(.25,realDt);lastFrame=now;
   if(town&&$('start').classList.contains('hidden')&&active){
+    if(mode==='challenge'&&!celebration){
+      timeRemaining=Math.max(0,timeRemaining-realDt);
+      showChallengeHud();
+      if(timeRemaining<=0){finishChallenge();renderer.render(scene,camera);previewRenderer.render(previewScene,previewCamera);return;}
+    }
     positionEverything(dt);
     for(const entry of mixers)entry.mixer.setTime(entry.person.elapsed);
     const target=getTarget();
     if(previewActor&&target){animateActivity(previewActor,target);previewMixer?.setTime(target.elapsed);}
     if(celebration){
-      celebration.remaining-=dt;
+      celebration.remaining-=realDt;
       if(celebration.remaining<=0){celebration=null;currentTarget=found.length;if(currentTarget>=town.order.length)finishRound();else setClue();}
     }
   }
