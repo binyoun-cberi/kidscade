@@ -196,7 +196,7 @@ export class RoadWeaver {
     if(this.budget<cost)return {ok:false,reason:'회전교차로 건설 자재가 부족해요.'};
     const circle={id:'o'+(++this.serial),x:near.x,y:near.y,radius,lanes};
     this.roundabouts.push(circle);this.budget-=cost;this.history.push({kind:'roundabout',id:circle.id,cost});
-    this.rebuild();return {ok:true,cost};
+    this.rebuild();return {ok:true,cost,lanes};
   }
   addTrafficIsland(p){
     let nearest=null,d=55;
