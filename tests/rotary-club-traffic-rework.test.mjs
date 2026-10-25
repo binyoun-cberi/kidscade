@@ -155,3 +155,64 @@ test('crowded roundabout keeps a substantial fraction of the hub throughput on a
     'a wide roundabout is throttling the whole city');
   assert.ok(rotary.cars.length<=180);
 });
+
+
+test('continuous ring spacing prevents cars on neighboring tiny arcs from occupying the same spot',()=>{
+  const sim=new RoadWeaver();sim.budget=10000;sim.openTowns=7;
+  sim.day=6;sim.minutes=0;sim.growthClock=-1e9;
+  const center={x:535,y:366};
+  assert.ok(sim.addRoad([home,center],4).ok);
+  for(const town of TOWN_TYPES.slice(1))assert.ok(sim.addRoad([center,town],4).ok);
+  assert.ok(sim.addRoundabout(center).ok);
+  assert.equal(sim.roundabouts[0].radius,50);
+  let closePairs=0,observations=0;
+  for(let tick=0;tick<1200;tick++){
+    sim.update(.1);
+    if(tick%4)continue;
+    const ringCars=sim.cars.filter(c=>c.edge.kind==='roundabout');
+    observations+=ringCars.length;
+    for(let i=0;i<ringCars.length;i++)for(let j=i+1;j<ringCars.length;j++){
+      if(ringCars[i].lane!==ringCars[j].lane)continue;
+      const a=sim.sampleCar(ringCars[i]),b=sim.sampleCar(ringCars[j]);
+      if(Math.hypot(a.x-b.x,a.y-b.y)<13)closePairs++;
+    }
+  }
+  assert.ok(observations>100,'no ring driving took place');
+  assert.ok(closePairs<65,'cars still overlap across adjacent short ring segments: '+closePairs);
+  assert.ok(sim.delivered>100,'new safe spacing stalled the entire city');
+});
+
+test('a car can safely merge from the inner roundabout lane to a narrower exit',()=>{
+  const sim=new RoadWeaver();sim.budget=10000;sim.openTowns=7;
+  const center={x:535,y:366};
+  assert.ok(sim.addRoad([home,center],4).ok);
+  for(const town of TOWN_TYPES.slice(1))assert.ok(sim.addRoad([center,town],town.id==='office'?2:4).ok);
+  assert.ok(sim.addRoundabout(center).ok);
+  const path=sim.route(home,office);
+  const i=path.findIndex((step,j)=>step.edge.kind==='roundabout'&&path[j+1]?.edge.kind==='ground');
+  assert.ok(i>0&&path[i+1].edge.lanes===2);
+  const step=path[i],car={id:'c999',from:'home',to:'office',path,step:i,edge:step.edge,dir:step.dir,
+    s:step.edge.length-.2,speed:40,maxSpeed:49,lane:1,laneVisual:1,laneCooldown:0,kind:'car'};
+  sim.cars=[car];
+  assert.equal(sim.canGo(car),true);
+  sim.advance(.1);
+  assert.equal(car.step,i+1,'car permanently blocked at a four-to-two lane exit');
+  assert.equal(car.lane,0);
+});
+
+test('roundabout vehicle heading stays smooth across segmented circle boundary',()=>{
+  const sim=commute('cross',4);
+  assert.ok(sim.addRoundabout({x:530,y:366}).ok);
+  const ringSteps=sim.route(home,office);
+  const i=ringSteps.findIndex((step,j)=>step.edge.kind==='roundabout'&&ringSteps[j+1]?.edge.kind==='roundabout');
+  assert.ok(i>=0);
+  const first=ringSteps[i],second=ringSteps[i+1];
+  const car={id:'c998',from:'home',to:'office',path:ringSteps,step:i,edge:first.edge,dir:1,
+    s:first.edge.length-.01,speed:25,maxSpeed:44,lane:0,laneVisual:0,laneCooldown:0,kind:'car'};
+  const a=sim.sampleCar(car);
+  car.step=i+1;car.edge=second.edge;car.s=.01;
+  const b=sim.sampleCar(car);
+  assert.ok(Math.hypot(a.x-b.x,a.y-b.y)<3,'vehicle teleported across arc boundary');
+  const rotation=Math.abs(Math.atan2(Math.sin(a.angle-b.angle),Math.cos(a.angle-b.angle)));
+  assert.ok(rotation<.2,'vehicle sprite snaps at an artificial ring subdivision');
+});
