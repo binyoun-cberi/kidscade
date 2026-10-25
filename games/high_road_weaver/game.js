@@ -310,8 +310,10 @@ function updateHud(now){
   $('clock').textContent=String(hr).padStart(2,'0')+':'+String(min).padStart(2,'0');
   $('day').textContent=sim.day+'일째';
   $('budget').textContent=sim.budget;
-  $('delivered').textContent=sim.delivered;
-  $('waiting').textContent=sim.waiting;
+  const connected=Boolean(sim.route(sim.towns[0],sim.towns[1]));
+  const traffic=sim.waiting>38?'심한 정체':sim.waiting>12?'혼잡':sim.waiting>3?'서행':'원활';
+  $('flow').textContent=connected?traffic:'연결 전';
+  $('queueState').textContent=sim.waiting>20?'대기 길어짐':sim.waiting>4?'대기 발생':'한산';
   const peak=sim.peak;
   $('timePhase').textContent=peak==='출근'?'출근':peak==='퇴근'?'퇴근':hr>=6&&hr<18?'낮':'밤';
   $('timePhase').style.background=peak==='일상'?'#dbead9':'#f5dba3';
