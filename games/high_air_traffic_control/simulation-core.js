@@ -11,17 +11,17 @@
   const WIDTH = 960, HEIGHT = 640, TAU = Math.PI * 2;
   const MAPS = {
     practice: {
-      title: '하늘빛 공항', duration: 150, interval: 13, required: 4,
+      title: '하늘빛 공항', duration: 150, interval: 13, required: 4, requiredCommands: 2,
       airports: [{id:'HBA',name:'하늘빛',x:488,y:320,angle:-0.32}],
       zones: [], backdrop:'forest'
     },
     coast: {
-      title: '해안 관제구역', duration: 175, interval: 10, required: 6,
+      title: '해안 관제구역', duration: 175, interval: 10, required: 6, requiredCommands: 3,
       airports: [{id:'BAY',name:'바다 공항',x:312,y:270,angle:.4},{id:'ISL',name:'섬 공항',x:697,y:413,angle:-.7}],
       zones: [{id:'W1',kind:'weather',x:570,y:170,w:144,h:109}], backdrop:'coast'
     },
     metro: {
-      title: '도시 관제구역', duration: 195, interval: 8, required: 8,
+      title: '도시 관제구역', duration: 195, interval: 8, required: 8, requiredCommands: 4,
       airports: [{id:'CTY',name:'중앙 공항',x:466,y:314,angle:.26},{id:'NTH',name:'북부 공항',x:266,y:183,angle:1.1},{id:'EST',name:'동부 공항',x:765,y:426,angle:-.55}],
       zones: [{id:'W2',kind:'weather',x:647,y:150,w:152,h:109},{id:'R1',kind:'restricted',x:330,y:490,w:132,h:103}],
       backdrop:'metro'
@@ -58,7 +58,7 @@
       elapsed:0,duration:m.duration,phase:'running', endReason:'',
       nextSpawn:9, sequence:0, planes:[], airports:m.airports.map(a=>({...a,busyUntil:0})),
       zones:m.zones.map(z=>({...z})), warnings:0, incidents:0, delivered:0, missed:0,
-      score:0, totalDelay:0, warningPairs:{}, messages:[],messageId:0,
+      score:0, totalDelay:0, warningPairs:{}, messages:[],messageId:0, managedIds:[], controlled:0, issuedInstructions:0,
       lastWeatherAt:0, activeAlerts:[], selectedId:null
     };
     notice(s,'관제 업무를 시작했어요. 항공기를 선택해 경로를 바꾸세요.');
@@ -96,10 +96,15 @@
   }
   function findPlane(s,id) { return s&&s.planes.find(p=>p.id===Number(id))||null; }
   function findDest(s,p) {return p.isExit?GATES.find(g=>g.id===p.destId):s.airports.find(a=>a.id===p.destId);}
+  function registerCommand(s,p) {
+    s.issuedInstructions++;
+    if (!s.managedIds.includes(p.id)) { s.managedIds.push(p.id); s.controlled++; }
+  }
   function route(s,id,x,y) {
     const p=findPlane(s,id);
     if(!p||s.phase!=='running'||!Number.isFinite(x)||!Number.isFinite(y)) return false;
     p.waypoint={x:clamp(x,34,WIDTH-34),y:clamp(y,34,HEIGHT-34)};
+    if (distance(p,p.waypoint)>=40) registerCommand(s,p);
     p.holding=false;p.automaticHold=false;p.status='경유점 이동';
     notice(s,p.callSign+' 경유점 변경');
     return true;
@@ -114,6 +119,7 @@
   function altitude(s,id,level) {
     const p=findPlane(s,id);
     if(!p||s.phase!=='running'||(level!==1&&level!==2))return false;
+    if (p.targetAltitude!==level) registerCommand(s,p);
     p.targetAltitude=level;
     notice(s,p.callSign+' · 고도 '+level+'단계 지시');
     return true;
@@ -121,6 +127,7 @@
   function hold(s,id) {
     const p=findPlane(s,id);
     if(!p||s.phase!=='running')return false;
+    if (!p.holding) registerCommand(s,p);
     p.holding=!p.holding;
     p.automaticHold=false;p.waypoint=null;
     p.status=p.holding?'대기 선회':'목적지 이동';
@@ -234,9 +241,9 @@
     dt=Math.min(dt,.1);s.elapsed+=dt;
     if(s.elapsed>=s.duration) {
       s.elapsed=s.duration;
-      const passed=s.incidents<3 && s.delivered>=s.map.required;
+      const passed=s.incidents<3 && s.delivered>=s.map.required && s.controlled>=s.map.requiredCommands;
       s.phase=passed?'completed':'failed';
-      s.endReason=passed?'오늘의 관제 업무를 안전하게 마쳤어요.':'근무가 끝났어요. 안전하게 도착한 항공기가 더 필요해요.';
+      s.endReason=passed?'오늘의 관제 업무를 안전하게 마쳤어요.':s.controlled<s.map.requiredCommands?'항공기를 직접 안내한 횟수가 부족해요. 다음에는 여러 비행기의 경로와 고도를 지시해 보세요.':'근무가 끝났어요. 안전하게 도착한 항공기가 더 필요해요.';
       notice(s,s.endReason,!passed);
       return s;
     }
