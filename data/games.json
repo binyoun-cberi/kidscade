@@ -2,6 +2,35 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "sand_island",
+      "addedAt": "2026-10-25T18:10:00+09:00",
+      "title": "말랑말랑 모래섬",
+      "href": "games/sand_island/index.html",
+      "category": "trivia",
+      "age": "toddler",
+      "ages": [
+        "toddler",
+        "low"
+      ],
+      "icon": "🏖️",
+      "cover": "games/sand_island/cover.svg",
+      "description": "알록달록 공을 톡톡 굴려 바구니에 모아요! 혼자서는 컴퓨터 친구가 도와주고, 둘이서도 함께 놀 수 있어요. 시간 제한 없이 즐기는 말랑한 협동 해변 놀이.",
+      "subject": "thinking",
+      "genre": "action",
+      "difficulty": "easy",
+      "sessionMinutes": 4,
+      "players": [
+        "solo",
+        "local2"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "western_quickdraw",
       "addedAt": "2026-10-23T22:27:00+09:00",
       "title": "정오의 결투",
