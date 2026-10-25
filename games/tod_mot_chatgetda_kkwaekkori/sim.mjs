@@ -52,7 +52,7 @@ export function signature(p){return `${p.modelVariant}:${p.activity}:${p.propVar
 export function getRoutePosition(person,stage){
   const c=getBlockCenter(person.block,stage);
   // Separate activity bays in front of every building, with room for bodies and props.
-  // Sidewalk: shoppers/reading/resting stand at z + 1.94.
+  // Sidewalk: shoppers/reading/resting stand at z + 1.61.
   // Deliveries, ball games and waving residents use the wider walking lane.
   // Neither route crosses the building footprint or the road (starts z + 2.825).
   // Stationary groups never overlap the pedestrian lane.
@@ -67,7 +67,7 @@ export function getRoutePosition(person,stage){
   const anchor=person.slot===0?-1.48:person.slot===1?0:1.48;
   const moving=person.activity==='deliver'||person.activity==='ball'||person.activity==='wave';
   const drift=moving?Math.sin(t*.82*pace+phase)*.28:Math.sin(t*.29+phase)*.045;
-  return {x:c.x+anchor+drift,z:c.z+1.94};
+  return {x:c.x+anchor+drift,z:c.z+1.61};
 }
 export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=true,challenge=null){
   const base=STAGES[stageName];if(!base)throw new Error(`알 수 없는 마을 크기: ${stageName}`);
