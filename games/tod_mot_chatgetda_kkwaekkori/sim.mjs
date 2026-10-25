@@ -6,7 +6,8 @@ export const CHALLENGE = Object.freeze({firstCrowd:10,additionalCrowd:3,maxCrowd
 export function getChallengeSettings(level=1) {
   const safeLevel=Math.max(1,Math.min(10000,Math.floor(Number(level)||1)));
   const residents=Math.min(CHALLENGE.maxCrowd,CHALLENGE.firstCrowd+(safeLevel-1)*CHALLENGE.additionalCrowd);
-  return {level:safeLevel,residents,targets:1,stageName:residents<=18?'small':residents<=45?'medium':'large',
+  return {level:safeLevel,residents,targets:1,stageName:residents<=18?'small':'medium', // denser, less empty cities
+    cols:residents<=18?3:residents<=36?4:5,rows:residents<=18?2:residents<=36?3:4,
     speed:Math.min(2.3,1+Math.max(0,safeLevel-10)*.12),seconds:CHALLENGE.seconds,wrongPenalty:CHALLENGE.wrongPenalty};
 }
 export const STAGES = Object.freeze({
@@ -51,20 +52,25 @@ export function signature(p){return `${p.modelVariant}:${p.activity}:${p.propVar
 export function getRoutePosition(person,stage){
   const c=getBlockCenter(person.block,stage);
   // Separate activity bays in front of every building, with room for bodies and props.
-  // Each resident stays in a separate, unobstructed sidewalk bay.
-  // In the arcade mode small loops become quicker after level ten, never teleporting.
-  if(person.challengeSpeed){
-    const t=person.elapsed,phase=person.phase,speed=person.challengeSpeed;
-    const sway=Math.sin(t*(.9+speed*.48)+phase)*(person.slot===1?.44:.14);
-    const depth=Math.sin(t*(.62+speed*.26)+phase*1.3)*.16;
-    return {x:c.x+(person.slot-1)*1.55+sway,z:c.z+2.15+depth};
+  // Sidewalk: z + 2.0 is for shoppers/reading/resting; z + 2.57 is
+  // the walking lane, still inside the parcel before the road (z + 2.825).
+  // Stationary groups never overlap the pedestrian lane.
+  const t=person.elapsed,pace=person.challengeSpeed||1,phase=person.phase;
+  if(person.slot===2){
+    // A walking neighbor travels continuously across most of the block.
+    // Smooth easing at each end avoids teleporting and sudden reversals.
+    const x=1.94*Math.sin(t*.47*pace+phase);
+    const z=2.57+Math.sin(t*.34*pace+phase)*.05;
+    return {x:c.x+x,z:c.z+z};
   }
-  const motion=person.activity==='deliver'&&!person.found ? Math.sin(person.elapsed*.8)*.16:0;
-  return {x:c.x+(person.slot-1)*1.55+motion,z:c.z+2.15};
+  const anchor=person.slot===0?-1.48:.82;
+  const moving=person.activity==='deliver'||person.activity==='ball'||person.activity==='wave';
+  const drift=moving?Math.sin(t*.82*pace+phase)*.28:Math.sin(t*.29+phase)*.045;
+  return {x:c.x+anchor+drift,z:c.z+2.0};
 }
 export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=true,challenge=null){
   const base=STAGES[stageName];if(!base)throw new Error(`알 수 없는 마을 크기: ${stageName}`);
-  const config=challenge?{...base,residents:challenge.residents,targets:1}:base;
+  const config=challenge?{...base,cols:challenge.cols,rows:challenge.rows,residents:challenge.residents,targets:1}:base;
   if(!DIFFICULTIES[difficulty])difficulty='easy';
   const random=createRng(seed),blocks=[],used=new Set();
   for(let row=0;row<config.rows;row++)for(let col=0;col<config.cols;col++)blocks.push({id:`b${row}-${col}`,col,row,...DISTRICTS[(col+row*config.cols)%6]});
@@ -76,12 +82,12 @@ export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=t
       challengeSpeed:challenge?.speed||0,phase:i*2.39996+(seed%19)*.37};
     used.add(signature(person));return person;
   });
-  const town={stageName,config,seed,difficulty,blocks,people,order:[],time:0};
+  const town={stageName,config,seed,difficulty,challenge:!!challenge,blocks,people,order:[],time:0};
   if(autoSelect)selectTargets(town,people.map(p=>p.id));return town;
 }
 export function selectTargets(town,eligibleIds,previous=[]){
   const eligible=new Set(eligibleIds),random=createRng(town.seed^0x51fa77);
-  const pool=shuffled(town.people.filter(p=>eligible.has(p.id)&&(town.difficulty!=='hard'||town.people.some(q=>q.id!==p.id&&q.activity===p.activity))),random),order=[];
+  const pool=shuffled(town.people.filter(p=>eligible.has(p.id)&&(town.difficulty!=='hard'||town.people.some(q=>eligible.has(q.id)&&q.id!==p.id&&q.activity===p.activity))),random),order=[];
   const recent=new Set(previous),kinds=new Set();
   while(order.length<town.config.targets&&pool.length){
     let index=pool.findIndex(p=>!recent.has(signature(p))&&!kinds.has(p.block.kind)&&!order.some(id=>town.people.find(q=>q.id===id).activity===p.activity));
@@ -91,7 +97,7 @@ export function selectTargets(town,eligibleIds,previous=[]){
   town.order=order;for(const p of town.people)p.reserved=order.includes(p.id);
   if(town.difficulty!=='easy')for(const id of order){
     const target=town.people.find(p=>p.id===id);
-    const candidates=town.people.filter(p=>!p.reserved&&!p.foilFor&&p.id!==id&&(town.difficulty==='hard'?p.activity===target.activity:p.activity!==target.activity));
+    const candidates=town.people.filter(p=>eligible.has(p.id)&&!p.reserved&&!p.foilFor&&p.id!==id&&(town.difficulty==='hard'?p.activity===target.activity:p.activity!==target.activity));
     let assigned=false;
     for(const foil of candidates){
       for(const propVariant of [(target.propVariant+1)%3,(target.propVariant+2)%3]){
