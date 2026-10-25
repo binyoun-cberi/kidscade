@@ -146,5 +146,5 @@ stickElement.addEventListener('pointermove',e=>{if(stick.active&&e.pointerId===s
 function stopStick(e){if(e.pointerId!==stick.pointer)return;stick.active=false;stick.dx=stick.dy=0;stickKnob.style.transform='translate(0px,0px)';}
 stickElement.addEventListener('pointerup',stopStick);stickElement.addEventListener('pointercancel',stopStick);
 // SDK-driven pause/resume: do not progress physics while the iframe is paused.
-try{window.KidscadeGame?.onPauseChange?.(paused=>paused?pause():resume());}catch{}
+try{window.KidscadeGame?.registerPauseHandlers?.({pause:()=>{if(scene==='playing')pause();},resume:()=>{if(scene==='paused')resume();}});}catch{}
 showMenu(true);syncUi();requestAnimationFrame(frame);
