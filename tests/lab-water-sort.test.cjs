@@ -128,5 +128,11 @@ test('UI-level hint, pour animation state, and undo stay consistent', async () =
     assert.notDeepEqual(app.getBoard(), original, 'pour updates board at stage ' + stage);
     app.undoMove();
     assert.deepEqual(app.getBoard(), original, 'undo exactly restores stage ' + stage);
+    // Complete the entire level through the actual UI click and animation handlers.
+    for (const move of core.generate(stage).solution) {
+      await app.handleBeakerClick(move[0]);
+      await app.handleBeakerClick(move[1]);
+    }
+    assert.ok(core.solved(app.getBoard()), 'full UI playthrough clears stage ' + stage);
   }
 });
