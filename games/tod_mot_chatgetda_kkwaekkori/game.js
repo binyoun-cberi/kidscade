@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { STAGES, DIFFICULTIES, WORLD_VERSION, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue } from './sim.mjs?v=3';
+import { STAGES, DIFFICULTIES, WORLD_VERSION, CHALLENGE, getChallengeSettings, COLORS, ACTIVITIES, BLOCK_PITCH, makeTown, selectTargets, signature, getComparison, getBlockCenter, getRoutePosition, movePeople, getClue } from './sim.mjs?v=3';
 
 const $ = id => document.getElementById(id);
 const ROOT = '../../assets/game/';
@@ -52,6 +52,7 @@ const citizenAssets = new Map();
 const readyAssets = new Map();
 const loweredBuildings = new Map();
 let loading=false, celebration=null, roundPrevious=[];
+let mode='explore',challengeLevel=1,timeRemaining=CHALLENGE.seconds,challengeBest=0,lastWrongClick=0;
 const recentLooks=[];
 let seeThrough = false, previewActor = null, previewMixer = null;
 const previewCanvas = $('targetPreview');
@@ -65,6 +66,36 @@ const previewCamera=new THREE.PerspectiveCamera(33,1,.1,30);
 previewCamera.position.set(1.7,1.5,3.6);previewCamera.lookAt(0,.72,0);
 
 const SAVE_KEY = window.KidscadeGame?.storageKey?.('tod_mot_chatgetda_kkwaekkori','session') || 'kidscade_game_v1:tod_mot_chatgetda_kkwaekkori:session';
+const BEST_KEY = window.KidscadeGame?.storageKey?.('tod_mot_chatgetda_kkwaekkori','arcade-best') || 'kidscade_game_v1:tod_mot_chatgetda_kkwaekkori:arcade-best';
+try{challengeBest=Math.max(0,Number(localStorage.getItem(BEST_KEY))||0)}catch(_){}
+function showChallengeHud(){
+  $('challengeHud').classList.toggle('hidden',mode!=='challenge');
+  $('progress').classList.toggle('hidden',mode==='challenge');
+  $('hintBtn').classList.toggle('hidden',mode==='challenge');
+  if(mode==='challenge'){
+    $('challengeStage').textContent=`${challengeLevel}단계 · ${town?.people.length||0}명`;
+    $('challengeBest').textContent=`최고 ${challengeBest}단계`;
+    $('challengeTimer').textContent=`${Math.ceil(timeRemaining)}초`;
+    $('challengeTimer').classList.toggle('urgent',timeRemaining<=5);
+  }
+}
+function finishChallenge(){
+  if(mode!=='challenge'||!active)return;
+  active=false;celebration=null;
+  $('finishTitle').textContent='연속 찾기 도전 완료!';
+  $('finishText').textContent=`${Math.max(0,challengeLevel-1)}단계 성공 · 최고 기록 ${challengeBest}단계! 다시 도전할까요?`;
+  $('finish').classList.remove('hidden');
+  try{window.KidscadeGame?.gameOver?.({success:false,score:Math.max(0,challengeLevel-1),stage:'challenge'})}catch(_){}
+}
+function completeChallengeStage(){
+  challengeBest=Math.max(challengeBest,challengeLevel);
+  try{localStorage.setItem(BEST_KEY,String(challengeBest))}catch(_){}
+  startChallenge(challengeLevel+1);
+}
+function startChallenge(level=1){
+  const settings=getChallengeSettings(level);
+  return startTown(settings.stageName,getSeed(),[],'easy',[],settings);
+}
 
 function loadGLB(url) {
   if (!modelCache.has(url)) modelCache.set(url,new Promise(resolve => {
@@ -100,12 +131,16 @@ function normalizedModel(gltf, longest = 2.5, footprint = null) {
   object.position.set(-center.x,-box.min.y,-center.z);
   return object;
 }
+function removeOccluder(root){
+  root.traverse(o=>{if(!o.isMesh)return;const i=occluders.indexOf(o);if(i>=0)occluders.splice(i,1);});
+}
 function modelIn(group, url, longest, fallback, parent, revision) {
   group.add(fallback);
   loadGLB(url).then(gltf => {
     if (!gltf || worldSerial !== revision || !parent.parent || !group.parent) return;
     const model = normalizedModel(gltf,longest,group.userData.footprint);
     if (!model) return;
+    if(group.userData.occluder)removeOccluder(fallback);
     group.remove(fallback);
     disposeProcedural(fallback);
     group.add(model);
@@ -123,10 +158,10 @@ function buildingFallback(block) {
   const g = new THREE.Group();
   const palette = [0xd7a58a,0x96b7d6,0xf6c875,0xa6bf97,0xe6aaaf];
   const color = palette[(block.col+block.row*2)%palette.length];
-  addPart(g,cube(2.1,1.5,2,color),0,.75,0);
-  const roof = addPart(g,owned(new THREE.Mesh(new THREE.ConeGeometry(1.54,.85,4),flat(0xba7a65))),0,1.9,0);
+  addPart(g,cube(1.62,1.5,1.62,color),0,.75,0);
+  const roof = addPart(g,owned(new THREE.Mesh(new THREE.ConeGeometry(1.06,.65,4),flat(0xba7a65))),0,1.81,0);
   roof.rotation.y = Math.PI/4;
-  addPart(g,cube(.65,.92,.12,0x765e54),0,.46,1.01);
+  addPart(g,cube(.46,.92,.12,0x765e54),0,.46,.83);
   return g;
 }
 function treeFallback() {
@@ -135,12 +170,30 @@ function treeFallback() {
   addPart(g,owned(new THREE.Mesh(new THREE.ConeGeometry(.56,1.1,7),flat(0x5ca16b))),0,1.03,0);
   return g;
 }
+function smallFallback(url){
+  if(/tree|bush|flower|planter/.test(url))return treeFallback();
+  const g=new THREE.Group();
+  if(/light-/.test(url)){
+    addPart(g,cylinder(.05,.07,1.4,0x748a79),0,.7,0);
+    addPart(g,ball(.17,0xffebaa),.15,1.35,0);
+  }else if(/bus-stop/.test(url)){
+    addPart(g,cube(.68,.09,.5,0x6c91a2),0,1.16,0);
+    for(const x of [-.27,.27])addPart(g,cube(.06,1.15,.07,0x69828b),x,.58,0);
+  }else if(/bicycle/.test(url)){
+    for(const x of [-.26,.26]){const wheel=owned(new THREE.Mesh(new THREE.TorusGeometry(.18,.035,6,12),flat(0x606f70)));wheel.position.set(x,.2,0);g.add(wheel);}
+    addPart(g,cube(.5,.035,.05,0x75a5b1),0,.34,0);
+  }else if(/mailbox/.test(url)){
+    addPart(g,cube(.34,.3,.25,0xe4a65b),0,.53,0);addPart(g,cube(.08,.5,.08,0x806b5e),0,.25,0);
+  }else{addPart(g,cylinder(.22,.23,.46,0x8da8a0),0,.23,0);}
+  return g;
+}
 function placeObject(url, center, longest, fallback, revision, footprint = null, occluder = false) {
   const pivot = new THREE.Group();
   pivot.position.set(center.x,0,center.z);
   scenery.add(pivot);
   pivot.userData.footprint=footprint;pivot.userData.occluder=occluder;
   modelIn(pivot,url,longest,fallback,pivot,revision);
+  if(occluder)registerOccluder(fallback);
   return pivot;
 }
 function generateWorld() {
@@ -166,7 +219,7 @@ function generateWorld() {
     const parcel=addPart(scenery,cube(5.6,.035,5.6,block.kind==='park'?0xa6c987:colors.concrete),center.x,.03,center.z);
     parcel.userData.block=block.id;
     // A 2.6-wide building envelope leaves the 1.88 sidewalk loop clear.
-    const local=(url,x,z,size,footprint=null,blocksView=false)=>placeObject(url,{x:center.x+x,z:center.z+z},size,treeFallback(),revision,footprint,blocksView);
+    const local=(url,x,z,size,footprint=null,blocksView=false)=>placeObject(url,{x:center.x+x,z:center.z+z},size,smallFallback(url),revision,footprint,blocksView);
     if(block.kind==='park') {
       addPart(scenery,cube(2.8,.06,2.8,0x8fbd75),center.x,.08,center.z);
       local(MODEL.parkTree,-.8,-.7,1.6,.9,true);
@@ -189,7 +242,7 @@ function generateWorld() {
       // Distinct, low storefront details sit inside each parcel, never in the pedestrian loop.
       if(block.kind==='market'||block.kind==='bakery') {
         // A stocked counter belongs to the storefront, clear of all activity bays.
-        const counter=new THREE.Group();counter.position.set(center.x,.62,center.z+1.35);scenery.add(counter);
+        const counter=new THREE.Group();counter.position.set(center.x,.62,center.z+1.06);scenery.add(counter);
         addPart(counter,cube(2.35,.14,.44,0xe7bd85),0,0,0);
         for(let bread=0;bread<3;bread++){
           const tray=new THREE.Group();tray.position.set((bread-1)*.7,.08,0);counter.add(tray);
@@ -220,6 +273,7 @@ function generateWorld() {
     const appearance=new THREE.Group();
     holder.add(body,appearance);
     citizens.add(holder);
+    holder.userData.citizenId=person.id;
     citizenMeshes.set(person.id,{holder,body,appearance,person,activity:person.activity});
     makeCitizenAppearance(person,body,appearance,revision);
   }
@@ -228,7 +282,8 @@ function generateWorld() {
       const holder=new THREE.Group();movingCars.add(holder);
       const fallback=cube(1.05,.38,.62,[0x4e99d2,0xebc25d,0xe17e85][i]);fallback.position.y=.23;
       modelIn(holder,MODEL.cars[i],1.25,fallback,holder,revision);
-      const z=(-((rows-1)/2)+.5)*BLOCK_PITCH;
+      const roadRow=i%Math.max(1,rows-1);
+      const z=(roadRow+.5-(rows-1)/2)*BLOCK_PITCH+(i%2?.25:-.25);
       cars.push({holder,z,phase:i*.33,direction:i%2?-1:1,speed:.9+i*.16,width});
     }
     const stop=town.blocks.find(b=>b.kind==='stop');
@@ -361,8 +416,11 @@ function positionEverything(dt) {
       if(entry&&clip){entry.mixer.stopAllAction();entry.mixer.clipAction(clip).play();entry.clipName=clipName;}
     }
     const pos=getRoutePosition(p,town.config);
-    mesh.holder.position.set(pos.x,0.08,pos.z);
-    mesh.holder.rotation.y=0;
+    if(dt===0)mesh.holder.position.set(pos.x,.08,pos.z);
+    else mesh.holder.position.lerp(new THREE.Vector3(pos.x,.08,pos.z),1-Math.exp(-5*dt));
+    const walking=p.slot===1&&['deliver','ball','wave'].includes(p.activity);
+    const facing=walking?(Math.cos(p.elapsed*.47*(p.challengeSpeed||1)+p.phase)>=0?Math.PI/2:-Math.PI/2):0;
+    mesh.holder.rotation.y=THREE.MathUtils.lerp(mesh.holder.rotation.y,facing,dt===0?1:Math.min(1,dt*6));
     if(celebration?.id===p.id){mesh.body.rotation.z=Math.sin(p.elapsed*12)*.07;}
     else mesh.body.rotation.z=0;
     animateActivity(mesh.holder,p);
@@ -383,7 +441,7 @@ function positionEverything(dt) {
   if(ring){
     const target=getTarget();
     ring.visible=active&&hintLevel>=3&&!!target;
-    if(target){const pos=getRoutePosition(target,town.config);ring.position.set(pos.x,.12+Math.sin(performance.now()*.005)*.045,pos.z)}
+    if(target){const pos=citizenMeshes.get(target.id)?.holder?.position;if(pos)ring.position.set(pos.x,.12+Math.sin(performance.now()*.005)*.045,pos.z)}
   }
 }
 
