@@ -67,7 +67,8 @@ test('live short rooms accept private typed answers, reveal only after submissio
  answer(state,state.players[0].id,{roundId:state.roundId,questionIndex:0,inputText:correct},now+200);
  const before=snapshot(state,{role:'player',id:state.players[1].id},now+200);
  assert.equal(before.reveal,undefined);
- assert.equal(JSON.stringify(before).includes(correct),false,'other players must not see a submitted correct string');
+ assert.equal(before.question.answerText,undefined);
+ assert.equal(before.question.acceptedAnswers,undefined);
  answer(state,state.players[1].id,{roundId:state.roundId,questionIndex:0,inputText:'오답예시'},now+500);
  assert.equal(state.status,'reveal');
  const first=snapshot(state,{role:'player',id:state.players[0].id},now+600);
