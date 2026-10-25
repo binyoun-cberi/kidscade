@@ -19,6 +19,7 @@
     <div><small>남은 근무</small><strong id="timeValue">--:--</strong></div>
     <div><small>안전 유도</small><strong id="safeValue">0</strong></div>
     <div><small>점수</small><strong id="scoreValue">0</strong></div>
+    <div><small>내 관제 지시</small><strong id="ordersValue">0 / 2</strong></div>
     <div><small>안전 여유</small><strong id="safetyValue">● ● ●</strong></div>
   </div>
 </header>
@@ -56,19 +57,19 @@
 </div>
 <div class="modal" id="startModal">
   <div class="modal-card"><span class="eyebrow">FLIGHT DIRECTOR · 첫 근무</span><h2>오늘은 내가 관제사!</h2>
-    <p>하늘에는 여러 항공기가 함께 날고 있어요. 목적지를 찾아 안전하게 안내하고, 서로 너무 가까워지지 않도록 비행 방향과 고도를 조절하세요.</p>
+    <p>하늘에는 여러 항공기가 함께 날고 있어요. 목적지를 찾아 안전하게 안내하고, 서로 너무 가까워지지 않도록 비행 방향과 고도를 조절하세요. <b>자동 비행만 바라봐서는 성공할 수 없어요.</b></p>
     <div class="guide"><div><b>① 비행기 선택</b><span>레이더의 비행기나 오른쪽 운항 목록을 누르세요.</span></div><div><b>② 경유점 지정</b><span>지도에 경유점을 찍으면 그곳을 지나 목적지로 향해요.</span></div><div><b>③ 안전하게 착륙</b><span>같은 고도의 항공기끼리 거리를 유지하고, 착륙 전에는 낮은 고도로 바꾸세요.</span></div></div>
     <div class="sector-choices" role="group" aria-label="관제 지역 선택">
-      <button data-map="practice" type="button" class="sector selected"><strong>하늘빛 공항</strong><small>기초 · 공항 1곳</small></button>
-      <button data-map="coast" type="button" class="sector"><strong>해안 관제구역</strong><small>중급 · 공항 2곳</small></button>
-      <button data-map="metro" type="button" class="sector"><strong>도시 관제구역</strong><small>도전 · 공항 3곳</small></button>
+      <button data-map="practice" type="button" class="sector selected"><strong>하늘빛 공항</strong><small>기초 · 공항 1곳 · 직접 2대 관제</small></button>
+      <button data-map="coast" type="button" class="sector"><strong>해안 관제구역</strong><small>중급 · 공항 2곳 · 직접 3대 관제</small></button>
+      <button data-map="metro" type="button" class="sector"><strong>도시 관제구역</strong><small>도전 · 공항 3곳 · 직접 4대 관제</small></button>
     </div>
     <button id="startBtn" type="button" class="primary">근무 시작</button><p class="fineprint">원작 AIROBICS의 게임 구성에서 영감을 받은 독립 제작 관제 게임입니다. 모든 공항과 비행 상황은 가상입니다.</p>
   </div>
 </div>
 <div class="modal" id="endModal" hidden>
   <div class="modal-card summary"><span class="eyebrow">SHIFT REPORT</span><h2 id="endTitle">오늘의 관제 보고서</h2><p id="endMessage"></p>
-    <div class="report-grid"><div><small>안전 도착</small><strong id="endSafe"></strong></div><div><small>경고 횟수</small><strong id="endWarnings"></strong></div><div><small>관제 점수</small><strong id="endScore"></strong></div><div><small>안전 개입</small><strong id="endIncidents"></strong></div></div>
+    <div class="report-grid"><div><small>안전 도착</small><strong id="endSafe"></strong></div><div><small>경고 횟수</small><strong id="endWarnings"></strong></div><div><small>관제 점수</small><strong id="endScore"></strong></div><div><small>직접 관리</small><strong id="endOrders"></strong></div><div><small>안전 개입</small><strong id="endIncidents"></strong></div></div>
     <button id="againBtn" type="button" class="primary">다시 도전</button><button id="chooseBtn" type="button" class="secondary">다른 관제구역 선택</button>
   </div>
 </div>
