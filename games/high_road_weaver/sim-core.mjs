@@ -189,9 +189,12 @@ export class RoadWeaver {
     if(!near)return {ok:false,reason:'지상 도로가 만나는 교차로를 눌러 주세요.'};
     if(this.towns.some(t=>len(t,near)<120)||this.roundabouts.some(c=>len(c,near)<120))
       return {ok:false,reason:'도시나 다른 회전교차로에서 조금 떨어진 곳을 골라 주세요.'};
-    const radius=37,cost=75;
+    // 진입 갈래가 많으면 1차선짜리 순환로 하나가 도시 전체를 가로막는다.
+    // 더 넓은 순환로는 비용도 더 많이 든다.
+    const lanes=(this.adj.get(near.id)||[]).length>=5?4:2;
+    const radius=37,cost=lanes===4?95:75;
     if(this.budget<cost)return {ok:false,reason:'회전교차로 건설 자재가 부족해요.'};
-    const circle={id:'o'+(++this.serial),x:near.x,y:near.y,radius};
+    const circle={id:'o'+(++this.serial),x:near.x,y:near.y,radius,lanes};
     this.roundabouts.push(circle);this.budget-=cost;this.history.push({kind:'roundabout',id:circle.id,cost});
     this.rebuild();return {ok:true,cost};
   }
@@ -385,7 +388,7 @@ export class RoadWeaver {
           pts.push({x:c.x+Math.cos(theta)*c.radius,y:c.y+Math.sin(theta)*c.radius});
         }
         pts.push(b.p);
-        addEdge(c.id+':'+i,a.p,b.p,pts,2,'roundabout',0,0,true);
+        addEdge(c.id+':'+i,a.p,b.p,pts,c.lanes===4?4:2,'roundabout',0,0,true);
       }
     }
     this.nodes=nodes;this.edges=edges;this.adj=adj;
@@ -471,7 +474,7 @@ export class RoadWeaver {
     // 진입 차량은 로터리 안을 먼저 달리고 있는 차에 양보한다.
     if(next.edge.kind==='roundabout'&&car.edge.kind!=='roundabout'){
       if(this.cars.some(other=>other!==car&&other.edge.kind==='roundabout'&&other.dir===1&&(
-        (other.edge===next.edge&&other.s<27)||(other.edge.b===node&&other.edge.length-other.s<26)
+        (other.edge===next.edge&&other.s<18)||(other.edge.b===node&&other.edge.length-other.s<18)
       )))return false;
     }
     if(this.junctionIsBusy(node,car))return false;
@@ -729,7 +732,8 @@ export class RoadWeaver {
       &&r.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=0&&p.x<=1080&&p.y>=0&&p.y<=720));
     const circles=(Array.isArray(data.roundabouts)?data.roundabouts:[]).filter(c=>c&&typeof c.id==='string'
       &&Number.isFinite(c.x)&&Number.isFinite(c.y)&&Number.isFinite(c.radius)
-      &&c.x>=0&&c.x<=1080&&c.y>=0&&c.y<=720&&c.radius>=15&&c.radius<=90);
+      &&c.x>=0&&c.x<=1080&&c.y>=0&&c.y<=720&&c.radius>=15&&c.radius<=90
+      &&(c.lanes===undefined||[2,4].includes(c.lanes)));
     if(circles.length>8||circles.length!==(data.roundabouts||[]).length)return false;
     if(roads.length!==data.roads.length||roads.length>120)return false;
     if(data.version===3&&(!Array.isArray(data.cars)||data.cars.length>180||
