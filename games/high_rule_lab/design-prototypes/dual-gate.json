@@ -1,0 +1,241 @@
+{
+  "status": "design-prototype-not-in-catalog",
+  "id": "dual-gate",
+  "difficultyTarget": "advanced",
+  "level": {
+    "title": "두 번 열리는 문",
+    "chapter": "2차 설계 시제품",
+    "w": 12,
+    "h": 10,
+    "objects": [
+      {
+        "kind": "object",
+        "type": "hero",
+        "x": 1,
+        "y": 2
+      },
+      {
+        "kind": "object",
+        "type": "flag",
+        "x": 10,
+        "y": 2
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 5,
+        "y": 0
+      },
+      {
+        "kind": "object",
+        "type": "door",
+        "x": 9,
+        "y": 0
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 5,
+        "y": 1
+      },
+      {
+        "kind": "object",
+        "type": "door",
+        "x": 9,
+        "y": 1
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 5,
+        "y": 2
+      },
+      {
+        "kind": "object",
+        "type": "door",
+        "x": 9,
+        "y": 2
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 5,
+        "y": 3
+      },
+      {
+        "kind": "object",
+        "type": "door",
+        "x": 9,
+        "y": 3
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 5,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "door",
+        "x": 9,
+        "y": 4
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 5,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "door",
+        "x": 9,
+        "y": 5
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 5,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "door",
+        "x": 9,
+        "y": 6
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 5,
+        "y": 7
+      },
+      {
+        "kind": "object",
+        "type": "door",
+        "x": 9,
+        "y": 7
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 5,
+        "y": 8
+      },
+      {
+        "kind": "object",
+        "type": "door",
+        "x": 9,
+        "y": 8
+      },
+      {
+        "kind": "object",
+        "type": "wall",
+        "x": 5,
+        "y": 9
+      },
+      {
+        "kind": "object",
+        "type": "door",
+        "x": 9,
+        "y": 9
+      }
+    ],
+    "words": [
+      {
+        "kind": "word",
+        "token": "N:hero",
+        "x": 1,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 2,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "P:YOU",
+        "x": 3,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "N:flag",
+        "x": 8,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 9,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "P:WIN",
+        "x": 10,
+        "y": 0
+      },
+      {
+        "kind": "word",
+        "token": "N:wall",
+        "x": 1,
+        "y": 7
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 2,
+        "y": 7
+      },
+      {
+        "kind": "word",
+        "token": "P:STOP",
+        "x": 3,
+        "y": 7
+      },
+      {
+        "kind": "word",
+        "token": "N:door",
+        "x": 7,
+        "y": 6
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 7,
+        "y": 7
+      },
+      {
+        "kind": "word",
+        "token": "P:STOP",
+        "x": 7,
+        "y": 8
+      }
+    ],
+    "note": "첫 번째 벽을 열고, 두 번째 방에서 문까지 다시 열어야 해요.",
+    "hints": [
+      "서로 다른 두 벽이 보이나요?",
+      "먼저 벽을 통과할 수 있어야 두 번째 규칙에 닿아요.",
+      "벽 = 막힘을 해제한 뒤 문 = 막힘도 해제하세요."
+    ]
+  },
+  "solution": {
+    "moves": "RRRDDDDDDLURRRDRLUUURRRRUUU",
+    "count": 27,
+    "ruleEdits": [
+      {
+        "atMove": 11,
+        "kind": "rule-broken",
+        "subject": "wall"
+      },
+      {
+        "atMove": 16,
+        "kind": "rule-broken",
+        "subject": "door"
+      }
+    ]
+  }
+}
