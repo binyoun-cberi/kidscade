@@ -167,6 +167,7 @@ test('moving neighbors use a separate unobstructed lane and never teleport',asyn
 test('3D picking, honest prop fallbacks and rotated-camera ground dragging are present',()=>{
   assert.match(code,/intersectObjects\(citizens\.children,true\)/);
   assert.match(code,/intersectPlane\(new THREE\.Plane/);
+  assert.match(code,/seeThrough=false;[\s\S]*?'seeThrough'\)\.setAttribute\('aria-pressed','false'\)/);
   assert.match(code,/smallFallback\(url\)/);
   assert.match(code,/removeOccluder\(fallback\)/);
   assert.match(code,/challengeLevel\+1/);
