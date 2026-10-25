@@ -128,7 +128,8 @@
   const PREFIXES = Object.freeze({
     languageV3: 'kidscade_language_v3_',
     gameSdkV1: 'kidscade_game_v1:',
-    gameSdkV2: 'kidscade_game_v2:'
+    gameSdkV2: 'kidscade_game_v2:',
+    muhanruRainBest: 'kidscade_muhanru_rain_best_'
   });
 
   function getStorage() {
