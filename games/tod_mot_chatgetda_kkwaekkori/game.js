@@ -235,14 +235,14 @@ function generateWorld() {
       const variants=DISTRICT_MODELS[block.kind];
       const url=town.stageName==='small'&&block.kind==='home' ? MODEL.buildings[i%MODEL.buildings.length] : `${CITY}${variants[Math.floor(i/6)%variants.length]}.glb`;
       const height=block.kind==='plaza'?4.6:block.kind==='home'?3.3:2.7;
-      const building=placeObject(url,{x:center.x-.95,z:center.z-.25},height,buildingFallback(block),revision,1.65,true);
+      const building=placeObject(url,{x:center.x-.95,z:center.z-.45},height,buildingFallback(block),revision,1.65,true);
       building.rotation.y=0;
       const neighbor=block.kind==='home'?MODEL.buildings[(i+3)%MODEL.buildings.length]:`${CITY}${variants[(Math.floor(i/6)+1)%variants.length]}.glb`;
       placeObject(neighbor,{x:center.x+1.05,z:center.z-.25},Math.min(height,2.8),buildingFallback(block),revision,1.7,true);
       // Distinct, low storefront details sit inside each parcel, never in the pedestrian loop.
       if(block.kind==='market'||block.kind==='bakery') {
         // A stocked counter belongs to the storefront, clear of all activity bays.
-        const counter=new THREE.Group();counter.position.set(center.x,.62,center.z+1.06);scenery.add(counter);
+        const counter=new THREE.Group();counter.position.set(center.x,.62,center.z+.93);scenery.add(counter);
         addPart(counter,cube(2.35,.14,.44,0xe7bd85),0,0,0);
         for(let bread=0;bread<3;bread++){
           const tray=new THREE.Group();tray.position.set((bread-1)*.7,.08,0);counter.add(tray);
