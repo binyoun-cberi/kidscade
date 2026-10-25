@@ -375,12 +375,14 @@ export class RoadWeaver {
     const a=nodeKey(from,0),b=nodeKey(to,0);
     if(!this.adj.has(a)||!this.adj.has(b))return null;
     const q=[{id:a,cost:0}],best=new Map([[a,0]]),prev=new Map();
+    const occupiedByEdge=new Map();
+    for(const car of this.cars)occupiedByEdge.set(car.edge.id,(occupiedByEdge.get(car.edge.id)||0)+1);
     while(q.length){
       q.sort((x,y)=>x.cost-y.cost);const cur=q.shift();
       if(cur.cost!==best.get(cur.id))continue;
       if(cur.id===b)break;
       for(const next of this.adj.get(cur.id)||[]){
-        const edge=next.edge,occupied=this.cars.filter(c=>c.edge===edge).length;
+        const edge=next.edge,occupied=occupiedByEdge.get(edge.id)||0;
         const weight=edge.length*(1+Math.min(2,occupied/(edge.lanes/2*12)))*1.0;
         const newCost=cur.cost+weight;
         if(newCost<(best.get(next.to)??Infinity)){
@@ -404,7 +406,9 @@ export class RoadWeaver {
     const lane=(this.serial++)%Math.max(1,Math.floor(edge.lanes/2));
     if(same.some(c=>c.lane===lane))return false;
     this.cars.push({id:'c'+this.serial,from,to,path,step:0,edge,dir,s:0,
-      lane,speed:0,maxSpeed:42+(this.serial%6)*3,kind:this.serial%9===0?'truck':'car'});
+      lane,laneVisual:lane,laneCooldown:0,speed:0,maxSpeed:42+(this.serial%6)*3,
+      kind:from==='farm'?(to==='home'?'tractor':'truck'):from==='factory'||to==='factory'?'truck':
+        (from==='tourism'||to==='tourism')&&this.serial%3===0?'bus':this.serial%9===0?'truck':'car'});
     return true;
   }
   canGo(car){
@@ -422,10 +426,43 @@ export class RoadWeaver {
       const phase=Math.floor(this.tickTime/6)%2;
       if((horizontal?0:1)!==phase)return false;
     }
-    const lane=car.lane%Math.max(1,next.edge.lanes/2);
-    return !this.cars.some(other=>other!==car&&other.edge===next.edge&&other.dir===next.dir&&other.lane===lane&&other.s<18);
+    const usable=Math.max(1,Math.floor(next.edge.lanes/2));
+    if(car.lane>=usable)return false; // 병합 차로에서 안전한 차선 변경을 끝내야 한다.
+    const lane=car.lane;
+    return !this.cars.some(other=>other!==car&&other.edge===next.edge&&other.dir===next.dir&&other.lane===lane&&other.s<23);
+  }
+  // 이웃 차선의 앞·뒤 공간을 모두 보고 이동한다. 급하게 다른 자동차 사이로 끼어들지 않는다.
+  changeLane(car,dt){
+    car.laneCooldown=Math.max(0,(car.laneCooldown||0)-dt);
+    const lanes=Math.max(1,Math.floor(car.edge.lanes/2));
+    car.lane=clamp(car.lane,0,lanes-1);
+    if(!Number.isFinite(car.laneVisual))car.laneVisual=car.lane;
+    const next=car.path[car.step+1],remaining=car.edge.length-car.s;
+    const nextLanes=next?Math.max(1,Math.floor(next.edge.lanes/2)):lanes;
+    const mandatory=next&&car.lane>=nextLanes;
+    if(lanes>1&&car.laneCooldown<=0&&car.s>24&&remaining>(mandatory?3:36)){
+      const gaps=Array.from({length:lanes},(_,lane)=>{
+        let front=Infinity,rear=Infinity;
+        for(const other of this.cars){
+          if(other===car||other.edge!==car.edge||other.dir!==car.dir||other.lane!==lane)continue;
+          if(other.s>=car.s)front=Math.min(front,other.s-car.s);
+          else rear=Math.min(rear,car.s-other.s);
+        }
+        return {lane,front,rear};
+      });
+      const current=gaps[car.lane];
+      const options=gaps.filter(g=>Math.abs(g.lane-car.lane)===1&&g.lane<nextLanes
+        &&g.front>=32&&g.rear>=28);
+      options.sort((a,b)=>b.front-a.front||a.lane-b.lane);
+      const choice=options[0];
+      if(choice&&(mandatory||current.front<64&&choice.front>current.front+22)){
+        car.lane=choice.lane;car.laneCooldown=1.25;
+      }
+    }
+    car.laneVisual+=(car.lane-car.laneVisual)*Math.min(1,dt*7);
   }
   advance(dt){
+    for(const c of this.cars)this.changeLane(c,dt);
     const groups=new Map();
     for(const c of this.cars){
       const k=c.edge.id+':'+c.dir+':'+c.lane;
@@ -451,7 +488,9 @@ export class RoadWeaver {
       const next=c.path[c.step+1];
       if(!next){arrived.push(c);continue;}
       if(!this.canGo(c)){c.s=c.edge.length-1;c.speed=0;continue;}
-      c.step++;c.edge=next.edge;c.dir=next.dir;c.lane%=Math.max(1,Math.floor(c.edge.lanes/2));c.s=0;
+      c.step++;c.edge=next.edge;c.dir=next.dir;
+      c.lane=clamp(c.lane,0,Math.max(1,Math.floor(c.edge.lanes/2))-1);
+      c.laneVisual=c.lane;c.s=0;
     }
     if(arrived.length){const gone=new Set(arrived.map(c=>c.id));this.cars=this.cars.filter(c=>!gone.has(c.id));this.delivered+=arrived.length;}
     this.retireEmpty();
@@ -474,13 +513,16 @@ export class RoadWeaver {
         this.openTowns++;this.budget+=next.bonus;this.announcements.push(next.message);
       }
     }
+    this.dispatchClock+=dt;
+    const mayDispatch=this.dispatchClock>=.18;
+    if(mayDispatch)this.dispatchClock=0;
     for(const a of this.towns)for(const b of this.towns){
       if(a===b)continue;
       const pair=a.id+'>'+b.id;
       let carry=(this.spawnFraction.get(pair)||0)+getDemandRate(a.id,b.id,this.hour,this.day)*dt*.85;
       while(carry>=1){this.pending.set(pair,Math.min(75,(this.pending.get(pair)||0)+1));carry--;}
       this.spawnFraction.set(pair,carry);
-      if((this.pending.get(pair)||0)>0&&this.spawn(a.id,b.id)){
+      if(mayDispatch&&(this.pending.get(pair)||0)>0&&this.spawn(a.id,b.id)){
         this.pending.set(pair,this.pending.get(pair)-1);
       }
     }
@@ -493,7 +535,7 @@ export class RoadWeaver {
     const angle=p.angle+(c.dir===1?0:Math.PI);
     const count=Math.max(1,Math.floor(c.edge.lanes/2));
     const side=c.dir===1?1:-1;
-    const offset=side*(5+(c.lane+.5)*10);
+    const offset=side*(5+((c.laneVisual??c.lane)+.5)*10);
     return {x:p.x-Math.sin(p.angle)*offset,y:p.y+Math.cos(p.angle)*offset,angle};
   }
   snapshot(){
