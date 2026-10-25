@@ -1027,6 +1027,11 @@ function toppingMatch(actual, want){
   return actual===0 ? 4 : -5;
 }
 
+function hasRecipeMismatch(s,o){
+  const wanted=o.cheese?'cheese':o.hot?'hot':'octopus';
+  if(s.filling!==wanted||!!s.extraOcto!==!!o.extraOcto)return true;
+  return ['sauce','mayo','katsu','aonori'].some(k=>!!s[k]!==!!o[k]);
+}
 function qualityReasons(s,o){
   const reasons=[];
   const wanted=o.cheese?'cheese':o.hot?'hot':'octopus';
@@ -1055,7 +1060,8 @@ function actionPack(){
   let score = 0;
   chosen.forEach(x=>score += x.sc);
   const countPenalty = 0; // Incomplete orders cannot be served.
-  const waitBonus = Math.round(clamp(1 - o.age/o.maxWait,0,1)*80);
+  // Speed cannot cancel out a wrong recipe: reward accuracy first, pace second.
+  const waitBonus = chosen.every(x=>!hasRecipeMismatch(x.s,o)) ? Math.round(clamp(1 - o.age/o.maxWait,0,1)*80) : 0;
   const avg = chosen.length ? score/chosen.length : 0;
   let final = Math.round(score + waitBonus - countPenalty);
   if(avg>=122 && chosen.length>=o.pieces){ game.combo++; final += game.combo*25; floatText('PERFECT',50,38); }
