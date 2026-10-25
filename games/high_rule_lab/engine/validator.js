@@ -35,10 +35,13 @@ function validateAll(levels,data){
 
 function analyzeTopology(level){
  const wall=new Set((level.objects||[]).filter(e=>e.type==='wall').map(e=>e.x+','+e.y));
- const hero=(level.objects||[]).find(e=>e.type==='hero');
- if(!hero)return {reachable:0,branches:0,deadEnds:0,upper:false,lower:false,wordAccess:0,shortestFlag:null};
  const key=(x,y)=>x+','+y;
- const origin=key(hero.x,hero.y),q=[{x:hero.x,y:hero.y,d:0}],seen=new Set([origin]);
+ const state=E.State.fromLevel(level);
+ const parsed=E.Rules.parse(state);
+ const controllable=(level.objects||[]).filter(e=>E.Rules.hasProp(e.type,'YOU',parsed));
+ if(!controllable.length)return {reachable:0,branches:0,deadEnds:0,upper:false,lower:false,wordAccess:0,shortestFlag:null};
+ const q=controllable.map(e=>({x:e.x,y:e.y,d:0}));
+ const seen=new Set(q.map(e=>key(e.x,e.y)));
  const goal=new Set((level.objects||[]).filter(e=>e.type==='flag').map(e=>key(e.x,e.y)));
  let branches=0,deadEnds=0,shortestFlag=null;
  for(let i=0;i<q.length;i++){
