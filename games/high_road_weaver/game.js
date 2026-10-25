@@ -497,7 +497,7 @@ function loop(time){
   if(time-lastSave>6500&&!paused){save();lastSave=time;}
   render();requestAnimationFrame(loop);
 }
-const stored=safeRead();saveAvailable=Boolean(stored&&[1,2].includes(stored.version));
+const stored=safeRead();saveAvailable=Boolean(stored&&[1,2,3].includes(stored.version));
 $('continueBtn').classList.toggle('hidden',!saveAvailable);
 resize();window.addEventListener('resize',resize,{passive:true});
 refreshButtons();requestAnimationFrame(loop);
