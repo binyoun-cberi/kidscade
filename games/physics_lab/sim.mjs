@@ -13,12 +13,31 @@ export const ZONES = Object.freeze([
   {name:'와르르 연쇄 연구실', concept:'연쇄 반응', intro:'첫 도미노를 맞히면 다음 도미노는 어디로 쓰러질까? 문을 여는 장치를 찾아 봐.', theme:'#f5e7d8'},
   {name:'움직이는 공장', concept:'운동과 힘의 전달', intro:'컨베이어 벨트가 물건을 움직여! 압력판에 올리고 문을 열어 봐.', theme:'#e1e9fa'},
 ]);
+// Freshly drawn arcade junk. No original StepOff art or source is embedded.
+const JUNK_NAMES = [
+  ['apple','사과','🍎'],['banana','바나나','🍌'],['boot','장화','👢'],['pizza','피자','🍕'],
+  ['vase','꽃병','🏺'],['book','책','📘'],['can','깡통','🥫'],['mug','머그컵','☕'],
+  ['clock','알람시계','⏰'],['soap','비누','🧼'],['eraser','지우개','▰'],['toycar','장난감 차','🚗'],
+  ['teddy','곰 인형','🧸'],['spoon','큰 숟가락','🥄'],['pillow','베개','▣'],['kettle','주전자','🫖'],
+  ['bottle','물병','🍶'],['hat','모자','🎩'],['pan','프라이팬','🍳'],['keyboard','키보드','⌨'],
+  ['donut','도넛','🍩'],['fish','물고기 인형','🐟'],['brick','벽돌','▣'],['dice','주사위','🎲'],
+  ['burger','햄버거','🍔'],['cup','컵','🥛'],['phone','전화기','☎'],['flashlight','손전등','🔦'],
+  ['plush','봉제인형','🧸'],['melon','멜론','🍈'],['disc','원반','💿'],['lamp','스탠드','💡'],
+  ['basket','바구니','🧺'],['carrot','당근','🥕'],['gift','선물상자','🎁']
+];
+export const ARCADE_ITEM_TYPES=Object.freeze(JUNK_NAMES.map(row=>row[0]).concat(['tennis','ball','wood','metal','cube']));
+const junkPalette=['#ffba87','#c5a0ed','#91d7ad','#ffe28d','#86cce4','#ec9bb5','#d4b48e'];
+const junkItems=Object.fromEntries(JUNK_NAMES.map(([type,name,icon],i)=>[type,{
+  name,icon,mass:0.5+(i%7)*0.49,radius:12+(i%4)*2,restitution:0.35+(i%5)*0.115,
+  color:junkPalette[i%junkPalette.length],outline:'#5e5967'
+}]));
 export const ITEMS = Object.freeze({
   tennis:{name:'테니스공', mass:0.65, radius:14, restitution:0.82, color:'#f6db4a', outline:'#8d762e'},
   ball:{name:'고무공', mass:1.0, radius:17, restitution:0.88, color:'#f0807d', outline:'#aa4351'},
   wood:{name:'나무 상자', mass:2.2, radius:20, restitution:0.34, color:'#d7a36b', outline:'#815a39'},
   metal:{name:'쇠공', mass:4.3, radius:17, restitution:0.54, color:'#9db9c6', outline:'#536e82'},
   cube:{name:'블록', mass:1.5, radius:17, restitution:0.4, color:'#8dc5e1', outline:'#467c9b'},
+  ...junkItems,
 });
 export const SURFACES = Object.freeze({
   normal:{label:'나무', drag:0.38,color:'#dfc49a'},
@@ -26,6 +45,9 @@ export const SURFACES = Object.freeze({
   carpet:{label:'카펫', drag:1.05,color:'#a4cc8f'},
 });
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+function random01(w){w.rng=(Math.imul(w.rng,1664525)+1013904223)>>>0;return w.rng/4294967296;}
+function randomRange(w,a,b){return a+random01(w)*(b-a);}
+function randomItemType(w){return ARCADE_ITEM_TYPES[Math.floor(random01(w)*ARCADE_ITEM_TYPES.length)];}
 const norm=(x,y)=>{const d=Math.hypot(x,y)||1;return {x:x/d,y:y/d};};
 // Authored early missions: every assignment has its own target placement and
 // an observable physical distinction. Legacy stage IDs remain unchanged.
@@ -116,11 +138,16 @@ export function createWorld(stageId=1,mode='campaign'){
   const stage=getStage(stageId);
   const world={mode,stage,player:{x:137,y:300,r:20,speed:245,held:null,invulnerable:0},items:[],goals:[],bumpers:[],barriers:[],dominos:[],belts:[],pads:[],gates:[],bots:[],
     time:0,score:0,shots:0,hits:0,experiments:[],combo:0,maxCombo:0,comboTimer:0,particles:[],messages:[],status:'playing',hearts:3,
-    spawnTimer:4,spawnCount:0,nextId:1000,events:[],clock:0};
+    spawnTimer:4,spawnCount:0,nextId:1000,events:[],clock:0,rng:1337,crates:[],spawnWarnings:[],survivalHits:0,cratesBroken:0,shotIndex:0};
   resetObjects(world);
   if(mode==='arcade'){
-    world.stage={...stage,zone:0,title:'와르르 챌린지',tip:'연속으로 로봇을 맞히면 콤보 보너스!',surfaces:[],goals:[],bumpers:[{x:490,y:180,r:22},{x:585,y:425,r:22}],barriers:[],itemTypes:['ball','wood','tennis','metal']};
-    resetObjects(world);world.spawnTimer=2;
+    world.stage={...stage,zone:0,title:'와르르 생존전',tip:'회전하는 화살표를 보고 알맞은 순간에 던져! 상자를 깨면 새 물건이 나와.',surfaces:[],goals:[],bumpers:[],barriers:[],itemTypes:[]};
+    resetObjects(world);world.player.x=480;world.player.y=305;world.player.speed=275;
+    for(let i=0;i<9;i++){
+      const a=i*Math.PI*2/9;world.items.push(makeItem(randomItemType(world),world.nextId++,480+Math.cos(a)*155,305+Math.sin(a)*155));
+    }
+    world.crates=[{id:world.nextId++,x:245,y:160,r:25},{id:world.nextId++,x:755,y:435,r:25},{id:world.nextId++,x:725,y:175,r:25}];
+    world.spawnTimer=1.45;world.hearts=3;world.clock=0;
   }
   return world;
 }
@@ -161,7 +188,7 @@ export function throwItem(world,tx,ty,power=0.82){
   const speed=(500*p)/Math.pow(item.m,0.2); // arcade throw: heavy objects are somewhat slower, with more momentum
   item.held=false;item.x=world.player.x+dir.x*(world.player.r+item.r+3);item.y=world.player.y+dir.y*(world.player.r+item.r+3);
   item.vx=dir.x*speed;item.vy=dir.y*speed;item.rest=0;item.bounces=0;item.launch={type:item.type,power:p,travel:0,surface:surfaceAt(world,item.x,item.y),surfaceTrail:[surfaceAt(world,item.x,item.y)],elapsed:0,bounces:0};
-  world.player.held=null;world.shots++;world.events.push({type:'throw',name:ITEMS[item.type].name,power:p});return true;
+  world.player.held=null;world.shots++;if(world.mode==='arcade'){world.combo=0;world.comboTimer=0;world.shotIndex++;item.arcadeShot=world.shotIndex;item.hitBotIds=[];}world.events.push({type:'throw',name:ITEMS[item.type].name,power:p});return true;
 }
 function collideWalls(body){
   const {l,r,t,b}=gameBounds,rest=body.bounce??0.35;
@@ -213,29 +240,98 @@ function goalInteractions(world,item){
     }
   }
 }
-function botsStep(world,dt){
-  world.spawnTimer-=dt;
-  if(world.spawnTimer<=0){world.spawnCount++;world.spawnTimer=clamp(3.6-world.score/850,1.0,3.6);
-    world.bots.push({x:850,y:100+((world.spawnCount*137)%380),vx:-(38+Math.min(75,world.score/50)),vy:Math.sin(world.spawnCount*7)*18,r:20,hp:1,id:world.nextId++});
-    world.events.push({type:'spawn'});
+// Survival arena: wandering opponents, visible door warnings, breakable supplies,
+// knockback and one-projectile combos. This is deliberately separate from lessons.
+function spawnArcadeEnemy(w,warning){
+  const b={id:w.nextId++,x:warning.x,y:warning.y,r:19,m:1.5,
+    vx:0,vy:0,angle:randomRange(w,-Math.PI,Math.PI),
+    turn:randomRange(w,.45,1.1),speed:randomRange(w,65,100)+Math.min(35,w.time*.18),
+    knock:0,hitCooldown:0,voice:0,dead:false};
+  w.bots.push(b);w.events.push({type:'spawn',x:b.x,y:b.y});
+}
+function updateArcadeCrates(w,dt){
+  w.clock+=dt;
+  if(w.clock>6 && w.crates.length<4){w.clock=0;
+    const edge=Math.floor(random01(w)*4),t=randomRange(w,.15,.85);
+    const x=edge<2?edge===0?145:815:145+670*t;
+    const y=edge>=2?edge===2?125:490:125+365*t;
+    w.crates.push({id:w.nextId++,x,y,r:25});w.events.push({type:'crate-appear'});
   }
-  for(const bot of world.bots){bot.x+=bot.vx*dt;bot.y+=bot.vy*dt;
-    for(const item of world.items){if(item.held||!item.active)continue;
-      if(Math.hypot(item.x-bot.x,item.y-bot.y)<item.r+bot.r && Math.hypot(item.vx,item.vy)*item.m>65){
-        bot.hp=0;world.combo++;world.maxCombo=Math.max(world.combo,world.maxCombo);world.comboTimer=2.8;
-        world.hits++;const points=50+world.combo*20;world.score+=points;hit(world,bot.x,bot.y,'#f4b3cb',12);
-        item.vx*=.6;item.vy*=.6;world.events.push({type:'bot-hit',points});break;
-      }
+  for(const crate of [...w.crates]){
+    for(const item of w.items){if(item.held||!item.active)continue;
+      if(Math.hypot(item.x-crate.x,item.y-crate.y)>item.r+crate.r)continue;
+      const momentum=Math.hypot(item.vx,item.vy)*item.m;
+      if(momentum<80){bumpStatic(item,crate.x,crate.y,crate.r,.45);continue;}
+      w.crates.splice(w.crates.indexOf(crate),1);w.cratesBroken++;
+      const type=randomItemType(w),newItem=makeItem(type,w.nextId++,crate.x+15,crate.y+12);
+      newItem.vx=item.vx*.20+randomRange(w,-35,35);
+      newItem.vy=item.vy*.20+randomRange(w,-35,35);
+      w.items.push(newItem);
+      item.vx*=.65;item.vy*=.65;
+      hit(w,crate.x,crate.y,'#ffca75',15);w.events.push({type:'crate-break',name:ITEMS[type].name});
+      break;
     }
-    if(bot.x<190&&bot.hp>0){bot.hp=0;world.hearts--;world.combo=0;world.events.push({type:'hurt',hearts:world.hearts});}
   }
-  world.bots=world.bots.filter(b=>b.hp>0);
-  if(world.hearts<=0){world.status='lost';world.events.push({type:'lost'});}
-  if(world.items.filter(i=>i.active&&!i.held&&Math.hypot(i.x-world.player.x,i.y-world.player.y)<85).length===0 && world.player.held===null){
-    world.clock+=dt;
-    if(world.clock>4){world.clock=0;const types=['ball','wood','tennis','metal'];const ty=types[world.spawnCount%types.length];
-      world.items.push(makeItem(ty,world.nextId++,205,285));world.events.push({type:'restock'});}
-  }else world.clock=0;
+  // Old thrown items can be reused, but keep the arena bounded over long sessions.
+  if(w.items.length>45){w.items=w.items.filter(i=>i.held||i.launch||Math.hypot(i.x-w.player.x,i.y-w.player.y)<200).slice(-40);}
+}
+function botsStep(w,dt){
+  w.spawnTimer-=dt;
+  if(w.spawnTimer<=0){
+    w.spawnTimer=clamp(2.6-w.score/1750-w.time/95,.7,2.6);
+    if(w.bots.length+w.spawnWarnings.length<16){
+      const edge=Math.floor(random01(w)*4),v=randomRange(w,.16,.84);
+      const x=edge<2?edge===0?73:887:75+810*v;
+      const y=edge>=2?edge===2?98:530:105+430*v;
+      w.spawnCount++;w.spawnWarnings.push({x,y,t:.72,max:.72});w.events.push({type:'warning',x,y});
+    }
+  }
+  for(const warning of [...w.spawnWarnings]){
+    warning.t-=dt;if(warning.t<=0){w.spawnWarnings.splice(w.spawnWarnings.indexOf(warning),1);spawnArcadeEnemy(w,warning);}
+  }
+  const player=w.player;player.invulnerable=Math.max(0,player.invulnerable-dt);
+  for(const bot of w.bots){
+    bot.hitCooldown=Math.max(0,bot.hitCooldown-dt);bot.voice=Math.max(0,bot.voice-dt);
+    bot.turn-=dt;if(bot.turn<=0){bot.turn=randomRange(w,.4,1.35);bot.angle+=randomRange(w,-2.1,2.1);}
+    if(bot.knock>0){bot.knock-=dt;bot.vx*=Math.exp(-2.5*dt);bot.vy*=Math.exp(-2.5*dt);}
+    else {
+      // Independent wandering, with just enough player bias to create pressure.
+      const toward=Math.atan2(player.y-bot.y,player.x-bot.x);
+      const dx=Math.cos(bot.angle)*.48+Math.cos(toward)*.52;
+      const dy=Math.sin(bot.angle)*.48+Math.sin(toward)*.52;
+      const dir=norm(dx,dy);bot.vx=dir.x*bot.speed;bot.vy=dir.y*bot.speed;
+    }
+    bot.x+=bot.vx*dt;bot.y+=bot.vy*dt;
+    if(bot.x<gameBounds.l+bot.r||bot.x>gameBounds.r-bot.r){bot.angle=Math.PI-bot.angle;bot.x=clamp(bot.x,gameBounds.l+bot.r,gameBounds.r-bot.r);}
+    if(bot.y<gameBounds.t+bot.r||bot.y>gameBounds.b-bot.r){bot.angle=-bot.angle;bot.y=clamp(bot.y,gameBounds.t+bot.r,gameBounds.b-bot.r);}
+    for(const item of w.items){if(item.held||!item.active)continue;
+      const diff=norm(bot.x-item.x,bot.y-item.y),dist=Math.hypot(item.x-bot.x,item.y-bot.y);
+      if(dist>=item.r+bot.r||bot.hitCooldown>0)continue;
+      const speed=Math.hypot(item.vx,item.vy),momentum=speed*item.m;
+      if(momentum<95)continue;
+      if(item.hitBotIds?.includes(bot.id))continue;
+      if(!item.hitBotIds)item.hitBotIds=[];
+      item.hitBotIds.push(bot.id);
+      bot.knock=1.15;bot.hitCooldown=.55;bot.vx=diff.x*speed*.64;bot.vy=diff.y*speed*.64;
+      item.vx*=.74;item.vy*=.74;
+      w.survivalHits++;w.hits++;w.combo++;w.maxCombo=Math.max(w.combo,w.maxCombo);
+      const points=25*w.combo;w.score+=points;
+      hit(w,bot.x,bot.y,'#ffd6a8',13);w.events.push({type:'bot-hit',points,combo:w.combo});
+      // A solid follow-up impact, or a sufficiently heavy first blow, finishes the foe.
+      if(momentum>480||item.m>=3.2){bot.dead=true;w.events.push({type:'bot-down',x:bot.x,y:bot.y});}
+      break;
+    }
+    const gap=Math.hypot(bot.x-player.x,bot.y-player.y);
+    if(!bot.dead && gap<bot.r+player.r && player.invulnerable<=0){
+      w.hearts--;player.invulnerable=1.6;w.events.push({type:'hurt',hearts:w.hearts});
+      const knockDir=norm(player.x-bot.x,player.y-bot.y);player.x=clamp(player.x+knockDir.x*42,gameBounds.l+player.r,gameBounds.r-player.r);
+      player.y=clamp(player.y+knockDir.y*42,gameBounds.t+player.r,gameBounds.b-player.r);
+      bot.knock=.5;bot.vx=-knockDir.x*110;bot.vy=-knockDir.y*110;
+    }
+  }
+  w.bots=w.bots.filter(b=>!b.dead);
+  updateArcadeCrates(w,dt);
+  if(w.hearts<=0){w.hearts=0;w.status='lost';w.events.push({type:'lost'});}
 }
 // A lightweight one-shot chain reaction. Each falling domino relays an impulse
 // to its nearest standing neighbor within a fixed radius; the chain completes
@@ -319,7 +415,7 @@ export function stepWorld(world,input={},dt=FIXED_DT){
   for(const p of world.particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;}
   world.particles=world.particles.filter(p=>p.life>0).slice(-250);
   for(const goal of world.goals)goal.pulse=Math.max(0,goal.pulse-dt);
-  world.comboTimer-=dt;if(world.comboTimer<=0)world.combo=0;
+  if(world.mode!=='arcade'){world.comboTimer-=dt;if(world.comboTimer<=0)world.combo=0;}
   if(world.mode==='arcade')botsStep(world,dt);
   else if(world.goals.length&&world.goals.every(g=>g.active) && world.gates.every(g=>g.open)){world.status='won';world.events.push({type:'won',score:world.score});}
   return world;
