@@ -58,7 +58,7 @@ test('live short rooms accept private typed answers, reveal only after submissio
  assert.equal(state.questionMode,'short');
  assert.ok(state.questions.every(q=>q.family==='short'));
  addPlayer(state,'학생1','a',now);addPlayer(state,'학생2','b',now);
- hostCommand(state,'start',{requestId:'begin',roundId:state.roundId,version:state.version},now);
+ hostCommand(state,'start',{requestId:'begin1234',roundId:state.roundId,version:state.version},now);
  const q=state.questions[0],correct=q.o[q.a];
  const visible=snapshot(state,{role:'player',id:state.players[0].id},now);
  assert.deepEqual(visible.question.options,[]);
