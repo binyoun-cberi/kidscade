@@ -90,7 +90,7 @@ export class RoadWeaver {
   get hour(){return this.minutes/60;}
   get peak(){const h=this.hour;return h>=7&&h<9.5?'출근':h>=16.5&&h<19.5?'퇴근':'일상';}
   snap(p){
-    for(const t of this.towns){if(len(p,t)<55)return {x:t.x,y:t.y};}
+    for(const t of this.towns){if(len(p,t)<82)return {x:t.x,y:t.y};}
     let best=null;
     for(const road of this.roads)for(let i=1;i<road.points.length;i++){
       const q=nearestOnSegment(p,road.points[i-1],road.points[i]);
