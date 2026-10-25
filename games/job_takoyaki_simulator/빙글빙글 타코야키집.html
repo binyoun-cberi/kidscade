@@ -1558,29 +1558,39 @@ function addFillingMarker(g,pos,s){
 }
 
 function addToppings(g,pos,s){
-  if(s.sauce>0){
-    for(let k=0;k<s.sauce;k++){
-      const line = new THREE.Mesh(new THREE.TorusGeometry(.38+.05*k,.028,8,58,Math.PI*1.55), material('sauce',0x5b2218,.42,.03));
-      line.position.set(pos.x,pos.y+.86+.025*k,pos.z); line.rotation.set(Math.PI/2,0,k*.8); g.add(line);
-    }
+  // Follow the dome surface. Flat torus outlines used to hover visibly over the balls.
+  const radius=.58;
+  function surfaceHeight(dx,dz){
+    return pos.y+.2+Math.sqrt(Math.max(.01,radius*radius-dx*dx-dz*dz))+.018;
   }
-  if(s.mayo>0){
-    for(let k=0;k<s.mayo;k++){
-      const line = new THREE.Mesh(new THREE.TorusGeometry(.32+.05*k,.024,8,58,Math.PI*1.55), material('mayo',0xfff5db,.32,.02));
-      line.position.set(pos.x,pos.y+.92+.025*k,pos.z); line.rotation.set(Math.PI/2,0,Math.PI/2+k*.7); g.add(line);
+  function sauceLine(color,key,alongX,offset){
+    const points=[];
+    for(let j=0;j<=16;j++){
+      const t=j/16;
+      const sweep=-.37+t*.74;
+      const wiggle=Math.sin(t*Math.PI*4)*.06+offset;
+      const x=alongX?sweep:wiggle,z=alongX?wiggle:sweep;
+      points.push(new THREE.Vector3(pos.x+x,surfaceHeight(x,z),pos.z+z));
     }
+    const path=new THREE.CatmullRomCurve3(points);
+    const mesh=new THREE.Mesh(new THREE.TubeGeometry(path,28,.025,6,false),material(key,color,.4,.02));
+    mesh.castShadow=true;g.add(mesh);
   }
+  if(s.sauce>0)for(let k=0;k<s.sauce;k++)sauceLine(0x5b2218,'sauce',true,(k-(s.sauce-1)/2)*.13);
+  if(s.mayo>0)for(let k=0;k<s.mayo;k++)sauceLine(0xfff5db,'mayo',false,(k-(s.mayo-1)/2)*.13);
   if(s.katsu>0){
     for(let k=0;k<Math.min(8,4+s.katsu*3);k++){
-      const chip = new THREE.Mesh(new THREE.BoxGeometry(.18,.018,.05), material('katsu',0xd8a159,.8,.01));
-      chip.position.set(pos.x+rand(-.28,.28),pos.y+.83+rand(0,.08),pos.z+rand(-.28,.28));
-      chip.rotation.set(rand(0,Math.PI),rand(0,Math.PI),rand(0,Math.PI)); g.add(chip);
+      const x=rand(-.27,.27),z=rand(-.27,.27);
+      const chip=new THREE.Mesh(new THREE.BoxGeometry(.15,.018,.048),material('katsu',0xd8a159,.8,.01));
+      chip.position.set(pos.x+x,surfaceHeight(x,z),pos.z+z);
+      chip.rotation.set(rand(-.3,.3),rand(0,Math.PI),rand(-.3,.3));g.add(chip);
     }
   }
   if(s.aonori>0){
     for(let k=0;k<Math.min(12,5+s.aonori*5);k++){
-      const dot = new THREE.Mesh(new THREE.SphereGeometry(.025,8,6), material('aonori',0x1f7b3a,.8,.01));
-      dot.position.set(pos.x+rand(-.32,.32),pos.y+.84+rand(0,.05),pos.z+rand(-.32,.32)); g.add(dot);
+      const x=rand(-.29,.29),z=rand(-.29,.29);
+      const dot=new THREE.Mesh(new THREE.SphereGeometry(.022,8,6),material('aonori',0x1f7b3a,.8,.01));
+      dot.position.set(pos.x+x,surfaceHeight(x,z),pos.z+z);g.add(dot);
     }
   }
 }
@@ -1605,7 +1615,7 @@ function resizeThree(){
   camera.aspect = Math.max(.3,rect.width/Math.max(1,rect.height));
   // A fixed camera crops entire rows of the pan on narrow portrait devices.
   // Move away while preserving the original diagonal kitchen viewpoint.
-  const portraitScale=Math.max(1,1.28/camera.aspect);
+  const portraitScale=Math.max(1,1.08/camera.aspect);
   camera.position.set(0,8.4*portraitScale,10.7*portraitScale);
   camera.lookAt(0,0,.12);
   camera.updateProjectionMatrix();
