@@ -94,7 +94,8 @@ function completeChallengeStage(){
 }
 function startChallenge(level=1){
   const settings=getChallengeSettings(level);
-  return startTown(settings.stageName,getSeed(),[],'easy',[],settings);
+  const difficulty=level>=9?'hard':level>=4?'normal':'easy';
+  return startTown(settings.stageName,getSeed(),[],difficulty,[],settings);
 }
 
 function loadGLB(url) {
@@ -501,8 +502,12 @@ async function startTown(stage,seed=getSeed(),restored=[],difficulty=$('difficul
   $('start').classList.add('hidden');$('finish').classList.add('hidden');
   resize();resetView();generateWorld();
   // Start close enough to distinguish a face. The whole-town button remains available.
-  const first=getBlockCenter(town.blocks[0],town.config);cameraLook.set(first.x,0,first.z+1);
-  viewSize=Math.min(13.5,Math.max(8,canvas.getBoundingClientRect().height*.025));resize();
+  // Timed search is only fair if the sought neighbor starts within view.
+  // Regular exploration still begins at the first district.
+  const first=getBlockCenter(challenge?getTarget().block:town.blocks[0],town.config);
+  cameraLook.set(first.x,0,first.z+1);
+  viewSize=challenge?Math.min(19,Math.max(14,canvas.getBoundingClientRect().height*.034)):Math.min(13.5,Math.max(8,canvas.getBoundingClientRect().height*.025));
+  resize();
   if(active){setClue();save();}
   else finishRound();
   $('startStatus').textContent='';
