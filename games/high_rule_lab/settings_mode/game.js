@@ -272,6 +272,7 @@ function renderStageList(){
  });
 }
 function onSettings(){
+ $('classicMode').onclick=()=>{window.location.href='../index.html'};
  for(const k of ['brightness','volume','frame']){
   $(k).addEventListener('input',()=>{settings[k]=Number($(k).value);$(k+'Value').textContent=settings[k]+'%';if(stage===1&&k==='brightness'&&settings[k]>=70)announce('문이 보이기 시작해요!');if(stage===6&&C.canExit(stage,settings,hits))announce('모든 설정이 맞았어요!')});
  }
