@@ -52,21 +52,22 @@ export function signature(p){return `${p.modelVariant}:${p.activity}:${p.propVar
 export function getRoutePosition(person,stage){
   const c=getBlockCenter(person.block,stage);
   // Separate activity bays in front of every building, with room for bodies and props.
-  // Sidewalk: z + 2.0 is for shoppers/reading/resting; z + 2.57 is
-  // the walking lane, still inside the parcel before the road (z + 2.825).
+  // Sidewalk: shoppers/reading/resting stand at z + 1.94.
+  // Deliveries, ball games and waving residents use the wider walking lane.
+  // Neither route crosses the building footprint or the road (starts z + 2.825).
   // Stationary groups never overlap the pedestrian lane.
   const t=person.elapsed,pace=person.challengeSpeed||1,phase=person.phase;
-  if(person.slot===2){
+  if(person.slot===1&&['deliver','ball','wave'].includes(person.activity)){
     // A walking neighbor travels continuously across most of the block.
     // Smooth easing at each end avoids teleporting and sudden reversals.
     const x=1.94*Math.sin(t*.47*pace+phase);
-    const z=2.57+Math.sin(t*.34*pace+phase)*.05;
+    const z=2.61+Math.sin(t*.34*pace+phase)*.035;
     return {x:c.x+x,z:c.z+z};
   }
-  const anchor=person.slot===0?-1.48:.82;
+  const anchor=person.slot===0?-1.48:person.slot===1?0:1.48;
   const moving=person.activity==='deliver'||person.activity==='ball'||person.activity==='wave';
   const drift=moving?Math.sin(t*.82*pace+phase)*.28:Math.sin(t*.29+phase)*.045;
-  return {x:c.x+anchor+drift,z:c.z+2.0};
+  return {x:c.x+anchor+drift,z:c.z+1.94};
 }
 export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=true,challenge=null){
   const base=STAGES[stageName];if(!base)throw new Error(`알 수 없는 마을 크기: ${stageName}`);
