@@ -310,6 +310,8 @@ const mat={
 // Detailed 3D assets still appear at selected sites once the habitat has matured.
 const natureDummy=new THREE.Object3D();
 function initNatureInstances(){
+  // Recreating a region must release the old instance buffers, not only detach them.
+  if(natureInstances)for(const mesh of Object.values(natureInstances))mesh.dispose?.();
   natureInstances={};
   const types={trunk:[geo.trunk,mat.trunk],crown:[geo.crown,mat.leaf],reed:[geo.reed,mat.leaf],stem:[geo.reed,mat.leaf],flower:[geo.flower,mat.pink]};
   for(const [kind,[geometry,material]] of Object.entries(types)){
@@ -394,7 +396,8 @@ function tickConstruction(dt){
 
 function clearGroup(g){while(g.children.length)g.remove(g.children[0])}
 function generateWorld(worldSeed=Math.floor(Math.random()*1e9)){
-  seed=worldSeed;rng=mulberry32(seed);tiles=[];tileMeshes=[];buildings=[];animals=[];visitors=[];constructionQueue=[];windRotors.length=0;
+  clearConstructions();
+  seed=worldSeed;rng=mulberry32(seed);tiles=[];tileMeshes=[];buildings=[];animals=[];visitors=[];windRotors.length=0;
   clearGroup(groundGroup);clearGroup(decorGroup);clearGroup(pathGroup);clearGroup(buildingGroup);clearGroup(animalGroup);clearGroup(visitorGroup);clearGroup(effectGroup);
   initNatureInstances();
   const sc=SCENARIOS[selectedScenario]||SCENARIOS.valley;
@@ -1098,7 +1101,8 @@ function showTileInfo(t){
   if(!t){ui.tileInfo.classList.add('hidden');return}
   const wind=Math.round(windAt(t)*100),sun=Math.round(sunAt(t)*100),geo=Math.round(geothermalAt(t)*100),bld=buildings.find(b=>b.x===t.x&&b.z===t.z);
   const biome=t.kind==='water'?(t.pollution<.25?'깨끗한 강':'오염된 강'):t.kind==='rock'?'바위':({barren:'메마른 땅',grass:'초원',wetland:'습지',forest:'숲',meadow:'꽃초원',lawn:'잔디밭',plantation:'단일수종 조림지',paved:'포장지'}[t.biome]||t.biome);
-  ui.tileInfo.innerHTML='<b>'+biome+'</b><br>오염 '+Math.round(t.pollution*100)+'% · 바람 '+wind+'% · 햇빛 '+sun+'% · 지열 '+geo+'%'+(t.path?'<br>길: '+TOOL[t.path].label+' · 혼잡 '+pathCrowd(t)+'/'+(PATH_CAPACITY[t.path]||2):'')+(bld?'<br>시설: '+TOOL[bld.type].label:'')+(powered(t)?'<br>⚡ 전력 범위 안':'');
+  const age=['forest','wetland','meadow'].includes(t.biome)?'<br>서식지 성장 '+Math.round(habitatMaturity(t)*100)+'% · '+(habitatMaturity(t)<.32?'어린 서식지':habitatMaturity(t)<.75?'자라는 중':'안정된 서식지'):'';
+  ui.tileInfo.innerHTML='<b>'+biome+'</b>'+age+'<br>오염 '+Math.round(t.pollution*100)+'% · 바람 '+wind+'% · 햇빛 '+sun+'% · 지열 '+geo+'%'+(t.path?'<br>길: '+TOOL[t.path].label+' · 혼잡 '+pathCrowd(t)+'/'+(PATH_CAPACITY[t.path]||2):'')+(bld?'<br>시설: '+TOOL[bld.type].label:'')+(powered(t)?'<br>⚡ 전력 범위 안':'');
   ui.tileInfo.classList.remove('hidden');
 }
 function selectTool(type){
