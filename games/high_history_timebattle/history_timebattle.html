@@ -531,6 +531,7 @@ function shortAnswerVariants(answer){
   if(/^\d{3,4}년$/.test(raw))set.add(raw.slice(0,-1));
   if(/^\d{3,4}$/.test(raw))set.add(raw+'년');
   if(raw.endsWith('대왕')&&raw.length>2)set.add(raw.slice(0,-2));
+  if(raw.endsWith('법사')&&raw.length>2)set.add(raw.slice(0,-2));
   if(raw.endsWith('세')&&/^\d+세$/.test(raw))set.add(raw.slice(0,-1));
   return set;
 }
@@ -540,7 +541,7 @@ function isSoloShortAnswerCorrect(input,correctText){
   return false;
 }
 function prepareSoloQuestions(bank,questions,questionMode){
-  if(questionMode==='short')return questions.map(q=>({...q,soloKind:'short',shortAnswer:q.o[q.a]}));
+  if(questionMode==='short')return questions.map(q=>({...q,soloKind:'short',shortAnswer:q.o[q.a],acceptedAnswers:q.acceptedAnswers||[q.o[q.a]]}));
   if(questionMode!=='choice-short')return questions;
   const candidates=questions.map((q,index)=>{
     const identify=bank.QUESTION_BANK.filter(item=>item.sourceFact===q.sourceFact&&item.family==='short');
@@ -551,7 +552,7 @@ function prepareSoloQuestions(bank,questions,questionMode){
   return questions.map((q,index)=>{
     const short=chosen.get(index);if(!short)return q;
     const correctText=short.o[short.a]??'';
-    return {...short,o:[...short.o],soloKind:'short',shortAnswer:correctText};
+    return {...short,o:[...short.o],soloKind:'short',shortAnswer:correctText,acceptedAnswers:short.acceptedAnswers||[correctText]};
   });
 }
 async function startSolo(){
@@ -600,7 +601,7 @@ function submitSoloAnswer(option,timeout=false){
 function submitSoloShortAnswer(value,timeout=false){
   if(!soloGame||soloGame.last)return;
   const q=soloGame.questions[soloGame.index],now=Date.now(),duration=Math.max(1,soloGame.deadlineAt-soloGame.startedAt),remaining=Math.max(0,soloGame.deadlineAt-now),correctText=q.shortAnswer||q.o[q.a]||'',chosenText=timeout?'':String(value??'').trim();
-  const correct=!timeout&&isSoloShortAnswerCorrect(chosenText,correctText),speed=Math.round(500*(remaining/duration));
+  const correct=!timeout&&(q.acceptedAnswers||[correctText]).some(expected=>isSoloShortAnswerCorrect(chosenText,expected)),speed=Math.round(500*(remaining/duration));
   soloGame.streak=correct?soloGame.streak+1:0;
   const bonus=correct&&soloGame.streak>=2?Math.min(300,(soloGame.streak-1)*100):0,points=correct?1000+speed+bonus:0;
   const answerRecord={number:soloGame.index+1,questionId:q.id||null,era:q.era||'',difficulty:q.difficulty||'',prompt:q.q,answerType:'short',options:[],chosenIndex:null,chosenText:chosenText||null,correctIndex:null,correctText,wrongOptions:[],correct,timeout:!!timeout,points,responseMs:Math.max(0,now-soloGame.startedAt),explanation:q.e||''};
