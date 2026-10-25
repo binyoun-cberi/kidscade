@@ -120,7 +120,8 @@ test('hard clues include a visible prop and near-matches differ in a meaningful 
 
 test('Critter-inspired challenge ramps its crowd and clamps movement difficulty',async()=>{
   const {getChallengeSettings,CHALLENGE,makeTown}=await simPromise;
-  assert.deepEqual([1,2,3,14,99].map(i=>getChallengeSettings(i).residents),[10,13,16,49,50]);
+  assert.deepEqual([1,2,3,14,99].map(i=>getChallengeSettings(i).residents),[11,14,17,50,51]);
+  assert.deepEqual([1,2,3,14,99].map(i=>getChallengeSettings(i).distractors),[10,13,16,49,50]);
   assert.equal(getChallengeSettings(1).speed,1);
   assert.ok(getChallengeSettings(11).speed>getChallengeSettings(10).speed);
   assert.equal(getChallengeSettings(9999).speed,2.3);
