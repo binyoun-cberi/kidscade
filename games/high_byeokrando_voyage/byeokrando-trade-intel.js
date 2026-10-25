@@ -279,7 +279,12 @@
   function poll() {
     const s = gameState();
     if (!s) return;
-    openBtn.style.display = ['port', 'sail'].includes(s.mode) ? '' : 'none';
+    // Keep sailing controls unobstructed; the journal is available again at the port.
+    openBtn.style.display = s.mode === 'port' ? '' : 'none';
+    if (s.mode === 'sail' && sheet.classList.contains('is-open')) {
+      sheet.classList.remove('is-open');
+      openBtn.setAttribute('aria-expanded', 'false');
+    }
     if (previousMode === 'sail' && s.mode === 'port' && s.place !== previousPort)
       record({ kind:'arrival', port:port(s), text:port(s) + '에 도착했습니다.' });
     previousMode = s.mode;
