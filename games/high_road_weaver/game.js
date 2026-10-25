@@ -7,7 +7,7 @@ let paused=true,speed=1,mode='road',lanes=2,zoom=1;
 let cam={x:540,y:360},scale=1,dpr=1,viewW=1,viewH=1;
 let draft=null,pending=null,active=new Map(),gesture=null;
 let accumulator=0,lastFrame=0,lastUi=0,lastSave=0,toastUntil=0;
-let guideCache='',saveAvailable=false,sessionStarted=false,suppressGesture=false;
+let guideCache='',saveAvailable=false,sessionStarted=false,suppressGesture=false,confirmNewCity=false;
 const STORAGE_KEY='kidscade_game_v1:high_road_weaver:world';
 const imageRoot='../../assets/game/2d/vehicles/pixel/cars/';
 const sprites={};
@@ -95,7 +95,7 @@ function applyEdit(p){
     if(result.ok)save();
   }
 }
-function stopDraft(){draft=null;pending=null;gesture=null;}
+function stopDraft(){draft=null;pending=null;gesture=null;active.clear();suppressGesture=false;}
 canvas.addEventListener('pointerdown',event=>{
   event.preventDefault();
   canvas.setPointerCapture(event.pointerId);
@@ -139,7 +139,7 @@ function pointerEnd(event,cancel=false){
     draft=null;
     return;
   }
-  if(cancel){draft=null;return;}
+  if(cancel){draft=null;pending=null;return;}
   const p=worldOf(event.clientX,event.clientY);
   if(drawingMode()){
     if(state.moved&&draft&&draft.length>=1){
@@ -168,8 +168,17 @@ $('speedBtn').addEventListener('click',()=>{speed=speed===1?2:speed===2?3:1;refr
 $('undoBtn').addEventListener('click',()=>{const r=sim.undo();notice(r.ok?'마지막 작업을 되돌렸어요.':r.reason);if(r.ok)save();});
 $('helpBtn').addEventListener('click',()=>showOverlay('help'));
 $('closeHelp').addEventListener('click',()=>showOverlay('help',false));
-function startNew(){sessionStarted=true;sim=new RoadWeaver();zoom=1;cam={x:540,y:360};paused=false;speed=1;stopDraft();save();showOverlay('intro',false);refreshButtons();notice('두 도시 사이에 도로를 그려 보세요.');}
-$('startBtn').addEventListener('click',startNew);
+function startNew(){confirmNewCity=false;sessionStarted=true;sim=new RoadWeaver();zoom=1;cam={x:540,y:360};paused=false;speed=1;stopDraft();save();showOverlay('intro',false);refreshButtons();notice('두 도시 사이에 도로를 그려 보세요.');}
+$('startBtn').addEventListener('click',()=>{
+  if(saveAvailable&&!confirmNewCity){
+    confirmNewCity=true;
+    $('overwriteWarning').classList.remove('hidden');
+    $('startBtn').textContent='이전 도시를 지우고 새로 시작';
+    $('continueBtn').classList.remove('hidden');
+    return;
+  }
+  startNew();
+});
 $('continueBtn').addEventListener('click',()=>{
   const data=safeRead();
   if(!sim.restore(data)){notice('저장 기록을 불러올 수 없어 새 도시를 시작합니다.');startNew();return;}
