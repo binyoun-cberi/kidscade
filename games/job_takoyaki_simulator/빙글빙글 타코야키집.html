@@ -884,6 +884,7 @@ function selectSlot(i){
   game.selected = i;
   refreshHoleButtons();
   updateSlotInfo();
+  updateButtonLocks();
   playSound('click');
 }
 
@@ -913,6 +914,7 @@ function tapSlot(i){
   }else if(s.phaseCook>=7&&s.rollCount<3){actionRoll();}
   else setNotice(s.rollCount>=3?'속까지 익는 중이에요. 잠깐 기다려 주세요.':'조금 더 노릇해지면 뒤집어요.','warn');
   refreshHoleButtons();
+  updateButtonLocks();
 }
 function selectedSlot(){ return game.slots[game.selected]; }
 
