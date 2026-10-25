@@ -148,3 +148,14 @@ test('traffic lights affect actual junction movement and legacy signal IDs migra
   const copy=new RoadWeaver();assert.ok(copy.restore(old));
   assert.ok(copy.lights.has(junction.id),'old signal keys must be attached to ground layer');
 });
+
+test('a ramp with no bridge access is rejected without wasting materials',()=>{
+  const sim=new RoadWeaver();
+  const initial=sim.budget;
+  assert.ok(sim.addRoad([{x:164,y:378},{x:330,y:370}],2).ok);
+  const current=sim.budget;
+  const result=sim.addRoad([{x:330,y:370},{x:550,y:190}],2,'ramp');
+  assert.equal(result.ok,false);
+  assert.equal(sim.budget,current);
+  assert.ok(sim.budget<initial);
+});
