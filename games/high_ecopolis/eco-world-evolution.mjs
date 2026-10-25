@@ -48,3 +48,25 @@ export function constructionVisualAt(elapsed) {
     done
   };
 }
+
+export function findArrivalRoutes(entries, goals, centerAccess, neighbors, pickIndex = () => 0) {
+  const centers = new Set(centerAccess),routes = [];
+  if(!centers.size) return routes;
+  for (const entry of entries) {
+    const queue=[entry],previous=new Map([[entry,null]]);
+    for(let i=0;i<queue.length;i++){
+      for(const next of neighbors(queue[i])){
+        if(previous.has(next))continue;
+        previous.set(next,queue[i]);queue.push(next);
+      }
+    }
+    if(![...centers].some(tile=>previous.has(tile)))continue;
+    const targets=goals.filter(tile=>tile!==entry&&previous.has(tile));
+    if(!targets.length)continue;
+    const selected=Math.min(targets.length-1,Math.max(0,Math.floor(pickIndex(targets.length))));
+    const route=[];
+    for(let tile=targets[selected];tile&&tile!==entry;tile=previous.get(tile))route.push(tile);
+    route.reverse();routes.push({start:entry,path:route});
+  }
+  return routes;
+}
