@@ -53,6 +53,7 @@ button:focus-visible{outline:3px solid #226756;outline-offset:2px}
 .instruction span{display:block;font-size:14px;color:#4e9873;font-weight:950;margin-bottom:8px}
 .instruction b{display:block;font-size:12px}
 .instruction small{display:block;color:#677f6b;font-size:10px;line-height:1.6;margin-top:5px}
+.overwrite-warning{margin:15px 0 5px!important;border-radius:10px;padding:11px 13px;background:#fff3df;color:#8c4f2a!important;font-weight:800;font-size:12px!important;line-height:1.65!important}
 .primary,.secondary{width:100%;border-radius:12px;padding:14px;border:0;font-weight:900;font-size:14px;margin-top:8px}
 .primary{background:#246c50;color:#fff}
 .secondary{background:#e8f1e7;color:#26513d}
