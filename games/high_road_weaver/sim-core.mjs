@@ -480,7 +480,7 @@ export class RoadWeaver {
       const p=pointOnPath(other.edge.points,other.s);
       const front=((angleAround(p,circle)-heading+Math.PI*2)%(Math.PI*2))*circle.radius;
       // 환상로 진입 차량은 앞차뿐 아니라 뒤에서 다가오는 순환 차량에게도 양보한다.
-      return front<18||(car.edge.kind!=='roundabout'&&circumference-front<13);
+      return front<22||(car.edge.kind!=='roundabout'&&circumference-front<16);
     });
   }
   ringFollowingGap(car){
