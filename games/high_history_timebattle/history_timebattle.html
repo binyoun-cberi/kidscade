@@ -88,9 +88,9 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
       <div class="preset-row"><button class="mini" onclick="applyHostPreset('quick')">⚡ 빠른 복습</button><button class="mini" onclick="applyHostPreset('ox')">⭕ OX 번개</button><button class="mini" onclick="applyHostPreset('flow')">⏳ 시대 흐름</button><button class="mini" onclick="applyHostPreset('people')">👤 인물 맞히기</button><button class="mini" onclick="applyHostPreset('heritage')">🏛️ 문화유산</button></div>
       <div class="grid">
         <div class="field"><label>문제 수</label><select id="questionCount"><option>10</option><option selected>15</option><option>20</option><option>30</option><option>40</option></select></div>
-        <div class="field"><label>문제당 시간</label><select id="seconds"><option value="10">10초</option><option value="12" selected>12초</option><option value="15">15초</option><option value="20">20초</option></select></div>
+        <div class="field"><label>문제당 시간</label><select id="seconds"><option value="10">10초</option><option value="12" selected>12초</option><option value="15">15초</option><option value="20">20초</option><option value="25">25초</option><option value="30">30초</option></select></div>
         <div class="field"><label>출제 순서</label><select id="orderMode"><option value="random" selected>무작위로 섞기</option><option value="chronological">시대 순서대로</option></select></div>
-        <div class="field"><label>문제 유형</label><select id="questionMode"><option value="choice" selected>객관식</option><option value="ox">OX 문제</option><option value="mixed">객관식 + OX 섞기</option><option value="people">역사 인물 이름 맞히기</option><option value="heritage">문화유산 맞히기</option></select></div>
+        <div class="field"><label>문제 유형</label><select id="questionMode"><option value="choice" selected>객관식</option><option value="ox">OX 문제</option><option value="mixed">객관식 + OX 섞기</option><option value="people">역사 인물 이름 맞히기</option><option value="heritage">문화유산 맞히기</option><option value="short">단답형 · 직접 입력</option></select></div>
       </div>
       <div class="field"><label>가르칠 시대</label><div class="era-tools"><button type="button" class="mini" onclick="setEraPreset('hostEraPicker','all')">전체</button><button type="button" class="mini" onclick="setEraPreset('hostEraPicker','ancient')">선사·고대</button><button type="button" class="mini" onclick="setEraPreset('hostEraPicker','goryeo')">고려</button><button type="button" class="mini" onclick="setEraPreset('hostEraPicker','joseon')">조선</button><button type="button" class="mini" onclick="setEraPreset('hostEraPicker','modern')">근현대</button></div><div id="hostEraPicker" class="era-picker"><label class="era-chip"><input type="checkbox" value="선사" checked><span>선사</span></label><label class="era-chip"><input type="checkbox" value="고조선" checked><span>고조선</span></label><label class="era-chip"><input type="checkbox" value="삼국" checked><span>삼국</span></label><label class="era-chip"><input type="checkbox" value="남북국" checked><span>남북국</span></label><label class="era-chip"><input type="checkbox" value="고려" checked><span>고려</span></label><label class="era-chip"><input type="checkbox" value="조선 전기" checked><span>조선 전기</span></label><label class="era-chip"><input type="checkbox" value="조선 후기" checked><span>조선 후기</span></label><label class="era-chip"><input type="checkbox" value="개항기" checked><span>개항기</span></label><label class="era-chip"><input type="checkbox" value="대한제국" checked><span>대한제국</span></label><label class="era-chip"><input type="checkbox" value="국권 피탈" checked><span>국권 피탈</span></label><label class="era-chip"><input type="checkbox" value="일제강점기" checked><span>일제강점기</span></label><label class="era-chip"><input type="checkbox" value="광복 이후" checked><span>광복 이후</span></label><label class="era-chip"><input type="checkbox" value="6·25 전쟁" checked><span>6·25 전쟁</span></label></div></div>
       <div class="field"><label>중간 순위 공개</label><select id="checkpointMode" onchange="toggleCheckpointCustom()"><option value="none">공개하지 않기</option><option value="every5">5문제마다</option><option value="every10">10문제마다</option><option value="custom">직접 정하기</option></select></div>
@@ -103,9 +103,9 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
       <div class="field solo-nickname-field"><label>별명</label><input id="soloNickname" maxlength="14" autocomplete="off" value="나" placeholder="예: 역사박사"></div>
       <div class="grid">
         <div class="field"><label>문제 수</label><select id="soloQuestionCount"><option>10</option><option selected>15</option><option>20</option><option>30</option><option>40</option></select></div>
-        <div class="field"><label>문제당 시간</label><select id="soloSeconds"><option value="10">10초</option><option value="12" selected>12초</option><option value="15">15초</option><option value="20">20초</option></select></div>
+        <div class="field"><label>문제당 시간</label><select id="soloSeconds"><option value="10">10초</option><option value="12" selected>12초</option><option value="15">15초</option><option value="20">20초</option><option value="25">25초</option><option value="30">30초</option></select></div>
         <div class="field"><label>출제 순서</label><select id="soloOrderMode"><option value="random" selected>무작위로 섞기</option><option value="chronological">시대 순서대로</option></select></div>
-        <div class="field"><label>문제 유형</label><select id="soloQuestionMode"><option value="choice" selected>객관식</option><option value="ox">OX 문제</option><option value="mixed">객관식 + OX 섞기</option><option value="people">역사 인물 이름 맞히기</option><option value="heritage">문화유산 맞히기</option><option value="choice-short">객관식 + 주관식 섞기</option><option value="figure-sort">시대별 인물 모으기</option></select><div class="tiny">주관식 섞기는 인물·유물·제도처럼 답이 짧은 문제를 약 30% 직접 입력해요.</div></div>
+        <div class="field"><label>문제 유형</label><select id="soloQuestionMode"><option value="choice" selected>객관식</option><option value="ox">OX 문제</option><option value="mixed">객관식 + OX 섞기</option><option value="people">역사 인물 이름 맞히기</option><option value="heritage">문화유산 맞히기</option><option value="short">단답형 · 직접 입력</option><option value="choice-short">객관식 + 주관식 섞기</option><option value="figure-sort">시대별 인물 모으기</option></select><div class="tiny">주관식 섞기는 인물·유물·제도처럼 답이 짧은 문제를 약 30% 직접 입력해요.</div></div>
       </div>
       <div id="sortSoloOptions" class="hidden" aria-label="시대별 인물 모으기 설정">
         <p class="sort-lead">역사 인물 카드를 알맞은 시대에 끌어다 놓아 보세요. 카드를 누르고 시대 칸을 눌러도 돼요. 인물이 대표적으로 활약한 시기를 기준으로 나눠요.</p>
@@ -173,9 +173,9 @@ button,input,select{font:inherit}button{cursor:pointer}button,.big,.btn,.answer,
     </div>
     <div class="grid">
       <div class="field"><label>문제 수</label><select id="roundQuestionCount"><option>10</option><option selected>15</option><option>20</option><option>30</option><option>40</option></select></div>
-      <div class="field"><label>문제당 시간</label><select id="roundSeconds"><option value="10">10초</option><option value="12" selected>12초</option><option value="15">15초</option><option value="20">20초</option></select></div>
+      <div class="field"><label>문제당 시간</label><select id="roundSeconds"><option value="10">10초</option><option value="12" selected>12초</option><option value="15">15초</option><option value="20">20초</option><option value="25">25초</option><option value="30">30초</option></select></div>
       <div class="field"><label>출제 순서</label><select id="roundOrderMode"><option value="random">무작위로 섞기</option><option value="chronological">시대 순서대로</option></select></div>
-      <div class="field"><label>문제 유형</label><select id="roundQuestionMode"><option value="choice">객관식</option><option value="ox">OX 문제</option><option value="mixed">객관식 + OX 섞기</option><option value="people">역사 인물 이름 맞히기</option><option value="heritage">문화유산 맞히기</option></select></div>
+      <div class="field"><label>문제 유형</label><select id="roundQuestionMode"><option value="choice">객관식</option><option value="ox">OX 문제</option><option value="mixed">객관식 + OX 섞기</option><option value="people">역사 인물 이름 맞히기</option><option value="heritage">문화유산 맞히기</option><option value="short">단답형 · 직접 입력</option></select></div>
     </div>
     <div class="field"><label>가르칠 시대</label><div class="era-tools"><button type="button" class="mini" onclick="setEraPreset('roundEraPicker','all')">전체</button><button type="button" class="mini" onclick="setEraPreset('roundEraPicker','ancient')">선사·고대</button><button type="button" class="mini" onclick="setEraPreset('roundEraPicker','goryeo')">고려</button><button type="button" class="mini" onclick="setEraPreset('roundEraPicker','joseon')">조선</button><button type="button" class="mini" onclick="setEraPreset('roundEraPicker','modern')">근현대</button></div><div id="roundEraPicker" class="era-picker"><label class="era-chip"><input type="checkbox" value="선사" checked><span>선사</span></label><label class="era-chip"><input type="checkbox" value="고조선" checked><span>고조선</span></label><label class="era-chip"><input type="checkbox" value="삼국" checked><span>삼국</span></label><label class="era-chip"><input type="checkbox" value="남북국" checked><span>남북국</span></label><label class="era-chip"><input type="checkbox" value="고려" checked><span>고려</span></label><label class="era-chip"><input type="checkbox" value="조선 전기" checked><span>조선 전기</span></label><label class="era-chip"><input type="checkbox" value="조선 후기" checked><span>조선 후기</span></label><label class="era-chip"><input type="checkbox" value="개항기" checked><span>개항기</span></label><label class="era-chip"><input type="checkbox" value="대한제국" checked><span>대한제국</span></label><label class="era-chip"><input type="checkbox" value="국권 피탈" checked><span>국권 피탈</span></label><label class="era-chip"><input type="checkbox" value="일제강점기" checked><span>일제강점기</span></label><label class="era-chip"><input type="checkbox" value="광복 이후" checked><span>광복 이후</span></label><label class="era-chip"><input type="checkbox" value="6·25 전쟁" checked><span>6·25 전쟁</span></label></div></div>
     <div class="grid">
@@ -540,9 +540,10 @@ function isSoloShortAnswerCorrect(input,correctText){
   return false;
 }
 function prepareSoloQuestions(bank,questions,questionMode){
+  if(questionMode==='short')return questions.map(q=>({...q,soloKind:'short',shortAnswer:q.o[q.a]}));
   if(questionMode!=='choice-short')return questions;
   const candidates=questions.map((q,index)=>{
-    const identify=bank.QUESTION_BANK.filter(item=>item.sourceFact===q.sourceFact&&item.family==='identify');
+    const identify=bank.QUESTION_BANK.filter(item=>item.sourceFact===q.sourceFact&&item.family==='short');
     return identify.length?{index,q:identify[Math.floor(Math.random()*identify.length)]}:null;
   }).filter(Boolean);
   for(let i=candidates.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[candidates[i],candidates[j]]=[candidates[j],candidates[i]]}
@@ -568,6 +569,7 @@ async function startSolo(){
   }catch(e){console.error(e);alert('혼자 연습 문제를 불러오지 못했어요. 페이지를 새로고침해 주세요.')}
 }
 function startSoloQuestion(){
+  window.__historyShortDraft='';
   const now=Date.now(); soloTimeoutHandled=false; answeredFor=-1;lastChosenOption=-1;lastTimerTick=-1;
   soloGame.startedAt=now; soloGame.deadlineAt=now+soloGame.seconds*1000; soloGame.last=null;
   renderQuestion(soloState('question'));
@@ -655,6 +657,22 @@ function soloNext(){
   soloGame.index+=1;lastFxState='';startSoloQuestion();
 }
 
+
+async function submitLiveShortAnswer(value){
+  if(session?.role!=='player'||answeredFor===lastState?.room?.questionNumber)return;
+  const activeSession=session,activeRound=lastState.room.roundId,activeQuestion=lastState.room.questionNumber;
+  answeredFor=activeQuestion;window.__historyShortDraft=value;
+  try{
+    await api('/answer',{method:'POST',headers:authHeaders(),body:JSON.stringify({code:session.code,inputText:value,questionIndex:Math.max(0,activeQuestion-1)})},1);
+    if(session===activeSession){lastPresenceWriteAt=Date.now();$('submitted').classList.remove('hidden');window.__historyShortDraft='';}
+  }catch(e){
+    if(session!==activeSession)return;
+    if(lastState?.room?.roundId===activeRound&&lastState?.room?.questionNumber===activeQuestion){
+      answeredFor=-1;if(lastState?.room?.status==='question')renderQuestion(lastState);
+    }
+    if(!e.status)setConnectionState('warn','답 전송 재시도 필요');alert(errorText(e));
+  }
+}
 async function submitAnswer(i,btn){
   lastChosenOption=i;playSfx('ui.select',{volume:.34,rateJitter:.025,cooldownMs:80});
   if(session?.role==='solo'){btn?.classList.add('selected');return submitSoloAnswer(i,false)}
@@ -708,7 +726,7 @@ function render(s){
 function renderLobby(s){
   showOnly('lobby');$('roomCode').textContent=s.room.code;$('playerCount').textContent=s.players.length;$('capacityBar').style.width=(s.players.length/26*100)+'%';
   $('lobbyRole').textContent='제 '+Number(s.room.round||1)+'판 · '+(session.role==='host'?'교사용 화면':'대기 중');
-  const points=s.room.checkpoints||[],orderText=s.room.orderMode==='chronological'?'시대 순서대로':'무작위 출제',typeText=s.room.questionMode==='ox'?'OX 문제':s.room.questionMode==='mixed'?'객관식 + OX':s.room.questionMode==='people'?'역사 인물 이름 맞히기':s.room.questionMode==='heritage'?'문화유산 맞히기':'객관식',scoreText=s.room.scoreMode==='cumulative'?'점수 누적':'이번 판 0점부터';
+  const points=s.room.checkpoints||[],orderText=s.room.orderMode==='chronological'?'시대 순서대로':'무작위 출제',typeText=s.room.questionMode==='ox'?'OX 문제':s.room.questionMode==='short'?'단답형 직접 입력':s.room.questionMode==='mixed'?'객관식 + OX':s.room.questionMode==='people'?'역사 인물 이름 맞히기':s.room.questionMode==='heritage'?'문화유산 맞히기':'객관식',scoreText=s.room.scoreMode==='cumulative'?'점수 누적':'이번 판 0점부터';
   $('checkpointPlan').textContent=eraSummary(s.room.eras)+' · '+s.room.questionCount+'문제 · '+orderText+' · '+typeText+' · '+scoreText+' · '+(points.length?'중간 순위: '+points.map(n=>n+'문제 뒤').join(' · '):'중간 순위 없음');
   $('hostLobbyButtons').classList.toggle('hidden',session.role!=='host');$('studentWait').classList.toggle('hidden',session.role!=='player');
   $('roster').innerHTML=s.players.map(p=>'<span class="pill '+(p.online?'':'off')+'">'+esc(p.nickname)+'</span>').join('');
@@ -726,16 +744,24 @@ function renderHeritagePhoto(id,media,showSource=false){
 }
 function renderQuestion(s){
   showOnly('game');const q=s.question;const fxKey='q:'+String(s.room.round||0)+':'+String(q.number);fxOnce(fxKey,()=>{playSfx('ui.open',{volume:.24,rate:1.05});animateQuestion()});
-  const typeName={people:'인물 이름 맞히기',heritage:'문화유산 맞히기',ox:'OX 문제',mixed:'한국사 혼합 문제','choice-short':'한국사 주관식'};
+  const typeName={people:'인물 이름 맞히기',heritage:'문화유산 맞히기',ox:'OX 문제',mixed:'한국사 혼합 문제','choice-short':'한국사 주관식',short:'한국사 단답형'};
   $('qEra').textContent=typeName[s.room.questionMode]||'한국사 퀴즈';$('qNum').textContent=(session.role==='solo'?'':('제 '+Number(s.room.round||1)+'판 · '))+q.number+' / '+q.total;$('question').textContent=q.prompt;$('submitted').classList.add('hidden');
   renderHeritagePhoto('heritageQuestionPhoto',q.media);
   $('hostProgress').classList.toggle('hidden',session.role!=='host');
   const n=s.players.filter(p=>p.answered).length;$('answeredCount').textContent=n;$('totalCount').textContent=s.players.length;$('answerBar').style.width=(s.players.length?n/s.players.length*100:0)+'%';
   const self=s.players.find(p=>p.id===session.playerId),alreadySubmitted=session.role==='solo'?Boolean(soloGame?.last):(Boolean(self?.answered)||answeredFor===s.room.questionNumber);
-  const isShort=session.role==='solo'&&q.kind==='short';$('answers').classList.toggle('ox',q.kind==='ox');$('answers').classList.toggle('short',isShort);
+  const isShort=q.kind==='short';$('answers').classList.toggle('ox',q.kind==='ox');$('answers').classList.toggle('short',isShort);
   if(isShort){
-    $('answers').innerHTML='<form id="shortAnswerForm" class="short-answer-form"><input id="shortAnswerInput" class="short-answer-input" maxlength="40" autocomplete="off" enterkeyhint="done" placeholder="정답을 직접 입력하세요" aria-label="주관식 정답"><button class="short-answer-submit" type="submit">정답 제출</button></form><div class="short-answer-hint">띄어쓰기는 달라도 괜찮아요. 입력 후 Enter 또는 정답 제출을 눌러요.</div>';
-    const form=$('shortAnswerForm'),input=$('shortAnswerInput');form.onsubmit=e=>{e.preventDefault();const value=input.value.trim();if(!value)return toastFx('정답을 입력해 주세요.');input.disabled=true;form.querySelector('button').disabled=true;submitSoloShortAnswer(value,false)};if(window.matchMedia?.('(pointer:fine)').matches)setTimeout(()=>input.focus(),40);
+    if(session.role==='host'){$('answers').innerHTML='<div class="short-answer-hint">학생들이 단답형 정답을 입력하고 있어요. 모두 제출하거나 시간이 끝나면 정답을 공개해요.</div>';}
+    else if(alreadySubmitted){$('answers').innerHTML='<div class="short-answer-hint">답을 제출했어요. 결과를 기다려 주세요.</div>';}
+    else{
+      const draft=window.__historyShortDraft||'';
+      $('answers').innerHTML='<form id="shortAnswerForm" class="short-answer-form"><input id="shortAnswerInput" class="short-answer-input" maxlength="40" autocomplete="off" enterkeyhint="done" placeholder="역사 용어를 직접 입력하세요" aria-label="단답형 정답"><button class="short-answer-submit" type="submit">정답 제출</button></form><div class="short-answer-hint">띄어쓰기와 일부 문장부호는 달라도 괜찮아요. Enter 또는 정답 제출을 눌러요.</div>';
+      const form=$('shortAnswerForm'),input=$('shortAnswerInput');input.value=draft;
+      input.oninput=()=>{window.__historyShortDraft=input.value};
+      form.onsubmit=e=>{e.preventDefault();const value=input.value.trim();if(!value)return toastFx('정답을 입력해 주세요.');input.disabled=true;form.querySelector('button').disabled=true;if(session.role==='solo')submitSoloShortAnswer(value,false);else submitLiveShortAnswer(value)};
+      if(window.matchMedia?.('(pointer:fine)').matches)setTimeout(()=>{if(input.isConnected)input.focus()},40);
+    }
   }else{
     $('answers').innerHTML=q.options.map(o=>'<button class="answer" '+(session.role==='host'||alreadySubmitted?'disabled':'')+'>'+esc(o)+'</button>').join('');
     if(['player','solo'].includes(session.role)&&!alreadySubmitted)document.querySelectorAll('#answers .answer').forEach((b,i)=>b.onclick=()=>submitAnswer(i,b));
@@ -754,6 +780,8 @@ function renderReveal(s){
   fxOnce(revealKey,()=>{
     if(session.role==='solo'){
       const ok=Boolean(soloGame?.last?.correct);playSfx(ok?'correct':'wrong',{volume:ok ? .32 : .28});flashFx(ok?'good':'bad');toastFx(ok?'정답!':'아쉬워요!');if(ok&&soloGame?.streak>=3){playSfx('cheer',{volume:.25,cooldownMs:700});confettiFx(16)}
+    }else if(session.role==='player'&&q.kind==='short'&&r.myAnswer!==undefined){
+      const ok=Boolean(r.myCorrect);playSfx(ok?'correct':'wrong',{volume:ok ? .32 : .28});flashFx(ok?'good':'bad');toastFx(ok?'정답!':'아쉬워요!');
     }else if(session.role==='player'&&lastChosenOption>=0){
       const ok=lastChosenOption===r.answerIndex;playSfx(ok?'correct':'wrong',{volume:ok ? .32 : .28});flashFx(ok?'good':'bad');toastFx(ok?'정답!':'아쉬워요!');if(ok&&Number(me?.streak||0)>=3){playSfx('cheer',{volume:.24,cooldownMs:700});confettiFx(14)}
     }else if(session.role==='host'){playSfx('ui.confirm',{volume:.22,cooldownMs:300})}
@@ -761,8 +789,8 @@ function renderReveal(s){
   $('nextQuestionBtn').textContent=session.role==='solo'?'다음 문제로':'다음 문제';
   $('revealEra').textContent=r.era||q.era||'시대 확인';$('revealNum').textContent=(session.role==='solo'?'':('제 '+Number(s.room.round||1)+'판 · '))+q.number+' / '+q.total;$('revealQuestion').textContent=q.prompt;
   renderHeritagePhoto('heritageRevealPhoto',q.media,true);
-  const shortReveal=session.role==='solo'&&q.kind==='short';$('revealAnswers').classList.toggle('ox',q.kind==='ox');$('revealAnswers').classList.toggle('short',shortReveal);
-  if(shortReveal){const mine=soloGame?.last?.inputText||'미응답',ok=Boolean(soloGame?.last?.correct);$('revealAnswers').innerHTML='<div class="short-reveal '+(ok?'good':'bad')+'"><div>내 답 · <b>'+esc(mine)+'</b></div><div>정답 · <b>'+esc(r.answerText||'')+'</b></div></div>'}
+  const shortReveal=q.kind==='short';$('revealAnswers').classList.toggle('ox',q.kind==='ox');$('revealAnswers').classList.toggle('short',shortReveal);
+  if(shortReveal){const mine=session.role==='solo'?soloGame?.last?.inputText:(r.myAnswer||''),ok=session.role==='solo'?Boolean(soloGame?.last?.correct):Boolean(r.myCorrect),own=session.role==='host'?'':'<div>내 답 · <b>'+esc(mine||'미응답')+'</b></div>';$('revealAnswers').innerHTML='<div class="short-reveal '+(session.role==='host'?'':ok?'good':'bad')+'">'+own+'<div>정답 · <b>'+esc(r.answerText||'')+'</b></div></div>'}
   else $('revealAnswers').innerHTML=q.options.map((o,i)=>'<div class="answer '+(i===r.answerIndex?'correct':'wrong')+' '+(i===r.answerIndex?'fx-correct':((i===lastChosenOption&&i!==r.answerIndex)?'fx-wrong':''))+'">'+esc(o)+(session.role==='solo'?'':' <small>('+r.optionStats[i]+'명)</small>')+'</div>').join('');
   $('explanation').textContent=r.explanation;$('hostNext').classList.toggle('hidden',!['host','solo'].includes(session.role));$('studentNext').classList.toggle('hidden',session.role!=='player');
   $('myScore').textContent=me?me.score.toLocaleString()+'점':'';const combo=$('comboChip');const streak=Number(me?.streak||0);combo.textContent=streak>=2?'🔥 '+streak+'연속 정답!':'';combo.classList.toggle('hidden',streak<2);
