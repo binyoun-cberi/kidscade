@@ -1,4 +1,5 @@
 import { HISTORY_FIGURE_FACTS } from './history-live-figure-facts.mjs';
+import { IMPORTED_HISTORY_QUIZ } from './history-timebattle-imported-quiz.mjs';
 import { HISTORY_HERITAGE_FACTS } from './history-live-heritage-facts.mjs';
 import { HERITAGE_MEDIA } from './history-heritage-media.mjs';
 const CORE_FACTS = [
@@ -1360,10 +1361,16 @@ for(const heritage of HISTORY_HERITAGE_FACTS){
   knownHeritage.add(heritage.term);
 }
 
+// Append new worksheet facts without changing existing fact IDs or question indices.
+for(const row of IMPORTED_HISTORY_QUIZ) CORE_FACTS.push({
+  era:row.era,type:row.type,term:row.answer,clue:row.q,direct:true,imported:true,
+  question:row.q,answer:row.answer,aliases:row.aliases||[],source:row.source,sourceId:row.id
+});
+
 const HERITAGE_TYPES = new Set(['유물','문화유산','역사서','법전','지도','과학']);
 export function isHeritageFact(fact){return Boolean(fact&&!fact.direct&&HERITAGE_TYPES.has(fact.type));}
 function matchesFactType(fact,factType){
-  return !factType || (factType==='heritage'?isHeritageFact(fact):fact.type===factType);
+  return !factType || (factType==='heritage'?isHeritageFact(fact):factType==='short'?(fact.imported||!fact.direct):factType==='ox'?!fact.imported:fact.type===factType);
 }
 
 export const ERA_ORDER = Object.freeze(['선사','고조선','삼국','남북국','고려','조선 전기','조선 후기','개항기','대한제국','국권 피탈','일제강점기','광복 이후','6·25 전쟁']);
@@ -1454,46 +1461,47 @@ const TERM_PROMPTS = [
   clue => `설명을 읽고 알맞은 답을 고르세요.\n${clue}`,
   clue => `이 역사 단서가 가리키는 것은 무엇일까요?\n${clue}`,
   clue => `다음 내용과 가장 관련 깊은 것은 무엇일까요?\n${clue}`,
-  clue => `역사 탐정 문제입니다. 단서를 보고 정답을 찾으세요.\n${clue}`
+  clue => `다음 단서를 읽고 알맞은 역사 용어를 찾아보세요.\n${clue}`
 ];
 const CLUE_PROMPTS = [
   term => `‘${term}’에 대한 설명으로 알맞은 것은 무엇일까요?`,
-  term => `‘${term}’와 가장 관련 있는 설명을 고르세요.`,
-  term => `‘${term}’에 알맞은 설명을 고르세요.`
+  term => `다음 역사 용어를 가장 잘 설명한 것은 무엇일까요?\n${term}`,
+  term => `‘${term}’의 특징을 올바르게 설명한 것은 무엇일까요?`
 ];
 const ERA_PROMPTS = [
-  term => `‘${term}’와 가장 관련 깊은 시대·시기는 언제일까요?`,
-  term => `‘${term}’를 공부할 때 함께 살펴볼 역사 시기로 알맞은 것은?`
+  term => `다음 역사 용어와 가장 관련 깊은 시대·시기는 언제일까요?\n${term}`,
+  term => `다음 역사 용어와 관련 깊은 시기는 언제일까요?\n${term}`
 ];
 
+function oxEraGroup(era){
+  if(['선사','고조선','삼국','남북국'].includes(era))return '고대';
+  if(era==='고려')return '고려';
+  if(['조선 전기','조선 후기'].includes(era))return '조선';
+  return '근현대';
+}
 function wrongFactForOx(fact,index){
-  const all=CORE_FACTS.map((f,i)=>({f,i})).filter(x=>!x.f.direct&&x.i!==index&&x.f.term!==fact.term&&(index>=BASE_FACT_COUNT||x.i<BASE_FACT_COUNT)&&(index>=PREVIOUS_FACT_COUNT||x.i<PREVIOUS_FACT_COUNT));
-  const groups=[
-    all.filter(x=>x.f.era===fact.era&&x.f.type===fact.type),
-    all.filter(x=>x.f.era===fact.era),
-    all.filter(x=>x.f.type===fact.type),
-    all
-  ];
-  for(let g=0;g<groups.length;g++){
-    const group=groups[g];if(!group.length)continue;
-    const pick=hashText(fact.term+':ox:'+g)%group.length;
-    return group[pick].f;
-  }
-  return null;
+  // Mismatching a different person's generic achievement can be accidentally true.
+  // Select a clearly different broad period instead; avoid misleading false statements.
+  const group=oxEraGroup(fact.era);
+  const candidates=CORE_FACTS.map((f,i)=>({f,i})).filter(({f,i})=>
+    !f.direct&&i!==index&&f.term!==fact.term&&oxEraGroup(f.era)!==group
+    &&(index>=BASE_FACT_COUNT||i<BASE_FACT_COUNT)
+    &&(index>=PREVIOUS_FACT_COUNT||i<PREVIOUS_FACT_COUNT));
+  return candidates.length?candidates[hashText(fact.term+':era-ox')%candidates.length].f:null;
 }
 function regularOxQuestions(fact,index){
   const out=[{
     id:`ox-${index}-true`,era:fact.era,difficulty:2,
-    q:`OX 문제\n다음 설명은 ‘${fact.term}’에 대한 설명이다.\n${fact.clue}`,
+    q:`OX 문제\n다음 설명은 ‘${fact.term}’에 관한 내용이다.\n${fact.clue}`,
     o:['O','X'],a:0,e:`O가 정답입니다. ${fact.term}: ${fact.clue}`,
     sourceFact:index,family:'ox'
   }];
   const wrong=wrongFactForOx(fact,index);
   if(wrong)out.push({
     id:`ox-${index}-false`,era:fact.era,difficulty:2,
-    q:`OX 문제\n다음 설명은 ‘${fact.term}’에 대한 설명이다.\n${wrong.clue}`,
+    q:`OX 문제\n다음 설명은 ‘${fact.term}’에 관한 내용이다.\n${wrong.clue}`,
     o:['O','X'],a:1,
-    e:`X가 정답입니다. 제시된 설명은 ‘${wrong.term}’에 더 알맞습니다. ${fact.term}: ${fact.clue}`,
+    e:`X가 정답입니다. 제시한 설명은 ‘${wrong.term}’에 관한 내용입니다. ${topicLabel(fact.term)} ${fact.clue}`,
     sourceFact:index,family:'ox'
   });
   return out;
@@ -1566,6 +1574,8 @@ function relationQuestions(fact,index){
 function buildBank() {
   const out = [];
   CORE_FACTS.forEach((fact, index) => {
+    // All imported questions are appended after legacy questions to preserve indexes.
+    if(fact.imported)return;
     if(fact.direct){
       out.push({
         id:`direct-${index}`,era:fact.era,difficulty:2,
@@ -1615,6 +1625,55 @@ function buildBank() {
       e:`${fact.term}: ${fact.clue}`,sourceFact:index,family:'heritage-identify',
       ...(HERITAGE_MEDIA[fact.term]?{media:HERITAGE_MEDIA[fact.term]}:{})
     });
+  });
+
+  // Preserve the older bank and all existing heritage-photo question indexes.
+  const normalizeAnswer=value=>String(value??'').normalize('NFKC').replace(/[\\s·.\-]/g,'').toLowerCase();
+  const imports=CORE_FACTS.map((fact,index)=>({fact,index})).filter(x=>x.fact.imported);
+  for(const {fact,index} of imports){
+    const target=normalizeAnswer(fact.answer),seen=new Set([target]);
+    const distractors=[];
+    const groups=[
+      imports.filter(x=>x.fact.era===fact.era&&x.fact.type===fact.type),
+      CORE_FACTS.map((f,i)=>({fact:f,index:i})).filter(x=>x.fact.era===fact.era&&x.fact.type===fact.type&&x.fact.term),
+      imports.filter(x=>x.fact.type===fact.type),
+      CORE_FACTS.map((f,i)=>({fact:f,index:i})).filter(x=>x.fact.type===fact.type&&!x.fact.direct&&x.fact.term),
+      imports.filter(x=>x.fact.era===fact.era),
+      CORE_FACTS.map((f,i)=>({fact:f,index:i})).filter(x=>x.fact.era===fact.era&&!x.fact.direct&&x.fact.term),
+      imports
+    ];
+    for(const group of groups){
+      const candidates=group.filter(x=>x.index!==index).sort((a,b)=>
+        hashText(fact.sourceId+':'+(a.fact.sourceId||a.fact.term))-hashText(fact.sourceId+':'+(b.fact.sourceId||b.fact.term)));
+      for(const item of candidates){
+        const name=item.fact.answer||item.fact.term,key=normalizeAnswer(name);
+        if(!key||seen.has(key))continue;
+        seen.add(key);distractors.push(name);
+        if(distractors.length>=3)break;
+      }
+      if(distractors.length>=3)break;
+    }
+    if(distractors.length!==3)continue;
+    const explanation='정답은 '+fact.answer+'입니다.';
+    // Imported facts use the direct schema so timeline/option integrity checks stay valid.
+    Object.assign(fact,{q:fact.question,o:[fact.answer,...distractors],a:0,e:explanation});
+    out.push({
+      id:'worksheet-'+fact.sourceId,era:fact.era,difficulty:2,
+      q:fact.q,o:[...fact.o],a:fact.a,
+      e:fact.e,sourceFact:index,family:fact.type==='인물'?'identify':'imported',
+      acceptedAnswers:[fact.answer,...fact.aliases]
+    });
+  }
+  // Explicit short-answer variants: never infer an answer from a choice's position.
+  // Keep four internally stored choices for compatibility; the UI never shows them.
+  const shortOrigins=new Map();
+  for(const q of out){
+    if(!['identify','imported'].includes(q.family)||shortOrigins.has(q.sourceFact))continue;
+    shortOrigins.set(q.sourceFact,q);
+  }
+  for(const q of shortOrigins.values())out.push({
+    ...q,id:'short-'+q.id,family:'short',difficulty:Math.max(2,q.difficulty||2),
+    acceptedAnswers:q.acceptedAnswers||[q.o[q.a]]
   });
   return out;
 }
@@ -1760,9 +1819,10 @@ function chronologicalSourceFactIndexes(count = 15, eras = ERA_ORDER, factType =
 
 function candidatesForFact(factIndex,questionMode,position,random){
   const all=QUESTION_BANK.filter(q=>q.sourceFact===factIndex);
-  const ox=all.filter(q=>q.family==='ox'),choice=all.filter(q=>q.family!=='ox');
+  const ox=all.filter(q=>q.family==='ox'),short=all.filter(q=>q.family==='short'),choice=all.filter(q=>q.family!=='ox'&&q.family!=='short');
   if(questionMode==='people')return all.filter(q=>q.family==='identify');
   if(questionMode==='heritage')return all.filter(q=>q.family==='heritage-identify');
+  if(questionMode==='short')return short;
   if(questionMode==='ox')return ox.length?ox:choice;
   if(questionMode==='mixed'){
     const useOx=position%2===1;
@@ -1788,7 +1848,7 @@ export function pickHistoryQuestions(count = 15, random = Math.random, orderMode
   let factIndexes;
 
   if(questionMode==='heritage'&&!hasHistoricalHeritage(selectedEras,wanted))return [];
-  const factType=questionMode==='people'?'인물':questionMode==='heritage'?'heritage':null;
+  const factType=questionMode==='people'?'인물':questionMode==='heritage'?'heritage':questionMode==='short'?'short':questionMode==='ox'?'ox':null;
   if (orderMode === 'chronological') {
     factIndexes = chronologicalSourceFactIndexes(wanted,selectedEras,factType);
   } else {
@@ -1805,7 +1865,7 @@ export function pickHistoryQuestions(count = 15, random = Math.random, orderMode
 }
 
 export function chronologicalQuestionIndexes(count = 15, questionMode = 'choice', eras = ERA_ORDER) {
-  return chronologicalSourceFactIndexes(count,eras,questionMode==='people'?'인물':questionMode==='heritage'?'heritage':null).map((factIndex,position)=>{
+  return chronologicalSourceFactIndexes(count,eras,questionMode==='people'?'인물':questionMode==='heritage'?'heritage':questionMode==='short'?'short':questionMode==='ox'?'ox':null).map((factIndex,position)=>{
     const candidates=candidatesForFact(factIndex,questionMode,position,Math.random).map(q=>QUESTION_BANK.indexOf(q));
     return candidates[(position*3+factIndex)%candidates.length];
   });
