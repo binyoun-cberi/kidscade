@@ -175,7 +175,7 @@ export class RoadWeaver {
     if(!choices.length)return {ok:false,reason:'우회전 전용도로를 만들 공간이 부족해요.'};
     choices.sort((a,b)=>a.d-b.d);
     const chosen=choices[0],a=chosen.from.point,b=chosen.to.point;
-    if(this.roads.some(r=>r.kind==='slip'&&len(r.points[0],a)<5&&len(r.points.at(-1),b)<5))
+    if(this.roads.some(r=>r.kind==='slip'&&len(r.points[1],chosen.point)<6))
       return {ok:false,reason:'이 모퉁이에는 이미 우회전 전용도로가 있어요.'};
     const points=[{x:a.x,y:a.y},chosen.point,{x:b.x,y:b.y}];
     const cost=Math.ceil(costOfRoad(points,2)*1.3);
