@@ -332,8 +332,12 @@ function drawCity(t,index){
   ctx.font='bold 15px system-ui';
   const w=Math.max(113,ctx.measureText(t.name).width+28);
   const labelY=cy>575?cy-116:cy+83;
-  rounded(cx-w/2,labelY,w,34,10,'rgba(255,255,251,.96)');
-  ctx.fillStyle='#254b3b';ctx.fillText(t.name,cx,labelY+17);
+  // 지도를 전체 보기로 표시하는 휴대전화에서도 지구 이름이 읽히도록 라벨만 확대한다.
+  const labelScale=viewW<=600?Math.min(1.75,Math.max(1,0.64/scale)):1;
+  ctx.save();ctx.translate(cx,labelY+17);ctx.scale(labelScale,labelScale);
+  rounded(-w/2,-17,w,34,10,'rgba(255,255,251,.96)');
+  ctx.fillStyle='#254b3b';ctx.fillText(t.name,0,0);
+  ctx.restore();
   ctx.restore();
 }
 function drawParkedCar(x,y,name,angle=0){
@@ -361,7 +365,7 @@ function drawDistrictLife(){
 function drawRoundaboutCenters(){
   for(const circle of sim.roundabouts){
     ctx.save();
-    ctx.beginPath();ctx.arc(circle.x,circle.y,circle.lanes===4?10:circle.radius-14,0,Math.PI*2);
+    ctx.beginPath();ctx.arc(circle.x,circle.y,circle.radius-(circle.lanes===4?29:14),0,Math.PI*2);
     ctx.fillStyle='#95c78b';ctx.fill();ctx.strokeStyle='#cfddd0';ctx.lineWidth=2;ctx.stroke();
     ctx.beginPath();ctx.arc(circle.x,circle.y,11,0,Math.PI*2);ctx.fillStyle='#70a875';ctx.fill();
     ctx.strokeStyle='rgba(250,255,245,.9)';ctx.lineWidth=2;
@@ -391,7 +395,10 @@ function drawCar(c){
   const p=sim.sampleCar(c),name=c.kind==='tractor'?'tractor':c.kind==='bus'?'bus':
     c.kind==='truck'?(Number(c.id.slice(1))%2?'truck':'truckdelivery'):
     ['sedan','sedan-blue','taxi','rounded-green','suv','van-small'][Number(c.id.slice(1))%6];
-  const img=sprites[name],long=['truck','tractor','bus'].includes(c.kind),w=long?14:12,h=long?26:21;
+  const img=sprites[name],long=['truck','tractor','bus'].includes(c.kind);
+  // 한눈에 보는 작은 화면에서는 자동차가 4px짜리 점으로 사라지지 않게 표시 크기를 보정한다.
+  const mobileScale=viewW<=600?Math.min(1.55,Math.max(1,.62/scale)):1;
+  const w=(long?14:12)*mobileScale,h=(long?26:21)*mobileScale;
   ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle+Math.PI/2);
   ctx.fillStyle='rgba(32,45,37,.28)';ctx.beginPath();ctx.ellipse(2,2,w/2+1,h/2,0,0,Math.PI*2);ctx.fill();
   if(img&&img.complete&&img.naturalWidth){
