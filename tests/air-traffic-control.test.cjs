@@ -95,8 +95,14 @@ test('위험한 근접은 자동 관제가 개입하고 심각 상황이 반복�
 });
 test('근무 완료에 필요한 기본 실적을 점검한다', () => {
   const ok=active(30);
-  ok.delivered=ok.map.required;ok.elapsed=ok.duration-.01;C.step(ok,.05);
+  ok.delivered=ok.map.required;
+  for(let id=1;id<=ok.map.requiredCommands;id++)ok.managedIds.push(id);
+  ok.controlled=ok.map.requiredCommands;
+  ok.elapsed=ok.duration-.01;C.step(ok,.05);
   assert.equal(ok.phase,'completed');
+  const passive=active(30);passive.delivered=passive.map.required;passive.elapsed=passive.duration-.01;C.step(passive,.05);
+  assert.equal(passive.phase,'failed');
+  assert.match(passive.endReason,/직접 안내/);
   const no=active(30);
   no.elapsed=no.duration-.01;C.step(no,.05);
   assert.equal(no.phase,'failed');
@@ -112,4 +118,28 @@ test('여러 시드에서 무조작 전체 근무를 안정적으로 시뮬레�
       assert.ok(s.planes.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&Number.isFinite(p.heading)));
     }
   }
+});
+test('서로 다른 비행기를 실제로 조종해야 근무 실적으로 인정된다', () => {
+  const s=active(8),p=s.planes[0];
+  assert.equal(s.controlled,0);
+  C.route(s,p.id,p.x+100,p.y+90);
+  assert.equal(s.controlled,1);
+  C.route(s,p.id,p.x+140,p.y+110);
+  assert.equal(s.controlled,1);
+  C.altitude(s,p.id,p.targetAltitude===1?2:1);
+  assert.equal(s.controlled,1);
+  C.spawn(s);const second=s.planes.find(x=>x.id!==p.id);
+  assert.ok(second);
+  C.hold(s,second.id);
+  assert.equal(s.controlled,2);
+  assert.equal(s.issuedInstructions,4);
+});
+test('관제 도중 빈 경유점과 누락된 항공기는 잘못된 지시를 기록하지 않는다', () => {
+  const s=active(9),p=s.planes[0];
+  const before=s.controlled;
+  assert.equal(C.route(s,p.id,p.x,p.y),true);
+  assert.equal(s.controlled,before);
+  assert.equal(C.route(s,876123,50,50),false);
+  assert.equal(C.altitude(s,p.id,3),false);
+  assert.equal(s.controlled,before);
 });
