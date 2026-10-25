@@ -1499,9 +1499,9 @@ function regularOxQuestions(fact,index){
   const wrong=wrongFactForOx(fact,index);
   if(wrong)out.push({
     id:`ox-${index}-false`,era:fact.era,difficulty:2,
-    q:`OX 문제\n다음 역사 용어와 가장 관련 깊은 시기는 ${wrong.era}이다.\n${fact.term}`,
+    q:`OX 문제\n다음 설명은 ‘${fact.term}’에 관한 내용이다.\n${wrong.clue}`,
     o:['O','X'],a:1,
-    e:`X가 정답입니다. ‘${fact.term}’은(는) ${fact.era}와 가장 관련 깊습니다.`,
+    e:`X가 정답입니다. 제시한 설명은 ‘${wrong.term}’에 관한 내용입니다. ${topicLabel(fact.term)} ${fact.clue}`,
     sourceFact:index,family:'ox'
   });
   return out;
@@ -1654,10 +1654,13 @@ function buildBank() {
       if(distractors.length>=3)break;
     }
     if(distractors.length!==3)continue;
+    const explanation='정답은 '+fact.answer+'입니다.';
+    // Imported facts use the direct schema so timeline/option integrity checks stay valid.
+    Object.assign(fact,{q:fact.question,o:[fact.answer,...distractors],a:0,e:explanation});
     out.push({
       id:'worksheet-'+fact.sourceId,era:fact.era,difficulty:2,
-      q:fact.question,o:[fact.answer,...distractors],a:0,
-      e:'정답은 '+fact.answer+'입니다.',sourceFact:index,family:fact.type==='인물'?'identify':'imported',
+      q:fact.q,o:[...fact.o],a:fact.a,
+      e:fact.e,sourceFact:index,family:fact.type==='인물'?'identify':'imported',
       acceptedAnswers:[fact.answer,...fact.aliases]
     });
   }
