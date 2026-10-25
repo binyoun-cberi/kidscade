@@ -3904,6 +3904,33 @@
       "qualityStatus": "standard",
       "classroom": false,
       "cover": "assets/gate-image/high_one_life.png"
+    },
+    {
+      "id": "high_road_weaver",
+      "addedAt": "2026-10-25T10:10:00+09:00",
+      "title": "도시를 잇다",
+      "href": "games/high_road_weaver/index.html",
+      "category": "trivia",
+      "age": "high",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🚗",
+      "description": "도로를 직접 그려 두 도시를 잇고, 아침 출근길과 저녁 퇴근길의 교통체증을 해결해요. 차선을 넓히고 교차로에 신호등을 설치하면 산업지구와 상업지구가 차례로 성장해요.",
+      "subject": "social",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 15,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
     }
   ],
   "taxonomy": {
