@@ -315,8 +315,8 @@
         let markerEnabled = true;
         let bestMoves = {};
         try {
-            markerEnabled = localStorage.getItem('labWaterSortMarkers') !== 'off';
-            const saved = JSON.parse(localStorage.getItem('labWaterSortBestMoves') || '{}');
+            markerEnabled = localStorage.getItem('kidscade_labWaterSortMarkers') !== 'off';
+            const saved = JSON.parse(localStorage.getItem('kidscade_labWaterSortBestMoves') || '{}');
             if (saved && typeof saved === 'object' && !Array.isArray(saved)) bestMoves = saved;
         } catch (e) { /* 저장소 없이도 동작 */ }
         
@@ -524,7 +524,7 @@
         function toggleMarkers() {
             if (isAnimating) return;
             markerEnabled = !markerEnabled;
-            try { localStorage.setItem('labWaterSortMarkers', markerEnabled ? 'on' : 'off'); } catch (e) {}
+            try { localStorage.setItem('kidscade_labWaterSortMarkers', markerEnabled ? 'on' : 'off'); } catch (e) {}
             render();
         }
 
@@ -822,7 +822,7 @@
             const newBest = !Number.isInteger(previousBest) || previousBest <= 0 || undoStack.length < previousBest;
             if (newBest) {
                 bestMoves[stage] = undoStack.length;
-                try { localStorage.setItem('labWaterSortBestMoves', JSON.stringify(bestMoves)); } catch (e) {}
+                try { localStorage.setItem('kidscade_labWaterSortBestMoves', JSON.stringify(bestMoves)); } catch (e) {}
             }
             const last = stage === LabWaterSortCore.LEVEL_COUNT;
             document.querySelector('#winScreen h2').textContent = last ? '모든 실험 성공!' : '실험 성공!';
