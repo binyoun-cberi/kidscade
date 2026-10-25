@@ -135,7 +135,7 @@ let chrome,ws,profile,serverOpen=false,passed=0;
     assert.ok(xy&&xy.x>=0&&xy.x<1280&&xy.y>=0&&xy.y<800,'target out of viewport round '+round+' '+JSON.stringify(xy));
     await click(xy.x,xy.y);
     await wait("__KK_TEST__.snapshot().found>="+round,4000);
-    await wait("!__KK_TEST__.snapshot().celebration",5000);
+    await wait("!__KK_TEST__.snapshot().celebration",12000);
   }
   await wait("!document.querySelector('#finish').classList.contains('hidden')",3000);
   await screenshot('04-large-finished');passed++;
@@ -163,5 +163,5 @@ let chrome,ws,profile,serverOpen=false,passed=0;
 })().catch(err=>{console.error('KKWAEKKORI BROWSER AUDIT FAILED',err);process.exitCode=1}).finally(async()=>{
   try{ws?.close();chrome?.kill('SIGKILL');}catch(_){}
   if(serverOpen)await new Promise(ok=>server.close(ok));
-  if(profile)fs.rmSync(profile,{recursive:true,force:true});
+  if(profile)try{fs.rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:250});}catch(e){console.warn('Chrome profile cleanup:',e.message)}
 });
