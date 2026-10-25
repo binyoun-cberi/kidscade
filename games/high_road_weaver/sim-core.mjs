@@ -83,7 +83,7 @@ export class RoadWeaver {
     this.cars=[];this.oldRoads=[];this.lights=new Set();this.history=[];
     this.openTowns=2;this.budget=420;this.day=1;this.minutes=5*60+30;
     this.delivered=0;this.waiting=0;this.attempted=0;this.serial=0;
-    this.tickTime=0;this.spawnFraction=new Map();this.announcements=[];
+    this.tickTime=0;this.spawnFraction=new Map();this.pending=new Map();this.announcements=[];
     this.rebuild();
   }
   get towns(){return TOWN_TYPES.slice(0,this.openTowns);}
@@ -217,7 +217,7 @@ export class RoadWeaver {
   spawn(from,to){
     const start=TOWN_TYPES.find(t=>t.id===from),end=TOWN_TYPES.find(t=>t.id===to),path=this.route(start,end);
     this.attempted++;
-    if(!path||!path.length){this.waiting++;return false;}
+    if(!path||!path.length)return false;
     if(this.cars.length>=180)return false;
     const edge=path[0].edge,dir=path[0].dir;
     const same=this.cars.filter(c=>c.edge===edge&&c.dir===dir&&c.s<25);
@@ -282,15 +282,17 @@ export class RoadWeaver {
     if(this.openTowns>2){
       // 새 도시가 직전에 그린 도로 위에 등장해도 기존 연결은 유지한다.
     }
-    if(this.roads.length){
-      for(const a of this.towns)for(const b of this.towns){
-        if(a===b)continue;
-        const pair=a.id+'>'+b.id;
-        let carry=(this.spawnFraction.get(pair)||0)+getDemandRate(a.id,b.id,this.hour)*dt*.85;
-        while(carry>=1){this.spawn(a.id,b.id);carry--;}
-        this.spawnFraction.set(pair,carry);
+    for(const a of this.towns)for(const b of this.towns){
+      if(a===b)continue;
+      const pair=a.id+'>'+b.id;
+      let carry=(this.spawnFraction.get(pair)||0)+getDemandRate(a.id,b.id,this.hour)*dt*.85;
+      while(carry>=1){this.pending.set(pair,Math.min(75,(this.pending.get(pair)||0)+1));carry--;}
+      this.spawnFraction.set(pair,carry);
+      if((this.pending.get(pair)||0)>0&&this.spawn(a.id,b.id)){
+        this.pending.set(pair,this.pending.get(pair)-1);
       }
     }
+    this.waiting=[...this.pending.values()].reduce((sum,n)=>sum+n,0);
     this.advance(dt);
   }
   sampleCar(c){
@@ -305,7 +307,8 @@ export class RoadWeaver {
   snapshot(){
     return {version:1,roads:this.roads.map(r=>({id:r.id,lanes:r.lanes,points:r.points})),
       openTowns:this.openTowns,budget:this.budget,day:this.day,minutes:this.minutes,
-      delivered:this.delivered,waiting:this.waiting,attempted:this.attempted,lights:[...this.lights],serial:this.serial};
+      delivered:this.delivered,waiting:this.waiting,attempted:this.attempted,lights:[...this.lights],serial:this.serial,
+      queues:[...this.pending].map(([pair,count])=>[pair,count])};
   }
   restore(data){
     if(!data||data.version!==1||!Array.isArray(data.roads))return false;
@@ -316,6 +319,9 @@ export class RoadWeaver {
     this.minutes=clamp(data.minutes||330,0,1439);this.delivered=Math.max(0,Math.round(data.delivered||0));
     this.waiting=Math.max(0,Math.round(data.waiting||0));this.attempted=Math.max(0,Math.round(data.attempted||0));
     this.serial=Math.max(0,Math.round(data.serial||0));this.lights=new Set(Array.isArray(data.lights)?data.lights:[]);
-    this.cars=[];this.oldRoads=[];this.history=[];this.spawnFraction.clear();this.rebuild();return true;
+    this.cars=[];this.oldRoads=[];this.history=[];this.spawnFraction.clear();
+    this.pending=new Map(Array.isArray(data.queues)?data.queues.filter(row=>Array.isArray(row)&&typeof row[0]==='string'&&Number.isFinite(row[1])&&row[1]>=0&&row[1]<=75):[]);
+    this.waiting=[...this.pending.values()].reduce((sum,n)=>sum+n,0);
+    this.rebuild();return true;
   }
 }
