@@ -115,6 +115,9 @@ export function movePeople(town,deltaSeconds){
   const dt=Math.min(.1,Math.max(0,Number(deltaSeconds)||0));town.time+=dt;
   for(const p of town.people){
     p.elapsed+=dt;if(p.reserved||p.found||p.elapsed<p.routineAt)continue;
+    // Crossing from a walking route to a static pose would move a character
+    // instantly across the sidewalk. Keep the walking role consistent.
+    if(p.slot===1){p.routineAt=p.elapsed+25;continue;}
     const list=p.block.activities,next=list[(list.indexOf(p.activity)+1)%list.length];
     if(!town.people.some(q=>q.id!==p.id&&signature(q)===signature({...p,activity:next}))){p.activity=next;p.action=next;}
     p.routineAt=p.elapsed+20+(p.slot%3)*4;
