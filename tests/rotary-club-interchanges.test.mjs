@@ -131,3 +131,20 @@ test('a disconnected pair of cities can connect exclusively through elevated roa
   assert.ok(observed,'cars never use the elevated road');
   assert.ok(sim.delivered>0,'cars never reach the other town via ramps');
 });
+
+test('traffic lights affect actual junction movement and legacy signal IDs migrate',()=>{
+  const {sim,junction}=intersection();
+  const on=sim.toggleLight(junction);
+  assert.ok(on.ok&&on.enabled);
+  assert.ok(sim.lights.has(junction.id));
+  assert.ok(sim.spawn('home','office'));
+  const car=sim.cars.find(c=>c.from==='home');
+  assert.ok(car);
+  sim.tickTime=6; // north-south green; east-west waits
+  assert.equal(sim.canGo(car),false);
+  sim.tickTime=0; // east-west green
+  assert.equal(sim.canGo(car),true);
+  const old={...sim.snapshot(),version:1,lights:[junction.id.split('@')[0]],roundabouts:[]};
+  const copy=new RoadWeaver();assert.ok(copy.restore(old));
+  assert.ok(copy.lights.has(junction.id),'old signal keys must be attached to ground layer');
+});
