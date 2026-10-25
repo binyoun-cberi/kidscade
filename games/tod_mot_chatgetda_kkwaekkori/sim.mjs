@@ -114,7 +114,7 @@ export function selectTargets(town,eligibleIds,previous=[]){
   return order;
 }
 export function movePeople(town,deltaSeconds){
-  const dt=Math.min(.1,Math.max(0,Number(deltaSeconds)||0));town.time+=dt;
+  const dt=Math.min(.25,Math.max(0,Number(deltaSeconds)||0));town.time+=dt;
   for(const p of town.people){
     p.elapsed+=dt;if(p.reserved||p.found||p.elapsed<p.routineAt)continue;
     // A delivery worker never teleports from the walking lane to an activity bay.
