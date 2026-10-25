@@ -125,18 +125,6 @@ jobs:
         run: npm run build
       - name: Run all regression tests and audits
         run: npm run test:ci
-      - name: Kkwaekkori real Chrome/WebGL playthrough
-        run: node tests/kkwaekkori-real-chrome-playthrough.cjs
-        env:
-          KIDSCADE_KKWA_AUDIT_OUT: ${{ runner.temp }}/kkwaekkori-real-play
-      - name: Upload Kkwaekkori desktop and mobile screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kkwaekkori-real-play
-          path: ${{ runner.temp }}/kkwaekkori-real-play/
-          if-no-files-found: ignore
-          retention-days: 7
       - name: Openmon expedition real-browser mobile and desktop audit
         run: node tests/openmon-expedition-browser-audit.cjs
         env:
@@ -190,3 +178,25 @@ jobs:
           path: ${{ runner.temp }}/chibi-visual-audit/
           if-no-files-found: ignore
           retention-days: 7
+
+  kkwaekkori-browser-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Kkwaekkori real Chrome/WebGL playthrough
+        run: node tests/kkwaekkori-real-chrome-playthrough.cjs
+        env:
+          KIDSCADE_KKWA_AUDIT_OUT: ${{ runner.temp }}/kkwaekkori-real-play
+      - name: Upload Kkwaekkori desktop and mobile screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kkwaekkori-real-play
+          path: ${{ runner.temp }}/kkwaekkori-real-play/
+          if-no-files-found: ignore
+          retention-days: 7
+
