@@ -56,6 +56,30 @@
   }
   const choice = (rng, size) => Math.floor(rng() * size);
 
+  // Remove loops in the known valid solution without changing the final board.
+  // This makes built-in hints useful rather than replaying needless shuffles.
+  function shortenSolution(initial, moves, capacity = CAPACITY) {
+    const board = clone(initial), route = [], states = [stateKey(board)];
+    const seen = new Map([[states[0], 0]]);
+    for (const move of moves) {
+      if (!pour(board, move[0], move[1], capacity)) throw new Error('Invalid witness move');
+      const key = stateKey(board);
+      if (seen.has(key)) {
+        const previous = seen.get(key);
+        while (route.length > previous) {
+          route.pop();
+          seen.delete(states.pop());
+        }
+      } else {
+        route.push(move);
+        states.push(key);
+        seen.set(key, route.length);
+      }
+    }
+    if (!solved(board, capacity)) throw new Error('Witness does not reach a solved board');
+    return route;
+  }
+
   // Every scramble operation is the *exact inverse* of a legal whole-run pour.
   // The reversed list is therefore a constructive solution, not a solver guess.
   function generate(level) {
@@ -84,7 +108,7 @@
         failures = 0;
       }
       const mixed = tubes.filter(t => t.length > 1 && runLength(t) !== t.length).length;
-      last = { tubes, solution: inverse.slice().reverse(), config: cfg };
+      last = { tubes, solution: shortenSolution(tubes, inverse.slice().reverse(), cfg.capacity), config: cfg };
       if (mixed >= Math.min(2, cfg.colors) && !solved(tubes, cfg.capacity)) return last;
     }
     if (last && !solved(last.tubes, cfg.capacity)) return last;
