@@ -17,7 +17,7 @@ const server=http.createServer((req,res)=>{
     if(err){res.writeHead(404);res.end('missing '+url.pathname);return;}
     if(decodeURIComponent(url.pathname)===GAME){
       const from='boot();\n})();';
-      const to='window.__takoyakiAudit={game,startDay,tapSlot,actionFilling,actionTopping,actionPack,scoreBall,activeOrder,chooseOrder,resetSlots,isReady,addOrder,updateCooking,updateOrders};boot();\n})();';
+      const to='window.__takoyakiAudit={game,startDay,tapSlot,actionFilling,actionTopping,actionPack,scoreBall,activeOrder,chooseOrder,resetSlots,isReady,addOrder,updateCooking,updateOrders,projectSlot(i){scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);const p=slotPositions[i].clone();p.y=.63;p.applyMatrix4(panGroup.matrixWorld).project(camera);const b=canvas.getBoundingClientRect();return{x:b.left+(p.x+1)*b.width/2,y:b.top+(1-p.y)*b.height/2}}};boot();\n})();';
       const before=body.toString();
       if(!before.includes(from)){res.writeHead(500);res.end('missing audit hook');return;}
       body=Buffer.from(before.replace(from,to));
@@ -75,19 +75,28 @@ let chrome,ws;
    assert.ok(geometry.scrollWidth<=config.w+2,'horizontal overflow');
    assert.ok(geometry.stage.bottom<=config.h+2,'stage extends below viewport');
    assert.ok(geometry.orders.x>=0&&geometry.orders.right<=config.w,'order ticket cut off');
+   // Use a physical CDP mouse press on the projected 3D pan hole.
+   const touch=await evalJS('__takoyakiAudit.projectSlot(0)');
+   assert.ok(touch.x>0&&touch.x<config.w&&touch.y>0&&touch.y<config.h,'projected pan well off screen');
+   await send('Input.dispatchMouseEvent',{type:'mousePressed',x:touch.x,y:touch.y,button:'left',clickCount:1});
+   await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:touch.x,y:touch.y,button:'left',clickCount:1});
+   await pause(100);
+   const physicallyStarted=await evalJS('__takoyakiAudit.game.slots[0].batter');
+   assert.equal(physicallyStarted,true,'real pointer click failed to fill first pan hole: '+JSON.stringify(touch));
+   await evalJS('__takoyakiAudit.startDay();true');
    const outcome=await evalJS(`(()=>{
      const a=__takoyakiAudit,g=a.game,order=a.activeOrder();
      for(let n=0;n<order.pieces;n++){
        a.tapSlot(n);let s=g.slots[n];
        if(g.day>=7){
-         a.actionFilling(order.filling);
-         if(order.extraOcto)a.actionFilling('octopus');
+         document.getElementById({octopus:'btnOcto',cheese:'btnCheese',hot:'btnHot'}[order.filling]).click();
+         if(order.extraOcto)document.getElementById('btnOcto').click();
        }
        for(let k=0;k<3;k++){s.phaseCook=12;s.totalCook=order.crispy?52:42;s.innerCook=34;a.tapSlot(n);}
        s.totalCook=order.crispy?52:42;s.innerCook=34;s.shape=100;s.phaseCook=10;
        a.tapSlot(n);
        if(g.day>=4){
-         for(const type of ['sauce','mayo','katsu','aonori'])if(order[type])a.actionTopping(type);
+         for(const type of ['sauce','mayo','katsu','aonori'])if(order[type])document.getElementById({sauce:'btnSauce',mayo:'btnMayo',katsu:'btnKatsu',aonori:'btnAonori'}[type]).click();
        }
      }
      return {day:g.day,pieces:order.pieces,ready:g.slots.filter(s=>s.finished&&s.orderId===order.id).length};
