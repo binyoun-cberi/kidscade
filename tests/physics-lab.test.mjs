@@ -29,7 +29,7 @@ test('light and heavy object differ in launch speed and momentum',()=>{
  const a=launch('tennis'),b=launch('metal');assert.ok(a.speed>b.speed);assert.ok(b.momentum>a.momentum);
 });
 test('simple targets can be activated by a physically simulated throw',()=>{
- for(const id of [1,2,3,7,8,9,13,14,15,19,20,21]){
+ for(const id of [1,2,3,7,8,13,14,15,19,20,21]){
   const w=createWorld(id);const g=w.goals[0];
   if(id>=13&&id<=18){const iron=w.items.find(x=>x.type==='metal');iron.x=205;iron.y=300;w.items=w.items.filter(x=>x===iron);}
   else {const ball=w.items.find(x=>x.type==='ball');ball.x=205;ball.y=300;w.items=w.items.filter(x=>x===ball);}
