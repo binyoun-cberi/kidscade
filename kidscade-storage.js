@@ -59,6 +59,7 @@
     aquariumSave: 'kidscade_aquarium_v1',
     byeokrandoSave: 'kidscade_byeokrando_v1',
     byeokrandoTutorialV2: 'kidscade_byeokrando_tutorial_v2',
+    byeokrandoTradeIntelV1: 'kidscade_byeokrando_trade_intel_v1',
     musicStudioSave: 'kidscade_music_studio_v2',
     timingExact10Local: 'kidscade_timing_exact10_local_v1',
     omokArenaSave: 'kidscade_omok_arena_v1',
