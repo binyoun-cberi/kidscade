@@ -9,6 +9,7 @@
     people:{title:'역사 인물',detail:'업적을 보고 이름 맞히기'},
     heritage:{title:'문화유산',detail:'특징을 보고 이름 맞히기'},
     'choice-short':{title:'직접 답하기',detail:'객관식 + 주관식 섞기'},
+    short:{title:'단답형',detail:'정답을 키보드로 직접 입력'},
     'figure-sort':{title:'시대별 인물 모으기',detail:'인물 카드를 시대별로 끌어다 놓기'}
   };
   const SETTINGS=[
