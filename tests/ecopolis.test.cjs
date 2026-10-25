@@ -18,7 +18,7 @@ test('Ecopolis is registered as a high-grade science strategy game',()=>{
   assert.equal(game.subject,'science');
   assert.equal(game.genre,'strategy');
   assert.deepEqual(game.input,['touch','keyboard']);
-  assert.equal(game.href,'games/high_ecopolis/index.html?v=10');
+  assert.equal(game.href,'games/high_ecopolis/index.html?v=11');
 });
 
 test('Ecopolis uses the common shell and local Three runtime',()=>{
@@ -86,7 +86,7 @@ test('Ecopolis supports procedural regions, analysis views, touch, tutorial and 
 
 test('Ecopolis uses QA-gated shared biome art without swapping in unverified animals',()=>{
   assert.match(html,/three\/addons\//);
-  assert.match(html,/game\.js\?v=10/);
+  assert.match(html,/game\.js\?v=11/);
   assert.match(js,/shared-community-3d\.js/);
   assert.match(js,/shared3DIsApproved/);
   assert.match(js,/normalizeShared/);
@@ -102,7 +102,7 @@ test('Ecopolis v5 makes ecosystem health change visible density and animal count
   assert.match(js,/function refreshLivingDecor/);
   assert.match(js,/const desired=pop\[species\]<8\?0/);
   assert.match(js,/function returnedSpeciesCount/);
-  assert.match(html,/game\.js\?v=10/);
+  assert.match(html,/game\.js\?v=11/);
 });
 
 test('Ecopolis v6 adds RollerCoaster-Tycoon-style environmental management',()=>{
@@ -150,7 +150,7 @@ test('Ecopolis v7 uses asset-backed connected paths and amenities',()=>{
   assert.match(html,/data-tool="trail"/);
   assert.match(html,/data-tool="boardwalk"/);
   assert.match(html,/data-tool="pavedwalk"/);
-  assert.match(html,/game\.js\?v=10/);
+  assert.match(html,/game\.js\?v=11/);
 });
 
 test('Ecopolis binds renderer events only after renderer initialization',()=>{
@@ -196,4 +196,66 @@ test('Ecopolis v10 adds free city building, larger maps and a touch carousel',()
   assert.match(html,/data-toolcat="develop"/);
   assert.match(css,/scroll-snap-type:x mandatory/);
   assert.match(css,/\.toolNav/);
+});
+
+
+test('Ecopolis v11 tracks progressive habitats, instancing and saves without discarding v10 games',()=>{
+  assert.match(js,/eco-world-evolution\.mjs/);
+  assert.match(js,/function initNatureInstances\(/);
+  assert.match(js,/new THREE\.InstancedMesh\(/);
+  assert.match(js,/natureDirty=true/);
+  assert.match(js,/function startConstruction\(/);
+  assert.match(js,/function tickConstruction\(/);
+  assert.match(js,/if\(!loading\)startConstruction\(b\)/);
+  assert.match(js,/function visitorArrivalRoutes\(/);
+  assert.match(js,/findArrivalRoutes\(/);
+  assert.match(js,/version:4/);
+  assert.match(js,/\[1,2,3,4\]\.includes\(s\.version\)/);
+  assert.match(js,/growth:\+\(t\.growth\?\?1\)\.toFixed\(3\)/);
+  assert.match(js,/tiles\[i\]\.growth=d\.growth\?\?1/);
+});
+
+test('new habitats grow rather than instantly providing full biodiversity',async()=>{
+  const {habitatMaturity,habitatTier,effectiveHabitatArea,advanceHabitatGrowth}=await import(
+    require('node:url').pathToFileURL(path.join(dir,'eco-world-evolution.mjs')).href
+  );
+  const young={kind:'land',biome:'forest',pollution:.05,growth:.12};
+  const mature={kind:'land',biome:'forest',pollution:.05,growth:1};
+  assert.equal(habitatTier(young),0);
+  assert.ok(effectiveHabitatArea([young],'forest')<effectiveHabitatArea([mature],'forest'));
+  for(let n=0;n<15;n++)advanceHabitatGrowth(young,0,0);
+  assert.equal(habitatMaturity(young),1);
+  assert.equal(habitatTier(young),2);
+  assert.equal(habitatMaturity({biome:'wetland'}),1); // legacy save compatibility
+  young.pollution=.75;
+  advanceHabitatGrowth(young,90,70);
+  assert.ok(young.growth<1);
+  const stressed={kind:'land',biome:'wetland',pollution:0,growth:.1};
+  const healthy={...stressed};
+  advanceHabitatGrowth(stressed,0,115);
+  advanceHabitatGrowth(healthy,0,0);
+  assert.ok(stressed.growth<healthy.growth);
+});
+
+test('construction progresses through phases and can reach final size',async()=>{
+  const {constructionVisualAt}=await import(require('node:url').pathToFileURL(path.join(dir,'eco-world-evolution.mjs')).href);
+  const start=constructionVisualAt(0),frame=constructionVisualAt(.6),details=constructionVisualAt(1.1),end=constructionVisualAt(2);
+  assert.equal(start.phase,0);assert.equal(frame.phase,1);assert.equal(details.phase,2);assert.equal(end.phase,3);
+  assert.equal(start.done,false);assert.equal(end.done,true);
+  assert.ok(start.scaleY<frame.scaleY&&frame.scaleY<details.scaleY);
+  assert.ok(end.scaleY>=1);
+  assert.equal(end.foundationOpacity,0);
+});
+
+test('visitor arrivals never use disconnected boundary paths',async()=>{
+  const {findArrivalRoutes}=await import(require('node:url').pathToFileURL(path.join(dir,'eco-world-evolution.mjs')).href);
+  const nodes=Array.from({length:8},(_,id)=>({id}));
+  const edges=new Map([[0,[1]],[1,[0,2]],[2,[1,3]],[3,[2]],[4,[5]],[5,[4]],[6,[7]],[7,[6]]]);
+  const neighbors=n=>(edges.get(n.id)||[]).map(id=>nodes[id]);
+  const routes=findArrivalRoutes([nodes[0],nodes[4],nodes[6]],[nodes[3],nodes[5]], [nodes[2]],neighbors,()=>0);
+  assert.equal(routes.length,1);
+  assert.equal(routes[0].start,nodes[0]);
+  assert.deepEqual(routes[0].path.map(n=>n.id),[1,2,3]);
+  assert.deepEqual(findArrivalRoutes([nodes[4]],[nodes[5]],[nodes[2]],neighbors),[]);
+  assert.deepEqual(findArrivalRoutes([nodes[0]],[nodes[3]],[],neighbors),[]);
 });

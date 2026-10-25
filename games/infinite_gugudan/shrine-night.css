@@ -1,0 +1,90 @@
+/*
+ * Moonlit shrine backdrop for the EXISTING energy duel, not a gameplay redesign.
+ * Shrine artwork: original SVG at shrine-night.svg (no external assets/fonts).
+ * Scenery is always behind the beam, fighters, pressure gauge, and HUD.
+ */
+.arena.shrine-theme {
+  background-color:#0b1422;
+  background-image:
+    linear-gradient(90deg,rgba(2,8,18,.20),rgba(5,11,22,.025) 32%,rgba(4,8,18,.035) 67%,rgba(4,7,16,.23)),
+    url("./shrine-night.svg");
+  background-position:center,center 50%;
+  background-repeat:no-repeat;
+  background-size:cover,cover;
+  border:1px solid rgba(180,188,180,.27);
+  box-shadow:
+    inset 0 0 46px rgba(2,6,12,.34),
+    inset 0 -35px 38px rgba(3,9,15,.27),
+    0 10px 32px rgba(0,0,0,.24);
+}
+/* Keep the original pressure gauge and central energy clash completely intact. */
+.arena.shrine-theme:before{background:linear-gradient(90deg,transparent,rgba(212,215,193,.13),transparent);opacity:.5}
+.arena.shrine-theme:after{opacity:.35}
+.arena.shrine-theme .pressure{z-index:7}
+.arena.shrine-theme .fighter{z-index:5}
+.arena.shrine-theme .beam{z-index:3}
+.arena.shrine-theme .clash{z-index:6}
+.arena.shrine-theme .speed-lines{
+  z-index:1;
+  opacity:.08;
+  background:repeating-linear-gradient(170deg,transparent 0 36px,rgba(255,247,207,.04) 37px 38px);
+  mix-blend-mode:screen;
+}
+.arena.shrine-theme.combo-intense-1 .speed-lines{opacity:.10}
+.arena.shrine-theme.combo-intense-2 .speed-lines{opacity:.13}
+.arena.shrine-theme.combo-intense-3 .speed-lines{opacity:.16}
+.arena.shrine-theme.combo-intense-4 .speed-lines{opacity:.2}
+.arena.shrine-theme.combo-intense-4{
+  box-shadow:
+    inset 0 0 48px rgba(5,5,10,.35),
+    inset 0 -35px 60px rgba(206,167,97,.065),
+    0 0 24px rgba(216,202,156,.08);
+}
+.shrine-atmosphere{
+  position:absolute;inset:0;z-index:0;overflow:hidden;
+  pointer-events:none;user-select:none;
+}
+/* Fog remains low and slow; never covers the equation or central beam. */
+.shrine-fog{
+  position:absolute;left:-22%;width:140%;height:22%;
+  border-radius:50%;
+  background:radial-gradient(ellipse at 48% 50%,rgba(166,189,191,.13),rgba(146,170,177,.06) 42%,transparent 73%);
+  filter:blur(9px);
+  will-change:transform;
+}
+.shrine-fog.fog-back{bottom:13%;opacity:.65;animation:shrineDriftBack 25s ease-in-out infinite alternate}
+.shrine-fog.fog-front{bottom:-6%;opacity:.50;animation:shrineDriftFront 33s ease-in-out infinite alternate}
+.shrine-ghostlight{
+  position:absolute;display:block;width:6px;height:9px;
+  border-radius:45% 55% 58% 42%;background:rgba(167,225,210,.55);
+  box-shadow:0 0 9px 4px rgba(89,204,177,.13),0 0 19px 7px rgba(113,194,176,.1);
+  filter:blur(.3px);
+  animation:shrineEmber 7s ease-in-out infinite alternate;
+}
+.shrine-ghostlight.light-left{left:23%;top:42%;animation-delay:-4s}
+.shrine-ghostlight.light-right{left:84%;top:47%;width:4px;height:6px;animation-duration:9s;animation-delay:-1s}
+.shrine-ghostlight.light-far{left:71%;top:24%;width:2px;height:4px;opacity:.44;animation-duration:11s;animation-delay:-6s}
+@keyframes shrineDriftBack{
+  from{transform:translate3d(-2%,1%,0) scale(1)}
+  to{transform:translate3d(4%,-5%,0) scale(1.04)}
+}
+@keyframes shrineDriftFront{
+  from{transform:translate3d(4%,0,0) scale(1.06)}
+  to{transform:translate3d(-3%,-6%,0) scale(.97)}
+}
+@keyframes shrineEmber{
+  0%,100%{transform:translate3d(0,0,0) scale(.76);opacity:.24}
+  50%{transform:translate3d(7px,-12px,0) scale(1.17);opacity:.62}
+}
+/* Large lantern and tree silhouettes naturally crop on narrow phone viewports. */
+@media(max-width:560px){
+  .arena.shrine-theme{background-position:center,center 48%}
+  .shrine-fog{height:25%;filter:blur(7px)}
+  .shrine-ghostlight.light-far{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .shrine-fog,.shrine-ghostlight{animation:none!important;will-change:auto}
+}
+@media(prefers-reduced-data:reduce){
+  .shrine-fog{filter:none;will-change:auto}
+}

@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 560" preserveAspectRatio="xMidYMid slice" role="img" aria-label="달빛 속 오래된 신사로 향하는 밤길">
+<defs>
+  <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#080d20"/><stop offset=".47" stop-color="#24273e"/><stop offset=".77" stop-color="#18232e"/><stop offset="1" stop-color="#070d17"/></linearGradient>
+  <radialGradient id="moonHalo"><stop stop-color="#dddcca" stop-opacity=".34"/><stop offset=".4" stop-color="#d3c9bc" stop-opacity=".13"/><stop offset="1" stop-color="#cac3aa" stop-opacity="0"/></radialGradient>
+  <radialGradient id="moon"><stop stop-color="#eae2d1"/><stop offset=".7" stop-color="#d4d3c7"/><stop offset="1" stop-color="#a3b3b3"/></radialGradient>
+  <linearGradient id="ridge" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#23323d"/><stop offset="1" stop-color="#0e1823"/></linearGradient>
+  <linearGradient id="path" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#3d4b50"/><stop offset="1" stop-color="#19262b"/></linearGradient>
+  <linearGradient id="torii" x1="0" x2="1" y1="0" y2=".25"><stop stop-color="#9b463f"/><stop offset=".45" stop-color="#642d32"/><stop offset="1" stop-color="#2a1925"/></linearGradient>
+  <linearGradient id="lantern"><stop stop-color="#ffe0a4" stop-opacity=".6"/><stop offset="1" stop-color="#d09b69" stop-opacity=".08"/></linearGradient>
+  <radialGradient id="vignette"><stop offset=".3" stop-color="#000" stop-opacity="0"/><stop offset=".76" stop-color="#000" stop-opacity=".13"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+  <radialGradient id="seal"><stop stop-color="#90a8a6" stop-opacity=".16"/><stop offset=".72" stop-color="#7ba7a2" stop-opacity=".055"/><stop offset="1" stop-color="#8db8a7" stop-opacity="0"/></radialGradient>
+  <filter id="soft"><feGaussianBlur stdDeviation="9"/></filter>
+  <filter id="halo"><feGaussianBlur stdDeviation="18"/></filter>
+</defs>
+<rect width="1440" height="560" fill="url(#sky)"/>
+<!-- An old pale moon above the silent cedar forest. -->
+<circle cx="1000" cy="96" r="142" fill="url(#moonHalo)"/>
+<circle cx="1000" cy="96" r="53" fill="url(#moon)" opacity=".94"/>
+<circle cx="987" cy="81" r="12" fill="#89999c" opacity=".08"/><circle cx="1020" cy="113" r="17" fill="#879a9e" opacity=".08"/>
+<path d="M906 126Q966 109 1040 126T1182 118" stroke="#aec3c6" opacity=".1" stroke-width="14" fill="none" filter="url(#soft)"/>
+<g><circle cx="80" cy="38" r="1.7" fill="#d9dddb" opacity=".54"/><circle cx="181" cy="88" r="1.3" fill="#d9dddb" opacity=".3"/><circle cx="246" cy="36" r="1.7" fill="#d9dddb" opacity=".3"/><circle cx="338" cy="111" r="1" fill="#d9dddb" opacity=".3"/><circle cx="412" cy="62" r="1.2" fill="#d9dddb" opacity=".54"/><circle cx="522" cy="32" r="1.3" fill="#d9dddb" opacity=".3"/><circle cx="602" cy="74" r="1.5" fill="#d9dddb" opacity=".3"/><circle cx="716" cy="44" r="1" fill="#d9dddb" opacity=".3"/><circle cx="1046" cy="53" r="1.1" fill="#d9dddb" opacity=".54"/><circle cx="1102" cy="118" r="1.5" fill="#d9dddb" opacity=".3"/><circle cx="1198" cy="55" r="1.2" fill="#d9dddb" opacity=".3"/><circle cx="1308" cy="102" r="1.7" fill="#d9dddb" opacity=".3"/><circle cx="1350" cy="35" r="1.1" fill="#d9dddb" opacity=".54"/><circle cx="1011" cy="145" r="1" fill="#d9dddb" opacity=".3"/><circle cx="940" cy="45" r="1.4" fill="#d9dddb" opacity=".3"/><circle cx="787" cy="63" r="1" fill="#d9dddb" opacity=".3"/><circle cx="384" cy="146" r="1.1" fill="#d9dddb" opacity=".54"/><circle cx="577" cy="117" r="1.1" fill="#d9dddb" opacity=".3"/></g>
+<!-- Mountains and forested horizon -->
+<path d="M0 274L66 201L148 232L233 182L316 232L398 164L482 224L578 194L661 234L771 174L861 216L940 167L1034 225L1133 181L1251 232L1336 179L1440 235V560H0Z" fill="url(#ridge)" opacity=".93"/>
+<path d="M0 294L100 238L178 271L290 225L382 266L470 225L585 259L696 215L786 256L900 214L1010 266L1120 229L1240 266L1330 221L1440 267V560H0Z" fill="#101c27"/>
+<!-- Distant shrine roof, slightly off centre so the beam remains legible. -->
+<g opacity=".81">
+ <path d="M548 264Q612 255 653 224Q688 248 734 236Q775 260 830 267Q752 276 704 270L608 278Z" fill="#0a101c"/>
+ <path d="M572 264L583 330L797 330L807 266L772 259L771 315L613 315L610 258Z" fill="#15191e"/>
+ <rect x="648" y="278" width="38" height="44" fill="#231e25"/><rect x="690" y="278" width="38" height="44" fill="#231e25"/>
+ <path d="M605 286H778" stroke="#8b4840" opacity=".4" stroke-width="4"/>
+ <path d="M547 266Q674 251 830 269" fill="none" stroke="#733f3b" stroke-opacity=".42" stroke-width="6"/>
+</g>
+<!-- Tall old vermilion torii in the middle distance -->
+<g opacity=".93" stroke-linejoin="round">
+ <path d="M577 231L587 345L607 345L609 230Z" fill="url(#torii)" stroke="#120e16" stroke-width="3"/>
+ <path d="M798 231L805 345L824 345L830 228Z" fill="url(#torii)" stroke="#120e16" stroke-width="3"/>
+ <path d="M553 203Q704 193 850 202L852 217Q714 212 550 220Z" fill="#331923" stroke="#130e17" stroke-width="4"/>
+ <path d="M542 193Q671 199 725 193Q782 188 861 192L859 204Q705 208 540 207Z" fill="url(#torii)"/>
+ <path d="M584 229H824V239H584Z" fill="#552b31"/>
+ <path d="M686 222h36v17h-36z" fill="#312029" stroke="#1b171c" stroke-width="2"/>
+ <path d="M595 237L598 310M815 236L814 310" stroke="#d27555" opacity=".27" stroke-width="3"/>
+</g>
+<!-- Rope and shrine paper charms on each side -->
+<g opacity=".61" stroke="#b9a98e" stroke-width="2.2" fill="none">
+ <path d="M316 167Q415 189 528 163"/><path d="M882 165Q997 188 1117 149"/>
+</g>
+<g fill="#d0d3bc" opacity=".47">
+ <path d="M355 175v22l10 8-10 9v15l-12-8v-33z"/>
+ <path d="M403 183v19l-10 11 12 8v14l13-16-9-10 7-20z"/>
+ <path d="M470 177v18l-9 9 8 9v13l12-11-8-10 8-23z"/>
+ <path d="M918 172v22l10 8-10 10v14l-12-9 7-18-8-17z"/>
+ <path d="M1033 177v20l10 9-10 9v13l-12-8v-32z"/>
+</g>
+<!-- Path toward the torii: stone slabs, dark flanking grass -->
+<path d="M616 318L793 317L1195 560H225Z" fill="url(#path)" opacity=".85"/>
+<path d="M610 319L238 560" stroke="#596064" stroke-opacity=".2" stroke-width="6"/>
+<path d="M799 317L1195 560" stroke="#596064" stroke-opacity=".2" stroke-width="6"/>
+<g><path d="M671 375L769 375" stroke="#9ca6a4" stroke-opacity=".16" stroke-width="1"/><path d="M616 416L824 416" stroke="#9ca6a4" stroke-opacity=".16" stroke-width="1.5"/><path d="M561 457L879 457" stroke="#9ca6a4" stroke-opacity=".16" stroke-width="2"/><path d="M506 498L934 498" stroke="#9ca6a4" stroke-opacity=".16" stroke-width="2.5"/><path d="M451 539L989 539" stroke="#9ca6a4" stroke-opacity=".16" stroke-width="3"/></g>
+<path d="M0 378Q170 337 300 370T563 378L210 560H0Z" fill="#0b161c" opacity=".92"/>
+<path d="M1440 373Q1310 339 1160 382T869 385L1230 560H1440Z" fill="#0b151c" opacity=".92"/>
+<!-- Distant stone lantern, each housing a tiny amber flame -->
+<g transform="translate(374 318)" opacity=".89">
+ <ellipse cx="0" cy="22" rx="51" ry="29" fill="url(#lantern)" filter="url(#halo)"/>
+ <path d="M-9 75V19H9V75M-25 18H25L17 11H-17Z" fill="#313236" stroke="#11161d" stroke-width="3"/>
+ <path d="M-28 9L0 -4L28 9L30 14H-30Z" fill="#37393b" stroke="#10141c" stroke-width="3"/>
+ <path d="M-10 16H10V41H-10Z" fill="#b6875f"/><path d="M0 21L5 34L0 37L-5 34Z" fill="#efd2a0" opacity=".87"/>
+ <rect x="-24" y="73" width="48" height="6" rx="2" fill="#252a2e"/>
+</g>
+<g transform="translate(1074 336) scale(.8)" opacity=".88">
+ <ellipse cx="0" cy="22" rx="51" ry="29" fill="url(#lantern)" filter="url(#halo)"/>
+ <path d="M-9 75V19H9V75M-25 18H25L17 11H-17Z" fill="#303138" stroke="#11161d" stroke-width="3"/>
+ <path d="M-28 9L0 -4L28 9L30 14H-30Z" fill="#373a3d" stroke="#10141c" stroke-width="3"/>
+ <path d="M-10 16H10V41H-10Z" fill="#bb8d5c"/><path d="M0 21L5 33L0 37L-5 34Z" fill="#f3d1a3" opacity=".85"/>
+ <rect x="-24" y="73" width="48" height="6" rx="2" fill="#252a2e"/>
+</g>
+<!-- Old twisted trunks and cedars framing the scene -->
+<path d="M-25 560Q15 435 0 313Q4 201 -13 91M2 315Q89 219 107 139M-7 244Q59 180 63 92" stroke="#070e18" stroke-width="34" fill="none" stroke-linecap="round"/>
+<path d="M1449 560Q1400 448 1440 318Q1430 222 1457 110M1428 327Q1325 235 1308 164M1438 247Q1361 174 1334 89" stroke="#070e18" stroke-width="40" fill="none" stroke-linecap="round"/>
+<g><path d="M30 520 Q22 325 34 65" stroke="#090f1b" stroke-width="5" fill="none"/><path d="M30 187q-48 -54 -60 -45 M30 237q49 -66 75 -55" stroke="#09131d" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M55 520 Q47 325 59 96" stroke="#090f1b" stroke-width="6" fill="none"/><path d="M55 218q-48 -54 -60 -45 M55 268q49 -66 75 -55" stroke="#09131d" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M80 520 Q72 325 84 127" stroke="#090f1b" stroke-width="7" fill="none"/><path d="M80 249q-48 -54 -60 -45 M80 299q49 -66 75 -55" stroke="#09131d" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M105 520 Q97 325 109 158" stroke="#090f1b" stroke-width="5" fill="none"/><path d="M105 280q-48 -54 -60 -45 M105 330q49 -66 75 -55" stroke="#09131d" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M130 520 Q122 325 134 189" stroke="#090f1b" stroke-width="6" fill="none"/><path d="M130 311q-48 -54 -60 -45 M130 361q49 -66 75 -55" stroke="#09131d" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M155 520 Q147 325 159 90" stroke="#090f1b" stroke-width="7" fill="none"/><path d="M155 212q-48 -54 -60 -45 M155 262q49 -66 75 -55" stroke="#09131d" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M180 520 Q172 325 184 121" stroke="#090f1b" stroke-width="5" fill="none"/><path d="M180 243q-48 -54 -60 -45 M180 293q49 -66 75 -55" stroke="#09131d" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M205 520 Q197 325 209 152" stroke="#090f1b" stroke-width="6" fill="none"/><path d="M205 274q-48 -54 -60 -45 M205 324q49 -66 75 -55" stroke="#09131d" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M230 520 Q222 325 234 183" stroke="#090f1b" stroke-width="7" fill="none"/><path d="M230 305q-48 -54 -60 -45 M230 355q49 -66 75 -55" stroke="#09131d" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M255 520 Q247 325 259 84" stroke="#090f1b" stroke-width="5" fill="none"/><path d="M255 206q-48 -54 -60 -45 M255 256q49 -66 75 -55" stroke="#09131d" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M280 520 Q272 325 284 115" stroke="#090f1b" stroke-width="6" fill="none"/><path d="M280 237q-48 -54 -60 -45 M280 287q49 -66 75 -55" stroke="#09131d" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M1185 520 Q1196 355 1182 45" stroke="#090f1b" stroke-width="4" fill="none"/><path d="M1185 175q55 -54 73 -46 M1185 250q-46 -77 -81 -68" stroke="#0a1520" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M1214 520 Q1225 355 1211 64" stroke="#090f1b" stroke-width="5" fill="none"/><path d="M1214 194q55 -54 73 -46 M1214 269q-46 -77 -81 -68" stroke="#0a1520" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M1243 520 Q1254 355 1240 83" stroke="#090f1b" stroke-width="6" fill="none"/><path d="M1243 213q55 -54 73 -46 M1243 288q-46 -77 -81 -68" stroke="#0a1520" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M1272 520 Q1283 355 1269 102" stroke="#090f1b" stroke-width="4" fill="none"/><path d="M1272 232q55 -54 73 -46 M1272 307q-46 -77 -81 -68" stroke="#0a1520" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M1301 520 Q1312 355 1298 121" stroke="#090f1b" stroke-width="5" fill="none"/><path d="M1301 251q55 -54 73 -46 M1301 326q-46 -77 -81 -68" stroke="#0a1520" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M1330 520 Q1341 355 1327 140" stroke="#090f1b" stroke-width="6" fill="none"/><path d="M1330 270q55 -54 73 -46 M1330 345q-46 -77 -81 -68" stroke="#0a1520" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M1359 520 Q1370 355 1356 159" stroke="#090f1b" stroke-width="4" fill="none"/><path d="M1359 289q55 -54 73 -46 M1359 364q-46 -77 -81 -68" stroke="#0a1520" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M1388 520 Q1399 355 1385 178" stroke="#090f1b" stroke-width="5" fill="none"/><path d="M1388 308q55 -54 73 -46 M1388 383q-46 -77 -81 -68" stroke="#0a1520" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M1417 520 Q1428 355 1414 197" stroke="#090f1b" stroke-width="6" fill="none"/><path d="M1417 327q55 -54 73 -46 M1417 402q-46 -77 -81 -68" stroke="#0a1520" stroke-width="9" stroke-linecap="round" fill="none"/></g>
+<path d="M0 410Q95 385 197 405L212 560H0ZM1440 415Q1350 384 1234 406L1201 560H1440Z" fill="#081018"/>
+<!-- Faint circular seal on the ground, strictly environmental, under combat. -->
+<ellipse cx="718" cy="464" rx="250" ry="68" fill="url(#seal)"/>
+<ellipse cx="718" cy="464" rx="211" ry="48" fill="none" stroke="#b5bbb0" stroke-width="2" stroke-opacity=".15"/>
+<ellipse cx="718" cy="464" rx="165" ry="31" fill="none" stroke="#a8b7af" stroke-width="1.4" stroke-opacity=".11"/>
+<path d="M589 446L846 483M848 446L588 483" stroke="#9eaaa4" stroke-opacity=".1" stroke-width="3"/>
+<!-- A few muted ghost lights behind the action -->
+<circle cx="293" cy="270" r="22" fill="#69c0ae" opacity=".07" filter="url(#soft)"/>
+<circle cx="1185" cy="273" r="30" fill="#72b6bc" opacity=".08" filter="url(#soft)"/>
+<circle cx="1195" cy="263" r="3.5" fill="#8bcbbe" opacity=".44"/>
+<circle cx="292" cy="268" r="3" fill="#9bc8c5" opacity=".42"/>
+<rect width="1440" height="560" fill="url(#vignette)"/>
+</svg>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="관제탑 시뮬레이터 레이더 화면">
+  <defs>
+    <radialGradient id="sea"><stop stop-color="#174957"/><stop offset="1" stop-color="#081825"/></radialGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#81ebc1" stop-opacity=".35"/><stop offset="1" stop-color="#81ebc1" stop-opacity="0"/></linearGradient>
+    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse"><path d="M64 0H0V64" fill="none" stroke="#55b7b4" stroke-opacity=".16"/></pattern>
+    <filter id="glow"><feGaussianBlur stdDeviation="5"/></filter>
+  </defs>
+  <rect width="1200" height="675" fill="url(#sea)"/>
+  <path d="M-60 180 100 120 230 148 260 250 178 330 0 360ZM1200 160 1020 196 950 318 1072 405 1200 390ZM760 675 825 570 950 545 1065 675Z" fill="#1b4145" opacity=".62"/>
+  <rect width="1200" height="675" fill="url(#grid)"/>
+  <g fill="none" stroke="#5ce0bc" stroke-opacity=".2"><circle cx="610" cy="335" r="110"/><circle cx="610" cy="335" r="220"/><circle cx="610" cy="335" r="330"/><circle cx="610" cy="335" r="440"/><path d="M0 335H1200M610 0V675"/></g>
+  <path d="M610 335 950 190A385 385 0 0 1 950 450Z" fill="url(#shine)" opacity=".75"/>
+  <path d="M350 475 865 142" stroke="#dcf9b9" stroke-width="3" stroke-dasharray="15 13" opacity=".8"/>
+  <path d="M430 175 800 502" stroke="#76d7ee" stroke-width="3" stroke-dasharray="12 14" opacity=".65"/>
+  <g transform="translate(355 470) rotate(-33)">
+    <path d="M0-34-10-12-39 5-39 15-9 11-9 34 0 41 9 34 9 11 39 15 39 5 10-12Z" fill="#b5ffe1"/>
+    <circle r="56" fill="none" stroke="#b5ffe1" stroke-width="3" opacity=".75"/>
+  </g>
+  <g transform="translate(784 490) rotate(44)">
+    <path d="M0-28-8-10-32 3-32 12-7 9-7 28 0 35 7 28 7 9 32 12 32 3 8-10Z" fill="#9fd0ff"/>
+  </g>
+  <g transform="translate(760 145) rotate(12)" fill="none" stroke="#b0f9ca" stroke-width="3"><circle r="48" opacity=".4"/><rect x="-62" y="-11" width="124" height="22" rx="3"/><path d="M-48 0H48" stroke-dasharray="9 10"/></g>
+  <g font-family="sans-serif">
+    <text x="65" y="90" fill="#70e2c7" font-size="24" font-weight="700" letter-spacing="6">KIDSCADE / AIR TRAFFIC CONTROL</text>
+    <text x="66" y="548" fill="#effff4" font-size="70" font-weight="900">관제탑 시뮬레이터</text>
+    <text x="68" y="602" fill="#a9dfdd" font-size="27">경로를 그리고, 하늘의 안전을 지켜요</text>
+    <text x="855" y="585" fill="#92ded7" font-size="22">RADAR ONLINE  ●</text>
+  </g>
+</svg>

@@ -4,6 +4,7 @@
 const { spawnSync } = require('node:child_process');
 
 const TEST_FILES = [
+  "tests/lab-water-sort.test.cjs",
   "tests/road-weaver-core.test.mjs",
   "tests/rotary-club-interchanges.test.mjs",
   "tests/rotary-club-traffic-expansion.test.mjs",
@@ -227,6 +228,8 @@ const TEST_FILES = [
   "tests/cube-architect-experience.test.cjs",
   "tests/cube-architect-shrine.test.cjs",
   "tests/rule-lab.test.cjs",
+  "tests/rule-lab-maze-rework.test.cjs",
+  "tests/rule-lab-maze-fog.test.cjs",
   "tests/rule-lab-settings-mode.test.cjs",
   "tests/rule-lab-settings-playthrough.test.cjs",
   "tests/story-builder-spelling.test.cjs",

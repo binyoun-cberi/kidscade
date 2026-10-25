@@ -15726,5 +15726,51 @@ const levels=[
     "note": "마지막 문제는 변환한 결과물을 다시 목표로 바꾸는 두 단계 퍼즐입니다."
   }
 ];
+
+/*
+ * Labyrinth layout pass (v4).
+ * The original 60 authored rule/object puzzles are kept, but most formerly
+ * sealed one-cell corridors gain accessible word chambers and a compulsory
+ * early detour. Openings stop BEFORE the original central mechanic, so the
+ * detour does not let the player walk around the intended puzzle object.
+ * A deterministic seed gives stages distinct branches without random rerolls.
+ */
+function reworkLabyrinthLayout(level,index){
+ const hero=(level.objects||[]).find(e=>e.type==='hero');
+ // The first walkthrough, original winding tutorial and six bottom-spawn
+ // stages have bespoke entry routes. Do not disrupt those authorial paths.
+ if(index===0||index===2||!hero||hero.y!==5)return;
+ const used=new Set(level.objects.filter(e=>e.type!=='wall').concat(level.words||[]).map(e=>e.x+','+e.y));
+ const walls=new Set(level.objects.filter(e=>e.type==='wall').map(e=>e.x+','+e.y));
+ function carve(x,y){walls.delete(x+','+y)}
+ function place(x,y){
+  if(x<1||x>10||y<2||y>8||used.has(x+','+y))return;
+  walls.add(x+','+y);
+ }
+ // Both upper word chambers and lower sentence workshops now connect to
+ // the walkable playfield. The x=3 divider makes the first bend unavoidable.
+ for(const y of [4,6])for(const x of [2,4])carve(x,y);
+ place(3,5);
+ let seed=Math.imul(index+1,2654435761)>>>0;
+ function random(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296}
+ // Build stage-specific partial barriers in the two side galleries.
+ // Keep the entry arch x=2..4 unobstructed to preserve puzzle reachability.
+ for(const y of [3,7]){
+  const xs=y===3?[6,7,8,9,10]:[5,6,7,8,9,10];
+  for(const x of xs)if(random()<(y===3?.39:.48))place(x,y);
+ }
+ for(let step=0;step<2;step++){
+  const x=5+Math.floor(random()*6);
+  place(x,step===0?8:3);
+ }
+ level.mazeReworked=true;
+ level.objects=level.objects.filter(e=>e.type!=='wall');
+ for(const key of walls){
+  const [x,y]=key.split(',').map(Number);
+  level.objects.push({kind:'object',type:'wall',x,y});
+ }
+}
+levels.forEach(reworkLabyrinthLayout);
+
 window.RuleLabData={levels,N,P};
 })();
