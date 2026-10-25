@@ -192,7 +192,7 @@ export class RoadWeaver {
     // 진입 갈래가 많으면 1차선짜리 순환로 하나가 도시 전체를 가로막는다.
     // 더 넓은 순환로는 비용도 더 많이 든다.
     const lanes=(this.adj.get(near.id)||[]).length>=5?4:2;
-    const radius=37,cost=lanes===4?95:75;
+    const radius=lanes===4?50:37,cost=lanes===4?95:75;
     if(this.budget<cost)return {ok:false,reason:'회전교차로 건설 자재가 부족해요.'};
     const circle={id:'o'+(++this.serial),x:near.x,y:near.y,radius,lanes};
     this.roundabouts.push(circle);this.budget-=cost;this.history.push({kind:'roundabout',id:circle.id,cost});
@@ -468,6 +468,34 @@ export class RoadWeaver {
     return (this.junctionReservations.get(node)||[]).some(entry=>
       entry.id!==car.id&&entry.until>this.tickTime&&this.movementsConflict(movement,entry));
   }
+  // 짧게 나뉜 환상 도로를 하나의 원으로 보고 앞·뒤 차량의 실제 간격을 판단한다.
+  // 단순히 다음 그래프 조각에 차가 있다는 이유만으로 입구를 봉쇄하지 않는다.
+  ringEntryFree(car,next,lane){
+    const circle=this.roundabouts.find(c=>c.id===next.edge.roadId);
+    if(!circle)return true;
+    const heading=angleAround(next.edge.points[0],circle);
+    const circumference=Math.PI*2*circle.radius;
+    return !this.cars.some(other=>{
+      if(other===car||other.edge.kind!=='roundabout'||other.edge.roadId!==circle.id||other.lane!==lane)return false;
+      const p=pointOnPath(other.edge.points,other.s);
+      const front=((angleAround(p,circle)-heading+Math.PI*2)%(Math.PI*2))*circle.radius;
+      // 환상로 진입 차량은 앞차뿐 아니라 뒤에서 다가오는 순환 차량에게도 양보한다.
+      return front<18||(car.edge.kind!=='roundabout'&&circumference-front<13);
+    });
+  }
+  ringFollowingGap(car){
+    const circle=this.roundabouts.find(c=>c.id===car.edge.roadId);
+    if(!circle)return Infinity;
+    const p=pointOnPath(car.edge.points,car.s),heading=angleAround(p,circle);
+    let nearest=Infinity;
+    for(const other of this.cars){
+      if(other===car||other.edge.kind!=='roundabout'||other.edge.roadId!==circle.id||other.lane!==car.lane)continue;
+      const q=pointOnPath(other.edge.points,other.s);
+      const forward=((angleAround(q,circle)-heading+Math.PI*2)%(Math.PI*2))*circle.radius;
+      if(forward>.001)nearest=Math.min(nearest,forward);
+    }
+    return nearest;
+  }
   canGo(car){
     const next=car.path[car.step+1];if(!next)return true;
     const node=car.dir===1?car.edge.b:car.edge.a;
@@ -497,7 +525,8 @@ export class RoadWeaver {
     // 출구에서 차로를 줄이되, 다음 도로의 실제 점유를 검사해 안전하게 합류한다.
     if(car.lane>=usable&&car.edge.kind!=='roundabout')return false;
     const lane=car.edge.kind==='roundabout'?Math.min(car.lane,usable-1):car.lane;
-    return !this.cars.some(other=>other!==car&&other.edge===next.edge&&other.dir===next.dir&&other.lane===lane&&other.s<(next.edge.kind==='roundabout'?14:23));
+    if(next.edge.kind==='roundabout')return this.ringEntryFree(car,next,lane);
+    return !this.cars.some(other=>other!==car&&other.edge===next.edge&&other.dir===next.dir&&other.lane===lane&&other.s<23);
   }
   // 이웃 차선의 앞·뒤 공간을 모두 보고 이동한다. 급하게 다른 자동차 사이로 끼어들지 않는다.
   changeLane(car,dt){
@@ -554,6 +583,11 @@ export class RoadWeaver {
         if(c.kind==='tractor')target*=.52;
         if(c.kind==='bus')target*=.81;
         if(ahead){const gap=ahead.s-c.s-19;target=Math.min(target,Math.max(0,gap*2.8));}
+        if(c.edge.kind==='roundabout'){
+          // 다른 도로 조각 위의 앞차와도 최소 간격을 확보한다.
+          const circleGap=this.ringFollowingGap(c);
+          target=Math.min(target,Math.max(0,(circleGap-15)*2.8));
+        }
         const left=c.edge.length-c.s;
         if(left<23&&!this.canGo(c))target=Math.min(target,Math.max(0,(left-11)*2.3));
         c.speed=clamp(c.speed+(target>c.speed?38:-85)*dt,0,target);
