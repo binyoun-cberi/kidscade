@@ -306,6 +306,92 @@ const mat={
   flower:new THREE.MeshStandardMaterial({color:0xf0d96a}),pink:new THREE.MeshStandardMaterial({color:0xf08ba1}),animal:new THREE.MeshStandardMaterial({color:0xc99562,roughness:.8})
 };
 
+// Low-poly nature is batched by material, following Hexkingdom's instancing strategy.
+// Detailed 3D assets still appear at selected sites once the habitat has matured.
+const natureDummy=new THREE.Object3D();
+function initNatureInstances(){
+  natureInstances={};
+  const types={trunk:[geo.trunk,mat.trunk],crown:[geo.crown,mat.leaf],reed:[geo.reed,mat.leaf],stem:[geo.reed,mat.leaf],flower:[geo.flower,mat.pink]};
+  for(const [kind,[geometry,material]] of Object.entries(types)){
+    const mesh=new THREE.InstancedMesh(geometry,material,COLS*ROWS*8);
+    mesh.count=0;mesh.frustumCulled=false;mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    decorGroup.add(mesh);natureInstances[kind]=mesh;
+  }
+  natureDirty=true;
+}
+function updateNatureInstances(){
+  if(!natureDirty||!natureInstances)return;
+  natureDirty=false;
+  const counts=Object.fromEntries(Object.keys(natureInstances).map(k=>[k,0]));
+  const reduced=viewSize>=25;
+  const add=(kind,x,y,z,scale,rotation=0)=>{
+    const mesh=natureInstances[kind],i=counts[kind];
+    if(i>=mesh.instanceMatrix.count)return;
+    natureDummy.position.set(x,y,z);natureDummy.rotation.set(0,rotation,0);
+    natureDummy.scale.setScalar(scale);natureDummy.updateMatrix();
+    mesh.setMatrixAt(i,natureDummy.matrix);counts[kind]=i+1;
+  };
+  if(analysisMode==='none')for(const t of tiles){
+    if(t.kind!=='land'||!['forest','wetland','meadow'].includes(t.biome))continue;
+    const p=worldPos(t),g=habitatMaturity(t),v=biomeVigor(t),stage=habitatTier(t,v);
+    const n=t.biome==='forest'?(reduced?Math.min(2,1+stage):1+stage):(reduced?2+stage:3+stage*2);
+    for(let i=0;i<n;i++){
+      const angle=noise(t.x*13+i*7,t.z*17+23)*Math.PI*2;
+      const radius=Math.sqrt(noise(t.x*29+i*3,t.z*11+i*19))*(t.biome==='forest'?.32:.36);
+      const x=p.x+Math.cos(angle)*radius,z=p.z+Math.sin(angle)*radius;
+      const variation=.7+.55*noise(t.x+i*47,t.z+i*31);
+      if(t.biome==='forest'){
+        const size=(.22+.42*g)*(.65+.35*v)*variation;
+        add('trunk',x,.12+.2*size,z,size,angle);
+        add('crown',x,.12+.68*size,z,size,angle);
+      }else if(t.biome==='wetland'){
+        const size=(.35+.5*g)*variation;
+        add('reed',x,.12+.19*size,z,size,angle);
+      }else{
+        const size=(.32+.5*g)*variation;
+        add('stem',x,.12+.19*size,z,size,angle);
+        add('flower',x,.12+.41*size,z,size*1.1,angle);
+      }
+    }
+  }
+  for(const [kind,mesh] of Object.entries(natureInstances)){
+    mesh.count=counts[kind];mesh.visible=analysisMode==='none';
+    mesh.instanceMatrix.needsUpdate=true;
+  }
+}
+const constructionRingGeometry=new THREE.RingGeometry(.27,.43,24);
+function startConstruction(building){
+  const site=new THREE.Mesh(constructionRingGeometry,new THREE.MeshBasicMaterial({
+    color:0xf0d364,transparent:true,opacity:.8,side:THREE.DoubleSide,depthWrite:false
+  }));
+  site.rotation.x=-Math.PI/2;site.position.copy(building.mesh.position);site.position.y=.27;
+  buildingGroup.add(site);building.mesh.scale.setScalar(.015);
+  constructionQueue.push({building,site,age:0});
+}
+function finishConstruction(building){
+  constructionQueue=constructionQueue.filter(rec=>{
+    if(rec.building!==building)return true;
+    rec.site.removeFromParent();rec.site.material.dispose();building.mesh.scale.setScalar(1);
+    return false;
+  });
+}
+function clearConstructions(){
+  for(const rec of constructionQueue){
+    rec.site.removeFromParent();rec.site.material.dispose();rec.building.mesh.scale.setScalar(1);
+  }
+  constructionQueue=[];
+}
+function tickConstruction(dt){
+  if(!dt||!constructionQueue.length)return;
+  for(const rec of [...constructionQueue]){
+    if(!rec.building.mesh.parent){finishConstruction(rec.building);continue}
+    rec.age+=dt;const frame=constructionVisualAt(rec.age);
+    rec.building.mesh.scale.set(frame.scaleXZ,frame.scaleY,frame.scaleXZ);
+    rec.site.material.opacity=frame.foundationOpacity;
+    if(frame.done)finishConstruction(rec.building);
+  }
+}
+
 function clearGroup(g){while(g.children.length)g.remove(g.children[0])}
 function generateWorld(worldSeed=Math.floor(Math.random()*1e9)){
   seed=worldSeed;rng=mulberry32(seed);tiles=[];tileMeshes=[];buildings=[];animals=[];visitors=[];constructionQueue=[];windRotors.length=0;
