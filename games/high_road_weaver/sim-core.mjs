@@ -147,8 +147,46 @@ export class RoadWeaver {
     this.roundabouts.push(circle);this.budget-=cost;this.history.push({kind:'roundabout',id:circle.id,cost});
     this.rebuild();return {ok:true,cost};
   }
+  addTrafficIsland(p){
+    let nearest=null,d=55;
+    for(const n of this.nodes.values()){
+      if(n.level!==0||this.roundabouts.some(c=>len(c,n)<c.radius+10))continue;
+      const arms=(this.adj.get(n.id)||[]).filter(x=>x.edge.kind==='ground');
+      if(arms.length<3)continue;
+      const delta=len(p,n);if(delta<d){nearest=n;d=delta;}
+    }
+    if(!nearest)return {ok:false,reason:'지상 교차로의 모퉁이를 눌러 주세요.'};
+    const arms=(this.adj.get(nearest.id)||[]).filter(x=>x.edge.kind==='ground')
+      .map(a=>{
+        const travel=Math.min(48,a.edge.length*.65);
+        const point=pointOnPath(a.edge.points,a.edge.a===nearest.id?travel:a.edge.length-travel);
+        return {...a,point,angle:angleAround(point,nearest)};
+      }).sort((a,b)=>a.angle-b.angle);
+    const choices=[];
+    for(let i=0;i<arms.length;i++){
+      const from=arms[i],to=arms[(i+arms.length-1)%arms.length];
+      const gap=(from.angle-to.angle+Math.PI*2)%(Math.PI*2);
+      if(gap<.28||gap>2.17)continue; // 직진·급커브는 교통섬으로 만들지 않는다.
+      const mx=from.point.x+to.point.x-2*nearest.x,my=from.point.y+to.point.y-2*nearest.y;
+      const size=Math.hypot(mx,my)||1;
+      const point={x:nearest.x+mx/size*38,y:nearest.y+my/size*38};
+      choices.push({from,to,point,d:len(point,p)});
+    }
+    if(!choices.length)return {ok:false,reason:'우회전 전용도로를 만들 공간이 부족해요.'};
+    choices.sort((a,b)=>a.d-b.d);
+    const chosen=choices[0],a=chosen.from.point,b=chosen.to.point;
+    if(this.roads.some(r=>r.kind==='slip'&&len(r.points[0],a)<5&&len(r.points.at(-1),b)<5))
+      return {ok:false,reason:'이 모퉁이에는 이미 우회전 전용도로가 있어요.'};
+    const points=[{x:a.x,y:a.y},chosen.point,{x:b.x,y:b.y}];
+    const cost=Math.ceil(costOfRoad(points,2)*1.3);
+    if(this.budget<cost)return {ok:false,reason:'교통섬 건설 자재가 부족해요.'};
+    const road={id:'r'+(++this.serial),points,lanes:2,kind:'slip'};
+    this.roads.push(road);this.budget-=cost;this.history.push({kind:'road',id:road.id,cost});
+    this.rebuild();return {ok:true,cost};
+  }
   widenRoad(p){
     const road=this.findRoad(p,24);if(!road)return {ok:false,reason:'도로를 눌러 주세요.'};
+    if(road.kind==='slip'||road.kind==='ramp')return {ok:false,reason:'이 도로는 차선을 넓힐 수 없어요.'};
     if(road.lanes>=6)return {ok:false,reason:'이미 가장 넓은 도로예요.'};
     const lanes=road.lanes+2;
     const cost=costOfRoad(road.points,lanes)-costOfRoad(road.points,road.lanes);
@@ -202,7 +240,7 @@ export class RoadWeaver {
         for(let j=i+1;j<this.roads.length;j++){
           const b=this.roads[j],bb=b.points;db=0;
           // 램프는 도로에 닿은 끝점에서만 연결되고, 고가/지면 간 단순 교차는 연결되지 않는다.
-          if((a.kind||'ground')===(b.kind||'ground')&&a.kind!=='ramp'){
+          if((a.kind||'ground')===(b.kind||'ground')&&!['ramp','slip'].includes(a.kind)){
             for(let y=1;y<bb.length;y++){
               const hit=crossing(aa[x-1],aa[x],bb[y-1],bb[y]);
               if(hit&&!this.roundabouts.some(c=>insideCircle(hit.p,c))){
@@ -226,8 +264,8 @@ export class RoadWeaver {
     }
     // 램프 양 끝점에서 기존 지상 도로/고가도로를 분할해 명시적인 환승 노드를 만든다.
     for(let i=0;i<this.roads.length;i++){
-      const ramp=this.roads[i];if(ramp.kind!=='ramp')continue;
-      for(const [level,p] of [[0,ramp.points[0]],[1,ramp.points.at(-1)]]){
+      const ramp=this.roads[i];if(!['ramp','slip'].includes(ramp.kind))continue;
+      for(const [level,p] of [[0,ramp.points[0]],[ramp.kind==='slip'?0:1,ramp.points.at(-1)]]){
         for(let j=0;j<this.roads.length;j++){
           if(i===j)continue;
           const road=this.roads[j];
@@ -266,7 +304,7 @@ export class RoadWeaver {
         // 램프의 끝점 이외에서는 높이가 바뀌지 않는다.
         const l0=r.kind==='ramp'?(j===1?0:1):start;
         const l1=r.kind==='ramp'?1:end;
-        addEdge(r.id+':'+j,a.p,b.p,path,r.lanes,r.kind||'ground',l0,l1);
+        addEdge(r.id+':'+j,a.p,b.p,path,r.lanes,r.kind||'ground',l0,l1,r.kind==='slip');
       }
     }
     for(let ci=0;ci<this.roundabouts.length;ci++){
@@ -428,8 +466,8 @@ export class RoadWeaver {
   }
   restore(data){
     if(!data||![1,2].includes(data.version)||!Array.isArray(data.roads))return false;
-    const roads=data.roads.filter(r=>r&&[2,4,6].includes(r.lanes)&&['ground','bridge','ramp',undefined].includes(r.kind)
-      &&(r.kind!=='ramp'||r.lanes===2)&&Array.isArray(r.points)&&r.points.length>=2&&r.points.length<350
+    const roads=data.roads.filter(r=>r&&[2,4,6].includes(r.lanes)&&['ground','bridge','ramp','slip',undefined].includes(r.kind)
+      &&(!['ramp','slip'].includes(r.kind)||r.lanes===2)&&Array.isArray(r.points)&&r.points.length>=2&&r.points.length<350
       &&r.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=0&&p.x<=1080&&p.y>=0&&p.y<=720));
     const circles=(Array.isArray(data.roundabouts)?data.roundabouts:[]).filter(c=>c&&typeof c.id==='string'
       &&Number.isFinite(c.x)&&Number.isFinite(c.y)&&Number.isFinite(c.radius)
