@@ -227,6 +227,7 @@ const TEST_FILES = [
   "tests/cube-architect-experience.test.cjs",
   "tests/cube-architect-shrine.test.cjs",
   "tests/rule-lab.test.cjs",
+  "tests/rule-lab-settings-mode.test.cjs",
   "tests/story-builder-spelling.test.cjs",
   "tests/story-builder-flow.test.cjs",
   "tests/server-stats-worker.test.mjs",
