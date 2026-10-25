@@ -15763,6 +15763,7 @@ function reworkLabyrinthLayout(level,index){
   const x=5+Math.floor(random()*6);
   place(x,step===0?8:3);
  }
+ level.mazeReworked=true;
  level.objects=level.objects.filter(e=>e.type!=='wall');
  for(const key of walls){
   const [x,y]=key.split(',').map(Number);
