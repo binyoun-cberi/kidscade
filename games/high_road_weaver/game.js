@@ -1,4 +1,4 @@
-import {RoadWeaver,TOWN_TYPES,costOfRoad,pointOnPath} from './sim-core.mjs';
+import {RoadWeaver,TOWN_TYPES,costOfRoad,pointOnPath,isWeekend} from './sim-core.mjs';
 
 const $=id=>document.getElementById(id);
 const canvas=$('map'),ctx=canvas.getContext('2d',{alpha:false});
@@ -11,7 +11,7 @@ let guideCache='',saveAvailable=false,sessionStarted=false,suppressGesture=false
 const STORAGE_KEY='kidscade_game_v1:high_road_weaver:world';
 const imageRoot='../../assets/game/2d/vehicles/pixel/cars/';
 const sprites={};
-for(const name of ['sedan','sedan-blue','taxi','rounded-green','suv','truck','truckdelivery','bus','van-small']){
+for(const name of ['sedan','sedan-blue','taxi','rounded-green','suv','truck','truckdelivery','bus','van-small','tractor']){
   const img=new Image();img.src=imageRoot+name+'.png';img.onload=()=>render();
   sprites[name]=img;
 }
@@ -245,27 +245,66 @@ function drawCity(t,index){
   const near=76;
   ctx.save();
   ctx.beginPath();ctx.arc(t.x,t.y,near,0,Math.PI*2);
-  ctx.fillStyle=index===0?'rgba(105,162,198,.09)':index===1?'rgba(173,137,190,.08)':'rgba(204,151,96,.08)';
-  ctx.fill();
+  ctx.fillStyle=t.color+'19';ctx.fill();
   ctx.strokeStyle=t.color;ctx.lineWidth=2.4;ctx.setLineDash([7,7]);ctx.stroke();ctx.setLineDash([]);
   drawTrees(t.x,t.y,93);
-  const floors=index===1?3:index===2?2:1;
-  for(let i=0;i<8;i++){
-    const angle=i*Math.PI/4+.3,r=28+(i%3)*4;
-    const x=t.x+Math.cos(angle)*r,y=t.y+Math.sin(angle)*r;
-    const w=index===1?19:20,h=index===1?26:19;
-    rounded(x-w/2+3,y-h/2+5,w,h,3,'#9bae9f');
-    rounded(x-w/2,y-h/2,w,h,3,index===0?'#f5e0ad':index===1?'#c2b4d4':index===2?'#b4b7b6':'#f1d9a5');
-    ctx.fillStyle=index===1?'#8f78b5':index===2?'#b47d62':'#c9816a';
-    ctx.fillRect(x-w/2+3,y-h/2+3,w-6,4+floors);
-    if(index===2){ctx.fillStyle='#77929a';ctx.fillRect(x+w/2-5,y-h/2-9,4,10);}
+  const cx=t.x,cy=t.y;
+  ctx.save();ctx.translate(cx,cy);
+  if(t.id==='farm'){
+    // 밭의 고랑과 창고를 그려 납품 트럭이 출발하는 농업지역임을 알 수 있다.
+    ctx.save();ctx.translate(-4,-9);ctx.rotate(-.24);
+    rounded(-51,-27,99,53,7,'#b4cb79');
+    for(let i=-2;i<=2;i++){ctx.beginPath();ctx.moveTo(-44,i*9);ctx.lineTo(40,i*9);ctx.strokeStyle=i%2?'#e2d39d':'#78a36b';ctx.lineWidth=5;ctx.stroke();}
+    ctx.restore();
+    rounded(-15,13,42,29,4,'#dcaf7c');ctx.fillStyle='#ab6f54';
+    ctx.beginPath();ctx.moveTo(-21,14);ctx.lineTo(6,-3);ctx.lineTo(31,14);ctx.closePath();ctx.fill();
+    rounded(9,24,10,18,2,'#916c4b');
+    rounded(32,-40,16,33,4,'#d4e2dd');
+    rounded(30,-43,20,6,2,'#90ada4');
+  }else if(t.id==='tourism'){
+    ctx.beginPath();ctx.ellipse(0,34,51,21,-.05,0,Math.PI*2);ctx.fillStyle='#b5dbd7';ctx.fill();
+    ctx.fillStyle='#a0bda9';
+    for(const [x,h] of [[-40,41],[-8,55],[30,37]]){
+      ctx.beginPath();ctx.moveTo(x-28,15);ctx.lineTo(x,-h);ctx.lineTo(x+27,15);ctx.closePath();ctx.fill();
+    }
+    ctx.fillStyle='#e3eddf';ctx.beginPath();ctx.moveTo(-18,-35);ctx.lineTo(-8,-55);ctx.lineTo(3,-33);ctx.closePath();ctx.fill();
+    for(const [x,y] of [[-55,18],[48,-13],[54,18]]){
+      ctx.fillStyle='#7fb49a';ctx.beginPath();ctx.moveTo(x-9,y+12);ctx.lineTo(x,y-19);ctx.lineTo(x+9,y+12);ctx.fill();
+    }
+    ctx.fillStyle='#efc67b';ctx.beginPath();ctx.moveTo(-24,25);ctx.lineTo(-10,4);ctx.lineTo(5,25);ctx.closePath();ctx.fill();
+  }else if(t.id==='market'){
+    rounded(-54,-39,109,56,7,'#e9ded0');
+    rounded(-50,-45,100,17,5,'#bb7271');
+    rounded(-36,-22,71,22,2,'#cee5e8');
+    rounded(-14,0,26,17,2,'#91a7ae');
+    rounded(-59,24,119,30,5,'#a4b0ab');
+    ctx.strokeStyle='#f2f5ed';ctx.lineWidth=2;
+    for(let i=-4;i<=4;i++){ctx.beginPath();ctx.moveTo(i*11,30);ctx.lineTo(i*11+6,48);ctx.stroke();}
+    rounded(-38,35,15,7,3,'#e8a875');
+    rounded(18,36,14,7,3,'#779bc3');
+  }else{
+    const floors=index===1?3:index===2?2:1;
+    for(let i=0;i<8;i++){
+      const a=i*Math.PI/4+.3,r=28+(i%3)*4,x=Math.cos(a)*r,y=Math.sin(a)*r;
+      const w=index===1?19:20,h=index===1?26:19;
+      rounded(x-w/2+3,y-h/2+5,w,h,3,'#9bae9f');
+      rounded(x-w/2,y-h/2,w,h,3,index===0?'#f5e0ad':index===1?'#c2b4d4':index===2?'#b4b7b6':'#f1d9a5');
+      ctx.fillStyle=index===1?'#8f78b5':index===2?'#b47d62':'#c9816a';
+      ctx.fillRect(x-w/2+3,y-h/2+3,w-6,4+floors);
+      if(index===2){ctx.fillStyle='#77929a';ctx.fillRect(x+w/2-5,y-h/2-9,4,10);}
+    }
   }
-  ctx.beginPath();ctx.arc(t.x,t.y,17,0,Math.PI*2);ctx.fillStyle=t.color;ctx.fill();
+  ctx.restore();
+  ctx.beginPath();ctx.arc(cx,cy,17,0,Math.PI*2);ctx.fillStyle=t.color;ctx.fill();
   ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.font='bold 16px system-ui';ctx.fillText(index===0?'⌂':index===1?'▦':index===2?'⚙':'▤',t.x,t.y+1);
-  ctx.font='bold 16px system-ui';const w=Math.max(113,ctx.measureText(t.name).width+28);
-  rounded(t.x-w/2,t.y+83,w,34,10,'rgba(255,255,251,.96)');
-  ctx.fillStyle='#254b3b';ctx.fillText(t.name,t.x,t.y+100);
+  ctx.font='bold 16px system-ui';
+  const icons={home:'⌂',office:'▦',factory:'⚙',mall:'▤',farm:'✿',tourism:'▲',market:'▣'};
+  ctx.fillText(icons[t.id]||'⌂',cx,cy+1);
+  ctx.font='bold 15px system-ui';
+  const w=Math.max(113,ctx.measureText(t.name).width+28);
+  const labelY=cy>575?cy-116:cy+83;
+  rounded(cx-w/2,labelY,w,34,10,'rgba(255,255,251,.96)');
+  ctx.fillStyle='#254b3b';ctx.fillText(t.name,cx,labelY+17);
   ctx.restore();
 }
 function drawRoundaboutCenters(){
@@ -298,15 +337,16 @@ function drawSignals(){
   }
 }
 function drawCar(c){
-  const p=sim.sampleCar(c),name=c.kind==='truck'?(Number(c.id.slice(1))%2?'truck':'truckdelivery'):
-    ['sedan','sedan-blue','taxi','rounded-green','suv','bus','van-small'][Number(c.id.slice(1))%7];
-  const img=sprites[name],isTruck=c.kind==='truck',w=isTruck?14:12,h=isTruck?26:21;
+  const p=sim.sampleCar(c),name=c.kind==='tractor'?'tractor':c.kind==='bus'?'bus':
+    c.kind==='truck'?(Number(c.id.slice(1))%2?'truck':'truckdelivery'):
+    ['sedan','sedan-blue','taxi','rounded-green','suv','van-small'][Number(c.id.slice(1))%6];
+  const img=sprites[name],long=['truck','tractor','bus'].includes(c.kind),w=long?14:12,h=long?26:21;
   ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle+Math.PI/2);
   ctx.fillStyle='rgba(32,45,37,.28)';ctx.beginPath();ctx.ellipse(2,2,w/2+1,h/2,0,0,Math.PI*2);ctx.fill();
   if(img&&img.complete&&img.naturalWidth){
     ctx.imageSmoothingEnabled=false;ctx.drawImage(img,-w/2,-h/2,w,h);
   }else{
-    rounded(-w/2,-h/2,w,h,3,isTruck?'#d9b576':'#f0e5d3');
+    rounded(-w/2,-h/2,w,h,3,c.kind==='tractor'?'#aac774':long?'#d9b576':'#f0e5d3');
     rounded(-w/2+2,-h/2+4,w-4,5,1,'#8ca8b6');
   }
   ctx.restore();
@@ -349,7 +389,8 @@ function render(){
 function updateHud(now){
   const hr=Math.floor(sim.minutes/60),min=Math.floor(sim.minutes%60);
   $('clock').textContent=String(hr).padStart(2,'0')+':'+String(min).padStart(2,'0');
-  $('day').textContent=sim.day+'일째';
+  const weekday=['월','화','수','목','금','토','일'][(sim.day-1)%7];
+  $('day').textContent=sim.day+'일째 · '+weekday+'요일';
   $('budget').textContent=sim.budget;
   const connected=Boolean(sim.route(sim.towns[0],sim.towns[1]));
   const traffic=sim.waiting>38?'심한 정체':sim.waiting>12?'혼잡':sim.waiting>3?'서행':'원활';
@@ -359,17 +400,26 @@ function updateHud(now){
   $('timePhase').textContent=peak==='출근'?'출근':peak==='퇴근'?'퇴근':hr>=6&&hr<18?'낮':'밤';
   $('timePhase').style.background=peak==='일상'?'#dbead9':'#f5dba3';
   const canRoute=sim.route(sim.towns[0],sim.towns[1]);
+  const disconnected=canRoute?sim.towns.slice(2).find(t=>!sim.route(sim.towns[0],t)):null;
   let title='',description='',label='오늘의 설계';
-  if(!canRoute){title='두 도시를 이어 주세요.';description='햇살마을과 중앙업무지구를 도로로 연결하세요.';}
-  else if(sim.openTowns>=3&&!sim.route(sim.towns[0],sim.towns[2])){
-    title='새 공업지구가 등장했어요.';description='북쪽 공업지구와 기존 도로망을 연결해 주세요.';
-  }else if(sim.openTowns>=4&&!sim.route(sim.towns[0],sim.towns[3])){
-    title='상업지구에도 길이 필요해요.';description='남쪽 상업지구를 연결하고 저녁 교통을 살펴보세요.';
+  if(!canRoute){
+    title='두 도시를 이어 주세요.';description='햇살마을과 중앙업무지구를 도로로 연결하세요.';
+  }else if(disconnected){
+    title=disconnected.name+'에 길이 필요해요.';
+    description=disconnected.type+'의 새로운 교통 흐름을 살펴보도록 기존 도로망에 연결하세요.';
+  }else if(isWeekend(sim.day)&&sim.towns.some(t=>t.id==='tourism')&&hr>=8&&hr<20){
+    title='주말 관광길에 차가 몰려요.';
+    description='관광지구로 향하는 차들이 줄을 서는 곳을 찾아보세요.';
+  }else if(sim.towns.some(t=>t.id==='farm')&&hr>=5&&hr<8){
+    title='농산물이 출발하는 새벽이에요.';
+    description='농업지구에서 출하 차량이 막힘없이 이동하는지 살펴보세요.';
   }else if(peak==='출근'){
     title='출근길이 붐비고 있어요.';description='사무지구로 향하는 자동차의 줄을 살펴보세요.';
   }else if(peak==='퇴근'){
     title='집으로 돌아오는 시간이에요.';description='아침과 반대 방향에서 길이 막히지 않는지 확인해 보세요.';
-  }else{title='차량의 흐름을 살펴보세요.';description='도로를 추가하거나 차선을 넓혀 병목을 해결할 수 있어요.';}
+  }else{
+    title='차량의 흐름을 살펴보세요.';description='도로를 추가하거나 차선을 넓혀 병목을 해결할 수 있어요.';
+  }
   const str=label+'|'+title+'|'+description;
   if(guideCache!==str){$('guideLabel').textContent=label;$('guideTitle').textContent=title;$('guideText').textContent=description;guideCache=str;}
   if(now>toastUntil)$('toast').classList.remove('show');
