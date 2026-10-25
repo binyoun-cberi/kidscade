@@ -755,12 +755,18 @@ function renderQuestion(s){
   if(isShort){
     if(session.role==='host'){$('answers').innerHTML='<div class="short-answer-hint">학생들이 단답형 정답을 입력하고 있어요. 모두 제출하거나 시간이 끝나면 정답을 공개해요.</div>';}
     else if(alreadySubmitted){$('answers').innerHTML='<div class="short-answer-hint">답을 제출했어요. 결과를 기다려 주세요.</div>';}
-    else{
+    else if($('shortAnswerInput')?.dataset.questionKey===(String(s.room.roundId||'solo')+':'+q.number)){
+      // Preserve focus, cursor and Korean IME composition across polling/state updates.
+    }else{
       const draft=window.__historyShortDraft||'';
       $('answers').innerHTML='<form id="shortAnswerForm" class="short-answer-form"><input id="shortAnswerInput" class="short-answer-input" maxlength="40" autocomplete="off" enterkeyhint="done" placeholder="역사 용어를 직접 입력하세요" aria-label="단답형 정답"><button class="short-answer-submit" type="submit">정답 제출</button></form><div class="short-answer-hint">띄어쓰기와 일부 문장부호는 달라도 괜찮아요. Enter 또는 정답 제출을 눌러요.</div>';
-      const form=$('shortAnswerForm'),input=$('shortAnswerInput');input.value=draft;
+      const form=$('shortAnswerForm'),input=$('shortAnswerInput');input.value=draft;input.dataset.questionKey=String(s.room.roundId||'solo')+':'+q.number;
+      let composing=false;
+      input.oncompositionstart=()=>{composing=true};
+      input.oncompositionend=()=>{composing=false;window.__historyShortDraft=input.value};
       input.oninput=()=>{window.__historyShortDraft=input.value};
-      form.onsubmit=e=>{e.preventDefault();const value=input.value.trim();if(!value)return toastFx('정답을 입력해 주세요.');input.disabled=true;form.querySelector('button').disabled=true;if(session.role==='solo')submitSoloShortAnswer(value,false);else submitLiveShortAnswer(value)};
+      form.onkeydown=e=>{if(e.key==='Enter'&&(e.isComposing||composing||e.keyCode===229))e.preventDefault()};
+      form.onsubmit=e=>{e.preventDefault();if(composing)return;const value=input.value.trim();if(!value)return toastFx('정답을 입력해 주세요.');input.disabled=true;form.querySelector('button').disabled=true;if(session.role==='solo')submitSoloShortAnswer(value,false);else submitLiveShortAnswer(value)};
       if(window.matchMedia?.('(pointer:fine)').matches)setTimeout(()=>{if(input.isConnected)input.focus()},40);
     }
   }else{
