@@ -1465,11 +1465,11 @@ const TERM_PROMPTS = [
 ];
 const CLUE_PROMPTS = [
   term => `‘${term}’에 대한 설명으로 알맞은 것은 무엇일까요?`,
-  term => `‘${term}’와 가장 관련 있는 설명을 고르세요.`,
+  term => `다음 역사 용어를 가장 잘 설명한 것은 무엇일까요?\n${term}`,
   term => `‘${term}’의 특징을 올바르게 설명한 것은 무엇일까요?`
 ];
 const ERA_PROMPTS = [
-  term => `‘${term}’와 가장 관련 깊은 시대·시기는 언제일까요?`,
+  term => `다음 역사 용어와 가장 관련 깊은 시대·시기는 언제일까요?\n${term}`,
   term => `다음 역사 용어와 관련 깊은 시기는 언제일까요?\n${term}`
 ];
 
@@ -1499,7 +1499,7 @@ function regularOxQuestions(fact,index){
   const wrong=wrongFactForOx(fact,index);
   if(wrong)out.push({
     id:`ox-${index}-false`,era:fact.era,difficulty:2,
-    q:`OX 문제\n‘${fact.term}’은(는) ${wrong.era}와 가장 관련 깊다.`,
+    q:`OX 문제\n다음 역사 용어와 가장 관련 깊은 시기는 ${wrong.era}이다.\n${fact.term}`,
     o:['O','X'],a:1,
     e:`X가 정답입니다. ‘${fact.term}’은(는) ${fact.era}와 가장 관련 깊습니다.`,
     sourceFact:index,family:'ox'
@@ -1636,9 +1636,10 @@ function buildBank() {
     const groups=[
       imports.filter(x=>x.fact.era===fact.era&&x.fact.type===fact.type),
       CORE_FACTS.map((f,i)=>({fact:f,index:i})).filter(x=>x.fact.era===fact.era&&x.fact.type===fact.type&&x.fact.term),
+      imports.filter(x=>x.fact.type===fact.type),
+      CORE_FACTS.map((f,i)=>({fact:f,index:i})).filter(x=>x.fact.type===fact.type&&!x.fact.direct&&x.fact.term),
       imports.filter(x=>x.fact.era===fact.era),
       CORE_FACTS.map((f,i)=>({fact:f,index:i})).filter(x=>x.fact.era===fact.era&&!x.fact.direct&&x.fact.term),
-      imports.filter(x=>x.fact.type===fact.type),
       imports
     ];
     for(const group of groups){
