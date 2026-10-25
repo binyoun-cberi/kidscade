@@ -49,12 +49,12 @@
 
 ## 검증
 ```bash
-node --test tests/road-weaver-core.test.mjs tests/rotary-club-interchanges.test.mjs
+node --test tests/road-weaver-core.test.mjs tests/rotary-club-interchanges.test.mjs tests/rotary-club-traffic-expansion.test.mjs tests/rotary-club-ui.test.cjs
 npm run health:strict
 npm run test:ci
 npm run build
 ```
-엔진 코드를 격리 실행한 V8 기반 검증에서는 **기존 테스트 17개와 이번 신규 테스트 6개, 총 23개가 통과**했다. 실제 Node CI와 게임 화면 브라우저/모바일 점검은 별도로 확인해야 하며, 실행하지 않은 검사를 통과했다고 주장하지 않는다.
+엔진 코드를 격리 실행한 V8 기반 검증에서는 **기존 테스트 17개와 지역·차선·수요 테스트 7개, 총 24개가 통과**했다. 실제 Node CI와 게임 화면 브라우저/모바일 점검은 별도로 확인해야 하며, 실행하지 않은 검사를 통과했다고 주장하지 않는다.
 
 **배포 금지:** 별도 PR로 제안한 상태다. 공통 `AGENTS.md`에 따라 main 직접 수정, 자동 병합, Cloudflare 배포, 비밀/과금/학생 데이터 변경은 하지 않는다.
 
@@ -65,3 +65,8 @@ npm run build
 - **도시 해금:** 지상 또는 고가·램프 도로망으로 현재 도시를 연결하고 누적 통행 성과를 달성해야 다음 도시가 열린다.
 - **차선 변경:** 현재 차로의 앞차가 느리거나 다음 도로가 좁아질 때 이웃 차선의 앞·뒤 간격을 검사한다. 차량 간 경로 예약과 회전 전용차로 예측은 아직 정교화 대상이다.
 - **성능:** 일곱 도시 간 출발 시도를 묶어 수행하고 경로 탐색 전에 현재 차선 점유를 한 번 집계한다.
+
+### 정규 검사 추가
+- `tests/rotary-club-traffic-expansion.test.mjs`: 안전한 차선 변경, 합류, 7종 지역별 시간 수요, 순차 해금, 기존 저장 호환, 7개 지역의 장기 교통 처리 검증.
+- `tests/rotary-club-ui.test.cjs`: 가짜 Canvas·DOM으로 시작/드래그 도로 건설/로터리 설치/두 손가락 제스처/지역 렌더링/요일 안내를 검증. **실제 브라우저나 iPhone 플레이테스트를 대신하지 않는다.**
+- 지역이 7개일 때 무조건 교통체증이 누적되지 않도록 전체 발생 비율을 단계별로 조정했다. 출퇴근 방향과 요일별 상대적 혼잡은 보존한다.
