@@ -18,6 +18,7 @@
       : easy ? integer(3, 20, random) : POOL[integer(0, POOL.length - 1, random)];
     const choices = easy ? ["add", "subtract"] : hard ? ["add", "subtract", "multiply", "divide"] : ["add", "multiply", "subtract"];
     let family = choices[integer(0, choices.length - 1, random)];
+    if (easy && answer === 20 && family === "subtract") family = "add";
     let a, b;
     if (family === "multiply") {
       const pairs = [];
@@ -33,7 +34,7 @@
       a = integer(1, answer - 1, random);
       b = answer - a;
     } else if (family === "subtract") {
-      b = integer(1, easy ? 9 : 20, random);
+      b = integer(1, easy ? Math.min(9, 20 - answer) : 20, random);
       a = answer + b;
     } else if (family === "divide") {
       b = integer(2, 7, random);
