@@ -467,13 +467,16 @@ function announceClue(){
   }else showToast(clue.subtitle);
 }
 function getSeed(){return (Date.now() + Math.floor(Math.random()*999999))>>>0}
-async function startTown(stage,seed=getSeed(),restored=[],difficulty=$('difficulty').value,previous=null) {
+async function startTown(stage,seed=getSeed(),restored=[],difficulty=$('difficulty').value,previous=null,challenge=null) {
   if(!STAGES[stage]||loading)return;
   loading=true;active=false;celebration=null;
+  mode=challenge?'challenge':'explore';
+  if(challenge){challengeLevel=challenge.level;timeRemaining=challenge.seconds}
+  showChallengeHud();
   $('startStatus').textContent='친구들이 외출 준비를 하고 있어요…';
   document.querySelectorAll('[data-stage],#quickStart').forEach(b=>b.disabled=true);
   try {
-  town=makeTown(stage,seed,difficulty,false);
+  town=makeTown(stage,seed,difficulty,false,challenge);
   // Only fully loaded models/props with the required pose may become a clue.
   const urls=[...MODEL.people,...BREADS,MODEL.bench];
   for(const url of urls)if(readyAssets.has(url)&&!readyAssets.get(url))modelCache.delete(url);
@@ -492,7 +495,8 @@ async function startTown(stage,seed=getSeed(),restored=[],difficulty=$('difficul
   active=currentTarget<town.order.length;
   initialViewSize=0;
   cameraLook.set(0,0,0);
-  $('districtLabel').textContent=`${town.config.label} · ${DIFFICULTIES[town.difficulty].name}`;
+  $('districtLabel').textContent=mode==='challenge'? `연속 찾기 · ${challengeLevel}단계` : `${town.config.label} · ${DIFFICULTIES[town.difficulty].name}`;
+  showChallengeHud();
   $('difficulty').value=town.difficulty;
   $('start').classList.add('hidden');$('finish').classList.add('hidden');
   resize();resetView();generateWorld();
@@ -506,7 +510,7 @@ async function startTown(stage,seed=getSeed(),restored=[],difficulty=$('difficul
   finally{loading=false;document.querySelectorAll('[data-stage],#quickStart').forEach(b=>b.disabled=false);}
 }
 function save(){
-  if(!town)return;
+  if(!town||mode==='challenge')return;
   try{localStorage.setItem(SAVE_KEY,JSON.stringify({version:WORLD_VERSION,stage:town.stageName,seed:town.seed,difficulty:town.difficulty,previous:roundPrevious,found,complete:found.length>=town.order.length,updatedAt:Date.now()}))}catch(_){}
 }
 function showToast(message){
@@ -516,35 +520,55 @@ function showToast(message){
   lastToast=setTimeout(()=>$('toast').classList.remove('show'),2200);
 }
 function pick(clientX,clientY) {
-  if(!active||celebration)return;
-  scene.updateMatrixWorld(true);
+  if(!active||celebration||loading)return;
+  scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);
   const rect=canvas.getBoundingClientRect();
-  let nearest=null,best=31*31;
-  for(const person of town.people){
-    if(found.includes(person.id))continue;
-    const holder=citizenMeshes.get(person.id)?.holder;
-    if(!holder)continue;
-    const projected=holder.position.clone().add(new THREE.Vector3(0,1.04,0)).project(camera);
-    if(projected.z< -1||projected.z>1)continue;
-    const x=rect.left+(projected.x+1)*rect.width/2;
-    const y=rect.top+(1-projected.y)*rect.height/2;
-    const distance=(x-clientX)**2+(y-clientY)**2;
-    if(distance<best){
-      // A hidden resident cannot be selected through an opaque building.
-      const point=holder.position.clone().add(new THREE.Vector3(0,1.04,0));
-      const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(projected.x,projected.y),camera);
-      const obstruction=seeThrough?null:ray.intersectObjects(occluders,false)[0];
-      if(!obstruction||obstruction.distance>ray.ray.origin.distanceTo(point)-.15){best=distance;nearest=person;}
+  const ndc=new THREE.Vector2((clientX-rect.left)/Math.max(1,rect.width)*2-1,1-(clientY-rect.top)/Math.max(1,rect.height)*2);
+  const ray=new THREE.Raycaster();ray.setFromCamera(ndc,camera);
+  const obstruction=seeThrough?null:ray.intersectObjects(occluders,false)[0];
+  let nearest=null;
+  // Pick the *visible surface* of the actual resident first.
+  // Screen-proximity remains a forgiving fallback for small touch targets.
+  for(const hit of ray.intersectObjects(citizens.children,true)){
+    if(obstruction&&obstruction.distance<hit.distance-.06)break;
+    let node=hit.object;
+    while(node&&node.parent!==citizens)node=node.parent;
+    const id=node?.userData?.citizenId;
+    if(id&&!found.includes(id)){nearest=town.people.find(p=>p.id===id);break;}
+  }
+  if(!nearest){
+    let best=35*35;
+    for(const person of town.people){
+      if(found.includes(person.id))continue;
+      const holder=citizenMeshes.get(person.id)?.holder;
+      if(!holder)continue;
+      for(const height of [.35,.77,1.1]){
+        const point=holder.position.clone().add(new THREE.Vector3(0,height,0));
+        const projected=point.clone().project(camera);
+        if(projected.z < -1||projected.z > 1)continue;
+        const x=rect.left+(projected.x+1)*rect.width/2;
+        const y=rect.top+(1-projected.y)*rect.height/2;
+        const distance=(x-clientX)**2+(y-clientY)**2;
+        if(distance>=best)continue;
+        if(obstruction&&obstruction.distance<ray.ray.origin.distanceTo(point)-.12)continue;
+        best=distance;nearest=person;
+      }
     }
   }
   if(!nearest){
-    const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((clientX-rect.left)/rect.width*2-1,1-(clientY-rect.top)/rect.height*2),camera);
-    const hit=ray.intersectObjects(occluders,false)[0];
+    const hit=obstruction||ray.intersectObjects(occluders,false)[0];
     if(hit){let root=hit.object;while(root.parent&&!root.userData.occluder)root=root.parent;if(root.userData.occluder){root.scale.y=.18;loweredBuildings.set(root,performance.now()+6000);showToast('건물을 잠깐 낮췄어요. 뒤쪽도 살펴봐!');}}
     return;
   }
   if(nearest.id!==town.order[currentTarget]){
-    showToast(getComparison(getTarget(),nearest));
+    if(mode==='challenge'){
+      if(performance.now()-lastWrongClick<350)return;
+      lastWrongClick=performance.now();
+      timeRemaining=Math.max(0,timeRemaining-CHALLENGE.wrongPenalty);
+      showChallengeHud();
+      showToast(`다른 친구예요! ${CHALLENGE.wrongPenalty}초가 줄었어요.`);
+      if(timeRemaining<=0)finishChallenge();
+    }else showToast(getComparison(getTarget(),nearest));
     try{window.KidscadeGame?.sound?.('click')}catch(_){}
     return;
   }
@@ -565,6 +589,7 @@ function addFoundMarker(holder){
 function finishRound(){
   active=false;
   if(!town)return;
+  if(mode==='challenge'){completeChallengeStage();return;}
   $('finishTitle').textContent='못 찾겠다 꾀꼬리? 다 찾았다!';
   $('finishText').textContent=`${town.config.label}에서 친구 ${town.order.length}명을 전부 찾았어요. 대단해요!`;
   $('finish').classList.remove('hidden');
@@ -573,7 +598,7 @@ function finishRound(){
   save();
 }
 function hint(){
-  if(!active||celebration)return;
+  if(!active||celebration||mode==='challenge')return;
   hintLevel=Math.min(3,hintLevel+1);
   const person=getTarget();
   if(!person)return;
@@ -610,13 +635,21 @@ function zoom(factor){
   viewSize=THREE.MathUtils.clamp(viewSize*factor,7,Math.max(initialViewSize*1.25,11));resize();
 }
 function pan(dx,dy){
+  if(!town)return;
+  // Drag the ground itself, rather than guessing screen-up vectors.
+  // This continues to work correctly after a 90-degree camera rotation.
+  camera.updateMatrixWorld(true);
   const rect=canvas.getBoundingClientRect();
-  const right=new THREE.Vector3().setFromMatrixColumn(camera.matrix,0);
-  const up=new THREE.Vector3().setFromMatrixColumn(camera.matrix,1);
-  cameraLook.addScaledVector(right,-dx*viewSize/Math.max(1,rect.height));
-  cameraLook.addScaledVector(up,dy*viewSize/Math.max(1,rect.height));
-  cameraLook.y=0;
-  const limitX=(town.config.cols*BLOCK_PITCH)/2,limitZ=(town.config.rows*BLOCK_PITCH)/2;
+  const cx=rect.width/2,cy=rect.height/2;
+  const ground=(x,y)=>{
+    const ray=new THREE.Raycaster();
+    ray.setFromCamera(new THREE.Vector2(x/Math.max(1,rect.width)*2-1,1-y/Math.max(1,rect.height)*2),camera);
+    return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),new THREE.Vector3());
+  };
+  const before=ground(cx,cy),after=ground(cx+dx,cy+dy);
+  if(!before||!after)return;
+  cameraLook.add(before.sub(after));cameraLook.y=0;
+  const limitX=town.config.cols*BLOCK_PITCH/2,limitZ=town.config.rows*BLOCK_PITCH/2;
   cameraLook.x=THREE.MathUtils.clamp(cameraLook.x,-limitX,limitX);
   cameraLook.z=THREE.MathUtils.clamp(cameraLook.z,-limitZ,limitZ);
   updateCamera();
@@ -665,7 +698,8 @@ $('speakBtn').addEventListener('click',announceClue);
 $('menuBtn').addEventListener('click',()=>{$('finish').classList.add('hidden');$('start').classList.remove('hidden')});
 document.querySelectorAll('[data-stage]').forEach(button=>button.addEventListener('click',()=>startTown(button.dataset.stage)));
 $('quickStart').addEventListener('click',()=>startTown('small',getSeed(),[],'easy'));
-$('againBtn').addEventListener('click',()=>startTown(town.stageName,getSeed(),[],town.difficulty));
+$('challengeStart').addEventListener('click',()=>startChallenge());
+$('againBtn').addEventListener('click',()=>mode==='challenge'?startChallenge():startTown(town.stageName,getSeed(),[],town.difficulty));
 $('otherStageBtn').addEventListener('click',()=>{$('finish').classList.add('hidden');$('start').classList.remove('hidden')});
 window.addEventListener('resize',resize);
 
@@ -673,6 +707,11 @@ function animate(now){
   requestAnimationFrame(animate);
   const dt=Math.min(.05,Math.max(0,(now-lastFrame)/1000));lastFrame=now;
   if(town&&$('start').classList.contains('hidden')&&active){
+    if(mode==='challenge'){
+      timeRemaining=Math.max(0,timeRemaining-dt);
+      showChallengeHud();
+      if(timeRemaining<=0){finishChallenge();renderer.render(scene,camera);previewRenderer.render(previewScene,previewCamera);return;}
+    }
     positionEverything(dt);
     for(const entry of mixers)entry.mixer.setTime(entry.person.elapsed);
     const target=getTarget();
