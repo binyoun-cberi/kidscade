@@ -32,5 +32,45 @@ function validateAll(levels,data){
  (levels||[]).forEach((l,i)=>{const r=validateLevel(l,data,i);errors.push(...r.errors);warnings.push(...r.warnings)});
  return {errors,warnings};
 }
-E.Validator={validateLevel,validateAll};
+
+function analyzeTopology(level){
+ const wall=new Set((level.objects||[]).filter(e=>e.type==='wall').map(e=>e.x+','+e.y));
+ const hero=(level.objects||[]).find(e=>e.type==='hero');
+ if(!hero)return {reachable:0,branches:0,deadEnds:0,upper:false,lower:false,wordAccess:0,shortestFlag:null};
+ const key=(x,y)=>x+','+y;
+ const origin=key(hero.x,hero.y),q=[{x:hero.x,y:hero.y,d:0}],seen=new Set([origin]);
+ const goal=new Set((level.objects||[]).filter(e=>e.type==='flag').map(e=>key(e.x,e.y)));
+ let branches=0,deadEnds=0,shortestFlag=null;
+ for(let i=0;i<q.length;i++){
+  const {x,y,d}=q[i],next=[];
+  if(goal.has(key(x,y))&&shortestFlag===null)shortestFlag=d;
+  for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+   const nx=x+dx,ny=y+dy,k=key(nx,ny);
+   if(nx<0||ny<0||nx>=level.w||ny>=level.h||wall.has(k))continue;
+   next.push(k);
+   if(!seen.has(k)){seen.add(k);q.push({x:nx,y:ny,d:d+1})}
+  }
+  if(next.length>=3)branches++;
+  if(next.length<=1)deadEnds++;
+ }
+ const accessibleWord=(level.words||[]).filter(w=>
+  [[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>seen.has(key(w.x+dx,w.y+dy)))
+ ).length;
+ return {reachable:seen.size,branches,deadEnds,
+  upper:q.some(p=>p.y<=3),lower:q.some(p=>p.y>=7),
+  wordAccess:accessibleWord,totalWords:(level.words||[]).length,shortestFlag};
+}
+function auditLayouts(levels){
+ const map=new Map(),details=(levels||[]).map((l,i)=>{
+  const topology=analyzeTopology(l);
+  const signature=(l.objects||[]).filter(e=>e.type==='wall').map(e=>e.x+','+e.y).sort().join(';');
+  map.set(signature,(map.get(signature)||0)+1);
+  return {stage:i+1,title:l.title,chapter:l.chapter,...topology};
+ });
+ return {levels:details.length,uniqueWallLayouts:map.size,
+  upperReachable:details.filter(x=>x.upper).length,lowerReachable:details.filter(x=>x.lower).length,
+  meanBranches:details.reduce((a,x)=>a+x.branches,0)/(details.length||1),
+  details};
+}
+E.Validator={validateLevel,validateAll,analyzeTopology,auditLayouts};
 })(typeof window!=='undefined'?window:globalThis);
