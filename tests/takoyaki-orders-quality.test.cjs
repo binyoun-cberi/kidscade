@@ -32,7 +32,7 @@ function loadGame(){
   context.globalThis=context;
   const source=moduleSource.replace(/^import .*;\s*$/gm,'').replace(/boot\(\);\s*\}\)\(\);/,[
     'globalThis.takoyakiQualityTest={game,emptySlot,tapSlot,actionTopping,actionFilling,',
-    'actionPack,scoreBall,qualityReasons,activeOrder,chooseOrder,startDay,updateButtonLocks};',
+    'actionPack,scoreBall,qualityReasons,hasRecipeMismatch,activeOrder,chooseOrder,startDay,updateButtonLocks};',
     '})();'
   ].join('\n'));
   vm.runInNewContext(source,context,{filename:'takoyaki-module.js'});
@@ -62,6 +62,9 @@ test('quality rewards requested ingredients and penalizes missing, extra and bur
   assert.match(api.qualityReasons(noSauce,o).join(','),/소스가 빠졌어요/);
   assert.match(api.qualityReasons(extraMayo,o).join(','),/마요가 더 들어갔어요/);
   assert.match(api.qualityReasons(burnt,o).join(','),/오래 구웠어요/);
+  assert.equal(api.hasRecipeMismatch(good,o),false);
+  assert.equal(api.hasRecipeMismatch(noSauce,o),true);
+  assert.equal(api.hasRecipeMismatch(extraOctopus,o),true);
 });
 test('from four holes, plating does not quietly add requested toppings or auto-serve',()=>{
   const {api,nodes}=loadGame();
