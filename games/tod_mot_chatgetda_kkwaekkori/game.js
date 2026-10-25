@@ -514,6 +514,10 @@ async function startTown(stage,seed=getSeed(),restored=[],difficulty=$('difficul
   showChallengeHud();
   $('difficulty').value=town.difficulty;
   $('start').classList.add('hidden');$('finish').classList.add('hidden');
+  // Building transparency is a temporary exploration tool, not a mode-wide setting.
+  // Reset on every new town to avoid ghostlike semi-transparent buildings.
+  seeThrough=false;
+  $('seeThrough').setAttribute('aria-pressed','false');
   resize();resetView();generateWorld();
   // Start close enough to distinguish a face. The whole-town button remains available.
   // Timed search is only fair if the sought neighbor starts within view.
