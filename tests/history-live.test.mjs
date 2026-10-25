@@ -143,9 +143,9 @@ test('solo practice runs locally while live mode keeps server play', () => {
 test('solo short-answer mode keeps typed answers local and reviewable', () => {
   const html = fs.readFileSync(new URL('../games/high_history_timebattle/history_timebattle.html', import.meta.url), 'utf8');
   assert.match(html, /questionMode!=='choice-short'/);
-  assert.match(html, /item\.family==='identify'/);
+  assert.match(html, /item\.family==='short'/);
   assert.match(html, /shortAnswer:correctText/);
-  assert.match(html, /띄어쓰기는 달라도 괜찮아요/);
+  assert.match(html, /띄어쓰기와 일부 문장부호는 달라도 괜찮아요/);
   assert.match(html, /내 답/);
   assert.match(html, /answerText:isShort/);
   assert.match(html, /entered=shortAnswerVariants\(input\)/);
@@ -625,7 +625,7 @@ test('timebattle v2 layout keeps teacher, solo and next-round quiz controls inta
   const css=fs.readFileSync(new URL('timebattle-ui-v2.css',base),'utf8');
   const js=fs.readFileSync(new URL('timebattle-ui-v2.js',base),'utf8');
   assert.match(html,/timebattle-ui-v2\.css\?v=2/);
-  assert.match(html,/timebattle-ui-v2\.js\?v=2/);
+  assert.match(html,/timebattle-ui-v2\.js\?v=\d+/);
   for (const id of ['hostSetup','soloSetup','roundSetup','questionMode','soloQuestionMode',
     'roundQuestionMode','hostEraPicker','soloEraPicker','roundEraPicker',
     'questionCount','soloQuestionCount','roundQuestionCount','checkpointCustom','roundCheckpointCustom']) {
