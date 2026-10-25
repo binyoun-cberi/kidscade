@@ -1,6 +1,14 @@
 // Seeded, renderer-independent town activities and fair observation puzzles.
 export const WORLD_VERSION = 3;
 export const BLOCK_PITCH = 7;
+// Critter Catchin' inspired optional arcade pacing; the untimed town mode is unchanged.
+export const CHALLENGE = Object.freeze({firstCrowd:10,additionalCrowd:3,maxCrowd:50,seconds:20,wrongPenalty:2});
+export function getChallengeSettings(level=1) {
+  const safeLevel=Math.max(1,Math.min(10000,Math.floor(Number(level)||1)));
+  const residents=Math.min(CHALLENGE.maxCrowd,CHALLENGE.firstCrowd+(safeLevel-1)*CHALLENGE.additionalCrowd);
+  return {level:safeLevel,residents,targets:1,stageName:residents<=18?'small':residents<=45?'medium':'large',
+    speed:Math.min(2.3,1+Math.max(0,safeLevel-10)*.12),seconds:CHALLENGE.seconds,wrongPenalty:CHALLENGE.wrongPenalty};
+}
 export const STAGES = Object.freeze({
   small: { label: '작은 마을', cols: 3, rows: 2, residents: 18, targets: 1 },
   medium: { label: '북적북적 동네', cols: 5, rows: 3, residents: 45, targets: 3 },
@@ -43,11 +51,20 @@ export function signature(p){return `${p.modelVariant}:${p.activity}:${p.propVar
 export function getRoutePosition(person,stage){
   const c=getBlockCenter(person.block,stage);
   // Separate activity bays in front of every building, with room for bodies and props.
+  // Each resident stays in a separate, unobstructed sidewalk bay.
+  // In the arcade mode small loops become quicker after level ten, never teleporting.
+  if(person.challengeSpeed){
+    const t=person.elapsed,phase=person.phase,speed=person.challengeSpeed;
+    const sway=Math.sin(t*(.9+speed*.48)+phase)*(person.slot===1?.44:.14);
+    const depth=Math.sin(t*(.62+speed*.26)+phase*1.3)*.16;
+    return {x:c.x+(person.slot-1)*1.55+sway,z:c.z+2.15+depth};
+  }
   const motion=person.activity==='deliver'&&!person.found ? Math.sin(person.elapsed*.8)*.16:0;
   return {x:c.x+(person.slot-1)*1.55+motion,z:c.z+2.15};
 }
-export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=true){
-  const config=STAGES[stageName];if(!config)throw new Error(`알 수 없는 마을 크기: ${stageName}`);
+export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=true,challenge=null){
+  const base=STAGES[stageName];if(!base)throw new Error(`알 수 없는 마을 크기: ${stageName}`);
+  const config=challenge?{...base,residents:challenge.residents,targets:1}:base;
   if(!DIFFICULTIES[difficulty])difficulty='easy';
   const random=createRng(seed),blocks=[],used=new Set();
   for(let row=0;row<config.rows;row++)for(let col=0;col<config.cols;col++)blocks.push({id:`b${row}-${col}`,col,row,...DISTRICTS[(col+row*config.cols)%6]});
@@ -55,7 +72,8 @@ export function makeTown(stageName='small',seed=1,difficulty='easy',autoSelect=t
     const block=blocks[i%blocks.length],slot=Math.floor(i/blocks.length),activity=block.activities[slot%3];
     const choices=shuffled(Array.from({length:36},(_,n)=>({modelVariant:n%12,propVariant:Math.floor(n/12)})),random);
     const look=choices.find(v=>!used.has(signature({...v,activity})));
-    const person={id:`person-${i}`,block,slot,...look,activity,action:activity,elapsed:0,routineAt:18+random()*14,reserved:false,found:false};
+    const person={id:`person-${i}`,block,slot,...look,activity,action:activity,elapsed:0,routineAt:18+random()*14,reserved:false,found:false,
+      challengeSpeed:challenge?.speed||0,phase:i*2.39996+(seed%19)*.37};
     used.add(signature(person));return person;
   });
   const town={stageName,config,seed,difficulty,blocks,people,order:[],time:0};
