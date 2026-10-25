@@ -78,12 +78,15 @@ function nearestOnSegment(p,a,b){
 function simplify(raw){
   const out=[];
   for(const p of raw){
+    if(!p||!Number.isFinite(Number(p.x))||!Number.isFinite(Number(p.y)))continue;
     const q={x:clamp(Number(p.x),10,1070),y:clamp(Number(p.y),10,710)};
     if(!Number.isFinite(q.x)||!Number.isFinite(q.y))continue;
     if(!out.length||len(out[out.length-1],q)>9)out.push(q);
   }
-  if(out.length>1&&len(out.at(-1),raw.at(-1))>1){
-    const p=raw.at(-1);out.push({x:clamp(p.x,10,1070),y:clamp(p.y,10,710)});
+  const last=Array.isArray(raw)&&raw.at(-1);
+  if(out.length>1&&last&&Number.isFinite(Number(last.x))&&Number.isFinite(Number(last.y))){
+    const p={x:clamp(Number(last.x),10,1070),y:clamp(Number(last.y),10,710)};
+    if(len(out.at(-1),p)>1)out.push(p);
   }
   return out;
 }
@@ -157,7 +160,8 @@ export class RoadWeaver {
     if(![2,4,6].includes(lanes))return {ok:false,reason:'차로 수를 선택해 주세요.'};
     if(!['ground','bridge','ramp'].includes(kind))return {ok:false,reason:'도로 종류를 확인해 주세요.'};
     if(kind==='ramp'&&lanes!==2)return {ok:false,reason:'진출입로는 2차로로 건설해 주세요.'};
-    const pts=simplify(raw||[]);
+    const pts=simplify(Array.isArray(raw)?raw:[]);
+    if(pts.length>340)return {ok:false,reason:'도로가 너무 복잡해요. 조금 더 단순하게 그려 주세요.'};
     if(pts.length<2)return {ok:false,reason:'조금 더 길게 그려 주세요.'};
     pts[0]=this.snap(pts[0],kind==='bridge'?1:0);
     pts[pts.length-1]=this.snap(pts.at(-1),kind==='ground'?0:1);
