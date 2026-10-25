@@ -4,7 +4,10 @@ export const TOWN_TYPES = [
   {id:'home',name:'햇살마을',type:'베드타운',x:164,y:378,color:'#5b9ec2'},
   {id:'office',name:'중앙업무지구',type:'사무지구',x:915,y:354,color:'#9c7bbd'},
   {id:'factory',name:'은하산업단지',type:'공업지구',x:550,y:122,color:'#be8b64'},
-  {id:'mall',name:'하늘상업지구',type:'상업지구',x:575,y:614,color:'#cc9b53'}
+  {id:'mall',name:'하늘상업지구',type:'상업지구',x:575,y:614,color:'#cc9b53'},
+  {id:'farm',name:'푸른들 농업지구',type:'농업지구',x:155,y:120,color:'#92a65a'},
+  {id:'tourism',name:'바람산 관광지구',type:'관광지구',x:914,y:115,color:'#55a5a1'},
+  {id:'market',name:'큰별 대형마트',type:'대형마트',x:915,y:614,color:'#ce7b74'}
 ];
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 const len=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
@@ -73,21 +76,44 @@ function simplify(raw){
   }
   return out;
 }
-function hourMultiplier(hour,kind){
-  const am=hour>=7&&hour<9.5,pm=hour>=16.5&&hour<19.5;
-  if(kind==='home>office')return am?3.7:pm?.32:.72;
-  if(kind==='office>home')return pm?3.7:am?.32:.72;
-  if(kind==='home>factory')return (hour>=5.5&&hour<8.5)?2.5:.62;
-  if(kind==='factory>home')return (hour>=16&&hour<19)?2.5:.62;
-  if(kind==='home>mall')return (hour>=16&&hour<21)?2.1:.6;
-  if(kind==='mall>home')return (hour>=17&&hour<22)?2.1:.6;
-  return .35;
-}
-export function getDemandRate(from,to,hour){
-  const id=from+'>'+to;
-  const base=(from==='home'&&to==='office'||from==='office'&&to==='home')?1.22:
-    (from==='home'||to==='home')?.65:.18;
-  return base*hourMultiplier(hour,id);
+// 1일차는 월요일, 6·7일차는 주말이다. 숫자 데이터는 내부에서만 사용한다.
+export function isWeekend(day=1){return ((Math.max(1,Math.floor(day))-1)%7)>=5;}
+function within(h,start,end){return h>=start&&h<end;}
+export function getDemandRate(from,to,hour,day=1){
+  const weekend=isWeekend(day);
+  const am=within(hour,7,9.5),pm=within(hour,16.5,19.5);
+  const toWork=(from==='home'&&to==='office'),toHome=(from==='office'&&to==='home');
+  if(toWork)return 1.22*(am?3.7:pm?.32:.72)*(weekend?.28:1);
+  if(toHome)return 1.22*(pm?3.7:am?.32:.72)*(weekend?.28:1);
+  if(from==='home'&&to==='factory')return .72*(within(hour,5.5,8.5)?2.6:.55)*(weekend?.55:1);
+  if(from==='factory'&&to==='home')return .72*(within(hour,16,19)?2.4:.55)*(weekend?.55:1);
+  if(from==='home'&&to==='mall')return .7*(within(hour,16,21)?2.0:.55)*(weekend?1.4:1);
+  if(from==='mall'&&to==='home')return .7*(within(hour,17,22)?2.0:.55)*(weekend?1.4:1);
+
+  // 농업지구: 이른 새벽 트랙터 이동과 납품 트럭. 낮에는 통행량이 적다.
+  if(from==='farm'||to==='farm'){
+    if(from==='farm'&&['factory','mall','market'].includes(to))
+      return .56*(within(hour,4.5,8.5)?3.4:within(hour,9,14)?1.1:.15);
+    if(to==='farm'&&['factory','mall','market'].includes(from))
+      return .35*(within(hour,12,16)?1.5:.4);
+    if(from==='home'&&to==='farm')return .5*(within(hour,5,8)?2.4:.22);
+    if(to==='home'&&from==='farm')return .5*(within(hour,16,19)?2:.23);
+    return .065;
+  }
+  // 관광지구: 평일은 소규모, 주말 오전 유입·저녁 복귀가 집중된다.
+  if(from==='tourism'||to==='tourism'){
+    if(to==='tourism')return .53*(weekend?3.15:.72)*(within(hour,8.5,14)?2.1:.24);
+    return .53*(weekend?3.0:.68)*(within(hour,16,21)?2.25:.22);
+  }
+  // 대형마트: 퇴근 이후, 그리고 주말 낮에 쇼핑 차량과 배송차량이 집중된다.
+  if(from==='market'||to==='market'){
+    const delivery=from==='factory'||from==='farm'||to==='factory';
+    if(delivery)return .43*(within(hour,5.5,11)?1.8:.3);
+    const peak=weekend?within(hour,10,20):within(hour,16,21);
+    return .62*(peak?(weekend?2.8:2.2):.2);
+  }
+  if(from==='factory'||to==='factory')return .28*(within(hour,6,18)?1.7:.32);
+  return .11*(within(hour,8,21)?1.5:.35);
 }
 export class RoadWeaver {
   constructor(){
@@ -96,6 +122,7 @@ export class RoadWeaver {
     this.openTowns=2;this.budget=420;this.day=1;this.minutes=5*60+30;
     this.delivered=0;this.waiting=0;this.attempted=0;this.serial=0;
     this.tickTime=0;this.spawnFraction=new Map();this.pending=new Map();this.announcements=[];
+    this.growthClock=0;this.dispatchClock=0;
     this.rebuild();
   }
   get towns(){return TOWN_TYPES.slice(0,this.openTowns);}
@@ -432,19 +459,25 @@ export class RoadWeaver {
   update(dt){
     dt=clamp(dt,0,.1);this.tickTime+=dt;this.minutes+=dt*12;
     if(this.minutes>=1440){this.minutes-=1440;this.day++;this.budget+=70;this.announcements.push('새로운 하루가 시작됐어요. 도로 자재 70을 받았어요.');}
-    if(this.openTowns===2&&this.day>=2&&this.delivered>=35){
-      this.openTowns=3;this.budget+=180;this.announcements.push('공업지구가 생겼어요! 화물차를 위한 길을 만들어 보세요.');
-    }
-    if(this.openTowns===3&&this.day>=3&&this.delivered>=90){
-      this.openTowns=4;this.budget+=200;this.announcements.push('상업지구가 문을 열었어요! 퇴근 뒤에도 차량이 몰립니다.');
-    }
-    if(this.openTowns>2){
-      // 새 도시가 직전에 그린 도로 위에 등장해도 기존 연결은 유지한다.
+    this.growthClock+=dt;
+    if(this.growthClock>=2){
+      this.growthClock=0;
+      const expansions=[
+        {count:3,day:2,arrivals:35,bonus:180,message:'새 공업지구가 생겼어요! 화물차를 위한 길을 만들어 보세요.'},
+        {count:4,day:3,arrivals:90,bonus:200,message:'상업지구가 문을 열었어요! 퇴근 후에도 자동차가 오갑니다.'},
+        {count:5,day:4,arrivals:150,bonus:170,message:'농업지구가 생겼어요! 아침 일찍 농기계와 납품차가 출발해요.'},
+        {count:6,day:5,arrivals:235,bonus:190,message:'관광지구가 문을 열었어요! 주말에는 방문객이 몰려요.'},
+        {count:7,day:6,arrivals:330,bonus:200,message:'대형마트가 들어섰어요! 퇴근길과 주말 쇼핑길을 살펴보세요.'}
+      ];
+      const next=expansions.find(x=>x.count===this.openTowns+1);
+      if(next&&this.day>=next.day&&this.delivered>=next.arrivals&&this.towns.every(t=>this.route(TOWN_TYPES[0],t))){
+        this.openTowns++;this.budget+=next.bonus;this.announcements.push(next.message);
+      }
     }
     for(const a of this.towns)for(const b of this.towns){
       if(a===b)continue;
       const pair=a.id+'>'+b.id;
-      let carry=(this.spawnFraction.get(pair)||0)+getDemandRate(a.id,b.id,this.hour)*dt*.85;
+      let carry=(this.spawnFraction.get(pair)||0)+getDemandRate(a.id,b.id,this.hour,this.day)*dt*.85;
       while(carry>=1){this.pending.set(pair,Math.min(75,(this.pending.get(pair)||0)+1));carry--;}
       this.spawnFraction.set(pair,carry);
       if((this.pending.get(pair)||0)>0&&this.spawn(a.id,b.id)){
@@ -480,7 +513,7 @@ export class RoadWeaver {
       &&c.x>=0&&c.x<=1080&&c.y>=0&&c.y<=720&&c.radius>=15&&c.radius<=90);
     if(circles.length>8||circles.length!==(data.roundabouts||[]).length)return false;
     if(roads.length!==data.roads.length||roads.length>120)return false;
-    this.roads=roads;this.roundabouts=circles;this.openTowns=clamp(Math.round(data.openTowns)||2,2,4);
+    this.roads=roads;this.roundabouts=circles;this.openTowns=clamp(Math.round(data.openTowns)||2,2,TOWN_TYPES.length);
     this.budget=clamp(data.budget||0,0,10000);this.day=clamp(data.day||1,1,9999);
     this.minutes=clamp(data.minutes||330,0,1439);this.delivered=Math.max(0,Math.round(data.delivered||0));
     this.waiting=Math.max(0,Math.round(data.waiting||0));this.attempted=Math.max(0,Math.round(data.attempted||0));
