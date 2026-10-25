@@ -53,9 +53,11 @@ test('quality rewards requested ingredients and penalizes missing, extra and bur
   const good=cooked(api,'a');good.sauce=1;
   const noSauce={...good,sauce:0};
   const extraMayo={...good,mayo:1};
+  const extraOctopus={...good,extraOcto:1};
   const burnt={...good,totalCook:71,burn:40};
   assert.ok(api.scoreBall(good,o).score>api.scoreBall(noSauce,o).score);
   assert.ok(api.scoreBall(good,o).score>api.scoreBall(extraMayo,o).score);
+  assert.ok(api.scoreBall(good,o).score>api.scoreBall(extraOctopus,o).score);
   assert.ok(api.scoreBall(good,o).score>api.scoreBall(burnt,o).score);
   assert.match(api.qualityReasons(noSauce,o).join(','),/소스가 빠졌어요/);
   assert.match(api.qualityReasons(extraMayo,o).join(','),/마요가 더 들어갔어요/);
