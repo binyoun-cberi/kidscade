@@ -4,3 +4,5 @@
 .experiment-log{background:#edf5f2;border-radius:10px;padding:9px 10px;font-size:11px;font-weight:700;color:#3a6e68;line-height:1.65;margin-top:10px;min-height:35px}
 
 #mechanism-status:not(:empty){background:#fff0d5;color:#784c23}#mechanism-status:empty{display:none}.control-row #hint-btn{background:#f8f1da;border-color:#e8cd89;color:#76561a}@media(max-width:650px){.hud span{font-size:9px}.control-row #hint-btn{padding:9px}.canvas-wrap{min-height:200px}}
+
+.survival-featured{display:block;width:100%;margin:14px 0 10px;padding:17px 12px;border-radius:16px;background:linear-gradient(135deg,#a34d88,#6c3c80);color:#fff;font:800 19px system-ui,sans-serif;box-shadow:0 5px 0 #562f67;cursor:pointer;border:0}.survival-featured:hover{filter:brightness(1.07)}.survival-featured:active{transform:translateY(3px);box-shadow:0 2px 0 #562f67}
