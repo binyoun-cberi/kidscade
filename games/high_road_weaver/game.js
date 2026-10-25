@@ -96,7 +96,7 @@ function applyEdit(p){
   if(mode==='roundabout')result=sim.addRoundabout(p);
   if(mode==='island')result=sim.addTrafficIsland(p);
   if(result){
-    notice(result.ok?(mode==='widen'?'차로를 넓혔어요.':mode==='light'?'신호등을 바꿨어요.':mode==='island'?'교통섬과 우회전 전용 차로가 생겼어요.':'회전교차로를 만들었어요. 차량이 원형 차로를 따라 이동해요.'):result.reason);
+    notice(result.ok?(mode==='widen'?'차로를 넓혔어요.':mode==='light'?'신호등을 바꿨어요.':mode==='island'?'교통섬과 우회전 전용 차로가 생겼어요.':result.lanes===4?'넓은 회전교차로를 만들었어요. 차가 계속 몰리면 우회도로도 고려해 보세요.':'회전교차로를 만들었어요. 차량이 원형 차로를 따라 이동해요.'):result.reason);
     if(result.ok)save();
   }
 }
@@ -361,7 +361,7 @@ function drawDistrictLife(){
 function drawRoundaboutCenters(){
   for(const circle of sim.roundabouts){
     ctx.save();
-    ctx.beginPath();ctx.arc(circle.x,circle.y,circle.radius-14,0,Math.PI*2);
+    ctx.beginPath();ctx.arc(circle.x,circle.y,circle.lanes===4?10:circle.radius-14,0,Math.PI*2);
     ctx.fillStyle='#95c78b';ctx.fill();ctx.strokeStyle='#cfddd0';ctx.lineWidth=2;ctx.stroke();
     ctx.beginPath();ctx.arc(circle.x,circle.y,11,0,Math.PI*2);ctx.fillStyle='#70a875';ctx.fill();
     ctx.strokeStyle='rgba(250,255,245,.9)';ctx.lineWidth=2;
