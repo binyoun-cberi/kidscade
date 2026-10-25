@@ -499,12 +499,8 @@ export class RoadWeaver {
   canGo(car){
     const next=car.path[car.step+1];if(!next)return true;
     const node=car.dir===1?car.edge.b:car.edge.a;
-    // 진입 차량은 로터리 안을 먼저 달리고 있는 차에 양보한다.
-    if(next.edge.kind==='roundabout'&&car.edge.kind!=='roundabout'){
-      if(this.cars.some(other=>other!==car&&other.edge.kind==='roundabout'&&other.dir===1&&(
-        (other.edge===next.edge&&other.s<18)||(other.edge.b===node&&other.edge.length-other.s<18)
-      )))return false;
-    }
+    // 원형 전체의 같은 차로 위치를 살피는 ringEntryFree()로 진입 안전을 일괄 판단.
+    // 구간별 고정 18px 검사까지 중복하면 짧은 도로 조각에서 이중 양보가 발생한다.
     if(this.junctionIsBusy(node,car))return false;
     if(this.lights.has(node)){
       const angle=travelAngle(car.edge,car.dir,true);
