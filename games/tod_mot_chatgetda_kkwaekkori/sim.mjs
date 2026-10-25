@@ -118,7 +118,10 @@ export function movePeople(town,deltaSeconds){
     // Crossing from a walking route to a static pose would move a character
     // instantly across the sidewalk. Keep the walking role consistent.
     if(p.slot===1){p.routineAt=p.elapsed+25;continue;}
-    const list=p.block.activities,next=list[(list.indexOf(p.activity)+1)%list.length];
+    // Activity changes stay within a physically compatible category:
+    // no bench teleporting across a pavement or walking in place.
+    const list=p.block.activities.filter(id=>!['deliver','ball','wave'].includes(id));
+    const next=list[(Math.max(0,list.indexOf(p.activity))+1)%list.length];
     if(!town.people.some(q=>q.id!==p.id&&signature(q)===signature({...p,activity:next}))){p.activity=next;p.action=next;}
     p.routineAt=p.elapsed+20+(p.slot%3)*4;
   }
