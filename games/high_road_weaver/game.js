@@ -80,8 +80,13 @@ function setLanes(n){
 const drawingMode=()=>mode==='road'||mode==='overpass'||mode==='ramp';
 function finishBuild(points){
   const kind=mode==='overpass'?'bridge':mode==='ramp'?'ramp':'ground';
+  const crossings=sim.previewCrossings(points,kind);
   const result=sim.addRoad(points,kind==='ramp'?2:lanes,kind);
-  if(result.ok){notice((kind==='bridge'?'고가도로':kind==='ramp'?'진출입로':'도로')+' 완성! 자재 '+result.cost+'을 사용했어요.');save();}
+  if(result.ok){
+    const hint=crossings.length?' 교차로가 '+crossings.length+'곳 생겼어요. 차량 흐름을 살펴보세요.':'';
+    notice((kind==='bridge'?'고가도로':kind==='ramp'?'진출입로':'도로')+' 완성! 자재 '+result.cost+'을 사용했어요.'+hint);
+    save();
+  }
   else notice(result.reason);
 }
 function applyEdit(p){
@@ -409,6 +414,17 @@ function drawDraft(){
     ctx.lineWidth=selectedLanes*11+6;ctx.globalAlpha=.38;ctx.setLineDash([15,8]);ctx.stroke();ctx.setLineDash([]);
     const last=pts.at(-1);rounded(last.x-36,last.y-54,72,27,7,bad?'#8d3f41':'#286850');
     ctx.fillStyle='#fff';ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.fillText('자재 '+cost,last.x,last.y-37);
+    const kind=mode==='overpass'?'bridge':mode==='ramp'?'ramp':'ground';
+    const crossings=sim.previewCrossings(pts,kind);
+    if(crossings.length){
+      for(const p of crossings){
+        ctx.beginPath();ctx.arc(p.x,p.y,18,0,Math.PI*2);
+        ctx.fillStyle='rgba(242,169,58,.26)';ctx.fill();
+        ctx.lineWidth=3;ctx.strokeStyle='#cc7b28';ctx.stroke();
+      }
+      rounded(last.x-58,last.y-89,116,28,7,'#875727');
+      ctx.fillStyle='#fff';ctx.fillText('교차로 '+crossings.length+'곳 예상',last.x,last.y-71);
+    }
   }else{
     ctx.beginPath();ctx.arc(pts[0].x,pts[0].y,16,0,Math.PI*2);ctx.strokeStyle='#25845e';ctx.lineWidth=4;ctx.stroke();
   }
