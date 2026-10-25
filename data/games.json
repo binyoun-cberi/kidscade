@@ -2,6 +2,34 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "high_air_traffic_control",
+      "addedAt": "2026-10-25T17:52:00+09:00",
+      "title": "관제탑 시뮬레이터",
+      "href": "games/high_air_traffic_control/index.html",
+      "category": "job",
+      "age": "high",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "✈️",
+      "cover": "assets/gate-image/high_air_traffic_control_cover.svg",
+      "description": "항공기마다 경유점과 고도를 지시하고, 악천후와 활주로 이용 상황을 살피며 안전하게 착륙을 유도하는 실시간 관제 게임이에요. 하늘빛·해안·도시 관제구역에 도전해요.",
+      "subject": "career",
+      "genre": "simulation",
+      "difficulty": "medium",
+      "sessionMinutes": 4,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "western_quickdraw",
       "addedAt": "2026-10-23T22:27:00+09:00",
       "title": "정오의 결투",

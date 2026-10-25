@@ -1,0 +1,38 @@
+name: Air traffic real-browser play audit
+on:
+  pull_request:
+    paths:
+      - 'games/high_air_traffic_control/**'
+      - 'tests/air-traffic-control.test.cjs'
+      - 'tests/air-traffic-browser-audit.cjs'
+      - '.github/workflows/air-traffic-browser-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chrome-playthrough:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Korean font for actual screenshot review
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk
+      - name: Verify real Chrome exists
+        run: command -v google-chrome || command -v chromium
+      - name: Run deterministic physics and shift tests
+        run: node --test tests/air-traffic-control.test.cjs
+      - name: Play through desktop and mobile Chrome
+        run: node tests/air-traffic-browser-audit.cjs
+        env:
+          AIR_TRAFFIC_AUDIT_OUT: ${{ runner.temp }}/air-traffic-audit
+      - name: Upload eight Chrome screenshot proofs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: air-traffic-desktop-mobile
+          path: ${{ runner.temp }}/air-traffic-audit/*.png
+          if-no-files-found: warn
+          retention-days: 7
