@@ -116,15 +116,15 @@ export function getDemandRate(from,to,hour,day=1){
   }
   // 관광지구: 평일은 소규모, 주말 오전 유입·저녁 복귀가 집중된다.
   if(from==='tourism'||to==='tourism'){
-    if(to==='tourism')return .53*(weekend?3.15:.72)*(within(hour,8.5,14)?2.1:.24);
-    return .53*(weekend?3.0:.68)*(within(hour,16,21)?2.25:.22);
+    if(to==='tourism')return .53*(weekend?2.3:.72)*(within(hour,8.5,14)?2.1:.24);
+    return .53*(weekend?2.35:.68)*(within(hour,16,21)?2.25:.22);
   }
   // 대형마트: 퇴근 이후, 그리고 주말 낮에 쇼핑 차량과 배송차량이 집중된다.
   if(from==='market'||to==='market'){
     const delivery=from==='factory'||from==='farm'||to==='factory';
     if(delivery)return .43*(within(hour,5.5,11)?1.8:.3);
     const peak=weekend?within(hour,10,20):within(hour,16,21);
-    return .62*(peak?(weekend?2.8:2.2):.2);
+    return .62*(peak?(weekend?2.2:2.2):.2);
   }
   if(from==='factory'||to==='factory')return .28*(within(hour,6,18)?1.7:.32);
   return .11*(within(hour,8,21)?1.5:.35);
@@ -133,11 +133,11 @@ export class RoadWeaver {
   constructor(){
     this.roads=[];this.nodes=new Map();this.edges=[];this.adj=new Map();
     this.cars=[];this.oldRoads=[];this.lights=new Set();this.roundabouts=[];this.history=[];
-    this.openTowns=2;this.budget=420;this.day=1;this.minutes=5*60+30;
+    this.openTowns=2;this.budget=445;this.day=1;this.minutes=5*60+30;
     this.delivered=0;this.waiting=0;this.attempted=0;this.serial=0;
     this.tickTime=0;this.spawnFraction=new Map();this.pending=new Map();this.announcements=[];
     this.junctionReservations=new Map();
-    this.growthClock=0;this.dispatchClock=0;
+    this.growthClock=0;this.dispatchClock=0;this.deliveredAtDawn=0;
     this.rebuild();
   }
   get towns(){return TOWN_TYPES.slice(0,this.openTowns);}
@@ -546,6 +546,8 @@ export class RoadWeaver {
         const c=cs[i],ahead=cs[i-1];
         let target=c.maxSpeed*Math.min(1,0.85+0.15*Math.max(1,c.edge.lanes/2));
         if(c.kind==='truck')target*=.73;
+        if(c.kind==='tractor')target*=.52;
+        if(c.kind==='bus')target*=.81;
         if(ahead){const gap=ahead.s-c.s-19;target=Math.min(target,Math.max(0,gap*2.8));}
         const left=c.edge.length-c.s;
         if(left<23&&!this.canGo(c))target=Math.min(target,Math.max(0,(left-11)*2.3));
@@ -563,9 +565,8 @@ export class RoadWeaver {
       if((this.adj.get(node)||[]).length>=3){
         const movement=this.movement(c);
         const records=(this.junctionReservations.get(node)||[]).filter(r=>r.until>this.tickTime);
-        const conflict=records.some(r=>this.movementsConflict(movement,r));
         // 같은 차로를 뒤따르는 차는 다음 도로의 실제 안전간격 규칙으로 보호한다.
-        records.push({...movement,until:this.tickTime+(conflict?.42:.28)});
+        records.push({...movement,until:this.tickTime+.34});
         this.junctionReservations.set(node,records);
       }
       c.step++;c.edge=next.edge;c.dir=next.dir;
@@ -582,7 +583,17 @@ export class RoadWeaver {
   }
   update(dt){
     dt=clamp(dt,0,.1);this.tickTime+=dt;this.minutes+=dt*12;
-    if(this.minutes>=1440){this.minutes-=1440;this.day++;this.budget+=70;this.announcements.push('새로운 하루가 시작됐어요. 도로 자재 70을 받았어요.');}
+    if(this.minutes>=1440){
+      this.minutes-=1440;this.day++;
+      const completed=this.delivered-this.deliveredAtDawn;
+      const earned=completed>=200?95:completed>=90?70:completed>=25?40:
+        this.budget<130?25:0;
+      this.budget+=earned;this.deliveredAtDawn=this.delivered;
+      if(completed>=90)this.announcements.push('차들이 목적지에 잘 도착했어요! 내일의 도로 자재를 받았어요.');
+      else if(completed>=25)this.announcements.push('조금씩 차들이 오가고 있어요. 길을 더 편리하게 고쳐 보세요.');
+      else if(this.roads.length)this.announcements.push('어제는 차들이 많이 이동하지 못했어요. 막힌 곳을 살펴보세요.');
+      else this.announcements.push('두 도시를 도로로 이어 차들이 움직이도록 도와주세요.');
+    }
     this.growthClock+=dt;
     if(this.growthClock>=2){
       this.growthClock=0;
@@ -669,6 +680,21 @@ export class RoadWeaver {
       this.waiting>20?'대기 길어짐':this.waiting>4?'대기 발생':'한산';
     return {flow,queue};
   }
+  previewCrossings(raw,kind='ground'){
+    if(kind!=='ground'||!Array.isArray(raw)||raw.length<2)return [];
+    const pts=simplify(raw),seen=new Set(),hits=[];
+    for(let i=1;i<pts.length;i++)for(const road of this.roads){
+      if(!isSurface(road))continue;
+      for(let j=1;j<road.points.length;j++){
+        const hit=crossing(pts[i-1],pts[i],road.points[j-1],road.points[j]);
+        if(!hit)continue;
+        const tag=key(hit.p);
+        if(seen.has(tag))continue;
+        seen.add(tag);hits.push(hit.p);
+      }
+    }
+    return hits.slice(0,24);
+  }
   snapshot(){
     // 활성 차량의 간선을 한 번씩만 기록해 모바일 브라우저의 저장 공간을 절약한다.
     // 도로 편집 중 이미 퇴역한 경로 위의 자동차도 원래 자리 그대로 복원된다.
@@ -691,7 +717,7 @@ export class RoadWeaver {
       delivered:this.delivered,waiting:this.waiting,attempted:this.attempted,lights:[...this.lights],serial:this.serial,
       queues:[...this.pending].map(([pair,count])=>[pair,count]),cars,edgePool,
       tickTime:this.tickTime,spawnFraction:[...this.spawnFraction],dispatchClock:this.dispatchClock,
-      growthClock:this.growthClock};
+      growthClock:this.growthClock,deliveredAtDawn:this.deliveredAtDawn};
   }
   restore(data){
     if(!data||![1,2,3].includes(data.version)||!Array.isArray(data.roads))return false;
@@ -715,11 +741,13 @@ export class RoadWeaver {
     this.junctionReservations.clear();
     this.pending=new Map(Array.isArray(data.queues)?data.queues.filter(row=>Array.isArray(row)&&typeof row[0]==='string'&&Number.isFinite(row[1])&&row[1]>=0&&row[1]<=75):[]);
     this.waiting=[...this.pending.values()].reduce((sum,n)=>sum+n,0);
+    this.deliveredAtDawn=this.delivered;
     this.rebuild();
     if(data.version===3){
       this.tickTime=Number.isFinite(data.tickTime)?clamp(data.tickTime,0,1e8):0;
       this.dispatchClock=Number.isFinite(data.dispatchClock)?clamp(data.dispatchClock,0,.3):0;
       this.growthClock=Number.isFinite(data.growthClock)?clamp(data.growthClock,0,2):0;
+      this.deliveredAtDawn=Number.isFinite(data.deliveredAtDawn)?clamp(data.deliveredAtDawn,0,this.delivered):this.delivered;
       this.spawnFraction=new Map(Array.isArray(data.spawnFraction)?data.spawnFraction.filter(row=>
         Array.isArray(row)&&typeof row[0]==='string'&&/^[a-z]+>[a-z]+$/.test(row[0])
         &&Number.isFinite(row[1])&&row[1]>=0&&row[1]<1).slice(0,50):[]);
