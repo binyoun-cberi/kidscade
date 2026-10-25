@@ -21,8 +21,8 @@ test('60개의 기존 규칙 퍼즐을 유지하면서 53개를 통로와 방 �
  assert.ok(audit.meanBranches>=50);
  assert.equal(audit.details.filter(d=>d.wordAccess===0).length,0);
  const valid=E.Validator.validateAll(levels,DATA);
- assert.deepEqual(valid.errors,[]);
- assert.deepEqual(valid.warnings,[]);
+ assert.equal(valid.errors.length,0,valid.errors.slice(0,3).join(' / '));
+ assert.equal(valid.warnings.length,0,valid.warnings.slice(0,3).join(' / '));
  for(const l of levels){
   const coords=[...l.objects,...l.words].map(e=>e.x+','+e.y);
   assert.equal(new Set(coords).size,coords.length,'objects cannot overlap at start: '+l.title);
