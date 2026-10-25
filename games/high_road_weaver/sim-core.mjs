@@ -493,9 +493,11 @@ export class RoadWeaver {
       }
     }
     const usable=Math.max(1,Math.floor(next.edge.lanes/2));
-    if(car.lane>=usable)return false; // 병합 차로에서 안전한 차선 변경을 끝내야 한다.
-    const lane=car.lane;
-    return !this.cars.some(other=>other!==car&&other.edge===next.edge&&other.dir===next.dir&&other.lane===lane&&other.s<23);
+    // 순환로는 종종 길이가 2~8px에 불과해 이동 중에 차선을 바꿀 시간이 없다.
+    // 출구에서 차로를 줄이되, 다음 도로의 실제 점유를 검사해 안전하게 합류한다.
+    if(car.lane>=usable&&car.edge.kind!=='roundabout')return false;
+    const lane=car.edge.kind==='roundabout'?Math.min(car.lane,usable-1):car.lane;
+    return !this.cars.some(other=>other!==car&&other.edge===next.edge&&other.dir===next.dir&&other.lane===lane&&other.s<(next.edge.kind==='roundabout'?14:23));
   }
   // 이웃 차선의 앞·뒤 공간을 모두 보고 이동한다. 급하게 다른 자동차 사이로 끼어들지 않는다.
   changeLane(car,dt){
@@ -666,6 +668,12 @@ export class RoadWeaver {
          y:inv*inv*start.y+2*inv*t*center.y+t*t*end.y};
       angle=Math.atan2(inv*(center.y-start.y)+t*(end.y-center.y),
                        inv*(center.x-start.x)+t*(end.x-center.x));
+    }
+    // 짧게 잘린 원형 도로에서도 차량 머리가 매 조각마다 꺾이지 않도록
+    // 전체 회전교차로의 접선 방향으로 각도를 일관되게 계산한다.
+    if(c.edge.kind==='roundabout'){
+      const circle=this.roundabouts.find(r=>r.id===c.edge.roadId);
+      if(circle)angle=wrapAngle(Math.atan2(p.y-circle.y,p.x-circle.x)+Math.PI/2);
     }
     const laneOffset=(5+((c.laneVisual??c.lane)+.5)*10);
     // 주행 방향을 기준으로 차선 오른쪽에 자동차를 배치한다.
