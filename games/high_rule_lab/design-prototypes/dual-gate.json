@@ -1,7 +1,6 @@
 {
-  "status": "design-prototype-not-in-catalog",
+  "status": "design-only-not-in-live-levels",
   "id": "dual-gate",
-  "difficultyTarget": "advanced",
   "level": {
     "title": "두 번 열리는 문",
     "chapter": "2차 설계 시제품",
@@ -22,25 +21,25 @@
       },
       {
         "kind": "object",
-        "type": "wall",
+        "type": "ice",
         "x": 5,
         "y": 0
       },
       {
         "kind": "object",
-        "type": "door",
+        "type": "ice",
         "x": 9,
         "y": 0
       },
       {
         "kind": "object",
-        "type": "wall",
+        "type": "ice",
         "x": 5,
         "y": 1
       },
       {
         "kind": "object",
-        "type": "door",
+        "type": "ice",
         "x": 9,
         "y": 1
       },
@@ -58,85 +57,85 @@
       },
       {
         "kind": "object",
-        "type": "wall",
+        "type": "ice",
         "x": 5,
         "y": 3
       },
       {
         "kind": "object",
-        "type": "door",
+        "type": "ice",
         "x": 9,
         "y": 3
       },
       {
         "kind": "object",
-        "type": "wall",
+        "type": "ice",
         "x": 5,
         "y": 4
       },
       {
         "kind": "object",
-        "type": "door",
+        "type": "ice",
         "x": 9,
         "y": 4
       },
       {
         "kind": "object",
-        "type": "wall",
+        "type": "ice",
         "x": 5,
         "y": 5
       },
       {
         "kind": "object",
-        "type": "door",
+        "type": "ice",
         "x": 9,
         "y": 5
       },
       {
         "kind": "object",
-        "type": "wall",
+        "type": "ice",
         "x": 5,
         "y": 6
       },
       {
         "kind": "object",
-        "type": "door",
+        "type": "ice",
         "x": 9,
         "y": 6
       },
       {
         "kind": "object",
-        "type": "wall",
+        "type": "ice",
         "x": 5,
         "y": 7
       },
       {
         "kind": "object",
-        "type": "door",
+        "type": "ice",
         "x": 9,
         "y": 7
       },
       {
         "kind": "object",
-        "type": "wall",
+        "type": "ice",
         "x": 5,
         "y": 8
       },
       {
         "kind": "object",
-        "type": "door",
+        "type": "ice",
         "x": 9,
         "y": 8
       },
       {
         "kind": "object",
-        "type": "wall",
+        "type": "ice",
         "x": 5,
         "y": 9
       },
       {
         "kind": "object",
-        "type": "door",
+        "type": "ice",
         "x": 9,
         "y": 9
       }
@@ -213,6 +212,24 @@
         "token": "P:STOP",
         "x": 7,
         "y": 8
+      },
+      {
+        "kind": "word",
+        "token": "N:ice",
+        "x": 11,
+        "y": 6
+      },
+      {
+        "kind": "word",
+        "token": "EQ",
+        "x": 11,
+        "y": 7
+      },
+      {
+        "kind": "word",
+        "token": "P:STOP",
+        "x": 11,
+        "y": 8
       }
     ],
     "note": "첫 번째 벽을 열고, 두 번째 방에서 문까지 다시 열어야 해요.",
@@ -223,19 +240,22 @@
     ]
   },
   "solution": {
-    "moves": "RRRDDDDDDLURRRDRLUUURRRRUUU",
-    "count": 27,
-    "ruleEdits": [
+    "moves": "RRDDDDDRUUUUURRDDDDDDRLUUURRUUURR",
+    "count": 33,
+    "events": [
       {
-        "atMove": 11,
-        "kind": "rule-broken",
-        "subject": "wall"
+        "afterMove": 7,
+        "kind": "remove-stop",
+        "noun": "wall",
+        "iceRemainsStop": true
       },
       {
-        "atMove": 16,
-        "kind": "rule-broken",
-        "subject": "door"
+        "afterMove": 22,
+        "kind": "remove-stop",
+        "noun": "door",
+        "iceRemainsStop": true
       }
     ]
-  }
+  },
+  "goal": "Requires rule edits in distant workbenches; permanent ice barriers force returning to a distinct gate."
 }
