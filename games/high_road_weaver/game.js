@@ -439,10 +439,9 @@ function updateHud(now){
   const weekday=['월','화','수','목','금','토','일'][(sim.day-1)%7];
   $('day').textContent=sim.day+'일째 · '+weekday+'요일';
   $('budget').textContent=sim.budget;
-  const connected=Boolean(sim.route(sim.towns[0],sim.towns[1]));
-  const traffic=sim.waiting>38?'심한 정체':sim.waiting>12?'혼잡':sim.waiting>3?'서행':'원활';
-  $('flow').textContent=connected?traffic:'연결 전';
-  $('queueState').textContent=sim.waiting>20?'대기 길어짐':sim.waiting>4?'대기 발생':'한산';
+  const traffic=sim.trafficOverview();
+  $('flow').textContent=traffic.flow;
+  $('queueState').textContent=traffic.queue;
   const peak=sim.peak;
   $('timePhase').textContent=peak==='출근'?'출근':peak==='퇴근'?'퇴근':hr>=6&&hr<18?'낮':'밤';
   $('timePhase').style.background=peak==='일상'?'#dbead9':'#f5dba3';
