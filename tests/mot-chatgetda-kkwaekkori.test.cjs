@@ -26,7 +26,7 @@ test('game loads local Three.js and has touch controls, audio clues, and hints',
   assert.match(html,/three-r160\/three\.module\.js/);
   assert.match(html,/kidscade-game-sdk\.js/);
   assert.match(html,/data-game-id="tod_mot_chatgetda_kkwaekkori"/);
-  for(const id of ['town','targetPreview','rotateLeft','rotateRight','seeThrough','hintBtn','zoomIn','zoomOut','finish','start','challengeStart','challengeHud','challengeTimer']) assert.match(html,new RegExp(`id="${id}"`));
+  for(const id of ['town','targetPreview','rotateLeft','rotateRight','seeThrough','hintBtn','zoomIn','zoomOut','finish','start','challengeStart','challengeHud','challengeTimer','compactMission']) assert.match(html,new RegExp(`id="${id}"`));
   for(const control of ['pointerdown','pointermove','pointerup','pointercancel','wheel','speechSynthesis','localStorage','GLTFLoader','SkeletonUtils']) assert.ok(code.includes(control),control);
   assert.match(css,/touch-action:none/);
 });
