@@ -749,10 +749,13 @@ window.addEventListener('resize',resize);
 
 function animate(now){
   requestAnimationFrame(animate);
-  const dt=Math.min(.05,Math.max(0,(now-lastFrame)/1000));lastFrame=now;
+  // Wall-clock time must not slow down when large 3D towns run below 20 FPS.
+  // Scene updates are capped separately to avoid teleporting after inactive tabs.
+  const realDt=Math.max(0,(now-lastFrame)/1000);
+  const dt=Math.min(.25,realDt);lastFrame=now;
   if(town&&$('start').classList.contains('hidden')&&active){
     if(mode==='challenge'&&!celebration){
-      timeRemaining=Math.max(0,timeRemaining-dt);
+      timeRemaining=Math.max(0,timeRemaining-realDt);
       showChallengeHud();
       if(timeRemaining<=0){finishChallenge();renderer.render(scene,camera);previewRenderer.render(previewScene,previewCamera);return;}
     }
@@ -761,7 +764,7 @@ function animate(now){
     const target=getTarget();
     if(previewActor&&target){animateActivity(previewActor,target);previewMixer?.setTime(target.elapsed);}
     if(celebration){
-      celebration.remaining-=dt;
+      celebration.remaining-=realDt;
       if(celebration.remaining<=0){celebration=null;currentTarget=found.length;if(currentTarget>=town.order.length)finishRound();else setClue();}
     }
   }
