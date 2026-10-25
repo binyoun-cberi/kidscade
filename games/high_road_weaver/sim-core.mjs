@@ -566,7 +566,10 @@ export class RoadWeaver {
         const movement=this.movement(c);
         const records=(this.junctionReservations.get(node)||[]).filter(r=>r.until>this.tickTime);
         // 같은 차로를 뒤따르는 차는 다음 도로의 실제 안전간격 규칙으로 보호한다.
-        records.push({...movement,until:this.tickTime+.34});
+        // 도시 중심은 여러 도로의 환승점이어서 지나치게 긴 일괄 봉쇄가 도시 전체를 마비시킨다.
+        // 같은 틱의 상충 진입만 막고, 다음 도로의 실제 차간 거리로 추가 보호한다.
+        const cityNode=this.towns.some(t=>node===nodeKey(t,0));
+        records.push({...movement,until:this.tickTime+(cityNode?.08:.28)});
         this.junctionReservations.set(node,records);
       }
       c.step++;c.edge=next.edge;c.dir=next.dir;
