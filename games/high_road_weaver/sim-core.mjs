@@ -134,6 +134,7 @@ export class RoadWeaver {
     let near=null,d=38;
     for(const n of this.nodes.values()){
       if(n.level!==0)continue;
+      if(this.roundabouts.some(c=>len(n,c)<c.radius+8))continue;
       if((this.adj.get(n.id)||[]).length<3)continue;
       const delta=len(p,n);if(delta<d){near=n;d=delta;}
     }
@@ -168,6 +169,7 @@ export class RoadWeaver {
     let nearest=null,d=39;
     for(const n of this.nodes.values()){
       const count=(this.adj.get(n.id)||[]).length;
+      if(n.level!==0||this.roundabouts.some(c=>len(n,c)<c.radius+8))continue;
       if(count<3)continue;
       const near=len(p,n);if(near<d){d=near;nearest=n;}
     }
@@ -260,7 +262,7 @@ export class RoadWeaver {
         if(b.d-a.d<.1)continue;
         const path=slicePath(r.points,a.d,b.d);
         if(isSurface(r)&&this.roundabouts.some(c=>insideCircle(pointOnPath(path,roadLength(path)/2),c)))continue;
-        const start=levelAt(r,j===1),end=levelAt(r,j===marks.length-1?false:true);
+        const start=levelAt(r,true),end=levelAt(r,false);
         // 램프의 끝점 이외에서는 높이가 바뀌지 않는다.
         const l0=r.kind==='ramp'?(j===1?0:1):start;
         const l1=r.kind==='ramp'?1:end;
@@ -339,7 +341,9 @@ export class RoadWeaver {
     const node=car.dir===1?car.edge.b:car.edge.a;
     // 진입 차량은 로터리 안을 먼저 달리고 있는 차에 양보한다.
     if(next.edge.kind==='roundabout'&&car.edge.kind!=='roundabout'){
-      if(this.cars.some(other=>other!==car&&other.edge===next.edge&&other.s>Math.max(0,next.edge.length-22)))return false;
+      if(this.cars.some(other=>other!==car&&other.edge.kind==='roundabout'&&other.dir===1&&(
+        (other.edge===next.edge&&other.s<27)||(other.edge.b===node&&other.edge.length-other.s<26)
+      )))return false;
     }
     if(this.lights.has(node)){
       const angle=pointOnPath(car.edge.points,car.dir===1?car.edge.length:0).angle;
