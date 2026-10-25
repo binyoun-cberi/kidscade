@@ -81,3 +81,52 @@ test('browser entry wires hint, undo, markers and keyboard support', () => {
   assert.ok(script);
   assert.doesNotThrow(() => new Function(script[1]), 'inline game code syntax');
 });
+
+test('UI-level hint, pour animation state, and undo stay consistent', async () => {
+  const html = fs.readFileSync(path.join(BASE, '연구소 물 정렬 퍼즐.html'), 'utf8');
+  const script = html.match(/<script>\s*([\s\S]*?)<\/script>/)[1];
+  class MockNode {
+    constructor() {
+      this.children = [];
+      this.className = '';
+      this.attrs = {};
+      this.style = { setProperty(key, value) { this[key] = value; } };
+      this.classList = { add() {}, remove() {}, contains() { return false; } };
+    }
+    appendChild(node) { this.children.push(node); return node; }
+    setAttribute(k, v) { this.attrs[k] = v; }
+    remove() {}
+    animate() { return { onfinish: null }; }
+    getBoundingClientRect() { return { left: 20, top: 120, width: 72, height: 208, bottom: 328 }; }
+    querySelectorAll(sel) {
+      return this.children.filter(el => sel === '.water-layer' && el.className === 'water-layer');
+    }
+    set innerHTML(v) { this.children = []; this.html = v; }
+    get innerHTML() { return this.html; }
+  }
+  const nodes = new Map();
+  function getNode(id) { if (!nodes.has(id)) nodes.set(id, new MockNode()); return nodes.get(id); }
+  const document = {
+    body: new MockNode(), head: new MockNode(), getElementById: getNode,
+    createElement: () => new MockNode(), querySelector: getNode,
+  };
+  const app = new Function('document', 'window', 'localStorage', 'LabWaterSortCore',
+    'requestAnimationFrame', 'setTimeout', 'setInterval', 'clearInterval',
+    script + '\nreturn {initStage,handleBeakerClick,undoMove,requestHint,getBoard:()=>beakers,' +
+    'getUndo:()=>undoStack,setStage:n=>{stage=n},getHint:()=>[selectedBeakerIndex,hintTarget]}')(
+      document, {}, { getItem: () => null, setItem() {} }, core,
+      fn => fn(), fn => fn(), () => 1, () => {});
+  for (const stage of [1, 30, 60, 100]) {
+    app.setStage(stage);
+    app.initStage();
+    const original = core.clone(app.getBoard());
+    const first = core.generate(stage).solution[0];
+    app.requestHint();
+    assert.deepEqual(app.getHint(), first, 'hint selects valid pair at stage ' + stage);
+    await app.handleBeakerClick(first[1]);
+    assert.equal(app.getUndo().length, 1, 'one pour recorded at stage ' + stage);
+    assert.notDeepEqual(app.getBoard(), original, 'pour updates board at stage ' + stage);
+    app.undoMove();
+    assert.deepEqual(app.getBoard(), original, 'undo exactly restores stage ' + stage);
+  }
+});
