@@ -4,6 +4,8 @@
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),http=require('node:http'),cp=require('node:child_process'),assert=require('node:assert/strict');
 const {once}=require('node:events');
 const ROOT=path.resolve(__dirname,'..');
+const SHOTS=path.resolve(ROOT,'artifacts/takoyaki-browser-audit');
+fs.mkdirSync(SHOTS,{recursive:true});
 const GAME='/games/job_takoyaki_simulator/빙글빙글 타코야키집.html';
 const CHROME=['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'].find(f=>fs.existsSync(f));
 if(!CHROME)throw Error('Chrome is required');
@@ -93,6 +95,7 @@ let chrome,ws;
    assert.equal(outcome.ready,outcome.pieces,'food was not ready before serving '+JSON.stringify(outcome));
    await pause(350);
    const before=await send('Page.captureScreenshot',{format:'jpeg',quality:57,captureBeyondViewport:false});
+   fs.writeFileSync(path.join(SHOTS,config.name+'-ready.jpg'),Buffer.from(before.data,'base64'));
    console.log('TAKOYAKI_IMAGE_'+config.name.replace(/-/g,'_')+'_ready='+before.data);
    await evalJS('__takoyakiAudit.actionPack();true');
    const served=await evalJS('(()=>{const g=__takoyakiAudit.game;return {served:g.dayServed,score:g.dayScore,feedback:document.getElementById("qualityResult").textContent}})()');
@@ -101,6 +104,7 @@ let chrome,ws;
    await pause(350);
    const image=await send('Page.captureScreenshot',{format:'jpeg',quality:50,captureBeyondViewport:false});
    console.log('TAKOYAKI_AUDIT '+JSON.stringify({config:config.name,geometry,outcome,served,errors:errors.slice(-3),requestErrors:requests.slice(-4)}));
+   fs.writeFileSync(path.join(SHOTS,config.name+'-served.jpg'),Buffer.from(image.data,'base64'));
    console.log('TAKOYAKI_IMAGE_'+config.name.replace(/-/g,'_')+'='+image.data);
  }
  // Visit every day sequentially and complete one full order with exact ingredients.
