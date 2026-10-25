@@ -1,4 +1,5 @@
 import { HISTORY_FIGURE_FACTS } from './history-live-figure-facts.mjs';
+import { IMPORTED_HISTORY_QUIZ } from './history-timebattle-imported-quiz.mjs';
 import { HISTORY_HERITAGE_FACTS } from './history-live-heritage-facts.mjs';
 import { HERITAGE_MEDIA } from './history-heritage-media.mjs';
 const CORE_FACTS = [
@@ -1360,10 +1361,16 @@ for(const heritage of HISTORY_HERITAGE_FACTS){
   knownHeritage.add(heritage.term);
 }
 
+// Append new worksheet facts without changing existing fact IDs or question indices.
+for(const row of IMPORTED_HISTORY_QUIZ) CORE_FACTS.push({
+  era:row.era,type:row.type,term:row.answer,clue:row.q,imported:true,
+  question:row.q,answer:row.answer,aliases:row.aliases||[],source:row.source,sourceId:row.id
+});
+
 const HERITAGE_TYPES = new Set(['유물','문화유산','역사서','법전','지도','과학']);
 export function isHeritageFact(fact){return Boolean(fact&&!fact.direct&&HERITAGE_TYPES.has(fact.type));}
 function matchesFactType(fact,factType){
-  return !factType || (factType==='heritage'?isHeritageFact(fact):fact.type===factType);
+  return !factType || (factType==='heritage'?isHeritageFact(fact):factType==='short'?(fact.imported||!fact.direct):fact.type===factType);
 }
 
 export const ERA_ORDER = Object.freeze(['선사','고조선','삼국','남북국','고려','조선 전기','조선 후기','개항기','대한제국','국권 피탈','일제강점기','광복 이후','6·25 전쟁']);
@@ -1566,6 +1573,8 @@ function relationQuestions(fact,index){
 function buildBank() {
   const out = [];
   CORE_FACTS.forEach((fact, index) => {
+    // All imported questions are appended after legacy questions to preserve indexes.
+    if(fact.imported)return;
     if(fact.direct){
       out.push({
         id:`direct-${index}`,era:fact.era,difficulty:2,
@@ -1615,6 +1624,49 @@ function buildBank() {
       e:`${fact.term}: ${fact.clue}`,sourceFact:index,family:'heritage-identify',
       ...(HERITAGE_MEDIA[fact.term]?{media:HERITAGE_MEDIA[fact.term]}:{})
     });
+  });
+
+  // Preserve the older bank and all existing heritage-photo question indexes.
+  const normalizeAnswer=value=>String(value??'').normalize('NFKC').replace(/[\\s·.\-]/g,'').toLowerCase();
+  const imports=CORE_FACTS.map((fact,index)=>({fact,index})).filter(x=>x.fact.imported);
+  for(const {fact,index} of imports){
+    const target=normalizeAnswer(fact.answer),seen=new Set([target]);
+    const distractors=[];
+    const groups=[
+      imports.filter(x=>x.fact.era===fact.era&&x.fact.type===fact.type),
+      imports.filter(x=>x.fact.type===fact.type),
+      imports.filter(x=>x.fact.era===fact.era),
+      imports
+    ];
+    for(const group of groups){
+      const candidates=group.filter(x=>x.index!==index).sort((a,b)=>
+        hashText(fact.sourceId+':'+a.fact.sourceId)-hashText(fact.sourceId+':'+b.fact.sourceId));
+      for(const item of candidates){
+        const name=item.fact.answer,key=normalizeAnswer(name);
+        if(!key||seen.has(key))continue;
+        seen.add(key);distractors.push(name);
+        if(distractors.length>=3)break;
+      }
+      if(distractors.length>=3)break;
+    }
+    if(distractors.length!==3)continue;
+    out.push({
+      id:'worksheet-'+fact.sourceId,era:fact.era,difficulty:2,
+      q:fact.question,o:[fact.answer,...distractors],a:0,
+      e:'정답은 '+fact.answer+'입니다.',sourceFact:index,family:'imported',
+      acceptedAnswers:[fact.answer,...fact.aliases]
+    });
+  }
+  // Explicit short-answer variants: never infer an answer from a choice's position.
+  // Keep four internally stored choices for compatibility; the UI never shows them.
+  const shortOrigins=new Map();
+  for(const q of out){
+    if(!['identify','imported'].includes(q.family)||shortOrigins.has(q.sourceFact))continue;
+    shortOrigins.set(q.sourceFact,q);
+  }
+  for(const q of shortOrigins.values())out.push({
+    ...q,id:'short-'+q.id,family:'short',difficulty:Math.max(2,q.difficulty||2),
+    acceptedAnswers:q.acceptedAnswers||[q.o[q.a]]
   });
   return out;
 }
@@ -1760,9 +1812,10 @@ function chronologicalSourceFactIndexes(count = 15, eras = ERA_ORDER, factType =
 
 function candidatesForFact(factIndex,questionMode,position,random){
   const all=QUESTION_BANK.filter(q=>q.sourceFact===factIndex);
-  const ox=all.filter(q=>q.family==='ox'),choice=all.filter(q=>q.family!=='ox');
+  const ox=all.filter(q=>q.family==='ox'),short=all.filter(q=>q.family==='short'),choice=all.filter(q=>q.family!=='ox'&&q.family!=='short');
   if(questionMode==='people')return all.filter(q=>q.family==='identify');
   if(questionMode==='heritage')return all.filter(q=>q.family==='heritage-identify');
+  if(questionMode==='short')return short;
   if(questionMode==='ox')return ox.length?ox:choice;
   if(questionMode==='mixed'){
     const useOx=position%2===1;
@@ -1788,7 +1841,7 @@ export function pickHistoryQuestions(count = 15, random = Math.random, orderMode
   let factIndexes;
 
   if(questionMode==='heritage'&&!hasHistoricalHeritage(selectedEras,wanted))return [];
-  const factType=questionMode==='people'?'인물':questionMode==='heritage'?'heritage':null;
+  const factType=questionMode==='people'?'인물':questionMode==='heritage'?'heritage':questionMode==='short'?'short':null;
   if (orderMode === 'chronological') {
     factIndexes = chronologicalSourceFactIndexes(wanted,selectedEras,factType);
   } else {
@@ -1805,7 +1858,7 @@ export function pickHistoryQuestions(count = 15, random = Math.random, orderMode
 }
 
 export function chronologicalQuestionIndexes(count = 15, questionMode = 'choice', eras = ERA_ORDER) {
-  return chronologicalSourceFactIndexes(count,eras,questionMode==='people'?'인물':questionMode==='heritage'?'heritage':null).map((factIndex,position)=>{
+  return chronologicalSourceFactIndexes(count,eras,questionMode==='people'?'인물':questionMode==='heritage'?'heritage':questionMode==='short'?'short':null).map((factIndex,position)=>{
     const candidates=candidatesForFact(factIndex,questionMode,position,Math.random).map(q=>QUESTION_BANK.indexOf(q));
     return candidates[(position*3+factIndex)%candidates.length];
   });
