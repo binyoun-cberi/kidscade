@@ -145,24 +145,39 @@
     }
   }
 
+  const PORT_INSIGHTS = Object.freeze({
+    byeokrando:'고려청자·인삼·고려지를 찾아온 상인이 많습니다.',
+    donghae:'어업과 소금 교역이 중심인 작은 연안항입니다.',
+    namhae:'고려의 남쪽 바닷길이 이어지는 중계항입니다.',
+    dengzhou:'철과 북방 물산이 드나드는 송의 북방항입니다.',
+    mingzhou:'비단과 차가 모이는 송의 국제항입니다.',
+    quanzhou:'향신료 등 먼 바다의 물산이 들어오는 항구입니다.',
+    hakata:'공예품과 유황 등이 거래되는 규슈의 항구입니다.',
+    tsushima:'목재와 연안 물자가 오가는 작은 중계항입니다.',
+    liaodong:'철·가죽·말과 육상 운송이 눈에 띄는 항구입니다.',
+    nuzhen:'모피·약초·말이 모이는 북방 교역장입니다.'
+  });
+
   function reply(topic) {
     const s = gameState();
     const carried = Object.entries(cargo(s)).filter(([, qty]) => Number(qty) > 0)
       .slice(0, 3).map(([id]) => core.goodsName(goods(), id));
     const newestTrade = [...journal.entries].reverse().find(x => x.kind === 'trade');
     const newestRumor = [...journal.entries].reverse().find(x => x.kind === 'rumor');
+    const localHint = PORT_INSIGHTS[s?.place] || '이곳의 교역전에서 거래 조건을 살펴보세요.';
+    const nativeRumor = core.nativeRumor(s);
     if (topic === 'trade') {
       return carried.length
-        ? '“짐칸에 ' + carried.join(', ') + '이 있군요. 이 항구의 실제 가격을 확인해 보세요. 항해에 필요한 식량과 시간도 장사 밑천이지요.”'
-        : '“지금은 짐칸이 비어 있군요. 여기서 싼 물품이 다른 항구에서도 비싸게 팔리는지는 직접 비교해야 합니다.”';
+        ? '“' + localHint + '\\n짐칸에 ' + carried.join(', ') + '이 있군요. 현지 가격과 항해에 드는 식량을 함께 따져보세요.”'
+        : '“' + localHint + '\\n지금은 짐칸이 비어 있으니 가격을 비교한 뒤 화물을 골라보세요.”';
     }
     if (topic === 'memory') {
       return newestTrade
         ? '“마지막 거래는 ' + newestTrade.port + '에서 ' + newestTrade.name + ' ' + newestTrade.qty + '개를 ' + (newestTrade.direction === 'sell' ? '판 것' : '산 것') + '이지요. 항해일지를 펼쳐 보세요.”'
         : '“아직 장부에 남은 거래가 없군요. 매입이나 판매가 실제로 이루어지면 기억해 두겠습니다.”';
     }
-    return newestRumor
-      ? '“얼마 전 객주에서 이렇게 들었지요.\n‘' + newestRumor.text + '’\n다만 지금도 맞는지는 교역전의 가격으로 확인해야 합니다.”'
+    return (newestRumor || nativeRumor)
+      ? '“얼마 전 객주에서 이렇게 들었지요.\n‘' + (newestRumor?.text || nativeRumor) + '’\n다만 지금도 맞는지는 교역전의 가격으로 확인해야 합니다.”'
       : '“소문을 들었다면 값이 변했는지 교역전에서 살펴보세요. 소문은 정보일 뿐, 이익을 보장하지는 않으니까요.”';
   }
   function renderTalk() {
@@ -229,7 +244,7 @@
         if (direction === 'buy' && change.delta <= 0) continue;
         if (direction === 'sell' && change.delta >= 0) continue;
         const name = core.goodsName(goods(), change.id);
-        if (visibleName && visibleName !== name) continue;
+        if (visibleName && changes.length > 1 && !visibleName.includes(name)) continue;
         record({ kind:'trade', port:location, direction, name, qty:Math.abs(change.delta) });
       }
     }, 120);
