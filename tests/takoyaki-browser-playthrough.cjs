@@ -71,6 +71,8 @@ let chrome,ws;
    assert.ok(geometry.bottom.x>=0&&geometry.bottom.right<=config.w+2,'pack button clipped horizontally');
    assert.ok(geometry.sauce.visible,'sauce selector not visible');
    assert.ok(geometry.scrollWidth<=config.w+2,'horizontal overflow');
+   assert.ok(geometry.stage.bottom<=config.h+2,'stage extends below viewport');
+   assert.ok(geometry.orders.x>=0&&geometry.orders.right<=config.w,'order ticket cut off');
    const outcome=await evalJS(`(()=>{
      const a=__takoyakiAudit,g=a.game,order=a.activeOrder();
      for(let n=0;n<order.pieces;n++){
@@ -86,14 +88,19 @@ let chrome,ws;
          for(const type of ['sauce','mayo','katsu','aonori'])if(order[type])a.actionTopping(type);
        }
      }
-     if(g.day>=4)a.actionPack();
-     return {day:g.day,pieces:order.pieces,served:g.dayServed,score:g.dayScore,remaining:g.orders.length,feedback:document.getElementById('qualityResult').textContent}
+     return {day:g.day,pieces:order.pieces,ready:g.slots.filter(s=>s.finished&&s.orderId===order.id).length};
    })()`);
-   assert.equal(outcome.served,1,'order was not completed: '+JSON.stringify(outcome));
-   assert.ok(outcome.score>0,'score not credited');
-   await pause(450);
+   assert.equal(outcome.ready,outcome.pieces,'food was not ready before serving '+JSON.stringify(outcome));
+   await pause(350);
+   const before=await send('Page.captureScreenshot',{format:'jpeg',quality:57,captureBeyondViewport:false});
+   console.log('TAKOYAKI_IMAGE_'+config.name.replace(/-/g,'_')+'_ready='+before.data);
+   await evalJS('__takoyakiAudit.actionPack();true');
+   const served=await evalJS('(()=>{const g=__takoyakiAudit.game;return {served:g.dayServed,score:g.dayScore,feedback:document.getElementById("qualityResult").textContent}})()');
+   assert.equal(served.served,1,'order was not completed: '+JSON.stringify(served));
+   assert.ok(served.score>0,'score not credited');
+   await pause(350);
    const image=await send('Page.captureScreenshot',{format:'jpeg',quality:50,captureBeyondViewport:false});
-   console.log('TAKOYAKI_AUDIT '+JSON.stringify({config:config.name,geometry,outcome,errors:errors.slice(-3),requestErrors:requests.slice(-4)}));
+   console.log('TAKOYAKI_AUDIT '+JSON.stringify({config:config.name,geometry,outcome,served,errors:errors.slice(-3),requestErrors:requests.slice(-4)}));
    console.log('TAKOYAKI_IMAGE_'+config.name.replace(/-/g,'_')+'='+image.data);
  }
  // Visit every day sequentially and complete one full order with exact ingredients.
