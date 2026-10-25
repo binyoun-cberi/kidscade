@@ -80,8 +80,13 @@ function setLanes(n){
 const drawingMode=()=>mode==='road'||mode==='overpass'||mode==='ramp';
 function finishBuild(points){
   const kind=mode==='overpass'?'bridge':mode==='ramp'?'ramp':'ground';
+  const crossings=sim.previewCrossings(points,kind);
   const result=sim.addRoad(points,kind==='ramp'?2:lanes,kind);
-  if(result.ok){notice((kind==='bridge'?'고가도로':kind==='ramp'?'진출입로':'도로')+' 완성! 자재 '+result.cost+'을 사용했어요.');save();}
+  if(result.ok){
+    const hint=crossings.length?' 교차로가 '+crossings.length+'곳 생겼어요. 차량 흐름을 살펴보세요.':'';
+    notice((kind==='bridge'?'고가도로':kind==='ramp'?'진출입로':'도로')+' 완성! 자재 '+result.cost+'을 사용했어요.'+hint);
+    save();
+  }
   else notice(result.reason);
 }
 function applyEdit(p){
@@ -91,7 +96,7 @@ function applyEdit(p){
   if(mode==='roundabout')result=sim.addRoundabout(p);
   if(mode==='island')result=sim.addTrafficIsland(p);
   if(result){
-    notice(result.ok?(mode==='widen'?'차로를 넓혔어요.':mode==='light'?'신호등을 바꿨어요.':mode==='island'?'교통섬과 우회전 전용 차로가 생겼어요.':'회전교차로를 만들었어요. 차량이 원형 차로를 따라 이동해요.'):result.reason);
+    notice(result.ok?(mode==='widen'?'차로를 넓혔어요.':mode==='light'?'신호등을 바꿨어요.':mode==='island'?'교통섬과 우회전 전용 차로가 생겼어요.':result.lanes===4?'넓은 회전교차로를 만들었어요. 차가 계속 몰리면 우회도로도 고려해 보세요.':'회전교차로를 만들었어요. 차량이 원형 차로를 따라 이동해요.'):result.reason);
     if(result.ok)save();
   }
 }
@@ -215,6 +220,8 @@ function drawRoad(road,alpha=1){
   drawPath(pts);ctx.strokeStyle=bridge?'#637483':ramp?'#737f88':circle?'#5b6965':slip?'#75716b':'#606b70';ctx.lineWidth=w;ctx.stroke();
   if(circle){
     offsetLine(pts,-w/2+3,'#d0dbd1',1.8,[6,8]);
+    // 넓은 회전교차로의 두 순환 차로가 시각적으로도 구분되도록 차선 경계선을 긋는다.
+    if(road.lanes===4)offsetLine(pts,0,'#d7e1d8',1.5,[5,7]);
     ctx.restore();return;
   }
   drawPath(pts);ctx.strokeStyle=bridge?'#f9ecbb':'#f4e3a2';ctx.lineWidth=2.2;ctx.setLineDash(ramp?[5,9]:[12,10]);ctx.stroke();ctx.setLineDash([]);
@@ -327,8 +334,12 @@ function drawCity(t,index){
   ctx.font='bold 15px system-ui';
   const w=Math.max(113,ctx.measureText(t.name).width+28);
   const labelY=cy>575?cy-116:cy+83;
-  rounded(cx-w/2,labelY,w,34,10,'rgba(255,255,251,.96)');
-  ctx.fillStyle='#254b3b';ctx.fillText(t.name,cx,labelY+17);
+  // 지도를 전체 보기로 표시하는 휴대전화에서도 지구 이름이 읽히도록 라벨만 확대한다.
+  const labelScale=viewW<=600?Math.min(1.75,Math.max(1,0.64/scale)):1;
+  ctx.save();ctx.translate(cx,labelY+17);ctx.scale(labelScale,labelScale);
+  rounded(-w/2,-17,w,34,10,'rgba(255,255,251,.96)');
+  ctx.fillStyle='#254b3b';ctx.fillText(t.name,0,0);
+  ctx.restore();
   ctx.restore();
 }
 function drawParkedCar(x,y,name,angle=0){
@@ -356,7 +367,7 @@ function drawDistrictLife(){
 function drawRoundaboutCenters(){
   for(const circle of sim.roundabouts){
     ctx.save();
-    ctx.beginPath();ctx.arc(circle.x,circle.y,circle.radius-14,0,Math.PI*2);
+    ctx.beginPath();ctx.arc(circle.x,circle.y,circle.radius-(circle.lanes===4?29:14),0,Math.PI*2);
     ctx.fillStyle='#95c78b';ctx.fill();ctx.strokeStyle='#cfddd0';ctx.lineWidth=2;ctx.stroke();
     ctx.beginPath();ctx.arc(circle.x,circle.y,11,0,Math.PI*2);ctx.fillStyle='#70a875';ctx.fill();
     ctx.strokeStyle='rgba(250,255,245,.9)';ctx.lineWidth=2;
@@ -382,11 +393,28 @@ function drawSignals(){
     }
   }
 }
+function drawCongestion(){
+  // 플레이어에게 교통량 숫자를 보여주는 대신 실제 느린 차가 모인 자리만 시각화한다.
+  // 막 출발한 차는 제외해 도시 출입구 전체가 계속 붉게 보이지 않도록 한다.
+  ctx.save();
+  for(const c of sim.cars){
+    if(c.s<26||c.speed>=c.maxSpeed*.32)continue;
+    const p=sim.sampleCar(c);
+    const radius=c.speed<4?17:12;
+    ctx.beginPath();ctx.arc(p.x,p.y,radius,0,Math.PI*2);
+    ctx.fillStyle=c.speed<4?'rgba(219,101,75,.13)':'rgba(230,160,66,.09)';
+    ctx.fill();
+  }
+  ctx.restore();
+}
 function drawCar(c){
   const p=sim.sampleCar(c),name=c.kind==='tractor'?'tractor':c.kind==='bus'?'bus':
     c.kind==='truck'?(Number(c.id.slice(1))%2?'truck':'truckdelivery'):
     ['sedan','sedan-blue','taxi','rounded-green','suv','van-small'][Number(c.id.slice(1))%6];
-  const img=sprites[name],long=['truck','tractor','bus'].includes(c.kind),w=long?14:12,h=long?26:21;
+  const img=sprites[name],long=['truck','tractor','bus'].includes(c.kind);
+  // 한눈에 보는 작은 화면에서는 자동차가 4px짜리 점으로 사라지지 않게 표시 크기를 보정한다.
+  const mobileScale=viewW<=600?Math.min(1.55,Math.max(1,.62/scale)):1;
+  const w=(long?14:12)*mobileScale,h=(long?26:21)*mobileScale;
   ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle+Math.PI/2);
   ctx.fillStyle='rgba(32,45,37,.28)';ctx.beginPath();ctx.ellipse(2,2,w/2+1,h/2,0,0,Math.PI*2);ctx.fill();
   if(img&&img.complete&&img.naturalWidth){
@@ -409,6 +437,17 @@ function drawDraft(){
     ctx.lineWidth=selectedLanes*11+6;ctx.globalAlpha=.38;ctx.setLineDash([15,8]);ctx.stroke();ctx.setLineDash([]);
     const last=pts.at(-1);rounded(last.x-36,last.y-54,72,27,7,bad?'#8d3f41':'#286850');
     ctx.fillStyle='#fff';ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.fillText('자재 '+cost,last.x,last.y-37);
+    const kind=mode==='overpass'?'bridge':mode==='ramp'?'ramp':'ground';
+    const crossings=sim.previewCrossings(pts,kind);
+    if(crossings.length){
+      for(const p of crossings){
+        ctx.beginPath();ctx.arc(p.x,p.y,18,0,Math.PI*2);
+        ctx.fillStyle='rgba(242,169,58,.26)';ctx.fill();
+        ctx.lineWidth=3;ctx.strokeStyle='#cc7b28';ctx.stroke();
+      }
+      rounded(last.x-58,last.y-89,116,28,7,'#875727');
+      ctx.fillStyle='#fff';ctx.fillText('교차로 '+crossings.length+'곳 예상',last.x,last.y-71);
+    }
   }else{
     ctx.beginPath();ctx.arc(pts[0].x,pts[0].y,16,0,Math.PI*2);ctx.strokeStyle='#25845e';ctx.lineWidth=4;ctx.stroke();
   }
@@ -429,6 +468,7 @@ function render(){
   drawSignals();
   sim.towns.forEach(drawCity);
   drawDistrictLife();
+  drawCongestion();
   for(const c of sim.cars)drawCar(c);
   drawDraft();
   ctx.restore();
@@ -481,7 +521,7 @@ function loop(time){
   if(time-lastSave>6500&&!paused){save();lastSave=time;}
   render();requestAnimationFrame(loop);
 }
-const stored=safeRead();saveAvailable=Boolean(stored&&[1,2].includes(stored.version));
+const stored=safeRead();saveAvailable=Boolean(stored&&[1,2,3].includes(stored.version));
 $('continueBtn').classList.toggle('hidden',!saveAvailable);
 resize();window.addEventListener('resize',resize,{passive:true});
 refreshButtons();requestAnimationFrame(loop);

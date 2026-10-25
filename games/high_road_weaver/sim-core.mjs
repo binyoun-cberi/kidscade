@@ -116,15 +116,15 @@ export function getDemandRate(from,to,hour,day=1){
   }
   // 관광지구: 평일은 소규모, 주말 오전 유입·저녁 복귀가 집중된다.
   if(from==='tourism'||to==='tourism'){
-    if(to==='tourism')return .53*(weekend?3.15:.72)*(within(hour,8.5,14)?2.1:.24);
-    return .53*(weekend?3.0:.68)*(within(hour,16,21)?2.25:.22);
+    if(to==='tourism')return .53*(weekend?2.3:.72)*(within(hour,8.5,14)?2.1:.24);
+    return .53*(weekend?2.35:.68)*(within(hour,16,21)?2.25:.22);
   }
   // 대형마트: 퇴근 이후, 그리고 주말 낮에 쇼핑 차량과 배송차량이 집중된다.
   if(from==='market'||to==='market'){
     const delivery=from==='factory'||from==='farm'||to==='factory';
     if(delivery)return .43*(within(hour,5.5,11)?1.8:.3);
     const peak=weekend?within(hour,10,20):within(hour,16,21);
-    return .62*(peak?(weekend?2.8:2.2):.2);
+    return .62*(peak?(weekend?2.2:2.2):.2);
   }
   if(from==='factory'||to==='factory')return .28*(within(hour,6,18)?1.7:.32);
   return .11*(within(hour,8,21)?1.5:.35);
@@ -133,11 +133,11 @@ export class RoadWeaver {
   constructor(){
     this.roads=[];this.nodes=new Map();this.edges=[];this.adj=new Map();
     this.cars=[];this.oldRoads=[];this.lights=new Set();this.roundabouts=[];this.history=[];
-    this.openTowns=2;this.budget=420;this.day=1;this.minutes=5*60+30;
+    this.openTowns=2;this.budget=445;this.day=1;this.minutes=5*60+30;
     this.delivered=0;this.waiting=0;this.attempted=0;this.serial=0;
     this.tickTime=0;this.spawnFraction=new Map();this.pending=new Map();this.announcements=[];
     this.junctionReservations=new Map();
-    this.growthClock=0;this.dispatchClock=0;
+    this.growthClock=0;this.dispatchClock=0;this.deliveredAtDawn=0;
     this.rebuild();
   }
   get towns(){return TOWN_TYPES.slice(0,this.openTowns);}
@@ -189,11 +189,14 @@ export class RoadWeaver {
     if(!near)return {ok:false,reason:'지상 도로가 만나는 교차로를 눌러 주세요.'};
     if(this.towns.some(t=>len(t,near)<120)||this.roundabouts.some(c=>len(c,near)<120))
       return {ok:false,reason:'도시나 다른 회전교차로에서 조금 떨어진 곳을 골라 주세요.'};
-    const radius=37,cost=75;
+    // 진입 갈래가 많으면 1차선짜리 순환로 하나가 도시 전체를 가로막는다.
+    // 더 넓은 순환로는 비용도 더 많이 든다.
+    const lanes=(this.adj.get(near.id)||[]).length>=5?4:2;
+    const radius=lanes===4?50:37,cost=lanes===4?95:75;
     if(this.budget<cost)return {ok:false,reason:'회전교차로 건설 자재가 부족해요.'};
-    const circle={id:'o'+(++this.serial),x:near.x,y:near.y,radius};
+    const circle={id:'o'+(++this.serial),x:near.x,y:near.y,radius,lanes};
     this.roundabouts.push(circle);this.budget-=cost;this.history.push({kind:'roundabout',id:circle.id,cost});
-    this.rebuild();return {ok:true,cost};
+    this.rebuild();return {ok:true,cost,lanes};
   }
   addTrafficIsland(p){
     let nearest=null,d=55;
@@ -385,7 +388,7 @@ export class RoadWeaver {
           pts.push({x:c.x+Math.cos(theta)*c.radius,y:c.y+Math.sin(theta)*c.radius});
         }
         pts.push(b.p);
-        addEdge(c.id+':'+i,a.p,b.p,pts,2,'roundabout',0,0,true);
+        addEdge(c.id+':'+i,a.p,b.p,pts,c.lanes===4?4:2,'roundabout',0,0,true);
       }
     }
     this.nodes=nodes;this.edges=edges;this.adj=adj;
@@ -441,32 +444,84 @@ export class RoadWeaver {
     if(!next)return 'straight';
     return classifyTurn(travelAngle(car.edge,car.dir,true),travelAngle(next.edge,next.dir,false));
   }
+  movement(car){
+    const next=car.path[car.step+1];
+    if(!next)return null;
+    const node=car.dir===1?car.edge.b:car.edge.a;
+    return {id:car.id,node,enter:car.edge.id+':'+car.dir,
+      exit:next.edge.id+':'+next.dir,lane:car.lane,turn:this.getTurn(car)};
+  }
+  movementsConflict(a,b){
+    if(a.enter===b.enter&&a.exit===b.exit)return a.lane===b.lane;
+    // 같은 방향으로 나란히 통과하는 차로는 서로 막지 않는다.
+    if(a.enter===b.enter&&a.exit===b.exit&&a.lane!==b.lane)return false;
+    // 맞은편에서 직진하는 차량은 우측통행 차로가 분리되어 있다.
+    const opposing=a.enter!==b.enter&&a.exit!==b.exit
+      &&a.enter.split(':').slice(0,-1).join(':')===b.exit.split(':').slice(0,-1).join(':')
+      &&a.exit.split(':').slice(0,-1).join(':')===b.enter.split(':').slice(0,-1).join(':');
+    if(opposing&&a.turn==='straight'&&b.turn==='straight')return false;
+    return true; // 서로 다른 회전/진행 경로는 충돌 가능하므로 보수적으로 양보
+  }
   junctionIsBusy(node,car){
-    const approaches=this.adj.get(node)||[];
-    if(approaches.length<3)return false;
-    if(this.towns.some(t=>node===nodeKey(t,0)))return false; // 지역 출입구는 차량 출발/도착 큐로 처리
-    const occupied=this.junctionReservations.get(node);
-    return Boolean(occupied&&occupied.id!==car.id&&occupied.until>this.tickTime);
+    if((this.adj.get(node)||[]).length<3)return false;
+    const movement=this.movement(car);
+    return (this.junctionReservations.get(node)||[]).some(entry=>
+      entry.id!==car.id&&entry.until>this.tickTime&&this.movementsConflict(movement,entry));
+  }
+  // 짧게 나뉜 환상 도로를 하나의 원으로 보고 앞·뒤 차량의 실제 간격을 판단한다.
+  // 단순히 다음 그래프 조각에 차가 있다는 이유만으로 입구를 봉쇄하지 않는다.
+  ringEntryFree(car,next,lane){
+    const circle=this.roundabouts.find(c=>c.id===next.edge.roadId);
+    if(!circle)return true;
+    const heading=angleAround(next.edge.points[0],circle);
+    const circumference=Math.PI*2*circle.radius;
+    return !this.cars.some(other=>{
+      if(other===car||other.edge.kind!=='roundabout'||other.edge.roadId!==circle.id||other.lane!==lane)return false;
+      const p=pointOnPath(other.edge.points,other.s);
+      const front=((angleAround(p,circle)-heading+Math.PI*2)%(Math.PI*2))*circle.radius;
+      // 환상로 진입 차량은 앞차뿐 아니라 뒤에서 다가오는 순환 차량에게도 양보한다.
+      return front<22||(car.edge.kind!=='roundabout'&&circumference-front<16);
+    });
+  }
+  ringFollowingGap(car){
+    const circle=this.roundabouts.find(c=>c.id===car.edge.roadId);
+    if(!circle)return Infinity;
+    const p=pointOnPath(car.edge.points,car.s),heading=angleAround(p,circle);
+    let nearest=Infinity;
+    for(const other of this.cars){
+      if(other===car||other.edge.kind!=='roundabout'||other.edge.roadId!==circle.id||other.lane!==car.lane)continue;
+      const q=pointOnPath(other.edge.points,other.s);
+      const forward=((angleAround(q,circle)-heading+Math.PI*2)%(Math.PI*2))*circle.radius;
+      if(forward>.001)nearest=Math.min(nearest,forward);
+    }
+    return nearest;
   }
   canGo(car){
     const next=car.path[car.step+1];if(!next)return true;
     const node=car.dir===1?car.edge.b:car.edge.a;
-    // 진입 차량은 로터리 안을 먼저 달리고 있는 차에 양보한다.
-    if(next.edge.kind==='roundabout'&&car.edge.kind!=='roundabout'){
-      if(this.cars.some(other=>other!==car&&other.edge.kind==='roundabout'&&other.dir===1&&(
-        (other.edge===next.edge&&other.s<27)||(other.edge.b===node&&other.edge.length-other.s<26)
-      )))return false;
-    }
+    // 원형 전체의 같은 차로 위치를 살피는 ringEntryFree()로 진입 안전을 일괄 판단.
+    // 구간별 고정 18px 검사까지 중복하면 짧은 도로 조각에서 이중 양보가 발생한다.
     if(this.junctionIsBusy(node,car))return false;
     if(this.lights.has(node)){
-      const angle=pointOnPath(car.edge.points,car.dir===1?car.edge.length:0).angle;
+      const angle=travelAngle(car.edge,car.dir,true);
       const horizontal=Math.abs(Math.cos(angle))>=Math.abs(Math.sin(angle));
       const phase=Math.floor(this.tickTime/6)%2;
-      if((horizontal?0:1)!==phase)return false;
+      if((horizontal?0:1)!==phase){
+        // 경쟁 방향에서 실제로 접근하는 차가 없으면 빈 교차로에서 무작정 기다리지 않는다.
+        const competitor=this.cars.some(other=>other!==car&&other.edge!==car.edge&&other.path[other.step+1]
+          &&(other.dir===1?other.edge.b:other.edge.a)===node
+          &&other.edge.length-other.s<80&&
+          ((Math.abs(Math.cos(travelAngle(other.edge,other.dir,true)))>=
+            Math.abs(Math.sin(travelAngle(other.edge,other.dir,true))))===Boolean(phase===0)));
+        if(competitor)return false;
+      }
     }
     const usable=Math.max(1,Math.floor(next.edge.lanes/2));
-    if(car.lane>=usable)return false; // 병합 차로에서 안전한 차선 변경을 끝내야 한다.
-    const lane=car.lane;
+    // 순환로는 종종 길이가 2~8px에 불과해 이동 중에 차선을 바꿀 시간이 없다.
+    // 출구에서 차로를 줄이되, 다음 도로의 실제 점유를 검사해 안전하게 합류한다.
+    if(car.lane>=usable&&car.edge.kind!=='roundabout')return false;
+    const lane=car.edge.kind==='roundabout'?Math.min(car.lane,usable-1):car.lane;
+    if(next.edge.kind==='roundabout')return this.ringEntryFree(car,next,lane);
     return !this.cars.some(other=>other!==car&&other.edge===next.edge&&other.dir===next.dir&&other.lane===lane&&other.s<23);
   }
   // 이웃 차선의 앞·뒤 공간을 모두 보고 이동한다. 급하게 다른 자동차 사이로 끼어들지 않는다.
@@ -521,7 +576,14 @@ export class RoadWeaver {
         const c=cs[i],ahead=cs[i-1];
         let target=c.maxSpeed*Math.min(1,0.85+0.15*Math.max(1,c.edge.lanes/2));
         if(c.kind==='truck')target*=.73;
+        if(c.kind==='tractor')target*=.52;
+        if(c.kind==='bus')target*=.81;
         if(ahead){const gap=ahead.s-c.s-19;target=Math.min(target,Math.max(0,gap*2.8));}
+        if(c.edge.kind==='roundabout'){
+          // 다른 도로 조각 위의 앞차와도 최소 간격을 확보한다.
+          const circleGap=this.ringFollowingGap(c);
+          target=Math.min(target,Math.max(0,(circleGap-19)*2.8));
+        }
         const left=c.edge.length-c.s;
         if(left<23&&!this.canGo(c))target=Math.min(target,Math.max(0,(left-11)*2.3));
         c.speed=clamp(c.speed+(target>c.speed?38:-85)*dt,0,target);
@@ -535,8 +597,15 @@ export class RoadWeaver {
       if(!next){arrived.push(c);continue;}
       if(!this.canGo(c)){c.s=c.edge.length-1;c.speed=0;continue;}
       const node=c.dir===1?c.edge.b:c.edge.a;
-      if((this.adj.get(node)||[]).length>=3&&!this.towns.some(t=>node===nodeKey(t,0))){
-        this.junctionReservations.set(node,{id:c.id,until:this.tickTime+.75});
+      if((this.adj.get(node)||[]).length>=3){
+        const movement=this.movement(c);
+        const records=(this.junctionReservations.get(node)||[]).filter(r=>r.until>this.tickTime);
+        // 같은 차로를 뒤따르는 차는 다음 도로의 실제 안전간격 규칙으로 보호한다.
+        // 도시 중심은 여러 도로의 환승점이어서 지나치게 긴 일괄 봉쇄가 도시 전체를 마비시킨다.
+        // 같은 틱의 상충 진입만 막고, 다음 도로의 실제 차간 거리로 추가 보호한다.
+        const cityNode=this.towns.some(t=>node===nodeKey(t,0));
+        records.push({...movement,until:this.tickTime+(cityNode?.08:.28)});
+        this.junctionReservations.set(node,records);
       }
       c.step++;c.edge=next.edge;c.dir=next.dir;
       c.lane=clamp(c.lane,0,Math.max(1,Math.floor(c.edge.lanes/2))-1);
@@ -544,13 +613,25 @@ export class RoadWeaver {
     }
     if(arrived.length){const gone=new Set(arrived.map(c=>c.id));this.cars=this.cars.filter(c=>!gone.has(c.id));this.delivered+=arrived.length;}
     this.retireEmpty();
-    for(const [node,record] of this.junctionReservations){
-      if(record.until<=this.tickTime)this.junctionReservations.delete(node);
+    for(const [node,records] of this.junctionReservations){
+      const remaining=records.filter(record=>record.until>this.tickTime);
+      if(remaining.length)this.junctionReservations.set(node,remaining);
+      else this.junctionReservations.delete(node);
     }
   }
   update(dt){
     dt=clamp(dt,0,.1);this.tickTime+=dt;this.minutes+=dt*12;
-    if(this.minutes>=1440){this.minutes-=1440;this.day++;this.budget+=70;this.announcements.push('새로운 하루가 시작됐어요. 도로 자재 70을 받았어요.');}
+    if(this.minutes>=1440){
+      this.minutes-=1440;this.day++;
+      const completed=this.delivered-this.deliveredAtDawn;
+      const earned=completed>=200?95:completed>=90?70:completed>=25?40:
+        this.budget<130?25:0;
+      this.budget+=earned;this.deliveredAtDawn=this.delivered;
+      if(completed>=90)this.announcements.push('차들이 목적지에 잘 도착했어요! 내일의 도로 자재를 받았어요.');
+      else if(completed>=25)this.announcements.push('조금씩 차들이 오가고 있어요. 길을 더 편리하게 고쳐 보세요.');
+      else if(this.roads.length)this.announcements.push('어제는 차들이 많이 이동하지 못했어요. 막힌 곳을 살펴보세요.');
+      else this.announcements.push('두 도시를 도로로 이어 차들이 움직이도록 도와주세요.');
+    }
     this.growthClock+=dt;
     if(this.growthClock>=2){
       this.growthClock=0;
@@ -618,6 +699,12 @@ export class RoadWeaver {
       angle=Math.atan2(inv*(center.y-start.y)+t*(end.y-center.y),
                        inv*(center.x-start.x)+t*(end.x-center.x));
     }
+    // 짧게 잘린 원형 도로에서도 차량 머리가 매 조각마다 꺾이지 않도록
+    // 전체 회전교차로의 접선 방향으로 각도를 일관되게 계산한다.
+    if(c.edge.kind==='roundabout'){
+      const circle=this.roundabouts.find(r=>r.id===c.edge.roadId);
+      if(circle)angle=wrapAngle(Math.atan2(p.y-circle.y,p.x-circle.x)+Math.PI/2);
+    }
     const laneOffset=(5+((c.laneVisual??c.lane)+.5)*10);
     // 주행 방향을 기준으로 차선 오른쪽에 자동차를 배치한다.
     return {x:p.x-Math.sin(angle)*laneOffset,y:p.y+Math.cos(angle)*laneOffset,angle};
@@ -637,23 +724,58 @@ export class RoadWeaver {
       this.waiting>20?'대기 길어짐':this.waiting>4?'대기 발생':'한산';
     return {flow,queue};
   }
+  previewCrossings(raw,kind='ground'){
+    if(kind!=='ground'||!Array.isArray(raw)||raw.length<2)return [];
+    const pts=simplify(raw),seen=new Set(),hits=[];
+    for(let i=1;i<pts.length;i++)for(const road of this.roads){
+      if(!isSurface(road))continue;
+      for(let j=1;j<road.points.length;j++){
+        const hit=crossing(pts[i-1],pts[i],road.points[j-1],road.points[j]);
+        if(!hit)continue;
+        const tag=key(hit.p);
+        if(seen.has(tag))continue;
+        seen.add(tag);hits.push(hit.p);
+      }
+    }
+    return hits.slice(0,24);
+  }
   snapshot(){
-    return {version:2,roads:this.roads.map(r=>({id:r.id,lanes:r.lanes,points:r.points,kind:r.kind||'ground'})),
+    // 활성 차량의 간선을 한 번씩만 기록해 모바일 브라우저의 저장 공간을 절약한다.
+    // 도로 편집 중 이미 퇴역한 경로 위의 자동차도 원래 자리 그대로 복원된다.
+    const edgePool=[],edgeIds=new Map();
+    const edgeIndex=edge=>{
+      if(!edgeIds.has(edge)){
+        edgeIds.set(edge,edgePool.length);
+        edgePool.push({id:edge.id,a:edge.a,b:edge.b,lanes:edge.lanes,kind:edge.kind,
+          points:edge.points});
+      }
+      return edgeIds.get(edge);
+    };
+    const cars=this.cars.map(c=>({id:c.id,from:c.from,to:c.to,kind:c.kind,
+      step:c.step,s:c.s,lane:c.lane,laneVisual:c.laneVisual,laneCooldown:c.laneCooldown,
+      speed:c.speed,maxSpeed:c.maxSpeed,
+      path:c.path.map(item=>[edgeIndex(item.edge),item.dir])}));
+    return {version:3,roads:this.roads.map(r=>({id:r.id,lanes:r.lanes,points:r.points,kind:r.kind||'ground'})),
       roundabouts:this.roundabouts.map(c=>({...c})),
       openTowns:this.openTowns,budget:this.budget,day:this.day,minutes:this.minutes,
       delivered:this.delivered,waiting:this.waiting,attempted:this.attempted,lights:[...this.lights],serial:this.serial,
-      queues:[...this.pending].map(([pair,count])=>[pair,count])};
+      queues:[...this.pending].map(([pair,count])=>[pair,count]),cars,edgePool,
+      tickTime:this.tickTime,spawnFraction:[...this.spawnFraction],dispatchClock:this.dispatchClock,
+      growthClock:this.growthClock,deliveredAtDawn:this.deliveredAtDawn};
   }
   restore(data){
-    if(!data||![1,2].includes(data.version)||!Array.isArray(data.roads))return false;
+    if(!data||![1,2,3].includes(data.version)||!Array.isArray(data.roads))return false;
     const roads=data.roads.filter(r=>r&&[2,4,6].includes(r.lanes)&&['ground','bridge','ramp','slip',undefined].includes(r.kind)
       &&(!['ramp','slip'].includes(r.kind)||r.lanes===2)&&Array.isArray(r.points)&&r.points.length>=2&&r.points.length<350
       &&r.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=0&&p.x<=1080&&p.y>=0&&p.y<=720));
     const circles=(Array.isArray(data.roundabouts)?data.roundabouts:[]).filter(c=>c&&typeof c.id==='string'
       &&Number.isFinite(c.x)&&Number.isFinite(c.y)&&Number.isFinite(c.radius)
-      &&c.x>=0&&c.x<=1080&&c.y>=0&&c.y<=720&&c.radius>=15&&c.radius<=90);
+      &&c.x>=0&&c.x<=1080&&c.y>=0&&c.y<=720&&c.radius>=15&&c.radius<=90
+      &&(c.lanes===undefined||[2,4].includes(c.lanes)));
     if(circles.length>8||circles.length!==(data.roundabouts||[]).length)return false;
     if(roads.length!==data.roads.length||roads.length>120)return false;
+    if(data.version===3&&(!Array.isArray(data.cars)||data.cars.length>180||
+      !Array.isArray(data.edgePool)||data.edgePool.length>2500))return false;
     this.roads=roads;this.roundabouts=circles;this.openTowns=clamp(Math.round(data.openTowns)||2,2,TOWN_TYPES.length);
     this.budget=clamp(data.budget||0,0,10000);this.day=clamp(data.day||1,1,9999);
     this.minutes=clamp(data.minutes||330,0,1439);this.delivered=Math.max(0,Math.round(data.delivered||0));
@@ -664,6 +786,57 @@ export class RoadWeaver {
     this.junctionReservations.clear();
     this.pending=new Map(Array.isArray(data.queues)?data.queues.filter(row=>Array.isArray(row)&&typeof row[0]==='string'&&Number.isFinite(row[1])&&row[1]>=0&&row[1]<=75):[]);
     this.waiting=[...this.pending.values()].reduce((sum,n)=>sum+n,0);
-    this.rebuild();return true;
+    this.deliveredAtDawn=this.delivered;
+    this.rebuild();
+    if(data.version===3){
+      this.tickTime=Number.isFinite(data.tickTime)?clamp(data.tickTime,0,1e8):0;
+      this.dispatchClock=Number.isFinite(data.dispatchClock)?clamp(data.dispatchClock,0,.3):0;
+      this.growthClock=Number.isFinite(data.growthClock)?clamp(data.growthClock,0,2):0;
+      this.deliveredAtDawn=Number.isFinite(data.deliveredAtDawn)?clamp(data.deliveredAtDawn,0,this.delivered):this.delivered;
+      this.spawnFraction=new Map(Array.isArray(data.spawnFraction)?data.spawnFraction.filter(row=>
+        Array.isArray(row)&&typeof row[0]==='string'&&/^[a-z]+>[a-z]+$/.test(row[0])
+        &&Number.isFinite(row[1])&&row[1]>=0&&row[1]<1).slice(0,50):[]);
+      const validEdge=e=>e&&typeof e.id==='string'&&e.id.length<80&&
+        typeof e.a==='string'&&typeof e.b==='string'&&
+        [2,4,6].includes(e.lanes)&&['ground','bridge','ramp','slip','roundabout'].includes(e.kind)
+        &&Array.isArray(e.points)&&e.points.length>=2&&e.points.length<350&&
+        e.points.every(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&
+          p.x>=0&&p.x<=1080&&p.y>=0&&p.y<=720);
+      if(!data.edgePool.every(validEdge))return false;
+      const active=new Map(this.edges.map(e=>[JSON.stringify([e.id,e.a,e.b,e.lanes,e.kind,e.points]),e]));
+      const unused=new Set();
+      const pool=data.edgePool.map(raw=>{
+        const original=active.get(JSON.stringify([raw.id,raw.a,raw.b,raw.lanes,raw.kind,raw.points]));
+        if(original)return original;
+        const orphan={...raw,roadId:raw.id.split(':')[0],length:roadLength(raw.points)};
+        unused.add(orphan);return orphan;
+      });
+      const seen=new Set();
+      for(const raw of data.cars){
+        if(!raw||typeof raw.id!=='string'||!/^c[0-9]+$/.test(raw.id)||seen.has(raw.id)||
+          !TOWN_TYPES.some(t=>t.id===raw.from)||!TOWN_TYPES.some(t=>t.id===raw.to)||
+          !Array.isArray(raw.path)||!raw.path.length||raw.path.length>300||
+          !Number.isInteger(raw.step)||raw.step<0||raw.step>=raw.path.length||
+          !Number.isFinite(raw.s)||!Number.isFinite(raw.lane)||!Number.isFinite(raw.speed)||
+          !Number.isFinite(raw.maxSpeed))continue;
+        const path=raw.path.map(row=>Array.isArray(row)&&Number.isInteger(row[0])&&
+          row[0]>=0&&row[0]<pool.length&&[1,-1].includes(row[1])
+          ?{edge:pool[row[0]],dir:row[1]}:null);
+        if(path.some(x=>!x))continue;
+        if(raw.s<0||raw.s>path[raw.step].edge.length+.1||
+          raw.lane<0||raw.lane>=path[raw.step].edge.lanes/2)continue;
+        const car={id:raw.id,from:raw.from,to:raw.to,
+          kind:['car','truck','tractor','bus'].includes(raw.kind)?raw.kind:'car',
+          path,step:raw.step,edge:path[raw.step].edge,dir:path[raw.step].dir,
+          s:raw.s,lane:raw.lane,laneVisual:Number.isFinite(raw.laneVisual)?raw.laneVisual:raw.lane,
+          laneCooldown:Number.isFinite(raw.laneCooldown)?clamp(raw.laneCooldown,0,5):0,
+          speed:clamp(raw.speed,0,100),maxSpeed:clamp(raw.maxSpeed,10,100)};
+        this.cars.push(car);seen.add(car.id);
+      }
+      const orphanCars=new Set(this.cars.filter(c=>c.path.slice(c.step).some(p=>unused.has(p.edge))).map(c=>c.id));
+      const orphanEdges=[...unused].filter(e=>this.cars.some(c=>c.path.slice(c.step).some(p=>p.edge===e)));
+      if(orphanEdges.length)this.oldRoads.push({edges:orphanEdges,cars:orphanCars});
+    }
+    return true;
   }
 }

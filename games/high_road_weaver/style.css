@@ -94,4 +94,33 @@ button:focus-visible{outline:3px solid #226756;outline-offset:2px}
 .instruction span,.instruction b,.instruction small{display:inline}.instruction span{margin-right:8px}.instruction small{margin-left:6px}
 #toast{top:143px}
 }
+/* 작은 화면에서는 도구 선택과 도로 폭·되돌리기를 분리해 항상 접근할 수 있게 한다. */
+@media(max-width:600px){
+.hud{width:calc(100vw - 83px);max-width:calc(100vw - 83px);padding:6px 5px}
+.metric{min-width:0;padding:0 5px}
+.metric.clock{flex:1 1 auto;min-width:85px;flex-direction:column;align-items:flex-start;gap:0}
+.metric.clock .phase{display:none}
+.metric.clock strong{font-size:16px}
+.metric.clock small{white-space:nowrap;font-size:9px}
+.metric:not(.clock){flex:0 0 auto;min-width:58px}
+.metric.delivered{min-width:85px}
+.metric.delivered strong{font-size:13px;white-space:nowrap}
+.toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;padding:6px;overflow:visible;align-items:center}
+.mode-group{grid-column:1/-1;min-width:0;width:100%;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#87ae91 transparent;scroll-snap-type:x proximity;overscroll-behavior-x:contain;touch-action:pan-x;padding-bottom:5px}
+.mode-group::-webkit-scrollbar{height:4px}
+.mode-group::-webkit-scrollbar-thumb{border-radius:8px;background:#8ead9b}
+.mode-group .tool{flex:0 0 57px;scroll-snap-align:start}
+.toolbar-divider{display:none}
+.lane-group{grid-column:1;min-width:0;height:35px;display:flex;justify-content:flex-start}
+.lane{min-width:60px;min-height:32px}
+.undo{grid-column:2;min-width:48px;min-height:35px}
+}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* 작은 화면에서는 가로로 숨겨진 건설 도구가 있다는 사실을 명확히 알린다. */
+@media(max-width:600px){
+  .toolbar::before{content:'도구를 옆으로 밀어 더 보기';grid-column:1/-1;display:block;font-size:10px;font-weight:800;color:#4f7760;padding:0 4px 1px;letter-spacing:-.015em}
+  .mode-group{scroll-padding-inline:8px}
+  .guide{max-height:20dvh;overflow:hidden}
+  .guide p{line-height:1.45}
+}
