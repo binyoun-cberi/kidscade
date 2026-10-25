@@ -16,7 +16,7 @@
   </header>
   <main class="main-grid">
     <section class="game-panel" aria-label="물리 연구소 플레이 화면">
-      <div class="game-topline"><div id="mission" class="mission">던지기 훈련장</div><div class="hud"><span id="goal-count">0 / 1 성공</span><span id="shots">투척 0회</span><span id="score">0점</span></div></div>
+      <div class="game-topline"><div id="mission" class="mission">던지기 훈련장</div><div class="hud"><span id="goal-count">0 / 1 성공</span><span id="mechanism-status" aria-live="polite"></span><span id="shots">투척 0회</span><span id="score">0점</span></div></div>
       <div class="canvas-wrap" id="canvas-wrap">
         <canvas id="arena" width="960" height="600" aria-label="이동하며 물건을 줍고 방향을 조절해 던지는 2D 물리 게임"></canvas>
         <div class="stick" id="stick" aria-label="이동 조이스틱"><div class="stick-knob" id="stick-knob"></div></div>
@@ -25,9 +25,9 @@
       <div class="control-row">
         <div class="action-group"><button id="pickup-btn" class="action primary" type="button">집기 <small>Space / E</small></button><button id="throw-btn" class="action amber" type="button">던지기 <small>클릭 / Enter</small></button><button id="drop-btn" class="action subtle" type="button">내려놓기 <small>Q</small></button></div>
         <div class="power-control"><label for="power">던지는 힘 <output id="power-value">85%</output></label><input id="power" type="range" min="30" max="100" value="85" step="5"></div>
-        <button id="restart-btn" class="reset" type="button">처음부터</button>
+        <button id="hint-btn" class="reset" type="button">힌트</button><button id="restart-btn" class="reset" type="button">처음부터</button>
       </div>
-      <div class="help-line">이동: 방향키·WASD·왼쪽 조이스틱 · 가까이 가서 <strong>집기</strong> · 마우스/터치로 방향 지정 · <strong>던지기</strong></div>
+      <div class="help-line">이동: 방향키·WASD·왼쪽 조이스틱 · 가까이 가서 <strong>집기</strong> · 화면을 누르고 끌어서 조준한 뒤 손을 떼면 <strong>던지기</strong></div>
     </section>
     <aside class="sidebar"><div class="learn-card"><span class="mini-label">오늘의 발견</span><h2 id="concept">방향과 힘</h2><p id="tip">물건이 날아가는 길을 예상해 봐.</p><div id="surface-label" class="surface-line">현재 바닥: 나무</div></div>
       <div class="item-card"><span class="mini-label">손에 든 물건</span><div class="item-view"><span id="held-icon" class="item-emoji">◯</span><div><strong id="held-name">없음</strong><p id="held-description">주변 물건에 다가가서 집어 봐.</p></div></div></div>
