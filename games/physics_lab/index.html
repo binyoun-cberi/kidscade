@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#143c40">
+  <title>와르르! 물리 연구소 | 키즈케이드</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="../../kidscade-game-sdk.js" data-game-id="physics_lab" data-title="와르르! 물리 연구소" data-shell="true" data-pauseable="true"></script>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="identity"><div class="emblem" aria-hidden="true">⚙</div><div><span class="eyebrow">KIDSCADE SCIENCE ARCADE</span><h1>와르르! <span>물리 연구소</span></h1></div></div>
+    <div class="top-actions"><span id="chapter-label" class="chapter-label">1구역 · 방향과 힘</span><button id="home-btn" class="ghost" type="button">구역 선택</button><button id="sound-btn" class="icon-btn" type="button" aria-label="소리 끄기">♫</button></div>
+  </header>
+  <main class="main-grid">
+    <section class="game-panel" aria-label="물리 연구소 플레이 화면">
+      <div class="game-topline"><div id="mission" class="mission">던지기 훈련장</div><div class="hud"><span id="goal-count">0 / 1 성공</span><span id="shots">투척 0회</span><span id="score">0점</span></div></div>
+      <div class="canvas-wrap" id="canvas-wrap">
+        <canvas id="arena" width="960" height="600" aria-label="이동하며 물건을 줍고 방향을 조절해 던지는 2D 물리 게임"></canvas>
+        <div class="stick" id="stick" aria-label="이동 조이스틱"><div class="stick-knob" id="stick-knob"></div></div>
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
+      </div>
+      <div class="control-row">
+        <div class="action-group"><button id="pickup-btn" class="action primary" type="button">집기 <small>Space / E</small></button><button id="throw-btn" class="action amber" type="button">던지기 <small>클릭 / Enter</small></button><button id="drop-btn" class="action subtle" type="button">내려놓기 <small>Q</small></button></div>
+        <div class="power-control"><label for="power">던지는 힘 <output id="power-value">85%</output></label><input id="power" type="range" min="30" max="100" value="85" step="5"></div>
+        <button id="restart-btn" class="reset" type="button">처음부터</button>
+      </div>
+      <div class="help-line">이동: 방향키·WASD·왼쪽 조이스틱 · 가까이 가서 <strong>집기</strong> · 마우스/터치로 방향 지정 · <strong>던지기</strong></div>
+    </section>
+    <aside class="sidebar"><div class="learn-card"><span class="mini-label">오늘의 발견</span><h2 id="concept">방향과 힘</h2><p id="tip">물건이 날아가는 길을 예상해 봐.</p><div id="surface-label" class="surface-line">현재 바닥: 나무</div></div>
+      <div class="item-card"><span class="mini-label">손에 든 물건</span><div class="item-view"><span id="held-icon" class="item-emoji">◯</span><div><strong id="held-name">없음</strong><p id="held-description">주변 물건에 다가가서 집어 봐.</p></div></div></div>
+      <div class="progress-card"><div class="progress-heading"><span class="mini-label">탐험 일지</span><strong id="progress-label">1 / 24</strong></div><div class="progress-track"><span id="progress-fill"></span></div><p>실패해도 괜찮아. 조건을 바꾸고 다시 실험해 봐!</p><div class="experiment-log" id="experiment-log" aria-live="polite">실험한 물건의 이동 거리가 여기에 기록돼요.</div></div>
+    </aside>
+  </main>
+  <footer class="footer">서로 다른 물건과 바닥을 비교해 보세요. 이 게임의 수치는 탐구를 위한 간소화된 모형이에요.</footer>
+</div>
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="overlay-title"><div class="modal"><div class="modal-top"><span class="mini-label">PHYSICS LAB</span><button id="close-overlay" class="icon-btn" type="button" aria-label="창 닫기">✕</button></div><h2 id="overlay-title">와르르! 물리 연구소</h2><p id="overlay-description">직접 던지고 부딪히며 발견하는 과학 놀이터</p><div id="overlay-content"></div><div id="overlay-actions" class="modal-actions"></div></div></div>
+<script type="module" src="./game.js"></script>
+</body>
+</html>
