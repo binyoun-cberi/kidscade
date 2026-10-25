@@ -1,0 +1,21 @@
+name: Takoyaki browser playthrough
+on:
+  pull_request:
+    paths:
+      - 'games/job_takoyaki_simulator/**'
+      - 'tests/takoyaki-*.cjs'
+      - '.github/workflows/takoyaki-playthrough.yml'
+  workflow_dispatch:
+jobs:
+  takoyaki:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run takoyaki recipe and progression tests
+        run: node --test tests/takoyaki-v2-stability.test.cjs tests/takoyaki-preschool-progression.test.cjs tests/takoyaki-orders-quality.test.cjs
+      - name: Simulate every day and inspect real browser
+        run: node tests/takoyaki-browser-playthrough.cjs
