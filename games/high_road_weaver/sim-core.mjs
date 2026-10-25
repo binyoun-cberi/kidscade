@@ -212,7 +212,7 @@ export class RoadWeaver {
       const near=len(p,n);if(near<d){d=near;nearest=n;}
     }
     if(!nearest)return {ok:false,reason:'교차로 가까이에서 선택해 주세요.'};
-    const k=key(nearest);const enabled=!this.lights.has(k);
+    const k=nearest.id;const enabled=!this.lights.has(k);
     if(enabled&&this.budget<20)return {ok:false,reason:'신호등 자재가 부족해요.'};
     if(enabled){this.budget-=20;this.lights.add(k);}else{this.budget+=20;this.lights.delete(k);}
     this.history.push({kind:'light',key:k,enabled});
@@ -478,7 +478,8 @@ export class RoadWeaver {
     this.budget=clamp(data.budget||0,0,10000);this.day=clamp(data.day||1,1,9999);
     this.minutes=clamp(data.minutes||330,0,1439);this.delivered=Math.max(0,Math.round(data.delivered||0));
     this.waiting=Math.max(0,Math.round(data.waiting||0));this.attempted=Math.max(0,Math.round(data.attempted||0));
-    this.serial=Math.max(0,Math.round(data.serial||0));this.lights=new Set(Array.isArray(data.lights)?data.lights:[]);
+    this.serial=Math.max(0,Math.round(data.serial||0));
+    this.lights=new Set(Array.isArray(data.lights)?data.lights.filter(k=>typeof k==='string').map(k=>/@[01]$/.test(k)?k:k+'@0'):[]);
     this.cars=[];this.oldRoads=[];this.history=[];this.spawnFraction.clear();
     this.pending=new Map(Array.isArray(data.queues)?data.queues.filter(row=>Array.isArray(row)&&typeof row[0]==='string'&&Number.isFinite(row[1])&&row[1]>=0&&row[1]<=75):[]);
     this.waiting=[...this.pending.values()].reduce((sum,n)=>sum+n,0);
