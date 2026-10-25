@@ -128,6 +128,8 @@ let chrome,ws,profile,serverOpen=false,passed=0;
   await evaluate("document.querySelector('#otherStageBtn').click();document.querySelector('#difficulty').value='hard';document.querySelector('[data-stage=large]').click()");
   await wait("__KK_TEST__.snapshot().active&&__KK_TEST__.snapshot().targets===5",65000);
   await screenshot('03-large-town');passed++;
+  assert.equal(await evaluate("document.querySelector('#seeThrough').getAttribute('aria-pressed')"),'false','new cities should start opaque');
+  await evaluate("document.querySelector('#seeThrough').click()");
   for(let round=1;round<=5;round++){
     await evaluate("document.querySelector('#hintBtn').click();document.querySelector('#hintBtn').click()");
     await sleep(120);
