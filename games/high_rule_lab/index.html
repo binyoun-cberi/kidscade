@@ -28,6 +28,7 @@
         <button id="restartBtn" class="icon-btn" type="button" aria-label="다시 시작">↻</button>
         <button id="levelBtn" class="icon-btn wide" type="button">단계</button>
         <button id="hintBtn" class="icon-btn wide" type="button">힌트</button>
+        <button id="fogBtn" class="icon-btn wide fog-toggle" type="button" aria-pressed="false" hidden>안개 끄기</button>
         <a class="icon-btn wide mode-link" href="./settings_mode/index.html" aria-label="설정 탈출 모드로 이동">설정 탈출</a>
       </div>
     </header>
@@ -116,15 +117,16 @@
   </dialog>
 
   <script src="../../kidscade-game-sdk.js" data-game-id="high_rule_lab" data-title="내 말 좀 들어" data-shell="true" data-orientation="landscape"></script>
-  <script src="./levels.js?v=4"></script>
+  <script src="./levels.js?v=7"></script>
   <script src="./engine/state.js?v=5"></script>
   <script src="./engine/rules.js?v=5"></script>
   <script src="./engine/movement.js?v=5"></script>
   <script src="./engine/interactions.js?v=5"></script>
   <script src="./engine/history.js?v=6"></script>
   <script src="./engine/turn.js?v=5"></script>
-  <script src="./engine/validator.js?v=5"></script>
+  <script src="./engine/validator.js?v=7"></script>
   <script src="./ui/renderer.js?v=5"></script>
-  <script src="./game.js?v=6"></script>
+  <script src="./ui/fog.js?v=1"></script>
+  <script src="./game.js?v=7"></script>
 </body>
 </html>
