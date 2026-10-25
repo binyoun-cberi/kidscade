@@ -1,6 +1,5 @@
-// Adapted from the two user-provided 100-question Korean history quiz worksheets.
-// Educational fact-check pass: misleading, duplicate and under-specified items are excluded.
-// The source number is retained for later editorial review.
+// Adapted from two user-provided 100-question Korean history worksheets.
+// Editorial pass: excluded ambiguous/repeated items; factual and language corrections are traceable by source number.
 export const IMPORTED_HISTORY_QUIZ = Object.freeze([
   {
     "id": "set1-001",
@@ -169,7 +168,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 1회 21번",
     "era": "남북국",
     "type": "인물",
-    "q": "많은 이두를 모아 체계를 세워, 백성들이 쉽게 사용할 수 있도록 한 사람은 누구인가?",
+    "q": "한자의 음과 뜻을 빌려 우리말을 적는 '이두' 표기법을 체계적으로 정리한 통일 신라의 학자는 누구일까요?",
     "answer": "설총",
     "aliases": []
   },
@@ -243,15 +242,6 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "type": "용어",
     "q": "조선 시대에 일본으로 보내던 사신으로 오늘날의 외교 사절에 해당하는 것은?",
     "answer": "통신사",
-    "aliases": []
-  },
-  {
-    "id": "set1-030",
-    "source": "역사 퀴즈 1회 30번",
-    "era": "조선 후기",
-    "type": "사건",
-    "q": "임진왜란으로 조선과 일본의 외교 관계가 한동안 끊어지는 계기가 된 전쟁은 무엇일까요?",
-    "answer": "임진왜란",
     "aliases": []
   },
   {
@@ -349,7 +339,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 1회 41번",
     "era": "개항기",
     "type": "문헌",
-    "q": "전체 4쪽 중 1쪽은 영어로 나머지는 한글로 쓰여진 민간인이 만든 최초의 신문은 무엇인가?",
+    "q": "1896년 한글과 영어를 함께 사용해 창간된 우리나라 최초의 민간 신문은 무엇일까요?",
     "answer": "독립신문",
     "aliases": []
   },
@@ -392,7 +382,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
   {
     "id": "set1-047",
     "source": "역사 퀴즈 1회 47번",
-    "era": "개항기",
+    "era": "대한제국",
     "type": "인물",
     "q": "‘사람이 곧 하늘이다.’라는 인간 중심 사상에 뿌리를 두고 국민들에게 애국심을 불어넣은 종교는 무엇인가?",
     "answer": "천도교",
@@ -423,7 +413,9 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "type": "인물",
     "q": "『국어 문법』을 펴내고 한글 연구에 힘쓴 국어학자는 누구일까요?",
     "answer": "주시경",
-    "aliases": []
+    "aliases": [
+      "주 시경"
+    ]
   },
   {
     "id": "set1-051",
@@ -457,7 +449,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 1회 54번",
     "era": "개항기",
     "type": "나라",
-    "q": "1885년에 발행한 우리나라 최초의 우두 총서로 지석영이 쓴 책은 무엇인가?",
+    "q": "지석영이 우두법을 널리 알리기 위해 1885년에 펴낸 의학서는 무엇일까요?",
     "answer": "우두 신서",
     "aliases": []
   },
@@ -484,7 +476,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 1회 57번",
     "era": "개항기",
     "type": "나라",
-    "q": "나라를 지키기 위해 무기를 들고 일본군과 맞서 싸운 농민과 평민들을 무엇이라고 하는가?",
+    "q": "일본의 침략에 맞서 자발적으로 무기를 들고 싸운 민간인 무리를 무엇이라고 하나요?",
     "answer": "의병",
     "aliases": []
   },
@@ -531,7 +523,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 1회 62번",
     "era": "일제강점기",
     "type": "인물",
-    "q": "3․1 운동 때 낭독한 독립 선언서를 작성한 사람은 누구인가?",
+    "q": "1919년 3·1운동 때 발표한 기미독립선언서의 초안을 작성한 인물은 누구일까요?",
     "answer": "최남선",
     "aliases": []
   },
@@ -540,7 +532,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 1회 63번",
     "era": "일제강점기",
     "type": "인물",
-    "q": "제 1차 세계 대전이 끝난 후, 파리 강화 회의에서 민족의 운명은 그 민족 스스로 결정한다는 말을 한 미국의 대통령은 누구인가?",
+    "q": "제1차 세계 대전 이후 민족 자결주의를 제창한 미국 대통령은 누구일까요?",
     "answer": "윌슨",
     "aliases": []
   },
@@ -560,7 +552,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 1회 65번",
     "era": "일제강점기",
     "type": "나라",
-    "q": "일제는 3․1 운동을 통해 우리 민족을 무력으로만 지배할 수 없다는 것을 깨닫고, 식민 통치 정책을 바꾸었는데 이를 무엇이라고 하는가?",
+    "q": "3·1운동 이후 일제가 무단 통치를 완화하는 것처럼 선전하며 실시한 식민지 통치 방식을 무엇이라고 하나요?",
     "answer": "문화 정치",
     "aliases": []
   },
@@ -639,11 +631,13 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
   {
     "id": "set1-075",
     "source": "역사 퀴즈 1회 75번",
-    "era": "일제강점기",
+    "era": "대한제국",
     "type": "인물",
-    "q": "조선 말기에 우리 한글을 보급하고 발전시키기 위해서 가장 많은 공을 세운 사람은 누구인가?",
+    "q": "한글 문법 연구와 보급에 크게 기여한 국어학자이자 『국어 문법』의 저자는 누구일까요?",
     "answer": "주시경",
-    "aliases": []
+    "aliases": [
+      "주 시경"
+    ]
   },
   {
     "id": "set1-076",
@@ -695,9 +689,12 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 1회 81번",
     "era": "고조선",
     "type": "나라",
-    "q": "고조선은 국가 통치를 위해 어떠한 법을 사용했는가?",
+    "q": "고조선의 사회 질서를 짐작하게 하는 여덟 가지 법 조항을 무엇이라고 하나요?",
     "answer": "8조금법",
-    "aliases": []
+    "aliases": [
+      "8조법",
+      "범금팔조"
+    ]
   },
   {
     "id": "set1-082",
@@ -740,7 +737,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 1회 87번",
     "era": "조선 전기",
     "type": "용어",
-    "q": "조선의 왕권 강화 기구는 승정원과 또 하나는 무엇인가?",
+    "q": "조선 시대 국왕의 명령을 전달하던 승정원과 함께 왕권을 뒷받침하며 중대한 죄를 조사하던 관청은 무엇일까요?",
     "answer": "의금부",
     "aliases": []
   },
@@ -767,7 +764,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 1회 90번",
     "era": "조선 후기",
     "type": "사건",
-    "q": "후금이 청을 건국하고 조선에 군신관계를 요구한 것을 계기로 일어난 전쟁은?",
+    "q": "1636년 청나라가 조선을 침입하여 일어난 전쟁은 무엇일까요?",
     "answer": "병자호란",
     "aliases": []
   },
@@ -1018,7 +1015,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 2회 19번",
     "era": "조선 후기",
     "type": "인물",
-    "q": "천문 과학 기구인 혼천의를 이용하여 지동설을 주장한 사람은 누구인가?",
+    "q": "지구가 스스로 회전한다는 지전설을 주장한 조선 후기의 학자는 누구일까요?",
     "answer": "홍대용",
     "aliases": []
   },
@@ -1054,7 +1051,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 2회 23번",
     "era": "삼국",
     "type": "인물",
-    "q": "고구려 영양왕 때의 사람으로 일본에 건너가 호류사에 금당 벽화를 그린 사람은 누구인가?",
+    "q": "전승에 따르면 일본 호류사 금당 벽화 제작에 참여한 고구려 승려의 이름은 무엇일까요?",
     "answer": "담징",
     "aliases": []
   },
@@ -1072,7 +1069,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 2회 25번",
     "era": "남북국",
     "type": "인물",
-    "q": "수군을 거느리고 해적들을 소탕하여, 신란인들은 물론 당나라 상인들까지도 편안히 항해할 수 있게 한 신라의 장군은?",
+    "q": "청해진을 설치해 해적을 물리치고 동아시아 바닷길의 무역을 활발하게 한 신라의 인물은 누구일까요?",
     "answer": "장보고",
     "aliases": []
   },
@@ -1225,7 +1222,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 2회 42번",
     "era": "개항기",
     "type": "용어",
-    "q": "오늘날의 초등학교로서 수신, 역사, 지리, 산술, 미술, 체조와 애국심을 기르는 것이 중요하다고 한글을 가르친 학교는?",
+    "q": "1895년 이후 근대적 학교 제도로 설치되어 오늘날 초등학교에 해당하는 학교는 무엇일까요?",
     "answer": "소학교",
     "aliases": []
   },
@@ -1259,7 +1256,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
   {
     "id": "set2-046",
     "source": "역사 퀴즈 2회 46번",
-    "era": "국권 피탈",
+    "era": "일제강점기",
     "type": "인물",
     "q": "여러 장군들의 영웅전을 썼으며, ‘조선 상고사’ 등을 펴내어 우리 민족의 우수성을 깨닫게 하고 민족혼을 불러일으킨 사람은 누구인가?",
     "answer": "신채호",
@@ -1387,7 +1384,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 2회 63번",
     "era": "일제강점기",
     "type": "나라",
-    "q": "민족 지도자들이 독립 운동을 보다 효과적으로 펴기 위하여 중국 상하이에 세운 것은?",
+    "q": "1919년 중국 상하이에서 수립된 독립운동 정부의 이름은 무엇일까요?",
     "answer": "대한민국임시정부",
     "aliases": []
   },
@@ -1396,7 +1393,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 2회 65번",
     "era": "일제강점기",
     "type": "사건",
-    "q": "임시 정부는 국내외의 동포들에게 독립 운동 소식을 전하기 위해서 무엇을 만들었는가?",
+    "q": "1919년 상하이에서 대한민국 임시정부의 독립운동 소식을 전하기 위해 발행한 신문의 이름은 무엇일까요?",
     "answer": "독립 신문",
     "aliases": []
   },
@@ -1477,7 +1474,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 2회 75번",
     "era": "일제강점기",
     "type": "인물",
-    "q": "1910년 중국으로 건너가 동양학을 연구하면서 박은식, 신채호 등과 더불어 동제사를 조직하여 독립 운동에 이바지한 사람은 누구인가?",
+    "q": "일제강점기에 국학 연구와 독립운동에 참여하고 '얼' 사상을 강조한 역사학자는 누구일까요?",
     "answer": "정인보",
     "aliases": []
   },
@@ -1531,7 +1528,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 2회 81번",
     "era": "선사",
     "type": "용어",
-    "q": "경기도 연천 전곡리는 어느 시대의 유물과 유적이인가?",
+    "q": "경기도 연천 전곡리에서 발견된 주먹도끼는 어느 시대의 유물일까요?",
     "answer": "구석기시대",
     "aliases": []
   },
@@ -1558,7 +1555,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 2회 84번",
     "era": "고려",
     "type": "용어",
-    "q": "위화도 회군을 일으킨 이성계는 정권을 장악한 후 사대부들에게도 이 법을 시행하였다. 이 법은 어떤 법인가?",
+    "q": "1391년 고려 말 신진 사대부의 경제 기반이 되었으며 관리에게 토지의 수조권을 지급한 제도는 무엇일까요?",
     "answer": "과전법",
     "aliases": []
   },
@@ -1603,25 +1600,25 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 2회 89번",
     "era": "조선 후기",
     "type": "용어",
-    "q": "탕평정치로 왕에게 넘어갔던 권력이 외척세력으로 넘어간 정치를 무엇이라고 하는가?",
+    "q": "19세기 조선에서 왕실의 외척 가문들이 권력을 장악한 정치 형태를 무엇이라고 하나요?",
     "answer": "세도정치",
     "aliases": []
   },
   {
     "id": "set2-090",
     "source": "역사 퀴즈 2회 90번",
-    "era": "남북국",
+    "era": "삼국",
     "type": "용어",
-    "q": "신라의 만장일치의 귀족 합의제로 왕권 견제 기능을 한 이것은 무엇인가?",
+    "q": "신라에서 귀족들이 국가의 중요한 일을 만장일치로 결정하던 회의는 무엇일까요?",
     "answer": "화백회의",
     "aliases": []
   },
   {
     "id": "set2-091",
     "source": "역사 퀴즈 2회 91번",
-    "era": "남북국",
+    "era": "삼국",
     "type": "나라",
-    "q": "신라의 화랑도는 어느 왕때 국가 차원에서 조직 및 형성이 확대 되었는가?",
+    "q": "화랑도가 국가 차원에서 정비된 시기의 신라 왕은 누구일까요?",
     "answer": "진흥왕",
     "aliases": []
   },
@@ -1666,7 +1663,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "source": "역사 퀴즈 2회 96번",
     "era": "조선 후기",
     "type": "인물",
-    "q": "사람이 곧 하늘이다 라는 인내천 사상으로 동학을 창시한 사람은?",
+    "q": "1860년 동학을 창시하고 시천주 사상을 내세운 인물은 누구일까요?",
     "answer": "최제우",
     "aliases": []
   },
@@ -1692,8 +1689,8 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-100",
     "source": "역사 퀴즈 2회 100번",
     "era": "광복 이후",
-    "type": "문헌",
-    "q": "노사정 협의회와 신자유주의 경제정책을 실시했던 정부는?",
+    "type": "용어",
+    "q": "1998년 외환위기 극복 과정에서 노사정위원회를 출범시킨 대통령의 정부는 무엇일까요?",
     "answer": "김대중 정부",
     "aliases": []
   }
