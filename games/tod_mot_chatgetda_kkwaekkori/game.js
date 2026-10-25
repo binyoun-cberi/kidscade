@@ -418,7 +418,7 @@ function positionEverything(dt) {
     const pos=getRoutePosition(p,town.config);
     if(dt===0)mesh.holder.position.set(pos.x,.08,pos.z);
     else mesh.holder.position.lerp(new THREE.Vector3(pos.x,.08,pos.z),1-Math.exp(-5*dt));
-    const walking=p.slot===1&&['deliver','ball','wave'].includes(p.activity);
+    const walking=p.slot===1&&p.activity==='deliver';
     const facing=walking?(Math.cos(p.elapsed*.47*(p.challengeSpeed||1)+p.phase)>=0?Math.PI/2:-Math.PI/2):0;
     mesh.holder.rotation.y=THREE.MathUtils.lerp(mesh.holder.rotation.y,facing,dt===0?1:Math.min(1,dt*6));
     if(celebration?.id===p.id){mesh.body.rotation.z=Math.sin(p.elapsed*12)*.07;}
@@ -707,7 +707,7 @@ function animate(now){
   requestAnimationFrame(animate);
   const dt=Math.min(.05,Math.max(0,(now-lastFrame)/1000));lastFrame=now;
   if(town&&$('start').classList.contains('hidden')&&active){
-    if(mode==='challenge'){
+    if(mode==='challenge'&&!celebration){
       timeRemaining=Math.max(0,timeRemaining-dt);
       showChallengeHud();
       if(timeRemaining<=0){finishChallenge();renderer.render(scene,camera);previewRenderer.render(previewScene,previewCamera);return;}
