@@ -74,6 +74,8 @@
     gugudanSettings: 'kidscade_gugudan_settings_v1',
     gugudanWins: 'kidscade_gugudan_wins_v1',
     gugudanHighScore: 'kidscade_gugudan_high_score_v1',
+    labWaterSortBestMoves: 'kidscade_labWaterSortBestMoves',
+    labWaterSortMarkers: 'kidscade_labWaterSortMarkers',
     topKingRecord: 'kidscade_top_king_record_v1',
     metroPlannerSave: 'kidscade_metro_planner_v1',
     disasterCityBestSeconds: 'kidscade_disaster_city_best_seconds',
