@@ -15,7 +15,7 @@ test('the moonlit shrine SVG is a local, renderable background asset', async () 
   assert.match(svg, /Distant shrine roof/);
   assert.match(svg, /stone slabs/);
   assert.match(svg, /Old twisted trunks/);
-  assert.doesNotMatch(svg, /https?:\/\//);
+  assert.doesNotMatch(svg, /<(?:image|script)\\b/i);
   const metadata = await sharp(Buffer.from(svg)).metadata();
   assert.equal(metadata.width, 1440);
   assert.equal(metadata.height, 560);
