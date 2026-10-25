@@ -2,6 +2,33 @@
   "schemaVersion": 7,
   "games": [
     {
+      "id": "physics_lab",
+      "addedAt": "2026-10-25T18:00:00+09:00",
+      "title": "와르르! 물리 연구소",
+      "href": "games/physics_lab/index.html",
+      "category": "trivia",
+      "age": "low",
+      "ages": [
+        "low",
+        "high"
+      ],
+      "icon": "🧪",
+      "description": "물건을 집고 던지며 방향·마찰·질량·충돌을 발견하는 2D 과학 액션! 24단계 연구소와 와르르 무한 챌린지.",
+      "subject": "science",
+      "genre": "action",
+      "difficulty": "easy",
+      "sessionMinutes": 5,
+      "players": [
+        "solo"
+      ],
+      "input": [
+        "touch",
+        "keyboard"
+      ],
+      "qualityStatus": "standard",
+      "classroom": true
+    },
+    {
       "id": "high_air_traffic_control",
       "addedAt": "2026-10-25T17:52:00+09:00",
       "title": "관제탑 시뮬레이터",
