@@ -138,3 +138,25 @@ test('QA 2: canceling a touch after setting a start point does not draw an unexp
   tap(canvas,3,915,354);
   assert.equal(page.sim().roads.length,0,'canceled touch reused the old start position');
 });
+
+
+test('traffic bottleneck glow renders without exposing numerical traffic demand',async()=>{
+  const {page,get}=await makePage();
+  get('startBtn').click();
+  const roads=page.sim();
+  assert.ok(roads.addRoad(roads.towns.slice(0,2),2).ok);
+  assert.ok(roads.spawn('home','office'));
+  roads.cars[0].s=60;roads.cars[0].speed=0;
+  assert.doesNotThrow(()=>page.render());
+  assert.doesNotThrow(()=>page.updateHud(100));
+  assert.doesNotMatch(get('flow').textContent,/\d/);
+});
+
+test('responsive styles keep lane controls and undo separate from scrolling mobile tools',()=>{
+  const styles=fs.readFileSync(path.join(ROOT,'games/high_road_weaver/style.css'),'utf8');
+  assert.match(styles,/@media\(max-width:600px\)/);
+  assert.match(styles,/\.toolbar\{display:grid;grid-template-columns:minmax\(0,1fr\) auto/);
+  assert.match(styles,/\.mode-group\{grid-column:1\/-1;[^}]*overflow-x:auto/);
+  assert.match(styles,/\.lane-group\{grid-column:1;/);
+  assert.match(styles,/\.undo\{grid-column:2;/);
+});
