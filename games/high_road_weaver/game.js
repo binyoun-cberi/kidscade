@@ -220,6 +220,8 @@ function drawRoad(road,alpha=1){
   drawPath(pts);ctx.strokeStyle=bridge?'#637483':ramp?'#737f88':circle?'#5b6965':slip?'#75716b':'#606b70';ctx.lineWidth=w;ctx.stroke();
   if(circle){
     offsetLine(pts,-w/2+3,'#d0dbd1',1.8,[6,8]);
+    // 넓은 회전교차로의 두 순환 차로가 시각적으로도 구분되도록 차선 경계선을 긋는다.
+    if(road.lanes===4)offsetLine(pts,0,'#d7e1d8',1.5,[5,7]);
     ctx.restore();return;
   }
   drawPath(pts);ctx.strokeStyle=bridge?'#f9ecbb':'#f4e3a2';ctx.lineWidth=2.2;ctx.setLineDash(ramp?[5,9]:[12,10]);ctx.stroke();ctx.setLineDash([]);
