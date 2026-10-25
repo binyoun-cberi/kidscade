@@ -9,6 +9,18 @@ export const TOWN_TYPES = [
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 const len=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const key=p=>Math.round(p.x*10)/10+','+Math.round(p.y*10)/10;
+const nodeKey=(p,level=0)=>key(p)+'@'+level;
+const levelAt=(road,atStart)=>road.kind==='bridge'?1:road.kind==='ramp'?(atStart?0:1):0;
+const isSurface=road=>road.kind==='ground'||!road.kind;
+function circleHits(a,b,circle){
+  const dx=b.x-a.x,dy=b.y-a.y,fx=a.x-circle.x,fy=a.y-circle.y;
+  const A=dx*dx+dy*dy,B=2*(fx*dx+fy*dy),C=fx*fx+fy*fy-circle.radius*circle.radius;
+  const disc=B*B-4*A*C;if(A<.001||disc<=0)return [];
+  return [(-B-Math.sqrt(disc))/(2*A),(-B+Math.sqrt(disc))/(2*A)]
+    .filter(t=>t>.00001&&t<.99999).map(t=>({t,p:mix(a,b,t)}));
+}
+const insideCircle=(p,c)=>len(p,c)<c.radius-.15;
+const angleAround=(p,c)=>{const v=Math.atan2(p.y-c.y,p.x-c.x);return v<0?v+Math.PI*2:v;};
 const mix=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});
 const roadLength=points=>points.slice(1).reduce((s,p,i)=>s+len(p,points[i]),0);
 const LANE_COST={2:1,4:1.85,6:2.8};
@@ -80,7 +92,7 @@ export function getDemandRate(from,to,hour){
 export class RoadWeaver {
   constructor(){
     this.roads=[];this.nodes=new Map();this.edges=[];this.adj=new Map();
-    this.cars=[];this.oldRoads=[];this.lights=new Set();this.history=[];
+    this.cars=[];this.oldRoads=[];this.lights=new Set();this.roundabouts=[];this.history=[];
     this.openTowns=2;this.budget=420;this.day=1;this.minutes=5*60+30;
     this.delivered=0;this.waiting=0;this.attempted=0;this.serial=0;
     this.tickTime=0;this.spawnFraction=new Map();this.pending=new Map();this.announcements=[];
@@ -89,25 +101,49 @@ export class RoadWeaver {
   get towns(){return TOWN_TYPES.slice(0,this.openTowns);}
   get hour(){return this.minutes/60;}
   get peak(){const h=this.hour;return h>=7&&h<9.5?'출근':h>=16.5&&h<19.5?'퇴근':'일상';}
-  snap(p){
-    for(const t of this.towns){if(len(p,t)<82)return {x:t.x,y:t.y};}
+  snap(p,level=0){
+    if(level===0)for(const t of this.towns){if(len(p,t)<82)return {x:t.x,y:t.y};}
     let best=null;
-    for(const road of this.roads)for(let i=1;i<road.points.length;i++){
-      const q=nearestOnSegment(p,road.points[i-1],road.points[i]);
-      if(q.d<23&&(!best||q.d<best.d))best=q;
+    for(const road of this.roads){
+      const roadLevel=road.kind==='bridge'?1:road.kind==='ramp'?-1:0;
+      if(roadLevel!==level)continue;
+      for(let i=1;i<road.points.length;i++){
+        const q=nearestOnSegment(p,road.points[i-1],road.points[i]);
+        if(q.d<23&&(!best||q.d<best.d))best=q;
+      }
     }
     return best?{x:best.x,y:best.y}:p;
   }
-  addRoad(raw,lanes=2){
+  addRoad(raw,lanes=2,kind='ground'){
     if(![2,4,6].includes(lanes))return {ok:false,reason:'차로 수를 선택해 주세요.'};
+    if(!['ground','bridge','ramp'].includes(kind))return {ok:false,reason:'도로 종류를 확인해 주세요.'};
+    if(kind==='ramp'&&lanes!==2)return {ok:false,reason:'진출입로는 2차로로 건설해 주세요.'};
     const pts=simplify(raw||[]);
     if(pts.length<2)return {ok:false,reason:'조금 더 길게 그려 주세요.'};
-    pts[0]=this.snap(pts[0]);pts[pts.length-1]=this.snap(pts.at(-1));
-    const distance=roadLength(pts),cost=costOfRoad(pts,lanes);
+    pts[0]=this.snap(pts[0],kind==='bridge'?1:0);
+    pts[pts.length-1]=this.snap(pts.at(-1),kind==='ground'?0:1);
+    const distance=roadLength(pts),cost=Math.ceil(costOfRoad(pts,lanes)*(kind==='bridge'?1.75:kind==='ramp'?1.4:1));
     if(distance<32)return {ok:false,reason:'도로가 너무 짧아요.'};
     if(cost>this.budget)return {ok:false,reason:'도로 자재가 부족해요.'};
-    const r={id:'r'+(++this.serial),points:pts,lanes};
+    const r={id:'r'+(++this.serial),points:pts,lanes,kind};
     this.roads.push(r);this.budget-=cost;this.history.push({kind:'road',id:r.id,cost});
+    this.rebuild();return {ok:true,cost};
+  }
+  addRoundabout(p){
+    if(this.roundabouts.length>=8)return {ok:false,reason:'이 지도에는 회전교차로를 더 놓을 수 없어요.'};
+    let near=null,d=38;
+    for(const n of this.nodes.values()){
+      if(n.level!==0)continue;
+      if((this.adj.get(n.id)||[]).length<3)continue;
+      const delta=len(p,n);if(delta<d){near=n;d=delta;}
+    }
+    if(!near)return {ok:false,reason:'지상 도로가 만나는 교차로를 눌러 주세요.'};
+    if(this.towns.some(t=>len(t,near)<120)||this.roundabouts.some(c=>len(c,near)<120))
+      return {ok:false,reason:'도시나 다른 회전교차로에서 조금 떨어진 곳을 골라 주세요.'};
+    const radius=37,cost=75;
+    if(this.budget<cost)return {ok:false,reason:'회전교차로 건설 자재가 부족해요.'};
+    const circle={id:'o'+(++this.serial),x:near.x,y:near.y,radius};
+    this.roundabouts.push(circle);this.budget-=cost;this.history.push({kind:'roundabout',id:circle.id,cost});
     this.rebuild();return {ok:true,cost};
   }
   widenRoad(p){
@@ -145,43 +181,114 @@ export class RoadWeaver {
   undo(){
     const item=this.history.pop();if(!item)return {ok:false,reason:'되돌릴 작업이 없어요.'};
     if(item.kind==='road')this.roads=this.roads.filter(r=>r.id!==item.id);
+    if(item.kind==='roundabout')this.roundabouts=this.roundabouts.filter(r=>r.id!==item.id);
     if(item.kind==='widen'){const road=this.roads.find(r=>r.id===item.id);if(road)road.lanes=item.old;}
     if(item.kind==='light'){if(item.enabled)this.lights.delete(item.key);else this.lights.add(item.key);}
     this.budget+=item.kind==='light'?(item.enabled?20:-20):item.cost;
     this.rebuild();return {ok:true};
   }
   rebuild(){
-    // 편집 이전에 운행 중이던 차량은 이전 도로망 위에서 목적지까지 이동한다.
+    // 기존 이동 중 차량은 이전 그래프 참조를 유지하여 편집해도 순간이동하지 않는다.
     if(this.cars.length&&this.edges.length)this.oldRoads.push({edges:this.edges,cars:new Set(this.cars.map(c=>c.id))});
     const cuts=this.roads.map(r=>[{d:0,p:r.points[0]},{d:roadLength(r.points),p:r.points.at(-1)}]);
+    const ports=this.roundabouts.map(()=>[]);
+    const mark=(idx,d,p)=>cuts[idx].push({d,p});
     for(let i=0;i<this.roads.length;i++){
       const a=this.roads[i],aa=a.points;let da=0;
       for(let x=1;x<aa.length;x++){
         let db=0;
         for(let j=i+1;j<this.roads.length;j++){
           const b=this.roads[j],bb=b.points;db=0;
-          for(let y=1;y<bb.length;y++){
-            const cross=crossing(aa[x-1],aa[x],bb[y-1],bb[y]);
-            if(cross){
-              cuts[i].push({d:da+cross.t*len(aa[x-1],aa[x]),p:cross.p});
-              cuts[j].push({d:db+cross.u*len(bb[y-1],bb[y]),p:cross.p});
+          // 램프는 도로에 닿은 끝점에서만 연결되고, 고가/지면 간 단순 교차는 연결되지 않는다.
+          if((a.kind||'ground')===(b.kind||'ground')&&a.kind!=='ramp'){
+            for(let y=1;y<bb.length;y++){
+              const hit=crossing(aa[x-1],aa[x],bb[y-1],bb[y]);
+              if(hit&&!this.roundabouts.some(c=>insideCircle(hit.p,c))){
+                mark(i,da+hit.t*len(aa[x-1],aa[x]),hit.p);
+                mark(j,db+hit.u*len(bb[y-1],bb[y]),hit.p);
+              }
+              db+=len(bb[y-1],bb[y]);
             }
-            db+=len(bb[y-1],bb[y]);
+          }
+        }
+        // 지상 도로는 원형 교차로 경계에서 끊기고 안쪽은 자동차가 지나갈 수 없다.
+        if(isSurface(a))for(let ci=0;ci<this.roundabouts.length;ci++){
+          const circle=this.roundabouts[ci];
+          for(const hit of circleHits(aa[x-1],aa[x],circle)){
+            mark(i,da+hit.t*len(aa[x-1],aa[x]),hit.p);
+            ports[ci].push({p:hit.p,angle:angleAround(hit.p,circle)});
           }
         }
         da+=len(aa[x-1],aa[x]);
       }
     }
+    // 램프 양 끝점에서 기존 지상 도로/고가도로를 분할해 명시적인 환승 노드를 만든다.
+    for(let i=0;i<this.roads.length;i++){
+      const ramp=this.roads[i];if(ramp.kind!=='ramp')continue;
+      for(const [level,p] of [[0,ramp.points[0]],[1,ramp.points.at(-1)]]){
+        for(let j=0;j<this.roads.length;j++){
+          if(i===j)continue;
+          const road=this.roads[j];
+          if((road.kind==='bridge'?1:road.kind==='ground'||!road.kind?0:-1)!==level)continue;
+          let d=0;
+          for(let k=1;k<road.points.length;k++){
+            const q=nearestOnSegment(p,road.points[k-1],road.points[k]);
+            if(q.d<.16)mark(j,d+len(road.points[k-1],q),p);
+            d+=len(road.points[k-1],road.points[k]);
+          }
+        }
+      }
+    }
     const nodes=new Map(),edges=[],adj=new Map();
-    const addNode=p=>{const id=key(p);if(!nodes.has(id)){nodes.set(id,{id,x:p.x,y:p.y});adj.set(id,[]);}return id;};
+    const addNode=(p,level=0)=>{
+      const id=nodeKey(p,level);
+      if(!nodes.has(id)){nodes.set(id,{id,x:p.x,y:p.y,level});adj.set(id,[]);}
+      return id;
+    };
+    const addEdge=(id,a,b,points,lanes,kind='ground',startLevel=0,endLevel=startLevel,oneWay=false)=>{
+      const n0=addNode(a,startLevel),n1=addNode(b,endLevel);
+      if(n0===n1)return;
+      const e={id,roadId:id.split(':')[0],a:n0,b:n1,points,length:roadLength(points),lanes,kind};
+      edges.push(e);
+      adj.get(n0).push({to:n1,edge:e,dir:1});
+      if(!oneWay)adj.get(n1).push({to:n0,edge:e,dir:-1});
+    };
     for(let i=0;i<this.roads.length;i++){
       const r=this.roads[i],marks=cuts[i].sort((a,b)=>a.d-b.d);
       for(let j=1;j<marks.length;j++){
-        const a=marks[j-1],b=marks[j];if(b.d-a.d<.1)continue;
-        const path=slicePath(r.points,a.d,b.d),n0=addNode(a.p),n1=addNode(b.p);
-        if(n0===n1)continue;
-        const e={id:r.id+':'+j,roadId:r.id,a:n0,b:n1,points:path,length:roadLength(path),lanes:r.lanes};
-        edges.push(e);adj.get(n0).push({to:n1,edge:e,dir:1});adj.get(n1).push({to:n0,edge:e,dir:-1});
+        const a=marks[j-1],b=marks[j];
+        if(b.d-a.d<.1)continue;
+        const path=slicePath(r.points,a.d,b.d);
+        if(isSurface(r)&&this.roundabouts.some(c=>insideCircle(pointOnPath(path,roadLength(path)/2),c)))continue;
+        const start=levelAt(r,j===1),end=levelAt(r,j===marks.length-1?false:true);
+        // 램프의 끝점 이외에서는 높이가 바뀌지 않는다.
+        const l0=r.kind==='ramp'?(j===1?0:1):start;
+        const l1=r.kind==='ramp'?1:end;
+        addEdge(r.id+':'+j,a.p,b.p,path,r.lanes,r.kind||'ground',l0,l1);
+      }
+    }
+    for(let ci=0;ci<this.roundabouts.length;ci++){
+      const c=this.roundabouts[ci],all=ports[ci];
+      // 빈 원형 차로에서 생길 수 있는 자기 순환을 피하기 위해 네 개의 기준점을 보존한다.
+      for(let n=0;n<8;n++){
+        const angle=n*Math.PI/4;
+        all.push({angle,p:{x:c.x+Math.cos(angle)*c.radius,y:c.y+Math.sin(angle)*c.radius}});
+      }
+      all.sort((a,b)=>a.angle-b.angle);
+      const unique=[];
+      for(const mark of all){if(!unique.length||len(unique.at(-1).p,mark.p)>.18)unique.push(mark);}
+      for(let i=0;i<unique.length;i++){
+        const a=unique[i],b=unique[(i+1)%unique.length];
+        const end=b.angle+(i===unique.length-1?Math.PI*2:0);
+        if(end-a.angle<.00001)continue;
+        const pts=[a.p];
+        const steps=Math.max(2,Math.ceil((end-a.angle)/.15));
+        for(let n=1;n<steps;n++){
+          const theta=a.angle+(end-a.angle)*n/steps;
+          pts.push({x:c.x+Math.cos(theta)*c.radius,y:c.y+Math.sin(theta)*c.radius});
+        }
+        pts.push(b.p);
+        addEdge(c.id+':'+i,a.p,b.p,pts,2,'roundabout',0,0,true);
       }
     }
     this.nodes=nodes;this.edges=edges;this.adj=adj;
@@ -192,7 +299,7 @@ export class RoadWeaver {
     this.oldRoads=this.oldRoads.filter(n=>[...n.cars].some(id=>ids.has(id)));
   }
   route(from,to){
-    const a=key(from),b=key(to);
+    const a=nodeKey(from,0),b=nodeKey(to,0);
     if(!this.adj.has(a)||!this.adj.has(b))return null;
     const q=[{id:a,cost:0}],best=new Map([[a,0]]),prev=new Map();
     while(q.length){
@@ -230,6 +337,10 @@ export class RoadWeaver {
   canGo(car){
     const next=car.path[car.step+1];if(!next)return true;
     const node=car.dir===1?car.edge.b:car.edge.a;
+    // 진입 차량은 로터리 안을 먼저 달리고 있는 차에 양보한다.
+    if(next.edge.kind==='roundabout'&&car.edge.kind!=='roundabout'){
+      if(this.cars.some(other=>other!==car&&other.edge===next.edge&&other.s>Math.max(0,next.edge.length-22)))return false;
+    }
     if(this.lights.has(node)){
       const angle=pointOnPath(car.edge.points,car.dir===1?car.edge.length:0).angle;
       const horizontal=Math.abs(Math.cos(angle))>=Math.abs(Math.sin(angle));
@@ -305,16 +416,23 @@ export class RoadWeaver {
     return {x:p.x-Math.sin(p.angle)*offset,y:p.y+Math.cos(p.angle)*offset,angle};
   }
   snapshot(){
-    return {version:1,roads:this.roads.map(r=>({id:r.id,lanes:r.lanes,points:r.points})),
+    return {version:2,roads:this.roads.map(r=>({id:r.id,lanes:r.lanes,points:r.points,kind:r.kind||'ground'})),
+      roundabouts:this.roundabouts.map(c=>({...c})),
       openTowns:this.openTowns,budget:this.budget,day:this.day,minutes:this.minutes,
       delivered:this.delivered,waiting:this.waiting,attempted:this.attempted,lights:[...this.lights],serial:this.serial,
       queues:[...this.pending].map(([pair,count])=>[pair,count])};
   }
   restore(data){
-    if(!data||data.version!==1||!Array.isArray(data.roads))return false;
-    const roads=data.roads.filter(r=>r&&[2,4,6].includes(r.lanes)&&Array.isArray(r.points)&&r.points.length>=2&&r.points.length<350&&r.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)));
+    if(!data||![1,2].includes(data.version)||!Array.isArray(data.roads))return false;
+    const roads=data.roads.filter(r=>r&&[2,4,6].includes(r.lanes)&&['ground','bridge','ramp',undefined].includes(r.kind)
+      &&(r.kind!=='ramp'||r.lanes===2)&&Array.isArray(r.points)&&r.points.length>=2&&r.points.length<350
+      &&r.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=0&&p.x<=1080&&p.y>=0&&p.y<=720));
+    const circles=(Array.isArray(data.roundabouts)?data.roundabouts:[]).filter(c=>c&&typeof c.id==='string'
+      &&Number.isFinite(c.x)&&Number.isFinite(c.y)&&Number.isFinite(c.radius)
+      &&c.x>=0&&c.x<=1080&&c.y>=0&&c.y<=720&&c.radius>=15&&c.radius<=90);
+    if(circles.length>8||circles.length!==(data.roundabouts||[]).length)return false;
     if(roads.length!==data.roads.length||roads.length>120)return false;
-    this.roads=roads;this.openTowns=clamp(Math.round(data.openTowns)||2,2,4);
+    this.roads=roads;this.roundabouts=circles;this.openTowns=clamp(Math.round(data.openTowns)||2,2,4);
     this.budget=clamp(data.budget||0,0,10000);this.day=clamp(data.day||1,1,9999);
     this.minutes=clamp(data.minutes||330,0,1439);this.delivered=Math.max(0,Math.round(data.delivered||0));
     this.waiting=Math.max(0,Math.round(data.waiting||0));this.attempted=Math.max(0,Math.round(data.attempted||0));
