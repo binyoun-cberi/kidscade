@@ -187,7 +187,7 @@
             pointer-events: none; z-index: 2;
         }
         .game-panel button:disabled { opacity: .38; cursor: not-allowed; }
-        #gameScreen { padding-bottom: max(12px, env(safe-area-inset-bottom, 12px)); }
+        #gameScreen { padding-top: max(16px, env(safe-area-inset-top, 16px)); padding-bottom: max(12px, env(safe-area-inset-bottom, 12px)); }
         #beakersContainer { min-height: 0; overscroll-behavior: contain; }
         @media (prefers-reduced-motion: reduce) {
             .glass-beaker, .water-layer { transition-duration: .01ms !important; }
@@ -313,7 +313,12 @@
         let recordedHintMap = new Map();
         let hintTarget = null;
         let markerEnabled = true;
-        try { markerEnabled = localStorage.getItem('labWaterSortMarkers') !== 'off'; } catch (e) { /* 저장소 없이도 동작 */ }
+        let bestMoves = {};
+        try {
+            markerEnabled = localStorage.getItem('labWaterSortMarkers') !== 'off';
+            const saved = JSON.parse(localStorage.getItem('labWaterSortBestMoves') || '{}');
+            if (saved && typeof saved === 'object' && !Array.isArray(saved)) bestMoves = saved;
+        } catch (e) { /* 저장소 없이도 동작 */ }
         
         // 연구실 테마에 맞는 맑고 뚜렷한 화학 시약 색상 팔레트 (채도/명도 조정)
         const PREDEFINED_COLORS = [
@@ -508,7 +513,9 @@
             document.getElementById('undoBtn').disabled = busy || undoStack.length === 0;
             document.getElementById('hintBtn').disabled = busy || checkWin();
             document.getElementById('hintBtn').textContent = isHintSearching ? '찾는 중…' : '힌트';
-            document.getElementById('moveDisplay').textContent = '이동 ' + undoStack.length + '회';
+            const best = Number(bestMoves[stage]);
+            document.getElementById('moveDisplay').textContent = '이동 ' + undoStack.length + '회' +
+                (Number.isInteger(best) && best > 0 ? ' · 최고 ' + best + '회' : '');
             const markerBtn = document.getElementById('markerBtn');
             markerBtn.setAttribute('aria-pressed', String(markerEnabled));
             markerBtn.textContent = markerEnabled ? '모양 숨기기' : '모양 표시';
@@ -811,9 +818,17 @@
                 maxUnlockedStage = stage + 1;
                 try { localStorage.setItem('labWaterSortProgress', maxUnlockedStage); } catch (e) {}
             }
+            const previousBest = Number(bestMoves[stage]);
+            const newBest = !Number.isInteger(previousBest) || previousBest <= 0 || undoStack.length < previousBest;
+            if (newBest) {
+                bestMoves[stage] = undoStack.length;
+                try { localStorage.setItem('labWaterSortBestMoves', JSON.stringify(bestMoves)); } catch (e) {}
+            }
             const last = stage === LabWaterSortCore.LEVEL_COUNT;
             document.querySelector('#winScreen h2').textContent = last ? '모든 실험 성공!' : '실험 성공!';
-            document.querySelector('#winScreen p').textContent = '이동 ' + undoStack.length + '회로 색을 모두 분류했어요.';
+            document.querySelector('#winScreen p').textContent =
+                '이동 ' + undoStack.length + '회로 색을 모두 분류했어요. ' +
+                (newBest ? '새로운 최고 기록!' : '최고 기록 ' + previousBest + '회');
             document.querySelector('#winScreen button').textContent = last ? '100단계 다시하기 ↺' : '다음 실험 진행 ➡';
             document.getElementById('winScreen').classList.remove('hidden');
             updateControls();
@@ -958,6 +973,16 @@
                     : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200 hover:scale-105'
                 }`;
                 btn.innerText = i;
+                const best = Number(bestMoves[i]);
+                if (Number.isInteger(best) && best > 0) {
+                    btn.classList.add('relative');
+                    const record = document.createElement('span');
+                    record.className = 'absolute bottom-1 text-[10px] sm:text-xs leading-none font-bold';
+                    record.innerText = '최고 ' + best + '회';
+                    btn.appendChild(record);
+                }
+                btn.setAttribute('aria-label', i + '단계' +
+                    (Number.isInteger(best) && best > 0 ? ', 최고 ' + best + '회' : ''));
                 btn.onclick = () => {
                     playSFX('select');
                     stage = i;
