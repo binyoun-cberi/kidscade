@@ -5,7 +5,7 @@
   const $=id=>document.getElementById(id), canvas=$('radar'),g=canvas.getContext('2d');
   const W=C.WIDTH,H=C.HEIGHT;
   let game=null,preview='practice',paused=false,speed=1,lastFrame=0,accumulator=0,uiTime=0;
-  let startPointer=null,reported=false,lastDelivered=0,lastWarnings=0;
+  let startPointer=null,reported=false,lastDelivered=0,lastWarnings=0,trafficSignature='';
   const safeText=value=>String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   function sdk(method,...args){try{if(window.KidscadeGame&&typeof window.KidscadeGame[method]==='function')return window.KidscadeGame[method](...args);}catch(e){console.warn('관제 기록 연동',e.message);}}
   function fmt(t){t=Math.max(0,Math.ceil(t));return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');}
@@ -106,7 +106,8 @@
     if(!game){$('timeValue').textContent='--:--';return;}
     $('sectorName').textContent=game.map.title;
     $('timeValue').textContent=fmt(game.duration-game.elapsed);
-    $('safeValue').textContent=String(game.delivered);
+    $('safeValue').textContent=game.delivered+' / '+game.map.required;
+    $('ordersValue').textContent=game.controlled+' / '+game.map.requiredCommands;
     $('scoreValue').textContent=game.score.toLocaleString('ko-KR');
     $('safetyValue').textContent=('● '.repeat(Math.max(0,3-game.incidents))+'○ '.repeat(game.incidents)).trim();
     $('trafficCount').textContent=game.planes.length;
@@ -124,20 +125,25 @@
       $('holdBtn').classList.toggle('active',p.holding);
       $('holdBtn').textContent=p.holding?'대기 끝내고 목적지로':'대기 선회 / 재진입';
     }
-    const traffic=$('trafficList');traffic.replaceChildren();
+    const traffic=$('trafficList');
+    const signature=JSON.stringify(game.planes.map(f=>[f.id,f.destId,f.type,f.altitude>1.5,game.activeAlerts.includes(f.id),f.id===game.selectedId]));
+    if(signature!==trafficSignature){
+      trafficSignature=signature;traffic.replaceChildren();
     if(!game.planes.length){const para=document.createElement('p');para.textContent='현재 관제 중인 항공기가 없어요.';traffic.append(para);}
     for(const f of game.planes){
-      const button=document.createElement('button');button.type='button';
+      const button=document.createElement('button');button.type='button';button.dataset.planeId=String(f.id);
       button.className='flight-row'+(f.id===game.selectedId?' chosen':'')+(game.activeAlerts.includes(f.id)?' danger':'');
       button.innerHTML='<b>'+safeText(f.callSign)+'</b><span>'+safeText(f.destId)+'</span><small>'+safeText(f.type)+'</small><small>고도 '+(f.altitude>1.5?'2':'1')+'</small>';
-      button.addEventListener('click',()=>{game.selectedId=f.id;updatePanel();});
       traffic.append(button);
     }
-    const log=$('logList');log.replaceChildren();
+    }
+    const log=$('logList');
+    const logSignature=JSON.stringify(game.messages.slice(0,6).map(m=>m.id));
+    if(log.dataset.signature!==logSignature){log.dataset.signature=logSignature;log.replaceChildren();
     for(const m of game.messages.slice(0,6)){
       const item=document.createElement('li');if(m.warn)item.className='warn';
       item.textContent=fmt(m.at)+' · '+m.text;log.append(item);
-    }
+    }}
     $('footerStatus').textContent=paused?'일시정지':game.phase==='running'?'현재 운항 '+game.planes.length+'대':'근무 종료';
     $('statusLabel').textContent=p?p.callSign+' 선택됨 · 지도를 터치해 경유점 지정':'항공기를 선택하고 지도에 경유점을 지정하세요';
     $('pauseBtn').textContent=paused?'계속하기':'일시정지';
@@ -147,10 +153,17 @@
     return {x:(event.clientX-bounds.left)/bounds.width*W,y:(event.clientY-bounds.top)/bounds.height*H};
   }
   function nearestPlane(pos){
-    if(!game)return null;let best=null,d=36;
+    if(!game)return null;const box=canvas.getBoundingClientRect();let best=null,d=Math.max(36,19*W/Math.max(1,box.width));
     for(const p of game.planes){const pd=C.distance(p,pos);if(pd<d){d=pd;best=p;}}
     return best;
   }
+  $('trafficList').addEventListener('click',event=>{
+    if(!game||game.phase!=='running')return;
+    const entry=event.target.closest('[data-plane-id]');
+    if(!entry)return;
+    const id=Number(entry.dataset.planeId);
+    if(C.findPlane(game,id)){game.selectedId=id;updatePanel();}
+  });
   canvas.addEventListener('pointerdown',event=>{
     if(!game||game.phase!=='running'||paused)return;
     const pos=pointerPosition(event);startPointer={id:event.pointerId,pos,hit:nearestPlane(pos)};
@@ -183,7 +196,7 @@
     document.querySelectorAll('[data-speed]').forEach(x=>x.classList.toggle('active',x===btn));
   }));
   function start(){
-    game=C.create(preview,Date.now());
+    game=C.create(preview,Date.now());trafficSignature='';
     game.selectedId=null;paused=false;speed=1;reported=false;lastDelivered=0;lastWarnings=0;accumulator=0;
     document.querySelectorAll('[data-speed]').forEach(b=>b.classList.toggle('active',b.dataset.speed==='1'));
     $('startModal').hidden=true;$('endModal').hidden=true;
@@ -203,11 +216,12 @@
     $('endTitle').textContent=passed?'오늘의 근무 완료!':'오늘의 관제 보고서';
     $('endMessage').textContent=game.endReason;
     $('endSafe').textContent=game.delivered+'대';
+    $('endOrders').textContent=game.controlled+' / '+game.map.requiredCommands+'대';
     $('endWarnings').textContent=game.warnings+'회';
     $('endScore').textContent=game.score.toLocaleString('ko-KR');
     $('endIncidents').textContent=game.incidents+'회';
     $('endModal').hidden=false;
-    sdk('result',{scope:'shift',status:passed?'completed':'failed',outcome:passed?'clear':'fail',score:game.score,level:game.mapKey,flights:game.delivered,warnings:game.warnings,incidents:game.incidents});
+    sdk('result',{scope:'shift',status:passed?'completed':'failed',outcome:passed?'clear':'fail',score:game.score,level:game.mapKey,flights:game.delivered,warnings:game.warnings,incidents:game.incidents,controlled:game.controlled});
   }
   $('startBtn').addEventListener('click',start);
   $('againBtn').addEventListener('click',start);
