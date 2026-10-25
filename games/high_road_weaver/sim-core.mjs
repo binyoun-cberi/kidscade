@@ -273,8 +273,16 @@ export class RoadWeaver {
     this.rebuild();return {ok:true};
   }
   rebuild(){
-    // 기존 이동 중 차량은 이전 그래프 참조를 유지하여 편집해도 순간이동하지 않는다.
-    if(this.cars.length&&this.edges.length)this.oldRoads.push({edges:this.edges,cars:new Set(this.cars.map(c=>c.id))});
+    // 현재 그래프 위에서 실제로 운행 중인 차량의 '남은 주행 구간'만 퇴역 도로로 보존한다.
+    // 이미 퇴역한 그래프의 차량을 다시 보관하면 편집 횟수에 따라 유령 도로망이 무한히 쌓인다.
+    const currentEdges=new Set(this.edges);
+    const retiredEdges=new Set(),retiredCars=new Set();
+    for(const car of this.cars){
+      for(const step of car.path.slice(car.step)){
+        if(currentEdges.has(step.edge)){retiredEdges.add(step.edge);retiredCars.add(car.id);}
+      }
+    }
+    if(retiredEdges.size)this.oldRoads.push({edges:[...retiredEdges],cars:retiredCars});
     const cuts=this.roads.map(r=>[{d:0,p:r.points[0]},{d:roadLength(r.points),p:r.points.at(-1)}]);
     const ports=this.roundabouts.map(()=>[]);
     const mark=(idx,d,p)=>cuts[idx].push({d,p});
