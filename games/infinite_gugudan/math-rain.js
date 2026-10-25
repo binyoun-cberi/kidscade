@@ -69,7 +69,7 @@
           <button data-rain-key="1">1</button><button data-rain-key="2">2</button><button data-rain-key="3">3</button>
           <button class="rain-delete" data-rain-key="del">지우기</button><button data-rain-key="0">0</button><button class="rain-enter" data-rain-key="enter">확인</button>
         </div>
-        <p class="rain-input-help">키보드 숫자 · Enter 확인 · Backspace 지우기 · Tab 블록 변경</p>
+        <p class="rain-input-help">키보드 숫자 · Enter 확인 · Backspace 지우기 · ← → 블록 변경</p>
       </div>
     </div>`;
   document.querySelector("main.app").appendChild(screen);
@@ -339,12 +339,13 @@
     if (/^\d$/.test(event.key)) key = event.key;
     else if (event.key === "Enter") key = "enter";
     else if (event.key === "Backspace" || event.key === "Delete") key = "del";
-    else if (event.key === "Tab") {
+    else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       event.preventDefault();
       if (!state.blocks.length) return;
       const ordered = state.blocks.slice().sort((a, b) => b.y - a.y);
       const at = ordered.findIndex(item => item.id === state.selected);
-      choose(ordered[(at + 1) % ordered.length].id);
+      const step = event.key === "ArrowRight" ? 1 : -1;
+      choose(ordered[(at + step + ordered.length) % ordered.length].id);
       return;
     } else if (event.key === "Escape") { pause(true); event.preventDefault(); return; }
     if (key !== null) { event.preventDefault(); press(key); }
