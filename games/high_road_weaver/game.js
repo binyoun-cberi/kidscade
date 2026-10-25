@@ -391,6 +391,20 @@ function drawSignals(){
     }
   }
 }
+function drawCongestion(){
+  // 플레이어에게 교통량 숫자를 보여주는 대신 실제 느린 차가 모인 자리만 시각화한다.
+  // 막 출발한 차는 제외해 도시 출입구 전체가 계속 붉게 보이지 않도록 한다.
+  ctx.save();
+  for(const c of sim.cars){
+    if(c.s<26||c.speed>=c.maxSpeed*.32)continue;
+    const p=sim.sampleCar(c);
+    const radius=c.speed<4?17:12;
+    ctx.beginPath();ctx.arc(p.x,p.y,radius,0,Math.PI*2);
+    ctx.fillStyle=c.speed<4?'rgba(219,101,75,.13)':'rgba(230,160,66,.09)';
+    ctx.fill();
+  }
+  ctx.restore();
+}
 function drawCar(c){
   const p=sim.sampleCar(c),name=c.kind==='tractor'?'tractor':c.kind==='bus'?'bus':
     c.kind==='truck'?(Number(c.id.slice(1))%2?'truck':'truckdelivery'):
@@ -452,6 +466,7 @@ function render(){
   drawSignals();
   sim.towns.forEach(drawCity);
   drawDistrictLife();
+  drawCongestion();
   for(const c of sim.cars)drawCar(c);
   drawDraft();
   ctx.restore();
