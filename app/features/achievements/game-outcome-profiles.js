@@ -161,7 +161,7 @@
       'trivia_drift_survival','high_outbreak_korea','korea_marble','high_history_map'
     ]),
     progression:Object.freeze([
-      'high_human_history_cards','high_metro_planner','trivia_blockraft','high_star_hoppers',
+      'high_human_history_cards','high_metro_planner','high_road_weaver','trivia_blockraft','high_star_hoppers',
       'high_ecopolis','high_micro_evolution','science_cosmic_growth','korean_farm'
     ]),
     sandbox:Object.freeze([
