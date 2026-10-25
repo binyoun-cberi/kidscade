@@ -171,7 +171,7 @@ test('3D picking, honest prop fallbacks and rotated-camera ground dragging are p
   assert.match(code,/challengeLevel\+1/);
   assert.match(code,/finishChallenge\(/);
   assert.match(html,/20초 연속 찾기 도전/);
-  assert.match(code,/sim\\.mjs\\?v=4/);
+  assert.match(code,/sim\.mjs\?v=4/);
   assert.match(code,/pinchCenter/);
-  assert.match(code,/zoom\\(zoomTouchDist\\/distance,center\\.x,center\\.y\\)/);
+  assert.match(code,/zoom\(zoomTouchDist\/distance,center\.x,center\.y\)/);
 });
