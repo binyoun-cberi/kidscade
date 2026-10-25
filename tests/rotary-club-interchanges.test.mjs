@@ -76,10 +76,10 @@ test('ramps explicitly connect ground and bridge with entry and exit',()=>{
   assert.equal(sim.roads.length,before-1);
 });
 
-test('existing v1 saves still load and v2 keeps roundabouts/overpasses',()=>{
+test('existing v1/v2 saves still load and v3 keeps roundabouts/overpasses',()=>{
   const {sim,junction}=intersection();
   assert.ok(sim.addRoundabout(junction).ok);
-  assert.equal(sim.snapshot().version,2);
+  assert.equal(sim.snapshot().version,3);
   const saved=sim.snapshot(),reloaded=new RoadWeaver();
   assert.ok(reloaded.restore(saved));
   assert.equal(reloaded.roundabouts.length,1);
@@ -140,10 +140,16 @@ test('traffic lights affect actual junction movement and legacy signal IDs migra
   assert.ok(sim.spawn('home','office'));
   const car=sim.cars.find(c=>c.from==='home');
   assert.ok(car);
-  sim.tickTime=6; // north-south green; east-west waits
-  assert.equal(sim.canGo(car),false);
-  sim.tickTime=0; // east-west green
-  assert.equal(sim.canGo(car),true);
+  sim.tickTime=6; // north-south green, but the junction is empty
+  assert.equal(sim.canGo(car),true,'a lonely driver should not be held at an empty junction');
+  const cross=sim.route({x:530,y:120},{x:530,y:610});
+  assert.ok(cross&&cross.length===2);
+  const opposing={...car,id:'c-cross',path:cross,step:0,edge:cross[0].edge,dir:cross[0].dir,
+    s:cross[0].edge.length-30,lane:0};
+  sim.cars.push(opposing);
+  assert.equal(sim.canGo(car),false,'red light must block a crossing with conflicting traffic');
+  sim.tickTime=0;
+  assert.equal(sim.canGo(car),true,'green traffic must be allowed');
   const old={...sim.snapshot(),version:1,lights:[junction.id.split('@')[0]],roundabouts:[]};
   const copy=new RoadWeaver();assert.ok(copy.restore(old));
   assert.ok(copy.lights.has(junction.id),'old signal keys must be attached to ground layer');
