@@ -34,7 +34,10 @@ test('실험실의 옛 절단 통로에 진입로와 반드시 꺾어야 하는 
   const l=levels[stage-1];
   assert.ok(!l.objects.some(e=>e.type==='wall'&&e.x===2&&e.y===4),'north entry '+stage);
   assert.ok(!l.objects.some(e=>e.type==='wall'&&e.x===4&&e.y===4),'north exit '+stage);
-  assert.ok(l.objects.some(e=>e.type==='wall'&&e.x===3&&e.y===5),'mandatory detour '+stage);
+  const centre=l.objects.filter(e=>e.x===3&&e.y===5);
+  assert.equal(centre.length,1,'one existing obstacle at the entry '+stage);
+  assert.ok(centre[0].type==='wall'||centre[0].type==='fire'||centre[0].type==='rock'||centre[0].type==='key',
+   'protect authored puzzle object instead of overwriting it '+stage);
  }
 });
 test('메인 플레이에서 해결 가능한 퍼즐을 차단하지 않는지 실제 턴 엔진으로 경로 확인',()=>{
