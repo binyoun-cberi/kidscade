@@ -57,7 +57,7 @@ export function getRoutePosition(person,stage){
   // Neither route crosses the building footprint or the road (starts z + 2.825).
   // Stationary groups never overlap the pedestrian lane.
   const t=person.elapsed,pace=person.challengeSpeed||1,phase=person.phase;
-  if(person.slot===1&&['deliver','ball','wave'].includes(person.activity)){
+  if(person.slot===1&&person.activity==='deliver'){
     // A walking neighbor travels continuously across most of the block.
     // Smooth easing at each end avoids teleporting and sudden reversals.
     const x=1.94*Math.sin(t*.47*pace+phase);
