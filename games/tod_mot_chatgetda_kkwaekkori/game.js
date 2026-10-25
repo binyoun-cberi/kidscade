@@ -424,6 +424,20 @@ function positionEverything(dt) {
     mesh.holder.rotation.y=THREE.MathUtils.lerp(mesh.holder.rotation.y,facing,dt===0?1:Math.min(1,dt*6));
     if(celebration?.id===p.id){mesh.body.rotation.z=Math.sin(p.elapsed*12)*.07;}
     else mesh.body.rotation.z=0;
+    if(mesh.catchBurst){
+      if(celebration?.id===p.id){
+        const elapsed=1.4-celebration.remaining;
+        mesh.catchBurst.children.forEach((spark,index)=>{
+          const angle=(index/mesh.catchBurst.children.length)*Math.PI*2;
+          spark.position.set(Math.cos(angle)*(.13+elapsed*.85),.72+elapsed*.6+Math.sin(index*3)*.06,Math.sin(angle)*(.13+elapsed*.65));
+          spark.scale.setScalar(Math.max(.02,1-elapsed/1.35));
+        });
+      }else{
+        disposeProcedural(mesh.catchBurst);
+        mesh.holder.remove(mesh.catchBurst);
+        mesh.catchBurst=null;
+      }
+    }
     animateActivity(mesh.holder,p);
   }
   for(const car of cars) {
@@ -579,7 +593,14 @@ function pick(clientX,clientY) {
   }
   nearest.found=true;found.push(nearest.id);
   recentLooks.push(signature(nearest));if(recentLooks.length>20)recentLooks.shift();
-  celebration={id:nearest.id,remaining:1.4};addFoundMarker(citizenMeshes.get(nearest.id).holder);
+  celebration={id:nearest.id,remaining:1.4};
+  const captured=citizenMeshes.get(nearest.id);
+  addFoundMarker(captured.holder);
+  // Original Critter Catchin' uses a visible capture-and-collect animation.
+  // A light 3D sparkle burst gives our scene the same immediate feedback.
+  const burst=new THREE.Group();burst.name='catch-burst';
+  for(let i=0;i<10;i++)burst.add(ball(.055,[0xffd761,0xffffff,0xf3947b][i%3]));
+  captured.holder.add(burst);captured.catchBurst=burst;
   $('foundStamps').textContent='🌟'.repeat(found.length);
   $('progress').textContent=`찾은 친구 ${found.length} / ${town.order.length}`;
   showToast('🎉 찾았다! 정말 잘했어!');
