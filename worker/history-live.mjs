@@ -55,11 +55,11 @@ function randomQuestionIndexes(count,questionMode='choice',eras=ERA_ORDER){
   const selectedEras=normalizeEraSelection(eras),byFact=new Map(),isPeople=questionMode==='people',isHeritage=questionMode==='heritage';
   QUESTIONS.forEach((q,index)=>{
     const fact=CORE_HISTORY_FACTS[Number(q.sourceFact)];
-    if(!fact||!selectedEras.includes(fact.era)||((isPeople||isHeritage)&&((isPeople&&fact.type!=='인물')||(isHeritage&&!isHeritageFact(fact))||(isHeritage?q.family!=='heritage-identify':q.family!=='identify'))))return;
+    if(!fact||!selectedEras.includes(fact.era)||(questionMode==='short'&&q.family!=='short')||((isPeople||isHeritage)&&((isPeople&&fact.type!=='인물')||(isHeritage&&!isHeritageFact(fact))||(isHeritage?q.family!=='heritage-identify':q.family!=='identify'))))return;
     const key=Number(q.sourceFact);if(!byFact.has(key))byFact.set(key,[]);byFact.get(key).push(index);
   });
   const allErasSelected=selectedEras.length===ERA_ORDER.length&&ERA_ORDER.every(era=>selectedEras.includes(era));
-  let facts=allErasSelected?balancedRandomFactIndexes(count,selectedEras,Math.random,isPeople?'인물':isHeritage?'heritage':null):[...byFact.keys()];
+  let facts=allErasSelected?balancedRandomFactIndexes(count,selectedEras,Math.random,isPeople?'인물':isHeritage?'heritage':questionMode==='short'?'short':null):[...byFact.keys()];
   facts=facts.filter(fact=>byFact.has(fact));
   const bytes=new Uint32Array(Math.max(2,Math.max(facts.length,byFact.size)*3+count+4));crypto.getRandomValues(bytes);
   if(!allErasSelected){
@@ -69,8 +69,8 @@ function randomQuestionIndexes(count,questionMode='choice',eras=ERA_ORDER){
   const pickedFacts=facts.slice(0,Math.min(count,facts.length));
   let cursor=0;while(pickedFacts.length<count){pickedFacts.push(facts[cursor%facts.length]);cursor++;}
   return pickedFacts.map((fact,pos)=>{
-    const all=byFact.get(fact)||[],ox=all.filter(i=>QUESTIONS[i]?.family==='ox'),choice=all.filter(i=>QUESTIONS[i]?.family!=='ox');
-    const options=(isPeople||isHeritage)?all.filter(i=>QUESTIONS[i]?.family===(isHeritage?'heritage-identify':'identify')):questionMode==='ox'?(ox.length?ox:choice):questionMode==='mixed'?(pos%2===1&&ox.length?ox:(choice.length?choice:ox)):(choice.length?choice:ox);
+    const all=byFact.get(fact)||[],ox=all.filter(i=>QUESTIONS[i]?.family==='ox'),short=all.filter(i=>QUESTIONS[i]?.family==='short'),choice=all.filter(i=>!['ox','short'].includes(QUESTIONS[i]?.family));
+    const options=questionMode==='short'?short:(isPeople||isHeritage)?all.filter(i=>QUESTIONS[i]?.family===(isHeritage?'heritage-identify':'identify')):questionMode==='ox'?(ox.length?ox:choice):questionMode==='mixed'?(pos%2===1&&ox.length?ox:(choice.length?choice:ox)):(choice.length?choice:ox);
     const pick=bytes[(facts.length+pos)%bytes.length]%options.length;
     return options[pick];
   });
