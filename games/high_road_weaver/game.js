@@ -7,7 +7,7 @@ let paused=true,speed=1,mode='road',lanes=2,zoom=1;
 let cam={x:540,y:360},scale=1,dpr=1,viewW=1,viewH=1;
 let draft=null,pending=null,active=new Map(),gesture=null;
 let accumulator=0,lastFrame=0,lastUi=0,lastSave=0,toastUntil=0;
-let guideCache='',saveAvailable=false;
+let guideCache='',saveAvailable=false,sessionStarted=false,suppressGesture=false;
 const STORAGE_KEY='kidscade_game_v1:high_road_weaver:world';
 const imageRoot='../../assets/game/2d/vehicles/pixel/cars/';
 const sprites={};
@@ -21,6 +21,7 @@ function safeRead(){
   try{const raw=localStorage.getItem(STORAGE_KEY);return raw?JSON.parse(raw):null;}catch(_){return null;}
 }
 function save(){
+  if(!sessionStarted)return;
   try{localStorage.setItem(STORAGE_KEY,JSON.stringify(sim.snapshot()));saveAvailable=true;}catch(_){}
 }
 function notice(message){
@@ -83,7 +84,7 @@ canvas.addEventListener('pointerdown',event=>{
   const p=worldOf(event.clientX,event.clientY);
   active.set(event.pointerId,{clientX:event.clientX,clientY:event.clientY,startX:event.clientX,startY:event.clientY,world:p,moved:false});
   if(active.size===2){
-    draft=null;pending=null;
+    suppressGesture=true;draft=null;pending=null;
     const a=[...active.values()],midX=(a[0].clientX+a[1].clientX)/2,midY=(a[0].clientY+a[1].clientY)/2;
     gesture={distance:Math.hypot(a[0].clientX-a[1].clientX,a[0].clientY-a[1].clientY),zoom,anchor:worldOf(midX,midY)};
   }else if(active.size===1&&mode==='road'){
@@ -111,6 +112,10 @@ canvas.addEventListener('pointermove',event=>{
 function pointerEnd(event,cancel=false){
   const state=active.get(event.pointerId);if(!state)return;
   active.delete(event.pointerId);
+  if(suppressGesture){
+    if(active.size===0){suppressGesture=false;gesture=null;}
+    draft=null;return;
+  }
   if(gesture||active.size){
     if(active.size<2)gesture=null;
     draft=null;
@@ -145,12 +150,12 @@ $('speedBtn').addEventListener('click',()=>{speed=speed===1?2:speed===2?3:1;refr
 $('undoBtn').addEventListener('click',()=>{const r=sim.undo();notice(r.ok?'마지막 작업을 되돌렸어요.':r.reason);if(r.ok)save();});
 $('helpBtn').addEventListener('click',()=>showOverlay('help'));
 $('closeHelp').addEventListener('click',()=>showOverlay('help',false));
-function startNew(){sim=new RoadWeaver();zoom=1;cam={x:540,y:360};paused=false;speed=1;stopDraft();save();showOverlay('intro',false);refreshButtons();notice('두 도시 사이에 도로를 그려 보세요.');}
+function startNew(){sessionStarted=true;sim=new RoadWeaver();zoom=1;cam={x:540,y:360};paused=false;speed=1;stopDraft();save();showOverlay('intro',false);refreshButtons();notice('두 도시 사이에 도로를 그려 보세요.');}
 $('startBtn').addEventListener('click',startNew);
 $('continueBtn').addEventListener('click',()=>{
   const data=safeRead();
   if(!sim.restore(data)){notice('저장 기록을 불러올 수 없어 새 도시를 시작합니다.');startNew();return;}
-  paused=false;stopDraft();showOverlay('intro',false);refreshButtons();notice('이전 도로망을 불러왔어요.');
+  sessionStarted=true;paused=false;stopDraft();showOverlay('intro',false);refreshButtons();notice('이전 도로망을 불러왔어요.');
 });
 window.addEventListener('keydown',event=>{
   if(event.key==='Escape'){pending=null;draft=null;showOverlay('help',false);}
