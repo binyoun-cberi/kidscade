@@ -122,6 +122,11 @@ export class RoadWeaver {
     if(pts.length<2)return {ok:false,reason:'조금 더 길게 그려 주세요.'};
     pts[0]=this.snap(pts[0],kind==='bridge'?1:0);
     pts[pts.length-1]=this.snap(pts.at(-1),kind==='ground'?0:1);
+    if(kind==='ramp'){
+      const grounded=this.roads.some(r=>isSurface(r)&&r.points.slice(1).some((end,i)=>nearestOnSegment(pts[0],r.points[i],end).d<.25));
+      const elevated=this.roads.some(r=>r.kind==='bridge'&&r.points.slice(1).some((end,i)=>nearestOnSegment(pts.at(-1),r.points[i],end).d<.25));
+      if(!grounded||!elevated)return {ok:false,reason:'진출입로는 지상 도로에서 시작해 고가도로에 닿아야 해요.'};
+    }
     const distance=roadLength(pts),cost=Math.ceil(costOfRoad(pts,lanes)*(kind==='bridge'?1.75:kind==='ramp'?1.4:1));
     if(distance<32)return {ok:false,reason:'도로가 너무 짧아요.'};
     if(cost>this.budget)return {ok:false,reason:'도로 자재가 부족해요.'};
@@ -189,7 +194,8 @@ export class RoadWeaver {
     if(road.kind==='slip'||road.kind==='ramp')return {ok:false,reason:'이 도로는 차선을 넓힐 수 없어요.'};
     if(road.lanes>=6)return {ok:false,reason:'이미 가장 넓은 도로예요.'};
     const lanes=road.lanes+2;
-    const cost=costOfRoad(road.points,lanes)-costOfRoad(road.points,road.lanes);
+    const factor=road.kind==='bridge'?1.75:1;
+    const cost=Math.ceil(costOfRoad(road.points,lanes)*factor)-Math.ceil(costOfRoad(road.points,road.lanes)*factor);
     if(cost>this.budget)return {ok:false,reason:'차로를 늘릴 자재가 부족해요.'};
     const old=road.lanes;road.lanes=lanes;this.budget-=cost;
     this.history.push({kind:'widen',id:road.id,old,cost});this.rebuild();
