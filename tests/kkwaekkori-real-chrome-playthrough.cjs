@@ -107,7 +107,7 @@ let chrome,ws,profile,serverOpen=false,passed=0;
   await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:810,y:490,button:'left',clickCount:1});
   const look1=await evaluate("__KK_TEST__.snapshot().look");
   assert.ok(Math.hypot(look1[0]-look0[0],look1[1]-look0[1])>.05,'Dragging the world must move the camera');
-  await evaluate("document.querySelector('#rotateRight').click();document.querySelector('#resetViewBtn').click();document.querySelector('#seeThrough').click()");
+  await evaluate("document.querySelector('#resetViewBtn').click();document.querySelector('#rotateRight').click();document.querySelector('#seeThrough').click()");
   // Rotation changes the plane projection; verify drag still follows the ground.
   const turnBefore=await evaluate("__KK_TEST__.snapshot().look");
   await send('Input.dispatchMouseEvent',{type:'mouseMoved',x:720,y:460});
