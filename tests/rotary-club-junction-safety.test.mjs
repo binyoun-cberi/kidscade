@@ -46,7 +46,7 @@ test('opposite-turn cars approach from a suitable lane when room is available',(
   assert.equal(sim.getTurn(car),'left');
   sim.changeLane(car,1/30);
   assert.equal(car.lane,0,'left-turning driver did not move to inner lane');
-  const rightRoute=sim.route({x:530,y:120},TOWN_TYPES[1]);
+  const rightRoute=sim.route({x:530,y:610},TOWN_TYPES[1]);
   const right=makeVehicle(rightRoute,'car-right',0);
   right.s=right.edge.length-70;
   sim.cars=[right];
