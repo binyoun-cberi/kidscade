@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1">
+ <meta name="theme-color" content="#0c1626">
+ <title>설정 탈출 | 내 말 좀 들어 · Kidscade</title>
+ <link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body>
+<div class="app">
+ <header class="topbar">
+  <div class="brand">
+   <span class="brand-icon" aria-hidden="true">⌘</span>
+   <div><span class="eyebrow">내 말 좀 들어 · 두 번째 놀이</span><strong>설정 탈출</strong></div>
+  </div>
+  <div class="topnav">
+   <a class="quiet-link" href="../index.html">규칙 퍼즐로 돌아가기</a>
+   <button id="chooseStage" class="small-btn" type="button">방 고르기</button>
+   <button id="restart" class="small-btn" type="button">다시 시작</button>
+  </div>
+ </header>
+ <section class="intro" aria-label="현재 스테이지">
+  <div><div class="eyebrow" id="chapter">조작 연습</div><h1 id="stageTitle">첫 발자국</h1><p id="stageDesc">오른쪽 문까지 걸어가 보세요.</p></div>
+  <div class="stage-counter"><span>ROOM</span><b id="stageCount">01 / 07</b><small id="status">문으로 가 보세요</small></div>
+ </section>
+ <main class="layout">
+  <section class="play-card" aria-label="플랫폼 게임 화면">
+   <div class="board-label"><span class="live-dot"></span> GAME WORLD <span id="boardMessage" role="status" aria-live="polite">움직여 보세요</span></div>
+   <div id="screen" class="screen">
+    <canvas id="scene" width="960" height="540" aria-label="횡스크롤 설정 퍼즐 게임"></canvas>
+    <div id="floatingPanel" class="floating-panel" role="group" aria-label="움직일 수 있는 설정 창">
+     <div id="dragHandle" class="drag-handle" tabindex="0" role="button" aria-label="설정 창 이동, 마우스 또는 손가락으로 끌기">
+      <span>⠿</span><b>SETTINGS</b><span class="mini-dots">● ●</span>
+     </div>
+     <div class="floating-body"><span>이 창을 움직일 수 있어요</span><span class="mini-grip">↔</span></div>
+    </div>
+   </div>
+   <div class="touch-controls" aria-label="화면 이동 버튼">
+    <div class="control-directions">
+     <button data-action="left" type="button" aria-label="왼쪽으로 이동">◀</button>
+     <button data-action="right" type="button" aria-label="오른쪽으로 이동">▶</button>
+    </div>
+    <button data-action="jump" class="jump-btn" type="button">점프 ↑</button>
+   </div>
+   <div class="game-footer"><span id="tip">← → 이동 · 스페이스 점프</span><span id="feedback" role="status" aria-live="polite"></span></div>
+  </section>
+  <aside class="settings-card" aria-label="퍼즐에 쓰이는 설정">
+   <div class="settings-header"><div><span class="eyebrow">CONTROLS ARE THE PUZZLE</span><h2>세계 설정</h2></div><div class="settings-icon">⚙</div></div>
+   <p class="settings-lead">이곳의 설정은 장식이 아니에요. 값을 바꾸면 게임 속 규칙도 바뀝니다.</p>
+   <div class="setting-field"><div class="setting-heading"><label for="brightness">밝기</label><output id="brightnessValue" for="brightness">35%</output></div><input type="range" min="0" max="100" step="5" id="brightness" value="35"><small>어둠이 걷히고 숨은 길이 드러나요.</small></div>
+   <div class="setting-field"><div class="setting-heading"><label for="volume">소리</label><output id="volumeValue" for="volume">70%</output></div><input type="range" min="0" max="100" step="5" id="volume" value="70"><small>소리가 크면 감시자가 더 멀리서 들어요.</small></div>
+   <div class="setting-field"><div class="setting-heading"><label for="frame">화면 너비</label><output id="frameValue" for="frame">25%</output></div><input type="range" min="0" max="100" step="5" id="frame" value="25"><small>화면 끝에서 새로운 길이 뻗어 나가요.</small></div>
+   <div class="panel-tip" id="puzzleTip">오른쪽 문까지 가면 다음 방이 열려요.</div>
+   <div class="settings-bottom"><button id="hint" type="button">힌트 보기</button><button id="resetSettings" type="button">설정 초기화</button></div>
+  </aside>
+ </main>
+ <footer>같은 세계, 완전히 다른 규칙. <span>ESC/APE의 발상을 참고해 새로 만든 키즈케이드 퍼즐입니다.</span></footer>
+</div>
+<dialog id="stageDialog" class="stage-dialog"><div class="dialog-head"><div><span class="eyebrow">SELECT ROOM</span><h2>방 고르기</h2></div><button id="closeStages" type="button" aria-label="닫기">✕</button></div><div id="stageGrid" class="stage-grid"></div></dialog>
+<dialog id="clearDialog" class="clear-dialog"><span class="win-mark">✧</span><span class="eyebrow">ROOM CLEAR</span><h2 id="clearTitle">문이 열렸어요!</h2><p id="clearCopy">세계의 규칙을 하나 알아냈어요.</p><div class="dialog-actions"><button id="retry" type="button">다시 하기</button><button id="next" class="primary" type="button">다음 방</button></div></dialog>
+<script src="../../../kidscade-game-sdk.js" data-game-id="high_rule_lab" data-title="내 말 좀 들어" data-shell="true" data-orientation="landscape"></script>
+<script src="./logic.js?v=1"></script>
+<script src="./game.js?v=1"></script>
+</body>
+</html>
