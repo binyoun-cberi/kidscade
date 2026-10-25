@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { shared3DPath, shared3DIsApproved } from '../../assets/game/manifest/shared-community-3d.js';
-import { habitatMaturity, habitatTier, effectiveHabitatArea, advanceHabitatGrowth, constructionVisualAt } from './eco-world-evolution.mjs';
+import { habitatMaturity, habitatTier, effectiveHabitatArea, advanceHabitatGrowth, constructionVisualAt, findArrivalRoutes } from './eco-world-evolution.mjs';
 
 const $=id=>document.getElementById(id);
 const ui={
@@ -771,26 +771,8 @@ function targetVisitorCount(){
 }
 function visitorArrivalRoutes(type){
   const entries=visitorEntryTiles(),goals=visitorDestinations(type);
-  const centerPaths=new Set(buildings.filter(b=>b.type==='visitorcenter').flatMap(facilityAccessTiles));
-  if(!centerPaths.size)return [];
-  const routes=[];
-  for(const entry of entries){
-    // A single BFS per entrance gives the whole connected component.
-    const queue=[entry],previous=new Map([[entry,null]]);
-    for(let i=0;i<queue.length;i++){
-      for(const next of adjacentPathTiles(queue[i])){
-        if(previous.has(next))continue;
-        previous.set(next,queue[i]);queue.push(next);
-      }
-    }
-    if(![...centerPaths].some(t=>previous.has(t)))continue;
-    const available=goals.filter(t=>t!==entry&&previous.has(t));
-    if(!available.length)continue;
-    const goal=available[Math.floor(rng()*available.length)];
-    const path=[];for(let cur=goal;cur&&cur!==entry;cur=previous.get(cur))path.push(cur);
-    path.reverse();routes.push({start:entry,path});
-  }
-  return routes;
+  const centerPaths=buildings.filter(b=>b.type==='visitorcenter').flatMap(facilityAccessTiles);
+  return findArrivalRoutes(entries,goals,centerPaths,adjacentPathTiles,length=>rng()*length);
 }
 function spawnVisitor(){
   const type=pickVisitorType(),routes=visitorArrivalRoutes(type);
