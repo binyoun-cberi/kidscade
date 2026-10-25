@@ -63,13 +63,14 @@ function syncUi(){ui.mission.textContent=world.mode==='arcade'?'와르르 챌린
   ui.heldName.textContent=item?ITEMS[item.type].name:'없음';ui.heldIcon.textContent=item?ICONS[item.type]:'◯';
   ui.heldDescription.textContent=item?`질량 ${ITEMS[item.type].mass} · 튕김 ${Math.round(ITEMS[item.type].restitution*100)}%`:'물건 가까이에서 집기를 눌러.';
   ui.progress.textContent=`${Math.min(progress.unlocked,ALL_STAGES.length)} / ${ALL_STAGES.length}`;ui.progressFill.style.width=`${(progress.unlocked-1)/(ALL_STAGES.length-1)*100}%`;
-  experimentLog.textContent=world.experiments.length?world.experiments.slice(-2).map(e=>`${ITEMS[e.type].name} · ${SURFACES[e.surface].label} · 힘 ${Math.round(e.power*100)}% → ${e.distance} 걸음`).join(' / '):'실험한 물건의 이동 거리가 여기에 기록돼요.';
+  experimentLog.textContent=world.experiments.length?world.experiments.slice(-2).map(e=>`${ITEMS[e.type].name} · ${SURFACES[e.surface].label} · 힘 ${Math.round(e.power*100)}% · 이동 약 ${Math.round(e.distance/40)}칸 · 튕김 ${e.bounces||0}회 (${e.reason})`).join(' / '):'던진 뒤 움직임을 관찰하면 이동 거리와 튕긴 횟수가 기록돼요.';
 }
 function processEvents(){for(const event of world.events){switch(event.type){case'goal':toast(`스위치 작동! +${event.score}점${event.combo>1?` · ${event.combo}콤보`:''}`);beep(770,.16,'triangle');break;
   case'bot-hit':toast(`로봇 밀어내기 +${event.points}점!`);beep(620,.1);break;
   case'hurt':toast(`로봇이 도착했어! 생명 ${event.hearts}개 남음`);beep(180,.22,'sawtooth');break;
   case'restock':toast('새 물건이 도착했어!');break;
   case'experiment':syncUi();break;
+  case'soft-hit':if(event.reason==='bounce')toast('이 스위치는 물건이 한 번 튕긴 뒤에야 켜져!');else toast('충격이 약했어. 힘이나 물건을 바꿔 봐!');break;
   case'bounce':beep(360,.055);break;
   case'domino':if(event.id===0)toast('첫 도미노가 쓰러졌어! 이어지는 움직임을 봐.');beep(490,.06);break;
   case'gate':toast('연쇄 장치 성공! 문이 열렸어!');beep(840,.17);break;
@@ -80,13 +81,18 @@ function processEvents(){for(const event of world.events){switch(event.type){cas
 function roundrect(x,y,w,h,r,fill,stroke,line=2){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=line;ctx.stroke();}}
 function text(str,x,y,size=15,color='#305a54',align='center',bold=true){ctx.font=`${bold?800:500} ${size}px system-ui,sans-serif`;ctx.textAlign=align;ctx.textBaseline='middle';ctx.fillStyle=color;ctx.fillText(str,x,y);}
 function circle(x,y,r,color,stroke=null,sw=2){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=sw;ctx.stroke();}}
-function drawFloor(time){const zone=world.mode==='arcade'?0:world.stage.zone,colors=['#e8ebd2','#e2eff2','#f2e7d3','#efe1e9'];ctx.fillStyle=colors[zone];ctx.fillRect(0,0,W,H);
+function drawFloor(time){const zone=world.mode==='arcade'?0:world.stage.zone,colors=['#e8ebd2','#e2eff2','#f2e7d3','#efe1e9','#f4e6d6','#e0e9f2'];ctx.fillStyle=colors[zone];ctx.fillRect(0,0,W,H);
   ctx.save();ctx.strokeStyle='#517c7524';ctx.lineWidth=1;for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}ctx.restore();
   roundrect(28,52,904,518,21,'#c4c4aa','#426d68',6);roundrect(36,60,888,502,17,'#ebe6cc','#a8c6b1',2);
-  for(const s of world.stage.surfaces){const c=SURFACES[s.type].color;roundrect(s.x,s.y,s.w,s.h,14,c,'#729f99',2);ctx.save();ctx.globalAlpha=.3;ctx.strokeStyle='#fff';ctx.lineWidth=4;
-    for(let v=-s.h;v<s.w+s.h;v+=54){ctx.beginPath();ctx.moveTo(s.x+Math.max(0,v),s.y+Math.max(0,-v));ctx.lineTo(s.x+Math.min(s.w,v+s.h),s.y+Math.min(s.h,s.h+v));ctx.stroke();}ctx.restore();}
+  for(const s of world.stage.surfaces){
+    const c=SURFACES[s.type].color;roundrect(s.x,s.y,s.w,s.h,14,c,'#729f99',2);
+    ctx.save();ctx.beginPath();ctx.roundRect(s.x+2,s.y+2,s.w-4,s.h-4,12);ctx.clip();
+    ctx.globalAlpha=.24;ctx.strokeStyle='#ffffff';ctx.lineWidth=3;
+    for(let x=s.x-s.h;x<s.x+s.w+s.h;x+=55){ctx.beginPath();ctx.moveTo(x,s.y);ctx.lineTo(x+s.h,s.y+s.h);ctx.stroke();}
+    ctx.restore();text(SURFACES[s.type].label+' 바닥',s.x+82,s.y+22,18,'#335a62');
+  }
   for(let i=0;i<9;i++){roundrect(48+i*99,62,10,10,3,'#a2bdad');roundrect(48+i*99,552,10,7,2,'#a2bdad');}
-  roundrect(74,187,188,227,21,'#bfd4b4','#749c88',3);text('물건 보관 구역',168,203,14,'#35635b');
+  roundrect(74,187,188,227,21,'#bfd4b4','#749c88',3);text('물건 보관 구역',168,203,18,'#35635b');
   for(let i=0;i<5;i++)circle(75+i*37,94,3,'#adc2af');
   text(world.mode==='arcade'?'로봇 진입 방향 →':'스위치 목표 →',750,80,16,'#618c82');
   if(world.mode==='arcade'){roundrect(150,95,10,410,4,'#d6a3a1');text('방어선',157,85,12,'#a95451');}
@@ -123,7 +129,7 @@ function drawBumpers(t){for(const b of world.bumpers){circle(b.x+3,b.y+5,b.r+6,'
 function drawGoals(t){for(const g of world.goals){ctx.save();ctx.translate(g.x,g.y);const breathe=reduceMotion?0:Math.sin(t*4+g.id)*2;
     circle(3,5,32,'#00000022');circle(0,0,30+breathe,g.active?'#53c3a6':'#c3595c','#ffffff',3);
     circle(0,0,21,g.active?'#b4ffdf':'#ffbfb8',g.active?'#2c9068':'#8b3537',4);
-    text(g.active?'✓':'!',0,1,22,g.active?'#18784c':'#ba3a39');if(g.pulse>0){circle(0,0,30+(1-g.pulse/.6)*30,'#ffffff00','#8bdfa3',4);}ctx.restore();}}
+    text(g.active?'✓':g.requiredBounces?'↶':'!',0,1,22,g.active?'#18784c':'#ba3a39');if(g.requiredBounces&&!g.active)text('튕겨서 켜기',0,54,18,'#963c47');if(g.pulse>0){circle(0,0,30+(1-g.pulse/.6)*30,'#ffffff00','#8bdfa3',4);}ctx.restore();}}
 function drawItem(item,t){const data=ITEMS[item.type],x=item.x,y=item.y;circle(x+3,y+5,item.r+2,'#224a4d33');ctx.save();ctx.translate(x,y);
   if(item.type==='wood'||item.type==='cube'){ctx.rotate(.08*Math.sin(t*2+item.id));roundrect(-item.r,-item.r,item.r*2,item.r*2,4,data.color,data.outline,3);ctx.strokeStyle=data.outline;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-item.r+6,-item.r+7);ctx.lineTo(item.r-6,item.r-7);ctx.stroke();}
   else{circle(0,0,item.r,data.color,data.outline,3);circle(-item.r*.28,-item.r*.32,item.r*.32,'#ffffff88');if(item.type==='metal'){ctx.strokeStyle='#ffffffa9';ctx.lineWidth=3;ctx.beginPath();ctx.arc(1,0,item.r*.67,-.9,.9);ctx.stroke();}else{ctx.strokeStyle=data.outline;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,item.r*.66,-.8,.7);ctx.stroke();}}
@@ -169,7 +175,10 @@ canvas.addEventListener('pointermove',e=>{if(scene==='playing'&&(e.pointerType==
 canvas.addEventListener('pointerup',e=>{if(e.pointerId!==aimingPointer)return;aim=pointerWorld(e);aimingPointer=null;tryThrow();});
 canvas.addEventListener('pointercancel',e=>{if(e.pointerId===aimingPointer)aimingPointer=null;});
 $('pickup-btn').addEventListener('click',tryPickup);$('throw-btn').addEventListener('click',tryThrow);$('drop-btn').addEventListener('click',()=>{if(drop(world)){beep(350);syncUi();}});
-$('hint-btn').addEventListener('click',()=>{if(scene==='playing')toast(world.stage.tip);});
+$('hint-btn').addEventListener('click',()=>{if(scene!=='playing')return;const remaining=world.goals.filter(g=>!g.active);
+  if(world.gates.some(g=>!g.open)){toast(world.dominos.length?'첫 도미노를 움직여 마지막 도미노까지 반응시키자.':`압력판에 올릴 물건의 질량을 살펴봐!`);}
+  else if(remaining.some(g=>g.requiredBounces)){toast('스위치까지 곧바로 던지지 말고 벽이나 범퍼에 먼저 맞혀 봐.');}
+  else toast(world.stage.tip);});
 $('restart-btn').addEventListener('click',()=>{world.mode==='arcade'?beginArcade():beginStage(world.stage.id);});
 $('home-btn').addEventListener('click',()=>showMenu());$('close-overlay').addEventListener('click',()=>{if(scene==='paused'||scene==='menu'&&world.status==='playing')resume();else if(scene==='result')showMenu();else showMenu();});
 $('sound-btn').addEventListener('click',()=>{muted=!muted;$('sound-btn').textContent=muted?'♪̸':'♫';$('sound-btn').setAttribute('aria-label',muted?'소리 켜기':'소리 끄기');});
