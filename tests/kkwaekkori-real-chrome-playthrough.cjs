@@ -60,7 +60,7 @@ let chrome,ws,profile,serverOpen=false,passed=0;
     if(!d.id)return;const p=pending.get(d.id);if(!p)return;
     pending.delete(d.id);if(d.error)p.reject(Error(d.error.message));else p.resolve(d.result||{});
   };
-  const send=(method,params={})=>new Promise((ok,fail)=>{const id=++seq;pending.set(id,{ok,fail});ws.send(JSON.stringify({id,method,params}))});
+  const send=(method,params={})=>new Promise((ok,fail)=>{const id=++seq;pending.set(id,{resolve:ok,reject:fail});ws.send(JSON.stringify({id,method,params}))});
   const evaluate=async code=>{
     const r=await send('Runtime.evaluate',{expression:code,returnByValue:true,awaitPromise:true});
     if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);
