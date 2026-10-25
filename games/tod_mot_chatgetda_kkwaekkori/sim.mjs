@@ -5,8 +5,9 @@ export const BLOCK_PITCH = 7;
 export const CHALLENGE = Object.freeze({firstCrowd:10,additionalCrowd:3,maxCrowd:50,seconds:20,wrongPenalty:2});
 export function getChallengeSettings(level=1) {
   const safeLevel=Math.max(1,Math.min(10000,Math.floor(Number(level)||1)));
-  const residents=Math.min(CHALLENGE.maxCrowd,CHALLENGE.firstCrowd+(safeLevel-1)*CHALLENGE.additionalCrowd);
-  return {level:safeLevel,residents,targets:1,stageName:residents<=18?'small':'medium', // denser, less empty cities
+  const distractors=Math.min(CHALLENGE.maxCrowd,CHALLENGE.firstCrowd+(safeLevel-1)*CHALLENGE.additionalCrowd);
+  const residents=distractors+1; // Critter Catchin' spawns the special target separately.
+  return {level:safeLevel,distractors,residents,targets:1,stageName:residents<=18?'small':'medium', // denser, less empty cities
     cols:residents<=18?3:residents<=36?4:5,rows:residents<=18?2:residents<=36?3:4,
     speed:Math.min(2.3,1+Math.max(0,safeLevel-10)*.12),seconds:CHALLENGE.seconds,wrongPenalty:CHALLENGE.wrongPenalty};
 }
