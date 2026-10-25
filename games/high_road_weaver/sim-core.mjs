@@ -14,6 +14,17 @@ const len=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const key=p=>Math.round(p.x*10)/10+','+Math.round(p.y*10)/10;
 const nodeKey=(p,level=0)=>key(p)+'@'+level;
 const levelAt=(road,atStart)=>road.kind==='bridge'?1:road.kind==='ramp'?(atStart?0:1):0;
+const wrapAngle=a=>Math.atan2(Math.sin(a),Math.cos(a));
+const travelAngle=(edge,dir,atEnd=false)=>{
+  const at=dir===1?(atEnd?edge.length:0):(atEnd?0:edge.length);
+  const point=pointOnPath(edge.points,Math.max(0,Math.min(edge.length,at+(atEnd?(dir===1?-.01:.01):(dir===1?.01:-.01)))));
+  return wrapAngle(point.angle+(dir===1?0:Math.PI));
+};
+export function classifyTurn(incoming,outgoing){
+  // 화면의 y축은 아래가 양수다. 음의 회전각이 좌회전이다.
+  const theta=wrapAngle(outgoing-incoming);
+  return Math.abs(theta)<.38?'straight':Math.abs(theta)>2.8?'uturn':theta>0?'right':'left';
+}
 const isSurface=road=>road.kind==='ground'||!road.kind;
 function circleHits(a,b,circle){
   const dx=b.x-a.x,dy=b.y-a.y,fx=a.x-circle.x,fy=a.y-circle.y;
@@ -122,6 +133,7 @@ export class RoadWeaver {
     this.openTowns=2;this.budget=420;this.day=1;this.minutes=5*60+30;
     this.delivered=0;this.waiting=0;this.attempted=0;this.serial=0;
     this.tickTime=0;this.spawnFraction=new Map();this.pending=new Map();this.announcements=[];
+    this.junctionReservations=new Map();
     this.growthClock=0;this.dispatchClock=0;
     this.rebuild();
   }
@@ -365,6 +377,7 @@ export class RoadWeaver {
       }
     }
     this.nodes=nodes;this.edges=edges;this.adj=adj;
+    this.junctionReservations.clear();
     this.retireEmpty();
   }
   retireEmpty(){
@@ -411,6 +424,18 @@ export class RoadWeaver {
         (from==='tourism'||to==='tourism')&&this.serial%3===0?'bus':this.serial%9===0?'truck':'car'});
     return true;
   }
+  getTurn(car){
+    const next=car.path[car.step+1];
+    if(!next)return 'straight';
+    return classifyTurn(travelAngle(car.edge,car.dir,true),travelAngle(next.edge,next.dir,false));
+  }
+  junctionIsBusy(node,car){
+    const approaches=this.adj.get(node)||[];
+    if(approaches.length<3)return false;
+    if(this.towns.some(t=>node===nodeKey(t,0)))return false; // 지역 출입구는 차량 출발/도착 큐로 처리
+    const occupied=this.junctionReservations.get(node);
+    return Boolean(occupied&&occupied.id!==car.id&&occupied.until>this.tickTime);
+  }
   canGo(car){
     const next=car.path[car.step+1];if(!next)return true;
     const node=car.dir===1?car.edge.b:car.edge.a;
@@ -420,6 +445,7 @@ export class RoadWeaver {
         (other.edge===next.edge&&other.s<27)||(other.edge.b===node&&other.edge.length-other.s<26)
       )))return false;
     }
+    if(this.junctionIsBusy(node,car))return false;
     if(this.lights.has(node)){
       const angle=pointOnPath(car.edge.points,car.dir===1?car.edge.length:0).angle;
       const horizontal=Math.abs(Math.cos(angle))>=Math.abs(Math.sin(angle));
@@ -440,7 +466,11 @@ export class RoadWeaver {
     const next=car.path[car.step+1],remaining=car.edge.length-car.s;
     const nextLanes=next?Math.max(1,Math.floor(next.edge.lanes/2)):lanes;
     const mandatory=next&&car.lane>=nextLanes;
-    if(lanes>1&&car.laneCooldown<=0&&car.s>24&&remaining>(mandatory?3:36)){
+    const turn=next?this.getTurn(car):'straight';
+    const junction=next?(this.adj.get(car.dir===1?car.edge.b:car.edge.a)||[]).length>=3:false;
+    const preferred=junction&&turn==='left'?0:junction&&turn==='right'?Math.min(lanes,nextLanes)-1:null;
+    const shouldPosition=preferred!==null&&car.lane!==preferred&&remaining<155;
+    if(lanes>1&&car.laneCooldown<=0&&car.s>24&&remaining>(mandatory?3:20)){
       const gaps=Array.from({length:lanes},(_,lane)=>{
         let front=Infinity,rear=Infinity;
         for(const other of this.cars){
@@ -453,9 +483,13 @@ export class RoadWeaver {
       const current=gaps[car.lane];
       const options=gaps.filter(g=>Math.abs(g.lane-car.lane)===1&&g.lane<nextLanes
         &&g.front>=32&&g.rear>=28);
-      options.sort((a,b)=>b.front-a.front||a.lane-b.lane);
+      options.sort((a,b)=>{
+        if(shouldPosition)return Math.abs(a.lane-preferred)-Math.abs(b.lane-preferred)||b.front-a.front;
+        return b.front-a.front||a.lane-b.lane;
+      });
       const choice=options[0];
-      if(choice&&(mandatory||current.front<64&&choice.front>current.front+22)){
+      if(choice&&(mandatory||shouldPosition&&Math.abs(choice.lane-preferred)<Math.abs(car.lane-preferred)
+        ||current.front<64&&choice.front>current.front+22)){
         car.lane=choice.lane;car.laneCooldown=1.25;
       }
     }
@@ -488,12 +522,19 @@ export class RoadWeaver {
       const next=c.path[c.step+1];
       if(!next){arrived.push(c);continue;}
       if(!this.canGo(c)){c.s=c.edge.length-1;c.speed=0;continue;}
+      const node=c.dir===1?c.edge.b:c.edge.a;
+      if((this.adj.get(node)||[]).length>=3&&!this.towns.some(t=>node===nodeKey(t,0))){
+        this.junctionReservations.set(node,{id:c.id,until:this.tickTime+.75});
+      }
       c.step++;c.edge=next.edge;c.dir=next.dir;
       c.lane=clamp(c.lane,0,Math.max(1,Math.floor(c.edge.lanes/2))-1);
       c.laneVisual=c.lane;c.s=0;
     }
     if(arrived.length){const gone=new Set(arrived.map(c=>c.id));this.cars=this.cars.filter(c=>!gone.has(c.id));this.delivered+=arrived.length;}
     this.retireEmpty();
+    for(const [node,record] of this.junctionReservations){
+      if(record.until<=this.tickTime)this.junctionReservations.delete(node);
+    }
   }
   update(dt){
     dt=clamp(dt,0,.1);this.tickTime+=dt;this.minutes+=dt*12;
@@ -565,6 +606,7 @@ export class RoadWeaver {
     this.serial=Math.max(0,Math.round(data.serial||0));
     this.lights=new Set(Array.isArray(data.lights)?data.lights.filter(k=>typeof k==='string').map(k=>/@[01]$/.test(k)?k:k+'@0'):[]);
     this.cars=[];this.oldRoads=[];this.history=[];this.spawnFraction.clear();
+    this.junctionReservations.clear();
     this.pending=new Map(Array.isArray(data.queues)?data.queues.filter(row=>Array.isArray(row)&&typeof row[0]==='string'&&Number.isFinite(row[1])&&row[1]>=0&&row[1]<=75):[]);
     this.waiting=[...this.pending.values()].reduce((sum,n)=>sum+n,0);
     this.rebuild();return true;
