@@ -17,7 +17,8 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.glb':'model/gltf-binary','.gltf':'model/gltf+json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.json':'application/json'};
 const server=http.createServer((req,res)=>{
   const url=new URL(req.url,'http://localhost');
-  const file=path.resolve(ROOT,'.'+decodeURIComponent(url.pathname));
+  let file=path.resolve(ROOT,'.'+decodeURIComponent(url.pathname));
+  if(url.pathname.endsWith('/'))file=path.join(file,'index.html');
   if(file!==ROOT&&!file.startsWith(ROOT+path.sep)){res.writeHead(403);res.end();return}
   fs.readFile(file,(err,body)=>{
     if(err){res.writeHead(404);res.end('Missing '+url.pathname);return}
@@ -107,7 +108,15 @@ let chrome,ws,profile,serverOpen=false,passed=0;
   const look1=await evaluate("__KK_TEST__.snapshot().look");
   assert.ok(Math.hypot(look1[0]-look0[0],look1[1]-look0[1])>.05,'Dragging the world must move the camera');
   await evaluate("document.querySelector('#rotateRight').click();document.querySelector('#resetViewBtn').click();document.querySelector('#seeThrough').click()");
-  await evaluate("document.querySelector('#hintBtn').click();document.querySelector('#hintBtn').click()");
+  // Rotation changes the plane projection; verify drag still follows the ground.
+  const turnBefore=await evaluate("__KK_TEST__.snapshot().look");
+  await send('Input.dispatchMouseEvent',{type:'mouseMoved',x:720,y:460});
+  await send('Input.dispatchMouseEvent',{type:'mousePressed',x:720,y:460,button:'left',clickCount:1});
+  await send('Input.dispatchMouseEvent',{type:'mouseMoved',x:810,y:470,button:'left',buttons:1});
+  await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:810,y:470,button:'left',clickCount:1});
+  const turnAfter=await evaluate("__KK_TEST__.snapshot().look");
+  assert.ok(Math.hypot(turnAfter[0]-turnBefore[0],turnAfter[1]-turnBefore[1])>.05,'Rotated camera dragging must still move the town');
+    await evaluate("document.querySelector('#hintBtn').click();document.querySelector('#hintBtn').click()");
   await sleep(250);
   const xy=await evaluate("__KK_TEST__.targetTap()");
   assert.ok(xy&&xy.x>10&&xy.x<1270&&xy.y>5&&xy.y<795,'the target should be visible after hint '+JSON.stringify(xy));
