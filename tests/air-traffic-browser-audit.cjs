@@ -16,7 +16,7 @@ const server=http.createServer((req,res)=>{
   if(pathname==='/games/high_air_traffic_control/game.js'){
    let src=body.toString('utf8');
    assert.match(src,/\}\)\(\);\s*$/);
-   src=src.replace(/\}\)\(\);\s*$/,'window.__airTrafficAudit={get game(){return game;},get paused(){return paused;},get speed(){return speed;},step(n){for(let i=0;i<n&&game&&game.phase==="running";i++)C.step(game,1/30)}};})();');
+   src=src.replace(/\}\)\(\);\s*$/,'window.__airTrafficAudit={get game(){return game;},get paused(){return paused;},get speed(){return speed;},step(n){for(let i=0;i<n&&game&&game.phase==="running";i++)C.step(game,1/30)},finish(){finish()}};})();');
    body=Buffer.from(src);
   }
   res.writeHead(200,{'Content-Type':mime[path.extname(f)]||'application/octet-stream'});res.end(body);
@@ -80,7 +80,7 @@ let chrome,ws;
  assert.ok(Math.abs(after-before)<.04,'Pause must freeze simulation');
  await screenshot('03-desktop-paused');
  await click('pauseBtn');await wait('!__airTrafficAudit.paused');
- await js('__airTrafficAudit.step(9000)');
+ await js('__airTrafficAudit.game.elapsed=__airTrafficAudit.game.duration-0.1;__airTrafficAudit.step(6);__airTrafficAudit.finish()');
  await wait('document.getElementById("endModal").hidden===false');
  assert.equal(await js('__airTrafficAudit.game.phase'),'failed');
  assert.match(await js('document.getElementById("endMessage").textContent'),/직접 안내/);
