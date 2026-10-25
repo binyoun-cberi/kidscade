@@ -1370,7 +1370,7 @@ for(const row of IMPORTED_HISTORY_QUIZ) CORE_FACTS.push({
 const HERITAGE_TYPES = new Set(['유물','문화유산','역사서','법전','지도','과학']);
 export function isHeritageFact(fact){return Boolean(fact&&!fact.direct&&HERITAGE_TYPES.has(fact.type));}
 function matchesFactType(fact,factType){
-  return !factType || (factType==='heritage'?isHeritageFact(fact):factType==='short'?(fact.imported||!fact.direct):fact.type===factType);
+  return !factType || (factType==='heritage'?isHeritageFact(fact):factType==='short'?(fact.imported||!fact.direct):factType==='ox'?!fact.imported:fact.type===factType);
 }
 
 export const ERA_ORDER = Object.freeze(['선사','고조선','삼국','남북국','고려','조선 전기','조선 후기','개항기','대한제국','국권 피탈','일제강점기','광복 이후','6·25 전쟁']);
@@ -1635,15 +1635,17 @@ function buildBank() {
     const distractors=[];
     const groups=[
       imports.filter(x=>x.fact.era===fact.era&&x.fact.type===fact.type),
-      imports.filter(x=>x.fact.type===fact.type),
+      CORE_FACTS.map((f,i)=>({fact:f,index:i})).filter(x=>x.fact.era===fact.era&&x.fact.type===fact.type&&x.fact.term),
       imports.filter(x=>x.fact.era===fact.era),
+      CORE_FACTS.map((f,i)=>({fact:f,index:i})).filter(x=>x.fact.era===fact.era&&!x.fact.direct&&x.fact.term),
+      imports.filter(x=>x.fact.type===fact.type),
       imports
     ];
     for(const group of groups){
       const candidates=group.filter(x=>x.index!==index).sort((a,b)=>
-        hashText(fact.sourceId+':'+a.fact.sourceId)-hashText(fact.sourceId+':'+b.fact.sourceId));
+        hashText(fact.sourceId+':'+(a.fact.sourceId||a.fact.term))-hashText(fact.sourceId+':'+(b.fact.sourceId||b.fact.term)));
       for(const item of candidates){
-        const name=item.fact.answer,key=normalizeAnswer(name);
+        const name=item.fact.answer||item.fact.term,key=normalizeAnswer(name);
         if(!key||seen.has(key))continue;
         seen.add(key);distractors.push(name);
         if(distractors.length>=3)break;
@@ -1654,7 +1656,7 @@ function buildBank() {
     out.push({
       id:'worksheet-'+fact.sourceId,era:fact.era,difficulty:2,
       q:fact.question,o:[fact.answer,...distractors],a:0,
-      e:'정답은 '+fact.answer+'입니다.',sourceFact:index,family:'imported',
+      e:'정답은 '+fact.answer+'입니다.',sourceFact:index,family:fact.type==='인물'?'identify':'imported',
       acceptedAnswers:[fact.answer,...fact.aliases]
     });
   }
@@ -1842,7 +1844,7 @@ export function pickHistoryQuestions(count = 15, random = Math.random, orderMode
   let factIndexes;
 
   if(questionMode==='heritage'&&!hasHistoricalHeritage(selectedEras,wanted))return [];
-  const factType=questionMode==='people'?'인물':questionMode==='heritage'?'heritage':questionMode==='short'?'short':null;
+  const factType=questionMode==='people'?'인물':questionMode==='heritage'?'heritage':questionMode==='short'?'short':questionMode==='ox'?'ox':null;
   if (orderMode === 'chronological') {
     factIndexes = chronologicalSourceFactIndexes(wanted,selectedEras,factType);
   } else {
@@ -1859,7 +1861,7 @@ export function pickHistoryQuestions(count = 15, random = Math.random, orderMode
 }
 
 export function chronologicalQuestionIndexes(count = 15, questionMode = 'choice', eras = ERA_ORDER) {
-  return chronologicalSourceFactIndexes(count,eras,questionMode==='people'?'인물':questionMode==='heritage'?'heritage':questionMode==='short'?'short':null).map((factIndex,position)=>{
+  return chronologicalSourceFactIndexes(count,eras,questionMode==='people'?'인물':questionMode==='heritage'?'heritage':questionMode==='short'?'short':questionMode==='ox'?'ox':null).map((factIndex,position)=>{
     const candidates=candidatesForFact(factIndex,questionMode,position,Math.random).map(q=>QUESTION_BANK.indexOf(q));
     return candidates[(position*3+factIndex)%candidates.length];
   });
