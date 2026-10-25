@@ -441,12 +441,29 @@ export class RoadWeaver {
     if(!next)return 'straight';
     return classifyTurn(travelAngle(car.edge,car.dir,true),travelAngle(next.edge,next.dir,false));
   }
+  movement(car){
+    const next=car.path[car.step+1];
+    if(!next)return null;
+    const node=car.dir===1?car.edge.b:car.edge.a;
+    return {id:car.id,node,enter:car.edge.id+':'+car.dir,
+      exit:next.edge.id+':'+next.dir,lane:car.lane,turn:this.getTurn(car)};
+  }
+  movementsConflict(a,b){
+    if(a.enter===b.enter&&a.exit===b.exit)return a.lane===b.lane;
+    // 같은 방향으로 나란히 통과하는 차로는 서로 막지 않는다.
+    if(a.enter===b.enter&&a.exit===b.exit&&a.lane!==b.lane)return false;
+    // 맞은편에서 직진하는 차량은 우측통행 차로가 분리되어 있다.
+    const opposing=a.enter!==b.enter&&a.exit!==b.exit
+      &&a.enter.split(':').slice(0,-1).join(':')===b.exit.split(':').slice(0,-1).join(':')
+      &&a.exit.split(':').slice(0,-1).join(':')===b.enter.split(':').slice(0,-1).join(':');
+    if(opposing&&a.turn==='straight'&&b.turn==='straight')return false;
+    return true; // 서로 다른 회전/진행 경로는 충돌 가능하므로 보수적으로 양보
+  }
   junctionIsBusy(node,car){
-    const approaches=this.adj.get(node)||[];
-    if(approaches.length<3)return false;
-    if(this.towns.some(t=>node===nodeKey(t,0)))return false; // 지역 출입구는 차량 출발/도착 큐로 처리
-    const occupied=this.junctionReservations.get(node);
-    return Boolean(occupied&&occupied.id!==car.id&&occupied.until>this.tickTime);
+    if((this.adj.get(node)||[]).length<3)return false;
+    const movement=this.movement(car);
+    return (this.junctionReservations.get(node)||[]).some(entry=>
+      entry.id!==car.id&&entry.until>this.tickTime&&this.movementsConflict(movement,entry));
   }
   canGo(car){
     const next=car.path[car.step+1];if(!next)return true;
@@ -459,10 +476,18 @@ export class RoadWeaver {
     }
     if(this.junctionIsBusy(node,car))return false;
     if(this.lights.has(node)){
-      const angle=pointOnPath(car.edge.points,car.dir===1?car.edge.length:0).angle;
+      const angle=travelAngle(car.edge,car.dir,true);
       const horizontal=Math.abs(Math.cos(angle))>=Math.abs(Math.sin(angle));
       const phase=Math.floor(this.tickTime/6)%2;
-      if((horizontal?0:1)!==phase)return false;
+      if((horizontal?0:1)!==phase){
+        // 경쟁 방향에서 실제로 접근하는 차가 없으면 빈 교차로에서 무작정 기다리지 않는다.
+        const competitor=this.cars.some(other=>other!==car&&other.edge!==car.edge&&other.path[other.step+1]
+          &&(other.dir===1?other.edge.b:other.edge.a)===node
+          &&other.edge.length-other.s<80&&
+          ((Math.abs(Math.cos(travelAngle(other.edge,other.dir,true)))>=
+            Math.abs(Math.sin(travelAngle(other.edge,other.dir,true))))===Boolean(phase===0)));
+        if(competitor)return false;
+      }
     }
     const usable=Math.max(1,Math.floor(next.edge.lanes/2));
     if(car.lane>=usable)return false; // 병합 차로에서 안전한 차선 변경을 끝내야 한다.
@@ -535,8 +560,13 @@ export class RoadWeaver {
       if(!next){arrived.push(c);continue;}
       if(!this.canGo(c)){c.s=c.edge.length-1;c.speed=0;continue;}
       const node=c.dir===1?c.edge.b:c.edge.a;
-      if((this.adj.get(node)||[]).length>=3&&!this.towns.some(t=>node===nodeKey(t,0))){
-        this.junctionReservations.set(node,{id:c.id,until:this.tickTime+.75});
+      if((this.adj.get(node)||[]).length>=3){
+        const movement=this.movement(c);
+        const records=(this.junctionReservations.get(node)||[]).filter(r=>r.until>this.tickTime);
+        const conflict=records.some(r=>this.movementsConflict(movement,r));
+        // 같은 차로를 뒤따르는 차는 다음 도로의 실제 안전간격 규칙으로 보호한다.
+        records.push({...movement,until:this.tickTime+(conflict?.42:.28)});
+        this.junctionReservations.set(node,records);
       }
       c.step++;c.edge=next.edge;c.dir=next.dir;
       c.lane=clamp(c.lane,0,Math.max(1,Math.floor(c.edge.lanes/2))-1);
@@ -544,8 +574,10 @@ export class RoadWeaver {
     }
     if(arrived.length){const gone=new Set(arrived.map(c=>c.id));this.cars=this.cars.filter(c=>!gone.has(c.id));this.delivered+=arrived.length;}
     this.retireEmpty();
-    for(const [node,record] of this.junctionReservations){
-      if(record.until<=this.tickTime)this.junctionReservations.delete(node);
+    for(const [node,records] of this.junctionReservations){
+      const remaining=records.filter(record=>record.until>this.tickTime);
+      if(remaining.length)this.junctionReservations.set(node,remaining);
+      else this.junctionReservations.delete(node);
     }
   }
   update(dt){
