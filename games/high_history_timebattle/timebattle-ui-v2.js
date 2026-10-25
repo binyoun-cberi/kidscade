@@ -109,7 +109,14 @@
       if(scoreField)fields.append(scoreField);
     }
     node.querySelectorAll(':scope > .grid').forEach(unused=>{if(!unused.children.length)unused.remove();});
-    select.addEventListener('change',refresh);
+    select.addEventListener('change',()=>{
+      if(select.value==='short'){
+        const secondsId=section.section==='hostSetup'?'seconds':section.section==='soloSetup'?'soloSeconds':'roundSeconds';
+        const time=byId(secondsId);
+        if(time&&Number(time.value)<20)time.value='20';
+      }
+      refresh();
+    });
     byId(section.count)?.addEventListener('change',refresh);
     panels.push({section,select,buttons,eraFold,advanced});
     node.classList.add('enhanced');
