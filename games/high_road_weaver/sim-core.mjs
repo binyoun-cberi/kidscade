@@ -582,7 +582,7 @@ export class RoadWeaver {
         if(c.edge.kind==='roundabout'){
           // 다른 도로 조각 위의 앞차와도 최소 간격을 확보한다.
           const circleGap=this.ringFollowingGap(c);
-          target=Math.min(target,Math.max(0,(circleGap-15)*2.8));
+          target=Math.min(target,Math.max(0,(circleGap-19)*2.8));
         }
         const left=c.edge.length-c.s;
         if(left<23&&!this.canGo(c))target=Math.min(target,Math.max(0,(left-11)*2.3));
