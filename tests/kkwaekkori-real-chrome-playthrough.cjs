@@ -22,20 +22,7 @@ const server=http.createServer((req,res)=>{
   fs.readFile(file,(err,body)=>{
     if(err){res.writeHead(404);res.end('Missing '+url.pathname);return}
     if(url.pathname.endsWith('/tod_mot_chatgetda_kkwaekkori/game.js')){
-      const expose=String.raw\`
-window.__KK_TEST__={
-  snapshot:()=>({active,mode,stage:town?.stageName,people:town?.people.length,targets:town?.order.length,
-    found:found.length,level:challengeLevel,time:timeRemaining,viewSize,look:[cameraLook.x,cameraLook.z],
-    currentTarget:getTarget()?.id,celebration:!!celebration,preview:!!previewActor,
-    shown:!document.querySelector('#start').classList.contains('hidden')}),
-  targetTap:()=>{const t=getTarget(),h=citizenMeshes.get(t?.id)?.holder;if(!h)return null;
-    scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);
-    const p=h.position.clone();p.y+=.85;p.project(camera);
-    const r=canvas.getBoundingClientRect();
-    return {x:r.left+(p.x+1)*r.width/2,y:r.top+(1-p.y)*r.height/2,z:p.z};},
-  deliveryPosition:()=>{const p=town?.people.find(q=>q.activity==='deliver'&&q.slot===1);
-    const h=citizenMeshes.get(p?.id)?.holder;return h?[h.position.x,h.position.z]:null;}
-};\`;
+      const expose="\nwindow.__KK_TEST__={\n  snapshot:()=>({active,mode,stage:town?.stageName,people:town?.people.length,targets:town?.order.length,\n    found:found.length,level:challengeLevel,time:timeRemaining,viewSize,look:[cameraLook.x,cameraLook.z],\n    currentTarget:getTarget()?.id,celebration:!!celebration,preview:!!previewActor,\n    shown:!document.querySelector('#start').classList.contains('hidden')}),\n  targetTap:()=>{const t=getTarget(),h=citizenMeshes.get(t?.id)?.holder;if(!h)return null;\n    scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);\n    const p=h.position.clone();p.y+=.85;p.project(camera);\n    const r=canvas.getBoundingClientRect();\n    return {x:r.left+(p.x+1)*r.width/2,y:r.top+(1-p.y)*r.height/2,z:p.z};},\n  deliveryPosition:()=>{const p=town?.people.find(q=>q.activity==='deliver'&&q.slot===1);\n    const h=citizenMeshes.get(p?.id)?.holder;return h?[h.position.x,h.position.z]:null;}\n};";
       body=Buffer.concat([body,Buffer.from('\n'+expose)]);
     }
     res.writeHead(200,{'content-type':mime[path.extname(file)]||'application/octet-stream'});
