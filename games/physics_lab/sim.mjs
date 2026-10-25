@@ -21,36 +21,55 @@ export const ITEMS = Object.freeze({
   cube:{name:'블록', mass:1.5, radius:17, restitution:0.4, color:'#8dc5e1', outline:'#467c9b'},
 });
 export const SURFACES = Object.freeze({
-  normal:{label:'나무', drag:0.34,color:'#dfc49a'},
-  ice:{label:'얼음', drag:0.075,color:'#a7e5f4'},
-  carpet:{label:'카펫', drag:0.54,color:'#a4cc8f'},
+  normal:{label:'나무', drag:0.38,color:'#dfc49a'},
+  ice:{label:'얼음', drag:0.07,color:'#a7e5f4'},
+  carpet:{label:'카펫', drag:1.05,color:'#a4cc8f'},
 });
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const norm=(x,y)=>{const d=Math.hypot(x,y)||1;return {x:x/d,y:y/d};};
-export const STAGES = Object.freeze(Array.from({length:24},(_,i)=>{
-  const zone=Math.floor(i/6), number=i%6, count=number>=4?2:1;
-  const goals=Array.from({length:count},(_,j)=>({
-    x:710+(number%2)*75+(j?48:0),
-    y:count===1 ? 300+(number%3-1)*105 : (j?405:195),
-    threshold:zone===2?(number>=3?27:17):6,
-  }));
-  const surfaces=zone===1?[{x:265,y:90,w:630,h:420,type:['ice','normal','carpet','ice','carpet','normal'][number]}] :
-    zone===3?[{x:270,y:100,w:615,h:400,type:number%2?'normal':'ice'}]:[];
-  const bumpers=zone===3?Array.from({length:1+Math.floor(number/2)},(_,k)=>({x:480+k*72,y:(k%2?410:185)+((number%2)*35),r:24})):[];
-  const barriers=number===3||number===5?[{x:515,y:280,w:20,h:105}]:[];
+// Authored early missions: every assignment has its own target placement and
+// an observable physical distinction. Legacy stage IDs remain unchanged.
+const EARLY_MISSIONS = [
+  {goals:[[690,300]],tip:'물건을 집어 오른쪽 스위치를 향해 던져 봐.'},
+  {goals:[[730,188]],tip:'같은 자리에서 방향을 바꾸면 어디에 도착할까?'},
+  {goals:[[832,420]],tip:'멀리 있는 스위치야. 힘과 방향을 함께 조절해 봐.'},
+  {goals:[[816,320]],barriers:[[508,235,32,152]],tip:'벽을 향해 곧장 던지면 튕겨. 위나 아래로 돌아가 봐.'},
+  {goals:[[730,178],[808,428]],tip:'스위치 두 곳을 서로 다른 방향으로 맞혀 봐.'},
+  {goals:[[820,196],[814,412]],barriers:[[525,265,30,124],[665,100,22,130]],bumpers:[[652,438,23]],tip:'장애물 두 개와 범퍼가 있어. 위치를 옮기며 차례로 도전해.'},
+  {goals:[[760,300]],surfaces:[[270,110,590,390,'ice']],tip:'같은 힘에서도 얼음에서는 물건이 더 오래 움직여.'},
+  {goals:[[784,225]],surfaces:[[270,110,590,390,'normal']],tip:'얼음보다 나무 바닥에서 더 빨리 느려지는지 보자.'},
+  {goals:[[724,390]],surfaces:[[270,110,590,390,'carpet']],tip:'카펫 위에서는 더 빨리 느려져. 더 가까이 가도 좋아.'},
+  {goals:[[830,183]],surfaces:[[270,100,620,175,'ice'],[270,320,620,165,'carpet']],tip:'위쪽 얼음길과 아래쪽 카펫길 중 어떤 길이 유리할까?'},
+  {goals:[[740,180],[772,415]],surfaces:[[270,90,610,200,'ice'],[270,320,610,175,'carpet']],tip:'두 바닥의 감속이 달라. 어느 쪽에 힘을 더 줘야 할까?'},
+  {goals:[[810,208],[805,410]],surfaces:[[300,100,570,185,'carpet'],[300,315,570,190,'ice']],barriers:[[545,275,30,60]],tip:'빠르게 멈추는 길과 멀리 미끄러지는 길을 나누어 실험해.'},
+  {goals:[[710,300,11]],tip:'가벼운 공과 무거운 쇠공 중 어느 것이 스위치를 강하게 밀까?'},
+  {goals:[[785,226,14]],tip:'물건이 무거워도 속도가 너무 낮으면 스위치가 움직이지 않아.'},
+  {goals:[[816,376,19]],tip:'충돌은 질량과 속도의 영향을 함께 받아.'},
+  {goals:[[814,300,21]],barriers:[[520,240,25,135]],tip:'벽을 피하면서도 충분히 큰 충격을 만들어 봐.'},
+  {goals:[[735,192,18],[799,407,26]],tip:'위아래 스위치는 필요한 충격이 달라. 물건도 바꿔 봐.'},
+  {goals:[[802,304,20]],pads:[{x:430,y:310,r:27,requiredMass:3.5}],gates:[{x:664,y:155,w:28,h:305,key:'pad'}],tip:'무거운 쇠공으로 압력판을 누르면 문이 열려. 그 뒤 스위치를 맞혀!'},
+  {goals:[[759,300]],bumpers:[[495,413,25]],tip:'범퍼 가까이에서 던지면 튕김을 관찰할 수 있어.'},
+  {goals:[[753,208]],bumpers:[[500,405,28]],tip:'튕기는 물건과 곧장 가는 물건의 길을 비교해 봐.'},
+  {goals:[[811,300]],bumpers:[[495,145,23],[598,442,24]],tip:'공은 범퍼에서 잘 튕기고 상자는 상대적으로 덜 튕겨.'},
+  {goals:[[770,300,7,1]],bumpers:[[508,417,26]],tip:'이번 스위치는 한 번 이상 벽이나 범퍼에 튕긴 물건으로만 켜져.'},
+  {goals:[[747,205],[820,418]],bumpers:[[525,190,24],[637,375,26]],barriers:[[584,250,22,105]],tip:'장애물과 범퍼를 피해 두 스위치를 차례대로 맞혀.'},
+  {goals:[[815,355,7,1]],bumpers:[[502,410,25],[646,178,28]],barriers:[[560,270,23,80]],tip:'마지막 임무! 벽이나 범퍼에서 한 번 튕겨 목표로 보내 봐.'},
+];
+const EARLY_NAMES=[
+  ['첫 번째 스위치','왼쪽? 오른쪽?','멀리 있는 버튼','벽을 피해 가자','두 개의 스위치','방향의 달인'],
+  ['매끈한 얼음','나무 바닥','폭신한 카펫','두 갈래 바닥','얼음과 카펫','마찰 탐험가'],
+  ['가벼운 공','상자를 던져요','묵직한 쇠공','강한 충돌','두 가지 충격','쇠공으로 문 열기'],
+  ['첫 번째 범퍼','통통 튕기기','두 개의 범퍼','튕겨서 켜기','장애물 사이로','반사 마스터'],
+];
+export const STAGES=Object.freeze(EARLY_MISSIONS.map((spec,i)=>{
+  const zone=Math.floor(i/6),number=i%6;
+  const goals=spec.goals.map(([x,y,threshold,requiredBounces=0])=>({x,y,threshold:threshold??(zone===2?17:6),requiredBounces}));
+  const surfaces=(spec.surfaces||[]).map(([x,y,w,h,type])=>({x,y,w,h,type}));
+  const barriers=(spec.barriers||[]).map(([x,y,w,h])=>({x,y,w,h}));
+  const bumpers=(spec.bumpers||[]).map(([x,y,r])=>({x,y,r}));
   const itemTypes=zone===2?['tennis','wood','metal','ball']:zone===3?['ball','tennis','cube']:['ball','wood','tennis'];
-  return {id:i+1,zone,number,chapter:`${zone+1}구역`,title:[
-    ['첫 번째 스위치','왼쪽? 오른쪽?','멀리 있는 버튼','벽을 피해 가자','두 개의 스위치','방향의 달인'],
-    ['매끈한 얼음','나무 바닥','폭신한 카펫','멀리 멀리','어느 바닥이 좋을까','마찰 탐험가'],
-    ['가벼운 공','상자를 던져요','묵직한 쇠공','강한 충돌','힘을 모아서','충격의 비밀'],
-    ['첫 번째 범퍼','벽에서 통통','두 개의 범퍼','반사로 우회','튕겨서 둘 다','반사 마스터'],
-  ][zone][number],concept:ZONES[zone].concept,goals,surfaces,bumpers,barriers,itemTypes,
-    tip:[
-      ['스위치 방향을 향해 던져 보자.','방향을 바꾸면 물건이 어디로 갈까?','힘을 키워서 먼 목표를 노려 봐.','가로막힌 물건은 다른 방향을 찾아 봐.','빨간 스위치 두 개를 모두 켜야 해.','물건을 주워 여러 번 실험해도 괜찮아.'],
-      ['얼음에서는 물건이 천천히 멈춰.','나무와 얼음을 비교해 보자.','카펫은 마찰이 커서 빨리 멈춰.','던지는 힘을 높이면 이동 거리가 달라져.','다른 물건으로 다시 실험해 보자.','어떤 조건이 멀리 가게 만들었니?'],
-      ['작은 공은 빠르지만 가벼워.','질량과 속도를 모두 살펴보자.','쇠공은 느려도 충격량이 클 수 있어.','더 빠르게 충돌시키면 어떻게 될까?','힘이 충분해야 스위치가 켜져.','서로 다른 물건의 충돌을 비교해 봐.'],
-      ['범퍼는 물체의 방향을 바꾸어.','튕기는 방향을 예상해 보자.','범퍼 두 개를 연달아 이용할 수 있어.','장애물을 돌아가도록 해 보자.','다른 방향으로 먼저 던져 봐.','튕겨 나오는 각도를 살펴봐.'],
-    ][zone][number]};
+  return {id:i+1,zone,number,chapter:`${zone+1}구역`,title:EARLY_NAMES[zone][number],concept:ZONES[zone].concept,
+    goals,surfaces,barriers,bumpers,itemTypes,pads:spec.pads||[],gates:spec.gates||[],dominos:[],belts:[],tip:spec.tip};
 }));
 // Original 24 missions remain in place: existing completion records stay valid.
 // The new machine missions use authored layouts instead of repeating generic targets.
@@ -79,7 +98,7 @@ const machineMissions=Array.from({length:12},(_,i)=>{
 });
 export const ALL_STAGES=Object.freeze([...STAGES,...machineMissions]);
 export const getStage=id=>ALL_STAGES[clamp(Math.floor(Number(id)||1),1,ALL_STAGES.length)-1];
-const makeItem=(kind,id,x,y)=>({id,type:kind,x,y,vx:0,vy:0,r:ITEMS[kind].radius,m:ITEMS[kind].mass,bounce:ITEMS[kind].restitution,held:false,active:true,rest:0});
+const makeItem=(kind,id,x,y)=>({id,type:kind,x,y,vx:0,vy:0,r:ITEMS[kind].radius,m:ITEMS[kind].mass,bounce:ITEMS[kind].restitution,held:false,active:true,rest:0,bounces:0});
 const gameBounds={l:36,r:924,t:60,b:562};
 function resetObjects(world){
   const stage=world.stage;
@@ -109,18 +128,28 @@ export function surfaceAt(world,x,y){
   for(const z of world.stage.surfaces){if(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h)return z.type;}
   return 'normal';
 }
+function finishExperiment(world,item,reason){
+  if(!item.launch)return;
+  const launch=item.launch;
+  world.experiments.push({...launch,distance:Math.round(launch.travel),reason});
+  world.experiments=world.experiments.slice(-8);
+  item.launch=null;
+  world.events.push({type:'experiment',reason});
+}
 export function pickup(world){
   if(world.status!=='playing'||world.player.held!==null)return false;
   let chosen=null,best=92;
   for(const item of world.items){if(item.held||!item.active||Math.hypot(item.vx,item.vy)>55)continue;const d=Math.hypot(item.x-world.player.x,item.y-world.player.y);
     if(d<best){best=d;chosen=item;}}
   if(!chosen)return false;
+  finishExperiment(world,chosen,'다시 집기');
   chosen.held=true;chosen.vx=chosen.vy=0;world.player.held=chosen.id;
   world.events.push({type:'pickup',name:ITEMS[chosen.type].name});return true;
 }
 export function drop(world){
   const item=world.items.find(x=>x.id===world.player.held);
   if(!item)return false;
+  finishExperiment(world,item,'내려놓기');
   item.held=false;item.x=world.player.x+30;item.y=world.player.y;item.vx=0;item.vy=0;
   world.player.held=null;return true;
 }
@@ -131,22 +160,22 @@ export function throwItem(world,tx,ty,power=0.82){
   const dir=norm(tx-world.player.x,ty-world.player.y),p=clamp(Number(power)||0,0.2,1);
   const speed=(500*p)/Math.pow(item.m,0.2); // arcade throw: heavy objects are somewhat slower, with more momentum
   item.held=false;item.x=world.player.x+dir.x*(world.player.r+item.r+3);item.y=world.player.y+dir.y*(world.player.r+item.r+3);
-  item.vx=dir.x*speed;item.vy=dir.y*speed;item.rest=0;item.launch={type:item.type,power:p,travel:0,surface:surfaceAt(world,item.x,item.y)};
+  item.vx=dir.x*speed;item.vy=dir.y*speed;item.rest=0;item.bounces=0;item.launch={type:item.type,power:p,travel:0,surface:surfaceAt(world,item.x,item.y),surfaceTrail:[surfaceAt(world,item.x,item.y)],elapsed:0,bounces:0};
   world.player.held=null;world.shots++;world.events.push({type:'throw',name:ITEMS[item.type].name,power:p});return true;
 }
 function collideWalls(body){
   const {l,r,t,b}=gameBounds,rest=body.bounce??0.35;
-  if(body.x-body.r<l){body.x=l+body.r;body.vx=Math.abs(body.vx||0)*rest;}
-  if(body.x+body.r>r){body.x=r-body.r;body.vx=-Math.abs(body.vx||0)*rest;}
-  if(body.y-body.r<t){body.y=t+body.r;body.vy=Math.abs(body.vy||0)*rest;}
-  if(body.y+body.r>b){body.y=b-body.r;body.vy=-Math.abs(body.vy||0)*rest;}
+  if(body.x-body.r<l){if(body.vx< -15){body.bounces=(body.bounces||0)+1;if(body.launch)body.launch.bounces++;}body.x=l+body.r;body.vx=Math.abs(body.vx||0)*rest;}
+  if(body.x+body.r>r){if(body.vx>15){body.bounces=(body.bounces||0)+1;if(body.launch)body.launch.bounces++;}body.x=r-body.r;body.vx=-Math.abs(body.vx||0)*rest;}
+  if(body.y-body.r<t){if(body.vy< -15){body.bounces=(body.bounces||0)+1;if(body.launch)body.launch.bounces++;}body.y=t+body.r;body.vy=Math.abs(body.vy||0)*rest;}
+  if(body.y+body.r>b){if(body.vy>15){body.bounces=(body.bounces||0)+1;if(body.launch)body.launch.bounces++;}body.y=b-body.r;body.vy=-Math.abs(body.vy||0)*rest;}
 }
 function bumpStatic(item,x,y,r,bounce=0.86){
   const dx=item.x-x,dy=item.y-y,d=Math.hypot(dx,dy),min=item.r+r;
   if(d>=min)return false;
   const dir=norm(dx||0.001,dy),closing=item.vx*dir.x+item.vy*dir.y;
   item.x=x+dir.x*min;item.y=y+dir.y*min;
-  if(closing<0){item.vx-=(1+bounce)*closing*dir.x;item.vy-=(1+bounce)*closing*dir.y;}
+  if(closing< -15){item.bounces=(item.bounces||0)+1;if(item.launch)item.launch.bounces++;item.vx-=(1+bounce)*closing*dir.x;item.vy-=(1+bounce)*closing*dir.y;}
   return true;
 }
 function bumpRect(item,rect){
@@ -177,9 +206,9 @@ function goalInteractions(world,item){
   for(const goal of world.goals){if(goal.active)continue;
     const d=Math.hypot(item.x-goal.x,item.y-goal.y);
     if(d<item.r+22){const force=Math.hypot(item.vx,item.vy)*item.m*0.043;
-      if(force>=goal.threshold){goal.active=true;goal.pulse=0.6;world.hits++;world.combo++;world.maxCombo=Math.max(world.combo,world.maxCombo);world.comboTimer=2.6;
+      if(force>=goal.threshold && (item.bounces||0)>=(goal.requiredBounces||0)){finishExperiment(world,item,'목표 명중');goal.active=true;goal.pulse=0.6;world.hits++;world.combo++;world.maxCombo=Math.max(world.combo,world.maxCombo);world.comboTimer=2.6;
         const bonus=100+world.combo*30;world.score+=bonus;hit(world,goal.x,goal.y);world.events.push({type:'goal',score:bonus,combo:world.combo});
-      }else if(Math.hypot(item.vx,item.vy)>20){world.events.push({type:'soft-hit'});}
+      }else if(Math.hypot(item.vx,item.vy)>20 && world.time-(goal.lastHintAt??-99)>1.5){goal.lastHintAt=world.time;world.events.push({type:'soft-hit',reason:(item.bounces||0)<(goal.requiredBounces||0)?'bounce':'impact'});}
       bumpStatic(item,goal.x,goal.y,22,0.4);
     }
   }
@@ -255,18 +284,26 @@ export function stepWorld(world,input={},dt=FIXED_DT){
   for(const rect of [...world.barriers,...world.gates.filter(g=>!g.open)]){
     const nx=clamp(player.x,rect.x,rect.x+rect.w),ny=clamp(player.y,rect.y,rect.y+rect.h);
     const dx=player.x-nx,dy=player.y-ny,d=Math.hypot(dx,dy);
-    if(d<player.r){const n=norm(dx||0.001,dy);player.x+=n.x*(player.r-d);player.y+=n.y*(player.r-d);}
+    if(d<player.r){
+      if(d<1e-6){const sides=[player.x-rect.x,rect.x+rect.w-player.x,player.y-rect.y,rect.y+rect.h-player.y];
+        const side=sides.indexOf(Math.min(...sides));
+        if(side===0)player.x=rect.x-player.r;else if(side===1)player.x=rect.x+rect.w+player.r;
+        else if(side===2)player.y=rect.y-player.r;else player.y=rect.y+rect.h+player.r;
+      }else{const n=norm(dx,dy);player.x+=n.x*(player.r-d);player.y+=n.y*(player.r-d);}
+    }
   }
   for(const item of world.items){
     if(item.held){item.x=player.x+26;item.y=player.y-24;continue;}
     if(!item.active)continue;
     const surface=surfaceAt(world,item.x,item.y),drag=SURFACES[surface].drag;
+    if(item.launch&&!item.launch.surfaceTrail.includes(surface))item.launch.surfaceTrail.push(surface);
     const damp=Math.exp(-drag*dt);item.vx*=damp;item.vy*=damp;
     for(const belt of world.belts){if(item.x>=belt.x&&item.x<=belt.x+belt.w&&item.y>=belt.y&&item.y<=belt.y+belt.h){
       const gain=1-Math.exp(-3*dt);item.vx+=(belt.vx-item.vx)*gain;item.vy+=(belt.vy-item.vy)*gain;
     }}
-    if(item.launch)item.launch.travel+=Math.hypot(item.vx,item.vy)*dt;
-    if(Math.hypot(item.vx,item.vy)<1.2){item.vx=0;item.vy=0;if(item.launch){world.experiments.push({...item.launch,distance:Math.round(item.launch.travel)});world.experiments=world.experiments.slice(-5);item.launch=null;world.events.push({type:'experiment'});}}
+    if(item.launch){item.launch.travel+=Math.hypot(item.vx,item.vy)*dt;item.launch.elapsed+=dt;}
+    if(Math.hypot(item.vx,item.vy)<1.2){item.vx=0;item.vy=0;if(item.launch)finishExperiment(world,item,'멈춤');}
+    if(item.launch&&item.launch.elapsed>=7)finishExperiment(world,item,'7초 관찰');
     item.x+=item.vx*dt;item.y+=item.vy*dt;
     collideWalls(item);
     for(const rect of [...world.barriers,...world.gates.filter(g=>!g.open)])bumpRect(item,rect);
@@ -288,4 +325,8 @@ export function stepWorld(world,input={},dt=FIXED_DT){
   return world;
 }
 export function simulate(world,steps,input={}){for(let i=0;i<steps;i++)stepWorld(world,input,FIXED_DT);return world;}
-export function medal(world){if(world.status!=='won')return 0;return world.shots<=world.goals.length?3:world.shots<=world.goals.length+2?2:1;}
+export function medal(world){
+  if(world.status!=='won')return 0;
+  const planned=world.goals.length+(world.pads.length?1:0)+(world.dominos.length?1:0);
+  return world.shots<=planned?3:world.shots<=planned+2?2:1;
+}
