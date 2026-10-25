@@ -86,7 +86,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-011",
     "source": "역사 퀴즈 1회 11번",
     "era": "고려",
-    "type": "나라",
+    "type": "민족",
     "q": "고려를 세 차례 침략했으며, 요나라를 세운 민족은 누구일까요?",
     "answer": "거란족",
     "aliases": []
@@ -95,7 +95,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-012",
     "source": "역사 퀴즈 1회 12번",
     "era": "고려",
-    "type": "나라",
+    "type": "민족",
     "q": "만주 동북부 지방에 살면서 고려의 국경을 자주 넘어와서 노략질을 하였으며 금이라는 나라를 세운 민족은?",
     "answer": "여진족",
     "aliases": []
@@ -158,7 +158,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-020",
     "source": "역사 퀴즈 1회 20번",
     "era": "조선 전기",
-    "type": "용어",
+    "type": "과학",
     "q": "세종 대왕 때 만들어졌으며 비가 온 양을 재는 기구는?",
     "answer": "측우기",
     "aliases": []
@@ -176,7 +176,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-022",
     "source": "역사 퀴즈 1회 22번",
     "era": "조선 전기",
-    "type": "용어",
+    "type": "문헌",
     "q": "훈민정음으로 쓴 최초의 글로 왕실 조상의 역사를 노래한 것은 무엇인가?",
     "answer": "용비어천가",
     "aliases": []
@@ -623,7 +623,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set1-074",
     "source": "역사 퀴즈 1회 74번",
     "era": "일제강점기",
-    "type": "장소",
+    "type": "문헌",
     "q": "조선 물건 쓰기 운동을 적극적으로 후원했던 당시의 신문사는 어디였는가?",
     "answer": "동아 일보",
     "aliases": []
@@ -1608,7 +1608,7 @@ export const IMPORTED_HISTORY_QUIZ = Object.freeze([
     "id": "set2-090",
     "source": "역사 퀴즈 2회 90번",
     "era": "삼국",
-    "type": "제도",
+    "type": "회의",
     "q": "신라에서 귀족들이 국가의 중요한 일을 만장일치로 결정하던 회의는 무엇일까요?",
     "answer": "화백회의",
     "aliases": []
