@@ -7,7 +7,7 @@ const int = (v, lo, hi, fallback) => Number.isFinite(Number(v)) ? Math.max(lo, M
 export function fail(code, status = 409) { throw Object.assign(new Error(code), { status }); }
 export function settings(body = {}) {
   const questionCount = int(body.questionCount, 5, 40, 15);
-  const questionMode = ['ox','mixed','people','heritage'].includes(body.questionMode) ? body.questionMode : 'choice';
+  const questionMode = ['ox','mixed','people','heritage','short'].includes(body.questionMode) ? body.questionMode : 'choice';
   const eras = normalizeEraSelection(body.eras || ERA_ORDER);
   if(questionMode==='people'&&!hasHistoricalFigures(eras))fail('person_era_empty',400);
   if(questionMode==='heritage'&&!hasHistoricalHeritage(eras,questionCount))fail('heritage_era_empty',400);
@@ -105,6 +105,26 @@ export function hostCommand(state, action, body, now) {
   if (keys.length > 256) delete state.actions[keys[0]];
   return { ok: true };
 }
+
+function normalizeShortAnswer(value){
+  return String(value??'').normalize('NFKC').toLowerCase().trim().replace(/[\\s\\-_.·ㆍ,!?'"“”‘’()[\\]{}:;]/g,'');
+}
+function shortAnswerVariants(answer){
+  const raw=normalizeShortAnswer(answer),values=new Set(raw?[raw]:[]);
+  if(/^\\d{3,4}년$/.test(raw))values.add(raw.slice(0,-1));
+  if(/^\\d{3,4}$/.test(raw))values.add(raw+'년');
+  if(raw.endsWith('대왕')&&raw.length>2)values.add(raw.slice(0,-2));
+  return values;
+}
+export function gradeHistoryShortAnswer(input,answers=[]){
+  if(typeof input!=='string'||!input.trim()||input.length>40)return false;
+  const entered=shortAnswerVariants(input);
+  return answers.some(answer=>{
+    const expected=shortAnswerVariants(answer);
+    for(const variant of entered)if(expected.has(variant))return true;
+    return false;
+  });
+}
 export function answer(state, playerId, body, now) {
   if (body.roundId !== state.roundId || !Number.isInteger(body.questionIndex) || body.questionIndex !== state.qi) fail('stale_question');
   const p = state.players.find(p => p.id === playerId);
@@ -113,12 +133,18 @@ export function answer(state, playerId, body, now) {
   // Acknowledgements never reveal correctness or score, including retries after reveal.
   if (prior) return { ok: true, submitted: true, duplicate: true, optionIndex: prior.optionIndex };
   if (state.status !== 'question' || now >= state.deadlineAt) fail('answer_closed');
-  const { q, display } = question(state), option = body.optionIndex;
-  if (!Number.isInteger(option) || option < 0 || option >= q.o.length) fail('invalid_option', 400);
-  const correct = option === display.answerIndex;
+  const { q, display } = question(state), isShort=q.family==='short';
+  const inputText=isShort?String(body.inputText??'').trim():'';
+  const option=isShort?-1:body.optionIndex;
+  if(isShort){
+    if(typeof body.inputText!=='string'||!inputText||body.inputText.length>40)fail('invalid_answer',400);
+  }else if(!Number.isInteger(option)||option<0||option>=q.o.length)fail('invalid_option',400);
+  const correct=isShort
+    ?gradeHistoryShortAnswer(inputText,q.acceptedAnswers||[q.o[q.a]])
+    :option===display.answerIndex;
   const streak = correct ? p.streak + 1 : 0;
   const points = correct ? 1000 + Math.round(500 * Math.max(0, state.deadlineAt - now) / (state.deadlineAt - state.startedAt)) + Math.min(300, Math.max(0, streak - 1) * 100) : 0;
-  state.answers[playerId] = { optionIndex: option, correct, points };
+  state.answers[playerId] = { optionIndex: option, ...(isShort?{inputText}:{}), correct, points };
   p.score += points; p.streak = streak; state.version++;
   if (state.players.every(p => state.answers[p.id])) reveal(state);
   return { ok: true, submitted: true, duplicate: false, optionIndex: option };
@@ -137,12 +163,15 @@ export function snapshot(state, auth, now) {
       eras:state.eras, scoreMode:state.scoreMode, round:state.round, roundId:state.roundId }, players };
   const { q, display } = question(state);
   if (q && ['question','reveal','finished'].includes(state.status)) out.question = {number:state.qi+1,total:state.questionCount,
-    difficulty:q.difficulty,prompt:q.q,options:display.options,kind:q.family==='ox'?'ox':'choice',
+    difficulty:q.difficulty,prompt:q.q,options:q.family==='short'?[]:display.options,kind:q.family==='short'?'short':q.family==='ox'?'ox':'choice',
     ...(q.media?{media:q.media}:{})};
   if (q && state.status === 'reveal') {
-    const answers = Object.values(state.answers), counts = q.o.map(() => 0);
-    for (const a of answers) counts[a.optionIndex]++;
-    out.reveal = {answerIndex:display.answerIndex,era:q.era,explanation:q.e,optionStats:counts,answeredCount:answers.length,correctCount:answers.filter(a=>a.correct).length};
+    const answers=Object.values(state.answers),isShort=q.family==='short',counts=isShort?[]:q.o.map(()=>0);
+    if(!isShort)for(const a of answers)if(a.optionIndex>=0&&a.optionIndex<counts.length)counts[a.optionIndex]++;
+    out.reveal={answerIndex:isShort?-1:display.answerIndex,
+      ...(isShort?{answerText:q.o[q.a],
+        ...(auth.role==='player'?{myAnswer:state.answers[auth.id]?.inputText||'',myCorrect:Boolean(state.answers[auth.id]?.correct)}:{})}:{}),
+      era:q.era,explanation:q.e,optionStats:counts,answeredCount:answers.length,correctCount:answers.filter(a=>a.correct).length};
   }
   if (state.status === 'checkpoint') out.checkpoint = {afterQuestion:state.qi+1,nextQuestion:state.qi+2,totalPlayers:players.length};
   if (state.status === 'finished') out.results = players;
