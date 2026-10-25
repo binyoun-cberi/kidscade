@@ -49,7 +49,7 @@
 
 ## 검증
 ```bash
-node --test tests/road-weaver-core.test.mjs tests/rotary-club-interchanges.test.mjs tests/rotary-club-traffic-expansion.test.mjs tests/rotary-club-junction-safety.test.mjs tests/rotary-club-ui.test.cjs
+node --test tests/road-weaver-core.test.mjs tests/rotary-club-interchanges.test.mjs tests/rotary-club-traffic-expansion.test.mjs tests/rotary-club-junction-safety.test.mjs tests/rotary-club-qa-loops.test.mjs tests/rotary-club-ui.test.cjs
 npm run health:strict
 npm run test:ci
 npm run build
@@ -78,3 +78,12 @@ npm run build
 - 잔디·차량 에셋은 이미 저장소에 있는 작은 PNG를 **추가 파일 복사 없이** 참조한다. 원본 2D 건물 이미지의 관측/스프라이트 배치 검수가 완결되지 않아 건물은 임시 도형을 유지한다.
 - `tests/rotary-club-junction-safety.test.mjs`에 교차로 동시 진입·예약 만료·좌우회전 차로·이미지 위치 연속성 테스트 5개를 추가했다.
 - 엔진 29개와 모의 UI 4개, 총 33개 격리 실행 검사 통과. **실제 브라우저 화면을 본 테스트는 아님**.
+
+## 2026-10-25 품질 검수 루프 3회
+**1차 — 도로 편집 안정성**: 차량이 운행 중인 상태에서 도로를 여러 차례 수정할 때 동일한 이전 도로망이 반복 보관되고 화면에 표시되는 문제를 재현하고 해결했다. 퇴역 도로를 실제 차량이 앞으로 통과할 구간만 보관하도록 수정했다. 또한 너무 복잡해 저장 파일 복원이 불가능한 자유곡선 도로는 건설 전에 이유를 안내하고 자재를 소비하지 않도록 고쳤다. 유효하지 않은 좌표를 안전하게 무시한다.
+
+**2차 — 모바일 조작과 저장 안전**: 기존 도시가 저장된 상태에서 새 도시 시작 버튼을 한 번만 누르면 기록이 덮어써질 수 있었다. 기존 기록이 있으면 두 번의 명시적인 확인 단계를 거쳐 새로 시작하도록 고쳤다. 포인터 취소 뒤 이전 도로 시작점이 남아 의도치 않은 도로가 이어지는 문제를 해결했다.
+
+**3차 — 실제 교통 상황의 신뢰성**: 연결되지 않은 새 지역의 출발 대기 차량까지 정체 숫자에 합산해, 도로에서 차들이 원활하게 움직여도 '심한 정체'가 표시되던 문제를 재현했다. 차량 자체의 주행 속도에서 정체 정도를 결정하고, 미연결 지역은 별도 안내로 표시한다. 차량 통행 숫자는 계속 화면에 보여주지 않는다.
+
+`tests/rotary-club-qa-loops.test.mjs` 6개 신규 회귀 테스트 및 `tests/rotary-club-ui.test.cjs` 2개 신규 테스트를 포함하여 총 **41개(엔진 35개 + 모의 UI 6개)** 를 격리 환경에서 실행하고 통과했다. **정식 Node 전체 CI 검증 결과는 별도로 확인하고, 브라우저 실기기·실제 렌더링 검사와 구분한다.**
