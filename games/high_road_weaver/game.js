@@ -11,6 +11,13 @@ let guideCache='',saveAvailable=false,sessionStarted=false,suppressGesture=false
 const STORAGE_KEY='kidscade_game_v1:high_road_weaver:world';
 const imageRoot='../../assets/game/2d/vehicles/pixel/cars/';
 const sprites={};
+const terrainTiles={};
+for(const name of ['land_grass01','land_grass05','land_grass09']){
+  const image=new Image();
+  image.src='../../assets/game/2d/racing/kenney-racing-pack/tiles/grass/'+name+'.png';
+  image.onload=()=>render();
+  terrainTiles[name]=image;
+}
 for(const name of ['sedan','sedan-blue','taxi','rounded-green','suv','truck','truckdelivery','bus','van-small','tractor']){
   const img=new Image();img.src=imageRoot+name+'.png';img.onload=()=>render();
   sprites[name]=img;
@@ -225,6 +232,14 @@ function rounded(x,y,w,h,r,fill){
 }
 function drawGrass(){
   ctx.fillStyle='#d3e8c9';ctx.fillRect(0,0,1080,720);
+  // 기존 Kenney Racing Pack 잔디 타일을 얇게 섞어 도로가 놓이는 들판의 질감을 유지한다.
+  const tileNames=['land_grass01','land_grass05','land_grass09'];
+  ctx.save();ctx.globalAlpha=.28;ctx.imageSmoothingEnabled=false;
+  for(let row=0;row<9;row++)for(let col=0;col<14;col++){
+    const img=terrainTiles[tileNames[(row*7+col*5)%3]];
+    if(img&&img.complete&&img.naturalWidth)ctx.drawImage(img,col*80,row*80,80,80);
+  }
+  ctx.restore();
   for(let i=0;i<165;i++){
     const x=(i*319.3+73)%1080,y=(i*169.7+47)%720;
     ctx.beginPath();ctx.ellipse(x,y,9+i%5*3,5+i%3*4,(i%7)*.5,0,Math.PI*2);
@@ -307,6 +322,28 @@ function drawCity(t,index){
   ctx.fillStyle='#254b3b';ctx.fillText(t.name,cx,labelY+17);
   ctx.restore();
 }
+function drawParkedCar(x,y,name,angle=0){
+  const image=sprites[name];
+  if(!image||!image.complete||!image.naturalWidth)return;
+  ctx.save();ctx.translate(x,y);ctx.rotate(angle);
+  ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.88;
+  ctx.drawImage(image,-7,-12,14,24);
+  ctx.restore();
+}
+function drawDistrictLife(){
+  for(const t of sim.towns){
+    if(t.id==='market'){
+      drawParkedCar(t.x-31,t.y+41,'sedan-blue');
+      drawParkedCar(t.x+31,t.y+41,'suv');
+      drawParkedCar(t.x+5,t.y+41,'taxi');
+    }else if(t.id==='farm'){
+      drawParkedCar(t.x+53,t.y+39,'tractor',-.22);
+      drawParkedCar(t.x-54,t.y+44,'truck',.24);
+    }else if(t.id==='tourism'){
+      drawParkedCar(t.x+54,t.y+43,'bus',-.12);
+    }
+  }
+}
 function drawRoundaboutCenters(){
   for(const circle of sim.roundabouts){
     ctx.save();
@@ -382,6 +419,7 @@ function render(){
   drawRoundaboutCenters();
   drawSignals();
   sim.towns.forEach(drawCity);
+  drawDistrictLife();
   for(const c of sim.cars)drawCar(c);
   drawDraft();
   ctx.restore();
