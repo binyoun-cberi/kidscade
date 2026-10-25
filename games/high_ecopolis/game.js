@@ -769,13 +769,36 @@ function targetVisitorCount(){
   const c=counts(),attractions=buildings.filter(b=>['visitorcenter','observatory','researchstation','ecocafe','bench','signpost'].includes(b.type)).length;
   return clamp(Math.round(3+ecosystem.reputation*.16+c.restorePct*.045+returnedSpeciesCount()*2.2+attractions*1.7+cityDiversityScore()*.05-ecosystem.habitatStress*.05),0,42);
 }
+function visitorArrivalRoutes(type){
+  const entries=visitorEntryTiles(),goals=visitorDestinations(type);
+  const centerPaths=new Set(buildings.filter(b=>b.type==='visitorcenter').flatMap(facilityAccessTiles));
+  if(!centerPaths.size)return [];
+  const routes=[];
+  for(const entry of entries){
+    // A single BFS per entrance gives the whole connected component.
+    const queue=[entry],previous=new Map([[entry,null]]);
+    for(let i=0;i<queue.length;i++){
+      for(const next of adjacentPathTiles(queue[i])){
+        if(previous.has(next))continue;
+        previous.set(next,queue[i]);queue.push(next);
+      }
+    }
+    if(![...centerPaths].some(t=>previous.has(t)))continue;
+    const available=goals.filter(t=>t!==entry&&previous.has(t));
+    if(!available.length)continue;
+    const goal=available[Math.floor(rng()*available.length)];
+    const path=[];for(let cur=goal;cur&&cur!==entry;cur=previous.get(cur))path.push(cur);
+    path.reverse();routes.push({start:entry,path});
+  }
+  return routes;
+}
 function spawnVisitor(){
-  const entries=visitorEntryTiles();if(!entries.length)return;
-  const type=pickVisitorType(),start=entries[Math.floor(rng()*entries.length)],destinations=visitorDestinations(type);
-  if(!destinations.length)return;
-  const dest=destinations[Math.floor(rng()*destinations.length)],path=findVisitorPath(start,dest);if(!path.length)return;
+  const type=pickVisitorType(),routes=visitorArrivalRoutes(type);
+  if(!routes.length)return;
+  const {start,path}=routes[Math.floor(rng()*routes.length)];
   const mesh=visitorModel(type),p=worldPos(start);mesh.position.set(p.x,.34,p.z);visitorGroup.add(mesh);
-  const v={type,mesh,tile:start,path,pathIndex:0,happiness:60,targetHappiness:60,age:0,maxAge:38+rng()*34,thoughtCooldown:2+rng()*5,mixer:null};visitors.push(v);attachVisitorAsset(v);
+  const v={type,mesh,tile:start,path,pathIndex:0,happiness:60,targetHappiness:60,age:0,maxAge:38+rng()*34,thoughtCooldown:2+rng()*5,mixer:null};
+  visitors.push(v);attachVisitorAsset(v);
 }
 function removeVisitor(v,served=true){
   visitorGroup.remove(v.mesh);visitors=visitors.filter(x=>x!==v);if(served)ecosystem.visitorsServed++;
@@ -818,14 +841,15 @@ function evaluateVisitor(v,t){
 }
 function chooseNextVisitorPath(v){
   const destinations=visitorDestinations(v.type);if(!destinations.length){removeVisitor(v);return}
-  const dest=destinations[Math.floor(rng()*destinations.length)],path=findVisitorPath(v.tile,dest);
-  if(path.length){v.path=path;v.pathIndex=0}else removeVisitor(v);
+  const paths=destinations.map(dest=>findVisitorPath(v.tile,dest)).filter(path=>path.length);
+  if(paths.length){v.path=paths[Math.floor(rng()*paths.length)];v.pathIndex=0}else removeVisitor(v);
 }
 function animateVisitors(dt){
   for(const v of [...visitors]){
     v.age+=dt;v.thoughtCooldown-=dt;v.happiness+=(v.targetHappiness-v.happiness)*Math.min(1,dt*.5);v.mixer?.update(dt);
     if(v.age>v.maxAge){removeVisitor(v);continue}
-    const next=v.path[v.pathIndex];if(!next){evaluateVisitor(v,v.tile);chooseNextVisitorPath(v);continue}
+    const next=v.path[v.pathIndex];if(next&&!visitorWalkable(next)){chooseNextVisitorPath(v);continue}
+    if(!next){evaluateVisitor(v,v.tile);chooseNextVisitorPath(v);continue}
     const p=worldPos(next),dx=p.x-v.mesh.position.x,dz=p.z-v.mesh.position.z,d=Math.hypot(dx,dz),step=(VISITOR_TYPES[v.type]?.speed||.75)*pathTravelFactor(next)*dt;
     if(d<=step+.02){v.mesh.position.x=p.x;v.mesh.position.z=p.z;v.tile=next;v.pathIndex++;if(v.thoughtCooldown<=0){evaluateVisitor(v,next);v.thoughtCooldown=5+rng()*7}}
     else{v.mesh.position.x+=dx/d*step;v.mesh.position.z+=dz/d*step;v.mesh.rotation.y=Math.atan2(dx,dz)}
