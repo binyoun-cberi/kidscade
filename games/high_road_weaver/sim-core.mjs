@@ -670,14 +670,31 @@ export class RoadWeaver {
     return {flow,queue};
   }
   snapshot(){
-    return {version:2,roads:this.roads.map(r=>({id:r.id,lanes:r.lanes,points:r.points,kind:r.kind||'ground'})),
+    // 활성 차량의 간선을 한 번씩만 기록해 모바일 브라우저의 저장 공간을 절약한다.
+    // 도로 편집 중 이미 퇴역한 경로 위의 자동차도 원래 자리 그대로 복원된다.
+    const edgePool=[],edgeIds=new Map();
+    const edgeIndex=edge=>{
+      if(!edgeIds.has(edge)){
+        edgeIds.set(edge,edgePool.length);
+        edgePool.push({id:edge.id,a:edge.a,b:edge.b,lanes:edge.lanes,kind:edge.kind,
+          points:edge.points});
+      }
+      return edgeIds.get(edge);
+    };
+    const cars=this.cars.map(c=>({id:c.id,from:c.from,to:c.to,kind:c.kind,
+      step:c.step,s:c.s,lane:c.lane,laneVisual:c.laneVisual,laneCooldown:c.laneCooldown,
+      speed:c.speed,maxSpeed:c.maxSpeed,
+      path:c.path.map(item=>[edgeIndex(item.edge),item.dir])}));
+    return {version:3,roads:this.roads.map(r=>({id:r.id,lanes:r.lanes,points:r.points,kind:r.kind||'ground'})),
       roundabouts:this.roundabouts.map(c=>({...c})),
       openTowns:this.openTowns,budget:this.budget,day:this.day,minutes:this.minutes,
       delivered:this.delivered,waiting:this.waiting,attempted:this.attempted,lights:[...this.lights],serial:this.serial,
-      queues:[...this.pending].map(([pair,count])=>[pair,count])};
+      queues:[...this.pending].map(([pair,count])=>[pair,count]),cars,edgePool,
+      tickTime:this.tickTime,spawnFraction:[...this.spawnFraction],dispatchClock:this.dispatchClock,
+      growthClock:this.growthClock};
   }
   restore(data){
-    if(!data||![1,2].includes(data.version)||!Array.isArray(data.roads))return false;
+    if(!data||![1,2,3].includes(data.version)||!Array.isArray(data.roads))return false;
     const roads=data.roads.filter(r=>r&&[2,4,6].includes(r.lanes)&&['ground','bridge','ramp','slip',undefined].includes(r.kind)
       &&(!['ramp','slip'].includes(r.kind)||r.lanes===2)&&Array.isArray(r.points)&&r.points.length>=2&&r.points.length<350
       &&r.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=0&&p.x<=1080&&p.y>=0&&p.y<=720));
@@ -686,6 +703,8 @@ export class RoadWeaver {
       &&c.x>=0&&c.x<=1080&&c.y>=0&&c.y<=720&&c.radius>=15&&c.radius<=90);
     if(circles.length>8||circles.length!==(data.roundabouts||[]).length)return false;
     if(roads.length!==data.roads.length||roads.length>120)return false;
+    if(data.version===3&&(!Array.isArray(data.cars)||data.cars.length>180||
+      !Array.isArray(data.edgePool)||data.edgePool.length>2500))return false;
     this.roads=roads;this.roundabouts=circles;this.openTowns=clamp(Math.round(data.openTowns)||2,2,TOWN_TYPES.length);
     this.budget=clamp(data.budget||0,0,10000);this.day=clamp(data.day||1,1,9999);
     this.minutes=clamp(data.minutes||330,0,1439);this.delivered=Math.max(0,Math.round(data.delivered||0));
@@ -696,6 +715,55 @@ export class RoadWeaver {
     this.junctionReservations.clear();
     this.pending=new Map(Array.isArray(data.queues)?data.queues.filter(row=>Array.isArray(row)&&typeof row[0]==='string'&&Number.isFinite(row[1])&&row[1]>=0&&row[1]<=75):[]);
     this.waiting=[...this.pending.values()].reduce((sum,n)=>sum+n,0);
-    this.rebuild();return true;
+    this.rebuild();
+    if(data.version===3){
+      this.tickTime=Number.isFinite(data.tickTime)?clamp(data.tickTime,0,1e8):0;
+      this.dispatchClock=Number.isFinite(data.dispatchClock)?clamp(data.dispatchClock,0,.3):0;
+      this.growthClock=Number.isFinite(data.growthClock)?clamp(data.growthClock,0,2):0;
+      this.spawnFraction=new Map(Array.isArray(data.spawnFraction)?data.spawnFraction.filter(row=>
+        Array.isArray(row)&&typeof row[0]==='string'&&/^[a-z]+>[a-z]+$/.test(row[0])
+        &&Number.isFinite(row[1])&&row[1]>=0&&row[1]<1).slice(0,50):[]);
+      const validEdge=e=>e&&typeof e.id==='string'&&e.id.length<80&&
+        typeof e.a==='string'&&typeof e.b==='string'&&
+        [2,4,6].includes(e.lanes)&&['ground','bridge','ramp','slip','roundabout'].includes(e.kind)
+        &&Array.isArray(e.points)&&e.points.length>=2&&e.points.length<350&&
+        e.points.every(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&
+          p.x>=0&&p.x<=1080&&p.y>=0&&p.y<=720);
+      if(!data.edgePool.every(validEdge))return false;
+      const active=new Map(this.edges.map(e=>[JSON.stringify([e.id,e.a,e.b,e.lanes,e.kind,e.points]),e]));
+      const unused=new Set();
+      const pool=data.edgePool.map(raw=>{
+        const original=active.get(JSON.stringify([raw.id,raw.a,raw.b,raw.lanes,raw.kind,raw.points]));
+        if(original)return original;
+        const orphan={...raw,roadId:raw.id.split(':')[0],length:roadLength(raw.points)};
+        unused.add(orphan);return orphan;
+      });
+      const seen=new Set();
+      for(const raw of data.cars){
+        if(!raw||typeof raw.id!=='string'||!/^c[0-9]+$/.test(raw.id)||seen.has(raw.id)||
+          !TOWN_TYPES.some(t=>t.id===raw.from)||!TOWN_TYPES.some(t=>t.id===raw.to)||
+          !Array.isArray(raw.path)||!raw.path.length||raw.path.length>300||
+          !Number.isInteger(raw.step)||raw.step<0||raw.step>=raw.path.length||
+          !Number.isFinite(raw.s)||!Number.isFinite(raw.lane)||!Number.isFinite(raw.speed)||
+          !Number.isFinite(raw.maxSpeed))continue;
+        const path=raw.path.map(row=>Array.isArray(row)&&Number.isInteger(row[0])&&
+          row[0]>=0&&row[0]<pool.length&&[1,-1].includes(row[1])
+          ?{edge:pool[row[0]],dir:row[1]}:null);
+        if(path.some(x=>!x))continue;
+        if(raw.s<0||raw.s>path[raw.step].edge.length+.1||
+          raw.lane<0||raw.lane>=path[raw.step].edge.lanes/2)continue;
+        const car={id:raw.id,from:raw.from,to:raw.to,
+          kind:['car','truck','tractor','bus'].includes(raw.kind)?raw.kind:'car',
+          path,step:raw.step,edge:path[raw.step].edge,dir:path[raw.step].dir,
+          s:raw.s,lane:raw.lane,laneVisual:Number.isFinite(raw.laneVisual)?raw.laneVisual:raw.lane,
+          laneCooldown:Number.isFinite(raw.laneCooldown)?clamp(raw.laneCooldown,0,5):0,
+          speed:clamp(raw.speed,0,100),maxSpeed:clamp(raw.maxSpeed,10,100)};
+        this.cars.push(car);seen.add(car.id);
+      }
+      const orphanCars=new Set(this.cars.filter(c=>c.path.slice(c.step).some(p=>unused.has(p.edge))).map(c=>c.id));
+      const orphanEdges=[...unused].filter(e=>this.cars.some(c=>c.path.slice(c.step).some(p=>p.edge===e)));
+      if(orphanEdges.length)this.oldRoads.push({edges:orphanEdges,cars:orphanCars});
+    }
+    return true;
   }
 }
